@@ -1,0 +1,9 @@
+Logging to file "build/dsk4-db1.simh.log"
+STAGE1 OK   
+DSK0  READ  
+DSK1  READ  
+DSK2  READ  
+DSK3  READ  
+HALT instruction, PC: 072007 (HALT 72007)
+Goodbye
+Log file closed

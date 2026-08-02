@@ -1,0 +1,33 @@
+set -q -n log @SIMH_LOG@
+set cpu 32k
+set cr disabled
+set cp disabled
+set ptr disabled
+set ptp disabled
+set dsk disabled
+set dtc disabled
+set mtc disabled
+set dcs disabled
+set ge disabled
+set wcnsls disabled
+set ocnsls disabled
+set slave disabled
+set dpy disabled
+
+; Standard PDP-6 paper-tape RIM loader at 020-027.
+deposit 020 710600000060
+deposit 021 710740000010
+deposit 022 254000000021
+deposit 023 710440000026
+deposit 024 710740000010
+deposit 025 254000000024
+deposit 026 000000000000
+deposit 027 254000000021
+
+; Stage0 deposits Stage1 from paper tape and transfers to its entry.
+break @STAGE1_ENTRY@
+set ptr enabled
+attach -q ptr @STAGE1_TAPE@
+deposit ptr time 1
+go 020
+exit
