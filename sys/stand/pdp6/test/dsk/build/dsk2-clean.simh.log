@@ -1,7 +1,0 @@
-Logging to file "build/dsk2-clean.simh.log"
-STAGE1 OK   
-DSK0  READ  
-DSK1  READ  
-HALT instruction, PC: 072007 (HALT 72007)
-Goodbye
-Log file closed

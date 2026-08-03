@@ -58,12 +58,6 @@ static unsigned long long mask36(unsigned long long v)
         return v & WORD_MASK;
 }
 
-static unsigned long long pair18(unsigned lh, unsigned rh)
-{
-        return (((unsigned long long)(lh & HALF_MASK)) << 18) |
-            (unsigned long long)(rh & HALF_MASK);
-}
-
 static unsigned long long six_header(unsigned magic, unsigned version,
     unsigned count, unsigned flags)
 {
@@ -86,20 +80,6 @@ static unsigned long long bad_word(unsigned start, unsigned count)
 {
         return mask36((((unsigned long long)(start & HALF_MASK)) << 18) |
             (((unsigned long long)((count - 1U) & 07777U)) << 6) | 1U);
-}
-
-static unsigned long long checksum(unsigned long long *words, unsigned skip)
-{
-        unsigned long long total = 0;
-        unsigned i;
-        for (i = 0; i < SECTOR_WORDS; i++) {
-                unsigned long long value = (i == skip) ? 0 : mask36(words[i]);
-                unsigned long long old = total;
-                total = mask36(total + value);
-                if (total < old || total < value)
-                        total = mask36(total + 1);
-        }
-        return mask36(~total);
 }
 
 static int contains_bad(struct member *m, unsigned sector)
@@ -175,15 +155,17 @@ static void init_bad_runs(struct member *members, unsigned n, const char *mode)
                 return;
         if (strcmp(mode, "bad") == 0) {
                 for (u = 0; u < n; u++) {
-                        add_bad(&members[u], 0200U + u * 020U, 1);
-                        add_bad(&members[u], 0240U + u * 020U, 2);
+                        add_bad(&members[u], 4U + u, 1);
+                        add_bad(&members[u], 010U + u * 2U, 2);
                 }
                 return;
         }
         if (strcmp(mode, "db1") == 0) {
-                for (u = 0; u < n; u++)
-                        for (i = 0; i < 021U; i++)
+                for (u = 0; u < n; u++) {
+                        add_bad(&members[u], 5U + u, 1);
+                        for (i = 1; i < 022U; i++)
                                 add_bad(&members[u], 0200U + i * 2U + u, 1);
+                }
                 return;
         }
         fprintf(stderr, "mkdsk: bad mode: %s\n", mode);
@@ -220,29 +202,36 @@ static void make_db1(unsigned long long *words, struct member *m)
 }
 
 static void make_dbx(unsigned long long *words, unsigned unit, unsigned n,
-    struct member *m, int compact)
+    int compact)
 {
         unsigned mask = (1U << n) - 1U;
         zero_sector(words);
         words[0] = six_header(compact ? MAGIC_DBC : MAGIC_DBX,
-            DBOOTX_VERSION, 0, DBX_F_CHECKSUM | DBX_F_COMPLETE_REQ |
-            (compact ? DBX_F_COMPACT : 0));
-        words[2] = 1;
-        words[3] = 0123456701234ULL;
-        words[4] = 0765432107654ULL;
-        words[5] = member_word(mask, unit, n, MEMBER_F_REQUIRED |
-            MEMBER_F_BOOT_MEMBER | MEMBER_F_REPLICA | MEMBER_F_COMPLETE_REQ);
-        words[012] = pair18(m->boot_start, m->boot_count);
-        words[1] = checksum(words, 1);
+            DBOOTX_VERSION, 0, 0);
+        words[2] = 0;
+        words[5] = member_word(mask, unit, n, 0);
 }
 
 static unsigned long long parse_word(const char *s)
 {
-        char *end;
         unsigned long long v;
-        errno = 0;
-        v = strtoull(s, &end, 8);
-        if (errno != 0 || end == s || (v & ~WORD_MASK))
+        int digit;
+        int seen;
+
+        v = 0;
+        seen = 0;
+        while (*s == ' ' || *s == '\t')
+                s++;
+        while (*s >= '0' && *s <= '7') {
+                digit = *s++ - '0';
+                if (v > (WORD_MASK >> 3))
+                        return ~0ULL;
+                v = (v << 3) | (unsigned long long)digit;
+                seen = 1;
+        }
+        while (*s == ' ' || *s == '\t')
+                s++;
+        if (!seen || (*s != '\0' && *s != '\n' && *s != '#'))
                 return ~0ULL;
         return v;
 }
@@ -344,7 +333,7 @@ int main(int argc, char **argv)
                             members[u].dbx_sector + 1);
                 }
                 members[u].boot_count = (logical_sectors + n - 1U - u) / n;
-                snprintf(path, sizeof(path), "%s/dsk%u.dsk", outdir, u);
+                sprintf(path, "%s/dsk%u.dsk", outdir, u);
                 files[u] = fopen(path, "wb+");
                 if (files[u] == NULL) {
                         perror(path);
@@ -358,7 +347,7 @@ int main(int argc, char **argv)
         }
 
         for (u = 0; u < n; u++) {
-                make_dbx(sector, u, n, &members[u], compact);
+                make_dbx(sector, u, n, compact);
                 write_sector(files[u], members[u].dbx_sector, sector);
                 if (!compact) {
                         make_db0(sector, &members[u]);

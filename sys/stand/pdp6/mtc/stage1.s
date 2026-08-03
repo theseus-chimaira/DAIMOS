@@ -1,71 +1,79 @@
-; magtape_boot_stub.s -- standalone PDP-6 magnetic-tape boot placeholder.
+; stage1.s -- sequential opaque-image Stage1 for PDP-6 magnetic tape.
 ;
-; This intentionally does not read MTC516 media or enter KINIT.  It proves the
-; build/launch slot for a future magnetic-tape Stage1 and leaves the processor
-; halted at magtape_stub_halt after announcing itself on CTY0.
+; Stage0 loads this loader from RIM paper tape. Stage1 reads one magnetic-tape
+; record through a Type 516 control and Type 136 data control. The record is a
+; six-character-per-word stream containing:
+;       word 0  DAIMON magic
+;       word 1  image_words,,entry_offset
+;       word 2  opaque image word 0
+; The image is loaded contiguously at 040000.
 
         .text
         .globl start
         .globl __start
-        .globl magtape_stub_halt
 
 __start:
 start:
-        movei 17,040000
-        move 1,msg_mta
-        pushj 17,put_sixbit_word
-        move 1,msg_boot
-        pushj 17,put_sixbit_word
-        move 1,msg_stub
-        pushj 17,put_sixbit_word
-        move 1,msg_ready
-        pushj 17,put_sixbit_word
-        movei 1,15
-        pushj 17,putc
-        movei 1,12
-        pushj 17,putc
-magtape_stub_halt:
+        movei 017,050000
+
+        ; Type 136: input, six 6-bit characters, device 3, move enabled.
+        movei 01,004000
+        cono 0200,0(01)
+
+        ; Type 516: unit 0, 556 bpi, binary parity, read forward.
+        movei 01,052400
+        cono 0220,0(01)
+
+        movei 01,header
+        movei 02,02
+        pushj 017,read_words
+        move 02,header
+        camn 02,daimon_magic
+        jrst header_ok
+        jrst fail
+header_ok:
+        hlrz 02,header+01
+        jumpe 02,fail
+        movem 02,image_words
+        hrrz 03,header+01
+        caml 03,02
+        jrst fail
+        movem 03,entry_off
+        movei 04,040000
+        add 04,02
+        caile 04,060000
+        jrst fail
+        movei 01,040000
+        pushj 017,read_words
+        movei 02,040000
+        add 02,entry_off
+        movem 02,entry_addr
+        movei 017,050000
+        setz 01,
+        setz 02,
+        jrst @entry_addr
+
+read_words:
+        jumpe 02,read_done
+read_loop:
+        conso 0200,001000
+        jrst read_loop
+        datai 0200,ioword
+        move 03,ioword
+        movem 03,0(01)
+        aoj 01,
+        sojg 02,read_loop
+read_done:
+        popj 017,
+
+fail:
         halt .
-        jrst magtape_stub_halt
+        jrst fail
 
-put_sixbit_word:
-        movem 1,put_word
-        movei 6,0
-put_six_loop:
-        caige 6,6
-        jrst put_six_one
-        popj 17,
-put_six_one:
-        move 2,put_word
-        move 3,put_shift(6)
-        lsh 2,0(3)
-        andi 2,077
-        addi 2,040
-        move 1,2
-        pushj 17,putc
-        aoj 6,
-        jrst put_six_loop
+header:      .block 02
+image_words: .word 0
+entry_off:   .word 0
+entry_addr:  .word 0
+ioword:      .word 0
 
-putc:
-        movem 1,ioword
-putc_wait:
-        coni 0120,cty_status
-        move 2,cty_status
-        trne 2,0020
-        jrst putc_wait
-        datao 0120,ioword
-        popj 17,
-
-put_shift: .word -36
-           .word -30
-           .word -22
-           .word -14
-           .word -6
-           .word 0
-put_word:  .word 0
-ioword:    .word 0
-cty_status:.word 0
-msg_mta:   .word 0556441000000
-msg_boot:  .word 0425757640000
-msg_stub:  .word 0636465420000
-msg_ready: .word 0624541447100
+daimon_magic: .word 0444151555756

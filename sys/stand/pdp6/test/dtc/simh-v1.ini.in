@@ -5,7 +5,7 @@ set cp disabled
 set ptr enabled
 set ptp disabled
 set dsk disabled
-set dtc disabled
+set dtc enabled
 set mtc disabled
 set dcs disabled
 set ge disabled
@@ -13,6 +13,9 @@ set wcnsls disabled
 set ocnsls disabled
 set slave disabled
 set dpy disabled
+
+set dtc dct=04
+attach -q -r dtc0 @PAYLOAD_TAPE@
 
 deposit 020 710600000060
 deposit 021 710740000010
@@ -23,13 +26,7 @@ deposit 025 254000000024
 deposit 026 000000000000
 deposit 027 254000000021
 
-break @STAGE1_ENTRY@
 attach -q ptr @STAGE1_TAPE@
 deposit ptr time 1
 go 020
-nobreak @STAGE1_ENTRY@
-detach ptr
-attach -q ptr @PAYLOAD_TAPE@
-deposit ptr time 1
-go @STAGE1_ENTRY@
 exit

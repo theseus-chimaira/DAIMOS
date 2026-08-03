@@ -1,7 +1,6 @@
 /* words2pt.c - encode octal 36-bit words as PDP-6 paper-tape bytes. */
 
 #include <errno.h>
-#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,18 +9,24 @@
 
 static unsigned long long parse_word(const char *s)
 {
-        char *end;
         unsigned long long v;
+        int digit;
+        int seen;
 
-        errno = 0;
-        v = strtoull(s, &end, 8);
-        if (errno != 0 || end == s)
-                return ~0ULL;
-        while (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r')
-                end++;
-        if (*end != '\0' && *end != '#')
-                return ~0ULL;
-        if (v & ~WORD_MASK)
+        v = 0;
+        seen = 0;
+        while (*s == ' ' || *s == '\t')
+                s++;
+        while (*s >= '0' && *s <= '7') {
+                digit = *s++ - '0';
+                if (v > (WORD_MASK >> 3))
+                        return ~0ULL;
+                v = (v << 3) | (unsigned long long)digit;
+                seen = 1;
+        }
+        while (*s == ' ' || *s == '\t' || *s == '\n' || *s == '\r')
+                s++;
+        if (!seen || (*s != '\0' && *s != '#'))
                 return ~0ULL;
         return v;
 }

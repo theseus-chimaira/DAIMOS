@@ -1,6 +1,0 @@
-Logging to file "build/dsk1-db1.simh.log"
-STAGE1 OK   
-DSK0  READ  
-HALT instruction, PC: 072007 (HALT 72007)
-Goodbye
-Log file closed

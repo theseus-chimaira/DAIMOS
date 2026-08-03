@@ -1,11 +1,11 @@
 /*
- * mkstream.c - wrap assembled standalone words as a minimal DAIMON stream.
+ * mkstream.c - wrap assembled standalone words as an opaque Stage1 stream.
  *
  * Input is the SIMH-style output produced by pdp10-dec-none-as:
  *      deposit ADDRESS WORD
  *
  * The output is an octal word stream:
- *      DAIMON header, one-word KCORE placeholder, fixed-size init payload.
+ *      DAIMON magic, image_words,,entry_offset, opaque image.
  */
 
 #include <errno.h>
@@ -45,7 +45,6 @@ int main(int argc, char **argv)
         unsigned long init_base = 0;
         unsigned long init_words = 0;
         unsigned long i;
-        unsigned long kcore_words = 1;
         unsigned long entry_off = 0;
         unsigned long long *init;
         FILE *in;
@@ -105,10 +104,9 @@ int main(int argc, char **argv)
                 return 1;
         }
         fprintf(out, "%012llo\n", DAIMON_MAGIC);
-        fprintf(out, "%012lo\n", ((kcore_words & HALF_MASK) << 18) |
-            (init_words & HALF_MASK));
-        fprintf(out, "%012lo\n", ((entry_off & HALF_MASK) << 18));
-        fprintf(out, "%012o\n", 0);
+        fprintf(out, "%012llo\n",
+            (((unsigned long long)init_words & HALF_MASK) << 18) |
+            ((unsigned long long)entry_off & HALF_MASK));
         for (i = 0; i < init_words; i++)
                 fprintf(out, "%012llo\n", init[i] & WORD_MASK);
         fclose(out);

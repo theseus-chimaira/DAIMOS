@@ -1,0 +1,27 @@
+# Generated build output
+build/
+
+# Generated bootloader test output
+sys/stand/pdp6/test/*/build/
+
+# Compiler and linker output
+*.o
+*.a
+*.so
+*.dxr
+*.rim
+*.pt
+*.tap
+*.dt
+
+# Test and emulator output
+*.log
+*.simh.log
+
+# Temporary files
+*~
+*.tmp
+*.swp
+*.swo
+.core
+core

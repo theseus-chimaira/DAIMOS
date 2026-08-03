@@ -1,71 +1,125 @@
-; dectape_boot_stub.s -- standalone PDP-6 DECtape boot placeholder.
+; stage1.s -- block-oriented opaque-image Stage1 for PDP-6 DECtape.
 ;
-; This intentionally does not read DTC551 media or enter KINIT.  It proves the
-; build/launch slot for a future block-addressed DECtape Stage1 and leaves the
-; processor halted at dectape_stub_halt after announcing itself on CTY0.
+; Stage0 loads this loader from RIM paper tape.  The opaque boot stream begins
+; in DECtape block 0 and consists of:
+;       word 0  SIXBIT /DAIMON/
+;       word 1  image_words,,entry_offset
+;       word 2  opaque image word 0
+; The image is loaded at 040000.  Only enough consecutive 128-word DECtape
+; blocks to contain the header and image are read.
 
         .text
         .globl start
         .globl __start
-        .globl dectape_stub_halt
 
 __start:
 start:
-        movei 17,040000
-        move 1,msg_dta
-        pushj 17,put_sixbit_word
-        move 1,msg_boot
-        pushj 17,put_sixbit_word
-        move 1,msg_stub
-        pushj 17,put_sixbit_word
-        move 1,msg_ready
-        pushj 17,put_sixbit_word
-        movei 1,15
-        pushj 17,putc
-        movei 1,12
-        pushj 17,putc
-dectape_stub_halt:
+        movei 017,050000
+
+        ; Read block 0 into the temporary block buffer.
+        pushj 017,read_block
+
+        move 02,blockbuf
+        camn 02,daimon_magic
+        jrst magic_ok
+        jrst fail
+
+magic_ok:
+        move 02,blockbuf+1
+        hlrz 03,02
+        jumpe 03,fail
+        movem 03,image_words
+        hrrz 04,02
+        caml 04,03
+        jrst fail
+        movem 04,entry_off
+
+        movei 05,040000
+        add 05,03
+        caile 05,060000
+        jrst fail
+
+        ; Copy the payload portion of block 0.
+        movei 01,040000
+        move 02,image_words
+        movei 06,blockbuf+2
+        movei 07,0176
+        pushj 017,copy_words
+
+next_block:
+        jumpe 02,image_done
+        pushj 017,read_block
+        movei 06,blockbuf
+        movei 07,0200
+        pushj 017,copy_words
+        jrst next_block
+
+image_done:
+        cono 0210,0
+        cono 0200,0
+        movei 02,040000
+        add 02,entry_off
+        movem 02,entry_addr
+        movei 017,050000
+        setz 01,
+        setz 02,
+        jrst @entry_addr
+
+; Copy min(AC2, AC7) words from (AC6) to (AC1).
+; AC1 and AC6 advance; AC2 is the remaining image word count.
+copy_words:
+        jumpe 02,copy_done
+        jumpe 07,copy_done
+        move 03,0(06)
+        movem 03,0(01)
+        aoj 01,
+        aoj 06,
+        soj 02,
+        sojg 07,copy_words
+copy_done:
+        popj 017,
+
+; Read the next physical DECtape data block into blockbuf.
+read_block:
+        ; DCT0: device 1 (DTC), device -> processor, move enabled.
+        movei 10,004040
+        cono 0200,0(10)
+
+        ; DTC0: selected, start forward, READ DATA.
+        movei 10,0220300
+        cono 0210,0(10)
+
+        movei 11,blockbuf
+        movei 12,0200
+read_word:
+read_wait:
+        conso 0200,001000
+        jrst read_wait
+        datai 0200,0(11)
+        aoj 11,
+        sojg 12,read_word
+
+        ; Wait for block completion and reject controller errors.
+read_done_wait:
+        coni 0214,ioword
+        move 10,ioword
+        trne 10,0000030
+        jrst fail
+        trnn 10,0000001
+        jrst read_done_wait
+        cono 0210,0
+        cono 0200,0
+        popj 017,
+
+fail:
+        cono 0210,0
+        cono 0200,0
         halt .
-        jrst dectape_stub_halt
+        jrst fail
 
-put_sixbit_word:
-        movem 1,put_word
-        movei 6,0
-put_six_loop:
-        caige 6,6
-        jrst put_six_one
-        popj 17,
-put_six_one:
-        move 2,put_word
-        move 3,put_shift(6)
-        lsh 2,0(3)
-        andi 2,077
-        addi 2,040
-        move 1,2
-        pushj 17,putc
-        aoj 6,
-        jrst put_six_loop
-
-putc:
-        movem 1,ioword
-putc_wait:
-        coni 0120,cty_status
-        move 2,cty_status
-        trne 2,0020
-        jrst putc_wait
-        datao 0120,ioword
-        popj 17,
-
-put_shift: .word -36
-           .word -30
-           .word -22
-           .word -14
-           .word -6
-           .word 0
-put_word:  .word 0
-ioword:    .word 0
-cty_status:.word 0
-msg_dta:   .word 0446441000000
-msg_boot:  .word 0425757640000
-msg_stub:  .word 0636465420000
-msg_ready: .word 0624541447100
+image_words: .word 0
+entry_off:   .word 0
+entry_addr:  .word 0
+ioword:      .word 0
+daimon_magic:.word 0444151555756
+blockbuf:    .space 0200
