@@ -36,17 +36,25 @@ test: image
 	@log="$(BUILD)/dtc-v1.log"; \
 	simhlog="$(BUILD)/dtc-v1.simh.log"; \
 	echo "DTC dtc-v1"; \
+	start=`date +%s`; \
 	timeout $(TIMEOUT) $(SIMH_PDP6) $(SIMH_INI) < /dev/null > "$$log" 2>&1; \
 	rc=$$?; \
-	if test "$$rc" -ne 0; then \
-	    echo "SIMH failed for dtc-v1: exit $$rc"; \
-	    echo "command: timeout $(TIMEOUT) $(SIMH_PDP6) $(SIMH_INI) < /dev/null"; \
+	reason=; \
+	if test "$$rc" -ne 0; then reason="SIMH exit $$rc"; fi; \
+	if test -z "$$reason" && ! grep -F "BOOTLOADER OK" "$$log" >/dev/null; then \
+	    reason="missing BOOTLOADER OK"; \
+	fi; \
+	elapsed=`expr `date +%s` - $$start`; \
+	if test -n "$$reason"; then \
+	    test -z "$$TEST_REPORT_DETAIL" || \
+	      printf '%-6s %-4s %-18s %7ss  %s; log=%s\n' FAIL DTC dtc-v1 "$$elapsed" "$$reason" "$$log" >> "$$TEST_REPORT_DETAIL"; \
+	    echo "DTC dtc-v1 failed: $$reason"; \
 	    cat "$$log"; \
 	    cat "$$simhlog"; \
 	    exit 1; \
 	fi; \
-	grep -F "BOOTLOADER OK" "$$log" >/dev/null || \
-	    { cat "$$log"; cat "$$simhlog"; exit 1; }
+	test -z "$$TEST_REPORT_DETAIL" || \
+	  printf '%-6s %-4s %-18s %7ss  bootloader and payload verified\n' PASS DTC dtc-v1 "$$elapsed" >> "$$TEST_REPORT_DETAIL"
 
 clean:
 	rm -rf $(BUILD)

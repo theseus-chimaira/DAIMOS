@@ -39,6 +39,7 @@ test: image
 	    dofile="$(BUILD)/$$name.ini"; \
 	    log="$(BUILD)/$$name.log"; \
 	    echo "DSK $$name"; \
+	    start=`date +%s`; \
 	    sed -e 's|@SIMH_LOG@|$(BUILD_ABS)/'"$$name"'.simh.log|g' \
 	        -e 's|@STAGE1_TAPE@|$(STAGE1_TAPE_ABS)|g' \
 	        $(SIMH_TEMPLATE) > "$$dofile"; \
@@ -52,19 +53,27 @@ test: image
 	    echo "exit" >> "$$dofile"; \
 	    timeout $(TIMEOUT) $(SIMH_PDP6) "$$dofile" < /dev/null > "$$log" 2>&1; \
 	    rc=$$?; \
-	    if test "$$rc" -ne 0; then \
-	      echo "SIMH failed for $$name: exit $$rc"; \
-	      echo "command: timeout $(TIMEOUT) $(SIMH_PDP6) $$dofile < /dev/null"; \
+	    reason=; \
+	    if test "$$rc" -ne 0; then reason="SIMH exit $$rc"; fi; \
+	    if test -z "$$reason" && ! grep -F "BOOTLOADER OK" "$$log" >/dev/null; then \
+	      reason="missing BOOTLOADER OK"; \
+	    fi; \
+	    i=0; \
+	    while test -z "$$reason" && test "$$i" -lt "$$n"; do \
+	      if ! grep -F "DSK$${i}  READ" "$$log" >/dev/null; then reason="missing DSK$${i} READ"; fi; \
+	      i=`expr $$i + 1`; \
+	    done; \
+	    elapsed=`expr `date +%s` - $$start`; \
+	    if test -n "$$reason"; then \
+	      test -z "$$TEST_REPORT_DETAIL" || \
+	        printf '%-6s %-4s %-18s %7ss  %s; log=%s\n' FAIL DSK "$$name" "$$elapsed" "$$reason" "$$log" >> "$$TEST_REPORT_DETAIL"; \
+	      echo "DSK $$name failed: $$reason"; \
 	      cat "$$log"; \
 	      cat "$(BUILD_ABS)/$$name.simh.log"; \
 	      exit 1; \
 	    fi; \
-	    grep -F "BOOTLOADER OK" "$$log" >/dev/null || { cat "$$log"; exit 1; }; \
-	    i=0; \
-	    while test "$$i" -lt "$$n"; do \
-	      grep -F "DSK$${i}  READ" "$$log" >/dev/null || { cat "$$log"; exit 1; }; \
-	      i=`expr $$i + 1`; \
-	    done; \
+	    test -z "$$TEST_REPORT_DETAIL" || \
+	      printf '%-6s %-4s %-18s %7ss  disks=%s mode=%s\n' PASS DSK "$$name" "$$elapsed" "$$n" "$$m" >> "$$TEST_REPORT_DETAIL"; \
 	  done; \
 	done
 
