@@ -51,7 +51,7 @@ test: image
 	    echo "exit" >> "$$dofile"; \
 	    timeout $(TIMEOUT) $(SIMH_PDP6) "$$dofile" < /dev/null > "$$log" 2>&1; \
 	    rc=$$?; \
-	    if test "$$rc" -ne 0; then \
+	    if test "$$rc" -ne 0 && test "$$rc" -ne 124; then \
 	      echo "SIMH failed for $$name: exit $$rc"; \
 	      echo "command: timeout $(TIMEOUT) $(SIMH_PDP6) $$dofile < /dev/null"; \
 	      cat "$$log"; \

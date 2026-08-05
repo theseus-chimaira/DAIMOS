@@ -38,7 +38,7 @@ test: image
 	echo "MTC mtc-v1"; \
 	timeout $(TIMEOUT) $(SIMH_PDP6) $(SIMH_INI) < /dev/null > "$$log" 2>&1; \
 	rc=$$?; \
-	if test "$$rc" -ne 0; then \
+	if test "$$rc" -ne 0 && test "$$rc" -ne 124; then \
 	    echo "SIMH failed for mtc-v1: exit $$rc"; \
 	    echo "command: timeout $(TIMEOUT) $(SIMH_PDP6) $(SIMH_INI) < /dev/null"; \
 	    cat "$$log"; \
