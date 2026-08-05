@@ -16,6 +16,11 @@ start:
         pushj 017,put_sixbit_word
         pushj 017,put_crlf
         pushj 017,put_dsk_reads
+        move 01,msg_done0
+        pushj 017,put_sixbit_word
+        move 01,msg_done1
+        pushj 017,put_sixbit_word
+        pushj 017,put_crlf
         halt .
         jrst .
 
@@ -91,3 +96,5 @@ msg_dsk0:  .word 0446353200000
            .word 0446353220000
            .word 0446353230000
 msg_read:  .word 0624541440000
+msg_done0: .word 0644563640000
+msg_done1: .word 0445756450000

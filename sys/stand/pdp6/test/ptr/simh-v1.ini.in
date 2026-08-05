@@ -31,5 +31,6 @@ nobreak @STAGE1_ENTRY@
 detach ptr
 attach -q ptr @PAYLOAD_TAPE@
 deposit ptr time 1
+expect HALTAFTER=0 "TEST  DONE" exit
 go @STAGE1_ENTRY@
 exit

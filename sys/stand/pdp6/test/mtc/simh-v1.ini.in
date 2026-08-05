@@ -29,5 +29,6 @@ deposit 027 254000000021
 
 attach -q ptr @STAGE1_TAPE@
 deposit ptr time 1
+expect HALTAFTER=0 "TEST  DONE" exit
 go 020
 exit

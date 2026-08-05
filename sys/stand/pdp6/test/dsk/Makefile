@@ -47,11 +47,12 @@ test: image
 	      echo "attach -q dsk$$i $(BUILD_ABS)/$$name/dsk$$i.dsk" >> "$$dofile"; \
 	      i=`expr $$i + 1`; \
 	    done; \
+	    echo 'expect HALTAFTER=0 "TEST  DONE" exit' >> "$$dofile"; \
 	    echo "go 020" >> "$$dofile"; \
 	    echo "exit" >> "$$dofile"; \
 	    timeout $(TIMEOUT) $(SIMH_PDP6) "$$dofile" < /dev/null > "$$log" 2>&1; \
 	    rc=$$?; \
-	    if test "$$rc" -ne 0 && test "$$rc" -ne 124; then \
+	    if test "$$rc" -ne 0; then \
 	      echo "SIMH failed for $$name: exit $$rc"; \
 	      echo "command: timeout $(TIMEOUT) $(SIMH_PDP6) $$dofile < /dev/null"; \
 	      cat "$$log"; \
