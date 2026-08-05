@@ -5,10 +5,10 @@ TEST_REPORT_DETAIL = $(abspath $(TEST_REPORT).detail)
 
 test:
 	@rm -f $(TEST_REPORT) $(TEST_REPORT).tmp $(TEST_REPORT).detail
-	@start=`date +%s`; started=`date`; \
+	@start=$$(date +%s); started=$$(date); \
 	TEST_REPORT_DETAIL='$(TEST_REPORT_DETAIL)' \
 	  $(MAKE) --no-print-directory test-inner; rc=$$?; \
-	end=`date +%s`; elapsed=`expr $$end - $$start`; \
+	end=$$(date +%s); elapsed=$$((end - start)); \
 	passed=0; failed=0; \
 	if test -f $(TEST_REPORT).detail; then \
 	  passed=`awk '$$1 == "PASS" { n++ } END { print n + 0 }' $(TEST_REPORT).detail`; \

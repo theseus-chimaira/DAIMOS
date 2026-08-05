@@ -36,7 +36,7 @@ test: image
 	@log="$(BUILD)/dtc-v1.log"; \
 	simhlog="$(BUILD)/dtc-v1.simh.log"; \
 	echo "DTC dtc-v1"; \
-	start=`date +%s`; \
+	start=$$(date +%s); \
 	timeout $(TIMEOUT) $(SIMH_PDP6) $(SIMH_INI) < /dev/null > "$$log" 2>&1; \
 	rc=$$?; \
 	reason=; \
@@ -44,7 +44,7 @@ test: image
 	if test -z "$$reason" && ! grep -F "BOOTLOADER OK" "$$log" >/dev/null; then \
 	    reason="missing BOOTLOADER OK"; \
 	fi; \
-	elapsed=`expr `date +%s` - $$start`; \
+	end=$$(date +%s); elapsed=$$((end - start)); \
 	if test -n "$$reason"; then \
 	    test -z "$$TEST_REPORT_DETAIL" || \
 	      printf '%-6s %-4s %-18s %7ss  %s; log=%s\n' FAIL DTC dtc-v1 "$$elapsed" "$$reason" "$$log" >> "$$TEST_REPORT_DETAIL"; \

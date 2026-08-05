@@ -39,7 +39,7 @@ test: image
 	    dofile="$(BUILD)/$$name.ini"; \
 	    log="$(BUILD)/$$name.log"; \
 	    echo "DSK $$name"; \
-	    start=`date +%s`; \
+	    start=$$(date +%s); \
 	    sed -e 's|@SIMH_LOG@|$(BUILD_ABS)/'"$$name"'.simh.log|g' \
 	        -e 's|@STAGE1_TAPE@|$(STAGE1_TAPE_ABS)|g' \
 	        $(SIMH_TEMPLATE) > "$$dofile"; \
@@ -63,7 +63,7 @@ test: image
 	      if ! grep -F "DSK$${i}  READ" "$$log" >/dev/null; then reason="missing DSK$${i} READ"; fi; \
 	      i=`expr $$i + 1`; \
 	    done; \
-	    elapsed=`expr `date +%s` - $$start`; \
+	    end=$$(date +%s); elapsed=$$((end - start)); \
 	    if test -n "$$reason"; then \
 	      test -z "$$TEST_REPORT_DETAIL" || \
 	        printf '%-6s %-4s %-18s %7ss  %s; log=%s\n' FAIL DSK "$$name" "$$elapsed" "$$reason" "$$log" >> "$$TEST_REPORT_DETAIL"; \
