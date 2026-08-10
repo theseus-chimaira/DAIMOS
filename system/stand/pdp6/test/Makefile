@@ -1,9 +1,12 @@
-TEST_REPORT ?= test-report.txt
+PROJECT_ROOT := $(abspath $(CURDIR)/../../../..)
+BUILD ?= $(PROJECT_ROOT)/build/system/stand/pdp6/test
+TEST_REPORT ?= $(BUILD)/test-report.txt
 TEST_REPORT_DETAIL = $(abspath $(TEST_REPORT).detail)
 
 .PHONY: test test-inner dsk ptr mtc dtc clean
 
 test:
+	@mkdir -p $(BUILD)
 	@rm -f $(TEST_REPORT) $(TEST_REPORT).tmp $(TEST_REPORT).detail
 	@start=$$(date +%s); started=$$(date); \
 	TEST_REPORT_DETAIL='$(TEST_REPORT_DETAIL)' \
@@ -37,20 +40,20 @@ test:
 test-inner: dsk ptr mtc dtc
 
 dsk:
-	$(MAKE) -C dsk test
+	$(MAKE) -C dsk BUILD=$(BUILD)/dsk test
 
 ptr:
-	$(MAKE) -C ptr test
+	$(MAKE) -C ptr BUILD=$(BUILD)/ptr test
 
 mtc:
-	$(MAKE) -C mtc test
+	$(MAKE) -C mtc BUILD=$(BUILD)/mtc test
 
 dtc:
-	$(MAKE) -C dtc test
+	$(MAKE) -C dtc BUILD=$(BUILD)/dtc test
 
 clean:
-	$(MAKE) -C dsk clean
-	$(MAKE) -C ptr clean
-	$(MAKE) -C mtc clean
-	$(MAKE) -C dtc clean
-	rm -f $(TEST_REPORT) $(TEST_REPORT).tmp $(TEST_REPORT).detail
+	$(MAKE) -C dsk BUILD=$(BUILD)/dsk clean
+	$(MAKE) -C ptr BUILD=$(BUILD)/ptr clean
+	$(MAKE) -C mtc BUILD=$(BUILD)/mtc clean
+	$(MAKE) -C dtc BUILD=$(BUILD)/dtc clean
+	rm -rf $(BUILD)
