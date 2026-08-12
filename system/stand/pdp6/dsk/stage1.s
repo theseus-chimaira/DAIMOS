@@ -63,20 +63,21 @@ stage1_have_set:
 stage1_magic_ok:
         hlrz 03,buffer+000001
         jumpe 03,fail_layout
-        movem 03,image_words
         hrrz 04,buffer+000001
         caml 04,03
         jrst fail_layout
-        movem 04,entry_offset
         movei 05,000002
         add 05,03
         movem 05,total_stream_words
         pushj 017,compute_total_sectors
 
         movei 05,040000
-        add 05,image_words
+        add 05,03
         caile 05,060000
         jrst fail_layout
+        movei 05,040000
+        add 05,04
+        movem 05,entry_addr
 
         setzm stream_sector
         pushj 017,copy_stream_sector
@@ -91,9 +92,6 @@ load_image_loop:
         aos stream_sector
         jrst load_image_loop
 load_image_done:
-        movei 02,040000
-        add 02,entry_offset
-        movem 02,entry_addr
         movei 017,050000
         setz 01,
         move 02,member_count
@@ -646,15 +644,6 @@ wait_fail:
         setz 01,
         popj 017,
 
-zero_words:
-        jumpe 02,zero_done
-zero_loop:
-        setzm 0(01)
-        aoj 01,
-        sojg 02,zero_loop
-zero_done:
-        popj 017,
-
 fail_nodsk:
         move 01,msg_nodsk
         pushj 017,put_sixbit_word
@@ -751,8 +740,6 @@ bad_copy_count: .block 01
 db1_next_sector: .block 01
 last_badmap_sector: .block 01
 candidate_dbx: .block 01
-image_words: .block 01
-entry_offset: .block 01
 total_stream_words: .block 01
 total_stream_sectors: .block 01
 stream_sector: .block 01

@@ -1,3 +1,6 @@
+PROJECT_ROOT := $(abspath ../../../../..)
+BUILD ?= $(PROJECT_ROOT)/build/system/stand/pdp6/test/mtc
+
 include ../bin/stat.mk
 
 STAGE1 = ../../mtc/stage1.s
@@ -8,21 +11,20 @@ PAYLOAD_TAPE = $(BUILD)/payload-v1.tap
 SIMH_INI = $(BUILD)/simh-v1.ini
 SIMH_TEMPLATE = simh-v1.ini.in
 
-.PHONY: all image test clean
+.DEFAULT_GOAL := build
 
-all: image
+.PHONY: build image test clean
+
+build: image
 
 $(STAGE1_DXR): $(STAGE1) | $(BUILD)
 	$(DAS) --base-kernel -o $@ $(STAGE1)
 
-$(BUILD)/dxr2pdp6rim-v1: $(TOOLS_DIR)/dxr2pdp6rim_v1.c | $(BUILD)
-	$(HOST_CC) -std=c89 -Wall -Wextra -O2 -o $@ $(TOOLS_DIR)/dxr2pdp6rim_v1.c
+$(STAGE1_TAPE): $(STAGE1_DXR) $(DXR2RIM)
+	$(DXR2RIM) -b $(STAGE1_ENTRY) $(STAGE1_DXR) $@
 
-$(STAGE1_TAPE): $(STAGE1_DXR) $(BUILD)/dxr2pdp6rim-v1
-	$(BUILD)/dxr2pdp6rim-v1 -b $(STAGE1_ENTRY) $(STAGE1_DXR) $@
-
-$(PAYLOAD_TAPE): $(STAT_WORDS) $(BUILD)/mktap
-	$(BUILD)/mktap -t mtc -p $(STAT_WORDS) -o $@
+$(PAYLOAD_TAPE): $(STAT_WORDS) $(MKTAP)
+	$(MKTAP) -t mtc -p $(STAT_WORDS) -o $@
 
 $(SIMH_INI): $(SIMH_TEMPLATE) $(STAGE1_TAPE) $(PAYLOAD_TAPE) | $(BUILD)
 	sed -e 's|@SIMH_LOG@|$(BUILD)/mtc-v1.simh.log|g' \

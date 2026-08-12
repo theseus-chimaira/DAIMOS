@@ -1,3 +1,6 @@
+PROJECT_ROOT := $(abspath ../../../../..)
+BUILD ?= $(PROJECT_ROOT)/build/system/stand/pdp6/test/dsk
+
 include ../bin/stat.mk
 
 DSK_SETS ?= 1 2 3 4
@@ -10,25 +13,24 @@ BUILD_ABS = $(abspath $(BUILD))
 STAGE1_TAPE_ABS = $(abspath $(STAGE1_TAPE))
 SIMH_TEMPLATE = simh-v1.ini.in
 
-.PHONY: all image test clean
+.DEFAULT_GOAL := build
 
-all: image
+.PHONY: build image test clean
+
+build: image
 
 $(STAGE1_DXR): $(STAGE1) | $(BUILD)
 	$(DAS) --base-kernel -o $@ $(STAGE1)
 
-$(BUILD)/dxr2pdp6rim-v1: $(TOOLS_DIR)/dxr2pdp6rim_v1.c | $(BUILD)
-	$(HOST_CC) -std=c89 -Wall -Wextra -O2 -o $@ $(TOOLS_DIR)/dxr2pdp6rim_v1.c
+$(STAGE1_TAPE): $(STAGE1_DXR) $(DXR2RIM)
+	$(DXR2RIM) -b $(STAGE1_ENTRY) $(STAGE1_DXR) $@
 
-$(STAGE1_TAPE): $(STAGE1_DXR) $(BUILD)/dxr2pdp6rim-v1
-	$(BUILD)/dxr2pdp6rim-v1 -b $(STAGE1_ENTRY) $(STAGE1_DXR) $@
-
-image: $(STAT_WORDS) $(BUILD)/mkdsk $(STAGE1_TAPE)
+image: $(STAT_WORDS) $(MKDSK) $(STAGE1_TAPE)
 	@for n in $(DSK_SETS); do \
 	  for m in $(DSK_MODES); do \
 	    out="$(BUILD)/dsk$${n}-$${m}"; \
 	    rm -rf "$$out"; \
-	    $(BUILD)/mkdsk -n "$$n" -m "$$m" -p $(STAT_WORDS) -o "$$out" || exit 1; \
+	    $(MKDSK) -n "$$n" -m "$$m" -p $(STAT_WORDS) -o "$$out" || exit 1; \
 	  done; \
 	done
 

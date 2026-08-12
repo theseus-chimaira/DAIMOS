@@ -1,4 +1,4 @@
-/* mkpdp6rim_v1.c - make a PDP-6 executable RIM paper tape. */
+/* mkrim.c - make a PDP-6 executable RIM paper tape. */
 
 #include <errno.h>
 #include <stdio.h>

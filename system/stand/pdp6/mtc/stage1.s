@@ -34,20 +34,18 @@ start:
 header_ok:
         hlrz 02,header+01
         jumpe 02,fail
-        movem 02,image_words
         hrrz 03,header+01
         caml 03,02
         jrst fail
-        movem 03,entry_off
         movei 04,040000
         add 04,02
         caile 04,060000
         jrst fail
+        movei 04,040000
+        add 04,03
+        movem 04,entry_addr
         movei 01,040000
         pushj 017,read_words
-        movei 02,040000
-        add 02,entry_off
-        movem 02,entry_addr
         movei 017,050000
         setz 01,
         setz 02,
@@ -71,8 +69,6 @@ fail:
         jrst fail
 
 header:      .block 02
-image_words: .word 0
-entry_off:   .word 0
 entry_addr:  .word 0
 ioword:      .word 0
 

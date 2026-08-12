@@ -1,4 +1,4 @@
-/* dxr2pdp6rim_v1.c - convert DAIMOS DXR V1 to PDP-6 RIM tape. */
+/* dxr2rim.c - convert DAIMOS DXR V1 to PDP-6 RIM tape. */
 
 #include <errno.h>
 #include <limits.h>
@@ -44,13 +44,13 @@ read_word(FILE *in, unsigned long *word)
                 if (ch == EOF) {
                         if (i == 0)
                                 return 0;
-                        fprintf(stderr, "dxr2pdp6rim-v1: truncated DXR word\n");
+                        fprintf(stderr, "dxr2rim: truncated DXR word\n");
                         return -1;
                 }
                 v |= ((unsigned long)(unsigned char)ch) << (i * 8);
         }
         if ((v & ~WORD_MASK) != 0) {
-                fprintf(stderr, "dxr2pdp6rim-v1: invalid DXR container word\n");
+                fprintf(stderr, "dxr2rim: invalid DXR container word\n");
                 return -1;
         }
         *word = v;
@@ -89,7 +89,7 @@ main(int argc, char **argv)
         int rc;
 
         if (sizeof(unsigned long) < 8) {
-                fprintf(stderr, "dxr2pdp6rim-v1: 64-bit unsigned long required\n");
+                fprintf(stderr, "dxr2rim: 64-bit unsigned long required\n");
                 return 2;
         }
         if (argc != 5 || argv[1][0] != '-' || argv[1][1] != 'b' ||
@@ -127,7 +127,7 @@ main(int argc, char **argv)
         image = (unsigned long *)malloc(image_words * sizeof(*image));
         reloc = (unsigned long *)malloc(reloc_words * sizeof(*reloc));
         if (image == NULL || reloc == NULL) {
-                fprintf(stderr, "dxr2pdp6rim-v1: out of memory\n");
+                fprintf(stderr, "dxr2rim: out of memory\n");
                 free(image);
                 free(reloc);
                 fclose(in);

@@ -1,16 +1,24 @@
 PROJECT_ROOT := $(abspath $(CURDIR)/../../../..)
 BUILD ?= $(PROJECT_ROOT)/build/system/stand/pdp6/test
-TEST_REPORT ?= $(BUILD)/test-report.txt
+TEST_REPORT ?= $(CURDIR)/test-report.txt
 TEST_REPORT_DETAIL = $(abspath $(TEST_REPORT).detail)
+SUBDIRS = dsk ptr mtc dtc
 
-.PHONY: test test-inner dsk ptr mtc dtc clean
+.DEFAULT_GOAL := build
+
+.PHONY: build test test_inner clean
+
+build:
+	@for d in $(SUBDIRS); do \
+		$(MAKE) -C $$d BUILD=$(BUILD)/$$d build || exit $$?; \
+	done
 
 test:
-	@mkdir -p $(BUILD)
+	@mkdir -p $(BUILD) $(dir $(TEST_REPORT))
 	@rm -f $(TEST_REPORT) $(TEST_REPORT).tmp $(TEST_REPORT).detail
 	@start=$$(date +%s); started=$$(date); \
 	TEST_REPORT_DETAIL='$(TEST_REPORT_DETAIL)' \
-	  $(MAKE) --no-print-directory test-inner; rc=$$?; \
+	  $(MAKE) --no-print-directory test_inner; rc=$$?; \
 	end=$$(date +%s); elapsed=$$((end - start)); \
 	passed=0; failed=0; \
 	if test -f $(TEST_REPORT).detail; then \
@@ -37,23 +45,10 @@ test:
 	rm -f $(TEST_REPORT).detail; \
 	exit $$rc
 
-test-inner: dsk ptr mtc dtc
-
-dsk:
-	$(MAKE) -C dsk BUILD=$(BUILD)/dsk test
-
-ptr:
-	$(MAKE) -C ptr BUILD=$(BUILD)/ptr test
-
-mtc:
-	$(MAKE) -C mtc BUILD=$(BUILD)/mtc test
-
-dtc:
-	$(MAKE) -C dtc BUILD=$(BUILD)/dtc test
+test_inner:
+	@for d in $(SUBDIRS); do \
+		$(MAKE) -C $$d BUILD=$(BUILD)/$$d test || exit $$?; \
+	done
 
 clean:
-	$(MAKE) -C dsk BUILD=$(BUILD)/dsk clean
-	$(MAKE) -C ptr BUILD=$(BUILD)/ptr clean
-	$(MAKE) -C mtc BUILD=$(BUILD)/mtc clean
-	$(MAKE) -C dtc BUILD=$(BUILD)/dtc clean
-	rm -rf $(BUILD)
+	rm -rf $(BUILD) test-report.txt test-report.txt.tmp test-report.txt.detail

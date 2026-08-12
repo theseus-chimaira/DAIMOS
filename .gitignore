@@ -1,9 +1,6 @@
 # Generated build output
 build/
 
-# Generated bootloader test output
-sys/stand/pdp6/test/*/build/
-
 # Compiler and linker output
 *.o
 *.a

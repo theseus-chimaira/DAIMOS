@@ -28,20 +28,21 @@ magic_ok:
         move 02,blockbuf+1
         hlrz 03,02
         jumpe 03,fail
-        movem 03,image_words
         hrrz 04,02
         caml 04,03
         jrst fail
-        movem 04,entry_off
 
         movei 05,040000
         add 05,03
         caile 05,060000
         jrst fail
+        movei 05,040000
+        add 05,04
+        movem 05,entry_addr
 
         ; Copy the payload portion of block 0.
         movei 01,040000
-        move 02,image_words
+        move 02,03
         movei 06,blockbuf+2
         movei 07,0176
         pushj 017,copy_words
@@ -57,9 +58,6 @@ next_block:
 image_done:
         cono 0210,0
         cono 0200,0
-        movei 02,040000
-        add 02,entry_off
-        movem 02,entry_addr
         movei 017,050000
         setz 01,
         setz 02,
@@ -117,8 +115,6 @@ fail:
         halt .
         jrst fail
 
-image_words: .word 0
-entry_off:   .word 0
 entry_addr:  .word 0
 ioword:      .word 0
 daimon_magic:.word 0444151555756
