@@ -20,8 +20,8 @@ build: image
 $(STAGE1_DXR): $(STAGE1) | $(BUILD)
 	$(DAS) --base-kernel -o $@ $(STAGE1)
 
-$(STAGE1_TAPE): $(STAGE1_DXR) $(DXR2RIM)
-	$(DXR2RIM) -b $(STAGE1_ENTRY) $(STAGE1_DXR) $@
+$(STAGE1_TAPE): $(STAGE1_DXR)
+	$(DXRCONVERT) --pdp6-readin -b $(STAGE1_ENTRY) $(STAGE1_DXR) $@
 
 $(PAYLOAD_TAPE): $(STAT_WORDS) $(MKDT)
 	$(MKDT) -t dtc -p $(STAT_WORDS) -o $@
