@@ -4,6 +4,7 @@ BUILD ?= $(PROJECT_ROOT)/build/system/stand/pdp6/test/mtc
 include ../bin/stat.mk
 
 STAGE1 = ../../mtc/stage1.s
+STAGE1_COMMON = ../../common/sequential-load.inc
 STAGE1_ENTRY = 060000
 STAGE1_DXR = $(BUILD)/stage1-mtc-v1.dxr
 STAGE1_TAPE = $(BUILD)/stage1-mtc-v1.pt
@@ -17,7 +18,7 @@ SIMH_TEMPLATE = simh-v1.ini.in
 
 build: image
 
-$(STAGE1_DXR): $(STAGE1) | $(BUILD)
+$(STAGE1_DXR): $(STAGE1) $(STAGE1_COMMON) | $(BUILD)
 	$(DAS) --base-kernel -o $@ $(STAGE1)
 
 $(STAGE1_TAPE): $(STAGE1_DXR)
