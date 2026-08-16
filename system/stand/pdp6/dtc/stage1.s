@@ -20,38 +20,20 @@ start:
         pushj 017,read_block
 
         move 02,blockbuf
-        camn 02,daimon_magic
-        jrst magic_ok
-        jrst fail
-
-magic_ok:
-        move 02,blockbuf+1
-        hlrz 03,02
-        jumpe 03,fail
-        hrrz 04,02
-        caml 04,03
-        jrst fail
-
-        movei 05,040000
-        add 05,03
-        caile 05,060000
-        jrst fail
-        movei 05,040000
-        add 05,04
-        movem 05,entry_addr
+        move 06,blockbuf+1
+        .include "../common/validate-load.inc"
 
         ; Copy the payload portion of block 0.
         movei 01,040000
-        move 02,03
         movei 06,blockbuf+2
-        movei 07,0176
+        movei 04,0176
         pushj 017,copy_words
 
 next_block:
         jumpe 02,image_done
         pushj 017,read_block
         movei 06,blockbuf
-        movei 07,0200
+        movei 04,0200
         pushj 017,copy_words
         jrst next_block
 
@@ -59,21 +41,18 @@ image_done:
         cono 0210,0
         cono 0200,0
         movei 017,050000
-        setz 01,
-        setz 02,
-        jrst @entry_addr
+        setzb 01,02
+        jrst 0(07)
 
-; Copy min(AC2, AC7) words from (AC6) to (AC1).
+; Copy min(AC2, AC4) words from (AC6) to (AC1).
 ; AC1 and AC6 advance; AC2 is the remaining image word count.
 copy_words:
-        jumpe 02,copy_done
-        jumpe 07,copy_done
         move 03,0(06)
         movem 03,0(01)
         aoj 01,
         aoj 06,
-        soj 02,
-        sojg 07,copy_words
+        soje 02,copy_done
+        sojg 04,copy_words
 copy_done:
         popj 017,
 
@@ -87,15 +66,13 @@ read_block:
         movei 10,0220300
         cono 0210,0(10)
 
-        movei 11,blockbuf
-        movei 12,0200
+        movsi 11,-0200
 read_word:
 read_wait:
         conso 0200,001000
         jrst read_wait
-        datai 0200,0(11)
-        aoj 11,
-        sojg 12,read_word
+        datai 0200,blockbuf(11)
+        aobjn 11,read_word
 
         ; Wait for block completion and reject controller errors.
 read_done_wait:
@@ -115,7 +92,6 @@ fail:
         halt .
         jrst fail
 
-entry_addr:  .word 0
 ioword:      .word 0
 daimon_magic:.word 0444151555756
 blockbuf:    .space 0200

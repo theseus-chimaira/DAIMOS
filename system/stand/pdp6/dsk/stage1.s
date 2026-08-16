@@ -27,7 +27,8 @@ stage1_try_unit:
         pushj 017,locate_unit
         jumpe 01,stage1_next_unit
         move 02,03
-        move 03,bit_table(02)
+        movei 03,01
+        lsh 03,0(02)
         iorb 03,found_mask
         and 03,member_mask
         camn 03,member_mask
@@ -58,26 +59,24 @@ stage1_magic_ok:
         hrrz 04,buffer+000001
         caml 04,03
         jrst fail_layout
-        movei 05,000002
-        add 05,03
-        movem 05,total_stream_words
-
-        movei 05,040000
-        add 05,03
-        caile 05,060000
+        caile 03,020000
         jrst fail_layout
         movei 05,040000
         add 05,04
         movem 05,entry_addr
 
-        setzm stream_sector
-        pushj 017,copy_stream_sector
+        movei 010,040000
+        move 011,03
+        movei 06,buffer+000002
+        movei 07,0176
+        pushj 017,copy_stream_words
         jumpe 01,load_image_done
 load_image_loop:
-        aos stream_sector
         pushj 017,read_next_stream_sector
         jumpe 01,fail_read
-        pushj 017,copy_stream_sector
+        movei 06,buffer
+        movei 07,0200
+        pushj 017,copy_stream_words
         jumpn 01,load_image_loop
 load_image_done:
         movei 017,050000
@@ -93,7 +92,6 @@ locate_scan_loop:
         cail 02,0200
         jrst return_zero
 locate_scan_try:
-        move 02,scan_sector
         pushj 017,unit_sector_to_dsk_addr
         pushj 017,read_dsk_sector
         jumpe 01,locate_scan_next
@@ -132,8 +130,7 @@ locate_db1_magic_ok:
         jumpe 02,locate_no_db1
         jrst locate_db1_loop
 locate_no_db1:
-        move 02,last_badmap_sector
-        addi 02,01
+        aos 02,last_badmap_sector
         movem 02,candidate_dbx
 locate_dbx_skip_loop:
         move 02,candidate_dbx
@@ -169,8 +166,7 @@ parse_db0_badmap:
         caile 06,020
         jrst parse_db0_fail
         setzm db1_next_sector
-        trne 03,000004
-        jrst parse_db0_has_db1
+        trnn 03,000004
         jrst parse_db0_copy
 parse_db0_has_db1:
         hrrz 04,buffer+000021
@@ -247,8 +243,7 @@ bad_contains_loop:
         jrst bad_contains_next
         jrst return_one
 bad_contains_next:
-        aoj 05,
-        jrst bad_contains_loop
+        aoja 05,bad_contains_loop
 bad_contains_no:
         jrst return_zero
 
@@ -278,9 +273,10 @@ parse_desc_index_ok:
         caml 03,05
         jrst parse_desc_fail
 parse_desc_member_ok:
-        move 07,04
-        and 07,bit_table(03)
-        jumpe 07,parse_desc_fail
+        movei 07,01
+        lsh 07,0(03)
+        tdnn 07,04
+        jrst parse_desc_fail
 
         move 01,member_mask
         jumpe 01,parse_desc_first
@@ -295,7 +291,8 @@ parse_desc_mask_ok:
 parse_desc_first:
         movem 04,member_mask
         movem 05,member_count
-        move 01,bit_table(05)
+        movei 01,01
+        lsh 01,0(05)
         subi 01,01
         came 01,04
         jrst parse_desc_fail
@@ -319,8 +316,7 @@ copy_member_bad_loop:
         move 01,bad_end(05)
         movem 01,member_bad_end(06)
         aoj 05,
-        aoj 06,
-        jrst copy_member_bad_loop
+        aoja 06,copy_member_bad_loop
 copy_bad_done:
         movei 01,01
         popj 017,
@@ -348,50 +344,36 @@ read_next_done:
         popj 017,
 
 skip_member_bad_sectors:
+skip_bad_restart:
         move 03,06
         lsh 03,07
         move 04,member_bad_count(06)
-        movei 05,0
-skip_bad_restart:
-        caml 05,04
-        jrst skip_bad_done
+skip_bad_loop:
+        jumpe 04,skip_bad_done
         camge 02,member_bad_start(03)
         jrst skip_bad_next
         caml 02,member_bad_end(03)
         jrst skip_bad_next
         move 02,member_bad_end(03)
-        movei 05,0
-        move 03,06
-        lsh 03,07
         jrst skip_bad_restart
 skip_bad_next:
         aoj 03,
-        aoj 05,
-        jrst skip_bad_restart
+        sojg 04,skip_bad_loop
 skip_bad_done:
         popj 017,
 
-copy_stream_sector:
-        move 06,stream_sector
-        lsh 06,07
-        movei 07,0
+copy_stream_words:
+        jumpe 011,copy_stream_done
 copy_stream_loop:
-        caml 06,total_stream_words
-        jrst copy_stream_done
-        caige 06,000002
-        jrst copy_stream_advance
-        move 04,buffer(07)
-        movem 04,037776(06)
-copy_stream_advance:
+        move 04,0(06)
+        movem 04,0(010)
         aoj 06,
-        aoj 07,
-        caige 07,0200
-        jrst copy_stream_loop
+        aoj 010,
+        soje 011,copy_stream_done
+        sojg 07,copy_stream_loop
+        jrst return_one
 copy_stream_done:
-        movei 01,01
-        caml 06,total_stream_words
-        setz 01,
-        popj 017,
+        jrst return_zero
 
 unit_sector_to_dsk_addr:
         pushj 017,linear_to_dsk_addr
@@ -412,15 +394,13 @@ read_dsk_sector:
         pushj 017,wait_dfr
         jumpe 01,read_dsk_fail
         cono 0270,01000
-        movei 02,0
+        movsi 02,-0200
 read_loop:
         pushj 017,wait_dct_rq
         jumpe 01,read_dsk_fail_end
         datai 0200,03
         movem 03,buffer(02)
-        aoj 02,
-        caige 02,0200
-        jrst read_loop
+        aobjn 02,read_loop
         cono 0270,030000
         pushj 017,wait_ids
         jumpe 01,read_dsk_fail
@@ -510,16 +490,11 @@ put_six_final_wait:
         popj 017,
 
 daimon_magic: .word 0444151555756
-bit_table:    .word 01
-              .word 02
-              .word 04
-              .word 010
-              .word 020
 msg_nodsk:    .word 0375657446353
 msg_noset:    .word 0375657634564
 msg_khead:    .word 0375350454144
-msg_layout:   .word 0374441715764
-msg_read:     .word 0375245414400
+msg_layout:   .word 0375441715764
+msg_read:     .word 0376245414400
         .bss
 any_read_ok: .block 01
 current_unit: .block 01
@@ -532,8 +507,6 @@ bad_count: .block 01
 db1_next_sector: .block 01
 last_badmap_sector: .block 01
 candidate_dbx: .block 01
-total_stream_words: .block 01
-stream_sector: .block 01
 stream_member: .block 01
 entry_addr: .block 01
 stage1_last_error: .block 01

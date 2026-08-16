@@ -27,16 +27,12 @@ start:
         .include "../common/sequential-load.inc"
 
 read_words:
-        jumpe 02,read_done
 read_loop:
         conso 0200,001000
         jrst read_loop
-        datai 0200,ioword
-        move 03,ioword
-        movem 03,0(01)
+        datai 0200,0(01)
         aoj 01,
         sojg 02,read_loop
-read_done:
         popj 017,
 
 fail:
@@ -44,7 +40,4 @@ fail:
         jrst fail
 
 header:      .block 02
-entry_addr:  .word 0
-ioword:      .word 0
-
 daimon_magic: .word 0444151555756

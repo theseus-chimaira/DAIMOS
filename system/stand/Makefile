@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := build
 
-BUILD_SUBDIRS = tools pdp6
+BUILD_SUBDIRS = pdp6
 TEST_SUBDIRS = pdp6
 BUILD_ROOT ?= $(abspath ../../build)
 TEST_REPORT ?= $(CURDIR)/test-report.txt

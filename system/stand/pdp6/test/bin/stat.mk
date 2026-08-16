@@ -8,10 +8,18 @@ BIN_DIR := $(TEST_ROOT)/bin
 BUILD ?= build
 HOST_CC ?= cc
 PDP10_PREFIX ?= $(HOME)/cross
+PDP10_TOOL_PREFIXES := $(strip $(PDP10_PREFIx) $(PDP10_PREFIX))
 
-DAS ?= $(PDP10_PREFIX)/bin/das
-DXRCONVERT ?= $(PDP10_PREFIX)/bin/dxrconvert
-SIMH_PDP6 ?= $(PDP10_PREFIX)/bin/pdp6
+ifeq ($(strip $(DAS)),)
+DAS := $(firstword $(foreach p,$(PDP10_TOOL_PREFIXES),$(wildcard $(p)/bin/das)) $(shell command -v das 2>/dev/null))
+endif
+ifeq ($(strip $(DXRCONVERT)),)
+DXRCONVERT := $(firstword $(foreach p,$(PDP10_TOOL_PREFIXES),$(wildcard $(p)/bin/dxrconvert)) $(shell command -v dxrconvert 2>/dev/null))
+endif
+ifeq ($(strip $(SIMH_PDP6)),)
+SIMH_PDP6 := $(firstword $(foreach p,$(PDP10_TOOL_PREFIXES),$(wildcard $(p)/bin/pdp6)) $(shell command -v pdp6 2>/dev/null))
+endif
+
 TIMEOUT ?= 120
 
 STAT_INIT_WORDS ?= 01000
@@ -21,11 +29,21 @@ STAT_DXR = $(STAT_BUILD)/stat.dxr
 STAT_RIM = $(STAT_BUILD)/stat.rim
 STAT_WORDS = $(STAT_BUILD)/stat.words
 
-MKDSK ?= $(PDP10_PREFIX)/bin/mkdsk
-MKDT ?= $(PDP10_PREFIX)/bin/mkdt
-MKSTREAM ?= $(PDP10_PREFIX)/bin/mkstream
-MKTAP ?= $(PDP10_PREFIX)/bin/mktap
-WORDS2PT ?= $(PDP10_PREFIX)/bin/words2pt
+ifeq ($(strip $(MKDSK)),)
+MKDSK := $(firstword $(foreach p,$(PDP10_TOOL_PREFIXES),$(wildcard $(p)/bin/mkdsk)) $(shell command -v mkdsk 2>/dev/null))
+endif
+ifeq ($(strip $(MKDT)),)
+MKDT := $(firstword $(foreach p,$(PDP10_TOOL_PREFIXES),$(wildcard $(p)/bin/mkdt)) $(shell command -v mkdt 2>/dev/null))
+endif
+ifeq ($(strip $(MKSTREAM)),)
+MKSTREAM := $(firstword $(foreach p,$(PDP10_TOOL_PREFIXES),$(wildcard $(p)/bin/mkstream)) $(shell command -v mkstream 2>/dev/null))
+endif
+ifeq ($(strip $(MKTAP)),)
+MKTAP := $(firstword $(foreach p,$(PDP10_TOOL_PREFIXES),$(wildcard $(p)/bin/mktap)) $(shell command -v mktap 2>/dev/null))
+endif
+ifeq ($(strip $(WORDS2PT)),)
+WORDS2PT := $(firstword $(foreach p,$(PDP10_TOOL_PREFIXES),$(wildcard $(p)/bin/words2pt)) $(shell command -v words2pt 2>/dev/null))
+endif
 
 $(BUILD):
 	mkdir -p $(BUILD)
