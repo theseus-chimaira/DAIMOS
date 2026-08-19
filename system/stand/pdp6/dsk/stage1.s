@@ -7,12 +7,7 @@
 
         .text
         .globl __start
-        .globl pdp6_stage1_hdd_v1_start
-        .globl start
-
 __start:
-pdp6_stage1_hdd_v1_start:
-start:
         movei 017,073040
         setzm any_read_ok
         setzm found_mask
