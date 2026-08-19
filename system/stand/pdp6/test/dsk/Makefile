@@ -6,7 +6,7 @@ include ../bin/stat.mk
 DSK_SETS ?= 1 2 3 4
 DSK_MODES ?= clean db0 db1 bad
 STAGE1 = ../../dsk/stage1.s
-STAGE1_ENTRY = 060000
+STAGE1_BASE = 060
 STAGE1_DXR = $(BUILD)/stage1-dsk-v1.dxr
 STAGE1_TAPE = $(BUILD)/stage1-dsk-v1.pt
 BUILD_ABS = $(abspath $(BUILD))
@@ -23,7 +23,7 @@ $(STAGE1_DXR): $(STAGE1) | $(BUILD)
 	$(DAS) --base-kernel -o $@ $(STAGE1)
 
 $(STAGE1_TAPE): $(STAGE1_DXR)
-	$(DXRCONVERT) --pdp6-readin -b $(STAGE1_ENTRY) $(STAGE1_DXR) $@
+	$(DXRCONVERT) --pdp6-readin -b $(STAGE1_BASE) $(STAGE1_DXR) $@
 
 image: $(STAT_WORDS) $(MKDSK) $(STAGE1_TAPE)
 	@for n in $(DSK_SETS); do \
