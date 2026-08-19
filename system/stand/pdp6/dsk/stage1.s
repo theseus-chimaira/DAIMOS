@@ -1,9 +1,13 @@
-; pdp6_stage1_hdd_v1.s -- pure assembler PDP-6 HDD/DBOOT V1 Stage1.
+; PDP-6 HDD/DBOOT V1 Stage1.
 ;
-; This is the paper-tape/RIM Stage1 image.  It scans DSK270 units 0..3,
-; accepts compact DBC or DB0/DB1/DBX metadata, reconstructs a round-robin
-; opaque image stream across one to four members, skips each member's bad-run
-; table, loads the image at 040000, and jumps to its relative entry point.
+; This is the paper-tape/RIM Stage1 image.
+; It scans DSK270 units 0..3, accepts
+; compact DBC or DB0/DB1/DBX metadata,
+; reconstructs a round-robin opaque
+; image stream across one to four
+; members, skips each member's bad-run
+; table, loads the image at 040000,
+; and jumps to its relative entry point.
 
         .text
         .globl __start
