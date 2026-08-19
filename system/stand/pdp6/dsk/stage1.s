@@ -114,10 +114,6 @@ locate_db1_loop:
         pushj 017,unit_sector_to_dsk_addr
         pushj 017,read_dsk_sector
         jumpe 01,locate_scan_next
-        hlrz 02,buffer
-        caie 02,0444221
-        jrst locate_scan_next
-locate_db1_magic_ok:
         pushj 017,parse_db1_badmap
         jumpe 01,locate_scan_next
         move 02,db1_next_sector
@@ -164,7 +160,6 @@ parse_db0_badmap:
         jrst parse_db0_copy
 parse_db0_has_db1:
         hrrz 04,buffer+000021
-        jumpe 04,parse_db0_fail
         movem 04,db1_next_sector
 parse_db0_copy:
         movei 05,buffer+000001
@@ -179,10 +174,6 @@ parse_db0_fail:
 
 parse_db1_badmap:
         hrrz 03,buffer
-        move 01,03
-        andi 01,0770037
-        caie 01,010000
-        jrst parse_db1_fail
         hrrz 04,buffer+000001
         movem 04,db1_next_sector
         move 06,03
