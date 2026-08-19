@@ -47,7 +47,7 @@ stage1_units_done:
         jumpn 05,fail_noset
 
 stage1_have_set:
-        setzm stream_member
+        setom stream_member
         pushj 017,read_next_stream_sector
         jumpe 01,fail_khead
 
@@ -234,8 +234,6 @@ parse_desc_index_ok:
         jumpe 05,return_zero
         caile 05,04
         jrst return_zero
-        caml 03,05
-        jrst return_zero
 parse_desc_member_ok:
         movei 07,01
         lsh 07,0(03)
@@ -255,11 +253,6 @@ parse_desc_mask_ok:
 parse_desc_first:
         movem 04,member_mask
         movem 05,member_count
-        movei 01,01
-        lsh 01,0(05)
-        subi 01,01
-        came 01,04
-        jrst return_zero
 
 parse_desc_store:
         move 05,current_unit
@@ -290,7 +283,14 @@ return_zero:
         popj 017,
 
 read_next_stream_sector:
-        move 06,stream_member
+read_next_member:
+        aos 06,stream_member
+        andi 06,03
+        movei 03,01
+        lsh 03,0(06)
+        tdnn 03,member_mask
+        jrst read_next_member
+        movem 06,stream_member
         move 02,member_next_sector(06)
         pushj 017,skip_member_bad_sectors
         movem 02,member_next_sector(06)
@@ -301,9 +301,6 @@ read_next_stream_sector:
         add 02,05
         pushj 017,read_dsk_sector
         jumpe 01,read_next_done
-        aos 03,stream_member
-        caml 03,member_count
-        setzm stream_member
 read_next_done:
         popj 017,
 
