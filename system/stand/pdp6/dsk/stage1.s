@@ -88,6 +88,7 @@ load_image_done:
 ; Locate DBOOT on current_unit.
 ; AC1 = 1 if a usable descriptor was stored.
 locate_unit:
+        setzm bad_count
         setom scan_sector
 locate_scan_next:
         aos 02,scan_sector
@@ -147,7 +148,6 @@ locate_descriptor:
 ; DB0 RH: VERSION3 | DB0_RUN_COUNT6 | DB1_RUN_COUNT9.
 ; Bad runs are packed two 18-bit descriptors per word.
 parse_db0_badmap:
-        setzm bad_count
         hrrz 03,buffer
         move 04,03
         andi 04,0777
@@ -212,9 +212,6 @@ bad_half_contains:
         jrst return_one
 
 parse_descriptor:
-        hrrz 01,buffer
-        trne 01,0770037
-        jrst return_zero
         move 02,buffer+000002
 	; generation zero only
         jumpn 02,return_zero
@@ -232,8 +229,6 @@ parse_desc_index_ok:
         lsh 05,-014
         andi 05,017
         jumpe 05,return_zero
-        caile 05,04
-        jrst return_zero
 parse_desc_member_ok:
         movei 07,01
         lsh 07,0(03)
