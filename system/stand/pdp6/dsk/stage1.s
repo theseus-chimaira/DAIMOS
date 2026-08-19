@@ -82,11 +82,12 @@ load_image_done:
         move 02,member_count
         jrst @entry_addr
 
-; Locate DBOOT on current_unit.  AC1 = 1 if a usable descriptor was stored.
+; Locate DBOOT on current_unit.
+; AC1 = 1 if a usable descriptor was stored.
 locate_unit:
-        setzm scan_sector
+        setom scan_sector
 locate_scan_loop:
-        move 02,scan_sector
+        aos 02,scan_sector
         cail 02,0200
         jrst return_zero
 locate_scan_try:
@@ -100,7 +101,6 @@ locate_scan_try:
         cain 02,0444220
         jrst locate_db0
 locate_scan_next:
-        aos scan_sector
         jrst locate_scan_loop
 
 locate_dbc:
@@ -250,8 +250,8 @@ parse_descriptor:
         trne 01,0770037
         jrst parse_desc_fail
         move 02,buffer+000002
-        jumpn 02,parse_desc_fail          ; generation zero only
-
+	; generation zero only
+        jumpn 02,parse_desc_fail
         move 02,buffer+000005
         move 03,02
         lsh 03,-020
