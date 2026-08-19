@@ -19,9 +19,9 @@ __start:
         setzm any_read_ok
         setzm found_mask
         setzm member_mask
-        setzm current_unit
+        setom current_unit
 stage1_unit_loop:
-        move 02,current_unit
+        aos 02,current_unit
         cail 02,04
         jrst stage1_units_done
 stage1_try_unit:
@@ -31,11 +31,9 @@ stage1_try_unit:
         movei 03,01
         lsh 03,0(02)
         iorb 03,found_mask
-        and 03,member_mask
         camn 03,member_mask
         jrst stage1_units_done
 stage1_next_unit:
-        aos current_unit
         jrst stage1_unit_loop
 
 stage1_units_done:
@@ -123,27 +121,22 @@ locate_db0:
         pushj 017,copy_packed_bad_words
 locate_no_db1:
         aos 02,last_badmap_sector
-        movem 02,candidate_dbx
 locate_dbx_skip_loop:
-        move 02,candidate_dbx
-        pushj 017,bad_contains_candidate
-        jumpe 01,locate_dbx_try
-        movem 02,candidate_dbx
-        jrst locate_dbx_skip_loop
-locate_dbx_try:
-        move 02,candidate_dbx
+        movei 05,bad_words
+        move 04,bad_count
+        pushj 017,bad_map_contains
+        jumpn 01,locate_dbx_skip_loop
+        movem 02,located_dboot_loc
         pushj 017,unit_sector_to_dsk_addr
         pushj 017,read_dsk_sector
         jumpe 01,locate_scan_next
         hlrz 02,buffer
         caie 02,0444270
         jrst locate_scan_next
-locate_dbx_magic_ok:
-        move 02,candidate_dbx
+        jrst parse_descriptor
 locate_descriptor:
         movem 02,located_dboot_loc
-        pushj 017,parse_descriptor
-        popj 017,
+        jrst parse_descriptor
 
 ; DB0 RH: VERSION3 | DB0_RUN_COUNT6 | DB1_RUN_COUNT9.
 ; Bad runs are packed two 18-bit descriptors per word.
@@ -174,13 +167,6 @@ copy_packed_bad_loop:
         aoj 07,
         sojg 06,copy_packed_bad_loop
 copy_packed_bad_done:
-        popj 017,
-
-bad_contains_candidate:
-        move 02,candidate_dbx
-        movei 05,bad_words
-        move 04,bad_count
-        pushj 017,bad_map_contains
         popj 017,
 
 bad_map_contains:
@@ -224,7 +210,6 @@ parse_descriptor:
 parse_desc_index_ok:
         move 04,02
         lsh 04,-024
-        jumpe 04,return_zero
         move 05,02
         lsh 05,-014
         andi 05,017
@@ -263,6 +248,7 @@ parse_desc_store:
         lsh 06,07
         add 07,06
         addi 07,member_bad_words
+        movem 07,member_bad_ptr(03)
         movei 05,bad_words
         move 06,bad_count
         addi 06,01
@@ -294,19 +280,11 @@ read_next_member:
         pushj 017,linear_to_dsk_addr
         lsh 05,020
         add 02,05
-        pushj 017,read_dsk_sector
-        jumpe 01,read_next_done
-read_next_done:
-        popj 017,
+        jrst read_dsk_sector
 
 skip_member_bad_sectors:
 skip_bad_restart:
-        move 05,06
-        lsh 05,04
-        move 03,06
-        lsh 03,07
-        add 05,03
-        addi 05,member_bad_words
+        move 05,member_bad_ptr(06)
         move 04,member_bad_count(06)
         pushj 017,bad_map_contains
         jumpn 01,skip_bad_restart
@@ -436,13 +414,13 @@ located_dboot_loc: .block 01
 bad_count: .block 01
 db1_count: .block 01
 last_badmap_sector: .block 01
-candidate_dbx: .block 01
 stream_member: .block 01
 entry_addr: .block 01
 stage1_last_error: .block 01
 member_unit: .block 04
 member_bad_count: .block 04
 member_next_sector: .block 04
+member_bad_ptr: .block 04
 bad_words: .block 0220
 member_bad_words: .block 01100
 buffer: .block 0200
