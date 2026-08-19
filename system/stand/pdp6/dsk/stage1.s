@@ -10,7 +10,10 @@
 ; and jumps to its relative entry point.
 
         .text
+        .include "../common/sixbit-output.inc"
+
         .globl __start
+        .entry __start
 __start:
         movei 017,073040
         setzm any_read_ok
@@ -461,26 +464,6 @@ halt_stage1:
         halt .
         jrst halt_stage1
 
-put_sixbit_word:
-        move 02,01
-        movei 06,06
-put_six_loop:
-        move 03,02
-        lsh 03,-036
-        andi 03,077
-        addi 03,040
-put_wait:
-        coni 0120,04
-        trne 04,0020
-        jrst put_wait
-        datao 0120,03
-        lsh 02,06
-        sojg 06,put_six_loop
-put_six_final_wait:
-        coni 0120,04
-        trne 04,0020
-        jrst put_six_final_wait
-        popj 017,
 
 daimon_magic: .word 0444151555756
 msg_nodsk:    .word 0375657446353

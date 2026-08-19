@@ -49,23 +49,7 @@ put_crlf:
         pushj 017,putc
         popj 017,
 
-put_sixbit_word:
-        movem 01,put_word
-        movei 06,0
-put_six_loop:
-        caige 06,06
-        jrst put_six_one
-        popj 017,
-put_six_one:
-        move 02,put_word
-        move 03,put_shift(06)
-        lsh 02,0(03)
-        andi 02,077
-        addi 02,040
-        move 01,02
-        pushj 017,putc
-        aoj 06,
-        jrst put_six_loop
+        .include "../../common/sixbit-output.inc"
 
 putc:
         movem 01,ioword
