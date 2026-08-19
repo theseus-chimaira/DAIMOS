@@ -109,18 +109,14 @@ locate_db0:
         jumpe 01,locate_scan_next
         move 06,db1_count
         addm 06,bad_count
-        movei 05,buffer
         movei 07,bad_words+000020
-        addi 06,01
-        lsh 06,-01
-        pushj 017,copy_packed_bad_words
+        hrli 07,buffer
+        blt 07,bad_words+000217
 locate_no_db1:
         aos 02,last_badmap_sector
-locate_dbx_skip_loop:
         movei 05,bad_words
         move 04,bad_count
-        pushj 017,bad_map_contains
-        jumpn 01,locate_dbx_skip_loop
+        pushj 017,bad_map_skip
         movem 02,located_dboot_loc
         pushj 017,unit_sector_to_dsk_addr
         pushj 017,read_dsk_sector
@@ -128,69 +124,6 @@ locate_dbx_skip_loop:
         hlrz 02,buffer
         caie 02,0444270
         jrst locate_scan_next
-        jrst parse_descriptor
-locate_descriptor:
-        movem 02,located_dboot_loc
-        jrst parse_descriptor
-
-; DB0 RH: VERSION3 | DB0_RUN_COUNT6 | DB1_RUN_COUNT9.
-; Bad runs are packed two 18-bit descriptors per word.
-parse_db0_badmap:
-        hrrz 03,buffer
-        move 04,03
-        andi 04,0777
-        movem 04,db1_count
-        move 06,03
-        lsh 06,-011
-        andi 06,077
-        movem 06,bad_count
-        movei 05,buffer+000001
-        movei 07,bad_words
-        addi 06,01
-        lsh 06,-01
-        pushj 017,copy_packed_bad_words
-        move 02,scan_sector
-        movem 02,last_badmap_sector
-        jrst return_one
-
-copy_packed_bad_words:
-        jumpe 06,copy_packed_bad_done
-copy_packed_bad_loop:
-        move 02,0(05)
-        movem 02,0(07)
-        aoj 05,
-        aoj 07,
-        sojg 06,copy_packed_bad_loop
-copy_packed_bad_done:
-        popj 017,
-
-bad_map_contains:
-        jumpe 04,return_zero
-bad_map_word_loop:
-        hlrz 03,0(05)
-        pushj 017,bad_half_contains
-        jumpn 01,return_one
-        soje 04,return_zero
-        hrrz 03,0(05)
-        pushj 017,bad_half_contains
-        jumpn 01,return_one
-        aoj 05,
-        sojg 04,bad_map_word_loop
-        jrst return_zero
-
-; AC3 = START_SECTOR10 | RUN_LENGTH_MINUS_ONE8, AC2 = candidate.
-bad_half_contains:
-        move 07,03
-        lsh 07,-010
-        camge 02,07
-        jrst return_zero
-        andi 03,0377
-        addi 03,01
-        add 03,07
-        caml 02,03
-        jrst return_zero
-        move 02,03
-        jrst return_one
 
 parse_descriptor:
         move 02,buffer+000005
@@ -241,13 +174,62 @@ parse_desc_store:
         add 07,06
         addi 07,member_bad_words
         movem 07,member_bad_ptr(03)
-        movei 05,bad_words
-        move 06,bad_count
-        addi 06,01
-        lsh 06,-01
-        pushj 017,copy_packed_bad_words
+        movei 06,000217(07)
+        hrli 07,bad_words
+        blt 07,0(06)
         movei 01,01
         popj 017,
+; DB0 RH: VERSION3 | DB0_RUN_COUNT6 | DB1_RUN_COUNT9.
+; Bad runs are packed two 18-bit descriptors per word.
+parse_db0_badmap:
+        hrrz 03,buffer
+        move 04,03
+        andi 04,0777
+        movem 04,db1_count
+        move 06,03
+        lsh 06,-011
+        andi 06,077
+        movem 06,bad_count
+        movei 07,bad_words
+        hrli 07,buffer+000001
+        blt 07,bad_words+000017
+        move 02,scan_sector
+        movem 02,last_badmap_sector
+        jrst return_one
+
+; Advance AC2 past every bad run containing it.
+; AC4 = run count, AC5 = packed bad-run table.
+bad_map_skip:
+        jumpe 04,bad_map_skip_done
+bad_map_word_loop:
+        hlrz 03,0(05)
+        pushj 017,bad_half_skip
+        soje 04,bad_map_skip_done
+        hrrz 03,0(05)
+        pushj 017,bad_half_skip
+        aoj 05,
+        sojg 04,bad_map_word_loop
+bad_map_skip_done:
+        popj 017,
+
+; AC3 = START_SECTOR10 | RUN_LENGTH_MINUS_ONE8, AC2 = candidate.
+bad_half_skip:
+        move 07,03
+        lsh 07,-010
+        camge 02,07
+        popj 017,
+        andi 03,0377
+        addi 03,01
+        add 03,07
+        caml 02,03
+        popj 017,
+        move 02,03
+        popj 017,
+
+locate_descriptor:
+        movem 02,located_dboot_loc
+        jrst parse_descriptor
+
 locate_dbc:
         skipn 02,scan_sector
         jrst locate_descriptor
@@ -275,12 +257,9 @@ read_next_member:
         jrst read_dsk_sector
 
 skip_member_bad_sectors:
-skip_bad_restart:
         move 05,member_bad_ptr(06)
         move 04,member_bad_count(06)
-        pushj 017,bad_map_contains
-        jumpn 01,skip_bad_restart
-        popj 017,
+        jrst bad_map_skip
 
 copy_stream_words:
         jumpe 011,copy_stream_done
