@@ -106,19 +106,20 @@ locate_scan_next:
 locate_db0:
         pushj 017,parse_db0_badmap
         jumpe 01,locate_scan_next
-        move 02,db1_next_sector
-        jumpe 02,locate_no_db1
-locate_db1_loop:
-        move 02,db1_next_sector
+        skipn db1_count
+        jrst locate_no_db1
+        hrrz 02,buffer+000021
         movem 02,last_badmap_sector
         pushj 017,unit_sector_to_dsk_addr
         pushj 017,read_dsk_sector
         jumpe 01,locate_scan_next
-        pushj 017,parse_db1_badmap
-        jumpe 01,locate_scan_next
-        move 02,db1_next_sector
-        jumpe 02,locate_no_db1
-        jrst locate_db1_loop
+        move 06,db1_count
+        addm 06,bad_count
+        movei 05,buffer
+        movei 07,bad_words+000020
+        addi 06,01
+        lsh 06,-01
+        pushj 017,copy_packed_bad_words
 locate_no_db1:
         aos 02,last_badmap_sector
         movem 02,candidate_dbx
@@ -126,7 +127,7 @@ locate_dbx_skip_loop:
         move 02,candidate_dbx
         pushj 017,bad_contains_candidate
         jumpe 01,locate_dbx_try
-        aos candidate_dbx
+        movem 02,candidate_dbx
         jrst locate_dbx_skip_loop
 locate_dbx_try:
         move 02,candidate_dbx
@@ -143,94 +144,72 @@ locate_descriptor:
         pushj 017,parse_descriptor
         popj 017,
 
+; DB0 RH: VERSION3 | DB0_RUN_COUNT6 | DB1_RUN_COUNT9.
+; Bad runs are packed two 18-bit descriptors per word.
 parse_db0_badmap:
         setzm bad_count
         hrrz 03,buffer
-        move 01,03
-        andi 01,0770002
-        caie 01,010000
-        jrst parse_db0_fail
+        move 04,03
+        andi 04,0777
+        movem 04,db1_count
         move 06,03
-        lsh 06,-05
-        andi 06,0177
-        caile 06,020
-        jrst parse_db0_fail
-        setzm db1_next_sector
-        trnn 03,000004
-        jrst parse_db0_copy
-parse_db0_has_db1:
-        hrrz 04,buffer+000021
-        movem 04,db1_next_sector
-parse_db0_copy:
+        lsh 06,-011
+        andi 06,077
+        movem 06,bad_count
         movei 05,buffer+000001
-        pushj 017,copy_bad_words
-        jumpe 01,parse_db0_fail
-parse_db0_done:
+        movei 07,bad_words
+        addi 06,01
+        lsh 06,-01
+        pushj 017,copy_packed_bad_words
         move 02,scan_sector
         movem 02,last_badmap_sector
         jrst return_one
-parse_db0_fail:
-        jrst return_zero
 
-parse_db1_badmap:
-        hrrz 03,buffer
-        hrrz 04,buffer+000001
-        movem 04,db1_next_sector
-        move 06,03
-        lsh 06,-05
-        andi 06,0177
-        movei 05,buffer+000002
-        pushj 017,copy_bad_words
-        jumpe 01,parse_db1_fail
-parse_db1_done:
-        jrst return_one
-parse_db1_fail:
-        jrst return_zero
-
-copy_bad_words:
-        jumpe 06,copy_bad_success
-load_bad_words_loop:
+copy_packed_bad_words:
+        jumpe 06,copy_packed_bad_done
+copy_packed_bad_loop:
         move 02,0(05)
-        pushj 017,append_bad_run_word
-        jumpe 01,copy_bad_return
+        movem 02,0(07)
         aoj 05,
-        sojg 06,load_bad_words_loop
-copy_bad_success:
-        jrst return_one
-copy_bad_return:
+        aoj 07,
+        sojg 06,copy_packed_bad_loop
+copy_packed_bad_done:
         popj 017,
 
-append_bad_run_word:
-        move 07,bad_count
-        cail 07,0177
-        jrst return_zero
-append_bad_room:
-        hlrz 04,02
-        movem 04,bad_start(07)
-        move 03,02
-        lsh 03,-06
-        andi 03,07777
-        addi 03,01
-        add 03,04
-        movem 03,bad_end(07)
-        aos bad_count
-        jrst return_one
-
 bad_contains_candidate:
-        movei 05,0
-bad_contains_loop:
-        caml 05,bad_count
-        jrst bad_contains_no
-        move 03,candidate_dbx
-        camge 03,bad_start(05)
-        jrst bad_contains_next
-        caml 03,bad_end(05)
-        jrst bad_contains_next
-        jrst return_one
-bad_contains_next:
-        aoja 05,bad_contains_loop
-bad_contains_no:
+        move 02,candidate_dbx
+        movei 05,bad_words
+        move 04,bad_count
+        pushj 017,bad_map_contains
+        popj 017,
+
+bad_map_contains:
+        jumpe 04,return_zero
+bad_map_word_loop:
+        hlrz 03,0(05)
+        pushj 017,bad_half_contains
+        jumpn 01,return_one
+        soje 04,return_zero
+        hrrz 03,0(05)
+        pushj 017,bad_half_contains
+        jumpn 01,return_one
+        aoj 05,
+        sojg 04,bad_map_word_loop
         jrst return_zero
+
+; AC3 = START_SECTOR10 | RUN_LENGTH_MINUS_ONE8, AC2 = candidate.
+bad_half_contains:
+        move 07,03
+        lsh 07,-010
+        camge 02,07
+        jrst return_zero
+        andi 03,0377
+        addi 03,01
+        add 03,07
+        caml 02,03
+        jrst return_zero
+        move 02,03
+        jrst return_one
 
 parse_descriptor:
         hrrz 01,buffer
@@ -290,19 +269,17 @@ parse_desc_store:
         movem 05,member_next_sector(03)
         move 05,bad_count
         movem 05,member_bad_count(03)
+        move 07,03
+        lsh 07,04
         move 06,03
         lsh 06,07
-        movei 05,0
-copy_member_bad_loop:
-        caml 05,bad_count
-        jrst copy_bad_done
-        move 01,bad_start(05)
-        movem 01,member_bad_start(06)
-        move 01,bad_end(05)
-        movem 01,member_bad_end(06)
-        aoj 05,
-        aoja 06,copy_member_bad_loop
-copy_bad_done:
+        add 07,06
+        addi 07,member_bad_words
+        movei 05,bad_words
+        move 06,bad_count
+        addi 06,01
+        lsh 06,-01
+        pushj 017,copy_packed_bad_words
         movei 01,01
         popj 017,
 locate_dbc:
@@ -332,21 +309,15 @@ read_next_done:
 
 skip_member_bad_sectors:
 skip_bad_restart:
+        move 05,06
+        lsh 05,04
         move 03,06
         lsh 03,07
+        add 05,03
+        addi 05,member_bad_words
         move 04,member_bad_count(06)
-skip_bad_loop:
-        jumpe 04,skip_bad_done
-        camge 02,member_bad_start(03)
-        jrst skip_bad_next
-        caml 02,member_bad_end(03)
-        jrst skip_bad_next
-        move 02,member_bad_end(03)
-        jrst skip_bad_restart
-skip_bad_next:
-        aoj 03,
-        sojg 04,skip_bad_loop
-skip_bad_done:
+        pushj 017,bad_map_contains
+        jumpn 01,skip_bad_restart
         popj 017,
 
 copy_stream_words:
@@ -471,7 +442,7 @@ member_mask: .block 01
 member_count: .block 01
 located_dboot_loc: .block 01
 bad_count: .block 01
-db1_next_sector: .block 01
+db1_count: .block 01
 last_badmap_sector: .block 01
 candidate_dbx: .block 01
 stream_member: .block 01
@@ -480,9 +451,7 @@ stage1_last_error: .block 01
 member_unit: .block 04
 member_bad_count: .block 04
 member_next_sector: .block 04
-bad_start: .block 0177
-bad_end: .block 0177
-member_bad_start: .block 01000
-member_bad_end: .block 01000
+bad_words: .block 0220
+member_bad_words: .block 01100
 buffer: .block 0200
 stage1_bss_end:
