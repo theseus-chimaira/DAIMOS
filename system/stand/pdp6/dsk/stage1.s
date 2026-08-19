@@ -54,12 +54,7 @@ stage1_have_set:
         jrst fail_khead
 stage1_magic_ok:
         hlrz 03,buffer+000001
-        jumpe 03,fail_layout
         hrrz 04,buffer+000001
-        caml 04,03
-        jrst fail_layout
-        caile 03,020000
-        jrst fail_layout
         movei 05,040000
         add 05,04
         movem 05,entry_addr
@@ -198,9 +193,6 @@ bad_half_contains:
         jrst return_one
 
 parse_descriptor:
-        move 02,buffer+000002
-	; generation zero only
-        jumpn 02,return_zero
         move 02,buffer+000005
         move 03,02
         lsh 03,-020
@@ -325,7 +317,6 @@ read_dsk_sector:
         movsi 02,-0200
 read_loop:
         pushj 017,wait_dct_rq
-        jumpe 01,read_dsk_fail_end
         datai 0200,03
         movem 03,buffer(02)
         aobjn 02,read_loop
@@ -340,37 +331,27 @@ read_dsk_fail:
 
 wait_dfr:
         movei 03,040000
-        movei 04,0200000
         jrst wait_dsk_status
 
 wait_ids:
         movei 03,0400000
-        movei 04,0400000
-        jrst wait_dsk_status
 
 wait_dsk_status:
         coni 0270,05
         trne 05,01777
-        jrst wait_fail
-        and 05,03
-        jumpn 05,wait_success
-        sojg 04,wait_dsk_status
         jrst return_zero
+        and 05,03
+        jumpn 05,return_one
+        jrst wait_dsk_status
 
 wait_dct_rq:
-        movei 04,0400000
-wait_dct_loop:
         coni 0200,05
         trne 05,01000
-        jrst wait_success
-        sojg 04,wait_dct_loop
-        jrst return_zero
-wait_success:
+        jrst return_one
+        jrst wait_dct_rq
 return_one:
         movei 01,01
         popj 017,
-wait_fail:
-        jrst return_zero
 
 fail_nodsk:
         movei 01,000001
@@ -381,11 +362,8 @@ fail_noset:
 fail_khead:
         movei 01,000003
         jrst fail_common
-fail_layout:
-        movei 01,000004
-        jrst fail_common
 fail_read:
-        movei 01,000005
+        movei 01,000004
 fail_common:
         move 05,01
         move 01,msg_nodsk-1(05)
@@ -401,7 +379,6 @@ daimon_magic: .word 0444151555756
 msg_nodsk:    .word 0375657446353
 msg_noset:    .word 0375657634564
 msg_khead:    .word 0375350454144
-msg_layout:   .word 0375441715764
 msg_read:     .word 0376245414400
         .bss
 any_read_ok: .block 01

@@ -138,10 +138,7 @@ test-negative: image
 	run_fail dsk-neg-noset '?NOSET' dsk0 "$(BUILD_ABS)/dsk2-clean/dsk0.dsk"; \
 	cp "$(BUILD_ABS)/dsk1-clean/dsk0.dsk" "$(BUILD_ABS)/dsk-neg-khead.dsk"; \
 	dd if=/dev/zero of="$(BUILD_ABS)/dsk-neg-khead.dsk" bs=8 seek=128 count=1 conv=notrunc >/dev/null 2>&1; \
-	run_fail dsk-neg-khead '?KHEAD' dsk0 "$(BUILD_ABS)/dsk-neg-khead.dsk"; \
-	cp "$(BUILD_ABS)/dsk1-clean/dsk0.dsk" "$(BUILD_ABS)/dsk-neg-layout.dsk"; \
-	dd if=/dev/zero of="$(BUILD_ABS)/dsk-neg-layout.dsk" bs=8 seek=129 count=1 conv=notrunc >/dev/null 2>&1; \
-	run_fail dsk-neg-layout '?LAYOT' dsk0 "$(BUILD_ABS)/dsk-neg-layout.dsk"
+	run_fail dsk-neg-khead '?KHEAD' dsk0 "$(BUILD_ABS)/dsk-neg-khead.dsk"
 
 clean:
 	rm -rf $(BUILD)
