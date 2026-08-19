@@ -65,32 +65,32 @@ $(PAYLOAD1_RIM): $(PAYLOAD1_DXR)
 	$(DXRCONVERT) --simh -b 040000 $< $@
 
 $(PAYLOAD1_STREAM): $(PAYLOAD1_RIM)
-	$(MKSTREAM) -i $< -o $@ -b 040000 -w 05
+	$(MKSTREAM) -i $< -o $@ -b 040000 -w 014
 
 $(PAYLOAD1_WORDS): $(PAYLOAD1_STREAM)
 	tail -n +3 $< > $@
-	test `wc -l < $@` -eq 5
+	test `wc -l < $@` -eq 12
 
 $(PAYLOAD2_DXR): $(PAYLOAD2_SRC) | $(BUILD)
 	$(DAS) --base-kernel -o $@ $<
 
 $(PAYLOAD2_RIM): $(PAYLOAD2_DXR)
-	$(DXRCONVERT) --simh -b 040005 $< $@
+	$(DXRCONVERT) --simh -b 040014 $< $@
 
 $(PAYLOAD2_STREAM): $(PAYLOAD2_RIM)
-	$(MKSTREAM) -i $< -o $@ -b 040005 -w 010
+	$(MKSTREAM) -i $< -o $@ -b 040014 -w 017
 
 $(PAYLOAD2_WORDS): $(PAYLOAD2_STREAM)
 	tail -n +3 $< > $@
-	test `wc -l < $@` -eq 8
+	test `wc -l < $@` -eq 15
 
 $(TAPE1_WORDS): $(LOWCORE_WORDS) $(PAYLOAD1_WORDS) | $(BUILD)
-	{ printf '%s\n' 000000000025; cat $(LOWCORE_WORDS) $(PAYLOAD1_WORDS); } > $@
-	test `wc -l < $@` -eq 22
+	{ printf '%s\n' 000000000034; cat $(LOWCORE_WORDS) $(PAYLOAD1_WORDS); } > $@
+	test `wc -l < $@` -eq 29
 
 $(TAPE2_WORDS): $(PAYLOAD2_WORDS) | $(BUILD)
-	{ printf '%s\n' 000000000010; cat $(PAYLOAD2_WORDS); } > $@
-	test `wc -l < $@` -eq 9
+	{ printf '%s\n' 000000000017; cat $(PAYLOAD2_WORDS); } > $@
+	test `wc -l < $@` -eq 16
 
 $(TAPE1): $(TAPE1_WORDS) $(WORDS2PT)
 	$(WORDS2PT) -t ptr -p $< -o $@

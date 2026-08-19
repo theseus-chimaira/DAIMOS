@@ -54,6 +54,18 @@ start:
         move 01,msg_change1
         pushj 017,000060
 
+; Terminate the operator message with CR/LF.  The SIXBIT helper waits for
+; the final character, so CR may be written immediately; wait only between
+; CR and LF.
+        movei 03,015
+        datao 0120,03
+change_cr_wait:
+        coni 0120,04
+        trne 04,0020
+        jrst change_cr_wait
+        movei 03,012
+        datao 0120,03
+
 ; Reset/start the reader for Tape 2.  If no tape is present, the normal
 ; PTR wait loop simply waits until the operator supplies one.
         movei 01,0020
