@@ -23,14 +23,22 @@ deposit 025 254000000024
 deposit 026 000000000000
 deposit 027 254000000021
 
+; Stage0 reads the RIM Stage1 tape and stops at Stage1 entry.
 break @STAGE1_ENTRY@
 attach -q ptr @STAGE1_TAPE@
 deposit ptr time 1
 go 020
 nobreak @STAGE1_ENTRY@
+
+; Tape 1 loads low core plus the first payload.  When Stage1 prints CHANGE TAPE,
+; SIMH EXPECT temporarily stops execution, swaps the PTR image, and resumes.
+; Stage1 itself contains no tape-change HALT.
 detach ptr
-attach -q ptr @PAYLOAD_TAPE@
+attach -q ptr @TAPE1@
 deposit ptr time 1
-expect HALTAFTER=0 "TEST  DONE" exit
+expect "CHANGE TAPE" detach ptr; attach -q ptr @TAPE2@; deposit ptr time 1; continue
 go @STAGE1_ENTRY@
+
+; The first payload prints KERNEL and explicitly jumps to the second payload,
+; which prints DRIVERS and HALTs to terminate the focused test.
 exit
