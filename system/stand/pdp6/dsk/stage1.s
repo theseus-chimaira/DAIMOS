@@ -86,11 +86,10 @@ load_image_done:
 ; AC1 = 1 if a usable descriptor was stored.
 locate_unit:
         setom scan_sector
-locate_scan_loop:
+locate_scan_next:
         aos 02,scan_sector
         cail 02,0200
         jrst return_zero
-locate_scan_try:
         pushj 017,unit_sector_to_dsk_addr
         pushj 017,read_dsk_sector
         jumpe 01,locate_scan_next
@@ -98,14 +97,8 @@ locate_scan_try:
         hlrz 02,buffer
         cain 02,0444243
         jrst locate_dbc
-        cain 02,0444220
-        jrst locate_db0
-locate_scan_next:
-        jrst locate_scan_loop
-
-locate_dbc:
-        move 02,scan_sector
-        jrst locate_descriptor
+        caie 02,0444220
+        jrst return_zero
 
 locate_db0:
         pushj 017,parse_db0_badmap
@@ -248,42 +241,42 @@ bad_contains_no:
 parse_descriptor:
         hrrz 01,buffer
         trne 01,0770037
-        jrst parse_desc_fail
+        jrst return_zero
         move 02,buffer+000002
 	; generation zero only
-        jumpn 02,parse_desc_fail
+        jumpn 02,return_zero
         move 02,buffer+000005
         move 03,02
         lsh 03,-020
         andi 03,017
         cail 03,04
-        jrst parse_desc_fail
+        jrst return_zero
 parse_desc_index_ok:
         move 04,02
         lsh 04,-024
-        jumpe 04,parse_desc_fail
+        jumpe 04,return_zero
         move 05,02
         lsh 05,-014
         andi 05,017
-        jumpe 05,parse_desc_fail
+        jumpe 05,return_zero
         caile 05,04
-        jrst parse_desc_fail
+        jrst return_zero
         caml 03,05
-        jrst parse_desc_fail
+        jrst return_zero
 parse_desc_member_ok:
         movei 07,01
         lsh 07,0(03)
         tdnn 07,04
-        jrst parse_desc_fail
+        jrst return_zero
 
         move 01,member_mask
         jumpe 01,parse_desc_first
         came 01,04
-        jrst parse_desc_fail
+        jrst return_zero
 parse_desc_mask_ok:
         move 01,member_count
         came 01,05
-        jrst parse_desc_fail
+        jrst return_zero
         jrst parse_desc_store
 
 parse_desc_first:
@@ -293,7 +286,7 @@ parse_desc_first:
         lsh 01,0(05)
         subi 01,01
         came 01,04
-        jrst parse_desc_fail
+        jrst return_zero
 
 parse_desc_store:
         move 05,current_unit
@@ -318,7 +311,9 @@ copy_member_bad_loop:
 copy_bad_done:
         movei 01,01
         popj 017,
-parse_desc_fail:
+locate_dbc:
+        skipn 02,scan_sector
+        jrst locate_descriptor
 return_zero:
         setz 01,
         popj 017,
