@@ -12,7 +12,6 @@ __start:
         setzm any_read_ok
         setzm found_mask
         setzm member_mask
-        setzm member_count
         setzm current_unit
 stage1_unit_loop:
         move 02,current_unit
