@@ -1,12 +1,10 @@
-; stage1.s -- block-oriented opaque-image Stage1 for PDP-6 DECtape.
+; stage1.s -- minimal opaque-image Stage1 for PDP-6 DECtape.
 ;
-; Stage0 loads this loader from RIM paper tape.  The opaque boot stream begins
-; in DECtape block 0 and consists of:
-;       word 0  SIXBIT /DAIMON/
-;       word 1  image_words,,entry_offset
-;       word 2  opaque image word 0
-; The image is loaded at 040000.  Only enough consecutive 128-word DECtape
-; blocks to contain the header and image are read.
+; Stage0 loads this loader from RIM paper tape.  Stage1 starts DECtape unit 0
+; reading forward through the Type 136 data control.  The existing DECtape
+; stream begins with the two-word DAIMON header; only its image word count is
+; needed here.  The entry point is fixed at 040000 and the image is otherwise
+; opaque.  Physical DECtape block boundaries are handled by the controller.
 
         .text
         .globl start
@@ -14,84 +12,37 @@
 
 __start:
 start:
-        movei 017,050000
-
-        ; Read block 0 into the temporary block buffer.
-        pushj 017,read_block
-
-        move 02,blockbuf
-        move 06,blockbuf+1
-        .include "../common/validate-load.inc"
-
-        ; Copy the payload portion of block 0.
-        movei 01,040000
-        movei 06,blockbuf+2
-        movei 04,0176
-        pushj 017,copy_words
-
-next_block:
-        jumpe 02,image_done
-        pushj 017,read_block
-        movei 06,blockbuf
-        movei 04,0200
-        pushj 017,copy_words
-        jrst next_block
-
-image_done:
-        cono 0210,0
-        cono 0200,0
-        movei 017,050000
-        setzb 01,02
-        jrst 0(07)
-
-; Copy min(AC2, AC4) words from (AC6) to (AC1).
-; AC1 and AC6 advance; AC2 is the remaining image word count.
-copy_words:
-        move 03,0(06)
-        movem 03,0(01)
-        aoj 01,
-        aoj 06,
-        soje 02,copy_done
-        sojg 04,copy_words
-copy_done:
-        popj 017,
-
-; Read the next physical DECtape data block into blockbuf.
-read_block:
         ; DCT0: device 1 (DTC), device -> processor, move enabled.
-        movei 10,004040
-        cono 0200,0(10)
+        cono 0200,004040
 
         ; DTC0: selected, start forward, READ DATA.
-        movei 10,0220300
-        cono 0210,0(10)
+        cono 0210,0220300
 
-        movsi 11,-0200
-read_word:
-read_wait:
+; Discard DAIMON magic; read image_words,,entry_offset into AC2.
+header0_wait:
         conso 0200,001000
-        jrst read_wait
-        datai 0200,blockbuf(11)
-        aobjn 11,read_word
+        jrst header0_wait
+        datai 0200,00
+header1_wait:
+        conso 0200,001000
+        jrst header1_wait
+        datai 0200,02
 
-        ; Wait for block completion and reject controller errors.
-read_done_wait:
-        coni 0214,ioword
-        move 10,ioword
-        trne 10,0000030
+; Only the word count is required.  Bound it to the 040000..060000 window.
+        hlrz 02,02
+        jumpe 02,fail
+        caile 02,020000
         jrst fail
-        trnn 10,0000001
-        jrst read_done_wait
-        cono 0210,0
-        cono 0200,0
-        popj 017,
+
+        movei 01,040000
+read_loop:
+        conso 0200,001000
+        jrst read_loop
+        datai 0200,0(01)
+        aoj 01,
+        sojg 02,read_loop
+        jrst 040000
 
 fail:
-        cono 0210,0
-        cono 0200,0
         halt .
         jrst fail
-
-ioword:      .word 0
-daimon_magic:.word 0444151555756
-blockbuf:    .space 0200

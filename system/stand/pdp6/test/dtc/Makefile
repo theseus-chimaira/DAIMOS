@@ -6,7 +6,6 @@ include ../bin/stat.mk
 BOOT_KIND = DTC
 TEST_NAME = dtc-v1
 STAGE1 = ../../dtc/stage1.s
-STAGE1_COMMON_DEPS = ../../common/validate-load.inc
 STAGE1_ENTRY = 060000
 STAGE1_DXR = $(BUILD)/stage1-dtc-v1.dxr
 STAGE1_TAPE = $(BUILD)/stage1-dtc-v1.pt
