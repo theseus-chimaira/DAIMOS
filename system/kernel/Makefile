@@ -20,9 +20,12 @@ KINIT_CPPFLAGS = \
 
 .DEFAULT_GOAL := kinit
 
-.PHONY: kinit clean
+.PHONY: kinit test clean
 
 kinit: $(KINIT_ASM)
+
+test:
+	$(MAKE) -C $(PROJECT_ROOT)/tests/system/kernel test BUILD='$(BUILD_ROOT)/tests/system/kernel'
 
 $(BUILD)/%.s: %.c kinit.h $(VERSION_FILE)
 	mkdir -p $(BUILD)

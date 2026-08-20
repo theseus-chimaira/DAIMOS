@@ -6,8 +6,12 @@ TEST_REPORT ?= $(PROJECT_ROOT)/test-report.txt
 
 .PHONY: build test kinit-test clean
 
-build test:
-	$(MAKE) -C stand $@ BUILD_ROOT='$(BUILD_ROOT)' TEST_REPORT='$(TEST_REPORT)'
+build:
+	$(MAKE) -C stand build BUILD_ROOT='$(BUILD_ROOT)' TEST_REPORT='$(TEST_REPORT)'
+
+test:
+	$(MAKE) -C stand test BUILD_ROOT='$(BUILD_ROOT)' TEST_REPORT='$(TEST_REPORT)'
+	$(MAKE) -C kernel test BUILD='$(BUILD_ROOT)/tests/system/kernel'
 
 kinit-test:
 	$(MAKE) -C kernel test BUILD='$(BUILD_ROOT)/tests/system/kernel'
