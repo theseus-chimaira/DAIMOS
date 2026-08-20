@@ -1,12 +1,11 @@
-; image-v1.s -- KINIT V0.1 pre-relocation test image prefix.
+; image-v1.s -- KINIT V0.1 relocation/early-KCORE test image prefix.
 ;
-; The host-side builder patches the two address-bearing manifest words after
-; link relocation is known.  The manifest intentionally has no modules yet.
+; The host-side builder patches the address-bearing manifest words after link.
+; The actual KCORE image is linked separately for address 060 and embedded
+; immediately after this manifest by kcore-embed-v1.s.
 
         .text
         .globl __kinit_image_start
-        .globl __kinit_code_start
-        .globl test_kcore
 
 __kinit_image_start:
         .word 0535541562021        ; SIXBIT /KMAN01/
@@ -14,7 +13,3 @@ __kinit_image_start:
         .word 000000000000        ; patched: KCORE source,,size
         .word 000000000000        ; patched: KINIT begin,,size
 
-test_kcore:
-        .word 000000000000
-
-__kinit_code_start:

@@ -8,6 +8,9 @@ typedef void (*kinit_minit_fn)(void);
 #define KINIT_WORD_MASK          0777777777777UL
 #define KINIT_HALF_MASK          0777777UL
 #define KINIT_KCORE_BASE         000060UL
+#define KINIT_KCORE_ENTRY         (KINIT_KCORE_BASE + 0UL)
+#define KINIT_KCORE_EARLY_INIT    (KINIT_KCORE_BASE + 1UL)
+#define KINIT_KCORE_PUTCHAR       (KINIT_KCORE_BASE + 2UL)
 #define KINIT_BOOT_WORD0         000040UL
 #define KINIT_BOOT_WORD1         000041UL
 #define KINIT_MAX_MODULES        32U
@@ -112,10 +115,9 @@ void kinit_diag_failure_poll(void);
 void kinit_diag_failure(void);
 void kinit_diag_finished(void);
 
-void kinit_cty_init(void);
+int kinit_cty_init(void);
 int kinit_cty_putchar(int c);
 void kinit_poll_put6(kword_t word);
-void kinit_cty_hw_init(void);
 void kinit_halt(void);
 
 int mresr_decode(const kword_t *payload, unsigned int payload_words,

@@ -37,6 +37,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--map", required=True, type=Path)
     parser.add_argument("--input", required=True, type=Path)
+    parser.add_argument("--kcore", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
 
@@ -44,17 +45,23 @@ def main():
     image_end = require(symbols, "__kinit_image_end")
     code_start = require(symbols, "__kinit_code_start")
     kcore = require(symbols, "test_kcore")
+    kcore_end = require(symbols, "test_kcore_end")
     entry = require(symbols, "kinit_enter")
 
     if not (0 < code_start < image_end <= HALF_MASK):
         raise SystemExit("invalid KINIT image bounds")
-    if not (0 <= kcore < code_start):
-        raise SystemExit("invalid test KCORE location")
+    if not (0 <= kcore < kcore_end <= code_start):
+        raise SystemExit("invalid test KCORE range")
     if not (0 <= entry < image_end):
         raise SystemExit("invalid KINIT entry")
 
     words = [int(line, 8) for line in
              args.input.read_text(encoding="ascii").splitlines() if line]
+    kcore_words = [int(line, 8) for line in
+                   args.kcore.read_text(encoding="ascii").splitlines() if line]
+    if len(kcore_words) < 2:
+        raise SystemExit("short KCORE stream")
+    kcore_words = kcore_words[2:]
     if len(words) != image_end + 2:
         raise SystemExit("stream length does not match linked image")
     if words[0] != DAIMON_MAGIC:
@@ -62,9 +69,13 @@ def main():
     if words[2] != KMAN01_MAGIC:
         raise SystemExit("KMAN01 is not at image offset zero")
 
+    if len(kcore_words) != kcore_end - kcore:
+        raise SystemExit("KCORE stream length does not match reserved range")
+
     words[1] = pair18(image_end, entry)
-    words[4] = pair18(IMAGE_BASE + kcore, 1)
+    words[4] = pair18(IMAGE_BASE + kcore, kcore_end - kcore)
     words[5] = pair18(IMAGE_BASE + code_start, image_end - code_start)
+    words[2 + kcore:2 + kcore_end] = kcore_words
 
     args.output.write_text(
         "".join("%012o\n" % (word & WORD_MASK) for word in words),

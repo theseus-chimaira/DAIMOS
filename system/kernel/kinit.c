@@ -1,17 +1,32 @@
 #include "kinit.h"
 
+typedef int (*kinit_kcore_init_fn)(void);
+typedef int (*kinit_kcore_putchar_fn)(int c);
+
 static void
 kcore_entry(void)
 {
-        /* Temporary V0.1 handoff stub.  Replace with relocated KCORE entry. */
+        /* Final handoff remains disabled during the V0.1 bring-up. */
         kinit_diag_finished();
         kinit_halt();
 }
 
-void
+int
 kinit_cty_init(void)
 {
-        kinit_cty_hw_init();
+        kinit_kcore_init_fn initfn;
+
+        initfn = (kinit_kcore_init_fn)(unsigned long)KINIT_KCORE_EARLY_INIT;
+        return (*initfn)();
+}
+
+int
+kinit_cty_putchar(int c)
+{
+        kinit_kcore_putchar_fn putfn;
+
+        putfn = (kinit_kcore_putchar_fn)(unsigned long)KINIT_KCORE_PUTCHAR;
+        return (*putfn)(c);
 }
 
 void
@@ -25,17 +40,21 @@ kinit_enter(void)
                 kinit_halt();
         }
 
-        /* From here on the polling helper at 060 is no longer required. */
-        kinit_cty_init();
+        /*
+         * Relocate resident KCORE first.  The copy overwrites the temporary
+         * Stage1 SIXBIT helper at 060, so all later output comes from KCORE.
+         */
+        if (kinit_relocate() != 0)
+                kinit_halt();
+
+        /* Borrow KCORE's real PI/CTY implementation, then return to KINIT. */
+        if (kinit_cty_init() != 0)
+                kinit_halt();
+
         kinit_diag_system();
 
-        /* V0.1 checkpoint: do not relocate until pre-relocation boot passes. */
+        /* V0.1 checkpoint: MINITs and final KCORE entry come next. */
         kinit_halt();
-
-        if (kinit_relocate() != 0) {
-                kinit_diag_failure();
-                kinit_halt();
-        }
 
         kinit_run_minits();
         kcore_entry();
