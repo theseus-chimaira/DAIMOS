@@ -21,6 +21,8 @@
 
 __start:
 start:
+        setom 000040
+        setom 000041
         movei 017,050000
 
         ; DCT0: device 1 (DTC), device -> processor, move enabled.

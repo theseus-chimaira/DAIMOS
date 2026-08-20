@@ -24,6 +24,8 @@
 
 __start:
 start:
+        setom 000040
+        setom 000041
         ; Type 136: input, six 6-bit characters, device 3, move enabled.
         movei 01,004000
         cono 0200,0(01)

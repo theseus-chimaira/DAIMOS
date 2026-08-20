@@ -16,6 +16,8 @@
         .entry __start
 __start:
         movei 017,073040
+        setom 000040
+        setom 000041
         setzm any_read_ok
         setzm found_mask
         setzm member_mask
@@ -98,6 +100,8 @@ locate_scan_next:
         jrst return_zero
 
 locate_db0:
+        move 02,scan_sector
+        movem 02,boot_locator
         pushj 017,parse_db0_badmap
         jumpe 01,locate_scan_next
         skipn db1_count
@@ -162,6 +166,18 @@ parse_desc_first:
 parse_desc_store:
         move 05,current_unit
         movem 05,member_unit(03)
+        lsh 05,020
+        ior 05,boot_locator
+        move 06,03
+        lsh 06,-01
+        addi 06,000040
+        trne 03,01
+        jrst parse_desc_handoff_rh
+        hrlm 05,0(06)
+        jrst parse_desc_handoff_done
+parse_desc_handoff_rh:
+        hrrm 05,0(06)
+parse_desc_handoff_done:
         move 05,located_dboot_loc
         aoj 05,
         movem 05,member_next_sector(03)
@@ -231,6 +247,8 @@ locate_descriptor:
         jrst parse_descriptor
 
 locate_dbc:
+        movei 02,000377
+        movem 02,boot_locator
         skipn 02,scan_sector
         jrst locate_descriptor
 return_zero:
@@ -367,6 +385,7 @@ found_mask: .block 01
 member_mask: .block 01
 member_count: .block 01
 located_dboot_loc: .block 01
+boot_locator: .block 01
 bad_count: .block 01
 db1_count: .block 01
 last_badmap_sector: .block 01
