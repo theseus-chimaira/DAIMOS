@@ -1,4 +1,4 @@
-#include "mres_reloc.h"
+#include "kinit.h"
 
 #define MRESR_EINVAL   (-1)
 #define MRESR_E2BIG    (-2)
@@ -301,157 +301,70 @@ mresr_bind(const kword_t *payload, unsigned int payload_words,
         return 0;
 }
 
-int
-mresr_patch_addr18(kword_t *wordp, kword_t target)
-{
-        if (wordp == 0 || target > MRESR_ADDR18_MASK)
-                return MRESR_ERANGE;
-        *wordp = (*wordp & ~MRESR_ADDR18_MASK) | target;
-        return 0;
-}
+
 
 int
-mresr_preflight(const struct mresr_input *inputs, unsigned int count,
-    kword_t resident_start, kword_t resident_limit, kword_t *load_bases,
-    kword_t *resident_endp)
+kinit_relocate(void)
 {
-        struct mresr_desc desc;
-        unsigned long cursor;
-        unsigned long extent;
+        struct kinit_manifest *manifest;
+        struct mresr_provider providers[KINIT_MAX_MODULES];
+        kword_t cursor;
+        unsigned int provider_count;
         unsigned int i;
-        int error;
 
-        if ((count != 0U && inputs == 0) || resident_endp == 0 ||
-            resident_start > MRESR_ADDR18_MASK ||
-            resident_limit > MRESR_ADDR18_MASK + 1UL ||
-            resident_start > resident_limit)
-                return MRESR_EINVAL;
+        manifest = kinit_manifest_get();
+        cursor = KINIT_KCORE_BASE;
 
-        cursor = resident_start;
-        for (i = 0; i < count; i++) {
-                error = mresr_decode(inputs[i].mr_payload,
-                    inputs[i].mr_payload_words, &desc);
-                if (error != 0)
-                        return error;
-                error = mresr_validate(inputs[i].mr_payload,
-                    inputs[i].mr_payload_words, &desc);
-                if (error != 0)
-                        return error;
-                extent = (unsigned long)desc.mr_image_words +
-                    desc.mr_bss_words;
-                if (extent > resident_limit - cursor)
-                        return MRESR_E2BIG;
-                cursor += extent;
-        }
+        for (i = 0U; i < manifest->km_kcore_words; i++)
+                ((kword_t *)(unsigned long)cursor)[i] =
+                    manifest->km_kcore_source[i] & KINIT_WORD_MASK;
+        cursor += manifest->km_kcore_words;
 
-        cursor = resident_start;
-        for (i = 0; i < count; i++) {
-                error = mresr_decode(inputs[i].mr_payload,
-                    inputs[i].mr_payload_words, &desc);
-                if (error != 0)
-                        return error;
-                if (load_bases != 0)
-                        load_bases[i] = (kword_t)cursor;
-                cursor += (unsigned long)desc.mr_image_words +
-                    desc.mr_bss_words;
-        }
-        *resident_endp = (kword_t)cursor;
-        return 0;
-}
+        provider_count = 0U;
+        for (i = 0U; i < manifest->km_module_count; i++) {
+                struct kinit_module *mp;
 
-int
-mresb_decode(const kword_t *payload, unsigned int payload_words,
-    struct mresb_desc *dp)
-{
-        unsigned int kcore_words;
-        unsigned int bitmap_words;
-        unsigned long stored_words;
-
-        if (payload == 0 || dp == 0 || payload_words < MRESB_HEADER_WORDS)
-                return MRESR_EINVAL;
-        if ((payload[0] & MRESR_WORD_MASK) != MRESB_MAGIC)
-                return MRESR_EINVAL;
-        kcore_words = MRESR_LH(payload[1]);
-        if (kcore_words == 0U)
-                return MRESR_EINVAL;
-        if ((payload[2] & ~0177UL) != 0)
-                return MRESR_EINVAL;
-        bitmap_words = MRESR_BITMAP_WORDS(kcore_words);
-        stored_words = (unsigned long)MRESB_HEADER_WORDS + bitmap_words;
-        if (stored_words > payload_words || stored_words > MRESR_ADDR18_MASK)
-                return MRESR_EINVAL;
-        if (!mresr_bitmap_tail_ok(payload + MRESB_HEADER_WORDS,
-            kcore_words, bitmap_words))
-                return MRESR_EINVAL;
-        dp->mb_kcore_words = kcore_words;
-        dp->mb_bitmap_words = bitmap_words;
-        dp->mb_provider_link_base = (kword_t)MRESR_RH(payload[1]);
-        dp->mb_provider_id = (unsigned int)(payload[2] & 0177UL);
-        dp->mb_stored_words = (unsigned int)stored_words;
-        return 0;
-}
-
-int
-mresb_apply(const kword_t *payload, unsigned int payload_words,
-    kword_t *kcore, unsigned int kcore_words, unsigned int provider_id,
-    kword_t provider_base, unsigned int provider_words)
-{
-        struct mresb_desc desc;
-        const kword_t *bitmap;
-        unsigned int i;
-        unsigned long old_target;
-        unsigned long offset;
-        kword_t mask;
-        const kword_t *bp;
-        int error;
-
-        if (kcore == 0 || provider_base > MRESR_ADDR18_MASK)
-                return MRESR_EINVAL;
-        error = mresb_decode(payload, payload_words, &desc);
-        if (error != 0)
-                return error;
-        if (desc.mb_stored_words != payload_words ||
-            desc.mb_kcore_words != kcore_words ||
-            desc.mb_provider_id != provider_id)
-                return MRESR_EINVAL;
-        if (provider_words == 0U ||
-            provider_base + (unsigned long)provider_words - 1UL >
-            MRESR_ADDR18_MASK)
-                return MRESR_ERANGE;
-        bitmap = payload + MRESB_HEADER_WORDS;
-
-        bp = bitmap;
-        mask = MRESR_BITMAP_BIT(0);
-        for (i = 0U; i < kcore_words; i++) {
-                if ((*bp & mask) != 0) {
-                        old_target = MRESR_RH(kcore[i]);
-                        if (old_target < desc.mb_provider_link_base)
-                                return MRESR_ERANGE;
-                        offset = old_target - desc.mb_provider_link_base;
-                        if (offset >= provider_words)
-                                return MRESR_ERANGE;
-                }
-                mask >>= 1;
-                if (mask == 0) {
-                        mask = MRESR_BITMAP_BIT(0);
-                        bp++;
+                mp = &manifest->km_module[i];
+                mp->km_mres_base = cursor;
+                if (mp->km_mres_resident_words != 0U) {
+                        if (cursor + mp->km_mres_resident_words >
+                            manifest->km_kinit_begin)
+                                return -1;
+                        providers[provider_count].mp_id = mp->km_id;
+                        providers[provider_count].mp_base = cursor;
+                        providers[provider_count].mp_resident_words =
+                            mp->km_mres_resident_words;
+                        provider_count++;
+                        cursor += mp->km_mres_resident_words;
                 }
         }
 
-        bp = bitmap;
-        mask = MRESR_BITMAP_BIT(0);
-        for (i = 0U; i < kcore_words; i++) {
-                if ((*bp & mask) != 0) {
-                        offset = MRESR_RH(kcore[i]) -
-                            desc.mb_provider_link_base;
-                        kcore[i] = (kcore[i] & ~MRESR_ADDR18_MASK) |
-                            (kword_t)(provider_base + offset);
-                }
-                mask >>= 1;
-                if (mask == 0) {
-                        mask = MRESR_BITMAP_BIT(0);
-                        bp++;
-                }
+        for (i = 0U; i < manifest->km_module_count; i++) {
+                struct kinit_module *mp;
+
+                mp = &manifest->km_module[i];
+                if (mp->km_mres_resident_words == 0U)
+                        continue;
+                if (mresr_load(mp->km_mres_source,
+                    mp->km_mres_stored_words, mp->km_mres_base,
+                    (kword_t *)(unsigned long)mp->km_mres_base,
+                    mp->km_mres_resident_words) != 0)
+                        return -1;
         }
+
+        for (i = 0U; i < manifest->km_module_count; i++) {
+                struct kinit_module *mp;
+
+                mp = &manifest->km_module[i];
+                if (mp->km_mres_resident_words == 0U)
+                        continue;
+                if (mresr_bind(mp->km_mres_source,
+                    mp->km_mres_stored_words,
+                    (kword_t *)(unsigned long)mp->km_mres_base,
+                    mp->km_mres_resident_words, providers,
+                    provider_count) != 0)
+                        return -1;
+        }
+
         return 0;
 }
