@@ -29,6 +29,9 @@ kinit_enter(void)
         kinit_cty_init();
         kinit_diag_system();
 
+        /* V0.1 checkpoint: do not relocate until pre-relocation boot passes. */
+        kinit_halt();
+
         if (kinit_relocate() != 0) {
                 kinit_diag_failure();
                 kinit_halt();

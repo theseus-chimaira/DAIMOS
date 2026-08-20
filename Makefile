@@ -4,7 +4,7 @@ SUBDIRS = system
 BUILD_ROOT ?= $(CURDIR)/build
 TEST_REPORT ?= $(CURDIR)/test-report.txt
 
-.PHONY: build test kinit clean
+.PHONY: build test kinit kinit-test clean
 
 build test:
 	@for d in $(SUBDIRS); do \
@@ -13,6 +13,9 @@ build test:
 
 kinit:
 	$(MAKE) -C system kinit BUILD_ROOT='$(BUILD_ROOT)'
+
+kinit-test:
+	$(MAKE) -C system/stand/pdp6/test/kinit test BUILD='$(BUILD_ROOT)/system/stand/pdp6/test/kinit'
 
 clean:
 	rm -rf build test-report.txt test-report.txt.tmp test-report.txt.detail
