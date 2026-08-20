@@ -10,7 +10,8 @@ MKSTREAM ?= $(PDP10_PREFIX)/bin/mkstream
 MKDSK ?= $(PDP10_PREFIX)/bin/mkdsk
 SIMH_PDP6 ?= $(PDP10_PREFIX)/bin/pdp6
 PYTHON ?= python3
-TIMEOUT ?= 20
+STDBUF ?= stdbuf
+WATCH_OUTPUT := $(PROJECT_ROOT)/tests/simh/watch-output.sh
 
 KINIT_NAMES = kinit kinit_boot kinit_diag kinit_reloc kinit_io
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
@@ -83,20 +84,22 @@ $(SIMH_INI): simh-v1.ini.in $(STAGE1_TAPE) $(DISK_IMAGE)
 image: $(SIMH_INI)
 
 test: image
-	@set -e; \
-	rm -f $(LOG) $(SIMH_LOG); \
-	set +e; timeout $(TIMEOUT) $(SIMH_PDP6) $(SIMH_INI) < /dev/null > $(LOG) 2>&1; rc=$$?; set -e; \
-	if test $$rc -ne 0; then echo "KINIT pre-relocation test: simulator exit $$rc"; cat $(LOG); exit 1; fi; \
-	grep -F 'DAIMON V0.1' $(LOG) >/dev/null || { echo 'missing DAIMON V0.1'; cat $(LOG); exit 1; }; \
-	grep -F 'KCORE' $(LOG) >/dev/null || { echo 'missing KCORE diagnostic'; cat $(LOG); exit 1; }; \
-	grep -F 'KINIT' $(LOG) >/dev/null || { echo 'missing KINIT diagnostic'; cat $(LOG); exit 1; }; \
-	grep -F 'MACH' $(LOG) >/dev/null || { echo 'missing MACH diagnostic'; cat $(LOG); exit 1; }; \
-	grep -F '256 K CORE' $(LOG) >/dev/null || { echo 'missing 256 K CORE diagnostic'; cat $(LOG); exit 1; }; \
-	grep -F 'CONS' $(LOG) >/dev/null || { echo 'missing CONS diagnostic'; cat $(LOG); exit 1; }; \
-	grep -F 'CTY' $(LOG) >/dev/null || { echo 'missing CTY diagnostic'; cat $(LOG); exit 1; }; \
-	grep -F 'HALT instruction' $(LOG) >/dev/null || { echo 'missing pre-relocation HALT'; cat $(LOG); exit 1; }; \
-	if grep -F 'KINIT FINISHED' $(LOG) >/dev/null; then echo 'relocation checkpoint was passed unexpectedly'; cat $(LOG); exit 1; fi; \
-	echo 'KINIT pre-relocation test PASS'
+	@STDBUF='$(STDBUF)' $(WATCH_OUTPUT) -f 5 -t 2 \
+	    $(SIMH_PDP6) $(SIMH_INI) $(SIMH_LOG) $(LOG) \
+	    'DAIMON V0.1' \
+	    'KCORE' \
+	    'KINIT' \
+	    'MACH' \
+	    '256 K CORE' \
+	    'CONS' \
+	    'CTY' \
+	    'HALT instruction'
+	@if grep -F 'KINIT FINISHED' $(SIMH_LOG) >/dev/null; then \
+	    echo 'relocation checkpoint was passed unexpectedly'; \
+	    cat $(SIMH_LOG); \
+	    exit 1; \
+	fi
+	@echo 'KINIT pre-relocation test PASS'
 
 clean:
 	rm -rf $(BUILD)
