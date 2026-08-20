@@ -1,18 +1,17 @@
 .DEFAULT_GOAL := build
 
-SUBDIRS = stand
+BUILD_SUBDIRS = stand
 BUILD_ROOT ?= $(abspath ../build)
-TEST_REPORT ?= $(CURDIR)/test-report.txt
 
-.PHONY: build test kinit clean
+.PHONY: build kinit clean
 
-build test:
-	@for d in $(SUBDIRS); do \
-		$(MAKE) -C $$d $@ BUILD_ROOT='$(BUILD_ROOT)' TEST_REPORT='$(TEST_REPORT)' || exit $$?; \
+build:
+	@for d in $(BUILD_SUBDIRS); do \
+		$(MAKE) -C $$d build BUILD_ROOT='$(BUILD_ROOT)' || exit $$?; \
 	done
 
 kinit:
 	$(MAKE) -C kernel kinit BUILD_ROOT='$(BUILD_ROOT)'
 
 clean:
-	rm -rf $(BUILD_ROOT)/system test-report.txt test-report.txt.tmp test-report.txt.detail
+	rm -rf $(BUILD_ROOT)/system

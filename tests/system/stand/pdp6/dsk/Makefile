@@ -1,11 +1,11 @@
 PROJECT_ROOT := $(abspath ../../../../..)
-BUILD ?= $(PROJECT_ROOT)/build/system/stand/pdp6/test/dsk
+BUILD ?= $(PROJECT_ROOT)/build/tests/system/stand/pdp6/dsk
 
 include ../bin/stat.mk
 
 DSK_SETS ?= 1 2 3 4
 DSK_MODES ?= clean db0 db1 bad
-STAGE1 = ../../dsk/stage1.s
+STAGE1 = $(PROJECT_ROOT)/system/stand/pdp6/dsk/stage1.s
 STAGE1_BASE = 060
 STAGE1_DXR = $(BUILD)/stage1-dsk-v1.dxr
 STAGE1_TAPE = $(BUILD)/stage1-dsk-v1.pt

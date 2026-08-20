@@ -6,4 +6,4 @@
 
 __start:
 start:
-        .include "../../common/sixbit-output.inc"
+        .include "../../../../../system/stand/pdp6/common/sixbit-output.inc"

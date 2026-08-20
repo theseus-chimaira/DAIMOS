@@ -1,15 +1,15 @@
 PROJECT_ROOT := $(abspath ../../../../..)
-BUILD ?= $(PROJECT_ROOT)/build/system/stand/pdp6/test/mtc
+BUILD ?= $(PROJECT_ROOT)/build/tests/system/stand/pdp6/mtc
 
 include ../bin/stat.mk
 
 BOOT_KIND = MTC
 TEST_NAME = mtc-v4
-STAGE1 = ../../mtc/stage1.s
+STAGE1 = $(PROJECT_ROOT)/system/stand/pdp6/mtc/stage1.s
 STAGE1_ENTRY = 060000
 STAGE1_DXR = $(BUILD)/stage1-mtc-v4.dxr
 STAGE1_TAPE = $(BUILD)/stage1-mtc-v4.pt
-LOWCORE_SRC = ../ptr/lowcore-v1.s
+LOWCORE_SRC = $(PROJECT_ROOT)/tests/system/stand/pdp6/ptr/lowcore-v1.s
 LOWCORE_DXR = $(BUILD)/lowcore-v1.dxr
 LOWCORE_RIM = $(BUILD)/lowcore-v1.rim
 LOWCORE_STREAM = $(BUILD)/lowcore-v1.stream
@@ -21,7 +21,7 @@ SIMH_INI = $(BUILD)/simh-v4.ini
 SIMH_TEMPLATE = simh-v1.ini.in
 SIMH_SED_EXTRA =
 
-$(LOWCORE_DXR): $(LOWCORE_SRC) ../../common/sixbit-output.inc | $(BUILD)
+$(LOWCORE_DXR): $(LOWCORE_SRC) $(PROJECT_ROOT)/system/stand/pdp6/common/sixbit-output.inc | $(BUILD)
 	$(DAS) --base-kernel -o $@ $(LOWCORE_SRC)
 
 $(LOWCORE_RIM): $(LOWCORE_DXR)

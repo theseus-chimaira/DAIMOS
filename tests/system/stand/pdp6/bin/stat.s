@@ -49,7 +49,7 @@ put_crlf:
         pushj 017,putc
         popj 017,
 
-        .include "../../common/sixbit-output.inc"
+        .include "../../../../../system/stand/pdp6/common/sixbit-output.inc"
 
 putc:
         movem 01,ioword

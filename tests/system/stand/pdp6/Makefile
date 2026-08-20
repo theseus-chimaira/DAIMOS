@@ -1,7 +1,8 @@
-PROJECT_ROOT := $(abspath $(CURDIR)/../../../..)
-BUILD ?= $(PROJECT_ROOT)/build/system/stand/pdp6/test
-TEST_REPORT ?= $(CURDIR)/test-report.txt
-TEST_REPORT_DETAIL = $(abspath $(TEST_REPORT).detail)
+PROJECT_ROOT := $(abspath ../../../..)
+BUILD_ROOT ?= $(PROJECT_ROOT)/build
+BUILD ?= $(BUILD_ROOT)/tests/system/stand/pdp6
+TEST_REPORT ?= $(PROJECT_ROOT)/test-report.txt
+TEST_REPORT_DETAIL := $(abspath $(TEST_REPORT).detail)
 SUBDIRS = dsk ptr mtc dtc
 
 .DEFAULT_GOAL := build
@@ -10,7 +11,7 @@ SUBDIRS = dsk ptr mtc dtc
 
 build:
 	@for d in $(SUBDIRS); do \
-		$(MAKE) -C $$d BUILD=$(BUILD)/$$d build || exit $$?; \
+		$(MAKE) -C $$d BUILD='$(BUILD)/'$$d build || exit $$?; \
 	done
 
 test:
@@ -30,7 +31,7 @@ test:
 	  echo "====================================="; \
 	  echo "started:  $$started"; \
 	  echo "finished: `date`"; \
-	  echo "commit:   `git -C ../../../.. rev-parse --short HEAD 2>/dev/null || echo unknown`"; \
+	  echo "commit:   `git -C $(PROJECT_ROOT) rev-parse --short HEAD 2>/dev/null || echo unknown`"; \
 	  echo "elapsed:  $${elapsed}s"; \
 	  echo; \
 	  printf '%-6s %-4s %-18s %8s  %s\n' RESULT TYPE TEST TIME DETAILS; \
@@ -47,8 +48,8 @@ test:
 
 test_inner:
 	@for d in $(SUBDIRS); do \
-		$(MAKE) -C $$d BUILD=$(BUILD)/$$d test || exit $$?; \
+		$(MAKE) -C $$d BUILD='$(BUILD)/'$$d test || exit $$?; \
 	done
 
 clean:
-	rm -rf $(BUILD) test-report.txt test-report.txt.tmp test-report.txt.detail
+	rm -rf $(BUILD) $(TEST_REPORT) $(TEST_REPORT).tmp $(TEST_REPORT).detail

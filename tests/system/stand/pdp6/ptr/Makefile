@@ -1,11 +1,11 @@
 PROJECT_ROOT := $(abspath ../../../../..)
-BUILD ?= $(PROJECT_ROOT)/build/system/stand/pdp6/test/ptr
+BUILD ?= $(PROJECT_ROOT)/build/tests/system/stand/pdp6/ptr
 
 include ../bin/stat.mk
 
 BOOT_KIND = PTR
 TEST_NAME = ptr-two-tape-v1
-STAGE1 = ../../ptr/stage1.s
+STAGE1 = $(PROJECT_ROOT)/system/stand/pdp6/ptr/stage1.s
 STAGE1_ENTRY = 060000
 STAGE1_DXR = $(BUILD)/stage1-ptr-two-tape-v1.dxr
 STAGE1_TAPE = $(BUILD)/stage1-ptr-two-tape-v1.pt
@@ -45,7 +45,7 @@ $(STAGE1_DXR): $(STAGE1) | $(BUILD)
 $(STAGE1_TAPE): $(STAGE1_DXR)
 	$(DXRCONVERT) --pdp6-readin -b $(STAGE1_ENTRY) $< $@
 
-$(LOWCORE_DXR): $(LOWCORE_SRC) ../../common/sixbit-output.inc | $(BUILD)
+$(LOWCORE_DXR): $(LOWCORE_SRC) $(PROJECT_ROOT)/system/stand/pdp6/common/sixbit-output.inc | $(BUILD)
 	$(DAS) --base-kernel -o $@ $<
 
 $(LOWCORE_RIM): $(LOWCORE_DXR)

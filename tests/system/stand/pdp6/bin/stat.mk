@@ -1,8 +1,7 @@
 .DELETE_ON_ERROR:
 
-STAND_ROOT := $(abspath $(CURDIR)/../..)
-PROJECT_ROOT ?= $(abspath $(STAND_ROOT)/../../..)
-TEST_ROOT := $(STAND_ROOT)/test
+PROJECT_ROOT ?= $(abspath $(CURDIR)/../../../../..)
+TEST_ROOT := $(PROJECT_ROOT)/tests/system/stand/pdp6
 BIN_DIR := $(TEST_ROOT)/bin
 
 BUILD ?= build
@@ -24,7 +23,7 @@ TIMEOUT ?= 120
 
 STAT_INIT_WORDS ?= 01000
 STAT_INIT_BASE ?= 040000
-STAT_BUILD ?= $(PROJECT_ROOT)/build/system/stand/pdp6/test/bin
+STAT_BUILD ?= $(abspath $(BUILD)/../bin)
 STAT_DXR = $(STAT_BUILD)/stat.dxr
 STAT_RIM = $(STAT_BUILD)/stat.rim
 STAT_WORDS = $(STAT_BUILD)/stat.words

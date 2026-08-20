@@ -1,5 +1,5 @@
-PROJECT_ROOT := $(abspath ../../../../..)
-BUILD ?= $(PROJECT_ROOT)/build/system/stand/pdp6/test/kinit
+PROJECT_ROOT := $(abspath ../../..)
+BUILD ?= $(PROJECT_ROOT)/build/tests/system/kernel
 KINIT_BUILD := $(BUILD)/kinit-asm
 PDP10_PREFIX ?= $(HOME)/cross
 
@@ -62,7 +62,9 @@ $(IMAGE_RAW): $(IMAGE_RIM) $(IMAGE_MAP)
 $(IMAGE_WORDS): $(IMAGE_RAW) $(IMAGE_MAP) mkimage-v1.py
 	$(PYTHON) mkimage-v1.py --map $(IMAGE_MAP) --input $(IMAGE_RAW) --output $@
 
-$(STAGE1_DXR): ../../dsk/stage1.s | $(BUILD)
+STAGE1_SRC := $(PROJECT_ROOT)/system/stand/pdp6/dsk/stage1.s
+
+$(STAGE1_DXR): $(STAGE1_SRC) | $(BUILD)
 	$(DAS) --base-kernel -o $@ $<
 
 $(STAGE1_TAPE): $(STAGE1_DXR)
