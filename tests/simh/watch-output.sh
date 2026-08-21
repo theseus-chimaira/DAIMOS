@@ -81,7 +81,7 @@ wait_for_phase()
 
         while test "$seconds" -gt 0; do
                 if test -f "$stdout_log" && grep -F "$pattern" "$stdout_log" >/dev/null 2>&1; then
-                        printf '%-30s OK\n' "$pattern"
+                        printf '%s\n' "$pattern"
                         return 0
                 fi
 
@@ -94,7 +94,7 @@ wait_for_phase()
         done
 
         if test -f "$stdout_log" && grep -F "$pattern" "$stdout_log" >/dev/null 2>&1; then
-                printf '%-30s OK\n' "$pattern"
+                printf '%s\n' "$pattern"
                 return 0
         fi
 
