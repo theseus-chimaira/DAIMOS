@@ -50,8 +50,17 @@ kinit_memory_kwords(void)
         return found;
 }
 
-static kword_t
-kinit_mem_word(unsigned int value)
+static void
+kinit_put_blank_words(unsigned int words)
+{
+        while (words != 0U) {
+                kinit_put6(PDP10_SIXBIT6(' ',' ',' ',' ',' ',' '));
+                --words;
+        }
+}
+
+static void
+kinit_put_memory(unsigned int value)
 {
         unsigned int h;
         unsigned int t;
@@ -60,10 +69,13 @@ kinit_mem_word(unsigned int value)
         h = (value / 100U) % 10U;
         t = (value / 10U) % 10U;
         o = value % 10U;
-        return ((kword_t)(h ? h + 020U : 0U) << 30) |
-            ((kword_t)((h || t) ? t + 020U : 0U) << 24) |
-            ((kword_t)(o + 020U) << 18) |
-            PDP10_SIXBIT6(' ',' ',' ',' ','K',' ');
+
+        if (h != 0U) {
+                kinit_put6(PDP10_SIXBIT6(' ',' ',' ',' ',' ','0' + h));
+        } else {
+                kinit_put6(PDP10_SIXBIT6(' ',' ',' ',' ',' ',' '));
+        }
+        kinit_put6(PDP10_SIXBIT6('0' + t, '0' + o, ' ','K',' ',' '));
 }
 
 void
@@ -71,9 +83,10 @@ kinit_diag_banner(void)
 {
         KINIT_TRACE(PDP10_SIXBIT6('K','B','A','N','N','R'));
         kinit_put6(PDP10_SIXBIT6('D','A','I','M','O','N'));
-        kinit_put6(PDP10_SIXBIT6(' ','V',
+        kinit_put_blank_words(5U);
+        kinit_put6(PDP10_SIXBIT6('V',
             '0' + DAIMON_VERSION_MAJOR, '.',
-            '0' + DAIMON_VERSION_MINOR, ' '));
+            '0' + DAIMON_VERSION_MINOR, ' ', ' '));
         kinit_newline();
 }
 
@@ -82,10 +95,12 @@ kinit_diag_system(void)
 {
         KINIT_TRACE(PDP10_SIXBIT6('K','D','I','A','G','S'));
         kinit_put6(PDP10_SIXBIT6('M','A','C','H',' ',' '));
+        kinit_put_blank_words(5U);
         kinit_put6(KINIT_MACHINE_NAME);
         kinit_newline();
         kinit_put6(PDP10_SIXBIT6('M','E','M',' ',' ',' '));
-        kinit_put6(kinit_mem_word(kinit_memory_kwords()));
+        kinit_put_blank_words(4U);
+        kinit_put_memory(kinit_memory_kwords());
         kinit_newline();
 }
 

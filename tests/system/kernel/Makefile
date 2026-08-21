@@ -141,9 +141,9 @@ image: $(SIMH_INI)
 test: image
 	@STDBUF='$(STDBUF)' $(WATCH_OUTPUT) -f 6 -t 2 \
 	    $(SIMH_PDP6) $(SIMH_INI) $(SIMH_LOG) $(LOG) \
-	    'DAIMON V0.1' \
-	    'MACH  PDP6' \
-	    'MEM   256 K' \
+	    'DAIMON                              V0.1' \
+	    'MACH                                PDP6' \
+	    'MEM                                256 K' \
 	    'MINIT1' \
 	    'MINIT2' \
 	    'KINIT FINISHED' \
