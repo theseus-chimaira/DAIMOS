@@ -11,6 +11,7 @@ MKSTREAM ?= $(PDP10_PREFIX)/bin/mkstream
 MKDSK ?= $(PDP10_PREFIX)/bin/mkdsk
 SIMH_PDP6 ?= $(PDP10_PREFIX)/bin/pdp6
 PYTHON ?= python3
+PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
 STDBUF ?= stdbuf
 WATCH_OUTPUT := $(PROJECT_ROOT)/tests/simh/watch-output.sh
 
@@ -27,6 +28,8 @@ KCORE_STREAM = $(BUILD)/kcore-v1.stream
 KCORE_EMBED_ASM = $(BUILD)/kcore-embed-v1.s
 KCORE_EMBED_OBJ = $(BUILD)/kcore-embed-v1.dobj
 PREFIX_OBJ = $(BUILD)/image-v1.dobj
+MINIT_ASM = $(BUILD)/minit-v1.s
+MINIT_OBJ = $(BUILD)/minit-v1.dobj
 END_OBJ = $(BUILD)/image-end-v1.dobj
 IMAGE_DXR = $(BUILD)/kinit-pre-reloc-v1.dxr
 IMAGE_MAP = $(BUILD)/kinit-pre-reloc-v1.map
@@ -111,8 +114,14 @@ $(PREFIX_OBJ): image-v1.s | $(BUILD)
 $(END_OBJ): image-end-v1.s | $(BUILD)
 	$(DAS) -c -o $@ $<
 
-$(IMAGE_DXR): $(PREFIX_OBJ) $(KCORE_EMBED_OBJ) $(KINIT_OBJS) $(END_OBJ)
-	$(DLINK) -o $@ -M $(IMAGE_MAP) $(PREFIX_OBJ) $(KCORE_EMBED_OBJ) $(KINIT_OBJS) $(END_OBJ)
+$(MINIT_ASM): minit-v1.c | $(BUILD)
+	$(PDP10_GCC) -std=c99 -Os -S $< -o $@
+
+$(MINIT_OBJ): $(MINIT_ASM)
+	$(DAS) -c -o $@ $<
+
+$(IMAGE_DXR): $(PREFIX_OBJ) $(MINIT_OBJ) $(KCORE_EMBED_OBJ) $(KINIT_OBJS) $(END_OBJ)
+	$(DLINK) -o $@ -M $(IMAGE_MAP) $(PREFIX_OBJ) $(MINIT_OBJ) $(KCORE_EMBED_OBJ) $(KINIT_OBJS) $(END_OBJ)
 
 $(IMAGE_RIM): $(IMAGE_DXR)
 	$(DXRCONVERT) --simh -b 040000 $< $@
@@ -154,14 +163,11 @@ test: image
 	    'MACH' \
 	    '256 K CORE' \
 	    'CONS' \
-	    'CTY' \
+	    'CTY0' \
+	    'MINIT TEST' \
+	    'KINIT FINISHED' \
 	    'HALT instruction'
-	@if grep -F 'KINIT FINISHED' $(SIMH_LOG) >/dev/null; then \
-	    echo 'relocation checkpoint was passed unexpectedly'; \
-	    cat $(SIMH_LOG); \
-	    exit 1; \
-	fi
-	@echo 'KINIT pre-relocation test PASS'
+	@echo 'KINIT MINIT checkpoint test PASS'
 
 clean:
 	rm -rf $(BUILD)

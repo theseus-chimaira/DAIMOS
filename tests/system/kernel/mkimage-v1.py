@@ -47,6 +47,7 @@ def main():
     kcore = require(symbols, "test_kcore")
     kcore_end = require(symbols, "test_kcore_end")
     entry = require(symbols, "kinit_enter")
+    minit = require(symbols, "test_minit_v1")
 
     if not (0 < code_start < image_end <= HALF_MASK):
         raise SystemExit("invalid KINIT image bounds")
@@ -54,6 +55,8 @@ def main():
         raise SystemExit("invalid test KCORE range")
     if not (0 <= entry < image_end):
         raise SystemExit("invalid KINIT entry")
+    if not (0 <= minit < image_end):
+        raise SystemExit("invalid test MINIT entry")
 
     words = [int(line, 8) for line in
              args.input.read_text(encoding="ascii").splitlines() if line]
@@ -75,6 +78,8 @@ def main():
     words[1] = pair18(image_end, entry)
     words[4] = pair18(IMAGE_BASE + kcore, kcore_end - kcore)
     words[5] = pair18(IMAGE_BASE + code_start, image_end - code_start)
+    words[6] = pair18(IMAGE_BASE + minit, 0)
+    words[7] = pair18(1, 0)
     words[2 + kcore:2 + kcore_end] = kcore_words
 
     args.output.write_text(

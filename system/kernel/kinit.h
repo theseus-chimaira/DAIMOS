@@ -1,6 +1,8 @@
 #ifndef DAIMON_KINIT_H
 #define DAIMON_KINIT_H
 
+#include <pdp10-sixbit.h>
+
 /* PDP-6/PDP-10 C uses one 36-bit word for unsigned long. */
 typedef unsigned long kword_t;
 typedef void (*kinit_minit_fn)(void);
@@ -42,7 +44,7 @@ typedef void (*kinit_minit_fn)(void);
  *        minit_entry,,mres_source
  *        module_id,,mres_stored_words
  */
-#define KINIT_MANIFEST_MAGIC             KINIT_S6_W6('K','M','A','N','0','1')
+#define KINIT_MANIFEST_MAGIC             SIXBIT("KMAN01")
 #define KINIT_MANIFEST_HEADER_WORDS      4U
 #define KINIT_MANIFEST_ENTRY_WORDS       2U
 #define KINIT_MANIFEST_WORD_MAGIC        0U
@@ -71,8 +73,8 @@ struct kinit_manifest {
 };
 
 /* MREL1/MREL2 relocation format used by stored MRES payloads. */
-#define MRESR_MAGIC              KINIT_S6_W6('M','R','E','L','1',' ')
-#define MRESR_MAGIC2             KINIT_S6_W6('M','R','E','L','2',' ')
+#define MRESR_MAGIC              SIXBIT("MREL1 ")
+#define MRESR_MAGIC2             SIXBIT("MREL2 ")
 #define MRESR_HEADER_WORDS       2U
 #define MRESR2_HEADER_WORDS      3U
 #define MRESR_ADDR18_MASK        0777777UL

@@ -136,12 +136,12 @@ kd_memory_line(unsigned int kwords)
 {
         unsigned int value_chars;
 
-        kd_sixbit_word(KINIT_S6_W6('M','E','M',' ',' ',' '), 3U);
+        kd_sixbit_word(SIXBIT("MEM   "), 3U);
         value_chars = kd_decimal_width(kwords) + 7U;
         kd_pad(3U, value_chars);
         kd_decimal(kwords);
         kd_putc(' ');
-        kd_sixbit_word(KINIT_S6_W6('K',' ','C','O','R','E'), 6U);
+        kd_sixbit_word(SIXBIT("K CORE"), 6U);
         kd_nl();
 }
 
@@ -193,9 +193,9 @@ kinit_diag_banner(void)
         version = KINIT_S6_W6(' ', 'V',
             '0' + DAIMON_VERSION_MAJOR, '.',
             '0' + DAIMON_VERSION_MINOR, ' ');
-        kinit_poll_put6(KINIT_S6_W6('D','A','I','M','O','N'));
+        kinit_poll_put6(SIXBIT("DAIMON"));
         kinit_poll_put6(version);
-        kinit_poll_put6(KINIT_S6_W6(' ',' ',' ',' ',' ',' '));
+        kinit_poll_put6(SIXBIT("      "));
 }
 
 void
@@ -206,38 +206,38 @@ kinit_diag_system(void)
         mp = kinit_manifest_get();
         kd_nl();
         kd_nl();
-        kd_range_line(KINIT_S6_W6('K','C','O','R','E',' '), 5U,
+        kd_range_line(SIXBIT("KCORE "), 5U,
             KINIT_KCORE_BASE, mp->km_kcore_words);
-        kd_range_line(KINIT_S6_W6('K','I','N','I','T',' '), 5U,
+        kd_range_line(SIXBIT("KINIT "), 5U,
             mp->km_kinit_begin, mp->km_kinit_words);
-        kd_text_line(KINIT_S6_W6('M','A','C','H',' ',' '), 4U,
-            KINIT_S6_W6('P','D','P','-','6',' '), 5U);
+        kd_text_line(SIXBIT("MACH  "), 4U,
+            SIXBIT("PDP-6 "), 5U);
         kd_memory_line(kd_memory_kwords());
-        kd_text_line(KINIT_S6_W6('C','O','N','S',' ',' '), 4U,
-            KINIT_S6_W6('C','T','Y','0',' ',' '), 4U);
-        kd_text_line(KINIT_S6_W6('C','T','Y',' ',' ',' '), 3U,
-            KINIT_S6_W6('O','K',' ',' ',' ',' '), 2U);
+        kd_text_line(SIXBIT("CONS  "), 4U,
+            SIXBIT("CTY0  "), 4U);
+        kd_text_line(SIXBIT("CTY0  "), 4U,
+            SIXBIT("OK    "), 2U);
         kd_nl();
 }
 
 void
 kinit_diag_failure_poll(void)
 {
-        kinit_poll_put6(KINIT_S6_W6('?','K','I','N','I','T'));
+        kinit_poll_put6(SIXBIT("?KINIT"));
 }
 
 void
 kinit_diag_failure(void)
 {
-        kd_sixbit_word(KINIT_S6_W6('?','K','I','N','I','T'), 6U);
+        kd_sixbit_word(SIXBIT("?KINIT"), 6U);
         kd_nl();
 }
 
 void
 kinit_diag_finished(void)
 {
-        kd_sixbit_word(KINIT_S6_W6('K','I','N','I','T',' '), 6U);
-        kd_sixbit_word(KINIT_S6_W6('F','I','N','I','S','H'), 6U);
-        kd_sixbit_word(KINIT_S6_W6('E','D',' ',' ',' ',' '), 2U);
+        kd_sixbit_word(SIXBIT("KINIT "), 6U);
+        kd_sixbit_word(SIXBIT("FINISH"), 6U);
+        kd_sixbit_word(SIXBIT("ED    "), 2U);
         kd_nl();
 }

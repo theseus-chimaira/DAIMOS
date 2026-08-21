@@ -53,9 +53,9 @@ kinit_enter(void)
 
         kinit_diag_system();
 
-        /* V0.1 checkpoint: MINITs and final KCORE entry come next. */
-        kinit_halt();
-
+        /* MINIT code remains in the opaque boot image and returns here. */
         kinit_run_minits();
+
+        /* Final resident KCORE handoff remains the next checkpoint. */
         kcore_entry();
 }

@@ -9,7 +9,9 @@
 
 __kinit_image_start:
         .word 0535541562021        ; SIXBIT /KMAN01/
-        .word 000000000004        ; 0 modules,,4 manifest words
+        .word 000001000006        ; 1 module,,6 manifest words
         .word 000000000000        ; patched: KCORE source,,size
         .word 000000000000        ; patched: KINIT begin,,size
+        .word 000000000000        ; patched: MINIT entry,,MRES source
+        .word 000001000000        ; module 1,,no MRES
 
