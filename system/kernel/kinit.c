@@ -1,32 +1,10 @@
 #include "kinit.h"
 
-typedef int (*kinit_kcore_init_fn)(void);
-typedef int (*kinit_kcore_putchar_fn)(int c);
-
 static void
 kcore_entry(void)
 {
-        /* Final handoff remains disabled during the V0.1 bring-up. */
         kinit_diag_finished();
         kinit_halt();
-}
-
-int
-kinit_cty_init(void)
-{
-        kinit_kcore_init_fn initfn;
-
-        initfn = (kinit_kcore_init_fn)(unsigned long)KINIT_KCORE_EARLY_INIT;
-        return (*initfn)();
-}
-
-int
-kinit_cty_putchar(int c)
-{
-        kinit_kcore_putchar_fn putfn;
-
-        putfn = (kinit_kcore_putchar_fn)(unsigned long)KINIT_KCORE_PUTCHAR;
-        return (*putfn)(c);
 }
 
 void
@@ -41,17 +19,14 @@ kinit_enter(void)
         }
 
         /*
-         * Relocate resident KCORE first.  The copy overwrites the temporary
-         * Stage1 SIXBIT helper at 060, so all later output comes from KCORE.
+         * KCORE and every MRES are relocated and bound before any device
+         * driver is initialized.  The fixed bootstrap SIXBIT helper at
+         * 077760 remains available throughout this phase.
          */
-        if (kinit_relocate() != 0)
+        if (kinit_relocate() != 0) {
+                kinit_diag_failure_poll();
                 kinit_halt();
-
-        /* Borrow KCORE's real PI/CTY implementation, then return to KINIT. */
-        if (kinit_cty_init() != 0)
-                kinit_halt();
-
-        kinit_diag_system();
+        }
 
         /* MINIT code remains in the opaque boot image and returns here. */
         kinit_run_minits();

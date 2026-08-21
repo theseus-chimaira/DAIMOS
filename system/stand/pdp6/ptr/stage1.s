@@ -5,16 +5,15 @@
 ;
 ; Tape 1:
 ;       word 0      payload word count
-;       words 1-16  low-core helper block -> 000060..000077
-;       remainder   first opaque payload   -> 040000...
+;       words 1..   first opaque payload -> 040000...
 ;
 ; After Tape 1 Stage1 prints "CHANGE TAPE" through the SIXBIT routine just
-; installed at 000060, resets the reader, and waits for Tape 2.  Tape 2 is
+; already installed by Stage1, resets the reader, and waits for Tape 2.  Tape 2 is
 ; loaded immediately after the Tape 1 high-memory payload:
 ;
 ; Tape 2:
 ;       word 0      payload word count
-;       remainder   second opaque payload  -> 040000 + tape1_count - 16
+;       remainder   second opaque payload  -> 040000 + tape1_count
 ;
 ; When Tape 2 is complete Stage1 enters the first payload at 040000.  Image
 ; contents are deliberately opaque to Stage1; there is no image validation.
@@ -31,6 +30,7 @@ start:
         setom 000040
         setom 000041
         movei 017,050000
+        pushj 017,install_bootstrap_sixbit
         movei 01,0020
         cono 0104,0(01)
 
@@ -38,23 +38,16 @@ start:
         pushj 017,read_word
         movem 03,tape1_count
 
-; Install the fixed 16-word low-core helper at 000060.
-        movei 01,000060
-        movei 02,000020
-        pushj 017,read_words
-
-; Load the rest of Tape 1 contiguously at 040000.
+; Load Tape 1 contiguously at 040000.
         move 02,tape1_count
-        subi 02,000020
         movei 01,040000
         pushj 017,read_words
         movem 01,tape2_base
 
-; The helper at 000060 is now available for operator messages.
         move 01,msg_change0
-        pushj 017,000060
+        pushj 017,077760
         move 01,msg_change1
-        pushj 017,000060
+        pushj 017,077760
 
 ; Terminate the operator message with CR/LF.  The SIXBIT helper waits for
 ; the final character, so CR may be written immediately; wait only between
@@ -113,3 +106,4 @@ ioword:      .word 0
 tmp:         .word 0
 msg_change0: .word 0435041564745
 msg_change1: .word 0006441604500
+        .include "../common/bootstrap-sixbit-077760.inc"

@@ -10,12 +10,6 @@ STAGE1_ENTRY = 060000
 STAGE1_DXR = $(BUILD)/stage1-ptr-two-tape-v1.dxr
 STAGE1_TAPE = $(BUILD)/stage1-ptr-two-tape-v1.pt
 
-LOWCORE_SRC = lowcore-v1.s
-LOWCORE_DXR = $(BUILD)/lowcore-v1.dxr
-LOWCORE_RIM = $(BUILD)/lowcore-v1.rim
-LOWCORE_STREAM = $(BUILD)/lowcore-v1.stream
-LOWCORE_WORDS = $(BUILD)/lowcore-v1.words
-
 PAYLOAD1_SRC = payload1-v1.s
 PAYLOAD1_DXR = $(BUILD)/payload1-v1.dxr
 PAYLOAD1_RIM = $(BUILD)/payload1-v1.rim
@@ -45,19 +39,6 @@ $(STAGE1_DXR): $(STAGE1) | $(BUILD)
 $(STAGE1_TAPE): $(STAGE1_DXR)
 	$(DXRCONVERT) --pdp6-readin -b $(STAGE1_ENTRY) $< $@
 
-$(LOWCORE_DXR): $(LOWCORE_SRC) $(PROJECT_ROOT)/system/stand/pdp6/common/sixbit-output.inc | $(BUILD)
-	$(DAS) --base-kernel -o $@ $<
-
-$(LOWCORE_RIM): $(LOWCORE_DXR)
-	$(DXRCONVERT) --simh -b 060 $< $@
-
-$(LOWCORE_STREAM): $(LOWCORE_RIM)
-	$(MKSTREAM) -i $< -o $@ -b 060 -w 020
-
-$(LOWCORE_WORDS): $(LOWCORE_STREAM)
-	tail -n +3 $< > $@
-	test `wc -l < $@` -eq 16
-
 $(PAYLOAD1_DXR): $(PAYLOAD1_SRC) | $(BUILD)
 	$(DAS) --base-kernel -o $@ $<
 
@@ -84,9 +65,9 @@ $(PAYLOAD2_WORDS): $(PAYLOAD2_STREAM)
 	tail -n +3 $< > $@
 	test `wc -l < $@` -eq 15
 
-$(TAPE1_WORDS): $(LOWCORE_WORDS) $(PAYLOAD1_WORDS) | $(BUILD)
-	{ printf '%s\n' 000000000034; cat $(LOWCORE_WORDS) $(PAYLOAD1_WORDS); } > $@
-	test `wc -l < $@` -eq 29
+$(TAPE1_WORDS): $(PAYLOAD1_WORDS) | $(BUILD)
+	{ printf '%s\n' 000000000014; cat $(PAYLOAD1_WORDS); } > $@
+	test `wc -l < $@` -eq 13
 
 $(TAPE2_WORDS): $(PAYLOAD2_WORDS) | $(BUILD)
 	{ printf '%s\n' 000000000017; cat $(PAYLOAD2_WORDS); } > $@

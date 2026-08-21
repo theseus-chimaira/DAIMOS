@@ -1,8 +1,9 @@
-; kinit_io.s -- KINIT-only polling bootstrap helpers.
+; kinit_io.s -- KINIT-only bootstrap helpers.
 ;
-; Stage1 supplies the temporary packed-SIXBIT helper at 060.  KINIT uses it
-; only for the initial banner.  kinit_relocate() then overwrites 060 with
-; KCORE, whose resident PI/CTY implementation owns all subsequent console I/O.
+; Every Stage1 installs the exact 16-word polling SIXBIT helper at the fixed
+; top of the minimum supported 32K memory: 077760..077777.  That area remains
+; valid for the entire disposable KINIT lifetime, so KCORE may occupy 060 and
+; MRES may follow it gaplessly before any device driver is initialized.
 
         .text
         .globl kinit_poll_put6
@@ -11,7 +12,7 @@
 ; void kinit_poll_put6(kword_t word)
 ; AC1 already contains the packed SIXBIT word.
 kinit_poll_put6:
-        pushj 017,000060
+        pushj 017,077760
         popj 017,
 
 kinit_halt:

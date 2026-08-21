@@ -1,8 +1,6 @@
 #ifndef DAIMON_KINIT_H
 #define DAIMON_KINIT_H
 
-#include <pdp10-sixbit.h>
-
 /* PDP-6/PDP-10 C uses one 36-bit word for unsigned long. */
 typedef unsigned long kword_t;
 typedef void (*kinit_minit_fn)(void);
@@ -10,9 +8,9 @@ typedef void (*kinit_minit_fn)(void);
 #define KINIT_WORD_MASK          0777777777777UL
 #define KINIT_HALF_MASK          0777777UL
 #define KINIT_KCORE_BASE         000060UL
-#define KINIT_KCORE_ENTRY         (KINIT_KCORE_BASE + 0UL)
-#define KINIT_KCORE_EARLY_INIT    (KINIT_KCORE_BASE + 1UL)
-#define KINIT_KCORE_PUTCHAR       (KINIT_KCORE_BASE + 2UL)
+#define KINIT_KCORE_ENTRY        (KINIT_KCORE_BASE + 0UL)
+#define KINIT_BOOT_SIXBIT_BASE   077760UL
+#define KINIT_BOOT_SIXBIT_WORDS  000020U
 #define KINIT_BOOT_WORD0         000040UL
 #define KINIT_BOOT_WORD1         000041UL
 #define KINIT_MAX_MODULES        32U
@@ -44,7 +42,7 @@ typedef void (*kinit_minit_fn)(void);
  *        minit_entry,,mres_source
  *        module_id,,mres_stored_words
  */
-#define KINIT_MANIFEST_MAGIC             SIXBIT("KMAN01")
+#define KINIT_MANIFEST_MAGIC             KINIT_S6_W6('K','M','A','N','0','1')
 #define KINIT_MANIFEST_HEADER_WORDS      4U
 #define KINIT_MANIFEST_ENTRY_WORDS       2U
 #define KINIT_MANIFEST_WORD_MAGIC        0U
@@ -73,8 +71,8 @@ struct kinit_manifest {
 };
 
 /* MREL1/MREL2 relocation format used by stored MRES payloads. */
-#define MRESR_MAGIC              SIXBIT("MREL1 ")
-#define MRESR_MAGIC2             SIXBIT("MREL2 ")
+#define MRESR_MAGIC              KINIT_S6_W6('M','R','E','L','1',' ')
+#define MRESR_MAGIC2             KINIT_S6_W6('M','R','E','L','2',' ')
 #define MRESR_HEADER_WORDS       2U
 #define MRESR2_HEADER_WORDS      3U
 #define MRESR_ADDR18_MASK        0777777UL
@@ -112,13 +110,9 @@ int kinit_relocate(void);
 void kinit_run_minits(void);
 
 void kinit_diag_banner(void);
-void kinit_diag_system(void);
 void kinit_diag_failure_poll(void);
-void kinit_diag_failure(void);
 void kinit_diag_finished(void);
 
-int kinit_cty_init(void);
-int kinit_cty_putchar(int c);
 void kinit_poll_put6(kword_t word);
 void kinit_halt(void);
 

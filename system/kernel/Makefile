@@ -19,11 +19,9 @@ KINIT_CPPFLAGS = \
 	-DDAIMON_VERSION_MINOR=$(DAIMON_VERSION_MINOR)
 
 KCORE_SRCS = \
-	kcore.c \
-	kcore_pi.c \
-	kcore_cty.c
+	kcore.c
 KCORE_C_ASM = $(KCORE_SRCS:%.c=$(BUILD)/%.s)
-KCORE_ASM = $(KCORE_C_ASM) $(BUILD)/kcore_entry.s $(BUILD)/kcore_io.s $(BUILD)/kcore_end.s
+KCORE_ASM = $(KCORE_C_ASM) $(BUILD)/kcore_entry.s $(BUILD)/kcore_end.s
 
 .DEFAULT_GOAL := kinit
 
@@ -44,11 +42,11 @@ $(BUILD)/kinit_io.s: kinit_io.s
 	mkdir -p $(BUILD)
 	cp $< $@
 
-$(BUILD)/kcore_%.s: kcore_%.c kcore.h kcore_pi.h kcore_cty.h kcore_io.h
+$(BUILD)/kcore_%.s: kcore_%.c kcore.h
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os -I. -S $< -o $@
 
-$(BUILD)/kcore.s: kcore.c kcore.h kcore_pi.h kcore_cty.h
+$(BUILD)/kcore.s: kcore.c kcore.h
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os -I. -S $< -o $@
 

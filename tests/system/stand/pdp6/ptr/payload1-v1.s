@@ -1,6 +1,6 @@
 ; payload1-v1.s -- Tape 1 test payload at 040000.
 ;
-; Prints KERNEL through the low-core helper, emits CR/LF, and jumps directly
+; Prints KERNEL through the bootstrap helper, emits CR/LF, and jumps directly
 ; to the first word of the Tape 2 payload at 040014.
 
         .text
@@ -11,7 +11,7 @@ __start:
 start:
         movei 017,050000
         move 01,msg_kernel
-        pushj 017,000060
+        pushj 017,077760
         movei 03,015
         datao 0120,03
 kernel_cr_wait:

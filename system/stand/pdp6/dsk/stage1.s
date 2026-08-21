@@ -10,12 +10,11 @@
 ; and jumps to its relative entry point.
 
         .text
-        .include "../common/sixbit-output.inc"
-
         .globl __start
         .entry __start
 __start:
         movei 017,073040
+        pushj 017,install_bootstrap_sixbit
         setom 000040
         setom 000041
         setzm any_read_ok
@@ -364,7 +363,7 @@ fail_read:
 fail_common:
         move 05,01
         move 01,msg_nodsk-1(05)
-        pushj 017,put_sixbit_word
+        pushj 017,077760
         move 01,05
 halt_stage1:
         movem 01,stage1_last_error
@@ -377,6 +376,7 @@ msg_nodsk:    .word 0375657446353
 msg_noset:    .word 0375657634564
 msg_khead:    .word 0375350454144
 msg_read:     .word 0376245414400
+        .include "../common/bootstrap-sixbit-077760.inc"
         .bss
 any_read_ok: .block 01
 current_unit: .block 01

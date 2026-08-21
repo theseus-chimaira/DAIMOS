@@ -18,7 +18,7 @@ WATCH_OUTPUT := $(PROJECT_ROOT)/tests/simh/watch-output.sh
 KINIT_NAMES = kinit kinit_boot kinit_diag kinit_reloc kinit_io
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
-KCORE_NAMES = kcore_entry kcore kcore_pi kcore_cty kcore_io kcore_end
+KCORE_NAMES = kcore_entry kcore kcore_end
 KCORE_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_NAMES)))
 KCORE_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_NAMES)))
 KCORE_DXR = $(BUILD)/kcore-v1.dxr
@@ -70,12 +70,6 @@ $(BUILD)/kinit_io.dobj: $(KINIT_BUILD)/kinit_io.s | $(BUILD)
 $(BUILD)/kcore_entry.dobj: $(KCORE_BUILD)/kcore_entry.s | $(BUILD)
 	$(DAS) -c -o $@ $<
 $(BUILD)/kcore.dobj: $(KCORE_BUILD)/kcore.s | $(BUILD)
-	$(DAS) -c -o $@ $<
-$(BUILD)/kcore_pi.dobj: $(KCORE_BUILD)/kcore_pi.s | $(BUILD)
-	$(DAS) -c -o $@ $<
-$(BUILD)/kcore_cty.dobj: $(KCORE_BUILD)/kcore_cty.s | $(BUILD)
-	$(DAS) -c -o $@ $<
-$(BUILD)/kcore_io.dobj: $(KCORE_BUILD)/kcore_io.s | $(BUILD)
 	$(DAS) -c -o $@ $<
 $(BUILD)/kcore_end.dobj: $(KCORE_BUILD)/kcore_end.s | $(BUILD)
 	$(DAS) -c -o $@ $<
@@ -158,12 +152,6 @@ test: image
 	@STDBUF='$(STDBUF)' $(WATCH_OUTPUT) -f 5 -t 2 \
 	    $(SIMH_PDP6) $(SIMH_INI) $(SIMH_LOG) $(LOG) \
 	    'DAIMON V0.1' \
-	    'KCORE' \
-	    'KINIT' \
-	    'MACH' \
-	    '256 K CORE' \
-	    'CONS' \
-	    'CTY0' \
 	    'MINIT TEST' \
 	    'KINIT FINISHED' \
 	    'HALT instruction'

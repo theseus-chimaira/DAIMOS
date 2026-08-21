@@ -3,9 +3,8 @@
 ; Stage0 loads this loader from RIM paper tape.  Stage1 starts DECtape unit 0
 ; reading forward through the Type 136 data control.  The DECtape stream is:
 ;
-;       words 0-15  fixed low-core SIXBIT helper -> 000060..000077
-;       word 16     DAIMON magic (ignored here)
-;       word 17     image_words,,entry_offset (only image_words is needed)
+;       word 0      DAIMON magic (ignored here)
+;       word 1      image_words,,entry_offset (only image_words is needed)
 ;       remainder   opaque boot image -> 040000...
 ;
 ; The entry point is fixed at 040000.  Physical DECtape block boundaries are
@@ -24,6 +23,7 @@ start:
         setom 000040
         setom 000041
         movei 017,050000
+        pushj 017,install_bootstrap_sixbit
 
         ; DCT0: device 1 (DTC), device -> processor, move enabled.
         cono 0200,004040
@@ -31,17 +31,7 @@ start:
         ; DTC0: selected, start forward, READ DATA.
         cono 0210,0220300
 
-        ; Install the fixed 16-word diagnostic/output helper at 000060.
-        movei 01,000060
-        movei 02,000020
-lowcore_loop:
-        conso 0200,001000
-        jrst lowcore_wait
-        datai 0200,0(01)
-        aoj 01,
-        sojg 02,lowcore_loop
-
-        ; The opaque stream header follows the helper.  Its magic and entry
+        ; The opaque stream header supplies the image word count. Its magic and entry
         ; offset are not needed by this fixed-entry Stage1.
         pushj 017,read_word
         pushj 017,read_word
@@ -58,11 +48,6 @@ load_loop:
         sojg 02,load_loop
         jrst 040000
 
-; Before the helper is complete, any DTC error/EOT can only halt.
-lowcore_wait:
-        consz 0214,0000036
-        halt .
-        jrst lowcore_loop
 
 ; Return the next 36-bit DCT word in AC3.  DTC status B distinguishes genuine
 ; controller/data errors from reaching the end zone before the declared image
@@ -88,9 +73,10 @@ bad_tape:
         move 01,msg_badtp
 
 diag:
-        pushj 017,000060
+        pushj 017,077760
         halt .
         jrst diag
 
 msg_rderr: .word 0376244456262
 msg_badtp: .word 0374241446460
+        .include "../common/bootstrap-sixbit-077760.inc"
