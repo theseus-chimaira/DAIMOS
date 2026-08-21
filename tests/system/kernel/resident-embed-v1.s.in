@@ -1,0 +1,6 @@
+        .text
+        .globl __resident_load_begin
+        .globl __resident_load_end
+__resident_load_begin:
+        .block @RESIDENT_INIT_WORDS@
+__resident_load_end:

@@ -1,36 +1,19 @@
 #include "kinit.h"
-
-static void
-kcore_entry(void)
-{
-        kinit_diag_finished();
-        kinit_halt();
-}
+#include "module.h"
+#include "mres.h"
 
 void
 kinit_enter(void)
 {
+        KINIT_TRACE(PDP10_SIXBIT6('K','E','N','T','E','R'));
         kinit_diag_banner();
+
+        mres_load();
         kinit_save_boot_handoff();
+        kinit_diag_system();
+        module_run_minits();
 
-        if (kinit_build_manifest() != 0) {
-                kinit_diag_failure_poll();
-                kinit_halt();
-        }
-
-        /*
-         * KCORE and every MRES are relocated and bound before any device
-         * driver is initialized.  The fixed bootstrap SIXBIT helper at
-         * 077760 remains available throughout this phase.
-         */
-        if (kinit_relocate() != 0) {
-                kinit_diag_failure_poll();
-                kinit_halt();
-        }
-
-        /* MINIT code remains in the opaque boot image and returns here. */
-        kinit_run_minits();
-
-        /* Final resident KCORE handoff remains the next checkpoint. */
-        kcore_entry();
+        kinit_diag_finished();
+        kinit_call18((unsigned int)KINIT_KCORE_BASE);
+        kinit_halt();
 }

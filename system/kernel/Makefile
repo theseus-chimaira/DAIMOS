@@ -11,17 +11,22 @@ KINIT_SRCS = \
 	kinit.c \
 	kinit_boot.c \
 	kinit_diag.c \
-	kinit_reloc.c
+	mres.c \
+	module.c
 KINIT_C_ASM = $(KINIT_SRCS:%.c=$(BUILD)/%.s)
 KINIT_ASM = $(KINIT_C_ASM) $(BUILD)/kinit_io.s
 KINIT_CPPFLAGS = \
 	-DDAIMON_VERSION_MAJOR=$(DAIMON_VERSION_MAJOR) \
 	-DDAIMON_VERSION_MINOR=$(DAIMON_VERSION_MINOR)
+KINIT_DEBUG ?= 0
+ifeq ($(KINIT_DEBUG),1)
+KINIT_CPPFLAGS += -DKINIT_DEBUG
+endif
 
 KCORE_SRCS = \
 	kcore.c
 KCORE_C_ASM = $(KCORE_SRCS:%.c=$(BUILD)/%.s)
-KCORE_ASM = $(KCORE_C_ASM) $(BUILD)/kcore_entry.s $(BUILD)/kcore_end.s
+KCORE_ASM = $(KCORE_C_ASM) $(BUILD)/kcore_entry.s $(BUILD)/resident_end.s
 
 .DEFAULT_GOAL := kinit
 
@@ -34,9 +39,9 @@ kcore: $(KCORE_ASM)
 test:
 	$(MAKE) -C $(PROJECT_ROOT)/tests/system/kernel test BUILD='$(BUILD_ROOT)/tests/system/kernel'
 
-$(BUILD)/%.s: %.c kinit.h $(VERSION_FILE)
+$(BUILD)/%.s: %.c kinit.h module.h mres.h $(VERSION_FILE)
 	mkdir -p $(BUILD)
-	$(PDP10_GCC) -std=c99 -Os $(KINIT_CPPFLAGS) -I. -S $< -o $@
+	$(PDP10_GCC) -std=c99 -Os $(KINIT_CPPFLAGS) -I. -I$(PDP10_PREFIX)/include -S $< -o $@
 
 $(BUILD)/kinit_io.s: kinit_io.s
 	mkdir -p $(BUILD)
@@ -58,7 +63,7 @@ $(BUILD)/kcore_io.s: kcore_io.s
 	mkdir -p $(BUILD)
 	cp $< $@
 
-$(BUILD)/kcore_end.s: kcore_end.s
+$(BUILD)/resident_end.s: resident_end.s
 	mkdir -p $(BUILD)
 	cp $< $@
 
