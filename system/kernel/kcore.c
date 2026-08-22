@@ -1,5 +1,4 @@
 #include "kcore.h"
-#include "clk.h"
 #include "kcore_pi.h"
 
 kword_t kcore_boot_handoff[2];
@@ -13,7 +12,5 @@ kcore_init(void)
 void
 kcore_entry_impl(void)
 {
-        while (clk_ticks() == 0U)
-                ;
         pdp10_halt();
 }

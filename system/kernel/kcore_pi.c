@@ -3,7 +3,7 @@
 #define PDP10_PI_MAX_HANDLERS 6U
 
 struct pdp10_pi_slot {
-        pdp10_pi_handler handler;
+        kword_t handler;
         kword_t opaque;
 };
 
@@ -46,7 +46,7 @@ pdp10_pi_init(void)
 }
 
 int
-pdp10_pi_register(unsigned int level, pdp10_pi_handler handler, kword_t opaque)
+pdp10_pi_register(unsigned int level, unsigned int handler, kword_t opaque)
 {
         unsigned int start;
         unsigned int count;
@@ -67,7 +67,7 @@ pdp10_pi_register(unsigned int level, pdp10_pi_handler handler, kword_t opaque)
                 return -1;
         for (i = total; i > start + count; --i)
                 pdp10_pi_slots[i] = pdp10_pi_slots[i - 1U];
-        pdp10_pi_slots[start + count].handler = handler;
+        pdp10_pi_slots[start + count].handler = (kword_t)handler;
         pdp10_pi_slots[start + count].opaque = opaque;
         pdp10_pi_level_span[level] = PI_SPAN_PACK(start, count + 1U);
         pi_reindex();

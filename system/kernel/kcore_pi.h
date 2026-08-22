@@ -10,11 +10,8 @@
 #define PDP10_PI_HANDLED       0
 #define PDP10_PI_NOT_HANDLED   1
 
-typedef int (*pdp10_pi_handler)(unsigned int level, kword_t opaque);
-
 void pdp10_pi_init(void);
-int pdp10_pi_register(unsigned int level, pdp10_pi_handler handler,
-    kword_t opaque);
+int pdp10_pi_register(unsigned int level, unsigned int handler, kword_t opaque);
 void pdp10_pi_hw_enable(unsigned int mask);
 void pdp10_pi_hw_clear(void);
 void kcore_pi_low_init(void);

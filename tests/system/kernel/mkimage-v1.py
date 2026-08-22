@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install the already-linked resident image into the high KINIT stream."""
+"""Install the fixed KCORE image into the high KINIT stream."""
 
 import argparse
 from pathlib import Path
@@ -37,47 +37,47 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--map", required=True, type=Path)
     ap.add_argument("--input", required=True, type=Path)
-    ap.add_argument("--resident", required=True, type=Path)
-    ap.add_argument("--resident-map", required=True, type=Path)
+    ap.add_argument("--kcore", required=True, type=Path)
+    ap.add_argument("--kcore-map", required=True, type=Path)
     ap.add_argument("--output", required=True, type=Path)
     args = ap.parse_args()
 
     syms = read_map(args.map)
-    rsyms = read_map(args.resident_map)
+    rsyms = read_map(args.kcore_map)
     image_start = require(syms, "__kinit_image_start")
     image_end = require(syms, "__kinit_image_end")
-    load_begin = require(syms, "__resident_load_begin")
-    load_end = require(syms, "__resident_load_end")
+    load_begin = require(syms, "__kcore_load_begin")
+    load_end = require(syms, "__kcore_load_end")
     entry = require(syms, "kinit_enter")
-    resident_init_end = require(rsyms, "__resident_low_init_end")
+    kcore_init_end = require(rsyms, "__kcore_low_init_end")
 
     if image_start != IMAGE_BASE or not (image_start < image_end <= HALF_MASK):
         raise SystemExit("invalid KINIT image bounds")
     if not (image_start <= load_begin <= load_end <= image_end):
-        raise SystemExit("invalid resident load slot")
+        raise SystemExit("invalid KCORE load slot")
     if not (image_start <= entry < image_end):
         raise SystemExit("invalid KINIT entry")
 
     image_words = image_end - IMAGE_BASE
-    resident_words = resident_init_end - KCORE_BASE
-    if load_end - load_begin != resident_words:
-        raise SystemExit("resident slot size mismatch")
+    kcore_words = kcore_init_end - KCORE_BASE
+    if load_end - load_begin != kcore_words:
+        raise SystemExit("KCORE slot size mismatch")
 
     words = [int(x, 8) for x in args.input.read_text(encoding="ascii").splitlines() if x]
-    resident = [int(x, 8) for x in args.resident.read_text(encoding="ascii").splitlines() if x]
+    kcore = [int(x, 8) for x in args.kcore.read_text(encoding="ascii").splitlines() if x]
     if words[0] != DAIMON_MAGIC:
         raise SystemExit("bad DAIMON stream header")
     if len(words) != image_words + 2:
         raise SystemExit("KINIT stream length mismatch")
-    if len(resident) < 2:
-        raise SystemExit("short resident stream")
-    resident = resident[2:]
-    if len(resident) != resident_words:
-        raise SystemExit("resident stream length mismatch")
+    if len(kcore) < 2:
+        raise SystemExit("short KCORE stream")
+    kcore = kcore[2:]
+    if len(kcore) != kcore_words:
+        raise SystemExit("KCORE stream length mismatch")
 
     words[1] = pair18(image_words, entry - IMAGE_BASE)
     off = 2 + (load_begin - IMAGE_BASE)
-    words[off:off + resident_words] = resident
+    words[off:off + kcore_words] = kcore
     args.output.write_text("".join("%012o\n" % (w & WORD_MASK) for w in words), encoding="ascii")
 
 

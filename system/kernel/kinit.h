@@ -27,6 +27,8 @@ void kinit_put6(kword_t word);
 void kinit_put6_spaces(unsigned int words);
 void kinit_newline(void);
 void kinit_call18(unsigned int address);
+kword_t kinit_call18_0(unsigned int address);
+kword_t kinit_call18_1(unsigned int address, kword_t arg);
 void kinit_halt(void);
 
 #ifdef KINIT_DEBUG
@@ -38,9 +40,19 @@ void kinit_diag_finished(void);
         kinit_put6((kword_t)SIXBIT("ENTER ")); \
         kinit_newline(); \
 } while (0)
-#define KINIT_TRACE_MRES_LOAD() do { \
-        kinit_put6((kword_t)SIXBIT("MRES_L")); \
-        kinit_put6((kword_t)SIXBIT("OAD   ")); \
+#define KINIT_TRACE_KCORE_LOAD() do { \
+        kinit_put6((kword_t)SIXBIT("KCORE_")); \
+        kinit_put6((kword_t)SIXBIT("LOAD  ")); \
+        kinit_newline(); \
+} while (0)
+#define KINIT_TRACE_MRES_INIT() do { \
+        kinit_put6((kword_t)SIXBIT("MRES_I")); \
+        kinit_put6((kword_t)SIXBIT("NIT   ")); \
+        kinit_newline(); \
+} while (0)
+#define KINIT_TRACE_MRES_INSTALL() do { \
+        kinit_put6((kword_t)SIXBIT("MRES_I")); \
+        kinit_put6((kword_t)SIXBIT("NSTALL")); \
         kinit_newline(); \
 } while (0)
 #define KINIT_TRACE_KINIT_SAVE_BOOT_HANDOFF() do { \

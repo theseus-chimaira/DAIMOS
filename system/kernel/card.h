@@ -14,6 +14,8 @@
 #define CR_CO_CLR_END_CARD      0000020UL
 #define CR_CO_CLR_DATA_MISS     0000200UL
 #define CR_CO_READ_CARD         0001000UL
+#define CR_CO_CLR_READER        0010000UL
+#define CR_ST_PI_MASK           0000007UL
 #define CR_ST_DATA_RDY          0000010UL
 #define CR_ST_END_CARD          0000020UL
 #define CR_ST_RDY_READ          0000100UL
@@ -24,6 +26,8 @@
 #define CP_CO_EN_END_CARD       0000200UL
 #define CP_CO_CLR_ERROR         0001000UL
 #define CP_CO_EJECT             0010000UL
+#define CP_CO_CLR_PUNCH         0100000UL
+#define CP_ST_PI_MASK           0000007UL
 #define CP_ST_DATA_REQ          0000010UL
 #define CP_ST_END_CARD          0000100UL
 #define CP_ST_ERROR             0001000UL
