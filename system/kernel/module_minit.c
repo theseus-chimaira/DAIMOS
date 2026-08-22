@@ -10,8 +10,8 @@ static void
 minit_fail_poll(kword_t name)
 {
         kinit_put6(name);
-        kinit_put6_spaces(4U);
-        kinit_put6((kword_t)SIXBIT("  FAIL"));
+        kinit_put6_spaces(5U);
+        kinit_put6((kword_t)SIXBIT("FAIL  "));
         kinit_newline();
         kinit_halt();
 }
@@ -20,10 +20,20 @@ static void
 minit_fail_cty(kword_t name)
 {
         (void)cty_put6(name);
-        (void)cty_put6_spaces(4U);
-        (void)cty_put6((kword_t)SIXBIT("  FAIL"));
+        (void)cty_put6_spaces(5U);
+        (void)cty_put6((kword_t)SIXBIT("FAIL  "));
         (void)cty_newline();
         kinit_halt();
+}
+
+static void
+minit_ok_cty(kword_t name)
+{
+        if (cty_put6(name) != CTY_E_OK ||
+            cty_put6_spaces(5U) != CTY_E_OK ||
+            cty_put6((kword_t)SIXBIT("  OK  ")) != CTY_E_OK ||
+            cty_newline() != CTY_E_OK)
+                kinit_halt();
 }
 
 void
@@ -33,11 +43,7 @@ cty_minit(void)
                 minit_fail_poll((kword_t)SIXBIT("CTY   "));
         cty_cono(CTY_NATIVE_PI_LEVEL);
         pdp10_pi_hw_enable(PDP10_PI_MASK(CTY_NATIVE_PI_LEVEL));
-        if (cty_put6((kword_t)SIXBIT("CTY   ")) != CTY_E_OK ||
-            cty_put6_spaces(5U) != CTY_E_OK ||
-            cty_put6((kword_t)SIXBIT("CTY0  ")) != CTY_E_OK ||
-            cty_newline() != CTY_E_OK)
-                kinit_halt();
+        minit_ok_cty((kword_t)SIXBIT("CTY   "));
 }
 
 void
@@ -63,11 +69,7 @@ ptr_minit(void)
                 minit_fail_cty((kword_t)SIXBIT("PTR   "));
         ptr_cono(PT_NATIVE_PI_LEVEL);
         pdp10_pi_hw_enable(PDP10_PI_MASK(PT_NATIVE_PI_LEVEL));
-        if (cty_put6((kword_t)SIXBIT("PTR   ")) != CTY_E_OK ||
-            cty_put6_spaces(5U) != CTY_E_OK ||
-            cty_put6((kword_t)SIXBIT("PTR0  ")) != CTY_E_OK ||
-            cty_newline() != CTY_E_OK)
-                kinit_halt();
+        minit_ok_cty((kword_t)SIXBIT("PTR   "));
 }
 
 void
@@ -77,11 +79,7 @@ ptp_minit(void)
                 minit_fail_cty((kword_t)SIXBIT("PTP   "));
         ptp_cono(PT_NATIVE_PI_LEVEL);
         pdp10_pi_hw_enable(PDP10_PI_MASK(PT_NATIVE_PI_LEVEL));
-        if (cty_put6((kword_t)SIXBIT("PTP   ")) != CTY_E_OK ||
-            cty_put6_spaces(5U) != CTY_E_OK ||
-            cty_put6((kword_t)SIXBIT("PTP0  ")) != CTY_E_OK ||
-            cty_newline() != CTY_E_OK)
-                kinit_halt();
+        minit_ok_cty((kword_t)SIXBIT("PTP   "));
 }
 
 void
@@ -92,11 +90,7 @@ cr_minit(void)
         cr_cono((kword_t)CARD_NATIVE_PI_LEVEL | CR_CO_CLR_DRDY |
             CR_CO_CLR_END_CARD | CR_CO_CLR_DATA_MISS);
         pdp10_pi_hw_enable(PDP10_PI_MASK(CARD_NATIVE_PI_LEVEL));
-        if (cty_put6((kword_t)SIXBIT("CR    ")) != CTY_E_OK ||
-            cty_put6_spaces(5U) != CTY_E_OK ||
-            cty_put6((kword_t)SIXBIT(" CR0  ")) != CTY_E_OK ||
-            cty_newline() != CTY_E_OK)
-                kinit_halt();
+        minit_ok_cty((kword_t)SIXBIT("CR    "));
 }
 
 void
@@ -106,34 +100,20 @@ cp_minit(void)
                 minit_fail_cty((kword_t)SIXBIT("CP    "));
         cp_cono(CARD_NATIVE_PI_LEVEL);
         pdp10_pi_hw_enable(PDP10_PI_MASK(CARD_NATIVE_PI_LEVEL));
-        if (cty_put6((kword_t)SIXBIT("CP    ")) != CTY_E_OK ||
-            cty_put6_spaces(5U) != CTY_E_OK ||
-            cty_put6((kword_t)SIXBIT(" CP0  ")) != CTY_E_OK ||
-            cty_newline() != CTY_E_OK)
-                kinit_halt();
+        minit_ok_cty((kword_t)SIXBIT("CP    "));
 }
 
 void
 wcnsls_minit(void)
 {
         wcnsls_cono(WCNSLS_CO_SPACEWAR);
-        if (cty_put6((kword_t)SIXBIT("WCNSLS")) != CTY_E_OK ||
-            cty_put6_spaces(4U) != CTY_E_OK ||
-            cty_put6((kword_t)SIXBIT("    WC")) != CTY_E_OK ||
-            cty_put6((kword_t)SIXBIT("NSLS  ")) != CTY_E_OK ||
-            cty_newline() != CTY_E_OK)
-                kinit_halt();
+        minit_ok_cty((kword_t)SIXBIT("WCNSLS"));
 }
 
 void
 ocnsls_minit(void)
 {
-        if (cty_put6((kword_t)SIXBIT("OCNSLS")) != CTY_E_OK ||
-            cty_put6_spaces(4U) != CTY_E_OK ||
-            cty_put6((kword_t)SIXBIT("    OC")) != CTY_E_OK ||
-            cty_put6((kword_t)SIXBIT("NSLS  ")) != CTY_E_OK ||
-            cty_newline() != CTY_E_OK)
-                kinit_halt();
+        minit_ok_cty((kword_t)SIXBIT("OCNSLS"));
 }
 
 void

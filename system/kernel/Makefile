@@ -1,7 +1,6 @@
 PROJECT_ROOT := $(abspath ../..)
 BUILD_ROOT ?= $(PROJECT_ROOT)/build
 KINIT_DEBUG ?= 0
-KCORE_TEST ?= 0
 BUILD ?= $(BUILD_ROOT)/system/kernel$(if $(filter 1,$(KINIT_DEBUG)),-debug,)
 PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
 VERSION_FILE := $(PROJECT_ROOT)/VERSION
@@ -18,9 +17,6 @@ ifeq ($(KINIT_DEBUG),1)
 KINIT_CPPFLAGS += -DKINIT_DEBUG
 endif
 KCORE_CPPFLAGS =
-ifeq ($(KCORE_TEST),1)
-KCORE_CPPFLAGS += -DKCORE_DEVICE_TEST
-endif
 
 KCORE_SRCS = \
 	kcore.c \

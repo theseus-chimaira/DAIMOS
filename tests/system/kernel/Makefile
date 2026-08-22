@@ -36,7 +36,9 @@ RESIDENT_RIM = $(BUILD)/resident-v1.rim
 RESIDENT_STREAM = $(BUILD)/resident-v1.stream
 RESIDENT_EMBED_ASM = $(BUILD)/resident-embed-v1.s
 RESIDENT_EMBED_OBJ = $(BUILD)/resident-embed-v1.dobj
-MINIT_TABLE_OBJ = $(BUILD)/module_table.dobj
+MINIT_TABLE_OBJ = $(BUILD)/module-table-test.dobj
+DEVICE_TEST_ASM = $(KINIT_BUILD)/device-test-minit.s
+DEVICE_TEST_OBJ = $(BUILD)/device-test-minit.dobj
 END_OBJ = $(BUILD)/image-end-v1.dobj
 IMAGE_DXR = $(BUILD)/kinit-v1.dxr
 IMAGE_MAP = $(BUILD)/kinit-v1.map
@@ -64,7 +66,7 @@ $(KINIT_ASM): $(KINIT_INPUTS) | $(BUILD)
 	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kinit BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_DEBUG='$(KINIT_DEBUG)'
 
 $(KCORE_ASM): $(KCORE_INPUTS) | $(BUILD)
-	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kcore BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KCORE_TEST=1
+	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kcore BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)'
 
 $(BUILD)/%.dobj: $(KINIT_BUILD)/%.s | $(BUILD)
 	$(DAS) -c -o $@ $<
@@ -72,7 +74,15 @@ $(BUILD)/%.dobj: $(KINIT_BUILD)/%.s | $(BUILD)
 $(BUILD)/%.dobj: $(KCORE_BUILD)/%.s | $(BUILD)
 	$(DAS) -c -o $@ $<
 
-$(MINIT_TABLE_OBJ): $(PROJECT_ROOT)/system/kernel/module_table.s | $(BUILD)
+$(DEVICE_TEST_ASM): device-test-minit.c $(PROJECT_ROOT)/system/kernel/pt.h \
+    $(PROJECT_ROOT)/system/kernel/card.h $(PROJECT_ROOT)/system/kernel/joy.h | $(BUILD)
+	mkdir -p $(KINIT_BUILD)
+	$(PDP10_GCC) -std=c99 -Os -I$(PROJECT_ROOT)/system/kernel -I$(PDP10_PREFIX)/include -S $< -o $@
+
+$(DEVICE_TEST_OBJ): $(DEVICE_TEST_ASM) | $(BUILD)
+	$(DAS) -c -o $@ $<
+
+$(MINIT_TABLE_OBJ): module-table-test.s | $(BUILD)
 	$(DAS) -c -o $@ $<
 
 $(END_OBJ): image-end-v1.s | $(BUILD)
@@ -100,9 +110,9 @@ $(RESIDENT_EMBED_ASM): resident-embed-v1.s.in $(RESIDENT_MAP) | $(BUILD)
 $(RESIDENT_EMBED_OBJ): $(RESIDENT_EMBED_ASM)
 	$(DAS) -c -o $@ $<
 
-$(IMAGE_DXR): $(MINIT_TABLE_OBJ) $(RESIDENT_EMBED_OBJ) $(KINIT_OBJS) $(END_OBJ) $(RESIDENT_MAP)
+$(IMAGE_DXR): $(MINIT_TABLE_OBJ) $(RESIDENT_EMBED_OBJ) $(KINIT_OBJS) $(DEVICE_TEST_OBJ) $(END_OBJ) $(RESIDENT_MAP)
 	$(DLINK) -b 040000 -A $(RESIDENT_MAP) -o $@ -M $(IMAGE_MAP) \
-	    $(MINIT_TABLE_OBJ) $(RESIDENT_EMBED_OBJ) $(KINIT_OBJS) $(END_OBJ)
+	    $(MINIT_TABLE_OBJ) $(RESIDENT_EMBED_OBJ) $(KINIT_OBJS) $(DEVICE_TEST_OBJ) $(END_OBJ)
 
 $(IMAGE_MAP): $(IMAGE_DXR)
 	@test -f $@
@@ -148,16 +158,15 @@ test: image
 	    'DAIMON                              V0.1' \
 	    'MACH                                PDP6' \
 	    'MEM                                256 K' \
-	    'CTY                                 CTY0' \
+	    'CTY                                   OK' \
 	    'HZ                               60 LINE' \
-	    'PTR                                 PTR0' \
-	    'PTP                                 PTP0' \
-	    'CR                                   CR0' \
-	    'CP                                   CP0' \
-	    'WCNSLS                            WCNSLS' \
-	    'OCNSLS                            OCNSLS' \
+	    'PTR                                   OK' \
+	    'PTP                                   OK' \
+	    'CR                                    OK' \
+	    'CP                                    OK' \
+	    'WCNSLS                                OK' \
+	    'OCNSLS                                OK' \
 	    'SLV                               NO DRV' \
-	    'DEVTST                              PASS' \
 	    'HALT instruction' $(if $(filter 1,$(KINIT_DEBUG)),>/dev/null,)
 ifeq ($(KINIT_DEBUG),1)
 	@cat $(LOG)
