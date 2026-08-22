@@ -1,32 +1,22 @@
 #include "kinit.h"
 
-#ifndef DAIMON_VERSION_MAJOR
-#error DAIMON_VERSION_MAJOR must come from VERSION
-#endif
-#ifndef DAIMON_VERSION_MINOR
-#error DAIMON_VERSION_MINOR must come from VERSION
-#endif
-#if DAIMON_VERSION_MAJOR > 9 || DAIMON_VERSION_MINOR > 9
-#error KINIT banner supports one decimal digit per version component
+#ifndef DAIMON_VERSION_TEXT
+#error DAIMON_VERSION_TEXT must come from VERSION
 #endif
 
 static int
 kinit_probe_word(volatile kword_t *addr)
 {
         kword_t old;
-        kword_t p1;
-        kword_t p2;
 
         old = *addr;
-        p1 = ((kword_t)(unsigned long)addr ^ 0525252525252UL) & KINIT_WORD_MASK;
-        p2 = ((kword_t)(unsigned long)addr ^ 0252525252525UL) & KINIT_WORD_MASK;
-        *addr = p1;
-        if ((*addr & KINIT_WORD_MASK) != p1) {
+        *addr = 0525252525252UL;
+        if (*addr != 0525252525252UL) {
                 *addr = old;
                 return 0;
         }
-        *addr = p2;
-        if ((*addr & KINIT_WORD_MASK) != p2) {
+        *addr = 0252525252525UL;
+        if (*addr != 0252525252525UL) {
                 *addr = old;
                 return 0;
         }
@@ -53,10 +43,8 @@ kinit_memory_kwords(void)
 static void
 kinit_put_blank_words(unsigned int words)
 {
-        while (words != 0U) {
-                kinit_put6(PDP10_SIXBIT6(' ',' ',' ',' ',' ',' '));
-                --words;
-        }
+        while (words-- != 0U)
+                kinit_put6(0);
 }
 
 static void
@@ -70,45 +58,51 @@ kinit_put_memory(unsigned int value)
         t = (value / 10U) % 10U;
         o = value % 10U;
 
-        if (h != 0U) {
-                kinit_put6(PDP10_SIXBIT6(' ',' ',' ',' ',' ','0' + h));
-        } else {
-                kinit_put6(PDP10_SIXBIT6(' ',' ',' ',' ',' ',' '));
-        }
-        kinit_put6(PDP10_SIXBIT6('0' + t, '0' + o, ' ','K',' ',' '));
+        if (h != 0U)
+                kinit_put6((kword_t)(020U + h));
+        else
+                kinit_put6(0);
+        kinit_put6(((kword_t)(020U + t) << 30) |
+            ((kword_t)(020U + o) << 24) |
+            ((kword_t)053 << 12));
 }
 
 void
 kinit_diag_banner(void)
 {
-        KINIT_TRACE("KBANNR");
-        kinit_put6(PDP10_SIXBIT6('D','A','I','M','O','N'));
+#ifdef KINIT_DEBUG
+        KINIT_TRACE(KINIT_DIAG_BANNER);
+#endif
+        kinit_put6((kword_t)SIXBIT("DAIMON"));
         kinit_put_blank_words(5U);
-        kinit_put6(PDP10_SIXBIT6('V',
-            '0' + DAIMON_VERSION_MAJOR, '.',
-            '0' + DAIMON_VERSION_MINOR, ' ', ' '));
+        kinit_put6((kword_t)SIXBIT(DAIMON_VERSION_TEXT));
         kinit_newline();
 }
 
 void
 kinit_diag_system(void)
 {
-        KINIT_TRACE("KDIAGS");
-        kinit_put6(PDP10_SIXBIT6('M','A','C','H',' ',' '));
+#ifdef KINIT_DEBUG
+        KINIT_TRACE(KINIT_DIAG_SYSTEM);
+#endif
+        kinit_put6((kword_t)SIXBIT("MACH  "));
         kinit_put_blank_words(5U);
-        kinit_put6(KINIT_MACHINE_NAME);
+        kinit_put6((kword_t)SIXBIT(KINIT_MACHINE_NAME));
         kinit_newline();
-        kinit_put6(PDP10_SIXBIT6('M','E','M',' ',' ',' '));
+
+        kinit_put6((kword_t)SIXBIT("MEM   "));
         kinit_put_blank_words(4U);
         kinit_put_memory(kinit_memory_kwords());
         kinit_newline();
 }
 
+#ifdef KINIT_DEBUG
 void
 kinit_diag_finished(void)
 {
-        kinit_put6(PDP10_SIXBIT6('K','I','N','I','T',' '));
-        kinit_put6(PDP10_SIXBIT6('F','I','N','I','S','H'));
-        kinit_put6(PDP10_SIXBIT6('E','D',' ',' ',' ',' '));
+        kinit_put6((kword_t)SIXBIT("KINIT "));
+        kinit_put6((kword_t)SIXBIT("FINISH"));
+        kinit_put6((kword_t)SIXBIT("ED    "));
         kinit_newline();
 }
+#endif

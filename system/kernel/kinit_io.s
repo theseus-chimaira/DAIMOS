@@ -11,19 +11,15 @@ kinit_put6:
         pushj 017,077760
         popj 017,
 
-; Polling CR/LF.  This remains deliberately independent of CTY module state.
+; Polling CR/LF, deliberately independent of CTY module state.
 kinit_newline:
         movei 03,015
-knl_wait_cr:
-        coni 0120,04
-        trne 04,0020
-        jrst knl_wait_cr
-        datao 0120,03
+        pushj 017,knl_putc
         movei 03,012
-knl_wait_lf:
+knl_putc:
         coni 0120,04
         trne 04,0020
-        jrst knl_wait_lf
+        jrst knl_putc
         datao 0120,03
         popj 017,
 

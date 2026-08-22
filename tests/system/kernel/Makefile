@@ -15,7 +15,7 @@ PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
 STDBUF ?= stdbuf
 WATCH_OUTPUT := $(PROJECT_ROOT)/tests/simh/watch-output.sh
 
-KINIT_NAMES = kinit kinit_boot kinit_diag mres module kinit_io
+KINIT_NAMES = kinit kinit_diag kinit_io
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 KCORE_ASM = $(KCORE_BUILD)/kcore_entry.s $(KCORE_BUILD)/kcore.s $(KCORE_BUILD)/resident_end.s
@@ -146,7 +146,6 @@ test: image
 	    'MEM                                256 K' \
 	    'MINIT1' \
 	    'MINIT2' \
-	    'KINIT FINISHED' \
 	    'HALT instruction'
 	@echo 'KINIT linked-resident/MINIT checkpoint test PASS'
 

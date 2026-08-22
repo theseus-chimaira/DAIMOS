@@ -9,7 +9,6 @@
  * only by the final aggregate boundary.
  */
 extern kword_t __resident_load_begin;
-extern kword_t __resident_load_end;
 extern kword_t __resident_low_init_end;
 extern kword_t __resident_low_end;
 
