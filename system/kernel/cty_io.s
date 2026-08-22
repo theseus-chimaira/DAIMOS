@@ -7,8 +7,7 @@
         .globl cty_datao
 
 cty_coni:
-        coni 0120,cty_ioword
-        move 1,cty_ioword
+        coni 0120,1
         popj 17,
 
 cty_cono:
@@ -16,14 +15,9 @@ cty_cono:
         popj 17,
 
 cty_datai:
-        datai 0120,cty_ioword
-        move 1,cty_ioword
+        datai 0120,1
         popj 17,
 
 cty_datao:
-        movem 1,cty_ioword
-        datao 0120,cty_ioword
+        datao 0120,1
         popj 17,
-
-        .data
-cty_ioword: .word 0

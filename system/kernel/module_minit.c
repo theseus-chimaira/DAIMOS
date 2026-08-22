@@ -1,4 +1,5 @@
 #include "kinit.h"
+#include "kcore_pi.h"
 #include "cty.h"
 #include "clk.h"
 #include "ptr.h"
@@ -26,8 +27,10 @@ minit_fail_cty(kword_t name)
 void
 cty_minit(void)
 {
-        if (cty_init() != CTY_E_OK)
+        if (pdp10_pi_register(CTY_NATIVE_PI_LEVEL, cty_pi_handler, 0) != 0)
                 minit_fail_poll((kword_t)SIXBIT("CTY   "));
+        cty_cono(CTY_NATIVE_PI_LEVEL);
+        pdp10_pi_hw_enable(PDP10_PI_MASK(CTY_NATIVE_PI_LEVEL));
         if (cty_put6((kword_t)SIXBIT("CTY   ")) != CTY_E_OK ||
             cty_put6_spaces(5U) != CTY_E_OK ||
             cty_put6((kword_t)SIXBIT("CTY0  ")) != CTY_E_OK ||
@@ -38,8 +41,11 @@ cty_minit(void)
 void
 clk_minit(void)
 {
-        if (clk_init() != CLK_E_OK)
+        if (pdp10_pi_register(CLK_NATIVE_PI_LEVEL, clk_pi_handler, 0) != 0)
                 minit_fail_cty((kword_t)SIXBIT("HZ    "));
+        clk_cono((kword_t)CLK_NATIVE_PI_LEVEL | CLK_APR_CO_CLEAR_FLAG |
+            CLK_APR_CO_ENABLE);
+        pdp10_pi_hw_enable(PDP10_PI_MASK(CLK_NATIVE_PI_LEVEL));
         if (cty_put6((kword_t)SIXBIT("HZ    ")) != CTY_E_OK ||
             cty_put6_spaces(4U) != CTY_E_OK ||
             cty_put6((kword_t)SIXBIT("   60 ")) != CTY_E_OK ||
@@ -51,8 +57,10 @@ clk_minit(void)
 void
 ptr_minit(void)
 {
-        if (ptr_init() != PTR_E_OK)
+        if (pdp10_pi_register(PTR_NATIVE_PI_LEVEL, ptr_pi_handler, 0) != 0)
                 minit_fail_cty((kword_t)SIXBIT("PTR   "));
+        ptr_cono(PTR_NATIVE_PI_LEVEL);
+        pdp10_pi_hw_enable(PDP10_PI_MASK(PTR_NATIVE_PI_LEVEL));
         if (cty_put6((kword_t)SIXBIT("PTR   ")) != CTY_E_OK ||
             cty_put6_spaces(5U) != CTY_E_OK ||
             cty_put6((kword_t)SIXBIT("PTR0  ")) != CTY_E_OK ||

@@ -38,7 +38,7 @@ kcore: $(KCORE_ASM)
 test:
 	$(MAKE) -C $(PROJECT_ROOT)/tests/system/kernel test BUILD='$(BUILD_ROOT)/tests/system/kernel' KINIT_DEBUG='$(KINIT_DEBUG)'
 
-$(BUILD)/%.s: %.c kinit.h module.h mres.h cty.h clk.h $(VERSION_FILE)
+$(BUILD)/%.s: %.c kinit.h module.h mres.h cty.h clk.h ptr.h kcore_pi.h $(VERSION_FILE)
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os $(KINIT_CPPFLAGS) -I. -I$(PDP10_PREFIX)/include -S $< -o $@
 

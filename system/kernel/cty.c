@@ -2,100 +2,75 @@
 #include "kcore_io.h"
 #include "kcore_pi.h"
 
-static unsigned int cty_tx_pending;
-static unsigned int cty_intr_pia;
-static unsigned int cty_rx_head;
-static unsigned int cty_rx_count;
-static int cty_rx_buf[CTY_RX_BUF_SIZE];
-static int cty_last_error;
+static volatile unsigned int cty_tx_pending;
+static volatile kword_t cty_rx_state;
 
-static void
-cty_rx_reset(void)
-{
-        cty_rx_head = 0U;
-        cty_rx_count = 0U;
-}
+#define CTY_RX_HEAD(state) ((unsigned int)((state) & 0777777UL))
+#define CTY_RX_COUNT(state) ((unsigned int)(((state) >> 18) & 0777777UL))
+#define CTY_RX_STATE(head, count) \
+        ((((kword_t)(count)) << 18) | (kword_t)(head))
+static volatile unsigned char cty_rx_buf[CTY_RX_BUF_SIZE];
 
 static int
 cty_rx_push(int ch)
 {
+        kword_t state;
+        unsigned int head;
+        unsigned int count;
         unsigned int tail;
 
-        if (cty_rx_count >= CTY_RX_BUF_SIZE)
+        state = cty_rx_state;
+        head = CTY_RX_HEAD(state);
+        count = CTY_RX_COUNT(state);
+        if (count >= CTY_RX_BUF_SIZE)
                 return CTY_E_BUSY;
-        tail = (cty_rx_head + cty_rx_count) & (CTY_RX_BUF_SIZE - 1U);
-        cty_rx_buf[tail] = ch;
-        ++cty_rx_count;
+        tail = (head + count) & (CTY_RX_BUF_SIZE - 1U);
+        cty_rx_buf[tail] = (unsigned char)ch;
+        cty_rx_state = CTY_RX_STATE(head, count + 1U);
         return CTY_E_OK;
 }
 
 static int
 cty_rx_pop(int *cp)
 {
-        if (cty_rx_count == 0U)
+        kword_t state;
+        unsigned int head;
+        unsigned int count;
+
+        state = cty_rx_state;
+        head = CTY_RX_HEAD(state);
+        count = CTY_RX_COUNT(state);
+        if (count == 0U)
                 return CTY_E_TIMEOUT;
-        *cp = cty_rx_buf[cty_rx_head];
-        cty_rx_head = (cty_rx_head + 1U) & (CTY_RX_BUF_SIZE - 1U);
-        --cty_rx_count;
+        *cp = (int)cty_rx_buf[head];
+        head = (head + 1U) & (CTY_RX_BUF_SIZE - 1U);
+        cty_rx_state = CTY_RX_STATE(head, count - 1U);
         return CTY_E_OK;
 }
 
-static kword_t
-cty_cono_word(kword_t flags)
-{
-        return flags | (kword_t)cty_intr_pia;
-}
-
-static int
-cty_intr_service(void)
+int
+cty_pi_handler(unsigned int level, kword_t opaque)
 {
         kword_t st;
         kword_t word;
         int handled;
 
+        (void)level;
+        (void)opaque;
         st = cty_coni();
         handled = 0;
         if ((st & CTY_ST_INPUT_READY) != 0) {
                 word = cty_datai();
-                if (cty_rx_push((int)(word & 0177UL)) != CTY_E_OK)
-                        cty_last_error = CTY_E_BUSY;
-                else
-                        cty_last_error = CTY_E_OK;
+                (void)cty_rx_push((int)(word & 0177UL));
                 handled = 1;
         }
         if ((st & CTY_ST_OUTPUT_READY) != 0) {
                 cty_tx_pending = 0U;
-                if (cty_last_error != CTY_E_BUSY)
-                        cty_last_error = CTY_E_OK;
-                cty_cono(cty_cono_word(CTY_CO_CLR_OUTPUT_READY));
+                cty_cono((kword_t)CTY_NATIVE_PI_LEVEL |
+                    CTY_CO_CLR_OUTPUT_READY);
                 handled = 1;
         }
-        return handled ? CTY_E_OK : CTY_E_TIMEOUT;
-}
-
-static int
-cty_intr_pi_handler(unsigned int level, kword_t opaque)
-{
-        (void)level;
-        (void)opaque;
-        return cty_intr_service() == CTY_E_OK ?
-            PDP10_PI_HANDLED : PDP10_PI_NOT_HANDLED;
-}
-
-int
-cty_init(void)
-{
-        if (cty_intr_pia != 0U)
-                return CTY_E_BUSY;
-        if (pdp10_pi_register(CTY_NATIVE_PI_LEVEL, cty_intr_pi_handler, 0) != 0)
-                return CTY_E_ARG;
-        cty_intr_pia = CTY_NATIVE_PI_LEVEL;
-        cty_tx_pending = 0U;
-        cty_rx_reset();
-        cty_last_error = CTY_E_OK;
-        cty_cono(cty_cono_word(0UL));
-        pdp10_pi_hw_enable(PDP10_PI_MASK(CTY_NATIVE_PI_LEVEL));
-        return CTY_E_OK;
+        return handled ? PDP10_PI_HANDLED : PDP10_PI_NOT_HANDLED;
 }
 
 int
@@ -103,8 +78,6 @@ cty_putchar(int c)
 {
         unsigned int i;
 
-        if (cty_intr_pia == 0U)
-                return CTY_E_ARG;
         if (cty_tx_pending != 0U)
                 return CTY_E_BUSY;
         for (i = CTY_WAIT_READY; i != 0U; --i) {
@@ -115,11 +88,10 @@ cty_putchar(int c)
         if (i == 0U)
                 return CTY_E_TIMEOUT;
         cty_tx_pending = 1U;
-        cty_last_error = CTY_E_OK;
         cty_datao(((kword_t)c) & 0177UL);
         for (i = CTY_WAIT_READY; i != 0U; --i) {
                 if (cty_tx_pending == 0U)
-                        return cty_last_error;
+                        return CTY_E_OK;
                 pdp10_io_wait(1U);
         }
         cty_tx_pending = 0U;
@@ -133,18 +105,15 @@ cty_getchar(int *cp)
 
         if (cp == 0)
                 return CTY_E_ARG;
-        if (cty_intr_pia == 0U)
-                return CTY_E_ARG;
         if (cty_rx_pop(cp) == CTY_E_OK)
                 return CTY_E_OK;
         for (i = CTY_WAIT_READY; i != 0U; --i) {
                 if (cty_rx_pop(cp) == CTY_E_OK)
-                        return cty_last_error;
+                        return CTY_E_OK;
                 pdp10_io_wait(1U);
         }
         return CTY_E_TIMEOUT;
 }
-
 
 int
 cty_put6(kword_t word)

@@ -5,13 +5,9 @@
         .globl clk_cono
 
 clk_coni:
-        coni 0000,clk_ioword
-        move 1,clk_ioword
+        coni 0000,1
         popj 17,
 
 clk_cono:
         cono 0000,0(1)
         popj 17,
-
-        .data
-clk_ioword: .word 0

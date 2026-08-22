@@ -23,6 +23,13 @@ KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 KCORE_NAMES = kcore_entry kcore kcore_pi cty clk ptr kcore_io cty_io clk_io ptr_io resident_end
 KCORE_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_NAMES)))
 KCORE_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_NAMES)))
+KINIT_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
+	kinit.c kinit_diag.c module_minit.c kinit.h module.h mres.h \
+	cty.h clk.h ptr.h kinit_io.s)
+KCORE_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
+	kcore.c kcore_pi.c cty.c clk.c ptr.c kcore.h kcore_pi.h kcore_io.h \
+	cty.h clk.h ptr.h kcore_entry.s kcore_io.s cty_io.s clk_io.s ptr_io.s \
+	resident_end.s)
 RESIDENT_DXR = $(BUILD)/resident-v1.dxr
 RESIDENT_MAP = $(BUILD)/resident-v1.map
 RESIDENT_RIM = $(BUILD)/resident-v1.rim
@@ -50,10 +57,10 @@ SIMH_LOG = $(BUILD)/kinit-v1.simh.log
 $(BUILD):
 	mkdir -p $@
 
-$(KINIT_ASM): | $(BUILD)
+$(KINIT_ASM): $(KINIT_INPUTS) | $(BUILD)
 	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kinit BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_DEBUG='$(KINIT_DEBUG)'
 
-$(KCORE_ASM): | $(BUILD)
+$(KCORE_ASM): $(KCORE_INPUTS) | $(BUILD)
 	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kcore BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)'
 
 $(BUILD)/%.dobj: $(KINIT_BUILD)/%.s | $(BUILD)
