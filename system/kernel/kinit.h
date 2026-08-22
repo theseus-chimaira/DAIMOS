@@ -37,9 +37,9 @@ void kinit_call18(unsigned int address);
 void kinit_halt(void);
 
 #ifdef KINIT_DEBUG
-#define KINIT_TRACE(word) do { kinit_put6((word)); kinit_newline(); } while (0)
+#define KINIT_TRACE(name) do { kinit_put6((kword_t)SIXBIT(name)); kinit_newline(); } while (0)
 #else
-#define KINIT_TRACE(word) ((void)0)
+#define KINIT_TRACE(name) ((void)0)
 #endif
 
 #endif

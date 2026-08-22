@@ -7,7 +7,7 @@ module_run_minits(void)
         const kword_t *end;
         unsigned int entry;
 
-        KINIT_TRACE(PDP10_SIXBIT6('K','R','U','N','M','I'));
+        KINIT_TRACE("KRUNMI");
         p = &__minit_table_begin;
         end = &__minit_table_end;
         while (p < end) {

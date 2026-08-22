@@ -5,7 +5,7 @@
 void
 kinit_enter(void)
 {
-        KINIT_TRACE(PDP10_SIXBIT6('K','E','N','T','E','R'));
+        KINIT_TRACE("KENTER");
         kinit_diag_banner();
 
         mres_load();

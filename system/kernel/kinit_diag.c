@@ -81,7 +81,7 @@ kinit_put_memory(unsigned int value)
 void
 kinit_diag_banner(void)
 {
-        KINIT_TRACE(PDP10_SIXBIT6('K','B','A','N','N','R'));
+        KINIT_TRACE("KBANNR");
         kinit_put6(PDP10_SIXBIT6('D','A','I','M','O','N'));
         kinit_put_blank_words(5U);
         kinit_put6(PDP10_SIXBIT6('V',
@@ -93,7 +93,7 @@ kinit_diag_banner(void)
 void
 kinit_diag_system(void)
 {
-        KINIT_TRACE(PDP10_SIXBIT6('K','D','I','A','G','S'));
+        KINIT_TRACE("KDIAGS");
         kinit_put6(PDP10_SIXBIT6('M','A','C','H',' ',' '));
         kinit_put_blank_words(5U);
         kinit_put6(KINIT_MACHINE_NAME);

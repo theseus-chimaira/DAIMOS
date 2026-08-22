@@ -8,7 +8,7 @@ mres_load(void)
         kword_t *init_end;
         kword_t *end;
 
-        KINIT_TRACE(PDP10_SIXBIT6('K','L','O','A','D',' '));
+        KINIT_TRACE("KLOAD ");
         src = &__resident_load_begin;
         dst = (kword_t *)(unsigned long)KINIT_KCORE_BASE;
         init_end = &__resident_low_init_end;
