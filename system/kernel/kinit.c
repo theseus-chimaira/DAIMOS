@@ -71,6 +71,7 @@ kinit_enter(void)
         kinit_diag_banner();
         mres_load();
         kinit_save_boot_handoff();
+        kcore_init();
         kinit_diag_system();
         module_run_minits();
 #ifdef KINIT_DEBUG

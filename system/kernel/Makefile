@@ -8,7 +8,8 @@ DAIMON_VERSION := $(strip $(shell cat $(VERSION_FILE)))
 
 KINIT_SRCS = \
 	kinit.c \
-	kinit_diag.c
+	kinit_diag.c \
+	module_minit.c
 KINIT_C_ASM = $(KINIT_SRCS:%.c=$(BUILD)/%.s)
 KINIT_ASM = $(KINIT_C_ASM) $(BUILD)/kinit_io.s
 KINIT_CPPFLAGS = -DDAIMON_VERSION_TEXT='"V$(DAIMON_VERSION)  "'
@@ -17,9 +18,13 @@ KINIT_CPPFLAGS += -DKINIT_DEBUG
 endif
 
 KCORE_SRCS = \
-	kcore.c
+	kcore.c \
+	kcore_pi.c \
+	cty.c \
+	clk.c
 KCORE_C_ASM = $(KCORE_SRCS:%.c=$(BUILD)/%.s)
-KCORE_ASM = $(KCORE_C_ASM) $(BUILD)/kcore_entry.s $(BUILD)/resident_end.s
+KCORE_ASM = $(KCORE_C_ASM) $(BUILD)/kcore_entry.s $(BUILD)/kcore_io.s \
+	$(BUILD)/cty_io.s $(BUILD)/clk_io.s $(BUILD)/resident_end.s
 
 .DEFAULT_GOAL := kinit
 
@@ -32,7 +37,7 @@ kcore: $(KCORE_ASM)
 test:
 	$(MAKE) -C $(PROJECT_ROOT)/tests/system/kernel test BUILD='$(BUILD_ROOT)/tests/system/kernel' KINIT_DEBUG='$(KINIT_DEBUG)'
 
-$(BUILD)/%.s: %.c kinit.h module.h mres.h $(VERSION_FILE)
+$(BUILD)/%.s: %.c kinit.h module.h mres.h cty.h clk.h $(VERSION_FILE)
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os $(KINIT_CPPFLAGS) -I. -I$(PDP10_PREFIX)/include -S $< -o $@
 
@@ -40,19 +45,36 @@ $(BUILD)/kinit_io.s: kinit_io.s
 	mkdir -p $(BUILD)
 	cp $< $@
 
-$(BUILD)/kcore_%.s: kcore_%.c kcore.h
+$(BUILD)/kcore_%.s: kcore_%.c kcore.h kcore_pi.h kcore_io.h
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os -I. -S $< -o $@
 
-$(BUILD)/kcore.s: kcore.c kcore.h
+$(BUILD)/kcore.s: kcore.c kcore.h kcore_pi.h clk.h
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os -I. -S $< -o $@
 
-$(BUILD)/kcore_entry.s: kcore_entry.s
+
+$(BUILD)/cty.s: cty.c cty.h kcore.h kcore_pi.h kcore_io.h
+	mkdir -p $(BUILD)
+	$(PDP10_GCC) -std=c99 -Os -I. -S $< -o $@
+
+$(BUILD)/clk.s: clk.c clk.h kcore.h kcore_pi.h
+	mkdir -p $(BUILD)
+	$(PDP10_GCC) -std=c99 -Os -I. -S $< -o $@
+
+$(BUILD)/kcore_io.s: kcore_io.s
 	mkdir -p $(BUILD)
 	cp $< $@
 
-$(BUILD)/kcore_io.s: kcore_io.s
+$(BUILD)/cty_io.s: cty_io.s
+	mkdir -p $(BUILD)
+	cp $< $@
+
+$(BUILD)/clk_io.s: clk_io.s
+	mkdir -p $(BUILD)
+	cp $< $@
+
+$(BUILD)/kcore_entry.s: kcore_entry.s
 	mkdir -p $(BUILD)
 	cp $< $@
 

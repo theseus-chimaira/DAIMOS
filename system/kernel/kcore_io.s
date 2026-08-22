@@ -1,25 +1,14 @@
-; kcore_io.s -- resident PDP-6 PI and CTY support used by KINIT and KCORE.
+; kcore_io.s -- resident PDP-6 priority-interrupt core support.
 ;
-; The dispatcher/CTY machinery is the DAIMOSV1 KCORE implementation, reduced
-; to the entries needed during V0.1 bring-up.  Unlike DAIMOSV1's fixed-image
-; build, KINIT relocates KCORE to 060 first; kcore_pi_low_init then installs
-; the fixed 020..057 PI state and vectors from resident KCORE code.
 
         .text
         .globl kcore_pi_low_init
-        .globl pdp10_coni_cty
-        .globl pdp10_cono_cty
-        .globl pdp10_datai_cty
-        .globl pdp10_datao_cty
         .globl pdp10_io_wait
-        .globl pdp10_halt
         .globl pdp10_pi_hw_enable
         .globl pdp10_pi_hw_clear
         .globl pdp10_pi_dispatch
         .globl pdp10_pi_slots
         .globl pdp10_pi_level_span
-        .globl pdp10_pi_count_words
-        .globl pdp10_pi_unhandled_words
         .globl mach_words_zero
         .globl mach_pi_stack_prepare
 
@@ -56,25 +45,6 @@ kcore_pi_low_init:
         setzm 000057
         popj 17,
 
-pdp10_coni_cty:
-        coni 0120,pdp10_ioword
-        move 1,pdp10_ioword
-        popj 17,
-
-pdp10_cono_cty:
-        cono 0120,0(1)
-        popj 17,
-
-pdp10_datai_cty:
-        datai 0120,pdp10_ioword
-        move 1,pdp10_ioword
-        popj 17,
-
-pdp10_datao_cty:
-        movem 1,pdp10_ioword
-        datao 0120,pdp10_ioword
-        popj 17,
-
 pdp10_io_wait:
         move 2,1
         jumple 2,pdp10_wait_done
@@ -106,10 +76,6 @@ mach_pi_stack_prepare:
         setzm 000041
         popj 17,
 
-pdp10_halt:
-        halt .
-        jrst pdp10_halt
-
 pdp10_pi_hw_enable:
         andi 1,0177
         iorm 1,pdp10_pi_enabled_mask
@@ -132,7 +98,6 @@ pdp10_pi_dispatch:
         caile 1,7
         jrst pdp10_pi_dispatch_bad
         move 10,1
-        aos pdp10_pi_count_words(10)
         hrrz 11,pdp10_pi_level_span(10)
         hlrz 12,pdp10_pi_level_span(10)
         lsh 11,1
@@ -152,7 +117,6 @@ pdp10_pi_dispatch_next:
         sojg 12,pdp10_pi_dispatch_loop
 pdp10_pi_dispatch_done:
         jumpn 13,pdp10_pi_dispatch_ok
-        aos pdp10_pi_unhandled_words(10)
 pdp10_pi_dispatch_ok:
         setz 1,
 pdp10_pi_dispatch_ret:

@@ -40,8 +40,8 @@ kinit_memory_kwords(void)
         return found;
 }
 
-static void
-kinit_put_blank_words(unsigned int words)
+void
+kinit_put6_spaces(unsigned int words)
 {
         while (words-- != 0U)
                 kinit_put6(0);
@@ -74,7 +74,7 @@ kinit_diag_banner(void)
         KINIT_TRACE(KINIT_DIAG_BANNER);
 #endif
         kinit_put6((kword_t)SIXBIT("DAIMON"));
-        kinit_put_blank_words(5U);
+        kinit_put6_spaces(5U);
         kinit_put6((kword_t)SIXBIT(DAIMON_VERSION_TEXT));
         kinit_newline();
 }
@@ -86,12 +86,12 @@ kinit_diag_system(void)
         KINIT_TRACE(KINIT_DIAG_SYSTEM);
 #endif
         kinit_put6((kword_t)SIXBIT("MACH  "));
-        kinit_put_blank_words(5U);
+        kinit_put6_spaces(5U);
         kinit_put6((kword_t)SIXBIT(KINIT_MACHINE_NAME));
         kinit_newline();
 
         kinit_put6((kword_t)SIXBIT("MEM   "));
-        kinit_put_blank_words(4U);
+        kinit_put6_spaces(4U);
         kinit_put_memory(kinit_memory_kwords());
         kinit_newline();
 }

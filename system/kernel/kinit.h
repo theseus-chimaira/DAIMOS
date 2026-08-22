@@ -24,6 +24,7 @@ void kinit_diag_banner(void);
 void kinit_diag_system(void);
 
 void kinit_put6(kword_t word);
+void kinit_put6_spaces(unsigned int words);
 void kinit_newline(void);
 void kinit_call18(unsigned int address);
 void kinit_halt(void);

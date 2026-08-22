@@ -17,20 +17,19 @@ PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
 STDBUF ?= stdbuf
 WATCH_OUTPUT := $(PROJECT_ROOT)/tests/simh/watch-output.sh
 
-KINIT_NAMES = kinit kinit_diag kinit_io
+KINIT_NAMES = kinit kinit_diag module_minit kinit_io
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
-KCORE_ASM = $(KCORE_BUILD)/kcore_entry.s $(KCORE_BUILD)/kcore.s $(KCORE_BUILD)/resident_end.s
-KCORE_OBJS = $(BUILD)/kcore_entry.dobj $(BUILD)/kcore.dobj $(BUILD)/resident-v1.dobj $(BUILD)/resident_end.dobj
+KCORE_NAMES = kcore_entry kcore kcore_pi cty clk kcore_io cty_io clk_io resident_end
+KCORE_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_NAMES)))
+KCORE_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_NAMES)))
 RESIDENT_DXR = $(BUILD)/resident-v1.dxr
 RESIDENT_MAP = $(BUILD)/resident-v1.map
 RESIDENT_RIM = $(BUILD)/resident-v1.rim
 RESIDENT_STREAM = $(BUILD)/resident-v1.stream
 RESIDENT_EMBED_ASM = $(BUILD)/resident-embed-v1.s
 RESIDENT_EMBED_OBJ = $(BUILD)/resident-embed-v1.dobj
-MINIT_ASM = $(BUILD)/minit-v1.s
-MINIT_OBJ = $(BUILD)/minit-v1.dobj
-MINIT_TABLE_OBJ = $(BUILD)/minit-table-v1.dobj
+MINIT_TABLE_OBJ = $(BUILD)/module_table.dobj
 END_OBJ = $(BUILD)/image-end-v1.dobj
 IMAGE_DXR = $(BUILD)/kinit-v1.dxr
 IMAGE_MAP = $(BUILD)/kinit-v1.map
@@ -60,16 +59,13 @@ $(KCORE_ASM): | $(BUILD)
 $(BUILD)/%.dobj: $(KINIT_BUILD)/%.s | $(BUILD)
 	$(DAS) -c -o $@ $<
 
-$(BUILD)/kcore_entry.dobj: $(KCORE_BUILD)/kcore_entry.s | $(BUILD)
-	$(DAS) -c -o $@ $<
-$(BUILD)/kcore.dobj: $(KCORE_BUILD)/kcore.s | $(BUILD)
-	$(DAS) -c -o $@ $<
-$(BUILD)/resident_end.dobj: $(KCORE_BUILD)/resident_end.s | $(BUILD)
+$(BUILD)/%.dobj: $(KCORE_BUILD)/%.s | $(BUILD)
 	$(DAS) -c -o $@ $<
 
-$(BUILD)/resident-v1.s: resident-v1.c | $(BUILD)
-	$(PDP10_GCC) -std=c99 -Os -S $< -o $@
-$(BUILD)/resident-v1.dobj: $(BUILD)/resident-v1.s
+$(MINIT_TABLE_OBJ): $(PROJECT_ROOT)/system/kernel/module_table.s | $(BUILD)
+	$(DAS) -c -o $@ $<
+
+$(END_OBJ): image-end-v1.s | $(BUILD)
 	$(DAS) -c -o $@ $<
 
 $(RESIDENT_DXR): $(KCORE_OBJS)
@@ -94,19 +90,9 @@ $(RESIDENT_EMBED_ASM): resident-embed-v1.s.in $(RESIDENT_MAP) | $(BUILD)
 $(RESIDENT_EMBED_OBJ): $(RESIDENT_EMBED_ASM)
 	$(DAS) -c -o $@ $<
 
-$(MINIT_TABLE_OBJ): minit-table-v1.s | $(BUILD)
-	$(DAS) -c -o $@ $<
-$(END_OBJ): image-end-v1.s | $(BUILD)
-	$(DAS) -c -o $@ $<
-
-$(MINIT_ASM): minit-v1.c | $(BUILD)
-	$(PDP10_GCC) -std=c99 -Os -I$(PROJECT_ROOT)/system/kernel -I$(PDP10_PREFIX)/include -S $< -o $@
-$(MINIT_OBJ): $(MINIT_ASM)
-	$(DAS) -c -o $@ $<
-
-$(IMAGE_DXR): $(MINIT_TABLE_OBJ) $(MINIT_OBJ) $(MINIT_TABLE_OBJ) $(RESIDENT_EMBED_OBJ) $(KINIT_OBJS) $(END_OBJ) $(RESIDENT_MAP)
+$(IMAGE_DXR): $(MINIT_TABLE_OBJ) $(RESIDENT_EMBED_OBJ) $(KINIT_OBJS) $(END_OBJ) $(RESIDENT_MAP)
 	$(DLINK) -b 040000 -A $(RESIDENT_MAP) -o $@ -M $(IMAGE_MAP) \
-	    $(MINIT_TABLE_OBJ) $(MINIT_OBJ) $(RESIDENT_EMBED_OBJ) $(KINIT_OBJS) $(END_OBJ)
+	    $(MINIT_TABLE_OBJ) $(RESIDENT_EMBED_OBJ) $(KINIT_OBJS) $(END_OBJ)
 
 $(IMAGE_MAP): $(IMAGE_DXR)
 	@test -f $@
@@ -146,8 +132,8 @@ test: image
 	    'DAIMON                              V0.1' \
 	    'MACH                                PDP6' \
 	    'MEM                                256 K' \
-	    'MINIT1' \
-	    'MINIT2' \
+	    'CTY                                 CTY0' \
+	    'HZ                               60 LINE' \
 	    'HALT instruction' $(if $(filter 1,$(KINIT_DEBUG)),>/dev/null,)
 ifeq ($(KINIT_DEBUG),1)
 	@cat $(LOG)
