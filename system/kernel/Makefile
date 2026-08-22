@@ -1,6 +1,7 @@
 PROJECT_ROOT := $(abspath ../..)
 BUILD_ROOT ?= $(PROJECT_ROOT)/build
-BUILD ?= $(BUILD_ROOT)/system/kernel
+KINIT_DEBUG ?= 0
+BUILD ?= $(BUILD_ROOT)/system/kernel$(if $(filter 1,$(KINIT_DEBUG)),-debug,)
 PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
 VERSION_FILE := $(PROJECT_ROOT)/VERSION
 DAIMON_VERSION := $(strip $(shell cat $(VERSION_FILE)))
@@ -11,7 +12,6 @@ KINIT_SRCS = \
 KINIT_C_ASM = $(KINIT_SRCS:%.c=$(BUILD)/%.s)
 KINIT_ASM = $(KINIT_C_ASM) $(BUILD)/kinit_io.s
 KINIT_CPPFLAGS = -DDAIMON_VERSION_TEXT='"V$(DAIMON_VERSION)  "'
-KINIT_DEBUG ?= 0
 ifeq ($(KINIT_DEBUG),1)
 KINIT_CPPFLAGS += -DKINIT_DEBUG
 endif
@@ -30,7 +30,7 @@ kinit: $(KINIT_ASM)
 kcore: $(KCORE_ASM)
 
 test:
-	$(MAKE) -C $(PROJECT_ROOT)/tests/system/kernel test BUILD='$(BUILD_ROOT)/tests/system/kernel'
+	$(MAKE) -C $(PROJECT_ROOT)/tests/system/kernel test BUILD='$(BUILD_ROOT)/tests/system/kernel' KINIT_DEBUG='$(KINIT_DEBUG)'
 
 $(BUILD)/%.s: %.c kinit.h module.h mres.h $(VERSION_FILE)
 	mkdir -p $(BUILD)

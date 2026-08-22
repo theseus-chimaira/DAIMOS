@@ -1,6 +1,8 @@
 PROJECT_ROOT := $(abspath ../../..)
 BUILD ?= $(PROJECT_ROOT)/build/tests/system/kernel
-KINIT_BUILD := $(BUILD)/kinit-asm
+KINIT_DEBUG ?= 0
+KINIT_VARIANT := $(if $(filter 1,$(KINIT_DEBUG)),debug,normal)
+KINIT_BUILD := $(BUILD)/kinit-asm-$(KINIT_VARIANT)
 KCORE_BUILD := $(BUILD)/kcore-asm
 PDP10_PREFIX ?= $(HOME)/cross
 
@@ -50,7 +52,7 @@ $(BUILD):
 	mkdir -p $@
 
 $(KINIT_ASM): | $(BUILD)
-	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kinit BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)'
+	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kinit BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_DEBUG='$(KINIT_DEBUG)'
 
 $(KCORE_ASM): | $(BUILD)
 	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kcore BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)'
@@ -146,7 +148,10 @@ test: image
 	    'MEM                                256 K' \
 	    'MINIT1' \
 	    'MINIT2' \
-	    'HALT instruction'
+	    'HALT instruction' $(if $(filter 1,$(KINIT_DEBUG)),>/dev/null,)
+ifeq ($(KINIT_DEBUG),1)
+	@cat $(LOG)
+endif
 	@echo 'KINIT linked-resident/MINIT checkpoint test PASS'
 
 clean:
