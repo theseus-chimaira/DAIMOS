@@ -144,3 +144,42 @@ cty_getchar(int *cp)
         }
         return CTY_E_TIMEOUT;
 }
+
+
+int
+cty_put6(kword_t word)
+{
+        unsigned int shift;
+        int error;
+
+        for (shift = 30U; ; shift -= 6U) {
+                error = cty_putchar((int)(((word >> shift) & 077UL) + 040UL));
+                if (error != CTY_E_OK)
+                        return error;
+                if (shift == 0U)
+                        break;
+        }
+        return CTY_E_OK;
+}
+
+int
+cty_newline(void)
+{
+        int error;
+
+        error = cty_putchar(015);
+        if (error != CTY_E_OK)
+                return error;
+        return cty_putchar(012);
+}
+
+int
+cty_put6_spaces(unsigned int words)
+{
+        while (words != 0U) {
+                if (cty_put6(0) != CTY_E_OK)
+                        return CTY_E_TIMEOUT;
+                --words;
+        }
+        return CTY_E_OK;
+}

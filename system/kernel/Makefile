@@ -21,10 +21,11 @@ KCORE_SRCS = \
 	kcore.c \
 	kcore_pi.c \
 	cty.c \
-	clk.c
+	clk.c \
+	ptr.c
 KCORE_C_ASM = $(KCORE_SRCS:%.c=$(BUILD)/%.s)
 KCORE_ASM = $(KCORE_C_ASM) $(BUILD)/kcore_entry.s $(BUILD)/kcore_io.s \
-	$(BUILD)/cty_io.s $(BUILD)/clk_io.s $(BUILD)/resident_end.s
+	$(BUILD)/cty_io.s $(BUILD)/clk_io.s $(BUILD)/ptr_io.s $(BUILD)/resident_end.s
 
 .DEFAULT_GOAL := kinit
 
@@ -62,6 +63,10 @@ $(BUILD)/clk.s: clk.c clk.h kcore.h kcore_pi.h
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os -I. -S $< -o $@
 
+$(BUILD)/ptr.s: ptr.c ptr.h kcore.h kcore_pi.h kcore_io.h
+	mkdir -p $(BUILD)
+	$(PDP10_GCC) -std=c99 -Os -I. -S $< -o $@
+
 $(BUILD)/kcore_io.s: kcore_io.s
 	mkdir -p $(BUILD)
 	cp $< $@
@@ -71,6 +76,10 @@ $(BUILD)/cty_io.s: cty_io.s
 	cp $< $@
 
 $(BUILD)/clk_io.s: clk_io.s
+	mkdir -p $(BUILD)
+	cp $< $@
+
+$(BUILD)/ptr_io.s: ptr_io.s
 	mkdir -p $(BUILD)
 	cp $< $@
 

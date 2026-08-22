@@ -20,7 +20,7 @@ WATCH_OUTPUT := $(PROJECT_ROOT)/tests/simh/watch-output.sh
 KINIT_NAMES = kinit kinit_diag module_minit kinit_io
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
-KCORE_NAMES = kcore_entry kcore kcore_pi cty clk kcore_io cty_io clk_io resident_end
+KCORE_NAMES = kcore_entry kcore kcore_pi cty clk ptr kcore_io cty_io clk_io ptr_io resident_end
 KCORE_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_NAMES)))
 KCORE_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_NAMES)))
 RESIDENT_DXR = $(BUILD)/resident-v1.dxr
@@ -134,6 +134,7 @@ test: image
 	    'MEM                                256 K' \
 	    'CTY                                 CTY0' \
 	    'HZ                               60 LINE' \
+	    'PTR                                 PTR0' \
 	    'HALT instruction' $(if $(filter 1,$(KINIT_DEBUG)),>/dev/null,)
 ifeq ($(KINIT_DEBUG),1)
 	@cat $(LOG)

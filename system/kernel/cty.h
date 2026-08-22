@@ -23,6 +23,9 @@
 int cty_init(void);
 int cty_putchar(int c);
 int cty_getchar(int *cp);
+int cty_put6(kword_t word);
+int cty_newline(void);
+int cty_put6_spaces(unsigned int words);
 
 kword_t cty_coni(void);
 void cty_cono(kword_t word);
