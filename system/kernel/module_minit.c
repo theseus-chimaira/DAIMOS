@@ -2,7 +2,9 @@
 #include "kcore_pi.h"
 #include "cty.h"
 #include "clk.h"
-#include "ptr.h"
+#include "pt.h"
+#include "card.h"
+#include "joy.h"
 
 static void
 minit_fail_poll(kword_t name)
@@ -57,13 +59,90 @@ clk_minit(void)
 void
 ptr_minit(void)
 {
-        if (pdp10_pi_register(PTR_NATIVE_PI_LEVEL, ptr_pi_handler, 0) != 0)
+        if (pdp10_pi_register(PT_NATIVE_PI_LEVEL, ptr_pi_handler, 0) != 0)
                 minit_fail_cty((kword_t)SIXBIT("PTR   "));
-        ptr_cono(PTR_NATIVE_PI_LEVEL);
-        pdp10_pi_hw_enable(PDP10_PI_MASK(PTR_NATIVE_PI_LEVEL));
+        ptr_cono(PT_NATIVE_PI_LEVEL);
+        pdp10_pi_hw_enable(PDP10_PI_MASK(PT_NATIVE_PI_LEVEL));
         if (cty_put6((kword_t)SIXBIT("PTR   ")) != CTY_E_OK ||
             cty_put6_spaces(5U) != CTY_E_OK ||
             cty_put6((kword_t)SIXBIT("PTR0  ")) != CTY_E_OK ||
+            cty_newline() != CTY_E_OK)
+                kinit_halt();
+}
+
+void
+ptp_minit(void)
+{
+        if (pdp10_pi_register(PT_NATIVE_PI_LEVEL, ptp_pi_handler, 0) != 0)
+                minit_fail_cty((kword_t)SIXBIT("PTP   "));
+        ptp_cono(PT_NATIVE_PI_LEVEL);
+        pdp10_pi_hw_enable(PDP10_PI_MASK(PT_NATIVE_PI_LEVEL));
+        if (cty_put6((kword_t)SIXBIT("PTP   ")) != CTY_E_OK ||
+            cty_put6_spaces(5U) != CTY_E_OK ||
+            cty_put6((kword_t)SIXBIT("PTP0  ")) != CTY_E_OK ||
+            cty_newline() != CTY_E_OK)
+                kinit_halt();
+}
+
+void
+cr_minit(void)
+{
+        if (pdp10_pi_register(CARD_NATIVE_PI_LEVEL, cr_pi_handler, 0) != 0)
+                minit_fail_cty((kword_t)SIXBIT("CR    "));
+        cr_cono((kword_t)CARD_NATIVE_PI_LEVEL | CR_CO_CLR_DRDY |
+            CR_CO_CLR_END_CARD | CR_CO_CLR_DATA_MISS);
+        pdp10_pi_hw_enable(PDP10_PI_MASK(CARD_NATIVE_PI_LEVEL));
+        if (cty_put6((kword_t)SIXBIT("CR    ")) != CTY_E_OK ||
+            cty_put6_spaces(5U) != CTY_E_OK ||
+            cty_put6((kword_t)SIXBIT(" CR0  ")) != CTY_E_OK ||
+            cty_newline() != CTY_E_OK)
+                kinit_halt();
+}
+
+void
+cp_minit(void)
+{
+        if (pdp10_pi_register(CARD_NATIVE_PI_LEVEL, cp_pi_handler, 0) != 0)
+                minit_fail_cty((kword_t)SIXBIT("CP    "));
+        cp_cono(CARD_NATIVE_PI_LEVEL);
+        pdp10_pi_hw_enable(PDP10_PI_MASK(CARD_NATIVE_PI_LEVEL));
+        if (cty_put6((kword_t)SIXBIT("CP    ")) != CTY_E_OK ||
+            cty_put6_spaces(5U) != CTY_E_OK ||
+            cty_put6((kword_t)SIXBIT(" CP0  ")) != CTY_E_OK ||
+            cty_newline() != CTY_E_OK)
+                kinit_halt();
+}
+
+void
+wcnsls_minit(void)
+{
+        wcnsls_cono(WCNSLS_CO_SPACEWAR);
+        if (cty_put6((kword_t)SIXBIT("WCNSLS")) != CTY_E_OK ||
+            cty_put6_spaces(4U) != CTY_E_OK ||
+            cty_put6((kword_t)SIXBIT("    WC")) != CTY_E_OK ||
+            cty_put6((kword_t)SIXBIT("NSLS  ")) != CTY_E_OK ||
+            cty_newline() != CTY_E_OK)
+                kinit_halt();
+}
+
+void
+ocnsls_minit(void)
+{
+        if (cty_put6((kword_t)SIXBIT("OCNSLS")) != CTY_E_OK ||
+            cty_put6_spaces(4U) != CTY_E_OK ||
+            cty_put6((kword_t)SIXBIT("    OC")) != CTY_E_OK ||
+            cty_put6((kword_t)SIXBIT("NSLS  ")) != CTY_E_OK ||
+            cty_newline() != CTY_E_OK)
+                kinit_halt();
+}
+
+void
+slv_minit(void)
+{
+        if (cty_put6((kword_t)SIXBIT("SLV   ")) != CTY_E_OK ||
+            cty_put6_spaces(4U) != CTY_E_OK ||
+            cty_put6((kword_t)SIXBIT("    NO")) != CTY_E_OK ||
+            cty_put6((kword_t)SIXBIT(" DRV  ")) != CTY_E_OK ||
             cty_newline() != CTY_E_OK)
                 kinit_halt();
 }

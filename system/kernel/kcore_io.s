@@ -128,49 +128,49 @@ pdp10_pi_dispatch_bad:
 pdp10_pi_level1:
         .word 0
         movem 1,000021
-        movem 2,000022
+        movem 2,pdp10_pi_ac2_save+0
         movei 1,1
         movei 2,pdp10_pi_level1
         jrst pdp10_pi_common
 pdp10_pi_level2:
         .word 0
         movem 1,000021
-        movem 2,000022
+        movem 2,pdp10_pi_ac2_save+1
         movei 1,2
         movei 2,pdp10_pi_level2
         jrst pdp10_pi_common
 pdp10_pi_level3:
         .word 0
         movem 1,000021
-        movem 2,000022
+        movem 2,pdp10_pi_ac2_save+2
         movei 1,3
         movei 2,pdp10_pi_level3
         jrst pdp10_pi_common
 pdp10_pi_level4:
         .word 0
         movem 1,000021
-        movem 2,000022
+        movem 2,pdp10_pi_ac2_save+3
         movei 1,4
         movei 2,pdp10_pi_level4
         jrst pdp10_pi_common
 pdp10_pi_level5:
         .word 0
         movem 1,000021
-        movem 2,000022
+        movem 2,pdp10_pi_ac2_save+4
         movei 1,5
         movei 2,pdp10_pi_level5
         jrst pdp10_pi_common
 pdp10_pi_level6:
         .word 0
         movem 1,000021
-        movem 2,000022
+        movem 2,pdp10_pi_ac2_save+5
         movei 1,6
         movei 2,pdp10_pi_level6
         jrst pdp10_pi_common
 pdp10_pi_level7:
         .word 0
         movem 1,000021
-        movem 2,000022
+        movem 2,pdp10_pi_ac2_save+6
         movei 1,7
         movei 2,pdp10_pi_level7
         jrst pdp10_pi_common
@@ -181,8 +181,6 @@ pdp10_pi_common:
         blt 0,000037
         move 3,pdp10_ioword
         movem 3,pdp10_pi_ioword
-        move 3,0(2)
-        movem 3,pdp10_pi_return_word
         cono 0004,000400
         movei 17,pdp10_pi_stack-1
         setz 16,
@@ -194,20 +192,56 @@ pdp10_pi_common:
 pdp10_pi_stack_ok:
         move 3,pdp10_pi_ioword
         movem 3,pdp10_ioword
+        move 2,pdp10_pi_epilogue_table-1(10)
         move 0,[000023,,3]
         blt 0,17
-        move 2,000022
         move 1,000021
         move 0,000020
+        jrst 0(2)
+
+pdp10_pi_return_level1:
+        move 2,pdp10_pi_ac2_save+0
         xct pdp10_pi_reenable
-        jrst 10,@pdp10_pi_return_word
+        jrst 10,@pdp10_pi_level1
+pdp10_pi_return_level2:
+        move 2,pdp10_pi_ac2_save+1
+        xct pdp10_pi_reenable
+        jrst 10,@pdp10_pi_level2
+pdp10_pi_return_level3:
+        move 2,pdp10_pi_ac2_save+2
+        xct pdp10_pi_reenable
+        jrst 10,@pdp10_pi_level3
+pdp10_pi_return_level4:
+        move 2,pdp10_pi_ac2_save+3
+        xct pdp10_pi_reenable
+        jrst 10,@pdp10_pi_level4
+pdp10_pi_return_level5:
+        move 2,pdp10_pi_ac2_save+4
+        xct pdp10_pi_reenable
+        jrst 10,@pdp10_pi_level5
+pdp10_pi_return_level6:
+        move 2,pdp10_pi_ac2_save+5
+        xct pdp10_pi_reenable
+        jrst 10,@pdp10_pi_level6
+pdp10_pi_return_level7:
+        move 2,pdp10_pi_ac2_save+6
+        xct pdp10_pi_reenable
+        jrst 10,@pdp10_pi_level7
 
         .data
+pdp10_pi_epilogue_table:
+        .word pdp10_pi_return_level1
+        .word pdp10_pi_return_level2
+        .word pdp10_pi_return_level3
+        .word pdp10_pi_return_level4
+        .word pdp10_pi_return_level5
+        .word pdp10_pi_return_level6
+        .word pdp10_pi_return_level7
 pdp10_ioword: .word 0
 pdp10_pi_stack: .space 128
 pdp10_pi_stack_end:
 pdp10_pi_stack_limit_guard: .word 0
-pdp10_pi_return_word: .word 0
+pdp10_pi_ac2_save: .space 7
 pdp10_pi_ioword: .word 0
 pdp10_pi_enabled_mask: .word 0
 pdp10_pi_reenable: .word 0

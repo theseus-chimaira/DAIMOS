@@ -1,17 +1,17 @@
 set -q -n log @SIMH_LOG@
 set cpu 256k
-set cr disabled
-set cp disabled
+set cr enabled
+set cp enabled
 set ptr enabled
-set ptp disabled
+set ptp enabled
 set dsk enabled
 set dtc disabled
 set mtc disabled
 set dcs disabled
 set ge disabled
-set wcnsls disabled
-set ocnsls disabled
-set slave disabled
+set wcnsls enabled
+set ocnsls enabled
+set slave enabled
 set dpy disabled
 
 deposit 020 710600000060
@@ -24,6 +24,9 @@ deposit 026 000000000000
 deposit 027 254000000021
 
 attach -q ptr @STAGE1_TAPE@
+attach -q -n ptp @PTP_OUTPUT@
+attach -q cr @CR_INPUT@
+attach -q -n cp @CP_OUTPUT@
 deposit ptr time 1
 attach -q dsk0 @DISK_IMAGE@
 go 020

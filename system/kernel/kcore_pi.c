@@ -1,6 +1,6 @@
 #include "kcore_pi.h"
 
-#define PDP10_PI_MAX_HANDLERS 3U
+#define PDP10_PI_MAX_HANDLERS 6U
 
 struct pdp10_pi_slot {
         pdp10_pi_handler handler;

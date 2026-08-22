@@ -20,16 +20,16 @@ WATCH_OUTPUT := $(PROJECT_ROOT)/tests/simh/watch-output.sh
 KINIT_NAMES = kinit kinit_diag module_minit kinit_io
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
-KCORE_NAMES = kcore_entry kcore kcore_pi cty clk ptr kcore_io cty_io clk_io ptr_io resident_end
+KCORE_NAMES = kcore_entry kcore kcore_pi cty clk pt card kcore_io cty_io clk_io pt_io card_io joy_io resident_end
 KCORE_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_NAMES)))
 KCORE_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_NAMES)))
 KINIT_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
 	kinit.c kinit_diag.c module_minit.c kinit.h module.h mres.h \
-	cty.h clk.h ptr.h kinit_io.s)
+	cty.h clk.h pt.h card.h joy.h kinit_io.s)
 KCORE_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
-	kcore.c kcore_pi.c cty.c clk.c ptr.c kcore.h kcore_pi.h kcore_io.h \
-	cty.h clk.h ptr.h kcore_entry.s kcore_io.s cty_io.s clk_io.s ptr_io.s \
-	resident_end.s)
+	kcore.c kcore_pi.c cty.c clk.c pt.c card.c kcore.h kcore_pi.h kcore_io.h \
+	cty.h clk.h pt.h card.h joy.h kcore_entry.s kcore_io.s cty_io.s clk_io.s \
+	pt_io.s card_io.s joy_io.s resident_end.s)
 RESIDENT_DXR = $(BUILD)/resident-v1.dxr
 RESIDENT_MAP = $(BUILD)/resident-v1.map
 RESIDENT_RIM = $(BUILD)/resident-v1.rim
@@ -50,6 +50,9 @@ DISK_IMAGE = $(DISK_DIR)/dsk0.dsk
 SIMH_INI = $(BUILD)/kinit-v1.ini
 LOG = $(BUILD)/kinit-v1.log
 SIMH_LOG = $(BUILD)/kinit-v1.simh.log
+PTP_OUTPUT = $(BUILD)/ptp-output.bin
+CR_INPUT = $(BUILD)/cr-input.txt
+CP_OUTPUT = $(BUILD)/cp-output.txt
 
 .DEFAULT_GOAL := image
 .PHONY: image test clean
@@ -61,7 +64,7 @@ $(KINIT_ASM): $(KINIT_INPUTS) | $(BUILD)
 	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kinit BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_DEBUG='$(KINIT_DEBUG)'
 
 $(KCORE_ASM): $(KCORE_INPUTS) | $(BUILD)
-	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kcore BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)'
+	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kcore BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KCORE_TEST=1
 
 $(BUILD)/%.dobj: $(KINIT_BUILD)/%.s | $(BUILD)
 	$(DAS) -c -o $@ $<
@@ -126,10 +129,16 @@ $(DISK_IMAGE): $(IMAGE_WORDS) $(STAGE1_TAPE)
 	rm -rf $(DISK_DIR)
 	$(MKDSK) -n 1 -m clean -p $(IMAGE_WORDS) -o $(DISK_DIR)
 
-$(SIMH_INI): simh-v1.ini.in $(STAGE1_TAPE) $(DISK_IMAGE)
+$(CR_INPUT): | $(BUILD)
+	printf 'DAIMOS CARD TEST\n' > $@
+
+$(SIMH_INI): simh-v1.ini.in $(STAGE1_TAPE) $(DISK_IMAGE) $(CR_INPUT)
 	sed -e 's|@SIMH_LOG@|$(abspath $(SIMH_LOG))|g' \
 	    -e 's|@STAGE1_TAPE@|$(abspath $(STAGE1_TAPE))|g' \
-	    -e 's|@DISK_IMAGE@|$(abspath $(DISK_IMAGE))|g' $< > $@
+	    -e 's|@DISK_IMAGE@|$(abspath $(DISK_IMAGE))|g' \
+	    -e 's|@PTP_OUTPUT@|$(abspath $(PTP_OUTPUT))|g' \
+	    -e 's|@CR_INPUT@|$(abspath $(CR_INPUT))|g' \
+	    -e 's|@CP_OUTPUT@|$(abspath $(CP_OUTPUT))|g' $< > $@
 
 image: $(SIMH_INI)
 
@@ -142,11 +151,21 @@ test: image
 	    'CTY                                 CTY0' \
 	    'HZ                               60 LINE' \
 	    'PTR                                 PTR0' \
+	    'PTP                                 PTP0' \
+	    'CR                                   CR0' \
+	    'CP                                   CP0' \
+	    'WCNSLS                            WCNSLS' \
+	    'OCNSLS                            OCNSLS' \
+	    'SLV                               NO DRV' \
+	    'DEVTST                              PASS' \
 	    'HALT instruction' $(if $(filter 1,$(KINIT_DEBUG)),>/dev/null,)
 ifeq ($(KINIT_DEBUG),1)
 	@cat $(LOG)
 endif
-	@echo 'KINIT linked-resident/MINIT checkpoint test PASS'
+	@$(PYTHON) -c "from pathlib import Path; p=Path('$(PTP_OUTPUT)').read_bytes(); assert p == bytes([0o252]), p"
+	@test -s $(CP_OUTPUT)
+	@grep 'DAIMOS CARD TEST' $(CP_OUTPUT) >/dev/null
+	@echo 'KINIT linked-resident/MINIT device checkpoint test PASS'
 
 clean:
 	rm -rf $(BUILD)
