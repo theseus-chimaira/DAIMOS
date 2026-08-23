@@ -1,23 +1,80 @@
-; cty_io.s -- PDP-6 console device primitives for the resident CTY module.
+; cty_io.s -- compact resident PDP-6 console driver.
+;
+; The interrupt path uses only AC1, as required by the KCORE PI ABI.
+; Synchronous output services use caller-saved ACs only and perform their
+; wait loops directly so no generic resident delay helper is required.
 
         .text
-        .globl cty_coni
-        .globl cty_cono
-        .globl cty_datai
-        .globl cty_datao
+        .globl cty_pi_handler
+        .globl cty_putchar
+        .globl cty_put6
+        .globl cty_tx_pending
+        .globl pdp10_pi_handler_return
 
-cty_coni:
+cty_pi_handler:
         coni 0120,1
-        popj 17,
-
-cty_cono:
+        trnn 1,0010
+        jrst cty_pi_input
+        setzm cty_tx_pending
+        movei 1,0204
         cono 0120,0(1)
-        popj 17,
-
-cty_datai:
+cty_pi_input:
+        coni 0120,1
+        trnn 1,0040
+        jrst pdp10_pi_handler_return
         datai 0120,1
+        jrst pdp10_pi_handler_return
+
+; AC1 = 7-bit character.  Return 0, CTY_E_BUSY (-3), or CTY_E_TIMEOUT (-2).
+cty_putchar:
+        move 2,cty_tx_pending
+        jumpn 2,cty_putchar_busy
+        movei 2,0200000
+cty_putchar_wait_idle:
+        coni 0120,3
+        trnn 3,0020
+        jrst cty_putchar_ready
+        sojg 2,cty_putchar_wait_idle
+        jrst cty_putchar_timeout
+cty_putchar_ready:
+        movei 2,1
+        movem 2,cty_tx_pending
+        andi 1,0177
+        datao 0120,1
+        movei 2,0200000
+cty_putchar_wait_done:
+        move 3,cty_tx_pending
+        jumpe 3,cty_putchar_ok
+        sojg 2,cty_putchar_wait_done
+        setzm cty_tx_pending
+cty_putchar_timeout:
+        hrroi 1,0777776
+        popj 17,
+cty_putchar_busy:
+        hrroi 1,0777775
+        popj 17,
+cty_putchar_ok:
+        movei 1,0
         popj 17,
 
-cty_datao:
-        datao 0120,1
+; AC1 = one packed SIXBIT word.  Return the first cty_putchar result.
+cty_put6:
+        move 4,1
+        movei 5,036
+cty_put6_loop:
+        movn 6,5
+        move 1,4
+        lsh 1,0(6)
+        andi 1,077
+        addi 1,040
+        pushj 17,cty_putchar
+        jumpn 1,cty_put6_return
+        jumpe 5,cty_put6_return
+        subi 5,6
+        jrst cty_put6_loop
+cty_put6_return:
         popj 17,
+
+        .bss
+cty_tx_pending:
+        .block 1

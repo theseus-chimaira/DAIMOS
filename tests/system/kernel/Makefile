@@ -1,8 +1,13 @@
 PROJECT_ROOT := $(abspath ../../..)
 BUILD ?= $(PROJECT_ROOT)/build/tests/system/kernel
 KINIT_DEBUG ?= 0
+DCS_SIMH_COMPAT ?= 1
 KINIT_VARIANT := $(if $(filter 1,$(KINIT_DEBUG)),debug,normal)
 KINIT_BUILD := $(BUILD)/kinit-asm-$(KINIT_VARIANT)
+
+ifneq ($(filter $(DCS_SIMH_COMPAT),0 1),$(DCS_SIMH_COMPAT))
+$(error DCS_SIMH_COMPAT must be 0 or 1)
+endif
 KCORE_BUILD := $(BUILD)/kcore-asm
 PDP10_PREFIX ?= $(HOME)/cross
 
@@ -20,20 +25,19 @@ WATCH_OUTPUT := $(PROJECT_ROOT)/tests/simh/watch-output.sh
 KINIT_NAMES = kinit kinit_diag module_minit kinit_io module_io
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
-KCORE_FIXED_NAMES = kcore_entry kcore kcore_pi kcore_io kcore_end
+KCORE_FIXED_NAMES = kcore_entry kcore_io kcore_end
 KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))
 KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
-MRES_NAMES = cty clk ptr ptp cr cp cty_io clk_io ptr_io ptp_io cr_io cp_io wcnsls_io
+MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io dcs_io wcnsls_io ocnsls_io
 MRES_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(MRES_NAMES)))
 
 KINIT_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
 	kinit.c kinit_diag.c module_minit.c kinit.h module.h mres.h \
-	cty.h clk.h pt.h card.h wcnsls.h kinit_io.s module_io.s)
+	cty.h clk.h pt.h card.h dcs.h wcnsls.h ocnsls.h kinit_io.s module_io.s)
 KCORE_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
-	kcore.c kcore_pi.c cty.c clk.c ptr.c ptp.c cr.c cp.c \
-	kcore.h kcore_pi.h kcore_io.h cty.h clk.h pt.h card.h wcnsls.h \
+	kcore.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h wcnsls.h ocnsls.h \
 	kcore_entry.s kcore_io.s kcore_end.s cty_io.s clk_io.s ptr_io.s \
-	ptp_io.s cr_io.s cp_io.s wcnsls_io.s)
+	ptp_io.s cr_io.s cp_io.s dcs_io.s wcnsls_io.s ocnsls_io.s)
 
 KCORE_DXR = $(BUILD)/kcore-v1.dxr
 KCORE_MAP = $(BUILD)/kcore-v1.map
@@ -48,9 +52,11 @@ PTR_MRES_OBJ = $(BUILD)/ptr-mres.dobj
 PTP_MRES_OBJ = $(BUILD)/ptp-mres.dobj
 CR_MRES_OBJ = $(BUILD)/cr-mres.dobj
 CP_MRES_OBJ = $(BUILD)/cp-mres.dobj
+DCS_MRES_OBJ = $(BUILD)/dcs-mres.dobj
 WCNSLS_MRES_OBJ = $(BUILD)/wcnsls-mres.dobj
+OCNSLS_MRES_OBJ = $(BUILD)/ocnsls-mres.dobj
 MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PTR_MRES_OBJ) \
-	$(PTP_MRES_OBJ) $(CR_MRES_OBJ) $(CP_MRES_OBJ) $(WCNSLS_MRES_OBJ)
+	$(PTP_MRES_OBJ) $(CR_MRES_OBJ) $(CP_MRES_OBJ) $(DCS_MRES_OBJ) $(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ)
 
 MINIT_TABLE_OBJ = $(BUILD)/module-table-test.dobj
 DEVICE_TEST_ASM = $(KINIT_BUILD)/device-test-minit.s
@@ -88,7 +94,7 @@ $(KINIT_ASM): $(KINIT_INPUTS) | $(BUILD)
 	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kinit BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_DEBUG='$(KINIT_DEBUG)'
 
 $(KCORE_FIXED_ASM) $(MRES_ASM): $(KCORE_INPUTS) | $(BUILD)
-	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kcore BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)'
+	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kcore BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' DCS_SIMH_COMPAT='$(DCS_SIMH_COMPAT)'
 
 $(BUILD)/%.dobj: $(KINIT_BUILD)/%.s | $(BUILD)
 	$(DAS) -c -o $@ $<
@@ -96,8 +102,12 @@ $(BUILD)/%.dobj: $(KCORE_BUILD)/%.s | $(BUILD)
 	$(DAS) -c -o $@ $<
 
 $(DEVICE_TEST_ASM): device-test-minit.c $(PROJECT_ROOT)/system/kernel/kinit.h \
+    $(PROJECT_ROOT)/system/kernel/kcore.h \
+    $(PROJECT_ROOT)/system/kernel/kcore_pi.h \
     $(PROJECT_ROOT)/system/kernel/module.h $(PROJECT_ROOT)/system/kernel/card.h \
-    $(PROJECT_ROOT)/system/kernel/wcnsls.h | $(BUILD)
+    $(PROJECT_ROOT)/system/kernel/dcs.h \
+    $(PROJECT_ROOT)/system/kernel/wcnsls.h \
+    $(PROJECT_ROOT)/system/kernel/ocnsls.h | $(BUILD)
 	mkdir -p $(KINIT_BUILD)
 	$(PDP10_GCC) -std=c99 -Os -I$(PROJECT_ROOT)/system/kernel -I$(PDP10_PREFIX)/include -S $< -o $@
 $(DEVICE_TEST_OBJ): $(DEVICE_TEST_ASM) | $(BUILD)
@@ -118,28 +128,35 @@ $(KCORE_STREAM): $(KCORE_RIM) $(KCORE_MAP)
 	test -n "$$end"; words=`$(PYTHON) -c 'import sys; print(oct(int(sys.argv[1],8)-0o60)[2:])' $$end`; \
 	$(MKSTREAM) -i $(KCORE_RIM) -o $@ -b 060 -w "$$words"
 
-$(CTY_MRES_OBJ): $(BUILD)/cty.dobj $(BUILD)/cty_io.dobj $(KCORE_MAP)
+$(CTY_MRES_OBJ): $(BUILD)/cty_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/cty-mres.dxr -M $(BUILD)/cty-mres.map \
 	    -R $@ -N cty_mres_package -X cty_pi_handler -X cty_put6 \
-	    -X cty_newline -X cty_put6_spaces $(BUILD)/cty.dobj $(BUILD)/cty_io.dobj
-$(CLK_MRES_OBJ): $(BUILD)/clk.dobj $(BUILD)/clk_io.dobj $(KCORE_MAP)
+	    -X cty_putchar $(BUILD)/cty_io.dobj
+$(CLK_MRES_OBJ): $(BUILD)/clk_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/clk-mres.dxr -M $(BUILD)/clk-mres.map \
-	    -R $@ -N clk_mres_package -X clk_pi_handler -X clk_ticks $(BUILD)/clk.dobj $(BUILD)/clk_io.dobj
-$(PTR_MRES_OBJ): $(BUILD)/ptr.dobj $(BUILD)/ptr_io.dobj $(KCORE_MAP)
+	    -R $@ -N clk_mres_package -X clk_pi_handler -X clk_ticks $(BUILD)/clk_io.dobj
+$(PTR_MRES_OBJ): $(BUILD)/ptr_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ptr-mres.dxr -M $(BUILD)/ptr-mres.map \
-	    -R $@ -N ptr_mres_package -X ptr_pi_handler -X ptr_getchar $(BUILD)/ptr.dobj $(BUILD)/ptr_io.dobj
-$(PTP_MRES_OBJ): $(BUILD)/ptp.dobj $(BUILD)/ptp_io.dobj $(KCORE_MAP)
+	    -R $@ -N ptr_mres_package -X ptr_pi_handler -X ptr_getchar $(BUILD)/ptr_io.dobj
+$(PTP_MRES_OBJ): $(BUILD)/ptp_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ptp-mres.dxr -M $(BUILD)/ptp-mres.map \
-	    -R $@ -N ptp_mres_package -X ptp_pi_handler -X ptp_putchar $(BUILD)/ptp.dobj $(BUILD)/ptp_io.dobj
-$(CR_MRES_OBJ): $(BUILD)/cr.dobj $(BUILD)/cr_io.dobj $(KCORE_MAP)
+	    -R $@ -N ptp_mres_package -X ptp_pi_handler -X ptp_putchar $(BUILD)/ptp_io.dobj
+$(CR_MRES_OBJ): $(BUILD)/cr_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/cr-mres.dxr -M $(BUILD)/cr-mres.map \
-	    -R $@ -N cr_mres_package -X cr_pi_handler -X cr_read_card $(BUILD)/cr.dobj $(BUILD)/cr_io.dobj
-$(CP_MRES_OBJ): $(BUILD)/cp.dobj $(BUILD)/cp_io.dobj $(KCORE_MAP)
+	    -R $@ -N cr_mres_package -X cr_pi_handler -X cr_read_card $(BUILD)/cr_io.dobj
+$(CP_MRES_OBJ): $(BUILD)/cp_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/cp-mres.dxr -M $(BUILD)/cp-mres.map \
-	    -R $@ -N cp_mres_package -X cp_pi_handler -X cp_punch_card $(BUILD)/cp.dobj $(BUILD)/cp_io.dobj
+	    -R $@ -N cp_mres_package -X cp_pi_handler -X cp_punch_card $(BUILD)/cp_io.dobj
+$(DCS_MRES_OBJ): $(BUILD)/dcs_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dcs-mres.dxr -M $(BUILD)/dcs-mres.map \
+	    -R $@ -N dcs_mres_package -X dcs_pi_handler -X dcs_getchar \
+	    -X dcs_putchar $(BUILD)/dcs_io.dobj
 $(WCNSLS_MRES_OBJ): $(BUILD)/wcnsls_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/wcnsls-mres.dxr -M $(BUILD)/wcnsls-mres.map \
 	    -R $@ -N wcnsls_mres_package -X wcnsls_read -X wcnsls_cono -X wcnsls_plot $(BUILD)/wcnsls_io.dobj
+$(OCNSLS_MRES_OBJ): $(BUILD)/ocnsls_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ocnsls-mres.dxr -M $(BUILD)/ocnsls-mres.map \
+	    -R $@ -N ocnsls_mres_package -X ocnsls_read $(BUILD)/ocnsls_io.dobj
 
 $(KCORE_EMBED_ASM): kcore-embed-v1.s.in $(KCORE_MAP) | $(BUILD)
 	end=`awk '$$1 == "__kcore_low_init_end" { print $$2 }' $(KCORE_MAP)`; \
@@ -170,6 +187,7 @@ $(STAGE1_DXR): $(STAGE1_SRC) | $(BUILD)
 	$(DAS) --base-kernel -o $@ $<
 $(STAGE1_TAPE): $(STAGE1_DXR)
 	$(DXRCONVERT) --pdp6-readin -b 060 $< $@
+	printf '\252' >> $@
 $(DISK_IMAGE): $(IMAGE_WORDS) $(STAGE1_TAPE)
 	rm -rf $(DISK_DIR)
 	$(MKDSK) -n 1 -m clean -p $(IMAGE_WORDS) -o $(DISK_DIR)
@@ -202,8 +220,10 @@ test: image $(SIMH_INI_NO_PTP) $(SIMH_INI_NO_SLV)
 	    'PTP                                   OK' \
 	    'CR                                    OK' \
 	    'CP                                    OK' \
-	    'WCNSLS' \
-	    'SLV                               NO DRV' \
+	    'DCS                               NO DEV' \
+	    'WCNSLS                            LOADED' \
+	    'OCNSLS                            LOADED' \
+	    'SLV                               NO' \
 	    'HALT instruction' $(if $(filter 1,$(KINIT_DEBUG)),>/dev/null,)
 ifeq ($(KINIT_DEBUG),1)
 	@cat $(LOG)
@@ -219,6 +239,7 @@ endif
 	    $(SIMH_PDP6) $(SIMH_INI_NO_SLV) $(SIMH_LOG_NO_SLV) $(LOG_NO_SLV) \
 	    'SLV                               NO DEV' \
 	    'HALT instruction' >/dev/null
+	@$(PYTHON) dcs-socket-test-v1.py --simh '$(SIMH_PDP6)' --ini '$(SIMH_INI)' --log '$(BUILD)/dcs-socket.log'
 	@echo 'KINIT conditional-MRES device checkpoint test PASS'
 
 clean:

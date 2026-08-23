@@ -1,20 +1,21 @@
 #include "kinit.h"
 #include "module.h"
 #include "mres.h"
-#include "kcore_io.h"
 #include "kcore_pi.h"
 #include "cty.h"
 #include "clk.h"
 #include "pt.h"
 #include "card.h"
+#include "dcs.h"
 #include "wcnsls.h"
+#include "ocnsls.h"
 
 #define CTY_X_HANDLER           0U
 #define CTY_X_PUT6              1U
-#define CTY_X_NEWLINE           2U
-#define CTY_X_SPACES            3U
+#define CTY_X_PUTCHAR           2U
 
 #define CLK_X_HANDLER           0U
+#define CLK_X_TICKS             1U
 #define PTR_X_HANDLER           0U
 #define PTR_X_GETCHAR           1U
 #define PTP_X_HANDLER           0U
@@ -23,15 +24,135 @@
 #define CR_X_READ_CARD          1U
 #define CP_X_HANDLER            0U
 #define CP_X_PUNCH_CARD         1U
+#define DCS_X_HANDLER           0U
+#define DCS_X_GETCHAR           1U
+#define DCS_X_PUTCHAR           2U
 #define WCNSLS_X_READ           0U
+#define OCNSLS_X_READ           0U
 
 #define SLV_PI_MASK             0000007UL
 #define SLV_CO_CLEAR_IRQ        0000010UL
 #define SLV_PROBE_PI            7U
 
 static unsigned int diag_put6_addr;
-static unsigned int diag_newline_addr;
-static unsigned int diag_spaces_addr;
+static unsigned int diag_putchar_addr;
+
+
+static unsigned int pi_level_count[PDP10_PI_LEVELS + 1U];
+static unsigned int pi_handler_total;
+static unsigned int pi_enabled_mask;
+
+static kword_t
+minit_pi_span(unsigned int start, unsigned int count)
+{
+        kword_t neg_count;
+
+        if (count == 0U)
+                return 0;
+        neg_count = (kword_t)((01000000U - count) & 0777777U);
+        return (neg_count << 18) | (kword_t)(start & 0777777U);
+}
+
+static void
+minit_pi_reindex(void)
+{
+        unsigned int level;
+        unsigned int start;
+
+        start = 0U;
+        for (level = PDP10_PI_LEVEL_MIN; level <= PDP10_PI_LEVEL_MAX;
+            ++level) {
+                pdp10_pi_level_span[level - 1U] =
+                    minit_pi_span(start, pi_level_count[level]);
+                start += pi_level_count[level];
+        }
+}
+
+void
+module_pi_init(void)
+{
+        unsigned int i;
+
+        minit_pi_low_init();
+        minit_pi_hw_clear();
+        pi_handler_total = 0U;
+        pi_enabled_mask = 0U;
+        for (i = 0U; i <= PDP10_PI_LEVELS; ++i)
+                pi_level_count[i] = 0U;
+        for (i = 0U; i < PDP10_PI_HANDLER_CAPACITY; ++i)
+                pdp10_pi_handlers[i] = 0;
+        for (i = 0U; i < PDP10_PI_LEVELS; ++i)
+                pdp10_pi_level_span[i] = 0;
+}
+
+int
+module_pi_register(unsigned int level, unsigned int handler)
+{
+        unsigned int start;
+        unsigned int count;
+        unsigned int insert;
+        unsigned int i;
+
+        if (level < PDP10_PI_LEVEL_MIN || level > PDP10_PI_LEVEL_MAX ||
+            handler == 0U || pi_handler_total >= PDP10_PI_HANDLER_CAPACITY)
+                return -1;
+        start = 0U;
+        for (i = PDP10_PI_LEVEL_MIN; i < level; ++i)
+                start += pi_level_count[i];
+        count = pi_level_count[level];
+        for (i = start; i < start + count; ++i) {
+                if ((unsigned int)pdp10_pi_handlers[i] == handler)
+                        return -1;
+        }
+        insert = start + count;
+        for (i = pi_handler_total; i > insert; --i)
+                pdp10_pi_handlers[i] = pdp10_pi_handlers[i - 1U];
+        pdp10_pi_handlers[insert] = (kword_t)handler;
+        ++pi_level_count[level];
+        ++pi_handler_total;
+        minit_pi_reindex();
+        return 0;
+}
+
+int
+module_pi_unregister(unsigned int level, unsigned int handler)
+{
+        unsigned int start;
+        unsigned int count;
+        unsigned int found;
+        unsigned int i;
+
+        if (level < PDP10_PI_LEVEL_MIN || level > PDP10_PI_LEVEL_MAX ||
+            handler == 0U)
+                return -1;
+        start = 0U;
+        for (i = PDP10_PI_LEVEL_MIN; i < level; ++i)
+                start += pi_level_count[i];
+        count = pi_level_count[level];
+        found = pi_handler_total;
+        for (i = start; i < start + count; ++i) {
+                if ((unsigned int)pdp10_pi_handlers[i] == handler) {
+                        found = i;
+                        break;
+                }
+        }
+        if (found == pi_handler_total)
+                return -1;
+        for (i = found; i + 1U < pi_handler_total; ++i)
+                pdp10_pi_handlers[i] = pdp10_pi_handlers[i + 1U];
+        --pi_handler_total;
+        pdp10_pi_handlers[pi_handler_total] = 0;
+        --pi_level_count[level];
+        minit_pi_reindex();
+        return 0;
+}
+
+static void
+minit_pi_enable(unsigned int level)
+{
+        pi_enabled_mask |= PDP10_PI_MASK(level);
+        minit_pi_hw_set((kword_t)pi_enabled_mask);
+}
 
 static int
 minit_put6(kword_t word)
@@ -46,21 +167,28 @@ minit_put6(kword_t word)
 static int
 minit_spaces(unsigned int words)
 {
-        if (diag_spaces_addr == 0U) {
+        if (diag_put6_addr == 0U) {
                 kinit_put6_spaces(words);
                 return 0;
         }
-        return (int)kinit_call18_1(diag_spaces_addr, (kword_t)words);
+        while (words != 0U) {
+                if (kinit_call18_1(diag_put6_addr, 0) != 0)
+                        return -1;
+                --words;
+        }
+        return 0;
 }
 
 static int
 minit_newline(void)
 {
-        if (diag_newline_addr == 0U) {
+        if (diag_putchar_addr == 0U) {
                 kinit_newline();
                 return 0;
         }
-        return (int)kinit_call18_0(diag_newline_addr);
+        if (kinit_call18_1(diag_putchar_addr, 015) != 0)
+                return -1;
+        return (int)kinit_call18_1(diag_putchar_addr, 012);
 }
 
 static void
@@ -109,10 +237,10 @@ minit_diag_nodrv(kword_t name)
 }
 
 static void
-minit_diag_name(kword_t name)
+minit_diag_loaded(kword_t name)
 {
-        if (minit_put6(name) != 0 || minit_newline() != 0)
-                minit_output_failure();
+        minit_diag_status6(name, (kword_t)SIXBIT("    LO"),
+            (kword_t)SIXBIT("ADED  "));
 }
 
 static void
@@ -160,9 +288,9 @@ minit_export(kword_t name, unsigned int base, unsigned int index)
 static void
 minit_register(kword_t name, unsigned int level, unsigned int handler)
 {
-        if (pdp10_pi_register(level, handler, 0) != 0)
+        if (module_pi_register(level, handler) != 0)
                 minit_fatal(name);
-        pdp10_pi_hw_enable(PDP10_PI_MASK(level));
+        minit_pi_enable(level);
 }
 
 void
@@ -185,8 +313,7 @@ cty_minit(void)
             minit_export(name, base, CTY_X_HANDLER));
         minit_cty_cono(CTY_NATIVE_PI_LEVEL);
         diag_put6_addr = minit_export(name, base, CTY_X_PUT6);
-        diag_newline_addr = minit_export(name, base, CTY_X_NEWLINE);
-        diag_spaces_addr = minit_export(name, base, CTY_X_SPACES);
+        diag_putchar_addr = minit_export(name, base, CTY_X_PUTCHAR);
         minit_diag_ok(name);
 }
 
@@ -210,6 +337,8 @@ clk_minit(void)
         base = minit_install(name);
         minit_register(name, CLK_NATIVE_PI_LEVEL,
             minit_export(name, base, CLK_X_HANDLER));
+        module_service_set(MODULE_SERVICE_CLK_TICKS,
+            minit_export(name, base, CLK_X_TICKS));
         minit_clk_cono((kword_t)CLK_NATIVE_PI_LEVEL | CLK_APR_CO_CLEAR_FLAG |
             CLK_APR_CO_ENABLE);
         minit_diag_hz();
@@ -231,6 +360,8 @@ ptr_minit(void)
         base = minit_install(name);
         minit_register(name, PT_NATIVE_PI_LEVEL,
             minit_export(name, base, PTR_X_HANDLER));
+        module_service_set(MODULE_SERVICE_PTR_GETCHAR,
+            minit_export(name, base, PTR_X_GETCHAR));
         minit_ptr_cono(PT_NATIVE_PI_LEVEL);
         minit_diag_ok(name);
 }
@@ -318,6 +449,33 @@ cp_minit(void)
         minit_diag_ok(name);
 }
 
+
+void
+dcs_minit(void)
+{
+        kword_t name;
+        kword_t st;
+        unsigned int base;
+
+        name = (kword_t)SIXBIT("DCS   ");
+        minit_dcs_cono((kword_t)DCS_NATIVE_PI_LEVEL);
+        st = minit_dcs_coni();
+        minit_dcs_cono(0);
+        if ((st & DCS_PI_MASK) != DCS_NATIVE_PI_LEVEL) {
+                minit_diag_nodev(name);
+                return;
+        }
+        base = minit_install(name);
+        minit_register(name, DCS_NATIVE_PI_LEVEL,
+            minit_export(name, base, DCS_X_HANDLER));
+        module_service_set(MODULE_SERVICE_DCS_GETCHAR,
+            minit_export(name, base, DCS_X_GETCHAR));
+        module_service_set(MODULE_SERVICE_DCS_PUTCHAR,
+            minit_export(name, base, DCS_X_PUTCHAR));
+        minit_dcs_cono(0);
+        minit_diag_ok(name);
+}
+
 void
 wcnsls_minit(void)
 {
@@ -329,7 +487,20 @@ wcnsls_minit(void)
         module_service_set(MODULE_SERVICE_WCNSLS_READ,
             minit_export(name, base, WCNSLS_X_READ));
         minit_wcnsls_cono(WCNSLS_CO_SPACEWAR);
-        minit_diag_name(name);
+        minit_diag_loaded(name);
+}
+
+void
+ocnsls_minit(void)
+{
+        kword_t name;
+        unsigned int base;
+
+        name = (kword_t)SIXBIT("OCNSLS");
+        base = minit_install(name);
+        module_service_set(MODULE_SERVICE_OCNSLS_READ,
+            minit_export(name, base, OCNSLS_X_READ));
+        minit_diag_loaded(name);
 }
 
 void

@@ -41,14 +41,8 @@
 
 int cr_read_card(kword_t cols[CARD_COLUMNS]);
 int cp_punch_card(const kword_t cols[CARD_COLUMNS]);
-int cr_pi_handler(unsigned int level, kword_t opaque);
-int cp_pi_handler(unsigned int level, kword_t opaque);
+void cr_pi_handler(void);
+void cp_pi_handler(void);
 
-kword_t cr_coni(void);
-void cr_cono(kword_t word);
-kword_t cr_datai(void);
-kword_t cp_coni(void);
-void cp_cono(kword_t word);
-void cp_datao(kword_t word);
 
 #endif

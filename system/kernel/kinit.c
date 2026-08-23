@@ -200,7 +200,7 @@ kinit_enter(void)
         kinit_diag_banner();
         kcore_load();
         kinit_save_boot_handoff();
-        kcore_init();
+        module_pi_init();
         kinit_diag_system();
         mres_init();
         module_run_minits();

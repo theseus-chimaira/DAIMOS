@@ -1,0 +1,23 @@
+diff --git a/system/kernel/Makefile b/system/kernel/Makefile
+--- a/system/kernel/Makefile
++++ b/system/kernel/Makefile
+@@ -1,7 +1,7 @@
+ PROJECT_ROOT := $(abspath ../..)
+ BUILD_ROOT ?= $(PROJECT_ROOT)/build
+ KINIT_DEBUG ?= 0
+-DCS_SIMH_COMPAT ?= 1
++DCS_SIMH_COMPAT ?= 0
+ BUILD ?= $(BUILD_ROOT)/system/kernel$(if $(filter 1,$(KINIT_DEBUG)),-debug,)
+ PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
+ VERSION_FILE := $(PROJECT_ROOT)/VERSION
+diff --git a/tests/system/kernel/Makefile b/tests/system/kernel/Makefile
+--- a/tests/system/kernel/Makefile
++++ b/tests/system/kernel/Makefile
+@@ -1,6 +1,6 @@
+ PROJECT_ROOT := $(abspath ../../..)
+ BUILD ?= $(PROJECT_ROOT)/build/tests/system/kernel
+ KINIT_DEBUG ?= 0
+-DCS_SIMH_COMPAT ?= 1
++DCS_SIMH_COMPAT ?= 0
+ KINIT_VARIANT := $(if $(filter 1,$(KINIT_DEBUG)),debug,normal)
+ KINIT_BUILD := $(BUILD)/kinit-asm-$(KINIT_VARIANT)

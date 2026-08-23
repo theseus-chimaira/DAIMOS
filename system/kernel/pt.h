@@ -21,15 +21,9 @@
 #define PT_E_IO                -4
 
 int ptr_getchar(int *cp);
-int ptr_pi_handler(unsigned int level, kword_t opaque);
+void ptr_pi_handler(void);
 int ptp_putchar(int c);
-int ptp_pi_handler(unsigned int level, kword_t opaque);
+void ptp_pi_handler(void);
 
-kword_t ptr_coni(void);
-void ptr_cono(kword_t word);
-kword_t ptr_datai(void);
-kword_t ptp_coni(void);
-void ptp_cono(kword_t word);
-void ptp_datao(kword_t word);
 
 #endif
