@@ -28,16 +28,16 @@ KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 KCORE_FIXED_NAMES = kcore_entry kcore_io kcore_end
 KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))
 KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
-MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io dcs_io ge_io tty_io wcnsls_io ocnsls_io
+MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io dcs_io ge_io dpy_io tty_io wcnsls_io ocnsls_io
 MRES_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(MRES_NAMES)))
 
 KINIT_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
 	kinit.c kinit_diag.c module_minit.c kinit.h module.h mres.h \
-	cty.h clk.h pt.h card.h dcs.h ge.h tty.h wcnsls.h ocnsls.h kinit_io.s module_io.s)
+	cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h kinit_io.s module_io.s)
 KCORE_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
-	kcore.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h tty.h wcnsls.h ocnsls.h \
+	kcore.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h \
 	kcore_entry.s kcore_io.s kcore_end.s cty_io.s clk_io.s ptr_io.s \
-	ptp_io.s cr_io.s cp_io.s dcs_io.s ge_io.s tty_io.s wcnsls_io.s ocnsls_io.s)
+	ptp_io.s cr_io.s cp_io.s dcs_io.s ge_io.s dpy_io.s tty_io.s wcnsls_io.s ocnsls_io.s)
 
 KCORE_DXR = $(BUILD)/kcore-v1.dxr
 KCORE_MAP = $(BUILD)/kcore-v1.map
@@ -54,12 +54,13 @@ CR_MRES_OBJ = $(BUILD)/cr-mres.dobj
 CP_MRES_OBJ = $(BUILD)/cp-mres.dobj
 DCS_MRES_OBJ = $(BUILD)/dcs-mres.dobj
 GE_MRES_OBJ = $(BUILD)/ge-mres.dobj
+DPY_MRES_OBJ = $(BUILD)/dpy-mres.dobj
 TTY_MRES_OBJ = $(BUILD)/tty-mres.dobj
 WCNSLS_MRES_OBJ = $(BUILD)/wcnsls-mres.dobj
 OCNSLS_MRES_OBJ = $(BUILD)/ocnsls-mres.dobj
 MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PTR_MRES_OBJ) \
 	$(PTP_MRES_OBJ) $(CR_MRES_OBJ) $(CP_MRES_OBJ) $(DCS_MRES_OBJ) \
-	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ)
+	$(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) $(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ)
 
 MINIT_TABLE_OBJ = $(BUILD)/module-table-test.dobj
 DEVICE_TEST_ASM = $(KINIT_BUILD)/device-test-minit.s
@@ -77,12 +78,16 @@ DISK_IMAGE = $(DISK_DIR)/dsk0.dsk
 SIMH_INI = $(BUILD)/kinit-v1.ini
 SIMH_INI_NO_PTP = $(BUILD)/kinit-v1-no-ptp.ini
 SIMH_INI_NO_SLV = $(BUILD)/kinit-v1-no-slv.ini
+SIMH_INI_DPY = $(BUILD)/kinit-v1-dpy.ini
 LOG = $(BUILD)/kinit-v1.log
 LOG_NO_PTP = $(BUILD)/kinit-v1-no-ptp.log
 LOG_NO_SLV = $(BUILD)/kinit-v1-no-slv.log
+LOG_DPY = $(BUILD)/kinit-v1-dpy.log
 SIMH_LOG = $(BUILD)/kinit-v1.simh.log
 SIMH_LOG_NO_PTP = $(BUILD)/kinit-v1-no-ptp.simh.log
 SIMH_LOG_NO_SLV = $(BUILD)/kinit-v1-no-slv.simh.log
+SIMH_LOG_DPY = $(BUILD)/kinit-v1-dpy.simh.log
+DPY_DEBUG = $(BUILD)/kinit-v1-dpy.debug.log
 PTP_OUTPUT = $(BUILD)/ptp-output.bin
 CR_INPUT = $(BUILD)/cr-input.txt
 CP_OUTPUT = $(BUILD)/cp-output.txt
@@ -110,6 +115,7 @@ $(DEVICE_TEST_ASM): device-test-minit.c $(PROJECT_ROOT)/system/kernel/kinit.h \
     $(PROJECT_ROOT)/system/kernel/module.h $(PROJECT_ROOT)/system/kernel/card.h \
     $(PROJECT_ROOT)/system/kernel/dcs.h \
     $(PROJECT_ROOT)/system/kernel/ge.h \
+    $(PROJECT_ROOT)/system/kernel/dpy.h \
     $(PROJECT_ROOT)/system/kernel/tty.h \
     $(PROJECT_ROOT)/system/kernel/wcnsls.h \
     $(PROJECT_ROOT)/system/kernel/ocnsls.h | $(BUILD)
@@ -139,7 +145,7 @@ $(CTY_MRES_OBJ): $(BUILD)/cty_io.dobj $(KCORE_MAP)
 	    -X cty_putchar $(BUILD)/cty_io.dobj
 $(CLK_MRES_OBJ): $(BUILD)/clk_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/clk-mres.dxr -M $(BUILD)/clk-mres.map \
-	    -R $@ -N clk_mres_package -X clk_pi_handler -X clk_ticks $(BUILD)/clk_io.dobj
+	    -R $@ -N clk_mres_package -X clk_pi_handler -X clk_ticks -X clk_pi_service $(BUILD)/clk_io.dobj
 $(PTR_MRES_OBJ): $(BUILD)/ptr_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ptr-mres.dxr -M $(BUILD)/ptr-mres.map \
 	    -R $@ -N ptr_mres_package -X ptr_pi_handler -X ptr_getchar $(BUILD)/ptr_io.dobj
@@ -160,6 +166,10 @@ $(GE_MRES_OBJ): $(BUILD)/ge_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ge-mres.dxr -M $(BUILD)/ge-mres.map \
 	    -R $@ -N ge_mres_package -X ge_pi_handler -X ge_getchar \
 	    -X ge_putchar -X ge_dcs_pi_service_address $(BUILD)/ge_io.dobj
+$(DPY_MRES_OBJ): $(BUILD)/dpy_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dpy-mres.dxr -M $(BUILD)/dpy-mres.map \
+	    -R $@ -N dpy_mres_package -X dpy_pi_handler -X dpy_putword \
+	    -X dpy_clk_pi_service_address $(BUILD)/dpy_io.dobj
 $(TTY_MRES_OBJ): $(BUILD)/tty_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/tty-mres.dxr -M $(BUILD)/tty-mres.map \
 	    -R $@ -N tty_mres_package -X tty_putchar -X tty_cty_putchar_address \
@@ -218,10 +228,19 @@ $(SIMH_INI_NO_PTP): $(SIMH_INI)
 	sed -e 's/set ptp enabled/set ptp disabled/' -e '/attach -q -n ptp/d' $< > $@
 $(SIMH_INI_NO_SLV): $(SIMH_INI)
 	sed 's/set slave enabled/set slave disabled/' $< > $@
+$(SIMH_INI_DPY): $(SIMH_INI)
+	{ \
+	    printf 'set debug -n %s\n' '$(abspath $(DPY_DEBUG))'; \
+	    sed -e 's|$(abspath $(SIMH_LOG))|$(abspath $(SIMH_LOG_DPY))|' \
+	        -e '/set ge disabled/a\
+set dpy headless\
+set dpy enabled\
+set dpy debug=DATAIO' $<; \
+	} > $@
 
 image: $(SIMH_INI)
 
-test: image $(SIMH_INI_NO_PTP) $(SIMH_INI_NO_SLV)
+test: image $(SIMH_INI_NO_PTP) $(SIMH_INI_NO_SLV) $(SIMH_INI_DPY)
 	@STDBUF='$(STDBUF)' $(WATCH_OUTPUT) -f 6 -t 2 \
 	    $(SIMH_PDP6) $(SIMH_INI) $(SIMH_LOG) $(LOG) \
 	    'DAIMON                              V0.1' \
@@ -235,6 +254,7 @@ test: image $(SIMH_INI_NO_PTP) $(SIMH_INI_NO_SLV)
 	    'CP                                    OK' \
 	    'DCS                               NO DEV' \
 	    'GE                                NO DEV' \
+	    'DPY                               NO DEV' \
 	    'TTY                               LOADED' \
 	    'WCNSLS                            LOADED' \
 	    'OCNSLS                            LOADED' \
@@ -254,6 +274,13 @@ endif
 	    $(SIMH_PDP6) $(SIMH_INI_NO_SLV) $(SIMH_LOG_NO_SLV) $(LOG_NO_SLV) \
 	    'SLV                               NO DEV' \
 	    'HALT instruction' >/dev/null
+	@rm -f $(DPY_DEBUG)
+	@STDBUF='$(STDBUF)' $(WATCH_OUTPUT) -f 6 -t 2 \
+	    $(SIMH_PDP6) $(SIMH_INI_DPY) $(SIMH_LOG_DPY) $(LOG_DPY) \
+	    'DPY                                   OK' \
+	    'HALT instruction' >/dev/null
+	@$(PYTHON) dpy-banner-test-v1.py --log '$(DPY_DEBUG)' \
+	    --version '$(PROJECT_ROOT)/VERSION'
 	@$(PYTHON) dcs-socket-test-v1.py --simh '$(SIMH_PDP6)' --ini '$(SIMH_INI)' --log '$(BUILD)/dcs-socket.log'
 	@$(PYTHON) ge-shared-socket-test-v1.py --simh '$(SIMH_PDP6)' --ini '$(SIMH_INI)' --log '$(BUILD)/ge-shared-socket.log'
 	@echo 'KINIT conditional-MRES device checkpoint test PASS'

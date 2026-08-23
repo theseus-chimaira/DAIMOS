@@ -8,6 +8,7 @@
         .globl cp_minit
         .globl dcs_minit
         .globl ge_minit
+        .globl dpy_minit
         .globl tty_minit
         .globl wcnsls_minit
         .globl ocnsls_minit
@@ -20,6 +21,7 @@
         .globl cp_mres_package
         .globl dcs_mres_package
         .globl ge_mres_package
+        .globl dpy_mres_package
         .globl tty_mres_package
         .globl wcnsls_mres_package
         .globl ocnsls_mres_package
@@ -36,6 +38,7 @@ __minit_table_begin:
         .word cp_minit,,cp_mres_package
         .word dcs_minit,,dcs_mres_package
         .word ge_minit,,ge_mres_package
+        .word dpy_minit,,dpy_mres_package
         .word tty_minit,,tty_mres_package
         .word wcnsls_minit,,wcnsls_mres_package
         .word ocnsls_minit,,ocnsls_mres_package

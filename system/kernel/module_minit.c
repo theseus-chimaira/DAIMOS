@@ -8,6 +8,7 @@
 #include "card.h"
 #include "dcs.h"
 #include "ge.h"
+#include "dpy.h"
 #include "tty.h"
 #include "wcnsls.h"
 #include "ocnsls.h"
@@ -18,6 +19,7 @@
 
 #define CLK_X_HANDLER           0U
 #define CLK_X_TICKS             1U
+#define CLK_X_PI_SERVICE        2U
 #define PTR_X_HANDLER           0U
 #define PTR_X_GETCHAR           1U
 #define PTP_X_HANDLER           0U
@@ -34,6 +36,9 @@
 #define GE_X_GETCHAR            1U
 #define GE_X_PUTCHAR            2U
 #define GE_X_DCS_PI_SERVICE     3U
+#define DPY_X_HANDLER           0U
+#define DPY_X_PUTWORD           1U
+#define DPY_X_CLK_PI_SERVICE    2U
 #define TTY_X_PUTCHAR           0U
 #define TTY_X_CTY_PUTCHAR_ADDR  1U
 #define TTY_X_DCS_PUTCHAR_ADDR  2U
@@ -47,6 +52,8 @@
 
 static unsigned int diag_put6_addr;
 static unsigned int diag_putchar_addr;
+static unsigned int clk_pi_handler_addr;
+static unsigned int clk_pi_service_addr;
 static unsigned int dcs_pi_handler_addr;
 static unsigned int dcs_pi_service_addr;
 
@@ -348,8 +355,9 @@ clk_minit(void)
         }
         minit_clk_cono(CLK_APR_CO_DISABLE | CLK_APR_CO_CLEAR_FLAG);
         base = minit_install(name);
-        minit_register(name, CLK_NATIVE_PI_LEVEL,
-            minit_export(name, base, CLK_X_HANDLER));
+        clk_pi_handler_addr = minit_export(name, base, CLK_X_HANDLER);
+        clk_pi_service_addr = minit_export(name, base, CLK_X_PI_SERVICE);
+        minit_register(name, CLK_NATIVE_PI_LEVEL, clk_pi_handler_addr);
         module_service_set(MODULE_SERVICE_CLK_TICKS,
             minit_export(name, base, CLK_X_TICKS));
         minit_clk_cono((kword_t)CLK_NATIVE_PI_LEVEL | CLK_APR_CO_CLEAR_FLAG |
@@ -540,6 +548,177 @@ ge_minit(void)
             minit_export(name, base, GE_X_PUTCHAR));
         minit_gtyi_cono(0);
         minit_gtyo_cono((kword_t)(GE_NATIVE_PI_LEVEL | GTYO_CO_FROB));
+        minit_diag_ok(name);
+}
+
+static unsigned int
+dpy_param_mode(unsigned int mode)
+{
+        return (mode & 07U) << 13;
+}
+
+static unsigned int
+dpy_point_coord(unsigned int yflag, unsigned int coord,
+    unsigned int next_mode)
+{
+        unsigned int inst;
+
+        inst = (next_mode & 07U) << 13;
+        if (yflag != 0U)
+                inst |= 0200000U;
+        inst |= coord & 01777U;
+        return inst & 0777777U;
+}
+
+static unsigned int
+dpy_char3(unsigned int c0, unsigned int c1, unsigned int c2)
+{
+        return ((c0 & 077U) << 12) | ((c1 & 077U) << 6) | (c2 & 077U);
+}
+
+static kword_t
+dpy_inst(unsigned int left, unsigned int right)
+{
+        return ((((kword_t)left) & 0777777UL) << 18) |
+            (((kword_t)right) & 0777777UL);
+}
+
+static void
+minit_dpy_word(kword_t name, unsigned int putword, kword_t word)
+{
+        if (kinit_call18_1(putword, word) != DPY_E_OK)
+                minit_fatal(name);
+}
+
+static void
+minit_dpy_flush_codes(kword_t name, unsigned int putword,
+    unsigned int *codes, unsigned int *count, unsigned int *char_mode)
+{
+        unsigned int need;
+
+        need = *char_mode == 0U ? 3U : 6U;
+        while (*count < need)
+                codes[(*count)++] = DPY_T342_SPACE;
+        if (*char_mode == 0U) {
+                minit_dpy_word(name, putword, dpy_inst(
+                    dpy_param_mode(DPY_MODE_CHAR),
+                    dpy_char3(codes[0], codes[1], codes[2])));
+                *char_mode = 1U;
+        } else {
+                minit_dpy_word(name, putword, dpy_inst(
+                    dpy_char3(codes[0], codes[1], codes[2]),
+                    dpy_char3(codes[3], codes[4], codes[5])));
+        }
+        *count = 0U;
+}
+
+static void
+minit_dpy_code(kword_t name, unsigned int putword, unsigned int code,
+    unsigned int *codes, unsigned int *count, unsigned int *char_mode)
+{
+        unsigned int need;
+
+        codes[(*count)++] = code & 077U;
+        need = *char_mode == 0U ? 3U : 6U;
+        if (*count == need)
+                minit_dpy_flush_codes(name, putword, codes, count, char_mode);
+}
+
+/* The Type 342 upper-case set uses 1..32 for A..Z and ASCII 040..077
+ * directly for the punctuation/digits needed by the boot version banner. */
+static void
+minit_dpy_char(kword_t name, unsigned int putword, unsigned int ch,
+    unsigned int *codes, unsigned int *count, unsigned int *char_mode)
+{
+        unsigned int code;
+
+        if (ch >= 'A' && ch <= 'Z')
+                code = ch - 'A' + 1U;
+        else if (ch >= 040U && ch <= 077U)
+                code = ch;
+        else
+                code = 077U;
+        minit_dpy_code(name, putword, code, codes, count, char_mode);
+}
+
+static void
+minit_dpy_banner(kword_t name, unsigned int putword)
+{
+        static const char title[] = "DAIMOS ";
+        static const char version[] = DAIMON_VERSION_TEXT;
+        unsigned int codes[6];
+        unsigned int count;
+        unsigned int char_mode;
+        unsigned int i;
+
+        count = 0U;
+        char_mode = 0U;
+
+        minit_dpy_word(name, putword, dpy_inst(dpy_param_mode(DPY_MODE_POINT),
+            dpy_point_coord(0U, 0240U, DPY_MODE_POINT)));
+        minit_dpy_word(name, putword, dpy_inst(
+            dpy_point_coord(1U, 01000U, DPY_MODE_PARAM),
+            dpy_param_mode(DPY_MODE_PARAM)));
+
+        for (i = 0U; title[i] != '\0'; ++i)
+                minit_dpy_char(name, putword, (unsigned int)title[i],
+                    codes, &count, &char_mode);
+        for (i = 0U; version[i] != '\0'; ++i)
+                minit_dpy_char(name, putword, (unsigned int)version[i],
+                    codes, &count, &char_mode);
+        if (count != 0U)
+                minit_dpy_flush_codes(name, putword, codes, &count, &char_mode);
+}
+
+void
+dpy_minit(void)
+{
+        kword_t name;
+        kword_t st;
+        kword_t probe;
+        unsigned int base;
+        unsigned int handler;
+        unsigned int putword;
+        unsigned int address;
+
+        name = (kword_t)SIXBIT("DPY   ");
+        probe = (kword_t)DPY_NATIVE_PI_LEVEL |
+            ((kword_t)DPY_PROBE_SPEC_PI << DPY_SPEC_PI_SHIFT);
+        minit_dpy_cono(probe);
+        st = minit_dpy_coni();
+        minit_dpy_cono(0);
+        if ((st & (DPY_DATA_PI_MASK | DPY_SPEC_PI_MASK)) == 0) {
+                minit_diag_nodev(name);
+                return;
+        }
+        if ((st & DPY_DATA_PI_MASK) != DPY_NATIVE_PI_LEVEL ||
+            ((st & DPY_SPEC_PI_MASK) >> DPY_SPEC_PI_SHIFT) !=
+            DPY_PROBE_SPEC_PI) {
+                minit_diag_notok(name);
+                return;
+        }
+
+        minit_dpy_cono(DPY_CO_INIT);
+        minit_dpy_cono(0);
+        base = minit_install(name);
+        handler = minit_export(name, base, DPY_X_HANDLER);
+        putword = minit_export(name, base, DPY_X_PUTWORD);
+        address = minit_export(name, base, DPY_X_CLK_PI_SERVICE);
+        *(kword_t *)(unsigned long)address = (kword_t)clk_pi_service_addr;
+
+        /* DPY and the APR line clock share one PI6 table entry. */
+        if (clk_pi_handler_addr != 0U) {
+                if (module_pi_unregister(CLK_NATIVE_PI_LEVEL,
+                    clk_pi_handler_addr) != 0 ||
+                    module_pi_register(DPY_NATIVE_PI_LEVEL, handler) != 0)
+                        minit_fatal(name);
+        } else {
+                minit_register(name, DPY_NATIVE_PI_LEVEL, handler);
+        }
+
+        module_service_set(MODULE_SERVICE_DPY_PUTWORD, putword);
+        minit_dpy_cono((kword_t)DPY_NATIVE_PI_LEVEL);
+        minit_dpy_banner(name, putword);
         minit_diag_ok(name);
 }
 
