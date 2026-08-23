@@ -79,15 +79,19 @@ SIMH_INI = $(BUILD)/kinit-v1.ini
 SIMH_INI_NO_PTP = $(BUILD)/kinit-v1-no-ptp.ini
 SIMH_INI_NO_SLV = $(BUILD)/kinit-v1-no-slv.ini
 SIMH_INI_DPY = $(BUILD)/kinit-v1-dpy.ini
+SIMH_INI_WCNSLS = $(BUILD)/kinit-v1-wcnsls.ini
 LOG = $(BUILD)/kinit-v1.log
 LOG_NO_PTP = $(BUILD)/kinit-v1-no-ptp.log
 LOG_NO_SLV = $(BUILD)/kinit-v1-no-slv.log
 LOG_DPY = $(BUILD)/kinit-v1-dpy.log
+LOG_WCNSLS = $(BUILD)/kinit-v1-wcnsls.log
 SIMH_LOG = $(BUILD)/kinit-v1.simh.log
 SIMH_LOG_NO_PTP = $(BUILD)/kinit-v1-no-ptp.simh.log
 SIMH_LOG_NO_SLV = $(BUILD)/kinit-v1-no-slv.simh.log
 SIMH_LOG_DPY = $(BUILD)/kinit-v1-dpy.simh.log
+SIMH_LOG_WCNSLS = $(BUILD)/kinit-v1-wcnsls.simh.log
 DPY_DEBUG = $(BUILD)/kinit-v1-dpy.debug.log
+WCNSLS_DEBUG = $(BUILD)/kinit-v1-wcnsls.debug.log
 PTP_OUTPUT = $(BUILD)/ptp-output.bin
 CR_INPUT = $(BUILD)/cr-input.txt
 CP_OUTPUT = $(BUILD)/cp-output.txt
@@ -237,10 +241,19 @@ set dpy headless\
 set dpy enabled\
 set dpy debug=DATAIO' $<; \
 	} > $@
+$(SIMH_INI_WCNSLS): $(SIMH_INI)
+	{ \
+	    printf 'set debug -n %s\n' '$(abspath $(WCNSLS_DEBUG))'; \
+	    sed -e 's|$(abspath $(SIMH_LOG))|$(abspath $(SIMH_LOG_WCNSLS))|' \
+	        -e '/set ge disabled/a\
+set wcnsls enabled\
+set wcnsls debug=DATAIO\
+set wcnsls debug=CONO' $<; \
+	} > $@
 
 image: $(SIMH_INI)
 
-test: image $(SIMH_INI_NO_PTP) $(SIMH_INI_NO_SLV) $(SIMH_INI_DPY)
+test: image $(SIMH_INI_NO_PTP) $(SIMH_INI_NO_SLV) $(SIMH_INI_DPY) $(SIMH_INI_WCNSLS)
 	@STDBUF='$(STDBUF)' $(WATCH_OUTPUT) -f 6 -t 2 \
 	    $(SIMH_PDP6) $(SIMH_INI) $(SIMH_LOG) $(LOG) \
 	    'DAIMON                              V0.1' \
@@ -281,6 +294,12 @@ endif
 	    'HALT instruction' >/dev/null
 	@$(PYTHON) dpy-banner-test-v1.py --log '$(DPY_DEBUG)' \
 	    --version '$(PROJECT_ROOT)/VERSION'
+	@rm -f $(WCNSLS_DEBUG)
+	@STDBUF='$(STDBUF)' $(WATCH_OUTPUT) -f 6 -t 2 \
+	    $(SIMH_PDP6) $(SIMH_INI_WCNSLS) $(SIMH_LOG_WCNSLS) $(LOG_WCNSLS) \
+	    'WCNSLS                            LOADED' 'HALT instruction' >/dev/null
+	@$(PYTHON) wcnsls-banner-test-v1.py --debug-log '$(WCNSLS_DEBUG)' \
+	    --simh-log '$(SIMH_LOG_WCNSLS)' --version '$(PROJECT_ROOT)/VERSION'
 	@$(PYTHON) dcs-socket-test-v1.py --simh '$(SIMH_PDP6)' --ini '$(SIMH_INI)' --log '$(BUILD)/dcs-socket.log'
 	@$(PYTHON) ge-shared-socket-test-v1.py --simh '$(SIMH_PDP6)' --ini '$(SIMH_INI)' --log '$(BUILD)/ge-shared-socket.log'
 	@echo 'KINIT conditional-MRES device checkpoint test PASS'

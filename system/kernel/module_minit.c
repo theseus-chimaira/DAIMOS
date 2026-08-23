@@ -753,6 +753,70 @@ tty_minit(void)
         minit_diag_loaded(name);
 }
 
+static const kword_t minit_wcnsls_title[] = {
+        0364306143076UL, 0164307743061UL, 0371020410237UL,
+        0216726543061UL, 0164306143056UL, 0174101602076UL, 0
+};
+
+static const kword_t minit_wcnsls_digits[] = {
+        0164316563056UL, 0043020410216UL, 0164204210437UL,
+        0360205602076UL, 0021452276102UL, 0374103602076UL,
+        0164103643056UL, 0370210420410UL, 0164305643056UL,
+        0164305702056UL
+};
+
+static kword_t
+minit_wcnsls_version_glyph(unsigned int ch)
+{
+        if (ch >= '0' && ch <= '9')
+                return minit_wcnsls_digits[ch - '0'];
+        if (ch == 'V')
+                return 0214306142504UL;
+        if (ch == '.')
+                return 0000000000306UL;
+        if (ch == '-')
+                return 0000003700000UL;
+        return 0;
+}
+
+static void
+minit_wcnsls_glyph(kword_t glyph, unsigned int x)
+{
+        unsigned int row;
+        unsigned int col;
+        unsigned int bit;
+
+        for (row = 0U; row < 7U; ++row) {
+                for (col = 0U; col < 5U; ++col) {
+                        bit = 34U - row * 5U - col;
+                        if (((glyph >> bit) & 1UL) != 0)
+                                minit_wcnsls_plot(WCNSLS_COORD(
+                                    x + col * 7U, 0330U - row * 7U));
+                }
+        }
+}
+
+static void
+minit_wcnsls_banner(void)
+{
+        static const char version[] = DAIMON_VERSION_TEXT;
+        unsigned int x;
+        unsigned int i;
+
+        minit_wcnsls_cono(WCNSLS_CO_SPACEWAR | WCNSLS_CO_GREEN_FULL);
+        x = 025U;
+        for (i = 0U; i < sizeof(minit_wcnsls_title) /
+            sizeof(minit_wcnsls_title[0]); ++i) {
+                minit_wcnsls_glyph(minit_wcnsls_title[i], x);
+                x += 42U;
+        }
+        for (i = 0U; version[i] != '\0'; ++i) {
+                minit_wcnsls_glyph(
+                    minit_wcnsls_version_glyph((unsigned int)version[i]), x);
+                x += 42U;
+        }
+}
+
 void
 wcnsls_minit(void)
 {
@@ -763,7 +827,7 @@ wcnsls_minit(void)
         base = minit_install(name);
         module_service_set(MODULE_SERVICE_WCNSLS_READ,
             minit_export(name, base, WCNSLS_X_READ));
-        minit_wcnsls_cono(WCNSLS_CO_SPACEWAR);
+        minit_wcnsls_banner();
         minit_diag_loaded(name);
 }
 

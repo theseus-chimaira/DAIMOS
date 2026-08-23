@@ -5,6 +5,11 @@
 
 #define WCNSLS_DEVICE           0420U
 #define WCNSLS_CO_SPACEWAR      0000040UL
+#define WCNSLS_CO_GREEN_ENABLE  0002000UL
+#define WCNSLS_CO_GREEN_MAX     0001700UL
+#define WCNSLS_CO_GREEN_FULL    (WCNSLS_CO_GREEN_ENABLE | WCNSLS_CO_GREEN_MAX)
+#define WCNSLS_COORD(x,y)       ((((kword_t)(x) & 0777UL) << 9) | \
+                                 ((kword_t)(y) & 0777UL))
 
 #define WCNSLS_POS_UR           0U
 #define WCNSLS_POS_LR           9U
