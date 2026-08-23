@@ -7,6 +7,7 @@
 #include "pt.h"
 #include "card.h"
 #include "dcs.h"
+#include "tty.h"
 #include "wcnsls.h"
 #include "ocnsls.h"
 
@@ -27,6 +28,9 @@
 #define DCS_X_HANDLER           0U
 #define DCS_X_GETCHAR           1U
 #define DCS_X_PUTCHAR           2U
+#define TTY_X_PUTCHAR           0U
+#define TTY_X_CTY_PUTCHAR_ADDR  1U
+#define TTY_X_DCS_PUTCHAR_ADDR  2U
 #define WCNSLS_X_READ           0U
 #define OCNSLS_X_READ           0U
 
@@ -474,6 +478,33 @@ dcs_minit(void)
             minit_export(name, base, DCS_X_PUTCHAR));
         minit_dcs_cono(0);
         minit_diag_ok(name);
+}
+
+void
+tty_minit(void)
+{
+        kword_t name;
+        unsigned int base;
+        unsigned int cty_putchar;
+        unsigned int dcs_putchar;
+        unsigned int address;
+
+        name = (kword_t)SIXBIT("TTY   ");
+        cty_putchar = diag_putchar_addr;
+        dcs_putchar = module_service_get(MODULE_SERVICE_DCS_PUTCHAR);
+        if (cty_putchar == 0U && dcs_putchar == 0U) {
+                minit_diag_nodev(name);
+                return;
+        }
+
+        base = minit_install(name);
+        address = minit_export(name, base, TTY_X_CTY_PUTCHAR_ADDR);
+        *(kword_t *)(unsigned long)address = (kword_t)cty_putchar;
+        address = minit_export(name, base, TTY_X_DCS_PUTCHAR_ADDR);
+        *(kword_t *)(unsigned long)address = (kword_t)dcs_putchar;
+        module_service_set(MODULE_SERVICE_TTY_PUTCHAR,
+            minit_export(name, base, TTY_X_PUTCHAR));
+        minit_diag_loaded(name);
 }
 
 void

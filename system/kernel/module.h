@@ -15,7 +15,8 @@ extern kword_t __minit_table_end;
 #define MODULE_SERVICE_OCNSLS_READ      7U
 #define MODULE_SERVICE_DCS_GETCHAR       8U
 #define MODULE_SERVICE_DCS_PUTCHAR       9U
-#define MODULE_SERVICE_COUNT            10U
+#define MODULE_SERVICE_TTY_PUTCHAR      10U
+#define MODULE_SERVICE_COUNT            11U
 
 void module_run_minits(void);
 const kword_t *module_current_mres(void);

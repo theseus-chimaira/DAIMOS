@@ -3,6 +3,7 @@
 #include "module.h"
 #include "card.h"
 #include "dcs.h"
+#include "tty.h"
 #include "wcnsls.h"
 #include "ocnsls.h"
 #include "kcore_pi.h"
@@ -127,6 +128,14 @@ device_test_minit(void)
                 device_test_fail();
         (void)kinit_call18_0(address);
 
+        address = module_service_get(MODULE_SERVICE_TTY_PUTCHAR);
+        if (address == 0U ||
+            (int)kinit_call18_1(address, TTY_PACK(TTY_ID_CTY, 0U)) !=
+                TTY_E_OK ||
+            (int)kinit_call18_1(address, TTY_PACK(077U, 0U)) !=
+                TTY_E_INVALID)
+                device_test_fail();
+
         /* DCS is disabled in the ordinary run.  The socket-backed variant
          * enables it, sends one byte, and verifies both resident services. */
         address = module_service_get(MODULE_SERVICE_DCS_GETCHAR);
@@ -144,9 +153,16 @@ device_test_minit(void)
                 putchar_address = module_service_get(MODULE_SERVICE_DCS_PUTCHAR);
                 if (putchar_address == 0U)
                         device_test_fail();
-                for (i = 0U; i < sizeof(text) / sizeof(text[0]); ++i) {
+                if ((int)kinit_call18_1(putchar_address,
+                    DCS_PACK(1U, text[0])) != DCS_E_OK)
+                        device_test_fail();
+                putchar_address = module_service_get(MODULE_SERVICE_TTY_PUTCHAR);
+                if (putchar_address == 0U)
+                        device_test_fail();
+                for (i = 1U; i < sizeof(text) / sizeof(text[0]); ++i) {
                         if ((int)kinit_call18_1(putchar_address,
-                            DCS_PACK(1U, text[i])) != DCS_E_OK)
+                            TTY_PACK(TTY_ID_DCS_BASE + 1U, text[i])) !=
+                                TTY_E_OK)
                                 device_test_fail();
                 }
         }
