@@ -28,16 +28,16 @@ KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 KCORE_FIXED_NAMES = kcore_entry kcore_io kcore_end
 KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))
 KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
-MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io dcs_io tty_io wcnsls_io ocnsls_io
+MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io dcs_io ge_io tty_io wcnsls_io ocnsls_io
 MRES_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(MRES_NAMES)))
 
 KINIT_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
 	kinit.c kinit_diag.c module_minit.c kinit.h module.h mres.h \
-	cty.h clk.h pt.h card.h dcs.h tty.h wcnsls.h ocnsls.h kinit_io.s module_io.s)
+	cty.h clk.h pt.h card.h dcs.h ge.h tty.h wcnsls.h ocnsls.h kinit_io.s module_io.s)
 KCORE_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
-	kcore.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h tty.h wcnsls.h ocnsls.h \
+	kcore.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h tty.h wcnsls.h ocnsls.h \
 	kcore_entry.s kcore_io.s kcore_end.s cty_io.s clk_io.s ptr_io.s \
-	ptp_io.s cr_io.s cp_io.s dcs_io.s tty_io.s wcnsls_io.s ocnsls_io.s)
+	ptp_io.s cr_io.s cp_io.s dcs_io.s ge_io.s tty_io.s wcnsls_io.s ocnsls_io.s)
 
 KCORE_DXR = $(BUILD)/kcore-v1.dxr
 KCORE_MAP = $(BUILD)/kcore-v1.map
@@ -53,12 +53,13 @@ PTP_MRES_OBJ = $(BUILD)/ptp-mres.dobj
 CR_MRES_OBJ = $(BUILD)/cr-mres.dobj
 CP_MRES_OBJ = $(BUILD)/cp-mres.dobj
 DCS_MRES_OBJ = $(BUILD)/dcs-mres.dobj
+GE_MRES_OBJ = $(BUILD)/ge-mres.dobj
 TTY_MRES_OBJ = $(BUILD)/tty-mres.dobj
 WCNSLS_MRES_OBJ = $(BUILD)/wcnsls-mres.dobj
 OCNSLS_MRES_OBJ = $(BUILD)/ocnsls-mres.dobj
 MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PTR_MRES_OBJ) \
 	$(PTP_MRES_OBJ) $(CR_MRES_OBJ) $(CP_MRES_OBJ) $(DCS_MRES_OBJ) \
-	$(TTY_MRES_OBJ) $(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ)
+	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ)
 
 MINIT_TABLE_OBJ = $(BUILD)/module-table-test.dobj
 DEVICE_TEST_ASM = $(KINIT_BUILD)/device-test-minit.s
@@ -108,6 +109,7 @@ $(DEVICE_TEST_ASM): device-test-minit.c $(PROJECT_ROOT)/system/kernel/kinit.h \
     $(PROJECT_ROOT)/system/kernel/kcore_pi.h \
     $(PROJECT_ROOT)/system/kernel/module.h $(PROJECT_ROOT)/system/kernel/card.h \
     $(PROJECT_ROOT)/system/kernel/dcs.h \
+    $(PROJECT_ROOT)/system/kernel/ge.h \
     $(PROJECT_ROOT)/system/kernel/tty.h \
     $(PROJECT_ROOT)/system/kernel/wcnsls.h \
     $(PROJECT_ROOT)/system/kernel/ocnsls.h | $(BUILD)
@@ -153,11 +155,15 @@ $(CP_MRES_OBJ): $(BUILD)/cp_io.dobj $(KCORE_MAP)
 $(DCS_MRES_OBJ): $(BUILD)/dcs_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dcs-mres.dxr -M $(BUILD)/dcs-mres.map \
 	    -R $@ -N dcs_mres_package -X dcs_pi_handler -X dcs_getchar \
-	    -X dcs_putchar $(BUILD)/dcs_io.dobj
+	    -X dcs_putchar -X dcs_pi_service $(BUILD)/dcs_io.dobj
+$(GE_MRES_OBJ): $(BUILD)/ge_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ge-mres.dxr -M $(BUILD)/ge-mres.map \
+	    -R $@ -N ge_mres_package -X ge_pi_handler -X ge_getchar \
+	    -X ge_putchar -X ge_dcs_pi_service_address $(BUILD)/ge_io.dobj
 $(TTY_MRES_OBJ): $(BUILD)/tty_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/tty-mres.dxr -M $(BUILD)/tty-mres.map \
 	    -R $@ -N tty_mres_package -X tty_putchar -X tty_cty_putchar_address \
-	    -X tty_dcs_putchar_address $(BUILD)/tty_io.dobj
+	    -X tty_dcs_putchar_address -X tty_ge_putchar_address $(BUILD)/tty_io.dobj
 $(WCNSLS_MRES_OBJ): $(BUILD)/wcnsls_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/wcnsls-mres.dxr -M $(BUILD)/wcnsls-mres.map \
 	    -R $@ -N wcnsls_mres_package -X wcnsls_read -X wcnsls_cono -X wcnsls_plot $(BUILD)/wcnsls_io.dobj
@@ -228,6 +234,7 @@ test: image $(SIMH_INI_NO_PTP) $(SIMH_INI_NO_SLV)
 	    'CR                                    OK' \
 	    'CP                                    OK' \
 	    'DCS                               NO DEV' \
+	    'GE                                NO DEV' \
 	    'TTY                               LOADED' \
 	    'WCNSLS                            LOADED' \
 	    'OCNSLS                            LOADED' \
@@ -248,6 +255,7 @@ endif
 	    'SLV                               NO DEV' \
 	    'HALT instruction' >/dev/null
 	@$(PYTHON) dcs-socket-test-v1.py --simh '$(SIMH_PDP6)' --ini '$(SIMH_INI)' --log '$(BUILD)/dcs-socket.log'
+	@$(PYTHON) ge-shared-socket-test-v1.py --simh '$(SIMH_PDP6)' --ini '$(SIMH_INI)' --log '$(BUILD)/ge-shared-socket.log'
 	@echo 'KINIT conditional-MRES device checkpoint test PASS'
 
 clean:

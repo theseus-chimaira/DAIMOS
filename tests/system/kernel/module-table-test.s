@@ -7,6 +7,7 @@
         .globl cr_minit
         .globl cp_minit
         .globl dcs_minit
+        .globl ge_minit
         .globl tty_minit
         .globl wcnsls_minit
         .globl ocnsls_minit
@@ -21,6 +22,7 @@
         .globl cr_mres_package
         .globl cp_mres_package
         .globl dcs_mres_package
+        .globl ge_mres_package
         .globl tty_mres_package
         .globl wcnsls_mres_package
         .globl ocnsls_mres_package
@@ -40,6 +42,7 @@ __minit_table_begin:
         ; Exercise nesting while the seventh handler slot is still free.
         .word device_test_nested_minit,,0
         .word dcs_minit,,dcs_mres_package
+        .word ge_minit,,ge_mres_package
         .word tty_minit,,tty_mres_package
         .word wcnsls_minit,,wcnsls_mres_package
         .word ocnsls_minit,,ocnsls_mres_package

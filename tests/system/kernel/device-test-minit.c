@@ -3,6 +3,7 @@
 #include "module.h"
 #include "card.h"
 #include "dcs.h"
+#include "ge.h"
 #include "tty.h"
 #include "wcnsls.h"
 #include "ocnsls.h"
@@ -162,6 +163,38 @@ device_test_minit(void)
                 for (i = 1U; i < sizeof(text) / sizeof(text[0]); ++i) {
                         if ((int)kinit_call18_1(putchar_address,
                             TTY_PACK(TTY_ID_DCS_BASE + 1U, text[i])) !=
+                                TTY_E_OK)
+                                device_test_fail();
+                }
+        }
+
+
+        /* GE socket variant enables GE (and DCS simultaneously), verifies
+         * GTY input, raw output, and TTY routing through the shared PI4
+         * handler without requiring another KCORE PI-table slot. */
+        address = module_service_get(MODULE_SERVICE_GE_GETCHAR);
+        if (address != 0U) {
+                static const unsigned int text[] = {
+                        'D','A','I','M','O','S',' ','G','E','1',' ','O','K',015,012
+                };
+                kword_t rx;
+                unsigned int putchar_address;
+                unsigned int i;
+
+                rx = kinit_call18_0(address);
+                if (GE_RX_LINE(rx) != 1U || GE_RX_CHAR(rx) != 'G')
+                        device_test_fail();
+                putchar_address = module_service_get(MODULE_SERVICE_GE_PUTCHAR);
+                if (putchar_address == 0U ||
+                    (int)kinit_call18_1(putchar_address,
+                    GE_PACK(1U, text[0])) != GE_E_OK)
+                        device_test_fail();
+                putchar_address = module_service_get(MODULE_SERVICE_TTY_PUTCHAR);
+                if (putchar_address == 0U)
+                        device_test_fail();
+                for (i = 1U; i < sizeof(text) / sizeof(text[0]); ++i) {
+                        if ((int)kinit_call18_1(putchar_address,
+                            TTY_PACK(TTY_ID_GE_BASE + 1U, text[i])) !=
                                 TTY_E_OK)
                                 device_test_fail();
                 }

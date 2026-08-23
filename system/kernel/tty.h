@@ -6,6 +6,8 @@
 #define TTY_ID_CTY              0U
 #define TTY_ID_DCS_BASE         1U
 #define TTY_ID_DCS_COUNT        16U
+#define TTY_ID_GE_BASE          17U
+#define TTY_ID_GE_COUNT         4U
 #define TTY_ID_MASK             077U
 #define TTY_DATA_MASK           0377UL
 
@@ -20,7 +22,8 @@
 
 /*
  * tty_putchar() is the minimal resident terminal-output dispatcher.
- * TTY 0 is the CTY; TTY 1..16 map to DCS lines 0..15.  Physical-device
+ * TTY 0 is the CTY; TTY 1..16 map to DCS lines 0..15; TTY 17..20 map
+ * to GE consoles 0..3.  Physical-device
  * addresses are bound by MINIT after the corresponding MRES modules load.
  */
 int tty_putchar(kword_t tty_char);

@@ -25,6 +25,10 @@
         .globl minit_cp_cono
         .globl minit_dcs_coni
         .globl minit_dcs_cono
+        .globl minit_gtyi_coni
+        .globl minit_gtyi_cono
+        .globl minit_gtyo_coni
+        .globl minit_gtyo_cono
         .globl minit_wcnsls_cono
         .globl minit_slv_coni
         .globl minit_slv_cono
@@ -119,6 +123,18 @@ minit_dcs_coni:
         popj 17,
 minit_dcs_cono:
         cono 0300,0(1)
+        popj 17,
+minit_gtyi_coni:
+        coni 0070,1
+        popj 17,
+minit_gtyi_cono:
+        cono 0070,0(1)
+        popj 17,
+minit_gtyo_coni:
+        coni 0750,1
+        popj 17,
+minit_gtyo_cono:
+        cono 0750,0(1)
         popj 17,
 minit_wcnsls_cono:
         cono 0420,0(1)

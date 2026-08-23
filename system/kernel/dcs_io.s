@@ -11,6 +11,7 @@
 
         .text
         .globl dcs_pi_handler
+        .globl dcs_pi_service
         .globl dcs_getchar
         .globl dcs_putchar
         .globl pdp10_pi_handler_return
@@ -18,12 +19,17 @@
 ; dcs_rx_word is zero when idle, -1 while a receive is pending, and the packed
 ; nonnegative line/byte result once the PI handler has serviced the scanner.
 dcs_pi_handler:
+        pushj 17,dcs_pi_service
+        jrst pdp10_pi_handler_return
+
+; Callable PI service used by the GE shared PI4 handler.  Clobbers AC1 only.
+dcs_pi_service:
         coni 0300,1
         trnn 1,000010
-        jrst pdp10_pi_handler_return
+        popj 17,
         skipge dcs_rx_word
         jrst dcs_pi_receive
-        jrst pdp10_pi_handler_return
+        popj 17,
 
 dcs_pi_receive:
         coni 0304,1
@@ -35,7 +41,7 @@ dcs_pi_receive:
         andi 1,0377
         iorm 1,dcs_rx_word
         cono 0300,0
-        jrst pdp10_pi_handler_return
+        popj 17,
 
 ; Return DCS_PACK(line, byte), or DCS_E_BUSY (-3) if another receive is active.
 dcs_getchar:

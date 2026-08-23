@@ -7,6 +7,7 @@
 #include "pt.h"
 #include "card.h"
 #include "dcs.h"
+#include "ge.h"
 #include "tty.h"
 #include "wcnsls.h"
 #include "ocnsls.h"
@@ -28,9 +29,15 @@
 #define DCS_X_HANDLER           0U
 #define DCS_X_GETCHAR           1U
 #define DCS_X_PUTCHAR           2U
+#define DCS_X_PI_SERVICE        3U
+#define GE_X_HANDLER            0U
+#define GE_X_GETCHAR            1U
+#define GE_X_PUTCHAR            2U
+#define GE_X_DCS_PI_SERVICE     3U
 #define TTY_X_PUTCHAR           0U
 #define TTY_X_CTY_PUTCHAR_ADDR  1U
 #define TTY_X_DCS_PUTCHAR_ADDR  2U
+#define TTY_X_GE_PUTCHAR_ADDR   3U
 #define WCNSLS_X_READ           0U
 #define OCNSLS_X_READ           0U
 
@@ -40,6 +47,8 @@
 
 static unsigned int diag_put6_addr;
 static unsigned int diag_putchar_addr;
+static unsigned int dcs_pi_handler_addr;
+static unsigned int dcs_pi_service_addr;
 
 
 static unsigned int pi_level_count[PDP10_PI_LEVELS + 1U];
@@ -470,13 +479,67 @@ dcs_minit(void)
                 return;
         }
         base = minit_install(name);
-        minit_register(name, DCS_NATIVE_PI_LEVEL,
-            minit_export(name, base, DCS_X_HANDLER));
+        dcs_pi_handler_addr = minit_export(name, base, DCS_X_HANDLER);
+        dcs_pi_service_addr = minit_export(name, base, DCS_X_PI_SERVICE);
+        minit_register(name, DCS_NATIVE_PI_LEVEL, dcs_pi_handler_addr);
         module_service_set(MODULE_SERVICE_DCS_GETCHAR,
             minit_export(name, base, DCS_X_GETCHAR));
         module_service_set(MODULE_SERVICE_DCS_PUTCHAR,
             minit_export(name, base, DCS_X_PUTCHAR));
         minit_dcs_cono(0);
+        minit_diag_ok(name);
+}
+
+void
+ge_minit(void)
+{
+        kword_t name;
+        kword_t ist;
+        kword_t ost;
+        unsigned int base;
+        unsigned int handler;
+        unsigned int address;
+
+        name = (kword_t)SIXBIT("GE    ");
+        minit_gtyi_cono((kword_t)GE_NATIVE_PI_LEVEL);
+        ist = minit_gtyi_coni();
+        minit_gtyi_cono(0);
+        minit_gtyo_cono((kword_t)GE_NATIVE_PI_LEVEL);
+        ost = minit_gtyo_coni();
+        minit_gtyo_cono(0);
+        if ((ist & GTYI_PI_MASK) != GE_NATIVE_PI_LEVEL &&
+            (ost & GTYO_PI_MASK) != GE_NATIVE_PI_LEVEL) {
+                minit_diag_nodev(name);
+                return;
+        }
+        if ((ist & GTYI_PI_MASK) != GE_NATIVE_PI_LEVEL ||
+            (ost & GTYO_PI_MASK) != GE_NATIVE_PI_LEVEL) {
+                minit_diag_notok(name);
+                return;
+        }
+
+        base = minit_install(name);
+        handler = minit_export(name, base, GE_X_HANDLER);
+        address = minit_export(name, base, GE_X_DCS_PI_SERVICE);
+        *(kword_t *)(unsigned long)address = (kword_t)dcs_pi_service_addr;
+
+        /* DCS and both GTY devices share one PI4 table entry. */
+        if (dcs_pi_handler_addr != 0U) {
+                if (module_pi_unregister(DCS_NATIVE_PI_LEVEL,
+                    dcs_pi_handler_addr) != 0)
+                        minit_fatal(name);
+                if (module_pi_register(GE_NATIVE_PI_LEVEL, handler) != 0)
+                        minit_fatal(name);
+        } else {
+                minit_register(name, GE_NATIVE_PI_LEVEL, handler);
+        }
+
+        module_service_set(MODULE_SERVICE_GE_GETCHAR,
+            minit_export(name, base, GE_X_GETCHAR));
+        module_service_set(MODULE_SERVICE_GE_PUTCHAR,
+            minit_export(name, base, GE_X_PUTCHAR));
+        minit_gtyi_cono(0);
+        minit_gtyo_cono((kword_t)(GE_NATIVE_PI_LEVEL | GTYO_CO_FROB));
         minit_diag_ok(name);
 }
 
@@ -487,12 +550,14 @@ tty_minit(void)
         unsigned int base;
         unsigned int cty_putchar;
         unsigned int dcs_putchar;
+        unsigned int ge_putchar;
         unsigned int address;
 
         name = (kword_t)SIXBIT("TTY   ");
         cty_putchar = diag_putchar_addr;
         dcs_putchar = module_service_get(MODULE_SERVICE_DCS_PUTCHAR);
-        if (cty_putchar == 0U && dcs_putchar == 0U) {
+        ge_putchar = module_service_get(MODULE_SERVICE_GE_PUTCHAR);
+        if (cty_putchar == 0U && dcs_putchar == 0U && ge_putchar == 0U) {
                 minit_diag_nodev(name);
                 return;
         }
@@ -502,6 +567,8 @@ tty_minit(void)
         *(kword_t *)(unsigned long)address = (kword_t)cty_putchar;
         address = minit_export(name, base, TTY_X_DCS_PUTCHAR_ADDR);
         *(kword_t *)(unsigned long)address = (kword_t)dcs_putchar;
+        address = minit_export(name, base, TTY_X_GE_PUTCHAR_ADDR);
+        *(kword_t *)(unsigned long)address = (kword_t)ge_putchar;
         module_service_set(MODULE_SERVICE_TTY_PUTCHAR,
             minit_export(name, base, TTY_X_PUTCHAR));
         minit_diag_loaded(name);
