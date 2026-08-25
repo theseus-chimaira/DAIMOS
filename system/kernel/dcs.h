@@ -5,9 +5,8 @@
 
 #define DCS_DEVICE              0300U
 #define DCSB_DEVICE             0304U
-#define DCS_NATIVE_PI_LEVEL     4U
+#define DCS_NATIVE_PI_LEVEL     2U
 #define DCS_MAX_LINES           16U
-#define DCS_LINE_BIAS           2U
 #define DCS_DATA_MASK           0377UL
 #define DCS_LINE_MASK           077UL
 #define DCS_ST_SCANNER_STOPPED  000010UL

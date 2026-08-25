@@ -166,15 +166,15 @@ $(IO7_MRES_OBJ): $(BUILD)/io7_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj 
 $(DCS_MRES_OBJ): $(BUILD)/dcs_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dcs-mres.dxr -M $(BUILD)/dcs-mres.map \
 	    -R $@ -N dcs_mres_package -X dcs_pi_handler -X dcs_getchar \
-	    -X dcs_putchar -X dcs_pi_service $(BUILD)/dcs_io.dobj
+	    -X dcs_putchar $(BUILD)/dcs_io.dobj
 $(GE_MRES_OBJ): $(BUILD)/ge_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ge-mres.dxr -M $(BUILD)/ge-mres.map \
 	    -R $@ -N ge_mres_package -X ge_pi_handler -X ge_getchar \
-	    -X ge_putchar -X ge_dcs_pi_service_address $(BUILD)/ge_io.dobj
+	    -X ge_putchar $(BUILD)/ge_io.dobj
 $(DPY_MRES_OBJ): $(BUILD)/dpy_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dpy-mres.dxr -M $(BUILD)/dpy-mres.map \
 	    -R $@ -N dpy_mres_package -X dpy_pi_handler -X dpy_putword \
-	    -X dpy_clk_pi_service_address $(BUILD)/dpy_io.dobj
+	    -X dpy_clk_pi_service_call $(BUILD)/dpy_io.dobj
 $(TTY_MRES_OBJ): $(BUILD)/tty_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/tty-mres.dxr -M $(BUILD)/tty-mres.map \
 	    -R $@ -N tty_mres_package -X tty_putchar -X tty_cty_putchar_address \

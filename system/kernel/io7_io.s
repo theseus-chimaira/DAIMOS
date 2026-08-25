@@ -13,12 +13,12 @@
         .globl io7_ret_arg
         .globl io7_ret_timeout
         .globl io7_ret_e3
+        .globl io7_ret_e4
         .globl pdp10_pi_handler_return
 
 io7_pi_handler:
         ; Paper-tape reader DONE.
-        coni 0104,1
-        trnn 1,0010
+        conso 0104,0010
         jrst io7_ptp
         skipn ptr_state
         jrst io7_ptr_prefetch
@@ -31,8 +31,7 @@ io7_ptr_prefetch:
         cono 0104,0010
 
 io7_ptp:
-        coni 0100,1
-        trnn 1,0010
+        conso 0100,0010
         jrst io7_cr
         setzm ptp_state
         cono 0100,0007
@@ -52,11 +51,11 @@ io7_cr_done:
 io7_cr_data:
         move 1,cr_iowd
         aobjn 1,io7_cr_more
-        datai 0150,(1)
         setom cr_iowd
-        jrst io7_cp
+        jrst io7_cr_xfer
 io7_cr_more:
         movem 1,cr_iowd
+io7_cr_xfer:
         datai 0150,(1)
 
 io7_cp:
@@ -97,4 +96,7 @@ io7_ret_timeout:
         popj 017,
 io7_ret_e3:
         hrroi 1,0777775
+        popj 017,
+io7_ret_e4:
+        hrroi 1,0777774
         popj 017,

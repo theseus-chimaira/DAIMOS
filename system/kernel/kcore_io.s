@@ -133,6 +133,6 @@ pdp10_pi_return_level7:
 
         .bss
 pdp10_pi_handlers:
-        .block 07
+        .block 010
 pdp10_pi_level_span:
         .block 07

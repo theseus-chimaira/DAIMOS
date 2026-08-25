@@ -12,15 +12,13 @@
         .globl pdp10_pi_handler_return
 
 cty_pi_handler:
-        coni 0120,1
-        trnn 1,0010
+        conso 0120,0010
         jrst cty_pi_input
         setzm cty_tx_pending
         movei 1,0204
         cono 0120,0(1)
 cty_pi_input:
-        coni 0120,1
-        trnn 1,0040
+        conso 0120,0040
         jrst pdp10_pi_handler_return
         datai 0120,1
         jrst pdp10_pi_handler_return
@@ -31,8 +29,7 @@ cty_putchar:
         jumpn 2,cty_putchar_busy
         movei 2,0200000
 cty_putchar_wait_idle:
-        coni 0120,3
-        trnn 3,0020
+        conso 0120,0020
         jrst cty_putchar_ready
         sojg 2,cty_putchar_wait_idle
         jrst cty_putchar_timeout

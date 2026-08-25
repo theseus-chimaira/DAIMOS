@@ -20,8 +20,7 @@ ptr_getchar:
         jumpl 2,io7_ret_e3
 
         ; Consume an already-prefetched hardware character without waiting.
-        coni 0104,3
-        trne 3,0010
+        consz 0104,0010
         jrst ptr_get_hardware
 
         setom ptr_state
@@ -40,14 +39,14 @@ ptr_get_hardware:
         cono 0104,0
         andi 3,0377
         movem 3,(4)
-        movei 1,0
-        popj 017,
+        jrst ptr_get_ok
 
 ptr_get_software:
         subi 2,1
         andi 2,0377
         movem 2,(4)
         setzm ptr_state
+ptr_get_ok:
         movei 1,0
         popj 017,
 

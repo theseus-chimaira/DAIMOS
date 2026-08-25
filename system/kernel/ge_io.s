@@ -1,27 +1,18 @@
 ; ge_io.s -- compact interrupt-driven PDP-6 GE/GTY driver.
 ;
-; One PI4 handler services GTYI, GTYO, and (when installed) the DCS.  MINIT
-; patches ge_dcs_pi_service_address with the relocated DCS service routine,
-; allowing GE to replace the DCS PI-table entry instead of consuming another
-; resident handler slot.
+; GE/GTY owns PI4 independently.  DCS uses PI2, so this handler contains only
+; the two GE terminal devices and needs no cross-driver dispatch glue.
 
         .text
         .globl ge_pi_handler
         .globl ge_getchar
         .globl ge_putchar
-        .globl ge_dcs_pi_service_address
         .globl pdp10_pi_handler_return
 
 ; ge_rx_word: zero idle, -1 waiting, otherwise 4,,raw-GTYI-word (ready).
 ; ge_tx_state: bit 0 owns one complete GE frame; bit 1 awaits GTYO DONE.
 ge_pi_handler:
-        move 1,ge_dcs_pi_service_address
-        jumpe 1,ge_pi_gtyi
-        pushj 017,(1)
-
-ge_pi_gtyi:
-        coni 0070,1
-        trnn 1,00010
+        conso 0070,00010
         jrst ge_pi_gtyo
         skipge ge_rx_word
         jrst ge_pi_gtyi_receive
@@ -43,8 +34,7 @@ ge_getchar:
         jumpl 1,ge_get_busy
 
         ; Consume a character which arrived while input PI was disabled.
-        coni 0070,2
-        trne 2,00010
+        consz 0070,00010
         jrst ge_get_hardware
 
         setom ge_rx_word
@@ -76,8 +66,7 @@ ge_get_busy:
 
 ; AC1 = decoded 7-bit GE byte.  Caller owns ge_tx_state bit 0.
 ge_put_decoded:
-        coni 0750,3
-        trnn 3,00100
+        conso 0750,00100
         jrst ge_put_decoded
         andi 1,0177
         move 3,1
@@ -87,8 +76,7 @@ ge_put_decoded:
         xori 1,0177
         datao 0750,1
 ge_put_decoded_wait:
-        coni 0750,2
-        trnn 2,00100
+        conso 0750,00100
         jrst ge_put_decoded_wait
         popj 017,
 
@@ -142,6 +130,4 @@ ge_putchar_arg:
 ge_rx_word:
         .block 1
 ge_tx_state:
-        .block 1
-ge_dcs_pi_service_address:
         .block 1

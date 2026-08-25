@@ -1,6 +1,6 @@
 ; dcs_io.s -- compact resident PDP-6 Type 630 DCS driver.
 ;
-; Receive service uses the hardware scanner and PI4.  Input is armed only while
+; Receive service uses the hardware scanner and PI2.  Input is armed only while
 ; dcs_getchar is waiting, so no resident queue is required.  The interrupt
 ; handler obeys the KCORE PI ABI and clobbers AC1 only.
 ;
@@ -8,7 +8,6 @@
 
         .text
         .globl dcs_pi_handler
-        .globl dcs_pi_service
         .globl dcs_getchar
         .globl dcs_putchar
         .globl pdp10_pi_handler_return
@@ -16,17 +15,11 @@
 ; dcs_rx_word is zero when idle, -1 while a receive is pending, and the packed
 ; nonnegative line/byte result once the PI handler has serviced the scanner.
 dcs_pi_handler:
-        pushj 017,dcs_pi_service
+        conso 0300,000010
         jrst pdp10_pi_handler_return
-
-; Callable PI service used by the GE shared PI4 handler.  Clobbers AC1 only.
-dcs_pi_service:
-        coni 0300,1
-        trnn 1,000010
-        popj 017,
         skipge dcs_rx_word
         jrst dcs_pi_receive
-        popj 017,
+        jrst pdp10_pi_handler_return
 
 dcs_pi_receive:
         coni 0304,1
@@ -37,14 +30,14 @@ dcs_pi_receive:
         andi 1,0377
         iorm 1,dcs_rx_word
         cono 0300,0
-        popj 017,
+        jrst pdp10_pi_handler_return
 
 ; Return DCS_PACK(line, byte), or DCS_E_BUSY (-3) if another receive is active.
 dcs_getchar:
         move 1,dcs_rx_word
         jumpn 1,dcs_getchar_busy
         setom dcs_rx_word
-        cono 0300,000014
+        cono 0300,000012
 
 dcs_getchar_wait:
         move 1,dcs_rx_word

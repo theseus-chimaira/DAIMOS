@@ -9,19 +9,16 @@
         .globl io7_ret_arg
         .globl io7_ret_timeout
         .globl io7_ret_e3
+        .globl io7_ret_e4
 
 cp_punch_card:
         jumpe 1,io7_ret_arg
-        skipn cp_iowd
-        jrst cp_punch_idle
-        hrroi 1,0777774
-        popj 017,
+        skipe cp_iowd
+        jrst io7_ret_e4
 cp_punch_idle:
         move 2,1
         subi 2,1
-        movei 3,0120
-        movn 3,3
-        hrl 2,3
+        hrli 2,0777660
         movem 2,cp_iowd
         cono 0110,01347
         movei 2,0200000
@@ -33,8 +30,7 @@ cp_punch_wait:
         cono 0110,0007
         jrst io7_ret_timeout
 cp_punch_done:
-        coni 0110,3
-        trne 3,05000
+        consz 0110,05000
         jrst io7_ret_e3
         movei 1,0120
         popj 017,

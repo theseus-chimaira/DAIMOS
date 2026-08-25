@@ -21,6 +21,9 @@ check-prefix:
 $(BUILD):
 	mkdir -p "$@"
 
+$(BUILD)/%.dobj: %.s | $(BUILD)
+	"$(AS)" -c -o "$@" "$<"
+
 $(BUILD)/%.s: %.c | $(BUILD)
 	"$(CC)" $(CFLAGS) -S "$<" -o "$@"
 

@@ -14,8 +14,7 @@ clk_pi_handler:
 
 ; Callable PI6 service used by the DPY shared handler.  Clobbers AC1 only.
 clk_pi_service:
-        coni 0000,1
-        trnn 1,01000
+        conso 0000,01000
         popj 017,
         aos clk_tick_count
         movei 1,03006

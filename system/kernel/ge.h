@@ -36,7 +36,7 @@
 #define GE_RX_CHAR(word)        ((unsigned int)((word) & GE_DATA_MASK))
 
 /*
- * Four GE/GTY terminals share PI4 with the DCS.  ge_getchar() returns one
+ * Four GE/GTY terminals use PI4.  ge_getchar() returns one
  * packed console/character pair.  ge_putchar() sends one character using the
  * GE framed-output protocol; higher-level buffering belongs to the TTY core.
  */

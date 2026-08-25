@@ -30,14 +30,12 @@
 #define DCS_X_HANDLER           0U
 #define DCS_X_GETCHAR           1U
 #define DCS_X_PUTCHAR           2U
-#define DCS_X_PI_SERVICE        3U
 #define GE_X_HANDLER            0U
 #define GE_X_GETCHAR            1U
 #define GE_X_PUTCHAR            2U
-#define GE_X_DCS_PI_SERVICE     3U
 #define DPY_X_HANDLER           0U
 #define DPY_X_PUTWORD           1U
-#define DPY_X_CLK_PI_SERVICE    2U
+#define DPY_X_CLK_PI_SERVICE_CALL 2U
 #define TTY_X_PUTCHAR           0U
 #define TTY_X_CTY_PUTCHAR_ADDR  1U
 #define TTY_X_DCS_PUTCHAR_ADDR  2U
@@ -61,10 +59,8 @@ static unsigned int diag_put6_addr;
 static unsigned int diag_putchar_addr;
 static unsigned int clk_pi_handler_addr;
 static unsigned int clk_pi_service_addr;
-static unsigned int dcs_pi_handler_addr;
 static unsigned int io7_mres_base;
 static unsigned int io7_pi_handler_addr;
-static unsigned int dcs_pi_service_addr;
 static unsigned int storage_mres_base;
 static unsigned int storage_pi_handler_addr;
 static unsigned int storage_dct_handler_addr;
@@ -503,9 +499,8 @@ dcs_minit(void)
                 return;
         }
         base = minit_install(name);
-        dcs_pi_handler_addr = minit_export(name, base, DCS_X_HANDLER);
-        dcs_pi_service_addr = minit_export(name, base, DCS_X_PI_SERVICE);
-        minit_register(name, DCS_NATIVE_PI_LEVEL, dcs_pi_handler_addr);
+        minit_register(name, DCS_NATIVE_PI_LEVEL,
+            minit_export(name, base, DCS_X_HANDLER));
         module_service_set(MODULE_SERVICE_DCS_GETCHAR,
             minit_export(name, base, DCS_X_GETCHAR));
         module_service_set(MODULE_SERVICE_DCS_PUTCHAR,
@@ -521,8 +516,6 @@ ge_minit(void)
         kword_t ist;
         kword_t ost;
         unsigned int base;
-        unsigned int handler;
-        unsigned int address;
 
         name = (kword_t)SIXBIT("GE    ");
         minit_gtyi_cono((kword_t)GE_NATIVE_PI_LEVEL);
@@ -543,20 +536,8 @@ ge_minit(void)
         }
 
         base = minit_install(name);
-        handler = minit_export(name, base, GE_X_HANDLER);
-        address = minit_export(name, base, GE_X_DCS_PI_SERVICE);
-        *(kword_t *)(unsigned long)address = (kword_t)dcs_pi_service_addr;
-
-        /* DCS and both GTY devices share one PI4 table entry. */
-        if (dcs_pi_handler_addr != 0U) {
-                if (module_pi_unregister(DCS_NATIVE_PI_LEVEL,
-                    dcs_pi_handler_addr) != 0)
-                        minit_fatal(name);
-                if (module_pi_register(GE_NATIVE_PI_LEVEL, handler) != 0)
-                        minit_fatal(name);
-        } else {
-                minit_register(name, GE_NATIVE_PI_LEVEL, handler);
-        }
+        minit_register(name, GE_NATIVE_PI_LEVEL,
+            minit_export(name, base, GE_X_HANDLER));
 
         module_service_set(MODULE_SERVICE_GE_GETCHAR,
             minit_export(name, base, GE_X_GETCHAR));
@@ -719,8 +700,12 @@ dpy_minit(void)
         base = minit_install(name);
         handler = minit_export(name, base, DPY_X_HANDLER);
         putword = minit_export(name, base, DPY_X_PUTWORD);
-        address = minit_export(name, base, DPY_X_CLK_PI_SERVICE);
-        *(kword_t *)(unsigned long)address = (kword_t)clk_pi_service_addr;
+        address = minit_export(name, base, DPY_X_CLK_PI_SERVICE_CALL);
+        if (clk_pi_service_addr != 0U)
+                *(kword_t *)(unsigned long)address =
+                    (*(kword_t *)(unsigned long)address &
+                    ~((kword_t)KINIT_HALF_MASK)) |
+                    (kword_t)clk_pi_service_addr;
 
         /* DPY and the APR line clock share one PI6 table entry. */
         if (clk_pi_handler_addr != 0U) {

@@ -6,7 +6,7 @@
 #define PDP10_PI_LEVELS              7U
 #define PDP10_PI_LEVEL_MIN           1U
 #define PDP10_PI_LEVEL_MAX           7U
-#define PDP10_PI_HANDLER_CAPACITY    7U
+#define PDP10_PI_HANDLER_CAPACITY    8U
 #define PDP10_PI_MASK(level)         (0200U >> (level))
 
 /* Compact resident dispatch state.  MINIT builds these tables once. */

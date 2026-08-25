@@ -159,10 +159,6 @@ storage_busy:
 storage_arg:
         seto 1,
         popj 017,
-storage_ioerr:
-        setzm storage_state
-        hrroi 1,0777773
-        popj 017,
 storage_ok:
         setzm storage_state
         movei 1,0
@@ -193,15 +189,11 @@ storage_dct_blko:
 
 ; AC1 unit, AC2 destination, AC3 exact word count.
 dtc_read_words:
-        skipn storage_state
-        jrst dtc_read_idle
+        skipe storage_state
         jrst storage_busy
-dtc_read_idle:
         caile 1,7
         jrst storage_arg
-        jumpg 3,dtc_read_start
-        jrst storage_arg
-dtc_read_start:
+        jumple 3,storage_arg
         pushj 017,storage_setup_read
         setom storage_state
         lsh 1,3
@@ -215,10 +207,8 @@ dtc_read_start:
 ; Type 551 block writes are deliberately fixed-size: the hardware block
 ; cycle, not a software short count, defines transfer completion.
 dtc_write_block:
-        skipn storage_state
-        jrst dtc_write_idle
+        skipe storage_state
         jrst storage_busy
-dtc_write_idle:
         caile 1,7
         jrst storage_arg
         movei 3,0200
@@ -234,66 +224,50 @@ dtc_write_idle:
 
 ; AC1 unit, AC2 destination, AC3 maximum words in one tape record.
 mtc_read_words:
-        skipn storage_state
-        jrst mtc_read_idle
+        skipe storage_state
         jrst storage_busy
-mtc_read_idle:
         caile 1,7
         jrst storage_arg
-        jumpg 3,mtc_read_start
-        jrst storage_arg
-mtc_read_start:
+        jumple 3,storage_arg
         pushj 017,storage_setup_read
         hrroi 3,0777776
-        movem 3,storage_state
-        lsh 1,4
-        iori 1,052405
-        cono 0220,0(1)
-        ; Starting the new command clears stale EOR/status from the previous
-        ; record.  Only then enable status PI and arm the input DCT.
-        movei 2,5
-        cono 0224,0(2)
-        movei 2,004003
-        cono 0200,0(2)
-        jrst storage_wait
+        movei 4,052405
+        movei 5,004003
+        jrst mtc_rw_start
 
 ; AC1 unit, AC2 source, AC3 exact word count for one magnetic-tape record.
 ; Direction and count-exhaustion behavior are patched once at start, leaving
 ; the per-word PI path identical to the disk write path.
 mtc_write_words:
-        skipn storage_state
-        jrst mtc_write_idle
+        skipe storage_state
         jrst storage_busy
-mtc_write_idle:
         caile 1,7
         jrst storage_arg
-        jumpg 3,mtc_write_start
-        jrst storage_arg
-mtc_write_start:
+        jumple 3,storage_arg
         pushj 017,storage_setup_write
         hrroi 3,0777773
+        movei 4,051005
+        movei 5,003403
+
+mtc_rw_start:
         movem 3,storage_state
         lsh 1,4
-        iori 1,051005
+        ior 1,4
         cono 0220,0(1)
-        ; Start MTC before enabling status PI: MTS may still contain EOR from
-        ; the preceding record, and enabling it first can complete this new
-        ; request before the command clears those flags.  Arm output DCT last
-        ; because it asserts its first data request immediately.
+        ; Starting the command clears stale EOR/status from the previous
+        ; record.  Enable status PI only afterwards, and arm DCT last; output
+        ; DCT asserts its first data request immediately.
         movei 2,5
         cono 0224,0(2)
-        movei 2,003403
-        cono 0200,0(2)
+        cono 0200,0(5)
         jrst storage_wait
 
 ; AC1 raw hardware address, AC2 destination/source of one 128-word sector.
 ; Read/write share address setup, DFR wait, and controller start; the two tiny
 ; entry stubs provide only direction-specific DCT/DSK command words.
 dsk_read_sector:
-        skipn storage_state
-        jrst dsk_read_idle
+        skipe storage_state
         jrst storage_busy
-dsk_read_idle:
         movei 3,0200
         pushj 017,storage_setup_read
         hrroi 3,0777775
@@ -302,10 +276,8 @@ dsk_read_idle:
         jrst dsk_rw_start
 
 dsk_write_sector:
-        skipn storage_state
-        jrst dsk_write_idle
+        skipe storage_state
         jrst storage_busy
-dsk_write_idle:
         movei 3,0200
         pushj 017,storage_setup_write
         hrroi 3,0777774
@@ -331,7 +303,10 @@ storage_wait:
         jumpl 1,storage_wait
         caie 1,4
         jrst storage_wait_done
-        jrst storage_ioerr
+storage_ioerr:
+        setzm storage_state
+        hrroi 1,0777773
+        popj 017,
 storage_wait_done:
         ; Completion code 3 is DSK; tape operations can return immediately.
         caie 1,3
