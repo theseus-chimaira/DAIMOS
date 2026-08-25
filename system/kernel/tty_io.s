@@ -1,9 +1,9 @@
 ; tty_io.s -- minimal resident terminal output dispatcher.
 ;
-; Terminal 0 is CTY, 1..16 are DCS lines 0..15, and 17..20 are GE consoles.
-; MINIT patches the right halves of the three JRST words below.  Missing
-; backends leave the default jump to tty_putchar_invalid.  Tail jumps reuse
-; the caller's return PC and require no resident backend-address words.
+; Terminal 0 is the CTY.  Terminals 1..16 map to DCS lines 0..15 and
+; terminals 17..20 map to GE consoles 0..3.
+; MINIT patches the two backend function-address words after relocation.
+; The dispatcher owns no queues and no per-line state.
 
         .text
         .globl tty_putchar
@@ -11,6 +11,7 @@
         .globl tty_dcs_putchar_address
         .globl tty_ge_putchar_address
 
+; AC1 = TTY_PACK(terminal, byte).  Return backend status or TTY_E_INVALID (-1).
 tty_putchar:
         move 2,1
         lsh 2,-010
@@ -18,21 +19,35 @@ tty_putchar:
         jumpe 2,tty_putchar_cty
         caile 2,020
         jrst tty_putchar_ge
+        move 3,tty_dcs_putchar_address
+        jumpe 3,tty_putchar_invalid
         subi 1,0400
-tty_dcs_putchar_address:
-        jrst tty_putchar_invalid
+        pushj 017,(3)
+        popj 017,
 
 tty_putchar_ge:
         caile 2,024
         jrst tty_putchar_invalid
+        move 3,tty_ge_putchar_address
+        jumpe 3,tty_putchar_invalid
         subi 1,010400
-tty_ge_putchar_address:
-        jrst tty_putchar_invalid
+        pushj 017,(3)
+        popj 017,
 
 tty_putchar_cty:
-tty_cty_putchar_address:
-        jrst tty_putchar_invalid
+        move 3,tty_cty_putchar_address
+        jumpe 3,tty_putchar_invalid
+        pushj 017,(3)
+        popj 017,
 
 tty_putchar_invalid:
         seto 1,
         popj 017,
+
+        .bss
+tty_cty_putchar_address:
+        .block 1
+tty_dcs_putchar_address:
+        .block 1
+tty_ge_putchar_address:
+        .block 1
