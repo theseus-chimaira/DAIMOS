@@ -7,14 +7,17 @@
         .text
         .globl ptr_getchar
         .globl ptr_state
+        .globl io7_ret_arg
+        .globl io7_ret_timeout
+        .globl io7_ret_e3
 
 ; AC1 = int *destination.  Return 0 or PT_E_ARG/BUSY/TIMEOUT.
 ptr_getchar:
-        jumpe 1,ptr_get_arg
+        jumpe 1,io7_ret_arg
         move 4,1
         move 2,ptr_state
         jumpg 2,ptr_get_software
-        jumpl 2,ptr_get_busy
+        jumpl 2,io7_ret_e3
 
         ; Consume an already-prefetched hardware character without waiting.
         coni 0104,3
@@ -30,8 +33,7 @@ ptr_get_wait:
         sojg 5,ptr_get_wait
         setzm ptr_state
         cono 0104,0
-        hrroi 1,0777776
-        popj 017,
+        jrst io7_ret_timeout
 
 ptr_get_hardware:
         datai 0104,3
@@ -47,12 +49,6 @@ ptr_get_software:
         movem 2,(4)
         setzm ptr_state
         movei 1,0
-        popj 017,
-ptr_get_arg:
-        seto 1,
-        popj 017,
-ptr_get_busy:
-        hrroi 1,0777775
         popj 017,
 
         .bss

@@ -5,6 +5,8 @@
         .text
         .globl ptp_putchar
         .globl ptp_state
+        .globl io7_ret_timeout
+        .globl io7_ret_e3
 
 ; AC1 = byte.  Return 0, PT_E_BUSY (-3), PT_E_IO (-4), or timeout (-2).
 ptp_putchar:
@@ -17,7 +19,7 @@ ptp_putchar_idle:
         trne 2,0100
         jrst ptp_putchar_io
         trne 2,0020
-        jrst ptp_putchar_busy
+        jrst io7_ret_e3
         movei 2,1
         movem 2,ptp_state
         cono 0100,0007
@@ -30,11 +32,7 @@ ptp_putchar_wait:
         sojg 2,ptp_putchar_wait
         setzm ptp_state
         cono 0100,0007
-        hrroi 1,0777776
-        popj 017,
-ptp_putchar_busy:
-        hrroi 1,0777775
-        popj 017,
+        jrst io7_ret_timeout
 ptp_putchar_io:
         hrroi 1,0777774
         popj 017,

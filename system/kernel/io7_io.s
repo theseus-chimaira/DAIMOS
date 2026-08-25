@@ -10,6 +10,9 @@
         .globl ptp_state
         .globl cr_iowd
         .globl cp_iowd
+        .globl io7_ret_arg
+        .globl io7_ret_timeout
+        .globl io7_ret_e3
         .globl pdp10_pi_handler_return
 
 io7_pi_handler:
@@ -83,3 +86,15 @@ io7_cp_more:
         andi 1,07777
         datao 0110,1
         jrst pdp10_pi_handler_return
+
+; Shared slow-path returns for the four PI7 peripherals.  Keep these out of
+; successful I/O paths; only errors/timeouts pay the extra JRST.
+io7_ret_arg:
+        seto 1,
+        popj 017,
+io7_ret_timeout:
+        hrroi 1,0777776
+        popj 017,
+io7_ret_e3:
+        hrroi 1,0777775
+        popj 017,

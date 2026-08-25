@@ -7,9 +7,12 @@
         .text
         .globl cr_read_card
         .globl cr_iowd
+        .globl io7_ret_arg
+        .globl io7_ret_timeout
+        .globl io7_ret_e3
 
 cr_read_card:
-        jumpe 1,cr_read_arg
+        jumpe 1,io7_ret_arg
         skipn cr_iowd
         jrst cr_read_idle
         hrroi 1,0777774
@@ -21,7 +24,7 @@ cr_read_ready_wait:
         trne 3,0100
         jrst cr_read_start
         sojg 2,cr_read_ready_wait
-        jrst cr_read_timeout
+        jrst io7_ret_timeout
 cr_read_start:
         move 2,1
         subi 2,1
@@ -37,20 +40,12 @@ cr_read_done_wait:
         sojg 2,cr_read_done_wait
         setzm cr_iowd
         cono 0150,0007
-cr_read_timeout:
-        hrroi 1,0777776
-        popj 017,
+        jrst io7_ret_timeout
 cr_read_done:
         coni 0150,3
         trne 3,0400
-        jrst cr_read_io
+        jrst io7_ret_e3
         movei 1,0120
-        popj 017,
-cr_read_arg:
-        seto 1,
-        popj 017,
-cr_read_io:
-        hrroi 1,0777775
         popj 017,
 
         .bss
