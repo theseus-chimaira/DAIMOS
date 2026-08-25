@@ -15,6 +15,8 @@
         .globl io7_ret_e3
         .globl io7_ret_e4
         .globl pdp10_pi_handler_return
+        .globl pdp10_ret_arg_v34
+        .globl pdp10_ret_busy_v34
 
 io7_pi_handler:
         ; Paper-tape reader DONE.
@@ -89,14 +91,12 @@ io7_cp_more:
 ; Shared slow-path returns for the four PI7 peripherals.  Keep these out of
 ; successful I/O paths; only errors/timeouts pay the extra JRST.
 io7_ret_arg:
-        seto 1,
-        popj 017,
+        jrst pdp10_ret_arg_v34
 io7_ret_timeout:
         hrroi 1,0777776
         popj 017,
 io7_ret_e3:
-        hrroi 1,0777775
-        popj 017,
+        jrst pdp10_ret_busy_v34
 io7_ret_e4:
         hrroi 1,0777774
         popj 017,

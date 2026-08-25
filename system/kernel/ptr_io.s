@@ -10,6 +10,7 @@
         .globl io7_ret_arg
         .globl io7_ret_timeout
         .globl io7_ret_e3
+        .globl pdp10_ret_ok_v34
 
 ; AC1 = int *destination.  Return 0 or PT_E_ARG/BUSY/TIMEOUT.
 ptr_getchar:
@@ -47,8 +48,7 @@ ptr_get_software:
         movem 2,(4)
         setzm ptr_state
 ptr_get_ok:
-        movei 1,0
-        popj 017,
+        jrst pdp10_ret_ok_v34
 
         .bss
 ptr_state:

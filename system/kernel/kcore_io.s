@@ -28,6 +28,9 @@
         .globl pdp10_pi_level7
         .globl pdp10_pi_handlers
         .globl pdp10_pi_level_span
+        .globl pdp10_ret_ok_v34
+        .globl pdp10_ret_arg_v34
+        .globl pdp10_ret_busy_v34
 
 pdp10_pi_level1:
         .word 0
@@ -130,6 +133,19 @@ pdp10_pi_return_level6:
 pdp10_pi_return_level7:
         move 3,000057
         jrst 010,@pdp10_pi_level7
+
+; Common service returns used by several independently installed MRES modules.
+; Keeping only the three globally profitable values here reduces the fully
+; equipped resident image even after paying for these fixed KCORE words.
+pdp10_ret_ok_v34:
+        movei 1,0
+        popj 017,
+pdp10_ret_arg_v34:
+        seto 1,
+        popj 017,
+pdp10_ret_busy_v34:
+        hrroi 1,0777775
+        popj 017,
 
         .bss
 pdp10_pi_handlers:

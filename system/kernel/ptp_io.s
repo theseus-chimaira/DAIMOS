@@ -8,6 +8,7 @@
         .globl io7_ret_timeout
         .globl io7_ret_e3
         .globl io7_ret_e4
+        .globl pdp10_ret_ok_v34
 
 ; AC1 = byte.  Return 0, PT_E_BUSY (-3), PT_E_IO (-4), or timeout (-2).
 ptp_putchar:
@@ -35,8 +36,7 @@ ptp_putchar_wait:
 ptp_putchar_io:
         jrst io7_ret_e4
 ptp_putchar_ok:
-        movei 1,0
-        popj 017,
+        jrst pdp10_ret_ok_v34
 
         .bss
 ptp_state:

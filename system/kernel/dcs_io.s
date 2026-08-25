@@ -11,16 +11,17 @@
         .globl dcs_getchar
         .globl dcs_putchar
         .globl pdp10_pi_handler_return
+        .globl pdp10_ret_ok_v34
+        .globl pdp10_ret_arg_v34
+        .globl pdp10_ret_busy_v34
 
 ; dcs_rx_word is zero when idle, -1 while a receive is pending, and the packed
 ; nonnegative line/byte result once the PI handler has serviced the scanner.
 dcs_pi_handler:
         conso 0300,000010
         jrst pdp10_pi_handler_return
-        skipge dcs_rx_word
-        jrst dcs_pi_receive
+        skipl dcs_rx_word
         jrst pdp10_pi_handler_return
-
 dcs_pi_receive:
         coni 0304,1
         andi 1,077
@@ -46,8 +47,7 @@ dcs_getchar_wait:
         popj 017,
 
 dcs_getchar_busy:
-        hrroi 1,0777775
-        popj 017,
+        jrst pdp10_ret_busy_v34
 
 ; AC1 = DCS_PACK(line, byte).  Return 0 or DCS_E_ARG (-1).
 dcs_putchar:
@@ -59,12 +59,10 @@ dcs_putchar:
         cono 0304,0(2)
         andi 1,0377
         datao 0300,1
-        movei 1,0
-        popj 017,
+        jrst pdp10_ret_ok_v34
 
 dcs_putchar_arg:
-        seto 1,
-        popj 017,
+        jrst pdp10_ret_arg_v34
 
         .bss
 dcs_rx_word:

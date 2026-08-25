@@ -8,23 +8,22 @@
         .globl ge_getchar
         .globl ge_putchar
         .globl pdp10_pi_handler_return
+        .globl pdp10_ret_ok_v34
+        .globl pdp10_ret_arg_v34
+        .globl pdp10_ret_busy_v34
 
 ; ge_rx_word: zero idle, -1 waiting, otherwise 4,,raw-GTYI-word (ready).
 ; ge_tx_state: bit 0 owns one complete GE frame; bit 1 awaits GTYO DONE.
 ge_pi_handler:
         conso 0070,00010
-        jrst ge_pi_gtyo
-        skipge ge_rx_word
-        jrst ge_pi_gtyi_receive
-        cono 0070,0
-        jrst ge_pi_gtyo
-ge_pi_gtyi_receive:
+        jrst pdp10_pi_handler_return
+        skipl ge_rx_word
+        jrst ge_pi_gtyi_disable
         datai 0070,1
         tlo 1,4
         movem 1,ge_rx_word
+ge_pi_gtyi_disable:
         cono 0070,0
-
-ge_pi_gtyo:
         jrst pdp10_pi_handler_return
 
 ; Return GE_PACK(console, character), or GE_E_BUSY if another read is waiting.
@@ -41,8 +40,7 @@ ge_getchar:
         movei 2,4
         cono 0070,0(2)
 ge_get_wait:
-        move 1,ge_rx_word
-        jumpg 1,ge_get_ready
+        skipg 1,ge_rx_word
         jrst ge_get_wait
 
 ge_get_hardware:
@@ -61,8 +59,7 @@ ge_get_unpack_raw:
         popj 017,
 
 ge_get_busy:
-        hrroi 1,0777775
-        popj 017,
+        jrst pdp10_ret_busy_v34
 
 ; AC1 = decoded 7-bit GE byte.  Caller owns ge_tx_state bit 0.
 ge_put_decoded:
@@ -85,10 +82,8 @@ ge_put_decoded_wait:
 ; ETX, longitudinal parity.  The parity byte simplifies to address XOR byte
 ; XOR 1 because STX XOR ETX is 1 and status is zero.
 ge_putchar:
-        skipn ge_tx_state
-        jrst ge_putchar_idle
-        hrroi 1,0777775
-        popj 017,
+        skipe ge_tx_state
+        jrst pdp10_ret_busy_v34
 ge_putchar_idle:
         move 4,1
         move 5,1
@@ -120,11 +115,9 @@ ge_putchar_idle:
         xori 1,1
         pushj 017,ge_put_decoded
         setzm ge_tx_state
-        movei 1,0
-        popj 017,
+        jrst pdp10_ret_ok_v34
 ge_putchar_arg:
-        seto 1,
-        popj 017,
+        jrst pdp10_ret_arg_v34
 
         .bss
 ge_rx_word:

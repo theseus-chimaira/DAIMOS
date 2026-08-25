@@ -10,6 +10,7 @@
         .globl tty_cty_putchar_address
         .globl tty_dcs_putchar_address
         .globl tty_ge_putchar_address
+        .globl pdp10_ret_arg_v34
 
 tty_putchar:
         move 2,1
@@ -34,5 +35,4 @@ tty_cty_putchar_address:
         jrst tty_putchar_invalid
 
 tty_putchar_invalid:
-        seto 1,
-        popj 017,
+        jrst pdp10_ret_arg_v34

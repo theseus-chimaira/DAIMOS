@@ -10,6 +10,8 @@
         .globl cty_put6
         .globl cty_tx_pending
         .globl pdp10_pi_handler_return
+        .globl pdp10_ret_ok_v34
+        .globl pdp10_ret_busy_v34
 
 cty_pi_handler:
         conso 0120,0010
@@ -48,11 +50,9 @@ cty_putchar_timeout:
         hrroi 1,0777776
         popj 017,
 cty_putchar_busy:
-        hrroi 1,0777775
-        popj 017,
+        jrst pdp10_ret_busy_v34
 cty_putchar_ok:
-        movei 1,0
-        popj 017,
+        jrst pdp10_ret_ok_v34
 
 ; AC1 = one packed SIXBIT word.  Return the first cty_putchar result.
 cty_put6:

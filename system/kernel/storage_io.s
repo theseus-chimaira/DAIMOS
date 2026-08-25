@@ -22,13 +22,23 @@
         .globl dsk_read_sector
         .globl dsk_write_sector
         .globl pdp10_pi_handler_return
+        .globl pdp10_ret_ok_v34
+        .globl pdp10_ret_arg_v34
+        .globl pdp10_ret_busy_v34
 
 storage_pi_handler:
         ; Controller status only.  Type-136 word transfers run directly from
         ; the PI3 vector and reach storage_dct_handler only at block end.
-        skipge storage_state
-        jrst storage_pi_active
+        skipl storage_state
         jrst pdp10_pi_handler_return
+storage_pi_active:
+        move 2,storage_state
+        aoje 2,storage_pi_dtc_status
+        aoje 2,storage_pi_mtc_status
+        aoje 2,storage_pi_dsk_status
+        aoje 2,storage_pi_dsk_status
+        aoje 2,storage_pi_mtc_write_status
+        jrst storage_pi_dtc_write_status
 
 storage_dct_handler:
 storage_dct_select:
@@ -84,15 +94,6 @@ storage_pi_mtc_read_full:
         ; EOR can arrive before the transport is actually idle.  ICE is
         ; enabled, so the later TAPE FREE interrupt completes the request.
         jrst pdp10_pi_handler_return
-
-storage_pi_active:
-        move 2,storage_state
-        aoje 2,storage_pi_dtc_status
-        aoje 2,storage_pi_mtc_status
-        aoje 2,storage_pi_dsk_status
-        aoje 2,storage_pi_dsk_status
-        aoje 2,storage_pi_mtc_write_status
-        jrst storage_pi_dtc_write_status
 
 storage_pi_dtc_status:
         ; AC2 is zero for read, -1 for write after the owner dispatch chain.
@@ -154,15 +155,12 @@ storage_pi_stop:
         jrst pdp10_pi_handler_return
 
 storage_busy:
-        hrroi 1,0777775
-        popj 017,
+        jrst pdp10_ret_busy_v34
 storage_arg:
-        seto 1,
-        popj 017,
+        jrst pdp10_ret_arg_v34
 storage_ok:
         setzm storage_state
-        movei 1,0
-        popj 017,
+        jrst pdp10_ret_ok_v34
 
 ; Set direct PI3 block transfer and build its combined -count,,buffer-1 word.
 ; BLKI/BLKO updates both halves itself and dismisses PI for every non-final
