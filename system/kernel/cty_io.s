@@ -60,18 +60,16 @@ cty_putchar_ok:
 ; AC1 = one packed SIXBIT word.  Return the first cty_putchar result.
 cty_put6:
         move 4,1
-        movei 5,036
+        movei 5,6
 cty_put6_loop:
-        movn 6,5
         move 1,4
-        lsh 1,0(6)
+        lsh 1,-30
         andi 1,077
         addi 1,040
         pushj 017,cty_putchar
         jumpn 1,cty_put6_return
-        jumpe 5,cty_put6_return
-        subi 5,6
-        jrst cty_put6_loop
+        lsh 4,6
+        sojg 5,cty_put6_loop
 cty_put6_return:
         popj 017,
 
