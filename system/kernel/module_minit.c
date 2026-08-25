@@ -759,11 +759,20 @@ tty_minit(void)
 
         base = minit_install(name);
         address = minit_export(name, base, TTY_X_CTY_PUTCHAR_ADDR);
-        *(kword_t *)(unsigned long)address = (kword_t)cty_putchar;
+        if (cty_putchar != 0U)
+                *(kword_t *)(unsigned long)address =
+                    (*(kword_t *)(unsigned long)address &
+                    ~((kword_t)KINIT_HALF_MASK)) | (kword_t)cty_putchar;
         address = minit_export(name, base, TTY_X_DCS_PUTCHAR_ADDR);
-        *(kword_t *)(unsigned long)address = (kword_t)dcs_putchar;
+        if (dcs_putchar != 0U)
+                *(kword_t *)(unsigned long)address =
+                    (*(kword_t *)(unsigned long)address &
+                    ~((kword_t)KINIT_HALF_MASK)) | (kword_t)dcs_putchar;
         address = minit_export(name, base, TTY_X_GE_PUTCHAR_ADDR);
-        *(kword_t *)(unsigned long)address = (kword_t)ge_putchar;
+        if (ge_putchar != 0U)
+                *(kword_t *)(unsigned long)address =
+                    (*(kword_t *)(unsigned long)address &
+                    ~((kword_t)KINIT_HALF_MASK)) | (kword_t)ge_putchar;
         module_service_set(MODULE_SERVICE_TTY_PUTCHAR,
             minit_export(name, base, TTY_X_PUTCHAR));
         minit_diag_loaded(name);
