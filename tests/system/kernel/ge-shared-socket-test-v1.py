@@ -8,6 +8,8 @@ import subprocess
 import tempfile
 import time
 
+EXIT_TIMEOUT = 12.0
+
 
 def free_port():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -109,7 +111,7 @@ def main():
                 break
 
         try:
-            output, _ = proc.communicate(timeout=max(0.5, deadline - time.time()))
+            output, _ = proc.communicate(timeout=EXIT_TIMEOUT)
         except subprocess.TimeoutExpired:
             proc.kill()
             output, _ = proc.communicate()

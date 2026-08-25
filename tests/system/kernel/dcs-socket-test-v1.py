@@ -8,6 +8,8 @@ import subprocess
 import tempfile
 import time
 
+EXIT_TIMEOUT = 12.0
+
 
 def free_port():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -74,10 +76,16 @@ def main():
                     break
 
         try:
-            output, _ = proc.communicate(timeout=max(0.5, deadline - time.time()))
+            output, _ = proc.communicate(timeout=EXIT_TIMEOUT)
         except subprocess.TimeoutExpired:
             proc.kill()
             output, _ = proc.communicate()
+            with open(args.log, "wb") as fp:
+                fp.write(output or b"")
+                fp.write(b"\n--- TIMEOUT DCS LINE 0 ---\n")
+                fp.write(dummy_received)
+                fp.write(b"\n--- TIMEOUT DCS LINE 1 ---\n")
+                fp.write(received)
             raise RuntimeError("DCS test: simulator did not finish")
 
         try:
