@@ -8,8 +8,10 @@
 #include "wcnsls.h"
 #include "ocnsls.h"
 #include "kcore_pi.h"
+#include "storage.h"
 
 static kword_t device_test_card[CARD_COLUMNS];
+static kword_t device_test_dsk_sector[DSK_WORDS_PER_SECTOR];
 static int device_test_ptr_byte;
 
 /* Guard adjacent KCORE state across real level-7 device interrupts. */
@@ -136,6 +138,36 @@ device_test_minit(void)
             (int)kinit_call18_1(address, TTY_PACK(077U, 0U)) !=
                 TTY_E_INVALID)
                 device_test_fail();
+
+        /* Sector zero of mkdsk clean media is the compact DBC descriptor. */
+        address = module_service_get(MODULE_SERVICE_DSK_READ_SECTOR);
+        if (address == 0U ||
+            (int)kinit_call18_2(address, 0UL,
+                (kword_t)(unsigned long)device_test_dsk_sector) != 0 ||
+            ((device_test_dsk_sector[0] >> 18) & 0777777UL) != 0444243UL)
+                device_test_fail();
+
+        {
+                unsigned int i;
+                unsigned int write_address;
+
+                for (i = 0U; i < DSK_WORDS_PER_SECTOR; ++i)
+                        device_test_dsk_sector[i] = 012345600000UL + i;
+                write_address = module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR);
+                if (write_address == 0U ||
+                    (int)kinit_call18_2(write_address, 02713UL,
+                        (kword_t)(unsigned long)device_test_dsk_sector) != 0)
+                        device_test_fail();
+                for (i = 0U; i < DSK_WORDS_PER_SECTOR; ++i)
+                        device_test_dsk_sector[i] = 0;
+                if ((int)kinit_call18_2(address, 02713UL,
+                    (kword_t)(unsigned long)device_test_dsk_sector) != 0)
+                        device_test_fail();
+                for (i = 0U; i < DSK_WORDS_PER_SECTOR; ++i) {
+                        if (device_test_dsk_sector[i] != 012345600000UL + i)
+                                device_test_fail();
+                }
+        }
 
         /* DCS is disabled in the ordinary run.  The socket-backed variant
          * enables it, sends one byte, and verifies both resident services. */

@@ -1,6 +1,6 @@
 ; cr_io.s -- compact resident PDP-6 card-reader driver.
         .text
-        .globl cr_pi_handler
+        .globl cr_pi_service
         .globl cr_read_card
         .globl cr_state
         .globl cr_cols
@@ -8,23 +8,23 @@
 
 ; cr_state: bit 0 pending, bit 1 done, bit 2 error, column count in bits 3+.
 ; cr_cols advances as columns arrive, keeping the interrupt path to AC1 only.
-cr_pi_handler:
+cr_pi_service:
         move 1,cr_state
         trnn 1,0001
-        jrst pdp10_pi_handler_return
+        popj 017,
         coni 0150,1
         trne 1,0400
         jrst cr_pi_error
         trne 1,0010
         jrst cr_pi_data
         trnn 1,0020
-        jrst pdp10_pi_handler_return
+        popj 017,
         cono 0150,0027
         move 1,cr_state
         andi 1,01770
         iori 1,0002
         movem 1,cr_state
-        jrst pdp10_pi_handler_return
+        popj 017,
 cr_pi_data:
         move 1,cr_state
         caige 1,01201
@@ -32,7 +32,7 @@ cr_pi_data:
 cr_pi_error:
         movei 1,0006
         movem 1,cr_state
-        jrst pdp10_pi_handler_return
+        popj 017,
 cr_pi_data_ok:
         datai 0150,1
         andi 1,07777
@@ -40,7 +40,7 @@ cr_pi_data_ok:
         aos cr_cols
         movei 1,0010
         addm 1,cr_state
-        jrst pdp10_pi_handler_return
+        popj 017,
 
 ; AC1 = 80-word destination.  Return 80 or a CARD_E_* error.
 cr_read_card:

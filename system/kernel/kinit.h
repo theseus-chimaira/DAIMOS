@@ -29,6 +29,7 @@ void kinit_newline(void);
 void kinit_call18(unsigned int address);
 kword_t kinit_call18_0(unsigned int address);
 kword_t kinit_call18_1(unsigned int address, kword_t arg);
+kword_t kinit_call18_2(unsigned int address, kword_t arg1, kword_t arg2);
 void kinit_halt(void);
 
 #ifdef KINIT_DEBUG

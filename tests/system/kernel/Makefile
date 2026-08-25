@@ -28,14 +28,14 @@ KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 KCORE_FIXED_NAMES = kcore_entry kcore_io kcore_end
 KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))
 KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
-MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io dcs_io ge_io dpy_io tty_io wcnsls_io ocnsls_io dtc_io
+MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io io7_io dcs_io ge_io dpy_io tty_io wcnsls_io ocnsls_io storage_io
 MRES_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(MRES_NAMES)))
 
 KINIT_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
 	kinit.c kinit_diag.c module_minit.c kinit.h module.h mres.h \
 	cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h kinit_io.s module_io.s)
 KCORE_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
-	kcore.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h dtc.h \
+	kcore.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h \
 	kcore_entry.s kcore_io.s kcore_end.s cty_io.s clk_io.s ptr_io.s \
 	ptp_io.s cr_io.s cp_io.s dcs_io.s ge_io.s dpy_io.s tty_io.s wcnsls_io.s ocnsls_io.s)
 
@@ -48,20 +48,16 @@ KCORE_EMBED_OBJ = $(BUILD)/kcore-embed-v1.dobj
 
 CTY_MRES_OBJ = $(BUILD)/cty-mres.dobj
 CLK_MRES_OBJ = $(BUILD)/clk-mres.dobj
-PTR_MRES_OBJ = $(BUILD)/ptr-mres.dobj
-PTP_MRES_OBJ = $(BUILD)/ptp-mres.dobj
-CR_MRES_OBJ = $(BUILD)/cr-mres.dobj
-CP_MRES_OBJ = $(BUILD)/cp-mres.dobj
+IO7_MRES_OBJ = $(BUILD)/io7-mres.dobj
 DCS_MRES_OBJ = $(BUILD)/dcs-mres.dobj
 GE_MRES_OBJ = $(BUILD)/ge-mres.dobj
 DPY_MRES_OBJ = $(BUILD)/dpy-mres.dobj
 TTY_MRES_OBJ = $(BUILD)/tty-mres.dobj
 WCNSLS_MRES_OBJ = $(BUILD)/wcnsls-mres.dobj
 OCNSLS_MRES_OBJ = $(BUILD)/ocnsls-mres.dobj
-DTC_MRES_OBJ = $(BUILD)/dtc-mres.dobj
-MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PTR_MRES_OBJ) \
-	$(PTP_MRES_OBJ) $(CR_MRES_OBJ) $(CP_MRES_OBJ) $(DCS_MRES_OBJ) \
-	$(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) $(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(DTC_MRES_OBJ)
+STORAGE_MRES_OBJ = $(BUILD)/storage-mres.dobj
+MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(IO7_MRES_OBJ) $(DCS_MRES_OBJ) \
+	$(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) $(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(STORAGE_MRES_OBJ)
 
 MINIT_TABLE_OBJ = $(BUILD)/module-table-test.dobj
 DEVICE_TEST_ASM = $(KINIT_BUILD)/device-test-minit.s
@@ -81,16 +77,22 @@ SIMH_INI_NO_PTP = $(BUILD)/kinit-v1-no-ptp.ini
 SIMH_INI_NO_SLV = $(BUILD)/kinit-v1-no-slv.ini
 SIMH_INI_DPY = $(BUILD)/kinit-v1-dpy.ini
 SIMH_INI_WCNSLS = $(BUILD)/kinit-v1-wcnsls.ini
+SIMH_INI_DTC = $(BUILD)/kinit-v1-dtc.ini
+SIMH_INI_MTC = $(BUILD)/kinit-v1-mtc.ini
 LOG = $(BUILD)/kinit-v1.log
 LOG_NO_PTP = $(BUILD)/kinit-v1-no-ptp.log
 LOG_NO_SLV = $(BUILD)/kinit-v1-no-slv.log
 LOG_DPY = $(BUILD)/kinit-v1-dpy.log
 LOG_WCNSLS = $(BUILD)/kinit-v1-wcnsls.log
+LOG_DTC = $(BUILD)/kinit-v1-dtc.log
+LOG_MTC = $(BUILD)/kinit-v1-mtc.log
 SIMH_LOG = $(BUILD)/kinit-v1.simh.log
 SIMH_LOG_NO_PTP = $(BUILD)/kinit-v1-no-ptp.simh.log
 SIMH_LOG_NO_SLV = $(BUILD)/kinit-v1-no-slv.simh.log
 SIMH_LOG_DPY = $(BUILD)/kinit-v1-dpy.simh.log
 SIMH_LOG_WCNSLS = $(BUILD)/kinit-v1-wcnsls.simh.log
+SIMH_LOG_DTC = $(BUILD)/kinit-v1-dtc.simh.log
+SIMH_LOG_MTC = $(BUILD)/kinit-v1-mtc.simh.log
 DPY_DEBUG = $(BUILD)/kinit-v1-dpy.debug.log
 WCNSLS_DEBUG = $(BUILD)/kinit-v1-wcnsls.debug.log
 PTP_OUTPUT = $(BUILD)/ptp-output.bin
@@ -151,18 +153,13 @@ $(CTY_MRES_OBJ): $(BUILD)/cty_io.dobj $(KCORE_MAP)
 $(CLK_MRES_OBJ): $(BUILD)/clk_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/clk-mres.dxr -M $(BUILD)/clk-mres.map \
 	    -R $@ -N clk_mres_package -X clk_pi_handler -X clk_ticks -X clk_pi_service $(BUILD)/clk_io.dobj
-$(PTR_MRES_OBJ): $(BUILD)/ptr_io.dobj $(KCORE_MAP)
-	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ptr-mres.dxr -M $(BUILD)/ptr-mres.map \
-	    -R $@ -N ptr_mres_package -X ptr_pi_handler -X ptr_getchar $(BUILD)/ptr_io.dobj
-$(PTP_MRES_OBJ): $(BUILD)/ptp_io.dobj $(KCORE_MAP)
-	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ptp-mres.dxr -M $(BUILD)/ptp-mres.map \
-	    -R $@ -N ptp_mres_package -X ptp_pi_handler -X ptp_putchar $(BUILD)/ptp_io.dobj
-$(CR_MRES_OBJ): $(BUILD)/cr_io.dobj $(KCORE_MAP)
-	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/cr-mres.dxr -M $(BUILD)/cr-mres.map \
-	    -R $@ -N cr_mres_package -X cr_pi_handler -X cr_read_card $(BUILD)/cr_io.dobj
-$(CP_MRES_OBJ): $(BUILD)/cp_io.dobj $(KCORE_MAP)
-	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/cp-mres.dxr -M $(BUILD)/cp-mres.map \
-	    -R $@ -N cp_mres_package -X cp_pi_handler -X cp_punch_card $(BUILD)/cp_io.dobj
+$(IO7_MRES_OBJ): $(BUILD)/io7_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj \
+    $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/io7-mres.dxr -M $(BUILD)/io7-mres.map \
+	    -R $@ -N io7_mres_package -X io7_pi_handler -X ptr_getchar \
+	    -X ptp_putchar -X cr_read_card -X cp_punch_card \
+	    $(BUILD)/io7_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj \
+	    $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj
 $(DCS_MRES_OBJ): $(BUILD)/dcs_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dcs-mres.dxr -M $(BUILD)/dcs-mres.map \
 	    -R $@ -N dcs_mres_package -X dcs_pi_handler -X dcs_getchar \
@@ -186,9 +183,10 @@ $(OCNSLS_MRES_OBJ): $(BUILD)/ocnsls_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ocnsls-mres.dxr -M $(BUILD)/ocnsls-mres.map \
 	    -R $@ -N ocnsls_mres_package -X ocnsls_read $(BUILD)/ocnsls_io.dobj
 
-$(DTC_MRES_OBJ): $(BUILD)/dtc_io.dobj $(KCORE_MAP)
-	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dtc-mres.dxr -M $(BUILD)/dtc-mres.map \
-	    -R $@ -N dtc_mres_package -X dtc_pi_handler -X dtc_read_words $(BUILD)/dtc_io.dobj
+$(STORAGE_MRES_OBJ): $(BUILD)/storage_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/storage-mres.dxr -M $(BUILD)/storage-mres.map \
+	    -R $@ -N storage_mres_package -X storage_pi_handler -X dtc_read_words \
+	    -X mtc_read_words -X dsk_read_sector -X dsk_write_sector $(BUILD)/storage_io.dobj
 
 $(KCORE_EMBED_ASM): kcore-embed-v1.s.in $(KCORE_MAP) | $(BUILD)
 	end=`awk '$$1 == "__kcore_low_init_end" { print $$2 }' $(KCORE_MAP)`; \
@@ -255,10 +253,16 @@ set wcnsls enabled\
 set wcnsls debug=DATAIO\
 set wcnsls debug=CONO' $<; \
 	} > $@
+$(SIMH_INI_DTC): $(SIMH_INI)
+	sed -e 's|$(abspath $(SIMH_LOG))|$(abspath $(SIMH_LOG_DTC))|' \
+	    -e 's/set dtc disabled/set dtc enabled/' $< > $@
+$(SIMH_INI_MTC): $(SIMH_INI)
+	sed -e 's|$(abspath $(SIMH_LOG))|$(abspath $(SIMH_LOG_MTC))|' \
+	    -e 's/set mtc disabled/set mtc enabled/' $< > $@
 
 image: $(SIMH_INI)
 
-test: image $(SIMH_INI_NO_PTP) $(SIMH_INI_NO_SLV) $(SIMH_INI_DPY) $(SIMH_INI_WCNSLS)
+test: image $(SIMH_INI_NO_PTP) $(SIMH_INI_NO_SLV) $(SIMH_INI_DPY) $(SIMH_INI_WCNSLS) $(SIMH_INI_DTC) $(SIMH_INI_MTC)
 	@STDBUF='$(STDBUF)' $(WATCH_OUTPUT) -f 6 -t 2 \
 	    $(SIMH_PDP6) $(SIMH_INI) $(SIMH_LOG) $(LOG) \
 	    'DAIMON                              V0.1' \
@@ -276,6 +280,9 @@ test: image $(SIMH_INI_NO_PTP) $(SIMH_INI_NO_SLV) $(SIMH_INI_DPY) $(SIMH_INI_WCN
 	    'TTY                               LOADED' \
 	    'WCNSLS                            LOADED' \
 	    'OCNSLS                            LOADED' \
+	    'DTC                               NO DEV' \
+	    'MTC                               NO DEV' \
+	    'DSK270                                OK' \
 	    'SLV                               NO' \
 	    'HALT instruction' $(if $(filter 1,$(KINIT_DEBUG)),>/dev/null,)
 ifeq ($(KINIT_DEBUG),1)
@@ -293,6 +300,16 @@ endif
 	    'SLV                               NO DEV' \
 	    'HALT instruction' >/dev/null
 	@rm -f $(DPY_DEBUG)
+	@STDBUF='$(STDBUF)' $(WATCH_OUTPUT) -f 6 -t 2 \
+	    $(SIMH_PDP6) $(SIMH_INI_DTC) $(SIMH_LOG_DTC) $(LOG_DTC) \
+	    'DTC                                   OK' \
+	    'MTC                               NO DEV' \
+	    'HALT instruction' >/dev/null
+	@STDBUF='$(STDBUF)' $(WATCH_OUTPUT) -f 6 -t 2 \
+	    $(SIMH_PDP6) $(SIMH_INI_MTC) $(SIMH_LOG_MTC) $(LOG_MTC) \
+	    'DTC                               NO DEV' \
+	    'MTC                                   OK' \
+	    'HALT instruction' >/dev/null
 	@STDBUF='$(STDBUF)' $(WATCH_OUTPUT) -f 6 -t 2 \
 	    $(SIMH_PDP6) $(SIMH_INI_DPY) $(SIMH_LOG_DPY) $(LOG_DPY) \
 	    'DPY                                   OK' \

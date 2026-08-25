@@ -1,17 +1,17 @@
 ; ptp_io.s -- compact resident PDP-6 paper-tape punch driver.
         .text
-        .globl ptp_pi_handler
+        .globl ptp_pi_service
         .globl ptp_putchar
         .globl ptp_state
         .globl pdp10_pi_handler_return
 
-ptp_pi_handler:
+ptp_pi_service:
         coni 0100,1
         trnn 1,0010
-        jrst pdp10_pi_handler_return
+        popj 017,
         setzm ptp_state
         cono 0100,0007
-        jrst pdp10_pi_handler_return
+        popj 017,
 
 ; AC1 = byte.  Return 0, PT_E_BUSY (-3), PT_E_IO (-4), or timeout (-2).
 ptp_putchar:

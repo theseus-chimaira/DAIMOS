@@ -1,29 +1,29 @@
 ; cp_io.s -- compact resident PDP-6 card-punch driver.
         .text
-        .globl cp_pi_handler
+        .globl cp_pi_service
         .globl cp_punch_card
         .globl cp_state
         .globl cp_cols
         .globl pdp10_pi_handler_return
 
 ; cp_cols advances as the punch requests columns, keeping PI to AC1 only.
-cp_pi_handler:
+cp_pi_service:
         move 1,cp_state
         trnn 1,0001
-        jrst pdp10_pi_handler_return
+        popj 017,
         coni 0110,1
         trne 1,05000
         jrst cp_pi_error
         trne 1,0010
         jrst cp_pi_data
         trnn 1,0100
-        jrst pdp10_pi_handler_return
+        popj 017,
         cono 0110,0107
         move 1,cp_state
         andi 1,01770
         iori 1,0002
         movem 1,cp_state
-        jrst pdp10_pi_handler_return
+        popj 017,
 cp_pi_data:
         move 1,cp_state
         caige 1,01201
@@ -31,7 +31,7 @@ cp_pi_data:
 cp_pi_error:
         movei 1,0006
         movem 1,cp_state
-        jrst pdp10_pi_handler_return
+        popj 017,
 cp_pi_data_ok:
         move 1,@cp_cols
         andi 1,07777
@@ -41,9 +41,9 @@ cp_pi_data_ok:
         addm 1,cp_state
         move 1,cp_state
         caige 1,01201
-        jrst pdp10_pi_handler_return
+        popj 017,
         cono 0110,010207
-        jrst pdp10_pi_handler_return
+        popj 017,
 
 ; AC1 = 80-word source.  Return 80 or a CARD_E_* error.
 cp_punch_card:

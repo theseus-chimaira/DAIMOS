@@ -20,7 +20,10 @@ extern kword_t __minit_table_end;
 #define MODULE_SERVICE_GE_PUTCHAR       12U
 #define MODULE_SERVICE_DPY_PUTWORD       13U
 #define MODULE_SERVICE_DTC_READ_WORDS    14U
-#define MODULE_SERVICE_COUNT            15U
+#define MODULE_SERVICE_MTC_READ_WORDS    15U
+#define MODULE_SERVICE_DSK_READ_SECTOR   16U
+#define MODULE_SERVICE_DSK_WRITE_SECTOR  17U
+#define MODULE_SERVICE_COUNT            18U
 
 void module_run_minits(void);
 const kword_t *module_current_mres(void);
@@ -61,6 +64,10 @@ void minit_wcnsls_cono(kword_t word);
 void minit_wcnsls_plot(kword_t word);
 kword_t minit_dtc_coni(void);
 void minit_dtc_cono(kword_t word);
+kword_t minit_mtc_coni(void);
+void minit_mtc_cono(kword_t word);
+kword_t minit_dsk_coni(void);
+void minit_dsk_cono(kword_t word);
 kword_t minit_slv_coni(void);
 void minit_slv_cono(kword_t word);
 

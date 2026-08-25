@@ -5,16 +5,16 @@
 ; DONE without interrupting or overwriting the software result.
 
         .text
-        .globl ptr_pi_handler
+        .globl ptr_pi_service
         .globl ptr_getchar
         .globl ptr_state
         .globl pdp10_pi_handler_return
 
 ; ptr_state: bit 0 pending, bit 1 software-ready, byte in bits 2..9.
-ptr_pi_handler:
+ptr_pi_service:
         coni 0104,1
         trnn 1,0010
-        jrst pdp10_pi_handler_return
+        popj 017,
         move 1,ptr_state
         trnn 1,0001
         jrst ptr_pi_unrequested
@@ -24,13 +24,13 @@ ptr_pi_handler:
         lsh 1,2
         iori 1,0002
         movem 1,ptr_state
-        jrst pdp10_pi_handler_return
+        popj 017,
 
 ; Preserve an unsolicited prefetched character in the hardware while
 ; removing its PI request.  CONO DONE with PIA zero leaves CHR readable.
 ptr_pi_unrequested:
         cono 0104,0010
-        jrst pdp10_pi_handler_return
+        popj 017,
 
 ; AC1 = int *destination.  Return 0 or PT_E_ARG/BUSY/TIMEOUT.
 ptr_getchar:
