@@ -53,14 +53,14 @@ dtc_read_words:
         skipn dtc_state
         jrst dtc_read_idle
         hrroi 1,0777775
-        popj 17,
+        popj 017,
 dtc_read_idle:
         caile 1,7
         jrst dtc_read_arg
         jumpg 3,dtc_read_start
 dtc_read_arg:
         seto 1,
-        popj 17,
+        popj 017,
 dtc_read_start:
         movem 2,dtc_ptr
         movem 3,dtc_count
@@ -77,11 +77,11 @@ dtc_read_wait:
         jrst dtc_read_ok
         setzm dtc_state
         hrroi 1,0777773
-        popj 17,
+        popj 017,
 dtc_read_ok:
         setzm dtc_state
         movei 1,0
-        popj 17,
+        popj 017,
 
         .bss
 dtc_state: .block 1

@@ -9,22 +9,22 @@
 ; APR and the line clock share one PDP-6 PIA.  PI6 therefore still requires
 ; the clock flag qualification before this handler claims the interrupt.
 clk_pi_handler:
-        pushj 17,clk_pi_service
+        pushj 017,clk_pi_service
         jrst pdp10_pi_handler_return
 
 ; Callable PI6 service used by the DPY shared handler.  Clobbers AC1 only.
 clk_pi_service:
         coni 0000,1
         trnn 1,01000
-        popj 17,
+        popj 017,
         aos clk_tick_count
         movei 1,03006
         cono 0000,0(1)
-        popj 17,
+        popj 017,
 
 clk_ticks:
         move 1,clk_tick_count
-        popj 17,
+        popj 017,
 
         .bss
 clk_tick_count:

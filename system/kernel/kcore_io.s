@@ -102,37 +102,37 @@ pdp10_pi_return_level1:
         move 1,000020
         move 2,000021
         move 3,000043
-        jrst 10,@pdp10_pi_level1
+        jrst 010,@pdp10_pi_level1
 pdp10_pi_return_level2:
         move 1,000022
         move 2,000023
         move 3,000045
-        jrst 10,@pdp10_pi_level2
+        jrst 010,@pdp10_pi_level2
 pdp10_pi_return_level3:
         move 1,000024
         move 2,000025
         move 3,000047
-        jrst 10,@pdp10_pi_level3
+        jrst 010,@pdp10_pi_level3
 pdp10_pi_return_level4:
         move 1,000026
         move 2,000027
         move 3,000051
-        jrst 10,@pdp10_pi_level4
+        jrst 010,@pdp10_pi_level4
 pdp10_pi_return_level5:
         move 1,000030
         move 2,000031
         move 3,000053
-        jrst 10,@pdp10_pi_level5
+        jrst 010,@pdp10_pi_level5
 pdp10_pi_return_level6:
         move 1,000032
         move 2,000033
         move 3,000055
-        jrst 10,@pdp10_pi_level6
+        jrst 010,@pdp10_pi_level6
 pdp10_pi_return_level7:
         move 1,000034
         move 2,000035
         move 3,000057
-        jrst 10,@pdp10_pi_level7
+        jrst 010,@pdp10_pi_level7
 
         .bss
 pdp10_pi_handlers:

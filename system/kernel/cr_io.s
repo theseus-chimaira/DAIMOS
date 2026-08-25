@@ -70,7 +70,7 @@ cr_read_done_wait:
         cono 0150,0007
 cr_read_timeout:
         hrroi 1,0777776
-        popj 17,
+        popj 017,
 cr_read_done:
         trne 3,0004
         jrst cr_read_io
@@ -79,19 +79,19 @@ cr_read_done:
         lsh 1,-3
         caie 1,0120
         jrst cr_read_limit
-        popj 17,
+        popj 017,
 cr_read_arg:
         seto 1,
-        popj 17,
+        popj 017,
 cr_read_io:
         hrroi 1,0777775
-        popj 17,
+        popj 017,
 cr_read_busy:
         hrroi 1,0777774
-        popj 17,
+        popj 017,
 cr_read_limit:
         hrroi 1,0777773
-        popj 17,
+        popj 017,
 
         .bss
 cr_state:

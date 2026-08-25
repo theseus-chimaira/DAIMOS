@@ -49,13 +49,13 @@ cty_putchar_wait_done:
         setzm cty_tx_pending
 cty_putchar_timeout:
         hrroi 1,0777776
-        popj 17,
+        popj 017,
 cty_putchar_busy:
         hrroi 1,0777775
-        popj 17,
+        popj 017,
 cty_putchar_ok:
         movei 1,0
-        popj 17,
+        popj 017,
 
 ; AC1 = one packed SIXBIT word.  Return the first cty_putchar result.
 cty_put6:
@@ -67,13 +67,13 @@ cty_put6_loop:
         lsh 1,0(6)
         andi 1,077
         addi 1,040
-        pushj 17,cty_putchar
+        pushj 017,cty_putchar
         jumpn 1,cty_put6_return
         jumpe 5,cty_put6_return
         subi 5,6
         jrst cty_put6_loop
 cty_put6_return:
-        popj 17,
+        popj 017,
 
         .bss
 cty_tx_pending:

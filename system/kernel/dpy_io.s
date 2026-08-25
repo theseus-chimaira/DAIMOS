@@ -16,7 +16,7 @@
 dpy_pi_handler:
         move 1,dpy_clk_pi_service_address
         jumpe 1,dpy_pi_display
-        pushj 17,(1)
+        pushj 017,(1)
 dpy_pi_display:
         coni 0130,1
         trnn 1,000200
@@ -32,7 +32,7 @@ dpy_putword:
         skipn dpy_pending
         jrst dpy_put_start
         hrroi 1,0777775
-        popj 17,
+        popj 017,
 dpy_put_start:
         setom dpy_pending
         datao 0130,1
@@ -42,7 +42,7 @@ dpy_put_wait:
         jrst dpy_put_wait
 dpy_put_ok:
         movei 1,0
-        popj 17,
+        popj 017,
 
         .bss
 dpy_pending:

@@ -64,7 +64,7 @@ cp_punch_wait:
         setzm cp_state
         cono 0110,0007
         hrroi 1,0777776
-        popj 17,
+        popj 017,
 cp_punch_done:
         trne 3,0004
         jrst cp_punch_io
@@ -73,19 +73,19 @@ cp_punch_done:
         lsh 1,-3
         caie 1,0120
         jrst cp_punch_limit
-        popj 17,
+        popj 017,
 cp_punch_arg:
         seto 1,
-        popj 17,
+        popj 017,
 cp_punch_io:
         hrroi 1,0777775
-        popj 17,
+        popj 017,
 cp_punch_busy:
         hrroi 1,0777774
-        popj 17,
+        popj 017,
 cp_punch_limit:
         hrroi 1,0777773
-        popj 17,
+        popj 017,
 
         .bss
 cp_state:

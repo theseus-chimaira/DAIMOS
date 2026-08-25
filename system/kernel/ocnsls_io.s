@@ -3,4 +3,4 @@
         .globl ocnsls_read
 ocnsls_read:
         datai 0724,1
-        popj 17,
+        popj 017,

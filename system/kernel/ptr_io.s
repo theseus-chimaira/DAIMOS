@@ -59,7 +59,7 @@ ptr_get_wait:
         setzm ptr_state
         cono 0104,0
         hrroi 1,0777776
-        popj 17,
+        popj 017,
 
 ptr_get_hardware:
         datai 0104,3
@@ -67,7 +67,7 @@ ptr_get_hardware:
         andi 3,0377
         movem 3,(4)
         movei 1,0
-        popj 17,
+        popj 017,
 
 ptr_get_software:
         move 3,2
@@ -76,13 +76,13 @@ ptr_get_software:
         movem 3,(4)
         setzm ptr_state
         movei 1,0
-        popj 17,
+        popj 017,
 ptr_get_arg:
         seto 1,
-        popj 17,
+        popj 017,
 ptr_get_busy:
         hrroi 1,0777775
-        popj 17,
+        popj 017,
 
         .bss
 ptr_state:

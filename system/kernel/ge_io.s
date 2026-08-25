@@ -17,7 +17,7 @@
 ge_pi_handler:
         move 1,ge_dcs_pi_service_address
         jumpe 1,ge_pi_gtyi
-        pushj 17,(1)
+        pushj 017,(1)
 
 ge_pi_gtyi:
         coni 0070,1
@@ -76,11 +76,11 @@ ge_get_unpack_raw:
         lsh 2,010
         andi 1,0177
         ior 1,2
-        popj 17,
+        popj 017,
 
 ge_get_busy:
         hrroi 1,0777775
-        popj 17,
+        popj 017,
 
 ; AC1 = decoded 7-bit GE byte.  Caller owns ge_tx_state bit 0.
 ge_put_decoded:
@@ -100,7 +100,7 @@ ge_put_decoded_wait:
         move 2,ge_tx_state
         trne 2,2
         jrst ge_put_decoded_wait
-        popj 17,
+        popj 017,
 
 ; AC1 = GE_PACK(console, byte).  Return 0 or GE_E_*.
 ; Each character is a complete GE message: SOH, address, status, STX, byte,
@@ -110,7 +110,7 @@ ge_putchar:
         skipn ge_tx_state
         jrst ge_putchar_idle
         hrroi 1,0777775
-        popj 17,
+        popj 017,
 ge_putchar_idle:
         move 4,1
         move 5,1
@@ -121,32 +121,32 @@ ge_putchar_idle:
         movei 2,1
         movem 2,ge_tx_state
         movei 1,1
-        pushj 17,ge_put_decoded
+        pushj 017,ge_put_decoded
         move 6,5
         lsh 6,3
         addi 6,0140
         move 1,6
-        pushj 17,ge_put_decoded
+        pushj 017,ge_put_decoded
         movei 1,0
-        pushj 17,ge_put_decoded
+        pushj 017,ge_put_decoded
         movei 1,2
-        pushj 17,ge_put_decoded
+        pushj 017,ge_put_decoded
         move 7,4
         andi 7,0177
         move 1,7
-        pushj 17,ge_put_decoded
+        pushj 017,ge_put_decoded
         movei 1,3
-        pushj 17,ge_put_decoded
+        pushj 017,ge_put_decoded
         move 1,6
         xor 1,7
         xori 1,1
-        pushj 17,ge_put_decoded
+        pushj 017,ge_put_decoded
         setzm ge_tx_state
         movei 1,0
-        popj 17,
+        popj 017,
 ge_putchar_arg:
         seto 1,
-        popj 17,
+        popj 017,
 
         .bss
 ge_rx_word:

@@ -66,11 +66,11 @@ minit_pi_low_init:
         move 1,[jsr pdp10_pi_level7]
         movem 1,000056
         setzm 000057
-        popj 17,
+        popj 017,
 
 minit_pi_hw_clear:
         cono 0004,010000
-        popj 17,
+        popj 017,
 
 ; AC1 contains the complete level-enable mask.  Enable PI globally and add
 ; these levels without disturbing already enabled levels.
@@ -78,90 +78,90 @@ minit_pi_hw_set:
         andi 1,0177
         iori 1,002200
         cono 0004,0(1)
-        popj 17,
+        popj 017,
 
 ; AC1 contains one or more PI level mask bits to request in software.
 minit_pi_request:
         andi 1,0177
         iori 1,004000
         cono 0004,0(1)
-        popj 17,
+        popj 017,
 
 minit_cty_coni:
         coni 0120,1
-        popj 17,
+        popj 017,
 minit_cty_cono:
         cono 0120,0(1)
-        popj 17,
+        popj 017,
 minit_clk_coni:
         coni 0000,1
-        popj 17,
+        popj 017,
 minit_clk_cono:
         cono 0000,0(1)
-        popj 17,
+        popj 017,
 minit_ptr_coni:
         coni 0104,1
-        popj 17,
+        popj 017,
 minit_ptr_cono:
         cono 0104,0(1)
-        popj 17,
+        popj 017,
 minit_ptp_coni:
         coni 0100,1
-        popj 17,
+        popj 017,
 minit_ptp_cono:
         cono 0100,0(1)
-        popj 17,
+        popj 017,
 minit_cr_coni:
         coni 0150,1
-        popj 17,
+        popj 017,
 minit_cr_cono:
         cono 0150,0(1)
-        popj 17,
+        popj 017,
 minit_cp_coni:
         coni 0110,1
-        popj 17,
+        popj 017,
 minit_cp_cono:
         cono 0110,0(1)
-        popj 17,
+        popj 017,
 minit_dcs_coni:
         coni 0300,1
-        popj 17,
+        popj 017,
 minit_dcs_cono:
         cono 0300,0(1)
-        popj 17,
+        popj 017,
 minit_gtyi_coni:
         coni 0070,1
-        popj 17,
+        popj 017,
 minit_gtyi_cono:
         cono 0070,0(1)
-        popj 17,
+        popj 017,
 minit_gtyo_coni:
         coni 0750,1
-        popj 17,
+        popj 017,
 minit_gtyo_cono:
         cono 0750,0(1)
-        popj 17,
+        popj 017,
 minit_dpy_coni:
         coni 0130,1
-        popj 17,
+        popj 017,
 minit_dpy_cono:
         cono 0130,0(1)
-        popj 17,
+        popj 017,
 minit_wcnsls_cono:
         cono 0420,0(1)
-        popj 17,
+        popj 017,
 minit_wcnsls_plot:
         datao 0420,1
-        popj 17,
+        popj 017,
 minit_dtc_coni:
         coni 0210,1
-        popj 17,
+        popj 017,
 minit_dtc_cono:
         cono 0210,0(1)
-        popj 17,
+        popj 017,
 minit_slv_coni:
         coni 0020,1
-        popj 17,
+        popj 017,
 minit_slv_cono:
         cono 0020,0(1)
-        popj 17,
+        popj 017,

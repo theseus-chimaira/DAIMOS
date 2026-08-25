@@ -22,8 +22,8 @@ tty_putchar:
         move 3,tty_dcs_putchar_address
         jumpe 3,tty_putchar_invalid
         subi 1,0400
-        pushj 17,(3)
-        popj 17,
+        pushj 017,(3)
+        popj 017,
 
 tty_putchar_ge:
         caile 2,024
@@ -31,18 +31,18 @@ tty_putchar_ge:
         move 3,tty_ge_putchar_address
         jumpe 3,tty_putchar_invalid
         subi 1,010400
-        pushj 17,(3)
-        popj 17,
+        pushj 017,(3)
+        popj 017,
 
 tty_putchar_cty:
         move 3,tty_cty_putchar_address
         jumpe 3,tty_putchar_invalid
-        pushj 17,(3)
-        popj 17,
+        pushj 017,(3)
+        popj 017,
 
 tty_putchar_invalid:
         seto 1,
-        popj 17,
+        popj 017,
 
         .bss
 tty_cty_putchar_address:
