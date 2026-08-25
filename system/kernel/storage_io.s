@@ -140,19 +140,16 @@ storage_pi_dsk_status:
         jrst pdp10_pi_handler_return
 
 storage_pi_done:
-        ; Preserve the completed owner without adding a word: -1/-2/-3
-        ; becomes +1/+2/+3.  The waiter can then special-case DSK IDS.
-        move 1,storage_state
-        movn 1,1
+        ; Preserve the completed owner without adding a word: negative owner
+        ; becomes its positive completion code.
+        movn 1,storage_state
         movem 1,storage_state
-        cono 0224,0
-        cono 0210,0
-        cono 0200,0
-        jrst pdp10_pi_handler_return
+        jrst storage_pi_stop
 
 storage_pi_error:
         movei 1,4
         movem 1,storage_state
+storage_pi_stop:
         cono 0224,0
         cono 0210,0
         cono 0200,0
@@ -291,7 +288,9 @@ mtc_write_start:
         cono 0200,0(2)
         jrst storage_wait
 
-; AC1 raw hardware address, AC2 destination of one 128-word sector.
+; AC1 raw hardware address, AC2 destination/source of one 128-word sector.
+; Read/write share address setup, DFR wait, and controller start; the two tiny
+; entry stubs provide only direction-specific DCT/DSK command words.
 dsk_read_sector:
         skipn storage_state
         jrst dsk_read_idle
@@ -300,24 +299,10 @@ dsk_read_idle:
         movei 3,0200
         pushj 017,storage_setup_read
         hrroi 3,0777775
-        movem 3,storage_state
-        move 3,1
-        datao 0270,3
+        movei 4,004003
+        movei 5,001105
+        jrst dsk_rw_start
 
-dsk_wait_dfr:
-        coni 0270,3
-        trne 3,001777
-        jrst storage_ioerr
-        trnn 3,040000
-        jrst dsk_wait_dfr
-        movei 3,004003
-        cono 0200,0(3)
-        movei 3,001105
-        cono 0270,0(3)
-        jrst storage_wait
-
-; AC1 raw hardware address, AC2 source of one 128-word sector.
-; Direction is encoded in the direct PI3 BLKI/BLKO vector word.
 dsk_write_sector:
         skipn storage_state
         jrst dsk_write_idle
@@ -326,20 +311,21 @@ dsk_write_idle:
         movei 3,0200
         pushj 017,storage_setup_write
         hrroi 3,0777774
+        movei 4,003403
+        movei 5,002105
+
+dsk_rw_start:
         movem 3,storage_state
         move 3,1
         datao 0270,3
-
-dsk_write_wait_dfr:
+dsk_rw_wait_dfr:
         coni 0270,3
         trne 3,001777
         jrst storage_ioerr
         trnn 3,040000
-        jrst dsk_write_wait_dfr
-        movei 3,003403
-        cono 0200,0(3)
-        movei 3,002105
-        cono 0270,0(3)
+        jrst dsk_rw_wait_dfr
+        cono 0200,0(4)
+        cono 0270,0(5)
         jrst storage_wait
 
 storage_wait:
