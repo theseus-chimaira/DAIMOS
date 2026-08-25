@@ -1,85 +1,19 @@
-; io7_io.s -- compact shared PI7 dispatcher for paper/card peripherals.
+; io7_io.s -- shared PI7 dispatcher for paper/card peripherals.
 ;
-; One generic PI handler services PTR, PTP, CR, and CP.  Device tests and the
-; small completion actions are inlined here, avoiding four PUSHJ/POPJ pairs.
-; CR/CP each use one AOBJN-style pointer/count word instead of state+pointer.
+; PTR, PTP, CR, and CP all use PI7.  One handler slot and one MRES package
+; serves all four, following the ITS practice of sharing interrupt glue.
 
         .text
         .globl io7_pi_handler
-        .globl ptr_state
-        .globl ptp_state
-        .globl cr_iowd
-        .globl cp_iowd
+        .globl ptr_pi_service
+        .globl ptp_pi_service
+        .globl cr_pi_service
+        .globl cp_pi_service
         .globl pdp10_pi_handler_return
 
 io7_pi_handler:
-        ; Paper-tape reader DONE.
-        coni 0104,1
-        trnn 1,0010
-        jrst io7_ptp
-        skipn ptr_state
-        jrst io7_ptr_prefetch
-        datai 0104,ptr_state
-        aos ptr_state
-        cono 0104,0
-        jrst io7_ptp
-io7_ptr_prefetch:
-        ; Preserve one unsolicited prefetched character with PI disabled.
-        cono 0104,0010
-
-io7_ptp:
-        coni 0100,1
-        trnn 1,0010
-        jrst io7_cr
-        setzm ptp_state
-        cono 0100,0007
-
-io7_cr:
-        coni 0150,1
-        trne 1,0400
-        jrst io7_cr_done
-        trne 1,0010
-        jrst io7_cr_data
-        trnn 1,0020
-        jrst io7_cp
-io7_cr_done:
-        cono 0150,0027
-        setzm cr_iowd
-        jrst io7_cp
-io7_cr_data:
-        move 1,cr_iowd
-        aobjn 1,io7_cr_more
-        datai 0150,(1)
-        setom cr_iowd
-        jrst io7_cp
-io7_cr_more:
-        movem 1,cr_iowd
-        datai 0150,(1)
-
-io7_cp:
-        coni 0110,1
-        trne 1,05000
-        jrst io7_cp_done
-        trne 1,0010
-        jrst io7_cp_data
-        trnn 1,0100
-        jrst pdp10_pi_handler_return
-io7_cp_done:
-        cono 0110,0107
-        setzm cp_iowd
-        jrst pdp10_pi_handler_return
-io7_cp_data:
-        move 1,cp_iowd
-        aobjn 1,io7_cp_more
-        move 1,(1)
-        andi 1,07777
-        datao 0110,1
-        setom cp_iowd
-        cono 0110,010207
-        jrst pdp10_pi_handler_return
-io7_cp_more:
-        movem 1,cp_iowd
-        move 1,(1)
-        andi 1,07777
-        datao 0110,1
+        pushj 017,ptr_pi_service
+        pushj 017,ptp_pi_service
+        pushj 017,cr_pi_service
+        pushj 017,cp_pi_service
         jrst pdp10_pi_handler_return
