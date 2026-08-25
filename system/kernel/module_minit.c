@@ -12,6 +12,7 @@
 #include "tty.h"
 #include "wcnsls.h"
 #include "ocnsls.h"
+#include "dtc.h"
 
 #define CTY_X_HANDLER           0U
 #define CTY_X_PUT6              1U
@@ -45,6 +46,8 @@
 #define TTY_X_GE_PUTCHAR_ADDR   3U
 #define WCNSLS_X_READ           0U
 #define OCNSLS_X_READ           0U
+#define DTC_X_HANDLER            0U
+#define DTC_X_READ_WORDS         1U
 
 #define SLV_PI_MASK             0000007UL
 #define SLV_CO_CLEAR_IRQ        0000010UL
@@ -842,6 +845,29 @@ ocnsls_minit(void)
         module_service_set(MODULE_SERVICE_OCNSLS_READ,
             minit_export(name, base, OCNSLS_X_READ));
         minit_diag_loaded(name);
+}
+
+void
+dtc_minit(void)
+{
+        kword_t name;
+        kword_t st;
+        unsigned int base;
+
+        name = (kword_t)SIXBIT("DTC   ");
+        minit_dtc_cono((kword_t)DTC_NATIVE_PI_LEVEL);
+        st = minit_dtc_coni();
+        minit_dtc_cono(0);
+        if ((st & DTC_ST_PI_MASK) != DTC_NATIVE_PI_LEVEL) {
+                minit_diag_nodev(name);
+                return;
+        }
+        base = minit_install(name);
+        minit_register(name, DTC_NATIVE_PI_LEVEL,
+            minit_export(name, base, DTC_X_HANDLER));
+        module_service_set(MODULE_SERVICE_DTC_READ_WORDS,
+            minit_export(name, base, DTC_X_READ_WORDS));
+        minit_diag_ok(name);
 }
 
 void

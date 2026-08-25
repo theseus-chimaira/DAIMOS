@@ -33,6 +33,8 @@
         .globl minit_dpy_cono
         .globl minit_wcnsls_cono
         .globl minit_wcnsls_plot
+        .globl minit_dtc_coni
+        .globl minit_dtc_cono
         .globl minit_slv_coni
         .globl minit_slv_cono
 
@@ -150,6 +152,12 @@ minit_wcnsls_cono:
         popj 17,
 minit_wcnsls_plot:
         datao 0420,1
+        popj 17,
+minit_dtc_coni:
+        coni 0210,1
+        popj 17,
+minit_dtc_cono:
+        cono 0210,0(1)
         popj 17,
 minit_slv_coni:
         coni 0020,1
