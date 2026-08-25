@@ -2,8 +2,9 @@
 ;
 ; DTC, MTC, and DSK270 all feed data through the Type 136 data control.
 ; They therefore share one resident pointer, count, and PI5 service path.
-; storage_state encodes ownership as -1 DTC, -2 MTC, -3 DSK; no separate
-; owner word is required.  Positive values are completion/error states.
+; storage_state encodes ownership as -1 DTC, -2 MTC read, -3 DSK read,
+; -4 DSK write, -5 MTC write; no owner word is required.  Positive values
+; are completion/error states.
 ;
 ; dtc_read_words / mtc_read_words:
 ;   AC1 = unit, AC2 = destination, AC3 = exact/max word count.
@@ -14,6 +15,7 @@
         .globl storage_pi_handler
         .globl dtc_read_words
         .globl mtc_read_words
+        .globl mtc_write_words
         .globl dsk_read_sector
         .globl dsk_write_sector
         .globl pdp10_pi_handler_return
@@ -42,11 +44,20 @@ storage_pi_advance:
         ; error unless EOR is already visible.
         move 2,storage_state
         aoje 2,storage_pi_done
-        aoje 2,storage_pi_mtc_full
+        aoje 2,storage_pi_mtc_read_full
         aoje 2,storage_pi_dsk_read_done
+        aoje 2,storage_pi_dsk_write_full
 
-        ; DSK write: the final DATAO is only buffered by the DCT.  Patch the
-        ; next DCT request to terminate the sector after the disk consumes it.
+        ; MTC write (-5): after the final DATAO, wait for the next DCT
+        ; request.  That means the buffered word has advanced into the DCT
+        ; accumulator; the drain handler can then silence DCT PI while
+        ; leaving the channel connected for Type 516 to consume it.
+        movei 1,storage_pi_mtc_write_drain
+        hrrm 1,storage_pi_select
+        jrst pdp10_pi_handler_return
+
+storage_pi_dsk_write_full:
+        ; DSK write (-4): the next request acknowledges the final DATAO.
         movei 1,storage_pi_write_finish
         hrrm 1,storage_pi_select
         jrst pdp10_pi_handler_return
@@ -56,7 +67,7 @@ storage_pi_dsk_read_done:
         cono 0270,0(1)
         jrst storage_pi_done
 
-storage_pi_mtc_full:
+storage_pi_mtc_read_full:
         coni 0224,1
         trne 1,0400520
         jrst storage_pi_error
@@ -65,7 +76,9 @@ storage_pi_mtc_full:
         coni 0200,1
         trne 1,002000
         jrst storage_pi_error
-        jrst storage_pi_done
+        ; EOR can arrive before the transport is actually idle.  ICE is
+        ; enabled, so the later TAPE FREE interrupt completes the request.
+        jrst pdp10_pi_handler_return
 
 storage_pi_status:
         skipge storage_state
@@ -75,7 +88,9 @@ storage_pi_active:
         move 2,storage_state
         aoje 2,storage_pi_dtc_status
         aoje 2,storage_pi_mtc_status
-        jrst storage_pi_dsk_status
+        aoje 2,storage_pi_dsk_status
+        aoje 2,storage_pi_dsk_status
+        jrst storage_pi_mtc_write_status
 
 storage_pi_dtc_status:
         coni 0214,1
@@ -92,6 +107,19 @@ storage_pi_mtc_status:
         ; EOR can precede delivery of the final DCT word.
         coni 0200,1
         trne 1,002000
+        jrst pdp10_pi_handler_return
+        coni 0224,1
+        trnn 1,0000001
+        jrst pdp10_pi_handler_return
+        jrst storage_pi_done
+
+storage_pi_mtc_write_status:
+        coni 0224,1
+        trne 1,0400520
+        jrst storage_pi_error
+        trnn 1,0000004
+        jrst pdp10_pi_handler_return
+        trnn 1,0000001
         jrst pdp10_pi_handler_return
         jrst storage_pi_done
 
@@ -167,17 +195,53 @@ mtc_read_idle:
         jumpg 3,mtc_read_start
         jrst storage_arg
 mtc_read_start:
+        movei 4,storage_pi_read
+        hrrm 4,storage_pi_select
         movem 2,storage_ptr
         movem 3,storage_count
         hrroi 3,0777776
         movem 3,storage_state
-        movei 2,004005
-        cono 0200,0(2)
-        movei 2,4
-        cono 0224,0(2)
         lsh 1,4
         iori 1,052405
         cono 0220,0(1)
+        ; Starting the new command clears stale EOR/status from the previous
+        ; record.  Only then enable status PI and arm the input DCT.
+        movei 2,5
+        cono 0224,0(2)
+        movei 2,004005
+        cono 0200,0(2)
+        jrst storage_wait
+
+; AC1 unit, AC2 source, AC3 exact word count for one magnetic-tape record.
+; Direction and count-exhaustion behavior are patched once at start, leaving
+; the per-word PI path identical to the disk write path.
+mtc_write_words:
+        skipn storage_state
+        jrst mtc_write_idle
+        jrst storage_busy
+mtc_write_idle:
+        caile 1,7
+        jrst storage_arg
+        jumpg 3,mtc_write_start
+        jrst storage_arg
+mtc_write_start:
+        movei 4,storage_pi_write
+        hrrm 4,storage_pi_select
+        movem 2,storage_ptr
+        movem 3,storage_count
+        hrroi 3,0777773
+        movem 3,storage_state
+        lsh 1,4
+        iori 1,051005
+        cono 0220,0(1)
+        ; Start MTC before enabling status PI: MTS may still contain EOR from
+        ; the preceding record, and enabling it first can complete this new
+        ; request before the command clears those flags.  Arm output DCT last
+        ; because it asserts its first data request immediately.
+        movei 2,5
+        cono 0224,0(2)
+        movei 2,003405
+        cono 0200,0(2)
         jrst storage_wait
 
 ; AC1 raw hardware address, AC2 destination of one 128-word sector.
@@ -265,6 +329,21 @@ storage_pi_write:
 
 ; Arrive on the request following the 128th DATAO.  Normalize owner -4 to
 ; DSK -3 so the common completion code remains +3 and needs no new state.
+storage_pi_mtc_write_drain:
+        ; Preserve the DCT connection and buffered accumulator word, but
+        ; remove its PI assignment so the unfilled next request cannot spin.
+        ; Type 516 consumes the final word, notices there is no following DCT
+        ; word, writes EOR, and the MTC status interrupt completes the call.
+        coni 0200,1
+        andi 1,0777770
+        cono 0200,0(1)
+        ; RQ must remain set so Type 516 sees end-of-stream after consuming
+        ; the accumulator word.  Because MTC shares PI5 with DCT, route the
+        ; next PI through status even though the DCT RQ bit is still visible.
+        movei 1,storage_pi_mtc_write_status
+        hrrm 1,storage_pi_select
+        jrst pdp10_pi_handler_return
+
 storage_pi_write_finish:
         aos storage_state
         movei 1,030105

@@ -12,6 +12,8 @@
 
 static kword_t device_test_card[CARD_COLUMNS];
 static kword_t device_test_dsk_sector[DSK_WORDS_PER_SECTOR];
+static kword_t device_test_mtc_record[8];
+static kword_t device_test_dtc_record[4];
 static int device_test_ptr_byte;
 
 /* Guard adjacent KCORE state across real level-7 device interrupts. */
@@ -138,6 +140,51 @@ device_test_minit(void)
             (int)kinit_call18_1(address, TTY_PACK(077U, 0U)) !=
                 TTY_E_INVALID)
                 device_test_fail();
+
+        /* The DTC-enabled variant exposes four known words at the start of
+         * unit 0.  Read exactly those words through the same resident PI5
+         * transfer engine used by MTC and DSK. */
+        address = module_service_get(MODULE_SERVICE_DTC_READ_WORDS);
+        if (address != 0U) {
+                unsigned int i;
+
+                for (i = 0U; i < 4U; ++i)
+                        device_test_dtc_record[i] = 0;
+                if ((int)kinit_call18_3(address, 0UL,
+                    (kword_t)(unsigned long)device_test_dtc_record, 4UL) != 0 ||
+                    device_test_dtc_record[0] != 012345670123UL ||
+                    device_test_dtc_record[1] != 076543210765UL ||
+                    device_test_dtc_record[2] != 000000000001UL ||
+                    device_test_dtc_record[3] != 0777777777776UL)
+                        device_test_fail();
+        }
+
+        /* The MTC-enabled variant attaches one four-word record to unit 0.
+         * Read it through the resident shared DCT/PI5 path and leave the
+         * sentinel beyond EOR untouched. */
+        address = module_service_get(MODULE_SERVICE_MTC_READ_WORDS);
+        if (address != 0U) {
+                unsigned int i;
+
+                for (i = 0U; i < 8U; ++i)
+                        device_test_mtc_record[i] = 0777777777777UL;
+                if ((int)kinit_call18_3(address, 0UL,
+                    (kword_t)(unsigned long)device_test_mtc_record, 8UL) != 0 ||
+                    device_test_mtc_record[0] != 012345670123UL ||
+                    device_test_mtc_record[1] != 076543210765UL ||
+                    device_test_mtc_record[2] != 000000000001UL ||
+                    device_test_mtc_record[3] != 0777777777776UL ||
+                    device_test_mtc_record[4] != 0777777777777UL)
+                        device_test_fail();
+
+                device_test_mtc_record[0] = 011223344556UL;
+                device_test_mtc_record[1] = 066554433221UL;
+                address = module_service_get(MODULE_SERVICE_MTC_WRITE_WORDS);
+                if (address == 0U ||
+                    (int)kinit_call18_3(address, 0UL,
+                    (kword_t)(unsigned long)device_test_mtc_record, 2UL) != 0)
+                        device_test_fail();
+        }
 
         /* Sector zero of mkdsk clean media is the compact DBC descriptor. */
         address = module_service_get(MODULE_SERVICE_DSK_READ_SECTOR);

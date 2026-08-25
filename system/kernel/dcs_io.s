@@ -4,10 +4,7 @@
 ; dcs_getchar is waiting, so no resident queue is required.  The interrupt
 ; handler obeys the KCORE PI ABI and clobbers AC1 only.
 ;
-; Output defaults to current upstream SIMH semantics: CONO DCSB selects the
-; line and DATAO DCSB transmits through that send buffer.  With
-; DCS_SIMH_COMPAT=0, DATAO DCSA is emitted instead, matching the PDP-6
-; Handbook description.  See ERRATA/README.md.
+; Type 630 IOT semantics follow the PDP-6 Handbook directly.
 
         .text
         .globl dcs_pi_handler
@@ -33,7 +30,6 @@ dcs_pi_service:
 
 dcs_pi_receive:
         coni 0304,1
-        subi 1,2
         andi 1,077
         lsh 1,010
         movem 1,dcs_rx_word
@@ -67,14 +63,9 @@ dcs_putchar:
         andi 2,077
         caile 2,017
         jrst dcs_putchar_arg
-        addi 2,2
         cono 0304,0(2)
         andi 1,0377
-.ifdef DCS_SIMH_COMPAT
-        datao 0304,1
-.else
         datao 0300,1
-.endif
         movei 1,0
         popj 017,
 

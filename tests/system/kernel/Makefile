@@ -1,13 +1,9 @@
 PROJECT_ROOT := $(abspath ../../..)
 BUILD ?= $(PROJECT_ROOT)/build/tests/system/kernel
 KINIT_DEBUG ?= 0
-DCS_SIMH_COMPAT ?= 1
 KINIT_VARIANT := $(if $(filter 1,$(KINIT_DEBUG)),debug,normal)
 KINIT_BUILD := $(BUILD)/kinit-asm-$(KINIT_VARIANT)
 
-ifneq ($(filter $(DCS_SIMH_COMPAT),0 1),$(DCS_SIMH_COMPAT))
-$(error DCS_SIMH_COMPAT must be 0 or 1)
-endif
 KCORE_BUILD := $(BUILD)/kcore-asm
 PDP10_PREFIX ?= $(HOME)/cross
 
@@ -16,6 +12,8 @@ DLINK ?= $(PDP10_PREFIX)/bin/dlink
 DXRCONVERT ?= $(PDP10_PREFIX)/bin/dxrconvert
 MKSTREAM ?= $(PDP10_PREFIX)/bin/mkstream
 MKDSK ?= $(PDP10_PREFIX)/bin/mkdsk
+MKTAP ?= $(PDP10_PREFIX)/bin/mktap
+MKDT ?= $(PDP10_PREFIX)/bin/mkdt
 SIMH_PDP6 ?= $(PDP10_PREFIX)/bin/pdp6
 PYTHON ?= python3
 PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
@@ -37,7 +35,7 @@ KINIT_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
 KCORE_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
 	kcore.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h \
 	kcore_entry.s kcore_io.s kcore_end.s cty_io.s clk_io.s ptr_io.s \
-	ptp_io.s cr_io.s cp_io.s dcs_io.s ge_io.s dpy_io.s tty_io.s wcnsls_io.s ocnsls_io.s)
+	ptp_io.s cr_io.s cp_io.s dcs_io.s ge_io.s dpy_io.s tty_io.s wcnsls_io.s ocnsls_io.s storage_io.s)
 
 KCORE_DXR = $(BUILD)/kcore-v1.dxr
 KCORE_MAP = $(BUILD)/kcore-v1.map
@@ -85,7 +83,11 @@ LOG_NO_SLV = $(BUILD)/kinit-v1-no-slv.log
 LOG_DPY = $(BUILD)/kinit-v1-dpy.log
 LOG_WCNSLS = $(BUILD)/kinit-v1-wcnsls.log
 LOG_DTC = $(BUILD)/kinit-v1-dtc.log
+DTC_TEST_WORDS = $(BUILD)/dtc-test-v1.words
+DTC_TEST_TAPE = $(BUILD)/dtc-test-v1.dt
 LOG_MTC = $(BUILD)/kinit-v1-mtc.log
+MTC_TEST_WORDS = $(BUILD)/mtc-test-v1.words
+MTC_TEST_TAPE = $(BUILD)/mtc-test-v1.tap
 SIMH_LOG = $(BUILD)/kinit-v1.simh.log
 SIMH_LOG_NO_PTP = $(BUILD)/kinit-v1-no-ptp.simh.log
 SIMH_LOG_NO_SLV = $(BUILD)/kinit-v1-no-slv.simh.log
@@ -109,7 +111,7 @@ $(KINIT_ASM): $(KINIT_INPUTS) | $(BUILD)
 	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kinit BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_DEBUG='$(KINIT_DEBUG)'
 
 $(KCORE_FIXED_ASM) $(MRES_ASM): $(KCORE_INPUTS) | $(BUILD)
-	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kcore BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' DCS_SIMH_COMPAT='$(DCS_SIMH_COMPAT)'
+	$(MAKE) -C $(PROJECT_ROOT)/system/kernel kcore BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)'
 
 $(BUILD)/%.dobj: $(KINIT_BUILD)/%.s | $(BUILD)
 	$(DAS) -c -o $@ $<
@@ -186,7 +188,7 @@ $(OCNSLS_MRES_OBJ): $(BUILD)/ocnsls_io.dobj $(KCORE_MAP)
 $(STORAGE_MRES_OBJ): $(BUILD)/storage_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/storage-mres.dxr -M $(BUILD)/storage-mres.map \
 	    -R $@ -N storage_mres_package -X storage_pi_handler -X dtc_read_words \
-	    -X mtc_read_words -X dsk_read_sector -X dsk_write_sector $(BUILD)/storage_io.dobj
+	    -X mtc_read_words -X dsk_read_sector -X dsk_write_sector -X mtc_write_words $(BUILD)/storage_io.dobj
 
 $(KCORE_EMBED_ASM): kcore-embed-v1.s.in $(KCORE_MAP) | $(BUILD)
 	end=`awk '$$1 == "__kcore_low_init_end" { print $$2 }' $(KCORE_MAP)`; \
@@ -253,12 +255,41 @@ set wcnsls enabled\
 set wcnsls debug=DATAIO\
 set wcnsls debug=CONO' $<; \
 	} > $@
-$(SIMH_INI_DTC): $(SIMH_INI)
+$(DTC_TEST_WORDS): | $(BUILD)
+	{ \
+	    echo 012345670123; \
+	    echo 076543210765; \
+	    echo 000000000001; \
+	    echo 0777777777776; \
+	} > $@
+
+$(DTC_TEST_TAPE): $(DTC_TEST_WORDS) $(MKDT)
+	$(MKDT) -t dtc -p $(DTC_TEST_WORDS) -o $@
+
+$(MTC_TEST_WORDS): | $(BUILD)
+	{ \
+	    echo 012345670123; \
+	    echo 076543210765; \
+	    echo 000000000001; \
+	    echo 0777777777776; \
+	} > $@
+
+$(MTC_TEST_TAPE): $(MTC_TEST_WORDS) $(MKTAP)
+	$(MKTAP) -t mtc -p $(MTC_TEST_WORDS) -o $@
+
+$(SIMH_INI_DTC): $(SIMH_INI) $(DTC_TEST_TAPE)
 	sed -e 's|$(abspath $(SIMH_LOG))|$(abspath $(SIMH_LOG_DTC))|' \
-	    -e 's/set dtc disabled/set dtc enabled/' $< > $@
-$(SIMH_INI_MTC): $(SIMH_INI)
+	    -e 's/set dtc disabled/set dtc enabled/' \
+	    -e '/^go 020/i\
+set dtc dct=04\
+attach -q -r dtc0 $(abspath $(DTC_TEST_TAPE))' $< > $@
+$(SIMH_INI_MTC): $(SIMH_INI) $(MTC_TEST_TAPE)
 	sed -e 's|$(abspath $(SIMH_LOG))|$(abspath $(SIMH_LOG_MTC))|' \
-	    -e 's/set mtc disabled/set mtc enabled/' $< > $@
+	    -e 's/set mtc disabled/set mtc enabled/' \
+	    -e '/^go 020/i\
+set mtc dct=0\
+set mtc0 7t\
+attach -q mtc0 $(abspath $(MTC_TEST_TAPE))' $< > $@
 
 image: $(SIMH_INI)
 
@@ -310,6 +341,8 @@ endif
 	    'DTC                               NO DEV' \
 	    'MTC                                   OK' \
 	    'HALT instruction' >/dev/null
+	@$(PYTHON) mtc-write-check-v1.py --tape '$(MTC_TEST_TAPE)' \
+	    --record 1 --word 011223344556 --word 066554433221
 	@STDBUF='$(STDBUF)' $(WATCH_OUTPUT) -f 6 -t 2 \
 	    $(SIMH_PDP6) $(SIMH_INI_DPY) $(SIMH_LOG_DPY) $(LOG_DPY) \
 	    'DPY                                   OK' \

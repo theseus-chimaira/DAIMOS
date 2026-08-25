@@ -7,6 +7,7 @@
         .globl kinit_call18_0
         .globl kinit_call18_1
         .globl kinit_call18_2
+        .globl kinit_call18_3
         .globl kinit_halt
 
 ; void kinit_put6(kword_t word)
@@ -53,6 +54,17 @@ kinit_call18_2:
         move 02,03
         andi 04,0777777
         pushj 017,(04)
+        popj 017,
+
+; kword_t kinit_call18_3(unsigned int address, kword_t arg1, kword_t arg2,
+;     kword_t arg3)
+kinit_call18_3:
+        move 05,01
+        move 01,02
+        move 02,03
+        move 03,04
+        andi 05,0777777
+        pushj 017,(05)
         popj 017,
 
 kinit_halt:
