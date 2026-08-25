@@ -96,41 +96,38 @@ pdp10_pi_dispatch:
 pdp10_pi_handler_return:
         aobjn 2,pdp10_pi_dispatch
 pdp10_pi_dispatch_done:
+        jrst pdp10_pi_return_common
+
+; AC3 still names the level-specific return stub.  The stubs are two words
+; apart, exactly matching the two-word stride of the AC1/AC2 save pairs in
+; low core.  Derive that offset once, restore AC1/AC2 here, then let the
+; original per-level tail restore AC3 and dismiss the correct PI level.
+pdp10_pi_return_common:
+        move 2,3
+        subi 2,pdp10_pi_return_level1
+        move 1,000020(2)
+        move 2,000021(2)
         jrst (3)
 
 pdp10_pi_return_level1:
-        move 1,000020
-        move 2,000021
         move 3,000043
         jrst 010,@pdp10_pi_level1
 pdp10_pi_return_level2:
-        move 1,000022
-        move 2,000023
         move 3,000045
         jrst 010,@pdp10_pi_level2
 pdp10_pi_return_level3:
-        move 1,000024
-        move 2,000025
         move 3,000036
         jrst 010,@pdp10_pi_level3
 pdp10_pi_return_level4:
-        move 1,000026
-        move 2,000027
         move 3,000051
         jrst 010,@pdp10_pi_level4
 pdp10_pi_return_level5:
-        move 1,000030
-        move 2,000031
         move 3,000053
         jrst 010,@pdp10_pi_level5
 pdp10_pi_return_level6:
-        move 1,000032
-        move 2,000033
         move 3,000055
         jrst 010,@pdp10_pi_level6
 pdp10_pi_return_level7:
-        move 1,000034
-        move 2,000035
         move 3,000057
         jrst 010,@pdp10_pi_level7
 

@@ -95,43 +95,41 @@ storage_pi_active:
         jrst storage_pi_dtc_write_status
 
 storage_pi_dtc_status:
+        ; AC2 is zero for read, -1 for write after the owner dispatch chain.
         coni 0214,1
         trne 1,0000034
         jrst storage_pi_error
+        jumpe 2,pdp10_pi_handler_return
+        trnn 1,0000001
         jrst pdp10_pi_handler_return
+        jrst storage_pi_done
 
 storage_pi_mtc_status:
+        ; AC2 is zero for read.  The write dispatch enters through the tiny
+        ; flag stub below, then shares the common Type-516 error/EOR tests.
         coni 0224,1
         trne 1,0400520
         jrst storage_pi_error
         trnn 1,0000004
         jrst pdp10_pi_handler_return
-        ; EOR can precede delivery of the final DCT word.
+        jumpn 2,storage_pi_mtc_idle_check
+        ; Read EOR can precede delivery of the final DCT word.
         coni 0200,1
         trne 1,002000
         jrst pdp10_pi_handler_return
         coni 0224,1
+storage_pi_mtc_idle_check:
         trnn 1,0000001
         jrst pdp10_pi_handler_return
         jrst storage_pi_done
 
 storage_pi_mtc_write_status:
-        coni 0224,1
-        trne 1,0400520
-        jrst storage_pi_error
-        trnn 1,0000004
-        jrst pdp10_pi_handler_return
-        trnn 1,0000001
-        jrst pdp10_pi_handler_return
-        jrst storage_pi_done
+        seto 2,
+        jrst storage_pi_mtc_status
 
 storage_pi_dtc_write_status:
-        coni 0214,1
-        trne 1,0000034
-        jrst storage_pi_error
-        trnn 1,0000001
-        jrst pdp10_pi_handler_return
-        jrst storage_pi_done
+        ; Owner dispatch leaves AC2 negative here; use the read status tail.
+        jrst storage_pi_dtc_status
 
 storage_pi_dsk_status:
         coni 0270,1
