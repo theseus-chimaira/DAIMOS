@@ -26,6 +26,7 @@
         .globl wcnsls_mres_package
         .globl ocnsls_mres_package
         .globl storage_mres_package
+        .globl slv_mres_package
         .globl __kinit_image_start
         .globl __minit_table_begin
         .globl __minit_table_end
@@ -46,5 +47,5 @@ __minit_table_begin:
         .word dtc_minit,,storage_mres_package
         .word mtc_minit,,storage_mres_package
         .word dsk_minit,,storage_mres_package
-        .word slv_minit,,0
+        .word slv_minit,,slv_mres_package
 __minit_table_end:

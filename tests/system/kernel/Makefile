@@ -26,16 +26,16 @@ KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 KCORE_FIXED_NAMES = kcore_entry kcore_io kcore_end
 KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))
 KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
-MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io io7_io dcs_io ge_io dpy_io tty_io wcnsls_io ocnsls_io storage_io
+MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io io7_io dcs_io ge_io dpy_io tty_io wcnsls_io ocnsls_io storage_io slv_io
 MRES_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(MRES_NAMES)))
 
 KINIT_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
 	kinit.c kinit_diag.c module_minit.c kinit.h module.h mres.h \
 	cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h kinit_io.s module_io.s)
 KCORE_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
-	kcore.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h \
+	kcore.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h \
 	kcore_entry.s kcore_io.s kcore_end.s cty_io.s clk_io.s ptr_io.s \
-	ptp_io.s cr_io.s cp_io.s dcs_io.s ge_io.s dpy_io.s tty_io.s wcnsls_io.s ocnsls_io.s storage_io.s)
+	ptp_io.s cr_io.s cp_io.s dcs_io.s ge_io.s dpy_io.s tty_io.s wcnsls_io.s ocnsls_io.s storage_io.s slv_io.s)
 
 KCORE_DXR = $(BUILD)/kcore-v1.dxr
 KCORE_MAP = $(BUILD)/kcore-v1.map
@@ -54,8 +54,9 @@ TTY_MRES_OBJ = $(BUILD)/tty-mres.dobj
 WCNSLS_MRES_OBJ = $(BUILD)/wcnsls-mres.dobj
 OCNSLS_MRES_OBJ = $(BUILD)/ocnsls-mres.dobj
 STORAGE_MRES_OBJ = $(BUILD)/storage-mres.dobj
+SLV_MRES_OBJ = $(BUILD)/slv-mres.dobj
 MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(IO7_MRES_OBJ) $(DCS_MRES_OBJ) \
-	$(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) $(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(STORAGE_MRES_OBJ)
+	$(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) $(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(STORAGE_MRES_OBJ) $(SLV_MRES_OBJ)
 
 MINIT_TABLE_OBJ = $(BUILD)/module-table-test.dobj
 DEVICE_TEST_ASM = $(KINIT_BUILD)/device-test-minit.s
@@ -190,6 +191,10 @@ $(STORAGE_MRES_OBJ): $(BUILD)/storage_io.dobj $(KCORE_MAP)
 	    -R $@ -N storage_mres_package -X storage_pi_handler -X dtc_read_words \
 	    -X mtc_read_words -X dsk_read_sector -X dsk_write_sector -X mtc_write_words $(BUILD)/storage_io.dobj
 
+$(SLV_MRES_OBJ): $(BUILD)/slv_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/slv-mres.dxr -M $(BUILD)/slv-mres.map \
+	    -R $@ -N slv_mres_package -X slv_pi_handler $(BUILD)/slv_io.dobj
+
 $(KCORE_EMBED_ASM): kcore-embed-v1.s.in $(KCORE_MAP) | $(BUILD)
 	end=`awk '$$1 == "__kcore_low_init_end" { print $$2 }' $(KCORE_MAP)`; \
 	test -n "$$end"; words=`$(PYTHON) -c 'import sys; print(oct(int(sys.argv[1],8)-0o60)[2:])' $$end`; \
@@ -314,7 +319,7 @@ test: image $(SIMH_INI_NO_PTP) $(SIMH_INI_NO_SLV) $(SIMH_INI_DPY) $(SIMH_INI_WCN
 	    'DTC                               NO DEV' \
 	    'MTC                               NO DEV' \
 	    'DSK270                                OK' \
-	    'SLV                               NO' \
+	    'SLV                                   OK' \
 	    'HALT instruction' $(if $(filter 1,$(KINIT_DEBUG)),>/dev/null,)
 ifeq ($(KINIT_DEBUG),1)
 	@cat $(LOG)

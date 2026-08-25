@@ -13,6 +13,7 @@
 #include "wcnsls.h"
 #include "ocnsls.h"
 #include "storage.h"
+#include "slv.h"
 
 #define CTY_X_HANDLER           0U
 #define CTY_X_PUT6              1U
@@ -945,9 +946,18 @@ slv_minit(void)
         name = (kword_t)SIXBIT("SLV   ");
         minit_slv_cono(SLV_PROBE_PI);
         st = minit_slv_coni();
-        minit_slv_cono(SLV_CO_CLEAR_IRQ);
-        if ((st & SLV_PI_MASK) == SLV_PROBE_PI)
-                minit_diag_nodrv(name);
-        else
+        minit_slv_cono(SLV_CO_CLEAR_IRQ | SLV_NATIVE_PI_LEVEL);
+        if ((st & SLV_PI_MASK) != SLV_PROBE_PI) {
                 minit_diag_nodev(name);
+                return;
+        }
+        {
+                unsigned int base;
+                unsigned int handler;
+
+                base = minit_install(name);
+                handler = minit_export(name, base, 0U);
+                minit_register(name, SLV_NATIVE_PI_LEVEL, handler);
+        }
+        minit_diag_ok(name);
 }
