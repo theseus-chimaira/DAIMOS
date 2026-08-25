@@ -1,53 +1,20 @@
-; cr_io.s -- compact resident PDP-6 card-reader driver.
+; cr_io.s -- compact PDP-6 card-reader service.
+;
+; cr_iowd combines the 80-column count and destination pointer.  The shared
+; PI7 handler advances it with AOBJN semantics and sets it to -1 after the
+; final column while waiting for END CARD; zero means idle/done.
+
         .text
-        .globl cr_pi_service
         .globl cr_read_card
-        .globl cr_state
-        .globl cr_cols
-        .globl pdp10_pi_handler_return
+        .globl cr_iowd
 
-; cr_state: bit 0 pending, bit 1 done, bit 2 error, column count in bits 3+.
-; cr_cols advances as columns arrive, keeping the interrupt path to AC1 only.
-cr_pi_service:
-        move 1,cr_state
-        trnn 1,0001
-        popj 017,
-        coni 0150,1
-        trne 1,0400
-        jrst cr_pi_error
-        trne 1,0010
-        jrst cr_pi_data
-        trnn 1,0020
-        popj 017,
-        cono 0150,0027
-        move 1,cr_state
-        andi 1,01770
-        iori 1,0002
-        movem 1,cr_state
-        popj 017,
-cr_pi_data:
-        move 1,cr_state
-        caige 1,01201
-        jrst cr_pi_data_ok
-cr_pi_error:
-        movei 1,0006
-        movem 1,cr_state
-        popj 017,
-cr_pi_data_ok:
-        datai 0150,1
-        andi 1,07777
-        movem 1,@cr_cols
-        aos cr_cols
-        movei 1,0010
-        addm 1,cr_state
-        popj 017,
-
-; AC1 = 80-word destination.  Return 80 or a CARD_E_* error.
 cr_read_card:
         jumpe 1,cr_read_arg
-        move 2,cr_state
-        trne 2,0001
-        jrst cr_read_busy
+        skipn cr_iowd
+        jrst cr_read_idle
+        hrroi 1,0777774
+        popj 017,
+cr_read_idle:
         movei 2,0200000
 cr_read_ready_wait:
         coni 0150,3
@@ -56,29 +23,28 @@ cr_read_ready_wait:
         sojg 2,cr_read_ready_wait
         jrst cr_read_timeout
 cr_read_start:
-        movem 1,cr_cols
-        movei 3,1
-        movem 3,cr_state
+        move 2,1
+        subi 2,1
+        movei 3,0120
+        movn 3,3
+        hrl 2,3
+        movem 2,cr_iowd
         cono 0150,01237
         movei 2,0200000
 cr_read_done_wait:
-        move 3,cr_state
-        trne 3,0002
+        skipn cr_iowd
         jrst cr_read_done
         sojg 2,cr_read_done_wait
-        setzm cr_state
+        setzm cr_iowd
         cono 0150,0007
 cr_read_timeout:
         hrroi 1,0777776
         popj 017,
 cr_read_done:
-        trne 3,0004
+        coni 0150,3
+        trne 3,0400
         jrst cr_read_io
-        move 1,3
-        andi 1,01770
-        lsh 1,-3
-        caie 1,0120
-        jrst cr_read_limit
+        movei 1,0120
         popj 017,
 cr_read_arg:
         seto 1,
@@ -86,15 +52,7 @@ cr_read_arg:
 cr_read_io:
         hrroi 1,0777775
         popj 017,
-cr_read_busy:
-        hrroi 1,0777774
-        popj 017,
-cr_read_limit:
-        hrroi 1,0777773
-        popj 017,
 
         .bss
-cr_state:
-        .block 1
-cr_cols:
+cr_iowd:
         .block 1

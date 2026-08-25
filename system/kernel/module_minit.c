@@ -563,7 +563,7 @@ ge_minit(void)
         module_service_set(MODULE_SERVICE_GE_PUTCHAR,
             minit_export(name, base, GE_X_PUTCHAR));
         minit_gtyi_cono(0);
-        minit_gtyo_cono((kword_t)(GE_NATIVE_PI_LEVEL | GTYO_CO_FROB));
+        minit_gtyo_cono((kword_t)GTYO_CO_FROB);
         minit_diag_ok(name);
 }
 
