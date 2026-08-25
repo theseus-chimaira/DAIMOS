@@ -50,6 +50,7 @@
 #define STORAGE_X_DSK_READ_SECTOR 3U
 #define STORAGE_X_DSK_WRITE_SECTOR 4U
 #define STORAGE_X_MTC_WRITE_WORDS  5U
+#define STORAGE_X_DTC_WRITE_BLOCK   6U
 
 #define SLV_PI_MASK             0000007UL
 #define SLV_CO_CLEAR_IRQ        0000010UL
@@ -888,6 +889,8 @@ dtc_minit(void)
         base = storage_install(name);
         module_service_set(MODULE_SERVICE_DTC_READ_WORDS,
             minit_export(name, base, STORAGE_X_DTC_READ_WORDS));
+        module_service_set(MODULE_SERVICE_DTC_WRITE_BLOCK,
+            minit_export(name, base, STORAGE_X_DTC_WRITE_BLOCK));
         minit_diag_ok(name);
 }
 

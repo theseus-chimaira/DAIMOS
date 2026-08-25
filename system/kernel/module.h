@@ -24,7 +24,8 @@ extern kword_t __minit_table_end;
 #define MODULE_SERVICE_DSK_READ_SECTOR   16U
 #define MODULE_SERVICE_DSK_WRITE_SECTOR  17U
 #define MODULE_SERVICE_MTC_WRITE_WORDS   18U
-#define MODULE_SERVICE_COUNT            19U
+#define MODULE_SERVICE_DTC_WRITE_BLOCK   19U
+#define MODULE_SERVICE_COUNT            20U
 
 void module_run_minits(void);
 const kword_t *module_current_mres(void);

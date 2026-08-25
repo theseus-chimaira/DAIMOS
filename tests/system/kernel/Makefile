@@ -188,8 +188,8 @@ $(OCNSLS_MRES_OBJ): $(BUILD)/ocnsls_io.dobj $(KCORE_MAP)
 
 $(STORAGE_MRES_OBJ): $(BUILD)/storage_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/storage-mres.dxr -M $(BUILD)/storage-mres.map \
-	    -R $@ -N storage_mres_package -X storage_pi_handler -X dtc_read_words \
-	    -X mtc_read_words -X dsk_read_sector -X dsk_write_sector -X mtc_write_words $(BUILD)/storage_io.dobj
+	    -R $@ -N storage_mres_package -X storage_pi_handler -X dtc_read_words -X mtc_read_words \
+	    -X dsk_read_sector -X dsk_write_sector -X mtc_write_words -X dtc_write_block $(BUILD)/storage_io.dobj
 
 $(SLV_MRES_OBJ): $(BUILD)/slv_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/slv-mres.dxr -M $(BUILD)/slv-mres.map \
@@ -287,7 +287,7 @@ $(SIMH_INI_DTC): $(SIMH_INI) $(DTC_TEST_TAPE)
 	    -e 's/set dtc disabled/set dtc enabled/' \
 	    -e '/^go 020/i\
 set dtc dct=04\
-attach -q -r dtc0 $(abspath $(DTC_TEST_TAPE))' $< > $@
+attach -q dtc0 $(abspath $(DTC_TEST_TAPE))' $< > $@
 $(SIMH_INI_MTC): $(SIMH_INI) $(MTC_TEST_TAPE)
 	sed -e 's|$(abspath $(SIMH_LOG))|$(abspath $(SIMH_LOG_MTC))|' \
 	    -e 's/set mtc disabled/set mtc enabled/' \
@@ -341,6 +341,7 @@ endif
 	    'DTC                                   OK' \
 	    'MTC                               NO DEV' \
 	    'HALT instruction' >/dev/null
+	@$(PYTHON) dtc-write-check-v1.py --tape '$(DTC_TEST_TAPE)' --block 1
 	@STDBUF='$(STDBUF)' $(WATCH_OUTPUT) -f 6 -t 2 \
 	    $(SIMH_PDP6) $(SIMH_INI_MTC) $(SIMH_LOG_MTC) $(LOG_MTC) \
 	    'DTC                               NO DEV' \

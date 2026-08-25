@@ -13,7 +13,7 @@
 static kword_t device_test_card[CARD_COLUMNS];
 static kword_t device_test_dsk_sector[DSK_WORDS_PER_SECTOR];
 static kword_t device_test_mtc_record[8];
-static kword_t device_test_dtc_record[4];
+static kword_t device_test_dtc_record[0200];
 static int device_test_ptr_byte;
 
 /* Guard adjacent KCORE state across real level-7 device interrupts. */
@@ -156,6 +156,14 @@ device_test_minit(void)
                     device_test_dtc_record[1] != 076543210765UL ||
                     device_test_dtc_record[2] != 000000000001UL ||
                     device_test_dtc_record[3] != 0777777777776UL)
+                        device_test_fail();
+
+                for (i = 0U; i < 0200U; ++i)
+                        device_test_dtc_record[i] = (kword_t)i;
+                address = module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK);
+                if (address == 0U ||
+                    (int)kinit_call18_2(address, 0UL,
+                    (kword_t)(unsigned long)device_test_dtc_record) != 0)
                         device_test_fail();
         }
 
