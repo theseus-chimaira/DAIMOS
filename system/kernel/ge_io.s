@@ -34,14 +34,6 @@ ge_pi_gtyi_receive:
         cono 0070,0
 
 ge_pi_gtyo:
-        coni 0750,1
-        trnn 1,00100
-        jrst pdp10_pi_handler_return
-        move 1,ge_tx_state
-        andi 1,1
-        movem 1,ge_tx_state
-        movei 1,4
-        cono 0750,0(1)
         jrst pdp10_pi_handler_return
 
 ; Return GE_PACK(console, character), or GE_E_BUSY if another read is waiting.
@@ -87,8 +79,6 @@ ge_put_decoded:
         coni 0750,3
         trnn 3,00100
         jrst ge_put_decoded
-        movei 2,2
-        iorm 2,ge_tx_state
         andi 1,0177
         move 3,1
         lsh 1,-1
@@ -97,8 +87,8 @@ ge_put_decoded:
         xori 1,0177
         datao 0750,1
 ge_put_decoded_wait:
-        move 2,ge_tx_state
-        trne 2,2
+        coni 0750,2
+        trnn 2,00100
         jrst ge_put_decoded_wait
         popj 017,
 
