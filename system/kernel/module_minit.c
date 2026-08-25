@@ -51,6 +51,7 @@
 #define STORAGE_X_DSK_WRITE_SECTOR 4U
 #define STORAGE_X_MTC_WRITE_WORDS  5U
 #define STORAGE_X_DTC_WRITE_BLOCK   6U
+#define STORAGE_X_DCT_HANDLER       7U
 
 #define SLV_PI_MASK             0000007UL
 #define SLV_CO_CLEAR_IRQ        0000010UL
@@ -66,6 +67,7 @@ static unsigned int io7_pi_handler_addr;
 static unsigned int dcs_pi_service_addr;
 static unsigned int storage_mres_base;
 static unsigned int storage_pi_handler_addr;
+static unsigned int storage_dct_handler_addr;
 
 
 static unsigned int pi_level_count[PDP10_PI_LEVELS + 1U];
@@ -865,8 +867,12 @@ storage_install(kword_t name)
                 storage_mres_base = minit_install(name);
                 storage_pi_handler_addr = minit_export(name, storage_mres_base,
                     STORAGE_X_HANDLER);
+                storage_dct_handler_addr = minit_export(name, storage_mres_base,
+                    STORAGE_X_DCT_HANDLER);
                 minit_register(name, STORAGE_NATIVE_PI_LEVEL,
                     storage_pi_handler_addr);
+                minit_register(name, STORAGE_DCT_PI_LEVEL,
+                    storage_dct_handler_addr);
         }
         return storage_mres_base;
 }

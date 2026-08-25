@@ -189,7 +189,8 @@ $(OCNSLS_MRES_OBJ): $(BUILD)/ocnsls_io.dobj $(KCORE_MAP)
 $(STORAGE_MRES_OBJ): $(BUILD)/storage_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/storage-mres.dxr -M $(BUILD)/storage-mres.map \
 	    -R $@ -N storage_mres_package -X storage_pi_handler -X dtc_read_words -X mtc_read_words \
-	    -X dsk_read_sector -X dsk_write_sector -X mtc_write_words -X dtc_write_block $(BUILD)/storage_io.dobj
+	    -X dsk_read_sector -X dsk_write_sector -X mtc_write_words -X dtc_write_block \
+	    -X storage_dct_handler $(BUILD)/storage_io.dobj
 
 $(SLV_MRES_OBJ): $(BUILD)/slv_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/slv-mres.dxr -M $(BUILD)/slv-mres.map \

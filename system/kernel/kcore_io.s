@@ -12,7 +12,7 @@
 ; Low-core save cells:
 ;   level 1: 020,021,043       level 5: 030,031,053
 ;   level 2: 022,023,045       level 6: 032,033,055
-;   level 3: 024,025,047       level 7: 034,035,057
+;   level 3: 024,025,036       level 7: 034,035,057
 ;   level 4: 026,027,051
 ;
 ; The odd words of the seven two-word PI vectors are otherwise unused.
@@ -49,7 +49,7 @@ pdp10_pi_level3:
         .word 0
         movem 1,000024
         movem 2,000025
-        movem 3,000047
+        movem 3,000036
         move 2,pdp10_pi_level_span+2
         movei 3,pdp10_pi_return_level3
         jrst pdp10_pi_dispatch
@@ -111,7 +111,7 @@ pdp10_pi_return_level2:
 pdp10_pi_return_level3:
         move 1,000024
         move 2,000025
-        move 3,000047
+        move 3,000036
         jrst 010,@pdp10_pi_level3
 pdp10_pi_return_level4:
         move 1,000026

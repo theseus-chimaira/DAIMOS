@@ -55,9 +55,12 @@ minit_pi_low_init:
         move 1,[jsr pdp10_pi_level2]
         movem 1,000044
         setzm 000045
+        ; PI3 is the Type-136 block-data channel.  BLKI/BLKO is installed
+        ; in 046 by the resident storage service; on the final word it falls
+        ; through to this JSR in 047 for normal saved-AC completion handling.
+        setzm 000046
         move 1,[jsr pdp10_pi_level3]
-        movem 1,000046
-        setzm 000047
+        movem 1,000047
         move 1,[jsr pdp10_pi_level4]
         movem 1,000050
         setzm 000051

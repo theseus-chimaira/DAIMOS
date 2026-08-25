@@ -1,7 +1,8 @@
 ; storage_io.s -- shared compact PDP-6 DCT storage transfer engine.
 ;
 ; DTC, MTC, and DSK270 all feed data through the Type 136 data control.
-; They therefore share one resident pointer, count, and PI5 service path.
+; They share one resident BLKI/BLKO pointer.  Type-136 data uses direct PI3
+; block I/O; controller completion/error status remains on PI5.
 ; storage_state encodes ownership as -1 DTC, -2 MTC read, -3 DSK read,
 ; -4 DSK write, -5 MTC write, -6 DTC write; no owner word is required.  Positive values
 ; are completion/error states.
@@ -13,6 +14,7 @@
 
         .text
         .globl storage_pi_handler
+        .globl storage_dct_handler
         .globl dtc_read_words
         .globl dtc_write_block
         .globl mtc_read_words
@@ -22,50 +24,47 @@
         .globl pdp10_pi_handler_return
 
 storage_pi_handler:
-        coni 0200,1
-        trne 1,001000
-        jrst storage_pi_word
-        jrst storage_pi_status
-
-storage_pi_word:
+        ; Controller status only.  Type-136 word transfers run directly from
+        ; the PI3 vector and reach storage_dct_handler only at block end.
         skipge storage_state
-storage_pi_select:
-        jrst storage_pi_read
-        jrst pdp10_pi_handler_return
-storage_pi_read:
-        datai 0200,1
-        movem 1,@storage_ptr
-storage_pi_advance:
-        aos storage_ptr
-        sosle storage_count
+        jrst storage_pi_active
         jrst pdp10_pi_handler_return
 
-        ; Count exhausted.  DTC and DSK have fixed transfer sizes; MTC uses
-        ; EOR as the real terminator and treats a full caller buffer as an
-        ; error unless EOR is already visible.
+storage_dct_handler:
+storage_dct_select:
+        jrst storage_dct_count_done
+storage_dct_count_done:
         move 2,storage_state
         aoje 2,storage_pi_done
         aoje 2,storage_pi_mtc_read_full
         aoje 2,storage_pi_dsk_read_done
         aoje 2,storage_pi_dsk_write_full
-
-        ; MTC write (-5): install its one-request drain.  DTC write (-6)
-        ; is continuous across block boundaries and needs a two-request drain
-        ; so the final real word is consumed without writing into the next
-        ; block.
         aoje 2,storage_pi_mtc_write_arm
-        movei 1,storage_pi_dtc_write_ack1
-        hrrm 1,storage_pi_select
-        jrst pdp10_pi_handler_return
+
+        ; DTC write (-6): after the final BLKO, service two more DCT requests
+        ; without allowing the dummy word to cross into the following block.
+        movei 1,storage_dct_dtc_write_ack1
+        hrrm 1,storage_dct_select
+        jrst storage_dct_arm_handler
+
 storage_pi_mtc_write_arm:
-        movei 1,storage_pi_mtc_write_drain
-        hrrm 1,storage_pi_select
-        jrst pdp10_pi_handler_return
+        movei 1,storage_dct_mtc_write_drain
+        hrrm 1,storage_dct_select
+        jrst storage_dct_arm_handler
 
 storage_pi_dsk_write_full:
-        ; DSK write (-4): the next request acknowledges the final DATAO.
-        movei 1,storage_pi_write_finish
-        hrrm 1,storage_pi_select
+        ; BLKO falls through before its final DCT word has drained to DSK.
+        ; Two following DCT requests distinguish pipeline release from actual
+        ; controller consumption of that final word.
+        movei 1,storage_dct_dsk_write_ack1
+        hrrm 1,storage_dct_select
+        jrst storage_dct_arm_handler
+
+storage_dct_arm_handler:
+        ; Replace PI3 vector word 046 with its final-word JSR.  The next DCT
+        ; request then enters storage_dct_handler without transferring data.
+        move 1,000047
+        movem 1,000046
         jrst pdp10_pi_handler_return
 
 storage_pi_dsk_read_done:
@@ -86,10 +85,6 @@ storage_pi_mtc_read_full:
         ; enabled, so the later TAPE FREE interrupt completes the request.
         jrst pdp10_pi_handler_return
 
-storage_pi_status:
-        skipge storage_state
-        jrst storage_pi_active
-        jrst pdp10_pi_handler_return
 storage_pi_active:
         move 2,storage_state
         aoje 2,storage_pi_dtc_status
@@ -178,6 +173,29 @@ storage_ok:
         movei 1,0
         popj 017,
 
+; Set direct PI3 block transfer and build its combined -count,,buffer-1 word.
+; BLKI/BLKO updates both halves itself and dismisses PI for every non-final
+; word, so normal transfer traffic executes no resident dispatcher code.
+storage_setup_read:
+        move 4,storage_dct_blki
+        jrst storage_setup_common
+storage_setup_write:
+        move 4,storage_dct_blko
+storage_setup_common:
+        movem 4,000046
+        movei 4,storage_dct_count_done
+        hrrm 4,storage_dct_select
+        subi 2,1
+        movn 4,3
+        hrl 2,4
+        movem 2,storage_iowd
+        popj 017,
+
+storage_dct_blki:
+        blki 0200,storage_iowd
+storage_dct_blko:
+        blko 0200,storage_iowd
+
 ; AC1 unit, AC2 destination, AC3 exact word count.
 dtc_read_words:
         skipn storage_state
@@ -189,12 +207,11 @@ dtc_read_idle:
         jumpg 3,dtc_read_start
         jrst storage_arg
 dtc_read_start:
-        movem 2,storage_ptr
-        movem 3,storage_count
+        pushj 017,storage_setup_read
         setom storage_state
         lsh 1,3
         iori 1,0220305
-        movei 2,004045
+        movei 2,004043
         cono 0200,0(2)
         cono 0210,0(1)
         jrst storage_wait
@@ -209,17 +226,14 @@ dtc_write_block:
 dtc_write_idle:
         caile 1,7
         jrst storage_arg
-        movei 4,storage_pi_write
-        hrrm 4,storage_pi_select
-        movem 2,storage_ptr
         movei 3,0200
-        movem 3,storage_count
+        pushj 017,storage_setup_write
         hrroi 3,0777772
         movem 3,storage_state
         lsh 1,3
         iori 1,0220705
         cono 0210,0(1)
-        movei 2,003445
+        movei 2,003443
         cono 0200,0(2)
         jrst storage_wait
 
@@ -234,10 +248,7 @@ mtc_read_idle:
         jumpg 3,mtc_read_start
         jrst storage_arg
 mtc_read_start:
-        movei 4,storage_pi_read
-        hrrm 4,storage_pi_select
-        movem 2,storage_ptr
-        movem 3,storage_count
+        pushj 017,storage_setup_read
         hrroi 3,0777776
         movem 3,storage_state
         lsh 1,4
@@ -247,7 +258,7 @@ mtc_read_start:
         ; record.  Only then enable status PI and arm the input DCT.
         movei 2,5
         cono 0224,0(2)
-        movei 2,004005
+        movei 2,004003
         cono 0200,0(2)
         jrst storage_wait
 
@@ -264,10 +275,7 @@ mtc_write_idle:
         jumpg 3,mtc_write_start
         jrst storage_arg
 mtc_write_start:
-        movei 4,storage_pi_write
-        hrrm 4,storage_pi_select
-        movem 2,storage_ptr
-        movem 3,storage_count
+        pushj 017,storage_setup_write
         hrroi 3,0777773
         movem 3,storage_state
         lsh 1,4
@@ -279,7 +287,7 @@ mtc_write_start:
         ; because it asserts its first data request immediately.
         movei 2,5
         cono 0224,0(2)
-        movei 2,003405
+        movei 2,003403
         cono 0200,0(2)
         jrst storage_wait
 
@@ -289,11 +297,8 @@ dsk_read_sector:
         jrst dsk_read_idle
         jrst storage_busy
 dsk_read_idle:
-        movei 3,storage_pi_read
-        hrrm 3,storage_pi_select
-        movem 2,storage_ptr
         movei 3,0200
-        movem 3,storage_count
+        pushj 017,storage_setup_read
         hrroi 3,0777775
         movem 3,storage_state
         move 3,1
@@ -305,24 +310,21 @@ dsk_wait_dfr:
         jrst storage_ioerr
         trnn 3,040000
         jrst dsk_wait_dfr
-        movei 3,004005
+        movei 3,004003
         cono 0200,0(3)
         movei 3,001105
         cono 0270,0(3)
         jrst storage_wait
 
 ; AC1 raw hardware address, AC2 source of one 128-word sector.
-; Direction is encoded in storage_pi_select, not another resident state word.
+; Direction is encoded in the direct PI3 BLKI/BLKO vector word.
 dsk_write_sector:
         skipn storage_state
         jrst dsk_write_idle
         jrst storage_busy
 dsk_write_idle:
-        movei 3,storage_pi_write
-        hrrm 3,storage_pi_select
-        movem 2,storage_ptr
         movei 3,0200
-        movem 3,storage_count
+        pushj 017,storage_setup_write
         hrroi 3,0777774
         movem 3,storage_state
         move 3,1
@@ -334,7 +336,7 @@ dsk_write_wait_dfr:
         jrst storage_ioerr
         trnn 3,040000
         jrst dsk_write_wait_dfr
-        movei 3,003405
+        movei 3,003403
         cono 0200,0(3)
         movei 3,002105
         cono 0270,0(3)
@@ -360,39 +362,31 @@ dsk_wait_ids:
         coni 0270,2
         jrst dsk_wait_ids
 
-; Write direction is selected once per operation by patching storage_pi_select.
-storage_pi_write:
-        move 1,@storage_ptr
-        datao 0200,1
-        jrst storage_pi_advance
-
-; Arrive on the request following the 128th DATAO.  Normalize owner -4 to
-; DSK -3 so the common completion code remains +3 and needs no new state.
-; DTC write drains in two DCT requests.  The first request means the
-; 128th real word has reached the DCT accumulator; queue a dummy only to let
-; the controller consume that real word.  The second request proves it did.
-; Disconnect and stop before the dummy can be consumed into the next block.
-storage_pi_dtc_write_ack1:
+; DCT drain/ack handlers run only after a final BLKO has fallen through
+; the PI3 vector.  storage_state keeps the controller owner unchanged, so
+; asynchronous PI5 status continues to dispatch to the correct controller.
+storage_dct_dtc_write_ack1:
         setz 1,
         datao 0200,1
-        movei 1,storage_pi_dtc_write_ack2
-        hrrm 1,storage_pi_select
+        movei 1,storage_dct_dtc_write_ack2
+        hrrm 1,storage_dct_select
         jrst pdp10_pi_handler_return
-storage_pi_dtc_write_ack2:
+storage_dct_dtc_write_ack2:
         cono 0200,0
         cono 0210,0
         jrst storage_pi_done
 
-; MTC only needs one drain request because EOR terminates its record.
-storage_pi_mtc_write_drain:
+storage_dct_mtc_write_drain:
         coni 0200,1
         andi 1,0777770
         cono 0200,0(1)
-        movei 1,storage_pi_mtc_write_status
-        hrrm 1,storage_pi_select
         jrst pdp10_pi_handler_return
 
-storage_pi_write_finish:
+storage_dct_dsk_write_ack1:
+        movei 1,storage_dct_dsk_write_ack2
+        hrrm 1,storage_dct_select
+        jrst pdp10_pi_handler_return
+storage_dct_dsk_write_ack2:
         aos storage_state
         movei 1,030105
         cono 0270,0(1)
@@ -400,5 +394,4 @@ storage_pi_write_finish:
 
         .bss
 storage_state: .block 1
-storage_ptr:   .block 1
-storage_count: .block 1
+storage_iowd:  .block 1
