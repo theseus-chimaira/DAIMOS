@@ -44,7 +44,7 @@ main(void)
         kword_t path[6];
         kword_t in[2];
         kword_t out[2];
-        struct sys_v1_stat st;
+        struct vfs_v1_stat st;
         struct sys_v1_meminfo mi;
         struct sys_v1_procinfo pi;
         struct proc_v1 *initp;

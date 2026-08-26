@@ -89,8 +89,8 @@ cmd_cat(int argc, kword_t **argv, struct u_v1_io *io)
 static int
 cmd_ls_one(kword_t *path, struct u_v1_io *io)
 {
-        struct sys_v1_stat st;
-        struct sys_v1_dirent ent;
+        struct vfs_v1_stat st;
+        struct vfs_v1_dirent ent;
         kword_t name[U_V1_ARG_WORDS];
         int fd;
         int r;
@@ -162,7 +162,7 @@ cmd_pwd(int argc, kword_t **argv, struct u_v1_io *io)
 static int
 cmd_stat(int argc, kword_t **argv, struct u_v1_io *io)
 {
-        struct sys_v1_stat st;
+        struct vfs_v1_stat st;
         int i, rc = 0;
         if (argc < 2) return cmd_err(io, "STAT", 0);
         for (i = 1; i < argc; ++i) {

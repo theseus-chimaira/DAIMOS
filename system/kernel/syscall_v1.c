@@ -10,25 +10,19 @@
 static kword_t sys_v1_total_words;
 static kword_t sys_v1_resident_words;
 
+#ifndef __PDP10__
 static unsigned int
 sys_v1_file_flags(unsigned int flags)
 {
-        unsigned int f;
+        static const unsigned int access[4] = {
+                FILE_V1_O_READ,
+                FILE_V1_O_WRITE,
+                FILE_V1_O_READ | FILE_V1_O_WRITE,
+                FILE_V1_O_READ | FILE_V1_O_WRITE
+        };
 
-        f = 0U;
-        if ((flags & SYS_V1_O_RDWR) == SYS_V1_O_RDWR)
-                f |= FILE_V1_O_READ | FILE_V1_O_WRITE;
-        else if ((flags & SYS_V1_O_WRONLY) != 0U)
-                f |= FILE_V1_O_WRITE;
-        else
-                f |= FILE_V1_O_READ;
-        if ((flags & SYS_V1_O_APPEND) != 0U)
-                f |= FILE_V1_O_APPEND;
-        if ((flags & SYS_V1_O_CREAT) != 0U)
-                f |= FILE_V1_O_CREAT;
-        if ((flags & SYS_V1_O_TRUNC) != 0U)
-                f |= FILE_V1_O_TRUNC;
-        return f;
+        return access[flags & 3U] |
+            (flags & (SYS_V1_O_APPEND | SYS_V1_O_CREAT | SYS_V1_O_TRUNC));
 }
 
 int
@@ -42,6 +36,7 @@ sys_v1_close(unsigned int owner, int fd)
 {
         return file_v1_close(owner, fd);
 }
+#endif
 
 int
 sys_v1_putchar(int ch)
@@ -95,6 +90,7 @@ sys_v1_writechar(unsigned int owner, int fd, int ch)
 }
 
 
+#ifndef __PDP10__
 int
 sys_v1_chdir(unsigned int owner, const kword_t *path)
 {
@@ -123,36 +119,15 @@ sys_v1_write_words(unsigned int owner, int fd, const kword_t *buf,
 
 int
 sys_v1_stat_path(unsigned int owner, const kword_t *path,
-    struct sys_v1_stat *st)
+    struct vfs_v1_stat *st)
 {
-        struct vfs_v1_stat vst;
-
-        if (st == 0 || file_v1_stat_path_owner(owner, path, &vst) != 0)
-                return -1;
-        st->type = (kword_t)vst.type;
-        st->size_chars = vst.size_chars;
-        st->size_words = vst.size_words;
-        st->mode = (kword_t)vst.mode;
-        return 0;
+        return file_v1_stat_path_owner(owner, path, st);
 }
 
 int
-sys_v1_dirread(unsigned int owner, int fd, struct sys_v1_dirent *ent)
+sys_v1_dirread(unsigned int owner, int fd, struct vfs_v1_dirent *ent)
 {
-        struct vfs_v1_dirent vent;
-        unsigned int i;
-        int rc;
-
-        if (ent == 0)
-                return -1;
-        rc = file_v1_readdir(owner, fd, &vent);
-        if (rc <= 0)
-                return rc;
-        ent->chars = vent.name.chars;
-        for (i = 0U; i < VFS_V1_NAME_WORDS; ++i)
-                ent->words[i] = vent.name.words[i];
-        ent->type = vent.type;
-        return 1;
+        return file_v1_readdir(owner, fd, ent);
 }
 
 int
@@ -179,6 +154,7 @@ sys_v1_truncate(unsigned int owner, const kword_t *path, kword_t chars)
 {
         return file_v1_truncate_owner(owner, path, chars);
 }
+#endif
 
 int
 sys_v1_procinfo(unsigned int slot, struct sys_v1_procinfo *info)
@@ -197,12 +173,14 @@ sys_v1_procinfo(unsigned int slot, struct sys_v1_procinfo *info)
 
 extern void pdp10_halt(void);
 
+#ifndef __PDP10__
 int
 sys_v1_halt(void)
 {
         pdp10_halt();
         return -1;
 }
+#endif
 
 void
 sys_v1_set_memory_bounds(kword_t total_words, kword_t resident_words)
@@ -242,6 +220,7 @@ sys_v1_meminfo(struct sys_v1_meminfo *info)
         return 0;
 }
 
+#ifndef __PDP10__
 static kword_t *
 sys_v1_user_words(kword_t addr)
 {
@@ -317,13 +296,13 @@ exec_native_syscall_v1(kword_t *ac)
                 p = sys_v1_user_words(ac[2]);
                 q = sys_v1_user_words(ac[3]);
                 rc = p == 0 || q == 0 ? -1 : sys_v1_stat_path(owner, p,
-                    (struct sys_v1_stat *)q);
+                    (struct vfs_v1_stat *)q);
                 break;
         case SYS_V1_DIRREAD:
                 p = sys_v1_user_words(ac[3]);
                 rc = p == 0 ? -1 : sys_v1_dirread(owner,
                     (int)(ac[2] & PROC_V1_HALF_MASK),
-                    (struct sys_v1_dirent *)p);
+                    (struct vfs_v1_dirent *)p);
                 break;
         case SYS_V1_MKDIR:
                 p = sys_v1_user_words(ac[2]);
@@ -372,3 +351,4 @@ exec_native_syscall_v1(kword_t *ac)
         ac[1] = (kword_t)rc;
         return rc;
 }
+#endif

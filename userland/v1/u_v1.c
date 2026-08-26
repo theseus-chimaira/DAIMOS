@@ -104,12 +104,12 @@ u_v1_s6_pack(kword_t *dst, unsigned int words, const char *src)
 
 int
 u_v1_s6_from_dirent(kword_t *dst, unsigned int words,
-    const struct sys_v1_dirent *ent)
+    const struct vfs_v1_dirent *ent)
 {
         unsigned int i;
         if (dst == 0 || ent == 0 || words < VFS_V1_NAME_WORDS + 1U) return -1;
         for (i = 0U; i < words; ++i) dst[i] = 0;
-        dst[0] = ent->chars;
-        for (i = 0U; i < VFS_V1_NAME_WORDS; ++i) dst[i + 1U] = ent->words[i];
+        dst[0] = ent->name.chars;
+        for (i = 0U; i < VFS_V1_NAME_WORDS; ++i) dst[i + 1U] = ent->name.words[i];
         return 0;
 }

@@ -34,19 +34,6 @@
 #define SYS_V1_O_TRUNC          000020U
 #define SYS_V1_PROC_SLOTS       64U
 
-struct sys_v1_stat {
-        kword_t type;
-        kword_t size_chars;
-        kword_t size_words;
-        kword_t mode;
-};
-
-struct sys_v1_dirent {
-        kword_t chars;
-        kword_t words[VFS_V1_NAME_WORDS];
-        kword_t type;
-};
-
 struct sys_v1_procinfo {
         kword_t pid;
         kword_t ppid;
@@ -80,8 +67,8 @@ int sys_v1_read_words(unsigned int owner, int fd, kword_t *buf,
 int sys_v1_write_words(unsigned int owner, int fd, const kword_t *buf,
     unsigned int nwords, kword_t size_chars);
 int sys_v1_stat_path(unsigned int owner, const kword_t *path,
-    struct sys_v1_stat *st);
-int sys_v1_dirread(unsigned int owner, int fd, struct sys_v1_dirent *ent);
+    struct vfs_v1_stat *st);
+int sys_v1_dirread(unsigned int owner, int fd, struct vfs_v1_dirent *ent);
 int sys_v1_mkdir(unsigned int owner, const kword_t *path, unsigned int mode);
 int sys_v1_unlink(unsigned int owner, const kword_t *path);
 int sys_v1_rename(unsigned int owner, const kword_t *oldpath,
