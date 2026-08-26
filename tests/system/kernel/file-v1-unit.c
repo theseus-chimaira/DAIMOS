@@ -70,6 +70,7 @@ main(void)
         kword_t p_root[2];
         kword_t p_device[4];
         kword_t p_proc[4];
+        kword_t p_proc1[4];
         kword_t p_rel[3];
         kword_t p_rel2[3];
         kword_t cwd[6];
@@ -140,24 +141,54 @@ main(void)
         if (file_v1_close(1U, fd) != 0)
                 return 13;
 
+        if (file_v1_chdir(1U, p_device) != 0 ||
+            file_v1_getcwd(1U, cwd, 6U) != 0)
+                return 14;
+        pack_path("/DEVICE", want_cwd, 6U);
+        if (memcmp(cwd, want_cwd, sizeof(cwd)) != 0)
+                return 15;
+        pack_path("..", p_rel, 3U);
+        if (file_v1_chdir(1U, p_rel) != 0 ||
+            file_v1_getcwd(1U, cwd, 6U) != 0)
+                return 16;
+        pack_path("/", want_cwd, 6U);
+        if (memcmp(cwd, want_cwd, sizeof(cwd)) != 0)
+                return 17;
+
+        if (file_v1_chdir(1U, p_proc) != 0 ||
+            file_v1_getcwd(1U, cwd, 6U) != 0)
+                return 18;
+        pack_path("/PROC", want_cwd, 6U);
+        if (memcmp(cwd, want_cwd, sizeof(cwd)) != 0)
+                return 19;
+        pack_path("/PROC/1", p_proc1, 4U);
+        if (file_v1_chdir(1U, p_proc1) != 0 ||
+            file_v1_getcwd(1U, cwd, 6U) != 0)
+                return 20;
+        pack_path("/PROC/1", want_cwd, 6U);
+        if (memcmp(cwd, want_cwd, sizeof(cwd)) != 0)
+                return 21;
+        if (file_v1_chdir(1U, p_root) != 0)
+                return 22;
+
         pack_path("R", p_rel, 3U);
         pack_path("S", p_rel2, 3U);
         if (file_v1_chdir(1U, p_dir) != 0 ||
             file_v1_getcwd(1U, cwd, 6U) != 0)
-                return 14;
+                return 23;
         pack_path("/TMP", want_cwd, 6U);
         if (memcmp(cwd, want_cwd, sizeof(cwd)) != 0)
-                return 15;
+                return 24;
         fd = file_v1_open(1U, p_rel, FILE_V1_O_WRITE | FILE_V1_O_CREAT);
         if (fd < 0 || file_v1_close(1U, fd) != 0 ||
             file_v1_rename(1U, p_rel, p_rel2) != 0 ||
             file_v1_stat_path_owner(1U, p_rel2, &st) != 0)
-                return 16;
+                return 25;
         if (file_v1_unlink_owner(1U, p_rel2) != 0 ||
             file_v1_chdir(1U, p_root) != 0)
-                return 17;
+                return 26;
         if (file_v1_unlink(p_nested) != 0 || file_v1_unlink(p_file) != 0)
-                return 18;
+                return 27;
 
         puts("FILE/VFS v1 unit test PASS");
         return 0;

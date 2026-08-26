@@ -692,8 +692,7 @@ file_v1_chdir(unsigned int owner, const kword_t *path)
 
         if (owner >= FILE_V1_OWNER_MAX ||
             file_v1_lookup_path_owner(owner, path, &node) != 0 ||
-            file_v1_node_stat(node, &st) != 0 || st.type != VFS_V1_TYPE_DIR ||
-            VFS_V1_PROVIDER(node) != MEMFS_V1_PROVIDER)
+            file_v1_node_stat(node, &st) != 0 || st.type != VFS_V1_TYPE_DIR)
                 return -1;
         file_v1_cwd[owner] = node;
         return 0;
@@ -714,6 +713,57 @@ file_v1_path_put_char(kword_t *buf, unsigned int nwords,
         return 0;
 }
 
+static int
+file_v1_getcwd_pseudo(vnode_v1_t node, kword_t *buf, unsigned int nwords)
+{
+        kword_t pid;
+        kword_t word;
+        unsigned int i;
+        unsigned int chars;
+
+        for (i = 0U; i < nwords; ++i)
+                buf[i] = 0;
+
+        if (VFS_V1_PROVIDER(node) == DEVICEFS_V1_PROVIDER) {
+                if (node != devicefs_v1_root() || nwords < 3U)
+                        return -1;
+                buf[0] = 7U;
+                buf[1] = VFS_V1_SIX6('/','D','E','V','I','C');
+                buf[2] = VFS_V1_SIX6('E',' ',' ',' ',' ',' ');
+                return 0;
+        }
+        if (VFS_V1_PROVIDER(node) != PROCFS_V1_PROVIDER || nwords < 2U)
+                return -1;
+        if (node == procfs_v1_root()) {
+                buf[0] = 5U;
+                buf[1] = VFS_V1_SIX6('/','P','R','O','C',' ');
+                return 0;
+        }
+        if (VFS_V1_KIND(node) != PROCFS_V1_KIND_PROC ||
+            procfs_v1_value(VFS_V1_NODE(PROCFS_V1_PROVIDER,
+            PROCFS_V1_KIND_PID, VFS_V1_INDEX(node)), &pid) != 0 || pid > 0377U ||
+            nwords < 3U)
+                return -1;
+        if (pid >= 100U)
+                chars = 3U;
+        else if (pid >= 10U)
+                chars = 2U;
+        else
+                chars = 1U;
+        word = ((kword_t)(020U + (unsigned int)(pid / 100U)) << 30);
+        if (chars < 3U)
+                word = 0;
+        if (chars >= 2U)
+                word |= ((kword_t)(020U + (unsigned int)((pid / 10U) % 10U)) <<
+                    (chars == 3U ? 24U : 30U));
+        word |= ((kword_t)(020U + (unsigned int)(pid % 10U)) <<
+            (chars == 3U ? 18U : chars == 2U ? 24U : 30U));
+        buf[0] = 6U + chars;
+        buf[1] = VFS_V1_SIX6('/','P','R','O','C','/');
+        buf[2] = word;
+        return 0;
+}
+
 int
 file_v1_getcwd(unsigned int owner, kword_t *buf, unsigned int nwords)
 {
@@ -726,11 +776,13 @@ file_v1_getcwd(unsigned int owner, kword_t *buf, unsigned int nwords)
         unsigned int pos;
 
         if (file_v1_root == 0 || owner >= FILE_V1_OWNER_MAX || buf == 0 ||
-            nwords < 2U || VFS_V1_PROVIDER(file_v1_cwd[owner]) != MEMFS_V1_PROVIDER)
+            nwords < 2U)
                 return -1;
+        node = file_v1_cwd[owner];
+        if (VFS_V1_PROVIDER(node) != MEMFS_V1_PROVIDER)
+                return file_v1_getcwd_pseudo(node, buf, nwords);
         for (i = 0U; i < nwords; ++i)
                 buf[i] = 0;
-        node = file_v1_cwd[owner];
         depth = 0U;
         while (node != memfs_v1_root(file_v1_root)) {
                 if (depth >= 16U ||
