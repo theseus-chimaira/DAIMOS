@@ -9,8 +9,10 @@
 #define NODES 16U
 #define POOL 32U
 
-int cty_putchar(int ch) { return ch >= 0 ? 0 : -1; }
-int cty_getchar(void) { return -2; }
+static int cty_last = -1;
+static unsigned int cty_writes;
+int cty_putchar(int ch) { cty_last = ch; ++cty_writes; return ch >= 0 ? 0 : -1; }
+int cty_getchar(void) { return 'Q'; }
 void mach_return_to_kernel_request_v1(void) { }
 void pdp10_halt(void) { }
 
@@ -50,7 +52,7 @@ main(void)
 
         if (ramfs_v1_init(&fs, nodes, NODES, pool, POOL) != 0)
                 return 1;
-        devicefs_v1_init(0);
+        devicefs_v1_init(DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CTY0));
         proc_v1_init();
         initp = proc_v1_alloc_init();
         if (initp == 0)
@@ -81,6 +83,17 @@ main(void)
         if (sys_v1_procinfo(1U, &pi) != 0 || pi.pid != 1U ||
             pi.words != 0200UL)
                 return 6;
+        pack_path("/DEVICE/CTY0/IO", path, 6U);
+        fd = sys_v1_open(1U, path, SYS_V1_O_WRONLY | SYS_V1_O_CREAT |
+            SYS_V1_O_TRUNC);
+        if (fd < 0 || sys_v1_writechar(1U, fd, 'T') != 0 ||
+            cty_writes != 1U || cty_last != 'T' ||
+            sys_v1_close(1U, fd) != 0)
+                return 7;
+        fd = sys_v1_open(1U, path, SYS_V1_O_RDONLY);
+        if (fd < 0 || sys_v1_readchar(1U, fd) != 'Q' ||
+            sys_v1_close(1U, fd) != 0)
+                return 8;
         puts("SYSCALL file v1 unit test PASS");
         return 0;
 }

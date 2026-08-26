@@ -67,5 +67,6 @@ int vfs_v1_name_set_uint(struct vfs_v1_name *name, unsigned int value);
 int vfs_v1_name_get_uint(const struct vfs_v1_name *name, unsigned int *valuep);
 int vfs_v1_sixbit_readchar(kword_t word, unsigned int nchars, kword_t off,
     unsigned int *chp);
+int vfs_v1_decimal_readchar(kword_t value, kword_t off, unsigned int *chp);
 
 #endif

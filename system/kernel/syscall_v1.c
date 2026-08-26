@@ -72,21 +72,30 @@ sys_v1_getchar(void)
 int
 sys_v1_readchar(unsigned int owner, int fd)
 {
+        int rc;
+
         if (fd == 0)
                 return sys_v1_getchar();
-        return file_v1_readchar(owner, fd);
+        rc = file_v1_readchar(owner, fd);
+        return rc == FILE_V1_DEVICE_IO ? sys_v1_getchar() : rc;
 }
+
 
 int
 sys_v1_writechar(unsigned int owner, int fd, int ch)
 {
         char c;
+        int rc;
 
         if (fd == 1 || fd == 2)
                 return sys_v1_putchar(ch);
         c = (char)(ch & 0777);
-        return file_v1_write(owner, fd, &c, 1U) == 1 ? 0 : -1;
+        rc = file_v1_write(owner, fd, &c, 1U);
+        if (rc == FILE_V1_DEVICE_IO)
+                return sys_v1_putchar(ch);
+        return rc == 1 ? 0 : -1;
 }
+
 
 int
 sys_v1_chdir(unsigned int owner, const kword_t *path)

@@ -8,6 +8,7 @@
 #define FILE_V1_O_APPEND        0004U
 #define FILE_V1_O_CREAT         0010U
 #define FILE_V1_O_TRUNC         0020U
+#define FILE_V1_DEVICE_IO       (-3)
 
 #ifndef FILE_V1_NFILE
 #define FILE_V1_NFILE           32U

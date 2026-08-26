@@ -16,7 +16,6 @@ static unsigned int procfs_v1_slots;
 static procfs_v1_get_fn procfs_v1_get;
 
 static const struct procfs_v1_desc procfs_v1_files[] = {
-        { VFS_V1_SIX6('P','I','D',' ',' ',' '), PROCFS_V1_META(3U, PROCFS_V1_FIELD_PID) },
         { VFS_V1_SIX6('P','P','I','D',' ',' '), PROCFS_V1_META(4U, PROCFS_V1_FIELD_PPID) },
         { VFS_V1_SIX6('S','T','A','T','E',' '), PROCFS_V1_META(5U, PROCFS_V1_FIELD_STATE) },
         { VFS_V1_SIX6('W','O','R','D','S',' '), PROCFS_V1_META(5U, PROCFS_V1_FIELD_WORDS) },
@@ -87,7 +86,6 @@ procfs_v1_is_file(vnode_v1_t node, unsigned int *slotp,
                 return 0;
         kind = VFS_V1_KIND(node);
         switch (kind) {
-        case PROCFS_V1_KIND_PID: field = PROCFS_V1_FIELD_PID; break;
         case PROCFS_V1_KIND_PPID: field = PROCFS_V1_FIELD_PPID; break;
         case PROCFS_V1_KIND_STATE: field = PROCFS_V1_FIELD_STATE; break;
         case PROCFS_V1_KIND_WORDS: field = PROCFS_V1_FIELD_WORDS; break;
@@ -150,7 +148,7 @@ procfs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
                     PROCFS_V1_META_CHARS(dp->meta)))
                         continue;
                 *nodep = VFS_V1_NODE(PROCFS_V1_PROVIDER,
-                    PROCFS_V1_KIND_PID + i, slot);
+                    PROCFS_V1_KIND_PPID + i, slot);
                 return 0;
         }
         return -1;
@@ -220,50 +218,11 @@ procfs_v1_stat(vnode_v1_t node, struct vfs_v1_stat *st)
 }
 
 int
-procfs_v1_value(vnode_v1_t node, kword_t *valuep)
+procfs_v1_pid(unsigned int slot, kword_t *pidp)
 {
-        unsigned int slot;
-        unsigned int field;
-
-        if (valuep == 0 || procfs_v1_get == 0 ||
-            !procfs_v1_is_file(node, &slot, &field))
+        if (procfs_v1_get == 0 || slot >= procfs_v1_slots)
                 return -1;
-        return procfs_v1_get(slot, field, valuep);
-}
-
-
-static int
-procfs_v1_decimal_char(kword_t value, kword_t off, unsigned int *chp)
-{
-        kword_t divisor;
-        kword_t q;
-        unsigned int digits;
-
-        divisor = 1;
-        digits = 1U;
-        q = value;
-        while (q >= 10U) {
-                q /= 10U;
-                divisor *= 10U;
-                ++digits;
-        }
-        if (off < (kword_t)digits) {
-                while (off != 0) {
-                        divisor /= 10U;
-                        --off;
-                }
-                *chp = '0' + (unsigned int)((value / divisor) % 10U);
-                return 1;
-        }
-        if (off == (kword_t)digits) {
-                *chp = '\r';
-                return 1;
-        }
-        if (off == (kword_t)digits + 1U) {
-                *chp = '\n';
-                return 1;
-        }
-        return 0;
+        return procfs_v1_get(slot, PROCFS_V1_FIELD_PID, pidp);
 }
 
 
@@ -293,5 +252,5 @@ procfs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp)
                 return vfs_v1_sixbit_readchar(state_names[(unsigned int)value],
                     state_chars[(unsigned int)value], off, chp);
         }
-        return procfs_v1_decimal_char(value, off, chp);
+        return vfs_v1_decimal_readchar(value, off, chp);
 }

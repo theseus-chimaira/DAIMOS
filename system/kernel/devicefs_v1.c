@@ -101,9 +101,15 @@ devicefs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
                         return 0;
                 }
                 if (vfs_v1_name_is6(name,
-                    VFS_V1_SIX6('S','T','A','T','U','S'), 6U)) {
+                    VFS_V1_SIX6('I','N',' ',' ',' ',' '), 2U)) {
                         *nodep = VFS_V1_NODE(DEVICEFS_V1_PROVIDER,
-                            DEVICEFS_V1_KIND_STATUS, DEVICEFS_V1_DEV_CTY0);
+                            DEVICEFS_V1_KIND_IN, DEVICEFS_V1_DEV_CTY0);
+                        return 0;
+                }
+                if (vfs_v1_name_is6(name,
+                    VFS_V1_SIX6('O','U','T',' ',' ',' '), 3U)) {
+                        *nodep = VFS_V1_NODE(DEVICEFS_V1_PROVIDER,
+                            DEVICEFS_V1_KIND_OUT, DEVICEFS_V1_DEV_CTY0);
                         return 0;
                 }
                 return -1;
@@ -148,7 +154,13 @@ devicefs_v1_readdir(vnode_v1_t dir, unsigned int off,
                 }
                 if (off == 1U) {
                         vfs_v1_name_set6(&ent->name,
-                            VFS_V1_SIX6('S','T','A','T','U','S'), 6U);
+                            VFS_V1_SIX6('I','N',' ',' ',' ',' '), 2U);
+                        ent->type = VFS_V1_TYPE_REG;
+                        return 1;
+                }
+                if (off == 2U) {
+                        vfs_v1_name_set6(&ent->name,
+                            VFS_V1_SIX6('O','U','T',' ',' ',' '), 3U);
                         ent->type = VFS_V1_TYPE_REG;
                         return 1;
                 }
@@ -199,7 +211,8 @@ devicefs_v1_stat(vnode_v1_t node, struct vfs_v1_stat *st)
                 st->type = VFS_V1_TYPE_DIR;
                 st->mode = 0555U;
         } else if (VFS_V1_PROVIDER(node) == DEVICEFS_V1_PROVIDER &&
-            VFS_V1_KIND(node) == DEVICEFS_V1_KIND_STATUS &&
+            (VFS_V1_KIND(node) == DEVICEFS_V1_KIND_IN ||
+            VFS_V1_KIND(node) == DEVICEFS_V1_KIND_OUT) &&
             VFS_V1_INDEX(node) == DEVICEFS_V1_DEV_CTY0 &&
             devicefs_v1_is_present(DEVICEFS_V1_DEV_CTY0)) {
                 st->type = VFS_V1_TYPE_REG;
@@ -229,25 +242,24 @@ devicefs_v1_device_id(vnode_v1_t node, unsigned int *idp)
         return 0;
 }
 
-unsigned int
-devicefs_v1_device_class(vnode_v1_t node)
-{
-        unsigned int id;
-
-        if (!devicefs_v1_is_device(node, &id))
-                return 0U;
-        return DEVICEFS_V1_META_CLASS(devicefs_v1_devices[id].meta);
-}
-
 
 int
 devicefs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp)
 {
-        if (VFS_V1_PROVIDER(node) != DEVICEFS_V1_PROVIDER ||
-            VFS_V1_KIND(node) != DEVICEFS_V1_KIND_STATUS ||
+        unsigned int kind;
+
+        if (chp == 0 || VFS_V1_PROVIDER(node) != DEVICEFS_V1_PROVIDER ||
             VFS_V1_INDEX(node) != DEVICEFS_V1_DEV_CTY0 ||
             !devicefs_v1_is_present(DEVICEFS_V1_DEV_CTY0))
                 return -1;
-        return vfs_v1_sixbit_readchar(
-            VFS_V1_SIX6('O','N','L','I','N','E'), 6U, off, chp);
+        kind = VFS_V1_KIND(node);
+        if (kind == DEVICEFS_V1_KIND_DEVICE)
+                return -3;
+        if (kind == DEVICEFS_V1_KIND_IN)
+                return vfs_v1_decimal_readchar(
+                    devicefs_v1_io_in[DEVICEFS_V1_DEV_CTY0], off, chp);
+        if (kind == DEVICEFS_V1_KIND_OUT)
+                return vfs_v1_decimal_readchar(
+                    devicefs_v1_io_out[DEVICEFS_V1_DEV_CTY0], off, chp);
+        return -1;
 }

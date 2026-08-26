@@ -383,14 +383,14 @@ file_v1_open(unsigned int owner, const kword_t *path, unsigned int flags)
         }
         if (file_v1_node_stat(node, &st) != 0)
                 return -1;
-        if ((flags & FILE_V1_O_TRUNC) != 0U) {
+        if ((flags & FILE_V1_O_TRUNC) != 0U && st.type == VFS_V1_TYPE_REG) {
                 if (VFS_V1_PROVIDER(node) != MEMFS_V1_PROVIDER ||
-                    st.type != VFS_V1_TYPE_REG ||
                     memfs_v1_truncate_words(file_v1_root, node, 0U, 0) != 0)
                         return -1;
         }
         return file_v1_new_fd(owner, node, flags, st.type == VFS_V1_TYPE_DIR);
 }
+
 
 int
 file_v1_close(unsigned int owner, int fd)
@@ -496,6 +496,8 @@ file_v1_readchar(unsigned int owner, int fd)
                 break;
         case DEVICEFS_V1_PROVIDER:
                 rc = devicefs_v1_readchar(fp->node, fp->off_chars, &ch);
+                if (rc == FILE_V1_DEVICE_IO)
+                        return rc;
                 if (rc <= 0)
                         return rc == 0 ? -2 : -1;
                 break;
@@ -522,8 +524,12 @@ file_v1_write(unsigned int owner, int fd, const char *buf,
 
         fp = file_v1_find(owner, fd);
         if (fp == 0 || buf == 0 || (fp->meta & FILE_V1_META_DIR) != 0U ||
-            (FILE_V1_META_FLAGS(fp->meta) & FILE_V1_O_WRITE) == 0U ||
-            VFS_V1_PROVIDER(fp->node) != MEMFS_V1_PROVIDER ||
+            (FILE_V1_META_FLAGS(fp->meta) & FILE_V1_O_WRITE) == 0U)
+                return -1;
+        if (fp->node == VFS_V1_NODE(DEVICEFS_V1_PROVIDER,
+            DEVICEFS_V1_KIND_DEVICE, DEVICEFS_V1_DEV_CTY0))
+                return FILE_V1_DEVICE_IO;
+        if (VFS_V1_PROVIDER(fp->node) != MEMFS_V1_PROVIDER ||
             memfs_v1_stat(file_v1_root, fp->node, &st) != 0)
                 return -1;
         if ((FILE_V1_META_FLAGS(fp->meta) & FILE_V1_O_APPEND) != 0U)
@@ -806,8 +812,7 @@ file_v1_getcwd_pseudo(vnode_v1_t node, kword_t *buf, unsigned int nwords)
                 return 0;
         }
         if (VFS_V1_KIND(node) != PROCFS_V1_KIND_PROC ||
-            procfs_v1_value(VFS_V1_NODE(PROCFS_V1_PROVIDER,
-            PROCFS_V1_KIND_PID, VFS_V1_INDEX(node)), &pid) != 0 || pid > 0377U ||
+            procfs_v1_pid(VFS_V1_INDEX(node), &pid) != 0 || pid > 0377U ||
             nwords < 3U)
                 return -1;
         if (pid >= 100U)
