@@ -201,6 +201,15 @@ sys_v1_procinfo(unsigned int slot, struct sys_v1_procinfo *info)
         return 0;
 }
 
+extern void pdp10_halt(void);
+
+int
+sys_v1_halt(void)
+{
+        pdp10_halt();
+        return -1;
+}
+
 void
 sys_v1_set_memory_bounds(kword_t total_words, kword_t resident_words)
 {
@@ -360,6 +369,9 @@ exec_native_syscall_v1(kword_t *ac)
                 rc = sys_v1_writechar(owner,
                     (int)(ac[2] & PROC_V1_HALF_MASK),
                     (int)(ac[3] & 0777UL));
+                break;
+        case SYS_V1_HALT:
+                rc = sys_v1_halt();
                 break;
         default:
                 rc = -1;

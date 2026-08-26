@@ -287,6 +287,38 @@ cmd_free(int argc, kword_t **argv, struct u_v1_io *io)
 }
 
 static int
+cmd_df(int argc, kword_t **argv, struct u_v1_io *io)
+{
+        struct sys_v1_meminfo m;
+        kword_t free_words;
+
+        (void)argc;
+        (void)argv;
+        if (dsys_v1_meminfo(&m) != 0)
+                return cmd_err(io, "DF", 0);
+        free_words = m.ramfs_capacity_words >= m.ramfs_used_words ?
+            m.ramfs_capacity_words - m.ramfs_used_words : 0;
+        if (u_v1_puts(io->out_fd, "RAMFS0 USED ") != 0 ||
+            u_v1_put_uint(io->out_fd, m.ramfs_used_words) != 0 ||
+            u_v1_puts(io->out_fd, " CAPACITY ") != 0 ||
+            u_v1_put_uint(io->out_fd, m.ramfs_capacity_words) != 0 ||
+            u_v1_puts(io->out_fd, " FREE ") != 0 ||
+            u_v1_put_uint(io->out_fd, free_words) != 0 ||
+            u_v1_crlf(io->out_fd) != 0)
+                return 1;
+        return 0;
+}
+
+static int
+cmd_halt(int argc, kword_t **argv, struct u_v1_io *io)
+{
+        (void)argc;
+        (void)argv;
+        (void)io;
+        return dsys_v1_halt() == 0 ? 0 : 1;
+}
+
+static int
 cmd_memstat(int argc, kword_t **argv, struct u_v1_io *io)
 {
         struct sys_v1_meminfo m;
@@ -325,5 +357,7 @@ cmd_v1_dispatch(int argc, kword_t **argv, struct u_v1_io *io)
         if (cmd_name_eq(argv[0], "DEVS")) return cmd_devs(argc, argv, io);
         if (cmd_name_eq(argv[0], "FREE")) return cmd_free(argc, argv, io);
         if (cmd_name_eq(argv[0], "MEMSTAT")) return cmd_memstat(argc, argv, io);
+        if (cmd_name_eq(argv[0], "DF")) return cmd_df(argc, argv, io);
+        if (cmd_name_eq(argv[0], "HALT")) return cmd_halt(argc, argv, io);
         return cmd_err(io, "DSH: UNKNOWN", argv[0]);
 }

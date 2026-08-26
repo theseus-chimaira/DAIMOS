@@ -73,6 +73,11 @@ IMAGE_RAW = $(BUILD)/kinit-v1.raw.words
 IMAGE_WORDS = $(BUILD)/kinit-v1.words
 USERLAND_BUILD_ROOT = $(BUILD)/userland-build
 DSH_DXR = $(USERLAND_BUILD_ROOT)/userland-v1/dsh-v1.dxr
+USERLAND_INPUTS = $(addprefix $(PROJECT_ROOT)/userland/, \
+	v1/u_v1.c v1/u_v1.h v1/dsys_v1.h v1/crt0_v1.s v1/syscall_v1.s \
+	v1/syscall_sentinel_v1.s exec_v1/commands_v1.c exec_v1/cmd_v1.h \
+	dsh_v1/dsh.c Makefile) \
+	$(PROJECT_ROOT)/system/kernel/syscall_v1.h
 INITFS_ASM = $(BUILD)/initfs-v1.s
 INITFS_OBJ = $(BUILD)/initfs-v1.dobj
 STAGE1_DXR = $(BUILD)/stage1-dsk-v1.dxr
@@ -311,7 +316,7 @@ $(KCORE_EMBED_ASM): kcore-embed-v1.s.in $(KCORE_MAP) | $(BUILD)
 $(KCORE_EMBED_OBJ): $(KCORE_EMBED_ASM)
 	$(DAS) -c -o $@ $<
 
-$(DSH_DXR):
+$(DSH_DXR): $(USERLAND_INPUTS)
 	$(MAKE) -C $(PROJECT_ROOT)/userland build BUILD_ROOT='$(USERLAND_BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'
 
 $(INITFS_ASM): $(DSH_DXR)

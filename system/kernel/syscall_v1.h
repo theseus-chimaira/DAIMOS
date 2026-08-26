@@ -24,6 +24,7 @@
 #define SYS_V1_MEMINFO          34U
 #define SYS_V1_READCHAR         35U
 #define SYS_V1_WRITECHAR        36U
+#define SYS_V1_HALT             37U
 
 #define SYS_V1_O_RDONLY         000000U
 #define SYS_V1_O_WRONLY         000001U
@@ -88,6 +89,7 @@ int sys_v1_rename(unsigned int owner, const kword_t *oldpath,
 int sys_v1_truncate(unsigned int owner, const kword_t *path, kword_t chars);
 int sys_v1_procinfo(unsigned int slot, struct sys_v1_procinfo *info);
 int sys_v1_meminfo(struct sys_v1_meminfo *info);
+int sys_v1_halt(void);
 void sys_v1_set_memory_bounds(kword_t total_words, kword_t resident_words);
 
 /* Called by mach_user_v1.s with the saved AC block. */

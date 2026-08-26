@@ -28,5 +28,6 @@ static int dsys_v1_getcwd(kword_t *p, unsigned int n) { return DSYS_V1_CALL2(SYS
 static int dsys_v1_procinfo(unsigned int s, struct sys_v1_procinfo *p) { return DSYS_V1_CALL2(SYS_V1_PROCINFO,s,p); }
 static int dsys_v1_meminfo(struct sys_v1_meminfo *p) { return DSYS_V1_CALL1(SYS_V1_MEMINFO,p); }
 static int dsys_v1_exit(int rc) { return DSYS_V1_CALL1(SYS_V1_EXIT,rc); }
+static int dsys_v1_halt(void) { return DSYS_V1_CALL0(SYS_V1_HALT); }
 
 #endif

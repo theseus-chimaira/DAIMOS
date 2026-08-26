@@ -12,6 +12,7 @@
 int cty_putchar(int ch) { return ch >= 0 ? 0 : -1; }
 int cty_getchar(void) { return -2; }
 void mach_return_to_kernel_request_v1(void) { }
+void pdp10_halt(void) { }
 
 static void
 pack_path(const char *s, kword_t *out, unsigned int words)
