@@ -8,6 +8,12 @@ static vnode_v1_t file_v1_alias_node;
 static int file_v1_alias_active;
 static struct file_v1 file_v1_table[FILE_V1_NFILE];
 static vnode_v1_t file_v1_cwd[FILE_V1_OWNER_MAX];
+static kword_t file_v1_alias_cwd[(FILE_V1_OWNER_MAX + 35U) / 36U];
+
+static int file_v1_chdir_lookup(unsigned int owner, const kword_t *path,
+    vnode_v1_t *nodep, int *aliasp);
+static int file_v1_alias_cwd_get(unsigned int owner);
+static void file_v1_alias_cwd_set(unsigned int owner, int active);
 
 static unsigned int
 file_v1_path_chars(const kword_t *path)
@@ -143,6 +149,8 @@ file_v1_init(struct memfs_v1 *rootfs)
                 file_v1_alias_name.words[i] = 0;
         for (i = 0U; i < FILE_V1_OWNER_MAX; ++i)
                 file_v1_cwd[i] = memfs_v1_root(rootfs);
+        for (i = 0U; i < (FILE_V1_OWNER_MAX + 35U) / 36U; ++i)
+                file_v1_alias_cwd[i] = 0;
         for (i = 0U; i < FILE_V1_NFILE; ++i) {
                 file_v1_table[i].node = VFS_V1_NODE_NONE;
                 file_v1_table[i].off_chars = 0;
@@ -689,12 +697,14 @@ file_v1_chdir(unsigned int owner, const kword_t *path)
 {
         vnode_v1_t node;
         struct vfs_v1_stat st;
+        int alias;
 
         if (owner >= FILE_V1_OWNER_MAX ||
-            file_v1_lookup_path_owner(owner, path, &node) != 0 ||
+            file_v1_chdir_lookup(owner, path, &node, &alias) != 0 ||
             file_v1_node_stat(node, &st) != 0 || st.type != VFS_V1_TYPE_DIR)
                 return -1;
         file_v1_cwd[owner] = node;
+        file_v1_alias_cwd_set(owner, alias);
         return 0;
 }
 
@@ -810,6 +820,83 @@ file_v1_getcwd(unsigned int owner, kword_t *buf, unsigned int nwords)
                 }
         }
         buf[0] = (kword_t)pos;
+        return 0;
+}
+
+static int
+file_v1_alias_cwd_get(unsigned int owner)
+{
+        return (file_v1_alias_cwd[owner / 36U] &
+            ((kword_t)1U << (owner % 36U))) != 0U;
+}
+
+static void
+file_v1_alias_cwd_set(unsigned int owner, int active)
+{
+        kword_t mask;
+
+        mask = (kword_t)1U << (owner % 36U);
+        if (active)
+                file_v1_alias_cwd[owner / 36U] |= mask;
+        else
+                file_v1_alias_cwd[owner / 36U] &= ~mask;
+}
+
+static int
+file_v1_chdir_lookup(unsigned int owner, const kword_t *path,
+    vnode_v1_t *nodep, int *aliasp)
+{
+        struct vfs_v1_name name;
+        vnode_v1_t next;
+        vnode_v1_t node;
+        unsigned int n;
+        unsigned int pos;
+        int alias;
+        int rc;
+
+        if (file_v1_root == 0 || path == 0 || nodep == 0 || aliasp == 0 ||
+            owner >= FILE_V1_OWNER_MAX)
+                return -1;
+        n = file_v1_path_chars(path);
+        if (n == 0U)
+                return -1;
+        if (file_v1_path_char(path, 0U) == '/') {
+                node = memfs_v1_root(file_v1_root);
+                alias = 0;
+        } else {
+                node = file_v1_cwd[owner];
+                alias = file_v1_alias_cwd_get(owner);
+        }
+        pos = 0U;
+        while (pos < n) {
+                rc = file_v1_component(path, &pos, &name);
+                if (rc < 0)
+                        return -1;
+                if (rc == 0)
+                        break;
+                if (file_v1_name_dot(&name))
+                        continue;
+                if (file_v1_name_dotdot(&name)) {
+                        if (alias && node == file_v1_alias_node) {
+                                node = memfs_v1_root(file_v1_root);
+                                alias = 0;
+                        } else {
+                                if (file_v1_parent_node(node, &next) != 0)
+                                        return -1;
+                                node = next;
+                        }
+                        continue;
+                }
+                if (file_v1_lookup_child(node, &name, &next) != 0)
+                        return -1;
+                if (file_v1_alias_active &&
+                    node == memfs_v1_root(file_v1_root) &&
+                    next == file_v1_alias_node)
+                        alias = 1;
+                node = next;
+        }
+        *nodep = node;
+        *aliasp = alias;
         return 0;
 }
 

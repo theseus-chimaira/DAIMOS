@@ -71,12 +71,16 @@ main(void)
         kword_t p_device[4];
         kword_t p_proc[4];
         kword_t p_proc1[4];
+        kword_t p_mount[5];
+        kword_t p_ramfs[6];
         kword_t p_rel[3];
         kword_t p_rel2[3];
         kword_t cwd[6];
         kword_t want_cwd[6];
         struct vfs_v1_stat st;
         struct vfs_v1_dirent ent;
+        struct vfs_v1_name alias_name;
+        vnode_v1_t alias_node;
         char buf[16];
         int fd;
         int rc;
@@ -189,6 +193,33 @@ main(void)
                 return 26;
         if (file_v1_unlink(p_nested) != 0 || file_v1_unlink(p_file) != 0)
                 return 27;
+
+        pack_path("/MOUNT", p_mount, 5U);
+        pack_path("/MOUNT/RAMFS0", p_ramfs, 6U);
+        if (file_v1_mkdir(p_mount, 0777U) != 0 ||
+            file_v1_mkdir(p_ramfs, 0777U) != 0 ||
+            file_v1_lookup_path(p_ramfs, &alias_node) != 0 ||
+            vfs_v1_name_set6(&alias_name,
+            VFS_V1_SIX6('T','E','M','P',' ',' '), 4U) != 0 ||
+            file_v1_alias_root(&alias_name, alias_node) != 0)
+                return 28;
+        pack_path("TEMP", p_rel, 3U);
+        if (file_v1_chdir(1U, p_rel) != 0)
+                return 29;
+        pack_path("..", p_rel, 3U);
+        if (file_v1_chdir(1U, p_rel) != 0 ||
+            file_v1_getcwd(1U, cwd, 6U) != 0)
+                return 30;
+        pack_path("/", want_cwd, 6U);
+        if (memcmp(cwd, want_cwd, sizeof(cwd)) != 0)
+                return 31;
+        if (file_v1_chdir(1U, p_ramfs) != 0 ||
+            file_v1_chdir(1U, p_rel) != 0 ||
+            file_v1_getcwd(1U, cwd, 6U) != 0)
+                return 32;
+        pack_path("/MOUNT", want_cwd, 6U);
+        if (memcmp(cwd, want_cwd, sizeof(cwd)) != 0)
+                return 33;
 
         puts("FILE/VFS v1 unit test PASS");
         return 0;
