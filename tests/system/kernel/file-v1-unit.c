@@ -96,36 +96,43 @@ main(void)
         pack_path("/HELLO", p_file, 6U);
         fd = file_v1_open(1U, p_file, FILE_V1_O_WRITE | FILE_V1_O_CREAT |
             FILE_V1_O_TRUNC);
-        if (fd < 0 || file_v1_write(1U, fd, "ABCDEF", 6U) != 6 ||
+        if (fd < 0 || file_v1_writechar(1U, fd, 'A') != 0 ||
+            file_v1_writechar(1U, fd, 'B') != 0 ||
+            file_v1_writechar(1U, fd, 'C') != 0 ||
+            file_v1_writechar(1U, fd, 'D') != 0 ||
+            file_v1_writechar(1U, fd, 'E') != 0 ||
+            file_v1_writechar(1U, fd, 'F') != 0 ||
             file_v1_close(1U, fd) != 0)
                 return 2;
         fd = file_v1_open(1U, p_file, FILE_V1_O_READ);
         if (fd < 0)
                 return 3;
         memset(buf, 0, sizeof(buf));
-        if (file_v1_read(1U, fd, buf, 6U) != 6 || memcmp(buf, "ABCDEF", 6U) != 0)
+        if (file_v1_readchar(1U, fd) != 'A' || file_v1_readchar(1U, fd) != 'B' ||
+            file_v1_readchar(1U, fd) != 'C' || file_v1_readchar(1U, fd) != 'D' ||
+            file_v1_readchar(1U, fd) != 'E' || file_v1_readchar(1U, fd) != 'F' )
                 return 4;
         if (file_v1_close(1U, fd) != 0)
                 return 5;
 
-        if (file_v1_truncate(p_file, 3U) != 0 ||
-            file_v1_stat_path(p_file, &st) != 0 || st.size_chars != 3U)
+        if (file_v1_truncate_owner(0U, p_file, 3U) != 0 ||
+            file_v1_stat_path_owner(0U, p_file, &st) != 0 || st.size_chars != 3U)
                 return 6;
 
         pack_path("/TMP", p_dir, 6U);
         pack_path("/TMP/X", p_nested, 6U);
-        if (file_v1_mkdir(p_dir, 0777U) != 0)
+        if (file_v1_mkdir_owner(0U, p_dir, 0777U) != 0)
                 return 7;
         fd = file_v1_open(1U, p_nested, FILE_V1_O_WRITE | FILE_V1_O_CREAT);
-        if (fd < 0 || file_v1_write(1U, fd, "Z", 1U) != 1 ||
+        if (fd < 0 || file_v1_writechar(1U, fd, 'Z') != 0 ||
             file_v1_close(1U, fd) != 0)
                 return 8;
 
         pack_path("/DEVICE", p_device, 4U);
-        if (file_v1_stat_path(p_device, &st) != 0 || st.type != VFS_V1_TYPE_DIR)
+        if (file_v1_stat_path_owner(0U, p_device, &st) != 0 || st.type != VFS_V1_TYPE_DIR)
                 return 9;
         pack_path("/PROC", p_proc, 4U);
-        if (file_v1_stat_path(p_proc, &st) != 0 || st.type != VFS_V1_TYPE_DIR)
+        if (file_v1_stat_path_owner(0U, p_proc, &st) != 0 || st.type != VFS_V1_TYPE_DIR)
                 return 10;
 
         pack_path("/", p_root, 2U);
@@ -191,14 +198,14 @@ main(void)
         if (file_v1_unlink_owner(1U, p_rel2) != 0 ||
             file_v1_chdir(1U, p_root) != 0)
                 return 26;
-        if (file_v1_unlink(p_nested) != 0 || file_v1_unlink(p_file) != 0)
+        if (file_v1_unlink_owner(0U, p_nested) != 0 || file_v1_unlink_owner(0U, p_file) != 0)
                 return 27;
 
         pack_path("/MOUNT", p_mount, 5U);
         pack_path("/MOUNT/RAMFS0", p_ramfs, 6U);
-        if (file_v1_mkdir(p_mount, 0777U) != 0 ||
-            file_v1_mkdir(p_ramfs, 0777U) != 0 ||
-            file_v1_lookup_path(p_ramfs, &alias_node) != 0 ||
+        if (file_v1_mkdir_owner(0U, p_mount, 0777U) != 0 ||
+            file_v1_mkdir_owner(0U, p_ramfs, 0777U) != 0 ||
+            file_v1_lookup_path_owner(0U, p_ramfs, &alias_node) != 0 ||
             vfs_v1_name_set6(&alias_name,
             VFS_V1_SIX6('T','E','M','P',' ',' '), 4U) != 0 ||
             file_v1_alias_root(&alias_name, alias_node) != 0)
