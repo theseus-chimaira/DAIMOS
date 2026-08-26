@@ -104,7 +104,7 @@ CR_INPUT = $(BUILD)/cr-input.txt
 CP_OUTPUT = $(BUILD)/cp-output.txt
 
 .DEFAULT_GOAL := image
-.PHONY: image test devicefs-v1-unit clean
+.PHONY: image test devicefs-v1-unit procfs-v1-unit proc-sched-v1-unit clean
 
 
 DEVICEFS_V1_UNIT = $(BUILD)/devicefs-v1-unit
@@ -119,6 +119,34 @@ $(DEVICEFS_V1_UNIT): devicefs-v1-unit.c \
 
 devicefs-v1-unit: $(DEVICEFS_V1_UNIT)
 	$(DEVICEFS_V1_UNIT)
+
+PROCFS_V1_UNIT = $(BUILD)/procfs-v1-unit
+$(PROCFS_V1_UNIT): procfs-v1-unit.c \
+    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
+    $(PROJECT_ROOT)/system/kernel/vfs_v1.h \
+    $(PROJECT_ROOT)/system/kernel/procfs_v1.c \
+    $(PROJECT_ROOT)/system/kernel/procfs_v1.h | $(BUILD)
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror -I$(PROJECT_ROOT)/system/kernel \
+	    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
+	    $(PROJECT_ROOT)/system/kernel/procfs_v1.c procfs-v1-unit.c -o $@
+
+procfs-v1-unit: $(PROCFS_V1_UNIT)
+	$(PROCFS_V1_UNIT)
+
+PROC_SCHED_V1_UNIT = $(BUILD)/proc-sched-v1-unit
+$(PROC_SCHED_V1_UNIT): proc-sched-v1-unit.c \
+    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
+    $(PROJECT_ROOT)/system/kernel/procfs_v1.c \
+    $(PROJECT_ROOT)/system/kernel/proc_v1.c \
+    $(PROJECT_ROOT)/system/kernel/sched_v1.c | $(BUILD)
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror -I$(PROJECT_ROOT)/system/kernel \
+	    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
+	    $(PROJECT_ROOT)/system/kernel/procfs_v1.c \
+	    $(PROJECT_ROOT)/system/kernel/proc_v1.c \
+	    $(PROJECT_ROOT)/system/kernel/sched_v1.c proc-sched-v1-unit.c -o $@
+
+proc-sched-v1-unit: $(PROC_SCHED_V1_UNIT)
+	$(PROC_SCHED_V1_UNIT)
 
 $(BUILD):
 	mkdir -p $@
