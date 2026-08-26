@@ -137,7 +137,6 @@ memfs_v1_clear_node(struct memfs_v1_node *np)
         np->data = 0;
 }
 
-#ifndef __PDP10__
 int
 memfs_v1_init(struct memfs_v1 *fs, struct memfs_v1_node *nodes,
     unsigned int node_count, kword_t *pool, unsigned int pool_words,
@@ -163,9 +162,7 @@ memfs_v1_init(struct memfs_v1 *fs, struct memfs_v1_node *nodes,
             (fs->writable ? MEMFS_V1_F_WRITABLE : 0U));
         return 0;
 }
-#endif
 
-#ifndef __PDP10__
 int
 memfs_v1_attach_pool(struct memfs_v1 *fs, kword_t *pool,
     unsigned int pool_words)
@@ -178,7 +175,6 @@ memfs_v1_attach_pool(struct memfs_v1 *fs, kword_t *pool,
         fs->writable = 1;
         return 0;
 }
-#endif
 
 vnode_v1_t
 memfs_v1_root(const struct memfs_v1 *fs)
@@ -521,7 +517,6 @@ memfs_v1_write_words(struct memfs_v1 *fs, vnode_v1_t node,
         return (int)nwords;
 }
 
-#ifndef __PDP10__
 int
 memfs_v1_import_dir(struct memfs_v1 *fs, vnode_v1_t dir,
     const struct vfs_v1_name *name, unsigned int mode, int writable,
@@ -570,4 +565,3 @@ memfs_v1_import_node(struct memfs_v1 *fs, unsigned int slot,
         np->size_chars = size_chars;
         return 0;
 }
-#endif
