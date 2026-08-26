@@ -41,6 +41,7 @@ int file_v1_lookup_path_owner(unsigned int owner, const kword_t *path,
 int file_v1_open(unsigned int owner, const kword_t *path, unsigned int flags);
 int file_v1_close(unsigned int owner, int fd);
 int file_v1_read(unsigned int owner, int fd, char *buf, unsigned int nchars);
+int file_v1_readchar(unsigned int owner, int fd);
 int file_v1_write(unsigned int owner, int fd, const char *buf,
     unsigned int nchars);
 int file_v1_read_words(unsigned int owner, int fd, kword_t *buf, unsigned int nwords);

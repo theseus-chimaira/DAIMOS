@@ -460,6 +460,53 @@ file_v1_read(unsigned int owner, int fd, char *buf, unsigned int nchars)
 }
 
 int
+file_v1_readchar(unsigned int owner, int fd)
+{
+        struct file_v1 *fp;
+        struct vfs_v1_stat st;
+        unsigned int ch;
+        unsigned int pos;
+        unsigned int wi;
+        unsigned int bi;
+        kword_t word;
+        int rc;
+
+        fp = file_v1_find(owner, fd);
+        if (fp == 0 || (fp->meta & FILE_V1_META_DIR) != 0U ||
+            (FILE_V1_META_FLAGS(fp->meta) & FILE_V1_O_READ) == 0U)
+                return -1;
+        switch (VFS_V1_PROVIDER(fp->node)) {
+        case MEMFS_V1_PROVIDER:
+                if (memfs_v1_stat(file_v1_root, fp->node, &st) != 0)
+                        return -1;
+                if (fp->off_chars >= st.size_chars)
+                        return -2;
+                pos = (unsigned int)fp->off_chars;
+                wi = pos / 4U;
+                bi = pos % 4U;
+                if (memfs_v1_read_words(file_v1_root, fp->node, wi, &word,
+                    1U) != 1)
+                        return -1;
+                ch = file_v1_word_char(word, bi);
+                break;
+        case PROCFS_V1_PROVIDER:
+                rc = procfs_v1_readchar(fp->node, fp->off_chars, &ch);
+                if (rc <= 0)
+                        return rc == 0 ? -2 : -1;
+                break;
+        case DEVICEFS_V1_PROVIDER:
+                rc = devicefs_v1_readchar(fp->node, fp->off_chars, &ch);
+                if (rc <= 0)
+                        return rc == 0 ? -2 : -1;
+                break;
+        default:
+                return -1;
+        }
+        ++fp->off_chars;
+        return (int)ch;
+}
+
+int
 file_v1_write(unsigned int owner, int fd, const char *buf,
     unsigned int nchars)
 {
@@ -735,12 +782,21 @@ file_v1_getcwd_pseudo(vnode_v1_t node, kword_t *buf, unsigned int nwords)
                 buf[i] = 0;
 
         if (VFS_V1_PROVIDER(node) == DEVICEFS_V1_PROVIDER) {
-                if (node != devicefs_v1_root() || nwords < 3U)
-                        return -1;
-                buf[0] = 7U;
-                buf[1] = VFS_V1_SIX6('/','D','E','V','I','C');
-                buf[2] = VFS_V1_SIX6('E',' ',' ',' ',' ',' ');
-                return 0;
+                if (node == devicefs_v1_root() && nwords >= 3U) {
+                        buf[0] = 7U;
+                        buf[1] = VFS_V1_SIX6('/','D','E','V','I','C');
+                        buf[2] = VFS_V1_SIX6('E',' ',' ',' ',' ',' ');
+                        return 0;
+                }
+                if (VFS_V1_KIND(node) == DEVICEFS_V1_KIND_CTYDIR &&
+                    VFS_V1_INDEX(node) == DEVICEFS_V1_DEV_CTY0 && nwords >= 4U) {
+                        buf[0] = 12U;
+                        buf[1] = VFS_V1_SIX6('/','D','E','V','I','C');
+                        buf[2] = VFS_V1_SIX6('E','/','C','T','Y','0');
+                        buf[3] = 0;
+                        return 0;
+                }
+                return -1;
         }
         if (VFS_V1_PROVIDER(node) != PROCFS_V1_PROVIDER || nwords < 2U)
                 return -1;

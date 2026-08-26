@@ -6,6 +6,8 @@
 #define DEVICEFS_V1_PROVIDER            2U
 #define DEVICEFS_V1_KIND_ROOT           1U
 #define DEVICEFS_V1_KIND_DEVICE         2U
+#define DEVICEFS_V1_KIND_CTYDIR         3U
+#define DEVICEFS_V1_KIND_STATUS         4U
 
 #define DEVICEFS_V1_DEV_CTY0            0U
 #define DEVICEFS_V1_DEV_CLK0            1U
@@ -57,5 +59,6 @@ int devicefs_v1_readdir(vnode_v1_t dir, unsigned int off,
 int devicefs_v1_stat(vnode_v1_t node, struct vfs_v1_stat *st);
 int devicefs_v1_device_id(vnode_v1_t node, unsigned int *idp);
 unsigned int devicefs_v1_device_class(vnode_v1_t node);
+int devicefs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp);
 
 #endif

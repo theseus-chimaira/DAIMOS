@@ -230,3 +230,68 @@ procfs_v1_value(vnode_v1_t node, kword_t *valuep)
                 return -1;
         return procfs_v1_get(slot, field, valuep);
 }
+
+
+static int
+procfs_v1_decimal_char(kword_t value, kword_t off, unsigned int *chp)
+{
+        kword_t divisor;
+        kword_t q;
+        unsigned int digits;
+
+        divisor = 1;
+        digits = 1U;
+        q = value;
+        while (q >= 10U) {
+                q /= 10U;
+                divisor *= 10U;
+                ++digits;
+        }
+        if (off < (kword_t)digits) {
+                while (off != 0) {
+                        divisor /= 10U;
+                        --off;
+                }
+                *chp = '0' + (unsigned int)((value / divisor) % 10U);
+                return 1;
+        }
+        if (off == (kword_t)digits) {
+                *chp = '\r';
+                return 1;
+        }
+        if (off == (kword_t)digits + 1U) {
+                *chp = '\n';
+                return 1;
+        }
+        return 0;
+}
+
+
+int
+procfs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp)
+{
+        static const kword_t state_names[] = {
+                VFS_V1_SIX6('F','R','E','E',' ',' '),
+                VFS_V1_SIX6('I','D','L',' ',' ',' '),
+                VFS_V1_SIX6('R','U','N',' ',' ',' '),
+                VFS_V1_SIX6('S','L','E','E','P',' '),
+                VFS_V1_SIX6('Z','O','M','B',' ',' ')
+        };
+        static const unsigned int state_chars[] = { 4U, 3U, 3U, 5U, 4U };
+        kword_t value;
+        unsigned int field;
+        unsigned int slot;
+
+        if (chp == 0 || !procfs_v1_is_file(node, &slot, &field) ||
+            procfs_v1_get(slot, field, &value) != 0)
+                return -1;
+        if (field == PROCFS_V1_FIELD_COMM)
+                return vfs_v1_sixbit_readchar(value, 6U, off, chp);
+        if (field == PROCFS_V1_FIELD_STATE) {
+                if (value >= (kword_t)(sizeof(state_names) / sizeof(state_names[0])))
+                        return -1;
+                return vfs_v1_sixbit_readchar(state_names[(unsigned int)value],
+                    state_chars[(unsigned int)value], off, chp);
+        }
+        return procfs_v1_decimal_char(value, off, chp);
+}

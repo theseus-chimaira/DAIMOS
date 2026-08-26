@@ -94,3 +94,27 @@ vfs_v1_name_get_uint(const struct vfs_v1_name *name, unsigned int *valuep)
         *valuep = value;
         return 0;
 }
+
+int
+vfs_v1_sixbit_readchar(kword_t word, unsigned int nchars, kword_t off,
+    unsigned int *chp)
+{
+        unsigned int shift;
+
+        if (chp == 0 || nchars > 6U)
+                return -1;
+        if (off < (kword_t)nchars) {
+                shift = 30U - (unsigned int)off * 6U;
+                *chp = (unsigned int)(((word >> shift) & 077UL) + 040U);
+                return 1;
+        }
+        if (off == (kword_t)nchars) {
+                *chp = '\r';
+                return 1;
+        }
+        if (off == (kword_t)nchars + 1U) {
+                *chp = '\n';
+                return 1;
+        }
+        return 0;
+}

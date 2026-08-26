@@ -72,15 +72,9 @@ sys_v1_getchar(void)
 int
 sys_v1_readchar(unsigned int owner, int fd)
 {
-        char ch;
-        int rc;
-
         if (fd == 0)
                 return sys_v1_getchar();
-        rc = file_v1_read(owner, fd, &ch, 1U);
-        if (rc != 1)
-                return rc == 0 ? -2 : -1;
-        return (int)(unsigned char)ch;
+        return file_v1_readchar(owner, fd);
 }
 
 int

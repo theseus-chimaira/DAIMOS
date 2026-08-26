@@ -47,6 +47,7 @@ main(void)
         struct vfs_v1_dirent ent;
         struct vfs_v1_stat st;
         unsigned int value;
+        unsigned int ch;
         kword_t word;
 
         procfs_v1_init(4U, fake_get);
@@ -71,6 +72,18 @@ main(void)
         assert(procfs_v1_lookup(proc, &name, &file) == 0);
         assert(procfs_v1_value(file, &word) == 0 && word == 17UL);
         assert(procfs_v1_stat(file, &st) == 0 && st.type == VFS_V1_TYPE_REG);
+        assert(procfs_v1_readchar(file, 0U, &ch) == 1 && ch == '1');
+        assert(procfs_v1_readchar(file, 1U, &ch) == 1 && ch == '7');
+        assert(procfs_v1_readchar(file, 2U, &ch) == 1 && ch == '\r');
+        assert(procfs_v1_readchar(file, 3U, &ch) == 1 && ch == '\n');
+        assert(procfs_v1_readchar(file, 4U, &ch) == 0);
+
+        assert(vfs_v1_name_set6(&name,
+            VFS_V1_SIX6('S','T','A','T','E',' '), 5U) == 0);
+        assert(procfs_v1_lookup(proc, &name, &file) == 0);
+        assert(procfs_v1_readchar(file, 0U, &ch) == 1 && ch == 'S');
+        assert(procfs_v1_readchar(file, 4U, &ch) == 1 && ch == 'P');
+        assert(procfs_v1_readchar(file, 5U, &ch) == 1 && ch == '\r');
 
         assert(procfs_v1_readdir(proc, 4U, &ent) == 1);
         assert(vfs_v1_name_is6(&ent.name,

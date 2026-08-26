@@ -30,5 +30,6 @@ int procfs_v1_readdir(vnode_v1_t dir, unsigned int off,
     struct vfs_v1_dirent *ent);
 int procfs_v1_stat(vnode_v1_t node, struct vfs_v1_stat *st);
 int procfs_v1_value(vnode_v1_t node, kword_t *valuep);
+int procfs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp);
 
 #endif
