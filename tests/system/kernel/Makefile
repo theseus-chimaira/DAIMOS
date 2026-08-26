@@ -16,6 +16,7 @@ MKTAP ?= $(PDP10_PREFIX)/bin/mktap
 MKDT ?= $(PDP10_PREFIX)/bin/mkdt
 SIMH_PDP6 ?= $(PDP10_PREFIX)/bin/pdp6
 PYTHON ?= python3
+HOST_CC ?= cc
 PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
 STDBUF ?= stdbuf
 WATCH_OUTPUT := $(PROJECT_ROOT)/tests/simh/watch-output.sh
@@ -103,7 +104,21 @@ CR_INPUT = $(BUILD)/cr-input.txt
 CP_OUTPUT = $(BUILD)/cp-output.txt
 
 .DEFAULT_GOAL := image
-.PHONY: image test clean
+.PHONY: image test devicefs-v1-unit clean
+
+
+DEVICEFS_V1_UNIT = $(BUILD)/devicefs-v1-unit
+$(DEVICEFS_V1_UNIT): devicefs-v1-unit.c \
+    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
+    $(PROJECT_ROOT)/system/kernel/vfs_v1.h \
+    $(PROJECT_ROOT)/system/kernel/devicefs_v1.c \
+    $(PROJECT_ROOT)/system/kernel/devicefs_v1.h | $(BUILD)
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror -I$(PROJECT_ROOT)/system/kernel \
+	    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
+	    $(PROJECT_ROOT)/system/kernel/devicefs_v1.c devicefs-v1-unit.c -o $@
+
+devicefs-v1-unit: $(DEVICEFS_V1_UNIT)
+	$(DEVICEFS_V1_UNIT)
 
 $(BUILD):
 	mkdir -p $@
