@@ -29,17 +29,17 @@ procfs_v1_is_root(vnode_v1_t node)
             VFS_V1_KIND(node) == PROCFS_V1_KIND_ROOT;
 }
 
-static int
+static struct proc_v1 *
 procfs_v1_slot_live(unsigned int slot, kword_t *pidp)
 {
-        kword_t pid;
+        struct proc_v1 *p;
 
-        if (slot >= PROC_V1_NPROC ||
-            proc_v1_procfs_get(slot, PROCFS_V1_FIELD_PID, &pid) != 0)
+        p = proc_v1_get(slot);
+        if (p == 0)
                 return 0;
         if (pidp != 0)
-                *pidp = pid;
-        return 1;
+                *pidp = (kword_t)PROC_V1_PID(p);
+        return p;
 }
 
 static int
@@ -196,9 +196,12 @@ procfs_v1_stat(vnode_v1_t node, struct vfs_v1_stat *st)
 int
 procfs_v1_pid(unsigned int slot, kword_t *pidp)
 {
-        if (slot >= PROC_V1_NPROC)
+        struct proc_v1 *p;
+
+        if (pidp == 0 || (p = proc_v1_get(slot)) == 0)
                 return -1;
-        return proc_v1_procfs_get(slot, PROCFS_V1_FIELD_PID, pidp);
+        *pidp = (kword_t)PROC_V1_PID(p);
+        return 0;
 }
 
 
@@ -212,15 +215,22 @@ procfs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp)
                 VFS_V1_SIX6('S','L','E','E','P',' '),
                 VFS_V1_SIX6('Z','O','M','B',' ',' ')
         };
+        struct proc_v1 *p;
         kword_t value;
         unsigned int field;
         unsigned int slot;
 
         if (chp == 0 || !procfs_v1_is_file(node, &slot, &field) ||
-            proc_v1_procfs_get(slot, field, &value) != 0)
+            (p = proc_v1_get(slot)) == 0)
                 return -1;
         if (field == PROCFS_V1_FIELD_COMM)
-                return vfs_v1_sixbit_readchar(value, 6U, off, chp);
+                return vfs_v1_sixbit_readchar(proc_v1_comm(p), 6U, off, chp);
+        if (field == PROCFS_V1_FIELD_PPID)
+                value = (kword_t)proc_v1_ppid(p);
+        else if (field == PROCFS_V1_FIELD_STATE)
+                value = (kword_t)PROC_V1_STATE(p);
+        else
+                value = PROC_V1_MEM_WORDS(p);
         if (field == PROCFS_V1_FIELD_STATE) {
                 if (value >= (kword_t)(sizeof(state_names) / sizeof(state_names[0])))
                         return -1;

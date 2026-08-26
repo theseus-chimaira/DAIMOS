@@ -183,22 +183,15 @@ sys_v1_truncate(unsigned int owner, const kword_t *path, kword_t chars)
 int
 sys_v1_procinfo(unsigned int slot, struct sys_v1_procinfo *info)
 {
-        kword_t v;
+        struct proc_v1 *p;
 
-        if (info == 0 || slot >= PROC_V1_NPROC)
+        if (info == 0 || (p = proc_v1_get(slot)) == 0)
                 return -1;
-        if (proc_v1_procfs_get(slot, PROCFS_V1_FIELD_PID, &info->pid) != 0)
-                return -1;
-        if (proc_v1_procfs_get(slot, PROCFS_V1_FIELD_PPID, &info->ppid) != 0)
-                return -1;
-        if (proc_v1_procfs_get(slot, PROCFS_V1_FIELD_STATE, &info->state) != 0)
-                return -1;
-        if (proc_v1_procfs_get(slot, PROCFS_V1_FIELD_WORDS, &info->words) != 0)
-                return -1;
-        v = 0;
-        if (proc_v1_procfs_get(slot, PROCFS_V1_FIELD_COMM, &v) != 0)
-                return -1;
-        info->comm = v;
+        info->pid = (kword_t)PROC_V1_PID(p);
+        info->ppid = (kword_t)proc_v1_ppid(p);
+        info->state = (kword_t)PROC_V1_STATE(p);
+        info->words = PROC_V1_MEM_WORDS(p);
+        info->comm = proc_v1_comm(p);
         return 0;
 }
 
@@ -278,8 +271,6 @@ exec_native_syscall_v1(kword_t *ac)
         if (ac == 0 || proc_v1_current == 0)
                 return -1;
         owner = proc_v1_slot(proc_v1_current);
-        if (owner >= PROC_V1_NPROC)
-                return -1;
         sysno = (unsigned int)(ac[1] & PROC_V1_HALF_MASK);
         switch (sysno) {
         case SYS_V1_EXIT:

@@ -137,10 +137,13 @@ $(PROCFS_V1_UNIT): procfs-v1-unit.c \
     $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
     $(PROJECT_ROOT)/system/kernel/vfs_v1.h \
     $(PROJECT_ROOT)/system/kernel/procfs_v1.c \
-    $(PROJECT_ROOT)/system/kernel/procfs_v1.h | $(BUILD)
+    $(PROJECT_ROOT)/system/kernel/procfs_v1.h \
+    $(PROJECT_ROOT)/system/kernel/proc_v1.c \
+    $(PROJECT_ROOT)/system/kernel/proc_v1.h | $(BUILD)
 	$(HOST_CC) -std=c99 -Wall -Wextra -Werror -I$(PROJECT_ROOT)/system/kernel \
 	    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/procfs_v1.c procfs-v1-unit.c -o $@
+	    $(PROJECT_ROOT)/system/kernel/procfs_v1.c \
+	    $(PROJECT_ROOT)/system/kernel/proc_v1.c procfs-v1-unit.c -o $@
 
 procfs-v1-unit: $(PROCFS_V1_UNIT)
 	$(PROCFS_V1_UNIT)
@@ -182,14 +185,16 @@ $(FILE_V1_UNIT): file-v1-unit.c \
     $(PROJECT_ROOT)/system/kernel/procfs_v1.c \
     $(PROJECT_ROOT)/system/kernel/memfs_v1.c \
     $(PROJECT_ROOT)/system/kernel/ramfs_v1.c \
-    $(PROJECT_ROOT)/system/kernel/file_v1.c | $(BUILD)
+    $(PROJECT_ROOT)/system/kernel/file_v1.c \
+    $(PROJECT_ROOT)/system/kernel/proc_v1.c | $(BUILD)
 	$(HOST_CC) -std=c99 -Wall -Wextra -Werror -I$(PROJECT_ROOT)/system/kernel \
 	    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
 	    $(PROJECT_ROOT)/system/kernel/devicefs_v1.c \
 	    $(PROJECT_ROOT)/system/kernel/procfs_v1.c \
 	    $(PROJECT_ROOT)/system/kernel/memfs_v1.c \
 	    $(PROJECT_ROOT)/system/kernel/ramfs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/file_v1.c file-v1-unit.c -o $@
+	    $(PROJECT_ROOT)/system/kernel/file_v1.c \
+	    $(PROJECT_ROOT)/system/kernel/proc_v1.c file-v1-unit.c -o $@
 
 file-v1-unit: $(FILE_V1_UNIT)
 	$(FILE_V1_UNIT)

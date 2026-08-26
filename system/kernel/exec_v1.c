@@ -129,8 +129,7 @@ exec_v1_load_init(struct proc_v1 *p, unsigned int owner,
          * its upper limit.  The first push then lands in the first stack
          * word and all stack-local syscall buffers remain inside the
          * process memory bounds. */
-        proc_v1_set_exec(p, (kword_t)entry,
-            (kword_t)image_words + (kword_t)bss_words - 1U);
+        proc_v1_set_entry(p, (kword_t)entry);
         proc_v1_set_state(p, PROC_V1_SRUN);
         rc = 0;
 out:

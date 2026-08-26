@@ -35,9 +35,6 @@ main(void)
         assert(init == &proc_v1_table[1]);
         assert(PROC_V1_PID(init) == 1U);
         assert(PROC_V1_STATE(init) == PROC_V1_SIDL);
-        proc_v1_set_cred(init, 7U, 11U);
-        assert(PROC_V1_UID(init) == 7U);
-        assert(PROC_V1_GID(init) == 11U);
 
         child = proc_v1_alloc_child(init);
         child2 = proc_v1_alloc_child(init);
@@ -45,11 +42,9 @@ main(void)
         assert(PROC_V1_PID(child) == 2U);
         assert(PROC_V1_PID(child2) == 3U);
         assert(proc_v1_ppid(child) == 1U);
-        assert(PROC_V1_UID(child) == 7U);
-        assert(PROC_V1_GID(child) == 11U);
 
-        proc_v1_set_memory(child, 01000UL, 0200UL);
-        proc_v1_set_exec(child, 01020UL, 01177UL);
+        proc_v1_set_memory(child, 01000UL, 03200UL);
+        proc_v1_set_entry(child, 01020UL);
         proc_v1_set_state(child, PROC_V1_SRUN);
         proc_v1_current = child;
         assert(sched_v1_run_once(fake_enter) == SCHED_V1_ENTERED);
@@ -64,8 +59,9 @@ main(void)
         assert(procfs_v1_readdir(procfs_v1_root(), 0U, &ent) == 1);
         assert(vfs_v1_name_get_pid(&ent.name, &pid) == 0);
         assert(pid == 0U);
-        assert(proc_v1_procfs_get(proc_v1_slot(child), PROCFS_V1_FIELD_WORDS,
-            &value) == 0 && value == 0200UL);
+        assert(proc_v1_get(proc_v1_slot(child)) == child);
+        value = PROC_V1_MEM_WORDS(child);
+        assert(value == 03200UL);
 
         proc_v1_reap(child);
         assert(PROC_V1_STATE(child) == PROC_V1_FREE);

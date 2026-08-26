@@ -67,14 +67,11 @@ kcore_boot_v1(void)
         if (initp == 0)
                 return;
         owner = proc_v1_slot(initp);
-        if (owner >= PROC_V1_NPROC)
-                return;
         proc_v1_current = initp;
         if (exec_v1_load_init(initp, owner, kboot_init_path_v1,
             KBOOT_V1_USER_BASE, KBOOT_V1_USER_LIMIT) != 0)
                 return;
         sys_v1_set_memory_bounds(KBOOT_V1_TOTAL_WORDS,
             kcore_resident_end_v1);
-        sched_v1_init();
         (void)sched_v1_run_once(mach_enter_user_v1);
 }

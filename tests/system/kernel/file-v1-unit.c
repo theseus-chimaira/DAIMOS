@@ -4,6 +4,7 @@
 #include "ramfs_v1.h"
 #include "devicefs_v1.h"
 #include "procfs_v1.h"
+#include "proc_v1.h"
 
 #define NODES 24U
 #define POOL 64U
@@ -50,18 +51,10 @@ name_eq(const struct vfs_v1_name *name, const char *s)
 }
 
 int
-proc_v1_procfs_get(unsigned int slot, unsigned int field, kword_t *valuep)
-{
-        if (slot != 1U)
-                return -1;
-        *valuep = field == PROCFS_V1_FIELD_PID ? 1UL : 0UL;
-        return 0;
-}
-
-int
 main(void)
 {
         struct memfs_v1 fs;
+        struct proc_v1 *initp;
         struct memfs_v1_node nodes[NODES];
         kword_t pool[POOL];
         kword_t p_file[6];
@@ -86,6 +79,12 @@ main(void)
         int rc;
         int saw_device;
         int saw_proc;
+
+        proc_v1_init();
+        initp = proc_v1_alloc_init();
+        if (initp == 0)
+                return 1;
+        proc_v1_set_state(initp, PROC_V1_SRUN);
 
         if (ramfs_v1_init(&fs, nodes, NODES, pool, POOL) != 0)
                 return 1;
