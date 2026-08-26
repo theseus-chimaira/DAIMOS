@@ -22,8 +22,7 @@ dpy_pi_display:
         conso 0130,000200
         jrst pdp10_pi_handler_return
         setzm dpy_pending
-        movei 1,6
-        cono 0130,0(1)
+        cono 0130,000006
         jrst pdp10_pi_handler_return
 
 ; AC1 = one Type 340 instruction word.  Return 0 or DPY_E_BUSY (-3).

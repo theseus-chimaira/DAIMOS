@@ -9,6 +9,5 @@
         .globl pdp10_pi_handler_return
 
 slv_pi_handler:
-        movei 1,0000017
-        cono 0020,0(1)
+        cono 0020,0000017
         jrst pdp10_pi_handler_return

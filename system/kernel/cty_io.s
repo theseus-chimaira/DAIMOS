@@ -17,8 +17,7 @@ cty_pi_handler:
         conso 0120,0010
         jrst cty_pi_input
         setzm cty_tx_pending
-        movei 1,0204
-        cono 0120,0(1)
+        cono 0120,000204
 cty_pi_input:
         conso 0120,0040
         jrst pdp10_pi_handler_return
@@ -36,8 +35,7 @@ cty_putchar_wait_idle:
         sojg 2,cty_putchar_wait_idle
         jrst cty_putchar_timeout
 cty_putchar_ready:
-        movei 2,1
-        movem 2,cty_tx_pending
+        setom cty_tx_pending
         andi 1,0177
         datao 0120,1
         movei 2,0200000

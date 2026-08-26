@@ -38,7 +38,7 @@ storage_pi_active:
         aoje 2,storage_pi_dsk_status
         aoje 2,storage_pi_dsk_status
         aoje 2,storage_pi_mtc_write_status
-        jrst storage_pi_dtc_write_status
+        jrst storage_pi_dtc_status
 
 storage_dct_handler:
 storage_dct_select:
@@ -78,8 +78,7 @@ storage_dct_arm_handler:
         jrst pdp10_pi_handler_return
 
 storage_pi_dsk_read_done:
-        movei 1,030105
-        cono 0270,0(1)
+        cono 0270,030105
         jrst storage_pi_done
 
 storage_pi_mtc_read_full:
@@ -128,15 +127,10 @@ storage_pi_mtc_write_status:
         seto 2,
         jrst storage_pi_mtc_status
 
-storage_pi_dtc_write_status:
-        ; Owner dispatch leaves AC2 negative here; use the read status tail.
-        jrst storage_pi_dtc_status
-
 storage_pi_dsk_status:
-        coni 0270,1
-        trne 1,001777
-        jrst storage_pi_error
+        conso 0270,001777
         jrst pdp10_pi_handler_return
+        jrst storage_pi_error
 
 storage_pi_done:
         ; Preserve the completed owner without adding a word: negative owner
@@ -196,8 +190,7 @@ dtc_read_words:
         setom storage_state
         lsh 1,3
         iori 1,0220305
-        movei 2,004043
-        cono 0200,0(2)
+        cono 0200,004043
         cono 0210,0(1)
         jrst storage_wait
 
@@ -216,8 +209,7 @@ dtc_write_block:
         lsh 1,3
         iori 1,0220705
         cono 0210,0(1)
-        movei 2,003443
-        cono 0200,0(2)
+        cono 0200,003443
         jrst storage_wait
 
 ; AC1 unit, AC2 destination, AC3 maximum words in one tape record.
@@ -255,8 +247,7 @@ mtc_rw_start:
         ; Starting the command clears stale EOR/status from the previous
         ; record.  Enable status PI only afterwards, and arm DCT last; output
         ; DCT asserts its first data request immediately.
-        movei 2,5
-        cono 0224,0(2)
+        cono 0224,000005
         cono 0200,0(5)
         jrst storage_wait
 
@@ -345,8 +336,7 @@ storage_dct_dsk_write_ack1:
         jrst pdp10_pi_handler_return
 storage_dct_dsk_write_ack2:
         aos storage_state
-        movei 1,030105
-        cono 0270,0(1)
+        cono 0270,030105
         jrst storage_pi_done
 
         .bss

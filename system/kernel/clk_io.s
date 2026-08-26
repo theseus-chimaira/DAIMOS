@@ -17,8 +17,7 @@ clk_pi_service:
         conso 0000,01000
         popj 017,
         aos clk_tick_count
-        movei 1,03006
-        cono 0000,0(1)
+        cono 0000,003006
         popj 017,
 
 clk_ticks:

@@ -20,8 +20,7 @@ ptp_putchar_idle:
         jrst ptp_putchar_io
         trne 2,0020
         jrst io7_ret_e3
-        movei 2,1
-        movem 2,ptp_state
+        setom ptp_state
         cono 0100,0007
         andi 1,0377
         datao 0100,1

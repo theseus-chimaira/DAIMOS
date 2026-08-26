@@ -70,6 +70,18 @@ static unsigned int pi_level_count[PDP10_PI_LEVELS + 1U];
 static unsigned int pi_handler_total;
 static unsigned int pi_enabled_mask;
 
+static volatile kword_t *
+minit_pi_span_slot(unsigned int level)
+{
+        if (level == 1U)
+                return (volatile kword_t *)(unsigned long)000037U;
+        if (level == 2U)
+                return (volatile kword_t *)(unsigned long)000040U;
+        if (level == 3U)
+                return (volatile kword_t *)(unsigned long)000041U;
+        return &pdp10_pi_level_span[level - 4U];
+}
+
 static kword_t
 minit_pi_span(unsigned int start, unsigned int count)
 {
@@ -90,7 +102,7 @@ minit_pi_reindex(void)
         start = 0U;
         for (level = PDP10_PI_LEVEL_MIN; level <= PDP10_PI_LEVEL_MAX;
             ++level) {
-                pdp10_pi_level_span[level - 1U] =
+                *minit_pi_span_slot(level) =
                     minit_pi_span(start, pi_level_count[level]);
                 start += pi_level_count[level];
         }
@@ -109,8 +121,8 @@ module_pi_init(void)
                 pi_level_count[i] = 0U;
         for (i = 0U; i < PDP10_PI_HANDLER_CAPACITY; ++i)
                 pdp10_pi_handlers[i] = 0;
-        for (i = 0U; i < PDP10_PI_LEVELS; ++i)
-                pdp10_pi_level_span[i] = 0;
+        for (i = PDP10_PI_LEVEL_MIN; i <= PDP10_PI_LEVEL_MAX; ++i)
+                *minit_pi_span_slot(i) = 0;
 }
 
 int

@@ -37,8 +37,7 @@ ge_getchar:
         jrst ge_get_hardware
 
         setom ge_rx_word
-        movei 2,4
-        cono 0070,0(2)
+        cono 0070,000004
 ge_get_wait:
         skipg 1,ge_rx_word
         jrst ge_get_wait
@@ -91,27 +90,24 @@ ge_putchar_idle:
         andi 5,077
         caile 5,3
         jrst ge_putchar_arg
-        movei 2,1
-        movem 2,ge_tx_state
+        setom ge_tx_state
         movei 1,1
         pushj 017,ge_put_decoded
-        move 6,5
-        lsh 6,3
-        addi 6,0140
-        move 1,6
+        lsh 5,3
+        addi 5,0140
+        move 1,5
         pushj 017,ge_put_decoded
         movei 1,0
         pushj 017,ge_put_decoded
         movei 1,2
         pushj 017,ge_put_decoded
-        move 7,4
-        andi 7,0177
-        move 1,7
+        andi 4,0177
+        move 1,4
         pushj 017,ge_put_decoded
         movei 1,3
         pushj 017,ge_put_decoded
-        move 1,6
-        xor 1,7
+        move 1,5
+        xor 1,4
         xori 1,1
         pushj 017,ge_put_decoded
         setzm ge_tx_state
