@@ -350,6 +350,44 @@ memfs_v1_unlink(struct memfs_v1 *fs, vnode_v1_t dir,
         return 0;
 }
 
+
+int
+memfs_v1_rename(struct memfs_v1 *fs, vnode_v1_t olddir,
+    const struct vfs_v1_name *oldname, vnode_v1_t newdir,
+    const struct vfs_v1_name *newname)
+{
+        unsigned int oldparent;
+        unsigned int newparent;
+        unsigned int slot;
+        unsigned int p;
+
+        if (fs == 0 || !fs->writable || !memfs_v1_name_valid(oldname) ||
+            !memfs_v1_name_valid(newname) ||
+            memfs_v1_slot(fs, olddir, &oldparent) != 0 ||
+            memfs_v1_slot(fs, newdir, &newparent) != 0 ||
+            fs->nodes[oldparent].type != VFS_V1_TYPE_DIR ||
+            fs->nodes[newparent].type != VFS_V1_TYPE_DIR ||
+            memfs_v1_find_child(fs, oldparent, oldname, &slot) != 0 ||
+            memfs_v1_find_child(fs, newparent, newname, 0) == 0)
+                return -1;
+        if (fs->nodes[slot].type == VFS_V1_TYPE_DIR) {
+                p = newparent;
+                for (;;) {
+                        if (p == slot)
+                                return -1;
+                        if (p == 0U)
+                                break;
+                        if (p >= fs->node_count ||
+                            (fs->nodes[p].flags & MEMFS_V1_F_USED) == 0U)
+                                return -1;
+                        p = fs->nodes[p].parent;
+                }
+        }
+        fs->nodes[slot].parent = newparent;
+        fs->nodes[slot].name = *newname;
+        return 0;
+}
+
 int
 memfs_v1_truncate_words(struct memfs_v1 *fs, vnode_v1_t node,
     unsigned int words, kword_t size_chars)

@@ -1,5 +1,11 @@
 #include "syscall_v1.h"
 #include "proc_v1.h"
+#include "procfs_v1.h"
+#include "cty.h"
+#include "mach_user_v1.h"
+
+static kword_t sys_v1_total_words;
+static kword_t sys_v1_resident_words;
 
 static unsigned int
 sys_v1_file_flags(unsigned int flags)
@@ -35,6 +41,55 @@ sys_v1_close(unsigned int owner, int fd)
 }
 
 int
+sys_v1_putchar(int ch)
+{
+        return cty_putchar(ch);
+}
+
+int
+sys_v1_getchar(void)
+{
+        return cty_getchar();
+}
+
+int
+sys_v1_readchar(unsigned int owner, int fd)
+{
+        char ch;
+        int rc;
+
+        if (fd == 0)
+                return cty_getchar();
+        rc = file_v1_read(owner, fd, &ch, 1U);
+        if (rc != 1)
+                return rc == 0 ? -2 : -1;
+        return (int)(unsigned char)ch;
+}
+
+int
+sys_v1_writechar(unsigned int owner, int fd, int ch)
+{
+        char c;
+
+        if (fd == 1 || fd == 2)
+                return cty_putchar(ch);
+        c = (char)(ch & 0777);
+        return file_v1_write(owner, fd, &c, 1U) == 1 ? 0 : -1;
+}
+
+int
+sys_v1_chdir(unsigned int owner, const kword_t *path)
+{
+        return file_v1_chdir(owner, path);
+}
+
+int
+sys_v1_getcwd(unsigned int owner, kword_t *buf, unsigned int nwords)
+{
+        return file_v1_getcwd(owner, buf, nwords);
+}
+
+int
 sys_v1_read_words(unsigned int owner, int fd, kword_t *buf,
     unsigned int nwords)
 {
@@ -49,11 +104,12 @@ sys_v1_write_words(unsigned int owner, int fd, const kword_t *buf,
 }
 
 int
-sys_v1_stat_path(const kword_t *path, struct sys_v1_stat *st)
+sys_v1_stat_path(unsigned int owner, const kword_t *path,
+    struct sys_v1_stat *st)
 {
         struct vfs_v1_stat vst;
 
-        if (st == 0 || file_v1_stat_path(path, &vst) != 0)
+        if (st == 0 || file_v1_stat_path_owner(owner, path, &vst) != 0)
                 return -1;
         st->type = (kword_t)vst.type;
         st->size_chars = vst.size_chars;
@@ -82,21 +138,88 @@ sys_v1_dirread(unsigned int owner, int fd, struct sys_v1_dirent *ent)
 }
 
 int
-sys_v1_mkdir(const kword_t *path, unsigned int mode)
+sys_v1_mkdir(unsigned int owner, const kword_t *path, unsigned int mode)
 {
-        return file_v1_mkdir(path, mode);
+        return file_v1_mkdir_owner(owner, path, mode);
 }
 
 int
-sys_v1_unlink(const kword_t *path)
+sys_v1_unlink(unsigned int owner, const kword_t *path)
 {
-        return file_v1_unlink(path);
+        return file_v1_unlink_owner(owner, path);
 }
 
 int
-sys_v1_truncate(const kword_t *path, kword_t chars)
+sys_v1_rename(unsigned int owner, const kword_t *oldpath,
+    const kword_t *newpath)
 {
-        return file_v1_truncate(path, chars);
+        return file_v1_rename(owner, oldpath, newpath);
+}
+
+int
+sys_v1_truncate(unsigned int owner, const kword_t *path, kword_t chars)
+{
+        return file_v1_truncate_owner(owner, path, chars);
+}
+
+int
+sys_v1_procinfo(unsigned int slot, struct sys_v1_procinfo *info)
+{
+        kword_t v;
+
+        if (info == 0 || slot >= PROC_V1_NPROC)
+                return -1;
+        if (proc_v1_procfs_get(slot, PROCFS_V1_FIELD_PID, &info->pid) != 0)
+                return -1;
+        if (proc_v1_procfs_get(slot, PROCFS_V1_FIELD_PPID, &info->ppid) != 0)
+                return -1;
+        if (proc_v1_procfs_get(slot, PROCFS_V1_FIELD_STATE, &info->state) != 0)
+                return -1;
+        if (proc_v1_procfs_get(slot, PROCFS_V1_FIELD_WORDS, &info->words) != 0)
+                return -1;
+        v = 0;
+        if (proc_v1_procfs_get(slot, PROCFS_V1_FIELD_COMM, &v) != 0)
+                return -1;
+        info->comm = v;
+        return 0;
+}
+
+void
+sys_v1_set_memory_bounds(kword_t total_words, kword_t resident_words)
+{
+        sys_v1_total_words = total_words;
+        sys_v1_resident_words = resident_words;
+}
+
+int
+sys_v1_meminfo(struct sys_v1_meminfo *info)
+{
+        struct memfs_v1 *fs;
+        unsigned int i;
+        kword_t proc_words;
+        kword_t proc_slots;
+
+        if (info == 0)
+                return -1;
+        proc_words = 0;
+        proc_slots = 0;
+        for (i = 0U; i < PROC_V1_NPROC; ++i) {
+                if (PROC_V1_STATE(&proc_v1_table[i]) == PROC_V1_FREE)
+                        continue;
+                ++proc_slots;
+                proc_words += PROC_V1_MEM_WORDS(&proc_v1_table[i]);
+        }
+        fs = file_v1_rootfs();
+        info->total_words = sys_v1_total_words;
+        info->resident_words = sys_v1_resident_words;
+        info->process_words = proc_words;
+        info->ramfs_used_words = fs == 0 ? 0 : (kword_t)fs->used_words;
+        info->ramfs_capacity_words = fs == 0 ? 0 : (kword_t)fs->pool_words;
+        info->process_slots_used = proc_slots;
+        info->process_slots_total = PROC_V1_NPROC;
+        info->file_slots_used = file_v1_used_slots();
+        info->file_slots_total = FILE_V1_NFILE;
+        return 0;
 }
 
 static kword_t *
@@ -116,6 +239,7 @@ exec_native_syscall_v1(kword_t *ac)
         unsigned int owner;
         unsigned int sysno;
         kword_t *p;
+        kword_t *q;
         int rc;
 
         if (ac == 0 || proc_v1_current == 0)
@@ -125,6 +249,11 @@ exec_native_syscall_v1(kword_t *ac)
                 return -1;
         sysno = (unsigned int)(ac[1] & PROC_V1_HALF_MASK);
         switch (sysno) {
+        case SYS_V1_EXIT:
+                proc_v1_set_state(proc_v1_current, PROC_V1_ZOMB);
+                mach_return_to_kernel_request_v1();
+                rc = (int)(ac[2] & PROC_V1_HALF_MASK);
+                break;
         case SYS_V1_OPEN:
                 p = sys_v1_user_words(ac[2]);
                 rc = p == 0 ? -1 : sys_v1_open(owner, p,
@@ -132,6 +261,21 @@ exec_native_syscall_v1(kword_t *ac)
                 break;
         case SYS_V1_CLOSE:
                 rc = sys_v1_close(owner, (int)(ac[2] & PROC_V1_HALF_MASK));
+                break;
+        case SYS_V1_PUTCHAR:
+                rc = sys_v1_putchar((int)(ac[2] & 0177UL));
+                break;
+        case SYS_V1_GETCHAR:
+                rc = sys_v1_getchar();
+                break;
+        case SYS_V1_CHDIR:
+                p = sys_v1_user_words(ac[2]);
+                rc = p == 0 ? -1 : sys_v1_chdir(owner, p);
+                break;
+        case SYS_V1_GETCWD:
+                p = sys_v1_user_words(ac[2]);
+                rc = p == 0 ? -1 : sys_v1_getcwd(owner, p,
+                    (unsigned int)(ac[3] & PROC_V1_HALF_MASK));
                 break;
         case SYS_V1_READ_WORDS:
                 p = sys_v1_user_words(ac[3]);
@@ -146,9 +290,10 @@ exec_native_syscall_v1(kword_t *ac)
                     (unsigned int)(ac[4] & PROC_V1_HALF_MASK), ac[5]);
                 break;
         case SYS_V1_STAT:
-                p = sys_v1_user_words(ac[3]);
-                rc = p == 0 ? -1 : sys_v1_stat_path(sys_v1_user_words(ac[2]),
-                    (struct sys_v1_stat *)p);
+                p = sys_v1_user_words(ac[2]);
+                q = sys_v1_user_words(ac[3]);
+                rc = p == 0 || q == 0 ? -1 : sys_v1_stat_path(owner, p,
+                    (struct sys_v1_stat *)q);
                 break;
         case SYS_V1_DIRREAD:
                 p = sys_v1_user_words(ac[3]);
@@ -158,16 +303,40 @@ exec_native_syscall_v1(kword_t *ac)
                 break;
         case SYS_V1_MKDIR:
                 p = sys_v1_user_words(ac[2]);
-                rc = p == 0 ? -1 : sys_v1_mkdir(p,
+                rc = p == 0 ? -1 : sys_v1_mkdir(owner, p,
                     (unsigned int)(ac[3] & PROC_V1_HALF_MASK));
                 break;
         case SYS_V1_UNLINK:
                 p = sys_v1_user_words(ac[2]);
-                rc = p == 0 ? -1 : sys_v1_unlink(p);
+                rc = p == 0 ? -1 : sys_v1_unlink(owner, p);
+                break;
+        case SYS_V1_RENAME:
+                p = sys_v1_user_words(ac[2]);
+                q = sys_v1_user_words(ac[3]);
+                rc = p == 0 || q == 0 ? -1 : sys_v1_rename(owner, p, q);
                 break;
         case SYS_V1_TRUNCATE:
                 p = sys_v1_user_words(ac[2]);
-                rc = p == 0 ? -1 : sys_v1_truncate(p, ac[3]);
+                rc = p == 0 ? -1 : sys_v1_truncate(owner, p, ac[3]);
+                break;
+        case SYS_V1_PROCINFO:
+                p = sys_v1_user_words(ac[3]);
+                rc = p == 0 ? -1 : sys_v1_procinfo(
+                    (unsigned int)(ac[2] & PROC_V1_HALF_MASK),
+                    (struct sys_v1_procinfo *)p);
+                break;
+        case SYS_V1_MEMINFO:
+                p = sys_v1_user_words(ac[2]);
+                rc = p == 0 ? -1 : sys_v1_meminfo(
+                    (struct sys_v1_meminfo *)p);
+                break;
+        case SYS_V1_READCHAR:
+                rc = sys_v1_readchar(owner, (int)(ac[2] & PROC_V1_HALF_MASK));
+                break;
+        case SYS_V1_WRITECHAR:
+                rc = sys_v1_writechar(owner,
+                    (int)(ac[2] & PROC_V1_HALF_MASK),
+                    (int)(ac[3] & 0777UL));
                 break;
         default:
                 rc = -1;

@@ -7,8 +7,10 @@
         .text
         .globl cty_pi_handler
         .globl cty_putchar
+        .globl cty_getchar
         .globl cty_put6
         .globl cty_tx_pending
+        .globl cty_rx_pending
         .globl pdp10_pi_handler_return
         .globl pdp10_ret_ok_v34
         .globl pdp10_ret_busy_v34
@@ -22,6 +24,9 @@ cty_pi_input:
         conso 0120,0040
         jrst pdp10_pi_handler_return
         datai 0120,1
+        andi 1,0177
+        addi 1,1
+        movem 1,cty_rx_pending
         jrst pdp10_pi_handler_return
 
 ; AC1 = 7-bit character.  Return 0, CTY_E_BUSY (-3), or CTY_E_TIMEOUT (-2).
@@ -48,6 +53,27 @@ cty_putchar_timeout:
         hrroi 1,0777776
         popj 017,
 
+; Return one 7-bit character in AC1, or CTY_E_TIMEOUT (-2).
+; The PI handler stores character+1 so zero remains the empty marker.
+cty_getchar:
+        movei 2,0200000
+cty_getchar_loop:
+        move 1,cty_rx_pending
+        jumpn 1,cty_getchar_pending
+        conso 0120,0040
+        jrst cty_getchar_wait
+        datai 0120,1
+        andi 1,0177
+        popj 017,
+cty_getchar_wait:
+        sojg 2,cty_getchar_loop
+        hrroi 1,0777776
+        popj 017,
+cty_getchar_pending:
+        setzm cty_rx_pending
+        subi 1,1
+        popj 017,
+
 ; AC1 = one packed SIXBIT word.  Return the first cty_putchar result.
 cty_put6:
         move 4,1
@@ -65,4 +91,6 @@ cty_put6_return:
 
         .bss
 cty_tx_pending:
+        .block 1
+cty_rx_pending:
         .block 1

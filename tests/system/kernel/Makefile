@@ -252,7 +252,7 @@ $(KCORE_STREAM): $(KCORE_RIM) $(KCORE_MAP)
 $(CTY_MRES_OBJ): $(BUILD)/cty_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/cty-mres.dxr -M $(BUILD)/cty-mres.map \
 	    -R $@ -N cty_mres_package -X cty_pi_handler -X cty_put6 \
-	    -X cty_putchar $(BUILD)/cty_io.dobj
+	    -X cty_putchar -X cty_getchar $(BUILD)/cty_io.dobj
 $(CLK_MRES_OBJ): $(BUILD)/clk_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/clk-mres.dxr -M $(BUILD)/clk-mres.map \
 	    -R $@ -N clk_mres_package -X clk_pi_handler -X clk_ticks -X clk_pi_service $(BUILD)/clk_io.dobj

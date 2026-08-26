@@ -49,6 +49,9 @@ int memfs_v1_mkdir(struct memfs_v1 *fs, vnode_v1_t dir,
     const struct vfs_v1_name *name, unsigned int mode, vnode_v1_t *nodep);
 int memfs_v1_unlink(struct memfs_v1 *fs, vnode_v1_t dir,
     const struct vfs_v1_name *name);
+int memfs_v1_rename(struct memfs_v1 *fs, vnode_v1_t olddir,
+    const struct vfs_v1_name *oldname, vnode_v1_t newdir,
+    const struct vfs_v1_name *newname);
 int memfs_v1_truncate_words(struct memfs_v1 *fs, vnode_v1_t node,
     unsigned int words, kword_t size_chars);
 int memfs_v1_read_words(const struct memfs_v1 *fs, vnode_v1_t node,

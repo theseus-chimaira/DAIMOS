@@ -20,6 +20,7 @@
 #define CTY_E_BUSY             -3
 
 int cty_putchar(int c);
+int cty_getchar(void);
 int cty_put6(kword_t word);
 void cty_pi_handler(void);
 

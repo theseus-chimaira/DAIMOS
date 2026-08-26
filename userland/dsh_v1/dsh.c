@@ -1,0 +1,139 @@
+#include "cmd_v1.h"
+
+#define DSH_V1_LINE_MAX 95U
+
+static char dsh_line[DSH_V1_LINE_MAX + 1U];
+static kword_t dsh_args[U_V1_MAX_ARGS][U_V1_ARG_WORDS];
+static kword_t *dsh_argv[U_V1_MAX_ARGS];
+
+static int
+dsh_getline(void)
+{
+        unsigned int n;
+        int ch;
+
+        n = 0U;
+        for (;;) {
+                ch = dsys_v1_readchar(0);
+                if (ch == -2)
+                        continue;
+                if (ch < 0)
+                        return -1;
+                if (ch == '\r' || ch == '\n') {
+                        (void)u_v1_crlf(1);
+                        dsh_line[n] = 0;
+                        return (int)n;
+                }
+                if (ch == 010 || ch == 0177) {
+                        if (n != 0U) {
+                                --n;
+                                (void)u_v1_puts(1, "\b \b");
+                        }
+                        continue;
+                }
+                if (ch < 040 || ch > 0176 || n >= DSH_V1_LINE_MAX)
+                        continue;
+                if (ch >= 'a' && ch <= 'z')
+                        ch -= 'a' - 'A';
+                dsh_line[n++] = (char)ch;
+                (void)u_v1_putc(1, ch);
+        }
+}
+
+static int
+dsh_parse(void)
+{
+        unsigned int pos;
+        unsigned int start;
+        unsigned int out;
+        int argc;
+        int quote;
+        char tmp[DSH_V1_LINE_MAX + 1U];
+
+        pos = 0U;
+        argc = 0;
+        while (dsh_line[pos] != 0) {
+                while (dsh_line[pos] == ' ' || dsh_line[pos] == '\t') ++pos;
+                if (dsh_line[pos] == 0) break;
+                if (argc >= (int)U_V1_MAX_ARGS) return -1;
+                start = pos;
+                out = 0U;
+                quote = 0;
+                if (dsh_line[pos] == '"') { quote = 1; ++pos; }
+                while (dsh_line[pos] != 0) {
+                        if (quote) {
+                                if (dsh_line[pos] == '"') { ++pos; break; }
+                        } else if (dsh_line[pos] == ' ' || dsh_line[pos] == '\t') {
+                                break;
+                        }
+                        tmp[out++] = dsh_line[pos++];
+                }
+                (void)start;
+                tmp[out] = 0;
+                if (u_v1_s6_pack(dsh_args[argc], U_V1_ARG_WORDS, tmp) != 0) return -1;
+                dsh_argv[argc] = dsh_args[argc];
+                ++argc;
+        }
+        return argc;
+}
+
+static int
+dsh_run(int argc)
+{
+        struct u_v1_io io;
+        int outfd;
+        int append;
+        int i;
+        int rc;
+
+        if (argc == 0) return 0;
+        if (u_v1_s6_eq(dsh_argv[0], "EXIT")) return 1000;
+        if (u_v1_s6_eq(dsh_argv[0], "CD")) {
+                if (argc != 2 || dsys_v1_chdir(dsh_argv[1]) != 0) {
+                        (void)u_v1_puts(2, "CD");
+                        (void)u_v1_crlf(2);
+                        return 1;
+                }
+                return 0;
+        }
+        io.in_fd = 0;
+        io.out_fd = 1;
+        io.err_fd = 2;
+        outfd = -1;
+        for (i = 1; i < argc; ++i) {
+                append = 0;
+                if (u_v1_s6_eq(dsh_argv[i], ">")) append = 1;
+                else if (u_v1_s6_eq(dsh_argv[i], ">>")) append = 2;
+                if (append == 0) continue;
+                if (i + 1 >= argc) return 1;
+                outfd = dsys_v1_open(dsh_argv[i + 1], SYS_V1_O_WRONLY |
+                    SYS_V1_O_CREAT | (append == 2 ? SYS_V1_O_APPEND : SYS_V1_O_TRUNC));
+                if (outfd < 0) return 1;
+                io.out_fd = outfd;
+                argc = i;
+                break;
+        }
+        rc = cmd_v1_dispatch(argc, dsh_argv, &io);
+        if (outfd >= 0 && dsys_v1_close(outfd) != 0) rc = 1;
+        return rc;
+}
+
+int
+main(void)
+{
+        int argc;
+        int rc;
+
+        (void)u_v1_puts(1, "DSH V1");
+        (void)u_v1_crlf(1);
+        for (;;) {
+                if (u_v1_puts(1, "# ") != 0) return 1;
+                if (dsh_getline() < 0) return 1;
+                argc = dsh_parse();
+                if (argc < 0) { (void)u_v1_puts(2, "?PARSE"); (void)u_v1_crlf(2); continue; }
+                rc = dsh_run(argc);
+                if (rc == 1000) break;
+        }
+        (void)dsys_v1_exit(0);
+        return 0;
+}
