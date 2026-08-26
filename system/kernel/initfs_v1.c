@@ -120,6 +120,7 @@ initfs_v1_mount(struct memfs_v1 *fs, struct memfs_v1_node *nodes,
         data = image + strings_end;
         if (memfs_v1_init(fs, nodes, node_count, 0, 0U, 0) != 0)
                 return -1;
+        fs->image_data = data;
         for (i = 0U; i < nent; ++i) {
                 type = (unsigned int)initfs_v1_ent(image, i, IEF_TYPE);
                 parent = (unsigned int)initfs_v1_ent(image, i, IEF_AUX);
@@ -128,8 +129,6 @@ initfs_v1_mount(struct memfs_v1 *fs, struct memfs_v1_node *nodes,
                     initfs_v1_name(strings, str_words * 4U,
                     (unsigned int)initfs_v1_ent(image, i, IEF_NAME_OFF),
                     &name) != 0)
-                        return -1;
-                if (parent != 0U && nodes[parent].type != VFS_V1_TYPE_DIR)
                         return -1;
                 data_off = (unsigned int)initfs_v1_ent(image, i, IEF_DATA_OFF);
                 words = (unsigned int)initfs_v1_ent(image, i, IEF_SIZE_WORDS);
@@ -145,8 +144,8 @@ initfs_v1_mount(struct memfs_v1 *fs, struct memfs_v1_node *nodes,
                 if (memfs_v1_import_node(fs, i + 1U, parent, &name,
                     type == INITFS_V1_DIR ? VFS_V1_TYPE_DIR : VFS_V1_TYPE_REG,
                     (unsigned int)initfs_v1_ent(image, i, IEF_MODE),
-                    type == INITFS_V1_DIR ? 0 : data + data_off,
-                    words, size_chars) != 0)
+                    type == INITFS_V1_DIR ? 0U : data_off, words,
+                    size_chars) != 0)
                         return -1;
         }
         return 0;

@@ -10,16 +10,16 @@
 #define MEMFS_V1_F_IMAGE                0002U
 #define MEMFS_V1_F_WRITABLE             0004U
 
+/*
+ * A node is deliberately eight PDP-10 words.  The low 18 bits of meta hold
+ * type/mode/flags, while the high half holds the parent slot.  data packs
+ * the pool/image word offset in the high half and its length in the low.
+ */
 struct memfs_v1_node {
         struct vfs_v1_name name;
-        unsigned int parent;
-        unsigned int type;
-        unsigned int mode;
-        unsigned int flags;
+        kword_t meta;
         kword_t size_chars;
-        unsigned int data_word;
-        unsigned int data_words;
-        const kword_t *image_data;
+        kword_t data;
 };
 
 struct memfs_v1 {
@@ -29,13 +29,12 @@ struct memfs_v1 {
         unsigned int pool_words;
         unsigned int used_words;
         int writable;
+        const kword_t *image_data;
 };
 
 int memfs_v1_init(struct memfs_v1 *fs, struct memfs_v1_node *nodes,
     unsigned int node_count, kword_t *pool, unsigned int pool_words,
     int writable);
-int memfs_v1_enable_write(struct memfs_v1 *fs, kword_t *pool,
-    unsigned int pool_words);
 int memfs_v1_attach_pool(struct memfs_v1 *fs, kword_t *pool,
     unsigned int pool_words);
 vnode_v1_t memfs_v1_root(const struct memfs_v1 *fs);
@@ -70,7 +69,7 @@ int memfs_v1_import_dir(struct memfs_v1 *fs, vnode_v1_t dir,
     vnode_v1_t *nodep);
 int memfs_v1_import_node(struct memfs_v1 *fs, unsigned int slot,
     unsigned int parent, const struct vfs_v1_name *name, unsigned int type,
-    unsigned int mode, const kword_t *data, unsigned int data_words,
+    unsigned int mode, unsigned int data_word, unsigned int data_words,
     kword_t size_chars);
 
 #endif
