@@ -104,7 +104,7 @@ CR_INPUT = $(BUILD)/cr-input.txt
 CP_OUTPUT = $(BUILD)/cp-output.txt
 
 .DEFAULT_GOAL := image
-.PHONY: image test devicefs-v1-unit procfs-v1-unit proc-sched-v1-unit clean
+.PHONY: image test devicefs-v1-unit procfs-v1-unit proc-sched-v1-unit memfs-v1-unit clean
 
 
 DEVICEFS_V1_UNIT = $(BUILD)/devicefs-v1-unit
@@ -147,6 +147,21 @@ $(PROC_SCHED_V1_UNIT): proc-sched-v1-unit.c \
 
 proc-sched-v1-unit: $(PROC_SCHED_V1_UNIT)
 	$(PROC_SCHED_V1_UNIT)
+
+MEMFS_V1_UNIT = $(BUILD)/memfs-v1-unit
+$(MEMFS_V1_UNIT): memfs-v1-unit.c \
+    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
+    $(PROJECT_ROOT)/system/kernel/memfs_v1.c \
+    $(PROJECT_ROOT)/system/kernel/initfs_v1.c \
+    $(PROJECT_ROOT)/system/kernel/ramfs_v1.c | $(BUILD)
+	$(HOST_CC) -std=c99 -Wall -Wextra -Werror -I$(PROJECT_ROOT)/system/kernel \
+	    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
+	    $(PROJECT_ROOT)/system/kernel/memfs_v1.c \
+	    $(PROJECT_ROOT)/system/kernel/initfs_v1.c \
+	    $(PROJECT_ROOT)/system/kernel/ramfs_v1.c memfs-v1-unit.c -o $@
+
+memfs-v1-unit: $(MEMFS_V1_UNIT)
+	$(MEMFS_V1_UNIT)
 
 $(BUILD):
 	mkdir -p $@
