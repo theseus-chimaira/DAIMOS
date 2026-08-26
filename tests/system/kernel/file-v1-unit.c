@@ -49,8 +49,8 @@ name_eq(const struct vfs_v1_name *name, const char *s)
         return 1;
 }
 
-static int
-proc_get(unsigned int slot, unsigned int field, kword_t *valuep)
+int
+proc_v1_procfs_get(unsigned int slot, unsigned int field, kword_t *valuep)
 {
         if (slot != 1U)
                 return -1;
@@ -90,7 +90,6 @@ main(void)
         if (ramfs_v1_init(&fs, nodes, NODES, pool, POOL) != 0)
                 return 1;
         devicefs_v1_init(DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CTY0));
-        procfs_v1_init(4U, proc_get);
         file_v1_init(&fs);
 
         pack_path("/HELLO", p_file, 6U);

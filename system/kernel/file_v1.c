@@ -731,7 +731,7 @@ file_v1_getcwd_pseudo(vnode_v1_t node, kword_t *buf, unsigned int nwords)
         }
         if (VFS_V1_KIND(node) != PROCFS_V1_KIND_PROC || nwords < 3U ||
             procfs_v1_pid(VFS_V1_INDEX(node), &pid) != 0 || pid > 0377U ||
-            vfs_v1_name_set_uint(&name, (unsigned int)pid) != 0)
+            vfs_v1_name_set_pid(&name, (unsigned int)pid) != 0)
                 return -1;
         buf[0] = 6U + name.chars;
         buf[1] = VFS_V1_SIX6('/','P','R','O','C','/');

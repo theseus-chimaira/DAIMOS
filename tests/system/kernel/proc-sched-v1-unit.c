@@ -62,7 +62,7 @@ main(void)
         assert(proc_v1_current == child2);
 
         assert(procfs_v1_readdir(procfs_v1_root(), 0U, &ent) == 1);
-        assert(vfs_v1_name_get_uint(&ent.name, &pid) == 0);
+        assert(vfs_v1_name_get_pid(&ent.name, &pid) == 0);
         assert(pid == 0U);
         assert(proc_v1_procfs_get(proc_v1_slot(child), PROCFS_V1_FIELD_WORDS,
             &value) == 0 && value == 0200UL);

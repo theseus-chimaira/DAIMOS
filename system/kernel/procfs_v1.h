@@ -17,11 +17,6 @@
 #define PROCFS_V1_FIELD_WORDS           4U
 #define PROCFS_V1_FIELD_COMM            5U
 
-/* Return zero for a live slot/field and nonzero for an unavailable slot. */
-typedef int (*procfs_v1_get_fn)(unsigned int slot, unsigned int field,
-    kword_t *valuep);
-
-void procfs_v1_init(unsigned int slots, procfs_v1_get_fn getfn);
 vnode_v1_t procfs_v1_root(void);
 int procfs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
     vnode_v1_t *nodep);

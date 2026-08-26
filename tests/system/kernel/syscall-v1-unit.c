@@ -58,7 +58,6 @@ main(void)
         if (initp == 0)
                 return 1;
         proc_v1_set_memory(initp, 01000UL, 0200UL);
-        procfs_v1_init(PROC_V1_NPROC, proc_v1_procfs_get);
         file_v1_init(&fs);
         sys_v1_set_memory_bounds(0400000UL, 0700UL);
         pack_path("/WORDS", path, 6U);

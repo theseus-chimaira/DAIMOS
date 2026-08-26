@@ -24,73 +24,73 @@ vfs_v1_name_is6(const struct vfs_v1_name *name, kword_t word,
         return name->chars == chars && name->words[0] == word;
 }
 
-static void
-vfs_v1_name_put_digit(struct vfs_v1_name *name, unsigned int pos,
-    unsigned int digit)
+static kword_t
+vfs_v1_pid_digit(unsigned int digit, unsigned int pos)
 {
-        unsigned int wi;
-        unsigned int shift;
-
-        wi = pos / 6U;
-        shift = 30U - (pos % 6U) * 6U;
-        name->words[wi] |= ((kword_t)(020U + digit) & 077UL) << shift;
+        return ((kword_t)(020U + digit) & 077UL) << (30U - pos * 6U);
 }
 
 int
-vfs_v1_name_set_uint(struct vfs_v1_name *name, unsigned int value)
+vfs_v1_name_set_pid(struct vfs_v1_name *name, unsigned int value)
 {
-        unsigned int divisor;
         unsigned int chars;
-        unsigned int i;
+        unsigned int digit;
+        kword_t word;
 
-        if (name == 0)
+        if (name == 0 || value > 0377U)
                 return -1;
-        for (i = 0U; i < VFS_V1_NAME_WORDS; ++i)
-                name->words[i] = 0;
-        divisor = 1U;
+        word = 0;
         chars = 1U;
-        while (value / divisor >= 10U) {
-                if (divisor > ((~0U) / 10U))
-                        break;
-                divisor *= 10U;
-                ++chars;
+        if (value >= 100U) {
+                digit = 0U;
+                while (value >= 100U) {
+                        value -= 100U;
+                        ++digit;
+                }
+                word |= vfs_v1_pid_digit(digit, 0U);
+                chars = 3U;
+        } else if (value >= 10U) {
+                chars = 2U;
         }
-        if (chars > VFS_V1_NAME_MAX_CHARS)
-                return -1;
+        if (chars >= 2U) {
+                digit = 0U;
+                while (value >= 10U) {
+                        value -= 10U;
+                        ++digit;
+                }
+                word |= vfs_v1_pid_digit(digit, chars - 2U);
+        }
+        word |= vfs_v1_pid_digit(value, chars - 1U);
         name->chars = chars;
-        for (i = 0U; i < chars; ++i) {
-                vfs_v1_name_put_digit(name, i, value / divisor % 10U);
-                if (divisor > 1U)
-                        divisor /= 10U;
-        }
+        name->words[0] = word;
+        name->words[1] = 0;
+        name->words[2] = 0;
+        name->words[3] = 0;
         return 0;
 }
 
 int
-vfs_v1_name_get_uint(const struct vfs_v1_name *name, unsigned int *valuep)
+vfs_v1_name_get_pid(const struct vfs_v1_name *name, unsigned int *valuep)
 {
+        unsigned int chars;
         unsigned int i;
-        unsigned int wi;
-        unsigned int shift;
         unsigned int code;
         unsigned int value;
-        unsigned int digit;
 
-        if (name == 0 || valuep == 0 || name->chars == 0U ||
-            name->chars > VFS_V1_NAME_MAX_CHARS)
+        if (name == 0 || valuep == 0)
+                return -1;
+        chars = name->chars;
+        if (chars == 0U || chars > 3U)
                 return -1;
         value = 0U;
-        for (i = 0U; i < name->chars; ++i) {
-                wi = i / 6U;
-                shift = 30U - (i % 6U) * 6U;
-                code = (unsigned int)((name->words[wi] >> shift) & 077UL);
+        for (i = 0U; i < chars; ++i) {
+                code = (unsigned int)((name->words[0] >> (30U - i * 6U)) & 077UL);
                 if (code < 020U || code > 031U)
                         return -1;
-                digit = code - 020U;
-                if (value > ((~0U) - digit) / 10U)
-                        return -1;
-                value = value * 10U + digit;
+                value = value * 10U + code - 020U;
         }
+        if (value > 0377U)
+                return -1;
         *valuep = value;
         return 0;
 }

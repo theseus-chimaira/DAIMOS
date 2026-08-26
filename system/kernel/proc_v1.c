@@ -112,7 +112,6 @@ proc_v1_init(void)
         proc_v1_set_state(&proc_v1_table[0], PROC_V1_SRUN);
         proc_v1_current = &proc_v1_table[0];
         proc_v1_next_pid = 2U;
-        procfs_v1_init(PROC_V1_NPROC, proc_v1_procfs_get);
 }
 
 struct proc_v1 *

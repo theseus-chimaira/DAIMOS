@@ -1,35 +1,19 @@
 #include "procfs_v1.h"
+#include "proc_v1.h"
 
-struct procfs_v1_desc {
-        kword_t name6;
-        kword_t meta;
+static const kword_t procfs_v1_files[] = {
+        VFS_V1_SIX6('P','P','I','D',' ',' '),
+        VFS_V1_SIX6('S','T','A','T','E',' '),
+        VFS_V1_SIX6('W','O','R','D','S',' '),
+        VFS_V1_SIX6('C','O','M','M',' ',' ')
 };
 
-#define PROCFS_V1_META(chars, field) \
-        (((kword_t)(chars) & 077UL) | (((kword_t)(field) & 077UL) << 6))
-#define PROCFS_V1_META_CHARS(meta) \
-        ((unsigned int)((meta) & 077UL))
-#define PROCFS_V1_META_FIELD(meta) \
-        ((unsigned int)(((meta) >> 6) & 077UL))
+#define PROCFS_V1_NFILES 4U
 
-static unsigned int procfs_v1_slots;
-static procfs_v1_get_fn procfs_v1_get;
-
-static const struct procfs_v1_desc procfs_v1_files[] = {
-        { VFS_V1_SIX6('P','P','I','D',' ',' '), PROCFS_V1_META(4U, PROCFS_V1_FIELD_PPID) },
-        { VFS_V1_SIX6('S','T','A','T','E',' '), PROCFS_V1_META(5U, PROCFS_V1_FIELD_STATE) },
-        { VFS_V1_SIX6('W','O','R','D','S',' '), PROCFS_V1_META(5U, PROCFS_V1_FIELD_WORDS) },
-        { VFS_V1_SIX6('C','O','M','M',' ',' '), PROCFS_V1_META(4U, PROCFS_V1_FIELD_COMM) }
-};
-
-#define PROCFS_V1_NFILES \
-        ((unsigned int)(sizeof(procfs_v1_files) / sizeof(procfs_v1_files[0])))
-
-void
-procfs_v1_init(unsigned int slots, procfs_v1_get_fn getfn)
+static unsigned int
+procfs_v1_file_chars(unsigned int i)
 {
-        procfs_v1_slots = slots;
-        procfs_v1_get = getfn;
+        return (i == 0U || i == 3U) ? 4U : 5U;
 }
 
 vnode_v1_t
@@ -50,8 +34,8 @@ procfs_v1_slot_live(unsigned int slot, kword_t *pidp)
 {
         kword_t pid;
 
-        if (procfs_v1_get == 0 || slot >= procfs_v1_slots ||
-            procfs_v1_get(slot, PROCFS_V1_FIELD_PID, &pid) != 0)
+        if (slot >= PROC_V1_NPROC ||
+            proc_v1_procfs_get(slot, PROCFS_V1_FIELD_PID, &pid) != 0)
                 return 0;
         if (pidp != 0)
                 *pidp = pid;
@@ -85,13 +69,9 @@ procfs_v1_is_file(vnode_v1_t node, unsigned int *slotp,
         if (VFS_V1_PROVIDER(node) != PROCFS_V1_PROVIDER)
                 return 0;
         kind = VFS_V1_KIND(node);
-        switch (kind) {
-        case PROCFS_V1_KIND_PPID: field = PROCFS_V1_FIELD_PPID; break;
-        case PROCFS_V1_KIND_STATE: field = PROCFS_V1_FIELD_STATE; break;
-        case PROCFS_V1_KIND_WORDS: field = PROCFS_V1_FIELD_WORDS; break;
-        case PROCFS_V1_KIND_COMM: field = PROCFS_V1_FIELD_COMM; break;
-        default: return 0;
-        }
+        if (kind < PROCFS_V1_KIND_PPID || kind > PROCFS_V1_KIND_COMM)
+                return 0;
+        field = kind - 1U;
         slot = VFS_V1_INDEX(node);
         if (!procfs_v1_slot_live(slot, 0))
                 return 0;
@@ -110,7 +90,7 @@ procfs_v1_find_pid(unsigned int pid, unsigned int *slotp)
 
         if (slotp == 0)
                 return -1;
-        for (slot = 0U; slot < procfs_v1_slots; ++slot) {
+        for (slot = 0U; slot < PROC_V1_NPROC; ++slot) {
                 if (!procfs_v1_slot_live(slot, &value))
                         continue;
                 if (value == (kword_t)pid) {
@@ -128,12 +108,11 @@ procfs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
         unsigned int slot;
         unsigned int pid;
         unsigned int i;
-        const struct procfs_v1_desc *dp;
 
         if (name == 0 || nodep == 0)
                 return -1;
         if (procfs_v1_is_root(dir)) {
-                if (vfs_v1_name_get_uint(name, &pid) != 0 ||
+                if (vfs_v1_name_get_pid(name, &pid) != 0 ||
                     procfs_v1_find_pid(pid, &slot) != 0)
                         return -1;
                 *nodep = VFS_V1_NODE(PROCFS_V1_PROVIDER,
@@ -143,9 +122,8 @@ procfs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
         if (!procfs_v1_is_proc(dir, &slot))
                 return -1;
         for (i = 0U; i < PROCFS_V1_NFILES; ++i) {
-                dp = &procfs_v1_files[i];
-                if (!vfs_v1_name_is6(name, dp->name6,
-                    PROCFS_V1_META_CHARS(dp->meta)))
+                if (!vfs_v1_name_is6(name, procfs_v1_files[i],
+                    procfs_v1_file_chars(i)))
                         continue;
                 *nodep = VFS_V1_NODE(PROCFS_V1_PROVIDER,
                     PROCFS_V1_KIND_PPID + i, slot);
@@ -162,18 +140,17 @@ procfs_v1_readdir(vnode_v1_t dir, unsigned int off,
         unsigned int visible;
         unsigned int proc_slot;
         kword_t pid;
-        const struct procfs_v1_desc *dp;
 
         if (ent == 0)
                 return -1;
         if (procfs_v1_is_root(dir)) {
                 visible = 0U;
-                for (slot = 0U; slot < procfs_v1_slots; ++slot) {
+                for (slot = 0U; slot < PROC_V1_NPROC; ++slot) {
                         if (!procfs_v1_slot_live(slot, &pid))
                                 continue;
                         if (visible++ != off)
                                 continue;
-                        if (vfs_v1_name_set_uint(&ent->name,
+                        if (vfs_v1_name_set_pid(&ent->name,
                             (unsigned int)pid) != 0)
                                 return -1;
                         ent->type = VFS_V1_TYPE_DIR;
@@ -186,9 +163,8 @@ procfs_v1_readdir(vnode_v1_t dir, unsigned int off,
         (void)proc_slot;
         if (off >= PROCFS_V1_NFILES)
                 return 0;
-        dp = &procfs_v1_files[off];
-        if (vfs_v1_name_set6(&ent->name, dp->name6,
-            PROCFS_V1_META_CHARS(dp->meta)) != 0)
+        if (vfs_v1_name_set6(&ent->name, procfs_v1_files[off],
+            procfs_v1_file_chars(off)) != 0)
                 return -1;
         ent->type = VFS_V1_TYPE_REG;
         return 1;
@@ -220,9 +196,9 @@ procfs_v1_stat(vnode_v1_t node, struct vfs_v1_stat *st)
 int
 procfs_v1_pid(unsigned int slot, kword_t *pidp)
 {
-        if (procfs_v1_get == 0 || slot >= procfs_v1_slots)
+        if (slot >= PROC_V1_NPROC)
                 return -1;
-        return procfs_v1_get(slot, PROCFS_V1_FIELD_PID, pidp);
+        return proc_v1_procfs_get(slot, PROCFS_V1_FIELD_PID, pidp);
 }
 
 
@@ -236,13 +212,12 @@ procfs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp)
                 VFS_V1_SIX6('S','L','E','E','P',' '),
                 VFS_V1_SIX6('Z','O','M','B',' ',' ')
         };
-        static const unsigned int state_chars[] = { 4U, 3U, 3U, 5U, 4U };
         kword_t value;
         unsigned int field;
         unsigned int slot;
 
         if (chp == 0 || !procfs_v1_is_file(node, &slot, &field) ||
-            procfs_v1_get(slot, field, &value) != 0)
+            proc_v1_procfs_get(slot, field, &value) != 0)
                 return -1;
         if (field == PROCFS_V1_FIELD_COMM)
                 return vfs_v1_sixbit_readchar(value, 6U, off, chp);
@@ -250,7 +225,8 @@ procfs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp)
                 if (value >= (kword_t)(sizeof(state_names) / sizeof(state_names[0])))
                         return -1;
                 return vfs_v1_sixbit_readchar(state_names[(unsigned int)value],
-                    state_chars[(unsigned int)value], off, chp);
+                    value == 3U ? 5U : (value == 1U || value == 2U ? 3U : 4U),
+                    off, chp);
         }
         return vfs_v1_decimal_readchar(value, off, chp);
 }

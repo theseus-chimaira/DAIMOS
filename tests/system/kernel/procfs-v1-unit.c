@@ -18,8 +18,8 @@ static struct fake_proc procs[4] = {
         { 0, 0UL, 0UL, 0UL, 0UL, 0UL }
 };
 
-static int
-fake_get(unsigned int slot, unsigned int field, kword_t *valuep)
+int
+proc_v1_procfs_get(unsigned int slot, unsigned int field, kword_t *valuep)
 {
         struct fake_proc *pp;
 
@@ -49,18 +49,17 @@ main(void)
         unsigned int value;
         unsigned int ch;
 
-        procfs_v1_init(4U, fake_get);
         root = procfs_v1_root();
         assert(VFS_V1_PROVIDER(root) == PROCFS_V1_PROVIDER);
 
         assert(procfs_v1_readdir(root, 0U, &ent) == 1);
-        assert(vfs_v1_name_get_uint(&ent.name, &value) == 0 && value == 1U);
+        assert(vfs_v1_name_get_pid(&ent.name, &value) == 0 && value == 1U);
         assert(ent.type == VFS_V1_TYPE_DIR);
         assert(procfs_v1_readdir(root, 1U, &ent) == 1);
-        assert(vfs_v1_name_get_uint(&ent.name, &value) == 0 && value == 42U);
+        assert(vfs_v1_name_get_pid(&ent.name, &value) == 0 && value == 42U);
         assert(procfs_v1_readdir(root, 2U, &ent) == 0);
 
-        assert(vfs_v1_name_set_uint(&name, 42U) == 0);
+        assert(vfs_v1_name_set_pid(&name, 42U) == 0);
         assert(procfs_v1_lookup(root, &name, &proc) == 0);
         assert(VFS_V1_KIND(proc) == PROCFS_V1_KIND_PROC);
         assert(VFS_V1_INDEX(proc) == 2U);
