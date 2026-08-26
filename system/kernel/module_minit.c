@@ -18,6 +18,7 @@
 #define CTY_X_HANDLER           0U
 #define CTY_X_PUT6              1U
 #define CTY_X_PUTCHAR           2U
+#define CTY_X_GETCHAR           3U
 
 #define CLK_X_HANDLER           0U
 #define CLK_X_TICKS             1U
@@ -354,6 +355,9 @@ cty_minit(void)
         minit_cty_cono(CTY_NATIVE_PI_LEVEL);
         diag_put6_addr = minit_export(name, base, CTY_X_PUT6);
         diag_putchar_addr = minit_export(name, base, CTY_X_PUTCHAR);
+        module_service_set(MODULE_SERVICE_CTY_PUTCHAR, diag_putchar_addr);
+        module_service_set(MODULE_SERVICE_CTY_GETCHAR,
+            minit_export(name, base, CTY_X_GETCHAR));
         minit_diag_ok(name);
 }
 

@@ -2,8 +2,9 @@
 
 BUILD_ROOT ?= $(CURDIR)/build
 TEST_REPORT ?= $(CURDIR)/test-report.txt
+PDP10_PREFIX ?= $(HOME)/cross
 
-.PHONY: build install test kinit kinit-test clean
+.PHONY: build install test kinit kinit-test minboot clean
 
 build:
 	$(MAKE) -C system build BUILD_ROOT='$(BUILD_ROOT)'
@@ -19,6 +20,10 @@ kinit:
 
 kinit-test:
 	$(MAKE) -C tests kinit-test BUILD_ROOT='$(BUILD_ROOT)'
+
+minboot:
+	$(MAKE) -C tests/system/kernel minboot \
+	    BUILD='$(BUILD_ROOT)/tests/system/kernel' PDP10_PREFIX='$(PDP10_PREFIX)'
 
 clean:
 	$(MAKE) -C libc clean BUILD_ROOT='$(BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'

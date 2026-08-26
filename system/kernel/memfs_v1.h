@@ -34,6 +34,10 @@ struct memfs_v1 {
 int memfs_v1_init(struct memfs_v1 *fs, struct memfs_v1_node *nodes,
     unsigned int node_count, kword_t *pool, unsigned int pool_words,
     int writable);
+int memfs_v1_enable_write(struct memfs_v1 *fs, kword_t *pool,
+    unsigned int pool_words);
+int memfs_v1_attach_pool(struct memfs_v1 *fs, kword_t *pool,
+    unsigned int pool_words);
 vnode_v1_t memfs_v1_root(const struct memfs_v1 *fs);
 int memfs_v1_lookup(const struct memfs_v1 *fs, vnode_v1_t dir,
     const struct vfs_v1_name *name, vnode_v1_t *nodep);
@@ -60,7 +64,10 @@ int memfs_v1_write_words(struct memfs_v1 *fs, vnode_v1_t node,
     unsigned int off, const kword_t *buf, unsigned int nwords,
     kword_t size_chars);
 
-/* Used by INITFS to install immutable image-backed nodes. */
+/* Used by INITFS/bootstrap code to install image-backed namespace nodes. */
+int memfs_v1_import_dir(struct memfs_v1 *fs, vnode_v1_t dir,
+    const struct vfs_v1_name *name, unsigned int mode, int writable,
+    vnode_v1_t *nodep);
 int memfs_v1_import_node(struct memfs_v1 *fs, unsigned int slot,
     unsigned int parent, const struct vfs_v1_name *name, unsigned int type,
     unsigned int mode, const kword_t *data, unsigned int data_words,

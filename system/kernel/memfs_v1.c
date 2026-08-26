@@ -125,6 +125,30 @@ memfs_v1_init(struct memfs_v1 *fs, struct memfs_v1_node *nodes,
         return 0;
 }
 
+int
+memfs_v1_attach_pool(struct memfs_v1 *fs, kword_t *pool,
+    unsigned int pool_words)
+{
+        if (fs == 0 || fs->nodes == 0 || fs->node_count == 0U ||
+            pool == 0 || pool_words == 0U || fs->used_words != 0U)
+                return -1;
+        fs->pool = pool;
+        fs->pool_words = pool_words;
+        fs->writable = 1;
+        return 0;
+}
+
+int
+memfs_v1_enable_write(struct memfs_v1 *fs, kword_t *pool,
+    unsigned int pool_words)
+{
+        if (memfs_v1_attach_pool(fs, pool, pool_words) != 0)
+                return -1;
+        fs->nodes[0].flags |= MEMFS_V1_F_WRITABLE;
+        fs->nodes[0].mode = 0777U;
+        return 0;
+}
+
 vnode_v1_t
 memfs_v1_root(const struct memfs_v1 *fs)
 {
@@ -222,7 +246,8 @@ memfs_v1_new_node(struct memfs_v1 *fs, vnode_v1_t dir,
 
         if (fs == 0 || !fs->writable || nodep == 0 ||
             !memfs_v1_name_valid(name) || memfs_v1_slot(fs, dir, &parent) != 0 ||
-            fs->nodes[parent].type != VFS_V1_TYPE_DIR)
+            fs->nodes[parent].type != VFS_V1_TYPE_DIR ||
+            (fs->nodes[parent].flags & MEMFS_V1_F_WRITABLE) == 0U)
                 return -1;
         if (memfs_v1_find_child(fs, parent, name, 0) == 0 ||
             memfs_v1_free_slot(fs, &slot) != 0)
@@ -340,6 +365,7 @@ memfs_v1_unlink(struct memfs_v1 *fs, vnode_v1_t dir,
         if (fs == 0 || !fs->writable || !memfs_v1_name_valid(name) ||
             memfs_v1_slot(fs, dir, &parent) != 0 ||
             fs->nodes[parent].type != VFS_V1_TYPE_DIR ||
+            (fs->nodes[parent].flags & MEMFS_V1_F_WRITABLE) == 0U ||
             memfs_v1_find_child(fs, parent, name, &slot) != 0 ||
             memfs_v1_has_children(fs, slot))
                 return -1;
@@ -367,6 +393,8 @@ memfs_v1_rename(struct memfs_v1 *fs, vnode_v1_t olddir,
             memfs_v1_slot(fs, newdir, &newparent) != 0 ||
             fs->nodes[oldparent].type != VFS_V1_TYPE_DIR ||
             fs->nodes[newparent].type != VFS_V1_TYPE_DIR ||
+            (fs->nodes[oldparent].flags & MEMFS_V1_F_WRITABLE) == 0U ||
+            (fs->nodes[newparent].flags & MEMFS_V1_F_WRITABLE) == 0U ||
             memfs_v1_find_child(fs, oldparent, oldname, &slot) != 0 ||
             memfs_v1_find_child(fs, newparent, newname, 0) == 0)
                 return -1;
@@ -457,6 +485,28 @@ memfs_v1_write_words(struct memfs_v1 *fs, vnode_v1_t node,
         if (size_chars > np->size_chars)
                 np->size_chars = size_chars;
         return (int)nwords;
+}
+
+int
+memfs_v1_import_dir(struct memfs_v1 *fs, vnode_v1_t dir,
+    const struct vfs_v1_name *name, unsigned int mode, int writable,
+    vnode_v1_t *nodep)
+{
+        unsigned int parent;
+        unsigned int slot;
+
+        if (fs == 0 || nodep == 0 || !memfs_v1_name_valid(name) ||
+            memfs_v1_slot(fs, dir, &parent) != 0 ||
+            fs->nodes[parent].type != VFS_V1_TYPE_DIR ||
+            memfs_v1_find_child(fs, parent, name, 0) == 0 ||
+            memfs_v1_free_slot(fs, &slot) != 0 ||
+            memfs_v1_import_node(fs, slot, parent, name, VFS_V1_TYPE_DIR,
+            mode, 0, 0U, 0) != 0)
+                return -1;
+        if (writable)
+                fs->nodes[slot].flags |= MEMFS_V1_F_WRITABLE;
+        *nodep = memfs_v1_node_handle(slot);
+        return 0;
 }
 
 int

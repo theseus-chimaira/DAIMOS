@@ -34,6 +34,7 @@ struct file_v1 {
 
 void file_v1_init(struct memfs_v1 *rootfs);
 struct memfs_v1 *file_v1_rootfs(void);
+int file_v1_alias_root(const struct vfs_v1_name *name, vnode_v1_t node);
 int file_v1_lookup_path(const kword_t *path, vnode_v1_t *nodep);
 int file_v1_lookup_path_owner(unsigned int owner, const kword_t *path,
     vnode_v1_t *nodep);

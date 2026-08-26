@@ -3,6 +3,9 @@
 #include "procfs_v1.h"
 #include "cty.h"
 #include "mach_user_v1.h"
+#ifdef __PDP10__
+#include "kboot_v1.h"
+#endif
 
 static kword_t sys_v1_total_words;
 static kword_t sys_v1_resident_words;
@@ -43,13 +46,27 @@ sys_v1_close(unsigned int owner, int fd)
 int
 sys_v1_putchar(int ch)
 {
+#ifdef __PDP10__
+        typedef int (*putchar_fn)(int);
+        if (kcore_cty_putchar_v1 == 0)
+                return -1;
+        return (*(putchar_fn)(unsigned long)kcore_cty_putchar_v1)(ch);
+#else
         return cty_putchar(ch);
+#endif
 }
 
 int
 sys_v1_getchar(void)
 {
+#ifdef __PDP10__
+        typedef int (*getchar_fn)(void);
+        if (kcore_cty_getchar_v1 == 0)
+                return -1;
+        return (*(getchar_fn)(unsigned long)kcore_cty_getchar_v1)();
+#else
         return cty_getchar();
+#endif
 }
 
 int
@@ -59,7 +76,7 @@ sys_v1_readchar(unsigned int owner, int fd)
         int rc;
 
         if (fd == 0)
-                return cty_getchar();
+                return sys_v1_getchar();
         rc = file_v1_read(owner, fd, &ch, 1U);
         if (rc != 1)
                 return rc == 0 ? -2 : -1;
@@ -72,7 +89,7 @@ sys_v1_writechar(unsigned int owner, int fd, int ch)
         char c;
 
         if (fd == 1 || fd == 2)
-                return cty_putchar(ch);
+                return sys_v1_putchar(ch);
         c = (char)(ch & 0777);
         return file_v1_write(owner, fd, &c, 1U) == 1 ? 0 : -1;
 }
@@ -226,11 +243,17 @@ static kword_t *
 sys_v1_user_words(kword_t addr)
 {
         kword_t base;
+        kword_t end;
+        kword_t word;
 
         if (proc_v1_current == 0)
                 return 0;
         base = PROC_V1_MEM_BASE(proc_v1_current);
-        return (kword_t *)(unsigned long)(base + (addr & PROC_V1_HALF_MASK));
+        end = base + PROC_V1_MEM_WORDS(proc_v1_current);
+        word = addr & PROC_V1_HALF_MASK;
+        if (word < base || word >= end)
+                return 0;
+        return (kword_t *)(unsigned long)word;
 }
 
 int

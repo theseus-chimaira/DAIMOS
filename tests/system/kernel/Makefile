@@ -12,6 +12,7 @@ DLINK ?= $(PDP10_PREFIX)/bin/dlink
 DXRCONVERT ?= $(PDP10_PREFIX)/bin/dxrconvert
 MKSTREAM ?= $(PDP10_PREFIX)/bin/mkstream
 MKDSK ?= $(PDP10_PREFIX)/bin/mkdsk
+MKINITFS0 ?= $(PDP10_PREFIX)/bin/mkinitfs0
 MKTAP ?= $(PDP10_PREFIX)/bin/mktap
 MKDT ?= $(PDP10_PREFIX)/bin/mkdt
 SIMH_PDP6 ?= $(PDP10_PREFIX)/bin/pdp6
@@ -24,7 +25,8 @@ WATCH_OUTPUT := $(PROJECT_ROOT)/tests/simh/watch-output.sh
 KINIT_NAMES = kinit kinit_diag module_minit kinit_io module_io
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
-KCORE_FIXED_NAMES = kcore_entry kcore_io kcore_end
+KCORE_C_NAMES = kboot_v1 vfs_v1 devicefs_v1 procfs_v1 memfs_v1 initfs_v1 ramfs_v1 file_v1 proc_v1 sched_v1 syscall_v1 exec_v1
+KCORE_FIXED_NAMES = kcore_entry $(KCORE_C_NAMES) mach_user_v1 kcore_io kcore_end
 KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))
 KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
 MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io io7_io dcs_io ge_io dpy_io tty_io wcnsls_io ocnsls_io storage_io slv_io
@@ -34,9 +36,10 @@ KINIT_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
 	kinit.c kinit_diag.c module_minit.c kinit.h module.h mres.h \
 	cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h kinit_io.s module_io.s)
 KCORE_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
-	kcore.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h \
-	kcore_entry.s kcore_io.s kcore_end.s cty_io.s clk_io.s ptr_io.s \
-	ptp_io.s cr_io.s cp_io.s dcs_io.s ge_io.s dpy_io.s tty_io.s wcnsls_io.s ocnsls_io.s storage_io.s slv_io.s)
+	kcore.h kcore_pi.h kboot_v1.h vfs_v1.h devicefs_v1.h procfs_v1.h memfs_v1.h initfs_v1.h ramfs_v1.h file_v1.h proc_v1.h sched_v1.h syscall_v1.h exec_v1.h mach_user_v1.h \
+	cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h \
+	kcore_entry.s kboot_v1.c vfs_v1.c devicefs_v1.c procfs_v1.c memfs_v1.c initfs_v1.c ramfs_v1.c file_v1.c proc_v1.c sched_v1.c syscall_v1.c exec_v1.c mach_user_v1.s kcore_io.s kcore_end.s \
+	cty_io.s clk_io.s ptr_io.s ptp_io.s cr_io.s cp_io.s dcs_io.s ge_io.s dpy_io.s tty_io.s wcnsls_io.s ocnsls_io.s storage_io.s slv_io.s)
 
 KCORE_DXR = $(BUILD)/kcore-v1.dxr
 KCORE_MAP = $(BUILD)/kcore-v1.map
@@ -68,6 +71,10 @@ IMAGE_MAP = $(BUILD)/kinit-v1.map
 IMAGE_RIM = $(BUILD)/kinit-v1.rim
 IMAGE_RAW = $(BUILD)/kinit-v1.raw.words
 IMAGE_WORDS = $(BUILD)/kinit-v1.words
+USERLAND_BUILD_ROOT = $(BUILD)/userland-build
+DSH_DXR = $(USERLAND_BUILD_ROOT)/userland-v1/dsh-v1.dxr
+INITFS_ASM = $(BUILD)/initfs-v1.s
+INITFS_OBJ = $(BUILD)/initfs-v1.dobj
 STAGE1_DXR = $(BUILD)/stage1-dsk-v1.dxr
 STAGE1_TAPE = $(BUILD)/stage1-dsk-v1.pt
 DISK_DIR = $(BUILD)/disk
@@ -104,7 +111,7 @@ CR_INPUT = $(BUILD)/cr-input.txt
 CP_OUTPUT = $(BUILD)/cp-output.txt
 
 .DEFAULT_GOAL := image
-.PHONY: image test devicefs-v1-unit procfs-v1-unit proc-sched-v1-unit memfs-v1-unit file-v1-unit syscall-v1-unit clean
+.PHONY: image minboot test devicefs-v1-unit procfs-v1-unit proc-sched-v1-unit memfs-v1-unit file-v1-unit syscall-v1-unit clean
 
 
 DEVICEFS_V1_UNIT = $(BUILD)/devicefs-v1-unit
@@ -239,7 +246,8 @@ $(END_OBJ): image-end-v1.s | $(BUILD)
 	$(DAS) -c -o $@ $<
 
 $(KCORE_DXR): $(KCORE_FIXED_OBJS)
-	$(DLINK) -b 060 -o $@ -M $(KCORE_MAP) $(KCORE_FIXED_OBJS)
+	libgcc=`$(PDP10_GCC) -print-libgcc-file-name`; \
+	$(DLINK) -b 060 -o $@ -M $(KCORE_MAP) $(KCORE_FIXED_OBJS) $$libgcc
 $(KCORE_MAP): $(KCORE_DXR)
 	@test -f $@
 $(KCORE_RIM): $(KCORE_DXR)
@@ -303,11 +311,21 @@ $(KCORE_EMBED_ASM): kcore-embed-v1.s.in $(KCORE_MAP) | $(BUILD)
 $(KCORE_EMBED_OBJ): $(KCORE_EMBED_ASM)
 	$(DAS) -c -o $@ $<
 
+$(DSH_DXR):
+	$(MAKE) -C $(PROJECT_ROOT)/userland build BUILD_ROOT='$(USERLAND_BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'
+
+$(INITFS_ASM): $(DSH_DXR)
+	$(MKINITFS0) --label __initfs_v1_begin -o $@ \
+	    /SYSTEM/INIT:$(DSH_DXR):555:dxr
+
+$(INITFS_OBJ): $(INITFS_ASM)
+	$(DAS) -c -o $@ $<
+
 $(IMAGE_DXR): $(MINIT_TABLE_OBJ) $(KCORE_EMBED_OBJ) $(KINIT_OBJS) \
-    $(MRES_PACKAGE_OBJS) $(DEVICE_TEST_OBJ) $(END_OBJ) $(KCORE_MAP)
+    $(MRES_PACKAGE_OBJS) $(DEVICE_TEST_OBJ) $(INITFS_OBJ) $(END_OBJ) $(KCORE_MAP)
 	$(DLINK) -b 040000 -A $(KCORE_MAP) -o $@ -M $(IMAGE_MAP) \
 	    $(MINIT_TABLE_OBJ) $(KCORE_EMBED_OBJ) $(KINIT_OBJS) \
-	    $(MRES_PACKAGE_OBJS) $(DEVICE_TEST_OBJ) $(END_OBJ)
+	    $(MRES_PACKAGE_OBJS) $(DEVICE_TEST_OBJ) $(INITFS_OBJ) $(END_OBJ)
 $(IMAGE_MAP): $(IMAGE_DXR)
 	@test -f $@
 $(IMAGE_RIM): $(IMAGE_DXR)
@@ -398,6 +416,11 @@ set mtc0 7t\
 attach -q mtc0 $(abspath $(MTC_TEST_TAPE))' $< > $@
 
 image: $(SIMH_INI)
+
+# Boot the minboot image on the terminal and leave DSH interactive.
+# Type EXIT in DSH to return to the simulator and terminate.
+minboot: image
+	$(SIMH_PDP6) $(SIMH_INI)
 
 test: image $(SIMH_INI_NO_PTP) $(SIMH_INI_NO_SLV) $(SIMH_INI_DPY) $(SIMH_INI_WCNSLS) $(SIMH_INI_DTC) $(SIMH_INI_MTC)
 	@STDBUF='$(STDBUF)' $(WATCH_OUTPUT) -f 6 -t 2 \

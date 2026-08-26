@@ -53,10 +53,9 @@ cty_putchar_timeout:
         hrroi 1,0777776
         popj 017,
 
-; Return one 7-bit character in AC1, or CTY_E_TIMEOUT (-2).
+; Return one 7-bit character in AC1.  Input blocks until available.
 ; The PI handler stores character+1 so zero remains the empty marker.
 cty_getchar:
-        movei 2,0200000
 cty_getchar_loop:
         move 1,cty_rx_pending
         jumpn 1,cty_getchar_pending
@@ -66,9 +65,7 @@ cty_getchar_loop:
         andi 1,0177
         popj 017,
 cty_getchar_wait:
-        sojg 2,cty_getchar_loop
-        hrroi 1,0777776
-        popj 017,
+        jrst cty_getchar_loop
 cty_getchar_pending:
         setzm cty_rx_pending
         subi 1,1

@@ -3,6 +3,9 @@
 #include "procfs_v1.h"
 
 static struct memfs_v1 *file_v1_root;
+static struct vfs_v1_name file_v1_alias_name;
+static vnode_v1_t file_v1_alias_node;
+static int file_v1_alias_active;
 static struct file_v1 file_v1_table[FILE_V1_NFILE];
 static vnode_v1_t file_v1_cwd[FILE_V1_OWNER_MAX];
 
@@ -88,6 +91,19 @@ file_v1_lookup_child(vnode_v1_t dir, const struct vfs_v1_name *name,
                                 *nodep = procfs_v1_root();
                                 return 0;
                         }
+                        if (file_v1_alias_active &&
+                            name->chars == file_v1_alias_name.chars) {
+                                unsigned int i;
+                                for (i = 0U; i < VFS_V1_NAME_WORDS; ++i) {
+                                        if (name->words[i] !=
+                                            file_v1_alias_name.words[i])
+                                                break;
+                                }
+                                if (i == VFS_V1_NAME_WORDS) {
+                                        *nodep = file_v1_alias_node;
+                                        return 0;
+                                }
+                        }
                 }
                 return memfs_v1_lookup(file_v1_root, dir, name, nodep);
         case DEVICEFS_V1_PROVIDER:
@@ -120,6 +136,11 @@ file_v1_init(struct memfs_v1 *rootfs)
         unsigned int i;
 
         file_v1_root = rootfs;
+        file_v1_alias_active = 0;
+        file_v1_alias_node = VFS_V1_NODE_NONE;
+        file_v1_alias_name.chars = 0U;
+        for (i = 0U; i < VFS_V1_NAME_WORDS; ++i)
+                file_v1_alias_name.words[i] = 0;
         for (i = 0U; i < FILE_V1_OWNER_MAX; ++i)
                 file_v1_cwd[i] = memfs_v1_root(rootfs);
         for (i = 0U; i < FILE_V1_NFILE; ++i) {
@@ -134,6 +155,21 @@ struct memfs_v1 *
 file_v1_rootfs(void)
 {
         return file_v1_root;
+}
+
+int
+file_v1_alias_root(const struct vfs_v1_name *name, vnode_v1_t node)
+{
+        struct vfs_v1_stat st;
+
+        if (file_v1_root == 0 || file_v1_alias_active || name == 0 ||
+            name->chars == 0U || file_v1_node_stat(node, &st) != 0 ||
+            st.type != VFS_V1_TYPE_DIR)
+                return -1;
+        file_v1_alias_name = *name;
+        file_v1_alias_node = node;
+        file_v1_alias_active = 1;
+        return 0;
 }
 
 static int
@@ -529,6 +565,11 @@ file_v1_readdir(unsigned int owner, int fd, struct vfs_v1_dirent *ent)
                         } else if ((unsigned int)fp->off_chars == base + 1U) {
                                 vfs_v1_name_set6(&ent->name,
                                     VFS_V1_SIX6('P','R','O','C',' ',' '), 4U);
+                                ent->type = VFS_V1_TYPE_DIR;
+                                rc = 1;
+                        } else if (file_v1_alias_active &&
+                            (unsigned int)fp->off_chars == base + 2U) {
+                                ent->name = file_v1_alias_name;
                                 ent->type = VFS_V1_TYPE_DIR;
                                 rc = 1;
                         }

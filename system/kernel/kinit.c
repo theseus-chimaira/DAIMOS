@@ -2,6 +2,10 @@
 #include "kcore.h"
 #include "module.h"
 #include "mres.h"
+#include "kboot_v1.h"
+
+extern kword_t __initfs_v1_begin;
+extern kword_t __initfs_v1_begin_end;
 
 static unsigned int mres_next_addr;
 static const kword_t *module_mres_package;
@@ -204,6 +208,14 @@ kinit_enter(void)
         kinit_diag_system();
         mres_init();
         module_run_minits();
+        kcore_resident_end_v1 = (kword_t)mres_next_addr;
+        kcore_cty_putchar_v1 =
+            (kword_t)module_service_get(MODULE_SERVICE_CTY_PUTCHAR);
+        kcore_cty_getchar_v1 =
+            (kword_t)module_service_get(MODULE_SERVICE_CTY_GETCHAR);
+        kcore_initfs_image_v1 = &__initfs_v1_begin;
+        kcore_initfs_words_v1 =
+            (kword_t)(&__initfs_v1_begin_end - &__initfs_v1_begin);
 #ifdef KINIT_DEBUG
         kinit_diag_finished();
 #endif

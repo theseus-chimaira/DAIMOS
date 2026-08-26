@@ -25,21 +25,21 @@
 mach_enter_user_v1:
         move 5,-1(17)
         move 6,-2(17)
-        push 17,10
-        push 17,11
-        push 17,12
-        push 17,13
-        push 17,14
-        push 17,15
-        push 17,16
+        push 17,010
+        push 17,011
+        push 17,012
+        push 17,013
+        push 17,014
+        push 17,015
+        push 17,016
         pushj 17,mach_enter_user_start_v1
-        pop 17,16
-        pop 17,15
-        pop 17,14
-        pop 17,13
-        pop 17,12
-        pop 17,11
-        pop 17,10
+        pop 17,016
+        pop 17,015
+        pop 17,014
+        pop 17,013
+        pop 17,012
+        pop 17,011
+        pop 17,010
         popj 17,
 
 mach_enter_user_start_v1:
@@ -73,8 +73,20 @@ mach_syscall_v1:
         popj 17,
 
 mach_syscall_user_return_v1:
-        move 0,[mach_syscall_ac2_v1,,2]
-        blt 0,16
+        move 1,mach_syscall_ac1_v1
+        move 2,mach_syscall_ac2_v1
+        move 3,mach_syscall_ac3_v1
+        move 4,mach_syscall_ac4_v1
+        move 5,mach_syscall_ac5_v1
+        move 6,mach_syscall_ac6_v1
+        move 7,mach_syscall_ac7_v1
+        move 010,mach_syscall_ac10_v1
+        move 011,mach_syscall_ac11_v1
+        move 012,mach_syscall_ac12_v1
+        move 013,mach_syscall_ac13_v1
+        move 014,mach_syscall_ac14_v1
+        move 015,mach_syscall_ac15_v1
+        move 016,mach_syscall_ac16_v1
         move 0,mach_syscall_ac0_v1
         move 17,mach_user_sp_v1
         popj 17,
@@ -84,7 +96,7 @@ mach_syscall_user_return_v1:
 mach_syscall_context_save_v1:
         move 0,1
         hrli 0,mach_syscall_ac0_v1
-        blt 0,17(1)
+        blt 0,017(1)
         popj 17,
 
 mach_syscall_context_restore_v1:
