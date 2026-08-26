@@ -5,6 +5,8 @@
 ; CR/CP each use one AOBJN-style pointer/count word instead of state+pointer.
 
         .text
+        .globl devicefs_v1_io_in
+        .globl devicefs_v1_io_out
         .globl io7_pi_handler
         .globl ptr_state
         .globl ptp_state
@@ -23,6 +25,7 @@ io7_pi_handler:
         skipn ptr_state
         jrst io7_ptr_prefetch
         datai 0104,ptr_state
+        aos devicefs_v1_io_in+2
         aos ptr_state
         cono 0104,0
         jrst io7_ptp
@@ -57,6 +60,7 @@ io7_cr_more:
         movem 1,cr_iowd
 io7_cr_xfer:
         datai 0150,(1)
+        aos devicefs_v1_io_in+4
 
 io7_cp:
         coni 0110,1
@@ -76,6 +80,7 @@ io7_cp_data:
         move 1,(1)
         andi 1,07777
         datao 0110,1
+        aos devicefs_v1_io_out+5
         setom cp_iowd
         cono 0110,010207
         jrst pdp10_pi_handler_return
@@ -84,6 +89,7 @@ io7_cp_more:
         move 1,(1)
         andi 1,07777
         datao 0110,1
+        aos devicefs_v1_io_out+5
         jrst pdp10_pi_handler_return
 
 ; Shared slow-path returns for the four PI7 peripherals.  Keep these out of

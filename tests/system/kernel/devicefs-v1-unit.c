@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include "devicefs_v1.h"
 
+extern kword_t devicefs_v1_io_in[DEVICEFS_V1_DEV_COUNT];
+extern kword_t devicefs_v1_io_out[DEVICEFS_V1_DEV_COUNT];
+
 static void
 set_name(struct vfs_v1_name *name, kword_t word, unsigned int chars)
 {
@@ -78,6 +81,12 @@ main(void)
         assert(st.type == VFS_V1_TYPE_MOUNTSRC);
         assert(devicefs_v1_set_present(DEVICEFS_V1_DEV_D6SET0, 0) == 0);
         assert(devicefs_v1_lookup(root, &name, &node) != 0);
+
+
+        devicefs_v1_io_in[DEVICEFS_V1_DEV_CTY0] = 012345670123UL;
+        devicefs_v1_io_out[DEVICEFS_V1_DEV_CTY0] = 076543210765UL;
+        assert(devicefs_v1_io_in[DEVICEFS_V1_DEV_CTY0] == 012345670123UL);
+        assert(devicefs_v1_io_out[DEVICEFS_V1_DEV_CTY0] == 076543210765UL);
 
         puts("DEVICEFS v1 unit test PASS");
         return 0;

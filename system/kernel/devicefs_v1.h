@@ -37,17 +37,24 @@
 #define DEVICEFS_V1_CLASS_CONTROLLER    5U
 #define DEVICEFS_V1_CLASS_MOUNTSRC      6U
 
+#define DEVICEFS_V1_UNIT_NONE           0U
+#define DEVICEFS_V1_UNIT_CHAR           1U
+#define DEVICEFS_V1_UNIT_WORD           2U
+
 struct devicefs_v1_desc {
         kword_t name6;
         kword_t meta;
 };
 
-#define DEVICEFS_V1_META(chars, class_id) \
-        (((kword_t)(chars) & 077UL) | (((kword_t)(class_id) & 077UL) << 6))
+#define DEVICEFS_V1_META(chars, class_id, unit_id) \
+        (((kword_t)(chars) & 077UL) | (((kword_t)(class_id) & 077UL) << 6) | \
+        (((kword_t)(unit_id) & 077UL) << 12))
 #define DEVICEFS_V1_META_CHARS(meta) \
         ((unsigned int)((meta) & 077UL))
 #define DEVICEFS_V1_META_CLASS(meta) \
         ((unsigned int)(((meta) >> 6) & 077UL))
+#define DEVICEFS_V1_META_UNIT(meta) \
+        ((unsigned int)(((meta) >> 12) & 077UL))
 
 void devicefs_v1_init(kword_t present_mask);
 int devicefs_v1_set_present(unsigned int id, int present);

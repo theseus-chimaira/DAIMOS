@@ -3,6 +3,8 @@
 ; PI7 completion is handled directly by io7_io.s; this file contains only
 ; the synchronous public service and its one-word ownership state.
         .text
+        .globl devicefs_v1_io_in
+        .globl devicefs_v1_io_out
         .globl ptp_putchar
         .globl ptp_state
         .globl io7_ret_timeout
@@ -24,6 +26,7 @@ ptp_putchar_idle:
         cono 0100,0007
         andi 1,0377
         datao 0100,1
+        aos devicefs_v1_io_out+3
         movei 2,0200000
 ptp_putchar_wait:
         skipn ptp_state

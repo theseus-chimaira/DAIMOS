@@ -13,6 +13,8 @@
 ;   AC1 = raw DSK270 hardware address, AC2 = 128-word destination.
 
         .text
+        .globl devicefs_v1_io_in
+        .globl devicefs_v1_io_out
         .globl storage_pi_handler
         .globl storage_dct_handler
         .globl dtc_read_words
@@ -152,6 +154,7 @@ storage_setup_read:
 storage_setup_write:
         move 4,storage_dct_blko
 storage_setup_common:
+        movem 3,storage_count
         movem 4,000046
         movei 4,storage_dct_count_done
         hrrm 4,storage_dct_select
@@ -281,6 +284,40 @@ storage_ioerr:
         hrroi 1,0777773
         popj 017,
 storage_wait_done:
+        ; The IOWD left half retains the untransferred count.  Combine it
+        ; with the requested count to account actual words, including short
+        ; tape records, without adding a per-word PI instruction.
+        move 2,storage_iowd
+        hlrz 2,2
+        add 2,storage_count
+        andi 2,0777777
+        caie 1,1
+        jrst storage_account_mtc_read
+        addm 2,devicefs_v1_io_in+12
+        jrst storage_account_done
+storage_account_mtc_read:
+        caie 1,2
+        jrst storage_account_dsk_read
+        addm 2,devicefs_v1_io_in+13
+        jrst storage_account_done
+storage_account_dsk_read:
+        caie 1,3
+        jrst storage_account_dsk_write
+        addm 2,devicefs_v1_io_in+14
+        jrst storage_account_done
+storage_account_dsk_write:
+        caie 1,4
+        jrst storage_account_mtc_write
+        addm 2,devicefs_v1_io_out+14
+        jrst storage_account_done
+storage_account_mtc_write:
+        caie 1,5
+        jrst storage_account_dtc_write
+        addm 2,devicefs_v1_io_out+13
+        jrst storage_account_done
+storage_account_dtc_write:
+        addm 2,devicefs_v1_io_out+12
+storage_account_done:
         ; Completion code 3 is DSK; tape operations can return immediately.
         caie 1,3
         jrst storage_ok
@@ -325,3 +362,4 @@ storage_dct_dsk_write_ack2:
         .bss
 storage_state: .block 1
 storage_iowd:  .block 1
+storage_count: .block 1

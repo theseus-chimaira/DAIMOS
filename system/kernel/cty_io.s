@@ -5,6 +5,8 @@
 ; wait loops directly so no generic resident delay helper is required.
 
         .text
+        .globl devicefs_v1_io_in
+        .globl devicefs_v1_io_out
         .globl cty_pi_handler
         .globl cty_putchar
         .globl cty_getchar
@@ -24,6 +26,7 @@ cty_pi_input:
         conso 0120,0040
         jrst pdp10_pi_handler_return
         datai 0120,1
+        aos devicefs_v1_io_in+0
         andi 1,0177
         addi 1,1
         movem 1,cty_rx_pending
@@ -43,6 +46,7 @@ cty_putchar_ready:
         setom cty_tx_pending
         andi 1,0177
         datao 0120,1
+        aos devicefs_v1_io_out+0
         movei 2,0200000
 cty_putchar_wait_done:
         move 3,cty_tx_pending
@@ -62,6 +66,7 @@ cty_getchar_loop:
         conso 0120,0040
         jrst cty_getchar_wait
         datai 0120,1
+        aos devicefs_v1_io_in+0
         andi 1,0177
         popj 017,
 cty_getchar_wait:
