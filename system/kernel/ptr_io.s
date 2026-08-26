@@ -7,18 +7,18 @@
         .text
         .globl ptr_getchar
         .globl ptr_state
-        .globl io7_ret_arg
+        .globl pdp10_ret_arg_v34
         .globl io7_ret_timeout
-        .globl io7_ret_e3
+        .globl pdp10_ret_busy_v34
         .globl pdp10_ret_ok_v34
 
 ; AC1 = int *destination.  Return 0 or PT_E_ARG/BUSY/TIMEOUT.
 ptr_getchar:
-        jumpe 1,io7_ret_arg
+        jumpe 1,pdp10_ret_arg_v34
         move 4,1
         move 2,ptr_state
         jumpg 2,ptr_get_software
-        jumpl 2,io7_ret_e3
+        jumpl 2,pdp10_ret_busy_v34
 
         ; Consume an already-prefetched hardware character without waiting.
         consz 0104,0010

@@ -36,7 +36,7 @@ dcs_pi_receive:
 ; Return DCS_PACK(line, byte), or DCS_E_BUSY (-3) if another receive is active.
 dcs_getchar:
         move 1,dcs_rx_word
-        jumpn 1,dcs_getchar_busy
+        jumpn 1,pdp10_ret_busy_v34
         setom dcs_rx_word
         cono 0300,000012
 
@@ -46,23 +46,17 @@ dcs_getchar_wait:
         setzm dcs_rx_word
         popj 017,
 
-dcs_getchar_busy:
-        jrst pdp10_ret_busy_v34
-
 ; AC1 = DCS_PACK(line, byte).  Return 0 or DCS_E_ARG (-1).
 dcs_putchar:
         move 2,1
         lsh 2,-010
         andi 2,077
         caile 2,017
-        jrst dcs_putchar_arg
+        jrst pdp10_ret_arg_v34
         cono 0304,0(2)
         andi 1,0377
         datao 0300,1
         jrst pdp10_ret_ok_v34
-
-dcs_putchar_arg:
-        jrst pdp10_ret_arg_v34
 
         .bss
 dcs_rx_word:

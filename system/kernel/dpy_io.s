@@ -3,7 +3,7 @@
 ; DPY shares PI6 with the APR line clock.  MINIT patches the right half of
 ; dpy_clk_pi_service_call with the relocated clock service routine and replaces
 ; the clock PI-table entry with dpy_pi_handler.  If no clock exists, the call
-; remains directed at the one-word local no-clock return stub.
+; initially targets the KCORE zero-return stub; MINIT patches it to the clock service when present.
 
         .text
         .globl dpy_pi_handler
@@ -17,7 +17,7 @@
 ; the second half of each DATAO word.  The shared PI path clobbers AC1 only.
 dpy_pi_handler:
 dpy_clk_pi_service_call:
-        pushj 017,dpy_no_clk_service
+        pushj 017,pdp10_ret_ok_v34
 dpy_pi_display:
         conso 0130,000200
         jrst pdp10_pi_handler_return
@@ -38,9 +38,6 @@ dpy_put_wait:
         jrst dpy_put_wait
 dpy_put_ok:
         jrst pdp10_ret_ok_v34
-
-dpy_no_clk_service:
-        popj 017,
 
         .bss
 dpy_pending:

@@ -68,7 +68,6 @@ storage_pi_dsk_write_full:
         ; controller consumption of that final word.
         movei 1,storage_dct_dsk_write_ack1
         hrrm 1,storage_dct_select
-        jrst storage_dct_arm_handler
 
 storage_dct_arm_handler:
         ; Replace PI3 vector word 046 with its final-word JSR.  The next DCT
@@ -79,7 +78,11 @@ storage_dct_arm_handler:
 
 storage_pi_dsk_read_done:
         cono 0270,030105
-        jrst storage_pi_done
+storage_pi_done:
+        ; Preserve the completed owner without adding a word: negative owner
+        ; becomes its positive completion code.
+        movns storage_state
+        jrst storage_pi_stop
 
 storage_pi_mtc_read_full:
         coni 0224,1
@@ -104,9 +107,11 @@ storage_pi_dtc_status:
         jrst pdp10_pi_handler_return
         jrst storage_pi_done
 
+storage_pi_mtc_write_status:
+        seto 2,
 storage_pi_mtc_status:
         ; AC2 is zero for read.  The write dispatch enters through the tiny
-        ; flag stub below, then shares the common Type-516 error/EOR tests.
+        ; flag stub above, then shares the common Type-516 error/EOR tests.
         coni 0224,1
         trne 1,0400520
         jrst storage_pi_error
@@ -123,22 +128,9 @@ storage_pi_mtc_idle_check:
         jrst pdp10_pi_handler_return
         jrst storage_pi_done
 
-storage_pi_mtc_write_status:
-        seto 2,
-        jrst storage_pi_mtc_status
-
 storage_pi_dsk_status:
         conso 0270,001777
         jrst pdp10_pi_handler_return
-        jrst storage_pi_error
-
-storage_pi_done:
-        ; Preserve the completed owner without adding a word: negative owner
-        ; becomes its positive completion code.
-        movn 1,storage_state
-        movem 1,storage_state
-        jrst storage_pi_stop
-
 storage_pi_error:
         movei 1,4
         movem 1,storage_state
@@ -147,11 +139,6 @@ storage_pi_stop:
         cono 0210,0
         cono 0200,0
         jrst pdp10_pi_handler_return
-
-storage_busy:
-        jrst pdp10_ret_busy_v34
-storage_arg:
-        jrst pdp10_ret_arg_v34
 storage_ok:
         setzm storage_state
         jrst pdp10_ret_ok_v34
@@ -182,10 +169,10 @@ storage_dct_blko:
 ; AC1 unit, AC2 destination, AC3 exact word count.
 dtc_read_words:
         skipe storage_state
-        jrst storage_busy
+        jrst pdp10_ret_busy_v34
         caile 1,7
-        jrst storage_arg
-        jumple 3,storage_arg
+        jrst pdp10_ret_arg_v34
+        jumple 3,pdp10_ret_arg_v34
         pushj 017,storage_setup_read
         setom storage_state
         lsh 1,3
@@ -199,9 +186,9 @@ dtc_read_words:
 ; cycle, not a software short count, defines transfer completion.
 dtc_write_block:
         skipe storage_state
-        jrst storage_busy
+        jrst pdp10_ret_busy_v34
         caile 1,7
-        jrst storage_arg
+        jrst pdp10_ret_arg_v34
         movei 3,0200
         pushj 017,storage_setup_write
         hrroi 3,0777772
@@ -215,10 +202,10 @@ dtc_write_block:
 ; AC1 unit, AC2 destination, AC3 maximum words in one tape record.
 mtc_read_words:
         skipe storage_state
-        jrst storage_busy
+        jrst pdp10_ret_busy_v34
         caile 1,7
-        jrst storage_arg
-        jumple 3,storage_arg
+        jrst pdp10_ret_arg_v34
+        jumple 3,pdp10_ret_arg_v34
         pushj 017,storage_setup_read
         hrroi 3,0777776
         movei 4,052405
@@ -230,10 +217,10 @@ mtc_read_words:
 ; the per-word PI path identical to the disk write path.
 mtc_write_words:
         skipe storage_state
-        jrst storage_busy
+        jrst pdp10_ret_busy_v34
         caile 1,7
-        jrst storage_arg
-        jumple 3,storage_arg
+        jrst pdp10_ret_arg_v34
+        jumple 3,pdp10_ret_arg_v34
         pushj 017,storage_setup_write
         hrroi 3,0777773
         movei 4,051005
@@ -256,7 +243,7 @@ mtc_rw_start:
 ; entry stubs provide only direction-specific DCT/DSK command words.
 dsk_read_sector:
         skipe storage_state
-        jrst storage_busy
+        jrst pdp10_ret_busy_v34
         movei 3,0200
         pushj 017,storage_setup_read
         hrroi 3,0777775
@@ -266,7 +253,7 @@ dsk_read_sector:
 
 dsk_write_sector:
         skipe storage_state
-        jrst storage_busy
+        jrst pdp10_ret_busy_v34
         movei 3,0200
         pushj 017,storage_setup_write
         hrroi 3,0777774
@@ -275,8 +262,7 @@ dsk_write_sector:
 
 dsk_rw_start:
         movem 3,storage_state
-        move 3,1
-        datao 0270,3
+        datao 0270,1
 dsk_rw_wait_dfr:
         coni 0270,3
         trne 3,001777
@@ -285,8 +271,6 @@ dsk_rw_wait_dfr:
         jrst dsk_rw_wait_dfr
         cono 0200,0(4)
         cono 0270,0(5)
-        jrst storage_wait
-
 storage_wait:
         move 1,storage_state
         jumpl 1,storage_wait
@@ -301,7 +285,6 @@ storage_wait_done:
         caie 1,3
         jrst storage_ok
         coni 0270,2
-        jrst dsk_wait_ids
 dsk_wait_ids:
         trne 2,001777
         jrst storage_ioerr

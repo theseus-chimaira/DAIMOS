@@ -30,7 +30,7 @@ ge_pi_gtyi_disable:
 ge_getchar:
         move 1,ge_rx_word
         jumpg 1,ge_get_ready
-        jumpl 1,ge_get_busy
+        jumpl 1,pdp10_ret_busy_v34
 
         ; Consume a character which arrived while input PI was disabled.
         consz 0070,00010
@@ -56,9 +56,6 @@ ge_get_unpack_raw:
         andi 1,0177
         ior 1,2
         popj 017,
-
-ge_get_busy:
-        jrst pdp10_ret_busy_v34
 
 ; AC1 = decoded 7-bit GE byte.  Caller owns ge_tx_state bit 0.
 ge_put_decoded:
@@ -89,7 +86,7 @@ ge_putchar_idle:
         lsh 5,-010
         andi 5,077
         caile 5,3
-        jrst ge_putchar_arg
+        jrst pdp10_ret_arg_v34
         setom ge_tx_state
         movei 1,1
         pushj 017,ge_put_decoded
@@ -112,9 +109,6 @@ ge_putchar_idle:
         pushj 017,ge_put_decoded
         setzm ge_tx_state
         jrst pdp10_ret_ok_v34
-ge_putchar_arg:
-        jrst pdp10_ret_arg_v34
-
         .bss
 ge_rx_word:
         .block 1

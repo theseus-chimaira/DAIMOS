@@ -96,20 +96,18 @@ pdp10_pi_level7:
 ; without modifying the cursor; AOBJN advances both count and slot index.
 pdp10_pi_dispatch:
         jumpe 2,pdp10_pi_dispatch_done
-        move 1,pdp10_pi_handlers(2)
-        jrst (1)
+        jrst @pdp10_pi_handlers(2)
 
 ; Every resident interrupt handler returns here and preserves AC2/AC3.
 pdp10_pi_handler_return:
         aobjn 2,pdp10_pi_dispatch
 pdp10_pi_dispatch_done:
-        jrst pdp10_pi_return_common
+pdp10_pi_return_common:
 
 ; AC3 still names the level-specific return stub.  The stubs are two words
 ; apart, exactly matching the two-word stride of the AC1/AC2 save pairs in
 ; low core.  Derive that offset once, restore AC1/AC2 here, then let the
 ; original per-level tail restore AC3 and dismiss the correct PI level.
-pdp10_pi_return_common:
         move 2,3
         subi 2,pdp10_pi_return_level1
         move 1,000020(2)
