@@ -9,9 +9,9 @@ struct memfs_v1 *file_v1_root;
 #define FILE_V1_PROC_ROOT VFS_V1_NODE(PROCFS_V1_PROVIDER, PROCFS_V1_KIND_ROOT, 0U)
 
 vnode_v1_t file_v1_alias_node;
-static struct file_v1 file_v1_table[FILE_V1_NFILE];
-static vnode_v1_t file_v1_cwd[FILE_V1_OWNER_MAX];
-static kword_t file_v1_alias_cwd[(FILE_V1_OWNER_MAX + 35U) / 36U];
+extern struct file_v1 file_v1_table[FILE_V1_NFILE];
+extern vnode_v1_t file_v1_cwd[FILE_V1_OWNER_MAX];
+extern kword_t file_v1_alias_cwd[(FILE_V1_OWNER_MAX + 35U) / 36U];
 
 static int file_v1_alias_cwd_get(unsigned int owner);
 static void file_v1_alias_cwd_set(unsigned int owner, int active);
@@ -26,39 +26,8 @@ file_v1_is_name(const struct vfs_v1_name *name, kword_t word,
         return vfs_v1_name_is6(name, word, chars);
 }
 
-static int
-file_v1_lookup_child(vnode_v1_t dir, const struct vfs_v1_name *name,
-    vnode_v1_t *nodep)
-{
-        switch (VFS_V1_PROVIDER(dir)) {
-        case MEMFS_V1_PROVIDER:
-                if (dir == FILE_V1_MEMFS_ROOT) {
-                        if (file_v1_is_name(name,
-                            VFS_V1_SIX6('D','E','V','I','C','E'), 6U)) {
-                                *nodep = FILE_V1_DEVICE_ROOT;
-                                return 0;
-                        }
-                        if (file_v1_is_name(name,
-                            VFS_V1_SIX6('P','R','O','C',' ',' '), 4U)) {
-                                *nodep = FILE_V1_PROC_ROOT;
-                                return 0;
-                        }
-                        if (file_v1_alias_node != VFS_V1_NODE_NONE &&
-                            vfs_v1_name_is6(name,
-                            VFS_V1_SIX6('T','E','M','P',' ',' '), 4U)) {
-                                *nodep = file_v1_alias_node;
-                                return 0;
-                        }
-                }
-                return memfs_v1_lookup(file_v1_root, dir, name, nodep);
-        case DEVICEFS_V1_PROVIDER:
-                return devicefs_v1_lookup(dir, name, nodep);
-        case PROCFS_V1_PROVIDER:
-                return procfs_v1_lookup(dir, name, nodep);
-        default:
-                return -1;
-        }
-}
+extern int file_v1_lookup_child(vnode_v1_t dir,
+    const struct vfs_v1_name *name, vnode_v1_t *nodep);
 
 static int
 file_v1_node_stat(vnode_v1_t node, struct vfs_v1_stat *st)
@@ -216,48 +185,9 @@ file_v1_parent_path_owner(unsigned int owner, const kword_t *path,
         return file_v1_walk_path_owner(owner, path, 1, dirp, leaf, 0);
 }
 
-static struct file_v1 *
-file_v1_find(unsigned int owner, int fd)
-{
-        unsigned int i;
-
-        if (fd < (int)FILE_V1_FD_FIRST || fd > (int)FILE_V1_FD_MAX)
-                return 0;
-        for (i = 0U; i < FILE_V1_NFILE; ++i) {
-                if ((file_v1_table[i].meta & FILE_V1_META_USED) != 0U &&
-                    FILE_V1_META_OWNER(file_v1_table[i].meta) == owner &&
-                    FILE_V1_META_FD(file_v1_table[i].meta) == (unsigned int)fd)
-                        return &file_v1_table[i];
-        }
-        return 0;
-}
-
-static int
-file_v1_new_fd(unsigned int owner, vnode_v1_t node, unsigned int flags,
-    int isdir)
-{
-        unsigned int fd;
-        unsigned int i;
-
-        for (fd = FILE_V1_FD_FIRST; fd <= FILE_V1_FD_MAX; ++fd) {
-                if (file_v1_find(owner, (int)fd) != 0)
-                        continue;
-                for (i = 0U; i < FILE_V1_NFILE; ++i) {
-                        if ((file_v1_table[i].meta & FILE_V1_META_USED) != 0U)
-                                continue;
-                        file_v1_table[i].node = node;
-                        file_v1_table[i].off_chars = 0;
-                        file_v1_table[i].meta = FILE_V1_META_USED |
-                            (isdir ? FILE_V1_META_DIR : 0U) |
-                            ((flags & 077U) << FILE_V1_META_FLAGS_SHIFT) |
-                            (fd << FILE_V1_META_FD_SHIFT) |
-                            ((kword_t)owner << FILE_V1_META_OWNER_SHIFT);
-                        return (int)fd;
-                }
-                return -1;
-        }
-        return -1;
-}
+extern struct file_v1 *file_v1_find(unsigned int owner, int fd);
+extern int file_v1_new_fd(unsigned int owner, vnode_v1_t node,
+    unsigned int flags, int isdir);
 
 int
 file_v1_open(unsigned int owner, const kword_t *path, unsigned int flags)
@@ -451,58 +381,8 @@ file_v1_write_words(unsigned int owner, int fd, const kword_t *buf,
         return rc;
 }
 
-int
-file_v1_readdir(unsigned int owner, int fd, struct vfs_v1_dirent *ent)
-{
-        struct file_v1 *fp;
-        int rc;
-
-        fp = file_v1_find(owner, fd);
-        if (fp == 0 || ent == 0 || (fp->meta & FILE_V1_META_DIR) == 0U)
-                return -1;
-        switch (VFS_V1_PROVIDER(fp->node)) {
-        case MEMFS_V1_PROVIDER:
-                rc = memfs_v1_readdir(file_v1_root, fp->node,
-                    (unsigned int)fp->off_chars, ent);
-                if (fp->node == FILE_V1_MEMFS_ROOT && rc == 0) {
-                        unsigned int base;
-                        base = 0U;
-                        while (memfs_v1_readdir(file_v1_root, fp->node, base, ent) > 0)
-                                ++base;
-                        if ((unsigned int)fp->off_chars == base) {
-                                vfs_v1_name_set6(&ent->name,
-                                    VFS_V1_SIX6('D','E','V','I','C','E'), 6U);
-                                ent->type = VFS_V1_TYPE_DIR;
-                                rc = 1;
-                        } else if ((unsigned int)fp->off_chars == base + 1U) {
-                                vfs_v1_name_set6(&ent->name,
-                                    VFS_V1_SIX6('P','R','O','C',' ',' '), 4U);
-                                ent->type = VFS_V1_TYPE_DIR;
-                                rc = 1;
-                        } else if (file_v1_alias_node != VFS_V1_NODE_NONE &&
-                            (unsigned int)fp->off_chars == base + 2U) {
-                                vfs_v1_name_set6(&ent->name,
-                                    VFS_V1_SIX6('T','E','M','P',' ',' '), 4U);
-                                ent->type = VFS_V1_TYPE_DIR;
-                                rc = 1;
-                        }
-                }
-                break;
-        case DEVICEFS_V1_PROVIDER:
-                rc = devicefs_v1_readdir(fp->node, (unsigned int)fp->off_chars,
-                    ent);
-                break;
-        case PROCFS_V1_PROVIDER:
-                rc = procfs_v1_readdir(fp->node, (unsigned int)fp->off_chars,
-                    ent);
-                break;
-        default:
-                return -1;
-        }
-        if (rc > 0)
-                ++fp->off_chars;
-        return rc;
-}
+extern int file_v1_readdir(unsigned int owner, int fd,
+    struct vfs_v1_dirent *ent);
 
 int
 file_v1_stat_path_owner(unsigned int owner, const kword_t *path,
@@ -589,22 +469,7 @@ file_v1_chdir(unsigned int owner, const kword_t *path)
         return 0;
 }
 
-static int
-file_v1_path_put_char(kword_t *buf, unsigned int nwords,
-    unsigned int pos, unsigned int ch)
-{
-        unsigned int wi;
-        unsigned int shift;
-
-        wi = 1U + pos / 6U;
-        if (wi >= nwords)
-                return -1;
-        shift = 30U - (pos % 6U) * 6U;
-        buf[wi] |= ((kword_t)((ch - 040U) & 077U)) << shift;
-        return 0;
-}
-
-static int
+int
 file_v1_getcwd_pseudo(vnode_v1_t node, kword_t *buf, unsigned int nwords)
 {
         struct vfs_v1_name name;
@@ -644,68 +509,6 @@ file_v1_getcwd_pseudo(vnode_v1_t node, kword_t *buf, unsigned int nwords)
         buf[0] = 6U + name.chars;
         buf[1] = VFS_V1_SIX6('/','P','R','O','C','/');
         buf[2] = name.words[0];
-        return 0;
-}
-
-int
-file_v1_getcwd(unsigned int owner, kword_t *buf, unsigned int nwords)
-{
-        struct vfs_v1_name parts[16];
-        vnode_v1_t node;
-        vnode_v1_t parent;
-        unsigned int depth;
-        unsigned int i;
-        unsigned int j;
-        unsigned int pos;
-        int alias;
-        vnode_v1_t stop;
-
-        if (file_v1_root == 0 || owner >= FILE_V1_OWNER_MAX || buf == 0 ||
-            nwords < 2U)
-                return -1;
-        node = file_v1_cwd[owner];
-        if (node == VFS_V1_NODE_NONE)
-                node = FILE_V1_MEMFS_ROOT;
-        if (VFS_V1_PROVIDER(node) != MEMFS_V1_PROVIDER)
-                return file_v1_getcwd_pseudo(node, buf, nwords);
-        alias = file_v1_alias_cwd_get(owner);
-        stop = alias ? file_v1_alias_node : FILE_V1_MEMFS_ROOT;
-        for (i = 0U; i < nwords; ++i)
-                buf[i] = 0;
-        depth = 0U;
-        while (node != stop) {
-                if (depth >= 16U ||
-                    memfs_v1_parent(file_v1_root, node, &parent,
-                    &parts[depth]) != 0)
-                        return -1;
-                node = parent;
-                ++depth;
-        }
-        pos = 0U;
-        if (file_v1_path_put_char(buf, nwords, pos++, '/') != 0)
-                return -1;
-        if (alias) {
-                if (file_v1_path_put_char(buf, nwords, pos++, 'T') != 0 ||
-                    file_v1_path_put_char(buf, nwords, pos++, 'E') != 0 ||
-                    file_v1_path_put_char(buf, nwords, pos++, 'M') != 0 ||
-                    file_v1_path_put_char(buf, nwords, pos++, 'P') != 0)
-                        return -1;
-        }
-        for (i = depth; i != 0U; --i) {
-                if (pos != 1U && file_v1_path_put_char(buf, nwords, pos++, '/') != 0)
-                        return -1;
-                for (j = 0U; j < parts[i - 1U].chars; ++j) {
-                        unsigned int wi;
-                        unsigned int shift;
-                        unsigned int ch;
-                        wi = j / 6U;
-                        shift = 30U - (j % 6U) * 6U;
-                        ch = (unsigned int)(((parts[i - 1U].words[wi] >> shift) & 077UL) + 040U);
-                        if (file_v1_path_put_char(buf, nwords, pos++, ch) != 0)
-                                return -1;
-                }
-        }
-        buf[0] = (kword_t)pos;
         return 0;
 }
 

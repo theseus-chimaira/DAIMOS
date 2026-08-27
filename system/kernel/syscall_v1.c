@@ -66,7 +66,7 @@ sys_v1_writechar(unsigned int owner, int fd, int ch)
 
         if (fd == 1 || fd == 2)
                 return sys_v1_putchar(ch);
-        rc = file_v1_writechar(owner, fd, (unsigned int)ch & 0777U);
+        rc = file_v1_writechar(owner, fd, (unsigned int)ch);
         if (rc == FILE_V1_DEVICE_IO)
                 return sys_v1_putchar(ch);
         return rc;

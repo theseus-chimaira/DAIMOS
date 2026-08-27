@@ -22,7 +22,7 @@ ge_pi_handler:
         skipl ge_rx_word
         jrst ge_pi_gtyi_disable
         datai 0070,1
-        aos devicefs_v1_io_in+7
+        aos devicefs_v1_io_in+4
         tlo 1,4
         movem 1,ge_rx_word
 ge_pi_gtyi_disable:
@@ -47,7 +47,7 @@ ge_get_wait:
 
 ge_get_hardware:
         datai 0070,1
-        aos devicefs_v1_io_in+7
+        aos devicefs_v1_io_in+4
         jrst ge_get_unpack_raw
 
 ge_get_ready:
@@ -72,7 +72,7 @@ ge_put_decoded:
         iori 1,0100
         xori 1,0177
         datao 0750,1
-        aos devicefs_v1_io_out+7
+        aos devicefs_v1_io_out+4
 ge_put_decoded_wait:
         conso 0750,00100
         jrst ge_put_decoded_wait

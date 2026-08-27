@@ -5,5 +5,5 @@
         .globl ocnsls_read
 ocnsls_read:
         datai 0724,1
-        aos devicefs_v1_io_in+11
+        aos devicefs_v1_io_in+6
         popj 017,

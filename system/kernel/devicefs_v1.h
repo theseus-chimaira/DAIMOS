@@ -31,41 +31,36 @@
 
 #define DEVICEFS_V1_PRESENT(id)         (1UL << (id))
 
-#define DEVICEFS_V1_CLASS_CHAR          1U
-#define DEVICEFS_V1_CLASS_CLOCK         2U
-#define DEVICEFS_V1_CLASS_DISPLAY       3U
-#define DEVICEFS_V1_CLASS_BLOCK         4U
-#define DEVICEFS_V1_CLASS_CONTROLLER    5U
-#define DEVICEFS_V1_CLASS_MOUNTSRC      6U
+#define DEVICEFS_V1_IO_IN_CTY0          0U
+#define DEVICEFS_V1_IO_IN_PTR0          1U
+#define DEVICEFS_V1_IO_IN_CR0           2U
+#define DEVICEFS_V1_IO_IN_DCS0          3U
+#define DEVICEFS_V1_IO_IN_GE0           4U
+#define DEVICEFS_V1_IO_IN_WCNSLS        5U
+#define DEVICEFS_V1_IO_IN_OCNSLS        6U
+#define DEVICEFS_V1_IO_IN_DTC0          7U
+#define DEVICEFS_V1_IO_IN_MTC0          8U
+#define DEVICEFS_V1_IO_IN_DSK0          9U
+#define DEVICEFS_V1_IO_IN_COUNT         10U
 
-#define DEVICEFS_V1_UNIT_NONE           0U
-#define DEVICEFS_V1_UNIT_CHAR           1U
-#define DEVICEFS_V1_UNIT_WORD           2U
-
-struct devicefs_v1_desc {
-        kword_t name6;
-        kword_t meta;
-};
-
-#define DEVICEFS_V1_META(chars, class_id, unit_id) \
-        (((kword_t)(chars) & 077UL) | (((kword_t)(class_id) & 077UL) << 6) | \
-        (((kword_t)(unit_id) & 077UL) << 12))
-#define DEVICEFS_V1_META_CHARS(meta) \
-        ((unsigned int)((meta) & 077UL))
-#define DEVICEFS_V1_META_CLASS(meta) \
-        ((unsigned int)(((meta) >> 6) & 077UL))
-#define DEVICEFS_V1_META_UNIT(meta) \
-        ((unsigned int)(((meta) >> 12) & 077UL))
+#define DEVICEFS_V1_IO_OUT_CTY0         0U
+#define DEVICEFS_V1_IO_OUT_PTP0         1U
+#define DEVICEFS_V1_IO_OUT_CP0          2U
+#define DEVICEFS_V1_IO_OUT_DCS0         3U
+#define DEVICEFS_V1_IO_OUT_GE0          4U
+#define DEVICEFS_V1_IO_OUT_DPY0         5U
+#define DEVICEFS_V1_IO_OUT_WCNSLS       6U
+#define DEVICEFS_V1_IO_OUT_DTC0         7U
+#define DEVICEFS_V1_IO_OUT_MTC0         8U
+#define DEVICEFS_V1_IO_OUT_DSK0         9U
+#define DEVICEFS_V1_IO_OUT_COUNT        10U
 
 extern kword_t devicefs_v1_present;
-int devicefs_v1_set_present(unsigned int id, int present);
-vnode_v1_t devicefs_v1_root(void);
 int devicefs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
     vnode_v1_t *nodep);
 int devicefs_v1_readdir(vnode_v1_t dir, unsigned int off,
     struct vfs_v1_dirent *ent);
 int devicefs_v1_stat(vnode_v1_t node, struct vfs_v1_stat *st);
-int devicefs_v1_device_id(vnode_v1_t node, unsigned int *idp);
 int devicefs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp);
 
 #endif

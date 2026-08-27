@@ -293,30 +293,30 @@ storage_wait_done:
         andi 2,0777777
         caie 1,1
         jrst storage_account_mtc_read
-        addm 2,devicefs_v1_io_in+12
+        addm 2,devicefs_v1_io_in+7
         jrst storage_account_done
 storage_account_mtc_read:
         caie 1,2
         jrst storage_account_dsk_read
-        addm 2,devicefs_v1_io_in+13
+        addm 2,devicefs_v1_io_in+8
         jrst storage_account_done
 storage_account_dsk_read:
         caie 1,3
         jrst storage_account_dsk_write
-        addm 2,devicefs_v1_io_in+14
+        addm 2,devicefs_v1_io_in+9
         jrst storage_account_done
 storage_account_dsk_write:
         caie 1,4
         jrst storage_account_mtc_write
-        addm 2,devicefs_v1_io_out+14
+        addm 2,devicefs_v1_io_out+9
         jrst storage_account_done
 storage_account_mtc_write:
         caie 1,5
         jrst storage_account_dtc_write
-        addm 2,devicefs_v1_io_out+13
+        addm 2,devicefs_v1_io_out+8
         jrst storage_account_done
 storage_account_dtc_write:
-        addm 2,devicefs_v1_io_out+12
+        addm 2,devicefs_v1_io_out+7
 storage_account_done:
         ; Completion code 3 is DSK; tape operations can return immediately.
         caie 1,3

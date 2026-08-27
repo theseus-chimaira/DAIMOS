@@ -23,84 +23,12 @@ procfs_v1_root(void)
         return VFS_V1_NODE(PROCFS_V1_PROVIDER, PROCFS_V1_KIND_ROOT, 0U);
 }
 
-static int
-procfs_v1_is_root(vnode_v1_t node)
-{
-        return VFS_V1_PROVIDER(node) == PROCFS_V1_PROVIDER &&
-            VFS_V1_KIND(node) == PROCFS_V1_KIND_ROOT;
-}
-
-static struct proc_v1 *
-procfs_v1_slot_live(unsigned int slot, kword_t *pidp)
-{
-        struct proc_v1 *p;
-
-        p = proc_v1_get(slot);
-        if (p == 0)
-                return 0;
-        if (pidp != 0)
-                *pidp = (kword_t)PROC_V1_PID(p);
-        return p;
-}
-
-static int
-procfs_v1_is_proc(vnode_v1_t node, unsigned int *slotp)
-{
-        unsigned int slot;
-
-        if (VFS_V1_PROVIDER(node) != PROCFS_V1_PROVIDER ||
-            VFS_V1_KIND(node) != PROCFS_V1_KIND_PROC)
-                return 0;
-        slot = VFS_V1_INDEX(node);
-        if (!procfs_v1_slot_live(slot, 0))
-                return 0;
-        if (slotp != 0)
-                *slotp = slot;
-        return 1;
-}
-
-static int
-procfs_v1_is_file(vnode_v1_t node, unsigned int *slotp,
-    unsigned int *fieldp)
-{
-        unsigned int kind;
-        unsigned int slot;
-        unsigned int field;
-
-        if (VFS_V1_PROVIDER(node) != PROCFS_V1_PROVIDER)
-                return 0;
-        kind = VFS_V1_KIND(node);
-        if (kind < PROCFS_V1_KIND_PPID || kind > PROCFS_V1_KIND_COMM)
-                return 0;
-        field = kind - 1U;
-        slot = VFS_V1_INDEX(node);
-        if (!procfs_v1_slot_live(slot, 0))
-                return 0;
-        if (slotp != 0)
-                *slotp = slot;
-        if (fieldp != 0)
-                *fieldp = field;
-        return 1;
-}
-
-static int
-procfs_v1_find_pid(unsigned int pid, unsigned int *slotp)
-{
-        unsigned int slot;
-        kword_t value;
-
-        if (slotp == 0)
-                return -1;
-        for (slot = 0U; slot < PROC_V1_NPROC; ++slot) {
-                if (!procfs_v1_slot_live(slot, &value))
-                        continue;
-                if (value == (kword_t)pid) {
-                        *slotp = slot;
-                        return 0;
-                }
-        }
-        return -1;
-}
+extern int procfs_v1_is_root(vnode_v1_t node);
+extern struct proc_v1 *procfs_v1_slot_live(unsigned int slot, kword_t *pidp);
+extern int procfs_v1_is_proc(vnode_v1_t node, unsigned int *slotp);
+extern int procfs_v1_is_file(vnode_v1_t node, unsigned int *slotp,
+    unsigned int *fieldp);
+extern int procfs_v1_find_pid(unsigned int pid, unsigned int *slotp);
 
 int
 procfs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,

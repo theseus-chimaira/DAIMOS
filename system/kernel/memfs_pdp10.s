@@ -279,3 +279,289 @@ memfs_write_size:
 memfs_write_fail:
         seto    1,
         popj    17,
+
+; int memfs_v1_name_valid(const struct vfs_v1_name *name)
+        .globl  memfs_v1_name_valid
+memfs_v1_name_valid:
+        jumpe   1,memfs_name_valid_fail
+        move    2,(1)
+        jumpge  2,memfs_name_valid_small
+        jrst    memfs_name_valid_fail
+memfs_name_valid_small:
+        caige   2,1
+        jrst    memfs_name_valid_fail
+        caile   2,030                  ; VFS_V1_NAME_MAX_CHARS = 24
+        jrst    memfs_name_valid_fail
+        movei   1,1
+        popj    17,
+memfs_name_valid_fail:
+        movei   1,0
+        popj    17,
+
+; int memfs_v1_slot(const struct memfs_v1 *fs, vnode_v1_t node,
+;     unsigned int *slotp)
+        .globl  memfs_v1_slot
+memfs_v1_slot:
+        jumpe   1,memfs_slot_fail
+        hlrz    4,2
+        caie    4,040001               ; provider 4, node kind 1
+        jrst    memfs_slot_fail
+        hrrz    4,2
+        caml    4,1(1)
+        jrst    memfs_slot_fail
+        move    5,4
+        lsh     5,3
+        add     5,(1)
+        move    6,5(5)
+        trnn    6,1
+        jrst    memfs_slot_fail
+        jumpe   3,memfs_slot_ok
+        movem   4,(3)
+memfs_slot_ok:
+        movei   1,0
+        popj    17,
+memfs_slot_fail:
+        seto    1,
+        popj    17,
+
+; int memfs_v1_find_child(const struct memfs_v1 *fs, unsigned int parent,
+;     const struct vfs_v1_name *name, unsigned int *slotp)
+        .globl  memfs_v1_find_child
+memfs_v1_find_child:
+        move    5,(1)
+        addi    5,010                  ; slot 1
+        movei   6,1
+memfs_find_child_loop:
+        caml    6,1(1)
+        jrst    memfs_find_child_fail
+        move    7,5(5)
+        trnn    7,1
+        jrst    memfs_find_child_next
+        hlrz    7,7
+        came    7,2
+        jrst    memfs_find_child_next
+        move    0,(5)
+        came    0,(3)
+        jrst    memfs_find_child_next
+        move    0,1(5)
+        came    0,1(3)
+        jrst    memfs_find_child_next
+        move    0,2(5)
+        came    0,2(3)
+        jrst    memfs_find_child_next
+        move    0,3(5)
+        came    0,3(3)
+        jrst    memfs_find_child_next
+        move    0,4(5)
+        came    0,4(3)
+        jrst    memfs_find_child_next
+        jumpe   4,memfs_find_child_ok
+        movem   6,(4)
+memfs_find_child_ok:
+        movei   1,0
+        popj    17,
+memfs_find_child_next:
+        addi    5,010
+        addi    6,1
+        jrst    memfs_find_child_loop
+memfs_find_child_fail:
+        seto    1,
+        popj    17,
+
+; int memfs_v1_free_slot(const struct memfs_v1 *fs, unsigned int *slotp)
+        .globl  memfs_v1_free_slot
+memfs_v1_free_slot:
+        move    3,(1)
+        addi    3,010
+        movei   4,1
+memfs_free_slot_loop:
+        caml    4,1(1)
+        jrst    memfs_free_slot_fail
+        move    5,5(3)
+        trnn    5,1
+        jrst    memfs_free_slot_found
+        addi    3,010
+        addi    4,1
+        jrst    memfs_free_slot_loop
+memfs_free_slot_found:
+        movem   4,(2)
+        movei   1,0
+        popj    17,
+memfs_free_slot_fail:
+        seto    1,
+        popj    17,
+
+; int memfs_v1_has_children(const struct memfs_v1 *fs, unsigned int slot)
+        .globl  memfs_v1_has_children
+memfs_v1_has_children:
+        move    3,(1)
+        addi    3,010
+        movei   4,1
+memfs_has_children_loop:
+        caml    4,1(1)
+        jrst    memfs_has_children_none
+        move    5,5(3)
+        trnn    5,1
+        jrst    memfs_has_children_next
+        hlrz    5,5
+        camn    5,2
+        jrst    memfs_has_children_yes
+memfs_has_children_next:
+        addi    3,010
+        addi    4,1
+        jrst    memfs_has_children_loop
+memfs_has_children_yes:
+        movei   1,1
+        popj    17,
+memfs_has_children_none:
+        movei   1,0
+        popj    17,
+
+; void memfs_v1_clear_node(struct memfs_v1_node *np)
+        .globl  memfs_v1_clear_node
+memfs_v1_clear_node:
+        setzm   (1)
+        movei   2,1(1)
+        hrli    2,(1)
+        blt     2,7(1)
+        popj    17,
+
+        .globl  memfs_v1_node_handle
+memfs_v1_node_handle:
+        hrrz    1,1
+        tlo     1,040001
+        popj    17,
+
+; int memfs_v1_readdir(const struct memfs_v1 *fs, vnode_v1_t dir,
+;     unsigned int off, struct vfs_v1_dirent *ent)
+        .globl  memfs_v1_readdir
+memfs_v1_readdir:
+        jumpe   4,memfs_readdir_fail
+        jumpe   1,memfs_readdir_fail
+        hlrz    5,2
+        caie    5,040001
+        jrst    memfs_readdir_fail
+        hrrz    2,2                     ; parent slot
+        caml    2,1(1)
+        jrst    memfs_readdir_fail
+        move    5,2
+        lsh     5,3
+        add     5,(1)
+        move    7,5(5)
+        trnn    7,1
+        jrst    memfs_readdir_fail
+        ldb     0,[POINT 3,5(5),20]
+        caie    0,1                     ; directory
+        jrst    memfs_readdir_fail
+
+        move    5,(1)
+        addi    5,010                   ; slot 1
+        movei   6,1
+        movei   0,0                     ; matching-entry ordinal
+memfs_readdir_loop:
+        caml    6,1(1)
+        jrst    memfs_readdir_eof
+        move    7,5(5)
+        trnn    7,1
+        jrst    memfs_readdir_next
+        hlrz    7,7
+        came    7,2
+        jrst    memfs_readdir_next
+        camn    0,3
+        jrst    memfs_readdir_found
+        addi    0,1
+memfs_readdir_next:
+        addi    5,010
+        addi    6,1
+        jrst    memfs_readdir_loop
+memfs_readdir_found:
+        move    6,0                     ; preserve scratch ordinal no longer needed
+        move    0,5
+        hrl     0,5
+        hrr     0,4
+        blt     0,4(4)                  ; copy five-word name
+        ldb     0,[POINT 3,5(5),20]
+        movem   0,5(4)
+        movei   1,1
+        popj    17,
+memfs_readdir_eof:
+        movei   1,0
+        popj    17,
+memfs_readdir_fail:
+        seto    1,
+        popj    17,
+
+; int memfs_v1_stat(const struct memfs_v1 *fs, vnode_v1_t node,
+;     struct vfs_v1_stat *st)
+        .globl  memfs_v1_stat
+memfs_v1_stat:
+        jumpe   3,memfs_stat_fail
+        jumpe   1,memfs_stat_fail
+        hlrz    4,2
+        caie    4,040001
+        jrst    memfs_stat_fail
+        hrrz    4,2
+        caml    4,1(1)
+        jrst    memfs_stat_fail
+        lsh     4,3
+        add     4,(1)
+        move    5,5(4)
+        trnn    5,1
+        jrst    memfs_stat_fail
+        ldb     6,[POINT 3,5(4),20]
+        movem   6,(3)
+        move    6,5
+        lsh     6,-3
+        andi    6,07777
+        movem   6,1(3)
+        move    6,6(4)
+        movem   6,2(3)
+        hrrz    6,7(4)
+        movem   6,3(3)
+        movei   1,0
+        popj    17,
+memfs_stat_fail:
+        seto    1,
+        popj    17,
+
+; int memfs_v1_parent(const struct memfs_v1 *fs, vnode_v1_t node,
+;     vnode_v1_t *parentp, struct vfs_v1_name *namep)
+        .globl  memfs_v1_parent
+memfs_v1_parent:
+        jumpe   3,memfs_parent_fail
+        jumpe   1,memfs_parent_fail
+        hlrz    5,2
+        caie    5,040001
+        jrst    memfs_parent_fail
+        hrrz    5,2                     ; child slot
+        caml    5,1(1)
+        jrst    memfs_parent_fail
+        move    6,5
+        lsh     6,3
+        add     6,(1)                   ; child np
+        move    7,5(6)
+        trnn    7,1
+        jrst    memfs_parent_fail
+        hlrz    5,7                     ; parent slot
+        caml    5,1(1)
+        jrst    memfs_parent_fail
+        move    7,5
+        lsh     7,3
+        add     7,(1)
+        move    0,5(7)
+        trnn    0,1
+        jrst    memfs_parent_fail
+        hrrz    0,5
+        tlo     0,040001
+        movem   0,(3)
+        jumpe   4,memfs_parent_ok
+        move    0,6
+        hrl     0,6
+        hrr     0,4
+        blt     0,4(4)                  ; copy child name
+memfs_parent_ok:
+        movei   1,0
+        popj    17,
+memfs_parent_fail:
+        seto    1,
+        popj    17,

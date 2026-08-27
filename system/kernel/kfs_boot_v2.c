@@ -236,15 +236,29 @@ kfs_boot_v2_prepare(void)
                 const kword_t *srcw;
                 unsigned int j;
 
-                dst = (kword_t *)&kboot_nodes_v1[i];
+                dst = (kword_t *)(unsigned long)(KBOOT_V1_RAMFS0_BASE +
+                    i * 8U);
                 srcw = (const kword_t *)&boot_nodes_v2[i];
                 for (j = 0U; j < 8U; ++j)
                         dst[j] = srcw[j];
         }
-        kboot_fs_v1.nodes = kboot_nodes_v1;
+        {
+                kword_t *state;
+                unsigned int j;
+
+                state = (kword_t *)(unsigned long)
+                    (KBOOT_V1_RAMFS0_BASE + KBOOT_V1_NODE_WORDS);
+                for (j = 0U; j < KBOOT_V1_RUNTIME_STATE_WORDS; ++j)
+                        state[j] = 0;
+        }
+        kboot_fs_v1.nodes = (struct memfs_v1_node *)(unsigned long)
+            KBOOT_V1_RAMFS0_BASE;
         kboot_fs_v1.node_count = KBOOT_V1_NODE_COUNT;
-        kboot_fs_v1.pool = (kword_t *)(unsigned long)KBOOT_V1_RAMFS0_BASE;
-        kboot_fs_v1.pool_words = KBOOT_V1_RAMFS0_WORDS;
+        kboot_fs_v1.pool = (kword_t *)(unsigned long)
+            (KBOOT_V1_RAMFS0_BASE + KBOOT_V1_NODE_WORDS +
+            KBOOT_V1_RUNTIME_STATE_WORDS);
+        kboot_fs_v1.pool_words = KBOOT_V1_RAMFS0_WORDS -
+            KBOOT_V1_NODE_WORDS - KBOOT_V1_RUNTIME_STATE_WORDS;
         kboot_fs_v1.used_words = 0U;
         kboot_fs_v1.writable = 1;
         kboot_fs_v1.image_data = data;

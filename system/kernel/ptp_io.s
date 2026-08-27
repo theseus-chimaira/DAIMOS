@@ -26,7 +26,7 @@ ptp_putchar_idle:
         cono 0100,0007
         andi 1,0377
         datao 0100,1
-        aos devicefs_v1_io_out+3
+        aos devicefs_v1_io_out+1
         movei 2,0200000
 ptp_putchar_wait:
         skipn ptp_state

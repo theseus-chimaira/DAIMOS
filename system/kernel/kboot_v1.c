@@ -9,7 +9,6 @@ kword_t kcore_cty_putchar_v1;
 kword_t kcore_cty_getchar_v1;
 
 struct memfs_v1 kboot_fs_v1;
-struct memfs_v1_node kboot_nodes_v1[KBOOT_V1_NODE_COUNT];
 kword_t kboot_fs_ready_v2;
 
 void

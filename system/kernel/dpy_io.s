@@ -35,7 +35,7 @@ dpy_putword:
 dpy_put_start:
         setom dpy_pending
         datao 0130,1
-        aos devicefs_v1_io_out+8
+        aos devicefs_v1_io_out+5
 dpy_put_wait:
         skipe dpy_pending
         jrst dpy_put_wait

@@ -39,7 +39,7 @@ ptr_get_wait:
 
 ptr_get_hardware:
         datai 0104,3
-        aos devicefs_v1_io_in+2
+        aos devicefs_v1_io_in+1
         cono 0104,0
         andi 3,0377
         movem 3,(4)

@@ -45,101 +45,14 @@ node_set_data(struct memfs_v1_node *np, unsigned int word,
             (kword_t)(words & MEMFS_V1_HALF_MASK);
 }
 
-static int
-memfs_v1_name_equal(const struct vfs_v1_name *a,
-    const struct vfs_v1_name *b)
-{
-        unsigned int i;
-
-        if (a == 0 || b == 0 || a->chars != b->chars)
-                return 0;
-        for (i = 0U; i < VFS_V1_NAME_WORDS; ++i) {
-                if (a->words[i] != b->words[i])
-                        return 0;
-        }
-        return 1;
-}
-
-static int
-memfs_v1_name_valid(const struct vfs_v1_name *name)
-{
-        return name != 0 && name->chars != 0U &&
-            name->chars <= VFS_V1_NAME_MAX_CHARS;
-}
-
-static int
-memfs_v1_slot(const struct memfs_v1 *fs, vnode_v1_t node,
-    unsigned int *slotp)
-{
-        unsigned int slot;
-
-        if (fs == 0 || VFS_V1_PROVIDER(node) != MEMFS_V1_PROVIDER ||
-            VFS_V1_KIND(node) != MEMFS_V1_KIND_NODE)
-                return -1;
-        slot = VFS_V1_INDEX(node);
-        if (slot >= fs->node_count ||
-            (NODE_FLAGS(&fs->nodes[slot]) & MEMFS_V1_F_USED) == 0U)
-                return -1;
-        if (slotp != 0)
-                *slotp = slot;
-        return 0;
-}
-
-static vnode_v1_t
-memfs_v1_node_handle(unsigned int slot)
-{
-        return VFS_V1_NODE(MEMFS_V1_PROVIDER, MEMFS_V1_KIND_NODE, slot);
-}
-
-static int
-memfs_v1_find_child(const struct memfs_v1 *fs, unsigned int parent,
-    const struct vfs_v1_name *name, unsigned int *slotp)
-{
-        const struct memfs_v1_node *np;
-        unsigned int i;
-
-        np = fs->nodes + 1;
-        for (i = 1U; i < fs->node_count; ++i, ++np) {
-                if ((NODE_FLAGS(np) & MEMFS_V1_F_USED) == 0U ||
-                    NODE_PARENT(np) != parent)
-                        continue;
-                if (memfs_v1_name_equal(&np->name, name)) {
-                        if (slotp != 0)
-                                *slotp = i;
-                        return 0;
-                }
-        }
-        return -1;
-}
-
-static int
-memfs_v1_free_slot(const struct memfs_v1 *fs, unsigned int *slotp)
-{
-        const struct memfs_v1_node *np;
-        unsigned int i;
-
-        np = fs->nodes + 1;
-        for (i = 1U; i < fs->node_count; ++i, ++np) {
-                if ((NODE_FLAGS(np) & MEMFS_V1_F_USED) == 0U) {
-                        *slotp = i;
-                        return 0;
-                }
-        }
-        return -1;
-}
-
-static void
-memfs_v1_clear_node(struct memfs_v1_node *np)
-{
-        unsigned int i;
-
-        for (i = 0U; i < VFS_V1_NAME_WORDS; ++i)
-                np->name.words[i] = 0;
-        np->name.chars = 0U;
-        np->meta = 0;
-        np->size_chars = 0;
-        np->data = 0;
-}
+extern vnode_v1_t memfs_v1_node_handle(unsigned int slot);
+extern int memfs_v1_name_valid(const struct vfs_v1_name *name);
+extern int memfs_v1_slot(const struct memfs_v1 *fs, vnode_v1_t node,
+    unsigned int *slotp);
+extern int memfs_v1_find_child(const struct memfs_v1 *fs, unsigned int parent,
+    const struct vfs_v1_name *name, unsigned int *slotp);
+extern int memfs_v1_free_slot(const struct memfs_v1 *fs, unsigned int *slotp);
+extern void memfs_v1_clear_node(struct memfs_v1_node *np);
 
 vnode_v1_t
 memfs_v1_root(const struct memfs_v1 *fs)
@@ -166,71 +79,14 @@ memfs_v1_lookup(const struct memfs_v1 *fs, vnode_v1_t dir,
         return 0;
 }
 
-int
-memfs_v1_readdir(const struct memfs_v1 *fs, vnode_v1_t dir,
-    unsigned int off, struct vfs_v1_dirent *ent)
-{
-        unsigned int parent;
-        unsigned int i;
-        unsigned int n;
+extern int memfs_v1_readdir(const struct memfs_v1 *fs, vnode_v1_t dir,
+    unsigned int off, struct vfs_v1_dirent *ent);
 
-        if (ent == 0 || memfs_v1_slot(fs, dir, &parent) != 0 ||
-            NODE_TYPE(&fs->nodes[parent]) != VFS_V1_TYPE_DIR)
-                return -1;
-        {
-                const struct memfs_v1_node *np;
+extern int memfs_v1_stat(const struct memfs_v1 *fs, vnode_v1_t node,
+    struct vfs_v1_stat *st);
 
-                n = 0U;
-                np = fs->nodes + 1;
-                for (i = 1U; i < fs->node_count; ++i, ++np) {
-                        if ((NODE_FLAGS(np) & MEMFS_V1_F_USED) == 0U ||
-                            NODE_PARENT(np) != parent)
-                                continue;
-                        if (n++ != off)
-                                continue;
-                        ent->name = np->name;
-                        ent->type = NODE_TYPE(np);
-                        return 1;
-                }
-        }
-        return 0;
-}
-
-int
-memfs_v1_stat(const struct memfs_v1 *fs, vnode_v1_t node,
-    struct vfs_v1_stat *st)
-{
-        unsigned int slot;
-        const struct memfs_v1_node *np;
-
-        if (st == 0 || memfs_v1_slot(fs, node, &slot) != 0)
-                return -1;
-        np = &fs->nodes[slot];
-        st->type = NODE_TYPE(np);
-        st->mode = NODE_MODE(np);
-        st->size_chars = np->size_chars;
-        st->size_words = NODE_DATA_WORDS(np);
-        return 0;
-}
-
-int
-memfs_v1_parent(const struct memfs_v1 *fs, vnode_v1_t node,
-    vnode_v1_t *parentp, struct vfs_v1_name *namep)
-{
-        unsigned int slot;
-        const struct memfs_v1_node *np;
-
-        if (parentp == 0 || memfs_v1_slot(fs, node, &slot) != 0)
-                return -1;
-        np = &fs->nodes[slot];
-        if (NODE_PARENT(np) >= fs->node_count ||
-            (NODE_FLAGS(&fs->nodes[NODE_PARENT(np)]) & MEMFS_V1_F_USED) == 0U)
-                return -1;
-        *parentp = memfs_v1_node_handle(NODE_PARENT(np));
-        if (namep != 0)
-                *namep = np->name;
-        return 0;
-}
+extern int memfs_v1_parent(const struct memfs_v1 *fs, vnode_v1_t node,
+    vnode_v1_t *parentp, struct vfs_v1_name *namep);
 
 static int
 memfs_v1_new_node(struct memfs_v1 *fs, vnode_v1_t dir,
@@ -275,20 +131,7 @@ memfs_v1_mkdir(struct memfs_v1 *fs, vnode_v1_t dir,
             nodep);
 }
 
-static int
-memfs_v1_has_children(const struct memfs_v1 *fs, unsigned int slot)
-{
-        const struct memfs_v1_node *np;
-        unsigned int i;
-
-        np = fs->nodes + 1;
-        for (i = 1U; i < fs->node_count; ++i, ++np) {
-                if ((NODE_FLAGS(np) & MEMFS_V1_F_USED) != 0U &&
-                    NODE_PARENT(np) == slot)
-                        return 1;
-        }
-        return 0;
-}
+extern int memfs_v1_has_children(const struct memfs_v1 *fs, unsigned int slot);
 
 extern void memfs_v1_shift_after(struct memfs_v1 *fs, unsigned int start,
     int delta, unsigned int exclude);

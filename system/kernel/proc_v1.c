@@ -1,7 +1,7 @@
 #include "proc_v1.h"
 #include "procfs_v1.h"
 
-struct proc_v1 proc_v1_table[PROC_V1_NPROC];
+extern struct proc_v1 proc_v1_table[PROC_V1_NPROC];
 struct proc_v1 *proc_v1_current;
 unsigned int proc_v1_next_pid;
 
