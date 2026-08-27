@@ -1,4 +1,5 @@
 #include "devicefs_v1.h"
+#include "kfmt_v1.h"
 
 kword_t devicefs_v1_present;
 
@@ -250,10 +251,10 @@ devicefs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp)
         if (kind == DEVICEFS_V1_KIND_DEVICE)
                 return -3;
         if (kind == DEVICEFS_V1_KIND_IN)
-                return vfs_v1_decimal_readchar(
+                return kfmt_u36_decimal_readchar(
                     devicefs_v1_io_in[DEVICEFS_V1_DEV_CTY0], off, chp);
         if (kind == DEVICEFS_V1_KIND_OUT)
-                return vfs_v1_decimal_readchar(
+                return kfmt_u36_decimal_readchar(
                     devicefs_v1_io_out[DEVICEFS_V1_DEV_CTY0], off, chp);
         return -1;
 }

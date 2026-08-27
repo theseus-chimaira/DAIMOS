@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include "procfs_v1.h"
 #include "proc_v1.h"
+#include "kfmt-stub-v1.h"
 
 
 static struct proc_v1 *
@@ -63,11 +64,10 @@ main(void)
             VFS_V1_SIX6('W','O','R','D','S',' '), 5U) == 0);
         assert(procfs_v1_lookup(proc, &name, &file) == 0);
         assert(procfs_v1_stat(file, &st) == 0 && st.type == VFS_V1_TYPE_REG);
-        assert(procfs_v1_readchar(file, 0U, &ch) == 1 && ch == '1');
-        assert(procfs_v1_readchar(file, 1U, &ch) == 1 && ch == '7');
-        assert(procfs_v1_readchar(file, 2U, &ch) == 1 && ch == '\r');
-        assert(procfs_v1_readchar(file, 3U, &ch) == 1 && ch == '\n');
-        assert(procfs_v1_readchar(file, 4U, &ch) == 0);
+        kfmt_stub_reset();
+        assert(procfs_v1_readchar(file, 1U, &ch) == 1 && ch == '?');
+        assert(kfmt_stub_calls == 1U && kfmt_stub_value == 17U &&
+            kfmt_stub_off == 1U);
 
         assert(vfs_v1_name_set6(&name,
             VFS_V1_SIX6('S','T','A','T','E',' '), 5U) == 0);

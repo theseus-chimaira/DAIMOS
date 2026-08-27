@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include "devicefs_v1.h"
+#include "kfmt-stub-v1.h"
 
 extern kword_t devicefs_v1_io_in[DEVICEFS_V1_DEV_COUNT];
 extern kword_t devicefs_v1_io_out[DEVICEFS_V1_DEV_COUNT];
@@ -48,16 +49,19 @@ main(void)
         assert(devicefs_v1_readdir(node, 1U, &ent) == 1);
         assert(vfs_v1_name_is6(&ent.name, VFS_V1_SIX6('I','N',' ',' ',' ',' '), 2U));
         assert(devicefs_v1_lookup(node, &ent.name, &node) == 0);
-        assert(devicefs_v1_readchar(node, 0U, &ch) == 1 && ch == '1');
-        assert(devicefs_v1_readchar(node, 1U, &ch) == 1 && ch == '2');
-        assert(devicefs_v1_readchar(node, 2U, &ch) == 1 && ch == '\r');
+        kfmt_stub_reset();
+        assert(devicefs_v1_readchar(node, 1U, &ch) == 1 && ch == '?');
+        assert(kfmt_stub_calls == 1U && kfmt_stub_value == 12U &&
+            kfmt_stub_off == 1U);
         set_name(&name, VFS_V1_SIX6('C','T','Y','0',' ',' '), 4U);
         assert(devicefs_v1_lookup(root, &name, &node) == 0);
         assert(devicefs_v1_readdir(node, 2U, &ent) == 1);
         assert(vfs_v1_name_is6(&ent.name, VFS_V1_SIX6('O','U','T',' ',' ',' '), 3U));
         assert(devicefs_v1_lookup(node, &ent.name, &node) == 0);
-        assert(devicefs_v1_readchar(node, 0U, &ch) == 1 && ch == '3');
-        assert(devicefs_v1_readchar(node, 2U, &ch) == 1 && ch == '5');
+        kfmt_stub_reset();
+        assert(devicefs_v1_readchar(node, 2U, &ch) == 1 && ch == '?');
+        assert(kfmt_stub_calls == 1U && kfmt_stub_value == 345U &&
+            kfmt_stub_off == 2U);
         assert(devicefs_v1_readdir(root, 1U, &ent) == 1);
         assert(vfs_v1_name_is6(&ent.name, VFS_V1_SIX6('D','T','C','0',' ',' '), 4U));
         assert(ent.type == VFS_V1_TYPE_BLOCK);

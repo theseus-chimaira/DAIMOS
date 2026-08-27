@@ -1,4 +1,5 @@
 #include "procfs_v1.h"
+#include "kfmt_v1.h"
 #include "proc_v1.h"
 
 static const kword_t procfs_v1_files[] = {
@@ -238,5 +239,5 @@ procfs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp)
                     value == 3U ? 5U : (value == 1U || value == 2U ? 3U : 4U),
                     off, chp);
         }
-        return vfs_v1_decimal_readchar(value, off, chp);
+        return kfmt_u36_decimal_readchar(value, off, chp);
 }
