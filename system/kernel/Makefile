@@ -17,7 +17,7 @@ endif
 
 KCORE_C_SRCS = kboot_v1.c vfs_v1.c devicefs_v1.c procfs_v1.c \
 	memfs_v1.c file_v1.c proc_v1.c sched_v1.c \
-	syscall_v1.c exec_v1.c
+	syscall_v1.c
 KCORE_C_ASM = $(KCORE_C_SRCS:%.c=$(BUILD)/%.s)
 KCORE_FIXED_ASM = $(BUILD)/kcore_entry.s $(KCORE_C_ASM) \
 	$(BUILD)/syscall_dispatch_v2.s $(BUILD)/mach_user_v1.s $(BUILD)/kcore_io.s $(BUILD)/kcore_end.s
@@ -38,11 +38,11 @@ kcore: $(KCORE_FIXED_ASM) $(MRES_ASM)
 test:
 	$(MAKE) -C $(PROJECT_ROOT)/tests/system/kernel test BUILD='$(BUILD_ROOT)/tests/system/kernel' KINIT_DEBUG='$(KINIT_DEBUG)'
 
-$(BUILD)/kinit.s $(BUILD)/kinit_diag.s $(BUILD)/module_minit.s $(BUILD)/kfs_boot_v2.s: $(BUILD)/%.s: %.c kinit.h module.h mres.h kcore.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h $(VERSION_FILE)
+$(BUILD)/kinit.s $(BUILD)/kinit_diag.s $(BUILD)/module_minit.s $(BUILD)/kfs_boot_v2.s: $(BUILD)/%.s: %.c kinit.h module.h mres.h kcore.h kboot_v1.h vfs_v1.h memfs_v1.h initfs_v1.h exec_v1.h proc_v1.h mach_user_v1.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h $(VERSION_FILE)
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os $(KINIT_CPPFLAGS) -I. -I$(PDP10_PREFIX)/include -S $< -o $@
 
-$(KCORE_C_ASM): $(BUILD)/%.s: %.c kcore.h kboot_v1.h vfs_v1.h devicefs_v1.h procfs_v1.h memfs_v1.h initfs_v1.h ramfs_v1.h file_v1.h proc_v1.h sched_v1.h syscall_v1.h exec_v1.h mach_user_v1.h
+$(KCORE_C_ASM): $(BUILD)/%.s: %.c kcore.h kboot_v1.h vfs_v1.h devicefs_v1.h procfs_v1.h memfs_v1.h initfs_v1.h ramfs_v1.h file_v1.h proc_v1.h sched_v1.h syscall_v1.h exec_v1.h proc_v1.h mach_user_v1.h
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os -I. -I$(PDP10_PREFIX)/include -S $< -o $@
 

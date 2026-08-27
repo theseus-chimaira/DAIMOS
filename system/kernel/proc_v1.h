@@ -33,6 +33,7 @@ struct proc_v1 {
 
 extern struct proc_v1 proc_v1_table[PROC_V1_NPROC];
 extern struct proc_v1 *proc_v1_current;
+extern unsigned int proc_v1_next_pid;
 
 #define PROC_V1_PID(p) ((unsigned int)((p)->meta & PROC_V1_PID_MASK))
 #define PROC_V1_PARENT_SLOT(p) \

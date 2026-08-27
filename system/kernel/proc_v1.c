@@ -3,7 +3,7 @@
 
 struct proc_v1 proc_v1_table[PROC_V1_NPROC];
 struct proc_v1 *proc_v1_current;
-static unsigned int proc_v1_next_pid = 2U;
+unsigned int proc_v1_next_pid;
 
 static void
 proc_v1_zero(struct proc_v1 *p)
@@ -102,6 +102,7 @@ proc_v1_new_pid(void)
         return 0U;
 }
 
+#ifndef __PDP10__
 void
 proc_v1_init(void)
 {
@@ -124,6 +125,7 @@ proc_v1_alloc_init(void)
         p->meta = 1U | ((kword_t)PROC_V1_SIDL << PROC_V1_STATE_SHIFT);
         return p;
 }
+#endif
 
 struct proc_v1 *
 proc_v1_alloc_child(struct proc_v1 *parent)
