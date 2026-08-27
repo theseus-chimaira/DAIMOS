@@ -46,13 +46,16 @@ memfs_v1_resize:
         camn    3,5
         jrst    memfs_resize_ok
         hlrz    6,7(4)          ; data start
+        jumpl   3,memfs_resize_grow ; unsigned high half is always > old
         camg    3,5             ; new > old => grow
         jrst    memfs_resize_shrink
+memfs_resize_grow:
 
 ; Grow the node by delta = new-old. Move following pool words upward,
 ; clear the inserted gap, then relocate later mutable-node offsets.
         move    7,3
         sub     7,5             ; delta
+        jumpl   7,memfs_resize_fail ; cannot fit in the small resident pool
         move    0,3(1)
         sub     0,4(1)          ; available pool words
         camle   7,0
@@ -125,5 +128,154 @@ memfs_resize_ok:
         movei   1,0
         popj    17,
 memfs_resize_fail:
+        seto    1,
+        popj    17,
+
+; int memfs_v1_read_words(const struct memfs_v1 *fs, vnode_v1_t node,
+;     unsigned int off, kword_t *buf, unsigned int nwords)
+        .globl  memfs_v1_read_words
+memfs_v1_read_words:
+        jumpe   4,memfs_read_fail
+        hlrz    5,2
+        caie    5,040001        ; MEMFS provider 4, node kind 1
+        jrst    memfs_read_fail
+        hrrz    5,2             ; slot
+        caml    5,1(1)          ; slot < node_count
+        jrst    memfs_read_fail
+        move    6,5
+        lsh     6,3
+        add     6,(1)           ; np
+        move    7,5(6)
+        andi    7,1
+        jumpe   7,memfs_read_fail
+        ldb     7,[POINT 3,5(6),20]
+        caie    7,2             ; regular file
+        jrst    memfs_read_fail
+        hrrz    5,7(6)          ; stored words
+        jumpl   3,memfs_read_eof ; unsigned off exceeds 18-bit length
+        caml    3,5             ; off < stored words
+        jrst    memfs_read_eof
+        sub     5,3             ; available words
+        move    7,-1(17)        ; nwords, fifth C argument
+        jumpl   7,memfs_read_count
+        camle   5,7
+        move    5,7
+memfs_read_count:
+        move    0,5(6)
+        andi    0,2
+        hlrz    2,7(6)
+        jumpe   0,memfs_read_pool
+        add     2,6(1)          ; image_data
+        jrst    memfs_read_source
+memfs_read_pool:
+        add     2,2(1)          ; pool
+memfs_read_source:
+        add     2,3
+        move    6,5             ; preserve return count
+        jumpe   5,memfs_read_done
+memfs_read_copy:
+        move    0,(2)
+        movem   0,(4)
+        addi    2,1
+        addi    4,1
+        sojg    5,memfs_read_copy
+memfs_read_done:
+        move    1,6
+        popj    17,
+memfs_read_eof:
+        movei   1,0
+        popj    17,
+memfs_read_fail:
+        seto    1,
+        popj    17,
+
+; int memfs_v1_write_words(struct memfs_v1 *fs, vnode_v1_t node,
+;     unsigned int off, const kword_t *buf, unsigned int nwords,
+;     kword_t size_chars)
+        .globl  memfs_v1_write_words
+memfs_v1_write_words:
+        jumpe   4,memfs_write_fail
+        hlrz    5,2
+        caie    5,040001        ; MEMFS provider 4, node kind 1
+        jrst    memfs_write_fail
+        hrrz    5,2             ; slot
+        caml    5,1(1)
+        jrst    memfs_write_fail
+        move    6,5
+        lsh     6,3
+        add     6,(1)           ; np
+        move    7,5(6)
+        andi    7,1
+        jumpe   7,memfs_write_fail
+        ldb     7,[POINT 3,5(6),20]
+        caie    7,2
+        jrst    memfs_write_fail
+        move    7,5(6)
+        andi    7,4
+        jumpe   7,memfs_write_fail
+
+; Compute need = off+nwords and reject 36-bit unsigned wrap.
+        move    5,-1(17)        ; nwords
+        move    7,5
+        add     7,3             ; need
+        move    0,7
+        tlc     0,0400000
+        move    5,3
+        tlc     5,0400000
+        caml    0,5             ; need < off (unsigned) => overflow
+        jrst    memfs_write_need_ok
+        jrst    memfs_write_fail
+memfs_write_need_ok:
+        hrrz    5,7(6)          ; current word count
+        jumpl   7,memfs_write_grow
+        camg    7,5
+        jrst    memfs_write_ready
+memfs_write_grow:
+; Preserve the four register arguments across the internal resize call.
+        push    17,1
+        push    17,2
+        push    17,3
+        push    17,4
+        move    3,7
+        move    2,-2(17)        ; saved vnode => slot in low half
+        hrrz    2,2
+        move    1,-3(17)        ; saved fs
+        pushj   17,memfs_v1_resize
+        move    0,1
+        pop     17,4
+        pop     17,3
+        pop     17,2
+        pop     17,1
+        jumpn   0,memfs_write_fail
+
+memfs_write_ready:
+; Recompute np after resize and copy nwords into the mutable pool.
+        hrrz    5,2
+        lsh     5,3
+        add     5,(1)           ; np
+        hlrz    6,7(5)
+        add     6,2(1)          ; pool + data word
+        add     6,3             ; + off
+        move    7,-1(17)        ; count
+        jumpe   7,memfs_write_size
+memfs_write_copy:
+        move    0,(4)
+        movem   0,(6)
+        addi    4,1
+        addi    6,1
+        sojg    7,memfs_write_copy
+
+memfs_write_size:
+; size_chars is unsigned 36-bit state, so compare after toggling sign bits.
+        move    6,-2(17)
+        move    0,6
+        tlc     0,0400000
+        move    7,6(5)
+        tlc     7,0400000
+        camle   0,7
+        movem   6,6(5)
+        move    1,-1(17)
+        popj    17,
+memfs_write_fail:
         seto    1,
         popj    17,

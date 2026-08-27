@@ -371,64 +371,9 @@ memfs_v1_truncate_words(struct memfs_v1 *fs, vnode_v1_t node,
         return 0;
 }
 
-int
-memfs_v1_read_words(const struct memfs_v1 *fs, vnode_v1_t node,
-    unsigned int off, kword_t *buf, unsigned int nwords)
-{
-        unsigned int slot;
-        unsigned int n;
-        unsigned int i;
-        const struct memfs_v1_node *np;
-        const kword_t *src;
+extern int memfs_v1_read_words(const struct memfs_v1 *fs, vnode_v1_t node,
+    unsigned int off, kword_t *buf, unsigned int nwords);
 
-        if (buf == 0 || memfs_v1_slot(fs, node, &slot) != 0)
-                return -1;
-        np = &fs->nodes[slot];
-        if (NODE_TYPE(np) != VFS_V1_TYPE_REG)
-                return -1;
-        if (off >= NODE_DATA_WORDS(np))
-                return 0;
-        n = NODE_DATA_WORDS(np) - off;
-        if (n > nwords)
-                n = nwords;
-        if ((NODE_FLAGS(np) & MEMFS_V1_F_IMAGE) != 0U)
-                src = fs->image_data + NODE_DATA_WORD(np);
-        else
-                src = fs->pool + NODE_DATA_WORD(np);
-        for (i = 0U; i < n; ++i)
-                buf[i] = src[off + i];
-        return (int)n;
-}
-
-int
-memfs_v1_write_words(struct memfs_v1 *fs, vnode_v1_t node,
+extern int memfs_v1_write_words(struct memfs_v1 *fs, vnode_v1_t node,
     unsigned int off, const kword_t *buf, unsigned int nwords,
-    kword_t size_chars)
-{
-        unsigned int slot;
-        unsigned int need;
-        unsigned int i;
-        struct memfs_v1_node *np;
-
-        if (buf == 0 || memfs_v1_slot(fs, node, &slot) != 0)
-                return -1;
-        np = &fs->nodes[slot];
-        if (NODE_TYPE(np) != VFS_V1_TYPE_REG ||
-            (NODE_FLAGS(np) & MEMFS_V1_F_WRITABLE) == 0U ||
-            nwords > (~0U) - off)
-                return -1;
-        need = off + nwords;
-        if (need > NODE_DATA_WORDS(np) && memfs_v1_resize(fs, slot, need) != 0)
-                return -1;
-        np = &fs->nodes[slot];
-        {
-                kword_t *dst;
-
-                dst = fs->pool + NODE_DATA_WORD(np) + off;
-                for (i = 0U; i < nwords; ++i)
-                        dst[i] = buf[i];
-        }
-        if (size_chars > np->size_chars)
-                np->size_chars = size_chars;
-        return (int)nwords;
-}
+    kword_t size_chars);
