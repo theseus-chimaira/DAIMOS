@@ -95,13 +95,15 @@ static int
 memfs_v1_find_child(const struct memfs_v1 *fs, unsigned int parent,
     const struct vfs_v1_name *name, unsigned int *slotp)
 {
+        const struct memfs_v1_node *np;
         unsigned int i;
 
-        for (i = 1U; i < fs->node_count; ++i) {
-                if ((NODE_FLAGS(&fs->nodes[i]) & MEMFS_V1_F_USED) == 0U ||
-                    NODE_PARENT(&fs->nodes[i]) != parent)
+        np = fs->nodes + 1;
+        for (i = 1U; i < fs->node_count; ++i, ++np) {
+                if ((NODE_FLAGS(np) & MEMFS_V1_F_USED) == 0U ||
+                    NODE_PARENT(np) != parent)
                         continue;
-                if (memfs_v1_name_equal(&fs->nodes[i].name, name)) {
+                if (memfs_v1_name_equal(&np->name, name)) {
                         if (slotp != 0)
                                 *slotp = i;
                         return 0;
@@ -113,10 +115,12 @@ memfs_v1_find_child(const struct memfs_v1 *fs, unsigned int parent,
 static int
 memfs_v1_free_slot(const struct memfs_v1 *fs, unsigned int *slotp)
 {
+        const struct memfs_v1_node *np;
         unsigned int i;
 
-        for (i = 1U; i < fs->node_count; ++i) {
-                if ((NODE_FLAGS(&fs->nodes[i]) & MEMFS_V1_F_USED) == 0U) {
+        np = fs->nodes + 1;
+        for (i = 1U; i < fs->node_count; ++i, ++np) {
+                if ((NODE_FLAGS(np) & MEMFS_V1_F_USED) == 0U) {
                         *slotp = i;
                         return 0;
                 }
@@ -137,6 +141,7 @@ memfs_v1_clear_node(struct memfs_v1_node *np)
         np->data = 0;
 }
 
+#ifndef __PDP10__
 int
 memfs_v1_init(struct memfs_v1 *fs, struct memfs_v1_node *nodes,
     unsigned int node_count, kword_t *pool, unsigned int pool_words,
@@ -163,6 +168,9 @@ memfs_v1_init(struct memfs_v1 *fs, struct memfs_v1_node *nodes,
         return 0;
 }
 
+#endif
+
+#ifndef __PDP10__
 int
 memfs_v1_attach_pool(struct memfs_v1 *fs, kword_t *pool,
     unsigned int pool_words)
@@ -175,6 +183,8 @@ memfs_v1_attach_pool(struct memfs_v1 *fs, kword_t *pool,
         fs->writable = 1;
         return 0;
 }
+
+#endif
 
 vnode_v1_t
 memfs_v1_root(const struct memfs_v1 *fs)
@@ -212,16 +222,21 @@ memfs_v1_readdir(const struct memfs_v1 *fs, vnode_v1_t dir,
         if (ent == 0 || memfs_v1_slot(fs, dir, &parent) != 0 ||
             NODE_TYPE(&fs->nodes[parent]) != VFS_V1_TYPE_DIR)
                 return -1;
-        n = 0U;
-        for (i = 1U; i < fs->node_count; ++i) {
-                if ((NODE_FLAGS(&fs->nodes[i]) & MEMFS_V1_F_USED) == 0U ||
-                    NODE_PARENT(&fs->nodes[i]) != parent)
-                        continue;
-                if (n++ != off)
-                        continue;
-                ent->name = fs->nodes[i].name;
-                ent->type = NODE_TYPE(&fs->nodes[i]);
-                return 1;
+        {
+                const struct memfs_v1_node *np;
+
+                n = 0U;
+                np = fs->nodes + 1;
+                for (i = 1U; i < fs->node_count; ++i, ++np) {
+                        if ((NODE_FLAGS(np) & MEMFS_V1_F_USED) == 0U ||
+                            NODE_PARENT(np) != parent)
+                                continue;
+                        if (n++ != off)
+                                continue;
+                        ent->name = np->name;
+                        ent->type = NODE_TYPE(np);
+                        return 1;
+                }
         }
         return 0;
 }
@@ -308,11 +323,13 @@ memfs_v1_mkdir(struct memfs_v1 *fs, vnode_v1_t dir,
 static int
 memfs_v1_has_children(const struct memfs_v1 *fs, unsigned int slot)
 {
+        const struct memfs_v1_node *np;
         unsigned int i;
 
-        for (i = 1U; i < fs->node_count; ++i) {
-                if ((NODE_FLAGS(&fs->nodes[i]) & MEMFS_V1_F_USED) != 0U &&
-                    NODE_PARENT(&fs->nodes[i]) == slot)
+        np = fs->nodes + 1;
+        for (i = 1U; i < fs->node_count; ++i, ++np) {
+                if ((NODE_FLAGS(np) & MEMFS_V1_F_USED) != 0U &&
+                    NODE_PARENT(np) == slot)
                         return 1;
         }
         return 0;
@@ -322,23 +339,22 @@ static void
 memfs_v1_shift_after(struct memfs_v1 *fs, unsigned int start,
     int delta, unsigned int exclude)
 {
+        struct memfs_v1_node *np;
         unsigned int i;
 
-        for (i = 1U; i < fs->node_count; ++i) {
+        np = fs->nodes + 1;
+        for (i = 1U; i < fs->node_count; ++i, ++np) {
                 if (i == exclude ||
-                    (NODE_FLAGS(&fs->nodes[i]) & MEMFS_V1_F_USED) == 0U ||
-                    (NODE_FLAGS(&fs->nodes[i]) & MEMFS_V1_F_IMAGE) != 0U ||
-                    NODE_DATA_WORD(&fs->nodes[i]) < start)
+                    (NODE_FLAGS(np) & MEMFS_V1_F_USED) == 0U ||
+                    (NODE_FLAGS(np) & MEMFS_V1_F_IMAGE) != 0U ||
+                    NODE_DATA_WORD(np) < start)
                         continue;
                 if (delta > 0)
-                        node_set_data(&fs->nodes[i],
-                            NODE_DATA_WORD(&fs->nodes[i]) + (unsigned int)delta,
-                            NODE_DATA_WORDS(&fs->nodes[i]));
+                        node_set_data(np, NODE_DATA_WORD(np) +
+                            (unsigned int)delta, NODE_DATA_WORDS(np));
                 else
-                        node_set_data(&fs->nodes[i],
-                            NODE_DATA_WORD(&fs->nodes[i]) -
-                            (unsigned int)(-delta),
-                            NODE_DATA_WORDS(&fs->nodes[i]));
+                        node_set_data(np, NODE_DATA_WORD(np) -
+                            (unsigned int)(-delta), NODE_DATA_WORDS(np));
         }
 }
 
@@ -510,13 +526,19 @@ memfs_v1_write_words(struct memfs_v1 *fs, vnode_v1_t node,
         if (need > NODE_DATA_WORDS(np) && memfs_v1_resize(fs, slot, need) != 0)
                 return -1;
         np = &fs->nodes[slot];
-        for (i = 0U; i < nwords; ++i)
-                fs->pool[NODE_DATA_WORD(np) + off + i] = buf[i];
+        {
+                kword_t *dst;
+
+                dst = fs->pool + NODE_DATA_WORD(np) + off;
+                for (i = 0U; i < nwords; ++i)
+                        dst[i] = buf[i];
+        }
         if (size_chars > np->size_chars)
                 np->size_chars = size_chars;
         return (int)nwords;
 }
 
+#ifndef __PDP10__
 int
 memfs_v1_import_dir(struct memfs_v1 *fs, vnode_v1_t dir,
     const struct vfs_v1_name *name, unsigned int mode, int writable,
@@ -565,3 +587,4 @@ memfs_v1_import_node(struct memfs_v1 *fs, unsigned int slot,
         np->size_chars = size_chars;
         return 0;
 }
+#endif

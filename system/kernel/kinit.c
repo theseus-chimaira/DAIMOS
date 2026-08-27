@@ -4,8 +4,7 @@
 #include "mres.h"
 #include "kboot_v1.h"
 
-extern kword_t __initfs_v1_begin;
-extern kword_t __initfs_v1_begin_end;
+int kfs_boot_v2_prepare(void);
 
 static unsigned int mres_next_addr;
 static const kword_t *module_mres_package;
@@ -201,8 +200,8 @@ kinit_enter(void)
 #ifdef KINIT_DEBUG
         KINIT_TRACE(KINIT_ENTER);
 #endif
-        kinit_diag_banner();
         kcore_load();
+        kinit_diag_banner();
         kinit_save_boot_handoff();
         module_pi_init();
         kinit_diag_system();
@@ -213,9 +212,8 @@ kinit_enter(void)
             (kword_t)module_service_get(MODULE_SERVICE_CTY_PUTCHAR);
         kcore_cty_getchar_v1 =
             (kword_t)module_service_get(MODULE_SERVICE_CTY_GETCHAR);
-        kcore_initfs_image_v1 = &__initfs_v1_begin;
-        kcore_initfs_words_v1 =
-            (kword_t)(&__initfs_v1_begin_end - &__initfs_v1_begin);
+        if (kfs_boot_v2_prepare() != 0)
+                kinit_halt();
 #ifdef KINIT_DEBUG
         kinit_diag_finished();
 #endif

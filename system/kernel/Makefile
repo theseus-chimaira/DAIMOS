@@ -7,7 +7,7 @@ VERSION_FILE := $(PROJECT_ROOT)/VERSION
 DAIMON_VERSION := $(strip $(shell cat $(VERSION_FILE)))
 
 
-KINIT_SRCS = kinit.c kinit_diag.c module_minit.c
+KINIT_SRCS = kinit.c kinit_diag.c module_minit.c kfs_boot_v2.c
 KINIT_C_ASM = $(KINIT_SRCS:%.c=$(BUILD)/%.s)
 KINIT_ASM = $(KINIT_C_ASM) $(BUILD)/kinit_io.s $(BUILD)/module_io.s
 KINIT_CPPFLAGS = -DDAIMON_VERSION_TEXT='"V$(DAIMON_VERSION)  "'
@@ -16,7 +16,7 @@ KINIT_CPPFLAGS += -DKINIT_DEBUG
 endif
 
 KCORE_C_SRCS = kboot_v1.c vfs_v1.c devicefs_v1.c procfs_v1.c \
-	memfs_v1.c initfs_v1.c ramfs_v1.c file_v1.c proc_v1.c sched_v1.c \
+	memfs_v1.c file_v1.c proc_v1.c sched_v1.c \
 	syscall_v1.c exec_v1.c
 KCORE_C_ASM = $(KCORE_C_SRCS:%.c=$(BUILD)/%.s)
 KCORE_FIXED_ASM = $(BUILD)/kcore_entry.s $(KCORE_C_ASM) \
@@ -38,7 +38,7 @@ kcore: $(KCORE_FIXED_ASM) $(MRES_ASM)
 test:
 	$(MAKE) -C $(PROJECT_ROOT)/tests/system/kernel test BUILD='$(BUILD_ROOT)/tests/system/kernel' KINIT_DEBUG='$(KINIT_DEBUG)'
 
-$(BUILD)/kinit.s $(BUILD)/kinit_diag.s $(BUILD)/module_minit.s: $(BUILD)/%.s: %.c kinit.h module.h mres.h kcore.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h $(VERSION_FILE)
+$(BUILD)/kinit.s $(BUILD)/kinit_diag.s $(BUILD)/module_minit.s $(BUILD)/kfs_boot_v2.s: $(BUILD)/%.s: %.c kinit.h module.h mres.h kcore.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h $(VERSION_FILE)
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os $(KINIT_CPPFLAGS) -I. -I$(PDP10_PREFIX)/include -S $< -o $@
 

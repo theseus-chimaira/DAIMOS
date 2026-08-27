@@ -3,9 +3,21 @@
 #include "procfs_v1.h"
 
 static struct memfs_v1 *file_v1_root;
+
+#ifdef __PDP10__
+#define FILE_V1_MEMFS_ROOT VFS_V1_NODE(MEMFS_V1_PROVIDER, MEMFS_V1_KIND_NODE, 0U)
+#define FILE_V1_DEVICE_ROOT VFS_V1_NODE(DEVICEFS_V1_PROVIDER, DEVICEFS_V1_KIND_ROOT, 0U)
+#define FILE_V1_PROC_ROOT VFS_V1_NODE(PROCFS_V1_PROVIDER, PROCFS_V1_KIND_ROOT, 0U)
+#else
+#define FILE_V1_MEMFS_ROOT memfs_v1_root(file_v1_root)
+#define FILE_V1_DEVICE_ROOT devicefs_v1_root()
+#define FILE_V1_PROC_ROOT procfs_v1_root()
+#endif
+#ifndef __PDP10__
 static struct vfs_v1_name file_v1_alias_name;
-static vnode_v1_t file_v1_alias_node;
 static int file_v1_alias_active;
+#endif
+static vnode_v1_t file_v1_alias_node;
 static struct file_v1 file_v1_table[FILE_V1_NFILE];
 static vnode_v1_t file_v1_cwd[FILE_V1_OWNER_MAX];
 static kword_t file_v1_alias_cwd[(FILE_V1_OWNER_MAX + 35U) / 36U];
@@ -84,17 +96,25 @@ file_v1_lookup_child(vnode_v1_t dir, const struct vfs_v1_name *name,
 {
         switch (VFS_V1_PROVIDER(dir)) {
         case MEMFS_V1_PROVIDER:
-                if (dir == memfs_v1_root(file_v1_root)) {
+                if (dir == FILE_V1_MEMFS_ROOT) {
                         if (file_v1_is_name(name,
                             VFS_V1_SIX6('D','E','V','I','C','E'), 6U)) {
-                                *nodep = devicefs_v1_root();
+                                *nodep = FILE_V1_DEVICE_ROOT;
                                 return 0;
                         }
                         if (file_v1_is_name(name,
                             VFS_V1_SIX6('P','R','O','C',' ',' '), 4U)) {
-                                *nodep = procfs_v1_root();
+                                *nodep = FILE_V1_PROC_ROOT;
                                 return 0;
                         }
+#ifdef __PDP10__
+                        if (file_v1_alias_node != VFS_V1_NODE_NONE &&
+                            vfs_v1_name_is6(name,
+                            VFS_V1_SIX6('T','E','M','P',' ',' '), 4U)) {
+                                *nodep = file_v1_alias_node;
+                                return 0;
+                        }
+#else
                         if (file_v1_alias_active &&
                             name->chars == file_v1_alias_name.chars) {
                                 unsigned int i;
@@ -108,6 +128,7 @@ file_v1_lookup_child(vnode_v1_t dir, const struct vfs_v1_name *name,
                                         return 0;
                                 }
                         }
+#endif
                 }
                 return memfs_v1_lookup(file_v1_root, dir, name, nodep);
         case DEVICEFS_V1_PROVIDER:
@@ -137,9 +158,15 @@ file_v1_node_stat(vnode_v1_t node, struct vfs_v1_stat *st)
 void
 file_v1_init(struct memfs_v1 *rootfs)
 {
+#ifndef __PDP10__
         unsigned int i;
+#endif
 
         file_v1_root = rootfs;
+#ifdef __PDP10__
+        /* KCORE BSS is already zeroed before entry.  Zero cwd means root. */
+        return;
+#else
         file_v1_alias_active = 0;
         file_v1_alias_node = VFS_V1_NODE_NONE;
         file_v1_alias_name.chars = 0U;
@@ -154,6 +181,7 @@ file_v1_init(struct memfs_v1 *rootfs)
                 file_v1_table[i].off_chars = 0;
                 file_v1_table[i].meta = 0;
         }
+#endif
 }
 
 struct memfs_v1 *
@@ -165,6 +193,11 @@ file_v1_rootfs(void)
 int
 file_v1_alias_root(const struct vfs_v1_name *name, vnode_v1_t node)
 {
+#ifdef __PDP10__
+        (void)name;
+        file_v1_alias_node = node;
+        return 0;
+#else
         struct vfs_v1_stat st;
 
         if (file_v1_root == 0 || file_v1_alias_active || name == 0 ||
@@ -175,6 +208,7 @@ file_v1_alias_root(const struct vfs_v1_name *name, vnode_v1_t node)
         file_v1_alias_node = node;
         file_v1_alias_active = 1;
         return 0;
+#endif
 }
 
 static int
@@ -185,24 +219,24 @@ file_v1_parent_node(vnode_v1_t node, vnode_v1_t *parentp)
         if (parentp == 0)
                 return -1;
         if (VFS_V1_PROVIDER(node) == MEMFS_V1_PROVIDER) {
-                if (node == memfs_v1_root(file_v1_root)) {
+                if (node == FILE_V1_MEMFS_ROOT) {
                         *parentp = node;
                         return 0;
                 }
                 return memfs_v1_parent(file_v1_root, node, parentp, 0);
         }
         if (VFS_V1_PROVIDER(node) == DEVICEFS_V1_PROVIDER) {
-                *parentp = memfs_v1_root(file_v1_root);
+                *parentp = FILE_V1_MEMFS_ROOT;
                 return 0;
         }
         if (VFS_V1_PROVIDER(node) == PROCFS_V1_PROVIDER) {
                 kind = VFS_V1_KIND(node);
                 if (kind == PROCFS_V1_KIND_ROOT) {
-                        *parentp = memfs_v1_root(file_v1_root);
+                        *parentp = FILE_V1_MEMFS_ROOT;
                         return 0;
                 }
                 if (kind == PROCFS_V1_KIND_PROC) {
-                        *parentp = procfs_v1_root();
+                        *parentp = FILE_V1_PROC_ROOT;
                         return 0;
                 }
         }
@@ -241,10 +275,14 @@ file_v1_walk_path_owner(unsigned int owner, const kword_t *path,
         if (n == 0U)
                 return -1;
         if (file_v1_path_char(path, 0U) == '/') {
-                node = memfs_v1_root(file_v1_root);
+                node = FILE_V1_MEMFS_ROOT;
                 alias = 0;
         } else {
                 node = file_v1_cwd[owner];
+#ifdef __PDP10__
+                if (node == VFS_V1_NODE_NONE)
+                        node = FILE_V1_MEMFS_ROOT;
+#endif
                 alias = aliasp != 0 ? file_v1_alias_cwd_get(owner) : 0;
         }
         pos = 0U;
@@ -276,7 +314,7 @@ file_v1_walk_path_owner(unsigned int owner, const kword_t *path,
                         continue;
                 if (file_v1_name_dotdot(&name)) {
                         if (aliasp != 0 && alias && node == file_v1_alias_node) {
-                                node = memfs_v1_root(file_v1_root);
+                                node = FILE_V1_MEMFS_ROOT;
                                 alias = 0;
                         } else if (file_v1_parent_node(node, &next) != 0) {
                                 return -1;
@@ -287,8 +325,13 @@ file_v1_walk_path_owner(unsigned int owner, const kword_t *path,
                 }
                 if (file_v1_lookup_child(node, &name, &next) != 0)
                         return -1;
-                if (aliasp != 0 && file_v1_alias_active &&
-                    node == memfs_v1_root(file_v1_root) &&
+                if (aliasp != 0 &&
+#ifdef __PDP10__
+                    file_v1_alias_node != VFS_V1_NODE_NONE &&
+#else
+                    file_v1_alias_active &&
+#endif
+                    node == FILE_V1_MEMFS_ROOT &&
                     next == file_v1_alias_node)
                         alias = 1;
                 node = next;
@@ -557,7 +600,7 @@ file_v1_readdir(unsigned int owner, int fd, struct vfs_v1_dirent *ent)
         case MEMFS_V1_PROVIDER:
                 rc = memfs_v1_readdir(file_v1_root, fp->node,
                     (unsigned int)fp->off_chars, ent);
-                if (fp->node == memfs_v1_root(file_v1_root) && rc == 0) {
+                if (fp->node == FILE_V1_MEMFS_ROOT && rc == 0) {
                         unsigned int base;
                         base = 0U;
                         while (memfs_v1_readdir(file_v1_root, fp->node, base, ent) > 0)
@@ -572,11 +615,20 @@ file_v1_readdir(unsigned int owner, int fd, struct vfs_v1_dirent *ent)
                                     VFS_V1_SIX6('P','R','O','C',' ',' '), 4U);
                                 ent->type = VFS_V1_TYPE_DIR;
                                 rc = 1;
+#ifdef __PDP10__
+                        } else if (file_v1_alias_node != VFS_V1_NODE_NONE &&
+                            (unsigned int)fp->off_chars == base + 2U) {
+                                vfs_v1_name_set6(&ent->name,
+                                    VFS_V1_SIX6('T','E','M','P',' ',' '), 4U);
+                                ent->type = VFS_V1_TYPE_DIR;
+                                rc = 1;
+#else
                         } else if (file_v1_alias_active &&
                             (unsigned int)fp->off_chars == base + 2U) {
                                 ent->name = file_v1_alias_name;
                                 ent->type = VFS_V1_TYPE_DIR;
                                 rc = 1;
+#endif
                         }
                 }
                 break;
@@ -706,7 +758,7 @@ file_v1_getcwd_pseudo(vnode_v1_t node, kword_t *buf, unsigned int nwords)
         for (i = 0U; i < nwords; ++i)
                 buf[i] = 0;
         if (VFS_V1_PROVIDER(node) == DEVICEFS_V1_PROVIDER) {
-                if (node == devicefs_v1_root() && nwords >= 3U) {
+                if (node == FILE_V1_DEVICE_ROOT && nwords >= 3U) {
                         buf[0] = 7U;
                         buf[1] = VFS_V1_SIX6('/','D','E','V','I','C');
                         buf[2] = VFS_V1_SIX6('E',' ',' ',' ',' ',' ');
@@ -724,7 +776,7 @@ file_v1_getcwd_pseudo(vnode_v1_t node, kword_t *buf, unsigned int nwords)
         }
         if (VFS_V1_PROVIDER(node) != PROCFS_V1_PROVIDER || nwords < 2U)
                 return -1;
-        if (node == procfs_v1_root()) {
+        if (node == FILE_V1_PROC_ROOT) {
                 buf[0] = 5U;
                 buf[1] = VFS_V1_SIX6('/','P','R','O','C',' ');
                 return 0;
@@ -749,17 +801,25 @@ file_v1_getcwd(unsigned int owner, kword_t *buf, unsigned int nwords)
         unsigned int i;
         unsigned int j;
         unsigned int pos;
+        int alias;
+        vnode_v1_t stop;
 
         if (file_v1_root == 0 || owner >= FILE_V1_OWNER_MAX || buf == 0 ||
             nwords < 2U)
                 return -1;
         node = file_v1_cwd[owner];
+#ifdef __PDP10__
+        if (node == VFS_V1_NODE_NONE)
+                node = FILE_V1_MEMFS_ROOT;
+#endif
         if (VFS_V1_PROVIDER(node) != MEMFS_V1_PROVIDER)
                 return file_v1_getcwd_pseudo(node, buf, nwords);
+        alias = file_v1_alias_cwd_get(owner);
+        stop = alias ? file_v1_alias_node : FILE_V1_MEMFS_ROOT;
         for (i = 0U; i < nwords; ++i)
                 buf[i] = 0;
         depth = 0U;
-        while (node != memfs_v1_root(file_v1_root)) {
+        while (node != stop) {
                 if (depth >= 16U ||
                     memfs_v1_parent(file_v1_root, node, &parent,
                     &parts[depth]) != 0)
@@ -770,6 +830,27 @@ file_v1_getcwd(unsigned int owner, kword_t *buf, unsigned int nwords)
         pos = 0U;
         if (file_v1_path_put_char(buf, nwords, pos++, '/') != 0)
                 return -1;
+        if (alias) {
+#ifdef __PDP10__
+                if (file_v1_path_put_char(buf, nwords, pos++, 'T') != 0 ||
+                    file_v1_path_put_char(buf, nwords, pos++, 'E') != 0 ||
+                    file_v1_path_put_char(buf, nwords, pos++, 'M') != 0 ||
+                    file_v1_path_put_char(buf, nwords, pos++, 'P') != 0)
+                        return -1;
+#else
+                for (j = 0U; j < file_v1_alias_name.chars; ++j) {
+                        unsigned int wi;
+                        unsigned int shift;
+                        unsigned int ch;
+                        wi = j / 6U;
+                        shift = 30U - (j % 6U) * 6U;
+                        ch = (unsigned int)(((file_v1_alias_name.words[wi] >>
+                            shift) & 077UL) + 040U);
+                        if (file_v1_path_put_char(buf, nwords, pos++, ch) != 0)
+                                return -1;
+                }
+#endif
+        }
         for (i = depth; i != 0U; --i) {
                 if (pos != 1U && file_v1_path_put_char(buf, nwords, pos++, '/') != 0)
                         return -1;
