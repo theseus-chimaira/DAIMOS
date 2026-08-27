@@ -15,11 +15,9 @@
 #error "RAMFS0 must occupy the top 64K words"
 #endif
 
+extern struct memfs_v1 kboot_fs_v1;
 extern struct memfs_v1_node kboot_nodes_v1[KBOOT_V1_NODE_COUNT];
-extern const kword_t *kboot_image_data_v2;
-extern vnode_v1_t kboot_ramfs0_dir_v2;
 extern kword_t kboot_fs_ready_v2;
-extern kword_t kboot_init_ready_v3;
 extern kword_t kcore_resident_end_v1;
 extern kword_t kcore_cty_putchar_v1;
 extern kword_t kcore_cty_getchar_v1;

@@ -7,8 +7,13 @@
 #include "kboot_v1.h"
 #endif
 
+#ifdef __PDP10__
+kword_t sys_v1_total_words;
+kword_t sys_v1_resident_words;
+#else
 static kword_t sys_v1_total_words;
 static kword_t sys_v1_resident_words;
+#endif
 
 static unsigned int
 sys_v1_file_flags(unsigned int flags)
@@ -182,12 +187,14 @@ sys_v1_halt(void)
 }
 #endif
 
+#ifndef __PDP10__
 void
 sys_v1_set_memory_bounds(kword_t total_words, kword_t resident_words)
 {
         sys_v1_total_words = total_words;
         sys_v1_resident_words = resident_words;
 }
+#endif
 
 int
 sys_v1_meminfo(struct sys_v1_meminfo *info)

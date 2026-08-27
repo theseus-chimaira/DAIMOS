@@ -34,9 +34,14 @@ struct file_v1 {
 #define FILE_V1_META_FD(m)      (((m) >> FILE_V1_META_FD_SHIFT) & 077U)
 #define FILE_V1_META_OWNER(m)   (((m) >> FILE_V1_META_OWNER_SHIFT) & 077U)
 
+#ifdef __PDP10__
+extern struct memfs_v1 *file_v1_root;
+extern vnode_v1_t file_v1_alias_node;
+#else
 void file_v1_init(struct memfs_v1 *rootfs);
-struct memfs_v1 *file_v1_rootfs(void);
 int file_v1_alias_root(const struct vfs_v1_name *name, vnode_v1_t node);
+#endif
+struct memfs_v1 *file_v1_rootfs(void);
 int file_v1_lookup_path_owner(unsigned int owner, const kword_t *path,
     vnode_v1_t *nodep);
 int file_v1_open(unsigned int owner, const kword_t *path, unsigned int flags);

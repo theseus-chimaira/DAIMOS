@@ -3,6 +3,9 @@
 #include "initfs_v1.h"
 #include "exec_v1.h"
 #include "proc_v1.h"
+#include "file_v1.h"
+#include "devicefs_v1.h"
+#include "syscall_v1.h"
 
 static int boot_load_init_v3(const kword_t *data);
 
@@ -226,7 +229,7 @@ kfs_boot_v2_prepare(void)
         if (boot_add_dir(next, next - 1U,
             VFS_V1_SIX6('R','A','M','F','S','0'), 6U, 0777U, 1) != 0)
                 return -1;
-        kboot_ramfs0_dir_v2 = VFS_V1_NODE(MEMFS_V1_PROVIDER,
+        file_v1_alias_node = VFS_V1_NODE(MEMFS_V1_PROVIDER,
             MEMFS_V1_KIND_NODE, next);
         for (i = 0U; i < KBOOT_V1_NODE_COUNT; ++i) {
                 kword_t *dst;
@@ -238,7 +241,19 @@ kfs_boot_v2_prepare(void)
                 for (j = 0U; j < 8U; ++j)
                         dst[j] = srcw[j];
         }
-        kboot_image_data_v2 = data;
+        kboot_fs_v1.nodes = kboot_nodes_v1;
+        kboot_fs_v1.node_count = KBOOT_V1_NODE_COUNT;
+        kboot_fs_v1.pool = (kword_t *)(unsigned long)KBOOT_V1_RAMFS0_BASE;
+        kboot_fs_v1.pool_words = KBOOT_V1_RAMFS0_WORDS;
+        kboot_fs_v1.used_words = 0U;
+        kboot_fs_v1.writable = 1;
+        kboot_fs_v1.image_data = data;
+        file_v1_root = &kboot_fs_v1;
+        devicefs_v1_present = kcore_cty_putchar_v1 != 0 &&
+            kcore_cty_getchar_v1 != 0 ?
+            DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CTY0) : 0;
+        sys_v1_total_words = KBOOT_V1_TOTAL_WORDS;
+        sys_v1_resident_words = kcore_resident_end_v1;
         if (boot_load_init_v3(data) != 0)
                 return -1;
         kboot_fs_ready_v2 = 1;
@@ -379,6 +394,5 @@ boot_load_init_v3(const kword_t *data)
             (KBOOT_V1_USER_BASE & PROC_V1_HALF_MASK);
         proc_v1_current = &proc_v1_table[1];
         proc_v1_next_pid = 2U;
-        kboot_init_ready_v3 = 1;
         return 0;
 }

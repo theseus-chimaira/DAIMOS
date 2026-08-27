@@ -2,7 +2,11 @@
 #include "devicefs_v1.h"
 #include "procfs_v1.h"
 
+#ifdef __PDP10__
+struct memfs_v1 *file_v1_root;
+#else
 static struct memfs_v1 *file_v1_root;
+#endif
 
 #ifdef __PDP10__
 #define FILE_V1_MEMFS_ROOT VFS_V1_NODE(MEMFS_V1_PROVIDER, MEMFS_V1_KIND_NODE, 0U)
@@ -17,7 +21,11 @@ static struct memfs_v1 *file_v1_root;
 static struct vfs_v1_name file_v1_alias_name;
 static int file_v1_alias_active;
 #endif
+#ifdef __PDP10__
+vnode_v1_t file_v1_alias_node;
+#else
 static vnode_v1_t file_v1_alias_node;
+#endif
 static struct file_v1 file_v1_table[FILE_V1_NFILE];
 static vnode_v1_t file_v1_cwd[FILE_V1_OWNER_MAX];
 static kword_t file_v1_alias_cwd[(FILE_V1_OWNER_MAX + 35U) / 36U];
@@ -155,18 +163,13 @@ file_v1_node_stat(vnode_v1_t node, struct vfs_v1_stat *st)
         }
 }
 
+#ifndef __PDP10__
 void
 file_v1_init(struct memfs_v1 *rootfs)
 {
-#ifndef __PDP10__
         unsigned int i;
-#endif
 
         file_v1_root = rootfs;
-#ifdef __PDP10__
-        /* KCORE BSS is already zeroed before entry.  Zero cwd means root. */
-        return;
-#else
         file_v1_alias_active = 0;
         file_v1_alias_node = VFS_V1_NODE_NONE;
         file_v1_alias_name.chars = 0U;
@@ -181,8 +184,8 @@ file_v1_init(struct memfs_v1 *rootfs)
                 file_v1_table[i].off_chars = 0;
                 file_v1_table[i].meta = 0;
         }
-#endif
 }
+#endif
 
 struct memfs_v1 *
 file_v1_rootfs(void)
@@ -190,14 +193,10 @@ file_v1_rootfs(void)
         return file_v1_root;
 }
 
+#ifndef __PDP10__
 int
 file_v1_alias_root(const struct vfs_v1_name *name, vnode_v1_t node)
 {
-#ifdef __PDP10__
-        (void)name;
-        file_v1_alias_node = node;
-        return 0;
-#else
         struct vfs_v1_stat st;
 
         if (file_v1_root == 0 || file_v1_alias_active || name == 0 ||
@@ -208,8 +207,8 @@ file_v1_alias_root(const struct vfs_v1_name *name, vnode_v1_t node)
         file_v1_alias_node = node;
         file_v1_alias_active = 1;
         return 0;
-#endif
 }
+#endif
 
 static int
 file_v1_parent_node(vnode_v1_t node, vnode_v1_t *parentp)

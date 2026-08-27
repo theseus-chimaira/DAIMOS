@@ -77,7 +77,12 @@ int sys_v1_truncate(unsigned int owner, const kword_t *path, kword_t chars);
 int sys_v1_procinfo(unsigned int slot, struct sys_v1_procinfo *info);
 int sys_v1_meminfo(struct sys_v1_meminfo *info);
 int sys_v1_halt(void);
+#ifdef __PDP10__
+extern kword_t sys_v1_total_words;
+extern kword_t sys_v1_resident_words;
+#else
 void sys_v1_set_memory_bounds(kword_t total_words, kword_t resident_words);
+#endif
 
 /* Called by mach_user_v1.s with the saved AC block. */
 int exec_native_syscall_v1(kword_t *ac);
