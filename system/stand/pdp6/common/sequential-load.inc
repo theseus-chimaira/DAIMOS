@@ -14,6 +14,6 @@
         .include "../common/validate-load.inc"
         movei 01,040000
         pushj 017,read_words
-        movei 017,050000
+        movei 017,070000
         setzb 01,02
         jrst 0(07)

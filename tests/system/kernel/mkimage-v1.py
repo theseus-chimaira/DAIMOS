@@ -8,6 +8,7 @@ WORD_MASK = (1 << 36) - 1
 HALF_MASK = (1 << 18) - 1
 IMAGE_BASE = 0o40000
 KCORE_BASE = 0o60
+KINIT_STACK_BASE = 0o70000
 DAIMON_MAGIC = 0o444151555756
 
 
@@ -53,6 +54,8 @@ def main():
 
     if image_start != IMAGE_BASE or not (image_start < image_end <= HALF_MASK):
         raise SystemExit("invalid KINIT image bounds")
+    if image_end > KINIT_STACK_BASE:
+        raise SystemExit("KINIT image overlaps pushdown stack")
     if not (image_start <= load_begin <= load_end <= image_end):
         raise SystemExit("invalid KCORE load slot")
     if not (image_start <= entry < image_end):

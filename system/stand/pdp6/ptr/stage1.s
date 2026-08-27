@@ -29,7 +29,7 @@ __start:
 start:
         setom 000040
         setom 000041
-        movei 017,050000
+        movei 017,070000
         pushj 017,install_bootstrap_sixbit
         movei 01,0020
         cono 0104,0(01)

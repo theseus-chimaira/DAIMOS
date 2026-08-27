@@ -20,7 +20,7 @@ KCORE_C_SRCS = kboot_v1.c vfs_v1.c devicefs_v1.c procfs_v1.c \
 	syscall_v1.c exec_v1.c
 KCORE_C_ASM = $(KCORE_C_SRCS:%.c=$(BUILD)/%.s)
 KCORE_FIXED_ASM = $(BUILD)/kcore_entry.s $(KCORE_C_ASM) \
-	$(BUILD)/mach_user_v1.s $(BUILD)/kcore_io.s $(BUILD)/kcore_end.s
+	$(BUILD)/syscall_dispatch_v2.s $(BUILD)/mach_user_v1.s $(BUILD)/kcore_io.s $(BUILD)/kcore_end.s
 
 MRES_SRCS =
 MRES_C_ASM = $(MRES_SRCS:%.c=$(BUILD)/%.s)

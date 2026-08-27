@@ -30,11 +30,13 @@ sys_v1_open(unsigned int owner, const kword_t *path, unsigned int flags)
         return file_v1_open(owner, path, sys_v1_file_flags(flags));
 }
 
+#ifndef __PDP10__
 int
 sys_v1_close(unsigned int owner, int fd)
 {
         return file_v1_close(owner, fd);
 }
+#endif
 
 int
 sys_v1_putchar(int ch)
@@ -88,6 +90,7 @@ sys_v1_writechar(unsigned int owner, int fd, int ch)
 }
 
 
+#ifndef __PDP10__
 int
 sys_v1_chdir(unsigned int owner, const kword_t *path)
 {
@@ -151,6 +154,7 @@ sys_v1_truncate(unsigned int owner, const kword_t *path, kword_t chars)
 {
         return file_v1_truncate_owner(owner, path, chars);
 }
+#endif
 
 int
 sys_v1_procinfo(unsigned int slot, struct sys_v1_procinfo *info)
@@ -169,12 +173,14 @@ sys_v1_procinfo(unsigned int slot, struct sys_v1_procinfo *info)
 
 extern void pdp10_halt(void);
 
+#ifndef __PDP10__
 int
 sys_v1_halt(void)
 {
         pdp10_halt();
         return -1;
 }
+#endif
 
 void
 sys_v1_set_memory_bounds(kword_t total_words, kword_t resident_words)
@@ -214,6 +220,7 @@ sys_v1_meminfo(struct sys_v1_meminfo *info)
         return 0;
 }
 
+#ifndef __PDP10__
 static kword_t *
 sys_v1_user_words(kword_t addr)
 {
@@ -344,3 +351,4 @@ exec_native_syscall_v1(kword_t *ac)
         ac[1] = (kword_t)rc;
         return rc;
 }
+#endif

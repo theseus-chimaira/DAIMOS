@@ -74,7 +74,7 @@ load_image_loop:
         pushj 017,copy_stream_words
         jumpn 01,load_image_loop
 load_image_done:
-        movei 017,050000
+        movei 017,070000
         setz 01,
         move 02,member_count
         jrst @entry_addr

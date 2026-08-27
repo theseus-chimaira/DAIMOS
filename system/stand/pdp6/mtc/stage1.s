@@ -16,7 +16,7 @@ __start:
 start:
         setom 000040
         setom 000041
-        movei 017,050000
+        movei 017,070000
         pushj 017,install_bootstrap_sixbit
 
         ; Type 136: input, six 6-bit characters, device 3, move enabled.
