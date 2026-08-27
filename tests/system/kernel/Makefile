@@ -26,7 +26,7 @@ KINIT_NAMES = kinit kinit_diag module_minit kfs_boot_v2 kinit_io module_io
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 KCORE_C_NAMES = kboot_v1 vfs_v1 devicefs_v1 procfs_v1 memfs_v1 file_v1 proc_v1 sched_v1 syscall_v1
-KCORE_FIXED_NAMES = kcore_entry $(KCORE_C_NAMES) kfmt_pdp10 syscall_dispatch_v2 mach_user_v1 kcore_io kcore_end
+KCORE_FIXED_NAMES = kcore_entry $(KCORE_C_NAMES) kfmt_pdp10 memfs_pdp10 syscall_dispatch_v2 mach_user_v1 kcore_io kcore_end
 KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))
 KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
 MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io io7_io dcs_io ge_io dpy_io tty_io wcnsls_io ocnsls_io storage_io slv_io
@@ -38,7 +38,7 @@ KINIT_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
 KCORE_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
 	kcore.h kcore_pi.h kboot_v1.h vfs_v1.h kfmt_v1.h devicefs_v1.h procfs_v1.h memfs_v1.h initfs_v1.h file_v1.h proc_v1.h sched_v1.h syscall_v1.h exec_v1.h mach_user_v1.h \
 	cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h \
-	kcore_entry.s kboot_v1.c vfs_v1.c kfmt_pdp10.s devicefs_v1.c procfs_v1.c memfs_v1.c file_v1.c proc_v1.c sched_v1.c syscall_v1.c syscall_dispatch_v2.s mach_user_v1.s kcore_io.s kcore_end.s \
+	kcore_entry.s kboot_v1.c vfs_v1.c kfmt_pdp10.s memfs_pdp10.s devicefs_v1.c procfs_v1.c memfs_v1.c file_v1.c proc_v1.c sched_v1.c syscall_v1.c syscall_dispatch_v2.s mach_user_v1.s kcore_io.s kcore_end.s \
 	cty_io.s clk_io.s ptr_io.s ptp_io.s cr_io.s cp_io.s dcs_io.s ge_io.s dpy_io.s tty_io.s wcnsls_io.s ocnsls_io.s storage_io.s slv_io.s)
 
 KCORE_DXR = $(BUILD)/kcore-v1.dxr
@@ -168,17 +168,19 @@ proc-sched-v1-unit: $(PROC_SCHED_V1_UNIT)
 
 MEMFS_V1_UNIT = $(BUILD)/memfs-v1-unit
 $(MEMFS_V1_UNIT): memfs-v1-unit.c \
+    memfs-shift-stub-v1.c \
     $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
     $(PROJECT_ROOT)/system/kernel/memfs_v1.c | $(BUILD)
 	$(HOST_CC) -std=c99 -Wall -Wextra -Werror -I$(PROJECT_ROOT)/system/kernel \
 	    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/memfs_v1.c memfs-v1-unit.c -o $@
+	    $(PROJECT_ROOT)/system/kernel/memfs_v1.c memfs-shift-stub-v1.c memfs-v1-unit.c -o $@
 
 memfs-v1-unit: $(MEMFS_V1_UNIT)
 	$(MEMFS_V1_UNIT)
 
 FILE_V1_UNIT = $(BUILD)/file-v1-unit
 $(FILE_V1_UNIT): file-v1-unit.c \
+    memfs-shift-stub-v1.c \
     kfmt-stub-v1.c kfmt-stub-v1.h \
     $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
     $(PROJECT_ROOT)/system/kernel/devicefs_v1.c \
@@ -192,13 +194,14 @@ $(FILE_V1_UNIT): file-v1-unit.c \
 	    $(PROJECT_ROOT)/system/kernel/procfs_v1.c \
 	    $(PROJECT_ROOT)/system/kernel/memfs_v1.c \
 		    $(PROJECT_ROOT)/system/kernel/file_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/proc_v1.c kfmt-stub-v1.c file-v1-unit.c -o $@
+	    $(PROJECT_ROOT)/system/kernel/proc_v1.c kfmt-stub-v1.c memfs-shift-stub-v1.c file-v1-unit.c -o $@
 
 file-v1-unit: $(FILE_V1_UNIT)
 	$(FILE_V1_UNIT)
 
 SYSCALL_V1_UNIT = $(BUILD)/syscall-v1-unit
 $(SYSCALL_V1_UNIT): syscall-v1-unit.c \
+    memfs-shift-stub-v1.c \
     kfmt-stub-v1.c kfmt-stub-v1.h \
     $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
     $(PROJECT_ROOT)/system/kernel/devicefs_v1.c \
@@ -214,7 +217,7 @@ $(SYSCALL_V1_UNIT): syscall-v1-unit.c \
 	    $(PROJECT_ROOT)/system/kernel/memfs_v1.c \
 		    $(PROJECT_ROOT)/system/kernel/file_v1.c \
 	    $(PROJECT_ROOT)/system/kernel/syscall_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/proc_v1.c kfmt-stub-v1.c syscall-v1-unit.c -o $@
+	    $(PROJECT_ROOT)/system/kernel/proc_v1.c kfmt-stub-v1.c memfs-shift-stub-v1.c syscall-v1-unit.c -o $@
 
 syscall-v1-unit: $(SYSCALL_V1_UNIT)
 	$(SYSCALL_V1_UNIT)

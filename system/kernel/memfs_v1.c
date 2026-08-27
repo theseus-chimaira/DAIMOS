@@ -290,28 +290,8 @@ memfs_v1_has_children(const struct memfs_v1 *fs, unsigned int slot)
         return 0;
 }
 
-static void
-memfs_v1_shift_after(struct memfs_v1 *fs, unsigned int start,
-    int delta, unsigned int exclude)
-{
-        struct memfs_v1_node *np;
-        unsigned int i;
-
-        np = fs->nodes + 1;
-        for (i = 1U; i < fs->node_count; ++i, ++np) {
-                if (i == exclude ||
-                    (NODE_FLAGS(np) & MEMFS_V1_F_USED) == 0U ||
-                    (NODE_FLAGS(np) & MEMFS_V1_F_IMAGE) != 0U ||
-                    NODE_DATA_WORD(np) < start)
-                        continue;
-                if (delta > 0)
-                        node_set_data(np, NODE_DATA_WORD(np) +
-                            (unsigned int)delta, NODE_DATA_WORDS(np));
-                else
-                        node_set_data(np, NODE_DATA_WORD(np) -
-                            (unsigned int)(-delta), NODE_DATA_WORDS(np));
-        }
-}
+extern void memfs_v1_shift_after(struct memfs_v1 *fs, unsigned int start,
+    int delta, unsigned int exclude);
 
 static int
 memfs_v1_resize(struct memfs_v1 *fs, unsigned int slot,
