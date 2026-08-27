@@ -46,8 +46,6 @@ extern unsigned int proc_v1_next_pid;
 #define PROC_V1_ENTRY(p) \
         ((kword_t)(((p)->meta >> PROC_V1_ENTRY_SHIFT) & PROC_V1_HALF_MASK))
 
-void proc_v1_init(void);
-struct proc_v1 *proc_v1_alloc_init(void);
 struct proc_v1 *proc_v1_alloc_child(struct proc_v1 *parent);
 void proc_v1_reap(struct proc_v1 *p);
 unsigned int proc_v1_slot(const struct proc_v1 *p);

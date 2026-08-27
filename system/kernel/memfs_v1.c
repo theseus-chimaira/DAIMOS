@@ -141,51 +141,6 @@ memfs_v1_clear_node(struct memfs_v1_node *np)
         np->data = 0;
 }
 
-#ifndef __PDP10__
-int
-memfs_v1_init(struct memfs_v1 *fs, struct memfs_v1_node *nodes,
-    unsigned int node_count, kword_t *pool, unsigned int pool_words,
-    int writable)
-{
-        unsigned int i;
-
-        if (fs == 0 || nodes == 0 || node_count == 0U)
-                return -1;
-        if (pool_words != 0U && pool == 0)
-                return -1;
-        fs->nodes = nodes;
-        fs->node_count = node_count;
-        fs->pool = pool;
-        fs->pool_words = pool_words;
-        fs->used_words = 0U;
-        fs->writable = writable != 0;
-        fs->image_data = 0;
-        for (i = 0U; i < node_count; ++i)
-                memfs_v1_clear_node(&nodes[i]);
-        node_set_meta(&nodes[0], 0U, VFS_V1_TYPE_DIR,
-            fs->writable ? 0777U : 0555U, MEMFS_V1_F_USED |
-            (fs->writable ? MEMFS_V1_F_WRITABLE : 0U));
-        return 0;
-}
-
-#endif
-
-#ifndef __PDP10__
-int
-memfs_v1_attach_pool(struct memfs_v1 *fs, kword_t *pool,
-    unsigned int pool_words)
-{
-        if (fs == 0 || fs->nodes == 0 || fs->node_count == 0U ||
-            pool == 0 || pool_words == 0U || fs->used_words != 0U)
-                return -1;
-        fs->pool = pool;
-        fs->pool_words = pool_words;
-        fs->writable = 1;
-        return 0;
-}
-
-#endif
-
 vnode_v1_t
 memfs_v1_root(const struct memfs_v1 *fs)
 {
@@ -537,54 +492,3 @@ memfs_v1_write_words(struct memfs_v1 *fs, vnode_v1_t node,
                 np->size_chars = size_chars;
         return (int)nwords;
 }
-
-#ifndef __PDP10__
-int
-memfs_v1_import_dir(struct memfs_v1 *fs, vnode_v1_t dir,
-    const struct vfs_v1_name *name, unsigned int mode, int writable,
-    vnode_v1_t *nodep)
-{
-        unsigned int parent;
-        unsigned int slot;
-
-        if (fs == 0 || nodep == 0 || !memfs_v1_name_valid(name) ||
-            memfs_v1_slot(fs, dir, &parent) != 0 ||
-            NODE_TYPE(&fs->nodes[parent]) != VFS_V1_TYPE_DIR ||
-            memfs_v1_find_child(fs, parent, name, 0) == 0 ||
-            memfs_v1_free_slot(fs, &slot) != 0 ||
-            memfs_v1_import_node(fs, slot, parent, name, VFS_V1_TYPE_DIR,
-            mode, 0, 0U, 0) != 0)
-                return -1;
-        if (writable)
-                fs->nodes[slot].meta |= MEMFS_V1_F_WRITABLE;
-        *nodep = memfs_v1_node_handle(slot);
-        return 0;
-}
-
-int
-memfs_v1_import_node(struct memfs_v1 *fs, unsigned int slot,
-    unsigned int parent, const struct vfs_v1_name *name, unsigned int type,
-    unsigned int mode, unsigned int data_word, unsigned int data_words,
-    kword_t size_chars)
-{
-        struct memfs_v1_node *np;
-
-        if (fs == 0 || slot == 0U || slot >= fs->node_count ||
-            parent >= fs->node_count || !memfs_v1_name_valid(name) ||
-            (type != VFS_V1_TYPE_DIR && type != VFS_V1_TYPE_REG) ||
-            (NODE_FLAGS(&fs->nodes[slot]) & MEMFS_V1_F_USED) != 0U ||
-            (NODE_FLAGS(&fs->nodes[parent]) & MEMFS_V1_F_USED) == 0U ||
-            NODE_TYPE(&fs->nodes[parent]) != VFS_V1_TYPE_DIR ||
-            data_word > MEMFS_V1_HALF_MASK ||
-            data_words > MEMFS_V1_HALF_MASK)
-                return -1;
-        np = &fs->nodes[slot];
-        memfs_v1_clear_node(np);
-        np->name = *name;
-        node_set_meta(np, parent, type, mode,
-            MEMFS_V1_F_USED | MEMFS_V1_F_IMAGE);
-        node_set_data(np, data_word, data_words);
-        np->size_chars = size_chars;
-        return 0;
-}
-#endif

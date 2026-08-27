@@ -55,34 +55,14 @@ struct sys_v1_meminfo {
 };
 
 int sys_v1_open(unsigned int owner, const kword_t *path, unsigned int flags);
-int sys_v1_close(unsigned int owner, int fd);
 int sys_v1_putchar(int ch);
 int sys_v1_getchar(void);
 int sys_v1_readchar(unsigned int owner, int fd);
 int sys_v1_writechar(unsigned int owner, int fd, int ch);
-int sys_v1_chdir(unsigned int owner, const kword_t *path);
-int sys_v1_getcwd(unsigned int owner, kword_t *buf, unsigned int nwords);
-int sys_v1_read_words(unsigned int owner, int fd, kword_t *buf,
-    unsigned int nwords);
-int sys_v1_write_words(unsigned int owner, int fd, const kword_t *buf,
-    unsigned int nwords, kword_t size_chars);
-int sys_v1_stat_path(unsigned int owner, const kword_t *path,
-    struct vfs_v1_stat *st);
-int sys_v1_dirread(unsigned int owner, int fd, struct vfs_v1_dirent *ent);
-int sys_v1_mkdir(unsigned int owner, const kword_t *path, unsigned int mode);
-int sys_v1_unlink(unsigned int owner, const kword_t *path);
-int sys_v1_rename(unsigned int owner, const kword_t *oldpath,
-    const kword_t *newpath);
-int sys_v1_truncate(unsigned int owner, const kword_t *path, kword_t chars);
 int sys_v1_procinfo(unsigned int slot, struct sys_v1_procinfo *info);
 int sys_v1_meminfo(struct sys_v1_meminfo *info);
-int sys_v1_halt(void);
-#ifdef __PDP10__
 extern kword_t sys_v1_total_words;
 extern kword_t sys_v1_resident_words;
-#else
-void sys_v1_set_memory_bounds(kword_t total_words, kword_t resident_words);
-#endif
 
 /* Called by mach_user_v1.s with the saved AC block. */
 int exec_native_syscall_v1(kword_t *ac);

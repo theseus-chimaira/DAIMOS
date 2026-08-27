@@ -42,7 +42,7 @@ $(BUILD)/kinit.s $(BUILD)/kinit_diag.s $(BUILD)/module_minit.s $(BUILD)/kfs_boot
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os $(KINIT_CPPFLAGS) -I. -I$(PDP10_PREFIX)/include -S $< -o $@
 
-$(KCORE_C_ASM): $(BUILD)/%.s: %.c kcore.h kboot_v1.h vfs_v1.h devicefs_v1.h procfs_v1.h memfs_v1.h initfs_v1.h ramfs_v1.h file_v1.h proc_v1.h sched_v1.h syscall_v1.h exec_v1.h proc_v1.h mach_user_v1.h
+$(KCORE_C_ASM): $(BUILD)/%.s: %.c kcore.h kboot_v1.h vfs_v1.h devicefs_v1.h procfs_v1.h memfs_v1.h initfs_v1.h file_v1.h proc_v1.h sched_v1.h syscall_v1.h exec_v1.h proc_v1.h mach_user_v1.h
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os -I. -I$(PDP10_PREFIX)/include -S $< -o $@
 

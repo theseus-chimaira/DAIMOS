@@ -102,30 +102,6 @@ proc_v1_new_pid(void)
         return 0U;
 }
 
-#ifndef __PDP10__
-void
-proc_v1_init(void)
-{
-        unsigned int i;
-
-        for (i = 0U; i < PROC_V1_NPROC; ++i)
-                proc_v1_zero(&proc_v1_table[i]);
-        proc_v1_set_state(&proc_v1_table[0], PROC_V1_SRUN);
-        proc_v1_current = &proc_v1_table[0];
-        proc_v1_next_pid = 2U;
-}
-
-struct proc_v1 *
-proc_v1_alloc_init(void)
-{
-        struct proc_v1 *p;
-
-        p = &proc_v1_table[1];
-        proc_v1_zero(p);
-        p->meta = 1U | ((kword_t)PROC_V1_SIDL << PROC_V1_STATE_SHIFT);
-        return p;
-}
-#endif
 
 struct proc_v1 *
 proc_v1_alloc_child(struct proc_v1 *parent)

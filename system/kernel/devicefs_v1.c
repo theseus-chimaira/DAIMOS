@@ -1,10 +1,6 @@
 #include "devicefs_v1.h"
 
-#ifdef __PDP10__
 kword_t devicefs_v1_present;
-#else
-static kword_t devicefs_v1_present;
-#endif
 
 /* Full-width counters are updated by the resident device drivers. */
 kword_t devicefs_v1_io_in[DEVICEFS_V1_DEV_COUNT];
@@ -30,14 +26,6 @@ static const struct devicefs_v1_desc devicefs_v1_devices[DEVICEFS_V1_DEV_COUNT] 
         { VFS_V1_SIX6('D','6','S','E','T','0'), DEVICEFS_V1_META(6U, DEVICEFS_V1_CLASS_MOUNTSRC, DEVICEFS_V1_UNIT_NONE) }
 };
 
-#ifndef __PDP10__
-void
-devicefs_v1_init(kword_t present_mask)
-{
-        devicefs_v1_present = present_mask &
-            ((1UL << DEVICEFS_V1_DEV_COUNT) - 1UL);
-}
-#endif
 
 int
 devicefs_v1_set_present(unsigned int id, int present)

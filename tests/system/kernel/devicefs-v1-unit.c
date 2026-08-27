@@ -22,9 +22,9 @@ main(void)
         unsigned int id;
         unsigned int ch;
 
-        devicefs_v1_init(DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CTY0) |
+        devicefs_v1_present = DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CTY0) |
             DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DSK0) |
-            DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DTC0));
+            DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DTC0);
         root = devicefs_v1_root();
         assert(VFS_V1_PROVIDER(root) == DEVICEFS_V1_PROVIDER);
         assert(VFS_V1_KIND(root) == DEVICEFS_V1_KIND_ROOT);

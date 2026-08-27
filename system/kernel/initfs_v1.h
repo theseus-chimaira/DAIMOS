@@ -11,7 +11,5 @@
 #define INITFS_V1_REG           1U
 #define INITFS_V1_DIR           4U
 
-int initfs_v1_mount(struct memfs_v1 *fs, struct memfs_v1_node *nodes,
-    unsigned int node_count, const kword_t *image, unsigned int image_words);
 
 #endif

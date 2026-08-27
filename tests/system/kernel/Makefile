@@ -36,9 +36,9 @@ KINIT_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
 	kinit.c kinit_diag.c module_minit.c kfs_boot_v2.c kinit.h module.h mres.h \
 	cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h kinit_io.s module_io.s)
 KCORE_INPUTS = $(addprefix $(PROJECT_ROOT)/system/kernel/, \
-	kcore.h kcore_pi.h kboot_v1.h vfs_v1.h devicefs_v1.h procfs_v1.h memfs_v1.h initfs_v1.h ramfs_v1.h file_v1.h proc_v1.h sched_v1.h syscall_v1.h exec_v1.h mach_user_v1.h \
+	kcore.h kcore_pi.h kboot_v1.h vfs_v1.h devicefs_v1.h procfs_v1.h memfs_v1.h initfs_v1.h file_v1.h proc_v1.h sched_v1.h syscall_v1.h exec_v1.h mach_user_v1.h \
 	cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h \
-	kcore_entry.s kboot_v1.c vfs_v1.c devicefs_v1.c procfs_v1.c memfs_v1.c initfs_v1.c ramfs_v1.c file_v1.c proc_v1.c sched_v1.c syscall_v1.c syscall_dispatch_v2.s mach_user_v1.s kcore_io.s kcore_end.s \
+	kcore_entry.s kboot_v1.c vfs_v1.c devicefs_v1.c procfs_v1.c memfs_v1.c file_v1.c proc_v1.c sched_v1.c syscall_v1.c syscall_dispatch_v2.s mach_user_v1.s kcore_io.s kcore_end.s \
 	cty_io.s clk_io.s ptr_io.s ptp_io.s cr_io.s cp_io.s dcs_io.s ge_io.s dpy_io.s tty_io.s wcnsls_io.s ocnsls_io.s storage_io.s slv_io.s)
 
 KCORE_DXR = $(BUILD)/kcore-v1.dxr
@@ -166,14 +166,10 @@ proc-sched-v1-unit: $(PROC_SCHED_V1_UNIT)
 MEMFS_V1_UNIT = $(BUILD)/memfs-v1-unit
 $(MEMFS_V1_UNIT): memfs-v1-unit.c \
     $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
-    $(PROJECT_ROOT)/system/kernel/memfs_v1.c \
-    $(PROJECT_ROOT)/system/kernel/initfs_v1.c \
-    $(PROJECT_ROOT)/system/kernel/ramfs_v1.c | $(BUILD)
+    $(PROJECT_ROOT)/system/kernel/memfs_v1.c | $(BUILD)
 	$(HOST_CC) -std=c99 -Wall -Wextra -Werror -I$(PROJECT_ROOT)/system/kernel \
 	    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/memfs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/initfs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/ramfs_v1.c memfs-v1-unit.c -o $@
+	    $(PROJECT_ROOT)/system/kernel/memfs_v1.c memfs-v1-unit.c -o $@
 
 memfs-v1-unit: $(MEMFS_V1_UNIT)
 	$(MEMFS_V1_UNIT)
@@ -184,7 +180,6 @@ $(FILE_V1_UNIT): file-v1-unit.c \
     $(PROJECT_ROOT)/system/kernel/devicefs_v1.c \
     $(PROJECT_ROOT)/system/kernel/procfs_v1.c \
     $(PROJECT_ROOT)/system/kernel/memfs_v1.c \
-    $(PROJECT_ROOT)/system/kernel/ramfs_v1.c \
     $(PROJECT_ROOT)/system/kernel/file_v1.c \
     $(PROJECT_ROOT)/system/kernel/proc_v1.c | $(BUILD)
 	$(HOST_CC) -std=c99 -Wall -Wextra -Werror -I$(PROJECT_ROOT)/system/kernel \
@@ -192,8 +187,7 @@ $(FILE_V1_UNIT): file-v1-unit.c \
 	    $(PROJECT_ROOT)/system/kernel/devicefs_v1.c \
 	    $(PROJECT_ROOT)/system/kernel/procfs_v1.c \
 	    $(PROJECT_ROOT)/system/kernel/memfs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/ramfs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/file_v1.c \
+		    $(PROJECT_ROOT)/system/kernel/file_v1.c \
 	    $(PROJECT_ROOT)/system/kernel/proc_v1.c file-v1-unit.c -o $@
 
 file-v1-unit: $(FILE_V1_UNIT)
@@ -205,7 +199,6 @@ $(SYSCALL_V1_UNIT): syscall-v1-unit.c \
     $(PROJECT_ROOT)/system/kernel/devicefs_v1.c \
     $(PROJECT_ROOT)/system/kernel/procfs_v1.c \
     $(PROJECT_ROOT)/system/kernel/memfs_v1.c \
-    $(PROJECT_ROOT)/system/kernel/ramfs_v1.c \
     $(PROJECT_ROOT)/system/kernel/file_v1.c \
     $(PROJECT_ROOT)/system/kernel/syscall_v1.c \
     $(PROJECT_ROOT)/system/kernel/proc_v1.c | $(BUILD)
@@ -214,8 +207,7 @@ $(SYSCALL_V1_UNIT): syscall-v1-unit.c \
 	    $(PROJECT_ROOT)/system/kernel/devicefs_v1.c \
 	    $(PROJECT_ROOT)/system/kernel/procfs_v1.c \
 	    $(PROJECT_ROOT)/system/kernel/memfs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/ramfs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/file_v1.c \
+		    $(PROJECT_ROOT)/system/kernel/file_v1.c \
 	    $(PROJECT_ROOT)/system/kernel/syscall_v1.c \
 	    $(PROJECT_ROOT)/system/kernel/proc_v1.c syscall-v1-unit.c -o $@
 

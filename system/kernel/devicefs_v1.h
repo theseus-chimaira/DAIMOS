@@ -57,11 +57,7 @@ struct devicefs_v1_desc {
 #define DEVICEFS_V1_META_UNIT(meta) \
         ((unsigned int)(((meta) >> 12) & 077UL))
 
-#ifdef __PDP10__
 extern kword_t devicefs_v1_present;
-#else
-void devicefs_v1_init(kword_t present_mask);
-#endif
 int devicefs_v1_set_present(unsigned int id, int present);
 vnode_v1_t devicefs_v1_root(void);
 int devicefs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,

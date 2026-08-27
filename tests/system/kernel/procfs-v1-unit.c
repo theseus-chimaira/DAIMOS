@@ -4,6 +4,22 @@
 #include "proc_v1.h"
 
 
+static struct proc_v1 *
+setup_processes(void)
+{
+        unsigned int i;
+
+        for (i = 0U; i < PROC_V1_NPROC; ++i) {
+                proc_v1_table[i].meta = 0;
+                proc_v1_table[i].mem_layout = 0;
+        }
+        proc_v1_table[0].meta = (kword_t)PROC_V1_SRUN << PROC_V1_STATE_SHIFT;
+        proc_v1_table[1].meta = 1U | ((kword_t)PROC_V1_SIDL << PROC_V1_STATE_SHIFT);
+        proc_v1_current = &proc_v1_table[0];
+        proc_v1_next_pid = 2U;
+        return &proc_v1_table[1];
+}
+
 int
 main(void)
 {
@@ -18,8 +34,7 @@ main(void)
         unsigned int value;
         unsigned int ch;
 
-        proc_v1_init();
-        initp = proc_v1_alloc_init();
+        initp = setup_processes();
         proc_v1_set_state(initp, PROC_V1_SRUN);
         child = proc_v1_alloc_child(initp);
         assert(child != 0);

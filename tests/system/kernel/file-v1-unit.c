@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <string.h>
 #include "file_v1.h"
-#include "ramfs_v1.h"
 #include "devicefs_v1.h"
 #include "procfs_v1.h"
 #include "proc_v1.h"
@@ -50,6 +49,41 @@ name_eq(const struct vfs_v1_name *name, const char *s)
         return 1;
 }
 
+static struct proc_v1 *
+setup_processes(void)
+{
+        unsigned int i;
+
+        for (i = 0U; i < PROC_V1_NPROC; ++i) {
+                proc_v1_table[i].meta = 0;
+                proc_v1_table[i].mem_layout = 0;
+        }
+        proc_v1_table[0].meta = (kword_t)PROC_V1_SRUN << PROC_V1_STATE_SHIFT;
+        proc_v1_table[1].meta = 1U | ((kword_t)PROC_V1_SIDL << PROC_V1_STATE_SHIFT);
+        proc_v1_current = &proc_v1_table[0];
+        proc_v1_next_pid = 2U;
+        return &proc_v1_table[1];
+}
+
+static void
+setup_ramfs(struct memfs_v1 *fs, struct memfs_v1_node *nodes,
+    unsigned int node_count, kword_t *pool, unsigned int pool_words)
+{
+        unsigned int i;
+
+        for (i = 0U; i < node_count; ++i)
+                memset(&nodes[i], 0, sizeof(nodes[i]));
+        fs->nodes = nodes;
+        fs->node_count = node_count;
+        fs->pool = pool;
+        fs->pool_words = pool_words;
+        fs->used_words = 0U;
+        fs->writable = 1;
+        fs->image_data = 0;
+        nodes[0].meta = ((kword_t)VFS_V1_TYPE_DIR << 15U) |
+            ((kword_t)0777U << 3U) | MEMFS_V1_F_USED | MEMFS_V1_F_WRITABLE;
+}
+
 int
 main(void)
 {
@@ -72,7 +106,6 @@ main(void)
         kword_t want_cwd[6];
         struct vfs_v1_stat st;
         struct vfs_v1_dirent ent;
-        struct vfs_v1_name alias_name;
         vnode_v1_t alias_node;
         char buf[16];
         int fd;
@@ -80,16 +113,15 @@ main(void)
         int saw_device;
         int saw_proc;
 
-        proc_v1_init();
-        initp = proc_v1_alloc_init();
+        initp = setup_processes();
         if (initp == 0)
                 return 1;
         proc_v1_set_state(initp, PROC_V1_SRUN);
 
-        if (ramfs_v1_init(&fs, nodes, NODES, pool, POOL) != 0)
-                return 1;
-        devicefs_v1_init(DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CTY0));
-        file_v1_init(&fs);
+        setup_ramfs(&fs, nodes, NODES, pool, POOL);
+        devicefs_v1_present = DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CTY0);
+        file_v1_root = &fs;
+        file_v1_alias_node = VFS_V1_NODE_NONE;
 
         pack_path("/HELLO", p_file, 6U);
         fd = file_v1_open(1U, p_file, FILE_V1_O_WRITE | FILE_V1_O_CREAT |
@@ -203,11 +235,9 @@ main(void)
         pack_path("/MOUNT/RAMFS0", p_ramfs, 6U);
         if (file_v1_mkdir_owner(0U, p_mount, 0777U) != 0 ||
             file_v1_mkdir_owner(0U, p_ramfs, 0777U) != 0 ||
-            file_v1_lookup_path_owner(0U, p_ramfs, &alias_node) != 0 ||
-            vfs_v1_name_set6(&alias_name,
-            VFS_V1_SIX6('T','E','M','P',' ',' '), 4U) != 0 ||
-            file_v1_alias_root(&alias_name, alias_node) != 0)
+            file_v1_lookup_path_owner(0U, p_ramfs, &alias_node) != 0)
                 return 28;
+        file_v1_alias_node = alias_node;
         pack_path("TEMP", p_rel, 3U);
         if (file_v1_chdir(1U, p_rel) != 0)
                 return 29;
