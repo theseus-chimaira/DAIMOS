@@ -16,63 +16,8 @@ static kword_t file_v1_alias_cwd[(FILE_V1_OWNER_MAX + 35U) / 36U];
 static int file_v1_alias_cwd_get(unsigned int owner);
 static void file_v1_alias_cwd_set(unsigned int owner, int active);
 
-static unsigned int
-file_v1_path_chars(const kword_t *path)
-{
-        if (path == 0)
-                return 0U;
-        return (unsigned int)path[0];
-}
-
-static unsigned int
-file_v1_path_char(const kword_t *path, unsigned int pos)
-{
-        unsigned int wi;
-        unsigned int bi;
-        unsigned int shift;
-
-        wi = 1U + pos / 6U;
-        bi = pos % 6U;
-        shift = 30U - bi * 6U;
-        return (unsigned int)(((path[wi] >> shift) & 077UL) + 040U);
-}
-
-static int
-file_v1_component(const kword_t *path, unsigned int *posp,
-    struct vfs_v1_name *name)
-{
-        unsigned int n;
-        unsigned int pos;
-        unsigned int c;
-        unsigned int i;
-        unsigned int wi;
-        unsigned int shift;
-
-        if (path == 0 || posp == 0 || name == 0)
-                return -1;
-        n = file_v1_path_chars(path);
-        pos = *posp;
-        while (pos < n && file_v1_path_char(path, pos) == '/')
-                ++pos;
-        if (pos >= n) {
-                *posp = pos;
-                return 0;
-        }
-        name->chars = 0U;
-        for (i = 0U; i < VFS_V1_NAME_WORDS; ++i)
-                name->words[i] = 0;
-        while (pos < n && file_v1_path_char(path, pos) != '/') {
-                if (name->chars >= VFS_V1_NAME_MAX_CHARS)
-                        return -1;
-                c = file_v1_path_char(path, pos++);
-                wi = name->chars / 6U;
-                shift = 30U - (name->chars % 6U) * 6U;
-                name->words[wi] |= ((kword_t)((c - 040U) & 077U)) << shift;
-                ++name->chars;
-        }
-        *posp = pos;
-        return 1;
-}
+extern int file_v1_component(const kword_t *path, unsigned int *posp,
+    struct vfs_v1_name *name);
 
 static int
 file_v1_is_name(const struct vfs_v1_name *name, kword_t word,
@@ -198,10 +143,10 @@ file_v1_walk_path_owner(unsigned int owner, const kword_t *path,
         if (file_v1_root == 0 || path == 0 || nodep == 0 ||
             owner >= FILE_V1_OWNER_MAX || (parent_only && leaf == 0))
                 return -1;
-        n = file_v1_path_chars(path);
+        n = (unsigned int)path[0];
         if (n == 0U)
                 return -1;
-        if (file_v1_path_char(path, 0U) == '/') {
+        if (((path[1] >> 30U) & 077UL) == (kword_t)('/' - 040)) {
                 node = FILE_V1_MEMFS_ROOT;
                 alias = 0;
         } else {
@@ -224,8 +169,6 @@ file_v1_walk_path_owner(unsigned int owner, const kword_t *path,
                         return 0;
                 }
                 if (parent_only) {
-                        while (pos < n && file_v1_path_char(path, pos) == '/')
-                                ++pos;
                         if (pos >= n) {
                                 if (file_v1_name_dot(&name) ||
                                     file_v1_name_dotdot(&name))
