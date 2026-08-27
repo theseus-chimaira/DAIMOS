@@ -293,48 +293,8 @@ memfs_v1_has_children(const struct memfs_v1 *fs, unsigned int slot)
 extern void memfs_v1_shift_after(struct memfs_v1 *fs, unsigned int start,
     int delta, unsigned int exclude);
 
-static int
-memfs_v1_resize(struct memfs_v1 *fs, unsigned int slot,
-    unsigned int words)
-{
-        struct memfs_v1_node *np;
-        unsigned int old;
-        unsigned int pos;
-        unsigned int i;
-        unsigned int delta;
-
-        np = &fs->nodes[slot];
-        if ((NODE_FLAGS(np) & MEMFS_V1_F_IMAGE) != 0U ||
-            (NODE_FLAGS(np) & MEMFS_V1_F_WRITABLE) == 0U)
-                return -1;
-        old = NODE_DATA_WORDS(np);
-        if (words == old)
-                return 0;
-        pos = NODE_DATA_WORD(np) + old;
-        if (words > old) {
-                delta = words - old;
-                if (delta > fs->pool_words - fs->used_words)
-                        return -1;
-                i = fs->used_words;
-                while (i > pos) {
-                        --i;
-                        fs->pool[i + delta] = fs->pool[i];
-                }
-                for (i = pos; i < pos + delta; ++i)
-                        fs->pool[i] = 0;
-                memfs_v1_shift_after(fs, pos, (int)delta, slot);
-                fs->used_words += delta;
-        } else {
-                delta = old - words;
-                pos = NODE_DATA_WORD(np) + words;
-                for (i = pos; i + delta < fs->used_words; ++i)
-                        fs->pool[i] = fs->pool[i + delta];
-                memfs_v1_shift_after(fs, NODE_DATA_WORD(np) + old, -(int)delta, slot);
-                fs->used_words -= delta;
-        }
-        node_set_data(np, NODE_DATA_WORD(np), words);
-        return 0;
-}
+extern int memfs_v1_resize(struct memfs_v1 *fs, unsigned int slot,
+    unsigned int words);
 
 int
 memfs_v1_unlink(struct memfs_v1 *fs, vnode_v1_t dir,

@@ -116,7 +116,7 @@ CR_INPUT = $(BUILD)/cr-input.txt
 CP_OUTPUT = $(BUILD)/cp-output.txt
 
 .DEFAULT_GOAL := image
-.PHONY: image minboot test devicefs-v1-unit procfs-v1-unit proc-sched-v1-unit memfs-v1-unit file-v1-unit syscall-v1-unit clean
+.PHONY: image minboot test devicefs-v1-unit procfs-v1-unit proc-sched-v1-unit clean
 
 
 DEVICEFS_V1_UNIT = $(BUILD)/devicefs-v1-unit
@@ -165,62 +165,6 @@ $(PROC_SCHED_V1_UNIT): proc-sched-v1-unit.c \
 
 proc-sched-v1-unit: $(PROC_SCHED_V1_UNIT)
 	$(PROC_SCHED_V1_UNIT)
-
-MEMFS_V1_UNIT = $(BUILD)/memfs-v1-unit
-$(MEMFS_V1_UNIT): memfs-v1-unit.c \
-    memfs-shift-stub-v1.c \
-    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
-    $(PROJECT_ROOT)/system/kernel/memfs_v1.c | $(BUILD)
-	$(HOST_CC) -std=c99 -Wall -Wextra -Werror -I$(PROJECT_ROOT)/system/kernel \
-	    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/memfs_v1.c memfs-shift-stub-v1.c memfs-v1-unit.c -o $@
-
-memfs-v1-unit: $(MEMFS_V1_UNIT)
-	$(MEMFS_V1_UNIT)
-
-FILE_V1_UNIT = $(BUILD)/file-v1-unit
-$(FILE_V1_UNIT): file-v1-unit.c \
-    memfs-shift-stub-v1.c \
-    kfmt-stub-v1.c kfmt-stub-v1.h \
-    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
-    $(PROJECT_ROOT)/system/kernel/devicefs_v1.c \
-    $(PROJECT_ROOT)/system/kernel/procfs_v1.c \
-    $(PROJECT_ROOT)/system/kernel/memfs_v1.c \
-    $(PROJECT_ROOT)/system/kernel/file_v1.c \
-    $(PROJECT_ROOT)/system/kernel/proc_v1.c | $(BUILD)
-	$(HOST_CC) -std=c99 -Wall -Wextra -Werror -I$(PROJECT_ROOT)/system/kernel \
-	    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/devicefs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/procfs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/memfs_v1.c \
-		    $(PROJECT_ROOT)/system/kernel/file_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/proc_v1.c kfmt-stub-v1.c memfs-shift-stub-v1.c file-v1-unit.c -o $@
-
-file-v1-unit: $(FILE_V1_UNIT)
-	$(FILE_V1_UNIT)
-
-SYSCALL_V1_UNIT = $(BUILD)/syscall-v1-unit
-$(SYSCALL_V1_UNIT): syscall-v1-unit.c \
-    memfs-shift-stub-v1.c \
-    kfmt-stub-v1.c kfmt-stub-v1.h \
-    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
-    $(PROJECT_ROOT)/system/kernel/devicefs_v1.c \
-    $(PROJECT_ROOT)/system/kernel/procfs_v1.c \
-    $(PROJECT_ROOT)/system/kernel/memfs_v1.c \
-    $(PROJECT_ROOT)/system/kernel/file_v1.c \
-    $(PROJECT_ROOT)/system/kernel/syscall_v1.c \
-    $(PROJECT_ROOT)/system/kernel/proc_v1.c | $(BUILD)
-	$(HOST_CC) -std=c99 -Wall -Wextra -Werror -I$(PROJECT_ROOT)/system/kernel \
-	    $(PROJECT_ROOT)/system/kernel/vfs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/devicefs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/procfs_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/memfs_v1.c \
-		    $(PROJECT_ROOT)/system/kernel/file_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/syscall_v1.c \
-	    $(PROJECT_ROOT)/system/kernel/proc_v1.c kfmt-stub-v1.c memfs-shift-stub-v1.c syscall-v1-unit.c -o $@
-
-syscall-v1-unit: $(SYSCALL_V1_UNIT)
-	$(SYSCALL_V1_UNIT)
 
 $(BUILD):
 	mkdir -p $@
