@@ -51,6 +51,8 @@ int memfs_v1_rename(struct memfs_v1 *fs, vnode_v1_t olddir,
     const struct vfs_v1_name *newname);
 int memfs_v1_truncate_words(struct memfs_v1 *fs, vnode_v1_t node,
     unsigned int words, kword_t size_chars);
+int memfs_v1_chmod(struct memfs_v1 *fs, vnode_v1_t node,
+    unsigned int mode);
 int memfs_v1_read_words(const struct memfs_v1 *fs, vnode_v1_t node,
     unsigned int off, kword_t *buf, unsigned int nwords);
 int memfs_v1_write_words(struct memfs_v1 *fs, vnode_v1_t node,

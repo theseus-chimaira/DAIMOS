@@ -172,6 +172,21 @@ memfs_v1_rename(struct memfs_v1 *fs, vnode_v1_t olddir,
 }
 
 int
+memfs_v1_chmod(struct memfs_v1 *fs, vnode_v1_t node, unsigned int mode)
+{
+        unsigned int slot;
+
+        if (fs == 0 || !fs->writable || memfs_v1_slot(fs, node, &slot) != 0 ||
+            (NODE_FLAGS(&fs->nodes[slot]) & MEMFS_V1_F_WRITABLE) == 0U)
+                return -1;
+        fs->nodes[slot].meta =
+            (fs->nodes[slot].meta &
+            ~((kword_t)MEMFS_V1_MODE_MASK << MEMFS_V1_MODE_SHIFT)) |
+            ((kword_t)(mode & MEMFS_V1_MODE_MASK) << MEMFS_V1_MODE_SHIFT);
+        return 0;
+}
+
+int
 memfs_v1_truncate_words(struct memfs_v1 *fs, vnode_v1_t node,
     unsigned int words, kword_t size_chars)
 {
