@@ -44,7 +44,7 @@
 #define WCNSLS_X_READ           0U
 #define OCNSLS_X_READ           0U
 #define STORAGE_X_HANDLER        0U
-#define STORAGE_X_DTC_READ_WORDS 1U
+#define STORAGE_X_DTC_READ_BLOCK 1U
 #define STORAGE_X_MTC_READ_WORDS 2U
 #define STORAGE_X_DSK_READ_SECTOR 3U
 #define STORAGE_X_DSK_WRITE_SECTOR 4U
@@ -903,8 +903,8 @@ dtc_minit(void)
                 return;
         }
         base = storage_install(name);
-        module_service_set(MODULE_SERVICE_DTC_READ_WORDS,
-            minit_export(name, base, STORAGE_X_DTC_READ_WORDS));
+        module_service_set(MODULE_SERVICE_DTC_READ_BLOCK,
+            minit_export(name, base, STORAGE_X_DTC_READ_BLOCK));
         module_service_set(MODULE_SERVICE_DTC_WRITE_BLOCK,
             minit_export(name, base, STORAGE_X_DTC_WRITE_BLOCK));
         minit_diag_ok(name);
