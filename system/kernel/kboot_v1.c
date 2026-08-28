@@ -9,12 +9,8 @@ kword_t kcore_cty_putchar_v1;
 kword_t kcore_cty_getchar_v1;
 
 struct memfs_v1 kboot_fs_v1;
-kword_t kboot_fs_ready_v2;
-
 void
 kcore_boot_v1(void)
 {
-        if (kboot_fs_ready_v2 == 0)
-                return;
         (void)sched_v1_run_once(mach_enter_user_v1);
 }

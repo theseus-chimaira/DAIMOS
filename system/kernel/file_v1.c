@@ -1,6 +1,7 @@
 #include "file_v1.h"
 #include "devicefs_v1.h"
 #include "procfs_v1.h"
+#include "proc_v1.h"
 
 struct memfs_v1 *file_v1_root;
 
@@ -10,21 +11,11 @@ struct memfs_v1 *file_v1_root;
 
 vnode_v1_t file_v1_alias_node;
 extern struct file_v1 file_v1_table[FILE_V1_NFILE];
-extern vnode_v1_t file_v1_cwd[FILE_V1_OWNER_MAX];
-extern kword_t file_v1_alias_cwd[(FILE_V1_OWNER_MAX + 35U) / 36U];
-
-static int file_v1_alias_cwd_get(unsigned int owner);
-static void file_v1_alias_cwd_set(unsigned int owner, int active);
+extern vnode_v1_t file_v1_cwd;
+extern kword_t file_v1_alias_cwd;
 
 extern int file_v1_component(const kword_t *path, unsigned int *posp,
     struct vfs_v1_name *name);
-
-static int
-file_v1_is_name(const struct vfs_v1_name *name, kword_t word,
-    unsigned int chars)
-{
-        return vfs_v1_name_is6(name, word, chars);
-}
 
 extern int file_v1_lookup_child(vnode_v1_t dir,
     const struct vfs_v1_name *name, vnode_v1_t *nodep);
@@ -42,13 +33,6 @@ file_v1_node_stat(vnode_v1_t node, struct vfs_v1_stat *st)
         default:
                 return -1;
         }
-}
-
-
-struct memfs_v1 *
-file_v1_rootfs(void)
-{
-        return file_v1_root;
 }
 
 
@@ -97,7 +81,7 @@ file_v1_name_dotdot(const struct vfs_v1_name *name)
 }
 
 static int
-file_v1_walk_path_owner(unsigned int owner, const kword_t *path,
+file_v1_walk_path(const kword_t *path,
     int parent_only, vnode_v1_t *nodep, struct vfs_v1_name *leaf,
     int *aliasp)
 {
@@ -110,7 +94,7 @@ file_v1_walk_path_owner(unsigned int owner, const kword_t *path,
         struct vfs_v1_name name;
 
         if (file_v1_root == 0 || path == 0 || nodep == 0 ||
-            owner >= FILE_V1_OWNER_MAX || (parent_only && leaf == 0))
+            (parent_only && leaf == 0))
                 return -1;
         n = (unsigned int)path[0];
         if (n == 0U)
@@ -119,10 +103,10 @@ file_v1_walk_path_owner(unsigned int owner, const kword_t *path,
                 node = FILE_V1_MEMFS_ROOT;
                 alias = 0;
         } else {
-                node = file_v1_cwd[owner];
+                node = file_v1_cwd;
                 if (node == VFS_V1_NODE_NONE)
                         node = FILE_V1_MEMFS_ROOT;
-                alias = aliasp != 0 ? file_v1_alias_cwd_get(owner) : 0;
+                alias = aliasp != 0 && file_v1_alias_cwd != 0;
         }
         pos = 0U;
         for (;;) {
@@ -172,34 +156,32 @@ file_v1_walk_path_owner(unsigned int owner, const kword_t *path,
 }
 
 int
-file_v1_lookup_path_owner(unsigned int owner, const kword_t *path,
-    vnode_v1_t *nodep)
+file_v1_lookup_path(const kword_t *path, vnode_v1_t *nodep)
 {
-        return file_v1_walk_path_owner(owner, path, 0, nodep, 0, 0);
+        return file_v1_walk_path(path, 0, nodep, 0, 0);
 }
 
 static int
-file_v1_parent_path_owner(unsigned int owner, const kword_t *path,
-    vnode_v1_t *dirp, struct vfs_v1_name *leaf)
+file_v1_parent_path(const kword_t *path, vnode_v1_t *dirp,
+    struct vfs_v1_name *leaf)
 {
-        return file_v1_walk_path_owner(owner, path, 1, dirp, leaf, 0);
+        return file_v1_walk_path(path, 1, dirp, leaf, 0);
 }
 
-extern struct file_v1 *file_v1_find(unsigned int owner, int fd);
-extern int file_v1_new_fd(unsigned int owner, vnode_v1_t node,
-    unsigned int flags, int isdir);
+extern struct file_v1 *file_v1_find(int fd);
+extern int file_v1_new_fd(vnode_v1_t node, unsigned int flags, int isdir);
 
 int
-file_v1_open(unsigned int owner, const kword_t *path, unsigned int flags)
+file_v1_open(const kword_t *path, unsigned int flags)
 {
         vnode_v1_t node;
         vnode_v1_t dir;
         struct vfs_v1_name leaf;
         struct vfs_v1_stat st;
 
-        if (file_v1_lookup_path_owner(owner, path, &node) != 0) {
+        if (file_v1_lookup_path(path, &node) != 0) {
                 if ((flags & FILE_V1_O_CREAT) == 0U ||
-                    file_v1_parent_path_owner(owner, path, &dir, &leaf) != 0 ||
+                    file_v1_parent_path(path, &dir, &leaf) != 0 ||
                     VFS_V1_PROVIDER(dir) != MEMFS_V1_PROVIDER ||
                     memfs_v1_create(file_v1_root, dir, &leaf, 0666U, &node) != 0)
                         return -1;
@@ -211,16 +193,16 @@ file_v1_open(unsigned int owner, const kword_t *path, unsigned int flags)
                     memfs_v1_truncate_words(file_v1_root, node, 0U, 0) != 0)
                         return -1;
         }
-        return file_v1_new_fd(owner, node, flags, st.type == VFS_V1_TYPE_DIR);
+        return file_v1_new_fd(node, flags, st.type == VFS_V1_TYPE_DIR);
 }
 
 
 int
-file_v1_close(unsigned int owner, int fd)
+file_v1_close(int fd)
 {
         struct file_v1 *fp;
 
-        fp = file_v1_find(owner, fd);
+        fp = file_v1_find(fd);
         if (fp == 0)
                 return -1;
         fp->meta = 0U;
@@ -229,25 +211,8 @@ file_v1_close(unsigned int owner, int fd)
         return 0;
 }
 
-static unsigned int
-file_v1_word_char(kword_t word, unsigned int i)
-{
-        return (unsigned int)((word >> (27U - 9U * i)) & 0777UL);
-}
-
-static kword_t
-file_v1_set_word_char(kword_t word, unsigned int i, unsigned int c)
-{
-        unsigned int shift;
-        kword_t mask;
-
-        shift = 27U - 9U * i;
-        mask = (kword_t)0777UL << shift;
-        return (word & ~mask) | (((kword_t)c & 0777UL) << shift);
-}
-
 int
-file_v1_readchar(unsigned int owner, int fd)
+file_v1_readchar(int fd)
 {
         struct file_v1 *fp;
         struct vfs_v1_stat st;
@@ -258,7 +223,7 @@ file_v1_readchar(unsigned int owner, int fd)
         kword_t word;
         int rc;
 
-        fp = file_v1_find(owner, fd);
+        fp = file_v1_find(fd);
         if (fp == 0 || (fp->meta & FILE_V1_META_DIR) != 0U ||
             (FILE_V1_META_FLAGS(fp->meta) & FILE_V1_O_READ) == 0U)
                 return -1;
@@ -274,7 +239,7 @@ file_v1_readchar(unsigned int owner, int fd)
                 if (memfs_v1_read_words(file_v1_root, fp->node, wi, &word,
                     1U) != 1)
                         return -1;
-                ch = file_v1_word_char(word, bi);
+                ch = (unsigned int)((word >> (27U - 9U * bi)) & 0777UL);
                 break;
         case PROCFS_V1_PROVIDER:
                 rc = procfs_v1_readchar(fp->node, fp->off_chars, &ch);
@@ -296,7 +261,7 @@ file_v1_readchar(unsigned int owner, int fd)
 }
 
 int
-file_v1_writechar(unsigned int owner, int fd, unsigned int ch)
+file_v1_writechar(int fd, unsigned int ch)
 {
         struct file_v1 *fp;
         struct vfs_v1_stat st;
@@ -307,7 +272,7 @@ file_v1_writechar(unsigned int owner, int fd, unsigned int ch)
         kword_t word;
         kword_t end_chars;
 
-        fp = file_v1_find(owner, fd);
+        fp = file_v1_find(fd);
         if (fp == 0 || (fp->meta & FILE_V1_META_DIR) != 0U ||
             (FILE_V1_META_FLAGS(fp->meta) & FILE_V1_O_WRITE) == 0U)
                 return -1;
@@ -330,7 +295,14 @@ file_v1_writechar(unsigned int owner, int fd, unsigned int ch)
         bi = pos % 4U;
         word = 0;
         (void)memfs_v1_read_words(file_v1_root, fp->node, wi, &word, 1U);
-        word = file_v1_set_word_char(word, bi, ch);
+        {
+                unsigned int shift;
+                kword_t mask;
+
+                shift = 27U - 9U * bi;
+                mask = (kword_t)0777UL << shift;
+                word = (word & ~mask) | (((kword_t)ch & 0777UL) << shift);
+        }
         if (memfs_v1_write_words(file_v1_root, fp->node, wi, &word, 1U,
             end_chars) != 1)
                 return -1;
@@ -338,13 +310,13 @@ file_v1_writechar(unsigned int owner, int fd, unsigned int ch)
         return 0;
 }
 int
-file_v1_read_words(unsigned int owner, int fd, kword_t *buf, unsigned int nwords)
+file_v1_read_words(int fd, kword_t *buf, unsigned int nwords)
 {
         struct file_v1 *fp;
         int rc;
         unsigned int off;
 
-        fp = file_v1_find(owner, fd);
+        fp = file_v1_find(fd);
         if (fp == 0 || buf == 0 || (fp->meta & FILE_V1_META_DIR) != 0U ||
             (FILE_V1_META_FLAGS(fp->meta) & FILE_V1_O_READ) == 0U ||
             VFS_V1_PROVIDER(fp->node) != MEMFS_V1_PROVIDER)
@@ -357,15 +329,15 @@ file_v1_read_words(unsigned int owner, int fd, kword_t *buf, unsigned int nwords
 }
 
 int
-file_v1_write_words(unsigned int owner, int fd, const kword_t *buf,
-    unsigned int nwords, kword_t size_chars)
+file_v1_write_words(int fd, const kword_t *buf, unsigned int nwords,
+    kword_t size_chars)
 {
         struct file_v1 *fp;
         struct vfs_v1_stat st;
         unsigned int off;
         int rc;
 
-        fp = file_v1_find(owner, fd);
+        fp = file_v1_find(fd);
         if (fp == 0 || buf == 0 || (fp->meta & FILE_V1_META_DIR) != 0U ||
             (FILE_V1_META_FLAGS(fp->meta) & FILE_V1_O_WRITE) == 0U ||
             VFS_V1_PROVIDER(fp->node) != MEMFS_V1_PROVIDER ||
@@ -381,54 +353,50 @@ file_v1_write_words(unsigned int owner, int fd, const kword_t *buf,
         return rc;
 }
 
-extern int file_v1_readdir(unsigned int owner, int fd,
-    struct vfs_v1_dirent *ent);
+extern int file_v1_readdir(int fd, struct vfs_v1_dirent *ent);
 
 int
-file_v1_stat_path_owner(unsigned int owner, const kword_t *path,
-    struct vfs_v1_stat *st)
+file_v1_stat_path(const kword_t *path, struct vfs_v1_stat *st)
 {
         vnode_v1_t node;
 
-        if (file_v1_lookup_path_owner(owner, path, &node) != 0)
+        if (file_v1_lookup_path(path, &node) != 0)
                 return -1;
         return file_v1_node_stat(node, st);
 }
 
 int
-file_v1_mkdir_owner(unsigned int owner, const kword_t *path,
-    unsigned int mode)
+file_v1_mkdir(const kword_t *path, unsigned int mode)
 {
         vnode_v1_t dir;
         vnode_v1_t node;
         struct vfs_v1_name leaf;
 
-        if (file_v1_parent_path_owner(owner, path, &dir, &leaf) != 0 ||
+        if (file_v1_parent_path(path, &dir, &leaf) != 0 ||
             VFS_V1_PROVIDER(dir) != MEMFS_V1_PROVIDER)
                 return -1;
         return memfs_v1_mkdir(file_v1_root, dir, &leaf, mode, &node);
 }
 
 int
-file_v1_unlink_owner(unsigned int owner, const kword_t *path)
+file_v1_unlink(const kword_t *path)
 {
         vnode_v1_t dir;
         struct vfs_v1_name leaf;
 
-        if (file_v1_parent_path_owner(owner, path, &dir, &leaf) != 0 ||
+        if (file_v1_parent_path(path, &dir, &leaf) != 0 ||
             VFS_V1_PROVIDER(dir) != MEMFS_V1_PROVIDER)
                 return -1;
         return memfs_v1_unlink(file_v1_root, dir, &leaf);
 }
 
 int
-file_v1_truncate_owner(unsigned int owner, const kword_t *path,
-    kword_t chars)
+file_v1_truncate(const kword_t *path, kword_t chars)
 {
         vnode_v1_t node;
         unsigned int words;
 
-        if (file_v1_lookup_path_owner(owner, path, &node) != 0 ||
+        if (file_v1_lookup_path(path, &node) != 0 ||
             VFS_V1_PROVIDER(node) != MEMFS_V1_PROVIDER)
                 return -1;
         words = (unsigned int)((chars + 3U) / 4U);
@@ -436,16 +404,15 @@ file_v1_truncate_owner(unsigned int owner, const kword_t *path,
 }
 
 int
-file_v1_rename(unsigned int owner, const kword_t *oldpath,
-    const kword_t *newpath)
+file_v1_rename(const kword_t *oldpath, const kword_t *newpath)
 {
         vnode_v1_t olddir;
         vnode_v1_t newdir;
         struct vfs_v1_name oldname;
         struct vfs_v1_name newname;
 
-        if (file_v1_parent_path_owner(owner, oldpath, &olddir, &oldname) != 0 ||
-            file_v1_parent_path_owner(owner, newpath, &newdir, &newname) != 0 ||
+        if (file_v1_parent_path(oldpath, &olddir, &oldname) != 0 ||
+            file_v1_parent_path(newpath, &newdir, &newname) != 0 ||
             VFS_V1_PROVIDER(olddir) != MEMFS_V1_PROVIDER ||
             VFS_V1_PROVIDER(newdir) != MEMFS_V1_PROVIDER)
                 return -1;
@@ -454,18 +421,17 @@ file_v1_rename(unsigned int owner, const kword_t *oldpath,
 }
 
 int
-file_v1_chdir(unsigned int owner, const kword_t *path)
+file_v1_chdir(const kword_t *path)
 {
         vnode_v1_t node;
         struct vfs_v1_stat st;
         int alias;
 
-        if (owner >= FILE_V1_OWNER_MAX ||
-            file_v1_walk_path_owner(owner, path, 0, &node, 0, &alias) != 0 ||
+        if (file_v1_walk_path(path, 0, &node, 0, &alias) != 0 ||
             file_v1_node_stat(node, &st) != 0 || st.type != VFS_V1_TYPE_DIR)
                 return -1;
-        file_v1_cwd[owner] = node;
-        file_v1_alias_cwd_set(owner, alias);
+        file_v1_cwd = node;
+        file_v1_alias_cwd = alias != 0;
         return 0;
 }
 
@@ -473,6 +439,7 @@ int
 file_v1_getcwd_pseudo(vnode_v1_t node, kword_t *buf, unsigned int nwords)
 {
         struct vfs_v1_name name;
+        struct proc_v1 *p;
         kword_t pid;
         unsigned int i;
 
@@ -503,44 +470,14 @@ file_v1_getcwd_pseudo(vnode_v1_t node, kword_t *buf, unsigned int nwords)
                 return 0;
         }
         if (VFS_V1_KIND(node) != PROCFS_V1_KIND_PROC || nwords < 3U ||
-            procfs_v1_pid(VFS_V1_INDEX(node), &pid) != 0 || pid > 0377U ||
+            (p = proc_v1_get(VFS_V1_INDEX(node))) == 0)
+                return -1;
+        pid = (kword_t)PROC_V1_PID(p);
+        if (pid > 0377U ||
             vfs_v1_name_set_pid(&name, (unsigned int)pid) != 0)
                 return -1;
         buf[0] = 6U + name.chars;
         buf[1] = VFS_V1_SIX6('/','P','R','O','C','/');
         buf[2] = name.words[0];
         return 0;
-}
-
-static int
-file_v1_alias_cwd_get(unsigned int owner)
-{
-        return (file_v1_alias_cwd[owner / 36U] &
-            ((kword_t)1U << (owner % 36U))) != 0U;
-}
-
-static void
-file_v1_alias_cwd_set(unsigned int owner, int active)
-{
-        kword_t mask;
-
-        mask = (kword_t)1U << (owner % 36U);
-        if (active)
-                file_v1_alias_cwd[owner / 36U] |= mask;
-        else
-                file_v1_alias_cwd[owner / 36U] &= ~mask;
-}
-
-unsigned int
-file_v1_used_slots(void)
-{
-        unsigned int i;
-        unsigned int n;
-
-        n = 0U;
-        for (i = 0U; i < FILE_V1_NFILE; ++i) {
-                if ((file_v1_table[i].meta & FILE_V1_META_USED) != 0U)
-                        ++n;
-        }
-        return n;
 }

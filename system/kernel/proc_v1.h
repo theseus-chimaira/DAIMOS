@@ -45,10 +45,8 @@ extern struct proc_v1 *proc_v1_current;
 #define PROC_V1_ENTRY(p) \
         ((kword_t)(((p)->meta >> PROC_V1_ENTRY_SHIFT) & PROC_V1_HALF_MASK))
 
-unsigned int proc_v1_slot(const struct proc_v1 *p);
 struct proc_v1 *proc_v1_get(unsigned int slot);
 unsigned int proc_v1_ppid(const struct proc_v1 *p);
 kword_t proc_v1_comm(const struct proc_v1 *p);
-void proc_v1_set_state(struct proc_v1 *p, unsigned int state);
 
 #endif

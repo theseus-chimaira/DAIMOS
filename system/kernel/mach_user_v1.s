@@ -24,21 +24,18 @@
 mach_enter_user_v1:
         move 5,-1(17)
         move 6,-2(17)
-        push 17,010
-        push 17,011
-        push 17,012
-        push 17,013
-        push 17,014
-        push 17,015
-        push 17,016
+        ; Preserve the callee-saved user-entry ACs as one contiguous block.
+        movei 0,1(17)
+        hrli 0,010
+        blt 0,7(17)
+        add 17,[7,,7]
         pushj 17,mach_enter_user_start_v1
-        pop 17,016
-        pop 17,015
-        pop 17,014
-        pop 17,013
-        pop 17,012
-        pop 17,011
-        pop 17,010
+        ; Restore AC10..AC16 with one block transfer.
+        movei 0,-6(17)
+        hrl 0,0
+        hrri 0,010
+        blt 0,016
+        sub 17,[7,,7]
         popj 17,
 
 mach_enter_user_start_v1:
@@ -70,7 +67,7 @@ mach_syscall_v1:
         popj 17,
 
 mach_syscall_user_return_v1:
-        move 1,mach_syscall_ac1_v1
+        ; exec_native_syscall_v1 returns the user-visible result directly in AC1.
         move 17,mach_user_sp_v1
         popj 17,
 

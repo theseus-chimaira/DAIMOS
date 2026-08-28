@@ -1,7 +1,7 @@
 ; FILE runtime state lives in the RAMFS0 metadata prefix.
         .equ    file_v1_table,0601000
         .equ    file_v1_cwd,0601140
-        .equ    file_v1_alias_cwd,0601240
+        .equ    file_v1_alias_cwd,0601141
         .globl  file_v1_table
         .globl  file_v1_cwd
         .globl  file_v1_alias_cwd
@@ -99,30 +99,23 @@ file_component_fail:
         seto    1,
         popj    17,
 
-; int file_v1_getcwd(unsigned int owner, kword_t *buf, unsigned int nwords)
+; int file_v1_getcwd(kword_t *buf, unsigned int nwords)
 ;
-; Construct MEMFS cwd paths directly as packed SIXBIT.  The C implementation
-; decoded every stored SIXBIT character to ASCII and then repacked it through
-; a second helper.  Here both source names and destination path use native
-; six-bit byte pointers.
+; Construct MEMFS cwd paths directly as packed SIXBIT.  DAIMOS 1.x has one
+; live FILE context, so cwd and alias state are scalar rather than per-owner.
         .globl  file_v1_getcwd
 file_v1_getcwd:
         skipn   file_v1_root
         jrst    file_getcwd_fail
-        jumpge  1,file_getcwd_owner_nonneg
-        jrst    file_getcwd_fail
-file_getcwd_owner_nonneg:
-        cail    1,0100
-        jrst    file_getcwd_fail
-        jumpe   2,file_getcwd_fail
-        jumpge  3,file_getcwd_nwords_nonneg
+        jumpe   1,file_getcwd_fail
+        jumpge  2,file_getcwd_nwords_nonneg
         jrst    file_getcwd_nwords_ok    ; unsigned value with bit 35 set
 file_getcwd_nwords_nonneg:
-        cail    3,2
+        cail    2,2
         jrst    file_getcwd_nwords_ok
         jrst    file_getcwd_fail
 file_getcwd_nwords_ok:
-        move    4,file_v1_cwd(1)
+        move    4,file_v1_cwd
         jumpn   4,file_getcwd_have_node
         move    4,[040001000000]         ; MEMFS root
 file_getcwd_have_node:
@@ -132,89 +125,77 @@ file_getcwd_have_node:
         caie    5,4
         jrst    file_getcwd_pseudo_tail
 
-; Save callee-preserved registers used below.  The 0121-word local area is
-; one parent vnode followed by sixteen five-word vfs_v1_name records.
+; The 0121-word local area is one parent vnode followed by sixteen five-word
+; vfs_v1_name records.  AC15 is reused as output count after the upward walk.
         push    17,010
         push    17,011
         push    17,012
         push    17,013
         push    17,014
         push    17,015
-        push    17,016
         add     17,[0121,,0121]
-        move    010,1                    ; owner
-        move    011,4                    ; current node
-        move    012,2                    ; output buffer
-        move    013,3                    ; output words
+        move    010,4                    ; current node
+        move    011,1                    ; output buffer
+        move    012,2                    ; output words
 
-; Determine whether cwd is rooted at the TEMP alias.  Owners 0..35 use word
-; zero; owners 36..63 use word one.
-        move    5,010
-        movei   4,0
-        caige   5,044
-        jrst    file_getcwd_alias_word
-        subi    5,044
-        movei   4,1
-file_getcwd_alias_word:
-        movei   6,1
-        lsh     6,0(5)
-        movei   015,0
-        tdnn    6,file_v1_alias_cwd(4)
+; Scalar alias state is sufficient for the single live FILE context.
+        movei   014,0
+        skipn   file_v1_alias_cwd
         jrst    file_getcwd_stop_root
-        movei   015,1
-        move    016,file_v1_alias_node
+        movei   014,1
+        move    015,file_v1_alias_node
         jrst    file_getcwd_stop_ready
 file_getcwd_stop_root:
-        move    016,[040001000000]
+        move    015,[040001000000]
 file_getcwd_stop_ready:
 
 ; Clear the complete supplied output record, preserving existing semantics.
-        move    4,013
-        move    5,012
+        move    4,012
+        move    5,011
 file_getcwd_clear:
         setzm   (5)
         addi    5,1
         sojg    4,file_getcwd_clear
 
 ; Walk to the selected root, saving component names leaf-first.
-        movei   014,0                    ; depth
+        movei   013,0                    ; depth
 file_getcwd_up:
-        camn    011,016
+        camn    010,015
         jrst    file_getcwd_up_done
-        cail    014,020                  ; depth >= 16
+        cail    013,020                  ; depth >= 16
         jrst    file_getcwd_local_fail
-        move    4,014
+        move    4,013
         lsh     4,2
-        add     4,014                    ; depth * 5
+        add     4,013                    ; depth * 5
         movei   5,-0120(17)             ; parts[0]
         add     4,5
         move    1,file_v1_root
-        move    2,011
+        move    2,010
         movei   3,(17)                   ; parent vnode
         pushj   17,memfs_v1_parent
         jumpn   1,file_getcwd_local_fail
-        move    011,(17)
-        addi    014,1
+        move    010,(17)
+        addi    013,1
         jrst    file_getcwd_up
 
 file_getcwd_up_done:
 ; Capacity is the number of SIXBIT characters in buf[1..nwords-1].
-        move    5,013
+        move    5,012
         subi    5,1
         imuli   5,6
         jumpe   5,file_getcwd_local_fail
         move    6,[POINT 6,0]
-        movei   4,1(012)
+        movei   4,1(011)
         hrr     6,4
-        movei   016,0                    ; output character count
+        movei   015,0                    ; output character count
 
 ; Every cwd starts with '/'.
         movei   4,017
         idpb    4,6
-        addi    016,1
+        addi    015,1
 
 ; Alias paths start with /TEMP.
-        jumpe   015,file_getcwd_components
+        jumpe   014,file_getcwd_components
         caige   5,5
         jrst    file_getcwd_local_fail
         movei   4,064                    ; T
@@ -225,32 +206,32 @@ file_getcwd_up_done:
         idpb    4,6
         movei   4,060                    ; P
         idpb    4,6
-        addi    016,4
+        addi    015,4
 
 file_getcwd_components:
-        jumpe   014,file_getcwd_store_len
-        subi    014,1
-        move    4,014
+        jumpe   013,file_getcwd_store_len
+        subi    013,1
+        move    4,013
         lsh     4,2
-        add     4,014
+        add     4,013
         movei   7,-0120(17)
         add     7,4                     ; AC7 -> component name
         move    3,(7)                   ; component chars
 
 ; Check room for the entire component and its separator before writing either.
-        move    4,016
-        cain    016,1
+        move    4,015
+        cain    015,1
         jrst    file_getcwd_no_sep_need
         addi    4,1
 file_getcwd_no_sep_need:
         add     4,3
         camle   4,5
         jrst    file_getcwd_local_fail
-        cain    016,1
+        cain    015,1
         jrst    file_getcwd_copy_name
         movei   4,017
         idpb    4,6
-        addi    016,1
+        addi    015,1
 
 file_getcwd_copy_name:
         move    1,[POINT 6,0]
@@ -260,19 +241,18 @@ file_getcwd_copy_name:
 file_getcwd_copy_loop:
         ildb    4,1
         idpb    4,6
-        addi    016,1
+        addi    015,1
         sojg    3,file_getcwd_copy_loop
         jrst    file_getcwd_components
 
 file_getcwd_store_len:
-        movem   016,(012)
+        movem   015,(011)
         movei   1,0
         jrst    file_getcwd_return
 file_getcwd_local_fail:
         seto    1,
 file_getcwd_return:
         sub     17,[0121,,0121]
-        pop     17,016
         pop     17,015
         pop     17,014
         pop     17,013
@@ -283,6 +263,8 @@ file_getcwd_return:
 
 ; Non-MEMFS cwd formatting stays in the existing shared C helper.
 file_getcwd_pseudo_tail:
+        move    3,2
+        move    2,1
         move    1,4
         jrst    file_v1_getcwd_pseudo
 file_getcwd_fail:
@@ -290,27 +272,24 @@ file_getcwd_fail:
         popj    17,
 
 
-; struct file_v1 *file_v1_find(unsigned int owner, int fd)
-; Match the used/owner/fd fields directly instead of extracting both packed
-; fields on every three-word table entry.
+; struct file_v1 *file_v1_find(int fd)
+; Match the used/fd fields directly.  DAIMOS 1.x has one FILE owner, so file
+; records no longer carry or compare an owner field.
         .globl  file_v1_find
 file_v1_find:
-        caige   2,3
+        caige   1,3
         jrst    file_find_fail
-        caile   2,017
+        caile   1,017
         jrst    file_find_fail
         move    3,1
-        lsh     3,016
-        move    4,2
-        lsh     4,010
-        ior     3,4
+        lsh     3,010
         iori    3,1
         movei   4,file_v1_table
         movei   5,040
 file_find_loop:
         move    6,2(4)
         xor     6,3
-        tdnn    6,[03777401]
+        tdnn    6,[037401]
         jrst    file_find_found
         addi    4,3
         sojg    5,file_find_loop
@@ -321,22 +300,19 @@ file_find_found:
         move    1,4
         popj    17,
 
-; int file_v1_new_fd(unsigned int owner, vnode_v1_t node,
-;     unsigned int flags, int isdir)
-; Scan the table once, remembering the first free record and all descriptor
-; numbers already owned by this process.  This replaces the C nested scan.
+; int file_v1_new_fd(vnode_v1_t node, unsigned int flags, int isdir)
+; Scan once, remembering the first free record and every descriptor already in
+; use.  With one owner, every used descriptor belongs to the current context.
         .globl  file_v1_new_fd
 file_v1_new_fd:
-        move    0,1                    ; base metadata: owner
-        lsh     0,016
-        andi    3,077
-        lsh     3,2
-        ior     0,3
-        jumpe   4,file_new_fd_nodir
+        move    0,2                    ; base metadata: flags
+        andi    0,077
+        lsh     0,2
+        jumpe   3,file_new_fd_nodir
         iori    0,2
 file_new_fd_nodir:
         iori    0,1                    ; FILE_V1_META_USED
-        movei   1,0                    ; bitmap of used fd numbers
+        movei   2,0                    ; bitmap of used fd numbers
         movei   3,0                    ; first free table record
         movei   4,file_v1_table
         movei   5,040
@@ -348,15 +324,11 @@ file_new_fd_scan:
         move    3,4
         jrst    file_new_fd_next
 file_new_fd_used:
-        move    7,6
-        xor     7,0
-        tdne    7,[03740000]           ; different owner
-        jrst    file_new_fd_next
         lsh     6,-010
         andi    6,077
         movei   7,1
         lsh     7,0(6)
-        ior     1,7
+        ior     2,7
 file_new_fd_next:
         addi    4,3
         sojg    5,file_new_fd_scan
@@ -365,7 +337,7 @@ file_new_fd_next:
         movei   5,3
         movei   6,010
 file_new_fd_pick:
-        tdnn    1,6
+        tdnn    2,6
         jrst    file_new_fd_store
         lsh     6,1
         addi    5,1
@@ -373,7 +345,7 @@ file_new_fd_pick:
         jrst    file_new_fd_fail
         jrst    file_new_fd_pick
 file_new_fd_store:
-        movem   2,(3)
+        movem   1,(3)
         setzm   1(3)
         move    6,5
         lsh     6,010
@@ -442,13 +414,13 @@ file_lookup_child_fail:
         seto    1,
         popj    17,
 
-; int file_v1_readdir(unsigned int owner, int fd, struct vfs_v1_dirent *ent)
+; int file_v1_readdir(int fd, struct vfs_v1_dirent *ent)
         .globl  file_v1_readdir
 file_v1_readdir:
         push    17,010
         push    17,011
         push    17,012
-        move    011,3                   ; ent
+        move    011,2                   ; ent
         pushj   17,file_v1_find
         move    010,1                   ; fp
         jumpe   1,file_readdir_fail
@@ -554,4 +526,20 @@ file_readdir_return:
         pop     17,012
         pop     17,011
         pop     17,010
+        popj    17,
+
+; unsigned int file_v1_used_slots(void)
+; FILE records are three words and metadata is word two.  Count the fixed
+; 32-entry table directly instead of emitting a general C array loop.
+        .globl  file_v1_used_slots
+file_v1_used_slots:
+        movei   1,0
+        movei   2,file_v1_table+2
+        movei   3,040
+file_used_slots_loop:
+        move    4,(2)
+        trne    4,1
+        addi    1,1
+        addi    2,3
+        sojg    3,file_used_slots_loop
         popj    17,

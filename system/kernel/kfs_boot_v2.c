@@ -266,11 +266,8 @@ kfs_boot_v2_prepare(void)
         devicefs_v1_present = kcore_cty_putchar_v1 != 0 &&
             kcore_cty_getchar_v1 != 0 ?
             DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CTY0) : 0;
-        sys_v1_total_words = KBOOT_V1_TOTAL_WORDS;
-        sys_v1_resident_words = kcore_resident_end_v1;
         if (boot_load_init_v3(data) != 0)
                 return -1;
-        kboot_fs_ready_v2 = 1;
         return 0;
 }
 

@@ -25,20 +25,18 @@ sys_v1_user_words:
 
 	.globl	exec_native_syscall_v1
 exec_native_syscall_v1:
-	add 017,[4,,4]
-	movem 010,-3(017)
-	movem 011,-2(017)
-	movem 012,-1(017)
+	add 017,[3,,3]
+	movem 010,-2(017)
+	movem 011,-1(017)
 	move 011,1
 	jumpe 1,%L62
-	skipe 1,proc_v1_current
+	skipn proc_v1_current
+	jrst %L62
 	jrst %L61
 %L62:
 	seto 1,
 	jrst %L60
 %L61:
-	pushj 17,proc_v1_slot
-	move 012,1
 	hrrz 4,(011)
 	subi 4,2
 	jumpl 4,%L137
@@ -85,14 +83,13 @@ exec_native_syscall_v1:
 %L66:
 	move 1,proc_v1_current
 	movei 2,4
-	pushj 17,proc_v1_set_state
+	dpb 2,[POINT 3,(1),20]
 	pushj 17,mach_return_to_kernel_request_v1
 	hrrz 1,1(011)
 	jrst %L65
 %L67:
 	move 1,1(011)
 	pushj 17,sys_v1_user_words
-	move 010,1
 	jumpe 1,%L137
 	hrrz 3,2(011)
 	move 4,3
@@ -102,12 +99,11 @@ exec_native_syscall_v1:
 	movei 4,3
 	andi 3,034
 	ior 3,4
-	move 1,012
-	move 2,010
+	move 2,3
 	pushj 17,file_v1_open
 	jrst %L65
 %L72:
-	hrrz 2,1(011)
+	hrrz 1,1(011)
 	pushj 17,file_v1_close
 	jrst %L65
 %L73:
@@ -119,44 +115,33 @@ exec_native_syscall_v1:
 %L75:
 	move 1,1(011)
 	pushj 17,sys_v1_user_words
-	move 010,1
 	jumpe 1,%L137
-	move 1,012
-	move 2,010
 	pushj 17,file_v1_chdir
 	jrst %L65
 %L80:
 	move 1,1(011)
 	pushj 17,sys_v1_user_words
-	move 010,1
 	jumpe 1,%L137
-	hrrz 3,2(011)
-	move 1,012
-	move 2,010
+	hrrz 2,2(011)
 	pushj 17,file_v1_getcwd
 	jrst %L65
 %L83:
 	move 1,2(011)
 	pushj 17,sys_v1_user_words
-	move 010,1
 	jumpe 1,%L137
-	hrrz 2,1(011)
-	hrrz 4,3(011)
-	move 1,012
-	move 3,010
+	move 2,1
+	hrrz 1,1(011)
+	hrrz 3,3(011)
 	pushj 17,file_v1_read_words
 	jrst %L65
 %L86:
 	move 1,2(011)
 	pushj 17,sys_v1_user_words
-	move 010,1
 	jumpe 1,%L137
-	hrrz 2,1(011)
-	hrrz 4,3(011)
-	move 6,4(011)
-	movem 6,(017)
-	move 1,012
-	move 3,010
+	move 2,1
+	hrrz 1,1(011)
+	hrrz 3,3(011)
+	move 4,4(011)
 	pushj 17,file_v1_write_words
 	jrst %L65
 %L90:
@@ -168,38 +153,30 @@ exec_native_syscall_v1:
 	move 3,1
 	jumpe 010,%L137
 	jumpe 1,%L137
-	move 1,012
-	move 2,010
-	pushj 17,file_v1_stat_path_owner
+	move 2,1
+	move 1,010
+	pushj 17,file_v1_stat_path
 	jrst %L65
 %L97:
 	move 1,2(011)
 	pushj 17,sys_v1_user_words
-	move 010,1
 	jumpe 1,%L137
-	hrrz 2,1(011)
-	move 1,012
-	move 3,010
+	move 2,1
+	hrrz 1,1(011)
 	pushj 17,file_v1_readdir
 	jrst %L65
 %L102:
 	move 1,1(011)
 	pushj 17,sys_v1_user_words
-	move 010,1
 	jumpe 1,%L137
-	hrrz 3,2(011)
-	move 1,012
-	move 2,010
-	pushj 17,file_v1_mkdir_owner
+	hrrz 2,2(011)
+	pushj 17,file_v1_mkdir
 	jrst %L65
 %L107:
 	move 1,1(011)
 	pushj 17,sys_v1_user_words
-	move 010,1
 	jumpe 1,%L137
-	move 1,012
-	move 2,010
-	pushj 17,file_v1_unlink_owner
+	pushj 17,file_v1_unlink
 	jrst %L65
 %L112:
 	move 1,1(011)
@@ -210,27 +187,23 @@ exec_native_syscall_v1:
 	move 3,1
 	jumpe 010,%L137
 	jumpe 1,%L137
-	move 1,012
-	move 2,010
+	move 2,1
+	move 1,010
 	pushj 17,file_v1_rename
 	jrst %L65
 %L119:
 	move 1,1(011)
 	pushj 17,sys_v1_user_words
-	move 010,1
 	jumpe 1,%L137
-	move 1,012
-	move 2,010
-	move 3,2(011)
-	pushj 17,file_v1_truncate_owner
+	move 2,2(011)
+	pushj 17,file_v1_truncate
 	jrst %L65
 %L124:
 	move 1,2(011)
 	pushj 17,sys_v1_user_words
-	move 010,1
 	jumpe 1,%L137
+	move 2,1
 	hrrz 1,1(011)
-	move 2,010
 	pushj 17,sys_v1_procinfo
 	jrst %L65
 %L129:
@@ -240,23 +213,21 @@ exec_native_syscall_v1:
 	pushj 17,sys_v1_meminfo
 	jrst %L65
 %L134:
-	hrrz 2,1(011)
-	jumpe 2,native_sys_getchar
-	move 1,012
+	hrrz 1,1(011)
+	jumpe 1,native_sys_getchar
 	pushj 17,file_v1_readchar
 	camn 1,[-3]
 	jrst native_sys_getchar
 	jrst %L65
 %L135:
-	hrrz 2,1(011)
-	move 3,2(011)
-	andi 3,0777
-	move 010,3
-	cail 2,1
-	cail 2,3
+	hrrz 1,1(011)
+	move 2,2(011)
+	andi 2,0777
+	move 010,2
+	cail 1,1
+	cail 1,3
 	trna
 	jrst native_sys_writechar_tty
-	move 1,012
 	pushj 17,file_v1_writechar
 	came 1,[-3]
 	jrst %L65
@@ -284,11 +255,10 @@ native_sys_putchar:
 	jrst %L65
 %L137:
 	seto 1,
+; Leave the native syscall result in AC1 for mach_syscall_v1.
 %L65:
-	movem 1,(011)
 %L60:
-	move 010,-3(017)
-	move 011,-2(017)
-	move 012,-1(017)
-	sub 017,[4,,4]
+	move 010,-2(017)
+	move 011,-1(017)
+	sub 017,[3,,3]
 	popj 17,

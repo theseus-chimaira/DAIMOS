@@ -56,8 +56,6 @@ struct sys_v1_meminfo {
 
 int sys_v1_procinfo(unsigned int slot, struct sys_v1_procinfo *info);
 int sys_v1_meminfo(struct sys_v1_meminfo *info);
-extern kword_t sys_v1_total_words;
-extern kword_t sys_v1_resident_words;
 
 /* Called by mach_user_v1.s with the saved AC block. */
 int exec_native_syscall_v1(kword_t *ac);

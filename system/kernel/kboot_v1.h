@@ -15,8 +15,9 @@
 #define KBOOT_V1_RAMFS0_WORDS       0200000U
 #define KBOOT_V1_NODE_WORDS          (KBOOT_V1_NODE_COUNT * 8U)
 #define KBOOT_V1_FILE_TABLE_WORDS    (FILE_V1_NFILE * 3U)
-#define KBOOT_V1_FILE_CWD_WORDS      FILE_V1_OWNER_MAX
-#define KBOOT_V1_FILE_ALIAS_WORDS    ((FILE_V1_OWNER_MAX + 35U) / 36U)
+/* FILE has one CWD and one alias flag in the single-process 1.x kernel. */
+#define KBOOT_V1_FILE_CWD_WORDS      1U
+#define KBOOT_V1_FILE_ALIAS_WORDS    1U
 #define KBOOT_V1_FILE_STATE_WORDS    (KBOOT_V1_FILE_TABLE_WORDS + \
     KBOOT_V1_FILE_CWD_WORDS + KBOOT_V1_FILE_ALIAS_WORDS)
 #define KBOOT_V1_PROC_TABLE_WORDS    (PROC_V1_NPROC * 2U)
@@ -30,7 +31,6 @@
 #endif
 
 extern struct memfs_v1 kboot_fs_v1;
-extern kword_t kboot_fs_ready_v2;
 extern kword_t kcore_resident_end_v1;
 extern kword_t kcore_cty_putchar_v1;
 extern kword_t kcore_cty_getchar_v1;

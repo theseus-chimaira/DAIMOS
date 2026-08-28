@@ -117,18 +117,6 @@ procfs_v1_stat(vnode_v1_t node, struct vfs_v1_stat *st)
 }
 
 int
-procfs_v1_pid(unsigned int slot, kword_t *pidp)
-{
-        struct proc_v1 *p;
-
-        if (pidp == 0 || (p = proc_v1_get(slot)) == 0)
-                return -1;
-        *pidp = (kword_t)PROC_V1_PID(p);
-        return 0;
-}
-
-
-int
 procfs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp)
 {
         static const kword_t state_names[] = {

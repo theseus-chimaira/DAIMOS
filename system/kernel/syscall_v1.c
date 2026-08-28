@@ -3,9 +3,6 @@
 #include "procfs_v1.h"
 #include "kboot_v1.h"
 
-kword_t sys_v1_total_words;
-kword_t sys_v1_resident_words;
-
 int
 sys_v1_procinfo(unsigned int slot, struct sys_v1_procinfo *info)
 {
@@ -41,9 +38,9 @@ sys_v1_meminfo(struct sys_v1_meminfo *info)
                 ++proc_slots;
                 proc_words += PROC_V1_MEM_WORDS(&proc_v1_table[i]);
         }
-        fs = file_v1_rootfs();
-        info->total_words = sys_v1_total_words;
-        info->resident_words = sys_v1_resident_words;
+        fs = file_v1_root;
+        info->total_words = KBOOT_V1_TOTAL_WORDS;
+        info->resident_words = kcore_resident_end_v1;
         info->process_words = proc_words;
         info->ramfs_used_words = fs == 0 ? 0 : (kword_t)fs->used_words;
         info->ramfs_capacity_words = fs == 0 ? 0 : (kword_t)fs->pool_words;

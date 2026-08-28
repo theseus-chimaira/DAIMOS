@@ -20,31 +20,6 @@
 #define NODE_DATA_WORDS(np) \
         ((unsigned int)((np)->data & MEMFS_V1_HALF_MASK))
 
-static void
-node_set_meta(struct memfs_v1_node *np, unsigned int parent,
-    unsigned int type, unsigned int mode, unsigned int flags)
-{
-        np->meta = ((kword_t)(parent & MEMFS_V1_HALF_MASK) << 18U) |
-            ((kword_t)(type & MEMFS_V1_TYPE_MASK) << MEMFS_V1_TYPE_SHIFT) |
-            ((kword_t)(mode & MEMFS_V1_MODE_MASK) << MEMFS_V1_MODE_SHIFT) |
-            (kword_t)(flags & MEMFS_V1_FLAGS_MASK);
-}
-
-static void
-node_set_parent(struct memfs_v1_node *np, unsigned int parent)
-{
-        np->meta = (np->meta & MEMFS_V1_HALF_MASK) |
-            ((kword_t)(parent & MEMFS_V1_HALF_MASK) << 18U);
-}
-
-static void
-node_set_data(struct memfs_v1_node *np, unsigned int word,
-    unsigned int words)
-{
-        np->data = ((kword_t)(word & MEMFS_V1_HALF_MASK) << 18U) |
-            (kword_t)(words & MEMFS_V1_HALF_MASK);
-}
-
 extern vnode_v1_t memfs_v1_node_handle(unsigned int slot);
 extern int memfs_v1_name_valid(const struct vfs_v1_name *name);
 extern int memfs_v1_slot(const struct memfs_v1 *fs, vnode_v1_t node,
@@ -100,9 +75,11 @@ memfs_v1_new_node(struct memfs_v1 *fs, vnode_v1_t dir,
         np = &fs->nodes[slot];
         memfs_v1_clear_node(np);
         np->name = *name;
-        node_set_meta(np, parent, type, mode,
-            MEMFS_V1_F_USED | MEMFS_V1_F_WRITABLE);
-        node_set_data(np, fs->used_words, 0U);
+        np->meta = ((kword_t)(parent & MEMFS_V1_HALF_MASK) << 18U) |
+            ((kword_t)(type & MEMFS_V1_TYPE_MASK) << MEMFS_V1_TYPE_SHIFT) |
+            ((kword_t)(mode & MEMFS_V1_MODE_MASK) << MEMFS_V1_MODE_SHIFT) |
+            (kword_t)(MEMFS_V1_F_USED | MEMFS_V1_F_WRITABLE);
+        np->data = (kword_t)(fs->used_words & MEMFS_V1_HALF_MASK) << 18U;
         *nodep = memfs_v1_node_handle(slot);
         return 0;
 }
@@ -187,7 +164,9 @@ memfs_v1_rename(struct memfs_v1 *fs, vnode_v1_t olddir,
                         p = NODE_PARENT(&fs->nodes[p]);
                 }
         }
-        node_set_parent(&fs->nodes[slot], newparent);
+        fs->nodes[slot].meta =
+            (fs->nodes[slot].meta & MEMFS_V1_HALF_MASK) |
+            ((kword_t)(newparent & MEMFS_V1_HALF_MASK) << 18U);
         fs->nodes[slot].name = *newname;
         return 0;
 }
