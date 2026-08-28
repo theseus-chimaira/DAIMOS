@@ -1,7 +1,6 @@
 #include "file_v1.h"
 #include "devicefs_v1.h"
 #include "procfs_v1.h"
-#include "proc_v1.h"
 
 struct memfs_v1 *file_v1_root;
 
@@ -432,52 +431,5 @@ file_v1_chdir(const kword_t *path)
                 return -1;
         file_v1_cwd = node;
         file_v1_alias_cwd = alias != 0;
-        return 0;
-}
-
-int
-file_v1_getcwd_pseudo(vnode_v1_t node, kword_t *buf, unsigned int nwords)
-{
-        struct vfs_v1_name name;
-        struct proc_v1 *p;
-        kword_t pid;
-        unsigned int i;
-
-        for (i = 0U; i < nwords; ++i)
-                buf[i] = 0;
-        if (VFS_V1_PROVIDER(node) == DEVICEFS_V1_PROVIDER) {
-                if (node == FILE_V1_DEVICE_ROOT && nwords >= 3U) {
-                        buf[0] = 7U;
-                        buf[1] = VFS_V1_SIX6('/','D','E','V','I','C');
-                        buf[2] = VFS_V1_SIX6('E',' ',' ',' ',' ',' ');
-                        return 0;
-                }
-                if (VFS_V1_KIND(node) == DEVICEFS_V1_KIND_CTYDIR &&
-                    VFS_V1_INDEX(node) == DEVICEFS_V1_DEV_CTY0 && nwords >= 4U) {
-                        buf[0] = 12U;
-                        buf[1] = VFS_V1_SIX6('/','D','E','V','I','C');
-                        buf[2] = VFS_V1_SIX6('E','/','C','T','Y','0');
-                        buf[3] = 0;
-                        return 0;
-                }
-                return -1;
-        }
-        if (VFS_V1_PROVIDER(node) != PROCFS_V1_PROVIDER || nwords < 2U)
-                return -1;
-        if (node == FILE_V1_PROC_ROOT) {
-                buf[0] = 5U;
-                buf[1] = VFS_V1_SIX6('/','P','R','O','C',' ');
-                return 0;
-        }
-        if (VFS_V1_KIND(node) != PROCFS_V1_KIND_PROC || nwords < 3U ||
-            (p = proc_v1_get(VFS_V1_INDEX(node))) == 0)
-                return -1;
-        pid = (kword_t)PROC_V1_PID(p);
-        if (pid > 0377U ||
-            vfs_v1_name_set_pid(&name, (unsigned int)pid) != 0)
-                return -1;
-        buf[0] = 6U + name.chars;
-        buf[1] = VFS_V1_SIX6('/','P','R','O','C','/');
-        buf[2] = name.words[0];
         return 0;
 }

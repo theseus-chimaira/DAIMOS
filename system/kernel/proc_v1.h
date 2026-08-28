@@ -4,7 +4,7 @@
 #include "kcore.h"
 
 #ifndef PROC_V1_NPROC
-#define PROC_V1_NPROC 64U
+#define PROC_V1_NPROC 2U
 #endif
 #if PROC_V1_NPROC > 128U
 #error "PROC_V1_NPROC must be <= 128"
@@ -32,7 +32,6 @@ struct proc_v1 {
 };
 
 extern struct proc_v1 proc_v1_table[PROC_V1_NPROC];
-extern struct proc_v1 *proc_v1_current;
 
 #define PROC_V1_PID(p) ((unsigned int)((p)->meta & PROC_V1_PID_MASK))
 #define PROC_V1_PARENT_SLOT(p) \
@@ -45,8 +44,5 @@ extern struct proc_v1 *proc_v1_current;
 #define PROC_V1_ENTRY(p) \
         ((kword_t)(((p)->meta >> PROC_V1_ENTRY_SHIFT) & PROC_V1_HALF_MASK))
 
-struct proc_v1 *proc_v1_get(unsigned int slot);
-unsigned int proc_v1_ppid(const struct proc_v1 *p);
-kword_t proc_v1_comm(const struct proc_v1 *p);
 
 #endif

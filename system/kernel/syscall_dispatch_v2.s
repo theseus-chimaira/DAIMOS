@@ -1,43 +1,28 @@
 ; syscall_dispatch_v2.s -- compiler-derived native syscall dispatcher.
 ; Pointer checks and ABI movement are copied from known-good GCC output.
 	.text
+        .globl  pdp10_ret_zero_v1
 sys_v1_user_words:
-	move 2,1
-	movei 1,0
-	skipn 3,proc_v1_current
-	jrst %L55
-	hrrz 4,1(3)
-	hlrz 3,1(3)
-	add 3,4
-	hrrz 1,2
-	move 2,1
-	tlc 2,0400000
-	tlc 4,0400000
-	camge 2,4
-	jrst %L58
-	move 4,3
-	tlc 4,0400000
-	caml 2,4
-%L58:
-	movei 1,0
-%L55:
-	popj 17,
+        hrrz    1,1
+        hrrz    4,proc_v1_table+3
+        hlrz    3,proc_v1_table+3
+        add     3,4
+        camge   1,4
+        jrst    sys_v1_user_words_bad
+        caml    1,3
+        jrst    sys_v1_user_words_bad
+        popj    17,
+sys_v1_user_words_bad:
+        jrst    pdp10_ret_zero_v1
 
 	.globl	exec_native_syscall_v1
+	.globl	mach_syscall_ac1_v1
+	.globl	mach_syscall_ac2_v1
+	.globl	mach_syscall_ac3_v1
+	.globl	mach_syscall_ac4_v1
+	.globl	mach_syscall_ac5_v1
 exec_native_syscall_v1:
-	add 017,[3,,3]
-	movem 010,-2(017)
-	movem 011,-1(017)
-	move 011,1
-	jumpe 1,%L62
-	skipn proc_v1_current
-	jrst %L62
-	jrst %L61
-%L62:
-	seto 1,
-	jrst %L60
-%L61:
-	hrrz 4,(011)
+	hrrz 4,mach_syscall_ac1_v1
 	subi 4,2
 	jumpl 4,%L137
 	caile 4,043
@@ -81,17 +66,14 @@ exec_native_syscall_v1:
 	.word	.135
 	.word	.136
 %L66:
-	move 1,proc_v1_current
-	movei 2,4
-	dpb 2,[POINT 3,(1),20]
 	pushj 17,mach_return_to_kernel_request_v1
-	hrrz 1,1(011)
+	hrrz 1,mach_syscall_ac2_v1
 	jrst %L65
 %L67:
-	move 1,1(011)
+	move 1,mach_syscall_ac2_v1
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
-	hrrz 3,2(011)
+	hrrz 3,mach_syscall_ac3_v1
 	move 4,3
 	andi 4,3
 	addi 4,1
@@ -103,127 +85,126 @@ exec_native_syscall_v1:
 	pushj 17,file_v1_open
 	jrst %L65
 %L72:
-	hrrz 1,1(011)
+	hrrz 1,mach_syscall_ac2_v1
 	pushj 17,file_v1_close
 	jrst %L65
 %L73:
-	move 1,1(011)
+	move 1,mach_syscall_ac2_v1
 	andi 1,0177
 	jrst native_sys_putchar
 %L74:
 	jrst native_sys_getchar
 %L75:
-	move 1,1(011)
+	move 1,mach_syscall_ac2_v1
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
 	pushj 17,file_v1_chdir
 	jrst %L65
 %L80:
-	move 1,1(011)
+	move 1,mach_syscall_ac2_v1
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
-	hrrz 2,2(011)
+	hrrz 2,mach_syscall_ac3_v1
 	pushj 17,file_v1_getcwd
 	jrst %L65
 %L83:
-	move 1,2(011)
+	move 1,mach_syscall_ac3_v1
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
 	move 2,1
-	hrrz 1,1(011)
-	hrrz 3,3(011)
+	hrrz 1,mach_syscall_ac2_v1
+	hrrz 3,mach_syscall_ac4_v1
 	pushj 17,file_v1_read_words
 	jrst %L65
 %L86:
-	move 1,2(011)
+	move 1,mach_syscall_ac3_v1
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
 	move 2,1
-	hrrz 1,1(011)
-	hrrz 3,3(011)
-	move 4,4(011)
+	hrrz 1,mach_syscall_ac2_v1
+	hrrz 3,mach_syscall_ac4_v1
+	move 4,mach_syscall_ac5_v1
 	pushj 17,file_v1_write_words
 	jrst %L65
 %L90:
-	move 1,1(011)
+	move 1,mach_syscall_ac2_v1
 	pushj 17,sys_v1_user_words
-	move 010,1
-	move 1,2(011)
+	move 5,1
+	move 1,mach_syscall_ac3_v1
 	pushj 17,sys_v1_user_words
 	move 3,1
-	jumpe 010,%L137
+	jumpe 5,%L137
 	jumpe 1,%L137
 	move 2,1
-	move 1,010
+	move 1,5
 	pushj 17,file_v1_stat_path
 	jrst %L65
 %L97:
-	move 1,2(011)
+	move 1,mach_syscall_ac3_v1
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
 	move 2,1
-	hrrz 1,1(011)
+	hrrz 1,mach_syscall_ac2_v1
 	pushj 17,file_v1_readdir
 	jrst %L65
 %L102:
-	move 1,1(011)
+	move 1,mach_syscall_ac2_v1
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
-	hrrz 2,2(011)
+	hrrz 2,mach_syscall_ac3_v1
 	pushj 17,file_v1_mkdir
 	jrst %L65
 %L107:
-	move 1,1(011)
+	move 1,mach_syscall_ac2_v1
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
 	pushj 17,file_v1_unlink
 	jrst %L65
 %L112:
-	move 1,1(011)
+	move 1,mach_syscall_ac2_v1
 	pushj 17,sys_v1_user_words
-	move 010,1
-	move 1,2(011)
+	move 5,1
+	move 1,mach_syscall_ac3_v1
 	pushj 17,sys_v1_user_words
 	move 3,1
-	jumpe 010,%L137
+	jumpe 5,%L137
 	jumpe 1,%L137
 	move 2,1
-	move 1,010
+	move 1,5
 	pushj 17,file_v1_rename
 	jrst %L65
 %L119:
-	move 1,1(011)
+	move 1,mach_syscall_ac2_v1
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
-	move 2,2(011)
+	move 2,mach_syscall_ac3_v1
 	pushj 17,file_v1_truncate
 	jrst %L65
 %L124:
-	move 1,2(011)
+	move 1,mach_syscall_ac3_v1
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
 	move 2,1
-	hrrz 1,1(011)
+	hrrz 1,mach_syscall_ac2_v1
 	pushj 17,sys_v1_procinfo
 	jrst %L65
 %L129:
-	move 1,1(011)
+	move 1,mach_syscall_ac2_v1
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
 	pushj 17,sys_v1_meminfo
 	jrst %L65
 %L134:
-	hrrz 1,1(011)
+	hrrz 1,mach_syscall_ac2_v1
 	jumpe 1,native_sys_getchar
 	pushj 17,file_v1_readchar
 	camn 1,[-3]
 	jrst native_sys_getchar
 	jrst %L65
 %L135:
-	hrrz 1,1(011)
-	move 2,2(011)
+	hrrz 1,mach_syscall_ac2_v1
+	move 2,mach_syscall_ac3_v1
 	andi 2,0777
-	move 010,2
 	cail 1,1
 	cail 1,3
 	trna
@@ -232,7 +213,8 @@ exec_native_syscall_v1:
 	came 1,[-3]
 	jrst %L65
 native_sys_writechar_tty:
-	move 1,010
+	move 1,mach_syscall_ac3_v1
+	andi 1,0777
 	jrst native_sys_putchar
 
 native_sys_getchar:
@@ -258,7 +240,4 @@ native_sys_putchar:
 ; Leave the native syscall result in AC1 for mach_syscall_v1.
 %L65:
 %L60:
-	move 010,-2(017)
-	move 011,-1(017)
-	sub 017,[3,,3]
 	popj 17,

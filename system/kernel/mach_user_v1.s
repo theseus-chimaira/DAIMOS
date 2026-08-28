@@ -18,6 +18,11 @@
         .globl mach_syscall_trampoline_v1
         .globl mach_return_to_kernel_request_v1
         .globl exec_native_syscall_v1
+        .globl mach_syscall_ac1_v1
+        .globl mach_syscall_ac2_v1
+        .globl mach_syscall_ac3_v1
+        .globl mach_syscall_ac4_v1
+        .globl mach_syscall_ac5_v1
 
 ; void mach_enter_user_v1(base, entry, stack, ac1, ac2, ac3)
 ; GCC supplies arguments 1..4 in AC1..AC4 and arguments 5..6 on the C stack.
@@ -58,7 +63,6 @@ mach_syscall_v1:
         blt 0,mach_syscall_ac5_v1
         movem 17,mach_user_sp_v1
         move 17,mach_kernel_sp_v1
-        movei 1,mach_syscall_ac1_v1
         pushj 17,exec_native_syscall_v1
         movem 17,mach_kernel_sp_v1
         skipn mach_return_to_kernel_flag_v1

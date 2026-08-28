@@ -8,6 +8,8 @@
 
 ; file_pdp10.s -- compact resident FILE/path primitives for PDP-6/PDP-10.
         .text
+        .globl  pdp10_ret_zero_v1
+        .globl  pdp10_ret_neg1_v1
 
 ; int file_v1_component(const kword_t *path, unsigned int *posp,
 ;     struct vfs_v1_name *name)
@@ -96,8 +98,7 @@ file_component_empty:
         movei   1,0
         popj    17,
 file_component_fail:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1_v1
 
 ; int file_v1_getcwd(kword_t *buf, unsigned int nwords)
 ;
@@ -268,8 +269,7 @@ file_getcwd_pseudo_tail:
         move    1,4
         jrst    file_v1_getcwd_pseudo
 file_getcwd_fail:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1_v1
 
 
 ; struct file_v1 *file_v1_find(int fd)
@@ -294,8 +294,7 @@ file_find_loop:
         addi    4,3
         sojg    5,file_find_loop
 file_find_fail:
-        movei   1,0
-        popj    17,
+        jrst    pdp10_ret_zero_v1
 file_find_found:
         move    1,4
         popj    17,
@@ -354,8 +353,7 @@ file_new_fd_store:
         move    1,5
         popj    17,
 file_new_fd_fail:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1_v1
 
 ; int file_v1_lookup_child(vnode_v1_t dir, const struct vfs_v1_name *name,
 ;     vnode_v1_t *nodep)
@@ -411,8 +409,7 @@ file_lookup_child_maybe_proc:
         jrst    file_lookup_child_fail
         jrst    procfs_v1_lookup
 file_lookup_child_fail:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1_v1
 
 ; int file_v1_readdir(int fd, struct vfs_v1_dirent *ent)
         .globl  file_v1_readdir
@@ -528,18 +525,76 @@ file_readdir_return:
         pop     17,010
         popj    17,
 
-; unsigned int file_v1_used_slots(void)
-; FILE records are three words and metadata is word two.  Count the fixed
-; 32-entry table directly instead of emitting a general C array loop.
-        .globl  file_v1_used_slots
-file_v1_used_slots:
-        movei   1,0
-        movei   2,file_v1_table+2
-        movei   3,040
-file_used_slots_loop:
-        move    4,(2)
-        trne    4,1
-        addi    1,1
-        addi    2,3
-        sojg    3,file_used_slots_loop
-        popj    17,
+; int file_v1_getcwd_pseudo(vnode_v1_t node, kword_t *buf,
+;     unsigned int nwords)
+; Only the fixed DAIMOS 1.x synthetic directories can be current directories.
+        .globl  file_v1_getcwd_pseudo
+file_v1_getcwd_pseudo:
+        move    4,2
+        move    5,3
+        jumpe   5,file_pseudo_zero_done
+file_pseudo_zero:
+        setzm   (4)
+        addi    4,1
+        sojg    5,file_pseudo_zero
+file_pseudo_zero_done:
+        camn    1,[020001000000]       ; /DEVICE
+        jrst    file_pseudo_device
+        camn    1,[020003000000]       ; /DEVICE/CTY0
+        jrst    file_pseudo_cty
+        camn    1,[030001000000]       ; /PROC
+        jrst    file_pseudo_proc
+        hlrz    4,1
+        caie    4,030002               ; /PROC/{0,1}
+        jrst    file_pseudo_fail
+        hrrz    4,1
+        cail    4,2
+        jrst    file_pseudo_fail
+        cail    3,3
+        jrst    file_pseudo_proc_slot
+        jrst    file_pseudo_fail
+file_pseudo_device:
+        cail    3,3
+        jrst    file_pseudo_device_store
+        jrst    file_pseudo_fail
+file_pseudo_device_store:
+        movei   4,7
+        movem   4,(2)
+        move    4,[0174445665143]      ; SIXBIT //DEVIC/
+        movem   4,1(2)
+        movsi   4,0450000              ; SIXBIT /E     /
+        movem   4,2(2)
+        jrst    pdp10_ret_zero_v1
+file_pseudo_cty:
+        cail    3,4
+        jrst    file_pseudo_cty_store
+        jrst    file_pseudo_fail
+file_pseudo_cty_store:
+        movei   4,014
+        movem   4,(2)
+        move    4,[0174445665143]      ; SIXBIT //DEVIC/
+        movem   4,1(2)
+        move    4,[-0326034130660]     ; SIXBIT /E/CTY0/
+        movem   4,2(2)
+        jrst    pdp10_ret_zero_v1
+file_pseudo_proc:
+        cail    3,2
+        jrst    file_pseudo_proc_store
+        jrst    file_pseudo_fail
+file_pseudo_proc_store:
+        movei   4,5
+        movem   4,(2)
+        move    4,[0176062574300]      ; SIXBIT //PROC /
+        movem   4,1(2)
+        jrst    pdp10_ret_zero_v1
+file_pseudo_proc_slot:
+        movei   5,7
+        movem   5,(2)
+        move    5,[0176062574317]      ; SIXBIT //PROC//
+        movem   5,1(2)
+        lsh     4,036
+        add     4,[0200000000000]
+        movem   4,2(2)
+        jrst    pdp10_ret_zero_v1
+file_pseudo_fail:
+        jrst    pdp10_ret_neg1_v1

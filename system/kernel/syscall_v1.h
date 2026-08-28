@@ -32,7 +32,7 @@
 #define SYS_V1_O_APPEND         000004U
 #define SYS_V1_O_CREAT          000010U
 #define SYS_V1_O_TRUNC          000020U
-#define SYS_V1_PROC_SLOTS       64U
+#define SYS_V1_PROC_SLOTS       2U
 
 struct sys_v1_procinfo {
         kword_t pid;
@@ -57,7 +57,7 @@ struct sys_v1_meminfo {
 int sys_v1_procinfo(unsigned int slot, struct sys_v1_procinfo *info);
 int sys_v1_meminfo(struct sys_v1_meminfo *info);
 
-/* Called by mach_user_v1.s with the saved AC block. */
-int exec_native_syscall_v1(kword_t *ac);
+/* Called by mach_user_v1.s; consumes the fixed native syscall AC snapshot. */
+int exec_native_syscall_v1(void);
 
 #endif
