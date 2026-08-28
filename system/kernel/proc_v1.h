@@ -33,7 +33,6 @@ struct proc_v1 {
 
 extern struct proc_v1 proc_v1_table[PROC_V1_NPROC];
 extern struct proc_v1 *proc_v1_current;
-extern unsigned int proc_v1_next_pid;
 
 #define PROC_V1_PID(p) ((unsigned int)((p)->meta & PROC_V1_PID_MASK))
 #define PROC_V1_PARENT_SLOT(p) \
@@ -46,14 +45,10 @@ extern unsigned int proc_v1_next_pid;
 #define PROC_V1_ENTRY(p) \
         ((kword_t)(((p)->meta >> PROC_V1_ENTRY_SHIFT) & PROC_V1_HALF_MASK))
 
-struct proc_v1 *proc_v1_alloc_child(struct proc_v1 *parent);
-void proc_v1_reap(struct proc_v1 *p);
 unsigned int proc_v1_slot(const struct proc_v1 *p);
 struct proc_v1 *proc_v1_get(unsigned int slot);
 unsigned int proc_v1_ppid(const struct proc_v1 *p);
 kword_t proc_v1_comm(const struct proc_v1 *p);
 void proc_v1_set_state(struct proc_v1 *p, unsigned int state);
-void proc_v1_set_memory(struct proc_v1 *p, kword_t base, kword_t words);
-void proc_v1_set_entry(struct proc_v1 *p, kword_t entry);
 
 #endif

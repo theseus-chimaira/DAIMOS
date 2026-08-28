@@ -407,6 +407,5 @@ boot_load_init_v3(const kword_t *data)
             ((process_words & PROC_V1_HALF_MASK) << PROC_V1_HALF_SHIFT) |
             (KBOOT_V1_USER_BASE & PROC_V1_HALF_MASK);
         proc_v1_current = &proc_v1_table[1];
-        proc_v1_next_pid = 2U;
         return 0;
 }

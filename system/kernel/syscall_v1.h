@@ -54,11 +54,6 @@ struct sys_v1_meminfo {
         kword_t file_slots_total;
 };
 
-int sys_v1_open(unsigned int owner, const kword_t *path, unsigned int flags);
-int sys_v1_putchar(int ch);
-int sys_v1_getchar(void);
-int sys_v1_readchar(unsigned int owner, int fd);
-int sys_v1_writechar(unsigned int owner, int fd, int ch);
 int sys_v1_procinfo(unsigned int slot, struct sys_v1_procinfo *info);
 int sys_v1_meminfo(struct sys_v1_meminfo *info);
 extern kword_t sys_v1_total_words;

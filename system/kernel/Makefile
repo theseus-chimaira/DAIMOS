@@ -30,13 +30,10 @@ MRES_ASM = $(MRES_C_ASM) $(BUILD)/cty_io.s $(BUILD)/clk_io.s \
 	$(BUILD)/tty_io.s $(BUILD)/wcnsls_io.s $(BUILD)/ocnsls_io.s $(BUILD)/storage_io.s $(BUILD)/slv_io.s
 
 .DEFAULT_GOAL := kinit
-.PHONY: kinit kcore test clean
+.PHONY: kinit kcore clean
 
 kinit: $(KINIT_ASM)
 kcore: $(KCORE_FIXED_ASM) $(MRES_ASM)
-
-test:
-	$(MAKE) -C $(PROJECT_ROOT)/tests/system/kernel test BUILD='$(BUILD_ROOT)/tests/system/kernel' KINIT_DEBUG='$(KINIT_DEBUG)'
 
 $(BUILD)/kinit.s $(BUILD)/kinit_diag.s $(BUILD)/module_minit.s $(BUILD)/kfs_boot_v2.s: $(BUILD)/%.s: %.c kinit.h module.h mres.h kcore.h kboot_v1.h vfs_v1.h memfs_v1.h initfs_v1.h exec_v1.h proc_v1.h mach_user_v1.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h $(VERSION_FILE)
 	mkdir -p $(BUILD)

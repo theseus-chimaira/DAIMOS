@@ -17,7 +17,6 @@
 #define PROCFS_V1_FIELD_WORDS           4U
 #define PROCFS_V1_FIELD_COMM            5U
 
-vnode_v1_t procfs_v1_root(void);
 int procfs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
     vnode_v1_t *nodep);
 int procfs_v1_readdir(vnode_v1_t dir, unsigned int off,

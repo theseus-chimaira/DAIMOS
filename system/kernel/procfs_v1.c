@@ -17,12 +17,6 @@ procfs_v1_file_chars(unsigned int i)
         return (i == 0U || i == 3U) ? 4U : 5U;
 }
 
-vnode_v1_t
-procfs_v1_root(void)
-{
-        return VFS_V1_NODE(PROCFS_V1_PROVIDER, PROCFS_V1_KIND_ROOT, 0U);
-}
-
 extern int procfs_v1_is_root(vnode_v1_t node);
 extern struct proc_v1 *procfs_v1_slot_live(unsigned int slot, kword_t *pidp);
 extern int procfs_v1_is_proc(vnode_v1_t node, unsigned int *slotp);

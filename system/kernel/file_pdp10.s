@@ -447,6 +447,7 @@ file_lookup_child_fail:
 file_v1_readdir:
         push    17,010
         push    17,011
+        push    17,012
         move    011,3                   ; ent
         pushj   17,file_v1_find
         move    010,1                   ; fp
@@ -473,22 +474,24 @@ file_v1_readdir:
         jrst    file_readdir_finish
 
         ; Count ordinary MEMFS root entries to locate synthetic entries.
-        movei   7,0
+        ; AC1-AC7 are caller-saved; keep the ordinal in saved AC12 because
+        ; memfs_v1_readdir clobbers AC7 while scanning node metadata.
+        movei   012,0
 file_readdir_base_loop:
         move    1,file_v1_root
         move    2,[040001000000]
-        move    3,7
+        move    3,012
         move    4,011
         pushj   17,memfs_v1_readdir
         jumpg   1,file_readdir_base_more
         move    5,1(010)                ; requested visible offset
-        camn    5,7
+        camn    5,012
         jrst    file_readdir_synth_device
-        addi    7,1
-        camn    5,7
+        addi    012,1
+        camn    5,012
         jrst    file_readdir_synth_proc
-        addi    7,1
-        came    5,7
+        addi    012,1
+        came    5,012
         jrst    file_readdir_eof
         skipn   file_v1_alias_node
         jrst    file_readdir_eof
@@ -496,7 +499,7 @@ file_readdir_base_loop:
         move    6,[-0133222200000]      ; TEMP
         jrst    file_readdir_synth_store
 file_readdir_base_more:
-        addi    7,1
+        addi    012,1
         jrst    file_readdir_base_loop
 
 file_readdir_synth_device:
@@ -548,6 +551,7 @@ file_readdir_advance:
 file_readdir_fail:
         seto    1,
 file_readdir_return:
+        pop     17,012
         pop     17,011
         pop     17,010
         popj    17,

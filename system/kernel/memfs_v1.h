@@ -32,7 +32,6 @@ struct memfs_v1 {
         const kword_t *image_data;
 };
 
-vnode_v1_t memfs_v1_root(const struct memfs_v1 *fs);
 int memfs_v1_lookup(const struct memfs_v1 *fs, vnode_v1_t dir,
     const struct vfs_v1_name *name, vnode_v1_t *nodep);
 int memfs_v1_readdir(const struct memfs_v1 *fs, vnode_v1_t dir,

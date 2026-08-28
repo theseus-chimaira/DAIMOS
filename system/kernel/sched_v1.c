@@ -15,20 +15,3 @@ sched_v1_run_once(sched_v1_enter_fn enterfn)
             0, 0, 0);
         return SCHED_V1_ENTERED;
 }
-
-void
-sched_v1_yield(void)
-{
-        unsigned int start;
-        unsigned int i;
-        unsigned int slot;
-
-        start = proc_v1_slot(proc_v1_current);
-        for (i = 1U; i <= PROC_V1_NPROC; ++i) {
-                slot = (start + i) % PROC_V1_NPROC;
-                if (PROC_V1_STATE(&proc_v1_table[slot]) == PROC_V1_SRUN) {
-                        proc_v1_current = &proc_v1_table[slot];
-                        return;
-                }
-        }
-}

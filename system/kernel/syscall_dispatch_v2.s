@@ -39,7 +39,7 @@ exec_native_syscall_v1:
 %L61:
 	pushj 17,proc_v1_slot
 	move 012,1
-	hrrz 4,1(011)
+	hrrz 4,(011)
 	subi 4,2
 	jumpl 4,%L137
 	caile 4,043
@@ -87,32 +87,37 @@ exec_native_syscall_v1:
 	movei 2,4
 	pushj 17,proc_v1_set_state
 	pushj 17,mach_return_to_kernel_request_v1
-	hrrz 1,2(011)
+	hrrz 1,1(011)
 	jrst %L65
 %L67:
-	move 1,2(011)
+	move 1,1(011)
 	pushj 17,sys_v1_user_words
 	move 010,1
 	jumpe 1,%L137
-	hrrz 3,3(011)
+	hrrz 3,2(011)
+	move 4,3
+	andi 4,3
+	addi 4,1
+	caile 4,3
+	movei 4,3
+	andi 3,034
+	ior 3,4
 	move 1,012
 	move 2,010
-	pushj 17,sys_v1_open
+	pushj 17,file_v1_open
 	jrst %L65
 %L72:
-	hrrz 2,2(011)
+	hrrz 2,1(011)
 	pushj 17,file_v1_close
 	jrst %L65
 %L73:
-	move 1,2(011)
+	move 1,1(011)
 	andi 1,0177
-	pushj 17,sys_v1_putchar
-	jrst %L65
+	jrst native_sys_putchar
 %L74:
-	pushj 17,sys_v1_getchar
-	jrst %L65
+	jrst native_sys_getchar
 %L75:
-	move 1,2(011)
+	move 1,1(011)
 	pushj 17,sys_v1_user_words
 	move 010,1
 	jumpe 1,%L137
@@ -121,44 +126,44 @@ exec_native_syscall_v1:
 	pushj 17,file_v1_chdir
 	jrst %L65
 %L80:
-	move 1,2(011)
+	move 1,1(011)
 	pushj 17,sys_v1_user_words
 	move 010,1
 	jumpe 1,%L137
-	hrrz 3,3(011)
+	hrrz 3,2(011)
 	move 1,012
 	move 2,010
 	pushj 17,file_v1_getcwd
 	jrst %L65
 %L83:
-	move 1,3(011)
+	move 1,2(011)
 	pushj 17,sys_v1_user_words
 	move 010,1
 	jumpe 1,%L137
-	hrrz 2,2(011)
-	hrrz 4,4(011)
+	hrrz 2,1(011)
+	hrrz 4,3(011)
 	move 1,012
 	move 3,010
 	pushj 17,file_v1_read_words
 	jrst %L65
 %L86:
-	move 1,3(011)
+	move 1,2(011)
 	pushj 17,sys_v1_user_words
 	move 010,1
 	jumpe 1,%L137
-	hrrz 2,2(011)
-	hrrz 4,4(011)
-	move 6,5(011)
+	hrrz 2,1(011)
+	hrrz 4,3(011)
+	move 6,4(011)
 	movem 6,(017)
 	move 1,012
 	move 3,010
 	pushj 17,file_v1_write_words
 	jrst %L65
 %L90:
-	move 1,2(011)
+	move 1,1(011)
 	pushj 17,sys_v1_user_words
 	move 010,1
-	move 1,3(011)
+	move 1,2(011)
 	pushj 17,sys_v1_user_words
 	move 3,1
 	jumpe 010,%L137
@@ -168,27 +173,27 @@ exec_native_syscall_v1:
 	pushj 17,file_v1_stat_path_owner
 	jrst %L65
 %L97:
-	move 1,3(011)
+	move 1,2(011)
 	pushj 17,sys_v1_user_words
 	move 010,1
 	jumpe 1,%L137
-	hrrz 2,2(011)
+	hrrz 2,1(011)
 	move 1,012
 	move 3,010
 	pushj 17,file_v1_readdir
 	jrst %L65
 %L102:
-	move 1,2(011)
+	move 1,1(011)
 	pushj 17,sys_v1_user_words
 	move 010,1
 	jumpe 1,%L137
-	hrrz 3,3(011)
+	hrrz 3,2(011)
 	move 1,012
 	move 2,010
 	pushj 17,file_v1_mkdir_owner
 	jrst %L65
 %L107:
-	move 1,2(011)
+	move 1,1(011)
 	pushj 17,sys_v1_user_words
 	move 010,1
 	jumpe 1,%L137
@@ -197,10 +202,10 @@ exec_native_syscall_v1:
 	pushj 17,file_v1_unlink_owner
 	jrst %L65
 %L112:
-	move 1,2(011)
+	move 1,1(011)
 	pushj 17,sys_v1_user_words
 	move 010,1
-	move 1,3(011)
+	move 1,2(011)
 	pushj 17,sys_v1_user_words
 	move 3,1
 	jumpe 010,%L137
@@ -210,39 +215,68 @@ exec_native_syscall_v1:
 	pushj 17,file_v1_rename
 	jrst %L65
 %L119:
-	move 1,2(011)
+	move 1,1(011)
 	pushj 17,sys_v1_user_words
 	move 010,1
 	jumpe 1,%L137
 	move 1,012
 	move 2,010
-	move 3,3(011)
+	move 3,2(011)
 	pushj 17,file_v1_truncate_owner
 	jrst %L65
 %L124:
-	move 1,3(011)
+	move 1,2(011)
 	pushj 17,sys_v1_user_words
 	move 010,1
 	jumpe 1,%L137
-	hrrz 1,2(011)
+	hrrz 1,1(011)
 	move 2,010
 	pushj 17,sys_v1_procinfo
 	jrst %L65
 %L129:
-	move 1,2(011)
+	move 1,1(011)
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
 	pushj 17,sys_v1_meminfo
 	jrst %L65
 %L134:
-	hrrz 2,2(011)
-	pushj 17,sys_v1_readchar
+	hrrz 2,1(011)
+	jumpe 2,native_sys_getchar
+	move 1,012
+	pushj 17,file_v1_readchar
+	camn 1,[-3]
+	jrst native_sys_getchar
 	jrst %L65
 %L135:
-	hrrz 2,2(011)
-	move 3,3(011)
+	hrrz 2,1(011)
+	move 3,2(011)
 	andi 3,0777
-	pushj 17,sys_v1_writechar
+	move 010,3
+	cail 2,1
+	cail 2,3
+	trna
+	jrst native_sys_writechar_tty
+	move 1,012
+	pushj 17,file_v1_writechar
+	came 1,[-3]
+	jrst %L65
+native_sys_writechar_tty:
+	move 1,010
+	jrst native_sys_putchar
+
+native_sys_getchar:
+	seto 1,
+	skipe 4,kcore_cty_getchar_v1
+	pushj 17,(4)
+	jrst %L65
+
+native_sys_putchar:
+	move 5,1
+	seto 1,
+	skipn 4,kcore_cty_putchar_v1
+	jrst %L65
+	move 1,5
+	pushj 17,(4)
 	jrst %L65
 %L136:
 	pushj 17,pdp10_halt
@@ -251,7 +285,7 @@ exec_native_syscall_v1:
 %L137:
 	seto 1,
 %L65:
-	movem 1,1(011)
+	movem 1,(011)
 %L60:
 	move 010,-3(017)
 	move 011,-2(017)

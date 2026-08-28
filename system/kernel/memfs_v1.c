@@ -54,14 +54,6 @@ extern int memfs_v1_find_child(const struct memfs_v1 *fs, unsigned int parent,
 extern int memfs_v1_free_slot(const struct memfs_v1 *fs, unsigned int *slotp);
 extern void memfs_v1_clear_node(struct memfs_v1_node *np);
 
-vnode_v1_t
-memfs_v1_root(const struct memfs_v1 *fs)
-{
-        if (fs == 0 || fs->nodes == 0 || fs->node_count == 0U)
-                return VFS_V1_NODE_NONE;
-        return memfs_v1_node_handle(0U);
-}
-
 int
 memfs_v1_lookup(const struct memfs_v1 *fs, vnode_v1_t dir,
     const struct vfs_v1_name *name, vnode_v1_t *nodep)
