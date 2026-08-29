@@ -118,14 +118,14 @@ file_getcwd_nwords_nonneg:
 file_getcwd_nwords_ok:
         move    4,file_v1_cwd
         jumpn   4,file_getcwd_have_node
-        move    4,[040001000000]         ; MEMFS root
+        move    4,vfs_v1_namespace_root
 file_getcwd_have_node:
         move    5,4
         lsh     5,-036
         andi    5,077
         caige   5,4
         jrst    file_getcwd_pseudo_tail
-        caile   5,5
+        caile   5,6
         jrst    file_getcwd_pseudo_tail
 
 ; The 0121-word local area is one parent vnode followed by sixteen five-word
@@ -149,7 +149,7 @@ file_getcwd_have_node:
         move    015,file_v1_alias_node
         jrst    file_getcwd_stop_ready
 file_getcwd_stop_root:
-        move    015,[040001000000]
+        move    015,vfs_v1_namespace_root
 file_getcwd_stop_ready:
 
 ; Clear the complete supplied output record, preserving existing semantics.

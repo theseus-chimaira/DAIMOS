@@ -3,6 +3,7 @@
 #include "devicefs_v1.h"
 #include "procfs_v1.h"
 #include "dtfs_v1.h"
+#include "d6fs_provider_v2.h"
 
 extern struct memfs_v1 *file_v1_root;
 extern vnode_v1_t file_v1_alias_node;
@@ -17,6 +18,26 @@ static kword_t vfs_v1_mount_ro;
     VFS_V1_NODE(DEVICEFS_V1_PROVIDER, DEVICEFS_V1_KIND_ROOT, 0U)
 #define VFS_V1_PROC_ROOT \
     VFS_V1_NODE(PROCFS_V1_PROVIDER, PROCFS_V1_KIND_ROOT, 0U)
+
+vnode_v1_t vfs_v1_namespace_root = VFS_V1_MEMFS_ROOT;
+
+vnode_v1_t
+vfs_v1_root(void)
+{
+        return vfs_v1_namespace_root;
+}
+
+int
+vfs_v1_set_root(vnode_v1_t node)
+{
+        struct vfs_v1_stat st;
+
+        if (node == VFS_V1_NODE_NONE || vfs_v1_stat(node, &st) != 0 ||
+            st.type != VFS_V1_TYPE_DIR)
+                return -1;
+        vfs_v1_namespace_root = node;
+        return 0;
+}
 
 static void
 vfs_v1_dirent_set6(struct vfs_v1_dirent *ent, kword_t word,
@@ -100,6 +121,11 @@ vfs_v1_unmount(vnode_v1_t root)
         i = id - 1U;
         if (vfs_v1_mount_root[i] != root || vfs_v1_sync(root) != 0)
                 return -1;
+        if (VFS_V1_PROVIDER(root) == D6FS_V2_PROVIDER &&
+            d6fs_provider_v2_prepare_unmount(root) != 0)
+                return -1;
+        if (vfs_v1_namespace_root == root)
+                vfs_v1_namespace_root = vfs_v1_mount_target[i];
         vfs_v1_mount_target[i] = VFS_V1_NODE_NONE;
         vfs_v1_mount_root[i] = VFS_V1_NODE_NONE;
         vfs_v1_mount_ro &= ~((kword_t)1UL << i);
@@ -115,7 +141,7 @@ vfs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
 
         if (name == 0 || nodep == 0)
                 return -1;
-        if (dir == VFS_V1_MEMFS_ROOT) {
+        if (dir == vfs_v1_namespace_root) {
                 if (vfs_v1_name_is6(name,
                     VFS_V1_SIX6('D','E','V','I','C','E'), 6U)) {
                         *nodep = VFS_V1_DEVICE_ROOT;
@@ -146,6 +172,9 @@ vfs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
         case DTFS_V1_PROVIDER:
                 rc = dtfs_v1_lookup(dir, name, &node);
                 break;
+        case D6FS_V2_PROVIDER:
+                rc = d6fs_provider_v2_lookup(dir, name, &node);
+                break;
         default:
                 return -1;
         }
@@ -153,6 +182,26 @@ vfs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
                 return rc;
         *nodep = vfs_v1_follow_mount(node);
         return 0;
+}
+
+static int
+vfs_v1_readdir_raw(vnode_v1_t dir, unsigned int off,
+    struct vfs_v1_dirent *ent)
+{
+        switch (VFS_V1_PROVIDER(dir)) {
+        case MEMFS_V1_PROVIDER:
+                return memfs_v1_readdir(file_v1_root, dir, off, ent);
+        case DEVICEFS_V1_PROVIDER:
+                return devicefs_v1_readdir(dir, off, ent);
+        case PROCFS_V1_PROVIDER:
+                return procfs_v1_readdir(dir, off, ent);
+        case DTFS_V1_PROVIDER:
+                return dtfs_v1_readdir(dir, off, ent);
+        case D6FS_V2_PROVIDER:
+                return d6fs_provider_v2_readdir(dir, off, ent);
+        default:
+                return -1;
+        }
 }
 
 int
@@ -163,43 +212,31 @@ vfs_v1_readdir(vnode_v1_t dir, unsigned int off, struct vfs_v1_dirent *ent)
 
         if (ent == 0)
                 return -1;
-        switch (VFS_V1_PROVIDER(dir)) {
-        case MEMFS_V1_PROVIDER:
-                rc = memfs_v1_readdir(file_v1_root, dir, off, ent);
-                if (rc != 0 || dir != VFS_V1_MEMFS_ROOT)
-                        return rc;
-                base = 0U;
-                while (memfs_v1_readdir(file_v1_root, dir, base, ent) > 0)
-                        ++base;
-                if (off == base) {
-                        vfs_v1_dirent_set6(ent,
-                            VFS_V1_SIX6('D','E','V','I','C','E'), 6U,
-                            VFS_V1_TYPE_DIR);
-                        return 1;
-                }
-                if (off == base + 1U) {
-                        vfs_v1_dirent_set6(ent,
-                            VFS_V1_SIX6('P','R','O','C',' ',' '), 4U,
-                            VFS_V1_TYPE_DIR);
-                        return 1;
-                }
-                if (off == base + 2U &&
-                    file_v1_alias_node != VFS_V1_NODE_NONE) {
-                        vfs_v1_dirent_set6(ent,
-                            VFS_V1_SIX6('T','E','M','P',' ',' '), 4U,
-                            VFS_V1_TYPE_DIR);
-                        return 1;
-                }
-                return 0;
-        case DEVICEFS_V1_PROVIDER:
-                return devicefs_v1_readdir(dir, off, ent);
-        case PROCFS_V1_PROVIDER:
-                return procfs_v1_readdir(dir, off, ent);
-        case DTFS_V1_PROVIDER:
-                return dtfs_v1_readdir(dir, off, ent);
-        default:
-                return -1;
+        rc = vfs_v1_readdir_raw(dir, off, ent);
+        if (rc != 0 || dir != vfs_v1_namespace_root)
+                return rc;
+        base = 0U;
+        while (vfs_v1_readdir_raw(dir, base, ent) > 0)
+                ++base;
+        if (off == base) {
+                vfs_v1_dirent_set6(ent,
+                    VFS_V1_SIX6('D','E','V','I','C','E'), 6U,
+                    VFS_V1_TYPE_DIR);
+                return 1;
         }
+        if (off == base + 1U) {
+                vfs_v1_dirent_set6(ent,
+                    VFS_V1_SIX6('P','R','O','C',' ',' '), 4U,
+                    VFS_V1_TYPE_DIR);
+                return 1;
+        }
+        if (off == base + 2U && file_v1_alias_node != VFS_V1_NODE_NONE) {
+                vfs_v1_dirent_set6(ent,
+                    VFS_V1_SIX6('T','E','M','P',' ',' '), 4U,
+                    VFS_V1_TYPE_DIR);
+                return 1;
+        }
+        return 0;
 }
 
 int
@@ -214,6 +251,8 @@ vfs_v1_stat(vnode_v1_t node, struct vfs_v1_stat *st)
                 return procfs_v1_stat(node, st);
         case DTFS_V1_PROVIDER:
                 return dtfs_v1_stat(node, st);
+        case D6FS_V2_PROVIDER:
+                return d6fs_provider_v2_stat(node, st);
         default:
                 return -1;
         }
@@ -234,12 +273,12 @@ vfs_v1_parent_raw(vnode_v1_t node, vnode_v1_t *parentp)
                 }
                 return memfs_v1_parent(file_v1_root, node, parentp, 0);
         case DEVICEFS_V1_PROVIDER:
-                *parentp = VFS_V1_MEMFS_ROOT;
+                *parentp = vfs_v1_namespace_root;
                 return 0;
         case PROCFS_V1_PROVIDER:
                 kind = VFS_V1_LOCAL_KIND(node);
                 if (kind == PROCFS_V1_KIND_ROOT) {
-                        *parentp = VFS_V1_MEMFS_ROOT;
+                        *parentp = vfs_v1_namespace_root;
                         return 0;
                 }
                 if (kind == PROCFS_V1_KIND_PROC) {
@@ -249,6 +288,8 @@ vfs_v1_parent_raw(vnode_v1_t node, vnode_v1_t *parentp)
                 return -1;
         case DTFS_V1_PROVIDER:
                 return dtfs_v1_parent(node, parentp);
+        case D6FS_V2_PROVIDER:
+                return d6fs_provider_v2_parent(node, parentp);
         default:
                 return -1;
         }
@@ -258,6 +299,13 @@ int
 vfs_v1_parent(vnode_v1_t node, vnode_v1_t *parentp)
 {
         unsigned int id;
+
+        if (parentp == 0)
+                return -1;
+        if (node == vfs_v1_namespace_root) {
+                *parentp = node;
+                return 0;
+        }
 
         id = VFS_V1_MOUNT_ID(node);
         if (id != 0U && id <= VFS_V1_NMOUNT &&
@@ -278,15 +326,17 @@ vfs_v1_parent_name(vnode_v1_t node, vnode_v1_t *parentp,
 {
         unsigned int id;
 
-        if (parentp == 0 || namep == 0)
+        if (parentp == 0 || namep == 0 || node == vfs_v1_namespace_root)
                 return -1;
         id = VFS_V1_MOUNT_ID(node);
         if (id != 0U && id <= VFS_V1_NMOUNT &&
             vfs_v1_mount_root[id - 1U] == node)
                 node = vfs_v1_mount_target[id - 1U];
-        if (VFS_V1_PROVIDER(node) != MEMFS_V1_PROVIDER)
-                return -1;
-        return memfs_v1_parent(file_v1_root, node, parentp, namep);
+        if (VFS_V1_PROVIDER(node) == MEMFS_V1_PROVIDER)
+                return memfs_v1_parent(file_v1_root, node, parentp, namep);
+        if (VFS_V1_PROVIDER(node) == D6FS_V2_PROVIDER)
+                return d6fs_provider_v2_parent_name(node, parentp, namep);
+        return -1;
 }
 
 int
@@ -300,6 +350,8 @@ vfs_v1_create(vnode_v1_t dir, const struct vfs_v1_name *name,
                 return memfs_v1_create(file_v1_root, dir, name, mode, nodep);
         case DTFS_V1_PROVIDER:
                 return dtfs_v1_create(dir, name, mode, nodep);
+        case D6FS_V2_PROVIDER:
+                return d6fs_provider_v2_create(dir, name, mode, nodep);
         default:
                 return -1;
         }
@@ -313,6 +365,8 @@ vfs_v1_mkdir(vnode_v1_t dir, const struct vfs_v1_name *name,
                 return -1;
         if (VFS_V1_PROVIDER(dir) == MEMFS_V1_PROVIDER)
                 return memfs_v1_mkdir(file_v1_root, dir, name, mode, nodep);
+        if (VFS_V1_PROVIDER(dir) == D6FS_V2_PROVIDER)
+                return d6fs_provider_v2_mkdir(dir, name, mode, nodep);
         return -1;
 }
 
@@ -326,6 +380,8 @@ vfs_v1_unlink(vnode_v1_t dir, const struct vfs_v1_name *name)
                 return memfs_v1_unlink(file_v1_root, dir, name);
         case DTFS_V1_PROVIDER:
                 return dtfs_v1_unlink(dir, name);
+        case D6FS_V2_PROVIDER:
+                return d6fs_provider_v2_unlink(dir, name);
         default:
                 return -1;
         }
@@ -345,6 +401,9 @@ vfs_v1_rename(vnode_v1_t olddir, const struct vfs_v1_name *oldname,
                     newname);
         case DTFS_V1_PROVIDER:
                 return dtfs_v1_rename(olddir, oldname, newdir, newname);
+        case D6FS_V2_PROVIDER:
+                return d6fs_provider_v2_rename(olddir, oldname, newdir,
+                    newname);
         default:
                 return -1;
         }
@@ -361,6 +420,8 @@ vfs_v1_truncate(vnode_v1_t node, unsigned int words, kword_t size_chars)
                     size_chars);
         case DTFS_V1_PROVIDER:
                 return dtfs_v1_truncate(node, words, size_chars);
+        case D6FS_V2_PROVIDER:
+                return d6fs_provider_v2_truncate(node, words, size_chars);
         default:
                 return -1;
         }
@@ -376,6 +437,8 @@ vfs_v1_chmod(vnode_v1_t node, unsigned int mode)
                 return memfs_v1_chmod(file_v1_root, node, mode);
         case DTFS_V1_PROVIDER:
                 return dtfs_v1_chmod(node, mode);
+        case D6FS_V2_PROVIDER:
+                return d6fs_provider_v2_chmod(node, mode);
         default:
                 return -1;
         }
@@ -391,6 +454,8 @@ vfs_v1_read_words(vnode_v1_t node, unsigned int off, kword_t *buf,
                     nwords);
         case DTFS_V1_PROVIDER:
                 return dtfs_v1_read_words(node, off, buf, nwords);
+        case D6FS_V2_PROVIDER:
+                return d6fs_provider_v2_read_words(node, off, buf, nwords);
         default:
                 return -1;
         }
@@ -408,6 +473,9 @@ vfs_v1_write_words(vnode_v1_t node, unsigned int off,
                     nwords, size_chars);
         case DTFS_V1_PROVIDER:
                 return dtfs_v1_write_words(node, off, buf, nwords, size_chars);
+        case D6FS_V2_PROVIDER:
+                return d6fs_provider_v2_write_words(node, off, buf, nwords,
+                    size_chars);
         default:
                 return -1;
         }
@@ -485,6 +553,8 @@ vfs_v1_sync(vnode_v1_t node)
 {
         if (VFS_V1_PROVIDER(node) == DTFS_V1_PROVIDER)
                 return dtfs_v1_sync(node);
+        if (VFS_V1_PROVIDER(node) == D6FS_V2_PROVIDER)
+                return d6fs_provider_v2_sync(node);
         return 0;
 }
 

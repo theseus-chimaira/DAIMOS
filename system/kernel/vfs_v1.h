@@ -47,6 +47,7 @@ typedef kword_t vnode_v1_t;
 #define VFS_V1_TYPE_CHAR        3U
 #define VFS_V1_TYPE_BLOCK       4U
 #define VFS_V1_TYPE_MOUNTSRC    5U
+#define VFS_V1_TYPE_SYMLINK     6U
 
 #define VFS_V1_NAME_WORDS       4U
 #define VFS_V1_NAME_MAX_CHARS   (VFS_V1_NAME_WORDS * 6U)
@@ -118,5 +119,7 @@ int vfs_v1_mount(vnode_v1_t target, unsigned int provider,
     vnode_v1_t *rootp);
 int vfs_v1_unmount(vnode_v1_t root);
 int vfs_v1_readonly(vnode_v1_t node);
+vnode_v1_t vfs_v1_root(void);
+int vfs_v1_set_root(vnode_v1_t node);
 
 #endif

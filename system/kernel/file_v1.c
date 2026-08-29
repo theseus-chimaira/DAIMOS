@@ -44,12 +44,12 @@ file_v1_walk_path(const kword_t *path,
         if (n == 0U)
                 return -1;
         if (((path[1] >> 30U) & 077UL) == (kword_t)('/' - 040)) {
-                node = FILE_V1_MEMFS_ROOT;
+                node = vfs_v1_root();
                 alias = 0;
         } else {
                 node = file_v1_cwd;
                 if (node == VFS_V1_NODE_NONE)
-                        node = FILE_V1_MEMFS_ROOT;
+                        node = vfs_v1_root();
                 alias = aliasp != 0 && file_v1_alias_cwd != 0;
         }
         pos = 0U;
