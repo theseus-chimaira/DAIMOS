@@ -27,7 +27,20 @@ kcore_boot_v1(void)
                 if (d6fs_rc < 0)
                         return;
         }
+        proc_v1_table[0].meta =
+            (kword_t)PROC_V1_SRUN << PROC_V1_STATE_SHIFT;
         p = &proc_v1_table[1];
+        {
+                static const kword_t init_path[] = {
+                        12UL,
+                        VFS_V1_SIX6('/','S','Y','S','T','E'),
+                        VFS_V1_SIX6('M','/','I','N','I','T')
+                };
+
+                if (exec_v1_load_init(p, 1U, init_path, KBOOT_V1_USER_BASE,
+                    KBOOT_V1_USER_LIMIT) != 0)
+                        return;
+        }
         mach_enter_user_v1(PROC_V1_MEM_BASE(p), PROC_V1_ENTRY(p),
             PROC_V1_MEM_WORDS(p) -
             (kword_t)EXEC_V1_DXR_STACK_WORDS - 1U, 0, 0, 0);

@@ -15,7 +15,7 @@ ifeq ($(KINIT_DEBUG),1)
 KINIT_CPPFLAGS += -DKINIT_DEBUG
 endif
 
-KCORE_C_SRCS = kboot_v1.c vfs_v1.c devicefs_v1.c \
+KCORE_C_SRCS = kboot_v1.c exec_v1.c vfs_v1.c devicefs_v1.c \
 	memfs_v1.c dtfs_v1.c d6fs_v2.c d6fs_provider_v2.c d6fs_disk_v2.c file_v1.c
 KCORE_C_ASM = $(KCORE_C_SRCS:%.c=$(BUILD)/%.s)
 KCORE_FIXED_ASM = $(BUILD)/kcore_entry.s $(KCORE_C_ASM) \
