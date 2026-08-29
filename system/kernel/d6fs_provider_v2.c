@@ -15,6 +15,12 @@ static struct d6fs_provider_v2_mount d6fs_provider_v2_mounts[VFS_V1_NMOUNT];
 static struct d6fs_v2_reader d6fs_provider_v2_reader;
 static unsigned int d6fs_provider_v2_reader_mount;
 
+kword_t *
+d6fs_provider_v2_block_buffer(void)
+{
+        return d6fs_provider_v2_reader.cache;
+}
+
 static void d6fs_provider_v2_lcache_flush(void);
 static struct d6fs_provider_v2_mount *d6fs_provider_v2_mount_for(
     vnode_v1_t node);

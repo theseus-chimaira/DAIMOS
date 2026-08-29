@@ -281,13 +281,14 @@ int
 d6fs_dsk_v2_mount_boot_root(unsigned int read_addr, unsigned int write_addr,
     unsigned int flags, vnode_v1_t *rootp)
 {
-        kword_t scratch[D6FS_V2_BLOCK_WORDS];
+        kword_t *scratch;
         kword_t super_a;
         kword_t super_b;
         int rc;
 
         if (rootp == 0)
                 return -1;
+        scratch = d6fs_provider_v2_block_buffer();
         rc = d6fs_dsk_v2_from_boot(&d6fs_dsk_v2_boot_disk, read_addr,
             &super_a, &super_b);
         if (rc != 0)

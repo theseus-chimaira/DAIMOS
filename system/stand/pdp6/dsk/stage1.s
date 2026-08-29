@@ -74,7 +74,10 @@ load_image_loop:
         pushj 017,copy_stream_words
         jumpn 01,load_image_loop
 load_image_done:
-        movei 017,070000
+        ; KINIT/KCORE now extend above 070000.  The transient bootstrap
+        ; pushdown list may use the remaining low-memory window below
+        ; the user image at 0100000.
+        movei 017,076000
         setz 01,
         move 02,member_count
         jrst @entry_addr

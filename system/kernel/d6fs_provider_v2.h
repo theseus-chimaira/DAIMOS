@@ -11,6 +11,8 @@ int d6fs_provider_v2_mount(vnode_v1_t target,
     d6fs_v2_read_block_fn read_block, void *opaque,
     const struct d6fs_v2_super_info *super, unsigned int flags,
     vnode_v1_t *rootp);
+/* Shared block buffer used for mount probing and the active reader cache. */
+kword_t *d6fs_provider_v2_block_buffer(void);
 int d6fs_provider_v2_mount_rw(vnode_v1_t target,
     d6fs_v2_read_block_fn read_block, d6fs_v2_write_block_fn write_block,
     void *opaque, const struct d6fs_v2_super_info *super, unsigned int flags,
