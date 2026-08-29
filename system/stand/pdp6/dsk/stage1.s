@@ -13,7 +13,9 @@
         .globl __start
         .entry __start
 __start:
-        movei 017,073040
+        ; Keep the Stage1 pushdown list above the complete KINIT image.
+        ; KINIT may extend past 073040 before control is transferred.
+        movei 017,076000
         pushj 017,install_bootstrap_sixbit
         setom 000040
         setom 000041
