@@ -6,7 +6,7 @@
 #define D6FS_DSK_V2_UNUSED_HALF        0777777UL
 #define D6FS_DSK_V2_UNIT_SHIFT         16U
 #define D6FS_DSK_V2_UNIT_MASK          03U
-#define D6FS_DSK_V2_HW_UNIT_SHIFT      18U
+#define D6FS_DSK_V2_HW_UNIT_SHIFT      16U
 #define D6FS_DSK_V2_CYL_SHIFT          6U
 #define D6FS_DSK_V2_LOCATOR_MASK       0177777UL
 
