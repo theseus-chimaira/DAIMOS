@@ -279,6 +279,11 @@ kfs_boot_v2_prepare(void)
         if (dtfs_v1_dtc_read_addr != 0U && dtfs_v1_dtc_write_addr != 0U)
                 devicefs_v1_present |=
                     DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DTC0);
+
+        kcore_dsk_read_sector_v1 =
+            (kword_t)module_service_get(MODULE_SERVICE_DSK_READ_SECTOR);
+        kcore_dsk_write_sector_v1 =
+            (kword_t)module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR);
         if (boot_load_init_v3(data) != 0)
                 return -1;
         return 0;

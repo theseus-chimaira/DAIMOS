@@ -166,7 +166,7 @@ parse_desc_store:
         move 05,current_unit
         movem 05,member_unit(03)
         lsh 05,020
-        ior 05,boot_locator
+        ior 05,located_dboot_loc
         move 06,03
         lsh 06,-01
         addi 06,000040

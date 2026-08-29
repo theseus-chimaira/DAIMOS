@@ -8,6 +8,9 @@
 #define D6FS_DSK_V2_UNIT_MASK          03U
 #define D6FS_DSK_V2_HW_UNIT_SHIFT      18U
 #define D6FS_DSK_V2_CYL_SHIFT          6U
+#define D6FS_DSK_V2_LOCATOR_MASK       0177777UL
+
+static struct d6fs_dsk_v2 d6fs_dsk_v2_boot_disk;
 
 static kword_t
 d6fs_dsk_v2_handoff_half(unsigned int index)
@@ -36,6 +39,7 @@ d6fs_dsk_v2_init(struct d6fs_dsk_v2 *disk, unsigned int members,
         disk->write_addr = 0U;
         for (i = 0U; i < D6FS_V2_MAX_MEMBERS; ++i) {
                 disk->unit[i] = 0U;
+                disk->base[i] = 0UL;
                 disk->set.blocks[i] = 0UL;
         }
         for (i = 0U; i < members; ++i) {
@@ -48,30 +52,95 @@ d6fs_dsk_v2_init(struct d6fs_dsk_v2 *disk, unsigned int members,
 }
 
 int
-d6fs_dsk_v2_from_boot(struct d6fs_dsk_v2 *disk,
-    kword_t swap_tail_blocks, unsigned int read_addr)
+d6fs_dsk_v2_layout_decode(const kword_t block[D6FS_V2_BLOCK_WORDS],
+    struct d6fs_dsk_v2_layout *layout)
+{
+        kword_t range;
+
+        if (block == 0 || layout == 0 ||
+            block[D6FS_DSK_V2_LAYOUT_MAGIC_WORD] != D6FS_DSK_V2_LAYOUT_MAGIC)
+                return -1;
+        range = block[D6FS_DSK_V2_LAYOUT_RANGE_WORD];
+        layout->base = (range >> 18) & D6FS_DSK_V2_HALF_MASK;
+        layout->usable_blocks = range & D6FS_DSK_V2_HALF_MASK;
+        layout->super_a = block[D6FS_DSK_V2_LAYOUT_SUPER_A];
+        layout->super_b = block[D6FS_DSK_V2_LAYOUT_SUPER_B];
+        layout->swap_tail_blocks = block[D6FS_DSK_V2_LAYOUT_SWAP_TAIL];
+        if (layout->usable_blocks == 0UL ||
+            layout->swap_tail_blocks >= D6FS_DSK_V2_SECTORS_PER_UNIT ||
+            layout->base >= D6FS_DSK_V2_SECTORS_PER_UNIT ||
+            layout->usable_blocks > D6FS_DSK_V2_SECTORS_PER_UNIT - layout->base ||
+            layout->swap_tail_blocks > D6FS_DSK_V2_SECTORS_PER_UNIT -
+            layout->base - layout->usable_blocks ||
+            layout->super_a == layout->super_b ||
+            layout->super_a > D6FS_V2_LOGICAL_BLOCK_MASK ||
+            layout->super_b > D6FS_V2_LOGICAL_BLOCK_MASK)
+                return -1;
+        return 0;
+}
+
+int
+d6fs_dsk_v2_from_boot(struct d6fs_dsk_v2 *disk, unsigned int read_addr,
+    kword_t *super_ap, kword_t *super_bp)
 {
         unsigned int units[D6FS_DSK_V2_BOOT_MEMBERS];
         kword_t blocks[D6FS_DSK_V2_BOOT_MEMBERS];
+        kword_t bases[D6FS_DSK_V2_BOOT_MEMBERS];
+        kword_t descriptor[D6FS_V2_BLOCK_WORDS];
+        struct d6fs_dsk_v2_layout layout;
         unsigned int index;
         unsigned int members;
+        kword_t first_super_a;
+        kword_t first_super_b;
+        kword_t first_swap_tail;
         kword_t half;
+        kword_t locator;
+        kword_t raw;
 
-        if (disk == 0 || read_addr == 0U ||
-            swap_tail_blocks >= D6FS_DSK_V2_SECTORS_PER_UNIT)
+        if (disk == 0 || read_addr == 0U || super_ap == 0 || super_bp == 0)
                 return -1;
         members = 0U;
+        first_super_a = 0UL;
+        first_super_b = 0UL;
+        first_swap_tail = 0UL;
         for (index = 0U; index < D6FS_DSK_V2_BOOT_MEMBERS; ++index) {
                 half = d6fs_dsk_v2_handoff_half(index);
                 if (half == D6FS_DSK_V2_UNUSED_HALF)
                         continue;
                 units[members] = (unsigned int)((half >>
                     D6FS_DSK_V2_UNIT_SHIFT) & D6FS_DSK_V2_UNIT_MASK);
-                blocks[members] = D6FS_DSK_V2_SECTORS_PER_UNIT -
-                    swap_tail_blocks;
+                locator = half & D6FS_DSK_V2_LOCATOR_MASK;
+                if (d6fs_dsk_v2_raw_addr(units[members], locator, &raw) != 0 ||
+                    d6fs_dsk_v2_call(read_addr, raw, descriptor) != 0)
+                        return -1;
+                if (descriptor[D6FS_DSK_V2_LAYOUT_MAGIC_WORD] !=
+                    D6FS_DSK_V2_LAYOUT_MAGIC)
+                        return members == 0U ? 1 : -1;
+                if (d6fs_dsk_v2_layout_decode(descriptor, &layout) != 0)
+                        return -1;
+                if (members == 0U) {
+                        first_super_a = layout.super_a;
+                        first_super_b = layout.super_b;
+                        first_swap_tail = layout.swap_tail_blocks;
+                } else if (layout.super_a != first_super_a ||
+                    layout.super_b != first_super_b ||
+                    layout.swap_tail_blocks != first_swap_tail) {
+                        return -1;
+                }
+                bases[members] = layout.base;
+                blocks[members] = layout.usable_blocks;
                 ++members;
         }
-        return d6fs_dsk_v2_init(disk, members, units, blocks, read_addr);
+        if (d6fs_dsk_v2_init(disk, members, units, blocks, read_addr) != 0)
+                return -1;
+        for (index = 0U; index < members; ++index)
+                disk->base[index] = bases[index];
+        if (first_super_a >= d6fs_v2_diskset_blocks(&disk->set) ||
+            first_super_b >= d6fs_v2_diskset_blocks(&disk->set))
+                return -1;
+        *super_ap = first_super_a;
+        *super_bp = first_super_b;
+        return 0;
 }
 
 int
@@ -111,8 +180,9 @@ d6fs_dsk_v2_read_block(void *opaque, kword_t logical,
         if (disk == 0 || block == 0 || disk->read_addr == 0U ||
             d6fs_v2_map_block(&disk->set, logical, &phys) != 0 ||
             phys.member >= disk->set.members ||
-            d6fs_dsk_v2_raw_addr(disk->unit[phys.member], phys.block,
-            &raw) != 0)
+            phys.block >= disk->set.blocks[phys.member] ||
+            d6fs_dsk_v2_raw_addr(disk->unit[phys.member],
+            disk->base[phys.member] + phys.block, &raw) != 0)
                 return -1;
         return d6fs_dsk_v2_call(disk->read_addr, raw, block);
 }
@@ -129,8 +199,9 @@ d6fs_dsk_v2_write_block(void *opaque, kword_t logical,
         if (disk == 0 || block == 0 || disk->write_addr == 0U ||
             d6fs_v2_map_block(&disk->set, logical, &phys) != 0 ||
             phys.member >= disk->set.members ||
-            d6fs_dsk_v2_raw_addr(disk->unit[phys.member], phys.block,
-            &raw) != 0)
+            phys.block >= disk->set.blocks[phys.member] ||
+            d6fs_dsk_v2_raw_addr(disk->unit[phys.member],
+            disk->base[phys.member] + phys.block, &raw) != 0)
                 return -1;
         return d6fs_dsk_v2_call(disk->write_addr, raw, (kword_t *)block);
 }
@@ -204,4 +275,26 @@ d6fs_dsk_v2_mount_root(struct d6fs_dsk_v2 *disk, kword_t super_a,
         }
         *rootp = root;
         return 0;
+}
+
+int
+d6fs_dsk_v2_mount_boot_root(unsigned int read_addr, unsigned int write_addr,
+    unsigned int flags, vnode_v1_t *rootp)
+{
+        kword_t scratch[D6FS_V2_BLOCK_WORDS];
+        kword_t super_a;
+        kword_t super_b;
+        int rc;
+
+        if (rootp == 0)
+                return -1;
+        rc = d6fs_dsk_v2_from_boot(&d6fs_dsk_v2_boot_disk, read_addr,
+            &super_a, &super_b);
+        if (rc != 0)
+                return rc;
+        if (write_addr != 0U &&
+            d6fs_dsk_v2_set_writer(&d6fs_dsk_v2_boot_disk, write_addr) != 0)
+                return -1;
+        return d6fs_dsk_v2_mount_root(&d6fs_dsk_v2_boot_disk, super_a,
+            super_b, flags, scratch, rootp);
 }

@@ -34,6 +34,8 @@ extern struct memfs_v1 kboot_fs_v1;
 extern kword_t kcore_resident_end_v1;
 extern kword_t kcore_cty_putchar_v1;
 extern kword_t kcore_cty_getchar_v1;
+extern kword_t kcore_dsk_read_sector_v1;
+extern kword_t kcore_dsk_write_sector_v1;
 
 void kcore_boot_v1(void);
 
