@@ -85,6 +85,7 @@ dsh_run(int argc)
         int append;
         int i;
         int rc;
+        kword_t *outpath;
 
         if (argc == 0) return 0;
         if (u_v1_s6_eq(dsh_argv[0], "EXIT")) return 1000;
@@ -100,6 +101,7 @@ dsh_run(int argc)
         io.out_fd = 1;
         io.err_fd = 2;
         outfd = -1;
+        outpath = 0;
         for (i = 1; i < argc; ++i) {
                 append = 0;
                 if (u_v1_s6_eq(dsh_argv[i], ">")) append = 1;
@@ -110,11 +112,18 @@ dsh_run(int argc)
                     SYS_V1_O_CREAT | (append == 2 ? SYS_V1_O_APPEND : SYS_V1_O_TRUNC));
                 if (outfd < 0) return 1;
                 io.out_fd = outfd;
+                outpath = dsh_argv[i + 1];
                 argc = i;
                 break;
         }
         rc = cmd_v1_dispatch(argc, dsh_argv, &io);
         if (outfd >= 0 && dsys_v1_close(outfd) != 0) rc = 1;
+        if (rc != 0 && outpath != 0) {
+                (void)u_v1_put_s6(io.err_fd, dsh_argv[0]);
+                (void)u_v1_puts(io.err_fd, ": ");
+                (void)u_v1_put_s6(io.err_fd, outpath);
+                (void)u_v1_crlf(io.err_fd);
+        }
         return rc;
 }
 

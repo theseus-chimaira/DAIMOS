@@ -2,6 +2,7 @@
 #include "memfs_v1.h"
 #include "devicefs_v1.h"
 #include "procfs_v1.h"
+#include "dtfs_v1.h"
 
 extern struct memfs_v1 *file_v1_root;
 extern vnode_v1_t file_v1_alias_node;
@@ -142,6 +143,9 @@ vfs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
         case PROCFS_V1_PROVIDER:
                 rc = procfs_v1_lookup(dir, name, &node);
                 break;
+        case DTFS_V1_PROVIDER:
+                rc = dtfs_v1_lookup(dir, name, &node);
+                break;
         default:
                 return -1;
         }
@@ -191,6 +195,8 @@ vfs_v1_readdir(vnode_v1_t dir, unsigned int off, struct vfs_v1_dirent *ent)
                 return devicefs_v1_readdir(dir, off, ent);
         case PROCFS_V1_PROVIDER:
                 return procfs_v1_readdir(dir, off, ent);
+        case DTFS_V1_PROVIDER:
+                return dtfs_v1_readdir(dir, off, ent);
         default:
                 return -1;
         }
@@ -206,6 +212,8 @@ vfs_v1_stat(vnode_v1_t node, struct vfs_v1_stat *st)
                 return devicefs_v1_stat(node, st);
         case PROCFS_V1_PROVIDER:
                 return procfs_v1_stat(node, st);
+        case DTFS_V1_PROVIDER:
+                return dtfs_v1_stat(node, st);
         default:
                 return -1;
         }
@@ -239,6 +247,8 @@ vfs_v1_parent_raw(vnode_v1_t node, vnode_v1_t *parentp)
                         return 0;
                 }
                 return -1;
+        case DTFS_V1_PROVIDER:
+                return dtfs_v1_parent(node, parentp);
         default:
                 return -1;
         }
@@ -257,15 +267,42 @@ vfs_v1_parent(vnode_v1_t node, vnode_v1_t *parentp)
         return vfs_v1_parent_raw(node, parentp);
 }
 
+/*
+ * Return the parent and namespace name of a directory while crossing a mount
+ * root back through its mountpoint.  The current writable mountpoints live in
+ * MEMFS, so their stored name is authoritative for getcwd().
+ */
+int
+vfs_v1_parent_name(vnode_v1_t node, vnode_v1_t *parentp,
+    struct vfs_v1_name *namep)
+{
+        unsigned int id;
+
+        if (parentp == 0 || namep == 0)
+                return -1;
+        id = VFS_V1_MOUNT_ID(node);
+        if (id != 0U && id <= VFS_V1_NMOUNT &&
+            vfs_v1_mount_root[id - 1U] == node)
+                node = vfs_v1_mount_target[id - 1U];
+        if (VFS_V1_PROVIDER(node) != MEMFS_V1_PROVIDER)
+                return -1;
+        return memfs_v1_parent(file_v1_root, node, parentp, namep);
+}
+
 int
 vfs_v1_create(vnode_v1_t dir, const struct vfs_v1_name *name,
     unsigned int mode, vnode_v1_t *nodep)
 {
         if (vfs_v1_readonly(dir))
                 return -1;
-        if (VFS_V1_PROVIDER(dir) == MEMFS_V1_PROVIDER)
+        switch (VFS_V1_PROVIDER(dir)) {
+        case MEMFS_V1_PROVIDER:
                 return memfs_v1_create(file_v1_root, dir, name, mode, nodep);
-        return -1;
+        case DTFS_V1_PROVIDER:
+                return dtfs_v1_create(dir, name, mode, nodep);
+        default:
+                return -1;
+        }
 }
 
 int
@@ -284,9 +321,14 @@ vfs_v1_unlink(vnode_v1_t dir, const struct vfs_v1_name *name)
 {
         if (vfs_v1_readonly(dir))
                 return -1;
-        if (VFS_V1_PROVIDER(dir) == MEMFS_V1_PROVIDER)
+        switch (VFS_V1_PROVIDER(dir)) {
+        case MEMFS_V1_PROVIDER:
                 return memfs_v1_unlink(file_v1_root, dir, name);
-        return -1;
+        case DTFS_V1_PROVIDER:
+                return dtfs_v1_unlink(dir, name);
+        default:
+                return -1;
+        }
 }
 
 int
@@ -297,10 +339,15 @@ vfs_v1_rename(vnode_v1_t olddir, const struct vfs_v1_name *oldname,
             VFS_V1_PROVIDER(olddir) != VFS_V1_PROVIDER(newdir) ||
             VFS_V1_MOUNT_ID(olddir) != VFS_V1_MOUNT_ID(newdir))
                 return -1;
-        if (VFS_V1_PROVIDER(olddir) == MEMFS_V1_PROVIDER)
+        switch (VFS_V1_PROVIDER(olddir)) {
+        case MEMFS_V1_PROVIDER:
                 return memfs_v1_rename(file_v1_root, olddir, oldname, newdir,
                     newname);
-        return -1;
+        case DTFS_V1_PROVIDER:
+                return dtfs_v1_rename(olddir, oldname, newdir, newname);
+        default:
+                return -1;
+        }
 }
 
 int
@@ -308,10 +355,15 @@ vfs_v1_truncate(vnode_v1_t node, unsigned int words, kword_t size_chars)
 {
         if (vfs_v1_readonly(node))
                 return -1;
-        if (VFS_V1_PROVIDER(node) == MEMFS_V1_PROVIDER)
+        switch (VFS_V1_PROVIDER(node)) {
+        case MEMFS_V1_PROVIDER:
                 return memfs_v1_truncate_words(file_v1_root, node, words,
                     size_chars);
-        return -1;
+        case DTFS_V1_PROVIDER:
+                return dtfs_v1_truncate(node, words, size_chars);
+        default:
+                return -1;
+        }
 }
 
 int
@@ -319,19 +371,29 @@ vfs_v1_chmod(vnode_v1_t node, unsigned int mode)
 {
         if (vfs_v1_readonly(node))
                 return -1;
-        if (VFS_V1_PROVIDER(node) == MEMFS_V1_PROVIDER)
+        switch (VFS_V1_PROVIDER(node)) {
+        case MEMFS_V1_PROVIDER:
                 return memfs_v1_chmod(file_v1_root, node, mode);
-        return -1;
+        case DTFS_V1_PROVIDER:
+                return dtfs_v1_chmod(node, mode);
+        default:
+                return -1;
+        }
 }
 
 int
 vfs_v1_read_words(vnode_v1_t node, unsigned int off, kword_t *buf,
     unsigned int nwords)
 {
-        if (VFS_V1_PROVIDER(node) == MEMFS_V1_PROVIDER)
+        switch (VFS_V1_PROVIDER(node)) {
+        case MEMFS_V1_PROVIDER:
                 return memfs_v1_read_words(file_v1_root, node, off, buf,
                     nwords);
-        return -1;
+        case DTFS_V1_PROVIDER:
+                return dtfs_v1_read_words(node, off, buf, nwords);
+        default:
+                return -1;
+        }
 }
 
 int
@@ -340,10 +402,15 @@ vfs_v1_write_words(vnode_v1_t node, unsigned int off,
 {
         if (vfs_v1_readonly(node))
                 return -1;
-        if (VFS_V1_PROVIDER(node) == MEMFS_V1_PROVIDER)
+        switch (VFS_V1_PROVIDER(node)) {
+        case MEMFS_V1_PROVIDER:
                 return memfs_v1_write_words(file_v1_root, node, off, buf,
                     nwords, size_chars);
-        return -1;
+        case DTFS_V1_PROVIDER:
+                return dtfs_v1_write_words(node, off, buf, nwords, size_chars);
+        default:
+                return -1;
+        }
 }
 
 int
@@ -416,7 +483,8 @@ vfs_v1_writechar(vnode_v1_t node, kword_t off, unsigned int ch)
 int
 vfs_v1_sync(vnode_v1_t node)
 {
-        (void)node;
+        if (VFS_V1_PROVIDER(node) == DTFS_V1_PROVIDER)
+                return dtfs_v1_sync(node);
         return 0;
 }
 

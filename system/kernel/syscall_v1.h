@@ -25,6 +25,13 @@
 #define SYS_V1_READCHAR         35U
 #define SYS_V1_WRITECHAR        36U
 #define SYS_V1_HALT             37U
+#define SYS_V1_CHMOD            38U
+#define SYS_V1_DTFS_FORMAT      39U
+#define SYS_V1_DTFS_MOUNT       40U
+#define SYS_V1_UNMOUNT          41U
+
+#define SYS_V1_MOUNT_RW         0U
+#define SYS_V1_MOUNT_RDONLY     1U
 
 #define SYS_V1_O_RDONLY         000000U
 #define SYS_V1_O_WRONLY         000001U

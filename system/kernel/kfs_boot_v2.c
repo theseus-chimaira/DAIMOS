@@ -5,6 +5,8 @@
 #include "proc_v1.h"
 #include "file_v1.h"
 #include "devicefs_v1.h"
+#include "dtfs_v1.h"
+#include "module.h"
 #include "syscall_v1.h"
 
 static int boot_load_init_v3(const kword_t *data);
@@ -177,7 +179,7 @@ kfs_boot_v2_prepare(void)
         nent = (unsigned int)image[IHF_NENT];
         str_words = (unsigned int)image[IHF_STR_WORDS];
         data_words = (unsigned int)image[IHF_DATA_WORDS];
-        if (nent + 3U > KBOOT_V1_NODE_COUNT)
+        if (nent + 4U > KBOOT_V1_NODE_COUNT)
                 return -1;
         entries_end = INITFS_V1_HDR_WORDS + nent * INITFS_V1_ENT_WORDS;
         if (entries_end > image_words || str_words > image_words - entries_end)
@@ -231,6 +233,10 @@ kfs_boot_v2_prepare(void)
                 return -1;
         file_v1_alias_node = VFS_V1_NODE(MEMFS_V1_PROVIDER,
             MEMFS_V1_KIND_NODE, next);
+        ++next;
+        if (boot_add_dir(next, 0U, VFS_V1_SIX6('D','T','0',' ',' ',' '),
+            3U, 0777U, 0) != 0)
+                return -1;
         for (i = 0U; i < KBOOT_V1_NODE_COUNT; ++i) {
                 kword_t *dst;
                 const kword_t *srcw;
@@ -263,9 +269,16 @@ kfs_boot_v2_prepare(void)
         kboot_fs_v1.writable = 1;
         kboot_fs_v1.image_data = data;
         file_v1_root = &kboot_fs_v1;
+        dtfs_v1_dtc_read_addr =
+            module_service_get(MODULE_SERVICE_DTC_READ_BLOCK);
+        dtfs_v1_dtc_write_addr =
+            module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK);
         devicefs_v1_present = kcore_cty_putchar_v1 != 0 &&
             kcore_cty_getchar_v1 != 0 ?
             DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CTY0) : 0;
+        if (dtfs_v1_dtc_read_addr != 0U && dtfs_v1_dtc_write_addr != 0U)
+                devicefs_v1_present |=
+                    DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DTC0);
         if (boot_load_init_v3(data) != 0)
                 return -1;
         return 0;

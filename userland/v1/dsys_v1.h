@@ -23,6 +23,10 @@ static int dsys_v1_mkdir(kword_t *p) { return DSYS_V1_CALL2(SYS_V1_MKDIR,p,0777U
 static int dsys_v1_unlink(kword_t *p) { return DSYS_V1_CALL1(SYS_V1_UNLINK,p); }
 static int dsys_v1_rename(kword_t *a, kword_t *b) { return DSYS_V1_CALL2(SYS_V1_RENAME,a,b); }
 static int dsys_v1_truncate(kword_t *p, kword_t n) { return DSYS_V1_CALL2(SYS_V1_TRUNCATE,p,n); }
+static int dsys_v1_chmod(kword_t *p, unsigned int m) { return DSYS_V1_CALL2(SYS_V1_CHMOD,p,m); }
+static int dsys_v1_dtfs_format(kword_t *p) { return DSYS_V1_CALL1(SYS_V1_DTFS_FORMAT,p); }
+static int dsys_v1_dtfs_mount(kword_t *d, kword_t *p, unsigned int f) { return DSYS_V1_CALL3(SYS_V1_DTFS_MOUNT,d,p,f); }
+static int dsys_v1_unmount(kword_t *p) { return DSYS_V1_CALL1(SYS_V1_UNMOUNT,p); }
 static int dsys_v1_chdir(kword_t *p) { return DSYS_V1_CALL1(SYS_V1_CHDIR,p); }
 static int dsys_v1_getcwd(kword_t *p, unsigned int n) { return DSYS_V1_CALL2(SYS_V1_GETCWD,p,n); }
 static int dsys_v1_procinfo(unsigned int s, struct sys_v1_procinfo *p) { return DSYS_V1_CALL2(SYS_V1_PROCINFO,s,p); }

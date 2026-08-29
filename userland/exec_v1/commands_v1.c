@@ -192,20 +192,91 @@ cmd_touch(int argc, kword_t **argv, struct u_v1_io *io)
 static int
 cmd_cp(int argc, kword_t **argv, struct u_v1_io *io)
 {
-        int in, out, ch, rc;
+        struct vfs_v1_stat st;
+        kword_t buf[127];
+        kword_t chars;
+        int in, out, n, rc;
+
         if (argc != 3) return cmd_err(io, "CP", 0);
+        if (dsys_v1_stat(argv[1], &st) != 0 || st.type != VFS_V1_TYPE_REG)
+                return cmd_err(io, "CP", argv[1]);
         in = dsys_v1_open(argv[1], SYS_V1_O_RDONLY);
         if (in < 0) return cmd_err(io, "CP", argv[1]);
         out = dsys_v1_open(argv[2], SYS_V1_O_WRONLY | SYS_V1_O_CREAT | SYS_V1_O_TRUNC);
         if (out < 0) { (void)dsys_v1_close(in); return cmd_err(io, "CP", argv[2]); }
         rc = 0;
+        chars = 0;
         for (;;) {
-                ch = dsys_v1_readchar(in);
-                if (ch == -2) break;
-                if (ch < 0 || dsys_v1_writechar(out, ch) != 0) { rc = 1; break; }
+                n = dsys_v1_read_words(in, buf, 127U);
+                if (n == 0) break;
+                if (n < 0) { rc = 1; break; }
+                chars += (kword_t)(unsigned int)n * 4U;
+                if (chars > st.size_chars) chars = st.size_chars;
+                if (dsys_v1_write_words(out, buf, (unsigned int)n, chars) != n) {
+                        rc = 1;
+                        break;
+                }
         }
         if (dsys_v1_close(in) != 0 || dsys_v1_close(out) != 0) rc = 1;
         return rc;
+}
+
+static int
+cmd_octal_mode(const kword_t *arg, unsigned int *modep)
+{
+        unsigned int i, n, wi, sh, ch, mode;
+
+        if (arg == 0 || modep == 0) return -1;
+        n = (unsigned int)(arg[0] & 0777777UL);
+        if (n == 0U || n > 4U) return -1;
+        mode = 0U;
+        for (i = 0U; i < n; ++i) {
+                wi = 1U + i / 6U;
+                sh = 30U - (i % 6U) * 6U;
+                ch = (unsigned int)(((arg[wi] >> sh) & 077UL) + 040U);
+                if (ch < '0' || ch > '7') return -1;
+                mode = (mode << 3) | (ch - '0');
+        }
+        *modep = mode;
+        return 0;
+}
+
+static int
+cmd_chmod(int argc, kword_t **argv, struct u_v1_io *io)
+{
+        unsigned int mode;
+        if (argc != 3 || cmd_octal_mode(argv[1], &mode) != 0)
+                return cmd_err(io, "CHMOD", 0);
+        return dsys_v1_chmod(argv[2], mode) == 0 ? 0 :
+            cmd_err(io, "CHMOD", argv[2]);
+}
+
+static int
+cmd_mkfs_dtfs(int argc, kword_t **argv, struct u_v1_io *io)
+{
+        if (argc != 2) return cmd_err(io, "MKFS.DTFS", 0);
+        return dsys_v1_dtfs_format(argv[1]) == 0 ? 0 :
+            cmd_err(io, "MKFS.DTFS", argv[1]);
+}
+
+static int
+cmd_mount_dtfs(int argc, kword_t **argv, struct u_v1_io *io)
+{
+        unsigned int flags;
+        if (argc != 4) return cmd_err(io, "MOUNT.DTFS", 0);
+        if (u_v1_s6_eq(argv[3], "RW")) flags = SYS_V1_MOUNT_RW;
+        else if (u_v1_s6_eq(argv[3], "RO")) flags = SYS_V1_MOUNT_RDONLY;
+        else return cmd_err(io, "MOUNT.DTFS", argv[3]);
+        return dsys_v1_dtfs_mount(argv[1], argv[2], flags) == 0 ? 0 :
+            cmd_err(io, "MOUNT.DTFS", argv[2]);
+}
+
+static int
+cmd_unmount(int argc, kword_t **argv, struct u_v1_io *io)
+{
+        if (argc != 2) return cmd_err(io, "UNMOUNT", 0);
+        return dsys_v1_unmount(argv[1]) == 0 ? 0 :
+            cmd_err(io, "UNMOUNT", argv[1]);
 }
 
 static int
@@ -351,6 +422,10 @@ cmd_v1_dispatch(int argc, kword_t **argv, struct u_v1_io *io)
         if (cmd_name_eq(argv[0], "STAT")) return cmd_stat(argc, argv, io);
         if (cmd_name_eq(argv[0], "TOUCH")) return cmd_touch(argc, argv, io);
         if (cmd_name_eq(argv[0], "CP")) return cmd_cp(argc, argv, io);
+        if (cmd_name_eq(argv[0], "CHMOD")) return cmd_chmod(argc, argv, io);
+        if (cmd_name_eq(argv[0], "MKFS.DTFS")) return cmd_mkfs_dtfs(argc, argv, io);
+        if (cmd_name_eq(argv[0], "MOUNT.DTFS")) return cmd_mount_dtfs(argc, argv, io);
+        if (cmd_name_eq(argv[0], "UNMOUNT")) return cmd_unmount(argc, argv, io);
         if (cmd_name_eq(argv[0], "MV")) return cmd_mv(argc, argv, io);
         if (cmd_name_eq(argv[0], "HEXDUMP")) return cmd_hexdump(argc, argv, io);
         if (cmd_name_eq(argv[0], "PS")) return cmd_ps(argc, argv, io);

@@ -276,11 +276,9 @@ dtc_block_start:
         soj 6,
         sub 6,dtc_request_block
         jumpg 6,dtc_search_choose_reverse
-        jumpl 6,dtc_search_begin
-        ; We have just passed through the last observed block.  Repeating the
-        ; same block is therefore behind the current motion: turn once instead
-        ; of searching to the far end of the tape.
-        jumpge 5,dtc_search_choose_reverse
+        ; For an exact cached-position request, keep the current direction
+        ; until SEARCH reports its first block number.  Reversing before that
+        ; report can miss the target while the controller is still activating.
         jrst dtc_search_begin
 dtc_search_choose_reverse:
         movei 6,0010000

@@ -122,6 +122,8 @@ file_v1_open(const kword_t *path, unsigned int flags)
         vnode_v1_t dir;
         struct vfs_v1_name leaf;
         struct vfs_v1_stat st;
+        struct file_v1 *fp;
+        int fd;
 
         if (file_v1_lookup_path(path, &node) != 0) {
                 if ((flags & FILE_V1_O_CREAT) == 0U ||
@@ -131,10 +133,18 @@ file_v1_open(const kword_t *path, unsigned int flags)
         }
         if (vfs_v1_stat(node, &st) != 0)
                 return -1;
-        if ((flags & FILE_V1_O_TRUNC) != 0U && st.type == VFS_V1_TYPE_REG &&
-            vfs_v1_truncate(node, 0U, 0) != 0)
-                return -1;
-        return file_v1_new_fd(node, flags, st.type == VFS_V1_TYPE_DIR);
+        if ((flags & FILE_V1_O_TRUNC) != 0U && st.type == VFS_V1_TYPE_REG) {
+                if (vfs_v1_truncate(node, 0U, 0) != 0)
+                        return -1;
+                st.size_chars = 0;
+        }
+        fd = file_v1_new_fd(node, flags, st.type == VFS_V1_TYPE_DIR);
+        if (fd >= 0 && (flags & FILE_V1_O_APPEND) != 0U) {
+                fp = file_v1_find(fd);
+                if (fp != 0)
+                        fp->off_chars = st.size_chars;
+        }
+        return fd;
 }
 
 
@@ -178,18 +188,12 @@ int
 file_v1_writechar(int fd, unsigned int ch)
 {
         struct file_v1 *fp;
-        struct vfs_v1_stat st;
         int rc;
 
         fp = file_v1_find(fd);
         if (fp == 0 || (fp->meta & FILE_V1_META_DIR) != 0U ||
             (FILE_V1_META_FLAGS(fp->meta) & FILE_V1_O_WRITE) == 0U)
                 return -1;
-        if ((FILE_V1_META_FLAGS(fp->meta) & FILE_V1_O_APPEND) != 0U) {
-                if (vfs_v1_stat(fp->node, &st) != 0)
-                        return -1;
-                fp->off_chars = st.size_chars;
-        }
         rc = vfs_v1_writechar(fp->node, fp->off_chars, ch);
         if (rc != 0)
                 return rc;
@@ -221,7 +225,6 @@ file_v1_write_words(int fd, const kword_t *buf, unsigned int nwords,
     kword_t size_chars)
 {
         struct file_v1 *fp;
-        struct vfs_v1_stat st;
         unsigned int off;
         int rc;
 
@@ -229,11 +232,6 @@ file_v1_write_words(int fd, const kword_t *buf, unsigned int nwords,
         if (fp == 0 || buf == 0 || (fp->meta & FILE_V1_META_DIR) != 0U ||
             (FILE_V1_META_FLAGS(fp->meta) & FILE_V1_O_WRITE) == 0U)
                 return -1;
-        if ((FILE_V1_META_FLAGS(fp->meta) & FILE_V1_O_APPEND) != 0U) {
-                if (vfs_v1_stat(fp->node, &st) != 0)
-                        return -1;
-                fp->off_chars = st.size_chars;
-        }
         off = (unsigned int)(fp->off_chars / 4U);
         rc = vfs_v1_write_words(fp->node, off, buf, nwords, size_chars);
         if (rc > 0)

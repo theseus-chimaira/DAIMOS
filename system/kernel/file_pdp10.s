@@ -123,7 +123,9 @@ file_getcwd_have_node:
         move    5,4
         lsh     5,-036
         andi    5,077
-        caie    5,4
+        caige   5,4
+        jrst    file_getcwd_pseudo_tail
+        caile   5,5
         jrst    file_getcwd_pseudo_tail
 
 ; The 0121-word local area is one parent vnode followed by sixteen five-word
@@ -170,10 +172,10 @@ file_getcwd_up:
         add     4,013                    ; depth * 5
         movei   5,-0120(17)             ; parts[0]
         add     4,5
-        move    1,file_v1_root
-        move    2,010
-        movei   3,(17)                   ; parent vnode
-        pushj   17,memfs_v1_parent
+        move    1,010                   ; current vnode
+        movei   2,(17)                   ; parent vnode
+        move    3,4                      ; saved component name
+        pushj   17,vfs_v1_parent_name
         jumpn   1,file_getcwd_local_fail
         move    010,(17)
         addi    013,1

@@ -25,7 +25,7 @@ exec_native_syscall_v1:
 	hrrz 4,mach_syscall_ac1_v1
 	subi 4,2
 	jumpl 4,%L137
-	caile 4,043
+	caile 4,047
 	jrst %L137
 	jrst @%L138(4)
 %L138:
@@ -65,6 +65,10 @@ exec_native_syscall_v1:
 	.word	.134
 	.word	.135
 	.word	.136
+	.word	native_sys_chmod_v1
+	.word	native_sys_dtfs_format_v1
+	.word	native_sys_dtfs_mount_v1
+	.word	native_sys_unmount_v1
 %L66:
 	pushj 17,mach_return_to_kernel_request_v1
 	hrrz 1,mach_syscall_ac2_v1
@@ -216,6 +220,72 @@ native_sys_writechar_tty:
 	move 1,mach_syscall_ac3_v1
 	andi 1,0777
 	jrst native_sys_putchar
+
+
+; Return the DTC0 vnode for a valid user path, or zero on failure.
+native_sys_dtc0_path_v1:
+        pushj 17,sys_v1_user_words
+        jumpe 1,native_sys_dtc0_path_fail_v1
+        movei 2,mach_syscall_ac5_v1
+        pushj 17,file_v1_lookup_path
+        jumpn 1,native_sys_dtc0_path_fail_v1
+        move 1,mach_syscall_ac5_v1
+        came 1,[020002000014]           ; DEVICEFS DTC0
+        jrst native_sys_dtc0_path_fail_v1
+        popj 17,
+native_sys_dtc0_path_fail_v1:
+        setz 1,
+        popj 17,
+
+native_sys_chmod_v1:
+        move 1,mach_syscall_ac2_v1
+        pushj 17,sys_v1_user_words
+        jumpe 1,%L137
+        movei 2,mach_syscall_ac5_v1
+        pushj 17,file_v1_lookup_path
+        jumpn 1,%L137
+        move 1,mach_syscall_ac5_v1
+        hrrz 2,mach_syscall_ac3_v1
+        pushj 17,vfs_v1_chmod
+        jrst %L65
+
+native_sys_dtfs_format_v1:
+        move 1,mach_syscall_ac2_v1
+        pushj 17,native_sys_dtc0_path_v1
+        jumpe 1,%L137
+        movei 1,0                       ; DTC0 unit
+        pushj 17,dtfs_v1_format_unit
+        jrst %L65
+
+native_sys_dtfs_mount_v1:
+        move 1,mach_syscall_ac2_v1
+        pushj 17,native_sys_dtc0_path_v1
+        jumpe 1,%L137
+        move 1,mach_syscall_ac3_v1
+        pushj 17,sys_v1_user_words
+        jumpe 1,%L137
+        movei 2,mach_syscall_ac5_v1
+        pushj 17,file_v1_lookup_path
+        jumpn 1,%L137
+        hrrz 3,mach_syscall_ac4_v1
+        caile 3,1
+        jrst %L137
+        move 2,mach_syscall_ac5_v1
+        movei 1,0                       ; DTC0 unit
+        movei 4,mach_syscall_ac5_v1     ; returned root is not otherwise needed
+        pushj 17,dtfs_v1_mount_unit
+        jrst %L65
+
+native_sys_unmount_v1:
+        move 1,mach_syscall_ac2_v1
+        pushj 17,sys_v1_user_words
+        jumpe 1,%L137
+        movei 2,mach_syscall_ac5_v1
+        pushj 17,file_v1_lookup_path
+        jumpn 1,%L137
+        move 1,mach_syscall_ac5_v1
+        pushj 17,vfs_v1_unmount
+        jrst %L65
 
 native_sys_getchar:
 	seto 1,

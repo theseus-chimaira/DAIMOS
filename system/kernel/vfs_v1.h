@@ -93,6 +93,8 @@ int vfs_v1_readdir(vnode_v1_t dir, unsigned int off,
     struct vfs_v1_dirent *ent);
 int vfs_v1_stat(vnode_v1_t node, struct vfs_v1_stat *st);
 int vfs_v1_parent(vnode_v1_t node, vnode_v1_t *parentp);
+int vfs_v1_parent_name(vnode_v1_t node, vnode_v1_t *parentp,
+    struct vfs_v1_name *namep);
 int vfs_v1_create(vnode_v1_t dir, const struct vfs_v1_name *name,
     unsigned int mode, vnode_v1_t *nodep);
 int vfs_v1_mkdir(vnode_v1_t dir, const struct vfs_v1_name *name,
