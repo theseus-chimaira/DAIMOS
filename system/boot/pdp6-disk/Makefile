@@ -1,0 +1,260 @@
+PROJECT_ROOT := $(abspath ../../..)
+KERNEL_DIR := $(PROJECT_ROOT)/system/kernel
+BUILD_ROOT ?= $(PROJECT_ROOT)/build
+BUILD ?= $(BUILD_ROOT)/system/boot/pdp6-disk
+PDP10_PREFIX ?= $(HOME)/cross
+
+DAS ?= $(PDP10_PREFIX)/bin/das
+DLINK ?= $(PDP10_PREFIX)/bin/dlink
+DXRCONVERT ?= $(PDP10_PREFIX)/bin/dxrconvert
+MKSTREAM ?= $(PDP10_PREFIX)/bin/mkstream
+MKDSK ?= $(PDP10_PREFIX)/bin/mkdsk
+MKD6FS ?= $(PDP10_PREFIX)/bin/mkd6fs
+MKINITFS0 ?= $(PDP10_PREFIX)/bin/mkinitfs0
+SIMH_PDP6 ?= $(PDP10_PREFIX)/bin/pdp6
+PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
+
+D6FS_LOGSTORE_BLOCKS ?= 0400
+D6FS_SWAP_TAIL_BLOCKS ?= 0200
+
+KINIT_BUILD := $(BUILD)/kinit-asm
+KCORE_BUILD := $(BUILD)/kcore-asm
+KINIT_STAMP := $(BUILD)/.kinit-built
+KCORE_STAMP := $(BUILD)/.kcore-built
+KERNEL_INPUTS := $(wildcard $(KERNEL_DIR)/*.c $(KERNEL_DIR)/*.h $(KERNEL_DIR)/*.s)
+
+KINIT_NAMES = kinit kinit_diag module_minit kfs_boot_v2 kinit_io module_io
+KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
+KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
+
+KCORE_C_NAMES = kboot_v1 exec_v1 vfs_v1 devicefs_v1 memfs_v1 dtfs_v1 \
+	d6fs_v2 d6fs_provider_v2 d6fs_disk_v2 d6log_v2 file_v1
+KCORE_FIXED_NAMES = kcore_entry $(KCORE_C_NAMES) ret_pdp10 dtfs_pdp10 \
+	d6fs_disk_pdp10 kfmt_pdp10 vfs_pdp10 memfs_pdp10 file_pdp10 proc_pdp10 \
+	device_state_pdp10 procfs_pdp10 devicefs_pdp10 syscall_info_pdp10 \
+	syscall_dispatch_v2 mach_user_v1 kcore_io kcore_end
+KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))
+KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
+MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io io7_io dcs_io ge_io dpy_io \
+	tty_io wcnsls_io ocnsls_io storage_io slv_io
+MRES_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(MRES_NAMES)))
+
+KCORE_DXR = $(BUILD)/kcore-v1.dxr
+KCORE_MAP = $(BUILD)/kcore-v1.map
+KCORE_RIM = $(BUILD)/kcore-v1.rim
+KCORE_STREAM = $(BUILD)/kcore-v1.stream
+KCORE_EMBED_ASM = $(BUILD)/kcore-embed-v1.s
+KCORE_EMBED_OBJ = $(BUILD)/kcore-embed-v1.dobj
+
+CTY_MRES_OBJ = $(BUILD)/cty-mres.dobj
+CLK_MRES_OBJ = $(BUILD)/clk-mres.dobj
+IO7_MRES_OBJ = $(BUILD)/io7-mres.dobj
+DCS_MRES_OBJ = $(BUILD)/dcs-mres.dobj
+GE_MRES_OBJ = $(BUILD)/ge-mres.dobj
+DPY_MRES_OBJ = $(BUILD)/dpy-mres.dobj
+TTY_MRES_OBJ = $(BUILD)/tty-mres.dobj
+WCNSLS_MRES_OBJ = $(BUILD)/wcnsls-mres.dobj
+OCNSLS_MRES_OBJ = $(BUILD)/ocnsls-mres.dobj
+STORAGE_MRES_OBJ = $(BUILD)/storage-mres.dobj
+SLV_MRES_OBJ = $(BUILD)/slv-mres.dobj
+MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(IO7_MRES_OBJ) \
+	$(DCS_MRES_OBJ) $(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) \
+	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(STORAGE_MRES_OBJ) $(SLV_MRES_OBJ)
+
+MINIT_TABLE_OBJ = $(BUILD)/module-table-runtime.dobj
+END_OBJ = $(BUILD)/image-end-v1.dobj
+DISKBOOT_INITFS_ASM = $(BUILD)/initfs-diskboot-v1.s
+DISKBOOT_INITFS_OBJ = $(BUILD)/initfs-diskboot-v1.dobj
+IMAGE_DXR = $(BUILD)/kinit-v1.dxr
+IMAGE_MAP = $(BUILD)/kinit-v1.map
+IMAGE_RIM = $(BUILD)/kinit-v1.rim
+IMAGE_RAW = $(BUILD)/kinit-v1.raw.words
+IMAGE_WORDS = $(BUILD)/kinit-v1.words
+
+USERLAND_BUILD_ROOT = $(BUILD)/userland-build
+DSH_DXR = $(USERLAND_BUILD_ROOT)/userland-v1/dsh-v1.dxr
+USERLAND_INPUTS := $(wildcard $(PROJECT_ROOT)/userland/v1/* $(PROJECT_ROOT)/userland/exec_v1/* \
+	$(PROJECT_ROOT)/userland/dsh_v1/*) $(PROJECT_ROOT)/userland/Makefile \
+	$(KERNEL_DIR)/syscall_v1.h
+
+STAGE1_SRC = $(PROJECT_ROOT)/system/stand/pdp6/dsk/stage1.s
+STAGE1_DXR = $(BUILD)/stage1-dsk-v1.dxr
+STAGE1_TAPE = $(BUILD)/stage1-dsk-v1.pt
+DISK_DIR = $(BUILD)/disk
+DISK_IMAGE = $(DISK_DIR)/dsk0.dsk
+SIMH_INI = $(BUILD)/boot-v1.ini
+SIMH_LOG = $(BUILD)/boot-v1.simh.log
+
+.DEFAULT_GOAL := image
+.PHONY: image boot clean
+
+$(BUILD):
+	mkdir -p $@
+
+$(KINIT_STAMP): $(KERNEL_INPUTS) | $(BUILD)
+	$(MAKE) -C $(KERNEL_DIR) kinit BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)'
+	touch $@
+
+$(KCORE_STAMP): $(KERNEL_INPUTS) | $(BUILD)
+	$(MAKE) -C $(KERNEL_DIR) kcore BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)'
+	touch $@
+
+$(KINIT_ASM): $(KINIT_STAMP)
+	@test -f $@
+
+$(KCORE_FIXED_ASM) $(MRES_ASM): $(KCORE_STAMP)
+	@test -f $@
+
+$(BUILD)/%.dobj: $(KINIT_BUILD)/%.s | $(BUILD)
+	$(DAS) -c -o $@ $<
+
+$(BUILD)/%.dobj: $(KCORE_BUILD)/%.s | $(BUILD)
+	$(DAS) -c -o $@ $<
+
+$(MINIT_TABLE_OBJ): $(KERNEL_DIR)/module_table.s | $(BUILD)
+	$(DAS) -c -o $@ $<
+
+$(END_OBJ): image-end-v1.s | $(BUILD)
+	$(DAS) -c -o $@ $<
+
+$(KCORE_DXR): $(KCORE_FIXED_OBJS)
+	libgcc=`$(PDP10_GCC) -print-libgcc-file-name`; \
+	$(DLINK) -b 060 -o $@ -M $(KCORE_MAP) $(KCORE_FIXED_OBJS) $$libgcc
+
+$(KCORE_MAP): $(KCORE_DXR)
+	@test -f $@
+
+$(KCORE_RIM): $(KCORE_DXR)
+	$(DXRCONVERT) --simh -b 060 $< $@
+
+$(KCORE_STREAM): $(KCORE_RIM) $(KCORE_MAP)
+	end=`awk '$$1 == "__kcore_low_init_end" { print $$2 }' $(KCORE_MAP)`; \
+	test -n "$$end"; words=$$((0$$end - 060)); words=`printf '%o' "$$words"`; \
+	$(MKSTREAM) -i $(KCORE_RIM) -o $@ -b 060 -w "$$words"
+
+$(CTY_MRES_OBJ): $(BUILD)/cty_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/cty-mres.dxr -M $(BUILD)/cty-mres.map \
+	    -R $@ -N cty_mres_package -X cty_pi_handler -X cty_put6 \
+	    -X cty_putchar -X cty_getchar $(BUILD)/cty_io.dobj
+
+$(CLK_MRES_OBJ): $(BUILD)/clk_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/clk-mres.dxr -M $(BUILD)/clk-mres.map \
+	    -R $@ -N clk_mres_package -X clk_pi_handler -X clk_ticks -X clk_pi_service \
+	    $(BUILD)/clk_io.dobj
+
+$(IO7_MRES_OBJ): $(BUILD)/io7_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj \
+    $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/io7-mres.dxr -M $(BUILD)/io7-mres.map \
+	    -R $@ -N io7_mres_package -X io7_pi_handler -X ptr_getchar \
+	    -X ptp_putchar -X cr_read_card -X cp_punch_card \
+	    $(BUILD)/io7_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj \
+	    $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj
+
+$(DCS_MRES_OBJ): $(BUILD)/dcs_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dcs-mres.dxr -M $(BUILD)/dcs-mres.map \
+	    -R $@ -N dcs_mres_package -X dcs_pi_handler -X dcs_getchar -X dcs_putchar \
+	    $(BUILD)/dcs_io.dobj
+
+$(GE_MRES_OBJ): $(BUILD)/ge_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ge-mres.dxr -M $(BUILD)/ge-mres.map \
+	    -R $@ -N ge_mres_package -X ge_pi_handler -X ge_getchar -X ge_putchar \
+	    $(BUILD)/ge_io.dobj
+
+$(DPY_MRES_OBJ): $(BUILD)/dpy_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dpy-mres.dxr -M $(BUILD)/dpy-mres.map \
+	    -R $@ -N dpy_mres_package -X dpy_pi_handler -X dpy_putword \
+	    -X dpy_clk_pi_service_call $(BUILD)/dpy_io.dobj
+
+$(TTY_MRES_OBJ): $(BUILD)/tty_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/tty-mres.dxr -M $(BUILD)/tty-mres.map \
+	    -R $@ -N tty_mres_package -X tty_putchar -X tty_cty_putchar_address \
+	    -X tty_dcs_putchar_address -X tty_ge_putchar_address $(BUILD)/tty_io.dobj
+
+$(WCNSLS_MRES_OBJ): $(BUILD)/wcnsls_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/wcnsls-mres.dxr -M $(BUILD)/wcnsls-mres.map \
+	    -R $@ -N wcnsls_mres_package -X wcnsls_read -X wcnsls_cono -X wcnsls_plot \
+	    $(BUILD)/wcnsls_io.dobj
+
+$(OCNSLS_MRES_OBJ): $(BUILD)/ocnsls_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ocnsls-mres.dxr -M $(BUILD)/ocnsls-mres.map \
+	    -R $@ -N ocnsls_mres_package -X ocnsls_read $(BUILD)/ocnsls_io.dobj
+
+$(STORAGE_MRES_OBJ): $(BUILD)/storage_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/storage-mres.dxr -M $(BUILD)/storage-mres.map \
+	    -R $@ -N storage_mres_package -X storage_pi_handler -X dtc_read_block \
+	    -X mtc_read_words -X dsk_read_sector -X dsk_write_sector -X mtc_write_words \
+	    -X dtc_write_block -X storage_dct_handler $(BUILD)/storage_io.dobj
+
+$(SLV_MRES_OBJ): $(BUILD)/slv_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/slv-mres.dxr -M $(BUILD)/slv-mres.map \
+	    -R $@ -N slv_mres_package -X slv_pi_handler $(BUILD)/slv_io.dobj
+
+$(KCORE_EMBED_ASM): kcore-embed-v1.s.in $(KCORE_MAP) | $(BUILD)
+	end=`awk '$$1 == "__kcore_low_init_end" { print $$2 }' $(KCORE_MAP)`; \
+	test -n "$$end"; words=$$((0$$end - 060)); words=`printf '%o' "$$words"`; \
+	sed "s/@KCORE_INIT_WORDS@/$$words/" $< > $@
+
+$(KCORE_EMBED_OBJ): $(KCORE_EMBED_ASM)
+	$(DAS) -c -o $@ $<
+
+$(DSH_DXR): $(USERLAND_INPUTS)
+	$(MAKE) -C $(PROJECT_ROOT)/userland build BUILD_ROOT='$(USERLAND_BUILD_ROOT)' \
+	    PDP10_PREFIX='$(PDP10_PREFIX)'
+
+# Diskboot reads /SYSTEM/INIT exclusively from D6FS.  KINIT carries only the
+# empty bootstrap namespace header.
+$(DISKBOOT_INITFS_ASM): | $(BUILD)
+	$(MKINITFS0) --label __initfs_v1_begin -o $@
+
+$(DISKBOOT_INITFS_OBJ): $(DISKBOOT_INITFS_ASM)
+	$(DAS) -c -o $@ $<
+
+$(IMAGE_DXR): $(MINIT_TABLE_OBJ) $(KCORE_EMBED_OBJ) $(KINIT_OBJS) \
+    $(MRES_PACKAGE_OBJS) $(DISKBOOT_INITFS_OBJ) $(END_OBJ) $(KCORE_MAP)
+	$(DLINK) -b 040000 -A $(KCORE_MAP) -o $@ -M $(IMAGE_MAP) \
+	    $(MINIT_TABLE_OBJ) $(KCORE_EMBED_OBJ) $(KINIT_OBJS) \
+	    $(MRES_PACKAGE_OBJS) $(DISKBOOT_INITFS_OBJ) $(END_OBJ)
+
+$(IMAGE_MAP): $(IMAGE_DXR)
+	@test -f $@
+
+$(IMAGE_RIM): $(IMAGE_DXR)
+	$(DXRCONVERT) --simh -b 040000 $< $@
+
+$(IMAGE_RAW): $(IMAGE_RIM) $(IMAGE_MAP)
+	end=`awk '$$1 == "__kinit_image_end" { print $$2 }' $(IMAGE_MAP)`; \
+	test -n "$$end"; words=$$((0$$end - 040000)); words=`printf '%o' "$$words"`; \
+	$(MKSTREAM) -i $(IMAGE_RIM) -o $@ -b 040000 -w "$$words"
+
+$(IMAGE_WORDS): $(IMAGE_RAW) $(IMAGE_MAP) $(KCORE_STREAM) $(KCORE_MAP) mkimage-v2.sh
+	./mkimage-v2.sh --map $(IMAGE_MAP) --input $(IMAGE_RAW) \
+	    --kcore $(KCORE_STREAM) --kcore-map $(KCORE_MAP) --output $@
+
+$(STAGE1_DXR): $(STAGE1_SRC) | $(BUILD)
+	$(DAS) --base-kernel -o $@ $<
+
+$(STAGE1_TAPE): $(STAGE1_DXR)
+	$(DXRCONVERT) --pdp6-readin -b 060 $< $@
+	printf '\252' >> $@
+
+$(DISK_IMAGE): $(IMAGE_WORDS) $(DSH_DXR)
+	rm -rf $(DISK_DIR)
+	$(MKDSK) -n 1 -m clean -p $(IMAGE_WORDS) -o $(DISK_DIR) \
+	    --d6fs-layout --logstore-blocks $(D6FS_LOGSTORE_BLOCKS) \
+	    --swap-tail-blocks $(D6FS_SWAP_TAIL_BLOCKS)
+	$(MKD6FS) -n 1 -d $(DISK_DIR) -f "/SYSTEM/INIT:$(DSH_DXR):555:dxr"
+
+$(SIMH_INI): simh-v1.ini.in $(STAGE1_TAPE) $(DISK_IMAGE)
+	sed -e 's|@SIMH_LOG@|$(abspath $(SIMH_LOG))|g' \
+	    -e 's|@STAGE1_TAPE@|$(abspath $(STAGE1_TAPE))|g' \
+	    -e 's|@DISK_IMAGE@|$(abspath $(DISK_IMAGE))|g' $< > $@
+
+image: $(SIMH_INI)
+
+boot:
+	rm -rf $(DISK_DIR) $(SIMH_INI)
+	$(MAKE) image
+	$(SIMH_PDP6) $(SIMH_INI)
+
+clean:
+	rm -rf $(BUILD)

@@ -1,0 +1,6 @@
+        .text
+        .globl __kcore_load_begin
+        .globl __kcore_load_end
+__kcore_load_begin:
+        .block @KCORE_INIT_WORDS@
+__kcore_load_end:

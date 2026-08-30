@@ -3,7 +3,7 @@
 BUILD_ROOT ?= $(CURDIR)/build
 PDP10_PREFIX ?= $(HOME)/cross
 
-.PHONY: build install kinit clean
+.PHONY: build install kinit boot clean
 
 build:
 	$(MAKE) -C system build BUILD_ROOT='$(BUILD_ROOT)'
@@ -13,6 +13,9 @@ install:
 
 kinit:
 	$(MAKE) -C system kinit BUILD_ROOT='$(BUILD_ROOT)'
+
+boot:
+	$(MAKE) -C system/boot/pdp6-disk boot BUILD_ROOT='$(BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'
 
 clean:
 	$(MAKE) -C libc clean BUILD_ROOT='$(BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'
