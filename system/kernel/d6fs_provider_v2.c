@@ -21,6 +21,12 @@ d6fs_provider_v2_block_buffer(void)
         return d6fs_provider_v2_reader.cache;
 }
 
+void
+d6fs_provider_v2_cache_invalidate(void)
+{
+        d6fs_provider_v2_reader.cache_valid = 0U;
+}
+
 static void d6fs_provider_v2_lcache_flush(void);
 static struct d6fs_provider_v2_mount *d6fs_provider_v2_mount_for(
     vnode_v1_t node);
@@ -169,7 +175,9 @@ d6fs_provider_v2_mount(vnode_v1_t target,
             super, flags | VFS_V1_MOUNT_RDONLY, rootp);
 }
 
-#define D6FS_PROVIDER_V2_LOOKUP_CACHE 16U
+#ifndef D6FS_PROVIDER_V2_LOOKUP_CACHE
+#define D6FS_PROVIDER_V2_LOOKUP_CACHE 8U
+#endif
 struct d6fs_provider_v2_lookup_cache {
         vnode_v1_t dir;
         kword_t hash;
@@ -298,6 +306,9 @@ d6fs_provider_v2_stat(vnode_v1_t node, struct vfs_v1_stat *st)
         st->size_words = fi.size_words;
         if (fi.size_words == 0UL)
                 st->size_chars = 0UL;
+        else if (fi.type == D6FS_V2_TYPE_SYMLINK)
+                st->size_chars = (fi.size_words - 1UL) * 6UL +
+                    (fi.tail != 0U ? fi.tail : 6U);
         else if (fi.tail != 0U)
                 st->size_chars = (fi.size_words - 1UL) * 4UL + fi.tail;
         else
@@ -556,7 +567,8 @@ d6fs_provider_v2_resize_fcb(vnode_v1_t node,
         unsigned int i;
 
         if (fcb == 0 || fi == 0 || !d6fs_provider_v2_writable(node) ||
-            new_tail > 4U || (new_words == 0UL && new_tail != 0U))
+            new_tail > (fi->type == D6FS_V2_TYPE_SYMLINK ? 6U : 4U) ||
+            (new_words == 0UL && new_tail != 0U))
                 return -1;
         mp = d6fs_provider_v2_mount_for(node);
         if (mp == 0)
@@ -861,7 +873,8 @@ d6fs_provider_v2_create_type(vnode_v1_t dir,
         unsigned int i;
 
         if (nodep == 0 || !d6fs_provider_v2_writable(dir) ||
-            (type != D6FS_V2_TYPE_REG && type != D6FS_V2_TYPE_DIR) ||
+            (type != D6FS_V2_TYPE_REG && type != D6FS_V2_TYPE_DIR &&
+            type != D6FS_V2_TYPE_SYMLINK) ||
             d6fs_provider_v2_find_slot(dir, name, 0, 0) == 0 ||
             d6fs_provider_v2_free_fcb(&index) != 0)
                 return -1;
@@ -917,6 +930,75 @@ d6fs_provider_v2_mkdir(vnode_v1_t dir, const struct vfs_v1_name *name,
 {
         return d6fs_provider_v2_create_type(dir, name, mode,
             D6FS_V2_TYPE_DIR, nodep);
+}
+
+int
+d6fs_provider_v2_symlink(vnode_v1_t dir, const struct vfs_v1_name *name,
+    const kword_t *target, unsigned int target_chars, vnode_v1_t *nodep)
+{
+        kword_t fcb[D6FS_V2_FCB_WORDS];
+        struct d6fs_v2_fcb_info fi;
+        struct d6fs_v2_dirent_info di;
+        vnode_v1_t node;
+        unsigned int index;
+        unsigned int slot;
+        unsigned int words;
+        unsigned int tail;
+        unsigned int i;
+        int append_slot;
+
+        if (target == 0 || target_chars == 0U || nodep == 0 ||
+            !d6fs_provider_v2_writable(dir) ||
+            d6fs_provider_v2_find_slot(dir, name, 0, 0) == 0 ||
+            d6fs_provider_v2_free_fcb(&index) != 0)
+                return -1;
+        append_slot = d6fs_provider_v2_empty_slot(dir, &slot);
+        if (append_slot < 0)
+                return -1;
+        words = (target_chars + 5U) / 6U;
+        tail = target_chars - (words - 1U) * 6U;
+        for (i = 0U; i < D6FS_V2_FCB_WORDS; ++i)
+                fcb[i] = 0UL;
+        fi.type = D6FS_V2_TYPE_SYMLINK;
+        fi.flags = 0U;
+        fi.mode = 0777U;
+        fi.tail = 0U;
+        fi.extent_count = 0U;
+        fi.uid = 0U;
+        fi.gid = 0U;
+        fi.size_words = 0UL;
+        fi.mtime = 0UL;
+        fi.parent_fcb = VFS_V1_INDEX(dir);
+        if (d6fs_v2_fcb_encode(fcb, &fi) != 0 ||
+            d6fs_v2_reader_put_fcb(&d6fs_provider_v2_reader, index, fcb) != 0)
+                return -1;
+        node = VFS_V1_NODE(D6FS_V2_PROVIDER,
+            VFS_V1_MOUNT_KIND(VFS_V1_MOUNT_ID(dir), D6FS_V2_KIND_NODE), index);
+        if (d6fs_provider_v2_resize_fcb(node, fcb, &fi, words, tail) != 0 ||
+            d6fs_provider_v2_fcb(node, fcb, &fi) != 0 ||
+            d6fs_v2_reader_write_words(&d6fs_provider_v2_reader, fcb, 0UL,
+            target, words) != (int)words)
+                goto fail;
+        for (i = 0U; i < 4U; ++i)
+                di.name[i] = name->words[i];
+        di.hash = d6fs_v2_name_hash24(name->words, name->chars);
+        di.type = D6FS_V2_TYPE_SYMLINK;
+        di.flags = 0U;
+        di.child_fcb = index;
+        if (d6fs_provider_v2_write_dirent(dir, slot, &di) != 0)
+                goto fail;
+        d6fs_provider_v2_lcache_flush();
+        *nodep = node;
+        (void)append_slot;
+        return 0;
+
+fail:
+        if (d6fs_provider_v2_fcb(node, fcb, &fi) == 0)
+                (void)d6fs_provider_v2_resize_fcb(node, fcb, &fi, 0UL, 0U);
+        for (i = 0U; i < D6FS_V2_FCB_WORDS; ++i)
+                fcb[i] = 0UL;
+        (void)d6fs_v2_reader_put_fcb(&d6fs_provider_v2_reader, index, fcb);
+        return -1;
 }
 
 int
@@ -1060,15 +1142,17 @@ d6fs_provider_v2_truncate(vnode_v1_t node, unsigned int words,
         unsigned int tail;
 
         if (d6fs_provider_v2_fcb(node, fcb, &fi) != 0 ||
-            fi.type != D6FS_V2_TYPE_REG ||
+            (fi.type != D6FS_V2_TYPE_REG && fi.type != D6FS_V2_TYPE_SYMLINK) ||
             (fi.flags & (D6FS_V2_FLAG_APPEND | D6FS_V2_FLAG_IMMUTABLE)) != 0U)
                 return -1;
         if (words == 0U)
                 tail = 0U;
         else {
-                kword_t base = ((kword_t)words - 1UL) * 4UL;
-                if (size_chars <= base || size_chars > base + 4UL)
-                        tail = 4U;
+                kword_t chars_per_word = fi.type == D6FS_V2_TYPE_SYMLINK ?
+                    6UL : 4UL;
+                kword_t base = ((kword_t)words - 1UL) * chars_per_word;
+                if (size_chars <= base || size_chars > base + chars_per_word)
+                        tail = (unsigned int)chars_per_word;
                 else
                         tail = (unsigned int)(size_chars - base);
         }
@@ -1104,7 +1188,7 @@ d6fs_provider_v2_write_words(vnode_v1_t node, unsigned int off,
         unsigned int tail;
 
         if (buf == 0 || d6fs_provider_v2_fcb(node, fcb, &fi) != 0 ||
-            fi.type != D6FS_V2_TYPE_REG ||
+            (fi.type != D6FS_V2_TYPE_REG && fi.type != D6FS_V2_TYPE_SYMLINK) ||
             (fi.flags & D6FS_V2_FLAG_IMMUTABLE) != 0U ||
             ((fi.flags & D6FS_V2_FLAG_APPEND) != 0U &&
             (kword_t)off != fi.size_words))
@@ -1114,9 +1198,12 @@ d6fs_provider_v2_write_words(vnode_v1_t node, unsigned int off,
                 if (need == 0UL)
                         tail = 0U;
                 else {
-                        kword_t base = (need - 1UL) * 4UL;
-                        if (size_chars <= base || size_chars > base + 4UL)
-                                tail = 4U;
+                        kword_t chars_per_word =
+                            fi.type == D6FS_V2_TYPE_SYMLINK ? 6UL : 4UL;
+                        kword_t base = (need - 1UL) * chars_per_word;
+                        if (size_chars <= base ||
+                            size_chars > base + chars_per_word)
+                                tail = (unsigned int)chars_per_word;
                         else
                                 tail = (unsigned int)(size_chars - base);
                 }

@@ -56,6 +56,10 @@ typedef kword_t vnode_v1_t;
 #define VFS_V1_MOUNT_RW         0U
 #define VFS_V1_MOUNT_RDONLY     1U
 #define VFS_V1_DEVICE_IO        (-3)
+#define VFS_V1_LOCK_SHARED      1U
+#define VFS_V1_LOCK_EXCLUSIVE   2U
+#define VFS_V1_LOCK_UNLOCK      3U
+#define VFS_V1_NLOCK            8U
 
 /* Compile-time PDP-10 SIXBIT packing, also usable by host tests. */
 #define VFS_V1_SIXCHAR(ch)      ((kword_t)(((unsigned int)(ch) - 040U) & 077U))
@@ -100,6 +104,8 @@ int vfs_v1_create(vnode_v1_t dir, const struct vfs_v1_name *name,
     unsigned int mode, vnode_v1_t *nodep);
 int vfs_v1_mkdir(vnode_v1_t dir, const struct vfs_v1_name *name,
     unsigned int mode, vnode_v1_t *nodep);
+int vfs_v1_symlink(vnode_v1_t dir, const struct vfs_v1_name *name,
+    const kword_t *target, unsigned int target_chars, vnode_v1_t *nodep);
 int vfs_v1_unlink(vnode_v1_t dir, const struct vfs_v1_name *name);
 int vfs_v1_rename(vnode_v1_t olddir, const struct vfs_v1_name *oldname,
     vnode_v1_t newdir, const struct vfs_v1_name *newname);
@@ -112,6 +118,8 @@ int vfs_v1_write_words(vnode_v1_t node, unsigned int off,
 int vfs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp);
 int vfs_v1_writechar(vnode_v1_t node, kword_t off, unsigned int ch);
 int vfs_v1_sync(vnode_v1_t node);
+int vfs_v1_lock(vnode_v1_t node, unsigned int owner, unsigned int op);
+void vfs_v1_unlock_owner(vnode_v1_t node, unsigned int owner);
 
 vnode_v1_t vfs_v1_follow_mount(vnode_v1_t node);
 int vfs_v1_mount(vnode_v1_t target, unsigned int provider,

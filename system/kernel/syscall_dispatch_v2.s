@@ -25,7 +25,7 @@ exec_native_syscall_v1:
 	hrrz 4,mach_syscall_ac1_v1
 	subi 4,2
 	jumpl 4,%L137
-	caile 4,047
+	caile 4,052
 	jrst %L137
 	jrst @%L138(4)
 %L138:
@@ -69,7 +69,11 @@ exec_native_syscall_v1:
 	.word	native_sys_dtfs_format_v1
 	.word	native_sys_dtfs_mount_v1
 	.word	native_sys_unmount_v1
+	.word	native_sys_flock_v1
+	.word	native_sys_dup_v1
+	.word	native_sys_symlink_v1
 %L66:
+	pushj 17,file_v1_close_all
 	pushj 17,mach_return_to_kernel_request_v1
 	hrrz 1,mach_syscall_ac2_v1
 	jrst %L65
@@ -285,6 +289,30 @@ native_sys_unmount_v1:
         jumpn 1,%L137
         move 1,mach_syscall_ac5_v1
         pushj 17,vfs_v1_unmount
+        jrst %L65
+
+native_sys_flock_v1:
+        hrrz 1,mach_syscall_ac2_v1
+        hrrz 2,mach_syscall_ac3_v1
+        pushj 17,file_v1_lock
+        jrst %L65
+
+native_sys_dup_v1:
+        hrrz 1,mach_syscall_ac2_v1
+        pushj 17,file_v1_dup
+        jrst %L65
+
+native_sys_symlink_v1:
+        move 1,mach_syscall_ac2_v1
+        pushj 17,sys_v1_user_words
+        move 5,1
+        move 1,mach_syscall_ac3_v1
+        pushj 17,sys_v1_user_words
+        jumpe 5,%L137
+        jumpe 1,%L137
+        move 2,1
+        move 1,5
+        pushj 17,file_v1_symlink
         jrst %L65
 
 native_sys_getchar:

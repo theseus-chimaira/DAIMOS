@@ -231,7 +231,8 @@ d6fs_v2_fcb_valid(const kword_t fcb[D6FS_V2_FCB_WORDS],
         if (fcb == 0 || fs_blocks == 0UL || fcb_count == 0U ||
             d6fs_v2_fcb_decode(fcb, &info) != 0 ||
             !d6fs_v2_type_valid(info.type) || info.extent_count > D6FS_V2_EXTENTS ||
-            info.tail > 4U || (fcb[D6FS_V2_FCB_META] & 017UL) != 0UL ||
+            (info.type == D6FS_V2_TYPE_SYMLINK ? info.tail > 6U :
+            info.tail > 4U) || (fcb[D6FS_V2_FCB_META] & 017UL) != 0UL ||
             (fcb[D6FS_V2_FCB_PARENT] & D6FS_V2_FCB_MASK) != 0UL ||
             fcb[D6FS_V2_FCB_RESERVED0] != 0UL ||
             fcb[D6FS_V2_FCB_RESERVED0 + 1U] != 0UL ||

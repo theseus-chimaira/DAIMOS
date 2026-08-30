@@ -37,13 +37,19 @@ d6fs_dsk_v2_init(struct d6fs_dsk_v2 *disk, unsigned int members,
         disk->set.members = members;
         disk->read_addr = read_addr;
         disk->write_addr = 0U;
+        disk->swap_tail_blocks = 0UL;
+        disk->bootstream_blocks = 0UL;
+        disk->logstore_start = 0UL;
+        disk->logstore_blocks = 0UL;
+        disk->badmap_start = 0UL;
+        disk->badmap_blocks = 0UL;
         for (i = 0U; i < D6FS_V2_MAX_MEMBERS; ++i) {
                 disk->unit[i] = 0U;
                 disk->base[i] = 0UL;
                 disk->set.blocks[i] = 0UL;
         }
         for (i = 0U; i < members; ++i) {
-                if (units[i] > 07U || usable_blocks[i] == 0UL)
+                if (units[i] > 03U || usable_blocks[i] == 0UL)
                         return -1;
                 disk->unit[i] = units[i];
                 disk->set.blocks[i] = usable_blocks[i];
@@ -66,6 +72,11 @@ d6fs_dsk_v2_layout_decode(const kword_t block[D6FS_V2_BLOCK_WORDS],
         layout->super_a = block[D6FS_DSK_V2_LAYOUT_SUPER_A];
         layout->super_b = block[D6FS_DSK_V2_LAYOUT_SUPER_B];
         layout->swap_tail_blocks = block[D6FS_DSK_V2_LAYOUT_SWAP_TAIL];
+        layout->bootstream_blocks = block[D6FS_DSK_V2_LAYOUT_BOOTSTREAM];
+        layout->logstore_start = block[D6FS_DSK_V2_LAYOUT_LOGSTORE_START];
+        layout->logstore_blocks = block[D6FS_DSK_V2_LAYOUT_LOGSTORE_BLOCKS];
+        layout->badmap_start = block[D6FS_DSK_V2_LAYOUT_BADMAP_START];
+        layout->badmap_blocks = block[D6FS_DSK_V2_LAYOUT_BADMAP_BLOCKS];
         if (layout->usable_blocks == 0UL ||
             layout->swap_tail_blocks >= D6FS_DSK_V2_SECTORS_PER_UNIT ||
             layout->base >= D6FS_DSK_V2_SECTORS_PER_UNIT ||
@@ -76,6 +87,17 @@ d6fs_dsk_v2_layout_decode(const kword_t block[D6FS_V2_BLOCK_WORDS],
             layout->super_a > D6FS_V2_LOGICAL_BLOCK_MASK ||
             layout->super_b > D6FS_V2_LOGICAL_BLOCK_MASK)
                 return -1;
+        if (layout->bootstream_blocks != 0UL || layout->logstore_start != 0UL ||
+            layout->logstore_blocks != 0UL || layout->badmap_start != 0UL ||
+            layout->badmap_blocks != 0UL) {
+                if (layout->logstore_start != layout->bootstream_blocks ||
+                    layout->badmap_start != layout->logstore_start +
+                    layout->logstore_blocks ||
+                    layout->super_a != layout->badmap_start +
+                    layout->badmap_blocks ||
+                    layout->super_b != layout->super_a + 1UL)
+                        return -1;
+        }
         return 0;
 }
 
@@ -93,6 +115,11 @@ d6fs_dsk_v2_from_boot(struct d6fs_dsk_v2 *disk, unsigned int read_addr,
         kword_t first_super_a;
         kword_t first_super_b;
         kword_t first_swap_tail;
+        kword_t first_bootstream;
+        kword_t first_logstore_start;
+        kword_t first_logstore_blocks;
+        kword_t first_badmap_start;
+        kword_t first_badmap_blocks;
         kword_t half;
         kword_t locator;
         kword_t raw;
@@ -103,6 +130,11 @@ d6fs_dsk_v2_from_boot(struct d6fs_dsk_v2 *disk, unsigned int read_addr,
         first_super_a = 0UL;
         first_super_b = 0UL;
         first_swap_tail = 0UL;
+        first_bootstream = 0UL;
+        first_logstore_start = 0UL;
+        first_logstore_blocks = 0UL;
+        first_badmap_start = 0UL;
+        first_badmap_blocks = 0UL;
         for (index = 0U; index < D6FS_DSK_V2_BOOT_MEMBERS; ++index) {
                 half = d6fs_dsk_v2_handoff_half(index);
                 if (half == D6FS_DSK_V2_UNUSED_HALF)
@@ -122,9 +154,19 @@ d6fs_dsk_v2_from_boot(struct d6fs_dsk_v2 *disk, unsigned int read_addr,
                         first_super_a = layout.super_a;
                         first_super_b = layout.super_b;
                         first_swap_tail = layout.swap_tail_blocks;
+                        first_bootstream = layout.bootstream_blocks;
+                        first_logstore_start = layout.logstore_start;
+                        first_logstore_blocks = layout.logstore_blocks;
+                        first_badmap_start = layout.badmap_start;
+                        first_badmap_blocks = layout.badmap_blocks;
                 } else if (layout.super_a != first_super_a ||
                     layout.super_b != first_super_b ||
-                    layout.swap_tail_blocks != first_swap_tail) {
+                    layout.swap_tail_blocks != first_swap_tail ||
+                    layout.bootstream_blocks != first_bootstream ||
+                    layout.logstore_start != first_logstore_start ||
+                    layout.logstore_blocks != first_logstore_blocks ||
+                    layout.badmap_start != first_badmap_start ||
+                    layout.badmap_blocks != first_badmap_blocks) {
                         return -1;
                 }
                 bases[members] = layout.base;
@@ -135,6 +177,12 @@ d6fs_dsk_v2_from_boot(struct d6fs_dsk_v2 *disk, unsigned int read_addr,
                 return -1;
         for (index = 0U; index < members; ++index)
                 disk->base[index] = bases[index];
+        disk->swap_tail_blocks = first_swap_tail;
+        disk->bootstream_blocks = first_bootstream;
+        disk->logstore_start = first_logstore_start;
+        disk->logstore_blocks = first_logstore_blocks;
+        disk->badmap_start = first_badmap_start;
+        disk->badmap_blocks = first_badmap_blocks;
         if (first_super_a >= d6fs_v2_diskset_blocks(&disk->set) ||
             first_super_b >= d6fs_v2_diskset_blocks(&disk->set))
                 return -1;
@@ -206,6 +254,73 @@ d6fs_dsk_v2_write_block(void *opaque, kword_t logical,
         return d6fs_dsk_v2_call(disk->write_addr, raw, (kword_t *)block);
 }
 
+kword_t
+d6fs_dsk_v2_swap_blocks(const struct d6fs_dsk_v2 *disk)
+{
+        if (disk == 0)
+                return 0UL;
+        return disk->swap_tail_blocks * (kword_t)disk->set.members;
+}
+
+static int
+d6fs_dsk_v2_swap_io(struct d6fs_dsk_v2 *disk, kword_t logical,
+    kword_t block[D6FS_V2_BLOCK_WORDS], int write)
+{
+        unsigned int member;
+        kword_t local;
+        kword_t raw;
+        unsigned int address;
+
+        if (disk == 0 || block == 0 || disk->set.members == 0U ||
+            disk->swap_tail_blocks == 0UL ||
+            logical >= d6fs_dsk_v2_swap_blocks(disk))
+                return -1;
+        member = (unsigned int)(logical % (kword_t)disk->set.members);
+        local = logical / (kword_t)disk->set.members;
+        if (local >= disk->swap_tail_blocks ||
+            d6fs_dsk_v2_raw_addr(disk->unit[member], disk->base[member] +
+            disk->set.blocks[member] + local, &raw) != 0)
+                return -1;
+        address = write ? disk->write_addr : disk->read_addr;
+        if (address == 0U)
+                return -1;
+        return d6fs_dsk_v2_call(address, raw, block);
+}
+
+int
+d6fs_dsk_v2_swap_read(struct d6fs_dsk_v2 *disk, kword_t logical,
+    kword_t block[D6FS_V2_BLOCK_WORDS])
+{
+        return d6fs_dsk_v2_swap_io(disk, logical, block, 0);
+}
+
+int
+d6fs_dsk_v2_swap_write(struct d6fs_dsk_v2 *disk, kword_t logical,
+    const kword_t block[D6FS_V2_BLOCK_WORDS])
+{
+        return d6fs_dsk_v2_swap_io(disk, logical, (kword_t *)block, 1);
+}
+
+int
+d6fs_dsk_v2_log_read(struct d6fs_dsk_v2 *disk, kword_t blockno,
+    kword_t block[D6FS_V2_BLOCK_WORDS])
+{
+        if (disk == 0 || blockno >= disk->logstore_blocks)
+                return -1;
+        return d6fs_dsk_v2_read_block(disk, disk->logstore_start + blockno,
+            block);
+}
+
+int
+d6fs_dsk_v2_log_write(struct d6fs_dsk_v2 *disk, kword_t blockno,
+    const kword_t block[D6FS_V2_BLOCK_WORDS])
+{
+        if (disk == 0 || blockno >= disk->logstore_blocks)
+                return -1;
+        return d6fs_dsk_v2_write_block(disk, disk->logstore_start + blockno,
+            block);
+}
+
 int
 d6fs_dsk_v2_mount(struct d6fs_dsk_v2 *disk, vnode_v1_t target,
     kword_t super_a, kword_t super_b, unsigned int flags,
@@ -275,6 +390,12 @@ d6fs_dsk_v2_mount_root(struct d6fs_dsk_v2 *disk, kword_t super_a,
         }
         *rootp = root;
         return 0;
+}
+
+struct d6fs_dsk_v2 *
+d6fs_dsk_v2_boot_disk_get(void)
+{
+        return &d6fs_dsk_v2_boot_disk;
 }
 
 int

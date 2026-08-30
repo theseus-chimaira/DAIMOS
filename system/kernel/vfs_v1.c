@@ -12,6 +12,97 @@ static vnode_v1_t vfs_v1_mount_target[VFS_V1_NMOUNT];
 static vnode_v1_t vfs_v1_mount_root[VFS_V1_NMOUNT];
 static kword_t vfs_v1_mount_ro;
 
+struct vfs_v1_lock_entry {
+        vnode_v1_t node;
+        kword_t state;
+};
+
+#define VFS_V1_LOCK_EXBIT       ((kword_t)1UL << 35)
+#define VFS_V1_LOCK_OWNER_MASK  0377777777777UL
+#define VFS_V1_LOCK_OWNER_MAX   32U
+
+static struct vfs_v1_lock_entry vfs_v1_locks[VFS_V1_NLOCK];
+
+static void
+vfs_v1_unlock_mount(unsigned int mount_id)
+{
+        unsigned int i;
+
+        for (i = 0U; i < VFS_V1_NLOCK; ++i)
+                if (vfs_v1_locks[i].node != VFS_V1_NODE_NONE &&
+                    VFS_V1_MOUNT_ID(vfs_v1_locks[i].node) == mount_id) {
+                        vfs_v1_locks[i].node = VFS_V1_NODE_NONE;
+                        vfs_v1_locks[i].state = 0UL;
+                }
+}
+
+int
+vfs_v1_lock(vnode_v1_t node, unsigned int owner, unsigned int op)
+{
+        struct vfs_v1_stat st;
+        struct vfs_v1_lock_entry *entry;
+        struct vfs_v1_lock_entry *free_entry;
+        kword_t bit;
+        kword_t owners;
+        unsigned int i;
+
+        if (node == VFS_V1_NODE_NONE || owner == 0U || owner > VFS_V1_LOCK_OWNER_MAX ||
+            (op != VFS_V1_LOCK_SHARED && op != VFS_V1_LOCK_EXCLUSIVE &&
+            op != VFS_V1_LOCK_UNLOCK) || vfs_v1_stat(node, &st) != 0 ||
+            st.type != VFS_V1_TYPE_REG)
+                return -1;
+        entry = 0;
+        free_entry = 0;
+        for (i = 0U; i < VFS_V1_NLOCK; ++i) {
+                if (vfs_v1_locks[i].node == node) {
+                        entry = &vfs_v1_locks[i];
+                        break;
+                }
+                if (free_entry == 0 &&
+                    vfs_v1_locks[i].node == VFS_V1_NODE_NONE)
+                        free_entry = &vfs_v1_locks[i];
+        }
+        bit = (kword_t)1UL << owner;
+        if (op == VFS_V1_LOCK_UNLOCK) {
+                if (entry == 0)
+                        return 0;
+                entry->state &= ~bit;
+                if ((entry->state & VFS_V1_LOCK_EXBIT) != 0UL)
+                        entry->state &= ~VFS_V1_LOCK_EXBIT;
+                if ((entry->state & VFS_V1_LOCK_OWNER_MASK) == 0UL) {
+                        entry->node = VFS_V1_NODE_NONE;
+                        entry->state = 0UL;
+                }
+                return 0;
+        }
+        if (entry == 0) {
+                if (free_entry == 0)
+                        return -1;
+                entry = free_entry;
+                entry->node = node;
+                entry->state = 0UL;
+        }
+        owners = entry->state & VFS_V1_LOCK_OWNER_MASK;
+        if (op == VFS_V1_LOCK_SHARED) {
+                if ((entry->state & VFS_V1_LOCK_EXBIT) != 0UL &&
+                    owners != bit)
+                        return -1;
+                entry->state = (owners | bit);
+                return 0;
+        }
+        if ((owners & ~bit) != 0UL)
+                return -1;
+        entry->state = VFS_V1_LOCK_EXBIT | bit;
+        return 0;
+}
+
+void
+vfs_v1_unlock_owner(vnode_v1_t node, unsigned int owner)
+{
+        if (owner != 0U && owner <= VFS_V1_LOCK_OWNER_MAX)
+                (void)vfs_v1_lock(node, owner, VFS_V1_LOCK_UNLOCK);
+}
+
 #define VFS_V1_MEMFS_ROOT \
     VFS_V1_NODE(MEMFS_V1_PROVIDER, MEMFS_V1_KIND_NODE, 0U)
 #define VFS_V1_DEVICE_ROOT \
@@ -126,6 +217,7 @@ vfs_v1_unmount(vnode_v1_t root)
                 return -1;
         if (vfs_v1_namespace_root == root)
                 vfs_v1_namespace_root = vfs_v1_mount_target[i];
+        vfs_v1_unlock_mount(id);
         vfs_v1_mount_target[i] = VFS_V1_NODE_NONE;
         vfs_v1_mount_root[i] = VFS_V1_NODE_NONE;
         vfs_v1_mount_ro &= ~((kword_t)1UL << i);
@@ -367,6 +459,18 @@ vfs_v1_mkdir(vnode_v1_t dir, const struct vfs_v1_name *name,
                 return memfs_v1_mkdir(file_v1_root, dir, name, mode, nodep);
         if (VFS_V1_PROVIDER(dir) == D6FS_V2_PROVIDER)
                 return d6fs_provider_v2_mkdir(dir, name, mode, nodep);
+        return -1;
+}
+
+int
+vfs_v1_symlink(vnode_v1_t dir, const struct vfs_v1_name *name,
+    const kword_t *target, unsigned int target_chars, vnode_v1_t *nodep)
+{
+        if (vfs_v1_readonly(dir))
+                return -1;
+        if (VFS_V1_PROVIDER(dir) == D6FS_V2_PROVIDER)
+                return d6fs_provider_v2_symlink(dir, name, target,
+                    target_chars, nodep);
         return -1;
 }
 

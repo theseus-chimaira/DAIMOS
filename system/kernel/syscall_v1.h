@@ -29,6 +29,9 @@
 #define SYS_V1_DTFS_FORMAT      39U
 #define SYS_V1_DTFS_MOUNT       40U
 #define SYS_V1_UNMOUNT          41U
+#define SYS_V1_FLOCK            42U
+#define SYS_V1_DUP              43U
+#define SYS_V1_SYMLINK          44U
 
 #define SYS_V1_MOUNT_RW         0U
 #define SYS_V1_MOUNT_RDONLY     1U
@@ -39,6 +42,9 @@
 #define SYS_V1_O_APPEND         000004U
 #define SYS_V1_O_CREAT          000010U
 #define SYS_V1_O_TRUNC          000020U
+#define SYS_V1_LOCK_SHARED      VFS_V1_LOCK_SHARED
+#define SYS_V1_LOCK_EXCLUSIVE   VFS_V1_LOCK_EXCLUSIVE
+#define SYS_V1_LOCK_UNLOCK      VFS_V1_LOCK_UNLOCK
 #define SYS_V1_PROC_SLOTS       2U
 
 struct sys_v1_procinfo {

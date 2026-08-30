@@ -14,6 +14,11 @@
 #define D6FS_DSK_V2_LAYOUT_SUPER_A      010U
 #define D6FS_DSK_V2_LAYOUT_SUPER_B      011U
 #define D6FS_DSK_V2_LAYOUT_SWAP_TAIL    012U
+#define D6FS_DSK_V2_LAYOUT_BOOTSTREAM    013U
+#define D6FS_DSK_V2_LAYOUT_LOGSTORE_START 014U
+#define D6FS_DSK_V2_LAYOUT_LOGSTORE_BLOCKS 015U
+#define D6FS_DSK_V2_LAYOUT_BADMAP_START  016U
+#define D6FS_DSK_V2_LAYOUT_BADMAP_BLOCKS 017U
 
 struct d6fs_dsk_v2 {
         struct d6fs_v2_diskset set;
@@ -21,6 +26,12 @@ struct d6fs_dsk_v2 {
         kword_t base[D6FS_V2_MAX_MEMBERS];
         unsigned int read_addr;
         unsigned int write_addr;
+        kword_t swap_tail_blocks;
+        kword_t bootstream_blocks;
+        kword_t logstore_start;
+        kword_t logstore_blocks;
+        kword_t badmap_start;
+        kword_t badmap_blocks;
 };
 
 struct d6fs_dsk_v2_layout {
@@ -29,6 +40,11 @@ struct d6fs_dsk_v2_layout {
         kword_t super_a;
         kword_t super_b;
         kword_t swap_tail_blocks;
+        kword_t bootstream_blocks;
+        kword_t logstore_start;
+        kword_t logstore_blocks;
+        kword_t badmap_start;
+        kword_t badmap_blocks;
 };
 
 /* Decode the D6FS root-layout extension carried by a DBOOT descriptor. */
@@ -42,7 +58,7 @@ int d6fs_dsk_v2_layout_decode(const kword_t block[D6FS_V2_BLOCK_WORDS],
 int d6fs_dsk_v2_from_boot(struct d6fs_dsk_v2 *disk, unsigned int read_addr,
     kword_t *super_ap, kword_t *super_bp);
 
-/* Generic initializer used by tests and later non-DSK270 disk providers. */
+/* Initialize the current PDP-6 DSK270 bridge; hardware units are 0..3. */
 int d6fs_dsk_v2_init(struct d6fs_dsk_v2 *disk, unsigned int members,
     const unsigned int *units, const kword_t *usable_blocks,
     unsigned int read_addr);
@@ -65,6 +81,17 @@ int d6fs_dsk_v2_mount_root(struct d6fs_dsk_v2 *disk, kword_t super_a,
 /* Return 1 when the bootset has no D6FS root-layout extension. */
 int d6fs_dsk_v2_mount_boot_root(unsigned int read_addr,
     unsigned int write_addr, unsigned int flags, vnode_v1_t *rootp);
+struct d6fs_dsk_v2 *d6fs_dsk_v2_boot_disk_get(void);
+
+kword_t d6fs_dsk_v2_swap_blocks(const struct d6fs_dsk_v2 *disk);
+int d6fs_dsk_v2_swap_read(struct d6fs_dsk_v2 *disk, kword_t logical,
+    kword_t block[D6FS_V2_BLOCK_WORDS]);
+int d6fs_dsk_v2_swap_write(struct d6fs_dsk_v2 *disk, kword_t logical,
+    const kword_t block[D6FS_V2_BLOCK_WORDS]);
+int d6fs_dsk_v2_log_read(struct d6fs_dsk_v2 *disk, kword_t blockno,
+    kword_t block[D6FS_V2_BLOCK_WORDS]);
+int d6fs_dsk_v2_log_write(struct d6fs_dsk_v2 *disk, kword_t blockno,
+    const kword_t block[D6FS_V2_BLOCK_WORDS]);
 
 int d6fs_dsk_v2_call(unsigned int address, kword_t raw_address,
     kword_t *block);

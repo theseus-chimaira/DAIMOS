@@ -13,6 +13,7 @@ int d6fs_provider_v2_mount(vnode_v1_t target,
     vnode_v1_t *rootp);
 /* Shared block buffer used for mount probing and the active reader cache. */
 kword_t *d6fs_provider_v2_block_buffer(void);
+void d6fs_provider_v2_cache_invalidate(void);
 int d6fs_provider_v2_mount_rw(vnode_v1_t target,
     d6fs_v2_read_block_fn read_block, d6fs_v2_write_block_fn write_block,
     void *opaque, const struct d6fs_v2_super_info *super, unsigned int flags,
@@ -35,6 +36,8 @@ int d6fs_provider_v2_create(vnode_v1_t dir, const struct vfs_v1_name *name,
     unsigned int mode, vnode_v1_t *nodep);
 int d6fs_provider_v2_mkdir(vnode_v1_t dir, const struct vfs_v1_name *name,
     unsigned int mode, vnode_v1_t *nodep);
+int d6fs_provider_v2_symlink(vnode_v1_t dir, const struct vfs_v1_name *name,
+    const kword_t *target, unsigned int target_chars, vnode_v1_t *nodep);
 int d6fs_provider_v2_unlink(vnode_v1_t dir, const struct vfs_v1_name *name);
 int d6fs_provider_v2_rename(vnode_v1_t olddir,
     const struct vfs_v1_name *oldname, vnode_v1_t newdir,
