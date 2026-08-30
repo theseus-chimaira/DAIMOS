@@ -148,6 +148,7 @@ d6fs_provider_v2_mount_rw(vnode_v1_t target,
         if (mp->alloc_cursor >= super->total_blocks)
                 mp->alloc_cursor = 0UL;
         d6fs_provider_v2_reader_mount = 0U;
+        d6fs_provider_v2_lcache_flush();
         if (d6fs_provider_v2_load(root) != 0) {
                 (void)vfs_v1_unmount(root);
                 mp->read_block = 0;
@@ -832,6 +833,7 @@ d6fs_provider_v2_write_dirent(vnode_v1_t dir, unsigned int slot,
 
         if (di == 0 || d6fs_provider_v2_fcb(dir, fcb, &fi) != 0 ||
             fi.type != D6FS_V2_TYPE_DIR ||
+            (fi.flags & D6FS_V2_FLAG_IMMUTABLE) != 0U ||
             d6fs_v2_dirent_encode(raw, di) != 0)
                 return -1;
         need = ((kword_t)slot + 1UL) * D6FS_V2_DIRENT_WORDS;
@@ -978,9 +980,11 @@ d6fs_provider_v2_rename(vnode_v1_t olddir,
     const struct vfs_v1_name *newname)
 {
         struct d6fs_v2_dirent_info di;
+        struct d6fs_v2_dirent_info old_di;
         struct d6fs_v2_dirent_info zero_di;
         kword_t fcb[D6FS_V2_FCB_WORDS];
         struct d6fs_v2_fcb_info fi;
+        unsigned int old_parent;
         unsigned int oldslot;
         unsigned int newslot;
         unsigned int i;
@@ -994,6 +998,8 @@ d6fs_provider_v2_rename(vnode_v1_t olddir,
             fcb) != 0 || d6fs_v2_fcb_decode(fcb, &fi) != 0 ||
             (fi.flags & (D6FS_V2_FLAG_NOUNLINK | D6FS_V2_FLAG_IMMUTABLE)) != 0U)
                 return -1;
+        old_di = di;
+        old_parent = fi.parent_fcb;
         if (olddir == newdir) {
                 newslot = oldslot;
         } else {
@@ -1004,23 +1010,42 @@ d6fs_provider_v2_rename(vnode_v1_t olddir,
         for (i = 0U; i < 4U; ++i)
                 di.name[i] = newname->words[i];
         di.hash = d6fs_v2_name_hash24(newname->words, newname->chars);
-        if (d6fs_provider_v2_write_dirent(newdir, newslot, &di) != 0)
-                return -1;
-        if (olddir != newdir) {
-                fi.parent_fcb = VFS_V1_INDEX(newdir);
-                fcb[D6FS_V2_FCB_PARENT] = (kword_t)fi.parent_fcb << 18;
-                if (d6fs_v2_reader_put_fcb(&d6fs_provider_v2_reader,
-                    di.child_fcb, fcb) != 0)
+        if (olddir == newdir) {
+                if (d6fs_provider_v2_write_dirent(newdir, newslot, &di) != 0)
                         return -1;
+        } else {
                 for (i = 0U; i < 4U; ++i)
                         zero_di.name[i] = 0UL;
                 zero_di.hash = 0UL;
                 zero_di.type = 0U;
                 zero_di.flags = 0U;
                 zero_di.child_fcb = 0U;
+                /*
+                 * Remove the old namespace reference first.  A crash from
+                 * this point until publication in the new directory can
+                 * leave an orphaned FCB, which fsck can repair, but never a
+                 * transient second hard-link-like reference.
+                 */
                 if (d6fs_provider_v2_write_dirent(olddir, oldslot,
                     &zero_di) != 0)
                         return -1;
+                fi.parent_fcb = VFS_V1_INDEX(newdir);
+                fcb[D6FS_V2_FCB_PARENT] = (kword_t)fi.parent_fcb << 18;
+                if (d6fs_v2_reader_put_fcb(&d6fs_provider_v2_reader,
+                    di.child_fcb, fcb) != 0) {
+                        (void)d6fs_provider_v2_write_dirent(olddir, oldslot,
+                            &old_di);
+                        return -1;
+                }
+                if (d6fs_provider_v2_write_dirent(newdir, newslot, &di) != 0) {
+                        fi.parent_fcb = old_parent;
+                        fcb[D6FS_V2_FCB_PARENT] = (kword_t)old_parent << 18;
+                        (void)d6fs_v2_reader_put_fcb(&d6fs_provider_v2_reader,
+                            di.child_fcb, fcb);
+                        (void)d6fs_provider_v2_write_dirent(olddir, oldslot,
+                            &old_di);
+                        return -1;
+                }
         }
         d6fs_provider_v2_lcache_flush();
         return 0;

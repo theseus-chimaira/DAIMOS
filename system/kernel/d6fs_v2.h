@@ -29,6 +29,7 @@
 #define D6FS_V2_FLAG_APPEND          0001U
 #define D6FS_V2_FLAG_NOUNLINK        0002U
 #define D6FS_V2_FLAG_NODUMP          0004U
+/* ARCHIVE is persistent and manual/tool-managed; kernel mutations preserve it. */
 #define D6FS_V2_FLAG_ARCHIVE         0010U
 #define D6FS_V2_FLAG_IMMUTABLE       0020U
 #define D6FS_V2_FLAG_MASK            0777U
