@@ -32,6 +32,16 @@ struct proc_v1 {
 };
 
 extern struct proc_v1 proc_v1_table[PROC_V1_NPROC];
+extern kword_t proc_v1_wait_channel;
+
+/*
+ * V1 blocking uses an event word as its wait channel.  A zero event means
+ * pending; the producer stores a nonzero completion value before wakeup.
+ * The recheck after publishing the wait channel closes the completion race.
+ * V1 has one schedulable user context, so one wait-channel word is sufficient.
+ */
+int proc_v1_wait_event(volatile kword_t *eventp);
+void proc_v1_wakeup_event(volatile kword_t *eventp);
 
 #define PROC_V1_PID(p) ((unsigned int)((p)->meta & PROC_V1_PID_MASK))
 #define PROC_V1_PARENT_SLOT(p) \

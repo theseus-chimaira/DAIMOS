@@ -5,7 +5,9 @@
 ; block I/O; controller completion/error status remains on PI5.
 ; storage_state encodes ownership as -1 DTC block read, -2 MTC read,
 ; -3 DSK read, -4 DSK write, -5 MTC write, -6 DTC block write.  Positive
-; values are completion/error states.
+; values 1..6 are successful completion states; 7 is I/O error.  Runtime
+; DSK waits use storage_event;
+; boot DSK keeps the original polling path.
 ;
 ; mtc_read_words:
 ;   AC1 = unit, AC2 = destination, AC3 = maximum word count.
@@ -27,6 +29,9 @@
         .globl pdp10_ret_ok_v34
         .globl pdp10_ret_arg_v34
         .globl pdp10_ret_busy_v34
+        .globl proc_v1_table
+        .globl proc_v1_wait_event
+        .globl proc_v1_wakeup_event
 
 storage_pi_handler:
         ; Controller status only.  Type-136 word transfers run directly from
@@ -110,8 +115,11 @@ storage_dct_arm_handler:
         jrst pdp10_pi_handler_return
 
 storage_pi_dsk_read_done:
-        cono 0270,030105
-        jrst storage_pi_done
+        ; Sector data is complete, but the controller is not reusable until
+        ; IDS.  End/clear with EIS and let PI5 publish final completion.
+        cono 0270,030115
+        cono 0200,0
+        jrst pdp10_pi_handler_return
 storage_pi_done_keep_dtc:
         ; Block-addressed DTC I/O leaves the selected unit coasting in MOVE
         ; mode.  This avoids a stop/start cycle between adjacent filesystem
@@ -185,10 +193,33 @@ storage_pi_mtc_idle_check:
         jrst storage_pi_done
 
 storage_pi_dsk_status:
-        conso 0270,001777
+        coni 0270,1
+        trne 1,001777
+        jrst storage_pi_dsk_error
+        trne 1,0400000
+        jrst storage_pi_dsk_idle
+        trnn 1,040000
+        jrst pdp10_pi_handler_return
+        ; DFR is only interrupt-enabled by the runtime sleeping path.
+        cono 0270,000105
+        jrst storage_pi_dsk_signal
+storage_pi_dsk_idle:
+        cono 0270,0
+        movns storage_state
+        jrst storage_pi_dsk_signal
+storage_pi_dsk_error:
+        movei 2,7
+        movem 2,storage_state
+        cono 0270,0
+        cono 0200,0
+storage_pi_dsk_signal:
+        ; Boot has no waiter, so wakeup is a cheap no-op there.
+        setom storage_event
+        movei 1,storage_event
+        pushj 017,proc_v1_wakeup_event
         jrst pdp10_pi_handler_return
 storage_pi_error:
-        movei 1,4
+        movei 1,7
         movem 1,storage_state
         skipe dtc_active_unit
         jrst storage_pi_dtc_block_error
@@ -470,6 +501,20 @@ dsk_write_sector:
 dsk_rw_start:
         movem 3,storage_state
         datao 0270,1
+        skipn proc_v1_table+2
+        jrst dsk_rw_wait_dfr
+        setzm storage_event
+        cono 0270,000125
+        movei 1,storage_event
+        pushj 017,proc_v1_wait_event
+        skipl storage_state
+        jrst storage_wait
+        setzm storage_event
+        cono 0200,0(4)
+        cono 0270,0(5)
+        movei 1,storage_event
+        pushj 017,proc_v1_wait_event
+        jrst storage_wait
 dsk_rw_wait_dfr:
         coni 0270,3
         trne 3,001777
@@ -481,7 +526,7 @@ dsk_rw_wait_dfr:
 storage_wait:
         move 1,storage_state
         jumpl 1,storage_wait
-        caie 1,4
+        caie 1,7
         jrst storage_wait_done
 storage_ioerr:
         setzm storage_state
@@ -564,14 +609,15 @@ storage_dct_dsk_write_ack1:
         hrrm 1,storage_dct_select
         jrst pdp10_pi_handler_return
 storage_dct_dsk_write_ack2:
-        aos storage_state
-        cono 0270,030105
-        jrst storage_pi_done
+        cono 0270,030115
+        cono 0200,0
+        jrst pdp10_pi_handler_return
 
         .bss
 storage_state: .block 1
 storage_iowd:  .block 1
 storage_count: .block 1
+storage_event: .block 1
 dtc_active_unit: .block 1
 dtc_request_unit: .block 1
 dtc_request_block: .block 1

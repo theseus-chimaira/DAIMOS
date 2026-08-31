@@ -28,9 +28,9 @@ KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 
 KCORE_C_NAMES = kboot_v1 exec_v1 vfs_v1 devicefs_v1 memfs_v1 dtfs_v1 \
-	d6fs_v2 d6fs_provider_v2 d6fs_disk_v2 d6log_v2 file_v1
+	dsk270 d6fs_v2 d6fs_provider_v2 d6fs_disk_v2 d6log_v2 file_v1
 KCORE_FIXED_NAMES = kcore_entry $(KCORE_C_NAMES) ret_pdp10 dtfs_pdp10 \
-	d6fs_disk_pdp10 kfmt_pdp10 vfs_pdp10 memfs_pdp10 file_pdp10 proc_pdp10 \
+	dsk270_pdp10 kfmt_pdp10 vfs_pdp10 memfs_pdp10 file_pdp10 proc_pdp10 \
 	device_state_pdp10 procfs_pdp10 devicefs_pdp10 syscall_info_pdp10 \
 	syscall_dispatch_v2 mach_user_v1 kcore_io kcore_end
 KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))

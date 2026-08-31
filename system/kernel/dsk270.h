@@ -1,0 +1,90 @@
+#ifndef DAIMON_DSK270_H
+#define DAIMON_DSK270_H
+
+#include "kcore.h"
+
+#define DSK270_UNITS             4U
+#define DSK270_WORDS_PER_SECTOR  0200U
+#define DSK270_SECTORS_PER_CYL   054U
+#define DSK270_CYLINDERS         02000U
+#define DSK270_SECTORS_PER_UNIT  0130000UL
+
+#define DSK270_HW_UNIT_SHIFT     16U
+#define DSK270_CYL_SHIFT          6U
+
+struct dsk270_addr {
+        kword_t raw;
+};
+
+/* MRES service entry points installed by KINIT after DSK270 probe. */
+extern unsigned int dsk270_read_addr_v1;
+extern unsigned int dsk270_write_addr_v1;
+
+static inline int
+dsk270_probe(unsigned int unit)
+{
+        return unit < DSK270_UNITS && dsk270_read_addr_v1 != 0U ? 0 : -1;
+}
+
+static inline int
+dsk270_make_addr(unsigned int unit, kword_t sector, struct dsk270_addr *ap)
+{
+        kword_t cylinder;
+        kword_t sec;
+
+        if (ap == 0 || unit >= DSK270_UNITS ||
+            sector >= DSK270_SECTORS_PER_UNIT)
+                return -1;
+        cylinder = sector / (kword_t)DSK270_SECTORS_PER_CYL;
+        sec = sector % (kword_t)DSK270_SECTORS_PER_CYL;
+        ap->raw = ((kword_t)unit << DSK270_HW_UNIT_SHIFT) |
+            (cylinder << DSK270_CYL_SHIFT) | sec;
+        return 0;
+}
+
+int dsk270_read_sector(unsigned int unit, kword_t sector, kword_t *buf);
+int dsk270_write_sector(unsigned int unit, kword_t sector,
+    const kword_t *buf);
+
+/*
+ * Current run I/O intentionally loops over sector I/O.  Keeping this tiny
+ * policy wrapper inline costs no resident words until a caller needs it;
+ * hardware streaming can replace it later without changing the API.
+ */
+static inline int
+dsk270_read_run(unsigned int unit, kword_t sector, kword_t count,
+    kword_t *buf)
+{
+        if (count == 0UL)
+                return 0;
+        if (buf == 0 || count > DSK270_SECTORS_PER_UNIT ||
+            sector > DSK270_SECTORS_PER_UNIT - count)
+                return -1;
+        do {
+                if (dsk270_read_sector(unit, sector, buf) != 0)
+                        return -1;
+                ++sector;
+                buf += DSK270_WORDS_PER_SECTOR;
+        } while (--count != 0UL);
+        return 0;
+}
+
+static inline int
+dsk270_write_run(unsigned int unit, kword_t sector, kword_t count,
+    const kword_t *buf)
+{
+        if (count == 0UL)
+                return 0;
+        if (buf == 0 || count > DSK270_SECTORS_PER_UNIT ||
+            sector > DSK270_SECTORS_PER_UNIT - count)
+                return -1;
+        do {
+                if (dsk270_write_sector(unit, sector, buf) != 0)
+                        return -1;
+                ++sector;
+                buf += DSK270_WORDS_PER_SECTOR;
+        } while (--count != 0UL);
+        return 0;
+}
+
+#endif

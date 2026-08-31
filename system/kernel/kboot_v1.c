@@ -4,14 +4,13 @@
 #include "mach_user_v1.h"
 #include "proc_v1.h"
 #include "d6fs_disk_v2.h"
+#include "dsk270.h"
 #include "d6log_v2.h"
 #include "d6fs_provider_v2.h"
 
 kword_t kcore_resident_end_v1;
 kword_t kcore_cty_putchar_v1;
 kword_t kcore_cty_getchar_v1;
-kword_t kcore_dsk_read_sector_v1;
-kword_t kcore_dsk_write_sector_v1;
 
 struct memfs_v1 kboot_fs_v1;
 static struct d6log_v2 kboot_log_v2;
@@ -26,19 +25,17 @@ kcore_boot_v1(void)
         vnode_v1_t d6fs_root;
         int d6fs_rc;
 
-        if (kcore_dsk_read_sector_v1 != 0UL) {
+        if (dsk270_read_addr_v1 != 0U) {
                 struct d6fs_dsk_v2 *boot_disk;
                 kword_t *scratch;
                 kword_t payload[1];
 
-                d6fs_rc = d6fs_dsk_v2_mount_boot_root(
-                    (unsigned int)kcore_dsk_read_sector_v1,
-                    (unsigned int)kcore_dsk_write_sector_v1, 0U, &d6fs_root);
+                d6fs_rc = d6fs_dsk_v2_mount_boot_root(0U, &d6fs_root);
                 if (d6fs_rc < 0)
                         return;
                 boot_disk = d6fs_dsk_v2_boot_disk_get();
                 scratch = d6fs_provider_v2_block_buffer();
-                if (kcore_dsk_write_sector_v1 != 0UL &&
+                if (dsk270_write_addr_v1 != 0U &&
                     boot_disk->logstore_blocks >= 2UL) {
                         if (d6log_v2_recover(&kboot_log_v2, boot_disk,
                             scratch) == 0) {

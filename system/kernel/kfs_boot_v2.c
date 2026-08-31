@@ -6,6 +6,7 @@
 #include "file_v1.h"
 #include "devicefs_v1.h"
 #include "dtfs_v1.h"
+#include "dsk270.h"
 #include "module.h"
 #include "syscall_v1.h"
 
@@ -279,10 +280,10 @@ kfs_boot_v2_prepare(void)
                 devicefs_v1_present |=
                     DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DTC0);
 
-        kcore_dsk_read_sector_v1 =
-            (kword_t)module_service_get(MODULE_SERVICE_DSK_READ_SECTOR);
-        kcore_dsk_write_sector_v1 =
-            (kword_t)module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR);
+        dsk270_read_addr_v1 =
+            module_service_get(MODULE_SERVICE_DSK_READ_SECTOR);
+        dsk270_write_addr_v1 =
+            module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR);
         return 0;
 }
 

@@ -16,10 +16,10 @@ KINIT_CPPFLAGS += -DKINIT_DEBUG
 endif
 
 KCORE_C_SRCS = kboot_v1.c exec_v1.c vfs_v1.c devicefs_v1.c \
-	memfs_v1.c dtfs_v1.c d6fs_v2.c d6fs_provider_v2.c d6fs_disk_v2.c d6log_v2.c file_v1.c
+	memfs_v1.c dtfs_v1.c dsk270.c d6fs_v2.c d6fs_provider_v2.c d6fs_disk_v2.c d6log_v2.c file_v1.c
 KCORE_C_ASM = $(KCORE_C_SRCS:%.c=$(BUILD)/%.s)
 KCORE_FIXED_ASM = $(BUILD)/kcore_entry.s $(KCORE_C_ASM) \
-	$(BUILD)/ret_pdp10.s $(BUILD)/dtfs_pdp10.s $(BUILD)/d6fs_disk_pdp10.s $(BUILD)/kfmt_pdp10.s $(BUILD)/vfs_pdp10.s $(BUILD)/memfs_pdp10.s $(BUILD)/file_pdp10.s $(BUILD)/proc_pdp10.s $(BUILD)/device_state_pdp10.s $(BUILD)/procfs_pdp10.s $(BUILD)/devicefs_pdp10.s $(BUILD)/syscall_info_pdp10.s $(BUILD)/syscall_dispatch_v2.s $(BUILD)/mach_user_v1.s $(BUILD)/kcore_io.s $(BUILD)/kcore_end.s
+	$(BUILD)/ret_pdp10.s $(BUILD)/dtfs_pdp10.s $(BUILD)/dsk270_pdp10.s $(BUILD)/kfmt_pdp10.s $(BUILD)/vfs_pdp10.s $(BUILD)/memfs_pdp10.s $(BUILD)/file_pdp10.s $(BUILD)/proc_pdp10.s $(BUILD)/device_state_pdp10.s $(BUILD)/procfs_pdp10.s $(BUILD)/devicefs_pdp10.s $(BUILD)/syscall_info_pdp10.s $(BUILD)/syscall_dispatch_v2.s $(BUILD)/mach_user_v1.s $(BUILD)/kcore_io.s $(BUILD)/kcore_end.s
 
 MRES_SRCS =
 MRES_C_ASM = $(MRES_SRCS:%.c=$(BUILD)/%.s)
@@ -38,7 +38,7 @@ $(BUILD)/kinit.s $(BUILD)/kinit_diag.s $(BUILD)/module_minit.s $(BUILD)/kfs_boot
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os $(KINIT_CPPFLAGS) -I. -I$(PDP10_PREFIX)/include -S $< -o $@
 
-$(KCORE_C_ASM): $(BUILD)/%.s: %.c kcore.h kboot_v1.h vfs_v1.h kfmt_v1.h devicefs_v1.h procfs_v1.h memfs_v1.h dtfs_v1.h d6fs_v2.h d6fs_provider_v2.h d6fs_disk_v2.h d6log_v2.h initfs_v1.h file_v1.h proc_v1.h syscall_v1.h exec_v1.h proc_v1.h mach_user_v1.h
+$(KCORE_C_ASM): $(BUILD)/%.s: %.c kcore.h kboot_v1.h vfs_v1.h kfmt_v1.h devicefs_v1.h procfs_v1.h memfs_v1.h dtfs_v1.h dsk270.h d6fs_v2.h d6fs_provider_v2.h d6fs_disk_v2.h d6log_v2.h initfs_v1.h file_v1.h proc_v1.h syscall_v1.h exec_v1.h proc_v1.h mach_user_v1.h
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os -I. -I$(PDP10_PREFIX)/include -S $< -o $@
 
