@@ -36,18 +36,21 @@ dsk270_sector_bad:
 
 dsk270_sector_addr:
         ; raw = unit<<16 | (sector/054)<<6 | sector%054
-        setz    5,
-        move    6,2
-        divi    5,054                   ; AC5 quotient, AC6 remainder
+        move    5,2
+        idivi   5,054                   ; AC5 quotient, AC6 remainder
         lsh     1,020
         lsh     5,6
         ior     1,5
         ior     1,6
         move    2,3
-        andi    4,0777777
         pushj   17,(4)
         popj    17,
 
+        .data
+; PI6 consults the read-service word before KFS binds the storage MRES.  Keep
+; this existing pointer explicitly initialized so early line-clock ticks see
+; a disabled watchdog rather than uninitialized BSS contents.
+dsk270_read_addr_v1:  .word 0
+
         .bss
-dsk270_read_addr_v1:  .block 1
 dsk270_write_addr_v1: .block 1

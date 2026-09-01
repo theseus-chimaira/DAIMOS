@@ -21,9 +21,8 @@ proc_v1_wait_event:
         skipe   (1)
         jrst    pdp10_ret_zero_v1
         movem   1,proc_v1_wait_channel
-        move    2,proc_v1_table+2
-        xori    2,PROC_V1_RUN_SLEEP_BIT
-        movem   2,proc_v1_table+2
+        movei   2,PROC_V1_RUN_SLEEP_BIT
+        xorb    2,proc_v1_table+2
         skipe   (1)
         jrst    proc_v1_wait_raced
 proc_v1_wait_loop:
@@ -37,15 +36,14 @@ proc_v1_wait_raced:
         jrst    pdp10_ret_zero_v1
 
 ; void proc_v1_wakeup_event(volatile kword_t *eventp)
-; PI-safe: clobbers only AC1..AC2, within the resident interrupt ABI scratch
-; set.  The producer stores a nonzero event value before calling this routine.
+; PI-safe: clobbers only AC1.  The producer stores a nonzero event value before
+; calling this routine.
 proc_v1_wakeup_event:
         came    1,proc_v1_wait_channel
         popj    17,
         setzm   proc_v1_wait_channel
-        move    2,proc_v1_table+2
-        xori    2,PROC_V1_RUN_SLEEP_BIT
-        movem   2,proc_v1_table+2
+        movei   1,PROC_V1_RUN_SLEEP_BIT
+        xorb    1,proc_v1_table+2
         popj    17,
 
         .data
