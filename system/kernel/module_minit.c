@@ -986,6 +986,7 @@ slv_minit(void)
                 base = minit_install(name);
                 handler = minit_export(name, base, 0U);
                 minit_register(name, SLV_NATIVE_PI_LEVEL, handler);
+                module_service_set(MODULE_SERVICE_SLV_HANDLER, handler);
         }
         minit_diag_ok(name);
 }

@@ -30,7 +30,8 @@ extern kword_t __minit_table_end;
 #define MODULE_SERVICE_MEMFS             22U
 #define MODULE_SERVICE_DTFS              23U
 #define MODULE_SERVICE_D6FS              24U
-#define MODULE_SERVICE_COUNT             25U
+#define MODULE_SERVICE_SLV_HANDLER       25U
+#define MODULE_SERVICE_COUNT             26U
 
 void module_run_minits(void);
 const kword_t *module_current_mres(void);

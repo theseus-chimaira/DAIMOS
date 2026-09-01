@@ -281,13 +281,46 @@ kfs_boot_prepare(void)
         }
 
 bind_services:
-        devicefs_present = kcore_cty_putchar_v1 != 0 &&
-            kcore_cty_getchar_v1 != 0 ?
-            DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CTY0) : 0;
+        devicefs_present = 0;
+        if (kcore_cty_putchar_v1 != 0 && kcore_cty_getchar_v1 != 0)
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CTY0);
+        if (module_service_get(MODULE_SERVICE_CLK_TICKS) != 0U)
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CLK0);
+        if (module_service_get(MODULE_SERVICE_PTR_GETCHAR) != 0U)
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_PTR0);
+        if (module_service_get(MODULE_SERVICE_PTP_PUTCHAR) != 0U)
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_PTP0);
+        if (module_service_get(MODULE_SERVICE_CR_READ_CARD) != 0U)
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CR0);
+        if (module_service_get(MODULE_SERVICE_CP_PUNCH_CARD) != 0U)
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CP0);
+        if (module_service_get(MODULE_SERVICE_DCS_GETCHAR) != 0U &&
+            module_service_get(MODULE_SERVICE_DCS_PUTCHAR) != 0U)
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DCS0);
+        if (module_service_get(MODULE_SERVICE_GE_GETCHAR) != 0U &&
+            module_service_get(MODULE_SERVICE_GE_PUTCHAR) != 0U)
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_GE0);
+        if (module_service_get(MODULE_SERVICE_DPY_PUTWORD) != 0U)
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DPY0);
+        if (module_service_get(MODULE_SERVICE_TTY_PUTCHAR) != 0U)
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_TTY0);
+        if (module_service_get(MODULE_SERVICE_WCNSLS_READ) != 0U)
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_WCNSLS);
+        if (module_service_get(MODULE_SERVICE_OCNSLS_READ) != 0U)
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_OCNSLS);
         if (module_service_get(MODULE_SERVICE_DTC_READ_BLOCK) != 0U &&
             module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK) != 0U)
-                devicefs_present |=
-                    DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DTC0);
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DTC0);
+        if (module_service_get(MODULE_SERVICE_MTC_READ_WORDS) != 0U &&
+            module_service_get(MODULE_SERVICE_MTC_WRITE_WORDS) != 0U)
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_MTC0);
+        if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) != 0U &&
+            module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U)
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DSK0);
+        if (module_service_get(MODULE_SERVICE_SLV_HANDLER) != 0U)
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_SLV0);
+        if (module_service_get(MODULE_SERVICE_D6FS) != 0U)
+                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_D6SET0);
 
         dsk270_read_addr_v1 =
             module_service_get(MODULE_SERVICE_DSK_READ_SECTOR);
