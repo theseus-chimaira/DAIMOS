@@ -12,10 +12,6 @@
 #define DSK270_HW_UNIT_SHIFT     16U
 #define DSK270_CYL_SHIFT          6U
 
-struct dsk270_addr {
-        kword_t raw;
-};
-
 /* MRES service entry points installed by KINIT after DSK270 probe. */
 extern unsigned int dsk270_read_addr_v1;
 extern unsigned int dsk270_write_addr_v1;
@@ -24,22 +20,6 @@ static inline int
 dsk270_probe(unsigned int unit)
 {
         return unit < DSK270_UNITS && dsk270_read_addr_v1 != 0U ? 0 : -1;
-}
-
-static inline int
-dsk270_make_addr(unsigned int unit, kword_t sector, struct dsk270_addr *ap)
-{
-        kword_t cylinder;
-        kword_t sec;
-
-        if (ap == 0 || unit >= DSK270_UNITS ||
-            sector >= DSK270_SECTORS_PER_UNIT)
-                return -1;
-        cylinder = sector / (kword_t)DSK270_SECTORS_PER_CYL;
-        sec = sector % (kword_t)DSK270_SECTORS_PER_CYL;
-        ap->raw = ((kword_t)unit << DSK270_HW_UNIT_SHIFT) |
-            (cylinder << DSK270_CYL_SHIFT) | sec;
-        return 0;
 }
 
 int dsk270_read_sector(unsigned int unit, kword_t sector, kword_t *buf);

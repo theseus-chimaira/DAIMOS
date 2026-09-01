@@ -33,12 +33,7 @@
         .globl minit_dpy_cono
         .globl minit_wcnsls_cono
         .globl minit_wcnsls_plot
-        .globl minit_dtc_coni
-        .globl minit_dtc_cono
-        .globl minit_mtc_coni
-        .globl minit_mtc_cono
-        .globl minit_dsk_coni
-        .globl minit_dsk_cono
+        .globl minit_storage_probe
         .globl minit_slv_coni
         .globl minit_slv_cono
 
@@ -160,27 +155,27 @@ minit_wcnsls_cono:
 minit_wcnsls_plot:
         datao 0420,1
         popj 017,
-minit_dtc_coni:
-        coni 0210,1
-        popj 017,
-minit_dtc_cono:
-        cono 0210,0(1)
-        popj 017,
-
-minit_mtc_coni:
+; Probe the three Type-136 storage controllers through one compact entry.
+; AC1 kind: 0 DTC, 1 MTC, 2 DSK.  Return status in AC1 with DSK normalized
+; from its left half so all three callers test the same PI-level bits.
+minit_storage_probe:
+        jumpe 1,minit_storage_probe_dtc
+        caie 1,1
+        jrst minit_storage_probe_dsk
+        cono 0220,5
         coni 0220,1
+        cono 0220,0
         popj 017,
-
-minit_mtc_cono:
-        cono 0220,0(1)
+minit_storage_probe_dtc:
+        cono 0210,5
+        coni 0210,1
+        cono 0210,0
         popj 017,
-
-minit_dsk_coni:
+minit_storage_probe_dsk:
+        cono 0270,5
         coni 0270,1
-        popj 017,
-
-minit_dsk_cono:
-        cono 0270,0(1)
+        cono 0270,0
+        hlrz 1,1
         popj 017,
 minit_slv_coni:
         coni 0020,1

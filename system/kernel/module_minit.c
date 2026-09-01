@@ -888,71 +888,21 @@ storage_install(kword_t name)
 }
 
 void
-dtc_minit(void)
+storage_minit(unsigned int kind, kword_t name)
 {
-        kword_t name;
         kword_t st;
         unsigned int base;
 
-        name = (kword_t)SIXBIT("DTC   ");
-        minit_dtc_cono((kword_t)STORAGE_NATIVE_PI_LEVEL);
-        st = minit_dtc_coni();
-        minit_dtc_cono(0);
+        st = minit_storage_probe(kind);
         if ((st & STORAGE_ST_PI_MASK) != STORAGE_NATIVE_PI_LEVEL) {
                 minit_diag_nodev(name);
                 return;
         }
         base = storage_install(name);
-        module_service_set(MODULE_SERVICE_DTC_READ_BLOCK,
-            minit_export(name, base, STORAGE_X_DTC_READ_BLOCK));
-        module_service_set(MODULE_SERVICE_DTC_WRITE_BLOCK,
-            minit_export(name, base, STORAGE_X_DTC_WRITE_BLOCK));
-        minit_diag_ok(name);
-}
-
-void
-mtc_minit(void)
-{
-        kword_t name;
-        kword_t st;
-        unsigned int base;
-
-        name = (kword_t)SIXBIT("MTC   ");
-        minit_mtc_cono((kword_t)STORAGE_NATIVE_PI_LEVEL);
-        st = minit_mtc_coni();
-        minit_mtc_cono(0);
-        if ((st & STORAGE_ST_PI_MASK) != STORAGE_NATIVE_PI_LEVEL) {
-                minit_diag_nodev(name);
-                return;
-        }
-        base = storage_install(name);
-        module_service_set(MODULE_SERVICE_MTC_READ_WORDS,
-            minit_export(name, base, STORAGE_X_MTC_READ_WORDS));
-        module_service_set(MODULE_SERVICE_MTC_WRITE_WORDS,
-            minit_export(name, base, STORAGE_X_MTC_WRITE_WORDS));
-        minit_diag_ok(name);
-}
-
-void
-dsk_minit(void)
-{
-        kword_t name;
-        kword_t st;
-        unsigned int base;
-
-        name = (kword_t)SIXBIT("DSK270");
-        minit_dsk_cono((kword_t)STORAGE_NATIVE_PI_LEVEL);
-        st = minit_dsk_coni();
-        minit_dsk_cono(0);
-        if (((st >> 18) & STORAGE_ST_PI_MASK) != STORAGE_NATIVE_PI_LEVEL) {
-                minit_diag_nodev(name);
-                return;
-        }
-        base = storage_install(name);
-        module_service_set(MODULE_SERVICE_DSK_READ_SECTOR,
-            minit_export(name, base, STORAGE_X_DSK_READ_SECTOR));
-        module_service_set(MODULE_SERVICE_DSK_WRITE_SECTOR,
-            minit_export(name, base, STORAGE_X_DSK_WRITE_SECTOR));
+        module_service_set(MODULE_SERVICE_DTC_READ_BLOCK + kind,
+            minit_export(name, base, STORAGE_X_DTC_READ_BLOCK + kind));
+        module_service_set(MODULE_SERVICE_DTC_WRITE_BLOCK - kind,
+            minit_export(name, base, STORAGE_X_DTC_WRITE_BLOCK - kind));
         minit_diag_ok(name);
 }
 

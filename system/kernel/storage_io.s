@@ -5,9 +5,9 @@
 ; block I/O; controller completion/error status remains on PI5.
 ; storage_state encodes ownership as -1 DTC block read, -2 MTC read,
 ; -3 DSK read, -4 DSK write, -5 MTC write, -6 DTC block write.  Positive
-; values 1..6 are successful completion states; 7 is I/O error.  Runtime
-; DSK waits use storage_event;
-; boot DSK keeps the original polling path.
+; values 1..6 are successful boot/tape completion states; 7 is I/O error.
+; Runtime DSK requests keep their completion event on the blocked caller's
+; kernel stack and use a bounded two-pending-request queue per physical unit.
 ;
 ; mtc_read_words:
 ;   AC1 = unit, AC2 = destination, AC3 = maximum word count.
@@ -18,6 +18,9 @@
         .globl devicefs_v1_io_in
         .globl devicefs_v1_io_out
         .globl storage_pi_handler
+        .globl dsk_enqueue
+        .globl dsk_queue
+        .globl dsk_current_cyl
         .globl storage_dct_handler
         .globl dtc_read_block
         .globl dtc_write_block
@@ -74,6 +77,11 @@ storage_dct_reverse_read:
 storage_dct_reverse_advance:
         sosle storage_count
         jrst storage_dct_reverse_more
+        ; Keep the common completion-accounting formula valid for reverse
+        ; DTC: its per-word path does not update the BLKI/BLKO IOWD.
+        movei 1,0200
+        movem 1,storage_count
+        hrrzs storage_iowd
         jrst storage_dct_count_done
 storage_dct_reverse_more:
         sos dtc_request_buffer
@@ -200,23 +208,62 @@ storage_pi_dsk_status:
         jrst storage_pi_dsk_idle
         trnn 1,040000
         jrst pdp10_pi_handler_return
-        ; DFR is only interrupt-enabled by the runtime sleeping path.
-        cono 0270,000105
-        jrst storage_pi_dsk_signal
+        ; Runtime DFR starts DCT directly.  Boot never enables DFR PI.
+        move 2,storage_state
+        addi 2,3
+        jumpe 2,storage_pi_dsk_start_read
+        cono 0200,003403
+        cono 0270,002105
+        jrst pdp10_pi_handler_return
+storage_pi_dsk_start_read:
+        cono 0200,004003
+        cono 0270,001105
+        jrst pdp10_pi_handler_return
+
 storage_pi_dsk_idle:
         cono 0270,0
+        skipn 2,dsk_active_request
+        jrst storage_pi_dsk_boot_done
+        ; Runtime completion publishes the caller-owned event.  Dispatch of
+        ; the next queued request is left to the awakened process, keeping the
+        ; PI ABI at AC1..AC3 only.
+        hrrz 1,2
+        aos 1(1)                     ; event 0 -> success value 1
+        tlne 2,1
+        jrst storage_pi_dsk_count_write
+        movei 1,0200
+        addm 1,devicefs_v1_io_in+011
+        jrst storage_pi_dsk_complete
+storage_pi_dsk_count_write:
+        movei 1,0200
+        addm 1,devicefs_v1_io_out+011
+storage_pi_dsk_complete:
+        hrrz 1,dsk_active_request
+        setzm storage_state
+        setzm dsk_active_request
+        aoj 1,
+        pushj 017,proc_v1_wakeup_event
+        jrst pdp10_pi_handler_return
+storage_pi_dsk_boot_done:
         movns storage_state
-        jrst storage_pi_dsk_signal
+        jrst pdp10_pi_handler_return
+
 storage_pi_dsk_error:
-        movei 2,7
-        movem 2,storage_state
         cono 0270,0
         cono 0200,0
-storage_pi_dsk_signal:
-        ; Boot has no waiter, so wakeup is a cheap no-op there.
-        setom storage_event
-        movei 1,storage_event
+        skipn 2,dsk_active_request
+        jrst storage_pi_dsk_boot_error
+        hrrz 1,2
+        movei 2,7
+        movem 2,1(1)
+        setzm storage_state
+        setzm dsk_active_request
+        aoj 1,
         pushj 017,proc_v1_wakeup_event
+        jrst pdp10_pi_handler_return
+storage_pi_dsk_boot_error:
+        movei 2,7
+        movem 2,storage_state
         jrst pdp10_pi_handler_return
 storage_pi_error:
         movei 1,7
@@ -477,52 +524,168 @@ mtc_rw_start:
         jrst storage_wait
 
 ; AC1 raw hardware address, AC2 destination/source of one 128-word sector.
-; Read/write share address setup, DFR wait, and controller start; the two tiny
-; entry stubs provide only direction-specific DCT/DSK command words.
+; Boot keeps a direct polling caller.  Runtime callers put a two-word request
+; (raw,,buffer plus event) on their kernel stack; queued slots contain only an
+; op,,request-pointer descriptor, so queue RAM never owns transfer buffers.
 dsk_read_sector:
+        skipn proc_v1_table+2
+        jrst dsk_boot_read
+        setz 4,
+        jrst dsk_runtime_request
+
+dsk_write_sector:
+        skipn proc_v1_table+2
+        jrst dsk_boot_write
+        movei 4,1
+
+dsk_runtime_request:
+        hrlz 5,1
+        hrr 5,2
+        push 017,5
+        setz 5,
+        push 017,5
+        movei 1,-1(017)
+        jumpe 4,dsk_runtime_submit
+        hrli 1,1
+dsk_runtime_submit:
+        skipe dsk_active_request
+        jrst dsk_runtime_queue
+        skipe storage_state
+        jrst dsk_runtime_busy
+        movem 1,dsk_active_request
+        pushj 017,dsk_start_active
+        jrst dsk_runtime_wait
+dsk_runtime_queue:
+        pushj 017,dsk_enqueue
+        jumpl 1,dsk_runtime_submit_fail
+dsk_runtime_wait:
+        movei 1,(017)
+        pushj 017,proc_v1_wait_event
+        pushj 017,dsk_dispatch
+        move 1,(017)
+        sub 017,[2,,2]
+        sojn 1,dsk_runtime_ioerr
+        popj 017,
+dsk_runtime_busy:
+        hrroi 1,0777775
+dsk_runtime_submit_fail:
+        sub 017,[2,,2]
+        popj 017,
+dsk_runtime_ioerr:
+        hrroi 1,0777773
+        popj 017,
+
+; Two pending descriptors per unit.  q0 is always the next request according
+; to one-way elevator distance (cylinder-current)&01777; q1 is the later one.
+dsk_enqueue:
+        hrrz 2,1
+        hlrz 2,(2)
+        move 4,2
+        lsh 4,-020
+        andi 4,3
+        move 3,4
+        lsh 3,1
+        addi 3,dsk_queue
+        skipn (3)
+        jrst dsk_enqueue_first
+        skipe 1(3)
+        jrst pdp10_ret_busy_v34
+        move 5,(3)
+        movem 1,1(3)
+        move 6,dsk_current_cyl(4)
+        andi 2,0177700
+        sub 2,6
+        andi 2,0177700
+        hrrz 7,5
+        hlrz 7,(7)
+        andi 7,0177700
+        sub 7,6
+        andi 7,0177700
+        caml 2,7
+        jrst dsk_enqueue_ok
+        movem 1,(3)
+        movem 5,1(3)
+dsk_enqueue_ok:
+        setz 1,
+        popj 017,
+dsk_enqueue_first:
+        movem 1,(3)
+        setz 1,
+        popj 017,
+
+; Process-context dispatcher.  Fairness between physical units is deliberately
+; not added here: the frozen V1 document leaves that as a measured V1B item.
+; Within each unit, q0 already embodies the TENEX one-way elevator policy.
+dsk_dispatch:
+        skipe dsk_active_request
+        popj 017,
+        skipe storage_state
+        popj 017,
+        setz 4,
+dsk_dispatch_scan:
+        skipn 1,dsk_queue(4)
+        jrst dsk_dispatch_next
+        move 2,dsk_queue+1(4)
+        movem 2,dsk_queue(4)
+        setzm dsk_queue+1(4)
+        movem 1,dsk_active_request
+        jrst dsk_start_active
+dsk_dispatch_next:
+        addi 4,2
+        caie 4,010
+        jrst dsk_dispatch_scan
+        popj 017,
+
+; Start the descriptor in dsk_active_request.  The event was zeroed by its
+; caller before submission.  Current cylinder is updated to the seek target,
+; which is the origin relevant to requests queued while that seek is pending.
+dsk_start_active:
+        move 4,dsk_active_request
+        hrrz 2,4
+        move 3,(2)
+        hlrz 1,3
+        hrrz 2,3
+        move 5,1
+        lsh 5,-020
+        andi 5,3
+        move 6,1
+        andi 6,0177700
+        movem 6,dsk_current_cyl(5)
+        movei 3,0200
+        tlne 4,1
+        jrst dsk_start_write
+        pushj 017,storage_setup_read
+        hrroi 3,0777775
+        jrst dsk_start_go
+dsk_start_write:
+        pushj 017,storage_setup_write
+        hrroi 3,0777774
+dsk_start_go:
+        movem 3,storage_state
+        datao 0270,1
+        cono 0270,000125
+        setz 1,
+        popj 017,
+
+; KINIT has no caller event, but PI is already live after MINIT.  Start the
+; same DFR/IDS interrupt state machine as runtime and poll only storage_state.
+dsk_boot_read:
         skipe storage_state
         jrst pdp10_ret_busy_v34
         movei 3,0200
         pushj 017,storage_setup_read
         hrroi 3,0777775
-        movei 4,004003
-        movei 5,001105
-        jrst dsk_rw_start
-
-dsk_write_sector:
+        jrst dsk_boot_start
+dsk_boot_write:
         skipe storage_state
         jrst pdp10_ret_busy_v34
         movei 3,0200
         pushj 017,storage_setup_write
         hrroi 3,0777774
-        movei 4,003403
-        movei 5,002105
-
-dsk_rw_start:
+dsk_boot_start:
         movem 3,storage_state
         datao 0270,1
-        skipn proc_v1_table+2
-        jrst dsk_rw_wait_dfr
-        setzm storage_event
         cono 0270,000125
-        movei 1,storage_event
-        pushj 017,proc_v1_wait_event
-        skipl storage_state
-        jrst storage_wait
-        setzm storage_event
-        cono 0200,0(4)
-        cono 0270,0(5)
-        movei 1,storage_event
-        pushj 017,proc_v1_wait_event
-        jrst storage_wait
-dsk_rw_wait_dfr:
-        coni 0270,3
-        trne 3,001777
-        jrst storage_ioerr
-        trnn 3,040000
-        jrst dsk_rw_wait_dfr
-        cono 0200,0(4)
-        cono 0270,0(5)
 storage_wait:
         move 1,storage_state
         jumpl 1,storage_wait
@@ -533,53 +696,32 @@ storage_ioerr:
         hrroi 1,0777773
         popj 017,
 storage_wait_done:
-        ; The IOWD left half retains the untransferred count for MTC/DSK.
-        ; DTC block I/O is always exactly 128 words; reverse transfers do not
-        ; advance the IOWD, so account its fixed block size directly.
+        ; transferred = initial count + final signed IOWD count.  Reverse DTC
+        ; normalizes these two words at its final per-word interrupt above.
         move 2,storage_iowd
         hlrz 2,2
         add 2,storage_count
         andi 2,0777777
-        caie 1,1
-        jrst storage_account_mtc_read
-        movei 2,0200
-        addm 2,devicefs_v1_io_in+7
-        jrst storage_account_done
-storage_account_mtc_read:
-        caie 1,2
-        jrst storage_account_dsk_read
-        addm 2,devicefs_v1_io_in+010
-        jrst storage_account_done
-storage_account_dsk_read:
-        caie 1,3
-        jrst storage_account_dsk_write
-        addm 2,devicefs_v1_io_in+011
-        jrst storage_account_done
-storage_account_dsk_write:
-        caie 1,4
-        jrst storage_account_mtc_write
-        addm 2,devicefs_v1_io_out+011
-        jrst storage_account_done
-storage_account_mtc_write:
-        caie 1,5
-        jrst storage_account_dtc_write
-        addm 2,devicefs_v1_io_out+010
-        jrst storage_account_done
-storage_account_dtc_write:
-        movei 2,0200
-        addm 2,devicefs_v1_io_out+7
-storage_account_done:
-        ; Completion code 3 is DSK; tape operations can return immediately.
-        caie 1,3
+
+        ; Completion owners are symmetric: 1/2/3 are DTC/MTC/DSK reads,
+        ; 4/5/6 are DSK/MTC/DTC writes.  Derive the device counter instead of
+        ; maintaining six nearly identical accounting tails.
+        move 3,1
+        subi 3,4
+        jumpl 3,storage_account_read
+        movn 5,3
+        addi 5,011
+        movei 4,devicefs_v1_io_out
+        jrst storage_account_add
+storage_account_read:
+        addi 3,4
+        move 5,3
+        addi 5,6
+        movei 4,devicefs_v1_io_in
+storage_account_add:
+        add 4,5
+        addm 2,(4)
         jrst storage_ok
-        coni 0270,2
-dsk_wait_ids:
-        trne 2,001777
-        jrst storage_ioerr
-        trne 2,0400000
-        jrst storage_ok
-        coni 0270,2
-        jrst dsk_wait_ids
 
 ; DCT drain/ack handlers run only after a final BLKO has fallen through
 ; the PI3 vector.  storage_state keeps the controller owner unchanged, so
@@ -617,7 +759,9 @@ storage_dct_dsk_write_ack2:
 storage_state: .block 1
 storage_iowd:  .block 1
 storage_count: .block 1
-storage_event: .block 1
+dsk_active_request: .block 1
+dsk_current_cyl: .block 4
+dsk_queue: .block 010
 dtc_active_unit: .block 1
 dtc_request_unit: .block 1
 dtc_request_block: .block 1
