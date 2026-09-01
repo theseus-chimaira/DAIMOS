@@ -73,7 +73,7 @@ exec_native_syscall_v1:
 	.word	native_sys_dup_v1
 	.word	native_sys_symlink_v1
 %L66:
-	pushj 17,file_v1_close_all
+	pushj 17,file_close_all
 	pushj 17,mach_return_to_kernel_request_v1
 	hrrz 1,mach_syscall_ac2_v1
 	jrst %L65
@@ -90,11 +90,11 @@ exec_native_syscall_v1:
 	andi 3,034
 	ior 3,4
 	move 2,3
-	pushj 17,file_v1_open
+	pushj 17,file_open
 	jrst %L65
 %L72:
 	hrrz 1,mach_syscall_ac2_v1
-	pushj 17,file_v1_close
+	pushj 17,file_close
 	jrst %L65
 %L73:
 	move 1,mach_syscall_ac2_v1
@@ -106,14 +106,14 @@ exec_native_syscall_v1:
 	move 1,mach_syscall_ac2_v1
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
-	pushj 17,file_v1_chdir
+	pushj 17,file_chdir
 	jrst %L65
 %L80:
 	move 1,mach_syscall_ac2_v1
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
 	hrrz 2,mach_syscall_ac3_v1
-	pushj 17,file_v1_getcwd
+	pushj 17,file_getcwd
 	jrst %L65
 %L83:
 	move 1,mach_syscall_ac3_v1
@@ -122,7 +122,7 @@ exec_native_syscall_v1:
 	move 2,1
 	hrrz 1,mach_syscall_ac2_v1
 	hrrz 3,mach_syscall_ac4_v1
-	pushj 17,file_v1_read_words
+	pushj 17,file_read_words
 	jrst %L65
 %L86:
 	move 1,mach_syscall_ac3_v1
@@ -132,7 +132,7 @@ exec_native_syscall_v1:
 	hrrz 1,mach_syscall_ac2_v1
 	hrrz 3,mach_syscall_ac4_v1
 	move 4,mach_syscall_ac5_v1
-	pushj 17,file_v1_write_words
+	pushj 17,file_write_words
 	jrst %L65
 %L90:
 	move 1,mach_syscall_ac2_v1
@@ -145,7 +145,7 @@ exec_native_syscall_v1:
 	jumpe 1,%L137
 	move 2,1
 	move 1,5
-	pushj 17,file_v1_stat_path
+	pushj 17,file_stat_path
 	jrst %L65
 %L97:
 	move 1,mach_syscall_ac3_v1
@@ -153,20 +153,20 @@ exec_native_syscall_v1:
 	jumpe 1,%L137
 	move 2,1
 	hrrz 1,mach_syscall_ac2_v1
-	pushj 17,file_v1_readdir
+	pushj 17,file_readdir
 	jrst %L65
 %L102:
 	move 1,mach_syscall_ac2_v1
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
 	hrrz 2,mach_syscall_ac3_v1
-	pushj 17,file_v1_mkdir
+	pushj 17,file_mkdir
 	jrst %L65
 %L107:
 	move 1,mach_syscall_ac2_v1
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
-	pushj 17,file_v1_unlink
+	pushj 17,file_unlink
 	jrst %L65
 %L112:
 	move 1,mach_syscall_ac2_v1
@@ -179,14 +179,14 @@ exec_native_syscall_v1:
 	jumpe 1,%L137
 	move 2,1
 	move 1,5
-	pushj 17,file_v1_rename
+	pushj 17,file_rename
 	jrst %L65
 %L119:
 	move 1,mach_syscall_ac2_v1
 	pushj 17,sys_v1_user_words
 	jumpe 1,%L137
 	move 2,mach_syscall_ac3_v1
-	pushj 17,file_v1_truncate
+	pushj 17,file_truncate
 	jrst %L65
 %L124:
 	move 1,mach_syscall_ac3_v1
@@ -205,7 +205,7 @@ exec_native_syscall_v1:
 %L134:
 	hrrz 1,mach_syscall_ac2_v1
 	jumpe 1,native_sys_getchar
-	pushj 17,file_v1_readchar
+	pushj 17,file_readchar
 	camn 1,[-3]
 	jrst native_sys_getchar
 	jrst %L65
@@ -217,7 +217,7 @@ exec_native_syscall_v1:
 	cail 1,3
 	trna
 	jrst native_sys_writechar_tty
-	pushj 17,file_v1_writechar
+	pushj 17,file_writechar
 	came 1,[-3]
 	jrst %L65
 native_sys_writechar_tty:
@@ -231,7 +231,7 @@ native_sys_dtc0_path_v1:
         pushj 17,sys_v1_user_words
         jumpe 1,native_sys_dtc0_path_fail_v1
         movei 2,mach_syscall_ac5_v1
-        pushj 17,file_v1_lookup_path
+        pushj 17,file_lookup_path
         jumpn 1,native_sys_dtc0_path_fail_v1
         move 1,mach_syscall_ac5_v1
         came 1,[020002000014]           ; DEVICEFS DTC0
@@ -246,11 +246,11 @@ native_sys_chmod_v1:
         pushj 17,sys_v1_user_words
         jumpe 1,%L137
         movei 2,mach_syscall_ac5_v1
-        pushj 17,file_v1_lookup_path
+        pushj 17,file_lookup_path
         jumpn 1,%L137
         move 1,mach_syscall_ac5_v1
         hrrz 2,mach_syscall_ac3_v1
-        pushj 17,vfs_v1_chmod
+        pushj 17,vfs_chmod
         jrst %L65
 
 native_sys_dtfs_format_v1:
@@ -269,7 +269,7 @@ native_sys_dtfs_mount_v1:
         pushj 17,sys_v1_user_words
         jumpe 1,%L137
         movei 2,mach_syscall_ac5_v1
-        pushj 17,file_v1_lookup_path
+        pushj 17,file_lookup_path
         jumpn 1,%L137
         hrrz 3,mach_syscall_ac4_v1
         caile 3,1
@@ -285,21 +285,21 @@ native_sys_unmount_v1:
         pushj 17,sys_v1_user_words
         jumpe 1,%L137
         movei 2,mach_syscall_ac5_v1
-        pushj 17,file_v1_lookup_path
+        pushj 17,file_lookup_path
         jumpn 1,%L137
         move 1,mach_syscall_ac5_v1
-        pushj 17,vfs_v1_unmount
+        pushj 17,vfs_unmount
         jrst %L65
 
 native_sys_flock_v1:
         hrrz 1,mach_syscall_ac2_v1
         hrrz 2,mach_syscall_ac3_v1
-        pushj 17,file_v1_lock
+        pushj 17,file_lock
         jrst %L65
 
 native_sys_dup_v1:
         hrrz 1,mach_syscall_ac2_v1
-        pushj 17,file_v1_dup
+        pushj 17,file_dup
         jrst %L65
 
 native_sys_symlink_v1:
@@ -312,7 +312,7 @@ native_sys_symlink_v1:
         jumpe 1,%L137
         move 2,1
         move 1,5
-        pushj 17,file_v1_symlink
+        pushj 17,file_symlink
         jrst %L65
 
 native_sys_getchar:

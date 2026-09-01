@@ -1,7 +1,7 @@
-#include "d6fs_disk_v2.h"
+#include "d6fs_disk.h"
 #include "kcore.h"
 #include "dsk270.h"
-#include "d6fs_provider_v2.h"
+#include "d6fs_provider.h"
 
 static struct d6fs_dsk_v2 d6fs_dsk_v2_boot_disk;
 
@@ -10,10 +10,10 @@ d6fs_dsk_v2_read_block(void *opaque, kword_t logical,
     kword_t block[D6FS_V2_BLOCK_WORDS])
 {
         struct d6fs_dsk_v2 *disk;
-        struct d6fs_v2_phys phys;
+        struct d6fs_phys phys;
         disk = (struct d6fs_dsk_v2 *)opaque;
         if (disk == 0 || block == 0 ||
-            d6fs_v2_map_block(&disk->set, logical, &phys) != 0 ||
+            d6fs_map_block(&disk->set, logical, &phys) != 0 ||
             phys.member >= disk->set.members ||
             phys.block >= disk->set.blocks[phys.member])
                 return -1;
@@ -26,10 +26,10 @@ d6fs_dsk_v2_write_block(void *opaque, kword_t logical,
     const kword_t block[D6FS_V2_BLOCK_WORDS])
 {
         struct d6fs_dsk_v2 *disk;
-        struct d6fs_v2_phys phys;
+        struct d6fs_phys phys;
         disk = (struct d6fs_dsk_v2 *)opaque;
         if (disk == 0 || block == 0 ||
-            d6fs_v2_map_block(&disk->set, logical, &phys) != 0 ||
+            d6fs_map_block(&disk->set, logical, &phys) != 0 ||
             phys.member >= disk->set.members ||
             phys.block >= disk->set.blocks[phys.member])
                 return -1;

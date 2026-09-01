@@ -2,14 +2,14 @@
         .text
         .globl  pdp10_ret_zero_v1
         .globl  pdp10_ret_neg1_v1
-        .globl  vfs_v1_sixbit_readchar
+        .globl  vfs_sixbit_readchar
         .globl  kfmt_u36_decimal_readchar
         .globl  proc_v1_table
         .globl  proc_v1_comm_words
 
-; int procfs_v1_stat(vnode_v1_t node, struct vfs_v1_stat *st)
-        .globl procfs_v1_stat
-procfs_v1_stat:
+; int procfs_stat(vnode_t node, struct vfs_stat *st)
+        .globl procfs_stat
+procfs_stat:
         jumpe   2,procfs_stat_fail
         hlrz    3,1
         caie    3,030001               ; root directory
@@ -43,9 +43,9 @@ procfs_stat_store:
 procfs_stat_fail:
         jrst    pdp10_ret_neg1_v1
 
-; int procfs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp)
-        .globl  procfs_v1_readchar
-procfs_v1_readchar:
+; int procfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
+        .globl  procfs_readchar
+procfs_readchar:
         jumpe   3,procfs_readchar_fail
         hlrz    4,1
         caige   4,030003               ; PPID..COMM kinds 3..6
@@ -61,7 +61,7 @@ procfs_v1_readchar:
         move    3,2                    ; vfs readchar off
         movei   2,6
         move    1,proc_v1_comm_words(5)
-        jrst    vfs_v1_sixbit_readchar
+        jrst    vfs_sixbit_readchar
 procfs_readchar_not_comm:
         caie    4,030004               ; STATE
         jrst    procfs_readchar_numeric
@@ -69,7 +69,7 @@ procfs_readchar_not_comm:
         move    3,2
         movei   2,3
         movsi   1,0626556              ; SIXBIT /RUN   /
-        jrst    vfs_v1_sixbit_readchar
+        jrst    vfs_sixbit_readchar
 procfs_readchar_numeric:
         caie    4,030003               ; PPID
         jrst    procfs_readchar_words
@@ -85,10 +85,10 @@ procfs_readchar_fail:
         jrst    pdp10_ret_neg1_v1
 
 ; Fixed two-process PROCFS directory operations.
-; int procfs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
-;     vnode_v1_t *nodep)
-        .globl  procfs_v1_lookup
-procfs_v1_lookup:
+; int procfs_lookup(vnode_t dir, const struct vfs_name *name,
+;     vnode_t *nodep)
+        .globl  procfs_lookup
+procfs_lookup:
         jumpe   2,procfs_lookup_fail
         jumpe   3,procfs_lookup_fail
         hlrz    4,1
@@ -145,10 +145,10 @@ procfs_lookup_file:
 procfs_lookup_fail:
         jrst    pdp10_ret_neg1_v1
 
-; int procfs_v1_readdir(vnode_v1_t dir, unsigned int off,
-;     struct vfs_v1_dirent *ent)
-        .globl  procfs_v1_readdir
-procfs_v1_readdir:
+; int procfs_readdir(vnode_t dir, unsigned int off,
+;     struct vfs_dirent *ent)
+        .globl  procfs_readdir
+procfs_readdir:
         jumpe   3,procfs_readdir_fail
         hlrz    4,1
         caie    4,030001

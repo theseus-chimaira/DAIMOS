@@ -17,8 +17,8 @@ static int dsys_v1_readchar(int fd) { return DSYS_V1_CALL1(SYS_V1_READCHAR,fd); 
 static int dsys_v1_writechar(int fd, int ch) { return DSYS_V1_CALL2(SYS_V1_WRITECHAR,fd,ch); }
 static int dsys_v1_read_words(int fd, kword_t *b, unsigned int n) { return DSYS_V1_CALL3(SYS_V1_READ_WORDS,fd,b,n); }
 static int dsys_v1_write_words(int fd, kword_t *b, unsigned int n, kword_t c) { return DSYS_V1_CALL4(SYS_V1_WRITE_WORDS,fd,b,n,c); }
-static int dsys_v1_stat(kword_t *p, struct vfs_v1_stat *s) { return DSYS_V1_CALL2(SYS_V1_STAT,p,s); }
-static int dsys_v1_dirread(int fd, struct vfs_v1_dirent *e) { return DSYS_V1_CALL2(SYS_V1_DIRREAD,fd,e); }
+static int dsys_v1_stat(kword_t *p, struct vfs_stat *s) { return DSYS_V1_CALL2(SYS_V1_STAT,p,s); }
+static int dsys_v1_dirread(int fd, struct vfs_dirent *e) { return DSYS_V1_CALL2(SYS_V1_DIRREAD,fd,e); }
 static int dsys_v1_mkdir(kword_t *p) { return DSYS_V1_CALL2(SYS_V1_MKDIR,p,0777U); }
 static int dsys_v1_unlink(kword_t *p) { return DSYS_V1_CALL1(SYS_V1_UNLINK,p); }
 static int dsys_v1_rename(kword_t *a, kword_t *b) { return DSYS_V1_CALL2(SYS_V1_RENAME,a,b); }

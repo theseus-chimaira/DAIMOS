@@ -22,6 +22,6 @@ int u_v1_crlf(int fd);
 int u_v1_s6_eq(const kword_t *s, const char *text);
 int u_v1_s6_pack(kword_t *dst, unsigned int words, const char *src);
 int u_v1_s6_from_dirent(kword_t *dst, unsigned int words,
-    const struct vfs_v1_dirent *ent);
+    const struct vfs_dirent *ent);
 
 #endif

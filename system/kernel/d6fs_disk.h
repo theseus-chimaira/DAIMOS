@@ -1,8 +1,8 @@
 #ifndef DAIMON_D6FS_DISK_V2_H
 #define DAIMON_D6FS_DISK_V2_H
 
-#include "d6fs_v2.h"
-#include "vfs_v1.h"
+#include "d6fs.h"
+#include "vfs.h"
 
 #define D6FS_DSK_V2_BOOT_MEMBERS       4U
 #define D6FS_DSK_V2_LAYOUT_MAGIC        0442654636222UL /* SIXBIT /D6FSR2/ */
@@ -18,7 +18,7 @@
 #define D6FS_DSK_V2_LAYOUT_BADMAP_BLOCKS 017U
 
 struct d6fs_dsk_v2 {
-        struct d6fs_v2_diskset set;
+        struct d6fs_diskset set;
         unsigned int unit[D6FS_V2_MAX_MEMBERS];
         kword_t base[D6FS_V2_MAX_MEMBERS];
         kword_t swap_tail_blocks;

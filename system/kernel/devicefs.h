@@ -1,7 +1,7 @@
 #ifndef DAIMON_DEVICEFS_V1_H
 #define DAIMON_DEVICEFS_V1_H
 
-#include "vfs_v1.h"
+#include "vfs.h"
 
 #define DEVICEFS_V1_PROVIDER            2U
 #define DEVICEFS_V1_KIND_ROOT           1U
@@ -55,12 +55,12 @@
 #define DEVICEFS_V1_IO_OUT_DSK0         9U
 #define DEVICEFS_V1_IO_OUT_COUNT        10U
 
-extern kword_t devicefs_v1_present;
-int devicefs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
-    vnode_v1_t *nodep);
-int devicefs_v1_readdir(vnode_v1_t dir, unsigned int off,
-    struct vfs_v1_dirent *ent);
-int devicefs_v1_stat(vnode_v1_t node, struct vfs_v1_stat *st);
-int devicefs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp);
+extern kword_t devicefs_present;
+int devicefs_lookup(vnode_t dir, const struct vfs_name *name,
+    vnode_t *nodep);
+int devicefs_readdir(vnode_t dir, unsigned int off,
+    struct vfs_dirent *ent);
+int devicefs_stat(vnode_t node, struct vfs_stat *st);
+int devicefs_readchar(vnode_t node, kword_t off, unsigned int *chp);
 
 #endif

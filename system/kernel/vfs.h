@@ -4,7 +4,7 @@
 #include "kcore.h"
 
 /* Compact vnode handle: provider:6, kind/mount:12, index:18. */
-typedef kword_t vnode_v1_t;
+typedef kword_t vnode_t;
 
 #define VFS_V1_NODE_NONE        0UL
 #define VFS_V1_PROVIDER_SHIFT   30U
@@ -68,66 +68,66 @@ typedef kword_t vnode_v1_t;
         (VFS_V1_SIXCHAR(c) << 18) | (VFS_V1_SIXCHAR(d) << 12) | \
         (VFS_V1_SIXCHAR(e) << 6) | VFS_V1_SIXCHAR(f))
 
-struct vfs_v1_name {
+struct vfs_name {
         unsigned int chars;
         kword_t words[VFS_V1_NAME_WORDS];
 };
 
-struct vfs_v1_dirent {
-        struct vfs_v1_name name;
+struct vfs_dirent {
+        struct vfs_name name;
         unsigned int type;
 };
 
-struct vfs_v1_stat {
+struct vfs_stat {
         unsigned int type;
         unsigned int mode;
         kword_t size_chars;
         kword_t size_words;
 };
 
-int vfs_v1_name_set6(struct vfs_v1_name *name, kword_t word,
+int vfs_name_set6(struct vfs_name *name, kword_t word,
     unsigned int chars);
-int vfs_v1_name_is6(const struct vfs_v1_name *name, kword_t word,
+int vfs_name_is6(const struct vfs_name *name, kword_t word,
     unsigned int chars);
-int vfs_v1_sixbit_readchar(kword_t word, unsigned int nchars, kword_t off,
+int vfs_sixbit_readchar(kword_t word, unsigned int nchars, kword_t off,
     unsigned int *chp);
 
-int vfs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
-    vnode_v1_t *nodep);
-int vfs_v1_readdir(vnode_v1_t dir, unsigned int off,
-    struct vfs_v1_dirent *ent);
-int vfs_v1_stat(vnode_v1_t node, struct vfs_v1_stat *st);
-int vfs_v1_parent(vnode_v1_t node, vnode_v1_t *parentp);
-int vfs_v1_parent_name(vnode_v1_t node, vnode_v1_t *parentp,
-    struct vfs_v1_name *namep);
-int vfs_v1_create(vnode_v1_t dir, const struct vfs_v1_name *name,
-    unsigned int mode, vnode_v1_t *nodep);
-int vfs_v1_mkdir(vnode_v1_t dir, const struct vfs_v1_name *name,
-    unsigned int mode, vnode_v1_t *nodep);
-int vfs_v1_symlink(vnode_v1_t dir, const struct vfs_v1_name *name,
-    const kword_t *target, unsigned int target_chars, vnode_v1_t *nodep);
-int vfs_v1_unlink(vnode_v1_t dir, const struct vfs_v1_name *name);
-int vfs_v1_rename(vnode_v1_t olddir, const struct vfs_v1_name *oldname,
-    vnode_v1_t newdir, const struct vfs_v1_name *newname);
-int vfs_v1_truncate(vnode_v1_t node, unsigned int words, kword_t size_chars);
-int vfs_v1_chmod(vnode_v1_t node, unsigned int mode);
-int vfs_v1_read_words(vnode_v1_t node, unsigned int off, kword_t *buf,
+int vfs_lookup(vnode_t dir, const struct vfs_name *name,
+    vnode_t *nodep);
+int vfs_readdir(vnode_t dir, unsigned int off,
+    struct vfs_dirent *ent);
+int vfs_stat(vnode_t node, struct vfs_stat *st);
+int vfs_parent(vnode_t node, vnode_t *parentp);
+int vfs_parent_name(vnode_t node, vnode_t *parentp,
+    struct vfs_name *namep);
+int vfs_create(vnode_t dir, const struct vfs_name *name,
+    unsigned int mode, vnode_t *nodep);
+int vfs_mkdir(vnode_t dir, const struct vfs_name *name,
+    unsigned int mode, vnode_t *nodep);
+int vfs_symlink(vnode_t dir, const struct vfs_name *name,
+    const kword_t *target, unsigned int target_chars, vnode_t *nodep);
+int vfs_unlink(vnode_t dir, const struct vfs_name *name);
+int vfs_rename(vnode_t olddir, const struct vfs_name *oldname,
+    vnode_t newdir, const struct vfs_name *newname);
+int vfs_truncate(vnode_t node, unsigned int words, kword_t size_chars);
+int vfs_chmod(vnode_t node, unsigned int mode);
+int vfs_read_words(vnode_t node, unsigned int off, kword_t *buf,
     unsigned int nwords);
-int vfs_v1_write_words(vnode_v1_t node, unsigned int off,
+int vfs_write_words(vnode_t node, unsigned int off,
     const kword_t *buf, unsigned int nwords, kword_t size_chars);
-int vfs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp);
-int vfs_v1_writechar(vnode_v1_t node, kword_t off, unsigned int ch);
-int vfs_v1_sync(vnode_v1_t node);
-int vfs_v1_lock(vnode_v1_t node, unsigned int owner, unsigned int op);
-void vfs_v1_unlock_owner(vnode_v1_t node, unsigned int owner);
+int vfs_readchar(vnode_t node, kword_t off, unsigned int *chp);
+int vfs_writechar(vnode_t node, kword_t off, unsigned int ch);
+int vfs_sync(vnode_t node);
+int vfs_lock(vnode_t node, unsigned int owner, unsigned int op);
+void vfs_unlock_owner(vnode_t node, unsigned int owner);
 
-vnode_v1_t vfs_v1_follow_mount(vnode_v1_t node);
-int vfs_v1_mount(vnode_v1_t target, unsigned int provider,
+vnode_t vfs_follow_mount(vnode_t node);
+int vfs_mount(vnode_t target, unsigned int provider,
     unsigned int kind, unsigned int index, unsigned int flags,
-    vnode_v1_t *rootp);
-int vfs_v1_unmount(vnode_v1_t root);
-int vfs_v1_readonly(vnode_v1_t node);
-vnode_v1_t vfs_v1_root(void);
-int vfs_v1_set_root(vnode_v1_t node);
+    vnode_t *rootp);
+int vfs_unmount(vnode_t root);
+int vfs_readonly(vnode_t node);
+vnode_t vfs_root(void);
+int vfs_set_root(vnode_t node);
 
 #endif

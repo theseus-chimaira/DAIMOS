@@ -1,8 +1,8 @@
 ; syscall_info_pdp10.s -- compact fixed-layout PROCINFO/MEMINFO syscalls.
         .text
         .globl  pdp10_ret_neg1_v1
-        .globl  file_v1_root
-        .globl  file_v1_table
+        .globl  file_root
+        .globl  file_table
         .globl  proc_v1_table
         .globl  proc_v1_comm_words
         .globl  kcore_resident_end_v1
@@ -34,7 +34,7 @@ sys_procinfo_fail:
 sys_v1_meminfo:
         move    2,1                    ; validated info pointer
         movei   1,0                    ; count active FILE slots in place
-        movei   3,file_v1_table+2
+        movei   3,file_table+2
         movei   4,040
 sys_meminfo_file_loop:
         move    5,(3)
@@ -49,7 +49,7 @@ sys_meminfo_file_loop:
         movem   3,1(2)
         hlrz    3,proc_v1_table+3
         movem   3,2(2)
-        move    4,file_v1_root
+        move    4,file_root
         jumpe   4,sys_meminfo_no_ramfs
         move    3,4(4)
         movem   3,3(2)

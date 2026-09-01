@@ -1,7 +1,7 @@
 #ifndef DAIMON_INITFS_V1_H
 #define DAIMON_INITFS_V1_H
 
-#include "memfs_v1.h"
+#include "memfs.h"
 
 #define INITFS_V1_MAGIC         0051646060UL
 #define INITFS_V1_VERSION       1U

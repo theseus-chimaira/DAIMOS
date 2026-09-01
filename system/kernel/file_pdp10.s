@@ -1,24 +1,24 @@
 ; FILE runtime state lives in the RAMFS0 metadata prefix.
-        .equ    file_v1_table,0601000
-        .equ    file_v1_cwd,0601140
-        .equ    file_v1_alias_cwd,0601141
-        .globl  file_v1_table
-        .globl  file_v1_cwd
-        .globl  file_v1_alias_cwd
+        .equ    file_table,0601000
+        .equ    file_cwd,0601140
+        .equ    file_alias_cwd,0601141
+        .globl  file_table
+        .globl  file_cwd
+        .globl  file_alias_cwd
 
 ; file_pdp10.s -- compact resident FILE/path primitives for PDP-6/PDP-10.
         .text
         .globl  pdp10_ret_zero_v1
         .globl  pdp10_ret_neg1_v1
 
-; int file_v1_component(const kword_t *path, unsigned int *posp,
-;     struct vfs_v1_name *name)
+; int file_component(const kword_t *path, unsigned int *posp,
+;     struct vfs_name *name)
 ;
 ; Packed paths and VFS names both use six 6-bit SIXBIT characters per word.
 ; Build byte pointers once and copy the component directly instead of
 ; repeatedly dividing, shifting, decoding to ASCII, and re-encoding.
-        .globl  file_v1_component
-file_v1_component:
+        .globl  file_component
+file_component:
         jumpe   1,file_component_fail
         jumpe   2,file_component_fail
         jumpe   3,file_component_fail
@@ -54,7 +54,7 @@ file_component_skip:
         jrst    file_component_skip
 
 file_component_start:
-; Clear the five-word vfs_v1_name and make an output SIXBIT byte pointer.
+; Clear the five-word vfs_name and make an output SIXBIT byte pointer.
         setzm   (3)
         movei   0,1(3)
         hrli    0,(3)
@@ -100,12 +100,12 @@ file_component_empty:
 file_component_fail:
         jrst    pdp10_ret_neg1_v1
 
-; int file_v1_getcwd(kword_t *buf, unsigned int nwords)
+; int file_getcwd(kword_t *buf, unsigned int nwords)
 ;
 ; Construct MEMFS cwd paths directly as packed SIXBIT.  DAIMOS 1.x has one
 ; live FILE context, so cwd and alias state are scalar rather than per-owner.
-        .globl  file_v1_getcwd
-file_v1_getcwd:
+        .globl  file_getcwd
+file_getcwd:
         jumpe   1,file_getcwd_fail
         jumpge  2,file_getcwd_nwords_nonneg
         jrst    file_getcwd_nwords_ok    ; unsigned value with bit 35 set
@@ -114,9 +114,9 @@ file_getcwd_nwords_nonneg:
         jrst    file_getcwd_nwords_ok
         jrst    file_getcwd_fail
 file_getcwd_nwords_ok:
-        move    4,file_v1_cwd
+        move    4,file_cwd
         jumpn   4,file_getcwd_have_node
-        move    4,vfs_v1_namespace_root
+        move    4,vfs_namespace_root
 file_getcwd_have_node:
         move    5,4
         lsh     5,-036
@@ -127,7 +127,7 @@ file_getcwd_have_node:
         jrst    file_getcwd_pseudo_tail
 
 ; The 0121-word local area is one parent vnode followed by sixteen five-word
-; vfs_v1_name records.  AC15 is reused as output count after the upward walk.
+; vfs_name records.  AC15 is reused as output count after the upward walk.
         push    17,010
         push    17,011
         push    17,012
@@ -141,13 +141,13 @@ file_getcwd_have_node:
 
 ; Scalar alias state is sufficient for the single live FILE context.
         movei   014,0
-        skipn   file_v1_alias_cwd
+        skipn   file_alias_cwd
         jrst    file_getcwd_stop_root
         movei   014,1
-        move    015,file_v1_alias_node
+        move    015,file_alias_node
         jrst    file_getcwd_stop_ready
 file_getcwd_stop_root:
-        move    015,vfs_v1_namespace_root
+        move    015,vfs_namespace_root
 file_getcwd_stop_ready:
 
 ; Clear the complete supplied output record, preserving existing semantics.
@@ -173,7 +173,7 @@ file_getcwd_up:
         move    1,010                   ; current vnode
         movei   2,(17)                   ; parent vnode
         move    3,4                      ; saved component name
-        pushj   17,vfs_v1_parent_name
+        pushj   17,vfs_parent_name
         jumpn   1,file_getcwd_local_fail
         move    010,(17)
         addi    013,1
@@ -267,16 +267,16 @@ file_getcwd_pseudo_tail:
         move    3,2
         move    2,1
         move    1,4
-        jrst    file_v1_getcwd_pseudo
+        jrst    file_getcwd_pseudo
 file_getcwd_fail:
         jrst    pdp10_ret_neg1_v1
 
 
-; struct file_v1 *file_v1_find(int fd)
+; struct file *file_find(int fd)
 ; Match the used/fd fields directly.  DAIMOS 1.x has one FILE owner, so file
 ; records no longer carry or compare an owner field.
-        .globl  file_v1_find
-file_v1_find:
+        .globl  file_find
+file_find:
         caige   1,3
         jrst    file_find_fail
         caile   1,017
@@ -284,7 +284,7 @@ file_v1_find:
         move    3,1
         lsh     3,010
         iori    3,1
-        movei   4,file_v1_table
+        movei   4,file_table
         movei   5,040
 file_find_loop:
         move    6,2(4)
@@ -299,11 +299,11 @@ file_find_found:
         move    1,4
         popj    17,
 
-; int file_v1_new_fd(vnode_v1_t node, unsigned int flags, int isdir)
+; int file_new_fd(vnode_t node, unsigned int flags, int isdir)
 ; Scan once, remembering the first free record and every descriptor already in
 ; use.  With one owner, every used descriptor belongs to the current context.
-        .globl  file_v1_new_fd
-file_v1_new_fd:
+        .globl  file_new_fd
+file_new_fd:
         move    0,2                    ; base metadata: flags
         andi    0,077
         lsh     0,2
@@ -313,7 +313,7 @@ file_new_fd_nodir:
         iori    0,1                    ; FILE_V1_META_USED
         movei   2,0                    ; bitmap of used fd numbers
         movei   3,0                    ; first free table record
-        movei   4,file_v1_table
+        movei   4,file_table
         movei   5,040
 file_new_fd_scan:
         move    6,2(4)
@@ -355,11 +355,11 @@ file_new_fd_store:
 file_new_fd_fail:
         jrst    pdp10_ret_neg1_v1
 
-; int file_v1_getcwd_pseudo(vnode_v1_t node, kword_t *buf,
+; int file_getcwd_pseudo(vnode_t node, kword_t *buf,
 ;     unsigned int nwords)
 ; Only the fixed DAIMOS 1.x synthetic directories can be current directories.
-        .globl  file_v1_getcwd_pseudo
-file_v1_getcwd_pseudo:
+        .globl  file_getcwd_pseudo
+file_getcwd_pseudo:
         move    4,2
         move    5,3
         jumpe   5,file_pseudo_zero_done

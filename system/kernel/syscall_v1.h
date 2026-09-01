@@ -1,7 +1,7 @@
 #ifndef DAIMON_SYSCALL_V1_H
 #define DAIMON_SYSCALL_V1_H
 
-#include "file_v1.h"
+#include "file.h"
 
 #define SYS_V1_WRITE            1U
 #define SYS_V1_EXIT             2U

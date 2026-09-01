@@ -5,8 +5,8 @@
 ; with one AOS, including for byte zero.
 
         .text
-        .globl devicefs_v1_io_in
-        .globl devicefs_v1_io_out
+        .globl devicefs_io_in
+        .globl devicefs_io_out
         .globl ptr_getchar
         .globl ptr_state
         .globl pdp10_ret_arg_v34
@@ -39,7 +39,7 @@ ptr_get_wait:
 
 ptr_get_hardware:
         datai 0104,3
-        aos devicefs_v1_io_in+1
+        aos devicefs_io_in+1
         cono 0104,0
         andi 3,0377
         movem 3,(4)

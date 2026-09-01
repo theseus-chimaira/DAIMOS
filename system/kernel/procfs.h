@@ -1,7 +1,7 @@
 #ifndef DAIMON_PROCFS_V1_H
 #define DAIMON_PROCFS_V1_H
 
-#include "vfs_v1.h"
+#include "vfs.h"
 
 #define PROCFS_V1_PROVIDER              3U
 #define PROCFS_V1_KIND_ROOT             1U
@@ -17,11 +17,11 @@
 #define PROCFS_V1_FIELD_WORDS           4U
 #define PROCFS_V1_FIELD_COMM            5U
 
-int procfs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
-    vnode_v1_t *nodep);
-int procfs_v1_readdir(vnode_v1_t dir, unsigned int off,
-    struct vfs_v1_dirent *ent);
-int procfs_v1_stat(vnode_v1_t node, struct vfs_v1_stat *st);
-int procfs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp);
+int procfs_lookup(vnode_t dir, const struct vfs_name *name,
+    vnode_t *nodep);
+int procfs_readdir(vnode_t dir, unsigned int off,
+    struct vfs_dirent *ent);
+int procfs_stat(vnode_t node, struct vfs_stat *st);
+int procfs_readchar(vnode_t node, kword_t off, unsigned int *chp);
 
 #endif

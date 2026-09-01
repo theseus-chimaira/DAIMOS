@@ -1,6 +1,6 @@
-#include "d6fs_boot_v2.h"
-#include "d6fs_disk_v2.h"
-#include "d6fs_provider_v2.h"
+#include "d6fs_boot.h"
+#include "d6fs_disk.h"
+#include "d6fs_provider.h"
 #include "dsk270.h"
 #include "kinit.h"
 #include "fs_mres.h"
@@ -12,7 +12,7 @@
 #define D6FS_BOOT_V2_LOCATOR_MASK       0177777UL
 
 static int
-d6fs_boot_v2_call(unsigned int op, kword_t a, kword_t b, kword_t c,
+d6fs_boot_call(unsigned int op, kword_t a, kword_t b, kword_t c,
     kword_t d, kword_t e, kword_t f)
 {
         struct fs_mres_request req;
@@ -23,56 +23,56 @@ d6fs_boot_v2_call(unsigned int op, kword_t a, kword_t b, kword_t c,
 }
 
 struct d6fs_dsk_v2 *
-d6fs_boot_v2_disk(void)
+d6fs_boot_disk(void)
 {
-        return (struct d6fs_dsk_v2 *)(unsigned long)d6fs_boot_v2_call(
+        return (struct d6fs_dsk_v2 *)(unsigned long)d6fs_boot_call(
             FS_MRES_OP_D6FS_BOOT_DISK, 0, 0, 0, 0, 0, 0);
 }
 
 kword_t *
-d6fs_boot_v2_block_buffer(void)
+d6fs_boot_block_buffer(void)
 {
-        return (kword_t *)(unsigned long)d6fs_boot_v2_call(
+        return (kword_t *)(unsigned long)d6fs_boot_call(
             FS_MRES_OP_D6FS_BLOCK_BUFFER, 0, 0, 0, 0, 0, 0);
 }
 
 void
-d6fs_boot_v2_cache_invalidate(void)
+d6fs_boot_cache_invalidate(void)
 {
-        (void)d6fs_boot_v2_call(FS_MRES_OP_D6FS_CACHE_INVALID,
+        (void)d6fs_boot_call(FS_MRES_OP_D6FS_CACHE_INVALID,
             0, 0, 0, 0, 0, 0);
 }
 
 int
-d6fs_boot_v2_log_read(struct d6fs_dsk_v2 *disk, kword_t blockno,
+d6fs_boot_log_read(struct d6fs_dsk_v2 *disk, kword_t blockno,
     kword_t block[D6FS_V2_BLOCK_WORDS])
 {
-        return d6fs_boot_v2_call(FS_MRES_OP_D6FS_LOG_READ,
+        return d6fs_boot_call(FS_MRES_OP_D6FS_LOG_READ,
             (kword_t)(unsigned long)disk, blockno,
             (kword_t)(unsigned long)block, 0, 0, 0);
 }
 
 int
-d6fs_boot_v2_log_write(struct d6fs_dsk_v2 *disk, kword_t blockno,
+d6fs_boot_log_write(struct d6fs_dsk_v2 *disk, kword_t blockno,
     const kword_t block[D6FS_V2_BLOCK_WORDS])
 {
-        return d6fs_boot_v2_call(FS_MRES_OP_D6FS_LOG_WRITE,
+        return d6fs_boot_call(FS_MRES_OP_D6FS_LOG_WRITE,
             (kword_t)(unsigned long)disk, blockno,
             (kword_t)(unsigned long)block, 0, 0, 0);
 }
 
 static int
-d6fs_boot_v2_disk_init(struct d6fs_dsk_v2 *disk, unsigned int members,
+d6fs_boot_disk_init(struct d6fs_dsk_v2 *disk, unsigned int members,
     const unsigned int *units, const kword_t *usable_blocks)
 {
-        return d6fs_boot_v2_call(FS_MRES_OP_D6FS_DISK_INIT,
+        return d6fs_boot_call(FS_MRES_OP_D6FS_DISK_INIT,
             (kword_t)(unsigned long)disk, (kword_t)members,
             (kword_t)(unsigned long)units,
             (kword_t)(unsigned long)usable_blocks, 0, 0);
 }
 
 static int
-d6fs_boot_v2_layout_decode(const kword_t block[D6FS_V2_BLOCK_WORDS],
+d6fs_boot_layout_decode(const kword_t block[D6FS_V2_BLOCK_WORDS],
     struct d6fs_dsk_v2_layout *layout)
 {
         kword_t range;
@@ -116,17 +116,17 @@ d6fs_boot_v2_layout_decode(const kword_t block[D6FS_V2_BLOCK_WORDS],
 }
 
 static int
-d6fs_boot_v2_mount_at_root(struct d6fs_dsk_v2 *disk, kword_t super_a,
+d6fs_boot_mount_at_root(struct d6fs_dsk_v2 *disk, kword_t super_a,
     kword_t super_b, unsigned int flags, kword_t scratch[D6FS_V2_BLOCK_WORDS],
-    vnode_v1_t *rootp)
+    vnode_t *rootp)
 {
-        return d6fs_boot_v2_call(FS_MRES_OP_D6FS_MOUNT_ROOT,
+        return d6fs_boot_call(FS_MRES_OP_D6FS_MOUNT_ROOT,
             (kword_t)(unsigned long)disk, super_a, super_b, (kword_t)flags,
             (kword_t)(unsigned long)scratch, (kword_t)(unsigned long)rootp);
 }
 
 static kword_t
-d6fs_boot_v2_handoff_half(unsigned int index)
+d6fs_boot_handoff_half(unsigned int index)
 {
         kword_t word;
 
@@ -137,7 +137,7 @@ d6fs_boot_v2_handoff_half(unsigned int index)
 }
 
 static int
-d6fs_boot_v2_discover(struct d6fs_dsk_v2 *disk, kword_t *super_ap,
+d6fs_boot_discover(struct d6fs_dsk_v2 *disk, kword_t *super_ap,
     kword_t *super_bp)
 {
         unsigned int units[D6FS_DSK_V2_BOOT_MEMBERS];
@@ -170,7 +170,7 @@ d6fs_boot_v2_discover(struct d6fs_dsk_v2 *disk, kword_t *super_ap,
         first_badmap_start = 0UL;
         first_badmap_blocks = 0UL;
         for (index = 0U; index < D6FS_DSK_V2_BOOT_MEMBERS; ++index) {
-                half = d6fs_boot_v2_handoff_half(index);
+                half = d6fs_boot_handoff_half(index);
                 if (half == D6FS_BOOT_V2_UNUSED_HALF)
                         continue;
                 units[members] = (unsigned int)((half >>
@@ -182,7 +182,7 @@ d6fs_boot_v2_discover(struct d6fs_dsk_v2 *disk, kword_t *super_ap,
                 if (descriptor[D6FS_DSK_V2_LAYOUT_MAGIC_WORD] !=
                     D6FS_DSK_V2_LAYOUT_MAGIC)
                         return members == 0U ? 1 : -1;
-                if (d6fs_boot_v2_layout_decode(descriptor, &layout) != 0)
+                if (d6fs_boot_layout_decode(descriptor, &layout) != 0)
                         return -1;
                 if (members == 0U) {
                         first_super_a = layout.super_a;
@@ -207,7 +207,7 @@ d6fs_boot_v2_discover(struct d6fs_dsk_v2 *disk, kword_t *super_ap,
                 blocks[members] = layout.usable_blocks;
                 ++members;
         }
-        if (d6fs_boot_v2_disk_init(disk, members, units, blocks) != 0)
+        if (d6fs_boot_disk_init(disk, members, units, blocks) != 0)
                 return -1;
         for (index = 0U; index < members; ++index)
                 disk->base[index] = bases[index];
@@ -217,7 +217,7 @@ d6fs_boot_v2_discover(struct d6fs_dsk_v2 *disk, kword_t *super_ap,
         {
                 int total;
 
-                total = d6fs_boot_v2_call(FS_MRES_OP_D6FS_DISK_BLOCKS,
+                total = d6fs_boot_call(FS_MRES_OP_D6FS_DISK_BLOCKS,
                     (kword_t)(unsigned long)disk, 0, 0, 0, 0, 0);
                 if (total <= 0 || first_super_a >= (kword_t)total ||
                     first_super_b >= (kword_t)total)
@@ -229,7 +229,7 @@ d6fs_boot_v2_discover(struct d6fs_dsk_v2 *disk, kword_t *super_ap,
 }
 
 int
-d6fs_boot_v2_mount_root(unsigned int flags, vnode_v1_t *rootp)
+d6fs_boot_mount_root(unsigned int flags, vnode_t *rootp)
 {
         struct d6fs_dsk_v2 *disk;
         kword_t *scratch;
@@ -239,11 +239,11 @@ d6fs_boot_v2_mount_root(unsigned int flags, vnode_v1_t *rootp)
 
         if (rootp == 0)
                 return -1;
-        disk = d6fs_boot_v2_disk();
-        scratch = d6fs_boot_v2_block_buffer();
-        rc = d6fs_boot_v2_discover(disk, &super_a, &super_b);
+        disk = d6fs_boot_disk();
+        scratch = d6fs_boot_block_buffer();
+        rc = d6fs_boot_discover(disk, &super_a, &super_b);
         if (rc != 0)
                 return rc;
-        return d6fs_boot_v2_mount_at_root(disk, super_a, super_b, flags,
+        return d6fs_boot_mount_at_root(disk, super_a, super_b, flags,
             scratch, rootp);
 }

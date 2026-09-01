@@ -1,7 +1,7 @@
 #include "fs_mres.h"
-#include "memfs_v1.h"
-#include "dtfs_v1.h"
-#include "d6fs_provider_v2.h"
+#include "memfs.h"
+#include "dtfs.h"
+#include "d6fs_provider.h"
 
 unsigned int fs_memfs_service_addr;
 unsigned int fs_dtfs_service_addr;
@@ -36,8 +36,8 @@ fs_dtfs_format_unit(unsigned int unit)
 }
 
 int
-fs_dtfs_mount_unit(unsigned int unit, vnode_v1_t target,
-    unsigned int flags, vnode_v1_t *rootp)
+fs_dtfs_mount_unit(unsigned int unit, vnode_t target,
+    unsigned int flags, vnode_t *rootp)
 {
         struct fs_mres_request req;
 

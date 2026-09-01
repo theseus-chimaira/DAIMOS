@@ -1,8 +1,8 @@
-#include "d6fs_v2.h"
+#include "d6fs.h"
 
 
 static kword_t
-d6fs_v2_min_above(const struct d6fs_v2_diskset *set, kword_t floor)
+d6fs_min_above(const struct d6fs_diskset *set, kword_t floor)
 {
         unsigned int i;
         kword_t next;
@@ -17,7 +17,7 @@ d6fs_v2_min_above(const struct d6fs_v2_diskset *set, kword_t floor)
 }
 
 static unsigned int
-d6fs_v2_width_above(const struct d6fs_v2_diskset *set, kword_t floor)
+d6fs_width_above(const struct d6fs_diskset *set, kword_t floor)
 {
         unsigned int i;
         unsigned int width;
@@ -30,7 +30,7 @@ d6fs_v2_width_above(const struct d6fs_v2_diskset *set, kword_t floor)
 }
 
 int
-d6fs_v2_extent_encode(kword_t start, kword_t blocks, kword_t *runp,
+d6fs_extent_encode(kword_t start, kword_t blocks, kword_t *runp,
     unsigned int *highp)
 {
         kword_t count;
@@ -50,7 +50,7 @@ d6fs_v2_extent_encode(kword_t start, kword_t blocks, kword_t *runp,
 }
 
 int
-d6fs_v2_extent_decode(kword_t run, unsigned int high, kword_t *startp,
+d6fs_extent_decode(kword_t run, unsigned int high, kword_t *startp,
     kword_t *blocksp)
 {
         kword_t count;
@@ -68,7 +68,7 @@ d6fs_v2_extent_decode(kword_t run, unsigned int high, kword_t *startp,
 }
 
 int
-d6fs_v2_diskset_valid(const struct d6fs_v2_diskset *set)
+d6fs_diskset_valid(const struct d6fs_diskset *set)
 {
         unsigned int i;
 
@@ -82,12 +82,12 @@ d6fs_v2_diskset_valid(const struct d6fs_v2_diskset *set)
 }
 
 kword_t
-d6fs_v2_diskset_blocks(const struct d6fs_v2_diskset *set)
+d6fs_diskset_blocks(const struct d6fs_diskset *set)
 {
         unsigned int i;
         kword_t total;
 
-        if (!d6fs_v2_diskset_valid(set))
+        if (!d6fs_diskset_valid(set))
                 return 0UL;
         total = 0UL;
         for (i = 0U; i < set->members; ++i)
@@ -96,8 +96,8 @@ d6fs_v2_diskset_blocks(const struct d6fs_v2_diskset *set)
 }
 
 int
-d6fs_v2_map_block(const struct d6fs_v2_diskset *set, kword_t logical,
-    struct d6fs_v2_phys *phys)
+d6fs_map_block(const struct d6fs_diskset *set, kword_t logical,
+    struct d6fs_phys *phys)
 {
         unsigned int i;
         unsigned int width;
@@ -107,14 +107,14 @@ d6fs_v2_map_block(const struct d6fs_v2_diskset *set, kword_t logical,
         kword_t zone_blocks;
         kword_t rel;
 
-        if (!d6fs_v2_diskset_valid(set) || phys == 0 ||
-            logical >= d6fs_v2_diskset_blocks(set))
+        if (!d6fs_diskset_valid(set) || phys == 0 ||
+            logical >= d6fs_diskset_blocks(set))
                 return -1;
 
         floor = 0UL;
         for (;;) {
-                next = d6fs_v2_min_above(set, floor);
-                width = d6fs_v2_width_above(set, floor);
+                next = d6fs_min_above(set, floor);
+                width = d6fs_width_above(set, floor);
                 if (next == 0UL || width == 0U)
                         return -1;
                 zone_blocks = (next - floor) * (kword_t)width;
@@ -140,7 +140,7 @@ d6fs_v2_map_block(const struct d6fs_v2_diskset *set, kword_t logical,
 }
 
 unsigned int
-d6fs_v2_extent_high_get(kword_t word, unsigned int extent)
+d6fs_extent_high_get(kword_t word, unsigned int extent)
 {
         if (extent >= D6FS_V2_EXTENTS)
                 return 0U;
@@ -149,7 +149,7 @@ d6fs_v2_extent_high_get(kword_t word, unsigned int extent)
 }
 
 int
-d6fs_v2_extent_high_set(kword_t *wordp, unsigned int extent,
+d6fs_extent_high_set(kword_t *wordp, unsigned int extent,
     unsigned int high)
 {
         unsigned int shift;
@@ -165,19 +165,19 @@ d6fs_v2_extent_high_set(kword_t *wordp, unsigned int extent,
 }
 
 static int
-d6fs_v2_type_valid(unsigned int type)
+d6fs_type_valid(unsigned int type)
 {
         return type == D6FS_V2_TYPE_FREE || type == D6FS_V2_TYPE_REG ||
             type == D6FS_V2_TYPE_DIR || type == D6FS_V2_TYPE_SYMLINK;
 }
 
 int
-d6fs_v2_fcb_encode(kword_t fcb[D6FS_V2_FCB_WORDS],
-    const struct d6fs_v2_fcb_info *info)
+d6fs_fcb_encode(kword_t fcb[D6FS_V2_FCB_WORDS],
+    const struct d6fs_fcb_info *info)
 {
         unsigned int i;
 
-        if (fcb == 0 || info == 0 || !d6fs_v2_type_valid(info->type) ||
+        if (fcb == 0 || info == 0 || !d6fs_type_valid(info->type) ||
             info->flags > D6FS_V2_FLAG_MASK || info->mode > 07777U ||
             info->tail > 017U || info->extent_count > D6FS_V2_EXTENTS ||
             info->uid > D6FS_V2_FCB_MASK || info->gid > D6FS_V2_FCB_MASK ||
@@ -197,8 +197,8 @@ d6fs_v2_fcb_encode(kword_t fcb[D6FS_V2_FCB_WORDS],
 }
 
 int
-d6fs_v2_fcb_decode(const kword_t fcb[D6FS_V2_FCB_WORDS],
-    struct d6fs_v2_fcb_info *info)
+d6fs_fcb_decode(const kword_t fcb[D6FS_V2_FCB_WORDS],
+    struct d6fs_fcb_info *info)
 {
         if (fcb == 0 || info == 0)
                 return -1;
@@ -219,10 +219,10 @@ d6fs_v2_fcb_decode(const kword_t fcb[D6FS_V2_FCB_WORDS],
 }
 
 int
-d6fs_v2_fcb_valid(const kword_t fcb[D6FS_V2_FCB_WORDS],
+d6fs_fcb_valid(const kword_t fcb[D6FS_V2_FCB_WORDS],
     kword_t fs_blocks, unsigned int fcb_count)
 {
-        struct d6fs_v2_fcb_info info;
+        struct d6fs_fcb_info info;
         unsigned int i;
         unsigned int high;
         kword_t start;
@@ -230,8 +230,8 @@ d6fs_v2_fcb_valid(const kword_t fcb[D6FS_V2_FCB_WORDS],
         kword_t capacity;
 
         if (fcb == 0 || fs_blocks == 0UL || fcb_count == 0U ||
-            d6fs_v2_fcb_decode(fcb, &info) != 0 ||
-            !d6fs_v2_type_valid(info.type) || info.extent_count > D6FS_V2_EXTENTS ||
+            d6fs_fcb_decode(fcb, &info) != 0 ||
+            !d6fs_type_valid(info.type) || info.extent_count > D6FS_V2_EXTENTS ||
             (info.type == D6FS_V2_TYPE_SYMLINK ? info.tail > 6U :
             info.tail > 4U) || (fcb[D6FS_V2_FCB_META] & 017UL) != 0UL ||
             (fcb[D6FS_V2_FCB_PARENT] & D6FS_V2_FCB_MASK) != 0UL ||
@@ -247,12 +247,12 @@ d6fs_v2_fcb_valid(const kword_t fcb[D6FS_V2_FCB_WORDS],
         for (i = 0U; i < D6FS_V2_EXTENTS; ++i) {
                 if (i >= info.extent_count) {
                         if (fcb[D6FS_V2_FCB_EXTENT0 + i] != 0UL ||
-                            d6fs_v2_extent_high_get(fcb[D6FS_V2_FCB_LENHIGH], i) != 0U)
+                            d6fs_extent_high_get(fcb[D6FS_V2_FCB_LENHIGH], i) != 0U)
                                 return 0;
                         continue;
                 }
-                high = d6fs_v2_extent_high_get(fcb[D6FS_V2_FCB_LENHIGH], i);
-                if (d6fs_v2_extent_decode(fcb[D6FS_V2_FCB_EXTENT0 + i], high,
+                high = d6fs_extent_high_get(fcb[D6FS_V2_FCB_LENHIGH], i);
+                if (d6fs_extent_decode(fcb[D6FS_V2_FCB_EXTENT0 + i], high,
                     &start, &blocks) != 0 || start >= fs_blocks ||
                     blocks > fs_blocks - start)
                         return 0;
@@ -264,8 +264,8 @@ d6fs_v2_fcb_valid(const kword_t fcb[D6FS_V2_FCB_WORDS],
 }
 
 int
-d6fs_v2_super_encode(kword_t sb[D6FS_V2_SUPER_WORDS],
-    const struct d6fs_v2_super_info *info)
+d6fs_super_encode(kword_t sb[D6FS_V2_SUPER_WORDS],
+    const struct d6fs_super_info *info)
 {
         unsigned int i;
 
@@ -297,8 +297,8 @@ d6fs_v2_super_encode(kword_t sb[D6FS_V2_SUPER_WORDS],
 }
 
 int
-d6fs_v2_super_decode(const kword_t sb[D6FS_V2_SUPER_WORDS],
-    struct d6fs_v2_super_info *info)
+d6fs_super_decode(const kword_t sb[D6FS_V2_SUPER_WORDS],
+    struct d6fs_super_info *info)
 {
         if (sb == 0 || info == 0)
                 return -1;
@@ -320,35 +320,35 @@ d6fs_v2_super_decode(const kword_t sb[D6FS_V2_SUPER_WORDS],
 }
 
 static int
-d6fs_v2_uuid_equal(const kword_t a[2], const kword_t b[2])
+d6fs_uuid_equal(const kword_t a[2], const kword_t b[2])
 {
         return a[0] == b[0] && a[1] == b[1];
 }
 
 int
-d6fs_v2_super_select(const kword_t a[D6FS_V2_SUPER_WORDS],
+d6fs_super_select(const kword_t a[D6FS_V2_SUPER_WORDS],
     const kword_t b[D6FS_V2_SUPER_WORDS], kword_t diskset_blocks,
-    struct d6fs_v2_super_info *info, unsigned int *copyp)
+    struct d6fs_super_info *info, unsigned int *copyp)
 {
-        struct d6fs_v2_super_info ai;
-        struct d6fs_v2_super_info bi;
+        struct d6fs_super_info ai;
+        struct d6fs_super_info bi;
         unsigned int i;
         int av;
         int bv;
 
         if (a == 0 || b == 0 || info == 0 || copyp == 0)
                 return -1;
-        av = d6fs_v2_super_valid(a, diskset_blocks);
-        bv = d6fs_v2_super_valid(b, diskset_blocks);
+        av = d6fs_super_valid(a, diskset_blocks);
+        bv = d6fs_super_valid(b, diskset_blocks);
         if (!av && !bv)
                 return -1;
-        if (av && d6fs_v2_super_decode(a, &ai) != 0)
+        if (av && d6fs_super_decode(a, &ai) != 0)
                 return -1;
-        if (bv && d6fs_v2_super_decode(b, &bi) != 0)
+        if (bv && d6fs_super_decode(b, &bi) != 0)
                 return -1;
         if (av && bv) {
-                if (!d6fs_v2_uuid_equal(ai.fs_uuid, bi.fs_uuid) ||
-                    !d6fs_v2_uuid_equal(ai.diskset_uuid, bi.diskset_uuid))
+                if (!d6fs_uuid_equal(ai.fs_uuid, bi.fs_uuid) ||
+                    !d6fs_uuid_equal(ai.diskset_uuid, bi.diskset_uuid))
                         return -1;
                 if (ai.sequence == bi.sequence) {
                         for (i = 0U; i < D6FS_V2_SUPER_WORDS; ++i)
@@ -378,20 +378,20 @@ d6fs_v2_super_select(const kword_t a[D6FS_V2_SUPER_WORDS],
 }
 
 static int
-d6fs_v2_range_valid(kword_t start, kword_t blocks, kword_t total)
+d6fs_range_valid(kword_t start, kword_t blocks, kword_t total)
 {
         return blocks != 0UL && start < total && blocks <= total - start;
 }
 
 int
-d6fs_v2_super_valid(const kword_t sb[D6FS_V2_SUPER_WORDS],
+d6fs_super_valid(const kword_t sb[D6FS_V2_SUPER_WORDS],
     kword_t diskset_blocks)
 {
-        struct d6fs_v2_super_info info;
+        struct d6fs_super_info info;
         kword_t magic_version;
 
         if (sb == 0 || diskset_blocks == 0UL ||
-            d6fs_v2_super_decode(sb, &info) != 0)
+            d6fs_super_decode(sb, &info) != 0)
                 return 0;
         magic_version = (D6FS_V2_MAGIC & ~077UL) | D6FS_V2_FORMAT_VERSION;
         if (sb[D6FS_V2_SB_MAGIC_VERSION] != magic_version ||
@@ -401,21 +401,21 @@ d6fs_v2_super_valid(const kword_t sb[D6FS_V2_SUPER_WORDS],
             info.total_blocks > D6FS_V2_LOGICAL_BLOCK_MASK + 1UL ||
             info.fcb_count == 0U || info.fcb_count > D6FS_V2_FCB_MASK ||
             info.root_fcb >= info.fcb_count ||
-            !d6fs_v2_range_valid(info.fcb_start,
+            !d6fs_range_valid(info.fcb_start,
             ((kword_t)info.fcb_count * D6FS_V2_FCB_WORDS +
             D6FS_V2_BLOCK_WORDS - 1UL) / D6FS_V2_BLOCK_WORDS,
             info.total_blocks) ||
-            !d6fs_v2_range_valid(info.freemap_start, info.freemap_blocks,
+            !d6fs_range_valid(info.freemap_start, info.freemap_blocks,
             info.total_blocks) ||
-            !d6fs_v2_range_valid(info.summary_start, info.summary_blocks,
+            !d6fs_range_valid(info.summary_start, info.summary_blocks,
             info.total_blocks))
                 return 0;
         return 1;
 }
 
 int
-d6fs_v2_dirent_decode(const kword_t ent[D6FS_V2_DIRENT_WORDS],
-    struct d6fs_v2_dirent_info *info)
+d6fs_dirent_decode(const kword_t ent[D6FS_V2_DIRENT_WORDS],
+    struct d6fs_dirent_info *info)
 {
         if (ent == 0 || info == 0)
                 return -1;
@@ -433,13 +433,13 @@ d6fs_v2_dirent_decode(const kword_t ent[D6FS_V2_DIRENT_WORDS],
 }
 
 int
-d6fs_v2_dirent_valid(const kword_t ent[D6FS_V2_DIRENT_WORDS],
+d6fs_dirent_valid(const kword_t ent[D6FS_V2_DIRENT_WORDS],
     unsigned int fcb_count)
 {
-        struct d6fs_v2_dirent_info info;
+        struct d6fs_dirent_info info;
         unsigned int empty;
 
-        if (ent == 0 || fcb_count == 0U || d6fs_v2_dirent_decode(ent, &info) != 0 ||
+        if (ent == 0 || fcb_count == 0U || d6fs_dirent_decode(ent, &info) != 0 ||
             (ent[5] & D6FS_V2_FCB_MASK) != 0UL)
                 return 0;
         empty = info.child_fcb == 0U;
@@ -448,16 +448,16 @@ d6fs_v2_dirent_valid(const kword_t ent[D6FS_V2_DIRENT_WORDS],
                     info.name[2] == 0UL && info.name[3] == 0UL &&
                     ent[4] == 0UL;
         if (info.child_fcb >= fcb_count || info.type == D6FS_V2_TYPE_FREE ||
-            !d6fs_v2_type_valid(info.type))
+            !d6fs_type_valid(info.type))
                 return 0;
         return info.name[0] != 0UL || info.name[1] != 0UL ||
             info.name[2] != 0UL || info.name[3] != 0UL;
 }
 
 int
-d6fs_v2_reader_init(struct d6fs_v2_reader *reader,
-    d6fs_v2_read_block_fn read_block, void *opaque,
-    const struct d6fs_v2_super_info *super)
+d6fs_reader_init(struct d6fs_reader *reader,
+    d6fs_read_block_fn read_block, void *opaque,
+    const struct d6fs_super_info *super)
 {
         if (reader == 0 || read_block == 0 || super == 0 ||
             super->total_blocks == 0UL || super->fcb_count == 0U)
@@ -471,7 +471,7 @@ d6fs_v2_reader_init(struct d6fs_v2_reader *reader,
 }
 
 static int
-d6fs_v2_reader_block(struct d6fs_v2_reader *reader, kword_t logical,
+d6fs_reader_block(struct d6fs_reader *reader, kword_t logical,
     const kword_t **blockp)
 {
         if (reader == 0 || blockp == 0 || logical >= reader->super.total_blocks)
@@ -487,14 +487,14 @@ d6fs_v2_reader_block(struct d6fs_v2_reader *reader, kword_t logical,
 }
 
 int
-d6fs_v2_reader_get_block(struct d6fs_v2_reader *reader, kword_t logical,
+d6fs_reader_get_block(struct d6fs_reader *reader, kword_t logical,
     const kword_t **blockp)
 {
-        return d6fs_v2_reader_block(reader, logical, blockp);
+        return d6fs_reader_block(reader, logical, blockp);
 }
 
 int
-d6fs_v2_reader_fcb(struct d6fs_v2_reader *reader, unsigned int fcb_index,
+d6fs_reader_fcb(struct d6fs_reader *reader, unsigned int fcb_index,
     kword_t fcb[D6FS_V2_FCB_WORDS])
 {
         kword_t word_index;
@@ -509,30 +509,30 @@ d6fs_v2_reader_fcb(struct d6fs_v2_reader *reader, unsigned int fcb_index,
         block_no = reader->super.fcb_start + word_index / D6FS_V2_BLOCK_WORDS;
         in_block = (unsigned int)(word_index % D6FS_V2_BLOCK_WORDS);
         if (in_block + D6FS_V2_FCB_WORDS > D6FS_V2_BLOCK_WORDS ||
-            d6fs_v2_reader_block(reader, block_no, &block) != 0)
+            d6fs_reader_block(reader, block_no, &block) != 0)
                 return -1;
         for (i = 0U; i < D6FS_V2_FCB_WORDS; ++i)
                 fcb[i] = block[in_block + i];
-        return d6fs_v2_fcb_valid(fcb, reader->super.total_blocks,
+        return d6fs_fcb_valid(fcb, reader->super.total_blocks,
             reader->super.fcb_count) ? 0 : -1;
 }
 
 int
-d6fs_v2_file_block(const kword_t fcb[D6FS_V2_FCB_WORDS],
+d6fs_file_block(const kword_t fcb[D6FS_V2_FCB_WORDS],
     kword_t file_block, kword_t *logical_block)
 {
-        struct d6fs_v2_fcb_info info;
+        struct d6fs_fcb_info info;
         unsigned int i;
         unsigned int high;
         kword_t start;
         kword_t blocks;
 
         if (fcb == 0 || logical_block == 0 ||
-            d6fs_v2_fcb_decode(fcb, &info) != 0)
+            d6fs_fcb_decode(fcb, &info) != 0)
                 return -1;
         for (i = 0U; i < info.extent_count; ++i) {
-                high = d6fs_v2_extent_high_get(fcb[D6FS_V2_FCB_LENHIGH], i);
-                if (d6fs_v2_extent_decode(fcb[D6FS_V2_FCB_EXTENT0 + i], high,
+                high = d6fs_extent_high_get(fcb[D6FS_V2_FCB_LENHIGH], i);
+                if (d6fs_extent_decode(fcb[D6FS_V2_FCB_EXTENT0 + i], high,
                     &start, &blocks) != 0)
                         return -1;
                 if (file_block < blocks) {
@@ -545,11 +545,11 @@ d6fs_v2_file_block(const kword_t fcb[D6FS_V2_FCB_WORDS],
 }
 
 int
-d6fs_v2_reader_read_words(struct d6fs_v2_reader *reader,
+d6fs_reader_read_words(struct d6fs_reader *reader,
     const kword_t fcb[D6FS_V2_FCB_WORDS], kword_t off, kword_t *buf,
     unsigned int nwords)
 {
-        struct d6fs_v2_fcb_info info;
+        struct d6fs_fcb_info info;
         kword_t pos;
         kword_t file_block;
         kword_t logical;
@@ -560,7 +560,7 @@ d6fs_v2_reader_read_words(struct d6fs_v2_reader *reader,
         unsigned int i;
 
         if (reader == 0 || fcb == 0 || buf == 0 ||
-            d6fs_v2_fcb_decode(fcb, &info) != 0)
+            d6fs_fcb_decode(fcb, &info) != 0)
                 return -1;
         if (off >= info.size_words)
                 return 0;
@@ -571,8 +571,8 @@ d6fs_v2_reader_read_words(struct d6fs_v2_reader *reader,
                 pos = off + done;
                 file_block = pos / D6FS_V2_BLOCK_WORDS;
                 in_block = (unsigned int)(pos % D6FS_V2_BLOCK_WORDS);
-                if (d6fs_v2_file_block(fcb, file_block, &logical) != 0 ||
-                    d6fs_v2_reader_block(reader, logical, &block) != 0)
+                if (d6fs_file_block(fcb, file_block, &logical) != 0 ||
+                    d6fs_reader_block(reader, logical, &block) != 0)
                         return -1;
                 take = D6FS_V2_BLOCK_WORDS - in_block;
                 if (take > nwords - done)
@@ -585,7 +585,7 @@ d6fs_v2_reader_read_words(struct d6fs_v2_reader *reader,
 }
 
 kword_t
-d6fs_v2_name_hash24(const kword_t words[4], unsigned int chars)
+d6fs_name_hash24(const kword_t words[4], unsigned int chars)
 {
         kword_t h;
         kword_t word;
@@ -608,8 +608,8 @@ d6fs_v2_name_hash24(const kword_t words[4], unsigned int chars)
 }
 
 int
-d6fs_v2_dirent_encode(kword_t ent[D6FS_V2_DIRENT_WORDS],
-    const struct d6fs_v2_dirent_info *info)
+d6fs_dirent_encode(kword_t ent[D6FS_V2_DIRENT_WORDS],
+    const struct d6fs_dirent_info *info)
 {
         unsigned int i;
 
@@ -628,8 +628,8 @@ d6fs_v2_dirent_encode(kword_t ent[D6FS_V2_DIRENT_WORDS],
 }
 
 int
-d6fs_v2_reader_set_writer(struct d6fs_v2_reader *reader,
-    d6fs_v2_write_block_fn write_block)
+d6fs_reader_set_writer(struct d6fs_reader *reader,
+    d6fs_write_block_fn write_block)
 {
         if (reader == 0)
                 return -1;
@@ -638,7 +638,7 @@ d6fs_v2_reader_set_writer(struct d6fs_v2_reader *reader,
 }
 
 int
-d6fs_v2_reader_write_block(struct d6fs_v2_reader *reader, kword_t logical,
+d6fs_reader_write_block(struct d6fs_reader *reader, kword_t logical,
     const kword_t block[D6FS_V2_BLOCK_WORDS])
 {
         unsigned int i;
@@ -654,7 +654,7 @@ d6fs_v2_reader_write_block(struct d6fs_v2_reader *reader, kword_t logical,
 }
 
 int
-d6fs_v2_reader_zero_block(struct d6fs_v2_reader *reader, kword_t logical)
+d6fs_reader_zero_block(struct d6fs_reader *reader, kword_t logical)
 {
         unsigned int i;
 
@@ -672,7 +672,7 @@ d6fs_v2_reader_zero_block(struct d6fs_v2_reader *reader, kword_t logical)
 }
 
 int
-d6fs_v2_reader_write_words(struct d6fs_v2_reader *reader,
+d6fs_reader_write_words(struct d6fs_reader *reader,
     const kword_t fcb[D6FS_V2_FCB_WORDS], kword_t off,
     const kword_t *buf, unsigned int nwords)
 {
@@ -693,8 +693,8 @@ d6fs_v2_reader_write_words(struct d6fs_v2_reader *reader,
                 pos = off + (kword_t)done;
                 file_block = pos / D6FS_V2_BLOCK_WORDS;
                 in_block = (unsigned int)(pos % D6FS_V2_BLOCK_WORDS);
-                if (d6fs_v2_file_block(fcb, file_block, &logical) != 0 ||
-                    d6fs_v2_reader_block(reader, logical, &cached) != 0)
+                if (d6fs_file_block(fcb, file_block, &logical) != 0 ||
+                    d6fs_reader_block(reader, logical, &cached) != 0)
                         return -1;
                 for (i = 0U; i < D6FS_V2_BLOCK_WORDS; ++i)
                         block[i] = cached[i];
@@ -703,7 +703,7 @@ d6fs_v2_reader_write_words(struct d6fs_v2_reader *reader,
                         take = nwords - done;
                 for (i = 0U; i < take; ++i)
                         block[in_block + i] = buf[done + i];
-                if (d6fs_v2_reader_write_block(reader, logical, block) != 0)
+                if (d6fs_reader_write_block(reader, logical, block) != 0)
                         return -1;
                 done += take;
         }
@@ -711,7 +711,7 @@ d6fs_v2_reader_write_words(struct d6fs_v2_reader *reader,
 }
 
 int
-d6fs_v2_reader_put_fcb(struct d6fs_v2_reader *reader,
+d6fs_reader_put_fcb(struct d6fs_reader *reader,
     unsigned int fcb_index, const kword_t fcb[D6FS_V2_FCB_WORDS])
 {
         kword_t word_index;
@@ -728,17 +728,17 @@ d6fs_v2_reader_put_fcb(struct d6fs_v2_reader *reader,
         block_no = reader->super.fcb_start + word_index / D6FS_V2_BLOCK_WORDS;
         in_block = (unsigned int)(word_index % D6FS_V2_BLOCK_WORDS);
         if (in_block + D6FS_V2_FCB_WORDS > D6FS_V2_BLOCK_WORDS ||
-            d6fs_v2_reader_block(reader, block_no, &cached) != 0)
+            d6fs_reader_block(reader, block_no, &cached) != 0)
                 return -1;
         for (i = 0U; i < D6FS_V2_BLOCK_WORDS; ++i)
                 block[i] = cached[i];
         for (i = 0U; i < D6FS_V2_FCB_WORDS; ++i)
                 block[in_block + i] = fcb[i];
-        return d6fs_v2_reader_write_block(reader, block_no, block);
+        return d6fs_reader_write_block(reader, block_no, block);
 }
 
 static int
-d6fs_v2_bitmap_position(kword_t logical, kword_t *map_blockp,
+d6fs_bitmap_position(kword_t logical, kword_t *map_blockp,
     unsigned int *wordp, unsigned int *bitp)
 {
         kword_t in;
@@ -753,13 +753,13 @@ d6fs_v2_bitmap_position(kword_t logical, kword_t *map_blockp,
 }
 
 static kword_t
-d6fs_v2_bit_mask(unsigned int bit)
+d6fs_bit_mask(unsigned int bit)
 {
         return 1UL << (35U - bit);
 }
 
 int
-d6fs_v2_freemap_test(struct d6fs_v2_reader *reader, kword_t logical,
+d6fs_freemap_test(struct d6fs_reader *reader, kword_t logical,
     unsigned int *allocatedp)
 {
         kword_t mbi;
@@ -769,17 +769,17 @@ d6fs_v2_freemap_test(struct d6fs_v2_reader *reader, kword_t logical,
 
         if (reader == 0 || allocatedp == 0 ||
             logical >= reader->super.total_blocks ||
-            d6fs_v2_bitmap_position(logical, &mbi, &wi, &bi) != 0 ||
+            d6fs_bitmap_position(logical, &mbi, &wi, &bi) != 0 ||
             mbi >= reader->super.freemap_blocks ||
-            d6fs_v2_reader_block(reader, reader->super.freemap_start + mbi,
+            d6fs_reader_block(reader, reader->super.freemap_start + mbi,
             &block) != 0)
                 return -1;
-        *allocatedp = (block[wi] & d6fs_v2_bit_mask(bi)) != 0UL;
+        *allocatedp = (block[wi] & d6fs_bit_mask(bi)) != 0UL;
         return 0;
 }
 
 static int
-d6fs_v2_summary_test(struct d6fs_v2_reader *reader, kword_t map_index,
+d6fs_summary_test(struct d6fs_reader *reader, kword_t map_index,
     unsigned int *has_freep)
 {
         kword_t sbi;
@@ -795,15 +795,15 @@ d6fs_v2_summary_test(struct d6fs_v2_reader *reader, kword_t map_index,
         wi = (unsigned int)(in / D6FS_V2_BITS_PER_WORD);
         bi = (unsigned int)(in % D6FS_V2_BITS_PER_WORD);
         if (sbi >= reader->super.summary_blocks ||
-            d6fs_v2_reader_block(reader, reader->super.summary_start + sbi,
+            d6fs_reader_block(reader, reader->super.summary_start + sbi,
             &block) != 0)
                 return -1;
-        *has_freep = (block[wi] & d6fs_v2_bit_mask(bi)) != 0UL;
+        *has_freep = (block[wi] & d6fs_bit_mask(bi)) != 0UL;
         return 0;
 }
 
 static int
-d6fs_v2_summary_set(struct d6fs_v2_reader *reader, kword_t map_index,
+d6fs_summary_set(struct d6fs_reader *reader, kword_t map_index,
     unsigned int has_free)
 {
         kword_t sbi;
@@ -821,21 +821,21 @@ d6fs_v2_summary_set(struct d6fs_v2_reader *reader, kword_t map_index,
         wi = (unsigned int)(in / D6FS_V2_BITS_PER_WORD);
         bi = (unsigned int)(in % D6FS_V2_BITS_PER_WORD);
         if (sbi >= reader->super.summary_blocks ||
-            d6fs_v2_reader_block(reader, reader->super.summary_start + sbi,
+            d6fs_reader_block(reader, reader->super.summary_start + sbi,
             &cached) != 0)
                 return -1;
         for (i = 0U; i < D6FS_V2_BLOCK_WORDS; ++i)
                 block[i] = cached[i];
         if (has_free)
-                block[wi] |= d6fs_v2_bit_mask(bi);
+                block[wi] |= d6fs_bit_mask(bi);
         else
-                block[wi] &= ~d6fs_v2_bit_mask(bi);
-        return d6fs_v2_reader_write_block(reader,
+                block[wi] &= ~d6fs_bit_mask(bi);
+        return d6fs_reader_write_block(reader,
             reader->super.summary_start + sbi, block);
 }
 
 static int
-d6fs_v2_map_block_has_free(struct d6fs_v2_reader *reader, kword_t mbi,
+d6fs_map_block_has_free(struct d6fs_reader *reader, kword_t mbi,
     unsigned int *has_freep)
 {
         const kword_t *block;
@@ -847,7 +847,7 @@ d6fs_v2_map_block_has_free(struct d6fs_v2_reader *reader, kword_t mbi,
 
         if (reader == 0 || has_freep == 0 ||
             mbi >= reader->super.freemap_blocks ||
-            d6fs_v2_reader_block(reader, reader->super.freemap_start + mbi,
+            d6fs_reader_block(reader, reader->super.freemap_start + mbi,
             &block) != 0)
                 return -1;
         first = mbi * (kword_t)D6FS_V2_BITS_PER_MAP_BLOCK;
@@ -859,7 +859,7 @@ d6fs_v2_map_block_has_free(struct d6fs_v2_reader *reader, kword_t mbi,
                 kword_t in = logical - first;
                 wi = (unsigned int)(in / D6FS_V2_BITS_PER_WORD);
                 bi = (unsigned int)(in % D6FS_V2_BITS_PER_WORD);
-                if ((block[wi] & d6fs_v2_bit_mask(bi)) == 0UL) {
+                if ((block[wi] & d6fs_bit_mask(bi)) == 0UL) {
                         *has_freep = 1U;
                         break;
                 }
@@ -868,7 +868,7 @@ d6fs_v2_map_block_has_free(struct d6fs_v2_reader *reader, kword_t mbi,
 }
 
 int
-d6fs_v2_freemap_set(struct d6fs_v2_reader *reader, kword_t logical,
+d6fs_freemap_set(struct d6fs_reader *reader, kword_t logical,
     unsigned int allocated)
 {
         kword_t mbi;
@@ -881,29 +881,29 @@ d6fs_v2_freemap_set(struct d6fs_v2_reader *reader, kword_t logical,
 
         if (reader == 0 || reader->write_block == 0 ||
             logical >= reader->super.total_blocks ||
-            d6fs_v2_bitmap_position(logical, &mbi, &wi, &bi) != 0 ||
+            d6fs_bitmap_position(logical, &mbi, &wi, &bi) != 0 ||
             mbi >= reader->super.freemap_blocks ||
-            d6fs_v2_reader_block(reader, reader->super.freemap_start + mbi,
+            d6fs_reader_block(reader, reader->super.freemap_start + mbi,
             &cached) != 0)
                 return -1;
         for (i = 0U; i < D6FS_V2_BLOCK_WORDS; ++i)
                 block[i] = cached[i];
         if (allocated)
-                block[wi] |= d6fs_v2_bit_mask(bi);
+                block[wi] |= d6fs_bit_mask(bi);
         else
-                block[wi] &= ~d6fs_v2_bit_mask(bi);
-        if (d6fs_v2_reader_write_block(reader,
+                block[wi] &= ~d6fs_bit_mask(bi);
+        if (d6fs_reader_write_block(reader,
             reader->super.freemap_start + mbi, block) != 0)
                 return -1;
         if (!allocated)
                 has_free = 1U;
-        else if (d6fs_v2_map_block_has_free(reader, mbi, &has_free) != 0)
+        else if (d6fs_map_block_has_free(reader, mbi, &has_free) != 0)
                 return -1;
-        return d6fs_v2_summary_set(reader, mbi, has_free);
+        return d6fs_summary_set(reader, mbi, has_free);
 }
 
 int
-d6fs_v2_alloc_run(struct d6fs_v2_reader *reader, kword_t cursor,
+d6fs_alloc_run(struct d6fs_reader *reader, kword_t cursor,
     kword_t max_blocks, kword_t *startp, kword_t *blocksp)
 {
         kword_t logical;
@@ -931,7 +931,7 @@ d6fs_v2_alloc_run(struct d6fs_v2_reader *reader, kword_t cursor,
                     logical % (kword_t)D6FS_V2_BITS_PER_MAP_BLOCK == 0UL) {
                         mbi = logical / (kword_t)D6FS_V2_BITS_PER_MAP_BLOCK;
                         if (mbi < reader->super.freemap_blocks &&
-                            d6fs_v2_summary_test(reader, mbi, &has_free) == 0 &&
+                            d6fs_summary_test(reader, mbi, &has_free) == 0 &&
                             !has_free) {
                                 skip = (kword_t)D6FS_V2_BITS_PER_MAP_BLOCK;
                                 if (skip > reader->super.total_blocks - scanned)
@@ -941,7 +941,7 @@ d6fs_v2_alloc_run(struct d6fs_v2_reader *reader, kword_t cursor,
                                 continue;
                         }
                 }
-                if (d6fs_v2_freemap_test(reader, logical, &allocated) != 0)
+                if (d6fs_freemap_test(reader, logical, &allocated) != 0)
                         return -1;
                 if (!allocated) {
                         if (count == 0UL)
@@ -960,10 +960,10 @@ d6fs_v2_alloc_run(struct d6fs_v2_reader *reader, kword_t cursor,
         if (count == 0UL)
                 return -1;
         for (logical = 0UL; logical < count; ++logical)
-                if (d6fs_v2_freemap_set(reader, start + logical, 1U) != 0) {
+                if (d6fs_freemap_set(reader, start + logical, 1U) != 0) {
                         while (logical != 0UL) {
                                 --logical;
-                                (void)d6fs_v2_freemap_set(reader,
+                                (void)d6fs_freemap_set(reader,
                                     start + logical, 0U);
                         }
                         return -1;
@@ -974,7 +974,7 @@ d6fs_v2_alloc_run(struct d6fs_v2_reader *reader, kword_t cursor,
 }
 
 int
-d6fs_v2_free_run(struct d6fs_v2_reader *reader, kword_t start,
+d6fs_free_run(struct d6fs_reader *reader, kword_t start,
     kword_t blocks)
 {
         kword_t i;
@@ -983,7 +983,7 @@ d6fs_v2_free_run(struct d6fs_v2_reader *reader, kword_t start,
             blocks > reader->super.total_blocks - start)
                 return -1;
         for (i = 0UL; i < blocks; ++i)
-                if (d6fs_v2_freemap_set(reader, start + i, 0U) != 0)
+                if (d6fs_freemap_set(reader, start + i, 0U) != 0)
                         return -1;
         return 0;
 }

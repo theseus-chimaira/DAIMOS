@@ -1,0 +1,63 @@
+#ifndef DAIMON_MEMFS_V1_H
+#define DAIMON_MEMFS_V1_H
+
+#include "vfs.h"
+
+#define MEMFS_V1_PROVIDER               4U
+#define MEMFS_V1_KIND_NODE              1U
+
+#define MEMFS_V1_F_USED                 0001U
+#define MEMFS_V1_F_IMAGE                0002U
+#define MEMFS_V1_F_WRITABLE             0004U
+
+/*
+ * A node is deliberately eight PDP-10 words.  The low 18 bits of meta hold
+ * type/mode/flags, while the high half holds the parent slot.  data packs
+ * the pool/image word offset in the high half and its length in the low.
+ */
+struct memfs_node {
+        struct vfs_name name;
+        kword_t meta;
+        kword_t size_chars;
+        kword_t data;
+};
+
+struct memfs {
+        struct memfs_node *nodes;
+        unsigned int node_count;
+        kword_t *pool;
+        unsigned int pool_words;
+        unsigned int used_words;
+        int writable;
+        const kword_t *image_data;
+};
+
+int memfs_lookup(const struct memfs *fs, vnode_t dir,
+    const struct vfs_name *name, vnode_t *nodep);
+int memfs_readdir(const struct memfs *fs, vnode_t dir,
+    unsigned int off, struct vfs_dirent *ent);
+int memfs_stat(const struct memfs *fs, vnode_t node,
+    struct vfs_stat *st);
+int memfs_parent(const struct memfs *fs, vnode_t node,
+    vnode_t *parentp, struct vfs_name *namep);
+int memfs_create(struct memfs *fs, vnode_t dir,
+    const struct vfs_name *name, unsigned int mode, vnode_t *nodep);
+int memfs_mkdir(struct memfs *fs, vnode_t dir,
+    const struct vfs_name *name, unsigned int mode, vnode_t *nodep);
+int memfs_unlink(struct memfs *fs, vnode_t dir,
+    const struct vfs_name *name);
+int memfs_rename(struct memfs *fs, vnode_t olddir,
+    const struct vfs_name *oldname, vnode_t newdir,
+    const struct vfs_name *newname);
+int memfs_truncate_words(struct memfs *fs, vnode_t node,
+    unsigned int words, kword_t size_chars);
+int memfs_chmod(struct memfs *fs, vnode_t node,
+    unsigned int mode);
+int memfs_read_words(const struct memfs *fs, vnode_t node,
+    unsigned int off, kword_t *buf, unsigned int nwords);
+int memfs_write_words(struct memfs *fs, vnode_t node,
+    unsigned int off, const kword_t *buf, unsigned int nwords,
+    kword_t size_chars);
+
+
+#endif

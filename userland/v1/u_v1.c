@@ -104,7 +104,7 @@ u_v1_s6_pack(kword_t *dst, unsigned int words, const char *src)
 
 int
 u_v1_s6_from_dirent(kword_t *dst, unsigned int words,
-    const struct vfs_v1_dirent *ent)
+    const struct vfs_dirent *ent)
 {
         unsigned int i;
         if (dst == 0 || ent == 0 || words < VFS_V1_NAME_WORDS + 1U) return -1;

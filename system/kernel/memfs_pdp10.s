@@ -3,10 +3,10 @@
         .globl  pdp10_ret_zero_v1
         .globl  pdp10_ret_neg1_v1
 
-; void memfs_v1_shift_after(struct memfs_v1 *fs, unsigned int start,
+; void memfs_shift_after(struct memfs *fs, unsigned int start,
 ;     int delta, unsigned int exclude)
-        .globl  memfs_v1_shift_after
-memfs_v1_shift_after:
+        .globl  memfs_shift_after
+memfs_shift_after:
         move    5,(1)           ; nodes
         addi    5,010           ; slot 1, nodes are exactly 8 words
         movei   6,1
@@ -31,12 +31,12 @@ memfs_shift_next:
         addi    5,010
         jrst    memfs_shift_check
 
-; int memfs_v1_resize(struct memfs_v1 *fs, unsigned int slot,
+; int memfs_resize(struct memfs *fs, unsigned int slot,
 ;     unsigned int words)
 ; fs layout: nodes,node_count,pool,pool_words,used_words,writable,image_data.
 ; node layout is 8 words; meta at +5, packed data at +7.
-        .globl  memfs_v1_resize
-memfs_v1_resize:
+        .globl  memfs_resize
+memfs_resize:
         move    4,2
         lsh     4,3
         add     4,(1)           ; node = fs->nodes + slot
@@ -94,7 +94,7 @@ memfs_resize_grow_done:
         addm    7,4(1)
         move    2,5             ; start = old end
         move    3,7             ; positive delta
-        pushj   17,memfs_v1_shift_after
+        pushj   17,memfs_shift_after
         jrst    memfs_resize_ok
 
 ; Shrink by delta = old-new. Move following pool words downward and then
@@ -125,17 +125,17 @@ memfs_resize_shrink_done:
         movem   2,4(1)
         move    2,5             ; start = old end
         movn    3,7             ; negative delta
-        pushj   17,memfs_v1_shift_after
+        pushj   17,memfs_shift_after
 memfs_resize_ok:
         movei   1,0
         popj    17,
 memfs_resize_fail:
         jrst    pdp10_ret_neg1_v1
 
-; int memfs_v1_read_words(const struct memfs_v1 *fs, vnode_v1_t node,
+; int memfs_read_words(const struct memfs *fs, vnode_t node,
 ;     unsigned int off, kword_t *buf, unsigned int nwords)
-        .globl  memfs_v1_read_words
-memfs_v1_read_words:
+        .globl  memfs_read_words
+memfs_read_words:
         jumpe   4,memfs_read_fail
         hlrz    5,2
         caie    5,040001        ; MEMFS provider 4, node kind 1
@@ -188,11 +188,11 @@ memfs_read_eof:
 memfs_read_fail:
         jrst    pdp10_ret_neg1_v1
 
-; int memfs_v1_write_words(struct memfs_v1 *fs, vnode_v1_t node,
+; int memfs_write_words(struct memfs *fs, vnode_t node,
 ;     unsigned int off, const kword_t *buf, unsigned int nwords,
 ;     kword_t size_chars)
-        .globl  memfs_v1_write_words
-memfs_v1_write_words:
+        .globl  memfs_write_words
+memfs_write_words:
         jumpe   4,memfs_write_fail
         hlrz    5,2
         caie    5,040001        ; MEMFS provider 4, node kind 1
@@ -239,7 +239,7 @@ memfs_write_grow:
         move    2,-2(17)        ; saved vnode => slot in low half
         hrrz    2,2
         move    1,-3(17)        ; saved fs
-        pushj   17,memfs_v1_resize
+        pushj   17,memfs_resize
         move    0,1
         pop     17,4
         pop     17,3
@@ -278,9 +278,9 @@ memfs_write_size:
 memfs_write_fail:
         jrst    pdp10_ret_neg1_v1
 
-; int memfs_v1_name_valid(const struct vfs_v1_name *name)
-        .globl  memfs_v1_name_valid
-memfs_v1_name_valid:
+; int memfs_name_valid(const struct vfs_name *name)
+        .globl  memfs_name_valid
+memfs_name_valid:
         jumpe   1,memfs_name_valid_fail
         move    2,(1)
         jumpge  2,memfs_name_valid_small
@@ -295,10 +295,10 @@ memfs_name_valid_small:
 memfs_name_valid_fail:
         jrst    pdp10_ret_zero_v1
 
-; int memfs_v1_slot(const struct memfs_v1 *fs, vnode_v1_t node,
+; int memfs_slot(const struct memfs *fs, vnode_t node,
 ;     unsigned int *slotp)
-        .globl  memfs_v1_slot
-memfs_v1_slot:
+        .globl  memfs_slot
+memfs_slot:
         jumpe   1,memfs_slot_fail
         hlrz    4,2
         caie    4,040001               ; provider 4, node kind 1
@@ -320,10 +320,10 @@ memfs_slot_ok:
 memfs_slot_fail:
         jrst    pdp10_ret_neg1_v1
 
-; int memfs_v1_find_child(const struct memfs_v1 *fs, unsigned int parent,
-;     const struct vfs_v1_name *name, unsigned int *slotp)
-        .globl  memfs_v1_find_child
-memfs_v1_find_child:
+; int memfs_find_child(const struct memfs *fs, unsigned int parent,
+;     const struct vfs_name *name, unsigned int *slotp)
+        .globl  memfs_find_child
+memfs_find_child:
         move    5,(1)
         addi    5,010                  ; slot 1
         movei   6,1
@@ -363,9 +363,9 @@ memfs_find_child_next:
 memfs_find_child_fail:
         jrst    pdp10_ret_neg1_v1
 
-; int memfs_v1_free_slot(const struct memfs_v1 *fs, unsigned int *slotp)
-        .globl  memfs_v1_free_slot
-memfs_v1_free_slot:
+; int memfs_free_slot(const struct memfs *fs, unsigned int *slotp)
+        .globl  memfs_free_slot
+memfs_free_slot:
         move    3,(1)
         addi    3,010
         movei   4,1
@@ -385,9 +385,9 @@ memfs_free_slot_found:
 memfs_free_slot_fail:
         jrst    pdp10_ret_neg1_v1
 
-; int memfs_v1_has_children(const struct memfs_v1 *fs, unsigned int slot)
-        .globl  memfs_v1_has_children
-memfs_v1_has_children:
+; int memfs_has_children(const struct memfs *fs, unsigned int slot)
+        .globl  memfs_has_children
+memfs_has_children:
         move    3,(1)
         addi    3,010
         movei   4,1
@@ -410,25 +410,25 @@ memfs_has_children_yes:
 memfs_has_children_none:
         jrst    pdp10_ret_zero_v1
 
-; void memfs_v1_clear_node(struct memfs_v1_node *np)
-        .globl  memfs_v1_clear_node
-memfs_v1_clear_node:
+; void memfs_clear_node(struct memfs_node *np)
+        .globl  memfs_clear_node
+memfs_clear_node:
         setzm   (1)
         movei   2,1(1)
         hrli    2,(1)
         blt     2,7(1)
         popj    17,
 
-        .globl  memfs_v1_node_handle
-memfs_v1_node_handle:
+        .globl  memfs_node_handle
+memfs_node_handle:
         hrrz    1,1
         tlo     1,040001
         popj    17,
 
-; int memfs_v1_readdir(const struct memfs_v1 *fs, vnode_v1_t dir,
-;     unsigned int off, struct vfs_v1_dirent *ent)
-        .globl  memfs_v1_readdir
-memfs_v1_readdir:
+; int memfs_readdir(const struct memfs *fs, vnode_t dir,
+;     unsigned int off, struct vfs_dirent *ent)
+        .globl  memfs_readdir
+memfs_readdir:
         jumpe   4,memfs_readdir_fail
         jumpe   1,memfs_readdir_fail
         hlrz    5,2
@@ -482,10 +482,10 @@ memfs_readdir_eof:
 memfs_readdir_fail:
         jrst    pdp10_ret_neg1_v1
 
-; int memfs_v1_stat(const struct memfs_v1 *fs, vnode_v1_t node,
-;     struct vfs_v1_stat *st)
-        .globl  memfs_v1_stat
-memfs_v1_stat:
+; int memfs_stat(const struct memfs *fs, vnode_t node,
+;     struct vfs_stat *st)
+        .globl  memfs_stat
+memfs_stat:
         jumpe   3,memfs_stat_fail
         jumpe   1,memfs_stat_fail
         hlrz    4,2
@@ -514,10 +514,10 @@ memfs_v1_stat:
 memfs_stat_fail:
         jrst    pdp10_ret_neg1_v1
 
-; int memfs_v1_parent(const struct memfs_v1 *fs, vnode_v1_t node,
-;     vnode_v1_t *parentp, struct vfs_v1_name *namep)
-        .globl  memfs_v1_parent
-memfs_v1_parent:
+; int memfs_parent(const struct memfs *fs, vnode_t node,
+;     vnode_t *parentp, struct vfs_name *namep)
+        .globl  memfs_parent
+memfs_parent:
         jumpe   3,memfs_parent_fail
         jumpe   1,memfs_parent_fail
         hlrz    5,2

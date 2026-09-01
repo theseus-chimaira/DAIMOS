@@ -1,5 +1,5 @@
 #include "exec_v1.h"
-#include "file_v1.h"
+#include "file.h"
 #include "mach_user_v1.h"
 
 #define EXEC_V1_HALF_MASK 0777777UL
@@ -11,8 +11,8 @@ int
 exec_v1_load_init(struct proc_v1 *p, unsigned int owner,
     const kword_t *path, kword_t base, kword_t limit)
 {
-        vnode_v1_t node;
-        struct vfs_v1_stat st;
+        vnode_t node;
+        struct vfs_stat st;
         kword_t hdr[EXEC_V1_DXR_HDR_WORDS];
         kword_t *mem;
         kword_t target;
@@ -26,10 +26,10 @@ exec_v1_load_init(struct proc_v1 *p, unsigned int owner,
         unsigned int rel_index;
 
         if (p == 0 || path == 0 || base >= limit ||
-            file_v1_lookup_path(path, &node) != 0 ||
-            vfs_v1_stat(node, &st) != 0 || st.type != VFS_V1_TYPE_REG ||
+            file_lookup_path(path, &node) != 0 ||
+            vfs_stat(node, &st) != 0 || st.type != VFS_V1_TYPE_REG ||
             st.size_words < EXEC_V1_DXR_HDR_WORDS ||
-            vfs_v1_read_words(node, 0U, hdr, EXEC_V1_DXR_HDR_WORDS) !=
+            vfs_read_words(node, 0U, hdr, EXEC_V1_DXR_HDR_WORDS) !=
             (int)EXEC_V1_DXR_HDR_WORDS ||
             ((hdr[0] >> 18U) & EXEC_V1_HALF_MASK) != EXEC_V1_DXR_MAGIC)
                 return -1;
@@ -51,7 +51,7 @@ exec_v1_load_init(struct proc_v1 *p, unsigned int owner,
                 return -1;
 
         mem = (kword_t *)(unsigned long)base;
-        if (vfs_v1_read_words(node, EXEC_V1_DXR_HDR_WORDS, mem,
+        if (vfs_read_words(node, EXEC_V1_DXR_HDR_WORDS, mem,
             image_words) != (int)image_words)
                 return -1;
 
@@ -62,7 +62,7 @@ exec_v1_load_init(struct proc_v1 *p, unsigned int owner,
 
                 r = i / 36U;
                 if (r != rel_index) {
-                        if (vfs_v1_read_words(node,
+                        if (vfs_read_words(node,
                             EXEC_V1_DXR_HDR_WORDS + image_words + r,
                             &relword, 1U) != 1)
                                 return -1;

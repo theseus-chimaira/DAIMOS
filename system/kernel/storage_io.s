@@ -20,8 +20,8 @@
 ;   AC1 = raw DSK270 hardware address, AC2 = 128-word destination.
 
         .text
-        .globl devicefs_v1_io_in
-        .globl devicefs_v1_io_out
+        .globl devicefs_io_in
+        .globl devicefs_io_out
         .globl storage_pi_handler
         .globl dsk_enqueue
         .globl dsk_queue
@@ -230,9 +230,9 @@ storage_pi_dsk_idle:
         ; the next queued request is left to the awakened process, keeping the
         ; PI ABI at AC1..AC3 only.
         aos 1,1(2)                  ; event 0 -> success value 1
-        movei 1,devicefs_v1_io_in+011
+        movei 1,devicefs_io_in+011
         tlne 2,1
-        movei 1,devicefs_v1_io_out+011
+        movei 1,devicefs_io_out+011
         movei 2,0200
         addm 2,(1)
 storage_pi_dsk_complete:
@@ -713,12 +713,12 @@ storage_wait_done:
 
 
 storage_account_table:
-        .word devicefs_v1_io_in+07
-        .word devicefs_v1_io_in+010
-        .word devicefs_v1_io_in+011
-        .word devicefs_v1_io_out+011
-        .word devicefs_v1_io_out+010
-        .word devicefs_v1_io_out+07
+        .word devicefs_io_in+07
+        .word devicefs_io_in+010
+        .word devicefs_io_in+011
+        .word devicefs_io_out+011
+        .word devicefs_io_out+010
+        .word devicefs_io_out+07
 
 ; DCT drain/ack handlers run only after a final BLKO has fallen through
 ; the PI3 vector.  storage_state keeps the controller owner unchanged, so

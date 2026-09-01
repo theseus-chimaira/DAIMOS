@@ -1,5 +1,5 @@
 #include "proc_v1.h"
-#include "procfs_v1.h"
+#include "procfs.h"
 
 extern struct proc_v1 proc_v1_table[PROC_V1_NPROC];
 kword_t

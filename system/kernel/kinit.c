@@ -4,7 +4,7 @@
 #include "mres.h"
 #include "kboot_v1.h"
 
-int kfs_boot_v2_prepare(void);
+int kfs_boot_prepare(void);
 
 static unsigned int mres_next_addr;
 static const kword_t *module_mres_package;
@@ -213,7 +213,7 @@ kinit_enter(void)
             (kword_t)module_service_get(MODULE_SERVICE_CTY_PUTCHAR);
         kcore_cty_getchar_v1 =
             (kword_t)module_service_get(MODULE_SERVICE_CTY_GETCHAR);
-        if (kfs_boot_v2_prepare() != 0)
+        if (kfs_boot_prepare() != 0)
                 kinit_halt();
 #ifdef KINIT_DEBUG
         kinit_diag_finished();

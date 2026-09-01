@@ -1,10 +1,10 @@
 ; dtfs_pdp10.s -- resident indirect bridge to block-addressed DTC MRES.
         .text
-        .globl dtfs_v1_dtc_call
+        .globl dtfs_dtc_call
 
-; int dtfs_v1_dtc_call(address, unit, block, buffer)
+; int dtfs_dtc_call(address, unit, block, buffer)
 ; C args arrive in AC1..AC4; DTC service expects unit/block/buffer in AC1..AC3.
-dtfs_v1_dtc_call:
+dtfs_dtc_call:
         move    5,1
         move    1,2
         move    2,3

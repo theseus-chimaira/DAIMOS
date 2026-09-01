@@ -1,11 +1,11 @@
 #include "kinit.h"
 #include "kboot_v1.h"
-#include "initfs_v1.h"
+#include "initfs.h"
 #include "exec_v1.h"
 #include "proc_v1.h"
-#include "file_v1.h"
-#include "devicefs_v1.h"
-#include "dtfs_v1.h"
+#include "file.h"
+#include "devicefs.h"
+#include "dtfs.h"
 #include "dsk270.h"
 #include "module.h"
 #include "syscall_v1.h"
@@ -37,13 +37,13 @@
 #define IEF_AUX         6U
 #define IEF_FLAGS       7U
 
-extern kword_t __initfs_v1_begin;
-extern kword_t __initfs_v1_begin_end;
+extern kword_t __initfs_begin;
+extern kword_t __initfs_begin_end;
 
-static struct memfs_v1_node boot_nodes_v2[KBOOT_V1_NODE_COUNT];
+static struct memfs_node boot_nodes_v2[KBOOT_V1_NODE_COUNT];
 
 static void
-boot_clear_node(struct memfs_v1_node *np)
+boot_clear_node(struct memfs_node *np)
 {
         unsigned int i;
 
@@ -56,7 +56,7 @@ boot_clear_node(struct memfs_v1_node *np)
 }
 
 static void
-boot_set_node(struct memfs_v1_node *np, unsigned int parent,
+boot_set_node(struct memfs_node *np, unsigned int parent,
     unsigned int type, unsigned int mode, unsigned int flags,
     unsigned int data_word, unsigned int data_words, kword_t size_chars)
 {
@@ -100,7 +100,7 @@ boot_name_char(unsigned int c)
 
 static int
 boot_name(const kword_t *strings, unsigned int string_nonets,
-    unsigned int off, struct vfs_v1_name *name)
+    unsigned int off, struct vfs_name *name)
 {
         unsigned int i;
         unsigned int c;
@@ -133,7 +133,7 @@ static int
 boot_add_dir(unsigned int slot, unsigned int parent, kword_t word,
     unsigned int chars, unsigned int mode, int writable)
 {
-        struct memfs_v1_node *np;
+        struct memfs_node *np;
 
         if (slot >= KBOOT_V1_NODE_COUNT || parent >= KBOOT_V1_NODE_COUNT)
                 return -1;
@@ -148,7 +148,7 @@ boot_add_dir(unsigned int slot, unsigned int parent, kword_t word,
 }
 
 int
-kfs_boot_v2_prepare(void)
+kfs_boot_prepare(void)
 {
         const kword_t *image;
         const kword_t *strings;
@@ -166,11 +166,11 @@ kfs_boot_v2_prepare(void)
         unsigned int words;
         unsigned int next;
         kword_t size_chars;
-        struct vfs_v1_name name;
-        struct memfs_v1_node *np;
+        struct vfs_name name;
+        struct memfs_node *np;
 
-        image = &__initfs_v1_begin;
-        image_words = (unsigned int)(&__initfs_v1_begin_end - &__initfs_v1_begin);
+        image = &__initfs_begin;
+        image_words = (unsigned int)(&__initfs_begin_end - &__initfs_begin);
         if (image_words < INITFS_V1_HDR_WORDS ||
             image[IHF_MAGIC] != INITFS_V1_MAGIC ||
             image[IHF_VERSION] != INITFS_V1_VERSION ||
@@ -240,7 +240,7 @@ kfs_boot_v2_prepare(void)
         if (boot_add_dir(next, next - 1U,
             VFS_V1_SIX6('R','A','M','F','S','0'), 6U, 0777U, 1) != 0)
                 return -1;
-        file_v1_alias_node = VFS_V1_NODE(MEMFS_V1_PROVIDER,
+        file_alias_node = VFS_V1_NODE(MEMFS_V1_PROVIDER,
             MEMFS_V1_KIND_NODE, next);
         ++next;
         if (boot_add_dir(next, 0U, VFS_V1_SIX6('D','T','0',' ',' ',' '),
@@ -267,11 +267,11 @@ kfs_boot_v2_prepare(void)
                         state[j] = 0;
         }
         {
-                struct memfs_v1 config;
+                struct memfs config;
                 struct fs_mres_request req;
-                vnode_v1_t root;
+                vnode_t root;
 
-                config.nodes = (struct memfs_v1_node *)(unsigned long)
+                config.nodes = (struct memfs_node *)(unsigned long)
                     KBOOT_V1_RAMFS0_BASE;
                 config.node_count = KBOOT_V1_NODE_COUNT;
                 config.pool = (kword_t *)(unsigned long)
@@ -285,18 +285,18 @@ kfs_boot_v2_prepare(void)
                 req.op = FS_MRES_OP_MEMFS_INIT;
                 req.a = (kword_t)(unsigned long)&config;
                 if (fs_mres_call(fs_memfs_service_addr, &req) != 0 ||
-                    vfs_v1_mount(VFS_V1_NODE_NONE, MEMFS_V1_PROVIDER,
+                    vfs_mount(VFS_V1_NODE_NONE, MEMFS_V1_PROVIDER,
                     MEMFS_V1_KIND_NODE, 0U, VFS_V1_MOUNT_RW, &root) != 0)
                         return -1;
         }
 
 bind_services:
-        devicefs_v1_present = kcore_cty_putchar_v1 != 0 &&
+        devicefs_present = kcore_cty_putchar_v1 != 0 &&
             kcore_cty_getchar_v1 != 0 ?
             DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CTY0) : 0;
         if (module_service_get(MODULE_SERVICE_DTC_READ_BLOCK) != 0U &&
             module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK) != 0U)
-                devicefs_v1_present |=
+                devicefs_present |=
                     DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DTC0);
 
         dsk270_read_addr_v1 =

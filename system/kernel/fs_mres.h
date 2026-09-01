@@ -1,7 +1,7 @@
 #ifndef DAIMON_FS_MRES_H
 #define DAIMON_FS_MRES_H
 
-#include "vfs_v1.h"
+#include "vfs.h"
 
 /* One exported entry per optional filesystem MRES. */
 #define FS_MRES_OP_LOOKUP              1U
@@ -52,7 +52,7 @@ extern unsigned int fs_d6fs_service_addr;
 int fs_mres_call(unsigned int address, struct fs_mres_request *req);
 int fs_provider_call(unsigned int provider, struct fs_mres_request *req);
 int fs_dtfs_format_unit(unsigned int unit);
-int fs_dtfs_mount_unit(unsigned int unit, vnode_v1_t target,
-    unsigned int flags, vnode_v1_t *rootp);
+int fs_dtfs_mount_unit(unsigned int unit, vnode_t target,
+    unsigned int flags, vnode_t *rootp);
 
 #endif

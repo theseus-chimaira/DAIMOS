@@ -2,10 +2,10 @@
 #define DAIMON_KBOOT_V1_H
 
 #include "kcore.h"
-#include "memfs_v1.h"
-#include "file_v1.h"
+#include "memfs.h"
+#include "file.h"
 #include "proc_v1.h"
-#include "devicefs_v1.h"
+#include "devicefs.h"
 
 #define KBOOT_V1_TOTAL_WORDS        01000000UL
 #define KBOOT_V1_USER_BASE          0100000UL

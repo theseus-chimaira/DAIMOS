@@ -7,8 +7,8 @@
 ; Type 630 IOT semantics follow the PDP-6 Handbook directly.
 
         .text
-        .globl devicefs_v1_io_in
-        .globl devicefs_v1_io_out
+        .globl devicefs_io_in
+        .globl devicefs_io_out
         .globl dcs_pi_handler
         .globl dcs_getchar
         .globl dcs_putchar
@@ -30,7 +30,7 @@ dcs_pi_receive:
         lsh 1,010
         movem 1,dcs_rx_word
         datai 0304,1
-        aos devicefs_v1_io_in+3
+        aos devicefs_io_in+3
         andi 1,0377
         iorm 1,dcs_rx_word
         cono 0300,0
@@ -59,7 +59,7 @@ dcs_putchar:
         cono 0304,0(2)
         andi 1,0377
         datao 0300,1
-        aos devicefs_v1_io_out+3
+        aos devicefs_io_out+3
         jrst pdp10_ret_ok_v34
 
         .bss

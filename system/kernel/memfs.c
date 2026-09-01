@@ -1,4 +1,4 @@
-#include "memfs_v1.h"
+#include "memfs.h"
 
 #define MEMFS_V1_HALF_MASK      0777777UL
 #define MEMFS_V1_TYPE_SHIFT     15U
@@ -20,136 +20,136 @@
 #define NODE_DATA_WORDS(np) \
         ((unsigned int)((np)->data & MEMFS_V1_HALF_MASK))
 
-extern vnode_v1_t memfs_v1_node_handle(unsigned int slot);
-extern int memfs_v1_name_valid(const struct vfs_v1_name *name);
-extern int memfs_v1_slot(const struct memfs_v1 *fs, vnode_v1_t node,
+extern vnode_t memfs_node_handle(unsigned int slot);
+extern int memfs_name_valid(const struct vfs_name *name);
+extern int memfs_slot(const struct memfs *fs, vnode_t node,
     unsigned int *slotp);
-extern int memfs_v1_find_child(const struct memfs_v1 *fs, unsigned int parent,
-    const struct vfs_v1_name *name, unsigned int *slotp);
-extern int memfs_v1_free_slot(const struct memfs_v1 *fs, unsigned int *slotp);
-extern void memfs_v1_clear_node(struct memfs_v1_node *np);
+extern int memfs_find_child(const struct memfs *fs, unsigned int parent,
+    const struct vfs_name *name, unsigned int *slotp);
+extern int memfs_free_slot(const struct memfs *fs, unsigned int *slotp);
+extern void memfs_clear_node(struct memfs_node *np);
 
 int
-memfs_v1_lookup(const struct memfs_v1 *fs, vnode_v1_t dir,
-    const struct vfs_v1_name *name, vnode_v1_t *nodep)
+memfs_lookup(const struct memfs *fs, vnode_t dir,
+    const struct vfs_name *name, vnode_t *nodep)
 {
         unsigned int parent;
         unsigned int slot;
 
-        if (nodep == 0 || !memfs_v1_name_valid(name) ||
-            memfs_v1_slot(fs, dir, &parent) != 0 ||
+        if (nodep == 0 || !memfs_name_valid(name) ||
+            memfs_slot(fs, dir, &parent) != 0 ||
             NODE_TYPE(&fs->nodes[parent]) != VFS_V1_TYPE_DIR)
                 return -1;
-        if (memfs_v1_find_child(fs, parent, name, &slot) != 0)
+        if (memfs_find_child(fs, parent, name, &slot) != 0)
                 return -1;
-        *nodep = memfs_v1_node_handle(slot);
+        *nodep = memfs_node_handle(slot);
         return 0;
 }
 
-extern int memfs_v1_readdir(const struct memfs_v1 *fs, vnode_v1_t dir,
-    unsigned int off, struct vfs_v1_dirent *ent);
+extern int memfs_readdir(const struct memfs *fs, vnode_t dir,
+    unsigned int off, struct vfs_dirent *ent);
 
-extern int memfs_v1_stat(const struct memfs_v1 *fs, vnode_v1_t node,
-    struct vfs_v1_stat *st);
+extern int memfs_stat(const struct memfs *fs, vnode_t node,
+    struct vfs_stat *st);
 
-extern int memfs_v1_parent(const struct memfs_v1 *fs, vnode_v1_t node,
-    vnode_v1_t *parentp, struct vfs_v1_name *namep);
+extern int memfs_parent(const struct memfs *fs, vnode_t node,
+    vnode_t *parentp, struct vfs_name *namep);
 
 static int
-memfs_v1_new_node(struct memfs_v1 *fs, vnode_v1_t dir,
-    const struct vfs_v1_name *name, unsigned int type, unsigned int mode,
-    vnode_v1_t *nodep)
+memfs_new_node(struct memfs *fs, vnode_t dir,
+    const struct vfs_name *name, unsigned int type, unsigned int mode,
+    vnode_t *nodep)
 {
         unsigned int parent;
         unsigned int slot;
-        struct memfs_v1_node *np;
+        struct memfs_node *np;
 
         if (fs == 0 || !fs->writable || nodep == 0 ||
-            !memfs_v1_name_valid(name) || memfs_v1_slot(fs, dir, &parent) != 0 ||
+            !memfs_name_valid(name) || memfs_slot(fs, dir, &parent) != 0 ||
             NODE_TYPE(&fs->nodes[parent]) != VFS_V1_TYPE_DIR ||
             (NODE_FLAGS(&fs->nodes[parent]) & MEMFS_V1_F_WRITABLE) == 0U)
                 return -1;
-        if (memfs_v1_find_child(fs, parent, name, 0) == 0 ||
-            memfs_v1_free_slot(fs, &slot) != 0)
+        if (memfs_find_child(fs, parent, name, 0) == 0 ||
+            memfs_free_slot(fs, &slot) != 0)
                 return -1;
         np = &fs->nodes[slot];
-        memfs_v1_clear_node(np);
+        memfs_clear_node(np);
         np->name = *name;
         np->meta = ((kword_t)(parent & MEMFS_V1_HALF_MASK) << 18U) |
             ((kword_t)(type & MEMFS_V1_TYPE_MASK) << MEMFS_V1_TYPE_SHIFT) |
             ((kword_t)(mode & MEMFS_V1_MODE_MASK) << MEMFS_V1_MODE_SHIFT) |
             (kword_t)(MEMFS_V1_F_USED | MEMFS_V1_F_WRITABLE);
         np->data = (kword_t)(fs->used_words & MEMFS_V1_HALF_MASK) << 18U;
-        *nodep = memfs_v1_node_handle(slot);
+        *nodep = memfs_node_handle(slot);
         return 0;
 }
 
 int
-memfs_v1_create(struct memfs_v1 *fs, vnode_v1_t dir,
-    const struct vfs_v1_name *name, unsigned int mode, vnode_v1_t *nodep)
+memfs_create(struct memfs *fs, vnode_t dir,
+    const struct vfs_name *name, unsigned int mode, vnode_t *nodep)
 {
-        return memfs_v1_new_node(fs, dir, name, VFS_V1_TYPE_REG, mode,
+        return memfs_new_node(fs, dir, name, VFS_V1_TYPE_REG, mode,
             nodep);
 }
 
 int
-memfs_v1_mkdir(struct memfs_v1 *fs, vnode_v1_t dir,
-    const struct vfs_v1_name *name, unsigned int mode, vnode_v1_t *nodep)
+memfs_mkdir(struct memfs *fs, vnode_t dir,
+    const struct vfs_name *name, unsigned int mode, vnode_t *nodep)
 {
-        return memfs_v1_new_node(fs, dir, name, VFS_V1_TYPE_DIR, mode,
+        return memfs_new_node(fs, dir, name, VFS_V1_TYPE_DIR, mode,
             nodep);
 }
 
-extern int memfs_v1_has_children(const struct memfs_v1 *fs, unsigned int slot);
+extern int memfs_has_children(const struct memfs *fs, unsigned int slot);
 
-extern void memfs_v1_shift_after(struct memfs_v1 *fs, unsigned int start,
+extern void memfs_shift_after(struct memfs *fs, unsigned int start,
     int delta, unsigned int exclude);
 
-extern int memfs_v1_resize(struct memfs_v1 *fs, unsigned int slot,
+extern int memfs_resize(struct memfs *fs, unsigned int slot,
     unsigned int words);
 
 int
-memfs_v1_unlink(struct memfs_v1 *fs, vnode_v1_t dir,
-    const struct vfs_v1_name *name)
+memfs_unlink(struct memfs *fs, vnode_t dir,
+    const struct vfs_name *name)
 {
         unsigned int parent;
         unsigned int slot;
 
-        if (fs == 0 || !fs->writable || !memfs_v1_name_valid(name) ||
-            memfs_v1_slot(fs, dir, &parent) != 0 ||
+        if (fs == 0 || !fs->writable || !memfs_name_valid(name) ||
+            memfs_slot(fs, dir, &parent) != 0 ||
             NODE_TYPE(&fs->nodes[parent]) != VFS_V1_TYPE_DIR ||
             (NODE_FLAGS(&fs->nodes[parent]) & MEMFS_V1_F_WRITABLE) == 0U ||
-            memfs_v1_find_child(fs, parent, name, &slot) != 0 ||
-            memfs_v1_has_children(fs, slot))
+            memfs_find_child(fs, parent, name, &slot) != 0 ||
+            memfs_has_children(fs, slot))
                 return -1;
         if (NODE_TYPE(&fs->nodes[slot]) == VFS_V1_TYPE_REG &&
-            memfs_v1_resize(fs, slot, 0U) != 0)
+            memfs_resize(fs, slot, 0U) != 0)
                 return -1;
-        memfs_v1_clear_node(&fs->nodes[slot]);
+        memfs_clear_node(&fs->nodes[slot]);
         return 0;
 }
 
 
 int
-memfs_v1_rename(struct memfs_v1 *fs, vnode_v1_t olddir,
-    const struct vfs_v1_name *oldname, vnode_v1_t newdir,
-    const struct vfs_v1_name *newname)
+memfs_rename(struct memfs *fs, vnode_t olddir,
+    const struct vfs_name *oldname, vnode_t newdir,
+    const struct vfs_name *newname)
 {
         unsigned int oldparent;
         unsigned int newparent;
         unsigned int slot;
         unsigned int p;
 
-        if (fs == 0 || !fs->writable || !memfs_v1_name_valid(oldname) ||
-            !memfs_v1_name_valid(newname) ||
-            memfs_v1_slot(fs, olddir, &oldparent) != 0 ||
-            memfs_v1_slot(fs, newdir, &newparent) != 0 ||
+        if (fs == 0 || !fs->writable || !memfs_name_valid(oldname) ||
+            !memfs_name_valid(newname) ||
+            memfs_slot(fs, olddir, &oldparent) != 0 ||
+            memfs_slot(fs, newdir, &newparent) != 0 ||
             NODE_TYPE(&fs->nodes[oldparent]) != VFS_V1_TYPE_DIR ||
             NODE_TYPE(&fs->nodes[newparent]) != VFS_V1_TYPE_DIR ||
             (NODE_FLAGS(&fs->nodes[oldparent]) & MEMFS_V1_F_WRITABLE) == 0U ||
             (NODE_FLAGS(&fs->nodes[newparent]) & MEMFS_V1_F_WRITABLE) == 0U ||
-            memfs_v1_find_child(fs, oldparent, oldname, &slot) != 0 ||
-            memfs_v1_find_child(fs, newparent, newname, 0) == 0)
+            memfs_find_child(fs, oldparent, oldname, &slot) != 0 ||
+            memfs_find_child(fs, newparent, newname, 0) == 0)
                 return -1;
         if (NODE_TYPE(&fs->nodes[slot]) == VFS_V1_TYPE_DIR) {
                 p = newparent;
@@ -172,11 +172,11 @@ memfs_v1_rename(struct memfs_v1 *fs, vnode_v1_t olddir,
 }
 
 int
-memfs_v1_chmod(struct memfs_v1 *fs, vnode_v1_t node, unsigned int mode)
+memfs_chmod(struct memfs *fs, vnode_t node, unsigned int mode)
 {
         unsigned int slot;
 
-        if (fs == 0 || !fs->writable || memfs_v1_slot(fs, node, &slot) != 0 ||
+        if (fs == 0 || !fs->writable || memfs_slot(fs, node, &slot) != 0 ||
             (NODE_FLAGS(&fs->nodes[slot]) & MEMFS_V1_F_WRITABLE) == 0U)
                 return -1;
         fs->nodes[slot].meta =
@@ -187,22 +187,22 @@ memfs_v1_chmod(struct memfs_v1 *fs, vnode_v1_t node, unsigned int mode)
 }
 
 int
-memfs_v1_truncate_words(struct memfs_v1 *fs, vnode_v1_t node,
+memfs_truncate_words(struct memfs *fs, vnode_t node,
     unsigned int words, kword_t size_chars)
 {
         unsigned int slot;
 
-        if (memfs_v1_slot(fs, node, &slot) != 0 ||
+        if (memfs_slot(fs, node, &slot) != 0 ||
             NODE_TYPE(&fs->nodes[slot]) != VFS_V1_TYPE_REG ||
-            memfs_v1_resize(fs, slot, words) != 0)
+            memfs_resize(fs, slot, words) != 0)
                 return -1;
         fs->nodes[slot].size_chars = size_chars;
         return 0;
 }
 
-extern int memfs_v1_read_words(const struct memfs_v1 *fs, vnode_v1_t node,
+extern int memfs_read_words(const struct memfs *fs, vnode_t node,
     unsigned int off, kword_t *buf, unsigned int nwords);
 
-extern int memfs_v1_write_words(struct memfs_v1 *fs, vnode_v1_t node,
+extern int memfs_write_words(struct memfs *fs, vnode_t node,
     unsigned int off, const kword_t *buf, unsigned int nwords,
     kword_t size_chars);

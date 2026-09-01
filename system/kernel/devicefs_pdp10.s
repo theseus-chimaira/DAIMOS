@@ -5,7 +5,7 @@
 
 ; Full DEVICEFS runtime operations.  Names remain packed SIXBIT words.
         .data
-devicefs_v1_names:
+devicefs_names:
         .word   0436471200000          ; CTY0
         .word   0435453200000          ; CLK0
         .word   0606462200000          ; PTR0
@@ -44,10 +44,10 @@ devicefs_name_len4:
         movei   6,4
         popj    17,
 
-; int devicefs_v1_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
-;     vnode_v1_t *nodep)
-        .globl  devicefs_v1_lookup
-devicefs_v1_lookup:
+; int devicefs_lookup(vnode_t dir, const struct vfs_name *name,
+;     vnode_t *nodep)
+        .globl  devicefs_lookup
+devicefs_lookup:
         jumpe   2,devicefs_lookup_fail
         jumpe   3,devicefs_lookup_fail
         camn    1,[020003000000]       ; /DEVICE/CTY0 directory
@@ -61,9 +61,9 @@ devicefs_lookup_scan:
         jrst    devicefs_lookup_fail
         movei   5,1
         lsh     5,0(4)
-        tdnn    5,devicefs_v1_present
+        tdnn    5,devicefs_present
         jrst    devicefs_lookup_next
-        move    5,devicefs_v1_names(4)
+        move    5,devicefs_names(4)
         pushj   17,devicefs_name_length
         came    6,(2)
         jrst    devicefs_lookup_next
@@ -84,7 +84,7 @@ devicefs_lookup_next:
         jrst    devicefs_lookup_scan
 
 devicefs_lookup_cty:
-        move    5,devicefs_v1_present
+        move    5,devicefs_present
         trnn    5,1
         jrst    devicefs_lookup_fail
         move    4,(2)
@@ -127,10 +127,10 @@ devicefs_readdir_store:
         movei   1,1
         popj    17,
 
-; int devicefs_v1_readdir(vnode_v1_t dir, unsigned int off,
-;     struct vfs_v1_dirent *ent)
-        .globl  devicefs_v1_readdir
-devicefs_v1_readdir:
+; int devicefs_readdir(vnode_t dir, unsigned int off,
+;     struct vfs_dirent *ent)
+        .globl  devicefs_readdir
+devicefs_readdir:
         jumpe   3,devicefs_readdir_fail
         move    4,3                     ; ent
         camn    1,[020003000000]
@@ -145,7 +145,7 @@ devicefs_readdir_scan:
         jrst    devicefs_readdir_eof
         movei   6,1
         lsh     6,0(5)
-        tdnn    6,devicefs_v1_present
+        tdnn    6,devicefs_present
         jrst    devicefs_readdir_next
         camn    7,2
         jrst    devicefs_readdir_found
@@ -155,7 +155,7 @@ devicefs_readdir_next:
         jrst    devicefs_readdir_scan
 devicefs_readdir_found:
         move    0,5                     ; preserve id in AC0
-        move    5,devicefs_v1_names(5)
+        move    5,devicefs_names(5)
         pushj   17,devicefs_name_length
         jumpe   0,devicefs_readdir_root_cty_type
         caige   0,014
@@ -177,7 +177,7 @@ devicefs_readdir_root_cty_type:
         jrst    devicefs_readdir_store
 
 devicefs_readdir_cty:
-        move    5,devicefs_v1_present
+        move    5,devicefs_present
         trnn    5,1
         jrst    devicefs_readdir_fail
         cail    2,3
@@ -204,9 +204,9 @@ devicefs_readdir_eof:
 devicefs_readdir_fail:
         jrst    pdp10_ret_neg1_v1
 
-; int devicefs_v1_stat(vnode_v1_t node, struct vfs_v1_stat *st)
-        .globl  devicefs_v1_stat
-devicefs_v1_stat:
+; int devicefs_stat(vnode_t node, struct vfs_stat *st)
+        .globl  devicefs_stat
+devicefs_stat:
         jumpe   2,devicefs_stat_fail
         hlrz    3,1
         hrrz    4,1
@@ -228,7 +228,7 @@ devicefs_stat_not_root:
         jrst    devicefs_stat_fail
         movei   5,1
         lsh     5,0(4)
-        tdnn    5,devicefs_v1_present
+        tdnn    5,devicefs_present
         jrst    devicefs_stat_fail
         caige   4,014
         jrst    devicefs_stat_char
@@ -248,7 +248,7 @@ devicefs_stat_device_mode:
         jrst    devicefs_stat_store
 devicefs_stat_ctydir:
         jumpn   4,devicefs_stat_fail
-        move    5,devicefs_v1_present
+        move    5,devicefs_present
         trnn    5,1
         jrst    devicefs_stat_fail
         movei   5,1
@@ -256,7 +256,7 @@ devicefs_stat_ctydir:
         jrst    devicefs_stat_store
 devicefs_stat_ctyfile:
         jumpn   4,devicefs_stat_fail
-        move    5,devicefs_v1_present
+        move    5,devicefs_present
         trnn    5,1
         jrst    devicefs_stat_fail
         movei   5,2
@@ -271,13 +271,13 @@ devicefs_stat_store:
 devicefs_stat_fail:
         jrst    pdp10_ret_neg1_v1
 
-; int devicefs_v1_readchar(vnode_v1_t node, kword_t off, unsigned int *chp)
-        .globl  devicefs_v1_readchar
-devicefs_v1_readchar:
+; int devicefs_readchar(vnode_t node, kword_t off, unsigned int *chp)
+        .globl  devicefs_readchar
+devicefs_readchar:
         jumpe   3,devicefs_readchar_fail
         hrrz    4,1
         jumpn   4,devicefs_readchar_fail
-        move    5,devicefs_v1_present
+        move    5,devicefs_present
         trnn    5,1
         jrst    devicefs_readchar_fail
         hlrz    4,1
@@ -290,10 +290,10 @@ devicefs_readchar_not_device:
         jrst    devicefs_readchar_in
         caie    4,020005
         jrst    devicefs_readchar_fail
-        move    1,devicefs_v1_io_out
+        move    1,devicefs_io_out
         jrst    devicefs_readchar_tail
 devicefs_readchar_in:
-        move    1,devicefs_v1_io_in
+        move    1,devicefs_io_in
 devicefs_readchar_tail:
         ; AC2 already holds off, AC3 already holds chp.
         jrst    kfmt_u36_decimal_readchar
