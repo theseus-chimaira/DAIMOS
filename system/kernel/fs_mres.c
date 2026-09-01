@@ -3,27 +3,6 @@
 #include "dtfs.h"
 #include "d6fs_provider.h"
 
-unsigned int fs_memfs_service_addr;
-unsigned int fs_dtfs_service_addr;
-unsigned int fs_d6fs_service_addr;
-
-int
-fs_provider_call(unsigned int provider, struct fs_mres_request *req)
-{
-        unsigned int address;
-
-        if (req == 0)
-                return -1;
-        if (provider == MEMFS_V1_PROVIDER)
-                address = fs_memfs_service_addr;
-        else if (provider == DTFS_V1_PROVIDER)
-                address = fs_dtfs_service_addr;
-        else if (provider == D6FS_V2_PROVIDER)
-                address = fs_d6fs_service_addr;
-        else
-                return -1;
-        return fs_mres_call(address, req);
-}
 
 int
 fs_dtfs_format_unit(unsigned int unit)

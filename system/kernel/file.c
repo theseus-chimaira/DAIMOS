@@ -28,26 +28,8 @@ file_name_dotdot(const struct vfs_name *name)
 #define FILE_V1_PATH_MAX_CHARS   ((FILE_V1_PATH_WORDS - 1U) * 6U)
 #define FILE_V1_SYMLINK_MAX      8U
 
-static unsigned int
-file_path_char(const kword_t *path, unsigned int pos)
-{
-        unsigned int shift;
-
-        shift = 30U - 6U * (pos % 6U);
-        return (unsigned int)((path[1U + pos / 6U] >> shift) & 077UL);
-}
-
-static void
-file_path_setchar(kword_t *path, unsigned int pos, unsigned int ch)
-{
-        unsigned int shift;
-        kword_t mask;
-
-        shift = 30U - 6U * (pos % 6U);
-        mask = (kword_t)077UL << shift;
-        path[1U + pos / 6U] = (path[1U + pos / 6U] & ~mask) |
-            (((kword_t)ch & 077UL) << shift);
-}
+extern unsigned int file_path_char(const kword_t *path, unsigned int pos);
+extern void file_path_setchar(kword_t *path, unsigned int pos, unsigned int ch);
 
 static int
 file_walk_path_at(const kword_t *path, int parent_only,

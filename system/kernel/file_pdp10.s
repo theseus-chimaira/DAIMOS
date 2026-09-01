@@ -8,6 +8,47 @@
 
 ; file_pdp10.s -- compact resident FILE/path primitives for PDP-6/PDP-10.
         .text
+
+        .globl  file_path_char
+; unsigned int file_path_char(path, pos)
+; pos is bounded by FILE_V1_PATH_MAX_CHARS, so signed IDIVI is sufficient and
+; avoids constructing a 72-bit unsigned dividend for DIVI.
+file_path_char:
+        idivi   2,6
+        move    4,3
+        muli    4,6
+        trne    4,1
+        tloa    5,0400000
+        tlz     5,0400000
+        add     1,2
+        move    1,1(1)
+        move    4,5
+        subi    4,036
+        lsh     1,0(4)
+        andi    1,077
+        popj    17,
+
+        .globl  file_path_setchar
+; void file_path_setchar(path, pos, ch)
+file_path_setchar:
+        idivi   2,6
+        move    5,3
+        muli    5,6
+        trne    5,1
+        tloa    6,0400000
+        tlz     6,0400000
+        movei   4,036
+        sub     4,6
+        movei   5,077
+        lsh     5,0(4)
+        add     1,2
+        andca   5,1(1)
+        andi    3,077
+        lsh     3,0(4)
+        ior     5,3
+        movem   5,1(1)
+        popj    17,
+
         .globl  pdp10_ret_zero_v1
         .globl  pdp10_ret_neg1_v1
 

@@ -1,6 +1,29 @@
 ; fs_mres_pdp10.s -- fixed resident bridge to an optional filesystem MRES.
         .text
         .globl fs_mres_call
+        .globl fs_provider_call
+        .globl fs_memfs_service_addr
+        .globl fs_dtfs_service_addr
+        .globl fs_d6fs_service_addr
+
+; Provider ids 4..6 index these three resident service addresses directly.
+fs_memfs_service_addr:
+        .word   0
+fs_dtfs_service_addr:
+        .word   0
+fs_d6fs_service_addr:
+        .word   0
+
+; int fs_provider_call(provider, request)
+fs_provider_call:
+        jumpe   2,fs_mres_no_service
+        subi    1,4
+        jumpl   1,fs_mres_no_service
+        cail    1,3
+        jrst    fs_mres_no_service
+        move    1,fs_memfs_service_addr(1)
+        jrst    fs_mres_call
+
 
 ; int fs_mres_call(address, request)
 ; C args arrive in AC1,AC2.  Dispatcher expects request pointer in AC1.
