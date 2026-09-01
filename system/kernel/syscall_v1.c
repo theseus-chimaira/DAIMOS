@@ -30,8 +30,10 @@ sys_v1_meminfo(struct sys_v1_meminfo *info)
         info->total_words = KBOOT_V1_TOTAL_WORDS;
         info->resident_words = kcore_resident_end_v1;
         info->process_words = PROC_V1_MEM_WORDS(&proc_v1_table[1]);
-        info->ramfs_used_words = (kword_t)file_v1_root->used_words;
-        info->ramfs_capacity_words = (kword_t)file_v1_root->pool_words;
+        info->ramfs_used_words = file_v1_root != 0 ?
+            (kword_t)file_v1_root->used_words : 0UL;
+        info->ramfs_capacity_words = file_v1_root != 0 ?
+            (kword_t)file_v1_root->pool_words : 0UL;
         info->process_slots_used = PROC_V1_NPROC;
         info->process_slots_total = PROC_V1_NPROC;
         info->file_slots_used = file_v1_used_slots();

@@ -1,5 +1,7 @@
 #include "d6fs_provider_v2.h"
 
+#define D6FS_PROVIDER_V2_SUPER_DISABLED 2U
+
 struct d6fs_provider_v2_mount {
         d6fs_v2_read_block_fn read_block;
         d6fs_v2_write_block_fn write_block;
@@ -7,8 +9,7 @@ struct d6fs_provider_v2_mount {
         struct d6fs_v2_super_info super;
         kword_t alloc_cursor;
         kword_t super_block[2];
-        unsigned int super_copy;
-        unsigned int state_enabled;
+        unsigned int super_copy; /* 0/1 active copy, otherwise disabled */
 };
 
 static struct d6fs_provider_v2_mount d6fs_provider_v2_mounts[VFS_V1_NMOUNT];
@@ -24,7 +25,7 @@ d6fs_provider_v2_block_buffer(void)
 void
 d6fs_provider_v2_cache_invalidate(void)
 {
-        d6fs_provider_v2_reader.cache_valid = 0U;
+        d6fs_provider_v2_reader.cache_block = D6FS_V2_CACHE_INVALID;
 }
 
 static void d6fs_provider_v2_lcache_flush(void);
@@ -149,8 +150,7 @@ d6fs_provider_v2_mount_rw(vnode_v1_t target,
         mp->alloc_cursor = super->summary_start + super->summary_blocks;
         mp->super_block[0] = 0UL;
         mp->super_block[1] = 0UL;
-        mp->super_copy = 0U;
-        mp->state_enabled = 0U;
+        mp->super_copy = D6FS_PROVIDER_V2_SUPER_DISABLED;
         if (mp->alloc_cursor >= super->total_blocks)
                 mp->alloc_cursor = 0UL;
         d6fs_provider_v2_reader_mount = 0U;
@@ -182,15 +182,9 @@ struct d6fs_provider_v2_lookup_cache {
         vnode_v1_t dir;
         kword_t hash;
         unsigned int slot;
-        unsigned int valid;
 };
 static struct d6fs_provider_v2_lookup_cache
     d6fs_provider_v2_lcache[D6FS_PROVIDER_V2_LOOKUP_CACHE];
-static unsigned int d6fs_provider_v2_lnext;
-static kword_t d6fs_provider_v2_lookup_hits;
-static kword_t d6fs_provider_v2_lookup_misses;
-static kword_t d6fs_provider_v2_hash_rejects;
-static kword_t d6fs_provider_v2_full_compares;
 
 static int
 d6fs_provider_v2_name_equal(const struct d6fs_v2_dirent_info *di,
@@ -198,7 +192,6 @@ d6fs_provider_v2_name_equal(const struct d6fs_v2_dirent_info *di,
 {
         unsigned int i;
 
-        ++d6fs_provider_v2_full_compares;
         for (i = 0U; i < VFS_V1_NAME_WORDS; ++i)
                 if (di->name[i] != name->words[i])
                         return 0;
@@ -219,24 +212,20 @@ d6fs_provider_v2_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
             name->chars > VFS_V1_NAME_MAX_CHARS)
                 return -1;
         hash = d6fs_v2_name_hash24(name->words, name->chars);
-        for (i = 0U; i < D6FS_PROVIDER_V2_LOOKUP_CACHE; ++i) {
-                if (!d6fs_provider_v2_lcache[i].valid ||
-                    d6fs_provider_v2_lcache[i].dir != dir ||
-                    d6fs_provider_v2_lcache[i].hash != hash)
-                        continue;
+        i = (unsigned int)hash & (D6FS_PROVIDER_V2_LOOKUP_CACHE - 1U);
+        if (d6fs_provider_v2_lcache[i].dir == dir &&
+            d6fs_provider_v2_lcache[i].hash == hash) {
                 rc = d6fs_provider_v2_dirent(dir,
                     d6fs_provider_v2_lcache[i].slot, &di);
                 if (rc > 0 && di.child_fcb != 0U && di.hash == hash &&
                     d6fs_provider_v2_name_equal(&di, name)) {
-                        ++d6fs_provider_v2_lookup_hits;
                         *nodep = VFS_V1_NODE(D6FS_V2_PROVIDER,
                             VFS_V1_MOUNT_KIND(VFS_V1_MOUNT_ID(dir),
                             D6FS_V2_KIND_NODE), di.child_fcb);
                         return 0;
                 }
-                d6fs_provider_v2_lcache[i].valid = 0U;
+                d6fs_provider_v2_lcache[i].dir = VFS_V1_NODE_NONE;
         }
-        ++d6fs_provider_v2_lookup_misses;
         for (slot = 0U;; ++slot) {
                 rc = d6fs_provider_v2_dirent(dir, slot, &di);
                 if (rc <= 0)
@@ -244,16 +233,15 @@ d6fs_provider_v2_lookup(vnode_v1_t dir, const struct vfs_v1_name *name,
                 if (di.child_fcb == 0U)
                         continue;
                 if (di.hash != hash) {
-                        ++d6fs_provider_v2_hash_rejects;
                         continue;
                 }
                 if (!d6fs_provider_v2_name_equal(&di, name))
                         continue;
-                i = d6fs_provider_v2_lnext++ % D6FS_PROVIDER_V2_LOOKUP_CACHE;
+                i = (unsigned int)hash &
+                    (D6FS_PROVIDER_V2_LOOKUP_CACHE - 1U);
                 d6fs_provider_v2_lcache[i].dir = dir;
                 d6fs_provider_v2_lcache[i].hash = hash;
                 d6fs_provider_v2_lcache[i].slot = slot;
-                d6fs_provider_v2_lcache[i].valid = 1U;
                 *nodep = VFS_V1_NODE(D6FS_V2_PROVIDER,
                     VFS_V1_MOUNT_KIND(VFS_V1_MOUNT_ID(dir),
                     D6FS_V2_KIND_NODE), di.child_fcb);
@@ -432,10 +420,9 @@ d6fs_provider_v2_enable_state(vnode_v1_t root, kword_t super_a,
         mp->super_block[0] = super_a;
         mp->super_block[1] = super_b;
         mp->super_copy = selected_copy;
-        mp->state_enabled = 1U;
         if (d6fs_provider_v2_write_super(mp, selected_copy ^ 1U,
             D6FS_V2_STATE_DIRTY) != 0) {
-                mp->state_enabled = 0U;
+                mp->super_copy = D6FS_PROVIDER_V2_SUPER_DISABLED;
                 return -1;
         }
         return 0;
@@ -451,14 +438,14 @@ d6fs_provider_v2_prepare_unmount(vnode_v1_t root)
         mp = d6fs_provider_v2_mount_for(root);
         if (mp == 0)
                 return -1;
-        if (mp->state_enabled && mp->write_block != 0 &&
+        if (mp->super_copy != D6FS_PROVIDER_V2_SUPER_DISABLED && mp->write_block != 0 &&
             d6fs_provider_v2_load(root) == 0 &&
             d6fs_provider_v2_write_super(mp, mp->super_copy ^ 1U,
             D6FS_V2_STATE_CLEAN) != 0)
                 return -1;
         mp->read_block = 0;
         mp->write_block = 0;
-        mp->state_enabled = 0U;
+        mp->super_copy = D6FS_PROVIDER_V2_SUPER_DISABLED;
         if (d6fs_provider_v2_reader_mount == id)
                 d6fs_provider_v2_reader_mount = 0U;
         d6fs_provider_v2_lcache_flush();
@@ -471,7 +458,7 @@ d6fs_provider_v2_lcache_flush(void)
         unsigned int i;
 
         for (i = 0U; i < D6FS_PROVIDER_V2_LOOKUP_CACHE; ++i)
-                d6fs_provider_v2_lcache[i].valid = 0U;
+                d6fs_provider_v2_lcache[i].dir = VFS_V1_NODE_NONE;
 }
 
 static struct d6fs_provider_v2_mount *

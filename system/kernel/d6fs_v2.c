@@ -1,5 +1,6 @@
 #include "d6fs_v2.h"
 
+
 static kword_t
 d6fs_v2_min_above(const struct d6fs_v2_diskset *set, kword_t floor)
 {
@@ -465,12 +466,7 @@ d6fs_v2_reader_init(struct d6fs_v2_reader *reader,
         reader->write_block = 0;
         reader->opaque = opaque;
         reader->super = *super;
-        reader->cache_block = 0UL;
-        reader->cache_valid = 0U;
-        reader->physical_reads = 0UL;
-        reader->physical_writes = 0UL;
-        reader->cache_hits = 0UL;
-        reader->cache_misses = 0UL;
+        reader->cache_block = D6FS_V2_CACHE_INVALID;
         return 0;
 }
 
@@ -480,16 +476,11 @@ d6fs_v2_reader_block(struct d6fs_v2_reader *reader, kword_t logical,
 {
         if (reader == 0 || blockp == 0 || logical >= reader->super.total_blocks)
                 return -1;
-        if (!reader->cache_valid || reader->cache_block != logical) {
-                ++reader->cache_misses;
+        if (reader->cache_block != logical) {
                 if (reader->read_block(reader->opaque, logical,
                     reader->cache) != 0)
                         return -1;
-                ++reader->physical_reads;
                 reader->cache_block = logical;
-                reader->cache_valid = 1U;
-        } else {
-                ++reader->cache_hits;
         }
         *blockp = reader->cache;
         return 0;
@@ -656,9 +647,7 @@ d6fs_v2_reader_write_block(struct d6fs_v2_reader *reader, kword_t logical,
             logical >= reader->super.total_blocks ||
             reader->write_block(reader->opaque, logical, block) != 0)
                 return -1;
-        ++reader->physical_writes;
         reader->cache_block = logical;
-        reader->cache_valid = 1U;
         for (i = 0U; i < D6FS_V2_BLOCK_WORDS; ++i)
                 reader->cache[i] = block[i];
         return 0;
@@ -675,12 +664,10 @@ d6fs_v2_reader_zero_block(struct d6fs_v2_reader *reader, kword_t logical)
         for (i = 0U; i < D6FS_V2_BLOCK_WORDS; ++i)
                 reader->cache[i] = 0UL;
         if (reader->write_block(reader->opaque, logical, reader->cache) != 0) {
-                reader->cache_valid = 0U;
+                reader->cache_block = D6FS_V2_CACHE_INVALID;
                 return -1;
         }
-        ++reader->physical_writes;
         reader->cache_block = logical;
-        reader->cache_valid = 1U;
         return 0;
 }
 

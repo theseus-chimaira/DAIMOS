@@ -22,11 +22,8 @@ struct d6fs_dsk_v2 {
         unsigned int unit[D6FS_V2_MAX_MEMBERS];
         kword_t base[D6FS_V2_MAX_MEMBERS];
         kword_t swap_tail_blocks;
-        kword_t bootstream_blocks;
         kword_t logstore_start;
         kword_t logstore_blocks;
-        kword_t badmap_start;
-        kword_t badmap_blocks;
 };
 
 struct d6fs_dsk_v2_layout {
@@ -43,34 +40,21 @@ struct d6fs_dsk_v2_layout {
 };
 
 /* Decode the D6FS root-layout extension carried by a DBOOT descriptor. */
-int d6fs_dsk_v2_layout_decode(const kword_t block[D6FS_V2_BLOCK_WORDS],
-    struct d6fs_dsk_v2_layout *layout);
 
 /*
  * Build the current PDP-6 diskset from the Stage1 040/041 handoff and the
  * D6FS root-layout extension in each member's DBOOT descriptor.
  */
-int d6fs_dsk_v2_from_boot(struct d6fs_dsk_v2 *disk, kword_t *super_ap,
-    kword_t *super_bp);
 
 /* Initialize the D6FS view of an already assembled diskset. */
-int d6fs_dsk_v2_init(struct d6fs_dsk_v2 *disk, unsigned int members,
-    const unsigned int *units, const kword_t *usable_blocks);
 
 int d6fs_dsk_v2_read_block(void *opaque, kword_t logical,
     kword_t block[D6FS_V2_BLOCK_WORDS]);
 int d6fs_dsk_v2_write_block(void *opaque, kword_t logical,
     const kword_t block[D6FS_V2_BLOCK_WORDS]);
-int d6fs_dsk_v2_mount(struct d6fs_dsk_v2 *disk, vnode_v1_t target,
-    kword_t super_a, kword_t super_b, unsigned int flags,
-    kword_t scratch[D6FS_V2_BLOCK_WORDS], vnode_v1_t *rootp);
 
-int d6fs_dsk_v2_mount_root(struct d6fs_dsk_v2 *disk, kword_t super_a,
-    kword_t super_b, unsigned int flags,
-    kword_t scratch[D6FS_V2_BLOCK_WORDS], vnode_v1_t *rootp);
 
 /* Return 1 when the bootset has no D6FS root-layout extension. */
-int d6fs_dsk_v2_mount_boot_root(unsigned int flags, vnode_v1_t *rootp);
 struct d6fs_dsk_v2 *d6fs_dsk_v2_boot_disk_get(void);
 
 kword_t d6fs_dsk_v2_swap_blocks(const struct d6fs_dsk_v2 *disk);

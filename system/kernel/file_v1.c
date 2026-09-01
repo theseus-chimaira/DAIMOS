@@ -66,7 +66,7 @@ file_v1_walk_path_at(const kword_t *path, int parent_only,
         vnode_v1_t next;
         struct vfs_v1_name name;
 
-        if (file_v1_root == 0 || path == 0 || nodep == 0 ||
+        if (path == 0 || nodep == 0 ||
             (parent_only && leaf == 0) || depth > FILE_V1_SYMLINK_MAX)
                 return -1;
         n = (unsigned int)path[0];

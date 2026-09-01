@@ -6,6 +6,8 @@
 ; storage_state encodes ownership as -1 DTC block read, -2 MTC read,
 ; -3 DSK read, -4 DSK write, -5 MTC write, -6 DTC block write.  Positive
 ; values 1..6 are successful boot/tape completion states; 7 is I/O error.
+; During synchronous DTC SEARCH, a larger positive value temporarily carries
+; the requested transfer word count while still meaning only "controller busy".
 ; Runtime DSK requests keep their completion event on the blocked caller's
 ; kernel stack and use a bounded two-pending-request queue per physical unit.
 ; storage_count is 0200 for a DSK sector and is otherwise unused after runtime
@@ -343,14 +345,19 @@ dtc_block_start:
         jrst pdp10_ret_busy_v34
         caile 1,7
         jrst pdp10_ret_arg_v34
-        jumpl 2,pdp10_ret_arg_v34
+        ; The LH of AC2 optionally carries (run_blocks-1)*0200 words.
+        ; Zero therefore remains the exact legacy one-block ABI.
+        hlrz 6,2
+        addi 6,0200
+        hrrzs 2
         caile 2,01101
         jrst pdp10_ret_arg_v34
         movem 4,dtc_request_write
         setzm dtc_request_reverse
         movei 7,7
-        movei 5,7
-        movem 5,storage_state
+        ; While SEARCH is synchronous, a positive state only means busy.
+        ; Keep the requested word count there until DCT setup needs it.
+        movem 6,storage_state
 
         ; A signed motion word stores +block+1 while moving forward and
         ; -block-1 while moving backward.  Zero means no reliable estimate.
@@ -426,9 +433,17 @@ dtc_search_command:
         popj 017,
 
 dtc_search_found:
+        ; A counted ascending run must transfer forward.  SEARCH may approach
+        ; the target in reverse; turn there and reacquire it before arming DCT.
+        skipn dtc_request_reverse
+        jrst dtc_search_found_forward
+        move 4,storage_state
+        caie 4,0200
+        jrst dtc_search_turn
+dtc_search_found_forward:
         cono 0200,0
         move 2,3
-        movei 3,0200
+        move 3,storage_state
         skipn dtc_request_write
         jrst dtc_block_setup_read
         pushj 017,storage_setup_write
@@ -473,9 +488,7 @@ dtc_search_fail:
         iori 1,0200000
         cono 0210,0(1)
         cono 0200,0
-        setzm storage_state
-        hrroi 1,0777773
-        popj 017,
+        jrst storage_ioerr
 
 ; AC1 unit, AC2 destination, AC3 maximum words in one tape record.
 mtc_read_words:
@@ -735,9 +748,8 @@ storage_dct_dsk_write_ack1:
         hrrm 1,storage_dct_select
         jrst pdp10_pi_handler_return
 storage_dct_dsk_write_ack2:
-        cono 0270,030115
-        cono 0200,0
-        jrst pdp10_pi_handler_return
+        ; Read completion uses the same END/CLEAR, DCT-disconnect tail.
+        jrst storage_pi_dsk_read_done
 
         .bss
 storage_state: .block 1

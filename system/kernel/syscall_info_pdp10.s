@@ -50,10 +50,16 @@ sys_meminfo_file_loop:
         hlrz    3,proc_v1_table+3
         movem   3,2(2)
         move    4,file_v1_root
+        jumpe   4,sys_meminfo_no_ramfs
         move    3,4(4)
         movem   3,3(2)
         move    3,3(4)
         movem   3,4(2)
+        jrst    sys_meminfo_ramfs_done
+sys_meminfo_no_ramfs:
+        setzm   3(2)
+        setzm   4(2)
+sys_meminfo_ramfs_done:
         movei   3,2
         movem   3,5(2)
         movem   3,6(2)

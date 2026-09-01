@@ -14,6 +14,7 @@
 #include "ocnsls.h"
 #include "storage.h"
 #include "slv.h"
+#include "fs_mres.h"
 
 #define CTY_X_HANDLER           0U
 #define CTY_X_PUT6              1U
@@ -904,6 +905,64 @@ storage_minit(unsigned int kind, kword_t name)
         module_service_set(MODULE_SERVICE_DTC_WRITE_BLOCK - kind,
             minit_export(name, base, STORAGE_X_DTC_WRITE_BLOCK - kind));
         minit_diag_ok(name);
+}
+
+
+void
+memfs_minit(void)
+{
+        kword_t name;
+        unsigned int base;
+
+        name = (kword_t)SIXBIT("MEMFS ");
+        base = minit_install(name);
+        fs_memfs_service_addr = minit_export(name, base, 0U);
+        module_service_set(MODULE_SERVICE_MEMFS, fs_memfs_service_addr);
+        minit_diag_loaded(name);
+}
+
+void
+dtfs_minit(void)
+{
+        struct fs_mres_request req;
+        kword_t name;
+        unsigned int base;
+        unsigned int read_addr;
+        unsigned int write_addr;
+
+        name = (kword_t)SIXBIT("DTFS  ");
+        read_addr = module_service_get(MODULE_SERVICE_DTC_READ_BLOCK);
+        write_addr = module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK);
+        if (read_addr == 0U || write_addr == 0U) {
+                minit_diag_nodrv(name);
+                return;
+        }
+        base = minit_install(name);
+        fs_dtfs_service_addr = minit_export(name, base, 0U);
+        req.op = FS_MRES_OP_DTFS_BIND;
+        req.a = (kword_t)read_addr;
+        req.b = (kword_t)write_addr;
+        if (fs_mres_call(fs_dtfs_service_addr, &req) != 0)
+                minit_fatal(name);
+        module_service_set(MODULE_SERVICE_DTFS, fs_dtfs_service_addr);
+        minit_diag_loaded(name);
+}
+
+void
+d6fs_minit(void)
+{
+        kword_t name;
+        unsigned int base;
+
+        name = (kword_t)SIXBIT("D6FS  ");
+        if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) == 0U) {
+                minit_diag_nodrv(name);
+                return;
+        }
+        base = minit_install(name);
+        fs_d6fs_service_addr = minit_export(name, base, 0U);
+        module_service_set(MODULE_SERVICE_D6FS, fs_d6fs_service_addr);
+        minit_diag_loaded(name);
 }
 
 void

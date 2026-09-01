@@ -9,7 +9,6 @@ typedef unsigned long kword_t;
 #define KCORE_BASE              000060UL
 #define KCORE_ENTRY_ADDR        KCORE_BASE
 
-extern kword_t kcore_boot_handoff[2];
 
 
 #endif

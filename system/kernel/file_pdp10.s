@@ -106,8 +106,6 @@ file_component_fail:
 ; live FILE context, so cwd and alias state are scalar rather than per-owner.
         .globl  file_v1_getcwd
 file_v1_getcwd:
-        skipn   file_v1_root
-        jrst    file_getcwd_fail
         jumpe   1,file_getcwd_fail
         jumpge  2,file_getcwd_nwords_nonneg
         jrst    file_getcwd_nwords_ok    ; unsigned value with bit 35 set

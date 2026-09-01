@@ -9,6 +9,7 @@
 #include "dsk270.h"
 #include "module.h"
 #include "syscall_v1.h"
+#include "fs_mres.h"
 
 
 #define HALF_MASK       0777777UL
@@ -177,6 +178,14 @@ kfs_boot_v2_prepare(void)
             image[IHF_FLAGS] != 0 || image[IHF_CKSUM] != 0)
                 return -1;
         nent = (unsigned int)image[IHF_NENT];
+        fs_memfs_service_addr = module_service_get(MODULE_SERVICE_MEMFS);
+        fs_dtfs_service_addr = module_service_get(MODULE_SERVICE_DTFS);
+        fs_d6fs_service_addr = module_service_get(MODULE_SERVICE_D6FS);
+        if (fs_memfs_service_addr == 0U) {
+                if (nent != 0U)
+                        return -1;
+                goto bind_services;
+        }
         str_words = (unsigned int)image[IHF_STR_WORDS];
         data_words = (unsigned int)image[IHF_DATA_WORDS];
         if (nent + 4U > KBOOT_V1_NODE_COUNT)
@@ -257,26 +266,36 @@ kfs_boot_v2_prepare(void)
                 for (j = 0U; j < KBOOT_V1_RUNTIME_STATE_WORDS; ++j)
                         state[j] = 0;
         }
-        kboot_fs_v1.nodes = (struct memfs_v1_node *)(unsigned long)
-            KBOOT_V1_RAMFS0_BASE;
-        kboot_fs_v1.node_count = KBOOT_V1_NODE_COUNT;
-        kboot_fs_v1.pool = (kword_t *)(unsigned long)
-            (KBOOT_V1_RAMFS0_BASE + KBOOT_V1_NODE_WORDS +
-            KBOOT_V1_RUNTIME_STATE_WORDS);
-        kboot_fs_v1.pool_words = KBOOT_V1_RAMFS0_WORDS -
-            KBOOT_V1_NODE_WORDS - KBOOT_V1_RUNTIME_STATE_WORDS;
-        kboot_fs_v1.used_words = 0U;
-        kboot_fs_v1.writable = 1;
-        kboot_fs_v1.image_data = data;
-        file_v1_root = &kboot_fs_v1;
-        dtfs_v1_dtc_read_addr =
-            module_service_get(MODULE_SERVICE_DTC_READ_BLOCK);
-        dtfs_v1_dtc_write_addr =
-            module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK);
+        {
+                struct memfs_v1 config;
+                struct fs_mres_request req;
+                vnode_v1_t root;
+
+                config.nodes = (struct memfs_v1_node *)(unsigned long)
+                    KBOOT_V1_RAMFS0_BASE;
+                config.node_count = KBOOT_V1_NODE_COUNT;
+                config.pool = (kword_t *)(unsigned long)
+                    (KBOOT_V1_RAMFS0_BASE + KBOOT_V1_NODE_WORDS +
+                    KBOOT_V1_RUNTIME_STATE_WORDS);
+                config.pool_words = KBOOT_V1_RAMFS0_WORDS -
+                    KBOOT_V1_NODE_WORDS - KBOOT_V1_RUNTIME_STATE_WORDS;
+                config.used_words = 0U;
+                config.writable = 1;
+                config.image_data = data;
+                req.op = FS_MRES_OP_MEMFS_INIT;
+                req.a = (kword_t)(unsigned long)&config;
+                if (fs_mres_call(fs_memfs_service_addr, &req) != 0 ||
+                    vfs_v1_mount(VFS_V1_NODE_NONE, MEMFS_V1_PROVIDER,
+                    MEMFS_V1_KIND_NODE, 0U, VFS_V1_MOUNT_RW, &root) != 0)
+                        return -1;
+        }
+
+bind_services:
         devicefs_v1_present = kcore_cty_putchar_v1 != 0 &&
             kcore_cty_getchar_v1 != 0 ?
             DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CTY0) : 0;
-        if (dtfs_v1_dtc_read_addr != 0U && dtfs_v1_dtc_write_addr != 0U)
+        if (module_service_get(MODULE_SERVICE_DTC_READ_BLOCK) != 0U &&
+            module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK) != 0U)
                 devicefs_v1_present |=
                     DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DTC0);
 

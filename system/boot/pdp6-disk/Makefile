@@ -23,20 +23,20 @@ KINIT_STAMP := $(BUILD)/.kinit-built
 KCORE_STAMP := $(BUILD)/.kcore-built
 KERNEL_INPUTS := $(wildcard $(KERNEL_DIR)/*.c $(KERNEL_DIR)/*.h $(KERNEL_DIR)/*.s)
 
-KINIT_NAMES = kinit kinit_diag module_minit kfs_boot_v2 kinit_io module_io
+KINIT_NAMES = kinit kinit_diag module_minit kfs_boot_v2 kinit_boot_v1 d6fs_boot_v2 d6log_v2 kinit_io module_io
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 
-KCORE_C_NAMES = kboot_v1 exec_v1 vfs_v1 devicefs_v1 memfs_v1 dtfs_v1 \
-	d6fs_v2 d6fs_provider_v2 d6fs_disk_v2 d6log_v2 file_v1
-KCORE_FIXED_NAMES = kcore_entry $(KCORE_C_NAMES) ret_pdp10 dtfs_pdp10 \
-	dsk270_pdp10 kfmt_pdp10 vfs_pdp10 memfs_pdp10 file_pdp10 proc_pdp10 \
+KCORE_C_NAMES = kboot_v1 exec_v1 vfs_v1 devicefs_v1 fs_mres file_v1
+KCORE_FIXED_NAMES = kcore_entry $(KCORE_C_NAMES) ret_pdp10 \
+	dsk270_pdp10 kfmt_pdp10 vfs_pdp10 fs_mres_pdp10 file_pdp10 proc_pdp10 \
 	device_state_pdp10 procfs_pdp10 devicefs_pdp10 syscall_info_pdp10 \
 	syscall_dispatch_v2 mach_user_v1 kcore_io kcore_end
 KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))
 KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
 MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io io7_io dcs_io ge_io dpy_io \
-	tty_io wcnsls_io ocnsls_io storage_io slv_io
+	tty_io wcnsls_io ocnsls_io storage_io slv_io memfs_v1 memfs_mres memfs_pdp10 \
+	dtfs_v1 dtfs_mres dtfs_pdp10 d6fs_v2 d6fs_provider_v2 d6fs_disk_v2 d6fs_mres
 MRES_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(MRES_NAMES)))
 
 KCORE_DXR = $(BUILD)/kcore-v1.dxr
@@ -57,9 +57,13 @@ WCNSLS_MRES_OBJ = $(BUILD)/wcnsls-mres.dobj
 OCNSLS_MRES_OBJ = $(BUILD)/ocnsls-mres.dobj
 STORAGE_MRES_OBJ = $(BUILD)/storage-mres.dobj
 SLV_MRES_OBJ = $(BUILD)/slv-mres.dobj
+MEMFS_MRES_OBJ = $(BUILD)/memfs-mres.dobj
+DTFS_MRES_OBJ = $(BUILD)/dtfs-mres.dobj
+D6FS_MRES_OBJ = $(BUILD)/d6fs-mres.dobj
 MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(IO7_MRES_OBJ) \
 	$(DCS_MRES_OBJ) $(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) \
-	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(STORAGE_MRES_OBJ) $(SLV_MRES_OBJ)
+	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(STORAGE_MRES_OBJ) $(SLV_MRES_OBJ) \
+	$(DTFS_MRES_OBJ) $(D6FS_MRES_OBJ)
 
 MINIT_TABLE_OBJ = $(BUILD)/module-table-runtime.dobj
 END_OBJ = $(BUILD)/image-end-v1.dobj
@@ -188,6 +192,22 @@ $(STORAGE_MRES_OBJ): $(BUILD)/storage_io.dobj $(KCORE_MAP)
 $(SLV_MRES_OBJ): $(BUILD)/slv_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/slv-mres.dxr -M $(BUILD)/slv-mres.map \
 	    -R $@ -N slv_mres_package -X slv_pi_handler $(BUILD)/slv_io.dobj
+
+$(MEMFS_MRES_OBJ): $(BUILD)/memfs_v1.dobj $(BUILD)/memfs_mres.dobj $(BUILD)/memfs_pdp10.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/memfs-mres.dxr -M $(BUILD)/memfs-mres.map \
+	    -R $@ -N memfs_mres_package -X memfs_mres_dispatch \
+	    $(BUILD)/memfs_v1.dobj $(BUILD)/memfs_mres.dobj $(BUILD)/memfs_pdp10.dobj
+
+$(DTFS_MRES_OBJ): $(BUILD)/dtfs_v1.dobj $(BUILD)/dtfs_mres.dobj $(BUILD)/dtfs_pdp10.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dtfs-mres.dxr -M $(BUILD)/dtfs-mres.map \
+	    -R $@ -N dtfs_mres_package -X dtfs_mres_dispatch \
+	    $(BUILD)/dtfs_v1.dobj $(BUILD)/dtfs_mres.dobj $(BUILD)/dtfs_pdp10.dobj
+
+$(D6FS_MRES_OBJ): $(BUILD)/d6fs_v2.dobj $(BUILD)/d6fs_provider_v2.dobj $(BUILD)/d6fs_disk_v2.dobj $(BUILD)/d6fs_mres.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/d6fs-mres.dxr -M $(BUILD)/d6fs-mres.map \
+	    -R $@ -N d6fs_mres_package -X d6fs_mres_dispatch \
+	    $(BUILD)/d6fs_v2.dobj $(BUILD)/d6fs_provider_v2.dobj \
+	    $(BUILD)/d6fs_disk_v2.dobj $(BUILD)/d6fs_mres.dobj
 
 $(KCORE_EMBED_ASM): kcore-embed-v1.s.in $(KCORE_MAP) | $(BUILD)
 	end=`awk '$$1 == "__kcore_low_init_end" { print $$2 }' $(KCORE_MAP)`; \

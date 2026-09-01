@@ -1,4 +1,5 @@
 #include "d6log_v2.h"
+#include "d6fs_boot_v2.h"
 
 #define D6LOG_V2_WORD_MASK      0777777777777UL
 
@@ -36,7 +37,7 @@ d6log_v2_write_header(struct d6log_v2 *log,
         scratch[5] = log->capacity;
         scratch[6] = D6LOG_V2_RECORD_WORDS;
         scratch[7] = D6LOG_V2_PAYLOAD_WORDS;
-        return d6fs_dsk_v2_log_write(log->disk, 0UL, scratch);
+        return d6fs_boot_v2_log_write(log->disk, 0UL, scratch);
 }
 
 int
@@ -57,7 +58,7 @@ d6log_v2_recover(struct d6log_v2 *log, struct d6fs_dsk_v2 *disk,
             D6LOG_V2_RECORDS_BLOCK);
         if (capacity == 0U)
                 return -1;
-        if (d6fs_dsk_v2_log_read(disk, 0UL, scratch) != 0)
+        if (d6fs_boot_v2_log_read(disk, 0UL, scratch) != 0)
                 return -1;
         have_header = d6log_v2_header_valid(scratch, capacity);
         header_lost = have_header ? scratch[4] : 0UL;
@@ -69,7 +70,7 @@ d6log_v2_recover(struct d6log_v2 *log, struct d6fs_dsk_v2 *disk,
 
                 current_block = 1U + slot / D6LOG_V2_RECORDS_BLOCK;
                 if (current_block != loaded_block) {
-                        if (d6fs_dsk_v2_log_read(disk,
+                        if (d6fs_boot_v2_log_read(disk,
                             (kword_t)current_block, scratch) != 0)
                                 return -1;
                         loaded_block = current_block;
@@ -119,7 +120,7 @@ d6log_v2_append(struct d6log_v2 *log, unsigned int severity,
         blockno = 1U + log->next_slot / D6LOG_V2_RECORDS_BLOCK;
         offset = (log->next_slot % D6LOG_V2_RECORDS_BLOCK) *
             D6LOG_V2_RECORD_WORDS;
-        if (d6fs_dsk_v2_log_read(log->disk, (kword_t)blockno, scratch) != 0)
+        if (d6fs_boot_v2_log_read(log->disk, (kword_t)blockno, scratch) != 0)
                 return -1;
         sequence = log->next_sequence;
         scratch[offset + 0U] = D6LOG_V2_RECORD_MAGIC;
@@ -130,11 +131,11 @@ d6log_v2_append(struct d6log_v2 *log, unsigned int severity,
         for (i = 0U; i < D6LOG_V2_PAYLOAD_WORDS; ++i)
                 scratch[offset + 4U + i] = i < payload_words ? payload[i] : 0UL;
         scratch[offset + 7U] = 0UL;
-        if (d6fs_dsk_v2_log_write(log->disk, (kword_t)blockno, scratch) != 0)
+        if (d6fs_boot_v2_log_write(log->disk, (kword_t)blockno, scratch) != 0)
                 return -1;
         scratch[offset + 7U] = (D6LOG_V2_RECORD_MAGIC ^ sequence) &
             D6LOG_V2_WORD_MASK;
-        if (d6fs_dsk_v2_log_write(log->disk, (kword_t)blockno, scratch) != 0)
+        if (d6fs_boot_v2_log_write(log->disk, (kword_t)blockno, scratch) != 0)
                 return -1;
 
         if (sequence > (kword_t)log->capacity)

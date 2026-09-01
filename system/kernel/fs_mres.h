@@ -1,0 +1,58 @@
+#ifndef DAIMON_FS_MRES_H
+#define DAIMON_FS_MRES_H
+
+#include "vfs_v1.h"
+
+/* One exported entry per optional filesystem MRES. */
+#define FS_MRES_OP_LOOKUP              1U
+#define FS_MRES_OP_READDIR             2U
+#define FS_MRES_OP_STAT                3U
+#define FS_MRES_OP_PARENT              4U
+#define FS_MRES_OP_PARENT_NAME         5U
+#define FS_MRES_OP_CREATE              6U
+#define FS_MRES_OP_MKDIR               7U
+#define FS_MRES_OP_SYMLINK             8U
+#define FS_MRES_OP_UNLINK              9U
+#define FS_MRES_OP_RENAME             10U
+#define FS_MRES_OP_TRUNCATE            11U
+#define FS_MRES_OP_CHMOD               12U
+#define FS_MRES_OP_READ_WORDS          13U
+#define FS_MRES_OP_WRITE_WORDS         14U
+#define FS_MRES_OP_SYNC                15U
+#define FS_MRES_OP_PREPARE_UNMOUNT     16U
+#define FS_MRES_OP_FORMAT_UNIT         17U
+#define FS_MRES_OP_MOUNT_UNIT          18U
+#define FS_MRES_OP_MEMFS_INIT          19U
+#define FS_MRES_OP_D6FS_BOOT_DISK      20U
+#define FS_MRES_OP_D6FS_BLOCK_BUFFER   21U
+#define FS_MRES_OP_D6FS_CACHE_INVALID  22U
+#define FS_MRES_OP_D6FS_DISK_INIT      23U
+#define FS_MRES_OP_D6FS_DISK_BLOCKS    24U
+#define FS_MRES_OP_D6FS_READ_BLOCK     25U
+#define FS_MRES_OP_D6FS_WRITE_BLOCK    26U
+#define FS_MRES_OP_D6FS_MOUNT_ROOT     27U
+#define FS_MRES_OP_D6FS_LOG_READ       28U
+#define FS_MRES_OP_D6FS_LOG_WRITE      29U
+#define FS_MRES_OP_DTFS_BIND            30U
+
+struct fs_mres_request {
+        kword_t op;
+        kword_t a;
+        kword_t b;
+        kword_t c;
+        kword_t d;
+        kword_t e;
+        kword_t f;
+};
+
+extern unsigned int fs_memfs_service_addr;
+extern unsigned int fs_dtfs_service_addr;
+extern unsigned int fs_d6fs_service_addr;
+
+int fs_mres_call(unsigned int address, struct fs_mres_request *req);
+int fs_provider_call(unsigned int provider, struct fs_mres_request *req);
+int fs_dtfs_format_unit(unsigned int unit);
+int fs_dtfs_mount_unit(unsigned int unit, vnode_v1_t target,
+    unsigned int flags, vnode_v1_t *rootp);
+
+#endif

@@ -1,11 +1,9 @@
 ; proc_pdp10.s -- compact process runtime state and wait channel.
 ;
-; V1 has one schedulable user context (INIT).  Its single event-word wait
-; channel lives in the RAMFS runtime-state prefix after the two-word process
-; table, spending no KCORE BSS.  A later multiprocess scheduler can widen this
-; state without changing driver callers of the event-word API.
-        .equ    proc_v1_table,0601142
-        .equ    proc_v1_wait_channel,0601146
+; V1 has one schedulable user context (INIT).  Process state belongs to the
+; unconditional kernel nucleus: RAMFS is an optional filesystem MRES and cannot
+; own scheduler state.  A later multiprocess scheduler can widen this state
+; without changing driver callers of the event-word API.
         .equ    PROC_V1_RUN_SLEEP_BIT,0100000
         .globl  proc_v1_table
         .globl  proc_v1_wait_channel
@@ -45,6 +43,12 @@ proc_v1_wakeup_event:
         movei   1,PROC_V1_RUN_SLEEP_BIT
         xorb    1,proc_v1_table+2
         popj    17,
+
+        .bss
+proc_v1_table:
+        .block  4                       ; two two-word struct proc_v1 entries
+proc_v1_wait_channel:
+        .block  1
 
         .data
         .globl  proc_v1_comm_words

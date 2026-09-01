@@ -5,6 +5,7 @@
 
 #define D6FS_V2_BLOCK_WORDS          0200U
 #define D6FS_V2_MAX_MEMBERS          8U
+#define D6FS_V2_CACHE_INVALID 0777777777777UL
 #define D6FS_V2_EXTENTS              7U
 #define D6FS_V2_FCB_WORDS            020U
 #define D6FS_V2_SUPER_WORDS          020U
@@ -132,11 +133,6 @@ struct d6fs_v2_reader {
         void *opaque;
         struct d6fs_v2_super_info super;
         kword_t cache_block;
-        unsigned int cache_valid;
-        kword_t physical_reads;
-        kword_t physical_writes;
-        kword_t cache_hits;
-        kword_t cache_misses;
         kword_t cache[D6FS_V2_BLOCK_WORDS];
 };
 

@@ -15,6 +15,8 @@ typedef unsigned long kword_t;
 #define KINIT_BOOT_WORD1         000041UL
 #define KINIT_MACHINE_NAME       "PDP6  "
 
+extern kword_t kinit_boot_handoff[2];
+
 #define KINIT_LH(w) \
         ((unsigned int)(((w) >> 18) & KINIT_HALF_MASK))
 #define KINIT_RH(w) \
@@ -33,6 +35,7 @@ kword_t kinit_call18_2(unsigned int address, kword_t arg1, kword_t arg2);
 kword_t kinit_call18_3(unsigned int address, kword_t arg1, kword_t arg2,
     kword_t arg3);
 void kinit_halt(void);
+void kinit_boot_v1(void);
 
 #ifdef KINIT_DEBUG
 void kinit_diag_finished(void);

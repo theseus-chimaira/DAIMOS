@@ -9,6 +9,7 @@ int kfs_boot_v2_prepare(void);
 static unsigned int mres_next_addr;
 static const kword_t *module_mres_package;
 static unsigned int module_services[MODULE_SERVICE_COUNT];
+kword_t kinit_boot_handoff[2];
 
 static unsigned int
 mres_reloc_code(const kword_t *map, unsigned int word)
@@ -148,8 +149,8 @@ kinit_save_boot_handoff(void)
 #endif
         boot0 = (volatile kword_t *)(unsigned long)KINIT_BOOT_WORD0;
         boot1 = (volatile kword_t *)(unsigned long)KINIT_BOOT_WORD1;
-        kcore_boot_handoff[0] = *boot0;
-        kcore_boot_handoff[1] = *boot1;
+        kinit_boot_handoff[0] = *boot0;
+        kinit_boot_handoff[1] = *boot1;
 }
 
 const kword_t *
@@ -217,6 +218,6 @@ kinit_enter(void)
 #ifdef KINIT_DEBUG
         kinit_diag_finished();
 #endif
-        kinit_call18((unsigned int)KINIT_KCORE_BASE);
+        kinit_boot_v1();
         kinit_halt();
 }

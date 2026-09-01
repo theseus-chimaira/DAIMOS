@@ -32,7 +32,6 @@
 #error "RAMFS0 must occupy the top 64K words"
 #endif
 
-extern struct memfs_v1 kboot_fs_v1;
 extern kword_t kcore_resident_end_v1;
 extern kword_t kcore_cty_putchar_v1;
 extern kword_t kcore_cty_getchar_v1;

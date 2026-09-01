@@ -258,7 +258,7 @@ native_sys_dtfs_format_v1:
         pushj 17,native_sys_dtc0_path_v1
         jumpe 1,%L137
         movei 1,0                       ; DTC0 unit
-        pushj 17,dtfs_v1_format_unit
+        pushj 17,fs_dtfs_format_unit
         jrst %L65
 
 native_sys_dtfs_mount_v1:
@@ -277,7 +277,7 @@ native_sys_dtfs_mount_v1:
         move 2,mach_syscall_ac5_v1
         movei 1,0                       ; DTC0 unit
         movei 4,mach_syscall_ac5_v1     ; returned root is not otherwise needed
-        pushj 17,dtfs_v1_mount_unit
+        pushj 17,fs_dtfs_mount_unit
         jrst %L65
 
 native_sys_unmount_v1:
