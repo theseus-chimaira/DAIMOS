@@ -258,15 +258,6 @@ kfs_boot_prepare(void)
                         dst[j] = srcw[j];
         }
         {
-                kword_t *state;
-                unsigned int j;
-
-                state = (kword_t *)(unsigned long)
-                    (KBOOT_V1_RAMFS0_BASE + KBOOT_V1_NODE_WORDS);
-                for (j = 0U; j < KBOOT_V1_RUNTIME_STATE_WORDS; ++j)
-                        state[j] = 0;
-        }
-        {
                 struct memfs config;
                 struct fs_mres_request req;
                 vnode_t root;
@@ -275,10 +266,9 @@ kfs_boot_prepare(void)
                     KBOOT_V1_RAMFS0_BASE;
                 config.node_count = KBOOT_V1_NODE_COUNT;
                 config.pool = (kword_t *)(unsigned long)
-                    (KBOOT_V1_RAMFS0_BASE + KBOOT_V1_NODE_WORDS +
-                    KBOOT_V1_RUNTIME_STATE_WORDS);
+                    (KBOOT_V1_RAMFS0_BASE + KBOOT_V1_NODE_WORDS);
                 config.pool_words = KBOOT_V1_RAMFS0_WORDS -
-                    KBOOT_V1_NODE_WORDS - KBOOT_V1_RUNTIME_STATE_WORDS;
+                    KBOOT_V1_NODE_WORDS;
                 config.used_words = 0U;
                 config.writable = 1;
                 config.image_data = data;

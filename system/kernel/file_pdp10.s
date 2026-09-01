@@ -1,11 +1,17 @@
-; FILE runtime state lives in the RAMFS0 metadata prefix.
-        .equ    file_table,0601000
-        .equ    file_cwd,0601140
-        .equ    file_alias_cwd,0601141
+; FILE runtime state is unconditional kernel state.  Keep it in KCORE BSS;
+; RAMFS is an optional filesystem MRES and must not own FILE state.
+        .bss
         .globl  file_table
+file_table:
+        .block  0140                    ; 32 three-word struct file entries
         .globl  file_cwd
+file_cwd:
+        .block  1
         .globl  file_alias_cwd
+file_alias_cwd:
+        .block  1
 
+        .text
 ; file_pdp10.s -- compact resident FILE/path primitives for PDP-6/PDP-10.
         .text
 
