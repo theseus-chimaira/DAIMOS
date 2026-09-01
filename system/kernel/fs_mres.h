@@ -34,6 +34,7 @@
 #define FS_MRES_OP_D6FS_LOG_READ       28U
 #define FS_MRES_OP_D6FS_LOG_WRITE      29U
 #define FS_MRES_OP_DTFS_BIND            30U
+#define FS_MRES_OP_MEMFS_USAGE          31U
 
 struct fs_mres_request {
         kword_t op;

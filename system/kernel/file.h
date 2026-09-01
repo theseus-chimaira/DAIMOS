@@ -1,7 +1,7 @@
 #ifndef DAIMON_FILE_V1_H
 #define DAIMON_FILE_V1_H
 
-#include "memfs.h"
+#include "vfs.h"
 
 #define FILE_V1_O_READ          0001U
 #define FILE_V1_O_WRITE         0002U
@@ -32,8 +32,6 @@ struct file {
 #define FILE_V1_META_DESC(m)    (((m) >> FILE_V1_META_DESC_SHIFT) & 077U)
 
 /* DAIMOS 1.x has one live user process, so FILE state is global. */
-extern struct memfs *file_root;
-extern vnode_t file_alias_node;
 int file_lookup_path(const kword_t *path, vnode_t *nodep);
 int file_open(const kword_t *path, unsigned int flags);
 int file_close(int fd);

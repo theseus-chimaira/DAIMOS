@@ -138,6 +138,7 @@ memfs_resize_fail:
 memfs_read_words:
         jumpe   4,memfs_read_fail
         hlrz    5,2
+        andi    5,0770077
         caie    5,040001        ; MEMFS provider 4, node kind 1
         jrst    memfs_read_fail
         hrrz    5,2             ; slot
@@ -195,6 +196,7 @@ memfs_read_fail:
 memfs_write_words:
         jumpe   4,memfs_write_fail
         hlrz    5,2
+        andi    5,0770077
         caie    5,040001        ; MEMFS provider 4, node kind 1
         jrst    memfs_write_fail
         hrrz    5,2             ; slot
@@ -301,6 +303,7 @@ memfs_name_valid_fail:
 memfs_slot:
         jumpe   1,memfs_slot_fail
         hlrz    4,2
+        andi    4,0770077
         caie    4,040001               ; provider 4, node kind 1
         jrst    memfs_slot_fail
         hrrz    4,2
@@ -432,6 +435,7 @@ memfs_readdir:
         jumpe   4,memfs_readdir_fail
         jumpe   1,memfs_readdir_fail
         hlrz    5,2
+        andi    5,0770077
         caie    5,040001
         jrst    memfs_readdir_fail
         hrrz    2,2                     ; parent slot
@@ -489,6 +493,7 @@ memfs_stat:
         jumpe   3,memfs_stat_fail
         jumpe   1,memfs_stat_fail
         hlrz    4,2
+        andi    4,0770077
         caie    4,040001
         jrst    memfs_stat_fail
         hrrz    4,2
@@ -521,6 +526,7 @@ memfs_parent:
         jumpe   3,memfs_parent_fail
         jumpe   1,memfs_parent_fail
         hlrz    5,2
+        andi    5,0770077
         caie    5,040001
         jrst    memfs_parent_fail
         hrrz    5,2                     ; child slot

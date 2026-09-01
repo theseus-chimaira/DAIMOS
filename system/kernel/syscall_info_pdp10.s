@@ -1,11 +1,12 @@
 ; syscall_info_pdp10.s -- compact fixed-layout PROCINFO/MEMINFO syscalls.
         .text
         .globl  pdp10_ret_neg1_v1
-        .globl  file_root
         .globl  file_table
         .globl  proc_v1_table
         .globl  proc_v1_comm_words
         .globl  kcore_resident_end_v1
+        .globl  fs_memfs_service_addr
+        .globl  fs_mres_call
 
 ; int sys_v1_procinfo(unsigned int slot, struct sys_v1_procinfo *info)
 ; Fixed DAIMOS 1.x process slots: 0=SWAPPER, 1=INIT.
@@ -47,19 +48,32 @@ sys_meminfo_file_loop:
         movem   3,(2)
         move    3,kcore_resident_end_v1
         movem   3,1(2)
-        hlrz    3,proc_v1_table+3
+; Reuse info[2..8] as the seven-word filesystem request.  These fields are
+; filled with their final values after the optional MEMFS call returns.
+        movei   3,037                  ; FS_MRES_OP_MEMFS_USAGE
         movem   3,2(2)
-        move    4,file_root
-        jumpe   4,sys_meminfo_no_ramfs
-        move    3,4(4)
-        movem   3,3(2)
-        move    3,3(4)
-        movem   3,4(2)
-        jrst    sys_meminfo_ramfs_done
-sys_meminfo_no_ramfs:
         setzm   3(2)
         setzm   4(2)
-sys_meminfo_ramfs_done:
+        setzm   5(2)
+        setzm   6(2)
+        setzm   7(2)
+        setzm   010(2)
+        move    1,fs_memfs_service_addr
+        movei   2,2(2)
+        pushj   17,fs_mres_call
+        subi    2,2
+        jumpn   1,sys_meminfo_no_ramfs
+        move    4,3(2)
+        move    5,4(2)
+        jrst    sys_meminfo_have_ramfs
+sys_meminfo_no_ramfs:
+        movei   4,0
+        movei   5,0
+sys_meminfo_have_ramfs:
+        hlrz    3,proc_v1_table+3
+        movem   3,2(2)
+        movem   4,3(2)
+        movem   5,4(2)
         movei   3,2
         movem   3,5(2)
         movem   3,6(2)

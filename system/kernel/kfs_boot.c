@@ -165,6 +165,8 @@ kfs_boot_prepare(void)
         unsigned int data_off;
         unsigned int words;
         unsigned int next;
+        unsigned int ramfs_slot;
+        unsigned int temp_slot;
         kword_t size_chars;
         struct vfs_name name;
         struct memfs_node *np;
@@ -188,7 +190,7 @@ kfs_boot_prepare(void)
         }
         str_words = (unsigned int)image[IHF_STR_WORDS];
         data_words = (unsigned int)image[IHF_DATA_WORDS];
-        if (nent + 4U > KBOOT_V1_NODE_COUNT)
+        if (nent + 5U > KBOOT_V1_NODE_COUNT)
                 return -1;
         entries_end = INITFS_V1_HDR_WORDS + nent * INITFS_V1_ENT_WORDS;
         if (entries_end > image_words || str_words > image_words - entries_end)
@@ -237,11 +239,15 @@ kfs_boot_prepare(void)
             5U, 0555U, 0) != 0)
                 return -1;
         ++next;
+        ramfs_slot = next;
         if (boot_add_dir(next, next - 1U,
             VFS_V1_SIX6('R','A','M','F','S','0'), 6U, 0777U, 1) != 0)
                 return -1;
-        file_alias_node = VFS_V1_NODE(MEMFS_V1_PROVIDER,
-            MEMFS_V1_KIND_NODE, next);
+        ++next;
+        temp_slot = next;
+        if (boot_add_dir(next, 0U, VFS_V1_SIX6('T','E','M','P',' ',' '),
+            4U, 0555U, 0) != 0)
+                return -1;
         ++next;
         if (boot_add_dir(next, 0U, VFS_V1_SIX6('D','T','0',' ',' ',' '),
             3U, 0777U, 0) != 0)
@@ -261,6 +267,8 @@ kfs_boot_prepare(void)
                 struct memfs config;
                 struct fs_mres_request req;
                 vnode_t root;
+                vnode_t temp;
+                vnode_t ramfs;
 
                 config.nodes = (struct memfs_node *)(unsigned long)
                     KBOOT_V1_RAMFS0_BASE;
@@ -277,6 +285,12 @@ kfs_boot_prepare(void)
                 if (fs_mres_call(fs_memfs_service_addr, &req) != 0 ||
                     vfs_mount(VFS_V1_NODE_NONE, MEMFS_V1_PROVIDER,
                     MEMFS_V1_KIND_NODE, 0U, VFS_V1_MOUNT_RW, &root) != 0)
+                        return -1;
+                temp = VFS_V1_NODE(MEMFS_V1_PROVIDER,
+                    VFS_V1_MOUNT_KIND(VFS_V1_MOUNT_ID(root),
+                    MEMFS_V1_KIND_NODE), temp_slot);
+                if (vfs_mount(temp, MEMFS_V1_PROVIDER, MEMFS_V1_KIND_NODE,
+                    ramfs_slot, VFS_V1_MOUNT_RW, &ramfs) != 0)
                         return -1;
         }
 

@@ -1,13 +1,7 @@
 #include "file.h"
 
-struct memfs *file_root;
-
-#define FILE_V1_MEMFS_ROOT VFS_V1_NODE(MEMFS_V1_PROVIDER, MEMFS_V1_KIND_NODE, 0U)
-
-vnode_t file_alias_node;
 extern struct file file_table[FILE_V1_NFILE];
 extern vnode_t file_cwd;
-extern kword_t file_alias_cwd;
 
 extern int file_component(const kword_t *path, unsigned int *posp,
     struct vfs_name *name);
@@ -33,8 +27,8 @@ extern void file_path_setchar(kword_t *path, unsigned int pos, unsigned int ch);
 
 static int
 file_walk_path_at(const kword_t *path, int parent_only,
-    vnode_t start_node, int start_alias, unsigned int depth,
-    vnode_t *nodep, struct vfs_name *leaf, int *aliasp)
+    vnode_t start_node, unsigned int depth,
+    vnode_t *nodep, struct vfs_name *leaf)
 {
         kword_t work[FILE_V1_PATH_WORDS];
         kword_t combined[FILE_V1_PATH_WORDS];
@@ -43,7 +37,6 @@ file_walk_path_at(const kword_t *path, int parent_only,
         unsigned int words;
         unsigned int i;
         int rc;
-        int alias;
         vnode_t node;
         vnode_t next;
         struct vfs_name name;
@@ -62,12 +55,10 @@ restart:
         n = (unsigned int)work[0];
         if (file_path_char(work, 0U) == (unsigned int)('/' - 040)) {
                 node = vfs_root();
-                alias = 0;
         } else {
                 node = start_node;
                 if (node == VFS_V1_NODE_NONE)
                         node = vfs_root();
-                alias = start_alias;
         }
         pos = 0U;
         for (;;) {
@@ -78,8 +69,6 @@ restart:
                         if (parent_only)
                                 return -1;
                         *nodep = node;
-                        if (aliasp != 0)
-                                *aliasp = alias;
                         return 0;
                 }
                 if (parent_only && pos >= n) {
@@ -87,21 +76,14 @@ restart:
                                 return -1;
                         *nodep = node;
                         *leaf = name;
-                        if (aliasp != 0)
-                                *aliasp = alias;
                         return 0;
                 }
                 if (file_name_dot(&name))
                         continue;
                 if (file_name_dotdot(&name)) {
-                        if (alias && node == file_alias_node) {
-                                node = FILE_V1_MEMFS_ROOT;
-                                alias = 0;
-                        } else if (vfs_parent(node, &next) != 0) {
+                        if (vfs_parent(node, &next) != 0)
                                 return -1;
-                        } else {
-                                node = next;
-                        }
+                        node = next;
                         continue;
                 }
                 if (vfs_lookup(node, &name, &next) != 0)
@@ -148,45 +130,38 @@ restart:
                                 for (i = 0U; i < FILE_V1_PATH_WORDS; ++i)
                                         work[i] = i < words ? combined[i] : 0UL;
                                 start_node = node;
-                                start_alias = alias;
                                 ++depth;
                                 goto restart;
                         }
                 }
-                if (aliasp != 0 && file_alias_node != VFS_V1_NODE_NONE &&
-                    node == FILE_V1_MEMFS_ROOT && next == file_alias_node)
-                        alias = 1;
                 node = next;
         }
 }
 
 static int
 file_walk_path(const kword_t *path,
-    int parent_only, vnode_t *nodep, struct vfs_name *leaf,
-    int *aliasp)
+    int parent_only, vnode_t *nodep, struct vfs_name *leaf)
 {
         vnode_t start;
-        int alias;
 
         start = file_cwd;
         if (start == VFS_V1_NODE_NONE)
                 start = vfs_root();
-        alias = aliasp != 0 && file_alias_cwd != 0;
-        return file_walk_path_at(path, parent_only, start, alias, 0U,
-            nodep, leaf, aliasp);
+        return file_walk_path_at(path, parent_only, start, 0U,
+            nodep, leaf);
 }
 
 int
 file_lookup_path(const kword_t *path, vnode_t *nodep)
 {
-        return file_walk_path(path, 0, nodep, 0, 0);
+        return file_walk_path(path, 0, nodep, 0);
 }
 
 static int
 file_parent_path(const kword_t *path, vnode_t *dirp,
     struct vfs_name *leaf)
 {
-        return file_walk_path(path, 1, dirp, leaf, 0);
+        return file_walk_path(path, 1, dirp, leaf);
 }
 
 extern struct file *file_find(int fd);
@@ -488,12 +463,10 @@ file_chdir(const kword_t *path)
 {
         vnode_t node;
         struct vfs_stat st;
-        int alias;
 
-        if (file_walk_path(path, 0, &node, 0, &alias) != 0 ||
+        if (file_walk_path(path, 0, &node, 0) != 0 ||
             vfs_stat(node, &st) != 0 || st.type != VFS_V1_TYPE_DIR)
                 return -1;
         file_cwd = node;
-        file_alias_cwd = alias != 0;
         return 0;
 }

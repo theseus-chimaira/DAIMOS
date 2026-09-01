@@ -6,9 +6,6 @@
 #include "dtfs.h"
 #include "d6fs_provider.h"
 
-extern vnode_t file_alias_node;
-
-
 static int
 vfs_mres_call(unsigned int provider, struct fs_mres_request *req)
 {
@@ -110,8 +107,6 @@ vfs_unlock_owner(vnode_t node, unsigned int owner)
                 (void)vfs_lock(node, owner, VFS_V1_LOCK_UNLOCK);
 }
 
-#define VFS_V1_MEMFS_ROOT \
-    VFS_V1_NODE(MEMFS_V1_PROVIDER, MEMFS_V1_KIND_NODE, 0U)
 #define VFS_V1_DEVICE_ROOT \
     VFS_V1_NODE(DEVICEFS_V1_PROVIDER, DEVICEFS_V1_KIND_ROOT, 0U)
 #define VFS_V1_PROC_ROOT \
@@ -264,12 +259,6 @@ vfs_lookup(vnode_t dir, const struct vfs_name *name,
                         *nodep = VFS_V1_PROC_ROOT;
                         return 0;
                 }
-                if (file_alias_node != VFS_V1_NODE_NONE &&
-                    vfs_name_is6(name,
-                    VFS_V1_SIX6('T','E','M','P',' ',' '), 4U)) {
-                        *nodep = file_alias_node;
-                        return 0;
-                }
         }
         provider = VFS_V1_PROVIDER(dir);
         switch (provider) {
@@ -349,12 +338,6 @@ vfs_readdir(vnode_t dir, unsigned int off, struct vfs_dirent *ent)
                     VFS_V1_TYPE_DIR);
                 return 1;
         }
-        if (off == base + 2U && file_alias_node != VFS_V1_NODE_NONE) {
-                vfs_dirent_set6(ent,
-                    VFS_V1_SIX6('T','E','M','P',' ',' '), 4U,
-                    VFS_V1_TYPE_DIR);
-                return 1;
-        }
         return 0;
 }
 
@@ -394,11 +377,6 @@ vfs_parent_raw(vnode_t node, vnode_t *parentp)
         provider = VFS_V1_PROVIDER(node);
         switch (provider) {
         case MEMFS_V1_PROVIDER:
-                if (node == VFS_V1_MEMFS_ROOT) {
-                        *parentp = node;
-                        return 0;
-                }
-                /* FALLTHROUGH */
         case DTFS_V1_PROVIDER:
         case D6FS_V2_PROVIDER:
                 req.op = FS_MRES_OP_PARENT;
@@ -446,8 +424,7 @@ vfs_parent(vnode_t node, vnode_t *parentp)
 
 /*
  * Return the parent and namespace name of a directory while crossing a mount
- * root back through its mountpoint.  The current writable mountpoints live in
- * MEMFS, so their stored name is authoritative for getcwd().
+ * root back through its mountpoint.
  */
 int
 vfs_parent_name(vnode_t node, vnode_t *parentp,

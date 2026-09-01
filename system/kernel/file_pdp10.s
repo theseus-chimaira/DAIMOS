@@ -7,9 +7,6 @@ file_table:
         .globl  file_cwd
 file_cwd:
         .block  1
-        .globl  file_alias_cwd
-file_alias_cwd:
-        .block  1
 
         .text
 ; file_pdp10.s -- compact resident FILE/path primitives for PDP-6/PDP-10.
@@ -149,8 +146,7 @@ file_component_fail:
 
 ; int file_getcwd(kword_t *buf, unsigned int nwords)
 ;
-; Construct MEMFS cwd paths directly as packed SIXBIT.  DAIMOS 1.x has one
-; live FILE context, so cwd and alias state are scalar rather than per-owner.
+; Construct cwd paths directly as packed SIXBIT.
         .globl  file_getcwd
 file_getcwd:
         jumpe   1,file_getcwd_fail
@@ -186,16 +182,7 @@ file_getcwd_have_node:
         move    011,1                    ; output buffer
         move    012,2                    ; output words
 
-; Scalar alias state is sufficient for the single live FILE context.
-        movei   014,0
-        skipn   file_alias_cwd
-        jrst    file_getcwd_stop_root
-        movei   014,1
-        move    015,file_alias_node
-        jrst    file_getcwd_stop_ready
-file_getcwd_stop_root:
         move    015,vfs_namespace_root
-file_getcwd_stop_ready:
 
 ; Clear the complete supplied output record, preserving existing semantics.
         move    4,012
@@ -241,20 +228,6 @@ file_getcwd_up_done:
         movei   4,017
         idpb    4,6
         addi    015,1
-
-; Alias paths start with /TEMP.
-        jumpe   014,file_getcwd_components
-        caige   5,5
-        jrst    file_getcwd_local_fail
-        movei   4,064                    ; T
-        idpb    4,6
-        movei   4,045                    ; E
-        idpb    4,6
-        movei   4,055                    ; M
-        idpb    4,6
-        movei   4,060                    ; P
-        idpb    4,6
-        addi    015,4
 
 file_getcwd_components:
         jumpe   013,file_getcwd_store_len
