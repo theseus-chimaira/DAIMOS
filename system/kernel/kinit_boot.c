@@ -3,7 +3,6 @@
 #include "exec.h"
 #include "mach_user.h"
 #include "proc.h"
-#include "d6fs_disk.h"
 #include "d6fs_boot.h"
 #include "dsk270.h"
 #include "d6log.h"
@@ -21,7 +20,7 @@ kinit_boot(void)
         int d6fs_rc;
 
         if (dsk270_read_addr != 0U) {
-                struct d6fs_dsk *boot_disk;
+                struct diskset *boot_disk;
                 kword_t *scratch;
                 kword_t payload[1];
 

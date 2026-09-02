@@ -1,39 +1,39 @@
 #include "fs_mres.h"
 #include "d6fs_provider.h"
-#include "d6fs_disk.h"
 #include "d6fs.h"
 #include "dsk270.h"
+#include "diskset.h"
 
 
 static int
-d6fs_mres_disk_init(struct d6fs_dsk *disk, unsigned int members,
+d6fs_mres_disk_init(struct diskset *disk, unsigned int members,
     const unsigned int *units, const kword_t *blocks)
 {
         unsigned int i;
 
         if (disk == 0 || units == 0 || blocks == 0 || members == 0U ||
-            members > D6FS_MAX_MEMBERS)
+            members > DISKSET_MAX_MEMBERS)
                 return -1;
-        disk->set.members = members;
+        disk->members = members;
         disk->swap_tail_blocks = 0UL;
         disk->logstore_start = 0UL;
         disk->logstore_blocks = 0UL;
-        for (i = 0U; i < D6FS_MAX_MEMBERS; ++i) {
+        for (i = 0U; i < DISKSET_MAX_MEMBERS; ++i) {
                 disk->unit[i] = 0U;
                 disk->base[i] = 0UL;
-                disk->set.blocks[i] = 0UL;
+                disk->blocks[i] = 0UL;
         }
         for (i = 0U; i < members; ++i) {
                 if (units[i] >= DSK270_UNITS || blocks[i] == 0UL)
                         return -1;
                 disk->unit[i] = units[i];
-                disk->set.blocks[i] = blocks[i];
+                disk->blocks[i] = blocks[i];
         }
-        return d6fs_diskset_valid(&disk->set) ? 0 : -1;
+        return diskset_valid(disk) ? 0 : -1;
 }
 
 static int
-d6fs_mres_mount_root(struct d6fs_dsk *disk, kword_t super_a,
+d6fs_mres_mount_root(struct diskset *disk, kword_t super_a,
     kword_t super_b, unsigned int flags, kword_t *scratch, vnode_t *rootp)
 {
         kword_t a[D6FS_SUPER_WORDS];
@@ -48,14 +48,14 @@ d6fs_mres_mount_root(struct d6fs_dsk *disk, kword_t super_a,
 
         if (disk == 0 || scratch == 0 || rootp == 0)
                 return -1;
-        total = d6fs_diskset_blocks(&disk->set);
+        total = diskset_blocks(disk);
         if (total == 0UL || super_a >= total || super_b >= total ||
             super_a == super_b ||
-            d6fs_dsk_read_block(disk, super_a, scratch) != 0)
+            diskset_read_block(disk, super_a, scratch) != 0)
                 return -1;
         for (i = 0U; i < D6FS_SUPER_WORDS; ++i)
                 a[i] = scratch[i];
-        if (d6fs_dsk_read_block(disk, super_b, scratch) != 0)
+        if (diskset_read_block(disk, super_b, scratch) != 0)
                 return -1;
         for (i = 0U; i < D6FS_SUPER_WORDS; ++i)
                 b[i] = scratch[i];
@@ -65,7 +65,7 @@ d6fs_mres_mount_root(struct d6fs_dsk *disk, kword_t super_a,
         if ((flags & VFS_MOUNT_RDONLY) == 0U &&
             dsk270_write_addr != 0U) {
                 rc = d6fs_provider_mount_rw(target,
-                    d6fs_dsk_read_block, d6fs_dsk_write_block, disk,
+                    diskset_read_block, diskset_write_block, disk,
                     &super, flags, &root);
                 if (rc != 0)
                         return rc;
@@ -75,7 +75,7 @@ d6fs_mres_mount_root(struct d6fs_dsk *disk, kword_t super_a,
                         return -1;
                 }
         } else {
-                rc = d6fs_provider_mount(target, d6fs_dsk_read_block,
+                rc = d6fs_provider_mount(target, diskset_read_block,
                     disk, &super, flags | VFS_MOUNT_RDONLY, &root);
                 if (rc != 0)
                         return rc;
@@ -91,7 +91,7 @@ d6fs_mres_mount_root(struct d6fs_dsk *disk, kword_t super_a,
 int
 d6fs_mres_dispatch(struct fs_mres_request *r)
 {
-        struct d6fs_dsk *disk;
+        struct diskset *disk;
 
         if (r == 0)
                 return -1;
@@ -155,7 +155,7 @@ d6fs_mres_dispatch(struct fs_mres_request *r)
         case FS_MRES_OP_PREPARE_UNMOUNT:
                 return d6fs_provider_prepare_unmount(r->a);
         case FS_MRES_OP_D6FS_BOOT_DISK:
-                return (int)(unsigned long)d6fs_dsk_boot_disk_get();
+                return (int)(unsigned long)diskset_boot_get();
         case FS_MRES_OP_D6FS_BLOCK_BUFFER:
                 return (int)(unsigned long)d6fs_provider_block_buffer();
         case FS_MRES_OP_D6FS_CACHE_INVALID:
@@ -163,34 +163,34 @@ d6fs_mres_dispatch(struct fs_mres_request *r)
                 return 0;
         case FS_MRES_OP_D6FS_DISK_INIT:
                 return d6fs_mres_disk_init(
-                    (struct d6fs_dsk *)(unsigned long)r->a,
+                    (struct diskset *)(unsigned long)r->a,
                     (unsigned int)r->b,
                     (const unsigned int *)(unsigned long)r->c,
                     (const kword_t *)(unsigned long)r->d);
         case FS_MRES_OP_D6FS_DISK_BLOCKS:
-                disk = (struct d6fs_dsk *)(unsigned long)r->a;
-                return (int)d6fs_diskset_blocks(&disk->set);
+                disk = (struct diskset *)(unsigned long)r->a;
+                return (int)diskset_blocks(disk);
         case FS_MRES_OP_D6FS_READ_BLOCK:
-                return d6fs_dsk_read_block(
+                return diskset_read_block(
                     (void *)(unsigned long)r->a, r->b,
                     (kword_t *)(unsigned long)r->c);
         case FS_MRES_OP_D6FS_WRITE_BLOCK:
-                return d6fs_dsk_write_block(
+                return diskset_write_block(
                     (void *)(unsigned long)r->a, r->b,
                     (const kword_t *)(unsigned long)r->c);
         case FS_MRES_OP_D6FS_MOUNT_ROOT:
                 return d6fs_mres_mount_root(
-                    (struct d6fs_dsk *)(unsigned long)r->a,
+                    (struct diskset *)(unsigned long)r->a,
                     r->b, r->c, (unsigned int)r->d,
                     (kword_t *)(unsigned long)r->e,
                     (vnode_t *)(unsigned long)r->f);
         case FS_MRES_OP_D6FS_LOG_READ:
-                return d6fs_dsk_log_read(
-                    (struct d6fs_dsk *)(unsigned long)r->a, r->b,
+                return diskset_log_read(
+                    (struct diskset *)(unsigned long)r->a, r->b,
                     (kword_t *)(unsigned long)r->c);
         case FS_MRES_OP_D6FS_LOG_WRITE:
-                return d6fs_dsk_log_write(
-                    (struct d6fs_dsk *)(unsigned long)r->a, r->b,
+                return diskset_log_write(
+                    (struct diskset *)(unsigned long)r->a, r->b,
                     (const kword_t *)(unsigned long)r->c);
         default:
                 return -1;

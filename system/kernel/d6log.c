@@ -41,7 +41,7 @@ d6log_write_header(struct d6log *log,
 }
 
 int
-d6log_recover(struct d6log *log, struct d6fs_dsk *disk,
+d6log_recover(struct d6log *log, struct diskset *disk,
     kword_t scratch[D6FS_BLOCK_WORDS])
 {
         kword_t best_sequence;

@@ -4,7 +4,6 @@
 #include "kcore.h"
 
 #define D6FS_BLOCK_WORDS          0200U
-#define D6FS_MAX_MEMBERS          8U
 #define D6FS_CACHE_INVALID 0777777777777UL
 #define D6FS_EXTENTS              7U
 #define D6FS_FCB_WORDS            020U
@@ -69,16 +68,6 @@
 #define D6FS_SB_SUMMARY_START     015U
 #define D6FS_SB_SUMMARY_BLOCKS    016U
 #define D6FS_SB_RESERVED          017U
-
-struct d6fs_diskset {
-        unsigned int members;
-        kword_t blocks[D6FS_MAX_MEMBERS];
-};
-
-struct d6fs_phys {
-        unsigned int member;
-        kword_t block;
-};
 
 struct d6fs_fcb_info {
         unsigned int type;
@@ -174,10 +163,6 @@ int d6fs_super_select(const kword_t a[D6FS_SUPER_WORDS],
  * configured stripe order.  Missing members are not representable here: a
  * diskset is either complete or unusable.
  */
-int d6fs_diskset_valid(const struct d6fs_diskset *set);
-kword_t d6fs_diskset_blocks(const struct d6fs_diskset *set);
-int d6fs_map_block(const struct d6fs_diskset *set, kword_t logical,
-    struct d6fs_phys *phys);
 
 /* Directory entry codec and read-only media helpers. */
 int d6fs_dirent_decode(const kword_t ent[D6FS_DIRENT_WORDS],

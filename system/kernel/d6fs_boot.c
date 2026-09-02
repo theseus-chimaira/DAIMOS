@@ -1,9 +1,10 @@
 #include "d6fs_boot.h"
-#include "d6fs_disk.h"
 #include "d6fs_provider.h"
 #include "dsk270.h"
 #include "kinit.h"
 #include "fs_mres.h"
+#include "diskset.h"
+#include "diskset_layout.h"
 
 #define D6FS_BOOT_HALF_MASK          0777777UL
 #define D6FS_BOOT_UNUSED_HALF        0777777UL
@@ -22,10 +23,10 @@ d6fs_boot_call(unsigned int op, kword_t a, kword_t b, kword_t c,
         return fs_mres_call(fs_d6fs_service_addr, &req);
 }
 
-struct d6fs_dsk *
+struct diskset *
 d6fs_boot_disk(void)
 {
-        return (struct d6fs_dsk *)(unsigned long)d6fs_boot_call(
+        return (struct diskset *)(unsigned long)d6fs_boot_call(
             FS_MRES_OP_D6FS_BOOT_DISK, 0, 0, 0, 0, 0, 0);
 }
 
@@ -44,7 +45,7 @@ d6fs_boot_cache_invalidate(void)
 }
 
 int
-d6fs_boot_log_read(struct d6fs_dsk *disk, kword_t blockno,
+d6fs_boot_log_read(struct diskset *disk, kword_t blockno,
     kword_t block[D6FS_BLOCK_WORDS])
 {
         return d6fs_boot_call(FS_MRES_OP_D6FS_LOG_READ,
@@ -53,7 +54,7 @@ d6fs_boot_log_read(struct d6fs_dsk *disk, kword_t blockno,
 }
 
 int
-d6fs_boot_log_write(struct d6fs_dsk *disk, kword_t blockno,
+d6fs_boot_log_write(struct diskset *disk, kword_t blockno,
     const kword_t block[D6FS_BLOCK_WORDS])
 {
         return d6fs_boot_call(FS_MRES_OP_D6FS_LOG_WRITE,
@@ -62,7 +63,7 @@ d6fs_boot_log_write(struct d6fs_dsk *disk, kword_t blockno,
 }
 
 static int
-d6fs_boot_disk_init(struct d6fs_dsk *disk, unsigned int members,
+d6fs_boot_disk_init(struct diskset *disk, unsigned int members,
     const unsigned int *units, const kword_t *usable_blocks)
 {
         return d6fs_boot_call(FS_MRES_OP_D6FS_DISK_INIT,
@@ -73,24 +74,24 @@ d6fs_boot_disk_init(struct d6fs_dsk *disk, unsigned int members,
 
 static int
 d6fs_boot_layout_decode(const kword_t block[D6FS_BLOCK_WORDS],
-    struct d6fs_dsk_layout *layout)
+    struct diskset_layout *layout)
 {
         kword_t range;
 
         if (block == 0 || layout == 0 ||
-            block[D6FS_DSK_LAYOUT_MAGIC_WORD] != D6FS_DSK_LAYOUT_MAGIC)
+            block[DISKSET_LAYOUT_MAGIC_WORD] != DISKSET_LAYOUT_MAGIC_D6FSR2)
                 return -1;
-        range = block[D6FS_DSK_LAYOUT_RANGE_WORD];
+        range = block[DISKSET_LAYOUT_RANGE_WORD];
         layout->base = (range >> 18) & D6FS_BOOT_HALF_MASK;
         layout->usable_blocks = range & D6FS_BOOT_HALF_MASK;
-        layout->super_a = block[D6FS_DSK_LAYOUT_SUPER_A];
-        layout->super_b = block[D6FS_DSK_LAYOUT_SUPER_B];
-        layout->swap_tail_blocks = block[D6FS_DSK_LAYOUT_SWAP_TAIL];
-        layout->bootstream_blocks = block[D6FS_DSK_LAYOUT_BOOTSTREAM];
-        layout->logstore_start = block[D6FS_DSK_LAYOUT_LOGSTORE_START];
-        layout->logstore_blocks = block[D6FS_DSK_LAYOUT_LOGSTORE_BLOCKS];
-        layout->badmap_start = block[D6FS_DSK_LAYOUT_BADMAP_START];
-        layout->badmap_blocks = block[D6FS_DSK_LAYOUT_BADMAP_BLOCKS];
+        layout->super_a = block[DISKSET_LAYOUT_SUPER_A];
+        layout->super_b = block[DISKSET_LAYOUT_SUPER_B];
+        layout->swap_tail_blocks = block[DISKSET_LAYOUT_SWAP_TAIL];
+        layout->bootstream_blocks = block[DISKSET_LAYOUT_BOOTSTREAM];
+        layout->logstore_start = block[DISKSET_LAYOUT_LOGSTORE_START];
+        layout->logstore_blocks = block[DISKSET_LAYOUT_LOGSTORE_BLOCKS];
+        layout->badmap_start = block[DISKSET_LAYOUT_BADMAP_START];
+        layout->badmap_blocks = block[DISKSET_LAYOUT_BADMAP_BLOCKS];
         if (layout->usable_blocks == 0UL ||
             layout->swap_tail_blocks >= DSK270_SECTORS_PER_UNIT ||
             layout->base >= DSK270_SECTORS_PER_UNIT ||
@@ -116,7 +117,7 @@ d6fs_boot_layout_decode(const kword_t block[D6FS_BLOCK_WORDS],
 }
 
 static int
-d6fs_boot_mount_at_root(struct d6fs_dsk *disk, kword_t super_a,
+d6fs_boot_mount_at_root(struct diskset *disk, kword_t super_a,
     kword_t super_b, unsigned int flags, kword_t scratch[D6FS_BLOCK_WORDS],
     vnode_t *rootp)
 {
@@ -137,14 +138,14 @@ d6fs_boot_handoff_half(unsigned int index)
 }
 
 static int
-d6fs_boot_discover(struct d6fs_dsk *disk, kword_t *super_ap,
+d6fs_boot_discover(struct diskset *disk, kword_t *super_ap,
     kword_t *super_bp)
 {
-        unsigned int units[D6FS_DSK_BOOT_MEMBERS];
-        kword_t blocks[D6FS_DSK_BOOT_MEMBERS];
-        kword_t bases[D6FS_DSK_BOOT_MEMBERS];
+        unsigned int units[DISKSET_BOOT_MEMBERS];
+        kword_t blocks[DISKSET_BOOT_MEMBERS];
+        kword_t bases[DISKSET_BOOT_MEMBERS];
         kword_t descriptor[D6FS_BLOCK_WORDS];
-        struct d6fs_dsk_layout layout;
+        struct diskset_layout layout;
         unsigned int index;
         unsigned int members;
         kword_t first_super_a;
@@ -169,7 +170,7 @@ d6fs_boot_discover(struct d6fs_dsk *disk, kword_t *super_ap,
         first_logstore_blocks = 0UL;
         first_badmap_start = 0UL;
         first_badmap_blocks = 0UL;
-        for (index = 0U; index < D6FS_DSK_BOOT_MEMBERS; ++index) {
+        for (index = 0U; index < DISKSET_BOOT_MEMBERS; ++index) {
                 half = d6fs_boot_handoff_half(index);
                 if (half == D6FS_BOOT_UNUSED_HALF)
                         continue;
@@ -179,8 +180,8 @@ d6fs_boot_discover(struct d6fs_dsk *disk, kword_t *super_ap,
                 if (dsk270_read_sector(units[members], locator,
                     descriptor) != 0)
                         return -1;
-                if (descriptor[D6FS_DSK_LAYOUT_MAGIC_WORD] !=
-                    D6FS_DSK_LAYOUT_MAGIC)
+                if (descriptor[DISKSET_LAYOUT_MAGIC_WORD] !=
+                    DISKSET_LAYOUT_MAGIC_D6FSR2)
                         return members == 0U ? 1 : -1;
                 if (d6fs_boot_layout_decode(descriptor, &layout) != 0)
                         return -1;
@@ -231,7 +232,7 @@ d6fs_boot_discover(struct d6fs_dsk *disk, kword_t *super_ap,
 int
 d6fs_boot_mount_root(unsigned int flags, vnode_t *rootp)
 {
-        struct d6fs_dsk *disk;
+        struct diskset *disk;
         kword_t *scratch;
         kword_t super_a;
         kword_t super_b;
