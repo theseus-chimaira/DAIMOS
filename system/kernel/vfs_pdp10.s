@@ -1,7 +1,7 @@
 ; vfs_pdp10.s -- compact resident VFS primitives for PDP-6/PDP-10.
         .text
-        .globl  pdp10_ret_zero_v1
-        .globl  pdp10_ret_neg1_v1
+        .globl  pdp10_ret_zero
+        .globl  pdp10_ret_neg1
 
 ; int vfs_name_set6(struct vfs_name *name, kword_t word,
 ;     unsigned int chars)
@@ -21,7 +21,7 @@ vfs_name_set6_small:
         movei   1,0
         popj    17,
 vfs_name_set6_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1
 
 ; int vfs_name_is6(const struct vfs_name *name, kword_t word,
 ;     unsigned int chars)
@@ -78,6 +78,6 @@ vfs_sixchar_lf:
         movei   1,1
         popj    17,
 vfs_sixchar_eof:
-        jrst    pdp10_ret_zero_v1
+        jrst    pdp10_ret_zero
 vfs_sixchar_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1

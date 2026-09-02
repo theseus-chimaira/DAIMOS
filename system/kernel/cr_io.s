@@ -7,14 +7,14 @@
         .text
         .globl cr_read_card
         .globl cr_iowd
-        .globl pdp10_ret_arg_v34
+        .globl pdp10_ret_arg
         .globl io7_ret_timeout
-        .globl pdp10_ret_busy_v34
+        .globl pdp10_ret_busy
         .globl io7_ret_card_count
         .globl io7_ret_e4
 
 cr_read_card:
-        jumpe 1,pdp10_ret_arg_v34
+        jumpe 1,pdp10_ret_arg
         skipe cr_iowd
         jrst io7_ret_e4
 cr_read_idle:
@@ -39,7 +39,7 @@ cr_read_done_wait:
         jrst io7_ret_timeout
 cr_read_done:
         consz 0150,0400
-        jrst pdp10_ret_busy_v34
+        jrst pdp10_ret_busy
 io7_ret_card_count:
         movei 1,0120
         popj 017,

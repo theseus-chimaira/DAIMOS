@@ -1,11 +1,11 @@
-#ifndef DAIMON_D6FS_PROVIDER_V2_H
-#define DAIMON_D6FS_PROVIDER_V2_H
+#ifndef DAIMON_D6FS_PROVIDER_H
+#define DAIMON_D6FS_PROVIDER_H
 
 #include "d6fs.h"
 #include "vfs.h"
 
-#define D6FS_V2_PROVIDER        6U
-#define D6FS_V2_KIND_NODE       1U
+#define D6FS_PROVIDER        6U
+#define D6FS_KIND_NODE       1U
 
 int d6fs_provider_mount(vnode_t target,
     d6fs_read_block_fn read_block, void *opaque,

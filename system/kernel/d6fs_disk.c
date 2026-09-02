@@ -3,15 +3,15 @@
 #include "dsk270.h"
 #include "d6fs_provider.h"
 
-static struct d6fs_dsk_v2 d6fs_dsk_v2_boot_disk;
+static struct d6fs_dsk d6fs_dsk_boot_disk;
 
 int
-d6fs_dsk_v2_read_block(void *opaque, kword_t logical,
-    kword_t block[D6FS_V2_BLOCK_WORDS])
+d6fs_dsk_read_block(void *opaque, kword_t logical,
+    kword_t block[D6FS_BLOCK_WORDS])
 {
-        struct d6fs_dsk_v2 *disk;
+        struct d6fs_dsk *disk;
         struct d6fs_phys phys;
-        disk = (struct d6fs_dsk_v2 *)opaque;
+        disk = (struct d6fs_dsk *)opaque;
         if (disk == 0 || block == 0 ||
             d6fs_map_block(&disk->set, logical, &phys) != 0 ||
             phys.member >= disk->set.members ||
@@ -22,12 +22,12 @@ d6fs_dsk_v2_read_block(void *opaque, kword_t logical,
 }
 
 int
-d6fs_dsk_v2_write_block(void *opaque, kword_t logical,
-    const kword_t block[D6FS_V2_BLOCK_WORDS])
+d6fs_dsk_write_block(void *opaque, kword_t logical,
+    const kword_t block[D6FS_BLOCK_WORDS])
 {
-        struct d6fs_dsk_v2 *disk;
+        struct d6fs_dsk *disk;
         struct d6fs_phys phys;
-        disk = (struct d6fs_dsk_v2 *)opaque;
+        disk = (struct d6fs_dsk *)opaque;
         if (disk == 0 || block == 0 ||
             d6fs_map_block(&disk->set, logical, &phys) != 0 ||
             phys.member >= disk->set.members ||
@@ -38,7 +38,7 @@ d6fs_dsk_v2_write_block(void *opaque, kword_t logical,
 }
 
 kword_t
-d6fs_dsk_v2_swap_blocks(const struct d6fs_dsk_v2 *disk)
+d6fs_dsk_swap_blocks(const struct d6fs_dsk *disk)
 {
         if (disk == 0)
                 return 0UL;
@@ -46,14 +46,14 @@ d6fs_dsk_v2_swap_blocks(const struct d6fs_dsk_v2 *disk)
 }
 
 static int
-d6fs_dsk_v2_swap_io(struct d6fs_dsk_v2 *disk, kword_t logical,
-    kword_t block[D6FS_V2_BLOCK_WORDS], int write)
+d6fs_dsk_swap_io(struct d6fs_dsk *disk, kword_t logical,
+    kword_t block[D6FS_BLOCK_WORDS], int write)
 {
         unsigned int member;
         kword_t local;
         if (disk == 0 || block == 0 || disk->set.members == 0U ||
             disk->swap_tail_blocks == 0UL ||
-            logical >= d6fs_dsk_v2_swap_blocks(disk))
+            logical >= d6fs_dsk_swap_blocks(disk))
                 return -1;
         member = (unsigned int)(logical % (kword_t)disk->set.members);
         local = logical / (kword_t)disk->set.members;
@@ -68,41 +68,41 @@ d6fs_dsk_v2_swap_io(struct d6fs_dsk_v2 *disk, kword_t logical,
 }
 
 int
-d6fs_dsk_v2_swap_read(struct d6fs_dsk_v2 *disk, kword_t logical,
-    kword_t block[D6FS_V2_BLOCK_WORDS])
+d6fs_dsk_swap_read(struct d6fs_dsk *disk, kword_t logical,
+    kword_t block[D6FS_BLOCK_WORDS])
 {
-        return d6fs_dsk_v2_swap_io(disk, logical, block, 0);
+        return d6fs_dsk_swap_io(disk, logical, block, 0);
 }
 
 int
-d6fs_dsk_v2_swap_write(struct d6fs_dsk_v2 *disk, kword_t logical,
-    const kword_t block[D6FS_V2_BLOCK_WORDS])
+d6fs_dsk_swap_write(struct d6fs_dsk *disk, kword_t logical,
+    const kword_t block[D6FS_BLOCK_WORDS])
 {
-        return d6fs_dsk_v2_swap_io(disk, logical, (kword_t *)block, 1);
+        return d6fs_dsk_swap_io(disk, logical, (kword_t *)block, 1);
 }
 
 int
-d6fs_dsk_v2_log_read(struct d6fs_dsk_v2 *disk, kword_t blockno,
-    kword_t block[D6FS_V2_BLOCK_WORDS])
+d6fs_dsk_log_read(struct d6fs_dsk *disk, kword_t blockno,
+    kword_t block[D6FS_BLOCK_WORDS])
 {
         if (disk == 0 || blockno >= disk->logstore_blocks)
                 return -1;
-        return d6fs_dsk_v2_read_block(disk, disk->logstore_start + blockno,
+        return d6fs_dsk_read_block(disk, disk->logstore_start + blockno,
             block);
 }
 
 int
-d6fs_dsk_v2_log_write(struct d6fs_dsk_v2 *disk, kword_t blockno,
-    const kword_t block[D6FS_V2_BLOCK_WORDS])
+d6fs_dsk_log_write(struct d6fs_dsk *disk, kword_t blockno,
+    const kword_t block[D6FS_BLOCK_WORDS])
 {
         if (disk == 0 || blockno >= disk->logstore_blocks)
                 return -1;
-        return d6fs_dsk_v2_write_block(disk, disk->logstore_start + blockno,
+        return d6fs_dsk_write_block(disk, disk->logstore_start + blockno,
             block);
 }
 
-struct d6fs_dsk_v2 *
-d6fs_dsk_v2_boot_disk_get(void)
+struct d6fs_dsk *
+d6fs_dsk_boot_disk_get(void)
 {
-        return &d6fs_dsk_v2_boot_disk;
+        return &d6fs_dsk_boot_disk;
 }

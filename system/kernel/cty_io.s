@@ -14,8 +14,8 @@
         .globl cty_tx_pending
         .globl cty_rx_pending
         .globl pdp10_pi_handler_return
-        .globl pdp10_ret_ok_v34
-        .globl pdp10_ret_busy_v34
+        .globl pdp10_ret_ok
+        .globl pdp10_ret_busy
 
 cty_pi_handler:
         conso 0120,0010
@@ -35,7 +35,7 @@ cty_pi_input:
 ; AC1 = 7-bit character.  Return 0, CTY_E_BUSY (-3), or CTY_E_TIMEOUT (-2).
 cty_putchar:
         move 2,cty_tx_pending
-        jumpn 2,pdp10_ret_busy_v34
+        jumpn 2,pdp10_ret_busy
         movei 2,0200000
 cty_putchar_wait_idle:
         conso 0120,0020
@@ -50,7 +50,7 @@ cty_putchar_ready:
         movei 2,0200000
 cty_putchar_wait_done:
         move 3,cty_tx_pending
-        jumpe 3,pdp10_ret_ok_v34
+        jumpe 3,pdp10_ret_ok
         sojg 2,cty_putchar_wait_done
         setzm cty_tx_pending
 cty_putchar_timeout:

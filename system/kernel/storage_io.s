@@ -34,12 +34,12 @@
         .globl dsk_read_sector
         .globl dsk_write_sector
         .globl pdp10_pi_handler_return
-        .globl pdp10_ret_ok_v34
-        .globl pdp10_ret_arg_v34
-        .globl pdp10_ret_busy_v34
-        .globl proc_v1_table
-        .globl proc_v1_wait_event
-        .globl proc_v1_wakeup_event
+        .globl pdp10_ret_ok
+        .globl pdp10_ret_arg
+        .globl pdp10_ret_busy
+        .globl proc_table
+        .globl proc_wait_event
+        .globl proc_wakeup_event
 
 storage_pi_handler:
         ; Controller status only.  Type-136 word transfers run directly from
@@ -240,7 +240,7 @@ storage_pi_dsk_complete:
         setzm storage_state
         setzm dsk_active_request
         aoj 1,
-        pushj 017,proc_v1_wakeup_event
+        pushj 017,proc_wakeup_event
         jrst pdp10_pi_handler_return
 storage_pi_dsk_boot_done:
         movns storage_state
@@ -287,7 +287,7 @@ storage_dsk_fail_runtime:
         setzm storage_state
         setzm dsk_active_request
         aoj 1,
-        jrst proc_v1_wakeup_event
+        jrst proc_wakeup_event
 storage_pi_dtc_block_error:
         ; Stop only the failing DECtape unit; other units may be coasting.
         movei 1,7
@@ -302,7 +302,7 @@ storage_pi_dtc_block_error:
         jrst pdp10_pi_handler_return
 storage_ok:
         setzm storage_state
-        jrst pdp10_ret_ok_v34
+        jrst pdp10_ret_ok
 
 ; Set direct PI3 block transfer and build its combined -count,,buffer-1 word.
 ; BLKI/BLKO updates both halves itself and dismisses PI for every non-final
@@ -342,16 +342,16 @@ dtc_write_block:
         movei 4,1
 dtc_block_start:
         skipe storage_state
-        jrst pdp10_ret_busy_v34
+        jrst pdp10_ret_busy
         caile 1,7
-        jrst pdp10_ret_arg_v34
+        jrst pdp10_ret_arg
         ; The LH of AC2 optionally carries (run_blocks-1)*0200 words.
         ; Zero therefore remains the exact legacy one-block ABI.
         hlrz 6,2
         addi 6,0200
         hrrzs 2
         caile 2,01101
-        jrst pdp10_ret_arg_v34
+        jrst pdp10_ret_arg
         movem 4,dtc_request_write
         setzm dtc_request_reverse
         movei 7,7
@@ -493,10 +493,10 @@ dtc_search_fail:
 ; AC1 unit, AC2 destination, AC3 maximum words in one tape record.
 mtc_read_words:
         skipe storage_state
-        jrst pdp10_ret_busy_v34
+        jrst pdp10_ret_busy
         caile 1,7
-        jrst pdp10_ret_arg_v34
-        jumple 3,pdp10_ret_arg_v34
+        jrst pdp10_ret_arg
+        jumple 3,pdp10_ret_arg
         pushj 017,storage_setup_read
         hrroi 3,0777776
         movei 4,052405
@@ -508,10 +508,10 @@ mtc_read_words:
 ; the per-word PI path identical to the disk write path.
 mtc_write_words:
         skipe storage_state
-        jrst pdp10_ret_busy_v34
+        jrst pdp10_ret_busy
         caile 1,7
-        jrst pdp10_ret_arg_v34
-        jumple 3,pdp10_ret_arg_v34
+        jrst pdp10_ret_arg
+        jumple 3,pdp10_ret_arg
         pushj 017,storage_setup_write
         hrroi 3,0777773
         movei 4,051005
@@ -544,7 +544,7 @@ dsk_read_sector:
 dsk_write_sector:
         movei 4,1
 dsk_sector_request:
-        skipn proc_v1_table+2
+        skipn proc_table+2
         jrst dsk_boot_request
 
 dsk_runtime_request:
@@ -567,7 +567,7 @@ dsk_runtime_queue:
         jumpl 1,dsk_runtime_submit_fail
 dsk_runtime_wait:
         movei 1,(017)
-        pushj 017,proc_v1_wait_event
+        pushj 017,proc_wait_event
         pushj 017,dsk_dispatch
         move 1,(017)
         sub 017,[2,,2]
@@ -594,7 +594,7 @@ dsk_enqueue:
         skipn (3)
         jrst dsk_enqueue_first
         skipe 1(3)
-        jrst pdp10_ret_busy_v34
+        jrst pdp10_ret_busy
         move 5,(3)
         movem 1,1(3)
         move 6,dsk_current_cyl(4)
@@ -675,7 +675,7 @@ dsk_start_go:
 ; same DFR/IDS interrupt state machine as runtime and poll only storage_state.
 dsk_boot_request:
         skipe storage_state
-        jrst pdp10_ret_busy_v34
+        jrst pdp10_ret_busy
         movei 3,0200
         jumpe 4,dsk_boot_read
         pushj 017,storage_setup_write

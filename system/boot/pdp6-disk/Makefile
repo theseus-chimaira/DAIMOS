@@ -23,15 +23,15 @@ KINIT_STAMP := $(BUILD)/.kinit-built
 KCORE_STAMP := $(BUILD)/.kcore-built
 KERNEL_INPUTS := $(wildcard $(KERNEL_DIR)/*.c $(KERNEL_DIR)/*.h $(KERNEL_DIR)/*.s)
 
-KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot_v1 d6fs_boot d6log kinit_io module_io
+KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot d6fs_boot d6log kinit_io module_io
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 
-KCORE_C_NAMES = kboot_v1 exec_v1 vfs devicefs fs_mres file
+KCORE_C_NAMES = kboot exec vfs devicefs fs_mres file
 KCORE_FIXED_NAMES = kcore_entry $(KCORE_C_NAMES) ret_pdp10 \
 	dsk270_pdp10 kfmt_pdp10 vfs_pdp10 fs_mres_pdp10 file_pdp10 proc_pdp10 \
 	device_state_pdp10 procfs_pdp10 devicefs_pdp10 syscall_info_pdp10 \
-	syscall_dispatch_v2 mach_user_v1 kcore_io kcore_end
+	syscall_dispatch mach_user kcore_io kcore_end
 KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))
 KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
 MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io io7_io dcs_io ge_io dpy_io \
@@ -76,10 +76,10 @@ IMAGE_RAW = $(BUILD)/kinit-v1.raw.words
 IMAGE_WORDS = $(BUILD)/kinit-v1.words
 
 USERLAND_BUILD_ROOT = $(BUILD)/userland-build
-DSH_DXR = $(USERLAND_BUILD_ROOT)/userland-v1/dsh-v1.dxr
-USERLAND_INPUTS := $(wildcard $(PROJECT_ROOT)/userland/v1/* $(PROJECT_ROOT)/userland/exec_v1/* \
-	$(PROJECT_ROOT)/userland/dsh_v1/*) $(PROJECT_ROOT)/userland/Makefile \
-	$(KERNEL_DIR)/syscall_v1.h
+DSH_DXR = $(USERLAND_BUILD_ROOT)/userland/dsh.dxr
+USERLAND_INPUTS := $(wildcard $(PROJECT_ROOT)/userland/libc/* $(PROJECT_ROOT)/userland/exec/* \
+	$(PROJECT_ROOT)/userland/dsh/*) $(PROJECT_ROOT)/userland/Makefile \
+	$(KERNEL_DIR)/syscall.h
 
 STAGE1_SRC = $(PROJECT_ROOT)/system/stand/pdp6/dsk/stage1.s
 STAGE1_DXR = $(BUILD)/stage1-dsk-v1.dxr

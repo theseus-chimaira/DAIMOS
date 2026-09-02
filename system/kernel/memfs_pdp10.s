@@ -1,7 +1,7 @@
 ; memfs_pdp10.s -- compact resident MEMFS primitives for PDP-6/PDP-10.
         .text
-        .globl  pdp10_ret_zero_v1
-        .globl  pdp10_ret_neg1_v1
+        .globl  pdp10_ret_zero
+        .globl  pdp10_ret_neg1
 
 ; void memfs_shift_after(struct memfs *fs, unsigned int start,
 ;     int delta, unsigned int exclude)
@@ -130,7 +130,7 @@ memfs_resize_ok:
         movei   1,0
         popj    17,
 memfs_resize_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1
 
 ; int memfs_read_words(const struct memfs *fs, vnode_t node,
 ;     unsigned int off, kword_t *buf, unsigned int nwords)
@@ -185,9 +185,9 @@ memfs_read_done:
         move    1,6
         popj    17,
 memfs_read_eof:
-        jrst    pdp10_ret_zero_v1
+        jrst    pdp10_ret_zero
 memfs_read_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1
 
 ; int memfs_write_words(struct memfs *fs, vnode_t node,
 ;     unsigned int off, const kword_t *buf, unsigned int nwords,
@@ -278,7 +278,7 @@ memfs_write_size:
         move    1,-1(17)
         popj    17,
 memfs_write_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1
 
 ; int memfs_name_valid(const struct vfs_name *name)
         .globl  memfs_name_valid
@@ -290,12 +290,12 @@ memfs_name_valid:
 memfs_name_valid_small:
         caige   2,1
         jrst    memfs_name_valid_fail
-        caile   2,030                  ; VFS_V1_NAME_MAX_CHARS = 24
+        caile   2,030                  ; VFS_NAME_MAX_CHARS = 24
         jrst    memfs_name_valid_fail
         movei   1,1
         popj    17,
 memfs_name_valid_fail:
-        jrst    pdp10_ret_zero_v1
+        jrst    pdp10_ret_zero
 
 ; int memfs_slot(const struct memfs *fs, vnode_t node,
 ;     unsigned int *slotp)
@@ -321,7 +321,7 @@ memfs_slot_ok:
         movei   1,0
         popj    17,
 memfs_slot_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1
 
 ; int memfs_find_child(const struct memfs *fs, unsigned int parent,
 ;     const struct vfs_name *name, unsigned int *slotp)
@@ -364,7 +364,7 @@ memfs_find_child_next:
         addi    6,1
         jrst    memfs_find_child_loop
 memfs_find_child_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1
 
 ; int memfs_free_slot(const struct memfs *fs, unsigned int *slotp)
         .globl  memfs_free_slot
@@ -386,7 +386,7 @@ memfs_free_slot_found:
         movei   1,0
         popj    17,
 memfs_free_slot_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1
 
 ; int memfs_has_children(const struct memfs *fs, unsigned int slot)
         .globl  memfs_has_children
@@ -411,7 +411,7 @@ memfs_has_children_yes:
         movei   1,1
         popj    17,
 memfs_has_children_none:
-        jrst    pdp10_ret_zero_v1
+        jrst    pdp10_ret_zero
 
 ; void memfs_clear_node(struct memfs_node *np)
         .globl  memfs_clear_node
@@ -482,9 +482,9 @@ memfs_readdir_found:
         movei   1,1
         popj    17,
 memfs_readdir_eof:
-        jrst    pdp10_ret_zero_v1
+        jrst    pdp10_ret_zero
 memfs_readdir_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1
 
 ; int memfs_stat(const struct memfs *fs, vnode_t node,
 ;     struct vfs_stat *st)
@@ -517,7 +517,7 @@ memfs_stat:
         movei   1,0
         popj    17,
 memfs_stat_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1
 
 ; int memfs_parent(const struct memfs *fs, vnode_t node,
 ;     vnode_t *parentp, struct vfs_name *namep)
@@ -559,4 +559,4 @@ memfs_parent_ok:
         movei   1,0
         popj    17,
 memfs_parent_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1

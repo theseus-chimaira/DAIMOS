@@ -1,5 +1,5 @@
-#ifndef DAIMON_KFMT_V1_H
-#define DAIMON_KFMT_V1_H
+#ifndef DAIMON_KFMT_H
+#define DAIMON_KFMT_H
 
 #include "kcore.h"
 

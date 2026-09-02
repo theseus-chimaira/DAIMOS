@@ -7,7 +7,7 @@ VERSION_FILE := $(PROJECT_ROOT)/VERSION
 DAIMON_VERSION := $(strip $(shell cat $(VERSION_FILE)))
 
 
-KINIT_SRCS = kinit.c kinit_diag.c module_minit.c kfs_boot.c kinit_boot_v1.c d6fs_boot.c d6log.c
+KINIT_SRCS = kinit.c kinit_diag.c module_minit.c kfs_boot.c kinit_boot.c d6fs_boot.c d6log.c
 KINIT_C_ASM = $(KINIT_SRCS:%.c=$(BUILD)/%.s)
 KINIT_ASM = $(KINIT_C_ASM) $(BUILD)/kinit_io.s $(BUILD)/module_io.s
 KINIT_CPPFLAGS = -DDAIMON_VERSION_TEXT='"V$(DAIMON_VERSION)  "'
@@ -15,11 +15,11 @@ ifeq ($(KINIT_DEBUG),1)
 KINIT_CPPFLAGS += -DKINIT_DEBUG
 endif
 
-KCORE_C_SRCS = kboot_v1.c exec_v1.c vfs.c devicefs.c \
+KCORE_C_SRCS = kboot.c exec.c vfs.c devicefs.c \
 	fs_mres.c file.c
 KCORE_C_ASM = $(KCORE_C_SRCS:%.c=$(BUILD)/%.s)
 KCORE_FIXED_ASM = $(BUILD)/kcore_entry.s $(KCORE_C_ASM) \
-	$(BUILD)/ret_pdp10.s $(BUILD)/dsk270_pdp10.s $(BUILD)/kfmt_pdp10.s $(BUILD)/vfs_pdp10.s $(BUILD)/fs_mres_pdp10.s $(BUILD)/file_pdp10.s $(BUILD)/proc_pdp10.s $(BUILD)/device_state_pdp10.s $(BUILD)/procfs_pdp10.s $(BUILD)/devicefs_pdp10.s $(BUILD)/syscall_info_pdp10.s $(BUILD)/syscall_dispatch_v2.s $(BUILD)/mach_user_v1.s $(BUILD)/kcore_io.s $(BUILD)/kcore_end.s
+	$(BUILD)/ret_pdp10.s $(BUILD)/dsk270_pdp10.s $(BUILD)/kfmt_pdp10.s $(BUILD)/vfs_pdp10.s $(BUILD)/fs_mres_pdp10.s $(BUILD)/file_pdp10.s $(BUILD)/proc_pdp10.s $(BUILD)/device_state_pdp10.s $(BUILD)/procfs_pdp10.s $(BUILD)/devicefs_pdp10.s $(BUILD)/syscall_info_pdp10.s $(BUILD)/syscall_dispatch.s $(BUILD)/mach_user.s $(BUILD)/kcore_io.s $(BUILD)/kcore_end.s
 
 MRES_SRCS = memfs.c memfs_mres.c dtfs.c dtfs_mres.c \
 	d6fs.c d6fs_provider.c d6fs_disk.c d6fs_mres.c
@@ -35,11 +35,11 @@ MRES_ASM = $(MRES_C_ASM) $(BUILD)/cty_io.s $(BUILD)/clk_io.s \
 kinit: $(KINIT_ASM)
 kcore: $(KCORE_FIXED_ASM) $(MRES_ASM)
 
-$(KINIT_C_ASM): $(BUILD)/%.s: %.c kinit.h module.h mres.h kcore.h kboot_v1.h vfs.h memfs.h initfs.h exec_v1.h proc_v1.h mach_user_v1.h fs_mres.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h d6fs_disk.h d6fs_boot.h d6log.h d6fs_provider.h dsk270.h $(VERSION_FILE)
+$(KINIT_C_ASM): $(BUILD)/%.s: %.c kinit.h module.h mres.h kcore.h kboot.h vfs.h memfs.h initfs.h exec.h proc.h mach_user.h fs_mres.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h d6fs_disk.h d6fs_boot.h d6log.h d6fs_provider.h dsk270.h $(VERSION_FILE)
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os $(KINIT_CPPFLAGS) -I. -I$(PDP10_PREFIX)/include -S $< -o $@
 
-$(KCORE_C_ASM): $(BUILD)/%.s: %.c kcore.h kboot_v1.h vfs.h kfmt_v1.h devicefs.h procfs.h memfs.h dtfs.h dsk270.h d6fs.h d6fs_provider.h d6fs_disk.h d6fs_boot.h d6log.h initfs.h file.h proc_v1.h syscall_v1.h exec_v1.h proc_v1.h mach_user_v1.h fs_mres.h
+$(KCORE_C_ASM): $(BUILD)/%.s: %.c kcore.h kboot.h vfs.h kfmt.h devicefs.h procfs.h memfs.h dtfs.h dsk270.h d6fs.h d6fs_provider.h d6fs_disk.h d6fs_boot.h d6log.h initfs.h file.h proc.h syscall.h exec.h proc.h mach_user.h fs_mres.h
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os -I. -I$(PDP10_PREFIX)/include -S $< -o $@
 

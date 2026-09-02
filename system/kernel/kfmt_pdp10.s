@@ -1,7 +1,7 @@
 ; kfmt_pdp10.s -- compact resident unsigned 36-bit decimal formatter.
         .text
-        .globl  pdp10_ret_zero_v1
-        .globl  pdp10_ret_neg1_v1
+        .globl  pdp10_ret_zero
+        .globl  pdp10_ret_neg1
 
 kfmt_u36_pow10:
         .long   10000000000
@@ -70,6 +70,6 @@ kfmt_u36_store:
         movei   1,1
         popj    17,
 kfmt_u36_none:
-        jrst    pdp10_ret_zero_v1
+        jrst    pdp10_ret_zero
 kfmt_u36_bad:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1

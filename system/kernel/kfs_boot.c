@@ -1,14 +1,14 @@
 #include "kinit.h"
-#include "kboot_v1.h"
+#include "kboot.h"
 #include "initfs.h"
-#include "exec_v1.h"
-#include "proc_v1.h"
+#include "exec.h"
+#include "proc.h"
 #include "file.h"
 #include "devicefs.h"
 #include "dtfs.h"
 #include "dsk270.h"
 #include "module.h"
-#include "syscall_v1.h"
+#include "syscall.h"
 #include "fs_mres.h"
 
 
@@ -40,14 +40,14 @@
 extern kword_t __initfs_begin;
 extern kword_t __initfs_begin_end;
 
-static struct memfs_node boot_nodes_v2[KBOOT_V1_NODE_COUNT];
+static struct memfs_node boot_nodes[KBOOT_NODE_COUNT];
 
 static void
 boot_clear_node(struct memfs_node *np)
 {
         unsigned int i;
 
-        for (i = 0U; i < VFS_V1_NAME_WORDS; ++i)
+        for (i = 0U; i < VFS_NAME_WORDS; ++i)
                 np->name.words[i] = 0;
         np->name.chars = 0U;
         np->meta = 0;
@@ -72,7 +72,7 @@ boot_set_node(struct memfs_node *np, unsigned int parent,
 static kword_t
 boot_ent(const kword_t *image, unsigned int ent, unsigned int field)
 {
-        return image[INITFS_V1_HDR_WORDS + ent * INITFS_V1_ENT_WORDS + field];
+        return image[INITFS_HDR_WORDS + ent * INITFS_ENT_WORDS + field];
 }
 
 static unsigned int
@@ -110,9 +110,9 @@ boot_name(const kword_t *strings, unsigned int string_nonets,
         if (off >= string_nonets)
                 return -1;
         name->chars = 0U;
-        for (i = 0U; i < VFS_V1_NAME_WORDS; ++i)
+        for (i = 0U; i < VFS_NAME_WORDS; ++i)
                 name->words[i] = 0;
-        for (i = 0U; i < VFS_V1_NAME_MAX_CHARS; ++i) {
+        for (i = 0U; i < VFS_NAME_MAX_CHARS; ++i) {
                 if (off >= string_nonets)
                         return -1;
                 c = boot_nonet(strings, off++);
@@ -135,14 +135,14 @@ boot_add_dir(unsigned int slot, unsigned int parent, kword_t word,
 {
         struct memfs_node *np;
 
-        if (slot >= KBOOT_V1_NODE_COUNT || parent >= KBOOT_V1_NODE_COUNT)
+        if (slot >= KBOOT_NODE_COUNT || parent >= KBOOT_NODE_COUNT)
                 return -1;
-        np = &boot_nodes_v2[slot];
+        np = &boot_nodes[slot];
         boot_clear_node(np);
         np->name.chars = chars;
         np->name.words[0] = word;
-        boot_set_node(np, parent, VFS_V1_TYPE_DIR, mode,
-            MEMFS_V1_F_USED | (writable ? MEMFS_V1_F_WRITABLE : 0U),
+        boot_set_node(np, parent, VFS_TYPE_DIR, mode,
+            MEMFS_F_USED | (writable ? MEMFS_F_WRITABLE : 0U),
             0U, 0U, 0);
         return 0;
 }
@@ -173,10 +173,10 @@ kfs_boot_prepare(void)
 
         image = &__initfs_begin;
         image_words = (unsigned int)(&__initfs_begin_end - &__initfs_begin);
-        if (image_words < INITFS_V1_HDR_WORDS ||
-            image[IHF_MAGIC] != INITFS_V1_MAGIC ||
-            image[IHF_VERSION] != INITFS_V1_VERSION ||
-            image[IHF_ENT_WORDS] != INITFS_V1_ENT_WORDS ||
+        if (image_words < INITFS_HDR_WORDS ||
+            image[IHF_MAGIC] != INITFS_MAGIC ||
+            image[IHF_VERSION] != INITFS_VERSION ||
+            image[IHF_ENT_WORDS] != INITFS_ENT_WORDS ||
             image[IHF_FLAGS] != 0 || image[IHF_CKSUM] != 0)
                 return -1;
         nent = (unsigned int)image[IHF_NENT];
@@ -190,9 +190,9 @@ kfs_boot_prepare(void)
         }
         str_words = (unsigned int)image[IHF_STR_WORDS];
         data_words = (unsigned int)image[IHF_DATA_WORDS];
-        if (nent + 5U > KBOOT_V1_NODE_COUNT)
+        if (nent + 5U > KBOOT_NODE_COUNT)
                 return -1;
-        entries_end = INITFS_V1_HDR_WORDS + nent * INITFS_V1_ENT_WORDS;
+        entries_end = INITFS_HDR_WORDS + nent * INITFS_ENT_WORDS;
         if (entries_end > image_words || str_words > image_words - entries_end)
                 return -1;
         strings_end = entries_end + str_words;
@@ -201,15 +201,15 @@ kfs_boot_prepare(void)
         strings = image + entries_end;
         data = image + strings_end;
 
-        for (i = 0U; i < KBOOT_V1_NODE_COUNT; ++i)
-                boot_clear_node(&boot_nodes_v2[i]);
-        boot_set_node(&boot_nodes_v2[0], 0U, VFS_V1_TYPE_DIR, 0555U,
-            MEMFS_V1_F_USED, 0U, 0U, 0);
+        for (i = 0U; i < KBOOT_NODE_COUNT; ++i)
+                boot_clear_node(&boot_nodes[i]);
+        boot_set_node(&boot_nodes[0], 0U, VFS_TYPE_DIR, 0555U,
+            MEMFS_F_USED, 0U, 0U, 0);
 
         for (i = 0U; i < nent; ++i) {
                 type = (unsigned int)boot_ent(image, i, IEF_TYPE);
                 parent = (unsigned int)boot_ent(image, i, IEF_AUX);
-                if ((type != INITFS_V1_REG && type != INITFS_V1_DIR) ||
+                if ((type != INITFS_REG && type != INITFS_DIR) ||
                     boot_ent(image, i, IEF_FLAGS) != 0 || parent > i ||
                     boot_name(strings, str_words * 4U,
                     (unsigned int)boot_ent(image, i, IEF_NAME_OFF), &name) != 0)
@@ -217,49 +217,49 @@ kfs_boot_prepare(void)
                 data_off = (unsigned int)boot_ent(image, i, IEF_DATA_OFF);
                 words = (unsigned int)boot_ent(image, i, IEF_SIZE_WORDS);
                 size_chars = boot_ent(image, i, IEF_SIZE_9BYTES);
-                if (type == INITFS_V1_DIR) {
+                if (type == INITFS_DIR) {
                         if (data_off != 0U || words != 0U || size_chars != 0)
                                 return -1;
                 } else if (data_off > data_words || words > data_words - data_off ||
                     size_chars > (kword_t)words * 4UL) {
                         return -1;
                 }
-                np = &boot_nodes_v2[i + 1U];
+                np = &boot_nodes[i + 1U];
                 boot_clear_node(np);
                 np->name = name;
-                boot_set_node(np, parent, type == INITFS_V1_DIR ?
-                    VFS_V1_TYPE_DIR : VFS_V1_TYPE_REG,
+                boot_set_node(np, parent, type == INITFS_DIR ?
+                    VFS_TYPE_DIR : VFS_TYPE_REG,
                     (unsigned int)boot_ent(image, i, IEF_MODE),
-                    MEMFS_V1_F_USED | MEMFS_V1_F_IMAGE,
-                    type == INITFS_V1_DIR ? 0U : data_off, words, size_chars);
+                    MEMFS_F_USED | MEMFS_F_IMAGE,
+                    type == INITFS_DIR ? 0U : data_off, words, size_chars);
         }
 
         next = nent + 1U;
-        if (boot_add_dir(next, 0U, VFS_V1_SIX6('M','O','U','N','T',' '),
+        if (boot_add_dir(next, 0U, VFS_SIX6('M','O','U','N','T',' '),
             5U, 0555U, 0) != 0)
                 return -1;
         ++next;
         ramfs_slot = next;
         if (boot_add_dir(next, next - 1U,
-            VFS_V1_SIX6('R','A','M','F','S','0'), 6U, 0777U, 1) != 0)
+            VFS_SIX6('R','A','M','F','S','0'), 6U, 0777U, 1) != 0)
                 return -1;
         ++next;
         temp_slot = next;
-        if (boot_add_dir(next, 0U, VFS_V1_SIX6('T','E','M','P',' ',' '),
+        if (boot_add_dir(next, 0U, VFS_SIX6('T','E','M','P',' ',' '),
             4U, 0555U, 0) != 0)
                 return -1;
         ++next;
-        if (boot_add_dir(next, 0U, VFS_V1_SIX6('D','T','0',' ',' ',' '),
+        if (boot_add_dir(next, 0U, VFS_SIX6('D','T','0',' ',' ',' '),
             3U, 0777U, 0) != 0)
                 return -1;
-        for (i = 0U; i < KBOOT_V1_NODE_COUNT; ++i) {
+        for (i = 0U; i < KBOOT_NODE_COUNT; ++i) {
                 kword_t *dst;
                 const kword_t *srcw;
                 unsigned int j;
 
-                dst = (kword_t *)(unsigned long)(KBOOT_V1_RAMFS0_BASE +
+                dst = (kword_t *)(unsigned long)(KBOOT_RAMFS0_BASE +
                     i * 8U);
-                srcw = (const kword_t *)&boot_nodes_v2[i];
+                srcw = (const kword_t *)&boot_nodes[i];
                 for (j = 0U; j < 8U; ++j)
                         dst[j] = srcw[j];
         }
@@ -271,74 +271,74 @@ kfs_boot_prepare(void)
                 vnode_t ramfs;
 
                 config.nodes = (struct memfs_node *)(unsigned long)
-                    KBOOT_V1_RAMFS0_BASE;
-                config.node_count = KBOOT_V1_NODE_COUNT;
+                    KBOOT_RAMFS0_BASE;
+                config.node_count = KBOOT_NODE_COUNT;
                 config.pool = (kword_t *)(unsigned long)
-                    (KBOOT_V1_RAMFS0_BASE + KBOOT_V1_NODE_WORDS);
-                config.pool_words = KBOOT_V1_RAMFS0_WORDS -
-                    KBOOT_V1_NODE_WORDS;
+                    (KBOOT_RAMFS0_BASE + KBOOT_NODE_WORDS);
+                config.pool_words = KBOOT_RAMFS0_WORDS -
+                    KBOOT_NODE_WORDS;
                 config.used_words = 0U;
                 config.writable = 1;
                 config.image_data = data;
                 req.op = FS_MRES_OP_MEMFS_INIT;
                 req.a = (kword_t)(unsigned long)&config;
                 if (fs_mres_call(fs_memfs_service_addr, &req) != 0 ||
-                    vfs_mount(VFS_V1_NODE_NONE, MEMFS_V1_PROVIDER,
-                    MEMFS_V1_KIND_NODE, 0U, VFS_V1_MOUNT_RW, &root) != 0)
+                    vfs_mount(VFS_NODE_NONE, MEMFS_PROVIDER,
+                    MEMFS_KIND_NODE, 0U, VFS_MOUNT_RW, &root) != 0)
                         return -1;
-                temp = VFS_V1_NODE(MEMFS_V1_PROVIDER,
-                    VFS_V1_MOUNT_KIND(VFS_V1_MOUNT_ID(root),
-                    MEMFS_V1_KIND_NODE), temp_slot);
-                if (vfs_mount(temp, MEMFS_V1_PROVIDER, MEMFS_V1_KIND_NODE,
-                    ramfs_slot, VFS_V1_MOUNT_RW, &ramfs) != 0)
+                temp = VFS_NODE(MEMFS_PROVIDER,
+                    VFS_MOUNT_KIND(VFS_MOUNT_ID(root),
+                    MEMFS_KIND_NODE), temp_slot);
+                if (vfs_mount(temp, MEMFS_PROVIDER, MEMFS_KIND_NODE,
+                    ramfs_slot, VFS_MOUNT_RW, &ramfs) != 0)
                         return -1;
         }
 
 bind_services:
         devicefs_present = 0;
-        if (kcore_cty_putchar_v1 != 0 && kcore_cty_getchar_v1 != 0)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CTY0);
+        if (kcore_cty_putchar != 0 && kcore_cty_getchar != 0)
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_CTY0);
         if (module_service_get(MODULE_SERVICE_CLK_TICKS) != 0U)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CLK0);
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_CLK0);
         if (module_service_get(MODULE_SERVICE_PTR_GETCHAR) != 0U)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_PTR0);
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_PTR0);
         if (module_service_get(MODULE_SERVICE_PTP_PUTCHAR) != 0U)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_PTP0);
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_PTP0);
         if (module_service_get(MODULE_SERVICE_CR_READ_CARD) != 0U)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CR0);
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_CR0);
         if (module_service_get(MODULE_SERVICE_CP_PUNCH_CARD) != 0U)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_CP0);
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_CP0);
         if (module_service_get(MODULE_SERVICE_DCS_GETCHAR) != 0U &&
             module_service_get(MODULE_SERVICE_DCS_PUTCHAR) != 0U)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DCS0);
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DCS0);
         if (module_service_get(MODULE_SERVICE_GE_GETCHAR) != 0U &&
             module_service_get(MODULE_SERVICE_GE_PUTCHAR) != 0U)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_GE0);
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_GE0);
         if (module_service_get(MODULE_SERVICE_DPY_PUTWORD) != 0U)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DPY0);
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DPY0);
         if (module_service_get(MODULE_SERVICE_TTY_PUTCHAR) != 0U)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_TTY0);
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_TTY0);
         if (module_service_get(MODULE_SERVICE_WCNSLS_READ) != 0U)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_WCNSLS);
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_WCNSLS);
         if (module_service_get(MODULE_SERVICE_OCNSLS_READ) != 0U)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_OCNSLS);
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_OCNSLS);
         if (module_service_get(MODULE_SERVICE_DTC_READ_BLOCK) != 0U &&
             module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK) != 0U)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DTC0);
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DTC0);
         if (module_service_get(MODULE_SERVICE_MTC_READ_WORDS) != 0U &&
             module_service_get(MODULE_SERVICE_MTC_WRITE_WORDS) != 0U)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_MTC0);
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_MTC0);
         if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) != 0U &&
             module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_DSK0);
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DSK0);
         if (module_service_get(MODULE_SERVICE_SLV_HANDLER) != 0U)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_SLV0);
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_SLV0);
         if (module_service_get(MODULE_SERVICE_D6FS) != 0U)
-                devicefs_present |= DEVICEFS_V1_PRESENT(DEVICEFS_V1_DEV_D6SET0);
+                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_D6SET0);
 
-        dsk270_read_addr_v1 =
+        dsk270_read_addr =
             module_service_get(MODULE_SERVICE_DSK_READ_SECTOR);
-        dsk270_write_addr_v1 =
+        dsk270_write_addr =
             module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR);
         return 0;
 }

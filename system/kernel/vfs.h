@@ -1,76 +1,76 @@
-#ifndef DAIMON_VFS_V1_H
-#define DAIMON_VFS_V1_H
+#ifndef DAIMON_VFS_H
+#define DAIMON_VFS_H
 
 #include "kcore.h"
 
 /* Compact vnode handle: provider:6, kind/mount:12, index:18. */
 typedef kword_t vnode_t;
 
-#define VFS_V1_NODE_NONE        0UL
-#define VFS_V1_PROVIDER_SHIFT   30U
-#define VFS_V1_KIND_SHIFT       18U
-#define VFS_V1_PROVIDER_MASK    077UL
-#define VFS_V1_KIND_MASK        07777UL
-#define VFS_V1_INDEX_MASK       0777777UL
+#define VFS_NODE_NONE        0UL
+#define VFS_PROVIDER_SHIFT   30U
+#define VFS_KIND_SHIFT       18U
+#define VFS_PROVIDER_MASK    077UL
+#define VFS_KIND_MASK        07777UL
+#define VFS_INDEX_MASK       0777777UL
 
 /*
  * Mounted providers use the high six bits of kind as a VFS mount id.  Mount
  * id zero is the built-in namespace.  Existing provider vnode values are
  * therefore unchanged.
  */
-#define VFS_V1_LOCAL_KIND_MASK  077U
-#define VFS_V1_MOUNT_SHIFT      6U
-#define VFS_V1_MOUNT_MASK       077U
-#define VFS_V1_MOUNT_KIND(mount, kind) \
-        ((((mount) & VFS_V1_MOUNT_MASK) << VFS_V1_MOUNT_SHIFT) | \
-        ((kind) & VFS_V1_LOCAL_KIND_MASK))
+#define VFS_LOCAL_KIND_MASK  077U
+#define VFS_MOUNT_SHIFT      6U
+#define VFS_MOUNT_MASK       077U
+#define VFS_MOUNT_KIND(mount, kind) \
+        ((((mount) & VFS_MOUNT_MASK) << VFS_MOUNT_SHIFT) | \
+        ((kind) & VFS_LOCAL_KIND_MASK))
 
-#define VFS_V1_NODE(provider, kind, index) \
-        ((((kword_t)(provider) & VFS_V1_PROVIDER_MASK) << \
-        VFS_V1_PROVIDER_SHIFT) | \
-        (((kword_t)(kind) & VFS_V1_KIND_MASK) << VFS_V1_KIND_SHIFT) | \
-        ((kword_t)(index) & VFS_V1_INDEX_MASK))
-#define VFS_V1_PROVIDER(node) \
-        ((unsigned int)(((node) >> VFS_V1_PROVIDER_SHIFT) & \
-        VFS_V1_PROVIDER_MASK))
-#define VFS_V1_KIND(node) \
-        ((unsigned int)(((node) >> VFS_V1_KIND_SHIFT) & VFS_V1_KIND_MASK))
-#define VFS_V1_LOCAL_KIND(node) \
-        (VFS_V1_KIND(node) & VFS_V1_LOCAL_KIND_MASK)
-#define VFS_V1_MOUNT_ID(node) \
-        ((VFS_V1_KIND(node) >> VFS_V1_MOUNT_SHIFT) & VFS_V1_MOUNT_MASK)
-#define VFS_V1_INDEX(node) \
-        ((unsigned int)((node) & VFS_V1_INDEX_MASK))
+#define VFS_NODE(provider, kind, index) \
+        ((((kword_t)(provider) & VFS_PROVIDER_MASK) << \
+        VFS_PROVIDER_SHIFT) | \
+        (((kword_t)(kind) & VFS_KIND_MASK) << VFS_KIND_SHIFT) | \
+        ((kword_t)(index) & VFS_INDEX_MASK))
+#define VFS_PROVIDER(node) \
+        ((unsigned int)(((node) >> VFS_PROVIDER_SHIFT) & \
+        VFS_PROVIDER_MASK))
+#define VFS_KIND(node) \
+        ((unsigned int)(((node) >> VFS_KIND_SHIFT) & VFS_KIND_MASK))
+#define VFS_LOCAL_KIND(node) \
+        (VFS_KIND(node) & VFS_LOCAL_KIND_MASK)
+#define VFS_MOUNT_ID(node) \
+        ((VFS_KIND(node) >> VFS_MOUNT_SHIFT) & VFS_MOUNT_MASK)
+#define VFS_INDEX(node) \
+        ((unsigned int)((node) & VFS_INDEX_MASK))
 
-#define VFS_V1_TYPE_DIR         1U
-#define VFS_V1_TYPE_REG         2U
-#define VFS_V1_TYPE_CHAR        3U
-#define VFS_V1_TYPE_BLOCK       4U
-#define VFS_V1_TYPE_MOUNTSRC    5U
-#define VFS_V1_TYPE_SYMLINK     6U
+#define VFS_TYPE_DIR         1U
+#define VFS_TYPE_REG         2U
+#define VFS_TYPE_CHAR        3U
+#define VFS_TYPE_BLOCK       4U
+#define VFS_TYPE_MOUNTSRC    5U
+#define VFS_TYPE_SYMLINK     6U
 
-#define VFS_V1_NAME_WORDS       4U
-#define VFS_V1_NAME_MAX_CHARS   (VFS_V1_NAME_WORDS * 6U)
+#define VFS_NAME_WORDS       4U
+#define VFS_NAME_MAX_CHARS   (VFS_NAME_WORDS * 6U)
 
-#define VFS_V1_NMOUNT           4U
-#define VFS_V1_MOUNT_RW         0U
-#define VFS_V1_MOUNT_RDONLY     1U
-#define VFS_V1_DEVICE_IO        (-3)
-#define VFS_V1_LOCK_SHARED      1U
-#define VFS_V1_LOCK_EXCLUSIVE   2U
-#define VFS_V1_LOCK_UNLOCK      3U
-#define VFS_V1_NLOCK            8U
+#define VFS_NMOUNT           4U
+#define VFS_MOUNT_RW         0U
+#define VFS_MOUNT_RDONLY     1U
+#define VFS_DEVICE_IO        (-3)
+#define VFS_LOCK_SHARED      1U
+#define VFS_LOCK_EXCLUSIVE   2U
+#define VFS_LOCK_UNLOCK      3U
+#define VFS_NLOCK            8U
 
 /* Compile-time PDP-10 SIXBIT packing, also usable by host tests. */
-#define VFS_V1_SIXCHAR(ch)      ((kword_t)(((unsigned int)(ch) - 040U) & 077U))
-#define VFS_V1_SIX6(a,b,c,d,e,f) \
-        ((VFS_V1_SIXCHAR(a) << 30) | (VFS_V1_SIXCHAR(b) << 24) | \
-        (VFS_V1_SIXCHAR(c) << 18) | (VFS_V1_SIXCHAR(d) << 12) | \
-        (VFS_V1_SIXCHAR(e) << 6) | VFS_V1_SIXCHAR(f))
+#define VFS_SIXCHAR(ch)      ((kword_t)(((unsigned int)(ch) - 040U) & 077U))
+#define VFS_SIX6(a,b,c,d,e,f) \
+        ((VFS_SIXCHAR(a) << 30) | (VFS_SIXCHAR(b) << 24) | \
+        (VFS_SIXCHAR(c) << 18) | (VFS_SIXCHAR(d) << 12) | \
+        (VFS_SIXCHAR(e) << 6) | VFS_SIXCHAR(f))
 
 struct vfs_name {
         unsigned int chars;
-        kword_t words[VFS_V1_NAME_WORDS];
+        kword_t words[VFS_NAME_WORDS];
 };
 
 struct vfs_dirent {

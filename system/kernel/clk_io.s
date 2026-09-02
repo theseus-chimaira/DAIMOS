@@ -4,7 +4,7 @@
         .globl clk_pi_service
         .globl clk_ticks
         .globl clk_tick_count
-        .globl dsk270_read_addr_v1
+        .globl dsk270_read_addr
         .globl pdp10_pi_handler_return
 
 ; APR and the line clock share one PDP-6 PIA.  PI6 therefore still requires
@@ -22,7 +22,7 @@ clk_pi_service:
         popj 017,
         aos clk_tick_count
         cono 0000,003006
-        skipe 1,dsk270_read_addr_v1
+        skipe 1,dsk270_read_addr
         pushj 017,-1(1)
         popj 017,
 

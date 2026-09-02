@@ -1,14 +1,14 @@
-#ifndef DAIMON_MEMFS_V1_H
-#define DAIMON_MEMFS_V1_H
+#ifndef DAIMON_MEMFS_H
+#define DAIMON_MEMFS_H
 
 #include "vfs.h"
 
-#define MEMFS_V1_PROVIDER               4U
-#define MEMFS_V1_KIND_NODE              1U
+#define MEMFS_PROVIDER               4U
+#define MEMFS_KIND_NODE              1U
 
-#define MEMFS_V1_F_USED                 0001U
-#define MEMFS_V1_F_IMAGE                0002U
-#define MEMFS_V1_F_WRITABLE             0004U
+#define MEMFS_F_USED                 0001U
+#define MEMFS_F_IMAGE                0002U
+#define MEMFS_F_WRITABLE             0004U
 
 /*
  * A node is deliberately eight PDP-10 words.  The low 18 bits of meta hold

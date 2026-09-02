@@ -8,7 +8,7 @@ devicefs_present:
         .block  1
         .globl  devicefs_io_in
 devicefs_io_in:
-        .block  012                     ; DEVICEFS_V1_IO_IN_COUNT
+        .block  012                     ; DEVICEFS_IO_IN_COUNT
         .globl  devicefs_io_out
 devicefs_io_out:
-        .block  012                     ; DEVICEFS_V1_IO_OUT_COUNT
+        .block  012                     ; DEVICEFS_IO_OUT_COUNT

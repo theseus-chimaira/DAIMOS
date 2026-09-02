@@ -1,11 +1,11 @@
 ; procfs_pdp10.s -- fixed two-process PROCFS implementation.
         .text
-        .globl  pdp10_ret_zero_v1
-        .globl  pdp10_ret_neg1_v1
+        .globl  pdp10_ret_zero
+        .globl  pdp10_ret_neg1
         .globl  vfs_sixbit_readchar
         .globl  kfmt_u36_decimal_readchar
-        .globl  proc_v1_table
-        .globl  proc_v1_comm_words
+        .globl  proc_table
+        .globl  proc_comm_words
 
 ; int procfs_stat(vnode_t node, struct vfs_stat *st)
         .globl procfs_stat
@@ -41,7 +41,7 @@ procfs_stat_store:
         movei   1,0
         popj    17,
 procfs_stat_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1
 
 ; int procfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
         .globl  procfs_readchar
@@ -60,7 +60,7 @@ procfs_readchar:
         move    4,3                    ; vfs readchar chp
         move    3,2                    ; vfs readchar off
         movei   2,6
-        move    1,proc_v1_comm_words(5)
+        move    1,proc_comm_words(5)
         jrst    vfs_sixbit_readchar
 procfs_readchar_not_comm:
         caie    4,030004               ; STATE
@@ -79,10 +79,10 @@ procfs_readchar_words:
         caie    4,030005               ; WORDS
         jrst    procfs_readchar_fail
         lsh     5,1
-        hlrz    1,proc_v1_table+1(5)
+        hlrz    1,proc_table+1(5)
         jrst    kfmt_u36_decimal_readchar
 procfs_readchar_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1
 
 ; Fixed two-process PROCFS directory operations.
 ; int procfs_lookup(vnode_t dir, const struct vfs_name *name,
@@ -105,11 +105,11 @@ procfs_lookup:
         movsi   4,030002
         hrri    4,1
         movem   4,(3)
-        jrst    pdp10_ret_zero_v1
+        jrst    pdp10_ret_zero
 procfs_lookup_slot0:
         movsi   4,030002
         movem   4,(3)
-        jrst    pdp10_ret_zero_v1
+        jrst    pdp10_ret_zero
 procfs_lookup_proc:
         caie    4,030002
         jrst    procfs_lookup_fail
@@ -141,9 +141,9 @@ procfs_lookup_file:
         hrrz    4,1                    ; process slot
         ior     6,4
         movem   6,(3)
-        jrst    pdp10_ret_zero_v1
+        jrst    pdp10_ret_zero
 procfs_lookup_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1
 
 ; int procfs_readdir(vnode_t dir, unsigned int off,
 ;     struct vfs_dirent *ent)
@@ -154,7 +154,7 @@ procfs_readdir:
         caie    4,030001
         jrst    procfs_readdir_proc
         cail    2,2
-        jrst    pdp10_ret_zero_v1
+        jrst    pdp10_ret_zero
         movei   4,1
         move    5,2
         lsh     5,036
@@ -168,7 +168,7 @@ procfs_readdir_proc:
         cail    4,2
         jrst    procfs_readdir_fail
         cail    2,4
-        jrst    pdp10_ret_zero_v1
+        jrst    pdp10_ret_zero
         movei   4,5
         caie    2,0
         cain    2,3
@@ -185,7 +185,7 @@ procfs_readdir_store:
         movei   1,1
         popj    17,
 procfs_readdir_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1
 
 procfs_readdir_names:
         .long   0606051440000          ; PPID

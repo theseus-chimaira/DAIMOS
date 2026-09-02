@@ -12,14 +12,14 @@
         .globl dpy_putword
         .globl dpy_clk_pi_service_call
         .globl pdp10_pi_handler_return
-        .globl pdp10_ret_ok_v34
-        .globl pdp10_ret_busy_v34
+        .globl pdp10_ret_ok
+        .globl pdp10_ret_busy
 
 ; One word is in flight at a time.  The Type 340 raises DONE after completing
 ; the second half of each DATAO word.  The shared PI path clobbers AC1 only.
 dpy_pi_handler:
 dpy_clk_pi_service_call:
-        pushj 017,pdp10_ret_ok_v34
+        pushj 017,pdp10_ret_ok
 dpy_pi_display:
         conso 0130,000200
         jrst pdp10_pi_handler_return
@@ -31,7 +31,7 @@ dpy_pi_display:
 ; Completion is interrupt-driven; callers wait for the real DONE interrupt.
 dpy_putword:
         skipe dpy_pending
-        jrst pdp10_ret_busy_v34
+        jrst pdp10_ret_busy
 dpy_put_start:
         setom dpy_pending
         datao 0130,1
@@ -40,7 +40,7 @@ dpy_put_wait:
         skipe dpy_pending
         jrst dpy_put_wait
 dpy_put_ok:
-        jrst pdp10_ret_ok_v34
+        jrst pdp10_ret_ok
 
         .bss
 dpy_pending:

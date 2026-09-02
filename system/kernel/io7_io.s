@@ -15,8 +15,8 @@
         .globl io7_ret_timeout
         .globl io7_ret_e4
         .globl pdp10_pi_handler_return
-        .globl pdp10_ret_arg_v34
-        .globl pdp10_ret_busy_v34
+        .globl pdp10_ret_arg
+        .globl pdp10_ret_busy
 
 io7_pi_handler:
         ; Paper-tape reader DONE.

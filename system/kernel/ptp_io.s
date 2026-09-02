@@ -8,20 +8,20 @@
         .globl ptp_putchar
         .globl ptp_state
         .globl io7_ret_timeout
-        .globl pdp10_ret_busy_v34
+        .globl pdp10_ret_busy
         .globl io7_ret_e4
-        .globl pdp10_ret_ok_v34
+        .globl pdp10_ret_ok
 
 ; AC1 = byte.  Return 0, PT_E_BUSY (-3), PT_E_IO (-4), or timeout (-2).
 ptp_putchar:
         skipe ptp_state
-        jrst pdp10_ret_busy_v34
+        jrst pdp10_ret_busy
 ptp_putchar_idle:
         coni 0100,2
         trne 2,0100
         jrst io7_ret_e4
         trne 2,0020
-        jrst pdp10_ret_busy_v34
+        jrst pdp10_ret_busy
         setom ptp_state
         cono 0100,0007
         andi 1,0377
@@ -30,7 +30,7 @@ ptp_putchar_idle:
         movei 2,0200000
 ptp_putchar_wait:
         skipn ptp_state
-        jrst pdp10_ret_ok_v34
+        jrst pdp10_ret_ok
         sojg 2,ptp_putchar_wait
         setzm ptp_state
         cono 0100,0007

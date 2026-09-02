@@ -13,13 +13,13 @@
 #define DSK270_CYL_SHIFT          6U
 
 /* MRES service entry points installed by KINIT after DSK270 probe. */
-extern unsigned int dsk270_read_addr_v1;
-extern unsigned int dsk270_write_addr_v1;
+extern unsigned int dsk270_read_addr;
+extern unsigned int dsk270_write_addr;
 
 static inline int
 dsk270_probe(unsigned int unit)
 {
-        return unit < DSK270_UNITS && dsk270_read_addr_v1 != 0U ? 0 : -1;
+        return unit < DSK270_UNITS && dsk270_read_addr != 0U ? 0 : -1;
 }
 
 int dsk270_read_sector(unsigned int unit, kword_t sector, kword_t *buf);

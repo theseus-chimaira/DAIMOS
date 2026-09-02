@@ -10,9 +10,9 @@
         .globl ge_getchar
         .globl ge_putchar
         .globl pdp10_pi_handler_return
-        .globl pdp10_ret_ok_v34
-        .globl pdp10_ret_arg_v34
-        .globl pdp10_ret_busy_v34
+        .globl pdp10_ret_ok
+        .globl pdp10_ret_arg
+        .globl pdp10_ret_busy
 
 ; ge_rx_word: zero idle, -1 waiting, otherwise 4,,raw-GTYI-word (ready).
 ; ge_tx_state: bit 0 owns one complete GE frame; bit 1 awaits GTYO DONE.
@@ -33,7 +33,7 @@ ge_pi_gtyi_disable:
 ge_getchar:
         move 1,ge_rx_word
         jumpg 1,ge_get_ready
-        jumpl 1,pdp10_ret_busy_v34
+        jumpl 1,pdp10_ret_busy
 
         ; Consume a character which arrived while input PI was disabled.
         consz 0070,00010
@@ -84,14 +84,14 @@ ge_put_decoded_wait:
 ; XOR 1 because STX XOR ETX is 1 and status is zero.
 ge_putchar:
         skipe ge_tx_state
-        jrst pdp10_ret_busy_v34
+        jrst pdp10_ret_busy
 ge_putchar_idle:
         move 4,1
         move 5,1
         lsh 5,-010
         andi 5,077
         caile 5,3
-        jrst pdp10_ret_arg_v34
+        jrst pdp10_ret_arg
         setom ge_tx_state
         movei 1,1
         pushj 017,ge_put_decoded
@@ -113,7 +113,7 @@ ge_putchar_idle:
         xori 1,1
         pushj 017,ge_put_decoded
         setzm ge_tx_state
-        jrst pdp10_ret_ok_v34
+        jrst pdp10_ret_ok
         .bss
 ge_rx_word:
         .block 1

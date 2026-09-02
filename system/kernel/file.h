@@ -1,20 +1,20 @@
-#ifndef DAIMON_FILE_V1_H
-#define DAIMON_FILE_V1_H
+#ifndef DAIMON_FILE_H
+#define DAIMON_FILE_H
 
 #include "vfs.h"
 
-#define FILE_V1_O_READ          0001U
-#define FILE_V1_O_WRITE         0002U
-#define FILE_V1_O_APPEND        0004U
-#define FILE_V1_O_CREAT         0010U
-#define FILE_V1_O_TRUNC         0020U
-#define FILE_V1_DEVICE_IO       VFS_V1_DEVICE_IO
+#define FILE_O_READ          0001U
+#define FILE_O_WRITE         0002U
+#define FILE_O_APPEND        0004U
+#define FILE_O_CREAT         0010U
+#define FILE_O_TRUNC         0020U
+#define FILE_DEVICE_IO       VFS_DEVICE_IO
 
-#ifndef FILE_V1_NFILE
-#define FILE_V1_NFILE           32U
+#ifndef FILE_NFILE
+#define FILE_NFILE           32U
 #endif
-#define FILE_V1_FD_FIRST        3U
-#define FILE_V1_FD_MAX          15U
+#define FILE_FD_FIRST        3U
+#define FILE_FD_MAX          15U
 
 struct file {
         vnode_t node;
@@ -22,14 +22,14 @@ struct file {
         kword_t meta;
 };
 
-#define FILE_V1_META_USED       0001U
-#define FILE_V1_META_DIR        0002U
-#define FILE_V1_META_FLAGS_SHIFT 2U
-#define FILE_V1_META_FD_SHIFT   8U
-#define FILE_V1_META_DESC_SHIFT 14U
-#define FILE_V1_META_FLAGS(m)   (((m) >> FILE_V1_META_FLAGS_SHIFT) & 077U)
-#define FILE_V1_META_FD(m)      (((m) >> FILE_V1_META_FD_SHIFT) & 077U)
-#define FILE_V1_META_DESC(m)    (((m) >> FILE_V1_META_DESC_SHIFT) & 077U)
+#define FILE_META_USED       0001U
+#define FILE_META_DIR        0002U
+#define FILE_META_FLAGS_SHIFT 2U
+#define FILE_META_FD_SHIFT   8U
+#define FILE_META_DESC_SHIFT 14U
+#define FILE_META_FLAGS(m)   (((m) >> FILE_META_FLAGS_SHIFT) & 077U)
+#define FILE_META_FD(m)      (((m) >> FILE_META_FD_SHIFT) & 077U)
+#define FILE_META_DESC(m)    (((m) >> FILE_META_DESC_SHIFT) & 077U)
 
 /* DAIMOS 1.x has one live user process, so FILE state is global. */
 int file_lookup_path(const kword_t *path, vnode_t *nodep);

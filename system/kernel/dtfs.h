@@ -1,13 +1,13 @@
-#ifndef DAIMON_DTFS_V1_H
-#define DAIMON_DTFS_V1_H
+#ifndef DAIMON_DTFS_H
+#define DAIMON_DTFS_H
 
 #include "vfs.h"
 
-#define DTFS_V1_PROVIDER        5U
-#define DTFS_V1_KIND_ROOT       1U
-#define DTFS_V1_KIND_FILE       2U
-#define DTFS_V1_FILE_SLOTS      22U
-#define DTFS_V1_NAME_MAX_CHARS  11U
+#define DTFS_PROVIDER        5U
+#define DTFS_KIND_ROOT       1U
+#define DTFS_KIND_FILE       2U
+#define DTFS_FILE_SLOTS      22U
+#define DTFS_NAME_MAX_CHARS  11U
 
 /* Native-media management used by the mount/format syscalls. */
 int dtfs_format_unit(unsigned int unit);

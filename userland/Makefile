@@ -1,20 +1,20 @@
 PROJECT_ROOT := $(abspath ..)
 BUILD_ROOT ?= $(PROJECT_ROOT)/build
-USER_BUILD := $(BUILD_ROOT)/userland-v1
+USER_BUILD := $(BUILD_ROOT)/userland
 PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
 DAS ?= $(PDP10_PREFIX)/bin/das
 DLINK ?= $(PDP10_PREFIX)/bin/dlink
-CPPFLAGS = -I$(PROJECT_ROOT)/system/kernel -I$(PROJECT_ROOT)/userland/v1 -I$(PROJECT_ROOT)/userland/exec_v1
+CPPFLAGS = -I$(PROJECT_ROOT)/system/kernel -I$(PROJECT_ROOT)/userland/libc -I$(PROJECT_ROOT)/userland/exec
 CFLAGS = -std=c99 -Os
 
-CHECK_SRCS = v1/u_v1.c exec_v1/commands_v1.c exec_v1/standalone.c dsh_v1/dsh.c
+CHECK_SRCS = libc/u.c exec/commands.c exec/standalone.c dsh/dsh.c
 CHECK_ASMS = $(CHECK_SRCS:%.c=$(USER_BUILD)/check/%.s)
-DSH_C_SRCS = v1/u_v1.c exec_v1/commands_v1.c dsh_v1/dsh.c
+DSH_C_SRCS = libc/u.c exec/commands.c dsh/dsh.c
 DSH_C_OBJS = $(DSH_C_SRCS:%.c=$(USER_BUILD)/dsh/%.dobj)
-DSH_S_SRCS = v1/crt0_v1.s v1/syscall_v1.s v1/syscall_sentinel_v1.s
+DSH_S_SRCS = libc/crt0.s libc/syscall.s libc/syscall_sentinel.s
 DSH_S_OBJS = $(DSH_S_SRCS:%.s=$(USER_BUILD)/dsh/%.dobj)
-DSH_DXR = $(USER_BUILD)/dsh-v1.dxr
-DSH_MAP = $(USER_BUILD)/dsh-v1.map
+DSH_DXR = $(USER_BUILD)/dsh.dxr
+DSH_MAP = $(USER_BUILD)/dsh.map
 
 .DEFAULT_GOAL := build
 .PHONY: build check clean

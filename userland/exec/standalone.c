@@ -1,11 +1,11 @@
-#include "cmd_v1.h"
+#include "cmd.h"
 
 int
 main(int argc, kword_t **argv)
 {
-        struct u_v1_io io;
+        struct u_io io;
         io.in_fd = 0;
         io.out_fd = 1;
         io.err_fd = 2;
-        return cmd_v1_dispatch(argc, argv, &io);
+        return cmd_dispatch(argc, argv, &io);
 }

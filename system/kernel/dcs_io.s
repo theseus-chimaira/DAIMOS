@@ -13,9 +13,9 @@
         .globl dcs_getchar
         .globl dcs_putchar
         .globl pdp10_pi_handler_return
-        .globl pdp10_ret_ok_v34
-        .globl pdp10_ret_arg_v34
-        .globl pdp10_ret_busy_v34
+        .globl pdp10_ret_ok
+        .globl pdp10_ret_arg
+        .globl pdp10_ret_busy
 
 ; dcs_rx_word is zero when idle, -1 while a receive is pending, and the packed
 ; nonnegative line/byte result once the PI handler has serviced the scanner.
@@ -39,7 +39,7 @@ dcs_pi_receive:
 ; Return DCS_PACK(line, byte), or DCS_E_BUSY (-3) if another receive is active.
 dcs_getchar:
         move 1,dcs_rx_word
-        jumpn 1,pdp10_ret_busy_v34
+        jumpn 1,pdp10_ret_busy
         setom dcs_rx_word
         cono 0300,000012
 
@@ -55,12 +55,12 @@ dcs_putchar:
         lsh 2,-010
         andi 2,077
         caile 2,017
-        jrst pdp10_ret_arg_v34
+        jrst pdp10_ret_arg
         cono 0304,0(2)
         andi 1,0377
         datao 0300,1
         aos devicefs_io_out+3
-        jrst pdp10_ret_ok_v34
+        jrst pdp10_ret_ok
 
         .bss
 dcs_rx_word:

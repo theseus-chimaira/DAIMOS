@@ -35,7 +35,7 @@ kword_t kinit_call18_2(unsigned int address, kword_t arg1, kword_t arg2);
 kword_t kinit_call18_3(unsigned int address, kword_t arg1, kword_t arg2,
     kword_t arg3);
 void kinit_halt(void);
-void kinit_boot_v1(void);
+void kinit_boot(void);
 
 #ifdef KINIT_DEBUG
 void kinit_diag_finished(void);

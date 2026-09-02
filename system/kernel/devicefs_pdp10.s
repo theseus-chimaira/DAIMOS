@@ -1,7 +1,7 @@
 ; devicefs_pdp10.s -- compact resident DEVICEFS primitives.
         .text
-        .globl  pdp10_ret_zero_v1
-        .globl  pdp10_ret_neg1_v1
+        .globl  pdp10_ret_zero
+        .globl  pdp10_ret_neg1
 
 ; Full DEVICEFS runtime operations.  Names remain packed SIXBIT words.
         .data
@@ -24,7 +24,7 @@ devicefs_names:
         .word   0635466200000          ; SLV0
         .word   0442663456420          ; D6SET0
         .text
-        .globl  pdp10_ret_zero_v1
+        .globl  pdp10_ret_zero
 
 ; Derive 3/4/6-character device name length from trailing SIXBIT blanks.
 ; input AC5=name word, output AC6=chars.
@@ -114,7 +114,7 @@ devicefs_lookup_cty_store:
         movei   1,0
         popj    17,
 devicefs_lookup_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1
 
 ; Store ent name/type and return 1. AC4=ent, AC5=word, AC6=chars, AC7=type.
 devicefs_readdir_store:
@@ -200,9 +200,9 @@ devicefs_readdir_cty_out:
         movei   7,2
         jrst    devicefs_readdir_store
 devicefs_readdir_eof:
-        jrst    pdp10_ret_zero_v1
+        jrst    pdp10_ret_zero
 devicefs_readdir_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1
 
 ; int devicefs_stat(vnode_t node, struct vfs_stat *st)
         .globl  devicefs_stat
@@ -269,7 +269,7 @@ devicefs_stat_store:
         movei   1,0
         popj    17,
 devicefs_stat_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1
 
 ; int devicefs_readchar(vnode_t node, kword_t off, unsigned int *chp)
         .globl  devicefs_readchar
@@ -298,4 +298,4 @@ devicefs_readchar_tail:
         ; AC2 already holds off, AC3 already holds chp.
         jrst    kfmt_u36_decimal_readchar
 devicefs_readchar_fail:
-        jrst    pdp10_ret_neg1_v1
+        jrst    pdp10_ret_neg1

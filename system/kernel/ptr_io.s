@@ -9,18 +9,18 @@
         .globl devicefs_io_out
         .globl ptr_getchar
         .globl ptr_state
-        .globl pdp10_ret_arg_v34
+        .globl pdp10_ret_arg
         .globl io7_ret_timeout
-        .globl pdp10_ret_busy_v34
-        .globl pdp10_ret_ok_v34
+        .globl pdp10_ret_busy
+        .globl pdp10_ret_ok
 
 ; AC1 = int *destination.  Return 0 or PT_E_ARG/BUSY/TIMEOUT.
 ptr_getchar:
-        jumpe 1,pdp10_ret_arg_v34
+        jumpe 1,pdp10_ret_arg
         move 4,1
         move 2,ptr_state
         jumpg 2,ptr_get_software
-        jumpl 2,pdp10_ret_busy_v34
+        jumpl 2,pdp10_ret_busy
 
         ; Consume an already-prefetched hardware character without waiting.
         consz 0104,0010
@@ -51,7 +51,7 @@ ptr_get_software:
         movem 2,(4)
         setzm ptr_state
 ptr_get_ok:
-        jrst pdp10_ret_ok_v34
+        jrst pdp10_ret_ok
 
         .bss
 ptr_state:

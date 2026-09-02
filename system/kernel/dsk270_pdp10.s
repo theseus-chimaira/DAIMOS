@@ -6,18 +6,18 @@
         .text
         .globl  dsk270_read_sector
         .globl  dsk270_write_sector
-        .globl  dsk270_read_addr_v1
-        .globl  dsk270_write_addr_v1
+        .globl  dsk270_read_addr
+        .globl  dsk270_write_addr
 
 ; int dsk270_read_sector(unsigned unit, kword_t sector, kword_t *buf)
 ; int dsk270_write_sector(unsigned unit, kword_t sector, const kword_t *buf)
 ; C arguments: AC1 unit, AC2 sector, AC3 buffer.
 dsk270_read_sector:
-        move    4,dsk270_read_addr_v1
+        move    4,dsk270_read_addr
         jrst    dsk270_sector_io
 
 dsk270_write_sector:
-        move    4,dsk270_write_addr_v1
+        move    4,dsk270_write_addr
 
 ; AC4 is the relocated MRES service address.
 dsk270_sector_io:
@@ -50,7 +50,7 @@ dsk270_sector_addr:
 ; PI6 consults the read-service word before KFS binds the storage MRES.  Keep
 ; this existing pointer explicitly initialized so early line-clock ticks see
 ; a disabled watchdog rather than uninitialized BSS contents.
-dsk270_read_addr_v1:  .word 0
+dsk270_read_addr:  .word 0
 
         .bss
-dsk270_write_addr_v1: .block 1
+dsk270_write_addr: .block 1
