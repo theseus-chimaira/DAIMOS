@@ -10,6 +10,7 @@
 #include "module.h"
 #include "syscall.h"
 #include "fs_mres.h"
+#include "diskset_mres.h"
 
 
 #define HALF_MASK       0777777UL
@@ -180,6 +181,7 @@ kfs_boot_prepare(void)
             image[IHF_FLAGS] != 0 || image[IHF_CKSUM] != 0)
                 return -1;
         nent = (unsigned int)image[IHF_NENT];
+        diskset_service_addr = module_service_get(MODULE_SERVICE_DISKSET);
         fs_memfs_service_addr = module_service_get(MODULE_SERVICE_MEMFS);
         fs_dtfs_service_addr = module_service_get(MODULE_SERVICE_DTFS);
         fs_d6fs_service_addr = module_service_get(MODULE_SERVICE_D6FS);
@@ -325,8 +327,7 @@ bind_services:
         if (module_service_get(MODULE_SERVICE_DTC_READ_BLOCK) != 0U &&
             module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK) != 0U)
                 devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DTC0);
-        if (module_service_get(MODULE_SERVICE_MTC_READ_WORDS) != 0U &&
-            module_service_get(MODULE_SERVICE_MTC_WRITE_WORDS) != 0U)
+        if (module_service_get(MODULE_SERVICE_MTC) != 0U)
                 devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_MTC0);
         if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) != 0U &&
             module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U)

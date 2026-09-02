@@ -15,6 +15,7 @@
 #include "storage.h"
 #include "slv.h"
 #include "fs_mres.h"
+#include "diskset_mres.h"
 
 #define CTY_X_HANDLER           0U
 #define CTY_X_PUT6              1U
@@ -45,13 +46,12 @@
 #define WCNSLS_X_READ           0U
 #define OCNSLS_X_READ           0U
 #define STORAGE_X_HANDLER        0U
-#define STORAGE_X_DTC_READ_BLOCK 1U
-#define STORAGE_X_MTC_READ_WORDS 2U
-#define STORAGE_X_DSK_READ_SECTOR 3U
-#define STORAGE_X_DSK_WRITE_SECTOR 4U
-#define STORAGE_X_MTC_WRITE_WORDS  5U
-#define STORAGE_X_DTC_WRITE_BLOCK   6U
-#define STORAGE_X_DCT_HANDLER       7U
+#define STORAGE_X_DTC_READ_BLOCK   1U
+#define STORAGE_X_MTC_SERVICE       2U
+#define STORAGE_X_DSK_READ_SECTOR   3U
+#define STORAGE_X_DSK_WRITE_SECTOR  4U
+#define STORAGE_X_DTC_WRITE_BLOCK   5U
+#define STORAGE_X_DCT_HANDLER       6U
 
 #define SLV_PI_MASK             0000007UL
 #define SLV_CO_CLEAR_IRQ        0000010UL
@@ -902,8 +902,10 @@ storage_minit(unsigned int kind, kword_t name)
         base = storage_install(name);
         module_service_set(MODULE_SERVICE_DTC_READ_BLOCK + kind,
             minit_export(name, base, STORAGE_X_DTC_READ_BLOCK + kind));
-        module_service_set(MODULE_SERVICE_DTC_WRITE_BLOCK - kind,
-            minit_export(name, base, STORAGE_X_DTC_WRITE_BLOCK - kind));
+        if (kind != 1U)
+                module_service_set(MODULE_SERVICE_DTC_WRITE_BLOCK - (kind >> 1),
+                    minit_export(name, base, STORAGE_X_DTC_WRITE_BLOCK -
+                    (kind >> 1)));
         minit_diag_ok(name);
 }
 
@@ -949,13 +951,31 @@ dtfs_minit(void)
 }
 
 void
+diskset_minit(void)
+{
+        kword_t name;
+        unsigned int base;
+        unsigned int service;
+
+        name = (kword_t)SIXBIT("DSET  ");
+        if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) == 0U) {
+                minit_diag_nodrv(name);
+                return;
+        }
+        base = minit_install(name);
+        service = minit_export(name, base, 0U);
+        module_service_set(MODULE_SERVICE_DISKSET, service);
+        minit_diag_loaded(name);
+}
+
+void
 d6fs_minit(void)
 {
         kword_t name;
         unsigned int base;
 
         name = (kword_t)SIXBIT("D6FS  ");
-        if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) == 0U) {
+        if (module_service_get(MODULE_SERVICE_DISKSET) == 0U) {
                 minit_diag_nodrv(name);
                 return;
         }

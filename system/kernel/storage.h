@@ -21,6 +21,8 @@
 #define MTC_CO_WRITE_556_BINARY 0051000UL
 #define MTC_ST_TAPE_FREE        0000001UL
 #define MTC_ST_EOR              0000004UL
+#define MTC_ST_EOF              0000400UL
+#define MTC_ST_EOT              0010000UL
 #define MTC_ST_ERROR_MASK       00400520UL
 #define MTC_SO_ENABLE_READY     0000001UL
 #define MTC_SO_ENABLE_EOR       0000004UL
@@ -38,5 +40,12 @@
 #define STORAGE_E_ARG              (-1)
 #define STORAGE_E_BUSY             (-3)
 #define STORAGE_E_IO               (-5)
+#define MTC_OP_READ                  0U
+#define MTC_OP_WRITE                (-1)
+#define MTC_OP_STATUS                1U
+#define MTC_OP_REWIND                0000400UL
+#define MTC_OP_WRITE_FILEMARK        0001400UL
+#define MTC_OP_SPACE_FORWARD         0003000UL
+#define MTC_OP_SPACE_FILE_FORWARD    0007000UL
 
 #endif

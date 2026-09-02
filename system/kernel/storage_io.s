@@ -29,8 +29,7 @@
         .globl storage_dct_handler
         .globl dtc_read_block
         .globl dtc_write_block
-        .globl mtc_read_words
-        .globl mtc_write_words
+        .globl mtc_service
         .globl dsk_read_sector
         .globl dsk_write_sector
         .globl pdp10_pi_handler_return
@@ -490,12 +489,34 @@ dtc_search_fail:
         cono 0200,0
         jrst storage_ioerr
 
-; AC1 unit, AC2 destination, AC3 maximum words in one tape record.
-mtc_read_words:
+; One compact MTC service keeps only one MRES export and shares validation.
+; AC1 = unit, AC2 = buffer, AC3 = record word count, AC4 = operation.
+; READ/WRITE use MTC_OP_READ/MTC_OP_WRITE.  Control operations use the raw
+; Type-516 command values defined in storage.h; STATUS is the sole synthetic
+; control opcode.  This is an internal kernel ABI, not a user-facing command
+; interface, so upper layers supply only defined operation constants.  STATUS
+; is also the readiness preflight: callers do not start commands unless the
+; selected transport reports TAPE_RDY.
+mtc_service:
         skipe storage_state
         jrst pdp10_ret_busy
         caile 1,7
         jrst pdp10_ret_arg
+        jumpe 4,mtc_read_words
+        jumpl 4,mtc_write_words
+        jrst mtc_control
+
+; AC1 unit, AC2 source, AC3 exact word count for one magnetic-tape record.
+mtc_write_words:
+        jumple 3,pdp10_ret_arg
+        pushj 017,storage_setup_write
+        hrroi 3,0777773
+        movei 4,051005
+        movei 5,003403
+        jrst mtc_rw_start
+
+; AC1 unit, AC2 destination, AC3 maximum words in one tape record.
+mtc_read_words:
         jumple 3,pdp10_ret_arg
         pushj 017,storage_setup_read
         hrroi 3,0777776
@@ -503,19 +524,36 @@ mtc_read_words:
         movei 5,004003
         jrst mtc_rw_start
 
-; AC1 unit, AC2 source, AC3 exact word count for one magnetic-tape record.
-; Direction and count-exhaustion behavior are patched once at start, leaving
-; the per-word PI path identical to the disk write path.
-mtc_write_words:
-        skipe storage_state
-        jrst pdp10_ret_busy
-        caile 1,7
-        jrst pdp10_ret_arg
-        jumple 3,pdp10_ret_arg
-        pushj 017,storage_setup_write
-        hrroi 3,0777773
-        movei 4,051005
-        movei 5,003403
+; Rare control commands are synchronous and polling, avoiding another resident
+; owner/event path.  AC4 is copied to AC3 because the PI ABI preserves AC1..AC3.
+mtc_control:
+        caie 4,1
+        jrst mtc_control_command
+        ; Select requested unit without consuming a record command.
+        lsh 1,4
+        cono 0220,0(1)
+        cono 0224,2
+        cono 0224,0
+        coni 0224,1
+        popj 017,
+
+mtc_control_command:
+        lsh 1,4
+        ior 1,4
+        ; PIA zero and no MTS enables keep this synchronous path out of PI5.
+        cono 0224,0
+        cono 0220,0(1)
+mtc_control_wait:
+        coni 0224,2
+        trnn 2,0000001
+        jrst mtc_control_wait
+        ; REW remains set while the transport is still completing rewind.
+        trne 2,0020000
+        jrst mtc_control_wait
+mtc_control_check:
+        trnn 2,0400520
+        jrst pdp10_ret_ok
+        jrst storage_ioerr
 
 mtc_rw_start:
         movem 3,storage_state

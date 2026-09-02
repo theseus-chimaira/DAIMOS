@@ -3,7 +3,7 @@
 
 #include "kcore.h"
 
-#define DISKSET_MAX_MEMBERS 8U
+#define DISKSET_MAX_MEMBERS 4U
 #define DISKSET_BLOCK_WORDS 0200U
 
 struct diskset {
@@ -16,30 +16,22 @@ struct diskset {
         kword_t logstore_blocks;
 };
 
-struct diskset_phys {
-        unsigned int member;
-        kword_t block;
-};
-
-int diskset_valid(const struct diskset *set);
-kword_t diskset_blocks(const struct diskset *set);
-int diskset_map_block(const struct diskset *set, kword_t logical,
-    struct diskset_phys *phys);
-int diskset_read_block(void *opaque, kword_t logical,
+int diskset_boot_init(const struct diskset *config);
+kword_t diskset_blocks(void);
+int diskset_read_block(kword_t logical,
     kword_t block[DISKSET_BLOCK_WORDS]);
-int diskset_write_block(void *opaque, kword_t logical,
+int diskset_write_block(kword_t logical,
     const kword_t block[DISKSET_BLOCK_WORDS]);
+int diskset_writable(void);
 
-kword_t diskset_swap_blocks(const struct diskset *set);
-int diskset_swap_read(struct diskset *set, kword_t logical,
-    kword_t block[DISKSET_BLOCK_WORDS]);
-int diskset_swap_write(struct diskset *set, kword_t logical,
-    const kword_t block[DISKSET_BLOCK_WORDS]);
-int diskset_log_read(struct diskset *set, kword_t blockno,
-    kword_t block[DISKSET_BLOCK_WORDS]);
-int diskset_log_write(struct diskset *set, kword_t blockno,
-    const kword_t block[DISKSET_BLOCK_WORDS]);
+kword_t diskset_swap_blocks(void);
+int diskset_swap_read(kword_t logical, kword_t count, kword_t *block);
+int diskset_swap_write(kword_t logical, kword_t count, const kword_t *block);
 
-struct diskset *diskset_boot_get(void);
+kword_t diskset_log_blocks(void);
+int diskset_log_read(kword_t blockno,
+    kword_t block[DISKSET_BLOCK_WORDS]);
+int diskset_log_write(kword_t blockno,
+    const kword_t block[DISKSET_BLOCK_WORDS]);
 
 #endif

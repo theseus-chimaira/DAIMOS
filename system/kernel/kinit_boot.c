@@ -5,8 +5,9 @@
 #include "proc.h"
 #include "d6fs_boot.h"
 #include "dsk270.h"
-#include "d6log.h"
+#include "logstore.h"
 #include "d6fs_provider.h"
+#include "diskset_boot.h"
 
 #define KBOOT_LOG_SEVERITY_INFO  6U
 #define KBOOT_LOG_SOURCE_BOOT    1U
@@ -15,27 +16,24 @@ void
 kinit_boot(void)
 {
         struct proc *p;
-        struct d6log boot_log;
+        struct logstore boot_log;
         vnode_t d6fs_root;
         int d6fs_rc;
 
         if (dsk270_read_addr != 0U) {
-                struct diskset *boot_disk;
                 kword_t *scratch;
                 kword_t payload[1];
 
                 d6fs_rc = d6fs_boot_mount_root(0U, &d6fs_root);
                 if (d6fs_rc < 0)
                         return;
-                boot_disk = d6fs_boot_disk();
                 scratch = d6fs_boot_block_buffer();
                 if (dsk270_write_addr != 0U &&
-                    boot_disk->logstore_blocks >= 2UL) {
-                        if (d6log_recover(&boot_log, boot_disk,
-                            scratch) == 0) {
+                    diskset_boot_log_blocks() >= 3UL) {
+                        if (logstore_recover(&boot_log, scratch) == 0) {
                                 payload[0] =
                                     VFS_SIX6('B','O','O','T','/','R');
-                                (void)d6log_append(&boot_log,
+                                (void)logstore_append(&boot_log,
                                     KBOOT_LOG_SEVERITY_INFO,
                                     KBOOT_LOG_SOURCE_BOOT, 0UL, payload, 1U,
                                     scratch);

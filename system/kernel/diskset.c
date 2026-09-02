@@ -1,6 +1,11 @@
 #include "diskset.h"
 #include "dsk270.h"
 
+struct diskset_phys {
+        unsigned int member;
+        kword_t block;
+};
+
 static struct diskset diskset_boot;
 
 static kword_t
@@ -31,37 +36,26 @@ diskset_width_above(const struct diskset *set, kword_t floor)
         return width;
 }
 
-int
-diskset_valid(const struct diskset *set)
-{
-        unsigned int i;
-
-        if (set == 0 || set->members == 0U ||
-            set->members > DISKSET_MAX_MEMBERS)
-                return 0;
-        for (i = 0U; i < set->members; ++i)
-                if (set->blocks[i] == 0UL || set->unit[i] >= DSK270_UNITS)
-                        return 0;
-        return 1;
-}
-
-kword_t
-diskset_blocks(const struct diskset *set)
+static kword_t
+diskset_blocks_ready(const struct diskset *set)
 {
         unsigned int i;
         kword_t total;
 
-        if (!diskset_valid(set))
-                return 0UL;
         total = 0UL;
         for (i = 0U; i < set->members; ++i)
                 total += set->blocks[i];
         return total;
 }
 
-int
-diskset_map_block(const struct diskset *set, kword_t logical,
-    struct diskset_phys *phys)
+kword_t
+diskset_blocks(void)
+{
+        return diskset_blocks_ready(&diskset_boot);
+}
+
+static int
+diskset_map_block(kword_t logical, struct diskset_phys *phys)
 {
         unsigned int i;
         unsigned int width;
@@ -71,14 +65,12 @@ diskset_map_block(const struct diskset *set, kword_t logical,
         kword_t zone_blocks;
         kword_t rel;
 
-        if (!diskset_valid(set) || phys == 0 ||
-            logical >= diskset_blocks(set))
+        if (phys == 0 || logical >= diskset_blocks_ready(&diskset_boot))
                 return -1;
-
         floor = 0UL;
         for (;;) {
-                next = diskset_min_above(set, floor);
-                width = diskset_width_above(set, floor);
+                next = diskset_min_above(&diskset_boot, floor);
+                width = diskset_width_above(&diskset_boot, floor);
                 if (next == 0UL || width == 0U)
                         return -1;
                 zone_blocks = (next - floor) * (kword_t)width;
@@ -90,8 +82,8 @@ diskset_map_block(const struct diskset *set, kword_t logical,
 
         slot = (unsigned int)(logical % (kword_t)width);
         rel = logical / (kword_t)width;
-        for (i = 0U; i < set->members; ++i) {
-                if (set->blocks[i] <= floor)
+        for (i = 0U; i < diskset_boot.members; ++i) {
+                if (diskset_boot.blocks[i] <= floor)
                         continue;
                 if (slot == 0U) {
                         phys->member = i;
@@ -103,100 +95,150 @@ diskset_map_block(const struct diskset *set, kword_t logical,
         return -1;
 }
 
-int
-diskset_read_block(void *opaque, kword_t logical,
-    kword_t block[DISKSET_BLOCK_WORDS])
+static int
+diskset_block_io(kword_t logical, kword_t *block, int write)
 {
-        struct diskset *set;
         struct diskset_phys phys;
 
-        set = (struct diskset *)opaque;
-        if (set == 0 || block == 0 ||
-            diskset_map_block(set, logical, &phys) != 0)
+        if (block == 0 || diskset_map_block(logical, &phys) != 0)
                 return -1;
-        return dsk270_read_sector(set->unit[phys.member],
-            set->base[phys.member] + phys.block, block);
+        if (write != 0)
+                return dsk270_write_sector(diskset_boot.unit[phys.member],
+                    diskset_boot.base[phys.member] + phys.block, block);
+        return dsk270_read_sector(diskset_boot.unit[phys.member],
+            diskset_boot.base[phys.member] + phys.block, block);
 }
 
 int
-diskset_write_block(void *opaque, kword_t logical,
+diskset_read_block(kword_t logical, kword_t block[DISKSET_BLOCK_WORDS])
+{
+        return diskset_block_io(logical, block, 0);
+}
+
+int
+diskset_write_block(kword_t logical,
     const kword_t block[DISKSET_BLOCK_WORDS])
 {
-        struct diskset *set;
-        struct diskset_phys phys;
+        return diskset_block_io(logical, (kword_t *)block, 1);
+}
 
-        set = (struct diskset *)opaque;
-        if (set == 0 || block == 0 ||
-            diskset_map_block(set, logical, &phys) != 0)
-                return -1;
-        return dsk270_write_sector(set->unit[phys.member],
-            set->base[phys.member] + phys.block, block);
+int
+diskset_writable(void)
+{
+        return diskset_boot.members != 0U && dsk270_write_addr != 0U ? 1 : 0;
 }
 
 kword_t
-diskset_swap_blocks(const struct diskset *set)
+diskset_swap_blocks(void)
 {
-        if (set == 0)
-                return 0UL;
-        return set->swap_tail_blocks * (kword_t)set->members;
+        return diskset_boot.swap_tail_blocks * (kword_t)diskset_boot.members;
 }
 
 static int
-diskset_swap_io(struct diskset *set, kword_t logical,
-    kword_t block[DISKSET_BLOCK_WORDS], int write)
+diskset_swap_io(kword_t logical, kword_t count, kword_t *block, int write)
 {
         unsigned int member;
         kword_t local;
+        int rc;
 
-        if (set == 0 || block == 0 || set->members == 0U ||
-            set->swap_tail_blocks == 0UL ||
-            logical >= diskset_swap_blocks(set))
+        if (count == 0UL)
+                return 0;
+        if (block == 0 || logical >= diskset_swap_blocks() ||
+            count > diskset_swap_blocks() - logical)
                 return -1;
-        member = (unsigned int)(logical % (kword_t)set->members);
-        local = logical / (kword_t)set->members;
-        if (local >= set->swap_tail_blocks)
-                return -1;
-        if (write != 0)
-                return dsk270_write_sector(set->unit[member],
-                    set->base[member] + set->blocks[member] + local, block);
-        return dsk270_read_sector(set->unit[member],
-            set->base[member] + set->blocks[member] + local, block);
+        member = (unsigned int)(logical / diskset_boot.swap_tail_blocks);
+        local = logical % diskset_boot.swap_tail_blocks;
+        while (count-- != 0UL) {
+                if (write != 0)
+                        rc = dsk270_write_sector(diskset_boot.unit[member],
+                            diskset_boot.base[member] +
+                            diskset_boot.blocks[member] + local, block);
+                else
+                        rc = dsk270_read_sector(diskset_boot.unit[member],
+                            diskset_boot.base[member] +
+                            diskset_boot.blocks[member] + local, block);
+                if (rc != 0)
+                        return rc;
+                block += DISKSET_BLOCK_WORDS;
+                if (++local == diskset_boot.swap_tail_blocks) {
+                        local = 0UL;
+                        ++member;
+                }
+        }
+        return 0;
 }
 
 int
-diskset_swap_read(struct diskset *set, kword_t logical,
-    kword_t block[DISKSET_BLOCK_WORDS])
+diskset_swap_read(kword_t logical, kword_t count, kword_t *block)
 {
-        return diskset_swap_io(set, logical, block, 0);
+        return diskset_swap_io(logical, count, block, 0);
 }
 
 int
-diskset_swap_write(struct diskset *set, kword_t logical,
+diskset_swap_write(kword_t logical, kword_t count, const kword_t *block)
+{
+        return diskset_swap_io(logical, count, (kword_t *)block, 1);
+}
+
+kword_t
+diskset_log_blocks(void)
+{
+        return diskset_boot.logstore_blocks;
+}
+
+static int
+diskset_log_io(kword_t blockno, kword_t *block, int write)
+{
+        if (block == 0 || blockno >= diskset_boot.logstore_blocks)
+                return -1;
+        return diskset_block_io(diskset_boot.logstore_start + blockno,
+            block, write);
+}
+
+int
+diskset_log_read(kword_t blockno, kword_t block[DISKSET_BLOCK_WORDS])
+{
+        return diskset_log_io(blockno, block, 0);
+}
+
+int
+diskset_log_write(kword_t blockno,
     const kword_t block[DISKSET_BLOCK_WORDS])
 {
-        return diskset_swap_io(set, logical, (kword_t *)block, 1);
+        return diskset_log_io(blockno, (kword_t *)block, 1);
 }
 
 int
-diskset_log_read(struct diskset *set, kword_t blockno,
-    kword_t block[DISKSET_BLOCK_WORDS])
+diskset_boot_init(const struct diskset *config)
 {
-        if (set == 0 || blockno >= set->logstore_blocks)
-                return -1;
-        return diskset_read_block(set, set->logstore_start + blockno, block);
-}
+        unsigned int i;
+        kword_t total;
 
-int
-diskset_log_write(struct diskset *set, kword_t blockno,
-    const kword_t block[DISKSET_BLOCK_WORDS])
-{
-        if (set == 0 || blockno >= set->logstore_blocks)
+        if (config == 0 || config->members == 0U ||
+            config->members > DISKSET_MAX_MEMBERS)
                 return -1;
-        return diskset_write_block(set, set->logstore_start + blockno, block);
-}
-
-struct diskset *
-diskset_boot_get(void)
-{
-        return &diskset_boot;
+        diskset_boot.members = 0U;
+        total = 0UL;
+        for (i = 0U; i < config->members; ++i) {
+                if (config->blocks[i] == 0UL ||
+                    config->unit[i] >= DSK270_UNITS ||
+                    config->base[i] >= DSK270_SECTORS_PER_UNIT ||
+                    config->blocks[i] > DSK270_SECTORS_PER_UNIT -
+                    config->base[i] ||
+                    config->swap_tail_blocks > DSK270_SECTORS_PER_UNIT -
+                    config->base[i] - config->blocks[i])
+                        return -1;
+                diskset_boot.unit[i] = config->unit[i];
+                diskset_boot.base[i] = config->base[i];
+                diskset_boot.blocks[i] = config->blocks[i];
+                total += config->blocks[i];
+        }
+        if (config->logstore_start > total ||
+            config->logstore_blocks > total - config->logstore_start)
+                return -1;
+        diskset_boot.swap_tail_blocks = config->swap_tail_blocks;
+        diskset_boot.logstore_start = config->logstore_start;
+        diskset_boot.logstore_blocks = config->logstore_blocks;
+        diskset_boot.members = config->members;
+        return 0;
 }

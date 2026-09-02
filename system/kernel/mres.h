@@ -19,5 +19,6 @@ void mres_init(void);
 int mres_install(const kword_t *package, unsigned int *basep);
 unsigned int mres_export(const kword_t *package, unsigned int base,
     unsigned int index);
+int mres_call(unsigned int address, void *request);
 
 #endif
