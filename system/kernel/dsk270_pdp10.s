@@ -8,6 +8,7 @@
         .globl  dsk270_write_sector
         .globl  dsk270_read_addr
         .globl  dsk270_write_addr
+        .globl  pdp10_ret_neg1
 
 ; int dsk270_read_sector(unsigned unit, kword_t sector, kword_t *buf)
 ; int dsk270_write_sector(unsigned unit, kword_t sector, const kword_t *buf)
@@ -31,8 +32,7 @@ dsk270_sector_io:
         jrst    dsk270_sector_addr
 
 dsk270_sector_bad:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
 dsk270_sector_addr:
         ; raw = unit<<16 | (sector/054)<<6 | sector%054

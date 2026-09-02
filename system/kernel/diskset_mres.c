@@ -7,10 +7,10 @@ diskset_mres_dispatch(struct diskset_mres_request *r)
 {
         if (r == 0)
                 return -1;
-        if ((unsigned int)r->op == DISKSET_MRES_OP_INIT)
+        switch ((unsigned int)r->op) {
+        case DISKSET_MRES_OP_INIT:
                 return diskset_boot_init(
                     (const struct diskset *)(unsigned long)r->a);
-        switch ((unsigned int)r->op) {
         case DISKSET_MRES_OP_BLOCKS:
                 return (int)diskset_blocks();
         case DISKSET_MRES_OP_READ_BLOCK:

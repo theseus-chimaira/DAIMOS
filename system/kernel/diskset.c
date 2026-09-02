@@ -7,51 +7,12 @@ struct diskset_phys {
 };
 
 static struct diskset diskset_boot;
-
-static kword_t
-diskset_min_above(const struct diskset *set, kword_t floor)
-{
-        unsigned int i;
-        kword_t next;
-
-        next = 0UL;
-        for (i = 0U; i < set->members; ++i) {
-                if (set->blocks[i] > floor &&
-                    (next == 0UL || set->blocks[i] < next))
-                        next = set->blocks[i];
-        }
-        return next;
-}
-
-static unsigned int
-diskset_width_above(const struct diskset *set, kword_t floor)
-{
-        unsigned int i;
-        unsigned int width;
-
-        width = 0U;
-        for (i = 0U; i < set->members; ++i)
-                if (set->blocks[i] > floor)
-                        ++width;
-        return width;
-}
-
-static kword_t
-diskset_blocks_ready(const struct diskset *set)
-{
-        unsigned int i;
-        kword_t total;
-
-        total = 0UL;
-        for (i = 0U; i < set->members; ++i)
-                total += set->blocks[i];
-        return total;
-}
+static kword_t diskset_total_blocks;
 
 kword_t
 diskset_blocks(void)
 {
-        return diskset_blocks_ready(&diskset_boot);
+        return diskset_total_blocks;
 }
 
 static int
@@ -65,13 +26,20 @@ diskset_map_block(kword_t logical, struct diskset_phys *phys)
         kword_t zone_blocks;
         kword_t rel;
 
-        if (phys == 0 || logical >= diskset_blocks_ready(&diskset_boot))
+        if (phys == 0 || logical >= diskset_total_blocks)
                 return -1;
         floor = 0UL;
         for (;;) {
-                next = diskset_min_above(&diskset_boot, floor);
-                width = diskset_width_above(&diskset_boot, floor);
-                if (next == 0UL || width == 0U)
+                next = 0UL;
+                width = 0U;
+                for (i = 0U; i < diskset_boot.members; ++i) {
+                        if (diskset_boot.blocks[i] <= floor)
+                                continue;
+                        ++width;
+                        if (next == 0UL || diskset_boot.blocks[i] < next)
+                                next = diskset_boot.blocks[i];
+                }
+                if (next == 0UL)
                         return -1;
                 zone_blocks = (next - floor) * (kword_t)width;
                 if (logical < zone_blocks)
@@ -218,6 +186,7 @@ diskset_boot_init(const struct diskset *config)
             config->members > DISKSET_MAX_MEMBERS)
                 return -1;
         diskset_boot.members = 0U;
+        diskset_total_blocks = 0UL;
         total = 0UL;
         for (i = 0U; i < config->members; ++i) {
                 if (config->blocks[i] == 0UL ||
@@ -239,6 +208,7 @@ diskset_boot_init(const struct diskset *config)
         diskset_boot.swap_tail_blocks = config->swap_tail_blocks;
         diskset_boot.logstore_start = config->logstore_start;
         diskset_boot.logstore_blocks = config->logstore_blocks;
+        diskset_total_blocks = total;
         diskset_boot.members = config->members;
         return 0;
 }
