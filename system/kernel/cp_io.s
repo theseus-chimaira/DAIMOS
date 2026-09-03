@@ -1,6 +1,5 @@
 ; cp_io.s -- resident PDP-6 card-punch driver.
         .text
-        .globl devicefs_io_out
         .globl cp_pi_handler
         .globl cp_punch_card
         .globl pdp10_pi_handler_return
@@ -25,7 +24,7 @@ cp_pi_data:
         move 1,(1)
         andi 1,07777
         datao 0110,1
-        aos devicefs_io_out+2
+        aos cp_io_out
         setom cp_iowd
         cono 0110,010207
         jrst pdp10_pi_handler_return
@@ -34,7 +33,7 @@ cp_pi_more:
         move 1,(1)
         andi 1,07777
         datao 0110,1
-        aos devicefs_io_out+2
+        aos cp_io_out
         jrst pdp10_pi_handler_return
 
 cp_punch_card:
@@ -68,3 +67,7 @@ cp_ret_e4:
         .bss
 cp_iowd:
         .block 1
+
+; Device-local accounting state; absent devices consume no fixed KCORE.
+        .bss
+cp_io_out: .block 1

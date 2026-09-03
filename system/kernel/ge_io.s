@@ -4,8 +4,6 @@
 ; the two GE terminal devices and needs no cross-driver dispatch glue.
 
         .text
-        .globl devicefs_io_in
-        .globl devicefs_io_out
         .globl ge_pi_handler
         .globl ge_getchar
         .globl ge_putchar
@@ -22,7 +20,7 @@ ge_pi_handler:
         skipl ge_rx_word
         jrst ge_pi_gtyi_disable
         datai 0070,1
-        aos devicefs_io_in+4
+        aos ge_io_in
         tlo 1,4
         movem 1,ge_rx_word
 ge_pi_gtyi_disable:
@@ -47,7 +45,7 @@ ge_get_wait:
 
 ge_get_hardware:
         datai 0070,1
-        aos devicefs_io_in+4
+        aos ge_io_in
         jrst ge_get_unpack_raw
 
 ge_get_ready:
@@ -72,7 +70,7 @@ ge_put_decoded:
         iori 1,0100
         xori 1,0177
         datao 0750,1
-        aos devicefs_io_out+4
+        aos ge_io_out
 ge_put_decoded_wait:
         conso 0750,00100
         jrst ge_put_decoded_wait
@@ -119,3 +117,8 @@ ge_rx_word:
         .block 1
 ge_tx_state:
         .block 1
+
+; Device-local accounting state; absent devices consume no fixed KCORE.
+        .bss
+ge_io_in: .block 1
+ge_io_out: .block 1

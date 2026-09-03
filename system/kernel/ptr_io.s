@@ -2,7 +2,6 @@
 ; The PI7 leaf is local so a PTR-only machine does not load the other IO7
 ; devices.  Interrupt handlers preserve AC2/AC3 as required by PI fanout.
         .text
-        .globl devicefs_io_in
         .globl ptr_pi_handler
         .globl ptr_getchar
         .globl pdp10_pi_handler_return
@@ -16,7 +15,7 @@ ptr_pi_handler:
         skipn ptr_state
         jrst ptr_pi_prefetch
         datai 0104,ptr_state
-        aos devicefs_io_in+1
+        aos ptr_io_in
         aos ptr_state
         cono 0104,0
         jrst pdp10_pi_handler_return
@@ -45,7 +44,7 @@ ptr_get_wait:
         jrst ptr_ret_timeout
 ptr_get_hardware:
         datai 0104,3
-        aos devicefs_io_in+1
+        aos ptr_io_in
         cono 0104,0
         andi 3,0377
         movem 3,(4)
@@ -64,3 +63,7 @@ ptr_ret_timeout:
         .bss
 ptr_state:
         .block 1
+
+; Device-local accounting state; absent devices consume no fixed KCORE.
+        .bss
+ptr_io_in: .block 1

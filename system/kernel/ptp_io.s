@@ -1,6 +1,5 @@
 ; ptp_io.s -- resident PDP-6 paper-tape punch driver.
         .text
-        .globl devicefs_io_out
         .globl ptp_pi_handler
         .globl ptp_putchar
         .globl pdp10_pi_handler_return
@@ -27,7 +26,7 @@ ptp_putchar:
         cono 0100,0007
         andi 1,0377
         datao 0100,1
-        aos devicefs_io_out+1
+        aos ptp_io_out
         movei 2,0200000
 ptp_putchar_wait:
         skipn ptp_state
@@ -45,3 +44,7 @@ ptp_ret_e4:
         .bss
 ptp_state:
         .block 1
+
+; Device-local accounting state; absent devices consume no fixed KCORE.
+        .bss
+ptp_io_out: .block 1

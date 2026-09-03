@@ -15,27 +15,37 @@
 
 struct logstore {
         kword_t next_sequence;
-        kword_t next_drain_sequence;
-        kword_t lost_records;
-        kword_t state_generation;
         unsigned int next_slot;
         unsigned int capacity;
+};
+
+/* Optional consumer state.  The producer never depends on this structure. */
+struct logstore_drain {
+        kword_t next_sequence;
+        kword_t lost_records;
+        kword_t state_generation;
         unsigned int state_copy;
 };
+
+typedef int (*logstore_sink_fn)(void *context,
+    const kword_t record[DISKSET_BLOCK_WORDS], unsigned int words);
 
 int logstore_recover(struct logstore *log,
     kword_t scratch[DISKSET_BLOCK_WORDS]);
 int logstore_append(struct logstore *log, unsigned int severity,
     unsigned int source, kword_t timestamp, const kword_t *payload,
     unsigned int payload_words, kword_t scratch[DISKSET_BLOCK_WORDS]);
+int logstore_record_valid(const kword_t block[DISKSET_BLOCK_WORDS]);
 
-/* Drain support is kept outside the boot image and owns no transfer buffer. */
-int logstore_drain_one(struct logstore *log, unsigned int unit,
+/* Optional drain support.  Not part of the disk-only LOGSTORE producer. */
+int logstore_drain_recover(const struct logstore *log,
+    struct logstore_drain *drain, kword_t scratch[DISKSET_BLOCK_WORDS]);
+int logstore_drain_one(const struct logstore *log,
+    struct logstore_drain *drain, logstore_sink_fn sink, void *context,
     kword_t scratch[DISKSET_BLOCK_WORDS]);
 
-/* Shared with the cold drain path; not a general LOGSTORE interface. */
-int logstore_record_valid(const kword_t block[DISKSET_BLOCK_WORDS]);
-int logstore_write_state(struct logstore *log, kword_t next_drain_sequence,
-    kword_t lost_records, kword_t scratch[DISKSET_BLOCK_WORDS]);
+/* Optional magnetic-tape sink adapter. */
+int logstore_mtc_sink(void *context,
+    const kword_t record[DISKSET_BLOCK_WORDS], unsigned int words);
 
 #endif

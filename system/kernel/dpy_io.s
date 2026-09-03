@@ -6,8 +6,6 @@
 ; initially targets the KCORE zero-return stub; MINIT patches it to the clock service when present.
 
         .text
-        .globl devicefs_io_in
-        .globl devicefs_io_out
         .globl dpy_pi_handler
         .globl dpy_putword
         .globl dpy_clk_pi_service_call
@@ -35,7 +33,7 @@ dpy_putword:
 dpy_put_start:
         setom dpy_pending
         datao 0130,1
-        aos devicefs_io_out+5
+        aos dpy_io_out
 dpy_put_wait:
         skipe dpy_pending
         jrst dpy_put_wait
@@ -45,3 +43,7 @@ dpy_put_ok:
         .bss
 dpy_pending:
         .block 1
+
+; Device-local accounting state; absent devices consume no fixed KCORE.
+        .bss
+dpy_io_out: .block 1

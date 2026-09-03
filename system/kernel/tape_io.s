@@ -409,15 +409,22 @@ tape_wait_done:
         jrst pdp10_ret_ok
 
 tape_account_table:
-        .word devicefs_io_in+07
-        .word devicefs_io_in+010
+        .word dtc_io_in
+        .word mtc_io_in
         .word devicefs_io_in+011
         .word devicefs_io_out+011
-        .word devicefs_io_out+010
-        .word devicefs_io_out+07
+        .word mtc_io_out
+        .word dtc_io_out
 
         .bss
 dtc_request_unit: .block 1
 dtc_request_write: .block 1
 dtc_request_reverse: .block 1
 dtc_motion: .block 010
+
+; Device-local accounting state; absent devices consume no fixed KCORE.
+        .bss
+dtc_io_in: .block 1
+mtc_io_in: .block 1
+mtc_io_out: .block 1
+dtc_io_out: .block 1
