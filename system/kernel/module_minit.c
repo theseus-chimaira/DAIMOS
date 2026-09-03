@@ -48,13 +48,15 @@
 #define TTY_X_GE_PUTCHAR_ADDR   3U
 #define WCNSLS_X_READ           0U
 #define OCNSLS_X_READ           0U
-#define STORAGE_X_HANDLER        0U
-#define STORAGE_X_DTC_READ_BLOCK   1U
-#define STORAGE_X_MTC_SERVICE       2U
-#define STORAGE_X_DSK_READ_SECTOR   3U
-#define STORAGE_X_DSK_WRITE_SECTOR  4U
-#define STORAGE_X_DTC_WRITE_BLOCK   5U
-#define STORAGE_X_DCT_HANDLER       6U
+#define TAPE_X_HANDLER           0U
+#define TAPE_X_DTC_READ_BLOCK    1U
+#define TAPE_X_MTC_SERVICE       2U
+#define TAPE_X_DTC_WRITE_BLOCK   3U
+#define TAPE_X_DCT_HANDLER       4U
+#define DSK_X_HANDLER            0U
+#define DSK_X_READ_SECTOR        1U
+#define DSK_X_WRITE_SECTOR       2U
+#define DSK_X_DCT_HANDLER        3U
 
 #define SLV_PI_MASK             0000007UL
 #define SLV_CO_CLEAR_IRQ        0000010UL
@@ -64,9 +66,18 @@ static unsigned int diag_put6_addr;
 static unsigned int diag_putchar_addr;
 static unsigned int clk_pi_handler_addr;
 static unsigned int clk_pi_service_addr;
-static unsigned int storage_mres_base;
-static unsigned int storage_pi_handler_addr;
-static unsigned int storage_dct_handler_addr;
+static unsigned int tape_mres_base;
+static unsigned int dsk_mres_base;
+static unsigned int storage_router_registered;
+unsigned int diskset_state_addr;
+unsigned int diskset_total_addr;
+
+extern kword_t storage_pi_handler;
+extern kword_t storage_dct_handler;
+extern kword_t storage_pi_dsk_jump;
+extern kword_t storage_pi_tape_jump;
+extern kword_t storage_dct_dsk_jump;
+extern kword_t storage_dct_tape_jump;
 
 
 static unsigned int pi_level_count[PDP10_PI_LEVELS + 1U];
@@ -562,37 +573,8 @@ ge_minit(void)
         minit_diag_ok(name);
 }
 
-static unsigned int
-dpy_param_mode(unsigned int mode)
-{
-        return (mode & 07U) << 13;
-}
-
-static unsigned int
-dpy_point_coord(unsigned int yflag, unsigned int coord,
-    unsigned int next_mode)
-{
-        unsigned int inst;
-
-        inst = (next_mode & 07U) << 13;
-        if (yflag != 0U)
-                inst |= 0200000U;
-        inst |= coord & 01777U;
-        return inst & 0777777U;
-}
-
-static unsigned int
-dpy_char3(unsigned int c0, unsigned int c1, unsigned int c2)
-{
-        return ((c0 & 077U) << 12) | ((c1 & 077U) << 6) | (c2 & 077U);
-}
-
-static kword_t
-dpy_inst(unsigned int left, unsigned int right)
-{
-        return ((((kword_t)left) & 0777777UL) << 18) |
-            (((kword_t)right) & 0777777UL);
-}
+extern kword_t minit_dpy_banner_words[];
+extern kword_t minit_dpy_banner_words_end[];
 
 static void
 minit_dpy_word(kword_t name, unsigned int putword, kword_t word)
@@ -602,83 +584,13 @@ minit_dpy_word(kword_t name, unsigned int putword, kword_t word)
 }
 
 static void
-minit_dpy_flush_codes(kword_t name, unsigned int putword,
-    unsigned int *codes, unsigned int *count, unsigned int *char_mode)
-{
-        unsigned int need;
-
-        need = *char_mode == 0U ? 3U : 6U;
-        while (*count < need)
-                codes[(*count)++] = DPY_T342_SPACE;
-        if (*char_mode == 0U) {
-                minit_dpy_word(name, putword, dpy_inst(
-                    dpy_param_mode(DPY_MODE_CHAR),
-                    dpy_char3(codes[0], codes[1], codes[2])));
-                *char_mode = 1U;
-        } else {
-                minit_dpy_word(name, putword, dpy_inst(
-                    dpy_char3(codes[0], codes[1], codes[2]),
-                    dpy_char3(codes[3], codes[4], codes[5])));
-        }
-        *count = 0U;
-}
-
-static void
-minit_dpy_code(kword_t name, unsigned int putword, unsigned int code,
-    unsigned int *codes, unsigned int *count, unsigned int *char_mode)
-{
-        unsigned int need;
-
-        codes[(*count)++] = code & 077U;
-        need = *char_mode == 0U ? 3U : 6U;
-        if (*count == need)
-                minit_dpy_flush_codes(name, putword, codes, count, char_mode);
-}
-
-/* The Type 342 upper-case set uses 1..32 for A..Z and ASCII 040..077
- * directly for the punctuation/digits needed by the boot version banner. */
-static void
-minit_dpy_char(kword_t name, unsigned int putword, unsigned int ch,
-    unsigned int *codes, unsigned int *count, unsigned int *char_mode)
-{
-        unsigned int code;
-
-        if (ch >= 'A' && ch <= 'Z')
-                code = ch - 'A' + 1U;
-        else if (ch >= 040U && ch <= 077U)
-                code = ch;
-        else
-                code = 077U;
-        minit_dpy_code(name, putword, code, codes, count, char_mode);
-}
-
-static void
 minit_dpy_banner(kword_t name, unsigned int putword)
 {
-        static const char title[] = "DAIMOS ";
-        static const char version[] = DAIMON_VERSION_TEXT;
-        unsigned int codes[6];
-        unsigned int count;
-        unsigned int char_mode;
-        unsigned int i;
+        kword_t *word;
 
-        count = 0U;
-        char_mode = 0U;
-
-        minit_dpy_word(name, putword, dpy_inst(dpy_param_mode(DPY_MODE_POINT),
-            dpy_point_coord(0U, 0240U, DPY_MODE_POINT)));
-        minit_dpy_word(name, putword, dpy_inst(
-            dpy_point_coord(1U, 01000U, DPY_MODE_PARAM),
-            dpy_param_mode(DPY_MODE_PARAM)));
-
-        for (i = 0U; title[i] != '\0'; ++i)
-                minit_dpy_char(name, putword, (unsigned int)title[i],
-                    codes, &count, &char_mode);
-        for (i = 0U; version[i] != '\0'; ++i)
-                minit_dpy_char(name, putword, (unsigned int)version[i],
-                    codes, &count, &char_mode);
-        if (count != 0U)
-                minit_dpy_flush_codes(name, putword, codes, &count, &char_mode);
+        for (word = minit_dpy_banner_words;
+            word != minit_dpy_banner_words_end; ++word)
+                minit_dpy_word(name, putword, *word);
 }
 
 void
@@ -777,31 +689,8 @@ tty_minit(void)
         minit_diag_loaded(name);
 }
 
-static const kword_t minit_wcnsls_title[] = {
-        0364306143076UL, 0164307743061UL, 0371020410237UL,
-        0216726543061UL, 0164306143056UL, 0174101602076UL, 0
-};
-
-static const kword_t minit_wcnsls_digits[] = {
-        0164316563056UL, 0043020410216UL, 0164204210437UL,
-        0360205602076UL, 0021452276102UL, 0374103602076UL,
-        0164103643056UL, 0370210420410UL, 0164305643056UL,
-        0164305702056UL
-};
-
-static kword_t
-minit_wcnsls_version_glyph(unsigned int ch)
-{
-        if (ch >= '0' && ch <= '9')
-                return minit_wcnsls_digits[ch - '0'];
-        if (ch == 'V')
-                return 0214306142504UL;
-        if (ch == '.')
-                return 0000000000306UL;
-        if (ch == '-')
-                return 0000003700000UL;
-        return 0;
-}
+extern kword_t minit_wcnsls_banner_glyphs[];
+extern kword_t minit_wcnsls_banner_glyphs_end[];
 
 static void
 minit_wcnsls_glyph(kword_t glyph, unsigned int x)
@@ -823,20 +712,14 @@ minit_wcnsls_glyph(kword_t glyph, unsigned int x)
 static void
 minit_wcnsls_banner(void)
 {
-        static const char version[] = DAIMON_VERSION_TEXT;
+        kword_t *glyph;
         unsigned int x;
-        unsigned int i;
 
         minit_wcnsls_cono(WCNSLS_CO_SPACEWAR | WCNSLS_CO_GREEN_FULL);
         x = 025U;
-        for (i = 0U; i < sizeof(minit_wcnsls_title) /
-            sizeof(minit_wcnsls_title[0]); ++i) {
-                minit_wcnsls_glyph(minit_wcnsls_title[i], x);
-                x += 42U;
-        }
-        for (i = 0U; version[i] != '\0'; ++i) {
-                minit_wcnsls_glyph(
-                    minit_wcnsls_version_glyph((unsigned int)version[i]), x);
+        for (glyph = minit_wcnsls_banner_glyphs;
+            glyph != minit_wcnsls_banner_glyphs_end; ++glyph) {
+                minit_wcnsls_glyph(*glyph, x);
                 x += 42U;
         }
 }
@@ -868,21 +751,53 @@ ocnsls_minit(void)
         minit_diag_loaded(name);
 }
 
-static unsigned int
-storage_install(kword_t name)
+static void
+storage_patch_jump(kword_t *word, unsigned int address)
 {
-        if (storage_mres_base == 0U) {
-                storage_mres_base = minit_install(name);
-                storage_pi_handler_addr = minit_export(name, storage_mres_base,
-                    STORAGE_X_HANDLER);
-                storage_dct_handler_addr = minit_export(name, storage_mres_base,
-                    STORAGE_X_DCT_HANDLER);
-                minit_register(name, STORAGE_NATIVE_PI_LEVEL,
-                    storage_pi_handler_addr);
-                minit_register(name, STORAGE_DCT_PI_LEVEL,
-                    storage_dct_handler_addr);
+        *word = (*word & ~((kword_t)KINIT_HALF_MASK)) |
+            (kword_t)(address & KINIT_HALF_MASK);
+}
+
+static void
+storage_register_router(kword_t name)
+{
+        if (storage_router_registered != 0U)
+                return;
+        minit_register(name, STORAGE_NATIVE_PI_LEVEL,
+            (unsigned int)(unsigned long)&storage_pi_handler);
+        minit_register(name, STORAGE_DCT_PI_LEVEL,
+            (unsigned int)(unsigned long)&storage_dct_handler);
+        storage_router_registered = 1U;
+}
+
+static unsigned int
+storage_install(unsigned int kind, kword_t name)
+{
+        unsigned int base;
+        unsigned int pi;
+        unsigned int dct;
+
+        storage_register_router(name);
+        if (kind == 2U) {
+                if (dsk_mres_base != 0U)
+                        return dsk_mres_base;
+                base = minit_install(name);
+                pi = minit_export(name, base, DSK_X_HANDLER);
+                dct = minit_export(name, base, DSK_X_DCT_HANDLER);
+                storage_patch_jump(&storage_pi_dsk_jump, pi);
+                storage_patch_jump(&storage_dct_dsk_jump, dct);
+                dsk_mres_base = base;
+                return base;
         }
-        return storage_mres_base;
+        if (tape_mres_base != 0U)
+                return tape_mres_base;
+        base = minit_install(name);
+        pi = minit_export(name, base, TAPE_X_HANDLER);
+        dct = minit_export(name, base, TAPE_X_DCT_HANDLER);
+        storage_patch_jump(&storage_pi_tape_jump, pi);
+        storage_patch_jump(&storage_dct_tape_jump, dct);
+        tape_mres_base = base;
+        return base;
 }
 
 void
@@ -896,13 +811,21 @@ storage_minit(unsigned int kind, kword_t name)
                 minit_diag_nodev(name);
                 return;
         }
-        base = storage_install(name);
-        module_service_set(MODULE_SERVICE_DTC_READ_BLOCK + kind,
-            minit_export(name, base, STORAGE_X_DTC_READ_BLOCK + kind));
-        if (kind != 1U)
-                module_service_set(MODULE_SERVICE_DTC_WRITE_BLOCK - (kind >> 1),
-                    minit_export(name, base, STORAGE_X_DTC_WRITE_BLOCK -
-                    (kind >> 1)));
+        base = storage_install(kind, name);
+        if (kind == 0U) {
+                module_service_set(MODULE_SERVICE_DTC_READ_BLOCK,
+                    minit_export(name, base, TAPE_X_DTC_READ_BLOCK));
+                module_service_set(MODULE_SERVICE_DTC_WRITE_BLOCK,
+                    minit_export(name, base, TAPE_X_DTC_WRITE_BLOCK));
+        } else if (kind == 1U) {
+                module_service_set(MODULE_SERVICE_MTC,
+                    minit_export(name, base, TAPE_X_MTC_SERVICE));
+        } else {
+                module_service_set(MODULE_SERVICE_DSK_READ_SECTOR,
+                    minit_export(name, base, DSK_X_READ_SECTOR));
+                module_service_set(MODULE_SERVICE_DSK_WRITE_SECTOR,
+                    minit_export(name, base, DSK_X_WRITE_SECTOR));
+        }
         minit_diag_ok(name);
 }
 
@@ -961,6 +884,8 @@ diskset_minit(void)
         }
         base = minit_install(name);
         service = minit_export(name, base, 0U);
+        diskset_state_addr = minit_export(name, base, 1U);
+        diskset_total_addr = minit_export(name, base, 2U);
         module_service_set(MODULE_SERVICE_DISKSET, service);
         minit_diag_loaded(name);
 }

@@ -3,7 +3,6 @@
 
 #include "kcore.h"
 
-#define DISKSET_MRES_OP_INIT            1U
 #define DISKSET_MRES_OP_BLOCKS          2U
 #define DISKSET_MRES_OP_READ_BLOCK      3U
 #define DISKSET_MRES_OP_WRITE_BLOCK     4U
@@ -24,5 +23,9 @@ struct diskset_mres_request {
 
 /* Fixed KCORE service pointer, bound once after MINIT discovery. */
 extern unsigned int diskset_service_addr;
+
+/* KINIT-only relocated runtime-state destinations exported by the MRES. */
+extern unsigned int diskset_state_addr;
+extern unsigned int diskset_total_addr;
 
 #endif

@@ -6,8 +6,8 @@ struct diskset_phys {
         kword_t block;
 };
 
-static struct diskset diskset_boot;
-static kword_t diskset_total_blocks;
+struct diskset diskset_boot;
+kword_t diskset_total_blocks;
 
 kword_t
 diskset_blocks(void)
@@ -176,39 +176,3 @@ diskset_log_write(kword_t blockno,
         return diskset_log_io(blockno, (kword_t *)block, 1);
 }
 
-int
-diskset_boot_init(const struct diskset *config)
-{
-        unsigned int i;
-        kword_t total;
-
-        if (config == 0 || config->members == 0U ||
-            config->members > DISKSET_MAX_MEMBERS)
-                return -1;
-        diskset_boot.members = 0U;
-        diskset_total_blocks = 0UL;
-        total = 0UL;
-        for (i = 0U; i < config->members; ++i) {
-                if (config->blocks[i] == 0UL ||
-                    config->unit[i] >= DSK270_UNITS ||
-                    config->base[i] >= DSK270_SECTORS_PER_UNIT ||
-                    config->blocks[i] > DSK270_SECTORS_PER_UNIT -
-                    config->base[i] ||
-                    config->swap_tail_blocks > DSK270_SECTORS_PER_UNIT -
-                    config->base[i] - config->blocks[i])
-                        return -1;
-                diskset_boot.unit[i] = config->unit[i];
-                diskset_boot.base[i] = config->base[i];
-                diskset_boot.blocks[i] = config->blocks[i];
-                total += config->blocks[i];
-        }
-        if (config->logstore_start > total ||
-            config->logstore_blocks > total - config->logstore_start)
-                return -1;
-        diskset_boot.swap_tail_blocks = config->swap_tail_blocks;
-        diskset_boot.logstore_start = config->logstore_start;
-        diskset_boot.logstore_blocks = config->logstore_blocks;
-        diskset_total_blocks = total;
-        diskset_boot.members = config->members;
-        return 0;
-}

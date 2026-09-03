@@ -32,7 +32,8 @@
         .globl tty_mres_package
         .globl wcnsls_mres_package
         .globl ocnsls_mres_package
-        .globl storage_mres_package
+        .globl tape_mres_package
+        .globl dsk_mres_package
         .globl slv_mres_package
         .globl dtfs_mres_package
         .globl diskset_mres_package
@@ -71,9 +72,9 @@ __minit_table_begin:
         .word tty_minit,,tty_mres_package
         .word wcnsls_minit,,wcnsls_mres_package
         .word ocnsls_minit,,ocnsls_mres_package
-        .word dtc_minit,,storage_mres_package
-        .word mtc_minit,,storage_mres_package
-        .word dsk_minit,,storage_mres_package
+        .word dtc_minit,,tape_mres_package
+        .word mtc_minit,,tape_mres_package
+        .word dsk_minit,,dsk_mres_package
         .word diskset_minit,,diskset_mres_package
         .word dtfs_minit,,dtfs_mres_package
         .word d6fs_minit,,d6fs_mres_package

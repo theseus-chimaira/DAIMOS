@@ -23,6 +23,7 @@
 
         .text
         .globl pdp10_pi_handler_return
+        .globl pdp10_pi_dispatch_done
         .globl pdp10_pi_level1
         .globl pdp10_pi_level2
         .globl pdp10_pi_level3

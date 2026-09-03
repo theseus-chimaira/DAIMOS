@@ -16,7 +16,6 @@ struct diskset {
         kword_t logstore_blocks;
 };
 
-int diskset_boot_init(const struct diskset *config);
 kword_t diskset_blocks(void);
 int diskset_read_block(kword_t logical,
     kword_t block[DISKSET_BLOCK_WORDS]);

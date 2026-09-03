@@ -79,12 +79,56 @@ diskset_boot_half(unsigned int index)
         return word & DISKSET_BOOT_HALF_MASK;
 }
 
+static int
+diskset_boot_configure(const struct diskset *config)
+{
+        struct diskset *runtime;
+        kword_t *totalp;
+        kword_t total;
+        unsigned int i;
+
+        if (config == 0 || diskset_state_addr == 0U ||
+            diskset_total_addr == 0U || config->members == 0U ||
+            config->members > DISKSET_MAX_MEMBERS)
+                return -1;
+        total = 0UL;
+        for (i = 0U; i < config->members; ++i) {
+                if (config->blocks[i] == 0UL ||
+                    config->unit[i] >= DSK270_UNITS ||
+                    config->base[i] >= DSK270_SECTORS_PER_UNIT ||
+                    config->blocks[i] > DSK270_SECTORS_PER_UNIT -
+                    config->base[i] ||
+                    config->swap_tail_blocks > DSK270_SECTORS_PER_UNIT -
+                    config->base[i] - config->blocks[i])
+                        return -1;
+                total += config->blocks[i];
+        }
+        if (config->logstore_start > total ||
+            config->logstore_blocks > total - config->logstore_start)
+                return -1;
+
+        runtime = (struct diskset *)(unsigned long)diskset_state_addr;
+        totalp = (kword_t *)(unsigned long)diskset_total_addr;
+        runtime->members = 0U;
+        *totalp = 0UL;
+        for (i = 0U; i < config->members; ++i) {
+                runtime->unit[i] = config->unit[i];
+                runtime->base[i] = config->base[i];
+                runtime->blocks[i] = config->blocks[i];
+        }
+        runtime->swap_tail_blocks = config->swap_tail_blocks;
+        runtime->logstore_start = config->logstore_start;
+        runtime->logstore_blocks = config->logstore_blocks;
+        *totalp = total;
+        runtime->members = config->members;
+        return 0;
+}
+
 int
 diskset_boot_discover(kword_t *super_ap, kword_t *super_bp)
 {
         struct diskset config;
         struct diskset_layout layout;
-        struct diskset_mres_request req;
         kword_t descriptor[DISKSET_BLOCK_WORDS];
         unsigned int index;
         unsigned int members;
@@ -158,11 +202,7 @@ diskset_boot_discover(kword_t *super_ap, kword_t *super_bp)
         config.swap_tail_blocks = first_swap_tail;
         config.logstore_start = first_logstore_start;
         config.logstore_blocks = first_logstore_blocks;
-        req.op = DISKSET_MRES_OP_INIT;
-        req.a = (kword_t)(unsigned long)&config;
-        req.b = 0UL;
-        req.c = 0UL;
-        rc = diskset_boot_call(&req);
+        rc = diskset_boot_configure(&config);
         if (rc != 0)
                 return rc;
         *super_ap = first_super_a;
