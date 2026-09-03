@@ -183,8 +183,6 @@ d6fs_super_encode(kword_t sb[D6FS_SUPER_WORDS],
         sb[D6FS_SB_STATE] = (kword_t)info->state;
         sb[D6FS_SB_FS_UUID0] = info->fs_uuid[0];
         sb[D6FS_SB_FS_UUID1] = info->fs_uuid[1];
-        sb[D6FS_SB_DISKSET_UUID0] = info->diskset_uuid[0];
-        sb[D6FS_SB_DISKSET_UUID1] = info->diskset_uuid[1];
         sb[D6FS_SB_TOTAL_BLOCKS] = info->total_blocks;
         sb[D6FS_SB_ROOT_FCB] = (kword_t)info->root_fcb;
         sb[D6FS_SB_FCB_START] = info->fcb_start;
@@ -206,8 +204,6 @@ d6fs_super_decode(const kword_t sb[D6FS_SUPER_WORDS],
         info->state = (unsigned int)sb[D6FS_SB_STATE];
         info->fs_uuid[0] = sb[D6FS_SB_FS_UUID0];
         info->fs_uuid[1] = sb[D6FS_SB_FS_UUID1];
-        info->diskset_uuid[0] = sb[D6FS_SB_DISKSET_UUID0];
-        info->diskset_uuid[1] = sb[D6FS_SB_DISKSET_UUID1];
         info->total_blocks = sb[D6FS_SB_TOTAL_BLOCKS];
         info->root_fcb = (unsigned int)sb[D6FS_SB_ROOT_FCB];
         info->fcb_start = sb[D6FS_SB_FCB_START];
@@ -247,8 +243,7 @@ d6fs_super_select(const kword_t a[D6FS_SUPER_WORDS],
         if (bv && d6fs_super_decode(b, &bi) != 0)
                 return -1;
         if (av && bv) {
-                if (!d6fs_uuid_equal(ai.fs_uuid, bi.fs_uuid) ||
-                    !d6fs_uuid_equal(ai.diskset_uuid, bi.diskset_uuid))
+                if (!d6fs_uuid_equal(ai.fs_uuid, bi.fs_uuid))
                         return -1;
                 if (ai.sequence == bi.sequence) {
                         for (i = 0U; i < D6FS_SUPER_WORDS; ++i)
@@ -295,6 +290,8 @@ d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
                 return 0;
         magic_version = (D6FS_MAGIC & ~077UL) | D6FS_FORMAT_VERSION;
         if (sb[D6FS_SB_MAGIC_VERSION] != magic_version ||
+            sb[D6FS_SB_RESERVED0] != 0UL ||
+            sb[D6FS_SB_RESERVED1] != 0UL ||
             sb[D6FS_SB_RESERVED] != 0UL ||
             info.state > D6FS_STATE_DIRTY || info.total_blocks == 0UL ||
             info.total_blocks > diskset_blocks ||
@@ -537,6 +534,20 @@ d6fs_reader_set_writer(struct d6fs_reader *reader,
         return 0;
 }
 
+static int
+d6fs_reader_commit_cache(struct d6fs_reader *reader, kword_t logical)
+{
+        if (reader == 0 || reader->write_block == 0 ||
+            logical >= reader->super.total_blocks ||
+            reader->write_block(reader->opaque, logical, reader->cache) != 0) {
+                if (reader != 0)
+                        reader->cache_block = D6FS_CACHE_INVALID;
+                return -1;
+        }
+        reader->cache_block = logical;
+        return 0;
+}
+
 int
 d6fs_reader_write_block(struct d6fs_reader *reader, kword_t logical,
     const kword_t block[D6FS_BLOCK_WORDS])
@@ -544,13 +555,12 @@ d6fs_reader_write_block(struct d6fs_reader *reader, kword_t logical,
         unsigned int i;
 
         if (reader == 0 || block == 0 || reader->write_block == 0 ||
-            logical >= reader->super.total_blocks ||
-            reader->write_block(reader->opaque, logical, block) != 0)
+            logical >= reader->super.total_blocks)
                 return -1;
-        reader->cache_block = logical;
-        for (i = 0U; i < D6FS_BLOCK_WORDS; ++i)
-                reader->cache[i] = block[i];
-        return 0;
+        if (block != reader->cache)
+                for (i = 0U; i < D6FS_BLOCK_WORDS; ++i)
+                        reader->cache[i] = block[i];
+        return d6fs_reader_commit_cache(reader, logical);
 }
 
 int
@@ -563,12 +573,7 @@ d6fs_reader_zero_block(struct d6fs_reader *reader, kword_t logical)
                 return -1;
         for (i = 0U; i < D6FS_BLOCK_WORDS; ++i)
                 reader->cache[i] = 0UL;
-        if (reader->write_block(reader->opaque, logical, reader->cache) != 0) {
-                reader->cache_block = D6FS_CACHE_INVALID;
-                return -1;
-        }
-        reader->cache_block = logical;
-        return 0;
+        return d6fs_reader_commit_cache(reader, logical);
 }
 
 int
@@ -584,7 +589,6 @@ d6fs_reader_write_words(struct d6fs_reader *reader,
         unsigned int take;
         unsigned int i;
         const kword_t *cached;
-        kword_t block[D6FS_BLOCK_WORDS];
 
         if (reader == 0 || fcb == 0 || buf == 0 || reader->write_block == 0)
                 return -1;
@@ -596,14 +600,12 @@ d6fs_reader_write_words(struct d6fs_reader *reader,
                 if (d6fs_file_block(fcb, file_block, &logical) != 0 ||
                     d6fs_reader_block(reader, logical, &cached) != 0)
                         return -1;
-                for (i = 0U; i < D6FS_BLOCK_WORDS; ++i)
-                        block[i] = cached[i];
                 take = D6FS_BLOCK_WORDS - in_block;
                 if (take > nwords - done)
                         take = nwords - done;
                 for (i = 0U; i < take; ++i)
-                        block[in_block + i] = buf[done + i];
-                if (d6fs_reader_write_block(reader, logical, block) != 0)
+                        reader->cache[in_block + i] = buf[done + i];
+                if (d6fs_reader_commit_cache(reader, logical) != 0)
                         return -1;
                 done += take;
         }
@@ -619,7 +621,6 @@ d6fs_reader_put_fcb(struct d6fs_reader *reader,
         unsigned int in_block;
         unsigned int i;
         const kword_t *cached;
-        kword_t block[D6FS_BLOCK_WORDS];
 
         if (reader == 0 || fcb == 0 || reader->write_block == 0 ||
             fcb_index >= reader->super.fcb_count)
@@ -630,11 +631,9 @@ d6fs_reader_put_fcb(struct d6fs_reader *reader,
         if (in_block + D6FS_FCB_WORDS > D6FS_BLOCK_WORDS ||
             d6fs_reader_block(reader, block_no, &cached) != 0)
                 return -1;
-        for (i = 0U; i < D6FS_BLOCK_WORDS; ++i)
-                block[i] = cached[i];
         for (i = 0U; i < D6FS_FCB_WORDS; ++i)
-                block[in_block + i] = fcb[i];
-        return d6fs_reader_write_block(reader, block_no, block);
+                reader->cache[in_block + i] = fcb[i];
+        return d6fs_reader_commit_cache(reader, block_no);
 }
 
 static int
@@ -710,9 +709,7 @@ d6fs_summary_set(struct d6fs_reader *reader, kword_t map_index,
         kword_t in;
         unsigned int wi;
         unsigned int bi;
-        unsigned int i;
         const kword_t *cached;
-        kword_t block[D6FS_BLOCK_WORDS];
         kword_t bits_per_block;
 
         bits_per_block = D6FS_BITS_PER_MAP_BLOCK;
@@ -724,14 +721,12 @@ d6fs_summary_set(struct d6fs_reader *reader, kword_t map_index,
             d6fs_reader_block(reader, reader->super.summary_start + sbi,
             &cached) != 0)
                 return -1;
-        for (i = 0U; i < D6FS_BLOCK_WORDS; ++i)
-                block[i] = cached[i];
         if (has_free)
-                block[wi] |= d6fs_bit_mask(bi);
+                reader->cache[wi] |= d6fs_bit_mask(bi);
         else
-                block[wi] &= ~d6fs_bit_mask(bi);
-        return d6fs_reader_write_block(reader,
-            reader->super.summary_start + sbi, block);
+                reader->cache[wi] &= ~d6fs_bit_mask(bi);
+        return d6fs_reader_commit_cache(reader,
+            reader->super.summary_start + sbi);
 }
 
 static int
@@ -774,10 +769,8 @@ d6fs_freemap_set(struct d6fs_reader *reader, kword_t logical,
         kword_t mbi;
         unsigned int wi;
         unsigned int bi;
-        unsigned int i;
         unsigned int has_free;
         const kword_t *cached;
-        kword_t block[D6FS_BLOCK_WORDS];
 
         if (reader == 0 || reader->write_block == 0 ||
             logical >= reader->super.total_blocks ||
@@ -786,14 +779,12 @@ d6fs_freemap_set(struct d6fs_reader *reader, kword_t logical,
             d6fs_reader_block(reader, reader->super.freemap_start + mbi,
             &cached) != 0)
                 return -1;
-        for (i = 0U; i < D6FS_BLOCK_WORDS; ++i)
-                block[i] = cached[i];
         if (allocated)
-                block[wi] |= d6fs_bit_mask(bi);
+                reader->cache[wi] |= d6fs_bit_mask(bi);
         else
-                block[wi] &= ~d6fs_bit_mask(bi);
-        if (d6fs_reader_write_block(reader,
-            reader->super.freemap_start + mbi, block) != 0)
+                reader->cache[wi] &= ~d6fs_bit_mask(bi);
+        if (d6fs_reader_commit_cache(reader,
+            reader->super.freemap_start + mbi) != 0)
                 return -1;
         if (!allocated)
                 has_free = 1U;

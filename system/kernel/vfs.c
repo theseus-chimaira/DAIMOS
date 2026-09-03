@@ -441,8 +441,6 @@ vfs_parent_name(vnode_t node, vnode_t *parentp,
             vfs_mount_root[id - 1U] == node)
                 node = vfs_mount_target[id - 1U];
         provider = VFS_PROVIDER(node);
-        if (provider != MEMFS_PROVIDER && provider != D6FS_PROVIDER)
-                return -1;
         req.op = FS_MRES_OP_PARENT_NAME;
         req.a = node;
         req.b = (kword_t)(unsigned long)parentp;
@@ -460,9 +458,6 @@ vfs_create(vnode_t dir, const struct vfs_name *name,
         if (vfs_readonly(dir))
                 return -1;
         provider = VFS_PROVIDER(dir);
-        if (provider != MEMFS_PROVIDER && provider != DTFS_PROVIDER &&
-            provider != D6FS_PROVIDER)
-                return -1;
         req.op = FS_MRES_OP_CREATE;
         req.a = dir;
         req.b = (kword_t)(unsigned long)name;
@@ -481,8 +476,6 @@ vfs_mkdir(vnode_t dir, const struct vfs_name *name,
         if (vfs_readonly(dir))
                 return -1;
         provider = VFS_PROVIDER(dir);
-        if (provider != MEMFS_PROVIDER && provider != D6FS_PROVIDER)
-                return -1;
         req.op = FS_MRES_OP_MKDIR;
         req.a = dir;
         req.b = (kword_t)(unsigned long)name;
@@ -497,7 +490,7 @@ vfs_symlink(vnode_t dir, const struct vfs_name *name,
 {
         struct fs_mres_request req;
 
-        if (vfs_readonly(dir) || VFS_PROVIDER(dir) != D6FS_PROVIDER)
+        if (vfs_readonly(dir))
                 return -1;
         req.op = FS_MRES_OP_SYMLINK;
         req.a = dir;
@@ -505,7 +498,7 @@ vfs_symlink(vnode_t dir, const struct vfs_name *name,
         req.c = (kword_t)(unsigned long)target;
         req.d = (kword_t)target_chars;
         req.e = (kword_t)(unsigned long)nodep;
-        return vfs_mres_call(D6FS_PROVIDER, &req);
+        return vfs_mres_call(VFS_PROVIDER(dir), &req);
 }
 
 int
@@ -517,9 +510,6 @@ vfs_unlink(vnode_t dir, const struct vfs_name *name)
         if (vfs_readonly(dir))
                 return -1;
         provider = VFS_PROVIDER(dir);
-        if (provider != MEMFS_PROVIDER && provider != DTFS_PROVIDER &&
-            provider != D6FS_PROVIDER)
-                return -1;
         req.op = FS_MRES_OP_UNLINK;
         req.a = dir;
         req.b = (kword_t)(unsigned long)name;
@@ -538,9 +528,6 @@ vfs_rename(vnode_t olddir, const struct vfs_name *oldname,
             VFS_MOUNT_ID(olddir) != VFS_MOUNT_ID(newdir))
                 return -1;
         provider = VFS_PROVIDER(olddir);
-        if (provider != MEMFS_PROVIDER && provider != DTFS_PROVIDER &&
-            provider != D6FS_PROVIDER)
-                return -1;
         req.op = FS_MRES_OP_RENAME;
         req.a = olddir;
         req.b = (kword_t)(unsigned long)oldname;
@@ -558,9 +545,6 @@ vfs_truncate(vnode_t node, unsigned int words, kword_t size_chars)
         if (vfs_readonly(node))
                 return -1;
         provider = VFS_PROVIDER(node);
-        if (provider != MEMFS_PROVIDER && provider != DTFS_PROVIDER &&
-            provider != D6FS_PROVIDER)
-                return -1;
         req.op = FS_MRES_OP_TRUNCATE;
         req.a = node;
         req.b = (kword_t)words;
@@ -577,9 +561,6 @@ vfs_chmod(vnode_t node, unsigned int mode)
         if (vfs_readonly(node))
                 return -1;
         provider = VFS_PROVIDER(node);
-        if (provider != MEMFS_PROVIDER && provider != DTFS_PROVIDER &&
-            provider != D6FS_PROVIDER)
-                return -1;
         req.op = FS_MRES_OP_CHMOD;
         req.a = node;
         req.b = (kword_t)mode;
@@ -594,9 +575,6 @@ vfs_read_words(vnode_t node, unsigned int off, kword_t *buf,
         unsigned int provider;
 
         provider = VFS_PROVIDER(node);
-        if (provider != MEMFS_PROVIDER && provider != DTFS_PROVIDER &&
-            provider != D6FS_PROVIDER)
-                return -1;
         req.op = FS_MRES_OP_READ_WORDS;
         req.a = node;
         req.b = (kword_t)off;
@@ -615,9 +593,6 @@ vfs_write_words(vnode_t node, unsigned int off,
         if (vfs_readonly(node))
                 return -1;
         provider = VFS_PROVIDER(node);
-        if (provider != MEMFS_PROVIDER && provider != DTFS_PROVIDER &&
-            provider != D6FS_PROVIDER)
-                return -1;
         req.op = FS_MRES_OP_WRITE_WORDS;
         req.a = node;
         req.b = (kword_t)off;

@@ -376,7 +376,6 @@ d6fs_provider_write_super(struct d6fs_provider_mount *mp,
     unsigned int copy, unsigned int state)
 {
         const kword_t *cached;
-        kword_t block[D6FS_BLOCK_WORDS];
         kword_t raw[D6FS_SUPER_WORDS];
         struct d6fs_super_info next;
         unsigned int i;
@@ -391,12 +390,10 @@ d6fs_provider_write_super(struct d6fs_provider_mount *mp,
             d6fs_reader_get_block(&d6fs_provider_reader,
             mp->super_block[copy], &cached) != 0)
                 return -1;
-        for (i = 0U; i < D6FS_BLOCK_WORDS; ++i)
-                block[i] = cached[i];
         for (i = 0U; i < D6FS_SUPER_WORDS; ++i)
-                block[i] = raw[i];
+                d6fs_provider_reader.cache[i] = raw[i];
         if (d6fs_reader_write_block(&d6fs_provider_reader,
-            mp->super_block[copy], block) != 0)
+            mp->super_block[copy], d6fs_provider_reader.cache) != 0)
                 return -1;
         mp->super = next;
         d6fs_provider_reader.super = next;

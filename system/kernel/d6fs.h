@@ -57,8 +57,8 @@
 #define D6FS_SB_STATE             002U
 #define D6FS_SB_FS_UUID0          003U
 #define D6FS_SB_FS_UUID1          004U
-#define D6FS_SB_DISKSET_UUID0     005U
-#define D6FS_SB_DISKSET_UUID1     006U
+#define D6FS_SB_RESERVED0         005U
+#define D6FS_SB_RESERVED1         006U
 #define D6FS_SB_TOTAL_BLOCKS      007U
 #define D6FS_SB_ROOT_FCB          010U
 #define D6FS_SB_FCB_START         011U
@@ -105,7 +105,6 @@ struct d6fs_super_info {
         kword_t sequence;
         unsigned int state;
         kword_t fs_uuid[2];
-        kword_t diskset_uuid[2];
         kword_t total_blocks;
         unsigned int root_fcb;
         kword_t fcb_start;
@@ -155,14 +154,6 @@ int d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
 int d6fs_super_select(const kword_t a[D6FS_SUPER_WORDS],
     const kword_t b[D6FS_SUPER_WORDS], kword_t diskset_blocks,
     struct d6fs_super_info *info, unsigned int *copyp);
-
-/*
- * Map the linear D6FS address space over unequal striped members.  blocks[]
- * contains the usable blocks on each member after physical swap tails have
- * already been removed by the diskset layer.  Members are numbered in their
- * configured stripe order.  Missing members are not representable here: a
- * diskset is either complete or unusable.
- */
 
 /* Directory entry codec and read-only media helpers. */
 int d6fs_dirent_decode(const kword_t ent[D6FS_DIRENT_WORDS],
