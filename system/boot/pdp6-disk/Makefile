@@ -34,7 +34,7 @@ KCORE_FIXED_NAMES = kcore_entry $(KCORE_C_NAMES) ret_pdp10 \
 	syscall_dispatch mach_user kcore_io kcore_end
 KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))
 KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
-MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io io7_io dcs_io ge_io dpy_io \
+MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io dcs_io ge_io dpy_io \
 	tty_io wcnsls_io ocnsls_io storage_io slv_io memfs memfs_mres memfs_pdp10 \
 	dtfs dtfs_mres dtfs_pdp10 diskset diskset_mres d6fs d6fs_provider d6fs_mres
 MRES_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(MRES_NAMES)))
@@ -48,7 +48,10 @@ KCORE_EMBED_OBJ = $(BUILD)/kcore-embed-v1.dobj
 
 CTY_MRES_OBJ = $(BUILD)/cty-mres.dobj
 CLK_MRES_OBJ = $(BUILD)/clk-mres.dobj
-IO7_MRES_OBJ = $(BUILD)/io7-mres.dobj
+PTR_MRES_OBJ = $(BUILD)/ptr-mres.dobj
+PTP_MRES_OBJ = $(BUILD)/ptp-mres.dobj
+CR_MRES_OBJ = $(BUILD)/cr-mres.dobj
+CP_MRES_OBJ = $(BUILD)/cp-mres.dobj
 DCS_MRES_OBJ = $(BUILD)/dcs-mres.dobj
 GE_MRES_OBJ = $(BUILD)/ge-mres.dobj
 DPY_MRES_OBJ = $(BUILD)/dpy-mres.dobj
@@ -61,7 +64,8 @@ MEMFS_MRES_OBJ = $(BUILD)/memfs-mres.dobj
 DTFS_MRES_OBJ = $(BUILD)/dtfs-mres.dobj
 DISKSET_MRES_OBJ = $(BUILD)/diskset-mres.dobj
 D6FS_MRES_OBJ = $(BUILD)/d6fs-mres.dobj
-MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(IO7_MRES_OBJ) \
+MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PTR_MRES_OBJ) \
+	$(PTP_MRES_OBJ) $(CR_MRES_OBJ) $(CP_MRES_OBJ) \
 	$(DCS_MRES_OBJ) $(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) \
 	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(STORAGE_MRES_OBJ) $(SLV_MRES_OBJ) \
 	$(DTFS_MRES_OBJ) $(DISKSET_MRES_OBJ) $(D6FS_MRES_OBJ)
@@ -147,13 +151,25 @@ $(CLK_MRES_OBJ): $(BUILD)/clk_io.dobj $(KCORE_MAP)
 	    -R $@ -N clk_mres_package -X clk_pi_handler -X clk_ticks -X clk_pi_service \
 	    $(BUILD)/clk_io.dobj
 
-$(IO7_MRES_OBJ): $(BUILD)/io7_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj \
-    $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj $(KCORE_MAP)
-	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/io7-mres.dxr -M $(BUILD)/io7-mres.map \
-	    -R $@ -N io7_mres_package -X io7_pi_handler -X ptr_getchar \
-	    -X ptp_putchar -X cr_read_card -X cp_punch_card \
-	    $(BUILD)/io7_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj \
-	    $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj
+$(PTR_MRES_OBJ): $(BUILD)/ptr_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ptr-mres.dxr -M $(BUILD)/ptr-mres.map \
+	    -R $@ -N ptr_mres_package -X ptr_pi_handler -X ptr_getchar \
+	    $(BUILD)/ptr_io.dobj
+
+$(PTP_MRES_OBJ): $(BUILD)/ptp_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ptp-mres.dxr -M $(BUILD)/ptp-mres.map \
+	    -R $@ -N ptp_mres_package -X ptp_pi_handler -X ptp_putchar \
+	    $(BUILD)/ptp_io.dobj
+
+$(CR_MRES_OBJ): $(BUILD)/cr_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/cr-mres.dxr -M $(BUILD)/cr-mres.map \
+	    -R $@ -N cr_mres_package -X cr_pi_handler -X cr_read_card \
+	    $(BUILD)/cr_io.dobj
+
+$(CP_MRES_OBJ): $(BUILD)/cp_io.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/cp-mres.dxr -M $(BUILD)/cp-mres.map \
+	    -R $@ -N cp_mres_package -X cp_pi_handler -X cp_punch_card \
+	    $(BUILD)/cp_io.dobj
 
 $(DCS_MRES_OBJ): $(BUILD)/dcs_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dcs-mres.dxr -M $(BUILD)/dcs-mres.map \

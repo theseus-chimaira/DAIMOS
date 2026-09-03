@@ -1,22 +1,46 @@
-; cp_io.s -- compact PDP-6 card-punch service.
-;
-; cp_iowd combines the 80-column count and source pointer.  The shared PI7
-; handler advances it and requests eject immediately after column 80.
-
+; cp_io.s -- resident PDP-6 card-punch driver.
         .text
+        .globl devicefs_io_out
+        .globl cp_pi_handler
         .globl cp_punch_card
-        .globl cp_iowd
+        .globl pdp10_pi_handler_return
         .globl pdp10_ret_arg
-        .globl io7_ret_timeout
         .globl pdp10_ret_busy
-        .globl io7_ret_e4
-        .globl io7_ret_card_count
+
+cp_pi_handler:
+        coni 0110,1
+        trne 1,05000
+        jrst cp_pi_done
+        trne 1,0010
+        jrst cp_pi_data
+        trnn 1,0100
+        jrst pdp10_pi_handler_return
+cp_pi_done:
+        cono 0110,0107
+        setzm cp_iowd
+        jrst pdp10_pi_handler_return
+cp_pi_data:
+        move 1,cp_iowd
+        aobjn 1,cp_pi_more
+        move 1,(1)
+        andi 1,07777
+        datao 0110,1
+        aos devicefs_io_out+2
+        setom cp_iowd
+        cono 0110,010207
+        jrst pdp10_pi_handler_return
+cp_pi_more:
+        movem 1,cp_iowd
+        move 1,(1)
+        andi 1,07777
+        datao 0110,1
+        aos devicefs_io_out+2
+        jrst pdp10_pi_handler_return
 
 cp_punch_card:
         jumpe 1,pdp10_ret_arg
         skipe cp_iowd
-        jrst io7_ret_e4
-cp_punch_idle:
+        jrst cp_ret_e4
         subi 1,1
         hrli 1,0777660
         movem 1,cp_iowd
@@ -28,11 +52,18 @@ cp_punch_wait:
         sojg 2,cp_punch_wait
         setzm cp_iowd
         cono 0110,0007
-        jrst io7_ret_timeout
+        jrst cp_ret_timeout
 cp_punch_done:
         consz 0110,05000
         jrst pdp10_ret_busy
-        jrst io7_ret_card_count
+        movei 1,0120
+        popj 017,
+cp_ret_timeout:
+        hrroi 1,0777776
+        popj 017,
+cp_ret_e4:
+        hrroi 1,0777774
+        popj 017,
 
         .bss
 cp_iowd:

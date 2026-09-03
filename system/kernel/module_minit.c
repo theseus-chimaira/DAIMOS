@@ -25,11 +25,14 @@
 #define CLK_X_HANDLER           0U
 #define CLK_X_TICKS             1U
 #define CLK_X_PI_SERVICE        2U
-#define IO7_X_HANDLER            0U
-#define IO7_X_PTR_GETCHAR        1U
-#define IO7_X_PTP_PUTCHAR        2U
-#define IO7_X_CR_READ_CARD       3U
-#define IO7_X_CP_PUNCH_CARD      4U
+#define PTR_X_HANDLER            0U
+#define PTR_X_GETCHAR            1U
+#define PTP_X_HANDLER            0U
+#define PTP_X_PUTCHAR            1U
+#define CR_X_HANDLER             0U
+#define CR_X_READ_CARD           1U
+#define CP_X_HANDLER             0U
+#define CP_X_PUNCH_CARD          1U
 #define DCS_X_HANDLER           0U
 #define DCS_X_GETCHAR           1U
 #define DCS_X_PUTCHAR           2U
@@ -61,8 +64,6 @@ static unsigned int diag_put6_addr;
 static unsigned int diag_putchar_addr;
 static unsigned int clk_pi_handler_addr;
 static unsigned int clk_pi_service_addr;
-static unsigned int io7_mres_base;
-static unsigned int io7_pi_handler_addr;
 static unsigned int storage_mres_base;
 static unsigned int storage_pi_handler_addr;
 static unsigned int storage_dct_handler_addr;
@@ -390,18 +391,6 @@ clk_minit(void)
         minit_diag_hz();
 }
 
-static unsigned int
-io7_install(kword_t name)
-{
-        if (io7_mres_base == 0U) {
-                io7_mres_base = minit_install(name);
-                io7_pi_handler_addr = minit_export(name, io7_mres_base,
-                    IO7_X_HANDLER);
-                minit_register(name, PT_NATIVE_PI_LEVEL, io7_pi_handler_addr);
-        }
-        return io7_mres_base;
-}
-
 void
 ptr_minit(void)
 {
@@ -415,9 +404,11 @@ ptr_minit(void)
                 minit_diag_nodev(name);
                 return;
         }
-        base = io7_install(name);
+        base = minit_install(name);
+        minit_register(name, PT_NATIVE_PI_LEVEL,
+            minit_export(name, base, PTR_X_HANDLER));
         module_service_set(MODULE_SERVICE_PTR_GETCHAR,
-            minit_export(name, base, IO7_X_PTR_GETCHAR));
+            minit_export(name, base, PTR_X_GETCHAR));
         minit_ptr_cono(PT_NATIVE_PI_LEVEL);
         minit_diag_ok(name);
 }
@@ -435,10 +426,12 @@ ptp_minit(void)
                 minit_diag_nodev(name);
                 return;
         }
-        base = io7_install(name);
+        base = minit_install(name);
+        minit_register(name, PT_NATIVE_PI_LEVEL,
+            minit_export(name, base, PTP_X_HANDLER));
         minit_ptp_cono(PT_NATIVE_PI_LEVEL);
         module_service_set(MODULE_SERVICE_PTP_PUTCHAR,
-            minit_export(name, base, IO7_X_PTP_PUTCHAR));
+            minit_export(name, base, PTP_X_PUTCHAR));
         minit_diag_ok(name);
 }
 
@@ -464,11 +457,13 @@ cr_minit(void)
                 minit_diag_notok(name);
                 return;
         }
-        base = io7_install(name);
+        base = minit_install(name);
+        minit_register(name, CARD_NATIVE_PI_LEVEL,
+            minit_export(name, base, CR_X_HANDLER));
         minit_cr_cono((kword_t)CARD_NATIVE_PI_LEVEL | CR_CO_CLR_DRDY |
             CR_CO_CLR_END_CARD | CR_CO_CLR_DATA_MISS);
         module_service_set(MODULE_SERVICE_CR_READ_CARD,
-            minit_export(name, base, IO7_X_CR_READ_CARD));
+            minit_export(name, base, CR_X_READ_CARD));
         minit_diag_ok(name);
 }
 
@@ -492,10 +487,12 @@ cp_minit(void)
                 minit_diag_notok(name);
                 return;
         }
-        base = io7_install(name);
+        base = minit_install(name);
+        minit_register(name, CARD_NATIVE_PI_LEVEL,
+            minit_export(name, base, CP_X_HANDLER));
         minit_cp_cono((kword_t)CARD_NATIVE_PI_LEVEL | CP_CO_CLR_PUNCH);
         module_service_set(MODULE_SERVICE_CP_PUNCH_CARD,
-            minit_export(name, base, IO7_X_CP_PUNCH_CARD));
+            minit_export(name, base, CP_X_PUNCH_CARD));
         minit_diag_ok(name);
 }
 

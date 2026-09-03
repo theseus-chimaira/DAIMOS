@@ -22,7 +22,10 @@
         .globl d6fs_minit
         .globl cty_mres_package
         .globl clk_mres_package
-        .globl io7_mres_package
+        .globl ptr_mres_package
+        .globl ptp_mres_package
+        .globl cr_mres_package
+        .globl cp_mres_package
         .globl dcs_mres_package
         .globl ge_mres_package
         .globl dpy_mres_package
@@ -58,10 +61,10 @@ dsk_minit:
 __minit_table_begin:
         .word cty_minit,,cty_mres_package
         .word clk_minit,,clk_mres_package
-        .word ptr_minit,,io7_mres_package
-        .word ptp_minit,,io7_mres_package
-        .word cr_minit,,io7_mres_package
-        .word cp_minit,,io7_mres_package
+        .word ptr_minit,,ptr_mres_package
+        .word ptp_minit,,ptp_mres_package
+        .word cr_minit,,cr_mres_package
+        .word cp_minit,,cp_mres_package
         .word dcs_minit,,dcs_mres_package
         .word ge_minit,,ge_mres_package
         .word dpy_minit,,dpy_mres_package

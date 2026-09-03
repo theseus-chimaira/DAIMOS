@@ -1,25 +1,26 @@
-; ptp_io.s -- compact resident PDP-6 paper-tape punch service.
-;
-; PI7 completion is handled directly by io7_io.s; this file contains only
-; the synchronous public service and its one-word ownership state.
+; ptp_io.s -- resident PDP-6 paper-tape punch driver.
         .text
-        .globl devicefs_io_in
         .globl devicefs_io_out
+        .globl ptp_pi_handler
         .globl ptp_putchar
-        .globl ptp_state
-        .globl io7_ret_timeout
+        .globl pdp10_pi_handler_return
         .globl pdp10_ret_busy
-        .globl io7_ret_e4
         .globl pdp10_ret_ok
+
+ptp_pi_handler:
+        conso 0100,0010
+        jrst pdp10_pi_handler_return
+        setzm ptp_state
+        cono 0100,0007
+        jrst pdp10_pi_handler_return
 
 ; AC1 = byte.  Return 0, PT_E_BUSY (-3), PT_E_IO (-4), or timeout (-2).
 ptp_putchar:
         skipe ptp_state
         jrst pdp10_ret_busy
-ptp_putchar_idle:
         coni 0100,2
         trne 2,0100
-        jrst io7_ret_e4
+        jrst ptp_ret_e4
         trne 2,0020
         jrst pdp10_ret_busy
         setom ptp_state
@@ -34,7 +35,13 @@ ptp_putchar_wait:
         sojg 2,ptp_putchar_wait
         setzm ptp_state
         cono 0100,0007
-        jrst io7_ret_timeout
+        jrst ptp_ret_timeout
+ptp_ret_timeout:
+        hrroi 1,0777776
+        popj 017,
+ptp_ret_e4:
+        hrroi 1,0777774
+        popj 017,
         .bss
 ptp_state:
         .block 1

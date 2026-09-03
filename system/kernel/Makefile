@@ -26,7 +26,7 @@ MRES_SRCS = memfs.c memfs_mres.c dtfs.c dtfs_mres.c \
 MRES_C_ASM = $(MRES_SRCS:%.c=$(BUILD)/%.s)
 MRES_ASM = $(MRES_C_ASM) $(BUILD)/cty_io.s $(BUILD)/clk_io.s \
 	$(BUILD)/ptr_io.s $(BUILD)/ptp_io.s $(BUILD)/cr_io.s \
-	$(BUILD)/cp_io.s $(BUILD)/io7_io.s $(BUILD)/dcs_io.s $(BUILD)/ge_io.s $(BUILD)/dpy_io.s \
+	$(BUILD)/cp_io.s $(BUILD)/dcs_io.s $(BUILD)/ge_io.s $(BUILD)/dpy_io.s \
 	$(BUILD)/tty_io.s $(BUILD)/dtfs_pdp10.s $(BUILD)/memfs_pdp10.s $(BUILD)/wcnsls_io.s $(BUILD)/ocnsls_io.s $(BUILD)/storage_io.s $(BUILD)/slv_io.s
 
 .DEFAULT_GOAL := kinit

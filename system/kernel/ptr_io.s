@@ -1,18 +1,28 @@
-; ptr_io.s -- compact resident PDP-6 paper-tape reader driver.
-;
-; ptr_state: 0 idle, -1 waiting, byte+1 ready.  The +1 representation lets
-; the direct PI7 handler store DATAI straight to memory and mark readiness
-; with one AOS, including for byte zero.
-
+; ptr_io.s -- resident PDP-6 paper-tape reader driver.
+; The PI7 leaf is local so a PTR-only machine does not load the other IO7
+; devices.  Interrupt handlers preserve AC2/AC3 as required by PI fanout.
         .text
         .globl devicefs_io_in
-        .globl devicefs_io_out
+        .globl ptr_pi_handler
         .globl ptr_getchar
-        .globl ptr_state
+        .globl pdp10_pi_handler_return
         .globl pdp10_ret_arg
-        .globl io7_ret_timeout
         .globl pdp10_ret_busy
         .globl pdp10_ret_ok
+
+ptr_pi_handler:
+        conso 0104,0010
+        jrst pdp10_pi_handler_return
+        skipn ptr_state
+        jrst ptr_pi_prefetch
+        datai 0104,ptr_state
+        aos devicefs_io_in+1
+        aos ptr_state
+        cono 0104,0
+        jrst pdp10_pi_handler_return
+ptr_pi_prefetch:
+        cono 0104,0010
+        jrst pdp10_pi_handler_return
 
 ; AC1 = int *destination.  Return 0 or PT_E_ARG/BUSY/TIMEOUT.
 ptr_getchar:
@@ -21,11 +31,8 @@ ptr_getchar:
         move 2,ptr_state
         jumpg 2,ptr_get_software
         jumpl 2,pdp10_ret_busy
-
-        ; Consume an already-prefetched hardware character without waiting.
         consz 0104,0010
         jrst ptr_get_hardware
-
         setom ptr_state
         cono 0104,0027
         movei 5,0200000
@@ -35,8 +42,7 @@ ptr_get_wait:
         sojg 5,ptr_get_wait
         setzm ptr_state
         cono 0104,0
-        jrst io7_ret_timeout
-
+        jrst ptr_ret_timeout
 ptr_get_hardware:
         datai 0104,3
         aos devicefs_io_in+1
@@ -44,7 +50,6 @@ ptr_get_hardware:
         andi 3,0377
         movem 3,(4)
         jrst ptr_get_ok
-
 ptr_get_software:
         subi 2,1
         andi 2,0377
@@ -52,6 +57,9 @@ ptr_get_software:
         setzm ptr_state
 ptr_get_ok:
         jrst pdp10_ret_ok
+ptr_ret_timeout:
+        hrroi 1,0777776
+        popj 017,
 
         .bss
 ptr_state:
