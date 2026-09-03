@@ -225,11 +225,11 @@ $(DTFS_MRES_OBJ): $(BUILD)/dtfs.dobj $(BUILD)/dtfs_mres.dobj $(BUILD)/dtfs_pdp10
 	    -R $@ -N dtfs_mres_package -X dtfs_mres_dispatch \
 	    $(BUILD)/dtfs.dobj $(BUILD)/dtfs_mres.dobj $(BUILD)/dtfs_pdp10.dobj
 
-$(DISKSET_MRES_OBJ): $(BUILD)/diskset.dobj $(BUILD)/diskset_dispatch.dobj $(KCORE_MAP)
+$(DISKSET_MRES_OBJ): $(BUILD)/diskset_dispatch.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/diskset-mres.dxr -M $(BUILD)/diskset-mres.map \
 	    -R $@ -N diskset_mres_package -X diskset_mres_dispatch \
 	    -X diskset_boot -X diskset_total_blocks \
-	    $(BUILD)/diskset.dobj $(BUILD)/diskset_dispatch.dobj
+	    $(BUILD)/diskset_dispatch.dobj
 
 $(D6FS_MRES_OBJ): $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_mres.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/d6fs-mres.dxr -M $(BUILD)/d6fs-mres.map \

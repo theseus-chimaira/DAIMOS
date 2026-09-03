@@ -22,16 +22,13 @@ dsk270_write_sector:
 
 ; AC4 is the relocated MRES service address.
 dsk270_sector_io:
-        jumpe   4,dsk270_sector_bad
-        jumpe   3,dsk270_sector_bad
+        jumpe   4,pdp10_ret_neg1
+        jumpe   3,pdp10_ret_neg1
         trne    1,0777774              ; units 0..3 only
-        jrst    dsk270_sector_bad
+        jrst    pdp10_ret_neg1
         tlne    2,0777777              ; sector must fit RH18
-        jrst    dsk270_sector_bad
-        caige   2,0130000              ; 02000 cyl * 054 sectors/cyl
-        jrst    dsk270_sector_addr
-
-dsk270_sector_bad:
+        jrst    pdp10_ret_neg1
+        cail    2,0130000              ; 02000 cyl * 054 sectors/cyl
         jrst    pdp10_ret_neg1
 
 dsk270_sector_addr:

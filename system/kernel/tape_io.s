@@ -61,14 +61,12 @@ tape_pi_mtc_idle_check:
 
 tape_pi_done:
         movns storage_state
-        cono 0224,0
-        cono 0210,0
-        cono 0200,0
-        jrst storage_pi_return
+        jrst tape_pi_cleanup
 
 tape_pi_error:
         movei 1,7
         movem 1,storage_state
+tape_pi_cleanup:
         cono 0224,0
         cono 0210,0
         cono 0200,0

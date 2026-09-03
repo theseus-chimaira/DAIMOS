@@ -23,28 +23,22 @@
         .globl pdp10_pi_dispatch_done
 
 storage_pi_handler:
-        skipl storage_state
+        skipl 2,storage_state
         jrst storage_pi_return
-        move 2,storage_state
-        aoje 2,storage_pi_tape_jump
-        aoje 2,storage_pi_tape_jump
-        aoje 2,storage_pi_dsk_jump
-        aoje 2,storage_pi_dsk_jump
+        trne 2,2
         jrst storage_pi_tape_jump
 
-storage_dct_handler:
-        move 2,storage_state
-        aoje 2,storage_dct_tape_jump
-        aoje 2,storage_dct_tape_jump
-        aoje 2,storage_dct_dsk_jump
-        aoje 2,storage_dct_dsk_jump
-        jrst storage_dct_tape_jump
-
-; MINIT rewrites only the RH target of these JRST words.
+; MINIT rewrites only the RH target of these JRST words.  The DSK slot is the
+; natural fall-through for states -3/-4, saving a separate branch.
 storage_pi_dsk_jump:
         jrst storage_pi_return
 storage_pi_tape_jump:
         jrst storage_pi_return
+
+storage_dct_handler:
+        move 2,storage_state
+        trne 2,2
+        jrst storage_dct_tape_jump
 storage_dct_dsk_jump:
         jrst storage_pi_return
 storage_dct_tape_jump:

@@ -192,38 +192,32 @@ dsk_runtime_ioerr:
         hrroi 1,0777773
         popj 017,
 
-; Two pending descriptors per unit.  q0 is next by one-way elevator distance;
-; q1 is the later request.
+; Two pending 18-bit descriptor pointers per unit share one word.  q0 is
+; the LH and is next by one-way elevator distance; q1 is the RH later request.
 dsk_enqueue:
         hlrz 2,(1)
         move 4,2
         lsh 4,-020
-        move 3,4
-        lsh 3,1
-        addi 3,dsk_queue
-        skipn (3)
-        jrst dsk_enqueue_first
-        skipe 1(3)
-        jrst pdp10_ret_busy
-        move 5,(3)
-        movem 1,1(3)
+        hlrz 5,dsk_queue(4)
+        jumpe 5,dsk_enqueue_first
+        hrrz 6,dsk_queue(4)
+        jumpn 6,pdp10_ret_busy
+        hrrm 1,dsk_queue(4)
         move 6,dsk_current_cyl(4)
-        andi 2,0177700
         sub 2,6
         andi 2,0177700
         hlrz 7,(5)
-        andi 7,0177700
         sub 7,6
         andi 7,0177700
         caml 2,7
         jrst dsk_enqueue_ok
-        movem 1,(3)
-        movem 5,1(3)
+        hrlm 1,dsk_queue(4)
+        hrrm 5,dsk_queue(4)
 dsk_enqueue_ok:
         setz 1,
         popj 017,
 dsk_enqueue_first:
-        movem 1,(3)
+        hrlm 1,dsk_queue(4)
         jrst dsk_enqueue_ok
 
 dsk_dispatch:
@@ -231,19 +225,16 @@ dsk_dispatch:
         popj 017,
         skipe storage_state
         popj 017,
-        setz 4,
+        hrlzi 4,0777774             ; AOBJN count -4, unit index 0
 dsk_dispatch_scan:
-        skipn 1,dsk_queue(4)
-        jrst dsk_dispatch_next
-        move 2,dsk_queue+1(4)
-        movem 2,dsk_queue(4)
-        setzm dsk_queue+1(4)
-        jrst dsk_start_active
-dsk_dispatch_next:
-        addi 4,2
-        caie 4,010
-        jrst dsk_dispatch_scan
+        hlrz 1,dsk_queue(4)
+        jumpn 1,dsk_dispatch_found
+        aobjn 4,dsk_dispatch_scan
         popj 017,
+dsk_dispatch_found:
+        hrlz 2,dsk_queue(4)
+        movem 2,dsk_queue(4)
+        jrst dsk_start_active
 
 dsk_start_active:
         move 4,1
@@ -312,4 +303,4 @@ dsk_account_table:
         .bss
 dsk_active_request: .block 1
 dsk_current_cyl: .block 4
-dsk_queue: .block 010
+dsk_queue: .block 4
