@@ -5,6 +5,7 @@
 
 int diskset_boot_discover(kword_t *super_ap, kword_t *super_bp);
 kword_t diskset_boot_blocks(void);
+int diskset_boot_read(kword_t blockno, kword_t block[DISKSET_BLOCK_WORDS]);
 int diskset_boot_writable(void);
 kword_t diskset_boot_log_blocks(void);
 int diskset_boot_log_read(kword_t blockno,

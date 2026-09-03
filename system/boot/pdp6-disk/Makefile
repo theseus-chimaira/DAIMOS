@@ -23,7 +23,7 @@ KINIT_STAMP := $(BUILD)/.kinit-built
 KCORE_STAMP := $(BUILD)/.kcore-built
 KERNEL_INPUTS := $(wildcard $(KERNEL_DIR)/*.c $(KERNEL_DIR)/*.h $(KERNEL_DIR)/*.s)
 
-KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot d6fs_boot diskset_boot logstore kinit_io module_io bootbanner_generated
+KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot d6fs_boot d6fs_super_boot diskset_boot logstore kinit_io module_io bootbanner_generated
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 
@@ -35,8 +35,8 @@ KCORE_FIXED_NAMES = kcore_entry $(KCORE_C_NAMES) ret_pdp10 \
 KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))
 KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
 MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io dcs_io ge_io dpy_io \
-	tty_io wcnsls_io ocnsls_io dsk_io tape_io slv_io memfs memfs_mres memfs_pdp10 \
-	dtfs dtfs_mres dtfs_pdp10 diskset diskset_dispatch d6fs d6fs_provider d6fs_mres
+	tty_io wcnsls_io ocnsls_io dsk_io tape_io slv_io memfs memfs_pdp10 \
+	dtfs dtfs_mres dtfs_pdp10 diskset diskset_dispatch d6fs d6fs_provider d6fs_mres d6fs_pdp10
 MRES_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(MRES_NAMES)))
 
 KCORE_DXR = $(BUILD)/kcore-v1.dxr
@@ -215,10 +215,10 @@ $(SLV_MRES_OBJ): $(BUILD)/slv_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/slv-mres.dxr -M $(BUILD)/slv-mres.map \
 	    -R $@ -N slv_mres_package -X slv_pi_handler $(BUILD)/slv_io.dobj
 
-$(MEMFS_MRES_OBJ): $(BUILD)/memfs.dobj $(BUILD)/memfs_mres.dobj $(BUILD)/memfs_pdp10.dobj $(KCORE_MAP)
+$(MEMFS_MRES_OBJ): $(BUILD)/memfs_pdp10.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/memfs-mres.dxr -M $(BUILD)/memfs-mres.map \
 	    -R $@ -N memfs_mres_package -X memfs_mres_dispatch \
-	    $(BUILD)/memfs.dobj $(BUILD)/memfs_mres.dobj $(BUILD)/memfs_pdp10.dobj
+	    $(BUILD)/memfs_pdp10.dobj
 
 $(DTFS_MRES_OBJ): $(BUILD)/dtfs.dobj $(BUILD)/dtfs_mres.dobj $(BUILD)/dtfs_pdp10.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dtfs-mres.dxr -M $(BUILD)/dtfs-mres.map \
@@ -231,10 +231,10 @@ $(DISKSET_MRES_OBJ): $(BUILD)/diskset_dispatch.dobj $(KCORE_MAP)
 	    -X diskset_boot -X diskset_total_blocks \
 	    $(BUILD)/diskset_dispatch.dobj
 
-$(D6FS_MRES_OBJ): $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_mres.dobj $(KCORE_MAP)
+$(D6FS_MRES_OBJ): $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_mres.dobj $(BUILD)/d6fs_pdp10.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/d6fs-mres.dxr -M $(BUILD)/d6fs-mres.map \
 	    -R $@ -N d6fs_mres_package -X d6fs_mres_dispatch \
-	    $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_mres.dobj
+	    $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_mres.dobj $(BUILD)/d6fs_pdp10.dobj
 
 $(KCORE_EMBED_ASM): kcore-embed-v1.s.in $(KCORE_MAP) | $(BUILD)
 	end=`awk '$$1 == "__kcore_low_init_end" { print $$2 }' $(KCORE_MAP)`; \

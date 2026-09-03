@@ -6,6 +6,5 @@
 
 int d6fs_boot_mount_root(unsigned int flags, vnode_t *rootp);
 kword_t *d6fs_boot_block_buffer(void);
-void d6fs_boot_cache_invalidate(void);
 
 #endif

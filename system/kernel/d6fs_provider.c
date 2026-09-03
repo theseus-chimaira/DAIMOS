@@ -3,33 +3,15 @@
 #define D6FS_PROVIDER_SUPER_DISABLED 2U
 
 struct d6fs_provider_mount {
-        d6fs_read_block_fn read_block;
-        d6fs_write_block_fn write_block;
-        void *opaque;
-        struct d6fs_super_info super;
         kword_t alloc_cursor;
         kword_t super_block[2];
         unsigned int super_copy; /* 0/1 active copy, otherwise disabled */
 };
 
-static struct d6fs_provider_mount d6fs_provider_mounts[VFS_NMOUNT];
+static struct d6fs_provider_mount d6fs_provider_mount_state;
 static struct d6fs_reader d6fs_provider_reader;
-static unsigned int d6fs_provider_reader_mount;
+static unsigned int d6fs_provider_mount_id;
 
-kword_t *
-d6fs_provider_block_buffer(void)
-{
-        return d6fs_provider_reader.cache;
-}
-
-void
-d6fs_provider_cache_invalidate(void)
-{
-        d6fs_provider_reader.cache_block = D6FS_CACHE_INVALID;
-}
-
-static struct d6fs_provider_mount *d6fs_provider_mount_for(
-    vnode_t node);
 static int d6fs_provider_find_slot(vnode_t dir,
     const struct vfs_name *name, unsigned int *slotp,
     struct d6fs_dirent_info *dip);
@@ -38,21 +20,11 @@ static int
 d6fs_provider_load(vnode_t node)
 {
         unsigned int id;
-        struct d6fs_provider_mount *mp;
 
         id = VFS_MOUNT_ID(node);
-        if (id == 0U || id > VFS_NMOUNT)
+        if (id == 0U || id != d6fs_provider_mount_id ||
+            d6fs_provider_reader.read_block == 0)
                 return -1;
-        mp = &d6fs_provider_mounts[id - 1U];
-        if (mp->read_block == 0)
-                return -1;
-        if (d6fs_provider_reader_mount != id) {
-                if (d6fs_reader_init(&d6fs_provider_reader,
-                    mp->read_block, mp->opaque, &mp->super) != 0)
-                        return -1;
-                d6fs_provider_reader.write_block = mp->write_block;
-                d6fs_provider_reader_mount = id;
-        }
         return 0;
 }
 
@@ -62,8 +34,7 @@ d6fs_provider_fcb(vnode_t node, kword_t fcb[D6FS_FCB_WORDS],
 {
         if (d6fs_provider_load(node) != 0 ||
             d6fs_reader_fcb(&d6fs_provider_reader,
-            VFS_INDEX(node), fcb) != 0 ||
-            d6fs_fcb_decode(fcb, info) != 0)
+            VFS_INDEX(node), fcb, info) != 0)
                 return -1;
         return 0;
 }
@@ -76,26 +47,6 @@ d6fs_provider_vtype(unsigned int type)
         if (type == D6FS_TYPE_SYMLINK)
                 return VFS_TYPE_SYMLINK;
         return VFS_TYPE_REG;
-}
-
-static unsigned int
-d6fs_provider_name_chars(const kword_t words[4])
-{
-        unsigned int chars;
-        unsigned int wi;
-        unsigned int si;
-        kword_t ch;
-
-        chars = VFS_NAME_MAX_CHARS;
-        while (chars != 0U) {
-                wi = (chars - 1U) / 6U;
-                si = (chars - 1U) % 6U;
-                ch = (words[wi] >> ((5U - si) * 6U)) & 077UL;
-                if (ch != 0UL)
-                        break;
-                --chars;
-        }
-        return chars;
 }
 
 static int
@@ -119,9 +70,8 @@ d6fs_provider_dirent(vnode_t dir, unsigned int slot,
         rc = d6fs_reader_read_words(&d6fs_provider_reader, fcb, off,
             raw, D6FS_DIRENT_WORDS);
         if (rc != (int)D6FS_DIRENT_WORDS ||
-            !d6fs_dirent_valid(raw,
-            d6fs_provider_reader.super.fcb_count) ||
-            d6fs_dirent_decode(raw, di) != 0)
+            !d6fs_dirent_decode_valid(raw,
+            d6fs_provider_reader.super.fcb_count, di))
                 return -1;
         return 1;
 }
@@ -143,36 +93,27 @@ d6fs_provider_mount_rw(vnode_t target,
             super->root_fcb, flags, &root) != 0)
                 return -1;
         id = VFS_MOUNT_ID(root);
-        mp = &d6fs_provider_mounts[id - 1U];
-        mp->read_block = read_block;
-        mp->write_block = write_block;
-        mp->opaque = opaque;
-        mp->super = *super;
+        if (d6fs_provider_reader.read_block != 0) {
+                (void)vfs_unmount(root);
+                return -1;
+        }
+        mp = &d6fs_provider_mount_state;
         mp->alloc_cursor = super->summary_start + super->summary_blocks;
         mp->super_block[0] = 0UL;
         mp->super_block[1] = 0UL;
         mp->super_copy = D6FS_PROVIDER_SUPER_DISABLED;
         if (mp->alloc_cursor >= super->total_blocks)
                 mp->alloc_cursor = 0UL;
-        d6fs_provider_reader_mount = 0U;
-        if (d6fs_provider_load(root) != 0) {
+        d6fs_provider_mount_id = id;
+        if (d6fs_reader_init(&d6fs_provider_reader,
+            read_block, opaque, super) != 0) {
                 (void)vfs_unmount(root);
-                mp->read_block = 0;
-                mp->write_block = 0;
+                d6fs_provider_mount_id = 0U;
                 return -1;
         }
+        d6fs_provider_reader.write_block = write_block;
         *rootp = root;
         return 0;
-}
-
-int
-d6fs_provider_mount(vnode_t target,
-    d6fs_read_block_fn read_block, void *opaque,
-    const struct d6fs_super_info *super, unsigned int flags,
-    vnode_t *rootp)
-{
-        return d6fs_provider_mount_rw(target, read_block, 0, opaque,
-            super, flags | VFS_MOUNT_RDONLY, rootp);
 }
 
 static int
@@ -225,7 +166,7 @@ d6fs_provider_readdir(vnode_t dir, unsigned int off,
                         continue;
                 for (i = 0U; i < VFS_NAME_WORDS; ++i)
                         ent->name.words[i] = di.name[i];
-                ent->name.chars = d6fs_provider_name_chars(di.name);
+                ent->name.chars = vfs_sixbit_name_chars(di.name, VFS_NAME_MAX_CHARS);
                 ent->type = d6fs_provider_vtype(di.type);
                 return 1;
         }
@@ -234,10 +175,9 @@ d6fs_provider_readdir(vnode_t dir, unsigned int off,
 int
 d6fs_provider_stat(vnode_t node, struct vfs_stat *st)
 {
-        kword_t fcb[D6FS_FCB_WORDS];
         struct d6fs_fcb_info fi;
 
-        if (st == 0 || d6fs_provider_fcb(node, fcb, &fi) != 0 ||
+        if (st == 0 || d6fs_provider_fcb(node, 0, &fi) != 0 ||
             fi.type == D6FS_TYPE_FREE)
                 return -1;
         st->type = d6fs_provider_vtype(fi.type);
@@ -258,10 +198,9 @@ d6fs_provider_stat(vnode_t node, struct vfs_stat *st)
 int
 d6fs_provider_parent(vnode_t node, vnode_t *parentp)
 {
-        kword_t fcb[D6FS_FCB_WORDS];
         struct d6fs_fcb_info fi;
 
-        if (parentp == 0 || d6fs_provider_fcb(node, fcb, &fi) != 0)
+        if (parentp == 0 || d6fs_provider_fcb(node, 0, &fi) != 0)
                 return -1;
         if (VFS_INDEX(node) == d6fs_provider_reader.super.root_fcb) {
                 *parentp = node;
@@ -294,7 +233,7 @@ d6fs_provider_parent_name(vnode_t node, vnode_t *parentp,
                         return -1;
                 if (di.child_fcb != VFS_INDEX(node))
                         continue;
-                namep->chars = d6fs_provider_name_chars(di.name);
+                namep->chars = vfs_sixbit_name_chars(di.name, VFS_NAME_MAX_CHARS);
                 for (i = 0U; i < VFS_NAME_WORDS; ++i)
                         namep->words[i] = di.name[i];
                 *parentp = parent;
@@ -326,28 +265,20 @@ static int
 d6fs_provider_write_super(struct d6fs_provider_mount *mp,
     unsigned int copy, unsigned int state)
 {
-        const kword_t *cached;
-        kword_t raw[D6FS_SUPER_WORDS];
-        struct d6fs_super_info next;
-        unsigned int i;
-
-        if (mp == 0 || copy > 1U || mp->write_block == 0 ||
-            d6fs_provider_reader_mount == 0U)
+        if (mp == 0 || copy > 1U || d6fs_provider_reader.write_block == 0 ||
+            d6fs_provider_mount_id == 0U)
                 return -1;
-        next = mp->super;
-        ++next.sequence;
-        next.state = state;
-        if (d6fs_super_encode(raw, &next) != 0 ||
-            d6fs_reader_get_block(&d6fs_provider_reader,
-            mp->super_block[copy], &cached) != 0)
+        if (d6fs_reader_get_block(&d6fs_provider_reader,
+            mp->super_block[copy]) == 0)
                 return -1;
-        for (i = 0U; i < D6FS_SUPER_WORDS; ++i)
-                d6fs_provider_reader.cache[i] = raw[i];
+        fs_block_workspace[D6FS_SB_SEQUENCE] =
+            d6fs_provider_reader.super.sequence + 1UL;
+        fs_block_workspace[D6FS_SB_STATE] = (kword_t)state;
         if (d6fs_reader_write_block(&d6fs_provider_reader,
-            mp->super_block[copy], d6fs_provider_reader.cache) != 0)
+            mp->super_block[copy], fs_block_workspace) != 0)
                 return -1;
-        mp->super = next;
-        d6fs_provider_reader.super = next;
+        ++d6fs_provider_reader.super.sequence;
+        d6fs_provider_reader.super.state = state;
         mp->super_copy = copy;
         return 0;
 }
@@ -361,9 +292,9 @@ d6fs_provider_enable_state(vnode_t root, kword_t super_a,
         if (selected_copy > 1U || super_a == super_b ||
             d6fs_provider_load(root) != 0)
                 return -1;
-        mp = d6fs_provider_mount_for(root);
-        if (mp == 0 || mp->write_block == 0 ||
-            mp->super.state != D6FS_STATE_CLEAN)
+        mp = &d6fs_provider_mount_state;
+        if (d6fs_provider_reader.write_block == 0 ||
+            d6fs_provider_reader.super.state != D6FS_STATE_CLEAN)
                 return -1;
         mp->super_block[0] = super_a;
         mp->super_block[1] = super_b;
@@ -380,68 +311,88 @@ int
 d6fs_provider_prepare_unmount(vnode_t root)
 {
         struct d6fs_provider_mount *mp;
-        unsigned int id;
-
-        id = VFS_MOUNT_ID(root);
-        mp = d6fs_provider_mount_for(root);
-        if (mp == 0)
+        if (d6fs_provider_load(root) != 0)
                 return -1;
-        if (mp->super_copy != D6FS_PROVIDER_SUPER_DISABLED && mp->write_block != 0 &&
-            d6fs_provider_load(root) == 0 &&
+        mp = &d6fs_provider_mount_state;
+        if (mp->super_copy != D6FS_PROVIDER_SUPER_DISABLED &&
+            d6fs_provider_reader.write_block != 0 &&
             d6fs_provider_write_super(mp, mp->super_copy ^ 1U,
             D6FS_STATE_CLEAN) != 0)
                 return -1;
-        mp->read_block = 0;
-        mp->write_block = 0;
         mp->super_copy = D6FS_PROVIDER_SUPER_DISABLED;
-        if (d6fs_provider_reader_mount == id)
-                d6fs_provider_reader_mount = 0U;
+        d6fs_provider_mount_id = 0U;
+        d6fs_provider_reader.read_block = 0;
+        d6fs_provider_reader.write_block = 0;
+        d6fs_provider_reader.cache_block = D6FS_CACHE_INVALID;
         return 0;
-}
-
-static struct d6fs_provider_mount *
-d6fs_provider_mount_for(vnode_t node)
-{
-        unsigned int id;
-
-        id = VFS_MOUNT_ID(node);
-        if (id == 0U || id > VFS_NMOUNT)
-                return 0;
-        return &d6fs_provider_mounts[id - 1U];
 }
 
 static int
 d6fs_provider_writable(vnode_t node)
 {
-        struct d6fs_provider_mount *mp;
+        return d6fs_provider_load(node) == 0 &&
+            d6fs_provider_reader.write_block != 0;
+}
 
-        mp = d6fs_provider_mount_for(node);
-        return mp != 0 && mp->read_block != 0 && mp->write_block != 0;
+static void
+d6fs_provider_init_fcb(kword_t fcb[D6FS_FCB_WORDS],
+    struct d6fs_fcb_info *fi, unsigned int type, unsigned int mode,
+    unsigned int parent)
+{
+        unsigned int i;
+
+        for (i = 0U; i < D6FS_FCB_WORDS; ++i)
+                fcb[i] = 0UL;
+        fcb[D6FS_FCB_META] = ((kword_t)type << 33) |
+            ((kword_t)(mode & 07777U) << 12);
+        fcb[D6FS_FCB_PARENT] = (kword_t)parent << 18;
+        fi->type = type;
+        fi->flags = 0U;
+        fi->mode = mode & 07777U;
+        fi->tail = 0U;
+        fi->extent_count = 0U;
+        fi->uid = 0U;
+        fi->gid = 0U;
+        fi->size_words = 0UL;
+        fi->mtime = 0UL;
+        fi->parent_fcb = parent;
 }
 
 static int
 d6fs_provider_set_extent(kword_t fcb[D6FS_FCB_WORDS],
     unsigned int index, kword_t start, kword_t blocks)
 {
-        kword_t run;
-        unsigned int high;
+        kword_t length;
+        kword_t mask;
+        unsigned int shift;
 
-        if (index >= D6FS_EXTENTS ||
-            d6fs_extent_encode(start, blocks, &run, &high) != 0)
+        if (index >= D6FS_EXTENTS || start > D6FS_LOGICAL_BLOCK_MASK ||
+            blocks == 0UL || blocks > D6FS_EXTENT_MAX_BLOCKS)
                 return -1;
-        fcb[D6FS_FCB_EXTENT0 + index] = run;
-        return d6fs_extent_high_set(&fcb[D6FS_FCB_LENHIGH], index,
-            high);
+        length = blocks - 1UL;
+        fcb[D6FS_FCB_EXTENT0 + index] = (start << D6FS_EXTENT_LOW_BITS) |
+            (length & D6FS_EXTENT_LOW_MASK);
+        shift = index * D6FS_EXTENT_HIGH_BITS;
+        mask = (kword_t)D6FS_EXTENT_HIGH_MASK << shift;
+        fcb[D6FS_FCB_LENHIGH] = (fcb[D6FS_FCB_LENHIGH] & ~mask) |
+            (((length >> D6FS_EXTENT_LOW_BITS) & D6FS_EXTENT_HIGH_MASK) <<
+            shift);
+        return 0;
 }
 
 static int
 d6fs_provider_clear_extent(kword_t fcb[D6FS_FCB_WORDS],
     unsigned int index)
 {
+        unsigned int shift;
+
         if (index >= D6FS_EXTENTS)
                 return -1;
         fcb[D6FS_FCB_EXTENT0 + index] = 0UL;
-        return d6fs_extent_high_set(&fcb[D6FS_FCB_LENHIGH], index, 0U);
+        shift = index * D6FS_EXTENT_HIGH_BITS;
+        fcb[D6FS_FCB_LENHIGH] &=
+            ~((kword_t)D6FS_EXTENT_HIGH_MASK << shift);
+        return 0;
 }
 
 static kword_t
@@ -461,7 +412,8 @@ d6fs_provider_free_file_tail(const kword_t fcb[D6FS_FCB_WORDS],
         kword_t file_block;
 
         file_block = first_file_block;
-        while (d6fs_file_block(fcb, file_block, &logical) == 0) {
+        while ((logical = d6fs_file_block(fcb, file_block)) !=
+            D6FS_CACHE_INVALID) {
                 if (d6fs_freemap_set(&d6fs_provider_reader,
                     logical, 0U) != 0)
                         return -1;
@@ -498,7 +450,7 @@ d6fs_provider_resize_fcb(vnode_t node,
         kword_t last_start;
         kword_t last_blocks;
         kword_t candidate;
-        unsigned int allocated;
+        int allocated;
         unsigned int high;
         unsigned int i;
 
@@ -506,9 +458,7 @@ d6fs_provider_resize_fcb(vnode_t node,
             new_tail > (fi->type == D6FS_TYPE_SYMLINK ? 6U : 4U) ||
             (new_words == 0UL && new_tail != 0U))
                 return -1;
-        mp = d6fs_provider_mount_for(node);
-        if (mp == 0)
-                return -1;
+        mp = &d6fs_provider_mount_state;
         for (i = 0U; i < D6FS_FCB_WORDS; ++i)
                 old_fcb[i] = fcb[i];
         work = *fi;
@@ -528,26 +478,30 @@ d6fs_provider_resize_fcb(vnode_t node,
                         while (need != 0UL &&
                             last_blocks < D6FS_EXTENT_MAX_BLOCKS) {
                                 candidate = last_start + last_blocks;
-                                if (candidate >= d6fs_provider_reader.super.total_blocks ||
-                                    d6fs_freemap_test(&d6fs_provider_reader,
-                                    candidate, &allocated) != 0 || allocated)
+                                if (candidate >= d6fs_provider_reader.super.total_blocks)
                                         break;
+                                allocated = d6fs_freemap_state(
+                                    &d6fs_provider_reader, candidate);
+                                if (allocated != 0)
+                                        break;
+                                if (d6fs_reader_zero_block(
+                                    &d6fs_provider_reader, candidate) != 0)
+                                        return d6fs_provider_rollback_growth(
+                                            fcb, old_fcb, old_blocks);
                                 if (d6fs_freemap_set(&d6fs_provider_reader,
-                                    candidate, 1U) != 0 ||
-                                    d6fs_reader_zero_block(
-                                    &d6fs_provider_reader, candidate) != 0) {
+                                    candidate, 1U) != 0)
+                                        return d6fs_provider_rollback_growth(
+                                            fcb, old_fcb, old_blocks);
+                                ++last_blocks;
+                                --need;
+                                if (d6fs_provider_set_extent(fcb, i,
+                                    last_start, last_blocks) != 0) {
                                         (void)d6fs_freemap_set(
                                             &d6fs_provider_reader,
                                             candidate, 0U);
                                         return d6fs_provider_rollback_growth(
                                             fcb, old_fcb, old_blocks);
                                 }
-                                ++last_blocks;
-                                --need;
-                                if (d6fs_provider_set_extent(fcb, i,
-                                    last_start, last_blocks) != 0)
-                                        return d6fs_provider_rollback_growth(
-                                            fcb, old_fcb, old_blocks);
                         }
                 }
                 while (need != 0UL) {
@@ -566,10 +520,16 @@ d6fs_provider_resize_fcb(vnode_t node,
                         for (candidate = 0UL; candidate < blocks; ++candidate)
                                 if (d6fs_reader_zero_block(
                                     &d6fs_provider_reader,
-                                    start + candidate) != 0) {
-                                        (void)d6fs_free_run(
-                                            &d6fs_provider_reader, start,
-                                            blocks);
+                                    start + candidate) != 0)
+                                        return d6fs_provider_rollback_growth(
+                                            fcb, old_fcb, old_blocks);
+                        for (candidate = 0UL; candidate < blocks; ++candidate)
+                                if (d6fs_freemap_set(&d6fs_provider_reader,
+                                    start + candidate, 1U) != 0) {
+                                        if (candidate != 0UL)
+                                                (void)d6fs_free_run(
+                                                    &d6fs_provider_reader,
+                                                    start, candidate);
                                         return d6fs_provider_rollback_growth(
                                             fcb, old_fcb, old_blocks);
                                 }
@@ -716,8 +676,7 @@ d6fs_provider_free_fcb(unsigned int *indexp)
         if (indexp == 0)
                 return -1;
         for (i = 1U; i < d6fs_provider_reader.super.fcb_count; ++i) {
-                if (d6fs_reader_fcb(&d6fs_provider_reader, i, fcb) != 0 ||
-                    d6fs_fcb_decode(fcb, &fi) != 0)
+                if (d6fs_reader_fcb(&d6fs_provider_reader, i, fcb, &fi) != 0)
                         continue;
                 if (fi.type == D6FS_TYPE_FREE) {
                         *indexp = i;
@@ -743,8 +702,12 @@ d6fs_provider_write_dirent(vnode_t dir, unsigned int slot,
             (fi.flags & D6FS_FLAG_IMMUTABLE) != 0U)
                 return -1;
         if (di != 0) {
-                if (d6fs_dirent_encode(raw, di) != 0)
-                        return -1;
+                for (i = 0U; i < 4U; ++i)
+                        raw[i] = di->name[i];
+                raw[4] = (di->hash << D6FS_DIRENT_HASH_SHIFT) |
+                    ((kword_t)di->type << D6FS_DIRENT_TYPE_SHIFT) |
+                    (kword_t)di->flags;
+                raw[5] = (kword_t)di->child_fcb << 18;
         } else {
                 for (i = 0U; i < D6FS_DIRENT_WORDS; ++i)
                         raw[i] = 0UL;
@@ -761,59 +724,9 @@ d6fs_provider_write_dirent(vnode_t dir, unsigned int slot,
 }
 
 int
-d6fs_provider_create_type(vnode_t dir,
-    const struct vfs_name *name, unsigned int mode, unsigned int type,
+d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
+    const kword_t *payload, unsigned int value, unsigned int type,
     vnode_t *nodep)
-{
-        kword_t fcb[D6FS_FCB_WORDS];
-        struct d6fs_fcb_info fi;
-        struct d6fs_dirent_info di;
-        unsigned int index;
-        unsigned int slot;
-        unsigned int i;
-
-        if (nodep == 0 || !d6fs_provider_writable(dir) ||
-            (type != D6FS_TYPE_REG && type != D6FS_TYPE_DIR &&
-            type != D6FS_TYPE_SYMLINK) ||
-            d6fs_provider_find_slot(dir, name, 0, 0) == 0 ||
-            d6fs_provider_free_fcb(&index) != 0)
-                return -1;
-        if (d6fs_provider_empty_slot(dir, &slot) < 0)
-                return -1;
-        fi.type = type;
-        fi.flags = 0U;
-        fi.mode = mode & 07777U;
-        fi.tail = 0U;
-        fi.extent_count = 0U;
-        fi.uid = 0U;
-        fi.gid = 0U;
-        fi.size_words = 0UL;
-        fi.mtime = 0UL;
-        fi.parent_fcb = VFS_INDEX(dir);
-        if (d6fs_fcb_encode(fcb, &fi) != 0 ||
-            d6fs_reader_put_fcb(&d6fs_provider_reader, index, fcb) != 0)
-                return -1;
-        for (i = 0U; i < 4U; ++i)
-                di.name[i] = name->words[i];
-        di.hash = d6fs_name_hash24(name->words, name->chars);
-        di.type = type;
-        di.flags = 0U;
-        di.child_fcb = index;
-        if (d6fs_provider_write_dirent(dir, slot, &di) != 0) {
-                for (i = 0U; i < D6FS_FCB_WORDS; ++i)
-                        fcb[i] = 0UL;
-                (void)d6fs_reader_put_fcb(&d6fs_provider_reader,
-                    index, fcb);
-                return -1;
-        }
-        *nodep = VFS_NODE(D6FS_PROVIDER,
-            VFS_MOUNT_KIND(VFS_MOUNT_ID(dir), D6FS_KIND_NODE), index);
-        return 0;
-}
-
-int
-d6fs_provider_symlink(vnode_t dir, const struct vfs_name *name,
-    const kword_t *target, unsigned int target_chars, vnode_t *nodep)
 {
         kword_t fcb[D6FS_FCB_WORDS];
         struct d6fs_fcb_info fi;
@@ -821,43 +734,42 @@ d6fs_provider_symlink(vnode_t dir, const struct vfs_name *name,
         vnode_t node;
         unsigned int index;
         unsigned int slot;
+        unsigned int mode;
         unsigned int words;
         unsigned int tail;
         unsigned int i;
 
-        if (target == 0 || target_chars == 0U || nodep == 0 ||
-            !d6fs_provider_writable(dir) ||
+        if (nodep == 0 || !d6fs_provider_writable(dir) ||
+            (type != D6FS_TYPE_REG && type != D6FS_TYPE_DIR &&
+            type != D6FS_TYPE_SYMLINK) ||
+            (type == D6FS_TYPE_SYMLINK && (payload == 0 || value == 0U)) ||
             d6fs_provider_find_slot(dir, name, 0, 0) == 0 ||
             d6fs_provider_free_fcb(&index) != 0)
                 return -1;
         if (d6fs_provider_empty_slot(dir, &slot) < 0)
                 return -1;
-        words = (target_chars + 5U) / 6U;
-        tail = target_chars - (words - 1U) * 6U;
-        fi.type = D6FS_TYPE_SYMLINK;
-        fi.flags = 0U;
-        fi.mode = 0777U;
-        fi.tail = 0U;
-        fi.extent_count = 0U;
-        fi.uid = 0U;
-        fi.gid = 0U;
-        fi.size_words = 0UL;
-        fi.mtime = 0UL;
-        fi.parent_fcb = VFS_INDEX(dir);
-        if (d6fs_fcb_encode(fcb, &fi) != 0 ||
-            d6fs_reader_put_fcb(&d6fs_provider_reader, index, fcb) != 0)
+
+        mode = type == D6FS_TYPE_SYMLINK ? 0777U : value;
+        d6fs_provider_init_fcb(fcb, &fi, type, mode, VFS_INDEX(dir));
+        if (d6fs_reader_put_fcb(&d6fs_provider_reader, index, fcb) != 0)
                 return -1;
         node = VFS_NODE(D6FS_PROVIDER,
             VFS_MOUNT_KIND(VFS_MOUNT_ID(dir), D6FS_KIND_NODE), index);
-        if (d6fs_provider_resize_fcb(node, fcb, &fi, words, tail) != 0 ||
-            d6fs_provider_fcb(node, fcb, &fi) != 0 ||
-            d6fs_reader_write_words(&d6fs_provider_reader, fcb, 0UL,
-            target, words) != (int)words)
-                goto fail;
+
+        if (type == D6FS_TYPE_SYMLINK) {
+                words = (value + 5U) / 6U;
+                tail = value - (words - 1U) * 6U;
+                if (d6fs_provider_resize_fcb(node, fcb, &fi, words, tail) != 0 ||
+                    d6fs_provider_fcb(node, fcb, &fi) != 0 ||
+                    d6fs_reader_write_words(&d6fs_provider_reader, fcb, 0UL,
+                    payload, words) != (int)words)
+                        goto fail;
+        }
+
         for (i = 0U; i < 4U; ++i)
                 di.name[i] = name->words[i];
         di.hash = d6fs_name_hash24(name->words, name->chars);
-        di.type = D6FS_TYPE_SYMLINK;
+        di.type = type;
         di.flags = 0U;
         di.child_fcb = index;
         if (d6fs_provider_write_dirent(dir, slot, &di) != 0)
@@ -866,7 +778,8 @@ d6fs_provider_symlink(vnode_t dir, const struct vfs_name *name,
         return 0;
 
 fail:
-        if (d6fs_provider_fcb(node, fcb, &fi) == 0)
+        if (type == D6FS_TYPE_SYMLINK &&
+            d6fs_provider_fcb(node, fcb, &fi) == 0)
                 (void)d6fs_provider_resize_fcb(node, fcb, &fi, 0UL, 0U);
         for (i = 0U; i < D6FS_FCB_WORDS; ++i)
                 fcb[i] = 0UL;
@@ -887,7 +800,7 @@ d6fs_provider_unlink(vnode_t dir, const struct vfs_name *name)
         if (!d6fs_provider_writable(dir) ||
             d6fs_provider_find_slot(dir, name, &slot, &di) != 0 ||
             d6fs_reader_fcb(&d6fs_provider_reader, di.child_fcb,
-            fcb) != 0 || d6fs_fcb_decode(fcb, &fi) != 0 ||
+            fcb, &fi) != 0 ||
             (fi.flags & (D6FS_FLAG_NOUNLINK | D6FS_FLAG_IMMUTABLE)) != 0U)
                 return -1;
         for (i = 0U; i < D6FS_FCB_WORDS; ++i)
@@ -941,7 +854,7 @@ d6fs_provider_rename(vnode_t olddir,
             d6fs_provider_find_slot(olddir, oldname, &oldslot, &di) != 0 ||
             d6fs_provider_find_slot(newdir, newname, 0, 0) == 0 ||
             d6fs_reader_fcb(&d6fs_provider_reader, di.child_fcb,
-            fcb) != 0 || d6fs_fcb_decode(fcb, &fi) != 0 ||
+            fcb, &fi) != 0 ||
             (fi.flags & (D6FS_FLAG_NOUNLINK | D6FS_FLAG_IMMUTABLE)) != 0U)
                 return -1;
         old_di = di;
@@ -989,6 +902,21 @@ d6fs_provider_rename(vnode_t olddir,
         return 0;
 }
 
+static unsigned int
+d6fs_provider_tail(unsigned int type, kword_t words, kword_t size_chars)
+{
+        kword_t chars_per_word;
+        kword_t base;
+
+        if (words == 0UL)
+                return 0U;
+        chars_per_word = type == D6FS_TYPE_SYMLINK ? 6UL : 4UL;
+        base = (words - 1UL) * chars_per_word;
+        if (size_chars <= base || size_chars > base + chars_per_word)
+                return (unsigned int)chars_per_word;
+        return (unsigned int)(size_chars - base);
+}
+
 int
 d6fs_provider_truncate(vnode_t node, unsigned int words,
     kword_t size_chars)
@@ -1001,17 +929,7 @@ d6fs_provider_truncate(vnode_t node, unsigned int words,
             (fi.type != D6FS_TYPE_REG && fi.type != D6FS_TYPE_SYMLINK) ||
             (fi.flags & (D6FS_FLAG_APPEND | D6FS_FLAG_IMMUTABLE)) != 0U)
                 return -1;
-        if (words == 0U)
-                tail = 0U;
-        else {
-                kword_t chars_per_word = fi.type == D6FS_TYPE_SYMLINK ?
-                    6UL : 4UL;
-                kword_t base = ((kword_t)words - 1UL) * chars_per_word;
-                if (size_chars <= base || size_chars > base + chars_per_word)
-                        tail = (unsigned int)chars_per_word;
-                else
-                        tail = (unsigned int)(size_chars - base);
-        }
+        tail = d6fs_provider_tail(fi.type, (kword_t)words, size_chars);
         return d6fs_provider_resize_fcb(node, fcb, &fi,
             (kword_t)words, tail);
 }
@@ -1051,18 +969,7 @@ d6fs_provider_write_words(vnode_t node, unsigned int off,
                 return -1;
         need = (kword_t)off + (kword_t)nwords;
         if (need > fi.size_words) {
-                if (need == 0UL)
-                        tail = 0U;
-                else {
-                        kword_t chars_per_word =
-                            fi.type == D6FS_TYPE_SYMLINK ? 6UL : 4UL;
-                        kword_t base = (need - 1UL) * chars_per_word;
-                        if (size_chars <= base ||
-                            size_chars > base + chars_per_word)
-                                tail = (unsigned int)chars_per_word;
-                        else
-                                tail = (unsigned int)(size_chars - base);
-                }
+                tail = d6fs_provider_tail(fi.type, need, size_chars);
                 if (d6fs_provider_resize_fcb(node, fcb, &fi, need,
                     tail) != 0)
                         return -1;

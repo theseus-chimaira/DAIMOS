@@ -26,7 +26,7 @@ unsigned int dtfs_dtc_write_addr;
 
 /* One directory and one transfer block are shared by every DTFS mount. */
 static kword_t dtfs_dir[DTFS_BLOCK_WORDS];
-static kword_t dtfs_block[DTFS_BLOCK_WORDS];
+#define dtfs_block fs_block_workspace
 static unsigned int dtfs_cache_mount;
 static unsigned int dtfs_units[VFS_NMOUNT];
 
@@ -256,12 +256,6 @@ static unsigned int
 dtfs_hdr_first(kword_t h)
 {
         return (unsigned int)((h >> DTFS_FIRST_SHIFT) & DTFS_BLOCKNO_MASK);
-}
-
-static unsigned int
-dtfs_hdr_count(kword_t h)
-{
-        return (unsigned int)(h & DTFS_COUNT_MASK);
 }
 
 static kword_t
@@ -553,8 +547,6 @@ dtfs_readdir(vnode_t dir, unsigned int off,
         unsigned int slot;
         unsigned int seen;
         unsigned int base;
-        unsigned int chars;
-        kword_t w;
 
         if (!dtfs_is_root(dir) || ent == 0 || dtfs_load(dir) != 0)
                 return -1;
@@ -570,21 +562,8 @@ dtfs_readdir(vnode_t dir, unsigned int off,
                     DTFS_NAME2_MASK;
                 ent->name.words[2] = 0;
                 ent->name.words[3] = 0;
-                chars = 11U;
-                while (chars > 6U) {
-                        w = ent->name.words[1] >> (36U - (chars - 6U) * 6U);
-                        if ((w & 077UL) != 0)
-                                break;
-                        --chars;
-                }
-                if (chars == 6U) {
-                        w = ent->name.words[0];
-                        while (chars > 1U && (w & 077UL) == 0) {
-                                --chars;
-                                w >>= 6;
-                        }
-                }
-                ent->name.chars = chars;
+                ent->name.chars = vfs_sixbit_name_chars(ent->name.words,
+                    DTFS_NAME_MAX_CHARS);
                 ent->type = VFS_TYPE_REG;
                 return 1;
         }

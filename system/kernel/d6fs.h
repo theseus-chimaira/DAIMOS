@@ -4,6 +4,7 @@
 #include "kcore.h"
 
 #define D6FS_BLOCK_WORDS          0200U
+extern kword_t fs_block_workspace[D6FS_BLOCK_WORDS];
 #define D6FS_CACHE_INVALID 0777777777777UL
 #define D6FS_EXTENTS              7U
 #define D6FS_FCB_WORDS            020U
@@ -121,32 +122,21 @@ struct d6fs_reader {
         void *opaque;
         struct d6fs_super_info super;
         kword_t cache_block;
-        kword_t cache[D6FS_BLOCK_WORDS];
 };
 
 /*
  * Encode/decode one inline extent.  The run word stores START24|LENLOW12;
  * the caller stores LENHIGH5 in the shared FCB length-high word.
  */
-int d6fs_extent_encode(kword_t start, kword_t blocks,
-    kword_t *runp, unsigned int *highp);
 int d6fs_extent_decode(kword_t run, unsigned int high,
     kword_t *startp, kword_t *blocksp);
 unsigned int d6fs_extent_high_get(kword_t word, unsigned int extent);
-int d6fs_extent_high_set(kword_t *wordp, unsigned int extent,
-    unsigned int high);
 
 /* Fixed 16-word FCB codec and structural validation. */
-int d6fs_fcb_encode(kword_t fcb[D6FS_FCB_WORDS],
-    const struct d6fs_fcb_info *info);
-int d6fs_fcb_decode(const kword_t fcb[D6FS_FCB_WORDS],
-    struct d6fs_fcb_info *info);
-int d6fs_fcb_valid(const kword_t fcb[D6FS_FCB_WORDS],
-    kword_t fs_blocks, unsigned int fcb_count);
+int d6fs_fcb_decode_valid(const kword_t fcb[D6FS_FCB_WORDS],
+    kword_t fs_blocks, unsigned int fcb_count, struct d6fs_fcb_info *info);
 
-/* Fixed 16-word dual-superblock codec and structural validation. */
-int d6fs_super_encode(kword_t sb[D6FS_SUPER_WORDS],
-    const struct d6fs_super_info *info);
+/* Fixed 16-word dual-superblock decode and structural validation. */
 int d6fs_super_decode(const kword_t sb[D6FS_SUPER_WORDS],
     struct d6fs_super_info *info);
 int d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
@@ -156,19 +146,17 @@ int d6fs_super_select(const kword_t a[D6FS_SUPER_WORDS],
     struct d6fs_super_info *info, unsigned int *copyp);
 
 /* Directory entry codec and read-only media helpers. */
-int d6fs_dirent_decode(const kword_t ent[D6FS_DIRENT_WORDS],
-    struct d6fs_dirent_info *info);
-int d6fs_dirent_valid(const kword_t ent[D6FS_DIRENT_WORDS],
-    unsigned int fcb_count);
+int d6fs_dirent_decode_valid(const kword_t ent[D6FS_DIRENT_WORDS],
+    unsigned int fcb_count, struct d6fs_dirent_info *info);
 int d6fs_reader_init(struct d6fs_reader *reader,
     d6fs_read_block_fn read_block, void *opaque,
     const struct d6fs_super_info *super);
-int d6fs_reader_get_block(struct d6fs_reader *reader, kword_t logical,
-    const kword_t **blockp);
+const kword_t *d6fs_reader_get_block(struct d6fs_reader *reader,
+    kword_t logical);
 int d6fs_reader_fcb(struct d6fs_reader *reader, unsigned int fcb_index,
-    kword_t fcb[D6FS_FCB_WORDS]);
-int d6fs_file_block(const kword_t fcb[D6FS_FCB_WORDS],
-    kword_t file_block, kword_t *logical_block);
+    kword_t fcb[D6FS_FCB_WORDS], struct d6fs_fcb_info *info);
+kword_t d6fs_file_block(const kword_t fcb[D6FS_FCB_WORDS],
+    kword_t file_block);
 int d6fs_reader_read_words(struct d6fs_reader *reader,
     const kword_t fcb[D6FS_FCB_WORDS], kword_t off, kword_t *buf,
     unsigned int nwords);
@@ -180,8 +168,6 @@ int d6fs_reader_read_words(struct d6fs_reader *reader,
 #define D6FS_BITS_PER_MAP_BLOCK     (D6FS_BLOCK_WORDS * 36U)
 
 kword_t d6fs_name_hash24(const kword_t words[4], unsigned int chars);
-int d6fs_dirent_encode(kword_t ent[D6FS_DIRENT_WORDS],
-    const struct d6fs_dirent_info *info);
 int d6fs_reader_write_block(struct d6fs_reader *reader,
     kword_t logical, const kword_t block[D6FS_BLOCK_WORDS]);
 int d6fs_reader_zero_block(struct d6fs_reader *reader, kword_t logical);
@@ -190,8 +176,7 @@ int d6fs_reader_write_words(struct d6fs_reader *reader,
     const kword_t *buf, unsigned int nwords);
 int d6fs_reader_put_fcb(struct d6fs_reader *reader,
     unsigned int fcb_index, const kword_t fcb[D6FS_FCB_WORDS]);
-int d6fs_freemap_test(struct d6fs_reader *reader, kword_t logical,
-    unsigned int *allocatedp);
+int d6fs_freemap_state(struct d6fs_reader *reader, kword_t logical);
 int d6fs_freemap_set(struct d6fs_reader *reader, kword_t logical,
     unsigned int allocated);
 int d6fs_alloc_run(struct d6fs_reader *reader, kword_t cursor,

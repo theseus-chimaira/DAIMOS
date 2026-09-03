@@ -25,8 +25,11 @@ kinit_boot(void)
                 kword_t payload[1];
 
                 d6fs_rc = d6fs_boot_mount_root(0U, &d6fs_root);
-                if (d6fs_rc < 0)
+                if (d6fs_rc < 0) {
+                        kinit_put6((kword_t)SIXBIT("MNTERR"));
+                        kinit_newline();
                         return;
+                }
                 scratch = d6fs_boot_block_buffer();
                 if (dsk270_write_addr != 0U &&
                     diskset_boot_log_blocks() >= 3UL) {
@@ -38,10 +41,6 @@ kinit_boot(void)
                                     KBOOT_LOG_SOURCE_BOOT, 0UL, payload, 1U,
                                     scratch);
                         }
-                        /* LOGSTORE deliberately borrows the one-block D6FS
-                         * cache as scratch.  Invalidate after every attempted
-                         * log operation, including failed recovery. */
-                        d6fs_boot_cache_invalidate();
                 }
         }
         proc_table[0].meta =
@@ -55,8 +54,9 @@ kinit_boot(void)
                 };
 
                 if (exec_load_init(p, 1U, init_path, KBOOT_USER_BASE,
-                    KBOOT_USER_LIMIT) != 0)
+                    KBOOT_USER_LIMIT) != 0) {
                         return;
+                }
         }
         mach_enter_user(PROC_MEM_BASE(p), PROC_ENTRY(p),
             PROC_MEM_WORDS(p) -

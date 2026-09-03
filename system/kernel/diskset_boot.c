@@ -222,6 +222,12 @@ diskset_boot_simple(unsigned int op, kword_t logical, const void *buffer)
         return diskset_boot_call(&req);
 }
 
+int
+diskset_boot_read(kword_t blockno, kword_t block[DISKSET_BLOCK_WORDS])
+{
+        return diskset_boot_simple(DISKSET_MRES_OP_READ_BLOCK, blockno, block);
+}
+
 kword_t
 diskset_boot_blocks(void)
 {

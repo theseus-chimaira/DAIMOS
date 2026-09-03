@@ -428,6 +428,379 @@ memfs_node_handle:
         tlo     1,040001
         popj    17,
 
+; Compact namespace/mutation operations.  The slot helpers above return
+; their result directly, avoiding the stack temporaries emitted by C.
+        .globl  memfs_lookup
+memfs_lookup:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        move    010,1                   ; fs
+        move    011,2                   ; dir
+        move    012,3                   ; name
+        move    013,4                   ; nodep
+        jumpe   013,memfs_lookup_fail
+        move    1,012
+        pushj   17,memfs_name_valid
+        jumpe   1,memfs_lookup_fail
+        move    1,010
+        move    2,011
+        pushj   17,memfs_slot
+        jumpl   1,memfs_lookup_fail
+        move    2,1                     ; parent slot
+        move    4,1
+        lsh     4,3
+        add     4,(010)
+        ldb     5,[POINT 3,5(4),20]
+        caie    5,1
+        jrst    memfs_lookup_fail
+        move    1,010
+        move    3,012
+        pushj   17,memfs_find_child
+        jumpl   1,memfs_lookup_fail
+        hrrz    1,1
+        tlo     1,040001
+        movem   1,(013)
+        setz    1,
+        jrst    memfs_lookup_done
+memfs_lookup_fail:
+        seto    1,
+memfs_lookup_done:
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+        .globl  memfs_create
+memfs_create:
+        movei   5,2                     ; VFS_TYPE_REG
+        jrst    memfs_new_node
+        .globl  memfs_mkdir
+memfs_mkdir:
+        movei   5,1                     ; VFS_TYPE_DIR
+memfs_new_node:
+        move    7,-1(17)                ; C arg 5: nodep
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        push    17,014
+        push    17,015
+        move    010,1                   ; fs
+        move    011,2                   ; dir, then parent slot
+        move    012,3                   ; name
+        move    013,4                   ; mode
+        move    014,7                   ; nodep
+        move    015,5                   ; type
+        jumpe   010,memfs_new_fail
+        skipn   5(010)                  ; fs->writable
+        jrst    memfs_new_fail
+        jumpe   014,memfs_new_fail
+        move    1,012
+        pushj   17,memfs_name_valid
+        jumpe   1,memfs_new_fail
+        move    1,010
+        move    2,011
+        pushj   17,memfs_slot
+        jumpl   1,memfs_new_fail
+        move    011,1                   ; parent slot
+        move    4,1
+        lsh     4,3
+        add     4,(010)
+        ldb     6,[POINT 3,5(4),20]
+        caie    6,1
+        jrst    memfs_new_fail
+        move    6,5(4)
+        trnn    6,4                     ; parent writable
+        jrst    memfs_new_fail
+        move    1,010
+        move    2,011
+        move    3,012
+        pushj   17,memfs_find_child
+        jumpge  1,memfs_new_fail        ; duplicate name
+        move    1,010
+        pushj   17,memfs_free_slot
+        jumpl   1,memfs_new_fail
+        move    7,1                     ; new slot
+        move    6,1
+        lsh     6,3
+        add     6,(010)                 ; np
+        move    1,6
+        pushj   17,memfs_clear_node
+        move    1,6
+        hrl     1,012
+        blt     1,4(6)                  ; five-word name
+        hrlz    3,011                   ; parent in high half
+        move    4,015
+        andi    4,7
+        lsh     4,017                   ; type << 15
+        ior     3,4
+        move    4,013
+        andi    4,07777
+        lsh     4,3
+        ior     3,4
+        iori    3,5                     ; USED|WRITABLE
+        movem   3,5(6)
+        move    4,4(010)                ; used_words
+        hrlzm   4,7(6)
+        move    1,7
+        pushj   17,memfs_node_handle
+        movem   1,(014)
+        setz    1,
+        jrst    memfs_new_done
+memfs_new_fail:
+        seto    1,
+memfs_new_done:
+        pop     17,015
+        pop     17,014
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+        .globl  memfs_unlink
+memfs_unlink:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        move    010,1                   ; fs
+        move    011,2                   ; dir, then parent
+        move    012,3                   ; name
+        jumpe   010,memfs_unlink_fail
+        skipn   5(010)
+        jrst    memfs_unlink_fail
+        move    1,012
+        pushj   17,memfs_name_valid
+        jumpe   1,memfs_unlink_fail
+        move    1,010
+        move    2,011
+        pushj   17,memfs_slot
+        jumpl   1,memfs_unlink_fail
+        move    011,1
+        move    4,1
+        lsh     4,3
+        add     4,(010)
+        ldb     5,[POINT 3,5(4),20]
+        caie    5,1
+        jrst    memfs_unlink_fail
+        move    5,5(4)
+        trnn    5,4
+        jrst    memfs_unlink_fail
+        move    1,010
+        move    2,011
+        move    3,012
+        pushj   17,memfs_find_child
+        jumpl   1,memfs_unlink_fail
+        move    013,1                   ; victim slot
+        move    2,1
+        move    1,010
+        pushj   17,memfs_has_children
+        jumpn   1,memfs_unlink_fail
+        move    4,013
+        lsh     4,3
+        add     4,(010)
+        ldb     5,[POINT 3,5(4),20]
+        caie    5,2
+        jrst    memfs_unlink_clear
+        move    1,010
+        move    2,013
+        movei   3,0
+        pushj   17,memfs_resize
+        jumpn   1,memfs_unlink_fail
+memfs_unlink_clear:
+        move    1,013
+        lsh     1,3
+        add     1,(010)
+        pushj   17,memfs_clear_node
+        setz    1,
+        jrst    memfs_unlink_done
+memfs_unlink_fail:
+        seto    1,
+memfs_unlink_done:
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+        .globl  memfs_rename
+memfs_rename:
+        move    7,-1(17)                ; C arg 5: newname
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        push    17,014
+        push    17,015
+        push    17,016
+        move    010,1                   ; fs
+        move    011,2                   ; olddir, later victim slot
+        move    012,3                   ; oldname
+        move    013,4                   ; newdir
+        move    014,7                   ; newname
+        jumpe   010,memfs_rename_fail
+        skipn   5(010)
+        jrst    memfs_rename_fail
+        move    1,012
+        pushj   17,memfs_name_valid
+        jumpe   1,memfs_rename_fail
+        move    1,014
+        pushj   17,memfs_name_valid
+        jumpe   1,memfs_rename_fail
+        move    1,010
+        move    2,011
+        pushj   17,memfs_slot
+        jumpl   1,memfs_rename_fail
+        move    015,1                   ; old parent
+        move    1,010
+        move    2,013
+        pushj   17,memfs_slot
+        jumpl   1,memfs_rename_fail
+        move    016,1                   ; new parent
+        ; Both parents must be writable directories.
+        move    4,015
+        lsh     4,3
+        add     4,(010)
+        ldb     5,[POINT 3,5(4),20]
+        caie    5,1
+        jrst    memfs_rename_fail
+        move    5,5(4)
+        trnn    5,4
+        jrst    memfs_rename_fail
+        move    4,016
+        lsh     4,3
+        add     4,(010)
+        ldb     5,[POINT 3,5(4),20]
+        caie    5,1
+        jrst    memfs_rename_fail
+        move    5,5(4)
+        trnn    5,4
+        jrst    memfs_rename_fail
+        move    1,010
+        move    2,015
+        move    3,012
+        pushj   17,memfs_find_child
+        jumpl   1,memfs_rename_fail
+        move    011,1                   ; victim slot
+        move    1,010
+        move    2,016
+        move    3,014
+        pushj   17,memfs_find_child
+        jumpge  1,memfs_rename_fail     ; destination exists
+        move    4,011
+        lsh     4,3
+        add     4,(010)                 ; victim np
+        ldb     5,[POINT 3,5(4),20]
+        caie    5,1
+        jrst    memfs_rename_apply
+        ; Prevent moving a directory below itself.
+        move    7,016
+memfs_rename_up:
+        camn    7,011
+        jrst    memfs_rename_fail
+        jumpe   7,memfs_rename_apply
+        caml    7,1(010)
+        jrst    memfs_rename_fail
+        move    5,7
+        lsh     5,3
+        add     5,(010)
+        move    6,5(5)
+        trnn    6,1
+        jrst    memfs_rename_fail
+        hlrz    7,6
+        jrst    memfs_rename_up
+memfs_rename_apply:
+        move    4,011
+        lsh     4,3
+        add     4,(010)
+        hrlm    016,5(4)
+        move    1,4
+        hrl     1,014
+        blt     1,4(4)
+        setz    1,
+        jrst    memfs_rename_done
+memfs_rename_fail:
+        seto    1,
+memfs_rename_done:
+        pop     17,016
+        pop     17,015
+        pop     17,014
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+        .globl  memfs_chmod
+memfs_chmod:
+        push    17,010
+        push    17,011
+        move    010,1
+        move    011,3                   ; mode
+        jumpe   010,memfs_chmod_fail
+        skipn   5(010)
+        jrst    memfs_chmod_fail
+        pushj   17,memfs_slot           ; fs already AC1, node AC2
+        jumpl   1,memfs_chmod_fail
+        lsh     1,3
+        add     1,(010)
+        move    4,5(1)
+        trnn    4,4
+        jrst    memfs_chmod_fail
+        move    4,011
+        andi    4,07777
+        dpb     4,[POINT 12,5(1),32]
+        setz    1,
+        jrst    memfs_chmod_done
+memfs_chmod_fail:
+        seto    1,
+memfs_chmod_done:
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+        .globl  memfs_truncate_words
+memfs_truncate_words:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        move    010,1
+        move    011,3                   ; words
+        move    012,4                   ; size chars
+        pushj   17,memfs_slot           ; node in AC2
+        jumpl   1,memfs_truncate_fail
+        move    013,1                   ; slot
+        move    4,1
+        lsh     4,3
+        add     4,(010)
+        ldb     5,[POINT 3,5(4),20]
+        caie    5,2
+        jrst    memfs_truncate_fail
+        move    1,010
+        move    2,013
+        move    3,011
+        pushj   17,memfs_resize
+        jumpn   1,memfs_truncate_fail
+        move    4,013
+        lsh     4,3
+        add     4,(010)
+        movem   012,6(4)
+        setz    1,
+        jrst    memfs_truncate_done
+memfs_truncate_fail:
+        seto    1,
+memfs_truncate_done:
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
 ; int memfs_readdir(const struct memfs *fs, vnode_t dir,
 ;     unsigned int off, struct vfs_dirent *ent)
         .globl  memfs_readdir
@@ -560,3 +933,165 @@ memfs_parent_ok:
         popj    17,
 memfs_parent_fail:
         jrst    pdp10_ret_neg1
+
+; Singleton resident MEMFS state.  A MEMFS MRES represents exactly one mounted
+; in-memory filesystem; carrying a context pointer through a C switch was dead
+; generality.
+        .bss
+        .globl  memfs_mres_fs
+memfs_mres_fs:
+        .block  7
+        .text
+
+        .globl  fs_mres_context_vector_dispatch
+        .globl  memfs_mres_dispatch
+        .globl  memfs_lookup
+        .globl  memfs_create
+        .globl  memfs_mkdir
+        .globl  memfs_unlink
+        .globl  memfs_rename
+        .globl  memfs_chmod
+        .globl  memfs_truncate_words
+        .globl  memfs_read_words
+        .globl  memfs_write_words
+
+; Apply the caller vnode's mount-id bits to a successful returned vnode.
+memfs_mres_mount_result:
+        and     1,[07700000000]
+        iorm    1,(2)
+        popj    17,
+
+memfs_mres_lookup:
+        push    17,010
+        push    17,011
+        move    010,2                    ; source vnode / mount id
+        move    011,4                    ; result vnode pointer
+        pushj   17,memfs_lookup
+        jumpn   1,memfs_mres_lookup_done
+        move    1,010
+        move    2,011
+        pushj   17,memfs_mres_mount_result
+        setz    1,
+memfs_mres_lookup_done:
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+memfs_mres_parent_no_name:
+        setz    4,
+        jrst    memfs_mres_parent
+
+memfs_mres_parent:
+        push    17,010
+        push    17,011
+        move    010,2                    ; source vnode
+        move    011,3                    ; parent result pointer
+        pushj   17,memfs_parent
+        jumpn   1,memfs_mres_parent_done
+        move    1,010
+        move    2,011
+        pushj   17,memfs_mres_mount_result
+        setz    1,
+memfs_mres_parent_done:
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+memfs_mres_create:
+        push    17,010
+        push    17,011
+        move    010,2                    ; source directory vnode
+        move    011,-3(17)               ; incoming arg 5: nodep
+        push    17,011
+        pushj   17,memfs_create
+        sub     17,[1,,1]
+        jumpn   1,memfs_mres_create_done
+        move    1,010
+        move    2,011
+        pushj   17,memfs_mres_mount_result
+        setz    1,
+memfs_mres_create_done:
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+memfs_mres_mkdir:
+        push    17,010
+        push    17,011
+        move    010,2
+        move    011,-3(17)
+        push    17,011
+        pushj   17,memfs_mkdir
+        sub     17,[1,,1]
+        jumpn   1,memfs_mres_mkdir_done
+        move    1,010
+        move    2,011
+        pushj   17,memfs_mres_mount_result
+        setz    1,
+memfs_mres_mkdir_done:
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; Initialize singleton state from the KINIT-provided seven-word struct.
+memfs_mres_init:
+        jumpe   2,memfs_mres_bad
+        movei   3,memfs_mres_fs
+        movei   4,7
+memfs_mres_init_loop:
+        move    5,(2)
+        movem   5,(3)
+        addi    2,1
+        addi    3,1
+        sojg    4,memfs_mres_init_loop
+        setz    1,
+        popj    17,
+
+; MEMINFO expects FS_MRES_OP_MEMFS_USAGE to overwrite request a/b.
+memfs_mres_usage:
+        move    2,memfs_mres_fs+4       ; used_words
+        movem   2,1(1)
+        move    2,memfs_mres_fs+3       ; pool_words
+        movem   2,2(1)
+        setz    1,
+        popj    17,
+
+memfs_mres_bad:
+        seto    1,
+        popj    17,
+
+memfs_mres_dispatch:
+        jumpe   1,memfs_mres_bad
+        move    2,(1)
+        caie    2,023                   ; 19 decimal: MEMFS_INIT
+        jrst    memfs_mres_not_init
+        move    2,1(1)
+        jrst    memfs_mres_init
+memfs_mres_not_init:
+        caie    2,024                   ; 20 decimal: MEMFS_USAGE
+        jrst    memfs_mres_vector_call
+        jrst    memfs_mres_usage
+memfs_mres_vector_call:
+        move    2,[memfs_mres_vector]
+        movei   3,memfs_mres_fs
+        jrst    fs_mres_context_vector_dispatch
+
+        .data
+memfs_mres_vector:
+        .word   017                      ; operations 1..15
+        .word   memfs_mres_lookup        ; 1 LOOKUP
+        .word   memfs_readdir            ; 2 READDIR
+        .word   memfs_stat               ; 3 STAT
+        .word   memfs_mres_parent_no_name ; 4 PARENT
+        .word   memfs_mres_parent        ; 5 PARENT_NAME
+        .word   memfs_mres_create        ; 6 CREATE
+        .word   memfs_mres_mkdir         ; 7 MKDIR
+        .word   0                        ; 8 SYMLINK
+        .word   memfs_unlink             ; 9 UNLINK
+        .word   memfs_rename             ; 10 RENAME
+        .word   memfs_truncate_words     ; 11 TRUNCATE
+        .word   memfs_chmod              ; 12 CHMOD
+        .word   memfs_read_words         ; 13 READ_WORDS
+        .word   memfs_write_words        ; 14 WRITE_WORDS
+        .word   pdp10_ret_zero           ; 15 SYNC
+        .text

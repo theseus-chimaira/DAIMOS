@@ -8,7 +8,7 @@ VERSION_FILE := $(PROJECT_ROOT)/VERSION
 DAIMON_VERSION := $(strip $(shell cat $(VERSION_FILE)))
 
 
-KINIT_SRCS = kinit.c kinit_diag.c module_minit.c kfs_boot.c kinit_boot.c d6fs_boot.c diskset_boot.c logstore.c
+KINIT_SRCS = kinit.c kinit_diag.c module_minit.c kfs_boot.c kinit_boot.c d6fs_boot.c d6fs_super_boot.c diskset_boot.c logstore.c
 KINIT_C_ASM = $(KINIT_SRCS:%.c=$(BUILD)/%.s)
 KINIT_ASM = $(KINIT_C_ASM) $(BUILD)/kinit_io.s $(BUILD)/module_io.s $(BUILD)/bootbanner_generated.s
 KINIT_CPPFLAGS = -DDAIMON_VERSION_TEXT='"V$(DAIMON_VERSION)  "'
@@ -22,13 +22,13 @@ KCORE_C_ASM = $(KCORE_C_SRCS:%.c=$(BUILD)/%.s)
 KCORE_FIXED_ASM = $(BUILD)/kcore_entry.s $(KCORE_C_ASM) \
 	$(BUILD)/ret_pdp10.s $(BUILD)/dsk270_pdp10.s $(BUILD)/kfmt_pdp10.s $(BUILD)/vfs_pdp10.s $(BUILD)/fs_mres_pdp10.s $(BUILD)/file_pdp10.s $(BUILD)/proc_pdp10.s $(BUILD)/device_state_pdp10.s $(BUILD)/procfs_pdp10.s $(BUILD)/devicefs_pdp10.s $(BUILD)/syscall_info_pdp10.s $(BUILD)/syscall_dispatch.s $(BUILD)/mach_user.s $(BUILD)/kcore_io.s $(BUILD)/storage_router.s $(BUILD)/kcore_end.s
 
-MRES_SRCS = memfs.c memfs_mres.c dtfs.c dtfs_mres.c \
+MRES_SRCS = memfs.c dtfs.c dtfs_mres.c \
 	d6fs.c d6fs_provider.c d6fs_mres.c
 MRES_C_ASM = $(MRES_SRCS:%.c=$(BUILD)/%.s)
 MRES_ASM = $(MRES_C_ASM) $(BUILD)/cty_io.s $(BUILD)/clk_io.s \
 	$(BUILD)/ptr_io.s $(BUILD)/ptp_io.s $(BUILD)/cr_io.s \
 	$(BUILD)/cp_io.s $(BUILD)/diskset_dispatch.s $(BUILD)/dcs_io.s $(BUILD)/ge_io.s $(BUILD)/dpy_io.s \
-	$(BUILD)/tty_io.s $(BUILD)/dtfs_pdp10.s $(BUILD)/memfs_pdp10.s $(BUILD)/wcnsls_io.s $(BUILD)/ocnsls_io.s $(BUILD)/dsk_io.s $(BUILD)/tape_io.s $(BUILD)/slv_io.s
+	$(BUILD)/tty_io.s $(BUILD)/dtfs_pdp10.s $(BUILD)/memfs_pdp10.s $(BUILD)/d6fs_pdp10.s $(BUILD)/wcnsls_io.s $(BUILD)/ocnsls_io.s $(BUILD)/dsk_io.s $(BUILD)/tape_io.s $(BUILD)/slv_io.s
 
 .DEFAULT_GOAL := kinit
 .PHONY: kinit kcore clean

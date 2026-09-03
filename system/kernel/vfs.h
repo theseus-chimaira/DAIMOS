@@ -89,6 +89,8 @@ int vfs_name_set6(struct vfs_name *name, kword_t word,
     unsigned int chars);
 int vfs_name_is6(const struct vfs_name *name, kword_t word,
     unsigned int chars);
+unsigned int vfs_sixbit_name_chars(const kword_t *words,
+    unsigned int maxchars);
 int vfs_sixbit_readchar(kword_t word, unsigned int nchars, kword_t off,
     unsigned int *chp);
 
@@ -129,5 +131,8 @@ int vfs_unmount(vnode_t root);
 int vfs_readonly(vnode_t node);
 vnode_t vfs_root(void);
 int vfs_set_root(vnode_t node);
+
+/* Shared 128-word synchronous filesystem transfer workspace. */
+extern kword_t fs_block_workspace[0200];
 
 #endif

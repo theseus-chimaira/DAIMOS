@@ -23,11 +23,12 @@
 #define FS_MRES_OP_FORMAT_UNIT         17U
 #define FS_MRES_OP_MOUNT_UNIT          18U
 #define FS_MRES_OP_MEMFS_INIT          19U
-#define FS_MRES_OP_D6FS_BLOCK_BUFFER   21U
-#define FS_MRES_OP_D6FS_CACHE_INVALID  22U
-#define FS_MRES_OP_D6FS_MOUNT_ROOT     27U
-#define FS_MRES_OP_DTFS_BIND            30U
-#define FS_MRES_OP_MEMFS_USAGE          31U
+/* Provider-private operation 20 is intentionally reused.  Calls are already
+ * directed to a specific provider MRES, so global sparse numbering only wastes
+ * resident vector words. */
+#define FS_MRES_OP_D6FS_MOUNT_ROOT     20U
+#define FS_MRES_OP_DTFS_BIND            20U
+#define FS_MRES_OP_MEMFS_USAGE          20U
 
 struct fs_mres_request {
         kword_t op;

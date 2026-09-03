@@ -81,3 +81,38 @@ vfs_sixchar_eof:
         jrst    pdp10_ret_zero
 vfs_sixchar_fail:
         jrst    pdp10_ret_neg1
+
+; unsigned int vfs_sixbit_name_chars(words, maxchars)
+; Return the last nonzero character position in a packed SIXBIT name.
+        .globl  vfs_sixbit_name_chars
+vfs_sixbit_name_chars:
+        jumpe   1,vfs_name_chars_zero
+        jumpe   2,vfs_name_chars_zero
+        caile   2,030                    ; VFS names are at most 24 chars
+        jrst    vfs_name_chars_zero
+        move    3,[POINT 6,0]
+        hrr     3,1
+        setz    4,                       ; last nonzero position
+        setz    5,                       ; current position
+vfs_name_chars_loop:
+        ildb    6,3
+        addi    5,1
+        jumpe   6,vfs_name_chars_next
+        move    4,5
+vfs_name_chars_next:
+        came    5,2
+        jrst    vfs_name_chars_loop
+        move    1,4
+        popj    17,
+vfs_name_chars_zero:
+        setz    1,
+        popj    17,
+
+; One 128-word filesystem transfer workspace.  Filesystem providers serialize
+; through the resident VFS entry path, so D6FS and DTFS must not each reserve
+; a private full-block transfer buffer.
+        .bss
+        .globl  fs_block_workspace
+fs_block_workspace:
+        .block  0200
+        .text

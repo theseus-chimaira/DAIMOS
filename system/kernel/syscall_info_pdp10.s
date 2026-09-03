@@ -50,7 +50,7 @@ sys_meminfo_file_loop:
         movem   3,1(2)
 ; Reuse info[2..8] as the seven-word filesystem request.  These fields are
 ; filled with their final values after the optional MEMFS call returns.
-        movei   3,037                  ; FS_MRES_OP_MEMFS_USAGE
+        movei   3,024                  ; FS_MRES_OP_MEMFS_USAGE
         movem   3,2(2)
         setzm   3(2)
         setzm   4(2)

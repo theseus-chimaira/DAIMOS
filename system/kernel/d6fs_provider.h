@@ -7,13 +7,7 @@
 #define D6FS_PROVIDER        6U
 #define D6FS_KIND_NODE       1U
 
-int d6fs_provider_mount(vnode_t target,
-    d6fs_read_block_fn read_block, void *opaque,
-    const struct d6fs_super_info *super, unsigned int flags,
-    vnode_t *rootp);
-/* Shared block buffer used for mount probing and the active reader cache. */
-kword_t *d6fs_provider_block_buffer(void);
-void d6fs_provider_cache_invalidate(void);
+
 int d6fs_provider_mount_rw(vnode_t target,
     d6fs_read_block_fn read_block, d6fs_write_block_fn write_block,
     void *opaque, const struct d6fs_super_info *super, unsigned int flags,
@@ -32,10 +26,9 @@ int d6fs_provider_sync(vnode_t node);
 int d6fs_provider_enable_state(vnode_t root, kword_t super_a,
     kword_t super_b, unsigned int selected_copy);
 int d6fs_provider_prepare_unmount(vnode_t root);
-int d6fs_provider_create_type(vnode_t dir, const struct vfs_name *name,
-    unsigned int mode, unsigned int type, vnode_t *nodep);
-int d6fs_provider_symlink(vnode_t dir, const struct vfs_name *name,
-    const kword_t *target, unsigned int target_chars, vnode_t *nodep);
+int d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
+    const kword_t *payload, unsigned int value, unsigned int type,
+    vnode_t *nodep);
 int d6fs_provider_unlink(vnode_t dir, const struct vfs_name *name);
 int d6fs_provider_rename(vnode_t olddir,
     const struct vfs_name *oldname, vnode_t newdir,
