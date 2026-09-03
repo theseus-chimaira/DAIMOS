@@ -182,8 +182,6 @@ int d6fs_reader_read_words(struct d6fs_reader *reader,
 kword_t d6fs_name_hash24(const kword_t words[4], unsigned int chars);
 int d6fs_dirent_encode(kword_t ent[D6FS_DIRENT_WORDS],
     const struct d6fs_dirent_info *info);
-int d6fs_reader_set_writer(struct d6fs_reader *reader,
-    d6fs_write_block_fn write_block);
 int d6fs_reader_write_block(struct d6fs_reader *reader,
     kword_t logical, const kword_t block[D6FS_BLOCK_WORDS]);
 int d6fs_reader_zero_block(struct d6fs_reader *reader, kword_t logical);

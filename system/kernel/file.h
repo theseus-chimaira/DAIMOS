@@ -11,7 +11,7 @@
 #define FILE_DEVICE_IO       VFS_DEVICE_IO
 
 #ifndef FILE_NFILE
-#define FILE_NFILE           32U
+#define FILE_NFILE           13U
 #endif
 #define FILE_FD_FIRST        3U
 #define FILE_FD_MAX          15U
@@ -22,13 +22,9 @@ struct file {
         kword_t meta;
 };
 
-#define FILE_META_USED       0001U
-#define FILE_META_DIR        0002U
-#define FILE_META_FLAGS_SHIFT 2U
-#define FILE_META_FD_SHIFT   8U
-#define FILE_META_DESC_SHIFT 14U
-#define FILE_META_FLAGS(m)   (((m) >> FILE_META_FLAGS_SHIFT) & 077U)
-#define FILE_META_FD(m)      (((m) >> FILE_META_FD_SHIFT) & 077U)
+#define FILE_META_DIR        0100U
+#define FILE_META_DESC_SHIFT 7U
+#define FILE_META_FLAGS(m)   ((m) & 077U)
 #define FILE_META_DESC(m)    (((m) >> FILE_META_DESC_SHIFT) & 077U)
 
 /* DAIMOS 1.x has one live user process, so FILE state is global. */

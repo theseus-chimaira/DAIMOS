@@ -224,7 +224,7 @@ file_close(int fd)
         still_open = 0;
         if (desc != 0U)
                 for (i = 0U; i < FILE_NFILE; ++i)
-                        if ((file_table[i].meta & FILE_META_USED) != 0U &&
+                        if (file_table[i].node != VFS_NODE_NONE &&
                             FILE_META_DESC(file_table[i].meta) == desc) {
                                 still_open = 1;
                                 break;
@@ -280,9 +280,8 @@ file_close_all(void)
         unsigned int i;
 
         for (i = 0U; i < FILE_NFILE; ++i)
-                if ((file_table[i].meta & FILE_META_USED) != 0U)
-                        (void)file_close((int)FILE_META_FD(
-                            file_table[i].meta));
+                if (file_table[i].node != VFS_NODE_NONE)
+                        (void)file_close((int)(FILE_FD_FIRST + i));
 }
 
 

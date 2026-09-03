@@ -32,10 +32,8 @@ int d6fs_provider_sync(vnode_t node);
 int d6fs_provider_enable_state(vnode_t root, kword_t super_a,
     kword_t super_b, unsigned int selected_copy);
 int d6fs_provider_prepare_unmount(vnode_t root);
-int d6fs_provider_create(vnode_t dir, const struct vfs_name *name,
-    unsigned int mode, vnode_t *nodep);
-int d6fs_provider_mkdir(vnode_t dir, const struct vfs_name *name,
-    unsigned int mode, vnode_t *nodep);
+int d6fs_provider_create_type(vnode_t dir, const struct vfs_name *name,
+    unsigned int mode, unsigned int type, vnode_t *nodep);
 int d6fs_provider_symlink(vnode_t dir, const struct vfs_name *name,
     const kword_t *target, unsigned int target_chars, vnode_t *nodep);
 int d6fs_provider_unlink(vnode_t dir, const struct vfs_name *name);

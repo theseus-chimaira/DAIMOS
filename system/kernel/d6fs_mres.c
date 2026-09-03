@@ -130,14 +130,14 @@ d6fs_mres_dispatch(struct fs_mres_request *r)
                     (vnode_t *)(unsigned long)r->b,
                     (struct vfs_name *)(unsigned long)r->c);
         case FS_MRES_OP_CREATE:
-                return d6fs_provider_create(r->a,
+                return d6fs_provider_create_type(r->a,
                     (const struct vfs_name *)(unsigned long)r->b,
-                    (unsigned int)r->c,
+                    (unsigned int)r->c, D6FS_TYPE_REG,
                     (vnode_t *)(unsigned long)r->d);
         case FS_MRES_OP_MKDIR:
-                return d6fs_provider_mkdir(r->a,
+                return d6fs_provider_create_type(r->a,
                     (const struct vfs_name *)(unsigned long)r->b,
-                    (unsigned int)r->c,
+                    (unsigned int)r->c, D6FS_TYPE_DIR,
                     (vnode_t *)(unsigned long)r->d);
         case FS_MRES_OP_SYMLINK:
                 return d6fs_provider_symlink(r->a,

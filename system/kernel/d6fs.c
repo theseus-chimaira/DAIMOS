@@ -367,8 +367,8 @@ d6fs_reader_init(struct d6fs_reader *reader,
         return 0;
 }
 
-static int
-d6fs_reader_block(struct d6fs_reader *reader, kword_t logical,
+int
+d6fs_reader_get_block(struct d6fs_reader *reader, kword_t logical,
     const kword_t **blockp)
 {
         if (reader == 0 || blockp == 0 || logical >= reader->super.total_blocks)
@@ -381,13 +381,6 @@ d6fs_reader_block(struct d6fs_reader *reader, kword_t logical,
         }
         *blockp = reader->cache;
         return 0;
-}
-
-int
-d6fs_reader_get_block(struct d6fs_reader *reader, kword_t logical,
-    const kword_t **blockp)
-{
-        return d6fs_reader_block(reader, logical, blockp);
 }
 
 int
@@ -406,7 +399,7 @@ d6fs_reader_fcb(struct d6fs_reader *reader, unsigned int fcb_index,
         block_no = reader->super.fcb_start + word_index / D6FS_BLOCK_WORDS;
         in_block = (unsigned int)(word_index % D6FS_BLOCK_WORDS);
         if (in_block + D6FS_FCB_WORDS > D6FS_BLOCK_WORDS ||
-            d6fs_reader_block(reader, block_no, &block) != 0)
+            d6fs_reader_get_block(reader, block_no, &block) != 0)
                 return -1;
         for (i = 0U; i < D6FS_FCB_WORDS; ++i)
                 fcb[i] = block[in_block + i];
@@ -469,7 +462,7 @@ d6fs_reader_read_words(struct d6fs_reader *reader,
                 file_block = pos / D6FS_BLOCK_WORDS;
                 in_block = (unsigned int)(pos % D6FS_BLOCK_WORDS);
                 if (d6fs_file_block(fcb, file_block, &logical) != 0 ||
-                    d6fs_reader_block(reader, logical, &block) != 0)
+                    d6fs_reader_get_block(reader, logical, &block) != 0)
                         return -1;
                 take = D6FS_BLOCK_WORDS - in_block;
                 if (take > nwords - done)
@@ -521,16 +514,6 @@ d6fs_dirent_encode(kword_t ent[D6FS_DIRENT_WORDS],
             ((kword_t)info->type << D6FS_DIRENT_TYPE_SHIFT) |
             (kword_t)info->flags;
         ent[5] = (kword_t)info->child_fcb << 18;
-        return 0;
-}
-
-int
-d6fs_reader_set_writer(struct d6fs_reader *reader,
-    d6fs_write_block_fn write_block)
-{
-        if (reader == 0)
-                return -1;
-        reader->write_block = write_block;
         return 0;
 }
 
@@ -598,7 +581,7 @@ d6fs_reader_write_words(struct d6fs_reader *reader,
                 file_block = pos / D6FS_BLOCK_WORDS;
                 in_block = (unsigned int)(pos % D6FS_BLOCK_WORDS);
                 if (d6fs_file_block(fcb, file_block, &logical) != 0 ||
-                    d6fs_reader_block(reader, logical, &cached) != 0)
+                    d6fs_reader_get_block(reader, logical, &cached) != 0)
                         return -1;
                 take = D6FS_BLOCK_WORDS - in_block;
                 if (take > nwords - done)
@@ -629,7 +612,7 @@ d6fs_reader_put_fcb(struct d6fs_reader *reader,
         block_no = reader->super.fcb_start + word_index / D6FS_BLOCK_WORDS;
         in_block = (unsigned int)(word_index % D6FS_BLOCK_WORDS);
         if (in_block + D6FS_FCB_WORDS > D6FS_BLOCK_WORDS ||
-            d6fs_reader_block(reader, block_no, &cached) != 0)
+            d6fs_reader_get_block(reader, block_no, &cached) != 0)
                 return -1;
         for (i = 0U; i < D6FS_FCB_WORDS; ++i)
                 reader->cache[in_block + i] = fcb[i];
@@ -670,7 +653,7 @@ d6fs_freemap_test(struct d6fs_reader *reader, kword_t logical,
             logical >= reader->super.total_blocks ||
             d6fs_bitmap_position(logical, &mbi, &wi, &bi) != 0 ||
             mbi >= reader->super.freemap_blocks ||
-            d6fs_reader_block(reader, reader->super.freemap_start + mbi,
+            d6fs_reader_get_block(reader, reader->super.freemap_start + mbi,
             &block) != 0)
                 return -1;
         *allocatedp = (block[wi] & d6fs_bit_mask(bi)) != 0UL;
@@ -694,7 +677,7 @@ d6fs_summary_test(struct d6fs_reader *reader, kword_t map_index,
         wi = (unsigned int)(in / D6FS_BITS_PER_WORD);
         bi = (unsigned int)(in % D6FS_BITS_PER_WORD);
         if (sbi >= reader->super.summary_blocks ||
-            d6fs_reader_block(reader, reader->super.summary_start + sbi,
+            d6fs_reader_get_block(reader, reader->super.summary_start + sbi,
             &block) != 0)
                 return -1;
         *has_freep = (block[wi] & d6fs_bit_mask(bi)) != 0UL;
@@ -718,7 +701,7 @@ d6fs_summary_set(struct d6fs_reader *reader, kword_t map_index,
         wi = (unsigned int)(in / D6FS_BITS_PER_WORD);
         bi = (unsigned int)(in % D6FS_BITS_PER_WORD);
         if (sbi >= reader->super.summary_blocks ||
-            d6fs_reader_block(reader, reader->super.summary_start + sbi,
+            d6fs_reader_get_block(reader, reader->super.summary_start + sbi,
             &cached) != 0)
                 return -1;
         if (has_free)
@@ -742,7 +725,7 @@ d6fs_map_block_has_free(struct d6fs_reader *reader, kword_t mbi,
 
         if (reader == 0 || has_freep == 0 ||
             mbi >= reader->super.freemap_blocks ||
-            d6fs_reader_block(reader, reader->super.freemap_start + mbi,
+            d6fs_reader_get_block(reader, reader->super.freemap_start + mbi,
             &block) != 0)
                 return -1;
         first = mbi * (kword_t)D6FS_BITS_PER_MAP_BLOCK;
@@ -776,7 +759,7 @@ d6fs_freemap_set(struct d6fs_reader *reader, kword_t logical,
             logical >= reader->super.total_blocks ||
             d6fs_bitmap_position(logical, &mbi, &wi, &bi) != 0 ||
             mbi >= reader->super.freemap_blocks ||
-            d6fs_reader_block(reader, reader->super.freemap_start + mbi,
+            d6fs_reader_get_block(reader, reader->super.freemap_start + mbi,
             &cached) != 0)
                 return -1;
         if (allocated)

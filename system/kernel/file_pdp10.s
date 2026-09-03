@@ -3,7 +3,7 @@
         .bss
         .globl  file_table
 file_table:
-        .block  0140                    ; 32 three-word struct file entries
+        .block  047                     ; 13 three-word struct file entries
         .globl  file_cwd
 file_cwd:
         .block  1
@@ -293,87 +293,49 @@ file_getcwd_fail:
 
 
 ; struct file *file_find(int fd)
-; Match the used/fd fields directly.  DAIMOS 1.x has one FILE owner, so file
-; records no longer carry or compare an owner field.
+; File descriptors 3..15 map directly onto the 13 FILE records.
         .globl  file_find
 file_find:
         caige   1,3
         jrst    file_find_fail
         caile   1,017
         jrst    file_find_fail
-        move    3,1
-        lsh     3,010
-        iori    3,1
-        movei   4,file_table
-        movei   5,040
-file_find_loop:
-        move    6,2(4)
-        xor     6,3
-        tdnn    6,[037401]
-        jrst    file_find_found
-        addi    4,3
-        sojg    5,file_find_loop
+        subi    1,3
+        imuli   1,3
+        addi    1,file_table
+        skipn   (1)
+        jrst    file_find_fail
+        popj    17,
 file_find_fail:
         jrst    pdp10_ret_zero
-file_find_found:
-        move    1,4
-        popj    17,
 
 ; int file_new_fd(vnode_t node, unsigned int flags, int isdir)
-; Scan once, remembering the first free record and every descriptor already in
-; use.  With one owner, every used descriptor belongs to the current context.
+; Table order is descriptor order, so the first free record is the lowest
+; available descriptor and no resident fd bitmap or stored fd field is needed.
         .globl  file_new_fd
 file_new_fd:
         move    0,2                    ; base metadata: flags
         andi    0,077
-        lsh     0,2
         jumpe   3,file_new_fd_nodir
-        iori    0,2
+        iori    0,0100                 ; FILE_META_DIR
 file_new_fd_nodir:
-        iori    0,1                    ; FILE_META_USED
-        movei   2,0                    ; bitmap of used fd numbers
-        movei   3,0                    ; first free table record
         movei   4,file_table
-        movei   5,040
+        movei   5,3                    ; descriptor for current slot
+        movei   6,015                  ; 13 slots
 file_new_fd_scan:
-        move    6,2(4)
-        trne    6,1
-        jrst    file_new_fd_used
-        jumpn   3,file_new_fd_next
-        move    3,4
-        jrst    file_new_fd_next
-file_new_fd_used:
-        lsh     6,-010
-        andi    6,077
-        movei   7,1
-        lsh     7,0(6)
-        ior     2,7
-file_new_fd_next:
-        addi    4,3
-        sojg    5,file_new_fd_scan
-        jumpe   3,file_new_fd_fail
-
-        movei   5,3
-        movei   6,010
-file_new_fd_pick:
-        tdnn    2,6
+        skipn   (4)
         jrst    file_new_fd_store
-        lsh     6,1
+        addi    4,3
         addi    5,1
-        caile   5,017
-        jrst    file_new_fd_fail
-        jrst    file_new_fd_pick
-file_new_fd_store:
-        movem   1,(3)
-        setzm   1(3)
-        move    6,5
-        lsh     6,010
-        ior     6,0
-        movem   6,2(3)
-        move    1,5
-        popj    17,
+        sojg    6,file_new_fd_scan
 file_new_fd_fail:
         jrst    pdp10_ret_neg1
+file_new_fd_store:
+        movem   1,(4)
+        setzm   1(4)
+        movem   0,2(4)
+        move    1,5
+        popj    17,
 
 ; int file_getcwd_pseudo(vnode_t node, kword_t *buf,
 ;     unsigned int nwords)
