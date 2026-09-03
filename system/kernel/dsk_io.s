@@ -1,7 +1,7 @@
 ; dsk_io.s -- resident PDP-6 DSK270 driver, independent of tape support.
 ;
 ; Type-136 ownership/state lives in fixed KCORE storage_router.s.  This MRES
-; contains only disk controller policy, queueing, watchdog, and transfer leaf
+; contains only disk controller policy, queueing, and transfer leaf
 ; handlers.  The shared router is the sole generic PI3/PI5 handler.
 
         .text
@@ -101,17 +101,6 @@ dsk_dct_read_done:
         cono 0200,0
         jrst storage_pi_return
 
-; Called once per 60 Hz line-clock tick through the word immediately before
-; dsk_read_sector.  Runtime requests reuse storage_count as timeout budget.
-dsk_watchdog_tick:
-        skipn dsk_active_request
-        popj 017,
-        sosle storage_count
-        popj 017,
-        cono 0270,0
-        cono 0200,0
-        jrst dsk_fail_runtime
-
 dsk_fail_runtime:
         hrrz 1,dsk_active_request
         setom 1(1)
@@ -141,10 +130,6 @@ dsk_dct_blki:
 dsk_dct_blko:
         blko 0200,storage_iowd
 
-; The watchdog entry is deliberately the word immediately before the exported
-; read service; clk_io.s uses read_addr-1 without another binding word.
-dsk_watchdog_entry:
-        jrst dsk_watchdog_tick
 dsk_read_sector:
         setz 4,
         jrst dsk_sector_request

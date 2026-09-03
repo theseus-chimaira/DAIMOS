@@ -43,11 +43,6 @@ dsk270_sector_addr:
         pushj   17,(4)
         popj    17,
 
-        .data
-; PI6 consults the read-service word before KFS binds the storage MRES.  Keep
-; this existing pointer explicitly initialized so early line-clock ticks see
-; a disabled watchdog rather than uninitialized BSS contents.
-dsk270_read_addr:  .word 0
-
         .bss
+dsk270_read_addr:  .block 1
 dsk270_write_addr: .block 1

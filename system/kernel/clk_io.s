@@ -4,7 +4,6 @@
         .globl clk_pi_service
         .globl clk_ticks
         .globl clk_tick_count
-        .globl dsk270_read_addr
         .globl pdp10_pi_handler_return
 
 ; APR and the line clock share one PDP-6 PIA.  PI6 therefore still requires
@@ -13,17 +12,12 @@ clk_pi_handler:
         pushj 017,clk_pi_service
         jrst pdp10_pi_handler_return
 
-; Callable PI6 service used by the DPY shared handler.  The storage MRES keeps
-; its watchdog entry immediately before dsk_read_sector, so the installed read
-; service also acts as the compact binding.  The watchdog and wakeup path
-; clobber only AC1, preserving the generic PI dispatch cursor in AC2/AC3.
+; Callable PI6 service used by the DPY shared handler.
 clk_pi_service:
         conso 0000,01000
         popj 017,
         aos clk_tick_count
         cono 0000,003006
-        skipe 1,dsk270_read_addr
-        pushj 017,-1(1)
         popj 017,
 
 clk_ticks:

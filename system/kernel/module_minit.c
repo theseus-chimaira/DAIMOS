@@ -731,6 +731,13 @@ wcnsls_minit(void)
         unsigned int base;
 
         name = (kword_t)SIXBIT("WCNSLS");
+        /* The real switch register is active-low in its unused bits; the
+         * null-device path returns an all-zero DATAI. */
+        minit_wcnsls_cono(WCNSLS_CO_SPACEWAR);
+        if (minit_wcnsls_datai() == 0UL) {
+                minit_diag_nodev(name);
+                return;
+        }
         base = minit_install(name);
         module_service_set(MODULE_SERVICE_WCNSLS_READ,
             minit_export(name, base, WCNSLS_X_READ));

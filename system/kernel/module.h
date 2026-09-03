@@ -69,6 +69,7 @@ void minit_gtyo_cono(kword_t word);
 kword_t minit_dpy_coni(void);
 void minit_dpy_cono(kword_t word);
 void minit_wcnsls_cono(kword_t word);
+kword_t minit_wcnsls_datai(void);
 void minit_wcnsls_plot(kword_t word);
 kword_t minit_storage_probe(unsigned int kind);
 kword_t minit_slv_coni(void);
