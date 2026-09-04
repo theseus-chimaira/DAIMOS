@@ -317,21 +317,18 @@ memfs_find_child_loop:
         hlrz    7,7
         came    7,2
         jrst    memfs_find_child_next
-        move    0,(5)
-        came    0,(3)
-        jrst    memfs_find_child_next
-        move    0,1(5)
-        came    0,1(3)
-        jrst    memfs_find_child_next
-        move    0,2(5)
-        came    0,2(3)
-        jrst    memfs_find_child_next
-        move    0,3(5)
-        came    0,3(3)
-        jrst    memfs_find_child_next
-        move    0,4(5)
-        came    0,4(3)
-        jrst    memfs_find_child_next
+        push    17,1
+        push    17,2
+        push    17,3
+        move    1,5
+        move    2,3
+        movei   3,5                    ; chars + four SIXBIT words
+        pushj   17,fs_words_equal
+        move    0,1
+        pop     17,3
+        pop     17,2
+        pop     17,1
+        jumpe   0,memfs_find_child_next
         jumpe   4,memfs_find_child_ok
         movem   6,(4)
 memfs_find_child_ok:
@@ -394,11 +391,8 @@ memfs_has_children_none:
 ; void memfs_clear_node(struct memfs_node *np)
         .globl  memfs_clear_node
 memfs_clear_node:
-        setzm   (1)
-        movei   2,1(1)
-        hrli    2,(1)
-        blt     2,7(1)
-        popj    17,
+        movei   2,010
+        jrst    fs_zero_words
 
         .globl  memfs_node_handle
 memfs_node_handle:
@@ -921,6 +915,8 @@ memfs_mres_fs:
         .block  7
         .text
 
+        .globl  fs_words_equal
+        .globl  fs_zero_words
         .globl  fs_mres_context_vector_dispatch
         .globl  memfs_mres_dispatch
         .globl  memfs_lookup
@@ -932,84 +928,6 @@ memfs_mres_fs:
         .globl  memfs_truncate_words
         .globl  memfs_read_words
         .globl  memfs_write_words
-
-; Apply the caller vnode's mount-id bits to a successful returned vnode.
-memfs_mres_mount_result:
-        and     1,[07700000000]
-        iorm    1,(2)
-        popj    17,
-
-memfs_mres_lookup:
-        push    17,010
-        push    17,011
-        move    010,2                    ; source vnode / mount id
-        move    011,4                    ; result vnode pointer
-        pushj   17,memfs_lookup
-        jumpn   1,memfs_mres_lookup_done
-        move    1,010
-        move    2,011
-        pushj   17,memfs_mres_mount_result
-        setz    1,
-memfs_mres_lookup_done:
-        pop     17,011
-        pop     17,010
-        popj    17,
-
-memfs_mres_parent_no_name:
-        setz    4,
-        jrst    memfs_mres_parent
-
-memfs_mres_parent:
-        push    17,010
-        push    17,011
-        move    010,2                    ; source vnode
-        move    011,3                    ; parent result pointer
-        pushj   17,memfs_parent
-        jumpn   1,memfs_mres_parent_done
-        move    1,010
-        move    2,011
-        pushj   17,memfs_mres_mount_result
-        setz    1,
-memfs_mres_parent_done:
-        pop     17,011
-        pop     17,010
-        popj    17,
-
-memfs_mres_create:
-        push    17,010
-        push    17,011
-        move    010,2                    ; source directory vnode
-        move    011,-3(17)               ; incoming arg 5: nodep
-        push    17,011
-        pushj   17,memfs_create
-        sub     17,[1,,1]
-        jumpn   1,memfs_mres_create_done
-        move    1,010
-        move    2,011
-        pushj   17,memfs_mres_mount_result
-        setz    1,
-memfs_mres_create_done:
-        pop     17,011
-        pop     17,010
-        popj    17,
-
-memfs_mres_mkdir:
-        push    17,010
-        push    17,011
-        move    010,2
-        move    011,-3(17)
-        push    17,011
-        pushj   17,memfs_mkdir
-        sub     17,[1,,1]
-        jumpn   1,memfs_mres_mkdir_done
-        move    1,010
-        move    2,011
-        pushj   17,memfs_mres_mount_result
-        setz    1,
-memfs_mres_mkdir_done:
-        pop     17,011
-        pop     17,010
-        popj    17,
 
 ; Initialize singleton state from the KINIT-provided seven-word struct.
 memfs_mres_init:
@@ -1057,13 +975,13 @@ memfs_mres_vector_call:
         .data
 memfs_mres_vector:
         .word   017                      ; operations 1..15
-        .word   memfs_mres_lookup        ; 1 LOOKUP
+        .word   memfs_lookup             ; 1 LOOKUP
         .word   memfs_readdir            ; 2 READDIR
         .word   memfs_stat               ; 3 STAT
-        .word   memfs_mres_parent_no_name ; 4 PARENT
-        .word   memfs_mres_parent        ; 5 PARENT_NAME
-        .word   memfs_mres_create        ; 6 CREATE
-        .word   memfs_mres_mkdir         ; 7 MKDIR
+        .word   memfs_parent             ; 4 PARENT
+        .word   memfs_parent             ; 5 PARENT_NAME
+        .word   memfs_create             ; 6 CREATE
+        .word   memfs_mkdir              ; 7 MKDIR
         .word   0                        ; 8 SYMLINK
         .word   memfs_unlink             ; 9 UNLINK
         .word   memfs_rename             ; 10 RENAME

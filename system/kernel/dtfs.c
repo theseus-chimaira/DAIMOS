@@ -382,7 +382,7 @@ dtfs_resize(vnode_t node, unsigned int words)
         unsigned int i;
         unsigned int unit;
         unsigned int owner;
-        unsigned int count;
+        unsigned int last_words;
 
         if (!dtfs_is_file(node) || dtfs_load(node) != 0)
                 return -1;
@@ -395,6 +395,8 @@ dtfs_resize(vnode_t node, unsigned int words)
             (words + DTFS_DATA_WORDS - 1U) / DTFS_DATA_WORDS;
         if (new_blocks > DTFS_LAST_BLOCK)
                 return -1;
+        last_words = new_blocks == 0U ? 0U :
+            words - (new_blocks - 1U) * DTFS_DATA_WORDS;
 
         if (old_blocks == 0U) {
                 first = 0U;
@@ -413,32 +415,33 @@ dtfs_resize(vnode_t node, unsigned int words)
                 }
         }
 
-        while (old_blocks < new_blocks) {
-                if (dtfs_find_free_block(prev + 1U, &block) != 0)
-                        return -1;
-                if (first == 0U)
-                        first = block;
-                fs_zero_block_workspace();
-                count = (old_blocks + 1U == new_blocks) ?
-                    words - old_blocks * DTFS_DATA_WORDS :
-                    DTFS_DATA_WORDS;
-                dtfs_block[0] = dtfs_header(0U, first, count);
-                if (dtfs_dtc_write(unit, block, dtfs_block) != 0)
-                        return -1;
-                dtfs_set_owner(block, owner);
-                if (prev != 0U) {
-                        if (dtfs_dtc_read(unit, prev, dtfs_block) != 0)
+        if (old_blocks < new_blocks) {
+                do {
+                        if (dtfs_find_free_block(prev + 1U, &block) != 0)
                                 return -1;
-                        dtfs_block[0] = dtfs_header(block, first,
+                        if (first == 0U)
+                                first = block;
+                        fs_zero_block_workspace();
+                        dtfs_block[0] = dtfs_header(0U, first,
+                            old_blocks + 1U == new_blocks ? last_words :
                             DTFS_DATA_WORDS);
-                        if (dtfs_dtc_write(unit, prev, dtfs_block) != 0)
+                        if (dtfs_dtc_write(unit, block, dtfs_block) != 0)
                                 return -1;
-                }
-                prev = block;
-                ++old_blocks;
-        }
-
-        if (new_blocks < old_blocks) {
+                        dtfs_set_owner(block, owner);
+                        if (prev != 0U) {
+                                if (dtfs_dtc_read(unit, prev,
+                                    dtfs_block) != 0)
+                                        return -1;
+                                dtfs_block[0] = dtfs_header(block, first,
+                                    DTFS_DATA_WORDS);
+                                if (dtfs_dtc_write(unit, prev,
+                                    dtfs_block) != 0)
+                                        return -1;
+                        }
+                        prev = block;
+                        ++old_blocks;
+                } while (old_blocks < new_blocks);
+        } else if (new_blocks < old_blocks) {
                 if (new_blocks == 0U) {
                         block = first;
                 } else {
@@ -452,8 +455,7 @@ dtfs_resize(vnode_t node, unsigned int words)
                         if (dtfs_dtc_read(unit, block, dtfs_block) != 0)
                                 return -1;
                         next = dtfs_hdr_next(dtfs_block[0]);
-                        count = words - (new_blocks - 1U) * DTFS_DATA_WORDS;
-                        dtfs_block[0] = dtfs_header(0U, first, count);
+                        dtfs_block[0] = dtfs_header(0U, first, last_words);
                         if (dtfs_dtc_write(unit, block, dtfs_block) != 0)
                                 return -1;
                         block = next;
@@ -467,16 +469,14 @@ dtfs_resize(vnode_t node, unsigned int words)
                         block = next;
                 }
         } else if (new_blocks != 0U) {
-                if (dtfs_locate(node, new_blocks - 1U, &block) != 0 ||
-                    dtfs_dtc_read(unit, block, dtfs_block) != 0)
+                /* PREV already names the last block from the initial walk. */
+                if (dtfs_dtc_read(unit, prev, dtfs_block) != 0)
                         return -1;
-                count = words - (new_blocks - 1U) * DTFS_DATA_WORDS;
-                dtfs_block[0] = dtfs_header(0U, first, count);
-                if (dtfs_dtc_write(unit, block, dtfs_block) != 0)
+                dtfs_block[0] = dtfs_header(0U, first, last_words);
+                if (dtfs_dtc_write(unit, prev, dtfs_block) != 0)
                         return -1;
         }
-        dtfs_set_last_words(slot, new_blocks == 0U ? 0U :
-            words - (new_blocks - 1U) * DTFS_DATA_WORDS);
+        dtfs_set_last_words(slot, last_words);
         return dtfs_commit(node);
 }
 
@@ -487,8 +487,7 @@ dtfs_format_unit(unsigned int unit)
 
         if (unit > 7U || dtfs_dtc_write_addr == 0U)
                 return -1;
-        for (i = 0U; i < DTFS_BLOCK_WORDS; ++i)
-                dtfs_dir[i] = 0;
+        fs_zero_words(dtfs_dir, DTFS_BLOCK_WORDS);
         dtfs_set_owner(0U, DTFS_OWNER_RESERVED);
         dtfs_set_owner(DTFS_DIR_BLOCK, DTFS_OWNER_RESERVED);
         for (i = DTFS_BLOCKS; i <= 01104U; ++i)
@@ -670,11 +669,12 @@ dtfs_chmod(vnode_t node, unsigned int mode)
         return dtfs_commit(node);
 }
 
-int
-dtfs_read_words(vnode_t node, unsigned int off, kword_t *buf,
-    unsigned int nwords)
+static int
+dtfs_transfer_words(vnode_t node, unsigned int off, kword_t *buf,
+    unsigned int nwords, int writing)
 {
         unsigned int size;
+        unsigned int need;
         unsigned int done;
         unsigned int file_block;
         unsigned int in_block;
@@ -685,10 +685,16 @@ dtfs_read_words(vnode_t node, unsigned int off, kword_t *buf,
         if (!dtfs_is_file(node) || buf == 0 || dtfs_load(node) != 0)
                 return -1;
         size = dtfs_size_words(VFS_INDEX(node));
-        if (off >= size)
-                return 0;
-        if (nwords > size - off)
-                nwords = size - off;
+        if (writing) {
+                need = off + nwords;
+                if (need > size && dtfs_resize(node, need) != 0)
+                        return -1;
+        } else {
+                if (off >= size)
+                        return 0;
+                if (nwords > size - off)
+                        nwords = size - off;
+        }
         unit = dtfs_units[VFS_MOUNT_ID(node) - 1U];
         done = 0U;
         while (done < nwords) {
@@ -700,51 +706,34 @@ dtfs_read_words(vnode_t node, unsigned int off, kword_t *buf,
                 take = DTFS_DATA_WORDS - in_block;
                 if (take > nwords - done)
                         take = nwords - done;
-                fs_copy_words(&dtfs_block[1U + in_block],
-                    &buf[done], take);
+                if (writing) {
+                        fs_copy_words(&buf[done],
+                            &dtfs_block[1U + in_block], take);
+                        if (dtfs_dtc_write(unit, block, dtfs_block) != 0)
+                                return -1;
+                } else {
+                        fs_copy_words(&dtfs_block[1U + in_block],
+                            &buf[done], take);
+                }
                 done += take;
         }
         return (int)done;
 }
 
 int
+dtfs_read_words(vnode_t node, unsigned int off, kword_t *buf,
+    unsigned int nwords)
+{
+        return dtfs_transfer_words(node, off, buf, nwords, 0);
+}
+
+int
 dtfs_write_words(vnode_t node, unsigned int off,
     const kword_t *buf, unsigned int nwords, kword_t size_chars)
 {
-        unsigned int old_size;
-        unsigned int need;
-        unsigned int done;
-        unsigned int file_block;
-        unsigned int in_block;
-        unsigned int block;
-        unsigned int take;
-        unsigned int unit;
-
         (void)size_chars;
-        if (!dtfs_is_file(node) || buf == 0 || dtfs_load(node) != 0)
-                return -1;
-        old_size = dtfs_size_words(VFS_INDEX(node));
-        need = off + nwords;
-        if (need > old_size && dtfs_resize(node, need) != 0)
-                return -1;
-        unit = dtfs_units[VFS_MOUNT_ID(node) - 1U];
-        done = 0U;
-        while (done < nwords) {
-                file_block = (off + done) / DTFS_DATA_WORDS;
-                in_block = (off + done) % DTFS_DATA_WORDS;
-                if (dtfs_locate(node, file_block, &block) != 0 ||
-                    dtfs_dtc_read(unit, block, dtfs_block) != 0)
-                        return -1;
-                take = DTFS_DATA_WORDS - in_block;
-                if (take > nwords - done)
-                        take = nwords - done;
-                fs_copy_words(&buf[done],
-                    &dtfs_block[1U + in_block], take);
-                if (dtfs_dtc_write(unit, block, dtfs_block) != 0)
-                        return -1;
-                done += take;
-        }
-        return (int)done;
+        return dtfs_transfer_words(node, off, (kword_t *)buf,
+            nwords, 1);
 }
 
 int

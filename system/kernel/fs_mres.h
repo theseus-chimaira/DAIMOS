@@ -27,7 +27,6 @@
  * directed to a specific provider MRES, so global sparse numbering only wastes
  * resident vector words. */
 #define FS_MRES_OP_D6FS_MOUNT_ROOT     20U
-#define FS_MRES_OP_DTFS_BIND            20U
 #define FS_MRES_OP_MEMFS_USAGE          20U
 
 struct fs_mres_request {
@@ -47,6 +46,8 @@ extern unsigned int fs_d6fs_service_addr;
 int fs_mres_call(unsigned int address, struct fs_mres_request *req);
 int fs_provider_call(unsigned int provider, struct fs_mres_request *req);
 void fs_copy_words(const kword_t *src, kword_t *dst, unsigned int count);
+int fs_words_equal(const kword_t *a, const kword_t *b, unsigned int count);
+void fs_zero_words(kword_t *dst, unsigned int count);
 void fs_zero_block_workspace(void);
 int fs_dtfs_format_unit(unsigned int unit);
 int fs_dtfs_mount_unit(unsigned int unit, vnode_t target,

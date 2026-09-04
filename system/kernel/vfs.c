@@ -1,6 +1,11 @@
 #include "vfs.h"
 #include "memfs.h"
 #include "fs_mres.h"
+
+#define VFS_MOUNT_BITS_MASK \
+        ((kword_t)VFS_MOUNT_MASK << (VFS_KIND_SHIFT + VFS_MOUNT_SHIFT))
+#define VFS_INHERIT_MOUNT(source, node) \
+        (((node) & ~VFS_MOUNT_BITS_MASK) | ((source) & VFS_MOUNT_BITS_MASK))
 #include "devicefs.h"
 #include "procfs.h"
 #include "dtfs.h"
@@ -268,6 +273,7 @@ vfs_lookup(vnode_t dir, const struct vfs_name *name,
         }
         if (rc != 0)
                 return rc;
+        node = VFS_INHERIT_MOUNT(dir, node);
         *nodep = vfs_follow_mount(node);
         return 0;
 }
@@ -363,10 +369,20 @@ vfs_parent_raw(vnode_t node, vnode_t *parentp)
                 }
                 return -1;
         }
-        req.op = FS_MRES_OP_PARENT;
-        req.a = node;
-        req.b = (kword_t)(unsigned long)parentp;
-        return fs_provider_call(provider, &req);
+        {
+                vnode_t parent;
+                int rc;
+
+                req.op = FS_MRES_OP_PARENT;
+                req.a = node;
+                req.b = (kword_t)(unsigned long)&parent;
+                req.c = 0;
+                rc = fs_provider_call(provider, &req);
+                if (rc != 0)
+                        return rc;
+                *parentp = VFS_INHERIT_MOUNT(node, parent);
+                return 0;
+        }
 }
 
 int
@@ -408,11 +424,20 @@ vfs_parent_name(vnode_t node, vnode_t *parentp,
             vfs_mount_root[id - 1U] == node)
                 node = vfs_mount_target[id - 1U];
         provider = VFS_PROVIDER(node);
-        req.op = FS_MRES_OP_PARENT_NAME;
-        req.a = node;
-        req.b = (kword_t)(unsigned long)parentp;
-        req.c = (kword_t)(unsigned long)namep;
-        return fs_provider_call(provider, &req);
+        {
+                vnode_t parent;
+                int rc;
+
+                req.op = FS_MRES_OP_PARENT_NAME;
+                req.a = node;
+                req.b = (kword_t)(unsigned long)&parent;
+                req.c = (kword_t)(unsigned long)namep;
+                rc = fs_provider_call(provider, &req);
+                if (rc != 0)
+                        return rc;
+                *parentp = VFS_INHERIT_MOUNT(node, parent);
+                return 0;
+        }
 }
 
 static int
@@ -420,15 +445,21 @@ vfs_create_op(unsigned int op, vnode_t dir, const struct vfs_name *name,
     unsigned int mode, vnode_t *nodep)
 {
         struct fs_mres_request req;
+        vnode_t node;
+        int rc;
 
-        if (vfs_readonly(dir))
+        if (nodep == 0 || vfs_readonly(dir))
                 return -1;
         req.op = op;
         req.a = dir;
         req.b = (kword_t)(unsigned long)name;
         req.c = (kword_t)mode;
-        req.d = (kword_t)(unsigned long)nodep;
-        return fs_provider_call(VFS_PROVIDER(dir), &req);
+        req.d = (kword_t)(unsigned long)&node;
+        rc = fs_provider_call(VFS_PROVIDER(dir), &req);
+        if (rc != 0)
+                return rc;
+        *nodep = VFS_INHERIT_MOUNT(dir, node);
+        return 0;
 }
 
 int
@@ -450,16 +481,22 @@ vfs_symlink(vnode_t dir, const struct vfs_name *name,
     const kword_t *target, unsigned int target_chars, vnode_t *nodep)
 {
         struct fs_mres_request req;
+        vnode_t node;
+        int rc;
 
-        if (vfs_readonly(dir))
+        if (nodep == 0 || vfs_readonly(dir))
                 return -1;
         req.op = FS_MRES_OP_SYMLINK;
         req.a = dir;
         req.b = (kword_t)(unsigned long)name;
         req.c = (kword_t)(unsigned long)target;
         req.d = (kword_t)target_chars;
-        req.e = (kword_t)(unsigned long)nodep;
-        return fs_provider_call(VFS_PROVIDER(dir), &req);
+        req.e = (kword_t)(unsigned long)&node;
+        rc = fs_provider_call(VFS_PROVIDER(dir), &req);
+        if (rc != 0)
+                return rc;
+        *nodep = VFS_INHERIT_MOUNT(dir, node);
+        return 0;
 }
 
 int

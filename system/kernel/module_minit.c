@@ -16,6 +16,7 @@
 #include "slv.h"
 #include "fs_mres.h"
 #include "diskset_mres.h"
+#include "devicefs.h"
 
 #define CTY_X_HANDLER           0U
 #define CTY_X_PUT6              1U
@@ -853,11 +854,11 @@ memfs_minit(void)
 void
 dtfs_minit(void)
 {
-        struct fs_mres_request req;
         kword_t name;
         unsigned int base;
         unsigned int read_addr;
         unsigned int write_addr;
+        unsigned int state_addr;
 
         name = (kword_t)SIXBIT("DTFS  ");
         read_addr = module_service_get(MODULE_SERVICE_DTC_READ_BLOCK);
@@ -868,11 +869,10 @@ dtfs_minit(void)
         }
         base = minit_install(name);
         fs_dtfs_service_addr = minit_export(name, base, 0U);
-        req.op = FS_MRES_OP_DTFS_BIND;
-        req.a = (kword_t)read_addr;
-        req.b = (kword_t)write_addr;
-        if (fs_mres_call(fs_dtfs_service_addr, &req) != 0)
-                minit_fatal(name);
+        state_addr = minit_export(name, base, 1U);
+        *(kword_t *)(unsigned long)state_addr = (kword_t)read_addr;
+        state_addr = minit_export(name, base, 2U);
+        *(kword_t *)(unsigned long)state_addr = (kword_t)write_addr;
         module_service_set(MODULE_SERVICE_DTFS, fs_dtfs_service_addr);
         minit_diag_loaded(name);
 }
@@ -912,6 +912,54 @@ d6fs_minit(void)
         fs_d6fs_service_addr = minit_export(name, base, 0U);
         module_service_set(MODULE_SERVICE_D6FS, fs_d6fs_service_addr);
         minit_diag_loaded(name);
+}
+
+void
+devicefs_minit(void)
+{
+        kword_t present;
+
+        present = 0;
+        if (module_service_get(MODULE_SERVICE_CTY_PUTCHAR) != 0U &&
+            module_service_get(MODULE_SERVICE_CTY_GETCHAR) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_CTY0);
+        if (module_service_get(MODULE_SERVICE_CLK_TICKS) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_CLK0);
+        if (module_service_get(MODULE_SERVICE_PTR_GETCHAR) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_PTR0);
+        if (module_service_get(MODULE_SERVICE_PTP_PUTCHAR) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_PTP0);
+        if (module_service_get(MODULE_SERVICE_CR_READ_CARD) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_CR0);
+        if (module_service_get(MODULE_SERVICE_CP_PUNCH_CARD) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_CP0);
+        if (module_service_get(MODULE_SERVICE_DCS_GETCHAR) != 0U &&
+            module_service_get(MODULE_SERVICE_DCS_PUTCHAR) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DCS0);
+        if (module_service_get(MODULE_SERVICE_GE_GETCHAR) != 0U &&
+            module_service_get(MODULE_SERVICE_GE_PUTCHAR) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_GE0);
+        if (module_service_get(MODULE_SERVICE_DPY_PUTWORD) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DPY0);
+        if (module_service_get(MODULE_SERVICE_TTY_PUTCHAR) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_TTY0);
+        if (module_service_get(MODULE_SERVICE_WCNSLS_READ) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_WCNSLS);
+        if (module_service_get(MODULE_SERVICE_OCNSLS_READ) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_OCNSLS);
+        if (module_service_get(MODULE_SERVICE_DTC_READ_BLOCK) != 0U &&
+            module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DTC0);
+        if (module_service_get(MODULE_SERVICE_MTC) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_MTC0);
+        if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) != 0U &&
+            module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DSK0);
+        if (module_service_get(MODULE_SERVICE_SLV_HANDLER) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_SLV0);
+        if (module_service_get(MODULE_SERVICE_D6FS) != 0U)
+                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_D6SET0);
+        devicefs_present = present;
 }
 
 void

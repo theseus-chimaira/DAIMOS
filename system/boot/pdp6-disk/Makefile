@@ -36,7 +36,7 @@ KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES
 KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
 MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io dcs_io ge_io dpy_io \
 	tty_io wcnsls_io ocnsls_io dsk_io tape_io slv_io memfs memfs_pdp10 \
-	dtfs dtfs_mres dtfs_pdp10 diskset diskset_dispatch d6fs d6fs_provider d6fs_mres d6fs_pdp10
+	dtfs dtfs_pdp10 diskset diskset_dispatch d6fs d6fs_provider d6fs_mres d6fs_pdp10
 MRES_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(MRES_NAMES)))
 
 KCORE_DXR = $(BUILD)/kcore-v1.dxr
@@ -220,10 +220,11 @@ $(MEMFS_MRES_OBJ): $(BUILD)/memfs_pdp10.dobj $(KCORE_MAP)
 	    -R $@ -N memfs_mres_package -X memfs_mres_dispatch \
 	    $(BUILD)/memfs_pdp10.dobj
 
-$(DTFS_MRES_OBJ): $(BUILD)/dtfs.dobj $(BUILD)/dtfs_mres.dobj $(BUILD)/dtfs_pdp10.dobj $(KCORE_MAP)
+$(DTFS_MRES_OBJ): $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dtfs-mres.dxr -M $(BUILD)/dtfs-mres.map \
 	    -R $@ -N dtfs_mres_package -X dtfs_mres_dispatch \
-	    $(BUILD)/dtfs.dobj $(BUILD)/dtfs_mres.dobj $(BUILD)/dtfs_pdp10.dobj
+	    -X dtfs_dtc_read_addr -X dtfs_dtc_write_addr \
+	    $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj
 
 $(DISKSET_MRES_OBJ): $(BUILD)/diskset_dispatch.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/diskset-mres.dxr -M $(BUILD)/diskset-mres.map \

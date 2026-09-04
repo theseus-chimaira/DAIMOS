@@ -58,13 +58,49 @@ fs_copy_words:
 fs_copy_words_done:
         popj    17,
 
+        .globl  fs_words_equal
+; int fs_words_equal(a, b, count)
+; Return 1 when count words match, otherwise 0.
+fs_words_equal:
+        jumpe   3,fs_words_equal_yes
+fs_words_equal_loop:
+        move    4,(1)
+        came    4,(2)
+        jrst    fs_words_equal_no
+        aoj     1,
+        aoj     2,
+        sojg    3,fs_words_equal_loop
+fs_words_equal_yes:
+        movei   1,1
+        popj    17,
+fs_words_equal_no:
+        setz    1,
+        popj    17,
+
+        .globl  fs_zero_words
+; void fs_zero_words(dst, count)
+; Shared contiguous word clear.  AC1=dst, AC2=count, AC3 is scratch.
+fs_zero_words:
+        jumpe   2,fs_zero_words_done
+        setzm   (1)
+        subi    2,1
+        jumpe   2,fs_zero_words_done
+        move    3,1
+        aoj     3,
+        hrl     3,1
+        add     1,2
+        blt     3,(1)
+fs_zero_words_done:
+        popj    17,
+
         .globl  fs_zero_block_workspace
 ; Zero the shared 128-word filesystem transfer block without disturbing AC1.
 fs_zero_block_workspace:
-        setzm   fs_block_workspace
-        movei   2,fs_block_workspace+1
-        hrli    2,fs_block_workspace
-        blt     2,fs_block_workspace+0177
+        push    17,1
+        movei   1,fs_block_workspace
+        movei   2,0200
+        pushj   17,fs_zero_words
+        pop     17,1
         popj    17,
 
         .globl  fs_mres_vector_dispatch

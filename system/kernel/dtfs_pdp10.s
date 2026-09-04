@@ -33,7 +33,6 @@ dtfs_dtc_no_service:
         .globl  dtfs_sync
         .globl  dtfs_format_unit
         .globl  dtfs_mount_unit
-        .globl  dtfs_mres_bind
 
 dtfs_mres_dispatch:
         move    2,[dtfs_mres_vector]
@@ -41,7 +40,7 @@ dtfs_mres_dispatch:
 
         .data
 dtfs_mres_vector:
-        .word   024                      ; highest operation: 20 decimal
+        .word   022                      ; highest operation: 18 decimal
         .word   dtfs_lookup              ; 1
         .word   dtfs_readdir             ; 2
         .word   dtfs_stat                ; 3
@@ -60,6 +59,4 @@ dtfs_mres_vector:
         .word   0                        ; 16 PREPARE_UNMOUNT
         .word   dtfs_format_unit         ; 17 FORMAT_UNIT
         .word   dtfs_mount_unit          ; 18 MOUNT_UNIT
-        .word   0                        ; 19 MEMFS_INIT
-        .word   dtfs_mres_bind           ; 20 provider-private BIND
         .text

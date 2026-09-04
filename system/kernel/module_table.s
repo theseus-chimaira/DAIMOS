@@ -21,6 +21,7 @@
         .globl dtfs_minit
         .globl diskset_minit
         .globl d6fs_minit
+        .globl devicefs_minit
         .globl cty_mres_package
         .globl clk_mres_package
         .globl ptr_mres_package
@@ -82,4 +83,5 @@ __minit_table_begin:
         .word dtfs_minit,,dtfs_mres_package
         .word d6fs_minit,,d6fs_mres_package
         .word slv_minit,,slv_mres_package
+        .word devicefs_minit,,0
 __minit_table_end:

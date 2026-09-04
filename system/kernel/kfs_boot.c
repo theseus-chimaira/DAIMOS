@@ -4,7 +4,6 @@
 #include "exec.h"
 #include "proc.h"
 #include "file.h"
-#include "devicefs.h"
 #include "dtfs.h"
 #include "dsk270.h"
 #include "module.h"
@@ -297,45 +296,6 @@ kfs_boot_prepare(void)
         }
 
 bind_services:
-        devicefs_present = 0;
-        if (kcore_cty_putchar != 0 && kcore_cty_getchar != 0)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_CTY0);
-        if (module_service_get(MODULE_SERVICE_CLK_TICKS) != 0U)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_CLK0);
-        if (module_service_get(MODULE_SERVICE_PTR_GETCHAR) != 0U)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_PTR0);
-        if (module_service_get(MODULE_SERVICE_PTP_PUTCHAR) != 0U)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_PTP0);
-        if (module_service_get(MODULE_SERVICE_CR_READ_CARD) != 0U)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_CR0);
-        if (module_service_get(MODULE_SERVICE_CP_PUNCH_CARD) != 0U)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_CP0);
-        if (module_service_get(MODULE_SERVICE_DCS_GETCHAR) != 0U &&
-            module_service_get(MODULE_SERVICE_DCS_PUTCHAR) != 0U)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DCS0);
-        if (module_service_get(MODULE_SERVICE_GE_GETCHAR) != 0U &&
-            module_service_get(MODULE_SERVICE_GE_PUTCHAR) != 0U)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_GE0);
-        if (module_service_get(MODULE_SERVICE_DPY_PUTWORD) != 0U)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DPY0);
-        if (module_service_get(MODULE_SERVICE_TTY_PUTCHAR) != 0U)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_TTY0);
-        if (module_service_get(MODULE_SERVICE_WCNSLS_READ) != 0U)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_WCNSLS);
-        if (module_service_get(MODULE_SERVICE_OCNSLS_READ) != 0U)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_OCNSLS);
-        if (module_service_get(MODULE_SERVICE_DTC_READ_BLOCK) != 0U &&
-            module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK) != 0U)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DTC0);
-        if (module_service_get(MODULE_SERVICE_MTC) != 0U)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_MTC0);
-        if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) != 0U &&
-            module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DSK0);
-        if (module_service_get(MODULE_SERVICE_SLV_HANDLER) != 0U)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_SLV0);
-        if (module_service_get(MODULE_SERVICE_D6FS) != 0U)
-                devicefs_present |= DEVICEFS_PRESENT(DEVICEFS_DEV_D6SET0);
 
         dsk270_read_addr =
             module_service_get(MODULE_SERVICE_DSK_READ_SECTOR);

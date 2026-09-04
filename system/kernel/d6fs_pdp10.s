@@ -1014,3 +1014,148 @@ d6fs_reader_zero_block:
 d6fs_reader_zero_block_bad:
         seto    1,
         popj    17,
+
+; Compact D6FS provider metadata/growth helpers.  These are leaf-sized
+; representation operations shared by the larger C policy paths.
+        .globl  d6fs_provider_set_extent
+; int d6fs_provider_set_extent(fcb, index, start, blocks)
+d6fs_provider_set_extent:
+        caile   2,6
+        jrst    d6fs_provider_extent_bad
+        caml    3,[0100000000]          ; 24-bit logical start
+        jrst    d6fs_provider_extent_bad
+        jumpe   4,d6fs_provider_extent_bad
+        camle   4,[0200000]             ; 17-bit encoded block count
+        jrst    d6fs_provider_extent_bad
+        subi    4,1                     ; encoded length is blocks - 1
+        move    5,3
+        lsh     5,014
+        move    6,4
+        andi    6,07777
+        ior     5,6
+        move    6,1
+        addi    6,6
+        add     6,2
+        movem   5,(6)
+        move    5,2
+        lsh     5,2
+        add     5,2                     ; shift = index * 5
+        movei   6,037
+        lsh     6,0(5)
+        andca   6,5(1)                  ; clear prior high-length field
+        lsh     4,-014
+        andi    4,037
+        lsh     4,0(5)
+        ior     6,4
+        movem   6,5(1)
+        setz    1,
+        popj    17,
+
+d6fs_provider_extent_bad:
+        seto    1,
+        popj    17,
+
+        .globl  d6fs_provider_clear_extent
+; int d6fs_provider_clear_extent(fcb, index)
+d6fs_provider_clear_extent:
+        caile   2,6
+        jrst    d6fs_provider_extent_bad
+        move    3,1
+        addi    3,6
+        add     3,2
+        setzm   (3)
+        move    3,2
+        lsh     3,2
+        add     3,2
+        movei   4,037
+        lsh     4,0(3)
+        andcam  4,5(1)
+        setz    1,
+        popj    17,
+
+        .globl  d6fs_provider_blocks_for_words
+; kword_t d6fs_provider_blocks_for_words(words)
+d6fs_provider_blocks_for_words:
+        jumpe   1,d6fs_provider_blocks_done
+        addi    1,0177
+        lsh     1,-7                    ; D6FS block = 128 words
+d6fs_provider_blocks_done:
+        popj    17,
+
+        .globl  d6fs_provider_free_file_tail
+; int d6fs_provider_free_file_tail(fcb, first_file_block)
+d6fs_provider_free_file_tail:
+        push    17,010
+        push    17,011
+        move    010,1
+        move    011,2
+d6fs_provider_free_tail_loop:
+        move    1,010
+        move    2,011
+        pushj   17,d6fs_file_block
+        camn    1,[-1]
+        jrst    d6fs_provider_free_tail_ok
+        move    2,1
+        movei   1,d6fs_provider_reader
+        setz    3,
+        pushj   17,d6fs_freemap_set
+        jumpn   1,d6fs_provider_free_tail_done
+        aoja    011,d6fs_provider_free_tail_loop
+d6fs_provider_free_tail_ok:
+        setz    1,
+d6fs_provider_free_tail_done:
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+        .globl  d6fs_provider_rollback_growth
+; int d6fs_provider_rollback_growth(fcb, old_fcb, old_blocks)
+d6fs_provider_rollback_growth:
+        push    17,010
+        push    17,011
+        move    010,1
+        move    011,2
+        move    2,3
+        pushj   17,d6fs_provider_free_file_tail
+        move    1,011
+        move    2,010
+        movei   3,020
+        pushj   17,fs_copy_words
+        seto    1,
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+        .globl  d6fs_provider_tail
+; unsigned int d6fs_provider_tail(type, words, size_chars)
+d6fs_provider_tail:
+        jumpe   2,d6fs_provider_tail_zero
+        caie    1,3                     ; D6FS_TYPE_SYMLINK
+        jrst    d6fs_provider_tail_four
+        subi    2,1
+        move    5,2
+        lsh     2,2
+        lsh     5,1
+        add     2,5                     ; base = (words - 1) * 6
+        movei   4,6
+        jrst    d6fs_provider_tail_check
+d6fs_provider_tail_four:
+        subi    2,1
+        lsh     2,2                     ; base = (words - 1) * 4
+        movei   4,4
+d6fs_provider_tail_check:
+        camg    3,2
+        jrst    d6fs_provider_tail_full
+        move    5,2
+        add     5,4
+        camle   3,5
+        jrst    d6fs_provider_tail_full
+        sub     3,2
+        move    1,3
+        popj    17,
+d6fs_provider_tail_full:
+        move    1,4
+        popj    17,
+d6fs_provider_tail_zero:
+        setz    1,
+        popj    17,
