@@ -35,11 +35,7 @@ vfs_mkdir:
 vfs_name_valid:
         jumpe   1,vfs_name_valid_fail
         move    2,(1)
-        jumpge  2,vfs_name_valid_small
-        jrst    vfs_name_valid_fail
-vfs_name_valid_small:
-        caige   2,1
-        jrst    vfs_name_valid_fail
+        jumple  2,vfs_name_valid_fail
         caile   2,030                    ; VFS_NAME_MAX_CHARS = 24
         jrst    vfs_name_valid_fail
         movei   1,1
@@ -55,11 +51,8 @@ vfs_name_is6:
         ; Current callers always pass a valid vfs_name pointer.
         camn    3,(1)
         came    2,1(1)
-        jrst    vfs_name_is6_fail
+        tdza    1,1
         movei   1,1
-        popj    17,
-vfs_name_is6_fail:
-        movei   1,0
         popj    17,
 
 ; int vfs_sixbit_readchar(kword_t word, unsigned int nchars, kword_t off,
@@ -67,14 +60,10 @@ vfs_name_is6_fail:
         .globl  vfs_sixbit_readchar
 vfs_sixbit_readchar:
         jumpe   4,vfs_sixchar_fail
-        jumpge  2,vfs_sixchar_count_small
-        jrst    vfs_sixchar_fail
-vfs_sixchar_count_small:
+        jumpl   2,vfs_sixchar_fail
         caile   2,6
         jrst    vfs_sixchar_fail
-        jumpge  3,vfs_sixchar_off_small
-        jrst    vfs_sixchar_eof
-vfs_sixchar_off_small:
+        jumpl   3,vfs_sixchar_eof
         caml    3,2
         jrst    vfs_sixchar_tail
         move    6,3

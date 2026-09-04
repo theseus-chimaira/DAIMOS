@@ -12,7 +12,7 @@
         .globl dtc_read_block
         .globl dtc_write_block
         .globl mtc_service
-        .globl storage_pi_return
+        .globl pdp10_pi_dispatch_done
         .globl storage_state
         .globl storage_iowd
         .globl storage_count
@@ -25,8 +25,8 @@ tape_pi_handler:
         move 2,storage_state
         aoje 2,tape_pi_dtc_status
         aoje 2,tape_pi_mtc_status
-        aoje 2,storage_pi_return
-        aoje 2,storage_pi_return
+        aoje 2,pdp10_pi_dispatch_done
+        aoje 2,pdp10_pi_dispatch_done
         aoje 2,tape_pi_mtc_write_status
         jrst tape_pi_dtc_write_status
 
@@ -36,9 +36,9 @@ tape_pi_dtc_status:
         coni 0214,1
         trne 1,0000034
         jrst tape_pi_dtc_block_error
-        jumpe 2,storage_pi_return
+        jumpe 2,pdp10_pi_dispatch_done
         trnn 1,0000001
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
         jrst tape_pi_done
 
 tape_pi_mtc_write_status:
@@ -48,15 +48,15 @@ tape_pi_mtc_status:
         trne 1,0400520
         jrst tape_pi_error
         trnn 1,0000004
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
         jumpn 2,tape_pi_mtc_idle_check
         coni 0200,1
         trne 1,002000
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
         coni 0224,1
 tape_pi_mtc_idle_check:
         trnn 1,0000001
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
         jrst tape_pi_done
 
 tape_pi_done:
@@ -70,7 +70,7 @@ tape_pi_cleanup:
         cono 0224,0
         cono 0210,0
         cono 0200,0
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 
 tape_pi_dtc_block_error:
         movei 1,7
@@ -82,7 +82,7 @@ tape_pi_dtc_block_error:
         cono 0210,0(2)
         cono 0200,0
         setzm dtc_motion(1)
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 
 ; PI3 tape leaf.  Reverse DECtape transfers are serviced one word at a time;
 ; forward transfers reach this entry only when BLKI/BLKO falls through.
@@ -115,14 +115,14 @@ tape_dct_reverse_advance:
         jrst tape_dct_count_done
 tape_dct_reverse_more:
         sos storage_iowd
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 
 tape_dct_count_done:
         move 2,storage_state
         aoje 2,tape_dct_done_keep_dtc
         aoje 2,tape_dct_mtc_read_full
-        aoje 2,storage_pi_return
-        aoje 2,storage_pi_return
+        aoje 2,pdp10_pi_dispatch_done
+        aoje 2,pdp10_pi_dispatch_done
         aoje 2,tape_dct_mtc_write_arm
         jrst tape_dct_dtc_write_arm
 
@@ -138,7 +138,7 @@ tape_dct_mtc_write_arm:
 tape_dct_arm_handler:
         move 1,000047
         movem 1,000046
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 
 tape_dct_done_keep_dtc:
         move 1,dtc_request_unit
@@ -151,7 +151,7 @@ tape_dct_keep_forward:
         cono 0210,0(1)
         cono 0200,0
         movns storage_state
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 
 tape_dct_mtc_read_full:
         coni 0224,1
@@ -162,14 +162,14 @@ tape_dct_mtc_read_full:
         coni 0200,1
         trne 1,002000
         jrst tape_pi_error
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 
 tape_dct_dtc_write_ack1:
         setz 1,
         datao 0200,1
         movei 1,tape_dct_dtc_write_ack2
         hrrm 1,tape_dct_select
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 tape_dct_dtc_write_ack2:
         move 1,storage_state
         addi 1,6
@@ -182,7 +182,7 @@ tape_dct_mtc_write_drain:
         coni 0200,1
         andi 1,0777770
         cono 0200,0(1)
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 
 ; Direct PI3 block setup shared inside the tape package.
 tape_setup_read:
@@ -232,8 +232,7 @@ dtc_block_start:
         movms 6
         soj 6,
         sub 6,2
-        jumpg 6,dtc_search_choose_reverse
-        jrst dtc_search_begin
+        jumple 6,dtc_search_begin
 dtc_search_choose_reverse:
         movei 6,0010000
         movem 6,dtc_request_reverse
@@ -342,8 +341,7 @@ mtc_service:
         caile 1,7
         jrst pdp10_ret_arg
         jumpe 4,mtc_read_words
-        jumpl 4,mtc_write_words
-        jrst mtc_control
+        jumpge 4,mtc_control
 mtc_write_words:
         jumple 3,pdp10_ret_arg
         pushj 017,tape_setup_write
@@ -400,10 +398,7 @@ tape_ioerr:
         hrroi 1,0777773
         popj 017,
 tape_wait_done:
-        move 2,storage_iowd
-        hlrz 2,2
-        add 2,storage_count
-        andi 2,0777777
+        move 2,storage_count
         addm 2,@tape_account_table-1(1)
         setzm storage_state
         jrst pdp10_ret_ok

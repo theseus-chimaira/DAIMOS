@@ -150,9 +150,7 @@ file_component_fail:
         .globl  file_getcwd
 file_getcwd:
         jumpe   1,file_getcwd_fail
-        jumpge  2,file_getcwd_nwords_nonneg
-        jrst    file_getcwd_nwords_ok    ; unsigned value with bit 35 set
-file_getcwd_nwords_nonneg:
+        jumpl   2,file_getcwd_nwords_ok ; unsigned value with bit 35 set
         cail    2,2
         jrst    file_getcwd_nwords_ok
         jrst    file_getcwd_fail

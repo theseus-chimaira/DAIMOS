@@ -16,7 +16,6 @@
         .globl storage_pi_tape_jump
         .globl storage_dct_dsk_jump
         .globl storage_dct_tape_jump
-        .globl storage_pi_return
         .globl storage_state
         .globl storage_iowd
         .globl storage_count
@@ -24,31 +23,29 @@
 
 storage_pi_handler:
         skipl 2,storage_state
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
         trne 2,2
         jrst storage_pi_tape_jump
 
 ; MINIT rewrites only the RH target of these JRST words.  The DSK slot is the
 ; natural fall-through for states -3/-4, saving a separate branch.
 storage_pi_dsk_jump:
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 storage_pi_tape_jump:
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 
 storage_dct_handler:
         move 2,storage_state
         trne 2,2
         jrst storage_dct_tape_jump
 storage_dct_dsk_jump:
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 storage_dct_tape_jump:
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 
 ; PI3 and PI5 each have exactly one registered storage router.  Leaf drivers
-; may therefore use AC2 internally and bypass the generic AOBJN fanout tail;
-; the common PI return restores the interrupted ACs from low core.
-storage_pi_return:
-        jrst pdp10_pi_dispatch_done
+; may therefore use AC2 internally and bypass the generic AOBJN fanout tail
+; by jumping directly to the common PI-dispatch return.
 
         .bss
 storage_state: .block 1

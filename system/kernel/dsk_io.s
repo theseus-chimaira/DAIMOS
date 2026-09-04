@@ -14,7 +14,7 @@
         .globl dsk_current_cyl
         .globl dsk_read_sector
         .globl dsk_write_sector
-        .globl storage_pi_return
+        .globl pdp10_pi_dispatch_done
         .globl storage_state
         .globl storage_iowd
         .globl storage_count
@@ -24,7 +24,7 @@
         .globl proc_wait_event
         .globl proc_wakeup_event
 
-; PI5 DSK status leaf.  AC2 may be used because storage_pi_return bypasses the
+; PI5 DSK status leaf.  AC2 may be used because pdp10_pi_dispatch_done bypasses the
 ; generic fanout cursor and restores interrupted ACs directly.
 dsk_pi_handler:
         coni 0270,1
@@ -33,17 +33,17 @@ dsk_pi_handler:
         trne 1,0400000
         jrst dsk_pi_idle
         trnn 1,040000
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
         move 2,storage_state
         addi 2,3
         jumpe 2,dsk_pi_start_read
         cono 0200,003403
         cono 0270,002105
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 dsk_pi_start_read:
         cono 0200,004003
         cono 0270,001105
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 
 dsk_pi_idle:
         cono 0270,0
@@ -60,10 +60,10 @@ dsk_pi_idle:
         setzm dsk_active_request
         aoj 1,
         pushj 017,proc_wakeup_event
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 dsk_pi_boot_done:
         movns storage_state
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 
 dsk_pi_error:
         cono 0270,0
@@ -71,11 +71,11 @@ dsk_pi_error:
         skipn dsk_active_request
         jrst dsk_pi_boot_error
         pushj 017,dsk_fail_runtime
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 dsk_pi_boot_error:
         movei 2,7
         movem 2,storage_state
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 
 ; PI3 final-word leaf.  Reads can end immediately; writes need the two DCT
 ; drain requests required by the Type-270 pipeline before ending the sector.
@@ -91,17 +91,17 @@ dsk_dct_count_done:
         hrrm 1,dsk_dct_select
         move 1,000047
         movem 1,000046
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 
 dsk_dct_write_ack1:
         movei 1,dsk_dct_write_ack2
         hrrm 1,dsk_dct_select
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 dsk_dct_write_ack2:
 dsk_dct_read_done:
         cono 0270,030115
         cono 0200,0
-        jrst storage_pi_return
+        jrst pdp10_pi_dispatch_done
 
 dsk_fail_runtime:
         hrrz 1,dsk_active_request
@@ -118,7 +118,6 @@ dsk_setup_read:
 dsk_setup_write:
         move 4,dsk_dct_blko
 dsk_setup_common:
-        movem 3,storage_count
         movem 4,000046
         movei 4,dsk_dct_count_done
         hrrm 4,dsk_dct_select
@@ -273,10 +272,7 @@ dsk_wait:
         hrroi 1,0777773
         popj 017,
 dsk_wait_done:
-        move 2,storage_iowd
-        hlrz 2,2
-        add 2,storage_count
-        andi 2,0777777
+        movei 2,0200
         addm 2,@dsk_account_table-3(1)
         setzm storage_state
         jrst pdp10_ret_ok

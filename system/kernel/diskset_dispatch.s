@@ -41,8 +41,7 @@ diskset_blocks:
 ; logical value preserves the C implementation's unsigned bounds semantics
 ; without GCC's repeated sign-bit transforms.
 diskset_map_block:
-        tlne 1,0400000
-        jrst diskset_map_fail
+        jumpl 1,diskset_map_fail
         caml 1,diskset_total_blocks
         jrst diskset_map_fail
         setz 2,                        ; floor
@@ -152,10 +151,8 @@ diskset_swap_write:
 diskset_swap_io:
         jumpe 2,pdp10_ret_zero         ; zero count ignores buffer
         jumpe 3,pdp10_ret_neg1
-        tlne 1,0400000
-        jrst pdp10_ret_neg1
-        tlne 2,0400000
-        jrst pdp10_ret_neg1
+        jumpl 1,pdp10_ret_neg1
+        jumpl 2,pdp10_ret_neg1
         move 5,diskset_boot+015
         mul 5,diskset_boot             ; AC6 = total SWAP blocks
         caml 1,6
@@ -225,8 +222,7 @@ diskset_log_write:
 
 diskset_log_io:
         jumpe 2,pdp10_ret_neg1
-        tlne 1,0400000
-        jrst pdp10_ret_neg1
+        jumpl 1,pdp10_ret_neg1
         caml 1,diskset_boot+017
         jrst pdp10_ret_neg1
         add 1,diskset_boot+016
