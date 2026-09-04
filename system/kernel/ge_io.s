@@ -3,6 +3,8 @@
 ; GE/GTY owns PI4 independently.  DCS uses PI2, so this handler contains only
 ; the two GE terminal devices and needs no cross-driver dispatch glue.
 
+        .globl devicefs_io_in
+        .globl devicefs_io_out
         .text
         .globl ge_pi_handler
         .globl ge_getchar
@@ -20,7 +22,7 @@ ge_pi_handler:
         skipl ge_rx_word
         jrst ge_pi_gtyi_disable
         datai 0070,1
-        aos ge_io_in
+        aos devicefs_io_in+7
         tlo 1,4
         movem 1,ge_rx_word
 ge_pi_gtyi_disable:
@@ -45,7 +47,7 @@ ge_get_wait:
 
 ge_get_hardware:
         datai 0070,1
-        aos ge_io_in
+        aos devicefs_io_in+7
         jrst ge_get_unpack_raw
 
 ge_get_ready:
@@ -70,7 +72,7 @@ ge_put_decoded:
         iori 1,0100
         xori 1,0177
         datao 0750,1
-        aos ge_io_out
+        aos devicefs_io_out+7
 ge_put_decoded_wait:
         conso 0750,00100
         jrst ge_put_decoded_wait
@@ -120,5 +122,3 @@ ge_tx_state:
 
 ; Device-local accounting state; absent devices consume no fixed KCORE.
         .bss
-ge_io_in: .block 1
-ge_io_out: .block 1

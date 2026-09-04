@@ -1,4 +1,5 @@
 ; cr_io.s -- resident PDP-6 card-reader driver.
+        .globl devicefs_io_in
         .text
         .globl cr_pi_handler
         .globl cr_read_card
@@ -27,7 +28,7 @@ cr_pi_more:
         movem 1,cr_iowd
 cr_pi_xfer:
         datai 0150,(1)
-        aos cr_io_in
+        aos devicefs_io_in+4
         jrst pdp10_pi_handler_return
 
 cr_read_card:
@@ -71,4 +72,3 @@ cr_iowd:
 
 ; Device-local accounting state; absent devices consume no fixed KCORE.
         .bss
-cr_io_in: .block 1

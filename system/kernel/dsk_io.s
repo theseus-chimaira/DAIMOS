@@ -4,6 +4,8 @@
 ; contains only disk controller policy, queueing, and transfer leaf
 ; handlers.  The shared router is the sole generic PI3/PI5 handler.
 
+        .globl devicefs_io_in
+        .globl devicefs_io_out
         .text
         .globl dsk_pi_handler
         .globl dsk_dct_handler
@@ -48,9 +50,9 @@ dsk_pi_idle:
         skipn 2,dsk_active_request
         jrst dsk_pi_boot_done
         aos 1,1(2)
-        movei 1,dsk_io_in
+        movei 1,devicefs_io_in+016
         tlne 2,1
-        movei 1,dsk_io_out
+        movei 1,devicefs_io_out+016
         movei 2,0200
         addm 2,(1)
         hrrz 1,dsk_active_request
@@ -280,8 +282,8 @@ dsk_wait_done:
         jrst pdp10_ret_ok
 
 dsk_account_table:
-        .word dsk_io_in
-        .word dsk_io_out
+        .word devicefs_io_in+016
+        .word devicefs_io_out+016
 
         .bss
 dsk_active_request: .block 1
@@ -290,5 +292,3 @@ dsk_queue: .block 4
 
 ; Device-local accounting state; absent devices consume no fixed KCORE.
         .bss
-dsk_io_in: .block 1
-dsk_io_out: .block 1

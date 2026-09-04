@@ -6,6 +6,8 @@
 ;
 ; Type 630 IOT semantics follow the PDP-6 Handbook directly.
 
+        .globl devicefs_io_in
+        .globl devicefs_io_out
         .text
         .globl dcs_pi_handler
         .globl dcs_getchar
@@ -28,7 +30,7 @@ dcs_pi_receive:
         lsh 1,010
         movem 1,dcs_rx_word
         datai 0304,1
-        aos dcs_io_in
+        aos devicefs_io_in+6
         andi 1,0377
         iorm 1,dcs_rx_word
         cono 0300,0
@@ -57,7 +59,7 @@ dcs_putchar:
         cono 0304,0(2)
         andi 1,0377
         datao 0300,1
-        aos dcs_io_out
+        aos devicefs_io_out+6
         jrst pdp10_ret_ok
 
         .bss
@@ -66,5 +68,3 @@ dcs_rx_word:
 
 ; Device-local accounting state; absent devices consume no fixed KCORE.
         .bss
-dcs_io_in: .block 1
-dcs_io_out: .block 1

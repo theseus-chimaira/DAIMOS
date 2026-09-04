@@ -6,7 +6,8 @@
 #define DEVICEFS_PROVIDER            2U
 #define DEVICEFS_KIND_ROOT           1U
 #define DEVICEFS_KIND_DEVICE         2U
-#define DEVICEFS_KIND_CTYDIR         3U
+#define DEVICEFS_KIND_DEVDIR        3U
+#define DEVICEFS_KIND_CTYDIR         DEVICEFS_KIND_DEVDIR
 #define DEVICEFS_KIND_IN             4U
 #define DEVICEFS_KIND_OUT            5U
 
@@ -31,29 +32,9 @@
 
 #define DEVICEFS_PRESENT(id)         (1UL << (id))
 
-#define DEVICEFS_IO_IN_CTY0          0U
-#define DEVICEFS_IO_IN_PTR0          1U
-#define DEVICEFS_IO_IN_CR0           2U
-#define DEVICEFS_IO_IN_DCS0          3U
-#define DEVICEFS_IO_IN_GE0           4U
-#define DEVICEFS_IO_IN_WCNSLS        5U
-#define DEVICEFS_IO_IN_OCNSLS        6U
-#define DEVICEFS_IO_IN_DTC0          7U
-#define DEVICEFS_IO_IN_MTC0          8U
-#define DEVICEFS_IO_IN_DSK0          9U
-#define DEVICEFS_IO_IN_COUNT         10U
+#define DEVICEFS_IO_IN_COUNT         DEVICEFS_DEV_COUNT
+#define DEVICEFS_IO_OUT_COUNT        DEVICEFS_DEV_COUNT
 
-#define DEVICEFS_IO_OUT_CTY0         0U
-#define DEVICEFS_IO_OUT_PTP0         1U
-#define DEVICEFS_IO_OUT_CP0          2U
-#define DEVICEFS_IO_OUT_DCS0         3U
-#define DEVICEFS_IO_OUT_GE0          4U
-#define DEVICEFS_IO_OUT_DPY0         5U
-#define DEVICEFS_IO_OUT_WCNSLS       6U
-#define DEVICEFS_IO_OUT_DTC0         7U
-#define DEVICEFS_IO_OUT_MTC0         8U
-#define DEVICEFS_IO_OUT_DSK0         9U
-#define DEVICEFS_IO_OUT_COUNT        10U
 
 extern kword_t devicefs_present;
 int devicefs_lookup(vnode_t dir, const struct vfs_name *name,

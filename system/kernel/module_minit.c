@@ -278,8 +278,8 @@ minit_diag_status6(kword_t name, kword_t first, kword_t second)
 static void
 minit_diag_nodev(kword_t name)
 {
-        minit_diag_status6(name, (kword_t)SIXBIT("    NO"),
-            (kword_t)SIXBIT(" DEV  "));
+        /* Non-detectable hardware is omitted from the boot log. */
+        (void)name;
 }
 
 static void

@@ -606,8 +606,7 @@ vfs_writechar(vnode_t node, kword_t off, unsigned int ch)
         kword_t end_chars;
 
         if (VFS_PROVIDER(node) == DEVICEFS_PROVIDER &&
-            VFS_LOCAL_KIND(node) == DEVICEFS_KIND_DEVICE &&
-            VFS_INDEX(node) == DEVICEFS_DEV_CTY0)
+            VFS_LOCAL_KIND(node) == DEVICEFS_KIND_DEVICE)
                 return VFS_DEVICE_IO;
         if (vfs_stat(node, &st) != 0 || st.type != VFS_TYPE_REG)
                 return -1;

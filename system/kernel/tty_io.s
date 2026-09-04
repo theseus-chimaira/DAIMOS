@@ -11,6 +11,7 @@
         .globl tty_dcs_putchar_address
         .globl tty_ge_putchar_address
         .globl pdp10_ret_arg
+        .globl devicefs_io_out
 
 tty_putchar:
         move 2,1
@@ -20,6 +21,7 @@ tty_putchar:
         caile 2,020
         jrst tty_putchar_ge
         subi 1,0400
+        aos devicefs_io_out+011
 tty_dcs_putchar_address:
         jrst pdp10_ret_arg
 
@@ -27,9 +29,11 @@ tty_putchar_ge:
         caile 2,024
         jrst pdp10_ret_arg
         subi 1,010400
+        aos devicefs_io_out+011
 tty_ge_putchar_address:
         jrst pdp10_ret_arg
 
 tty_putchar_cty:
+        aos devicefs_io_out+011
 tty_cty_putchar_address:
         jrst pdp10_ret_arg

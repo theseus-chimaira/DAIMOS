@@ -9,7 +9,7 @@ set dtc disabled
 set mtc disabled
 set dcs disabled
 set ge disabled
-set slave enabled
+set slave disabled
 
 deposit 020 710600000060
 deposit 021 710740000010

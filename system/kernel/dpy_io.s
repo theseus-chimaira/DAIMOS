@@ -5,6 +5,7 @@
 ; the clock PI-table entry with dpy_pi_handler.  If no clock exists, the call
 ; initially targets the KCORE zero-return stub; MINIT patches it to the clock service when present.
 
+        .globl devicefs_io_out
         .text
         .globl dpy_pi_handler
         .globl dpy_putword
@@ -33,7 +34,7 @@ dpy_putword:
 dpy_put_start:
         setom dpy_pending
         datao 0130,1
-        aos dpy_io_out
+        aos devicefs_io_out+010
 dpy_put_wait:
         skipe dpy_pending
         jrst dpy_put_wait
@@ -46,4 +47,3 @@ dpy_pending:
 
 ; Device-local accounting state; absent devices consume no fixed KCORE.
         .bss
-dpy_io_out: .block 1
