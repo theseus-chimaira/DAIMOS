@@ -59,7 +59,6 @@ typedef kword_t vnode_t;
 #define VFS_LOCK_SHARED      1U
 #define VFS_LOCK_EXCLUSIVE   2U
 #define VFS_LOCK_UNLOCK      3U
-#define VFS_NLOCK            8U
 
 /* Compile-time PDP-10 SIXBIT packing, also usable by host tests. */
 #define VFS_SIXCHAR(ch)      ((kword_t)(((unsigned int)(ch) - 040U) & 077U))
@@ -119,7 +118,6 @@ int vfs_write_words(vnode_t node, unsigned int off,
 int vfs_readchar(vnode_t node, kword_t off, unsigned int *chp);
 int vfs_writechar(vnode_t node, kword_t off, unsigned int ch);
 int vfs_sync(vnode_t node);
-int vfs_lock(vnode_t node, unsigned int owner, unsigned int op);
 
 int vfs_mount(vnode_t target, unsigned int provider,
     unsigned int kind, unsigned int index, unsigned int flags,

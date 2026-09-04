@@ -26,6 +26,10 @@ struct file {
 #define FILE_META_DESC_SHIFT 7U
 #define FILE_META_FLAGS(m)   ((m) & 077U)
 #define FILE_META_DESC(m)    (((m) >> FILE_META_DESC_SHIFT) & 077U)
+#define FILE_META_LOCK_SHARED 020000UL
+#define FILE_META_LOCK_EXCL   040000UL
+#define FILE_META_LOCK_MASK   060000UL
+#define FILE_META_REGULAR     0100000UL
 
 /* DAIMOS 1.x has one live user process, so FILE state is global. */
 int file_lookup_path(const kword_t *path, vnode_t *nodep);
@@ -33,6 +37,7 @@ int file_open(const kword_t *path, unsigned int flags);
 int file_close(int fd);
 int file_dup(int fd);
 int file_lock(int fd, unsigned int op);
+void file_unlock_mount(unsigned int mount_id);
 void file_close_all(void);
 int file_readchar(int fd);
 int file_writechar(int fd, unsigned int ch);

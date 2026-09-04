@@ -5,8 +5,6 @@
 file_table:
         .block  047                     ; 13 three-word struct file entries
         .globl  file_cwd
-file_cwd:
-        .block  1
 
         .text
 ; file_pdp10.s -- compact resident FILE/path primitives for PDP-6/PDP-10.

@@ -46,8 +46,3 @@ storage_dct_tape_jump:
 ; PI3 and PI5 each have exactly one registered storage router.  Leaf drivers
 ; may therefore use AC2 internally and bypass the generic AOBJN fanout tail
 ; by jumping directly to the common PI-dispatch return.
-
-        .bss
-storage_state: .block 1
-storage_iowd:  .block 1
-storage_count: .block 1

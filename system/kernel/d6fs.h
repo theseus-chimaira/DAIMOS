@@ -118,10 +118,12 @@ struct d6fs_super_info {
 
 struct d6fs_reader {
         kword_t alloc_cursor;
-        kword_t cache_block;
         void *opaque;
         struct d6fs_super_info super;
 };
+
+/* super.state is boot-only; after mount it is the runtime cache tag. */
+#define D6FS_READER_CACHE_BLOCK(reader) ((reader)->super.state)
 
 /*
  * Encode/decode one inline extent.  The run word stores START24|LENLOW12;

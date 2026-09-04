@@ -47,8 +47,6 @@ proc_wakeup_event:
         .bss
 proc_table:
         .block  4                       ; two two-word struct proc entries
-proc_wait_channel:
-        .block  1
 
         .data
         .globl  proc_comm_words

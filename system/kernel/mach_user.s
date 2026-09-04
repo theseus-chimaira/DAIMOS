@@ -54,5 +54,3 @@ mach_syscall_ac2:  .word 0
 mach_syscall_ac3:  .word 0
 mach_syscall_ac4:  .word 0
 mach_syscall_ac5:  .word 0
-mach_user_sp:      .word 0
-mach_kernel_sp:    .word 0

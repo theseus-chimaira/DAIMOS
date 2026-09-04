@@ -13,98 +13,16 @@
 
 static vnode_t vfs_mount_target[VFS_NMOUNT];
 static vnode_t vfs_mount_root[VFS_NMOUNT];
-static kword_t vfs_mount_ro;
+extern kword_t vfs_mount_ro;
 
-struct vfs_lock_entry {
-        vnode_t node;
-        kword_t state;
-};
-
-#define VFS_LOCK_EXBIT       ((kword_t)1UL << 35)
-#define VFS_LOCK_OWNER_MASK  0377777777777UL
-#define VFS_LOCK_OWNER_MAX   32U
-
-static struct vfs_lock_entry vfs_locks[VFS_NLOCK];
-
-static void
-vfs_unlock_mount(unsigned int mount_id)
-{
-        unsigned int i;
-
-        for (i = 0U; i < VFS_NLOCK; ++i)
-                if (vfs_locks[i].node != VFS_NODE_NONE &&
-                    VFS_MOUNT_ID(vfs_locks[i].node) == mount_id) {
-                        vfs_locks[i].node = VFS_NODE_NONE;
-                        vfs_locks[i].state = 0UL;
-                }
-}
-
-int
-vfs_lock(vnode_t node, unsigned int owner, unsigned int op)
-{
-        struct vfs_stat st;
-        struct vfs_lock_entry *entry;
-        struct vfs_lock_entry *free_entry;
-        kword_t bit;
-        kword_t owners;
-        unsigned int i;
-
-        if (node == VFS_NODE_NONE || owner == 0U || owner > VFS_LOCK_OWNER_MAX ||
-            (op != VFS_LOCK_SHARED && op != VFS_LOCK_EXCLUSIVE &&
-            op != VFS_LOCK_UNLOCK) || vfs_stat(node, &st) != 0 ||
-            st.type != VFS_TYPE_REG)
-                return -1;
-        entry = 0;
-        free_entry = 0;
-        for (i = 0U; i < VFS_NLOCK; ++i) {
-                if (vfs_locks[i].node == node) {
-                        entry = &vfs_locks[i];
-                        break;
-                }
-                if (free_entry == 0 &&
-                    vfs_locks[i].node == VFS_NODE_NONE)
-                        free_entry = &vfs_locks[i];
-        }
-        bit = (kword_t)1UL << owner;
-        if (op == VFS_LOCK_UNLOCK) {
-                if (entry == 0)
-                        return 0;
-                entry->state &= ~bit;
-                if ((entry->state & VFS_LOCK_EXBIT) != 0UL)
-                        entry->state &= ~VFS_LOCK_EXBIT;
-                if ((entry->state & VFS_LOCK_OWNER_MASK) == 0UL) {
-                        entry->node = VFS_NODE_NONE;
-                        entry->state = 0UL;
-                }
-                return 0;
-        }
-        if (entry == 0) {
-                if (free_entry == 0)
-                        return -1;
-                entry = free_entry;
-                entry->node = node;
-                entry->state = 0UL;
-        }
-        owners = entry->state & VFS_LOCK_OWNER_MASK;
-        if (op == VFS_LOCK_SHARED) {
-                if ((entry->state & VFS_LOCK_EXBIT) != 0UL &&
-                    owners != bit)
-                        return -1;
-                entry->state = (owners | bit);
-                return 0;
-        }
-        if ((owners & ~bit) != 0UL)
-                return -1;
-        entry->state = VFS_LOCK_EXBIT | bit;
-        return 0;
-}
+extern void file_unlock_mount(unsigned int mount_id);
 
 #define VFS_DEVICE_ROOT \
     VFS_NODE(DEVICEFS_PROVIDER, DEVICEFS_KIND_ROOT, 0U)
 #define VFS_PROC_ROOT \
     VFS_NODE(PROCFS_PROVIDER, PROCFS_KIND_ROOT, 0U)
 
-vnode_t vfs_namespace_root = VFS_NODE_NONE;
+extern vnode_t vfs_namespace_root;
 
 static inline void
 vfs_dirent_set6(struct vfs_dirent *ent, kword_t word,
@@ -204,7 +122,7 @@ vfs_unmount(vnode_t root)
         }
         if (vfs_namespace_root == root)
                 vfs_namespace_root = vfs_mount_target[i];
-        vfs_unlock_mount(id);
+        file_unlock_mount(id);
         vfs_mount_target[i] = VFS_NODE_NONE;
         vfs_mount_root[i] = VFS_NODE_NONE;
         vfs_mount_ro &= ~((kword_t)1UL << i);

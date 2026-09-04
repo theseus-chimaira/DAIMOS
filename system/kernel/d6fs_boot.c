@@ -57,7 +57,7 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
         reader->super = *super;
         D6FS_RUNTIME_SUPER_BLOCK(reader, 0U) = super_a;
         D6FS_RUNTIME_SUPER_BLOCK(reader, 1U) = super_b;
-        reader->cache_block = D6FS_CACHE_INVALID;
+        D6FS_READER_CACHE_BLOCK(reader) = D6FS_CACHE_INVALID;
 
         if (writable) {
                 if (super->state != D6FS_STATE_CLEAN)
@@ -71,7 +71,6 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
                 if (diskset_boot_write(dirty_block, scratch) != 0)
                         goto fail;
                 reader->super.sequence = super->sequence + 1UL;
-                reader->super.state = D6FS_STATE_DIRTY;
                 reader->opaque = (void *)(unsigned long)(id |
                     D6FS_PROVIDER_MOUNT_WRITABLE |
                     ((copy ^ 1U) ? D6FS_PROVIDER_MOUNT_COPY : 0U));
@@ -82,7 +81,7 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
 
 fail:
         reader->opaque = 0;
-        reader->cache_block = D6FS_CACHE_INVALID;
+        D6FS_READER_CACHE_BLOCK(reader) = D6FS_CACHE_INVALID;
         (void)vfs_unmount(root);
         return -1;
 }

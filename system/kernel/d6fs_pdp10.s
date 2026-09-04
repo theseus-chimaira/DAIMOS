@@ -174,20 +174,20 @@ d6fs_hash_zero:
 ; directly instead of forcing every caller to allocate a pointer temporary.
 d6fs_reader_get_block:
         jumpe   1,d6fs_get_block_fail
-        caml    2,7(1)                   ; logical >= total_blocks
+        caml    2,6(1)                   ; logical >= total_blocks
         jrst    d6fs_get_block_fail
-        camn    2,1(1)                   ; cache hit
+        camn    2,3(1)                   ; cache hit
         jrst    d6fs_get_block_hit
         push    17,010
         push    17,011
         move    010,1
         move    011,2
         movei   3,fs_block_workspace     ; shared transfer block
-        move    1,2(010)                 ; opaque
+        move    1,1(010)                 ; opaque
         move    2,011
         pushj   17,d6fs_diskset_read     ; fixed MINIT-patched DISKSET read
         jumpn   1,d6fs_get_block_read_fail
-        movem   011,1(010)
+        movem   011,3(010)
         movei   1,fs_block_workspace
         pop     17,011
         pop     17,010
@@ -213,7 +213,7 @@ d6fs_get_block_fail:
 d6fs_reader_fcb:
         jumpe   1,d6fs_reader_fcb_bad
         jumpe   4,d6fs_reader_fcb_bad
-        caml    2,012(1)                 ; index >= fcb_count
+        caml    2,011(1)                 ; index >= fcb_count
         jrst    d6fs_reader_fcb_bad
         push    17,010
         push    17,011
@@ -225,7 +225,7 @@ d6fs_reader_fcb:
         move    013,2                    ; index
         move    5,2
         lsh     5,-3                     ; index / 8
-        add     5,011(010)               ; fcb_start + block index
+        add     5,010(010)               ; fcb_start + block index
         move    2,5
         move    1,010
         pushj   17,d6fs_reader_get_block
@@ -240,8 +240,8 @@ d6fs_reader_fcb:
         blt     5,017(011)
         move    1,011
 d6fs_reader_fcb_decode_cache:
-        move    2,7(010)                 ; total_blocks
-        move    3,012(010)               ; fcb_count
+        move    2,6(010)                 ; total_blocks
+        move    3,011(010)               ; fcb_count
         move    4,012
         pushj   17,d6fs_fcb_decode_valid
         jumpe   1,d6fs_reader_fcb_fail
@@ -264,7 +264,7 @@ d6fs_reader_fcb_bad:
 d6fs_reader_put_fcb:
         jumpe   1,d6fs_reader_put_fcb_bad
         jumpe   3,d6fs_reader_put_fcb_bad
-        caml    2,012(1)
+        caml    2,011(1)
         jrst    d6fs_reader_put_fcb_bad
         push    17,010
         push    17,011
@@ -275,7 +275,7 @@ d6fs_reader_put_fcb:
         move    012,2                    ; index
         move    013,2
         lsh     013,-3
-        add     013,011(010)             ; logical FCB block
+        add     013,010(010)             ; logical FCB block
         move    1,010
         move    2,013
         pushj   17,d6fs_reader_get_block
@@ -328,7 +328,7 @@ d6fs_bitmap_mask:
 ; Return 0 free, 1 allocated, -1 on I/O/range error.
 d6fs_freemap_state:
         jumpe   1,d6fs_bitmap_error
-        caml    2,7(1)
+        caml    2,6(1)
         jrst    d6fs_bitmap_error
         push    17,010
         push    17,011
@@ -337,11 +337,11 @@ d6fs_freemap_state:
         move    010,1                     ; reader
         move    1,2
         pushj   17,d6fs_bitmap_pos
-        caml    1,014(010)                ; map block >= freemap_blocks
+        caml    1,013(010)                ; map block >= freemap_blocks
         jrst    d6fs_freemap_state_fail
         move    011,2                     ; word index
         move    012,3                     ; bit index
-        add     1,013(010)                ; freemap_start + mbi
+        add     1,012(010)                ; freemap_start + mbi
         move    2,1
         move    1,010
         pushj   17,d6fs_reader_get_block
@@ -374,9 +374,9 @@ d6fs_freemap_state_fail:
 d6fs_free_run:
         jumpe   1,d6fs_free_run_error
         jumpe   3,d6fs_free_run_error
-        caml    2,7(1)                   ; start >= total_blocks
+        caml    2,6(1)                   ; start >= total_blocks
         jrst    d6fs_free_run_error
-        move    4,7(1)
+        move    4,6(1)
         sub     4,2                      ; blocks available from start
         camle   3,4
         jrst    d6fs_free_run_error
@@ -417,9 +417,7 @@ d6fs_alloc_run:
         jumpe   1,d6fs_alloc_run_error
         jumpe   3,d6fs_alloc_run_error
         jumpe   4,d6fs_alloc_run_error
-        skipn   1(1)                     ; writable reader required
-        jrst    d6fs_alloc_run_error
-        skipn   7(1)                     ; total_blocks
+        skipn   6(1)                     ; total_blocks
         jrst    d6fs_alloc_run_error
         skipn   5,-1(17)                 ; fifth C arg: blocksp
         jrst    d6fs_alloc_run_error
@@ -435,7 +433,7 @@ d6fs_alloc_run:
         move    012,3                    ; max_blocks
         move    013,4                    ; startp
         move    014,5                    ; blocksp
-        move    015,7(1)                 ; total_blocks
+        move    015,6(1)                 ; total_blocks
         move    1,011
         idiv    1,015
         move    011,2                    ; cursor %= total_blocks
@@ -519,17 +517,17 @@ d6fs_alloc_run_error:
 ; Scan whole 36-bit words instead of testing as many as 4608 individual bits.
 d6fs_map_block_has_free_i:
         jumpe   1,d6fs_bitmap_error
-        caml    2,014(1)
+        caml    2,013(1)
         jrst    d6fs_bitmap_error
         move    010,1
         move    011,2
         move    3,2
         imuli   3,011000                  ; first logical block represented
-        move    012,7(1)
+        move    012,6(1)
         sub     012,3                     ; valid bits remaining
         camle   012,[011000]
         movei   012,011000
-        add     2,013(1)
+        add     2,012(1)
         pushj   17,d6fs_reader_get_block
         jumpe   1,d6fs_map_scan_fail
         move    2,012
@@ -575,12 +573,12 @@ d6fs_summary_set_i:
         move    014,3
         move    1,2
         pushj   17,d6fs_bitmap_pos
-        caml    1,016(010)
+        caml    1,015(010)
         jrst    d6fs_summary_set_fail
         move    011,1                     ; summary block index
         move    012,2                     ; word index
         move    013,3                     ; bit index
-        add     1,015(010)
+        add     1,014(010)
         move    2,1
         move    1,010
         pushj   17,d6fs_reader_get_block
@@ -596,7 +594,7 @@ d6fs_summary_clear:
         andcam  1,(012)
 d6fs_summary_commit:
         move    2,011
-        add     2,015(010)
+        add     2,014(010)
         move    1,010
         pushj   17,d6fs_reader_commit_cache
         jrst    d6fs_summary_set_done
@@ -609,7 +607,7 @@ d6fs_summary_set_done:
 ; int d6fs_freemap_set(reader, logical, allocated)
 d6fs_freemap_set:
         jumpe   1,d6fs_bitmap_error
-        caml    2,7(1)
+        caml    2,6(1)
         jrst    d6fs_bitmap_error
         push    17,010
         push    17,011
@@ -621,12 +619,12 @@ d6fs_freemap_set:
         move    014,3
         move    1,2
         pushj   17,d6fs_bitmap_pos
-        caml    1,014(010)
+        caml    1,013(010)
         jrst    d6fs_freemap_set_fail
         move    011,1                     ; map block index
         move    012,2                     ; word index
         move    013,3                     ; bit index
-        add     1,013(010)
+        add     1,012(010)
         move    2,1
         move    1,010
         pushj   17,d6fs_reader_get_block
@@ -642,7 +640,7 @@ d6fs_freemap_clear:
         andcam  1,(012)
 d6fs_freemap_commit:
         move    2,011
-        add     2,013(010)
+        add     2,012(010)
         move    1,010
         pushj   17,d6fs_reader_commit_cache
         jumpn   1,d6fs_freemap_set_fail
@@ -936,33 +934,33 @@ d6fs_reader_write_bad:
 ; int d6fs_reader_commit_cache(reader, logical)
 d6fs_reader_commit_cache:
         jumpe   1,d6fs_reader_commit_bad
-        move    4,2(1)                   ; packed mount state
+        move    4,1(1)                   ; packed mount state
         trnn    4,0100                    ; D6FS_PROVIDER_MOUNT_WRITABLE
         jrst    d6fs_reader_commit_invalidate
-        caml    2,7(1)                   ; logical >= total_blocks
+        caml    2,6(1)                   ; logical >= total_blocks
         jrst    d6fs_reader_commit_invalidate
         push    17,010
         push    17,011
         move    010,1
         move    011,2
-        move    1,2(010)                 ; opaque
+        move    1,1(010)                 ; opaque
         move    2,011
         movei   3,fs_block_workspace
         pushj   17,d6fs_diskset_write
         jumpn   1,d6fs_reader_commit_fail_saved
-        movem   011,1(010)
+        movem   011,3(010)
         setz    1,
         pop     17,011
         pop     17,010
         popj    17,
 d6fs_reader_commit_fail_saved:
-        setom   1(010)
+        setom   3(010)
         pop     17,011
         pop     17,010
         seto    1,
         popj    17,
 d6fs_reader_commit_invalidate:
-        setom   1(1)
+        setom   3(1)
 d6fs_reader_commit_bad:
         seto    1,
         popj    17,
@@ -972,7 +970,7 @@ d6fs_reader_commit_bad:
 d6fs_reader_write_block:
         jumpe   1,d6fs_reader_write_block_bad
         jumpe   3,d6fs_reader_write_block_bad
-        caml    2,7(1)
+        caml    2,6(1)
         jrst    d6fs_reader_write_block_bad
         camn    3,[fs_block_workspace]
         jrst    d6fs_reader_write_block_commit
@@ -989,7 +987,7 @@ d6fs_reader_write_block_bad:
 ; int d6fs_reader_zero_block(reader, logical)
 d6fs_reader_zero_block:
         jumpe   1,d6fs_reader_zero_block_bad
-        caml    2,7(1)
+        caml    2,6(1)
         jrst    d6fs_reader_zero_block_bad
         pushj   17,fs_zero_block_workspace
         jrst    d6fs_reader_commit_cache

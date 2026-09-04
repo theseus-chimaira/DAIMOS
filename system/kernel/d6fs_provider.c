@@ -237,10 +237,9 @@ d6fs_provider_prepare_unmount(vnode_t root)
                     fs_block_workspace) != 0)
                         return -1;
                 ++d6fs_provider_reader.super.sequence;
-                d6fs_provider_reader.super.state = D6FS_STATE_CLEAN;
         }
         d6fs_provider_reader.opaque = 0;
-        d6fs_provider_reader.cache_block = D6FS_CACHE_INVALID;
+        D6FS_READER_CACHE_BLOCK(&d6fs_provider_reader) = D6FS_CACHE_INVALID;
         return 0;
 }
 

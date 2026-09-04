@@ -196,6 +196,8 @@ file_open(const kword_t *path, unsigned int flags)
                 if (fp != 0) {
                         fp->meta |= (kword_t)((unsigned int)fd + 1U) <<
                             FILE_META_DESC_SHIFT;
+                        if (st.type == VFS_TYPE_REG)
+                                fp->meta |= FILE_META_REGULAR;
                         if ((flags & FILE_O_APPEND) != 0U)
                                 fp->off_chars = st.size_chars;
                 }
@@ -208,29 +210,12 @@ int
 file_close(int fd)
 {
         struct file *fp;
-        vnode_t node;
-        unsigned int desc;
-        unsigned int i;
-        int still_open;
-
         fp = file_find(fd);
         if (fp == 0 || vfs_sync(fp->node) != 0)
                 return -1;
-        node = fp->node;
-        desc = FILE_META_DESC(fp->meta);
         fp->meta = 0U;
         fp->node = VFS_NODE_NONE;
         fp->off_chars = 0;
-        still_open = 0;
-        if (desc != 0U)
-                for (i = 0U; i < FILE_NFILE; ++i)
-                        if (file_table[i].node != VFS_NODE_NONE &&
-                            FILE_META_DESC(file_table[i].meta) == desc) {
-                                still_open = 1;
-                                break;
-                        }
-        if (!still_open && desc != 0U)
-                (void)vfs_lock(node, desc, VFS_LOCK_UNLOCK);
         return 0;
 }
 
@@ -254,8 +239,9 @@ file_dup(int fd)
         if (dst == 0)
                 return -1;
         dst->off_chars = src->off_chars;
-        dst->meta |= (kword_t)FILE_META_DESC(src->meta) <<
-            FILE_META_DESC_SHIFT;
+        dst->meta |= ((kword_t)FILE_META_DESC(src->meta) <<
+            FILE_META_DESC_SHIFT) |
+            (src->meta & (FILE_META_LOCK_MASK | FILE_META_REGULAR));
         return newfd;
 }
 
@@ -263,15 +249,56 @@ int
 file_lock(int fd, unsigned int op)
 {
         struct file *fp;
+        struct file *other;
+        kword_t mode;
         unsigned int desc;
+        unsigned int i;
 
         fp = file_find(fd);
-        if (fp == 0 || (fp->meta & FILE_META_DIR) != 0U)
+        if (fp == 0 || (fp->meta & FILE_META_REGULAR) == 0U ||
+            (op != VFS_LOCK_SHARED && op != VFS_LOCK_EXCLUSIVE &&
+            op != VFS_LOCK_UNLOCK))
                 return -1;
         desc = FILE_META_DESC(fp->meta);
         if (desc == 0U)
                 return -1;
-        return vfs_lock(fp->node, desc, op);
+        mode = 0UL;
+        if (op == VFS_LOCK_SHARED)
+                mode = FILE_META_LOCK_SHARED;
+        else if (op == VFS_LOCK_EXCLUSIVE)
+                mode = FILE_META_LOCK_EXCL;
+
+        if (mode != 0UL)
+                for (i = 0U; i < FILE_NFILE; ++i) {
+                        other = &file_table[i];
+                        if (other->node != fp->node ||
+                            FILE_META_DESC(other->meta) == desc)
+                                continue;
+                        if ((other->meta & FILE_META_LOCK_EXCL) != 0UL ||
+                            (mode == FILE_META_LOCK_EXCL &&
+                            (other->meta & FILE_META_LOCK_MASK) != 0UL))
+                                return -1;
+                }
+        for (i = 0U; i < FILE_NFILE; ++i) {
+                other = &file_table[i];
+                if (other->node == fp->node &&
+                    FILE_META_DESC(other->meta) == desc)
+                        other->meta = (other->meta & ~FILE_META_LOCK_MASK) |
+                            mode;
+        }
+        return 0;
+}
+
+void
+file_unlock_mount(unsigned int mount_id)
+{
+        unsigned int i;
+
+        for (i = 0U; i < FILE_NFILE; ++i)
+                if (file_table[i].node != VFS_NODE_NONE &&
+                    VFS_MOUNT_ID(file_table[i].node) == mount_id)
+                        file_table[i].meta &=
+                            ~(FILE_META_LOCK_MASK | FILE_META_REGULAR);
 }
 
 void
