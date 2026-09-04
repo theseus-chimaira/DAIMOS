@@ -60,3 +60,56 @@ dtfs_mres_vector:
         .word   dtfs_format_unit         ; 17 FORMAT_UNIT
         .word   dtfs_mount_unit          ; 18 MOUNT_UNIT
         .text
+
+; Compact vnode predicates.  The vnode encoding is provider:6, kind/mount:12,
+; index:18.  Mask provider plus local kind in one operation; mount-id and file
+; index remain independent tests.
+        .globl  dtfs_is_root
+dtfs_is_root:
+        move    2,1
+        and     2,[770077000000]
+        came    2,[050001000000]       ; DTFS provider, root local kind
+        jrst    dtfs_is_false
+        move    2,1
+        and     2,[007700000000]       ; non-zero mount id required
+        jumpe   2,dtfs_is_false
+        movei   1,1
+        popj    17,
+
+        .globl  dtfs_is_file
+dtfs_is_file:
+        move    2,1
+        and     2,[770077000000]
+        came    2,[050002000000]       ; DTFS provider, file local kind
+        jrst    dtfs_is_false
+        move    2,1
+        and     2,[007700000000]
+        jumpe   2,dtfs_is_false
+        move    2,1
+        andi    2,0777777
+        cail    2,026                  ; DTFS_FILE_SLOTS = 22 decimal
+        jrst    dtfs_is_false
+        movei   1,1
+        popj    17,
+
+dtfs_is_false:
+        setz    1,
+        popj    17,
+
+; DTC call veneers.  Shuffle arguments high-to-low so no temporary ACs are
+; needed: (unit, block, buf) -> (service, unit, block, buf).
+        .globl  dtfs_dtc_read
+dtfs_dtc_read:
+        move    4,3
+        move    3,2
+        move    2,1
+        move    1,dtfs_dtc_read_addr
+        jrst    dtfs_dtc_call
+
+        .globl  dtfs_dtc_write
+dtfs_dtc_write:
+        move    4,3
+        move    3,2
+        move    2,1
+        move    1,dtfs_dtc_write_addr
+        jrst    dtfs_dtc_call

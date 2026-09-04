@@ -31,22 +31,8 @@ static kword_t dtfs_dir[DTFS_BLOCK_WORDS];
 static unsigned int dtfs_cache_mount;
 static unsigned int dtfs_units[VFS_NMOUNT];
 
-static int
-dtfs_is_root(vnode_t node)
-{
-        return VFS_PROVIDER(node) == DTFS_PROVIDER &&
-            VFS_LOCAL_KIND(node) == DTFS_KIND_ROOT &&
-            VFS_MOUNT_ID(node) != 0U;
-}
-
-static int
-dtfs_is_file(vnode_t node)
-{
-        return VFS_PROVIDER(node) == DTFS_PROVIDER &&
-            VFS_LOCAL_KIND(node) == DTFS_KIND_FILE &&
-            VFS_MOUNT_ID(node) != 0U &&
-            VFS_INDEX(node) < DTFS_FILE_SLOTS;
-}
+extern int dtfs_is_root(vnode_t node);
+extern int dtfs_is_file(vnode_t node);
 
 static unsigned int
 dtfs_owner(unsigned int block)
@@ -73,17 +59,8 @@ dtfs_set_owner(unsigned int block, unsigned int owner)
             ((kword_t)owner << shift);
 }
 
-static int
-dtfs_dtc_read(unsigned int unit, unsigned int block, kword_t *buf)
-{
-        return dtfs_dtc_call(dtfs_dtc_read_addr, unit, block, buf);
-}
-
-static int
-dtfs_dtc_write(unsigned int unit, unsigned int block, kword_t *buf)
-{
-        return dtfs_dtc_call(dtfs_dtc_write_addr, unit, block, buf);
-}
+extern int dtfs_dtc_read(unsigned int unit, unsigned int block, kword_t *buf);
+extern int dtfs_dtc_write(unsigned int unit, unsigned int block, kword_t *buf);
 
 static int
 dtfs_native_valid(void)
