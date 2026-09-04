@@ -133,52 +133,33 @@ dtfs_commit(vnode_t node)
 }
 
 static int
-dtfs_name_valid(const struct vfs_name *name)
-{
-        return vfs_name_valid(name) &&
-            name->chars <= DTFS_NAME_MAX_CHARS &&
-            name->words[2] == 0 && name->words[3] == 0;
-}
-
-static int
-dtfs_slot_name_eq(unsigned int slot, const struct vfs_name *name)
+dtfs_scan_slot(const struct vfs_name *name, unsigned int *slotp)
 {
         unsigned int base;
-
-        if (!dtfs_name_valid(name))
-                return 0;
-        base = DTFS_NAME_BASE + slot * 2U;
-        return dtfs_dir[base] == name->words[0] &&
-            (dtfs_dir[base + 1U] & DTFS_NAME2_MASK) ==
-            (name->words[1] & DTFS_NAME2_MASK);
-}
-
-static int
-dtfs_find(const struct vfs_name *name, unsigned int *slotp)
-{
         unsigned int slot;
 
-        for (slot = 0U; slot < DTFS_FILE_SLOTS; ++slot) {
-                if (dtfs_dir[DTFS_NAME_BASE + slot * 2U] != 0 &&
-                    dtfs_slot_name_eq(slot, name)) {
-                        if (slotp != 0)
-                                *slotp = slot;
-                        return 0;
-                }
+        if (name != 0) {
+                if (!vfs_name_valid(name) ||
+                    name->chars > DTFS_NAME_MAX_CHARS ||
+                    name->words[2] != 0 || name->words[3] != 0)
+                        return -1;
+        } else if (slotp == 0) {
+                return -1;
         }
-        return -1;
-}
-
-static int
-dtfs_free_slot(unsigned int *slotp)
-{
-        unsigned int slot;
-
         for (slot = 0U; slot < DTFS_FILE_SLOTS; ++slot) {
-                if (dtfs_dir[DTFS_NAME_BASE + slot * 2U] == 0) {
-                        *slotp = slot;
-                        return 0;
+                base = DTFS_NAME_BASE + slot * 2U;
+                if (name == 0) {
+                        if (dtfs_dir[base] != 0)
+                                continue;
+                } else {
+                        if (dtfs_dir[base] != name->words[0] ||
+                            (dtfs_dir[base + 1U] & DTFS_NAME2_MASK) !=
+                            (name->words[1] & DTFS_NAME2_MASK))
+                                continue;
                 }
+                if (slotp != 0)
+                        *slotp = slot;
+                return 0;
         }
         return -1;
 }
@@ -207,18 +188,6 @@ dtfs_clear_slot(unsigned int slot)
         dtfs_dir[22U + slot] &= ~1UL;
 }
 
-static unsigned int
-dtfs_last_words(unsigned int slot)
-{
-        unsigned int low;
-        unsigned int high;
-
-        low = (unsigned int)(dtfs_dir[DTFS_NAME_BASE + slot * 2U + 1U] &
-            077UL);
-        high = (dtfs_dir[22U + slot] & 1UL) != 0 ? 0100U : 0U;
-        return low | high;
-}
-
 static void
 dtfs_set_last_words(unsigned int slot, unsigned int words)
 {
@@ -230,12 +199,6 @@ dtfs_set_last_words(unsigned int slot, unsigned int words)
                 dtfs_dir[22U + slot] |= 1UL;
         else
                 dtfs_dir[22U + slot] &= ~1UL;
-}
-
-static unsigned int
-dtfs_exec(unsigned int slot)
-{
-        return (dtfs_dir[slot] & 1UL) != 0;
 }
 
 static void
@@ -251,12 +214,6 @@ static unsigned int
 dtfs_hdr_next(kword_t h)
 {
         return (unsigned int)((h >> DTFS_NEXT_SHIFT) & DTFS_BLOCKNO_MASK);
-}
-
-static unsigned int
-dtfs_hdr_first(kword_t h)
-{
-        return (unsigned int)((h >> DTFS_FIRST_SHIFT) & DTFS_BLOCKNO_MASK);
 }
 
 static kword_t
@@ -291,7 +248,10 @@ dtfs_size_words(unsigned int slot)
         blocks = dtfs_block_count(slot);
         if (blocks == 0U)
                 return 0U;
-        last = dtfs_last_words(slot);
+        last = (unsigned int)(dtfs_dir[DTFS_NAME_BASE + slot * 2U + 1U] &
+            077UL);
+        if ((dtfs_dir[22U + slot] & 1UL) != 0)
+                last |= 0100U;
         if (last == 0U || last > DTFS_DATA_WORDS)
                 return 0U;
         return (blocks - 1U) * DTFS_DATA_WORDS + last;
@@ -312,7 +272,8 @@ dtfs_first_block(unsigned int mount, unsigned int slot,
                         continue;
                 if (dtfs_dtc_read(unit, block, dtfs_block) != 0)
                         return -1;
-                if (dtfs_hdr_first(dtfs_block[0]) == block) {
+                if (((dtfs_block[0] >> DTFS_FIRST_SHIFT) &
+                    DTFS_BLOCKNO_MASK) == block) {
                         *blockp = block;
                         return 0;
                 }
@@ -524,7 +485,7 @@ dtfs_lookup(vnode_t dir, const struct vfs_name *name,
         unsigned int slot;
 
         if (!dtfs_is_root(dir) || nodep == 0 || dtfs_load(dir) != 0 ||
-            dtfs_find(name, &slot) != 0)
+            dtfs_scan_slot(name, &slot) != 0)
                 return -1;
         *nodep = VFS_NODE(DTFS_PROVIDER,
             VFS_MOUNT_KIND(VFS_MOUNT_ID(dir), DTFS_KIND_FILE), slot);
@@ -583,7 +544,8 @@ dtfs_stat(vnode_t node, struct vfs_stat *st)
                 return -1;
         words = dtfs_size_words(slot);
         st->type = VFS_TYPE_REG;
-        st->mode = 0666U | (dtfs_exec(slot) ? 0111U : 0U);
+        st->mode = 0666U |
+            ((dtfs_dir[slot] & 1UL) != 0 ? 0111U : 0U);
         st->size_words = words;
         st->size_chars = (kword_t)words * 4U;
         return 0;
@@ -605,9 +567,9 @@ dtfs_create(vnode_t dir, const struct vfs_name *name,
 {
         unsigned int slot;
 
-        if (!dtfs_is_root(dir) || nodep == 0 || !dtfs_name_valid(name) ||
-            dtfs_load(dir) != 0 || dtfs_find(name, 0) == 0 ||
-            dtfs_free_slot(&slot) != 0)
+        if (!dtfs_is_root(dir) || nodep == 0 || dtfs_load(dir) != 0 ||
+            dtfs_scan_slot(name, 0) == 0 ||
+            dtfs_scan_slot(0, &slot) != 0)
                 return -1;
         dtfs_set_name(slot, name);
         dtfs_set_last_words(slot, 0U);
@@ -628,7 +590,7 @@ dtfs_unlink(vnode_t dir, const struct vfs_name *name)
         vnode_t node;
 
         if (!dtfs_is_root(dir) || dtfs_load(dir) != 0 ||
-            dtfs_find(name, &slot) != 0)
+            dtfs_scan_slot(name, &slot) != 0)
                 return -1;
         node = VFS_NODE(DTFS_PROVIDER,
             VFS_MOUNT_KIND(VFS_MOUNT_ID(dir), DTFS_KIND_FILE), slot);
@@ -646,8 +608,8 @@ dtfs_rename(vnode_t olddir, const struct vfs_name *oldname,
 
         if (!dtfs_is_root(olddir) || !dtfs_is_root(newdir) ||
             VFS_MOUNT_ID(olddir) != VFS_MOUNT_ID(newdir) ||
-            !dtfs_name_valid(newname) || dtfs_load(olddir) != 0 ||
-            dtfs_find(oldname, &slot) != 0 || dtfs_find(newname, 0) == 0)
+            dtfs_load(olddir) != 0 || dtfs_scan_slot(oldname, &slot) != 0 ||
+            dtfs_scan_slot(newname, 0) == 0)
                 return -1;
         dtfs_set_name(slot, newname);
         return dtfs_commit(olddir);
