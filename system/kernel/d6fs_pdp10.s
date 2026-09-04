@@ -990,15 +990,9 @@ d6fs_reader_zero_block_bad:
 ; Compact D6FS provider metadata/growth helpers.  These are leaf-sized
 ; representation operations shared by the larger C policy paths.
         .globl  d6fs_provider_set_extent
-; int d6fs_provider_set_extent(fcb, index, start, blocks)
+; void d6fs_provider_set_extent(fcb, index, start, blocks)
+; Internal helper: callers pass validated index/start/block values.
 d6fs_provider_set_extent:
-        caile   2,6
-        jrst    d6fs_provider_extent_bad
-        caml    3,[0100000000]          ; 24-bit logical start
-        jrst    d6fs_provider_extent_bad
-        jumpe   4,d6fs_provider_extent_bad
-        camle   4,[0200000]             ; 17-bit encoded block count
-        jrst    d6fs_provider_extent_bad
         subi    4,1                     ; encoded length is blocks - 1
         move    5,3
         lsh     5,014
@@ -1020,18 +1014,12 @@ d6fs_provider_set_extent:
         lsh     4,0(5)
         ior     6,4
         movem   6,5(1)
-        setz    1,
-        popj    17,
-
-d6fs_provider_extent_bad:
-        seto    1,
         popj    17,
 
         .globl  d6fs_provider_clear_extent
-; int d6fs_provider_clear_extent(fcb, index)
+; void d6fs_provider_clear_extent(fcb, index)
+; Internal helper: callers pass an index in [0,D6FS_EXTENTS).
 d6fs_provider_clear_extent:
-        caile   2,6
-        jrst    d6fs_provider_extent_bad
         move    3,1
         addi    3,6
         add     3,2
@@ -1042,7 +1030,6 @@ d6fs_provider_clear_extent:
         movei   4,037
         lsh     4,0(3)
         andcam  4,5(1)
-        setz    1,
         popj    17,
 
         .globl  d6fs_provider_blocks_for_words
@@ -1076,24 +1063,6 @@ d6fs_provider_free_tail_loop:
 d6fs_provider_free_tail_ok:
         setz    1,
 d6fs_provider_free_tail_done:
-        pop     17,011
-        pop     17,010
-        popj    17,
-
-        .globl  d6fs_provider_rollback_growth
-; int d6fs_provider_rollback_growth(fcb, old_fcb, old_blocks)
-d6fs_provider_rollback_growth:
-        push    17,010
-        push    17,011
-        move    010,1
-        move    011,2
-        move    2,3
-        pushj   17,d6fs_provider_free_file_tail
-        move    1,011
-        move    2,010
-        movei   3,020
-        pushj   17,fs_copy_words
-        seto    1,
         pop     17,011
         pop     17,010
         popj    17,
