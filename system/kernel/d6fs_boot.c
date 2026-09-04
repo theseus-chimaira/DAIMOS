@@ -20,7 +20,6 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
 {
         struct d6fs_provider_mount *mp;
         struct d6fs_reader *reader;
-        unsigned int *mount_idp;
         vnode_t target;
         vnode_t root;
         unsigned int id;
@@ -32,7 +31,7 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
             super->total_blocks == 0UL || super->fcb_count == 0UL ||
             super->root_fcb >= super->fcb_count ||
             d6fs_provider_mount_addr == 0U || d6fs_provider_reader_addr == 0U ||
-            d6fs_provider_mount_id_addr == 0U || d6fs_diskset_read_addr == 0U)
+            d6fs_diskset_read_addr == 0U)
                 return -1;
 
         writable = (flags & VFS_MOUNT_RDONLY) == 0U &&
@@ -52,27 +51,22 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
         }
 
         mp = (struct d6fs_provider_mount *)(unsigned long)d6fs_provider_mount_addr;
-        mount_idp = (unsigned int *)(unsigned long)d6fs_provider_mount_id_addr;
         mp->alloc_cursor = super->summary_start + super->summary_blocks;
-        mp->super_block[0] = 0UL;
-        mp->super_block[1] = 0UL;
-        mp->super_copy = D6FS_PROVIDER_SUPER_DISABLED;
         if (mp->alloc_cursor >= super->total_blocks)
                 mp->alloc_cursor = 0UL;
 
-        *mount_idp = id;
+        reader->opaque = (void *)(unsigned long)id;
         reader->read_block = (d6fs_read_block_fn)(unsigned long)d6fs_diskset_read_addr;
         reader->write_block = writable ?
             (d6fs_write_block_fn)(unsigned long)d6fs_diskset_write_addr : 0;
-        reader->opaque = 0;
         reader->super = *super;
+        D6FS_RUNTIME_SUPER_BLOCK(reader, 0U) = super_a;
+        D6FS_RUNTIME_SUPER_BLOCK(reader, 1U) = super_b;
         reader->cache_block = D6FS_CACHE_INVALID;
 
         if (writable) {
                 if (super->state != D6FS_STATE_CLEAN)
                         goto fail;
-                mp->super_block[0] = super_a;
-                mp->super_block[1] = super_b;
                 dirty_block = copy == 0U ? super_b : super_a;
                 scratch = d6fs_boot_block_buffer();
                 if (diskset_boot_read(dirty_block, scratch) != 0)
@@ -83,15 +77,16 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
                         goto fail;
                 reader->super.sequence = super->sequence + 1UL;
                 reader->super.state = D6FS_STATE_DIRTY;
-                mp->super_copy = copy ^ 1U;
+                reader->opaque = (void *)(unsigned long)(id |
+                    D6FS_PROVIDER_MOUNT_WRITABLE |
+                    ((copy ^ 1U) ? D6FS_PROVIDER_MOUNT_COPY : 0U));
         }
 
         *rootp = root;
         return 0;
 
 fail:
-        mp->super_copy = D6FS_PROVIDER_SUPER_DISABLED;
-        *mount_idp = 0U;
+        reader->opaque = 0;
         reader->read_block = 0;
         reader->write_block = 0;
         reader->cache_block = D6FS_CACHE_INVALID;

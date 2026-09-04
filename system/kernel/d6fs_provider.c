@@ -3,7 +3,6 @@
 
 struct d6fs_provider_mount d6fs_provider_mount_state;
 struct d6fs_reader d6fs_provider_reader;
-unsigned int d6fs_provider_mount_id;
 
 void d6fs_provider_set_extent(kword_t fcb[D6FS_FCB_WORDS],
     unsigned int index, kword_t start, kword_t blocks);
@@ -25,7 +24,9 @@ d6fs_provider_load(vnode_t node)
         unsigned int id;
 
         id = VFS_MOUNT_ID(node);
-        if (id == 0U || id != d6fs_provider_mount_id ||
+        if (id == 0U || id !=
+            ((unsigned int)(unsigned long)d6fs_provider_reader.opaque &
+            D6FS_PROVIDER_MOUNT_ID_MASK) ||
             d6fs_provider_reader.read_block == 0)
                 return -1;
         return 0;
@@ -224,24 +225,26 @@ d6fs_provider_prepare_unmount(vnode_t root)
         if (d6fs_provider_load(root) != 0)
                 return -1;
         mp = &d6fs_provider_mount_state;
-        if (mp->super_copy != D6FS_PROVIDER_SUPER_DISABLED &&
+        if ((((unsigned int)(unsigned long)d6fs_provider_reader.opaque &
+            D6FS_PROVIDER_MOUNT_WRITABLE) != 0U) &&
             d6fs_provider_reader.write_block != 0) {
-                copy = mp->super_copy ^ 1U;
+                copy = (((unsigned int)(unsigned long)
+                    d6fs_provider_reader.opaque &
+                    D6FS_PROVIDER_MOUNT_COPY) != 0U) ? 0U : 1U;
                 if (d6fs_reader_get_block(&d6fs_provider_reader,
-                    mp->super_block[copy]) == 0)
+                    D6FS_RUNTIME_SUPER_BLOCK(&d6fs_provider_reader, copy)) == 0)
                         return -1;
                 fs_block_workspace[D6FS_SB_SEQUENCE] =
                     d6fs_provider_reader.super.sequence + 1UL;
                 fs_block_workspace[D6FS_SB_STATE] = D6FS_STATE_CLEAN;
                 if (d6fs_reader_write_block(&d6fs_provider_reader,
-                    mp->super_block[copy], fs_block_workspace) != 0)
+                    D6FS_RUNTIME_SUPER_BLOCK(&d6fs_provider_reader, copy),
+                    fs_block_workspace) != 0)
                         return -1;
                 ++d6fs_provider_reader.super.sequence;
                 d6fs_provider_reader.super.state = D6FS_STATE_CLEAN;
-                mp->super_copy = copy;
         }
-        mp->super_copy = D6FS_PROVIDER_SUPER_DISABLED;
-        d6fs_provider_mount_id = 0U;
+        d6fs_provider_reader.opaque = 0;
         d6fs_provider_reader.read_block = 0;
         d6fs_provider_reader.write_block = 0;
         d6fs_provider_reader.cache_block = D6FS_CACHE_INVALID;

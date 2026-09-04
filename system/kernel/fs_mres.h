@@ -35,7 +35,6 @@ struct fs_mres_request {
         kword_t c;
         kword_t d;
         kword_t e;
-        kword_t f;
 };
 
 extern kword_t fs_memfs_service_jump;
