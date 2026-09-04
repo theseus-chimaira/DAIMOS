@@ -26,7 +26,6 @@
 /* Provider-private operation 20 is intentionally reused.  Calls are already
  * directed to a specific provider MRES, so global sparse numbering only wastes
  * resident vector words. */
-#define FS_MRES_OP_D6FS_MOUNT_ROOT     20U
 #define FS_MRES_OP_MEMFS_USAGE          20U
 
 struct fs_mres_request {

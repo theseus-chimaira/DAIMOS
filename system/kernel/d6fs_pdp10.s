@@ -696,7 +696,6 @@ d6fs_bitmap_error:
         .globl  d6fs_provider_write_words
         .globl  d6fs_provider_sync
         .globl  d6fs_provider_prepare_unmount
-        .globl  d6fs_mres_mount_root
 
 ; D6FS provider dispatch.  CREATE, MKDIR and SYMLINK share one compact
 ; object creator.  The wrappers only reshape the generic request ABI.
@@ -740,7 +739,7 @@ d6fs_mres_symlink:
 
         .data
 d6fs_mres_vector:
-        .word   024                      ; highest operation: 20 decimal
+        .word   020                      ; highest operation: 16 decimal
         .word   d6fs_provider_lookup     ; 1 LOOKUP
         .word   d6fs_provider_readdir    ; 2 READDIR
         .word   d6fs_provider_stat       ; 3 STAT
@@ -757,10 +756,6 @@ d6fs_mres_vector:
         .word   d6fs_provider_write_words ; 14 WRITE_WORDS
         .word   d6fs_provider_sync       ; 15 SYNC
         .word   d6fs_provider_prepare_unmount ; 16 PREPARE_UNMOUNT
-        .word   0                        ; 17 FORMAT_UNIT
-        .word   0                        ; 18 MOUNT_UNIT
-        .word   0                        ; 19 MEMFS_INIT
-        .word   d6fs_mres_mount_root     ; 20 provider-private MOUNT_ROOT
         .text
 
 ; int d6fs_reader_read_words(reader, fcb, off, buf, nwords)
@@ -921,29 +916,6 @@ d6fs_reader_write_exit:
         pop     17,010
         popj    17,
 d6fs_reader_write_bad:
-        seto    1,
-        popj    17,
-
-        .globl  d6fs_reader_init
-; int d6fs_reader_init(reader, read_block, opaque, super)
-d6fs_reader_init:
-        jumpe   1,d6fs_reader_init_bad
-        jumpe   2,d6fs_reader_init_bad
-        jumpe   4,d6fs_reader_init_bad
-        skipn   4(4)                     ; super->total_blocks
-        jrst    d6fs_reader_init_bad
-        skipn   7(4)                     ; super->fcb_count
-        jrst    d6fs_reader_init_bad
-        movem   2,(1)                    ; read callback
-        setzm   1(1)                     ; no write callback yet
-        movem   3,2(1)                   ; opaque
-        movei   5,3(1)                   ; destination super
-        hrl     5,4                      ; source,,destination
-        blt     5,016(1)                 ; 12-word super info
-        setom   017(1)                   ; cache invalid
-        setz    1,
-        popj    17,
-d6fs_reader_init_bad:
         seto    1,
         popj    17,
 

@@ -72,6 +72,11 @@ static unsigned int dsk_mres_base;
 static unsigned int storage_router_registered;
 unsigned int diskset_state_addr;
 unsigned int diskset_total_addr;
+unsigned int d6fs_diskset_read_addr;
+unsigned int d6fs_diskset_write_addr;
+unsigned int d6fs_provider_mount_addr;
+unsigned int d6fs_provider_reader_addr;
+unsigned int d6fs_provider_mount_id_addr;
 
 extern kword_t storage_pi_handler;
 extern kword_t storage_dct_handler;
@@ -910,6 +915,11 @@ d6fs_minit(void)
         }
         base = minit_install(name);
         fs_d6fs_service_addr = minit_export(name, base, 0U);
+        d6fs_diskset_read_addr = minit_export(name, base, 1U);
+        d6fs_diskset_write_addr = minit_export(name, base, 2U);
+        d6fs_provider_mount_addr = minit_export(name, base, 3U);
+        d6fs_provider_reader_addr = minit_export(name, base, 4U);
+        d6fs_provider_mount_id_addr = minit_export(name, base, 5U);
         module_service_set(MODULE_SERVICE_D6FS, fs_d6fs_service_addr);
         minit_diag_loaded(name);
 }

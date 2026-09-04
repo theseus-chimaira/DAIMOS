@@ -243,6 +243,13 @@ diskset_boot_writable(void)
         return diskset_boot_simple(DISKSET_MRES_OP_WRITABLE, 0UL, 0);
 }
 
+int
+diskset_boot_write(kword_t blockno,
+    const kword_t block[DISKSET_BLOCK_WORDS])
+{
+        return diskset_boot_simple(DISKSET_MRES_OP_WRITE_BLOCK, blockno, block);
+}
+
 kword_t
 diskset_boot_log_blocks(void)
 {

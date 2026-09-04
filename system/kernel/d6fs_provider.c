@@ -1,17 +1,9 @@
 #include "d6fs_provider.h"
 #include "fs_mres.h"
 
-#define D6FS_PROVIDER_SUPER_DISABLED 2U
-
-struct d6fs_provider_mount {
-        kword_t alloc_cursor;
-        kword_t super_block[2];
-        unsigned int super_copy; /* 0/1 active copy, otherwise disabled */
-};
-
 struct d6fs_provider_mount d6fs_provider_mount_state;
 struct d6fs_reader d6fs_provider_reader;
-static unsigned int d6fs_provider_mount_id;
+unsigned int d6fs_provider_mount_id;
 
 int d6fs_provider_set_extent(kword_t fcb[D6FS_FCB_WORDS],
     unsigned int index, kword_t start, kword_t blocks);
@@ -87,46 +79,6 @@ d6fs_provider_dirent(vnode_t dir, unsigned int slot,
             d6fs_provider_reader.super.fcb_count, di))
                 return -1;
         return 1;
-}
-
-int
-d6fs_provider_mount_rw(vnode_t target,
-    d6fs_read_block_fn read_block, d6fs_write_block_fn write_block,
-    void *opaque, const struct d6fs_super_info *super, unsigned int flags,
-    vnode_t *rootp)
-{
-        vnode_t root;
-        unsigned int id;
-        struct d6fs_provider_mount *mp;
-
-        if (read_block == 0 || super == 0 || rootp == 0 ||
-            super->root_fcb >= super->fcb_count ||
-            ((flags & VFS_MOUNT_RDONLY) == 0U && write_block == 0) ||
-            vfs_mount(target, D6FS_PROVIDER, D6FS_KIND_NODE,
-            super->root_fcb, flags, &root) != 0)
-                return -1;
-        id = VFS_MOUNT_ID(root);
-        if (d6fs_provider_reader.read_block != 0) {
-                (void)vfs_unmount(root);
-                return -1;
-        }
-        mp = &d6fs_provider_mount_state;
-        mp->alloc_cursor = super->summary_start + super->summary_blocks;
-        mp->super_block[0] = 0UL;
-        mp->super_block[1] = 0UL;
-        mp->super_copy = D6FS_PROVIDER_SUPER_DISABLED;
-        if (mp->alloc_cursor >= super->total_blocks)
-                mp->alloc_cursor = 0UL;
-        d6fs_provider_mount_id = id;
-        if (d6fs_reader_init(&d6fs_provider_reader,
-            read_block, opaque, super) != 0) {
-                (void)vfs_unmount(root);
-                d6fs_provider_mount_id = 0U;
-                return -1;
-        }
-        d6fs_provider_reader.write_block = write_block;
-        *rootp = root;
-        return 0;
 }
 
 static int
@@ -284,30 +236,6 @@ d6fs_provider_write_super(struct d6fs_provider_mount *mp,
         ++d6fs_provider_reader.super.sequence;
         d6fs_provider_reader.super.state = state;
         mp->super_copy = copy;
-        return 0;
-}
-
-int
-d6fs_provider_enable_state(vnode_t root, kword_t super_a,
-    kword_t super_b, unsigned int selected_copy)
-{
-        struct d6fs_provider_mount *mp;
-
-        if (selected_copy > 1U || super_a == super_b ||
-            d6fs_provider_load(root) != 0)
-                return -1;
-        mp = &d6fs_provider_mount_state;
-        if (d6fs_provider_reader.write_block == 0 ||
-            d6fs_provider_reader.super.state != D6FS_STATE_CLEAN)
-                return -1;
-        mp->super_block[0] = super_a;
-        mp->super_block[1] = super_b;
-        mp->super_copy = selected_copy;
-        if (d6fs_provider_write_super(mp, selected_copy ^ 1U,
-            D6FS_STATE_DIRTY) != 0) {
-                mp->super_copy = D6FS_PROVIDER_SUPER_DISABLED;
-                return -1;
-        }
         return 0;
 }
 

@@ -148,9 +148,6 @@ int d6fs_super_select(const kword_t a[D6FS_SUPER_WORDS],
 /* Directory entry codec and read-only media helpers. */
 int d6fs_dirent_decode_valid(const kword_t ent[D6FS_DIRENT_WORDS],
     unsigned int fcb_count, struct d6fs_dirent_info *info);
-int d6fs_reader_init(struct d6fs_reader *reader,
-    d6fs_read_block_fn read_block, void *opaque,
-    const struct d6fs_super_info *super);
 const kword_t *d6fs_reader_get_block(struct d6fs_reader *reader,
     kword_t logical);
 int d6fs_reader_fcb(struct d6fs_reader *reader, unsigned int fcb_index,
