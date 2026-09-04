@@ -1,4 +1,5 @@
 #include "dtfs.h"
+#include "fs_mres.h"
 
 #define DTFS_BLOCK_WORDS      0200U
 #define DTFS_BLOCKS           01102U
@@ -134,7 +135,7 @@ dtfs_commit(vnode_t node)
 static int
 dtfs_name_valid(const struct vfs_name *name)
 {
-        return name != 0 && name->chars != 0U &&
+        return vfs_name_valid(name) &&
             name->chars <= DTFS_NAME_MAX_CHARS &&
             name->words[2] == 0 && name->words[3] == 0;
 }
@@ -341,15 +342,6 @@ dtfs_find_free_block(unsigned int start, unsigned int *blockp)
         return -1;
 }
 
-static void
-dtfs_zero_block(void)
-{
-        unsigned int i;
-
-        for (i = 0U; i < DTFS_BLOCK_WORDS; ++i)
-                dtfs_block[i] = 0;
-}
-
 static int
 dtfs_locate(vnode_t node, unsigned int file_block,
     unsigned int *physicalp)
@@ -426,7 +418,7 @@ dtfs_resize(vnode_t node, unsigned int words)
                         return -1;
                 if (first == 0U)
                         first = block;
-                dtfs_zero_block();
+                fs_zero_block_workspace();
                 count = (old_blocks + 1U == new_blocks) ?
                     words - old_blocks * DTFS_DATA_WORDS :
                     DTFS_DATA_WORDS;
@@ -688,7 +680,6 @@ dtfs_read_words(vnode_t node, unsigned int off, kword_t *buf,
         unsigned int in_block;
         unsigned int block;
         unsigned int take;
-        unsigned int i;
         unsigned int unit;
 
         if (!dtfs_is_file(node) || buf == 0 || dtfs_load(node) != 0)
@@ -709,8 +700,8 @@ dtfs_read_words(vnode_t node, unsigned int off, kword_t *buf,
                 take = DTFS_DATA_WORDS - in_block;
                 if (take > nwords - done)
                         take = nwords - done;
-                for (i = 0U; i < take; ++i)
-                        buf[done + i] = dtfs_block[1U + in_block + i];
+                fs_copy_words(&dtfs_block[1U + in_block],
+                    &buf[done], take);
                 done += take;
         }
         return (int)done;
@@ -727,7 +718,6 @@ dtfs_write_words(vnode_t node, unsigned int off,
         unsigned int in_block;
         unsigned int block;
         unsigned int take;
-        unsigned int i;
         unsigned int unit;
 
         (void)size_chars;
@@ -748,8 +738,8 @@ dtfs_write_words(vnode_t node, unsigned int off,
                 take = DTFS_DATA_WORDS - in_block;
                 if (take > nwords - done)
                         take = nwords - done;
-                for (i = 0U; i < take; ++i)
-                        dtfs_block[1U + in_block + i] = buf[done + i];
+                fs_copy_words(&buf[done],
+                    &dtfs_block[1U + in_block], take);
                 if (dtfs_dtc_write(unit, block, dtfs_block) != 0)
                         return -1;
                 done += take;

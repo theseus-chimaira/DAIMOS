@@ -23,6 +23,25 @@ vfs_name_set6_small:
 vfs_name_set6_fail:
         jrst    pdp10_ret_neg1
 
+        .globl  vfs_name_valid
+; int vfs_name_valid(const struct vfs_name *name)
+; Common filesystem namespace rule: non-empty SIXBIT names fit VFS_NAME_WORDS.
+vfs_name_valid:
+        jumpe   1,vfs_name_valid_fail
+        move    2,(1)
+        jumpge  2,vfs_name_valid_small
+        jrst    vfs_name_valid_fail
+vfs_name_valid_small:
+        caige   2,1
+        jrst    vfs_name_valid_fail
+        caile   2,030                    ; VFS_NAME_MAX_CHARS = 24
+        jrst    vfs_name_valid_fail
+        movei   1,1
+        popj    17,
+vfs_name_valid_fail:
+        setz    1,
+        popj    17,
+
 ; int vfs_name_is6(const struct vfs_name *name, kword_t word,
 ;     unsigned int chars)
         .globl  vfs_name_is6

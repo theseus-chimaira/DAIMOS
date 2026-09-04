@@ -620,8 +620,7 @@ d6fs_provider_find_slot(vnode_t dir, const struct vfs_name *name,
         unsigned int slot;
         int rc;
 
-        if (name == 0 || name->chars == 0U ||
-            name->chars > VFS_NAME_MAX_CHARS)
+        if (!vfs_name_valid(name))
                 return -1;
         hash = d6fs_name_hash24(name->words, name->chars);
         for (slot = 0U;; ++slot) {

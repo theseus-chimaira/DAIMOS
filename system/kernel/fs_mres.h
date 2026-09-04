@@ -46,6 +46,8 @@ extern unsigned int fs_d6fs_service_addr;
 
 int fs_mres_call(unsigned int address, struct fs_mres_request *req);
 int fs_provider_call(unsigned int provider, struct fs_mres_request *req);
+void fs_copy_words(const kword_t *src, kword_t *dst, unsigned int count);
+void fs_zero_block_workspace(void);
 int fs_dtfs_format_unit(unsigned int unit);
 int fs_dtfs_mount_unit(unsigned int unit, vnode_t target,
     unsigned int flags, vnode_t *rootp);

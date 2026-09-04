@@ -87,6 +87,7 @@ struct vfs_stat {
 
 int vfs_name_set6(struct vfs_name *name, kword_t word,
     unsigned int chars);
+int vfs_name_valid(const struct vfs_name *name);
 int vfs_name_is6(const struct vfs_name *name, kword_t word,
     unsigned int chars);
 unsigned int vfs_sixbit_name_chars(const kword_t *words,

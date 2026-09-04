@@ -43,6 +43,30 @@ fs_mres_no_service:
         hrroi   1,1
         popj    17,
 
+
+        .globl  fs_copy_words
+; void fs_copy_words(src, dst, count)
+; Shared forward word copy for resident filesystem data paths.
+; AC1=src, AC2=dst, AC3=count.  AC4 is scratch.
+fs_copy_words:
+        jumpe   3,fs_copy_words_done
+        move    4,2
+        hrl     4,1
+        add     2,3
+        subi    2,1
+        blt     4,(2)
+fs_copy_words_done:
+        popj    17,
+
+        .globl  fs_zero_block_workspace
+; Zero the shared 128-word filesystem transfer block without disturbing AC1.
+fs_zero_block_workspace:
+        setzm   fs_block_workspace
+        movei   2,fs_block_workspace+1
+        hrli    2,fs_block_workspace
+        blt     2,fs_block_workspace+0177
+        popj    17,
+
         .globl  fs_mres_vector_dispatch
 ; int fs_mres_vector_dispatch(request, table)
 ;

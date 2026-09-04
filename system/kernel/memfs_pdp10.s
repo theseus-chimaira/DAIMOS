@@ -1,5 +1,7 @@
 ; memfs_pdp10.s -- compact resident MEMFS primitives for PDP-6/PDP-10.
         .text
+        .globl  vfs_name_valid
+        .globl  fs_copy_words
         .globl  pdp10_ret_zero
         .globl  pdp10_ret_neg1
 
@@ -174,14 +176,10 @@ memfs_read_pool:
 memfs_read_source:
         add     2,3
         move    6,5             ; preserve return count
-        jumpe   5,memfs_read_done
-memfs_read_copy:
-        move    0,(2)
-        movem   0,(4)
-        addi    2,1
-        addi    4,1
-        sojg    5,memfs_read_copy
-memfs_read_done:
+        move    1,2             ; source
+        move    2,4             ; destination
+        move    3,5             ; count
+        pushj   17,fs_copy_words
         move    1,6
         popj    17,
 memfs_read_eof:
@@ -258,13 +256,10 @@ memfs_write_ready:
         add     6,2(1)          ; pool + data word
         add     6,3             ; + off
         move    7,-1(17)        ; count
-        jumpe   7,memfs_write_size
-memfs_write_copy:
-        move    0,(4)
-        movem   0,(6)
-        addi    4,1
-        addi    6,1
-        sojg    7,memfs_write_copy
+        move    1,4             ; source
+        move    2,6             ; destination
+        move    3,7             ; count
+        pushj   17,fs_copy_words
 
 memfs_write_size:
 ; size_chars is unsigned 36-bit state, so compare after toggling sign bits.
@@ -279,23 +274,6 @@ memfs_write_size:
         popj    17,
 memfs_write_fail:
         jrst    pdp10_ret_neg1
-
-; int memfs_name_valid(const struct vfs_name *name)
-        .globl  memfs_name_valid
-memfs_name_valid:
-        jumpe   1,memfs_name_valid_fail
-        move    2,(1)
-        jumpge  2,memfs_name_valid_small
-        jrst    memfs_name_valid_fail
-memfs_name_valid_small:
-        caige   2,1
-        jrst    memfs_name_valid_fail
-        caile   2,030                  ; VFS_NAME_MAX_CHARS = 24
-        jrst    memfs_name_valid_fail
-        movei   1,1
-        popj    17,
-memfs_name_valid_fail:
-        jrst    pdp10_ret_zero
 
 ; int memfs_slot(const struct memfs *fs, vnode_t node,
 ;     unsigned int *slotp)
@@ -442,7 +420,7 @@ memfs_lookup:
         move    013,4                   ; nodep
         jumpe   013,memfs_lookup_fail
         move    1,012
-        pushj   17,memfs_name_valid
+        pushj   17,vfs_name_valid
         jumpe   1,memfs_lookup_fail
         move    1,010
         move    2,011
@@ -499,7 +477,7 @@ memfs_new_node:
         jrst    memfs_new_fail
         jumpe   014,memfs_new_fail
         move    1,012
-        pushj   17,memfs_name_valid
+        pushj   17,vfs_name_valid
         jumpe   1,memfs_new_fail
         move    1,010
         move    2,011
@@ -574,7 +552,7 @@ memfs_unlink:
         skipn   5(010)
         jrst    memfs_unlink_fail
         move    1,012
-        pushj   17,memfs_name_valid
+        pushj   17,vfs_name_valid
         jumpe   1,memfs_unlink_fail
         move    1,010
         move    2,011
@@ -646,10 +624,10 @@ memfs_rename:
         skipn   5(010)
         jrst    memfs_rename_fail
         move    1,012
-        pushj   17,memfs_name_valid
+        pushj   17,vfs_name_valid
         jumpe   1,memfs_rename_fail
         move    1,014
-        pushj   17,memfs_name_valid
+        pushj   17,vfs_name_valid
         jumpe   1,memfs_rename_fail
         move    1,010
         move    2,011

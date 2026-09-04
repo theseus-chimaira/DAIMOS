@@ -678,6 +678,8 @@ d6fs_bitmap_error:
         seto    1,
         popj    17,
 
+        .globl  fs_copy_words
+        .globl  fs_zero_block_workspace
         .globl  fs_mres_vector_dispatch
         .globl  d6fs_mres_dispatch
         .globl  d6fs_provider_lookup
@@ -815,14 +817,10 @@ d6fs_reader_read_loop:
         camle   7,5
         move    7,5                      ; take = min(block remainder, total)
         jumpe   7,d6fs_reader_read_done
-        move    4,013
-        add     4,015                    ; destination address
-        move    5,4
-        hrl     5,1                      ; source,,destination
-        move    6,4
-        add     6,7
-        subi    6,1                      ; inclusive BLT end
-        blt     5,(6)
+        move    2,013
+        add     2,015                    ; destination address
+        move    3,7                      ; count
+        pushj   17,fs_copy_words
         add     015,7
         jrst    d6fs_reader_read_loop
 
@@ -898,13 +896,9 @@ d6fs_reader_write_loop:
         jumpe   5,d6fs_reader_write_done
         move    1,013
         add     1,015                    ; source address
-        movei   4,fs_block_workspace(7)  ; destination address
-        move    3,4
-        hrl     3,1                      ; source,,destination
-        move    2,4
-        add     2,5
-        subi    2,1
-        blt     3,(2)
+        movei   2,fs_block_workspace(7)  ; destination address
+        move    3,5                      ; count
+        pushj   17,fs_copy_words
         move    1,010
         move    2,6
         pushj   17,d6fs_reader_commit_cache
@@ -1015,10 +1009,7 @@ d6fs_reader_zero_block:
         jrst    d6fs_reader_zero_block_bad
         caml    2,7(1)
         jrst    d6fs_reader_zero_block_bad
-        setzm   fs_block_workspace
-        movei   3,fs_block_workspace+1
-        hrli    3,fs_block_workspace
-        blt     3,fs_block_workspace+0177
+        pushj   17,fs_zero_block_workspace
         jrst    d6fs_reader_commit_cache
 d6fs_reader_zero_block_bad:
         seto    1,

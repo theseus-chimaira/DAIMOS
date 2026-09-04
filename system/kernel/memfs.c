@@ -21,7 +21,6 @@
         ((unsigned int)((np)->data & MEMFS_HALF_MASK))
 
 extern vnode_t memfs_node_handle(unsigned int slot);
-extern int memfs_name_valid(const struct vfs_name *name);
 extern int memfs_slot(const struct memfs *fs, vnode_t node,
     unsigned int *slotp);
 extern int memfs_find_child(const struct memfs *fs, unsigned int parent,
@@ -36,7 +35,7 @@ memfs_lookup(const struct memfs *fs, vnode_t dir,
         unsigned int parent;
         unsigned int slot;
 
-        if (nodep == 0 || !memfs_name_valid(name) ||
+        if (nodep == 0 || !vfs_name_valid(name) ||
             memfs_slot(fs, dir, &parent) != 0 ||
             NODE_TYPE(&fs->nodes[parent]) != VFS_TYPE_DIR)
                 return -1;
@@ -65,7 +64,7 @@ memfs_new_node(struct memfs *fs, vnode_t dir,
         struct memfs_node *np;
 
         if (fs == 0 || !fs->writable || nodep == 0 ||
-            !memfs_name_valid(name) || memfs_slot(fs, dir, &parent) != 0 ||
+            !vfs_name_valid(name) || memfs_slot(fs, dir, &parent) != 0 ||
             NODE_TYPE(&fs->nodes[parent]) != VFS_TYPE_DIR ||
             (NODE_FLAGS(&fs->nodes[parent]) & MEMFS_F_WRITABLE) == 0U)
                 return -1;
@@ -115,7 +114,7 @@ memfs_unlink(struct memfs *fs, vnode_t dir,
         unsigned int parent;
         unsigned int slot;
 
-        if (fs == 0 || !fs->writable || !memfs_name_valid(name) ||
+        if (fs == 0 || !fs->writable || !vfs_name_valid(name) ||
             memfs_slot(fs, dir, &parent) != 0 ||
             NODE_TYPE(&fs->nodes[parent]) != VFS_TYPE_DIR ||
             (NODE_FLAGS(&fs->nodes[parent]) & MEMFS_F_WRITABLE) == 0U ||
@@ -140,8 +139,8 @@ memfs_rename(struct memfs *fs, vnode_t olddir,
         unsigned int slot;
         unsigned int p;
 
-        if (fs == 0 || !fs->writable || !memfs_name_valid(oldname) ||
-            !memfs_name_valid(newname) ||
+        if (fs == 0 || !fs->writable || !vfs_name_valid(oldname) ||
+            !vfs_name_valid(newname) ||
             memfs_slot(fs, olddir, &oldparent) != 0 ||
             memfs_slot(fs, newdir, &newparent) != 0 ||
             NODE_TYPE(&fs->nodes[oldparent]) != VFS_TYPE_DIR ||
