@@ -6,6 +6,8 @@
 
 int kfs_boot_prepare(void);
 
+extern kword_t sys_resident_words_immediate;
+
 static unsigned int mres_next_addr;
 static const kword_t *module_mres_package;
 static unsigned int module_services[MODULE_SERVICE_COUNT];
@@ -208,11 +210,9 @@ kinit_enter(void)
         kinit_diag_system();
         mres_init();
         module_run_minits();
-        kcore_resident_end = (kword_t)mres_next_addr;
-        kcore_cty_putchar =
-            (kword_t)module_service_get(MODULE_SERVICE_CTY_PUTCHAR);
-        kcore_cty_getchar =
-            (kword_t)module_service_get(MODULE_SERVICE_CTY_GETCHAR);
+        sys_resident_words_immediate =
+            (sys_resident_words_immediate & ~((kword_t)KINIT_HALF_MASK)) |
+            (kword_t)mres_next_addr;
         if (kfs_boot_prepare() != 0)
                 kinit_halt();
 #ifdef KINIT_DEBUG

@@ -299,19 +299,17 @@ native_sys_symlink:
         jrst file_symlink
 
 native_sys_getchar:
-	seto 1,
-	skipe 4,kcore_cty_getchar
-	pushj 17,(4)
-	jrst %L65
+        seto    1,
+        .globl  native_sys_getchar_call
+native_sys_getchar_call:
+        pushj   17,pdp10_ret_neg1
+        jrst    %L65
 
 native_sys_putchar:
-	move 5,1
-	seto 1,
-	skipn 4,kcore_cty_putchar
-	jrst %L65
-	move 1,5
-	pushj 17,(4)
-	jrst %L65
+        .globl  native_sys_putchar_call
+native_sys_putchar_call:
+        pushj   17,pdp10_ret_neg1
+        jrst    %L65
 %L136:
 	pushj 17,pdp10_halt
 	seto 1,

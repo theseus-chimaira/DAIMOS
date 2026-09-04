@@ -4,7 +4,6 @@
         .globl  file_table
         .globl  proc_table
         .globl  proc_comm_words
-        .globl  kcore_resident_end
         .globl  sys_memfs_usage_call
 
 ; int sys_procinfo(unsigned int slot, struct sys_procinfo *info)
@@ -45,7 +44,9 @@ sys_meminfo_file_loop:
         movem   1,7(2)
         movsi   3,1                    ; 262144 words
         movem   3,(2)
-        move    3,kcore_resident_end
+        .globl  sys_resident_words_immediate
+sys_resident_words_immediate:
+        movei   3,0
         movem   3,1(2)
 ; Reuse info[2..8] as the seven-word filesystem request.  These fields are
 ; filled with their final values after the optional MEMFS call returns.

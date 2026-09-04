@@ -16,10 +16,4 @@
 #error "RAMFS0 must occupy the top 64K words"
 #endif
 
-extern kword_t kcore_resident_end;
-extern kword_t kcore_cty_putchar;
-extern kword_t kcore_cty_getchar;
-
-void kcore_boot(void);
-
 #endif

@@ -68,6 +68,8 @@ static unsigned int clk_pi_service_addr;
 static unsigned int tape_mres_base;
 static unsigned int dsk_mres_base;
 static unsigned int storage_router_registered;
+static unsigned int diskset_read_addr;
+static unsigned int diskset_write_addr;
 unsigned int diskset_state_addr;
 unsigned int diskset_total_addr;
 unsigned int d6fs_diskset_read_addr;
@@ -85,9 +87,13 @@ extern kword_t storage_dct_tape_jump;
 
 extern kword_t dsk270_read_jump;
 extern kword_t dsk270_write_jump;
+extern kword_t native_sys_getchar_call;
+extern kword_t native_sys_putchar_call;
 
 
 static unsigned int pi_level_count[PDP10_PI_LEVELS + 1U];
+
+static void storage_patch_jump(kword_t *word, unsigned int address);
 static unsigned int pi_handler_total;
 static unsigned int pi_enabled_mask;
 
@@ -384,8 +390,10 @@ cty_minit(void)
         minit_cty_cono(CTY_NATIVE_PI_LEVEL);
         diag_putchar_addr = minit_export(name, base, CTY_X_PUTCHAR);
         module_service_set(MODULE_SERVICE_CTY_PUTCHAR, diag_putchar_addr);
-        module_service_set(MODULE_SERVICE_CTY_GETCHAR,
-            minit_export(name, base, CTY_X_GETCHAR));
+        storage_patch_jump(&native_sys_putchar_call, diag_putchar_addr);
+        base = minit_export(name, base, CTY_X_GETCHAR);
+        module_service_set(MODULE_SERVICE_CTY_GETCHAR, base);
+        storage_patch_jump(&native_sys_getchar_call, base);
         minit_diag_ok(name);
 }
 
@@ -934,6 +942,8 @@ diskset_minit(void)
         service = minit_export(name, base, 0U);
         diskset_state_addr = minit_export(name, base, 1U);
         diskset_total_addr = minit_export(name, base, 2U);
+        diskset_read_addr = minit_export(name, base, 3U);
+        diskset_write_addr = minit_export(name, base, 4U);
         module_service_set(MODULE_SERVICE_DISKSET, service);
         minit_diag_loaded(name);
 }
@@ -963,8 +973,9 @@ d6fs_minit(void)
         d6fs_provider_reader_addr = minit_export(name, base, 4U);
         d6fs_provider_mount_id_addr = minit_export(name, base, 5U);
         storage_patch_jump((kword_t *)(unsigned long)
-            minit_export(name, base, 6U),
-            module_service_get(MODULE_SERVICE_DISKSET));
+            minit_export(name, base, 6U), diskset_read_addr);
+        storage_patch_jump((kword_t *)(unsigned long)
+            minit_export(name, base, 7U), diskset_write_addr);
         minit_diag_loaded(name);
 }
 
