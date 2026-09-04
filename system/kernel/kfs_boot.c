@@ -180,7 +180,6 @@ kfs_boot_prepare(void)
             image[IHF_FLAGS] != 0 || image[IHF_CKSUM] != 0)
                 return -1;
         nent = (unsigned int)image[IHF_NENT];
-        diskset_service_addr = module_service_get(MODULE_SERVICE_DISKSET);
         fs_memfs_service_addr = module_service_get(MODULE_SERVICE_MEMFS);
         fs_dtfs_service_addr = module_service_get(MODULE_SERVICE_DTFS);
         fs_d6fs_service_addr = module_service_get(MODULE_SERVICE_D6FS);
@@ -296,11 +295,6 @@ kfs_boot_prepare(void)
         }
 
 bind_services:
-
-        dsk270_read_addr =
-            module_service_get(MODULE_SERVICE_DSK_READ_SECTOR);
-        dsk270_write_addr =
-            module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR);
         return 0;
 }
 

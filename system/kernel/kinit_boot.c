@@ -5,6 +5,7 @@
 #include "proc.h"
 #include "d6fs_boot.h"
 #include "dsk270.h"
+#include "module.h"
 #include "logstore.h"
 #include "d6fs_provider.h"
 #include "diskset_boot.h"
@@ -20,7 +21,7 @@ kinit_boot(void)
         vnode_t d6fs_root;
         int d6fs_rc;
 
-        if (dsk270_read_addr != 0U) {
+        if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) != 0U) {
                 kword_t *scratch;
                 kword_t payload[1];
 
@@ -31,7 +32,7 @@ kinit_boot(void)
                         return;
                 }
                 scratch = d6fs_boot_block_buffer();
-                if (dsk270_write_addr != 0U &&
+                if (module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U &&
                     diskset_boot_log_blocks() >= 3UL) {
                         if (logstore_recover(&boot_log, scratch) == 0) {
                                 payload[0] =

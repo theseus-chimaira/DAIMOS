@@ -22,9 +22,6 @@
 #define DTFS_COUNT_MASK       0377UL
 #define DTFS_NAME2_MASK       0777777777700UL
 
-unsigned int dtfs_dtc_read_addr;
-unsigned int dtfs_dtc_write_addr;
-
 /* One directory and one transfer block are shared by every DTFS mount. */
 static kword_t dtfs_dir[DTFS_BLOCK_WORDS];
 #define dtfs_block fs_block_workspace
@@ -58,9 +55,6 @@ dtfs_set_owner(unsigned int block, unsigned int owner)
         dtfs_dir[wi] = (dtfs_dir[wi] & ~mask) |
             ((kword_t)owner << shift);
 }
-
-extern int dtfs_dtc_read(unsigned int unit, unsigned int block, kword_t *buf);
-extern int dtfs_dtc_write(unsigned int unit, unsigned int block, kword_t *buf);
 
 static int
 dtfs_native_valid(void)
@@ -415,7 +409,7 @@ dtfs_format_unit(unsigned int unit)
 {
         unsigned int i;
 
-        if (unit > 7U || dtfs_dtc_write_addr == 0U)
+        if (unit > 7U)
                 return -1;
         fs_zero_words(dtfs_dir, DTFS_BLOCK_WORDS);
         dtfs_set_owner(0U, DTFS_OWNER_RESERVED);
@@ -434,7 +428,7 @@ dtfs_mount_unit(unsigned int unit, vnode_t target,
         vnode_t root;
         unsigned int id;
 
-        if (unit > 7U || rootp == 0 || dtfs_dtc_read_addr == 0U ||
+        if (unit > 7U || rootp == 0 ||
             dtfs_dtc_read(unit, DTFS_DIR_BLOCK, dtfs_dir) != 0 ||
             !dtfs_native_valid() ||
             vfs_mount(target, DTFS_PROVIDER, DTFS_KIND_ROOT, 0U,

@@ -24,7 +24,6 @@
         .globl diskset_total_blocks
         .globl dsk270_read_sector
         .globl dsk270_write_sector
-        .globl dsk270_write_addr
         .globl pdp10_ret_neg1
         .globl pdp10_ret_zero
 
@@ -124,13 +123,11 @@ diskset_block_io:
         jumpe 5,dsk270_read_sector
         jrst dsk270_write_sector
 
-; Writable iff at least one member is configured and the DSK write service is
-; installed.
+; Writable iff at least one validated member is configured.  DISKSET is only
+; installed after DSK MINIT has bound both read and write services.
 diskset_writable:
         movei 1,1
         skipn diskset_boot
-        setz 1,
-        skipn dsk270_write_addr
         setz 1,
         popj 17,
 

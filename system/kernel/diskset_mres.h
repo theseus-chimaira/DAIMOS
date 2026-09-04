@@ -21,9 +21,6 @@ struct diskset_mres_request {
         kword_t c;
 };
 
-/* Fixed KCORE service pointer, bound once after MINIT discovery. */
-extern unsigned int diskset_service_addr;
-
 /* KINIT-only relocated runtime-state destinations exported by the MRES. */
 extern unsigned int diskset_state_addr;
 extern unsigned int diskset_total_addr;

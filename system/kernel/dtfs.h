@@ -34,11 +34,9 @@ int dtfs_write_words(vnode_t node, unsigned int off,
     const kword_t *buf, unsigned int nwords, kword_t size_chars);
 int dtfs_sync(vnode_t node);
 
-/* Filled by KINIT after the STORAGE MRES has been installed. */
-extern unsigned int dtfs_dtc_read_addr;
-extern unsigned int dtfs_dtc_write_addr;
-int dtfs_dtc_call(unsigned int address, unsigned int unit,
-    kword_t block, kword_t *buf);
+/* Direct DTC veneers are patched by MINIT after STORAGE is installed. */
+int dtfs_dtc_read(unsigned int unit, unsigned int block, kword_t *buf);
+int dtfs_dtc_write(unsigned int unit, unsigned int block, kword_t *buf);
 
 /*
  * Counted Type-551 transfer ABI.  The resident service keeps the historical
@@ -56,7 +54,7 @@ dtfs_dtc_read_run(unsigned int unit, unsigned int block,
                 return -1;
         request = (kword_t)block |
             ((kword_t)(count - 1U) * 0200UL << 18);
-        return dtfs_dtc_call(dtfs_dtc_read_addr, unit, request, buf);
+        return dtfs_dtc_read(unit, (unsigned int)request, buf);
 }
 
 static inline int
@@ -70,7 +68,7 @@ dtfs_dtc_write_run(unsigned int unit, unsigned int block,
                 return -1;
         request = (kword_t)block |
             ((kword_t)(count - 1U) * 0200UL << 18);
-        return dtfs_dtc_call(dtfs_dtc_write_addr, unit, request, buf);
+        return dtfs_dtc_write(unit, (unsigned int)request, buf);
 }
 
 #endif

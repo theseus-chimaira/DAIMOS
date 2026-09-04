@@ -6,23 +6,21 @@
         .text
         .globl  dsk270_read_sector
         .globl  dsk270_write_sector
-        .globl  dsk270_read_addr
-        .globl  dsk270_write_addr
+        .globl  dsk270_read_jump
+        .globl  dsk270_write_jump
         .globl  pdp10_ret_neg1
 
 ; int dsk270_read_sector(unsigned unit, kword_t sector, kword_t *buf)
 ; int dsk270_write_sector(unsigned unit, kword_t sector, const kword_t *buf)
 ; C arguments: AC1 unit, AC2 sector, AC3 buffer.
 dsk270_read_sector:
-        move    4,dsk270_read_addr
+        setz    4,                      ; read selector
         jrst    dsk270_sector_io
 
 dsk270_write_sector:
-        move    4,dsk270_write_addr
+        movei   4,1                    ; write selector
 
-; AC4 is the relocated MRES service address.
 dsk270_sector_io:
-        jumpe   4,pdp10_ret_neg1
         jumpe   3,pdp10_ret_neg1
         trne    1,0777774              ; units 0..3 only
         jrst    pdp10_ret_neg1
@@ -40,9 +38,10 @@ dsk270_sector_addr:
         ior     1,5
         ior     1,6
         move    2,3
-        pushj   17,(4)
-        popj    17,
+        jumpe   4,dsk270_read_jump
 
-        .bss
-dsk270_read_addr:  .block 1
-dsk270_write_addr: .block 1
+dsk270_write_jump:
+        jrst    0                       ; patched by MINIT
+
+dsk270_read_jump:
+        jrst    0                       ; patched by MINIT

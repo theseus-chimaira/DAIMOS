@@ -2,7 +2,6 @@
         .text
         .globl fs_mres_call
         .globl mres_call
-        .globl diskset_service_addr
         .globl fs_provider_call
         .globl fs_memfs_service_addr
         .globl fs_dtfs_service_addr
@@ -14,8 +13,6 @@ fs_memfs_service_addr:
 fs_dtfs_service_addr:
         .word   0
 fs_d6fs_service_addr:
-        .word   0
-diskset_service_addr:
         .word   0
 
 ; int fs_provider_call(provider, request)

@@ -3,20 +3,19 @@
 #include "d6fs.h"
 #include "diskset.h"
 #include "diskset_mres.h"
-#include "mres.h"
+
+extern int d6fs_diskset_service(struct diskset_mres_request *req);
 
 static int
 d6fs_diskset_call(unsigned int op, kword_t logical, const void *buffer)
 {
         struct diskset_mres_request req;
 
-        if (diskset_service_addr == 0U)
-                return -1;
         req.op = (kword_t)op;
         req.a = logical;
         req.b = (kword_t)(unsigned long)buffer;
         req.c = 0UL;
-        return mres_call(diskset_service_addr, &req);
+        return d6fs_diskset_service(&req);
 }
 
 int

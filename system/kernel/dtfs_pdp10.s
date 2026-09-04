@@ -1,21 +1,5 @@
-; dtfs_pdp10.s -- resident indirect bridge to block-addressed DTC MRES.
+; dtfs_pdp10.s -- DTFS runtime and boot-patched DTC veneers.
         .text
-        .globl dtfs_dtc_call
-
-; int dtfs_dtc_call(address, unit, block, buffer)
-; C args arrive in AC1..AC4; DTC service expects unit/block/buffer in AC1..AC3.
-dtfs_dtc_call:
-        move    5,1
-        move    1,2
-        move    2,3
-        move    3,4
-        andi    5,0777777
-        jumpe   5,dtfs_dtc_no_service
-        pushj   17,(5)
-        popj    17,
-dtfs_dtc_no_service:
-        hrroi   1,1
-        popj    17,
 
         .globl  fs_mres_vector_dispatch
         .globl  dtfs_mres_dispatch
@@ -96,20 +80,17 @@ dtfs_is_false:
         setz    1,
         popj    17,
 
-; DTC call veneers.  Shuffle arguments high-to-low so no temporary ACs are
-; needed: (unit, block, buf) -> (service, unit, block, buf).
+; DTC veneers.  MINIT patches the RH of each JRST with the installed DTC
+; service entry.  The DTFS and DTC ABIs are identical: AC1=unit, AC2=block,
+; AC3=buffer, so the tail jump needs no argument shuffling or resident pointer.
         .globl  dtfs_dtc_read
+        .globl  dtfs_dtc_read_jump
 dtfs_dtc_read:
-        move    4,3
-        move    3,2
-        move    2,1
-        move    1,dtfs_dtc_read_addr
-        jrst    dtfs_dtc_call
+dtfs_dtc_read_jump:
+        jrst    0
 
         .globl  dtfs_dtc_write
+        .globl  dtfs_dtc_write_jump
 dtfs_dtc_write:
-        move    4,3
-        move    3,2
-        move    2,1
-        move    1,dtfs_dtc_write_addr
-        jrst    dtfs_dtc_call
+dtfs_dtc_write_jump:
+        jrst    0

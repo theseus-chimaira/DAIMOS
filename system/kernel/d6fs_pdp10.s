@@ -679,6 +679,15 @@ d6fs_bitmap_error:
         popj    17,
 
         .globl  fs_copy_words
+
+        .globl  d6fs_diskset_service
+        .globl  d6fs_diskset_service_jump
+; DISKSET is a boot prerequisite for this MRES.  MINIT patches this JRST to
+; the installed DISKSET dispatcher, whose ABI is already AC1=request.
+d6fs_diskset_service:
+d6fs_diskset_service_jump:
+        jrst    0
+
         .globl  fs_zero_block_workspace
         .globl  fs_mres_vector_dispatch
         .globl  d6fs_mres_dispatch

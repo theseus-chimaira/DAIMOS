@@ -223,7 +223,7 @@ $(MEMFS_MRES_OBJ): $(BUILD)/memfs_pdp10.dobj $(KCORE_MAP)
 $(DTFS_MRES_OBJ): $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dtfs-mres.dxr -M $(BUILD)/dtfs-mres.map \
 	    -R $@ -N dtfs_mres_package -X dtfs_mres_dispatch \
-	    -X dtfs_dtc_read_addr -X dtfs_dtc_write_addr \
+	    -X dtfs_dtc_read_jump -X dtfs_dtc_write_jump \
 	    $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj
 
 $(DISKSET_MRES_OBJ): $(BUILD)/diskset_dispatch.dobj $(KCORE_MAP)
@@ -237,7 +237,7 @@ $(D6FS_MRES_OBJ): $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_m
 	    -R $@ -N d6fs_mres_package -X d6fs_mres_dispatch \
 	    -X d6fs_diskset_read -X d6fs_diskset_write \
 	    -X d6fs_provider_mount_state -X d6fs_provider_reader \
-	    -X d6fs_provider_mount_id \
+	    -X d6fs_provider_mount_id -X d6fs_diskset_service_jump \
 	    $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_mres.dobj $(BUILD)/d6fs_pdp10.dobj
 
 $(KCORE_EMBED_ASM): kcore-embed-v1.s.in $(KCORE_MAP) | $(BUILD)
