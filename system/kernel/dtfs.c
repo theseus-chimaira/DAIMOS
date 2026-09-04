@@ -70,7 +70,7 @@ dtfs_set_owner(unsigned int block, unsigned int owner)
         shift = 31U - (block % 7U) * 5U;
         mask = (kword_t)037UL << shift;
         dtfs_dir[wi] = (dtfs_dir[wi] & ~mask) |
-            ((kword_t)(owner & 037U) << shift);
+            ((kword_t)owner << shift);
 }
 
 static int
@@ -123,12 +123,7 @@ dtfs_load(vnode_t node)
 static int
 dtfs_commit(vnode_t node)
 {
-        unsigned int id;
-
-        id = VFS_MOUNT_ID(node);
-        if (id == 0U || id > VFS_NMOUNT || dtfs_cache_mount != id)
-                return -1;
-        return dtfs_dtc_write(dtfs_units[id - 1U],
+        return dtfs_dtc_write(dtfs_units[VFS_MOUNT_ID(node) - 1U],
             DTFS_DIR_BLOCK, dtfs_dir);
 }
 
@@ -143,8 +138,6 @@ dtfs_scan_slot(const struct vfs_name *name, unsigned int *slotp)
                     name->chars > DTFS_NAME_MAX_CHARS ||
                     name->words[2] != 0 || name->words[3] != 0)
                         return -1;
-        } else if (slotp == 0) {
-                return -1;
         }
         for (slot = 0U; slot < DTFS_FILE_SLOTS; ++slot) {
                 base = DTFS_NAME_BASE + slot * 2U;
@@ -219,9 +212,8 @@ dtfs_hdr_next(kword_t h)
 static kword_t
 dtfs_header(unsigned int next, unsigned int first, unsigned int count)
 {
-        return ((kword_t)(next & DTFS_BLOCKNO_MASK) << DTFS_NEXT_SHIFT) |
-            ((kword_t)(first & DTFS_BLOCKNO_MASK) << DTFS_FIRST_SHIFT) |
-            (kword_t)(count & DTFS_COUNT_MASK);
+        return ((kword_t)next << DTFS_NEXT_SHIFT) |
+            ((kword_t)first << DTFS_FIRST_SHIFT) | (kword_t)count;
 }
 
 static unsigned int

@@ -275,8 +275,8 @@ memfs_write_size:
 memfs_write_fail:
         jrst    pdp10_ret_neg1
 
-; int memfs_slot(const struct memfs *fs, vnode_t node,
-;     unsigned int *slotp)
+; int memfs_slot(const struct memfs *fs, vnode_t node)
+; Return the validated slot directly, or -1.  On success AC5=np, AC6=meta.
         .globl  memfs_slot
 memfs_slot:
         jumpe   1,memfs_slot_fail
@@ -293,16 +293,14 @@ memfs_slot:
         move    6,5(5)
         trnn    6,1
         jrst    memfs_slot_fail
-        jumpe   3,memfs_slot_ok
-        movem   4,(3)
-memfs_slot_ok:
-        movei   1,0
+        move    1,4
         popj    17,
 memfs_slot_fail:
         jrst    pdp10_ret_neg1
 
 ; int memfs_find_child(const struct memfs *fs, unsigned int parent,
-;     const struct vfs_name *name, unsigned int *slotp)
+;     const struct vfs_name *name)
+; Return the child slot directly, or -1.
         .globl  memfs_find_child
 memfs_find_child:
         move    5,(1)
@@ -329,10 +327,7 @@ memfs_find_child_loop:
         pop     17,2
         pop     17,1
         jumpe   0,memfs_find_child_next
-        jumpe   4,memfs_find_child_ok
-        movem   6,(4)
-memfs_find_child_ok:
-        movei   1,0
+        move    1,6
         popj    17,
 memfs_find_child_next:
         addi    5,010
@@ -341,7 +336,8 @@ memfs_find_child_next:
 memfs_find_child_fail:
         jrst    pdp10_ret_neg1
 
-; int memfs_free_slot(const struct memfs *fs, unsigned int *slotp)
+; int memfs_free_slot(const struct memfs *fs)
+; Return the free slot directly, or -1.
         .globl  memfs_free_slot
 memfs_free_slot:
         move    3,(1)
@@ -357,8 +353,7 @@ memfs_free_slot_loop:
         addi    4,1
         jrst    memfs_free_slot_loop
 memfs_free_slot_found:
-        movem   4,(2)
-        movei   1,0
+        move    1,4
         popj    17,
 memfs_free_slot_fail:
         jrst    pdp10_ret_neg1
@@ -421,11 +416,8 @@ memfs_lookup:
         pushj   17,memfs_slot
         jumpl   1,memfs_lookup_fail
         move    2,1                     ; parent slot
-        move    4,1
-        lsh     4,3
-        add     4,(010)
-        ldb     5,[POINT 3,5(4),20]
-        caie    5,1
+        ldb     4,[POINT 3,5(5),20]
+        caie    4,1
         jrst    memfs_lookup_fail
         move    1,010
         move    3,012
@@ -478,13 +470,9 @@ memfs_new_node:
         pushj   17,memfs_slot
         jumpl   1,memfs_new_fail
         move    011,1                   ; parent slot
-        move    4,1
-        lsh     4,3
-        add     4,(010)
-        ldb     6,[POINT 3,5(4),20]
-        caie    6,1
+        ldb     4,[POINT 3,5(5),20]
+        caie    4,1
         jrst    memfs_new_fail
-        move    6,5(4)
         trnn    6,4                     ; parent writable
         jrst    memfs_new_fail
         move    1,010
@@ -553,14 +541,10 @@ memfs_unlink:
         pushj   17,memfs_slot
         jumpl   1,memfs_unlink_fail
         move    011,1
-        move    4,1
-        lsh     4,3
-        add     4,(010)
-        ldb     5,[POINT 3,5(4),20]
-        caie    5,1
+        ldb     4,[POINT 3,5(5),20]
+        caie    4,1
         jrst    memfs_unlink_fail
-        move    5,5(4)
-        trnn    5,4
+        trnn    6,4
         jrst    memfs_unlink_fail
         move    1,010
         move    2,011
@@ -628,29 +612,20 @@ memfs_rename:
         pushj   17,memfs_slot
         jumpl   1,memfs_rename_fail
         move    015,1                   ; old parent
+        ldb     4,[POINT 3,5(5),20]
+        caie    4,1
+        jrst    memfs_rename_fail
+        trnn    6,4
+        jrst    memfs_rename_fail
         move    1,010
         move    2,013
         pushj   17,memfs_slot
         jumpl   1,memfs_rename_fail
         move    016,1                   ; new parent
-        ; Both parents must be writable directories.
-        move    4,015
-        lsh     4,3
-        add     4,(010)
-        ldb     5,[POINT 3,5(4),20]
-        caie    5,1
+        ldb     4,[POINT 3,5(5),20]
+        caie    4,1
         jrst    memfs_rename_fail
-        move    5,5(4)
-        trnn    5,4
-        jrst    memfs_rename_fail
-        move    4,016
-        lsh     4,3
-        add     4,(010)
-        ldb     5,[POINT 3,5(4),20]
-        caie    5,1
-        jrst    memfs_rename_fail
-        move    5,5(4)
-        trnn    5,4
+        trnn    6,4
         jrst    memfs_rename_fail
         move    1,010
         move    2,015
@@ -709,68 +684,49 @@ memfs_rename_done:
 
         .globl  memfs_chmod
 memfs_chmod:
-        push    17,010
-        push    17,011
-        move    010,1
-        move    011,3                   ; mode
-        jumpe   010,memfs_chmod_fail
-        skipn   5(010)
+        jumpe   1,memfs_chmod_fail
+        skipn   5(1)
         jrst    memfs_chmod_fail
-        pushj   17,memfs_slot           ; fs already AC1, node AC2
+        pushj   17,memfs_slot           ; mode remains in AC3
         jumpl   1,memfs_chmod_fail
-        lsh     1,3
-        add     1,(010)
-        move    4,5(1)
-        trnn    4,4
+        trnn    6,4
         jrst    memfs_chmod_fail
-        move    4,011
+        move    4,3
         andi    4,07777
-        dpb     4,[POINT 12,5(1),32]
+        dpb     4,[POINT 12,5(5),32]
         setz    1,
-        jrst    memfs_chmod_done
+        popj    17,
 memfs_chmod_fail:
         seto    1,
-memfs_chmod_done:
-        pop     17,011
-        pop     17,010
         popj    17,
 
         .globl  memfs_truncate_words
 memfs_truncate_words:
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
-        move    010,1
-        move    011,3                   ; words
-        move    012,4                   ; size chars
-        pushj   17,memfs_slot           ; node in AC2
+        push    17,1                     ; fs
+        push    17,4                     ; size chars
+        push    17,0                     ; slot placeholder
+        pushj   17,memfs_slot           ; words remain in AC3
         jumpl   1,memfs_truncate_fail
-        move    013,1                   ; slot
-        move    4,1
-        lsh     4,3
-        add     4,(010)
-        ldb     5,[POINT 3,5(4),20]
-        caie    5,2
+        movem   1,(17)                  ; slot
+        ldb     4,[POINT 3,5(5),20]
+        caie    4,2
         jrst    memfs_truncate_fail
-        move    1,010
-        move    2,013
-        move    3,011
+        move    2,(17)                  ; slot
+        move    1,-2(17)                ; fs
         pushj   17,memfs_resize
         jumpn   1,memfs_truncate_fail
-        move    4,013
+        move    4,(17)
         lsh     4,3
-        add     4,(010)
-        movem   012,6(4)
+        move    5,-2(17)
+        add     4,(5)
+        move    5,-1(17)                ; size chars
+        movem   5,6(4)
         setz    1,
         jrst    memfs_truncate_done
 memfs_truncate_fail:
         seto    1,
 memfs_truncate_done:
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
+        adjsp   17,-3
         popj    17,
 
 ; int memfs_readdir(const struct memfs *fs, vnode_t dir,
@@ -778,20 +734,13 @@ memfs_truncate_done:
         .globl  memfs_readdir
 memfs_readdir:
         jumpe   4,memfs_readdir_fail
-        jumpe   1,memfs_readdir_fail
-        hlrz    5,2
-        andi    5,0770077
-        caie    5,040001
-        jrst    memfs_readdir_fail
-        hrrz    2,2                     ; parent slot
-        caml    2,1(1)
-        jrst    memfs_readdir_fail
-        move    5,2
-        lsh     5,3
-        add     5,(1)
-        move    7,5(5)
-        trnn    7,1
-        jrst    memfs_readdir_fail
+        move    0,4                     ; memfs_slot clobbers AC4
+        move    7,1
+        pushj   17,memfs_slot
+        jumpl   1,memfs_readdir_fail
+        move    2,1                     ; parent slot
+        move    1,7                     ; restore fs
+        move    4,0                     ; restore ent
         ldb     0,[POINT 3,5(5),20]
         caie    0,1                     ; directory
         jrst    memfs_readdir_fail
@@ -817,7 +766,6 @@ memfs_readdir_next:
         addi    6,1
         jrst    memfs_readdir_loop
 memfs_readdir_found:
-        move    6,0                     ; preserve scratch ordinal no longer needed
         move    0,5
         hrl     0,5
         hrr     0,4
@@ -836,29 +784,18 @@ memfs_readdir_fail:
         .globl  memfs_stat
 memfs_stat:
         jumpe   3,memfs_stat_fail
-        jumpe   1,memfs_stat_fail
-        hlrz    4,2
-        andi    4,0770077
-        caie    4,040001
-        jrst    memfs_stat_fail
-        hrrz    4,2
-        caml    4,1(1)
-        jrst    memfs_stat_fail
-        lsh     4,3
-        add     4,(1)
-        move    5,5(4)
-        trnn    5,1
-        jrst    memfs_stat_fail
-        ldb     6,[POINT 3,5(4),20]
-        movem   6,(3)
-        move    6,5
-        lsh     6,-3
-        andi    6,07777
-        movem   6,1(3)
-        move    6,6(4)
-        movem   6,2(3)
-        hrrz    6,7(4)
-        movem   6,3(3)
+        pushj   17,memfs_slot
+        jumpl   1,memfs_stat_fail
+        ldb     4,[POINT 3,5(5),20]
+        movem   4,(3)
+        move    4,6
+        lsh     4,-3
+        andi    4,07777
+        movem   4,1(3)
+        move    4,6(5)
+        movem   4,2(3)
+        hrrz    4,7(5)
+        movem   4,3(3)
         movei   1,0
         popj    17,
 memfs_stat_fail:
@@ -869,21 +806,14 @@ memfs_stat_fail:
         .globl  memfs_parent
 memfs_parent:
         jumpe   3,memfs_parent_fail
-        jumpe   1,memfs_parent_fail
-        hlrz    5,2
-        andi    5,0770077
-        caie    5,040001
-        jrst    memfs_parent_fail
-        hrrz    5,2                     ; child slot
-        caml    5,1(1)
-        jrst    memfs_parent_fail
-        move    6,5
-        lsh     6,3
-        add     6,(1)                   ; child np
-        move    7,5(6)
-        trnn    7,1
-        jrst    memfs_parent_fail
-        hlrz    5,7                     ; parent slot
+        move    0,4                     ; memfs_slot clobbers AC4
+        move    7,1
+        pushj   17,memfs_slot
+        jumpl   1,memfs_parent_fail
+        move    2,5                     ; preserve child np
+        move    1,7                     ; restore fs
+        move    4,0                     ; restore optional namep
+        hlrz    5,6                     ; parent slot
         caml    5,1(1)
         jrst    memfs_parent_fail
         move    7,5
@@ -896,8 +826,8 @@ memfs_parent:
         tlo     0,040001
         movem   0,(3)
         jumpe   4,memfs_parent_ok
-        move    0,6
-        hrl     0,6
+        move    0,2
+        hrl     0,2
         hrr     0,4
         blt     0,4(4)                  ; copy child name
 memfs_parent_ok:
@@ -932,14 +862,9 @@ memfs_mres_fs:
 ; Initialize singleton state from the KINIT-provided seven-word struct.
 memfs_mres_init:
         jumpe   2,memfs_mres_bad
-        movei   3,memfs_mres_fs
-        movei   4,7
-memfs_mres_init_loop:
-        move    5,(2)
-        movem   5,(3)
-        addi    2,1
-        addi    3,1
-        sojg    4,memfs_mres_init_loop
+        hrl     2,2
+        hrri    2,memfs_mres_fs
+        blt     2,memfs_mres_fs+6
         setz    1,
         popj    17,
 
