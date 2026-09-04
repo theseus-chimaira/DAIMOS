@@ -99,13 +99,6 @@ vfs_lock(vnode_t node, unsigned int owner, unsigned int op)
         return 0;
 }
 
-void
-vfs_unlock_owner(vnode_t node, unsigned int owner)
-{
-        if (owner != 0U && owner <= VFS_LOCK_OWNER_MAX)
-                (void)vfs_lock(node, owner, VFS_LOCK_UNLOCK);
-}
-
 #define VFS_DEVICE_ROOT \
     VFS_NODE(DEVICEFS_PROVIDER, DEVICEFS_KIND_ROOT, 0U)
 #define VFS_PROC_ROOT \
@@ -113,25 +106,7 @@ vfs_unlock_owner(vnode_t node, unsigned int owner)
 
 vnode_t vfs_namespace_root = VFS_NODE_NONE;
 
-vnode_t
-vfs_root(void)
-{
-        return vfs_namespace_root;
-}
-
-int
-vfs_set_root(vnode_t node)
-{
-        struct vfs_stat st;
-
-        if (node == VFS_NODE_NONE || vfs_stat(node, &st) != 0 ||
-            st.type != VFS_TYPE_DIR)
-                return -1;
-        vfs_namespace_root = node;
-        return 0;
-}
-
-static void
+static inline void
 vfs_dirent_set6(struct vfs_dirent *ent, kword_t word,
     unsigned int chars, unsigned int type)
 {
@@ -143,7 +118,7 @@ vfs_dirent_set6(struct vfs_dirent *ent, kword_t word,
         ent->type = type;
 }
 
-vnode_t
+static inline vnode_t
 vfs_follow_mount(vnode_t node)
 {
         unsigned int i;
@@ -440,7 +415,7 @@ vfs_parent_name(vnode_t node, vnode_t *parentp,
         }
 }
 
-static int
+int
 vfs_create_op(unsigned int op, vnode_t dir, const struct vfs_name *name,
     unsigned int mode, vnode_t *nodep)
 {
@@ -460,20 +435,6 @@ vfs_create_op(unsigned int op, vnode_t dir, const struct vfs_name *name,
                 return rc;
         *nodep = VFS_INHERIT_MOUNT(dir, node);
         return 0;
-}
-
-int
-vfs_create(vnode_t dir, const struct vfs_name *name,
-    unsigned int mode, vnode_t *nodep)
-{
-        return vfs_create_op(FS_MRES_OP_CREATE, dir, name, mode, nodep);
-}
-
-int
-vfs_mkdir(vnode_t dir, const struct vfs_name *name,
-    unsigned int mode, vnode_t *nodep)
-{
-        return vfs_create_op(FS_MRES_OP_MKDIR, dir, name, mode, nodep);
 }
 
 int
@@ -681,8 +642,6 @@ vfs_sync(vnode_t node)
         return fs_provider_call(provider, &req);
 }
 
-extern int vfs_name_set6(struct vfs_name *name, kword_t word,
-    unsigned int chars);
 extern int vfs_name_is6(const struct vfs_name *name, kword_t word,
     unsigned int chars);
 extern int vfs_sixbit_readchar(kword_t word, unsigned int nchars, kword_t off,

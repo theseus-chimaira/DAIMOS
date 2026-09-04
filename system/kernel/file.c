@@ -54,11 +54,11 @@ file_walk_path_at(const kword_t *path, int parent_only,
 restart:
         n = (unsigned int)work[0];
         if (file_path_char(work, 0U) == (unsigned int)('/' - 040)) {
-                node = vfs_root();
+                node = vfs_namespace_root;
         } else {
                 node = start_node;
                 if (node == VFS_NODE_NONE)
-                        node = vfs_root();
+                        node = vfs_namespace_root;
         }
         pos = 0U;
         for (;;) {
@@ -146,7 +146,7 @@ file_walk_path(const kword_t *path,
 
         start = file_cwd;
         if (start == VFS_NODE_NONE)
-                start = vfs_root();
+                start = vfs_namespace_root;
         return file_walk_path_at(path, parent_only, start, 0U,
             nodep, leaf);
 }
@@ -157,7 +157,7 @@ file_lookup_path(const kword_t *path, vnode_t *nodep)
         return file_walk_path(path, 0, nodep, 0);
 }
 
-static int
+int
 file_parent_path(const kword_t *path, vnode_t *dirp,
     struct vfs_name *leaf)
 {
@@ -229,8 +229,8 @@ file_close(int fd)
                                 still_open = 1;
                                 break;
                         }
-        if (!still_open)
-                vfs_unlock_owner(node, desc);
+        if (!still_open && desc != 0U)
+                (void)vfs_lock(node, desc, VFS_LOCK_UNLOCK);
         return 0;
 }
 
@@ -374,98 +374,4 @@ file_readdir(int fd, struct vfs_dirent *ent)
         if (rc > 0)
                 ++fp->off_chars;
         return rc;
-}
-
-
-int
-file_stat_path(const kword_t *path, struct vfs_stat *st)
-{
-        vnode_t node;
-
-        if (file_lookup_path(path, &node) != 0)
-                return -1;
-        return vfs_stat(node, st);
-}
-
-int
-file_mkdir(const kword_t *path, unsigned int mode)
-{
-        vnode_t dir;
-        vnode_t node;
-        struct vfs_name leaf;
-
-        if (file_parent_path(path, &dir, &leaf) != 0)
-                return -1;
-        return vfs_mkdir(dir, &leaf, mode, &node);
-}
-
-
-int
-file_symlink(const kword_t *target, const kword_t *linkpath)
-{
-        vnode_t dir;
-        vnode_t node;
-        struct vfs_name leaf;
-        unsigned int chars;
-
-        if (target == 0 || linkpath == 0)
-                return -1;
-        chars = (unsigned int)target[0];
-        if (chars == 0U || chars > FILE_PATH_MAX_CHARS ||
-            file_parent_path(linkpath, &dir, &leaf) != 0)
-                return -1;
-        return vfs_symlink(dir, &leaf, target + 1, chars, &node);
-}
-
-int
-file_unlink(const kword_t *path)
-{
-        vnode_t dir;
-        struct vfs_name leaf;
-
-        if (file_parent_path(path, &dir, &leaf) != 0)
-                return -1;
-        return vfs_unlink(dir, &leaf);
-}
-
-
-int
-file_truncate(const kword_t *path, kword_t chars)
-{
-        vnode_t node;
-        unsigned int words;
-
-        if (file_lookup_path(path, &node) != 0)
-                return -1;
-        words = (unsigned int)((chars + 3U) / 4U);
-        return vfs_truncate(node, words, chars);
-}
-
-
-int
-file_rename(const kword_t *oldpath, const kword_t *newpath)
-{
-        vnode_t olddir;
-        vnode_t newdir;
-        struct vfs_name oldname;
-        struct vfs_name newname;
-
-        if (file_parent_path(oldpath, &olddir, &oldname) != 0 ||
-            file_parent_path(newpath, &newdir, &newname) != 0)
-                return -1;
-        return vfs_rename(olddir, &oldname, newdir, &newname);
-}
-
-
-int
-file_chdir(const kword_t *path)
-{
-        vnode_t node;
-        struct vfs_stat st;
-
-        if (file_walk_path(path, 0, &node, 0) != 0 ||
-            vfs_stat(node, &st) != 0 || st.type != VFS_TYPE_DIR)
-                return -1;
-        file_cwd = node;
-        return 0;
 }

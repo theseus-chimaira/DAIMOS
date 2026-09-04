@@ -40,7 +40,7 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
         if (!writable)
                 flags |= VFS_MOUNT_RDONLY;
 
-        target = vfs_root();
+        target = vfs_namespace_root;
         if (vfs_mount(target, D6FS_PROVIDER, D6FS_KIND_NODE,
             super->root_fcb, flags, &root) != 0)
                 return -1;
@@ -112,6 +112,7 @@ d6fs_boot_mount_root(unsigned int flags, vnode_t *rootp)
         unsigned int copy;
         unsigned int i;
         int rc;
+        struct vfs_stat st;
 
         if (rootp == 0)
                 return -1;
@@ -135,10 +136,12 @@ d6fs_boot_mount_root(unsigned int flags, vnode_t *rootp)
             rootp);
         if (rc != 0)
                 return rc;
-        if (vfs_set_root(*rootp) != 0) {
+        if (*rootp == VFS_NODE_NONE || vfs_stat(*rootp, &st) != 0 ||
+            st.type != VFS_TYPE_DIR) {
                 (void)vfs_unmount(*rootp);
                 *rootp = VFS_NODE_NONE;
                 return -1;
         }
+        vfs_namespace_root = *rootp;
         return 0;
 }

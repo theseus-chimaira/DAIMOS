@@ -3,25 +3,31 @@
         .globl  pdp10_ret_zero
         .globl  pdp10_ret_neg1
 
-; int vfs_name_set6(struct vfs_name *name, kword_t word,
-;     unsigned int chars)
-        .globl  vfs_name_set6
-vfs_name_set6:
-        jumpe   1,vfs_name_set6_fail
-        jumpge  3,vfs_name_set6_small
-        jrst    vfs_name_set6_fail
-vfs_name_set6_small:
-        caile   3,6
-        jrst    vfs_name_set6_fail
-        movem   3,(1)
-        movem   2,1(1)
-        setzm   2(1)
-        setzm   3(1)
-        setzm   4(1)
-        movei   1,0
+
+; Compact wrappers around the shared C create helper.  The fifth helper
+; argument (nodep) is passed in one stack word by the PDP-10 C ABI.
+        .globl  vfs_create_op
+        .globl  vfs_create
+vfs_create:
+        push    17,4
+        move    4,3
+        move    3,2
+        move    2,1
+        movei   1,6                    ; FS_MRES_OP_CREATE
+        pushj   17,vfs_create_op
+        sub     17,[1,,1]
         popj    17,
-vfs_name_set6_fail:
-        jrst    pdp10_ret_neg1
+
+        .globl  vfs_mkdir
+vfs_mkdir:
+        push    17,4
+        move    4,3
+        move    3,2
+        move    2,1
+        movei   1,7                    ; FS_MRES_OP_MKDIR
+        pushj   17,vfs_create_op
+        sub     17,[1,,1]
+        popj    17,
 
         .globl  vfs_name_valid
 ; int vfs_name_valid(const struct vfs_name *name)
@@ -46,7 +52,7 @@ vfs_name_valid_fail:
 ;     unsigned int chars)
         .globl  vfs_name_is6
 vfs_name_is6:
-        jumpe   1,vfs_name_is6_fail
+        ; Current callers always pass a valid vfs_name pointer.
         camn    3,(1)
         came    2,1(1)
         jrst    vfs_name_is6_fail

@@ -292,6 +292,192 @@ file_getcwd_fail:
         jrst    pdp10_ret_neg1
 
 
+; int file_symlink(const kword_t *target, const kword_t *linkpath)
+; Save target and character count below one parent-vnode/name record.
+        .globl  vfs_symlink
+        .globl  file_symlink
+file_symlink:
+        jumpe   1,file_symlink_early_fail
+        jumpe   2,file_symlink_early_fail
+        move    3,(1)
+        cail    3,1
+        cail    3,0147                 ; FILE_PATH_MAX_CHARS + 1
+        jrst    file_symlink_early_fail
+        push    17,1                   ; target
+        push    17,3                   ; chars
+        add     17,[6,,6]
+        move    1,2                    ; linkpath
+        movei   2,-5(17)              ; dir
+        movei   3,-4(17)              ; leaf
+        pushj   17,file_parent_path
+        jumpn   1,file_symlink_fail
+        move    1,-5(17)              ; dir
+        movei   2,-4(17)              ; leaf
+        move    3,-7(17)              ; target
+        addi    3,1
+        move    4,-6(17)              ; chars
+        movei   5,-5(17)              ; reuse dir slot for output vnode
+        push    17,5
+        pushj   17,vfs_symlink
+        sub     17,[1,,1]
+file_symlink_done:
+        sub     17,[6,,6]
+        pop     17,3
+        pop     17,2
+        popj    17,
+file_symlink_fail:
+        seto    1,
+        jrst    file_symlink_done
+file_symlink_early_fail:
+        seto    1,
+        popj    17,
+
+; int file_rename(const kword_t *oldpath, const kword_t *newpath)
+; Save newpath below two parent-vnode/name records.
+        .globl  vfs_rename
+        .globl  file_rename
+file_rename:
+        push    17,2
+        add     17,[014,,014]
+        movei   2,-013(17)             ; olddir
+        movei   3,-012(17)             ; oldname
+        pushj   17,file_parent_path
+        jumpn   1,file_rename_fail
+        move    1,-014(17)             ; saved newpath
+        movei   2,-5(17)               ; newdir
+        movei   3,-4(17)               ; newname
+        pushj   17,file_parent_path
+        jumpn   1,file_rename_fail
+        move    1,-013(17)
+        movei   2,-012(17)
+        move    3,-5(17)
+        movei   4,-4(17)
+        pushj   17,vfs_rename
+file_rename_done:
+        sub     17,[014,,014]
+        pop     17,2
+        popj    17,
+file_rename_fail:
+        seto    1,
+        jrst    file_rename_done
+
+; int file_chdir(const kword_t *path)
+; Five locals hold one vnode followed by a four-word vfs_stat.
+        .globl  file_cwd
+        .globl  file_chdir
+file_chdir:
+        add     17,[5,,5]
+        movei   2,-4(17)
+        pushj   17,file_lookup_path
+        jumpn   1,file_chdir_fail
+        move    1,-4(17)
+        movei   2,-3(17)
+        pushj   17,vfs_stat
+        jumpn   1,file_chdir_fail
+        move    3,-3(17)
+        caie    3,1                    ; VFS_TYPE_DIR
+        jrst    file_chdir_fail
+        move    1,-4(17)
+        movem   1,file_cwd
+        setz    1,
+file_chdir_done:
+        sub     17,[5,,5]
+        popj    17,
+file_chdir_fail:
+        seto    1,
+        jrst    file_chdir_done
+
+; int file_mkdir(const kword_t *path, unsigned int mode)
+; Mode is saved below one parent vnode and one five-word name.  The parent
+; vnode slot becomes the ignored output vnode once the parent is loaded.
+        .globl  vfs_mkdir
+        .globl  file_mkdir
+file_mkdir:
+        push    17,2
+        add     17,[6,,6]
+        movei   2,-5(17)
+        movei   3,-4(17)
+        pushj   17,file_parent_path
+        jumpn   1,file_mkdir_fail
+        move    3,-6(17)
+        move    1,-5(17)
+        movei   2,-4(17)
+        movei   4,-5(17)
+        pushj   17,vfs_mkdir
+file_mkdir_done:
+        sub     17,[6,,6]
+        pop     17,2
+        popj    17,
+file_mkdir_fail:
+        seto    1,
+        jrst    file_mkdir_done
+
+; int file_unlink(const kword_t *path)
+; Six stack words hold one parent vnode and one five-word name.
+        .globl  vfs_unlink
+        .globl  file_unlink
+file_unlink:
+        add     17,[6,,6]
+        movei   2,-5(17)
+        movei   3,-4(17)
+        pushj   17,file_parent_path
+        jumpn   1,file_unlink_fail
+        move    1,-5(17)
+        movei   2,-4(17)
+        pushj   17,vfs_unlink
+        sub     17,[6,,6]
+        popj    17,
+file_unlink_fail:
+        seto    1,
+        sub     17,[6,,6]
+        popj    17,
+
+; int file_truncate(const kword_t *path, kword_t size_chars)
+; One saved size argument plus one vnode local.
+        .globl  vfs_truncate
+        .globl  file_truncate
+file_truncate:
+        push    17,2
+        add     17,[1,,1]
+        movei   2,(17)
+        pushj   17,file_lookup_path
+        jumpn   1,file_truncate_fail
+        move    3,-1(17)
+        move    2,3
+        addi    2,3
+        lsh     2,-2
+        move    1,(17)
+        pushj   17,vfs_truncate
+file_truncate_done:
+        sub     17,[1,,1]
+        pop     17,2
+        popj    17,
+file_truncate_fail:
+        seto    1,
+        jrst    file_truncate_done
+
+; int file_stat_path(const kword_t *path, struct vfs_stat *st)
+; One saved argument plus one vnode local.
+        .globl  file_lookup_path
+        .globl  vfs_stat
+        .globl  file_stat_path
+file_stat_path:
+        push    17,2
+        add     17,[1,,1]
+        movei   2,(17)
+        pushj   17,file_lookup_path
+        jumpn   1,file_stat_path_fail
+        move    1,(17)
+        move    2,-1(17)
+        pushj   17,vfs_stat
+file_stat_path_done:
+        sub     17,[1,,1]
+        pop     17,2
+        popj    17,
+file_stat_path_fail:
+        seto    1,
+        jrst    file_stat_path_done
+
 ; struct file *file_find(int fd)
 ; File descriptors 3..15 map directly onto the 13 FILE records.
         .globl  file_find
