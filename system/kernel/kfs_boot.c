@@ -277,7 +277,6 @@ kfs_boot_prepare(void)
                 config.pool_words = KBOOT_RAMFS0_WORDS -
                     KBOOT_NODE_WORDS;
                 config.used_words = 0U;
-                config.writable = 1;
                 config.image_data = data;
                 req.op = FS_MRES_OP_MEMFS_INIT;
                 req.a = (kword_t)(unsigned long)&config;

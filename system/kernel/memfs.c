@@ -63,7 +63,7 @@ memfs_new_node(struct memfs *fs, vnode_t dir,
         unsigned int slot;
         struct memfs_node *np;
 
-        if (fs == 0 || !fs->writable || nodep == 0 ||
+        if (fs == 0 || nodep == 0 ||
             !vfs_name_valid(name) || memfs_slot(fs, dir, &parent) != 0 ||
             NODE_TYPE(&fs->nodes[parent]) != VFS_TYPE_DIR ||
             (NODE_FLAGS(&fs->nodes[parent]) & MEMFS_F_WRITABLE) == 0U)
@@ -114,7 +114,7 @@ memfs_unlink(struct memfs *fs, vnode_t dir,
         unsigned int parent;
         unsigned int slot;
 
-        if (fs == 0 || !fs->writable || !vfs_name_valid(name) ||
+        if (fs == 0 || !vfs_name_valid(name) ||
             memfs_slot(fs, dir, &parent) != 0 ||
             NODE_TYPE(&fs->nodes[parent]) != VFS_TYPE_DIR ||
             (NODE_FLAGS(&fs->nodes[parent]) & MEMFS_F_WRITABLE) == 0U ||
@@ -139,7 +139,7 @@ memfs_rename(struct memfs *fs, vnode_t olddir,
         unsigned int slot;
         unsigned int p;
 
-        if (fs == 0 || !fs->writable || !vfs_name_valid(oldname) ||
+        if (fs == 0 || !vfs_name_valid(oldname) ||
             !vfs_name_valid(newname) ||
             memfs_slot(fs, olddir, &oldparent) != 0 ||
             memfs_slot(fs, newdir, &newparent) != 0 ||
@@ -175,7 +175,7 @@ memfs_chmod(struct memfs *fs, vnode_t node, unsigned int mode)
 {
         unsigned int slot;
 
-        if (fs == 0 || !fs->writable || memfs_slot(fs, node, &slot) != 0 ||
+        if (fs == 0 || memfs_slot(fs, node, &slot) != 0 ||
             (NODE_FLAGS(&fs->nodes[slot]) & MEMFS_F_WRITABLE) == 0U)
                 return -1;
         fs->nodes[slot].meta =

@@ -35,7 +35,7 @@ memfs_shift_next:
 
 ; int memfs_resize(struct memfs *fs, unsigned int slot,
 ;     unsigned int words)
-; fs layout: nodes,node_count,pool,pool_words,used_words,writable,image_data.
+; fs layout: nodes,node_count,pool,pool_words,used_words,image_data.
 ; node layout is 8 words; meta at +5, packed data at +7.
         .globl  memfs_resize
 memfs_resize:
@@ -169,7 +169,7 @@ memfs_read_count:
         andi    0,2
         hlrz    2,7(6)
         jumpe   0,memfs_read_pool
-        add     2,6(1)          ; image_data
+        add     2,5(1)          ; image_data
         jrst    memfs_read_source
 memfs_read_pool:
         add     2,2(1)          ; pool
@@ -459,8 +459,6 @@ memfs_new_node:
         move    014,7                   ; nodep
         move    015,5                   ; type
         jumpe   010,memfs_new_fail
-        skipn   5(010)                  ; fs->writable
-        jrst    memfs_new_fail
         jumpe   014,memfs_new_fail
         move    1,012
         pushj   17,vfs_name_valid
@@ -842,7 +840,7 @@ memfs_parent_fail:
         .bss
         .globl  memfs_mres_fs
 memfs_mres_fs:
-        .block  7
+        .block  6
         .text
 
         .globl  fs_words_equal
@@ -859,12 +857,12 @@ memfs_mres_fs:
         .globl  memfs_read_words
         .globl  memfs_write_words
 
-; Initialize singleton state from the KINIT-provided seven-word struct.
+; Initialize singleton state from the KINIT-provided six-word struct.
 memfs_mres_init:
         jumpe   2,memfs_mres_bad
         hrl     2,2
         hrri    2,memfs_mres_fs
-        blt     2,memfs_mres_fs+6
+        blt     2,memfs_mres_fs+5
         setz    1,
         popj    17,
 

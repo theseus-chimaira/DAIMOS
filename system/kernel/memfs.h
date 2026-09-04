@@ -28,7 +28,6 @@ struct memfs {
         kword_t *pool;
         unsigned int pool_words;
         unsigned int used_words;
-        int writable;
         const kword_t *image_data;
 };
 
