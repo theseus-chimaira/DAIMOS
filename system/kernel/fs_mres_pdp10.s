@@ -1,45 +1,35 @@
-; fs_mres_pdp10.s -- fixed resident bridge to an optional filesystem MRES.
+; fs_mres_pdp10.s -- fixed resident bridge to optional filesystem MRES.
         .text
-        .globl fs_mres_call
-        .globl mres_call
         .globl fs_provider_call
-        .globl fs_memfs_service_addr
-        .globl fs_dtfs_service_addr
-        .globl fs_d6fs_service_addr
-
-; Provider ids 4..6 index these three resident service addresses directly.
-fs_memfs_service_addr:
-        .word   0
-fs_dtfs_service_addr:
-        .word   0
-fs_d6fs_service_addr:
-        .word   0
+        .globl fs_memfs_service_jump
+        .globl fs_dtfs_service_jump
+        .globl fs_d6fs_service_jump
 
 ; int fs_provider_call(provider, request)
+; Provider topology is frozen by MINIT.  The three JRST words below are
+; patched once at boot, avoiding resident service pointers and indirect calls.
 fs_provider_call:
         jumpe   2,fs_mres_no_service
-        subi    1,4
-        jumpl   1,fs_mres_no_service
-        cail    1,3
-        jrst    fs_mres_no_service
-        move    1,fs_memfs_service_addr(1)
-        jrst    fs_mres_call
-
-
-; int fs_mres_call(address, request)
-; C args arrive in AC1,AC2.  Dispatcher expects request pointer in AC1.
-fs_mres_call:
-mres_call:
-        move    3,1
+        caie    1,4
+        jrst    fs_provider_dtfs
         move    1,2
-        andi    3,0777777
-        jumpe   3,fs_mres_no_service
-        pushj   17,(3)
-        popj    17,
+fs_memfs_service_jump:
+        jrst    fs_mres_no_service
+fs_provider_dtfs:
+        caie    1,5
+        jrst    fs_provider_d6fs
+        move    1,2
+fs_dtfs_service_jump:
+        jrst    fs_mres_no_service
+fs_provider_d6fs:
+        caie    1,6
+        jrst    fs_mres_no_service
+        move    1,2
+fs_d6fs_service_jump:
+        jrst    fs_mres_no_service
 fs_mres_no_service:
         hrroi   1,1
         popj    17,
-
 
         .globl  fs_copy_words
 ; void fs_copy_words(src, dst, count)

@@ -243,7 +243,9 @@ native_sys_dtfs_format:
         pushj 17,native_sys_dtc0_path
         jumpe 1,%L137
         movei 1,0                       ; DTC0 unit
-        jrst fs_dtfs_format_unit
+        .globl sys_dtfs_format_jump
+sys_dtfs_format_jump:
+        jrst pdp10_ret_neg1
 
 native_sys_dtfs_mount:
         move 1,mach_syscall_ac2
@@ -261,7 +263,9 @@ native_sys_dtfs_mount:
         move 2,mach_syscall_ac5
         movei 1,0                       ; DTC0 unit
         movei 4,mach_syscall_ac5     ; returned root is not otherwise needed
-        jrst fs_dtfs_mount_unit
+        .globl sys_dtfs_mount_jump
+sys_dtfs_mount_jump:
+        jrst pdp10_ret_neg1
 
 native_sys_unmount:
         move 1,mach_syscall_ac2

@@ -871,8 +871,15 @@ memfs_minit(void)
 
         name = (kword_t)SIXBIT("MEMFS ");
         base = minit_install(name);
-        fs_memfs_service_addr = minit_export(name, base, 0U);
-        module_service_set(MODULE_SERVICE_MEMFS, fs_memfs_service_addr);
+        {
+                unsigned int service;
+
+                service = minit_export(name, base, 0U);
+                storage_patch_jump(&fs_memfs_service_jump, service);
+                storage_patch_jump(&sys_memfs_usage_call,
+                    minit_export(name, base, 1U));
+                module_service_set(MODULE_SERVICE_MEMFS, service);
+        }
         minit_diag_loaded(name);
 }
 
@@ -893,12 +900,21 @@ dtfs_minit(void)
                 return;
         }
         base = minit_install(name);
-        fs_dtfs_service_addr = minit_export(name, base, 0U);
-        state_addr = minit_export(name, base, 1U);
-        storage_patch_jump((kword_t *)(unsigned long)state_addr, read_addr);
-        state_addr = minit_export(name, base, 2U);
-        storage_patch_jump((kword_t *)(unsigned long)state_addr, write_addr);
-        module_service_set(MODULE_SERVICE_DTFS, fs_dtfs_service_addr);
+        {
+                unsigned int service;
+
+                service = minit_export(name, base, 0U);
+                storage_patch_jump(&fs_dtfs_service_jump, service);
+                state_addr = minit_export(name, base, 1U);
+                storage_patch_jump((kword_t *)(unsigned long)state_addr, read_addr);
+                state_addr = minit_export(name, base, 2U);
+                storage_patch_jump((kword_t *)(unsigned long)state_addr, write_addr);
+                storage_patch_jump(&sys_dtfs_format_jump,
+                    minit_export(name, base, 3U));
+                storage_patch_jump(&sys_dtfs_mount_jump,
+                    minit_export(name, base, 4U));
+                module_service_set(MODULE_SERVICE_DTFS, service);
+        }
         minit_diag_loaded(name);
 }
 
@@ -934,7 +950,13 @@ d6fs_minit(void)
                 return;
         }
         base = minit_install(name);
-        fs_d6fs_service_addr = minit_export(name, base, 0U);
+        {
+                unsigned int service;
+
+                service = minit_export(name, base, 0U);
+                storage_patch_jump(&fs_d6fs_service_jump, service);
+                module_service_set(MODULE_SERVICE_D6FS, service);
+        }
         d6fs_diskset_read_addr = minit_export(name, base, 1U);
         d6fs_diskset_write_addr = minit_export(name, base, 2U);
         d6fs_provider_mount_addr = minit_export(name, base, 3U);
@@ -943,7 +965,6 @@ d6fs_minit(void)
         storage_patch_jump((kword_t *)(unsigned long)
             minit_export(name, base, 6U),
             module_service_get(MODULE_SERVICE_DISKSET));
-        module_service_set(MODULE_SERVICE_D6FS, fs_d6fs_service_addr);
         minit_diag_loaded(name);
 }
 

@@ -167,6 +167,7 @@ kfs_boot_prepare(void)
         unsigned int next;
         unsigned int ramfs_slot;
         unsigned int temp_slot;
+        unsigned int memfs_service;
         kword_t size_chars;
         struct vfs_name name;
         struct memfs_node *np;
@@ -180,10 +181,8 @@ kfs_boot_prepare(void)
             image[IHF_FLAGS] != 0 || image[IHF_CKSUM] != 0)
                 return -1;
         nent = (unsigned int)image[IHF_NENT];
-        fs_memfs_service_addr = module_service_get(MODULE_SERVICE_MEMFS);
-        fs_dtfs_service_addr = module_service_get(MODULE_SERVICE_DTFS);
-        fs_d6fs_service_addr = module_service_get(MODULE_SERVICE_D6FS);
-        if (fs_memfs_service_addr == 0U) {
+        memfs_service = module_service_get(MODULE_SERVICE_MEMFS);
+        if (memfs_service == 0U) {
                 if (nent != 0U)
                         return -1;
                 goto bind_services;
@@ -282,7 +281,8 @@ kfs_boot_prepare(void)
                 config.image_data = data;
                 req.op = FS_MRES_OP_MEMFS_INIT;
                 req.a = (kword_t)(unsigned long)&config;
-                if (fs_mres_call(fs_memfs_service_addr, &req) != 0 ||
+                if ((int)kinit_call18_1(memfs_service,
+                    (kword_t)(unsigned long)&req) != 0 ||
                     vfs_mount(VFS_NODE_NONE, MEMFS_PROVIDER,
                     MEMFS_KIND_NODE, 0U, VFS_MOUNT_RW, &root) != 0)
                         return -1;

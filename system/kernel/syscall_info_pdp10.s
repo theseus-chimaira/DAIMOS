@@ -5,8 +5,7 @@
         .globl  proc_table
         .globl  proc_comm_words
         .globl  kcore_resident_end
-        .globl  fs_memfs_service_addr
-        .globl  fs_mres_call
+        .globl  sys_memfs_usage_call
 
 ; int sys_procinfo(unsigned int slot, struct sys_procinfo *info)
 ; Fixed DAIMOS 1.x process slots: 0=SWAPPER, 1=INIT.
@@ -50,18 +49,16 @@ sys_meminfo_file_loop:
         movem   3,1(2)
 ; Reuse info[2..8] as the seven-word filesystem request.  These fields are
 ; filled with their final values after the optional MEMFS call returns.
-        movei   3,024                  ; FS_MRES_OP_MEMFS_USAGE
-        movem   3,2(2)
+        setzm   2(2)
         setzm   3(2)
         setzm   4(2)
         setzm   5(2)
         setzm   6(2)
         setzm   7(2)
         setzm   010(2)
-        move    1,fs_memfs_service_addr
-        movei   2,2(2)
-        pushj   17,fs_mres_call
-        subi    2,2
+        movei   1,2(2)
+sys_memfs_usage_call:
+        pushj   17,pdp10_ret_neg1
         jumpn   1,sys_meminfo_no_ramfs
         move    4,3(2)
         move    5,4(2)

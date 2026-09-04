@@ -27,7 +27,7 @@ KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot exec d6fs_boot d
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 
-KCORE_C_NAMES = kboot vfs devicefs fs_mres file
+KCORE_C_NAMES = kboot vfs devicefs file
 KCORE_FIXED_NAMES = kcore_entry $(KCORE_C_NAMES) ret_pdp10 \
 	dsk270_pdp10 kfmt_pdp10 vfs_pdp10 fs_mres_pdp10 file_pdp10 proc_pdp10 \
 	device_state_pdp10 procfs_pdp10 devicefs_pdp10 syscall_info_pdp10 \
@@ -217,13 +217,14 @@ $(SLV_MRES_OBJ): $(BUILD)/slv_io.dobj $(KCORE_MAP)
 
 $(MEMFS_MRES_OBJ): $(BUILD)/memfs_pdp10.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/memfs-mres.dxr -M $(BUILD)/memfs-mres.map \
-	    -R $@ -N memfs_mres_package -X memfs_mres_dispatch \
+	    -R $@ -N memfs_mres_package -X memfs_mres_dispatch -X memfs_mres_usage \
 	    $(BUILD)/memfs_pdp10.dobj
 
 $(DTFS_MRES_OBJ): $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dtfs-mres.dxr -M $(BUILD)/dtfs-mres.map \
 	    -R $@ -N dtfs_mres_package -X dtfs_mres_dispatch \
 	    -X dtfs_dtc_read_jump -X dtfs_dtc_write_jump \
+	    -X dtfs_format_unit -X dtfs_mount_unit \
 	    $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj
 
 $(DISKSET_MRES_OBJ): $(BUILD)/diskset_dispatch.dobj $(KCORE_MAP)

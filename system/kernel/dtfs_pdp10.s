@@ -24,7 +24,7 @@ dtfs_mres_dispatch:
 
         .data
 dtfs_mres_vector:
-        .word   022                      ; highest operation: 18 decimal
+        .word   017                      ; highest runtime VFS operation: 15
         .word   dtfs_lookup              ; 1
         .word   dtfs_readdir             ; 2
         .word   dtfs_stat                ; 3
@@ -40,9 +40,6 @@ dtfs_mres_vector:
         .word   dtfs_read_words          ; 13 READ_WORDS
         .word   dtfs_write_words         ; 14 WRITE_WORDS
         .word   dtfs_sync                ; 15 SYNC
-        .word   0                        ; 16 PREPARE_UNMOUNT
-        .word   dtfs_format_unit         ; 17 FORMAT_UNIT
-        .word   dtfs_mount_unit          ; 18 MOUNT_UNIT
         .text
 
 ; Compact vnode predicates.  The vnode encoding is provider:6, kind/mount:12,

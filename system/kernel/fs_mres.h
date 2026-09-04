@@ -38,18 +38,17 @@ struct fs_mres_request {
         kword_t f;
 };
 
-extern unsigned int fs_memfs_service_addr;
-extern unsigned int fs_dtfs_service_addr;
-extern unsigned int fs_d6fs_service_addr;
+extern kword_t fs_memfs_service_jump;
+extern kword_t fs_dtfs_service_jump;
+extern kword_t fs_d6fs_service_jump;
+extern kword_t sys_memfs_usage_call;
+extern kword_t sys_dtfs_format_jump;
+extern kword_t sys_dtfs_mount_jump;
 
-int fs_mres_call(unsigned int address, struct fs_mres_request *req);
 int fs_provider_call(unsigned int provider, struct fs_mres_request *req);
 void fs_copy_words(const kword_t *src, kword_t *dst, unsigned int count);
 int fs_words_equal(const kword_t *a, const kword_t *b, unsigned int count);
 void fs_zero_words(kword_t *dst, unsigned int count);
 void fs_zero_block_workspace(void);
-int fs_dtfs_format_unit(unsigned int unit);
-int fs_dtfs_mount_unit(unsigned int unit, vnode_t target,
-    unsigned int flags, vnode_t *rootp);
 
 #endif

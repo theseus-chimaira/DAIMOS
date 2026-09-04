@@ -868,7 +868,8 @@ memfs_mres_init:
         setz    1,
         popj    17,
 
-; MEMINFO expects FS_MRES_OP_MEMFS_USAGE to overwrite request a/b.
+; MEMINFO calls this exported entry directly; overwrite request a/b.
+        .globl  memfs_mres_usage
 memfs_mres_usage:
         move    2,memfs_mres_fs+4       ; used_words
         movem   2,1(1)
@@ -889,10 +890,6 @@ memfs_mres_dispatch:
         move    2,1(1)
         jrst    memfs_mres_init
 memfs_mres_not_init:
-        caie    2,024                   ; 20 decimal: MEMFS_USAGE
-        jrst    memfs_mres_vector_call
-        jrst    memfs_mres_usage
-memfs_mres_vector_call:
         move    2,[memfs_mres_vector]
         movei   3,memfs_mres_fs
         jrst    fs_mres_context_vector_dispatch
