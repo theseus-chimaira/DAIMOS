@@ -36,7 +36,7 @@
 #define DEVICEFS_IO_OUT_COUNT        DEVICEFS_DEV_COUNT
 
 
-extern kword_t devicefs_present;
+extern kword_t devicefs_names[DEVICEFS_DEV_COUNT];
 int devicefs_lookup(vnode_t dir, const struct vfs_name *name,
     vnode_t *nodep);
 int devicefs_readdir(vnode_t dir, unsigned int off,

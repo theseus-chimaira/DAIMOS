@@ -933,49 +933,45 @@ d6fs_minit(void)
 void
 devicefs_minit(void)
 {
-        kword_t present;
-
-        present = 0;
         if (module_service_get(MODULE_SERVICE_CTY_PUTCHAR) != 0U &&
             module_service_get(MODULE_SERVICE_CTY_GETCHAR) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_CTY0);
+                devicefs_names[DEVICEFS_DEV_CTY0] = (kword_t)SIXBIT("CTY0  ");
         if (module_service_get(MODULE_SERVICE_CLK_TICKS) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_CLK0);
+                devicefs_names[DEVICEFS_DEV_CLK0] = (kword_t)SIXBIT("CLK0  ");
         if (module_service_get(MODULE_SERVICE_PTR_GETCHAR) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_PTR0);
+                devicefs_names[DEVICEFS_DEV_PTR0] = (kword_t)SIXBIT("PTR0  ");
         if (module_service_get(MODULE_SERVICE_PTP_PUTCHAR) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_PTP0);
+                devicefs_names[DEVICEFS_DEV_PTP0] = (kword_t)SIXBIT("PTP0  ");
         if (module_service_get(MODULE_SERVICE_CR_READ_CARD) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_CR0);
+                devicefs_names[DEVICEFS_DEV_CR0] = (kword_t)SIXBIT("CR0   ");
         if (module_service_get(MODULE_SERVICE_CP_PUNCH_CARD) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_CP0);
+                devicefs_names[DEVICEFS_DEV_CP0] = (kword_t)SIXBIT("CP0   ");
         if (module_service_get(MODULE_SERVICE_DCS_GETCHAR) != 0U &&
             module_service_get(MODULE_SERVICE_DCS_PUTCHAR) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DCS0);
+                devicefs_names[DEVICEFS_DEV_DCS0] = (kword_t)SIXBIT("DCS0  ");
         if (module_service_get(MODULE_SERVICE_GE_GETCHAR) != 0U &&
             module_service_get(MODULE_SERVICE_GE_PUTCHAR) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_GE0);
+                devicefs_names[DEVICEFS_DEV_GE0] = (kword_t)SIXBIT("GE0   ");
         if (module_service_get(MODULE_SERVICE_DPY_PUTWORD) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DPY0);
+                devicefs_names[DEVICEFS_DEV_DPY0] = (kword_t)SIXBIT("DPY0  ");
         if (module_service_get(MODULE_SERVICE_TTY_PUTCHAR) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_TTY0);
+                devicefs_names[DEVICEFS_DEV_TTY0] = (kword_t)SIXBIT("TTY0  ");
         if (module_service_get(MODULE_SERVICE_WCNSLS_READ) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_WCNSLS);
+                devicefs_names[DEVICEFS_DEV_WCNSLS] = (kword_t)SIXBIT("WCNSLS");
         if (module_service_get(MODULE_SERVICE_OCNSLS_READ) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_OCNSLS);
+                devicefs_names[DEVICEFS_DEV_OCNSLS] = (kword_t)SIXBIT("OCNSLS");
         if (module_service_get(MODULE_SERVICE_DTC_READ_BLOCK) != 0U &&
             module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DTC0);
+                devicefs_names[DEVICEFS_DEV_DTC0] = (kword_t)SIXBIT("DTC0  ");
         if (module_service_get(MODULE_SERVICE_MTC) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_MTC0);
+                devicefs_names[DEVICEFS_DEV_MTC0] = (kword_t)SIXBIT("MTC0  ");
         if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) != 0U &&
             module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_DSK0);
+                devicefs_names[DEVICEFS_DEV_DSK0] = (kword_t)SIXBIT("DSK0  ");
         if (module_service_get(MODULE_SERVICE_SLV_HANDLER) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_SLV0);
+                devicefs_names[DEVICEFS_DEV_SLV0] = (kword_t)SIXBIT("SLV0  ");
         if (module_service_get(MODULE_SERVICE_D6FS) != 0U)
-                present |= DEVICEFS_PRESENT(DEVICEFS_DEV_D6SET0);
-        devicefs_present = present;
+                devicefs_names[DEVICEFS_DEV_D6SET0] = (kword_t)SIXBIT("D6SET0");
 }
 
 void

@@ -2,32 +2,13 @@
         .text
         .globl  pdp10_ret_zero
         .globl  pdp10_ret_neg1
-        .globl  devicefs_present
         .globl  devicefs_io_in
         .globl  devicefs_io_out
         .globl  kfmt_u36_decimal_readchar
 
-; Full DEVICEFS runtime operations.  Names remain packed SIXBIT words.
-        .data
-devicefs_names:
-        .word   0436471200000          ; CTY0
-        .word   0435453200000          ; CLK0
-        .word   0606462200000          ; PTR0
-        .word   0606460200000          ; PTP0
-        .word   0436220000000          ; CR0
-        .word   0436020000000          ; CP0
-        .word   0444363200000          ; DCS0
-        .word   0474520000000          ; GE0
-        .word   0446071200000          ; DPY0
-        .word   0646471200000          ; TTY0
-        .word   0674356635463          ; WCNSLS
-        .word   0574356635463          ; OCNSLS
-        .word   0446443200000          ; DTC0
-        .word   0556443200000          ; MTC0
-        .word   0446353200000          ; DSK0
-        .word   0635466200000          ; SLV0
-        .word   0442663456420          ; D6SET0
-        .text
+; Full DEVICEFS runtime operations.  MINIT freezes detected device names
+; into devicefs_names; a zero slot means that device is absent.
+        .globl  devicefs_names
 
 ; Capability masks indexed by device id.  TTY0 has output accounting at the
 ; logical terminal layer in addition to the physical backend accounting.
@@ -37,19 +18,13 @@ devicefs_names:
 ; Derive 3/4/6-character device name length from trailing SIXBIT blanks.
 ; input AC5=name word, output AC6=chars.
 devicefs_name_length:
-        move    6,5
-        andi    6,0777777
-        jumpe   6,devicefs_name_len3
-        move    6,5
-        andi    6,07777
-        jumpe   6,devicefs_name_len4
-        movei   6,6
-        popj    17,
-devicefs_name_len3:
         movei   6,3
+        trnn    5,0777777
         popj    17,
-devicefs_name_len4:
         movei   6,4
+        trnn    5,07777
+        popj    17,
+        movei   6,6
         popj    17,
 
 ; AC4=device id.  Skip next instruction when input accounting exists.
@@ -72,9 +47,7 @@ devicefs_skip_if_out:
 devicefs_validate_id:
         cail    4,021
         jrst    pdp10_ret_neg1
-        movei   5,1
-        lsh     5,0(4)
-        tdnn    5,devicefs_present
+        skipn   5,devicefs_names(4)
         jrst    pdp10_ret_neg1
         jrst    pdp10_ret_zero
 
@@ -91,15 +64,12 @@ devicefs_lookup:
 devicefs_lookup_scan:
         cail    4,021
         jrst    devicefs_lookup_fail
-        movei   5,1
-        lsh     5,0(4)
-        tdnn    5,devicefs_present
-        jrst    devicefs_lookup_next
-        move    5,devicefs_names(4)
-        pushj   17,devicefs_name_length
-        came    6,(2)
+        skipn   5,devicefs_names(4)
         jrst    devicefs_lookup_next
         came    5,1(2)
+        jrst    devicefs_lookup_next
+        pushj   17,devicefs_name_length
+        came    6,(2)
         jrst    devicefs_lookup_next
         move    5,4
         tlo     5,020003               ; device directory
@@ -194,9 +164,7 @@ devicefs_readdir:
 devicefs_readdir_scan:
         cail    5,021
         jrst    devicefs_readdir_eof
-        movei   6,1
-        lsh     6,0(5)
-        tdnn    6,devicefs_present
+        skipn   6,devicefs_names(5)
         jrst    devicefs_readdir_next
         camn    7,2
         jrst    devicefs_readdir_found
@@ -206,7 +174,7 @@ devicefs_readdir_next:
         jrst    devicefs_readdir_scan
 
 devicefs_readdir_found:
-        move    5,devicefs_names(5)
+        move    5,6
         pushj   17,devicefs_name_length
         movei   7,1                    ; directory
         jrst    devicefs_readdir_store
