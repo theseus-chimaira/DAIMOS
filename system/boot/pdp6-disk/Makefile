@@ -23,7 +23,7 @@ KINIT_STAMP := $(BUILD)/.kinit-built
 KCORE_STAMP := $(BUILD)/.kcore-built
 KERNEL_INPUTS := $(wildcard $(KERNEL_DIR)/*.c $(KERNEL_DIR)/*.h $(KERNEL_DIR)/*.s)
 
-KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot exec d6fs_boot d6fs_super_boot diskset_boot logstore kinit_io module_io bootbanner_generated
+KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot exec d6fs_boot d6fs_super_boot diskset_boot logstore mach_enter_user kinit_io module_io bootbanner_generated
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 
@@ -144,8 +144,8 @@ $(KCORE_STREAM): $(KCORE_RIM) $(KCORE_MAP)
 
 $(CTY_MRES_OBJ): $(BUILD)/cty_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/cty-mres.dxr -M $(BUILD)/cty-mres.map \
-	    -R $@ -N cty_mres_package -X cty_pi_handler -X cty_put6 \
-	    -X cty_putchar -X cty_getchar $(BUILD)/cty_io.dobj
+	    -R $@ -N cty_mres_package -X cty_pi_handler -X cty_putchar \
+	    -X cty_getchar $(BUILD)/cty_io.dobj
 
 $(CLK_MRES_OBJ): $(BUILD)/clk_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/clk-mres.dxr -M $(BUILD)/clk-mres.map \

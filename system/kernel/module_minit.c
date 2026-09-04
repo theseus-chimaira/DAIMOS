@@ -19,9 +19,8 @@
 #include "devicefs.h"
 
 #define CTY_X_HANDLER           0U
-#define CTY_X_PUT6              1U
-#define CTY_X_PUTCHAR           2U
-#define CTY_X_GETCHAR           3U
+#define CTY_X_PUTCHAR           1U
+#define CTY_X_GETCHAR           2U
 
 #define CLK_X_HANDLER           0U
 #define CLK_X_TICKS             1U
@@ -63,7 +62,6 @@
 #define SLV_CO_CLEAR_IRQ        0000010UL
 #define SLV_PROBE_PI            7U
 
-static unsigned int diag_put6_addr;
 static unsigned int diag_putchar_addr;
 static unsigned int clk_pi_handler_addr;
 static unsigned int clk_pi_service_addr;
@@ -217,22 +215,31 @@ minit_pi_enable(unsigned int level)
 static int
 minit_put6(kword_t word)
 {
-        if (diag_put6_addr == 0U) {
+        unsigned int i;
+        unsigned int ch;
+
+        if (diag_putchar_addr == 0U) {
                 kinit_put6(word);
                 return 0;
         }
-        return (int)kinit_call18_1(diag_put6_addr, word);
+        for (i = 0U; i < 6U; ++i) {
+                ch = (unsigned int)((word >> 30) & 077UL) + 040U;
+                if (kinit_call18_1(diag_putchar_addr, (kword_t)ch) != 0)
+                        return -1;
+                word <<= 6;
+        }
+        return 0;
 }
 
 static int
 minit_spaces(unsigned int words)
 {
-        if (diag_put6_addr == 0U) {
+        if (diag_putchar_addr == 0U) {
                 kinit_put6_spaces(words);
                 return 0;
         }
         while (words != 0U) {
-                if (kinit_call18_1(diag_put6_addr, 0) != 0)
+                if (minit_put6(0) != 0)
                         return -1;
                 --words;
         }
@@ -372,7 +379,6 @@ cty_minit(void)
         minit_register(name, CTY_NATIVE_PI_LEVEL,
             minit_export(name, base, CTY_X_HANDLER));
         minit_cty_cono(CTY_NATIVE_PI_LEVEL);
-        diag_put6_addr = minit_export(name, base, CTY_X_PUT6);
         diag_putchar_addr = minit_export(name, base, CTY_X_PUTCHAR);
         module_service_set(MODULE_SERVICE_CTY_PUTCHAR, diag_putchar_addr);
         module_service_set(MODULE_SERVICE_CTY_GETCHAR,

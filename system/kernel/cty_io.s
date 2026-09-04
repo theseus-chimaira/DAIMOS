@@ -10,7 +10,6 @@
         .globl cty_pi_handler
         .globl cty_putchar
         .globl cty_getchar
-        .globl cty_put6
         .globl cty_tx_pending
         .globl cty_rx_pending
         .globl pdp10_pi_handler_return
@@ -74,21 +73,6 @@ cty_getchar_wait:
 cty_getchar_pending:
         setzm cty_rx_pending
         subi 1,1
-        popj 017,
-
-; AC1 = one packed SIXBIT word.  Return the first cty_putchar result.
-cty_put6:
-        move 4,1
-        movei 5,6
-cty_put6_loop:
-        rot 4,6
-        move 1,4
-        andi 1,077
-        addi 1,040
-        pushj 017,cty_putchar
-        jumpn 1,cty_put6_return
-        sojg 5,cty_put6_loop
-cty_put6_return:
         popj 017,
 
         .bss
