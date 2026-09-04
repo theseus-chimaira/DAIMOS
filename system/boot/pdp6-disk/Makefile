@@ -238,7 +238,7 @@ $(D6FS_MRES_OBJ): $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_p
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/d6fs-mres.dxr -M $(BUILD)/d6fs-mres.map \
 	    -R $@ -N d6fs_mres_package -X d6fs_mres_dispatch \
 	    -X d6fs_diskset_read -X d6fs_diskset_write \
-	    -X d6fs_provider_mount_state -X d6fs_provider_reader \
+	    -X d6fs_provider_reader \
 	    -X d6fs_diskset_read_jump -X d6fs_diskset_write_jump \
 	    $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_pdp10.dobj
 

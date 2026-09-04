@@ -74,7 +74,6 @@ unsigned int diskset_state_addr;
 unsigned int diskset_total_addr;
 unsigned int d6fs_diskset_read_addr;
 unsigned int d6fs_diskset_write_addr;
-unsigned int d6fs_provider_mount_addr;
 unsigned int d6fs_provider_reader_addr;
 
 extern kword_t storage_pi_handler;
@@ -968,12 +967,11 @@ d6fs_minit(void)
         }
         d6fs_diskset_read_addr = minit_export(name, base, 1U);
         d6fs_diskset_write_addr = minit_export(name, base, 2U);
-        d6fs_provider_mount_addr = minit_export(name, base, 3U);
-        d6fs_provider_reader_addr = minit_export(name, base, 4U);
+        d6fs_provider_reader_addr = minit_export(name, base, 3U);
         storage_patch_jump((kword_t *)(unsigned long)
-            minit_export(name, base, 5U), diskset_read_addr);
+            minit_export(name, base, 4U), diskset_read_addr);
         storage_patch_jump((kword_t *)(unsigned long)
-            minit_export(name, base, 6U), diskset_write_addr);
+            minit_export(name, base, 5U), diskset_write_addr);
         minit_diag_loaded(name);
 }
 

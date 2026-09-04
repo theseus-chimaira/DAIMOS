@@ -10,10 +10,6 @@
 #define D6FS_PROVIDER_MOUNT_WRITABLE  0100U
 #define D6FS_PROVIDER_MOUNT_COPY      0200U
 
-struct d6fs_provider_mount {
-        kword_t alloc_cursor;
-};
-
 /* The filesystem UUID is needed only while KINIT selects the superblock.
  * After that, reuse those two resident reader words for the physical dual-
  * superblock locations needed by the writable unmount commit. */
@@ -22,7 +18,6 @@ struct d6fs_provider_mount {
 /* KINIT-only relocated D6FS runtime destinations and callback addresses. */
 extern unsigned int d6fs_diskset_read_addr;
 extern unsigned int d6fs_diskset_write_addr;
-extern unsigned int d6fs_provider_mount_addr;
 extern unsigned int d6fs_provider_reader_addr;
 
 int d6fs_provider_lookup(vnode_t dir, const struct vfs_name *name,

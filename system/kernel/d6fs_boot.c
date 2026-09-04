@@ -18,7 +18,6 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
     unsigned int flags, kword_t super_a, kword_t super_b, unsigned int copy,
     vnode_t *rootp)
 {
-        struct d6fs_provider_mount *mp;
         struct d6fs_reader *reader;
         vnode_t target;
         vnode_t root;
@@ -30,7 +29,7 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
         if (super == 0 || rootp == 0 || copy > 1U || super_a == super_b ||
             super->total_blocks == 0UL || super->fcb_count == 0UL ||
             super->root_fcb >= super->fcb_count ||
-            d6fs_provider_mount_addr == 0U || d6fs_provider_reader_addr == 0U ||
+            d6fs_provider_reader_addr == 0U ||
             d6fs_diskset_read_addr == 0U)
                 return -1;
 
@@ -45,20 +44,16 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
                 return -1;
         id = VFS_MOUNT_ID(root);
         reader = (struct d6fs_reader *)(unsigned long)d6fs_provider_reader_addr;
-        if (reader->read_block != 0) {
+        if (reader->opaque != 0) {
                 (void)vfs_unmount(root);
                 return -1;
         }
 
-        mp = (struct d6fs_provider_mount *)(unsigned long)d6fs_provider_mount_addr;
-        mp->alloc_cursor = super->summary_start + super->summary_blocks;
-        if (mp->alloc_cursor >= super->total_blocks)
-                mp->alloc_cursor = 0UL;
+        reader->alloc_cursor = super->summary_start + super->summary_blocks;
+        if (reader->alloc_cursor >= super->total_blocks)
+                reader->alloc_cursor = 0UL;
 
         reader->opaque = (void *)(unsigned long)id;
-        reader->read_block = (d6fs_read_block_fn)(unsigned long)d6fs_diskset_read_addr;
-        reader->write_block = writable ?
-            (d6fs_write_block_fn)(unsigned long)d6fs_diskset_write_addr : 0;
         reader->super = *super;
         D6FS_RUNTIME_SUPER_BLOCK(reader, 0U) = super_a;
         D6FS_RUNTIME_SUPER_BLOCK(reader, 1U) = super_b;
@@ -87,8 +82,6 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
 
 fail:
         reader->opaque = 0;
-        reader->read_block = 0;
-        reader->write_block = 0;
         reader->cache_block = D6FS_CACHE_INVALID;
         (void)vfs_unmount(root);
         return -1;

@@ -17,7 +17,6 @@
         .globl mach_syscall_trampoline
         .globl mach_return_to_kernel_request
         .globl exec_native_syscall
-        .globl mach_syscall_ac1
         .globl mach_syscall_ac2
         .globl mach_syscall_ac3
         .globl mach_syscall_ac4
@@ -28,15 +27,17 @@ mach_syscall_trampoline:
         jrst mach_syscall
 
 mach_syscall:
-        move 0,[1,,mach_syscall_ac1]
+        ; AC1 remains live into exec_native_syscall as the syscall number.
+        ; Snapshot only the four argument registers.
+        move 0,[2,,mach_syscall_ac2]
         blt 0,mach_syscall_ac5
         movem 17,mach_user_sp
         move 17,mach_kernel_sp
         pushj 17,exec_native_syscall
         movem 17,mach_kernel_sp
-        skipn mach_return_to_kernel_flag
-        jrst mach_syscall_user_return
-        setzm mach_return_to_kernel_flag
+        ; A zero saved user SP is the return-to-kernel sentinel.  The user
+        ; stack is not needed on that path, so this replaces a separate flag.
+        skipn mach_user_sp
         popj 17,
 
 mach_syscall_user_return:
@@ -45,15 +46,13 @@ mach_syscall_user_return:
         popj 17,
 
 mach_return_to_kernel_request:
-        setom mach_return_to_kernel_flag
+        setzm mach_user_sp
         popj 17,
 
         .bss
-mach_syscall_ac1:  .word 0
 mach_syscall_ac2:  .word 0
 mach_syscall_ac3:  .word 0
 mach_syscall_ac4:  .word 0
 mach_syscall_ac5:  .word 0
 mach_user_sp:      .word 0
 mach_kernel_sp:    .word 0
-mach_return_to_kernel_flag: .word 0

@@ -176,7 +176,7 @@ d6fs_reader_get_block:
         jumpe   1,d6fs_get_block_fail
         caml    2,7(1)                   ; logical >= total_blocks
         jrst    d6fs_get_block_fail
-        camn    2,017(1)                 ; cache hit
+        camn    2,1(1)                   ; cache hit
         jrst    d6fs_get_block_hit
         push    17,010
         push    17,011
@@ -185,9 +185,9 @@ d6fs_reader_get_block:
         movei   3,fs_block_workspace     ; shared transfer block
         move    1,2(010)                 ; opaque
         move    2,011
-        pushj   17,@(010)                ; read_block(opaque, logical, cache)
+        pushj   17,d6fs_diskset_read     ; fixed MINIT-patched DISKSET read
         jumpn   1,d6fs_get_block_read_fail
-        movem   011,017(010)
+        movem   011,1(010)
         movei   1,fs_block_workspace
         pop     17,011
         pop     17,010
@@ -264,8 +264,6 @@ d6fs_reader_fcb_bad:
 d6fs_reader_put_fcb:
         jumpe   1,d6fs_reader_put_fcb_bad
         jumpe   3,d6fs_reader_put_fcb_bad
-        skipn   1(1)                     ; writable reader required
-        jrst    d6fs_reader_put_fcb_bad
         caml    2,012(1)
         jrst    d6fs_reader_put_fcb_bad
         push    17,010
@@ -611,8 +609,6 @@ d6fs_summary_set_done:
 ; int d6fs_freemap_set(reader, logical, allocated)
 d6fs_freemap_set:
         jumpe   1,d6fs_bitmap_error
-        skipn   1(1)                      ; write_block required
-        jrst    d6fs_bitmap_error
         caml    2,7(1)
         jrst    d6fs_bitmap_error
         push    17,010
@@ -867,8 +863,6 @@ d6fs_reader_write_words:
         jumpe   1,d6fs_reader_write_bad
         jumpe   2,d6fs_reader_write_bad
         jumpe   4,d6fs_reader_write_bad
-        skipn   1(1)                     ; write_block callback required
-        jrst    d6fs_reader_write_bad
         push    17,010
         push    17,011
         push    17,012
@@ -942,7 +936,8 @@ d6fs_reader_write_bad:
 ; int d6fs_reader_commit_cache(reader, logical)
 d6fs_reader_commit_cache:
         jumpe   1,d6fs_reader_commit_bad
-        skipn   4,1(1)                   ; write callback
+        move    4,2(1)                   ; packed mount state
+        trnn    4,0100                    ; D6FS_PROVIDER_MOUNT_WRITABLE
         jrst    d6fs_reader_commit_invalidate
         caml    2,7(1)                   ; logical >= total_blocks
         jrst    d6fs_reader_commit_invalidate
@@ -953,21 +948,21 @@ d6fs_reader_commit_cache:
         move    1,2(010)                 ; opaque
         move    2,011
         movei   3,fs_block_workspace
-        pushj   17,(4)
+        pushj   17,d6fs_diskset_write
         jumpn   1,d6fs_reader_commit_fail_saved
-        movem   011,017(010)
+        movem   011,1(010)
         setz    1,
         pop     17,011
         pop     17,010
         popj    17,
 d6fs_reader_commit_fail_saved:
-        setom   017(010)
+        setom   1(010)
         pop     17,011
         pop     17,010
         seto    1,
         popj    17,
 d6fs_reader_commit_invalidate:
-        setom   017(1)
+        setom   1(1)
 d6fs_reader_commit_bad:
         seto    1,
         popj    17,
@@ -977,8 +972,6 @@ d6fs_reader_commit_bad:
 d6fs_reader_write_block:
         jumpe   1,d6fs_reader_write_block_bad
         jumpe   3,d6fs_reader_write_block_bad
-        skipn   1(1)
-        jrst    d6fs_reader_write_block_bad
         caml    2,7(1)
         jrst    d6fs_reader_write_block_bad
         camn    3,[fs_block_workspace]
@@ -996,8 +989,6 @@ d6fs_reader_write_block_bad:
 ; int d6fs_reader_zero_block(reader, logical)
 d6fs_reader_zero_block:
         jumpe   1,d6fs_reader_zero_block_bad
-        skipn   1(1)
-        jrst    d6fs_reader_zero_block_bad
         caml    2,7(1)
         jrst    d6fs_reader_zero_block_bad
         pushj   17,fs_zero_block_workspace

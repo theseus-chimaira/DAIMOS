@@ -117,11 +117,10 @@ struct d6fs_super_info {
 };
 
 struct d6fs_reader {
-        d6fs_read_block_fn read_block;
-        d6fs_write_block_fn write_block;
+        kword_t alloc_cursor;
+        kword_t cache_block;
         void *opaque;
         struct d6fs_super_info super;
-        kword_t cache_block;
 };
 
 /*

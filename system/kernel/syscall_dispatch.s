@@ -16,16 +16,23 @@ sys_user_words_bad:
         jrst    pdp10_ret_zero
 
 	.globl	exec_native_syscall
-	.globl	mach_syscall_ac1
 	.globl	mach_syscall_ac2
 	.globl	mach_syscall_ac3
 	.globl	mach_syscall_ac4
 	.globl	mach_syscall_ac5
 exec_native_syscall:
-	hrrz 4,mach_syscall_ac1
+	; AC1 is still the syscall number on entry from mach_syscall.
+	hrrz 4,1
 	subi 4,2
 	jumpl 4,%L137
-	caile 4,052
+	caige 4,035                 ; syscall 31 - 2
+	jrst exec_native_low
+	subi 4,035
+	caile 4,015                 ; syscalls 31..44
+	jrst %L137
+	jrst @exec_native_high(4)
+exec_native_low:
+	caile 4,024                 ; syscalls 2..22
 	jrst %L137
 	jrst @%L138(4)
 %L138:
@@ -50,14 +57,7 @@ exec_native_syscall:
 	.word	.107
 	.word	.112
 	.word	.119
-	.word	.137
-	.word	.137
-	.word	.137
-	.word	.137
-	.word	.137
-	.word	.137
-	.word	.137
-	.word	.137
+exec_native_high:
 	.word	.83
 	.word	.86
 	.word	.124

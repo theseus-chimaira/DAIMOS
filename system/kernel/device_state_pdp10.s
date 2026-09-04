@@ -9,7 +9,7 @@ devicefs_names:
         .block  021                    ; frozen detected-device SIXBIT names
         .globl  devicefs_io_in
 devicefs_io_in:
-        .block  021                    ; DEVICEFS_DEV_COUNT (17 decimal)
+        .block  017                    ; counters exist only for ids 0..14
         .globl  devicefs_io_out
 devicefs_io_out:
-        .block  021
+        .block  017
