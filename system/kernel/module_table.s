@@ -17,6 +17,7 @@
         .globl dsk_minit
         .globl storage_minit
         .globl slv_minit
+        .globl memfs_minit
         .globl dtfs_minit
         .globl diskset_minit
         .globl d6fs_minit
@@ -35,6 +36,7 @@
         .globl tape_mres_package
         .globl dsk_mres_package
         .globl slv_mres_package
+        .globl memfs_mres_package
         .globl dtfs_mres_package
         .globl diskset_mres_package
         .globl d6fs_mres_package
@@ -76,6 +78,7 @@ __minit_table_begin:
         .word mtc_minit,,tape_mres_package
         .word dsk_minit,,dsk_mres_package
         .word diskset_minit,,diskset_mres_package
+        .word memfs_minit,,memfs_mres_package
         .word dtfs_minit,,dtfs_mres_package
         .word d6fs_minit,,d6fs_mres_package
         .word slv_minit,,slv_mres_package
