@@ -181,6 +181,7 @@ dtfs_tenex_valid(void)
         unsigned int i;
         unsigned int owner;
         unsigned int slot;
+        kword_t seen;
 
         /* TENEX DECTAP.MAC DTINID/DIRTHR structural invariants. */
         if (dtfs_map_owner(0U) != DTFS_TENEX_RESERVED ||
@@ -190,12 +191,16 @@ dtfs_tenex_valid(void)
         for (i = 577U; i <= 580U; ++i)
                 if (dtfs_map_owner(i) != DTFS_TENEX_INVALID)
                         return 0;
+        seen = 0UL;
         for (i = 0U; i < 578U; ++i) {
                 owner = dtfs_map_owner(i);
                 if (owner <= DTFS_TENEX_MAX_FILE) {
-                        if (owner != 0U &&
-                            dtfs_dir[DTFS_NAME_BASE + owner - 1U] == 0UL)
-                                return 0;
+                        if (owner != 0U) {
+                                if (dtfs_dir[DTFS_NAME_BASE + owner - 1U] ==
+                                    0UL)
+                                        return 0;
+                                seen |= 1UL << (owner - 1U);
+                        }
                         continue;
                 }
                 if (owner == DTFS_TENEX_RESERVED ||
@@ -207,13 +212,9 @@ dtfs_tenex_valid(void)
                 if (dtfs_dir[DTFS_NAME_BASE + slot] == 0UL) {
                         if (dtfs_dir[DTFS_TENEX_EXT_BASE + slot] != 0UL)
                                 return 0;
-                        continue;
-                }
-                for (i = 0U; i < 577U; ++i)
-                        if (dtfs_map_owner(i) == slot + 1U)
-                                break;
-                if (i == 577U)
+                } else if ((seen & (1UL << slot)) == 0UL) {
                         return 0;
+                }
         }
         return 1;
 }
@@ -252,12 +253,6 @@ static int
 dtfs_is_its(vnode_t node)
 {
         return dtfs_personality(node) == DTFS_MEDIA_ITS;
-}
-
-static int
-dtfs_is_foreign(vnode_t node)
-{
-        return dtfs_personality(node) != 0U;
 }
 
 static unsigned int
@@ -654,49 +649,24 @@ dtfs_block_count(vnode_t node, unsigned int slot)
 static int dtfs_first_block(vnode_t node, unsigned int slot,
     unsigned int *blockp);
 
+static int dtfs_tenex_walk(unsigned int unit, unsigned int slot,
+    unsigned int off, kword_t *buf, unsigned int nwords);
+static int dtfs_tenex_deep_valid(unsigned int unit);
+
 static unsigned int
 dtfs_size_words(vnode_t node, unsigned int slot)
 {
         unsigned int blocks;
         unsigned int last;
-        unsigned int first;
-        unsigned int block;
-        unsigned int next;
-        unsigned int count;
-        unsigned int words;
-        unsigned int i;
-        unsigned int unit;
+        int i;
 
+        if (dtfs_is_tenex(node)) {
+                i = dtfs_tenex_walk(dtfs_unit(node), slot, 0U, 0, 0U);
+                return i < 0 ? 0U : (unsigned int)i;
+        }
         blocks = dtfs_block_count(node, slot);
         if (blocks == 0U)
                 return 0U;
-        if (dtfs_is_tenex(node)) {
-                if (dtfs_first_block(node, slot, &first) != 0)
-                        return 0U;
-                block = first;
-                unit = dtfs_unit(node);
-                words = 0U;
-                for (i = 0U; i < blocks; ++i) {
-                        if (block == 0U || block > DTFS_LAST_BLOCK ||
-                            dtfs_tenex_block_owner(block) != slot + 1U ||
-                            dtfs_dtc_read(unit, block, dtfs_block) != 0 ||
-                            ((dtfs_block[0] >> DTFS_FIRST_SHIFT) &
-                            DTFS_BLOCKNO_MASK) != first)
-                                return 0U;
-                        count = (unsigned int)(dtfs_block[0] &
-                            DTFS_COUNT_MASK);
-                        if (count > DTFS_DATA_WORDS)
-                                return 0U;
-                        words += count;
-                        next = dtfs_hdr_next(dtfs_block[0]);
-                        if (next == 0U)
-                                return i + 1U == blocks ? words : 0U;
-                        if (count == 0U)
-                                return 0U;
-                        block = next;
-                }
-                return 0U;
-        }
         last = (unsigned int)(dtfs_dir[DTFS_NAME_BASE + slot * 2U + 1U] &
             077UL);
         if ((dtfs_dir[22U + slot] & 1UL) != 0)
@@ -975,7 +945,8 @@ dtfs_format_unit(unsigned int unit, unsigned int ctl)
                                         return SYS_DTFS_TYPE_NATIVE;
                                 if ((type == SYS_DTFS_TYPE_AUTO ||
                                     type == SYS_DTFS_TYPE_TENEX) &&
-                                    dtfs_tenex_valid())
+                                    dtfs_tenex_valid() &&
+                                    dtfs_tenex_deep_valid(unit))
                                         return SYS_DTFS_TYPE_TENEX;
                         } else if (type != SYS_DTFS_TYPE_AUTO) {
                                 return -1;
@@ -1258,7 +1229,7 @@ dtfs_unlink(vnode_t dir, const struct vfs_name *name)
                 for (i = 0U; i < blocks; ++i) {
                         block = next;
                         if (block == 0U || block > DTFS_LAST_BLOCK ||
-                            dtfs_tenex_block_owner(block) != slot + 1U ||
+                            dtfs_map_owner(block - 1U) != slot + 1U ||
                             dtfs_dtc_read(dtfs_unit(dir), block,
                             dtfs_block) != 0) {
                                 dtfs_cache_mount = 0U;
@@ -1325,39 +1296,45 @@ int
 dtfs_chmod(vnode_t node, unsigned int mode)
 {
         if (!dtfs_is_file(node) || dtfs_load(node) != 0 ||
-            dtfs_is_foreign(node))
+            dtfs_personality(node) != 0U)
                 return -1;
         dtfs_set_exec(VFS_INDEX(node), (mode & 0111U) != 0U);
         return dtfs_commit(node);
 }
 
 static int
-dtfs_tenex_read_words(vnode_t node, unsigned int off, kword_t *buf,
-    unsigned int nwords)
+dtfs_tenex_walk(unsigned int unit, unsigned int slot, unsigned int off,
+    kword_t *buf, unsigned int nwords)
 {
-        unsigned int slot;
+        unsigned int blocks;
         unsigned int first;
         unsigned int block;
         unsigned int count;
         unsigned int take;
         unsigned int done;
         unsigned int seen;
-        unsigned int unit;
+        unsigned int words;
 
-        slot = VFS_INDEX(node);
-        if (slot >= DTFS_FILE_SLOTS ||
-            dtfs_dir[DTFS_NAME_BASE + slot] == 0UL)
+        blocks = 0U;
+        first = 0U;
+        for (block = 1U; block <= DTFS_LAST_BLOCK; ++block) {
+                if (dtfs_map_owner(block - 1U) != slot + 1U)
+                        continue;
+                ++blocks;
+                if (first == 0U &&
+                    dtfs_dtc_read(unit, block, dtfs_block) == 0 &&
+                    ((dtfs_block[0] >> DTFS_FIRST_SHIFT) &
+                    DTFS_BLOCKNO_MASK) == block)
+                        first = block;
+        }
+        if (first == 0U)
                 return -1;
-        if (nwords == 0U)
-                return 0;
-        if (dtfs_first_block(node, slot, &first) != 0)
-                return 0;
         block = first;
         done = 0U;
-        unit = dtfs_unit(node);
-        for (seen = 0U; seen < DTFS_LAST_BLOCK; ++seen) {
+        words = 0U;
+        for (seen = 0U; seen < blocks; ++seen) {
                 if (block == 0U || block > DTFS_LAST_BLOCK ||
-                    dtfs_tenex_block_owner(block) != slot + 1U ||
+                    dtfs_map_owner(block - 1U) != slot + 1U ||
                     dtfs_dtc_read(unit, block, dtfs_block) != 0 ||
                     ((dtfs_block[0] >> DTFS_FIRST_SHIFT) &
                     DTFS_BLOCKNO_MASK) != first)
@@ -1365,27 +1342,58 @@ dtfs_tenex_read_words(vnode_t node, unsigned int off, kword_t *buf,
                 count = (unsigned int)(dtfs_block[0] & DTFS_COUNT_MASK);
                 if (count > DTFS_DATA_WORDS)
                         return -1;
-                if (count == 0U)
-                        return dtfs_hdr_next(dtfs_block[0]) == 0U ?
-                            (int)done : -1;
-                if (off < count) {
-                        take = count - off;
-                        if (take > nwords - done)
-                                take = nwords - done;
-                        fs_copy_words(&dtfs_block[1U + off], &buf[done],
-                            take);
-                        done += take;
-                        off = 0U;
-                        if (done == nwords)
-                                return (int)done;
-                } else {
-                        off -= count;
+                words += count;
+                if (buf != 0) {
+                        if (off < count) {
+                                take = count - off;
+                                if (take > nwords - done)
+                                        take = nwords - done;
+                                fs_copy_words(&dtfs_block[1U + off],
+                                    &buf[done], take);
+                                done += take;
+                                off = 0U;
+                                if (done == nwords)
+                                        return (int)done;
+                        } else {
+                                off -= count;
+                        }
                 }
                 block = dtfs_hdr_next(dtfs_block[0]);
-                if (block == 0U)
-                        return (int)done;
+                if (block == 0U) {
+                        if (seen + 1U != blocks)
+                                return -1;
+                        return buf != 0 ? (int)done : (int)words;
+                }
+                if (count == 0U)
+                        return -1;
         }
         return -1;
+}
+
+static int
+dtfs_tenex_read_words(vnode_t node, unsigned int off, kword_t *buf,
+    unsigned int nwords)
+{
+        unsigned int slot;
+
+        slot = VFS_INDEX(node);
+        if (slot >= DTFS_FILE_SLOTS ||
+            dtfs_dir[DTFS_NAME_BASE + slot] == 0UL)
+                return -1;
+        if (nwords == 0U)
+                return 0;
+        return dtfs_tenex_walk(dtfs_unit(node), slot, off, buf, nwords);
+}
+
+static int
+dtfs_tenex_deep_valid(unsigned int unit)
+{
+        unsigned int slot;
+        for (slot = 0U; slot < DTFS_FILE_SLOTS; ++slot)
+                if (dtfs_dir[DTFS_NAME_BASE + slot] != 0UL &&
+                    dtfs_tenex_walk(unit, slot, 0U, 0, 0U) < 0)
+                        return 0;
+        return 1;
 }
 
 static int
