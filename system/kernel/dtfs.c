@@ -180,6 +180,7 @@ dtfs_tenex_valid(void)
 {
         unsigned int i;
         unsigned int owner;
+        unsigned int slot;
 
         /* TENEX DECTAP.MAC DTINID/DIRTHR structural invariants. */
         if (dtfs_map_owner(0U) != DTFS_TENEX_RESERVED ||
@@ -191,11 +192,28 @@ dtfs_tenex_valid(void)
                         return 0;
         for (i = 0U; i < 578U; ++i) {
                 owner = dtfs_map_owner(i);
-                if (owner <= DTFS_TENEX_MAX_FILE ||
-                    owner == DTFS_TENEX_RESERVED ||
+                if (owner <= DTFS_TENEX_MAX_FILE) {
+                        if (owner != 0U &&
+                            dtfs_dir[DTFS_NAME_BASE + owner - 1U] == 0UL)
+                                return 0;
+                        continue;
+                }
+                if (owner == DTFS_TENEX_RESERVED ||
                     owner == DTFS_TENEX_INVALID)
                         continue;
                 return 0;
+        }
+        for (slot = 0U; slot < DTFS_FILE_SLOTS; ++slot) {
+                if (dtfs_dir[DTFS_NAME_BASE + slot] == 0UL) {
+                        if (dtfs_dir[DTFS_TENEX_EXT_BASE + slot] != 0UL)
+                                return 0;
+                        continue;
+                }
+                for (i = 0U; i < 577U; ++i)
+                        if (dtfs_map_owner(i) == slot + 1U)
+                                break;
+                if (i == 577U)
+                        return 0;
         }
         return 1;
 }
