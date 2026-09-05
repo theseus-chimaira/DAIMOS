@@ -355,8 +355,8 @@ cmd_mkfs_dtfs(int argc, kword_t **argv, struct u_io *io)
 
         if (argc != 4 || !u_s6_eq(argv[1], "-O") ||
             cmd_dtfs_options(argv[2], &flags, &type) != 0 ||
-            (type != SYS_DTFS_TYPE_NATIVE && type != SYS_DTFS_TYPE_TENEX) ||
-            flags != SYS_MOUNT_RDONLY)
+            (type != SYS_DTFS_TYPE_NATIVE && type != SYS_DTFS_TYPE_TENEX &&
+            type != SYS_DTFS_TYPE_ITS) || flags != SYS_MOUNT_RDONLY)
                 return cmd_err(io, "MKFS.DTFS", 0);
         return dsys_dtfs_format(argv[3], type) == 0 ? 0 :
             cmd_err(io, "MKFS.DTFS", argv[3]);

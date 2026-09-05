@@ -23,6 +23,12 @@
 #define DTFS_ITS_NAME_WORDS   056U       /* 23 two-word names */
 #define DTFS_ITS_MAP_ENTRIES  01076U     /* 82 words, seven 5-bit bytes each */
 #define DTFS_ITS_END          037U
+#define DTFS_ITS_MAP_FIRST    056U
+#define DTFS_ITS_MAP_DIR      067U
+#define DTFS_ITS_MAP_LAST     0177U
+#define DTFS_ITS_MAP_RESERVED 0757367573674UL
+#define DTFS_ITS_MAP_DIRWORD  0660000000000UL
+#define DTFS_ITS_MAP_END      0777777777776UL
 #define DTFS_TENEX_RESERVED   036U
 #define DTFS_TENEX_INVALID    037U
 
@@ -718,6 +724,14 @@ dtfs_format_unit(unsigned int unit, unsigned int ctl)
                 dtfs_dir[DTFS_MAGIC_WORD] = DTFS_NATIVE_MAGIC;
         } else if (type == SYS_DTFS_TYPE_TENEX) {
                 dtfs_tenex_format_dir();
+        } else if (type == SYS_DTFS_TYPE_ITS) {
+                fs_zero_words(dtfs_dir, DTFS_BLOCK_WORDS);
+                dtfs_dir[DTFS_ITS_MAP_FIRST] = DTFS_ITS_MAP_RESERVED;
+                dtfs_dir[DTFS_ITS_MAP_DIR] = DTFS_ITS_MAP_DIRWORD;
+                dtfs_dir[DTFS_ITS_MAP_LAST] = DTFS_ITS_MAP_END;
+                dtfs_cache_mount = 0U;
+                return dtfs_dtc_write(unit, DTFS_ITS_DIR_BLOCK,
+                    dtfs_dir);
         } else {
                 return -1;
         }
