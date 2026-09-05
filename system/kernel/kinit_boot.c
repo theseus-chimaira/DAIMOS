@@ -31,6 +31,11 @@ kinit_boot(void)
                         kinit_newline();
                         return;
                 }
+                if (kfs_boot_rebind_root() != 0) {
+                        kinit_put6((kword_t)SIXBIT("MNTERR"));
+                        kinit_newline();
+                        return;
+                }
                 scratch = d6fs_boot_block_buffer();
                 if (module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U &&
                     diskset_boot_log_blocks() >= 3UL) {

@@ -42,6 +42,12 @@ extern kword_t __initfs_begin_end;
 
 static struct memfs_node boot_nodes[KBOOT_NODE_COUNT];
 
+/* KINIT-only handles for moving the RAMFS mount out of the bootstrap
+ * namespace after D6FS becomes the live root. */
+static vnode_t boot_memfs_root = VFS_NODE_NONE;
+static vnode_t boot_ramfs_root = VFS_NODE_NONE;
+static unsigned int boot_ramfs_slot;
+
 static void
 boot_clear_node(struct memfs_node *np)
 {
@@ -165,6 +171,7 @@ kfs_boot_prepare(void)
         unsigned int data_off;
         unsigned int words;
         unsigned int next;
+        unsigned int mount_slot;
         unsigned int ramfs_slot;
         unsigned int temp_slot;
         unsigned int memfs_service;
@@ -234,6 +241,7 @@ kfs_boot_prepare(void)
         }
 
         next = nent + 1U;
+        mount_slot = next;
         if (boot_add_dir(next, 0U, VFS_SIX6('M','O','U','N','T',' '),
             5U, 0555U, 0) != 0)
                 return -1;
@@ -248,7 +256,7 @@ kfs_boot_prepare(void)
             4U, 0555U, 0) != 0)
                 return -1;
         ++next;
-        if (boot_add_dir(next, 0U, VFS_SIX6('D','T','0',' ',' ',' '),
+        if (boot_add_dir(next, mount_slot, VFS_SIX6('D','T','0',' ',' ',' '),
             3U, 0777U, 0) != 0)
                 return -1;
         for (i = 0U; i < KBOOT_NODE_COUNT; ++i) {
@@ -291,9 +299,66 @@ kfs_boot_prepare(void)
                 if (vfs_mount(temp, MEMFS_PROVIDER, MEMFS_KIND_NODE,
                     ramfs_slot, VFS_MOUNT_RW, &ramfs) != 0)
                         return -1;
+                boot_memfs_root = root;
+                boot_ramfs_root = ramfs;
+                boot_ramfs_slot = ramfs_slot;
         }
 
 bind_services:
+        return 0;
+}
+
+static void
+boot_name6(struct vfs_name *name, kword_t word, unsigned int chars)
+{
+        unsigned int i;
+
+        name->chars = chars;
+        name->words[0] = word;
+        for (i = 1U; i < VFS_NAME_WORDS; ++i)
+                name->words[i] = 0;
+}
+
+int
+kfs_boot_rebind_root(void)
+{
+        struct vfs_name name;
+        struct vfs_stat st;
+        vnode_t mount_dir;
+        vnode_t ramfs_target;
+        vnode_t temp_target;
+        vnode_t ramfs_mount;
+        vnode_t temp_mount;
+
+        if (boot_memfs_root == VFS_NODE_NONE)
+                return 0;
+        boot_name6(&name, VFS_SIX6('M','O','U','N','T',' '), 5U);
+        if (vfs_lookup(vfs_namespace_root, &name, &mount_dir) != 0)
+                return -1;
+        boot_name6(&name, VFS_SIX6('R','A','M','F','S','0'), 6U);
+        if (vfs_lookup(mount_dir, &name, &ramfs_target) != 0)
+                return -1;
+        boot_name6(&name, VFS_SIX6('T','E','M','P',' ',' '), 4U);
+        if (vfs_lookup(vfs_namespace_root, &name, &temp_target) != 0)
+                return -1;
+        if (vfs_stat(ramfs_target, &st) != 0 || st.type != VFS_TYPE_DIR ||
+            vfs_stat(temp_target, &st) != 0 || st.type != VFS_TYPE_DIR)
+                return -1;
+
+        if (vfs_unmount(boot_ramfs_root) != 0 ||
+            vfs_unmount(boot_memfs_root) != 0)
+                return -1;
+        boot_ramfs_root = VFS_NODE_NONE;
+        boot_memfs_root = VFS_NODE_NONE;
+
+        if (vfs_mount(ramfs_target, MEMFS_PROVIDER, MEMFS_KIND_NODE,
+            boot_ramfs_slot, VFS_MOUNT_RW, &ramfs_mount) != 0)
+                return -1;
+        if (vfs_mount(temp_target, MEMFS_PROVIDER, MEMFS_KIND_NODE,
+            boot_ramfs_slot, VFS_MOUNT_RW, &temp_mount) != 0) {
+                (void)vfs_unmount(ramfs_mount);
+                return -1;
+        }
         return 0;
 }
 

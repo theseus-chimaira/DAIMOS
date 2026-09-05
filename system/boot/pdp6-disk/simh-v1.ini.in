@@ -5,6 +5,7 @@ set cp disabled
 set ptr enabled
 set ptp disabled
 set dsk enabled
+set dtc dct=04
 set dtc disabled
 set mtc disabled
 set dcs disabled

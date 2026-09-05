@@ -295,7 +295,9 @@ $(DISK_IMAGE): $(IMAGE_WORDS) $(DSH_DXR)
 	$(MKDSK) -n 1 -m clean -p $(IMAGE_WORDS) -o $(DISK_DIR) \
 	    --d6fs-layout --logstore-blocks $(D6FS_LOGSTORE_BLOCKS) \
 	    --swap-tail-blocks $(D6FS_SWAP_TAIL_BLOCKS)
-	$(MKD6FS) -n 1 -d $(DISK_DIR) -f "/SYSTEM/INIT:$(DSH_DXR):555:dxr"
+	$(MKD6FS) -n 1 -d $(DISK_DIR) \
+	    -D /MOUNT/RAMFS0:0755 -D /TEMP:0555 -D /MOUNT/DT0:0755 \
+	    -f "/SYSTEM/INIT:$(DSH_DXR):555:dxr"
 
 $(SIMH_INI): simh-v1.ini.in $(STAGE1_TAPE) $(DISK_IMAGE)
 	sed -e 's|@SIMH_LOG@|$(abspath $(SIMH_LOG))|g' \

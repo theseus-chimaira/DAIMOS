@@ -16,4 +16,6 @@
 #error "RAMFS0 must occupy the top 64K words"
 #endif
 
+int kfs_boot_rebind_root(void);
+
 #endif
