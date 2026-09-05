@@ -301,8 +301,8 @@ dtc_block_setup_read:
 dtc_block_setup_direction:
         skipn dtc_request_reverse
         jrst dtc_block_setup_state
-        move 4,3
-        addi 4,0177
+        move 4,2
+        addi 4,0200
         hrrm 4,storage_iowd
         move 4,000047
         movem 4,000046
