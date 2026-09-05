@@ -220,7 +220,7 @@ native_sys_dtc0_path:
         pushj 17,file_lookup_path
         jumpn 1,native_sys_dtc0_path_fail
         move 1,mach_syscall_ac5
-        came 1,[020002000014]           ; DEVICEFS DTC0
+        came 1,[020003000014]           ; DEVICEFS DTC0 directory
         jrst native_sys_dtc0_path_fail
         popj 17,
 native_sys_dtc0_path_fail:
