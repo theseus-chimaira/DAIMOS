@@ -90,6 +90,10 @@ int vfs_name_is6(const struct vfs_name *name, kword_t word,
     unsigned int chars);
 unsigned int vfs_sixbit_name_chars(const kword_t *words,
     unsigned int maxchars);
+unsigned int vfs_name_char(const struct vfs_name *name,
+    unsigned int pos);
+void vfs_name_setchar(struct vfs_name *name, unsigned int pos,
+    unsigned int ch);
 int vfs_sixbit_readchar(kword_t word, unsigned int nchars, kword_t off,
     unsigned int *chp);
 

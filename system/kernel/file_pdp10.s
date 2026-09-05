@@ -11,9 +11,12 @@ file_table:
         .text
 
         .globl  file_path_char
+        .globl  vfs_name_char
 ; unsigned int file_path_char(path, pos)
+; unsigned int vfs_name_char(name, pos) -- identical packed layout on PDP-10
 ; pos is bounded by FILE_PATH_MAX_CHARS, so signed IDIVI is sufficient and
 ; avoids constructing a 72-bit unsigned dividend for DIVI.
+vfs_name_char:
 file_path_char:
         idivi   2,6
         move    4,3
@@ -30,7 +33,10 @@ file_path_char:
         popj    17,
 
         .globl  file_path_setchar
+        .globl  vfs_name_setchar
 ; void file_path_setchar(path, pos, ch)
+; void vfs_name_setchar(name, pos, ch) -- same packed character field
+vfs_name_setchar:
 file_path_setchar:
         idivi   2,6
         move    5,3

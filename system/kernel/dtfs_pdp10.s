@@ -49,6 +49,39 @@ dtfs_mkdir_unsupported:
         hrroi   1,0777776              ; SYS_ERR_UNSUPPORTED (-2)
         popj    17,
 
+
+; Compact five-bit allocation-map accessors.  All DTFS map indices are small
+; non-negative values, so IDIVI avoids GCC's 72-bit unsigned DIV setup.
+        .globl  dtfs_owner
+dtfs_owner:
+        idivi   2,7                     ; AC2 word index, AC3 remainder
+        add     1,2                     ; AC1 map base + word index
+        move    2,3
+        lsh     2,2
+        add     2,3                     ; remainder * 5
+        move    1,dtfs_dir(1)
+        lsh     1,-037(2)               ; right by 31 - remainder * 5
+        andi    1,037
+        popj    17,
+
+        .globl  dtfs_set_owner
+dtfs_set_owner:
+        move    4,3                     ; preserve new owner
+        idivi   2,7                     ; AC2 word index, AC3 remainder
+        add     1,2
+        move    2,3
+        lsh     2,2
+        add     2,3                     ; remainder * 5
+        movei   5,037
+        sub     5,2                     ; left shift = 31 - remainder * 5
+        movei   3,037
+        lsh     3,0(5)
+        andca   3,dtfs_dir(1)
+        lsh     4,0(5)
+        ior     3,4
+        movem   3,dtfs_dir(1)
+        popj    17,
+
 ; Compact vnode predicates.  The vnode encoding is provider:6, kind/mount:12,
 ; index:18.  Mask provider plus local kind in one operation; mount-id and file
 ; index remain independent tests.
