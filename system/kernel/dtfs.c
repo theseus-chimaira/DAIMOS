@@ -58,12 +58,6 @@ dtfs_map_owner(unsigned int index)
         return (unsigned int)((dtfs_dir[wi] >> shift) & 037UL);
 }
 
-static unsigned int
-dtfs_owner(unsigned int block)
-{
-        return dtfs_map_owner(block);
-}
-
 static void
 dtfs_set_owner(unsigned int block, unsigned int owner)
 {
@@ -85,22 +79,13 @@ dtfs_native_valid(void)
 
         if (dtfs_dir[DTFS_MAGIC_WORD] != DTFS_NATIVE_MAGIC)
                 return 0;
-        if (dtfs_owner(0U) != DTFS_OWNER_RESERVED ||
-            dtfs_owner(DTFS_DIR_BLOCK) != DTFS_OWNER_RESERVED)
+        if (dtfs_map_owner(0U) != DTFS_OWNER_RESERVED ||
+            dtfs_map_owner(DTFS_DIR_BLOCK) != DTFS_OWNER_RESERVED)
                 return 0;
         for (block = DTFS_BLOCKS; block <= 01104U; ++block)
-                if (dtfs_owner(block) != DTFS_OWNER_NATIVE_TAG)
+                if (dtfs_map_owner(block) != DTFS_OWNER_NATIVE_TAG)
                         return 0;
         return 1;
-}
-
-static unsigned int
-dtfs_tenex_owner(unsigned int slot)
-{
-        unsigned int shift;
-
-        shift = 31U - (slot % 7U) * 5U;
-        return (unsigned int)((dtfs_dir[slot / 7U] >> shift) & 037UL);
 }
 
 static unsigned int
@@ -108,7 +93,7 @@ dtfs_tenex_block_owner(unsigned int block)
 {
         if (block == 0U)
                 return DTFS_TENEX_INVALID;
-        return dtfs_tenex_owner(block - 1U);
+        return dtfs_map_owner(block - 1U);
 }
 
 static unsigned int
@@ -150,15 +135,15 @@ dtfs_tenex_valid(void)
         unsigned int owner;
 
         /* TENEX DECTAP.MAC DTINID/DIRTHR structural invariants. */
-        if (dtfs_tenex_owner(0U) != DTFS_TENEX_RESERVED ||
-            dtfs_tenex_owner(1U) != DTFS_TENEX_RESERVED ||
-            dtfs_tenex_owner(99U) != DTFS_TENEX_RESERVED)
+        if (dtfs_map_owner(0U) != DTFS_TENEX_RESERVED ||
+            dtfs_map_owner(1U) != DTFS_TENEX_RESERVED ||
+            dtfs_map_owner(99U) != DTFS_TENEX_RESERVED)
                 return 0;
         for (i = 577U; i <= 580U; ++i)
-                if (dtfs_tenex_owner(i) != DTFS_TENEX_INVALID)
+                if (dtfs_map_owner(i) != DTFS_TENEX_INVALID)
                         return 0;
         for (i = 0U; i < 578U; ++i) {
-                owner = dtfs_tenex_owner(i);
+                owner = dtfs_map_owner(i);
                 if (owner <= DTFS_TENEX_MAX_FILE ||
                     owner == DTFS_TENEX_RESERVED ||
                     owner == DTFS_TENEX_INVALID)
@@ -181,30 +166,33 @@ dtfs_tenex_format_dir(void)
             ((kword_t)DTFS_TENEX_INVALID << 1U);
 }
 
-static int
-dtfs_is_tenex(vnode_t node)
+static unsigned int
+dtfs_personality(vnode_t node)
 {
         unsigned int id;
 
         id = VFS_MOUNT_ID(node);
-        return id != 0U && id <= VFS_NMOUNT &&
-            (dtfs_media[id - 1U] & DTFS_MEDIA_TENEX) != 0U;
+        if (id == 0U || id > VFS_NMOUNT)
+                return 0U;
+        return dtfs_media[id - 1U] & (DTFS_MEDIA_TENEX | DTFS_MEDIA_ITS);
+}
+
+static int
+dtfs_is_tenex(vnode_t node)
+{
+        return dtfs_personality(node) == DTFS_MEDIA_TENEX;
 }
 
 static int
 dtfs_is_its(vnode_t node)
 {
-        unsigned int id;
-
-        id = VFS_MOUNT_ID(node);
-        return id != 0U && id <= VFS_NMOUNT &&
-            (dtfs_media[id - 1U] & DTFS_MEDIA_ITS) != 0U;
+        return dtfs_personality(node) == DTFS_MEDIA_ITS;
 }
 
 static int
 dtfs_is_foreign(vnode_t node)
 {
-        return dtfs_is_tenex(node) || dtfs_is_its(node);
+        return dtfs_personality(node) != 0U;
 }
 
 static unsigned int
@@ -538,7 +526,7 @@ dtfs_find_free_block(unsigned int start, unsigned int *blockp)
                 start = DTFS_DIR_BLOCK + 1U;
         block = start;
         for (n = 0U; n < DTFS_LAST_BLOCK; ++n) {
-                if (dtfs_owner(block) == DTFS_OWNER_FREE) {
+                if (dtfs_map_owner(block) == DTFS_OWNER_FREE) {
                         *blockp = block;
                         return 0;
                 }
