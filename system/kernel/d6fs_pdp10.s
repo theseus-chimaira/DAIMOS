@@ -715,19 +715,15 @@ d6fs_mres_create_common:
         move    6,4                     ; nodep
         move    4,3                     ; mode => value
         setz    3,                      ; no payload
-        add     17,[2,,2]
-        movem   5,(17)                  ; C arg 5: type
-        movem   6,-1(17)                ; C arg 6: nodep
-        pushj   17,d6fs_provider_create_object
-        sub     17,[2,,2]
-        popj    17,
+        jrst    d6fs_mres_create_call
 
 d6fs_mres_symlink:
         move    6,-1(17)                ; incoming C arg 5: nodep
-        add     17,[2,,2]
         movei   5,3                     ; symlink type
-        movem   5,(17)
-        movem   6,-1(17)
+d6fs_mres_create_call:
+        add     17,[2,,2]
+        movem   5,(17)                  ; C arg 5: type
+        movem   6,-1(17)                ; C arg 6: nodep
         pushj   17,d6fs_provider_create_object
         sub     17,[2,,2]
         popj    17,
