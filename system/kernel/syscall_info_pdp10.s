@@ -12,7 +12,7 @@
         .globl  sys_procinfo
 sys_procinfo:
         cail    1,2
-        jrst    sys_procinfo_fail
+        jrst    pdp10_ret_neg1
         movem   1,(2)                  ; pid == fixed slot
         setzm   1(2)                   ; ppid
         movei   3,2                    ; RUN
@@ -25,8 +25,6 @@ sys_procinfo_words:
         move    3,proc_comm_words(1)
         movem   3,4(2)
         jrst    pdp10_ret_zero
-sys_procinfo_fail:
-        jrst    pdp10_ret_neg1
 
 ; int sys_meminfo(struct sys_meminfo *info)
         .globl  sys_meminfo

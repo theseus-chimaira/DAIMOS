@@ -40,9 +40,9 @@ diskset_blocks:
 ; logical value preserves the C implementation's unsigned bounds semantics
 ; without GCC's repeated sign-bit transforms.
 diskset_map_block:
-        jumpl 1,diskset_map_fail
+        jumpl 1,pdp10_ret_neg1
         caml 1,diskset_total_blocks
-        jrst diskset_map_fail
+        jrst pdp10_ret_neg1
         setz 2,                        ; floor
 
 diskset_map_zone:
@@ -67,7 +67,7 @@ diskset_map_set_next:
         aoja 7,diskset_map_scan
 
 diskset_map_scan_done:
-        jumpe 3,diskset_map_fail
+        jumpe 3,pdp10_ret_neg1
         move 0,3
         sub 0,2
         imul 0,6                       ; zone blocks fit one validated word
@@ -86,7 +86,7 @@ diskset_map_found_zone:
 
 diskset_map_pick:
         caml 7,diskset_boot
-        jrst diskset_map_fail
+        jrst pdp10_ret_neg1
         move 3,diskset_boot+011(7)
         camg 3,2
         jrst diskset_map_pick_next
@@ -100,8 +100,6 @@ diskset_map_emit:
         add 2,0
         popj 17,
 
-diskset_map_fail:
-        jrst pdp10_ret_neg1
 
 ; Raw region block I/O.  AC5 is an internal write flag and AC4 preserves the
 ; caller buffer while the mapper uses the volatile argument registers.

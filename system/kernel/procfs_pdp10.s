@@ -10,7 +10,7 @@
 ; int procfs_stat(vnode_t node, struct vfs_stat *st)
         .globl procfs_stat
 procfs_stat:
-        jumpe   2,procfs_stat_fail
+        jumpe   2,pdp10_ret_neg1
         hlrz    3,1
         caie    3,030001               ; root directory
         jrst    procfs_stat_nonroot
@@ -20,7 +20,7 @@ procfs_stat:
 procfs_stat_nonroot:
         hrrz    4,1
         cail    4,2                    ; process/file nodes only slots 0..1
-        jrst    procfs_stat_fail
+        jrst    pdp10_ret_neg1
         caie    3,030002
         jrst    procfs_stat_file
         movei   4,1
@@ -28,9 +28,9 @@ procfs_stat_nonroot:
         jrst    procfs_stat_store
 procfs_stat_file:
         caige   3,030003
-        jrst    procfs_stat_fail
+        jrst    pdp10_ret_neg1
         caile   3,030006
-        jrst    procfs_stat_fail
+        jrst    pdp10_ret_neg1
         movei   4,2
         movei   5,0444
 procfs_stat_store:
@@ -39,8 +39,6 @@ procfs_stat_store:
         setzm   2(2)
         setzm   3(2)
         jrst    pdp10_ret_zero
-procfs_stat_fail:
-        jrst    pdp10_ret_neg1
 
 ; int procfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
         .globl  procfs_readchar

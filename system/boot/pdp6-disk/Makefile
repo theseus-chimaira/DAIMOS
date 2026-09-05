@@ -28,14 +28,14 @@ KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 
 KCORE_C_NAMES = vfs devicefs file
-KCORE_FIXED_NAMES = kcore_entry $(KCORE_C_NAMES) ret_pdp10 \
+KCORE_FIXED_NAMES = $(KCORE_C_NAMES) ret_pdp10 \
 	dsk270_pdp10 kfmt_pdp10 vfs_pdp10 fs_mres_pdp10 file_pdp10 proc_pdp10 \
 	device_state_pdp10 procfs_pdp10 devicefs_pdp10 syscall_info_pdp10 \
 	syscall_dispatch mach_user kcore_io storage_router kcore_end
 KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))
 KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
 MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io dcs_io ge_io dpy_io \
-	tty_io wcnsls_io ocnsls_io dsk_io tape_io slv_io memfs memfs_pdp10 \
+	tty_io wcnsls_io ocnsls_io dsk_io tape_io slv_io memfs_pdp10 \
 	dtfs dtfs_pdp10 diskset diskset_dispatch d6fs d6fs_provider d6fs_pdp10
 MRES_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(MRES_NAMES)))
 

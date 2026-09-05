@@ -8,12 +8,10 @@ sys_user_words:
         hlrz    3,proc_table+3
         add     3,4
         camge   1,4
-        jrst    sys_user_words_bad
-        caml    1,3
-        jrst    sys_user_words_bad
-        popj    17,
-sys_user_words_bad:
         jrst    pdp10_ret_zero
+        caml    1,3
+        jrst    pdp10_ret_zero
+        popj    17,
 
 	.globl	exec_native_syscall
 	.globl	mach_syscall_ac2
@@ -41,7 +39,7 @@ exec_native_low:
 	.word	.137
 	.word	.72
 	.word	.73
-	.word	.74
+	.word	native_sys_getchar
 	.word	.75
 	.word	.80
 	.word	.90
@@ -98,8 +96,6 @@ exec_native_high:
 	move 1,mach_syscall_ac2
 	andi 1,0177
 	jrst native_sys_putchar
-%L74:
-	jrst native_sys_getchar
 %L75:
 	move 1,mach_syscall_ac2
 	pushj 17,sys_user_words
@@ -316,7 +312,7 @@ native_sys_putchar_call:
         pushj   17,pdp10_ret_neg1
         jrst    %L65
 %L136:
-	pushj 17,pdp10_halt
+	halt .
 	seto 1,
 	jrst %L65
 %L137:

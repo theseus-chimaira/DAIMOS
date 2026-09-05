@@ -18,7 +18,7 @@ kfmt_u36_pow10:
 
         .globl  kfmt_u36_decimal_readchar
 kfmt_u36_decimal_readchar:
-        jumpe   3,kfmt_u36_bad
+        jumpe   3,pdp10_ret_neg1
         move    5,1
         tlc     5,0400000
         movei   4,0
@@ -33,7 +33,7 @@ kfmt_u36_first:
 kfmt_u36_found:
         movei   6,013
         sub     6,4
-        jumpl   2,kfmt_u36_none
+        jumpl   2,pdp10_ret_zero
         camge   2,6
         jrst    kfmt_u36_digit
         came    2,6
@@ -43,7 +43,7 @@ kfmt_u36_found:
 kfmt_u36_lf:
         addi    6,1
         came    2,6
-        jrst    kfmt_u36_none
+        jrst    pdp10_ret_zero
         movei   6,012
         jrst    kfmt_u36_store
 kfmt_u36_digit:
@@ -69,7 +69,3 @@ kfmt_u36_store:
         movem   6,(3)
         movei   1,1
         popj    17,
-kfmt_u36_none:
-        jrst    pdp10_ret_zero
-kfmt_u36_bad:
-        jrst    pdp10_ret_neg1

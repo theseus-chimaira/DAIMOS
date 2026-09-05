@@ -54,11 +54,11 @@ vfs_name_is6:
 ;     unsigned int *chp)
         .globl  vfs_sixbit_readchar
 vfs_sixbit_readchar:
-        jumpe   4,vfs_sixchar_fail
-        jumpl   2,vfs_sixchar_fail
+        jumpe   4,pdp10_ret_neg1
+        jumpl   2,pdp10_ret_neg1
         caile   2,6
-        jrst    vfs_sixchar_fail
-        jumpl   3,vfs_sixchar_eof
+        jrst    pdp10_ret_neg1
+        jumpl   3,pdp10_ret_zero
         caml    3,2
         jrst    vfs_sixchar_tail
         move    6,3
@@ -81,15 +81,11 @@ vfs_sixchar_tail:
 vfs_sixchar_lf:
         addi    2,1
         came    3,2
-        jrst    vfs_sixchar_eof
+        jrst    pdp10_ret_zero
         movei   5,012                  ; LF
         movem   5,(4)
         movei   1,1
         popj    17,
-vfs_sixchar_eof:
-        jrst    pdp10_ret_zero
-vfs_sixchar_fail:
-        jrst    pdp10_ret_neg1
 
 ; unsigned int vfs_sixbit_name_chars(words, maxchars)
 ; Return the last nonzero character position in a packed SIXBIT name.

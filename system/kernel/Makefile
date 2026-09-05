@@ -19,10 +19,10 @@ endif
 KCORE_C_SRCS = vfs.c devicefs.c \
 	file.c
 KCORE_C_ASM = $(KCORE_C_SRCS:%.c=$(BUILD)/%.s)
-KCORE_FIXED_ASM = $(BUILD)/kcore_entry.s $(KCORE_C_ASM) \
+KCORE_FIXED_ASM = $(KCORE_C_ASM) \
 	$(BUILD)/ret_pdp10.s $(BUILD)/dsk270_pdp10.s $(BUILD)/kfmt_pdp10.s $(BUILD)/vfs_pdp10.s $(BUILD)/fs_mres_pdp10.s $(BUILD)/file_pdp10.s $(BUILD)/proc_pdp10.s $(BUILD)/device_state_pdp10.s $(BUILD)/procfs_pdp10.s $(BUILD)/devicefs_pdp10.s $(BUILD)/syscall_info_pdp10.s $(BUILD)/syscall_dispatch.s $(BUILD)/mach_user.s $(BUILD)/kcore_io.s $(BUILD)/storage_router.s $(BUILD)/kcore_end.s
 
-MRES_SRCS = memfs.c dtfs.c \
+MRES_SRCS = dtfs.c \
 	d6fs.c d6fs_provider.c
 MRES_C_ASM = $(MRES_SRCS:%.c=$(BUILD)/%.s)
 MRES_ASM = $(MRES_C_ASM) $(BUILD)/cty_io.s $(BUILD)/clk_io.s \

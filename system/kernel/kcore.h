@@ -7,7 +7,6 @@ typedef unsigned long kword_t;
 #endif
 
 #define KCORE_BASE              000060UL
-#define KCORE_ENTRY_ADDR        KCORE_BASE
 
 
 

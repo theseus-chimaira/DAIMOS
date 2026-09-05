@@ -55,15 +55,15 @@ devicefs_validate_id:
 ;     vnode_t *nodep)
         .globl  devicefs_lookup
 devicefs_lookup:
-        jumpe   2,devicefs_lookup_fail
-        jumpe   3,devicefs_lookup_fail
+        jumpe   2,pdp10_ret_neg1
+        jumpe   3,pdp10_ret_neg1
         hlrz    4,1
         caie    4,020001               ; DEVICEFS root
         jrst    devicefs_lookup_dir
         movei   4,0
 devicefs_lookup_scan:
         cail    4,021
-        jrst    devicefs_lookup_fail
+        jrst    pdp10_ret_neg1
         skipn   5,devicefs_names(4)
         jrst    devicefs_lookup_next
         came    5,1(2)
@@ -81,10 +81,10 @@ devicefs_lookup_next:
 
 devicefs_lookup_dir:
         caie    4,020003
-        jrst    devicefs_lookup_fail
+        jrst    pdp10_ret_neg1
         hrrz    4,1
         pushj   17,devicefs_validate_id
-        jumpn   1,devicefs_lookup_fail
+        jumpn   1,pdp10_ret_neg1
         move    5,(2)
         caie    5,2
         jrst    devicefs_lookup_out
@@ -92,21 +92,21 @@ devicefs_lookup_dir:
         camn    5,[0515700000000]      ; IO
         jrst    devicefs_lookup_io
         came    5,[0515600000000]      ; IN
-        jrst    devicefs_lookup_fail
+        jrst    pdp10_ret_neg1
         pushj   17,devicefs_skip_if_in
-        jrst    devicefs_lookup_fail
+        jrst    pdp10_ret_neg1
         move    5,4
         tlo     5,020004
         jrst    devicefs_lookup_store
 
 devicefs_lookup_out:
         caie    5,3
-        jrst    devicefs_lookup_fail
+        jrst    pdp10_ret_neg1
         move    5,1(2)
         came    5,[0576564000000]      ; OUT
-        jrst    devicefs_lookup_fail
+        jrst    pdp10_ret_neg1
         pushj   17,devicefs_skip_if_out
-        jrst    devicefs_lookup_fail
+        jrst    pdp10_ret_neg1
         move    5,4
         tlo     5,020005
         jrst    devicefs_lookup_store
@@ -119,8 +119,6 @@ devicefs_lookup_store:
         movem   5,(3)
         jrst    pdp10_ret_zero
 
-devicefs_lookup_fail:
-        jrst    pdp10_ret_neg1
 
 ; Store ent name/type and return 1. AC4=ent, AC5=word, AC6=chars, AC7=type.
 devicefs_readdir_store:
@@ -154,7 +152,7 @@ devicefs_io_type_char:
 ;     struct vfs_dirent *ent)
         .globl  devicefs_readdir
 devicefs_readdir:
-        jumpe   3,devicefs_readdir_fail
+        jumpe   3,pdp10_ret_neg1
         move    4,3
         hlrz    5,1
         caie    5,020001
@@ -163,7 +161,7 @@ devicefs_readdir:
         movei   7,0
 devicefs_readdir_scan:
         cail    5,021
-        jrst    devicefs_readdir_eof
+        jrst    pdp10_ret_zero
         skipn   6,devicefs_names(5)
         jrst    devicefs_readdir_next
         camn    7,2
@@ -181,12 +179,12 @@ devicefs_readdir_found:
 
 devicefs_readdir_dir:
         caie    5,020003
-        jrst    devicefs_readdir_fail
+        jrst    pdp10_ret_neg1
         hrrz    0,1
         move    5,0
         move    4,5
         pushj   17,devicefs_validate_id
-        jumpn   1,devicefs_readdir_fail
+        jumpn   1,pdp10_ret_neg1
         move    4,3
         jumpe   2,devicefs_readdir_io
         move    4,0
@@ -202,17 +200,17 @@ devicefs_readdir_dir:
 
 devicefs_readdir_maybe_out2:
         caie    2,2
-        jrst    devicefs_readdir_eof
+        jrst    pdp10_ret_zero
         jrst    devicefs_readdir_out
 
 devicefs_readdir_no_in:
         caie    2,1
-        jrst    devicefs_readdir_eof
+        jrst    pdp10_ret_zero
 
 devicefs_readdir_out:
         move    4,0
         pushj   17,devicefs_skip_if_out
-        jrst    devicefs_readdir_eof
+        jrst    pdp10_ret_zero
         move    5,[0576564000000]      ; OUT
         movei   6,3
         movei   7,2
@@ -226,15 +224,11 @@ devicefs_readdir_io:
         move    4,3
         jrst    devicefs_readdir_store
 
-devicefs_readdir_eof:
-        jrst    pdp10_ret_zero
-devicefs_readdir_fail:
-        jrst    pdp10_ret_neg1
 
 ; int devicefs_stat(vnode_t node, struct vfs_stat *st)
         .globl  devicefs_stat
 devicefs_stat:
-        jumpe   2,devicefs_stat_fail
+        jumpe   2,pdp10_ret_neg1
         hlrz    3,1
         hrrz    4,1
         caie    3,020001
@@ -245,7 +239,7 @@ devicefs_stat:
 
 devicefs_stat_not_root:
         pushj   17,devicefs_validate_id
-        jumpn   1,devicefs_stat_fail
+        jumpn   1,pdp10_ret_neg1
         cain    3,020003
         jrst    devicefs_stat_dir
         cain    3,020004
@@ -253,7 +247,7 @@ devicefs_stat_not_root:
         cain    3,020005
         jrst    devicefs_stat_out
         caie    3,020002
-        jrst    devicefs_stat_fail
+        jrst    pdp10_ret_neg1
         caige   4,014
         jrst    devicefs_stat_char
         caile   4,016
@@ -278,12 +272,12 @@ devicefs_stat_dir:
 
 devicefs_stat_in:
         pushj   17,devicefs_skip_if_in
-        jrst    devicefs_stat_fail
+        jrst    pdp10_ret_neg1
         jrst    devicefs_stat_counter
 
 devicefs_stat_out:
         pushj   17,devicefs_skip_if_out
-        jrst    devicefs_stat_fail
+        jrst    pdp10_ret_neg1
 devicefs_stat_counter:
         movei   5,2
         movei   6,0444
@@ -295,17 +289,15 @@ devicefs_stat_store:
         setzm   3(2)
         jrst    pdp10_ret_zero
 
-devicefs_stat_fail:
-        jrst    pdp10_ret_neg1
 
 ; int devicefs_readchar(vnode_t node, kword_t off, unsigned int *chp)
         .globl  devicefs_readchar
 devicefs_readchar:
-        jumpe   3,devicefs_readchar_fail
+        jumpe   3,pdp10_ret_neg1
         hlrz    5,1
         hrrz    4,1
         pushj   17,devicefs_validate_id
-        jumpn   1,devicefs_readchar_fail
+        jumpn   1,pdp10_ret_neg1
         caie    5,020002
         jrst    devicefs_readchar_not_io
         move    1,[-3]                 ; VFS_DEVICE_IO
@@ -314,17 +306,14 @@ devicefs_readchar_not_io:
         cain    5,020004
         jrst    devicefs_readchar_in
         caie    5,020005
-        jrst    devicefs_readchar_fail
+        jrst    pdp10_ret_neg1
         pushj   17,devicefs_skip_if_out
-        jrst    devicefs_readchar_fail
+        jrst    pdp10_ret_neg1
         move    1,devicefs_io_out(4)
         jrst    devicefs_readchar_tail
 devicefs_readchar_in:
         pushj   17,devicefs_skip_if_in
-        jrst    devicefs_readchar_fail
+        jrst    pdp10_ret_neg1
         move    1,devicefs_io_in(4)
 devicefs_readchar_tail:
         jrst    kfmt_u36_decimal_readchar
-
-devicefs_readchar_fail:
-        jrst    pdp10_ret_neg1

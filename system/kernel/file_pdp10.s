@@ -61,9 +61,9 @@ file_path_setchar:
 ; repeatedly dividing, shifting, decoding to ASCII, and re-encoding.
         .globl  file_component
 file_component:
-        jumpe   1,file_component_fail
-        jumpe   2,file_component_fail
-        jumpe   3,file_component_fail
+        jumpe   1,pdp10_ret_neg1
+        jumpe   2,pdp10_ret_neg1
+        jumpe   3,pdp10_ret_neg1
         move    4,(1)           ; total path characters
         move    5,(2)           ; current character position
         caml    5,4             ; pos >= n
@@ -108,7 +108,7 @@ file_component_start:
 
 file_component_copy:
         cain    0,030           ; maximum is 24 characters
-        jrst    file_component_fail
+        jrst    pdp10_ret_neg1
         idpb    7,1
         addi    0,1
         addi    5,1
@@ -138,8 +138,6 @@ file_component_done:
 file_component_empty:
         movem   5,(2)
         jrst    pdp10_ret_zero
-file_component_fail:
-        jrst    pdp10_ret_neg1
 
 ; int file_getcwd(kword_t *buf, unsigned int nwords)
 ;

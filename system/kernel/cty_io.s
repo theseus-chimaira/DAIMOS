@@ -63,13 +63,11 @@ cty_getchar_loop:
         move 1,cty_rx_pending
         jumpn 1,cty_getchar_pending
         conso 0120,0040
-        jrst cty_getchar_wait
+        jrst cty_getchar_loop
         datai 0120,1
         aos devicefs_io_in+0
         andi 1,0177
         popj 017,
-cty_getchar_wait:
-        jrst cty_getchar_loop
 cty_getchar_pending:
         setzm cty_rx_pending
         subi 1,1

@@ -45,7 +45,7 @@ memfs_resize:
         move    0,5(4)
         andi    0,6             ; require WRITABLE and reject IMAGE
         caie    0,4
-        jrst    memfs_resize_fail
+        jrst    pdp10_ret_neg1
         hrrz    5,7(4)          ; old word count
         camn    3,5
         jrst    memfs_resize_ok
@@ -59,11 +59,11 @@ memfs_resize_grow:
 ; clear the inserted gap, then relocate later mutable-node offsets.
         move    7,3
         sub     7,5             ; delta
-        jumpl   7,memfs_resize_fail ; cannot fit in the small resident pool
+        jumpl   7,pdp10_ret_neg1 ; cannot fit in the small resident pool
         move    0,3(1)
         sub     0,4(1)          ; available pool words
         camle   7,0
-        jrst    memfs_resize_fail
+        jrst    pdp10_ret_neg1
         add     5,6             ; old end / shift threshold
         hrrm    3,7(4)          ; install new length; preserve data start
         move    4,2             ; exclude slot for shift_after
@@ -130,8 +130,6 @@ memfs_resize_shrink_done:
         pushj   17,memfs_shift_after
 memfs_resize_ok:
         jrst    pdp10_ret_zero
-memfs_resize_fail:
-        jrst    pdp10_ret_neg1
 
 ; int memfs_read_words(const struct memfs *fs, vnode_t node,
 ;     unsigned int off, kword_t *buf, unsigned int nwords)
@@ -778,9 +776,9 @@ memfs_readdir_fail:
 ;     struct vfs_stat *st)
         .globl  memfs_stat
 memfs_stat:
-        jumpe   3,memfs_stat_fail
+        jumpe   3,pdp10_ret_neg1
         pushj   17,memfs_slot
-        jumpl   1,memfs_stat_fail
+        jumpl   1,pdp10_ret_neg1
         ldb     4,[POINT 3,5(5),20]
         movem   4,(3)
         move    4,6
@@ -792,30 +790,28 @@ memfs_stat:
         hrrz    4,7(5)
         movem   4,3(3)
         jrst    pdp10_ret_zero
-memfs_stat_fail:
-        jrst    pdp10_ret_neg1
 
 ; int memfs_parent(const struct memfs *fs, vnode_t node,
 ;     vnode_t *parentp, struct vfs_name *namep)
         .globl  memfs_parent
 memfs_parent:
-        jumpe   3,memfs_parent_fail
+        jumpe   3,pdp10_ret_neg1
         move    0,4                     ; memfs_slot clobbers AC4
         move    7,1
         pushj   17,memfs_slot
-        jumpl   1,memfs_parent_fail
+        jumpl   1,pdp10_ret_neg1
         move    2,5                     ; preserve child np
         move    1,7                     ; restore fs
         move    4,0                     ; restore optional namep
         hlrz    5,6                     ; parent slot
         caml    5,1(1)
-        jrst    memfs_parent_fail
+        jrst    pdp10_ret_neg1
         move    7,5
         lsh     7,3
         add     7,(1)
         move    0,5(7)
         trnn    0,1
-        jrst    memfs_parent_fail
+        jrst    pdp10_ret_neg1
         hrrz    0,5
         tlo     0,040001
         movem   0,(3)
@@ -826,8 +822,6 @@ memfs_parent:
         blt     0,4(4)                  ; copy child name
 memfs_parent_ok:
         jrst    pdp10_ret_zero
-memfs_parent_fail:
-        jrst    pdp10_ret_neg1
 
 ; Singleton resident MEMFS state.  A MEMFS MRES represents exactly one mounted
 ; in-memory filesystem; carrying a context pointer through a C switch was dead
