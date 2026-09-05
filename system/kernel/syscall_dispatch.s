@@ -242,6 +242,9 @@ native_sys_dtfs_format:
         move 1,mach_syscall_ac2
         pushj 17,native_sys_dtc0_path
         jumpe 1,%L137
+        hrrz 2,mach_syscall_ac3         ; management op: 0 format, 1 check
+        caile 2,1
+        jrst %L137
         movei 1,0                       ; DTC0 unit
         .globl sys_dtfs_format_jump
 sys_dtfs_format_jump:

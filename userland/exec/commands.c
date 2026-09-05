@@ -344,6 +344,33 @@ cmd_mkfs_dtfs(int argc, kword_t **argv, struct u_io *io)
 }
 
 static int
+cmd_fsck_dtfs(int argc, kword_t **argv, struct u_io *io)
+{
+        unsigned int flags;
+        int native;
+        kword_t *device;
+
+        flags = SYS_MOUNT_RDONLY;
+        native = 0;
+        if (argc == 2) {
+                device = argv[1];
+        } else if (argc == 4 && u_s6_eq(argv[1], "-O") &&
+            cmd_dtfs_options(argv[2], &flags, &native) == 0) {
+                device = argv[3];
+        } else {
+                return cmd_err(io, "FSCK.DTFS", 0);
+        }
+        if (flags != SYS_MOUNT_RDONLY)
+                return cmd_err(io, "FSCK.DTFS", 0);
+        if (dsys_dtfs_check(device) != 0)
+                return cmd_err(io, "FSCK.DTFS", device);
+        if (u_puts(io->out_fd, "FSCK.DTFS NATIVE OK") != 0 ||
+            u_crlf(io->out_fd) != 0)
+                return 1;
+        return 0;
+}
+
+static int
 cmd_mount_dtfs(int argc, kword_t **argv, struct u_io *io)
 {
         unsigned int flags;
@@ -520,6 +547,7 @@ cmd_dispatch(int argc, kword_t **argv, struct u_io *io)
         if (cmd_name_eq(argv[0], "CP")) return cmd_cp(argc, argv, io);
         if (cmd_name_eq(argv[0], "CHMOD")) return cmd_chmod(argc, argv, io);
         if (cmd_name_eq(argv[0], "MKFS.DTFS")) return cmd_mkfs_dtfs(argc, argv, io);
+        if (cmd_name_eq(argv[0], "FSCK.DTFS")) return cmd_fsck_dtfs(argc, argv, io);
         if (cmd_name_eq(argv[0], "MOUNT.DTFS")) return cmd_mount_dtfs(argc, argv, io);
         if (cmd_name_eq(argv[0], "UNMOUNT")) return cmd_unmount(argc, argv, io);
         if (cmd_name_eq(argv[0], "MV")) return cmd_mv(argc, argv, io);

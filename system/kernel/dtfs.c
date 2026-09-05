@@ -405,12 +405,17 @@ dtfs_resize(vnode_t node, unsigned int words)
 }
 
 int
-dtfs_format_unit(unsigned int unit)
+dtfs_format_unit(unsigned int unit, unsigned int op)
 {
         unsigned int i;
 
-        if (unit > 7U)
+        if (unit > 7U || op > 1U)
                 return -1;
+        if (op == 1U) {
+                if (dtfs_dtc_read(unit, DTFS_DIR_BLOCK, dtfs_dir) != 0)
+                        return -1;
+                return dtfs_native_valid() ? 0 : -1;
+        }
         fs_zero_words(dtfs_dir, DTFS_BLOCK_WORDS);
         dtfs_set_owner(0U, DTFS_OWNER_RESERVED);
         dtfs_set_owner(DTFS_DIR_BLOCK, DTFS_OWNER_RESERVED);
