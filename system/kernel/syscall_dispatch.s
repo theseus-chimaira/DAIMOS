@@ -220,7 +220,7 @@ native_sys_dtc0_path:
         pushj 17,file_lookup_path
         jumpn 1,native_sys_dtc0_path_fail
         move 1,mach_syscall_ac5
-        came 1,[020003000014]           ; DEVICEFS DTC0 directory
+        came 1,[020002000014]           ; DEVICEFS DTC0
         jrst native_sys_dtc0_path_fail
         popj 17,
 native_sys_dtc0_path_fail:
@@ -263,7 +263,7 @@ native_sys_dtfs_mount:
         pushj 17,file_lookup_path
         jumpn 1,%L137
         hrrz 3,mach_syscall_ac4
-        caile 3,1
+        caile 3,031                     ; RO plus DTFS type override
         jrst %L137
         move 2,mach_syscall_ac5
         movei 1,0                       ; DTC0 unit
