@@ -341,7 +341,11 @@ vfs_create_op(unsigned int op, vnode_t dir, const struct vfs_name *name,
         vnode_t node;
         int rc;
 
-        if (nodep == 0 || vfs_readonly(dir))
+        if (nodep == 0)
+                return -1;
+        if (op == FS_MRES_OP_MKDIR && VFS_PROVIDER(dir) == DTFS_PROVIDER)
+                return VFS_ERR_UNSUPPORTED;
+        if (vfs_readonly(dir))
                 return -1;
         req.op = op;
         req.a = dir;
