@@ -117,6 +117,14 @@ dtfs_its_owner(unsigned int block)
         return (unsigned int)((dtfs_dir[wi] >> shift) & 037UL);
 }
 
+static unsigned int
+dtfs_its_block_owner(unsigned int block)
+{
+        if (block == 0U || block > DTFS_ITS_MAP_ENTRIES)
+                return DTFS_ITS_END;
+        return dtfs_its_owner(block - 1U);
+}
+
 static int
 dtfs_its_valid(void)
 {
@@ -1078,8 +1086,8 @@ dtfs_its_read_words(vnode_t node, unsigned int off, kword_t *buf,
                 return 0;
         done = 0U;
         unit = dtfs_unit(node);
-        for (block = 0U; block < DTFS_ITS_MAP_ENTRIES; ++block) {
-                owner = dtfs_its_owner(block);
+        for (block = 1U; block <= DTFS_ITS_MAP_ENTRIES; ++block) {
+                owner = dtfs_its_block_owner(block);
                 if (owner == DTFS_ITS_END)
                         return (int)done;
                 if (owner != slot + 1U)
