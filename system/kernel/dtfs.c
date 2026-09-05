@@ -206,6 +206,7 @@ dtfs_load(vnode_t node)
 {
         unsigned int id;
         unsigned int unit;
+        unsigned int personality;
 
         id = VFS_MOUNT_ID(node);
         if (id == 0U || id > VFS_NMOUNT)
@@ -213,11 +214,12 @@ dtfs_load(vnode_t node)
         if (dtfs_cache_mount == id)
                 return 0;
         unit = dtfs_media[id - 1U] & DTFS_MEDIA_UNIT_MASK;
-        if (dtfs_dtc_read(unit, dtfs_is_its(node) ? DTFS_ITS_DIR_BLOCK :
-            DTFS_DIR_BLOCK, dtfs_dir) != 0)
+        personality = dtfs_personality(node);
+        if (dtfs_dtc_read(unit, personality == DTFS_MEDIA_ITS ?
+            DTFS_ITS_DIR_BLOCK : DTFS_DIR_BLOCK, dtfs_dir) != 0)
                 return -1;
-        if (dtfs_is_its(node) ? !dtfs_its_valid() :
-            (dtfs_is_tenex(node) ? !dtfs_tenex_valid() :
+        if (personality == DTFS_MEDIA_ITS ? !dtfs_its_valid() :
+            (personality == DTFS_MEDIA_TENEX ? !dtfs_tenex_valid() :
             !dtfs_native_valid()))
                 return -1;
         dtfs_cache_mount = id;
@@ -331,15 +333,17 @@ dtfs_scan_slot(vnode_t node, const struct vfs_name *name,
 {
         struct vfs_name media_name;
         unsigned int slot;
+        unsigned int personality;
 
-        if (!dtfs_is_foreign(node))
+        personality = dtfs_personality(node);
+        if (personality == 0U)
                 return dtfs_native_scan_slot(name, slotp);
         if (name == 0 || !vfs_name_valid(name) ||
-            name->chars > (dtfs_is_its(node) ? 13U : 10U))
+            name->chars > (personality == DTFS_MEDIA_ITS ? 13U : 10U))
                 return -1;
-        for (slot = 0U; slot < (dtfs_is_its(node) ?
+        for (slot = 0U; slot < (personality == DTFS_MEDIA_ITS ?
             DTFS_ITS_FILE_SLOTS : DTFS_FILE_SLOTS); ++slot) {
-                if (dtfs_is_its(node)) {
+                if (personality == DTFS_MEDIA_ITS) {
                         if (dtfs_dir[slot * 2U] == 0UL &&
                             dtfs_dir[slot * 2U + 1U] == 0UL)
                                 continue;
