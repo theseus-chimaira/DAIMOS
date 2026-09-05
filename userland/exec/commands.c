@@ -251,24 +251,120 @@ cmd_chmod(int argc, kword_t **argv, struct u_io *io)
             cmd_err(io, "CHMOD", argv[2]);
 }
 
+static unsigned int
+cmd_arg_char(const kword_t *arg, unsigned int off)
+{
+        unsigned int wi;
+        unsigned int sh;
+
+        wi = 1U + off / 6U;
+        sh = 30U - (off % 6U) * 6U;
+        return (unsigned int)(((arg[wi] >> sh) & 077UL) + 040U);
+}
+
+static int
+cmd_opt_name(const kword_t *arg, unsigned int off, unsigned int len,
+    const char *name)
+{
+        unsigned int i;
+        unsigned int ch;
+        unsigned int want;
+
+        for (i = 0U; i < len; ++i) {
+                if (name[i] == 0)
+                        return 0;
+                ch = cmd_arg_char(arg, off + i);
+                want = (unsigned int)name[i];
+                if (ch >= 'a' && ch <= 'z') ch -= 'a' - 'A';
+                if (want >= 'a' && want <= 'z') want -= 'a' - 'A';
+                if (ch != want)
+                        return 0;
+        }
+        return name[len] == 0;
+}
+
+static int
+cmd_dtfs_options(const kword_t *arg, unsigned int *flagsp,
+    int *nativep)
+{
+        unsigned int n;
+        unsigned int start;
+        unsigned int i;
+        unsigned int flags;
+        int seen_access;
+        int seen_native;
+
+        if (arg == 0 || flagsp == 0 || nativep == 0)
+                return -1;
+        n = (unsigned int)(arg[0] & 0777777UL);
+        if (n == 0U)
+                return -1;
+        flags = SYS_MOUNT_RDONLY;
+        seen_access = 0;
+        seen_native = 0;
+        start = 0U;
+        for (i = 0U; i <= n; ++i) {
+                if (i != n && cmd_arg_char(arg, i) != ',')
+                        continue;
+                if (i == start)
+                        return -1;
+                if (cmd_opt_name(arg, start, i - start, "RO")) {
+                        if (seen_access) return -1;
+                        flags = SYS_MOUNT_RDONLY;
+                        seen_access = 1;
+                } else if (cmd_opt_name(arg, start, i - start, "RW")) {
+                        if (seen_access) return -1;
+                        flags = SYS_MOUNT_RW;
+                        seen_access = 1;
+                } else if (cmd_opt_name(arg, start, i - start, "NATIVE")) {
+                        if (seen_native) return -1;
+                        seen_native = 1;
+                } else {
+                        return -1;
+                }
+                start = i + 1U;
+        }
+        *flagsp = flags;
+        *nativep = seen_native;
+        return 0;
+}
+
 static int
 cmd_mkfs_dtfs(int argc, kword_t **argv, struct u_io *io)
 {
-        if (argc != 2) return cmd_err(io, "MKFS.DTFS", 0);
-        return dsys_dtfs_format(argv[1]) == 0 ? 0 :
-            cmd_err(io, "MKFS.DTFS", argv[1]);
+        unsigned int flags;
+        int native;
+
+        if (argc != 4 || !u_s6_eq(argv[1], "-O") ||
+            cmd_dtfs_options(argv[2], &flags, &native) != 0 || !native ||
+            flags != SYS_MOUNT_RDONLY)
+                return cmd_err(io, "MKFS.DTFS", 0);
+        return dsys_dtfs_format(argv[3]) == 0 ? 0 :
+            cmd_err(io, "MKFS.DTFS", argv[3]);
 }
 
 static int
 cmd_mount_dtfs(int argc, kword_t **argv, struct u_io *io)
 {
         unsigned int flags;
-        if (argc != 4) return cmd_err(io, "MOUNT.DTFS", 0);
-        if (u_s6_eq(argv[3], "RW")) flags = SYS_MOUNT_RW;
-        else if (u_s6_eq(argv[3], "RO")) flags = SYS_MOUNT_RDONLY;
-        else return cmd_err(io, "MOUNT.DTFS", argv[3]);
-        return dsys_dtfs_mount(argv[1], argv[2], flags) == 0 ? 0 :
-            cmd_err(io, "MOUNT.DTFS", argv[2]);
+        int native;
+        kword_t *device;
+        kword_t *target;
+
+        flags = SYS_MOUNT_RDONLY;
+        native = 0;
+        if (argc == 3) {
+                device = argv[1];
+                target = argv[2];
+        } else if (argc == 5 && u_s6_eq(argv[1], "-O") &&
+            cmd_dtfs_options(argv[2], &flags, &native) == 0) {
+                device = argv[3];
+                target = argv[4];
+        } else {
+                return cmd_err(io, "MOUNT.DTFS", 0);
+        }
+        return dsys_dtfs_mount(device, target, flags) == 0 ? 0 :
+            cmd_err(io, "MOUNT.DTFS", target);
 }
 
 static int
