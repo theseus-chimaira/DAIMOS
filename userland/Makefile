@@ -29,7 +29,8 @@ $(USER_BUILD)/check/%.s: %.c
 
 $(USER_BUILD)/dsh/%.dobj: %.c
 	mkdir -p $(dir $@)
-	PATH='$(PDP10_PREFIX)/bin:$(PATH)' $(PDP10_GCC) $(CFLAGS) $(CPPFLAGS) -c $< -o $@
+	$(PDP10_GCC) $(CFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
+	$(DAS) -c -o $@ $(@:.dobj=.s)
 
 $(USER_BUILD)/dsh/%.dobj: %.s
 	mkdir -p $(dir $@)
