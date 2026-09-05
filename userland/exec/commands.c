@@ -368,7 +368,7 @@ cmd_fsck_dtfs(int argc, kword_t **argv, struct u_io *io)
         } else {
                 return cmd_err(io, "FSCK.DTFS", 0);
         }
-        if (flags != SYS_MOUNT_RDONLY || type == SYS_DTFS_TYPE_ITS)
+        if (flags != SYS_MOUNT_RDONLY)
                 return cmd_err(io, "FSCK.DTFS", 0);
         found = dsys_dtfs_check(device, type);
         if (found < 0)
@@ -379,6 +379,8 @@ cmd_fsck_dtfs(int argc, kword_t **argv, struct u_io *io)
                 if (u_puts(io->out_fd, "NATIVE OK") != 0) return 1;
         } else if (found == (int)SYS_DTFS_TYPE_TENEX) {
                 if (u_puts(io->out_fd, "TENEX OK") != 0) return 1;
+        } else if (found == (int)SYS_DTFS_TYPE_ITS) {
+                if (u_puts(io->out_fd, "ITS OK") != 0) return 1;
         } else {
                 return cmd_err(io, "FSCK.DTFS", device);
         }
@@ -407,8 +409,6 @@ cmd_mount_dtfs(int argc, kword_t **argv, struct u_io *io)
         } else {
                 return cmd_err(io, "MOUNT.DTFS", 0);
         }
-        if (type == SYS_DTFS_TYPE_ITS)
-                return cmd_err(io, "MOUNT.DTFS", target);
         return dsys_dtfs_mount(device, target, flags | type) == 0 ? 0 :
             cmd_err(io, "MOUNT.DTFS", target);
 }
