@@ -131,3 +131,107 @@ dtfs_dtc_read_jump:
 dtfs_dtc_write:
 dtfs_dtc_write_jump:
         jrst    0
+
+; int dtfs_foreign_set_name(slot, name, its)
+; Pack a VFS SIXBIT NAME[.EXT] directly into the ITS/TENEX directory words.
+; ITS permits six extension characters, TENEX three.  Names are at most 13
+; characters, so validating the format here also satisfies vfs_name_valid().
+        .globl  dtfs_foreign_set_name
+dtfs_foreign_set_name:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        push    17,014
+        push    17,015
+        push    17,016
+        move    010,1                   ; slot
+        move    011,2                   ; struct vfs_name *
+        move    012,3                   ; ITS flag
+        jumpe   011,dtfs_foreign_set_name_fail
+        move    013,(011)               ; total characters
+        jumple  013,dtfs_foreign_set_name_fail
+        skipn   012
+        jrst    dtfs_foreign_set_name_tenex_limit
+        caile   013,015                 ; ITS: 13 decimal
+        jrst    dtfs_foreign_set_name_fail
+        movei   3,6                     ; maximum extension characters
+        jrst    dtfs_foreign_set_name_start
+dtfs_foreign_set_name_tenex_limit:
+        caile   013,012                 ; TENEX: 10 decimal
+        jrst    dtfs_foreign_set_name_fail
+        movei   3,3
+
+dtfs_foreign_set_name_start:
+        move    014,[POINT 6,0]
+        movei   2,1(011)                ; packed name begins at name->words[0]
+        hrr     014,2
+        setz    015,                    ; packed NAME
+        setz    016,                    ; packed EXT
+        setz    4,                      ; NAME count
+        setz    5,                      ; EXT count
+        setz    6,                      ; dot seen
+
+dtfs_foreign_set_name_loop:
+        ildb    7,014
+        cain    7,016                   ; SIXBIT '.'
+        jrst    dtfs_foreign_set_name_dot
+        jumpn   6,dtfs_foreign_set_name_ext
+        addi    4,1
+        caile   4,6
+        jrst    dtfs_foreign_set_name_fail
+        lsh     015,6
+        ior     015,7
+        jrst    dtfs_foreign_set_name_next
+dtfs_foreign_set_name_ext:
+        addi    5,1
+        camle   5,3
+        jrst    dtfs_foreign_set_name_fail
+        lsh     016,6
+        ior     016,7
+        jrst    dtfs_foreign_set_name_next
+dtfs_foreign_set_name_dot:
+        jumpn   6,dtfs_foreign_set_name_fail
+        jumpe   4,dtfs_foreign_set_name_fail
+        movei   6,1
+dtfs_foreign_set_name_next:
+        sojg    013,dtfs_foreign_set_name_loop
+        jumpn   6,dtfs_foreign_set_name_need_ext
+        jrst    dtfs_foreign_set_name_align
+dtfs_foreign_set_name_need_ext:
+        jumpe   5,dtfs_foreign_set_name_fail
+
+dtfs_foreign_set_name_align:
+        movei   7,6
+        sub     7,4
+        imuli   7,6
+        lsh     015,0(7)
+        movei   7,6
+        sub     7,5
+        imuli   7,6
+        lsh     016,0(7)
+        skipn   012
+        jrst    dtfs_foreign_set_name_tenex_store
+        move    4,010
+        lsh     4,1
+        movem   015,dtfs_dir(4)
+        movem   016,dtfs_dir+1(4)
+        jrst    dtfs_foreign_set_name_ok
+dtfs_foreign_set_name_tenex_store:
+        movei   4,dtfs_dir(010)
+        movem   015,0123(4)
+        movem   016,0151(4)
+dtfs_foreign_set_name_ok:
+        setz    1,
+        jrst    dtfs_foreign_set_name_return
+dtfs_foreign_set_name_fail:
+        seto    1,
+dtfs_foreign_set_name_return:
+        pop     17,016
+        pop     17,015
+        pop     17,014
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
