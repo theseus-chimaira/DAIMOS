@@ -1,5 +1,6 @@
 #include "dtfs.h"
 #include "fs_mres.h"
+#include "syscall.h"
 
 #define DTFS_BLOCK_WORDS      0200U
 #define DTFS_BLOCKS           01102U
@@ -15,6 +16,9 @@
 #define DTFS_OWNER_RESERVED   036U
 #define DTFS_OWNER_INVALID    037U
 #define DTFS_NATIVE_MAGIC     0446446632021UL
+#define DTFS_TENEX_MAX_FILE   026U
+#define DTFS_TENEX_RESERVED   036U
+#define DTFS_TENEX_INVALID    037U
 
 #define DTFS_NEXT_SHIFT       18U
 #define DTFS_FIRST_SHIFT      8U
@@ -70,6 +74,53 @@ dtfs_native_valid(void)
                 if (dtfs_owner(block) != DTFS_OWNER_NATIVE_TAG)
                         return 0;
         return 1;
+}
+
+static unsigned int
+dtfs_tenex_owner(unsigned int slot)
+{
+        unsigned int shift;
+
+        shift = 31U - (slot % 7U) * 5U;
+        return (unsigned int)((dtfs_dir[slot / 7U] >> shift) & 037UL);
+}
+
+static int
+dtfs_tenex_valid(void)
+{
+        unsigned int i;
+        unsigned int owner;
+
+        /* TENEX DECTAP.MAC DTINID/DIRTHR structural invariants. */
+        if (dtfs_tenex_owner(0U) != DTFS_TENEX_RESERVED ||
+            dtfs_tenex_owner(1U) != DTFS_TENEX_RESERVED ||
+            dtfs_tenex_owner(99U) != DTFS_TENEX_RESERVED)
+                return 0;
+        for (i = 577U; i <= 580U; ++i)
+                if (dtfs_tenex_owner(i) != DTFS_TENEX_INVALID)
+                        return 0;
+        for (i = 0U; i < 578U; ++i) {
+                owner = dtfs_tenex_owner(i);
+                if (owner <= DTFS_TENEX_MAX_FILE ||
+                    owner == DTFS_TENEX_RESERVED ||
+                    owner == DTFS_TENEX_INVALID)
+                        continue;
+                return 0;
+        }
+        return 1;
+}
+
+static void
+dtfs_tenex_format_dir(void)
+{
+        fs_zero_words(dtfs_dir, DTFS_BLOCK_WORDS);
+        dtfs_dir[0] = ((kword_t)DTFS_TENEX_RESERVED << 31U) |
+            ((kword_t)DTFS_TENEX_RESERVED << 26U);
+        dtfs_dir[14] = (kword_t)DTFS_TENEX_RESERVED << 26U;
+        dtfs_dir[82] = ((kword_t)DTFS_TENEX_INVALID << 16U) |
+            ((kword_t)DTFS_TENEX_INVALID << 11U) |
+            ((kword_t)DTFS_TENEX_INVALID << 6U) |
+            ((kword_t)DTFS_TENEX_INVALID << 1U);
 }
 
 static int
@@ -405,23 +456,39 @@ dtfs_resize(vnode_t node, unsigned int words)
 }
 
 int
-dtfs_format_unit(unsigned int unit, unsigned int op)
+dtfs_format_unit(unsigned int unit, unsigned int ctl)
 {
         unsigned int i;
+        unsigned int op;
+        unsigned int type;
 
-        if (unit > 7U || op > 1U)
+        op = ctl & 07U;
+        type = ctl & SYS_DTFS_TYPE_MASK;
+        if (unit > 7U || op > SYS_DTFS_CTL_CHECK)
                 return -1;
-        if (op == 1U) {
+        if (op == SYS_DTFS_CTL_CHECK) {
                 if (dtfs_dtc_read(unit, DTFS_DIR_BLOCK, dtfs_dir) != 0)
                         return -1;
-                return dtfs_native_valid() ? 0 : -1;
+                if ((type == SYS_DTFS_TYPE_AUTO ||
+                    type == SYS_DTFS_TYPE_NATIVE) && dtfs_native_valid())
+                        return SYS_DTFS_TYPE_NATIVE;
+                if ((type == SYS_DTFS_TYPE_AUTO ||
+                    type == SYS_DTFS_TYPE_TENEX) && dtfs_tenex_valid())
+                        return SYS_DTFS_TYPE_TENEX;
+                return -1;
         }
-        fs_zero_words(dtfs_dir, DTFS_BLOCK_WORDS);
-        dtfs_set_owner(0U, DTFS_OWNER_RESERVED);
-        dtfs_set_owner(DTFS_DIR_BLOCK, DTFS_OWNER_RESERVED);
-        for (i = DTFS_BLOCKS; i <= 01104U; ++i)
-                dtfs_set_owner(i, DTFS_OWNER_NATIVE_TAG);
-        dtfs_dir[DTFS_MAGIC_WORD] = DTFS_NATIVE_MAGIC;
+        if (type == SYS_DTFS_TYPE_NATIVE) {
+                fs_zero_words(dtfs_dir, DTFS_BLOCK_WORDS);
+                dtfs_set_owner(0U, DTFS_OWNER_RESERVED);
+                dtfs_set_owner(DTFS_DIR_BLOCK, DTFS_OWNER_RESERVED);
+                for (i = DTFS_BLOCKS; i <= 01104U; ++i)
+                        dtfs_set_owner(i, DTFS_OWNER_NATIVE_TAG);
+                dtfs_dir[DTFS_MAGIC_WORD] = DTFS_NATIVE_MAGIC;
+        } else if (type == SYS_DTFS_TYPE_TENEX) {
+                dtfs_tenex_format_dir();
+        } else {
+                return -1;
+        }
         dtfs_cache_mount = 0U;
         return dtfs_dtc_write(unit, DTFS_DIR_BLOCK, dtfs_dir);
 }

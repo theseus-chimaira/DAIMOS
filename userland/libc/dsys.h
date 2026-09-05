@@ -24,8 +24,8 @@ static int dsys_unlink(kword_t *p) { return DSYS_CALL1(SYS_UNLINK,p); }
 static int dsys_rename(kword_t *a, kword_t *b) { return DSYS_CALL2(SYS_RENAME,a,b); }
 static int dsys_truncate(kword_t *p, kword_t n) { return DSYS_CALL2(SYS_TRUNCATE,p,n); }
 static int dsys_chmod(kword_t *p, unsigned int m) { return DSYS_CALL2(SYS_CHMOD,p,m); }
-static int dsys_dtfs_format(kword_t *p) { return DSYS_CALL2(SYS_DTFS_FORMAT,p,0); }
-static int dsys_dtfs_check(kword_t *p) { return DSYS_CALL2(SYS_DTFS_FORMAT,p,1); }
+static int dsys_dtfs_format(kword_t *p, unsigned int t) { return DSYS_CALL2(SYS_DTFS_FORMAT,p,SYS_DTFS_CTL_FORMAT|t); }
+static int dsys_dtfs_check(kword_t *p, unsigned int t) { return DSYS_CALL2(SYS_DTFS_FORMAT,p,SYS_DTFS_CTL_CHECK|t); }
 static int dsys_dtfs_mount(kword_t *d, kword_t *p, unsigned int f) { return DSYS_CALL3(SYS_DTFS_MOUNT,d,p,f); }
 static int dsys_unmount(kword_t *p) { return DSYS_CALL1(SYS_UNMOUNT,p); }
 static int dsys_flock(int fd, unsigned int op) { return DSYS_CALL2(SYS_FLOCK,fd,op); }

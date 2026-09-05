@@ -285,23 +285,23 @@ cmd_opt_name(const kword_t *arg, unsigned int off, unsigned int len,
 
 static int
 cmd_dtfs_options(const kword_t *arg, unsigned int *flagsp,
-    int *nativep)
+    unsigned int *typep)
 {
         unsigned int n;
         unsigned int start;
         unsigned int i;
         unsigned int flags;
         int seen_access;
-        int seen_native;
+        unsigned int type;
 
-        if (arg == 0 || flagsp == 0 || nativep == 0)
+        if (arg == 0 || flagsp == 0 || typep == 0)
                 return -1;
         n = (unsigned int)(arg[0] & 0777777UL);
         if (n == 0U)
                 return -1;
         flags = SYS_MOUNT_RDONLY;
         seen_access = 0;
-        seen_native = 0;
+        type = SYS_DTFS_TYPE_AUTO;
         start = 0U;
         for (i = 0U; i <= n; ++i) {
                 if (i != n && cmd_arg_char(arg, i) != ',')
@@ -317,15 +317,21 @@ cmd_dtfs_options(const kword_t *arg, unsigned int *flagsp,
                         flags = SYS_MOUNT_RW;
                         seen_access = 1;
                 } else if (cmd_opt_name(arg, start, i - start, "NATIVE")) {
-                        if (seen_native) return -1;
-                        seen_native = 1;
+                        if (type != SYS_DTFS_TYPE_AUTO) return -1;
+                        type = SYS_DTFS_TYPE_NATIVE;
+                } else if (cmd_opt_name(arg, start, i - start, "TENEX")) {
+                        if (type != SYS_DTFS_TYPE_AUTO) return -1;
+                        type = SYS_DTFS_TYPE_TENEX;
+                } else if (cmd_opt_name(arg, start, i - start, "ITS")) {
+                        if (type != SYS_DTFS_TYPE_AUTO) return -1;
+                        type = SYS_DTFS_TYPE_ITS;
                 } else {
                         return -1;
                 }
                 start = i + 1U;
         }
         *flagsp = flags;
-        *nativep = seen_native;
+        *typep = type;
         return 0;
 }
 
@@ -333,13 +339,14 @@ static int
 cmd_mkfs_dtfs(int argc, kword_t **argv, struct u_io *io)
 {
         unsigned int flags;
-        int native;
+        unsigned int type;
 
         if (argc != 4 || !u_s6_eq(argv[1], "-O") ||
-            cmd_dtfs_options(argv[2], &flags, &native) != 0 || !native ||
+            cmd_dtfs_options(argv[2], &flags, &type) != 0 ||
+            (type != SYS_DTFS_TYPE_NATIVE && type != SYS_DTFS_TYPE_TENEX) ||
             flags != SYS_MOUNT_RDONLY)
                 return cmd_err(io, "MKFS.DTFS", 0);
-        return dsys_dtfs_format(argv[3]) == 0 ? 0 :
+        return dsys_dtfs_format(argv[3], type) == 0 ? 0 :
             cmd_err(io, "MKFS.DTFS", argv[3]);
 }
 
@@ -347,25 +354,35 @@ static int
 cmd_fsck_dtfs(int argc, kword_t **argv, struct u_io *io)
 {
         unsigned int flags;
-        int native;
+        unsigned int type;
         kword_t *device;
+        int found;
 
         flags = SYS_MOUNT_RDONLY;
-        native = 0;
+        type = SYS_DTFS_TYPE_AUTO;
         if (argc == 2) {
                 device = argv[1];
         } else if (argc == 4 && u_s6_eq(argv[1], "-O") &&
-            cmd_dtfs_options(argv[2], &flags, &native) == 0) {
+            cmd_dtfs_options(argv[2], &flags, &type) == 0) {
                 device = argv[3];
         } else {
                 return cmd_err(io, "FSCK.DTFS", 0);
         }
         if (flags != SYS_MOUNT_RDONLY)
                 return cmd_err(io, "FSCK.DTFS", 0);
-        if (dsys_dtfs_check(device) != 0)
+        found = dsys_dtfs_check(device, type);
+        if (found < 0)
                 return cmd_err(io, "FSCK.DTFS", device);
-        if (u_puts(io->out_fd, "FSCK.DTFS NATIVE OK") != 0 ||
-            u_crlf(io->out_fd) != 0)
+        if (u_puts(io->out_fd, "FSCK.DTFS ") != 0)
+                return 1;
+        if (found == (int)SYS_DTFS_TYPE_NATIVE) {
+                if (u_puts(io->out_fd, "NATIVE OK") != 0) return 1;
+        } else if (found == (int)SYS_DTFS_TYPE_TENEX) {
+                if (u_puts(io->out_fd, "TENEX OK") != 0) return 1;
+        } else {
+                return cmd_err(io, "FSCK.DTFS", device);
+        }
+        if (u_crlf(io->out_fd) != 0)
                 return 1;
         return 0;
 }
@@ -374,22 +391,24 @@ static int
 cmd_mount_dtfs(int argc, kword_t **argv, struct u_io *io)
 {
         unsigned int flags;
-        int native;
+        unsigned int type;
         kword_t *device;
         kword_t *target;
 
         flags = SYS_MOUNT_RDONLY;
-        native = 0;
+        type = SYS_DTFS_TYPE_AUTO;
         if (argc == 3) {
                 device = argv[1];
                 target = argv[2];
         } else if (argc == 5 && u_s6_eq(argv[1], "-O") &&
-            cmd_dtfs_options(argv[2], &flags, &native) == 0) {
+            cmd_dtfs_options(argv[2], &flags, &type) == 0) {
                 device = argv[3];
                 target = argv[4];
         } else {
                 return cmd_err(io, "MOUNT.DTFS", 0);
         }
+        if (type != SYS_DTFS_TYPE_AUTO && type != SYS_DTFS_TYPE_NATIVE)
+                return cmd_err(io, "MOUNT.DTFS", target);
         return dsys_dtfs_mount(device, target, flags) == 0 ? 0 :
             cmd_err(io, "MOUNT.DTFS", target);
 }

@@ -36,6 +36,14 @@
 #define SYS_MOUNT_RW         0U
 #define SYS_MOUNT_RDONLY     1U
 
+#define SYS_DTFS_CTL_FORMAT  0U
+#define SYS_DTFS_CTL_CHECK   1U
+#define SYS_DTFS_TYPE_AUTO   0U
+#define SYS_DTFS_TYPE_NATIVE 010U
+#define SYS_DTFS_TYPE_TENEX  020U
+#define SYS_DTFS_TYPE_ITS    030U
+#define SYS_DTFS_TYPE_MASK   030U
+
 #define SYS_O_RDONLY         000000U
 #define SYS_O_WRONLY         000001U
 #define SYS_O_RDWR           000002U
