@@ -1150,11 +1150,16 @@ dtfs_rename(vnode_t olddir, const struct vfs_name *oldname,
 
         if (!dtfs_is_root(olddir) || !dtfs_is_root(newdir) ||
             VFS_MOUNT_ID(olddir) != VFS_MOUNT_ID(newdir) ||
-            dtfs_load(olddir) != 0 || dtfs_is_foreign(olddir) ||
+            dtfs_load(olddir) != 0 || dtfs_is_tenex(olddir) ||
             dtfs_scan_slot(olddir, oldname, &slot) != 0 ||
             dtfs_scan_slot(olddir, newname, 0) == 0)
                 return -1;
-        dtfs_set_name(slot, newname);
+        if (dtfs_is_its(olddir)) {
+                if (dtfs_its_set_name(slot, newname) != 0)
+                        return -1;
+        } else {
+                dtfs_set_name(slot, newname);
+        }
         return dtfs_commit(olddir);
 }
 
