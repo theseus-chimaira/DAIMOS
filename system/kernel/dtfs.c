@@ -23,6 +23,8 @@
 #define DTFS_ITS_NAME_WORDS   056U       /* 23 two-word names */
 #define DTFS_ITS_MAP_ENTRIES  01076U     /* 82 words, seven 5-bit bytes each */
 #define DTFS_ITS_END          037U
+#define DTFS_ITS_DIR_OWNER    033U
+#define DTFS_ITS_END_BLOCK    01067U
 #define DTFS_ITS_MAP_FIRST    056U
 #define DTFS_ITS_MAP_DIR      067U
 #define DTFS_ITS_MAP_LAST     0177U
@@ -119,19 +121,34 @@ static int
 dtfs_its_valid(void)
 {
         unsigned int block;
+        unsigned int owner;
+        unsigned int slot;
 
         /*
-         * ITS UTAPE keeps 23 two-word names at the front of block 0100.
-         * A stream of 5-bit allocation entries follows; 037 terminates it.
-         * The directory block itself must therefore be represented before
-         * the terminator.  Values 030..036 are reserved by old media and
-         * are deliberately accepted.
+         * UTAPE reserves the first seven allocation entries, marks the
+         * directory at map entry 077, and terminates the map with seven
+         * 037 entries beginning at 01067.  Owners 1..027 name directory
+         * slots; reserved/bad-block values 030..036 remain acceptable.
+         * The low bit of each seven-entry map word is padding.
          */
-        for (block = 0U; block < DTFS_ITS_MAP_ENTRIES; ++block) {
-                if (dtfs_its_owner(block) == DTFS_ITS_END)
-                        return block > DTFS_ITS_DIR_BLOCK;
+        if ((dtfs_dir[DTFS_ITS_MAP_FIRST] & ~1UL) !=
+            DTFS_ITS_MAP_RESERVED ||
+            (unsigned int)(dtfs_dir[DTFS_ITS_MAP_DIR] >> 31U) !=
+            DTFS_ITS_DIR_OWNER ||
+            (dtfs_dir[DTFS_ITS_MAP_LAST] & ~1UL) != DTFS_ITS_MAP_END)
+                return 0;
+        for (block = 7U; block < DTFS_ITS_END_BLOCK; ++block) {
+                owner = dtfs_its_owner(block);
+                if (owner == DTFS_ITS_END)
+                        return 0;
+                if (owner == 0U || owner > DTFS_ITS_FILE_SLOTS)
+                        continue;
+                slot = owner - 1U;
+                if (dtfs_dir[slot * 2U] == 0UL &&
+                    dtfs_dir[slot * 2U + 1U] == 0UL)
+                        return 0;
         }
-        return 0;
+        return 1;
 }
 
 static int
