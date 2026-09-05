@@ -4,6 +4,8 @@
 ; paths.  They implement the on-disk D6FS V2 bit layout directly; policy and
 ; crash-ordering remain in C.
         .text
+        .globl  pdp10_ret_zero
+        .globl  pdp10_ret_neg1
 
 ; FCB decode/validation is implemented in d6fs.c.
 
@@ -54,8 +56,7 @@ d6fs_dirent_valid:
         movei   1,1
         popj    17,
 d6fs_dirent_invalid:
-        setz    1,
-        popj    17,
+        jrst    pdp10_ret_zero
 
         .globl  d6fs_extent_decode
 ; int d6fs_extent_decode(run, high, startp, blocksp)
@@ -71,11 +72,9 @@ d6fs_extent_decode:
         ior     2,1
         addi    2,1
         movem   2,(4)
-        setz    1,
-        popj    17,
+        jrst    pdp10_ret_zero
 d6fs_extent_bad:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
         .globl  d6fs_extent_high_get
 ; unsigned int d6fs_extent_high_get(word, extent)
@@ -90,8 +89,7 @@ d6fs_extent_high_get:
         andi    1,037
         popj    17,
 d6fs_high_zero:
-        setz    1,
-        popj    17,
+        jrst    pdp10_ret_zero
 
 ; kword_t d6fs_file_block(fcb, file_block)
 ;
@@ -130,8 +128,7 @@ d6fs_file_block_next:
         sojg    3,d6fs_file_block_loop
 
 d6fs_file_block_bad:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
         .globl  d6fs_name_hash24
 ; kword_t d6fs_name_hash24(words, chars)
@@ -163,8 +160,7 @@ d6fs_hash_loop:
         popj    17,
 
 d6fs_hash_zero:
-        setz    1,
-        popj    17,
+        jrst    pdp10_ret_zero
 
         .globl  fs_block_workspace
         .globl  d6fs_reader_get_block
@@ -195,14 +191,12 @@ d6fs_reader_get_block:
 d6fs_get_block_read_fail:
         pop     17,011
         pop     17,010
-        setz    1,
-        popj    17,
+        jrst    pdp10_ret_zero
 d6fs_get_block_hit:
         movei   1,fs_block_workspace
         popj    17,
 d6fs_get_block_fail:
-        setz    1,
-        popj    17,
+        jrst    pdp10_ret_zero
 
         .globl  d6fs_reader_fcb
 ; int d6fs_reader_fcb(reader, index, fcb, info)
@@ -256,8 +250,7 @@ d6fs_reader_fcb_done:
         pop     17,010
         popj    17,
 d6fs_reader_fcb_bad:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
         .globl  d6fs_reader_put_fcb
 ; int d6fs_reader_put_fcb(reader, index, fcb)
@@ -300,8 +293,7 @@ d6fs_reader_put_fcb_done:
         pop     17,010
         popj    17,
 d6fs_reader_put_fcb_bad:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
 ; Return quotient map-block in AC1, word index in AC2, bit index in AC3.
 ; Input index is in AC1.  D6FS map blocks contain 128*36 = 011000 bits.
@@ -404,8 +396,7 @@ d6fs_free_run_done:
         pop     17,010
         popj    17,
 d6fs_free_run_error:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
         .globl  d6fs_alloc_run
 ; int d6fs_alloc_run(reader, cursor, max_blocks, startp, blocksp)
@@ -510,8 +501,7 @@ d6fs_alloc_run_done:
         pop     17,010
         popj    17,
 d6fs_alloc_run_error:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
 ; Internal: return 1 if map block has a free valid bit, 0 if full, -1 error.
 ; Scan whole 36-bit words instead of testing as many as 4608 individual bits.
@@ -669,8 +659,7 @@ d6fs_freemap_set_done:
         popj    17,
 
 d6fs_bitmap_error:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
         .globl  fs_copy_words
 
@@ -717,25 +706,18 @@ d6fs_mres_dispatch:
         jrst    fs_mres_vector_dispatch
 
 d6fs_mres_create:
+        movei   5,1                     ; regular file type
+        jrst    d6fs_mres_create_common
+
+d6fs_mres_mkdir:
+        movei   5,2                     ; directory type
+d6fs_mres_create_common:
         move    6,4                     ; nodep
         move    4,3                     ; mode => value
         setz    3,                      ; no payload
         add     17,[2,,2]
-        movei   5,1                     ; regular file type
         movem   5,(17)                  ; C arg 5: type
         movem   6,-1(17)                ; C arg 6: nodep
-        pushj   17,d6fs_provider_create_object
-        sub     17,[2,,2]
-        popj    17,
-
-d6fs_mres_mkdir:
-        move    6,4
-        move    4,3
-        setz    3,
-        add     17,[2,,2]
-        movei   5,2                     ; directory type
-        movem   5,(17)
-        movem   6,-1(17)
         pushj   17,d6fs_provider_create_object
         sub     17,[2,,2]
         popj    17,
@@ -847,11 +829,9 @@ d6fs_reader_read_exit:
         pop     17,010
         popj    17,
 d6fs_reader_read_zero:
-        setz    1,
-        popj    17,
+        jrst    pdp10_ret_zero
 d6fs_reader_read_bad:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
         .globl  d6fs_reader_write_words
 ; int d6fs_reader_write_words(reader, fcb, off, buf, nwords)
@@ -927,8 +907,7 @@ d6fs_reader_write_exit:
         pop     17,010
         popj    17,
 d6fs_reader_write_bad:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
         .globl  d6fs_reader_commit_cache
 ; int d6fs_reader_commit_cache(reader, logical)
@@ -957,13 +936,11 @@ d6fs_reader_commit_fail_saved:
         setom   3(010)
         pop     17,011
         pop     17,010
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 d6fs_reader_commit_invalidate:
         setom   3(1)
 d6fs_reader_commit_bad:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
         .globl  d6fs_reader_write_block
 ; int d6fs_reader_write_block(reader, logical, block)
@@ -980,8 +957,7 @@ d6fs_reader_write_block:
 d6fs_reader_write_block_commit:
         jrst    d6fs_reader_commit_cache
 d6fs_reader_write_block_bad:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
         .globl  d6fs_reader_zero_block
 ; int d6fs_reader_zero_block(reader, logical)
@@ -992,8 +968,7 @@ d6fs_reader_zero_block:
         pushj   17,fs_zero_block_workspace
         jrst    d6fs_reader_commit_cache
 d6fs_reader_zero_block_bad:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
 ; Compact D6FS provider metadata/growth helpers.  These are leaf-sized
 ; representation operations shared by the larger C policy paths.
@@ -1106,5 +1081,4 @@ d6fs_provider_tail_full:
         move    1,4
         popj    17,
 d6fs_provider_tail_zero:
-        setz    1,
-        popj    17,
+        jrst    pdp10_ret_zero

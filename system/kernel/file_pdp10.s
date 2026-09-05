@@ -137,8 +137,7 @@ file_component_done:
         popj    17,
 file_component_empty:
         movem   5,(2)
-        movei   1,0
-        popj    17,
+        jrst    pdp10_ret_zero
 file_component_fail:
         jrst    pdp10_ret_neg1
 
@@ -325,8 +324,7 @@ file_symlink_fail:
         seto    1,
         jrst    file_symlink_done
 file_symlink_early_fail:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
 ; int file_rename(const kword_t *oldpath, const kword_t *newpath)
 ; Save newpath below two parent-vnode/name records.
@@ -421,12 +419,12 @@ file_unlink:
         move    1,-5(17)
         movei   2,-4(17)
         pushj   17,vfs_unlink
+file_unlink_done:
         sub     17,[6,,6]
         popj    17,
 file_unlink_fail:
         seto    1,
-        sub     17,[6,,6]
-        popj    17,
+        jrst    file_unlink_done
 
 ; int file_truncate(const kword_t *path, kword_t size_chars)
 ; One saved size argument plus one vnode local.
@@ -445,12 +443,9 @@ file_truncate:
         move    1,(17)
         pushj   17,vfs_truncate
 file_truncate_done:
-        sub     17,[1,,1]
-        pop     17,2
-        popj    17,
+        jrst    file_path_onearg_done
 file_truncate_fail:
-        seto    1,
-        jrst    file_truncate_done
+        jrst    file_path_onearg_fail
 
 ; int file_stat_path(const kword_t *path, struct vfs_stat *st)
 ; One saved argument plus one vnode local.
@@ -467,12 +462,14 @@ file_stat_path:
         move    2,-1(17)
         pushj   17,vfs_stat
 file_stat_path_done:
+        jrst    file_path_onearg_done
+file_stat_path_fail:
+file_path_onearg_fail:
+        seto    1,
+file_path_onearg_done:
         sub     17,[1,,1]
         pop     17,2
         popj    17,
-file_stat_path_fail:
-        seto    1,
-        jrst    file_stat_path_done
 
 ; struct file *file_find(int fd)
 ; File descriptors 3..15 map directly onto the 13 FILE records.

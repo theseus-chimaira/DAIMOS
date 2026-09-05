@@ -38,8 +38,7 @@ procfs_stat_store:
         movem   5,1(2)
         setzm   2(2)
         setzm   3(2)
-        movei   1,0
-        popj    17,
+        jrst    pdp10_ret_zero
 procfs_stat_fail:
         jrst    pdp10_ret_neg1
 

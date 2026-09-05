@@ -1,5 +1,6 @@
 ; syscall_info_pdp10.s -- compact fixed-layout PROCINFO/MEMINFO syscalls.
         .text
+        .globl  pdp10_ret_zero
         .globl  pdp10_ret_neg1
         .globl  file_table
         .globl  proc_table
@@ -23,8 +24,7 @@ sys_procinfo_words:
         movem   3,3(2)
         move    3,proc_comm_words(1)
         movem   3,4(2)
-        movei   1,0
-        popj    17,
+        jrst    pdp10_ret_zero
 sys_procinfo_fail:
         jrst    pdp10_ret_neg1
 
@@ -77,5 +77,4 @@ sys_meminfo_have_ramfs:
         movem   3,6(2)
         movei   3,040
         movem   3,010(2)
-        movei   1,0
-        popj    17,
+        jrst    pdp10_ret_zero

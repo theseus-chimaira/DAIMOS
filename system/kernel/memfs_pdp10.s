@@ -129,8 +129,7 @@ memfs_resize_shrink_done:
         movn    3,7             ; negative delta
         pushj   17,memfs_shift_after
 memfs_resize_ok:
-        movei   1,0
-        popj    17,
+        jrst    pdp10_ret_zero
 memfs_resize_fail:
         jrst    pdp10_ret_neg1
 
@@ -692,11 +691,9 @@ memfs_chmod:
         move    4,3
         andi    4,07777
         dpb     4,[POINT 12,5(5),32]
-        setz    1,
-        popj    17,
+        jrst    pdp10_ret_zero
 memfs_chmod_fail:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
         .globl  memfs_truncate_words
 memfs_truncate_words:
@@ -794,8 +791,7 @@ memfs_stat:
         movem   4,2(3)
         hrrz    4,7(5)
         movem   4,3(3)
-        movei   1,0
-        popj    17,
+        jrst    pdp10_ret_zero
 memfs_stat_fail:
         jrst    pdp10_ret_neg1
 
@@ -829,8 +825,7 @@ memfs_parent:
         hrr     0,4
         blt     0,4(4)                  ; copy child name
 memfs_parent_ok:
-        movei   1,0
-        popj    17,
+        jrst    pdp10_ret_zero
 memfs_parent_fail:
         jrst    pdp10_ret_neg1
 
@@ -862,9 +857,8 @@ memfs_mres_init:
         jumpe   2,memfs_mres_bad
         hrl     2,2
         hrri    2,memfs_mres_fs
-        blt     2,memfs_mres_fs+5
-        setz    1,
-        popj    17,
+        blt     2,memfs_mres_fs+6
+        jrst    pdp10_ret_zero
 
 ; MEMINFO calls this exported entry directly; overwrite request a/b.
         .globl  memfs_mres_usage
@@ -873,12 +867,10 @@ memfs_mres_usage:
         movem   2,1(1)
         move    2,memfs_mres_fs+3       ; pool_words
         movem   2,2(1)
-        setz    1,
-        popj    17,
+        jrst    pdp10_ret_zero
 
 memfs_mres_bad:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
 memfs_mres_dispatch:
         jumpe   1,memfs_mres_bad

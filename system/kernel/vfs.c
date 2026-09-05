@@ -171,24 +171,8 @@ vfs_lookup(vnode_t dir, const struct vfs_name *name,
         return 0;
 }
 
-static int
-vfs_readdir_raw(vnode_t dir, unsigned int off,
-    struct vfs_dirent *ent)
-{
-        struct fs_mres_request req;
-        unsigned int provider;
-
-        provider = VFS_PROVIDER(dir);
-        if (provider == DEVICEFS_PROVIDER)
-                return devicefs_readdir(dir, off, ent);
-        if (provider == PROCFS_PROVIDER)
-                return procfs_readdir(dir, off, ent);
-        req.op = FS_MRES_OP_READDIR;
-        req.a = dir;
-        req.b = (kword_t)off;
-        req.c = (kword_t)(unsigned long)ent;
-        return fs_provider_call(provider, &req);
-}
+extern int vfs_readdir_raw(vnode_t dir, unsigned int off,
+    struct vfs_dirent *ent);
 
 int
 vfs_readdir(vnode_t dir, unsigned int off, struct vfs_dirent *ent)
@@ -217,23 +201,6 @@ vfs_readdir(vnode_t dir, unsigned int off, struct vfs_dirent *ent)
                 return 1;
         }
         return 0;
-}
-
-int
-vfs_stat(vnode_t node, struct vfs_stat *st)
-{
-        struct fs_mres_request req;
-        unsigned int provider;
-
-        provider = VFS_PROVIDER(node);
-        if (provider == DEVICEFS_PROVIDER)
-                return devicefs_stat(node, st);
-        if (provider == PROCFS_PROVIDER)
-                return procfs_stat(node, st);
-        req.op = FS_MRES_OP_STAT;
-        req.a = node;
-        req.b = (kword_t)(unsigned long)st;
-        return fs_provider_call(provider, &req);
 }
 
 static int
@@ -383,21 +350,6 @@ vfs_symlink(vnode_t dir, const struct vfs_name *name,
 }
 
 int
-vfs_unlink(vnode_t dir, const struct vfs_name *name)
-{
-        struct fs_mres_request req;
-        unsigned int provider;
-
-        if (vfs_readonly(dir))
-                return -1;
-        provider = VFS_PROVIDER(dir);
-        req.op = FS_MRES_OP_UNLINK;
-        req.a = dir;
-        req.b = (kword_t)(unsigned long)name;
-        return fs_provider_call(provider, &req);
-}
-
-int
 vfs_rename(vnode_t olddir, const struct vfs_name *oldname,
     vnode_t newdir, const struct vfs_name *newname)
 {
@@ -414,72 +366,6 @@ vfs_rename(vnode_t olddir, const struct vfs_name *oldname,
         req.b = (kword_t)(unsigned long)oldname;
         req.c = newdir;
         req.d = (kword_t)(unsigned long)newname;
-        return fs_provider_call(provider, &req);
-}
-
-int
-vfs_truncate(vnode_t node, unsigned int words, kword_t size_chars)
-{
-        struct fs_mres_request req;
-        unsigned int provider;
-
-        if (vfs_readonly(node))
-                return -1;
-        provider = VFS_PROVIDER(node);
-        req.op = FS_MRES_OP_TRUNCATE;
-        req.a = node;
-        req.b = (kword_t)words;
-        req.c = size_chars;
-        return fs_provider_call(provider, &req);
-}
-
-int
-vfs_chmod(vnode_t node, unsigned int mode)
-{
-        struct fs_mres_request req;
-        unsigned int provider;
-
-        if (vfs_readonly(node))
-                return -1;
-        provider = VFS_PROVIDER(node);
-        req.op = FS_MRES_OP_CHMOD;
-        req.a = node;
-        req.b = (kword_t)mode;
-        return fs_provider_call(provider, &req);
-}
-
-int
-vfs_read_words(vnode_t node, unsigned int off, kword_t *buf,
-    unsigned int nwords)
-{
-        struct fs_mres_request req;
-        unsigned int provider;
-
-        provider = VFS_PROVIDER(node);
-        req.op = FS_MRES_OP_READ_WORDS;
-        req.a = node;
-        req.b = (kword_t)off;
-        req.c = (kword_t)(unsigned long)buf;
-        req.d = (kword_t)nwords;
-        return fs_provider_call(provider, &req);
-}
-
-int
-vfs_write_words(vnode_t node, unsigned int off,
-    const kword_t *buf, unsigned int nwords, kword_t size_chars)
-{
-        struct fs_mres_request req;
-        unsigned int provider;
-
-        if (vfs_readonly(node))
-                return -1;
-        provider = VFS_PROVIDER(node);
-        req.op = FS_MRES_OP_WRITE_WORDS;
-        req.a = node;
-        req.b = (kword_t)off;
-        req.c = (kword_t)(unsigned long)buf;
-        req.d = (kword_t)nwords;
-        req.e = size_chars;
         return fs_provider_call(provider, &req);
 }
 
@@ -547,20 +433,6 @@ vfs_writechar(vnode_t node, kword_t off, unsigned int ch)
         if (vfs_write_words(node, wi, &word, 1U, end_chars) != 1)
                 return -1;
         return 0;
-}
-
-int
-vfs_sync(vnode_t node)
-{
-        struct fs_mres_request req;
-        unsigned int provider;
-
-        provider = VFS_PROVIDER(node);
-        if (provider != DTFS_PROVIDER && provider != D6FS_PROVIDER)
-                return 0;
-        req.op = FS_MRES_OP_SYNC;
-        req.a = node;
-        return fs_provider_call(provider, &req);
 }
 
 extern int vfs_name_is6(const struct vfs_name *name, kword_t word,
