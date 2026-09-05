@@ -1221,13 +1221,46 @@ int
 dtfs_unlink(vnode_t dir, const struct vfs_name *name)
 {
         unsigned int slot;
+        unsigned int block;
+        unsigned int next;
+        unsigned int blocks;
+        unsigned int i;
         vnode_t node;
 
         if (!dtfs_is_root(dir) || dtfs_load(dir) != 0 ||
-            dtfs_is_tenex(dir) || dtfs_scan_slot(dir, name, &slot) != 0)
+            dtfs_scan_slot(dir, name, &slot) != 0)
                 return -1;
         node = VFS_NODE(DTFS_PROVIDER,
             VFS_MOUNT_KIND(VFS_MOUNT_ID(dir), DTFS_KIND_FILE), slot);
+        if (dtfs_is_tenex(dir)) {
+                blocks = dtfs_block_count(node, slot);
+                if (blocks == 0U || dtfs_first_block(node, slot, &block) != 0)
+                        return -1;
+                next = block;
+                for (i = 0U; i < blocks; ++i) {
+                        block = next;
+                        if (block == 0U || block > DTFS_LAST_BLOCK ||
+                            dtfs_tenex_block_owner(block) != slot + 1U ||
+                            dtfs_dtc_read(dtfs_unit(dir), block,
+                            dtfs_block) != 0) {
+                                dtfs_cache_mount = 0U;
+                                return -1;
+                        }
+                        next = dtfs_hdr_next(dtfs_block[0]);
+                        dtfs_set_owner(block - 1U, DTFS_OWNER_FREE);
+                }
+                if (next != 0U) {
+                        dtfs_cache_mount = 0U;
+                        return -1;
+                }
+                dtfs_dir[DTFS_NAME_BASE + slot] = 0UL;
+                dtfs_dir[DTFS_TENEX_EXT_BASE + slot] = 0UL;
+                if (dtfs_commit(dir) != 0) {
+                        dtfs_cache_mount = 0U;
+                        return -1;
+                }
+                return 0;
+        }
         if (dtfs_resize(node, 0U) != 0)
                 return -1;
         if (dtfs_is_its(dir)) {
