@@ -82,6 +82,149 @@ dtfs_set_owner:
         movem   3,dtfs_dir(1)
         popj    17,
 
+; TENEX directory validation, including the optional fsck/deep chain pass.
+; The allocation index and slot ranges are small non-negative constants, so
+; direct CAIGE loops avoid GCC's signed-range scaffolding.
+        .globl  dtfs_tenex_walk
+        .globl  dtfs_tenex_valid
+dtfs_tenex_valid:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        move    010,1                   ; unit for optional deep walk
+        move    011,2                   ; deep flag
+
+; TENEX DECTAP.MAC DTINID/DIRTHR structural markers.
+        move    4,dtfs_dir
+        lsh     4,-032
+        caie    4,01736
+        jrst    dtfs_tenex_valid_false
+        ldb     4,[POINT 5,dtfs_dir+016,9]
+        caie    4,036
+        jrst    dtfs_tenex_valid_false
+        move    4,dtfs_dir+0122
+        and     4,[07777776]
+        came    4,[07777776]
+        jrst    dtfs_tenex_valid_false
+
+; Validate all 578 allocation entries and remember which file owners occur.
+        setz    012,                    ; seen owner bitmap
+        setz    013,                    ; allocation index
+dtfs_tenex_valid_map_loop:
+        setz    1,
+        move    2,013
+        pushj   17,dtfs_owner
+        cail    1,027
+        jrst    dtfs_tenex_valid_special_owner
+        jumpe   1,dtfs_tenex_valid_map_next
+        skipn   dtfs_dir+0122(1)        ; NAME_BASE + owner - 1
+        jrst    dtfs_tenex_valid_false
+        movei   4,1
+        lsh     4,-1(1)                 ; bit owner-1
+        ior     012,4
+        jrst    dtfs_tenex_valid_map_next
+dtfs_tenex_valid_special_owner:
+        cail    1,036
+        cail    1,040
+        jrst    dtfs_tenex_valid_false
+
+dtfs_tenex_valid_map_next:
+        addi    013,1
+        caige   013,01102
+        jrst    dtfs_tenex_valid_map_loop
+
+; Every named slot must own at least one block; an empty NAME may not carry an
+; EXT.  Deep CHECK additionally validates the complete block chain in-place.
+        setz    013,
+dtfs_tenex_valid_slot_loop:
+        skipn   dtfs_dir+0123(013)
+        jrst    dtfs_tenex_valid_empty_slot
+        move    4,012
+        movn    5,013
+        lsh     4,0(5)
+        trnn    4,1
+        jrst    dtfs_tenex_valid_false
+        jumpe   011,dtfs_tenex_valid_slot_next
+        move    1,010
+        move    2,013
+        setz    3,
+        setz    4,
+        push    17,3                    ; fifth argument nwords = 0
+        pushj   17,dtfs_tenex_walk
+        pop     17,0
+        jumpl   1,dtfs_tenex_valid_false
+        jrst    dtfs_tenex_valid_slot_next
+dtfs_tenex_valid_empty_slot:
+        skipn   dtfs_dir+0151(013)
+        jrst    dtfs_tenex_valid_slot_next
+        jrst    dtfs_tenex_valid_false
+
+dtfs_tenex_valid_slot_next:
+        addi    013,1
+        caige   013,026
+        jrst    dtfs_tenex_valid_slot_loop
+        movei   1,1
+        jrst    dtfs_tenex_valid_return
+dtfs_tenex_valid_false:
+        setz    1,
+dtfs_tenex_valid_return:
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; ITS directory structural validation.  Keep the fixed UTAPE markers and
+; owner/name consistency scan in one compact target loop.
+        .globl  dtfs_its_valid
+dtfs_its_valid:
+        move    1,dtfs_dir+056
+        andcm   1,[1]
+        came    1,[0757367573674]
+        jrst    dtfs_its_valid_false
+        move    1,dtfs_dir+067
+        lsh     1,-037                  ; owner is the top five bits
+        caie    1,033
+        jrst    dtfs_its_valid_false
+        move    1,dtfs_dir+0177
+        andcm   1,[1]
+        came    1,[0777777777776]
+        jrst    dtfs_its_valid_false
+        push    17,010
+        movei   010,7
+
+dtfs_its_valid_loop:
+        movei   1,056
+        move    2,010
+        pushj   17,dtfs_owner
+        caie    1,037
+        jrst    dtfs_its_valid_owner
+        jrst    dtfs_its_valid_pop_false
+dtfs_its_valid_owner:
+        jumpe   1,dtfs_its_valid_next
+        caile   1,027
+        jrst    dtfs_its_valid_next
+        subi    1,1
+        lsh     1,1
+        skipn   dtfs_dir(1)
+        skipe   dtfs_dir+1(1)
+        jrst    dtfs_its_valid_next
+        jrst    dtfs_its_valid_pop_false
+
+dtfs_its_valid_next:
+        addi    010,1
+        caige   010,01067
+        jrst    dtfs_its_valid_loop
+        pop     17,010
+        movei   1,1
+        popj    17,
+dtfs_its_valid_pop_false:
+        pop     17,010
+dtfs_its_valid_false:
+        setz    1,
+        popj    17,
+
 ; Compact vnode predicates.  The vnode encoding is provider:6, kind/mount:12,
 ; index:18.  Mask provider plus local kind in one operation; mount-id and file
 ; index remain independent tests.
@@ -117,6 +260,40 @@ dtfs_is_false:
         setz    1,
         popj    17,
 
+; Flat DTFS parent and sync operations need only vnode classification.  The
+; local predicates touch AC1/AC2 only, so AC4/AC5 can retain the original
+; arguments without a compiler-generated stack frame.
+        .globl  dtfs_parent
+dtfs_parent:
+        move    4,1                     ; original file vnode
+        move    5,2                     ; vnode_t *parentp
+        jumpe   5,dtfs_parent_fail
+        pushj   17,dtfs_is_file
+        jumpe   1,dtfs_parent_fail
+        and     4,[07700000000]         ; retain mount id
+        tlo     4,050001                 ; DTFS provider + root local kind
+        movem   4,(5)
+        setz    1,
+        popj    17,
+dtfs_parent_fail:
+        seto    1,
+        popj    17,
+
+        .globl  dtfs_sync
+dtfs_sync:
+        move    4,1
+        pushj   17,dtfs_is_root
+        jumpn   1,dtfs_sync_ok
+        move    1,4
+        pushj   17,dtfs_is_file
+        jumpe   1,dtfs_sync_fail
+dtfs_sync_ok:
+        setz    1,
+        popj    17,
+dtfs_sync_fail:
+        seto    1,
+        popj    17,
+
 ; DTC veneers.  MINIT patches the RH of each JRST with the installed DTC
 ; service entry.  The DTFS and DTC ABIs are identical: AC1=unit, AC2=block,
 ; AC3=buffer, so the tail jump needs no argument shuffling or resident pointer.
@@ -132,106 +309,179 @@ dtfs_dtc_write:
 dtfs_dtc_write_jump:
         jrst    0
 
+; void dtfs_foreign_name(slot, name, its)
+; Decode the two foreign SIXBIT directory words directly into the packed
+; vfs_name.  NAME is already in the correct six-character format; only an
+; optional dot and EXT need byte-pointer copying.
+        .globl  vfs_sixbit_name_chars
+        .globl  dtfs_foreign_name
+dtfs_foreign_name:
+        push    17,010
+        move    010,2                   ; struct vfs_name *
+
+; Clear chars plus all four packed name words.
+        setzm   (010)
+        movei   4,1(010)
+        hrli    4,(010)
+        blt     4,4(010)
+
+; Fetch NAME and EXT.  Keep EXT temporarily in name->words[3]; a foreign name
+; is at most 13 characters, so the real result never reaches that word.
+        skipn   3
+        jrst    dtfs_foreign_name_tenex
+        lsh     1,1
+        move    5,dtfs_dir(1)
+        move    6,dtfs_dir+1(1)
+        movei   7,6                     ; ITS extension limit
+        jrst    dtfs_foreign_name_have_words
+dtfs_foreign_name_tenex:
+        move    5,dtfs_dir+0123(1)
+        move    6,dtfs_dir+0151(1)
+        movei   7,3                     ; TENEX extension limit
+dtfs_foreign_name_have_words:
+        movem   5,1(010)
+        movem   6,4(010)                ; temporary EXT word
+
+; Cache NAME length in name->chars while finding EXT length.
+        movei   1,1(010)
+        movei   2,6
+        pushj   17,vfs_sixbit_name_chars
+        movem   1,(010)
+        movei   1,4(010)
+        move    2,7                     ; helper leaves AC7 untouched
+        pushj   17,vfs_sixbit_name_chars
+        move    4,1                     ; EXT characters
+        jumpe   4,dtfs_foreign_name_finish
+
+; Point at the first unused packed output character.
+        move    5,[POINT 6,0]
+        movei   6,1(010)
+        hrr     5,6
+        move    6,(010)
+dtfs_foreign_name_seek:
+        jumpe   6,dtfs_foreign_name_at_end
+        ibp     5
+        sojg    6,dtfs_foreign_name_seek
+dtfs_foreign_name_at_end:
+        skipn   (010)
+        jrst    dtfs_foreign_name_copy_ext
+        movei   7,016                   ; SIXBIT '.'
+        idpb    7,5
+
+; Copy only significant EXT characters from the temporary packed word.
+dtfs_foreign_name_copy_ext:
+        move    6,[POINT 6,0]
+        movei   7,4(010)
+        hrr     6,7
+        move    3,4
+dtfs_foreign_name_ext_loop:
+        ildb    7,6
+        idpb    7,5
+        sojg    3,dtfs_foreign_name_ext_loop
+
+; chars = NAME + EXT + optional dot.
+        move    1,(010)
+        add     1,4
+        skipn   (010)
+        jrst    dtfs_foreign_name_store_chars
+        addi    1,1
+dtfs_foreign_name_store_chars:
+        movem   1,(010)
+dtfs_foreign_name_finish:
+        setzm   4(010)
+        pop     17,010
+        popj    17,
+
 ; int dtfs_foreign_set_name(slot, name, its)
 ; Pack a VFS SIXBIT NAME[.EXT] directly into the ITS/TENEX directory words.
-; ITS permits six extension characters, TENEX three.  Names are at most 13
-; characters, so validating the format here also satisfies vfs_name_valid().
+; AC10 keeps the NAME destination address; its LH bit 0 tags the contiguous
+; ITS layout while the RH remains a normal PDP-10 index address.
         .globl  dtfs_foreign_set_name
 dtfs_foreign_set_name:
         push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
-        push    17,014
-        push    17,015
-        push    17,016
-        move    010,1                   ; slot
-        move    011,2                   ; struct vfs_name *
-        move    012,3                   ; ITS flag
-        jumpe   011,dtfs_foreign_set_name_fail
-        move    013,(011)               ; total characters
-        jumple  013,dtfs_foreign_set_name_fail
-        skipn   012
-        jrst    dtfs_foreign_set_name_tenex_limit
-        caile   013,015                 ; ITS: 13 decimal
+        jumpe   2,dtfs_foreign_set_name_fail
+        skipn   3
+        jrst    dtfs_foreign_set_name_tenex_setup
+        move    010,1
+        lsh     010,1
+        addi    010,dtfs_dir
+        tlo     010,1                   ; ITS layout tag in LH
+        movei   7,6                     ; maximum EXT length
+        jrst    dtfs_foreign_set_name_setup_done
+dtfs_foreign_set_name_tenex_setup:
+        movei   010,dtfs_dir+0123(1)
+        movei   7,3
+dtfs_foreign_set_name_setup_done:
+        move    3,(2)                   ; total characters
+        jumple  3,dtfs_foreign_set_name_fail
+        move    0,7
+        addi    0,7                     ; NAME(6) + dot(1) + max EXT
+        camle   3,0
         jrst    dtfs_foreign_set_name_fail
-        movei   3,6                     ; maximum extension characters
-        jrst    dtfs_foreign_set_name_start
-dtfs_foreign_set_name_tenex_limit:
-        caile   013,012                 ; TENEX: 10 decimal
-        jrst    dtfs_foreign_set_name_fail
-        movei   3,3
-
-dtfs_foreign_set_name_start:
-        move    014,[POINT 6,0]
-        movei   2,1(011)                ; packed name begins at name->words[0]
-        hrr     014,2
-        setz    015,                    ; packed NAME
-        setz    016,                    ; packed EXT
-        setz    4,                      ; NAME count
-        setz    5,                      ; EXT count
-        setz    6,                      ; dot seen
+        move    4,[POINT 6,0]
+        movei   0,1(2)
+        hrr     4,0
+        setz    5,                      ; packed NAME
+        setz    6,                      ; packed EXT
+        setz    1,                      ; NAME count
+        setz    2,                      ; EXT count
 
 dtfs_foreign_set_name_loop:
-        ildb    7,014
-        cain    7,016                   ; SIXBIT '.'
+        ildb    0,4
+        cain    0,016                   ; SIXBIT '.'
         jrst    dtfs_foreign_set_name_dot
-        jumpn   6,dtfs_foreign_set_name_ext
-        addi    4,1
-        caile   4,6
+        trne    7,0100                  ; dot already seen -> EXT
+        jrst    dtfs_foreign_set_name_ext
+        addi    1,1
+        caile   1,6
         jrst    dtfs_foreign_set_name_fail
-        lsh     015,6
-        ior     015,7
+        lsh     5,6
+        ior     5,0
         jrst    dtfs_foreign_set_name_next
+
 dtfs_foreign_set_name_ext:
-        addi    5,1
-        camle   5,3
+        lsh     6,6
+        ior     6,0
+        addi    2,1
+        move    0,7
+        andi    0,7
+        camle   2,0
         jrst    dtfs_foreign_set_name_fail
-        lsh     016,6
-        ior     016,7
         jrst    dtfs_foreign_set_name_next
+
 dtfs_foreign_set_name_dot:
-        jumpn   6,dtfs_foreign_set_name_fail
-        jumpe   4,dtfs_foreign_set_name_fail
-        movei   6,1
+        trne    7,0100
+        jrst    dtfs_foreign_set_name_fail
+        jumpe   1,dtfs_foreign_set_name_fail
+        iori    7,0100
+
 dtfs_foreign_set_name_next:
-        sojg    013,dtfs_foreign_set_name_loop
-        jumpn   6,dtfs_foreign_set_name_need_ext
+        sojg    3,dtfs_foreign_set_name_loop
+        trnn    7,0100
         jrst    dtfs_foreign_set_name_align
-dtfs_foreign_set_name_need_ext:
-        jumpe   5,dtfs_foreign_set_name_fail
+        jumpe   2,dtfs_foreign_set_name_fail
 
 dtfs_foreign_set_name_align:
-        movei   7,6
-        sub     7,4
-        imuli   7,6
-        lsh     015,0(7)
-        movei   7,6
-        sub     7,5
-        imuli   7,6
-        lsh     016,0(7)
-        skipn   012
-        jrst    dtfs_foreign_set_name_tenex_store
-        move    4,010
-        lsh     4,1
-        movem   015,dtfs_dir(4)
-        movem   016,dtfs_dir+1(4)
+        movei   0,6
+        sub     0,1
+        imuli   0,6
+        lsh     5,0(0)
+        movei   0,6
+        sub     0,2
+        imuli   0,6
+        lsh     6,0(0)
+        movem   5,(010)
+        tlne    010,1
+        jrst    dtfs_foreign_set_name_its_ext
+        movem   6,026(010)              ; TENEX EXT_BASE - NAME_BASE
         jrst    dtfs_foreign_set_name_ok
-dtfs_foreign_set_name_tenex_store:
-        movei   4,dtfs_dir(010)
-        movem   015,0123(4)
-        movem   016,0151(4)
+dtfs_foreign_set_name_its_ext:
+        movem   6,1(010)
 dtfs_foreign_set_name_ok:
         setz    1,
         jrst    dtfs_foreign_set_name_return
 dtfs_foreign_set_name_fail:
         seto    1,
 dtfs_foreign_set_name_return:
-        pop     17,016
-        pop     17,015
-        pop     17,014
-        pop     17,013
-        pop     17,012
-        pop     17,011
         pop     17,010
         popj    17,
