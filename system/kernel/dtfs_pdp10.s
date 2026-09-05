@@ -68,7 +68,7 @@ dtfs_is_file:
         jumpe   2,dtfs_is_false
         move    2,1
         andi    2,0777777
-        cail    2,026                  ; DTFS_FILE_SLOTS = 22 decimal
+        cail    2,027                  ; ITS has 23 file slots
         jrst    dtfs_is_false
         movei   1,1
         popj    17,
