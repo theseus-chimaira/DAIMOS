@@ -1127,13 +1127,18 @@ dtfs_unlink(vnode_t dir, const struct vfs_name *name)
         vnode_t node;
 
         if (!dtfs_is_root(dir) || dtfs_load(dir) != 0 ||
-            dtfs_is_foreign(dir) || dtfs_scan_slot(dir, name, &slot) != 0)
+            dtfs_is_tenex(dir) || dtfs_scan_slot(dir, name, &slot) != 0)
                 return -1;
         node = VFS_NODE(DTFS_PROVIDER,
             VFS_MOUNT_KIND(VFS_MOUNT_ID(dir), DTFS_KIND_FILE), slot);
         if (dtfs_resize(node, 0U) != 0)
                 return -1;
-        dtfs_clear_slot(slot);
+        if (dtfs_is_its(dir)) {
+                dtfs_dir[slot * 2U] = 0UL;
+                dtfs_dir[slot * 2U + 1U] = 0UL;
+        } else {
+                dtfs_clear_slot(slot);
+        }
         return dtfs_commit(dir);
 }
 
