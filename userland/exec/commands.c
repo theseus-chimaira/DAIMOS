@@ -135,9 +135,21 @@ cmd_ls(int argc, kword_t **argv, struct u_io *io)
 static int
 cmd_mkdir(int argc, kword_t **argv, struct u_io *io)
 {
-        int i, rc = 0;
+        int i, r, rc = 0;
         if (argc < 2) return cmd_err(io, "MKDIR", 0);
-        for (i = 1; i < argc; ++i) if (dsys_mkdir(argv[i]) != 0) rc = cmd_err(io, "MKDIR", argv[i]);
+        for (i = 1; i < argc; ++i) {
+                r = dsys_mkdir(argv[i]);
+                if (r == SYS_ERR_UNSUPPORTED) {
+                        if (u_puts(io->err_fd, "MKDIR: ") != 0 ||
+                            u_put_s6(io->err_fd, argv[i]) != 0 ||
+                            u_puts(io->err_fd, ": UNSUPPORTED") != 0 ||
+                            u_crlf(io->err_fd) != 0)
+                                return 1;
+                        rc = 1;
+                } else if (r != 0) {
+                        rc = cmd_err(io, "MKDIR", argv[i]);
+                }
+        }
         return rc;
 }
 

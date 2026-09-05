@@ -53,6 +53,8 @@
 #define SYS_LOCK_SHARED      VFS_LOCK_SHARED
 #define SYS_LOCK_EXCLUSIVE   VFS_LOCK_EXCLUSIVE
 #define SYS_LOCK_UNLOCK      VFS_LOCK_UNLOCK
+#define SYS_ERR_UNSUPPORTED  (-2)
+
 #define SYS_PROC_SLOTS       2U
 
 struct sys_procinfo {

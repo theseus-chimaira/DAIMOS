@@ -31,7 +31,7 @@ dtfs_mres_vector:
         .word   dtfs_parent              ; 4
         .word   0                        ; 5 PARENT_NAME unsupported
         .word   dtfs_create              ; 6
-        .word   0                        ; 7 MKDIR unsupported
+        .word   dtfs_mkdir_unsupported   ; 7 MKDIR unsupported
         .word   0                        ; 8 SYMLINK unsupported
         .word   dtfs_unlink              ; 9 UNLINK
         .word   dtfs_rename              ; 10 RENAME
@@ -41,6 +41,13 @@ dtfs_mres_vector:
         .word   dtfs_write_words         ; 14 WRITE_WORDS
         .word   dtfs_sync                ; 15 SYNC
         .text
+
+; DTFS is deliberately flat.  Preserve a distinct error through the syscall
+; boundary so userland can report that MKDIR is unsupported rather than an
+; undifferentiated filesystem failure.
+dtfs_mkdir_unsupported:
+        hrroi   1,0777776              ; SYS_ERR_UNSUPPORTED (-2)
+        popj    17,
 
 ; Compact vnode predicates.  The vnode encoding is provider:6, kind/mount:12,
 ; index:18.  Mask provider plus local kind in one operation; mount-id and file
