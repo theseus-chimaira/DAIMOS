@@ -122,7 +122,7 @@ dtfs_scan_slot(vnode_t node, const struct vfs_name *name,
         if (name != 0 && (!vfs_name_valid(name) ||
             name->chars > (its ? 13U : 10U)))
                 return -1;
-        for (slot = 0U; slot < (its ? DTFS_ITS_FILE_SLOTS :
+        for (slot = 0U; slot != (its ? DTFS_ITS_FILE_SLOTS :
             DTFS_FILE_SLOTS); ++slot) {
                 if (its)
                         empty = dtfs_dir[slot * 2U] == 0UL &&
@@ -211,14 +211,14 @@ dtfs_block_info(vnode_t node, unsigned int slot, unsigned int *firstp)
                 *firstp = 0U;
         media = dtfs_media[VFS_MOUNT_ID(node) - 1U];
         if ((media & DTFS_MEDIA_ITS) != 0U) {
-                for (block = 0U; block < DTFS_ITS_MAP_ENTRIES; ++block)
+                for (block = 0U; block != DTFS_ITS_MAP_ENTRIES; ++block)
                         if (dtfs_owner(DTFS_ITS_NAME_WORDS, block) == owner)
                                 ++count;
                 return count;
         }
         mapoff = (media & DTFS_MEDIA_TENEX) != 0U;
         unit = media & DTFS_MEDIA_UNIT_MASK;
-        for (block = 1U; block <= DTFS_LAST_BLOCK; ++block) {
+        for (block = 1U; block != DTFS_LAST_BLOCK + 1U; ++block) {
                 if (dtfs_owner(0U, block - mapoff) != owner)
                         continue;
                 ++count;
@@ -243,15 +243,17 @@ dtfs_its_resize(vnode_t node, unsigned int words, int grow_only)
 {
         unsigned int slot;
         unsigned int owner;
-        unsigned int old_blocks;
-        unsigned int new_blocks;
+        int old_blocks;
+        int new_blocks;
         unsigned int block;
         unsigned int last;
 
         slot = VFS_INDEX(node);
         owner = slot + 1U;
-        new_blocks = (words + DTFS_BLOCK_WORDS - 1U) / DTFS_BLOCK_WORDS;
-        old_blocks = 0U;
+        if (words > DTFS_ITS_END_BLOCK * DTFS_BLOCK_WORDS)
+                return -1;
+        new_blocks = (int)((words + DTFS_BLOCK_WORDS - 1U) / DTFS_BLOCK_WORDS);
+        old_blocks = 0;
         last = 0U;
         for (block = 1U; block != DTFS_ITS_END_BLOCK + 1U; ++block)
                 if (dtfs_owner(DTFS_ITS_NAME_WORDS, block - 1U) == owner) {
@@ -333,7 +335,7 @@ dtfs_resize(vnode_t node, unsigned int words)
                 if (first == 0U)
                         return -1;
                 prev = first;
-                for (i = 1U; i < old_blocks; ++i) {
+                for (i = 1U; i != old_blocks; ++i) {
                         if (dtfs_dtc_read(unit, prev, dtfs_block) != 0)
                                 return -1;
                         next = dtfs_hdr_next(dtfs_block[0]);
@@ -368,13 +370,13 @@ dtfs_resize(vnode_t node, unsigned int words)
                         }
                         prev = block;
                         ++old_blocks;
-                } while (old_blocks < new_blocks);
+                } while (old_blocks != new_blocks);
         } else if (new_blocks < old_blocks) {
                 if (new_blocks == 0U) {
                         block = first;
                 } else {
                         block = first;
-                        for (i = 1U; i < new_blocks; ++i) {
+                        for (i = 1U; i != new_blocks; ++i) {
                                 if (dtfs_dtc_read(unit, block,
                                     dtfs_block) != 0)
                                         return -1;
@@ -632,7 +634,7 @@ dtfs_unlink(vnode_t dir, const struct vfs_name *name)
                 if (blocks == 0U || block == 0U)
                         return -1;
                 next = block;
-                for (i = 0U; i < blocks; ++i) {
+                for (i = 0U; i != blocks; ++i) {
                         block = next;
                         if (block == 0U || block > DTFS_LAST_BLOCK ||
                             dtfs_owner(0U, block - 1U) != slot + 1U ||
@@ -717,7 +719,7 @@ dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
 
         blocks = 0U;
         first = 0U;
-        for (block = 1U; block <= DTFS_LAST_BLOCK; ++block) {
+        for (block = 1U; block != DTFS_LAST_BLOCK + 1U; ++block) {
                 if (dtfs_owner(0U, block - mapoff) != slot + 1U)
                         continue;
                 ++blocks;
@@ -732,7 +734,7 @@ dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
         block = first;
         done = 0U;
         words = 0U;
-        for (seen = 0U; seen < blocks; ++seen) {
+        for (seen = 0U; seen != blocks; ++seen) {
                 if (block == 0U || block > DTFS_LAST_BLOCK ||
                     dtfs_owner(0U, block - mapoff) != slot + 1U ||
                     dtfs_dtc_read(unit, block, dtfs_block) != 0 ||
