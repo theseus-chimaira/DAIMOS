@@ -61,7 +61,7 @@ extern void dtfs_set_owner(unsigned int base, unsigned int index,
 
 int dtfs_chain_walk(unsigned int unit, unsigned int slot,
     unsigned int off, kword_t *buf, unsigned int nwords,
-    unsigned int mapoff);
+    unsigned int mapoff, int writing);
 
 extern int dtfs_native_valid(void);
 
@@ -711,7 +711,7 @@ extern int dtfs_chmod(vnode_t node, unsigned int mode);
 
 int
 dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
-    kword_t *buf, unsigned int nwords, unsigned int mapoff)
+    kword_t *buf, unsigned int nwords, unsigned int mapoff, int writing)
 {
         unsigned int blocks;
         unsigned int first;
@@ -755,8 +755,16 @@ dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
                                 take = count - off;
                                 if (take > nwords - done)
                                         take = nwords - done;
-                                fs_copy_words(&dtfs_block[1U + off],
-                                    &buf[done], take);
+                                if (writing) {
+                                        fs_copy_words(&buf[done],
+                                            &dtfs_block[1U + off], take);
+                                        if (dtfs_dtc_write(unit, block,
+                                            dtfs_block) != 0)
+                                                return -1;
+                                } else {
+                                        fs_copy_words(&dtfs_block[1U + off],
+                                            &buf[done], take);
+                                }
                                 done += take;
                                 off = 0U;
                                 if (done == nwords)
@@ -850,13 +858,6 @@ dtfs_transfer_words(vnode_t node, unsigned int off, kword_t *buf,
 {
         unsigned int size;
         unsigned int need;
-        unsigned int done;
-        unsigned int file_block;
-        unsigned int in_block;
-        unsigned int block;
-        unsigned int take;
-        unsigned int unit;
-        unsigned int i;
         unsigned int personality;
 
         if (!dtfs_is_file(node) || buf == 0 || dtfs_load(node) != 0)
@@ -875,47 +876,14 @@ dtfs_transfer_words(vnode_t node, unsigned int off, kword_t *buf,
                 if (nwords == 0U)
                         return 0;
                 return dtfs_chain_walk(dtfs_unit(node), slot, off, buf,
-                    nwords, personality == DTFS_MEDIA_TENEX);
+                    nwords, personality == DTFS_MEDIA_TENEX, 0);
         }
         size = dtfs_size_words(node, VFS_INDEX(node));
         need = off + nwords;
         if (need > size && dtfs_resize(node, need) != 0)
                 return -1;
-        unit = dtfs_unit(node);
-        file_block = off / DTFS_DATA_WORDS;
-        in_block = off % DTFS_DATA_WORDS;
-        if (dtfs_block_info(node, VFS_INDEX(node), &block) == 0U || block == 0U)
-                return -1;
-        for (i = 0U; i < file_block; ++i) {
-                if (dtfs_dtc_read(unit, block, dtfs_block) != 0)
-                        return -1;
-                block = dtfs_hdr_next(dtfs_block[0]);
-                if (block == 0U || block > DTFS_LAST_BLOCK)
-                        return -1;
-        }
-        done = 0U;
-        while (done < nwords) {
-                unsigned int next;
-
-                if (dtfs_dtc_read(unit, block, dtfs_block) != 0)
-                        return -1;
-                next = dtfs_hdr_next(dtfs_block[0]);
-                take = DTFS_DATA_WORDS - in_block;
-                if (take > nwords - done)
-                        take = nwords - done;
-                fs_copy_words(&buf[done],
-                    &dtfs_block[1U + in_block], take);
-                if (dtfs_dtc_write(unit, block, dtfs_block) != 0)
-                        return -1;
-                done += take;
-                in_block = 0U;
-                if (done != nwords) {
-                        if (next == 0U || next > DTFS_LAST_BLOCK)
-                                return -1;
-                        block = next;
-                }
-        }
-        return (int)done;
+        return dtfs_chain_walk(dtfs_unit(node), VFS_INDEX(node), off, buf,
+            nwords, personality == DTFS_MEDIA_TENEX, 1);
 }
 
 int
