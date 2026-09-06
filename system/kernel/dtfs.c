@@ -566,11 +566,12 @@ dtfs_create(vnode_t dir, const struct vfs_name *name,
             dtfs_scan_slot(dir, name, 0) == 0)
                 return -1;
         personality = dtfs_personality(dir);
+        if (dtfs_scan_slot(dir, 0, &slot) != 0)
+                return -1;
         if (personality == DTFS_MEDIA_TENEX) {
                 unsigned int block;
 
-                if (dtfs_scan_slot(dir, 0, &slot) != 0 ||
-                    dtfs_find_free_block(1U, 1, &block) != 0 ||
+                if (dtfs_find_free_block(1U, 1, &block) != 0 ||
                     dtfs_foreign_set_name(slot, name, 0) != 0)
                         return -1;
                 fs_zero_block_workspace();
@@ -588,8 +589,7 @@ dtfs_create(vnode_t dir, const struct vfs_name *name,
                         return -1;
                 }
         } else if (personality == DTFS_MEDIA_ITS) {
-                if (dtfs_scan_slot(dir, 0, &slot) != 0 ||
-                    dtfs_foreign_set_name(slot, name, 1) != 0)
+                if (dtfs_foreign_set_name(slot, name, 1) != 0)
                         return -1;
                 if (dtfs_commit(dir) != 0) {
                         dtfs_dir[slot * 2U] = 0UL;
@@ -597,8 +597,6 @@ dtfs_create(vnode_t dir, const struct vfs_name *name,
                         return -1;
                 }
         } else {
-                if (dtfs_scan_slot(dir, 0, &slot) != 0)
-                        return -1;
                 dtfs_set_name(slot, name);
                 dtfs_set_last_words(slot, 0U);
                 dtfs_set_exec(slot, (mode & 0111U) != 0U);
@@ -683,11 +681,9 @@ dtfs_rename(vnode_t olddir, const struct vfs_name *oldname,
             dtfs_scan_slot(olddir, newname, 0) == 0)
                 return -1;
         personality = dtfs_personality(olddir);
-        if (personality == DTFS_MEDIA_TENEX) {
-                if (dtfs_foreign_set_name(slot, newname, 0) != 0)
-                        return -1;
-        } else if (personality == DTFS_MEDIA_ITS) {
-                if (dtfs_foreign_set_name(slot, newname, 1) != 0)
+        if (personality != 0U) {
+                if (dtfs_foreign_set_name(slot, newname,
+                    personality == DTFS_MEDIA_ITS) != 0)
                         return -1;
         } else {
                 dtfs_set_name(slot, newname);
