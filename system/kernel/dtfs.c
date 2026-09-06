@@ -59,8 +59,9 @@ extern unsigned int dtfs_owner(unsigned int base, unsigned int index);
 extern void dtfs_set_owner(unsigned int base, unsigned int index,
     unsigned int owner);
 
-int dtfs_tenex_walk(unsigned int unit, unsigned int slot,
-    unsigned int off, kword_t *buf, unsigned int nwords);
+int dtfs_chain_walk(unsigned int unit, unsigned int slot,
+    unsigned int off, kword_t *buf, unsigned int nwords,
+    unsigned int mapoff);
 
 extern int dtfs_native_valid(void);
 
@@ -709,8 +710,8 @@ dtfs_truncate(vnode_t node, unsigned int words, kword_t size_chars)
 extern int dtfs_chmod(vnode_t node, unsigned int mode);
 
 int
-dtfs_tenex_walk(unsigned int unit, unsigned int slot, unsigned int off,
-    kword_t *buf, unsigned int nwords)
+dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
+    kword_t *buf, unsigned int nwords, unsigned int mapoff)
 {
         unsigned int blocks;
         unsigned int first;
@@ -724,7 +725,7 @@ dtfs_tenex_walk(unsigned int unit, unsigned int slot, unsigned int off,
         blocks = 0U;
         first = 0U;
         for (block = 1U; block <= DTFS_LAST_BLOCK; ++block) {
-                if (dtfs_owner(0U, block - 1U) != slot + 1U)
+                if (dtfs_owner(0U, block - mapoff) != slot + 1U)
                         continue;
                 ++blocks;
                 if (first == 0U &&
@@ -734,13 +735,13 @@ dtfs_tenex_walk(unsigned int unit, unsigned int slot, unsigned int off,
                         first = block;
         }
         if (first == 0U)
-                return -1;
+                return mapoff == 0U && blocks == 0U ? 0 : -1;
         block = first;
         done = 0U;
         words = 0U;
         for (seen = 0U; seen < blocks; ++seen) {
                 if (block == 0U || block > DTFS_LAST_BLOCK ||
-                    dtfs_owner(0U, block - 1U) != slot + 1U ||
+                    dtfs_owner(0U, block - mapoff) != slot + 1U ||
                     dtfs_dtc_read(unit, block, dtfs_block) != 0 ||
                     ((dtfs_block[0] >> DTFS_FIRST_SHIFT) &
                     DTFS_BLOCKNO_MASK) != first)
@@ -863,29 +864,23 @@ dtfs_transfer_words(vnode_t node, unsigned int off, kword_t *buf,
         personality = dtfs_personality(node);
         if (personality == DTFS_MEDIA_ITS)
                 return dtfs_its_transfer_words(node, off, buf, nwords, writing);
-        if (personality == DTFS_MEDIA_TENEX && !writing) {
+        if (!writing) {
                 unsigned int slot;
 
                 slot = VFS_INDEX(node);
-                if (slot >= DTFS_FILE_SLOTS ||
-                    dtfs_dir[DTFS_NAME_BASE + slot] == 0UL)
+                if (personality == DTFS_MEDIA_TENEX &&
+                    (slot >= DTFS_FILE_SLOTS ||
+                    dtfs_dir[DTFS_NAME_BASE + slot] == 0UL))
                         return -1;
                 if (nwords == 0U)
                         return 0;
-                return dtfs_tenex_walk(dtfs_unit(node), slot, off, buf,
-                    nwords);
+                return dtfs_chain_walk(dtfs_unit(node), slot, off, buf,
+                    nwords, personality == DTFS_MEDIA_TENEX);
         }
         size = dtfs_size_words(node, VFS_INDEX(node));
-        if (writing) {
-                need = off + nwords;
-                if (need > size && dtfs_resize(node, need) != 0)
-                        return -1;
-        } else {
-                if (off >= size)
-                        return 0;
-                if (nwords > size - off)
-                        nwords = size - off;
-        }
+        need = off + nwords;
+        if (need > size && dtfs_resize(node, need) != 0)
+                return -1;
         unit = dtfs_unit(node);
         file_block = off / DTFS_DATA_WORDS;
         in_block = off % DTFS_DATA_WORDS;
@@ -908,15 +903,10 @@ dtfs_transfer_words(vnode_t node, unsigned int off, kword_t *buf,
                 take = DTFS_DATA_WORDS - in_block;
                 if (take > nwords - done)
                         take = nwords - done;
-                if (writing) {
-                        fs_copy_words(&buf[done],
-                            &dtfs_block[1U + in_block], take);
-                        if (dtfs_dtc_write(unit, block, dtfs_block) != 0)
-                                return -1;
-                } else {
-                        fs_copy_words(&dtfs_block[1U + in_block],
-                            &buf[done], take);
-                }
+                fs_copy_words(&buf[done],
+                    &dtfs_block[1U + in_block], take);
+                if (dtfs_dtc_write(unit, block, dtfs_block) != 0)
+                        return -1;
                 done += take;
                 in_block = 0U;
                 if (done != nwords) {

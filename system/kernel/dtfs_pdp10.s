@@ -85,7 +85,7 @@ dtfs_set_owner:
 ; TENEX directory validation, including the optional fsck/deep chain pass.
 ; The allocation index and slot ranges are small non-negative constants, so
 ; direct CAIGE loops avoid GCC's signed-range scaffolding.
-        .globl  dtfs_tenex_walk
+        .globl  dtfs_chain_walk
         .globl  dtfs_tenex_valid
 dtfs_tenex_valid:
         push    17,010
@@ -150,9 +150,12 @@ dtfs_tenex_valid_slot_loop:
         move    2,013
         setz    3,
         setz    4,
-        push    17,3                    ; fifth argument nwords = 0
-        pushj   17,dtfs_tenex_walk
-        pop     17,0
+        add     17,[2,,2]
+        setzm   (17)                    ; fifth argument nwords = 0
+        movei   5,1
+        movem   5,-1(17)                ; sixth argument map offset = 1
+        pushj   17,dtfs_chain_walk
+        sub     17,[2,,2]
         jumpl   1,dtfs_tenex_valid_false
         jrst    dtfs_tenex_valid_slot_next
 dtfs_tenex_valid_empty_slot:
@@ -895,9 +898,12 @@ dtfs_size_words:
         pushj   17,dtfs_unit
         move    2,011
         setzb   3,4
-        push    17,4
-        pushj   17,dtfs_tenex_walk
-        pop     17,0
+        add     17,[2,,2]
+        setzm   (17)                    ; fifth argument nwords = 0
+        movei   5,1
+        movem   5,-1(17)                ; sixth argument map offset = 1
+        pushj   17,dtfs_chain_walk
+        sub     17,[2,,2]
         jumpl   1,dtfs_size_words_zero
         jrst    dtfs_size_words_return
 
