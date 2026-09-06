@@ -807,3 +807,20 @@ dtfs_readdir_return:
         pop     17,011
         pop     17,010
         popj    17,
+
+; Compact personality predicates.  Avoid GCC's extra constant load into AC6.
+        .globl  dtfs_is_tenex
+dtfs_is_tenex:
+        pushj   17,dtfs_personality
+        caie    1,010
+        tdza    1,1
+        movei   1,1
+        popj    17,
+
+        .globl  dtfs_is_its
+dtfs_is_its:
+        pushj   17,dtfs_personality
+        caie    1,020
+        tdza    1,1
+        movei   1,1
+        popj    17,

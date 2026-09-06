@@ -90,17 +90,8 @@ dtfs_personality(vnode_t node)
             (DTFS_MEDIA_TENEX | DTFS_MEDIA_ITS);
 }
 
-static int
-dtfs_is_tenex(vnode_t node)
-{
-        return dtfs_personality(node) == DTFS_MEDIA_TENEX;
-}
-
-static int
-dtfs_is_its(vnode_t node)
-{
-        return dtfs_personality(node) == DTFS_MEDIA_ITS;
-}
+extern int dtfs_is_tenex(vnode_t node);
+extern int dtfs_is_its(vnode_t node);
 
 static unsigned int
 dtfs_unit(vnode_t node)
@@ -565,10 +556,8 @@ dtfs_mount_unit(unsigned int unit, vnode_t target,
     unsigned int flags, vnode_t *rootp)
 {
         vnode_t root;
-        unsigned int id;
         unsigned int format;
         unsigned int media;
-        unsigned int vfs_flags;
 
         if (unit > 7U || rootp == 0 ||
             (flags & ~(VFS_MOUNT_RDONLY | SYS_DTFS_TYPE_MASK)) != 0U)
@@ -576,19 +565,13 @@ dtfs_mount_unit(unsigned int unit, vnode_t target,
         format = dtfs_detect_unit(unit, flags & SYS_DTFS_TYPE_MASK, 0);
         if ((int)format < 0)
                 return -1;
-        media = unit;
-        vfs_flags = flags & VFS_MOUNT_RDONLY;
-        if (format == SYS_DTFS_TYPE_TENEX) {
-                media |= DTFS_MEDIA_TENEX;
-        } else if (format == SYS_DTFS_TYPE_ITS) {
-                media |= DTFS_MEDIA_ITS;
-        }
+        media = unit | (format - SYS_DTFS_TYPE_NATIVE);
         if (vfs_mount(target, DTFS_PROVIDER, DTFS_KIND_ROOT, 0U,
-            vfs_flags, &root) != 0)
+            flags & VFS_MOUNT_RDONLY, &root) != 0)
                 return -1;
-        id = VFS_MOUNT_ID(root);
-        dtfs_media[id - 1U] = media;
-        dtfs_cache_mount = id;
+        format = VFS_MOUNT_ID(root);
+        dtfs_media[format - 1U] = media;
+        dtfs_cache_mount = format;
         *rootp = root;
         return 0;
 }
@@ -604,16 +587,14 @@ dtfs_stat(vnode_t node, struct vfs_stat *st)
 {
         unsigned int slot;
         unsigned int words;
-        int tenex;
-        int its;
+        unsigned int personality;
 
         if (st == 0 || dtfs_load(node) != 0)
                 return -1;
-        tenex = dtfs_is_tenex(node);
-        its = dtfs_is_its(node);
+        personality = dtfs_personality(node);
         if (dtfs_is_root(node)) {
                 st->type = VFS_TYPE_DIR;
-                st->mode = ((tenex || its) && vfs_readonly(node)) ?
+                st->mode = (personality != 0U && vfs_readonly(node)) ?
                     0555U : 0777U;
                 st->size_chars = 0;
                 st->size_words = 0;
@@ -622,7 +603,7 @@ dtfs_stat(vnode_t node, struct vfs_stat *st)
         if (!dtfs_is_file(node))
                 return -1;
         slot = VFS_INDEX(node);
-        if (its) {
+        if (personality == DTFS_MEDIA_ITS) {
                 if (slot >= DTFS_ITS_FILE_SLOTS ||
                     (dtfs_dir[slot * 2U] == 0UL &&
                     dtfs_dir[slot * 2U + 1U] == 0UL))
@@ -630,13 +611,13 @@ dtfs_stat(vnode_t node, struct vfs_stat *st)
                 words = dtfs_block_info(node, slot, 0) * DTFS_BLOCK_WORDS;
         } else {
                 if (slot >= DTFS_FILE_SLOTS || dtfs_dir[DTFS_NAME_BASE +
-                    (tenex ? slot : slot * 2U)] == 0)
+                    (personality == DTFS_MEDIA_TENEX ? slot : slot * 2U)] == 0)
                         return -1;
                 words = dtfs_size_words(node, slot);
         }
         st->type = VFS_TYPE_REG;
-        st->mode = ((tenex || its) && vfs_readonly(node)) ? 0444U :
-            (its || tenex ? 0666U : 0666U |
+        st->mode = (personality != 0U && vfs_readonly(node)) ? 0444U :
+            (personality != 0U ? 0666U : 0666U |
             ((dtfs_dir[slot] & 1UL) != 0 ? 0111U : 0U));
         st->size_words = words;
         st->size_chars = (kword_t)words * 4U;
