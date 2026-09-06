@@ -48,9 +48,9 @@
 /* One directory and one transfer block are shared by every DTFS mount. */
 kword_t dtfs_dir[DTFS_BLOCK_WORDS];
 #define dtfs_block fs_block_workspace
-static unsigned int dtfs_cache_mount;
+unsigned int dtfs_cache_mount;
 /* Unit number and the read-only foreign-media personality share one word. */
-static unsigned int dtfs_media[VFS_NMOUNT];
+unsigned int dtfs_media[VFS_NMOUNT];
 
 extern int dtfs_is_root(vnode_t node);
 extern int dtfs_is_file(vnode_t node);
@@ -62,21 +62,7 @@ extern void dtfs_set_owner(unsigned int base, unsigned int index,
 int dtfs_tenex_walk(unsigned int unit, unsigned int slot,
     unsigned int off, kword_t *buf, unsigned int nwords);
 
-static int
-dtfs_native_valid(void)
-{
-        unsigned int block;
-
-        if (dtfs_dir[DTFS_MAGIC_WORD] != DTFS_NATIVE_MAGIC)
-                return 0;
-        if (dtfs_owner(0U, 0U) != DTFS_OWNER_RESERVED ||
-            dtfs_owner(0U, DTFS_DIR_BLOCK) != DTFS_OWNER_RESERVED)
-                return 0;
-        for (block = DTFS_BLOCKS; block <= 01104U; ++block)
-                if (dtfs_owner(0U, block) != DTFS_OWNER_NATIVE_TAG)
-                        return 0;
-        return 1;
-}
+extern int dtfs_native_valid(void);
 
 extern int dtfs_its_valid(void);
 
@@ -97,7 +83,7 @@ dtfs_tenex_format_dir(void)
             ((kword_t)DTFS_TENEX_INVALID << 1U);
 }
 
-static unsigned int
+unsigned int
 dtfs_personality(vnode_t node)
 {
         return dtfs_media[VFS_MOUNT_ID(node) - 1U] &
@@ -122,32 +108,9 @@ dtfs_unit(vnode_t node)
         return dtfs_media[VFS_MOUNT_ID(node) - 1U] & DTFS_MEDIA_UNIT_MASK;
 }
 
-static int
-dtfs_load(vnode_t node)
-{
-        unsigned int id;
-        unsigned int media;
-        unsigned int unit;
-        unsigned int personality;
+extern int dtfs_load(vnode_t node);
 
-        id = VFS_MOUNT_ID(node);
-        if (dtfs_cache_mount == id)
-                return 0;
-        media = dtfs_media[id - 1U];
-        unit = media & DTFS_MEDIA_UNIT_MASK;
-        personality = media & (DTFS_MEDIA_TENEX | DTFS_MEDIA_ITS);
-        if (dtfs_dtc_read(unit, personality == DTFS_MEDIA_ITS ?
-            DTFS_ITS_DIR_BLOCK : DTFS_DIR_BLOCK, dtfs_dir) != 0)
-                return -1;
-        if (personality == DTFS_MEDIA_ITS ? !dtfs_its_valid() :
-            (personality == DTFS_MEDIA_TENEX ? !dtfs_tenex_valid(unit, 0) :
-            !dtfs_native_valid()))
-                return -1;
-        dtfs_cache_mount = id;
-        return 0;
-}
-
-static int
+int
 dtfs_commit(vnode_t node)
 {
         unsigned int media;
@@ -197,7 +160,7 @@ extern int dtfs_foreign_set_name(unsigned int slot,
     const struct vfs_name *name, int its);
 
 
-static int
+int
 dtfs_scan_slot(vnode_t node, const struct vfs_name *name,
     unsigned int *slotp)
 {
@@ -277,7 +240,7 @@ dtfs_set_last_words(unsigned int slot, unsigned int words)
             ((words >> 6U) & 1U);
 }
 
-static void
+void
 dtfs_set_exec(unsigned int slot, int executable)
 {
         /* Both callers pass a C relational expression, hence exactly 0/1. */
@@ -657,19 +620,8 @@ dtfs_mount_unit(unsigned int unit, vnode_t target,
         return 0;
 }
 
-int
-dtfs_lookup(vnode_t dir, const struct vfs_name *name,
-    vnode_t *nodep)
-{
-        unsigned int slot;
-
-        if (!dtfs_is_root(dir) || nodep == 0 || dtfs_load(dir) != 0 ||
-            dtfs_scan_slot(dir, name, &slot) != 0)
-                return -1;
-        *nodep = VFS_NODE(DTFS_PROVIDER,
-            VFS_MOUNT_KIND(VFS_MOUNT_ID(dir), DTFS_KIND_FILE), slot);
-        return 0;
-}
+extern int dtfs_lookup(vnode_t dir, const struct vfs_name *name,
+    vnode_t *nodep);
 
 int
 dtfs_readdir(vnode_t dir, unsigned int off,
@@ -902,15 +854,7 @@ dtfs_truncate(vnode_t node, unsigned int words, kword_t size_chars)
         return dtfs_resize(node, words);
 }
 
-int
-dtfs_chmod(vnode_t node, unsigned int mode)
-{
-        if (!dtfs_is_file(node) || dtfs_load(node) != 0 ||
-            dtfs_personality(node) != 0U)
-                return -1;
-        dtfs_set_exec(VFS_INDEX(node), (mode & 0111U) != 0U);
-        return dtfs_commit(node);
-}
+extern int dtfs_chmod(vnode_t node, unsigned int mode);
 
 int
 dtfs_tenex_walk(unsigned int unit, unsigned int slot, unsigned int off,

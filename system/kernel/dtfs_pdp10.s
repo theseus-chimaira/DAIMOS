@@ -485,3 +485,171 @@ dtfs_foreign_set_name_fail:
 dtfs_foreign_set_name_return:
         pop     17,010
         popj    17,
+
+; Compact provider lookup.  Preserve the three live arguments and one slot
+; word with PUSH/POP rather than GCC's frame plus callee-save spill block.
+        .globl  dtfs_load
+        .globl  dtfs_scan_slot
+        .globl  dtfs_personality
+        .globl  dtfs_commit
+        .globl  dtfs_set_exec
+        .globl  pdp10_ret_zero
+        .globl  pdp10_ret_neg1
+
+dtfs_lookup:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,[0]
+        move    010,1                   ; dir
+        move    011,2                   ; name
+        move    012,3                   ; nodep
+        pushj   17,dtfs_is_root
+        jumpe   1,dtfs_lookup_fail
+        jumpe   012,dtfs_lookup_fail
+        move    1,010
+        pushj   17,dtfs_load
+        jumpn   1,dtfs_lookup_fail
+        move    1,010
+        move    2,011
+        movei   3,(17)
+        pushj   17,dtfs_scan_slot
+        jumpn   1,dtfs_lookup_fail
+        and     010,[07700000000]       ; retain mount id
+        tlo     010,050002              ; DTFS provider + file local kind
+        hrr     010,(17)                ; slot index
+        movem   010,(012)
+        setz    1,
+        jrst    dtfs_lookup_return
+
+dtfs_lookup_fail:
+        seto    1,
+dtfs_lookup_return:
+        pop     17,0                    ; slot scratch
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; Native chmod only.  Foreign personalities are read-only at this provider
+; entry.  Keep NODE/MODE in callee-saved ACs across C helpers.
+dtfs_chmod:
+        push    17,010
+        push    17,011
+        move    010,1
+        move    011,2
+        pushj   17,dtfs_is_file
+        jumpe   1,dtfs_chmod_fail
+        move    1,010
+        pushj   17,dtfs_load
+        jumpn   1,dtfs_chmod_fail
+        move    1,010
+        pushj   17,dtfs_personality
+        jumpn   1,dtfs_chmod_fail
+        hrrz    1,010
+        move    2,011
+        andi    2,0111
+        jumpe   2,dtfs_chmod_have_exec
+        movei   2,1
+dtfs_chmod_have_exec:
+        pushj   17,dtfs_set_exec
+        move    1,010
+        pop     17,011
+        pop     17,010
+        jrst    dtfs_commit
+
+dtfs_chmod_fail:
+        pop     17,011
+        pop     17,010
+        jrst    pdp10_ret_neg1
+
+; Shared cached directory loader.  Keep only mount id and packed media across
+; the DTC/validator calls; unit and personality are cheap masks of MEDIA.
+        .globl  dtfs_cache_mount
+        .globl  dtfs_media
+        .globl  dtfs_native_valid
+
+dtfs_load:
+        push    17,010
+        push    17,011
+        ldb     010,[POINT 6,1,11]      ; mount id
+        move    4,dtfs_cache_mount
+        camn    4,010
+        jrst    dtfs_load_ok
+        move    011,dtfs_media-1(010)   ; unit + personality
+        move    1,011
+        andi    1,7                     ; unit
+        move    4,011
+        andi    4,030                   ; personality
+        movei   2,0144                  ; native/TENEX directory
+        cain    4,020
+        movei   2,0100                  ; ITS directory
+        movei   3,dtfs_dir
+        pushj   17,dtfs_dtc_read
+        jumpn   1,dtfs_load_fail
+        move    4,011
+        andi    4,030
+        cain    4,020
+        jrst    dtfs_load_validate_its
+        cain    4,010
+        jrst    dtfs_load_validate_tenex
+        pushj   17,dtfs_native_valid
+        jrst    dtfs_load_validated
+
+dtfs_load_validate_its:
+        pushj   17,dtfs_its_valid
+        jrst    dtfs_load_validated
+
+dtfs_load_validate_tenex:
+        move    1,011
+        andi    1,7
+        setz    2,
+        pushj   17,dtfs_tenex_valid
+
+dtfs_load_validated:
+        jumpe   1,dtfs_load_fail
+        movem   010,dtfs_cache_mount
+
+dtfs_load_ok:
+        setz    1,
+        jrst    dtfs_load_return
+
+dtfs_load_fail:
+        seto    1,
+dtfs_load_return:
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; Native directory validation.  The three post-media map entries are a fixed
+; tiny range, so use a direct CAIG loop instead of GCC's signed-range code.
+dtfs_native_valid:
+        move    1,dtfs_dir+0177
+        came    1,[0446446632021]
+        jrst    dtfs_native_valid_false
+        setzb   1,2
+        pushj   17,dtfs_owner
+        caie    1,036
+        jrst    dtfs_native_valid_false
+        setz    1,
+        movei   2,0144
+        pushj   17,dtfs_owner
+        caie    1,036
+        jrst    dtfs_native_valid_false
+        movei   4,01102
+
+dtfs_native_valid_loop:
+        setz    1,
+        move    2,4
+        pushj   17,dtfs_owner
+        caie    1,035
+        jrst    dtfs_native_valid_false
+        addi    4,1
+        caig    4,01104
+        jrst    dtfs_native_valid_loop
+        movei   1,1
+        popj    17,
+
+dtfs_native_valid_false:
+        setz    1,
+        popj    17,
