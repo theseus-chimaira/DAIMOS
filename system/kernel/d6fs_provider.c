@@ -13,7 +13,7 @@ int d6fs_provider_free_file_tail(const kword_t fcb[D6FS_FCB_WORDS],
 unsigned int d6fs_provider_tail(unsigned int type, kword_t words,
     kword_t size_chars);
 
-static int d6fs_provider_scan_slot(vnode_t dir,
+int d6fs_provider_scan_slot(vnode_t dir,
     const struct vfs_name *name, unsigned int *slotp,
     struct d6fs_dirent_info *dip);
 
@@ -46,19 +46,6 @@ d6fs_provider_dirent(vnode_t dir, unsigned int slot,
             d6fs_provider_reader.super.fcb_count, di))
                 return -1;
         return 1;
-}
-
-int
-d6fs_provider_lookup(vnode_t dir, const struct vfs_name *name,
-    vnode_t *nodep)
-{
-        struct d6fs_dirent_info di;
-
-        if (nodep == 0 || d6fs_provider_scan_slot(dir, name, 0, &di) != 0)
-                return -1;
-        *nodep = VFS_NODE(D6FS_PROVIDER,
-            VFS_MOUNT_KIND(VFS_MOUNT_ID(dir), D6FS_KIND_NODE), di.child_fcb);
-        return 0;
 }
 
 int
@@ -110,25 +97,6 @@ d6fs_provider_stat(vnode_t node, struct vfs_stat *st)
                 st->size_chars = (fi.size_words - 1UL) * 4UL + fi.tail;
         else
                 st->size_chars = fi.size_words * 4UL;
-        return 0;
-}
-
-int
-d6fs_provider_parent(vnode_t node, vnode_t *parentp)
-{
-        struct d6fs_fcb_info fi;
-
-        if (parentp == 0 || d6fs_provider_fcb(node, 0, &fi) != 0)
-                return -1;
-        if (VFS_INDEX(node) == d6fs_provider_reader.super.root_fcb) {
-                *parentp = node;
-                return 0;
-        }
-        if (fi.parent_fcb >= d6fs_provider_reader.super.fcb_count)
-                return -1;
-        *parentp = VFS_NODE(D6FS_PROVIDER,
-            VFS_MOUNT_KIND(VFS_MOUNT_ID(node), D6FS_KIND_NODE),
-            fi.parent_fcb);
         return 0;
 }
 
@@ -342,13 +310,15 @@ rollback:
         return -1;
 }
 
-static int
+int
 d6fs_provider_scan_slot(vnode_t dir, const struct vfs_name *name,
     unsigned int *slotp, struct d6fs_dirent_info *dip)
 {
         struct d6fs_dirent_info di;
         kword_t hash;
         unsigned int slot;
+        unsigned int empty_slot;
+        int have_empty;
         int rc;
 
         if (name != 0) {
@@ -358,11 +328,15 @@ d6fs_provider_scan_slot(vnode_t dir, const struct vfs_name *name,
         } else if (slotp == 0) {
                 return -1;
         }
+        have_empty = 0;
         for (slot = 0U;; ++slot) {
                 rc = d6fs_provider_dirent(dir, slot, &di);
                 if (rc == 0) {
-                        if (name != 0)
+                        if (name != 0) {
+                                if (slotp != 0)
+                                        *slotp = have_empty ? empty_slot : slot;
                                 return 1;
+                        }
                         *slotp = slot;
                         return 1;
                 }
@@ -374,7 +348,14 @@ d6fs_provider_scan_slot(vnode_t dir, const struct vfs_name *name,
                         *slotp = slot;
                         return 0;
                 }
-                if (di.child_fcb == 0U || di.hash != hash ||
+                if (di.child_fcb == 0U) {
+                        if (slotp != 0 && dip == 0 && !have_empty) {
+                                empty_slot = slot;
+                                have_empty = 1;
+                        }
+                        continue;
+                }
+                if (di.hash != hash ||
                     !fs_words_equal(di.name, name->words, VFS_NAME_WORDS))
                         continue;
                 if (slotp != 0)
@@ -457,10 +438,8 @@ d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
         if (nodep == 0 || (type != D6FS_TYPE_REG && type != D6FS_TYPE_DIR &&
             type != D6FS_TYPE_SYMLINK) ||
             (type == D6FS_TYPE_SYMLINK && (payload == 0 || value == 0U)) ||
-            d6fs_provider_scan_slot(dir, name, 0, 0) == 0 ||
+            d6fs_provider_scan_slot(dir, name, &slot, 0) == 0 ||
             d6fs_provider_free_fcb(&index) != 0)
-                return -1;
-        if (d6fs_provider_scan_slot(dir, 0, &slot, 0) < 0)
                 return -1;
 
         mode = type == D6FS_TYPE_SYMLINK ? 0777U : value;

@@ -1176,3 +1176,68 @@ d6fs_provider_truncate_fail:
 d6fs_provider_truncate_done:
         sub     17,[035,,035]
         popj    17,
+
+; int d6fs_provider_lookup(vnode_t dir, const struct vfs_name *name,
+;     vnode_t *nodep)
+; Keep only the output pointer and directory vnode across the directory scan.
+; The 010-word scratch area is one decoded d6fs_dirent_info.
+        .globl  d6fs_provider_scan_slot
+        .globl  d6fs_provider_lookup
+d6fs_provider_lookup:
+        jumpe   3,pdp10_ret_neg1
+        add     17,[012,,012]
+        movem   1,-1(17)                 ; directory vnode
+        movem   3,(17)                   ; output pointer
+        movei   3,0
+        movei   4,-011(17)               ; decoded dirent scratch
+        pushj   17,d6fs_provider_scan_slot
+        jumpn   1,d6fs_provider_lookup_fail
+        move    1,-1(17)
+        and     1,[07700000000]
+        tlo     1,1
+        hrrz    4,-4(17)                 ; di.child_fcb
+        ior     1,4
+        tlo     1,060000
+        move    2,(17)
+        movem   1,(2)
+        setz    1,
+        jrst    d6fs_provider_lookup_done
+d6fs_provider_lookup_fail:
+        seto    1,
+d6fs_provider_lookup_done:
+        sub     17,[012,,012]
+        popj    17,
+
+; int d6fs_provider_parent(vnode_t node, vnode_t *parentp)
+; Keep the vnode and destination beside one decoded FCB-info scratch area.
+        .globl  d6fs_provider_parent
+d6fs_provider_parent:
+        jumpe   2,pdp10_ret_neg1
+        add     17,[014,,014]
+        movem   1,-1(17)                 ; node
+        movem   2,(17)                   ; parentp
+        movei   2,0
+        movei   3,-013(17)               ; 012-word decoded FCB info
+        pushj   17,d6fs_provider_fcb
+        jumpn   1,d6fs_provider_parent_fail
+        move    1,-1(17)
+        hrrz    4,1
+        camn    4,d6fs_provider_reader+7 ; root_fcb: root is its own parent
+        jrst    d6fs_provider_parent_store
+        move    4,-2(17)                 ; fi.parent_fcb
+        caml    4,d6fs_provider_reader+011 ; reject parent outside FCB table
+        jrst    d6fs_provider_parent_fail
+        and     1,[07700000000]
+        tlo     1,1
+        ior     1,4
+        tlo     1,060000
+d6fs_provider_parent_store:
+        move    2,(17)
+        movem   1,(2)
+        setz    1,
+        jrst    d6fs_provider_parent_done
+d6fs_provider_parent_fail:
+        seto    1,
+d6fs_provider_parent_done:
+        sub     17,[014,,014]
+        popj    17,
