@@ -267,6 +267,8 @@ d6fs_provider_resize_fcb(vnode_t node,
                 return -1;
         fs_copy_words(fcb, old_fcb, D6FS_FCB_WORDS);
         extent_count = fi->extent_count;
+        if (new_words == 0UL)
+                new_tail = 0U;
         old_blocks = d6fs_provider_blocks_for_words(fi->size_words);
         new_blocks = d6fs_provider_blocks_for_words(new_words);
 
@@ -312,20 +314,18 @@ d6fs_provider_resize_fcb(vnode_t node,
                             d6fs_provider_reader.alloc_cursor, blocks, &start, &blocks) != 0) {
                                 goto rollback;
                         }
-                        for (candidate = 0UL; candidate < blocks; ++candidate)
+                        for (candidate = 0UL; candidate < blocks; ++candidate) {
                                 if (d6fs_reader_zero_block(
                                     &d6fs_provider_reader,
-                                    start + candidate) != 0)
-                                        goto rollback;
-                        for (candidate = 0UL; candidate < blocks; ++candidate)
-                                if (d6fs_freemap_set(&d6fs_provider_reader,
-                                    start + candidate, 1U) != 0) {
-                                        if (candidate != 0UL)
-                                                (void)d6fs_free_run(
-                                                    &d6fs_provider_reader,
-                                                    start, candidate);
-                                        goto rollback;
-                                }
+                                    start + candidate) == 0 &&
+                                    d6fs_freemap_set(&d6fs_provider_reader,
+                                    start + candidate, 1U) == 0)
+                                        continue;
+                                if (candidate != 0UL)
+                                        (void)d6fs_free_run(&d6fs_provider_reader,
+                                            start, candidate);
+                                goto rollback;
+                        }
                         i = extent_count;
                         d6fs_provider_set_extent(fcb, i, start, blocks);
                         ++extent_count;
@@ -341,7 +341,7 @@ d6fs_provider_resize_fcb(vnode_t node,
                 kword_t extent_blocks;
 
                 keep = new_blocks;
-                for (i = 0U; i < fi->extent_count && keep != 0UL; ++i) {
+                for (i = 0U; i < extent_count && keep != 0UL; ++i) {
                         high = d6fs_extent_high_get(
                             old_fcb[D6FS_FCB_LENHIGH], i);
                         if (d6fs_extent_decode(
@@ -362,7 +362,7 @@ d6fs_provider_resize_fcb(vnode_t node,
         /* Resize changes only size, tail, and extent count.  Preserve every
          * other on-disk metadata bit exactly as it was read. */
         fcb[D6FS_FCB_META] = (fcb[D6FS_FCB_META] & ~07760UL) |
-            ((kword_t)(new_words == 0UL ? 0U : new_tail) << 8) |
+            ((kword_t)new_tail << 8) |
             ((kword_t)extent_count << 4);
         fcb[D6FS_FCB_SIZE] = new_words;
         if (d6fs_reader_put_fcb(&d6fs_provider_reader,
@@ -376,7 +376,7 @@ d6fs_provider_resize_fcb(vnode_t node,
                 return -1;
         fi->extent_count = extent_count;
         fi->size_words = new_words;
-        fi->tail = new_words == 0UL ? 0U : new_tail;
+        fi->tail = new_tail;
         return 0;
 
 rollback:

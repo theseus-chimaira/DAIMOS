@@ -185,13 +185,13 @@ d6fs_reader_get_block:
         jumpn   1,d6fs_get_block_read_fail
         movem   011,3(010)
         movei   1,fs_block_workspace
+        jrst    d6fs_get_block_read_done
+d6fs_get_block_read_fail:
+        setz    1,
+d6fs_get_block_read_done:
         pop     17,011
         pop     17,010
         popj    17,
-d6fs_get_block_read_fail:
-        pop     17,011
-        pop     17,010
-        jrst    pdp10_ret_zero
 d6fs_get_block_hit:
         movei   1,fs_block_workspace
         popj    17,
@@ -325,7 +325,6 @@ d6fs_freemap_state:
         push    17,010
         push    17,011
         push    17,012
-        push    17,013
         move    010,1                     ; reader
         move    1,2
         pushj   17,d6fs_bitmap_pos
@@ -339,21 +338,16 @@ d6fs_freemap_state:
         pushj   17,d6fs_reader_get_block
         jumpe   1,d6fs_freemap_state_fail
         add     1,011
-        move    013,(1)
+        move    2,(1)
         move    1,012
         pushj   17,d6fs_bitmap_mask
-        tdne    013,1
-        movei   1,1
-        tdnn    013,1
         setz    1,
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
-        popj    17,
+        tdne    2,1
+        movei   1,1
+        jrst    d6fs_freemap_state_done
 d6fs_freemap_state_fail:
         seto    1,
-        pop     17,013
+d6fs_freemap_state_done:
         pop     17,012
         pop     17,011
         pop     17,010
@@ -429,7 +423,7 @@ d6fs_alloc_run:
         idiv    1,015
         move    011,2                    ; cursor %= total_blocks
         setz    016,                      ; scanned
-        add     17,[2,,2]                ; local start, count
+        add     17,[3,,3]                ; local start, count, current
         setzm   (17)                     ; count
         setzm   -1(17)                   ; start
 
@@ -440,25 +434,20 @@ d6fs_alloc_run_loop:
         add     2,016                    ; logical = cursor + scanned
         caml    2,015
         sub     2,015                    ; one wrap is sufficient
+        movem   2,-2(17)                ; preserve current across helper
         move    1,010
         pushj   17,d6fs_freemap_state
         jumpl   1,d6fs_alloc_run_fail
         jumpn   1,d6fs_alloc_run_used
         move    2,(17)                   ; count
         jumpn   2,d6fs_alloc_run_continue
-        move    3,011
-        add     3,016
-        caml    3,015
-        sub     3,015
+        move    3,-2(17)
         movem   3,-1(17)                 ; first free logical block
         jrst    d6fs_alloc_run_add
 d6fs_alloc_run_continue:
         move    3,-1(17)
         add     3,2
-        move    4,011
-        add     4,016
-        caml    4,015
-        sub     4,015
+        move    4,-2(17)                ; current logical block
         came    4,3                      ; do not join across wrap
         jrst    d6fs_alloc_run_restart
 d6fs_alloc_run_add:
@@ -491,7 +480,7 @@ d6fs_alloc_run_success:
 d6fs_alloc_run_fail:
         seto    1,
 d6fs_alloc_run_done:
-        sub     17,[2,,2]
+        sub     17,[3,,3]
         pop     17,016
         pop     17,015
         pop     17,014
@@ -545,15 +534,12 @@ d6fs_map_scan_partial:
         jrst    d6fs_map_scan_free
 
 d6fs_map_scan_full:
-        setz    1,
-        jrst    d6fs_map_scan_done
+        jrst    pdp10_ret_zero
 d6fs_map_scan_free:
         movei   1,1
-        jrst    d6fs_map_scan_done
-d6fs_map_scan_fail:
-        seto    1,
-d6fs_map_scan_done:
         popj    17,
+d6fs_map_scan_fail:
+        jrst    pdp10_ret_neg1
 
 ; Internal summary bit setter: reader AC1, map index AC2, boolean AC3.
 d6fs_summary_set_i:
@@ -586,12 +572,9 @@ d6fs_summary_commit:
         move    2,011
         add     2,014(010)
         move    1,010
-        pushj   17,d6fs_reader_commit_cache
-        jrst    d6fs_summary_set_done
+        jrst    d6fs_reader_commit_cache
 d6fs_summary_set_fail:
-        seto    1,
-d6fs_summary_set_done:
-        popj    17,
+        jrst    pdp10_ret_neg1
 
         .globl  d6fs_freemap_set
 ; int d6fs_freemap_set(reader, logical, allocated)
@@ -634,14 +617,12 @@ d6fs_freemap_commit:
         move    1,010
         pushj   17,d6fs_reader_commit_cache
         jumpn   1,d6fs_freemap_set_fail
-        jumpe   014,d6fs_freemap_now_free
+        movei   1,1
+        jumpe   014,d6fs_freemap_have_summary
         move    1,010
         move    2,011
         pushj   17,d6fs_map_block_has_free_i
-        jumpge  1,d6fs_freemap_have_summary
-        jrst    d6fs_freemap_set_fail
-d6fs_freemap_now_free:
-        movei   1,1
+        jumpl   1,d6fs_freemap_set_fail
 d6fs_freemap_have_summary:
         move    3,1
         move    1,010
@@ -925,14 +906,14 @@ d6fs_reader_commit_cache:
         jumpn   1,d6fs_reader_commit_fail_saved
         movem   011,3(010)
         setz    1,
+        jrst    d6fs_reader_commit_done
+d6fs_reader_commit_fail_saved:
+        setom   3(010)
+        seto    1,
+d6fs_reader_commit_done:
         pop     17,011
         pop     17,010
         popj    17,
-d6fs_reader_commit_fail_saved:
-        setom   3(010)
-        pop     17,011
-        pop     17,010
-        jrst    pdp10_ret_neg1
 d6fs_reader_commit_invalidate:
         setom   3(1)
 d6fs_reader_commit_bad:
