@@ -313,19 +313,19 @@ dtfs_resize(vnode_t node, unsigned int words)
         unsigned int owner;
         unsigned int last_words;
         unsigned int personality;
-        int tenex;
+        unsigned int mapoff;
 
         if (!dtfs_is_file(node) || dtfs_load(node) != 0)
                 return -1;
         personality = dtfs_personality(node);
         if (personality == DTFS_MEDIA_ITS)
                 return dtfs_its_resize(node, words);
-        tenex = personality == DTFS_MEDIA_TENEX;
+        mapoff = personality == DTFS_MEDIA_TENEX ? 1U : 0U;
         slot = VFS_INDEX(node);
         unit = dtfs_unit(node);
         owner = slot + 1U;
         old_blocks = dtfs_block_info(node, slot, &first);
-        new_blocks = words == 0U ? (tenex ? 1U : 0U) :
+        new_blocks = words == 0U ? mapoff :
             (words + DTFS_DATA_WORDS - 1U) / DTFS_DATA_WORDS;
         if (new_blocks > DTFS_LAST_BLOCK)
                 return -1;
@@ -351,7 +351,7 @@ dtfs_resize(vnode_t node, unsigned int words)
 
         if (old_blocks < new_blocks) {
                 do {
-                        if (dtfs_find_free_block(prev + 1U, tenex, &block) != 0)
+                        if (dtfs_find_free_block(prev + 1U, mapoff, &block) != 0)
                                 return -1;
                         if (first == 0U)
                                 first = block;
@@ -361,7 +361,7 @@ dtfs_resize(vnode_t node, unsigned int words)
                             DTFS_DATA_WORDS);
                         if (dtfs_dtc_write(unit, block, dtfs_block) != 0)
                                 return -1;
-                        dtfs_set_owner(0U, block - (tenex ? 1U : 0U), owner);
+                        dtfs_set_owner(0U, block - mapoff, owner);
                         if (prev != 0U) {
                                 if (dtfs_dtc_read(unit, prev,
                                     dtfs_block) != 0)
@@ -399,8 +399,7 @@ dtfs_resize(vnode_t node, unsigned int words)
                             dtfs_dtc_read(unit, block, dtfs_block) != 0)
                                 return -1;
                         next = dtfs_hdr_next(dtfs_block[0]);
-                        dtfs_set_owner(0U, block - (tenex ? 1U : 0U),
-                            DTFS_OWNER_FREE);
+                        dtfs_set_owner(0U, block - mapoff, DTFS_OWNER_FREE);
                         block = next;
                 }
         } else if (new_blocks != 0U) {
@@ -411,7 +410,7 @@ dtfs_resize(vnode_t node, unsigned int words)
                 if (dtfs_dtc_write(unit, prev, dtfs_block) != 0)
                         return -1;
         }
-        if (!tenex)
+        if (mapoff == 0U)
                 dtfs_set_last_words(slot, last_words);
         return dtfs_commit(node);
 }
