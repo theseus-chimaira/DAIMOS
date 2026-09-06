@@ -30,35 +30,6 @@ int d6fs_provider_parent_name(vnode_t node, vnode_t *parentp,
     struct vfs_name *namep);
 
 int
-d6fs_provider_prepare_unmount(vnode_t root)
-{
-        unsigned int copy;
-
-        if (d6fs_provider_sync(root) != 0)
-                return -1;
-        if ((((unsigned int)(unsigned long)d6fs_provider_reader.opaque &
-            D6FS_PROVIDER_MOUNT_WRITABLE) != 0U)) {
-                copy = (((unsigned int)(unsigned long)
-                    d6fs_provider_reader.opaque &
-                    D6FS_PROVIDER_MOUNT_COPY) != 0U) ? 0U : 1U;
-                if (d6fs_reader_get_block(&d6fs_provider_reader,
-                    D6FS_RUNTIME_SUPER_BLOCK(&d6fs_provider_reader, copy)) == 0)
-                        return -1;
-                fs_block_workspace[D6FS_SB_SEQUENCE] =
-                    d6fs_provider_reader.super.sequence + 1UL;
-                fs_block_workspace[D6FS_SB_STATE] = D6FS_STATE_CLEAN;
-                if (d6fs_reader_write_block(&d6fs_provider_reader,
-                    D6FS_RUNTIME_SUPER_BLOCK(&d6fs_provider_reader, copy),
-                    fs_block_workspace) != 0)
-                        return -1;
-                ++d6fs_provider_reader.super.sequence;
-        }
-        d6fs_provider_reader.opaque = 0;
-        D6FS_READER_CACHE_BLOCK(&d6fs_provider_reader) = D6FS_CACHE_INVALID;
-        return 0;
-}
-
-int
 d6fs_provider_resize_fcb(vnode_t node,
     kword_t fcb[D6FS_FCB_WORDS], struct d6fs_fcb_info *fi,
     kword_t new_words, unsigned int new_tail)

@@ -1239,6 +1239,37 @@ d6fs_provider_sync:
         jrst    pdp10_ret_neg1
         jrst    pdp10_ret_zero
 
+; int d6fs_provider_prepare_unmount(vnode_t root)
+        .globl  d6fs_provider_prepare_unmount
+d6fs_provider_prepare_unmount:
+        pushj   17,d6fs_provider_sync
+        jumpn   1,pdp10_ret_neg1
+        move    4,d6fs_provider_reader+1
+        trnn    4,0100                    ; D6FS_PROVIDER_MOUNT_WRITABLE
+        jrst    d6fs_provider_unmount_done
+        movei   2,d6fs_provider_reader+4 ; fs_uuid[] reused for super blocks
+        trnn    4,0200                    ; D6FS_PROVIDER_MOUNT_COPY
+        addi    2,1
+        move    2,(2)
+        push    17,2                      ; keep target across get_block
+        movei   1,d6fs_provider_reader
+        pushj   17,d6fs_reader_get_block
+        pop     17,2
+        jumpe   1,pdp10_ret_neg1
+        move    4,d6fs_provider_reader+2
+        addi    4,1
+        movem   4,fs_block_workspace+1   ; sequence
+        setzm   fs_block_workspace+2     ; D6FS_STATE_CLEAN
+        movei   1,d6fs_provider_reader
+        movei   3,fs_block_workspace
+        pushj   17,d6fs_reader_write_block
+        jumpn   1,pdp10_ret_neg1
+        aos     d6fs_provider_reader+2
+d6fs_provider_unmount_done:
+        setzm   d6fs_provider_reader+1   ; opaque
+        setom   d6fs_provider_reader+3   ; cache invalid
+        jrst    pdp10_ret_zero
+
 ; int d6fs_provider_chmod(vnode_t node, unsigned int mode)
 ; Store the two live arguments beside the FCB/info scratch instead of saving
 ; callee-saved registers solely to carry them across validation.
