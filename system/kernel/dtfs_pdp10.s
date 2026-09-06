@@ -824,3 +824,65 @@ dtfs_is_its:
         tdza    1,1
         movei   1,1
         popj    17,
+
+        .globl  dtfs_block_info
+        .globl  dtfs_size_words
+dtfs_size_words:
+        push    17,010
+        push    17,011
+        move    010,1
+        move    011,2
+        pushj   17,dtfs_is_tenex
+        jumpe   1,dtfs_size_words_native
+        move    1,010
+        pushj   17,dtfs_unit
+        move    2,011
+        setzb   3,4
+        push    17,4
+        pushj   17,dtfs_tenex_walk
+        pop     17,0
+        jumpl   1,dtfs_size_words_zero
+        jrst    dtfs_size_words_return
+
+dtfs_size_words_native:
+        move    1,010
+        move    2,011
+        setz    3,
+        pushj   17,dtfs_block_info
+        jumpe   1,dtfs_size_words_zero
+        move    4,011
+        lsh     4,1
+        move    2,dtfs_dir+0124(4)
+        andi    2,077
+        move    3,dtfs_dir+026(011)
+        trne    3,1
+        iori    2,0100
+        cail    2,1
+        cail    2,0200
+        jrst    dtfs_size_words_zero
+        move    3,1
+        lsh     1,7
+        sub     1,3
+        add     1,2
+        subi    1,0177
+        jrst    dtfs_size_words_return
+
+dtfs_size_words_zero:
+        setz    1,
+dtfs_size_words_return:
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+        .globl  dtfs_set_name
+dtfs_set_name:
+        lsh     1,1
+        move    3,dtfs_dir+0124(1)
+        andi    3,077
+        move    4,1(2)
+        movem   4,dtfs_dir+0123(1)
+        move    4,2(2)
+        andcmi  4,077
+        ior     4,3
+        movem   4,dtfs_dir+0124(1)
+        popj    17,

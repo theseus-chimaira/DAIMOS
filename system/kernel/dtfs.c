@@ -80,7 +80,7 @@ dtfs_personality(vnode_t node)
 extern int dtfs_is_tenex(vnode_t node);
 extern int dtfs_is_its(vnode_t node);
 
-static unsigned int
+unsigned int
 dtfs_unit(vnode_t node)
 {
         return dtfs_media[VFS_MOUNT_ID(node) - 1U] & DTFS_MEDIA_UNIT_MASK;
@@ -156,17 +156,7 @@ dtfs_scan_slot(vnode_t node, const struct vfs_name *name,
         return -1;
 }
 
-static void
-dtfs_set_name(unsigned int slot, const struct vfs_name *name)
-{
-        unsigned int base;
-        kword_t last;
-
-        base = DTFS_NAME_BASE + slot * 2U;
-        last = dtfs_dir[base + 1U] & 077UL;
-        dtfs_dir[base] = name->words[0];
-        dtfs_dir[base + 1U] = (name->words[1] & DTFS_NAME2_MASK) | last;
-}
+extern void dtfs_set_name(unsigned int slot, const struct vfs_name *name);
 
 static void
 dtfs_clear_slot(unsigned int slot)
@@ -211,7 +201,7 @@ dtfs_header(unsigned int next, unsigned int first, unsigned int count)
             ((kword_t)first << DTFS_FIRST_SHIFT) | (kword_t)count;
 }
 
-static unsigned int
+unsigned int
 dtfs_block_info(vnode_t node, unsigned int slot, unsigned int *firstp)
 {
         unsigned int block;
@@ -249,28 +239,7 @@ dtfs_block_info(vnode_t node, unsigned int slot, unsigned int *firstp)
         return count;
 }
 
-static unsigned int
-dtfs_size_words(vnode_t node, unsigned int slot)
-{
-        unsigned int blocks;
-        unsigned int last;
-        int i;
-
-        if (dtfs_is_tenex(node)) {
-                i = dtfs_tenex_walk(dtfs_unit(node), slot, 0U, 0, 0U);
-                return i < 0 ? 0U : (unsigned int)i;
-        }
-        blocks = dtfs_block_info(node, slot, 0);
-        if (blocks == 0U)
-                return 0U;
-        last = (unsigned int)(dtfs_dir[DTFS_NAME_BASE + slot * 2U + 1U] &
-            077UL);
-        if ((dtfs_dir[22U + slot] & 1UL) != 0)
-                last |= 0100U;
-        if (last == 0U || last > DTFS_DATA_WORDS)
-                return 0U;
-        return (blocks - 1U) * DTFS_DATA_WORDS + last;
-}
+extern unsigned int dtfs_size_words(vnode_t node, unsigned int slot);
 
 static int
 dtfs_find_free_block(unsigned int start, int tenex,
