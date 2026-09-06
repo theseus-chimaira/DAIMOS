@@ -341,7 +341,7 @@ d6fs_provider_resize_fcb(vnode_t node,
                 kword_t extent_blocks;
 
                 keep = new_blocks;
-                for (i = 0U; i < extent_count && keep != 0UL; ++i) {
+                for (i = 0U; keep != 0UL; ++i) {
                         high = d6fs_extent_high_get(
                             old_fcb[D6FS_FCB_LENHIGH], i);
                         if (d6fs_extent_decode(
@@ -458,6 +458,7 @@ d6fs_provider_write_dirent(vnode_t dir, unsigned int slot,
         struct d6fs_fcb_info fi;
         kword_t raw[D6FS_DIRENT_WORDS];
         kword_t need;
+        kword_t off;
         unsigned int tail;
 
         if (d6fs_provider_fcb(dir, fcb, &fi) != 0 ||
@@ -473,14 +474,15 @@ d6fs_provider_write_dirent(vnode_t dir, unsigned int slot,
         } else {
                 fs_zero_words(raw, D6FS_DIRENT_WORDS);
         }
-        need = ((kword_t)slot + 1UL) * D6FS_DIRENT_WORDS;
+        off = (kword_t)slot * D6FS_DIRENT_WORDS;
+        need = off + D6FS_DIRENT_WORDS;
         if (need > fi.size_words) {
                 tail = 4U;
                 if (d6fs_provider_resize_fcb(dir, fcb, &fi, need, tail) != 0)
                         return -1;
         }
         return d6fs_reader_write_words(&d6fs_provider_reader, fcb,
-            (kword_t)slot * D6FS_DIRENT_WORDS, raw,
+            off, raw,
             D6FS_DIRENT_WORDS) == (int)D6FS_DIRENT_WORDS ? 0 : -1;
 }
 
@@ -525,7 +527,6 @@ d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
                 words = (value + 5U) / 6U;
                 tail = value - (words - 1U) * 6U;
                 if (d6fs_provider_resize_fcb(node, fcb, &fi, words, tail) != 0 ||
-                    d6fs_provider_fcb(node, fcb, &fi) != 0 ||
                     d6fs_reader_write_words(&d6fs_provider_reader, fcb, 0UL,
                     payload, words) != (int)words)
                         goto fail;
@@ -712,8 +713,6 @@ d6fs_provider_write_words(vnode_t node, unsigned int off,
                 tail = d6fs_provider_tail(fi.type, need, size_chars);
                 if (d6fs_provider_resize_fcb(node, fcb, &fi, need,
                     tail) != 0)
-                        return -1;
-                if (d6fs_provider_fcb(node, fcb, &fi) != 0)
                         return -1;
         }
         return d6fs_reader_write_words(&d6fs_provider_reader, fcb,
