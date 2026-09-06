@@ -200,7 +200,7 @@ d6fs_provider_prepare_unmount(vnode_t root)
         return 0;
 }
 
-static int
+int
 d6fs_provider_resize_fcb(vnode_t node,
     kword_t fcb[D6FS_FCB_WORDS], struct d6fs_fcb_info *fi,
     kword_t new_words, unsigned int new_tail)
@@ -613,39 +613,6 @@ d6fs_provider_rename(vnode_t olddir,
         return 0;
 }
 
-
-int
-d6fs_provider_truncate(vnode_t node, unsigned int words,
-    kword_t size_chars)
-{
-        kword_t fcb[D6FS_FCB_WORDS];
-        struct d6fs_fcb_info fi;
-        unsigned int tail;
-
-        if (d6fs_provider_fcb(node, fcb, &fi) != 0 ||
-            (fi.type != D6FS_TYPE_REG && fi.type != D6FS_TYPE_SYMLINK) ||
-            (fi.flags & (D6FS_FLAG_APPEND | D6FS_FLAG_IMMUTABLE)) != 0U)
-                return -1;
-        tail = d6fs_provider_tail(fi.type, (kword_t)words, size_chars);
-        return d6fs_provider_resize_fcb(node, fcb, &fi,
-            (kword_t)words, tail);
-}
-
-int
-d6fs_provider_chmod(vnode_t node, unsigned int mode)
-{
-        kword_t fcb[D6FS_FCB_WORDS];
-        struct d6fs_fcb_info fi;
-
-        if (d6fs_provider_fcb(node, fcb, &fi) != 0 ||
-            fi.type == D6FS_TYPE_FREE ||
-            (fi.flags & D6FS_FLAG_IMMUTABLE) != 0U)
-                return -1;
-        fcb[D6FS_FCB_META] = (fcb[D6FS_FCB_META] & ~07777000UL) |
-            ((kword_t)(mode & 07777U) << 12);
-        return d6fs_reader_put_fcb(&d6fs_provider_reader,
-            VFS_INDEX(node), fcb);
-}
 
 int
 d6fs_provider_write_words(vnode_t node, unsigned int off,

@@ -1101,3 +1101,78 @@ d6fs_provider_sync:
         came    1,2
         jrst    pdp10_ret_neg1
         jrst    pdp10_ret_zero
+
+; int d6fs_provider_chmod(vnode_t node, unsigned int mode)
+; Store the two live arguments beside the FCB/info scratch instead of saving
+; callee-saved registers solely to carry them across validation.
+        .globl  d6fs_provider_chmod
+d6fs_provider_chmod:
+        add     17,[034,,034]            ; FCB + info + node + mode
+        movem   1,-1(17)                 ; node
+        movem   2,(17)                   ; requested mode
+        movei   2,-033(17)               ; 020-word FCB scratch
+        movei   3,-013(17)               ; 012-word decoded info
+        pushj   17,d6fs_provider_fcb
+        jumpn   1,d6fs_provider_chmod_fail
+        skipn   -013(17)                 ; FREE FCB
+        jrst    d6fs_provider_chmod_fail
+        move    4,-012(17)               ; info.flags
+        trne    4,020                     ; D6FS_FLAG_IMMUTABLE
+        jrst    d6fs_provider_chmod_fail
+        move    4,-033(17)               ; FCB META
+        and     4,[-07777001]
+        move    5,(17)
+        andi    5,07777
+        lsh     5,014
+        ior     4,5
+        movem   4,-033(17)
+        movei   1,d6fs_provider_reader
+        hrrz    2,-1(17)
+        movei   3,-033(17)
+        pushj   17,d6fs_reader_put_fcb
+        jrst    d6fs_provider_chmod_done
+d6fs_provider_chmod_fail:
+        seto    1,
+d6fs_provider_chmod_done:
+        sub     17,[034,,034]
+        popj    17,
+
+; int d6fs_provider_truncate(vnode_t node, unsigned int words,
+;     kword_t size_chars)
+; Keep the FCB/info and live arguments in one compact frame, then pass the
+; computed tail in the normal fifth-argument stack slot to resize_fcb.
+        .globl  d6fs_provider_resize_fcb
+        .globl  d6fs_provider_truncate
+d6fs_provider_truncate:
+        add     17,[035,,035]            ; FCB + info + node/words/arg5
+        movem   1,-2(17)                 ; node
+        movem   2,-1(17)                 ; words
+        movem   3,(17)                   ; size_chars, later new_tail
+        movei   2,-034(17)               ; FCB scratch
+        movei   3,-014(17)               ; decoded info
+        pushj   17,d6fs_provider_fcb
+        jumpn   1,d6fs_provider_truncate_fail
+        move    1,-014(17)               ; info.type
+        cain    1,1                      ; D6FS_TYPE_REG
+        jrst    d6fs_provider_truncate_type_ok
+        caie    1,3                      ; D6FS_TYPE_SYMLINK
+        jrst    d6fs_provider_truncate_fail
+d6fs_provider_truncate_type_ok:
+        move    4,-013(17)               ; info.flags
+        trne    4,021                    ; APPEND | IMMUTABLE
+        jrst    d6fs_provider_truncate_fail
+        move    2,-1(17)
+        move    3,(17)
+        pushj   17,d6fs_provider_tail
+        movem   1,(17)                   ; outgoing arg 5: new_tail
+        move    1,-2(17)
+        movei   2,-034(17)
+        movei   3,-014(17)
+        move    4,-1(17)
+        pushj   17,d6fs_provider_resize_fcb
+        jrst    d6fs_provider_truncate_done
+d6fs_provider_truncate_fail:
+        seto    1,
+d6fs_provider_truncate_done:
+        sub     17,[035,,035]
+        popj    17,
