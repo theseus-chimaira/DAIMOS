@@ -21,32 +21,8 @@ int d6fs_provider_fcb(vnode_t node, kword_t fcb[D6FS_FCB_WORDS],
     struct d6fs_fcb_info *info);
 unsigned int d6fs_provider_vtype(unsigned int type);
 
-static int
-d6fs_provider_dirent(vnode_t dir, unsigned int slot,
-    struct d6fs_dirent_info *di)
-{
-        kword_t fcb[D6FS_FCB_WORDS];
-        struct d6fs_fcb_info fi;
-        kword_t raw[D6FS_DIRENT_WORDS];
-        kword_t off;
-        int rc;
-
-        if (di == 0 || d6fs_provider_fcb(dir, fcb, &fi) != 0 ||
-            fi.type != D6FS_TYPE_DIR)
-                return -1;
-        off = (kword_t)slot * D6FS_DIRENT_WORDS;
-        if (off >= fi.size_words)
-                return 0;
-        if (fi.size_words - off < D6FS_DIRENT_WORDS)
-                return -1;
-        rc = d6fs_reader_read_words(&d6fs_provider_reader, fcb, off,
-            raw, D6FS_DIRENT_WORDS);
-        if (rc != (int)D6FS_DIRENT_WORDS ||
-            !d6fs_dirent_decode_valid(raw,
-            d6fs_provider_reader.super.fcb_count, di))
-                return -1;
-        return 1;
-}
+int d6fs_provider_dirent(vnode_t dir, unsigned int slot,
+    struct d6fs_dirent_info *di);
 
 int
 d6fs_provider_readdir(vnode_t dir, unsigned int off,

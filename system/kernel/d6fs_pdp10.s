@@ -1060,6 +1060,59 @@ d6fs_provider_tail_full:
 d6fs_provider_tail_zero:
         jrst    pdp10_ret_zero
 
+; int d6fs_provider_dirent(vnode_t dir, unsigned int slot,
+;     struct d6fs_dirent_info *di)
+; Keep only fixed scratch objects and the two live input values on the stack.
+; This avoids GCC's five-register save area on this heavily shared helper.
+        .globl  d6fs_provider_dirent
+d6fs_provider_dirent:
+        jumpe   3,pdp10_ret_neg1
+        add     17,[043,,043]            ; FCB + info + raw + slot/di + arg5
+        movem   2,-2(17)                 ; slot
+        movem   3,-1(17)                 ; decoded dirent output
+        movei   2,-042(17)               ; 020-word FCB scratch
+        movei   3,-022(17)               ; 012-word decoded FCB info
+        pushj   17,d6fs_provider_fcb
+        jumpn   1,d6fs_provider_dirent_fail
+        move    1,-022(17)               ; info.type
+        caie    1,2                      ; D6FS_TYPE_DIR
+        jrst    d6fs_provider_dirent_fail
+        move    3,-2(17)                 ; off = slot * 6
+        imuli   3,6
+        move    4,3
+        tlc     4,0400000                 ; unsigned off comparison
+        move    5,-013(17)               ; info.size_words
+        move    6,5
+        tlc     6,0400000
+        caml    4,6                      ; off < size_words?
+        jrst    d6fs_provider_dirent_eof
+        sub     5,3
+        caige   5,6                      ; malformed short final dirent?
+        jrst    d6fs_provider_dirent_fail
+        movei   1,d6fs_provider_reader
+        movei   2,-042(17)
+        movei   4,-010(17)               ; 6-word raw dirent scratch
+        movei   5,6
+        movem   5,(17)                   ; fifth argument: nwords
+        pushj   17,d6fs_reader_read_words
+        caie    1,6
+        jrst    d6fs_provider_dirent_fail
+        movei   1,-010(17)
+        move    2,d6fs_provider_reader+011 ; super.fcb_count
+        move    3,-1(17)
+        pushj   17,d6fs_dirent_decode_valid
+        jumpe   1,d6fs_provider_dirent_fail
+        movei   1,1
+        jrst    d6fs_provider_dirent_done
+d6fs_provider_dirent_eof:
+        setz    1,
+        jrst    d6fs_provider_dirent_done
+d6fs_provider_dirent_fail:
+        seto    1,
+d6fs_provider_dirent_done:
+        sub     17,[043,,043]
+        popj    17,
+
 ; Private provider helpers use the same 0/-1 convention as reader helpers.
 ; Keeping these in assembly avoids compiler result normalization and allows
 ; successful FCB validation to tail-call d6fs_reader_fcb directly.
