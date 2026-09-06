@@ -596,48 +596,8 @@ dtfs_mount_unit(unsigned int unit, vnode_t target,
 extern int dtfs_lookup(vnode_t dir, const struct vfs_name *name,
     vnode_t *nodep);
 
-int
-dtfs_readdir(vnode_t dir, unsigned int off,
-    struct vfs_dirent *ent)
-{
-        unsigned int slot;
-        unsigned int seen;
-        unsigned int base;
-        int tenex;
-        int its;
-
-        if (!dtfs_is_root(dir) || ent == 0 || dtfs_load(dir) != 0)
-                return -1;
-        tenex = dtfs_is_tenex(dir);
-        its = dtfs_is_its(dir);
-        seen = 0U;
-        for (slot = 0U; slot < (its ? DTFS_ITS_FILE_SLOTS :
-            DTFS_FILE_SLOTS); ++slot) {
-                base = its ? slot * 2U : DTFS_NAME_BASE +
-                    (tenex ? slot : slot * 2U);
-                if (its ? (dtfs_dir[base] == 0UL &&
-                    dtfs_dir[base + 1U] == 0UL) : dtfs_dir[base] == 0UL)
-                        continue;
-                if (seen++ != off)
-                        continue;
-                if (its) {
-                        dtfs_foreign_name(slot, &ent->name, 1);
-                } else if (tenex) {
-                        dtfs_foreign_name(slot, &ent->name, 0);
-                } else {
-                        ent->name.words[0] = dtfs_dir[base];
-                        ent->name.words[1] = dtfs_dir[base + 1U] &
-                            DTFS_NAME2_MASK;
-                        ent->name.words[2] = 0;
-                        ent->name.words[3] = 0;
-                        ent->name.chars = vfs_sixbit_name_chars(
-                            ent->name.words, DTFS_NAME_MAX_CHARS);
-                }
-                ent->type = VFS_TYPE_REG;
-                return 1;
-        }
-        return 0;
-}
+extern int dtfs_readdir(vnode_t dir, unsigned int off,
+    struct vfs_dirent *ent);
 
 int
 dtfs_stat(vnode_t node, struct vfs_stat *st)

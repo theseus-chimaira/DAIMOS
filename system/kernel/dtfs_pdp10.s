@@ -696,3 +696,114 @@ dtfs_native_valid_loop:
 dtfs_native_valid_false:
         setz    1,
         popj    17,
+
+; Compact directory enumeration.  Resolve the personality once and scan using
+; caller-clobbered ACs; no state must survive a helper call until a matching
+; entry has already been selected.
+; int dtfs_readdir(vnode_t dir, unsigned int off, struct vfs_dirent *ent)
+dtfs_readdir:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        move    010,1                   ; dir
+        move    011,2                   ; requested visible entry
+        move    012,3                   ; result
+        pushj   17,dtfs_is_root
+        jumpe   1,dtfs_readdir_fail
+        jumpe   012,dtfs_readdir_fail
+        move    1,010
+        pushj   17,dtfs_load
+        jumpn   1,dtfs_readdir_fail
+        move    1,010
+        pushj   17,dtfs_personality
+        move    013,1                   ; 0 native, 010 TENEX, 020 ITS
+        setzb   4,5                     ; slot, seen
+
+dtfs_readdir_loop:
+        cain    013,020
+        jrst    dtfs_readdir_its
+        move    6,4
+        cain    013,010
+        jrst    dtfs_readdir_tenex_base
+        lsh     6,1                     ; native: two words/name
+
+dtfs_readdir_tenex_base:
+        addi    6,0123                  ; DTFS_NAME_BASE
+        skipn   dtfs_dir(6)
+        jrst    dtfs_readdir_next
+        jrst    dtfs_readdir_present
+
+dtfs_readdir_its:
+        move    6,4
+        lsh     6,1
+        skipe   dtfs_dir(6)
+        jrst    dtfs_readdir_present
+        skipn   dtfs_dir+1(6)
+        jrst    dtfs_readdir_next
+
+dtfs_readdir_present:
+        came    5,011
+        jrst    dtfs_readdir_seen_next
+        cain    013,020
+        jrst    dtfs_readdir_name_its
+        cain    013,010
+        jrst    dtfs_readdir_name_tenex
+
+        move    7,dtfs_dir(6)
+        movem   7,1(012)
+        move    7,dtfs_dir+1(6)
+        andcmi  7,077
+        movem   7,2(012)
+        setzm   3(012)
+        setzm   4(012)
+        movei   1,1(012)
+        movei   2,013
+        pushj   17,vfs_sixbit_name_chars
+        movem   1,(012)
+        jrst    dtfs_readdir_found
+
+dtfs_readdir_name_tenex:
+        move    1,4
+        move    2,012
+        setz    3,
+        pushj   17,dtfs_foreign_name
+        jrst    dtfs_readdir_found
+
+dtfs_readdir_name_its:
+        move    1,4
+        move    2,012
+        movei   3,1
+        pushj   17,dtfs_foreign_name
+
+dtfs_readdir_found:
+        movei   1,2                     ; VFS_TYPE_REG
+        movem   1,5(012)
+        movei   1,1
+        jrst    dtfs_readdir_return
+
+dtfs_readdir_seen_next:
+        addi    5,1
+
+dtfs_readdir_next:
+        addi    4,1
+        cain    013,020
+        jrst    dtfs_readdir_its_limit
+        caige   4,026                   ; native/TENEX: 22 slots
+        jrst    dtfs_readdir_loop
+        jrst    dtfs_readdir_end
+dtfs_readdir_its_limit:
+        caige   4,027                   ; ITS: 23 slots
+        jrst    dtfs_readdir_loop
+dtfs_readdir_end:
+        setz    1,                      ; end of directory
+        jrst    dtfs_readdir_return
+
+dtfs_readdir_fail:
+        seto    1,
+dtfs_readdir_return:
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
