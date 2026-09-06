@@ -70,15 +70,7 @@ extern int dtfs_its_valid(void);
 extern int dtfs_tenex_valid(unsigned int unit, int deep);
 
 
-unsigned int
-dtfs_personality(vnode_t node)
-{
-        return dtfs_media[VFS_MOUNT_ID(node) - 1U] &
-            (DTFS_MEDIA_TENEX | DTFS_MEDIA_ITS);
-}
-
-extern int dtfs_is_tenex(vnode_t node);
-extern int dtfs_is_its(vnode_t node);
+extern unsigned int dtfs_personality(vnode_t node);
 
 unsigned int
 dtfs_unit(vnode_t node)
@@ -87,6 +79,7 @@ dtfs_unit(vnode_t node)
 }
 
 extern int dtfs_load(vnode_t node);
+extern void dtfs_patch_media(unsigned int mount, unsigned int media);
 
 int
 dtfs_commit(vnode_t node)
@@ -241,35 +234,8 @@ dtfs_block_info(vnode_t node, unsigned int slot, unsigned int *firstp)
 
 extern unsigned int dtfs_size_words(vnode_t node, unsigned int slot);
 
-static int
-dtfs_find_free_block(unsigned int start, int tenex,
-    unsigned int *blockp)
-{
-        unsigned int n;
-        unsigned int block;
-        unsigned int mapoff;
-
-        if (tenex) {
-                start = 1U;
-                mapoff = 1U;
-        } else {
-                /* start==1 is the empty-file seed: allocate by metadata. */
-                if (start <= 1U || start > DTFS_LAST_BLOCK)
-                        start = DTFS_DIR_BLOCK + 1U;
-                mapoff = 0U;
-        }
-        block = start;
-        for (n = 0U; n < DTFS_LAST_BLOCK; ++n) {
-                if (dtfs_owner(0U, block - mapoff) == DTFS_OWNER_FREE) {
-                        *blockp = block;
-                        return 0;
-                }
-                ++block;
-                if (block > DTFS_LAST_BLOCK)
-                        block = 1U;
-        }
-        return -1;
-}
+extern int dtfs_find_free_block(unsigned int start, int tenex,
+    unsigned int *blockp);
 
 static int
 dtfs_its_resize(vnode_t node, unsigned int words)
@@ -345,13 +311,15 @@ dtfs_resize(vnode_t node, unsigned int words)
         unsigned int unit;
         unsigned int owner;
         unsigned int last_words;
+        unsigned int personality;
         int tenex;
 
         if (!dtfs_is_file(node) || dtfs_load(node) != 0)
                 return -1;
-        if (dtfs_is_its(node))
+        personality = dtfs_personality(node);
+        if (personality == DTFS_MEDIA_ITS)
                 return dtfs_its_resize(node, words);
-        tenex = dtfs_is_tenex(node);
+        tenex = personality == DTFS_MEDIA_TENEX;
         slot = VFS_INDEX(node);
         unit = dtfs_unit(node);
         owner = slot + 1U;
@@ -534,7 +502,7 @@ dtfs_mount_unit(unsigned int unit, vnode_t target,
             flags & VFS_MOUNT_RDONLY, &root) != 0)
                 return -1;
         format = VFS_MOUNT_ID(root);
-        dtfs_media[format - 1U] = media;
+        dtfs_patch_media(format, media);
         dtfs_cache_mount = format;
         *rootp = root;
         return 0;
@@ -710,6 +678,7 @@ dtfs_rename(vnode_t olddir, const struct vfs_name *oldname,
     vnode_t newdir, const struct vfs_name *newname)
 {
         unsigned int slot;
+        unsigned int personality;
 
         if (!dtfs_is_root(olddir) || !dtfs_is_root(newdir) ||
             VFS_MOUNT_ID(olddir) != VFS_MOUNT_ID(newdir) ||
@@ -717,10 +686,11 @@ dtfs_rename(vnode_t olddir, const struct vfs_name *oldname,
             dtfs_scan_slot(olddir, oldname, &slot) != 0 ||
             dtfs_scan_slot(olddir, newname, 0) == 0)
                 return -1;
-        if (dtfs_is_tenex(olddir)) {
+        personality = dtfs_personality(olddir);
+        if (personality == DTFS_MEDIA_TENEX) {
                 if (dtfs_foreign_set_name(slot, newname, 0) != 0)
                         return -1;
-        } else if (dtfs_is_its(olddir)) {
+        } else if (personality == DTFS_MEDIA_ITS) {
                 if (dtfs_foreign_set_name(slot, newname, 1) != 0)
                         return -1;
         } else {
@@ -886,12 +856,14 @@ dtfs_transfer_words(vnode_t node, unsigned int off, kword_t *buf,
         unsigned int take;
         unsigned int unit;
         unsigned int i;
+        unsigned int personality;
 
         if (!dtfs_is_file(node) || buf == 0 || dtfs_load(node) != 0)
                 return -1;
-        if (dtfs_is_its(node))
+        personality = dtfs_personality(node);
+        if (personality == DTFS_MEDIA_ITS)
                 return dtfs_its_transfer_words(node, off, buf, nwords, writing);
-        if (dtfs_is_tenex(node) && !writing) {
+        if (personality == DTFS_MEDIA_TENEX && !writing) {
                 unsigned int slot;
 
                 slot = VFS_INDEX(node);

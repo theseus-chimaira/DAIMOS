@@ -606,6 +606,32 @@ dtfs_chmod_fail:
         pop     17,010
         jrst    pdp10_ret_neg1
 
+; Per-mount personality instructions are patched once by mount.  XCT turns a
+; personality lookup into MOVEI 1,{0,010,020}; dtfs_media[] remains the packed
+; unit/personality store used by paths that need the unit too.
+        .data
+dtfs_personality_xct:
+        movei   1,0
+        movei   1,0
+        movei   1,0
+        movei   1,0
+        .text
+
+        .globl  dtfs_patch_media
+dtfs_patch_media:
+        movem   2,dtfs_media-1(1)
+        move    3,dtfs_personality_xct  ; MOVEI 1,0 template
+        andi    2,030
+        ior     3,2
+        movem   3,dtfs_personality_xct-1(1)
+        popj    17,
+
+        .globl  dtfs_personality
+dtfs_personality:
+        ldb     2,[POINT 6,1,11]
+        xct     dtfs_personality_xct-1(2)
+        popj    17,
+
 ; Shared cached directory loader.  Keep only mount id and packed media across
 ; the DTC/validator calls; unit and personality are cheap masks of MEDIA.
         .globl  dtfs_cache_mount
@@ -622,16 +648,16 @@ dtfs_load:
         move    011,dtfs_media-1(010)   ; unit + personality
         move    1,011
         andi    1,7                     ; unit
-        move    4,011
-        andi    4,030                   ; personality
+        xct     dtfs_personality_xct-1(010)
+        move    4,1                     ; personality
         movei   2,0144                  ; native/TENEX directory
         cain    4,020
         movei   2,0100                  ; ITS directory
         movei   3,dtfs_dir
         pushj   17,dtfs_dtc_read
         jumpn   1,dtfs_load_fail
-        move    4,011
-        andi    4,030
+        xct     dtfs_personality_xct-1(010)
+        move    4,1
         cain    4,020
         jrst    dtfs_load_validate_its
         cain    4,010
@@ -808,21 +834,51 @@ dtfs_readdir_return:
         pop     17,010
         popj    17,
 
-; Compact personality predicates.  Avoid GCC's extra constant load into AC6.
-        .globl  dtfs_is_tenex
-dtfs_is_tenex:
-        pushj   17,dtfs_personality
-        caie    1,010
-        tdza    1,1
-        movei   1,1
-        popj    17,
+        .globl  dtfs_find_free_block
+dtfs_find_free_block:
+        push    17,010
+        push    17,011
+        move    010,3                   ; blockp
+        jumpe   2,dtfs_find_free_native
+        movei   6,1
+        movei   011,1                   ; TENEX map is block-1
+        jrst    dtfs_find_free_start
 
-        .globl  dtfs_is_its
-dtfs_is_its:
-        pushj   17,dtfs_personality
-        caie    1,020
-        tdza    1,1
-        movei   1,1
+dtfs_find_free_native:
+        move    6,1
+        setz    011,
+        caig    6,1
+        jrst    dtfs_find_free_reset
+        caig    6,01101
+        jrst    dtfs_find_free_start
+dtfs_find_free_reset:
+        movei   6,0145                  ; first data block after directory
+
+dtfs_find_free_start:
+        setz    7,
+dtfs_find_free_loop:
+        setz    1,
+        move    2,6
+        sub     2,011
+        pushj   17,dtfs_owner
+        jumpe   1,dtfs_find_free_found
+        addi    6,1
+        caig    6,01101
+        jrst    dtfs_find_free_count
+        movei   6,1
+dtfs_find_free_count:
+        addi    7,1
+        caige   7,01101
+        jrst    dtfs_find_free_loop
+        seto    1,
+        jrst    dtfs_find_free_return
+
+dtfs_find_free_found:
+        movem   6,(010)
+        setz    1,
+dtfs_find_free_return:
+        pop     17,011
+        pop     17,010
         popj    17,
 
         .globl  dtfs_block_info
@@ -832,8 +888,9 @@ dtfs_size_words:
         push    17,011
         move    010,1
         move    011,2
-        pushj   17,dtfs_is_tenex
-        jumpe   1,dtfs_size_words_native
+        pushj   17,dtfs_personality
+        caie    1,010
+        jrst    dtfs_size_words_native
         move    1,010
         pushj   17,dtfs_unit
         move    2,011
