@@ -554,30 +554,3 @@ d6fs_provider_rename(vnode_t olddir,
         }
         return 0;
 }
-
-
-int
-d6fs_provider_write_words(vnode_t node, unsigned int off,
-    const kword_t *buf, unsigned int nwords, kword_t size_chars)
-{
-        kword_t fcb[D6FS_FCB_WORDS];
-        struct d6fs_fcb_info fi;
-        kword_t need;
-        unsigned int tail;
-
-        if (buf == 0 || d6fs_provider_fcb(node, fcb, &fi) != 0 ||
-            (fi.type != D6FS_TYPE_REG && fi.type != D6FS_TYPE_SYMLINK) ||
-            (fi.flags & D6FS_FLAG_IMMUTABLE) != 0U ||
-            ((fi.flags & D6FS_FLAG_APPEND) != 0U &&
-            (kword_t)off != fi.size_words))
-                return -1;
-        need = (kword_t)off + (kword_t)nwords;
-        if (need > fi.size_words) {
-                tail = d6fs_provider_tail(fi.type, need, size_chars);
-                if (d6fs_provider_resize_fcb(node, fcb, &fi, need,
-                    tail) != 0)
-                        return -1;
-        }
-        return d6fs_reader_write_words(&d6fs_provider_reader, fcb,
-            off, buf, nwords);
-}

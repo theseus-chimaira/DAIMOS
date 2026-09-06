@@ -1325,3 +1325,70 @@ d6fs_provider_parent_fail:
 d6fs_provider_parent_done:
         sub     17,[014,,014]
         popj    17,
+
+; int d6fs_provider_write_words(vnode_t node, unsigned int off,
+;     const kword_t *buf, unsigned int nwords, kword_t size_chars)
+; Keep all live arguments beside the FCB/info scratch.  The top frame word is
+; reused as the outgoing fifth argument first for resize_fcb (tail), then for
+; reader_write_words (nwords).
+        .globl  d6fs_provider_write_words
+        .globl  d6fs_reader_write_words
+d6fs_provider_write_words:
+        jumpe   3,pdp10_ret_neg1
+        add     17,[037,,037]            ; FCB + info + node/off/buf/nwords/arg5
+        movem   1,-4(17)                 ; node
+        movem   2,-3(17)                 ; off
+        movem   3,-2(17)                 ; buf
+        movem   4,-1(17)                 ; nwords
+        move    5,-040(17)               ; incoming arg 5: size_chars
+        movem   5,(17)
+        movei   2,-036(17)               ; 020-word FCB scratch
+        movei   3,-016(17)               ; 012-word decoded info
+        pushj   17,d6fs_provider_fcb
+        jumpn   1,d6fs_provider_write_words_fail
+        move    1,-016(17)               ; info.type
+        cain    1,1                      ; D6FS_TYPE_REG
+        jrst    d6fs_provider_write_words_type_ok
+        caie    1,3                      ; D6FS_TYPE_SYMLINK
+        jrst    d6fs_provider_write_words_fail
+d6fs_provider_write_words_type_ok:
+        move    4,-015(17)               ; info.flags
+        trne    4,020                    ; D6FS_FLAG_IMMUTABLE
+        jrst    d6fs_provider_write_words_fail
+        trnn    4,1                      ; D6FS_FLAG_APPEND
+        jrst    d6fs_provider_write_words_append_ok
+        move    5,-3(17)                 ; APPEND requires off == old size
+        came    5,-7(17)                 ; info.size_words
+        jrst    d6fs_provider_write_words_fail
+d6fs_provider_write_words_append_ok:
+        move    5,-3(17)
+        add     5,-1(17)                 ; need = off + nwords
+        camg    5,-7(17)                 ; resize only when need > old size
+        jrst    d6fs_provider_write_words_store
+d6fs_provider_write_words_resize:
+        move    1,-016(17)               ; type
+        move    2,5                      ; new size in words
+        move    3,(17)                   ; size_chars
+        pushj   17,d6fs_provider_tail
+        movem   1,(17)                   ; outgoing arg 5: tail
+        move    1,-4(17)                 ; node
+        movei   2,-036(17)               ; FCB
+        movei   3,-016(17)               ; info
+        move    4,-3(17)
+        add     4,-1(17)                 ; recompute need after helper call
+        pushj   17,d6fs_provider_resize_fcb
+        jumpn   1,d6fs_provider_write_words_fail
+d6fs_provider_write_words_store:
+        move    5,-1(17)
+        movem   5,(17)                   ; outgoing arg 5: nwords
+        movei   1,d6fs_provider_reader
+        movei   2,-036(17)
+        move    3,-3(17)
+        move    4,-2(17)
+        pushj   17,d6fs_reader_write_words
+        jrst    d6fs_provider_write_words_done
+d6fs_provider_write_words_fail:
+        seto    1,
+d6fs_provider_write_words_done:
+        sub     17,[037,,037]
+        popj    17,
