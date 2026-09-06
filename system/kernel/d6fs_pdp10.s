@@ -1091,6 +1091,90 @@ d6fs_provider_vtype_ops:
         movei   1,1                     ; DIR -> VFS_TYPE_DIR
         movei   1,6                     ; SYMLINK -> VFS_TYPE_SYMLINK
 
+; int d6fs_provider_stat(vnode_t node, struct vfs_stat *st)
+; Decode only FCB info, then derive the character size directly.  D6FS tail
+; zero means a full final word, so only a nonzero tail needs correction.
+        .globl  d6fs_provider_stat
+d6fs_provider_stat:
+        jumpe   2,pdp10_ret_neg1
+        add     17,[013,,013]            ; info + st pointer
+        movem   2,(17)
+        movei   2,0
+        movei   3,-011(17)               ; 012-word decoded info
+        pushj   17,d6fs_provider_fcb
+        jumpn   1,d6fs_provider_stat_fail
+        skipn   1,-011(17)               ; info.type; FREE is invalid
+        jrst    d6fs_provider_stat_fail
+        pushj   17,d6fs_provider_vtype
+        move    2,(17)
+        movem   1,(2)                    ; st->type
+        move    1,-7(17)                 ; info.mode
+        movem   1,1(2)                   ; st->mode
+        move    4,-2(17)                 ; info.size_words
+        movem   4,3(2)                   ; st->size_words
+        jumpe   4,d6fs_provider_stat_zero_chars
+        move    1,-011(17)               ; info.type
+        cain    1,3                      ; D6FS_TYPE_SYMLINK
+        jrst    d6fs_provider_stat_symlink
+        imuli   4,4
+        skipn   1,-6(17)                 ; info.tail
+        jrst    d6fs_provider_stat_store_chars
+        subi    4,4
+        add     4,1
+        jrst    d6fs_provider_stat_store_chars
+d6fs_provider_stat_symlink:
+        imuli   4,6
+        skipn   1,-6(17)                 ; info.tail
+        jrst    d6fs_provider_stat_store_chars
+        subi    4,6
+        add     4,1
+d6fs_provider_stat_store_chars:
+        movem   4,2(2)
+        setz    1,
+        jrst    d6fs_provider_stat_done
+d6fs_provider_stat_zero_chars:
+        setzm   2(2)
+        setz    1,
+        jrst    d6fs_provider_stat_done
+d6fs_provider_stat_fail:
+        seto    1,
+d6fs_provider_stat_done:
+        sub     17,[013,,013]
+        popj    17,
+
+; int d6fs_provider_read_words(vnode_t node, unsigned int off,
+;     kword_t *buf, unsigned int nwords)
+; Validate into one compact FCB/info frame and leave nwords in the outgoing
+; fifth-argument slot for d6fs_reader_read_words.
+        .globl  d6fs_provider_read_words
+d6fs_provider_read_words:
+        jumpe   3,pdp10_ret_neg1
+        add     17,[035,,035]            ; FCB + info + off/buf/nwords
+        movem   2,-2(17)                 ; off
+        movem   3,-1(17)                 ; buf
+        movem   4,(17)                   ; outgoing arg 5: nwords
+        movei   2,-034(17)               ; 020-word FCB scratch
+        movei   3,-014(17)               ; 012-word decoded info
+        pushj   17,d6fs_provider_fcb
+        jumpn   1,d6fs_provider_read_words_fail
+        move    1,-014(17)               ; info.type
+        cain    1,1                      ; D6FS_TYPE_REG
+        jrst    d6fs_provider_read_words_ok
+        caie    1,3                      ; D6FS_TYPE_SYMLINK
+        jrst    d6fs_provider_read_words_fail
+d6fs_provider_read_words_ok:
+        movei   1,d6fs_provider_reader
+        movei   2,-034(17)
+        move    3,-2(17)
+        move    4,-1(17)
+        pushj   17,d6fs_reader_read_words
+        jrst    d6fs_provider_read_words_done
+d6fs_provider_read_words_fail:
+        seto    1,
+d6fs_provider_read_words_done:
+        sub     17,[035,,035]
+        popj    17,
+
 ; int d6fs_provider_sync(vnode_t node)
         .globl  d6fs_provider_sync
 d6fs_provider_sync:

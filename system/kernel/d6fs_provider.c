@@ -78,29 +78,6 @@ d6fs_provider_readdir(vnode_t dir, unsigned int off,
 }
 
 int
-d6fs_provider_stat(vnode_t node, struct vfs_stat *st)
-{
-        struct d6fs_fcb_info fi;
-
-        if (st == 0 || d6fs_provider_fcb(node, 0, &fi) != 0 ||
-            fi.type == D6FS_TYPE_FREE)
-                return -1;
-        st->type = d6fs_provider_vtype(fi.type);
-        st->mode = fi.mode;
-        st->size_words = fi.size_words;
-        if (fi.size_words == 0UL)
-                st->size_chars = 0UL;
-        else if (fi.type == D6FS_TYPE_SYMLINK)
-                st->size_chars = (fi.size_words - 1UL) * 6UL +
-                    (fi.tail != 0U ? fi.tail : 6U);
-        else if (fi.tail != 0U)
-                st->size_chars = (fi.size_words - 1UL) * 4UL + fi.tail;
-        else
-                st->size_chars = fi.size_words * 4UL;
-        return 0;
-}
-
-int
 d6fs_provider_parent_name(vnode_t node, vnode_t *parentp,
     struct vfs_name *namep)
 {
@@ -123,20 +100,6 @@ d6fs_provider_parent_name(vnode_t node, vnode_t *parentp,
                 *parentp = parent;
                 return 0;
         }
-}
-
-int
-d6fs_provider_read_words(vnode_t node, unsigned int off,
-    kword_t *buf, unsigned int nwords)
-{
-        kword_t fcb[D6FS_FCB_WORDS];
-        struct d6fs_fcb_info fi;
-
-        if (buf == 0 || d6fs_provider_fcb(node, fcb, &fi) != 0 ||
-            (fi.type != D6FS_TYPE_REG && fi.type != D6FS_TYPE_SYMLINK))
-                return -1;
-        return d6fs_reader_read_words(&d6fs_provider_reader, fcb,
-            off, buf, nwords);
 }
 
 int
