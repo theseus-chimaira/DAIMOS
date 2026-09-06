@@ -1376,7 +1376,7 @@ d6fs_provider_parent_store:
 d6fs_provider_parent_fail:
         seto    1,
 d6fs_provider_parent_done:
-        sub     17,[014,,014]
+        sub     17,[015,,015]
         popj    17,
 
 ; int d6fs_provider_write_words(vnode_t node, unsigned int off,
@@ -1444,4 +1444,109 @@ d6fs_provider_write_words_fail:
         seto    1,
 d6fs_provider_write_words_done:
         sub     17,[037,,037]
+        popj    17,
+
+; int d6fs_provider_readdir(vnode_t dir, unsigned int off,
+;     struct vfs_dirent *ent)
+; Keep scan state in a compact stack frame and reuse provider_dirent's decoded
+; entry directly.  AC1-AC7 are call-clobbered, so no register save block is
+; required around the helper calls.
+        .globl  d6fs_provider_readdir
+d6fs_provider_readdir:
+        jumpe   3,pdp10_ret_neg1
+        add     17,[015,,015]            ; di[8] + dir/off/ent/slot/seen
+        movem   1,-4(17)
+        movem   2,-3(17)
+        movem   3,-2(17)
+        setzm   -1(17)                   ; slot
+        setzm   (17)                     ; seen
+d6fs_provider_readdir_loop:
+        move    1,-4(17)
+        move    2,-1(17)
+        movei   3,-014(17)               ; struct d6fs_dirent_info
+        pushj   17,d6fs_provider_dirent
+        jumpe   1,d6fs_provider_readdir_eof
+        jumpl   1,d6fs_provider_readdir_fail
+        skipn   -5(17)                   ; di.child_fcb
+        jrst    d6fs_provider_readdir_next
+        move    4,(17)
+        aos     (17)
+        came    4,-3(17)
+        jrst    d6fs_provider_readdir_next
+        movei   1,-014(17)               ; di.name
+        move    2,-2(17)
+        addi    2,1                      ; ent->name.words
+        movei   3,4
+        pushj   17,fs_copy_words
+        movei   1,-014(17)
+        movei   2,030                    ; VFS_NAME_MAX_CHARS
+        pushj   17,vfs_sixbit_name_chars
+        move    2,-2(17)
+        movem   1,(2)                    ; ent->name.chars
+        move    1,-7(17)                 ; di.type
+        pushj   17,d6fs_provider_vtype
+        move    2,-2(17)
+        movem   1,5(2)                   ; ent->type
+        movei   1,1
+        jrst    d6fs_provider_readdir_done
+d6fs_provider_readdir_next:
+        aos     -1(17)
+        jrst    d6fs_provider_readdir_loop
+d6fs_provider_readdir_eof:
+        setz    1,
+        jrst    d6fs_provider_readdir_done
+d6fs_provider_readdir_fail:
+        seto    1,
+d6fs_provider_readdir_done:
+        sub     17,[015,,015]
+        popj    17,
+
+; int d6fs_provider_parent_name(vnode_t node, vnode_t *parentp,
+;     struct vfs_name *namep)
+        .globl  d6fs_provider_parent_name
+d6fs_provider_parent_name:
+        jumpe   2,pdp10_ret_neg1
+        jumpe   3,pdp10_ret_neg1
+        add     17,[015,,015]            ; di[8] + node/parentp/namep/slot/parent
+        movem   1,-4(17)
+        movem   2,-3(17)
+        movem   3,-2(17)
+        movei   2,(17)                   ; parent scratch
+        pushj   17,d6fs_provider_parent
+        jumpn   1,d6fs_provider_parent_name_fail
+        move    4,(17)
+        camn    4,-4(17)                 ; root/self has no parent name
+        jrst    d6fs_provider_parent_name_fail
+        setzm   -1(17)                   ; slot
+d6fs_provider_parent_name_loop:
+        move    1,(17)
+        move    2,-1(17)
+        movei   3,-014(17)               ; struct d6fs_dirent_info
+        pushj   17,d6fs_provider_dirent
+        jumple  1,d6fs_provider_parent_name_fail
+        move    4,-5(17)                 ; di.child_fcb
+        hrrz    5,-4(17)                 ; VFS_INDEX(node)
+        came    4,5
+        jrst    d6fs_provider_parent_name_next
+        movei   1,-014(17)               ; di.name
+        movei   2,030
+        pushj   17,vfs_sixbit_name_chars
+        move    2,-2(17)
+        movem   1,(2)                    ; namep->chars
+        addi    2,1
+        movei   1,-014(17)
+        movei   3,4
+        pushj   17,fs_copy_words
+        move    1,(17)
+        move    2,-3(17)
+        movem   1,(2)
+        setz    1,
+        jrst    d6fs_provider_parent_name_done
+d6fs_provider_parent_name_next:
+        aos     -1(17)
+        jrst    d6fs_provider_parent_name_loop
+d6fs_provider_parent_name_fail:
+        seto    1,
+d6fs_provider_parent_name_done:
+        sub     17,[015,,015]
         popj    17,

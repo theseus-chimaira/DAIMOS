@@ -24,59 +24,10 @@ unsigned int d6fs_provider_vtype(unsigned int type);
 int d6fs_provider_dirent(vnode_t dir, unsigned int slot,
     struct d6fs_dirent_info *di);
 
-int
-d6fs_provider_readdir(vnode_t dir, unsigned int off,
-    struct vfs_dirent *ent)
-{
-        struct d6fs_dirent_info di;
-        unsigned int slot;
-        unsigned int seen;
-        int rc;
-
-        if (ent == 0)
-                return -1;
-        seen = 0U;
-        for (slot = 0U;; ++slot) {
-                rc = d6fs_provider_dirent(dir, slot, &di);
-                if (rc == 0)
-                        return 0;
-                if (rc < 0)
-                        return -1;
-                if (di.child_fcb == 0U)
-                        continue;
-                if (seen++ != off)
-                        continue;
-                fs_copy_words(di.name, ent->name.words, VFS_NAME_WORDS);
-                ent->name.chars = vfs_sixbit_name_chars(di.name, VFS_NAME_MAX_CHARS);
-                ent->type = d6fs_provider_vtype(di.type);
-                return 1;
-        }
-}
-
-int
-d6fs_provider_parent_name(vnode_t node, vnode_t *parentp,
-    struct vfs_name *namep)
-{
-        vnode_t parent;
-        struct d6fs_dirent_info di;
-        unsigned int slot;
-        int rc;
-
-        if (parentp == 0 || namep == 0 ||
-            d6fs_provider_parent(node, &parent) != 0 || parent == node)
-                return -1;
-        for (slot = 0U;; ++slot) {
-                rc = d6fs_provider_dirent(parent, slot, &di);
-                if (rc <= 0)
-                        return -1;
-                if (di.child_fcb != VFS_INDEX(node))
-                        continue;
-                namep->chars = vfs_sixbit_name_chars(di.name, VFS_NAME_MAX_CHARS);
-                fs_copy_words(di.name, namep->words, VFS_NAME_WORDS);
-                *parentp = parent;
-                return 0;
-        }
-}
+int d6fs_provider_readdir(vnode_t dir, unsigned int off,
+    struct vfs_dirent *ent);
+int d6fs_provider_parent_name(vnode_t node, vnode_t *parentp,
+    struct vfs_name *namep);
 
 int
 d6fs_provider_prepare_unmount(vnode_t root)
