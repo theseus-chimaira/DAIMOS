@@ -1059,3 +1059,45 @@ d6fs_provider_tail_full:
         popj    17,
 d6fs_provider_tail_zero:
         jrst    pdp10_ret_zero
+
+; Private provider helpers use the same 0/-1 convention as reader helpers.
+; Keeping these in assembly avoids compiler result normalization and allows
+; successful FCB validation to tail-call d6fs_reader_fcb directly.
+        .globl  d6fs_provider_fcb
+d6fs_provider_fcb:
+        move    6,2
+        move    7,3
+        ldb     4,[POINT 6,1,11]
+        jumpe   4,pdp10_ret_neg1
+        move    5,d6fs_provider_reader+1
+        andi    5,077
+        came    4,5
+        jrst    pdp10_ret_neg1
+        hrrz    2,1
+        movei   1,d6fs_provider_reader
+        move    3,6
+        move    4,7
+        jrst    d6fs_reader_fcb
+
+; unsigned int d6fs_provider_vtype(unsigned int type)
+; D6FS types reaching this helper are validated REG/DIR/SYMLINK values 1..3.
+; XCT keeps the three-value translation smaller than a branch chain/table.
+        .globl  d6fs_provider_vtype
+d6fs_provider_vtype:
+        xct     d6fs_provider_vtype_ops-1(1)
+        popj    17,
+d6fs_provider_vtype_ops:
+        movei   1,2                     ; REG -> VFS_TYPE_REG
+        movei   1,1                     ; DIR -> VFS_TYPE_DIR
+        movei   1,6                     ; SYMLINK -> VFS_TYPE_SYMLINK
+
+; int d6fs_provider_sync(vnode_t node)
+        .globl  d6fs_provider_sync
+d6fs_provider_sync:
+        ldb     1,[POINT 6,1,11]
+        jumpe   1,pdp10_ret_neg1
+        move    2,d6fs_provider_reader+1
+        andi    2,077
+        came    1,2
+        jrst    pdp10_ret_neg1
+        jrst    pdp10_ret_zero

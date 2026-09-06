@@ -17,39 +17,9 @@ static int d6fs_provider_scan_slot(vnode_t dir,
     const struct vfs_name *name, unsigned int *slotp,
     struct d6fs_dirent_info *dip);
 
-int
-d6fs_provider_sync(vnode_t node)
-{
-        unsigned int id;
-
-        id = VFS_MOUNT_ID(node);
-        if (id == 0U || id !=
-            ((unsigned int)(unsigned long)d6fs_provider_reader.opaque &
-            D6FS_PROVIDER_MOUNT_ID_MASK))
-                return -1;
-        return 0;
-}
-
-static int
-d6fs_provider_fcb(vnode_t node, kword_t fcb[D6FS_FCB_WORDS],
-    struct d6fs_fcb_info *info)
-{
-        if (d6fs_provider_sync(node) != 0 ||
-            d6fs_reader_fcb(&d6fs_provider_reader,
-            VFS_INDEX(node), fcb, info) != 0)
-                return -1;
-        return 0;
-}
-
-static unsigned int
-d6fs_provider_vtype(unsigned int type)
-{
-        if (type == D6FS_TYPE_DIR)
-                return VFS_TYPE_DIR;
-        if (type == D6FS_TYPE_SYMLINK)
-                return VFS_TYPE_SYMLINK;
-        return VFS_TYPE_REG;
-}
+int d6fs_provider_fcb(vnode_t node, kword_t fcb[D6FS_FCB_WORDS],
+    struct d6fs_fcb_info *info);
+unsigned int d6fs_provider_vtype(unsigned int type);
 
 static int
 d6fs_provider_dirent(vnode_t dir, unsigned int slot,
