@@ -202,22 +202,22 @@ dtfs_block_info(vnode_t node, unsigned int slot, unsigned int *firstp)
         unsigned int owner;
         unsigned int count;
         unsigned int mapoff;
-        unsigned int personality;
+        unsigned int media;
         unsigned int unit;
 
         owner = slot + 1U;
         count = 0U;
         if (firstp != 0)
                 *firstp = 0U;
-        personality = dtfs_personality(node);
-        if (personality == DTFS_MEDIA_ITS) {
+        media = dtfs_media[VFS_MOUNT_ID(node) - 1U];
+        if ((media & DTFS_MEDIA_ITS) != 0U) {
                 for (block = 0U; block < DTFS_ITS_MAP_ENTRIES; ++block)
                         if (dtfs_owner(DTFS_ITS_NAME_WORDS, block) == owner)
                                 ++count;
                 return count;
         }
-        mapoff = personality == DTFS_MEDIA_TENEX ? 1U : 0U;
-        unit = dtfs_unit(node);
+        mapoff = (media & DTFS_MEDIA_TENEX) != 0U;
+        unit = media & DTFS_MEDIA_UNIT_MASK;
         for (block = 1U; block <= DTFS_LAST_BLOCK; ++block) {
                 if (dtfs_owner(0U, block - mapoff) != owner)
                         continue;
