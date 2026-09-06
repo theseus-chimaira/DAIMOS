@@ -121,35 +121,8 @@ dtfs_commit(vnode_t node)
             DTFS_DIR_BLOCK, dtfs_dir);
 }
 
-static int
-dtfs_native_scan_slot(const struct vfs_name *name, unsigned int *slotp)
-{
-        unsigned int base;
-        unsigned int slot;
-
-        if (name != 0) {
-                if (!vfs_name_valid(name) ||
-                    name->chars > DTFS_NAME_MAX_CHARS ||
-                    name->words[2] != 0 || name->words[3] != 0)
-                        return -1;
-        }
-        for (slot = 0U; slot < DTFS_FILE_SLOTS; ++slot) {
-                base = DTFS_NAME_BASE + slot * 2U;
-                if (name == 0) {
-                        if (dtfs_dir[base] != 0)
-                                continue;
-                } else {
-                        if (dtfs_dir[base] != name->words[0] ||
-                            (dtfs_dir[base + 1U] & DTFS_NAME2_MASK) !=
-                            (name->words[1] & DTFS_NAME2_MASK))
-                                continue;
-                }
-                if (slotp != 0)
-                        *slotp = slot;
-                return 0;
-        }
-        return -1;
-}
+extern int dtfs_native_scan_slot(const struct vfs_name *name,
+    unsigned int *slotp);
 
 /* Present TENEX/ITS NAME and EXT fields as one packed VFS NAME.EXT. */
 extern void dtfs_foreign_name(unsigned int slot, struct vfs_name *name,

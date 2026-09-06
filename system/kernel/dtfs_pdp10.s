@@ -493,6 +493,49 @@ dtfs_foreign_set_name_return:
         .globl  dtfs_personality
         .globl  dtfs_commit
         .globl  dtfs_set_exec
+        .globl  dtfs_native_scan_slot
+; int dtfs_native_scan_slot(const struct vfs_name *name, unsigned int *slotp)
+; Native names occupy two words; unused slots have a zero first word.
+; Inline the VFS name-range check because DTFS's 11-character limit is stricter.
+dtfs_native_scan_slot:
+        jumpe   1,dtfs_native_scan_begin
+        move    4,(1)
+        jumple  4,pdp10_ret_neg1
+        caile   4,013                    ; DTFS_NAME_MAX_CHARS = 11
+        jrst    pdp10_ret_neg1
+        skipe   3(1)
+        jrst    pdp10_ret_neg1
+        skipe   4(1)
+        jrst    pdp10_ret_neg1
+dtfs_native_scan_begin:
+        setz    3,                       ; slot
+        movei   4,0123                   ; DTFS_NAME_BASE
+dtfs_native_scan_loop:
+        jumpe   1,dtfs_native_scan_empty
+        move    5,dtfs_dir(4)
+        came    5,1(1)
+        jrst    dtfs_native_scan_next
+        move    5,dtfs_dir+1(4)
+        andcmi  5,077                    ; ignore native tail-count bits
+        move    6,2(1)
+        andcmi  6,077
+        came    5,6
+        jrst    dtfs_native_scan_next
+        jrst    dtfs_native_scan_match
+dtfs_native_scan_empty:
+        skipn   dtfs_dir(4)
+        jrst    dtfs_native_scan_match
+dtfs_native_scan_next:
+        addi    4,2
+        addi    3,1
+        caige   3,026                    ; DTFS_FILE_SLOTS = 22
+        jrst    dtfs_native_scan_loop
+        jrst    pdp10_ret_neg1
+dtfs_native_scan_match:
+        jumpe   2,pdp10_ret_zero
+        movem   3,(2)
+        jrst    pdp10_ret_zero
+
         .globl  pdp10_ret_zero
         .globl  pdp10_ret_neg1
 
