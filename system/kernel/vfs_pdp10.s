@@ -171,17 +171,8 @@ vfs_unlink:
         movem   1,-1(17)
         movem   2,(17)
         pushj   17,vfs_readonly
-        jumpn   1,vfs_unlink_ro
-        move    1,-1(17)
-        lsh     1,-036
-        andi    1,077
-        movei   2,-2(17)
-        pushj   17,fs_provider_call
-        sub     17,[3,,3]
-        popj    17,
-vfs_unlink_ro:
-        sub     17,[3,,3]
-        jrst    pdp10_ret_neg1
+        jumpn   1,vfs_mutate3_ro
+        jrst    vfs_mutate3_call
 
         .globl  vfs_truncate
 vfs_truncate:
@@ -212,7 +203,8 @@ vfs_chmod:
         movem   1,-1(17)
         movem   2,(17)
         pushj   17,vfs_readonly
-        jumpn   1,vfs_chmod_ro
+        jumpn   1,vfs_mutate3_ro
+vfs_mutate3_call:
         move    1,-1(17)
         lsh     1,-036
         andi    1,077
@@ -220,7 +212,7 @@ vfs_chmod:
         pushj   17,fs_provider_call
         sub     17,[3,,3]
         popj    17,
-vfs_chmod_ro:
+vfs_mutate3_ro:
         sub     17,[3,,3]
         jrst    pdp10_ret_neg1
 

@@ -135,14 +135,12 @@ diskset_block_io:
         move 3,4
         add 2,diskset_boot+5(1)
         move 1,diskset_boot+1(1)
-        jumpe 5,diskset_block_account_read
-        aos devicefs_d6set_writes
-        aos devicefs_d6set_blocks_written
+        aos devicefs_d6set_reads(5)
+        aos devicefs_d6set_blocks_read(5)
+        jumpe 5,diskset_block_read
         pushj 17,dsk270_write_sector
         jrst diskset_block_done
-diskset_block_account_read:
-        aos devicefs_d6set_reads
-        aos devicefs_d6set_blocks_read
+diskset_block_read:
         pushj 17,dsk270_read_sector
 diskset_block_done:
         jumpe 1,diskset_block_return
@@ -186,24 +184,11 @@ diskset_swap_io:
         jrst pdp10_ret_neg1
 
 diskset_swap_valid:
-        ; Count one logical SWAP request and its block volume at D6SET too.
-        movei 5,devicefs_swap_reads
-        movei 6,devicefs_swap_blocks_read
-        movei 7,devicefs_d6set_reads
-        jumpe 4,diskset_swap_account
-        movei 5,devicefs_swap_writes
-        movei 6,devicefs_swap_blocks_written
-        movei 7,devicefs_d6set_writes
-diskset_swap_account:
-        aos (5)
-        addm 2,(6)
-        aos (7)
-        jumpe 4,diskset_swap_account_read_blocks
-        addm 2,devicefs_d6set_blocks_written
-        jrst diskset_swap_account_done
-diskset_swap_account_read_blocks:
-        addm 2,devicefs_d6set_blocks_read
-diskset_swap_account_done:
+        ; Read/write counters are adjacent and indexed directly by mode 0/1.
+        aos devicefs_swap_reads(4)
+        addm 2,devicefs_swap_blocks_read(4)
+        aos devicefs_d6set_reads(4)
+        addm 2,devicefs_d6set_blocks_read(4)
         ; Preserve only the state live across DSK service calls.
         add 17,[6,,6]
         movei 0,-5(17)

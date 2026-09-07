@@ -25,21 +25,21 @@ dtfs_mres_dispatch:
         .data
 dtfs_mres_vector:
         .word   017                      ; highest runtime VFS operation: 15
-        .word   dtfs_lookup              ; 1
-        .word   dtfs_readdir             ; 2
-        .word   dtfs_stat                ; 3
-        .word   dtfs_parent              ; 4
-        .word   0                        ; 5 PARENT_NAME unsupported
-        .word   dtfs_create              ; 6
-        .word   dtfs_mkdir_unsupported   ; 7 MKDIR unsupported
-        .word   0                        ; 8 SYMLINK unsupported
-        .word   dtfs_unlink              ; 9 UNLINK
-        .word   dtfs_rename              ; 10 RENAME
-        .word   dtfs_truncate            ; 11 TRUNCATE
-        .word   dtfs_chmod               ; 12 CHMOD
-        .word   dtfs_read_words          ; 13 READ_WORDS
-        .word   dtfs_write_words         ; 14 WRITE_WORDS
-        .word   dtfs_sync                ; 15 SYNC
+        movei   7,dtfs_lookup                 ; 1
+        movei   7,dtfs_readdir                ; 2
+        movei   7,dtfs_stat                   ; 3
+        movei   7,dtfs_parent                 ; 4
+        jrst    fs_mres_no_service       ; 5 PARENT_NAME unsupported
+        movei   7,dtfs_create                 ; 6
+        movei   7,dtfs_mkdir_unsupported      ; 7 MKDIR unsupported
+        jrst    fs_mres_no_service       ; 8 SYMLINK unsupported
+        movei   7,dtfs_unlink                 ; 9 UNLINK
+        movei   7,dtfs_rename                 ; 10 RENAME
+        movei   7,dtfs_truncate               ; 11 TRUNCATE
+        movei   7,dtfs_chmod                  ; 12 CHMOD
+        movei   7,dtfs_read_words             ; 13 READ_WORDS
+        movei   7,dtfs_write_words            ; 14 WRITE_WORDS
+        movei   7,dtfs_sync                   ; 15 SYNC
         .text
 
 ; DTFS is deliberately flat.  Preserve a distinct error through the syscall
@@ -82,6 +82,7 @@ dtfs_set_owner:
         movem   3,dtfs_dir(1)
         popj    17,
 
+.if DTFS_ENABLE_TENEX
 ; TENEX directory validation, including the optional fsck/deep chain pass.
 ; The allocation index and slot ranges are small non-negative constants, so
 ; direct CAIGE loops avoid GCC's signed-range scaffolding.
@@ -172,12 +173,19 @@ dtfs_tenex_valid_slot_next:
 dtfs_tenex_valid_false:
         setz    1,
 dtfs_tenex_valid_return:
+.endif
+
+dtfs_restore4:
         pop     17,013
+dtfs_restore3:
         pop     17,012
+dtfs_restore2:
         pop     17,011
+dtfs_restore1:
         pop     17,010
         popj    17,
 
+.if DTFS_ENABLE_ITS
 ; ITS directory structural validation.  Keep the fixed UTAPE markers and
 ; owner/name consistency scan in one compact target loop.
         .globl  dtfs_its_valid
@@ -231,6 +239,8 @@ dtfs_its_valid_false:
 ; Compact vnode predicates.  The vnode encoding is provider:6, kind/mount:12,
 ; index:18.  Mask provider plus local kind in one operation; mount-id and file
 ; index remain independent tests.
+.endif
+
         .globl  dtfs_is_root
 dtfs_is_root:
         move    2,1
@@ -312,6 +322,7 @@ dtfs_dtc_write:
 dtfs_dtc_write_jump:
         jrst    0
 
+        .if DTFS_ENABLE_FOREIGN
 ; void dtfs_foreign_name(slot, name, its)
 ; Decode the two foreign SIXBIT directory words directly into the packed
 ; vfs_name.  NAME is already in the correct six-character format; only an
@@ -392,8 +403,7 @@ dtfs_foreign_name_store_chars:
         movem   1,(010)
 dtfs_foreign_name_finish:
         setzm   4(010)
-        pop     17,010
-        popj    17,
+        jrst    dtfs_restore1
 
 ; int dtfs_foreign_set_name(slot, name, its)
 ; Pack a VFS SIXBIT NAME[.EXT] directly into the ITS/TENEX directory words.
@@ -486,8 +496,9 @@ dtfs_foreign_set_name_ok:
 dtfs_foreign_set_name_fail:
         seto    1,
 dtfs_foreign_set_name_return:
-        pop     17,010
-        popj    17,
+        jrst    dtfs_restore1
+
+        .endif
 
 ; Compact provider lookup.  Preserve the three live arguments and one slot
 ; word with PUSH/POP rather than GCC's frame plus callee-save spill block.
@@ -573,9 +584,7 @@ dtfs_lookup_fail:
 dtfs_lookup_return:
         pop     17,0                    ; slot scratch
         pop     17,012
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    dtfs_restore2
 
 ; Native chmod only.  Foreign personalities are read-only at this provider
 ; entry.  Keep NODE/MODE in callee-saved ACs across C helpers.
@@ -609,6 +618,7 @@ dtfs_chmod_fail:
         pop     17,010
         jrst    pdp10_ret_neg1
 
+.if DTFS_ENABLE_FOREIGN
 ; Per-mount personality instructions are patched once by mount.  XCT turns a
 ; personality lookup into MOVEI 1,{0,010,020}; dtfs_media[] remains the packed
 ; unit/personality store used by paths that need the unit too.
@@ -689,9 +699,50 @@ dtfs_load_ok:
 dtfs_load_fail:
         seto    1,
 dtfs_load_return:
-        pop     17,011
+        jrst    dtfs_restore2
+
+.else
+; Native-only build: packed media contains only the unit.
+        .globl  dtfs_patch_media
+dtfs_patch_media:
+        andi    2,7
+        movem   2,dtfs_media-1(1)
+        popj    17,
+
+        .globl  dtfs_personality
+dtfs_personality:
+        setz    1,
+        popj    17,
+
+        .globl  dtfs_cache_mount
+        .globl  dtfs_media
+        .globl  dtfs_native_valid
+
+dtfs_load:
+        push    17,010
+        ldb     010,[POINT 6,1,11]
+        move    4,dtfs_cache_mount
+        camn    4,010
+        jrst    dtfs_load_native_ok
+        move    1,dtfs_media-1(010)
+        andi    1,7
+        movei   2,0144
+        movei   3,dtfs_dir
+        pushj   17,dtfs_dtc_read
+        jumpn   1,dtfs_load_native_fail
+        pushj   17,dtfs_native_valid
+        jumpe   1,dtfs_load_native_fail
+        movem   010,dtfs_cache_mount
+dtfs_load_native_ok:
+        setz    1,
         pop     17,010
         popj    17,
+dtfs_load_native_fail:
+        seto    1,
+        pop     17,010
+        popj    17,
+
+.endif
 
 ; Native directory validation.  The three post-media map entries are a fixed
 ; tiny range, so use a direct CAIG loop instead of GCC's signed-range code.
@@ -726,6 +777,7 @@ dtfs_native_valid_false:
         setz    1,
         popj    17,
 
+.if DTFS_ENABLE_FOREIGN
 ; Compact directory enumeration.  Resolve the personality once and scan using
 ; caller-clobbered ACs; no state must survive a helper call until a matching
 ; entry has already been selected.
@@ -831,11 +883,62 @@ dtfs_readdir_end:
 dtfs_readdir_fail:
         seto    1,
 dtfs_readdir_return:
-        pop     17,013
+        jrst    dtfs_restore4
+
+.else
+; Native-only compact directory enumeration.
+dtfs_readdir:
+        push    17,010
+        push    17,011
+        push    17,012
+        move    010,2                   ; requested visible entry
+        move    011,3                   ; result
+        pushj   17,dtfs_is_root
+        jumpe   1,dtfs_readdir_native_fail
+        jumpe   011,dtfs_readdir_native_fail
+        pushj   17,dtfs_load
+        jumpn   1,dtfs_readdir_native_fail
+        setzb   4,5                     ; slot, seen
+dtfs_readdir_native_loop:
+        move    6,4
+        lsh     6,1
+        addi    6,0123
+        skipn   dtfs_dir(6)
+        jrst    dtfs_readdir_native_next
+        came    5,010
+        jrst    dtfs_readdir_native_seen
+        move    7,dtfs_dir(6)
+        movem   7,1(011)
+        move    7,dtfs_dir+1(6)
+        andcmi  7,077
+        movem   7,2(011)
+        setzm   3(011)
+        setzm   4(011)
+        movei   1,1(011)
+        movei   2,013
+        pushj   17,vfs_sixbit_name_chars
+        movem   1,(011)
+        movei   1,2
+        movem   1,5(011)
+        movei   1,1
+        jrst    dtfs_readdir_native_return
+dtfs_readdir_native_seen:
+        addi    5,1
+dtfs_readdir_native_next:
+        addi    4,1
+        caige   4,026
+        jrst    dtfs_readdir_native_loop
+        setz    1,
+        jrst    dtfs_readdir_native_return
+dtfs_readdir_native_fail:
+        seto    1,
+dtfs_readdir_native_return:
         pop     17,012
         pop     17,011
         pop     17,010
         popj    17,
+
+.endif
 
         .globl  dtfs_find_free_block
 dtfs_find_free_block:
@@ -880,9 +983,7 @@ dtfs_find_free_found:
         movem   6,(010)
         setz    1,
 dtfs_find_free_return:
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    dtfs_restore2
 
         .globl  dtfs_block_info
         .globl  dtfs_size_words
@@ -933,9 +1034,7 @@ dtfs_size_words_native:
 dtfs_size_words_zero:
         setz    1,
 dtfs_size_words_return:
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    dtfs_restore2
 
         .globl  dtfs_set_name
 dtfs_set_name:

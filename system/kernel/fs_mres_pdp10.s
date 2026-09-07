@@ -4,27 +4,24 @@
         .globl fs_memfs_service_jump
         .globl fs_dtfs_service_jump
         .globl fs_d6fs_service_jump
+        .globl fs_mres_no_service
 
 ; int fs_provider_call(provider, request)
 ; Provider topology is frozen by MINIT.  The three JRST words below are
 ; patched once at boot, avoiding resident service pointers and indirect calls.
 fs_provider_call:
         jumpe   2,fs_mres_no_service
-        caie    1,4
-        jrst    fs_provider_dtfs
+        subi    1,4
+        jumpl   1,fs_mres_no_service
+        caile   1,2
+        jrst    fs_mres_no_service
+        move    3,1
         move    1,2
+        xct     fs_memfs_service_jump(3)
 fs_memfs_service_jump:
         jrst    fs_mres_no_service
-fs_provider_dtfs:
-        caie    1,5
-        jrst    fs_provider_d6fs
-        move    1,2
 fs_dtfs_service_jump:
         jrst    fs_mres_no_service
-fs_provider_d6fs:
-        caie    1,6
-        jrst    fs_mres_no_service
-        move    1,2
 fs_d6fs_service_jump:
         jrst    fs_mres_no_service
 fs_mres_no_service:
@@ -104,8 +101,7 @@ fs_mres_vector_dispatch:
         camle   3,(2)
         jrst    fs_mres_no_service
         add     2,3
-        move    7,(2)
-        jumpe   7,fs_mres_no_service
+        xct     (2)                     ; entry loads AC7 or jumps to failure
         move    6,1                     ; preserve request pointer
         add     17,[1,,1]               ; reserve C arg 5
         move    5,5(6)                  ; request e => C arg 5
@@ -131,8 +127,7 @@ fs_mres_context_vector_dispatch:
         camle   3,(2)
         jrst    fs_mres_no_service
         add     2,3
-        move    7,(2)
-        jumpe   7,fs_mres_no_service
+        xct     (2)                     ; entry loads AC7 or jumps to failure
         move    6,1                     ; request
         add     17,[2,,2]
         move    5,4(6)

@@ -23,13 +23,20 @@
 
         .text
         .globl pdp10_pi_handler_return
+        .globl pdp10_pi_dispatch
         .globl pdp10_pi_dispatch_done
         .globl pdp10_pi_level1
+        .globl pdp10_pi_level1_dispatch_jump
         .globl pdp10_pi_level2
+        .globl pdp10_pi_level2_dispatch_jump
         .globl pdp10_pi_level3
+        .globl pdp10_pi_level3_dispatch_jump
         .globl pdp10_pi_level4
+        .globl pdp10_pi_level4_dispatch_jump
         .globl pdp10_pi_level5
+        .globl pdp10_pi_level5_dispatch_jump
         .globl pdp10_pi_level6
+        .globl pdp10_pi_level6_dispatch_jump
         .globl pdp10_pi_level7
         .globl pdp10_pi_handlers
         .globl pdp10_pi_level_span
@@ -41,6 +48,7 @@ pdp10_pi_level1:
         movem 3,000043
         move 2,000037
         movei 3,pdp10_pi_return_level1
+pdp10_pi_level1_dispatch_jump:
         jrst pdp10_pi_dispatch
 pdp10_pi_level2:
         .word 0
@@ -49,6 +57,7 @@ pdp10_pi_level2:
         movem 3,000045
         move 2,000040
         movei 3,pdp10_pi_return_level2
+pdp10_pi_level2_dispatch_jump:
         jrst pdp10_pi_dispatch
 pdp10_pi_level3:
         .word 0
@@ -57,6 +66,7 @@ pdp10_pi_level3:
         movem 3,000036
         move 2,000041
         movei 3,pdp10_pi_return_level3
+pdp10_pi_level3_dispatch_jump:
         jrst pdp10_pi_dispatch
 pdp10_pi_level4:
         .word 0
@@ -65,6 +75,7 @@ pdp10_pi_level4:
         movem 3,000051
         move 2,pdp10_pi_level_span+0
         movei 3,pdp10_pi_return_level4
+pdp10_pi_level4_dispatch_jump:
         jrst pdp10_pi_dispatch
 pdp10_pi_level5:
         .word 0
@@ -73,6 +84,7 @@ pdp10_pi_level5:
         movem 3,000053
         move 2,pdp10_pi_level_span+1
         movei 3,pdp10_pi_return_level5
+pdp10_pi_level5_dispatch_jump:
         jrst pdp10_pi_dispatch
 pdp10_pi_level6:
         .word 0
@@ -81,6 +93,7 @@ pdp10_pi_level6:
         movem 3,000055
         move 2,pdp10_pi_level_span+2
         movei 3,pdp10_pi_return_level6
+pdp10_pi_level6_dispatch_jump:
         jrst pdp10_pi_dispatch
 pdp10_pi_level7:
         .word 0

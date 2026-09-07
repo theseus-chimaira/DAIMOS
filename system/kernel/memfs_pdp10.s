@@ -311,8 +311,7 @@ memfs_find_child_found:
 memfs_find_child_fail:
         seto    1,
 memfs_find_child_done:
-        pop     17,010
-        popj    17,
+        jrst    memfs_restore1
 
 ; void memfs_clear_node(struct memfs_node *np)
         .globl  memfs_clear_node
@@ -438,13 +437,7 @@ memfs_new_free_found:
 memfs_new_fail:
         seto    1,
 memfs_new_done:
-        pop     17,015
-        pop     17,014
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    memfs_restore6
 
         .globl  memfs_unlink
 memfs_unlink:
@@ -516,11 +509,7 @@ memfs_unlink_fail:
         seto    1,
 memfs_unlink_done:
 memfs_restore_4:
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    memfs_restore4
 
         .globl  memfs_rename
 memfs_rename:
@@ -612,12 +601,19 @@ memfs_rename_apply:
 memfs_rename_fail:
         seto    1,
 memfs_rename_done:
+memfs_restore7:
         pop     17,016
+memfs_restore6:
         pop     17,015
+memfs_restore5:
         pop     17,014
+memfs_restore4:
         pop     17,013
+memfs_restore3:
         pop     17,012
+memfs_restore2:
         pop     17,011
+memfs_restore1:
         pop     17,010
         popj    17,
 
@@ -820,19 +816,19 @@ memfs_mres_not_init:
         .data
 memfs_mres_vector:
         .word   017                      ; operations 1..15
-        .word   memfs_lookup             ; 1 LOOKUP
-        .word   memfs_readdir            ; 2 READDIR
-        .word   memfs_stat               ; 3 STAT
-        .word   memfs_parent             ; 4 PARENT
-        .word   memfs_parent             ; 5 PARENT_NAME
-        .word   memfs_create             ; 6 CREATE
-        .word   memfs_mkdir              ; 7 MKDIR
-        .word   0                        ; 8 SYMLINK
-        .word   memfs_unlink             ; 9 UNLINK
-        .word   memfs_rename             ; 10 RENAME
-        .word   memfs_truncate_words     ; 11 TRUNCATE
-        .word   memfs_chmod              ; 12 CHMOD
-        .word   memfs_read_words         ; 13 READ_WORDS
-        .word   memfs_write_words        ; 14 WRITE_WORDS
-        .word   pdp10_ret_zero           ; 15 SYNC
+        movei   7,memfs_lookup                ; 1 LOOKUP
+        movei   7,memfs_readdir               ; 2 READDIR
+        movei   7,memfs_stat                  ; 3 STAT
+        movei   7,memfs_parent                ; 4 PARENT
+        movei   7,memfs_parent                ; 5 PARENT_NAME
+        movei   7,memfs_create                ; 6 CREATE
+        movei   7,memfs_mkdir                 ; 7 MKDIR
+        jrst    fs_mres_no_service       ; 8 SYMLINK
+        movei   7,memfs_unlink                ; 9 UNLINK
+        movei   7,memfs_rename                ; 10 RENAME
+        movei   7,memfs_truncate_words        ; 11 TRUNCATE
+        movei   7,memfs_chmod                 ; 12 CHMOD
+        movei   7,memfs_read_words            ; 13 READ_WORDS
+        movei   7,memfs_write_words           ; 14 WRITE_WORDS
+        movei   7,pdp10_ret_zero              ; 15 SYNC
         .text

@@ -127,9 +127,31 @@ minit_pi_reindex(void)
         start = 0U;
         for (level = PDP10_PI_LEVEL_MIN; level <= PDP10_PI_LEVEL_MAX;
             ++level) {
-                *minit_pi_span_slot(level) =
-                    minit_pi_span(start, pi_level_count[level]);
-                start += pi_level_count[level];
+                unsigned int count;
+                kword_t *jump;
+                unsigned int target;
+
+                count = pi_level_count[level];
+                *minit_pi_span_slot(level) = minit_pi_span(start, count);
+                if (level <= 6U) {
+                        if (level == 1U)
+                                jump = &pdp10_pi_level1_dispatch_jump;
+                        else if (level == 2U)
+                                jump = &pdp10_pi_level2_dispatch_jump;
+                        else if (level == 3U)
+                                jump = &pdp10_pi_level3_dispatch_jump;
+                        else if (level == 4U)
+                                jump = &pdp10_pi_level4_dispatch_jump;
+                        else if (level == 5U)
+                                jump = &pdp10_pi_level5_dispatch_jump;
+                        else
+                                jump = &pdp10_pi_level6_dispatch_jump;
+                        target = (unsigned int)(unsigned long)&pdp10_pi_dispatch;
+                        if (count == 1U)
+                                target = (unsigned int)pdp10_pi_handlers[start];
+                        storage_patch_jump(jump, target);
+                }
+                start += count;
         }
 }
 

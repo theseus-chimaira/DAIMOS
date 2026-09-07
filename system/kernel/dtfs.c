@@ -2,6 +2,13 @@
 #include "fs_mres.h"
 #include "syscall.h"
 
+#ifndef DTFS_ENABLE_TENEX
+#define DTFS_ENABLE_TENEX 0
+#endif
+#ifndef DTFS_ENABLE_ITS
+#define DTFS_ENABLE_ITS 0
+#endif
+
 #define DTFS_BLOCK_WORDS      0200U
 #define DTFS_BLOCKS           01102U
 #define DTFS_LAST_BLOCK       01101U
@@ -72,6 +79,9 @@ extern int dtfs_tenex_valid(unsigned int unit, int deep);
 
 
 extern unsigned int dtfs_personality(vnode_t node);
+#if !DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS
+#define dtfs_personality(node) 0U
+#endif
 
 unsigned int
 dtfs_unit(vnode_t node)
@@ -414,23 +424,41 @@ dtfs_resize(vnode_t node, unsigned int words)
 static int
 dtfs_detect_unit(unsigned int unit, unsigned int type, int deep)
 {
+#if !DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS
+        (void)deep;
+        if (type != SYS_DTFS_TYPE_AUTO && type != SYS_DTFS_TYPE_NATIVE)
+                return -1;
+        if (dtfs_dtc_read(unit, DTFS_DIR_BLOCK, dtfs_dir) != 0 ||
+            !dtfs_native_valid())
+                return -1;
+        return SYS_DTFS_TYPE_NATIVE;
+#else
         /* TYPE is always masked by both private callers. */
+#if DTFS_ENABLE_TENEX
         if (type != SYS_DTFS_TYPE_ITS) {
+#else
+        if (type != SYS_DTFS_TYPE_ITS) {
+#endif
                 if (dtfs_dtc_read(unit, DTFS_DIR_BLOCK, dtfs_dir) == 0) {
                         if (type != SYS_DTFS_TYPE_TENEX &&
                             dtfs_native_valid())
                                 return SYS_DTFS_TYPE_NATIVE;
+#if DTFS_ENABLE_TENEX
                         if (type != SYS_DTFS_TYPE_NATIVE &&
                             dtfs_tenex_valid(unit, deep))
                                 return SYS_DTFS_TYPE_TENEX;
+#endif
                 }
                 if (type != SYS_DTFS_TYPE_AUTO)
                         return -1;
         }
+#if DTFS_ENABLE_ITS
         if (dtfs_dtc_read(unit, DTFS_ITS_DIR_BLOCK, dtfs_dir) == 0 &&
             dtfs_its_valid())
                 return SYS_DTFS_TYPE_ITS;
+#endif
         return -1;
+#endif
 }
 
 
@@ -455,6 +483,7 @@ dtfs_format_unit(unsigned int unit, unsigned int ctl)
                     ((kword_t)DTFS_OWNER_NATIVE_TAG << 6U) |
                     ((kword_t)DTFS_OWNER_NATIVE_TAG << 1U);
                 dtfs_dir[DTFS_MAGIC_WORD] = DTFS_NATIVE_MAGIC;
+#if DTFS_ENABLE_TENEX
         } else if (type == SYS_DTFS_TYPE_TENEX) {
                 fs_zero_words(dtfs_dir, DTFS_BLOCK_WORDS);
                 dtfs_dir[0] = ((kword_t)DTFS_TENEX_RESERVED << 31U) |
@@ -464,6 +493,8 @@ dtfs_format_unit(unsigned int unit, unsigned int ctl)
                     ((kword_t)DTFS_TENEX_INVALID << 11U) |
                     ((kword_t)DTFS_TENEX_INVALID << 6U) |
                     ((kword_t)DTFS_TENEX_INVALID << 1U);
+#endif
+#if DTFS_ENABLE_ITS
         } else if (type == SYS_DTFS_TYPE_ITS) {
                 fs_zero_words(dtfs_dir, DTFS_BLOCK_WORDS);
                 dtfs_dir[DTFS_ITS_MAP_FIRST] = DTFS_ITS_MAP_RESERVED;
@@ -472,6 +503,7 @@ dtfs_format_unit(unsigned int unit, unsigned int ctl)
                 dtfs_cache_mount = 0U;
                 return dtfs_dtc_write(unit, DTFS_ITS_DIR_BLOCK,
                     dtfs_dir);
+#endif
         } else {
                 return -1;
         }
@@ -493,7 +525,11 @@ dtfs_mount_unit(unsigned int unit, vnode_t target,
         format = dtfs_detect_unit(unit, flags & SYS_DTFS_TYPE_MASK, 0);
         if ((int)format < 0)
                 return -1;
+#if !DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS
+        media = unit;
+#else
         media = unit | (format - SYS_DTFS_TYPE_NATIVE);
+#endif
         if (vfs_mount(target, DTFS_PROVIDER, DTFS_KIND_ROOT, 0U,
             flags & VFS_MOUNT_RDONLY, &root) != 0)
                 return -1;

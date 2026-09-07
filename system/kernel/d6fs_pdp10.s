@@ -189,9 +189,7 @@ d6fs_reader_get_block:
 d6fs_get_block_read_fail:
         setz    1,
 d6fs_get_block_read_done:
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    d6fs_restore2
 d6fs_get_block_hit:
         movei   1,fs_block_workspace
         popj    17,
@@ -244,11 +242,7 @@ d6fs_reader_fcb_decode_cache:
 d6fs_reader_fcb_fail:
         seto    1,
 d6fs_reader_fcb_done:
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    d6fs_restore4
 d6fs_reader_fcb_bad:
         jrst    pdp10_ret_neg1
 
@@ -287,11 +281,7 @@ d6fs_reader_put_fcb:
 d6fs_reader_put_fcb_fail:
         seto    1,
 d6fs_reader_put_fcb_done:
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    d6fs_restore4
 d6fs_reader_put_fcb_bad:
         jrst    pdp10_ret_neg1
 
@@ -348,10 +338,7 @@ d6fs_freemap_state:
 d6fs_freemap_state_fail:
         seto    1,
 d6fs_freemap_state_done:
-        pop     17,012
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    d6fs_restore3
 
         .globl  d6fs_free_run
 ; int d6fs_free_run(reader, start, blocks)
@@ -385,10 +372,7 @@ d6fs_free_run_loop:
 d6fs_free_run_fail:
         seto    1,
 d6fs_free_run_done:
-        pop     17,012
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    d6fs_restore3
 d6fs_free_run_error:
         jrst    pdp10_ret_neg1
 
@@ -481,14 +465,7 @@ d6fs_alloc_run_fail:
         seto    1,
 d6fs_alloc_run_done:
         sub     17,[3,,3]
-        pop     17,016
-        pop     17,015
-        pop     17,014
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    d6fs_restore7
 d6fs_alloc_run_error:
         jrst    pdp10_ret_neg1
 
@@ -632,12 +609,7 @@ d6fs_freemap_have_summary:
 d6fs_freemap_set_fail:
         seto    1,
 d6fs_freemap_set_done:
-        pop     17,014
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    d6fs_restore5
 
 d6fs_bitmap_error:
         jrst    pdp10_ret_neg1
@@ -712,22 +684,22 @@ d6fs_mres_create_call:
         .data
 d6fs_mres_vector:
         .word   020                      ; highest operation: 16 decimal
-        .word   d6fs_provider_lookup     ; 1 LOOKUP
-        .word   d6fs_provider_readdir    ; 2 READDIR
-        .word   d6fs_provider_stat       ; 3 STAT
-        .word   d6fs_provider_parent     ; 4 PARENT
-        .word   d6fs_provider_parent_name ; 5 PARENT_NAME
-        .word   d6fs_mres_create         ; 6 CREATE
-        .word   d6fs_mres_mkdir          ; 7 MKDIR
-        .word   d6fs_mres_symlink        ; 8 SYMLINK
-        .word   d6fs_provider_unlink     ; 9 UNLINK
-        .word   d6fs_provider_rename     ; 10 RENAME
-        .word   d6fs_provider_truncate   ; 11 TRUNCATE
-        .word   d6fs_provider_chmod      ; 12 CHMOD
-        .word   d6fs_provider_read_words ; 13 READ_WORDS
-        .word   d6fs_provider_write_words ; 14 WRITE_WORDS
-        .word   d6fs_provider_sync       ; 15 SYNC
-        .word   d6fs_provider_prepare_unmount ; 16 PREPARE_UNMOUNT
+        movei   7,d6fs_provider_lookup        ; 1 LOOKUP
+        movei   7,d6fs_provider_readdir       ; 2 READDIR
+        movei   7,d6fs_provider_stat          ; 3 STAT
+        movei   7,d6fs_provider_parent        ; 4 PARENT
+        movei   7,d6fs_provider_parent_name   ; 5 PARENT_NAME
+        movei   7,d6fs_mres_create            ; 6 CREATE
+        movei   7,d6fs_mres_mkdir             ; 7 MKDIR
+        movei   7,d6fs_mres_symlink           ; 8 SYMLINK
+        movei   7,d6fs_provider_unlink        ; 9 UNLINK
+        movei   7,d6fs_provider_rename        ; 10 RENAME
+        movei   7,d6fs_provider_truncate      ; 11 TRUNCATE
+        movei   7,d6fs_provider_chmod         ; 12 CHMOD
+        movei   7,d6fs_provider_read_words    ; 13 READ_WORDS
+        movei   7,d6fs_provider_write_words   ; 14 WRITE_WORDS
+        movei   7,d6fs_provider_sync          ; 15 SYNC
+        movei   7,d6fs_provider_prepare_unmount; 16 PREPARE_UNMOUNT
         .text
 
 ; int d6fs_reader_read_words(reader, fcb, off, buf, nwords)
@@ -797,12 +769,19 @@ d6fs_reader_read_done:
 d6fs_reader_read_fail:
         seto    1,
 d6fs_reader_read_exit:
+d6fs_restore7:
         pop     17,016
+d6fs_restore6:
         pop     17,015
+d6fs_restore5:
         pop     17,014
+d6fs_restore4:
         pop     17,013
+d6fs_restore3:
         pop     17,012
+d6fs_restore2:
         pop     17,011
+d6fs_restore1:
         pop     17,010
         popj    17,
 d6fs_reader_read_zero:
@@ -875,14 +854,7 @@ d6fs_reader_write_done:
 d6fs_reader_write_fail:
         seto    1,
 d6fs_reader_write_exit:
-        pop     17,016
-        pop     17,015
-        pop     17,014
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    d6fs_restore7
 d6fs_reader_write_bad:
         jrst    pdp10_ret_neg1
 
@@ -911,9 +883,7 @@ d6fs_reader_commit_fail_saved:
         setom   3(010)
         seto    1,
 d6fs_reader_commit_done:
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    d6fs_restore2
 d6fs_reader_commit_invalidate:
         setom   3(1)
 d6fs_reader_commit_bad:
@@ -1023,9 +993,7 @@ d6fs_provider_free_tail_loop:
 d6fs_provider_free_tail_ok:
         setz    1,
 d6fs_provider_free_tail_done:
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    d6fs_restore2
 
         .globl  d6fs_provider_tail
 ; unsigned int d6fs_provider_tail(type, words, size_chars)

@@ -1,6 +1,9 @@
 PROJECT_ROOT := $(abspath ../..)
 BUILD_ROOT ?= $(PROJECT_ROOT)/build
 KINIT_DEBUG ?= 0
+DTFS_TENEX ?= 0
+DTFS_ITS ?= 0
+DTFS_FOREIGN := $(if $(filter 1,$(DTFS_TENEX) $(DTFS_ITS)),1,0)
 BUILD ?= $(BUILD_ROOT)/system/kernel$(if $(filter 1,$(KINIT_DEBUG)),-debug,)
 PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
 MKBOOTBANNER ?= $(PDP10_PREFIX)/bin/mkbootbanner
@@ -51,6 +54,14 @@ $(KCORE_C_ASM): $(BUILD)/%.s: %.c kcore.h kboot.h vfs.h kfmt.h devicefs.h procfs
 $(MRES_C_ASM): $(BUILD)/%.s: %.c kcore.h vfs.h fs_mres.h memfs.h dtfs.h d6fs.h d6fs_provider.h diskset.h diskset_mres.h mres.h dsk270.h file.h
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os -I. -S $< -o $@
+
+$(BUILD)/dtfs.s: dtfs.c kcore.h vfs.h fs_mres.h memfs.h dtfs.h d6fs.h d6fs_provider.h diskset.h diskset_mres.h mres.h dsk270.h file.h
+	mkdir -p $(BUILD)
+	$(PDP10_GCC) -std=c99 -Os -DDTFS_ENABLE_TENEX=$(DTFS_TENEX) -DDTFS_ENABLE_ITS=$(DTFS_ITS) -I. -S $< -o $@
+
+$(BUILD)/dtfs_pdp10.s: dtfs_pdp10.s
+	mkdir -p $(BUILD)
+	{ echo ".set DTFS_ENABLE_TENEX,$(DTFS_TENEX)"; echo ".set DTFS_ENABLE_ITS,$(DTFS_ITS)"; echo ".set DTFS_ENABLE_FOREIGN,$(DTFS_FOREIGN)"; cat $<; } > $@
 
 $(BUILD)/%.s: %.s
 	mkdir -p $(BUILD)
