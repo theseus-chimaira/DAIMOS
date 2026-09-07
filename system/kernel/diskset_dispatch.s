@@ -26,6 +26,21 @@
         .globl dsk270_write_sector
         .globl pdp10_ret_neg1
         .globl pdp10_ret_zero
+        .globl devicefs_io_in
+        .globl devicefs_io_out
+        .globl devicefs_storage_errors
+        .globl devicefs_d6set_reads
+        .globl devicefs_d6set_writes
+        .globl devicefs_d6set_blocks_read
+        .globl devicefs_d6set_blocks_written
+        .globl devicefs_swap_reads
+        .globl devicefs_swap_writes
+        .globl devicefs_swap_blocks_read
+        .globl devicefs_swap_blocks_written
+        .globl devicefs_swap_errors
+        .globl devicefs_log_reads
+        .globl devicefs_log_writes
+        .globl devicefs_log_errors
 
 ; Return total usable blocks.
 diskset_blocks:
@@ -118,8 +133,20 @@ diskset_block_io:
         move 3,4
         add 2,diskset_boot+5(1)
         move 1,diskset_boot+1(1)
-        jumpe 5,dsk270_read_sector
-        jrst dsk270_write_sector
+        jumpe 5,diskset_block_account_read
+        aos devicefs_d6set_writes
+        aos devicefs_d6set_blocks_written
+        pushj 17,dsk270_write_sector
+        jrst diskset_block_done
+diskset_block_account_read:
+        aos devicefs_d6set_reads
+        aos devicefs_d6set_blocks_read
+        pushj 17,dsk270_read_sector
+diskset_block_done:
+        jumpe 1,diskset_block_return
+        aos devicefs_storage_errors+4 ; D6SET0
+diskset_block_return:
+        popj 17,
 
 ; Writable iff at least one validated member is configured.  DISKSET is only
 ; installed after DSK MINIT has bound both read and write services.
@@ -157,6 +184,24 @@ diskset_swap_io:
         jrst pdp10_ret_neg1
 
 diskset_swap_valid:
+        ; Count one logical SWAP request and its block volume at D6SET too.
+        movei 5,devicefs_swap_reads
+        movei 6,devicefs_swap_blocks_read
+        movei 7,devicefs_d6set_reads
+        jumpe 4,diskset_swap_account
+        movei 5,devicefs_swap_writes
+        movei 6,devicefs_swap_blocks_written
+        movei 7,devicefs_d6set_writes
+diskset_swap_account:
+        aos (5)
+        addm 2,(6)
+        aos (7)
+        jumpe 4,diskset_swap_account_read_blocks
+        addm 2,devicefs_d6set_blocks_written
+        jrst diskset_swap_account_done
+diskset_swap_account_read_blocks:
+        addm 2,devicefs_d6set_blocks_read
+diskset_swap_account_done:
         ; Preserve only the state live across DSK service calls.
         add 17,[6,,6]
         movei 0,-5(17)
@@ -185,7 +230,11 @@ diskset_swap_read_one:
         pushj 17,dsk270_read_sector
 
 diskset_swap_after_one:
-        jumpn 1,diskset_swap_done
+        jumpe 1,diskset_swap_after_ok
+        aos devicefs_swap_errors
+        aos devicefs_storage_errors+4 ; D6SET0
+        jrst diskset_swap_done
+diskset_swap_after_ok:
         addi 013,0200
         aoj 011,
         came 011,014
@@ -221,7 +270,17 @@ diskset_log_io:
         caml 1,diskset_boot+017
         jrst pdp10_ret_neg1
         add 1,diskset_boot+016
-        jrst diskset_block_io
+        jumpe 5,diskset_log_account_read
+        aos devicefs_log_writes
+        jrst diskset_log_call
+diskset_log_account_read:
+        aos devicefs_log_reads
+diskset_log_call:
+        pushj 17,diskset_block_io
+        jumpe 1,diskset_log_return
+        aos devicefs_log_errors
+diskset_log_return:
+        popj 17,
 
 ; Request ABI: req->op is 2..11, followed by three argument words.
 ; Load the fixed request record once and tail-jump through the service table.

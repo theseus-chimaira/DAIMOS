@@ -8,8 +8,10 @@
 #define DEVICEFS_KIND_DEVICE         2U
 #define DEVICEFS_KIND_DEVDIR        3U
 #define DEVICEFS_KIND_CTYDIR         DEVICEFS_KIND_DEVDIR
-#define DEVICEFS_KIND_IN             4U
-#define DEVICEFS_KIND_OUT            5U
+#define DEVICEFS_KIND_STATS          4U
+#define DEVICEFS_KIND_MEMBERS        5U
+#define DEVICEFS_KIND_SWAP_STATS     6U
+#define DEVICEFS_KIND_LOG_STATS      7U
 
 #define DEVICEFS_DEV_CTY0            0U
 #define DEVICEFS_DEV_CLK0            1U
@@ -35,8 +37,8 @@
 #define DEVICEFS_IO_IN_COUNT         DEVICEFS_DEV_COUNT
 #define DEVICEFS_IO_OUT_COUNT        DEVICEFS_DEV_COUNT
 
-
 extern kword_t devicefs_names[DEVICEFS_DEV_COUNT];
+extern kword_t devicefs_d6set_members;
 int devicefs_lookup(vnode_t dir, const struct vfs_name *name,
     vnode_t *nodep);
 int devicefs_readdir(vnode_t dir, unsigned int off,

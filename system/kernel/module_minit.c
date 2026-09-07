@@ -901,10 +901,8 @@ dtfs_minit(void)
         name = (kword_t)SIXBIT("DTFS  ");
         read_addr = module_service_get(MODULE_SERVICE_DTC_READ_BLOCK);
         write_addr = module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK);
-        if (read_addr == 0U || write_addr == 0U) {
-                minit_diag_nodrv(name);
+        if (read_addr == 0U || write_addr == 0U)
                 return;
-        }
         base = minit_install(name);
         {
                 unsigned int service;

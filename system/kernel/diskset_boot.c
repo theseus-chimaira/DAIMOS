@@ -4,6 +4,7 @@
 #include "dsk270.h"
 #include "kinit.h"
 #include "module.h"
+#include "devicefs.h"
 
 #define DISKSET_BOOT_HALF_MASK     0777777UL
 #define DISKSET_BOOT_UNUSED_HALF   0777777UL
@@ -205,6 +206,15 @@ diskset_boot_discover(kword_t *super_ap, kword_t *super_bp)
         rc = diskset_boot_configure(&config);
         if (rc != 0)
                 return rc;
+        {
+                kword_t packed;
+
+                packed = (kword_t)members;
+                for (index = 0U; index < members; ++index)
+                        packed |= ((kword_t)config.unit[index] & 07UL) <<
+                            (3U + 3U * index);
+                devicefs_d6set_members = packed;
+        }
         *super_ap = first_super_a;
         *super_bp = first_super_b;
         return 0;

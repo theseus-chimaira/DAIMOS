@@ -50,3 +50,47 @@ storage_iowd:
 storage_count:
         .block  1                      ; 013 OCNSLS has no OUT
         .block  3                      ; 014..016 OUT counters
+
+
+; Sparse extended DEVICEFS accounting.  The legacy io_in/io_out arrays above
+; remain the per-device completed READS/WRITES counters.  Only statistics
+; which cannot be derived from those counters consume additional KCORE words.
+        .globl  devicefs_storage_errors
+        .globl  devicefs_mtc_words_read
+        .globl  devicefs_mtc_words_written
+        .globl  devicefs_d6set_reads
+        .globl  devicefs_d6set_writes
+        .globl  devicefs_d6set_blocks_read
+        .globl  devicefs_d6set_blocks_written
+        .globl  devicefs_swap_reads
+        .globl  devicefs_swap_writes
+        .globl  devicefs_swap_blocks_read
+        .globl  devicefs_swap_blocks_written
+        .globl  devicefs_swap_errors
+        .globl  devicefs_log_reads
+        .globl  devicefs_log_writes
+        .globl  devicefs_log_errors
+        .globl  devicefs_d6set_members
+
+; Indexed by DEVICEFS id - DTC0 (014): DTC0, MTC0, DSK0, SLV0, D6SET0.
+devicefs_storage_errors:       .block 5
+
+devicefs_mtc_words_read:       .block 1
+devicefs_mtc_words_written:    .block 1
+devicefs_d6set_reads:          .block 1
+devicefs_d6set_writes:         .block 1
+devicefs_d6set_blocks_read:    .block 1
+devicefs_d6set_blocks_written: .block 1
+
+devicefs_swap_reads:           .block 1
+devicefs_swap_writes:          .block 1
+devicefs_swap_blocks_read:     .block 1
+devicefs_swap_blocks_written:  .block 1
+devicefs_swap_errors:          .block 1
+
+devicefs_log_reads:            .block 1
+devicefs_log_writes:           .block 1
+devicefs_log_errors:           .block 1
+
+; Packed D6SET membership: low 3 bits are count, then four 3-bit DSK units.
+devicefs_d6set_members:        .block 1

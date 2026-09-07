@@ -6,6 +6,7 @@
 
         .globl devicefs_io_in
         .globl devicefs_io_out
+        .globl devicefs_storage_errors
         .text
         .globl dsk_pi_handler
         .globl dsk_dct_handler
@@ -53,8 +54,7 @@ dsk_pi_idle:
         movei 1,devicefs_io_in+016
         tlne 2,1
         movei 1,devicefs_io_out+016
-        movei 2,0200
-        addm 2,(1)
+        aos (1)                         ; completed sector request
         hrrz 1,dsk_active_request
         setzm storage_state
         setzm dsk_active_request
@@ -104,6 +104,7 @@ dsk_dct_read_done:
         jrst pdp10_pi_dispatch_done
 
 dsk_fail_runtime:
+        aos devicefs_storage_errors+2   ; DSK0
         hrrz 1,dsk_active_request
         setom 1(1)
         setzm storage_state
@@ -272,8 +273,7 @@ dsk_wait:
         hrroi 1,0777773
         popj 017,
 dsk_wait_done:
-        movei 2,0200
-        addm 2,@dsk_account_table-3(1)
+        aos @dsk_account_table-3(1)     ; completed sector request
         setzm storage_state
         jrst pdp10_ret_ok
 

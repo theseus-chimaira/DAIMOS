@@ -36,7 +36,7 @@ MRES_ASM = $(MRES_C_ASM) $(BUILD)/cty_io.s $(BUILD)/clk_io.s \
 kinit: $(KINIT_ASM)
 kcore: $(KCORE_FIXED_ASM) $(MRES_ASM)
 
-$(KINIT_C_ASM): $(BUILD)/%.s: %.c kinit.h module.h mres.h kcore.h kboot.h vfs.h memfs.h initfs.h exec.h proc.h mach_user.h fs_mres.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h d6fs_boot.h logstore.h d6fs_provider.h dsk270.h diskset_boot.h diskset_mres.h $(VERSION_FILE)
+$(KINIT_C_ASM): $(BUILD)/%.s: %.c kinit.h module.h mres.h kcore.h kboot.h vfs.h devicefs.h memfs.h initfs.h exec.h proc.h mach_user.h fs_mres.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h d6fs_boot.h logstore.h d6fs_provider.h dsk270.h diskset_boot.h diskset_mres.h $(VERSION_FILE)
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os $(KINIT_CPPFLAGS) -I. -S $< -o $@
 

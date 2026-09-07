@@ -7,6 +7,9 @@
         .text
         .globl devicefs_io_in
         .globl devicefs_io_out
+        .globl devicefs_storage_errors
+        .globl devicefs_mtc_words_read
+        .globl devicefs_mtc_words_written
         .globl tape_pi_handler
         .globl tape_dct_handler
         .globl dtc_read_block
@@ -64,6 +67,7 @@ tape_pi_done:
         jrst tape_pi_cleanup
 
 tape_pi_error:
+        aos devicefs_storage_errors+1   ; MTC0
         movei 1,7
         movem 1,storage_state
 tape_pi_cleanup:
@@ -73,6 +77,7 @@ tape_pi_cleanup:
         jrst pdp10_pi_dispatch_done
 
 tape_pi_dtc_block_error:
+        aos devicefs_storage_errors     ; DTC0
         movei 1,7
         movem 1,storage_state
         move 1,dtc_request_unit
@@ -327,6 +332,7 @@ dtc_block_start_read:
         jrst tape_wait
 
 dtc_search_fail:
+        aos devicefs_storage_errors     ; DTC0 search failure
         setzm dtc_motion(1)
         lsh 1,3
         iori 1,0200000
@@ -378,6 +384,7 @@ mtc_control_wait:
         jrst mtc_control_wait
         trnn 2,0400520
         jrst pdp10_ret_ok
+        aos devicefs_storage_errors+1   ; MTC0 control error
         jrst tape_ioerr
 mtc_rw_start:
         movem 3,storage_state
@@ -398,8 +405,23 @@ tape_ioerr:
         hrroi 1,0777773
         popj 017,
 tape_wait_done:
+        aos @tape_account_table-1(1)    ; completed READ/WRITE request
+        caie 1,2                        ; MTC read
+        cain 1,5                        ; MTC write
+        jrst tape_account_mtc_words
+        jrst tape_account_done
+
+tape_account_mtc_words:
         move 2,storage_count
-        addm 2,@tape_account_table-1(1)
+        caie 1,2
+        jrst tape_account_mtc_write
+        addm 2,devicefs_mtc_words_read
+        jrst tape_account_done
+
+tape_account_mtc_write:
+        addm 2,devicefs_mtc_words_written
+
+tape_account_done:
         setzm storage_state
         jrst pdp10_ret_ok
 
