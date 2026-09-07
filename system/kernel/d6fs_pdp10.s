@@ -1151,7 +1151,7 @@ d6fs_provider_vtype_ops:
 d6fs_provider_stat:
         jumpe   2,pdp10_ret_neg1
         add     17,[013,,013]            ; info + st pointer
-        movem   2,(17)
+        movem   2,-012(17)               ; keep st outside decoded info
         movei   2,0
         movei   3,-011(17)               ; 012-word decoded info
         pushj   17,d6fs_provider_fcb
@@ -1159,7 +1159,7 @@ d6fs_provider_stat:
         skipn   1,-011(17)               ; info.type; FREE is invalid
         jrst    d6fs_provider_stat_fail
         pushj   17,d6fs_provider_vtype
-        move    2,(17)
+        move    2,-012(17)
         movem   1,(2)                    ; st->type
         move    1,-7(17)                 ; info.mode
         movem   1,1(2)                   ; st->mode
@@ -1363,7 +1363,7 @@ d6fs_provider_lookup:
         move    1,-1(17)
         and     1,[07700000000]
         tlo     1,1
-        hrrz    4,-4(17)                 ; di.child_fcb
+        hrrz    4,-2(17)                 ; di.child_fcb
         ior     1,4
         tlo     1,060000
         move    2,(17)
