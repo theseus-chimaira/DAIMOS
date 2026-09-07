@@ -69,6 +69,8 @@ storage_count:
         .globl  devicefs_swap_errors
         .globl  devicefs_log_reads
         .globl  devicefs_log_writes
+        .globl  devicefs_log_blocks_read
+        .globl  devicefs_log_blocks_written
         .globl  devicefs_log_errors
         .globl  devicefs_d6set_members
 
@@ -90,6 +92,8 @@ devicefs_swap_errors:          .block 1
 
 devicefs_log_reads:            .block 1
 devicefs_log_writes:           .block 1
+devicefs_log_blocks_read:      .block 1
+devicefs_log_blocks_written:   .block 1
 devicefs_log_errors:           .block 1
 
 ; Packed D6SET membership: low 3 bits are count, then four 3-bit DSK units.

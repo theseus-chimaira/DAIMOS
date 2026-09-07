@@ -18,6 +18,8 @@
         .globl  devicefs_swap_errors
         .globl  devicefs_log_reads
         .globl  devicefs_log_writes
+        .globl  devicefs_log_blocks_read
+        .globl  devicefs_log_blocks_written
         .globl  devicefs_log_errors
         .globl  devicefs_d6set_members
 
@@ -40,22 +42,6 @@ devicefs_name_length:
         trnn    5,07777
         popj    17,
         movei   6,6
-        popj    17,
-
-; AC4=device id.  Skip next instruction when input accounting exists.
-devicefs_skip_if_in:
-        movei   5,1
-        lsh     5,0(4)
-        tdne    5,[076325]
-        aos     (17)
-        popj    17,
-
-; AC4=device id.  Skip next instruction when output accounting exists.
-devicefs_skip_if_out:
-        movei   5,1
-        lsh     5,0(4)
-        tdne    5,[073751]
-        aos     (17)
         popj    17,
 
 ; Validate AC4 as a present device id.  Return 0/-1 in AC1.
@@ -357,18 +343,18 @@ devicefs_readchar_not_io:
         jrst    devicefs_stats_swap
         caie    6,020007
         jrst    pdp10_ret_neg1
-        movei   5,2                    ; LOG stats subtype
+        movei   5,devicefs_log_reads
         jrst    devicefs_stats_readchar
 
 devicefs_stats_swap:
-        movei   5,1                    ; SWAP stats subtype
+        movei   5,devicefs_swap_reads
         jrst    devicefs_stats_readchar
 
 devicefs_stats_device:
-        setz    5,                     ; ordinary device stats subtype
+        setz    5,                     ; zero means ordinary device stats
 
 ; Fixed-width bare octal values keep readchar offset handling compact.
-; AC4=device id, AC5 subtype (0 device, 1 swap, 2 log).
+; AC4=device id, AC5=0 for device stats or base of five subsystem counters.
 devicefs_stats_readchar:
         setz    6,                     ; line number
 devicefs_stats_line_loop:
@@ -383,12 +369,8 @@ devicefs_stats_select:
         jumpe   5,devicefs_stats_select_device
         cail    6,5
         jrst    pdp10_ret_zero
-        caie    5,1
-        jrst    devicefs_stats_log_value
-        move    1,@devicefs_swap_stat_ptrs(6)
-        jrst    devicefs_stats_emit
-devicefs_stats_log_value:
-        move    1,@devicefs_log_stat_ptrs(6)
+        add     5,6
+        move    1,(5)
         jrst    devicefs_stats_emit
 
 devicefs_stats_select_device:
@@ -437,44 +419,32 @@ devicefs_stats_error_label:
 devicefs_stats_device_reads:
         cain    4,020
         jrst    devicefs_stats_d6_reads
-        setz    1,
-        pushj   17,devicefs_skip_if_in
-        jrst    devicefs_stats_read_label
+        movei   0,1
+        lsh     0,0(4)
+        tdnn    0,[076325]
+        jrst    devicefs_stats_zero
         move    1,devicefs_io_in(4)
-devicefs_stats_read_label:
         jrst    devicefs_stats_emit
 devicefs_stats_d6_reads:
         move    1,devicefs_d6set_reads
-        jrst    devicefs_stats_read_label
+        jrst    devicefs_stats_emit
 
 devicefs_stats_device_writes:
         cain    4,020
         jrst    devicefs_stats_d6_writes
-        setz    1,
-        pushj   17,devicefs_skip_if_out
-        jrst    devicefs_stats_write_label
+        movei   0,1
+        lsh     0,0(4)
+        tdnn    0,[073751]
+        jrst    devicefs_stats_zero
         move    1,devicefs_io_out(4)
-devicefs_stats_write_label:
         jrst    devicefs_stats_emit
 devicefs_stats_d6_writes:
         move    1,devicefs_d6set_writes
-        jrst    devicefs_stats_write_label
+        jrst    devicefs_stats_emit
 
-; Subsystem statistics use the same fixed line order:
-; requests read, requests written, native units read, native units written,
-; errors.  LOG native-unit counts alias its one-block requests.
-devicefs_swap_stat_ptrs:
-        .word   devicefs_swap_reads
-        .word   devicefs_swap_writes
-        .word   devicefs_swap_blocks_read
-        .word   devicefs_swap_blocks_written
-        .word   devicefs_swap_errors
-devicefs_log_stat_ptrs:
-        .word   devicefs_log_reads
-        .word   devicefs_log_writes
-        .word   devicefs_log_reads
-        .word   devicefs_log_writes
-        .word   devicefs_log_errors
+devicefs_stats_zero:
+        setz    1,
+        jrst    devicefs_stats_emit
 
 ; Native transfer units by class: DTC blocks, MTC words, DSK sectors,
 ; D6SET blocks.  DTC/DSK reuse request counters because one request is one
@@ -515,50 +485,33 @@ devicefs_stats_store:
         movei   1,1
         popj    17,
 
-; D6SET MEMBERS is one fixed 8-character line per configured member:
-; DSK0:<unit> CR LF.  Membership is frozen by DEVICEFS MINIT in one word.
+; D6SET MEMBERS is one fixed four-character line per configured member:
+; two octal unit digits plus CR LF.  D6SET currently contains only DSK units,
+; so repeating the DSK prefix in every line would waste resident formatter code.
 devicefs_members_readchar:
         move    6,2
-        lsh     6,-3                   ; member index = off / 8
+        lsh     6,-2                   ; member index = off / 4
         move    5,devicefs_d6set_members
         move    0,5
         andi    0,7                    ; member count
         caml    6,0
         jrst    pdp10_ret_zero
-        andi    2,7                    ; column = off % 8
-        caile   2,3
-        jrst    devicefs_members_tail
-        move    0,[0446353200000]      ; DSK0
-        move    5,2
-        imuli   5,6
-        subi    5,036
-        lsh     0,0(5)
-        andi    0,077
-        addi    0,040
+        andi    2,3                    ; column = off % 4
+        jumpe   2,devicefs_members_zero
+        caie    2,1
+        jrst    devicefs_members_eol
+        imuli   6,-3
+        subi    6,3
+        lsh     5,0(6)
+        andi    5,7
+        movei   0,060(5)
         jrst    devicefs_members_store
-devicefs_members_tail:
-        caie    2,4
-        jrst    devicefs_members_unit
-        movei   0,072                  ; ':'
+devicefs_members_zero:
+        movei   0,060
         jrst    devicefs_members_store
-devicefs_members_unit:
-        caie    2,5
-        jrst    devicefs_members_cr
-        move    5,6
-        imuli   5,3
-        addi    5,3
-        movns   5
-        move    6,devicefs_d6set_members
-        lsh     6,0(5)
-        andi    6,7
-        movei   0,060(6)
-        jrst    devicefs_members_store
-devicefs_members_cr:
-        caie    2,6
-        jrst    devicefs_members_lf
+devicefs_members_eol:
         movei   0,015
-        jrst    devicefs_members_store
-devicefs_members_lf:
+        caie    2,2
         movei   0,012
 devicefs_members_store:
         movem   0,(3)

@@ -40,6 +40,8 @@
         .globl devicefs_swap_errors
         .globl devicefs_log_reads
         .globl devicefs_log_writes
+        .globl devicefs_log_blocks_read
+        .globl devicefs_log_blocks_written
         .globl devicefs_log_errors
 
 ; Return total usable blocks.
@@ -272,9 +274,11 @@ diskset_log_io:
         add 1,diskset_boot+016
         jumpe 5,diskset_log_account_read
         aos devicefs_log_writes
+        aos devicefs_log_blocks_written
         jrst diskset_log_call
 diskset_log_account_read:
         aos devicefs_log_reads
+        aos devicefs_log_blocks_read
 diskset_log_call:
         pushj 17,diskset_block_io
         jumpe 1,diskset_log_return
