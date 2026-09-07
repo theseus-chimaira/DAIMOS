@@ -500,17 +500,14 @@ d6fs_map_scan_words:
         sojg    5,d6fs_map_scan_words
 
 d6fs_map_scan_partial:
-        jumpe   3,d6fs_map_scan_full
+        jumpe   3,pdp10_ret_zero
         movei   5,044
         sub     5,3                       ; 36 - remainder
         seto    6,
         lsh     6,0(5)                    ; mask valid MSB-first bits
         move    7,(4)
         and     7,6
-        came    7,6
-        jrst    d6fs_map_scan_free
-
-d6fs_map_scan_full:
+        camn    7,6
         jrst    pdp10_ret_zero
 d6fs_map_scan_free:
         movei   1,1

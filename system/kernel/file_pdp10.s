@@ -545,43 +545,8 @@ file_pseudo_zero_done:
         hrrz    4,1
         cail    4,2
         jrst    file_pseudo_fail
-        cail    3,3
-        jrst    file_pseudo_proc_slot
+        caige   3,3
         jrst    file_pseudo_fail
-file_pseudo_device:
-        cail    3,3
-        jrst    file_pseudo_device_store
-        jrst    file_pseudo_fail
-file_pseudo_device_store:
-        movei   4,7
-        movem   4,(2)
-        move    4,[0174445665143]      ; SIXBIT //DEVIC/
-        movem   4,1(2)
-        movsi   4,0450000              ; SIXBIT /E     /
-        movem   4,2(2)
-        jrst    pdp10_ret_zero
-file_pseudo_cty:
-        cail    3,4
-        jrst    file_pseudo_cty_store
-        jrst    file_pseudo_fail
-file_pseudo_cty_store:
-        movei   4,014
-        movem   4,(2)
-        move    4,[0174445665143]      ; SIXBIT //DEVIC/
-        movem   4,1(2)
-        move    4,[-0326034130660]     ; SIXBIT /E/CTY0/
-        movem   4,2(2)
-        jrst    pdp10_ret_zero
-file_pseudo_proc:
-        cail    3,2
-        jrst    file_pseudo_proc_store
-        jrst    file_pseudo_fail
-file_pseudo_proc_store:
-        movei   4,5
-        movem   4,(2)
-        move    4,[0176062574300]      ; SIXBIT //PROC /
-        movem   4,1(2)
-        jrst    pdp10_ret_zero
 file_pseudo_proc_slot:
         movei   5,7
         movem   5,(2)
@@ -590,6 +555,34 @@ file_pseudo_proc_slot:
         lsh     4,036
         add     4,[0200000000000]
         movem   4,2(2)
+        jrst    pdp10_ret_zero
+file_pseudo_device:
+        caige   3,3
+        jrst    file_pseudo_fail
+        movei   4,7
+        movem   4,(2)
+        move    4,[0174445665143]      ; SIXBIT //DEVIC/
+        movem   4,1(2)
+        movsi   4,0450000              ; SIXBIT /E     /
+        movem   4,2(2)
+        jrst    pdp10_ret_zero
+file_pseudo_cty:
+        caige   3,4
+        jrst    file_pseudo_fail
+        movei   4,014
+        movem   4,(2)
+        move    4,[0174445665143]      ; SIXBIT //DEVIC/
+        movem   4,1(2)
+        move    4,[-0326034130660]     ; SIXBIT /E/CTY0/
+        movem   4,2(2)
+        jrst    pdp10_ret_zero
+file_pseudo_proc:
+        caige   3,2
+        jrst    file_pseudo_fail
+        movei   4,5
+        movem   4,(2)
+        move    4,[0176062574300]      ; SIXBIT //PROC /
+        movem   4,1(2)
         jrst    pdp10_ret_zero
 file_pseudo_fail:
         jrst    pdp10_ret_neg1
