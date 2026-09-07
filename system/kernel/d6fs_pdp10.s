@@ -12,12 +12,12 @@
         .globl  d6fs_dirent_decode_valid
 ; int d6fs_dirent_decode_valid(ent, fcb_count, info)
 d6fs_dirent_decode_valid:
-        jumpe   1,d6fs_dirent_invalid
-        jumpe   2,d6fs_dirent_invalid
-        jumpe   3,d6fs_dirent_invalid
+        jumpe   1,pdp10_ret_zero
+        jumpe   2,pdp10_ret_zero
+        jumpe   3,pdp10_ret_zero
         move    4,5(1)
         trne    4,0777777                ; low half must be zero
-        jrst    d6fs_dirent_invalid
+        jrst    pdp10_ret_zero
         move    5,3
         hrl     5,1
         blt     5,3(3)                   ; copy four packed name words
@@ -38,33 +38,31 @@ d6fs_dirent_decode_valid:
         ior     6,3(1)
         ior     6,5                      ; raw word 4 must also be zero
         jumpe   6,d6fs_dirent_valid
-        jrst    d6fs_dirent_invalid
+        jrst    pdp10_ret_zero
 
 d6fs_dirent_used:
         caml    4,2                      ; child_fcb >= fcb_count
-        jrst    d6fs_dirent_invalid
-        jumpe   6,d6fs_dirent_invalid    ; FREE type forbidden
+        jrst    pdp10_ret_zero
+        jumpe   6,pdp10_ret_zero    ; FREE type forbidden
         caile   6,3
-        jrst    d6fs_dirent_invalid
+        jrst    pdp10_ret_zero
         move    4,(1)
         ior     4,1(1)
         ior     4,2(1)
         ior     4,3(1)
-        jumpe   4,d6fs_dirent_invalid
+        jumpe   4,pdp10_ret_zero
 
 d6fs_dirent_valid:
         movei   1,1
         popj    17,
-d6fs_dirent_invalid:
-        jrst    pdp10_ret_zero
 
         .globl  d6fs_extent_decode
 ; int d6fs_extent_decode(run, high, startp, blocksp)
 d6fs_extent_decode:
-        jumpe   3,d6fs_extent_bad
-        jumpe   4,d6fs_extent_bad
+        jumpe   3,pdp10_ret_neg1
+        jumpe   4,pdp10_ret_neg1
         tdne    2,[-040]                 ; high must fit five bits
-        jrst    d6fs_extent_bad
+        jrst    pdp10_ret_neg1
         ldb     5,[POINT 24,1,23]
         movem   5,(3)
         lsh     2,014
@@ -73,14 +71,12 @@ d6fs_extent_decode:
         addi    2,1
         movem   2,(4)
         jrst    pdp10_ret_zero
-d6fs_extent_bad:
-        jrst    pdp10_ret_neg1
 
         .globl  d6fs_extent_high_get
 ; unsigned int d6fs_extent_high_get(word, extent)
 d6fs_extent_high_get:
         caile   2,6
-        jrst    d6fs_high_zero
+        jrst    pdp10_ret_zero
         move    3,2
         lsh     3,2
         add     3,2                      ; shift = extent * 5
@@ -88,8 +84,6 @@ d6fs_extent_high_get:
         lsh     1,0(3)
         andi    1,037
         popj    17,
-d6fs_high_zero:
-        jrst    pdp10_ret_zero
 
 ; kword_t d6fs_file_block(fcb, file_block)
 ;
@@ -136,10 +130,10 @@ d6fs_file_block_bad:
 ; Hash packed SIXBIT directly with ILDB; this avoids C division/modulo and
 ; per-character word shifting.  SIXBIT bytes are converted to ASCII by +040.
 d6fs_name_hash24:
-        jumpe   1,d6fs_hash_zero
-        jumpe   2,d6fs_hash_zero
+        jumpe   1,pdp10_ret_zero
+        jumpe   2,pdp10_ret_zero
         caile   2,030                    ; maximum 24 characters
-        jrst    d6fs_hash_zero
+        jrst    pdp10_ret_zero
         move    3,[POINT 6,0]
         hrr     3,1
         setz    4,                       ; h
@@ -159,8 +153,6 @@ d6fs_hash_loop:
         move    1,4
         popj    17,
 
-d6fs_hash_zero:
-        jrst    pdp10_ret_zero
 
         .globl  fs_block_workspace
         .globl  d6fs_reader_get_block
@@ -169,9 +161,9 @@ d6fs_hash_zero:
 ; A successful load always exposes reader->cache, so return that address
 ; directly instead of forcing every caller to allocate a pointer temporary.
 d6fs_reader_get_block:
-        jumpe   1,d6fs_get_block_fail
+        jumpe   1,pdp10_ret_zero
         caml    2,6(1)                   ; logical >= total_blocks
-        jrst    d6fs_get_block_fail
+        jrst    pdp10_ret_zero
         camn    2,3(1)                   ; cache hit
         jrst    d6fs_get_block_hit
         push    17,010
@@ -193,8 +185,6 @@ d6fs_get_block_read_done:
 d6fs_get_block_hit:
         movei   1,fs_block_workspace
         popj    17,
-d6fs_get_block_fail:
-        jrst    pdp10_ret_zero
 
         .globl  d6fs_reader_fcb
 ; int d6fs_reader_fcb(reader, index, fcb, info)
@@ -203,10 +193,10 @@ d6fs_get_block_fail:
 ; eight aligned FCBs.  Use shifts/masks and BLT instead of compiler division
 ; and a sixteen-iteration copy loop.
 d6fs_reader_fcb:
-        jumpe   1,d6fs_reader_fcb_bad
-        jumpe   4,d6fs_reader_fcb_bad
+        jumpe   1,pdp10_ret_neg1
+        jumpe   4,pdp10_ret_neg1
         caml    2,011(1)                 ; index >= fcb_count
-        jrst    d6fs_reader_fcb_bad
+        jrst    pdp10_ret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -243,16 +233,14 @@ d6fs_reader_fcb_fail:
         seto    1,
 d6fs_reader_fcb_done:
         jrst    d6fs_restore4
-d6fs_reader_fcb_bad:
-        jrst    pdp10_ret_neg1
 
         .globl  d6fs_reader_put_fcb
 ; int d6fs_reader_put_fcb(reader, index, fcb)
 d6fs_reader_put_fcb:
-        jumpe   1,d6fs_reader_put_fcb_bad
-        jumpe   3,d6fs_reader_put_fcb_bad
+        jumpe   1,pdp10_ret_neg1
+        jumpe   3,pdp10_ret_neg1
         caml    2,011(1)
-        jrst    d6fs_reader_put_fcb_bad
+        jrst    pdp10_ret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -282,8 +270,6 @@ d6fs_reader_put_fcb_fail:
         seto    1,
 d6fs_reader_put_fcb_done:
         jrst    d6fs_restore4
-d6fs_reader_put_fcb_bad:
-        jrst    pdp10_ret_neg1
 
 ; Return quotient map-block in AC1, word index in AC2, bit index in AC3.
 ; Input index is in AC1.  D6FS map blocks contain 128*36 = 011000 bits.
@@ -309,9 +295,9 @@ d6fs_bitmap_mask:
 ; int d6fs_freemap_state(reader, logical)
 ; Return 0 free, 1 allocated, -1 on I/O/range error.
 d6fs_freemap_state:
-        jumpe   1,d6fs_bitmap_error
+        jumpe   1,pdp10_ret_neg1
         caml    2,6(1)
-        jrst    d6fs_bitmap_error
+        jrst    pdp10_ret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -345,14 +331,14 @@ d6fs_freemap_state_done:
 ; Clear one contiguous allocation run.  Keep this with the bitmap primitives so
 ; callers do not pay a compiler-generated loop around d6fs_freemap_set().
 d6fs_free_run:
-        jumpe   1,d6fs_free_run_error
-        jumpe   3,d6fs_free_run_error
+        jumpe   1,pdp10_ret_neg1
+        jumpe   3,pdp10_ret_neg1
         caml    2,6(1)                   ; start >= total_blocks
-        jrst    d6fs_free_run_error
+        jrst    pdp10_ret_neg1
         move    4,6(1)
         sub     4,2                      ; blocks available from start
         camle   3,4
-        jrst    d6fs_free_run_error
+        jrst    pdp10_ret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -373,8 +359,6 @@ d6fs_free_run_fail:
         seto    1,
 d6fs_free_run_done:
         jrst    d6fs_restore3
-d6fs_free_run_error:
-        jrst    pdp10_ret_neg1
 
         .globl  d6fs_alloc_run
 ; int d6fs_alloc_run(reader, cursor, max_blocks, startp, blocksp)
@@ -383,13 +367,13 @@ d6fs_free_run_error:
 ; new data first, then commits allocation bits, then persists FCB reachability.
 ; Return the first contiguous free run at or after cursor, limited to max_blocks.
 d6fs_alloc_run:
-        jumpe   1,d6fs_alloc_run_error
-        jumpe   3,d6fs_alloc_run_error
-        jumpe   4,d6fs_alloc_run_error
+        jumpe   1,pdp10_ret_neg1
+        jumpe   3,pdp10_ret_neg1
+        jumpe   4,pdp10_ret_neg1
         skipn   6(1)                     ; total_blocks
-        jrst    d6fs_alloc_run_error
+        jrst    pdp10_ret_neg1
         skipn   5,-1(17)                 ; fifth C arg: blocksp
-        jrst    d6fs_alloc_run_error
+        jrst    pdp10_ret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -466,15 +450,13 @@ d6fs_alloc_run_fail:
 d6fs_alloc_run_done:
         sub     17,[3,,3]
         jrst    d6fs_restore7
-d6fs_alloc_run_error:
-        jrst    pdp10_ret_neg1
 
 ; Internal: return 1 if map block has a free valid bit, 0 if full, -1 error.
 ; Scan whole 36-bit words instead of testing as many as 4608 individual bits.
 d6fs_map_block_has_free_i:
-        jumpe   1,d6fs_bitmap_error
+        jumpe   1,pdp10_ret_neg1
         caml    2,013(1)
-        jrst    d6fs_bitmap_error
+        jrst    pdp10_ret_neg1
         move    010,1
         move    011,2
         move    3,2
@@ -485,7 +467,7 @@ d6fs_map_block_has_free_i:
         movei   012,011000
         add     2,012(1)
         pushj   17,d6fs_reader_get_block
-        jumpe   1,d6fs_map_scan_fail
+        jumpe   1,pdp10_ret_neg1
         move    2,012
         idivi   2,044                     ; AC2 full words, AC3 remainder
         move    4,1                       ; current bitmap word
@@ -512,8 +494,6 @@ d6fs_map_scan_partial:
 d6fs_map_scan_free:
         movei   1,1
         popj    17,
-d6fs_map_scan_fail:
-        jrst    pdp10_ret_neg1
 
 ; Internal summary bit setter: reader AC1, map index AC2, boolean AC3.
 d6fs_summary_set_i:
@@ -524,7 +504,7 @@ d6fs_summary_set_i:
         move    1,2
         pushj   17,d6fs_bitmap_pos
         caml    1,015(010)
-        jrst    d6fs_summary_set_fail
+        jrst    pdp10_ret_neg1
         move    011,1                     ; summary block index
         move    012,2                     ; word index
         move    013,3                     ; bit index
@@ -532,7 +512,7 @@ d6fs_summary_set_i:
         move    2,1
         move    1,010
         pushj   17,d6fs_reader_get_block
-        jumpe   1,d6fs_summary_set_fail
+        jumpe   1,pdp10_ret_neg1
         add     1,012
         move    012,1                     ; address of bitmap word
         move    1,013
@@ -547,15 +527,13 @@ d6fs_summary_commit:
         add     2,014(010)
         move    1,010
         jrst    d6fs_reader_commit_cache
-d6fs_summary_set_fail:
-        jrst    pdp10_ret_neg1
 
         .globl  d6fs_freemap_set
 ; int d6fs_freemap_set(reader, logical, allocated)
 d6fs_freemap_set:
-        jumpe   1,d6fs_bitmap_error
+        jumpe   1,pdp10_ret_neg1
         caml    2,6(1)
-        jrst    d6fs_bitmap_error
+        jrst    pdp10_ret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -608,8 +586,6 @@ d6fs_freemap_set_fail:
 d6fs_freemap_set_done:
         jrst    d6fs_restore5
 
-d6fs_bitmap_error:
-        jrst    pdp10_ret_neg1
 
         .globl  fs_copy_words
 
@@ -705,12 +681,12 @@ d6fs_mres_vector:
 ; in-block transfer.
         .globl  d6fs_reader_read_words
 d6fs_reader_read_words:
-        jumpe   1,d6fs_reader_read_bad
-        jumpe   2,d6fs_reader_read_bad
-        jumpe   4,d6fs_reader_read_bad
+        jumpe   1,pdp10_ret_neg1
+        jumpe   2,pdp10_ret_neg1
+        jumpe   4,pdp10_ret_neg1
         move    5,2(2)                   ; file size in words
         caml    3,5                      ; off >= size
-        jrst    d6fs_reader_read_zero
+        jrst    pdp10_ret_zero
         push    17,010
         push    17,011
         push    17,012
@@ -781,19 +757,15 @@ d6fs_restore2:
 d6fs_restore1:
         pop     17,010
         popj    17,
-d6fs_reader_read_zero:
-        jrst    pdp10_ret_zero
-d6fs_reader_read_bad:
-        jrst    pdp10_ret_neg1
 
         .globl  d6fs_reader_write_words
 ; int d6fs_reader_write_words(reader, fcb, off, buf, nwords)
 ; The caller has already grown the FCB as required.  This routine only maps
 ; file blocks, copies words into the shared cache, and commits each block.
 d6fs_reader_write_words:
-        jumpe   1,d6fs_reader_write_bad
-        jumpe   2,d6fs_reader_write_bad
-        jumpe   4,d6fs_reader_write_bad
+        jumpe   1,pdp10_ret_neg1
+        jumpe   2,pdp10_ret_neg1
+        jumpe   4,pdp10_ret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -852,8 +824,6 @@ d6fs_reader_write_fail:
         seto    1,
 d6fs_reader_write_exit:
         jrst    d6fs_restore7
-d6fs_reader_write_bad:
-        jrst    pdp10_ret_neg1
 
         .globl  d6fs_reader_commit_cache
 ; int d6fs_reader_commit_cache(reader, logical)
@@ -889,10 +859,10 @@ d6fs_reader_commit_bad:
         .globl  d6fs_reader_write_block
 ; int d6fs_reader_write_block(reader, logical, block)
 d6fs_reader_write_block:
-        jumpe   1,d6fs_reader_write_block_bad
-        jumpe   3,d6fs_reader_write_block_bad
+        jumpe   1,pdp10_ret_neg1
+        jumpe   3,pdp10_ret_neg1
         caml    2,6(1)
-        jrst    d6fs_reader_write_block_bad
+        jrst    pdp10_ret_neg1
         camn    3,[fs_block_workspace]
         jrst    d6fs_reader_write_block_commit
         movei   4,fs_block_workspace
@@ -900,19 +870,15 @@ d6fs_reader_write_block:
         blt     4,fs_block_workspace+0177
 d6fs_reader_write_block_commit:
         jrst    d6fs_reader_commit_cache
-d6fs_reader_write_block_bad:
-        jrst    pdp10_ret_neg1
 
         .globl  d6fs_reader_zero_block
 ; int d6fs_reader_zero_block(reader, logical)
 d6fs_reader_zero_block:
-        jumpe   1,d6fs_reader_zero_block_bad
+        jumpe   1,pdp10_ret_neg1
         caml    2,6(1)
-        jrst    d6fs_reader_zero_block_bad
+        jrst    pdp10_ret_neg1
         pushj   17,fs_zero_block_workspace
         jrst    d6fs_reader_commit_cache
-d6fs_reader_zero_block_bad:
-        jrst    pdp10_ret_neg1
 
 ; Compact D6FS provider metadata/growth helpers.  These are leaf-sized
 ; representation operations shared by the larger C policy paths.
@@ -995,7 +961,7 @@ d6fs_provider_free_tail_done:
         .globl  d6fs_provider_tail
 ; unsigned int d6fs_provider_tail(type, words, size_chars)
 d6fs_provider_tail:
-        jumpe   2,d6fs_provider_tail_zero
+        jumpe   2,pdp10_ret_zero
         caie    1,3                     ; D6FS_TYPE_SYMLINK
         jrst    d6fs_provider_tail_four
         subi    2,1
@@ -1022,8 +988,6 @@ d6fs_provider_tail_check:
 d6fs_provider_tail_full:
         move    1,4
         popj    17,
-d6fs_provider_tail_zero:
-        jrst    pdp10_ret_zero
 
 ; int d6fs_provider_dirent(vnode_t dir, unsigned int slot,
 ;     struct d6fs_dirent_info *di)

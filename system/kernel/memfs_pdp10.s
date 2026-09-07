@@ -135,20 +135,20 @@ memfs_resize_ok:
 ;     unsigned int off, kword_t *buf, unsigned int nwords)
         .globl  memfs_read_words
 memfs_read_words:
-        jumpe   4,memfs_read_fail
+        jumpe   4,pdp10_ret_neg1
         move    0,4             ; preserve destination; slot clobbers AC4
         move    7,1             ; preserve fs across slot validation
         pushj   17,memfs_slot   ; AC5=np, AC6=meta
-        jumpl   1,memfs_read_fail
+        jumpl   1,pdp10_ret_neg1
         ldb     1,[POINT 3,5(5),20]
         caie    1,2             ; regular file
-        jrst    memfs_read_fail
+        jrst    pdp10_ret_neg1
         move    4,6
         andi    4,2             ; IMAGE flag for source selection
         hrrz    6,7(5)          ; stored words
-        jumpl   3,memfs_read_eof ; unsigned off exceeds 18-bit length
+        jumpl   3,pdp10_ret_zero ; unsigned off exceeds 18-bit length
         caml    3,6             ; off < stored words
-        jrst    memfs_read_eof
+        jrst    pdp10_ret_zero
         sub     6,3             ; available words
         move    1,7             ; restore fs before reusing AC7
         move    7,-1(17)        ; nwords, fifth C argument
@@ -170,27 +170,23 @@ memfs_read_source:
         pushj   17,fs_copy_words
         move    1,6
         popj    17,
-memfs_read_eof:
-        jrst    pdp10_ret_zero
-memfs_read_fail:
-        jrst    pdp10_ret_neg1
 
 ; int memfs_write_words(struct memfs *fs, vnode_t node,
 ;     unsigned int off, const kword_t *buf, unsigned int nwords,
 ;     kword_t size_chars)
         .globl  memfs_write_words
 memfs_write_words:
-        jumpe   4,memfs_write_fail
+        jumpe   4,pdp10_ret_neg1
         move    0,4             ; preserve source; slot clobbers AC4
         move    7,1             ; preserve fs
         pushj   17,memfs_slot   ; AC5=np, AC6=meta
-        jumpl   1,memfs_write_fail
+        jumpl   1,pdp10_ret_neg1
         move    2,1             ; preserve slot
         ldb     4,[POINT 3,5(5),20]
         caie    4,2             ; regular file
-        jrst    memfs_write_fail
+        jrst    pdp10_ret_neg1
         trnn    6,4             ; writable
-        jrst    memfs_write_fail
+        jrst    pdp10_ret_neg1
 
 ; Compute need = off+nwords and reject 36-bit unsigned wrap.
         move    4,-1(17)        ; nwords
@@ -202,7 +198,7 @@ memfs_write_words:
         tlc     4,0400000
         caml    1,4             ; need < off (unsigned) => overflow
         jrst    memfs_write_need_ok
-        jrst    memfs_write_fail
+        jrst    pdp10_ret_neg1
 memfs_write_need_ok:
         hrrz    4,7(5)          ; current word count
         jumpl   6,memfs_write_grow
@@ -223,7 +219,7 @@ memfs_write_grow:
         pop     17,3
         pop     17,2
         pop     17,7
-        jumpn   6,memfs_write_fail
+        jumpn   6,pdp10_ret_neg1
 
 memfs_write_ready:
 ; Recompute np after resize and copy nwords into the mutable pool.
@@ -249,31 +245,27 @@ memfs_write_size:
         movem   6,6(5)
         move    1,-1(17)
         popj    17,
-memfs_write_fail:
-        jrst    pdp10_ret_neg1
 
 ; int memfs_slot(const struct memfs *fs, vnode_t node)
 ; Return the validated slot directly, or -1.  On success AC5=np, AC6=meta.
         .globl  memfs_slot
 memfs_slot:
-        jumpe   1,memfs_slot_fail
+        jumpe   1,pdp10_ret_neg1
         hlrz    4,2
         andi    4,0770077
         caie    4,040001               ; provider 4, node kind 1
-        jrst    memfs_slot_fail
+        jrst    pdp10_ret_neg1
         hrrz    4,2
         caml    4,1(1)
-        jrst    memfs_slot_fail
+        jrst    pdp10_ret_neg1
         move    5,4
         lsh     5,3
         add     5,(1)
         move    6,5(5)
         trnn    6,1
-        jrst    memfs_slot_fail
+        jrst    pdp10_ret_neg1
         move    1,4
         popj    17,
-memfs_slot_fail:
-        jrst    pdp10_ret_neg1
 
 ; int memfs_find_child(const struct memfs *fs, unsigned int parent,
 ;     const struct vfs_name *name)
@@ -355,7 +347,7 @@ memfs_lookup:
 memfs_lookup_fail:
         seto    1,
 memfs_lookup_done:
-        jrst    memfs_restore_4
+        jrst    memfs_restore4
 
         .globl  memfs_create
 memfs_create:
@@ -508,8 +500,6 @@ memfs_unlink_clear:
 memfs_unlink_fail:
         seto    1,
 memfs_unlink_done:
-memfs_restore_4:
-        jrst    memfs_restore4
 
         .globl  memfs_rename
 memfs_rename:
@@ -619,19 +609,17 @@ memfs_restore1:
 
         .globl  memfs_chmod
 memfs_chmod:
-        jumpe   1,memfs_chmod_fail
+        jumpe   1,pdp10_ret_neg1
         skipn   5(1)
-        jrst    memfs_chmod_fail
+        jrst    pdp10_ret_neg1
         pushj   17,memfs_slot           ; mode remains in AC3
-        jumpl   1,memfs_chmod_fail
+        jumpl   1,pdp10_ret_neg1
         trnn    6,4
-        jrst    memfs_chmod_fail
+        jrst    pdp10_ret_neg1
         move    4,3
         andi    4,07777
         dpb     4,[POINT 12,5(5),32]
         jrst    pdp10_ret_zero
-memfs_chmod_fail:
-        jrst    pdp10_ret_neg1
 
         .globl  memfs_truncate_words
 memfs_truncate_words:
@@ -666,17 +654,17 @@ memfs_truncate_done:
 ;     unsigned int off, struct vfs_dirent *ent)
         .globl  memfs_readdir
 memfs_readdir:
-        jumpe   4,memfs_readdir_fail
+        jumpe   4,pdp10_ret_neg1
         move    0,4                     ; memfs_slot clobbers AC4
         move    7,1
         pushj   17,memfs_slot
-        jumpl   1,memfs_readdir_fail
+        jumpl   1,pdp10_ret_neg1
         move    2,1                     ; parent slot
         move    1,7                     ; restore fs
         move    4,0                     ; restore ent
         ldb     0,[POINT 3,5(5),20]
         caie    0,1                     ; directory
-        jrst    memfs_readdir_fail
+        jrst    pdp10_ret_neg1
 
         move    5,(1)
         addi    5,010                   ; slot 1
@@ -684,7 +672,7 @@ memfs_readdir:
         movei   0,0                     ; matching-entry ordinal
 memfs_readdir_loop:
         caml    6,1(1)
-        jrst    memfs_readdir_eof
+        jrst    pdp10_ret_zero
         move    7,5(5)
         trnn    7,1
         jrst    memfs_readdir_next
@@ -707,10 +695,6 @@ memfs_readdir_found:
         movem   0,5(4)
         movei   1,1
         popj    17,
-memfs_readdir_eof:
-        jrst    pdp10_ret_zero
-memfs_readdir_fail:
-        jrst    pdp10_ret_neg1
 
 ; int memfs_stat(const struct memfs *fs, vnode_t node,
 ;     struct vfs_stat *st)

@@ -150,11 +150,11 @@ file_component_empty:
 ; Construct cwd paths directly as packed SIXBIT.
         .globl  file_getcwd
 file_getcwd:
-        jumpe   1,file_getcwd_fail
+        jumpe   1,pdp10_ret_neg1
         jumpl   2,file_getcwd_nwords_ok ; unsigned value with bit 35 set
         cail    2,2
         jrst    file_getcwd_nwords_ok
-        jrst    file_getcwd_fail
+        jrst    pdp10_ret_neg1
 file_getcwd_nwords_ok:
         move    4,file_cwd
         jumpn   4,file_getcwd_have_node
@@ -287,8 +287,6 @@ file_getcwd_pseudo_tail:
         move    2,1
         move    1,4
         jrst    file_getcwd_pseudo
-file_getcwd_fail:
-        jrst    pdp10_ret_neg1
 
 
 ; int file_symlink(const kword_t *target, const kword_t *linkpath)
@@ -296,12 +294,12 @@ file_getcwd_fail:
         .globl  vfs_symlink
         .globl  file_symlink
 file_symlink:
-        jumpe   1,file_symlink_early_fail
-        jumpe   2,file_symlink_early_fail
+        jumpe   1,pdp10_ret_neg1
+        jumpe   2,pdp10_ret_neg1
         move    3,(1)
         cail    3,1
         cail    3,0147                 ; FILE_PATH_MAX_CHARS + 1
-        jrst    file_symlink_early_fail
+        jrst    pdp10_ret_neg1
         push    17,1                   ; target
         push    17,3                   ; chars
         add     17,[6,,6]
@@ -327,8 +325,6 @@ file_symlink_done:
 file_symlink_fail:
         seto    1,
         jrst    file_symlink_done
-file_symlink_early_fail:
-        jrst    pdp10_ret_neg1
 
 ; int file_rename(const kword_t *oldpath, const kword_t *newpath)
 ; Save newpath below two parent-vnode/name records.
@@ -480,17 +476,15 @@ file_path_onearg_done:
         .globl  file_find
 file_find:
         caige   1,3
-        jrst    file_find_fail
+        jrst    pdp10_ret_zero
         caile   1,017
-        jrst    file_find_fail
+        jrst    pdp10_ret_zero
         subi    1,3
         imuli   1,3
         addi    1,file_table
         skipn   (1)
-        jrst    file_find_fail
-        popj    17,
-file_find_fail:
         jrst    pdp10_ret_zero
+        popj    17,
 
 ; int file_new_fd(vnode_t node, unsigned int flags, int isdir)
 ; Table order is descriptor order, so the first free record is the lowest
@@ -541,12 +535,12 @@ file_pseudo_zero_done:
         jrst    file_pseudo_proc
         hlrz    4,1
         caie    4,030002               ; /PROC/{0,1}
-        jrst    file_pseudo_fail
+        jrst    pdp10_ret_neg1
         hrrz    4,1
         cail    4,2
-        jrst    file_pseudo_fail
+        jrst    pdp10_ret_neg1
         caige   3,3
-        jrst    file_pseudo_fail
+        jrst    pdp10_ret_neg1
 file_pseudo_proc_slot:
         movei   5,7
         movem   5,(2)
@@ -558,7 +552,7 @@ file_pseudo_proc_slot:
         jrst    pdp10_ret_zero
 file_pseudo_device:
         caige   3,3
-        jrst    file_pseudo_fail
+        jrst    pdp10_ret_neg1
         movei   4,7
         movem   4,(2)
         move    4,[0174445665143]      ; SIXBIT //DEVIC/
@@ -568,7 +562,7 @@ file_pseudo_device:
         jrst    pdp10_ret_zero
 file_pseudo_cty:
         caige   3,4
-        jrst    file_pseudo_fail
+        jrst    pdp10_ret_neg1
         movei   4,014
         movem   4,(2)
         move    4,[0174445665143]      ; SIXBIT //DEVIC/
@@ -578,11 +572,9 @@ file_pseudo_cty:
         jrst    pdp10_ret_zero
 file_pseudo_proc:
         caige   3,2
-        jrst    file_pseudo_fail
+        jrst    pdp10_ret_neg1
         movei   4,5
         movem   4,(2)
         move    4,[0176062574300]      ; SIXBIT //PROC /
         movem   4,1(2)
         jrst    pdp10_ret_zero
-file_pseudo_fail:
-        jrst    pdp10_ret_neg1

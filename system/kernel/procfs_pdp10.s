@@ -43,15 +43,15 @@ procfs_stat_store:
 ; int procfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
         .globl  procfs_readchar
 procfs_readchar:
-        jumpe   3,procfs_readchar_fail
+        jumpe   3,pdp10_ret_neg1
         hlrz    4,1
         caige   4,030003               ; PPID..COMM kinds 3..6
-        jrst    procfs_readchar_fail
+        jrst    pdp10_ret_neg1
         caile   4,030006
-        jrst    procfs_readchar_fail
+        jrst    pdp10_ret_neg1
         hrrz    5,1
         cail    5,2                    ; fixed slots 0 and 1
-        jrst    procfs_readchar_fail
+        jrst    pdp10_ret_neg1
         caie    4,030006               ; COMM
         jrst    procfs_readchar_not_comm
         move    4,3                    ; vfs readchar chp
@@ -74,31 +74,29 @@ procfs_readchar_numeric:
         jrst    kfmt_u36_decimal_readchar
 procfs_readchar_words:
         caie    4,030005               ; WORDS
-        jrst    procfs_readchar_fail
+        jrst    pdp10_ret_neg1
         lsh     5,1
         hlrz    1,proc_table+1(5)
         jrst    kfmt_u36_decimal_readchar
-procfs_readchar_fail:
-        jrst    pdp10_ret_neg1
 
 ; Fixed two-process PROCFS directory operations.
 ; int procfs_lookup(vnode_t dir, const struct vfs_name *name,
 ;     vnode_t *nodep)
         .globl  procfs_lookup
 procfs_lookup:
-        jumpe   2,procfs_lookup_fail
-        jumpe   3,procfs_lookup_fail
+        jumpe   2,pdp10_ret_neg1
+        jumpe   3,pdp10_ret_neg1
         hlrz    4,1
         caie    4,030001               ; root
         jrst    procfs_lookup_proc
         move    4,(2)
         caie    4,1
-        jrst    procfs_lookup_fail
+        jrst    pdp10_ret_neg1
         move    4,1(2)
         camn    4,[0200000000000]      ; SIXBIT /0     /
         jrst    procfs_lookup_slot0
         came    4,[0210000000000]      ; SIXBIT /1     /
-        jrst    procfs_lookup_fail
+        jrst    pdp10_ret_neg1
         movsi   4,030002
         hrri    4,1
         movem   4,(3)
@@ -109,10 +107,10 @@ procfs_lookup_slot0:
         jrst    pdp10_ret_zero
 procfs_lookup_proc:
         caie    4,030002
-        jrst    procfs_lookup_fail
+        jrst    pdp10_ret_neg1
         hrrz    4,1
         cail    4,2
-        jrst    procfs_lookup_fail
+        jrst    pdp10_ret_neg1
         move    4,(2)                  ; name chars
         move    5,1(2)                 ; packed name
         movei   6,0
@@ -123,15 +121,15 @@ procfs_lookup_proc:
         camn    5,procfs_readdir_names+3 ; COMM
         movei   6,6
         jumpn   6,procfs_lookup_file
-        jrst    procfs_lookup_fail
+        jrst    pdp10_ret_neg1
 procfs_lookup_len5:
         caie    4,5
-        jrst    procfs_lookup_fail
+        jrst    pdp10_ret_neg1
         camn    5,procfs_readdir_names+1 ; STATE
         movei   6,4
         camn    5,procfs_readdir_names+2 ; WORDS
         movei   6,5
-        jumpe   6,procfs_lookup_fail
+        jumpe   6,pdp10_ret_neg1
 procfs_lookup_file:
         lsh     6,022                  ; kind -> LH (18 bits)
         tlo     6,030000               ; provider 3
@@ -139,14 +137,12 @@ procfs_lookup_file:
         ior     6,4
         movem   6,(3)
         jrst    pdp10_ret_zero
-procfs_lookup_fail:
-        jrst    pdp10_ret_neg1
 
 ; int procfs_readdir(vnode_t dir, unsigned int off,
 ;     struct vfs_dirent *ent)
         .globl  procfs_readdir
 procfs_readdir:
-        jumpe   3,procfs_readdir_fail
+        jumpe   3,pdp10_ret_neg1
         hlrz    4,1
         caie    4,030001
         jrst    procfs_readdir_proc
@@ -160,10 +156,10 @@ procfs_readdir:
         jrst    procfs_readdir_store
 procfs_readdir_proc:
         caie    4,030002
-        jrst    procfs_readdir_fail
+        jrst    pdp10_ret_neg1
         hrrz    4,1
         cail    4,2
-        jrst    procfs_readdir_fail
+        jrst    pdp10_ret_neg1
         cail    2,4
         jrst    pdp10_ret_zero
         movei   4,5
@@ -181,8 +177,6 @@ procfs_readdir_store:
         movem   6,5(3)
         movei   1,1
         popj    17,
-procfs_readdir_fail:
-        jrst    pdp10_ret_neg1
 
 procfs_readdir_names:
         .long   0606051440000          ; PPID

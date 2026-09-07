@@ -29,15 +29,13 @@ vfs_create_common:
 ; int vfs_name_valid(const struct vfs_name *name)
 ; Common filesystem namespace rule: non-empty SIXBIT names fit VFS_NAME_WORDS.
 vfs_name_valid:
-        jumpe   1,vfs_name_valid_fail
+        jumpe   1,pdp10_ret_zero
         move    2,(1)
-        jumple  2,vfs_name_valid_fail
+        jumple  2,pdp10_ret_zero
         caile   2,030                    ; VFS_NAME_MAX_CHARS = 24
-        jrst    vfs_name_valid_fail
+        jrst    pdp10_ret_zero
         movei   1,1
         popj    17,
-vfs_name_valid_fail:
-        jrst    pdp10_ret_zero
 
 ; int vfs_name_is6(const struct vfs_name *name, kword_t word,
 ;     unsigned int chars)
@@ -91,10 +89,10 @@ vfs_sixchar_lf:
 ; Return the last nonzero character position in a packed SIXBIT name.
         .globl  vfs_sixbit_name_chars
 vfs_sixbit_name_chars:
-        jumpe   1,vfs_name_chars_zero
-        jumpe   2,vfs_name_chars_zero
+        jumpe   1,pdp10_ret_zero
+        jumpe   2,pdp10_ret_zero
         caile   2,030                    ; VFS names are at most 24 chars
-        jrst    vfs_name_chars_zero
+        jrst    pdp10_ret_zero
         move    3,[POINT 6,0]
         hrr     3,1
         setz    4,                       ; last nonzero position
@@ -109,8 +107,6 @@ vfs_name_chars_next:
         jrst    vfs_name_chars_loop
         move    1,4
         popj    17,
-vfs_name_chars_zero:
-        jrst    pdp10_ret_zero
 
 
 ; MRES-backed VFS leaf operations.  Keeping these here avoids the compiler's
