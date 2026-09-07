@@ -1407,7 +1407,7 @@ d6fs_provider_parent_store:
 d6fs_provider_parent_fail:
         seto    1,
 d6fs_provider_parent_done:
-        sub     17,[015,,015]
+        sub     17,[014,,014]
         popj    17,
 
 ; int d6fs_provider_write_words(vnode_t node, unsigned int off,
