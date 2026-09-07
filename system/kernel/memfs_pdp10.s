@@ -500,6 +500,7 @@ memfs_unlink_clear:
 memfs_unlink_fail:
         seto    1,
 memfs_unlink_done:
+        jrst    memfs_restore4
 
         .globl  memfs_rename
 memfs_rename:
