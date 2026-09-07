@@ -851,7 +851,7 @@ memfs_mres_init:
         jumpe   2,memfs_mres_bad
         hrl     2,2
         hrri    2,memfs_mres_fs
-        blt     2,memfs_mres_fs+6
+        blt     2,memfs_mres_fs+5
         jrst    pdp10_ret_zero
 
 ; MEMINFO calls this exported entry directly; overwrite request a/b.
