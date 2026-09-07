@@ -367,16 +367,16 @@ devicefs_stats_swap:
 devicefs_stats_device:
         setz    5,                     ; ordinary device stats subtype
 
-; Fixed-width statistic lines keep readchar offset handling compact.
+; Fixed-width bare octal values keep readchar offset handling compact.
 ; AC4=device id, AC5 subtype (0 device, 1 swap, 2 log).
 devicefs_stats_readchar:
         setz    6,                     ; line number
 devicefs_stats_line_loop:
-        caile   2,022                  ; 023 chars per line
+        caile   2,015                  ; 016 chars: 12 digits + CR LF
         jrst    devicefs_stats_next_line
         jrst    devicefs_stats_select
 devicefs_stats_next_line:
-        subi    2,023
+        subi    2,016
         aoja    6,devicefs_stats_line_loop
 
 devicefs_stats_select:
@@ -386,11 +386,9 @@ devicefs_stats_select:
         caie    5,1
         jrst    devicefs_stats_log_value
         move    1,@devicefs_swap_stat_ptrs(6)
-        jrst    devicefs_stats_sub_label
+        jrst    devicefs_stats_emit
 devicefs_stats_log_value:
         move    1,@devicefs_log_stat_ptrs(6)
-devicefs_stats_sub_label:
-        move    5,devicefs_sub_stat_labels(6)
         jrst    devicefs_stats_emit
 
 devicefs_stats_select_device:
@@ -413,7 +411,6 @@ devicefs_stats_device_native:
         caie    6,4
         jrst    devicefs_stats_device_native_value
         move    1,devicefs_storage_errors-014(4)
-        move    5,[0456262630000]      ; ERRS
         jrst    devicefs_stats_emit
 devicefs_stats_device_native_value:
         caige   6,2
@@ -425,7 +422,6 @@ devicefs_stats_device_native_value:
         subi    5,2                    ; read/write selector
         add     5,0
         move    1,@devicefs_native_stat_ptrs(5)
-        move    5,devicefs_native_stat_labels(5)
         jrst    devicefs_stats_emit
 
 devicefs_stats_device_simple_error:
@@ -436,7 +432,6 @@ devicefs_stats_device_simple_error:
         jrst    devicefs_stats_error_label
         move    1,devicefs_storage_errors-014(4)
 devicefs_stats_error_label:
-        move    5,[0456262630000]      ; ERRS
         jrst    devicefs_stats_emit
 
 devicefs_stats_device_reads:
@@ -447,7 +442,6 @@ devicefs_stats_device_reads:
         jrst    devicefs_stats_read_label
         move    1,devicefs_io_in(4)
 devicefs_stats_read_label:
-        move    5,[0624541440000]      ; READ
         jrst    devicefs_stats_emit
 devicefs_stats_d6_reads:
         move    1,devicefs_d6set_reads
@@ -461,20 +455,14 @@ devicefs_stats_device_writes:
         jrst    devicefs_stats_write_label
         move    1,devicefs_io_out(4)
 devicefs_stats_write_label:
-        move    5,[0676251640000]      ; WRIT
         jrst    devicefs_stats_emit
 devicefs_stats_d6_writes:
         move    1,devicefs_d6set_writes
         jrst    devicefs_stats_write_label
 
-; Subsystem stats share the same five line labels.  LOG block counts alias
-; its one-block READ/WRITE requests, avoiding two extra resident counters.
-devicefs_sub_stat_labels:
-        .word   0624541440000          ; READ
-        .word   0676251640000          ; WRIT
-        .word   0425453620000          ; BLKR
-        .word   0425453670000          ; BLKW
-        .word   0456262630000          ; ERRS
+; Subsystem statistics use the same fixed line order:
+; requests read, requests written, native units read, native units written,
+; errors.  LOG native-unit counts alias its one-block requests.
 devicefs_swap_stat_ptrs:
         .word   devicefs_swap_reads
         .word   devicefs_swap_writes
@@ -500,40 +488,12 @@ devicefs_native_stat_ptrs:
         .word   devicefs_io_out+016
         .word   devicefs_d6set_blocks_read
         .word   devicefs_d6set_blocks_written
-devicefs_native_stat_labels:
-        .word   0425453620000          ; BLKR
-        .word   0425453670000          ; BLKW
-        .word   0676244620000          ; WRDR
-        .word   0676244670000          ; WRDW
-        .word   0634543620000          ; SECR
-        .word   0634543670000          ; SECW
-        .word   0425453620000          ; BLKR
-        .word   0425453670000          ; BLKW
-
-; Emit one fixed-width line: LABEL4 SP 12-octal-digits CR LF = 023 chars.
-; Native octal formatting is deliberately used here: it avoids a second
-; decimal formatter in KCORE and makes every line fixed-width.
+; Emit one fixed-width bare value: 12 octal digits CR LF = 016 chars.
+; Native octal formatting avoids a decimal formatter in resident KCORE.
 devicefs_stats_emit:
-        caile   2,3
-        jrst    devicefs_stats_after_label
-        move    6,2
-        imuli   6,6
-        subi    6,036
-        move    0,5
-        lsh     0,0(6)
-        andi    0,077
-        addi    0,040
-        jrst    devicefs_stats_store
-devicefs_stats_after_label:
-        caie    2,4
-        jrst    devicefs_stats_octal
-        movei   0,040
-        jrst    devicefs_stats_store
-devicefs_stats_octal:
-        caile   2,020                  ; columns 5..16 are 12 octal digits
+        caile   2,013                  ; columns 0..11 are octal digits
         jrst    devicefs_stats_eol
         move    6,2
-        subi    6,5
         imuli   6,-3
         addi    6,041                  ; bit shift 33..0
         move    0,1
@@ -542,12 +502,12 @@ devicefs_stats_octal:
         addi    0,060
         jrst    devicefs_stats_store
 devicefs_stats_eol:
-        caie    2,021
+        caie    2,014
         jrst    devicefs_stats_lf
         movei   0,015
         jrst    devicefs_stats_store
 devicefs_stats_lf:
-        caie    2,022
+        caie    2,015
         jrst    pdp10_ret_zero
         movei   0,012
 devicefs_stats_store:

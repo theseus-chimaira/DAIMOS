@@ -13,6 +13,13 @@
 #define DEVICEFS_KIND_SWAP_STATS     6U
 #define DEVICEFS_KIND_LOG_STATS      7U
 
+/* STATS files contain unlabeled 12-digit octal values, one per line.
+ * Stream/special: reads, writes, errors.
+ * Storage/aggregate: reads, writes, native units read, native units written,
+ * errors.  Native units are DTC/D6SET blocks, MTC words, and DSK sectors.
+ * D6SET SWAP/LOG use the five-line storage order.
+ */
+
 #define DEVICEFS_DEV_CTY0            0U
 #define DEVICEFS_DEV_CLK0            1U
 #define DEVICEFS_DEV_PTR0            2U
