@@ -130,6 +130,21 @@ proc_uarea_release(unsigned int slot, struct proc *p)
         return 0;
 }
 
+static int
+proc_slot_cleanup(unsigned int slot, struct proc *p)
+{
+        proc_swap_detach(slot);
+        if (proc_uarea_release(slot, p) != 0)
+                return -1;
+        p->meta = 0UL;
+        p->mem_layout = 0UL;
+        p->sched = 0UL;
+        while (proc_high_slot > 1U &&
+            PROC_STATE(&proc_table[proc_high_slot - 1U]) == PROC_FREE)
+                --proc_high_slot;
+        return 0;
+}
+
 int
 proc_slot_release(unsigned int slot)
 {
@@ -139,16 +154,9 @@ proc_slot_release(unsigned int slot)
                 return -1;
         p = &proc_table[slot];
         if (PROC_STATE(p) == PROC_FREE || PROC_MEM_BASE(p) != 0UL ||
-            PROC_TRANSITION(p) || proc_uarea_release(slot, p) != 0)
+            PROC_TRANSITION(p))
                 return -1;
-        proc_swap_detach(slot);
-        p->meta = 0UL;
-        p->mem_layout = 0UL;
-        p->sched = 0UL;
-        while (proc_high_slot > 1U &&
-            PROC_STATE(&proc_table[proc_high_slot - 1U]) == PROC_FREE)
-                --proc_high_slot;
-        return 0;
+        return proc_slot_cleanup(slot, p);
 }
 
 /*
@@ -182,15 +190,8 @@ proc_exit_finish(void)
                 return -1;
         }
 
-        proc_swap_detach(slot);
-        if (proc_uarea_release(slot, p) != 0)
+        if (proc_slot_cleanup(slot, p) != 0)
                 return -1;
-        p->meta = 0UL;
-        p->mem_layout = 0UL;
-        p->sched = 0UL;
-        while (proc_high_slot > 1U &&
-            PROC_STATE(&proc_table[proc_high_slot - 1U]) == PROC_FREE)
-                --proc_high_slot;
         return proc_high_slot > 1U ? 1 : 0;
 }
 

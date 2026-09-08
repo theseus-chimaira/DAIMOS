@@ -256,6 +256,17 @@ mm_alloc_aligned_raw(kword_t words, kword_t alignment, unsigned int type,
         return mm_total_free() >= words ? MM_ERR_FRAGMENTED : MM_ERR_NOMEM;
 }
 
+static unsigned int
+mm_find_base(kword_t base)
+{
+        unsigned int i;
+
+        for (i = 0U; i < mm_extent_count; ++i)
+                if (MM_EXTENT_BASE(&mm_extents[i]) == base)
+                        break;
+        return i;
+}
+
 static struct proc *
 mm_process_owner(unsigned int owner, kword_t base)
 {
@@ -274,11 +285,8 @@ mm_is_pinned(kword_t base)
 {
         unsigned int i;
 
-        for (i = 0U; i < mm_extent_count; ++i) {
-                if (MM_EXTENT_BASE(&mm_extents[i]) == base)
-                        return MM_EXTENT_PINS(&mm_extents[i]) != 0U;
-        }
-        return 0;
+        i = mm_find_base(base);
+        return i < mm_extent_count && MM_EXTENT_PINS(&mm_extents[i]) != 0U;
 }
 
 int
@@ -300,13 +308,8 @@ mm_move_process(struct proc *p, unsigned int owner)
         old_base = PROC_MEM_BASE(p);
         words = PROC_MEM_WORDS(p);
         PROC_SET_TRANSITION(p);
-        extent = 0;
-        for (i = 0U; i < mm_extent_count; ++i) {
-                if (MM_EXTENT_BASE(&mm_extents[i]) == old_base) {
-                        extent = &mm_extents[i];
-                        break;
-                }
-        }
+        i = mm_find_base(old_base);
+        extent = i < mm_extent_count ? &mm_extents[i] : 0;
         if (extent == 0 || MM_EXTENT_TYPE(extent) != MM_TYPE_PROCESS ||
             MM_EXTENT_OWNER(extent) != owner ||
             MM_EXTENT_WORDS(extent) != words) {
@@ -367,13 +370,8 @@ mm_move_module(unsigned int owner)
         words = MODULE_RUNTIME_EXTENT_WORDS(&module_runtime_descs[owner]);
         if (old_base == 0UL || words == 0UL)
                 return MM_ERR_INVAL;
-        extent = 0;
-        for (i = 0U; i < mm_extent_count; ++i) {
-                if (MM_EXTENT_BASE(&mm_extents[i]) == old_base) {
-                        extent = &mm_extents[i];
-                        break;
-                }
-        }
+        i = mm_find_base(old_base);
+        extent = i < mm_extent_count ? &mm_extents[i] : 0;
         if (extent == 0 || MM_EXTENT_TYPE(extent) != MM_TYPE_MODULE ||
             MM_EXTENT_OWNER(extent) != owner ||
             MM_EXTENT_WORDS(extent) != words)
@@ -541,20 +539,17 @@ mm_free(kword_t base, unsigned int type, unsigned int owner)
         unsigned int i;
         struct mm_extent *extent;
 
-        for (i = 0U; i < mm_extent_count; ++i) {
-                extent = &mm_extents[i];
-                if (MM_EXTENT_BASE(extent) != base)
-                        continue;
-                if (MM_EXTENT_TYPE(extent) != type ||
-                    MM_EXTENT_OWNER(extent) != owner)
-                        return MM_ERR_INVAL;
-                if (MM_EXTENT_PINS(extent) != 0U)
-                        return MM_ERR_BUSY;
-                extent->meta = mm_meta(MM_TYPE_FREE, 0U, 0U);
-                mm_coalesce(i);
-                return MM_OK;
-        }
-        return MM_ERR_INVAL;
+        i = mm_find_base(base);
+        if (i >= mm_extent_count)
+                return MM_ERR_INVAL;
+        extent = &mm_extents[i];
+        if (MM_EXTENT_TYPE(extent) != type || MM_EXTENT_OWNER(extent) != owner)
+                return MM_ERR_INVAL;
+        if (MM_EXTENT_PINS(extent) != 0U)
+                return MM_ERR_BUSY;
+        extent->meta = mm_meta(MM_TYPE_FREE, 0U, 0U);
+        mm_coalesce(i);
+        return MM_OK;
 }
 
 int
@@ -564,19 +559,17 @@ mm_pin(kword_t base)
         unsigned int pins;
         struct mm_extent *extent;
 
-        for (i = 0U; i < mm_extent_count; ++i) {
-                extent = &mm_extents[i];
-                if (MM_EXTENT_BASE(extent) != base)
-                        continue;
-                if (MM_EXTENT_TYPE(extent) == MM_TYPE_FREE)
-                        return MM_ERR_INVAL;
-                pins = MM_EXTENT_PINS(extent);
-                if (pins == MM_PIN_MASK)
-                        return MM_ERR_BUSY;
-                extent->meta += (kword_t)1UL << MM_PIN_SHIFT;
-                return MM_OK;
-        }
-        return MM_ERR_INVAL;
+        i = mm_find_base(base);
+        if (i >= mm_extent_count)
+                return MM_ERR_INVAL;
+        extent = &mm_extents[i];
+        if (MM_EXTENT_TYPE(extent) == MM_TYPE_FREE)
+                return MM_ERR_INVAL;
+        pins = MM_EXTENT_PINS(extent);
+        if (pins == MM_PIN_MASK)
+                return MM_ERR_BUSY;
+        extent->meta += (kword_t)1UL << MM_PIN_SHIFT;
+        return MM_OK;
 }
 
 int
@@ -585,14 +578,12 @@ mm_unpin(kword_t base)
         unsigned int i;
         struct mm_extent *extent;
 
-        for (i = 0U; i < mm_extent_count; ++i) {
-                extent = &mm_extents[i];
-                if (MM_EXTENT_BASE(extent) != base)
-                        continue;
-                if (MM_EXTENT_PINS(extent) == 0U)
-                        return MM_ERR_INVAL;
-                extent->meta -= (kword_t)1UL << MM_PIN_SHIFT;
-                return MM_OK;
-        }
-        return MM_ERR_INVAL;
+        i = mm_find_base(base);
+        if (i >= mm_extent_count)
+                return MM_ERR_INVAL;
+        extent = &mm_extents[i];
+        if (MM_EXTENT_PINS(extent) == 0U)
+                return MM_ERR_INVAL;
+        extent->meta -= (kword_t)1UL << MM_PIN_SHIFT;
+        return MM_OK;
 }
