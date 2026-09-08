@@ -399,11 +399,20 @@ devicefs_stats_device_native_value:
         jrst    pdp10_ret_zero
         caile   6,3
         jrst    pdp10_ret_zero
-        lsh     0,1                    ; class * 2
         move    5,6
         subi    5,2                    ; read/write selector
-        add     5,0
-        move    1,@devicefs_native_stat_ptrs(5)
+        cain    0,1                    ; MTC has separate word volume
+        jrst    devicefs_stats_native_mtc
+        cain    0,3                    ; D6SET has aggregate block volume
+        jrst    devicefs_stats_native_d6
+        ; DTC and DSK are one native unit per request.
+        jumpe   5,devicefs_stats_device_reads
+        jrst    devicefs_stats_device_writes
+devicefs_stats_native_mtc:
+        move    1,devicefs_mtc_words_read(5)
+        jrst    devicefs_stats_emit
+devicefs_stats_native_d6:
+        move    1,devicefs_d6set_blocks_read(5)
         jrst    devicefs_stats_emit
 
 devicefs_stats_device_simple_error:
@@ -446,18 +455,6 @@ devicefs_stats_zero:
         setz    1,
         jrst    devicefs_stats_emit
 
-; Native transfer units by class: DTC blocks, MTC words, DSK sectors,
-; D6SET blocks.  DTC/DSK reuse request counters because one request is one
-; native block/sector; only MTC and aggregate D6SET need separate volume.
-devicefs_native_stat_ptrs:
-        .word   devicefs_io_in+014
-        .word   devicefs_io_out+014
-        .word   devicefs_mtc_words_read
-        .word   devicefs_mtc_words_written
-        .word   devicefs_io_in+016
-        .word   devicefs_io_out+016
-        .word   devicefs_d6set_blocks_read
-        .word   devicefs_d6set_blocks_written
 ; Emit one fixed-width bare value: 12 octal digits CR LF = 016 chars.
 ; Native octal formatting avoids a decimal formatter in resident KCORE.
 devicefs_stats_emit:

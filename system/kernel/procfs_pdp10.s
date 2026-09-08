@@ -14,6 +14,7 @@ procfs_stat:
         hlrz    3,1
         caie    3,030001               ; root directory
         jrst    procfs_stat_nonroot
+procfs_stat_dir:
         movei   4,1
         movei   5,0555
         jrst    procfs_stat_store
@@ -23,9 +24,7 @@ procfs_stat_nonroot:
         jrst    pdp10_ret_neg1
         caie    3,030002
         jrst    procfs_stat_file
-        movei   4,1
-        movei   5,0555
-        jrst    procfs_stat_store
+        jrst    procfs_stat_dir
 procfs_stat_file:
         caige   3,030003
         jrst    pdp10_ret_neg1
@@ -94,15 +93,13 @@ procfs_lookup:
         jrst    pdp10_ret_neg1
         move    4,1(2)
         camn    4,[0200000000000]      ; SIXBIT /0     /
-        jrst    procfs_lookup_slot0
+        jrst    procfs_lookup_root_slot
         came    4,[0210000000000]      ; SIXBIT /1     /
         jrst    pdp10_ret_neg1
-        movsi   4,030002
-        hrri    4,1
-        movem   4,(3)
-        jrst    pdp10_ret_zero
-procfs_lookup_slot0:
-        movsi   4,030002
+procfs_lookup_root_slot:
+        lsh     4,-036                  ; SIXBIT digit 020/021 -> slot 0/1
+        andi    4,1
+        tlo     4,030002                ; process-directory vnode kind
         movem   4,(3)
         jrst    pdp10_ret_zero
 procfs_lookup_proc:
@@ -149,9 +146,8 @@ procfs_readdir:
         cail    2,2
         jrst    pdp10_ret_zero
         movei   4,1
-        move    5,2
+        movei   5,020(2)                ; SIXBIT digit code for slot 0/1
         lsh     5,036
-        add     5,[0200000000000]
         movei   6,1
         jrst    procfs_readdir_store
 procfs_readdir_proc:
