@@ -88,7 +88,8 @@ vfs_mount(vnode_t target, unsigned int provider,
         if (i == VFS_NMOUNT)
                 return -1;
         id = i + 1U;
-        root = VFS_NODE(provider, VFS_MOUNT_KIND(id, kind), index);
+        root = VFS_NODE_PACKED(provider,
+            (id << VFS_MOUNT_SHIFT) | kind, index);
         vfs_mount_target[i] = target;
         vfs_mount_root[i] = root;
         if (flags == VFS_MOUNT_RDONLY)

@@ -687,8 +687,8 @@ dtfs_create(vnode_t dir, const struct vfs_name *name,
                         return -1;
                 }
         }
-        *nodep = VFS_NODE(DTFS_PROVIDER,
-            VFS_MOUNT_KIND(VFS_MOUNT_ID(dir), DTFS_KIND_FILE), slot);
+        *nodep = VFS_NODE_PACKED(DTFS_PROVIDER,
+            (VFS_MOUNT_ID(dir) << VFS_MOUNT_SHIFT) | DTFS_KIND_FILE, slot);
         return 0;
 }
 
@@ -707,8 +707,8 @@ dtfs_unlink(vnode_t dir, const struct vfs_name *name)
             dtfs_scan_slot(dir, name, &slot) != 0)
                 return -1;
         personality = dtfs_personality(dir);
-        node = VFS_NODE(DTFS_PROVIDER,
-            VFS_MOUNT_KIND(VFS_MOUNT_ID(dir), DTFS_KIND_FILE), slot);
+        node = VFS_NODE_PACKED(DTFS_PROVIDER,
+            (VFS_MOUNT_ID(dir) << VFS_MOUNT_SHIFT) | DTFS_KIND_FILE, slot);
         if (personality == DTFS_MEDIA_TENEX) {
                 blocks = dtfs_block_info(node, slot, &block);
                 if (blocks == 0U || block == 0U)

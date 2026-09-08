@@ -30,6 +30,10 @@ typedef kword_t vnode_t;
         VFS_PROVIDER_SHIFT) | \
         (((kword_t)(kind) & VFS_KIND_MASK) << VFS_KIND_SHIFT) | \
         ((kword_t)(index) & VFS_INDEX_MASK))
+/* Use only when each component is already known to fit its field. */
+#define VFS_NODE_PACKED(provider, kind, index) \
+        (((kword_t)(provider) << VFS_PROVIDER_SHIFT) | \
+        ((kword_t)(kind) << VFS_KIND_SHIFT) | (kword_t)(index))
 /* vnode_t is one PDP-10 word, so shifting away the low 30 bits already
  * leaves exactly the six-bit provider field. */
 #define VFS_PROVIDER(node) \

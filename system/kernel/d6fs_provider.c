@@ -310,8 +310,8 @@ d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
         fcb[D6FS_FCB_PARENT] = (kword_t)VFS_INDEX(dir) << 18;
         if (d6fs_reader_put_fcb(&d6fs_provider_reader, index, fcb) != 0)
                 return -1;
-        node = VFS_NODE(D6FS_PROVIDER,
-            VFS_MOUNT_KIND(VFS_MOUNT_ID(dir), D6FS_KIND_NODE), index);
+        node = VFS_NODE_PACKED(D6FS_PROVIDER,
+            (VFS_MOUNT_ID(dir) << VFS_MOUNT_SHIFT) | D6FS_KIND_NODE, index);
 
         if (type == D6FS_TYPE_SYMLINK) {
                 fi.type = type;
@@ -368,10 +368,10 @@ d6fs_provider_unlink(vnode_t dir, const struct vfs_name *name)
                 int rc;
 
                 for (s = 0U;; ++s) {
-                        rc = d6fs_provider_dirent(VFS_NODE(
+                        rc = d6fs_provider_dirent(VFS_NODE_PACKED(
                             D6FS_PROVIDER,
-                            VFS_MOUNT_KIND(VFS_MOUNT_ID(dir),
-                            D6FS_KIND_NODE), di.child_fcb), s, &child);
+                            (VFS_MOUNT_ID(dir) << VFS_MOUNT_SHIFT) |
+                            D6FS_KIND_NODE, di.child_fcb), s, &child);
                         if (rc == 0)
                                 break;
                         if (rc < 0 || child.child_fcb != 0U)
