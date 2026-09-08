@@ -278,3 +278,158 @@ vfs_sync:
 fs_block_workspace:
         .block  0200
         .text
+
+; Character I/O is deliberately handwritten.  The C versions need large
+; callee-save frames around the short stat/read/write sequence.  These leaf
+; wrappers use only caller-scratch ACs and ordinary PDP-6 stack operations.
+        .globl  procfs_readchar
+        .globl  devicefs_readchar
+
+; int vfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
+        .globl  vfs_readchar
+vfs_readchar:
+        jumpe   3,pdp10_ret_neg1
+        move    4,1
+        lsh     4,-036
+        andi    4,077
+        cain    4,3
+        jrst    procfs_readchar
+        cain    4,2
+        jrst    devicefs_readchar
+
+        add     17,[010,,010]
+        movem   1,-7(17)               ; node
+        movem   2,-6(17)               ; character offset
+        movem   3,-5(17)               ; result pointer
+        movei   2,-4(17)               ; struct vfs_stat
+        pushj   17,vfs_stat
+        jumpn   1,vfs_readchar_fail
+        move    1,-4(17)               ; st.type
+        caie    1,2                    ; VFS_TYPE_REG
+        jrst    vfs_readchar_fail
+
+        ; Compare unsigned character offset with st.size_chars.
+        move    2,-6(17)
+        tlc     2,0400000
+        move    3,-2(17)
+        tlc     3,0400000
+        caml    2,3
+        jrst    vfs_readchar_eof
+
+        move    2,-6(17)
+        move    4,2
+        andi    4,3                    ; quarter-word number
+        lsh     2,-2                   ; word offset
+        move    1,-7(17)
+        movei   3,(17)                 ; one-word buffer
+        movei   5,4                    ; preserve bi across call in stack
+        movem   4,-1(17)
+        movei   4,1
+        pushj   17,vfs_read_words
+        caie    1,1
+        jrst    vfs_readchar_fail
+
+        move    4,-1(17)
+        move    5,4
+        lsh     5,3
+        add     5,4                    ; 9 * bi
+        move    6,(17)
+        lsh     6,-033(5)              ; right by 27 - 9*bi
+        andi    6,0777
+        move    3,-5(17)
+        movem   6,(3)
+        movei   1,1
+        jrst    vfs_readchar_done
+vfs_readchar_eof:
+        setz    1,
+        jrst    vfs_readchar_done
+vfs_readchar_fail:
+        seto    1,
+vfs_readchar_done:
+        sub     17,[010,,010]
+        popj    17,
+
+; int vfs_writechar(vnode_t node, kword_t off, unsigned int ch)
+        .globl  vfs_writechar
+vfs_writechar:
+        move    4,1
+        lsh     4,-036
+        andi    4,077
+        caie    4,2                    ; DEVICEFS_PROVIDER
+        jrst    vfs_writechar_regular
+        move    4,1
+        lsh     4,-022                 ; VFS_KIND_SHIFT = 18
+        andi    4,077                  ; local kind only
+        caie    4,2                    ; DEVICEFS_KIND_DEVICE
+        jrst    vfs_writechar_regular
+        hrroi   1,0777775              ; VFS_DEVICE_IO = -3
+        popj    17,
+
+vfs_writechar_regular:
+        add     17,[010,,010]
+        movem   1,-7(17)               ; node
+        movem   2,-6(17)               ; character offset
+        movem   3,-5(17)               ; character
+        movei   2,-4(17)               ; struct vfs_stat
+        pushj   17,vfs_stat
+        jumpn   1,vfs_writechar_fail
+        move    1,-4(17)
+        caie    1,2                    ; VFS_TYPE_REG
+        jrst    vfs_writechar_fail
+
+        move    2,-6(17)
+        addi    2,1
+        movem   2,(17)                 ; end_chars; later fifth argument
+        addi    2,3
+        lsh     2,-2                   ; ceil(end_chars / 4)
+        move    3,-1(17)               ; st.size_words
+        camle   2,3
+        jrst    vfs_writechar_grow
+vfs_writechar_after_grow:
+        move    2,-6(17)
+        lsh     2,-2                   ; word offset
+        movem   2,-1(17)
+        setzm   -4(17)                 ; read beyond EOF as zero word
+        move    1,-7(17)
+        movei   3,-4(17)
+        movei   4,1
+        pushj   17,vfs_read_words
+
+        move    3,-6(17)
+        andi    3,3                    ; quarter-word number
+        move    4,3
+        lsh     4,3
+        add     4,3                    ; 9 * bi
+        movei   5,033
+        sub     5,4                    ; shift = 27 - 9*bi
+        movei   4,0777
+        lsh     4,0(5)
+        andca   4,-4(17)
+        move    3,-5(17)
+        andi    3,0777
+        lsh     3,0(5)
+        ior     4,3
+        movem   4,-4(17)
+
+        move    1,-7(17)
+        move    2,-1(17)
+        movei   3,-4(17)
+        movei   4,1
+        pushj   17,vfs_write_words
+        caie    1,1
+        jrst    vfs_writechar_fail
+        setz    1,
+        jrst    vfs_writechar_done
+
+vfs_writechar_grow:
+        move    1,-7(17)
+        move    3,-2(17)               ; st.size_chars
+        pushj   17,vfs_truncate
+        jumpn   1,vfs_writechar_fail
+        jrst    vfs_writechar_after_grow
+
+vfs_writechar_fail:
+        seto    1,
+vfs_writechar_done:
+        sub     17,[010,,010]
+        popj    17,
