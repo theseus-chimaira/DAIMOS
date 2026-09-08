@@ -219,7 +219,6 @@ dsk_dispatch_scan:
 dsk_dispatch_found:
         hrlz 2,dsk_queue(4)
         movem 2,dsk_queue(4)
-        jrst dsk_start_active
 
 dsk_start_active:
         move 4,1

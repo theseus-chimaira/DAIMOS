@@ -451,7 +451,6 @@ devicefs_stats_d6_writes:
 
 devicefs_stats_zero:
         setz    1,
-        jrst    devicefs_stats_emit
 
 ; Emit one fixed-width bare value: 12 octal digits CR LF = 016 chars.
 ; Native octal formatting avoids a decimal formatter in resident KCORE.

@@ -24,8 +24,6 @@
         .globl mach_kernel_sp
 
 mach_syscall_trampoline:
-        jrst mach_syscall
-
 mach_syscall:
         ; AC1 remains live into exec_native_syscall as the syscall number.
         ; Snapshot only the four argument registers.

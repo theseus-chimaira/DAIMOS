@@ -31,7 +31,6 @@ tape_pi_handler:
         aoje 2,pdp10_pi_dispatch_done
         aoje 2,pdp10_pi_dispatch_done
         aoje 2,tape_pi_mtc_write_status
-        jrst tape_pi_dtc_write_status
 
 tape_pi_dtc_write_status:
         seto 2,
@@ -60,7 +59,6 @@ tape_pi_mtc_status:
 tape_pi_mtc_idle_check:
         trnn 1,0000001
         jrst pdp10_pi_dispatch_done
-        jrst tape_pi_done
 
 tape_pi_done:
         movns storage_state
@@ -129,7 +127,6 @@ tape_dct_count_done:
         aoje 2,pdp10_pi_dispatch_done
         aoje 2,pdp10_pi_dispatch_done
         aoje 2,tape_dct_mtc_write_arm
-        jrst tape_dct_dtc_write_arm
 
 tape_dct_dtc_write_arm:
         movei 1,tape_dct_dtc_write_ack1
@@ -270,7 +267,6 @@ dtc_search_wait:
         jrst dtc_search_turn
 dtc_search_forward:
         jumpl 6,dtc_search_continue
-        jrst dtc_search_turn
 dtc_search_turn:
         movei 6,0010000
         xorm 6,dtc_request_reverse
@@ -393,7 +389,6 @@ mtc_rw_start:
         cono 0220,0(1)
         cono 0224,000005
         cono 0200,0(5)
-        jrst tape_wait
 
 tape_wait:
         move 1,storage_state

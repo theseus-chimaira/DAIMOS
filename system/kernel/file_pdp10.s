@@ -58,6 +58,74 @@ file_path_setchar:
 
         .globl  pdp10_ret_zero
         .globl  pdp10_ret_neg1
+        .globl  vfs_readchar
+        .globl  vfs_writechar
+
+; int file_readchar(int fd)
+; Validate the descriptor exactly as the C wrapper did, then advance the
+; character offset only after a successful one-character VFS transfer.
+        .globl  file_readchar
+file_readchar:
+        push    17,010
+        push    17,0                   ; one-word character result
+        pushj   17,file_find
+        jumpe   1,file_readchar_fail
+        move    3,2(1)
+        andi    3,0101                 ; FILE_META_DIR | FILE_O_READ
+        caie    3,1
+        jrst    file_readchar_fail
+        move    010,1
+        move    1,(010)
+        move    2,1(010)
+        movei   3,(17)
+        pushj   17,vfs_readchar
+        camn    1,[-3]                 ; VFS_DEVICE_IO
+        jrst    file_readchar_done
+        jumpg   1,file_readchar_ok
+        jumpe   1,file_readchar_eof
+        seto    1,                     ; other VFS errors -> -1
+        jrst    file_readchar_done
+file_readchar_eof:
+        hrroi   1,0777776              ; EOF -> -2
+        jrst    file_readchar_done
+file_readchar_ok:
+        aos     1(010)
+        move    1,(17)
+file_readchar_done:
+        sub     17,[1,,1]
+        pop     17,010
+        popj    17,
+file_readchar_fail:
+        seto    1,
+        jrst    file_readchar_done
+
+; int file_writechar(int fd, unsigned int ch)
+; The input character is held on the stack across file_find; only AC10 needs
+; saving across the VFS call.
+        .globl  file_writechar
+file_writechar:
+        push    17,010
+        push    17,2
+        pushj   17,file_find
+        jumpe   1,file_writechar_fail
+        move    3,2(1)
+        andi    3,0102                 ; FILE_META_DIR | FILE_O_WRITE
+        caie    3,2
+        jrst    file_writechar_fail
+        move    010,1
+        move    3,(17)
+        move    1,(010)
+        move    2,1(010)
+        pushj   17,vfs_writechar
+        jumpn   1,file_writechar_done
+        aos     1(010)
+file_writechar_done:
+        sub     17,[1,,1]
+        pop     17,010
+        popj    17,
+file_writechar_fail:
+        seto    1,
+        jrst    file_writechar_done
 
 ; int file_component(const kword_t *path, unsigned int *posp,
 ;     struct vfs_name *name)
@@ -435,7 +503,7 @@ file_truncate:
         add     17,[1,,1]
         movei   2,(17)
         pushj   17,file_lookup_path
-        jumpn   1,file_truncate_fail
+        jumpn   1,file_path_onearg_fail
         move    3,-1(17)
         move    2,3
         addi    2,3
@@ -444,8 +512,6 @@ file_truncate:
         pushj   17,vfs_truncate
 file_truncate_done:
         jrst    file_path_onearg_done
-file_truncate_fail:
-        jrst    file_path_onearg_fail
 
 ; int file_stat_path(const kword_t *path, struct vfs_stat *st)
 ; One saved argument plus one vnode local.

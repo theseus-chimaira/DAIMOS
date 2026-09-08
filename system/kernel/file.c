@@ -312,43 +312,7 @@ file_close_all(void)
 }
 
 
-int
-file_readchar(int fd)
-{
-        struct file *fp;
-        unsigned int ch;
-        int rc;
-
-        fp = file_find(fd);
-        if (fp == 0 || (fp->meta & FILE_META_DIR) != 0U ||
-            (FILE_META_FLAGS(fp->meta) & FILE_O_READ) == 0U)
-                return -1;
-        rc = vfs_readchar(fp->node, fp->off_chars, &ch);
-        if (rc == VFS_DEVICE_IO)
-                return rc;
-        if (rc <= 0)
-                return rc == 0 ? -2 : -1;
-        ++fp->off_chars;
-        return (int)ch;
-}
-
-
-int
-file_writechar(int fd, unsigned int ch)
-{
-        struct file *fp;
-        int rc;
-
-        fp = file_find(fd);
-        if (fp == 0 || (fp->meta & FILE_META_DIR) != 0U ||
-            (FILE_META_FLAGS(fp->meta) & FILE_O_WRITE) == 0U)
-                return -1;
-        rc = vfs_writechar(fp->node, fp->off_chars, ch);
-        if (rc != 0)
-                return rc;
-        ++fp->off_chars;
-        return 0;
-}
+/* Character I/O wrappers are compact PDP-10 assembly in file_pdp10.s. */
 
 int
 file_read_words(int fd, kword_t *buf, unsigned int nwords)

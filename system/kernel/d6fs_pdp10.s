@@ -92,11 +92,11 @@ d6fs_extent_high_get:
 ; only 24 bits, so the sentinel cannot collide with valid media.
         .globl  d6fs_file_block
 d6fs_file_block:
-        jumpe   1,d6fs_file_block_bad
+        jumpe   1,pdp10_ret_neg1
         move    3,(1)
         lsh     3,-4
         andi    3,017                    ; extent_count
-        jumpe   3,d6fs_file_block_bad
+        jumpe   3,pdp10_ret_neg1
         move    4,5(1)                   ; packed length-high fields
         movei   5,6(1)                   ; current extent run
 
@@ -120,9 +120,6 @@ d6fs_file_block_next:
         lsh     4,-5                     ; next length-high field
         addi    5,1
         sojg    3,d6fs_file_block_loop
-
-d6fs_file_block_bad:
-        jrst    pdp10_ret_neg1
 
         .globl  d6fs_name_hash24
 ; kword_t d6fs_name_hash24(words, chars)
@@ -776,7 +773,6 @@ d6fs_reader_rw_fail:
         seto    1,
 d6fs_reader_rw_exit:
         pop     17,0
-        jrst    d6fs_restore7
 
 d6fs_restore7:
         pop     17,016

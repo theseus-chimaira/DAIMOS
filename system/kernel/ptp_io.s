@@ -35,7 +35,6 @@ ptp_putchar_wait:
         sojg 2,ptp_putchar_wait
         setzm ptp_state
         cono 0100,0007
-        jrst ptp_ret_timeout
 ptp_ret_timeout:
         hrroi 1,0777776
         popj 017,
