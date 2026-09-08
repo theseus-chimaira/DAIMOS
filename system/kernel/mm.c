@@ -364,20 +364,19 @@ mm_move_module(unsigned int owner)
 
         if (module_moves_enabled == 0U || owner == 0U ||
             owner > MODULE_RUNTIME_MAX ||
-            MODULE_RUNTIME_IMAGE_WORDS(&module_runtime_descs[owner]) == 0UL)
+            MODULE_RUNTIME_INIT_WORDS(module_runtime_descs[owner]) == 0UL)
                 return MM_ERR_BUSY;
-        old_base = MODULE_RUNTIME_BASE(&module_runtime_descs[owner]);
-        words = MODULE_RUNTIME_EXTENT_WORDS(&module_runtime_descs[owner]);
-        if (old_base == 0UL || words == 0UL)
+        old_base = MODULE_RUNTIME_BASE(module_runtime_descs[owner]);
+        if (old_base == 0UL)
                 return MM_ERR_INVAL;
         i = mm_find_base(old_base);
         extent = i < mm_extent_count ? &mm_extents[i] : 0;
         if (extent == 0 || MM_EXTENT_TYPE(extent) != MM_TYPE_MODULE ||
-            MM_EXTENT_OWNER(extent) != owner ||
-            MM_EXTENT_WORDS(extent) != words)
+            MM_EXTENT_OWNER(extent) != owner)
                 return MM_ERR_INVAL;
         if (MM_EXTENT_PINS(extent) != 0U)
                 return MM_ERR_BUSY;
+        words = MM_EXTENT_WORDS(extent);
 
         rc = mm_alloc_aligned_raw(words, 1UL, MM_TYPE_MODULE, owner,
             MM_ALLOC_LOW, &new_base);
@@ -387,7 +386,7 @@ mm_move_module(unsigned int owner)
                 (void)mm_free(new_base, MM_TYPE_MODULE, owner);
                 return MM_ERR_FRAGMENTED;
         }
-        if (module_runtime_move(owner, new_base) != 0) {
+        if (module_runtime_move(owner, new_base, (unsigned int)words) != 0) {
                 (void)mm_free(new_base, MM_TYPE_MODULE, owner);
                 return MM_ERR_INVAL;
         }

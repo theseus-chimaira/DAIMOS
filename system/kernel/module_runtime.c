@@ -5,7 +5,7 @@
 
 #define MODULE_BIND_OWNER_SHIFT 18U
 
-struct module_runtime_desc module_runtime_descs[MODULE_RUNTIME_MAX + 1U];
+kword_t module_runtime_descs[MODULE_RUNTIME_MAX + 1U];
 kword_t module_dynamic_bindings[MODULE_DYNAMIC_BIND_MAX];
 unsigned int module_dynamic_binding_count;
 unsigned int module_moves_enabled;
@@ -76,13 +76,13 @@ module_retarget(kword_t *slot, int old_base, int new_base, int image_words)
 }
 
 int
-module_runtime_move(unsigned int owner, unsigned int new_base)
+module_runtime_move(unsigned int owner, unsigned int new_base,
+    unsigned int total_words)
 {
-        struct module_runtime_desc *d;
+        kword_t d;
         int old_base;
         int image_words;
         int init_words;
-        int total_words;
         kword_t *src;
         kword_t *dst;
         const kword_t *map;
@@ -90,11 +90,11 @@ module_runtime_move(unsigned int owner, unsigned int new_base)
         int i;
 
         /* mm_move_module() owns owner/state/range validation. */
-        d = &module_runtime_descs[owner];
+        d = module_runtime_descs[owner];
         old_base = (int)MODULE_RUNTIME_BASE(d);
-        image_words = (int)MODULE_RUNTIME_IMAGE_WORDS(d);
         init_words = (int)MODULE_RUNTIME_INIT_WORDS(d);
-        total_words = (int)MODULE_RUNTIME_EXTENT_WORDS(d);
+        image_words = (int)total_words -
+            (int)MODULE_RUNTIME_MAP_WORDS(d);
         src = (kword_t *)(unsigned long)old_base;
         dst = (kword_t *)(unsigned long)new_base;
         fs_copy_words(src, dst, (unsigned int)total_words);
@@ -159,14 +159,15 @@ module_runtime_move(unsigned int owner, unsigned int new_base)
                         source_base = new_base;
                 else
                         source_base = (int)MODULE_RUNTIME_BASE(
-                            &module_runtime_descs[source_owner]);
+                            module_runtime_descs[source_owner]);
                 module_retarget((kword_t *)(unsigned long)(source_base + offset),
                     old_base, new_base, image_words);
         }
         for (i = 0; i < (int)PDP10_PI_HANDLER_CAPACITY; ++i)
                 module_retarget(&pdp10_pi_handlers[i], old_base, new_base,
                     image_words);
-        d->span = (d->span & ~MODULE_HALF_MASK) |
+        module_runtime_descs[owner] =
+            (d & ~MODULE_HALF_MASK) |
             ((kword_t)new_base & MODULE_HALF_MASK);
         mach_pi_restore(pi_state);
         return 0;

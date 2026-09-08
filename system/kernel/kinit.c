@@ -15,6 +15,7 @@ extern kword_t __kinit_image_end;
 static unsigned int mres_next_addr;
 static unsigned int mres_owner_next;
 unsigned int mres_last_owner;
+unsigned int mres_last_image_words;
 static const kword_t *module_mres_package;
 static unsigned int module_services[MODULE_SERVICE_COUNT];
 kword_t kinit_boot_handoff[2];
@@ -62,6 +63,7 @@ mres_init(void)
         mres_next_addr = (unsigned int)(unsigned long)&__kcore_low_end;
         mres_owner_next = 1U;
         mres_last_owner = 0U;
+        mres_last_image_words = 0U;
 }
 
 int
@@ -136,19 +138,17 @@ mres_install(const kword_t *package, unsigned int *basep)
         for (i = 0U; i < map_words; ++i)
                 dst[init_words + bss_words + i] = map[i];
         if (mres_owner_next == 0U || mres_owner_next > MODULE_RUNTIME_MAX ||
-            MODULE_RUNTIME_IMAGE_WORDS(&module_runtime_descs[mres_owner_next]) !=
+            MODULE_RUNTIME_INIT_WORDS(module_runtime_descs[mres_owner_next]) !=
             0UL)
                 goto fail;
-        module_runtime_descs[mres_owner_next].span =
-            (((kword_t)init_words + (kword_t)bss_words) << 18U) |
-            (kword_t)base;
-        module_runtime_descs[mres_owner_next].reloc =
-            ((kword_t)init_words << 18U) | (kword_t)map_words;
+        module_runtime_descs[mres_owner_next] =
+            ((kword_t)init_words << 18U) | (kword_t)base;
         mm_loaded_module_words += (kword_t)init_words + (kword_t)bss_words;
         if (base + init_words + bss_words + map_words > mres_next_addr)
                 mres_next_addr = base + init_words + bss_words + map_words;
         *basep = base;
         mres_last_owner = mres_owner_next;
+        mres_last_image_words = init_words + bss_words;
         ++mres_owner_next;
         return 0;
 

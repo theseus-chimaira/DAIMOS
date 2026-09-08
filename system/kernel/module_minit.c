@@ -811,8 +811,7 @@ storage_patch_module_jump(unsigned int base, kword_t *word,
             module_dynamic_binding_count >= MODULE_DYNAMIC_BIND_MAX)
                 return;
         offset = (kword_t)(unsigned long)word - (kword_t)base;
-        if (offset >= MODULE_RUNTIME_IMAGE_WORDS(
-            &module_runtime_descs[mres_last_owner]))
+        if (offset >= mres_last_image_words)
                 return;
         module_dynamic_bindings[module_dynamic_binding_count++] =
             ((kword_t)mres_last_owner << 18U) | offset;

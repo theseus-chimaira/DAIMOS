@@ -11,6 +11,7 @@ extern kword_t __kcore_load_begin;
 extern kword_t __kcore_low_init_end;
 extern kword_t __kcore_low_end;
 extern unsigned int mres_last_owner;
+extern unsigned int mres_last_image_words;
 
 void kcore_load(void);
 void mres_init(void);
