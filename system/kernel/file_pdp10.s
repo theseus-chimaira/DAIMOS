@@ -1,10 +1,7 @@
-; FILE runtime state is unconditional kernel state.  Keep it in KCORE BSS;
-; RAMFS is an optional filesystem MRES and must not own FILE state.
-        .bss
+; FILE descriptors and cwd live in the current process's stable u-area.
+; file_table is a one-word KCORE pointer to its 13-entry descriptor table;
+; cwd occupies the word immediately before the table.
         .globl  file_table
-file_table:
-        .block  047                     ; 13 three-word struct file entries
-        .globl  file_cwd
 
         .text
 ; file_pdp10.s -- compact resident FILE/path primitives for PDP-6/PDP-10.
@@ -155,7 +152,7 @@ file_lock:
 ; exactly the required conflict mask for the two nonzero modes.
         move    0,6
         addi    0,020000
-        movei   2,file_table
+        move    2,file_table
         movei   3,015                  ; FILE_NFILE = 13
 file_lock_check:
         move    4,(2)
@@ -173,7 +170,7 @@ file_lock_check_next:
         sojg    3,file_lock_check
 
 file_lock_update:
-        movei   2,file_table
+        move    2,file_table
         movei   3,015
 file_lock_update_loop:
         move    4,(2)
@@ -202,7 +199,7 @@ file_lock_modes:
 ; so this needs no frame and avoids GCC's unsigned-loop sequence.
         .globl  file_unlock_mount
 file_unlock_mount:
-        movei   2,file_table
+        move    2,file_table
         movei   3,015                  ; FILE_NFILE = 13
 file_unlock_mount_loop:
         skipn   4,(2)
@@ -223,7 +220,7 @@ file_close_all:
         push    17,010
         push    17,011
         movei   010,0
-        movei   011,file_table
+        move    011,file_table
 file_close_all_loop:
         skipn   (011)
         jrst    file_close_all_next
@@ -432,7 +429,8 @@ file_getcwd:
         jrst    file_getcwd_nwords_ok
         jrst    pdp10_ret_neg1
 file_getcwd_nwords_ok:
-        move    4,file_cwd
+        move    5,file_table
+        move    4,-1(5)
         jumpn   4,file_getcwd_have_node
         move    4,vfs_namespace_root
 file_getcwd_have_node:
@@ -631,7 +629,6 @@ file_rename_fail:
 
 ; int file_chdir(const kword_t *path)
 ; Five locals hold one vnode followed by a four-word vfs_stat.
-        .globl  file_cwd
         .globl  file_chdir
 file_chdir:
         add     17,[5,,5]
@@ -646,7 +643,8 @@ file_chdir:
         caie    3,1                    ; VFS_TYPE_DIR
         jrst    file_chdir_fail
         move    1,-4(17)
-        movem   1,file_cwd
+        move    2,file_table
+        movem   1,-1(2)
         setz    1,
 file_chdir_done:
         sub     17,[5,,5]
@@ -753,7 +751,7 @@ file_find:
         jrst    pdp10_ret_zero
         subi    1,3
         imuli   1,3
-        addi    1,file_table
+        add     1,file_table
         skipn   (1)
         jrst    pdp10_ret_zero
         popj    17,
@@ -768,7 +766,7 @@ file_new_fd:
         jumpe   3,file_new_fd_nodir
         iori    0,0100                 ; FILE_META_DIR
 file_new_fd_nodir:
-        movei   4,file_table
+        move    4,file_table
         movei   5,3                    ; descriptor for current slot
         movei   6,015                  ; 13 slots
 file_new_fd_scan:
@@ -788,8 +786,9 @@ file_new_fd_store:
 
 ; int file_getcwd_pseudo(vnode_t node, kword_t *buf,
 ;     unsigned int nwords)
-; Only the fixed DAIMOS 1.x synthetic directories can be current directories.
+; Only fixed DAIMOS synthetic directories can be current directories.
         .globl  file_getcwd_pseudo
+        .globl  procfs_getcwd_slot
 file_getcwd_pseudo:
         move    4,2
         move    5,3
@@ -806,22 +805,11 @@ file_pseudo_zero_done:
         camn    1,[030001000000]       ; /PROC
         jrst    file_pseudo_proc
         hlrz    4,1
-        caie    4,030002               ; /PROC/{0,1}
+        caie    4,030002               ; /PROC/<runtime slot>
         jrst    pdp10_ret_neg1
-        hrrz    4,1
-        cail    4,2
-        jrst    pdp10_ret_neg1
-        caige   3,3
-        jrst    pdp10_ret_neg1
-file_pseudo_proc_slot:
-        movei   5,7
-        movem   5,(2)
-        move    5,[0176062574317]      ; SIXBIT //PROC//
-        movem   5,1(2)
-        lsh     4,036
-        add     4,[0200000000000]
-        movem   4,2(2)
-        jrst    pdp10_ret_zero
+        hrrz    1,1                    ; slot
+        ; AC2 already points at buf; AC3 is nwords.
+        jrst    procfs_getcwd_slot
 file_pseudo_device:
         caige   3,3
         jrst    pdp10_ret_neg1

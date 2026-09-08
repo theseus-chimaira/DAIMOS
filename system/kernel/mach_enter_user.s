@@ -6,6 +6,8 @@
         .text
         .globl mach_enter_user
         .globl mach_kernel_sp
+        .globl mach_user_apr
+        .globl proc_record_kernel_sp
 
 ; void mach_enter_user(base, entry, stack, ac1, ac2, ac3)
 ; base is a physical 02000-word-aligned MM extent base.  entry and stack are
@@ -28,6 +30,7 @@ mach_enter_user:
 
 mach_enter_user_start:
         movem 17,mach_kernel_sp
+        pushj 17,proc_record_kernel_sp
 
         ; APR DATAO: RH high address bits -> relocation register; LH high
         ; address bits -> protection register.  The hardware adds 01777 to

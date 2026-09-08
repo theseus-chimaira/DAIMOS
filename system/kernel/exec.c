@@ -87,12 +87,15 @@ exec_load_init(struct proc *p, unsigned int owner,
 
 
 
-        p->meta = ((kword_t)owner & PROC_PID_MASK) |
-            ((kword_t)PROC_SIDL << PROC_STATE_SHIFT) |
+        p->meta = (p->meta &
+            ((kword_t)PROC_PARENT_MASK << PROC_PARENT_SHIFT)) |
+            ((kword_t)owner & PROC_PID_MASK) |
             (((kword_t)(entry + EXEC_USER_ORIGIN) & PROC_HALF_MASK) <<
             PROC_ENTRY_SHIFT);
         p->mem_layout = ((alloc_words & PROC_HALF_MASK) <<
             PROC_HALF_SHIFT) | (base & PROC_HALF_MASK);
+        p->sched = PROC_SCHED_DEFAULT;
+        PROC_SET_STATE(p, PROC_SIDL);
         proc_swap_attach(owner, node, (kword_t)image_words,
             (kword_t)text_words, header_words,
             (dxr_flags == EXEC_DXR_F_PURE &&

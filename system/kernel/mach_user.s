@@ -17,6 +17,7 @@
         .text
         .globl mach_user_trap_init
         .globl mach_syscall
+        .globl mach_syscall_save
         .globl mach_return_to_kernel_request
         .globl exec_native_syscall
         .globl mach_syscall_ac2

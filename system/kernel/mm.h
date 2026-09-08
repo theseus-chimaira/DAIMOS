@@ -59,6 +59,7 @@ int mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
 int mm_free(kword_t base, unsigned int type, unsigned int owner);
 int mm_pin(kword_t base);
 int mm_unpin(kword_t base);
+int mm_is_pinned(kword_t base);
 int mm_move_process(struct proc *p, unsigned int owner);
 int mm_move_module(unsigned int owner);
 int mm_compact(kword_t words, kword_t alignment);

@@ -18,6 +18,7 @@ D6FS_LOGSTORE_BLOCKS ?= 0400
 D6FS_SWAP_TAIL_BLOCKS ?= 0200
 DTFS_TENEX ?= 0
 DTFS_ITS ?= 0
+PROC_BOOT_USERS ?= 1
 
 KINIT_BUILD := $(BUILD)/kinit-asm
 KCORE_BUILD := $(BUILD)/kcore-asm
@@ -29,10 +30,10 @@ KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot d6fs_boot d6fs_s
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 
-KCORE_C_NAMES = vfs devicefs mm module_runtime proc_swap exec kcore_boot file
+KCORE_C_NAMES = vfs devicefs procfs mm module_runtime proc proc_swap exec kcore_boot file
 KCORE_FIXED_NAMES = $(KCORE_C_NAMES) ret_pdp10 \
 	dsk270_pdp10 kfmt_pdp10 vfs_pdp10 fs_mres_pdp10 file_pdp10 proc_pdp10 \
-	device_state_pdp10 procfs_pdp10 devicefs_pdp10 syscall_info_pdp10 \
+	device_state_pdp10 devicefs_pdp10 syscall_info_pdp10 \
 	syscall_dispatch mach_user mach_enter_user kcore_handoff kcore_io storage_router kcore_end
 KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))
 KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
@@ -85,6 +86,7 @@ IMAGE_WORDS = $(BUILD)/kinit-v1.words
 
 USERLAND_BUILD_ROOT = $(BUILD)/userland-build
 DSH_DXR = $(USERLAND_BUILD_ROOT)/userland/dsh.dxr
+SYSTEM_INIT_DXR ?= $(DSH_DXR)
 USERLAND_INPUTS := $(wildcard $(PROJECT_ROOT)/userland/libc/* $(PROJECT_ROOT)/userland/exec/* \
 	$(PROJECT_ROOT)/userland/dsh/*) $(PROJECT_ROOT)/userland/Makefile \
 	$(KERNEL_DIR)/syscall.h
@@ -108,7 +110,7 @@ $(KINIT_STAMP): $(KERNEL_INPUTS) | $(BUILD)
 	touch $@
 
 $(KCORE_STAMP): $(KERNEL_INPUTS) | $(BUILD)
-	$(MAKE) -C $(KERNEL_DIR) kcore BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' DTFS_TENEX='$(DTFS_TENEX)' DTFS_ITS='$(DTFS_ITS)'
+	$(MAKE) -C $(KERNEL_DIR) kcore BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' DTFS_TENEX='$(DTFS_TENEX)' DTFS_ITS='$(DTFS_ITS)' PROC_BOOT_USERS='$(PROC_BOOT_USERS)'
 	touch $@
 
 $(KINIT_ASM): $(KINIT_STAMP)
@@ -292,14 +294,14 @@ $(STAGE1_TAPE): $(STAGE1_DXR)
 	$(DXRCONVERT) --pdp6-readin -b 060 $< $@
 	printf '\252' >> $@
 
-$(DISK_IMAGE): $(IMAGE_WORDS) $(DSH_DXR)
+$(DISK_IMAGE): $(IMAGE_WORDS) $(SYSTEM_INIT_DXR)
 	rm -rf $(DISK_DIR)
 	$(MKDSK) -n 1 -m clean -p $(IMAGE_WORDS) -o $(DISK_DIR) \
 	    --d6fs-layout --logstore-blocks $(D6FS_LOGSTORE_BLOCKS) \
 	    --swap-tail-blocks $(D6FS_SWAP_TAIL_BLOCKS)
 	$(MKD6FS) -n 1 -d $(DISK_DIR) \
 	    -D /MOUNT/RAMFS0:0755 -D /TEMP:0555 -D /MOUNT/DT0:0755 \
-	    -f "/SYSTEM/INIT:$(DSH_DXR):555:dxr"
+	    -f "/SYSTEM/INIT:$(SYSTEM_INIT_DXR):555:dxr"
 
 $(SIMH_INI): simh-v1.ini.in $(STAGE1_TAPE) $(DISK_IMAGE)
 	sed -e 's|@SIMH_LOG@|$(abspath $(SIMH_LOG))|g' \

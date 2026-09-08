@@ -8,10 +8,15 @@ sys_user_words:
         hrrz    1,1
         caige   1,020
         jrst    pdp10_ret_zero
-        hlrz    3,proc_table+3
+        move    4,proc_current_slot
+        move    5,4
+        lsh     4,1
+        add     4,5                    ; 3 * current slot
+        add     4,proc_table
+        hlrz    3,1(4)
         caml    1,3
         jrst    pdp10_ret_zero
-        hrrz    4,proc_table+3
+        hrrz    4,1(4)
         add     1,4
         popj    17,
 
@@ -20,6 +25,9 @@ sys_user_words:
 	.globl	mach_syscall_ac3
 	.globl	mach_syscall_ac4
 	.globl	mach_syscall_ac5
+        .globl  proc_current_slot
+        .globl  proc_nice_current
+        .globl  proc_exit_current
 exec_native_syscall:
 	; AC1 is still the syscall number on entry from mach_syscall.
 	hrrz 4,1
@@ -28,7 +36,7 @@ exec_native_syscall:
 	caige 4,035                 ; syscall 31 - 2
 	jrst exec_native_low
 	subi 4,035
-	caile 4,015                 ; syscalls 31..44
+	caile 4,016                 ; syscalls 31..45
 	jrst %L137
 	jrst @exec_native_high(4)
 exec_native_low:
@@ -72,11 +80,11 @@ exec_native_high:
 	.word	native_sys_flock
 	.word	native_sys_dup
 	.word	native_sys_symlink
+        .word   native_sys_nice
 %L66:
 	pushj 17,file_close_all
-	pushj 17,mach_return_to_kernel_request
-	hrrz 1,mach_syscall_ac2
-	jrst %L65
+	; EXIT never returns through the dying process's u-area stack.
+	jrst proc_exit_current
 %L67:
 	move 1,mach_syscall_ac2
 	pushj 17,sys_user_words
@@ -297,6 +305,10 @@ native_sys_symlink:
         move 2,1
         move 1,5
         jrst file_symlink
+
+native_sys_nice:
+        move    1,mach_syscall_ac2
+        jrst    proc_nice_current
 
 native_sys_getchar:
         seto    1,

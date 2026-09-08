@@ -261,12 +261,24 @@ mm_process_owner(unsigned int owner, kword_t base)
 {
         struct proc *p;
 
-        if (owner >= PROC_NPROC)
+        if (proc_table == 0 || owner >= proc_slots)
                 return 0;
         p = &proc_table[owner];
         if (PROC_STATE(p) == PROC_FREE || PROC_MEM_BASE(p) != base)
                 return 0;
         return p;
+}
+
+int
+mm_is_pinned(kword_t base)
+{
+        unsigned int i;
+
+        for (i = 0U; i < mm_extent_count; ++i) {
+                if (MM_EXTENT_BASE(&mm_extents[i]) == base)
+                        return MM_EXTENT_PINS(&mm_extents[i]) != 0U;
+        }
+        return 0;
 }
 
 int
@@ -281,11 +293,13 @@ mm_move_process(struct proc *p, unsigned int owner)
         unsigned int i;
         int rc;
 
-        if (p == 0 || owner >= PROC_NPROC || p != &proc_table[owner] ||
-            PROC_STATE(p) == PROC_FREE || PROC_STATE(p) == PROC_SRUN)
+        if (p == 0 || proc_table == 0 || owner >= proc_slots ||
+            p != &proc_table[owner] || PROC_STATE(p) == PROC_FREE ||
+            PROC_STATE(p) == PROC_SRUN || PROC_TRANSITION(p))
                 return MM_ERR_BUSY;
         old_base = PROC_MEM_BASE(p);
         words = PROC_MEM_WORDS(p);
+        PROC_SET_TRANSITION(p);
         extent = 0;
         for (i = 0U; i < mm_extent_count; ++i) {
                 if (MM_EXTENT_BASE(&mm_extents[i]) == old_base) {
@@ -295,17 +309,24 @@ mm_move_process(struct proc *p, unsigned int owner)
         }
         if (extent == 0 || MM_EXTENT_TYPE(extent) != MM_TYPE_PROCESS ||
             MM_EXTENT_OWNER(extent) != owner ||
-            MM_EXTENT_WORDS(extent) != words)
+            MM_EXTENT_WORDS(extent) != words) {
+                PROC_CLEAR_TRANSITION(p);
                 return MM_ERR_INVAL;
-        if (MM_EXTENT_PINS(extent) != 0U)
+        }
+        if (MM_EXTENT_PINS(extent) != 0U) {
+                PROC_CLEAR_TRANSITION(p);
                 return MM_ERR_BUSY;
+        }
 
         rc = mm_alloc_aligned_raw(words, 02000UL, MM_TYPE_PROCESS, owner,
             MM_ALLOC_HIGH, &new_base);
-        if (rc != MM_OK)
+        if (rc != MM_OK) {
+                PROC_CLEAR_TRANSITION(p);
                 return rc;
+        }
         if (new_base <= old_base) {
                 (void)mm_free(new_base, MM_TYPE_PROCESS, owner);
+                PROC_CLEAR_TRANSITION(p);
                 return MM_ERR_FRAGMENTED;
         }
 
@@ -320,8 +341,10 @@ mm_move_process(struct proc *p, unsigned int owner)
         if (rc != MM_OK) {
                 PROC_SET_MEM_BASE(p, old_base);
                 (void)mm_free(new_base, MM_TYPE_PROCESS, owner);
+                PROC_CLEAR_TRANSITION(p);
                 return rc;
         }
+        PROC_CLEAR_TRANSITION(p);
         return MM_OK;
 }
 
@@ -456,7 +479,7 @@ mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
                 return rc;
         }
         if (proc_swap_reclaim(words, alignment,
-            type == MM_TYPE_PROCESS ? owner : PROC_NPROC) != 0) {
+            type == MM_TYPE_PROCESS ? owner : PROC_NO_SLOT) != 0) {
                 ++mm_allocation_failures;
                 return MM_ERR_NOMEM;
         }

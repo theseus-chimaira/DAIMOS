@@ -3,6 +3,7 @@ BUILD_ROOT ?= $(PROJECT_ROOT)/build
 KINIT_DEBUG ?= 0
 DTFS_TENEX ?= 0
 DTFS_ITS ?= 0
+PROC_BOOT_USERS ?= 1
 DTFS_FOREIGN := $(if $(filter 1,$(DTFS_TENEX) $(DTFS_ITS)),1,0)
 BUILD ?= $(BUILD_ROOT)/system/kernel$(if $(filter 1,$(KINIT_DEBUG)),-debug,)
 PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
@@ -19,11 +20,11 @@ ifeq ($(KINIT_DEBUG),1)
 KINIT_CPPFLAGS += -DKINIT_DEBUG
 endif
 
-KCORE_C_SRCS = vfs.c devicefs.c mm.c module_runtime.c proc_swap.c exec.c kcore_boot.c \
+KCORE_C_SRCS = vfs.c devicefs.c procfs.c mm.c module_runtime.c proc.c proc_swap.c exec.c kcore_boot.c \
 	file.c
 KCORE_C_ASM = $(KCORE_C_SRCS:%.c=$(BUILD)/%.s)
 KCORE_FIXED_ASM = $(KCORE_C_ASM) \
-	$(BUILD)/ret_pdp10.s $(BUILD)/dsk270_pdp10.s $(BUILD)/kfmt_pdp10.s $(BUILD)/vfs_pdp10.s $(BUILD)/fs_mres_pdp10.s $(BUILD)/file_pdp10.s $(BUILD)/proc_pdp10.s $(BUILD)/device_state_pdp10.s $(BUILD)/procfs_pdp10.s $(BUILD)/devicefs_pdp10.s $(BUILD)/syscall_info_pdp10.s $(BUILD)/syscall_dispatch.s $(BUILD)/mach_user.s $(BUILD)/mach_enter_user.s $(BUILD)/kcore_handoff.s $(BUILD)/kcore_io.s $(BUILD)/storage_router.s $(BUILD)/kcore_end.s
+	$(BUILD)/ret_pdp10.s $(BUILD)/dsk270_pdp10.s $(BUILD)/kfmt_pdp10.s $(BUILD)/vfs_pdp10.s $(BUILD)/fs_mres_pdp10.s $(BUILD)/file_pdp10.s $(BUILD)/proc_pdp10.s $(BUILD)/device_state_pdp10.s $(BUILD)/devicefs_pdp10.s $(BUILD)/syscall_info_pdp10.s $(BUILD)/syscall_dispatch.s $(BUILD)/mach_user.s $(BUILD)/mach_enter_user.s $(BUILD)/kcore_handoff.s $(BUILD)/kcore_io.s $(BUILD)/storage_router.s $(BUILD)/kcore_end.s
 
 MRES_SRCS = d6fs.c d6fs_provider.c
 MRES_C_ASM = $(MRES_SRCS:%.c=$(BUILD)/%.s)
@@ -48,7 +49,7 @@ $(BUILD)/bootbanner_generated.s: $(VERSION_FILE)
 
 $(KCORE_C_ASM): $(BUILD)/%.s: %.c kcore.h kboot.h vfs.h kfmt.h devicefs.h procfs.h memfs.h dtfs.h dsk270.h d6fs.h d6fs_provider.h d6fs_boot.h logstore.h initfs.h file.h proc.h syscall.h exec.h proc.h mach_user.h fs_mres.h mm.h module_runtime.h proc_swap.h
 	mkdir -p $(BUILD)
-	$(PDP10_GCC) -std=c99 -Os -I. -S $< -o $@
+	$(PDP10_GCC) -std=c99 -Os -DPROC_BOOT_USERS=$(PROC_BOOT_USERS) -I. -S $< -o $@
 
 $(MRES_C_ASM): $(BUILD)/%.s: %.c kcore.h vfs.h fs_mres.h memfs.h dtfs.h d6fs.h d6fs_provider.h diskset.h diskset_mres.h mres.h dsk270.h file.h
 	mkdir -p $(BUILD)

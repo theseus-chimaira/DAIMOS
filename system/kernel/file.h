@@ -31,7 +31,8 @@ struct file {
 #define FILE_META_LOCK_MASK   060000UL
 #define FILE_META_REGULAR     0100000UL
 
-/* DAIMOS 1.x has one live user process, so FILE state is global. */
+/* FILE descriptors and cwd are process-private and live in the stable
+ * process u-area.  KCORE retains only a pointer to the current table. */
 int file_lookup_path(const kword_t *path, vnode_t *nodep);
 int file_open(const kword_t *path, unsigned int flags);
 int file_close(int fd);

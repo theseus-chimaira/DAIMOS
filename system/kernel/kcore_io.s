@@ -39,12 +39,20 @@
         .globl pdp10_pi_level7
         .globl pdp10_pi_handlers
         .globl pdp10_pi_level_span
+        .globl pdp10_pi_sp_save
+        .globl mach_kernel_sp
 
 pdp10_pi_level1:
         .word 0
         movem 1,000020
         movem 2,000021
         movem 3,000043
+        movem 17,pdp10_pi_sp_save+0
+        move 1,pdp10_pi_level1
+        tlnn 1,010000
+        jrst pdp10_pi_level1_stack_ready
+        move 17,mach_kernel_sp
+pdp10_pi_level1_stack_ready:
         move 2,pdp10_pi_level_span+0
         movei 3,pdp10_pi_return_level1
 pdp10_pi_level1_dispatch_jump:
@@ -54,6 +62,12 @@ pdp10_pi_level2:
         movem 1,000022
         movem 2,000023
         movem 3,000045
+        movem 17,pdp10_pi_sp_save+2
+        move 1,pdp10_pi_level2
+        tlnn 1,010000
+        jrst pdp10_pi_level2_stack_ready
+        move 17,mach_kernel_sp
+pdp10_pi_level2_stack_ready:
         move 2,pdp10_pi_level_span+1
         movei 3,pdp10_pi_return_level2
 pdp10_pi_level2_dispatch_jump:
@@ -63,6 +77,12 @@ pdp10_pi_level3:
         movem 1,000024
         movem 2,000025
         movem 3,000036
+        movem 17,pdp10_pi_sp_save+4
+        move 1,pdp10_pi_level3
+        tlnn 1,010000
+        jrst pdp10_pi_level3_stack_ready
+        move 17,mach_kernel_sp
+pdp10_pi_level3_stack_ready:
         move 2,pdp10_pi_level_span+2
         movei 3,pdp10_pi_return_level3
 pdp10_pi_level3_dispatch_jump:
@@ -72,6 +92,12 @@ pdp10_pi_level4:
         movem 1,000026
         movem 2,000027
         movem 3,000051
+        movem 17,pdp10_pi_sp_save+6
+        move 1,pdp10_pi_level4
+        tlnn 1,010000
+        jrst pdp10_pi_level4_stack_ready
+        move 17,mach_kernel_sp
+pdp10_pi_level4_stack_ready:
         move 2,pdp10_pi_level_span+3
         movei 3,pdp10_pi_return_level4
 pdp10_pi_level4_dispatch_jump:
@@ -81,6 +107,12 @@ pdp10_pi_level5:
         movem 1,000030
         movem 2,000031
         movem 3,000053
+        movem 17,pdp10_pi_sp_save+010
+        move 1,pdp10_pi_level5
+        tlnn 1,010000
+        jrst pdp10_pi_level5_stack_ready
+        move 17,mach_kernel_sp
+pdp10_pi_level5_stack_ready:
         move 2,pdp10_pi_level_span+4
         movei 3,pdp10_pi_return_level5
 pdp10_pi_level5_dispatch_jump:
@@ -90,6 +122,12 @@ pdp10_pi_level6:
         movem 1,000032
         movem 2,000033
         movem 3,000055
+        movem 17,pdp10_pi_sp_save+012
+        move 1,pdp10_pi_level6
+        tlnn 1,010000
+        jrst pdp10_pi_level6_stack_ready
+        move 17,mach_kernel_sp
+pdp10_pi_level6_stack_ready:
         move 2,pdp10_pi_level_span+5
         movei 3,pdp10_pi_return_level6
 pdp10_pi_level6_dispatch_jump:
@@ -99,6 +137,12 @@ pdp10_pi_level7:
         movem 1,000034
         movem 2,000035
         movem 3,000057
+        movem 17,pdp10_pi_sp_save+014
+        move 1,pdp10_pi_level7
+        tlnn 1,010000
+        jrst pdp10_pi_level7_stack_ready
+        move 17,mach_kernel_sp
+pdp10_pi_level7_stack_ready:
         move 2,pdp10_pi_level_span+6
         movei 3,pdp10_pi_return_level7
 
@@ -120,38 +164,42 @@ pdp10_pi_return_common:
 ; original per-level tail restore AC3 and dismiss the correct PI level.
         move 2,3
         subi 2,pdp10_pi_return_level1
+        move 17,pdp10_pi_sp_save(2)
         move 1,000020(2)
         move 2,000021(2)
         jrst (3)
 
 pdp10_pi_return_level1:
         move 3,000043
-        jrst 010,@pdp10_pi_level1
+        jrst 012,@pdp10_pi_level1
 pdp10_pi_return_level2:
         move 3,000045
-        jrst 010,@pdp10_pi_level2
+        jrst 012,@pdp10_pi_level2
 pdp10_pi_return_level3:
         move 3,000036
-        jrst 010,@pdp10_pi_level3
+        jrst 012,@pdp10_pi_level3
 pdp10_pi_return_level4:
         move 3,000051
-        jrst 010,@pdp10_pi_level4
+        jrst 012,@pdp10_pi_level4
 pdp10_pi_return_level5:
         move 3,000053
-        jrst 010,@pdp10_pi_level5
+        jrst 012,@pdp10_pi_level5
 pdp10_pi_return_level6:
         move 3,000055
-        jrst 010,@pdp10_pi_level6
+        jrst 012,@pdp10_pi_level6
 pdp10_pi_return_level7:
         move 3,000057
-        jrst 010,@pdp10_pi_level7
+        jrst 012,@pdp10_pi_level7
 
         .bss
 pdp10_pi_handlers:
         .block 013
 pdp10_pi_level_span:
         .block 07
+pdp10_pi_sp_save:
+        .block 015
 
+        .text
 ; Save the PI state and suppress new priority interrupts while MM publishes a
 ; relocated module.  The caller restores only the global on/off state; level
 ; enables remain untouched by CONO PI,0400/0200.

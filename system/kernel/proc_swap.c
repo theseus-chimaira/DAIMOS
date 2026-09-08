@@ -8,8 +8,6 @@
 #define PROC_SWAP_META_FLAGS_MASK   077U
 #define PROC_SWAP_META_HEADER_SHIFT 6U
 #define PROC_SWAP_META_HEADER_MASK  07U
-#define PROC_SWAP_META_STATE_SHIFT  9U
-#define PROC_SWAP_META_STATE_MASK   07U
 
 struct proc_swap_record {
         vnode_t backing;
@@ -18,9 +16,31 @@ struct proc_swap_record {
         kword_t meta;                /* flags, DXR header words, saved state. */
 };
 
-static struct proc_swap_record proc_swap_records[PROC_NPROC];
+static struct proc_swap_record *proc_swap_records;
+#define PROC_SWAP_MM_OWNER 4U
 kword_t proc_swap_words_read;
 kword_t proc_swap_words_written;
+
+int
+proc_swap_boot_init(unsigned int slots)
+{
+        kword_t base;
+        kword_t words;
+        kword_t *wp;
+        unsigned int i;
+
+        if (proc_swap_records != 0 || slots == 0U || slots > PROC_MAX_SLOTS)
+                return -1;
+        words = (kword_t)slots * (kword_t)PROC_SWAP_RECORD_WORDS;
+        if (mm_alloc(words, MM_TYPE_KERNEL_DYNAMIC, PROC_SWAP_MM_OWNER,
+            MM_ALLOC_LOW, &base) != MM_OK)
+                return -1;
+        wp = (kword_t *)(unsigned long)base;
+        for (i = 0U; (kword_t)i < words; ++i)
+                wp[i] = 0UL;
+        proc_swap_records = (struct proc_swap_record *)(unsigned long)base;
+        return 0;
+}
 
 static kword_t
 proc_swap_disk_blocks(void)
@@ -56,7 +76,7 @@ proc_swap_blocks_used(void)
         unsigned int i;
 
         used = 0UL;
-        for (i = 0U; i < PROC_NPROC; ++i)
+        for (i = 0U; i < proc_slots; ++i)
                 used += proc_swap_records[i].disk_span & MM_HALF_MASK;
         return used;
 }
@@ -82,7 +102,7 @@ proc_swap_find(kword_t blocks, kword_t *startp)
                         return -1;
                 next = start;
                 conflict = 0;
-                for (i = 0U; i < PROC_NPROC; ++i) {
+                for (i = 0U; i < proc_slots; ++i) {
                         kword_t span;
                         kword_t first;
                         kword_t count;
@@ -162,7 +182,7 @@ proc_swap_attach(unsigned int slot, vnode_t backing, kword_t image_words,
 {
         struct proc_swap_record *r;
 
-        if (slot >= PROC_NPROC)
+        if (proc_swap_records == 0 || slot >= proc_slots)
                 return;
         r = &proc_swap_records[slot];
         r->backing = backing;
@@ -177,7 +197,7 @@ proc_swap_attach(unsigned int slot, vnode_t backing, kword_t image_words,
 void
 proc_swap_detach(unsigned int slot)
 {
-        if (slot >= PROC_NPROC)
+        if (proc_swap_records == 0 || slot >= proc_slots)
                 return;
         proc_swap_records[slot].backing = VFS_NODE_NONE;
         proc_swap_records[slot].image_span = 0UL;
@@ -201,58 +221,64 @@ proc_swap_out(unsigned int slot)
         unsigned int state;
         int pure;
 
-        if (slot == 0U || slot >= PROC_NPROC)
+        if (proc_swap_records == 0 || proc_table == 0 || slot == 0U ||
+            slot >= proc_slots || slot == (unsigned int)proc_current_slot)
                 return -1;
         p = &proc_table[slot];
         state = PROC_STATE(p);
-        if (state != PROC_SIDL && state != PROC_SLEEP)
+        if ((state != PROC_SRUN && state != PROC_SLEEP && state != PROC_STOP) ||
+            PROC_TRANSITION(p))
                 return -1;
         r = &proc_swap_records[slot];
         if (r->backing == VFS_NODE_NONE || r->disk_span != 0UL)
                 return -1;
         base = PROC_MEM_BASE(p);
         words = PROC_MEM_WORDS(p);
-        if (base == 0UL || words == 0UL || mm_pin(base) != MM_OK)
+        if (base == 0UL || words == 0UL || mm_is_pinned(base))
                 return -1;
+
+        PROC_SET_TRANSITION(p);
+        if (mm_pin(base) != MM_OK) {
+                PROC_CLEAR_TRANSITION(p);
+                return -1;
+        }
         mem = (kword_t *)(unsigned long)base;
 
         pure = (r->meta & PROC_SWAP_EXEC_PURE) != 0UL;
         text_words = (r->image_span >> 18U) & MM_HALF_MASK;
         if (pure) {
                 offset = (kword_t)EXEC_USER_ORIGIN + text_words;
-                if (offset > words) {
-                        (void)mm_unpin(base);
-                        return -1;
-                }
+                if (offset > words)
+                        goto fail_unpin;
         } else {
                 offset = 0UL;
         }
         swap_words = words - offset;
         blocks = (swap_words + DSK_WORDS_PER_SECTOR - 1UL) /
             DSK_WORDS_PER_SECTOR;
-        if (blocks == 0UL || proc_swap_find(blocks, &first) != 0) {
-                (void)mm_unpin(base);
-                return -1;
-        }
+        if (blocks == 0UL || proc_swap_find(blocks, &first) != 0)
+                goto fail_unpin;
         r->disk_span = ((first & MM_HALF_MASK) << 18U) |
             (blocks & MM_HALF_MASK);
-        r->meta = (r->meta & ~((kword_t)PROC_SWAP_META_STATE_MASK <<
-            PROC_SWAP_META_STATE_SHIFT)) |
-            ((kword_t)state << PROC_SWAP_META_STATE_SHIFT);
         if (proc_swap_write_words(first, mem + offset, swap_words) != 0) {
                 r->disk_span = 0UL;
-                (void)mm_unpin(base);
-                return -1;
+                goto fail_unpin;
         }
         proc_swap_words_written += swap_words;
-        if (mm_unpin(base) != MM_OK ||
-            mm_free(base, MM_TYPE_PROCESS, slot) != MM_OK) {
-                r->disk_span = 0UL;
-                return -1;
-        }
+        if (mm_unpin(base) != MM_OK)
+                goto fail_record;
+        if (mm_free(base, MM_TYPE_PROCESS, slot) != MM_OK)
+                goto fail_record;
         PROC_SET_MEM_BASE(p, 0UL);
-        PROC_SET_STATE(p, PROC_SSWAP);
+        PROC_CLEAR_TRANSITION(p);
         return 0;
+
+fail_unpin:
+        (void)mm_unpin(base);
+fail_record:
+        r->disk_span = 0UL;
+        PROC_CLEAR_TRANSITION(p);
+        return -1;
 }
 
 int
@@ -270,22 +296,30 @@ proc_swap_in(unsigned int slot)
         kword_t blocks;
         kword_t *mem;
         unsigned int header_words;
-        unsigned int old_state;
         unsigned int i;
         int pure;
 
-        if (slot == 0U || slot >= PROC_NPROC)
+        if (proc_swap_records == 0 || proc_table == 0 || slot == 0U ||
+            slot >= proc_slots)
                 return -1;
         p = &proc_table[slot];
         r = &proc_swap_records[slot];
-        if (PROC_STATE(p) != PROC_SSWAP || r->disk_span == 0UL)
+        if (PROC_MEM_BASE(p) != 0UL || PROC_STATE(p) == PROC_FREE ||
+            r->disk_span == 0UL || PROC_TRANSITION(p))
                 return -1;
         words = PROC_MEM_WORDS(p);
-        if (words == 0UL || mm_alloc_aligned(words, EXEC_PDP6_ALIGN_WORDS,
-            MM_TYPE_PROCESS, slot, MM_ALLOC_HIGH, &base) != MM_OK)
+        if (words == 0UL)
                 return -1;
+
+        PROC_SET_TRANSITION(p);
+        if (mm_alloc_aligned(words, EXEC_PDP6_ALIGN_WORDS,
+            MM_TYPE_PROCESS, slot, MM_ALLOC_HIGH, &base) != MM_OK) {
+                PROC_CLEAR_TRANSITION(p);
+                return -1;
+        }
         if (mm_pin(base) != MM_OK) {
                 (void)mm_free(base, MM_TYPE_PROCESS, slot);
+                PROC_CLEAR_TRANSITION(p);
                 return -1;
         }
         mem = (kword_t *)(unsigned long)base;
@@ -320,12 +354,8 @@ proc_swap_in(unsigned int slot)
 
         if (mm_unpin(base) != MM_OK)
                 goto fail_free;
-        old_state = (unsigned int)((r->meta >> PROC_SWAP_META_STATE_SHIFT) &
-            PROC_SWAP_META_STATE_MASK);
-        if (old_state != PROC_SIDL && old_state != PROC_SLEEP)
-                old_state = PROC_SIDL;
         PROC_SET_MEM_BASE(p, base);
-        PROC_SET_STATE(p, old_state);
+        PROC_CLEAR_TRANSITION(p);
         r->disk_span = 0UL;
         return 0;
 
@@ -333,6 +363,7 @@ fail:
         (void)mm_unpin(base);
 fail_free:
         (void)mm_free(base, MM_TYPE_PROCESS, slot);
+        PROC_CLEAR_TRANSITION(p);
         return -1;
 }
 
@@ -340,19 +371,19 @@ int
 proc_swap_reclaim(kword_t words, kword_t alignment,
     unsigned int exclude_owner)
 {
-        unsigned int i;
+        int victim;
         int swapped;
 
         (void)alignment;
+        if (proc_swap_records == 0 || proc_table == 0)
+                return -1;
         swapped = 0;
-        for (i = 1U; i < PROC_NPROC; ++i) {
-                if (i == exclude_owner)
-                        continue;
-                if (PROC_STATE(&proc_table[i]) != PROC_SIDL &&
-                    PROC_STATE(&proc_table[i]) != PROC_SLEEP)
-                        continue;
-                if (proc_swap_out(i) != 0)
-                        continue;
+        for (;;) {
+                victim = proc_swap_victim(exclude_owner);
+                if (victim < 0)
+                        break;
+                if (proc_swap_out((unsigned int)victim) != 0)
+                        break;
                 swapped = 1;
                 if (mm_total_free() >= words)
                         return 0;
@@ -363,7 +394,7 @@ proc_swap_reclaim(kword_t words, kword_t alignment,
 kword_t
 proc_swap_used_blocks(void)
 {
-        return proc_swap_blocks_used();
+        return proc_swap_records == 0 ? 0UL : proc_swap_blocks_used();
 }
 
 kword_t
@@ -373,6 +404,6 @@ proc_swap_free_blocks(void)
         kword_t used;
 
         total = proc_swap_disk_blocks();
-        used = proc_swap_blocks_used();
+        used = proc_swap_records == 0 ? 0UL : proc_swap_blocks_used();
         return total > used ? total - used : 0UL;
 }

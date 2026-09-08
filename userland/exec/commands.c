@@ -470,10 +470,15 @@ static int
 cmd_ps(int argc, kword_t **argv, struct u_io *io)
 {
         struct sys_procinfo p;
+        struct sys_meminfo m;
         unsigned int i;
+        unsigned int slots;
         (void)argc; (void)argv;
+        slots = SYS_PROC_SLOTS;
+        if (dsys_meminfo(&m) == 0 && m.process_slots_total <= SYS_PROC_SLOTS)
+                slots = (unsigned int)m.process_slots_total;
         if (u_puts(io->out_fd, "PID PPID S WORDS COMM") != 0 || u_crlf(io->out_fd) != 0) return 1;
-        for (i = 0U; i < SYS_PROC_SLOTS; ++i) {
+        for (i = 0U; i < slots; ++i) {
                 if (dsys_procinfo(i, &p) != 0) continue;
                 if (u_put_uint(io->out_fd, p.pid) != 0 || u_putc(io->out_fd, ' ') != 0 ||
                     u_put_uint(io->out_fd, p.ppid) != 0 || u_putc(io->out_fd, ' ') != 0 ||

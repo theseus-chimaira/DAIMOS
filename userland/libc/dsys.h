@@ -31,6 +31,7 @@ static int dsys_unmount(kword_t *p) { return DSYS_CALL1(SYS_UNMOUNT,p); }
 static int dsys_flock(int fd, unsigned int op) { return DSYS_CALL2(SYS_FLOCK,fd,op); }
 static int dsys_dup(int fd) { return DSYS_CALL1(SYS_DUP,fd); }
 static int dsys_symlink(kword_t *t, kword_t *p) { return DSYS_CALL2(SYS_SYMLINK,t,p); }
+static int dsys_nice(int n) { return DSYS_CALL1(SYS_NICE,n); }
 static int dsys_chdir(kword_t *p) { return DSYS_CALL1(SYS_CHDIR,p); }
 static int dsys_getcwd(kword_t *p, unsigned int n) { return DSYS_CALL2(SYS_GETCWD,p,n); }
 static int dsys_procinfo(unsigned int s, struct sys_procinfo *p) { return DSYS_CALL2(SYS_PROCINFO,s,p); }

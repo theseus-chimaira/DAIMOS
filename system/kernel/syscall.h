@@ -32,6 +32,7 @@
 #define SYS_FLOCK            42U
 #define SYS_DUP              43U
 #define SYS_SYMLINK          44U
+#define SYS_NICE             45U
 
 #define SYS_MOUNT_RW         0U
 #define SYS_MOUNT_RDONLY     1U
@@ -55,7 +56,7 @@
 #define SYS_LOCK_UNLOCK      VFS_LOCK_UNLOCK
 #define SYS_ERR_UNSUPPORTED  VFS_ERR_UNSUPPORTED
 
-#define SYS_PROC_SLOTS       2U
+#define SYS_PROC_SLOTS       256U
 
 struct sys_procinfo {
         kword_t pid;

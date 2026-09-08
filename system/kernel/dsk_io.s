@@ -139,7 +139,7 @@ dsk_read_sector:
 dsk_write_sector:
         movei 4,1
 dsk_sector_request:
-        skipn proc_table+2
+        skipn proc_table
         jrst dsk_boot_request
 
 dsk_runtime_request:

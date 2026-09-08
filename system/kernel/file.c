@@ -1,8 +1,15 @@
 #include "file.h"
 #include "fs_mres.h"
 
-extern struct file file_table[FILE_NFILE];
-extern vnode_t file_cwd;
+extern struct file *file_table;
+
+static vnode_t
+file_cwd_get(void)
+{
+        if (file_table == 0)
+                return VFS_NODE_NONE;
+        return *((vnode_t *)file_table - 1);
+}
 
 extern int file_component(const kword_t *path, unsigned int *posp,
     struct vfs_name *name);
@@ -141,7 +148,7 @@ file_walk_path(const kword_t *path,
 {
         vnode_t start;
 
-        start = file_cwd;
+        start = file_cwd_get();
         if (start == VFS_NODE_NONE)
                 start = vfs_namespace_root;
         return file_walk_path_at(path, parent_only, start, 0U,

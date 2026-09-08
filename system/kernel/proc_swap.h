@@ -5,6 +5,9 @@
 #include "vfs.h"
 
 #define PROC_SWAP_EXEC_PURE  01U
+#define PROC_SWAP_RECORD_WORDS 4U
+
+int proc_swap_boot_init(unsigned int slots);
 
 void proc_swap_attach(unsigned int slot, vnode_t backing,
     kword_t image_words, kword_t text_words, unsigned int header_words,
