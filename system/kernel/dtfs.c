@@ -362,8 +362,10 @@ dtfs_resize(vnode_t node, unsigned int words)
         if (!dtfs_is_file(node) || dtfs_load(node) != 0)
                 return -1;
         personality = dtfs_personality(node);
+#if DTFS_ENABLE_ITS
         if (personality == DTFS_MEDIA_ITS)
                 return dtfs_its_resize(node, words, 0);
+#endif
         mapoff = personality == DTFS_MEDIA_TENEX ? 1U : 0U;
         slot = VFS_INDEX(node);
         unit = dtfs_unit(node);
@@ -907,6 +909,7 @@ dtfs_transfer_words(vnode_t node, unsigned int off, kword_t *buf,
                 return -1;
         personality = dtfs_personality(node);
         slot = VFS_INDEX(node);
+#if DTFS_ENABLE_ITS
         if (personality == DTFS_MEDIA_ITS) {
                 if (slot >= DTFS_ITS_FILE_SLOTS ||
                     (dtfs_dir[slot * 2U] == 0UL &&
@@ -919,6 +922,7 @@ dtfs_transfer_words(vnode_t node, unsigned int off, kword_t *buf,
                 return dtfs_chain_walk(dtfs_unit(node), slot, off, buf,
                     nwords, DTFS_ITS_NAME_WORDS, writing);
         }
+#endif
         if (!writing) {
                 if (personality == DTFS_MEDIA_TENEX &&
                     (slot >= DTFS_FILE_SLOTS ||
