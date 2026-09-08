@@ -44,7 +44,7 @@ proc_slots_for_core(kword_t core_words)
 {
         if (core_words <= 0100000UL)
                 return 64U;
-        if (core_words <= 0200000UL)
+        if (core_words <= 0300000UL)
                 return 128U;
         return PROC_MAX_SLOTS;
 }
