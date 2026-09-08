@@ -1,8 +1,8 @@
 ; proc_pdp10.s -- PDP-6 scheduler context switch and event sleep/wakeup.
 ;
 ; proc_table is allocated after memory discovery.  Each active process owns a
-; stable 0400-word executive u-area allocated from kernel-dynamic core.  The
-; first 060 words hold saved CPU/syscall state and the remainder is the private
+; stable executive u-area allocated from kernel-dynamic core.  Saved CPU/syscall
+; state ends at 044, followed immediately by cwd/file state and the private
 ; kernel pushdown list.  User extents may move or swap independently; the u-area
 ; remains resident so a sleeping executive continuation keeps valid stack
 ; addresses.
@@ -15,8 +15,8 @@
         .equ    PROC_WAIT_EVENT_LH,020000
         .equ    PROC_TRANSITION_RH,0200000
         .equ    PROC_KCTX_WORDS,060
-        .equ    PROC_FILE_TABLE_OFFSET,061
-        .equ    PROC_USTACK_BASE,0130
+        .equ    PROC_FILE_TABLE_OFFSET,046
+        .equ    PROC_USTACK_BASE,0115
 
         .equ    CTX_U_PC,020
         .equ    CTX_U_KSP,021
@@ -24,10 +24,6 @@
         .equ    CTX_K_AC0,023
         .equ    CTX_M_USER_SP,043
         .equ    CTX_M_SYSCALL_SAVE,044
-        .equ    CTX_M_AC2,045
-        .equ    CTX_M_AC3,046
-        .equ    CTX_M_AC4,047
-        .equ    CTX_M_AC5,050
 
         .text
         .globl  proc_table
@@ -55,10 +51,6 @@
         .globl  mach_user_sp
         .globl  mach_user_apr
         .globl  mach_syscall_save
-        .globl  mach_syscall_ac2
-        .globl  mach_syscall_ac3
-        .globl  mach_syscall_ac4
-        .globl  mach_syscall_ac5
         .globl  file_table
 
 ; AC1 = slot.  Return AC1 = address of its three-word struct proc, AC2 clobbered.
@@ -265,14 +257,6 @@ proc_save_kernel:
         movem   1,CTX_M_USER_SP(2)
         move    1,mach_syscall_save
         movem   1,CTX_M_SYSCALL_SAVE(2)
-        move    1,mach_syscall_ac2
-        movem   1,CTX_M_AC2(2)
-        move    1,mach_syscall_ac3
-        movem   1,CTX_M_AC3(2)
-        move    1,mach_syscall_ac4
-        movem   1,CTX_M_AC4(2)
-        move    1,mach_syscall_ac5
-        movem   1,CTX_M_AC5(2)
         move    1,mach_kernel_sp
         movem   1,CTX_U_KSP(2)
         popj    17,
@@ -348,14 +332,6 @@ proc_restore_kernel:
         movem   1,mach_user_sp
         move    1,CTX_M_SYSCALL_SAVE(2)
         movem   1,mach_syscall_save
-        move    1,CTX_M_AC2(2)
-        movem   1,mach_syscall_ac2
-        move    1,CTX_M_AC3(2)
-        movem   1,mach_syscall_ac3
-        move    1,CTX_M_AC4(2)
-        movem   1,mach_syscall_ac4
-        move    1,CTX_M_AC5(2)
-        movem   1,mach_syscall_ac5
         move    1,CTX_U_KSP(2)
         movem   1,mach_kernel_sp
         pushj   17,proc_load_apr

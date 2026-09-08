@@ -65,7 +65,7 @@
 #define PROC_WAIT_TTY       3U
 
 /*
- * Each active process allocates a stable 0400-word executive u-area from
+ * Each active process allocates a stable executive u-area from
  * kernel-dynamic core.  It contains saved CPU/syscall context followed by that
  * process's private cwd/file table and kernel stack.  The u-area never moves
  * with the relocatable
@@ -76,11 +76,11 @@
  * consumes that value and repurposes the same half-word as the stable u-area
  * physical base; the three-word process descriptor therefore does not grow.
  */
-#define PROC_UAREA_WORDS        0450UL
+#define PROC_UAREA_WORDS        0435UL
 #define PROC_KCTX_WORDS         0060UL
-#define PROC_FILE_CWD_OFFSET     0060UL
-#define PROC_FILE_TABLE_OFFSET   0061UL
-#define PROC_USTACK_BASE         0130UL
+#define PROC_FILE_CWD_OFFSET     0045UL
+#define PROC_FILE_TABLE_OFFSET   0046UL
+#define PROC_USTACK_BASE         0115UL
 #define PROC_KSTACK_WORDS \
         (PROC_UAREA_WORDS - PROC_USTACK_BASE)
 

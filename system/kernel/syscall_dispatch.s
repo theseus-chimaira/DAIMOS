@@ -1,313 +1,353 @@
-; syscall_dispatch.s -- compiler-derived native syscall dispatcher.
-; Pointer checks and ABI movement are copied from known-good GCC output.
-	.text
+; syscall_dispatch.s -- native PDP-6 monitor-UUO syscall dispatcher.
+;
+; Monitor UUOs 040..073 are the direct userspace syscall ABI.  The hardware
+; leaves the trapped UUO at 000040 and its computed effective address at
+; 000041.  mach_user materializes that effective address in AC1, so real
+; arguments arrive here in AC1..AC4 and AC1 also carries the result.
+
+        .text
         .globl  pdp10_ret_zero
+        .globl  mach_user_apr
 sys_user_words:
-        ; User pointers are logical.  Validate against the process extent,
-        ; then translate once for executive-mode kernel access.
+        ; User pointers are logical.  Validate against the cached PDP-6 APR
+        ; relocation/protection state and translate once for executive access.
+        ; The APR LH contains (user_words - 02000), RH the physical base.
         hrrz    1,1
         caige   1,020
         jrst    pdp10_ret_zero
-        move    4,proc_current_slot
-        move    5,4
-        lsh     4,1
-        add     4,5                    ; 3 * current slot
-        add     4,proc_table
-        hlrz    3,1(4)
+        hlrz    3,mach_user_apr
+        addi    3,02000
         caml    1,3
         jrst    pdp10_ret_zero
-        hrrz    4,1(4)
+        hrrz    4,mach_user_apr
         add     1,4
         popj    17,
 
-	.globl	exec_native_syscall
-	.globl	mach_syscall_ac2
-	.globl	mach_syscall_ac3
-	.globl	mach_syscall_ac4
-	.globl	mach_syscall_ac5
-        .globl  proc_current_slot
+        .globl  exec_native_syscall
         .globl  proc_nice_current
         .globl  proc_exit_current
 exec_native_syscall:
-	; AC1 is still the syscall number on entry from mach_syscall.
-	hrrz 4,1
-	subi 4,2
-	jumpl 4,%L137
-	caige 4,035                 ; syscall 31 - 2
-	jrst exec_native_low
-	subi 4,035
-	caile 4,016                 ; syscalls 31..45
-	jrst %L137
-	jrst @exec_native_high(4)
-exec_native_low:
-	caile 4,024                 ; syscalls 2..22
-	jrst %L137
-	jrst @%L138(4)
-%L138:
-	.word	.66
-	.word	.67
-	.word	.137
-	.word	.72
-	.word	.73
-	.word	native_sys_getchar
-	.word	.75
-	.word	.80
-	.word	.90
-	.word	.137
-	.word	.137
-	.word	.137
-	.word	.97
-	.word	.137
-	.word	.137
-	.word	.137
-	.word	.102
-	.word	.137
-	.word	.107
-	.word	.112
-	.word	.119
-exec_native_high:
-	.word	.83
-	.word	.86
-	.word	.124
-	.word	.129
-	.word	.134
-	.word	.135
-	.word	.136
-	.word	native_sys_chmod
-	.word	native_sys_dtfs_format
-	.word	native_sys_dtfs_mount
-	.word	native_sys_unmount
-	.word	native_sys_flock
-	.word	native_sys_dup
-	.word	native_sys_symlink
-        .word   native_sys_nice
+        ; Recover the monitor-UUO opcode from the trapped instruction.
+        ; AC0 cannot be an index register on the PDP-6: index field zero
+        ; means no indexing.  Use caller-scratch AC5 for the table selector.
+        hlrz    5,000040
+        lsh     5,-011
+        subi    5,040
+        jumpl   5,%L137
+        caile   5,033                   ; opcodes 040..073 inclusive
+        jrst    %L137
+        jrst    @exec_native_table(5)
+exec_native_table:
+        .word   %L66                    ; 040 EXIT
+        .word   %L67                    ; 041 OPEN
+        .word   %L72                    ; 042 CLOSE
+        .word   %L73                    ; 043 PUTCHAR
+        .word   native_sys_getchar      ; 044 GETCHAR
+        .word   %L75                    ; 045 CHDIR
+        .word   %L80                    ; 046 GETCWD
+        .word   %L90                    ; 047 STAT
+        .word   %L97                    ; 050 DIRREAD
+        .word   %L102                   ; 051 MKDIR
+        .word   %L107                   ; 052 UNLINK
+        .word   %L112                   ; 053 RENAME
+        .word   %L119                   ; 054 TRUNCATE
+        .word   %L83                    ; 055 READ_WORDS
+        .word   %L86                    ; 056 WRITE_WORDS
+        .word   %L124                   ; 057 PROCINFO
+        .word   %L129                   ; 060 MEMINFO
+        .word   %L134                   ; 061 READCHAR
+        .word   %L135                   ; 062 WRITECHAR
+        .word   %L136                   ; 063 HALT
+        .word   native_sys_chmod        ; 064 CHMOD
+        .word   native_sys_dtfs_format  ; 065 DTFS_FORMAT/CHECK
+        .word   native_sys_dtfs_mount   ; 066 DTFS_MOUNT
+        .word   native_sys_unmount      ; 067 UNMOUNT
+        .word   native_sys_flock        ; 070 FLOCK
+        .word   native_sys_dup          ; 071 DUP
+        .word   native_sys_symlink      ; 072 SYMLINK
+        .word   native_sys_nice         ; 073 NICE
+
 %L66:
-	pushj 17,file_close_all
-	; EXIT never returns through the dying process's u-area stack.
-	jrst proc_exit_current
+        pushj   17,file_close_all
+        ; EXIT never returns through the dying process's u-area stack.
+        jrst    proc_exit_current
 %L67:
-	move 1,mach_syscall_ac2
-	pushj 17,sys_user_words
-	jumpe 1,%L137
-	hrrz 3,mach_syscall_ac3
-	move 4,3
-	andi 4,3
-	addi 4,1
-	caile 4,3
-	movei 4,3
-	andi 3,034
-	ior 3,4
-	move 2,3
-	jrst file_open
+        ; AC1 path, AC2 flags.
+        pushj   17,sys_user_words
+        jumpe   1,%L137
+        hrrz    3,2
+        move    4,3
+        andi    4,3
+        addi    4,1
+        caile   4,3
+        movei   4,3
+        andi    3,034
+        ior     3,4
+        move    2,3
+        jrst    file_open
 %L72:
-	hrrz 1,mach_syscall_ac2
-	jrst file_close
+        hrrz    1,1
+        jrst    file_close
 %L73:
-	move 1,mach_syscall_ac2
-	andi 1,0177
-	jrst native_sys_putchar
+        andi    1,0177
+        jrst    native_sys_putchar
 %L75:
-	move 1,mach_syscall_ac2
-	pushj 17,sys_user_words
-	jumpe 1,%L137
-	jrst file_chdir
+        pushj   17,sys_user_words
+        jumpe   1,%L137
+        jrst    file_chdir
 %L80:
-	move 1,mach_syscall_ac2
-	pushj 17,sys_user_words
-	jumpe 1,%L137
-	hrrz 2,mach_syscall_ac3
-	jrst file_getcwd
+        pushj   17,sys_user_words
+        jumpe   1,%L137
+        hrrz    2,2
+        jrst    file_getcwd
 %L83:
-	move 1,mach_syscall_ac3
-	pushj 17,sys_user_words
-	jumpe 1,%L137
-	move 2,1
-	hrrz 1,mach_syscall_ac2
-	hrrz 3,mach_syscall_ac4
-	jrst file_read_words
+        ; AC1 fd, AC2 buffer, AC3 word count.
+        move    6,1
+        move    7,3
+        move    1,2
+        pushj   17,sys_user_words
+        jumpe   1,%L137
+        move    2,1
+        hrrz    1,6
+        hrrz    3,7
+        jrst    file_read_words
 %L86:
-	move 1,mach_syscall_ac3
-	pushj 17,sys_user_words
-	jumpe 1,%L137
-	move 2,1
-	hrrz 1,mach_syscall_ac2
-	hrrz 3,mach_syscall_ac4
-	move 4,mach_syscall_ac5
-	jrst file_write_words
+        ; AC1 fd, AC2 buffer, AC3 word count, AC4 buffer size.
+        move    6,1
+        move    7,3
+        move    5,4
+        move    1,2
+        pushj   17,sys_user_words
+        jumpe   1,%L137
+        move    2,1
+        hrrz    1,6
+        hrrz    3,7
+        move    4,5
+        jrst    file_write_words
 %L90:
-	move 1,mach_syscall_ac2
-	pushj 17,sys_user_words
-	move 5,1
-	move 1,mach_syscall_ac3
-	pushj 17,sys_user_words
-	move 3,1
-	jumpe 5,%L137
-	jumpe 1,%L137
-	move 2,1
-	move 1,5
-	jrst file_stat_path
+        ; AC1 path, AC2 stat buffer.
+        pushj   17,sys_user_words
+        move    5,1
+        move    1,2
+        pushj   17,sys_user_words
+        jumpe   5,%L137
+        jumpe   1,%L137
+        move    2,1
+        move    1,5
+        jrst    file_stat_path
 %L97:
-	move 1,mach_syscall_ac3
-	pushj 17,sys_user_words
-	jumpe 1,%L137
-	move 2,1
-	hrrz 1,mach_syscall_ac2
-	jrst file_readdir
+        ; AC1 fd, AC2 directory entry buffer.
+        move    5,1
+        move    1,2
+        pushj   17,sys_user_words
+        jumpe   1,%L137
+        move    2,1
+        hrrz    1,5
+        jrst    file_readdir
 %L102:
-	move 1,mach_syscall_ac2
-	pushj 17,sys_user_words
-	jumpe 1,%L137
-	hrrz 2,mach_syscall_ac3
-	jrst file_mkdir
+        ; AC1 path, AC2 mode.
+        pushj   17,sys_user_words
+        jumpe   1,%L137
+        hrrz    2,2
+        jrst    file_mkdir
 %L107:
-	move 1,mach_syscall_ac2
-	pushj 17,sys_user_words
-	jumpe 1,%L137
-	jrst file_unlink
+        pushj   17,sys_user_words
+        jumpe   1,%L137
+        jrst    file_unlink
 %L112:
-	move 1,mach_syscall_ac2
-	pushj 17,sys_user_words
-	move 5,1
-	move 1,mach_syscall_ac3
-	pushj 17,sys_user_words
-	move 3,1
-	jumpe 5,%L137
-	jumpe 1,%L137
-	move 2,1
-	move 1,5
-	jrst file_rename
+        ; AC1 old path, AC2 new path.
+        pushj   17,sys_user_words
+        move    5,1
+        move    1,2
+        pushj   17,sys_user_words
+        jumpe   5,%L137
+        jumpe   1,%L137
+        move    2,1
+        move    1,5
+        jrst    file_rename
 %L119:
-	move 1,mach_syscall_ac2
-	pushj 17,sys_user_words
-	jumpe 1,%L137
-	move 2,mach_syscall_ac3
-	jrst file_truncate
+        ; AC1 path, AC2 new size.
+        pushj   17,sys_user_words
+        jumpe   1,%L137
+        move    2,2
+        jrst    file_truncate
 %L124:
-	move 1,mach_syscall_ac3
-	pushj 17,sys_user_words
-	jumpe 1,%L137
-	move 2,1
-	hrrz 1,mach_syscall_ac2
-	jrst sys_procinfo
+        ; AC1 slot, AC2 result buffer.
+        move    5,1
+        move    1,2
+        pushj   17,sys_user_words
+        jumpe   1,%L137
+        move    2,1
+        hrrz    1,5
+        jrst    sys_procinfo
 %L129:
-	move 1,mach_syscall_ac2
-	pushj 17,sys_user_words
-	jumpe 1,%L137
-	jrst sys_meminfo
+        pushj   17,sys_user_words
+        jumpe   1,%L137
+        jrst    sys_meminfo
 %L134:
-	hrrz 1,mach_syscall_ac2
-	jumpe 1,native_sys_getchar
-	pushj 17,file_readchar
-	camn 1,[-3]
-	jrst native_sys_getchar
-	jrst %L65
+        hrrz    1,1
+        jumpe   1,native_sys_getchar
+        pushj   17,file_readchar
+        camn    1,[-3]
+        jrst    native_sys_getchar
+        jrst    %L65
 %L135:
-	hrrz 1,mach_syscall_ac2
-	move 2,mach_syscall_ac3
-	andi 2,0777
-	cail 1,1
-	cail 1,3
-	trna
-	jrst native_sys_writechar_tty
-	pushj 17,file_writechar
-	came 1,[-3]
-	jrst %L65
+        ; AC1 fd, AC2 character.  Preserve the character on the process
+        ; kernel stack across a real file_writechar call.
+        hrrz    1,1
+        cail    1,1
+        cail    1,3
+        trna
+        jrst    native_sys_writechar_tty
+        push    17,2
+        andi    2,0777
+        pushj   17,file_writechar
+        pop     17,2
+        came    1,[-3]
+        jrst    %L65
 native_sys_writechar_tty:
-	move 1,mach_syscall_ac3
-	andi 1,0777
-	jrst native_sys_putchar
+        move    1,2
+        andi    1,0777
+        jrst    native_sys_putchar
 
-
-; Return the DTC0 vnode for a valid user path, or zero on failure.
+; Return the DTC0 vnode for a valid translated user path, or zero on failure.
+; A one-word process-private kernel-stack temporary replaces the old global
+; syscall AC5 shadow and remains safe across scheduler sleep/resume.
 native_sys_dtc0_path:
-        pushj 17,sys_user_words
-        jumpe 1,pdp10_ret_zero
-        movei 2,mach_syscall_ac5
-        pushj 17,file_lookup_path
-        jumpn 1,pdp10_ret_zero
-        move 1,mach_syscall_ac5
-        came 1,[020003000014]           ; DEVICEFS DTC0 directory
-        jrst pdp10_ret_zero
-        popj 17,
+        pushj   17,sys_user_words
+        jumpe   1,pdp10_ret_zero
+        push    17,0
+        movei   2,(17)
+        pushj   17,file_lookup_path
+        jumpn   1,native_sys_dtc0_bad
+        move    5,(17)
+        pop     17,0
+        move    1,5
+        came    1,[020003000014]        ; DEVICEFS DTC0 directory
+        jrst    pdp10_ret_zero
+        popj    17,
+native_sys_dtc0_bad:
+        pop     17,0
+        jrst    pdp10_ret_zero
 
 native_sys_chmod:
-        move 1,mach_syscall_ac2
-        pushj 17,sys_user_words
-        jumpe 1,%L137
-        movei 2,mach_syscall_ac5
-        pushj 17,file_lookup_path
-        jumpn 1,%L137
-        move 1,mach_syscall_ac5
-        hrrz 2,mach_syscall_ac3
-        jrst vfs_chmod
+        ; Preserve mode across pointer translation and VFS lookup.
+        push    17,2
+        pushj   17,sys_user_words
+        jumpe   1,native_sys_chmod_bad1
+        push    17,0
+        movei   2,(17)
+        pushj   17,file_lookup_path
+        jumpn   1,native_sys_chmod_bad2
+        move    5,(17)
+        pop     17,0
+        pop     17,2
+        move    1,5
+        hrrz    2,2
+        jrst    vfs_chmod
+native_sys_chmod_bad2:
+        pop     17,0
+native_sys_chmod_bad1:
+        pop     17,0
+        jrst    %L137
 
 native_sys_dtfs_format:
-        move 1,mach_syscall_ac2
-        pushj 17,native_sys_dtc0_path
-        jumpe 1,%L137
-        hrrz 2,mach_syscall_ac3         ; DTFS management control word
-        move 3,2
-        andi 3,07
-        caile 3,1
-        jrst %L137
-        movei 1,0                       ; DTC0 unit
-        .globl sys_dtfs_format_jump
+        ; AC1 device path, AC2 DTFS management control word.
+        push    17,2
+        pushj   17,native_sys_dtc0_path
+        pop     17,2
+        jumpe   1,%L137
+        hrrz    2,2
+        move    3,2
+        andi    3,07
+        caile   3,1
+        jrst    %L137
+        movei   1,0                     ; DTC0 unit
+        .globl  sys_dtfs_format_jump
 sys_dtfs_format_jump:
-        jrst pdp10_ret_neg1
+        jrst    pdp10_ret_neg1
 
 native_sys_dtfs_mount:
-        move 1,mach_syscall_ac2
-        pushj 17,native_sys_dtc0_path
-        jumpe 1,%L137
-        move 1,mach_syscall_ac3
-        pushj 17,sys_user_words
-        jumpe 1,%L137
-        movei 2,mach_syscall_ac5
-        pushj 17,file_lookup_path
-        jumpn 1,%L137
-        hrrz 3,mach_syscall_ac4
-        caile 3,031                     ; RO plus DTFS type override
-        jrst %L137
-        move 2,mach_syscall_ac5
-        movei 1,0                       ; DTC0 unit
-        movei 4,mach_syscall_ac5     ; returned root is not otherwise needed
-        .globl sys_dtfs_mount_jump
+        ; AC1 device path, AC2 mount path, AC3 flags.
+        push    17,2                    ; preserve mount path
+        push    17,3                    ; preserve flags
+        pushj   17,native_sys_dtc0_path
+        jumpe   1,native_sys_dtfs_mount_bad2
+        move    1,-1(17)                ; saved mount path
+        pushj   17,sys_user_words
+        jumpe   1,native_sys_dtfs_mount_bad2
+        pop     17,3                    ; restore flags
+        pop     17,0                    ; discard saved mount path
+        push    17,3                    ; preserve flags across VFS lookup
+        push    17,0                    ; vnode/result scratch
+        movei   2,(17)
+        pushj   17,file_lookup_path
+        jumpn   1,native_sys_dtfs_mount_bad_lookup
+        move    2,(17)                  ; mounted-on root vnode
+        move    3,-1(17)                ; saved flags
+        hrrz    3,3
+        caile   3,031                   ; RO plus DTFS type override
+        jrst    native_sys_dtfs_mount_bad_lookup
+        movei   1,0                     ; DTC0 unit
+        movei   4,(17)                  ; returned root scratch
+        .globl  sys_dtfs_mount_jump
 sys_dtfs_mount_jump:
-        jrst pdp10_ret_neg1
+        pushj   17,pdp10_ret_neg1
+        pop     17,0                    ; result scratch
+        pop     17,0                    ; saved flags
+        popj    17,
+native_sys_dtfs_mount_bad_lookup:
+        pop     17,0
+        pop     17,0
+        jrst    %L137
+native_sys_dtfs_mount_bad2:
+        pop     17,0
+        pop     17,0
+        jrst    %L137
 
 native_sys_unmount:
-        move 1,mach_syscall_ac2
-        pushj 17,sys_user_words
-        jumpe 1,%L137
-        movei 2,mach_syscall_ac5
-        pushj 17,file_lookup_path
-        jumpn 1,%L137
-        move 1,mach_syscall_ac5
-        jrst vfs_unmount
+        pushj   17,sys_user_words
+        jumpe   1,%L137
+        push    17,0
+        movei   2,(17)
+        pushj   17,file_lookup_path
+        jumpn   1,native_sys_unmount_bad
+        move    5,(17)
+        pop     17,0
+        move    1,5
+        jrst    vfs_unmount
+native_sys_unmount_bad:
+        pop     17,0
+        jrst    %L137
 
 native_sys_flock:
-        hrrz 1,mach_syscall_ac2
-        hrrz 2,mach_syscall_ac3
-        jrst file_lock
+        hrrz    1,1
+        hrrz    2,2
+        jrst    file_lock
 
 native_sys_dup:
-        hrrz 1,mach_syscall_ac2
-        jrst file_dup
+        hrrz    1,1
+        jrst    file_dup
 
 native_sys_symlink:
-        move 1,mach_syscall_ac2
-        pushj 17,sys_user_words
-        move 5,1
-        move 1,mach_syscall_ac3
-        pushj 17,sys_user_words
-        jumpe 5,%L137
-        jumpe 1,%L137
-        move 2,1
-        move 1,5
-        jrst file_symlink
+        ; AC1 target, AC2 link path.
+        pushj   17,sys_user_words
+        move    5,1
+        move    1,2
+        pushj   17,sys_user_words
+        jumpe   5,%L137
+        jumpe   1,%L137
+        move    2,1
+        move    1,5
+        jrst    file_symlink
 
 native_sys_nice:
-        move    1,mach_syscall_ac2
+        ; UUO effective addresses are 18-bit.  NICE is the one current arg0
+        ; with signed semantics, so restore the 36-bit C value explicitly.
+        hrrz    1,1
+        trnn    1,0400000
+        jrst    proc_nice_current
+        tlo     1,0777777
         jrst    proc_nice_current
 
 native_sys_getchar:
@@ -323,12 +363,11 @@ native_sys_putchar_call:
         pushj   17,pdp10_ret_neg1
         jrst    %L65
 %L136:
-	halt .
-	seto 1,
-	jrst %L65
+        halt    .
+        seto    1,
+        jrst    %L65
 %L137:
-	seto 1,
+        seto    1,
 ; Leave the native syscall result in AC1 for mach_syscall.
 %L65:
-%L60:
-	popj 17,
+        popj    17,

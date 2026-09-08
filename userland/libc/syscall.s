@@ -1,7 +1,94 @@
+; syscall.s -- shared DAIMOS PDP-6 monitor-UUO veneers.
+;
+; C arguments arrive in AC1..AC4.  The UUO effective address carries arg0,
+; leaving AC2..AC4 as the remaining real arguments.  The kernel returns the
+; result in AC1.  Opcodes 074..077 remain reserved for future ABI extension.
+
         .text
-        .globl __syscall
-__syscall:
-        move 5,-1(17)
-        ; PDP-6 user UUO.  AC1 carries the syscall number; AC2..AC5 args.
-        .word 0
+
+        .globl dsys_exit
+        .globl dsys_open
+        .globl dsys_close
+        .globl dsys_chdir
+        .globl dsys_getcwd
+        .globl dsys_stat
+        .globl dsys_dirread
+        .globl dsys_mkdir
+        .globl dsys_unlink
+        .globl dsys_rename
+        .globl dsys_truncate
+        .globl dsys_read_words
+        .globl dsys_write_words
+        .globl dsys_procinfo
+        .globl dsys_meminfo
+        .globl dsys_readchar
+        .globl dsys_writechar
+        .globl dsys_halt
+        .globl dsys_chmod
+        .globl dsys_dtfs_format
+        .globl dsys_dtfs_check
+        .globl dsys_dtfs_mount
+        .globl dsys_unmount
+        .globl dsys_flock
+        .globl dsys_dup
+        .globl dsys_symlink
+        .globl dsys_nice
+
+dsys_exit:             uuo 040,0(1)
+                       popj 17,
+dsys_open:             uuo 041,0(1)
+                       popj 17,
+dsys_close:            uuo 042,0(1)
+                       popj 17,
+dsys_chdir:            uuo 045,0(1)
+                       popj 17,
+dsys_getcwd:           uuo 046,0(1)
+                       popj 17,
+dsys_stat:             uuo 047,0(1)
+                       popj 17,
+dsys_dirread:          uuo 050,0(1)
+                       popj 17,
+dsys_mkdir:
+        movei 2,0777
+        uuo 051,0(1)
         popj 17,
+dsys_unlink:           uuo 052,0(1)
+                       popj 17,
+dsys_rename:           uuo 053,0(1)
+                       popj 17,
+dsys_truncate:         uuo 054,0(1)
+                       popj 17,
+dsys_read_words:       uuo 055,0(1)
+                       popj 17,
+dsys_write_words:      uuo 056,0(1)
+                       popj 17,
+dsys_procinfo:         uuo 057,0(1)
+                       popj 17,
+dsys_meminfo:          uuo 060,0(1)
+                       popj 17,
+dsys_readchar:         uuo 061,0(1)
+                       popj 17,
+dsys_writechar:        uuo 062,0(1)
+                       popj 17,
+dsys_halt:             uuo 063,0
+                       popj 17,
+dsys_chmod:            uuo 064,0(1)
+                       popj 17,
+dsys_dtfs_format:      uuo 065,0(1)
+                       popj 17,
+dsys_dtfs_check:
+        iori 2,1
+        uuo 065,0(1)
+        popj 17,
+dsys_dtfs_mount:       uuo 066,0(1)
+                       popj 17,
+dsys_unmount:          uuo 067,0(1)
+                       popj 17,
+dsys_flock:            uuo 070,0(1)
+                       popj 17,
+dsys_dup:              uuo 071,0(1)
+                       popj 17,
+dsys_symlink:          uuo 072,0(1)
+                       popj 17,
+dsys_nice:             uuo 073,0(1)
+                       popj 17,

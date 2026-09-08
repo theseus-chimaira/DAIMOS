@@ -3,36 +3,39 @@
 
 #include "file.h"
 
-#define SYS_WRITE            1U
-#define SYS_EXIT             2U
-#define SYS_OPEN             3U
-#define SYS_READ             4U
-#define SYS_CLOSE            5U
-#define SYS_PUTCHAR          6U
-#define SYS_GETCHAR          7U
-#define SYS_CHDIR            8U
-#define SYS_GETCWD           9U
-#define SYS_STAT             10U
-#define SYS_DIRREAD          14U
-#define SYS_MKDIR            18U
-#define SYS_UNLINK           20U
-#define SYS_RENAME           21U
-#define SYS_TRUNCATE         22U
-#define SYS_READ_WORDS       31U
-#define SYS_WRITE_WORDS      32U
-#define SYS_PROCINFO         33U
-#define SYS_MEMINFO          34U
-#define SYS_READCHAR         35U
-#define SYS_WRITECHAR        36U
-#define SYS_HALT             37U
-#define SYS_CHMOD            38U
-#define SYS_DTFS_FORMAT      39U
-#define SYS_DTFS_MOUNT       40U
-#define SYS_UNMOUNT          41U
-#define SYS_FLOCK            42U
-#define SYS_DUP              43U
-#define SYS_SYMLINK          44U
-#define SYS_NICE             45U
+/* PDP-6 monitor-UUO ABI.  074..077 are reserved for extension. */
+#define SYS_WRITE            1U      /* unsupported legacy generic call */
+#define SYS_READ             4U      /* unsupported legacy generic call */
+#define SYS_EXIT             040U
+#define SYS_OPEN             041U
+#define SYS_CLOSE            042U
+#define SYS_PUTCHAR          043U
+#define SYS_GETCHAR          044U
+#define SYS_CHDIR            045U
+#define SYS_GETCWD           046U
+#define SYS_STAT             047U
+#define SYS_DIRREAD          050U
+#define SYS_MKDIR            051U
+#define SYS_UNLINK           052U
+#define SYS_RENAME           053U
+#define SYS_TRUNCATE         054U
+#define SYS_READ_WORDS       055U
+#define SYS_WRITE_WORDS      056U
+#define SYS_PROCINFO         057U
+#define SYS_MEMINFO          060U
+#define SYS_READCHAR         061U
+#define SYS_WRITECHAR        062U
+#define SYS_HALT             063U
+#define SYS_CHMOD            064U
+#define SYS_DTFS_FORMAT      065U
+#define SYS_DTFS_MOUNT       066U
+#define SYS_UNMOUNT          067U
+#define SYS_FLOCK            070U
+#define SYS_DUP              071U
+#define SYS_SYMLINK          072U
+#define SYS_NICE             073U
+#define SYS_UUO_EXT_FIRST    074U
+#define SYS_UUO_EXT_LAST     077U
 
 #define SYS_MOUNT_RW         0U
 #define SYS_MOUNT_RDONLY     1U
