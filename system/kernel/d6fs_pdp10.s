@@ -676,9 +676,11 @@ d6fs_mres_vector:
         .text
 
 ; int d6fs_reader_read_words(reader, fcb, off, buf, nwords)
-; Fifth C argument is at -1(17) on entry.  D6FS blocks are 128 words, so
-; block division/modulo reduce to shift/mask.  BLT handles each contiguous
-; in-block transfer.
+; int d6fs_reader_write_words(reader, fcb, off, buf, nwords)
+;
+; Both operations share block mapping and transfer-size calculation.  A saved
+; tail address selects read copying or write copying/commit after each mapped
+; block, avoiding a per-block read/write mode test.
         .globl  d6fs_reader_read_words
 d6fs_reader_read_words:
         jumpe   1,pdp10_ret_neg1
@@ -687,6 +689,19 @@ d6fs_reader_read_words:
         move    5,2(2)                   ; file size in words
         caml    3,5                      ; off >= size
         jrst    pdp10_ret_zero
+        movei   0,d6fs_reader_read_transfer
+        jrst    d6fs_reader_rw_save
+
+        .globl  d6fs_reader_write_words
+d6fs_reader_write_words:
+        jumpe   1,pdp10_ret_neg1
+        jumpe   2,pdp10_ret_neg1
+        jumpe   4,pdp10_ret_neg1
+        movei   0,d6fs_reader_write_transfer
+
+; Save the common loop state plus one transfer-tail address.  The original
+; fifth C argument is therefore nine words below the resulting stack top.
+d6fs_reader_rw_save:
         push    17,010
         push    17,011
         push    17,012
@@ -694,54 +709,75 @@ d6fs_reader_read_words:
         push    17,014
         push    17,015
         push    17,016
+        push    17,0                     ; transfer tail
         move    010,1                    ; reader
         move    011,2                    ; fcb
         move    012,3                    ; base file offset
-        move    013,4                    ; destination
-        move    014,-010(17)             ; original fifth arg: nwords
-        sub     5,012                    ; available = size - off
+        move    013,4                    ; source/destination buffer
+        move    014,-011(17)             ; original fifth arg: nwords
+        setz    015,                     ; done
+        caie    0,d6fs_reader_read_transfer
+        jrst    d6fs_reader_rw_loop
+        sub     5,012                    ; read available = size - off
         camle   014,5
         move    014,5                    ; nwords = min(nwords, available)
-        setz    015,                     ; done
 
-d6fs_reader_read_loop:
+d6fs_reader_rw_loop:
         caml    015,014                  ; continue while done < nwords
-        jrst    d6fs_reader_read_done
+        jrst    d6fs_reader_rw_done
         move    016,012
         add     016,015                  ; pos = off + done
         move    2,016
         lsh     2,-7                     ; file block
         move    1,011
         pushj   17,d6fs_file_block
-        camn    1,[-1]
-        jrst    d6fs_reader_read_fail
+        jumpl   1,d6fs_reader_rw_fail  ; only negative value is invalid
+        move    6,1                      ; logical block (needed by write)
         move    2,1
         move    1,010
         pushj   17,d6fs_reader_get_block
-        jumpe   1,d6fs_reader_read_fail
-        move    6,016
-        andi    6,0177                   ; offset within block
-        add     1,6                      ; source address
-        movei   7,0200
-        sub     7,6                      ; max words in this block
-        move    5,014
-        sub     5,015                    ; words remaining
-        camle   7,5
-        move    7,5                      ; take = min(block remainder, total)
-        jumpe   7,d6fs_reader_read_done
+        jumpe   1,d6fs_reader_rw_fail
+        move    7,016
+        andi    7,0177                   ; offset within block
+        movei   5,0200
+        sub     5,7                      ; max words in this block
+        move    4,014
+        sub     4,015                    ; words remaining
+        camle   5,4
+        move    5,4                      ; take
+        jrst    @(17)                   ; operation-specific transfer tail
+
+d6fs_reader_read_transfer:
+        add     1,7                      ; source in cached block
         move    2,013
         add     2,015                    ; destination address
-        move    3,7                      ; count
+        move    3,5
         pushj   17,fs_copy_words
-        add     015,7
-        jrst    d6fs_reader_read_loop
+        add     015,5
+        jrst    d6fs_reader_rw_loop
 
-d6fs_reader_read_done:
+d6fs_reader_write_transfer:
+        move    1,013
+        add     1,015                    ; source address
+        movei   2,fs_block_workspace(7)  ; destination in cached block
+        move    3,5
+        pushj   17,fs_copy_words
+        move    1,010
+        move    2,6
+        pushj   17,d6fs_reader_commit_cache
+        jumpn   1,d6fs_reader_rw_fail
+        add     015,5
+        jrst    d6fs_reader_rw_loop
+
+d6fs_reader_rw_done:
         move    1,015
-        jrst    d6fs_reader_read_exit
-d6fs_reader_read_fail:
+        jrst    d6fs_reader_rw_exit
+d6fs_reader_rw_fail:
         seto    1,
-d6fs_reader_read_exit:
+d6fs_reader_rw_exit:
+        pop     17,0
+        jrst    d6fs_restore7
+
 d6fs_restore7:
         pop     17,016
 d6fs_restore6:
@@ -757,73 +793,6 @@ d6fs_restore2:
 d6fs_restore1:
         pop     17,010
         popj    17,
-
-        .globl  d6fs_reader_write_words
-; int d6fs_reader_write_words(reader, fcb, off, buf, nwords)
-; The caller has already grown the FCB as required.  This routine only maps
-; file blocks, copies words into the shared cache, and commits each block.
-d6fs_reader_write_words:
-        jumpe   1,pdp10_ret_neg1
-        jumpe   2,pdp10_ret_neg1
-        jumpe   4,pdp10_ret_neg1
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
-        push    17,014
-        push    17,015
-        push    17,016
-        move    010,1                    ; reader
-        move    011,2                    ; fcb
-        move    012,3                    ; base file offset
-        move    013,4                    ; source buffer
-        move    014,-010(17)             ; original fifth arg: nwords
-        setz    015,                     ; done
-
-d6fs_reader_write_loop:
-        caml    015,014                  ; continue while done < nwords
-        jrst    d6fs_reader_write_done
-        move    016,012
-        add     016,015                  ; pos = off + done
-        move    2,016
-        lsh     2,-7                     ; file block
-        move    1,011
-        pushj   17,d6fs_file_block
-        camn    1,[-1]
-        jrst    d6fs_reader_write_fail
-        move    6,1                      ; logical block
-        move    2,1
-        move    1,010
-        pushj   17,d6fs_reader_get_block
-        jumpe   1,d6fs_reader_write_fail
-        move    7,016
-        andi    7,0177                   ; offset within block
-        movei   5,0200
-        sub     5,7                      ; max words in this block
-        move    4,014
-        sub     4,015                    ; words remaining
-        camle   5,4
-        move    5,4                      ; take
-        jumpe   5,d6fs_reader_write_done
-        move    1,013
-        add     1,015                    ; source address
-        movei   2,fs_block_workspace(7)  ; destination address
-        move    3,5                      ; count
-        pushj   17,fs_copy_words
-        move    1,010
-        move    2,6
-        pushj   17,d6fs_reader_commit_cache
-        jumpn   1,d6fs_reader_write_fail
-        add     015,5
-        jrst    d6fs_reader_write_loop
-
-d6fs_reader_write_done:
-        move    1,015
-        jrst    d6fs_reader_write_exit
-d6fs_reader_write_fail:
-        seto    1,
-d6fs_reader_write_exit:
-        jrst    d6fs_restore7
 
         .globl  d6fs_reader_commit_cache
 ; int d6fs_reader_commit_cache(reader, logical)
