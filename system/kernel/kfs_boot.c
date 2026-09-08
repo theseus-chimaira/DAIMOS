@@ -48,6 +48,8 @@ static struct memfs_node boot_nodes[KBOOT_NODE_COUNT];
 static vnode_t boot_memfs_root = VFS_NODE_NONE;
 static vnode_t boot_ramfs_root = VFS_NODE_NONE;
 static unsigned int boot_ramfs_slot;
+static unsigned int boot_ramfs_enabled;
+static kword_t boot_memfs_base;
 
 static void
 boot_clear_node(struct memfs_node *np)
@@ -265,23 +267,32 @@ kfs_boot_prepare(kword_t future_free_words)
                 kword_t ramfs_words;
                 kword_t spare_words;
 
-                ramfs_words = mm_largest_free();
-                if (ramfs_words > KBOOT_RAMFS0_MAX_WORDS)
-                        ramfs_words = KBOOT_RAMFS0_MAX_WORDS;
-                spare_words = mm_total_free();
-                if (future_free_words > MM_HALF_MASK - spare_words)
-                        spare_words = MM_HALF_MASK;
-                else
-                        spare_words += future_free_words;
-                if (spare_words <= KBOOT_FIRST_USER_RESERVE_WORDS)
-                        return -1;
-                spare_words -= KBOOT_FIRST_USER_RESERVE_WORDS;
-                if (ramfs_words > spare_words)
-                        ramfs_words = spare_words;
-                if (ramfs_words < KBOOT_RAMFS0_MIN_WORDS ||
-                    mm_alloc(ramfs_words, MM_TYPE_KERNEL_DYNAMIC, 1U,
+                boot_ramfs_enabled =
+                    mm_core_words >= KBOOT_RAMFS0_MIN_CORE_WORDS;
+                if (boot_ramfs_enabled) {
+                        ramfs_words = mm_largest_free();
+                        if (ramfs_words > KBOOT_RAMFS0_MAX_WORDS)
+                                ramfs_words = KBOOT_RAMFS0_MAX_WORDS;
+                        spare_words = mm_total_free();
+                        if (future_free_words > MM_HALF_MASK - spare_words)
+                                spare_words = MM_HALF_MASK;
+                        else
+                                spare_words += future_free_words;
+                        if (spare_words <= KBOOT_FIRST_USER_RESERVE_WORDS)
+                                return -1;
+                        spare_words -= KBOOT_FIRST_USER_RESERVE_WORDS;
+                        if (ramfs_words > spare_words)
+                                ramfs_words = spare_words;
+                        if (ramfs_words < KBOOT_RAMFS0_MIN_WORDS)
+                                return -1;
+                } else {
+                        /* Read-only bootstrap MEMFS needs only its node table. */
+                        ramfs_words = KBOOT_NODE_WORDS;
+                }
+                if (mm_alloc(ramfs_words, MM_TYPE_KERNEL_DYNAMIC, 1U,
                     MM_ALLOC_LOW, &ramfs_base) != MM_OK)
                         return -1;
+                boot_memfs_base = ramfs_base;
                 for (i = 0U; i < KBOOT_NODE_COUNT; ++i) {
                         kword_t *dst;
                         const kword_t *srcw;
@@ -302,10 +313,11 @@ kfs_boot_prepare(kword_t future_free_words)
                         config.nodes = (struct memfs_node *)(unsigned long)
                             ramfs_base;
                         config.node_count = KBOOT_NODE_COUNT;
-                        config.pool = (kword_t *)(unsigned long)
-                            (ramfs_base + KBOOT_NODE_WORDS);
-                        config.pool_words = (unsigned int)(ramfs_words -
-                            KBOOT_NODE_WORDS);
+                        config.pool = boot_ramfs_enabled ?
+                            (kword_t *)(unsigned long)(ramfs_base +
+                            KBOOT_NODE_WORDS) : 0;
+                        config.pool_words = boot_ramfs_enabled ?
+                            (unsigned int)(ramfs_words - KBOOT_NODE_WORDS) : 0U;
                         config.used_words = 0U;
                         config.image_data = data;
                         req.op = FS_MRES_OP_MEMFS_INIT;
@@ -347,32 +359,60 @@ kfs_boot_rebind_root(void)
 {
         struct vfs_name name;
         struct vfs_stat st;
+        struct memfs config;
+        struct fs_mres_request req;
         vnode_t mount_dir;
         vnode_t ramfs_target;
         vnode_t temp_target;
         vnode_t ramfs_mount;
         vnode_t temp_mount;
+        unsigned int memfs_service;
 
         if (boot_memfs_root == VFS_NODE_NONE)
                 return 0;
-        boot_name6(&name, VFS_SIX6('M','O','U','N','T',' '), 5U);
-        if (vfs_lookup(vfs_namespace_root, &name, &mount_dir) != 0)
-                return -1;
-        boot_name6(&name, VFS_SIX6('R','A','M','F','S','0'), 6U);
-        if (vfs_lookup(mount_dir, &name, &ramfs_target) != 0)
-                return -1;
-        boot_name6(&name, VFS_SIX6('T','E','M','P',' ',' '), 4U);
-        if (vfs_lookup(vfs_namespace_root, &name, &temp_target) != 0)
-                return -1;
-        if (vfs_stat(ramfs_target, &st) != 0 || st.type != VFS_TYPE_DIR ||
-            vfs_stat(temp_target, &st) != 0 || st.type != VFS_TYPE_DIR)
-                return -1;
+        if (boot_ramfs_enabled) {
+                boot_name6(&name, VFS_SIX6('M','O','U','N','T',' '), 5U);
+                if (vfs_lookup(vfs_namespace_root, &name, &mount_dir) != 0)
+                        return -1;
+                boot_name6(&name, VFS_SIX6('R','A','M','F','S','0'), 6U);
+                if (vfs_lookup(mount_dir, &name, &ramfs_target) != 0)
+                        return -1;
+                boot_name6(&name, VFS_SIX6('T','E','M','P',' ',' '), 4U);
+                if (vfs_lookup(vfs_namespace_root, &name, &temp_target) != 0)
+                        return -1;
+                if (vfs_stat(ramfs_target, &st) != 0 ||
+                    st.type != VFS_TYPE_DIR ||
+                    vfs_stat(temp_target, &st) != 0 ||
+                    st.type != VFS_TYPE_DIR)
+                        return -1;
+        }
 
         if (vfs_unmount(boot_ramfs_root) != 0 ||
             vfs_unmount(boot_memfs_root) != 0)
                 return -1;
         boot_ramfs_root = VFS_NODE_NONE;
         boot_memfs_root = VFS_NODE_NONE;
+
+        if (!boot_ramfs_enabled) {
+                /* Drop the transient MEMFS before KINIT memory is reclaimed. */
+                config.nodes = 0;
+                config.node_count = 0U;
+                config.pool = 0;
+                config.pool_words = 0U;
+                config.used_words = 0U;
+                config.image_data = 0;
+                req.op = FS_MRES_OP_MEMFS_INIT;
+                req.a = (kword_t)(unsigned long)&config;
+                memfs_service = module_service_get(MODULE_SERVICE_MEMFS);
+                if (memfs_service == 0U ||
+                    (int)kinit_call18_1(memfs_service,
+                    (kword_t)(unsigned long)&req) != 0 ||
+                    mm_free(boot_memfs_base, MM_TYPE_KERNEL_DYNAMIC, 1U) !=
+                    MM_OK)
+                        return -1;
+                boot_memfs_base = 0UL;
+                return 0;
+        }
 
         if (vfs_mount(ramfs_target, MEMFS_PROVIDER, MEMFS_KIND_NODE,
             boot_ramfs_slot, VFS_MOUNT_RW, &ramfs_mount) != 0)
