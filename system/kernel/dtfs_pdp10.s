@@ -504,7 +504,6 @@ dtfs_foreign_set_name_return:
 ; word with PUSH/POP rather than GCC's frame plus callee-save spill block.
         .globl  dtfs_load
         .globl  dtfs_scan_slot
-        .globl  dtfs_personality
         .globl  dtfs_commit
         .globl  dtfs_set_exec
         .globl  dtfs_native_scan_slot
@@ -598,9 +597,11 @@ dtfs_chmod:
         move    1,010
         pushj   17,dtfs_load
         jumpn   1,dtfs_chmod_fail
+        .if DTFS_ENABLE_FOREIGN
         move    1,010
         pushj   17,dtfs_personality
         jumpn   1,dtfs_chmod_fail
+        .endif
         hrrz    1,010
         move    2,011
         andi    2,0111
@@ -707,11 +708,6 @@ dtfs_load_return:
 dtfs_patch_media:
         andi    2,7
         movem   2,dtfs_media-1(1)
-        popj    17,
-
-        .globl  dtfs_personality
-dtfs_personality:
-        setz    1,
         popj    17,
 
         .globl  dtfs_cache_mount
@@ -941,6 +937,7 @@ dtfs_readdir_native_return:
 .endif
 
         .globl  dtfs_find_free_block
+.if DTFS_ENABLE_FOREIGN
 dtfs_find_free_block:
         push    17,010
         push    17,011
@@ -957,6 +954,7 @@ dtfs_find_free_native:
         jrst    dtfs_find_free_reset
         caig    6,01101
         jrst    dtfs_find_free_start
+
 dtfs_find_free_reset:
         movei   6,0145                  ; first data block after directory
 
@@ -984,9 +982,45 @@ dtfs_find_free_found:
         setz    1,
 dtfs_find_free_return:
         jrst    dtfs_restore2
+.else
+dtfs_find_free_block:
+        push    17,010
+        move    010,3                   ; blockp
+        move    6,1                     ; preferred first block
+        caig    6,1
+        jrst    dtfs_find_free_native_reset
+        caig    6,01101
+        jrst    dtfs_find_free_native_start
+dtfs_find_free_native_reset:
+        movei   6,0145                  ; first native data block
+dtfs_find_free_native_start:
+        setz    7,
+dtfs_find_free_native_loop:
+        setz    1,
+        move    2,6
+        pushj   17,dtfs_owner
+        jumpe   1,dtfs_find_free_native_found
+        addi    6,1
+        caig    6,01101
+        jrst    dtfs_find_free_native_count
+        movei   6,1
+dtfs_find_free_native_count:
+        addi    7,1
+        caige   7,01101
+        jrst    dtfs_find_free_native_loop
+        seto    1,
+        pop     17,010
+        popj    17,
+dtfs_find_free_native_found:
+        movem   6,(010)
+        setz    1,
+        pop     17,010
+        popj    17,
+.endif
 
         .globl  dtfs_block_info
         .globl  dtfs_size_words
+.if DTFS_ENABLE_FOREIGN
 dtfs_size_words:
         push    17,010
         push    17,011
@@ -1035,6 +1069,35 @@ dtfs_size_words_zero:
         setz    1,
 dtfs_size_words_return:
         jrst    dtfs_restore2
+.else
+dtfs_size_words:
+        push    17,010
+        move    010,2                   ; slot
+        setz    3,
+        pushj   17,dtfs_block_info
+        jumpe   1,dtfs_size_words_native_zero
+        move    4,010
+        lsh     4,1
+        move    2,dtfs_dir+0124(4)
+        andi    2,077
+        move    3,dtfs_dir+026(010)
+        trne    3,1
+        iori    2,0100
+        cail    2,1
+        cail    2,0200
+        jrst    dtfs_size_words_native_zero
+        move    3,1
+        lsh     1,7
+        sub     1,3
+        add     1,2
+        subi    1,0177
+        pop     17,010
+        popj    17,
+dtfs_size_words_native_zero:
+        setz    1,
+        pop     17,010
+        popj    17,
+.endif
 
         .globl  dtfs_set_name
 dtfs_set_name:

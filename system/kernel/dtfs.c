@@ -98,9 +98,14 @@ dtfs_commit(vnode_t node)
         unsigned int media;
 
         media = dtfs_media[VFS_MOUNT_ID(node) - 1U];
+#if DTFS_ENABLE_ITS
         return dtfs_dtc_write(media & DTFS_MEDIA_UNIT_MASK,
             (media & DTFS_MEDIA_ITS) != 0U ? DTFS_ITS_DIR_BLOCK :
             DTFS_DIR_BLOCK, dtfs_dir);
+#else
+        return dtfs_dtc_write(media & DTFS_MEDIA_UNIT_MASK,
+            DTFS_DIR_BLOCK, dtfs_dir);
+#endif
 }
 
 extern int dtfs_native_scan_slot(const struct vfs_name *name,
@@ -205,6 +210,7 @@ dtfs_header(unsigned int next, unsigned int first, unsigned int count)
             ((kword_t)first << DTFS_FIRST_SHIFT) | (kword_t)count;
 }
 
+#if DTFS_ENABLE_TENEX || DTFS_ENABLE_ITS
 unsigned int
 dtfs_block_info(vnode_t node, unsigned int slot, unsigned int *firstp)
 {
@@ -242,12 +248,42 @@ dtfs_block_info(vnode_t node, unsigned int slot, unsigned int *firstp)
         }
         return count;
 }
+#else
+unsigned int
+dtfs_block_info(vnode_t node, unsigned int slot, unsigned int *firstp)
+{
+        unsigned int block;
+        unsigned int count;
+        unsigned int owner;
+        unsigned int unit;
+
+        owner = slot + 1U;
+        count = 0U;
+        if (firstp != 0)
+                *firstp = 0U;
+        unit = dtfs_media[VFS_MOUNT_ID(node) - 1U] & DTFS_MEDIA_UNIT_MASK;
+        for (block = 1U; block != DTFS_LAST_BLOCK + 1U; ++block) {
+                if (dtfs_owner(0U, block) != owner)
+                        continue;
+                ++count;
+                if (firstp != 0 && *firstp == 0U) {
+                        if (dtfs_dtc_read(unit, block, dtfs_block) != 0)
+                                return 0U;
+                        if (((dtfs_block[0] >> DTFS_FIRST_SHIFT) &
+                            DTFS_BLOCKNO_MASK) == block)
+                                *firstp = block;
+                }
+        }
+        return count;
+}
+#endif
 
 extern unsigned int dtfs_size_words(vnode_t node, unsigned int slot);
 
 extern int dtfs_find_free_block(unsigned int start, int tenex,
     unsigned int *blockp);
 
+#if DTFS_ENABLE_ITS
 static int
 dtfs_its_resize(vnode_t node, unsigned int words, int grow_only)
 {
@@ -303,6 +339,8 @@ dtfs_its_resize(vnode_t node, unsigned int words, int grow_only)
         }
         return 0;
 }
+
+#endif
 
 static int
 dtfs_resize(vnode_t node, unsigned int words)
