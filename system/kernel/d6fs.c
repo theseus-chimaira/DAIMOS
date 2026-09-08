@@ -32,6 +32,7 @@ d6fs_fcb_decode_valid(const kword_t fcb[D6FS_FCB_WORDS],
         unsigned int i;
         unsigned int high;
         kword_t run;
+        kword_t highs;
         kword_t start;
         kword_t blocks;
         kword_t capacity;
@@ -65,9 +66,10 @@ d6fs_fcb_decode_valid(const kword_t fcb[D6FS_FCB_WORDS],
         if (info->parent_fcb >= fcb_count)
                 return 0;
         capacity = 0UL;
+        highs = fcb[D6FS_FCB_LENHIGH];
         for (i = 0U; i < D6FS_EXTENTS; ++i) {
-                high = (unsigned int)((fcb[D6FS_FCB_LENHIGH] >>
-                    (i * 5U)) & 037UL);
+                high = (unsigned int)(highs & 037UL);
+                highs >>= 5U;
                 run = fcb[D6FS_FCB_EXTENT0 + i];
                 if (i >= info->extent_count) {
                         if (run != 0UL || high != 0U)

@@ -1,4 +1,5 @@
 #include "file.h"
+#include "fs_mres.h"
 
 extern struct file file_table[FILE_NFILE];
 extern vnode_t file_cwd;
@@ -48,8 +49,7 @@ file_walk_path_at(const kword_t *path, int parent_only,
         if (n == 0U || n > FILE_PATH_MAX_CHARS)
                 return -1;
         words = 1U + (n + 5U) / 6U;
-        for (i = 0U; i < FILE_PATH_WORDS; ++i)
-                work[i] = i < words ? path[i] : 0UL;
+        fs_copy_words(path, work, words);
 
 restart:
         n = (unsigned int)work[0];
@@ -103,8 +103,6 @@ restart:
                                         return -1;
                                 target_chars = (unsigned int)st.size_chars;
                                 target_words = (target_chars + 5U) / 6U;
-                                for (i = 0U; i < FILE_PATH_WORDS; ++i)
-                                        combined[i] = 0UL;
                                 if (vfs_read_words(next, 0U, &combined[1],
                                     target_words) != (int)target_words)
                                         return -1;
@@ -127,8 +125,7 @@ restart:
                                 }
                                 combined[0] = out;
                                 words = 1U + (out + 5U) / 6U;
-                                for (i = 0U; i < FILE_PATH_WORDS; ++i)
-                                        work[i] = i < words ? combined[i] : 0UL;
+                                fs_copy_words(combined, work, words);
                                 start_node = node;
                                 ++depth;
                                 goto restart;
@@ -191,17 +188,15 @@ file_open(const kword_t *path, unsigned int flags)
                 st.size_chars = 0;
         }
         fd = file_new_fd(node, flags, st.type == VFS_TYPE_DIR);
-        if (fd >= 0) {
-                fp = file_find(fd);
-                if (fp != 0) {
-                        fp->meta |= (kword_t)((unsigned int)fd + 1U) <<
-                            FILE_META_DESC_SHIFT;
-                        if (st.type == VFS_TYPE_REG)
-                                fp->meta |= FILE_META_REGULAR;
-                        if ((flags & FILE_O_APPEND) != 0U)
-                                fp->off_chars = st.size_chars;
-                }
-        }
+        if (fd < 0)
+                return fd;
+        fp = &file_table[(unsigned int)fd - FILE_FD_FIRST];
+        fp->meta |= (kword_t)((unsigned int)fd + 1U) <<
+            FILE_META_DESC_SHIFT;
+        if (st.type == VFS_TYPE_REG)
+                fp->meta |= FILE_META_REGULAR;
+        if ((flags & FILE_O_APPEND) != 0U)
+                fp->off_chars = st.size_chars;
         return fd;
 }
 
@@ -235,9 +230,7 @@ file_dup(int fd)
             (src->meta & FILE_META_DIR) != 0U);
         if (newfd < 0)
                 return -1;
-        dst = file_find(newfd);
-        if (dst == 0)
-                return -1;
+        dst = &file_table[(unsigned int)newfd - FILE_FD_FIRST];
         dst->off_chars = src->off_chars;
         dst->meta |= ((kword_t)FILE_META_DESC(src->meta) <<
             FILE_META_DESC_SHIFT) |
