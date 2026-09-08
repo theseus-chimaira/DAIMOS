@@ -6,6 +6,13 @@
 
 #define PROC_SWAP_RECORD_WORDS 3U
 
+struct proc_swap_record {
+        vnode_t backing;
+        kword_t image_span;          /* LH text words, RH initialized image. */
+        kword_t disk_span;           /* LH first SWAP block, RH block count. */
+};
+
+extern struct proc_swap_record *proc_swap_records;
 int proc_swap_boot_init(unsigned int slots);
 
 void proc_swap_attach(unsigned int slot, vnode_t backing,

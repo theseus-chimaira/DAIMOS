@@ -20,8 +20,7 @@ kcore_boot_start(kword_t reclaim_base, kword_t reclaim_words)
                 VFS_SIX6('M', '/', 'I', 'N', 'I', 'T')
         };
 
-        if (mm_add_free(reclaim_base, reclaim_words) != MM_OK ||
-            proc_boot_init() != 0)
+        if (mm_add_free(reclaim_base, reclaim_words) != MM_OK)
                 return;
         mach_user_trap_init();
         proc_table[0].meta = 0UL;

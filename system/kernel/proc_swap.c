@@ -12,35 +12,9 @@
 #error "packed swap text field is too small for executable ABI"
 #endif
 
-struct proc_swap_record {
-        vnode_t backing;
-        kword_t image_span;          /* LH text words, RH initialized image. */
-        kword_t disk_span;           /* LH first SWAP block, RH block count. */
-};
-
-static struct proc_swap_record *proc_swap_records;
-#define PROC_SWAP_MM_OWNER 4U
+struct proc_swap_record *proc_swap_records;
 kword_t proc_swap_words_read;
 kword_t proc_swap_words_written;
-
-int
-proc_swap_boot_init(unsigned int slots)
-{
-        kword_t base;
-        kword_t words;
-        kword_t *wp;
-
-        if (proc_swap_records != 0 || slots == 0U || slots > PROC_MAX_SLOTS)
-                return -1;
-        words = (kword_t)slots * (kword_t)PROC_SWAP_RECORD_WORDS;
-        if (mm_alloc(words, MM_TYPE_KERNEL_DYNAMIC, PROC_SWAP_MM_OWNER,
-            MM_ALLOC_LOW, &base) != MM_OK)
-                return -1;
-        wp = (kword_t *)(unsigned long)base;
-        fs_zero_words(wp, (unsigned int)words);
-        proc_swap_records = (struct proc_swap_record *)(unsigned long)base;
-        return 0;
-}
 
 static kword_t
 proc_swap_disk_blocks(void)

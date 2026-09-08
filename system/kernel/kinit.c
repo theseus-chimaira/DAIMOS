@@ -5,6 +5,7 @@
 #include "kboot.h"
 #include "mm.h"
 #include "module_runtime.h"
+#include "proc.h"
 
 int kfs_boot_prepare(kword_t future_free_words);
 
@@ -304,6 +305,8 @@ kinit_enter(void)
         kinit_diag_finished();
 #endif
         kinit_boot();
+        if (proc_boot_init() != 0)
+                kinit_halt();
         {
                 kword_t reclaim_end;
                 kword_t image_end;

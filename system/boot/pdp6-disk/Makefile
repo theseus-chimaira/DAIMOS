@@ -26,7 +26,7 @@ KINIT_STAMP := $(BUILD)/.kinit-built
 KCORE_STAMP := $(BUILD)/.kcore-built
 KERNEL_INPUTS := $(wildcard $(KERNEL_DIR)/*.c $(KERNEL_DIR)/*.h $(KERNEL_DIR)/*.s)
 
-KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot d6fs_boot d6fs_super_boot diskset_boot logstore kinit_io module_io bootbanner_generated
+KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot d6fs_boot d6fs_super_boot diskset_boot logstore proc_boot proc_swap_boot kinit_io module_io bootbanner_generated
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 
