@@ -1,4 +1,5 @@
 #include "proc.h"
+#include "fs_mres.h"
 #include "mm.h"
 #include "proc_swap.h"
 #include "procfs.h"
@@ -56,7 +57,6 @@ proc_boot_init(void)
         kword_t words;
         kword_t *wp;
         unsigned int slots;
-        unsigned int i;
 
         if (proc_table != 0 || proc_slots != 0U)
                 return -1;
@@ -66,8 +66,7 @@ proc_boot_init(void)
             MM_ALLOC_LOW, &base) != MM_OK)
                 return -1;
         wp = (kword_t *)(unsigned long)base;
-        for (i = 0U; (kword_t)i < words; ++i)
-                wp[i] = 0UL;
+        fs_zero_words(wp, (unsigned int)words);
         proc_table = (struct proc *)(unsigned long)base;
         proc_slots = slots;
         proc_high_slot = 1U;
@@ -217,7 +216,6 @@ proc_user_context_init(unsigned int slot, kword_t entry, kword_t stack,
         struct proc *p;
         kword_t base;
         kword_t *ctx;
-        unsigned int i;
 
         if (proc_table == 0 || slot == 0U || slot >= proc_slots)
                 return -1;
@@ -228,8 +226,7 @@ proc_user_context_init(unsigned int slot, kword_t entry, kword_t stack,
             proc_uarea_owner(slot), MM_ALLOC_LOW, &base) != MM_OK)
                 return -1;
         ctx = (kword_t *)(unsigned long)base;
-        for (i = 0U; i < (unsigned int)PROC_UAREA_WORDS; ++i)
-                ctx[i] = 0UL;
+        fs_zero_words(ctx, (unsigned int)PROC_UAREA_WORDS);
         ctx[1] = ac1;
         ctx[2] = ac2;
         ctx[3] = ac3;

@@ -1,4 +1,5 @@
 #include "exec.h"
+#include "fs_mres.h"
 #include "file.h"
 #include "mach_user.h"
 #include "mm.h"
@@ -79,8 +80,7 @@ exec_load_init(struct proc *p, unsigned int owner,
                 return -1;
 
         mem = (kword_t *)(unsigned long)base;
-        for (i = 0U; (kword_t)i < alloc_words; ++i)
-                mem[i] = 0UL;
+        fs_zero_words(mem, (unsigned int)alloc_words);
         if (vfs_read_words(node, header_words,
             mem + EXEC_USER_ORIGIN, image_words) != (int)image_words)
                 goto fail;
