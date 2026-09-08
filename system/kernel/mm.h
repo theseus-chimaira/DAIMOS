@@ -40,9 +40,15 @@ struct mm_extent {
         kword_t meta;           /* pin count, type, owner id. */
 };
 
+struct proc;
+
 extern struct mm_extent mm_extents[MM_MAX_EXTENTS];
 extern kword_t mm_core_words;
 extern unsigned int mm_extent_count;
+extern kword_t mm_compaction_count;
+extern kword_t mm_words_moved;
+extern kword_t mm_allocation_failures;
+extern kword_t mm_loaded_module_words;
 
 void mm_boot_init(kword_t core_words);
 int mm_add_free(kword_t base, kword_t words);
@@ -53,6 +59,9 @@ int mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
 int mm_free(kword_t base, unsigned int type, unsigned int owner);
 int mm_pin(kword_t base);
 int mm_unpin(kword_t base);
+int mm_move_process(struct proc *p, unsigned int owner);
+int mm_move_module(unsigned int owner);
+int mm_compact(kword_t words, kword_t alignment);
 kword_t mm_total_free(void);
 kword_t mm_largest_free(void);
 

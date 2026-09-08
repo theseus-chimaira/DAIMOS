@@ -1,8 +1,15 @@
 #include "mm.h"
+#include "proc.h"
+#include "module_runtime.h"
+#include "proc_swap.h"
 
 struct mm_extent mm_extents[MM_MAX_EXTENTS];
 kword_t mm_core_words;
 unsigned int mm_extent_count;
+kword_t mm_compaction_count;
+kword_t mm_words_moved;
+kword_t mm_allocation_failures;
+kword_t mm_loaded_module_words;
 
 static kword_t
 mm_span(kword_t base, kword_t words)
@@ -27,6 +34,9 @@ mm_delete(unsigned int slot)
 }
 
 static void mm_coalesce(unsigned int slot);
+static int mm_alloc_aligned_raw(kword_t words, kword_t alignment,
+    unsigned int type, unsigned int owner, unsigned int preference,
+    kword_t *basep);
 
 static int
 mm_insert(unsigned int slot, const struct mm_extent *extent)
@@ -49,6 +59,10 @@ mm_boot_init(kword_t core_words)
 {
         mm_core_words = core_words;
         mm_extent_count = 0U;
+        mm_compaction_count = 0UL;
+        mm_words_moved = 0UL;
+        mm_allocation_failures = 0UL;
+        mm_loaded_module_words = 0UL;
 }
 
 /* Add a physically free boot-time range.  KINIT deliberately adds only
@@ -164,8 +178,29 @@ mm_use_free(unsigned int slot, kword_t base, kword_t words,
         return MM_OK;
 }
 
-int
-mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
+static int
+mm_has_aligned_fit(kword_t words, kword_t alignment)
+{
+        struct mm_extent *e;
+        kword_t base;
+        kword_t end;
+        unsigned int i;
+
+        for (i = 0U; i < mm_extent_count; ++i) {
+                e = &mm_extents[i];
+                if (MM_EXTENT_TYPE(e) != MM_TYPE_FREE)
+                        continue;
+                base = (MM_EXTENT_BASE(e) + alignment - 1UL) &
+                    ~(alignment - 1UL);
+                end = MM_EXTENT_BASE(e) + MM_EXTENT_WORDS(e);
+                if (base <= end && words <= end - base)
+                        return 1;
+        }
+        return 0;
+}
+
+static int
+mm_alloc_aligned_raw(kword_t words, kword_t alignment, unsigned int type,
     unsigned int owner, unsigned int preference, kword_t *basep)
 {
         struct mm_extent *freep;
@@ -219,6 +254,223 @@ mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
                         ++i;
         }
         return mm_total_free() >= words ? MM_ERR_FRAGMENTED : MM_ERR_NOMEM;
+}
+
+static struct proc *
+mm_process_owner(unsigned int owner, kword_t base)
+{
+        struct proc *p;
+
+        if (owner >= PROC_NPROC)
+                return 0;
+        p = &proc_table[owner];
+        if (PROC_STATE(p) == PROC_FREE || PROC_MEM_BASE(p) != base)
+                return 0;
+        return p;
+}
+
+int
+mm_move_process(struct proc *p, unsigned int owner)
+{
+        struct mm_extent *extent;
+        kword_t old_base;
+        kword_t new_base;
+        kword_t words;
+        kword_t *src;
+        kword_t *dst;
+        unsigned int i;
+        int rc;
+
+        if (p == 0 || owner >= PROC_NPROC || p != &proc_table[owner] ||
+            PROC_STATE(p) == PROC_FREE || PROC_STATE(p) == PROC_SRUN)
+                return MM_ERR_BUSY;
+        old_base = PROC_MEM_BASE(p);
+        words = PROC_MEM_WORDS(p);
+        extent = 0;
+        for (i = 0U; i < mm_extent_count; ++i) {
+                if (MM_EXTENT_BASE(&mm_extents[i]) == old_base) {
+                        extent = &mm_extents[i];
+                        break;
+                }
+        }
+        if (extent == 0 || MM_EXTENT_TYPE(extent) != MM_TYPE_PROCESS ||
+            MM_EXTENT_OWNER(extent) != owner ||
+            MM_EXTENT_WORDS(extent) != words)
+                return MM_ERR_INVAL;
+        if (MM_EXTENT_PINS(extent) != 0U)
+                return MM_ERR_BUSY;
+
+        rc = mm_alloc_aligned_raw(words, 02000UL, MM_TYPE_PROCESS, owner,
+            MM_ALLOC_HIGH, &new_base);
+        if (rc != MM_OK)
+                return rc;
+        if (new_base <= old_base) {
+                (void)mm_free(new_base, MM_TYPE_PROCESS, owner);
+                return MM_ERR_FRAGMENTED;
+        }
+
+        src = (kword_t *)(unsigned long)old_base;
+        dst = (kword_t *)(unsigned long)new_base;
+        for (i = 0U; (kword_t)i < words; ++i)
+                dst[i] = src[i];
+
+        PROC_SET_MEM_BASE(p, new_base);
+        mm_words_moved += words;
+        rc = mm_free(old_base, MM_TYPE_PROCESS, owner);
+        if (rc != MM_OK) {
+                PROC_SET_MEM_BASE(p, old_base);
+                (void)mm_free(new_base, MM_TYPE_PROCESS, owner);
+                return rc;
+        }
+        return MM_OK;
+}
+
+
+int
+mm_move_module(unsigned int owner)
+{
+        struct mm_extent *extent;
+        kword_t old_base;
+        kword_t new_base;
+        kword_t words;
+        unsigned int i;
+        int rc;
+
+        if (module_moves_enabled == 0U || owner == 0U ||
+            owner > MODULE_RUNTIME_MAX ||
+            MODULE_RUNTIME_IMAGE_WORDS(&module_runtime_descs[owner]) == 0UL)
+                return MM_ERR_BUSY;
+        old_base = MODULE_RUNTIME_BASE(&module_runtime_descs[owner]);
+        words = MODULE_RUNTIME_EXTENT_WORDS(&module_runtime_descs[owner]);
+        if (old_base == 0UL || words == 0UL)
+                return MM_ERR_INVAL;
+        extent = 0;
+        for (i = 0U; i < mm_extent_count; ++i) {
+                if (MM_EXTENT_BASE(&mm_extents[i]) == old_base) {
+                        extent = &mm_extents[i];
+                        break;
+                }
+        }
+        if (extent == 0 || MM_EXTENT_TYPE(extent) != MM_TYPE_MODULE ||
+            MM_EXTENT_OWNER(extent) != owner ||
+            MM_EXTENT_WORDS(extent) != words)
+                return MM_ERR_INVAL;
+        if (MM_EXTENT_PINS(extent) != 0U)
+                return MM_ERR_BUSY;
+
+        rc = mm_alloc_aligned_raw(words, 1UL, MM_TYPE_MODULE, owner,
+            MM_ALLOC_LOW, &new_base);
+        if (rc != MM_OK)
+                return rc;
+        if (new_base >= old_base) {
+                (void)mm_free(new_base, MM_TYPE_MODULE, owner);
+                return MM_ERR_FRAGMENTED;
+        }
+        if (module_runtime_move(owner, new_base) != 0) {
+                (void)mm_free(new_base, MM_TYPE_MODULE, owner);
+                return MM_ERR_INVAL;
+        }
+        mm_words_moved += words;
+        rc = mm_free(old_base, MM_TYPE_MODULE, owner);
+        if (rc != MM_OK)
+                return rc;
+        return MM_OK;
+}
+
+int
+mm_compact(kword_t words, kword_t alignment)
+{
+        struct mm_extent *extent;
+        struct proc *p;
+        kword_t base;
+        unsigned int owner;
+        unsigned int i;
+
+        if (words == 0UL || alignment == 0UL ||
+            (alignment & (alignment - 1UL)) != 0UL)
+                return MM_ERR_INVAL;
+        if (mm_total_free() < words)
+                return MM_ERR_NOMEM;
+        if (mm_has_aligned_fit(words, alignment))
+                return MM_OK;
+        ++mm_compaction_count;
+
+        i = 0U;
+        while (i < mm_extent_count) {
+                extent = &mm_extents[i];
+                if (MM_EXTENT_TYPE(extent) != MM_TYPE_MODULE ||
+                    MM_EXTENT_PINS(extent) != 0U) {
+                        ++i;
+                        continue;
+                }
+                owner = MM_EXTENT_OWNER(extent);
+                if (mm_move_module(owner) != MM_OK) {
+                        ++i;
+                        continue;
+                }
+                if (mm_has_aligned_fit(words, alignment))
+                        return MM_OK;
+                i = 0U;
+        }
+
+        i = 0U;
+        while (i < mm_extent_count) {
+                extent = &mm_extents[i];
+                if (MM_EXTENT_TYPE(extent) != MM_TYPE_PROCESS ||
+                    MM_EXTENT_PINS(extent) != 0U) {
+                        ++i;
+                        continue;
+                }
+                base = MM_EXTENT_BASE(extent);
+                owner = MM_EXTENT_OWNER(extent);
+                p = mm_process_owner(owner, base);
+                if (p == 0 || mm_move_process(p, owner) != MM_OK) {
+                        ++i;
+                        continue;
+                }
+                if (mm_has_aligned_fit(words, alignment))
+                        return MM_OK;
+                i = 0U;
+        }
+        return MM_ERR_FRAGMENTED;
+}
+
+int
+mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
+    unsigned int owner, unsigned int preference, kword_t *basep)
+{
+        int rc;
+
+        rc = mm_alloc_aligned_raw(words, alignment, type, owner,
+            preference, basep);
+        if (rc == MM_ERR_FRAGMENTED) {
+                rc = mm_compact(words, alignment);
+                if (rc == MM_OK)
+                        rc = mm_alloc_aligned_raw(words, alignment, type, owner,
+                            preference, basep);
+        }
+        if (rc == MM_OK)
+                return MM_OK;
+        if (rc != MM_ERR_NOMEM) {
+                ++mm_allocation_failures;
+                return rc;
+        }
+        if (proc_swap_reclaim(words, alignment,
+            type == MM_TYPE_PROCESS ? owner : PROC_NPROC) != 0) {
+                ++mm_allocation_failures;
+                return MM_ERR_NOMEM;
+        }
+        rc = mm_alloc_aligned_raw(words, alignment, type, owner,
+            preference, basep);
+        if (rc == MM_ERR_FRAGMENTED) {
+                rc = mm_compact(words, alignment);
+                if (rc == MM_OK)
+                        rc = mm_alloc_aligned_raw(words, alignment, type, owner,
+                            preference, basep);
+        }
+        if (rc != MM_OK)
+                ++mm_allocation_failures;
+        return rc;
 }
 
 int

@@ -6,7 +6,7 @@
 ; reconstructs a round-robin opaque
 ; image stream across one to four
 ; members, skips each member's bad-run
-; table, loads the image at 040000,
+; table, loads the image at 030000,
 ; and jumps to its relative entry point.
 
         .text
@@ -58,14 +58,14 @@ stage1_have_set:
 stage1_magic_ok:
         hlrz 03,buffer+000001
         hrrz 04,buffer+000001
-        movei 05,040000
+        movei 05,030000
         add 05,03
         movem 05,kinit_stack_base
-        movei 05,040000
+        movei 05,030000
         add 05,04
         movem 05,entry_addr
 
-        movei 010,040000
+        movei 010,030000
         move 011,03
         movei 06,buffer+000002
         movei 07,0176

@@ -40,6 +40,8 @@ struct fs_mres_request {
 extern kword_t fs_memfs_service_jump;
 extern kword_t fs_dtfs_service_jump;
 extern kword_t fs_d6fs_service_jump;
+extern kword_t diskset_runtime_service_jump;
+int diskset_runtime_call(void *request);
 extern kword_t sys_memfs_usage_call;
 extern kword_t sys_dtfs_format_jump;
 extern kword_t sys_dtfs_mount_jump;

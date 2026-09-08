@@ -155,7 +155,7 @@ boot_add_dir(unsigned int slot, unsigned int parent, kword_t word,
 }
 
 int
-kfs_boot_prepare(void)
+kfs_boot_prepare(kword_t future_free_words)
 {
         const kword_t *image;
         const kword_t *strings;
@@ -263,10 +263,21 @@ kfs_boot_prepare(void)
         {
                 kword_t ramfs_base;
                 kword_t ramfs_words;
+                kword_t spare_words;
 
                 ramfs_words = mm_largest_free();
                 if (ramfs_words > KBOOT_RAMFS0_MAX_WORDS)
                         ramfs_words = KBOOT_RAMFS0_MAX_WORDS;
+                spare_words = mm_total_free();
+                if (future_free_words > MM_HALF_MASK - spare_words)
+                        spare_words = MM_HALF_MASK;
+                else
+                        spare_words += future_free_words;
+                if (spare_words <= KBOOT_FIRST_USER_RESERVE_WORDS)
+                        return -1;
+                spare_words -= KBOOT_FIRST_USER_RESERVE_WORDS;
+                if (ramfs_words > spare_words)
+                        ramfs_words = spare_words;
                 if (ramfs_words < KBOOT_RAMFS0_MIN_WORDS ||
                     mm_alloc(ramfs_words, MM_TYPE_KERNEL_DYNAMIC, 1U,
                     MM_ALLOC_LOW, &ramfs_base) != MM_OK)

@@ -3,7 +3,8 @@
 
 #include "proc.h"
 
-#define EXEC_DXR_HDR_WORDS          2U
+#define EXEC_DXR_BASE_HDR_WORDS     2U
+#define EXEC_DXR_EXT_HDR_WORDS      3U
 #define EXEC_DXR_BSS_MASK           0177777U
 #define EXEC_DXR_F_PURE             0200000U
 #define EXEC_DXR_F_IMPURE           0400000U
@@ -12,6 +13,7 @@
 #define EXEC_PDP6_ALIGN_WORDS        02000U
 #define EXEC_DXR_MAX_IMAGE_WORDS    036000U
 #define EXEC_DXR_MAX_BSS_WORDS      020000U
+#define EXEC_DXR_TEXT_TAG            0647022U /* SIXBIT /TX2/ */
 
 int exec_load_init(struct proc *p, unsigned int owner,
     const kword_t *path);

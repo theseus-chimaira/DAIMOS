@@ -1,8 +1,5 @@
 #include "kinit.h"
 #include "kboot.h"
-#include "exec.h"
-#include "mach_user.h"
-#include "proc.h"
 #include "d6fs_boot.h"
 #include "dsk270.h"
 #include "module.h"
@@ -49,22 +46,5 @@ kinit_boot(void)
                         }
                 }
         }
-        mach_user_trap_init();
-        proc_table[0].meta =
-            (kword_t)PROC_SRUN << PROC_STATE_SHIFT;
-        p = &proc_table[1];
-        {
-                static const kword_t init_path[] = {
-                        12UL,
-                        VFS_SIX6('/','S','Y','S','T','E'),
-                        VFS_SIX6('M','/','I','N','I','T')
-                };
 
-                if (exec_load_init(p, 1U, init_path) != 0) {
-                        return;
-                }
-        }
-        mach_enter_user(PROC_MEM_BASE(p), PROC_ENTRY(p),
-            PROC_MEM_WORDS(p) -
-            (kword_t)EXEC_DXR_STACK_WORDS - 1U, 0, 0, 0);
 }

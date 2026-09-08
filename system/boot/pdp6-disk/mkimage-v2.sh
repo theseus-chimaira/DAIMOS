@@ -29,7 +29,7 @@ sym()
         printf '%s\n' "$value"
 }
 
-IMAGE_BASE=$((040000))
+IMAGE_BASE=$((030000))
 KCORE_BASE=$((060))
 KINIT_32K_TOP=$((0100000))
 KINIT_MIN_STACK_WORDS=$((04000))

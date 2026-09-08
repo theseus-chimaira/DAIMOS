@@ -25,15 +25,15 @@ KINIT_STAMP := $(BUILD)/.kinit-built
 KCORE_STAMP := $(BUILD)/.kcore-built
 KERNEL_INPUTS := $(wildcard $(KERNEL_DIR)/*.c $(KERNEL_DIR)/*.h $(KERNEL_DIR)/*.s)
 
-KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot exec d6fs_boot d6fs_super_boot diskset_boot logstore mach_enter_user kinit_io module_io bootbanner_generated
+KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot d6fs_boot d6fs_super_boot diskset_boot logstore kinit_io module_io bootbanner_generated
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 
-KCORE_C_NAMES = vfs devicefs mm file
+KCORE_C_NAMES = vfs devicefs mm module_runtime proc_swap exec kcore_boot file
 KCORE_FIXED_NAMES = $(KCORE_C_NAMES) ret_pdp10 \
 	dsk270_pdp10 kfmt_pdp10 vfs_pdp10 fs_mres_pdp10 file_pdp10 proc_pdp10 \
 	device_state_pdp10 procfs_pdp10 devicefs_pdp10 syscall_info_pdp10 \
-	syscall_dispatch mach_user kcore_io storage_router kcore_end
+	syscall_dispatch mach_user mach_enter_user kcore_handoff kcore_io storage_router kcore_end
 KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))
 KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
 MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io dcs_io ge_io dpy_io \
@@ -266,7 +266,7 @@ $(DISKBOOT_INITFS_OBJ): $(DISKBOOT_INITFS_ASM)
 
 $(IMAGE_DXR): $(MINIT_TABLE_OBJ) $(KCORE_EMBED_OBJ) $(KINIT_OBJS) \
     $(MRES_PACKAGE_OBJS) $(DISKBOOT_INITFS_OBJ) $(END_OBJ) $(KCORE_MAP)
-	$(DLINK) -b 040000 -A $(KCORE_MAP) -o $@ -M $(IMAGE_MAP) \
+	$(DLINK) -b 030000 -A $(KCORE_MAP) -o $@ -M $(IMAGE_MAP) \
 	    $(MINIT_TABLE_OBJ) $(KCORE_EMBED_OBJ) $(KINIT_OBJS) \
 	    $(MRES_PACKAGE_OBJS) $(DISKBOOT_INITFS_OBJ) $(END_OBJ)
 
@@ -274,12 +274,12 @@ $(IMAGE_MAP): $(IMAGE_DXR)
 	@test -f $@
 
 $(IMAGE_RIM): $(IMAGE_DXR)
-	$(DXRCONVERT) --simh -b 040000 $< $@
+	$(DXRCONVERT) --simh -b 030000 $< $@
 
 $(IMAGE_RAW): $(IMAGE_RIM) $(IMAGE_MAP)
 	end=`awk '$$1 == "__kinit_image_end" { print $$2 }' $(IMAGE_MAP)`; \
-	test -n "$$end"; words=$$((0$$end - 040000)); words=`printf '%o' "$$words"`; \
-	$(MKSTREAM) -i $(IMAGE_RIM) -o $@ -b 040000 -w "$$words"
+	test -n "$$end"; words=$$((0$$end - 030000)); words=`printf '%o' "$$words"`; \
+	$(MKSTREAM) -i $(IMAGE_RIM) -o $@ -b 030000 -w "$$words"
 
 $(IMAGE_WORDS): $(IMAGE_RAW) $(IMAGE_MAP) $(KCORE_STREAM) $(KCORE_MAP) mkimage-v2.sh
 	./mkimage-v2.sh --map $(IMAGE_MAP) --input $(IMAGE_RAW) \

@@ -6,6 +6,16 @@
         .globl fs_d6fs_service_jump
         .globl fs_mres_no_service
 
+        .globl diskset_runtime_call
+        .globl diskset_runtime_service_jump
+
+; Stable KCORE bridge to the movable DISKSET MRES dispatcher.
+; AC1 points at struct diskset_mres_request.
+diskset_runtime_call:
+        xct     diskset_runtime_service_jump
+diskset_runtime_service_jump:
+        jrst    fs_mres_no_service
+
 ; int fs_provider_call(provider, request)
 ; Provider topology is frozen by MINIT.  The three JRST words below are
 ; patched once at boot, avoiding resident service pointers and indirect calls.

@@ -2,17 +2,15 @@
 #define DAIMON_MRES_H
 
 #include "kinit.h"
+#include "mres_reloc.h"
 
 #define MRES_MAGIC              SIXBIT("MRES1 ")
 #define MRES_HEADER_WORDS       3U
-#define MRES_RELOC_NONE         0U
-#define MRES_RELOC_RH18         1U
-#define MRES_RELOC_LH18         2U
-#define MRES_RELOC_BOTH         3U
 
 extern kword_t __kcore_load_begin;
 extern kword_t __kcore_low_init_end;
 extern kword_t __kcore_low_end;
+extern unsigned int mres_last_owner;
 
 void kcore_load(void);
 void mres_init(void);

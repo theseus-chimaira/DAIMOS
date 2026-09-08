@@ -17,6 +17,7 @@
 #include "fs_mres.h"
 #include "diskset_mres.h"
 #include "devicefs.h"
+#include "module_runtime.h"
 
 #define CTY_X_HANDLER           0U
 #define CTY_X_PUTCHAR           1U
@@ -92,6 +93,8 @@ extern kword_t native_sys_putchar_call;
 static unsigned int pi_level_count[PDP10_PI_LEVELS + 1U];
 
 static void storage_patch_jump(kword_t *word, unsigned int address);
+static void storage_patch_module_jump(unsigned int base, kword_t *word,
+    unsigned int address);
 static unsigned int pi_handler_total;
 static unsigned int pi_enabled_mask;
 
@@ -665,10 +668,8 @@ dpy_minit(void)
         putword = minit_export(name, base, DPY_X_PUTWORD);
         address = minit_export(name, base, DPY_X_CLK_PI_SERVICE_CALL);
         if (clk_pi_service_addr != 0U)
-                *(kword_t *)(unsigned long)address =
-                    (*(kword_t *)(unsigned long)address &
-                    ~((kword_t)KINIT_HALF_MASK)) |
-                    (kword_t)clk_pi_service_addr;
+                storage_patch_module_jump(base,
+                    (kword_t *)(unsigned long)address, clk_pi_service_addr);
 
         /* DPY and the APR line clock share one PI6 table entry. */
         if (clk_pi_handler_addr != 0U) {
@@ -708,19 +709,16 @@ tty_minit(void)
         base = minit_install(name);
         address = minit_export(name, base, TTY_X_CTY_PUTCHAR_ADDR);
         if (cty_putchar != 0U)
-                *(kword_t *)(unsigned long)address =
-                    (*(kword_t *)(unsigned long)address &
-                    ~((kword_t)KINIT_HALF_MASK)) | (kword_t)cty_putchar;
+                storage_patch_module_jump(base,
+                    (kword_t *)(unsigned long)address, cty_putchar);
         address = minit_export(name, base, TTY_X_DCS_PUTCHAR_ADDR);
         if (dcs_putchar != 0U)
-                *(kword_t *)(unsigned long)address =
-                    (*(kword_t *)(unsigned long)address &
-                    ~((kword_t)KINIT_HALF_MASK)) | (kword_t)dcs_putchar;
+                storage_patch_module_jump(base,
+                    (kword_t *)(unsigned long)address, dcs_putchar);
         address = minit_export(name, base, TTY_X_GE_PUTCHAR_ADDR);
         if (ge_putchar != 0U)
-                *(kword_t *)(unsigned long)address =
-                    (*(kword_t *)(unsigned long)address &
-                    ~((kword_t)KINIT_HALF_MASK)) | (kword_t)ge_putchar;
+                storage_patch_module_jump(base,
+                    (kword_t *)(unsigned long)address, ge_putchar);
         module_service_set(MODULE_SERVICE_TTY_PUTCHAR,
             minit_export(name, base, TTY_X_PUTCHAR));
         minit_diag_loaded(name);
@@ -800,6 +798,24 @@ storage_patch_jump(kword_t *word, unsigned int address)
 {
         *word = (*word & ~((kword_t)KINIT_HALF_MASK)) |
             (kword_t)(address & KINIT_HALF_MASK);
+}
+
+static void
+storage_patch_module_jump(unsigned int base, kword_t *word,
+    unsigned int address)
+{
+        kword_t offset;
+
+        storage_patch_jump(word, address);
+        if (mres_last_owner == 0U || mres_last_owner > MODULE_RUNTIME_MAX ||
+            module_dynamic_binding_count >= MODULE_DYNAMIC_BIND_MAX)
+                return;
+        offset = (kword_t)(unsigned long)word - (kword_t)base;
+        if (offset >= MODULE_RUNTIME_IMAGE_WORDS(
+            &module_runtime_descs[mres_last_owner]))
+                return;
+        module_dynamic_bindings[module_dynamic_binding_count++] =
+            ((kword_t)mres_last_owner << 18U) | offset;
 }
 
 static void
@@ -926,9 +942,11 @@ dtfs_minit(void)
                 service = minit_export(name, base, 0U);
                 storage_patch_jump(&fs_dtfs_service_jump, service);
                 state_addr = minit_export(name, base, 1U);
-                storage_patch_jump((kword_t *)(unsigned long)state_addr, read_addr);
+                storage_patch_module_jump(base,
+                    (kword_t *)(unsigned long)state_addr, read_addr);
                 state_addr = minit_export(name, base, 2U);
-                storage_patch_jump((kword_t *)(unsigned long)state_addr, write_addr);
+                storage_patch_module_jump(base,
+                    (kword_t *)(unsigned long)state_addr, write_addr);
                 storage_patch_jump(&sys_dtfs_format_jump,
                     minit_export(name, base, 3U));
                 storage_patch_jump(&sys_dtfs_mount_jump,
@@ -956,6 +974,7 @@ diskset_minit(void)
         diskset_total_addr = minit_export(name, base, 2U);
         diskset_read_addr = minit_export(name, base, 3U);
         diskset_write_addr = minit_export(name, base, 4U);
+        storage_patch_jump(&diskset_runtime_service_jump, service);
         module_service_set(MODULE_SERVICE_DISKSET, service);
         minit_diag_loaded(name);
 }
@@ -982,9 +1001,9 @@ d6fs_minit(void)
         d6fs_diskset_read_addr = minit_export(name, base, 1U);
         d6fs_diskset_write_addr = minit_export(name, base, 2U);
         d6fs_provider_reader_addr = minit_export(name, base, 3U);
-        storage_patch_jump((kword_t *)(unsigned long)
+        storage_patch_module_jump(base, (kword_t *)(unsigned long)
             minit_export(name, base, 4U), diskset_read_addr);
-        storage_patch_jump((kword_t *)(unsigned long)
+        storage_patch_module_jump(base, (kword_t *)(unsigned long)
             minit_export(name, base, 5U), diskset_write_addr);
         minit_diag_loaded(name);
 }

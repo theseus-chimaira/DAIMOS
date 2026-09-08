@@ -151,3 +151,18 @@ pdp10_pi_handlers:
         .block 013
 pdp10_pi_level_span:
         .block 07
+
+; Save the PI state and suppress new priority interrupts while MM publishes a
+; relocated module.  The caller restores only the global on/off state; level
+; enables remain untouched by CONO PI,0400/0200.
+        .globl mach_pi_disable
+        .globl mach_pi_restore
+mach_pi_disable:
+        coni 0004,1
+        cono 0004,000400
+        popj 017,
+mach_pi_restore:
+        trnn 1,000200
+        popj 017,
+        cono 0004,000200
+        popj 017,

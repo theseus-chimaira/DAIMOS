@@ -15,6 +15,7 @@
 #define PROC_SRUN   2U
 #define PROC_SLEEP  3U
 #define PROC_ZOMB   4U
+#define PROC_SSWAP  5U
 
 #define PROC_PID_MASK       0377UL
 #define PROC_PARENT_MASK    0177UL
@@ -25,6 +26,8 @@
 #define PROC_HALF_SHIFT     18U
 #define PROC_ENTRY_SHIFT    18U
 #define PROC_CTX_WORDS      3U
+#define PROC_STATE_BITS \
+        ((kword_t)PROC_STATE_MASK << PROC_STATE_SHIFT)
 
 struct proc {
         kword_t meta;
@@ -53,6 +56,13 @@ void proc_wakeup_event(volatile kword_t *eventp);
         ((kword_t)(((p)->mem_layout >> PROC_HALF_SHIFT) & PROC_HALF_MASK))
 #define PROC_ENTRY(p) \
         ((kword_t)(((p)->meta >> PROC_ENTRY_SHIFT) & PROC_HALF_MASK))
+#define PROC_SET_STATE(p, s) \
+        ((p)->meta = ((p)->meta & ~PROC_STATE_BITS) | \
+        ((kword_t)((s) & PROC_STATE_MASK) << PROC_STATE_SHIFT))
+#define PROC_SET_MEM_BASE(p, b) \
+        ((p)->mem_layout = ((p)->mem_layout & \
+        ((kword_t)PROC_HALF_MASK << PROC_HALF_SHIFT)) | \
+        ((kword_t)(b) & PROC_HALF_MASK))
 
 
 #endif

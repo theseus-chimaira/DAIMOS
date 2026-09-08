@@ -4,14 +4,16 @@
 #include "mres.h"
 #include "kboot.h"
 #include "mm.h"
+#include "module_runtime.h"
 
-int kfs_boot_prepare(void);
+int kfs_boot_prepare(kword_t future_free_words);
 
 extern kword_t sys_resident_words_immediate;
 extern kword_t __kinit_image_end;
 
 static unsigned int mres_next_addr;
 static unsigned int mres_owner_next;
+unsigned int mres_last_owner;
 static const kword_t *module_mres_package;
 static unsigned int module_services[MODULE_SERVICE_COUNT];
 kword_t kinit_boot_handoff[2];
@@ -58,6 +60,7 @@ mres_init(void)
 #endif
         mres_next_addr = (unsigned int)(unsigned long)&__kcore_low_end;
         mres_owner_next = 1U;
+        mres_last_owner = 0U;
 }
 
 int
@@ -94,10 +97,16 @@ mres_install(const kword_t *package, unsigned int *basep)
         {
                 kword_t alloc_base;
 
-                if ((kword_t)init_words + (kword_t)bss_words > KINIT_HALF_MASK ||
-                    mm_alloc((kword_t)init_words + (kword_t)bss_words,
-                    MM_TYPE_MODULE, mres_owner_next, MM_ALLOC_LOW,
-                    &alloc_base) != MM_OK)
+                kword_t image_words;
+                kword_t extent_words;
+
+                image_words = (kword_t)init_words + (kword_t)bss_words;
+                extent_words = image_words + (kword_t)map_words;
+                if (image_words > KINIT_HALF_MASK ||
+                    extent_words > KINIT_HALF_MASK ||
+                    mres_owner_next > MODULE_RUNTIME_MAX ||
+                    mm_alloc(extent_words, MM_TYPE_MODULE, mres_owner_next,
+                    MM_ALLOC_LOW, &alloc_base) != MM_OK)
                         return -1;
                 base = (unsigned int)alloc_base;
         }
@@ -123,9 +132,22 @@ mres_install(const kword_t *package, unsigned int *basep)
         }
         for (i = 0U; i < bss_words; ++i)
                 dst[init_words + i] = 0;
-        if (base + init_words + bss_words > mres_next_addr)
-                mres_next_addr = base + init_words + bss_words;
+        for (i = 0U; i < map_words; ++i)
+                dst[init_words + bss_words + i] = map[i];
+        if (mres_owner_next == 0U || mres_owner_next > MODULE_RUNTIME_MAX ||
+            MODULE_RUNTIME_IMAGE_WORDS(&module_runtime_descs[mres_owner_next]) !=
+            0UL)
+                goto fail;
+        module_runtime_descs[mres_owner_next].span =
+            (((kword_t)init_words + (kword_t)bss_words) << 18U) |
+            (kword_t)base;
+        module_runtime_descs[mres_owner_next].reloc =
+            ((kword_t)init_words << 18U) | (kword_t)map_words;
+        mm_loaded_module_words += (kword_t)init_words + (kword_t)bss_words;
+        if (base + init_words + bss_words + map_words > mres_next_addr)
+                mres_next_addr = base + init_words + bss_words + map_words;
         *basep = base;
+        mres_last_owner = mres_owner_next;
         ++mres_owner_next;
         return 0;
 
@@ -211,6 +233,7 @@ module_run_minits(void)
                         kinit_call18(entry);
         }
         module_mres_package = 0;
+        module_moves_enabled = 1U;
 }
 
 void
@@ -220,6 +243,7 @@ kinit_enter(void)
         KINIT_TRACE(KINIT_ENTER);
 #endif
         unsigned int memory_kwords;
+        kword_t kernel_stack_base;
 
         kcore_load();
         memory_kwords = kinit_memory_kwords();
@@ -250,6 +274,10 @@ kinit_enter(void)
                                 kinit_halt();
                 }
         }
+        if (mm_alloc(02000UL, MM_TYPE_KERNEL_DYNAMIC, 2U, MM_ALLOC_LOW,
+            &kernel_stack_base) != MM_OK ||
+            mm_pin(kernel_stack_base) != MM_OK)
+                kinit_halt();
         kinit_diag_banner();
         kinit_save_boot_handoff();
         module_pi_init();
@@ -259,11 +287,33 @@ kinit_enter(void)
         sys_resident_words_immediate =
             (sys_resident_words_immediate & ~((kword_t)KINIT_HALF_MASK)) |
             (kword_t)mres_next_addr;
-        if (kfs_boot_prepare() != 0)
-                kinit_halt();
+        {
+                kword_t image_end;
+                kword_t reclaim_end;
+                kword_t future_free_words;
+
+                image_end = (kword_t)(unsigned long)&__kinit_image_end;
+                reclaim_end = image_end + KINIT_STACK_RESERVE_WORDS;
+                if (reclaim_end > mm_core_words)
+                        kinit_halt();
+                future_free_words = reclaim_end - KINIT_IMAGE_BASE;
+                if (kfs_boot_prepare(future_free_words) != 0)
+                        kinit_halt();
+        }
 #ifdef KINIT_DEBUG
         kinit_diag_finished();
 #endif
         kinit_boot();
+        {
+                kword_t reclaim_end;
+                kword_t image_end;
+
+                image_end = (kword_t)(unsigned long)&__kinit_image_end;
+                reclaim_end = image_end + KINIT_STACK_RESERVE_WORDS;
+                if (reclaim_end > mm_core_words)
+                        kinit_halt();
+                kcore_boot_handoff(kernel_stack_base, KINIT_IMAGE_BASE,
+                    reclaim_end - KINIT_IMAGE_BASE);
+        }
         kinit_halt();
 }
