@@ -1,4 +1,5 @@
 #include "module_runtime.h"
+#include "fs_mres.h"
 #include "kcore_pi.h"
 #include "mres_reloc.h"
 
@@ -96,8 +97,7 @@ module_runtime_move(unsigned int owner, unsigned int new_base)
         total_words = (int)MODULE_RUNTIME_EXTENT_WORDS(d);
         src = (kword_t *)(unsigned long)old_base;
         dst = (kword_t *)(unsigned long)new_base;
-        for (i = 0; i < total_words; ++i)
-                dst[i] = src[i];
+        fs_copy_words(src, dst, (unsigned int)total_words);
         /* Modules are packed downward, so relocation is a single base
          * subtraction.  Walk the two-bit map sequentially; division by 18 in
          * the inner loop is unnecessarily expensive on PDP-6. */

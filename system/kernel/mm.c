@@ -2,6 +2,7 @@
 #include "proc.h"
 #include "module_runtime.h"
 #include "proc_swap.h"
+#include "fs_mres.h"
 
 struct mm_extent mm_extents[MM_MAX_EXTENTS];
 kword_t mm_core_words;
@@ -335,8 +336,7 @@ mm_move_process(struct proc *p, unsigned int owner)
 
         src = (kword_t *)(unsigned long)old_base;
         dst = (kword_t *)(unsigned long)new_base;
-        for (i = 0U; (kword_t)i < words; ++i)
-                dst[i] = src[i];
+        fs_copy_words(src, dst, (unsigned int)words);
 
         PROC_SET_MEM_BASE(p, new_base);
         mm_words_moved += words;
