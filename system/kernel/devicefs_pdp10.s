@@ -358,10 +358,8 @@ devicefs_stats_device:
 devicefs_stats_readchar:
         setz    6,                     ; line number
 devicefs_stats_line_loop:
-        caile   2,015                  ; 016 chars: 12 digits + CR LF
-        jrst    devicefs_stats_next_line
+        caig    2,015                  ; select once offset is inside a line
         jrst    devicefs_stats_select
-devicefs_stats_next_line:
         subi    2,016
         aoja    6,devicefs_stats_line_loop
 
@@ -469,13 +467,8 @@ devicefs_stats_emit:
         addi    0,060
         jrst    devicefs_stats_store
 devicefs_stats_eol:
+        movei   0,015                  ; normalized offset is either CR or LF
         caie    2,014
-        jrst    devicefs_stats_lf
-        movei   0,015
-        jrst    devicefs_stats_store
-devicefs_stats_lf:
-        caie    2,015
-        jrst    pdp10_ret_zero
         movei   0,012
 devicefs_stats_store:
         movem   0,(3)
