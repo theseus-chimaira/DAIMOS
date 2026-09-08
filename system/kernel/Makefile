@@ -19,7 +19,7 @@ ifeq ($(KINIT_DEBUG),1)
 KINIT_CPPFLAGS += -DKINIT_DEBUG
 endif
 
-KCORE_C_SRCS = vfs.c devicefs.c \
+KCORE_C_SRCS = vfs.c devicefs.c mm.c \
 	file.c
 KCORE_C_ASM = $(KCORE_C_SRCS:%.c=$(BUILD)/%.s)
 KCORE_FIXED_ASM = $(KCORE_C_ASM) \
@@ -38,7 +38,7 @@ MRES_ASM = $(BUILD)/dtfs.s $(MRES_C_ASM) $(BUILD)/cty_io.s $(BUILD)/clk_io.s \
 kinit: $(KINIT_ASM)
 kcore: $(KCORE_FIXED_ASM) $(MRES_ASM)
 
-$(KINIT_C_ASM): $(BUILD)/%.s: %.c kinit.h module.h mres.h kcore.h kboot.h vfs.h devicefs.h memfs.h initfs.h exec.h proc.h mach_user.h fs_mres.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h d6fs_boot.h logstore.h d6fs_provider.h dsk270.h diskset_boot.h diskset_mres.h $(VERSION_FILE)
+$(KINIT_C_ASM): $(BUILD)/%.s: %.c kinit.h module.h mres.h kcore.h kboot.h vfs.h devicefs.h memfs.h initfs.h exec.h proc.h mach_user.h fs_mres.h mm.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h d6fs_boot.h logstore.h d6fs_provider.h dsk270.h diskset_boot.h diskset_mres.h $(VERSION_FILE)
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os $(KINIT_CPPFLAGS) -I. -S $< -o $@
 
@@ -46,7 +46,7 @@ $(BUILD)/bootbanner_generated.s: $(VERSION_FILE)
 	mkdir -p $(BUILD)
 	$(MKBOOTBANNER) -v '$(DAIMON_VERSION)' -o $@
 
-$(KCORE_C_ASM): $(BUILD)/%.s: %.c kcore.h kboot.h vfs.h kfmt.h devicefs.h procfs.h memfs.h dtfs.h dsk270.h d6fs.h d6fs_provider.h d6fs_boot.h logstore.h initfs.h file.h proc.h syscall.h exec.h proc.h mach_user.h fs_mres.h
+$(KCORE_C_ASM): $(BUILD)/%.s: %.c kcore.h kboot.h vfs.h kfmt.h devicefs.h procfs.h memfs.h dtfs.h dsk270.h d6fs.h d6fs_provider.h d6fs_boot.h logstore.h initfs.h file.h proc.h syscall.h exec.h proc.h mach_user.h fs_mres.h mm.h
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os -I. -S $< -o $@
 

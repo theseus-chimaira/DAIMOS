@@ -3,12 +3,14 @@
 #include "module.h"
 #include "mres.h"
 #include "kboot.h"
+#include "mm.h"
 
 int kfs_boot_prepare(void);
 
 extern kword_t sys_resident_words_immediate;
 
 static unsigned int mres_next_addr;
+static unsigned int mres_owner_next;
 static const kword_t *module_mres_package;
 static unsigned int module_services[MODULE_SERVICE_COUNT];
 kword_t kinit_boot_handoff[2];
@@ -54,6 +56,7 @@ mres_init(void)
         KINIT_TRACE(MRES_INIT);
 #endif
         mres_next_addr = (unsigned int)(unsigned long)&__kcore_low_end;
+        mres_owner_next = 1U;
 }
 
 int
@@ -87,10 +90,16 @@ mres_install(const kword_t *package, unsigned int *basep)
         export_words = (export_count + 1U) / 2U;
         image = package + MRES_HEADER_WORDS + export_words;
         map = image + init_words;
-        base = mres_next_addr;
-        if (base > KINIT_HALF_MASK || init_words > KINIT_HALF_MASK - base ||
-            bss_words > KINIT_HALF_MASK - base - init_words)
-                return -1;
+        {
+                kword_t alloc_base;
+
+                if ((kword_t)init_words + (kword_t)bss_words > KINIT_HALF_MASK ||
+                    mm_alloc((kword_t)init_words + (kword_t)bss_words,
+                    MM_TYPE_MODULE, mres_owner_next, MM_ALLOC_LOW,
+                    &alloc_base) != MM_OK)
+                        return -1;
+                base = (unsigned int)alloc_base;
+        }
         dst = (kword_t *)(unsigned long)base;
         for (i = 0U; i < init_words; ++i) {
                 word = image[i];
@@ -98,14 +107,14 @@ mres_install(const kword_t *package, unsigned int *basep)
                 if ((code & MRES_RELOC_LH18) != 0U) {
                         half = KINIT_LH(word);
                         if (half > KINIT_HALF_MASK - base)
-                                return -1;
+                                goto fail;
                         word = ((kword_t)(half + base) << 18) |
                             (word & KINIT_HALF_MASK);
                 }
                 if ((code & MRES_RELOC_RH18) != 0U) {
                         half = KINIT_RH(word);
                         if (half > KINIT_HALF_MASK - base)
-                                return -1;
+                                goto fail;
                         word = (word & ~((kword_t)KINIT_HALF_MASK)) |
                             (kword_t)(half + base);
                 }
@@ -113,9 +122,15 @@ mres_install(const kword_t *package, unsigned int *basep)
         }
         for (i = 0U; i < bss_words; ++i)
                 dst[init_words + i] = 0;
-        mres_next_addr = base + init_words + bss_words;
+        if (base + init_words + bss_words > mres_next_addr)
+                mres_next_addr = base + init_words + bss_words;
         *basep = base;
+        ++mres_owner_next;
         return 0;
+
+fail:
+        (void)mm_free((kword_t)base, MM_TYPE_MODULE, mres_owner_next);
+        return -1;
 }
 
 unsigned int
@@ -203,11 +218,16 @@ kinit_enter(void)
 #ifdef KINIT_DEBUG
         KINIT_TRACE(KINIT_ENTER);
 #endif
+        unsigned int memory_kwords;
+
         kcore_load();
+        memory_kwords = kinit_memory_kwords();
+        mm_boot_init((kword_t)(unsigned long)&__kcore_low_end,
+            (kword_t)memory_kwords << 10U);
         kinit_diag_banner();
         kinit_save_boot_handoff();
         module_pi_init();
-        kinit_diag_system();
+        kinit_diag_system(memory_kwords);
         mres_init();
         module_run_minits();
         sys_resident_words_immediate =

@@ -22,8 +22,9 @@ extern kword_t kinit_boot_handoff[2];
 #define KINIT_RH(w) \
         ((unsigned int)((w) & KINIT_HALF_MASK))
 
+unsigned int kinit_memory_kwords(void);
 void kinit_diag_banner(void);
-void kinit_diag_system(void);
+void kinit_diag_system(unsigned int memory_kwords);
 
 void kinit_put6(kword_t word);
 void kinit_put6_spaces(unsigned int words);

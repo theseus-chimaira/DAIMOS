@@ -6,6 +6,7 @@
         .globl  proc_table
         .globl  proc_comm_words
         .globl  sys_memfs_usage_call
+        .globl  mm_core_words
 
 ; int sys_procinfo(unsigned int slot, struct sys_procinfo *info)
 ; Fixed DAIMOS 1.x process slots: 0=SWAPPER, 1=INIT.
@@ -40,7 +41,7 @@ sys_meminfo_file_loop:
         addi    3,3
         sojg    4,sys_meminfo_file_loop
         movem   1,7(2)
-        movsi   3,1                    ; 262144 words
+        move    3,mm_core_words         ; detected physical core
         movem   3,(2)
         .globl  sys_resident_words_immediate
 sys_resident_words_immediate:

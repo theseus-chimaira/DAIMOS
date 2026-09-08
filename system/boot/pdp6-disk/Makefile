@@ -29,7 +29,7 @@ KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot exec d6fs_boot d
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 
-KCORE_C_NAMES = vfs devicefs file
+KCORE_C_NAMES = vfs devicefs mm file
 KCORE_FIXED_NAMES = $(KCORE_C_NAMES) ret_pdp10 \
 	dsk270_pdp10 kfmt_pdp10 vfs_pdp10 fs_mres_pdp10 file_pdp10 proc_pdp10 \
 	device_state_pdp10 procfs_pdp10 devicefs_pdp10 syscall_info_pdp10 \

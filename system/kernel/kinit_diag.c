@@ -24,7 +24,7 @@ kinit_probe_word(volatile kword_t *addr)
         return 1;
 }
 
-static unsigned int
+unsigned int
 kinit_memory_kwords(void)
 {
         unsigned int k;
@@ -80,7 +80,7 @@ kinit_diag_banner(void)
 }
 
 void
-kinit_diag_system(void)
+kinit_diag_system(unsigned int memory_kwords)
 {
 #ifdef KINIT_DEBUG
         KINIT_TRACE(KINIT_DIAG_SYSTEM);
@@ -92,7 +92,7 @@ kinit_diag_system(void)
 
         kinit_put6((kword_t)SIXBIT("MEM   "));
         kinit_put6_spaces(4U);
-        kinit_put_memory(kinit_memory_kwords());
+        kinit_put_memory(memory_kwords);
         kinit_newline();
 }
 
