@@ -58,8 +58,7 @@ ptr_get_software:
 ptr_get_ok:
         jrst pdp10_ret_ok
 ptr_ret_timeout:
-        hrroi 1,0777776
-        popj 017,
+        jrst    pdp10_ret_neg2
 
         .bss
 ptr_state:

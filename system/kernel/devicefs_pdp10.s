@@ -154,8 +154,7 @@ devicefs_readdir_store_tail:
         setzm   3(4)
         setzm   4(4)
         movem   7,5(4)
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 
 ; Set AC7 to the VFS dirent type for an IO endpoint.  AC0=device id.
 devicefs_io_type:
@@ -418,9 +417,8 @@ devicefs_stats_device_simple_error:
         jrst    pdp10_ret_zero
         setz    1,
         caige   4,014
-        jrst    devicefs_stats_error_label
+        jrst    devicefs_stats_emit
         move    1,devicefs_storage_errors-014(4)
-devicefs_stats_error_label:
         jrst    devicefs_stats_emit
 
 devicefs_stats_device_reads:
@@ -471,8 +469,7 @@ devicefs_stats_eol:
         movei   0,012
 devicefs_stats_store:
         movem   0,(3)
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 
 ; D6SET MEMBERS is one fixed four-character line per configured member:
 ; two octal unit digits plus CR LF.  D6SET currently contains only DSK units,
@@ -503,6 +500,4 @@ devicefs_members_eol:
         caie    2,2
         movei   0,012
 devicefs_members_store:
-        movem   0,(3)
-        movei   1,1
-        popj    17,
+        jrst    devicefs_stats_store

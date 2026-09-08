@@ -54,8 +54,7 @@ ge_get_ready:
         setzm ge_rx_word
         tlz 1,4
 ge_get_unpack_raw:
-        hlrz 2,1
-        andi 2,3
+        ldb 2,[POINT 2,1,17]
         lsh 2,010
         andi 1,0177
         ior 1,2
@@ -87,9 +86,7 @@ ge_putchar:
         jrst pdp10_ret_busy
 ge_putchar_idle:
         move 4,1
-        move 5,1
-        lsh 5,-010
-        andi 5,077
+        ldb 5,[POINT 6,1,27]
         caile 5,3
         jrst pdp10_ret_arg
         setom ge_tx_state

@@ -59,11 +59,9 @@ cp_punch_done:
         movei 1,0120
         popj 017,
 cp_ret_timeout:
-        hrroi 1,0777776
-        popj 017,
+        jrst    pdp10_ret_neg2
 cp_ret_e4:
-        hrroi 1,0777774
-        popj 017,
+        jrst    pdp10_ret_neg4
 
         .bss
 cp_iowd:

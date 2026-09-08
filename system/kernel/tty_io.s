@@ -14,9 +14,7 @@
         .globl devicefs_io_out
 
 tty_putchar:
-        move 2,1
-        lsh 2,-010
-        andi 2,077
+        ldb 2,[POINT 6,1,27]
         jumpe 2,tty_putchar_cty
         caile 2,020
         jrst tty_putchar_ge

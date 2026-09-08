@@ -127,6 +127,144 @@ file_writechar_fail:
         seto    1,
         jrst    file_writechar_done
 
+; void file_unlock_mount(unsigned int mount_id)
+; Scan FILE state directly.  The index and table pointer are caller-scratch ACs,
+; so this needs no frame and avoids GCC's unsigned-loop sequence.
+        .globl  file_unlock_mount
+file_unlock_mount:
+        movei   2,file_table
+        movei   3,015                  ; FILE_NFILE = 13
+file_unlock_mount_loop:
+        skipn   4,(2)
+        jrst    file_unlock_mount_next
+        ldb     4,[POINT 6,4,11]       ; VFS_MOUNT_ID(node)
+        came    4,1
+        jrst    file_unlock_mount_next
+        hrroi   4,0617777              ; ~(LOCK_MASK | REGULAR)
+        andm    4,2(2)
+file_unlock_mount_next:
+        addi    2,3
+        sojg    3,file_unlock_mount_loop
+        popj    17,
+
+; void file_close_all(void)
+        .globl  file_close_all
+file_close_all:
+        push    17,010
+        push    17,011
+        movei   010,0
+        movei   011,file_table
+file_close_all_loop:
+        skipn   (011)
+        jrst    file_close_all_next
+        movei   1,3(010)               ; FILE_FD_FIRST + slot
+        pushj   17,file_close
+file_close_all_next:
+        addi    011,3
+        addi    010,1
+        caige   010,015                 ; FILE_NFILE
+        jrst    file_close_all_loop
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; int file_read_words(int fd, kword_t *buf, unsigned int nwords)
+        .globl  file_read_words
+file_read_words:
+        push    17,010
+        push    17,2                    ; buf
+        push    17,3                    ; nwords
+        pushj   17,file_find
+        jumpe   1,file_read_words_fail
+        skipn   -1(17)                  ; buf
+        jrst    file_read_words_fail
+        move    4,2(1)
+        andi    4,0101                  ; FILE_META_DIR | FILE_O_READ
+        caie    4,1
+        jrst    file_read_words_fail
+        move    010,1
+        move    2,1(010)
+        lsh     2,-2                    ; character offset -> word offset
+        move    1,(010)
+        move    3,-1(17)
+        move    4,(17)
+        pushj   17,vfs_read_words
+        jumple  1,file_read_words_done
+        move    4,1
+        lsh     4,2
+        addm    4,1(010)
+file_read_words_done:
+        sub     17,[2,,2]
+        pop     17,010
+        popj    17,
+file_read_words_fail:
+        seto    1,
+        jrst    file_read_words_done
+
+; int file_write_words(int fd, const kword_t *buf, unsigned int nwords,
+;     kword_t size_chars)
+; The caller's size_chars word remains at the top of our local argument stack,
+; exactly where vfs_write_words sees its fifth C argument after PUSHJ.
+        .globl  file_write_words
+file_write_words:
+        push    17,010
+        push    17,2                    ; buf
+        push    17,3                    ; nwords
+        push    17,4                    ; size_chars / VFS arg 5
+        pushj   17,file_find
+        jumpe   1,file_write_words_fail
+        skipn   -2(17)                  ; buf
+        jrst    file_write_words_fail
+        move    4,2(1)
+        andi    4,0102                  ; FILE_META_DIR | FILE_O_WRITE
+        caie    4,2
+        jrst    file_write_words_fail
+        move    010,1
+        move    2,1(010)
+        lsh     2,-2
+        move    1,(010)
+        move    3,-2(17)
+        move    4,-1(17)
+        pushj   17,vfs_write_words
+        jumple  1,file_write_words_done
+        move    4,1
+        lsh     4,2
+        addm    4,1(010)
+file_write_words_done:
+        sub     17,[3,,3]
+        pop     17,010
+        popj    17,
+file_write_words_fail:
+        seto    1,
+        jrst    file_write_words_done
+
+; int file_readdir(int fd, struct vfs_dirent *ent)
+        .globl  file_readdir
+file_readdir:
+        push    17,010
+        push    17,2                    ; ent
+        pushj   17,file_find
+        jumpe   1,file_readdir_fail
+        skipn   (17)                    ; ent
+        jrst    file_readdir_fail
+        move    4,2(1)
+        trnn    4,0100                  ; FILE_META_DIR
+        jrst    file_readdir_fail
+        move    010,1
+        move    1,(010)
+        move    2,1(010)
+        move    3,(17)
+        pushj   17,vfs_readdir
+        jumple  1,file_readdir_done
+        aos     1(010)
+file_readdir_done:
+        sub     17,[1,,1]
+        pop     17,010
+        popj    17,
+file_readdir_fail:
+        seto    1,
+        jrst    file_readdir_done
+
 ; int file_component(const kword_t *path, unsigned int *posp,
 ;     struct vfs_name *name)
 ;
@@ -228,9 +366,7 @@ file_getcwd_nwords_ok:
         jumpn   4,file_getcwd_have_node
         move    4,vfs_namespace_root
 file_getcwd_have_node:
-        move    5,4
-        lsh     5,-036
-        andi    5,077
+        ldb     5,[POINT 6,4,5]
         caige   5,4
         jrst    file_getcwd_pseudo_tail
         caile   5,6

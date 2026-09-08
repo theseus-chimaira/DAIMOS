@@ -97,8 +97,7 @@ procfs_lookup:
         came    4,[0210000000000]      ; SIXBIT /1     /
         jrst    pdp10_ret_neg1
 procfs_lookup_root_slot:
-        lsh     4,-036                  ; SIXBIT digit 020/021 -> slot 0/1
-        andi    4,1
+        ldb     4,[POINT 1,4,5]        ; SIXBIT digit 020/021 -> slot 0/1
         tlo     4,030002                ; process-directory vnode kind
         movem   4,(3)
         jrst    pdp10_ret_zero
@@ -171,8 +170,7 @@ procfs_readdir_store:
         setzm   3(3)
         setzm   4(3)
         movem   6,5(3)
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 
 procfs_readdir_names:
         .long   0606051440000          ; PPID

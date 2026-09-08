@@ -44,9 +44,8 @@ vfs_name_is6:
         ; Current callers always pass a valid vfs_name pointer.
         camn    3,(1)
         came    2,1(1)
-        tdza    1,1
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_zero
+        jrst    pdp10_ret_one
 
 ; int vfs_sixbit_readchar(kword_t word, unsigned int nchars, kword_t off,
 ;     unsigned int *chp)
@@ -66,24 +65,20 @@ vfs_sixbit_readchar:
         lsh     5,0(6)
         andi    5,077
         addi    5,040
+vfs_sixchar_store:
         movem   5,(4)
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 vfs_sixchar_tail:
         came    3,2
         jrst    vfs_sixchar_lf
         movei   5,015                  ; CR
-        movem   5,(4)
-        movei   1,1
-        popj    17,
+        jrst    vfs_sixchar_store
 vfs_sixchar_lf:
         addi    2,1
         came    3,2
         jrst    pdp10_ret_zero
         movei   5,012                  ; LF
-        movem   5,(4)
-        movei   1,1
-        popj    17,
+        jrst    vfs_sixchar_store
 
 ; unsigned int vfs_sixbit_name_chars(words, maxchars)
 ; Return the last nonzero character position in a packed SIXBIT name.
@@ -120,9 +115,7 @@ vfs_name_chars_next:
 
         .globl  vfs_readdir_raw
 vfs_readdir_raw:
-        move    4,1
-        lsh     4,-036
-        andi    4,077
+        ldb     4,[POINT 6,1,5]
         cain    4,2
         jrst    devicefs_readdir
         cain    4,3
@@ -134,6 +127,7 @@ vfs_readdir_raw:
         movem   2,-1(17)
         movem   3,(17)
         move    1,4
+vfs_provider_call4:
         movei   2,-3(17)
         pushj   17,fs_provider_call
         sub     17,[4,,4]
@@ -141,9 +135,7 @@ vfs_readdir_raw:
 
         .globl  vfs_stat
 vfs_stat:
-        move    3,1
-        lsh     3,-036
-        andi    3,077
+        ldb     3,[POINT 6,1,5]
         cain    3,2
         jrst    devicefs_stat
         cain    3,3
@@ -154,6 +146,7 @@ vfs_stat:
         movem   1,-1(17)
         movem   2,(17)
         move    1,3
+vfs_provider_call3:
         movei   2,-2(17)
         pushj   17,fs_provider_call
         sub     17,[3,,3]
@@ -180,13 +173,8 @@ vfs_truncate:
         movem   3,(17)
         pushj   17,vfs_readonly
         jumpn   1,vfs_truncate_ro
-        move    1,-2(17)
-        lsh     1,-036
-        andi    1,077
-        movei   2,-3(17)
-        pushj   17,fs_provider_call
-        sub     17,[4,,4]
-        popj    17,
+        ldb     1,[POINT 6,-2(17),5]
+        jrst    vfs_provider_call4
 vfs_truncate_ro:
         sub     17,[4,,4]
         jrst    pdp10_ret_neg1
@@ -201,13 +189,8 @@ vfs_chmod:
         pushj   17,vfs_readonly
         jumpn   1,vfs_mutate3_ro
 vfs_mutate3_call:
-        move    1,-1(17)
-        lsh     1,-036
-        andi    1,077
-        movei   2,-2(17)
-        pushj   17,fs_provider_call
-        sub     17,[3,,3]
-        popj    17,
+        ldb     1,[POINT 6,-1(17),5]
+        jrst    vfs_provider_call3
 vfs_mutate3_ro:
         sub     17,[3,,3]
         jrst    pdp10_ret_neg1
@@ -215,8 +198,7 @@ vfs_mutate3_ro:
         .globl  vfs_read_words
 vfs_read_words:
         move    5,1
-        lsh     1,-036
-        andi    1,077
+        ldb     1,[POINT 6,1,5]
         add     17,[5,,5]
         movei   6,015                  ; FS_MRES_OP_READ_WORDS
         movem   6,-4(17)
@@ -242,9 +224,7 @@ vfs_write_words:
         movem   5,(17)
         pushj   17,vfs_readonly
         jumpn   1,vfs_write_words_ro
-        move    1,-4(17)
-        lsh     1,-036
-        andi    1,077
+        ldb     1,[POINT 6,-4(17),5]
         movei   2,-5(17)
         pushj   17,fs_provider_call
         sub     17,[6,,6]
@@ -256,8 +236,7 @@ vfs_write_words_ro:
         .globl  vfs_sync
 vfs_sync:
         move    4,1
-        lsh     1,-036
-        andi    1,077
+        ldb     1,[POINT 6,1,5]
         cail    1,5                    ; DTFS_PROVIDER
         cail    1,7                    ; one past D6FS_PROVIDER
         jrst    pdp10_ret_zero
@@ -289,9 +268,7 @@ fs_block_workspace:
         .globl  vfs_readchar
 vfs_readchar:
         jumpe   3,pdp10_ret_neg1
-        move    4,1
-        lsh     4,-036
-        andi    4,077
+        ldb     4,[POINT 6,1,5]
         cain    4,3
         jrst    procfs_readchar
         cain    4,2
@@ -352,14 +329,10 @@ vfs_readchar_done:
 ; int vfs_writechar(vnode_t node, kword_t off, unsigned int ch)
         .globl  vfs_writechar
 vfs_writechar:
-        move    4,1
-        lsh     4,-036
-        andi    4,077
+        ldb     4,[POINT 6,1,5]
         caie    4,2                    ; DEVICEFS_PROVIDER
         jrst    vfs_writechar_regular
-        move    4,1
-        lsh     4,-022                 ; VFS_KIND_SHIFT = 18
-        andi    4,077                  ; local kind only
+        ldb     4,[POINT 6,1,17]       ; VFS local kind
         caie    4,2                    ; DEVICEFS_KIND_DEVICE
         jrst    vfs_writechar_regular
         hrroi   1,0777775              ; VFS_DEVICE_IO = -3

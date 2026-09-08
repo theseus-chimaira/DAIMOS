@@ -93,9 +93,7 @@ d6fs_extent_high_get:
         .globl  d6fs_file_block
 d6fs_file_block:
         jumpe   1,pdp10_ret_neg1
-        move    3,(1)
-        lsh     3,-4
-        andi    3,017                    ; extent_count
+        ldb     3,[POINT 4,(1),31]       ; extent_count
         jumpe   3,pdp10_ret_neg1
         move    4,5(1)                   ; packed length-high fields
         movei   5,6(1)                   ; current extent run
@@ -489,8 +487,7 @@ d6fs_map_scan_partial:
         camn    7,6
         jrst    pdp10_ret_zero
 d6fs_map_scan_free:
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 
 ; Internal summary bit setter: reader AC1, map index AC2, boolean AC3.
 d6fs_summary_set_i:
@@ -867,8 +864,7 @@ d6fs_provider_set_extent:
         movei   6,037
         lsh     6,0(5)
         andca   6,5(1)                  ; clear prior high-length field
-        lsh     4,-014
-        andi    4,037
+        ldb     4,[POINT 5,4,027]
         lsh     4,0(5)
         ior     6,4
         movem   6,5(1)

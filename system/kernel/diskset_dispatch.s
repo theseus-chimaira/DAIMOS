@@ -151,10 +151,9 @@ diskset_block_return:
 ; Writable iff at least one validated member is configured.  DISKSET is only
 ; installed after DSK MINIT has bound both read and write services.
 diskset_writable:
-        movei 1,1
-        skipn diskset_boot
-        setz 1,
-        popj 17,
+        skipn   diskset_boot
+        jrst    pdp10_ret_zero
+        jrst    pdp10_ret_one
 
 ; Current profile uses <=4 members and per-member tails below one Type-270
 ; unit, so the product is safely within a single 36-bit IMUL result.

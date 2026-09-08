@@ -46,8 +46,7 @@ dtfs_mres_vector:
 ; boundary so userland can report that MKDIR is unsupported rather than an
 ; undifferentiated filesystem failure.
 dtfs_mkdir_unsupported:
-        hrroi   1,0777776              ; SYS_ERR_UNSUPPORTED (-2)
-        popj    17,
+        jrst    pdp10_ret_neg2  ; SYS_ERR_UNSUPPORTED (-2)
 
 
 ; Compact five-bit allocation-map accessors.  All DTFS map indices are small
@@ -228,13 +227,11 @@ dtfs_its_valid_next:
         caige   010,01067
         jrst    dtfs_its_valid_loop
         pop     17,010
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 dtfs_its_valid_pop_false:
         pop     17,010
 dtfs_its_valid_false:
-        setz    1,
-        popj    17,
+        jrst    pdp10_ret_zero
 
 ; Compact vnode predicates.  The vnode encoding is provider:6, kind/mount:12,
 ; index:18.  Mask provider plus local kind in one operation; mount-id and file
@@ -250,8 +247,7 @@ dtfs_is_root:
         move    2,1
         and     2,[007700000000]       ; non-zero mount id required
         jumpe   2,dtfs_is_false
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 
         .globl  dtfs_is_file
 dtfs_is_file:
@@ -266,12 +262,10 @@ dtfs_is_file:
         andi    2,0777777
         cail    2,027                  ; ITS has 23 file slots
         jrst    dtfs_is_false
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 
 dtfs_is_false:
-        setz    1,
-        popj    17,
+        jrst    pdp10_ret_zero
 
 ; Flat DTFS parent and sync operations need only vnode classification.  The
 ; local predicates touch AC1/AC2 only, so AC4/AC5 can retain the original
@@ -286,11 +280,9 @@ dtfs_parent:
         and     4,[07700000000]         ; retain mount id
         tlo     4,050001                 ; DTFS provider + root local kind
         movem   4,(5)
-        setz    1,
-        popj    17,
+        jrst    pdp10_ret_zero
 dtfs_parent_fail:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
         .globl  dtfs_sync
 dtfs_sync:
@@ -301,11 +293,9 @@ dtfs_sync:
         pushj   17,dtfs_is_file
         jumpe   1,dtfs_sync_fail
 dtfs_sync_ok:
-        setz    1,
-        popj    17,
+        jrst    pdp10_ret_zero
 dtfs_sync_fail:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
 ; DTC veneers.  MINIT patches the RH of each JRST with the installed DTC
 ; service entry.  The DTFS and DTC ABIs are identical: AC1=unit, AC2=block,
@@ -738,13 +728,11 @@ dtfs_load:
         jumpe   1,dtfs_load_native_fail
         movem   010,dtfs_cache_mount
 dtfs_load_native_ok:
-        setz    1,
         pop     17,010
-        popj    17,
+        jrst    pdp10_ret_zero
 dtfs_load_native_fail:
-        seto    1,
         pop     17,010
-        popj    17,
+        jrst    pdp10_ret_neg1
 
 .endif
 
@@ -774,12 +762,10 @@ dtfs_native_valid_loop:
         addi    4,1
         caig    4,01104
         jrst    dtfs_native_valid_loop
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 
 dtfs_native_valid_false:
-        setz    1,
-        popj    17,
+        jrst    pdp10_ret_zero
 
 .if DTFS_ENABLE_FOREIGN
 ; Compact directory enumeration.  Resolve the personality once and scan using
@@ -1016,14 +1002,12 @@ dtfs_find_free_native_count:
         addi    7,1
         caige   7,01101
         jrst    dtfs_find_free_native_loop
-        seto    1,
         pop     17,010
-        popj    17,
+        jrst    pdp10_ret_neg1
 dtfs_find_free_native_found:
         movem   6,(010)
-        setz    1,
         pop     17,010
-        popj    17,
+        jrst    pdp10_ret_zero
 .endif
 
         .globl  dtfs_block_info
@@ -1099,12 +1083,12 @@ dtfs_size_words:
         sub     1,3
         add     1,2
         subi    1,0177
+dtfs_size_words_native_return:
         pop     17,010
         popj    17,
 dtfs_size_words_native_zero:
         setz    1,
-        pop     17,010
-        popj    17,
+        jrst    dtfs_size_words_native_return
 .endif
 
         .globl  dtfs_set_name

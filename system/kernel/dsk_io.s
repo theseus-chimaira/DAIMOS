@@ -174,8 +174,7 @@ dsk_runtime_submit_fail:
         sub 017,[2,,2]
         popj 017,
 dsk_runtime_ioerr:
-        hrroi 1,0777773
-        popj 017,
+        jrst    pdp10_ret_neg5
 
 ; Two pending 18-bit descriptor pointers per unit share one word.  q0 is
 ; the LH and is next by one-way elevator distance; q1 is the RH later request.
@@ -269,8 +268,7 @@ dsk_wait:
         caie 1,7
         jrst dsk_wait_done
         setzm storage_state
-        hrroi 1,0777773
-        popj 017,
+        jrst    pdp10_ret_neg5
 dsk_wait_done:
         aos @dsk_account_table-3(1)     ; completed sector request
         setzm storage_state

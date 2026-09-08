@@ -36,11 +36,9 @@ ptp_putchar_wait:
         setzm ptp_state
         cono 0100,0007
 ptp_ret_timeout:
-        hrroi 1,0777776
-        popj 017,
+        jrst    pdp10_ret_neg2
 ptp_ret_e4:
-        hrroi 1,0777774
-        popj 017,
+        jrst    pdp10_ret_neg4
         .bss
 ptp_state:
         .block 1

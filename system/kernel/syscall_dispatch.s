@@ -220,8 +220,7 @@ native_sys_dtc0_path:
         jrst native_sys_dtc0_path_fail
         popj 17,
 native_sys_dtc0_path_fail:
-        setz 1,
-        popj 17,
+        jrst pdp10_ret_zero
 
 native_sys_chmod:
         move 1,mach_syscall_ac2

@@ -53,8 +53,7 @@ cty_putchar_wait_done:
         sojg 2,cty_putchar_wait_done
         setzm cty_tx_pending
 cty_putchar_timeout:
-        hrroi 1,0777776
-        popj 017,
+        jrst    pdp10_ret_neg2
 
 ; Return one 7-bit character in AC1.  Input blocks until available.
 ; The PI handler stores character+1 so zero remains the empty marker.

@@ -60,11 +60,9 @@ cr_read_done:
         movei 1,0120
         popj 017,
 cr_ret_timeout:
-        hrroi 1,0777776
-        popj 017,
+        jrst    pdp10_ret_neg2
 cr_ret_e4:
-        hrroi 1,0777774
-        popj 017,
+        jrst    pdp10_ret_neg4
 
         .bss
 cr_iowd:

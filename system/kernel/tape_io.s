@@ -397,8 +397,7 @@ tape_wait:
         jrst tape_wait_done
 tape_ioerr:
         setzm storage_state
-        hrroi 1,0777773
-        popj 017,
+        jrst    pdp10_ret_neg5
 tape_wait_done:
         aos @tape_account_table-1(1)    ; completed READ/WRITE request
         caie 1,2                        ; MTC read

@@ -688,8 +688,7 @@ memfs_readdir_found:
         blt     0,4(4)                  ; copy five-word name
         ldb     0,[POINT 3,5(5),20]
         movem   0,5(4)
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 
 ; int memfs_stat(const struct memfs *fs, vnode_t node,
 ;     struct vfs_stat *st)

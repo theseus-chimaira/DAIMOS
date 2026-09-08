@@ -51,9 +51,7 @@ dcs_getchar_wait:
 
 ; AC1 = DCS_PACK(line, byte).  Return 0 or DCS_E_ARG (-1).
 dcs_putchar:
-        move 2,1
-        lsh 2,-010
-        andi 2,077
+        ldb 2,[POINT 6,1,27]
         caile 2,017
         jrst pdp10_ret_arg
         cono 0304,0(2)
