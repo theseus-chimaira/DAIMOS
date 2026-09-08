@@ -243,10 +243,10 @@ dtfs_is_root:
         move    2,1
         and     2,[770077000000]
         came    2,[050001000000]       ; DTFS provider, root local kind
-        jrst    dtfs_is_false
+        jrst    pdp10_ret_zero
         move    2,1
         and     2,[007700000000]       ; non-zero mount id required
-        jumpe   2,dtfs_is_false
+        jumpe   2,pdp10_ret_zero
         jrst    pdp10_ret_one
 
         .globl  dtfs_is_file
@@ -254,18 +254,15 @@ dtfs_is_file:
         move    2,1
         and     2,[770077000000]
         came    2,[050002000000]       ; DTFS provider, file local kind
-        jrst    dtfs_is_false
+        jrst    pdp10_ret_zero
         move    2,1
         and     2,[007700000000]
-        jumpe   2,dtfs_is_false
+        jumpe   2,pdp10_ret_zero
         move    2,1
         andi    2,0777777
         cail    2,027                  ; ITS has 23 file slots
-        jrst    dtfs_is_false
-        jrst    pdp10_ret_one
-
-dtfs_is_false:
         jrst    pdp10_ret_zero
+        jrst    pdp10_ret_one
 
 ; Flat DTFS parent and sync operations need only vnode classification.  The
 ; local predicates touch AC1/AC2 only, so AC4/AC5 can retain the original
@@ -274,16 +271,13 @@ dtfs_is_false:
 dtfs_parent:
         move    4,1                     ; original file vnode
         move    5,2                     ; vnode_t *parentp
-        jumpe   5,dtfs_parent_fail
+        jumpe   5,pdp10_ret_neg1
         pushj   17,dtfs_is_file
-        jumpe   1,dtfs_parent_fail
+        jumpe   1,pdp10_ret_neg1
         and     4,[07700000000]         ; retain mount id
         tlo     4,050001                 ; DTFS provider + root local kind
         movem   4,(5)
         jrst    pdp10_ret_zero
-dtfs_parent_fail:
-        jrst    pdp10_ret_neg1
-
         .globl  dtfs_sync
 dtfs_sync:
         move    4,1
@@ -291,12 +285,9 @@ dtfs_sync:
         jumpn   1,dtfs_sync_ok
         move    1,4
         pushj   17,dtfs_is_file
-        jumpe   1,dtfs_sync_fail
+        jumpe   1,pdp10_ret_neg1
 dtfs_sync_ok:
         jrst    pdp10_ret_zero
-dtfs_sync_fail:
-        jrst    pdp10_ret_neg1
-
 ; DTC veneers.  MINIT patches the RH of each JRST with the installed DTC
 ; service entry.  The DTFS and DTC ABIs are identical: AC1=unit, AC2=block,
 ; AC3=buffer, so the tail jump needs no argument shuffling or resident pointer.
@@ -741,16 +732,16 @@ dtfs_load_native_fail:
 dtfs_native_valid:
         move    1,dtfs_dir+0177
         came    1,[0446446632021]
-        jrst    dtfs_native_valid_false
+        jrst    pdp10_ret_zero
         setzb   1,2
         pushj   17,dtfs_owner
         caie    1,036
-        jrst    dtfs_native_valid_false
+        jrst    pdp10_ret_zero
         setz    1,
         movei   2,0144
         pushj   17,dtfs_owner
         caie    1,036
-        jrst    dtfs_native_valid_false
+        jrst    pdp10_ret_zero
         movei   4,01102
 
 dtfs_native_valid_loop:
@@ -758,14 +749,12 @@ dtfs_native_valid_loop:
         move    2,4
         pushj   17,dtfs_owner
         caie    1,035
-        jrst    dtfs_native_valid_false
+        jrst    pdp10_ret_zero
         addi    4,1
         caig    4,01104
         jrst    dtfs_native_valid_loop
         jrst    pdp10_ret_one
 
-dtfs_native_valid_false:
-        jrst    pdp10_ret_zero
 
 .if DTFS_ENABLE_FOREIGN
 ; Compact directory enumeration.  Resolve the personality once and scan using
@@ -1099,7 +1088,6 @@ dtfs_set_name:
         move    4,1(2)
         movem   4,dtfs_dir+0123(1)
         move    4,2(2)
-        andcmi  4,077
-        ior     4,3
+        dpb     3,[POINT 6,4,35]
         movem   4,dtfs_dir+0124(1)
         popj    17,

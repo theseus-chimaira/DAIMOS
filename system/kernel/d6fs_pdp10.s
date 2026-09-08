@@ -472,7 +472,7 @@ d6fs_map_block_has_free_i:
 d6fs_map_scan_words:
         move    6,(4)
         came    6,[-1]
-        jrst    d6fs_map_scan_free
+        jrst    pdp10_ret_one
         addi    4,1
         sojg    5,d6fs_map_scan_words
 
@@ -486,8 +486,6 @@ d6fs_map_scan_partial:
         and     7,6
         camn    7,6
         jrst    pdp10_ret_zero
-d6fs_map_scan_free:
-        jrst    pdp10_ret_one
 
 ; Internal summary bit setter: reader AC1, map index AC2, boolean AC3.
 d6fs_summary_set_i:
@@ -1178,11 +1176,8 @@ d6fs_provider_chmod:
         trne    4,020                     ; D6FS_FLAG_IMMUTABLE
         jrst    d6fs_provider_chmod_fail
         move    4,-033(17)               ; FCB META
-        and     4,[-07777001]
         move    5,(17)
-        andi    5,07777
-        lsh     5,014
-        ior     4,5
+        dpb     5,[POINT 12,4,23]        ; replace mode bits 12..23
         movem   4,-033(17)
         movei   1,d6fs_provider_reader
         hrrz    2,-1(17)

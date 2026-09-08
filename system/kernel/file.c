@@ -245,48 +245,6 @@ file_dup(int fd)
         return newfd;
 }
 
-int
-file_lock(int fd, unsigned int op)
-{
-        struct file *fp;
-        struct file *other;
-        kword_t mode;
-        unsigned int desc;
-        unsigned int i;
 
-        fp = file_find(fd);
-        if (fp == 0 || (fp->meta & FILE_META_REGULAR) == 0U ||
-            (op != VFS_LOCK_SHARED && op != VFS_LOCK_EXCLUSIVE &&
-            op != VFS_LOCK_UNLOCK))
-                return -1;
-        desc = FILE_META_DESC(fp->meta);
-        if (desc == 0U)
-                return -1;
-        mode = 0UL;
-        if (op == VFS_LOCK_SHARED)
-                mode = FILE_META_LOCK_SHARED;
-        else if (op == VFS_LOCK_EXCLUSIVE)
-                mode = FILE_META_LOCK_EXCL;
-
-        if (mode != 0UL)
-                for (i = 0U; i < FILE_NFILE; ++i) {
-                        other = &file_table[i];
-                        if (other->node != fp->node ||
-                            FILE_META_DESC(other->meta) == desc)
-                                continue;
-                        if ((other->meta & FILE_META_LOCK_EXCL) != 0UL ||
-                            (mode == FILE_META_LOCK_EXCL &&
-                            (other->meta & FILE_META_LOCK_MASK) != 0UL))
-                                return -1;
-                }
-        for (i = 0U; i < FILE_NFILE; ++i) {
-                other = &file_table[i];
-                if (other->node == fp->node &&
-                    FILE_META_DESC(other->meta) == desc)
-                        other->meta = (other->meta & ~FILE_META_LOCK_MASK) |
-                            mode;
-        }
-        return 0;
-}
 
 /* Mount unlock, close-all and I/O wrappers are compact PDP-10 assembly. */

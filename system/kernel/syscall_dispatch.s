@@ -211,16 +211,14 @@ native_sys_writechar_tty:
 ; Return the DTC0 vnode for a valid user path, or zero on failure.
 native_sys_dtc0_path:
         pushj 17,sys_user_words
-        jumpe 1,native_sys_dtc0_path_fail
+        jumpe 1,pdp10_ret_zero
         movei 2,mach_syscall_ac5
         pushj 17,file_lookup_path
-        jumpn 1,native_sys_dtc0_path_fail
+        jumpn 1,pdp10_ret_zero
         move 1,mach_syscall_ac5
         came 1,[020003000014]           ; DEVICEFS DTC0 directory
-        jrst native_sys_dtc0_path_fail
-        popj 17,
-native_sys_dtc0_path_fail:
         jrst pdp10_ret_zero
+        popj 17,
 
 native_sys_chmod:
         move 1,mach_syscall_ac2

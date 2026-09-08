@@ -50,7 +50,7 @@ fs_words_equal:
 fs_words_equal_loop:
         move    4,(1)
         came    4,(2)
-        jrst    fs_words_equal_no
+        jrst    pdp10_ret_zero
         aoj     1,
         aoj     2,
         sojg    3,fs_words_equal_loop
@@ -58,8 +58,6 @@ fs_words_equal_yes:
 pdp10_ret_one:
         movei   1,1
         popj    17,
-fs_words_equal_no:
-        jrst    pdp10_ret_zero
 
         .globl  pdp10_ret_one
         .globl  fs_zero_words

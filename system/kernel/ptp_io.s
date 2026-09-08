@@ -20,7 +20,7 @@ ptp_putchar:
         jrst pdp10_ret_busy
         coni 0100,2
         trne 2,0100
-        jrst ptp_ret_e4
+        jrst pdp10_ret_neg4
         trne 2,0020
         jrst pdp10_ret_busy
         setom ptp_state
@@ -37,8 +37,6 @@ ptp_putchar_wait:
         cono 0100,0007
 ptp_ret_timeout:
         jrst    pdp10_ret_neg2
-ptp_ret_e4:
-        jrst    pdp10_ret_neg4
         .bss
 ptp_state:
         .block 1

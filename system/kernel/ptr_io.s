@@ -42,7 +42,7 @@ ptr_get_wait:
         sojg 5,ptr_get_wait
         setzm ptr_state
         cono 0104,0
-        jrst ptr_ret_timeout
+        jrst pdp10_ret_neg2
 ptr_get_hardware:
         datai 0104,3
         aos devicefs_io_in+2
@@ -57,8 +57,6 @@ ptr_get_software:
         setzm ptr_state
 ptr_get_ok:
         jrst pdp10_ret_ok
-ptr_ret_timeout:
-        jrst    pdp10_ret_neg2
 
         .bss
 ptr_state:

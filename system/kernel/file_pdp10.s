@@ -127,6 +127,76 @@ file_writechar_fail:
         seto    1,
         jrst    file_writechar_done
 
+; int file_lock(int fd, unsigned int op)
+; FILE lock ownership is carried in the descriptor bits of meta.  Once
+; file_find has validated the descriptor, the remaining operation is two
+; fixed 13-slot scans and needs no C frame or callee-saved registers.
+        .globl  file_lock
+file_lock:
+        push    17,2                    ; file_find may clobber operation
+        pushj   17,file_find
+        pop     17,2
+        jumpe   1,pdp10_ret_neg1
+        move    4,2(1)                 ; selected file metadata
+        trnn    4,0100000              ; regular files only
+        jrst    pdp10_ret_neg1
+        move    5,4
+        andi    5,017600               ; lock-owner descriptor bits
+        jumpe   5,pdp10_ret_neg1
+        caige   2,1                    ; SHARED..UNLOCK are 1..3
+        jrst    pdp10_ret_neg1
+        caile   2,3
+        jrst    pdp10_ret_neg1
+        move    6,file_lock_modes-1(2)
+        jumpe   6,file_lock_update      ; unlock cannot conflict
+
+; For shared requests only an existing exclusive lock conflicts; for an
+; exclusive request either shared or exclusive does.  mode + 020000 is
+; exactly the required conflict mask for the two nonzero modes.
+        move    0,6
+        addi    0,020000
+        movei   2,file_table
+        movei   3,015                  ; FILE_NFILE = 13
+file_lock_check:
+        move    4,(2)
+        came    4,(1)
+        jrst    file_lock_check_next
+        move    4,2(2)
+        move    7,4
+        xor     7,2(1)
+        andi    7,017600
+        jumpe   7,file_lock_check_next ; same lock owner
+        tdne    4,0
+        jrst    pdp10_ret_neg1
+file_lock_check_next:
+        addi    2,3
+        sojg    3,file_lock_check
+
+file_lock_update:
+        movei   2,file_table
+        movei   3,015
+file_lock_update_loop:
+        move    4,(2)
+        came    4,(1)
+        jrst    file_lock_update_next
+        move    4,2(2)
+        move    7,4
+        xor     7,2(1)
+        andi    7,017600
+        jumpn   7,file_lock_update_next
+        andcmi  4,060000               ; replace lock mode only
+        ior     4,6
+        movem   4,2(2)
+file_lock_update_next:
+        addi    2,3
+        sojg    3,file_lock_update_loop
+        jrst    pdp10_ret_zero
+
+file_lock_modes:
+        .long   020000                  ; VFS_LOCK_SHARED
+        .long   040000                  ; VFS_LOCK_EXCLUSIVE
+        .long   0                       ; VFS_LOCK_UNLOCK
+
 ; void file_unlock_mount(unsigned int mount_id)
 ; Scan FILE state directly.  The index and table pointer are caller-scratch ACs,
 ; so this needs no frame and avoids GCC's unsigned-loop sequence.

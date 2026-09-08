@@ -40,7 +40,7 @@ cp_pi_more:
 cp_punch_card:
         jumpe 1,pdp10_ret_arg
         skipe cp_iowd
-        jrst cp_ret_e4
+        jrst pdp10_ret_neg4
         subi 1,1
         hrli 1,0777660
         movem 1,cp_iowd
@@ -52,16 +52,12 @@ cp_punch_wait:
         sojg 2,cp_punch_wait
         setzm cp_iowd
         cono 0110,0007
-        jrst cp_ret_timeout
+        jrst pdp10_ret_neg2
 cp_punch_done:
         consz 0110,05000
         jrst pdp10_ret_busy
         movei 1,0120
         popj 017,
-cp_ret_timeout:
-        jrst    pdp10_ret_neg2
-cp_ret_e4:
-        jrst    pdp10_ret_neg4
 
         .bss
 cp_iowd:

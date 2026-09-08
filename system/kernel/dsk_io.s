@@ -166,15 +166,13 @@ dsk_runtime_wait:
         pushj 017,dsk_dispatch
         move 1,(017)
         sub 017,[2,,2]
-        sojn 1,dsk_runtime_ioerr
+        sojn 1,pdp10_ret_neg5
         popj 017,
 dsk_runtime_busy:
         hrroi 1,0777775
 dsk_runtime_submit_fail:
         sub 017,[2,,2]
         popj 017,
-dsk_runtime_ioerr:
-        jrst    pdp10_ret_neg5
 
 ; Two pending 18-bit descriptor pointers per unit share one word.  q0 is
 ; the LH and is next by one-way elevator distance; q1 is the RH later request.

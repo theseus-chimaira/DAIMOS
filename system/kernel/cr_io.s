@@ -34,13 +34,13 @@ cr_pi_xfer:
 cr_read_card:
         jumpe 1,pdp10_ret_arg
         skipe cr_iowd
-        jrst cr_ret_e4
+        jrst pdp10_ret_neg4
         movei 2,0200000
 cr_read_ready_wait:
         consz 0150,0100
         jrst cr_read_start
         sojg 2,cr_read_ready_wait
-        jrst cr_ret_timeout
+        jrst pdp10_ret_neg2
 cr_read_start:
         subi 1,1
         hrli 1,0777660
@@ -53,16 +53,12 @@ cr_read_done_wait:
         sojg 2,cr_read_done_wait
         setzm cr_iowd
         cono 0150,0007
-        jrst cr_ret_timeout
+        jrst pdp10_ret_neg2
 cr_read_done:
         consz 0150,0400
         jrst pdp10_ret_busy
         movei 1,0120
         popj 017,
-cr_ret_timeout:
-        jrst    pdp10_ret_neg2
-cr_ret_e4:
-        jrst    pdp10_ret_neg4
 
         .bss
 cr_iowd:
