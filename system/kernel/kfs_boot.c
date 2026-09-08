@@ -1,5 +1,6 @@
 #include "kinit.h"
 #include "kboot.h"
+#include "mm.h"
 #include "initfs.h"
 #include "exec.h"
 #include "proc.h"
@@ -259,49 +260,60 @@ kfs_boot_prepare(void)
         if (boot_add_dir(next, mount_slot, VFS_SIX6('D','T','0',' ',' ',' '),
             3U, 0777U, 0) != 0)
                 return -1;
-        for (i = 0U; i < KBOOT_NODE_COUNT; ++i) {
-                kword_t *dst;
-                const kword_t *srcw;
-                unsigned int j;
-
-                dst = (kword_t *)(unsigned long)(KBOOT_RAMFS0_BASE +
-                    i * 8U);
-                srcw = (const kword_t *)&boot_nodes[i];
-                for (j = 0U; j < 8U; ++j)
-                        dst[j] = srcw[j];
-        }
         {
-                struct memfs config;
-                struct fs_mres_request req;
-                vnode_t root;
-                vnode_t temp;
-                vnode_t ramfs;
+                kword_t ramfs_base;
+                kword_t ramfs_words;
 
-                config.nodes = (struct memfs_node *)(unsigned long)
-                    KBOOT_RAMFS0_BASE;
-                config.node_count = KBOOT_NODE_COUNT;
-                config.pool = (kword_t *)(unsigned long)
-                    (KBOOT_RAMFS0_BASE + KBOOT_NODE_WORDS);
-                config.pool_words = KBOOT_RAMFS0_WORDS -
-                    KBOOT_NODE_WORDS;
-                config.used_words = 0U;
-                config.image_data = data;
-                req.op = FS_MRES_OP_MEMFS_INIT;
-                req.a = (kword_t)(unsigned long)&config;
-                if ((int)kinit_call18_1(memfs_service,
-                    (kword_t)(unsigned long)&req) != 0 ||
-                    vfs_mount(VFS_NODE_NONE, MEMFS_PROVIDER,
-                    MEMFS_KIND_NODE, 0U, VFS_MOUNT_RW, &root) != 0)
+                ramfs_words = mm_largest_free();
+                if (ramfs_words > KBOOT_RAMFS0_MAX_WORDS)
+                        ramfs_words = KBOOT_RAMFS0_MAX_WORDS;
+                if (ramfs_words < KBOOT_RAMFS0_MIN_WORDS ||
+                    mm_alloc(ramfs_words, MM_TYPE_KERNEL_DYNAMIC, 1U,
+                    MM_ALLOC_LOW, &ramfs_base) != MM_OK)
                         return -1;
-                temp = VFS_NODE(MEMFS_PROVIDER,
-                    VFS_MOUNT_KIND(VFS_MOUNT_ID(root),
-                    MEMFS_KIND_NODE), temp_slot);
-                if (vfs_mount(temp, MEMFS_PROVIDER, MEMFS_KIND_NODE,
-                    ramfs_slot, VFS_MOUNT_RW, &ramfs) != 0)
-                        return -1;
-                boot_memfs_root = root;
-                boot_ramfs_root = ramfs;
-                boot_ramfs_slot = ramfs_slot;
+                for (i = 0U; i < KBOOT_NODE_COUNT; ++i) {
+                        kword_t *dst;
+                        const kword_t *srcw;
+                        unsigned int j;
+
+                        dst = (kword_t *)(unsigned long)(ramfs_base + i * 8U);
+                        srcw = (const kword_t *)&boot_nodes[i];
+                        for (j = 0U; j < 8U; ++j)
+                                dst[j] = srcw[j];
+                }
+                {
+                        struct memfs config;
+                        struct fs_mres_request req;
+                        vnode_t root;
+                        vnode_t temp;
+                        vnode_t ramfs;
+
+                        config.nodes = (struct memfs_node *)(unsigned long)
+                            ramfs_base;
+                        config.node_count = KBOOT_NODE_COUNT;
+                        config.pool = (kword_t *)(unsigned long)
+                            (ramfs_base + KBOOT_NODE_WORDS);
+                        config.pool_words = (unsigned int)(ramfs_words -
+                            KBOOT_NODE_WORDS);
+                        config.used_words = 0U;
+                        config.image_data = data;
+                        req.op = FS_MRES_OP_MEMFS_INIT;
+                        req.a = (kword_t)(unsigned long)&config;
+                        if ((int)kinit_call18_1(memfs_service,
+                            (kword_t)(unsigned long)&req) != 0 ||
+                            vfs_mount(VFS_NODE_NONE, MEMFS_PROVIDER,
+                            MEMFS_KIND_NODE, 0U, VFS_MOUNT_RW, &root) != 0)
+                                return -1;
+                        temp = VFS_NODE(MEMFS_PROVIDER,
+                            VFS_MOUNT_KIND(VFS_MOUNT_ID(root),
+                            MEMFS_KIND_NODE), temp_slot);
+                        if (vfs_mount(temp, MEMFS_PROVIDER, MEMFS_KIND_NODE,
+                            ramfs_slot, VFS_MOUNT_RW, &ramfs) != 0)
+                                return -1;
+                        boot_memfs_root = root;
+                        boot_ramfs_root = ramfs;
+                        boot_ramfs_slot = ramfs_slot;
+                }
         }
 
 bind_services:

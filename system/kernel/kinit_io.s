@@ -9,6 +9,7 @@
         .globl kinit_call18_2
         .globl kinit_call18_3
         .globl kinit_halt
+        .globl kinit_apr_clear
 
 ; void kinit_put6(kword_t word)
 kinit_put6:
@@ -65,6 +66,13 @@ kinit_call18_3:
         move 03,04
         andi 05,0777777
         pushj 017,(05)
+        popj 017,
+
+; Clear the APR flag left by an intentional nonexistent-memory probe.
+; The probe runs before the line clock is enabled, so clearing the shared APR
+; flag here cannot lose a clock event.
+kinit_apr_clear:
+        cono 0000,010000
         popj 017,
 
 kinit_halt:

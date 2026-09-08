@@ -44,9 +44,12 @@ extern struct mm_extent mm_extents[MM_MAX_EXTENTS];
 extern kword_t mm_core_words;
 extern unsigned int mm_extent_count;
 
-void mm_boot_init(kword_t managed_base, kword_t core_words);
+void mm_boot_init(kword_t core_words);
+int mm_add_free(kword_t base, kword_t words);
 int mm_alloc(kword_t words, unsigned int type, unsigned int owner,
     unsigned int preference, kword_t *basep);
+int mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
+    unsigned int owner, unsigned int preference, kword_t *basep);
 int mm_free(kword_t base, unsigned int type, unsigned int owner);
 int mm_pin(kword_t base);
 int mm_unpin(kword_t base);

@@ -36,6 +36,9 @@ kinit_memory_kwords(void)
                 words = ((kword_t)k) << 10;
                 if (kinit_probe_word((volatile kword_t *)(unsigned long)(words - 1UL)))
                         found = k;
+                /* A failed probe is expected to set the PDP-6 APR NXM flag.
+                 * Do not leave it pending until PI/clock initialization. */
+                kinit_apr_clear();
         }
         return found;
 }

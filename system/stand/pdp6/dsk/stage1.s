@@ -59,6 +59,9 @@ stage1_magic_ok:
         hlrz 03,buffer+000001
         hrrz 04,buffer+000001
         movei 05,040000
+        add 05,03
+        movem 05,kinit_stack_base
+        movei 05,040000
         add 05,04
         movem 05,entry_addr
 
@@ -76,10 +79,10 @@ load_image_loop:
         pushj 017,copy_stream_words
         jumpn 01,load_image_loop
 load_image_done:
-        ; KINIT/KCORE now extend above 070000.  The transient bootstrap
-        ; pushdown list may use the remaining low-memory window below
-        ; the user image at 0100000.
-        movei 017,076000
+        ; Start the disposable KINIT stack immediately after the loaded image.
+        ; This maximizes stack headroom on a 32K machine and removes the old
+        ; fixed 076000 placement assumption.
+        move 017,kinit_stack_base
         setz 01,
         move 02,member_count
         jrst @entry_addr
@@ -396,6 +399,7 @@ db1_count: .block 01
 last_badmap_sector: .block 01
 stream_member: .block 01
 entry_addr: .block 01
+kinit_stack_base: .block 01
 stage1_last_error: .block 01
 member_unit: .block 04
 member_bad_count: .block 04

@@ -8,6 +8,7 @@
 int kfs_boot_prepare(void);
 
 extern kword_t sys_resident_words_immediate;
+extern kword_t __kinit_image_end;
 
 static unsigned int mres_next_addr;
 static unsigned int mres_owner_next;
@@ -222,8 +223,33 @@ kinit_enter(void)
 
         kcore_load();
         memory_kwords = kinit_memory_kwords();
-        mm_boot_init((kword_t)(unsigned long)&__kcore_low_end,
-            (kword_t)memory_kwords << 10U);
+        {
+                kword_t core_words;
+                kword_t low_base;
+                kword_t image_end;
+
+                core_words = (kword_t)memory_kwords << 10U;
+                low_base = (kword_t)(unsigned long)&__kcore_low_end;
+                image_end = (kword_t)(unsigned long)&__kinit_image_end;
+                mm_boot_init(core_words);
+                if (low_base < KINIT_IMAGE_BASE && low_base < core_words) {
+                        kword_t low_end = KINIT_IMAGE_BASE;
+                        if (low_end > core_words)
+                                low_end = core_words;
+                        if (low_end > low_base &&
+                            mm_add_free(low_base, low_end - low_base) != MM_OK)
+                                kinit_halt();
+                }
+                /* The pushdown list begins at image_end and grows upward.
+                 * Keep its bootstrap reserve outside MM until KINIT is gone. */
+                if (image_end < core_words &&
+                    KINIT_STACK_RESERVE_WORDS <= core_words - image_end) {
+                        kword_t high_base = image_end + KINIT_STACK_RESERVE_WORDS;
+                        if (high_base < core_words &&
+                            mm_add_free(high_base, core_words - high_base) != MM_OK)
+                                kinit_halt();
+                }
+        }
         kinit_diag_banner();
         kinit_save_boot_handoff();
         module_pi_init();

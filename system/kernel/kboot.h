@@ -4,17 +4,12 @@
 #include "kcore.h"
 #include "memfs.h"
 
-#define KBOOT_TOTAL_WORDS        01000000UL
-#define KBOOT_USER_BASE          0100000UL
-#define KBOOT_USER_LIMIT         0200000UL
 #define KBOOT_NODE_COUNT         64U
-#define KBOOT_RAMFS0_BASE        0600000UL
-#define KBOOT_RAMFS0_WORDS       0200000U
-#define KBOOT_NODE_WORDS          (KBOOT_NODE_COUNT * 8U)
-
-#if KBOOT_RAMFS0_BASE + KBOOT_RAMFS0_WORDS != KBOOT_TOTAL_WORDS
-#error "RAMFS0 must occupy the top 64K words"
-#endif
+#define KBOOT_NODE_WORDS         (KBOOT_NODE_COUNT * 8U)
+/* RAMFS0 is bootstrap scratch/storage, not a fixed physical reservation.
+ * Keep it useful on 32K systems while preserving core for a user process. */
+#define KBOOT_RAMFS0_MAX_WORDS   010000U
+#define KBOOT_RAMFS0_MIN_WORDS   (KBOOT_NODE_WORDS + 01000U)
 
 int kfs_boot_rebind_root(void);
 

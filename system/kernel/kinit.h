@@ -11,6 +11,8 @@ typedef unsigned long kword_t;
 
 #define KINIT_HALF_MASK          0777777UL
 #define KINIT_KCORE_BASE         000060UL
+#define KINIT_IMAGE_BASE         040000UL
+#define KINIT_STACK_RESERVE_WORDS 04000UL
 #define KINIT_BOOT_WORD0         000040UL
 #define KINIT_BOOT_WORD1         000041UL
 #define KINIT_MACHINE_NAME       "PDP6  "
@@ -23,6 +25,7 @@ extern kword_t kinit_boot_handoff[2];
         ((unsigned int)((w) & KINIT_HALF_MASK))
 
 unsigned int kinit_memory_kwords(void);
+void kinit_apr_clear(void);
 void kinit_diag_banner(void);
 void kinit_diag_system(unsigned int memory_kwords);
 

@@ -59,8 +59,7 @@ kinit_boot(void)
                         VFS_SIX6('M','/','I','N','I','T')
                 };
 
-                if (exec_load_init(p, 1U, init_path, KBOOT_USER_BASE,
-                    KBOOT_USER_LIMIT) != 0) {
+                if (exec_load_init(p, 1U, init_path) != 0) {
                         return;
                 }
         }

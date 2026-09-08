@@ -26,6 +26,8 @@ mm_delete(unsigned int slot)
         --mm_extent_count;
 }
 
+static void mm_coalesce(unsigned int slot);
+
 static int
 mm_insert(unsigned int slot, const struct mm_extent *extent)
 {
@@ -43,15 +45,43 @@ mm_insert(unsigned int slot, const struct mm_extent *extent)
 }
 
 void
-mm_boot_init(kword_t managed_base, kword_t core_words)
+mm_boot_init(kword_t core_words)
 {
         mm_core_words = core_words;
         mm_extent_count = 0U;
-        if (managed_base >= core_words || managed_base > MM_HALF_MASK)
-                return;
-        mm_extents[0].span = mm_span(managed_base, core_words - managed_base);
-        mm_extents[0].meta = mm_meta(MM_TYPE_FREE, 0U, 0U);
-        mm_extent_count = 1U;
+}
+
+/* Add a physically free boot-time range.  KINIT deliberately adds only
+ * ranges that do not contain its own live image or packaged MRES sources. */
+int
+mm_add_free(kword_t base, kword_t words)
+{
+        struct mm_extent extent;
+        unsigned int slot;
+        kword_t end;
+
+        if (words == 0UL || base > MM_HALF_MASK || words > MM_HALF_MASK ||
+            base >= mm_core_words || words > mm_core_words - base)
+                return MM_ERR_INVAL;
+        end = base + words;
+        slot = 0U;
+        while (slot < mm_extent_count &&
+            MM_EXTENT_BASE(&mm_extents[slot]) < base)
+                ++slot;
+        if (slot != 0U) {
+                struct mm_extent *left = &mm_extents[slot - 1U];
+                if (MM_EXTENT_BASE(left) + MM_EXTENT_WORDS(left) > base)
+                        return MM_ERR_INVAL;
+        }
+        if (slot < mm_extent_count &&
+            end > MM_EXTENT_BASE(&mm_extents[slot]))
+                return MM_ERR_INVAL;
+        extent.span = mm_span(base, words);
+        extent.meta = mm_meta(MM_TYPE_FREE, 0U, 0U);
+        if (mm_insert(slot, &extent) != MM_OK)
+                return MM_ERR_DESCRIPTORS;
+        mm_coalesce(slot);
+        return MM_OK;
 }
 
 kword_t
@@ -85,19 +115,70 @@ mm_largest_free(void)
         return largest;
 }
 
-int
-mm_alloc(kword_t words, unsigned int type, unsigned int owner,
-    unsigned int preference, kword_t *basep)
+static int
+mm_use_free(unsigned int slot, kword_t base, kword_t words,
+    unsigned int type, unsigned int owner, kword_t *basep)
 {
         struct mm_extent used;
+        struct mm_extent tail;
+        struct mm_extent *freep;
+        kword_t free_base;
+        kword_t free_end;
+        kword_t before;
+        kword_t after;
+        unsigned int needed;
+
+        freep = &mm_extents[slot];
+        free_base = MM_EXTENT_BASE(freep);
+        free_end = free_base + MM_EXTENT_WORDS(freep);
+        if (base < free_base || words > free_end - base)
+                return MM_ERR_INVAL;
+        before = base - free_base;
+        after = free_end - (base + words);
+        needed = (before != 0UL ? 1U : 0U) + (after != 0UL ? 1U : 0U);
+        if (mm_extent_count + needed > MM_MAX_EXTENTS)
+                return MM_ERR_DESCRIPTORS;
+
+        used.span = mm_span(base, words);
+        used.meta = mm_meta(type, owner, 0U);
+        if (before == 0UL) {
+                *freep = used;
+                if (after != 0UL) {
+                        tail.span = mm_span(base + words, after);
+                        tail.meta = mm_meta(MM_TYPE_FREE, 0U, 0U);
+                        if (mm_insert(slot + 1U, &tail) != MM_OK)
+                                return MM_ERR_DESCRIPTORS;
+                }
+        } else {
+                freep->span = mm_span(free_base, before);
+                if (mm_insert(slot + 1U, &used) != MM_OK)
+                        return MM_ERR_DESCRIPTORS;
+                if (after != 0UL) {
+                        tail.span = mm_span(base + words, after);
+                        tail.meta = mm_meta(MM_TYPE_FREE, 0U, 0U);
+                        if (mm_insert(slot + 2U, &tail) != MM_OK)
+                                return MM_ERR_DESCRIPTORS;
+                }
+        }
+        *basep = base;
+        return MM_OK;
+}
+
+int
+mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
+    unsigned int owner, unsigned int preference, kword_t *basep)
+{
         struct mm_extent *freep;
         kword_t free_base;
         kword_t free_words;
+        kword_t free_end;
         kword_t base;
         unsigned int i;
         int step;
 
         if (basep == 0 || words == 0UL || words > MM_HALF_MASK ||
+            alignment == 0UL || alignment > MM_HALF_MASK ||
+            (alignment & (alignment - 1UL)) != 0UL ||
             type == MM_TYPE_FREE || type > MM_TYPE_KERNEL_DYNAMIC ||
             preference > MM_ALLOC_HIGH)
                 return MM_ERR_INVAL;
@@ -116,39 +197,35 @@ mm_alloc(kword_t words, unsigned int type, unsigned int owner,
                 if (MM_EXTENT_TYPE(freep) == MM_TYPE_FREE) {
                         free_base = MM_EXTENT_BASE(freep);
                         free_words = MM_EXTENT_WORDS(freep);
+                        free_end = free_base + free_words;
                         if (free_words >= words) {
-                                if (free_words == words) {
-                                        freep->meta = mm_meta(type, owner, 0U);
-                                        *basep = free_base;
-                                        return MM_OK;
-                                }
-                                if (mm_extent_count >= MM_MAX_EXTENTS)
-                                        return MM_ERR_DESCRIPTORS;
                                 if (preference == MM_ALLOC_LOW) {
-                                        base = free_base;
-                                        freep->span = mm_span(free_base + words,
-                                            free_words - words);
-                                        used.span = mm_span(base, words);
-                                        used.meta = mm_meta(type, owner, 0U);
-                                        if (mm_insert(i, &used) != MM_OK)
-                                                return MM_ERR_DESCRIPTORS;
+                                        base = (free_base + alignment - 1UL) &
+                                            ~(alignment - 1UL);
+                                        if (base >= free_base && base <= free_end &&
+                                            words <= free_end - base)
+                                                return mm_use_free(i, base, words,
+                                                    type, owner, basep);
                                 } else {
-                                        base = free_base + free_words - words;
-                                        freep->span = mm_span(free_base,
-                                            free_words - words);
-                                        used.span = mm_span(base, words);
-                                        used.meta = mm_meta(type, owner, 0U);
-                                        if (mm_insert(i + 1U, &used) != MM_OK)
-                                                return MM_ERR_DESCRIPTORS;
+                                        base = (free_end - words) &
+                                            ~(alignment - 1UL);
+                                        if (base >= free_base)
+                                                return mm_use_free(i, base, words,
+                                                    type, owner, basep);
                                 }
-                                *basep = base;
-                                return MM_OK;
                         }
                 }
                 if (step > 0)
                         ++i;
         }
         return mm_total_free() >= words ? MM_ERR_FRAGMENTED : MM_ERR_NOMEM;
+}
+
+int
+mm_alloc(kword_t words, unsigned int type, unsigned int owner,
+    unsigned int preference, kword_t *basep)
+{
+        return mm_alloc_aligned(words, 1UL, type, owner, preference, basep);
 }
 
 static void
@@ -162,19 +239,24 @@ mm_coalesce(unsigned int slot)
         if (slot != 0U && MM_EXTENT_TYPE(&mm_extents[slot - 1U]) == MM_TYPE_FREE) {
                 left = &mm_extents[slot - 1U];
                 right = &mm_extents[slot];
-                words = MM_EXTENT_WORDS(left) + MM_EXTENT_WORDS(right);
-                left->span = mm_span(MM_EXTENT_BASE(left), words);
-                mm_delete(slot);
-                --slot;
+                if (MM_EXTENT_BASE(left) + MM_EXTENT_WORDS(left) ==
+                    MM_EXTENT_BASE(right)) {
+                        words = MM_EXTENT_WORDS(left) + MM_EXTENT_WORDS(right);
+                        left->span = mm_span(MM_EXTENT_BASE(left), words);
+                        mm_delete(slot);
+                        --slot;
+                }
         }
         if (slot + 1U < mm_extent_count &&
             MM_EXTENT_TYPE(&mm_extents[slot + 1U]) == MM_TYPE_FREE) {
                 left = &mm_extents[slot];
                 right = &mm_extents[slot + 1U];
                 base = MM_EXTENT_BASE(left);
-                words = MM_EXTENT_WORDS(left) + MM_EXTENT_WORDS(right);
-                left->span = mm_span(base, words);
-                mm_delete(slot + 1U);
+                if (base + MM_EXTENT_WORDS(left) == MM_EXTENT_BASE(right)) {
+                        words = MM_EXTENT_WORDS(left) + MM_EXTENT_WORDS(right);
+                        left->span = mm_span(base, words);
+                        mm_delete(slot + 1U);
+                }
         }
 }
 

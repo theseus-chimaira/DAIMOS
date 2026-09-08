@@ -31,7 +31,8 @@ sym()
 
 IMAGE_BASE=$((040000))
 KCORE_BASE=$((060))
-KINIT_STACK_BASE=$((076000))
+KINIT_32K_TOP=$((0100000))
+KINIT_MIN_STACK_WORDS=$((04000))
 HALF_MASK=$((0777777))
 DAIMON_MAGIC=$((0444151555756))
 image_start=$((0$(sym "$map" __kinit_image_start)))
@@ -43,7 +44,7 @@ kcore_init_end=$((0$(sym "$kcore_map" __kcore_low_init_end)))
 
 [ "$image_start" -eq "$IMAGE_BASE" ] && [ "$image_start" -lt "$image_end" ] && \
     [ "$image_end" -le "$HALF_MASK" ] || fail "invalid KINIT image bounds"
-[ "$image_end" -le "$KINIT_STACK_BASE" ] || fail "KINIT image overlaps pushdown stack"
+[ "$image_end" -le $((KINIT_32K_TOP - KINIT_MIN_STACK_WORDS)) ] || fail "KINIT image leaves less than 2K words of stack on a 32K machine"
 [ "$image_start" -le "$load_begin" ] && [ "$load_begin" -le "$load_end" ] && \
     [ "$load_end" -le "$image_end" ] || fail "invalid KCORE load slot"
 [ "$image_start" -le "$entry" ] && [ "$entry" -lt "$image_end" ] || fail "invalid KINIT entry"
