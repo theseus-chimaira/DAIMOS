@@ -120,6 +120,10 @@ extern int dtfs_foreign_set_name(unsigned int slot,
     const struct vfs_name *name, int its);
 
 
+#if !DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS
+#define dtfs_scan_slot(node, name, slotp) \
+        dtfs_native_scan_slot((name), (slotp))
+#else
 int
 dtfs_scan_slot(vnode_t node, const struct vfs_name *name,
     unsigned int *slotp)
@@ -164,6 +168,8 @@ dtfs_scan_slot(vnode_t node, const struct vfs_name *name,
         }
         return -1;
 }
+
+#endif
 
 extern void dtfs_set_name(unsigned int slot, const struct vfs_name *name);
 
@@ -776,6 +782,85 @@ dtfs_truncate(vnode_t node, unsigned int words, kword_t size_chars)
 
 extern int dtfs_chmod(vnode_t node, unsigned int mode);
 
+#if !DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS
+int
+dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
+    kword_t *buf, unsigned int nwords, unsigned int mapoff, int writing)
+{
+        unsigned int blocks;
+        unsigned int first;
+        unsigned int block;
+        unsigned int count;
+        unsigned int take;
+        unsigned int done;
+        unsigned int seen;
+        unsigned int words;
+
+        (void)mapoff;
+        blocks = 0U;
+        first = 0U;
+        for (block = 1U; block != DTFS_LAST_BLOCK + 1U; ++block) {
+                if (dtfs_owner(0U, block) != slot + 1U)
+                        continue;
+                ++blocks;
+                if (first == 0U &&
+                    dtfs_dtc_read(unit, block, dtfs_block) == 0 &&
+                    ((dtfs_block[0] >> DTFS_FIRST_SHIFT) &
+                    DTFS_BLOCKNO_MASK) == block)
+                        first = block;
+        }
+        if (first == 0U)
+                return blocks == 0U ? 0 : -1;
+        block = first;
+        done = 0U;
+        words = 0U;
+        seen = 0U;
+        for (;;) {
+                if (block == 0U || block > DTFS_LAST_BLOCK ||
+                    dtfs_owner(0U, block) != slot + 1U ||
+                    dtfs_dtc_read(unit, block, dtfs_block) != 0 ||
+                    ((dtfs_block[0] >> DTFS_FIRST_SHIFT) &
+                    DTFS_BLOCKNO_MASK) != first)
+                        return -1;
+                count = (unsigned int)(dtfs_block[0] & DTFS_COUNT_MASK);
+                if (count > DTFS_DATA_WORDS)
+                        return -1;
+                words += count;
+                if (buf != 0) {
+                        if (off < count) {
+                                take = count - off;
+                                if (take > nwords - done)
+                                        take = nwords - done;
+                                if (writing) {
+                                        fs_copy_words(&buf[done],
+                                            &dtfs_block[1U + off], take);
+                                        if (dtfs_dtc_write(unit, block,
+                                            dtfs_block) != 0)
+                                                return -1;
+                                } else {
+                                        fs_copy_words(&dtfs_block[1U + off],
+                                            &buf[done], take);
+                                }
+                                done += take;
+                                off = 0U;
+                                if (done == nwords)
+                                        return (int)done;
+                        } else {
+                                off -= count;
+                        }
+                }
+                block = dtfs_hdr_next(dtfs_block[0]);
+                ++seen;
+                if (block == 0U) {
+                        if (seen != blocks)
+                                return -1;
+                        return buf != 0 ? (int)done : (int)words;
+                }
+                if (count == 0U || seen == blocks)
+                        return -1;
+        }
+}
+#else
 int
 dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
     kword_t *buf, unsigned int nwords, unsigned int mapoff, int writing)
@@ -895,6 +980,8 @@ chain_next:
                 return -1;
         goto chain_scan;
 }
+
+#endif
 
 static int
 dtfs_transfer_words(vnode_t node, unsigned int off, kword_t *buf,

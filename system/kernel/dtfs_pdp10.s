@@ -503,7 +503,9 @@ dtfs_foreign_set_name_return:
 ; Compact provider lookup.  Preserve the three live arguments and one slot
 ; word with PUSH/POP rather than GCC's frame plus callee-save spill block.
         .globl  dtfs_load
+        .if DTFS_ENABLE_FOREIGN
         .globl  dtfs_scan_slot
+        .endif
         .globl  dtfs_commit
         .globl  dtfs_set_exec
         .globl  dtfs_native_scan_slot
@@ -566,10 +568,16 @@ dtfs_lookup:
         move    1,010
         pushj   17,dtfs_load
         jumpn   1,dtfs_lookup_fail
+        .if DTFS_ENABLE_FOREIGN
         move    1,010
         move    2,011
         movei   3,(17)
         pushj   17,dtfs_scan_slot
+        .else
+        move    1,011
+        movei   2,(17)
+        pushj   17,dtfs_native_scan_slot
+        .endif
         jumpn   1,dtfs_lookup_fail
         and     010,[07700000000]       ; retain mount id
         tlo     010,050002              ; DTFS provider + file local kind
