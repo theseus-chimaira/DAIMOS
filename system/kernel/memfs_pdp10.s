@@ -648,7 +648,7 @@ memfs_truncate_words:
 memfs_truncate_fail:
         seto    1,
 memfs_truncate_done:
-        adjsp   17,-3
+        sub     17,[3,,3]
         popj    17,
 
 ; int memfs_readdir(const struct memfs *fs, vnode_t dir,
