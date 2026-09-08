@@ -17,9 +17,8 @@
 ;
 ; The odd words of the seven two-word PI vectors are otherwise unused.
 ;
-; PI1..PI3 dispatch spans reuse low core 037, 040, and 041.  KINIT copies
-; the Stage1 040/041 boot handoff into kcore_boot_handoff before MINIT runs,
-; so these words are free for permanent PI state by module_pi_init().
+; PI dispatch spans live in resident storage.  Executive locations 040/041
+; are reserved for the PDP-6 user UUO trap block.
 
         .text
         .globl pdp10_pi_handler_return
@@ -46,7 +45,7 @@ pdp10_pi_level1:
         movem 1,000020
         movem 2,000021
         movem 3,000043
-        move 2,000037
+        move 2,pdp10_pi_level_span+0
         movei 3,pdp10_pi_return_level1
 pdp10_pi_level1_dispatch_jump:
         jrst pdp10_pi_dispatch
@@ -55,7 +54,7 @@ pdp10_pi_level2:
         movem 1,000022
         movem 2,000023
         movem 3,000045
-        move 2,000040
+        move 2,pdp10_pi_level_span+1
         movei 3,pdp10_pi_return_level2
 pdp10_pi_level2_dispatch_jump:
         jrst pdp10_pi_dispatch
@@ -64,7 +63,7 @@ pdp10_pi_level3:
         movem 1,000024
         movem 2,000025
         movem 3,000036
-        move 2,000041
+        move 2,pdp10_pi_level_span+2
         movei 3,pdp10_pi_return_level3
 pdp10_pi_level3_dispatch_jump:
         jrst pdp10_pi_dispatch
@@ -73,7 +72,7 @@ pdp10_pi_level4:
         movem 1,000026
         movem 2,000027
         movem 3,000051
-        move 2,pdp10_pi_level_span+0
+        move 2,pdp10_pi_level_span+3
         movei 3,pdp10_pi_return_level4
 pdp10_pi_level4_dispatch_jump:
         jrst pdp10_pi_dispatch
@@ -82,7 +81,7 @@ pdp10_pi_level5:
         movem 1,000030
         movem 2,000031
         movem 3,000053
-        move 2,pdp10_pi_level_span+1
+        move 2,pdp10_pi_level_span+4
         movei 3,pdp10_pi_return_level5
 pdp10_pi_level5_dispatch_jump:
         jrst pdp10_pi_dispatch
@@ -91,7 +90,7 @@ pdp10_pi_level6:
         movem 1,000032
         movem 2,000033
         movem 3,000055
-        move 2,pdp10_pi_level_span+2
+        move 2,pdp10_pi_level_span+5
         movei 3,pdp10_pi_return_level6
 pdp10_pi_level6_dispatch_jump:
         jrst pdp10_pi_dispatch
@@ -100,7 +99,7 @@ pdp10_pi_level7:
         movem 1,000034
         movem 2,000035
         movem 3,000057
-        move 2,pdp10_pi_level_span+3
+        move 2,pdp10_pi_level_span+6
         movei 3,pdp10_pi_return_level7
 
 ; A nonzero span is stored as -count,,start.  The first handler is called
@@ -151,4 +150,4 @@ pdp10_pi_return_level7:
 pdp10_pi_handlers:
         .block 013
 pdp10_pi_level_span:
-        .block 04
+        .block 07

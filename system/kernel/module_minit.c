@@ -98,13 +98,7 @@ static unsigned int pi_enabled_mask;
 static volatile kword_t *
 minit_pi_span_slot(unsigned int level)
 {
-        if (level == 1U)
-                return (volatile kword_t *)(unsigned long)000037U;
-        if (level == 2U)
-                return (volatile kword_t *)(unsigned long)000040U;
-        if (level == 3U)
-                return (volatile kword_t *)(unsigned long)000041U;
-        return &pdp10_pi_level_span[level - 4U];
+        return &pdp10_pi_level_span[level - 1U];
 }
 
 static kword_t

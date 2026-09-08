@@ -3,14 +3,16 @@
 	.text
         .globl  pdp10_ret_zero
 sys_user_words:
+        ; User pointers are logical.  Validate against the process extent,
+        ; then translate once for executive-mode kernel access.
         hrrz    1,1
-        hrrz    4,proc_table+3
-        hlrz    3,proc_table+3
-        add     3,4
-        camge   1,4
+        caige   1,020
         jrst    pdp10_ret_zero
+        hlrz    3,proc_table+3
         caml    1,3
         jrst    pdp10_ret_zero
+        hrrz    4,proc_table+3
+        add     1,4
         popj    17,
 
 	.globl	exec_native_syscall

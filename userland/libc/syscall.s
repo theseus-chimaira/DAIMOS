@@ -1,7 +1,7 @@
         .text
         .globl __syscall
-        .globl mach_syscall
 __syscall:
         move 5,-1(17)
-        pushj 17,mach_syscall
+        ; PDP-6 user UUO.  AC1 carries the syscall number; AC2..AC5 args.
+        .word 0
         popj 17,

@@ -8,11 +8,10 @@
 #define EXEC_DXR_F_PURE             0200000U
 #define EXEC_DXR_F_IMPURE           0400000U
 #define EXEC_DXR_STACK_WORDS        02000U
+#define EXEC_USER_ORIGIN            000020U
 #define EXEC_PDP6_ALIGN_WORDS        02000U
 #define EXEC_DXR_MAX_IMAGE_WORDS    036000U
 #define EXEC_DXR_MAX_BSS_WORDS      020000U
-#define EXEC_SYSCALL_MARKER         0777777777777UL
-#define EXEC_PDP10_JRST             0254000000000UL
 
 int exec_load_init(struct proc *p, unsigned int owner,
     const kword_t *path);

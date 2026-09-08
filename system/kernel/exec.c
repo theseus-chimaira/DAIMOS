@@ -16,17 +16,14 @@ exec_load_init(struct proc *p, unsigned int owner,
         struct vfs_stat st;
         kword_t hdr[EXEC_DXR_HDR_WORDS];
         kword_t *mem;
-        kword_t target;
         kword_t process_words;
         kword_t alloc_words;
         kword_t base;
-        kword_t relword;
         unsigned int entry;
         unsigned int image_words;
         unsigned int bss_words;
         unsigned int reloc_words;
         unsigned int i;
-        unsigned int rel_index;
 
         if (p == 0 || path == 0 ||
             file_lookup_path(path, &node) != 0 ||
@@ -47,7 +44,8 @@ exec_load_init(struct proc *p, unsigned int owner,
         if ((kword_t)EXEC_DXR_HDR_WORDS + (kword_t)image_words +
             (kword_t)reloc_words > st.size_words)
                 return -1;
-        process_words = (kword_t)image_words + (kword_t)bss_words +
+        process_words = (kword_t)EXEC_USER_ORIGIN +
+            (kword_t)image_words + (kword_t)bss_words +
             (kword_t)EXEC_DXR_STACK_WORDS;
         if (process_words > EXEC_HALF_MASK)
                 return -1;
@@ -59,41 +57,18 @@ exec_load_init(struct proc *p, unsigned int owner,
                 return -1;
 
         mem = (kword_t *)(unsigned long)base;
-        if (vfs_read_words(node, EXEC_DXR_HDR_WORDS, mem,
-            image_words) != (int)image_words)
+        for (i = 0U; (kword_t)i < alloc_words; ++i)
+                mem[i] = 0UL;
+        if (vfs_read_words(node, EXEC_DXR_HDR_WORDS,
+            mem + EXEC_USER_ORIGIN, image_words) != (int)image_words)
                 goto fail;
 
-        relword = 0UL;
-        rel_index = (unsigned int)-1;
-        for (i = 0U; i < image_words; ++i) {
-                unsigned int r;
 
-                r = i / 36U;
-                if (r != rel_index) {
-                        if (vfs_read_words(node,
-                            EXEC_DXR_HDR_WORDS + image_words + r,
-                            &relword, 1U) != 1)
-                                goto fail;
-                        rel_index = r;
-                }
-                if ((relword & ((kword_t)1UL << (35U - (i % 36U)))) != 0)
-                        mem[i] = (mem[i] & ~(kword_t)EXEC_HALF_MASK) |
-                            ((mem[i] + base) & EXEC_HALF_MASK);
-        }
-        for (i = image_words; (kword_t)i < alloc_words; ++i)
-                mem[i] = 0UL;
-
-        target = EXEC_PDP10_JRST |
-            ((kword_t)(unsigned long)mach_syscall_trampoline &
-            EXEC_HALF_MASK);
-        target &= EXEC_WORD_MASK;
-        for (i = 0U; i < image_words; ++i)
-                if ((mem[i] & EXEC_WORD_MASK) == EXEC_SYSCALL_MARKER)
-                        mem[i] = target;
 
         p->meta = ((kword_t)owner & PROC_PID_MASK) |
             ((kword_t)PROC_SRUN << PROC_STATE_SHIFT) |
-            (((kword_t)entry & PROC_HALF_MASK) << PROC_ENTRY_SHIFT);
+            (((kword_t)(entry + EXEC_USER_ORIGIN) & PROC_HALF_MASK) <<
+            PROC_ENTRY_SHIFT);
         p->mem_layout = ((alloc_words & PROC_HALF_MASK) <<
             PROC_HALF_SHIFT) | (base & PROC_HALF_MASK);
         return 0;

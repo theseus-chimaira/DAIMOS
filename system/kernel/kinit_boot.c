@@ -49,6 +49,7 @@ kinit_boot(void)
                         }
                 }
         }
+        mach_user_trap_init();
         proc_table[0].meta =
             (kword_t)PROC_SRUN << PROC_STATE_SHIFT;
         p = &proc_table[1];

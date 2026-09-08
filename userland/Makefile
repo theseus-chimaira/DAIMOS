@@ -11,7 +11,7 @@ CHECK_SRCS = libc/u.c exec/commands.c exec/standalone.c dsh/dsh.c
 CHECK_ASMS = $(CHECK_SRCS:%.c=$(USER_BUILD)/check/%.s)
 DSH_C_SRCS = libc/u.c exec/commands.c dsh/dsh.c
 DSH_C_OBJS = $(DSH_C_SRCS:%.c=$(USER_BUILD)/dsh/%.dobj)
-DSH_S_SRCS = libc/crt0.s libc/syscall.s libc/syscall_sentinel.s
+DSH_S_SRCS = libc/crt0.s libc/syscall.s
 DSH_S_OBJS = $(DSH_S_SRCS:%.s=$(USER_BUILD)/dsh/%.dobj)
 DSH_DXR = $(USER_BUILD)/dsh.dxr
 DSH_MAP = $(USER_BUILD)/dsh.map
@@ -38,7 +38,7 @@ $(USER_BUILD)/dsh/%.dobj: %.s
 
 $(DSH_DXR): $(DSH_C_OBJS) $(DSH_S_OBJS)
 	libgcc=`$(PDP10_GCC) -print-libgcc-file-name`; \
-	$(DLINK) -o $@ -M $(DSH_MAP) $(DSH_S_OBJS) $(DSH_C_OBJS) $$libgcc
+	$(DLINK) -b 020 -o $@ -M $(DSH_MAP) $(DSH_S_OBJS) $(DSH_C_OBJS) $$libgcc
 
 clean:
 	rm -rf $(USER_BUILD)
