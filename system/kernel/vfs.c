@@ -211,8 +211,6 @@ vfs_parent_raw(vnode_t node, vnode_t *parentp)
         unsigned int provider;
         unsigned int kind;
 
-        if (parentp == 0)
-                return -1;
         provider = VFS_PROVIDER(node);
         if (provider == DEVICEFS_PROVIDER) {
                 *parentp = vfs_namespace_root;
@@ -307,11 +305,13 @@ vfs_create_op(unsigned int op, vnode_t dir, const struct vfs_name *name,
 {
         struct fs_mres_request req;
         vnode_t node;
+        unsigned int provider;
         int rc;
 
         if (nodep == 0)
                 return -1;
-        if (op == FS_MRES_OP_MKDIR && VFS_PROVIDER(dir) == DTFS_PROVIDER)
+        provider = VFS_PROVIDER(dir);
+        if (op == FS_MRES_OP_MKDIR && provider == DTFS_PROVIDER)
                 return VFS_ERR_UNSUPPORTED;
         if (vfs_readonly(dir))
                 return -1;
@@ -320,7 +320,7 @@ vfs_create_op(unsigned int op, vnode_t dir, const struct vfs_name *name,
         req.b = (kword_t)(unsigned long)name;
         req.c = (kword_t)mode;
         req.d = (kword_t)(unsigned long)&node;
-        rc = fs_provider_call(VFS_PROVIDER(dir), &req);
+        rc = fs_provider_call(provider, &req);
         if (rc != 0)
                 return rc;
         *nodep = VFS_INHERIT_MOUNT(dir, node);

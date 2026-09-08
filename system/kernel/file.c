@@ -208,9 +208,7 @@ file_close(int fd)
         fp = file_find(fd);
         if (fp == 0 || vfs_sync(fp->node) != 0)
                 return -1;
-        fp->meta = 0U;
         fp->node = VFS_NODE_NONE;
-        fp->off_chars = 0;
         return 0;
 }
 
