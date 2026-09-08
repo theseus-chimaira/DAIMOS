@@ -97,9 +97,9 @@ exec_load_init(struct proc *p, unsigned int owner,
         p->sched = PROC_SCHED_DEFAULT;
         PROC_SET_STATE(p, PROC_SIDL);
         proc_swap_attach(owner, node, (kword_t)image_words,
-            (kword_t)text_words, header_words,
-            (dxr_flags == EXEC_DXR_F_PURE &&
-            header_words == EXEC_DXR_EXT_HDR_WORDS) ? PROC_SWAP_EXEC_PURE : 0U);
+            (kword_t)text_words,
+            dxr_flags == EXEC_DXR_F_PURE &&
+            header_words == EXEC_DXR_EXT_HDR_WORDS);
         return 0;
 
 fail:

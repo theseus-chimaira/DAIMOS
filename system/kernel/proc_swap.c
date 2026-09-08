@@ -5,15 +5,17 @@
 #include "mm.h"
 #include "storage.h"
 
-#define PROC_SWAP_META_FLAGS_MASK   077U
-#define PROC_SWAP_META_HEADER_SHIFT 6U
-#define PROC_SWAP_META_HEADER_MASK  07U
+#define PROC_SWAP_TEXT_MASK  0377777UL
+#define PROC_SWAP_PURE_BIT   (0400000UL << 18U)
+
+#if EXEC_DXR_MAX_IMAGE_WORDS > PROC_SWAP_TEXT_MASK
+#error "packed swap text field is too small for executable ABI"
+#endif
 
 struct proc_swap_record {
         vnode_t backing;
         kword_t image_span;          /* LH text words, RH initialized image. */
         kword_t disk_span;           /* LH first SWAP block, RH block count. */
-        kword_t meta;                /* flags, DXR header words, saved state. */
 };
 
 static struct proc_swap_record *proc_swap_records;
@@ -27,7 +29,6 @@ proc_swap_boot_init(unsigned int slots)
         kword_t base;
         kword_t words;
         kword_t *wp;
-        unsigned int i;
 
         if (proc_swap_records != 0 || slots == 0U || slots > PROC_MAX_SLOTS)
                 return -1;
@@ -36,8 +37,7 @@ proc_swap_boot_init(unsigned int slots)
             MM_ALLOC_LOW, &base) != MM_OK)
                 return -1;
         wp = (kword_t *)(unsigned long)base;
-        for (i = 0U; (kword_t)i < words; ++i)
-                wp[i] = 0UL;
+        fs_zero_words(wp, (unsigned int)words);
         proc_swap_records = (struct proc_swap_record *)(unsigned long)base;
         return 0;
 }
@@ -136,7 +136,6 @@ proc_swap_write_words(kword_t first, const kword_t *src, kword_t words)
         kword_t full;
         kword_t rem;
         kword_t block[DSK_WORDS_PER_SECTOR];
-        unsigned int i;
 
         full = words / DSK_WORDS_PER_SECTOR;
         rem = words % DSK_WORDS_PER_SECTOR;
@@ -145,10 +144,10 @@ proc_swap_write_words(kword_t first, const kword_t *src, kword_t words)
                 return -1;
         if (rem == 0UL)
                 return 0;
-        for (i = 0U; (kword_t)i < rem; ++i)
-                block[i] = src[full * DSK_WORDS_PER_SECTOR + i];
-        while (i < DSK_WORDS_PER_SECTOR)
-                block[i++] = 0UL;
+        fs_copy_words(src + full * DSK_WORDS_PER_SECTOR, block,
+            (unsigned int)rem);
+        fs_zero_words(block + rem,
+            (unsigned int)(DSK_WORDS_PER_SECTOR - rem));
         return proc_swap_disk_io(DISKSET_MRES_OP_SWAP_WRITE, first + full,
             1UL, block) == 0 ? 0 : -1;
 }
@@ -159,7 +158,6 @@ proc_swap_read_words(kword_t first, kword_t *dst, kword_t words)
         kword_t full;
         kword_t rem;
         kword_t block[DSK_WORDS_PER_SECTOR];
-        unsigned int i;
 
         full = words / DSK_WORDS_PER_SECTOR;
         rem = words % DSK_WORDS_PER_SECTOR;
@@ -171,14 +169,14 @@ proc_swap_read_words(kword_t first, kword_t *dst, kword_t words)
         if (proc_swap_disk_io(DISKSET_MRES_OP_SWAP_READ, first + full,
             1UL, block) != 0)
                 return -1;
-        for (i = 0U; (kword_t)i < rem; ++i)
-                dst[full * DSK_WORDS_PER_SECTOR + i] = block[i];
+        fs_copy_words(block, dst + full * DSK_WORDS_PER_SECTOR,
+            (unsigned int)rem);
         return 0;
 }
 
 void
 proc_swap_attach(unsigned int slot, vnode_t backing, kword_t image_words,
-    kword_t text_words, unsigned int header_words, unsigned int flags)
+    kword_t text_words, unsigned int pure)
 {
         struct proc_swap_record *r;
 
@@ -186,12 +184,11 @@ proc_swap_attach(unsigned int slot, vnode_t backing, kword_t image_words,
                 return;
         r = &proc_swap_records[slot];
         r->backing = backing;
-        r->image_span = ((text_words & MM_HALF_MASK) << 18U) |
+        r->image_span = ((text_words & PROC_SWAP_TEXT_MASK) << 18U) |
             (image_words & MM_HALF_MASK);
+        if (pure != 0U)
+                r->image_span |= PROC_SWAP_PURE_BIT;
         r->disk_span = 0UL;
-        r->meta = ((kword_t)(header_words & PROC_SWAP_META_HEADER_MASK) <<
-            PROC_SWAP_META_HEADER_SHIFT) |
-            (kword_t)(flags & PROC_SWAP_META_FLAGS_MASK);
 }
 
 void
@@ -202,7 +199,6 @@ proc_swap_detach(unsigned int slot)
         proc_swap_records[slot].backing = VFS_NODE_NONE;
         proc_swap_records[slot].image_span = 0UL;
         proc_swap_records[slot].disk_span = 0UL;
-        proc_swap_records[slot].meta = 0UL;
 }
 
 int
@@ -244,8 +240,8 @@ proc_swap_out(unsigned int slot)
         }
         mem = (kword_t *)(unsigned long)base;
 
-        pure = (r->meta & PROC_SWAP_EXEC_PURE) != 0UL;
-        text_words = (r->image_span >> 18U) & MM_HALF_MASK;
+        pure = (r->image_span & PROC_SWAP_PURE_BIT) != 0UL;
+        text_words = (r->image_span >> 18U) & PROC_SWAP_TEXT_MASK;
         if (pure) {
                 offset = (kword_t)EXEC_USER_ORIGIN + text_words;
                 if (offset > words)
@@ -295,8 +291,6 @@ proc_swap_in(unsigned int slot)
         kword_t first;
         kword_t blocks;
         kword_t *mem;
-        unsigned int header_words;
-        unsigned int i;
         int pure;
 
         if (proc_swap_records == 0 || proc_table == 0 || slot == 0U ||
@@ -323,19 +317,16 @@ proc_swap_in(unsigned int slot)
                 return -1;
         }
         mem = (kword_t *)(unsigned long)base;
-        for (i = 0U; (kword_t)i < words; ++i)
-                mem[i] = 0UL;
+        fs_zero_words(mem, (unsigned int)words);
 
-        pure = (r->meta & PROC_SWAP_EXEC_PURE) != 0UL;
-        text_words = (r->image_span >> 18U) & MM_HALF_MASK;
+        pure = (r->image_span & PROC_SWAP_PURE_BIT) != 0UL;
+        text_words = (r->image_span >> 18U) & PROC_SWAP_TEXT_MASK;
         image_words = r->image_span & MM_HALF_MASK;
-        header_words = (unsigned int)((r->meta >>
-            PROC_SWAP_META_HEADER_SHIFT) & PROC_SWAP_META_HEADER_MASK);
         first = (r->disk_span >> 18U) & MM_HALF_MASK;
         blocks = r->disk_span & MM_HALF_MASK;
         if (pure) {
-                if (text_words > image_words || header_words == 0U ||
-                    vfs_read_words(r->backing, header_words,
+                if (text_words > image_words ||
+                    vfs_read_words(r->backing, EXEC_DXR_EXT_HDR_WORDS,
                     mem + EXEC_USER_ORIGIN, (unsigned int)text_words) !=
                     (int)text_words)
                         goto fail;
