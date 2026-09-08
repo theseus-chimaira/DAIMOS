@@ -196,8 +196,7 @@ memfs_write_words:
         tlc     1,0400000
         move    4,3
         tlc     4,0400000
-        caml    1,4             ; need < off (unsigned) => overflow
-        jrst    memfs_write_need_ok
+        camge   1,4             ; need >= off (unsigned) => no overflow
         jrst    pdp10_ret_neg1
 memfs_write_need_ok:
         hrrz    4,7(5)          ; current word count
@@ -323,30 +322,30 @@ memfs_lookup:
         move    011,2                   ; dir
         move    012,3                   ; name
         move    013,4                   ; nodep
-        jumpe   013,memfs_lookup_fail
+        jumpe   013,memfs_restore4_fail
         move    1,012
         pushj   17,vfs_name_valid
-        jumpe   1,memfs_lookup_fail
+        jumpe   1,memfs_restore4_fail
         move    1,010
         move    2,011
         pushj   17,memfs_slot
-        jumpl   1,memfs_lookup_fail
+        jumpl   1,memfs_restore4_fail
         move    2,1                     ; parent slot
         ldb     4,[POINT 3,5(5),20]
         caie    4,1
-        jrst    memfs_lookup_fail
+        jrst    memfs_restore4_fail
         move    1,010
         move    3,012
         pushj   17,memfs_find_child
-        jumpl   1,memfs_lookup_fail
+        jumpl   1,memfs_restore4_fail
         hrrz    1,1
         tlo     1,040001
         movem   1,(013)
+memfs_restore4_zero:
         setz    1,
-        jrst    memfs_lookup_done
-memfs_lookup_fail:
+        jrst    memfs_restore4
+memfs_restore4_fail:
         seto    1,
-memfs_lookup_done:
         jrst    memfs_restore4
 
         .globl  memfs_create
@@ -440,27 +439,27 @@ memfs_unlink:
         move    010,1                   ; fs
         move    011,2                   ; dir, then parent
         move    012,3                   ; name
-        jumpe   010,memfs_unlink_fail
+        jumpe   010,memfs_restore4_fail
         skipn   5(010)
-        jrst    memfs_unlink_fail
+        jrst    memfs_restore4_fail
         move    1,012
         pushj   17,vfs_name_valid
-        jumpe   1,memfs_unlink_fail
+        jumpe   1,memfs_restore4_fail
         move    1,010
         move    2,011
         pushj   17,memfs_slot
-        jumpl   1,memfs_unlink_fail
+        jumpl   1,memfs_restore4_fail
         move    011,1
         ldb     4,[POINT 3,5(5),20]
         caie    4,1
-        jrst    memfs_unlink_fail
+        jrst    memfs_restore4_fail
         trnn    6,4
-        jrst    memfs_unlink_fail
+        jrst    memfs_restore4_fail
         move    1,010
         move    2,011
         move    3,012
         pushj   17,memfs_find_child
-        jumpl   1,memfs_unlink_fail
+        jumpl   1,memfs_restore4_fail
         move    013,1                   ; victim slot
         move    3,(010)
         addi    3,010                   ; slot 1
@@ -473,7 +472,7 @@ memfs_unlink_child_loop:
         jrst    memfs_unlink_child_next
         hlrz    5,5
         camn    5,013
-        jrst    memfs_unlink_fail
+        jrst    memfs_restore4_fail
 memfs_unlink_child_next:
         addi    3,010
         addi    4,1
@@ -489,18 +488,13 @@ memfs_unlink_no_children:
         move    2,013
         movei   3,0
         pushj   17,memfs_resize
-        jumpn   1,memfs_unlink_fail
+        jumpn   1,memfs_restore4_fail
 memfs_unlink_clear:
         move    1,013
         lsh     1,3
         add     1,(010)
         pushj   17,memfs_clear_node
-        setz    1,
-        jrst    memfs_unlink_done
-memfs_unlink_fail:
-        seto    1,
-memfs_unlink_done:
-        jrst    memfs_restore4
+        jrst    memfs_restore4_zero
 
         .globl  memfs_rename
 memfs_rename:
