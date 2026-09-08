@@ -85,8 +85,10 @@ sys_resident_words_immediate:
         setzm   7(2)
         setzm   010(2)
         movei   1,2(2)
+        push    17,2                    ; MRES calls may clobber AC2
 sys_memfs_usage_call:
         pushj   17,pdp10_ret_neg1
+        pop     17,2                    ; restore struct sys_meminfo pointer
         jumpn   1,sys_meminfo_no_ramfs
         move    4,3(2)
         move    5,4(2)
@@ -95,33 +97,34 @@ sys_meminfo_no_ramfs:
         movei   4,0
         movei   5,0
 sys_meminfo_have_ramfs:
+        ; Commit MEMFS results before reusing AC4 as an index register.
+        movem   4,3(2)
+        movem   5,4(2)
         ; Count occupied slots and resident process+u-area words.
         movei   1,0                    ; resident process words
         movei   3,0                    ; occupied logical slots
         movei   6,0                    ; slot index
-        move    010,proc_table         ; process pointer
+        move    4,proc_table           ; process pointer; AC4 is caller-scratch
 sys_meminfo_proc_loop:
         caml    6,proc_high_slot
         jrst    sys_meminfo_proc_done
-        hlrz    7,2(010)
+        hlrz    7,2(4)
         andi    7,PROC_STATE_LH_MASK
         jumpe   7,sys_meminfo_proc_next
         addi    3,1
-        move    7,(010)
+        move    7,(4)
         trne    7,PROC_UAREA_RH
         addi    1,PROC_UAREA_WORDS      ; stable u-area remains while swapped
-        hrrz    7,1(010)
+        hrrz    7,1(4)
         jumpe   7,sys_meminfo_proc_next
-        hlrz    7,1(010)
+        hlrz    7,1(4)
         add     1,7
 sys_meminfo_proc_next:
-        addi    010,PROC_WORDS
+        addi    4,PROC_WORDS
         addi    6,1
         jrst    sys_meminfo_proc_loop
 sys_meminfo_proc_done:
         movem   1,2(2)
-        movem   4,3(2)
-        movem   5,4(2)
         movem   3,5(2)
         move    3,proc_slots
         movem   3,6(2)
