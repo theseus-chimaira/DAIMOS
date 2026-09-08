@@ -36,7 +36,7 @@ exec_load_init(struct proc *p, unsigned int owner,
 
         entry = (unsigned int)(hdr[0] & EXEC_HALF_MASK);
         image_words = (unsigned int)((hdr[1] >> 18U) & EXEC_HALF_MASK);
-        bss_words = (unsigned int)(hdr[1] & EXEC_HALF_MASK);
+        bss_words = (unsigned int)(hdr[1] & EXEC_DXR_BSS_MASK);
         if (image_words == 0U || image_words > EXEC_DXR_MAX_IMAGE_WORDS ||
             bss_words > EXEC_DXR_MAX_BSS_WORDS || entry >= image_words)
                 return -1;
