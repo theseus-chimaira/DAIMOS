@@ -14,7 +14,6 @@
         .globl dsys_getcwd
         .globl dsys_stat
         .globl dsys_dirread
-        .globl dsys_mkdir
         .globl dsys_unlink
         .globl dsys_rename
         .globl dsys_truncate
@@ -25,11 +24,9 @@
         .globl dsys_readchar
         .globl dsys_writechar
         .globl dsys_write_chars
-        .globl dsys_write_nonets
         .globl dsys_halt
         .globl dsys_chmod
         .globl dsys_dtfs_format
-        .globl dsys_dtfs_check
         .globl dsys_dtfs_mount
         .globl dsys_unmount
         .globl dsys_flock
@@ -45,12 +42,6 @@ dsys_close:            uuo 042,0(1)
                        popj 17,
 dsys_write_chars:      uuo 043,0(1)
                        popj 17,
-dsys_write_nonets:
-        move 4,[POINT 9,0]
-        hrr 4,2
-        move 2,4
-        uuo 043,0(1)
-        popj 17,
 dsys_chdir:            uuo 045,0(1)
                        popj 17,
 dsys_getcwd:           uuo 046,0(1)
@@ -59,10 +50,6 @@ dsys_stat:             uuo 047,0(1)
                        popj 17,
 dsys_dirread:          uuo 050,0(1)
                        popj 17,
-dsys_mkdir:
-        movei 2,0777
-        uuo 051,0(1)
-        popj 17,
 dsys_unlink:           uuo 052,0(1)
                        popj 17,
 dsys_rename:           uuo 053,0(1)
@@ -87,10 +74,6 @@ dsys_chmod:            uuo 064,0(1)
                        popj 17,
 dsys_dtfs_format:      uuo 065,0(1)
                        popj 17,
-dsys_dtfs_check:
-        iori 2,1
-        uuo 065,0(1)
-        popj 17,
 dsys_dtfs_mount:       uuo 066,0(1)
                        popj 17,
 dsys_unmount:          uuo 067,0(1)
