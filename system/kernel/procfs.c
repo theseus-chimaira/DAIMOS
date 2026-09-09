@@ -40,9 +40,10 @@ procfs_parse_slot(const struct vfs_name *name, unsigned int *slotp)
         value = 0U;
         for (i = 0U; i < name->chars; ++i) {
                 ch = vfs_name_char(name, i);
-                if (ch < (unsigned int)'0' || ch > (unsigned int)'9')
+                if (ch < (unsigned int)VFS_SIXCHAR('0') ||
+                    ch > (unsigned int)VFS_SIXCHAR('9'))
                         return -1;
-                value = value * 10U + ch - (unsigned int)'0';
+                value = value * 10U + ch - (unsigned int)VFS_SIXCHAR('0');
         }
         if (value >= PROC_MAX_SLOTS)
                 return -1;
