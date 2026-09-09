@@ -104,10 +104,10 @@ vfs_name_chars_next:
         popj    17,
 
 
-; MRES-backed VFS leaf operations.  On the PDP-6 a private programmed operator
-; carries the FS_MRES operation in its opcode and the dynamic provider in its
-; computed EA.  AC1..AC5 remain the ordinary provider arguments, eliminating
-; the old resident request-block build/unpack path.
+; MRES-backed VFS leaf operations.  AC6 carries the FS_MRES operation and AC7
+; the dynamic provider.  Tail-calling the resident register bridge avoids an
+; executive programmed-operator trap while retaining the compact request-free
+; ABI and the movable-provider indirection.
         .globl  devicefs_readdir
         .globl  procfs_readdir
         .globl  devicefs_stat
@@ -120,8 +120,8 @@ vfs_readdir_raw:
         jrst    devicefs_readdir
         cain    7,3
         jrst    procfs_readdir
-        uuo     002,0(7)               ; FS_MRES_OP_READDIR
-        popj    17,
+        movei   6,2                    ; FS_MRES_OP_READDIR
+        jrst    fs_provider_reg_call
 
         .globl  vfs_stat
 vfs_stat:
@@ -130,8 +130,8 @@ vfs_stat:
         jrst    devicefs_stat
         cain    7,3
         jrst    procfs_stat
-        uuo     003,0(7)               ; FS_MRES_OP_STAT
-        popj    17,
+        movei   6,3                    ; FS_MRES_OP_STAT
+        jrst    fs_provider_reg_call
 
         .globl  vfs_unlink
 vfs_unlink:
@@ -142,8 +142,8 @@ vfs_unlink:
         pop     17,2
         pop     17,1
         ldb     7,[POINT 6,1,5]
-        uuo     011,0(7)               ; FS_MRES_OP_UNLINK
-        popj    17,
+        movei   6,11                   ; FS_MRES_OP_UNLINK
+        jrst    fs_provider_reg_call
 
         .globl  vfs_truncate
 vfs_truncate:
@@ -156,8 +156,8 @@ vfs_truncate:
         pop     17,2
         pop     17,1
         ldb     7,[POINT 6,1,5]
-        uuo     013,0(7)               ; FS_MRES_OP_TRUNCATE
-        popj    17,
+        movei   6,13                   ; FS_MRES_OP_TRUNCATE
+        jrst    fs_provider_reg_call
 
         .globl  vfs_chmod
 vfs_chmod:
@@ -168,8 +168,8 @@ vfs_chmod:
         pop     17,2
         pop     17,1
         ldb     7,[POINT 6,1,5]
-        uuo     014,0(7)               ; FS_MRES_OP_CHMOD
-        popj    17,
+        movei   6,14                   ; FS_MRES_OP_CHMOD
+        jrst    fs_provider_reg_call
 vfs_mutate3_ro:
         sub     17,[1,,1]
 vfs_mutate2_ro:
@@ -179,8 +179,8 @@ vfs_mutate2_ro:
         .globl  vfs_read_words
 vfs_read_words:
         ldb     7,[POINT 6,1,5]
-        uuo     015,0(7)               ; FS_MRES_OP_READ_WORDS
-        popj    17,
+        movei   6,15                   ; FS_MRES_OP_READ_WORDS
+        jrst    fs_provider_reg_call
 
         .globl  vfs_write_words
 vfs_write_words:
@@ -196,8 +196,8 @@ vfs_write_words:
         pop     17,1
         move    5,-1(17)               ; request e / C arg 5: size_chars
         ldb     7,[POINT 6,1,5]
-        uuo     016,0(7)               ; FS_MRES_OP_WRITE_WORDS
-        popj    17,
+        movei   6,16                   ; FS_MRES_OP_WRITE_WORDS
+        jrst    fs_provider_reg_call
 vfs_write_words_ro:
         sub     17,[4,,4]
         jrst    pdp10_ret_neg1
@@ -208,8 +208,8 @@ vfs_sync:
         cail    7,5                    ; DTFS_PROVIDER
         cail    7,7                    ; one past D6FS_PROVIDER
         jrst    pdp10_ret_zero
-        uuo     017,0(7)               ; FS_MRES_OP_SYNC
-        popj    17,
+        movei   6,17                   ; FS_MRES_OP_SYNC
+        jrst    fs_provider_reg_call
 
 ; One 128-word filesystem transfer workspace.  Filesystem providers serialize
 ; through the resident VFS entry path, so D6FS and DTFS must not each reserve
