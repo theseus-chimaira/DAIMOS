@@ -511,13 +511,19 @@ cmd_ps(int argc, kword_t **argv, struct u_io *io)
         struct sys_meminfo m;
         unsigned int i;
         unsigned int slots;
+        unsigned int used;
         (void)argc; (void)argv;
         slots = SYS_PROC_SLOTS;
-        if (dsys_meminfo(&m) == 0 && m.process_slots_total <= SYS_PROC_SLOTS)
+        used = SYS_PROC_SLOTS;
+        if (dsys_meminfo(&m) == 0 && m.process_slots_total <= SYS_PROC_SLOTS) {
                 slots = (unsigned int)m.process_slots_total;
+                if (m.process_slots_used <= slots)
+                        used = (unsigned int)m.process_slots_used;
+        }
         if (u_puts(io->out_fd, "PID PPID S WORDS COMM") != 0 || u_crlf(io->out_fd) != 0) return 1;
-        for (i = 0U; i < slots; ++i) {
+        for (i = 0U; i < slots && used != 0U; ++i) {
                 if (dsys_procinfo(i, &p) != 0) continue;
+                --used;
                 if (u_put_uint(io->out_fd, p.pid) != 0 || u_putc(io->out_fd, ' ') != 0 ||
                     u_put_uint(io->out_fd, p.ppid) != 0 || u_putc(io->out_fd, ' ') != 0 ||
                     u_put_uint(io->out_fd, p.state) != 0 || u_putc(io->out_fd, ' ') != 0 ||
