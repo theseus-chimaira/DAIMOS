@@ -12,8 +12,7 @@
  * from initialized words. */
 extern kword_t module_runtime_descs[MODULE_RUNTIME_MAX + 1U];
 extern kword_t module_dynamic_bindings[MODULE_DYNAMIC_BIND_MAX];
-extern unsigned int module_dynamic_binding_count;
-extern unsigned int module_moves_enabled;
+#define module_moves_enabled module_runtime_descs[0]
 
 int module_runtime_move(unsigned int owner, unsigned int new_base,
     unsigned int total_words);

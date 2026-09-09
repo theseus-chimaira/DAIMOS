@@ -7,9 +7,6 @@
 struct mm_extent mm_extents[MM_MAX_EXTENTS];
 kword_t mm_core_words;
 unsigned int mm_extent_count;
-kword_t mm_compaction_count;
-kword_t mm_words_moved;
-kword_t mm_allocation_failures;
 
 static kword_t
 mm_span(kword_t base, kword_t words)
@@ -276,7 +273,6 @@ mm_move_process(struct proc *p, unsigned int owner)
         fs_copy_words(src, dst, (unsigned int)words);
 
         PROC_SET_MEM_BASE(p, new_base);
-        mm_words_moved += words;
         rc = mm_free(old_base, MM_TYPE_PROCESS, owner);
         if (rc != MM_OK) {
                 PROC_SET_MEM_BASE(p, old_base);
@@ -327,7 +323,6 @@ mm_move_module(unsigned int owner)
                 (void)mm_free(new_base, MM_TYPE_MODULE, owner);
                 return MM_ERR_INVAL;
         }
-        mm_words_moved += words;
         rc = mm_free(old_base, MM_TYPE_MODULE, owner);
         if (rc != MM_OK)
                 return rc;
@@ -350,7 +345,6 @@ mm_compact(kword_t words, kword_t alignment)
                 return MM_ERR_NOMEM;
         if (mm_has_aligned_fit(words, alignment))
                 return MM_OK;
-        ++mm_compaction_count;
 
         i = 0U;
         while (i < mm_extent_count) {
@@ -409,12 +403,10 @@ mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
         if (rc == MM_OK)
                 return MM_OK;
         if (rc != MM_ERR_NOMEM) {
-                ++mm_allocation_failures;
                 return rc;
         }
         if (proc_swap_reclaim(words, alignment,
             type == MM_TYPE_PROCESS ? owner : PROC_NO_SLOT) != 0) {
-                ++mm_allocation_failures;
                 return MM_ERR_NOMEM;
         }
         rc = mm_alloc_aligned_raw(words, alignment, type, owner,
@@ -425,16 +417,7 @@ mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
                         rc = mm_alloc_aligned_raw(words, alignment, type, owner,
                             preference, basep);
         }
-        if (rc != MM_OK)
-                ++mm_allocation_failures;
         return rc;
-}
-
-int
-mm_alloc(kword_t words, unsigned int type, unsigned int owner,
-    unsigned int preference, kword_t *basep)
-{
-        return mm_alloc_aligned(words, 1UL, type, owner, preference, basep);
 }
 
 void

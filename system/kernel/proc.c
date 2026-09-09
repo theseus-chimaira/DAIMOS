@@ -71,20 +71,6 @@ proc_slot_cleanup(unsigned int slot, struct proc *p)
         return 0;
 }
 
-int
-proc_slot_release(unsigned int slot)
-{
-        struct proc *p;
-
-        if (proc_table == 0 || slot == 0U || slot >= proc_slots)
-                return -1;
-        p = &proc_table[slot];
-        if (PROC_STATE(p) == PROC_FREE || PROC_MEM_BASE(p) != 0UL ||
-            PROC_TRANSITION(p))
-                return -1;
-        return proc_slot_cleanup(slot, p);
-}
-
 /*
  * Finish EXIT after the assembly boundary has moved execution off the
  * process-private u-area stack and disabled priority interrupts.  No code may

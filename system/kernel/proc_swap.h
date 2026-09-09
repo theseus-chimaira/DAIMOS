@@ -24,9 +24,5 @@ int proc_swap_out(unsigned int slot);
 int proc_swap_in(unsigned int slot);
 int proc_swap_reclaim(kword_t words, kword_t alignment,
     unsigned int exclude_owner);
-kword_t proc_swap_used_blocks(void);
-kword_t proc_swap_free_blocks(void);
-extern kword_t proc_swap_words_read;
-extern kword_t proc_swap_words_written;
 
 #endif

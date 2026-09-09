@@ -69,6 +69,7 @@ static unsigned int clk_pi_service_addr;
 static unsigned int tape_mres_base;
 static unsigned int dsk_mres_base;
 static unsigned int storage_router_registered;
+static unsigned int module_dynamic_binding_count;
 static unsigned int diskset_read_addr;
 static unsigned int diskset_write_addr;
 unsigned int diskset_state_addr;

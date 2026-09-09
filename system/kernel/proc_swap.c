@@ -10,20 +10,14 @@
 #endif
 
 struct proc_swap_record *proc_swap_records;
-kword_t proc_swap_words_read;
-kword_t proc_swap_words_written;
 
 static kword_t
 proc_swap_disk_blocks(void)
 {
-        struct diskset_mres_request req;
         int rc;
 
-        req.op = DISKSET_MRES_OP_SWAP_BLOCKS;
-        req.a = 0UL;
-        req.b = 0UL;
-        req.c = 0UL;
-        rc = diskset_runtime_call(&req);
+        rc = diskset_runtime_reg_call(DISKSET_MRES_OP_SWAP_BLOCKS,
+            0UL, 0UL, 0UL);
         return rc > 0 ? (kword_t)rc : 0UL;
 }
 
@@ -31,25 +25,8 @@ static int
 proc_swap_disk_io(unsigned int op, kword_t block, kword_t count,
     kword_t *buffer)
 {
-        struct diskset_mres_request req;
-
-        req.op = (kword_t)op;
-        req.a = block;
-        req.b = count;
-        req.c = (kword_t)(unsigned long)buffer;
-        return diskset_runtime_call(&req);
-}
-
-static kword_t
-proc_swap_blocks_used(void)
-{
-        kword_t used;
-        unsigned int i;
-
-        used = 0UL;
-        for (i = 0U; i < proc_slots; ++i)
-                used += proc_swap_records[i].disk_span & MM_HALF_MASK;
-        return used;
+        return diskset_runtime_reg_call(op, block, count,
+            (kword_t)(unsigned long)buffer);
 }
 
 static int
@@ -214,7 +191,6 @@ proc_swap_out(unsigned int slot)
                 r->disk_span = 0UL;
                 goto fail_unpin;
         }
-        proc_swap_words_written += swap_words;
         if (mm_unpin(base) != MM_OK)
                 goto fail_record;
         if (mm_free(base, MM_TYPE_PROCESS, slot) != MM_OK)
@@ -295,7 +271,6 @@ proc_swap_in(unsigned int slot)
             DSK_WORDS_PER_SECTOR != blocks ||
             proc_swap_read_words(first, mem + offset, swap_words) != 0)
                 goto fail;
-        proc_swap_words_read += swap_words;
 
         if (mm_unpin(base) != MM_OK)
                 goto fail_free;
@@ -334,21 +309,4 @@ proc_swap_reclaim(kword_t words, kword_t alignment,
                         return 0;
         }
         return swapped ? 0 : -1;
-}
-
-kword_t
-proc_swap_used_blocks(void)
-{
-        return proc_swap_records == 0 ? 0UL : proc_swap_blocks_used();
-}
-
-kword_t
-proc_swap_free_blocks(void)
-{
-        kword_t total;
-        kword_t used;
-
-        total = proc_swap_disk_blocks();
-        used = proc_swap_records == 0 ? 0UL : proc_swap_blocks_used();
-        return total > used ? total - used : 0UL;
 }

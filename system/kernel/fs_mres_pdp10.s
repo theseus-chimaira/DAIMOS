@@ -7,13 +7,22 @@
         .globl fs_d6fs_service_jump
         .globl fs_mres_no_service
 
-        .globl diskset_runtime_call
+        .globl diskset_runtime_reg_call
         .globl diskset_runtime_service_jump
 
-; Stable KCORE bridge to the movable DISKSET MRES dispatcher.
-; AC1 points at struct diskset_mres_request.
-diskset_runtime_call:
-        xct     diskset_runtime_service_jump
+; Stable KCORE register bridge to the movable DISKSET MRES dispatcher.
+; C ABI: AC1=operation, AC2=a, AC3=b, AC4=c.  The movable export keeps a
+; two-word legacy request entry, so its register entry is target+2.
+diskset_runtime_reg_call:
+        move    5,1
+        move    1,2
+        move    2,3
+        move    3,4
+        hrrz    4,diskset_runtime_service_jump
+        cain    4,fs_mres_no_service
+        jrst    fs_mres_no_service
+        addi    4,2
+        jrst    (4)
 diskset_runtime_service_jump:
         jrst    fs_mres_no_service
 

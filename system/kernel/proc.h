@@ -100,7 +100,6 @@ extern kword_t mach_kernel_stack_base;
 int proc_boot_init(void);
 unsigned int proc_slots_for_core(kword_t core_words);
 int proc_slot_claim(unsigned int parent_slot);
-int proc_slot_release(unsigned int slot);
 int proc_exit_finish(void);
 kword_t proc_comm(const struct proc *p);
 int proc_wait_event(volatile kword_t *eventp);

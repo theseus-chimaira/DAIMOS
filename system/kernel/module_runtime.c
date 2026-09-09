@@ -7,8 +7,6 @@
 
 kword_t module_runtime_descs[MODULE_RUNTIME_MAX + 1U];
 kword_t module_dynamic_bindings[MODULE_DYNAMIC_BIND_MAX];
-unsigned int module_dynamic_binding_count;
-unsigned int module_moves_enabled;
 
 extern kword_t pdp10_pi_handlers[PDP10_PI_HANDLER_CAPACITY];
 extern kword_t mach_pi_disable(void);
@@ -146,13 +144,15 @@ module_runtime_move(unsigned int owner, unsigned int new_base,
         for (i = 0; i < (int)MODULE_FIXED_BIND_COUNT; ++i)
                 module_retarget(module_fixed_bindings[i], old_base, new_base,
                     image_words);
-        for (i = 0; i < (int)module_dynamic_binding_count; ++i) {
+        for (i = 0; i < (int)MODULE_DYNAMIC_BIND_MAX; ++i) {
                 kword_t source;
                 unsigned int source_owner;
                 kword_t offset;
                 int source_base;
 
                 source = module_dynamic_bindings[i];
+                if (source == 0UL)
+                        break;
                 source_owner = (unsigned int)((source >> 18U) & MODULE_HALF_MASK);
                 offset = source & MODULE_HALF_MASK;
                 if (source_owner == owner)

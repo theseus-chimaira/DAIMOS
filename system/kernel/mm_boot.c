@@ -6,9 +6,13 @@ mm_boot_init(kword_t core_words)
 {
         mm_core_words = core_words;
         mm_extent_count = 0U;
-        mm_compaction_count = 0UL;
-        mm_words_moved = 0UL;
-        mm_allocation_failures = 0UL;
+}
+
+int
+mm_alloc(kword_t words, unsigned int type, unsigned int owner,
+    unsigned int preference, kword_t *basep)
+{
+        return mm_alloc_aligned(words, 1UL, type, owner, preference, basep);
 }
 
 kword_t

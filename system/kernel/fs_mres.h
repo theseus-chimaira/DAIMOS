@@ -41,7 +41,7 @@ extern kword_t fs_memfs_service_jump;
 extern kword_t fs_dtfs_service_jump;
 extern kword_t fs_d6fs_service_jump;
 extern kword_t diskset_runtime_service_jump;
-int diskset_runtime_call(void *request);
+int diskset_runtime_reg_call(unsigned int op, kword_t a, kword_t b, kword_t c);
 extern kword_t sys_memfs_usage_call;
 extern kword_t sys_dtfs_format_jump;
 extern kword_t sys_dtfs_mount_jump;

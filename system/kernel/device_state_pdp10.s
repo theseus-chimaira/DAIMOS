@@ -16,7 +16,9 @@ devicefs_names:
         .globl  vfs_mount_ro
 devicefs_io_in:
         .block  1                      ; 00 CTY0 IN
-        .block  1                      ; 01 CLK0 has no IN
+        .globl  devicefs_d6set_members
+devicefs_d6set_members:
+        .block  1                      ; 01 CLK0 has no IN; packed D6SET members
         .block  1                      ; 02 PTR0 IN
 mach_user_sp:
         .block  1                      ; 03 PTP0 has no IN
@@ -93,6 +95,3 @@ devicefs_log_writes:           .block 1
 devicefs_log_blocks_read:      .block 1
 devicefs_log_blocks_written:   .block 1
 devicefs_log_errors:           .block 1
-
-; Packed D6SET membership: low 3 bits are count, then four 3-bit DSK units.
-devicefs_d6set_members:        .block 1
