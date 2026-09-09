@@ -144,7 +144,6 @@ mres_install(const kword_t *package, unsigned int *basep)
                 goto fail;
         module_runtime_descs[mres_owner_next] =
             ((kword_t)init_words << 18U) | (kword_t)base;
-        mm_loaded_module_words += (kword_t)init_words + (kword_t)bss_words;
         if (base + init_words + bss_words + map_words > mres_next_addr)
                 mres_next_addr = base + init_words + bss_words + map_words;
         *basep = base;
@@ -282,6 +281,10 @@ kinit_enter(void)
                 kinit_halt();
         kinit_diag_banner();
         kinit_save_boot_handoff();
+        /* Private PDP-6 filesystem UUOs are used by resident VFS leaves during
+         * the remainder of boot, so install 041 immediately after preserving
+         * the Stage1 handoff rather than waiting for first-user setup. */
+        kinit_user_trap_init();
         module_pi_init();
         kinit_diag_system(memory_kwords);
         mres_init();

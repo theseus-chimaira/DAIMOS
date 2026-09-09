@@ -5,6 +5,8 @@
 #include "vfs.h"
 
 #define PROC_SWAP_RECORD_WORDS 3U
+#define PROC_SWAP_TEXT_MASK  0377777UL
+#define PROC_SWAP_PURE_BIT   (0400000UL << 18U)
 
 struct proc_swap_record {
         vnode_t backing;

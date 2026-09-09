@@ -3,8 +3,8 @@
 #include "kinit.h"
 #include "diskset_boot.h"
 
-/* KINIT-only scratch.  Root probing and the early LOGSTORE append happen
- * before KINIT is reclaimed, so they need not borrow resident FS storage. */
+/* KINIT-only scratch used while probing and mounting the root D6FS.
+ * It is reclaimed with KINIT and does not consume resident FS storage. */
 static kword_t d6fs_boot_scratch[D6FS_BLOCK_WORDS];
 
 kword_t *

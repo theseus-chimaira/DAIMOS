@@ -104,10 +104,10 @@ vfs_name_chars_next:
         popj    17,
 
 
-; MRES-backed VFS leaf operations.  Keeping these here avoids the compiler's
-; callee-save frame around a short request block, while preserving the generic
-; fs_provider_call ABI used by every optional filesystem.
-        .globl  fs_provider_call
+; MRES-backed VFS leaf operations.  On the PDP-6 a private programmed operator
+; carries the FS_MRES operation in its opcode and the dynamic provider in its
+; computed EA.  AC1..AC5 remain the ordinary provider arguments, eliminating
+; the old resident request-block build/unpack path.
         .globl  devicefs_readdir
         .globl  procfs_readdir
         .globl  devicefs_stat
@@ -115,138 +115,100 @@ vfs_name_chars_next:
 
         .globl  vfs_readdir_raw
 vfs_readdir_raw:
-        ldb     4,[POINT 6,1,5]
-        cain    4,2
+        ldb     7,[POINT 6,1,5]
+        cain    7,2
         jrst    devicefs_readdir
-        cain    4,3
+        cain    7,3
         jrst    procfs_readdir
-        add     17,[4,,4]
-        movei   5,2                    ; FS_MRES_OP_READDIR
-        movem   5,-3(17)
-        movem   1,-2(17)
-        movem   2,-1(17)
-        movem   3,(17)
-        move    1,4
-vfs_provider_call4:
-        movei   2,-3(17)
-        pushj   17,fs_provider_call
-        sub     17,[4,,4]
+        uuo     002,0(7)               ; FS_MRES_OP_READDIR
         popj    17,
 
         .globl  vfs_stat
 vfs_stat:
-        ldb     3,[POINT 6,1,5]
-        cain    3,2
+        ldb     7,[POINT 6,1,5]
+        cain    7,2
         jrst    devicefs_stat
-        cain    3,3
+        cain    7,3
         jrst    procfs_stat
-        add     17,[3,,3]
-        movei   4,3                    ; FS_MRES_OP_STAT
-        movem   4,-2(17)
-        movem   1,-1(17)
-        movem   2,(17)
-        move    1,3
-vfs_provider_call3:
-        movei   2,-2(17)
-        pushj   17,fs_provider_call
-        sub     17,[3,,3]
+        uuo     003,0(7)               ; FS_MRES_OP_STAT
         popj    17,
 
         .globl  vfs_unlink
 vfs_unlink:
-        add     17,[3,,3]
-        movei   3,011                  ; FS_MRES_OP_UNLINK
-        movem   3,-2(17)
-        movem   1,-1(17)
-        movem   2,(17)
+        push    17,1
+        push    17,2
         pushj   17,vfs_readonly
-        jumpn   1,vfs_mutate3_ro
-        jrst    vfs_mutate3_call
+        jumpn   1,vfs_mutate2_ro
+        pop     17,2
+        pop     17,1
+        ldb     7,[POINT 6,1,5]
+        uuo     011,0(7)               ; FS_MRES_OP_UNLINK
+        popj    17,
 
         .globl  vfs_truncate
 vfs_truncate:
-        add     17,[4,,4]
-        movei   4,013                  ; FS_MRES_OP_TRUNCATE
-        movem   4,-3(17)
-        movem   1,-2(17)
-        movem   2,-1(17)
-        movem   3,(17)
+        push    17,1
+        push    17,2
+        push    17,3
         pushj   17,vfs_readonly
-        jumpn   1,vfs_truncate_ro
-        ldb     1,[POINT 6,-2(17),5]
-        jrst    vfs_provider_call4
-vfs_truncate_ro:
-        sub     17,[4,,4]
-        jrst    pdp10_ret_neg1
+        jumpn   1,vfs_mutate3_ro
+        pop     17,3
+        pop     17,2
+        pop     17,1
+        ldb     7,[POINT 6,1,5]
+        uuo     013,0(7)               ; FS_MRES_OP_TRUNCATE
+        popj    17,
 
         .globl  vfs_chmod
 vfs_chmod:
-        add     17,[3,,3]
-        movei   3,014                  ; FS_MRES_OP_CHMOD
-        movem   3,-2(17)
-        movem   1,-1(17)
-        movem   2,(17)
+        push    17,1
+        push    17,2
         pushj   17,vfs_readonly
-        jumpn   1,vfs_mutate3_ro
-vfs_mutate3_call:
-        ldb     1,[POINT 6,-1(17),5]
-        jrst    vfs_provider_call3
+        jumpn   1,vfs_mutate2_ro
+        pop     17,2
+        pop     17,1
+        ldb     7,[POINT 6,1,5]
+        uuo     014,0(7)               ; FS_MRES_OP_CHMOD
+        popj    17,
 vfs_mutate3_ro:
-        sub     17,[3,,3]
+        sub     17,[1,,1]
+vfs_mutate2_ro:
+        sub     17,[2,,2]
         jrst    pdp10_ret_neg1
 
         .globl  vfs_read_words
 vfs_read_words:
-        move    5,1
-        ldb     1,[POINT 6,1,5]
-        add     17,[5,,5]
-        movei   6,015                  ; FS_MRES_OP_READ_WORDS
-        movem   6,-4(17)
-        movem   5,-3(17)
-        movem   2,-2(17)
-        movem   3,-1(17)
-        movem   4,(17)
-        movei   2,-4(17)
-        pushj   17,fs_provider_call
-        sub     17,[5,,5]
+        ldb     7,[POINT 6,1,5]
+        uuo     015,0(7)               ; FS_MRES_OP_READ_WORDS
         popj    17,
 
         .globl  vfs_write_words
 vfs_write_words:
-        move    5,-1(17)               ; C arg 5: size_chars
-        add     17,[6,,6]
-        movei   6,016                  ; FS_MRES_OP_WRITE_WORDS
-        movem   6,-5(17)
-        movem   1,-4(17)
-        movem   2,-3(17)
-        movem   3,-2(17)
-        movem   4,-1(17)
-        movem   5,(17)
+        push    17,1
+        push    17,2
+        push    17,3
+        push    17,4
         pushj   17,vfs_readonly
         jumpn   1,vfs_write_words_ro
-        ldb     1,[POINT 6,-4(17),5]
-        movei   2,-5(17)
-        pushj   17,fs_provider_call
-        sub     17,[6,,6]
+        pop     17,4
+        pop     17,3
+        pop     17,2
+        pop     17,1
+        move    5,-1(17)               ; request e / C arg 5: size_chars
+        ldb     7,[POINT 6,1,5]
+        uuo     016,0(7)               ; FS_MRES_OP_WRITE_WORDS
         popj    17,
 vfs_write_words_ro:
-        sub     17,[6,,6]
+        sub     17,[4,,4]
         jrst    pdp10_ret_neg1
 
         .globl  vfs_sync
 vfs_sync:
-        move    4,1
-        ldb     1,[POINT 6,1,5]
-        cail    1,5                    ; DTFS_PROVIDER
-        cail    1,7                    ; one past D6FS_PROVIDER
+        ldb     7,[POINT 6,1,5]
+        cail    7,5                    ; DTFS_PROVIDER
+        cail    7,7                    ; one past D6FS_PROVIDER
         jrst    pdp10_ret_zero
-        add     17,[2,,2]
-        movei   3,017                  ; FS_MRES_OP_SYNC
-        movem   3,-1(17)
-        movem   4,(17)
-        movei   2,-1(17)
-        pushj   17,fs_provider_call
-        sub     17,[2,,2]
+        uuo     017,0(7)               ; FS_MRES_OP_SYNC
         popj    17,
 
 ; One 128-word filesystem transfer workspace.  Filesystem providers serialize
@@ -396,7 +358,7 @@ vfs_writechar_after_grow:
 
 vfs_writechar_grow:
         move    1,-7(17)
-        move    3,-2(17)               ; st.size_chars
+        move    3,(17)                  ; end_chars
         pushj   17,vfs_truncate
         jumpn   1,vfs_writechar_fail
         jrst    vfs_writechar_after_grow

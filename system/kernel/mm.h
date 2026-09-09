@@ -48,7 +48,6 @@ extern unsigned int mm_extent_count;
 extern kword_t mm_compaction_count;
 extern kword_t mm_words_moved;
 extern kword_t mm_allocation_failures;
-extern kword_t mm_loaded_module_words;
 
 void mm_boot_init(kword_t core_words);
 int mm_add_free(kword_t base, kword_t words);

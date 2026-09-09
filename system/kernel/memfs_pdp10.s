@@ -780,15 +780,16 @@ memfs_mres_usage:
         jrst    pdp10_ret_zero
 
 memfs_mres_dispatch:
-        jumpe   1,pdp10_ret_neg1
-        move    2,(1)
-        caie    2,023                   ; 19 decimal: MEMFS_INIT
+        movei   7,4                     ; MEMFS_PROVIDER
+        jrst    fs_provider_request_call
+memfs_mres_reg_dispatch:
+        caie    6,023                   ; 19 decimal: MEMFS_INIT
         jrst    memfs_mres_not_init
-        move    2,1(1)
+        move    2,1                     ; request a = init state
         jrst    memfs_mres_init
 memfs_mres_not_init:
-        move    2,[memfs_mres_vector]
-        movei   3,memfs_mres_fs
+        move    7,[memfs_mres_vector]
+        movei   0,memfs_mres_fs
         jrst    fs_mres_context_vector_dispatch
 
         .data

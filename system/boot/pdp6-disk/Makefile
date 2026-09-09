@@ -10,6 +10,7 @@ DXRCONVERT ?= $(PDP10_PREFIX)/bin/dxrconvert
 MKSTREAM ?= $(PDP10_PREFIX)/bin/mkstream
 MKDSK ?= $(PDP10_PREFIX)/bin/mkdsk
 MKD6FS ?= $(PDP10_PREFIX)/bin/mkd6fs
+LOGSTORE ?= $(PDP10_PREFIX)/bin/logstore
 MKINITFS0 ?= $(PDP10_PREFIX)/bin/mkinitfs0
 SIMH_PDP6 ?= $(PDP10_PREFIX)/bin/pdp6
 PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
@@ -27,8 +28,9 @@ KCORE_STAMP := $(BUILD)/.kcore-built
 KERNEL_INPUTS := $(wildcard $(KERNEL_DIR)/*.c $(KERNEL_DIR)/*.h $(KERNEL_DIR)/*.s)
 
 KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot d6fs_boot d6fs_super_boot diskset_boot logstore proc_boot proc_swap_boot kinit_io module_io bootbanner_generated
-KINIT_LATE_NAMES = kinit_late_begin exec proc_late kinit_late kinit_late_end
+KINIT_LATE_NAMES = kinit_late_begin exec proc_late proc_swap_late mm_boot kinit_late kinit_late_end
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
+KINIT_LATE_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_LATE_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
 KINIT_LATE_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_LATE_NAMES)))
 
@@ -115,7 +117,7 @@ $(KCORE_STAMP): $(KERNEL_INPUTS) | $(BUILD)
 	$(MAKE) -C $(KERNEL_DIR) kcore BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' DTFS_TENEX='$(DTFS_TENEX)' DTFS_ITS='$(DTFS_ITS)' PROC_BOOT_USERS='$(PROC_BOOT_USERS)'
 	touch $@
 
-$(KINIT_ASM): $(KINIT_STAMP)
+$(KINIT_ASM) $(KINIT_LATE_ASM): $(KINIT_STAMP)
 	@test -f $@
 
 $(KCORE_FIXED_ASM) $(MRES_ASM): $(KCORE_STAMP)
@@ -304,6 +306,7 @@ $(DISK_IMAGE): $(IMAGE_WORDS) $(SYSTEM_INIT_DXR)
 	$(MKD6FS) -n 1 -d $(DISK_DIR) \
 	    -D /MOUNT/RAMFS0:0755 -D /TEMP:0555 -D /MOUNT/DT0:0755 \
 	    -f "/SYSTEM/INIT:$(SYSTEM_INIT_DXR):555:dxr"
+	$(LOGSTORE) -n 1 -d $(DISK_DIR) --init
 
 $(SIMH_INI): simh-v1.ini.in $(STAGE1_TAPE) $(DISK_IMAGE)
 	sed -e 's|@SIMH_LOG@|$(abspath $(SIMH_LOG))|g' \

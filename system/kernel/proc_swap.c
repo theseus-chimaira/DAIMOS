@@ -5,9 +5,6 @@
 #include "mm.h"
 #include "storage.h"
 
-#define PROC_SWAP_TEXT_MASK  0377777UL
-#define PROC_SWAP_PURE_BIT   (0400000UL << 18U)
-
 #if EXEC_DXR_MAX_IMAGE_WORDS > PROC_SWAP_TEXT_MASK
 #error "packed swap text field is too small for executable ABI"
 #endif
@@ -146,23 +143,6 @@ proc_swap_read_words(kword_t first, kword_t *dst, kword_t words)
         fs_copy_words(block, dst + full * DSK_WORDS_PER_SECTOR,
             (unsigned int)rem);
         return 0;
-}
-
-void
-proc_swap_attach(unsigned int slot, vnode_t backing, kword_t image_words,
-    kword_t text_words, unsigned int pure)
-{
-        struct proc_swap_record *r;
-
-        if (proc_swap_records == 0 || slot >= proc_slots)
-                return;
-        r = &proc_swap_records[slot];
-        r->backing = backing;
-        r->image_span = ((text_words & PROC_SWAP_TEXT_MASK) << 18U) |
-            (image_words & MM_HALF_MASK);
-        if (pure != 0U)
-                r->image_span |= PROC_SWAP_PURE_BIT;
-        r->disk_span = 0UL;
 }
 
 void

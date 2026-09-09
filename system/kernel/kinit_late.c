@@ -7,7 +7,6 @@
 
 extern kword_t __kinit_late_begin;
 extern kword_t __kinit_late_end;
-void kinit_user_trap_init(void);
 
 /*
  * Finish boot from the only KINIT text which remains reserved after the main
@@ -44,7 +43,6 @@ kinit_late_start(kword_t reclaim_end)
         init_path[1] = VFS_SIX6('/', 'S', 'Y', 'S', 'T', 'E');
         init_path[2] = VFS_SIX6('M', '/', 'I', 'N', 'I', 'T');
 
-        kinit_user_trap_init();
         proc_table[0].meta = 0UL;
         proc_table[0].mem_layout = 0UL;
         proc_table[0].sched = PROC_SCHED_DEFAULT;

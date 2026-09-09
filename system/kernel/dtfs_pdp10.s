@@ -19,7 +19,10 @@
         .globl  dtfs_mount_unit
 
 dtfs_mres_dispatch:
-        move    2,[dtfs_mres_vector]
+        movei   7,5
+        jrst    fs_provider_request_call
+dtfs_mres_reg_dispatch:
+        move    7,[dtfs_mres_vector]
         jrst    fs_mres_vector_dispatch
 
         .data

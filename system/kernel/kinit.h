@@ -39,6 +39,7 @@ kword_t kinit_call18_2(unsigned int address, kword_t arg1, kword_t arg2);
 kword_t kinit_call18_3(unsigned int address, kword_t arg1, kword_t arg2,
     kword_t arg3);
 void kinit_halt(void);
+void kinit_user_trap_init(void);
 void kcore_boot_handoff(kword_t stack_base, kword_t reclaim_base,
     kword_t reclaim_words);
 void kinit_boot(void);

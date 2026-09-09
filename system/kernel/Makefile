@@ -14,7 +14,7 @@ DAIMON_VERSION := $(strip $(shell cat $(VERSION_FILE)))
 
 KINIT_SRCS = kinit.c kinit_diag.c module_minit.c kfs_boot.c kinit_boot.c d6fs_boot.c d6fs_super_boot.c diskset_boot.c logstore.c proc_boot.c proc_swap_boot.c
 KINIT_C_ASM = $(KINIT_SRCS:%.c=$(BUILD)/%.s)
-KINIT_LATE_SRCS = exec.c proc_late.c kinit_late.c
+KINIT_LATE_SRCS = exec.c proc_late.c proc_swap_late.c mm_boot.c kinit_late.c
 KINIT_LATE_C_ASM = $(KINIT_LATE_SRCS:%.c=$(BUILD)/%.s)
 KINIT_ASM = $(KINIT_C_ASM) $(KINIT_LATE_C_ASM) $(BUILD)/kinit_io.s $(BUILD)/module_io.s $(BUILD)/bootbanner_generated.s \
 	$(BUILD)/kinit_late_begin.s $(BUILD)/kinit_late_end.s
@@ -42,7 +42,7 @@ MRES_ASM = $(BUILD)/dtfs.s $(MRES_C_ASM) $(BUILD)/cty_io.s $(BUILD)/clk_io.s \
 kinit: $(KINIT_ASM)
 kcore: $(KCORE_FIXED_ASM) $(MRES_ASM)
 
-$(KINIT_C_ASM) $(KINIT_LATE_C_ASM): $(BUILD)/%.s: %.c kinit.h module.h mres.h kcore.h kboot.h vfs.h devicefs.h memfs.h initfs.h exec.h proc.h mach_user.h fs_mres.h mm.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h d6fs_boot.h logstore.h d6fs_provider.h dsk270.h diskset_boot.h diskset_mres.h module_runtime.h $(VERSION_FILE)
+$(KINIT_C_ASM) $(KINIT_LATE_C_ASM): $(BUILD)/%.s: %.c kinit.h module.h mres.h kcore.h kboot.h vfs.h devicefs.h memfs.h initfs.h exec.h proc.h mach_user.h fs_mres.h mm.h mm_internal.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h d6fs_boot.h logstore.h d6fs_provider.h dsk270.h diskset_boot.h diskset_mres.h module_runtime.h $(VERSION_FILE)
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os $(KINIT_CPPFLAGS) -I. -S $< -o $@
 
@@ -50,7 +50,7 @@ $(BUILD)/bootbanner_generated.s: $(VERSION_FILE)
 	mkdir -p $(BUILD)
 	$(MKBOOTBANNER) -v '$(DAIMON_VERSION)' -o $@
 
-$(KCORE_C_ASM): $(BUILD)/%.s: %.c kcore.h kboot.h vfs.h kfmt.h devicefs.h procfs.h memfs.h dtfs.h dsk270.h d6fs.h d6fs_provider.h d6fs_boot.h logstore.h initfs.h file.h proc.h syscall.h exec.h proc.h mach_user.h fs_mres.h mm.h module_runtime.h proc_swap.h
+$(KCORE_C_ASM): $(BUILD)/%.s: %.c kcore.h kboot.h vfs.h kfmt.h devicefs.h procfs.h memfs.h dtfs.h dsk270.h d6fs.h d6fs_provider.h d6fs_boot.h logstore.h initfs.h file.h proc.h syscall.h exec.h proc.h mach_user.h fs_mres.h mm.h mm_internal.h module_runtime.h proc_swap.h
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os -DPROC_BOOT_USERS=$(PROC_BOOT_USERS) -I. -S $< -o $@
 

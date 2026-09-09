@@ -312,8 +312,9 @@ d6fs_freemap_state:
         move    2,(1)
         move    1,012
         pushj   17,d6fs_bitmap_mask
+        move    3,1                      ; preserve mask while normalizing result
         setz    1,
-        tdne    2,1
+        tdne    2,3                      ; clear bit skips the one result
         movei   1,1
         jrst    d6fs_freemap_state_done
 d6fs_freemap_state_fail:
@@ -411,19 +412,19 @@ d6fs_alloc_run_continue:
         move    3,-1(17)
         add     3,2
         move    4,-2(17)                ; current logical block
-        came    4,3                      ; do not join across wrap
+        came    4,3                      ; contiguous: skip restart
         jrst    d6fs_alloc_run_restart
 d6fs_alloc_run_add:
         aos     (17)
         move    2,(17)
-        camge   2,012
+        caml    2,012
         jrst    d6fs_alloc_run_success
         aoja    016,d6fs_alloc_run_loop
 d6fs_alloc_run_restart:
         movem   4,-1(17)
         movei   2,1
         movem   2,(17)
-        camge   2,012
+        caml    2,012
         jrst    d6fs_alloc_run_success
         aoja    016,d6fs_alloc_run_loop
 d6fs_alloc_run_used:
@@ -486,6 +487,7 @@ d6fs_map_scan_partial:
         and     7,6
         camn    7,6
         jrst    pdp10_ret_zero
+        jrst    pdp10_ret_one
 
 ; Internal summary bit setter: reader AC1, map index AC2, boolean AC3.
 d6fs_summary_set_i:
@@ -620,7 +622,10 @@ d6fs_diskset_write_jump:
 ; D6FS provider dispatch.  CREATE, MKDIR and SYMLINK share one compact
 ; object creator.  The wrappers only reshape the generic request ABI.
 d6fs_mres_dispatch:
-        move    2,[d6fs_mres_vector]
+        movei   7,6
+        jrst    fs_provider_request_call
+d6fs_mres_reg_dispatch:
+        move    7,[d6fs_mres_vector]
         jrst    fs_mres_vector_dispatch
 
 d6fs_mres_create:
@@ -724,12 +729,13 @@ d6fs_reader_rw_loop:
         move    1,011
         pushj   17,d6fs_file_block
         jumpl   1,d6fs_reader_rw_fail  ; only negative value is invalid
-        move    6,1                      ; logical block (needed by write)
+        move    016,1                    ; logical block (needed by write)
         move    2,1
         move    1,010
         pushj   17,d6fs_reader_get_block
         jumpe   1,d6fs_reader_rw_fail
-        move    7,016
+        move    7,012
+        add     7,015                    ; recompute pos after helper call
         andi    7,0177                   ; offset within block
         movei   5,0200
         sub     5,7                      ; max words in this block
@@ -754,11 +760,11 @@ d6fs_reader_write_transfer:
         movei   2,fs_block_workspace(7)  ; destination in cached block
         move    3,5
         pushj   17,fs_copy_words
+        add     015,5                    ; consume take before commit clobbers AC5
         move    1,010
-        move    2,6
+        move    2,016
         pushj   17,d6fs_reader_commit_cache
         jumpn   1,d6fs_reader_rw_fail
-        add     015,5
         jrst    d6fs_reader_rw_loop
 
 d6fs_reader_rw_done:
