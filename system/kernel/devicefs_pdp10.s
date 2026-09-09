@@ -18,7 +18,7 @@
         .globl  devicefs_log_errors
         .globl  devicefs_d6set_members
         .globl  proc_swap_blocks_used
-        .globl  diskset_swap_blocks
+        .globl  diskset_runtime_reg_enter
 
 ; Full DEVICEFS runtime operations.  MINIT freezes detected device names
 ; into devicefs_names; a zero slot means that device is absent.
@@ -354,7 +354,8 @@ devicefs_swap_line_loop:
 devicefs_swap_select:
         cail    6,3
         jrst    pdp10_ret_zero
-        pushj   17,diskset_swap_blocks
+        movei   5,6                   ; DISKSET_MRES_OP_SWAP_BLOCKS
+        pushj   17,diskset_runtime_reg_enter
         jumpe   6,devicefs_stats_emit
         cain    6,1
         jrst    devicefs_swap_used

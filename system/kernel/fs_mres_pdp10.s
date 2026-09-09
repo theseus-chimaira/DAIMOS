@@ -8,6 +8,7 @@
         .globl fs_mres_no_service
 
         .globl diskset_runtime_reg_call
+        .globl diskset_runtime_reg_enter
         .globl diskset_runtime_service_jump
 
 ; Stable KCORE register bridge to the movable DISKSET MRES dispatcher.
@@ -18,6 +19,10 @@ diskset_runtime_reg_call:
         move    1,2
         move    2,3
         move    3,4
+
+; Assembly register entry: AC5=operation, AC1..AC3=a..c.  AC4 is scratch.
+; This keeps fixed KCORE callers from depending on movable DISKSET symbols.
+diskset_runtime_reg_enter:
         hrrz    4,diskset_runtime_service_jump
         cain    4,fs_mres_no_service
         jrst    fs_mres_no_service
