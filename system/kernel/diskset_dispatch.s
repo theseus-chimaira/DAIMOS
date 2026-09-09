@@ -33,11 +33,6 @@
         .globl devicefs_d6set_writes
         .globl devicefs_d6set_blocks_read
         .globl devicefs_d6set_blocks_written
-        .globl devicefs_swap_reads
-        .globl devicefs_swap_writes
-        .globl devicefs_swap_blocks_read
-        .globl devicefs_swap_blocks_written
-        .globl devicefs_swap_errors
         .globl devicefs_log_reads
         .globl devicefs_log_writes
         .globl devicefs_log_blocks_read
@@ -183,9 +178,8 @@ diskset_swap_io:
         jrst pdp10_ret_neg1
 
 diskset_swap_valid:
-        ; Read/write counters are adjacent and indexed directly by mode 0/1.
-        aos devicefs_swap_reads(4)
-        addm 2,devicefs_swap_blocks_read(4)
+        ; SWAP has no lifetime I/O counters.  D6SET retains aggregate device
+        ; accounting; SWAP itself exposes only current allocation state.
         aos devicefs_d6set_reads(4)
         addm 2,devicefs_d6set_blocks_read(4)
         ; Preserve only the state live across DSK service calls.
@@ -217,7 +211,6 @@ diskset_swap_read_one:
 
 diskset_swap_after_one:
         jumpe 1,diskset_swap_after_ok
-        aos devicefs_swap_errors
         aos devicefs_storage_errors+4 ; D6SET0
         jrst diskset_swap_done
 diskset_swap_after_ok:

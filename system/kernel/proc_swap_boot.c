@@ -20,5 +20,6 @@ proc_swap_boot_init(unsigned int slots)
         wp = (kword_t *)(unsigned long)base;
         fs_zero_words(wp, (unsigned int)words);
         proc_swap_records = (struct proc_swap_record *)(unsigned long)base;
+        proc_swap_blocks_used = 0UL;
         return 0;
 }

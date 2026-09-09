@@ -62,11 +62,6 @@ storage_count:
         .globl  devicefs_d6set_writes
         .globl  devicefs_d6set_blocks_read
         .globl  devicefs_d6set_blocks_written
-        .globl  devicefs_swap_reads
-        .globl  devicefs_swap_writes
-        .globl  devicefs_swap_blocks_read
-        .globl  devicefs_swap_blocks_written
-        .globl  devicefs_swap_errors
         .globl  devicefs_log_reads
         .globl  devicefs_log_writes
         .globl  devicefs_log_blocks_read
@@ -83,12 +78,6 @@ devicefs_d6set_reads:          .block 1
 devicefs_d6set_writes:         .block 1
 devicefs_d6set_blocks_read:    .block 1
 devicefs_d6set_blocks_written: .block 1
-
-devicefs_swap_reads:           .block 1
-devicefs_swap_writes:          .block 1
-devicefs_swap_blocks_read:     .block 1
-devicefs_swap_blocks_written:  .block 1
-devicefs_swap_errors:          .block 1
 
 devicefs_log_reads:            .block 1
 devicefs_log_writes:           .block 1

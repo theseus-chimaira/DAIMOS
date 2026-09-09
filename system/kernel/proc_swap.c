@@ -10,6 +10,7 @@
 #endif
 
 struct proc_swap_record *proc_swap_records;
+kword_t proc_swap_blocks_used;
 
 static kword_t
 proc_swap_disk_blocks(void)
@@ -127,6 +128,9 @@ proc_swap_detach(unsigned int slot)
 {
         if (proc_swap_records == 0 || slot >= proc_slots)
                 return;
+        if (proc_swap_records[slot].disk_span != 0UL)
+                proc_swap_blocks_used -=
+                    proc_swap_records[slot].disk_span & MM_HALF_MASK;
         proc_swap_records[slot].backing = VFS_NODE_NONE;
         proc_swap_records[slot].image_span = 0UL;
         proc_swap_records[slot].disk_span = 0UL;
@@ -196,6 +200,7 @@ proc_swap_out(unsigned int slot)
         if (mm_free(base, MM_TYPE_PROCESS, slot) != MM_OK)
                 goto fail_record;
         PROC_SET_MEM_BASE(p, 0UL);
+        proc_swap_blocks_used += blocks;
         PROC_CLEAR_TRANSITION(p);
         return 0;
 
@@ -275,6 +280,7 @@ proc_swap_in(unsigned int slot)
         if (mm_unpin(base) != MM_OK)
                 goto fail_free;
         PROC_SET_MEM_BASE(p, base);
+        proc_swap_blocks_used -= blocks;
         PROC_CLEAR_TRANSITION(p);
         r->disk_span = 0UL;
         return 0;

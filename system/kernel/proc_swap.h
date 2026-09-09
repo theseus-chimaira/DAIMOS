@@ -15,6 +15,7 @@ struct proc_swap_record {
 };
 
 extern struct proc_swap_record *proc_swap_records;
+extern kword_t proc_swap_blocks_used;
 int proc_swap_boot_init(unsigned int slots);
 
 void proc_swap_attach(unsigned int slot, vnode_t backing,

@@ -11,17 +11,14 @@
         .globl  devicefs_d6set_writes
         .globl  devicefs_d6set_blocks_read
         .globl  devicefs_d6set_blocks_written
-        .globl  devicefs_swap_reads
-        .globl  devicefs_swap_writes
-        .globl  devicefs_swap_blocks_read
-        .globl  devicefs_swap_blocks_written
-        .globl  devicefs_swap_errors
         .globl  devicefs_log_reads
         .globl  devicefs_log_writes
         .globl  devicefs_log_blocks_read
         .globl  devicefs_log_blocks_written
         .globl  devicefs_log_errors
         .globl  devicefs_d6set_members
+        .globl  proc_swap_blocks_used
+        .globl  diskset_swap_blocks
 
 ; Full DEVICEFS runtime operations.  MINIT freezes detected device names
 ; into devicefs_names; a zero slot means that device is absent.
@@ -346,8 +343,26 @@ devicefs_readchar_not_io:
         jrst    devicefs_stats_readchar
 
 devicefs_stats_swap:
-        movei   5,devicefs_swap_reads
-        jrst    devicefs_stats_readchar
+        ; SWAP reports live allocation state, not lifetime I/O accounting.
+        ; Lines are TOTAL, USED, FREE blocks.
+        setz    6,
+devicefs_swap_line_loop:
+        caig    2,015
+        jrst    devicefs_swap_select
+        subi    2,016
+        aoja    6,devicefs_swap_line_loop
+devicefs_swap_select:
+        cail    6,3
+        jrst    pdp10_ret_zero
+        pushj   17,diskset_swap_blocks
+        jumpe   6,devicefs_stats_emit
+        cain    6,1
+        jrst    devicefs_swap_used
+        sub     1,proc_swap_blocks_used
+        jrst    devicefs_stats_emit
+devicefs_swap_used:
+        move    1,proc_swap_blocks_used
+        jrst    devicefs_stats_emit
 
 devicefs_stats_device:
         setz    5,                     ; zero means ordinary device stats

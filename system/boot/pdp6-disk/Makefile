@@ -88,11 +88,11 @@ IMAGE_RIM = $(BUILD)/kinit-v1.rim
 IMAGE_RAW = $(BUILD)/kinit-v1.raw.words
 IMAGE_WORDS = $(BUILD)/kinit-v1.words
 
-USERLAND_BUILD_ROOT = $(BUILD)/userland-build
-DSH_DXR = $(USERLAND_BUILD_ROOT)/userland/dsh.dxr
+USR_BUILD_ROOT = $(BUILD)/usr-build
+DSH_DXR = $(USR_BUILD_ROOT)/usr/dsh.dxr
 SYSTEM_INIT_DXR ?= $(DSH_DXR)
-USERLAND_INPUTS := $(wildcard $(PROJECT_ROOT)/userland/libc/* $(PROJECT_ROOT)/userland/exec/* \
-	$(PROJECT_ROOT)/userland/dsh/*) $(PROJECT_ROOT)/userland/Makefile \
+USR_INPUTS := $(wildcard $(PROJECT_ROOT)/usr/libc/* $(PROJECT_ROOT)/usr/exec/* \
+	$(PROJECT_ROOT)/usr/dsh/*) $(PROJECT_ROOT)/usr/Makefile \
 	$(KERNEL_DIR)/syscall.h
 
 STAGE1_SRC = $(PROJECT_ROOT)/system/stand/pdp6/dsk/stage1.s
@@ -258,8 +258,8 @@ $(KCORE_EMBED_ASM): kcore-embed-v1.s.in $(KCORE_MAP) | $(BUILD)
 $(KCORE_EMBED_OBJ): $(KCORE_EMBED_ASM)
 	$(DAS) -c -o $@ $<
 
-$(DSH_DXR): $(USERLAND_INPUTS)
-	$(MAKE) -C $(PROJECT_ROOT)/userland build BUILD_ROOT='$(USERLAND_BUILD_ROOT)' \
+$(DSH_DXR): $(USR_INPUTS)
+	$(MAKE) -C $(PROJECT_ROOT)/usr build BUILD_ROOT='$(USR_BUILD_ROOT)' \
 	    PDP10_PREFIX='$(PDP10_PREFIX)'
 
 # Diskboot reads /SYSTEM/INIT exclusively from D6FS.  KINIT carries only the

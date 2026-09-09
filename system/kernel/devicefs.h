@@ -17,7 +17,8 @@
  * Stream/special: reads, writes, errors.
  * Storage/aggregate: reads, writes, native units read, native units written,
  * errors.  Native units are DTC/D6SET blocks, MTC words, and DSK sectors.
- * D6SET SWAP/LOG use the five-line storage order.
+ * D6SET LOG uses the five-line storage order.
+ * D6SET SWAP contains three current-state lines: total, used, free blocks.
  */
 
 #define DEVICEFS_DEV_CTY0            0U

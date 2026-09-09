@@ -46,7 +46,7 @@ dtfs_mres_vector:
         .text
 
 ; DTFS is deliberately flat.  Preserve a distinct error through the syscall
-; boundary so userland can report that MKDIR is unsupported rather than an
+; boundary so usr can report that MKDIR is unsupported rather than an
 ; undifferentiated filesystem failure.
 dtfs_mkdir_unsupported:
         jrst    pdp10_ret_neg2  ; SYS_ERR_UNSUPPORTED (-2)
