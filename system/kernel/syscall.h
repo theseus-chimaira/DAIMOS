@@ -3,13 +3,14 @@
 
 #include "file.h"
 
-/* PDP-6 monitor-UUO ABI.  074..077 are reserved for extension. */
+/* PDP-6 monitor-UUO ABI.  043 is the bulk character-stream write call;
+ * 074..077 stay reserved for process/self-hosting extension. */
 #define SYS_WRITE            1U      /* unsupported legacy generic call */
 #define SYS_READ             4U      /* unsupported legacy generic call */
 #define SYS_EXIT             040U
 #define SYS_OPEN             041U
 #define SYS_CLOSE            042U
-#define SYS_PUTCHAR          043U
+#define SYS_WRITE_CHARS      043U
 #define SYS_GETCHAR          044U
 #define SYS_CHDIR            045U
 #define SYS_GETCWD           046U

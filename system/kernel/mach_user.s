@@ -6,7 +6,7 @@
 ; mach_syscall_save below.  JRST 2,@save restores user mode and logical PC.
 ;
 ; User ABI:
-;   UUO opcode  syscall selector 040..073
+;   UUO opcode  monitor selector 040..073
 ;   UUO EA      arg0 (18-bit pointer/scalar)
 ;   AC2..AC4    arg1..arg3
 ;   AC1         return value
@@ -25,7 +25,7 @@ mach_syscall:
         ; All programmed operators reaching this entry are user syscalls.
         ; Resident kernel code calls movable filesystem providers through the
         ; direct register bridge instead of taking a second executive trap.
-        ; Low user selectors 000..037 remain rejected by exec_native_syscall.
+        ; User LUUO selectors 001..037 never enter this monitor dispatcher.
 
         ; Materialize arg0 from the UUO's computed effective address.  AC2..AC4
         ; remain live until exec_native_syscall has arranged the target call.

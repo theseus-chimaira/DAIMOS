@@ -67,19 +67,57 @@ cmd_echo(int argc, kword_t **argv, struct u_io *io)
 static int
 cmd_cat(int argc, kword_t **argv, struct u_io *io)
 {
+        struct vfs_stat st;
+        kword_t buf[32];
+        kword_t remaining;
+        unsigned int nchars;
         int i;
         int fd;
         int ch;
+        int n;
         int rc;
+
         if (argc < 2) return cmd_err(io, "CAT", 0);
         rc = 0;
         for (i = 1; i < argc; ++i) {
+                if (dsys_stat(argv[i], &st) != 0) {
+                        rc = cmd_err(io, "CAT", argv[i]);
+                        continue;
+                }
                 fd = dsys_open(argv[i], SYS_O_RDONLY);
                 if (fd < 0) { rc = cmd_err(io, "CAT", argv[i]); continue; }
+
+                if ((io->out_fd == 1 || io->out_fd == 2) &&
+                    st.type == VFS_TYPE_REG && st.size_chars != 0) {
+                        remaining = st.size_chars;
+                        while (remaining != 0) {
+                                n = dsys_read_words(fd, buf, 32U);
+                                if (n < 0) break;
+                                if (n == 0) { rc = 1; break; }
+                                nchars = (unsigned int)n * 4U;
+                                if ((kword_t)nchars > remaining)
+                                        nchars = (unsigned int)remaining;
+                                if (dsys_write_nonets(io->out_fd, buf, nchars) != 0) {
+                                        rc = 1;
+                                        break;
+                                }
+                                remaining -= (kword_t)nchars;
+                        }
+                        if (remaining == 0 || rc != 0) {
+                                if (dsys_close(fd) != 0) rc = 1;
+                                continue;
+                        }
+                        /* Pseudo-files may report REG but expose only the
+                         * character interface.  A failed READ_WORDS does not
+                         * advance the descriptor, so continue exactly there. */
+                }
                 for (;;) {
                         ch = dsys_readchar(fd);
                         if (ch == -2) break;
-                        if (ch < 0 || u_putc(io->out_fd, ch) != 0) { rc = 1; break; }
+                        if (ch < 0 || u_putc(io->out_fd, ch) != 0) {
+                                rc = 1;
+                                break;
+                        }
                 }
                 if (dsys_close(fd) != 0) rc = 1;
         }

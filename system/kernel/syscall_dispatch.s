@@ -1,6 +1,7 @@
 ; syscall_dispatch.s -- native PDP-6 monitor-UUO syscall dispatcher.
 ;
-; Monitor UUOs 040..073 are the direct userspace syscall ABI.  The hardware
+; Monitor UUOs 040..073 are the conventional userspace syscall ABI.  UUO 043
+; is the bulk character-stream write path.  The hardware
 ; leaves the trapped UUO at 000040 and its computed effective address at
 ; 000041.  mach_user materializes that effective address in AC1, so real
 ; arguments arrive here in AC1..AC4 and AC1 also carries the result.
@@ -41,7 +42,7 @@ exec_native_table:
         .word   %L66                    ; 040 EXIT
         .word   %L67                    ; 041 OPEN
         .word   %L72                    ; 042 CLOSE
-        .word   %L73                    ; 043 PUTCHAR
+        .word   native_sys_write_chars  ; 043 WRITE_CHARS
         .word   native_sys_getchar      ; 044 GETCHAR
         .word   %L75                    ; 045 CHDIR
         .word   %L80                    ; 046 GETCWD
@@ -67,6 +68,37 @@ exec_native_table:
         .word   native_sys_symlink      ; 072 SYMLINK
         .word   native_sys_nice         ; 073 NICE
 
+; UUO 043 WRITE_CHARS: AC1 console fd, AC2 9-bit byte pointer, AC3 chars.
+; This is deliberately the console fast path only.  Regular-file stream writes
+; retain WRITECHAR semantics in libc; CAT uses this call only for console output.
+native_sys_write_chars:
+        hrrz    6,3                   ; character count
+        jumpe   6,native_sys_write_chars_ok
+        move    5,2                   ; logical 9-bit byte pointer
+        hrrz    1,2
+        pushj   17,sys_user_words
+        jumpe   1,native_sys_write_chars_fail
+        hrr     5,1                   ; translated byte pointer
+        add     3,4                   ; one-past physical user end
+        move    7,3
+
+native_sys_write_chars_loop:
+        hrrz    4,5
+        caml    4,7
+        jrst    native_sys_write_chars_fail
+        ldb     1,5
+        pushj   17,native_sys_putchar
+        jumpn   1,native_sys_write_chars_fail
+        soje    6,native_sys_write_chars_ok
+        ibp     5
+        jrst    native_sys_write_chars_loop
+native_sys_write_chars_ok:
+        setz    1,
+        popj    17,
+native_sys_write_chars_fail:
+        seto    1,
+        popj    17,
+
 %L66:
         pushj   17,file_close_all
         ; EXIT never returns through the dying process's u-area stack.
@@ -88,9 +120,6 @@ exec_native_table:
 %L72:
         hrrz    1,1
         jrst    file_close
-%L73:
-        andi    1,0177
-        jrst    native_sys_putchar
 %L75:
         pushj   17,sys_user_words
         jumpe   1,%L137

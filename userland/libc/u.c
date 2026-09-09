@@ -11,6 +11,11 @@ u_puts(int fd, const char *s)
 {
         unsigned int i;
         if (s == 0) return 1;
+        if (fd == 1 || fd == 2) {
+                for (i = 0U; s[i] != 0; ++i) ;
+                if (i == 0U) return 0;
+                return dsys_write_chars(fd, s, i) == 0 ? 0 : 1;
+        }
         for (i = 0U; s[i] != 0; ++i)
                 if (u_putc(fd, (unsigned char)s[i]) != 0) return 1;
         return 0;
@@ -19,6 +24,9 @@ u_puts(int fd, const char *s)
 int
 u_crlf(int fd)
 {
+        static const char crlf[2] = { '\r', '\n' };
+        if (fd == 1 || fd == 2)
+                return dsys_write_chars(fd, crlf, 2U) == 0 ? 0 : 1;
         return u_putc(fd, '\r') != 0 || u_putc(fd, '\n') != 0;
 }
 

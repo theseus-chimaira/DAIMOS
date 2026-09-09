@@ -2,7 +2,8 @@
 ;
 ; C arguments arrive in AC1..AC4.  The UUO effective address carries arg0,
 ; leaving AC2..AC4 as the remaining real arguments.  The kernel returns the
-; result in AC1.  Opcodes 074..077 remain reserved for future ABI extension.
+; result in AC1.  UUO 043 is the bulk character-stream write path;
+; opcodes 074..077 remain reserved for future ABI extension.
 
         .text
 
@@ -23,6 +24,8 @@
         .globl dsys_meminfo
         .globl dsys_readchar
         .globl dsys_writechar
+        .globl dsys_write_chars
+        .globl dsys_write_nonets
         .globl dsys_halt
         .globl dsys_chmod
         .globl dsys_dtfs_format
@@ -40,6 +43,14 @@ dsys_open:             uuo 041,0(1)
                        popj 17,
 dsys_close:            uuo 042,0(1)
                        popj 17,
+dsys_write_chars:      uuo 043,0(1)
+                       popj 17,
+dsys_write_nonets:
+        move 4,[POINT 9,0]
+        hrr 4,2
+        move 2,4
+        uuo 043,0(1)
+        popj 17,
 dsys_chdir:            uuo 045,0(1)
                        popj 17,
 dsys_getcwd:           uuo 046,0(1)
