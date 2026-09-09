@@ -20,7 +20,6 @@ kinit_user_trap_init:
 ; range becomes visible to MM.  kinit_late_start() never returns on success.
 kinit_late_handoff:
         movem 1,mach_kernel_stack_base
-        addi 1,060
         move 17,1
         move 1,2
         pushj 17,kinit_late_start

@@ -14,7 +14,6 @@
         .equ    PROC_WAIT_LH_MASK,060000
         .equ    PROC_WAIT_EVENT_LH,020000
         .equ    PROC_TRANSITION_RH,0200000
-        .equ    PROC_KCTX_WORDS,060
         .equ    PROC_FILE_TABLE_OFFSET,046
         .equ    PROC_USTACK_BASE,0115
 
@@ -77,7 +76,6 @@ proc_exit_current:
         pushj   17,mach_pi_disable
         move    2,1                    ; saved global PI on/off state
         move    17,mach_kernel_stack_base
-        addi    17,PROC_KCTX_WORDS
         setzm   file_table
         push    17,2
         pushj   17,proc_exit_finish
@@ -362,7 +360,6 @@ proc_restore_idle:
         movei   1,proc_idle_loop
         movem   1,pdp10_pi_level6
         move    1,mach_kernel_stack_base
-        addi    1,PROC_KCTX_WORDS
         movem   1,pdp10_pi_sp_save+012
         movem   1,mach_kernel_sp
         popj    17,

@@ -275,7 +275,8 @@ kinit_enter(void)
                                 kinit_halt();
                 }
         }
-        if (mm_alloc(02000UL, MM_TYPE_KERNEL_DYNAMIC, 2U, MM_ALLOC_LOW,
+        if (mm_alloc(KERNEL_IDLE_STACK_WORDS, MM_TYPE_KERNEL_DYNAMIC, 2U,
+            MM_ALLOC_LOW,
             &kernel_stack_base) != MM_OK ||
             mm_pin(kernel_stack_base) != MM_OK)
                 kinit_halt();

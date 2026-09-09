@@ -77,7 +77,6 @@
  * physical base; the three-word process descriptor therefore does not grow.
  */
 #define PROC_UAREA_WORDS        0435UL
-#define PROC_KCTX_WORDS         0060UL
 #define PROC_FILE_CWD_OFFSET     0045UL
 #define PROC_FILE_TABLE_OFFSET   0046UL
 #define PROC_USTACK_BASE         0115UL

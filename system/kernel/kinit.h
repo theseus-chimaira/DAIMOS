@@ -13,6 +13,7 @@ typedef unsigned long kword_t;
 #define KINIT_KCORE_BASE         000060UL
 #define KINIT_IMAGE_BASE         030000UL
 #define KINIT_STACK_RESERVE_WORDS 04000UL
+#define KERNEL_IDLE_STACK_WORDS   00500UL
 #define KINIT_BOOT_WORD0         000040UL
 #define KINIT_BOOT_WORD1         000041UL
 #define KINIT_MACHINE_NAME       "PDP6  "
