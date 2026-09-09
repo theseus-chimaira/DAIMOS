@@ -198,51 +198,13 @@ file_open(const kword_t *path, unsigned int flags)
         if (fd < 0)
                 return fd;
         fp = &file_table[(unsigned int)fd - FILE_FD_FIRST];
-        fp->meta |= (kword_t)((unsigned int)fd + 1U) <<
-            FILE_META_DESC_SHIFT;
         if (st.type == VFS_TYPE_REG)
-                fp->meta |= FILE_META_REGULAR;
+                fp->node_meta |= FILE_META_REGULAR;
         if ((flags & FILE_O_APPEND) != 0U)
                 fp->off_chars = st.size_chars;
         return fd;
 }
 
 
-int
-file_close(int fd)
-{
-        struct file *fp;
-        fp = file_find(fd);
-        if (fp == 0 || vfs_sync(fp->node) != 0)
-                return -1;
-        fp->node = VFS_NODE_NONE;
-        return 0;
-}
 
-int
-file_dup(int fd)
-{
-        struct file *src;
-        struct file *dst;
-        unsigned int flags;
-        int newfd;
-
-        src = file_find(fd);
-        if (src == 0)
-                return -1;
-        flags = FILE_META_FLAGS(src->meta);
-        newfd = file_new_fd(src->node, flags,
-            (src->meta & FILE_META_DIR) != 0U);
-        if (newfd < 0)
-                return -1;
-        dst = &file_table[(unsigned int)newfd - FILE_FD_FIRST];
-        dst->off_chars = src->off_chars;
-        dst->meta |= ((kword_t)FILE_META_DESC(src->meta) <<
-            FILE_META_DESC_SHIFT) |
-            (src->meta & (FILE_META_LOCK_MASK | FILE_META_REGULAR));
-        return newfd;
-}
-
-
-
-/* Mount unlock, close-all and I/O wrappers are compact PDP-10 assembly. */
+/* Close, dup, mount unlock, close-all and I/O wrappers are compact PDP-10 assembly. */

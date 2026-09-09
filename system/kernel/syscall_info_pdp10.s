@@ -11,7 +11,7 @@
         .globl  mm_core_words
 
         .equ    PROC_WORDS,3
-        .equ    PROC_UAREA_WORDS,0435
+        .equ    PROC_UAREA_WORDS,0420
         .equ    PROC_STATE_LH_MASK,0700000
         .equ    PROC_UAREA_RH,0400000
 
@@ -60,13 +60,13 @@ sys_meminfo:
         move    2,1                    ; validated info pointer
         movei   1,0                    ; count active FILE slots in place
         move    3,file_table
-        addi    3,2
         movei   4,015
 sys_meminfo_file_loop:
-        move    5,(3)
-        trne    5,1
+        skipn   (3)
+        jrst    sys_meminfo_file_next
         addi    1,1
-        addi    3,3
+sys_meminfo_file_next:
+        addi    3,2
         sojg    4,sys_meminfo_file_loop
         movem   1,7(2)
         move    3,mm_core_words

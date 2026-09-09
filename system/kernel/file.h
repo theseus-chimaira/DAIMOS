@@ -16,21 +16,34 @@
 #define FILE_FD_FIRST        3U
 #define FILE_FD_MAX          15U
 
+/*
+ * FILE descriptors use two words.  The complete 36-bit character offset is
+ * kept intact.  Descriptor metadata occupies the nine bits which are known
+ * zero in every canonical DAIMOS vnode: providers, mount ids and local kinds
+ * are all 0..7 even though VFS reserves six bits for each field.
+ *
+ * node_meta therefore contains a canonical vnode plus:
+ *   LH 400000  readable
+ *   LH 200000  writable
+ *   LH 100000  directory
+ *   LH 007040  four-bit lock-family token (the originating fd)
+ *   LH 000030  regular/lock state: 0 other, 1 regular, 2 shared, 3 exclusive
+ */
 struct file {
-        vnode_t node;
+        kword_t node_meta;
         kword_t off_chars;
-        kword_t meta;
 };
 
-#define FILE_META_DIR        0100U
-#define FILE_META_DESC_SHIFT 7U
-#define FILE_META_FLAGS(m)   ((m) & 077U)
-#define FILE_META_DESC(m)    (((m) >> FILE_META_DESC_SHIFT) & 077U)
-#define FILE_META_LOCK_SHARED 020000UL
-#define FILE_META_LOCK_EXCL   040000UL
-#define FILE_META_LOCK_MASK   060000UL
-#define FILE_META_REGULAR     0100000UL
-
+#define FILE_NODE_VNODE_MASK       070707777777UL
+#define FILE_META_READ             0400000000000UL
+#define FILE_META_WRITE            0200000000000UL
+#define FILE_META_DIR              0100000000000UL
+#define FILE_META_OWNER_MASK       0007040000000UL
+#define FILE_META_STATE_MASK       0000030000000UL
+#define FILE_META_REGULAR          0000010000000UL
+#define FILE_META_LOCK_SHARED      0000020000000UL
+#define FILE_META_LOCK_EXCL        0000030000000UL
+#define FILE_NODE(nm)              ((vnode_t)((nm) & FILE_NODE_VNODE_MASK))
 /* FILE descriptors and cwd are process-private and live in the stable
  * process u-area.  KCORE retains only a pointer to the current table. */
 int file_lookup_path(const kword_t *path, vnode_t *nodep);

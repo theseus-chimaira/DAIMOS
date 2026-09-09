@@ -67,12 +67,14 @@ file_readchar:
         push    17,0                   ; one-word character result
         pushj   17,file_find
         jumpe   1,file_readchar_fail
-        move    3,2(1)
-        andi    3,0101                 ; FILE_META_DIR | FILE_O_READ
-        caie    3,1
+        move    3,(1)
+        tlne    3,100000               ; directories are not byte streams
+        jrst    file_readchar_fail
+        tlnn    3,400000               ; FILE_META_READ
         jrst    file_readchar_fail
         move    010,1
         move    1,(010)
+        tlz     1,707070               ; strip packed descriptor metadata
         move    2,1(010)
         movei   3,(17)
         pushj   17,vfs_readchar
@@ -105,13 +107,15 @@ file_writechar:
         push    17,2
         pushj   17,file_find
         jumpe   1,file_writechar_fail
-        move    3,2(1)
-        andi    3,0102                 ; FILE_META_DIR | FILE_O_WRITE
-        caie    3,2
+        move    3,(1)
+        tlne    3,100000               ; directories are not byte streams
+        jrst    file_writechar_fail
+        tlnn    3,200000               ; FILE_META_WRITE
         jrst    file_writechar_fail
         move    010,1
         move    3,(17)
         move    1,(010)
+        tlz     1,707070               ; strip packed descriptor metadata
         move    2,1(010)
         pushj   17,vfs_writechar
         jumpn   1,file_writechar_done
@@ -124,22 +128,65 @@ file_writechar_fail:
         seto    1,
         jrst    file_writechar_done
 
+; int file_close(int fd)
+; Mask the packed descriptor bits only at the VFS boundary.
+        .globl  file_close
+file_close:
+        push    17,010
+        pushj   17,file_find
+        jumpe   1,file_close_fail
+        move    010,1
+        move    1,(1)
+        tlz     1,707070
+        pushj   17,vfs_sync
+        jumpn   1,file_close_done
+        setzm   (010)
+file_close_done:
+        pop     17,010
+        popj    17,
+file_close_fail:
+        seto    1,
+        jrst    file_close_done
+
+; int file_dup(int fd)
+; A duplicate has the same vnode, access state, lock-family token, lock state and
+; offset.  Copying both words directly is smaller than unpacking and rebuilding
+; a descriptor through file_new_fd, and preserves lock-family semantics exactly.
+        .globl  file_dup
+file_dup:
+        pushj   17,file_find
+        jumpe   1,pdp10_ret_neg1
+        move    2,file_table
+        movei   3,3                    ; returned descriptor
+        movei   4,015                  ; FILE_NFILE = 13
+file_dup_scan:
+        skipn   (2)
+        jrst    file_dup_store
+        addi    2,2
+        addi    3,1
+        sojg    4,file_dup_scan
+        jrst    pdp10_ret_neg1
+file_dup_store:
+        move    4,(1)
+        movem   4,(2)
+        move    4,1(1)
+        movem   4,1(2)
+        move    1,3
+        popj    17,
+
 ; int file_lock(int fd, unsigned int op)
-; FILE lock ownership is carried in the descriptor bits of meta.  Once
-; file_find has validated the descriptor, the remaining operation is two
-; fixed 13-slot scans and needs no C frame or callee-saved registers.
+; The packed node word carries both the canonical vnode and descriptor state.
+; FLOCK compares canonical vnode bits and the four-bit dup-family token
+; directly in packed form, so neither field needs unpacking.
         .globl  file_lock
 file_lock:
         push    17,2                    ; file_find may clobber operation
         pushj   17,file_find
         pop     17,2
         jumpe   1,pdp10_ret_neg1
-        move    4,2(1)                 ; selected file metadata
-        trnn    4,0100000              ; regular files only
+        move    4,(1)                   ; selected packed node/state
+        tlnn    4,000030                ; regular state is nonzero
         jrst    pdp10_ret_neg1
-        move    5,4
-        andi    5,017600               ; lock-owner descriptor bits
-        jumpe   5,pdp10_ret_neg1
         caige   2,1                    ; SHARED..UNLOCK are 1..3
         jrst    pdp10_ret_neg1
         caile   2,3
@@ -147,26 +194,28 @@ file_lock:
         move    6,file_lock_modes-1(2)
         jumpe   6,file_lock_update      ; unlock cannot conflict
 
-; For shared requests only an existing exclusive lock conflicts; for an
-; exclusive request either shared or exclusive does.  mode + 020000 is
-; exactly the required conflict mask for the two nonzero modes.
-        move    0,6
-        addi    0,020000
         move    2,file_table
         movei   3,015                  ; FILE_NFILE = 13
 file_lock_check:
         move    4,(2)
-        came    4,(1)
-        jrst    file_lock_check_next
-        move    4,2(2)
         move    7,4
-        xor     7,2(1)
-        andi    7,017600
-        jumpe   7,file_lock_check_next ; same lock owner
-        tdne    4,0
+        xor     7,(1)
+        trne    7,0777777               ; different vnode index
+        jrst    file_lock_check_next
+        tlne    7,070707                ; provider/mount/local-kind differ
+        jrst    file_lock_check_next
+        tlnn    7,007040                ; same owner never conflicts
+        jrst    file_lock_check_next
+        tlnn    4,000020                ; candidate is not locked
+        jrst    file_lock_check_next
+; An exclusive request conflicts with either lock.  A shared request conflicts
+; only with exclusive (state 11); shared itself is state 10.
+        tlne    6,000010                ; requested exclusive?
+        jrst    pdp10_ret_neg1
+        tlne    4,000010                ; candidate exclusive?
         jrst    pdp10_ret_neg1
 file_lock_check_next:
-        addi    2,3
+        addi    2,2
         sojg    3,file_lock_check
 
 file_lock_update:
@@ -174,29 +223,36 @@ file_lock_update:
         movei   3,015
 file_lock_update_loop:
         move    4,(2)
-        came    4,(1)
-        jrst    file_lock_update_next
-        move    4,2(2)
         move    7,4
-        xor     7,2(1)
-        andi    7,017600
-        jumpn   7,file_lock_update_next
-        andcmi  4,060000               ; replace lock mode only
+        xor     7,(1)
+        trne    7,0777777
+        jrst    file_lock_update_next
+        tlne    7,070707
+        jrst    file_lock_update_next
+        tlne    7,007040
+        jrst    file_lock_update_next
+        tlz     4,000030                ; replace regular/lock state
+        jumpn   6,file_lock_update_set
+        tlo     4,000010                ; unlock -> regular, unlocked
+        jrst    file_lock_update_store
+file_lock_update_set:
         ior     4,6
-        movem   4,2(2)
+file_lock_update_store:
+        movem   4,(2)
 file_lock_update_next:
-        addi    2,3
+        addi    2,2
         sojg    3,file_lock_update_loop
         jrst    pdp10_ret_zero
 
 file_lock_modes:
-        .long   020000                  ; VFS_LOCK_SHARED
-        .long   040000                  ; VFS_LOCK_EXCLUSIVE
+        .long   000020000000            ; VFS_LOCK_SHARED
+        .long   000030000000            ; VFS_LOCK_EXCLUSIVE
         .long   0                       ; VFS_LOCK_UNLOCK
 
 ; void file_unlock_mount(unsigned int mount_id)
-; Scan FILE state directly.  The index and table pointer are caller-scratch ACs,
-; so this needs no frame and avoids GCC's unsigned-loop sequence.
+; Clear lock/regular state for descriptors of an unmounted filesystem.  Only
+; the low three canonical mount-id bits are extracted; the high three bits of
+; that six-bit VFS field carry packed FILE metadata.
         .globl  file_unlock_mount
 file_unlock_mount:
         move    2,file_table
@@ -204,13 +260,14 @@ file_unlock_mount:
 file_unlock_mount_loop:
         skipn   4,(2)
         jrst    file_unlock_mount_next
-        ldb     4,[POINT 6,4,11]       ; VFS_MOUNT_ID(node)
+        ldb     4,[POINT 3,4,11]
         came    4,1
         jrst    file_unlock_mount_next
-        hrroi   4,0617777              ; ~(LOCK_MASK | REGULAR)
-        andm    4,2(2)
+        move    4,(2)
+        tlz     4,000030
+        movem   4,(2)
 file_unlock_mount_next:
-        addi    2,3
+        addi    2,2
         sojg    3,file_unlock_mount_loop
         popj    17,
 
@@ -227,7 +284,7 @@ file_close_all_loop:
         movei   1,3(010)               ; FILE_FD_FIRST + slot
         pushj   17,file_close
 file_close_all_next:
-        addi    011,3
+        addi    011,2
         addi    010,1
         caige   010,015                 ; FILE_NFILE
         jrst    file_close_all_loop
@@ -245,14 +302,16 @@ file_read_words:
         jumpe   1,file_read_words_fail
         skipn   -1(17)                  ; buf
         jrst    file_read_words_fail
-        move    4,2(1)
-        andi    4,0101                  ; FILE_META_DIR | FILE_O_READ
-        caie    4,1
+        move    4,(1)
+        tlne    4,100000                ; FILE_META_DIR
+        jrst    file_read_words_fail
+        tlnn    4,400000                ; FILE_META_READ
         jrst    file_read_words_fail
         move    010,1
         move    2,1(010)
         lsh     2,-2                    ; character offset -> word offset
         move    1,(010)
+        tlz     1,707070                ; canonical vnode
         move    3,-1(17)
         move    4,(17)
         pushj   17,vfs_read_words
@@ -282,14 +341,16 @@ file_write_words:
         jumpe   1,file_write_words_fail
         skipn   -2(17)                  ; buf
         jrst    file_write_words_fail
-        move    4,2(1)
-        andi    4,0102                  ; FILE_META_DIR | FILE_O_WRITE
-        caie    4,2
+        move    4,(1)
+        tlne    4,100000                ; FILE_META_DIR
+        jrst    file_write_words_fail
+        tlnn    4,200000                ; FILE_META_WRITE
         jrst    file_write_words_fail
         move    010,1
         move    2,1(010)
         lsh     2,-2
         move    1,(010)
+        tlz     1,707070                ; canonical vnode
         move    3,-2(17)
         move    4,-1(17)
         pushj   17,vfs_write_words
@@ -314,11 +375,12 @@ file_readdir:
         jumpe   1,file_readdir_fail
         skipn   (17)                    ; ent
         jrst    file_readdir_fail
-        move    4,2(1)
-        trnn    4,0100                  ; FILE_META_DIR
+        move    4,(1)
+        tlnn    4,100000                ; FILE_META_DIR
         jrst    file_readdir_fail
         move    010,1
         move    1,(010)
+        tlz     1,707070                ; canonical vnode
         move    2,1(010)
         move    3,(17)
         pushj   17,vfs_readdir
@@ -750,37 +812,48 @@ file_find:
         caile   1,017
         jrst    pdp10_ret_zero
         subi    1,3
-        imuli   1,3
+        lsh     1,1
         add     1,file_table
         skipn   (1)
         jrst    pdp10_ret_zero
         popj    17,
 
 ; int file_new_fd(vnode_t node, unsigned int flags, int isdir)
-; Table order is descriptor order, so the first free record is the lowest
-; available descriptor and no resident fd bitmap or stored fd field is needed.
+; Pack the persistent READ/WRITE/DIR bits and lock-family token into the nine
+; vnode bits which are zero for every current DAIMOS provider/mount/kind.
+; OPEN-only APPEND/CREATE/TRUNC bits are deliberately not retained.
         .globl  file_new_fd
 file_new_fd:
-        move    0,2                    ; base metadata: flags
-        andi    0,077
+        tlne    1,707070               ; packed metadata bits must be free
+        jrst    file_new_fd_fail
+        trne    2,1
+        tlo     1,400000               ; FILE_META_READ
+        trne    2,2
+        tlo     1,200000               ; FILE_META_WRITE
         jumpe   3,file_new_fd_nodir
-        iori    0,0100                 ; FILE_META_DIR
+        tlo     1,100000               ; FILE_META_DIR
 file_new_fd_nodir:
         move    4,file_table
-        movei   5,3                    ; descriptor for current slot
-        movei   6,015                  ; 13 slots
+        movei   5,3                    ; descriptor / lock-family token
+        movei   6,015                  ; FILE_NFILE = 13
 file_new_fd_scan:
         skipn   (4)
         jrst    file_new_fd_store
-        addi    4,3
+        addi    4,2
         addi    5,1
         sojg    6,file_new_fd_scan
 file_new_fd_fail:
         jrst    pdp10_ret_neg1
 file_new_fd_store:
+; Scatter fd bits 0..2 into LH 007000 and bit 3 into LH 000040.
+        move    0,5
+        andi    0,7
+        lsh     0,033
+        ior     1,0
+        trne    5,010
+        tlo     1,000040
         movem   1,(4)
         setzm   1(4)
-        movem   0,2(4)
         move    1,5
         popj    17,
 

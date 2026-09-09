@@ -15,7 +15,7 @@
         .equ    PROC_WAIT_EVENT_LH,020000
         .equ    PROC_TRANSITION_RH,0200000
         .equ    PROC_FILE_TABLE_OFFSET,046
-        .equ    PROC_USTACK_BASE,0115
+        .equ    PROC_USTACK_BASE,0100
         .equ    PROC_KSTACK_WORDS,0320
 
         .equ    CTX_U_PC,020
