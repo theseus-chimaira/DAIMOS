@@ -4,22 +4,27 @@
 #include "proc.h"
 #include "vfs.h"
 
-#define PROC_SWAP_RECORD_WORDS 3U
-#define PROC_SWAP_TEXT_MASK  0377777UL
-#define PROC_SWAP_PURE_BIT   (0400000UL << 18U)
+#define PROC_SWAP_RECORD_WORDS 1U
+#define PROC_SWAP_TEXT_MASK       037777UL
+#define PROC_SWAP_INDEX_MASK      0777777UL
+#define PROC_SWAP_MOUNT_MASK      03UL
+#define PROC_SWAP_PROVIDER_MASK   03UL
+#define PROC_SWAP_MOUNT_SHIFT     18U
+#define PROC_SWAP_PROVIDER_SHIFT  20U
+#define PROC_SWAP_TEXT_SHIFT      22U
 
 struct proc_swap_record {
-        vnode_t backing;
-        kword_t image_span;          /* LH text words, RH initialized image. */
-        kword_t disk_span;           /* LH first SWAP block, RH block count. */
+        /* Resident: packed executable backing + pure-text boundary.
+         * Swapped:  LH first SWAP block, RH total block count. */
+        kword_t state;
 };
 
 extern struct proc_swap_record *proc_swap_records;
 extern kword_t proc_swap_blocks_used;
 int proc_swap_boot_init(unsigned int slots);
 
-void proc_swap_attach(unsigned int slot, vnode_t backing,
-    kword_t image_words, kword_t text_words, unsigned int pure);
+int proc_swap_attach(unsigned int slot, vnode_t backing,
+    kword_t text_words, unsigned int pure);
 void proc_swap_detach(unsigned int slot);
 int proc_swap_out(unsigned int slot);
 int proc_swap_in(unsigned int slot);

@@ -1,5 +1,8 @@
 #include "proc_swap.h"
 #include "diskset_mres.h"
+#include "d6fs_provider.h"
+#include "dtfs.h"
+#include "memfs.h"
 #include "exec.h"
 #include "fs_mres.h"
 #include "mm.h"
@@ -11,6 +14,8 @@
 
 struct proc_swap_record *proc_swap_records;
 kword_t proc_swap_blocks_used;
+
+#define PROC_SWAP_HEADER_BLOCKS 1UL
 
 static kword_t
 proc_swap_disk_blocks(void)
@@ -57,7 +62,10 @@ proc_swap_find(kword_t blocks, kword_t *startp)
                         kword_t count;
                         kword_t end;
 
-                        span = proc_swap_records[i].disk_span;
+                        if (proc_table == 0 ||
+                            PROC_MEM_BASE(&proc_table[i]) != 0UL)
+                                continue;
+                        span = proc_swap_records[i].state;
                         count = span & MM_HALF_MASK;
                         if (count == 0UL)
                                 continue;
@@ -128,12 +136,11 @@ proc_swap_detach(unsigned int slot)
 {
         if (proc_swap_records == 0 || slot >= proc_slots)
                 return;
-        if (proc_swap_records[slot].disk_span != 0UL)
+        if (proc_table != 0 && PROC_MEM_BASE(&proc_table[slot]) == 0UL &&
+            proc_swap_records[slot].state != 0UL)
                 proc_swap_blocks_used -=
-                    proc_swap_records[slot].disk_span & MM_HALF_MASK;
-        proc_swap_records[slot].backing = VFS_NODE_NONE;
-        proc_swap_records[slot].image_span = 0UL;
-        proc_swap_records[slot].disk_span = 0UL;
+                    proc_swap_records[slot].state & MM_HALF_MASK;
+        proc_swap_records[slot].state = 0UL;
 }
 
 int
@@ -148,6 +155,7 @@ proc_swap_out(unsigned int slot)
         kword_t blocks;
         kword_t first;
         kword_t text_words;
+        kword_t resident_state;
         kword_t *mem;
         unsigned int state;
         int pure;
@@ -161,7 +169,8 @@ proc_swap_out(unsigned int slot)
             PROC_TRANSITION(p))
                 return -1;
         r = &proc_swap_records[slot];
-        if (r->backing == VFS_NODE_NONE || r->disk_span != 0UL)
+        resident_state = r->state;
+        if (resident_state == 0UL)
                 return -1;
         base = PROC_MEM_BASE(p);
         words = PROC_MEM_WORDS(p);
@@ -175,8 +184,9 @@ proc_swap_out(unsigned int slot)
         }
         mem = (kword_t *)(unsigned long)base;
 
-        pure = (r->image_span & PROC_SWAP_PURE_BIT) != 0UL;
-        text_words = (r->image_span >> 18U) & PROC_SWAP_TEXT_MASK;
+        text_words = (resident_state >> PROC_SWAP_TEXT_SHIFT) &
+            PROC_SWAP_TEXT_MASK;
+        pure = text_words != 0UL;
         if (pure) {
                 offset = (kword_t)EXEC_USER_ORIGIN + text_words;
                 if (offset > words)
@@ -185,21 +195,23 @@ proc_swap_out(unsigned int slot)
                 offset = 0UL;
         }
         swap_words = words - offset;
-        blocks = (swap_words + DSK_WORDS_PER_SECTOR - 1UL) /
+        blocks = PROC_SWAP_HEADER_BLOCKS +
+            (swap_words + DSK_WORDS_PER_SECTOR - 1UL) /
             DSK_WORDS_PER_SECTOR;
-        if (blocks == 0UL || proc_swap_find(blocks, &first) != 0)
+        if (blocks <= PROC_SWAP_HEADER_BLOCKS ||
+            proc_swap_find(blocks, &first) != 0)
                 goto fail_unpin;
-        r->disk_span = ((first & MM_HALF_MASK) << 18U) |
-            (blocks & MM_HALF_MASK);
-        if (proc_swap_write_words(first, mem + offset, swap_words) != 0) {
-                r->disk_span = 0UL;
+        if (proc_swap_write_words(first, &resident_state, 1UL) != 0 ||
+            proc_swap_write_words(first + PROC_SWAP_HEADER_BLOCKS,
+            mem + offset, swap_words) != 0)
                 goto fail_unpin;
-        }
         if (mm_unpin(base) != MM_OK)
                 goto fail_record;
         if (mm_free(base, MM_TYPE_PROCESS, slot) != MM_OK)
                 goto fail_record;
         PROC_SET_MEM_BASE(p, 0UL);
+        r->state = ((first & MM_HALF_MASK) << 18U) |
+            (blocks & MM_HALF_MASK);
         proc_swap_blocks_used += blocks;
         PROC_CLEAR_TRANSITION(p);
         return 0;
@@ -207,7 +219,6 @@ proc_swap_out(unsigned int slot)
 fail_unpin:
         (void)mm_unpin(base);
 fail_record:
-        r->disk_span = 0UL;
         PROC_CLEAR_TRANSITION(p);
         return -1;
 }
@@ -220,7 +231,8 @@ proc_swap_in(unsigned int slot)
         kword_t base;
         kword_t words;
         kword_t text_words;
-        kword_t image_words;
+        kword_t resident_state;
+        vnode_t backing;
         kword_t offset;
         kword_t swap_words;
         kword_t first;
@@ -234,7 +246,7 @@ proc_swap_in(unsigned int slot)
         p = &proc_table[slot];
         r = &proc_swap_records[slot];
         if (PROC_MEM_BASE(p) != 0UL || PROC_STATE(p) == PROC_FREE ||
-            r->disk_span == 0UL || PROC_TRANSITION(p))
+            r->state == 0UL || PROC_TRANSITION(p))
                 return -1;
         words = PROC_MEM_WORDS(p);
         if (words == 0UL)
@@ -254,14 +266,33 @@ proc_swap_in(unsigned int slot)
         mem = (kword_t *)(unsigned long)base;
         fs_zero_words(mem, (unsigned int)words);
 
-        pure = (r->image_span & PROC_SWAP_PURE_BIT) != 0UL;
-        text_words = (r->image_span >> 18U) & PROC_SWAP_TEXT_MASK;
-        image_words = r->image_span & MM_HALF_MASK;
-        first = (r->disk_span >> 18U) & MM_HALF_MASK;
-        blocks = r->disk_span & MM_HALF_MASK;
+        first = (r->state >> 18U) & MM_HALF_MASK;
+        blocks = r->state & MM_HALF_MASK;
+        if (blocks <= PROC_SWAP_HEADER_BLOCKS ||
+            proc_swap_read_words(first, &resident_state, 1UL) != 0 ||
+            resident_state == 0UL)
+                goto fail;
+        text_words = (resident_state >> PROC_SWAP_TEXT_SHIFT) &
+            PROC_SWAP_TEXT_MASK;
+        {
+                unsigned int provider;
+                unsigned int mount;
+                unsigned int kind;
+
+                provider = (unsigned int)((resident_state >>
+                    PROC_SWAP_PROVIDER_SHIFT) & PROC_SWAP_PROVIDER_MASK) +
+                    MEMFS_PROVIDER;
+                mount = (unsigned int)((resident_state >>
+                    PROC_SWAP_MOUNT_SHIFT) & PROC_SWAP_MOUNT_MASK) + 1U;
+                kind = provider == DTFS_PROVIDER ? DTFS_KIND_FILE :
+                    MEMFS_KIND_NODE;
+                backing = VFS_NODE_PACKED(provider,
+                    (mount << VFS_MOUNT_SHIFT) | kind,
+                    resident_state & PROC_SWAP_INDEX_MASK);
+        }
+        pure = text_words != 0UL;
         if (pure) {
-                if (text_words > image_words ||
-                    vfs_read_words(r->backing, EXEC_DXR_EXT_HDR_WORDS,
+                if (vfs_read_words(backing, EXEC_DXR_EXT_HDR_WORDS,
                     mem + EXEC_USER_ORIGIN, (unsigned int)text_words) !=
                     (int)text_words)
                         goto fail;
@@ -272,9 +303,11 @@ proc_swap_in(unsigned int slot)
         if (offset > words)
                 goto fail;
         swap_words = words - offset;
-        if ((swap_words + DSK_WORDS_PER_SECTOR - 1UL) /
+        if (PROC_SWAP_HEADER_BLOCKS +
+            (swap_words + DSK_WORDS_PER_SECTOR - 1UL) /
             DSK_WORDS_PER_SECTOR != blocks ||
-            proc_swap_read_words(first, mem + offset, swap_words) != 0)
+            proc_swap_read_words(first + PROC_SWAP_HEADER_BLOCKS,
+            mem + offset, swap_words) != 0)
                 goto fail;
 
         if (mm_unpin(base) != MM_OK)
@@ -282,7 +315,7 @@ proc_swap_in(unsigned int slot)
         PROC_SET_MEM_BASE(p, base);
         proc_swap_blocks_used -= blocks;
         PROC_CLEAR_TRANSITION(p);
-        r->disk_span = 0UL;
+        r->state = resident_state;
         return 0;
 
 fail:
