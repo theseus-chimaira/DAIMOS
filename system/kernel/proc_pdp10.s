@@ -16,6 +16,7 @@
         .equ    PROC_TRANSITION_RH,0200000
         .equ    PROC_FILE_TABLE_OFFSET,046
         .equ    PROC_USTACK_BASE,0115
+        .equ    PROC_KSTACK_WORDS,0320
 
         .equ    CTX_U_PC,020
         .equ    CTX_U_KSP,021
@@ -191,11 +192,38 @@ proc_wakeup_done:
         pop     17,2
         popj    17,
 
+;. Test-only process-private kernel stack watermarking.  The untouched
+; canary in each stack word is that word's own physical address.  Because the
+; PDP-6 pushdown stack grows upward, the first untouched word terminates the
+; scan.  This code and state disappear completely from production builds.
+.if PROC_STACK_WATERMARK
+        .globl  proc_stack_highwater
+proc_stack_watermark_scan:
+        move    2,1
+        addi    2,PROC_USTACK_BASE+1
+        movei   3,1
+proc_stack_watermark_loop:
+        camn    2,(2)
+        jrst    proc_stack_watermark_done
+        addi    2,1
+        addi    3,1
+        caile   3,PROC_KSTACK_WORDS
+        jrst    proc_stack_watermark_done
+        jrst    proc_stack_watermark_loop
+proc_stack_watermark_done:
+        camle   3,proc_stack_highwater
+        movem   3,proc_stack_highwater
+        popj    17,
+.endif
+
 ; Save a user-origin PI6 context.  AC1..AC3 and AC17 were already preserved by
 ; the common PI entry path; all other user ACs are still live here.
 proc_save_user:
         move    1,proc_current_slot
         pushj   17,proc_uarea_slot
+.if PROC_STACK_WATERMARK
+        pushj   17,proc_stack_watermark_scan
+.endif
         move    2,1
         movem   0,0(2)
         movem   4,4(2)
@@ -228,6 +256,9 @@ proc_save_user:
 proc_save_kernel:
         move    1,proc_current_slot
         pushj   17,proc_uarea_slot
+.if PROC_STACK_WATERMARK
+        pushj   17,proc_stack_watermark_scan
+.endif
         move    2,1
         movem   0,CTX_K_AC0+0(2)
         movem   4,CTX_K_AC0+4(2)
@@ -427,6 +458,11 @@ proc_sched_cursor:
         .block  1
 proc_sched_kick:
         .block  1
+.if PROC_STACK_WATERMARK
+proc_stack_highwater:
+        .long   0
+.endif
+
 mach_kernel_stack_base:
         .block  1
 

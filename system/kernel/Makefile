@@ -4,6 +4,7 @@ KINIT_DEBUG ?= 0
 DTFS_TENEX ?= 0
 DTFS_ITS ?= 0
 PROC_BOOT_USERS ?= 1
+PROC_STACK_WATERMARK ?= 0
 DTFS_FOREIGN := $(if $(filter 1,$(DTFS_TENEX) $(DTFS_ITS)),1,0)
 BUILD ?= $(BUILD_ROOT)/system/kernel$(if $(filter 1,$(KINIT_DEBUG)),-debug,)
 PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
@@ -18,7 +19,7 @@ KINIT_LATE_SRCS = exec.c proc_late.c proc_swap_late.c mm_boot.c kinit_late.c
 KINIT_LATE_C_ASM = $(KINIT_LATE_SRCS:%.c=$(BUILD)/%.s)
 KINIT_ASM = $(KINIT_C_ASM) $(KINIT_LATE_C_ASM) $(BUILD)/kinit_io.s $(BUILD)/module_io.s $(BUILD)/bootbanner_generated.s \
 	$(BUILD)/kinit_late_begin.s $(BUILD)/kinit_late_end.s
-KINIT_CPPFLAGS = -DDAIMON_VERSION_TEXT='"V$(DAIMON_VERSION)  "' -DPROC_BOOT_USERS=$(PROC_BOOT_USERS)
+KINIT_CPPFLAGS = -DDAIMON_VERSION_TEXT='"V$(DAIMON_VERSION)  "' -DPROC_BOOT_USERS=$(PROC_BOOT_USERS) -DPROC_STACK_WATERMARK=$(PROC_STACK_WATERMARK)
 ifeq ($(KINIT_DEBUG),1)
 KINIT_CPPFLAGS += -DKINIT_DEBUG
 endif
@@ -61,6 +62,11 @@ $(MRES_C_ASM): $(BUILD)/%.s: %.c kcore.h vfs.h fs_mres.h memfs.h dtfs.h d6fs.h d
 $(BUILD)/dtfs.s: dtfs.c kcore.h vfs.h fs_mres.h memfs.h dtfs.h d6fs.h d6fs_provider.h diskset.h diskset_mres.h mres.h dsk270.h file.h
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os -DDTFS_ENABLE_TENEX=$(DTFS_TENEX) -DDTFS_ENABLE_ITS=$(DTFS_ITS) -I. -S $< -o $@
+
+
+$(BUILD)/proc_pdp10.s: proc_pdp10.s
+	mkdir -p $(BUILD)
+	{ echo ".set PROC_STACK_WATERMARK,$(PROC_STACK_WATERMARK)"; cat $<; } > $@
 
 $(BUILD)/dtfs_pdp10.s: dtfs_pdp10.s
 	mkdir -p $(BUILD)

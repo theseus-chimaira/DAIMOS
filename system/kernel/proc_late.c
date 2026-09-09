@@ -51,6 +51,14 @@ proc_user_context_init(unsigned int slot, kword_t entry, kword_t stack,
                 return -1;
         ctx = (kword_t *)(unsigned long)base;
         fs_zero_words(ctx, (unsigned int)PROC_UAREA_WORDS);
+#if PROC_STACK_WATERMARK
+        {
+                unsigned int i;
+                for (i = (unsigned int)PROC_USTACK_BASE + 1U;
+                    i < (unsigned int)PROC_UAREA_WORDS; ++i)
+                        ctx[i] = base + (kword_t)i;
+        }
+#endif
         ctx[1] = ac1;
         ctx[2] = ac2;
         ctx[3] = ac3;
