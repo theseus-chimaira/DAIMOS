@@ -11,6 +11,7 @@ int kfs_boot_prepare(kword_t future_free_words);
 
 extern kword_t sys_resident_words_immediate;
 extern kword_t __kinit_image_end;
+void kinit_late_handoff(kword_t stack_base, kword_t reclaim_end);
 
 static unsigned int mres_next_addr;
 static unsigned int mres_owner_next;
@@ -315,8 +316,7 @@ kinit_enter(void)
                 reclaim_end = image_end + KINIT_STACK_RESERVE_WORDS;
                 if (reclaim_end > mm_core_words)
                         kinit_halt();
-                kcore_boot_handoff(kernel_stack_base, KINIT_IMAGE_BASE,
-                    reclaim_end - KINIT_IMAGE_BASE);
+                kinit_late_handoff(kernel_stack_base, reclaim_end);
         }
         kinit_halt();
 }

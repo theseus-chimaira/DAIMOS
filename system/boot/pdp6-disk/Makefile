@@ -27,14 +27,16 @@ KCORE_STAMP := $(BUILD)/.kcore-built
 KERNEL_INPUTS := $(wildcard $(KERNEL_DIR)/*.c $(KERNEL_DIR)/*.h $(KERNEL_DIR)/*.s)
 
 KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot d6fs_boot d6fs_super_boot diskset_boot logstore proc_boot proc_swap_boot kinit_io module_io bootbanner_generated
+KINIT_LATE_NAMES = kinit_late_begin exec proc_late kinit_late kinit_late_end
 KINIT_ASM = $(addprefix $(KINIT_BUILD)/,$(addsuffix .s,$(KINIT_NAMES)))
 KINIT_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_NAMES)))
+KINIT_LATE_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KINIT_LATE_NAMES)))
 
-KCORE_C_NAMES = vfs devicefs procfs mm module_runtime proc proc_swap exec kcore_boot file
+KCORE_C_NAMES = vfs devicefs procfs mm module_runtime proc proc_swap file
 KCORE_FIXED_NAMES = $(KCORE_C_NAMES) ret_pdp10 \
 	dsk270_pdp10 kfmt_pdp10 vfs_pdp10 fs_mres_pdp10 file_pdp10 proc_pdp10 \
 	device_state_pdp10 devicefs_pdp10 syscall_info_pdp10 \
-	syscall_dispatch mach_user mach_enter_user kcore_handoff kcore_io storage_router kcore_end
+	syscall_dispatch mach_user mach_enter_user kcore_io storage_router kcore_end
 KCORE_FIXED_ASM = $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(KCORE_FIXED_NAMES)))
 KCORE_FIXED_OBJS = $(addprefix $(BUILD)/,$(addsuffix .dobj,$(KCORE_FIXED_NAMES)))
 MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io dcs_io ge_io dpy_io \
@@ -267,10 +269,10 @@ $(DISKBOOT_INITFS_OBJ): $(DISKBOOT_INITFS_ASM)
 	$(DAS) -c -o $@ $<
 
 $(IMAGE_DXR): $(MINIT_TABLE_OBJ) $(KCORE_EMBED_OBJ) $(KINIT_OBJS) \
-    $(MRES_PACKAGE_OBJS) $(DISKBOOT_INITFS_OBJ) $(END_OBJ) $(KCORE_MAP)
+    $(MRES_PACKAGE_OBJS) $(DISKBOOT_INITFS_OBJ) $(KINIT_LATE_OBJS) $(END_OBJ) $(KCORE_MAP)
 	$(DLINK) -b 030000 -A $(KCORE_MAP) -o $@ -M $(IMAGE_MAP) \
 	    $(MINIT_TABLE_OBJ) $(KCORE_EMBED_OBJ) $(KINIT_OBJS) \
-	    $(MRES_PACKAGE_OBJS) $(DISKBOOT_INITFS_OBJ) $(END_OBJ)
+	    $(MRES_PACKAGE_OBJS) $(DISKBOOT_INITFS_OBJ) $(KINIT_LATE_OBJS) $(END_OBJ)
 
 $(IMAGE_MAP): $(IMAGE_DXR)
 	@test -f $@

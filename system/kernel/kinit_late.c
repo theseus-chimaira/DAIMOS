@@ -1,11 +1,23 @@
 #include "exec.h"
+#include "kinit.h"
 #include "mach_user.h"
 #include "mm.h"
 #include "proc.h"
 #include "vfs.h"
 
+extern kword_t __kinit_late_begin;
+extern kword_t __kinit_late_end;
+void kinit_user_trap_init(void);
+
+/*
+ * Finish boot from the only KINIT text which remains reserved after the main
+ * bootstrap image is published to MM.  The final mm_add_free() deliberately
+ * publishes the instructions which are still executing.  That is safe on the
+ * PDP-6 because mm_add_free() changes only MM descriptors; PI is still off and
+ * no allocator is called before mach_enter_user() transfers control to INIT.
+ */
 void
-kcore_boot_start(kword_t reclaim_base, kword_t reclaim_words)
+kinit_late_start(kword_t reclaim_end)
 {
         struct proc *p;
         int init_slot;
@@ -14,15 +26,25 @@ kcore_boot_start(kword_t reclaim_base, kword_t reclaim_words)
         kword_t stack;
         kword_t first_entry;
         kword_t first_stack;
-        static const kword_t init_path[] = {
-                12UL,
-                VFS_SIX6('/', 'S', 'Y', 'S', 'T', 'E'),
-                VFS_SIX6('M', '/', 'I', 'N', 'I', 'T')
-        };
+        kword_t late_base;
+        kword_t late_end;
+        kword_t init_path[3];
 
-        if (mm_add_free(reclaim_base, reclaim_words) != MM_OK)
+        late_base = (kword_t)(unsigned long)&__kinit_late_begin;
+        late_end = (kword_t)(unsigned long)&__kinit_late_end;
+        if (late_base <= KINIT_IMAGE_BASE || late_end <= late_base ||
+            reclaim_end <= late_end)
                 return;
-        mach_user_trap_init();
+        if (mm_add_free(KINIT_IMAGE_BASE, late_base - KINIT_IMAGE_BASE) !=
+            MM_OK ||
+            mm_add_free(late_end, reclaim_end - late_end) != MM_OK)
+                return;
+
+        init_path[0] = 12UL;
+        init_path[1] = VFS_SIX6('/', 'S', 'Y', 'S', 'T', 'E');
+        init_path[2] = VFS_SIX6('M', '/', 'I', 'N', 'I', 'T');
+
+        kinit_user_trap_init();
         proc_table[0].meta = 0UL;
         proc_table[0].mem_layout = 0UL;
         proc_table[0].sched = PROC_SCHED_DEFAULT;
@@ -55,6 +77,14 @@ kcore_boot_start(kword_t reclaim_base, kword_t reclaim_words)
         p = &proc_table[1];
         proc_current_slot = 1UL;
         proc_sched_cursor = 1UL;
+
+        /*
+         * After this succeeds, the current PC is in physically unchanged but
+         * logically free memory.  Do not call an allocator or any routine that
+         * can compact/reuse core before the no-return user transition below.
+         */
+        if (mm_add_free(late_base, late_end - late_base) != MM_OK)
+                return;
         mach_enter_user(PROC_MEM_BASE(p), first_entry, first_stack,
             1UL, 0UL, 0UL);
 }

@@ -13,17 +13,11 @@
 ;   AC17        user pushdown pointer
 
         .text
-        .globl mach_user_trap_init
         .globl mach_syscall
         .globl mach_syscall_save
         .globl mach_return_to_kernel_request
         .globl exec_native_syscall
         .globl mach_kernel_sp
-
-mach_user_trap_init:
-        move 1,[jsr mach_syscall_save]
-        movem 1,000041
-        popj 17,
 
 mach_syscall_save:
         .word 0
