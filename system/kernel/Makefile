@@ -6,6 +6,7 @@ DTFS_ITS ?= 0
 PROC_BOOT_USERS ?= 1
 PROC_STACK_WATERMARK ?= 0
 DTFS_FOREIGN := $(if $(filter 1,$(DTFS_TENEX) $(DTFS_ITS)),1,0)
+DTFS_TARGET_ASM := $(if $(filter 1,$(DTFS_FOREIGN)),dtfs_chain_walk_pdp10.s,)
 BUILD ?= $(BUILD_ROOT)/system/kernel$(if $(filter 1,$(KINIT_DEBUG)),-debug,)
 PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
 MKBOOTBANNER ?= $(PDP10_PREFIX)/bin/mkbootbanner
@@ -65,9 +66,11 @@ $(BUILD)/d6fs_provider.s: d6fs_provider.c d6fs_provider_mutation_pdp10.s kcore.h
 	cat $@.c d6fs_provider_mutation_pdp10.s > $@
 	rm -f $@.c
 
-$(BUILD)/dtfs.s: dtfs.c kcore.h vfs.h fs_mres.h memfs.h dtfs.h d6fs.h d6fs_provider.h diskset.h diskset_mres.h mres.h dsk270.h file.h
+$(BUILD)/dtfs.s: dtfs.c $(DTFS_TARGET_ASM) kcore.h vfs.h fs_mres.h memfs.h dtfs.h d6fs.h d6fs_provider.h diskset.h diskset_mres.h mres.h dsk270.h file.h
 	mkdir -p $(BUILD)
-	$(PDP10_GCC) -std=c99 -Os -DDTFS_ENABLE_TENEX=$(DTFS_TENEX) -DDTFS_ENABLE_ITS=$(DTFS_ITS) -I. -S $< -o $@
+	$(PDP10_GCC) -std=c99 -Os -DDTFS_ENABLE_TENEX=$(DTFS_TENEX) -DDTFS_ENABLE_ITS=$(DTFS_ITS) -I. -S $< -o $@.c
+	cat $@.c $(DTFS_TARGET_ASM) > $@
+	rm -f $@.c
 
 
 $(BUILD)/proc_pdp10.s: proc_pdp10.s

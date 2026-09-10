@@ -57,12 +57,12 @@ d6fs_provider_resize_fcb(vnode_t node,
                 new_tail = 0U;
         old_blocks = (long)d6fs_provider_blocks_for_words(fi->size_words);
         {
-                kword_t n;
+                long n;
 
-                n = d6fs_provider_blocks_for_words(new_words);
-                if (n > d6fs_provider_reader.super.total_blocks)
+                n = (long)d6fs_provider_blocks_for_words(new_words);
+                if (n > (long)d6fs_provider_reader.super.total_blocks)
                         return -1;
-                new_blocks = (long)n;
+                new_blocks = n;
         }
 
         if (new_blocks > old_blocks) {
@@ -124,8 +124,8 @@ d6fs_provider_resize_fcb(vnode_t node,
                         ++extent_count;
                         need -= blocks;
                         d6fs_provider_reader.alloc_cursor = start + blocks;
-                        if (d6fs_provider_reader.alloc_cursor >=
-                            d6fs_provider_reader.super.total_blocks)
+                        if ((long)d6fs_provider_reader.alloc_cursor >=
+                            (long)d6fs_provider_reader.super.total_blocks)
                                 d6fs_provider_reader.alloc_cursor = 0UL;
                 }
         } else if (new_blocks < old_blocks) {
@@ -141,8 +141,8 @@ d6fs_provider_resize_fcb(vnode_t node,
                             old_fcb[D6FS_FCB_EXTENT0 + i], high,
                             &extent_start, &extent_blocks) != 0)
                                 return -1;
-                        if (extent_blocks > keep)
-                                extent_blocks = keep;
+                        if ((long)extent_blocks > keep)
+                                extent_blocks = (kword_t)keep;
                         d6fs_provider_set_extent(fcb, i,
                             extent_start, extent_blocks);
                         keep -= extent_blocks;
