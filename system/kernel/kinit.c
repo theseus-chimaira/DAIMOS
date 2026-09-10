@@ -280,6 +280,16 @@ kinit_enter(void)
             &kernel_stack_base) != MM_OK ||
             mm_pin(kernel_stack_base) != MM_OK)
                 kinit_halt();
+#if PROC_STACK_WATERMARK
+        {
+                kword_t *idle_stack;
+                unsigned int i;
+
+                idle_stack = (kword_t *)(unsigned long)kernel_stack_base;
+                for (i = 1U; i < (unsigned int)KERNEL_IDLE_STACK_WORDS; ++i)
+                        idle_stack[i] = kernel_stack_base + (kword_t)i;
+        }
+#endif
         kinit_diag_banner();
         kinit_save_boot_handoff();
         /* Private PDP-6 filesystem UUOs are used by resident VFS leaves during

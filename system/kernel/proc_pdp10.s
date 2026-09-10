@@ -17,6 +17,7 @@
         .equ    PROC_FILE_TABLE_OFFSET,046
         .equ    PROC_USTACK_BASE,0100
         .equ    PROC_KSTACK_WORDS,0320
+        .equ    KERNEL_IDLE_STACK_WORDS,0100
 
         .equ    CTX_U_PC,020
         .equ    CTX_U_KSP,021
@@ -80,10 +81,18 @@ proc_exit_current:
         setzm   file_table
         push    17,2
         pushj   17,proc_exit_finish
+.if PROC_STACK_WATERMARK
+        jumple  1,proc_exit_watermark_halt
+.else
         jumple  1,proc_exit_halt       ; final process or fatal release error
+.endif
         pop     17,1                   ; another process remains: restore PI
         pushj   17,mach_pi_restore
         jrst    proc_idle_loop
+.if PROC_STACK_WATERMARK
+proc_exit_watermark_halt:
+        pushj   17,kernel_idle_stack_watermark_scan
+.endif
 proc_exit_halt:
         ; Keep PI disabled.  Re-enabling it here lets a final clock interrupt
         ; redirect the no-process case into proc_idle_loop before HALT.
@@ -198,6 +207,7 @@ proc_wakeup_done:
 ; scan.  This code and state disappear completely from production builds.
 .if PROC_STACK_WATERMARK
         .globl  proc_stack_highwater
+        .globl  kernel_idle_stack_highwater
 proc_stack_watermark_scan:
         move    2,1
         addi    2,PROC_USTACK_BASE+1
@@ -214,6 +224,27 @@ proc_stack_watermark_done:
         camle   3,proc_stack_highwater
         movem   3,proc_stack_highwater
         popj    17,
+
+; Test-only watermark for the permanent idle/exit stack.  Late KINIT no
+; longer executes on this stack, so this measures runtime scheduler/exit use.
+kernel_idle_stack_watermark_scan:
+        move    1,mach_kernel_stack_base
+        move    2,1
+        addi    2,1
+        movei   3,1
+kernel_idle_stack_watermark_loop:
+        camn    2,(2)
+        jrst    kernel_idle_stack_watermark_done
+        addi    2,1
+        addi    3,1
+        caile   3,KERNEL_IDLE_STACK_WORDS
+        jrst    kernel_idle_stack_watermark_done
+        jrst    kernel_idle_stack_watermark_loop
+kernel_idle_stack_watermark_done:
+        camle   3,kernel_idle_stack_highwater
+        movem   3,kernel_idle_stack_highwater
+        popj    17,
+
 .endif
 
 ; Save a user-origin PI6 context.  AC1..AC3 and AC17 were already preserved by
@@ -415,6 +446,10 @@ proc_sched_resched_choose:
 ; cleared.  User code is preemptible.  Ordinary executive code is not; only a
 ; process which explicitly sleeps can be switched while in the kernel.
 proc_sched_pi_tick:
+.if PROC_STACK_WATERMARK
+        skipn   proc_current_slot
+        pushj   17,kernel_idle_stack_watermark_scan
+.endif
         skipn   proc_sched_cursor
         popj    17,
         move    1,pdp10_pi_level6
@@ -460,6 +495,8 @@ proc_sched_kick:
         .block  1
 .if PROC_STACK_WATERMARK
 proc_stack_highwater:
+        .long   0
+kernel_idle_stack_highwater:
         .long   0
 .endif
 

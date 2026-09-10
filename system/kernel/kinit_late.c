@@ -7,6 +7,7 @@
 
 extern kword_t __kinit_late_begin;
 extern kword_t __kinit_late_end;
+extern kword_t __kinit_image_end;
 
 /*
  * Finish boot from the only KINIT text which remains reserved after the main
@@ -16,7 +17,7 @@ extern kword_t __kinit_late_end;
  * no allocator is called before mach_enter_user() transfers control to INIT.
  */
 void
-kinit_late_start(kword_t reclaim_end)
+kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
 {
         struct proc *p;
         int init_slot;
@@ -27,16 +28,19 @@ kinit_late_start(kword_t reclaim_end)
         kword_t first_stack;
         kword_t late_base;
         kword_t late_end;
+        kword_t image_end;
         kword_t init_path[3];
 
         late_base = (kword_t)(unsigned long)&__kinit_late_begin;
         late_end = (kword_t)(unsigned long)&__kinit_late_end;
+        image_end = (kword_t)(unsigned long)&__kinit_image_end;
         if (late_base <= KINIT_IMAGE_BASE || late_end <= late_base ||
-            reclaim_end <= late_end)
+            image_end < late_end || reclaim_end <= image_end)
                 return;
         if (mm_add_free(KINIT_IMAGE_BASE, late_base - KINIT_IMAGE_BASE) !=
             MM_OK ||
-            mm_add_free(late_end, reclaim_end - late_end) != MM_OK)
+            (image_end > late_end &&
+            mm_add_free(late_end, image_end - late_end) != MM_OK))
                 return;
 
         init_path[0] = 12UL;
@@ -76,12 +80,15 @@ kinit_late_start(kword_t reclaim_end)
         proc_current_slot = 1UL;
         proc_sched_cursor = 1UL;
 
-        /*
-         * After this succeeds, the current PC is in physically unchanged but
-         * logically free memory.  Do not call an allocator or any routine that
-         * can compact/reuse core before the no-return user transition below.
-         */
-        if (mm_add_free(late_base, late_end - late_base) != MM_OK)
+        /* Publish the permanent idle/exit stack only after late KINIT has
+         * finished every operation which can allocate or enter VFS.  The
+         * current KINIT reserve stack may then be returned to MM together with
+         * this final code range: no allocator runs before the no-return user
+         * transition, so the physically unchanged instructions and stack stay
+         * safe until mach_enter_user() leaves them forever. */
+        mach_kernel_stack_base = idle_stack_base;
+        if (mm_add_free(late_base, late_end - late_base) != MM_OK ||
+            mm_add_free(image_end, reclaim_end - image_end) != MM_OK)
                 return;
         mach_enter_user(PROC_MEM_BASE(p), first_entry, first_stack,
             1UL, 0UL, 0UL);

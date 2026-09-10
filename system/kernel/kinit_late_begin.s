@@ -16,12 +16,10 @@ kinit_user_trap_init:
         popj 17,
 
 ; void kinit_late_handoff(stack_base, reclaim_end)
-; Switch permanently to the pinned resident kernel stack before any KINIT
-; range becomes visible to MM.  kinit_late_start() never returns on success.
+; Keep the existing KINIT reserve stack until all allocating late-KINIT work
+; is complete.  kinit_late_start() publishes stack_base for later idle/exit
+; use immediately before the no-return user transition.
 kinit_late_handoff:
-        movem 1,mach_kernel_stack_base
-        move 17,1
-        move 1,2
         pushj 17,kinit_late_start
 kinit_late_halt:
         halt
