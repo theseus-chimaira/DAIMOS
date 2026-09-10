@@ -9,7 +9,7 @@ build:
 	$(MAKE) -C system build BUILD_ROOT='$(BUILD_ROOT)'
 
 install:
-	$(MAKE) -C usr/libc install BUILD_ROOT='$(BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'
+	$(MAKE) -C userland/libc install BUILD_ROOT='$(BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'
 
 kinit:
 	$(MAKE) -C system kinit BUILD_ROOT='$(BUILD_ROOT)'
@@ -21,6 +21,6 @@ permanent-size:
 	$(MAKE) -C system/boot/pdp6-disk permanent-size BUILD_ROOT='$(BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'
 
 clean:
-	$(MAKE) -C usr/libc clean BUILD_ROOT='$(BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'
+	$(MAKE) -C userland/libc clean BUILD_ROOT='$(BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'
 	$(MAKE) -C system clean BUILD_ROOT='$(BUILD_ROOT)'
 	rm -rf $(BUILD_ROOT)

@@ -211,24 +211,24 @@ IMAGE_RIM = $(BUILD)/kinit.rim
 IMAGE_RAW = $(BUILD)/kinit.raw.words
 IMAGE_WORDS = $(BUILD)/kinit.words
 
-USR_BUILD_ROOT = $(BUILD)/usr-build
-DSH_DXR = $(USR_BUILD_ROOT)/usr/dsh.dxr
+USERLAND_BUILD_ROOT = $(BUILD)/userland-build
+DSH_DXR = $(USERLAND_BUILD_ROOT)/userland/dsh.dxr
 SYSTEM_INIT_DXR ?= $(DSH_DXR)
-USR_INPUTS = $(PROJECT_ROOT)/usr/libc/Makefile \
-	$(PROJECT_ROOT)/usr/libc/crt0.s \
-	$(PROJECT_ROOT)/usr/libc/dsys.h \
-	$(PROJECT_ROOT)/usr/libc/memcpy.s \
-	$(PROJECT_ROOT)/usr/libc/memmove.s \
-	$(PROJECT_ROOT)/usr/libc/syscall.s \
-	$(PROJECT_ROOT)/usr/libc/syscall_helpers.s \
-	$(PROJECT_ROOT)/usr/libc/u.c \
-	$(PROJECT_ROOT)/usr/libc/u.h \
-	$(PROJECT_ROOT)/usr/exec/COMMANDS \
-	$(PROJECT_ROOT)/usr/exec/cmd.h \
-	$(PROJECT_ROOT)/usr/exec/commands.c \
-	$(PROJECT_ROOT)/usr/exec/standalone.c \
-	$(PROJECT_ROOT)/usr/dsh/dsh.c \
-	$(PROJECT_ROOT)/usr/Makefile \
+USERLAND_INPUTS = $(PROJECT_ROOT)/userland/libc/Makefile \
+	$(PROJECT_ROOT)/userland/libc/crt0.s \
+	$(PROJECT_ROOT)/userland/libc/dsys.h \
+	$(PROJECT_ROOT)/userland/libc/memcpy.s \
+	$(PROJECT_ROOT)/userland/libc/memmove.s \
+	$(PROJECT_ROOT)/userland/libc/syscall.s \
+	$(PROJECT_ROOT)/userland/libc/syscall_helpers.s \
+	$(PROJECT_ROOT)/userland/libc/u.c \
+	$(PROJECT_ROOT)/userland/libc/u.h \
+	$(PROJECT_ROOT)/userland/exec/COMMANDS \
+	$(PROJECT_ROOT)/userland/exec/cmd.h \
+	$(PROJECT_ROOT)/userland/exec/commands.c \
+	$(PROJECT_ROOT)/userland/exec/standalone.c \
+	$(PROJECT_ROOT)/userland/dsh/dsh.c \
+	$(PROJECT_ROOT)/userland/Makefile \
 	$(PROJECT_ROOT)/system/kernel/proc/syscall.h
 
 STAGE1_SRC = $(PROJECT_ROOT)/system/stand/pdp6/dsk/stage1.s
@@ -401,8 +401,8 @@ $(KCORE_EMBED_ASM): kcore-embed.s.in $(KCORE_MAP) $(BUILD)
 $(KCORE_EMBED_OBJ): $(KCORE_EMBED_ASM)
 	$(DAS) -c -o $@ $<
 
-$(DSH_DXR): $(USR_INPUTS)
-	$(MAKE) -C $(PROJECT_ROOT)/usr build BUILD_ROOT='$(USR_BUILD_ROOT)' \
+$(DSH_DXR): $(USERLAND_INPUTS)
+	$(MAKE) -C $(PROJECT_ROOT)/userland build BUILD_ROOT='$(USERLAND_BUILD_ROOT)' \
 	    PDP10_PREFIX='$(PDP10_PREFIX)'
 
 # Diskboot reads /SYSTEM/INIT exclusively from D6FS.  KINIT carries only the
