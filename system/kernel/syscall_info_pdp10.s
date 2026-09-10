@@ -28,10 +28,8 @@ sys_procinfo:
         hlrz    3,2(5)
         andi    3,PROC_STATE_LH_MASK
         jumpe   3,pdp10_ret_neg1       ; FREE slots are not processes
+        movem   4,(2)                  ; pid is the process-table slot
         move    3,(5)
-        move    6,3
-        andi    6,0377
-        movem   6,(2)                  ; pid
         move    6,3
         lsh     6,-010
         andi    6,0377

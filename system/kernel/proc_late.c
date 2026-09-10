@@ -20,9 +20,8 @@ proc_slot_claim(unsigned int parent_slot)
                 p = &proc_table[slot];
                 if (PROC_STATE(p) != PROC_FREE)
                         continue;
-                p->meta = ((kword_t)slot & PROC_PID_MASK) |
-                    (((kword_t)parent_slot & PROC_PARENT_MASK) <<
-                    PROC_PARENT_SHIFT);
+                p->meta = ((kword_t)parent_slot & PROC_PARENT_MASK) <<
+                    PROC_PARENT_SHIFT;
                 p->mem_layout = 0UL;
                 p->sched = PROC_SCHED_DEFAULT;
                 PROC_SET_STATE(p, PROC_SIDL);

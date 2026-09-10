@@ -22,8 +22,7 @@
 #define PROC_SSWAP  5U        /* reserved compatibility state; not steady-state */
 #define PROC_STOP   6U
 
-/* meta RH: pid:8, parent-slot:8, flags:2.  meta LH retains initial entry PC. */
-#define PROC_PID_MASK        0377UL
+/* meta RH: low 8 bits free, parent-slot:8, flags:2.  meta LH retains initial entry PC. */
 #define PROC_PARENT_MASK     0377UL
 #define PROC_PARENT_SHIFT       8U
 #define PROC_FLAGS_MASK         03UL
@@ -112,7 +111,6 @@ int proc_user_context_init(unsigned int slot, kword_t entry, kword_t stack,
     kword_t ac1, kword_t ac2, kword_t ac3);
 void proc_sched_pi_tick(void);
 
-#define PROC_PID(p) ((unsigned int)((p)->meta & PROC_PID_MASK))
 #define PROC_PARENT_SLOT(p) \
         ((unsigned int)(((p)->meta >> PROC_PARENT_SHIFT) & PROC_PARENT_MASK))
 #define PROC_FLAGS(p) \

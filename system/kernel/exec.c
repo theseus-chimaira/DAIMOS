@@ -89,7 +89,6 @@ exec_load_init(struct proc *p, unsigned int owner,
 
         p->meta = (p->meta &
             ((kword_t)PROC_PARENT_MASK << PROC_PARENT_SHIFT)) |
-            ((kword_t)owner & PROC_PID_MASK) |
             (((kword_t)(entry + EXEC_USER_ORIGIN) & PROC_HALF_MASK) <<
             PROC_ENTRY_SHIFT);
         p->mem_layout = ((alloc_words & PROC_HALF_MASK) <<
