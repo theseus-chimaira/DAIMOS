@@ -55,9 +55,15 @@ $(KCORE_C_ASM): $(BUILD)/%.s: %.c kcore.h kboot.h vfs.h kfmt.h devicefs.h procfs
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os -DPROC_BOOT_USERS=$(PROC_BOOT_USERS) -I. -S $< -o $@
 
-$(MRES_C_ASM): $(BUILD)/%.s: %.c kcore.h vfs.h fs_mres.h memfs.h dtfs.h d6fs.h d6fs_provider.h diskset.h diskset_mres.h mres.h dsk270.h file.h
+$(BUILD)/d6fs.s: d6fs.c kcore.h vfs.h fs_mres.h memfs.h dtfs.h d6fs.h d6fs_provider.h diskset.h diskset_mres.h mres.h dsk270.h file.h
 	mkdir -p $(BUILD)
 	$(PDP10_GCC) -std=c99 -Os -I. -S $< -o $@
+
+$(BUILD)/d6fs_provider.s: d6fs_provider.c d6fs_provider_mutation_pdp10.s kcore.h vfs.h fs_mres.h memfs.h dtfs.h d6fs.h d6fs_provider.h diskset.h diskset_mres.h mres.h dsk270.h file.h
+	mkdir -p $(BUILD)
+	$(PDP10_GCC) -std=c99 -Os -I. -S $< -o $@.c
+	cat $@.c d6fs_provider_mutation_pdp10.s > $@
+	rm -f $@.c
 
 $(BUILD)/dtfs.s: dtfs.c kcore.h vfs.h fs_mres.h memfs.h dtfs.h d6fs.h d6fs_provider.h diskset.h diskset_mres.h mres.h dsk270.h file.h
 	mkdir -p $(BUILD)

@@ -203,18 +203,14 @@ dtfs_set_exec(unsigned int slot, int executable)
         dtfs_dir[slot] = (dtfs_dir[slot] & ~1UL) | (kword_t)executable;
 }
 
-static unsigned int
-dtfs_hdr_next(kword_t h)
-{
-        return (unsigned int)((h >> DTFS_NEXT_SHIFT) & DTFS_BLOCKNO_MASK);
-}
-
-static kword_t
-dtfs_header(unsigned int next, unsigned int first, unsigned int count)
-{
-        return ((kword_t)next << DTFS_NEXT_SHIFT) |
-            ((kword_t)first << DTFS_FIRST_SHIFT) | (kword_t)count;
-}
+/* These are pure on-media field operations.  Keep them as expressions so the
+ * PDP-10 compiler emits LDB/shift-OR sequences at the use site rather than
+ * paying a subroutine call for each block header. */
+#define DTFS_HDR_NEXT(h) \
+    ((unsigned int)(((h) >> DTFS_NEXT_SHIFT) & DTFS_BLOCKNO_MASK))
+#define DTFS_HEADER(next, first, count) \
+    (((kword_t)(next) << DTFS_NEXT_SHIFT) | \
+    ((kword_t)(first) << DTFS_FIRST_SHIFT) | (kword_t)(count))
 
 #if DTFS_ENABLE_TENEX || DTFS_ENABLE_ITS
 unsigned int
@@ -396,7 +392,7 @@ dtfs_resize(vnode_t node, unsigned int words)
                 for (i = 1U; i != old_blocks; ++i) {
                         if (dtfs_dtc_read(unit, prev, dtfs_block) != 0)
                                 return -1;
-                        next = dtfs_hdr_next(dtfs_block[0]);
+                        next = DTFS_HDR_NEXT(dtfs_block[0]);
                         if (next == 0U || next > DTFS_LAST_BLOCK)
                                 return -1;
                         prev = next;
@@ -410,7 +406,7 @@ dtfs_resize(vnode_t node, unsigned int words)
                         if (first == 0U)
                                 first = block;
                         fs_zero_block_workspace();
-                        dtfs_block[0] = dtfs_header(0U, first,
+                        dtfs_block[0] = DTFS_HEADER(0U, first,
                             old_blocks + 1U == new_blocks ? last_words :
                             DTFS_DATA_WORDS);
                         if (dtfs_dtc_write(unit, block, dtfs_block) != 0)
@@ -420,7 +416,7 @@ dtfs_resize(vnode_t node, unsigned int words)
                                 if (dtfs_dtc_read(unit, prev,
                                     dtfs_block) != 0)
                                         return -1;
-                                dtfs_block[0] = dtfs_header(block, first,
+                                dtfs_block[0] = DTFS_HEADER(block, first,
                                     DTFS_DATA_WORDS);
                                 if (dtfs_dtc_write(unit, prev,
                                     dtfs_block) != 0)
@@ -438,12 +434,12 @@ dtfs_resize(vnode_t node, unsigned int words)
                                 if (dtfs_dtc_read(unit, block,
                                     dtfs_block) != 0)
                                         return -1;
-                                block = dtfs_hdr_next(dtfs_block[0]);
+                                block = DTFS_HDR_NEXT(dtfs_block[0]);
                         }
                         if (dtfs_dtc_read(unit, block, dtfs_block) != 0)
                                 return -1;
-                        next = dtfs_hdr_next(dtfs_block[0]);
-                        dtfs_block[0] = dtfs_header(0U, first, last_words);
+                        next = DTFS_HDR_NEXT(dtfs_block[0]);
+                        dtfs_block[0] = DTFS_HEADER(0U, first, last_words);
                         if (dtfs_dtc_write(unit, block, dtfs_block) != 0)
                                 return -1;
                         block = next;
@@ -452,7 +448,7 @@ dtfs_resize(vnode_t node, unsigned int words)
                         if (block > DTFS_LAST_BLOCK ||
                             dtfs_dtc_read(unit, block, dtfs_block) != 0)
                                 return -1;
-                        next = dtfs_hdr_next(dtfs_block[0]);
+                        next = DTFS_HDR_NEXT(dtfs_block[0]);
                         dtfs_set_owner(0U, block - mapoff, DTFS_OWNER_FREE);
                         block = next;
                 }
@@ -460,7 +456,7 @@ dtfs_resize(vnode_t node, unsigned int words)
                 /* PREV already names the last block from the initial walk. */
                 if (dtfs_dtc_read(unit, prev, dtfs_block) != 0)
                         return -1;
-                dtfs_block[0] = dtfs_header(0U, first, last_words);
+                dtfs_block[0] = DTFS_HEADER(0U, first, last_words);
                 if (dtfs_dtc_write(unit, prev, dtfs_block) != 0)
                         return -1;
         }
@@ -659,7 +655,7 @@ dtfs_create(vnode_t dir, const struct vfs_name *name,
                     dtfs_foreign_set_name(slot, name, 0) != 0)
                         return -1;
                 fs_zero_block_workspace();
-                dtfs_block[0] = dtfs_header(0U, block, 0U);
+                dtfs_block[0] = DTFS_HEADER(0U, block, 0U);
                 if (dtfs_dtc_write(dtfs_unit(dir), block, dtfs_block) != 0) {
                         dtfs_dir[DTFS_NAME_BASE + slot] = 0UL;
                         dtfs_dir[DTFS_TENEX_EXT_BASE + slot] = 0UL;
@@ -725,7 +721,7 @@ dtfs_unlink(vnode_t dir, const struct vfs_name *name)
                                 dtfs_cache_mount = 0U;
                                 return -1;
                         }
-                        next = dtfs_hdr_next(dtfs_block[0]);
+                        next = DTFS_HDR_NEXT(dtfs_block[0]);
                         dtfs_set_owner(0U, block - 1U, DTFS_OWNER_FREE);
                 }
                 if (next != 0U) {
@@ -851,7 +847,7 @@ dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
                                 off -= count;
                         }
                 }
-                block = dtfs_hdr_next(dtfs_block[0]);
+                block = DTFS_HDR_NEXT(dtfs_block[0]);
                 ++seen;
                 if (block == 0U) {
                         if (seen != blocks)
@@ -971,7 +967,7 @@ transfer_block:
         }
 
 chain_next:
-        block = dtfs_hdr_next(dtfs_block[0]);
+        block = DTFS_HDR_NEXT(dtfs_block[0]);
         ++seen;
         if (block == 0U) {
                 if (seen != blocks)

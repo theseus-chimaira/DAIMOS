@@ -234,6 +234,7 @@ d6fs_provider_scan_slot(vnode_t dir, const struct vfs_name *name,
         }
 }
 
+#ifndef __PDP10__
 static int
 d6fs_provider_free_fcb(unsigned int *indexp)
 {
@@ -251,7 +252,11 @@ d6fs_provider_free_fcb(unsigned int *indexp)
         }
         return -1;
 }
+#else
+extern int d6fs_provider_free_fcb(unsigned int *indexp);
+#endif
 
+#ifndef __PDP10__
 static int
 d6fs_provider_write_dirent(vnode_t dir, unsigned int slot,
     const struct d6fs_dirent_info *di)
@@ -287,6 +292,10 @@ d6fs_provider_write_dirent(vnode_t dir, unsigned int slot,
             off, raw,
             D6FS_DIRENT_WORDS) == (int)D6FS_DIRENT_WORDS ? 0 : -1;
 }
+#else
+extern int d6fs_provider_write_dirent(vnode_t dir, unsigned int slot,
+    const struct d6fs_dirent_info *di);
+#endif
 
 int
 d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
