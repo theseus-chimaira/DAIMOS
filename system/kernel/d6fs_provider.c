@@ -7,10 +7,12 @@ void d6fs_provider_set_extent(kword_t fcb[D6FS_FCB_WORDS],
     unsigned int index, kword_t start, kword_t blocks);
 void d6fs_provider_clear_extent(kword_t fcb[D6FS_FCB_WORDS],
     unsigned int index);
-int d6fs_provider_free_file_tail(const kword_t fcb[D6FS_FCB_WORDS],
+int d6fs_provider_free_file_tail(const kword_t fcb[D6FS_FCB_RESERVED0],
     kword_t first_file_block);
 unsigned int d6fs_provider_tail(unsigned int type, kword_t words,
     kword_t size_chars);
+int d6fs_provider_alloc_run(kword_t max_blocks,
+    kword_t *startp, kword_t *blocksp);
 
 int d6fs_provider_scan_slot(vnode_t dir,
     const struct vfs_name *name, unsigned int *slotp,
@@ -44,14 +46,15 @@ d6fs_provider_resize_fcb(vnode_t node,
         long candidate;
         int allocated;
         unsigned int high;
-        unsigned int i;
-        unsigned int extent_count;
+        int i;
+        int extent_count;
 
         if (((unsigned int)(unsigned long)d6fs_provider_reader.opaque &
             D6FS_PROVIDER_MOUNT_WRITABLE) == 0U)
                 return -1;
-        fs_copy_words(fcb, old_fcb, D6FS_FCB_RESERVED0);
-        extent_count = fi->extent_count;
+        __builtin_memcpy(old_fcb, fcb,
+            D6FS_FCB_RESERVED0 * sizeof(old_fcb[0]));
+        extent_count = (int)fi->extent_count;
         if (new_words == 0UL)
                 new_tail = 0U;
         old_blocks = (long)((fi->size_words + 0177UL) >> 7);
@@ -67,7 +70,7 @@ d6fs_provider_resize_fcb(vnode_t node,
         if (new_blocks > old_blocks) {
                 need = new_blocks - old_blocks;
                 if (extent_count != 0U) {
-                        i = extent_count - 1U;
+                        i = extent_count - 1;
                         high = d6fs_extent_high_get(
                             fcb[D6FS_FCB_LENHIGH], i);
                         if (d6fs_extent_decode(
@@ -96,14 +99,14 @@ d6fs_provider_resize_fcb(vnode_t node,
                         }
                 }
                 while (need != 0UL) {
-                        if (extent_count >= D6FS_EXTENTS) {
+                        if (extent_count >= (int)D6FS_EXTENTS) {
                                 goto rollback;
                         }
                         blocks = need;
                         if (blocks > D6FS_EXTENT_MAX_BLOCKS)
                                 blocks = D6FS_EXTENT_MAX_BLOCKS;
-                        if (d6fs_alloc_run(&d6fs_provider_reader,
-                            blocks, &start, &blocks) != 0) {
+                        if (d6fs_provider_alloc_run(blocks,
+                            &start, &blocks) != 0) {
                                 goto rollback;
                         }
                         for (candidate = 0; candidate < (long)blocks; ++candidate) {
@@ -133,21 +136,21 @@ d6fs_provider_resize_fcb(vnode_t node,
                 kword_t extent_blocks;
 
                 keep = new_blocks;
-                for (i = 0U; keep != 0UL; ++i) {
+                for (i = 0; keep != 0UL; ++i) {
                         high = d6fs_extent_high_get(
                             old_fcb[D6FS_FCB_LENHIGH], i);
                         if (d6fs_extent_decode(
                             old_fcb[D6FS_FCB_EXTENT0 + i], high,
                             &extent_start, &extent_blocks) != 0)
                                 return -1;
-                        if ((long)extent_blocks > keep)
+                        if ((long)extent_blocks > (long)keep)
                                 extent_blocks = (kword_t)keep;
                         d6fs_provider_set_extent(fcb, i,
                             extent_start, extent_blocks);
                         keep -= extent_blocks;
                 }
                 extent_count = i;
-                for (; i < D6FS_EXTENTS; ++i)
+                for (; i < (int)D6FS_EXTENTS; ++i)
                         d6fs_provider_clear_extent(fcb, i);
         }
 
@@ -173,7 +176,8 @@ d6fs_provider_resize_fcb(vnode_t node,
 
 rollback:
         (void)d6fs_provider_free_file_tail(fcb, old_blocks);
-        fs_copy_words(old_fcb, fcb, D6FS_FCB_RESERVED0);
+        __builtin_memcpy(fcb, old_fcb,
+            D6FS_FCB_RESERVED0 * sizeof(old_fcb[0]));
         return -1;
 }
 

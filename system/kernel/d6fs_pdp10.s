@@ -356,94 +356,78 @@ d6fs_free_run_fail:
 d6fs_free_run_done:
         jrst    d6fs_restore3
 
-        .globl  d6fs_alloc_run
-; int d6fs_alloc_run(reader, max_blocks, startp, blocksp)
+        .globl  d6fs_provider_alloc_run
+; int d6fs_provider_alloc_run(max_blocks, startp, blocksp)
 ;
-; Selection only: this routine never changes the free map.  The caller writes
-; new data first, then commits allocation bits, then persists FCB reachability.
-; Start at reader->alloc_cursor, which is kept normalized by mount/resize.
-d6fs_alloc_run:
+; Selection only: this routine never changes the free map.  It is provider
+; private: the sole production caller always allocates from d6fs_provider_reader.
+; STARTP/BLOCKSP are scratch outputs while scanning and are undefined on error.
+d6fs_provider_alloc_run:
         jumpe   1,pdp10_ret_neg1
         jumpe   2,pdp10_ret_neg1
         jumpe   3,pdp10_ret_neg1
-        jumpe   4,pdp10_ret_neg1
-        skipn   6(1)                     ; total_blocks
-        jrst    pdp10_ret_neg1
         push    17,010
         push    17,011
         push    17,012
         push    17,013
         push    17,014
-        push    17,015
-        push    17,016
-        move    010,1                    ; reader
-        move    011,(1)                  ; normalized alloc_cursor
-        move    012,2                    ; max_blocks
-        move    013,3                    ; startp
-        move    014,4                    ; blocksp
-        move    015,6(1)                 ; total_blocks
-        caml    011,015
-        jrst    d6fs_alloc_run_fail
-        setz    016,                      ; scanned
-        add     17,[3,,3]                ; local start, count, current
-        setzm   (17)                     ; count
-        setzm   -1(17)                   ; start
+        move    011,1                    ; max_blocks
+        move    012,2                    ; startp
+        move    013,3                    ; blocksp
+        move    2,d6fs_provider_reader   ; normalized alloc_cursor
+        caml    2,d6fs_provider_reader+6
+        jrst    d6fs_provider_alloc_run_fail
+        setz    010,                     ; scanned
+        setzm   (013)                    ; running count / blocksp
 
-d6fs_alloc_run_loop:
-        caml    016,015
-        jrst    d6fs_alloc_run_end
-        move    2,011
-        add     2,016                    ; logical = cursor + scanned
-        caml    2,015
-        sub     2,015                    ; one wrap is sufficient
-        movem   2,-2(17)                ; preserve current across helper
-        move    1,010
+d6fs_provider_alloc_run_loop:
+        caml    010,d6fs_provider_reader+6
+        jrst    d6fs_provider_alloc_run_end
+        move    2,d6fs_provider_reader
+        add     2,010                    ; logical = cursor + scanned
+        caml    2,d6fs_provider_reader+6
+        sub     2,d6fs_provider_reader+6 ; one wrap is sufficient
+        move    014,2                    ; preserve current across helper
+        movei   1,d6fs_provider_reader
         pushj   17,d6fs_freemap_state
-        jumpl   1,d6fs_alloc_run_fail
-        jumpn   1,d6fs_alloc_run_used
-        move    2,(17)                   ; count
-        jumpn   2,d6fs_alloc_run_continue
-        move    3,-2(17)
-        movem   3,-1(17)                 ; first free logical block
-        jrst    d6fs_alloc_run_add
-d6fs_alloc_run_continue:
-        move    3,-1(17)
+        jumpl   1,d6fs_provider_alloc_run_fail
+        jumpn   1,d6fs_provider_alloc_run_used
+        move    2,(013)                  ; running count
+        jumpn   2,d6fs_provider_alloc_run_continue
+        movem   014,(012)                ; first free logical block
+        jrst    d6fs_provider_alloc_run_add
+d6fs_provider_alloc_run_continue:
+        move    3,(012)
         add     3,2
-        move    4,-2(17)                ; current logical block
-        came    4,3                      ; contiguous: skip restart
-        jrst    d6fs_alloc_run_restart
-d6fs_alloc_run_add:
-        aos     (17)
-        move    2,(17)
-        caml    2,012
-        jrst    d6fs_alloc_run_success
-        aoja    016,d6fs_alloc_run_loop
-d6fs_alloc_run_restart:
-        movem   4,-1(17)
+        came    014,3                    ; current must be contiguous
+        jrst    d6fs_provider_alloc_run_restart
+d6fs_provider_alloc_run_add:
+        aos     (013)
+        move    2,(013)
+        caml    2,011
+        jrst    d6fs_provider_alloc_run_success
+        aoja    010,d6fs_provider_alloc_run_loop
+d6fs_provider_alloc_run_restart:
+        movem   014,(012)
         movei   2,1
-        movem   2,(17)
-        caml    2,012
-        jrst    d6fs_alloc_run_success
-        aoja    016,d6fs_alloc_run_loop
-d6fs_alloc_run_used:
-        skipn   (17)
-        aoja    016,d6fs_alloc_run_loop
-        jrst    d6fs_alloc_run_success
-d6fs_alloc_run_end:
-        skipn   (17)
-        jrst    d6fs_alloc_run_fail
-d6fs_alloc_run_success:
-        move    1,-1(17)
-        movem   1,(013)
-        move    1,(17)
-        movem   1,(014)
+        movem   2,(013)
+        caml    2,011
+        jrst    d6fs_provider_alloc_run_success
+        aoja    010,d6fs_provider_alloc_run_loop
+d6fs_provider_alloc_run_used:
+        skipn   (013)
+        aoja    010,d6fs_provider_alloc_run_loop
+        jrst    d6fs_provider_alloc_run_success
+d6fs_provider_alloc_run_end:
+        skipn   (013)
+        jrst    d6fs_provider_alloc_run_fail
+d6fs_provider_alloc_run_success:
         setz    1,
-        jrst    d6fs_alloc_run_done
-d6fs_alloc_run_fail:
+        jrst    d6fs_provider_alloc_run_done
+d6fs_provider_alloc_run_fail:
         seto    1,
-d6fs_alloc_run_done:
-        sub     17,[3,,3]
-        jrst    d6fs_restore7
+d6fs_provider_alloc_run_done:
+        jrst    d6fs_restore5
 
 ; Internal: return 1 if map block has a free valid bit, 0 if full, -1 error.
 ; Scan whole 36-bit words instead of testing as many as 4608 individual bits.
