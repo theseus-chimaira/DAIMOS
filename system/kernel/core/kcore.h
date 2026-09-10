@@ -8,6 +8,4 @@ typedef unsigned long kword_t;
 
 #define KCORE_BASE              000060UL
 
-
-
 #endif
