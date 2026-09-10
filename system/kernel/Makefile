@@ -32,7 +32,7 @@ KCORE_FIXED_ASM = $(KCORE_C_ASM) \
 
 MRES_SRCS = d6fs.c d6fs_provider.c
 MRES_C_ASM = $(MRES_SRCS:%.c=$(BUILD)/%.s)
-MRES_ASM = $(BUILD)/dtfs.s $(MRES_C_ASM) $(BUILD)/cty_io.s $(BUILD)/clk_io.s \
+MRES_ASM = $(BUILD)/dtfs.s $(MRES_C_ASM) $(BUILD)/d6fs_validate_pdp10.s $(BUILD)/cty_io.s $(BUILD)/clk_io.s \
 	$(BUILD)/ptr_io.s $(BUILD)/ptp_io.s $(BUILD)/cr_io.s \
 	$(BUILD)/cp_io.s $(BUILD)/diskset_dispatch.s $(BUILD)/dcs_io.s $(BUILD)/ge_io.s $(BUILD)/dpy_io.s \
 	$(BUILD)/tty_io.s $(BUILD)/dtfs_pdp10.s $(BUILD)/memfs_pdp10.s $(BUILD)/d6fs_pdp10.s $(BUILD)/wcnsls_io.s $(BUILD)/ocnsls_io.s $(BUILD)/dsk_io.s $(BUILD)/tape_io.s $(BUILD)/slv_io.s

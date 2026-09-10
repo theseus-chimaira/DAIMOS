@@ -25,6 +25,7 @@ extern int d6fs_freemap_state(struct d6fs_reader *, kword_t);
 /* d6fs_free_run is implemented in d6fs_pdp10.s. */
 
 
+#ifndef __PDP10__
 int
 d6fs_fcb_decode_valid(const kword_t fcb[D6FS_FCB_WORDS],
     kword_t fs_blocks, unsigned int fcb_count, struct d6fs_fcb_info *info)
@@ -84,6 +85,8 @@ d6fs_fcb_decode_valid(const kword_t fcb[D6FS_FCB_WORDS],
         }
         return info->size_words <= capacity;
 }
+#endif
+
 
 
 /* d6fs_dirent_decode_valid is implemented in d6fs_pdp10.s. */
