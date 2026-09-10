@@ -177,7 +177,7 @@ int d6fs_reader_put_fcb(struct d6fs_reader *reader,
 int d6fs_freemap_state(struct d6fs_reader *reader, kword_t logical);
 int d6fs_freemap_set(struct d6fs_reader *reader, kword_t logical,
     unsigned int allocated);
-int d6fs_alloc_run(struct d6fs_reader *reader, kword_t cursor,
-    kword_t max_blocks, kword_t *startp, kword_t *blocksp);
+int d6fs_alloc_run(struct d6fs_reader *reader, kword_t max_blocks,
+    kword_t *startp, kword_t *blocksp);
 int d6fs_free_run(struct d6fs_reader *reader, kword_t start,
     kword_t blocks);

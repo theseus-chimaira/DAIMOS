@@ -357,18 +357,17 @@ d6fs_free_run_done:
         jrst    d6fs_restore3
 
         .globl  d6fs_alloc_run
-; int d6fs_alloc_run(reader, cursor, max_blocks, startp, blocksp)
+; int d6fs_alloc_run(reader, max_blocks, startp, blocksp)
 ;
 ; Selection only: this routine never changes the free map.  The caller writes
 ; new data first, then commits allocation bits, then persists FCB reachability.
-; Return the first contiguous free run at or after cursor, limited to max_blocks.
+; Start at reader->alloc_cursor, which is kept normalized by mount/resize.
 d6fs_alloc_run:
         jumpe   1,pdp10_ret_neg1
+        jumpe   2,pdp10_ret_neg1
         jumpe   3,pdp10_ret_neg1
         jumpe   4,pdp10_ret_neg1
         skipn   6(1)                     ; total_blocks
-        jrst    pdp10_ret_neg1
-        skipn   5,-1(17)                 ; fifth C arg: blocksp
         jrst    pdp10_ret_neg1
         push    17,010
         push    17,011
@@ -378,14 +377,13 @@ d6fs_alloc_run:
         push    17,015
         push    17,016
         move    010,1                    ; reader
-        move    011,2                    ; cursor
-        move    012,3                    ; max_blocks
-        move    013,4                    ; startp
-        move    014,5                    ; blocksp
+        move    011,(1)                  ; normalized alloc_cursor
+        move    012,2                    ; max_blocks
+        move    013,3                    ; startp
+        move    014,4                    ; blocksp
         move    015,6(1)                 ; total_blocks
-        move    1,011
-        idiv    1,015
-        move    011,2                    ; cursor %= total_blocks
+        caml    011,015
+        jrst    d6fs_alloc_run_fail
         setz    016,                      ; scanned
         add     17,[3,,3]                ; local start, count, current
         setzm   (17)                     ; count

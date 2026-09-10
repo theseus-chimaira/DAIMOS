@@ -33,7 +33,7 @@ d6fs_provider_resize_fcb(vnode_t node,
     kword_t fcb[D6FS_FCB_WORDS], struct d6fs_fcb_info *fi,
     kword_t new_words, unsigned int new_tail)
 {
-        kword_t old_fcb[D6FS_FCB_WORDS];
+        kword_t old_fcb[D6FS_FCB_RESERVED0];
         long old_blocks;
         long new_blocks;
         long need;
@@ -50,7 +50,7 @@ d6fs_provider_resize_fcb(vnode_t node,
         if (((unsigned int)(unsigned long)d6fs_provider_reader.opaque &
             D6FS_PROVIDER_MOUNT_WRITABLE) == 0U)
                 return -1;
-        fs_copy_words(fcb, old_fcb, D6FS_FCB_WORDS);
+        fs_copy_words(fcb, old_fcb, D6FS_FCB_RESERVED0);
         extent_count = fi->extent_count;
         if (new_words == 0UL)
                 new_tail = 0U;
@@ -103,7 +103,7 @@ d6fs_provider_resize_fcb(vnode_t node,
                         if (blocks > D6FS_EXTENT_MAX_BLOCKS)
                                 blocks = D6FS_EXTENT_MAX_BLOCKS;
                         if (d6fs_alloc_run(&d6fs_provider_reader,
-                            d6fs_provider_reader.alloc_cursor, blocks, &start, &blocks) != 0) {
+                            blocks, &start, &blocks) != 0) {
                                 goto rollback;
                         }
                         for (candidate = 0; candidate < (long)blocks; ++candidate) {
@@ -173,7 +173,7 @@ d6fs_provider_resize_fcb(vnode_t node,
 
 rollback:
         (void)d6fs_provider_free_file_tail(fcb, old_blocks);
-        fs_copy_words(old_fcb, fcb, D6FS_FCB_WORDS);
+        fs_copy_words(old_fcb, fcb, D6FS_FCB_RESERVED0);
         return -1;
 }
 
@@ -367,7 +367,7 @@ d6fs_provider_unlink(vnode_t dir, const struct vfs_name *name)
 {
         struct d6fs_dirent_info di;
         kword_t fcb[D6FS_FCB_WORDS];
-        kword_t old_fcb[D6FS_FCB_WORDS];
+        kword_t old_fcb[D6FS_FCB_RESERVED0];
         struct d6fs_fcb_info fi;
         unsigned int slot;
 
@@ -376,7 +376,7 @@ d6fs_provider_unlink(vnode_t dir, const struct vfs_name *name)
             fcb, &fi) != 0 ||
             (fi.flags & (D6FS_FLAG_NOUNLINK | D6FS_FLAG_IMMUTABLE)) != 0U)
                 return -1;
-        fs_copy_words(fcb, old_fcb, D6FS_FCB_WORDS);
+        fs_copy_words(fcb, old_fcb, D6FS_FCB_RESERVED0);
         if (fi.type == D6FS_TYPE_DIR && fi.size_words != 0UL) {
                 struct d6fs_dirent_info child;
                 unsigned int s;
