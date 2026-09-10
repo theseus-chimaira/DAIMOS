@@ -351,6 +351,7 @@ commit:
 
 #endif
 
+#if !defined(__PDP10__) || (!DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS)
 static int
 dtfs_resize(vnode_t node, unsigned int words)
 {
@@ -473,6 +474,9 @@ dtfs_resize(vnode_t node, unsigned int words)
                 dtfs_set_last_words(slot, last_words);
         return dtfs_commit(node);
 }
+#else
+extern int dtfs_resize(vnode_t node, unsigned int words);
+#endif
 
 static int
 dtfs_detect_unit(unsigned int unit, unsigned int type, int deep)

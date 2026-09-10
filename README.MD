@@ -43,11 +43,14 @@ KCC AND GCC GENERATED CODE MUST REMAIN ABI COMPATIBLE.  ABI CHANGES MUST BE MADE
 
 ## FULL PDP-6 BOOT
 
-`make boot` builds the full PDP-6 kernel configuration.  Native, TENEX, and ITS
-DTFS personalities are compiled in, all implemented SIMH devices are enabled,
-and three DECtape plus two magtape transports are attached for interactive
-storage testing.  The D6FS boot image pre-creates `/MOUNT/DT0`, `/MOUNT/DT1`,
-and `/MOUNT/DT2`.
+`make boot` builds the normal PDP-6 kernel configuration with the NATIVE DTFS
+personality resident.  TENEX and ITS remain build-time options and are enabled
+explicitly by the testkit for foreign-personality validation; they are not
+resident in the normal boot.  All implemented SIMH devices are enabled, three
+DECtape and two magtape transports are attached, and the D6FS boot image
+pre-creates `/MOUNT/DT0`, `/MOUNT/DT1`, and `/MOUNT/DT2`.
+
+For diagnostic foreign-personality builds use `DTFS_TENEX=1 DTFS_ITS=1`.
 
 DSH accepts `MOUNT` as the normal DTFS mount command; `MOUNT.DTFS` remains as a
 compatibility spelling.  For example:
@@ -57,6 +60,6 @@ compatibility spelling.  For example:
     LS /MOUNT/DT0
     UNMOUNT /MOUNT/DT0
 
-The PDP-6 disk boot makefile also provides `make permanent-size`.  For the full
-v17 configuration this reports KCORE plus every MRES package installed by the
-full-hardware boot, excluding KINIT/INIT and process-private storage.
+The PDP-6 disk boot makefile also provides `make permanent-size`.  It reports
+KCORE plus every MRES package installed by the normal full-hardware boot,
+excluding KINIT/INIT and process-private storage.
