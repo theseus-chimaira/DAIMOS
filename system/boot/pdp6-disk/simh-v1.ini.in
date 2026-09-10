@@ -1,17 +1,32 @@
 set -q -n log @SIMH_LOG@
 set cpu 256k
-set cr disabled
-set cp disabled
-set ptr enabled
-set ptp disabled
-set dsk enabled
-set dtc dct=04
-set dtc disabled
-set mtc disabled
-set dcs disabled
-set ge disabled
-set slave disabled
 
+; Full DAIMOS hardware configuration.  Keep every implemented PDP-6 device
+; online so MINIT loads the corresponding resident driver package.
+set cr enabled
+set cp enabled
+set ptr enabled
+set ptp enabled
+set dsk enabled
+set dct enabled
+set dtc dct=04
+set dtc enabled
+set dtc0 enabled
+set dtc1 enabled
+set dtc2 enabled
+set mtc enabled
+set mtc0 enabled
+set mtc1 enabled
+set dcs enabled
+set dcs lines=8
+set ge enabled
+set slave enabled
+set dpy enabled
+set wcnsls cscope
+set wcnsls enabled
+set ocnsls enabled
+
+; Bootstrap read-in loop.
 deposit 020 710600000060
 deposit 021 710740000010
 deposit 022 254000000021
@@ -22,7 +37,18 @@ deposit 026 000000000000
 deposit 027 254000000021
 
 attach -q ptr @STAGE1_TAPE@
+attach -q -n ptp @PTP_OUTPUT@
+attach -q -n cp @CP_OUTPUT@
 deposit ptr time 1
 attach -q dsk0 @DISK_IMAGE@
+
+; Writable blank media for interactive DTFS/storage testing.  The files are
+; persistent until make clean removes the build tree.
+attach -q dtc0 @DTC0_IMAGE@
+attach -q dtc1 @DTC1_IMAGE@
+attach -q dtc2 @DTC2_IMAGE@
+attach -q mtc0 @MTC0_IMAGE@
+attach -q mtc1 @MTC1_IMAGE@
+
 go 020
 exit

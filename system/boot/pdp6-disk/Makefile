@@ -14,11 +14,12 @@ LOGSTORE ?= $(PDP10_PREFIX)/bin/logstore
 MKINITFS0 ?= $(PDP10_PREFIX)/bin/mkinitfs0
 SIMH_PDP6 ?= $(PDP10_PREFIX)/bin/pdp6
 PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
+PDP10_OBJDUMP ?= $(PDP10_PREFIX)/bin/pdp10-objdump
 
 D6FS_LOGSTORE_BLOCKS ?= 0400
 D6FS_SWAP_TAIL_BLOCKS ?= 0200
-DTFS_TENEX ?= 0
-DTFS_ITS ?= 0
+DTFS_TENEX ?= 1
+DTFS_ITS ?= 1
 PROC_BOOT_USERS ?= 1
 PROC_STACK_WATERMARK ?= 0
 
@@ -103,9 +104,17 @@ DISK_DIR = $(BUILD)/disk
 DISK_IMAGE = $(DISK_DIR)/dsk0.dsk
 SIMH_INI = $(BUILD)/boot-v1.ini
 SIMH_LOG = $(BUILD)/boot-v1.simh.log
+MEDIA_DIR = $(BUILD)/media
+DTC0_IMAGE = $(MEDIA_DIR)/dtc0.tap
+DTC1_IMAGE = $(MEDIA_DIR)/dtc1.tap
+DTC2_IMAGE = $(MEDIA_DIR)/dtc2.tap
+MTC0_IMAGE = $(MEDIA_DIR)/mtc0.tap
+MTC1_IMAGE = $(MEDIA_DIR)/mtc1.tap
+PTP_OUTPUT = $(MEDIA_DIR)/ptp.out
+CP_OUTPUT = $(MEDIA_DIR)/cp.out
 
 .DEFAULT_GOAL := image
-.PHONY: image boot clean
+.PHONY: image boot permanent-size clean
 
 $(BUILD):
 	mkdir -p $@
@@ -305,16 +314,29 @@ $(DISK_IMAGE): $(IMAGE_WORDS) $(SYSTEM_INIT_DXR)
 	    --d6fs-layout --logstore-blocks $(D6FS_LOGSTORE_BLOCKS) \
 	    --swap-tail-blocks $(D6FS_SWAP_TAIL_BLOCKS)
 	$(MKD6FS) -n 1 -d $(DISK_DIR) \
-	    -D /MOUNT/RAMFS0:0755 -D /TEMP:0555 -D /MOUNT/DT0:0755 \
+	    -D /MOUNT/RAMFS0:0755 -D /TEMP:0555 \
+	    -D /MOUNT/DT0:0755 -D /MOUNT/DT1:0755 -D /MOUNT/DT2:0755 \
 	    -f "/SYSTEM/INIT:$(SYSTEM_INIT_DXR):555:dxr"
 	$(LOGSTORE) -n 1 -d $(DISK_DIR) --init
 
 $(SIMH_INI): simh-v1.ini.in $(STAGE1_TAPE) $(DISK_IMAGE)
+	mkdir -p $(MEDIA_DIR)
+	touch $(DTC0_IMAGE) $(DTC1_IMAGE) $(DTC2_IMAGE) $(MTC0_IMAGE) $(MTC1_IMAGE)
 	sed -e 's|@SIMH_LOG@|$(abspath $(SIMH_LOG))|g' \
 	    -e 's|@STAGE1_TAPE@|$(abspath $(STAGE1_TAPE))|g' \
-	    -e 's|@DISK_IMAGE@|$(abspath $(DISK_IMAGE))|g' $< > $@
+	    -e 's|@DISK_IMAGE@|$(abspath $(DISK_IMAGE))|g' \
+	    -e 's|@DTC0_IMAGE@|$(abspath $(DTC0_IMAGE))|g' \
+	    -e 's|@DTC1_IMAGE@|$(abspath $(DTC1_IMAGE))|g' \
+	    -e 's|@DTC2_IMAGE@|$(abspath $(DTC2_IMAGE))|g' \
+	    -e 's|@MTC0_IMAGE@|$(abspath $(MTC0_IMAGE))|g' \
+	    -e 's|@MTC1_IMAGE@|$(abspath $(MTC1_IMAGE))|g' \
+	    -e 's|@PTP_OUTPUT@|$(abspath $(PTP_OUTPUT))|g' \
+	    -e 's|@CP_OUTPUT@|$(abspath $(CP_OUTPUT))|g' $< > $@
 
 image: $(SIMH_INI)
+
+permanent-size: $(KCORE_MAP) $(MRES_PACKAGE_OBJS)
+	@./report-permanent-v1.sh --kcore-map $(KCORE_MAP) --build $(BUILD) --objdump $(PDP10_OBJDUMP)
 
 boot:
 	rm -rf $(DISK_DIR) $(SIMH_INI)

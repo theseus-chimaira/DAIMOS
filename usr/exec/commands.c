@@ -628,6 +628,7 @@ cmd_dispatch(int argc, kword_t **argv, struct u_io *io)
         if (cmd_name_eq(argv[0], "CHMOD")) return cmd_chmod(argc, argv, io);
         if (cmd_name_eq(argv[0], "MKFS.DTFS")) return cmd_mkfs_dtfs(argc, argv, io);
         if (cmd_name_eq(argv[0], "FSCK.DTFS")) return cmd_fsck_dtfs(argc, argv, io);
+        if (cmd_name_eq(argv[0], "MOUNT")) return cmd_mount_dtfs(argc, argv, io);
         if (cmd_name_eq(argv[0], "MOUNT.DTFS")) return cmd_mount_dtfs(argc, argv, io);
         if (cmd_name_eq(argv[0], "UNMOUNT")) return cmd_unmount(argc, argv, io);
         if (cmd_name_eq(argv[0], "MV")) return cmd_mv(argc, argv, io);

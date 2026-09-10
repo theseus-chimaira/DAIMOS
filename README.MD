@@ -40,3 +40,23 @@ TRANSFER REPRESENTATION SHOULD BE SHARED BETWEEN FILESYSTEMS WHERE POSSIBLE.  FO
 THE SYSTEM IS DEVELOPED FOR PDP-6 AND PDP-10 EXECUTION AND IS BUILT WITH A CROSS TOOLCHAIN DURING HOST DEVELOPMENT.
 
 KCC AND GCC GENERATED CODE MUST REMAIN ABI COMPATIBLE.  ABI CHANGES MUST BE MADE AT THE SYSTEM BOUNDARY RATHER THAN BY ADDING COMPILER-SPECIFIC WORKAROUNDS.
+
+## FULL PDP-6 BOOT
+
+`make boot` builds the full PDP-6 kernel configuration.  Native, TENEX, and ITS
+DTFS personalities are compiled in, all implemented SIMH devices are enabled,
+and three DECtape plus two magtape transports are attached for interactive
+storage testing.  The D6FS boot image pre-creates `/MOUNT/DT0`, `/MOUNT/DT1`,
+and `/MOUNT/DT2`.
+
+DSH accepts `MOUNT` as the normal DTFS mount command; `MOUNT.DTFS` remains as a
+compatibility spelling.  For example:
+
+    MKFS.DTFS -O NATIVE /DEVICE/DTC0
+    MOUNT /DEVICE/DTC0 /MOUNT/DT0
+    LS /MOUNT/DT0
+    UNMOUNT /MOUNT/DT0
+
+The PDP-6 disk boot makefile also provides `make permanent-size`.  For the full
+v17 configuration this reports KCORE plus every MRES package installed by the
+full-hardware boot, excluding KINIT/INIT and process-private storage.
