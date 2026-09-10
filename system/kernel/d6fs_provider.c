@@ -380,7 +380,8 @@ d6fs_provider_unlink(vnode_t dir, const struct vfs_name *name)
             fcb, &fi) != 0 ||
             (fi.flags & (D6FS_FLAG_NOUNLINK | D6FS_FLAG_IMMUTABLE)) != 0U)
                 return -1;
-        fs_copy_words(fcb, old_fcb, D6FS_FCB_RESERVED0);
+        __builtin_memcpy(old_fcb, fcb,
+            D6FS_FCB_RESERVED0 * sizeof(old_fcb[0]));
         if (fi.type == D6FS_TYPE_DIR && fi.size_words != 0UL) {
                 struct d6fs_dirent_info child;
                 unsigned int s;
