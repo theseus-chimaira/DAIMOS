@@ -890,15 +890,6 @@ d6fs_provider_clear_extent:
         andcam  4,5(1)
         popj    17,
 
-        .globl  d6fs_provider_blocks_for_words
-; kword_t d6fs_provider_blocks_for_words(words)
-d6fs_provider_blocks_for_words:
-        jumpe   1,d6fs_provider_blocks_done
-        addi    1,0177
-        lsh     1,-7                    ; D6FS block = 128 words
-d6fs_provider_blocks_done:
-        popj    17,
-
         .globl  d6fs_provider_free_file_tail
 ; int d6fs_provider_free_file_tail(fcb, first_file_block)
 d6fs_provider_free_file_tail:

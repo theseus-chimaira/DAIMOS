@@ -7,7 +7,6 @@ void d6fs_provider_set_extent(kword_t fcb[D6FS_FCB_WORDS],
     unsigned int index, kword_t start, kword_t blocks);
 void d6fs_provider_clear_extent(kword_t fcb[D6FS_FCB_WORDS],
     unsigned int index);
-kword_t d6fs_provider_blocks_for_words(kword_t words);
 int d6fs_provider_free_file_tail(const kword_t fcb[D6FS_FCB_WORDS],
     kword_t first_file_block);
 unsigned int d6fs_provider_tail(unsigned int type, kword_t words,
@@ -55,11 +54,11 @@ d6fs_provider_resize_fcb(vnode_t node,
         extent_count = fi->extent_count;
         if (new_words == 0UL)
                 new_tail = 0U;
-        old_blocks = (long)d6fs_provider_blocks_for_words(fi->size_words);
+        old_blocks = (long)((fi->size_words + 0177UL) >> 7);
         {
                 long n;
 
-                n = (long)d6fs_provider_blocks_for_words(new_words);
+                n = (long)((new_words + 0177UL) >> 7);
                 if (n > (long)d6fs_provider_reader.super.total_blocks)
                         return -1;
                 new_blocks = n;
