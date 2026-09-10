@@ -9,4 +9,4 @@ install_bootstrap_sixbit:
         popj 017,
 
 bootstrap_sixbit_image:
-        .include "../common/sixbit-output-077760.inc"
+        .include "../common/sixbit-fixed.inc"

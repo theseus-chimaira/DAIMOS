@@ -4,7 +4,7 @@ USR_BUILD := $(BUILD_ROOT)/usr
 PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
 DAS ?= $(PDP10_PREFIX)/bin/das
 DLINK ?= $(PDP10_PREFIX)/bin/dlink
-CPPFLAGS = -I$(PROJECT_ROOT)/system/kernel -I$(PROJECT_ROOT)/usr/libc -I$(PROJECT_ROOT)/usr/exec
+CPPFLAGS = -I$(PROJECT_ROOT)/system/kernel/boot -I$(PROJECT_ROOT)/system/kernel/core -I$(PROJECT_ROOT)/system/kernel/drivers -I$(PROJECT_ROOT)/system/kernel/fs -I$(PROJECT_ROOT)/system/kernel/mm -I$(PROJECT_ROOT)/system/kernel/modules -I$(PROJECT_ROOT)/system/kernel/proc -I$(PROJECT_ROOT)/system/kernel/storage -I$(PROJECT_ROOT)/usr/libc -I$(PROJECT_ROOT)/usr/exec
 CFLAGS = -std=c99 -Os
 
 CHECK_SRCS = libc/u.c exec/commands.c exec/standalone.c dsh/dsh.c

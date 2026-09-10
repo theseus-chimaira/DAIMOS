@@ -384,7 +384,7 @@ msg_nodsk:    .word 0375657446353
 msg_noset:    .word 0375657634564
 msg_khead:    .word 0375350454144
 msg_read:     .word 0376245414400
-        .include "../common/bootstrap-sixbit-077760.inc"
+        .include "../common/boot-sixbit.inc"
         .bss
 any_read_ok: .block 01
 current_unit: .block 01

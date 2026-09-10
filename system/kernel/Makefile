@@ -1,89 +1,341 @@
-PROJECT_ROOT := $(abspath ../..)
-BUILD_ROOT ?= $(PROJECT_ROOT)/build
+# Kernel build.  Keep this makefile within the common GNU/BSD make subset.
+PROJECT_ROOT != cd ../.. && pwd
+BUILD_ROOT ?= ${PROJECT_ROOT}/build
+BUILD ?= ${BUILD_ROOT}/system/kernel
+PDP10_PREFIX ?= ${HOME}/cross
+PDP10_GCC ?= ${PDP10_PREFIX}/bin/pdp10-dec-none-gcc
+MKBOOTBANNER ?= ${PDP10_PREFIX}/bin/mkbootbanner
 KINIT_DEBUG ?= 0
 DTFS_TENEX ?= 0
 DTFS_ITS ?= 0
 PROC_BOOT_USERS ?= 1
 PROC_STACK_WATERMARK ?= 0
-DTFS_FOREIGN := $(if $(filter 1,$(DTFS_TENEX) $(DTFS_ITS)),1,0)
-DTFS_TARGET_ASM := $(if $(filter 1,$(DTFS_FOREIGN)),dtfs_chain_walk_pdp10.s dtfs_resize_pdp10.s,)
-BUILD ?= $(BUILD_ROOT)/system/kernel$(if $(filter 1,$(KINIT_DEBUG)),-debug,)
-PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
-MKBOOTBANNER ?= $(PDP10_PREFIX)/bin/mkbootbanner
-VERSION_FILE := $(PROJECT_ROOT)/VERSION
-DAIMON_VERSION := $(strip $(shell cat $(VERSION_FILE)))
+VERSION_FILE = ${PROJECT_ROOT}/VERSION
+DAIMON_VERSION != cat ${VERSION_FILE}
+INCLUDES = -I. -Iboot -Icore -Idrivers -Ifs -Imm -Imodules -Iproc -Istorage
 
+KERNEL_HEADERS = boot/kboot.h \
+	boot/kinit.h \
+	core/kcore.h \
+	core/kcore_pi.h \
+	core/kfmt.h \
+	drivers/card.h \
+	drivers/clk.h \
+	drivers/cty.h \
+	drivers/dcs.h \
+	drivers/dpy.h \
+	drivers/dsk270.h \
+	drivers/ge.h \
+	drivers/ocnsls.h \
+	drivers/pt.h \
+	drivers/slv.h \
+	drivers/tty.h \
+	drivers/wcnsls.h \
+	fs/d6fs.h \
+	fs/d6fs_boot.h \
+	fs/d6fs_provider.h \
+	fs/devicefs.h \
+	fs/dtfs.h \
+	fs/file.h \
+	fs/fs_mres.h \
+	fs/initfs.h \
+	fs/memfs.h \
+	fs/procfs.h \
+	fs/vfs.h \
+	mm/mm.h \
+	mm/mm_internal.h \
+	mm/mres.h \
+	mm/mres_reloc.h \
+	modules/module.h \
+	modules/module_runtime.h \
+	proc/exec.h \
+	proc/mach_user.h \
+	proc/proc.h \
+	proc/proc_swap.h \
+	proc/syscall.h \
+	storage/diskset.h \
+	storage/diskset_boot.h \
+	storage/diskset_layout.h \
+	storage/diskset_mres.h \
+	storage/logstore.h \
+	storage/storage.h
 
-KINIT_SRCS = kinit.c kinit_diag.c module_minit.c kfs_boot.c kinit_boot.c d6fs_boot.c d6fs_super_boot.c diskset_boot.c logstore.c proc_boot.c proc_swap_boot.c
-KINIT_C_ASM = $(KINIT_SRCS:%.c=$(BUILD)/%.s)
-KINIT_LATE_SRCS = exec.c proc_late.c proc_swap_late.c mm_boot.c kinit_late.c
-KINIT_LATE_C_ASM = $(KINIT_LATE_SRCS:%.c=$(BUILD)/%.s)
-KINIT_ASM = $(KINIT_C_ASM) $(KINIT_LATE_C_ASM) $(BUILD)/kinit_io.s $(BUILD)/module_io.s $(BUILD)/bootbanner_generated.s \
-	$(BUILD)/kinit_late_begin.s $(BUILD)/kinit_late_end.s
-KINIT_CPPFLAGS = -DDAIMON_VERSION_TEXT='"V$(DAIMON_VERSION)  "' -DPROC_BOOT_USERS=$(PROC_BOOT_USERS) -DPROC_STACK_WATERMARK=$(PROC_STACK_WATERMARK)
-ifeq ($(KINIT_DEBUG),1)
-KINIT_CPPFLAGS += -DKINIT_DEBUG
-endif
+KINIT_SRCS = boot/kinit.c \
+	boot/kinit_diag.c \
+	modules/module_minit.c \
+	boot/kfs_boot.c \
+	boot/kinit_boot.c \
+	fs/d6fs_boot.c \
+	fs/d6fs_super_boot.c \
+	storage/diskset_boot.c \
+	storage/logstore.c \
+	proc/proc_boot.c \
+	proc/proc_swap_boot.c
 
-KCORE_C_SRCS = vfs.c devicefs.c procfs.c mm.c module_runtime.c proc.c proc_swap.c \
-	file.c
-KCORE_C_ASM = $(KCORE_C_SRCS:%.c=$(BUILD)/%.s)
-KCORE_FIXED_ASM = $(KCORE_C_ASM) \
-	$(BUILD)/ret_pdp10.s $(BUILD)/dsk270_pdp10.s $(BUILD)/kfmt_pdp10.s $(BUILD)/vfs_pdp10.s $(BUILD)/fs_mres_pdp10.s $(BUILD)/file_pdp10.s $(BUILD)/proc_pdp10.s $(BUILD)/device_state_pdp10.s $(BUILD)/devicefs_pdp10.s $(BUILD)/syscall_info_pdp10.s $(BUILD)/syscall_dispatch.s $(BUILD)/mach_user.s $(BUILD)/mach_enter_user.s $(BUILD)/kcore_io.s $(BUILD)/storage_router.s $(BUILD)/kcore_end.s
+KINIT_C_ASM = $(BUILD)/kinit.s \
+	$(BUILD)/kinit_diag.s \
+	$(BUILD)/module_minit.s \
+	$(BUILD)/kfs_boot.s \
+	$(BUILD)/kinit_boot.s \
+	$(BUILD)/d6fs_boot.s \
+	$(BUILD)/d6fs_super_boot.s \
+	$(BUILD)/diskset_boot.s \
+	$(BUILD)/logstore.s \
+	$(BUILD)/proc_boot.s \
+	$(BUILD)/proc_swap_boot.s
 
-MRES_SRCS = d6fs.c d6fs_provider.c
-MRES_C_ASM = $(MRES_SRCS:%.c=$(BUILD)/%.s)
-MRES_ASM = $(BUILD)/dtfs.s $(MRES_C_ASM) $(BUILD)/d6fs_validate_pdp10.s $(BUILD)/cty_io.s $(BUILD)/clk_io.s \
-	$(BUILD)/ptr_io.s $(BUILD)/ptp_io.s $(BUILD)/cr_io.s \
-	$(BUILD)/cp_io.s $(BUILD)/diskset_dispatch.s $(BUILD)/dcs_io.s $(BUILD)/ge_io.s $(BUILD)/dpy_io.s \
-	$(BUILD)/tty_io.s $(BUILD)/dtfs_pdp10.s $(BUILD)/memfs_pdp10.s $(BUILD)/d6fs_pdp10.s $(BUILD)/wcnsls_io.s $(BUILD)/ocnsls_io.s $(BUILD)/dsk_io.s $(BUILD)/tape_io.s $(BUILD)/slv_io.s
+KINIT_LATE_SRCS = proc/exec.c \
+	proc/proc_late.c \
+	proc/proc_swap_late.c \
+	mm/mm_boot.c \
+	boot/kinit_late.c
 
-.DEFAULT_GOAL := kinit
+KINIT_LATE_C_ASM = $(BUILD)/exec.s \
+	$(BUILD)/proc_late.s \
+	$(BUILD)/proc_swap_late.s \
+	$(BUILD)/mm_boot.s \
+	$(BUILD)/kinit_late.s
+
+KINIT_FIXED_SRCS = boot/kinit_io.s \
+	modules/module_io.s \
+	boot/kinit_late_begin.s \
+	boot/kinit_late_end.s
+
+KINIT_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${BUILD}/kinit_io.s ${BUILD}/module_io.s ${BUILD}/bootbanner_generated.s ${BUILD}/kinit_late_begin.s ${BUILD}/kinit_late_end.s
+
+KCORE_C_SRCS = fs/vfs.c \
+	fs/devicefs.c \
+	fs/procfs.c \
+	mm/mm.c \
+	modules/module_runtime.c \
+	proc/proc.c \
+	proc/proc_swap.c \
+	fs/file.c
+
+KCORE_C_ASM = $(BUILD)/vfs.s \
+	$(BUILD)/devicefs.s \
+	$(BUILD)/procfs.s \
+	$(BUILD)/mm.s \
+	$(BUILD)/module_runtime.s \
+	$(BUILD)/proc.s \
+	$(BUILD)/proc_swap.s \
+	$(BUILD)/file.s
+
+KCORE_FIXED_SRCS = core/ret_pdp10.s \
+	drivers/dsk270_pdp10.s \
+	core/kfmt_pdp10.s \
+	fs/vfs_pdp10.s \
+	fs/fs_mres_pdp10.s \
+	fs/file_pdp10.s \
+	proc/proc_pdp10.s \
+	drivers/device_state_pdp10.s \
+	fs/devicefs_pdp10.s \
+	proc/syscall_info_pdp10.s \
+	proc/syscall_dispatch.s \
+	proc/mach_user.s \
+	proc/mach_enter_user.s \
+	core/kcore_io.s \
+	storage/storage_router.s \
+	core/kcore_end.s
+
+KCORE_FIXED_ASM = $(BUILD)/vfs.s \
+	$(BUILD)/devicefs.s \
+	$(BUILD)/procfs.s \
+	$(BUILD)/mm.s \
+	$(BUILD)/module_runtime.s \
+	$(BUILD)/proc.s \
+	$(BUILD)/proc_swap.s \
+	$(BUILD)/file.s \
+	$(BUILD)/ret_pdp10.s \
+	$(BUILD)/dsk270_pdp10.s \
+	$(BUILD)/kfmt_pdp10.s \
+	$(BUILD)/vfs_pdp10.s \
+	$(BUILD)/fs_mres_pdp10.s \
+	$(BUILD)/file_pdp10.s \
+	$(BUILD)/proc_pdp10.s \
+	$(BUILD)/device_state_pdp10.s \
+	$(BUILD)/devicefs_pdp10.s \
+	$(BUILD)/syscall_info_pdp10.s \
+	$(BUILD)/syscall_dispatch.s \
+	$(BUILD)/mach_user.s \
+	$(BUILD)/mach_enter_user.s \
+	$(BUILD)/kcore_io.s \
+	$(BUILD)/storage_router.s \
+	$(BUILD)/kcore_end.s
+
+MRES_C_SRCS = fs/d6fs.c \
+	fs/d6fs_provider.c
+
+MRES_C_ASM = $(BUILD)/d6fs.s \
+	$(BUILD)/d6fs_provider.s
+
+MRES_FIXED_SRCS = fs/d6fs_validate_pdp10.s \
+	drivers/cty_io.s \
+	drivers/clk_io.s \
+	drivers/ptr_io.s \
+	drivers/ptp_io.s \
+	drivers/cr_io.s \
+	drivers/cp_io.s \
+	storage/diskset_dispatch.s \
+	drivers/dcs_io.s \
+	drivers/ge_io.s \
+	drivers/dpy_io.s \
+	drivers/tty_io.s \
+	fs/dtfs_pdp10.s \
+	fs/memfs_pdp10.s \
+	fs/d6fs_pdp10.s \
+	drivers/wcnsls_io.s \
+	drivers/ocnsls_io.s \
+	drivers/dsk_io.s \
+	drivers/tape_io.s \
+	drivers/slv_io.s
+
+MRES_ASM = $(BUILD)/dtfs.s \
+	$(BUILD)/d6fs.s \
+	$(BUILD)/d6fs_provider.s \
+	$(BUILD)/d6fs_validate_pdp10.s \
+	$(BUILD)/cty_io.s \
+	$(BUILD)/clk_io.s \
+	$(BUILD)/ptr_io.s \
+	$(BUILD)/ptp_io.s \
+	$(BUILD)/cr_io.s \
+	$(BUILD)/cp_io.s \
+	$(BUILD)/diskset_dispatch.s \
+	$(BUILD)/dcs_io.s \
+	$(BUILD)/ge_io.s \
+	$(BUILD)/dpy_io.s \
+	$(BUILD)/tty_io.s \
+	$(BUILD)/dtfs_pdp10.s \
+	$(BUILD)/memfs_pdp10.s \
+	$(BUILD)/d6fs_pdp10.s \
+	$(BUILD)/wcnsls_io.s \
+	$(BUILD)/ocnsls_io.s \
+	$(BUILD)/dsk_io.s \
+	$(BUILD)/tape_io.s \
+	$(BUILD)/slv_io.s
+
 .PHONY: kinit kcore clean
 
-kinit: $(KINIT_ASM)
-kcore: $(KCORE_FIXED_ASM) $(MRES_ASM)
+kinit: ${KINIT_ASM}
 
-$(KINIT_C_ASM) $(KINIT_LATE_C_ASM): $(BUILD)/%.s: %.c kinit.h module.h mres.h kcore.h kboot.h vfs.h devicefs.h memfs.h initfs.h exec.h proc.h mach_user.h fs_mres.h mm.h mm_internal.h kcore_pi.h cty.h clk.h pt.h card.h dcs.h ge.h dpy.h tty.h wcnsls.h ocnsls.h storage.h slv.h d6fs_boot.h logstore.h d6fs_provider.h dsk270.h diskset_boot.h diskset_mres.h module_runtime.h $(VERSION_FILE)
-	mkdir -p $(BUILD)
-	$(PDP10_GCC) -std=c99 -Os $(KINIT_CPPFLAGS) -I. -S $< -o $@
+kcore: ${KCORE_FIXED_ASM} ${MRES_ASM}
 
-$(BUILD)/bootbanner_generated.s: $(VERSION_FILE)
-	mkdir -p $(BUILD)
-	$(MKBOOTBANNER) -v '$(DAIMON_VERSION)' -o $@
+${KINIT_C_ASM} ${KINIT_LATE_C_ASM}: ${KINIT_SRCS} ${KINIT_LATE_SRCS} ${KERNEL_HEADERS} ${VERSION_FILE}
+	@mkdir -p ${BUILD}
+	@base=`basename "$@" .s`; src=; for d in boot core drivers fs mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_GCC} -std=c99 -Os -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
 
-$(KCORE_C_ASM): $(BUILD)/%.s: %.c kcore.h kboot.h vfs.h kfmt.h devicefs.h procfs.h memfs.h dtfs.h dsk270.h d6fs.h d6fs_provider.h d6fs_boot.h logstore.h initfs.h file.h proc.h syscall.h exec.h proc.h mach_user.h fs_mres.h mm.h mm_internal.h module_runtime.h proc_swap.h
-	mkdir -p $(BUILD)
-	$(PDP10_GCC) -std=c99 -Os -DPROC_BOOT_USERS=$(PROC_BOOT_USERS) -I. -S $< -o $@
+${BUILD}/bootbanner_generated.s: ${VERSION_FILE}
+	@mkdir -p ${BUILD}
+	${MKBOOTBANNER} -v '${DAIMON_VERSION}' -o $@
 
-$(BUILD)/d6fs.s: d6fs.c kcore.h vfs.h fs_mres.h memfs.h dtfs.h d6fs.h d6fs_provider.h diskset.h diskset_mres.h mres.h dsk270.h file.h
-	mkdir -p $(BUILD)
-	$(PDP10_GCC) -std=c99 -Os -I. -S $< -o $@
+${KCORE_C_ASM}: ${KCORE_C_SRCS} ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	@base=`basename "$@" .s`; src=; for d in boot core drivers fs mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; ${PDP10_GCC} -std=c99 -Os -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S "$$src" -o "$@"
 
-$(BUILD)/d6fs_provider.s: d6fs_provider.c d6fs_provider_mutation_pdp10.s kcore.h vfs.h fs_mres.h memfs.h dtfs.h d6fs.h d6fs_provider.h diskset.h diskset_mres.h mres.h dsk270.h file.h
-	mkdir -p $(BUILD)
-	$(PDP10_GCC) -std=c99 -Os -I. -S $< -o $@.c
-	cat $@.c d6fs_provider_mutation_pdp10.s > $@
+${BUILD}/d6fs.s: fs/d6fs.c ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_GCC} -std=c99 -Os ${INCLUDES} -S fs/d6fs.c -o $@
+
+${BUILD}/d6fs_provider.s: fs/d6fs_provider.c fs/d6fs_provider_mutation_pdp10.s ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_GCC} -std=c99 -Os ${INCLUDES} -S fs/d6fs_provider.c -o $@.c
+	cat $@.c fs/d6fs_provider_mutation_pdp10.s > $@
 	rm -f $@.c
 
-$(BUILD)/dtfs.s: dtfs.c $(DTFS_TARGET_ASM) kcore.h vfs.h fs_mres.h memfs.h dtfs.h d6fs.h d6fs_provider.h diskset.h diskset_mres.h mres.h dsk270.h file.h
-	mkdir -p $(BUILD)
-	$(PDP10_GCC) -std=c99 -Os -DDTFS_ENABLE_TENEX=$(DTFS_TENEX) -DDTFS_ENABLE_ITS=$(DTFS_ITS) -I. -S $< -o $@.c
-	cat $@.c $(DTFS_TARGET_ASM) > $@
-	rm -f $@.c
+${BUILD}/dtfs.s: fs/dtfs.c fs/dtfs_chain_walk_pdp10.s fs/dtfs_resize_pdp10.s ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_GCC} -std=c99 -Os -DDTFS_ENABLE_TENEX=${DTFS_TENEX} -DDTFS_ENABLE_ITS=${DTFS_ITS} ${INCLUDES} -S fs/dtfs.c -o $@.c
+	@cat $@.c > $@; if test "${DTFS_TENEX}" = 1 -o "${DTFS_ITS}" = 1; then cat fs/dtfs_chain_walk_pdp10.s fs/dtfs_resize_pdp10.s >> $@; fi; rm -f $@.c
 
+${BUILD}/proc_pdp10.s: proc/proc_pdp10.s
+	@mkdir -p ${BUILD}
+	{ echo ".set PROC_STACK_WATERMARK,${PROC_STACK_WATERMARK}"; cat proc/proc_pdp10.s; } > $@
 
-$(BUILD)/proc_pdp10.s: proc_pdp10.s
-	mkdir -p $(BUILD)
-	{ echo ".set PROC_STACK_WATERMARK,$(PROC_STACK_WATERMARK)"; cat $<; } > $@
+${BUILD}/dtfs_pdp10.s: fs/dtfs_pdp10.s
+	@mkdir -p ${BUILD}
+	@foreign=0; if test "${DTFS_TENEX}" = 1 -o "${DTFS_ITS}" = 1; then foreign=1; fi; { echo ".set DTFS_ENABLE_TENEX,${DTFS_TENEX}"; echo ".set DTFS_ENABLE_ITS,${DTFS_ITS}"; echo ".set DTFS_ENABLE_FOREIGN,$$foreign"; cat fs/dtfs_pdp10.s; } > $@
 
-$(BUILD)/dtfs_pdp10.s: dtfs_pdp10.s
-	mkdir -p $(BUILD)
-	{ echo ".set DTFS_ENABLE_TENEX,$(DTFS_TENEX)"; echo ".set DTFS_ENABLE_ITS,$(DTFS_ITS)"; echo ".set DTFS_ENABLE_FOREIGN,$(DTFS_FOREIGN)"; cat $<; } > $@
+COPY_ASM_SRCS = core/ret_pdp10.s \
+	drivers/dsk270_pdp10.s \
+	core/kfmt_pdp10.s \
+	fs/vfs_pdp10.s \
+	fs/fs_mres_pdp10.s \
+	fs/file_pdp10.s \
+	drivers/device_state_pdp10.s \
+	fs/devicefs_pdp10.s \
+	proc/syscall_info_pdp10.s \
+	proc/syscall_dispatch.s \
+	proc/mach_user.s \
+	proc/mach_enter_user.s \
+	core/kcore_io.s \
+	storage/storage_router.s \
+	core/kcore_end.s \
+	fs/d6fs_validate_pdp10.s \
+	drivers/cty_io.s \
+	drivers/clk_io.s \
+	drivers/ptr_io.s \
+	drivers/ptp_io.s \
+	drivers/cr_io.s \
+	drivers/cp_io.s \
+	storage/diskset_dispatch.s \
+	drivers/dcs_io.s \
+	drivers/ge_io.s \
+	drivers/dpy_io.s \
+	drivers/tty_io.s \
+	fs/memfs_pdp10.s \
+	fs/d6fs_pdp10.s \
+	drivers/wcnsls_io.s \
+	drivers/ocnsls_io.s \
+	drivers/dsk_io.s \
+	drivers/tape_io.s \
+	drivers/slv_io.s \
+	boot/kinit_io.s \
+	modules/module_io.s \
+	boot/kinit_late_begin.s \
+	boot/kinit_late_end.s
 
-$(BUILD)/%.s: %.s
-	mkdir -p $(BUILD)
-	cp $< $@
+COPY_ASM_TARGETS = $(BUILD)/ret_pdp10.s \
+	$(BUILD)/dsk270_pdp10.s \
+	$(BUILD)/kfmt_pdp10.s \
+	$(BUILD)/vfs_pdp10.s \
+	$(BUILD)/fs_mres_pdp10.s \
+	$(BUILD)/file_pdp10.s \
+	$(BUILD)/device_state_pdp10.s \
+	$(BUILD)/devicefs_pdp10.s \
+	$(BUILD)/syscall_info_pdp10.s \
+	$(BUILD)/syscall_dispatch.s \
+	$(BUILD)/mach_user.s \
+	$(BUILD)/mach_enter_user.s \
+	$(BUILD)/kcore_io.s \
+	$(BUILD)/storage_router.s \
+	$(BUILD)/kcore_end.s \
+	$(BUILD)/d6fs_validate_pdp10.s \
+	$(BUILD)/cty_io.s \
+	$(BUILD)/clk_io.s \
+	$(BUILD)/ptr_io.s \
+	$(BUILD)/ptp_io.s \
+	$(BUILD)/cr_io.s \
+	$(BUILD)/cp_io.s \
+	$(BUILD)/diskset_dispatch.s \
+	$(BUILD)/dcs_io.s \
+	$(BUILD)/ge_io.s \
+	$(BUILD)/dpy_io.s \
+	$(BUILD)/tty_io.s \
+	$(BUILD)/memfs_pdp10.s \
+	$(BUILD)/d6fs_pdp10.s \
+	$(BUILD)/wcnsls_io.s \
+	$(BUILD)/ocnsls_io.s \
+	$(BUILD)/dsk_io.s \
+	$(BUILD)/tape_io.s \
+	$(BUILD)/slv_io.s \
+	$(BUILD)/kinit_io.s \
+	$(BUILD)/module_io.s \
+	$(BUILD)/kinit_late_begin.s \
+	$(BUILD)/kinit_late_end.s
+
+${COPY_ASM_TARGETS}: ${COPY_ASM_SRCS}
+	@mkdir -p ${BUILD}
+	@base=`basename "$@"`; src=; for d in boot core drivers fs mm modules proc storage; do if test -f "$$d/$$base"; then src="$$d/$$base"; break; fi; done; test -n "$$src"; cp "$$src" "$@"
 
 clean:
-	rm -rf $(BUILD)
+	rm -rf ${BUILD}

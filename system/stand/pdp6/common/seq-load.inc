@@ -11,7 +11,7 @@
         pushj 017,read_words
         move 02,header
         move 06,header+01
-        .include "../common/validate-load.inc"
+        .include "../common/load-check.inc"
         movei 01,040000
         pushj 017,read_words
         movei 017,070000

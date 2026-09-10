@@ -106,4 +106,4 @@ ioword:      .word 0
 tmp:         .word 0
 msg_change0: .word 0435041564745
 msg_change1: .word 0006441604500
-        .include "../common/bootstrap-sixbit-077760.inc"
+        .include "../common/boot-sixbit.inc"

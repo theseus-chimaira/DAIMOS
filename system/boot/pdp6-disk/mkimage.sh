@@ -2,7 +2,7 @@
 # Install the fixed KCORE stream in the linked KINIT load slot.
 set -eu
 
-fail() { echo "mkimage-v2: $*" >&2; exit 1; }
+fail() { echo "mkimage: $*" >&2; exit 1; }
 map= input= kcore= kcore_map= output=
 while [ "$#" -gt 0 ]; do
         case $1 in
@@ -66,7 +66,7 @@ header=$(sed -n '1p' "$input")
 descriptor=$((((image_words & HALF_MASK) * 01000000) + ((entry - IMAGE_BASE) & HALF_MASK)))
 off=$((2 + load_begin - IMAGE_BASE))
 suffix=$((off + kcore_words + 1))
-tmp=${output}.v2.$$
+tmp=${output}.tmp.$$
 trap 'rm -f "$tmp"' 0 1 2 3 15
 {
         printf '%012o\n' "$DAIMON_MAGIC"

@@ -79,4 +79,4 @@ diag:
 
 msg_rderr: .word 0376244456262
 msg_badtp: .word 0374241446460
-        .include "../common/bootstrap-sixbit-077760.inc"
+        .include "../common/boot-sixbit.inc"

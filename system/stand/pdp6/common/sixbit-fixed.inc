@@ -1,4 +1,4 @@
-; Pre-relocated image of sixbit-output.inc for 077760..077777.
+; Pre-relocated image of sixbit-out.inc for 077760..077777.
 ; Keep this exactly 16 words; tests compare it with a freshly assembled helper.
         .word 0200100000001
         .word 0201300000006
