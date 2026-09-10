@@ -8,13 +8,13 @@ struct mm_extent mm_extents[MM_MAX_EXTENTS];
 kword_t mm_core_words;
 unsigned int mm_extent_count;
 
-static kword_t
+static inline kword_t
 mm_span(kword_t base, kword_t words)
 {
         return ((words & MM_HALF_MASK) << 18U) | (base & MM_HALF_MASK);
 }
 
-static kword_t
+static inline kword_t
 mm_meta(unsigned int type, unsigned int owner, unsigned int pins)
 {
         return ((kword_t)(pins & MM_PIN_MASK) << MM_PIN_SHIFT) |
@@ -202,7 +202,7 @@ mm_find_base(kword_t base)
         return i;
 }
 
-static struct proc *
+static inline struct proc *
 mm_process_owner(unsigned int owner, kword_t base)
 {
         struct proc *p;

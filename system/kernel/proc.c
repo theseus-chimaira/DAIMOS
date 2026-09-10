@@ -8,7 +8,7 @@
 
 unsigned int proc_sched_age_phase;
 
-static void
+static inline void
 proc_set_field(struct proc *p, kword_t mask, unsigned int shift,
     unsigned int value)
 {
@@ -34,7 +34,7 @@ proc_effective(const struct proc *p)
         return PROC_NICE_ENCODED(p) + PROC_CPU_PENALTY(p);
 }
 
-static unsigned int
+static inline unsigned int
 proc_uarea_owner(unsigned int slot)
 {
         return PROC_UAREA_MM_OWNER_BASE + slot;

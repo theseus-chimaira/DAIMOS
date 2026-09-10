@@ -9,7 +9,7 @@ procfs_slot_active(unsigned int slot)
             PROC_STATE(&proc_table[slot]) != PROC_FREE;
 }
 
-static void
+static inline void
 procfs_name_set(struct vfs_name *name, kword_t word, unsigned int chars)
 {
         name->chars = chars;
@@ -19,7 +19,7 @@ procfs_name_set(struct vfs_name *name, kword_t word, unsigned int chars)
         name->words[3] = 0UL;
 }
 
-static void
+static inline void
 procfs_dirent_set(struct vfs_dirent *ent, kword_t word,
     unsigned int chars, unsigned int type)
 {
@@ -81,7 +81,7 @@ procfs_format_slot(unsigned int slot, struct vfs_name *name)
         procfs_name_set(name, word, chars);
 }
 
-static int
+static inline int
 procfs_file_kind(unsigned int kind)
 {
         return kind >= PROCFS_KIND_PPID && kind <= PROCFS_KIND_COMM;
