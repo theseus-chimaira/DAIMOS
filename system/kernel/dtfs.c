@@ -318,8 +318,9 @@ dtfs_its_resize(vnode_t node, unsigned int words, int grow_only)
         if (new_blocks <= old_blocks) {
                 if (grow_only || new_blocks == old_blocks)
                         return 0;
+                goto commit;
         }
-        if (new_blocks > old_blocks) {
+        {
                 unsigned int unit;
 
                 unit = dtfs_unit(node);
@@ -339,6 +340,7 @@ dtfs_its_resize(vnode_t node, unsigned int words, int grow_only)
                         ++old_blocks;
                 }
         }
+commit:
         if (dtfs_commit(node) != 0) {
                 dtfs_cache_mount = 0U;
                 return -1;
@@ -352,8 +354,8 @@ static int
 dtfs_resize(vnode_t node, unsigned int words)
 {
         unsigned int slot;
-        unsigned int old_blocks;
-        unsigned int new_blocks;
+        int old_blocks;
+        int new_blocks;
         unsigned int first;
         unsigned int prev;
         unsigned int block;
@@ -376,11 +378,11 @@ dtfs_resize(vnode_t node, unsigned int words)
         slot = VFS_INDEX(node);
         unit = dtfs_unit(node);
         owner = slot + 1U;
-        old_blocks = dtfs_block_info(node, slot, &first);
-        new_blocks = words == 0U ? mapoff :
-            (words + DTFS_DATA_WORDS - 1U) / DTFS_DATA_WORDS;
-        if (new_blocks > DTFS_LAST_BLOCK)
+        old_blocks = (int)dtfs_block_info(node, slot, &first);
+        if (words > DTFS_LAST_BLOCK * DTFS_DATA_WORDS)
                 return -1;
+        new_blocks = words == 0U ? (int)mapoff :
+            (int)((words + DTFS_DATA_WORDS - 1U) / DTFS_DATA_WORDS);
         last_words = new_blocks == 0U ? 0U :
             words - (new_blocks - 1U) * DTFS_DATA_WORDS;
 
@@ -878,9 +880,9 @@ dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
         unsigned int last_block;
         int its;
 
+        owner = slot + 1U;
         its = mapoff == DTFS_ITS_NAME_WORDS;
         if (its) {
-                owner = slot + 1U;
                 done = 0U;
                 block = 1U;
                 last_block = writing ? DTFS_ITS_END_BLOCK + 1U :
@@ -891,7 +893,7 @@ dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
         blocks = 0U;
         first = 0U;
         for (block = 1U; block != DTFS_LAST_BLOCK + 1U; ++block) {
-                if (dtfs_owner(0U, block - mapoff) != slot + 1U)
+                if (dtfs_owner(0U, block - mapoff) != owner)
                         continue;
                 ++blocks;
                 if (first == 0U &&
@@ -908,7 +910,7 @@ dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
         seen = 0U;
 chain_scan:
         if (block == 0U || block > DTFS_LAST_BLOCK ||
-            dtfs_owner(0U, block - mapoff) != slot + 1U ||
+            dtfs_owner(0U, block - mapoff) != owner ||
             dtfs_dtc_read(unit, block, dtfs_block) != 0 ||
             ((dtfs_block[0] >> DTFS_FIRST_SHIFT) &
             DTFS_BLOCKNO_MASK) != first)

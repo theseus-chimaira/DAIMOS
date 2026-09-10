@@ -35,14 +35,14 @@ d6fs_provider_resize_fcb(vnode_t node,
     kword_t new_words, unsigned int new_tail)
 {
         kword_t old_fcb[D6FS_FCB_WORDS];
-        kword_t old_blocks;
-        kword_t new_blocks;
-        kword_t need;
+        long old_blocks;
+        long new_blocks;
+        long need;
         kword_t start;
         kword_t blocks;
         kword_t last_start;
         kword_t last_blocks;
-        kword_t candidate;
+        long candidate;
         int allocated;
         unsigned int high;
         unsigned int i;
@@ -55,8 +55,15 @@ d6fs_provider_resize_fcb(vnode_t node,
         extent_count = fi->extent_count;
         if (new_words == 0UL)
                 new_tail = 0U;
-        old_blocks = d6fs_provider_blocks_for_words(fi->size_words);
-        new_blocks = d6fs_provider_blocks_for_words(new_words);
+        old_blocks = (long)d6fs_provider_blocks_for_words(fi->size_words);
+        {
+                kword_t n;
+
+                n = d6fs_provider_blocks_for_words(new_words);
+                if (n > d6fs_provider_reader.super.total_blocks)
+                        return -1;
+                new_blocks = (long)n;
+        }
 
         if (new_blocks > old_blocks) {
                 need = new_blocks - old_blocks;
@@ -71,7 +78,7 @@ d6fs_provider_resize_fcb(vnode_t node,
                         while (need != 0UL &&
                             last_blocks < D6FS_EXTENT_MAX_BLOCKS) {
                                 candidate = last_start + last_blocks;
-                                if (candidate >= d6fs_provider_reader.super.total_blocks)
+                                if (candidate >= (long)d6fs_provider_reader.super.total_blocks)
                                         break;
                                 allocated = d6fs_freemap_state(
                                     &d6fs_provider_reader, candidate);
@@ -100,14 +107,14 @@ d6fs_provider_resize_fcb(vnode_t node,
                             d6fs_provider_reader.alloc_cursor, blocks, &start, &blocks) != 0) {
                                 goto rollback;
                         }
-                        for (candidate = 0UL; candidate < blocks; ++candidate) {
+                        for (candidate = 0; candidate < (long)blocks; ++candidate) {
                                 if (d6fs_reader_zero_block(
                                     &d6fs_provider_reader,
                                     start + candidate) == 0 &&
                                     d6fs_freemap_set(&d6fs_provider_reader,
                                     start + candidate, 1U) == 0)
                                         continue;
-                                if (candidate != 0UL)
+                                if (candidate != 0)
                                         (void)d6fs_free_run(&d6fs_provider_reader,
                                             start, candidate);
                                 goto rollback;
