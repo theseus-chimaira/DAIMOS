@@ -4,9 +4,12 @@
         .globl  pdp10_ret_neg1
 
 
-; Compact wrappers around the shared C create helper.  The fifth helper
-; argument (nodep) is passed in one stack word by the PDP-10 C ABI.
-        .globl  vfs_create_op
+; CREATE/MKDIR use the private register provider ABI directly.  Keeping the
+; operation in a local word avoids manufacturing a fifth C argument merely to
+; reach vfs_create_op.  The small local frame holds live values and the raw
+; provider result; it is not an outgoing argument frame.
+        .globl  fs_provider_reg_call
+        .globl  vfs_readonly
         .globl  vfs_create
 vfs_create:
         movei   5,6                    ; FS_MRES_OP_CREATE
@@ -16,13 +19,52 @@ vfs_create:
 vfs_mkdir:
         movei   5,7                    ; FS_MRES_OP_MKDIR
 vfs_create_common:
-        push    17,4
-        move    4,3
-        move    3,2
-        move    2,1
-        move    1,5
-        pushj   17,vfs_create_op
-        sub     17,[1,,1]
+        jumpe   4,pdp10_ret_neg1
+        add     17,[5,,5]
+        movem   1,-4(17)               ; dir
+        movem   2,-3(17)               ; name
+        movem   3,-2(17)               ; mode / raw node scratch
+        movem   4,-1(17)               ; caller nodep
+        movem   5,(17)                  ; operation
+
+        move    7,1
+        lsh     7,-036                 ; VFS_PROVIDER(dir)
+        move    6,(17)
+        caie    6,7                    ; MKDIR
+        jrst    vfs_create_check_ro
+        cain    7,5                    ; DTFS_PROVIDER
+        jrst    vfs_create_unsupported
+
+vfs_create_check_ro:
+        pushj   17,vfs_readonly
+        jumpn   1,vfs_create_fail
+        move    1,-4(17)
+        move    7,1
+        lsh     7,-036                 ; provider
+        move    2,-3(17)
+        move    3,-2(17)
+        movei   4,-2(17)               ; request d = raw node output
+        move    6,(17)
+        pushj   17,fs_provider_reg_call
+        jumpn   1,vfs_create_done
+
+        move    1,-2(17)               ; raw provider vnode
+        andcm   1,[07700000000]         ; clear mount-id bits
+        move    2,-4(17)
+        and     2,[07700000000]         ; inherit source mount id
+        ior     1,2
+        move    2,-1(17)
+        movem   1,(2)
+        setz    1,
+        jrst    vfs_create_done
+
+vfs_create_unsupported:
+        hrroi   1,0777776              ; VFS_ERR_UNSUPPORTED (-2)
+        jrst    vfs_create_done
+vfs_create_fail:
+        seto    1,
+vfs_create_done:
+        sub     17,[5,,5]
         popj    17,
 
         .globl  vfs_name_valid

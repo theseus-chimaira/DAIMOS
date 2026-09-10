@@ -66,9 +66,8 @@ extern unsigned int dtfs_owner(unsigned int base, unsigned int index);
 extern void dtfs_set_owner(unsigned int base, unsigned int index,
     unsigned int owner);
 
-int dtfs_chain_walk(unsigned int unit, unsigned int slot,
-    unsigned int off, kword_t *buf, unsigned int nwords,
-    unsigned int mapoff, int writing);
+int dtfs_chain_walk(kword_t unit_slot, unsigned int off, kword_t *buf,
+    kword_t control);
 
 extern int dtfs_native_valid(void);
 
@@ -795,8 +794,8 @@ extern int dtfs_chmod(vnode_t node, unsigned int mode);
 
 #if !DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS
 int
-dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
-    kword_t *buf, unsigned int nwords, unsigned int mapoff, int writing)
+dtfs_chain_walk(kword_t unit_slot, unsigned int off, kword_t *buf,
+    kword_t control)
 {
         unsigned int blocks;
         unsigned int first;
@@ -806,7 +805,18 @@ dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
         unsigned int done;
         unsigned int seen;
         unsigned int words;
+        unsigned int unit;
+        unsigned int slot;
+        unsigned int nwords;
+        unsigned int mapoff;
+        int writing;
 
+        unit = (unsigned int)(unit_slot & 0777777UL);
+        slot = (unsigned int)((unit_slot >> 18) & 0777777UL);
+        nwords = (unsigned int)(control & 0777777UL);
+        control >>= 18;
+        writing = (int)(control & 1UL);
+        mapoff = (unsigned int)(control >> 1);
         (void)mapoff;
         blocks = 0U;
         first = 0U;
@@ -874,8 +884,8 @@ dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
 #else
 #ifndef __PDP10__
 int
-dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
-    kword_t *buf, unsigned int nwords, unsigned int mapoff, int writing)
+dtfs_chain_walk(kword_t unit_slot, unsigned int off, kword_t *buf,
+    kword_t control)
 {
         unsigned int blocks;
         unsigned int first;
@@ -889,6 +899,18 @@ dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
         unsigned int owner;
         unsigned int last_block;
         int its;
+        unsigned int unit;
+        unsigned int slot;
+        unsigned int nwords;
+        unsigned int mapoff;
+        int writing;
+
+        unit = (unsigned int)(unit_slot & 0777777UL);
+        slot = (unsigned int)((unit_slot >> 18) & 0777777UL);
+        nwords = (unsigned int)(control & 0777777UL);
+        control >>= 18;
+        writing = (int)(control & 1UL);
+        mapoff = (unsigned int)(control >> 1);
 
         owner = slot + 1U;
         its = mapoff == DTFS_ITS_NAME_WORDS;
@@ -1039,8 +1061,9 @@ dtfs_transfer_words(vnode_t node, unsigned int off, kword_t *buf,
                         return -1;
         }
 transfer:
-        return dtfs_chain_walk(dtfs_unit(node), slot, off, buf,
-            nwords, mapoff, writing);
+        return dtfs_chain_walk(((kword_t)slot << 18) | dtfs_unit(node),
+            off, buf, ((kword_t)((mapoff << 1) | (writing != 0)) << 18) |
+            nwords);
 }
 
 int
@@ -1051,12 +1074,19 @@ dtfs_read_words(vnode_t node, unsigned int off, kword_t *buf,
 }
 
 int
+dtfs_write_words_reg(vnode_t node, unsigned int off,
+    const kword_t *buf, unsigned int nwords)
+{
+        return dtfs_transfer_words(node, off, (kword_t *)buf,
+            nwords, 1);
+}
+
+int
 dtfs_write_words(vnode_t node, unsigned int off,
     const kword_t *buf, unsigned int nwords, kword_t size_chars)
 {
         (void)size_chars;
-        return dtfs_transfer_words(node, off, (kword_t *)buf,
-            nwords, 1);
+        return dtfs_write_words_reg(node, off, buf, nwords);
 }
 
 extern int dtfs_sync(vnode_t node);

@@ -300,10 +300,9 @@ extern int d6fs_provider_write_dirent(vnode_t dir, unsigned int slot,
     const struct d6fs_dirent_info *di);
 #endif
 
-int
+vnode_t
 d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
-    const kword_t *payload, unsigned int value, unsigned int type,
-    vnode_t *nodep)
+    const kword_t *payload, kword_t value_type)
 {
         kword_t fcb[D6FS_FCB_WORDS];
         struct d6fs_fcb_info fi;
@@ -314,13 +313,17 @@ d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
         unsigned int mode;
         unsigned int words;
         unsigned int tail;
+        unsigned int type;
+        unsigned int value;
 
-        if (nodep == 0 || (type != D6FS_TYPE_REG && type != D6FS_TYPE_DIR &&
+        type = (unsigned int)((value_type >> 33) & 07U);
+        value = (unsigned int)(value_type & 077777777777UL);
+        if ((type != D6FS_TYPE_REG && type != D6FS_TYPE_DIR &&
             type != D6FS_TYPE_SYMLINK) ||
             (type == D6FS_TYPE_SYMLINK && (payload == 0 || value == 0U)) ||
             d6fs_provider_scan_slot(dir, name, &slot, 0) == 0 ||
             d6fs_provider_free_fcb(&index) != 0)
-                return -1;
+                return (vnode_t)-1;
 
         mode = type == D6FS_TYPE_SYMLINK ? 0777U : value;
         fs_zero_words(fcb, D6FS_FCB_WORDS);
@@ -328,7 +331,7 @@ d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
             ((kword_t)(mode & 07777U) << 12);
         fcb[D6FS_FCB_PARENT] = (kword_t)VFS_INDEX(dir) << 18;
         if (d6fs_reader_put_fcb(&d6fs_provider_reader, index, fcb) != 0)
-                return -1;
+                return (vnode_t)-1;
         node = VFS_NODE_PACKED(D6FS_PROVIDER,
             (VFS_MOUNT_ID(dir) << VFS_MOUNT_SHIFT) | D6FS_KIND_NODE, index);
 
@@ -355,15 +358,14 @@ d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
                         goto fail_symlink;
                 goto fail_fcb;
         }
-        *nodep = node;
-        return 0;
+        return node;
 
 fail_symlink:
         (void)d6fs_provider_resize_fcb(node, fcb, &fi, 0UL, 0U);
 fail_fcb:
         fs_zero_words(fcb, D6FS_FCB_WORDS);
         (void)d6fs_reader_put_fcb(&d6fs_provider_reader, index, fcb);
-        return -1;
+        return (vnode_t)-1;
 }
 
 int

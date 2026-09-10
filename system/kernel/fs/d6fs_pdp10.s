@@ -598,6 +598,7 @@ d6fs_diskset_write_jump:
         .globl  d6fs_provider_chmod
         .globl  d6fs_provider_read_words
         .globl  d6fs_provider_write_words
+        .globl  d6fs_provider_write_words_reg
         .globl  d6fs_provider_sync
         .globl  d6fs_provider_prepare_unmount
 
@@ -611,27 +612,29 @@ d6fs_mres_reg_dispatch:
         jrst    fs_mres_vector_dispatch
 
 d6fs_mres_create:
+        move    6,4                     ; nodep stays in a register
+        move    4,3                     ; mode => low packed value
+        setz    3,                      ; no payload
         movei   5,1                     ; regular file type
-        jrst    d6fs_mres_create_common
+        jrst    d6fs_mres_create_call
 
 d6fs_mres_mkdir:
-        movei   5,2                     ; directory type
-d6fs_mres_create_common:
-        move    6,4                     ; nodep
-        move    4,3                     ; mode => value
+        move    6,4                     ; nodep stays in a register
+        move    4,3                     ; mode => low packed value
         setz    3,                      ; no payload
+        movei   5,2                     ; directory type
         jrst    d6fs_mres_create_call
 
 d6fs_mres_symlink:
-        move    6,-1(17)                ; incoming C arg 5: nodep
+        move    6,5                     ; request e = nodep
         movei   5,3                     ; symlink type
 d6fs_mres_create_call:
-        add     17,[2,,2]
-        movem   5,(17)                  ; C arg 5: type
-        movem   6,-1(17)                ; C arg 6: nodep
+        lsh     5,041                   ; type in high three bits
+        ior     4,5                     ; value/type packed C arg 4
         pushj   17,d6fs_provider_create_object
-        sub     17,[2,,2]
-        popj    17,
+        jumpl   1,pdp10_ret_neg1
+        movem   1,(6)                   ; helper returns raw vnode
+        jrst    pdp10_ret_zero
 
         .data
 d6fs_mres_vector:
@@ -649,7 +652,7 @@ d6fs_mres_vector:
         movei   7,d6fs_provider_truncate      ; 11 TRUNCATE
         movei   7,d6fs_provider_chmod         ; 12 CHMOD
         movei   7,d6fs_provider_read_words    ; 13 READ_WORDS
-        movei   7,d6fs_provider_write_words   ; 14 WRITE_WORDS
+        movei   7,d6fs_provider_write_words_reg   ; 14 WRITE_WORDS
         movei   7,d6fs_provider_sync          ; 15 SYNC
         movei   7,d6fs_provider_prepare_unmount; 16 PREPARE_UNMOUNT
         .text
@@ -661,7 +664,11 @@ d6fs_mres_vector:
 ; tail address selects read copying or write copying/commit after each mapped
 ; block, avoiding a per-block read/write mode test.
         .globl  d6fs_reader_read_words
+        .globl  d6fs_reader_read_words_reg
 d6fs_reader_read_words:
+        move    5,-1(17)                ; C ABI compatibility entry
+d6fs_reader_read_words_reg:
+        move    6,5                     ; register ABI: nwords in AC5
         jumpe   1,pdp10_ret_neg1
         jumpe   2,pdp10_ret_neg1
         jumpe   4,pdp10_ret_neg1
@@ -672,14 +679,18 @@ d6fs_reader_read_words:
         jrst    d6fs_reader_rw_save
 
         .globl  d6fs_reader_write_words
+        .globl  d6fs_reader_write_words_reg
 d6fs_reader_write_words:
+        move    5,-1(17)                ; C ABI compatibility entry
+d6fs_reader_write_words_reg:
+        move    6,5                     ; register ABI: nwords in AC5
         jumpe   1,pdp10_ret_neg1
         jumpe   2,pdp10_ret_neg1
         jumpe   4,pdp10_ret_neg1
         movei   0,d6fs_reader_write_transfer
 
-; Save the common loop state plus one transfer-tail address.  The original
-; fifth C argument is therefore nine words below the resulting stack top.
+; Save the common loop state plus one transfer-tail address.  The private
+; register entries have already preserved nwords in AC6.
 d6fs_reader_rw_save:
         push    17,010
         push    17,011
@@ -693,7 +704,7 @@ d6fs_reader_rw_save:
         move    011,2                    ; fcb
         move    012,3                    ; base file offset
         move    013,4                    ; source/destination buffer
-        move    014,-011(17)             ; original fifth arg: nwords
+        move    014,6                    ; register ABI nwords
         setz    015,                     ; done
         caie    0,d6fs_reader_read_transfer
         jrst    d6fs_reader_rw_loop
@@ -960,8 +971,7 @@ d6fs_provider_dirent:
         movei   2,-042(17)
         movei   4,-010(17)               ; 6-word raw dirent scratch
         movei   5,6
-        movem   5,(17)                   ; fifth argument: nwords
-        pushj   17,d6fs_reader_read_words
+        pushj   17,d6fs_reader_read_words_reg
         caie    1,6
         jrst    d6fs_provider_dirent_fail
         movei   1,-010(17)
@@ -1072,7 +1082,7 @@ d6fs_provider_read_words:
         add     17,[035,,035]            ; FCB + info + off/buf/nwords
         movem   2,-2(17)                 ; off
         movem   3,-1(17)                 ; buf
-        movem   4,(17)                   ; outgoing arg 5: nwords
+        movem   4,(17)                   ; saved nwords
         movei   2,-034(17)               ; 020-word FCB scratch
         movei   3,-014(17)               ; 012-word decoded info
         pushj   17,d6fs_provider_fcb
@@ -1087,7 +1097,8 @@ d6fs_provider_read_words_ok:
         movei   2,-034(17)
         move    3,-2(17)
         move    4,-1(17)
-        pushj   17,d6fs_reader_read_words
+        move    5,(17)                   ; register ABI nwords
+        pushj   17,d6fs_reader_read_words_reg
         jrst    d6fs_provider_read_words_done
 d6fs_provider_read_words_fail:
         seto    1,
@@ -1282,14 +1293,15 @@ d6fs_provider_parent_done:
         .globl  d6fs_provider_write_words
         .globl  d6fs_reader_write_words
 d6fs_provider_write_words:
+        move    5,-1(17)                 ; C ABI compatibility entry
+d6fs_provider_write_words_reg:
         jumpe   3,pdp10_ret_neg1
         add     17,[037,,037]            ; FCB + info + node/off/buf/nwords/arg5
         movem   1,-4(17)                 ; node
         movem   2,-3(17)                 ; off
         movem   3,-2(17)                 ; buf
         movem   4,-1(17)                 ; nwords
-        move    5,-040(17)               ; incoming arg 5: size_chars
-        movem   5,(17)
+        movem   5,(17)                   ; size_chars from register ABI
         movei   2,-036(17)               ; 020-word FCB scratch
         movei   3,-016(17)               ; 012-word decoded info
         pushj   17,d6fs_provider_fcb
@@ -1327,13 +1339,12 @@ d6fs_provider_write_words_resize:
         pushj   17,d6fs_provider_resize_fcb
         jumpn   1,d6fs_provider_write_words_fail
 d6fs_provider_write_words_store:
-        move    5,-1(17)
-        movem   5,(17)                   ; outgoing arg 5: nwords
+        move    5,-1(17)                 ; register ABI nwords
         movei   1,d6fs_provider_reader
         movei   2,-036(17)
         move    3,-3(17)
         move    4,-2(17)
-        pushj   17,d6fs_reader_write_words
+        pushj   17,d6fs_reader_write_words_reg
         jrst    d6fs_provider_write_words_done
 d6fs_provider_write_words_fail:
         seto    1,

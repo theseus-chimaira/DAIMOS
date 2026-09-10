@@ -8,9 +8,18 @@ dtfs_chain_walk:
 	movei 0,-014(017)
 	hrli 0,010
 	blt 0,-7(017)
-	move 015,1
-	move 012,3
-	move 016,4
+	move 012,2
+	move 016,3
+	hrrz 015,1
+	hlrz 2,1
+	hrrz 5,4
+	movem 5,-017(017)
+	hlrz 6,4
+	move 7,6
+	andi 7,1
+	movem 7,-021(017)
+	lsh 6,-1
+	movem 6,-020(017)
 	addi 2,1
 	movem 2,-2(017)
 	setzm (017)
