@@ -1,71 +1,61 @@
-; kfmt_pdp10.s -- compact resident unsigned 36-bit decimal formatter.
+; kfmt_pdp10.s -- compact resident unsigned 18-bit decimal formatter.
         .text
         .globl  pdp10_ret_zero
         .globl  pdp10_ret_neg1
 
-kfmt_u36_pow10:
-        .long   10000000000
-        .long   1000000000
-        .long   100000000
-        .long   10000000
-        .long   1000000
-        .long   100000
-        .long   10000
-        .long   1000
-        .long   100
-        .long   10
+; PROCFS formats only process slots and process sizes.  Both values fit in
+; an 18-bit PDP-10 halfword, so a six-decade table is sufficient here.
+kfmt_u18_pow10:
+        .long   0303240                 ; 100000 decimal
+        .long   023420                  ; 10000 decimal
+        .long   01750                   ; 1000 decimal
+        .long   0144                    ; 100 decimal
+        .long   012                     ; 10 decimal
         .long   1
 
-        .globl  kfmt_u36_decimal_readchar
-kfmt_u36_decimal_readchar:
+        .globl  kfmt_u18_decimal_readchar
+kfmt_u18_decimal_readchar:
         jumpe   3,pdp10_ret_neg1
-        move    5,1
-        tlc     5,0400000
         movei   4,0
-kfmt_u36_first:
-        move    6,kfmt_u36_pow10(4)
-        tlc     6,0400000
-        caml    5,6
-        jrst    kfmt_u36_found
+kfmt_u18_first:
+        move    6,kfmt_u18_pow10(4)
+        caml    1,6
+        jrst    kfmt_u18_found
         addi    4,1
-        caie    4,012
-        jrst    kfmt_u36_first
-kfmt_u36_found:
-        movei   6,013
+        caie    4,5
+        jrst    kfmt_u18_first
+kfmt_u18_found:
+        movei   6,6
         sub     6,4
         jumpl   2,pdp10_ret_zero
         camge   2,6
-        jrst    kfmt_u36_digit
+        jrst    kfmt_u18_digit
         came    2,6
-        jrst    kfmt_u36_lf
+        jrst    kfmt_u18_lf
         movei   6,015
-        jrst    kfmt_u36_store
-kfmt_u36_lf:
+        jrst    kfmt_u18_store
+kfmt_u18_lf:
         addi    6,1
         came    2,6
         jrst    pdp10_ret_zero
         movei   6,012
-        jrst    kfmt_u36_store
-kfmt_u36_digit:
+        jrst    kfmt_u18_store
+kfmt_u18_digit:
         add     4,2
         move    7,1
         setz    6,
-        jumpge  7,kfmt_u36_div_ready
-        tlz     7,0400000
-        movei   6,1
-kfmt_u36_div_ready:
-        jumpe   4,kfmt_u36_top_digit
+        jumpe   4,kfmt_u18_top_digit
         move    5,4
         subi    5,1
-        div     6,kfmt_u36_pow10(5)
+        div     6,kfmt_u18_pow10(5)
         setz    6,
-        div     6,kfmt_u36_pow10(4)
-        jrst    kfmt_u36_digit_ready
-kfmt_u36_top_digit:
-        div     6,kfmt_u36_pow10(4)
-kfmt_u36_digit_ready:
+        div     6,kfmt_u18_pow10(4)
+        jrst    kfmt_u18_digit_ready
+kfmt_u18_top_digit:
+        div     6,kfmt_u18_pow10(4)
+kfmt_u18_digit_ready:
         addi    6,060
-kfmt_u36_store:
+kfmt_u18_store:
         movem   6,(3)
         movei   1,1
         popj    17,

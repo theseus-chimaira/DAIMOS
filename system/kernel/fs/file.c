@@ -3,7 +3,7 @@
 
 extern struct file *file_table;
 
-static vnode_t
+static inline vnode_t
 file_cwd_get(void)
 {
         if (file_table == 0)

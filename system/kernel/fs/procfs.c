@@ -238,7 +238,7 @@ procfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
         }
         value = kind == PROCFS_KIND_PPID ?
             (kword_t)PROC_PARENT_SLOT(p) : PROC_MEM_WORDS(p);
-        return kfmt_u36_decimal_readchar(value, off, chp);
+        return kfmt_u18_decimal_readchar(value, off, chp);
 }
 
 /* Assembly file_getcwd uses this for synthetic /PROC/<slot> directories. */

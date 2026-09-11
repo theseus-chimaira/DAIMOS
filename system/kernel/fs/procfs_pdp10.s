@@ -3,7 +3,7 @@
         .globl  pdp10_ret_zero
         .globl  pdp10_ret_neg1
         .globl  vfs_sixbit_readchar
-        .globl  kfmt_u36_decimal_readchar
+        .globl  kfmt_u18_decimal_readchar
         .globl  proc_table
         .globl  proc_comm_words
 
@@ -70,13 +70,13 @@ procfs_readchar_numeric:
         caie    4,030003               ; PPID
         jrst    procfs_readchar_words
         movei   1,0
-        jrst    kfmt_u36_decimal_readchar
+        jrst    kfmt_u18_decimal_readchar
 procfs_readchar_words:
         caie    4,030005               ; WORDS
         jrst    pdp10_ret_neg1
         lsh     5,1
         hlrz    1,proc_table+1(5)
-        jrst    kfmt_u36_decimal_readchar
+        jrst    kfmt_u18_decimal_readchar
 
 ; Fixed two-process PROCFS directory operations.
 ; int procfs_lookup(vnode_t dir, const struct vfs_name *name,

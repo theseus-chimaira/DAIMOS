@@ -17,7 +17,7 @@ kword_t proc_swap_blocks_used;
 
 #define PROC_SWAP_HEADER_BLOCKS 1UL
 
-static kword_t
+static inline kword_t
 proc_swap_disk_blocks(void)
 {
         int rc;

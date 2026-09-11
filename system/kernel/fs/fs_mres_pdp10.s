@@ -144,78 +144,38 @@ fs_zero_block_workspace:
 
         .globl  fs_mres_vector_dispatch
 ; Register provider dispatcher.  AC6 is the operation, AC7 the vector table,
-; and request a..e are already in AC1..AC5.  Every DTFS/D6FS vector entry
-; consumes that private register ABI directly, so dispatch is a tail jump.
+; and request a..e are already in AC1..AC5.  table[0] is the highest valid
+; operation; table[op] loads AC7 with a direct provider entry or jumps to the
+; shared failure return.  The fifth C argument is staged in one stack word.
 fs_mres_vector_dispatch:
         jumple  6,fs_mres_no_service
         camle   6,(7)
         jrst    fs_mres_no_service
         add     7,6
         xct     (7)                     ; target into AC7, or failure jump
-        jrst    (7)
+        add     17,[1,,1]               ; reserve C arg 5
+        movem   5,(17)
+        pushj   17,(7)
+        sub     17,[1,,1]
+        popj    17,
 
         .globl  fs_mres_context_vector_dispatch
-; Context-register provider dispatcher for MEMFS.  Use the operation arity to
-; avoid the old unconditional two-word C-argument frame.  Only operations
-; which genuinely have fifth/sixth C arguments use stack argument slots.
+; Context-register provider dispatcher.  AC0 is the provider context, AC6 the
+; operation, AC7 the table, and request a..e are in AC1..AC5.  Provider C ABI
+; receives context as argument 1, a..c as 2..4 and d/e as stack args 5/6.
 fs_mres_context_vector_dispatch:
         jumple  6,fs_mres_no_service
         camle   6,(7)
         jrst    fs_mres_no_service
         add     7,6
         xct     (7)                     ; target into AC7, or failure jump
-        cain    6,017                   ; SYNC: no arguments needed
-        jrst    (7)
-        cain    6,016                   ; WRITE_WORDS: context + a..e
-        jrst    fs_mres_context_call6
-        cain    6,6                     ; CREATE: context + a..d
-        jrst    fs_mres_context_call5
-        cain    6,7                     ; MKDIR
-        jrst    fs_mres_context_call5
-        cain    6,012                   ; RENAME
-        jrst    fs_mres_context_call5
-        cain    6,015                   ; READ_WORDS
-        jrst    fs_mres_context_call5
-        cain    6,3                     ; STAT: context + a..b
-        jrst    fs_mres_context_call3
-        cain    6,11                    ; UNLINK
-        jrst    fs_mres_context_call3
-        cain    6,014                   ; CHMOD
-        jrst    fs_mres_context_call3
-
-; LOOKUP, READDIR, PARENT, PARENT_NAME and TRUNCATE use context + a..c.
-fs_mres_context_call4:
-        move    4,3
-        move    3,2
-        move    2,1
-        move    1,0
-        jrst    (7)
-
-fs_mres_context_call3:
-        move    3,2
-        move    2,1
-        move    1,0
-        jrst    (7)
-
-fs_mres_context_call5:
-        add     17,[1,,1]
-        movem   4,(17)                  ; arg 5 = request d
-        move    4,3
-        move    3,2
-        move    2,1
-        move    1,0
-        pushj   17,(7)
-        sub     17,[1,,1]
-        popj    17,
-
-fs_mres_context_call6:
         add     17,[2,,2]
         movem   4,(17)                  ; arg 5 = request d
         movem   5,-1(17)                ; arg 6 = request e
         move    4,3
         move    3,2
         move    2,1
-        move    1,0
+        move    1,0                     ; arg 1 = context
         pushj   17,(7)
         sub     17,[2,,2]
         popj    17,

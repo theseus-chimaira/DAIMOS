@@ -14,7 +14,6 @@
         .globl  dtfs_chmod
         .globl  dtfs_read_words
         .globl  dtfs_write_words
-        .globl  dtfs_write_words_reg
         .globl  dtfs_sync
         .globl  dtfs_format_unit
         .globl  dtfs_mount_unit
@@ -42,7 +41,7 @@ dtfs_mres_vector:
         movei   7,dtfs_truncate               ; 11 TRUNCATE
         movei   7,dtfs_chmod                  ; 12 CHMOD
         movei   7,dtfs_read_words             ; 13 READ_WORDS
-        movei   7,dtfs_write_words_reg        ; 14 WRITE_WORDS
+        movei   7,dtfs_write_words            ; 14 WRITE_WORDS
         movei   7,dtfs_sync                   ; 15 SYNC
         .text
 
@@ -150,12 +149,16 @@ dtfs_tenex_valid_slot_loop:
         trnn    4,1
         jrst    dtfs_tenex_valid_false
         jumpe   011,dtfs_tenex_valid_slot_next
-        move    1,010                    ; low half: unit
-        hrl     1,013                    ; high half: slot
-        setz    2,                       ; off = 0
-        setz    3,                       ; no transfer buffer
-        move    4,[2,,0]                 ; mapoff = 1, read, nwords = 0
+        move    1,010
+        move    2,013
+        setz    3,
+        setz    4,
+        add     17,[2,,2]
+        setzm   (17)                    ; fifth argument nwords = 0
+        movei   5,1
+        movem   5,-1(17)                ; sixth argument map offset = 1
         pushj   17,dtfs_chain_walk
+        sub     17,[2,,2]
         jumpl   1,dtfs_tenex_valid_false
         jrst    dtfs_tenex_valid_slot_next
 dtfs_tenex_valid_empty_slot:
@@ -493,16 +496,20 @@ dtfs_foreign_set_name_return:
 ; int dtfs_native_scan_slot(const struct vfs_name *name, unsigned int *slotp)
 ; Native names occupy two words; unused slots have a zero first word.
 ; Inline the VFS name-range check because DTFS's 11-character limit is stricter.
+dtfs_native_scan_invalid:
+        seto    1,                       ; -1 means valid name not found
+        sos     1                        ; -2 means invalid name
+        popj    17,
 dtfs_native_scan_slot:
         jumpe   1,dtfs_native_scan_begin
         move    4,(1)
-        jumple  4,pdp10_ret_neg1
+        jumple  4,dtfs_native_scan_invalid
         caile   4,013                    ; DTFS_NAME_MAX_CHARS = 11
-        jrst    pdp10_ret_neg1
+        jrst    dtfs_native_scan_invalid
         skipe   3(1)
-        jrst    pdp10_ret_neg1
+        jrst    dtfs_native_scan_invalid
         skipe   4(1)
-        jrst    pdp10_ret_neg1
+        jrst    dtfs_native_scan_invalid
 dtfs_native_scan_begin:
         setz    3,                       ; slot
         movei   4,0123                   ; DTFS_NAME_BASE
@@ -870,11 +877,13 @@ dtfs_readdir:
         push    17,010
         push    17,011
         push    17,012
+        move    012,1                   ; dir survives dtfs_is_root
         move    010,2                   ; requested visible entry
         move    011,3                   ; result
         pushj   17,dtfs_is_root
         jumpe   1,dtfs_readdir_native_fail
         jumpe   011,dtfs_readdir_native_fail
+        move    1,012
         pushj   17,dtfs_load
         jumpn   1,dtfs_readdir_native_fail
         setzb   4,5                     ; slot, seen
@@ -1012,11 +1021,14 @@ dtfs_size_words:
         jrst    dtfs_size_words_native
         move    1,010
         pushj   17,dtfs_unit
-        hrl     1,011                    ; high half: slot, low half: unit
-        setz    2,                       ; off = 0
-        setz    3,                       ; no transfer buffer
-        move    4,[2,,0]                 ; mapoff = 1, read, nwords = 0
+        move    2,011
+        setzb   3,4
+        add     17,[2,,2]
+        setzm   (17)                    ; fifth argument nwords = 0
+        movei   5,1
+        movem   5,-1(17)                ; sixth argument map offset = 1
         pushj   17,dtfs_chain_walk
+        sub     17,[2,,2]
         jumpl   1,dtfs_size_words_zero
         jrst    dtfs_size_words_return
 

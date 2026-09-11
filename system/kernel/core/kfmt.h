@@ -3,6 +3,6 @@
 
 #include "kcore.h"
 
-int kfmt_u36_decimal_readchar(kword_t value, kword_t off, unsigned int *chp);
+int kfmt_u18_decimal_readchar(kword_t value, kword_t off, unsigned int *chp);
 
 #endif

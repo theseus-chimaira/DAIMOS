@@ -32,8 +32,9 @@ int d6fs_provider_read_words(vnode_t node, unsigned int off,
     kword_t *buf, unsigned int nwords);
 int d6fs_provider_sync(vnode_t node);
 int d6fs_provider_prepare_unmount(vnode_t root);
-vnode_t d6fs_provider_create_object(vnode_t dir,
-    const struct vfs_name *name, const kword_t *payload, kword_t value_type);
+int d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
+    const kword_t *payload, unsigned int value, unsigned int type,
+    vnode_t *nodep);
 int d6fs_provider_unlink(vnode_t dir, const struct vfs_name *name);
 int d6fs_provider_rename(vnode_t olddir,
     const struct vfs_name *oldname, vnode_t newdir,

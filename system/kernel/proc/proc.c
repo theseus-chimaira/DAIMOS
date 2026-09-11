@@ -16,13 +16,13 @@ proc_set_field(struct proc *p, kword_t mask, unsigned int shift,
             (((kword_t)value & mask) << shift);
 }
 
-static void
+static inline void
 proc_set_cpu(struct proc *p, unsigned int value)
 {
         proc_set_field(p, PROC_CPU_MASK, PROC_CPU_SHIFT, value);
 }
 
-static void
+static inline void
 proc_set_sleep_age(struct proc *p, unsigned int value)
 {
         proc_set_field(p, PROC_SLEEP_MASK, PROC_SLEEP_SHIFT, value);
@@ -40,7 +40,7 @@ proc_uarea_owner(unsigned int slot)
         return PROC_UAREA_MM_OWNER_BASE + slot;
 }
 
-static int
+static inline int
 proc_uarea_release(unsigned int slot, struct proc *p)
 {
         kword_t base;
@@ -56,7 +56,7 @@ proc_uarea_release(unsigned int slot, struct proc *p)
         return 0;
 }
 
-static int
+static inline int
 proc_slot_cleanup(unsigned int slot, struct proc *p)
 {
         proc_swap_detach(slot);
