@@ -84,7 +84,7 @@ procfs_format_slot(unsigned int slot, struct vfs_name *name)
 static inline int
 procfs_file_kind(unsigned int kind)
 {
-        return kind >= PROCFS_KIND_PPID && kind <= PROCFS_KIND_COMM;
+        return kind >= PROCFS_KIND_PPID && kind <= PROCFS_KIND_STATUS;
 }
 
 int
@@ -116,6 +116,8 @@ procfs_lookup(vnode_t dir, const struct vfs_name *name, vnode_t *nodep)
                 kind = PROCFS_KIND_WORDS;
         else if (vfs_name_is6(name, VFS_SIX6('C','O','M','M',' ',' '), 4U))
                 kind = PROCFS_KIND_COMM;
+        else if (vfs_name_is6(name, VFS_SIX6('S','T','A','T','U','S'), 6U))
+                kind = PROCFS_KIND_STATUS;
         else
                 return -1;
         *nodep = VFS_NODE(PROCFS_PROVIDER, kind, slot);
@@ -149,7 +151,7 @@ procfs_readdir(vnode_t dir, unsigned int off, struct vfs_dirent *ent)
         }
         if (kind != PROCFS_KIND_PROC || !procfs_slot_active(VFS_INDEX(dir)))
                 return -1;
-        if (off >= 4U)
+        if (off >= 5U)
                 return 0;
         if (off == 0U)
                 procfs_dirent_set(ent, VFS_SIX6('P','P','I','D',' ',' '),
@@ -160,9 +162,12 @@ procfs_readdir(vnode_t dir, unsigned int off, struct vfs_dirent *ent)
         else if (off == 2U)
                 procfs_dirent_set(ent, VFS_SIX6('W','O','R','D','S',' '),
                     5U, VFS_TYPE_REG);
-        else
+        else if (off == 3U)
                 procfs_dirent_set(ent, VFS_SIX6('C','O','M','M',' ',' '),
                     4U, VFS_TYPE_REG);
+        else
+                procfs_dirent_set(ent, VFS_SIX6('S','T','A','T','U','S'),
+                    6U, VFS_TYPE_REG);
         return 1;
 }
 
@@ -193,6 +198,73 @@ procfs_stat(vnode_t node, struct vfs_stat *st)
         return 0;
 }
 
+/*
+ * STATUS is deliberately one vnode kind: struct file stores descriptor
+ * metadata in vnode bits that are otherwise zero only while local kinds stay
+ * in 0..7.  IDs are fixed-width three-digit octal values so the PDP-6 can
+ * emit them with shifts/masks instead of resident decimal division code:
+ *
+ *   PID PPID PGRP SID DID S\r\n
+ */
+static int
+procfs_status_readchar(struct proc *p, unsigned int slot, kword_t off,
+    unsigned int *chp)
+{
+        unsigned int field;
+        unsigned int pos;
+        unsigned int value;
+        unsigned int state;
+
+        if (off < 20UL) {
+                field = (unsigned int)off >> 2;
+                pos = (unsigned int)off & 3U;
+                if (pos == 3U) {
+                        *chp = (unsigned int)' ';
+                        return 1;
+                }
+                if (field == 0U)
+                        value = slot;
+                else if (field == 1U)
+                        value = PROC_PARENT_SLOT(p);
+                else if (field == 2U)
+                        value = PROC_PGRP(p);
+                else if (field == 3U)
+                        value = proc_session_id(p);
+                else
+                        value = proc_domain_id(p);
+                *chp = (unsigned int)'0' +
+                    ((value >> ((2U - pos) * 3U)) & 07U);
+                return 1;
+        }
+        if (off == 20UL) {
+                state = PROC_STATE(p);
+                if (state == PROC_ZOMB)
+                        *chp = (unsigned int)'Z';
+                else if (slot != 0U && PROC_MEM_BASE(p) == 0UL)
+                        *chp = (unsigned int)'W';
+                else if (state == PROC_SIDL)
+                        *chp = (unsigned int)'I';
+                else if (state == PROC_SRUN)
+                        *chp = (unsigned int)'R';
+                else if (state == PROC_SLEEP)
+                        *chp = (unsigned int)'S';
+                else if (state == PROC_STOP)
+                        *chp = (unsigned int)'T';
+                else
+                        *chp = (unsigned int)'F';
+                return 1;
+        }
+        if (off == 21UL) {
+                *chp = 015U;
+                return 1;
+        }
+        if (off == 22UL) {
+                *chp = 012U;
+                return 1;
+        }
+        return 0;
+}
+
 int
 procfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
 {
@@ -213,10 +285,14 @@ procfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
         p = &proc_table[slot];
         if (kind == PROCFS_KIND_COMM)
                 return vfs_sixbit_readchar(proc_comm(p), 6U, off, chp);
+        if (kind == PROCFS_KIND_STATUS)
+                return procfs_status_readchar(p, slot, off, chp);
         if (kind == PROCFS_KIND_STATE) {
                 state = PROC_STATE(p);
                 chars = 4U;
-                if (slot != 0U && PROC_MEM_BASE(p) == 0UL) {
+                if (state == PROC_ZOMB) {
+                        name = VFS_SIX6('Z','O','M','B',' ',' ');
+                } else if (slot != 0U && PROC_MEM_BASE(p) == 0UL) {
                         name = VFS_SIX6('S','W','A','P',' ',' ');
                 } else if (state == PROC_SIDL) {
                         name = VFS_SIX6('I','D','L',' ',' ',' ');
@@ -227,8 +303,6 @@ procfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
                 } else if (state == PROC_SLEEP) {
                         name = VFS_SIX6('S','L','E','E','P',' ');
                         chars = 5U;
-                } else if (state == PROC_ZOMB) {
-                        name = VFS_SIX6('Z','O','M','B',' ',' ');
                 } else if (state == PROC_STOP) {
                         name = VFS_SIX6('S','T','O','P',' ',' ');
                 } else {
@@ -236,8 +310,12 @@ procfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
                 }
                 return vfs_sixbit_readchar(name, chars, off, chp);
         }
-        value = kind == PROCFS_KIND_PPID ?
-            (kword_t)PROC_PARENT_SLOT(p) : PROC_MEM_WORDS(p);
+        if (kind == PROCFS_KIND_PPID)
+                value = (kword_t)PROC_PARENT_SLOT(p);
+        else if (kind == PROCFS_KIND_WORDS)
+                value = PROC_MEM_WORDS(p);
+        else
+                return -1;
         return kfmt_u18_decimal_readchar(value, off, chp);
 }
 

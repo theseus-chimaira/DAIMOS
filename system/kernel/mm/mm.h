@@ -11,7 +11,7 @@
  * initial limit is deliberately modest; descriptor exhaustion is reported
  * separately from core exhaustion and can be raised after measurement.
  */
-#define MM_MAX_EXTENTS          34U
+#define MM_MAX_EXTENTS          36U
 
 #define MM_TYPE_FREE            0U
 #define MM_TYPE_PROCESS         1U

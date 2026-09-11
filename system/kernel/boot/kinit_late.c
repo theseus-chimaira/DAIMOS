@@ -8,6 +8,8 @@
 extern kword_t __kinit_late_begin;
 extern kword_t __kinit_late_end;
 extern kword_t __kinit_image_end;
+extern kword_t cty_mres_package;
+extern kword_t mres_source_end;
 
 /*
  * Finish boot from the only KINIT text which remains reserved after the main
@@ -29,18 +31,25 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
         kword_t late_base;
         kword_t late_end;
         kword_t image_end;
+        kword_t source_begin;
+        kword_t source_end;
         kword_t init_path[3];
 
         late_base = (kword_t)(unsigned long)&__kinit_late_begin;
         late_end = (kword_t)(unsigned long)&__kinit_late_end;
         image_end = (kword_t)(unsigned long)&__kinit_image_end;
+        source_begin = (kword_t)(unsigned long)&cty_mres_package;
+        source_end = mres_source_end;
         if (late_base <= KINIT_IMAGE_BASE || late_end <= late_base ||
-            image_end < late_end || reclaim_end <= image_end)
+            source_begin < late_end || source_end < source_begin ||
+            image_end < source_end || reclaim_end <= image_end)
                 return;
         if (mm_add_free(KINIT_IMAGE_BASE, late_base - KINIT_IMAGE_BASE) !=
             MM_OK ||
-            (image_end > late_end &&
-            mm_add_free(late_end, image_end - late_end) != MM_OK))
+            (source_begin > late_end && mm_add_free(late_end,
+            source_begin - late_end) != MM_OK) ||
+            (image_end > source_end && mm_add_free(source_end,
+            image_end - source_end) != MM_OK))
                 return;
 
         init_path[0] = 12UL;
@@ -74,7 +83,10 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
                 if (proc_user_context_init(slot, entry, stack,
                     (kword_t)slot, 0UL, 0UL) != 0)
                         return;
-                PROC_UAREA_WORD(p, PROC_FDCTL_OFFSET) = PROC_STDIO_MASK;
+                PROC_SET_PGRP(p, 1U);
+                PROC_UAREA_WORD(p, PROC_FDCTL_OFFSET) = PROC_STDIO_MASK |
+                    ((kword_t)1U << PROC_SESSION_SHIFT) |
+                    ((kword_t)1U << PROC_DOMAIN_SHIFT);
         }
 
         p = &proc_table[1];

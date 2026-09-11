@@ -38,7 +38,6 @@ KERNEL_HEADERS = boot/kboot.h \
 	fs/dtfs.h \
 	fs/file.h \
 	fs/fs_mres.h \
-	fs/initfs.h \
 	fs/memfs.h \
 	fs/procfs.h \
 	fs/vfs.h \

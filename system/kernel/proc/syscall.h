@@ -42,6 +42,53 @@
 #define SYS_UUO_EXT_FIRST   SYS_RUN
 #define SYS_UUO_EXT_LAST    SYS_PROCCTL
 
+/* Compact process hierarchy/control operations for UUO 077. */
+#define SYS_PROCCTL_GETPGRP       0U
+#define SYS_PROCCTL_GETSESSION    1U
+#define SYS_PROCCTL_GETDOMAIN     2U
+#define SYS_PROCCTL_NEWSESSION    3U
+#define SYS_PROCCTL_NEWDOMAIN     4U
+#define SYS_PROCCTL_GETEVENTS     5U
+#define SYS_PROCCTL_EVENT_PID     6U
+#define SYS_PROCCTL_EVENT_PGRP    7U
+#define SYS_PROCCTL_GETTTY       010U
+#define SYS_PROCCTL_TTY_ATTACH   011U
+#define SYS_PROCCTL_TTY_DETACH   012U
+#define SYS_PROCCTL_TTY_GETFG    013U
+#define SYS_PROCCTL_TTY_SETFG    014U
+
+/* Compact controlling-terminal state returned by GETTTY. */
+#define SYS_TTY_NO_TTY            0U
+#define SYS_TTY_DETACHED          1U
+#define SYS_TTY_ATTACHED_BASE     2U
+#define SYS_TTY_ID_MAX           20U
+#define SYS_TTY_ATTACHED(id) \
+        (SYS_TTY_ATTACHED_BASE + (unsigned int)(id))
+#define SYS_TTY_IS_ATTACHED(v) \
+        ((unsigned int)(v) >= SYS_TTY_ATTACHED_BASE && \
+        (unsigned int)(v) <= SYS_TTY_ATTACHED(SYS_TTY_ID_MAX))
+#define SYS_TTY_ID(v) \
+        ((unsigned int)(v) - SYS_TTY_ATTACHED_BASE)
+
+#define SYS_EVENT_INT             0U
+#define SYS_EVENT_TERM            1U
+#define SYS_EVENT_HUP             2U
+#define SYS_EVENT_TSTP            3U
+#define SYS_EVENT_CONT            4U
+#define SYS_EVENT_ALRM            5U
+#define SYS_EVENT_CHLD            6U
+#define SYS_EVENT_COUNT           7U
+#define SYS_EVENT_TARGET_MASK     0377U
+#define SYS_EVENT_CODE_MASK       07U
+#define SYS_EVENT_CODE_SHIFT         8U
+#define SYS_EVENT_ARG(target, event) \
+        ((((unsigned int)(event) & SYS_EVENT_CODE_MASK) << \
+        SYS_EVENT_CODE_SHIFT) | \
+        ((unsigned int)(target) & SYS_EVENT_TARGET_MASK))
+#define SYS_EVENT_ARG_MASK \
+        (SYS_EVENT_TARGET_MASK | (SYS_EVENT_CODE_MASK << SYS_EVENT_CODE_SHIFT))
+#define SYS_EVENT_BIT(event)      (1U << (event))
+
 #define SYS_RUN_VERSION_1       1U
 #define SYS_RUN_V1_FIXED_WORDS  7U
 #define SYS_RUN_V1_MIN_WORDS    9U
@@ -65,6 +112,8 @@
 #define SYS_WAIT_EXITED             1U
 #define SYS_WAIT_STOPPED            2U
 #define SYS_WAIT_CONTINUED          3U
+#define SYS_WAIT_EVENT_FLAG     0400000U
+#define SYS_WAIT_EVENT_MASK         0177U
 #define SYS_WAIT_STATUS(kind, value) \
         ((((kword_t)(kind) & SYS_WAIT_KIND_MASK) << SYS_WAIT_KIND_SHIFT) | \
         ((kword_t)(value) & 0777777UL))
@@ -130,6 +179,7 @@ struct sys_meminfo {
 
 int proc_run_block(const struct sys_run_v1 *args, unsigned int available_words);
 int proc_wait_status(unsigned int selector, kword_t *statusp, unsigned int flags);
+int proc_control(unsigned int op, unsigned int arg);
 int sys_procinfo(unsigned int slot, struct sys_procinfo *info);
 int sys_meminfo(struct sys_meminfo *info);
 

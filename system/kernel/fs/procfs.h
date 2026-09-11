@@ -10,6 +10,7 @@
 #define PROCFS_KIND_STATE            4U
 #define PROCFS_KIND_WORDS            5U
 #define PROCFS_KIND_COMM             6U
+#define PROCFS_KIND_STATUS           7U
 
 #define PROCFS_FIELD_PID             1U
 #define PROCFS_FIELD_PPID            2U

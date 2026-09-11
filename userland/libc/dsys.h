@@ -32,6 +32,7 @@ int dsys_nice(int n);
 int dsys_run(struct sys_run_v1 *args);
 int dsys_wait(unsigned int selector, kword_t *status, unsigned int flags);
 int dsys_getpid(void);
+int dsys_procctl(unsigned int op, unsigned int arg);
 int dsys_chdir(kword_t *p);
 int dsys_getcwd(kword_t *p, unsigned int n);
 int dsys_procinfo(unsigned int s, struct sys_procinfo *p);

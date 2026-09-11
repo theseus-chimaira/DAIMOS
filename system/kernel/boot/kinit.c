@@ -7,7 +7,6 @@
 #include "module_runtime.h"
 #include "proc.h"
 
-int kfs_boot_prepare(kword_t future_free_words);
 
 extern kword_t sys_resident_words_immediate;
 extern kword_t __kinit_image_end;
@@ -15,6 +14,7 @@ void kinit_late_handoff(kword_t stack_base, kword_t reclaim_end);
 
 static unsigned int mres_next_addr;
 static unsigned int mres_owner_next;
+kword_t mres_source_end;
 unsigned int mres_last_owner;
 unsigned int mres_last_image_words;
 static const kword_t *module_mres_package;
@@ -220,6 +220,8 @@ module_run_minits(void)
 {
         const kword_t *p;
         const kword_t *end;
+        const kword_t *previous_package;
+        const kword_t *package;
         unsigned int entry;
 
 #ifdef KINIT_DEBUG
@@ -227,11 +229,51 @@ module_run_minits(void)
 #endif
         p = &__minit_table_begin;
         end = &__minit_table_end;
+        previous_package = 0;
         while (p < end) {
                 entry = KINIT_LH(*p);
-                module_mres_package = (const kword_t *)(unsigned long)KINIT_RH(*p++);
+                package = (const kword_t *)(unsigned long)KINIT_RH(*p++);
+                /* MRES package sources are linked in last-use MINIT order.
+                 * Once MINIT advances to the next package, the preceding
+                 * contiguous source image is dead and may immediately back
+                 * later MRES allocations.  This is essential on 32K systems
+                 * and avoids retaining disposal data until late KINIT. */
+                if (previous_package != 0 && package != 0) {
+                        kword_t previous_addr;
+                        kword_t package_addr;
+
+                        previous_addr =
+                            (kword_t)(unsigned long)previous_package;
+                        package_addr = (kword_t)(unsigned long)package;
+                        if (package_addr < previous_addr)
+                                kinit_halt();
+                        if (package_addr > previous_addr &&
+                            mm_add_free(previous_addr,
+                            package_addr - previous_addr) != MM_OK)
+                                kinit_halt();
+                }
+                module_mres_package = package;
                 if (entry != 0U)
                         kinit_call18(entry);
+                if (package != 0)
+                        previous_package = package;
+        }
+        if (previous_package != 0) {
+                unsigned int init_words;
+                unsigned int map_words;
+                unsigned int export_words;
+                kword_t words;
+
+                init_words = KINIT_LH(previous_package[1]);
+                map_words = KINIT_LH(previous_package[2]);
+                export_words = (KINIT_RH(previous_package[2]) + 1U) / 2U;
+                words = (kword_t)MRES_HEADER_WORDS + export_words +
+                    init_words + map_words;
+                mres_source_end = (kword_t)(unsigned long)previous_package +
+                    words;
+                if (mm_add_free((kword_t)(unsigned long)previous_package,
+                    words) != MM_OK)
+                        kinit_halt();
         }
         module_mres_package = 0;
         module_moves_enabled = 1U;
@@ -313,13 +355,11 @@ kinit_enter(void)
                 if (reclaim_end > mm_core_words)
                         kinit_halt();
                 future_free_words = reclaim_end - KINIT_IMAGE_BASE;
-                if (kfs_boot_prepare(future_free_words) != 0)
-                        kinit_halt();
-        }
 #ifdef KINIT_DEBUG
-        kinit_diag_finished();
+                kinit_diag_finished();
 #endif
-        kinit_boot();
+                kinit_boot(future_free_words);
+        }
         if (proc_boot_init() != 0)
                 kinit_halt();
         {

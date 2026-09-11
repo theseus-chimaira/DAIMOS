@@ -38,6 +38,7 @@
         .globl  mm_alloc_aligned
         .globl  fs_zero_words
         .globl  proc_slot_discard
+        .globl  proc_child_hierarchy
 
 proc_run_block:
         push    17,010
@@ -65,11 +66,6 @@ proc_run_block:
         camle   3,011
         jrst    proc_run_bad
         move    011,3
-        skipe   1(010)
-        jrst    proc_run_bad
-        skipe   2(010)
-        jrst    proc_run_bad
-
         move    4,3(010)
         hrrz    3,4
         came    3,4
@@ -182,6 +178,15 @@ proc_run_watermark_loop:
         movei   4,PROC_F_UAREA_RH
         iorm    4,(013)
 
+        ; Inherit SESSION/DOMAIN and resolve INHERIT/NEW/JOIN process-group
+        ; semantics only after the child owns a stable u-area.  The helper
+        ; also verifies that JOIN names an existing group in this session.
+        move    1,012
+        move    2,1(010)
+        move    3,2(010)
+        pushj   17,proc_child_hierarchy
+        jumpn   1,proc_run_claimed_bad
+
         skipn   7,file_table
         jrst    proc_run_claimed_bad
         move    4,-1(7)
@@ -240,7 +245,8 @@ proc_run_map_next:
         addi    015,1
         sojg    3,proc_run_map_loop
 proc_run_map_done:
-        movem   5,PROC_FDCTL_OFFSET(014)
+        ; Preserve SESSION/DOMAIN already installed by proc_child_hierarchy.
+        iorm    5,PROC_FDCTL_OFFSET(014)
         movsi   4,PROC_SCHED_SRUN_LH
         movem   4,2(013)
         move    1,012

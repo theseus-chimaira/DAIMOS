@@ -29,6 +29,9 @@ sys_user_words:
         .globl  proc_exit_current
         .globl  proc_run_block
         .globl  proc_wait_status
+        .globl  proc_control
+        .globl  proc_tty_read_enter
+        .globl  proc_tty_input
         .globl  proc_current_slot
         .globl  file_stdio_enabled
 exec_native_syscall:
@@ -74,7 +77,7 @@ exec_native_table:
         .word   native_sys_run          ; 074 RUN
         .word   native_sys_wait         ; 075 WAIT
         .word   native_sys_getpid       ; 076 GETPID
-        .word   %L137                    ; 077 PROCCTL (reserved)
+        .word   native_sys_procctl       ; 077 PROCCTL
 
 ; UUO 043 WRITE_CHARS: AC1 console fd, AC2 9-bit byte pointer, AC3 chars.
 ; This is deliberately the console fast path only.  Regular-file stream writes
@@ -444,15 +447,36 @@ native_sys_getpid:
         move    1,proc_current_slot
         popj    17,
 
+native_sys_procctl:
+        hrrz    1,1
+        hrrz    2,2
+        jrst    proc_control
+
 native_sys_getchar:
         movei   1,0
         pushj   17,file_stdio_enabled
         jumpe   1,%L137
-        seto    1,
+native_sys_getchar_policy:
+        movei   1,0                    ; logical CTY id
+        pushj   17,proc_tty_read_enter
+        jumpn   1,%L137
+native_sys_getchar_again:
+        pushj   17,native_sys_getchar_call
+        jumpl   1,%L65                 ; no installed CTY input service
+        move    2,1                    ; raw character
+        movei   1,0                    ; logical CTY id
+        pushj   17,proc_tty_input
+        camn    1,[-2]                 ; consumed job-control character
+        jrst    native_sys_getchar_policy
+        jrst    %L65
+
+        ; MINIT patches this one-word call target to CTY getchar.  Keep it as
+        ; a callable trampoline so terminal policy remains in KCORE around the
+        ; relocatable CTY MRES implementation.
         .globl  native_sys_getchar_call
 native_sys_getchar_call:
         pushj   17,pdp10_ret_neg1
-        jrst    %L65
+        popj    17,
 
 native_sys_putchar:
         .globl  native_sys_putchar_call

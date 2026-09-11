@@ -234,12 +234,28 @@ mm_move_process(struct proc *p, unsigned int owner)
         kword_t *src;
         kword_t *dst;
         unsigned int i;
+        unsigned int old_state;
+        int mm_stopped;
         int rc;
 
         if (p == 0 || proc_table == 0 || owner >= proc_slots ||
             p != &proc_table[owner] || PROC_STATE(p) == PROC_FREE ||
-            PROC_STATE(p) == PROC_SRUN || PROC_TRANSITION(p))
+            PROC_STATE(p) == PROC_ZOMB || PROC_TRANSITION(p) ||
+            owner == (unsigned int)proc_current_slot)
                 return MM_ERR_BUSY;
+        old_state = PROC_STATE(p);
+        mm_stopped = 0;
+        if (PROC_HAS_UAREA(p)) {
+                kword_t ctl;
+
+                ctl = PROC_CTL_WORD(p);
+                ctl |= (kword_t)PROC_STOP_MM << PROC_STOP_SHIFT;
+                PROC_CTL_WORD(p) = ctl;
+                PROC_SET_STATE(p, PROC_STOP);
+                mm_stopped = 1;
+        } else if (old_state == PROC_SRUN) {
+                return MM_ERR_BUSY;
+        }
         old_base = PROC_MEM_BASE(p);
         words = PROC_MEM_WORDS(p);
         PROC_SET_TRANSITION(p);
@@ -248,24 +264,22 @@ mm_move_process(struct proc *p, unsigned int owner)
         if (extent == 0 || MM_EXTENT_TYPE(extent) != MM_TYPE_PROCESS ||
             MM_EXTENT_OWNER(extent) != owner ||
             MM_EXTENT_WORDS(extent) != words) {
-                PROC_CLEAR_TRANSITION(p);
-                return MM_ERR_INVAL;
+                rc = MM_ERR_INVAL;
+                goto out;
         }
         if (MM_EXTENT_PINS(extent) != 0U) {
-                PROC_CLEAR_TRANSITION(p);
-                return MM_ERR_BUSY;
+                rc = MM_ERR_BUSY;
+                goto out;
         }
 
         rc = mm_alloc_aligned_raw(words, 02000UL, MM_TYPE_PROCESS, owner,
             MM_ALLOC_HIGH, &new_base);
-        if (rc != MM_OK) {
-                PROC_CLEAR_TRANSITION(p);
-                return rc;
-        }
+        if (rc != MM_OK)
+                goto out;
         if (new_base <= old_base) {
                 (void)mm_free(new_base, MM_TYPE_PROCESS, owner);
-                PROC_CLEAR_TRANSITION(p);
-                return MM_ERR_FRAGMENTED;
+                rc = MM_ERR_FRAGMENTED;
+                goto out;
         }
 
         src = (kword_t *)(unsigned long)old_base;
@@ -277,11 +291,21 @@ mm_move_process(struct proc *p, unsigned int owner)
         if (rc != MM_OK) {
                 PROC_SET_MEM_BASE(p, old_base);
                 (void)mm_free(new_base, MM_TYPE_PROCESS, owner);
-                PROC_CLEAR_TRANSITION(p);
-                return rc;
+                goto out;
         }
+        rc = MM_OK;
+out:
         PROC_CLEAR_TRANSITION(p);
-        return MM_OK;
+        if (mm_stopped) {
+                kword_t ctl;
+
+                ctl = PROC_CTL_WORD(p);
+                ctl &= ~((kword_t)PROC_STOP_MM << PROC_STOP_SHIFT);
+                PROC_CTL_WORD(p) = ctl;
+                if (((ctl >> PROC_STOP_SHIFT) & PROC_STOP_MASK) == 0UL)
+                        PROC_SET_STATE(p, old_state);
+        }
+        return rc;
 }
 
 

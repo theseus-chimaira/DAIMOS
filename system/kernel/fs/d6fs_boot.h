@@ -4,7 +4,7 @@
 #include "vfs.h"
 #include "d6fs.h"
 
-int d6fs_boot_mount_root(unsigned int flags, vnode_t *rootp);
+int d6fs_boot_mount_root(unsigned int flags);
 kword_t *d6fs_boot_block_buffer(void);
 
 #endif

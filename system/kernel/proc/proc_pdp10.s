@@ -42,6 +42,7 @@
         .globl  proc_sched_resched_select
         .globl  proc_sched_pi_resched
         .globl  proc_sched_kick
+        .globl  proc_sched_resched_current
         .globl  proc_record_kernel_sp
         .globl  proc_exit_current
         .globl  pdp10_ret_zero
@@ -165,6 +166,16 @@ proc_wait_raced:
         hllz    3,3
         movem   3,2(2)
         jrst    pdp10_ret_zero
+
+
+; Request an immediate software PI6 reschedule after the caller has changed
+; the current process state (for example native job-control TSTP).  The PI
+; saves the executive continuation and will resume it after the process is
+; made runnable again.
+proc_sched_resched_current:
+        setom   proc_sched_kick
+        cono    0004,004002
+        popj    17,
 
 ; int proc_wait_child(void)
 ; WAIT scans while executive code is non-preemptible.  If live children exist

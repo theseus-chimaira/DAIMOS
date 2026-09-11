@@ -22,7 +22,9 @@
 #define PROC_SSWAP  5U        /* reserved compatibility state; not steady-state */
 #define PROC_STOP   6U
 
-/* meta RH: low 8 bits free, parent-slot:8, flags:2.  meta LH retains initial entry PC. */
+/* meta RH: pgrp:8, parent-slot:8, flags:2.  meta LH retains initial entry PC. */
+#define PROC_PGRP_MASK       0377UL
+#define PROC_PGRP_SHIFT          0U
 #define PROC_PARENT_MASK     0377UL
 #define PROC_PARENT_SHIFT       8U
 #define PROC_FLAGS_MASK         03UL
@@ -77,15 +79,42 @@
  */
 #define PROC_UAREA_WORDS        0420UL
 /*
- * One descriptor-control word precedes cwd/file state.  Bits 0..2 are the
- * explicit RUN mappings for the native console descriptors 0..2.  Keeping
- * this in the already-resident u-area costs no per-process descriptor words.
+ * One compact control word precedes cwd/file state.  Bits 0..2 are explicit
+ * RUN mappings for the native console descriptors 0..2.  Session and domain
+ * IDs share this already-resident word; process-group ID lives in meta RH so
+ * it survives after EXIT releases the u-area and group WAIT can reap zombies.
  */
 #define PROC_FDCTL_OFFSET        0045UL
 #define PROC_FILE_CWD_OFFSET     0046UL
 #define PROC_FILE_TABLE_OFFSET   0047UL
 #define PROC_USTACK_BASE         0101UL
 #define PROC_STDIO_MASK          0007UL
+#define PROC_SESSION_MASK         0377UL
+#define PROC_SESSION_SHIFT            3U
+#define PROC_DOMAIN_MASK          0377UL
+#define PROC_DOMAIN_SHIFT            11U
+#define PROC_EVENT_MASK           0177UL
+#define PROC_EVENT_SHIFT             19U
+#define PROC_STOP_MASK              03UL
+#define PROC_STOP_SHIFT              26U
+#define PROC_STOP_JOB                01U
+#define PROC_STOP_MM                 02U
+#define PROC_REPORT_MASK             03UL
+#define PROC_REPORT_SHIFT               28U
+#define PROC_REPORT_NONE              0U
+#define PROC_REPORT_STOPPED           1U
+#define PROC_REPORT_CONTINUED         2U
+/* Top six control-word bits encode NO_TTY, DETACHED, or tty-id+2. */
+#define PROC_TTY_MASK                 077UL
+#define PROC_TTY_SHIFT                   30U
+#define PROC_TTY_NO_TTY                 0U
+#define PROC_TTY_DETACHED               1U
+#define PROC_TTY_ATTACHED_BASE          2U
+#define PROC_TTY_COUNT                  21U
+#define PROC_ZOMB_SESSION_MASK       0377UL
+#define PROC_ZOMB_SESSION_SHIFT          0U
+#define PROC_ZOMB_DOMAIN_MASK        0377UL
+#define PROC_ZOMB_DOMAIN_SHIFT           8U
 #define PROC_KSTACK_WORDS \
         (PROC_UAREA_WORDS - PROC_USTACK_BASE)
 
@@ -106,7 +135,15 @@ int proc_boot_init(void);
 unsigned int proc_slots_for_core(kword_t core_words);
 int proc_slot_claim(unsigned int parent_slot);
 int proc_exit_finish(int status);
+void proc_exit_current(int status);
 int proc_slot_discard(unsigned int slot);
+int proc_child_hierarchy(unsigned int child_slot, unsigned int mode,
+    unsigned int requested_pgrp);
+int proc_tty_read_enter(unsigned int tty_id);
+int proc_tty_input(unsigned int tty_id, unsigned int ch);
+void proc_sched_resched_current(void);
+unsigned int proc_session_id(const struct proc *p);
+unsigned int proc_domain_id(const struct proc *p);
 int proc_wait_child(void);
 kword_t proc_comm(const struct proc *p);
 int proc_wait_event(volatile kword_t *eventp);
@@ -120,6 +157,8 @@ int proc_user_context_init(unsigned int slot, kword_t entry, kword_t stack,
     kword_t ac1, kword_t ac2, kword_t ac3);
 void proc_sched_pi_tick(void);
 
+#define PROC_PGRP(p) \
+        ((unsigned int)(((p)->meta >> PROC_PGRP_SHIFT) & PROC_PGRP_MASK))
 #define PROC_PARENT_SLOT(p) \
         ((unsigned int)(((p)->meta >> PROC_PARENT_SHIFT) & PROC_PARENT_MASK))
 #define PROC_FLAGS(p) \
@@ -138,12 +177,35 @@ void proc_sched_pi_tick(void);
 #define PROC_SET_META_LH(p, v) \
         ((p)->meta = ((p)->meta & PROC_HALF_MASK) | \
         (((kword_t)(v) & PROC_HALF_MASK) << PROC_HALF_SHIFT))
+#define PROC_SET_PGRP(p, v) \
+        ((p)->meta = ((p)->meta & \
+        ~((kword_t)PROC_PGRP_MASK << PROC_PGRP_SHIFT)) | \
+        (((kword_t)(v) & PROC_PGRP_MASK) << PROC_PGRP_SHIFT))
 #define PROC_SET_PARENT_SLOT(p, v) \
         ((p)->meta = ((p)->meta & \
         ~((kword_t)PROC_PARENT_MASK << PROC_PARENT_SHIFT)) | \
         (((kword_t)(v) & PROC_PARENT_MASK) << PROC_PARENT_SHIFT))
 #define PROC_UAREA_WORD(p, off) \
         (((kword_t *)(unsigned long)PROC_UAREA_BASE(p))[(off)])
+#define PROC_CTL_WORD(p) PROC_UAREA_WORD((p), PROC_FDCTL_OFFSET)
+#define PROC_SESSION(p) \
+        ((unsigned int)((PROC_CTL_WORD(p) >> PROC_SESSION_SHIFT) & \
+        PROC_SESSION_MASK))
+#define PROC_DOMAIN(p) \
+        ((unsigned int)((PROC_CTL_WORD(p) >> PROC_DOMAIN_SHIFT) & \
+        PROC_DOMAIN_MASK))
+#define PROC_EVENTS(p) \
+        ((unsigned int)((PROC_CTL_WORD(p) >> PROC_EVENT_SHIFT) & \
+        PROC_EVENT_MASK))
+#define PROC_STOP_REASONS(p) \
+        ((unsigned int)((PROC_CTL_WORD(p) >> PROC_STOP_SHIFT) & \
+        PROC_STOP_MASK))
+#define PROC_WAIT_REPORT(p) \
+        ((unsigned int)((PROC_CTL_WORD(p) >> PROC_REPORT_SHIFT) & \
+        PROC_REPORT_MASK))
+#define PROC_TTY_STATE(p) \
+        ((unsigned int)((PROC_CTL_WORD(p) >> PROC_TTY_SHIFT) & \
+        PROC_TTY_MASK))
 #define PROC_NICE_ENCODED(p) \
         ((unsigned int)(((p)->sched >> PROC_NICE_SHIFT) & PROC_NICE_MASK))
 #define PROC_CPU_PENALTY(p) \
@@ -155,6 +217,12 @@ void proc_sched_pi_tick(void);
 #define PROC_STATE(p) \
         ((unsigned int)(((p)->sched >> PROC_STATE_SHIFT) & PROC_STATE_MASK))
 #define PROC_WAIT_CHANNEL(p) ((kword_t)((p)->sched & PROC_SCHED_RH_MASK))
+#define PROC_ZOMB_SESSION(p) \
+        ((unsigned int)(((p)->sched >> PROC_ZOMB_SESSION_SHIFT) & \
+        PROC_ZOMB_SESSION_MASK))
+#define PROC_ZOMB_DOMAIN(p) \
+        ((unsigned int)(((p)->sched >> PROC_ZOMB_DOMAIN_SHIFT) & \
+        PROC_ZOMB_DOMAIN_MASK))
 
 #define PROC_SET_STATE(p, s) \
         ((p)->sched = ((p)->sched & ~PROC_STATE_BITS) | \

@@ -11,7 +11,6 @@ MKSTREAM ?= $(PDP10_PREFIX)/bin/mkstream
 MKDSK ?= $(PDP10_PREFIX)/bin/mkdsk
 MKD6FS ?= $(PDP10_PREFIX)/bin/mkd6fs
 LOGSTORE ?= $(PDP10_PREFIX)/bin/logstore
-MKINITFS0 ?= $(PDP10_PREFIX)/bin/mkinitfs0
 SIMH_PDP6 ?= $(PDP10_PREFIX)/bin/pdp6
 PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
 PDP10_OBJDUMP ?= $(PDP10_PREFIX)/bin/pdp10-objdump
@@ -98,7 +97,6 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/fs/file_pdp10.s \
 	$(KERNEL_DIR)/fs/fs_mres.h \
 	$(KERNEL_DIR)/fs/fs_mres_pdp10.s \
-	$(KERNEL_DIR)/fs/initfs.h \
 	$(KERNEL_DIR)/fs/memfs.c \
 	$(KERNEL_DIR)/fs/memfs.h \
 	$(KERNEL_DIR)/fs/memfs_pdp10.s \
@@ -198,13 +196,12 @@ D6FS_MRES_OBJ = $(BUILD)/d6fs-mres.dobj
 MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PTR_MRES_OBJ) \
 	$(PTP_MRES_OBJ) $(CR_MRES_OBJ) $(CP_MRES_OBJ) \
 	$(DCS_MRES_OBJ) $(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) \
-	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(DSK_MRES_OBJ) $(TAPE_MRES_OBJ) $(SLV_MRES_OBJ) \
-	$(MEMFS_MRES_OBJ) $(DTFS_MRES_OBJ) $(DISKSET_MRES_OBJ) $(D6FS_MRES_OBJ)
+	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(TAPE_MRES_OBJ) $(DSK_MRES_OBJ) \
+	$(DISKSET_MRES_OBJ) $(MEMFS_MRES_OBJ) $(DTFS_MRES_OBJ) $(D6FS_MRES_OBJ) \
+	$(SLV_MRES_OBJ)
 
 MINIT_TABLE_OBJ = $(BUILD)/module-table-runtime.dobj
 END_OBJ = $(BUILD)/image-end.dobj
-DISKBOOT_INITFS_ASM = $(BUILD)/initfs-diskboot.s
-DISKBOOT_INITFS_OBJ = $(BUILD)/initfs-diskboot.dobj
 IMAGE_DXR = $(BUILD)/kinit.dxr
 IMAGE_MAP = $(BUILD)/kinit.map
 IMAGE_RIM = $(BUILD)/kinit.rim
@@ -405,19 +402,11 @@ $(DSH_DXR): $(USERLAND_INPUTS)
 	$(MAKE) -C $(PROJECT_ROOT)/userland build BUILD_ROOT='$(USERLAND_BUILD_ROOT)' \
 	    PDP10_PREFIX='$(PDP10_PREFIX)'
 
-# Diskboot reads /SYSTEM/INIT exclusively from D6FS.  KINIT carries only the
-# empty bootstrap namespace header.
-$(DISKBOOT_INITFS_ASM): $(BUILD)
-	$(MKINITFS0) --label __initfs_begin -o $@
-
-$(DISKBOOT_INITFS_OBJ): $(DISKBOOT_INITFS_ASM)
-	$(DAS) -c -o $@ $<
-
 $(IMAGE_DXR): $(MINIT_TABLE_OBJ) $(KCORE_EMBED_OBJ) $(KINIT_OBJS) \
-    $(MRES_PACKAGE_OBJS) $(DISKBOOT_INITFS_OBJ) $(KINIT_LATE_OBJS) $(END_OBJ) $(KCORE_MAP)
+    $(MRES_PACKAGE_OBJS) $(KINIT_LATE_OBJS) $(END_OBJ) $(KCORE_MAP)
 	$(DLINK) -b 030000 -A $(KCORE_MAP) -o $@ -M $(IMAGE_MAP) \
 	    $(MINIT_TABLE_OBJ) $(KCORE_EMBED_OBJ) $(KINIT_OBJS) \
-	    $(MRES_PACKAGE_OBJS) $(DISKBOOT_INITFS_OBJ) $(KINIT_LATE_OBJS) $(END_OBJ)
+	    $(MRES_PACKAGE_OBJS) $(KINIT_LATE_OBJS) $(END_OBJ)
 
 $(IMAGE_MAP): $(IMAGE_DXR)
 	@test -f $@

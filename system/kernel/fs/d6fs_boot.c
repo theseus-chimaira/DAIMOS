@@ -15,18 +15,16 @@ d6fs_boot_block_buffer(void)
 
 static int
 d6fs_boot_runtime_init(const struct d6fs_super_info *super,
-    unsigned int flags, kword_t super_a, kword_t super_b, unsigned int copy,
-    vnode_t *rootp)
+    unsigned int flags, kword_t super_a, kword_t super_b, unsigned int copy)
 {
         struct d6fs_reader *reader;
-        vnode_t target;
         vnode_t root;
         unsigned int id;
         unsigned int writable;
         kword_t *scratch;
         kword_t dirty_block;
 
-        if (super == 0 || rootp == 0 || copy > 1U || super_a == super_b ||
+        if (super == 0 || copy > 1U || super_a == super_b ||
             super->total_blocks == 0UL || super->fcb_count == 0UL ||
             super->root_fcb >= super->fcb_count ||
             d6fs_provider_reader_addr == 0U ||
@@ -38,8 +36,11 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
         if (!writable)
                 flags |= VFS_MOUNT_RDONLY;
 
-        target = vfs_namespace_root;
-        if (vfs_mount(target, D6FS_PROVIDER, D6FS_KIND_NODE,
+        /* Disk boot owns initial namespace creation.  There is no
+         * temporary root to replace or rebind. */
+        if (vfs_namespace_root != VFS_NODE_NONE)
+                return -1;
+        if (vfs_mount(VFS_NODE_NONE, D6FS_PROVIDER, D6FS_KIND_NODE,
             super->root_fcb, flags, &root) != 0)
                 return -1;
         id = VFS_MOUNT_ID(root);
@@ -76,7 +77,6 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
                     ((copy ^ 1U) ? D6FS_PROVIDER_MOUNT_COPY : 0U));
         }
 
-        *rootp = root;
         return 0;
 
 fail:
@@ -87,7 +87,7 @@ fail:
 }
 
 int
-d6fs_boot_mount_root(unsigned int flags, vnode_t *rootp)
+d6fs_boot_mount_root(unsigned int flags)
 {
         kword_t a[D6FS_SUPER_WORDS];
         kword_t b[D6FS_SUPER_WORDS];
@@ -101,8 +101,6 @@ d6fs_boot_mount_root(unsigned int flags, vnode_t *rootp)
         int rc;
         struct vfs_stat st;
 
-        if (rootp == 0)
-                return -1;
         scratch = d6fs_boot_block_buffer();
         rc = diskset_boot_discover(&super_a, &super_b);
         if (rc != 0)
@@ -119,16 +117,15 @@ d6fs_boot_mount_root(unsigned int flags, vnode_t *rootp)
                 b[i] = scratch[i];
         if (d6fs_super_select(a, b, total, &super, &copy) != 0)
                 return -1;
-        rc = d6fs_boot_runtime_init(&super, flags, super_a, super_b, copy,
-            rootp);
+        rc = d6fs_boot_runtime_init(&super, flags, super_a, super_b, copy);
         if (rc != 0)
                 return rc;
-        if (*rootp == VFS_NODE_NONE || vfs_stat(*rootp, &st) != 0 ||
+        if (vfs_namespace_root == VFS_NODE_NONE ||
+            vfs_stat(vfs_namespace_root, &st) != 0 ||
             st.type != VFS_TYPE_DIR) {
-                (void)vfs_unmount(*rootp);
-                *rootp = VFS_NODE_NONE;
+                if (vfs_namespace_root != VFS_NODE_NONE)
+                        (void)vfs_unmount(vfs_namespace_root);
                 return -1;
         }
-        vfs_namespace_root = *rootp;
         return 0;
 }

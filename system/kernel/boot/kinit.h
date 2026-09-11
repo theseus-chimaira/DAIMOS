@@ -43,7 +43,7 @@ void kinit_halt(void);
 void kinit_user_trap_init(void);
 void kcore_boot_handoff(kword_t stack_base, kword_t reclaim_base,
     kword_t reclaim_words);
-void kinit_boot(void);
+void kinit_boot(kword_t future_free_words);
 
 #ifdef KINIT_DEBUG
 void kinit_diag_finished(void);
