@@ -84,15 +84,11 @@ KINIT_C_ASM = $(BUILD)/kinit.s \
 	$(BUILD)/proc_boot.s \
 	$(BUILD)/proc_swap_boot.s
 
-KINIT_LATE_SRCS = proc/exec.c \
-	proc/proc_late.c \
-	proc/proc_swap_late.c \
+KINIT_LATE_SRCS = proc/proc_late.c \
 	mm/mm_boot.c \
 	boot/kinit_late.c
 
-KINIT_LATE_C_ASM = $(BUILD)/exec.s \
-	$(BUILD)/proc_late.s \
-	$(BUILD)/proc_swap_late.s \
+KINIT_LATE_C_ASM = $(BUILD)/proc_late.s \
 	$(BUILD)/mm_boot.s \
 	$(BUILD)/kinit_late.s
 
@@ -103,7 +99,8 @@ KINIT_FIXED_SRCS = boot/kinit_io.s \
 
 KINIT_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${BUILD}/kinit_io.s ${BUILD}/module_io.s ${BUILD}/bootbanner_generated.s ${BUILD}/kinit_late_begin.s ${BUILD}/kinit_late_end.s
 
-KCORE_C_SRCS = fs/vfs.c \
+KCORE_C_SRCS = proc/exec.c \
+	fs/vfs.c \
 	fs/devicefs.c \
 	fs/procfs.c \
 	mm/mm.c \
@@ -112,7 +109,8 @@ KCORE_C_SRCS = fs/vfs.c \
 	proc/proc_swap.c \
 	fs/file.c
 
-KCORE_C_ASM = $(BUILD)/vfs.s \
+KCORE_C_ASM = $(BUILD)/exec.s \
+	$(BUILD)/vfs.s \
 	$(BUILD)/devicefs.s \
 	$(BUILD)/procfs.s \
 	$(BUILD)/mm.s \
@@ -128,6 +126,7 @@ KCORE_FIXED_SRCS = core/ret_pdp10.s \
 	fs/fs_mres_pdp10.s \
 	fs/file_pdp10.s \
 	proc/proc_pdp10.s \
+	proc/proc_run_pdp10.s \
 	drivers/device_state_pdp10.s \
 	fs/devicefs_pdp10.s \
 	proc/syscall_info_pdp10.s \
@@ -138,7 +137,8 @@ KCORE_FIXED_SRCS = core/ret_pdp10.s \
 	storage/storage_router.s \
 	core/kcore_end.s
 
-KCORE_FIXED_ASM = $(BUILD)/vfs.s \
+KCORE_FIXED_ASM = $(BUILD)/exec.s \
+	$(BUILD)/vfs.s \
 	$(BUILD)/devicefs.s \
 	$(BUILD)/procfs.s \
 	$(BUILD)/mm.s \
@@ -153,6 +153,7 @@ KCORE_FIXED_ASM = $(BUILD)/vfs.s \
 	$(BUILD)/fs_mres_pdp10.s \
 	$(BUILD)/file_pdp10.s \
 	$(BUILD)/proc_pdp10.s \
+	$(BUILD)/proc_run_pdp10.s \
 	$(BUILD)/device_state_pdp10.s \
 	$(BUILD)/devicefs_pdp10.s \
 	$(BUILD)/syscall_info_pdp10.s \
@@ -250,6 +251,10 @@ ${BUILD}/dtfs.s: fs/dtfs.c fs/dtfs_chain_walk_pdp10.s fs/dtfs_resize_pdp10.s ${K
 ${BUILD}/proc_pdp10.s: proc/proc_pdp10.s
 	@mkdir -p ${BUILD}
 	{ echo ".set PROC_STACK_WATERMARK,${PROC_STACK_WATERMARK}"; cat proc/proc_pdp10.s; } > $@
+
+${BUILD}/proc_run_pdp10.s: proc/proc_run_pdp10.s
+	@mkdir -p ${BUILD}
+	{ echo ".set PROC_STACK_WATERMARK,${PROC_STACK_WATERMARK}"; cat proc/proc_run_pdp10.s; } > $@
 
 ${BUILD}/dtfs_pdp10.s: fs/dtfs_pdp10.s
 	@mkdir -p ${BUILD}

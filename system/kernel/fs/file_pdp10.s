@@ -58,6 +58,34 @@ file_path_setchar:
         .globl  vfs_readchar
         .globl  vfs_writechar
 
+; int file_stdio_enabled(unsigned int fd)
+; Native descriptors 0..2 have explicit RUN inheritance bits two words before
+; file_table.  Ordinary descriptors remain in the regular file table.
+        .globl  file_stdio_enabled
+file_stdio_enabled:
+        caile   1,2
+        jrst    pdp10_ret_zero
+        skipn   2,file_table
+        jrst    pdp10_ret_zero
+        move    2,-2(2)
+        jumpe   1,file_stdio_check0
+        caie    1,1
+        jrst    file_stdio_check2
+        trnn    2,2
+        jrst    pdp10_ret_zero
+        movei   1,1
+        popj    17,
+file_stdio_check0:
+        trnn    2,1
+        jrst    pdp10_ret_zero
+        movei   1,1
+        popj    17,
+file_stdio_check2:
+        trnn    2,4
+        jrst    pdp10_ret_zero
+        movei   1,1
+        popj    17,
+
 ; int file_readchar(int fd)
 ; Validate the descriptor exactly as the C wrapper did, then advance the
 ; character offset only after a successful one-character VFS transfer.

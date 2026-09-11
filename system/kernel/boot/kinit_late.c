@@ -61,7 +61,7 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
                 if (init_slot != (int)slot)
                         return;
                 p = &proc_table[slot];
-                if (exec_load_init(p, slot, init_path) != 0)
+                if (exec_load_process(p, slot, init_path) != 0)
                         return;
                 PROC_SET_STATE(p, PROC_SRUN);
                 entry = PROC_ENTRY(p);
@@ -74,6 +74,7 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
                 if (proc_user_context_init(slot, entry, stack,
                     (kword_t)slot, 0UL, 0UL) != 0)
                         return;
+                PROC_UAREA_WORD(p, PROC_FDCTL_OFFSET) = PROC_STDIO_MASK;
         }
 
         p = &proc_table[1];

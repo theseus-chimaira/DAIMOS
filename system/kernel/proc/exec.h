@@ -15,7 +15,7 @@
 #define EXEC_DXR_MAX_BSS_WORDS      020000U
 #define EXEC_DXR_TEXT_TAG            0647022U /* SIXBIT /TX2/ */
 
-int exec_load_init(struct proc *p, unsigned int owner,
+int exec_load_process(struct proc *p, unsigned int owner,
     const kword_t *path);
 
 #endif

@@ -33,6 +33,9 @@
         .globl dsys_dup
         .globl dsys_symlink
         .globl dsys_nice
+        .globl dsys_run
+        .globl dsys_wait
+        .globl dsys_getpid
 
 dsys_exit:             uuo 040,0(1)
                        popj 17,
@@ -85,4 +88,10 @@ dsys_dup:              uuo 071,0(1)
 dsys_symlink:          uuo 072,0(1)
                        popj 17,
 dsys_nice:             uuo 073,0(1)
+                       popj 17,
+dsys_run:              uuo 074,0(1)
+                       popj 17,
+dsys_wait:             uuo 075,0(1)
+                       popj 17,
+dsys_getpid:           uuo 076,0
                        popj 17,

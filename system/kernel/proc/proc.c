@@ -3,6 +3,7 @@
 #include "mm.h"
 #include "proc_swap.h"
 #include "procfs.h"
+#include "syscall.h"
 
 #define PROC_UAREA_MM_OWNER_BASE 01000U
 
@@ -56,33 +57,118 @@ proc_uarea_release(unsigned int slot, struct proc *p)
         return 0;
 }
 
-static inline int
-proc_slot_cleanup(unsigned int slot, struct proc *p)
+static inline void
+proc_trim_high(void)
 {
-        proc_swap_detach(slot);
-        if (proc_uarea_release(slot, p) != 0)
-                return -1;
-        p->meta = 0UL;
-        p->mem_layout = 0UL;
-        p->sched = 0UL;
         while (proc_high_slot > 1U &&
             PROC_STATE(&proc_table[proc_high_slot - 1U]) == PROC_FREE)
                 --proc_high_slot;
+}
+
+static inline void
+proc_slot_zero(struct proc *p)
+{
+        p->meta = 0UL;
+        p->mem_layout = 0UL;
+        p->sched = 0UL;
+}
+
+int
+proc_slot_discard(unsigned int slot)
+{
+        struct proc *p;
+        kword_t base;
+
+        if (proc_table == 0 || slot == 0U || slot >= proc_slots)
+                return -1;
+        p = &proc_table[slot];
+        if (PROC_STATE(p) == PROC_FREE)
+                return 0;
+        base = PROC_MEM_BASE(p);
+        if (base != 0UL && mm_free(base, MM_TYPE_PROCESS, slot) != MM_OK)
+                return -1;
+        proc_swap_detach(slot);
+        if (proc_uarea_release(slot, p) != 0)
+                return -1;
+        proc_slot_zero(p);
+        proc_trim_high();
+        return 0;
+}
+
+static void
+proc_wake_parent(unsigned int parent)
+{
+        struct proc *p;
+
+        if (parent == 0U || proc_table == 0 || parent >= proc_slots)
+                return;
+        p = &proc_table[parent];
+        if (PROC_STATE(p) != PROC_SLEEP ||
+            PROC_WAIT_CLASS(p) != PROC_WAIT_CHILD)
+                return;
+        proc_set_field(p, PROC_WAIT_MASK, PROC_WAIT_SHIFT, PROC_WAIT_NONE);
+        p->sched &= ~PROC_SCHED_RH_MASK;
+        PROC_SET_STATE(p, PROC_SRUN);
+}
+
+static void
+proc_adopt_children(unsigned int old_parent)
+{
+        unsigned int i;
+        unsigned int new_parent;
+
+        if (proc_table == 0)
+                return;
+        new_parent = 0U;
+        if (old_parent != 1U && proc_slots > 1U &&
+            PROC_STATE(&proc_table[1]) != PROC_FREE &&
+            PROC_STATE(&proc_table[1]) != PROC_ZOMB)
+                new_parent = 1U;
+        for (i = 1U; i < proc_high_slot; ++i) {
+                struct proc *child;
+
+                if (i == old_parent)
+                        continue;
+                child = &proc_table[i];
+                if (PROC_STATE(child) == PROC_FREE ||
+                    PROC_PARENT_SLOT(child) != old_parent)
+                        continue;
+                if (new_parent == 0U && PROC_STATE(child) == PROC_ZOMB) {
+                        proc_slot_zero(child);
+                        continue;
+                }
+                PROC_SET_PARENT_SLOT(child, new_parent);
+                if (new_parent != 0U && PROC_STATE(child) == PROC_ZOMB)
+                        proc_wake_parent(new_parent);
+        }
+        proc_trim_high();
+}
+
+static int
+proc_has_live_user(void)
+{
+        unsigned int i;
+
+        for (i = 1U; i < proc_high_slot; ++i) {
+                unsigned int state;
+
+                state = PROC_STATE(&proc_table[i]);
+                if (state != PROC_FREE && state != PROC_ZOMB)
+                        return 1;
+        }
         return 0;
 }
 
 /*
- * Finish EXIT after the assembly boundary has moved execution off the
- * process-private u-area stack and disabled priority interrupts.  No code may
- * touch the old process extent after mm_free() succeeds.
- *
- * Return 1 if another user process still exists, 0 for the normal final-user
- * shutdown case, and -1 if the exiting slot could not be released safely.
+ * Finish EXIT after assembly has moved execution to the permanent idle stack.
+ * Heavy process resources are released immediately.  A child with a live
+ * parent keeps only its three-word descriptor as a zombie until WAIT reaps it.
  */
 int
-proc_exit_finish(void)
+proc_exit_finish(int status)
 {
         unsigned int slot;
+        unsigned int parent;
         struct proc *p;
         kword_t base;
 
@@ -93,18 +179,80 @@ proc_exit_finish(void)
         base = PROC_MEM_BASE(p);
         if (PROC_STATE(p) == PROC_FREE || base == 0UL || PROC_TRANSITION(p))
                 return -1;
+        parent = PROC_PARENT_SLOT(p);
 
-        p->meta |= (kword_t)PROC_F_TRANSITION << PROC_FLAGS_SHIFT;
+        PROC_SET_TRANSITION(p);
         proc_current_slot = 0UL;
         if (mm_free(base, MM_TYPE_PROCESS, slot) != MM_OK) {
                 proc_current_slot = (kword_t)slot;
-                p->meta &= ~((kword_t)PROC_F_TRANSITION << PROC_FLAGS_SHIFT);
+                PROC_CLEAR_TRANSITION(p);
                 return -1;
         }
-
-        if (proc_slot_cleanup(slot, p) != 0)
+        proc_swap_detach(slot);
+        p->mem_layout = 0UL;
+        if (proc_uarea_release(slot, p) != 0)
                 return -1;
-        return proc_high_slot > 1U ? 1 : 0;
+        proc_adopt_children(slot);
+
+        if (parent == 0U) {
+                proc_slot_zero(p);
+                proc_trim_high();
+                return proc_has_live_user();
+        }
+
+        p->meta = ((kword_t)parent << PROC_PARENT_SHIFT) |
+            (((kword_t)status & PROC_HALF_MASK) << PROC_HALF_SHIFT);
+        p->sched = PROC_SCHED_DEFAULT;
+        PROC_SET_STATE(p, PROC_ZOMB);
+        proc_wake_parent(parent);
+        return proc_has_live_user();
+}
+
+int
+proc_wait_status(unsigned int selector, kword_t *statusp, unsigned int flags)
+{
+        unsigned int parent;
+
+        if ((flags & ~SYS_WAIT_NOHANG) != 0U ||
+            (selector & SYS_WAIT_PGRP_FLAG) != 0U ||
+            (selector & ~SYS_WAIT_ID_MASK) != 0U)
+                return -1;
+        parent = (unsigned int)proc_current_slot;
+        if (parent == 0U || proc_table == 0)
+                return -1;
+
+        for (;;) {
+                unsigned int i;
+                int have_child;
+
+                have_child = 0;
+                for (i = 1U; i < proc_high_slot; ++i) {
+                        struct proc *child;
+
+                        child = &proc_table[i];
+                        if (PROC_STATE(child) == PROC_FREE ||
+                            PROC_PARENT_SLOT(child) != parent)
+                                continue;
+                        if (selector != 0U &&
+                            (selector & SYS_WAIT_ID_MASK) != i)
+                                continue;
+                        have_child = 1;
+                        if (PROC_STATE(child) != PROC_ZOMB)
+                                continue;
+                        if (statusp != 0)
+                                *statusp = SYS_WAIT_STATUS(SYS_WAIT_EXITED,
+                                    PROC_EXIT_STATUS(child));
+                        proc_slot_zero(child);
+                        proc_trim_high();
+                        return (int)i;
+                }
+                if (!have_child)
+                        return -1;
+                if ((flags & SYS_WAIT_NOHANG) != 0U)
+                        return 0;
+                if (proc_wait_child() != 0)
+                        return -1;
+        }
 }
 
 kword_t

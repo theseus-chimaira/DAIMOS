@@ -6,7 +6,7 @@
 ; mach_syscall_save below.  JRST 2,@save restores user mode and logical PC.
 ;
 ; User ABI:
-;   UUO opcode  monitor selector 040..073
+;   UUO opcode  monitor selector 040..077
 ;   UUO EA      arg0 (18-bit pointer/scalar)
 ;   AC2..AC4    arg1..arg3
 ;   AC1         return value

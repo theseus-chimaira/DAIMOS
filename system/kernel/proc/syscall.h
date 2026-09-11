@@ -3,8 +3,8 @@
 
 #include "file.h"
 
-/* PDP-6 monitor-UUO ABI.  043 is the bulk character-stream write call;
- * 074..077 stay reserved for process/self-hosting extension. */
+/* PDP-6 monitor-UUO ABI.  043 is the bulk character-stream write call.
+ * 074..077 are the compact process/self-hosting extension bank. */
 #define SYS_WRITE            1U      /* unsupported legacy generic call */
 #define SYS_READ             4U      /* unsupported legacy generic call */
 #define SYS_EXIT             040U
@@ -35,8 +35,43 @@
 #define SYS_DUP              071U
 #define SYS_SYMLINK          072U
 #define SYS_NICE             073U
-#define SYS_UUO_EXT_FIRST    074U
-#define SYS_UUO_EXT_LAST     077U
+#define SYS_RUN             074U
+#define SYS_WAIT            075U
+#define SYS_GETPID          076U
+#define SYS_PROCCTL         077U
+#define SYS_UUO_EXT_FIRST   SYS_RUN
+#define SYS_UUO_EXT_LAST    SYS_PROCCTL
+
+#define SYS_RUN_VERSION_1       1U
+#define SYS_RUN_V1_FIXED_WORDS  7U
+#define SYS_RUN_V1_MIN_WORDS    9U
+#define SYS_RUN_FD_MAX         16U
+#define SYS_RUN_PATH_MAX_CHARS 102U
+#define SYS_RUN_PGRP_INHERIT    0U
+#define SYS_RUN_PGRP_NEW        1U
+#define SYS_RUN_PGRP_JOIN       2U
+#define SYS_RUN_FD_MAP(child_fd, parent_fd) \
+        ((((kword_t)(child_fd) & 017UL) << 18U) | \
+        ((kword_t)(parent_fd) & 017UL))
+#define SYS_RUN_HEADER(version, words) \
+        ((((kword_t)(version) & 0777777UL) << 18U) | \
+        ((kword_t)(words) & 0777777UL))
+
+#define SYS_WAIT_NOHANG         0001U
+#define SYS_WAIT_PGRP_FLAG      0400U
+#define SYS_WAIT_ID_MASK        0377U
+#define SYS_WAIT_KIND_SHIFT       18U
+#define SYS_WAIT_KIND_MASK         03U
+#define SYS_WAIT_EXITED             1U
+#define SYS_WAIT_STOPPED            2U
+#define SYS_WAIT_CONTINUED          3U
+#define SYS_WAIT_STATUS(kind, value) \
+        ((((kword_t)(kind) & SYS_WAIT_KIND_MASK) << SYS_WAIT_KIND_SHIFT) | \
+        ((kword_t)(value) & 0777777UL))
+#define SYS_WAIT_STATUS_KIND(status) \
+        ((unsigned int)(((status) >> SYS_WAIT_KIND_SHIFT) & SYS_WAIT_KIND_MASK))
+#define SYS_WAIT_STATUS_VALUE(status) \
+        ((unsigned int)((status) & 0777777UL))
 
 #define SYS_MOUNT_RW         0U
 #define SYS_MOUNT_RDONLY     1U
@@ -62,6 +97,17 @@
 
 #define SYS_PROC_SLOTS       256U
 
+struct sys_run_v1 {
+        kword_t version_words;
+        kword_t flags;
+        kword_t pgrp;
+        kword_t fdmap_count;
+        kword_t ac1;
+        kword_t ac2;
+        kword_t ac3;
+        kword_t path[1];
+};
+
 struct sys_procinfo {
         kword_t pid;
         kword_t ppid;
@@ -82,6 +128,8 @@ struct sys_meminfo {
         kword_t file_slots_total;
 };
 
+int proc_run_block(const struct sys_run_v1 *args, unsigned int available_words);
+int proc_wait_status(unsigned int selector, kword_t *statusp, unsigned int flags);
 int sys_procinfo(unsigned int slot, struct sys_procinfo *info);
 int sys_meminfo(struct sys_meminfo *info);
 

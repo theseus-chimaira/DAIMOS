@@ -1,6 +1,6 @@
 ; syscall_dispatch.s -- native PDP-6 monitor-UUO syscall dispatcher.
 ;
-; Monitor UUOs 040..073 are the conventional userspace syscall ABI.  UUO 043
+; Monitor UUOs 040..077 are the conventional userspace syscall ABI.  UUO 043
 ; is the bulk character-stream write path.  The hardware
 ; leaves the trapped UUO at 000040 and its computed effective address at
 ; 000041.  mach_user materializes that effective address in AC1, so real
@@ -27,6 +27,10 @@ sys_user_words:
         .globl  exec_native_syscall
         .globl  proc_nice_current
         .globl  proc_exit_current
+        .globl  proc_run_block
+        .globl  proc_wait_status
+        .globl  proc_current_slot
+        .globl  file_stdio_enabled
 exec_native_syscall:
         ; Recover the monitor-UUO opcode from the trapped instruction.
         ; AC0 cannot be an index register on the PDP-6: index field zero
@@ -35,7 +39,7 @@ exec_native_syscall:
         lsh     5,-011
         subi    5,040
         jumpl   5,%L137
-        caile   5,033                   ; opcodes 040..073 inclusive
+        caile   5,037                   ; opcodes 040..077 inclusive
         jrst    %L137
         jrst    @exec_native_table(5)
 exec_native_table:
@@ -67,11 +71,26 @@ exec_native_table:
         .word   native_sys_dup          ; 071 DUP
         .word   native_sys_symlink      ; 072 SYMLINK
         .word   native_sys_nice         ; 073 NICE
+        .word   native_sys_run          ; 074 RUN
+        .word   native_sys_wait         ; 075 WAIT
+        .word   native_sys_getpid       ; 076 GETPID
+        .word   %L137                    ; 077 PROCCTL (reserved)
 
 ; UUO 043 WRITE_CHARS: AC1 console fd, AC2 9-bit byte pointer, AC3 chars.
 ; This is deliberately the console fast path only.  Regular-file stream writes
 ; retain WRITECHAR semantics in libc; CAT uses this call only for console output.
 native_sys_write_chars:
+        push    17,2                  ; preserve user byte pointer
+        push    17,3                  ; preserve character count
+        hrrz    1,1
+        caige   1,1
+        jrst    native_sys_write_chars_stdio_bad
+        caile   1,2
+        jrst    native_sys_write_chars_stdio_bad
+        pushj   17,file_stdio_enabled
+        jumpe   1,native_sys_write_chars_stdio_bad
+        pop     17,3
+        pop     17,2
         hrrz    6,3                   ; character count
         jumpe   6,native_sys_write_chars_ok
         move    5,2                   ; logical 9-bit byte pointer
@@ -95,12 +114,17 @@ native_sys_write_chars_loop:
 native_sys_write_chars_ok:
         setz    1,
         popj    17,
+native_sys_write_chars_stdio_bad:
+        pop     17,3
+        pop     17,2
 native_sys_write_chars_fail:
         seto    1,
         popj    17,
 
 %L66:
+        push    17,1
         pushj   17,file_close_all
+        pop     17,1
         ; EXIT never returns through the dying process's u-area stack.
         jrst    proc_exit_current
 %L67:
@@ -215,7 +239,7 @@ native_sys_write_chars_fail:
         jrst    sys_meminfo
 %L134:
         hrrz    1,1
-        jumpe   1,native_sys_getchar
+        jumpe   1,native_sys_readchar_stdio
         pushj   17,file_readchar
         camn    1,[-3]
         jrst    native_sys_getchar
@@ -235,9 +259,19 @@ native_sys_write_chars_fail:
         came    1,[-3]
         jrst    %L65
 native_sys_writechar_tty:
+        push    17,2
+        pushj   17,file_stdio_enabled
+        pop     17,2
+        jumpe   1,%L137
         move    1,2
         andi    1,0777
         jrst    native_sys_putchar
+
+native_sys_readchar_stdio:
+        movei   1,0
+        pushj   17,file_stdio_enabled
+        jumpe   1,%L137
+        jrst    native_sys_getchar
 
 ; Return the DTC0 vnode for a valid translated user path, or zero on failure.
 ; A one-word process-private kernel-stack temporary replaces the old global
@@ -379,7 +413,41 @@ native_sys_nice:
         tlo     1,0777777
         jrst    proc_nice_current
 
+native_sys_run:
+        ; AC1 points at an inline, versioned RUN block.  Translate once and
+        ; pass the number of user words remaining after that address as AC2.
+        pushj   17,sys_user_words
+        jumpe   1,%L137
+        move    2,4
+        add     2,3
+        sub     2,1
+        jrst    proc_run_block
+
+native_sys_wait:
+        ; AC1 selector, AC2 optional status word pointer, AC3 flags.
+        move    5,1
+        move    6,3
+        move    1,2
+        jumpe   1,native_sys_wait_no_status
+        pushj   17,sys_user_words
+        jumpe   1,%L137
+        move    2,1
+        jrst    native_sys_wait_call
+native_sys_wait_no_status:
+        setz    2,
+native_sys_wait_call:
+        hrrz    1,5
+        hrrz    3,6
+        jrst    proc_wait_status
+
+native_sys_getpid:
+        move    1,proc_current_slot
+        popj    17,
+
 native_sys_getchar:
+        movei   1,0
+        pushj   17,file_stdio_enabled
+        jumpe   1,%L137
         seto    1,
         .globl  native_sys_getchar_call
 native_sys_getchar_call:

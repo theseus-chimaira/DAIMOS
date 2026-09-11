@@ -13,10 +13,11 @@
         .equ    PROC_STATE_SLEEP,0300000
         .equ    PROC_WAIT_LH_MASK,060000
         .equ    PROC_WAIT_EVENT_LH,020000
+        .equ    PROC_WAIT_CHILD_LH,040000
         .equ    PROC_TRANSITION_RH,0200000
-        .equ    PROC_FILE_TABLE_OFFSET,046
-        .equ    PROC_USTACK_BASE,0100
-        .equ    PROC_KSTACK_WORDS,0320
+        .equ    PROC_FILE_TABLE_OFFSET,047
+        .equ    PROC_USTACK_BASE,0101
+        .equ    PROC_KSTACK_WORDS,0317
         .equ    KERNEL_IDLE_STACK_WORDS,0100
 
         .equ    CTX_U_PC,020
@@ -34,6 +35,7 @@
         .globl  proc_sched_cursor
         .globl  mach_kernel_stack_base
         .globl  proc_wait_event
+        .globl  proc_wait_child
         .globl  proc_wakeup_event
         .globl  proc_sched_pi_tick
         .globl  proc_sched_tick_select
@@ -43,6 +45,7 @@
         .globl  proc_record_kernel_sp
         .globl  proc_exit_current
         .globl  pdp10_ret_zero
+        .globl  pdp10_ret_neg1
         .globl  pdp10_pi_level6
         .globl  pdp10_pi_sp_save
         .globl  mach_pi_disable
@@ -75,8 +78,10 @@ proc_uarea_slot:
 ; either idle until another runnable process is selected by the clock PI or
 ; halt for the normal final-user shutdown.
 proc_exit_current:
+        move    3,1                    ; preserve low 18-bit exit status
         pushj   17,mach_pi_disable
         move    2,1                    ; saved global PI on/off state
+        move    1,3
         move    17,mach_kernel_stack_base
         setzm   file_table
         push    17,2
@@ -159,6 +164,28 @@ proc_wait_raced:
         tlo     3,PROC_STATE_RUN
         hllz    3,3
         movem   3,2(2)
+        jrst    pdp10_ret_zero
+
+; int proc_wait_child(void)
+; WAIT scans while executive code is non-preemptible.  If live children exist
+; but none is reportable, arm a child wait and request PI6 immediately.
+proc_wait_child:
+        skipn   proc_current_slot
+        jrst    pdp10_ret_neg1
+        move    2,proc_current_slot
+        move    3,2
+        lsh     2,1
+        add     2,3
+        add     2,proc_table
+        move    3,2(2)
+        tlz     3,PROC_WAIT_LH_MASK
+        tlo     3,PROC_WAIT_CHILD_LH
+        tlz     3,PROC_STATE_LH_MASK
+        tlo     3,PROC_STATE_SLEEP
+        hllz    3,3
+        movem   3,2(2)
+        setom   proc_sched_kick
+        cono    0004,004002
         jrst    pdp10_ret_zero
 
 ; void proc_wakeup_event(volatile kword_t *eventp)

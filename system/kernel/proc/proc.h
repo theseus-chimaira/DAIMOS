@@ -76,9 +76,16 @@
  * physical base; the three-word process descriptor therefore does not grow.
  */
 #define PROC_UAREA_WORDS        0420UL
-#define PROC_FILE_CWD_OFFSET     0045UL
-#define PROC_FILE_TABLE_OFFSET   0046UL
-#define PROC_USTACK_BASE         0100UL
+/*
+ * One descriptor-control word precedes cwd/file state.  Bits 0..2 are the
+ * explicit RUN mappings for the native console descriptors 0..2.  Keeping
+ * this in the already-resident u-area costs no per-process descriptor words.
+ */
+#define PROC_FDCTL_OFFSET        0045UL
+#define PROC_FILE_CWD_OFFSET     0046UL
+#define PROC_FILE_TABLE_OFFSET   0047UL
+#define PROC_USTACK_BASE         0101UL
+#define PROC_STDIO_MASK          0007UL
 #define PROC_KSTACK_WORDS \
         (PROC_UAREA_WORDS - PROC_USTACK_BASE)
 
@@ -98,7 +105,9 @@ extern kword_t mach_kernel_stack_base;
 int proc_boot_init(void);
 unsigned int proc_slots_for_core(kword_t core_words);
 int proc_slot_claim(unsigned int parent_slot);
-int proc_exit_finish(void);
+int proc_exit_finish(int status);
+int proc_slot_discard(unsigned int slot);
+int proc_wait_child(void);
 kword_t proc_comm(const struct proc *p);
 int proc_wait_event(volatile kword_t *eventp);
 void proc_wakeup_event(volatile kword_t *eventp);
@@ -125,9 +134,16 @@ void proc_sched_pi_tick(void);
         ((kword_t)(((p)->meta >> PROC_HALF_SHIFT) & PROC_HALF_MASK))
 #define PROC_UAREA_BASE(p) PROC_META_LH(p)
 #define PROC_ENTRY(p) PROC_META_LH(p)
+#define PROC_EXIT_STATUS(p) PROC_META_LH(p)
 #define PROC_SET_META_LH(p, v) \
         ((p)->meta = ((p)->meta & PROC_HALF_MASK) | \
         (((kword_t)(v) & PROC_HALF_MASK) << PROC_HALF_SHIFT))
+#define PROC_SET_PARENT_SLOT(p, v) \
+        ((p)->meta = ((p)->meta & \
+        ~((kword_t)PROC_PARENT_MASK << PROC_PARENT_SHIFT)) | \
+        (((kword_t)(v) & PROC_PARENT_MASK) << PROC_PARENT_SHIFT))
+#define PROC_UAREA_WORD(p, off) \
+        (((kword_t *)(unsigned long)PROC_UAREA_BASE(p))[(off)])
 #define PROC_NICE_ENCODED(p) \
         ((unsigned int)(((p)->sched >> PROC_NICE_SHIFT) & PROC_NICE_MASK))
 #define PROC_CPU_PENALTY(p) \

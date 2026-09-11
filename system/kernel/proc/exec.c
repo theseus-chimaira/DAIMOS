@@ -11,7 +11,7 @@
     ((VFS_SIX6('D','X','R',' ',' ',' ') >> 18) & EXEC_HALF_MASK)
 
 int
-exec_load_init(struct proc *p, unsigned int owner,
+exec_load_process(struct proc *p, unsigned int owner,
     const kword_t *path)
 {
         vnode_t node;
@@ -102,6 +102,10 @@ exec_load_init(struct proc *p, unsigned int owner,
         return 0;
 
 fail:
-        (void)mm_free(base, MM_TYPE_PROCESS, owner);
+        if (mm_free(base, MM_TYPE_PROCESS, owner) == MM_OK) {
+                proc_swap_detach(owner);
+                p->mem_layout = 0UL;
+                PROC_SET_META_LH(p, 0UL);
+        }
         return -1;
 }
