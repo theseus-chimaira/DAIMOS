@@ -29,7 +29,7 @@ dtfs_mres_vector:
         .word   dtfs_lookup,,dtfs_readdir
         .word   dtfs_stat,,dtfs_parent
         .word   0,,dtfs_create
-        .word   dtfs_mkdir_unsupported,,0
+        .word   pdp10_ret_neg2,,0
         .word   dtfs_unlink,,dtfs_rename
         .word   dtfs_truncate,,dtfs_chmod
         .word   dtfs_read_words,,dtfs_write_words
@@ -39,9 +39,6 @@ dtfs_mres_vector:
 ; DTFS is deliberately flat.  Preserve a distinct error through the syscall
 ; boundary so usr can report that MKDIR is unsupported rather than an
 ; undifferentiated filesystem failure.
-dtfs_mkdir_unsupported:
-        jrst    pdp10_ret_neg2  ; SYS_ERR_UNSUPPORTED (-2)
-
 
 ; Compact five-bit allocation-map accessors.  All DTFS map indices are small
 ; non-negative values, so IDIVI avoids GCC's 72-bit unsigned DIV setup.
@@ -487,18 +484,16 @@ dtfs_foreign_set_name_return:
 ; int dtfs_native_scan_slot(const struct vfs_name *name, unsigned int *slotp)
 ; Native names occupy two words; unused slots have a zero first word.
 ; Inline the VFS name-range check because DTFS's 11-character limit is stricter.
-dtfs_native_scan_invalid:
-	jrst    pdp10_ret_neg2           ; -2 means invalid name
 dtfs_native_scan_slot:
         jumpe   1,dtfs_native_scan_begin
         move    4,(1)
-        jumple  4,dtfs_native_scan_invalid
+        jumple  4,pdp10_ret_neg2
         caile   4,013                    ; DTFS_NAME_MAX_CHARS = 11
-        jrst    dtfs_native_scan_invalid
+        jrst    pdp10_ret_neg2
         skipe   3(1)
-        jrst    dtfs_native_scan_invalid
+        jrst    pdp10_ret_neg2
         skipe   4(1)
-        jrst    dtfs_native_scan_invalid
+        jrst    pdp10_ret_neg2
 dtfs_native_scan_begin:
         setz    3,                       ; slot
         movei   4,0123                   ; DTFS_NAME_BASE

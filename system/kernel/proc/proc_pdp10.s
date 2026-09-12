@@ -140,7 +140,7 @@ proc_tty_session_has:
         addi    3,PROC_WORDS
 proc_tty_session_scan:
         caml    2,proc_high_slot
-        jrst    proc_tty_session_none
+        jrst    pdp10_ret_zero
         camn    2,7
         jrst    proc_tty_session_next
         move    4,2(3)                 ; packed scheduler word
@@ -166,10 +166,6 @@ proc_tty_session_next:
         addi    3,PROC_WORDS
         addi    2,1
         jrst    proc_tty_session_scan
-proc_tty_session_none:
-        jrst    pdp10_ret_zero
-
-
 ; int proc_event_send(unsigned int target, unsigned int event, int group)
 ; Validate one PID or scan one process group, then hand actual state changes to
 ; proc_event_apply.  The group scan packs its two boolean results into the LH
@@ -296,18 +292,13 @@ proc_has_live_user:
         addi    3,PROC_WORDS
 proc_has_live_user_scan:
         caml    2,proc_high_slot
-        jrst    proc_has_live_user_none
+        jrst    pdp10_ret_zero
         move    4,2(3)                 ; packed scheduler word
         and     4,[0300000000000]      ; FREE/ZOMB have low state bits clear
-        jumpn   4,proc_has_live_user_yes
+        jumpn   4,pdp10_ret_one
         addi    3,PROC_WORDS
         addi    2,1
         jrst    proc_has_live_user_scan
-proc_has_live_user_yes:
-        jrst    pdp10_ret_one
-proc_has_live_user_none:
-        jrst    pdp10_ret_zero
-
 ; void proc_notify_parent(unsigned int parent)
 ; Queue CHLD and wake a parent blocked in WAIT.  The descriptor is decoded
 ; once; unlike the former C helper chain, the wake path does not revalidate
@@ -356,7 +347,7 @@ proc_scope_id:
 proc_scope_live:
         hrrz    2,(1)
         trnn    2,0400000              ; u-area present
-        jrst    proc_control_zero
+        jrst    pdp10_ret_zero
         hlrz    2,(1)
         move    1,045(2)
         lsh     1,-3
@@ -384,27 +375,27 @@ proc_child_hierarchy:
         caie    2,1
         jrst    proc_child_join
 ; NEW pgrp.
-        jumpn   6,proc_control_fail
+        jumpn   6,pdp10_ret_neg1
         move    1,7
         jrst    proc_child_set
 proc_child_inherit:
-        jumpn   6,proc_control_fail
+        jumpn   6,pdp10_ret_neg1
         hrrz    1,(4)
         andi    1,0377
-        jumpe   1,proc_control_fail
+        jumpe   1,pdp10_ret_neg1
         jrst    proc_child_set
 proc_child_join:
         caie    2,2
-        jrst    proc_control_fail
-        jumpe   6,proc_control_fail
+        jrst    pdp10_ret_neg1
+        jumpe   6,pdp10_ret_neg1
         caile   6,0377
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
         movei   1,1                    ; scan slot
         move    2,proc_table
         addi    2,3
 proc_child_join_loop:
         caml    1,proc_high_slot
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
         ; FREE has all state bits clear.  Preserve the original sched word in
         ; AC4 only long enough to classify zombie/live scope below.
         hlrz    4,2(2)
@@ -465,9 +456,9 @@ proc_child_set:
         .globl  proc_tty_records
         .globl  proc_tty_release_session
 proc_control:
-        jumpl   1,proc_control_fail
+        jumpl   1,pdp10_ret_neg1
         caile   1,014
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
         move    3,proc_current_slot
         move    4,3
         lsh     4,1
@@ -490,23 +481,23 @@ proc_control_table:
         .word   proc_control_tty_setfg
 
 proc_control_getpgrp:
-        jumpn   2,proc_control_fail
+        jumpn   2,pdp10_ret_neg1
         hrrz    1,(4)
         andi    1,0377
         popj    17,
 proc_control_getsession:
-        jumpn   2,proc_control_fail
+        jumpn   2,pdp10_ret_neg1
         hlrz    5,(4)
         ldb     1,[POINT 8,045(5),32]
         popj    17,
 proc_control_getdomain:
-        jumpn   2,proc_control_fail
+        jumpn   2,pdp10_ret_neg1
         hlrz    5,(4)
         ldb     1,[POINT 8,045(5),24]
         popj    17,
 
 proc_control_newsession:
-        jumpn   2,proc_control_fail
+        jumpn   2,pdp10_ret_neg1
         hlrz    5,(4)
         ldb     1,[POINT 8,045(5),32]
         move    2,3
@@ -530,17 +521,17 @@ proc_control_newsession:
         popj    17,
 
 proc_control_newdomain:
-        jumpn   2,proc_control_fail
+        jumpn   2,pdp10_ret_neg1
         hlrz    5,(4)
         ldb     6,[POINT 8,045(5),32]
         came    6,3
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
         dpb     3,[POINT 8,045(5),24]
         move    1,3
         popj    17,
 
 proc_control_getevents:
-        jumpn   2,proc_control_fail
+        jumpn   2,pdp10_ret_neg1
         hlrz    5,(4)
         ldb     1,[POINT 7,045(5),16]
         hrloi   6,0777401
@@ -554,7 +545,7 @@ proc_control_event_pgrp:
         movei   3,1
 proc_control_event:
         tdne    2,[-04000]
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
         move    1,2
         andi    1,0377
         lsh     2,-010
@@ -562,7 +553,7 @@ proc_control_event:
         jrst    proc_event_send
 
 proc_control_gettty:
-        jumpn   2,proc_control_fail
+        jumpn   2,pdp10_ret_neg1
         hlrz    5,(4)
         move    1,045(5)
         lsh     1,-036
@@ -570,25 +561,25 @@ proc_control_gettty:
 
 proc_control_tty_attach:
         cail    2,025
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
         hlrz    5,(4)
         move    6,045(5)
         ldb     7,[POINT 8,045(5),32]
         came    7,3
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
         move    7,6
         lsh     7,-036
         andi    7,077
         caige   7,2
         jrst    proc_control_tty_attach_state_ok
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
 proc_control_tty_attach_state_ok:
         move    7,proc_tty_records(2)
         move    1,7
         andi    1,0377
         jumpe   1,proc_control_tty_attach_claim
         came    1,3
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
         jrst    proc_control_tty_attach_set
 proc_control_tty_attach_claim:
         hrrz    1,(4)
@@ -607,22 +598,22 @@ proc_control_tty_attach_set:
         popj    17,
 
 proc_control_tty_detach:
-        jumpn   2,proc_control_fail
+        jumpn   2,pdp10_ret_neg1
         hlrz    5,(4)
         move    6,045(5)
         ldb     7,[POINT 8,045(5),32]
         came    7,3
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
         move    1,6
         lsh     1,-036
         subi    1,2
         cail    1,025
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
         move    7,proc_tty_records(1)
         move    5,7
         andi    5,0377
         came    5,3
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
         setzm   proc_tty_records(1)
         move    7,1                    ; tty id
         movei   2,1                    ; member slot
@@ -630,7 +621,7 @@ proc_control_tty_detach:
         addi    4,3
 proc_control_tty_detach_loop:
         caml    2,proc_high_slot
-        jrst    proc_control_zero
+        jrst    pdp10_ret_zero
         move    5,2(4)
         and     5,[0300000000000]
         jumpe   5,proc_control_tty_detach_next
@@ -655,42 +646,42 @@ proc_control_tty_detach_next:
         aoja    2,proc_control_tty_detach_loop
 
 proc_control_tty_getfg:
-        jumpn   2,proc_control_fail
+        jumpn   2,pdp10_ret_neg1
         hlrz    5,(4)
         move    6,045(5)
         move    1,6
         lsh     1,-036
         subi    1,2
         cail    1,025
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
         move    7,proc_tty_records(1)
         move    2,7
         andi    2,0377
         ldb     5,[POINT 8,045(5),32]
         came    2,5
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
         move    1,7
         lsh     1,-010
         andi    1,0377
         popj    17,
 
 proc_control_tty_setfg:
-        jumpe   2,proc_control_fail
+        jumpe   2,pdp10_ret_neg1
         caile   2,0377
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
         hlrz    5,(4)
         move    6,045(5)
         move    1,6
         lsh     1,-036
         subi    1,2
         cail    1,025
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
         move    7,proc_tty_records(1)
         ldb     5,[POINT 8,045(5),32]
         move    6,7
         andi    6,0377
         came    6,5
-        jrst    proc_control_fail
+        jrst    pdp10_ret_neg1
         push    17,1                   ; tty id
         push    17,2                   ; requested pgrp
         move    1,5                    ; session
@@ -698,7 +689,7 @@ proc_control_tty_setfg:
         pushj   17,proc_tty_session_has
         pop     17,2
         pop     17,4                   ; tty id
-        jumpe   1,proc_control_fail
+        jumpe   1,pdp10_ret_neg1
         move    5,proc_tty_records(4)
         andi    5,0377
         move    6,2
@@ -707,11 +698,6 @@ proc_control_tty_setfg:
         movem   5,proc_tty_records(4)
         move    1,2
         popj    17,
-
-proc_control_zero:
-        jrst    pdp10_ret_zero
-proc_control_fail:
-        jrst    pdp10_ret_neg1
 
 ; int proc_wait_event(volatile kword_t *eventp)
 ; Publish an event channel and sleep.  Request software PI6 so the executive
@@ -738,10 +724,8 @@ proc_wait_event:
         jrst    proc_wait_raced
         setom   proc_sched_kick
         cono    0004,004002             ; software request at PI level 6
-        jrst    proc_wait_armed
-proc_wait_armed:
-        ; PI6 is taken between instructions while PI is enabled.  This branch
-        ; is the saved continuation; after wakeup it simply returns success.
+        ; PI6 is taken between instructions while PI is enabled.  This direct
+        ; return branch is the saved continuation after wakeup.
         jrst    pdp10_ret_zero
 proc_wait_boot:
         skipn   (1)
@@ -1092,8 +1076,9 @@ proc_sched_exec_tick:
         andi    2,PROC_STATE_LH_MASK
         caie    2,PROC_STATE_SLEEP
         popj    17,
-        jrst    proc_sched_exec_sleep
-proc_sched_exec_sleep:
+        ; Sleep is the only executive-tick case that needs the kernel
+        ; context saved.  Fall through directly instead of jumping to
+        ; the immediately following instruction.
         pushj   17,proc_save_kernel
 proc_sched_select:
         pushj   17,proc_sched_tick_select

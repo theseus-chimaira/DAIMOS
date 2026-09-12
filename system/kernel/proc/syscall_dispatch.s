@@ -90,7 +90,7 @@ native_sys_write_chars:
         pop     17,3
         pop     17,2
         hrrz    6,3                   ; character count
-        jumpe   6,native_sys_write_chars_ok
+        jumpe   6,pdp10_ret_zero
         move    5,2                   ; logical 9-bit byte pointer
         hrrz    1,2
         pushj   17,sys_user_words
@@ -106,11 +106,9 @@ native_sys_write_chars_loop:
         ldb     1,5
         pushj   17,native_sys_putchar
         jumpn   1,native_sys_write_chars_fail
-        soje    6,native_sys_write_chars_ok
+        soje    6,pdp10_ret_zero
         ibp     5
         jrst    native_sys_write_chars_loop
-native_sys_write_chars_ok:
-        jrst    pdp10_ret_zero
 native_sys_write_chars_stdio_bad:
         pop     17,3
         pop     17,2
@@ -457,19 +455,18 @@ native_sys_getchar_again:
         jrst    native_sys_getchar_policy
         jrst    %L65
 
-        ; MINIT patches this one-word call target to CTY getchar.  Keep it as
-        ; a callable trampoline so terminal policy remains in KCORE around the
-        ; relocatable CTY MRES implementation.
+        ; MINIT patches the right half of this one-word tail-call target to
+        ; CTY getchar.  The CTY service then returns directly to this routine's
+        ; caller, avoiding a redundant inner PUSHJ/POPJ pair.
         .globl  native_sys_getchar_call
 native_sys_getchar_call:
-        pushj   17,pdp10_ret_neg1
-        popj    17,
+        jrst    pdp10_ret_neg1
 
 native_sys_putchar:
+        ; MINIT patches this one-word tail-call target to CTY putchar.
         .globl  native_sys_putchar_call
 native_sys_putchar_call:
-        pushj   17,pdp10_ret_neg1
-        jrst    %L65
+        jrst    pdp10_ret_neg1
 %L136:
         halt    .
         seto    1,
