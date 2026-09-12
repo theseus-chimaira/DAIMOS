@@ -99,7 +99,6 @@ KINIT_FIXED_SRCS = boot/kinit_io.s \
 KINIT_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${BUILD}/kinit_io.s ${BUILD}/module_io.s ${BUILD}/bootbanner_generated.s ${BUILD}/kinit_late_begin.s ${BUILD}/kinit_late_end.s
 
 KCORE_C_SRCS = proc/exec.c \
-	fs/vfs.c \
 	fs/devicefs.c \
 	mm/mm.c \
 	modules/module_runtime.c \
@@ -108,7 +107,6 @@ KCORE_C_SRCS = proc/exec.c \
 	fs/file.c
 
 KCORE_C_ASM = $(BUILD)/exec.s \
-	$(BUILD)/vfs.s \
 	$(BUILD)/devicefs.s \
 	$(BUILD)/mm.s \
 	$(BUILD)/module_runtime.s \
@@ -136,7 +134,6 @@ KCORE_FIXED_SRCS = core/ret_pdp10.s \
 	core/kcore_end.s
 
 KCORE_FIXED_ASM = $(BUILD)/exec.s \
-	$(BUILD)/vfs.s \
 	$(BUILD)/devicefs.s \
 	$(BUILD)/mm.s \
 	$(BUILD)/module_runtime.s \

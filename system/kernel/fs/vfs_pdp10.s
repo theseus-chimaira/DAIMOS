@@ -717,3 +717,175 @@ vfs_writechar_fail:
 vfs_writechar_done:
         sub     17,[010,,010]
         popj    17,
+
+; Compact mount policy.  The four-entry namespace table is a bounded PDP-6
+; structure, so keeping the policy in fixed assembly avoids the C callee-save
+; frames and unsigned comparison glue without changing the VFS ABI.
+        .globl  vfs_readonly
+vfs_readonly:
+        ldb     1,[POINT 6,1,11]        ; mount id
+        subi    1,1
+        jumpl   1,pdp10_ret_zero
+        caige   1,4
+        jrst    vfs_readonly_slot
+        jrst    pdp10_ret_zero
+vfs_readonly_slot:
+        skipn   vfs_mount_root(1)
+        jrst    pdp10_ret_zero
+        move    2,vfs_mount_ro
+        movn    3,1
+        lsh     2,0(3)
+        andi    2,1
+        move    1,2
+        popj    17,
+
+; int vfs_mount(target, provider, kind, index, flags, rootp)
+        .globl  vfs_mount
+vfs_mount:
+        skipn   -2(17)                  ; rootp
+        jrst    pdp10_ret_neg1
+        jumpe   2,pdp10_ret_neg1
+        cail    2,0
+        cail    2,0100                  ; provider <= 077
+        jrst    pdp10_ret_neg1
+        cail    3,0
+        cail    3,0100                  ; local kind <= 077
+        jrst    pdp10_ret_neg1
+        cail    4,0
+        caml    4,[01000000]            ; index <= 0777777
+        jrst    pdp10_ret_neg1
+        move    5,-1(17)                ; flags
+        cail    5,0
+        cail    5,2                     ; RW or RDONLY only
+        jrst    pdp10_ret_neg1
+        jumpn   1,vfs_mount_check_target
+        skipe   vfs_namespace_root
+        jrst    pdp10_ret_neg1
+        jrst    vfs_mount_find
+
+vfs_mount_check_target:
+        ; Preserve the four register arguments around vfs_stat().
+        push    17,1
+        push    17,2
+        push    17,3
+        push    17,4
+        add     17,[4,,4]               ; struct vfs_stat
+        movei   2,-3(17)
+        move    1,-7(17)
+        pushj   17,vfs_stat
+        jumpn   1,vfs_mount_stat_fail
+        move    6,-3(17)                ; st.type
+        move    1,-7(17)
+        move    2,-6(17)
+        move    3,-5(17)
+        move    4,-4(17)
+        sub     17,[010,,010]
+        caie    6,1                     ; VFS_TYPE_DIR
+        jrst    pdp10_ret_neg1
+        jrst    vfs_mount_find
+vfs_mount_stat_fail:
+        sub     17,[010,,010]
+        jrst    pdp10_ret_neg1
+
+vfs_mount_find:
+        setz    7,
+vfs_mount_find_loop:
+        skipn   vfs_mount_root(7)
+        jrst    vfs_mount_found
+        move    6,vfs_mount_target(7)
+        camn    6,1
+        jrst    pdp10_ret_neg1
+        addi    7,1
+        caige   7,4
+        jrst    vfs_mount_find_loop
+        jrst    pdp10_ret_neg1
+
+vfs_mount_found:
+        ; root = provider:6 | mount/kind:12 | index:18.
+        move    5,2
+        lsh     5,036
+        move    6,7
+        addi    6,1
+        lsh     6,6
+        ior     6,3
+        lsh     6,022
+        ior     5,6
+        ior     5,4
+        movem   1,vfs_mount_target(7)
+        movem   5,vfs_mount_root(7)
+        move    6,-1(17)
+        caie    6,1
+        jrst    vfs_mount_clear_ro
+        movei   6,1
+        lsh     6,0(7)
+        iorm    6,vfs_mount_ro
+        jrst    vfs_mount_store
+vfs_mount_clear_ro:
+        hrroi   6,0777776
+        rot     6,(7)
+        andm    6,vfs_mount_ro
+vfs_mount_store:
+        move    6,-2(17)
+        movem   5,(6)
+        jumpn   1,pdp10_ret_zero
+        movem   5,vfs_namespace_root
+        jrst    pdp10_ret_zero
+
+; int vfs_unmount(root)
+        .globl  vfs_unmount
+vfs_unmount:
+        ldb     2,[POINT 6,1,11]
+        subi    2,1
+        jumpl   2,pdp10_ret_neg1
+        caige   2,4
+        jrst    vfs_unmount_slot
+        jrst    pdp10_ret_neg1
+vfs_unmount_slot:
+        move    3,vfs_mount_root(2)
+        came    3,1
+        jrst    pdp10_ret_neg1
+        push    17,1                    ; root
+        push    17,2                    ; slot
+        pushj   17,vfs_sync
+        jumpn   1,vfs_unmount_fail
+        move    2,(17)
+        move    1,-1(17)
+        move    3,1
+        lsh     3,-036
+        caie    3,6                     ; D6FS_PROVIDER
+        jrst    vfs_unmount_after_prepare
+        movei   6,020                   ; FS_MRES_OP_PREPARE_UNMOUNT
+        movei   7,6
+        pushj   17,fs_provider_reg_call
+        jumpn   1,vfs_unmount_fail
+        move    2,(17)
+        move    1,-1(17)
+vfs_unmount_after_prepare:
+        came    1,vfs_namespace_root
+        jrst    vfs_unmount_unlock
+        move    3,vfs_mount_target(2)
+        movem   3,vfs_namespace_root
+vfs_unmount_unlock:
+        move    1,2
+        addi    1,1
+        pushj   17,file_unlock_mount
+        move    2,(17)
+        setzm   vfs_mount_target(2)
+        setzm   vfs_mount_root(2)
+        hrroi   3,0777776
+        rot     3,(2)
+        andm    3,vfs_mount_ro
+        sub     17,[2,,2]
+        jrst    pdp10_ret_zero
+vfs_unmount_fail:
+        sub     17,[2,,2]
+        jrst    pdp10_ret_neg1
+
+        .bss
+        .globl  vfs_mount_target
+vfs_mount_target:
+        .block  4
+        .globl  vfs_mount_root
+vfs_mount_root:
+        .block  4
+        .text
