@@ -171,6 +171,122 @@ proc_tty_session_none:
         popj    17,
 
 
+; int proc_event_send(unsigned int target, unsigned int event, int group)
+; Validate one PID or scan one process group, then hand actual state changes to
+; proc_event_apply.  The group scan packs its two boolean results into the LH
+; of AC14 while the RH remains the slot index, avoiding GCC's large C frame.
+        .globl  proc_event_send
+        .globl  proc_event_apply
+proc_event_send:
+        add     17,[5,,5]
+        movei   0,-4(17)
+        hrli    0,010
+        blt     0,(17)                 ; preserve AC10..AC14
+        move    010,1                  ; target
+        move    011,2                  ; event
+        move    012,proc_current_slot  ; caller slot
+        jumpe   010,proc_event_send_fail
+        cail    011,6                   ; CHLD and above are not user-sendable
+        jrst    proc_event_send_fail
+
+        move    4,012
+        lsh     4,1
+        add     4,012
+        add     4,proc_table
+        hlrz    4,(4)
+        move    013,045(4)             ; caller session/domain control word
+        jumpn   3,proc_event_send_group
+
+; PID delivery: target must be live, u-area resident, and in caller's domain.
+        caml    010,proc_slots
+        jrst    proc_event_send_fail
+        move    3,010
+        lsh     3,1
+        add     3,010
+        add     3,proc_table
+        move    4,2(3)
+        and     4,[0300000000000]
+        jumpe   4,proc_event_send_fail
+        hrrz    4,(3)
+        trnn    4,0400000               ; resident u-area flag
+        jrst    proc_event_send_fail
+        hlrz    4,(3)
+        move    5,045(4)
+        xor     5,013
+        tdne    5,[01774000]            ; domain differs
+        jrst    proc_event_send_fail
+        move    1,010
+        move    2,011
+        jrst    proc_event_send_apply_tail
+
+; Group delivery requires both session and domain to match.  AC14 LH bit 0
+; records any match and bit 1 records a deferred self-delivery; RH is slot.
+proc_event_send_group:
+        movei   014,1
+proc_event_send_group_loop:
+        hrrz    6,014
+        caml    6,proc_high_slot
+        jrst    proc_event_send_group_done
+        move    3,6
+        lsh     3,1
+        add     3,6
+        add     3,proc_table
+        move    4,2(3)
+        and     4,[0300000000000]
+        jumpe   4,proc_event_send_group_next
+        hrrz    4,(3)
+        trnn    4,0400000
+        jrst    proc_event_send_group_next
+        move    4,(3)
+        andi    4,0377
+        came    4,010
+        jrst    proc_event_send_group_next
+        hlrz    4,(3)
+        move    5,045(4)
+        xor     5,013
+        tdne    5,[01777770]
+        jrst    proc_event_send_group_next
+        tlo     014,1                   ; at least one matching member
+        came    6,012
+        jrst    proc_event_send_group_apply
+        cail    011,4                   ; defer self for INT..TSTP
+        jrst    proc_event_send_group_apply
+        tlo     014,2
+        jrst    proc_event_send_group_next
+proc_event_send_group_apply:
+        move    1,6
+        move    2,011
+        pushj   17,proc_event_apply
+        jumpn   1,proc_event_send_fail
+proc_event_send_group_next:
+        aoja    014,proc_event_send_group_loop
+
+proc_event_send_group_done:
+        tlnn    014,1
+        jrst    proc_event_send_fail
+        tlnn    014,2
+        jrst    proc_event_send_ok
+        move    1,012
+        move    2,011
+proc_event_send_apply_tail:
+        movei   0,010
+        hrli    0,-4(17)
+        blt     0,014
+        sub     17,[5,,5]
+        jrst    proc_event_apply
+
+proc_event_send_fail:
+        seto    1,
+        jrst    proc_event_send_return
+proc_event_send_ok:
+        movei   1,0
+proc_event_send_return:
+        movei   0,010
+        hrli    0,-4(17)
+        blt     0,014
+        sub     17,[5,,5]
+        popj    17,
+
 ; int proc_has_live_user(void)
 ; Return true as soon as a non-FREE/non-ZOMB user descriptor is found.  The
 ; packed state encoding makes this a single scheduler-word mask test per slot.

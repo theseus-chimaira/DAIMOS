@@ -10,7 +10,7 @@
 unsigned int proc_sched_age_phase;
 extern struct file *file_table;
 
-static int proc_event_send(unsigned int target, unsigned int event, int group);
+extern int proc_event_send(unsigned int target, unsigned int event, int group);
 
 static inline void
 proc_set_field(struct proc *p, kword_t mask, unsigned int shift,
@@ -520,7 +520,7 @@ proc_event_kill(unsigned int slot, unsigned int event)
         return proc_finish_slot(slot, SYS_WAIT_EVENT_FLAG | event);
 }
 
-static int
+int
 proc_event_apply(unsigned int slot, unsigned int event)
 {
         struct proc *p;
@@ -566,58 +566,6 @@ proc_event_apply(unsigned int slot, unsigned int event)
                     ~(PROC_WAIT_BITS | PROC_SCHED_RH_MASK | PROC_STATE_BITS)) |
                     ((kword_t)PROC_SRUN << PROC_STATE_SHIFT);
         }
-        return 0;
-}
-
-static int
-proc_event_send(unsigned int target, unsigned int event, int group)
-{
-        struct proc *caller;
-        unsigned int caller_slot;
-        kword_t caller_ctl;
-        unsigned int i;
-        unsigned int found;
-
-        caller_slot = (unsigned int)proc_current_slot;
-        if (target == 0U || event >= SYS_EVENT_CHLD)
-                return -1;
-        caller = &proc_table[caller_slot];
-        caller_ctl = PROC_CTL_WORD(caller);
-        found = 0U;
-
-        if (!group) {
-                struct proc *p;
-
-                if (target >= proc_slots)
-                        return -1;
-                p = &proc_table[target];
-                if (PROC_IS_FREE_OR_ZOMB(p) ||
-                    !PROC_HAS_UAREA(p) ||
-                    ((PROC_CTL_WORD(p) ^ caller_ctl) & PROC_DOMAIN_BITS) != 0UL)
-                        return -1;
-                return proc_event_apply(target, event);
-        }
-
-        for (i = 1U; i < proc_high_slot; ++i) {
-                struct proc *p;
-
-                p = &proc_table[i];
-                if (PROC_IS_FREE_OR_ZOMB(p) ||
-                    !PROC_HAS_UAREA(p) || PROC_PGRP(p) != target ||
-                    ((PROC_CTL_WORD(p) ^ caller_ctl) & PROC_SCOPE_BITS) != 0UL)
-                        continue;
-                found |= 1U;
-                if (i == caller_slot && event <= SYS_EVENT_TSTP) {
-                        found |= 2U;
-                        continue;
-                }
-                if (proc_event_apply(i, event) != 0)
-                        return -1;
-        }
-        if ((found & 1U) == 0U)
-                return -1;
-        if ((found & 2U) != 0U)
-                return proc_event_apply(caller_slot, event);
         return 0;
 }
 
