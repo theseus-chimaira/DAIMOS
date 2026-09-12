@@ -38,16 +38,16 @@ file_walk_path_at(const kword_t *path, int parent_only,
     vnode_t start_node, unsigned int depth,
     vnode_t *nodep, struct vfs_name *leaf)
 {
-        kword_t work[FILE_PATH_WORDS];
-        kword_t combined[FILE_PATH_WORDS];
+        kword_t target[FILE_PATH_WORDS];
         unsigned int pos;
         unsigned int n;
-        unsigned int words;
-        unsigned int i;
+        unsigned int target_chars;
+        unsigned int target_words;
         int rc;
         vnode_t node;
         vnode_t next;
         struct vfs_name name;
+        struct vfs_stat st;
 
         if (path == 0 || nodep == 0 ||
             (parent_only && leaf == 0) || depth > FILE_SYMLINK_MAX)
@@ -55,12 +55,7 @@ file_walk_path_at(const kword_t *path, int parent_only,
         n = (unsigned int)path[0];
         if (n == 0U || n > FILE_PATH_MAX_CHARS)
                 return -1;
-        words = 1U + (n + 5U) / 6U;
-        fs_copy_words(path, work, words);
-
-restart:
-        n = (unsigned int)work[0];
-        if (file_path_char(work, 0U) == (unsigned int)('/' - 040)) {
+        if (file_path_char(path, 0U) == (unsigned int)('/' - 040)) {
                 node = vfs_namespace_root;
         } else {
                 node = start_node;
@@ -69,7 +64,7 @@ restart:
         }
         pos = 0U;
         for (;;) {
-                rc = file_component(work, &pos, &name);
+                rc = file_component(path, &pos, &name);
                 if (rc < 0)
                         return -1;
                 if (rc == 0) {
@@ -93,50 +88,21 @@ restart:
                         node = next;
                         continue;
                 }
-                if (vfs_lookup(node, &name, &next) != 0)
+                if (vfs_lookup(node, &name, &next) != 0 ||
+                    vfs_stat(next, &st) != 0)
                         return -1;
-                {
-                        struct vfs_stat st;
-                        if (vfs_stat(next, &st) != 0)
+                if (st.type == VFS_TYPE_SYMLINK) {
+                        if (depth == FILE_SYMLINK_MAX || st.size_chars == 0UL ||
+                            st.size_chars > FILE_PATH_MAX_CHARS)
                                 return -1;
-                        if (st.type == VFS_TYPE_SYMLINK) {
-                                unsigned int target_chars;
-                                unsigned int target_words;
-                                unsigned int out;
-
-                                if (depth == FILE_SYMLINK_MAX ||
-                                    st.size_chars == 0UL ||
-                                    st.size_chars > FILE_PATH_MAX_CHARS)
-                                        return -1;
-                                target_chars = (unsigned int)st.size_chars;
-                                target_words = (target_chars + 5U) / 6U;
-                                if (vfs_read_words(next, 0U, &combined[1],
-                                    target_words) != (int)target_words)
-                                        return -1;
-                                out = target_chars;
-                                if (pos < n) {
-                                        if (file_path_char(combined,
-                                            target_chars - 1U) !=
-                                            (unsigned int)('/' - 040)) {
-                                                if (out >= FILE_PATH_MAX_CHARS)
-                                                        return -1;
-                                                file_path_setchar(combined,
-                                                    out++, '/' - 040);
-                                        }
-                                        if (n - pos > FILE_PATH_MAX_CHARS - out)
-                                                return -1;
-                                        for (i = pos; i < n; ++i)
-                                                file_path_setchar(combined,
-                                                    out++, file_path_char(work,
-                                                    i));
-                                }
-                                combined[0] = out;
-                                words = 1U + (out + 5U) / 6U;
-                                fs_copy_words(combined, work, words);
-                                start_node = node;
-                                ++depth;
-                                goto restart;
-                        }
+                        target_chars = (unsigned int)st.size_chars;
+                        target_words = (target_chars + 5U) / 6U;
+                        target[0] = target_chars;
+                        if (vfs_read_words(next, 0U, &target[1], target_words) !=
+                            (int)target_words ||
+                            file_walk_path_at(target, 0, node, depth + 1U,
+                            &next, 0) != 0)
+                                return -1;
                 }
                 node = next;
         }
