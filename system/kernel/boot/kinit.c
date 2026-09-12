@@ -100,19 +100,20 @@ mres_install(const kword_t *package, unsigned int *basep)
         map = image + init_words;
         {
                 kword_t alloc_base;
-
                 kword_t image_words;
-                kword_t extent_words;
 
                 image_words = (kword_t)init_words + (kword_t)bss_words;
-                extent_words = image_words + (kword_t)map_words;
                 if (image_words > KINIT_HALF_MASK ||
-                    extent_words > KINIT_HALF_MASK ||
                     mres_owner_next > MODULE_RUNTIME_MAX ||
-                    mm_alloc(extent_words, MM_TYPE_MODULE, mres_owner_next,
+                    mm_alloc(image_words, MM_TYPE_MODULE, mres_owner_next,
                     MM_ALLOC_LOW, &alloc_base) != MM_OK)
                         return -1;
                 base = (unsigned int)alloc_base;
+                /* Boot MRES is permanent and must form one packed block
+                 * immediately above KCORE.  No dynamic allocation is allowed
+                 * before module installation completes. */
+                if (base != mres_next_addr)
+                        goto fail;
         }
         dst = (kword_t *)(unsigned long)base;
         for (i = 0U; i < init_words; ++i) {
@@ -136,16 +137,16 @@ mres_install(const kword_t *package, unsigned int *basep)
         }
         for (i = 0U; i < bss_words; ++i)
                 dst[init_words + i] = 0;
-        for (i = 0U; i < map_words; ++i)
-                dst[init_words + bss_words + i] = map[i];
         if (mres_owner_next == 0U || mres_owner_next > MODULE_RUNTIME_MAX ||
             MODULE_RUNTIME_INIT_WORDS(module_runtime_descs[mres_owner_next]) !=
-            0UL)
+            0UL || mm_pin((kword_t)base) != MM_OK)
                 goto fail;
+        /* Relocation maps remain only in disposable KINIT packages.  Resident
+         * boot modules are pinned, so retaining a second copy solely for
+         * mm_move_module() would waste permanent kernel space. */
         module_runtime_descs[mres_owner_next] =
             ((kword_t)init_words << 18U) | (kword_t)base;
-        if (base + init_words + bss_words + map_words > mres_next_addr)
-                mres_next_addr = base + init_words + bss_words + map_words;
+        mres_next_addr = base + init_words + bss_words;
         *basep = base;
         mres_last_owner = mres_owner_next;
         mres_last_image_words = init_words + bss_words;
@@ -317,6 +318,18 @@ kinit_enter(void)
                                 kinit_halt();
                 }
         }
+        kinit_diag_banner();
+        kinit_save_boot_handoff();
+        /* Private PDP-6 filesystem UUOs are used by resident VFS leaves during
+         * the remainder of boot, so install 041 immediately after preserving
+         * the Stage1 handoff rather than waiting for first-user setup. */
+        kinit_user_trap_init();
+        module_pi_init();
+        kinit_diag_system(memory_kwords);
+        mres_init();
+        module_run_minits();
+        /* Dynamic kernel objects begin only after the packed permanent MRES
+         * block is complete.  This keeps KCORE+MRES gapless in low memory. */
         if (mm_alloc(KERNEL_IDLE_STACK_WORDS, MM_TYPE_KERNEL_DYNAMIC, 2U,
             MM_ALLOC_LOW,
             &kernel_stack_base) != MM_OK ||
@@ -332,19 +345,9 @@ kinit_enter(void)
                         idle_stack[i] = kernel_stack_base + (kword_t)i;
         }
 #endif
-        kinit_diag_banner();
-        kinit_save_boot_handoff();
-        /* Private PDP-6 filesystem UUOs are used by resident VFS leaves during
-         * the remainder of boot, so install 041 immediately after preserving
-         * the Stage1 handoff rather than waiting for first-user setup. */
-        kinit_user_trap_init();
-        module_pi_init();
-        kinit_diag_system(memory_kwords);
-        mres_init();
-        module_run_minits();
         sys_resident_words_immediate =
             (sys_resident_words_immediate & ~((kword_t)KINIT_HALF_MASK)) |
-            (kword_t)mres_next_addr;
+            (kword_t)(mres_next_addr - KINIT_KCORE_BASE);
         {
                 kword_t image_end;
                 kword_t reclaim_end;

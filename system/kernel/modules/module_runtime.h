@@ -8,8 +8,9 @@
 #define MODULE_HALF_MASK         0777777UL
 
 /* One word per module: LH initialized words, RH current physical base.
- * Total extent size is authoritative in MM; relocation-map size is derived
- * from initialized words. */
+ * Boot MRES extents are pinned and do not retain relocation maps.  A future
+ * movable module must retain its map after the image; MODULE_RUNTIME_MAP_WORDS
+ * describes that movable-module representation. */
 extern kword_t module_runtime_descs[MODULE_RUNTIME_MAX + 1U];
 extern kword_t module_dynamic_bindings[MODULE_DYNAMIC_BIND_MAX];
 #define module_moves_enabled module_runtime_descs[0]

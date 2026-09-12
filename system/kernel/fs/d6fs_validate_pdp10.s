@@ -73,8 +73,9 @@ d6fs_fcb_reserved:
         ior     7,017(1)
         jumpn   7,d6fs_fcb_invalid
 
-        ; FREE FCBs carry no extents and no data size.
+        ; FREE FCBs and FIFO nodes carry no extents and no data size.
         jumpn   6,d6fs_fcb_live
+d6fs_fcb_nodata:
         skipe   4(4)
         jrst    d6fs_fcb_invalid
         skipe   7(4)
@@ -88,13 +89,8 @@ d6fs_fcb_live:
         move    7,011(4)
         caml    7,3
         jrst    d6fs_fcb_invalid
-        caie    6,4                     ; FIFO has no payload allocation
-        jrst    d6fs_fcb_live_extents
-        skipe   4(4)                    ; extent_count must be zero
-        jrst    d6fs_fcb_invalid
-        skipe   7(4)                    ; size_words must be zero
-        jrst    d6fs_fcb_invalid
-d6fs_fcb_live_extents:
+        cain    6,4                     ; FIFO has no payload allocation
+        jrst    d6fs_fcb_nodata
         move    3,5(1)                  ; packed 5-bit extent highs
         addi    1,6                     ; extent-word cursor
         movei   011,0                   ; extent index

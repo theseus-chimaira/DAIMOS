@@ -58,46 +58,40 @@ fs_provider_reg_call:
 ; Serialize those providers across the complete call.  The saved arguments
 ; live on the process-private kernel stack while proc_wait_event() switches.
 fs_provider_serialized:
-        push    17,1
-        push    17,2
-        push    17,3
-        push    17,4
-        push    17,5
-        push    17,6
-        push    17,7
+        ; Keep the original request registers on the process-private stack
+        ; for the entire lock wait.  A resumed waiter may lose live scratch
+        ; ACs while another process owns the provider.
+        add     17,[7,,7]
+        movei   0,-6(17)
+        hrli    0,1
+        blt     0,(17)
 fs_provider_lock_retry:
-        skipe   fs_provider_busy
+        skipn   fs_provider_ready
         jrst    fs_provider_lock_wait
-        setom   fs_provider_busy
-        jrst    fs_provider_lock_acquired
-fs_provider_lock_wait:
-        setzm   fs_provider_event
-        skipn   fs_provider_busy
-        jrst    fs_provider_lock_retry
-        movei   1,fs_provider_event
-        pushj   17,proc_wait_event
-        jrst    fs_provider_lock_retry
-fs_provider_lock_acquired:
-        pop     17,7
-        pop     17,6
-        pop     17,5
-        pop     17,4
-        pop     17,3
-        pop     17,2
-        pop     17,1
+        setzm   fs_provider_ready
+        movei   0,1
+        hrli    0,-6(17)
+        blt     0,7
+        sub     17,[7,,7]
         subi    7,4
         hrrz    7,fs_memfs_service_jump(7)
         cain    7,fs_mres_no_service
         jrst    fs_provider_locked_no_service
         pushj   17,(7)
         jrst    fs_provider_unlock
+
+; The executive is not process-preemptible between the ready test and clear.
+fs_provider_lock_wait:
+        movei   1,fs_provider_ready
+        pushj   17,proc_wait_event
+        jrst    fs_provider_lock_retry
+
 fs_provider_locked_no_service:
         hrroi   1,1
 fs_provider_unlock:
         push    17,1
-        setzm   fs_provider_busy
-        setom   fs_provider_event
-        movei   1,fs_provider_event
+        setom   fs_provider_ready
+        movei   1,fs_provider_ready
         pushj   17,proc_wakeup_event
         pop     17,1
         popj    17,
@@ -220,8 +214,6 @@ fs_mres_context_vector_dispatch:
         sub     17,[2,,2]
         popj    17,
 
-        .bss
-fs_provider_busy:
-        .block  1
-fs_provider_event:
-        .block  1
+        .data
+fs_provider_ready:
+        .word   1

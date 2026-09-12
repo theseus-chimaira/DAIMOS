@@ -20,7 +20,6 @@
         .globl  proc_tty_read_enter
         .globl  proc_tty_input
         .globl  proc_current_slot
-        .globl  file_is_cty
         .globl  pipe_create
         .globl  file_mkfifo
         .globl  file_writechar_reserve
@@ -68,7 +67,7 @@ native_sys_getpid:
 ; CTY remains fast enough for bring-up; the later pipe bulk step may specialize
 ; device/pipe transfer after measurements without changing this ABI.
 native_sys_write_chars:
-        ; AC10-12 carry the translated stream cursor across C pipe calls.
+        ; AC10-12 carry the translated stream cursor across pipe calls.
         ; They are callee-saved by the PDP-10 C ABI; the original user values
         ; are restored before leaving the syscall.
         push    17,010
@@ -117,10 +116,6 @@ native_sys_write_chars_next:
         jrst    native_sys_write_chars_loop
         jrst    native_sys_write_chars_chunk
 native_sys_write_chars_device:
-        move    1,-2(17)
-        hrrz    1,1
-        pushj   17,file_is_cty
-        jumpe   1,native_sys_write_chars_fail
         move    1,2
         pushj   17,native_sys_putchar
         jumpn   1,native_sys_write_chars_fail
@@ -258,40 +253,23 @@ native_sys_write_chars_fail:
         jrst    sys_meminfo
 %L134:
         hrrz    1,1
-        push    17,1
         pushj   17,file_readchar
         came    1,[-3]
-        jrst    native_sys_readchar_done
-        move    1,(17)
-        pushj   17,file_is_cty
-        jumpe   1,native_sys_readchar_bad
-        pop     17,1
-        jrst    native_sys_getchar_policy
-native_sys_readchar_bad:
-        seto    1,
-native_sys_readchar_done:
-        sub     17,[1,,1]
         jrst    %L65
+        jrst    native_sys_getchar_policy
 %L135:
-        ; AC1 fd, AC2 character.
+        ; AC1 fd, AC2 character.  Save only the character for CTY fallback.
         hrrz    1,1
-        push    17,1
         push    17,2
         andi    2,0777
         pushj   17,file_writechar
         came    1,[-3]
         jrst    native_sys_writechar_done
-        move    1,-1(17)
-        pushj   17,file_is_cty
-        jumpe   1,native_sys_writechar_bad
         move    1,(17)
         andi    1,0777
         pushj   17,native_sys_putchar
-        jrst    native_sys_writechar_done
-native_sys_writechar_bad:
-        seto    1,
 native_sys_writechar_done:
-        sub     17,[2,,2]
+        sub     17,[1,,1]
         jrst    %L65
 
 ; Return the DTC0 vnode for a valid translated user path, or zero on failure.
@@ -486,9 +464,6 @@ native_sys_getchar:
         pushj   17,file_readchar
         came    1,[-3]
         popj    17,
-        movei   1,0
-        pushj   17,file_is_cty
-        jumpe   1,pdp10_ret_neg1
 native_sys_getchar_policy:
         pushj   17,proc_tty_read_enter
         jumpn   1,%L137

@@ -609,13 +609,11 @@ d6fs_mres_reg_dispatch:
         jrst    fs_mres_vector_dispatch
 
 d6fs_mres_create:
+        movei   5,1                     ; regular file type
         trnn    3,010000                ; private VFS CREATE-as-FIFO marker
-        jrst    d6fs_mres_create_regular
+        jrst    d6fs_mres_create_common
         andi    3,07777                 ; leave only persistent mode bits
         movei   5,4                     ; FIFO type
-        jrst    d6fs_mres_create_common
-d6fs_mres_create_regular:
-        movei   5,1                     ; regular file type
         jrst    d6fs_mres_create_common
 
 d6fs_mres_mkdir:

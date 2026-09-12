@@ -248,11 +248,9 @@ vfs_create:
         .globl  vfs_mkfifo
 vfs_mkfifo:
         ldb     5,[POINT 6,1,5]
-        cain    5,4                    ; MEMFS
-        jrst    vfs_mkfifo_supported
-        caie    5,6                    ; D6FS
+        andi    5,075                  ; providers 4 and 6 both become 4
+        caie    5,4
         jrst    pdp10_ret_neg2
-vfs_mkfifo_supported:
         ori     3,010000               ; private CREATE-as-FIFO marker
         movei   5,6                    ; reuse FS_MRES_OP_CREATE
         jrst    vfs_create_common

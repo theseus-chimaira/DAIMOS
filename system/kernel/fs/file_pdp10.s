@@ -64,19 +64,6 @@ file_path_setchar:
         .globl  pipe_close_ref
         .globl  pipe_fifo_detach
 
-; int file_is_cty(int fd)
-; Return one only when fd names the CTY0 device vnode.  Access permissions are
-; checked by the normal read/write entry points before this helper is used.
-        .globl  file_is_cty
-file_is_cty:
-        pushj   17,file_find
-        jumpe   1,pdp10_ret_zero
-        move    1,(1)
-        tlz     1,707070               ; canonical vnode
-        camn    1,[020002000000]       ; DEVICEFS CTY0 IO endpoint
-        jrst    pdp10_ret_one
-        jrst    pdp10_ret_zero
-
 ; int file_readchar(int fd)
 ; Validate the descriptor exactly as the C wrapper did, then advance the
 ; character offset only after a successful one-character VFS transfer.
@@ -104,8 +91,18 @@ file_readchar_vfs:
         move    2,1(010)
         movei   3,(17)
         pushj   17,vfs_readchar
-        camn    1,[-3]                 ; VFS_DEVICE_IO
+        came    1,[-3]                 ; VFS_DEVICE_IO
+        jrst    file_readchar_result
+        move    1,(010)
+        tlz     1,707070
+        camn    1,[020002000000]       ; DEVICEFS CTY0 IO endpoint
+        jrst    file_readchar_cty
+        seto    1,                     ; other device streams are unsupported
         jrst    file_readchar_done
+file_readchar_cty:
+        move    1,[-3]
+        jrst    file_readchar_done
+file_readchar_result:
         jumpg   1,file_readchar_ok
         jumpe   1,file_readchar_eof
         seto    1,                     ; other VFS errors -> -1
@@ -157,6 +154,18 @@ file_writechar_vfs:
         move    3,(17)
         move    2,1(010)
         pushj   17,vfs_writechar
+        came    1,[-3]
+        jrst    file_writechar_result
+        move    1,(010)
+        tlz     1,707070
+        camn    1,[020002000000]
+        jrst    file_writechar_cty
+        seto    1,
+        jrst    file_writechar_done
+file_writechar_cty:
+        move    1,[-3]
+        jrst    file_writechar_done
+file_writechar_result:
         jumpn   1,file_writechar_done
         aos     1(010)
 file_writechar_done:
@@ -220,13 +229,8 @@ file_dup_store:
         move    4,1(1)
         movem   4,1(2)
         move    1,(2)
-        move    4,1
-        tlz     4,707070
-        lsh     4,-036                 ; provider
-        caie    4,7                    ; PIPE_PROVIDER
-        jrst    file_dup_return
         push    17,3
-        pushj   17,pipe_add_ref
+        pushj   17,pipe_add_ref         ; no-op for non-pipe descriptors
         pop     17,3
 file_dup_return:
         move    1,3
@@ -773,54 +777,40 @@ file_chdir_fail:
         jrst    file_chdir_done
 
 ; int file_mkdir(const kword_t *path, unsigned int mode)
-; Mode is saved below one parent vnode and one five-word name.  The parent
-; vnode slot becomes the ignored output vnode once the parent is loaded.
-        .globl  vfs_mkdir
-        .globl  file_mkdir
-file_mkdir:
-        push    17,2
-        add     17,[6,,6]
-        movei   2,-5(17)
-        movei   3,-4(17)
-        pushj   17,file_parent_path
-        jumpn   1,file_mkdir_fail
-        move    3,-6(17)
-        move    1,-5(17)
-        movei   2,-4(17)
-        movei   4,-5(17)
-        pushj   17,vfs_mkdir
-file_mkdir_done:
-        sub     17,[6,,6]
-        pop     17,2
-        popj    17,
-file_mkdir_fail:
-        seto    1,
-        jrst    file_mkdir_done
-
 ; int file_mkfifo(const kword_t *path, unsigned int mode)
-; Same compact parent/name layout as mkdir.  The persistent filesystem node
-; contains no stream payload; vfs_mkfifo selects the provider FIFO type.
+; Both operations share path splitting and stack layout; AC10 retains the
+; selected VFS creator across file_parent_path().
+        .globl  vfs_mkdir
         .globl  vfs_mkfifo
+        .globl  file_mkdir
         .globl  file_mkfifo
+file_mkdir:
+        push    17,010
+        movei   010,vfs_mkdir
+        jrst    file_make_node
 file_mkfifo:
+        push    17,010
+        movei   010,vfs_mkfifo
+file_make_node:
         push    17,2
         add     17,[6,,6]
         movei   2,-5(17)
         movei   3,-4(17)
         pushj   17,file_parent_path
-        jumpn   1,file_mkfifo_fail
+        jumpn   1,file_make_node_fail
         move    3,-6(17)
         move    1,-5(17)
         movei   2,-4(17)
         movei   4,-5(17)
-        pushj   17,vfs_mkfifo
-file_mkfifo_done:
+        pushj   17,(010)
+file_make_node_done:
         sub     17,[6,,6]
         pop     17,2
+        pop     17,010
         popj    17,
-file_mkfifo_fail:
+file_make_node_fail:
         seto    1,
-        jrst    file_mkfifo_done
+        jrst    file_make_node_done
 
 ; int file_unlink(const kword_t *path)
 ; Seven stack words hold one parent vnode, one five-word name and the vnode
