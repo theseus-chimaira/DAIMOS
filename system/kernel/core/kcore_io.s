@@ -197,7 +197,31 @@ pdp10_pi_handlers:
 pdp10_pi_level_span:
         .block 07
 pdp10_pi_sp_save:
-        .block 015
+        .block 1                       ; PI1 stack slot, offset 0
+        .globl proc_table
+proc_table:
+        .block 1                       ; unreachable PI offset 1
+        .block 1                       ; PI2 stack slot, offset 2
+        .globl proc_slots
+proc_slots:
+        .block 1                       ; unreachable PI offset 3
+        .block 1                       ; PI3 stack slot, offset 4
+        .globl proc_high_slot
+proc_high_slot:
+        .block 1                       ; unreachable PI offset 5
+        .block 1                       ; PI4 stack slot, offset 6
+        .globl proc_current_slot
+proc_current_slot:
+        .block 1                       ; unreachable PI offset 7
+        .block 1                       ; PI5 stack slot, offset 010
+        .globl proc_sched_cursor
+proc_sched_cursor:
+        .block 1                       ; unreachable PI offset 011
+        .block 1                       ; PI6 stack slot, offset 012
+        .globl proc_sched_kick
+proc_sched_kick:
+        .block 1                       ; unreachable PI offset 013
+        .block 1                       ; PI7 stack slot, offset 014
 
         .text
 ; Save the PI state and suppress new priority interrupts while MM publishes a

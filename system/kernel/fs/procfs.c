@@ -6,7 +6,7 @@ static int
 procfs_slot_active(unsigned int slot)
 {
         return proc_table != 0 && slot < proc_slots &&
-            PROC_STATE(&proc_table[slot]) != PROC_FREE;
+            !PROC_IS_FREE(&proc_table[slot]);
 }
 
 static inline void
@@ -81,6 +81,28 @@ procfs_format_slot(unsigned int slot, struct vfs_name *name)
         procfs_name_set(name, word, chars);
 }
 
+#define PROCFS_FILE_COUNT 5U
+#define PROCFS_FILE_LEN_BITS 3U
+#define PROCFS_FILE_LEN_MASK 07UL
+#define PROCFS_FILE_LENGTHS \
+        ((kword_t)4U | ((kword_t)5U << 3) | ((kword_t)5U << 6) | \
+        ((kword_t)4U << 9) | ((kword_t)6U << 12))
+
+static const kword_t procfs_file_names[PROCFS_FILE_COUNT] = {
+        VFS_SIX6('P','P','I','D',' ',' '),
+        VFS_SIX6('S','T','A','T','E',' '),
+        VFS_SIX6('W','O','R','D','S',' '),
+        VFS_SIX6('C','O','M','M',' ',' '),
+        VFS_SIX6('S','T','A','T','U','S')
+};
+
+static inline unsigned int
+procfs_file_chars(unsigned int index)
+{
+        return (unsigned int)((PROCFS_FILE_LENGTHS >>
+            (index * PROCFS_FILE_LEN_BITS)) & PROCFS_FILE_LEN_MASK);
+}
+
 static inline int
 procfs_file_kind(unsigned int kind)
 {
@@ -108,17 +130,15 @@ procfs_lookup(vnode_t dir, const struct vfs_name *name, vnode_t *nodep)
         slot = VFS_INDEX(dir);
         if (!procfs_slot_active(slot))
                 return -1;
-        if (vfs_name_is6(name, VFS_SIX6('P','P','I','D',' ',' '), 4U))
-                kind = PROCFS_KIND_PPID;
-        else if (vfs_name_is6(name, VFS_SIX6('S','T','A','T','E',' '), 5U))
-                kind = PROCFS_KIND_STATE;
-        else if (vfs_name_is6(name, VFS_SIX6('W','O','R','D','S',' '), 5U))
-                kind = PROCFS_KIND_WORDS;
-        else if (vfs_name_is6(name, VFS_SIX6('C','O','M','M',' ',' '), 4U))
-                kind = PROCFS_KIND_COMM;
-        else if (vfs_name_is6(name, VFS_SIX6('S','T','A','T','U','S'), 6U))
-                kind = PROCFS_KIND_STATUS;
-        else
+        for (kind = PROCFS_KIND_PPID; kind <= PROCFS_KIND_STATUS; ++kind) {
+                unsigned int index;
+
+                index = kind - PROCFS_KIND_PPID;
+                if (vfs_name_is6(name, procfs_file_names[index],
+                    procfs_file_chars(index)))
+                        break;
+        }
+        if (kind > PROCFS_KIND_STATUS)
                 return -1;
         *nodep = VFS_NODE(PROCFS_PROVIDER, kind, slot);
         return 0;
@@ -151,23 +171,10 @@ procfs_readdir(vnode_t dir, unsigned int off, struct vfs_dirent *ent)
         }
         if (kind != PROCFS_KIND_PROC || !procfs_slot_active(VFS_INDEX(dir)))
                 return -1;
-        if (off >= 5U)
+        if (off >= PROCFS_FILE_COUNT)
                 return 0;
-        if (off == 0U)
-                procfs_dirent_set(ent, VFS_SIX6('P','P','I','D',' ',' '),
-                    4U, VFS_TYPE_REG);
-        else if (off == 1U)
-                procfs_dirent_set(ent, VFS_SIX6('S','T','A','T','E',' '),
-                    5U, VFS_TYPE_REG);
-        else if (off == 2U)
-                procfs_dirent_set(ent, VFS_SIX6('W','O','R','D','S',' '),
-                    5U, VFS_TYPE_REG);
-        else if (off == 3U)
-                procfs_dirent_set(ent, VFS_SIX6('C','O','M','M',' ',' '),
-                    4U, VFS_TYPE_REG);
-        else
-                procfs_dirent_set(ent, VFS_SIX6('S','T','A','T','U','S'),
-                    6U, VFS_TYPE_REG);
+        procfs_dirent_set(ent, procfs_file_names[off],
+            procfs_file_chars(off), VFS_TYPE_REG);
         return 1;
 }
 
@@ -228,10 +235,12 @@ procfs_status_readchar(struct proc *p, unsigned int slot, kword_t off,
                         value = PROC_PARENT_SLOT(p);
                 else if (field == 2U)
                         value = PROC_PGRP(p);
-                else if (field == 3U)
-                        value = proc_session_id(p);
-                else
-                        value = proc_domain_id(p);
+                else {
+                        value = (unsigned int)proc_scope_id(p);
+                        if (field != 3U)
+                                value >>= PROC_ZOMB_DOMAIN_SHIFT;
+                        value &= (unsigned int)PROC_ZOMB_SESSION_MASK;
+                }
                 *chp = (unsigned int)'0' +
                     ((value >> ((2U - pos) * 3U)) & 07U);
                 return 1;

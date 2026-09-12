@@ -210,7 +210,7 @@ mm_process_owner(unsigned int owner, kword_t base)
         if (proc_table == 0 || owner >= proc_slots)
                 return 0;
         p = &proc_table[owner];
-        if (PROC_STATE(p) == PROC_FREE || PROC_MEM_BASE(p) != base)
+        if (PROC_IS_FREE(p) || PROC_MEM_BASE(p) != base)
                 return 0;
         return p;
 }
@@ -235,16 +235,13 @@ mm_move_process(struct proc *p, unsigned int owner)
         kword_t *dst;
         unsigned int i;
         unsigned int old_state;
-        int mm_stopped;
         int rc;
 
         if (p == 0 || proc_table == 0 || owner >= proc_slots ||
-            p != &proc_table[owner] || PROC_STATE(p) == PROC_FREE ||
-            PROC_STATE(p) == PROC_ZOMB || PROC_TRANSITION(p) ||
+            p != &proc_table[owner] || PROC_IS_FREE_OR_ZOMB(p) || PROC_TRANSITION(p) ||
             owner == (unsigned int)proc_current_slot)
                 return MM_ERR_BUSY;
         old_state = PROC_STATE(p);
-        mm_stopped = 0;
         if (PROC_HAS_UAREA(p)) {
                 kword_t ctl;
 
@@ -252,7 +249,6 @@ mm_move_process(struct proc *p, unsigned int owner)
                 ctl |= (kword_t)PROC_STOP_MM << PROC_STOP_SHIFT;
                 PROC_CTL_WORD(p) = ctl;
                 PROC_SET_STATE(p, PROC_STOP);
-                mm_stopped = 1;
         } else if (old_state == PROC_SRUN) {
                 return MM_ERR_BUSY;
         }
@@ -296,13 +292,14 @@ mm_move_process(struct proc *p, unsigned int owner)
         rc = MM_OK;
 out:
         PROC_CLEAR_TRANSITION(p);
-        if (mm_stopped) {
+        if (PROC_HAS_UAREA(p)) {
                 kword_t ctl;
 
                 ctl = PROC_CTL_WORD(p);
                 ctl &= ~((kword_t)PROC_STOP_MM << PROC_STOP_SHIFT);
                 PROC_CTL_WORD(p) = ctl;
-                if (((ctl >> PROC_STOP_SHIFT) & PROC_STOP_MASK) == 0UL)
+                if ((ctl & ((kword_t)PROC_STOP_MASK <<
+                    PROC_STOP_SHIFT)) == 0UL)
                         PROC_SET_STATE(p, old_state);
         }
         return rc;

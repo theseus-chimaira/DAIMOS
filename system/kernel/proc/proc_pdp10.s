@@ -519,18 +519,6 @@ proc_idle_loop:
         jrst    proc_idle_loop
 
         .bss
-proc_table:
-        .block  1                       ; pointer to boot-sized process table
-proc_slots:
-        .block  1                       ; configured 64/128/256 slot count
-proc_high_slot:
-        .block  1                       ; one past highest occupied slot
-proc_current_slot:
-        .block  1
-proc_sched_cursor:
-        .block  1
-proc_sched_kick:
-        .block  1
 .if PROC_STACK_WATERMARK
 proc_stack_highwater:
         .long   0

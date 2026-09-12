@@ -57,6 +57,8 @@
 #define PROC_SCHED_RH_MASK  PROC_HALF_MASK
 #define PROC_STATE_BITS \
         ((kword_t)PROC_STATE_MASK << PROC_STATE_SHIFT)
+#define PROC_STATE_LO_BITS \
+        ((kword_t)03UL << PROC_STATE_SHIFT)
 #define PROC_SCHED_DEFAULT \
         ((kword_t)PROC_NICE_BIAS << PROC_NICE_SHIFT)
 
@@ -115,6 +117,9 @@
 #define PROC_ZOMB_SESSION_SHIFT          0U
 #define PROC_ZOMB_DOMAIN_MASK        0377UL
 #define PROC_ZOMB_DOMAIN_SHIFT           8U
+#define PROC_ZOMB_SCOPE_MASK \
+        (PROC_ZOMB_SESSION_MASK | \
+        (PROC_ZOMB_DOMAIN_MASK << PROC_ZOMB_DOMAIN_SHIFT))
 #define PROC_KSTACK_WORDS \
         (PROC_UAREA_WORDS - PROC_USTACK_BASE)
 
@@ -139,11 +144,10 @@ void proc_exit_current(int status);
 int proc_slot_discard(unsigned int slot);
 int proc_child_hierarchy(unsigned int child_slot, unsigned int mode,
     unsigned int requested_pgrp);
-int proc_tty_read_enter(unsigned int tty_id);
-int proc_tty_input(unsigned int tty_id, unsigned int ch);
+int proc_tty_read_enter(void);
+int proc_tty_input(unsigned int ch);
 void proc_sched_resched_current(void);
-unsigned int proc_session_id(const struct proc *p);
-unsigned int proc_domain_id(const struct proc *p);
+kword_t proc_scope_id(const struct proc *p);
 int proc_wait_child(void);
 kword_t proc_comm(const struct proc *p);
 int proc_wait_event(volatile kword_t *eventp);
@@ -163,8 +167,10 @@ void proc_sched_pi_tick(void);
         ((unsigned int)(((p)->meta >> PROC_PARENT_SHIFT) & PROC_PARENT_MASK))
 #define PROC_FLAGS(p) \
         ((unsigned int)(((p)->meta >> PROC_FLAGS_SHIFT) & PROC_FLAGS_MASK))
-#define PROC_TRANSITION(p) ((PROC_FLAGS(p) & PROC_F_TRANSITION) != 0U)
-#define PROC_HAS_UAREA(p) ((PROC_FLAGS(p) & PROC_F_UAREA) != 0U)
+#define PROC_TRANSITION(p) \
+        (((p)->meta & ((kword_t)PROC_F_TRANSITION << PROC_FLAGS_SHIFT)) != 0UL)
+#define PROC_HAS_UAREA(p) \
+        (((p)->meta & ((kword_t)PROC_F_UAREA << PROC_FLAGS_SHIFT)) != 0UL)
 #define PROC_MEM_BASE(p) ((kword_t)((p)->mem_layout & PROC_HALF_MASK))
 #define PROC_MEM_WORDS(p) \
         ((kword_t)(((p)->mem_layout >> PROC_HALF_SHIFT) & PROC_HALF_MASK))
@@ -216,6 +222,10 @@ void proc_sched_pi_tick(void);
         ((unsigned int)(((p)->sched >> PROC_WAIT_SHIFT) & PROC_WAIT_MASK))
 #define PROC_STATE(p) \
         ((unsigned int)(((p)->sched >> PROC_STATE_SHIFT) & PROC_STATE_MASK))
+#define PROC_IS_FREE(p) \
+        (((p)->sched & PROC_STATE_BITS) == 0UL)
+#define PROC_IS_FREE_OR_ZOMB(p) \
+        (((p)->sched & PROC_STATE_LO_BITS) == 0UL)
 #define PROC_WAIT_CHANNEL(p) ((kword_t)((p)->sched & PROC_SCHED_RH_MASK))
 #define PROC_ZOMB_SESSION(p) \
         ((unsigned int)(((p)->sched >> PROC_ZOMB_SESSION_SHIFT) & \

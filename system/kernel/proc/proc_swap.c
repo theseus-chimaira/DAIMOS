@@ -279,7 +279,7 @@ proc_swap_in(unsigned int slot)
                 return -1;
         p = &proc_table[slot];
         r = &proc_swap_records[slot];
-        if (PROC_MEM_BASE(p) != 0UL || PROC_STATE(p) == PROC_FREE ||
+        if (PROC_MEM_BASE(p) != 0UL || PROC_IS_FREE(p) ||
             r->state == 0UL || PROC_TRANSITION(p))
                 return -1;
         words = PROC_MEM_WORDS(p);
