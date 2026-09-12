@@ -271,8 +271,7 @@ diskset_mres_reg_dispatch:
         jumpl 5,pdp10_ret_neg1
         cail 5,012
         jrst pdp10_ret_neg1
-        move 5,diskset_dispatch_table(5)
-        jrst (5)
+        jrst @diskset_dispatch_table(5)
 
 diskset_dispatch_table:
         .word diskset_blocks

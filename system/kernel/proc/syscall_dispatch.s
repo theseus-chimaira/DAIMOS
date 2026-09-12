@@ -45,14 +45,13 @@ exec_native_syscall:
         ; Hardware monitor UUOs reaching mach_syscall are exactly 040..077.
         ; Two 18-bit handler addresses share each permanent dispatch word.
         move    6,5
+        andi    5,1
         lsh     6,-1
-        trne    5,1
-        jrst    exec_native_odd
+        xct     exec_native_half_select(5)
+        jrst    (5)
+exec_native_half_select:
         hlrz    5,exec_native_table(6)
-        jrst    (5)
-exec_native_odd:
         hrrz    5,exec_native_table(6)
-        jrst    (5)
 exec_native_table:
         .word   %L66,,%L67
         .word   %L72,,native_sys_write_chars
