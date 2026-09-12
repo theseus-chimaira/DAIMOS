@@ -3,6 +3,7 @@
         .globl  pdp10_ret_zero
         .globl  pdp10_ret_one
         .globl  pdp10_ret_neg1
+        .globl  pdp10_ret_busy
 
 
 ; Compact namespace operations.  These use the permanent register-provider
@@ -646,8 +647,7 @@ vfs_writechar:
         ldb     4,[POINT 6,1,17]       ; VFS local kind
         caie    4,2                    ; DEVICEFS_KIND_DEVICE
         jrst    vfs_writechar_regular
-        hrroi   1,0777775              ; VFS_DEVICE_IO = -3
-        popj    17,
+        jrst    pdp10_ret_busy          ; VFS_DEVICE_IO = -3
 
 vfs_writechar_regular:
         add     17,[010,,010]

@@ -484,6 +484,7 @@ proc_wait_status(unsigned int selector, kword_t *statusp, unsigned int flags)
         }
 }
 
+#ifndef __PDP10__
 kword_t
 proc_comm(const struct proc *p)
 {
@@ -498,6 +499,7 @@ proc_comm(const struct proc *p)
                 return VFS_SIX6('I','N','I','T',' ',' ');
         return VFS_SIX6('U','S','E','R',' ',' ');
 }
+#endif
 
 int
 proc_nice_value(int slot)

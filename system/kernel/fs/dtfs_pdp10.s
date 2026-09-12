@@ -1,6 +1,7 @@
 ; dtfs_pdp10.s -- DTFS runtime and boot-patched DTC veneers.
         .text
 
+	.globl pdp10_ret_neg2
         .globl  fs_mres_vector_dispatch
         .globl  dtfs_mres_dispatch
         .globl  dtfs_lookup
@@ -495,9 +496,7 @@ dtfs_foreign_set_name_return:
 ; Native names occupy two words; unused slots have a zero first word.
 ; Inline the VFS name-range check because DTFS's 11-character limit is stricter.
 dtfs_native_scan_invalid:
-        seto    1,                       ; -1 means valid name not found
-        sos     1                        ; -2 means invalid name
-        popj    17,
+	jrst    pdp10_ret_neg2           ; -2 means invalid name
 dtfs_native_scan_slot:
         jumpe   1,dtfs_native_scan_begin
         move    4,(1)

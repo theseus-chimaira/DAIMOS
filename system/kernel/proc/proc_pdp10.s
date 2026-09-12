@@ -454,8 +454,7 @@ proc_child_set:
         and     5,[770001777770]
         ior     6,5
         movem   6,045(4)
-        movei   1,0
-        popj    17,
+        jrst    pdp10_ret_zero
 
 ; int proc_control(unsigned int op, unsigned int arg)
 ; Compact native PROCCTL dispatcher.  The syscall dispatcher guarantees a live
