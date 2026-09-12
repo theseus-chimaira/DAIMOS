@@ -501,6 +501,7 @@ proc_comm(const struct proc *p)
 }
 #endif
 
+#ifndef __PDP10__
 int
 proc_nice_value(int slot)
 {
@@ -510,6 +511,7 @@ proc_nice_value(int slot)
         return (int)PROC_NICE_ENCODED(&proc_table[slot]) -
             (int)PROC_NICE_BIAS;
 }
+#endif
 
 int
 proc_nice_current(int value)
@@ -649,7 +651,8 @@ proc_swap_victim(unsigned int exclude_owner)
                 if (PROC_MEM_BASE(p) == 0UL || mm_is_pinned(PROC_MEM_BASE(p)))
                         continue;
 
-                nice = proc_nice_value(i);
+                nice = (int)PROC_NICE_ENCODED(p) -
+                    (int)PROC_NICE_BIAS;
                 if (state == PROC_SLEEP || state == PROC_STOP) {
                         score = 04000 + (int)PROC_SLEEP_AGE(p) * 0100;
                         if (PROC_WAIT_CLASS(p) != PROC_WAIT_NONE)
