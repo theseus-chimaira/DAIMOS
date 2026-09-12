@@ -26,22 +26,14 @@ dtfs_mres_reg_dispatch:
 
         .data
 dtfs_mres_vector:
-        .word   017                      ; highest runtime VFS operation: 15
-        movei   7,dtfs_lookup                 ; 1
-        movei   7,dtfs_readdir                ; 2
-        movei   7,dtfs_stat                   ; 3
-        movei   7,dtfs_parent                 ; 4
-        jrst    fs_mres_no_service       ; 5 PARENT_NAME unsupported
-        movei   7,dtfs_create                 ; 6
-        movei   7,dtfs_mkdir_unsupported      ; 7 MKDIR unsupported
-        jrst    fs_mres_no_service       ; 8 SYMLINK unsupported
-        movei   7,dtfs_unlink                 ; 9 UNLINK
-        movei   7,dtfs_rename                 ; 10 RENAME
-        movei   7,dtfs_truncate               ; 11 TRUNCATE
-        movei   7,dtfs_chmod                  ; 12 CHMOD
-        movei   7,dtfs_read_words             ; 13 READ_WORDS
-        movei   7,dtfs_write_words            ; 14 WRITE_WORDS
-        movei   7,dtfs_sync                   ; 15 SYNC
+        .word   dtfs_lookup,,dtfs_readdir
+        .word   dtfs_stat,,dtfs_parent
+        .word   0,,dtfs_create
+        .word   dtfs_mkdir_unsupported,,0
+        .word   dtfs_unlink,,dtfs_rename
+        .word   dtfs_truncate,,dtfs_chmod
+        .word   dtfs_read_words,,dtfs_write_words
+        .word   dtfs_sync,,0
         .text
 
 ; DTFS is deliberately flat.  Preserve a distinct error through the syscall

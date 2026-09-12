@@ -633,23 +633,14 @@ d6fs_mres_create_call:
 
         .data
 d6fs_mres_vector:
-        .word   020                      ; highest operation: 16 decimal
-        movei   7,d6fs_provider_lookup        ; 1 LOOKUP
-        movei   7,d6fs_provider_readdir       ; 2 READDIR
-        movei   7,d6fs_provider_stat          ; 3 STAT
-        movei   7,d6fs_provider_parent        ; 4 PARENT
-        movei   7,d6fs_provider_parent_name   ; 5 PARENT_NAME
-        movei   7,d6fs_mres_create            ; 6 CREATE
-        movei   7,d6fs_mres_mkdir             ; 7 MKDIR
-        movei   7,d6fs_mres_symlink           ; 8 SYMLINK
-        movei   7,d6fs_provider_unlink        ; 9 UNLINK
-        movei   7,d6fs_provider_rename        ; 10 RENAME
-        movei   7,d6fs_provider_truncate      ; 11 TRUNCATE
-        movei   7,d6fs_provider_chmod         ; 12 CHMOD
-        movei   7,d6fs_provider_read_words    ; 13 READ_WORDS
-        movei   7,d6fs_provider_write_words   ; 14 WRITE_WORDS
-        movei   7,d6fs_provider_sync          ; 15 SYNC
-        movei   7,d6fs_provider_prepare_unmount; 16 PREPARE_UNMOUNT
+        .word   d6fs_provider_lookup,,d6fs_provider_readdir
+        .word   d6fs_provider_stat,,d6fs_provider_parent
+        .word   d6fs_provider_parent_name,,d6fs_mres_create
+        .word   d6fs_mres_mkdir,,d6fs_mres_symlink
+        .word   d6fs_provider_unlink,,d6fs_provider_rename
+        .word   d6fs_provider_truncate,,d6fs_provider_chmod
+        .word   d6fs_provider_read_words,,d6fs_provider_write_words
+        .word   d6fs_provider_sync,,d6fs_provider_prepare_unmount
         .text
 
 ; int d6fs_reader_read_words(reader, fcb, off, buf, nwords)

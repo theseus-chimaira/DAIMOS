@@ -46,7 +46,6 @@ extern kword_t sys_memfs_usage_call;
 extern kword_t sys_dtfs_format_jump;
 extern kword_t sys_dtfs_mount_jump;
 
-int fs_provider_call(unsigned int provider, struct fs_mres_request *req);
 void fs_copy_words(const kword_t *src, kword_t *dst, unsigned int count);
 int fs_words_equal(const kword_t *a, const kword_t *b, unsigned int count);
 void fs_zero_words(kword_t *dst, unsigned int count);

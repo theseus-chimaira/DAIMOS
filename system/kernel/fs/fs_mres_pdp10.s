@@ -1,6 +1,5 @@
 ; fs_mres_pdp10.s -- fixed resident bridge to optional filesystem MRES.
         .text
-        .globl fs_provider_call
         .globl fs_provider_reg_call
         .globl fs_memfs_service_jump
         .globl fs_dtfs_service_jump
@@ -29,31 +28,6 @@ diskset_runtime_reg_enter:
         jrst    (4)
 diskset_runtime_service_jump:
         jrst    fs_mres_no_service
-
-; int fs_provider_call(provider, request)
-; Legacy fixed-KCORE C bridge.  Movable provider exports also use the same
-; request ABI during KINIT.  Every provider export is exactly two words and
-; its register entry follows immediately, so the runtime bridge can derive the
-; movable register entry from the already-republished service jump without a
-; second permanent binding.
-fs_provider_call:
-        jumpe   2,fs_mres_no_service
-        move    7,1                     ; provider
-        move    1,2                     ; request
-
-        .globl  fs_provider_request_call
-; Provider export request ABI:
-;   AC1       struct fs_mres_request *
-;   AC7       provider number
-fs_provider_request_call:
-        jumpe   1,fs_mres_no_service
-        move    6,1                     ; request pointer; AC0 cannot index
-        move    5,5(6)                  ; request e
-        move    4,4(6)                  ; request d
-        move    3,3(6)                  ; request c
-        move    2,2(6)                  ; request b
-        move    1,1(6)                  ; request a
-        move    6,(6)                   ; operation, after final pointer use
 
 ; Register provider ABI used by the private PDP-6 UUO bridge:
 ;   AC6       FS_MRES_OP_*
@@ -138,16 +112,35 @@ fs_zero_block_workspace:
         popj    17,
 
         .globl  fs_mres_vector_dispatch
-; Register provider dispatcher.  AC6 is the operation, AC7 the vector table,
-; and request a..e are already in AC1..AC5.  table[0] is the highest valid
-; operation; table[op] loads AC7 with a direct provider entry or jumps to the
-; shared failure return.  The fifth C argument is staged in one stack word.
-fs_mres_vector_dispatch:
-        jumple  6,fs_mres_no_service
-        camle   6,(7)
-        jrst    fs_mres_no_service
+; Filesystem provider vectors pack two 18-bit target addresses per word.
+; Operations are 1..16; a zero halfword denotes an unsupported operation.
+; AC6 is scratch after target selection and AC0..AC5 remain untouched.
+fs_mres_vector_target:
+        jumple  6,fs_mres_vector_target_none
+        caile   6,020
+        jrst    fs_mres_vector_target_none
+        subi    6,1                     ; zero-based operation
+        trne    6,1
+        jrst    fs_mres_vector_target_odd
+        lsh     6,-1
         add     7,6
-        xct     (7)                     ; target into AC7, or failure jump
+        hlrz    7,(7)
+        popj    17,
+fs_mres_vector_target_odd:
+        lsh     6,-1
+        add     7,6
+        hrrz    7,(7)
+        popj    17,
+fs_mres_vector_target_none:
+        setz    7,
+        popj    17,
+
+; Register provider dispatcher.  AC6 is the operation, AC7 the packed vector,
+; and request a..e are already in AC1..AC5.  The fifth C argument is staged in
+; one stack word.
+fs_mres_vector_dispatch:
+        pushj   17,fs_mres_vector_target
+        jumpe   7,fs_mres_no_service
         add     17,[1,,1]               ; reserve C arg 5
         movem   5,(17)
         pushj   17,(7)
@@ -156,14 +149,11 @@ fs_mres_vector_dispatch:
 
         .globl  fs_mres_context_vector_dispatch
 ; Context-register provider dispatcher.  AC0 is the provider context, AC6 the
-; operation, AC7 the table, and request a..e are in AC1..AC5.  Provider C ABI
-; receives context as argument 1, a..c as 2..4 and d/e as stack args 5/6.
+; operation, AC7 the packed vector, and request a..e are in AC1..AC5.  Provider
+; C ABI receives context as argument 1, a..c as 2..4 and d/e as stack args 5/6.
 fs_mres_context_vector_dispatch:
-        jumple  6,fs_mres_no_service
-        camle   6,(7)
-        jrst    fs_mres_no_service
-        add     7,6
-        xct     (7)                     ; target into AC7, or failure jump
+        pushj   17,fs_mres_vector_target
+        jumpe   7,fs_mres_no_service
         add     17,[2,,2]
         movem   4,(17)                  ; arg 5 = request d
         movem   5,-1(17)                ; arg 6 = request e

@@ -792,20 +792,12 @@ memfs_mres_not_init:
 
         .data
 memfs_mres_vector:
-        .word   017                      ; operations 1..15
-        movei   7,memfs_lookup                ; 1 LOOKUP
-        movei   7,memfs_readdir               ; 2 READDIR
-        movei   7,memfs_stat                  ; 3 STAT
-        movei   7,memfs_parent                ; 4 PARENT
-        movei   7,memfs_parent                ; 5 PARENT_NAME
-        movei   7,memfs_create                ; 6 CREATE
-        movei   7,memfs_mkdir                 ; 7 MKDIR
-        jrst    fs_mres_no_service       ; 8 SYMLINK
-        movei   7,memfs_unlink                ; 9 UNLINK
-        movei   7,memfs_rename                ; 10 RENAME
-        movei   7,memfs_truncate_words        ; 11 TRUNCATE
-        movei   7,memfs_chmod                 ; 12 CHMOD
-        movei   7,memfs_read_words            ; 13 READ_WORDS
-        movei   7,memfs_write_words           ; 14 WRITE_WORDS
-        movei   7,pdp10_ret_zero              ; 15 SYNC
+        .word   memfs_lookup,,memfs_readdir
+        .word   memfs_stat,,memfs_parent
+        .word   memfs_parent,,memfs_create
+        .word   memfs_mkdir,,0
+        .word   memfs_unlink,,memfs_rename
+        .word   memfs_truncate_words,,memfs_chmod
+        .word   memfs_read_words,,memfs_write_words
+        .word   pdp10_ret_zero,,0
         .text
