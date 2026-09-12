@@ -20,6 +20,7 @@
         .globl storage_iowd
         .globl storage_count
         .globl pdp10_ret_ok
+        .globl pdp10_ret_zero
         .globl pdp10_ret_busy
         .globl proc_table
         .globl proc_wait_event
@@ -196,8 +197,7 @@ dsk_enqueue:
         hrlm 1,dsk_queue(4)
         hrrm 5,dsk_queue(4)
 dsk_enqueue_ok:
-        setz 1,
-        popj 017,
+        jrst pdp10_ret_zero
 dsk_enqueue_first:
         hrlm 1,dsk_queue(4)
         jrst dsk_enqueue_ok
@@ -242,8 +242,7 @@ dsk_start_go:
         movem 3,storage_state
         datao 0270,1
         cono 0270,000125
-        setz 1,
-        popj 017,
+        jrst pdp10_ret_zero
 
 dsk_boot_request:
         skipe storage_state

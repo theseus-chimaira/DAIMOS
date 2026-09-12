@@ -43,42 +43,37 @@ exec_native_syscall:
         lsh     5,-011
         subi    5,040
         ; Hardware monitor UUOs reaching mach_syscall are exactly 040..077.
-        ; Execute the table entry itself so the table doubles as dispatch code.
-        xct     exec_native_table(5)
-        popj    17,
+        ; Two 18-bit handler addresses share each permanent dispatch word.
+        move    6,5
+        lsh     6,-1
+        trne    5,1
+        jrst    exec_native_odd
+        hlrz    5,exec_native_table(6)
+        jrst    (5)
+exec_native_odd:
+        hrrz    5,exec_native_table(6)
+        jrst    (5)
 exec_native_table:
-        jrst    %L66                    ; 040 EXIT
-        jrst    %L67                    ; 041 OPEN
-        jrst    %L72                    ; 042 CLOSE
-        jrst    native_sys_write_chars  ; 043 WRITE_CHARS
-        jrst    native_sys_getchar      ; 044 GETCHAR
-        jrst    %L75                    ; 045 CHDIR
-        jrst    %L80                    ; 046 GETCWD
-        jrst    %L90                    ; 047 STAT
-        jrst    %L97                    ; 050 DIRREAD
-        jrst    %L102                   ; 051 MKDIR
-        jrst    %L107                   ; 052 UNLINK
-        jrst    %L112                   ; 053 RENAME
-        jrst    %L119                   ; 054 TRUNCATE
-        jrst    %L83                    ; 055 READ_WORDS
-        jrst    %L86                    ; 056 WRITE_WORDS
-        jrst    %L124                   ; 057 PROCINFO
-        jrst    %L129                   ; 060 MEMINFO
-        jrst    %L134                   ; 061 READCHAR
-        jrst    %L135                   ; 062 WRITECHAR
-        jrst    %L136                   ; 063 HALT
-        jrst    native_sys_chmod        ; 064 CHMOD
-        jrst    native_sys_dtfs_format  ; 065 DTFS_FORMAT/CHECK
-        jrst    native_sys_dtfs_mount   ; 066 DTFS_MOUNT
-        jrst    native_sys_unmount      ; 067 UNMOUNT
-        jrst    native_sys_flock        ; 070 FLOCK
-        jrst    native_sys_dup          ; 071 DUP
-        jrst    native_sys_symlink      ; 072 SYMLINK
-        jrst    native_sys_nice         ; 073 NICE
-        jrst    native_sys_run          ; 074 RUN
-        jrst    native_sys_wait         ; 075 WAIT
-        move    1,proc_current_slot     ; 076 GETPID
-        jrst    native_sys_procctl      ; 077 PROCCTL
+        .word   %L66,,%L67
+        .word   %L72,,native_sys_write_chars
+        .word   native_sys_getchar,,%L75
+        .word   %L80,,%L90
+        .word   %L97,,%L102
+        .word   %L107,,%L112
+        .word   %L119,,%L83
+        .word   %L86,,%L124
+        .word   %L129,,%L134
+        .word   %L135,,%L136
+        .word   native_sys_chmod,,native_sys_dtfs_format
+        .word   native_sys_dtfs_mount,,native_sys_unmount
+        .word   native_sys_flock,,native_sys_dup
+        .word   native_sys_symlink,,native_sys_nice
+        .word   native_sys_run,,native_sys_wait
+        .word   native_sys_getpid,,native_sys_procctl
+
+native_sys_getpid:
+        move    1,proc_current_slot
+        popj    17,
 
 ; UUO 043 WRITE_CHARS: AC1 console fd, AC2 9-bit byte pointer, AC3 chars.
 ; This is deliberately the console fast path only.  Regular-file stream writes
