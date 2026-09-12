@@ -1,5 +1,6 @@
 ; devicefs_pdp10.s -- compact resident DEVICEFS primitives.
         .text
+        .globl  pdp10_ret_busy
         .globl  pdp10_ret_zero
         .globl  pdp10_ret_neg1
         .globl  devicefs_io_in
@@ -325,8 +326,7 @@ devicefs_readchar:
         jumpn   1,pdp10_ret_neg1
         caie    6,020002
         jrst    devicefs_readchar_not_io
-        move    1,[-3]                 ; VFS_DEVICE_IO
-        popj    17,
+        jrst    pdp10_ret_busy          ; VFS_DEVICE_IO
 
 devicefs_readchar_not_io:
         cain    6,020004

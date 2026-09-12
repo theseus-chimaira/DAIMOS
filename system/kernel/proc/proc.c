@@ -546,22 +546,25 @@ proc_select_runnable(void)
         limit = (int)proc_high_slot;
         best = 0;
         best_prio = 0;
-        for (n = 1; n <= limit; ++n) {
-                struct proc *p;
+        {
                 int slot;
-                int prio;
 
-                slot = ((int)proc_sched_cursor + n) % limit;
-                if (slot == 0)
-                        continue;
-                p = &proc_table[slot];
+                slot = (int)proc_sched_cursor;
+                for (n = 1; n < limit; ++n) {
+                        struct proc *p;
+                        int prio;
+
+                        if (++slot >= limit)
+                                slot = 1;
+                        p = &proc_table[slot];
                 if (PROC_STATE(p) != PROC_SRUN || PROC_MEM_BASE(p) == 0UL ||
                     PROC_TRANSITION(p))
                         continue;
                 prio = proc_effective(p);
-                if (best == 0 || prio < best_prio) {
-                        best = slot;
-                        best_prio = prio;
+                        if (best == 0 || prio < best_prio) {
+                                best = slot;
+                                best_prio = prio;
+                        }
                 }
         }
         if (best != 0)
@@ -627,32 +630,37 @@ proc_sched_tick_select(void)
 int
 proc_swap_victim(unsigned int exclude_owner)
 {
+        struct proc *p;
+        int exclude;
         int i;
         int best;
         int best_score;
 
+#ifndef __PDP10__
         if (proc_table == 0)
                 return -1;
+#endif
+        exclude = (int)exclude_owner;
         best = 0;
         best_score = 0;
-        for (i = 1; i < (int)proc_high_slot; ++i) {
-                const struct proc *p;
+        p = &proc_table[1];
+        for (i = 1; i < (int)proc_high_slot; ++i, ++p) {
+                kword_t base;
                 unsigned int state;
                 int score;
                 int nice;
 
-                if ((unsigned int)i == exclude_owner || i == (int)proc_current_slot)
+                if (i == exclude || i == (int)proc_current_slot)
                         continue;
-                p = &proc_table[i];
                 state = PROC_STATE(p);
                 if ((state != PROC_SLEEP && state != PROC_STOP &&
                     state != PROC_SRUN) || PROC_TRANSITION(p))
                         continue;
-                if (PROC_MEM_BASE(p) == 0UL || mm_is_pinned(PROC_MEM_BASE(p)))
+                base = PROC_MEM_BASE(p);
+                if (base == 0UL || mm_is_pinned(base))
                         continue;
 
-                nice = (int)PROC_NICE_ENCODED(p) -
-                    (int)PROC_NICE_BIAS;
+                nice = (int)PROC_NICE_ENCODED(p) - (int)PROC_NICE_BIAS;
                 if (state == PROC_SLEEP || state == PROC_STOP) {
                         score = 04000 + (int)PROC_SLEEP_AGE(p) * 0100;
                         if (PROC_WAIT_CLASS(p) != PROC_WAIT_NONE)
