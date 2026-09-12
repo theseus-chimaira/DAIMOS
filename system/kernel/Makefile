@@ -17,7 +17,7 @@ VM_BACKEND_ASM = proc/vm_${VM_BACKEND}_asm.s
 VM_SWAP_C = proc/vm_${VM_BACKEND}_swap.c
 VERSION_FILE = ${PROJECT_ROOT}/VERSION
 DAIMON_VERSION != cat ${VERSION_FILE}
-INCLUDES = -I. -Iboot -Icore -Idrivers -Ifs -Imm -Imodules -Iproc -Istorage
+INCLUDES = -I. -Iboot -Icore -Idrivers -Ifs -Iipc -Imm -Imodules -Iproc -Istorage
 
 KERNEL_HEADERS = boot/kboot.h \
 	boot/kinit.h \
@@ -46,6 +46,7 @@ KERNEL_HEADERS = boot/kboot.h \
 	fs/memfs.h \
 	fs/procfs.h \
 	fs/vfs.h \
+	ipc/pipe.h \
 	mm/mm.h \
 	mm/mm_internal.h \
 	mm/mres.h \
@@ -110,14 +111,16 @@ KCORE_C_SRCS = proc/exec.c \
 	mm/mm.c \
 	modules/module_runtime.c \
 	proc/proc.c \
-	fs/file.c
+	fs/file.c \
+	ipc/pipe.c
 
 KCORE_C_ASM = $(BUILD)/exec.s \
 	$(BUILD)/devicefs.s \
 	$(BUILD)/mm.s \
 	$(BUILD)/module_runtime.s \
 	$(BUILD)/proc.s \
-	$(BUILD)/file.s
+	$(BUILD)/file.s \
+	$(BUILD)/pipe.s
 
 KCORE_VM_ASM = $(BUILD)/vm_backend.s \
 	$(BUILD)/proc_swap.s
@@ -146,6 +149,7 @@ KCORE_FIXED_ASM = $(BUILD)/exec.s \
 	$(BUILD)/module_runtime.s \
 	$(BUILD)/proc.s \
 	$(BUILD)/file.s \
+	$(BUILD)/pipe.s \
 	$(BUILD)/vm_backend.s \
 	$(BUILD)/proc_swap.s \
 	$(BUILD)/ret_pdp10.s \
@@ -226,7 +230,7 @@ kcore: ${KCORE_FIXED_ASM} ${MRES_ASM}
 
 ${KINIT_C_ASM} ${KINIT_LATE_C_ASM}: ${KINIT_SRCS} ${KINIT_LATE_SRCS} ${KERNEL_HEADERS} ${VERSION_FILE}
 	@mkdir -p ${BUILD}
-	@base=`basename "$@" .s`; src=; for d in boot core drivers fs mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_GCC} -std=c99 -Os -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
+	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_GCC} -std=c99 -Os -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
 
 ${BUILD}/bootbanner_generated.s: ${VERSION_FILE}
 	@mkdir -p ${BUILD}
@@ -234,7 +238,7 @@ ${BUILD}/bootbanner_generated.s: ${VERSION_FILE}
 
 ${KCORE_C_ASM}: ${KCORE_C_SRCS} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	@base=`basename "$@" .s`; src=; for d in boot core drivers fs mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; ${PDP10_GCC} -std=c99 -Os -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S "$$src" -o "$@"
+	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; ${PDP10_GCC} -std=c99 -Os -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S "$$src" -o "$@"
 
 ${BUILD}/vm_backend.s: ${VM_BACKEND_C} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
@@ -355,7 +359,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret_pdp10.s \
 
 ${COPY_ASM_TARGETS}: ${COPY_ASM_SRCS}
 	@mkdir -p ${BUILD}
-	@base=`basename "$@"`; src=; for d in boot core drivers fs mm modules proc storage; do if test -f "$$d/$$base"; then src="$$d/$$base"; break; fi; done; test -n "$$src"; cp "$$src" "$@"
+	@base=`basename "$@"`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base"; then src="$$d/$$base"; break; fi; done; test -n "$$src"; cp "$$src" "$@"
 
 clean:
 	rm -rf ${BUILD}

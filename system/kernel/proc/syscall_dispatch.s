@@ -20,7 +20,10 @@
         .globl  proc_tty_read_enter
         .globl  proc_tty_input
         .globl  proc_current_slot
-        .globl  file_stdio_enabled
+        .globl  file_is_cty
+        .globl  pipe_create
+        .globl  file_mkfifo
+        .globl  file_writechar_reserve
 exec_native_syscall:
         ; Recover the monitor-UUO opcode from the trapped instruction.
         ; AC0 cannot be an index register on the PDP-6: index field zero
@@ -54,52 +57,88 @@ exec_native_table:
         .word   native_sys_flock,,native_sys_dup
         .word   native_sys_symlink,,native_sys_nice
         .word   native_sys_run,,native_sys_wait
-        .word   native_sys_getpid,,native_sys_procctl
+        .word   native_sys_getpid,,native_sys_extctl
 
 native_sys_getpid:
         move    1,proc_current_slot
         popj    17,
 
-; UUO 043 WRITE_CHARS: AC1 console fd, AC2 9-bit byte pointer, AC3 chars.
-; This is deliberately the console fast path only.  Regular-file stream writes
-; retain WRITECHAR semantics in libc; CAT uses this call only for console output.
+; UUO 043 WRITE_CHARS: AC1 fd, AC2 9-bit byte pointer, AC3 chars.
+; Preserve the one-trap bulk ABI for ordinary files and future pipe streams.
+; CTY remains fast enough for bring-up; the later pipe bulk step may specialize
+; device/pipe transfer after measurements without changing this ABI.
 native_sys_write_chars:
-        push    17,2                  ; preserve user byte pointer
-        push    17,3                  ; preserve character count
-        hrrz    1,1
-        caige   1,1
-        jrst    native_sys_write_chars_stdio_bad
-        caile   1,2
-        jrst    native_sys_write_chars_stdio_bad
-        pushj   17,file_stdio_enabled
-        jumpe   1,native_sys_write_chars_stdio_bad
-        pop     17,3
-        pop     17,2
-        hrrz    6,3                   ; character count
-        jumpe   6,pdp10_ret_zero
-        move    5,2                   ; logical 9-bit byte pointer
+        ; AC10-12 carry the translated stream cursor across C pipe calls.
+        ; They are callee-saved by the PDP-10 C ABI; the original user values
+        ; are restored before leaving the syscall.
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,1                  ; fd
+        push    17,2                  ; user byte pointer
+        push    17,3                  ; chunk counter scratch
+        hrrz    011,3                 ; characters remaining
+        jumpe   011,native_sys_write_chars_empty
+        move    010,2
         hrrz    1,2
         pushj   17,vm_user_words
         jumpe   1,native_sys_write_chars_fail
-        hrr     5,1                   ; translated byte pointer
+        hrr     010,1                 ; translated byte pointer
         add     3,4                   ; one-past physical user end
-        move    7,3
+        move    012,3
+
+        ; The first pipe character in each <= PIPE_BUF chunk waits for enough
+        ; room for the complete chunk.  The remaining calls reduce that
+        ; reservation one character at a time.  Executive code does not
+        ; schedule another process between these non-waiting calls, preserving
+        ; atomicity without a separate pipe reservation object.
+native_sys_write_chars_chunk:
+        move    1,011
+        caile   1,0200                ; PIPE_BUF = 128 characters
+        movei   1,0200
+        movem   1,(17)
 
 native_sys_write_chars_loop:
-        hrrz    4,5
-        caml    4,7
+        hrrz    4,010
+        caml    4,012
         jrst    native_sys_write_chars_fail
-        ldb     1,5
+        ldb     2,010
+        move    1,-2(17)              ; saved fd
+        hrrz    1,1
+        move    3,(17)                ; remaining atomic reservation
+        pushj   17,file_writechar_reserve
+        camn    1,[-3]                ; VFS_DEVICE_IO
+        jrst    native_sys_write_chars_device
+        jumpn   1,native_sys_write_chars_fail
+native_sys_write_chars_next:
+        soje    011,native_sys_write_chars_ok
+        ibp     010
+        sosle   (17)
+        jrst    native_sys_write_chars_loop
+        jrst    native_sys_write_chars_chunk
+native_sys_write_chars_device:
+        move    1,-2(17)
+        hrrz    1,1
+        pushj   17,file_is_cty
+        jumpe   1,native_sys_write_chars_fail
+        move    1,2
         pushj   17,native_sys_putchar
         jumpn   1,native_sys_write_chars_fail
-        soje    6,pdp10_ret_zero
-        ibp     5
-        jrst    native_sys_write_chars_loop
-native_sys_write_chars_stdio_bad:
-        pop     17,3
-        pop     17,2
+        jrst    native_sys_write_chars_next
+native_sys_write_chars_empty:
+        setz    1,
+        jrst    native_sys_write_chars_done
+native_sys_write_chars_ok:
+        setz    1,
+native_sys_write_chars_done:
+        sub     17,[3,,3]
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
 native_sys_write_chars_fail:
-        jrst    pdp10_ret_neg1
+        seto    1,
+        jrst    native_sys_write_chars_done
 
 %L66:
         push    17,1
@@ -219,39 +258,41 @@ native_sys_write_chars_fail:
         jrst    sys_meminfo
 %L134:
         hrrz    1,1
-        jumpe   1,native_sys_readchar_stdio
+        push    17,1
         pushj   17,file_readchar
-        camn    1,[-3]
-        jrst    native_sys_getchar
+        came    1,[-3]
+        jrst    native_sys_readchar_done
+        move    1,(17)
+        pushj   17,file_is_cty
+        jumpe   1,native_sys_readchar_bad
+        pop     17,1
+        jrst    native_sys_getchar_policy
+native_sys_readchar_bad:
+        seto    1,
+native_sys_readchar_done:
+        sub     17,[1,,1]
         jrst    %L65
 %L135:
-        ; AC1 fd, AC2 character.  Preserve the character on the process
-        ; kernel stack across a real file_writechar call.
+        ; AC1 fd, AC2 character.
         hrrz    1,1
-        cail    1,1
-        cail    1,3
-        trna
-        jrst    native_sys_writechar_tty
+        push    17,1
         push    17,2
         andi    2,0777
         pushj   17,file_writechar
-        pop     17,2
         came    1,[-3]
-        jrst    %L65
-native_sys_writechar_tty:
-        push    17,2
-        pushj   17,file_stdio_enabled
-        pop     17,2
-        jumpe   1,%L137
-        move    1,2
+        jrst    native_sys_writechar_done
+        move    1,-1(17)
+        pushj   17,file_is_cty
+        jumpe   1,native_sys_writechar_bad
+        move    1,(17)
         andi    1,0777
-        jrst    native_sys_putchar
-
-native_sys_readchar_stdio:
-        movei   1,0
-        pushj   17,file_stdio_enabled
-        jumpe   1,%L137
-        jrst    native_sys_getchar
+        pushj   17,native_sys_putchar
+        jrst    native_sys_writechar_done
+native_sys_writechar_bad:
+        seto    1,
+native_sys_writechar_done:
+        sub     17,[2,,2]
+        jrst    %L65
 
 ; Return the DTC0 vnode for a valid translated user path, or zero on failure.
 ; A one-word process-private kernel-stack temporary replaces the old global
@@ -420,15 +461,34 @@ native_sys_wait_call:
         hrrz    3,6
         jrst    proc_wait_status
 
-native_sys_procctl:
+native_sys_extctl:
         hrrz    1,1
+        caie    1,020                  ; SYS_EXT_PIPE
+        jrst    native_sys_ext_nonpipe
+        jrst    pipe_create
+native_sys_ext_nonpipe:
+        caie    1,021                  ; SYS_EXT_MKFIFO
+        jrst    native_sys_procctl
+        move    1,2                    ; user path
+        push    17,3                   ; preserve mode across VM translation
+        pushj   17,vm_user_words
+        pop     17,2
+        jumpe   1,pdp10_ret_neg1
+        hrrz    2,2
+        jrst    file_mkfifo
+native_sys_procctl:
         hrrz    2,2
         jrst    proc_control
 
 native_sys_getchar:
+        ; Legacy GETCHAR follows descriptor 0 just like READCHAR.
         movei   1,0
-        pushj   17,file_stdio_enabled
-        jumpe   1,%L137
+        pushj   17,file_readchar
+        came    1,[-3]
+        popj    17,
+        movei   1,0
+        pushj   17,file_is_cty
+        jumpe   1,pdp10_ret_neg1
 native_sys_getchar_policy:
         pushj   17,proc_tty_read_enter
         jumpn   1,%L137

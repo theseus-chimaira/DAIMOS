@@ -352,6 +352,10 @@ memfs_restore4_fail:
 memfs_create:
         movei   5,2                     ; VFS_TYPE_REG
         jrst    memfs_new_node
+        .globl  memfs_mkfifo
+memfs_mkfifo:
+        movei   5,7                     ; VFS_TYPE_FIFO
+        jrst    memfs_new_node
         .globl  memfs_mkdir
 memfs_mkdir:
         movei   5,1                     ; VFS_TYPE_DIR
@@ -440,8 +444,6 @@ memfs_unlink:
         move    011,2                   ; dir, then parent
         move    012,3                   ; name
         jumpe   010,memfs_restore4_fail
-        skipn   5(010)
-        jrst    memfs_restore4_fail
         move    1,012
         pushj   17,vfs_name_valid
         jumpe   1,memfs_restore4_fail
@@ -512,8 +514,6 @@ memfs_rename:
         move    013,4                   ; newdir
         move    014,7                   ; newname
         jumpe   010,memfs_rename_fail
-        skipn   5(010)
-        jrst    memfs_rename_fail
         move    1,012
         pushj   17,vfs_name_valid
         jumpe   1,memfs_rename_fail
@@ -779,6 +779,15 @@ memfs_mres_usage:
         movem   2,2(1)
         jrst    pdp10_ret_zero
 
+; CREATE op multiplexes regular files and FIFO nodes so FIFO support costs
+; no additional permanent provider-vector slot.  Bit 010000 is outside the
+; twelve-bit mode and is private to vfs_mkfifo().
+memfs_mres_create:
+        trnn    4,010000
+        jrst    memfs_create
+        andi    4,07777
+        jrst    memfs_mkfifo
+
 memfs_mres_dispatch:
 memfs_mres_reg_dispatch:
         caie    6,023                   ; 19 decimal: MEMFS_INIT
@@ -794,7 +803,7 @@ memfs_mres_not_init:
 memfs_mres_vector:
         .word   memfs_lookup,,memfs_readdir
         .word   memfs_stat,,memfs_parent
-        .word   memfs_parent,,memfs_create
+        .word   memfs_parent,,memfs_mres_create
         .word   memfs_mkdir,,0
         .word   memfs_unlink,,memfs_rename
         .word   memfs_truncate_words,,memfs_chmod

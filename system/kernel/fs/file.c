@@ -1,5 +1,6 @@
 #include "file.h"
 #include "fs_mres.h"
+#include "../ipc/pipe.h"
 
 extern struct file *file_table;
 
@@ -167,7 +168,19 @@ file_open(const kword_t *path, unsigned int flags)
         fd = file_new_fd(node, flags, st.type == VFS_TYPE_DIR);
         if (fd < 0)
                 return fd;
-        fp = &file_table[(unsigned int)fd - FILE_FD_FIRST];
+        fp = &file_table[(unsigned int)fd];
+        if (st.type == VFS_TYPE_FIFO) {
+                node = pipe_fifo_open(node, fp->node_meta);
+                if (node == VFS_NODE_NONE) {
+                        fp->node_meta = 0UL;
+                        fp->off_chars = 0UL;
+                        return -1;
+                }
+                fp->node_meta = node |
+                    (fp->node_meta & ~FILE_NODE_VNODE_MASK);
+                fp->off_chars = 0UL;
+                return fd;
+        }
         if (st.type == VFS_TYPE_REG)
                 fp->node_meta |= FILE_META_REGULAR;
         if ((flags & FILE_O_APPEND) != 0U)

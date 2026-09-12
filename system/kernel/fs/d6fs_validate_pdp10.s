@@ -39,19 +39,24 @@ d6fs_fcb_decode_valid:
         move    7,4(1)
         hlrzm   7,011(4)                ; parent_fcb
 
-        caile   6,3                     ; highest defined type is SYMLINK
+        caile   6,4                     ; highest defined type is FIFO
         jrst    d6fs_fcb_invalid
         move    7,4(4)
         caile   7,7                     ; at most seven extents
         jrst    d6fs_fcb_invalid
         move    7,3(4)
         caie    6,3
-        jrst    d6fs_fcb_tail4
+        jrst    d6fs_fcb_tail_nonsymlink
         caig    7,6                     ; symlink tail is 0..6
         jrst    d6fs_fcb_reserved
 d6fs_fcb_invalid:
         setz    1,
         jrst    d6fs_fcb_done
+d6fs_fcb_tail_nonsymlink:
+        caie    6,4                     ; FIFO tail is exactly zero
+        jrst    d6fs_fcb_tail4
+        jumpe   7,d6fs_fcb_reserved
+        jrst    d6fs_fcb_invalid
 d6fs_fcb_tail4:
         caig    7,4                     ; regular/directory tail is 0..4
         jrst    d6fs_fcb_reserved
@@ -83,6 +88,13 @@ d6fs_fcb_live:
         move    7,011(4)
         caml    7,3
         jrst    d6fs_fcb_invalid
+        caie    6,4                     ; FIFO has no payload allocation
+        jrst    d6fs_fcb_live_extents
+        skipe   4(4)                    ; extent_count must be zero
+        jrst    d6fs_fcb_invalid
+        skipe   7(4)                    ; size_words must be zero
+        jrst    d6fs_fcb_invalid
+d6fs_fcb_live_extents:
         move    3,5(1)                  ; packed 5-bit extent highs
         addi    1,6                     ; extent-word cursor
         movei   011,0                   ; extent index

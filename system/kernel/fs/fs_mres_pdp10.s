@@ -5,6 +5,8 @@
         .globl fs_dtfs_service_jump
         .globl fs_d6fs_service_jump
         .globl fs_mres_no_service
+        .globl proc_wait_event
+        .globl proc_wakeup_event
 
         .globl diskset_runtime_reg_call
         .globl diskset_runtime_reg_enter
@@ -38,14 +40,67 @@ diskset_runtime_service_jump:
 ; is the two-word request wrapper, and the register entry is target+2.  Derive
 ; that address instead of adding another permanent republished binding.
 fs_provider_reg_call:
-        subi    7,4
-        jumpl   7,fs_mres_no_service
-        caile   7,2
+        caige   7,4
         jrst    fs_mres_no_service
+        caile   7,6
+        jrst    fs_mres_no_service
+        caie    7,4                    ; MEMFS never sleeps; no shared block
+        jrst    fs_provider_serialized
+        subi    7,4
         hrrz    7,fs_memfs_service_jump(7)
         cain    7,fs_mres_no_service
         jrst    fs_mres_no_service
         jrst    (7)
+
+; DTFS and D6FS share fs_block_workspace and provider state across calls.
+; A physical disk request may sleep, so another process can otherwise enter
+; the provider while the first request is suspended and corrupt that state.
+; Serialize those providers across the complete call.  The saved arguments
+; live on the process-private kernel stack while proc_wait_event() switches.
+fs_provider_serialized:
+        push    17,1
+        push    17,2
+        push    17,3
+        push    17,4
+        push    17,5
+        push    17,6
+        push    17,7
+fs_provider_lock_retry:
+        skipe   fs_provider_busy
+        jrst    fs_provider_lock_wait
+        setom   fs_provider_busy
+        jrst    fs_provider_lock_acquired
+fs_provider_lock_wait:
+        setzm   fs_provider_event
+        skipn   fs_provider_busy
+        jrst    fs_provider_lock_retry
+        movei   1,fs_provider_event
+        pushj   17,proc_wait_event
+        jrst    fs_provider_lock_retry
+fs_provider_lock_acquired:
+        pop     17,7
+        pop     17,6
+        pop     17,5
+        pop     17,4
+        pop     17,3
+        pop     17,2
+        pop     17,1
+        subi    7,4
+        hrrz    7,fs_memfs_service_jump(7)
+        cain    7,fs_mres_no_service
+        jrst    fs_provider_locked_no_service
+        pushj   17,(7)
+        jrst    fs_provider_unlock
+fs_provider_locked_no_service:
+        hrroi   1,1
+fs_provider_unlock:
+        push    17,1
+        setzm   fs_provider_busy
+        setom   fs_provider_event
+        movei   1,fs_provider_event
+        pushj   17,proc_wakeup_event
+        pop     17,1
+        popj    17,
 fs_memfs_service_jump:
         jrst    fs_mres_no_service
 fs_dtfs_service_jump:
@@ -164,3 +219,9 @@ fs_mres_context_vector_dispatch:
         pushj   17,(7)
         sub     17,[2,,2]
         popj    17,
+
+        .bss
+fs_provider_busy:
+        .block  1
+fs_provider_event:
+        .block  1

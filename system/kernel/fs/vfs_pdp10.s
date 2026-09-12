@@ -14,6 +14,7 @@
         .globl  vfs_namespace_root
         .globl  devicefs_lookup
         .globl  procfs_lookup
+        .globl  pipe_fifo_mount_busy
 
 ; int vfs_lookup(dir, name, nodep)
         .globl  vfs_lookup
@@ -243,6 +244,17 @@ vfs_parent_name_pop:
         .globl  vfs_create
 vfs_create:
         movei   5,6                    ; FS_MRES_OP_CREATE
+        jrst    vfs_create_common
+        .globl  vfs_mkfifo
+vfs_mkfifo:
+        ldb     5,[POINT 6,1,5]
+        cain    5,4                    ; MEMFS
+        jrst    vfs_mkfifo_supported
+        caie    5,6                    ; D6FS
+        jrst    pdp10_ret_neg2
+vfs_mkfifo_supported:
+        ori     3,010000               ; private CREATE-as-FIFO marker
+        movei   5,6                    ; reuse FS_MRES_OP_CREATE
         jrst    vfs_create_common
         .globl  vfs_mkdir
 vfs_mkdir:
@@ -846,6 +858,10 @@ vfs_unmount_slot:
         jrst    pdp10_ret_neg1
         push    17,1                    ; root
         push    17,2                    ; slot
+        movei   1,1(2)                  ; public mount id is slot + 1
+        pushj   17,pipe_fifo_mount_busy
+        jumpn   1,vfs_unmount_fail
+        move    1,-1(17)
         pushj   17,vfs_sync
         jumpn   1,vfs_unmount_fail
         move    2,(17)

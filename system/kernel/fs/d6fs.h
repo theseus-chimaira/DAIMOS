@@ -26,6 +26,7 @@ extern kword_t fs_block_workspace[D6FS_BLOCK_WORDS];
 #define D6FS_TYPE_REG             1U
 #define D6FS_TYPE_DIR             2U
 #define D6FS_TYPE_SYMLINK         3U
+#define D6FS_TYPE_FIFO            4U
 
 #define D6FS_FLAG_APPEND          0001U
 #define D6FS_FLAG_NOUNLINK        0002U

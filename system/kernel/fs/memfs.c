@@ -92,6 +92,14 @@ memfs_create(struct memfs *fs, vnode_t dir,
 }
 
 int
+memfs_mkfifo(struct memfs *fs, vnode_t dir,
+    const struct vfs_name *name, unsigned int mode, vnode_t *nodep)
+{
+        return memfs_new_node(fs, dir, name, VFS_TYPE_FIFO, mode,
+            nodep);
+}
+
+int
 memfs_mkdir(struct memfs *fs, vnode_t dir,
     const struct vfs_name *name, unsigned int mode, vnode_t *nodep)
 {

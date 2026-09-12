@@ -42,6 +42,10 @@
 #define SYS_UUO_EXT_FIRST   SYS_RUN
 #define SYS_UUO_EXT_LAST    SYS_PROCCTL
 
+/* UUO 077 is an operation-multiplexed extension/control call. */
+#define SYS_EXT_PIPE               020U
+#define SYS_EXT_MKFIFO             021U
+
 /* Compact process hierarchy/control operations for UUO 077. */
 #define SYS_PROCCTL_GETPGRP       0U
 #define SYS_PROCCTL_GETSESSION    1U

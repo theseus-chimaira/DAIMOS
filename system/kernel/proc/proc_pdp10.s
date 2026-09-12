@@ -16,7 +16,7 @@
         .equ    PROC_WAIT_CHILD_LH,040000
         .equ    PROC_TRANSITION_RH,0200000
         .equ    PROC_FILE_TABLE_OFFSET,047
-        .equ    PROC_USTACK_BASE,0101
+        .equ    PROC_USTACK_BASE,0107
         .equ    PROC_KSTACK_WORDS,0317
         .equ    KERNEL_IDLE_STACK_WORDS,0100
 

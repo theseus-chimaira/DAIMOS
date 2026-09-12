@@ -53,6 +53,7 @@ typedef kword_t vnode_t;
 #define VFS_TYPE_BLOCK       4U
 #define VFS_TYPE_MOUNTSRC    5U
 #define VFS_TYPE_SYMLINK     6U
+#define VFS_TYPE_FIFO        7U
 
 #define VFS_NAME_WORDS       4U
 #define VFS_NAME_MAX_CHARS   (VFS_NAME_WORDS * 6U)
@@ -111,6 +112,8 @@ int vfs_parent(vnode_t node, vnode_t *parentp);
 int vfs_parent_name(vnode_t node, vnode_t *parentp,
     struct vfs_name *namep);
 int vfs_create(vnode_t dir, const struct vfs_name *name,
+    unsigned int mode, vnode_t *nodep);
+int vfs_mkfifo(vnode_t dir, const struct vfs_name *name,
     unsigned int mode, vnode_t *nodep);
 int vfs_mkdir(vnode_t dir, const struct vfs_name *name,
     unsigned int mode, vnode_t *nodep);

@@ -11,9 +11,9 @@
 #define FILE_DEVICE_IO       VFS_DEVICE_IO
 
 #ifndef FILE_NFILE
-#define FILE_NFILE           13U
+#define FILE_NFILE           16U
 #endif
-#define FILE_FD_FIRST        3U
+#define FILE_FD_FIRST        0U
 #define FILE_FD_MAX          15U
 
 /*
@@ -61,6 +61,7 @@ int file_write_words(int fd, const kword_t *buf, unsigned int nwords,
 int file_readdir(int fd, struct vfs_dirent *ent);
 int file_stat_path(const kword_t *path, struct vfs_stat *st);
 int file_mkdir(const kword_t *path, unsigned int mode);
+int file_mkfifo(const kword_t *path, unsigned int mode);
 int file_symlink(const kword_t *target, const kword_t *linkpath);
 int file_unlink(const kword_t *path);
 int file_truncate(const kword_t *path, kword_t chars);

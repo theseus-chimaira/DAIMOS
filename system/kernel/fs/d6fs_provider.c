@@ -316,7 +316,7 @@ d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
         unsigned int tail;
 
         if (nodep == 0 || (type != D6FS_TYPE_REG && type != D6FS_TYPE_DIR &&
-            type != D6FS_TYPE_SYMLINK) ||
+            type != D6FS_TYPE_SYMLINK && type != D6FS_TYPE_FIFO) ||
             (type == D6FS_TYPE_SYMLINK && (payload == 0 || value == 0U)) ||
             d6fs_provider_scan_slot(dir, name, &slot, 0) == 0 ||
             d6fs_provider_free_fcb(&index) != 0)

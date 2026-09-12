@@ -81,16 +81,16 @@
  */
 #define PROC_UAREA_WORDS        0420UL
 /*
- * One compact control word precedes cwd/file state.  Bits 0..2 are explicit
- * RUN mappings for the native console descriptors 0..2.  Session and domain
- * IDs share this already-resident word; process-group ID lives in meta RH so
- * it survives after EXIT releases the u-area and group WAIT can reap zombies.
+ * One compact control word precedes cwd/file state.  Descriptors 0..15 are
+ * ordinary two-word FILE records; low control bits 0..2 are now spare.
+ * Session and domain IDs share this already-resident word; process-group ID
+ * lives in meta RH so it survives after EXIT releases the u-area and group WAIT can
+ * reap zombies.
  */
 #define PROC_FDCTL_OFFSET        0045UL
 #define PROC_FILE_CWD_OFFSET     0046UL
 #define PROC_FILE_TABLE_OFFSET   0047UL
-#define PROC_USTACK_BASE         0101UL
-#define PROC_STDIO_MASK          0007UL
+#define PROC_USTACK_BASE         0107UL
 #define PROC_SESSION_MASK         0377UL
 #define PROC_SESSION_SHIFT            3U
 #define PROC_DOMAIN_MASK          0377UL

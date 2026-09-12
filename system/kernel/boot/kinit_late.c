@@ -4,6 +4,8 @@
 #include "mm.h"
 #include "proc.h"
 #include "vfs.h"
+#include "file.h"
+#include "devicefs.h"
 
 extern kword_t __kinit_late_begin;
 extern kword_t __kinit_late_end;
@@ -84,9 +86,21 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
                     (kword_t)slot, 0UL, 0UL) != 0)
                         return;
                 PROC_SET_PGRP(p, 1U);
-                PROC_UAREA_WORD(p, PROC_FDCTL_OFFSET) = PROC_STDIO_MASK |
+                PROC_UAREA_WORD(p, PROC_FDCTL_OFFSET) =
                     ((kword_t)1U << PROC_SESSION_SHIFT) |
                     ((kword_t)1U << PROC_DOMAIN_SHIFT);
+                PROC_UAREA_WORD(p, PROC_FILE_TABLE_OFFSET) =
+                    VFS_NODE_PACKED(DEVICEFS_PROVIDER, DEVICEFS_KIND_DEVICE,
+                    DEVICEFS_DEV_CTY0) | FILE_META_READ;
+                PROC_UAREA_WORD(p, PROC_FILE_TABLE_OFFSET + 1U) = 0UL;
+                PROC_UAREA_WORD(p, PROC_FILE_TABLE_OFFSET + 2U) =
+                    VFS_NODE_PACKED(DEVICEFS_PROVIDER, DEVICEFS_KIND_DEVICE,
+                    DEVICEFS_DEV_CTY0) | FILE_META_WRITE;
+                PROC_UAREA_WORD(p, PROC_FILE_TABLE_OFFSET + 3U) = 0UL;
+                PROC_UAREA_WORD(p, PROC_FILE_TABLE_OFFSET + 4U) =
+                    VFS_NODE_PACKED(DEVICEFS_PROVIDER, DEVICEFS_KIND_DEVICE,
+                    DEVICEFS_DEV_CTY0) | FILE_META_WRITE;
+                PROC_UAREA_WORD(p, PROC_FILE_TABLE_OFFSET + 5U) = 0UL;
         }
 
         p = &proc_table[1];

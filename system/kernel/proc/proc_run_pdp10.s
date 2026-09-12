@@ -18,7 +18,7 @@
         .equ    PROC_FDCTL_OFFSET,045
         .equ    PROC_FILE_CWD_OFFSET,046
         .equ    PROC_FILE_TABLE_OFFSET,047
-        .equ    PROC_USTACK_BASE,0101
+        .equ    PROC_USTACK_BASE,0107
         .equ    PROC_UAREA_OWNER_BASE,01000
         .equ    MM_TYPE_KERNEL_DYNAMIC,3
         .equ    EXEC_DXR_STACK_WORDS,02000
@@ -37,6 +37,7 @@
         .globl  exec_load_process
         .globl  mm_alloc_aligned
         .globl  fs_zero_words
+        .globl  pipe_add_refs
         .globl  proc_slot_discard
         .globl  proc_child_hierarchy
 
@@ -191,9 +192,7 @@ proc_run_watermark_loop:
         jrst    proc_run_claimed_bad
         move    4,-1(7)
         movem   4,PROC_FILE_CWD_OFFSET(014)
-        move    6,-2(7)
-        andi    6,7
-        setzb   4,5
+        setz    4,                      ; child-fd duplicate bitmap
         hrrz    3,3(010)
         jumpe   3,proc_run_map_done
 proc_run_map_loop:
@@ -203,26 +202,20 @@ proc_run_map_loop:
         came    1,2
         jrst    proc_run_claimed_bad
         hlrz    1,2
-        andi    1,017
+        andi    1,017                   ; child fd 0..15
         hrrz    2,2
-        andi    2,017
+        andi    2,017                   ; parent fd 0..15
         movei   7,1
         lsh     7,0(1)
         tdne    4,7
         jrst    proc_run_claimed_bad
         ior     4,7
-        caige   1,3
-        jrst    proc_run_map_stdio
-        caige   2,3
-        jrst    proc_run_claimed_bad
 
         move    7,2
-        subi    7,3
         lsh     7,1
         add     7,file_table
         skipn   (7)
         jrst    proc_run_claimed_bad
-        subi    1,3
         lsh     1,1
         add     1,014
         addi    1,PROC_FILE_TABLE_OFFSET
@@ -230,23 +223,13 @@ proc_run_map_loop:
         movem   2,(1)
         move    2,1(7)
         movem   2,1(1)
-        jrst    proc_run_map_next
-proc_run_map_stdio:
-        caige   2,3
-        jrst    proc_run_map_stdio_low
-        jrst    proc_run_claimed_bad
-proc_run_map_stdio_low:
-        came    1,2
-        jrst    proc_run_claimed_bad
-        tdnn    6,7
-        jrst    proc_run_claimed_bad
-        ior     5,7
 proc_run_map_next:
         addi    015,1
         sojg    3,proc_run_map_loop
 proc_run_map_done:
-        ; Preserve SESSION/DOMAIN already installed by proc_child_hierarchy.
-        iorm    5,PROC_FDCTL_OFFSET(014)
+        move    1,014
+        addi    1,PROC_FILE_TABLE_OFFSET
+        pushj   17,pipe_add_refs
         movsi   4,PROC_SCHED_SRUN_LH
         movem   4,2(013)
         move    1,012

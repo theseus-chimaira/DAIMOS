@@ -45,7 +45,7 @@ d6fs_dirent_used:
         caml    4,2                      ; child_fcb >= fcb_count
         jrst    pdp10_ret_zero
         jumpe   6,pdp10_ret_zero    ; FREE type forbidden
-        caile   6,3
+        caile   6,4
         jrst    pdp10_ret_zero
         move    4,(1)
         ior     4,1(1)
@@ -609,6 +609,12 @@ d6fs_mres_reg_dispatch:
         jrst    fs_mres_vector_dispatch
 
 d6fs_mres_create:
+        trnn    3,010000                ; private VFS CREATE-as-FIFO marker
+        jrst    d6fs_mres_create_regular
+        andi    3,07777                 ; leave only persistent mode bits
+        movei   5,4                     ; FIFO type
+        jrst    d6fs_mres_create_common
+d6fs_mres_create_regular:
         movei   5,1                     ; regular file type
         jrst    d6fs_mres_create_common
 
@@ -985,8 +991,8 @@ d6fs_provider_fcb:
         jrst    d6fs_reader_fcb
 
 ; unsigned int d6fs_provider_vtype(unsigned int type)
-; D6FS types reaching this helper are validated REG/DIR/SYMLINK values 1..3.
-; XCT keeps the three-value translation smaller than a branch chain/table.
+; D6FS types reaching this helper are validated REG/DIR/SYMLINK/FIFO 1..4.
+; XCT keeps the translation smaller than a branch chain/table.
         .globl  d6fs_provider_vtype
 d6fs_provider_vtype:
         xct     d6fs_provider_vtype_ops-1(1)
@@ -995,6 +1001,7 @@ d6fs_provider_vtype_ops:
         movei   1,2                     ; REG -> VFS_TYPE_REG
         movei   1,1                     ; DIR -> VFS_TYPE_DIR
         movei   1,6                     ; SYMLINK -> VFS_TYPE_SYMLINK
+        movei   1,7                     ; FIFO -> VFS_TYPE_FIFO
 
 ; int d6fs_provider_stat(vnode_t node, struct vfs_stat *st)
 ; Decode only FCB info, then derive the character size directly.  D6FS tail

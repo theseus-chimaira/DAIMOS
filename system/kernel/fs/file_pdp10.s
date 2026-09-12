@@ -1,5 +1,5 @@
 ; FILE descriptors and cwd live in the current process's stable u-area.
-; file_table is a one-word KCORE pointer to its 13-entry descriptor table;
+; file_table is a one-word KCORE pointer to its 16-entry descriptor table;
 ; cwd occupies the word immediately before the table.
         .globl  file_table
 
@@ -58,31 +58,24 @@ file_path_setchar:
         .globl  pdp10_ret_neg1
         .globl  vfs_readchar
         .globl  vfs_writechar
+        .globl  pipe_readchar
+        .globl  pipe_writechar
+        .globl  pipe_add_ref
+        .globl  pipe_close_ref
+        .globl  pipe_fifo_detach
 
-; int file_stdio_enabled(unsigned int fd)
-; Native descriptors 0..2 have explicit RUN inheritance bits two words before
-; file_table.  Ordinary descriptors remain in the regular file table.
-        .globl  file_stdio_enabled
-file_stdio_enabled:
-        caile   1,2
-        jrst    pdp10_ret_zero
-        skipn   2,file_table
-        jrst    pdp10_ret_zero
-        move    2,-2(2)
-        jumpe   1,file_stdio_check0
-        caie    1,1
-        jrst    file_stdio_check2
-        trnn    2,2
-        jrst    pdp10_ret_zero
+; int file_is_cty(int fd)
+; Return one only when fd names the CTY0 device vnode.  Access permissions are
+; checked by the normal read/write entry points before this helper is used.
+        .globl  file_is_cty
+file_is_cty:
+        pushj   17,file_find
+        jumpe   1,pdp10_ret_zero
+        move    1,(1)
+        tlz     1,707070               ; canonical vnode
+        camn    1,[020002000000]       ; DEVICEFS CTY0 IO endpoint
         jrst    pdp10_ret_one
-file_stdio_check0:
-        trnn    2,1
         jrst    pdp10_ret_zero
-        jrst    pdp10_ret_one
-file_stdio_check2:
-        trnn    2,4
-        jrst    pdp10_ret_zero
-        jrst    pdp10_ret_one
 
 ; int file_readchar(int fd)
 ; Validate the descriptor exactly as the C wrapper did, then advance the
@@ -101,6 +94,13 @@ file_readchar:
         move    010,1
         move    1,(010)
         tlz     1,707070               ; strip packed descriptor metadata
+        move    4,1
+        lsh     4,-036                 ; provider
+        caie    4,7                    ; PIPE_PROVIDER
+        jrst    file_readchar_vfs
+        pushj   17,pipe_readchar
+        jrst    file_readchar_done
+file_readchar_vfs:
         move    2,1(010)
         movei   3,(17)
         pushj   17,vfs_readchar
@@ -125,29 +125,42 @@ file_readchar_fail:
         jrst    file_readchar_done
 
 ; int file_writechar(int fd, unsigned int ch)
-; The input character is held on the stack across file_find; only AC10 needs
-; saving across the VFS call.
+; int file_writechar_reserve(int fd, unsigned int ch, unsigned int reserve)
+; The reserve entry is used by WRITE_CHARS.  On a pipe, reserve is the number
+; of characters still required in the current atomic chunk.  Ordinary VFS
+; streams ignore AC3.
         .globl  file_writechar
+        .globl  file_writechar_reserve
 file_writechar:
+        movei   3,1
+file_writechar_reserve:
         push    17,010
         push    17,2
         pushj   17,file_find
         jumpe   1,file_writechar_fail
-        move    3,(1)
-        tlne    3,100000               ; directories are not byte streams
+        move    4,(1)
+        tlne    4,100000               ; directories are not byte streams
         jrst    file_writechar_fail
-        tlnn    3,200000               ; FILE_META_WRITE
+        tlnn    4,200000               ; FILE_META_WRITE
         jrst    file_writechar_fail
         move    010,1
-        move    3,(17)
         move    1,(010)
         tlz     1,707070               ; strip packed descriptor metadata
+        move    5,1
+        lsh     5,-036                 ; provider
+        caie    5,7                    ; PIPE_PROVIDER
+        jrst    file_writechar_vfs
+        move    2,(17)
+        pushj   17,pipe_writechar
+        jrst    file_writechar_done
+file_writechar_vfs:
+        move    3,(17)
         move    2,1(010)
         pushj   17,vfs_writechar
         jumpn   1,file_writechar_done
         aos     1(010)
 file_writechar_done:
-        sub     17,[1,,1]
+        pop     17,2                    ; restore input character
         pop     17,010
         popj    17,
 file_writechar_fail:
@@ -162,9 +175,18 @@ file_close:
         pushj   17,file_find
         jumpe   1,file_close_fail
         move    010,1
-        move    1,(1)
+        move    2,(1)                  ; packed descriptor for pipe refs
+        move    1,2
         tlz     1,707070
+        move    3,1
+        lsh     3,-036                 ; provider
+        caie    3,7                    ; PIPE_PROVIDER
+        jrst    file_close_vfs
+        pushj   17,pipe_close_ref
+        jrst    file_close_finish
+file_close_vfs:
         pushj   17,vfs_sync
+file_close_finish:
         jumpn   1,file_close_done
         setzm   (010)
 file_close_done:
@@ -183,8 +205,8 @@ file_dup:
         pushj   17,file_find
         jumpe   1,pdp10_ret_neg1
         move    2,file_table
-        movei   3,3                    ; returned descriptor
-        movei   4,015                  ; FILE_NFILE = 13
+        movei   3,0                    ; returned descriptor
+        movei   4,020                  ; FILE_NFILE = 16
 file_dup_scan:
         skipn   (2)
         jrst    file_dup_store
@@ -197,6 +219,16 @@ file_dup_store:
         movem   4,(2)
         move    4,1(1)
         movem   4,1(2)
+        move    1,(2)
+        move    4,1
+        tlz     4,707070
+        lsh     4,-036                 ; provider
+        caie    4,7                    ; PIPE_PROVIDER
+        jrst    file_dup_return
+        push    17,3
+        pushj   17,pipe_add_ref
+        pop     17,3
+file_dup_return:
         move    1,3
         popj    17,
 
@@ -221,7 +253,7 @@ file_lock:
         jumpe   6,file_lock_update      ; unlock cannot conflict
 
         move    2,file_table
-        movei   3,015                  ; FILE_NFILE = 13
+        movei   3,020                  ; FILE_NFILE = 16
 file_lock_check:
         move    4,(2)
         move    7,4
@@ -246,7 +278,7 @@ file_lock_check_next:
 
 file_lock_update:
         move    2,file_table
-        movei   3,015
+        movei   3,020
 file_lock_update_loop:
         move    4,(2)
         move    7,4
@@ -282,7 +314,7 @@ file_lock_modes:
         .globl  file_unlock_mount
 file_unlock_mount:
         move    2,file_table
-        movei   3,015                  ; FILE_NFILE = 13
+        movei   3,020                  ; FILE_NFILE = 16
 file_unlock_mount_loop:
         skipn   4,(2)
         jrst    file_unlock_mount_next
@@ -307,12 +339,12 @@ file_close_all:
 file_close_all_loop:
         skipn   (011)
         jrst    file_close_all_next
-        movei   1,3(010)               ; FILE_FD_FIRST + slot
+        move    1,010                  ; FILE_FD_FIRST is zero
         pushj   17,file_close
 file_close_all_next:
         addi    011,2
         addi    010,1
-        caige   010,015                 ; FILE_NFILE
+        caige   010,020                 ; FILE_NFILE
         jrst    file_close_all_loop
         pop     17,011
         pop     17,010
@@ -765,21 +797,58 @@ file_mkdir_fail:
         seto    1,
         jrst    file_mkdir_done
 
-; int file_unlink(const kword_t *path)
-; Six stack words hold one parent vnode and one five-word name.
-        .globl  vfs_unlink
-        .globl  file_unlink
-file_unlink:
+; int file_mkfifo(const kword_t *path, unsigned int mode)
+; Same compact parent/name layout as mkdir.  The persistent filesystem node
+; contains no stream payload; vfs_mkfifo selects the provider FIFO type.
+        .globl  vfs_mkfifo
+        .globl  file_mkfifo
+file_mkfifo:
+        push    17,2
         add     17,[6,,6]
         movei   2,-5(17)
         movei   3,-4(17)
         pushj   17,file_parent_path
-        jumpn   1,file_unlink_fail
+        jumpn   1,file_mkfifo_fail
+        move    3,-6(17)
         move    1,-5(17)
         movei   2,-4(17)
-        pushj   17,vfs_unlink
-file_unlink_done:
+        movei   4,-5(17)
+        pushj   17,vfs_mkfifo
+file_mkfifo_done:
         sub     17,[6,,6]
+        pop     17,2
+        popj    17,
+file_mkfifo_fail:
+        seto    1,
+        jrst    file_mkfifo_done
+
+; int file_unlink(const kword_t *path)
+; Seven stack words hold one parent vnode, one five-word name and the vnode
+; being removed.  Detaching every successful unlink is cheap: non-FIFO vnodes
+; are absent from the active FIFO list, while FIFO detach prevents later vnode
+; index reuse from joining an old live stream.
+        .globl  vfs_unlink
+        .globl  file_unlink
+file_unlink:
+        add     17,[7,,7]
+        movei   2,-6(17)
+        movei   3,-5(17)
+        pushj   17,file_parent_path
+        jumpn   1,file_unlink_fail
+        move    1,-6(17)
+        movei   2,-5(17)
+        movei   3,(17)
+        pushj   17,vfs_lookup
+        jumpn   1,file_unlink_fail
+        move    1,-6(17)
+        movei   2,-5(17)
+        pushj   17,vfs_unlink
+        jumpn   1,file_unlink_done
+        move    1,(17)
+        pushj   17,pipe_fifo_detach
+        setz    1,
+file_unlink_done:
+        sub     17,[7,,7]
         popj    17,
 file_unlink_fail:
         seto    1,
@@ -829,14 +898,12 @@ file_path_onearg_done:
         popj    17,
 
 ; struct file *file_find(int fd)
-; File descriptors 3..15 map directly onto the 13 FILE records.
+; File descriptors 0..15 map directly onto the 16 FILE records.
         .globl  file_find
 file_find:
-        caige   1,3
-        jrst    pdp10_ret_zero
+        jumpl   1,pdp10_ret_zero
         caile   1,017
         jrst    pdp10_ret_zero
-        subi    1,3
         lsh     1,1
         add     1,file_table
         skipn   (1)
@@ -859,8 +926,8 @@ file_new_fd:
         tlo     1,100000               ; FILE_META_DIR
 file_new_fd_nodir:
         move    4,file_table
-        movei   5,3                    ; descriptor / lock-family token
-        movei   6,015                  ; FILE_NFILE = 13
+        movei   5,0                    ; descriptor / lock-family token
+        movei   6,020                  ; FILE_NFILE = 16
 file_new_fd_scan:
         skipn   (4)
         jrst    file_new_fd_store

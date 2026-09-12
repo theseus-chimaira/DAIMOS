@@ -51,9 +51,10 @@ d6fs_fcb_decode_valid(const kword_t fcb[D6FS_FCB_WORDS],
         info->mtime = fcb[D6FS_FCB_MTIME];
         info->parent_fcb =
             (unsigned int)((fcb[D6FS_FCB_PARENT] >> 18) & D6FS_FCB_MASK);
-        if (info->type > D6FS_TYPE_SYMLINK ||
+        if (info->type > D6FS_TYPE_FIFO ||
             info->extent_count > D6FS_EXTENTS ||
             (info->type == D6FS_TYPE_SYMLINK ? info->tail > 6U :
+            info->type == D6FS_TYPE_FIFO ? info->tail != 0U :
             info->tail > 4U))
                 return 0;
         if ((fcb[D6FS_FCB_META] & 017UL) |
@@ -65,6 +66,9 @@ d6fs_fcb_decode_valid(const kword_t fcb[D6FS_FCB_WORDS],
         if (info->type == D6FS_TYPE_FREE)
                 return info->extent_count == 0U && info->size_words == 0UL;
         if (info->parent_fcb >= fcb_count)
+                return 0;
+        if (info->type == D6FS_TYPE_FIFO &&
+            (info->extent_count != 0U || info->size_words != 0UL))
                 return 0;
         capacity = 0UL;
         highs = fcb[D6FS_FCB_LENHIGH];

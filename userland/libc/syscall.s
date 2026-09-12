@@ -37,6 +37,7 @@
         .globl dsys_wait
         .globl dsys_getpid
         .globl dsys_procctl
+        .globl dsys_pipe
 
 dsys_exit:             uuo 040,0(1)
                        popj 17,
@@ -97,4 +98,13 @@ dsys_wait:             uuo 075,0(1)
 dsys_getpid:           uuo 076,0
                        popj 17,
 dsys_procctl:          uuo 077,0(1)
+                       popj 17,
+dsys_pipe:             movei 1,020
+                       uuo 077,0(1)
+                       popj 17,
+        .globl dsys_mkfifo
+dsys_mkfifo:           move 3,2
+                       move 2,1
+                       movei 1,021
+                       uuo 077,0(1)
                        popj 17,
