@@ -344,6 +344,381 @@ proc_notify_parent:
 proc_notify_parent_done:
         popj    17,
 
+; kword_t proc_scope_id(const struct proc *p)
+; Return packed session/domain.  Zombie scope already occupies sched RH;
+; live scope is the same 16-bit pair shifted down from the u-area control word.
+        .globl  proc_scope_id
+proc_scope_id:
+        hlrz    2,2(1)
+        andi    2,0700000
+        caie    2,0400000              ; ZOMB
+        jrst    proc_scope_live
+        hrrz    1,2(1)
+        andi    1,0177777
+        popj    17,
+proc_scope_live:
+        hrrz    2,(1)
+        trnn    2,0400000              ; u-area present
+        jrst    proc_control_zero
+        hlrz    2,(1)
+        move    1,045(2)
+        lsh     1,-3
+        andi    1,0177777
+        popj    17,
+
+; int proc_child_hierarchy(unsigned int child_slot, unsigned int mode,
+;     unsigned int requested_pgrp)
+; Leaf implementation: AC1 child slot, AC2 mode, AC3 requested pgrp.
+; Session/domain/TTY inheritance is one masked control-word transfer.
+        .globl  proc_child_hierarchy
+proc_child_hierarchy:
+        move    7,1                    ; child slot
+        move    6,3                    ; requested pgrp
+        move    5,proc_current_slot    ; parent slot
+        move    4,5
+        lsh     4,1
+        add     4,5
+        add     4,proc_table           ; parent descriptor
+        hlrz    3,(4)
+        move    3,045(3)               ; parent control word
+        ldb     5,[POINT 8,3,32]       ; parent session
+
+        jumpe   2,proc_child_inherit
+        caie    2,1
+        jrst    proc_child_join
+; NEW pgrp.
+        jumpn   6,proc_control_fail
+        move    1,7
+        jrst    proc_child_set
+proc_child_inherit:
+        jumpn   6,proc_control_fail
+        hrrz    1,(4)
+        andi    1,0377
+        jumpe   1,proc_control_fail
+        jrst    proc_child_set
+proc_child_join:
+        caie    2,2
+        jrst    proc_control_fail
+        jumpe   6,proc_control_fail
+        caile   6,0377
+        jrst    proc_control_fail
+        movei   1,1                    ; scan slot
+        move    2,proc_table
+        addi    2,3
+proc_child_join_loop:
+        caml    1,proc_high_slot
+        jrst    proc_control_fail
+        ; FREE has all state bits clear.  Preserve the original sched word in
+        ; AC4 only long enough to classify zombie/live scope below.
+        hlrz    4,2(2)
+        andi    4,0700000
+        jumpe   4,proc_child_join_next
+        hrrz    4,(2)
+        andi    4,0377
+        came    4,6
+        jrst    proc_child_join_next
+        hlrz    4,2(2)
+        andi    4,0700000
+        caie    4,0400000              ; zombie scope lives in sched RH
+        jrst    proc_child_join_live
+        hrrz    4,2(2)
+        andi    4,0377
+        jrst    proc_child_join_scope
+proc_child_join_live:
+        hrrz    4,(2)
+        trnn    4,0400000
+        jrst    proc_child_join_next
+        hlrz    4,(2)
+        ldb     4,[POINT 8,045(4),32]
+proc_child_join_scope:
+        came    4,5
+        jrst    proc_child_join_next
+        move    1,6
+        jrst    proc_child_set
+proc_child_join_next:
+        addi    2,3
+        aoja    1,proc_child_join_loop
+
+proc_child_set:
+        ; AC1 = selected pgrp, AC3 still parent control, AC7 child slot.
+        move    2,7
+        lsh     2,1
+        add     2,7
+        add     2,proc_table           ; child descriptor
+        move    4,(2)
+        andcmi  4,0377
+        andi    1,0377
+        ior     4,1
+        movem   4,(2)
+        hlrz    4,(2)
+        move    6,045(4)
+        and     6,[007776000007]       ; clear session/domain/TTY
+        move    5,3
+        and     5,[770001777770]
+        ior     6,5
+        movem   6,045(4)
+        movei   1,0
+        popj    17,
+
+; int proc_control(unsigned int op, unsigned int arg)
+; Compact native PROCCTL dispatcher.  The syscall dispatcher guarantees a live
+; current process with a resident u-area.  AC1=op, AC2=arg.  Only AC1..AC7 are
+; used except around explicit C calls, so the common query/update cases need no
+; GCC save frame.
+        .globl  proc_control
+        .globl  proc_tty_records
+        .globl  proc_tty_release_session
+proc_control:
+        jumpl   1,proc_control_fail
+        caile   1,014
+        jrst    proc_control_fail
+        move    3,proc_current_slot
+        move    4,3
+        lsh     4,1
+        add     4,3
+        add     4,proc_table
+        jrst    @proc_control_table(1)
+proc_control_table:
+        .word   proc_control_getpgrp
+        .word   proc_control_getsession
+        .word   proc_control_getdomain
+        .word   proc_control_newsession
+        .word   proc_control_newdomain
+        .word   proc_control_getevents
+        .word   proc_control_event_pid
+        .word   proc_control_event_pgrp
+        .word   proc_control_gettty
+        .word   proc_control_tty_attach
+        .word   proc_control_tty_detach
+        .word   proc_control_tty_getfg
+        .word   proc_control_tty_setfg
+
+proc_control_getpgrp:
+        jumpn   2,proc_control_fail
+        hrrz    1,(4)
+        andi    1,0377
+        popj    17,
+proc_control_getsession:
+        jumpn   2,proc_control_fail
+        hlrz    5,(4)
+        ldb     1,[POINT 8,045(5),32]
+        popj    17,
+proc_control_getdomain:
+        jumpn   2,proc_control_fail
+        hlrz    5,(4)
+        ldb     1,[POINT 8,045(5),24]
+        popj    17,
+
+proc_control_newsession:
+        jumpn   2,proc_control_fail
+        hlrz    5,(4)
+        ldb     1,[POINT 8,045(5),32]
+        move    2,3
+        pushj   17,proc_tty_release_session
+        move    3,proc_current_slot
+        move    4,3
+        lsh     4,1
+        add     4,3
+        add     4,proc_table
+        move    5,(4)
+        andcmi  5,0377                 ; preserve LH, clear pgrp in RH
+        move    6,3
+        andi    6,0377
+        ior     5,6
+        movem   5,(4)
+        hlrz    5,(4)
+        dpb     3,[POINT 8,045(5),32]
+        hrloi   6,07777
+        andm    6,045(5)               ; TTY state -> NO_TTY
+        move    1,3
+        popj    17,
+
+proc_control_newdomain:
+        jumpn   2,proc_control_fail
+        hlrz    5,(4)
+        ldb     6,[POINT 8,045(5),32]
+        came    6,3
+        jrst    proc_control_fail
+        dpb     3,[POINT 8,045(5),24]
+        move    1,3
+        popj    17,
+
+proc_control_getevents:
+        jumpn   2,proc_control_fail
+        hlrz    5,(4)
+        ldb     1,[POINT 7,045(5),16]
+        hrloi   6,0777401
+        andm    6,045(5)
+        popj    17,
+
+proc_control_event_pid:
+        setz    3,
+        jrst    proc_control_event
+proc_control_event_pgrp:
+        movei   3,1
+proc_control_event:
+        tdne    2,[-04000]
+        jrst    proc_control_fail
+        move    1,2
+        andi    1,0377
+        lsh     2,-010
+        andi    2,07
+        jrst    proc_event_send
+
+proc_control_gettty:
+        jumpn   2,proc_control_fail
+        hlrz    5,(4)
+        move    1,045(5)
+        lsh     1,-036
+        popj    17,
+
+proc_control_tty_attach:
+        cail    2,025
+        jrst    proc_control_fail
+        hlrz    5,(4)
+        move    6,045(5)
+        ldb     7,[POINT 8,045(5),32]
+        came    7,3
+        jrst    proc_control_fail
+        move    7,6
+        lsh     7,-036
+        andi    7,077
+        caige   7,2
+        jrst    proc_control_tty_attach_state_ok
+        jrst    proc_control_fail
+proc_control_tty_attach_state_ok:
+        move    7,proc_tty_records(2)
+        move    1,7
+        andi    1,0377
+        jumpe   1,proc_control_tty_attach_claim
+        came    1,3
+        jrst    proc_control_fail
+        jrst    proc_control_tty_attach_set
+proc_control_tty_attach_claim:
+        hrrz    1,(4)
+        andi    1,0377
+        lsh     1,010
+        ior     1,3
+        movem   1,proc_tty_records(2)
+proc_control_tty_attach_set:
+        move    1,2
+        addi    1,2
+        tlz     6,0770000
+        lsh     1,036
+        ior     6,1
+        movem   6,045(5)
+        move    1,2
+        popj    17,
+
+proc_control_tty_detach:
+        jumpn   2,proc_control_fail
+        hlrz    5,(4)
+        move    6,045(5)
+        ldb     7,[POINT 8,045(5),32]
+        came    7,3
+        jrst    proc_control_fail
+        move    1,6
+        lsh     1,-036
+        subi    1,2
+        cail    1,025
+        jrst    proc_control_fail
+        move    7,proc_tty_records(1)
+        move    5,7
+        andi    5,0377
+        came    5,3
+        jrst    proc_control_fail
+        setzm   proc_tty_records(1)
+        move    7,1                    ; tty id
+        movei   2,1                    ; member slot
+        move    4,proc_table
+        addi    4,3
+proc_control_tty_detach_loop:
+        caml    2,proc_high_slot
+        jrst    proc_control_zero
+        move    5,2(4)
+        and     5,[0300000000000]
+        jumpe   5,proc_control_tty_detach_next
+        hrrz    5,(4)
+        trnn    5,0400000
+        jrst    proc_control_tty_detach_next
+        hlrz    5,(4)
+        move    6,045(5)
+        ldb     1,[POINT 8,045(5),32]
+        came    1,3
+        jrst    proc_control_tty_detach_next
+        move    1,6
+        lsh     1,-036
+        subi    1,2
+        came    1,7
+        jrst    proc_control_tty_detach_next
+        tlz     6,0770000
+        tlo     6,010000               ; DETACHED
+        movem   6,045(5)
+proc_control_tty_detach_next:
+        addi    4,3
+        aoja    2,proc_control_tty_detach_loop
+
+proc_control_tty_getfg:
+        jumpn   2,proc_control_fail
+        hlrz    5,(4)
+        move    6,045(5)
+        move    1,6
+        lsh     1,-036
+        subi    1,2
+        cail    1,025
+        jrst    proc_control_fail
+        move    7,proc_tty_records(1)
+        move    2,7
+        andi    2,0377
+        ldb     5,[POINT 8,045(5),32]
+        came    2,5
+        jrst    proc_control_fail
+        move    1,7
+        lsh     1,-010
+        andi    1,0377
+        popj    17,
+
+proc_control_tty_setfg:
+        jumpe   2,proc_control_fail
+        caile   2,0377
+        jrst    proc_control_fail
+        hlrz    5,(4)
+        move    6,045(5)
+        move    1,6
+        lsh     1,-036
+        subi    1,2
+        cail    1,025
+        jrst    proc_control_fail
+        move    7,proc_tty_records(1)
+        ldb     5,[POINT 8,045(5),32]
+        move    6,7
+        andi    6,0377
+        came    6,5
+        jrst    proc_control_fail
+        push    17,1                   ; tty id
+        push    17,2                   ; requested pgrp
+        move    1,5                    ; session
+        movei   3,0
+        pushj   17,proc_tty_session_has
+        pop     17,2
+        pop     17,4                   ; tty id
+        jumpe   1,proc_control_fail
+        move    5,proc_tty_records(4)
+        andi    5,0377
+        move    6,2
+        lsh     6,010
+        ior     5,6
+        movem   5,proc_tty_records(4)
+        move    1,2
+        popj    17,
+
+proc_control_zero:
+        movei   1,0
+        popj    17,
+proc_control_fail:
+        seto    1,
+        popj    17,
+
 ; int proc_wait_event(volatile kword_t *eventp)
 ; Publish an event channel and sleep.  Request software PI6 so the executive
 ; continuation is saved immediately rather than polling until a timer tick.

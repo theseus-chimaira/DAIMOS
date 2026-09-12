@@ -263,14 +263,9 @@ diskset_log_call:
 diskset_log_return:
         popj 17,
 
-; Legacy request ABI entry.  Keep this export exactly two words so KCORE
-; can derive the register entry from the single republished service jump.
+; Permanent export is the register ABI.  KINIT owns the reclaimable
+; legacy request unpacking used while constructing the initial mount state.
 diskset_mres_dispatch:
-        jumpe 1,pdp10_ret_neg1
-        jrst diskset_mres_request_call
-
-; Register ABI: AC5=operation (2..11), AC1..AC3=a..c.
-; Operations needing fewer arguments simply ignore the extra AC values.
 diskset_mres_reg_dispatch:
         subi 5,2
         jumpl 5,pdp10_ret_neg1
@@ -278,14 +273,6 @@ diskset_mres_reg_dispatch:
         jrst pdp10_ret_neg1
         move 5,diskset_dispatch_table(5)
         jrst (5)
-
-diskset_mres_request_call:
-        move 4,1
-        move 5,(4)
-        move 1,1(4)
-        move 2,2(4)
-        move 3,3(4)
-        jrst diskset_mres_reg_dispatch
 
 diskset_dispatch_table:
         .word diskset_blocks

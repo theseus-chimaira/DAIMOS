@@ -780,8 +780,6 @@ memfs_mres_usage:
         jrst    pdp10_ret_zero
 
 memfs_mres_dispatch:
-        movei   7,4                     ; MEMFS_PROVIDER
-        jrst    fs_provider_request_call
 memfs_mres_reg_dispatch:
         caie    6,023                   ; 19 decimal: MEMFS_INIT
         jrst    memfs_mres_not_init

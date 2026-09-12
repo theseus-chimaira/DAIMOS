@@ -22,7 +22,7 @@ diskset_boot_call(struct diskset_mres_request *req)
         address = module_service_get(MODULE_SERVICE_DISKSET);
         if (address == 0U)
                 return -1;
-        return (int)kinit_call18_1(address, (kword_t)(unsigned long)req);
+        return (int)kinit_call_diskset_request(address, req);
 }
 
 static int

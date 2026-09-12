@@ -604,8 +604,6 @@ d6fs_diskset_write_jump:
 ; D6FS provider dispatch.  CREATE, MKDIR and SYMLINK share one compact
 ; object creator.  The wrappers only reshape the generic request ABI.
 d6fs_mres_dispatch:
-        movei   7,6
-        jrst    fs_provider_request_call
 d6fs_mres_reg_dispatch:
         move    7,[d6fs_mres_vector]
         jrst    fs_mres_vector_dispatch

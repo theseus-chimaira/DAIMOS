@@ -40,6 +40,30 @@ kinit_call18_0:
         pushj 017,(01)
         popj 017,
 
+; KINIT-only adapters for modules whose permanent export is the compact
+; register ABI.  Keeping request unpacking here makes it reclaimable.
+        .globl  kinit_call_fs_request
+kinit_call_fs_request:
+        move    7,1                    ; service address
+        move    6,2                    ; six-word fs request
+        move    5,5(6)
+        move    4,4(6)
+        move    3,3(6)
+        move    2,2(6)
+        move    1,1(6)
+        move    6,(6)                  ; operation, after final pointer use
+        jrst    (7)
+
+        .globl  kinit_call_diskset_request
+kinit_call_diskset_request:
+        move    4,1                    ; service address
+        move    5,2                    ; four-word diskset request
+        move    3,3(5)
+        move    2,2(5)
+        move    1,1(5)
+        move    5,(5)                  ; operation, after final pointer use
+        jrst    (4)
+
 ; kword_t kinit_call18_1(unsigned int address, kword_t arg)
 kinit_call18_1:
         move 03,01

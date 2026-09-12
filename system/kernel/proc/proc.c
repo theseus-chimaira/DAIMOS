@@ -76,16 +76,6 @@ proc_slot_zero(struct proc *p)
         p->sched = 0UL;
 }
 
-kword_t
-proc_scope_id(const struct proc *p)
-{
-        if (PROC_STATE(p) == PROC_ZOMB)
-                return p->sched & PROC_ZOMB_SCOPE_MASK;
-        if (!PROC_HAS_UAREA(p))
-                return 0UL;
-        return (PROC_CTL_WORD(p) >> PROC_SESSION_SHIFT) &
-            PROC_ZOMB_SCOPE_MASK;
-}
 
 static inline void
 proc_ctl_set(struct proc *p, kword_t mask, unsigned int shift,
@@ -120,25 +110,12 @@ proc_ctl_set(struct proc *p, kword_t mask, unsigned int shift,
 
 /* One compact record per logical TTY.  The extra ten words versus half-word
  * packing save substantially more KCORE instructions in every control path. */
-static kword_t proc_tty_records[PROC_TTY_COUNT];
-
-/* All callers pass a live process with a resident u-area. */
-static unsigned int
-proc_tty_id(const struct proc *p)
-{
-        unsigned int state;
-
-        state = PROC_TTY_STATE(p);
-        if (state < PROC_TTY_ATTACHED_BASE ||
-            state >= PROC_TTY_ATTACHED_BASE + PROC_TTY_COUNT)
-                return PROC_TTY_COUNT;
-        return state - PROC_TTY_ATTACHED_BASE;
-}
+kword_t proc_tty_records[PROC_TTY_COUNT];
 
 extern int proc_tty_session_has(unsigned int session, unsigned int pgrp,
     unsigned int skip_slot);
 
-static void
+void
 proc_tty_release_session(unsigned int session, unsigned int leaving_slot)
 {
         unsigned int i;
@@ -156,209 +133,6 @@ proc_tty_release_session(unsigned int session, unsigned int leaving_slot)
         }
 }
 
-int
-proc_child_hierarchy(unsigned int child_slot, unsigned int mode,
-    unsigned int requested_pgrp)
-{
-        struct proc *child;
-        struct proc *parent;
-        unsigned int parent_slot;
-        unsigned int pgrp;
-        unsigned int session;
-        unsigned int i;
-        kword_t parent_ctl;
-        kword_t child_ctl;
-
-        /* RUN calls this only after claiming a valid child slot and
-         * installing its u-area; the parent is the live current process. */
-        parent_slot = (unsigned int)proc_current_slot;
-        parent = &proc_table[parent_slot];
-        child = &proc_table[child_slot];
-        parent_ctl = PROC_CTL_WORD(parent);
-        session = (unsigned int)((parent_ctl >> PROC_SESSION_SHIFT) &
-            PROC_SESSION_MASK);
-
-        if (mode == SYS_RUN_PGRP_INHERIT) {
-                if (requested_pgrp != 0U)
-                        return -1;
-                pgrp = PROC_PGRP(parent);
-                if (pgrp == 0U)
-                        return -1;
-        } else if (mode == SYS_RUN_PGRP_NEW) {
-                if (requested_pgrp != 0U)
-                        return -1;
-                pgrp = child_slot;
-        } else if (mode == SYS_RUN_PGRP_JOIN) {
-                if (requested_pgrp == 0U || requested_pgrp > PROC_PGRP_MASK)
-                        return -1;
-                pgrp = 0U;
-                for (i = 1U; i < proc_high_slot; ++i) {
-                        const struct proc *member;
-
-                        member = &proc_table[i];
-                        if (PROC_IS_FREE(member) ||
-                            PROC_PGRP(member) != requested_pgrp ||
-                            (unsigned int)(proc_scope_id(member) & PROC_ZOMB_SESSION_MASK) != session)
-                                continue;
-                        pgrp = requested_pgrp;
-                        break;
-                }
-                if (pgrp == 0U)
-                        return -1;
-        } else {
-                return -1;
-        }
-
-        PROC_SET_PGRP(child, pgrp);
-        child_ctl = PROC_CTL_WORD(child);
-        child_ctl &= ~(((kword_t)PROC_SESSION_MASK << PROC_SESSION_SHIFT) |
-            ((kword_t)PROC_DOMAIN_MASK << PROC_DOMAIN_SHIFT) |
-            ((kword_t)PROC_TTY_MASK << PROC_TTY_SHIFT));
-        child_ctl |= parent_ctl &
-            (((kword_t)PROC_SESSION_MASK << PROC_SESSION_SHIFT) |
-            ((kword_t)PROC_DOMAIN_MASK << PROC_DOMAIN_SHIFT) |
-            ((kword_t)PROC_TTY_MASK << PROC_TTY_SHIFT));
-        PROC_CTL_WORD(child) = child_ctl;
-        return 0;
-}
-
-int
-proc_control(unsigned int op, unsigned int arg)
-{
-        struct proc *p;
-        unsigned int slot;
-
-        /* PROCCTL is a user-mode syscall only.  The dispatcher can reach it
-         * only with a current live process and its resident u-area installed. */
-        slot = (unsigned int)proc_current_slot;
-        p = &proc_table[slot];
-        switch (op) {
-        case SYS_PROCCTL_GETPGRP:
-                return arg == 0U ? (int)PROC_PGRP(p) : -1;
-        case SYS_PROCCTL_GETSESSION:
-                return arg == 0U ? (int)PROC_SESSION(p) : -1;
-        case SYS_PROCCTL_GETDOMAIN:
-                return arg == 0U ? (int)PROC_DOMAIN(p) : -1;
-        case SYS_PROCCTL_NEWSESSION: {
-                unsigned int session;
-
-                if (arg != 0U)
-                        return -1;
-                session = PROC_SESSION(p);
-                proc_tty_release_session(session, slot);
-                PROC_SET_PGRP(p, slot);
-                proc_ctl_set(p, PROC_SESSION_MASK, PROC_SESSION_SHIFT, slot);
-                proc_ctl_set(p, PROC_TTY_MASK, PROC_TTY_SHIFT,
-                    PROC_TTY_NO_TTY);
-                return (int)slot;
-        }
-        case SYS_PROCCTL_NEWDOMAIN:
-                if (arg != 0U || PROC_SESSION(p) != slot)
-                        return -1;
-                proc_ctl_set(p, PROC_DOMAIN_MASK, PROC_DOMAIN_SHIFT, slot);
-                return (int)slot;
-        case SYS_PROCCTL_GETEVENTS: {
-                unsigned int events;
-
-                if (arg != 0U)
-                        return -1;
-                events = PROC_EVENTS(p);
-                proc_ctl_set(p, PROC_EVENT_MASK, PROC_EVENT_SHIFT, 0U);
-                return (int)events;
-        }
-        case SYS_PROCCTL_EVENT_PID:
-        case SYS_PROCCTL_EVENT_PGRP:
-                if ((arg & ~SYS_EVENT_ARG_MASK) != 0U)
-                        return -1;
-                return proc_event_send(arg & SYS_EVENT_TARGET_MASK,
-                    (arg >> SYS_EVENT_CODE_SHIFT) & SYS_EVENT_CODE_MASK,
-                    op == SYS_PROCCTL_EVENT_PGRP);
-        case SYS_PROCCTL_GETTTY:
-                return arg == 0U ? (int)PROC_TTY_STATE(p) : -1;
-        case SYS_PROCCTL_TTY_ATTACH: {
-                unsigned int record;
-                unsigned int session;
-
-                if (arg >= PROC_TTY_COUNT || PROC_SESSION(p) != slot ||
-                    PROC_TTY_STATE(p) >= PROC_TTY_ATTACHED_BASE)
-                        return -1;
-                record = (unsigned int)proc_tty_records[arg];
-                session = PROC_TTY_REC_SESSION(record);
-                if (session != 0U && session != slot)
-                        return -1;
-                if (session == 0U)
-                        proc_tty_records[arg] = (kword_t)slot |
-                            ((kword_t)PROC_PGRP(p) << PROC_TTY_REC_PGRP_SHIFT);
-                proc_ctl_set(p, PROC_TTY_MASK, PROC_TTY_SHIFT,
-                    PROC_TTY_ATTACHED_BASE + arg);
-                return (int)arg;
-        }
-        case SYS_PROCCTL_TTY_DETACH: {
-                unsigned int tty_id;
-                unsigned int record;
-                unsigned int i;
-
-                if (arg != 0U || PROC_SESSION(p) != slot)
-                        return -1;
-                tty_id = proc_tty_id(p);
-                if (tty_id >= PROC_TTY_COUNT)
-                        return -1;
-                record = (unsigned int)proc_tty_records[tty_id];
-                if (PROC_TTY_REC_SESSION(record) != slot)
-                        return -1;
-                proc_tty_records[tty_id] = 0UL;
-                for (i = 1U; i < proc_high_slot; ++i) {
-                        struct proc *member;
-
-                        member = &proc_table[i];
-                        if (PROC_IS_FREE_OR_ZOMB(member) ||
-                            !PROC_HAS_UAREA(member) ||
-                            (unsigned int)(proc_scope_id(member) &
-                            PROC_ZOMB_SESSION_MASK) != slot ||
-                            proc_tty_id(member) != tty_id)
-                                continue;
-                        proc_ctl_set(member, PROC_TTY_MASK, PROC_TTY_SHIFT,
-                            PROC_TTY_DETACHED);
-                }
-                return 0;
-        }
-        case SYS_PROCCTL_TTY_GETFG: {
-                unsigned int tty_id;
-                unsigned int record;
-
-                if (arg != 0U)
-                        return -1;
-                tty_id = proc_tty_id(p);
-                if (tty_id >= PROC_TTY_COUNT)
-                        return -1;
-                record = (unsigned int)proc_tty_records[tty_id];
-                if (PROC_TTY_REC_SESSION(record) != PROC_SESSION(p))
-                        return -1;
-                return (int)PROC_TTY_REC_PGRP(record);
-        }
-        case SYS_PROCCTL_TTY_SETFG: {
-                unsigned int tty_id;
-                unsigned int record;
-                unsigned int session;
-
-                if (arg == 0U || arg > PROC_PGRP_MASK)
-                        return -1;
-                tty_id = proc_tty_id(p);
-                if (tty_id >= PROC_TTY_COUNT)
-                        return -1;
-                record = (unsigned int)proc_tty_records[tty_id];
-                session = PROC_SESSION(p);
-                if (PROC_TTY_REC_SESSION(record) != session ||
-                    !proc_tty_session_has(session, arg, 0U))
-                        return -1;
-                proc_tty_records[tty_id] = (kword_t)session |
-                    ((kword_t)arg << PROC_TTY_REC_PGRP_SHIFT);
-                return (int)arg;
-        }
-        default:
-                return -1;
-        }
-}
 
 int
 proc_slot_discard(unsigned int slot)

@@ -100,8 +100,7 @@ kfs_boot_mount_ramfs(kword_t future_free_words)
         req.op = FS_MRES_OP_MEMFS_INIT;
         req.a = (kword_t)(unsigned long)&config;
         ramfs_mount = VFS_NODE_NONE;
-        if ((int)kinit_call18_1(memfs_service,
-            (kword_t)(unsigned long)&req) != 0)
+        if ((int)kinit_call_fs_request(memfs_service, &req) != 0)
                 goto fail;
 
         if (vfs_mount(ramfs_target, MEMFS_PROVIDER, MEMFS_KIND_NODE,
@@ -123,8 +122,7 @@ fail:
         config.image_data = 0;
         req.op = FS_MRES_OP_MEMFS_INIT;
         req.a = (kword_t)(unsigned long)&config;
-        if ((int)kinit_call18_1(memfs_service,
-            (kword_t)(unsigned long)&req) != 0)
+        if ((int)kinit_call_fs_request(memfs_service, &req) != 0)
                 return -1;
         if (mm_free(ramfs_base, MM_TYPE_KERNEL_DYNAMIC, 1U) != MM_OK)
                 return -1;

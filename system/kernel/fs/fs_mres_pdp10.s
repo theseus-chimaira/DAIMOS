@@ -26,7 +26,6 @@ diskset_runtime_reg_enter:
         hrrz    4,diskset_runtime_service_jump
         cain    4,fs_mres_no_service
         jrst    fs_mres_no_service
-        addi    4,2
         jrst    (4)
 diskset_runtime_service_jump:
         jrst    fs_mres_no_service
@@ -72,7 +71,6 @@ fs_provider_reg_call:
         hrrz    7,fs_memfs_service_jump(7)
         cain    7,fs_mres_no_service
         jrst    fs_mres_no_service
-        addi    7,2
         jrst    (7)
 fs_memfs_service_jump:
         jrst    fs_mres_no_service
