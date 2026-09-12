@@ -135,26 +135,8 @@ proc_tty_id(const struct proc *p)
         return state - PROC_TTY_ATTACHED_BASE;
 }
 
-static int
-proc_tty_session_has(unsigned int session, unsigned int pgrp,
-    unsigned int skip_slot)
-{
-        unsigned int i;
-
-        for (i = 1U; i < proc_high_slot; ++i) {
-                const struct proc *member;
-
-                if (i == skip_slot)
-                        continue;
-                member = &proc_table[i];
-                if (PROC_IS_FREE_OR_ZOMB(member))
-                        continue;
-                if ((pgrp == 0U || PROC_PGRP(member) == pgrp) &&
-                    PROC_HAS_UAREA(member) && PROC_SESSION(member) == session)
-                        return 1;
-        }
-        return 0;
-}
+extern int proc_tty_session_has(unsigned int session, unsigned int pgrp,
+    unsigned int skip_slot);
 
 static void
 proc_tty_release_session(unsigned int session, unsigned int leaving_slot)
@@ -403,23 +385,6 @@ proc_slot_discard(unsigned int slot)
 }
 
 static inline void
-proc_wake_parent(unsigned int parent)
-{
-        struct proc *p;
-
-        if (parent == 0U || proc_table == 0 || parent >= proc_slots)
-                return;
-        p = &proc_table[parent];
-        if (PROC_STATE(p) != PROC_SLEEP ||
-            (p->sched & PROC_WAIT_BITS) !=
-            ((kword_t)PROC_WAIT_CHILD << PROC_WAIT_SHIFT))
-                return;
-        p->sched = (p->sched &
-            ~(PROC_WAIT_BITS | PROC_STATE_BITS | PROC_SCHED_RH_MASK)) |
-            ((kword_t)PROC_SRUN << PROC_STATE_SHIFT);
-}
-
-static inline void
 proc_queue_event(struct proc *p, unsigned int event)
 {
         kword_t ctl;
@@ -429,15 +394,7 @@ proc_queue_event(struct proc *p, unsigned int event)
         PROC_CTL_WORD(p) = ctl;
 }
 
-static void
-proc_notify_parent(unsigned int parent)
-{
-        if (parent == 0U || proc_table == 0 || parent >= proc_slots ||
-            PROC_IS_FREE_OR_ZOMB(&proc_table[parent]))
-                return;
-        proc_queue_event(&proc_table[parent], SYS_EVENT_CHLD);
-        proc_wake_parent(parent);
-}
+extern void proc_notify_parent(unsigned int parent);
 
 static void
 proc_child_report(struct proc *child, unsigned int report)

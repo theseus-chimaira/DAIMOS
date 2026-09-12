@@ -124,6 +124,86 @@ proc_record_kernel_sp:
         pop     17,1
         popj    17,
 
+
+; int proc_tty_session_has(unsigned int session, unsigned int pgrp,
+;     unsigned int skip_slot)
+; Scan the compact process table without a C save frame.  AC1..AC3 carry
+; arguments; AC1 is the boolean result.  AC2..AC7 are caller-scratch.
+        .globl  proc_tty_session_has
+proc_tty_session_has:
+        move    5,1                    ; session
+        move    6,2                    ; pgrp, zero means wildcard
+        move    7,3                    ; slot to exclude
+        movei   2,1                    ; first user slot
+        move    3,proc_table
+        addi    3,PROC_WORDS
+proc_tty_session_scan:
+        caml    2,proc_high_slot
+        jrst    proc_tty_session_none
+        camn    2,7
+        jrst    proc_tty_session_next
+        move    4,2(3)                 ; packed scheduler word
+        and     4,[0300000000000]      ; FREE/ZOMB have low state bits clear
+        jumpe   4,proc_tty_session_next
+        jumpe   6,proc_tty_session_scope
+        hrrz    4,(3)
+        andi    4,0377                  ; process group
+        came    4,6
+        jrst    proc_tty_session_next
+proc_tty_session_scope:
+        hrrz    4,(3)
+        trnn    4,0400000               ; resident u-area flag
+        jrst    proc_tty_session_next
+        hlrz    4,(3)                   ; stable u-area base
+        move    4,045(4)                ; packed control word
+        lsh     4,-3
+        andi    4,0377                  ; session id
+        came    4,5
+        jrst    proc_tty_session_next
+        movei   1,1
+        popj    17,
+proc_tty_session_next:
+        addi    3,PROC_WORDS
+        addi    2,1
+        jrst    proc_tty_session_scan
+proc_tty_session_none:
+        movei   1,0
+        popj    17,
+
+
+; void proc_notify_parent(unsigned int parent)
+; Queue CHLD and wake a parent blocked in WAIT.  The descriptor is decoded
+; once; unlike the former C helper chain, the wake path does not revalidate
+; proc_table and the slot after notification has already validated them.
+        .globl  proc_notify_parent
+proc_notify_parent:
+        jumpe   1,proc_notify_parent_done
+        skipn   3,proc_table
+        popj    17,
+        caml    1,proc_slots
+        popj    17,
+        move    2,1
+        lsh     2,1
+        add     2,1
+        add     2,3
+        move    4,2(2)
+        and     4,[0300000000000]      ; FREE/ZOMB have low state bits clear
+        jumpe   4,proc_notify_parent_done
+        hlrz    4,(2)
+        movsi   3,0200                 ; pending CHLD in control-word LH
+        iorm    3,045(4)
+        move    4,2(2)
+        xor     4,[0340000000000]      ; SLEEP + WAIT_CHILD
+        and     4,[0760000000000]
+        jumpn   4,proc_notify_parent_done
+        move    4,2(2)
+        hllz    4,4                    ; clear wait channel
+        tlz     4,0760000              ; clear wait class and state
+        tlo     4,0200000              ; RUN
+        movem   4,2(2)
+proc_notify_parent_done:
+        popj    17,
+
 ; int proc_wait_event(volatile kword_t *eventp)
 ; Publish an event channel and sleep.  Request software PI6 so the executive
 ; continuation is saved immediately rather than polling until a timer tick.
