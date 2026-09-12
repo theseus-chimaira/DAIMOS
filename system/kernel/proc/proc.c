@@ -435,17 +435,7 @@ proc_adopt_children(unsigned int old_parent)
         proc_trim_high();
 }
 
-static int
-proc_has_live_user(void)
-{
-        unsigned int i;
-
-        for (i = 1U; i < proc_high_slot; ++i) {
-                if (!PROC_IS_FREE_OR_ZOMB(&proc_table[i]))
-                        return 1;
-        }
-        return 0;
-}
+extern int proc_has_live_user(void);
 
 /* Release one process after its file table is closed.  The caller must never
  * run on the target u-area stack while this function executes. */

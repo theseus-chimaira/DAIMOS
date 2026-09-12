@@ -171,6 +171,30 @@ proc_tty_session_none:
         popj    17,
 
 
+; int proc_has_live_user(void)
+; Return true as soon as a non-FREE/non-ZOMB user descriptor is found.  The
+; packed state encoding makes this a single scheduler-word mask test per slot.
+        .globl  proc_has_live_user
+proc_has_live_user:
+        movei   2,1                    ; first user slot
+        move    3,proc_table
+        addi    3,PROC_WORDS
+proc_has_live_user_scan:
+        caml    2,proc_high_slot
+        jrst    proc_has_live_user_none
+        move    4,2(3)                 ; packed scheduler word
+        and     4,[0300000000000]      ; FREE/ZOMB have low state bits clear
+        jumpn   4,proc_has_live_user_yes
+        addi    3,PROC_WORDS
+        addi    2,1
+        jrst    proc_has_live_user_scan
+proc_has_live_user_yes:
+        movei   1,1
+        popj    17,
+proc_has_live_user_none:
+        movei   1,0
+        popj    17,
+
 ; void proc_notify_parent(unsigned int parent)
 ; Queue CHLD and wake a parent blocked in WAIT.  The descriptor is decoded
 ; once; unlike the former C helper chain, the wake path does not revalidate
