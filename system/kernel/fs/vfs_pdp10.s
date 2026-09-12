@@ -1,6 +1,7 @@
 ; vfs_pdp10.s -- compact resident VFS primitives for PDP-6/PDP-10.
         .text
         .globl  pdp10_ret_zero
+        .globl  pdp10_ret_one
         .globl  pdp10_ret_neg1
 
 
@@ -383,8 +384,7 @@ vfs_name_valid:
         jumple  2,pdp10_ret_zero
         caile   2,030                    ; VFS_NAME_MAX_CHARS = 24
         jrst    pdp10_ret_zero
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 
 ; int vfs_name_is6(const struct vfs_name *name, kword_t word,
 ;     unsigned int chars)

@@ -8,6 +8,7 @@
 
         .text
         .globl  pdp10_ret_zero
+        .globl  pdp10_ret_neg1
         .globl  mach_user_apr
 sys_user_words:
         ; User pointers are logical.  Validate against the cached PDP-6 APR
@@ -115,14 +116,12 @@ native_sys_write_chars_loop:
         ibp     5
         jrst    native_sys_write_chars_loop
 native_sys_write_chars_ok:
-        setz    1,
-        popj    17,
+        jrst    pdp10_ret_zero
 native_sys_write_chars_stdio_bad:
         pop     17,3
         pop     17,2
 native_sys_write_chars_fail:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
 %L66:
         push    17,1

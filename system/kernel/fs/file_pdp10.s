@@ -54,6 +54,7 @@ file_path_setchar:
         popj    17,
 
         .globl  pdp10_ret_zero
+        .globl  pdp10_ret_one
         .globl  pdp10_ret_neg1
         .globl  vfs_readchar
         .globl  vfs_writechar
@@ -73,18 +74,15 @@ file_stdio_enabled:
         jrst    file_stdio_check2
         trnn    2,2
         jrst    pdp10_ret_zero
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 file_stdio_check0:
         trnn    2,1
         jrst    pdp10_ret_zero
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 file_stdio_check2:
         trnn    2,4
         jrst    pdp10_ret_zero
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 
 ; int file_readchar(int fd)
 ; Validate the descriptor exactly as the C wrapper did, then advance the
@@ -502,8 +500,7 @@ file_component_trailing:
 file_component_done:
         movem   0,(3)
         movem   5,(2)
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 file_component_empty:
         movem   5,(2)
         jrst    pdp10_ret_zero

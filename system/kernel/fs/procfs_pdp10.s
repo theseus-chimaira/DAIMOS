@@ -46,8 +46,7 @@ procfs_format_slot:
         move    2,7
         addi    2,020
         lsh     2,036
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 procfs_format_two:
         move    2,6
         addi    2,020

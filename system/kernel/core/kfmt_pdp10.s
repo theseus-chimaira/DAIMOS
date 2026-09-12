@@ -1,6 +1,7 @@
 ; kfmt_pdp10.s -- compact resident unsigned 18-bit decimal formatter.
         .text
         .globl  pdp10_ret_zero
+        .globl  pdp10_ret_one
         .globl  pdp10_ret_neg1
 
 ; PROCFS formats only process slots and process sizes.  Both values fit in
@@ -57,5 +58,4 @@ kfmt_u18_digit_ready:
         addi    6,060
 kfmt_u18_store:
         movem   6,(3)
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one

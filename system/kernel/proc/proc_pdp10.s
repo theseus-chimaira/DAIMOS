@@ -46,6 +46,7 @@
         .globl  proc_record_kernel_sp
         .globl  proc_exit_current
         .globl  pdp10_ret_zero
+        .globl  pdp10_ret_one
         .globl  pdp10_ret_neg1
         .globl  pdp10_pi_level6
         .globl  pdp10_pi_sp_save
@@ -160,15 +161,13 @@ proc_tty_session_scope:
         andi    4,0377                  ; session id
         came    4,5
         jrst    proc_tty_session_next
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 proc_tty_session_next:
         addi    3,PROC_WORDS
         addi    2,1
         jrst    proc_tty_session_scan
 proc_tty_session_none:
-        movei   1,0
-        popj    17,
+        jrst    pdp10_ret_zero
 
 
 ; int proc_event_send(unsigned int target, unsigned int event, int group)
@@ -305,11 +304,9 @@ proc_has_live_user_scan:
         addi    2,1
         jrst    proc_has_live_user_scan
 proc_has_live_user_yes:
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 proc_has_live_user_none:
-        movei   1,0
-        popj    17,
+        jrst    pdp10_ret_zero
 
 ; void proc_notify_parent(unsigned int parent)
 ; Queue CHLD and wake a parent blocked in WAIT.  The descriptor is decoded
@@ -713,11 +710,9 @@ proc_control_tty_setfg:
         popj    17,
 
 proc_control_zero:
-        movei   1,0
-        popj    17,
+        jrst    pdp10_ret_zero
 proc_control_fail:
-        seto    1,
-        popj    17,
+        jrst    pdp10_ret_neg1
 
 ; int proc_wait_event(volatile kword_t *eventp)
 ; Publish an event channel and sleep.  Request software PI6 so the executive

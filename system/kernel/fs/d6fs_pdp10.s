@@ -5,6 +5,7 @@
 ; crash-ordering remain in C.
         .text
         .globl  pdp10_ret_zero
+        .globl  pdp10_ret_one
         .globl  pdp10_ret_neg1
 
 ; FCB decode/validation is implemented in d6fs.c.
@@ -53,8 +54,7 @@ d6fs_dirent_used:
         jumpe   4,pdp10_ret_zero
 
 d6fs_dirent_valid:
-        movei   1,1
-        popj    17,
+        jrst    pdp10_ret_one
 
         .globl  d6fs_extent_decode
 ; int d6fs_extent_decode(run, high, startp, blocksp)
