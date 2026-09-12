@@ -944,12 +944,8 @@ d6fs_provider_dirent:
         jrst    d6fs_provider_dirent_fail
         move    3,-2(17)                 ; off = slot * 6
         imuli   3,6
-        move    4,3
-        tlc     4,0400000                 ; unsigned off comparison
-        move    5,-013(17)               ; info.size_words
-        move    6,5
-        tlc     6,0400000
-        caml    4,6                      ; off < size_words?
+        move    5,-013(17)               ; validated positive info.size_words
+        caml    3,5                      ; off < size_words?
         jrst    d6fs_provider_dirent_eof
         sub     5,3
         caige   5,6                      ; malformed short final dirent?

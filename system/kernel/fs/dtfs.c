@@ -806,6 +806,7 @@ dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
         unsigned int done;
         unsigned int seen;
         unsigned int words;
+        unsigned int remaining;
 
         (void)mapoff;
         blocks = 0U;
@@ -834,14 +835,19 @@ dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
                     DTFS_BLOCKNO_MASK) != first)
                         return -1;
                 count = (unsigned int)(dtfs_block[0] & DTFS_COUNT_MASK);
-                if (count > DTFS_DATA_WORDS)
+                /* DTFS_COUNT_MASK keeps count in the positive signed range. */
+                if ((int)count > (int)DTFS_DATA_WORDS)
                         return -1;
                 words += count;
                 if (buf != 0) {
-                        if (off < count) {
+                        /* A negative cast denotes an unsigned offset past it. */
+                        if ((long)off >= 0L && (long)off < (long)count) {
                                 take = count - off;
-                                if (take > nwords - done)
-                                        take = nwords - done;
+                                remaining = nwords - done;
+                                /* Underflow is a large unsigned remainder. */
+                                if ((long)remaining >= 0L &&
+                                    (long)take > (long)remaining)
+                                        take = remaining;
                                 if (writing) {
                                         fs_copy_words(&buf[done],
                                             &dtfs_block[1U + off], take);
@@ -1035,7 +1041,9 @@ dtfs_transfer_words(vnode_t node, unsigned int off, kword_t *buf,
         } else {
                 size = dtfs_size_words(node, slot);
                 need = off + nwords;
-                if (need > size && dtfs_resize(node, need) != 0)
+                /* Valid DTFS sizes are positive; a negative need is larger. */
+                if (((long)need < 0L || (long)need > (long)size) &&
+                    dtfs_resize(node, need) != 0)
                         return -1;
         }
 transfer:

@@ -23,11 +23,11 @@ extern struct proc_swap_record *proc_swap_records;
 extern kword_t proc_swap_blocks_used;
 int proc_swap_boot_init(unsigned int slots);
 
-int proc_swap_attach(unsigned int slot, vnode_t backing,
+int proc_swap_attach(int slot, vnode_t backing,
     kword_t text_words, unsigned int pure);
-void proc_swap_detach(unsigned int slot);
-int proc_swap_out(unsigned int slot);
-int proc_swap_in(unsigned int slot);
+void proc_swap_detach(int slot);
+int proc_swap_out(int slot);
+int proc_swap_in(int slot);
 int proc_swap_reclaim(kword_t words, kword_t alignment,
     unsigned int exclude_owner);
 

@@ -11,7 +11,7 @@
  * initial limit is deliberately modest; descriptor exhaustion is reported
  * separately from core exhaustion and can be raised after measurement.
  */
-#define MM_MAX_EXTENTS          36U
+#define MM_MAX_EXTENTS          36
 
 #define MM_TYPE_FREE            0U
 #define MM_TYPE_PROCESS         1U
@@ -44,7 +44,7 @@ struct proc;
 
 extern struct mm_extent mm_extents[MM_MAX_EXTENTS];
 extern kword_t mm_core_words;
-extern unsigned int mm_extent_count;
+extern int mm_extent_count;
 
 void mm_boot_init(kword_t core_words);
 int mm_add_free(kword_t base, kword_t words);

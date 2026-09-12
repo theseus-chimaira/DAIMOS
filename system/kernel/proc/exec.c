@@ -46,7 +46,7 @@ exec_load_process(struct proc *p, unsigned int owner,
             (EXEC_DXR_F_PURE | EXEC_DXR_F_IMPURE));
         if (image_words == 0U || image_words > EXEC_DXR_MAX_IMAGE_WORDS ||
             bss_words > EXEC_DXR_MAX_BSS_WORDS ||
-            (kword_t)entry >= (kword_t)image_words ||
+            (int)entry >= (int)image_words ||
             dxr_flags == (EXEC_DXR_F_PURE | EXEC_DXR_F_IMPURE))
                 return -1;
         reloc_words = (image_words + 35U) / 36U;
@@ -61,7 +61,7 @@ exec_load_process(struct proc *p, unsigned int owner,
                     EXEC_DXR_TEXT_TAG)
                         return -1;
                 text_words = (unsigned int)((hdr[2] >> 18U) & EXEC_HALF_MASK);
-                if (text_words > image_words)
+                if ((int)text_words > (int)image_words)
                         return -1;
                 header_words = EXEC_DXR_EXT_HDR_WORDS;
         } else {

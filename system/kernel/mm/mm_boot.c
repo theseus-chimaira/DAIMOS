@@ -18,7 +18,7 @@ mm_alloc(kword_t words, unsigned int type, unsigned int owner,
 kword_t
 mm_largest_free(void)
 {
-        unsigned int i;
+        int i;
         kword_t largest;
         kword_t words;
 
@@ -41,7 +41,7 @@ mm_add_free(kword_t base, kword_t words)
         struct mm_extent extent;
         struct mm_extent *left;
         struct mm_extent *right;
-        unsigned int slot;
+        int slot;
         kword_t end;
         kword_t merged_words;
 

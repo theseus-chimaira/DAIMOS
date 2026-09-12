@@ -17,6 +17,10 @@ kword_t proc_swap_blocks_used;
 
 #define PROC_SWAP_HEADER_BLOCKS 1UL
 
+/* Swap slot numbers and packed block spans are bounded positive quantities.
+ * Use signed working values after unpacking so their comparisons stay compact
+ * on the PDP-10; packed on-disk/in-memory fields remain unchanged. */
+
 static inline kword_t
 proc_swap_disk_blocks(void)
 {
@@ -36,40 +40,41 @@ proc_swap_disk_io(unsigned int op, kword_t block, kword_t count,
 }
 
 static int
-proc_swap_find(kword_t blocks, kword_t *startp)
+proc_swap_find(kword_t block_words, kword_t *startp)
 {
-        kword_t total;
-        kword_t start;
-        unsigned int i;
+        long blocks;
+        long total;
+        long start;
+        int i;
 
-        if (blocks == 0UL || startp == 0)
+        if (block_words == 0UL || startp == 0)
                 return -1;
-        total = proc_swap_disk_blocks();
+        blocks = (long)block_words;
+        total = (long)proc_swap_disk_blocks();
         if (blocks > total)
                 return -1;
-        start = 0UL;
+        start = 0L;
         for (;;) {
-                kword_t next;
+                long next;
                 int conflict;
 
                 if (start > total - blocks)
                         return -1;
                 next = start;
                 conflict = 0;
-                for (i = 0U; i < proc_slots; ++i) {
+                for (i = 0; i < (int)proc_slots; ++i) {
                         kword_t span;
-                        kword_t first;
-                        kword_t count;
-                        kword_t end;
+                        long first;
+                        long count;
+                        long end;
 
-                        if (proc_table == 0 ||
-                            PROC_MEM_BASE(&proc_table[i]) != 0UL)
+                        if (PROC_MEM_BASE(&proc_table[i]) != 0UL)
                                 continue;
                         span = proc_swap_records[i].state;
-                        count = span & MM_HALF_MASK;
-                        if (count == 0UL)
+                        count = (long)(span & MM_HALF_MASK);
+                        if (count == 0L)
                                 continue;
-                        first = (span >> 18U) & MM_HALF_MASK;
+                        first = (long)((span >> 18U) & MM_HALF_MASK);
                         end = first + count;
                         if (start < end && first < start + blocks) {
                                 if (end > next)
@@ -78,7 +83,7 @@ proc_swap_find(kword_t blocks, kword_t *startp)
                         }
                 }
                 if (!conflict) {
-                        *startp = start;
+                        *startp = (kword_t)start;
                         return 0;
                 }
                 if (next <= start)
@@ -88,7 +93,8 @@ proc_swap_find(kword_t blocks, kword_t *startp)
 }
 
 static int
-proc_swap_write_words(kword_t first, const kword_t *src, kword_t words)
+proc_swap_transfer_words(unsigned int op, kword_t first,
+    kword_t *buf, kword_t words)
 {
         kword_t full;
         kword_t rem;
@@ -96,43 +102,27 @@ proc_swap_write_words(kword_t first, const kword_t *src, kword_t words)
 
         full = words / DSK_WORDS_PER_SECTOR;
         rem = words % DSK_WORDS_PER_SECTOR;
-        if (full != 0UL && proc_swap_disk_io(DISKSET_MRES_OP_SWAP_WRITE,
-            first, full, (kword_t *)(unsigned long)src) != 0)
+        if (full != 0UL && proc_swap_disk_io(op, first, full, buf) != 0)
                 return -1;
         if (rem == 0UL)
                 return 0;
-        fs_copy_words(src + full * DSK_WORDS_PER_SECTOR, block,
-            (unsigned int)rem);
-        fs_zero_words(block + rem,
-            (unsigned int)(DSK_WORDS_PER_SECTOR - rem));
-        return proc_swap_disk_io(DISKSET_MRES_OP_SWAP_WRITE, first + full,
-            1UL, block) == 0 ? 0 : -1;
-}
-
-static int
-proc_swap_read_words(kword_t first, kword_t *dst, kword_t words)
-{
-        kword_t full;
-        kword_t rem;
-        kword_t block[DSK_WORDS_PER_SECTOR];
-
-        full = words / DSK_WORDS_PER_SECTOR;
-        rem = words % DSK_WORDS_PER_SECTOR;
-        if (full != 0UL && proc_swap_disk_io(DISKSET_MRES_OP_SWAP_READ,
-            first, full, dst) != 0)
+        if (op == DISKSET_MRES_OP_SWAP_WRITE) {
+                fs_copy_words(buf + full * DSK_WORDS_PER_SECTOR, block,
+                    (unsigned int)rem);
+                fs_zero_words(block + rem,
+                    (unsigned int)(DSK_WORDS_PER_SECTOR - rem));
+                return proc_swap_disk_io(op, first + full, 1UL, block) == 0 ?
+                    0 : -1;
+        }
+        if (proc_swap_disk_io(op, first + full, 1UL, block) != 0)
                 return -1;
-        if (rem == 0UL)
-                return 0;
-        if (proc_swap_disk_io(DISKSET_MRES_OP_SWAP_READ, first + full,
-            1UL, block) != 0)
-                return -1;
-        fs_copy_words(block, dst + full * DSK_WORDS_PER_SECTOR,
+        fs_copy_words(block, buf + full * DSK_WORDS_PER_SECTOR,
             (unsigned int)rem);
         return 0;
 }
 
 int
-proc_swap_attach(unsigned int slot, vnode_t backing, kword_t text_words,
+proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
     unsigned int pure)
 {
         kword_t packed;
@@ -140,7 +130,7 @@ proc_swap_attach(unsigned int slot, vnode_t backing, kword_t text_words,
         unsigned int mount;
         unsigned int kind;
 
-        if (proc_swap_records == 0 || slot >= proc_slots ||
+        if (proc_swap_records == 0 || slot < 0 || slot >= (int)proc_slots ||
             backing == VFS_NODE_NONE)
                 return -1;
         provider = VFS_PROVIDER(backing);
@@ -166,9 +156,9 @@ proc_swap_attach(unsigned int slot, vnode_t backing, kword_t text_words,
 }
 
 void
-proc_swap_detach(unsigned int slot)
+proc_swap_detach(int slot)
 {
-        if (proc_swap_records == 0 || slot >= proc_slots)
+        if (proc_swap_records == 0 || slot < 0 || slot >= (int)proc_slots)
                 return;
         if (proc_table != 0 && PROC_MEM_BASE(&proc_table[slot]) == 0UL &&
             proc_swap_records[slot].state != 0UL)
@@ -178,7 +168,7 @@ proc_swap_detach(unsigned int slot)
 }
 
 int
-proc_swap_out(unsigned int slot)
+proc_swap_out(int slot)
 {
         struct proc_swap_record *r;
         struct proc *p;
@@ -194,8 +184,8 @@ proc_swap_out(unsigned int slot)
         unsigned int state;
         int pure;
 
-        if (proc_swap_records == 0 || proc_table == 0 || slot == 0U ||
-            slot >= proc_slots || slot == (unsigned int)proc_current_slot)
+        if (proc_swap_records == 0 || proc_table == 0 || slot <= 0 ||
+            slot >= (int)proc_slots || slot == (int)proc_current_slot)
                 return -1;
         p = &proc_table[slot];
         state = PROC_STATE(p);
@@ -223,7 +213,7 @@ proc_swap_out(unsigned int slot)
         pure = text_words != 0UL;
         if (pure) {
                 offset = (kword_t)EXEC_USER_ORIGIN + text_words;
-                if (offset > words)
+                if ((long)offset > (long)words)
                         goto fail_unpin;
         } else {
                 offset = 0UL;
@@ -235,9 +225,10 @@ proc_swap_out(unsigned int slot)
         if (blocks <= PROC_SWAP_HEADER_BLOCKS ||
             proc_swap_find(blocks, &first) != 0)
                 goto fail_unpin;
-        if (proc_swap_write_words(first, &resident_state, 1UL) != 0 ||
-            proc_swap_write_words(first + PROC_SWAP_HEADER_BLOCKS,
-            mem + offset, swap_words) != 0)
+        if (proc_swap_transfer_words(DISKSET_MRES_OP_SWAP_WRITE, first,
+            &resident_state, 1UL) != 0 ||
+            proc_swap_transfer_words(DISKSET_MRES_OP_SWAP_WRITE,
+            first + PROC_SWAP_HEADER_BLOCKS, mem + offset, swap_words) != 0)
                 goto fail_unpin;
         if (mm_unpin(base) != MM_OK)
                 goto fail_record;
@@ -258,7 +249,7 @@ fail_record:
 }
 
 int
-proc_swap_in(unsigned int slot)
+proc_swap_in(int slot)
 {
         struct proc_swap_record *r;
         struct proc *p;
@@ -274,8 +265,8 @@ proc_swap_in(unsigned int slot)
         kword_t *mem;
         int pure;
 
-        if (proc_swap_records == 0 || proc_table == 0 || slot == 0U ||
-            slot >= proc_slots)
+        if (proc_swap_records == 0 || proc_table == 0 || slot <= 0 ||
+            slot >= (int)proc_slots)
                 return -1;
         p = &proc_table[slot];
         r = &proc_swap_records[slot];
@@ -303,7 +294,8 @@ proc_swap_in(unsigned int slot)
         first = (r->state >> 18U) & MM_HALF_MASK;
         blocks = r->state & MM_HALF_MASK;
         if (blocks <= PROC_SWAP_HEADER_BLOCKS ||
-            proc_swap_read_words(first, &resident_state, 1UL) != 0 ||
+            proc_swap_transfer_words(DISKSET_MRES_OP_SWAP_READ, first,
+            &resident_state, 1UL) != 0 ||
             resident_state == 0UL)
                 goto fail;
         text_words = (resident_state >> PROC_SWAP_TEXT_SHIFT) &
@@ -334,14 +326,14 @@ proc_swap_in(unsigned int slot)
         } else {
                 offset = 0UL;
         }
-        if (offset > words)
+        if ((long)offset > (long)words)
                 goto fail;
         swap_words = words - offset;
         if (PROC_SWAP_HEADER_BLOCKS +
             (swap_words + DSK_WORDS_PER_SECTOR - 1UL) /
             DSK_WORDS_PER_SECTOR != blocks ||
-            proc_swap_read_words(first + PROC_SWAP_HEADER_BLOCKS,
-            mem + offset, swap_words) != 0)
+            proc_swap_transfer_words(DISKSET_MRES_OP_SWAP_READ,
+            first + PROC_SWAP_HEADER_BLOCKS, mem + offset, swap_words) != 0)
                 goto fail;
 
         if (mm_unpin(base) != MM_OK)
@@ -375,10 +367,10 @@ proc_swap_reclaim(kword_t words, kword_t alignment,
                 victim = proc_swap_victim(exclude_owner);
                 if (victim < 0)
                         break;
-                if (proc_swap_out((unsigned int)victim) != 0)
+                if (proc_swap_out(victim) != 0)
                         break;
                 swapped = 1;
-                if (mm_total_free() >= words)
+                if ((long)mm_total_free() >= (long)words)
                         return 0;
         }
         return swapped ? 0 : -1;

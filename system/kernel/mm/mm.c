@@ -6,7 +6,11 @@
 
 struct mm_extent mm_extents[MM_MAX_EXTENTS];
 kword_t mm_core_words;
-unsigned int mm_extent_count;
+int mm_extent_count;
+
+/* Extent indexes are bounded by MM_MAX_EXTENTS, and validated physical
+ * bases/lengths fit the positive PDP-10 core-address domain.  Keep bounded
+ * arithmetic signed so GCC need not synthesize unsigned sign-bit compares. */
 
 static inline kword_t
 mm_span(kword_t base, kword_t words)
@@ -23,22 +27,22 @@ mm_meta(unsigned int type, unsigned int owner, unsigned int pins)
 }
 
 static void
-mm_delete(unsigned int slot)
+mm_delete(int slot)
 {
         while (++slot < mm_extent_count)
                 mm_extents[slot - 1U] = mm_extents[slot];
         --mm_extent_count;
 }
 
-void mm_extent_coalesce(unsigned int slot);
+void mm_extent_coalesce(int slot);
 static int mm_alloc_aligned_raw(kword_t words, kword_t alignment,
     unsigned int type, unsigned int owner, unsigned int preference,
     kword_t *basep);
 
 int
-mm_extent_insert(unsigned int slot, const struct mm_extent *extent)
+mm_extent_insert(int slot, const struct mm_extent *extent)
 {
-        unsigned int i;
+        int i;
 
         if (mm_extent_count >= MM_MAX_EXTENTS)
                 return MM_ERR_DESCRIPTORS;
@@ -54,7 +58,7 @@ mm_extent_insert(unsigned int slot, const struct mm_extent *extent)
 kword_t
 mm_total_free(void)
 {
-        unsigned int i;
+        int i;
         kword_t total;
 
         total = 0UL;
@@ -65,17 +69,17 @@ mm_total_free(void)
 }
 
 static int
-mm_use_free(unsigned int slot, kword_t base, kword_t words,
+mm_use_free(int slot, long base, long words,
     unsigned int type, unsigned int owner, kword_t *basep)
 {
         struct mm_extent used;
         struct mm_extent tail;
         struct mm_extent *freep;
-        kword_t free_base;
-        kword_t free_end;
-        kword_t before;
-        kword_t after;
-        unsigned int needed;
+        long free_base;
+        long free_end;
+        long before;
+        long after;
+        int needed;
 
         freep = &mm_extents[slot];
         free_base = MM_EXTENT_BASE(freep);
@@ -84,7 +88,7 @@ mm_use_free(unsigned int slot, kword_t base, kword_t words,
                 return MM_ERR_INVAL;
         before = base - free_base;
         after = free_end - (base + words);
-        needed = (before != 0UL ? 1U : 0U) + (after != 0UL ? 1U : 0U);
+        needed = (before != 0L ? 1 : 0) + (after != 0L ? 1 : 0);
         if (mm_extent_count + needed > MM_MAX_EXTENTS)
                 return MM_ERR_DESCRIPTORS;
 
@@ -119,7 +123,7 @@ mm_has_aligned_fit(kword_t words, kword_t alignment)
         struct mm_extent *e;
         kword_t base;
         kword_t end;
-        unsigned int i;
+        int i;
 
         for (i = 0U; i < mm_extent_count; ++i) {
                 e = &mm_extents[i];
@@ -128,7 +132,8 @@ mm_has_aligned_fit(kword_t words, kword_t alignment)
                 base = (MM_EXTENT_BASE(e) + alignment - 1UL) &
                     ~(alignment - 1UL);
                 end = MM_EXTENT_BASE(e) + MM_EXTENT_WORDS(e);
-                if (base <= end && words <= end - base)
+                if ((long)base <= (long)end &&
+                    (long)words <= (long)(end - base))
                         return 1;
         }
         return 0;
@@ -143,7 +148,7 @@ mm_alloc_aligned_raw(kword_t words, kword_t alignment, unsigned int type,
         kword_t free_words;
         kword_t free_end;
         kword_t base;
-        unsigned int i;
+        int i;
         int step;
 
         if (basep == 0 || words == 0UL || words > MM_HALF_MASK ||
@@ -168,18 +173,19 @@ mm_alloc_aligned_raw(kword_t words, kword_t alignment, unsigned int type,
                         free_base = MM_EXTENT_BASE(freep);
                         free_words = MM_EXTENT_WORDS(freep);
                         free_end = free_base + free_words;
-                        if (free_words >= words) {
+                        if ((long)free_words >= (long)words) {
                                 if (preference == MM_ALLOC_LOW) {
                                         base = (free_base + alignment - 1UL) &
                                             ~(alignment - 1UL);
-                                        if (base >= free_base && base <= free_end &&
-                                            words <= free_end - base)
+                                        if ((long)base >= (long)free_base &&
+                                            (long)base <= (long)free_end &&
+                                            (long)words <= (long)(free_end - base))
                                                 return mm_use_free(i, base, words,
                                                     type, owner, basep);
                                 } else {
                                         base = (free_end - words) &
                                             ~(alignment - 1UL);
-                                        if (base >= free_base)
+                                        if ((long)base >= (long)free_base)
                                                 return mm_use_free(i, base, words,
                                                     type, owner, basep);
                                 }
@@ -188,13 +194,14 @@ mm_alloc_aligned_raw(kword_t words, kword_t alignment, unsigned int type,
                 if (step > 0)
                         ++i;
         }
-        return mm_total_free() >= words ? MM_ERR_FRAGMENTED : MM_ERR_NOMEM;
+        return (long)mm_total_free() >= (long)words ?
+            MM_ERR_FRAGMENTED : MM_ERR_NOMEM;
 }
 
-static unsigned int
+static int
 mm_find_base(kword_t base)
 {
-        unsigned int i;
+        int i;
 
         for (i = 0U; i < mm_extent_count; ++i)
                 if (MM_EXTENT_BASE(&mm_extents[i]) == base)
@@ -207,7 +214,7 @@ mm_process_owner(unsigned int owner, kword_t base)
 {
         struct proc *p;
 
-        if (proc_table == 0 || owner >= proc_slots)
+        if (proc_table == 0 || (int)owner >= (int)proc_slots)
                 return 0;
         p = &proc_table[owner];
         if (PROC_IS_FREE(p) || PROC_MEM_BASE(p) != base)
@@ -218,7 +225,7 @@ mm_process_owner(unsigned int owner, kword_t base)
 int
 mm_is_pinned(kword_t base)
 {
-        unsigned int i;
+        int i;
 
         i = mm_find_base(base);
         return i < mm_extent_count && MM_EXTENT_PINS(&mm_extents[i]) != 0U;
@@ -233,11 +240,11 @@ mm_move_process(struct proc *p, unsigned int owner)
         kword_t words;
         kword_t *src;
         kword_t *dst;
-        unsigned int i;
+        int i;
         unsigned int old_state;
         int rc;
 
-        if (p == 0 || proc_table == 0 || owner >= proc_slots ||
+        if (p == 0 || proc_table == 0 || (int)owner >= (int)proc_slots ||
             p != &proc_table[owner] || PROC_IS_FREE_OR_ZOMB(p) || PROC_TRANSITION(p) ||
             owner == (unsigned int)proc_current_slot)
                 return MM_ERR_BUSY;
@@ -272,7 +279,7 @@ mm_move_process(struct proc *p, unsigned int owner)
             MM_ALLOC_HIGH, &new_base);
         if (rc != MM_OK)
                 goto out;
-        if (new_base <= old_base) {
+        if ((long)new_base <= (long)old_base) {
                 (void)mm_free(new_base, MM_TYPE_PROCESS, owner);
                 rc = MM_ERR_FRAGMENTED;
                 goto out;
@@ -313,7 +320,7 @@ mm_move_module(unsigned int owner)
         kword_t old_base;
         kword_t new_base;
         kword_t words;
-        unsigned int i;
+        int i;
         int rc;
 
         if (module_moves_enabled == 0U || owner == 0U ||
@@ -336,7 +343,7 @@ mm_move_module(unsigned int owner)
             MM_ALLOC_LOW, &new_base);
         if (rc != MM_OK)
                 return rc;
-        if (new_base >= old_base) {
+        if ((long)new_base >= (long)old_base) {
                 (void)mm_free(new_base, MM_TYPE_MODULE, owner);
                 return MM_ERR_FRAGMENTED;
         }
@@ -357,12 +364,14 @@ mm_compact(kword_t words, kword_t alignment)
         struct proc *p;
         kword_t base;
         unsigned int owner;
-        unsigned int i;
+        int i;
 
         if (words == 0UL || alignment == 0UL ||
             (alignment & (alignment - 1UL)) != 0UL)
                 return MM_ERR_INVAL;
-        if (mm_total_free() < words)
+        /* Free memory is positive; a negative cast is a larger unsigned size. */
+        if ((long)words < 0L ||
+            (long)mm_total_free() < (long)words)
                 return MM_ERR_NOMEM;
         if (mm_has_aligned_fit(words, alignment))
                 return MM_OK;
@@ -442,7 +451,7 @@ mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
 }
 
 void
-mm_extent_coalesce(unsigned int slot)
+mm_extent_coalesce(int slot)
 {
         struct mm_extent *left;
         struct mm_extent *right;
@@ -460,15 +469,15 @@ mm_extent_coalesce(unsigned int slot)
                         --slot;
                 }
         }
-        if (slot + 1U < mm_extent_count &&
-            MM_EXTENT_TYPE(&mm_extents[slot + 1U]) == MM_TYPE_FREE) {
+        if (slot + 1 < mm_extent_count &&
+            MM_EXTENT_TYPE(&mm_extents[slot + 1]) == MM_TYPE_FREE) {
                 left = &mm_extents[slot];
-                right = &mm_extents[slot + 1U];
+                right = &mm_extents[slot + 1];
                 base = MM_EXTENT_BASE(left);
                 if (base + MM_EXTENT_WORDS(left) == MM_EXTENT_BASE(right)) {
                         words = MM_EXTENT_WORDS(left) + MM_EXTENT_WORDS(right);
                         left->span = mm_span(base, words);
-                        mm_delete(slot + 1U);
+                        mm_delete(slot + 1);
                 }
         }
 }
@@ -476,7 +485,7 @@ mm_extent_coalesce(unsigned int slot)
 int
 mm_free(kword_t base, unsigned int type, unsigned int owner)
 {
-        unsigned int i;
+        int i;
         struct mm_extent *extent;
 
         i = mm_find_base(base);
@@ -495,7 +504,7 @@ mm_free(kword_t base, unsigned int type, unsigned int owner)
 int
 mm_pin(kword_t base)
 {
-        unsigned int i;
+        int i;
         unsigned int pins;
         struct mm_extent *extent;
 
@@ -515,7 +524,7 @@ mm_pin(kword_t base)
 int
 mm_unpin(kword_t base)
 {
-        unsigned int i;
+        int i;
         struct mm_extent *extent;
 
         i = mm_find_base(base);

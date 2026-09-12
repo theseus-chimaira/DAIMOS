@@ -4,7 +4,7 @@
 #include "mm.h"
 
 /* Shared descriptor primitives used by permanent MM and disposable KINIT. */
-int mm_extent_insert(unsigned int slot, const struct mm_extent *extent);
-void mm_extent_coalesce(unsigned int slot);
+int mm_extent_insert(int slot, const struct mm_extent *extent);
+void mm_extent_coalesce(int slot);
 
 #endif

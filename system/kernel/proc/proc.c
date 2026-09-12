@@ -7,6 +7,10 @@
 
 #define PROC_UAREA_MM_OWNER_BASE 01000U
 
+/* Slot indexes are 1..PROC_MAX_SLOTS-1 and scheduler scores are small
+ * positive values.  Signed locals avoid PDP-10 unsigned-compare glue while
+ * preserving the externally stored unsigned slot/count representation. */
+
 unsigned int proc_sched_age_phase;
 extern struct file *file_table;
 
@@ -140,7 +144,9 @@ proc_slot_discard(unsigned int slot)
         struct proc *p;
         kword_t base;
 
-        if (proc_table == 0 || slot == 0U || slot >= proc_slots)
+        /* Process slots are bounded small positive table indices. */
+        if (proc_table == 0 || (int)slot <= 0 ||
+            (int)slot >= (int)proc_slots)
                 return -1;
         p = &proc_table[slot];
         if (PROC_IS_FREE(p))
@@ -180,18 +186,18 @@ proc_child_report(struct proc *child, unsigned int report)
 static void
 proc_adopt_children(unsigned int old_parent)
 {
-        unsigned int i;
+        int i;
         unsigned int new_parent;
 
         new_parent = 0U;
         if (old_parent != 1U && proc_slots > 1U &&
             !PROC_IS_FREE_OR_ZOMB(&proc_table[1]))
                 new_parent = 1U;
-        for (i = 1U; i < proc_high_slot; ++i) {
+        for (i = 1; i < (int)proc_high_slot; ++i) {
                 struct proc *child;
                 unsigned int state;
 
-                if (i == old_parent)
+                if ((unsigned int)i == old_parent)
                         continue;
                 child = &proc_table[i];
                 state = PROC_STATE(child);
@@ -425,11 +431,11 @@ proc_wait_status(unsigned int selector, kword_t *statusp, unsigned int flags)
         parent = (unsigned int)proc_current_slot;
 
         for (;;) {
-                unsigned int i;
+                int i;
                 int have_child;
 
                 have_child = 0;
-                for (i = 1U; i < proc_high_slot; ++i) {
+                for (i = 1; i < (int)proc_high_slot; ++i) {
                         struct proc *child;
                         unsigned int state;
 
@@ -441,7 +447,7 @@ proc_wait_status(unsigned int selector, kword_t *statusp, unsigned int flags)
                         if (group) {
                                 if (PROC_PGRP(child) != id)
                                         continue;
-                        } else if (id != 0U && id != i) {
+                        } else if (id != 0U && id != (unsigned int)i) {
                                 continue;
                         }
                         have_child = 1;
@@ -494,9 +500,9 @@ proc_comm(const struct proc *p)
 }
 
 int
-proc_nice_value(unsigned int slot)
+proc_nice_value(int slot)
 {
-        if (proc_table == 0 || slot == 0U || slot >= proc_slots ||
+        if (proc_table == 0 || slot <= 0 || slot >= (int)proc_slots ||
             PROC_IS_FREE(&proc_table[slot]))
                 return 0;
         return (int)PROC_NICE_ENCODED(&proc_table[slot]) -
@@ -506,12 +512,12 @@ proc_nice_value(unsigned int slot)
 int
 proc_nice_current(int value)
 {
-        unsigned int slot;
+        int slot;
         struct proc *p;
         unsigned int encoded;
 
-        slot = (unsigned int)proc_current_slot;
-        if (proc_table == 0 || slot == 0U || slot >= proc_slots)
+        slot = (int)proc_current_slot;
+        if (proc_table == 0 || slot == 0 || slot >= (int)proc_slots)
                 return -1;
         if (value < PROC_NICE_MIN)
                 value = PROC_NICE_MIN;
@@ -526,37 +532,37 @@ proc_nice_current(int value)
 static unsigned int
 proc_select_runnable(void)
 {
-        unsigned int n;
-        unsigned int limit;
-        unsigned int best;
-        unsigned int best_prio;
+        int n;
+        int limit;
+        int best;
+        int best_prio;
 
-        if (proc_table == 0 || proc_high_slot <= 1U)
+        if (proc_table == 0 || (int)proc_high_slot <= 1)
                 return 0U;
-        limit = proc_high_slot;
-        best = 0U;
-        best_prio = ~0U;
-        for (n = 1U; n <= limit; ++n) {
+        limit = (int)proc_high_slot;
+        best = 0;
+        best_prio = 0;
+        for (n = 1; n <= limit; ++n) {
                 struct proc *p;
-                unsigned int slot;
-                unsigned int prio;
+                int slot;
+                int prio;
 
-                slot = ((unsigned int)proc_sched_cursor + n) % limit;
-                if (slot == 0U)
+                slot = ((int)proc_sched_cursor + n) % limit;
+                if (slot == 0)
                         continue;
                 p = &proc_table[slot];
                 if (PROC_STATE(p) != PROC_SRUN || PROC_MEM_BASE(p) == 0UL ||
                     PROC_TRANSITION(p))
                         continue;
                 prio = proc_effective(p);
-                if (best == 0U || prio < best_prio) {
+                if (best == 0 || prio < best_prio) {
                         best = slot;
                         best_prio = prio;
                 }
         }
-        if (best != 0U)
+        if (best != 0)
                 proc_sched_cursor = (kword_t)best;
-        return best;
+        return (unsigned int)best;
 }
 
 unsigned int
@@ -568,22 +574,22 @@ proc_sched_resched_select(void)
 unsigned int
 proc_sched_tick_select(void)
 {
-        unsigned int cur;
-        unsigned int i;
-        unsigned int limit;
+        int cur;
+        int i;
+        int limit;
         int age_tick;
 
-        if (proc_table == 0 || proc_high_slot <= 1U)
+        if (proc_table == 0 || (int)proc_high_slot <= 1)
                 return 0U;
-        cur = (unsigned int)proc_current_slot;
-        limit = proc_high_slot;
+        cur = (int)proc_current_slot;
+        limit = (int)proc_high_slot;
         age_tick = 0;
         if (++proc_sched_age_phase >= 64U) {
                 proc_sched_age_phase = 0U;
                 age_tick = 1;
         }
 
-        for (i = 1U; i < limit; ++i) {
+        for (i = 1; i < limit; ++i) {
                 struct proc *p;
                 unsigned int cpu;
 
@@ -617,21 +623,21 @@ proc_sched_tick_select(void)
 int
 proc_swap_victim(unsigned int exclude_owner)
 {
-        unsigned int i;
-        unsigned int best;
-        unsigned int best_score;
+        int i;
+        int best;
+        int best_score;
 
         if (proc_table == 0)
                 return -1;
-        best = 0U;
-        best_score = 0U;
-        for (i = 1U; i < proc_high_slot; ++i) {
+        best = 0;
+        best_score = 0;
+        for (i = 1; i < (int)proc_high_slot; ++i) {
                 const struct proc *p;
                 unsigned int state;
-                unsigned int score;
+                int score;
                 int nice;
 
-                if (i == exclude_owner || i == (unsigned int)proc_current_slot)
+                if ((unsigned int)i == exclude_owner || i == (int)proc_current_slot)
                         continue;
                 p = &proc_table[i];
                 state = PROC_STATE(p);
@@ -643,18 +649,18 @@ proc_swap_victim(unsigned int exclude_owner)
 
                 nice = proc_nice_value(i);
                 if (state == PROC_SLEEP || state == PROC_STOP) {
-                        score = 04000U + PROC_SLEEP_AGE(p) * 0100U;
+                        score = 04000 + (int)PROC_SLEEP_AGE(p) * 0100;
                         if (PROC_WAIT_CLASS(p) != PROC_WAIT_NONE)
-                                score += 040U;
+                                score += 040;
                 } else {
-                        score = 01000U + proc_effective(p);
+                        score = 01000 + (int)proc_effective(p);
                         if (nice > 0)
-                                score += 02000U + (unsigned int)nice * 010U;
+                                score += 02000 + nice * 010;
                 }
-                if (best == 0U || score > best_score) {
+                if (best == 0 || score > best_score) {
                         best = i;
                         best_score = score;
                 }
         }
-        return best == 0U ? -1 : (int)best;
+        return best == 0 ? -1 : best;
 }

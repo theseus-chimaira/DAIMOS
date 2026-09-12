@@ -35,7 +35,7 @@ extern void file_path_setchar(kword_t *path, unsigned int pos, unsigned int ch);
 
 static int
 file_walk_path_at(const kword_t *path, int parent_only,
-    vnode_t start_node, unsigned int depth,
+    vnode_t start_node, unsigned int *depthp,
     vnode_t *nodep, struct vfs_name *leaf)
 {
         kword_t target[FILE_PATH_WORDS];
@@ -50,7 +50,7 @@ file_walk_path_at(const kword_t *path, int parent_only,
         struct vfs_stat st;
 
         if (path == 0 || nodep == 0 ||
-            (parent_only && leaf == 0) || depth > FILE_SYMLINK_MAX)
+            (parent_only && leaf == 0))
                 return -1;
         n = (unsigned int)path[0];
         if (n == 0U || n > FILE_PATH_MAX_CHARS)
@@ -73,7 +73,8 @@ file_walk_path_at(const kword_t *path, int parent_only,
                         *nodep = node;
                         return 0;
                 }
-                if (parent_only && pos >= n) {
+                /* file_component() bounds both values by the path limit. */
+                if (parent_only && (int)pos >= (int)n) {
                         if (file_name_dot(&name) || file_name_dotdot(&name))
                                 return -1;
                         *nodep = node;
@@ -92,7 +93,8 @@ file_walk_path_at(const kword_t *path, int parent_only,
                     vfs_stat(next, &st) != 0)
                         return -1;
                 if (st.type == VFS_TYPE_SYMLINK) {
-                        if (depth == FILE_SYMLINK_MAX || st.size_chars == 0UL ||
+                        /* One counter spans target recursion and resumed suffixes. */
+                        if (*depthp == FILE_SYMLINK_MAX || st.size_chars == 0UL ||
                             st.size_chars > FILE_PATH_MAX_CHARS)
                                 return -1;
                         target_chars = (unsigned int)st.size_chars;
@@ -100,8 +102,8 @@ file_walk_path_at(const kword_t *path, int parent_only,
                         target[0] = target_chars;
                         if (vfs_read_words(next, 0U, &target[1], target_words) !=
                             (int)target_words ||
-                            file_walk_path_at(target, 0, node, depth + 1U,
-                            &next, 0) != 0)
+                            (++*depthp, file_walk_path_at(target, 0, node,
+                            depthp, &next, 0)) != 0)
                                 return -1;
                 }
                 node = next;
@@ -113,11 +115,13 @@ file_walk_path(const kword_t *path,
     int parent_only, vnode_t *nodep, struct vfs_name *leaf)
 {
         vnode_t start;
+        unsigned int depth;
 
+        depth = 0U;
         start = file_cwd_get();
         if (start == VFS_NODE_NONE)
                 start = vfs_namespace_root;
-        return file_walk_path_at(path, parent_only, start, 0U,
+        return file_walk_path_at(path, parent_only, start, &depth,
             nodep, leaf);
 }
 
