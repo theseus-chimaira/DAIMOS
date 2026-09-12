@@ -9,21 +9,7 @@
         .text
         .globl  pdp10_ret_zero
         .globl  pdp10_ret_neg1
-        .globl  mach_user_apr
-sys_user_words:
-        ; User pointers are logical.  Validate against the cached PDP-6 APR
-        ; relocation/protection state and translate once for executive access.
-        ; The APR LH contains (user_words - 02000), RH the physical base.
-        hrrz    1,1
-        caige   1,020
-        jrst    pdp10_ret_zero
-        hlrz    3,mach_user_apr
-        addi    3,02000
-        caml    1,3
-        jrst    pdp10_ret_zero
-        hrrz    4,mach_user_apr
-        add     1,4
-        popj    17,
+        .globl  vm_user_words
 
         .globl  exec_native_syscall
         .globl  proc_nice_current
@@ -93,7 +79,7 @@ native_sys_write_chars:
         jumpe   6,pdp10_ret_zero
         move    5,2                   ; logical 9-bit byte pointer
         hrrz    1,2
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,native_sys_write_chars_fail
         hrr     5,1                   ; translated byte pointer
         add     3,4                   ; one-past physical user end
@@ -123,7 +109,7 @@ native_sys_write_chars_fail:
         jrst    proc_exit_current
 %L67:
         ; AC1 path, AC2 flags.
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,%L137
         hrrz    3,2
         move    4,3
@@ -139,11 +125,11 @@ native_sys_write_chars_fail:
         hrrz    1,1
         jrst    file_close
 %L75:
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,%L137
         jrst    file_chdir
 %L80:
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,%L137
         hrrz    2,2
         jrst    file_getcwd
@@ -152,7 +138,7 @@ native_sys_write_chars_fail:
         move    6,1
         move    7,3
         move    1,2
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,%L137
         move    2,1
         hrrz    1,6
@@ -164,7 +150,7 @@ native_sys_write_chars_fail:
         move    7,3
         move    5,4
         move    1,2
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,%L137
         move    2,1
         hrrz    1,6
@@ -173,10 +159,10 @@ native_sys_write_chars_fail:
         jrst    file_write_words
 %L90:
         ; AC1 path, AC2 stat buffer.
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         move    5,1
         move    1,2
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   5,%L137
         jumpe   1,%L137
         move    2,1
@@ -186,27 +172,27 @@ native_sys_write_chars_fail:
         ; AC1 fd, AC2 directory entry buffer.
         move    5,1
         move    1,2
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,%L137
         move    2,1
         hrrz    1,5
         jrst    file_readdir
 %L102:
         ; AC1 path, AC2 mode.
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,%L137
         hrrz    2,2
         jrst    file_mkdir
 %L107:
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,%L137
         jrst    file_unlink
 %L112:
         ; AC1 old path, AC2 new path.
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         move    5,1
         move    1,2
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   5,%L137
         jumpe   1,%L137
         move    2,1
@@ -214,7 +200,7 @@ native_sys_write_chars_fail:
         jrst    file_rename
 %L119:
         ; AC1 path, AC2 new size.
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,%L137
         move    2,2
         jrst    file_truncate
@@ -222,13 +208,13 @@ native_sys_write_chars_fail:
         ; AC1 slot, AC2 result buffer.
         move    5,1
         move    1,2
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,%L137
         move    2,1
         hrrz    1,5
         jrst    sys_procinfo
 %L129:
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,%L137
         jrst    sys_meminfo
 %L134:
@@ -271,7 +257,7 @@ native_sys_readchar_stdio:
 ; A one-word process-private kernel-stack temporary replaces the old global
 ; syscall AC5 shadow and remains safe across scheduler sleep/resume.
 native_sys_dtc0_path:
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,pdp10_ret_zero
         push    17,0
         movei   2,(17)
@@ -290,7 +276,7 @@ native_sys_dtc0_bad:
 native_sys_chmod:
         ; Preserve mode across pointer translation and VFS lookup.
         push    17,2
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,native_sys_chmod_bad1
         push    17,0
         movei   2,(17)
@@ -331,7 +317,7 @@ native_sys_dtfs_mount:
         pushj   17,native_sys_dtc0_path
         jumpe   1,native_sys_dtfs_mount_bad2
         move    1,-1(17)                ; saved mount path
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,native_sys_dtfs_mount_bad2
         pop     17,3                    ; restore flags
         pop     17,0                    ; discard saved mount path
@@ -363,7 +349,7 @@ native_sys_dtfs_mount_bad2:
         jrst    %L137
 
 native_sys_unmount:
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,%L137
         push    17,0
         movei   2,(17)
@@ -388,10 +374,10 @@ native_sys_dup:
 
 native_sys_symlink:
         ; AC1 target, AC2 link path.
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         move    5,1
         move    1,2
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   5,%L137
         jumpe   1,%L137
         move    2,1
@@ -408,9 +394,9 @@ native_sys_nice:
         jrst    proc_nice_current
 
 native_sys_run:
-        ; AC1 points at an inline, versioned RUN block.  Translate once and
-        ; pass the number of user words remaining after that address as AC2.
-        pushj   17,sys_user_words
+        ; AC1 points at an inline, versioned RUN block.  Ask the VM backend
+        ; for a kernel mapping and derive its remaining contiguous span.
+        pushj   17,vm_user_words
         jumpe   1,%L137
         move    2,4
         add     2,3
@@ -423,7 +409,7 @@ native_sys_wait:
         move    6,3
         move    1,2
         jumpe   1,native_sys_wait_no_status
-        pushj   17,sys_user_words
+        pushj   17,vm_user_words
         jumpe   1,%L137
         move    2,1
         jrst    native_sys_wait_call

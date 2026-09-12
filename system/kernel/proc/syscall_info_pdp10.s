@@ -39,7 +39,7 @@ sys_procinfo:
         andi    6,07
         movem   6,2(2)                 ; logical scheduler state
         hlrz    6,1(5)
-        movem   6,3(2)                 ; protected user words
+        movem   6,3(2)                 ; logical user words
         move    3,proc_comm_words+2    ; default USER
         jumpe   4,sys_procinfo_swapper
         caie    4,1

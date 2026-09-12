@@ -1,6 +1,7 @@
 #include "proc.h"
 #include "fs_mres.h"
 #include "mm.h"
+#include "vm.h"
 #include "proc_swap.h"
 #include "procfs.h"
 #include "syscall.h"
@@ -76,7 +77,7 @@ static void
 proc_slot_zero(struct proc *p)
 {
         p->meta = 0UL;
-        p->mem_layout = 0UL;
+        VM_SPACE_RESET(p);
         p->sched = 0UL;
 }
 
@@ -142,7 +143,6 @@ int
 proc_slot_discard(unsigned int slot)
 {
         struct proc *p;
-        kword_t base;
 
         /* Process slots are bounded small positive table indices. */
         if (proc_table == 0 || (int)slot <= 0 ||
@@ -151,10 +151,8 @@ proc_slot_discard(unsigned int slot)
         p = &proc_table[slot];
         if (PROC_IS_FREE(p))
                 return 0;
-        base = PROC_MEM_BASE(p);
-        if (base != 0UL && mm_free(base, MM_TYPE_PROCESS, slot) != MM_OK)
+        if (vm_space_destroy(p, slot) != 0)
                 return -1;
-        proc_swap_detach(slot);
         proc_tty_release_session((unsigned int)(proc_scope_id(p) &
             PROC_ZOMB_SESSION_MASK), slot);
         if (proc_uarea_release(slot, p) != 0)
@@ -223,7 +221,6 @@ static int
 proc_finish_slot(unsigned int slot, unsigned int status)
 {
         struct proc *p;
-        kword_t base;
         unsigned int parent;
         unsigned int pgrp;
         kword_t scope;
@@ -234,15 +231,12 @@ proc_finish_slot(unsigned int slot, unsigned int status)
         pgrp = PROC_PGRP(p);
         ctl = PROC_CTL_WORD(p);
         scope = (ctl >> PROC_SESSION_SHIFT) & PROC_ZOMB_SCOPE_MASK;
-        base = PROC_MEM_BASE(p);
 
         PROC_SET_TRANSITION(p);
-        if (base != 0UL && mm_free(base, MM_TYPE_PROCESS, slot) != MM_OK) {
+        if (vm_space_destroy(p, slot) != 0) {
                 PROC_CLEAR_TRANSITION(p);
                 return -1;
         }
-        proc_swap_detach(slot);
-        p->mem_layout = 0UL;
         proc_tty_release_session((unsigned int)(scope &
             PROC_ZOMB_SESSION_MASK), slot);
         if (proc_uarea_release(slot, p) != 0)
@@ -557,7 +551,7 @@ proc_select_runnable(void)
                         if (++slot >= limit)
                                 slot = 1;
                         p = &proc_table[slot];
-                if (PROC_STATE(p) != PROC_SRUN || PROC_MEM_BASE(p) == 0UL ||
+                if (PROC_STATE(p) != PROC_SRUN || !VM_SPACE_ACTIVE(p) ||
                     PROC_TRANSITION(p))
                         continue;
                 prio = proc_effective(p);
@@ -645,7 +639,6 @@ proc_swap_victim(unsigned int exclude_owner)
         best_score = 0;
         p = &proc_table[1];
         for (i = 1; i < (int)proc_high_slot; ++i, ++p) {
-                kword_t base;
                 unsigned int state;
                 int score;
                 int nice;
@@ -656,8 +649,7 @@ proc_swap_victim(unsigned int exclude_owner)
                 if ((state != PROC_SLEEP && state != PROC_STOP &&
                     state != PROC_SRUN) || PROC_TRANSITION(p))
                         continue;
-                base = PROC_MEM_BASE(p);
-                if (base == 0UL || mm_is_pinned(base))
+                if (!vm_space_can_swap(p))
                         continue;
 
                 nice = (int)PROC_NICE_ENCODED(p) - (int)PROC_NICE_BIAS;

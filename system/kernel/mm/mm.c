@@ -1,5 +1,5 @@
 #include "mm.h"
-#include "proc.h"
+#include "vm.h"
 #include "module_runtime.h"
 #include "proc_swap.h"
 #include "fs_mres.h"
@@ -35,7 +35,7 @@ mm_delete(int slot)
 }
 
 void mm_extent_coalesce(int slot);
-static int mm_alloc_aligned_raw(kword_t words, kword_t alignment,
+int mm_alloc_aligned_noreclaim(kword_t words, kword_t alignment,
     unsigned int type, unsigned int owner, unsigned int preference,
     kword_t *basep);
 
@@ -139,8 +139,8 @@ mm_has_aligned_fit(kword_t words, kword_t alignment)
         return 0;
 }
 
-static int
-mm_alloc_aligned_raw(kword_t words, kword_t alignment, unsigned int type,
+int
+mm_alloc_aligned_noreclaim(kword_t words, kword_t alignment, unsigned int type,
     unsigned int owner, unsigned int preference, kword_t *basep)
 {
         struct mm_extent *freep;
@@ -209,19 +209,6 @@ mm_find_base(kword_t base)
         return i;
 }
 
-static inline struct proc *
-mm_process_owner(unsigned int owner, kword_t base)
-{
-        struct proc *p;
-
-        if (proc_table == 0 || (int)owner >= (int)proc_slots)
-                return 0;
-        p = &proc_table[owner];
-        if (PROC_IS_FREE(p) || PROC_MEM_BASE(p) != base)
-                return 0;
-        return p;
-}
-
 int
 mm_is_pinned(kword_t base)
 {
@@ -230,88 +217,6 @@ mm_is_pinned(kword_t base)
         i = mm_find_base(base);
         return i < mm_extent_count && MM_EXTENT_PINS(&mm_extents[i]) != 0U;
 }
-
-int
-mm_move_process(struct proc *p, unsigned int owner)
-{
-        struct mm_extent *extent;
-        kword_t old_base;
-        kword_t new_base;
-        kword_t words;
-        kword_t *src;
-        kword_t *dst;
-        int i;
-        unsigned int old_state;
-        int rc;
-
-        if (p == 0 || proc_table == 0 || (int)owner >= (int)proc_slots ||
-            p != &proc_table[owner] || PROC_IS_FREE_OR_ZOMB(p) || PROC_TRANSITION(p) ||
-            owner == (unsigned int)proc_current_slot)
-                return MM_ERR_BUSY;
-        old_state = PROC_STATE(p);
-        if (PROC_HAS_UAREA(p)) {
-                kword_t ctl;
-
-                ctl = PROC_CTL_WORD(p);
-                ctl |= (kword_t)PROC_STOP_MM << PROC_STOP_SHIFT;
-                PROC_CTL_WORD(p) = ctl;
-                PROC_SET_STATE(p, PROC_STOP);
-        } else if (old_state == PROC_SRUN) {
-                return MM_ERR_BUSY;
-        }
-        old_base = PROC_MEM_BASE(p);
-        words = PROC_MEM_WORDS(p);
-        PROC_SET_TRANSITION(p);
-        i = mm_find_base(old_base);
-        extent = i < mm_extent_count ? &mm_extents[i] : 0;
-        if (extent == 0 || MM_EXTENT_TYPE(extent) != MM_TYPE_PROCESS ||
-            MM_EXTENT_OWNER(extent) != owner ||
-            MM_EXTENT_WORDS(extent) != words) {
-                rc = MM_ERR_INVAL;
-                goto out;
-        }
-        if (MM_EXTENT_PINS(extent) != 0U) {
-                rc = MM_ERR_BUSY;
-                goto out;
-        }
-
-        rc = mm_alloc_aligned_raw(words, 02000UL, MM_TYPE_PROCESS, owner,
-            MM_ALLOC_HIGH, &new_base);
-        if (rc != MM_OK)
-                goto out;
-        if ((long)new_base <= (long)old_base) {
-                (void)mm_free(new_base, MM_TYPE_PROCESS, owner);
-                rc = MM_ERR_FRAGMENTED;
-                goto out;
-        }
-
-        src = (kword_t *)(unsigned long)old_base;
-        dst = (kword_t *)(unsigned long)new_base;
-        fs_copy_words(src, dst, (unsigned int)words);
-
-        PROC_SET_MEM_BASE(p, new_base);
-        rc = mm_free(old_base, MM_TYPE_PROCESS, owner);
-        if (rc != MM_OK) {
-                PROC_SET_MEM_BASE(p, old_base);
-                (void)mm_free(new_base, MM_TYPE_PROCESS, owner);
-                goto out;
-        }
-        rc = MM_OK;
-out:
-        PROC_CLEAR_TRANSITION(p);
-        if (PROC_HAS_UAREA(p)) {
-                kword_t ctl;
-
-                ctl = PROC_CTL_WORD(p);
-                ctl &= ~((kword_t)PROC_STOP_MM << PROC_STOP_SHIFT);
-                PROC_CTL_WORD(p) = ctl;
-                if ((ctl & ((kword_t)PROC_STOP_MASK <<
-                    PROC_STOP_SHIFT)) == 0UL)
-                        PROC_SET_STATE(p, old_state);
-        }
-        return rc;
-}
-
 
 int
 mm_move_module(unsigned int owner)
@@ -339,7 +244,7 @@ mm_move_module(unsigned int owner)
                 return MM_ERR_BUSY;
         words = MM_EXTENT_WORDS(extent);
 
-        rc = mm_alloc_aligned_raw(words, 1UL, MM_TYPE_MODULE, owner,
+        rc = mm_alloc_aligned_noreclaim(words, 1UL, MM_TYPE_MODULE, owner,
             MM_ALLOC_LOW, &new_base);
         if (rc != MM_OK)
                 return rc;
@@ -361,7 +266,6 @@ int
 mm_compact(kword_t words, kword_t alignment)
 {
         struct mm_extent *extent;
-        struct proc *p;
         kword_t base;
         unsigned int owner;
         int i;
@@ -404,8 +308,7 @@ mm_compact(kword_t words, kword_t alignment)
                 }
                 base = MM_EXTENT_BASE(extent);
                 owner = MM_EXTENT_OWNER(extent);
-                p = mm_process_owner(owner, base);
-                if (p == 0 || mm_move_process(p, owner) != MM_OK) {
+                if (vm_extent_move(owner, base, MM_EXTENT_WORDS(extent)) != MM_OK) {
                         ++i;
                         continue;
                 }
@@ -422,12 +325,12 @@ mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
 {
         int rc;
 
-        rc = mm_alloc_aligned_raw(words, alignment, type, owner,
+        rc = mm_alloc_aligned_noreclaim(words, alignment, type, owner,
             preference, basep);
         if (rc == MM_ERR_FRAGMENTED) {
                 rc = mm_compact(words, alignment);
                 if (rc == MM_OK)
-                        rc = mm_alloc_aligned_raw(words, alignment, type, owner,
+                        rc = mm_alloc_aligned_noreclaim(words, alignment, type, owner,
                             preference, basep);
         }
         if (rc == MM_OK)
@@ -439,12 +342,12 @@ mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
             type == MM_TYPE_PROCESS ? owner : PROC_NO_SLOT) != 0) {
                 return MM_ERR_NOMEM;
         }
-        rc = mm_alloc_aligned_raw(words, alignment, type, owner,
+        rc = mm_alloc_aligned_noreclaim(words, alignment, type, owner,
             preference, basep);
         if (rc == MM_ERR_FRAGMENTED) {
                 rc = mm_compact(words, alignment);
                 if (rc == MM_OK)
-                        rc = mm_alloc_aligned_raw(words, alignment, type, owner,
+                        rc = mm_alloc_aligned_noreclaim(words, alignment, type, owner,
                             preference, basep);
         }
         return rc;

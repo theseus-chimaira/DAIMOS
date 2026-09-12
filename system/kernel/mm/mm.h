@@ -40,7 +40,6 @@ struct mm_extent {
         kword_t meta;           /* pin count, type, owner id. */
 };
 
-struct proc;
 
 extern struct mm_extent mm_extents[MM_MAX_EXTENTS];
 extern kword_t mm_core_words;
@@ -56,7 +55,6 @@ int mm_free(kword_t base, unsigned int type, unsigned int owner);
 int mm_pin(kword_t base);
 int mm_unpin(kword_t base);
 int mm_is_pinned(kword_t base);
-int mm_move_process(struct proc *p, unsigned int owner);
 int mm_move_module(unsigned int owner);
 int mm_compact(kword_t words, kword_t alignment);
 kword_t mm_total_free(void);

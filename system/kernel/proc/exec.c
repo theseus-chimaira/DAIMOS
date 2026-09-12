@@ -1,8 +1,7 @@
 #include "exec.h"
 #include "fs_mres.h"
 #include "file.h"
-#include "mach_user.h"
-#include "mm.h"
+#include "vm.h"
 #include "proc_swap.h"
 
 #define EXEC_HALF_MASK 0777777UL
@@ -17,10 +16,7 @@ exec_load_process(struct proc *p, unsigned int owner,
         vnode_t node;
         struct vfs_stat st;
         kword_t hdr[EXEC_DXR_EXT_HDR_WORDS];
-        kword_t *mem;
         kword_t process_words;
-        kword_t alloc_words;
-        kword_t base;
         unsigned int entry;
         unsigned int image_words;
         unsigned int text_words;
@@ -28,7 +24,6 @@ exec_load_process(struct proc *p, unsigned int owner,
         unsigned int header_words;
         unsigned int dxr_flags;
         unsigned int reloc_words;
-        unsigned int i;
 
         if (p == 0 || path == 0 ||
             file_lookup_path(path, &node) != 0 ||
@@ -72,27 +67,16 @@ exec_load_process(struct proc *p, unsigned int owner,
             (kword_t)EXEC_DXR_STACK_WORDS;
         if (process_words > EXEC_HALF_MASK)
                 return -1;
-        alloc_words = (process_words + EXEC_PDP6_ALIGN_WORDS - 1U) &
-            ~((kword_t)EXEC_PDP6_ALIGN_WORDS - 1UL);
-        if (alloc_words > EXEC_HALF_MASK ||
-            mm_alloc_aligned(alloc_words, EXEC_PDP6_ALIGN_WORDS,
-            MM_TYPE_PROCESS, owner, MM_ALLOC_HIGH, &base) != MM_OK)
+        if (vm_space_create(p, owner, process_words) != 0)
                 return -1;
-
-        mem = (kword_t *)(unsigned long)base;
-        fs_zero_words(mem, (unsigned int)alloc_words);
-        if (vfs_read_words(node, header_words,
-            mem + EXEC_USER_ORIGIN, image_words) != (int)image_words)
+        if (vm_space_load_file(p, node, (kword_t)header_words,
+            (kword_t)EXEC_USER_ORIGIN, image_words) != 0)
                 goto fail;
-
-
 
         p->meta = (p->meta &
             ((kword_t)PROC_PARENT_MASK << PROC_PARENT_SHIFT)) |
             (((kword_t)(entry + EXEC_USER_ORIGIN) & PROC_HALF_MASK) <<
             PROC_ENTRY_SHIFT);
-        p->mem_layout = ((alloc_words & PROC_HALF_MASK) <<
-            PROC_HALF_SHIFT) | (base & PROC_HALF_MASK);
         p->sched = PROC_SCHED_DEFAULT;
         PROC_SET_STATE(p, PROC_SIDL);
         if (proc_swap_attach(owner, node, (kword_t)text_words,
@@ -102,9 +86,8 @@ exec_load_process(struct proc *p, unsigned int owner,
         return 0;
 
 fail:
-        if (mm_free(base, MM_TYPE_PROCESS, owner) == MM_OK) {
+        if (vm_space_destroy(p, owner) == 0) {
                 proc_swap_detach(owner);
-                p->mem_layout = 0UL;
                 PROC_SET_META_LH(p, 0UL);
         }
         return -1;

@@ -1,4 +1,5 @@
 #include "proc_swap.h"
+#include "vm_pdp6.h"
 #include "diskset_mres.h"
 #include "d6fs_provider.h"
 #include "dtfs.h"
@@ -68,7 +69,7 @@ proc_swap_find(kword_t block_words, kword_t *startp)
                         long count;
                         long end;
 
-                        if (PROC_MEM_BASE(&proc_table[i]) != 0UL)
+                        if (VM_PDP6_BASE(&proc_table[i]) != 0UL)
                                 continue;
                         span = proc_swap_records[i].state;
                         count = (long)(span & MM_HALF_MASK);
@@ -160,7 +161,7 @@ proc_swap_detach(int slot)
 {
         if (proc_swap_records == 0 || slot < 0 || slot >= (int)proc_slots)
                 return;
-        if (proc_table != 0 && PROC_MEM_BASE(&proc_table[slot]) == 0UL &&
+        if (proc_table != 0 && VM_PDP6_BASE(&proc_table[slot]) == 0UL &&
             proc_swap_records[slot].state != 0UL)
                 proc_swap_blocks_used -=
                     proc_swap_records[slot].state & MM_HALF_MASK;
@@ -196,8 +197,8 @@ proc_swap_out(int slot)
         resident_state = r->state;
         if (resident_state == 0UL)
                 return -1;
-        base = PROC_MEM_BASE(p);
-        words = PROC_MEM_WORDS(p);
+        base = VM_PDP6_BASE(p);
+        words = VM_SPACE_WORDS(p);
         if (base == 0UL || words == 0UL || mm_is_pinned(base))
                 return -1;
 
@@ -234,7 +235,7 @@ proc_swap_out(int slot)
                 goto fail_record;
         if (mm_free(base, MM_TYPE_PROCESS, slot) != MM_OK)
                 goto fail_record;
-        PROC_SET_MEM_BASE(p, 0UL);
+        VM_PDP6_SET_BASE(p, 0UL);
         r->state = ((first & MM_HALF_MASK) << 18U) |
             (blocks & MM_HALF_MASK);
         proc_swap_blocks_used += blocks;
@@ -270,15 +271,15 @@ proc_swap_in(int slot)
                 return -1;
         p = &proc_table[slot];
         r = &proc_swap_records[slot];
-        if (PROC_MEM_BASE(p) != 0UL || PROC_IS_FREE(p) ||
+        if (VM_PDP6_BASE(p) != 0UL || PROC_IS_FREE(p) ||
             r->state == 0UL || PROC_TRANSITION(p))
                 return -1;
-        words = PROC_MEM_WORDS(p);
+        words = VM_SPACE_WORDS(p);
         if (words == 0UL)
                 return -1;
 
         PROC_SET_TRANSITION(p);
-        if (mm_alloc_aligned(words, EXEC_PDP6_ALIGN_WORDS,
+        if (mm_alloc_aligned(words, VM_PDP6_ALIGN_WORDS,
             MM_TYPE_PROCESS, slot, MM_ALLOC_HIGH, &base) != MM_OK) {
                 PROC_CLEAR_TRANSITION(p);
                 return -1;
@@ -338,7 +339,7 @@ proc_swap_in(int slot)
 
         if (mm_unpin(base) != MM_OK)
                 goto fail_free;
-        PROC_SET_MEM_BASE(p, base);
+        VM_PDP6_SET_BASE(p, base);
         proc_swap_blocks_used -= blocks;
         PROC_CLEAR_TRANSITION(p);
         r->state = resident_state;

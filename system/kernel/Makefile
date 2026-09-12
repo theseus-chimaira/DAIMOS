@@ -10,6 +10,11 @@ DTFS_TENEX ?= 0
 DTFS_ITS ?= 0
 PROC_BOOT_USERS ?= 1
 PROC_STACK_WATERMARK ?= 0
+VM_BACKEND ?= pdp6
+VM_BACKEND_C = proc/vm_${VM_BACKEND}.c
+VM_BACKEND_H = proc/vm_${VM_BACKEND}.h
+VM_BACKEND_ASM = proc/vm_${VM_BACKEND}_asm.s
+VM_SWAP_C = proc/vm_${VM_BACKEND}_swap.c
 VERSION_FILE = ${PROJECT_ROOT}/VERSION
 DAIMON_VERSION != cat ${VERSION_FILE}
 INCLUDES = -I. -Iboot -Icore -Idrivers -Ifs -Imm -Imodules -Iproc -Istorage
@@ -52,6 +57,8 @@ KERNEL_HEADERS = boot/kboot.h \
 	proc/proc.h \
 	proc/proc_swap.h \
 	proc/syscall.h \
+	proc/vm.h \
+	${VM_BACKEND_H} \
 	storage/diskset.h \
 	storage/diskset_boot.h \
 	storage/diskset_layout.h \
@@ -103,7 +110,6 @@ KCORE_C_SRCS = proc/exec.c \
 	mm/mm.c \
 	modules/module_runtime.c \
 	proc/proc.c \
-	proc/proc_swap.c \
 	fs/file.c
 
 KCORE_C_ASM = $(BUILD)/exec.s \
@@ -111,8 +117,10 @@ KCORE_C_ASM = $(BUILD)/exec.s \
 	$(BUILD)/mm.s \
 	$(BUILD)/module_runtime.s \
 	$(BUILD)/proc.s \
-	$(BUILD)/proc_swap.s \
 	$(BUILD)/file.s
+
+KCORE_VM_ASM = $(BUILD)/vm_backend.s \
+	$(BUILD)/proc_swap.s
 
 KCORE_FIXED_SRCS = core/ret_pdp10.s \
 	drivers/dsk270_pdp10.s \
@@ -128,7 +136,6 @@ KCORE_FIXED_SRCS = core/ret_pdp10.s \
 	proc/syscall_info_pdp10.s \
 	proc/syscall_dispatch.s \
 	proc/mach_user.s \
-	proc/mach_enter_user.s \
 	core/kcore_io.s \
 	storage/storage_router.s \
 	core/kcore_end.s
@@ -138,8 +145,9 @@ KCORE_FIXED_ASM = $(BUILD)/exec.s \
 	$(BUILD)/mm.s \
 	$(BUILD)/module_runtime.s \
 	$(BUILD)/proc.s \
-	$(BUILD)/proc_swap.s \
 	$(BUILD)/file.s \
+	$(BUILD)/vm_backend.s \
+	$(BUILD)/proc_swap.s \
 	$(BUILD)/ret_pdp10.s \
 	$(BUILD)/dsk270_pdp10.s \
 	$(BUILD)/kfmt_pdp10.s \
@@ -154,7 +162,7 @@ KCORE_FIXED_ASM = $(BUILD)/exec.s \
 	$(BUILD)/syscall_info_pdp10.s \
 	$(BUILD)/syscall_dispatch.s \
 	$(BUILD)/mach_user.s \
-	$(BUILD)/mach_enter_user.s \
+	$(BUILD)/vm_backend_asm.s \
 	$(BUILD)/kcore_io.s \
 	$(BUILD)/storage_router.s \
 	$(BUILD)/kcore_end.s
@@ -228,6 +236,18 @@ ${KCORE_C_ASM}: ${KCORE_C_SRCS} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	@base=`basename "$@" .s`; src=; for d in boot core drivers fs mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; ${PDP10_GCC} -std=c99 -Os -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S "$$src" -o "$@"
 
+${BUILD}/vm_backend.s: ${VM_BACKEND_C} ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_GCC} -std=c99 -Os -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S ${VM_BACKEND_C} -o $@
+
+${BUILD}/proc_swap.s: ${VM_SWAP_C} ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_GCC} -std=c99 -Os -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S ${VM_SWAP_C} -o $@
+
+${BUILD}/vm_backend_asm.s: ${VM_BACKEND_ASM}
+	@mkdir -p ${BUILD}
+	cp ${VM_BACKEND_ASM} $@
+
 ${BUILD}/d6fs.s: fs/d6fs.c ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_GCC} -std=c99 -Os ${INCLUDES} -S fs/d6fs.c -o $@
@@ -267,7 +287,6 @@ COPY_ASM_SRCS = core/ret_pdp10.s \
 	proc/syscall_info_pdp10.s \
 	proc/syscall_dispatch.s \
 	proc/mach_user.s \
-	proc/mach_enter_user.s \
 	core/kcore_io.s \
 	storage/storage_router.s \
 	core/kcore_end.s \
@@ -307,7 +326,6 @@ COPY_ASM_TARGETS = $(BUILD)/ret_pdp10.s \
 	$(BUILD)/syscall_info_pdp10.s \
 	$(BUILD)/syscall_dispatch.s \
 	$(BUILD)/mach_user.s \
-	$(BUILD)/mach_enter_user.s \
 	$(BUILD)/kcore_io.s \
 	$(BUILD)/storage_router.s \
 	$(BUILD)/kcore_end.s \

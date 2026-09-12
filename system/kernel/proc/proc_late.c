@@ -1,6 +1,7 @@
 #include "proc.h"
 #include "fs_mres.h"
 #include "mm.h"
+#include "vm.h"
 
 #define PROC_USER_FLAG_BITS ((kword_t)010000UL << 18U)
 #define PROC_CTX_U_PC       020U
@@ -22,7 +23,7 @@ proc_slot_claim(unsigned int parent_slot)
                         continue;
                 p->meta = ((kword_t)parent_slot & PROC_PARENT_MASK) <<
                     PROC_PARENT_SHIFT;
-                p->mem_layout = 0UL;
+                VM_SPACE_RESET(p);
                 p->sched = PROC_SCHED_DEFAULT;
                 PROC_SET_STATE(p, PROC_SIDL);
                 if (slot + 1U > proc_high_slot)
@@ -43,7 +44,7 @@ proc_user_context_init(unsigned int slot, kword_t entry, kword_t stack,
         if (proc_table == 0 || slot == 0U || slot >= proc_slots)
                 return -1;
         p = &proc_table[slot];
-        if (PROC_MEM_BASE(p) == 0UL || PROC_HAS_UAREA(p))
+        if (!VM_SPACE_ACTIVE(p) || PROC_HAS_UAREA(p))
                 return -1;
         if (mm_alloc(PROC_UAREA_WORDS, MM_TYPE_KERNEL_DYNAMIC,
             PROC_UAREA_MM_OWNER_BASE + slot, MM_ALLOC_LOW, &base) != MM_OK)

@@ -1,6 +1,6 @@
 #include "exec.h"
 #include "kinit.h"
-#include "mach_user.h"
+#include "vm.h"
 #include "mm.h"
 #include "proc.h"
 #include "vfs.h"
@@ -16,7 +16,7 @@ extern kword_t mres_source_end;
  * bootstrap image is published to MM.  The final mm_add_free() deliberately
  * publishes the instructions which are still executing.  That is safe on the
  * PDP-6 because mm_add_free() changes only MM descriptors; PI is still off and
- * no allocator is called before mach_enter_user() transfers control to INIT.
+ * no allocator is called before vm_enter_initial_user() transfers control to INIT.
  */
 void
 kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
@@ -57,7 +57,7 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
         init_path[2] = VFS_SIX6('M', '/', 'I', 'N', 'I', 'T');
 
         proc_table[0].meta = 0UL;
-        proc_table[0].mem_layout = 0UL;
+        VM_SPACE_RESET(&proc_table[0]);
         proc_table[0].sched = PROC_SCHED_DEFAULT;
         PROC_SET_STATE(&proc_table[0], PROC_SRUN);
 
@@ -74,7 +74,7 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
                         return;
                 PROC_SET_STATE(p, PROC_SRUN);
                 entry = PROC_ENTRY(p);
-                stack = PROC_MEM_WORDS(p) -
+                stack = VM_SPACE_WORDS(p) -
                     (kword_t)EXEC_DXR_STACK_WORDS - 1U;
                 if (slot == 1U) {
                         first_entry = entry;
@@ -98,11 +98,11 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
          * current KINIT reserve stack may then be returned to MM together with
          * this final code range: no allocator runs before the no-return user
          * transition, so the physically unchanged instructions and stack stay
-         * safe until mach_enter_user() leaves them forever. */
+         * safe until vm_enter_initial_user() leaves them forever. */
         mach_kernel_stack_base = idle_stack_base;
         if (mm_add_free(late_base, late_end - late_base) != MM_OK ||
             mm_add_free(image_end, reclaim_end - image_end) != MM_OK)
                 return;
-        mach_enter_user(PROC_MEM_BASE(p), first_entry, first_stack,
+        vm_enter_initial_user(p, first_entry, first_stack,
             1UL, 0UL, 0UL);
 }

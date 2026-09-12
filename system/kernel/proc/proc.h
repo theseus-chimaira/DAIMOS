@@ -125,7 +125,7 @@
 
 struct proc {
         kword_t meta;
-        kword_t mem_layout;     /* LH user/protected words, RH physical base. */
+        kword_t vm_state;       /* LH user words, RH backend-private VM state. */
         kword_t sched;
 };
 
@@ -171,10 +171,6 @@ void proc_sched_pi_tick(void);
         (((p)->meta & ((kword_t)PROC_F_TRANSITION << PROC_FLAGS_SHIFT)) != 0UL)
 #define PROC_HAS_UAREA(p) \
         (((p)->meta & ((kword_t)PROC_F_UAREA << PROC_FLAGS_SHIFT)) != 0UL)
-#define PROC_MEM_BASE(p) ((kword_t)((p)->mem_layout & PROC_HALF_MASK))
-#define PROC_MEM_WORDS(p) \
-        ((kword_t)(((p)->mem_layout >> PROC_HALF_SHIFT) & PROC_HALF_MASK))
-#define PROC_RESIDENT_WORDS(p) PROC_MEM_WORDS(p)
 #define PROC_META_LH(p) \
         ((kword_t)(((p)->meta >> PROC_HALF_SHIFT) & PROC_HALF_MASK))
 #define PROC_UAREA_BASE(p) PROC_META_LH(p)
@@ -241,9 +237,5 @@ void proc_sched_pi_tick(void);
         ((p)->meta |= ((kword_t)PROC_F_TRANSITION << PROC_FLAGS_SHIFT))
 #define PROC_CLEAR_TRANSITION(p) \
         ((p)->meta &= ~((kword_t)PROC_F_TRANSITION << PROC_FLAGS_SHIFT))
-#define PROC_SET_MEM_BASE(p, b) \
-        ((p)->mem_layout = ((p)->mem_layout & \
-        ((kword_t)PROC_HALF_MASK << PROC_HALF_SHIFT)) | \
-        ((kword_t)(b) & PROC_HALF_MASK))
 
 #endif

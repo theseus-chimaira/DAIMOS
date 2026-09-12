@@ -1,6 +1,7 @@
 #include "procfs.h"
 #include "kfmt.h"
 #include "proc.h"
+#include "vm.h"
 
 static int
 procfs_slot_active(unsigned int slot)
@@ -249,7 +250,7 @@ procfs_status_readchar(struct proc *p, unsigned int slot, kword_t off,
                 state = PROC_STATE(p);
                 if (state == PROC_ZOMB)
                         *chp = (unsigned int)'Z';
-                else if (slot != 0U && PROC_MEM_BASE(p) == 0UL)
+                else if (slot != 0U && !VM_SPACE_ACTIVE(p))
                         *chp = (unsigned int)'W';
                 else if (state == PROC_SIDL)
                         *chp = (unsigned int)'I';
@@ -301,7 +302,7 @@ procfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
                 chars = 4U;
                 if (state == PROC_ZOMB) {
                         name = VFS_SIX6('Z','O','M','B',' ',' ');
-                } else if (slot != 0U && PROC_MEM_BASE(p) == 0UL) {
+                } else if (slot != 0U && !VM_SPACE_ACTIVE(p)) {
                         name = VFS_SIX6('S','W','A','P',' ',' ');
                 } else if (state == PROC_SIDL) {
                         name = VFS_SIX6('I','D','L',' ',' ',' ');
@@ -322,7 +323,7 @@ procfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
         if (kind == PROCFS_KIND_PPID)
                 value = (kword_t)PROC_PARENT_SLOT(p);
         else if (kind == PROCFS_KIND_WORDS)
-                value = PROC_MEM_WORDS(p);
+                value = VM_SPACE_WORDS(p);
         else
                 return -1;
         return kfmt_u18_decimal_readchar(value, off, chp);

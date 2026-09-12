@@ -55,9 +55,10 @@
         .globl  proc_exit_finish
         .globl  mach_kernel_sp
         .globl  mach_user_sp
-        .globl  mach_user_apr
         .globl  mach_syscall_save
         .globl  file_table
+        .globl  vm_activate_current
+        .globl  proc_slot_ptr
 
 ; AC1 = slot.  Return AC1 = address of its three-word struct proc, AC2 clobbered.
 proc_slot_ptr:
@@ -108,7 +109,7 @@ proc_exit_halt:
 
 ; Initial user entry must leave the next syscall using the process-private
 ; kernel stack rather than KCORE's bootstrap/idle stack.  Preserve the
-; mach_enter_user argument ACs while publishing that stack pointer.
+; initial-user argument ACs while publishing that stack pointer.
 proc_record_kernel_sp:
         push    17,1
         push    17,2
@@ -932,19 +933,6 @@ proc_save_kernel:
         movem   1,CTX_U_KSP(2)
         popj    17,
 
-; Recompute PDP-6 relocation/protection from the selected process extent.
-proc_load_apr:
-        move    1,proc_current_slot
-        pushj   17,proc_slot_ptr
-        hlrz    2,1(1)
-        subi    2,02000
-        hrlz    2,2
-        hrrz    3,1(1)
-        hrr     2,3
-        movem   2,mach_user_apr
-        datao   0000,mach_user_apr
-        popj    17,
-
 ; Restore user ACs and PI return state for proc_current_slot.
 proc_restore_user:
         move    1,proc_current_slot
@@ -962,7 +950,7 @@ proc_restore_user:
         movem   1,pdp10_pi_sp_save+012
         move    1,CTX_U_KSP(2)
         movem   1,mach_kernel_sp
-        pushj   17,proc_load_apr
+        pushj   17,vm_activate_current
         move    1,proc_current_slot
         pushj   17,proc_uarea_slot
         move    2,1
@@ -1005,7 +993,7 @@ proc_restore_kernel:
         movem   1,mach_syscall_save
         move    1,CTX_U_KSP(2)
         movem   1,mach_kernel_sp
-        pushj   17,proc_load_apr
+        pushj   17,vm_activate_current
         move    1,proc_current_slot
         pushj   17,proc_uarea_slot
         move    2,1
