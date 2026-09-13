@@ -16,6 +16,7 @@ unsigned int proc_sched_age_phase;
 extern struct file *file_table;
 
 extern int proc_event_send(unsigned int target, unsigned int event, int group);
+extern int proc_session_teardown(unsigned int leader_slot, kword_t leader_ctl);
 
 static inline void
 proc_set_field(struct proc *p, kword_t mask, unsigned int shift,
@@ -234,6 +235,8 @@ proc_finish_slot(unsigned int slot, unsigned int status)
         pgrp = PROC_PGRP(p);
         ctl = PROC_CTL_WORD(p);
         scope = (ctl >> PROC_SESSION_SHIFT) & PROC_ZOMB_SCOPE_MASK;
+        if (proc_session_teardown(slot, ctl) != 0)
+                return -1;
 
         PROC_SET_TRANSITION(p);
         if (vm_space_destroy(p, slot) != 0) {

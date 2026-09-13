@@ -169,6 +169,64 @@ proc_tty_session_next:
         addi    3,PROC_WORDS
         addi    2,1
         jrst    proc_tty_session_scan
+; int proc_session_teardown(unsigned int leader_slot, kword_t leader_ctl)
+; Session-leader exit path.  A controlling TTY is encoded directly in the
+; leader control word, so teardown needs no permanent session table or TTY
+; census.  V0.9 HUP is unconditionally fatal, so clearing the session TTY
+; record and delivering HUP also guarantees that stopped jobs cannot survive.
+        .globl  proc_session_teardown
+        .globl  proc_event_apply
+        .globl  proc_tty_records
+proc_session_teardown:
+        push    17,010                  ; preserve callee-saved scan state
+        push    17,011
+        push    17,012
+        move    010,1                  ; leader slot, then session id
+        move    3,2                    ; leader control word
+        ldb     5,[POINT 8,3,32]       ; session
+        came    010,5                  ; only the session leader tears down
+        jrst    proc_session_teardown_ok
+        move    4,3
+        lsh     4,-036                 ; packed TTY state
+        subi    4,2                    ; attached state -> TTY id
+        jumpl   4,proc_session_teardown_ok
+        cail    4,025
+        jrst    proc_session_teardown_fail
+        setzm   proc_tty_records(4)    ; ID lifetime keeps this authoritative
+
+        movei   011,1
+        move    012,proc_table
+        addi    012,PROC_WORDS
+proc_session_teardown_loop:
+        caml    011,proc_high_slot
+        jrst    proc_session_teardown_ok
+        camn    011,010
+        jrst    proc_session_teardown_next
+        hrrz    3,(012)
+        trnn    3,0400000              ; no stable u-area: FREE/ZOMB
+        jrst    proc_session_teardown_next
+        hlrz    4,(012)
+        ldb     5,[POINT 8,045(4),32]
+        came    5,010
+        jrst    proc_session_teardown_next
+        move    1,011
+        movei   2,2                    ; default-fatal HUP
+        pushj   17,proc_event_apply
+        jumpn   1,proc_session_teardown_fail
+proc_session_teardown_next:
+        addi    012,PROC_WORDS
+        aoja    011,proc_session_teardown_loop
+proc_session_teardown_fail:
+        seto    1,
+        jrst    proc_session_teardown_return
+proc_session_teardown_ok:
+        setz    1,
+proc_session_teardown_return:
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
 ; int proc_event_send(unsigned int target, unsigned int event, int group)
 ; Validate one PID or scan one process group, then hand actual state changes to
 ; proc_event_apply.  The group scan packs its two boolean results into the LH
@@ -594,13 +652,11 @@ proc_control_tty_attach_claim:
         ior     1,3
         movem   1,proc_tty_records(2)
 proc_control_tty_attach_set:
+        addi    2,2                    ; encoded ATTACHED(tty)
+        move    1,3                    ; session id == session-leader slot
+        pushj   17,proc_tty_set_session_state
         move    1,2
-        addi    1,2
-        tlz     6,0770000
-        lsh     1,036
-        ior     6,1
-        movem   6,045(5)
-        move    1,2
+        subi    1,2                    ; return tty id
         popj    17,
 
 ; Decode and validate the caller's controlling TTY.  Return AC1 = TTY id,
@@ -632,35 +688,37 @@ proc_control_tty_detach:
         came    5,3                    ; only the session leader detaches
         jrst    pdp10_ret_neg1
         setzm   proc_tty_records(1)
-        move    7,1                    ; tty id
-        movei   2,1                    ; member slot
-        move    4,proc_table
-        addi    4,3
-proc_control_tty_detach_loop:
-        caml    2,proc_high_slot
+        move    1,5                    ; session
+        movei   2,1                    ; DETACHED
+        pushj   17,proc_tty_set_session_state
         jrst    pdp10_ret_zero
-        move    5,2(4)
-        and     5,[0300000000000]
-        jumpe   5,proc_control_tty_detach_next
+
+; AC1=session, AC2=packed TTY state.  Update every live member.  AC2 is
+; preserved so ATTACH can recover and return its TTY id without stack traffic.
+proc_tty_set_session_state:
+        move    7,1
+        move    6,2
+        lsh     6,036
+        movei   3,1
+        move    4,proc_table
+        addi    4,PROC_WORDS
+proc_tty_set_session_state_loop:
+        caml    3,proc_high_slot
+        popj    17,
         hrrz    5,(4)
-        trnn    5,0400000
-        jrst    proc_control_tty_detach_next
+        trnn    5,0400000              ; no stable u-area: FREE/ZOMB
+        jrst    proc_tty_set_session_state_next
         hlrz    5,(4)
-        move    6,045(5)
         ldb     1,[POINT 8,045(5),32]
-        came    1,3
-        jrst    proc_control_tty_detach_next
-        move    1,6
-        lsh     1,-036
-        subi    1,2
         came    1,7
-        jrst    proc_control_tty_detach_next
-        tlz     6,0770000
-        tlo     6,010000               ; DETACHED
-        movem   6,045(5)
-proc_control_tty_detach_next:
-        addi    4,3
-        aoja    2,proc_control_tty_detach_loop
+        jrst    proc_tty_set_session_state_next
+        move    1,045(5)
+        tlz     1,0770000
+        ior     1,6
+        movem   1,045(5)
+proc_tty_set_session_state_next:
+        addi    4,PROC_WORDS
+        aoja    3,proc_tty_set_session_state_loop
 
 proc_control_tty_getfg:
         jumpn   2,pdp10_ret_neg1
