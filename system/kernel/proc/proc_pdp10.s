@@ -18,7 +18,7 @@
         .equ    PROC_TRANSITION_RH,0200000
         .equ    PROC_FILE_TABLE_OFFSET,047
         .equ    PROC_USTACK_BASE,0107
-        .equ    PROC_KSTACK_WORDS,0317
+        .equ    PROC_KSTACK_WORDS,0311
         .equ    KERNEL_IDLE_STACK_WORDS,0100
 
         .equ    CTX_U_PC,020
@@ -61,6 +61,24 @@
         .globl  file_table
         .globl  vm_activate_current
         .globl  proc_slot_ptr
+        .globl  proc_trim_high
+
+; Remove only trailing FREE descriptors; interior holes remain reusable.
+proc_trim_high:
+        move    1,proc_high_slot
+proc_trim_high_loop:
+        caig    1,1
+        popj    17,
+        subi    1,1
+        move    2,1
+        lsh     2,1
+        add     2,1
+        add     2,proc_table
+        move    3,2(2)
+        tlne    3,PROC_STATE_LH_MASK
+        popj    17,
+        movem   1,proc_high_slot
+        jrst    proc_trim_high_loop
 
 ; AC1 = slot.  Return AC1 = address of its three-word struct proc, AC2 clobbered.
 proc_slot_ptr:

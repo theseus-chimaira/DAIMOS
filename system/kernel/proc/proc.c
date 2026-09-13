@@ -66,13 +66,7 @@ proc_uarea_release(unsigned int slot, struct proc *p)
         return 0;
 }
 
-static void
-proc_trim_high(void)
-{
-        while (proc_high_slot > 1U &&
-            PROC_IS_FREE(&proc_table[proc_high_slot - 1U]))
-                --proc_high_slot;
-}
+extern void proc_trim_high(void);
 
 static void
 proc_slot_zero(struct proc *p)
