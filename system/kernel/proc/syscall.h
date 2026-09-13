@@ -81,7 +81,8 @@
 #define SYS_EVENT_CONT            4U
 #define SYS_EVENT_ALRM            5U
 #define SYS_EVENT_CHLD            6U
-#define SYS_EVENT_COUNT           7U
+#define SYS_EVENT_PIPE            7U
+#define SYS_EVENT_COUNT           8U
 #define SYS_EVENT_TARGET_MASK     0377U
 #define SYS_EVENT_CODE_MASK       07U
 #define SYS_EVENT_CODE_SHIFT         8U

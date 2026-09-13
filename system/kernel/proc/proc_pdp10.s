@@ -14,6 +14,7 @@
         .equ    PROC_WAIT_LH_MASK,060000
         .equ    PROC_WAIT_EVENT_LH,020000
         .equ    PROC_WAIT_CHILD_LH,040000
+        .equ    PROC_WAIT_INTR_LH,060000
         .equ    PROC_TRANSITION_RH,0200000
         .equ    PROC_FILE_TABLE_OFFSET,047
         .equ    PROC_USTACK_BASE,0107
@@ -35,6 +36,7 @@
         .globl  proc_sched_cursor
         .globl  mach_kernel_stack_base
         .globl  proc_wait_event
+        .globl  proc_wait_event_intr
         .globl  proc_wait_child
         .globl  proc_wakeup_event
         .globl  proc_sched_pi_tick
@@ -324,11 +326,16 @@ proc_notify_parent:
         move    4,2(2)
         xor     4,[0340000000000]      ; SLEEP + WAIT_CHILD
         and     4,[0760000000000]
+        jumpe   4,proc_notify_parent_wake
+        move    4,2(2)
+        xor     4,[0640000000000]      ; STOP + WAIT_CHILD
+        and     4,[0760000000000]
         jumpn   4,proc_notify_parent_done
+proc_notify_parent_wake:
         move    4,2(2)
         hllz    4,4                    ; clear wait channel
-        tlz     4,0760000              ; clear wait class and state
-        tlo     4,0200000              ; RUN
+        tlz     4,PROC_WAIT_LH_MASK
+        tlz     4,0100000              ; SLEEP->RUN, STOP remains STOP
         movem   4,2(2)
 proc_notify_parent_done:
         popj    17,
@@ -529,7 +536,11 @@ proc_control_getevents:
         jumpn   2,pdp10_ret_neg1
         hlrz    5,(4)
         ldb     1,[POINT 7,045(5),16]
+        move    6,045(5)
+        trne    6,1
+        iori    1,0200
         hrloi   6,0777401
+        andcmi  6,1
         andm    6,045(5)
         popj    17,
 
@@ -684,10 +695,23 @@ proc_control_tty_setfg:
         popj    17,
 
 ; int proc_wait_event(volatile kword_t *eventp)
-; Publish an event channel and sleep.  Request software PI6 so the executive
-; continuation is saved immediately rather than polling until a timer tick.
-; The clock MRES distinguishes this request from a real timer interrupt.
+; Internal event waits are noninterruptible.  User-visible waits use
+; proc_wait_event_intr and return -1 when ALRM is already pending or wakes them.
+proc_wait_event_intr:
+        skipe   (1)
+        jrst    pdp10_ret_zero
+        skipn   proc_current_slot
+        jrst    proc_wait_event
+        move    2,file_table
+        move    2,-2(2)                 ; packed control word at u-area 045
+        tlne    2,0100                  ; pending ALRM (event 5)
+        jrst    pdp10_ret_neg1
+        movsi   4,PROC_WAIT_INTR_LH
+        jrst    proc_wait_event_common
+
 proc_wait_event:
+        movsi   4,PROC_WAIT_EVENT_LH
+proc_wait_event_common:
         skipe   (1)
         jrst    pdp10_ret_zero
         skipn   proc_current_slot
@@ -699,7 +723,7 @@ proc_wait_event:
         add     2,proc_table
         move    3,2(2)                 ; packed scheduler word
         tlz     3,PROC_WAIT_LH_MASK
-        tlo     3,PROC_WAIT_EVENT_LH
+        ior     3,4
         tlz     3,PROC_STATE_LH_MASK
         tlo     3,PROC_STATE_SLEEP
         hrr     3,1
@@ -708,8 +732,8 @@ proc_wait_event:
         jrst    proc_wait_raced
         setom   proc_sched_kick
         cono    0004,004002             ; software request at PI level 6
-        ; PI6 is taken between instructions while PI is enabled.  This direct
-        ; return branch is the saved continuation after wakeup.
+        tlne    4,040000                ; INTR class, not internal EVENT
+        jrst    proc_wait_intr_return
         jrst    pdp10_ret_zero
 proc_wait_boot:
         skipn   (1)
@@ -722,6 +746,13 @@ proc_wait_raced:
         tlo     3,PROC_STATE_RUN
         hllz    3,3
         movem   3,2(2)
+        jrst    pdp10_ret_zero
+
+proc_wait_intr_return:
+        move    2,file_table
+        move    2,-2(2)
+        tlne    2,0100                  ; ALRM remained pending across sleep
+        jrst    pdp10_ret_neg1
         jrst    pdp10_ret_zero
 
 
@@ -740,6 +771,10 @@ proc_sched_resched_current:
 proc_wait_child:
         skipn   proc_current_slot
         jrst    pdp10_ret_neg1
+        move    2,file_table
+        move    2,-2(2)
+        tlne    2,0100                  ; ALRM interrupts user WAIT
+        jrst    pdp10_ret_neg1
         move    2,proc_current_slot
         move    3,2
         lsh     2,1
@@ -754,7 +789,7 @@ proc_wait_child:
         movem   3,2(2)
         setom   proc_sched_kick
         cono    0004,004002
-        jrst    pdp10_ret_zero
+        jrst    proc_wait_intr_return
 
 ; void proc_wakeup_event(volatile kword_t *eventp)
 ; PI-safe.  Wake every event sleeper, including a swapped sleeper whose
@@ -774,9 +809,8 @@ proc_wakeup_scan:
         jrst    proc_wakeup_next
         move    4,2(2)
         tlz     4,PROC_WAIT_LH_MASK
-        tlz     4,PROC_STATE_LH_MASK
-        tlo     4,PROC_STATE_RUN
-        hllz    4,4
+        hllz    4,4                    ; clear wait channel
+        tlz     4,0100000              ; SLEEP->RUN, STOP remains STOP
         movem   4,2(2)
         ; If the CPU is in the scheduler idle loop, request PI6 now instead
         ; of adding up to one clock tick of wakeup latency.

@@ -15,7 +15,10 @@
         .globl  mm_free
         .globl  fs_zero_words
         .globl  proc_wait_event
+        .globl  proc_wait_event_intr
         .globl  proc_wakeup_event
+        .globl  proc_event_apply
+        .globl  proc_current_slot
 
 ; Allocate and zero a 046-word pipe object.  AC1 is fifo_node, zero for an
 ; anonymous pipe.  Return the stable low-18-bit physical base or zero.
@@ -55,11 +58,13 @@ pipe_signal_event:
         setom   (1)
         jrst    proc_wakeup_event
 
-; Arm and sleep on the pipe event in AC1.  Executive code is non-preemptible
-; between clearing the event and publishing the wait in proc_wait_event.
+; Arm and sleep interruptibly on a user-visible pipe/FIFO event in AC1.
+; Executive code is non-preemptible between clearing the event and publishing
+; the wait.  ALRM returns -1; internal kernel waits continue to use the
+; noninterruptible proc_wait_event entry directly.
 pipe_wait_event:
         setzm   (1)
-        jrst    proc_wait_event
+        jrst    proc_wait_event_intr
 
 ; Find the active named-FIFO object for AC1 vnode; return zero if absent.
 pipe_fifo_find:
@@ -203,12 +208,20 @@ pipe_fifo_open_rendezvous:
         jumpn   3,pipe_fifo_open_done
         movei   1,4(010)
         pushj   17,pipe_wait_event
+        jumpl   1,pipe_fifo_open_intr
         jrst    pipe_fifo_open_done
 pipe_fifo_open_write_only:
         hlrz    3,3(010)
         jumpn   3,pipe_fifo_open_done
         movei   1,5(010)
         pushj   17,pipe_wait_event
+        jumpl   1,pipe_fifo_open_intr
+        jrst    pipe_fifo_open_done
+pipe_fifo_open_intr:
+        move    1,010
+        move    2,011
+        pushj   17,pipe_close_ref
+        jrst    pipe_fifo_open_bad
 pipe_fifo_open_done:
         move    1,010
         tlo     1,070001
@@ -287,6 +300,7 @@ pipe_read_empty:
         jumpe   2,pipe_read_eof
         movei   1,4(010)
         pushj   17,pipe_wait_event
+        jumpl   1,pipe_read_bad
         jrst    pipe_read_retry
 pipe_read_eof:
         hrroi   1,0777776
@@ -312,7 +326,7 @@ pipe_writechar:
         jrst    pipe_write_bad
 pipe_write_retry:
         hlrz    4,3(010)
-        jumpe   4,pipe_write_bad
+        jumpe   4,pipe_write_broken
         ldb     5,[POINT 8,2(010),28]
         movei   6,0200
         sub     6,5
@@ -350,7 +364,12 @@ pipe_write_retry:
 pipe_write_wait:
         movei   1,5(010)
         pushj   17,pipe_wait_event
+        jumpl   1,pipe_write_bad
         jrst    pipe_write_retry
+pipe_write_broken:
+        move    1,proc_current_slot
+        movei   2,7                     ; SYS_EVENT_PIPE
+        pushj   17,proc_event_apply
 pipe_write_bad:
         seto    1,
 pipe_write_done:

@@ -168,7 +168,10 @@ proc_queue_event(struct proc *p, unsigned int event)
         kword_t ctl;
 
         ctl = PROC_CTL_WORD(p);
-        ctl |= (kword_t)SYS_EVENT_BIT(event) << PROC_EVENT_SHIFT;
+        if (event == SYS_EVENT_PIPE)
+                ctl |= PROC_PIPE_EVENT_BIT;
+        else
+                ctl |= (kword_t)SYS_EVENT_BIT(event) << PROC_EVENT_SHIFT;
         PROC_CTL_WORD(p) = ctl;
 }
 
@@ -307,7 +310,7 @@ proc_event_apply(unsigned int slot, unsigned int event)
         /* Fatal events are reported through the zombie wait status.  Their
          * pending bit would live only in the u-area that proc_event_kill()
          * immediately releases, so do not create dead state. */
-        if (event <= SYS_EVENT_HUP)
+        if (event <= SYS_EVENT_HUP || event == SYS_EVENT_PIPE)
                 return proc_event_kill(slot, event);
         proc_queue_event(p, event);
         if (event == SYS_EVENT_TSTP) {
@@ -334,11 +337,14 @@ proc_event_apply(unsigned int slot, unsigned int event)
                 proc_child_report(p, PROC_REPORT_CONTINUED);
                 return 0;
         }
-        /* proc_event_send admits only INT..ALRM; ALRM is the sole case left. */
-        if (state == PROC_SLEEP && PROC_WAIT_CLASS(p) == PROC_WAIT_EVENT) {
-                p->sched = (p->sched &
-                    ~(PROC_WAIT_BITS | PROC_SCHED_RH_MASK | PROC_STATE_BITS)) |
-                    ((kword_t)PROC_SRUN << PROC_STATE_SHIFT);
+        /* ALRM interrupts only explicit user waits.  Internal event waits
+         * remain noninterruptible.  A stopped continuation stays stopped;
+         * CONT later resumes it at the interrupted syscall return. */
+        if (event == SYS_EVENT_ALRM &&
+            (PROC_WAIT_CLASS(p) == PROC_WAIT_CHILD ||
+            PROC_WAIT_CLASS(p) == PROC_WAIT_INTR)) {
+                p->sched &= ~(PROC_WAIT_BITS | PROC_SCHED_RH_MASK |
+                    ((kword_t)01UL << PROC_STATE_SHIFT));
         }
         return 0;
 }

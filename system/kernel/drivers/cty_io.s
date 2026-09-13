@@ -12,6 +12,9 @@
         .globl cty_getchar
         .globl cty_tx_pending
         .globl cty_rx_pending
+        .globl cty_rx_event
+        .globl proc_wait_event_intr
+        .globl proc_wakeup_event
         .globl pdp10_pi_handler_return
         .globl pdp10_ret_ok
         .globl pdp10_ret_busy
@@ -29,6 +32,9 @@ cty_pi_input:
         andi 1,0177
         addi 1,1
         movem 1,cty_rx_pending
+        setom cty_rx_event
+        movei 1,cty_rx_event
+        pushj 17,proc_wakeup_event
         jrst pdp10_pi_handler_return
 
 ; AC1 = 7-bit character.  Return 0, CTY_E_BUSY (-3), or CTY_E_TIMEOUT (-2).
@@ -62,18 +68,33 @@ cty_getchar_loop:
         move 1,cty_rx_pending
         jumpn 1,cty_getchar_pending
         conso 0120,0040
-        jrst cty_getchar_loop
+        jrst cty_getchar_sleep
         datai 0120,1
         aos devicefs_io_in+0
         andi 1,0177
         popj 017,
+cty_getchar_sleep:
+        setzm cty_rx_event
+        move 1,cty_rx_pending
+        jumpn 1,cty_getchar_pending
+        conso 0120,0040
+        jrst cty_getchar_wait
+        jrst cty_getchar_loop
+cty_getchar_wait:
+        movei 1,cty_rx_event
+        pushj 17,proc_wait_event_intr
+        jumpn 1,cty_getchar_return
+        jrst cty_getchar_loop
 cty_getchar_pending:
         setzm cty_rx_pending
         subi 1,1
+cty_getchar_return:
         popj 017,
 
         .bss
 cty_tx_pending:
         .block 1
 cty_rx_pending:
+        .block 1
+cty_rx_event:
         .block 1
