@@ -277,6 +277,21 @@ proc_swap_service_one(void)
 
         if (proc_table == 0)
                 return 0;
+
+        /* proc_select_runnable() records the process it selected in the
+         * scheduler cursor before returning slot 0 for swap service.  Honor
+         * that choice first so equal-priority swapped tasks retain the same
+         * round-robin ordering as resident tasks. */
+        best = (int)proc_sched_cursor;
+        if (best > 0 && best < (int)proc_high_slot &&
+            PROC_STATE(&proc_table[best]) == PROC_SRUN &&
+            proc_swap_is_swapped(best)) {
+                if (proc_swap_in(best) == 0)
+                        return best;
+                (void)proc_event_apply((unsigned int)best, SYS_EVENT_TERM);
+                return -1;
+        }
+
         best = 0;
         best_prio = 0;
         for (i = 1; i < (int)proc_high_slot; ++i) {
