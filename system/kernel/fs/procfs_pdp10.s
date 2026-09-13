@@ -58,9 +58,15 @@ procfs_format_slot:
 procfs_format_done:
         popj    17,
 
+        .globl  domainfs_lookup
+        .globl  domainfs_readdir
+        .globl  domainfs_stat
+
 ; int procfs_lookup(vnode_t dir, const struct vfs_name *name, vnode_t *nodep)
         .globl  procfs_lookup
 procfs_lookup:
+        trne    1,0400000
+        jrst    domainfs_lookup
         jumpe   2,pdp10_ret_neg1
         jumpe   3,pdp10_ret_neg1
         hlrz    4,1
@@ -138,6 +144,8 @@ procfs_lookup_have_kind:
 ; int procfs_readdir(vnode_t dir, unsigned int off, struct vfs_dirent *ent)
         .globl  procfs_readdir
 procfs_readdir:
+        trne    1,0400000
+        jrst    domainfs_readdir
         jumpe   3,pdp10_ret_neg1
         hlrz    4,1
         caie    4,030001
@@ -199,6 +207,8 @@ procfs_readdir_store:
 ; int procfs_stat(vnode_t node, struct vfs_stat *st)
         .globl  procfs_stat
 procfs_stat:
+        trne    1,0400000
+        jrst    domainfs_stat
         jumpe   2,pdp10_ret_neg1
         move    7,2
         hlrz    5,1
@@ -359,6 +369,8 @@ procfs_status_lf:
         .globl  proc_scope_id
         .globl  proc_comm_words
 procfs_readchar:
+        trne    1,0400000
+        jrst    pdp10_ret_neg1
         jumpe   3,pdp10_ret_neg1
         move    7,3
         move    5,2

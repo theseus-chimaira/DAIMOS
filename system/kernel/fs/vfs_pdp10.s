@@ -31,6 +31,13 @@ vfs_lookup:
         jrst    vfs_lookup_device_root
 vfs_lookup_proc:
         move    4,(2)
+        caie    4,6
+        jrst    vfs_lookup_proc_name
+        move    4,1(2)
+        camn    4,[-0332022362622]     ; DOMAIN
+        jrst    vfs_lookup_domain_root
+vfs_lookup_proc_name:
+        move    4,(2)
         caie    4,4
         jrst    vfs_lookup_provider
         move    4,1(2)
@@ -82,6 +89,10 @@ vfs_lookup_proc_root:
         movsi   4,030001               ; PROCFS root
         movem   4,(3)
         jrst    pdp10_ret_zero
+vfs_lookup_domain_root:
+        move    4,[030001400000]       ; tagged DOMAIN root
+        movem   4,(3)
+        jrst    pdp10_ret_zero
 
 ; int vfs_readdir(dir, off, ent)
         .globl  vfs_readdir
@@ -115,9 +126,16 @@ vfs_readdir_try_proc:
         move    5,(17)
         addi    5,1
         came    4,5
-        jrst    vfs_readdir_zero
+        jrst    vfs_readdir_try_domain
         movei   4,4
         move    5,[-0171520350000]     ; PROC
+        jrst    vfs_readdir_emit
+vfs_readdir_try_domain:
+        addi    5,1
+        came    4,5
+        jrst    vfs_readdir_zero
+        movei   4,6
+        move    5,[-0332022362622]     ; DOMAIN
 vfs_readdir_emit:
         move    3,-1(17)
         movem   4,(3)
@@ -172,7 +190,13 @@ vfs_parent_proc:
 vfs_parent_proc_slot:
         caie    4,2                    ; PROCFS_KIND_PROC
         jrst    pdp10_ret_neg1
+        trne    1,0400000
+        jrst    vfs_parent_domain_slot
         movsi   4,030001               ; PROCFS root
+        movem   4,(2)
+        jrst    pdp10_ret_zero
+vfs_parent_domain_slot:
+        move    4,[030001400000]
         movem   4,(2)
         jrst    pdp10_ret_zero
 
@@ -536,9 +560,16 @@ vfs_mutate2_ro:
         sub     17,[2,,2]
         jrst    pdp10_ret_neg1
 
+        .globl  domainfs_read_words
         .globl  vfs_read_words
 vfs_read_words:
         ldb     7,[POINT 6,1,5]
+        caie    7,3
+        jrst    vfs_read_words_provider
+        trne    1,0400000
+        jrst    domainfs_read_words
+        jrst    pdp10_ret_neg1
+vfs_read_words_provider:
         movei   6,15                   ; FS_MRES_OP_READ_WORDS
         jrst    fs_provider_reg_call
 

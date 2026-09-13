@@ -601,9 +601,6 @@ proc_control_newsession:
 proc_control_newdomain:
         jumpn   2,pdp10_ret_neg1
         hlrz    5,(4)
-        ldb     6,[POINT 8,045(5),32]
-        came    6,3
-        jrst    pdp10_ret_neg1
         dpb     3,[POINT 8,045(5),24]
         move    1,3
         popj    17,

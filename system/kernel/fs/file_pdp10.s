@@ -944,6 +944,7 @@ file_new_fd_store:
 ; Only fixed DAIMOS synthetic directories can be current directories.
         .globl  file_getcwd_pseudo
         .globl  procfs_getcwd_slot
+        .globl  domainfs_getcwd_did
 file_getcwd_pseudo:
         move    4,2
         move    5,3
@@ -959,12 +960,19 @@ file_pseudo_zero_done:
         jrst    file_pseudo_cty
         camn    1,[030001000000]       ; /PROC
         jrst    file_pseudo_proc
+        camn    1,[030001400000]       ; /DOMAIN
+        jrst    file_pseudo_domain
         hlrz    4,1
-        caie    4,030002               ; /PROC/<runtime slot>
+        caie    4,030002               ; /PROC or /DOMAIN/<id>
         jrst    pdp10_ret_neg1
-        hrrz    1,1                    ; slot
+        hrrz    1,1
+        trne    1,0400000
+        jrst    file_pseudo_domain_id
         ; AC2 already points at buf; AC3 is nwords.
         jrst    procfs_getcwd_slot
+file_pseudo_domain_id:
+        andi    1,0377
+        jrst    domainfs_getcwd_did
 file_pseudo_device:
         caige   3,3
         jrst    pdp10_ret_neg1
@@ -992,4 +1000,14 @@ file_pseudo_proc:
         movem   4,(2)
         move    4,[0176062574300]      ; SIXBIT //PROC /
         movem   4,1(2)
+        jrst    pdp10_ret_zero
+file_pseudo_domain:
+        caige   3,3
+        jrst    pdp10_ret_neg1
+        movei   4,7
+        movem   4,(2)
+        move    4,[0174457554151]      ; SIXBIT //DOMAI/
+        movem   4,1(2)
+        movsi   4,0560000              ; SIXBIT /N     /
+        movem   4,2(2)
         jrst    pdp10_ret_zero

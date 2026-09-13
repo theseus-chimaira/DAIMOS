@@ -108,6 +108,7 @@ KINIT_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${BUILD}/kinit_io.s ${BUILD}/modu
 
 KCORE_C_SRCS = proc/exec.c \
 	fs/devicefs.c \
+	fs/domainfs.c \
 	mm/mm.c \
 	modules/module_runtime.c \
 	proc/proc.c \
@@ -115,6 +116,7 @@ KCORE_C_SRCS = proc/exec.c \
 
 KCORE_C_ASM = $(BUILD)/exec.s \
 	$(BUILD)/devicefs.s \
+	$(BUILD)/domainfs.s \
 	$(BUILD)/mm.s \
 	$(BUILD)/module_runtime.s \
 	$(BUILD)/proc.s \
@@ -144,6 +146,7 @@ KCORE_FIXED_SRCS = core/ret_pdp10.s \
 
 KCORE_FIXED_ASM = $(BUILD)/exec.s \
 	$(BUILD)/devicefs.s \
+	$(BUILD)/domainfs.s \
 	$(BUILD)/mm.s \
 	$(BUILD)/module_runtime.s \
 	$(BUILD)/proc.s \

@@ -12,6 +12,12 @@
 #define PROCFS_KIND_COMM             6U
 #define PROCFS_KIND_STATUS           7U
 
+#define PROCFS_DOMAIN_TAG        0400000U
+#define PROCFS_DOMAIN_ID(node) \
+        (VFS_INDEX(node) & ~PROCFS_DOMAIN_TAG)
+#define PROCFS_IS_DOMAIN(node) \
+        ((VFS_INDEX(node) & PROCFS_DOMAIN_TAG) != 0U)
+
 #define PROCFS_FIELD_PID             1U
 #define PROCFS_FIELD_PPID            2U
 #define PROCFS_FIELD_STATE           3U
