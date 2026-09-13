@@ -26,6 +26,7 @@
         .equ    RUN_FIXED_WORDS,7
         .equ    RUN_MAX_FDMAP,020
         .equ    RUN_MAX_PATH_CHARS,0146
+        .equ    PROC_TTY_COUNT,025
 
         .text
         .globl  proc_run_block
@@ -40,6 +41,8 @@
         .globl  pipe_add_refs
         .globl  proc_slot_discard
         .globl  proc_child_hierarchy
+        .globl  proc_scope_id
+        .globl  proc_tty_records
 
 proc_run_block:
         push    17,010
@@ -102,6 +105,8 @@ proc_run_slot_loop:
         move    4,2(013)
         tlne    4,PROC_STATE_LH_MASK
         jrst    proc_run_slot_next
+        pushj   17,proc_run_id_in_use
+        jumpn   1,proc_run_slot_next
         move    4,proc_current_slot
         lsh     4,010
         movem   4,(013)
@@ -119,6 +124,44 @@ proc_run_slot_next:
         caml    012,proc_slots
         jrst    proc_run_bad
         jrst    proc_run_slot_loop
+
+; Return nonzero if the candidate slot in AC12 is still a live scope ID.
+; Derive lifetime from compact process/TTY state; allocate no permanent table.
+proc_run_id_in_use:
+        movei   4,1                    ; first user slot
+        move    3,proc_table
+        addi    3,PROC_WORDS
+proc_run_id_scan:
+        caml    4,proc_high_slot
+        jrst    proc_run_id_tty_begin
+        hrrz    2,(3)
+        andi    2,0377                  ; process group
+        camn    2,012
+        jrst    proc_run_id_yes
+        move    1,3
+        pushj   17,proc_scope_id        ; packed domain,,session in RH
+        move    2,1
+        andi    2,0377
+        camn    2,012
+        jrst    proc_run_id_yes
+        lsh     1,-010
+        andi    1,0377
+        camn    1,012
+        jrst    proc_run_id_yes
+        addi    3,PROC_WORDS
+        aoja    4,proc_run_id_scan
+proc_run_id_tty_begin:
+        movei   4,PROC_TTY_COUNT-1
+proc_run_id_tty_loop:
+        move    2,proc_tty_records(4)
+        andi    2,0377                  ; controlling session
+        camn    2,012
+        jrst    proc_run_id_yes
+        sojge   4,proc_run_id_tty_loop
+        jrst    pdp10_ret_zero
+proc_run_id_yes:
+        movei   1,1
+        popj    17,
 
 proc_run_slot_found:
         move    1,013
