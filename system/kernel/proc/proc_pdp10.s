@@ -500,25 +500,19 @@ proc_control_getdomain:
 proc_control_newsession:
         jumpn   2,pdp10_ret_neg1
         hlrz    5,(4)
-        ldb     1,[POINT 8,045(5),32]
-        move    2,3
-        pushj   17,proc_tty_release_session
-        move    3,proc_current_slot
-        move    4,3
-        lsh     4,1
-        add     4,3
-        add     4,proc_table
-        move    5,(4)
-        andcmi  5,0377                 ; preserve LH, clear pgrp in RH
-        move    6,3
-        andi    6,0377
-        ior     5,6
-        movem   5,(4)
-        hlrz    5,(4)
+        ldb     1,[POINT 8,045(5),32]   ; old session for TTY release
+        move    6,(4)
+        andcmi  6,0377                 ; preserve LH, clear pgrp in RH
+        move    7,3
+        andi    7,0377
+        ior     6,7
+        movem   6,(4)
         dpb     3,[POINT 8,045(5),32]
         hrloi   6,07777
         andm    6,045(5)               ; TTY state -> NO_TTY
-        move    1,3
+        move    2,3                    ; leaving slot
+        pushj   17,proc_tty_release_session
+        move    1,proc_current_slot
         popj    17,
 
 proc_control_newdomain:
@@ -598,22 +592,33 @@ proc_control_tty_attach_set:
         move    1,2
         popj    17,
 
-proc_control_tty_detach:
-        jumpn   2,pdp10_ret_neg1
+; Decode and validate the caller's controlling TTY.  Return AC1 = TTY id,
+; AC5 = session, AC6 = control word, AC7 = TTY record; AC2/AC3 preserved.
+; This shared cold path replaces three copies in DETACH/GETFG/SETFG.
+proc_control_tty_owned:
         hlrz    5,(4)
         move    6,045(5)
-        ldb     7,[POINT 8,045(5),32]
-        came    7,3
-        jrst    pdp10_ret_neg1
         move    1,6
         lsh     1,-036
         subi    1,2
         cail    1,025
-        jrst    pdp10_ret_neg1
+        jrst    proc_control_tty_owned_bad
         move    7,proc_tty_records(1)
-        move    5,7
-        andi    5,0377
-        came    5,3
+        move    4,7
+        andi    4,0377
+        ldb     5,[POINT 8,045(5),32]
+        came    4,5
+        jrst    proc_control_tty_owned_bad
+        popj    17,
+proc_control_tty_owned_bad:
+        seto    1,
+        popj    17,
+
+proc_control_tty_detach:
+        jumpn   2,pdp10_ret_neg1
+        pushj   17,proc_control_tty_owned
+        jumpl   1,pdp10_ret_neg1
+        came    5,3                    ; only the session leader detaches
         jrst    pdp10_ret_neg1
         setzm   proc_tty_records(1)
         move    7,1                    ; tty id
@@ -648,19 +653,8 @@ proc_control_tty_detach_next:
 
 proc_control_tty_getfg:
         jumpn   2,pdp10_ret_neg1
-        hlrz    5,(4)
-        move    6,045(5)
-        move    1,6
-        lsh     1,-036
-        subi    1,2
-        cail    1,025
-        jrst    pdp10_ret_neg1
-        move    7,proc_tty_records(1)
-        move    2,7
-        andi    2,0377
-        ldb     5,[POINT 8,045(5),32]
-        came    2,5
-        jrst    pdp10_ret_neg1
+        pushj   17,proc_control_tty_owned
+        jumpl   1,pdp10_ret_neg1
         move    1,7
         lsh     1,-010
         andi    1,0377
@@ -670,19 +664,8 @@ proc_control_tty_setfg:
         jumpe   2,pdp10_ret_neg1
         caile   2,0377
         jrst    pdp10_ret_neg1
-        hlrz    5,(4)
-        move    6,045(5)
-        move    1,6
-        lsh     1,-036
-        subi    1,2
-        cail    1,025
-        jrst    pdp10_ret_neg1
-        move    7,proc_tty_records(1)
-        ldb     5,[POINT 8,045(5),32]
-        move    6,7
-        andi    6,0377
-        came    6,5
-        jrst    pdp10_ret_neg1
+        pushj   17,proc_control_tty_owned
+        jumpl   1,pdp10_ret_neg1
         push    17,1                   ; tty id
         push    17,2                   ; requested pgrp
         move    1,5                    ; session

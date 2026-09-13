@@ -121,8 +121,6 @@ native_sys_write_chars_device:
         jumpn   1,native_sys_write_chars_fail
         jrst    native_sys_write_chars_next
 native_sys_write_chars_empty:
-        setz    1,
-        jrst    native_sys_write_chars_done
 native_sys_write_chars_ok:
         setz    1,
 native_sys_write_chars_done:
@@ -191,16 +189,23 @@ native_sys_write_chars_fail:
         hrrz    3,7
         move    4,5
         jrst    file_write_words
-%L90:
-        ; AC1 path, AC2 stat buffer.
+; Translate two user pointers in AC1/AC2.  Return mapped pointers in AC1/AC2
+; or -1 in AC1.  The three pathname syscalls share this cold validation path.
+native_sys_two_paths:
         pushj   17,vm_user_words
         move    5,1
         move    1,2
         pushj   17,vm_user_words
-        jumpe   5,%L137
-        jumpe   1,%L137
+        jumpe   5,pdp10_ret_neg1
+        jumpe   1,pdp10_ret_neg1
         move    2,1
         move    1,5
+        popj    17,
+
+%L90:
+        ; AC1 path, AC2 stat buffer.
+        pushj   17,native_sys_two_paths
+        jumpl   1,%L137
         jrst    file_stat_path
 %L97:
         ; AC1 fd, AC2 directory entry buffer.
@@ -223,20 +228,13 @@ native_sys_write_chars_fail:
         jrst    file_unlink
 %L112:
         ; AC1 old path, AC2 new path.
-        pushj   17,vm_user_words
-        move    5,1
-        move    1,2
-        pushj   17,vm_user_words
-        jumpe   5,%L137
-        jumpe   1,%L137
-        move    2,1
-        move    1,5
+        pushj   17,native_sys_two_paths
+        jumpl   1,%L137
         jrst    file_rename
 %L119:
         ; AC1 path, AC2 new size.
         pushj   17,vm_user_words
         jumpe   1,%L137
-        move    2,2
         jrst    file_truncate
 %L124:
         ; AC1 slot, AC2 result buffer.
@@ -272,44 +270,38 @@ native_sys_writechar_done:
         sub     17,[1,,1]
         jrst    %L65
 
-; Return the DTC0 vnode for a valid translated user path, or zero on failure.
-; A one-word process-private kernel-stack temporary replaces the old global
-; syscall AC5 shadow and remains safe across scheduler sleep/resume.
-native_sys_dtc0_path:
+; Translate and resolve one user pathname.  Return its vnode in AC1, or zero.
+; The one-word scratch lives on the current process's private kernel stack.
+native_sys_lookup_user_path:
         pushj   17,vm_user_words
         jumpe   1,pdp10_ret_zero
         push    17,0
         movei   2,(17)
         pushj   17,file_lookup_path
-        jumpn   1,native_sys_dtc0_bad
-        move    5,(17)
+        jumpn   1,native_sys_lookup_user_path_bad
+        move    1,(17)
         pop     17,0
-        move    1,5
+        popj    17,
+native_sys_lookup_user_path_bad:
+        pop     17,0
+        jrst    pdp10_ret_zero
+
+; Return the DTC0 vnode for a valid translated user path, or zero on failure.
+native_sys_dtc0_path:
+        pushj   17,native_sys_lookup_user_path
         came    1,[020003000014]        ; DEVICEFS DTC0 directory
         jrst    pdp10_ret_zero
         popj    17,
-native_sys_dtc0_bad:
-        pop     17,0
-        jrst    pdp10_ret_zero
 
 native_sys_chmod:
         ; Preserve mode across pointer translation and VFS lookup.
         push    17,2
-        pushj   17,vm_user_words
-        jumpe   1,native_sys_chmod_bad1
-        push    17,0
-        movei   2,(17)
-        pushj   17,file_lookup_path
-        jumpn   1,native_sys_chmod_bad2
-        move    5,(17)
-        pop     17,0
+        pushj   17,native_sys_lookup_user_path
+        jumpe   1,native_sys_chmod_bad
         pop     17,2
-        move    1,5
         hrrz    2,2
         jrst    vfs_chmod
-native_sys_chmod_bad2:
-        pop     17,0
-native_sys_chmod_bad1:
+native_sys_chmod_bad:
         pop     17,0
         jrst    %L137
 
@@ -336,51 +328,31 @@ native_sys_dtfs_mount:
         pushj   17,native_sys_dtc0_path
         jumpe   1,native_sys_dtfs_mount_bad2
         move    1,-1(17)                ; saved mount path
-        pushj   17,vm_user_words
+        pushj   17,native_sys_lookup_user_path
         jumpe   1,native_sys_dtfs_mount_bad2
+        move    2,1                     ; mounted-on root vnode
         pop     17,3                    ; restore flags
         pop     17,0                    ; discard saved mount path
-        push    17,3                    ; preserve flags across VFS lookup
-        push    17,0                    ; vnode/result scratch
-        movei   2,(17)
-        pushj   17,file_lookup_path
-        jumpn   1,native_sys_dtfs_mount_bad_lookup
-        move    2,(17)                  ; mounted-on root vnode
-        move    3,-1(17)                ; saved flags
         hrrz    3,3
         caile   3,031                   ; RO plus DTFS type override
-        jrst    native_sys_dtfs_mount_bad_lookup
+        jrst    %L137
         movei   1,0                     ; DTC0 unit
-        movei   4,(17)                  ; returned root scratch
+        push    17,0                    ; returned root scratch
+        movei   4,(17)
         .globl  sys_dtfs_mount_jump
 sys_dtfs_mount_jump:
         pushj   17,pdp10_ret_neg1
         pop     17,0                    ; result scratch
-        pop     17,0                    ; saved flags
         popj    17,
-native_sys_dtfs_mount_bad_lookup:
-        pop     17,0
-        pop     17,0
-        jrst    %L137
 native_sys_dtfs_mount_bad2:
         pop     17,0
         pop     17,0
         jrst    %L137
 
 native_sys_unmount:
-        pushj   17,vm_user_words
+        pushj   17,native_sys_lookup_user_path
         jumpe   1,%L137
-        push    17,0
-        movei   2,(17)
-        pushj   17,file_lookup_path
-        jumpn   1,native_sys_unmount_bad
-        move    5,(17)
-        pop     17,0
-        move    1,5
         jrst    vfs_unmount
-native_sys_unmount_bad:
-        pop     17,0
-        jrst    %L137
 
 native_sys_flock:
         hrrz    1,1
@@ -393,14 +365,8 @@ native_sys_dup:
 
 native_sys_symlink:
         ; AC1 target, AC2 link path.
-        pushj   17,vm_user_words
-        move    5,1
-        move    1,2
-        pushj   17,vm_user_words
-        jumpe   5,%L137
-        jumpe   1,%L137
-        move    2,1
-        move    1,5
+        pushj   17,native_sys_two_paths
+        jumpl   1,%L137
         jrst    file_symlink
 
 native_sys_nice:

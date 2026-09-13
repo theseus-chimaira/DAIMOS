@@ -37,39 +37,25 @@ procfs_proc_ptr:
 procfs_format_slot:
         setz    4,
         move    5,1
-        divi    4,0144
+        divi    4,0144                  ; hundreds, remainder
         setz    6,
         move    7,5
-        divi    6,012
-        jumpn   4,procfs_format_three
-        jumpn   6,procfs_format_two
-        move    2,7
-        addi    2,020
-        lsh     2,036
-        jrst    pdp10_ret_one
-procfs_format_two:
-        move    2,6
-        addi    2,020
-        lsh     2,036
-        move    4,7
-        addi    4,020
-        lsh     4,030
-        ior     2,4
-        movei   1,2
-        popj    17,
-procfs_format_three:
+        divi    6,012                   ; tens, ones
         move    2,4
-        addi    2,020
-        lsh     2,036
-        move    4,6
-        addi    4,020
-        lsh     4,030
-        ior     2,4
-        move    4,7
-        addi    4,020
-        lsh     4,022
-        ior     2,4
+        lsh     2,6
+        ior     2,6
+        lsh     2,6
+        ior     2,7
+        addi    2,0202020               ; convert all three digits to SIXBIT
+        lsh     2,022                   ; left-justify three characters
         movei   1,3
+        jumpn   4,procfs_format_done
+        lsh     2,6                     ; discard leading zero
+        subi    1,1
+        jumpn   6,procfs_format_done
+        lsh     2,6
+        subi    1,1
+procfs_format_done:
         popj    17,
 
 ; int procfs_lookup(vnode_t dir, const struct vfs_name *name, vnode_t *nodep)
@@ -84,40 +70,20 @@ procfs_lookup:
         jumpe   4,pdp10_ret_neg1
         cail    4,4
         jrst    pdp10_ret_neg1
-        move    5,1(2)
-        move    6,5
-        lsh     6,-036
-        andi    6,077
-        cail    6,020
-        cail    6,032
+        move    5,1(2)                 ; packed SIXBIT digits
+        setz    6,                     ; accumulated decimal slot
+procfs_lookup_digit_loop:
+        move    1,5
+        lsh     1,-036
+        andi    1,077
+        cail    1,020
+        cail    1,032
         jrst    pdp10_ret_neg1
-        subi    6,020
-        caie    4,1
-        jrst    procfs_lookup_digit2
-        jrst    procfs_lookup_slot
-procfs_lookup_digit2:
-        move    7,5
-        lsh     7,-030
-        andi    7,077
-        cail    7,020
-        cail    7,032
-        jrst    pdp10_ret_neg1
-        subi    7,020
-        muli    6,012
-        add     6,7
-        caie    4,2
-        jrst    procfs_lookup_digit3
-        jrst    procfs_lookup_slot
-procfs_lookup_digit3:
-        move    7,5
-        lsh     7,-022
-        andi    7,077
-        cail    7,020
-        cail    7,032
-        jrst    pdp10_ret_neg1
-        subi    7,020
-        muli    6,012
-        add     6,7
+        subi    1,020
+        imuli   6,012
+        add     6,1
+        lsh     5,6
+        sojg    4,procfs_lookup_digit_loop
         cail    6,0400
         jrst    pdp10_ret_neg1
 procfs_lookup_slot:
@@ -196,14 +162,11 @@ procfs_readdir_root_next:
 procfs_readdir_root_found:
         move    1,6
         pushj   17,procfs_format_slot
-        movem   1,(3)
-        movem   2,1(3)
-        setzm   2(3)
-        setzm   3(3)
-        setzm   4(3)
-        movei   4,1
-        movem   4,5(3)
-        jrst    pdp10_ret_one
+        move    7,3
+        move    5,2
+        move    4,1
+        movei   6,1
+        jrst    procfs_readdir_store
 procfs_readdir_proc:
         caie    4,030002
         jrst    pdp10_ret_neg1
@@ -223,13 +186,14 @@ procfs_readdir_proc:
         jrst    procfs_readdir_proc_store
         movei   4,6
 procfs_readdir_proc_store:
+        movei   6,2
+procfs_readdir_store:
         movem   4,(7)
         movem   5,1(7)
         setzm   2(7)
         setzm   3(7)
         setzm   4(7)
-        movei   4,2
-        movem   4,5(7)
+        movem   6,5(7)
         jrst    pdp10_ret_one
 
 ; int procfs_stat(vnode_t node, struct vfs_stat *st)
