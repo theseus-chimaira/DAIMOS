@@ -8,6 +8,7 @@
 #include "fs_mres.h"
 #include "mm.h"
 #include "storage.h"
+#include "syscall.h"
 
 #if EXEC_DXR_MAX_IMAGE_WORDS > PROC_SWAP_TEXT_MASK
 #error "packed swap text field is too small for executable ABI"
@@ -246,6 +247,58 @@ fail_unpin:
         (void)mm_unpin(base);
 fail_record:
         PROC_CLEAR_TRANSITION(p);
+        return -1;
+}
+
+int
+proc_swap_is_swapped(int slot)
+{
+        struct proc *p;
+
+        if (proc_swap_records == 0 || proc_table == 0 || slot <= 0 ||
+            slot >= (int)proc_slots)
+                return 0;
+        p = &proc_table[slot];
+        return !PROC_IS_FREE(p) && VM_PDP6_BASE(p) == 0UL &&
+            proc_swap_records[slot].state != 0UL && !PROC_TRANSITION(p);
+}
+
+/* Run one swap-in transaction from slot-0 executive context.  Selection is
+ * deliberately derived from the existing scheduler fields, so no permanent
+ * request queue or per-process swap scheduling state is needed. */
+int
+proc_swap_service_one(void)
+{
+        struct proc *p;
+        int i;
+        int best;
+        int best_prio;
+        int prio;
+
+        if (proc_table == 0)
+                return 0;
+        best = 0;
+        best_prio = 0;
+        for (i = 1; i < (int)proc_high_slot; ++i) {
+                p = &proc_table[i];
+                if (PROC_STATE(p) != PROC_SRUN || !proc_swap_is_swapped(i))
+                        continue;
+                prio = (int)PROC_NICE_ENCODED(p) +
+                    (int)PROC_CPU_PENALTY(p);
+                if (best == 0 || prio < best_prio) {
+                        best = i;
+                        best_prio = prio;
+                }
+        }
+        if (best == 0)
+                return 0;
+        if (proc_swap_in(best) == 0)
+                return best;
+
+        /* proc_swap_in already performs normal MM reclaim.  A failure after
+         * that point cannot be left as an SRUN process that wins scheduling
+         * forever; terminate it with the normal fatal-event cleanup path. */
+        (void)proc_event_apply((unsigned int)best, SYS_EVENT_TERM);
         return -1;
 }
 

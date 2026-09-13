@@ -45,6 +45,7 @@
         .globl  proc_sched_pi_resched
         .globl  proc_sched_kick
         .globl  proc_sched_resched_current
+        .globl  proc_swap_service_one
         .globl  proc_record_kernel_sp
         .globl  proc_exit_current
         .globl  pdp10_ret_zero
@@ -1168,7 +1169,11 @@ proc_sched_select:
         jrst    proc_restore_kernel
 
 proc_idle_loop:
-        jrst    proc_idle_loop
+        ; Disk-backed swap-in must never run in PI context.  Slot 0 owns the
+        ; permanent idle/exit stack, so service one deserving swapped SRUN
+        ; process here and then re-enter ordinary scheduler selection.
+        pushj   17,proc_swap_service_one
+        jrst    proc_sched_resched_choose
 
         .bss
 .if PROC_STACK_WATERMARK

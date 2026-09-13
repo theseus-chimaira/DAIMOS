@@ -28,6 +28,8 @@ int proc_swap_attach(int slot, vnode_t backing,
 void proc_swap_detach(int slot);
 int proc_swap_out(int slot);
 int proc_swap_in(int slot);
+int proc_swap_is_swapped(int slot);
+int proc_swap_service_one(void);
 int proc_swap_reclaim(kword_t words, kword_t alignment,
     unsigned int exclude_owner);
 

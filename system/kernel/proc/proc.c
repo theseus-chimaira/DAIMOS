@@ -554,18 +554,22 @@ proc_select_runnable(void)
                         if (++slot >= limit)
                                 slot = 1;
                         p = &proc_table[slot];
-                if (PROC_STATE(p) != PROC_SRUN || !VM_SPACE_ACTIVE(p) ||
-                    PROC_TRANSITION(p))
+                if (PROC_STATE(p) != PROC_SRUN || PROC_TRANSITION(p))
+                        continue;
+                if (!VM_SPACE_ACTIVE(p) && !proc_swap_is_swapped(slot))
                         continue;
                 prio = proc_effective(p);
-                        if (best == 0 || prio < best_prio) {
-                                best = slot;
-                                best_prio = prio;
-                        }
+                if (best == 0 || prio < best_prio) {
+                        best = slot;
+                        best_prio = prio;
+                }
                 }
         }
-        if (best != 0)
+        if (best != 0) {
                 proc_sched_cursor = (kword_t)best;
+                if (proc_swap_is_swapped(best))
+                        return 0U;
+        }
         return (unsigned int)best;
 }
 
