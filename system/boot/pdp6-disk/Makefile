@@ -5,6 +5,7 @@ BUILD ?= $(BUILD_ROOT)/system/boot/pdp6-disk
 PDP10_PREFIX ?= $(HOME)/cross
 
 DAS ?= $(PDP10_PREFIX)/bin/das
+DASFLAGS ?= -O
 DLINK ?= $(PDP10_PREFIX)/bin/dlink
 DXRCONVERT ?= $(PDP10_PREFIX)/bin/dxrconvert
 MKSTREAM ?= $(PDP10_PREFIX)/bin/mkstream
@@ -274,13 +275,13 @@ KERNEL_ASM_OBJS = $(BUILD)/kinit.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_m
 
 $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM)
 	@mkdir -p $(BUILD)
-	@base=`basename "$@" .dobj`; src=; if test -f "$(KINIT_BUILD)/$$base.s"; then src="$(KINIT_BUILD)/$$base.s"; elif test -f "$(KCORE_BUILD)/$$base.s"; then src="$(KCORE_BUILD)/$$base.s"; fi; test -n "$$src"; $(DAS) -c -o "$@" "$$src"
+	@base=`basename "$@" .dobj`; src=; if test -f "$(KINIT_BUILD)/$$base.s"; then src="$(KINIT_BUILD)/$$base.s"; elif test -f "$(KCORE_BUILD)/$$base.s"; then src="$(KCORE_BUILD)/$$base.s"; fi; test -n "$$src"; $(DAS) $(DASFLAGS) -c -o "$@" "$$src"
 
 $(MINIT_TABLE_OBJ): $(KERNEL_DIR)/modules/module_table.s $(BUILD)
-	$(DAS) -c -o $@ $<
+	$(DAS) $(DASFLAGS) -c -o $@ $<
 
 $(END_OBJ): image-end.s $(BUILD)
-	$(DAS) -c -o $@ $<
+	$(DAS) $(DASFLAGS) -c -o $@ $<
 
 $(KCORE_DXR): $(KCORE_FIXED_OBJS)
 	libgcc=`$(PDP10_GCC) -print-libgcc-file-name`; \
@@ -403,7 +404,7 @@ $(KCORE_EMBED_ASM): kcore-embed.s.in $(KCORE_MAP) $(BUILD)
 	sed "s/@KCORE_INIT_WORDS@/$$words/" $< > $@
 
 $(KCORE_EMBED_OBJ): $(KCORE_EMBED_ASM)
-	$(DAS) -c -o $@ $<
+	$(DAS) $(DASFLAGS) -c -o $@ $<
 
 $(DSH_DXR): $(USERLAND_INPUTS)
 	$(MAKE) -C $(PROJECT_ROOT)/userland build BUILD_ROOT='$(USERLAND_BUILD_ROOT)' \
@@ -431,7 +432,7 @@ $(IMAGE_WORDS): $(IMAGE_RAW) $(IMAGE_MAP) $(KCORE_STREAM) $(KCORE_MAP) mkimage.s
 	    --kcore $(KCORE_STREAM) --kcore-map $(KCORE_MAP) --output $@
 
 $(STAGE1_DXR): $(STAGE1_SRC) $(BUILD)
-	$(DAS) --base-kernel -o $@ $<
+	$(DAS) $(DASFLAGS) -k -o $@ $<
 
 $(STAGE1_TAPE): $(STAGE1_DXR)
 	$(DXRCONVERT) --pdp6-readin -b 060 $< $@
