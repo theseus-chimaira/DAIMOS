@@ -86,9 +86,7 @@ exec_load_process(struct proc *p, unsigned int owner,
         return 0;
 
 fail:
-        if (vm_space_destroy(p, owner) == 0) {
-                proc_swap_detach(owner);
+        if (vm_space_destroy(p, owner) == 0)
                 PROC_SET_META_LH(p, 0UL);
-        }
         return -1;
 }

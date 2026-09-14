@@ -546,7 +546,7 @@ proc_select_runnable(void)
         {
                 int slot;
 
-                slot = (int)proc_sched_cursor;
+                slot = (int)(proc_sched_cursor & PROC_PGRP_MASK);
                 for (n = 1; n < limit; ++n) {
                         struct proc *p;
                         int prio;
@@ -567,8 +567,10 @@ proc_select_runnable(void)
         }
         if (best != 0) {
                 proc_sched_cursor = (kword_t)best;
-                if (proc_swap_is_swapped(best))
+                if (proc_swap_is_swapped(best)) {
+                        proc_sched_cursor |= PROC_SCHED_SWAP_REQUEST;
                         return 0U;
+                }
         }
         return (unsigned int)best;
 }
@@ -654,7 +656,8 @@ proc_swap_victim(unsigned int exclude_owner)
                         continue;
                 state = PROC_STATE(p);
                 if ((state != PROC_SLEEP && state != PROC_STOP &&
-                    state != PROC_SRUN) || PROC_TRANSITION(p))
+                    state != PROC_SRUN) || PROC_TRANSITION(p) ||
+                    (PROC_HAS_UAREA(p) && PROC_USER_MAPPING_HELD(p)))
                         continue;
                 if (!vm_space_can_swap(p))
                         continue;

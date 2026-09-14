@@ -18,7 +18,7 @@
         .equ    PROC_TRANSITION_RH,0200000
         .equ    PROC_FILE_TABLE_OFFSET,047
         .equ    PROC_USTACK_BASE,0107
-        .equ    PROC_KSTACK_WORDS,0311
+        .equ    PROC_KSTACK_WORDS,0310
         .equ    KERNEL_IDLE_STACK_WORDS,0100
 
         .equ    CTX_U_PC,020
@@ -1121,7 +1121,12 @@ proc_restore_idle:
 ; without charging recent CPU or aging sleepers.
 proc_sched_pi_resched:
         move    1,proc_current_slot
-        jumpe   1,proc_sched_resched_choose
+        jumpn   1,proc_sched_resched_save
+        move    1,proc_sched_cursor
+        trne    1,0400                  ; slot-0 swap service owns idle stack
+        popj    17,
+        jrst    proc_sched_resched_choose
+proc_sched_resched_save:
         pushj   17,proc_save_kernel
 proc_sched_resched_choose:
         pushj   17,proc_sched_resched_select
@@ -1140,6 +1145,14 @@ proc_sched_pi_tick:
         skipn   proc_current_slot
         pushj   17,kernel_idle_stack_watermark_scan
 .endif
+        skipn   proc_current_slot
+        jrst    proc_sched_tick_idle
+        jrst    proc_sched_tick_ready
+proc_sched_tick_idle:
+        move    1,proc_sched_cursor
+        trne    1,0400                  ; do not preempt slot-0 swap I/O
+        popj    17,
+proc_sched_tick_ready:
         skipn   proc_sched_cursor
         popj    17,
         move    1,pdp10_pi_level6
@@ -1169,11 +1182,17 @@ proc_sched_select:
         jrst    proc_restore_kernel
 
 proc_idle_loop:
-        ; Disk-backed swap-in must never run in PI context.  Slot 0 owns the
-        ; permanent idle/exit stack, so service one deserving swapped SRUN
-        ; process here and then re-enter ordinary scheduler selection.
+        ; Disk-backed swap-in must never run in PI context.  The scheduler
+        ; marks the exact swapped winner in proc_sched_cursor.  Slot 0 services
+        ; only that request, then asks PI6 to perform the normal context switch.
+        move    1,proc_sched_cursor
+        trnn    1,0400
+        jrst    proc_idle_wait
         pushj   17,proc_swap_service_one
-        jrst    proc_sched_resched_choose
+        setom   proc_sched_kick
+        cono    0004,004002
+proc_idle_wait:
+        jrst    proc_idle_loop
 
         .bss
 .if PROC_STACK_WATERMARK

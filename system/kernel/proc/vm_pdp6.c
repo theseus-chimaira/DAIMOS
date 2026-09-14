@@ -44,6 +44,7 @@ vm_space_destroy(struct proc *p, unsigned int owner)
         if (base != 0UL &&
             mm_free(base, MM_TYPE_PROCESS, owner) != MM_OK)
                 return -1;
+        proc_swap_detach((int)owner);
         VM_SPACE_RESET(p);
         return 0;
 }
@@ -72,7 +73,8 @@ vm_extent_move(unsigned int owner, kword_t base, kword_t words)
                 return MM_ERR_BUSY;
         p = &proc_table[owner];
         if (PROC_IS_FREE_OR_ZOMB(p) || PROC_TRANSITION(p) ||
-            VM_PDP6_BASE(p) != base || VM_SPACE_WORDS(p) != words)
+            VM_PDP6_BASE(p) != base || VM_SPACE_WORDS(p) != words ||
+            (PROC_HAS_UAREA(p) && PROC_USER_MAPPING_HELD(p)))
                 return MM_ERR_BUSY;
         old_state = PROC_STATE(p);
         if (PROC_HAS_UAREA(p)) {

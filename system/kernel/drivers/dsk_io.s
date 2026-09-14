@@ -23,6 +23,7 @@
         .globl pdp10_ret_zero
         .globl pdp10_ret_busy
         .globl proc_table
+        .globl proc_current_slot
         .globl proc_wait_event
         .globl proc_wakeup_event
 
@@ -51,15 +52,19 @@ dsk_pi_idle:
         cono 0270,0
         skipn 2,dsk_active_request
         jrst dsk_pi_boot_done
-        aos 1,1(2)
+        aos 1,2(2)
+        move 1,1(2)
+        jumpn 1,dsk_pi_account_write
         movei 1,devicefs_io_in+016
-        tlne 2,1
+        jrst dsk_pi_account_done
+dsk_pi_account_write:
         movei 1,devicefs_io_out+016
+dsk_pi_account_done:
         aos (1)                         ; completed sector request
         hrrz 1,dsk_active_request
         setzm storage_state
         setzm dsk_active_request
-        aoj 1,
+        addi 1,2
         pushj 017,proc_wakeup_event
         jrst pdp10_pi_dispatch_done
 dsk_pi_boot_done:
@@ -107,10 +112,10 @@ dsk_dct_read_done:
 dsk_fail_runtime:
         aos devicefs_storage_errors+2   ; DSK0
         hrrz 1,dsk_active_request
-        setom 1(1)
+        setom 2(1)
         setzm storage_state
         setzm dsk_active_request
-        aoj 1,
+        addi 1,2
         jrst proc_wakeup_event
 
 ; Build direct PI3 block transfer and its -count,,buffer-1 IOWD.
@@ -147,11 +152,18 @@ dsk_runtime_request:
         hrlz 5,1
         hrr 5,2
         push 017,5
+        push 017,4
         setz 5,
         push 017,5
-        movei 1,-1(017)
-        hrl 1,4
+        movei 1,-2(017)
 dsk_runtime_submit:
+        ; Slot 0 performs synchronous swap I/O on the permanent idle stack.
+        ; PI6 is suppressed while that service is active, so it must not put
+        ; its request into the ordinary queue and then depend on a sleeping
+        ; process resuming to dispatch it.  Drain older requests in order,
+        ; then start the slot-0 descriptor directly and poll its event word.
+        skipn proc_current_slot
+        jrst dsk_runtime_slot0
         skipe dsk_active_request
         jrst dsk_runtime_queue
         skipe storage_state
@@ -161,18 +173,36 @@ dsk_runtime_submit:
 dsk_runtime_queue:
         pushj 017,dsk_enqueue
         jumpl 1,dsk_runtime_submit_fail
+        ; Close the completion/enqueue race: if the active request completed
+        ; between the test above and enqueue, immediately promote the queued
+        ; request before this process sleeps.
+        pushj 017,dsk_dispatch
 dsk_runtime_wait:
         movei 1,(017)
         pushj 017,proc_wait_event
         pushj 017,dsk_dispatch
+        jrst dsk_runtime_finish
+
+dsk_runtime_slot0:
+        pushj 017,dsk_dispatch
+        skipe dsk_active_request
+        jrst dsk_runtime_slot0
+        skipe storage_state
+        jrst dsk_runtime_slot0
+        movei 1,-2(017)
+        pushj 017,dsk_start_active
+dsk_runtime_slot0_wait:
+        skipn (017)
+        jrst dsk_runtime_slot0_wait
+dsk_runtime_finish:
         move 1,(017)
-        sub 017,[2,,2]
+        sub 017,[3,,3]
         sojn 1,pdp10_ret_neg5
         popj 017,
 dsk_runtime_busy:
         hrroi 1,0777775
 dsk_runtime_submit_fail:
-        sub 017,[2,,2]
+        sub 017,[3,,3]
         popj 017,
 
 ; Two pending 18-bit descriptor pointers per unit share one word.  q0 is
@@ -229,7 +259,7 @@ dsk_start_active:
         movem 6,dsk_current_cyl(5)
         move 6,4
         movei 3,0200
-        tlne 4,1
+        skipe 1(4)
         jrst dsk_start_write
         pushj 017,dsk_setup_read
         hrroi 3,0777775

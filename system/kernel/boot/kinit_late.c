@@ -7,6 +7,7 @@
 #include "file.h"
 #include "devicefs.h"
 
+extern kword_t __kcore_load_end;
 extern kword_t __kinit_late_begin;
 extern kword_t __kinit_late_end;
 extern kword_t __kinit_image_end;
@@ -46,8 +47,8 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
             source_begin < late_end || source_end < source_begin ||
             image_end < source_end || reclaim_end <= image_end)
                 return;
-        if (mm_add_free(KINIT_IMAGE_BASE, late_base - KINIT_IMAGE_BASE) !=
-            MM_OK ||
+        if (mm_add_free((kword_t)(unsigned long)&__kcore_load_end,
+            late_base - (kword_t)(unsigned long)&__kcore_load_end) != MM_OK ||
             (source_begin > late_end && mm_add_free(late_end,
             source_begin - late_end) != MM_OK) ||
             (image_end > source_end && mm_add_free(source_end,

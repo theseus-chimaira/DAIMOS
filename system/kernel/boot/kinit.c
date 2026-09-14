@@ -9,6 +9,7 @@
 
 
 extern kword_t sys_resident_words_immediate;
+extern kword_t __kcore_load_end;
 extern kword_t __kinit_image_end;
 void kinit_late_handoff(kword_t stack_base, kword_t reclaim_end);
 
@@ -219,17 +220,36 @@ module_service_get(unsigned int service)
 void
 module_run_minits(void)
 {
+        kword_t minit_table[040];
         const kword_t *p;
         const kword_t *end;
         const kword_t *previous_package;
         const kword_t *package;
         unsigned int entry;
+        unsigned int i;
+        unsigned int table_words;
 
 #ifdef KINIT_DEBUG
         KINIT_TRACE(MODULE_RUN_MINITS);
 #endif
-        p = &__minit_table_begin;
-        end = &__minit_table_end;
+        table_words = (unsigned int)(&__minit_table_end -
+            &__minit_table_begin);
+        if (table_words > 040U)
+                kinit_halt();
+        for (i = 0U; i < table_words; ++i)
+                minit_table[i] = (&__minit_table_begin)[i];
+
+        /* KCORE has already been copied to its permanent low-memory address.
+         * Preserve the small MINIT table on the disposable KINIT stack, then
+         * publish the complete KINIT prefix containing the table and embedded
+         * KCORE source.  Permanent MRES may therefore grow through 030000
+         * without colliding with dead bootstrap data. */
+        if (mm_add_free(KINIT_IMAGE_BASE,
+            (kword_t)(unsigned long)&__kcore_load_end - KINIT_IMAGE_BASE) !=
+            MM_OK)
+                kinit_halt();
+        p = minit_table;
+        end = minit_table + table_words;
         previous_package = 0;
         while (p < end) {
                 entry = KINIT_LH(*p);

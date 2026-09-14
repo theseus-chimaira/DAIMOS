@@ -6,9 +6,12 @@
 
         .text
         .globl  vm_user_words
+        .globl  vm_user_mapping_hold
+        .globl  vm_user_mapping_release
         .globl  vm_activate_current
         .globl  vm_enter_initial_user
         .globl  proc_current_slot
+        .globl  proc_table
         .globl  proc_slot_ptr
         .globl  proc_record_kernel_sp
         .globl  mach_kernel_sp
@@ -30,6 +33,48 @@ vm_user_words:
         jrst    pdp10_ret_zero
         hrrz    4,vm_pdp6_apr
         add     1,4
+        popj    17,
+
+; Mark the current process as holding a translated physical user mapping.
+; Preserve AC0 and AC5 so callers can bracket an existing mapped argument
+; without disturbing the native syscall ABI.  The bit lives in the already
+; resident u-area control word and therefore adds no per-process storage.
+vm_user_mapping_hold:
+        push    17,0
+        push    17,5
+        move    0,proc_current_slot
+        move    5,0
+        lsh     5,1
+        add     5,0
+        add     5,proc_table
+        hlrz    0,(5)
+        jumpe   0,vm_user_mapping_hold_done
+        move    5,0045(0)
+        iori    5,02
+        movem   5,0045(0)
+vm_user_mapping_hold_done:
+        pop     17,5
+        pop     17,0
+        popj    17,
+
+; Clear only the mapping bit.  ANDI would also zero the left half of the packed
+; control word and destroy TTY/stop/report state, so use ANDCMI deliberately.
+vm_user_mapping_release:
+        push    17,0
+        push    17,5
+        move    0,proc_current_slot
+        move    5,0
+        lsh     5,1
+        add     5,0
+        add     5,proc_table
+        hlrz    0,(5)
+        jumpe   0,vm_user_mapping_release_done
+        move    5,0045(0)
+        andcmi  5,02
+        movem   5,0045(0)
+vm_user_mapping_release_done:
+        pop     17,5
+        pop     17,0
         popj    17,
 
 ; Activate the current process address space for user return.

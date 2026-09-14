@@ -605,8 +605,6 @@ memfs_restore1:
         .globl  memfs_chmod
 memfs_chmod:
         jumpe   1,pdp10_ret_neg1
-        skipn   5(1)
-        jrst    pdp10_ret_neg1
         pushj   17,memfs_slot           ; mode remains in AC3
         jumpl   1,pdp10_ret_neg1
         trnn    6,4

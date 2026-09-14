@@ -13,6 +13,7 @@
 #define PROC_MIN_SLOTS        64U
 #define PROC_WORDS             3U
 #define PROC_NO_SLOT         0400U
+#define PROC_SCHED_SWAP_REQUEST 0400UL
 
 #define PROC_FREE   0U
 #define PROC_SIDL   1U
@@ -82,8 +83,9 @@
 #define PROC_UAREA_WORDS        0420UL
 /*
  * One compact control word precedes cwd/file state.  Descriptors 0..15 are
- * ordinary two-word FILE records; low control bits 0..2 are now spare.
- * Session and domain IDs share this already-resident word; process-group ID
+ * ordinary two-word FILE records.  Low bit 0 carries the pipe event, bit 1
+ * marks a live direct user mapping, and bit 2 remains spare.  Session and
+ * domain IDs share this already-resident word; process-group ID
  * lives in meta RH so it survives after EXIT releases the u-area and group WAIT can
  * reap zombies.
  */
@@ -99,6 +101,7 @@
 #define PROC_EVENT_SHIFT             19U
 /* Event 7 uses one spare low control-word bit; events 0..6 stay packed. */
 #define PROC_PIPE_EVENT_BIT            01UL
+#define PROC_USER_MAP_BIT              02UL
 #define PROC_STOP_MASK              03UL
 #define PROC_STOP_SHIFT              26U
 #define PROC_STOP_JOB                01U
@@ -122,8 +125,10 @@
 #define PROC_ZOMB_SCOPE_MASK \
         (PROC_ZOMB_SESSION_MASK | \
         (PROC_ZOMB_DOMAIN_MASK << PROC_ZOMB_DOMAIN_SHIFT))
+#define PROC_SWAP_BACKING_OFFSET \
+        (PROC_UAREA_WORDS - 1UL)
 #define PROC_KSTACK_WORDS \
-        (PROC_UAREA_WORDS - PROC_USTACK_BASE)
+        (PROC_SWAP_BACKING_OFFSET - PROC_USTACK_BASE)
 
 struct proc {
         kword_t meta;
@@ -194,6 +199,10 @@ void proc_sched_pi_tick(void);
 #define PROC_UAREA_WORD(p, off) \
         (((kword_t *)(unsigned long)PROC_UAREA_BASE(p))[(off)])
 #define PROC_CTL_WORD(p) PROC_UAREA_WORD((p), PROC_FDCTL_OFFSET)
+#define PROC_SWAP_BACKING_WORD(p) \
+        PROC_UAREA_WORD((p), PROC_SWAP_BACKING_OFFSET)
+#define PROC_USER_MAPPING_HELD(p) \
+        ((PROC_CTL_WORD(p) & PROC_USER_MAP_BIT) != 0UL)
 #define PROC_SESSION(p) \
         ((unsigned int)((PROC_CTL_WORD(p) >> PROC_SESSION_SHIFT) & \
         PROC_SESSION_MASK))

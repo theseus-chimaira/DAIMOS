@@ -335,7 +335,7 @@ mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
         }
         if (rc == MM_OK)
                 return MM_OK;
-        if (rc != MM_ERR_NOMEM) {
+        if (rc != MM_ERR_NOMEM && rc != MM_ERR_FRAGMENTED) {
                 return rc;
         }
         if (proc_swap_reclaim(words, alignment,

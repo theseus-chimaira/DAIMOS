@@ -10,6 +10,8 @@
         .globl  pdp10_ret_zero
         .globl  pdp10_ret_neg1
         .globl  vm_user_words
+        .globl  vm_user_mapping_hold
+        .globl  vm_user_mapping_release
 
         .globl  exec_native_syscall
         .globl  proc_nice_current
@@ -62,6 +64,23 @@ native_sys_getpid:
         move    1,proc_current_slot
         popj    17,
 
+; Translate one user pointer while marking the current user extent immovable.
+; Success returns the mapped pointer in AC1 with the hold still active.  A
+; failed translation drops the hold before returning zero.
+native_sys_map_one:
+        pushj   17,vm_user_mapping_hold
+        pushj   17,vm_user_words
+        jumpn   1,native_sys_map_one_ok
+        pushj   17,vm_user_mapping_release
+native_sys_map_one_ok:
+        popj    17,
+
+; Common return for syscalls that retained a physical user mapping across a
+; potentially blocking kernel call.  The release helper preserves AC1.
+native_sys_mapped_return:
+        pushj   17,vm_user_mapping_release
+        popj    17,
+
 ; UUO 043 WRITE_CHARS: AC1 fd, AC2 9-bit byte pointer, AC3 chars.
 ; Preserve the one-trap bulk ABI for ordinary files and future pipe streams.
 ; CTY remains fast enough for bring-up; the later pipe bulk step may specialize
@@ -80,8 +99,8 @@ native_sys_write_chars:
         jumpe   011,native_sys_write_chars_empty
         move    010,2
         hrrz    1,2
-        pushj   17,vm_user_words
-        jumpe   1,native_sys_write_chars_fail
+        pushj   17,native_sys_map_one
+        jumpe   1,native_sys_write_chars_map_fail
         hrr     010,1                 ; translated byte pointer
         add     3,4                   ; one-past physical user end
         move    012,3
@@ -121,9 +140,13 @@ native_sys_write_chars_device:
         jumpn   1,native_sys_write_chars_fail
         jrst    native_sys_write_chars_next
 native_sys_write_chars_empty:
+        setz    1,
+        jrst    native_sys_write_chars_restore
 native_sys_write_chars_ok:
         setz    1,
 native_sys_write_chars_done:
+        pushj   17,vm_user_mapping_release
+native_sys_write_chars_restore:
         sub     17,[3,,3]
         pop     17,012
         pop     17,011
@@ -132,6 +155,9 @@ native_sys_write_chars_done:
 native_sys_write_chars_fail:
         seto    1,
         jrst    native_sys_write_chars_done
+native_sys_write_chars_map_fail:
+        seto    1,
+        jrst    native_sys_write_chars_restore
 
 %L66:
         push    17,1
@@ -141,7 +167,7 @@ native_sys_write_chars_fail:
         jrst    proc_exit_current
 %L67:
         ; AC1 path, AC2 flags.
-        pushj   17,vm_user_words
+        pushj   17,native_sys_map_one
         jumpe   1,%L137
         hrrz    3,2
         move    4,3
@@ -152,103 +178,120 @@ native_sys_write_chars_fail:
         andi    3,034
         ior     3,4
         move    2,3
-        jrst    file_open
+        pushj   17,file_open
+        jrst    native_sys_mapped_return
 %L72:
         hrrz    1,1
         jrst    file_close
 %L75:
-        pushj   17,vm_user_words
+        pushj   17,native_sys_map_one
         jumpe   1,%L137
-        jrst    file_chdir
+        pushj   17,file_chdir
+        jrst    native_sys_mapped_return
 %L80:
-        pushj   17,vm_user_words
+        pushj   17,native_sys_map_one
         jumpe   1,%L137
         hrrz    2,2
-        jrst    file_getcwd
+        pushj   17,file_getcwd
+        jrst    native_sys_mapped_return
 %L83:
         ; AC1 fd, AC2 buffer, AC3 word count.
         move    6,1
         move    7,3
         move    1,2
-        pushj   17,vm_user_words
+        pushj   17,native_sys_map_one
         jumpe   1,%L137
         move    2,1
         hrrz    1,6
         hrrz    3,7
-        jrst    file_read_words
+        pushj   17,file_read_words
+        jrst    native_sys_mapped_return
 %L86:
         ; AC1 fd, AC2 buffer, AC3 word count, AC4 buffer size.
         move    6,1
         move    7,3
         move    5,4
         move    1,2
-        pushj   17,vm_user_words
+        pushj   17,native_sys_map_one
         jumpe   1,%L137
         move    2,1
         hrrz    1,6
         hrrz    3,7
         move    4,5
-        jrst    file_write_words
+        pushj   17,file_write_words
+        jrst    native_sys_mapped_return
 ; Translate two user pointers in AC1/AC2.  Return mapped pointers in AC1/AC2
 ; or -1 in AC1.  The three pathname syscalls share this cold validation path.
 native_sys_two_paths:
+        pushj   17,vm_user_mapping_hold
         pushj   17,vm_user_words
         move    5,1
         move    1,2
         pushj   17,vm_user_words
-        jumpe   5,pdp10_ret_neg1
-        jumpe   1,pdp10_ret_neg1
+        jumpe   5,native_sys_two_paths_bad
+        jumpe   1,native_sys_two_paths_bad
         move    2,1
         move    1,5
         popj    17,
+native_sys_two_paths_bad:
+        pushj   17,vm_user_mapping_release
+        jrst    pdp10_ret_neg1
 
 %L90:
         ; AC1 path, AC2 stat buffer.
         pushj   17,native_sys_two_paths
         jumpl   1,%L137
-        jrst    file_stat_path
+        pushj   17,file_stat_path
+        jrst    native_sys_mapped_return
 %L97:
         ; AC1 fd, AC2 directory entry buffer.
         move    5,1
         move    1,2
-        pushj   17,vm_user_words
+        pushj   17,native_sys_map_one
         jumpe   1,%L137
         move    2,1
         hrrz    1,5
-        jrst    file_readdir
+        pushj   17,file_readdir
+        jrst    native_sys_mapped_return
 %L102:
         ; AC1 path, AC2 mode.
-        pushj   17,vm_user_words
+        pushj   17,native_sys_map_one
         jumpe   1,%L137
         hrrz    2,2
-        jrst    file_mkdir
+        pushj   17,file_mkdir
+        jrst    native_sys_mapped_return
 %L107:
-        pushj   17,vm_user_words
+        pushj   17,native_sys_map_one
         jumpe   1,%L137
-        jrst    file_unlink
+        pushj   17,file_unlink
+        jrst    native_sys_mapped_return
 %L112:
         ; AC1 old path, AC2 new path.
         pushj   17,native_sys_two_paths
         jumpl   1,%L137
-        jrst    file_rename
+        pushj   17,file_rename
+        jrst    native_sys_mapped_return
 %L119:
         ; AC1 path, AC2 new size.
-        pushj   17,vm_user_words
+        pushj   17,native_sys_map_one
         jumpe   1,%L137
-        jrst    file_truncate
+        pushj   17,file_truncate
+        jrst    native_sys_mapped_return
 %L124:
         ; AC1 slot, AC2 result buffer.
         move    5,1
         move    1,2
-        pushj   17,vm_user_words
+        pushj   17,native_sys_map_one
         jumpe   1,%L137
         move    2,1
         hrrz    1,5
-        jrst    sys_procinfo
+        pushj   17,sys_procinfo
+        jrst    native_sys_mapped_return
 %L129:
-        pushj   17,vm_user_words
+        pushj   17,native_sys_map_one
         jumpe   1,%L137
-        jrst    sys_meminfo
+        pushj   17,sys_meminfo
+        jrst    native_sys_mapped_return
 %L134:
         hrrz    1,1
         pushj   17,file_readchar
@@ -273,7 +316,7 @@ native_sys_writechar_done:
 ; Translate and resolve one user pathname.  Return its vnode in AC1, or zero.
 ; The one-word scratch lives on the current process's private kernel stack.
 native_sys_lookup_user_path:
-        pushj   17,vm_user_words
+        pushj   17,native_sys_map_one
         jumpe   1,pdp10_ret_zero
         push    17,0
         movei   2,(17)
@@ -281,9 +324,11 @@ native_sys_lookup_user_path:
         jumpn   1,native_sys_lookup_user_path_bad
         move    1,(17)
         pop     17,0
+        pushj   17,vm_user_mapping_release
         popj    17,
 native_sys_lookup_user_path_bad:
         pop     17,0
+        pushj   17,vm_user_mapping_release
         jrst    pdp10_ret_zero
 
 ; Return the DTC0 vnode for a valid translated user path, or zero on failure.
@@ -367,7 +412,8 @@ native_sys_symlink:
         ; AC1 target, AC2 link path.
         pushj   17,native_sys_two_paths
         jumpl   1,%L137
-        jrst    file_symlink
+        pushj   17,file_symlink
+        jrst    native_sys_mapped_return
 
 native_sys_nice:
         ; UUO effective addresses are 18-bit.  NICE is the one current arg0
@@ -379,31 +425,53 @@ native_sys_nice:
         jrst    proc_nice_current
 
 native_sys_run:
-        ; AC1 points at an inline, versioned RUN block.  Ask the VM backend
-        ; for a kernel mapping and derive its remaining contiguous span.
-        pushj   17,vm_user_words
+        ; AC1 points at an inline, versioned RUN block.  Keep the parent extent
+        ; fixed while proc_run_block may sleep during executable loading.
+        pushj   17,native_sys_map_one
         jumpe   1,%L137
         move    2,4
         add     2,3
         sub     2,1
-        jrst    proc_run_block
+        pushj   17,proc_run_block
+        jrst    native_sys_mapped_return
 
 native_sys_wait:
-        ; AC1 selector, AC2 optional status word pointer, AC3 flags.
+        ; AC1 selector, AC2 optional logical status pointer, AC3 flags.
+        ; WAIT may sleep while the parent itself is swapped or compacted, so
+        ; never retain a translated physical status address across the wait.
         move    5,1
         move    6,3
-        move    1,2
-        jumpe   1,native_sys_wait_no_status
-        pushj   17,vm_user_words
-        jumpe   1,%L137
-        move    2,1
-        jrst    native_sys_wait_call
-native_sys_wait_no_status:
-        setz    2,
+        push    17,2                    ; logical user status pointer
+        push    17,0                    ; stable kernel status scratch
+        move    1,-1(17)
+        jumpe   1,native_sys_wait_call
+        pushj   17,vm_user_words        ; validate before sleeping
+        jumpe   1,native_sys_wait_bad
 native_sys_wait_call:
         hrrz    1,5
+        movei   2,(17)
         hrrz    3,6
-        jrst    proc_wait_status
+        pushj   17,proc_wait_status
+        move    5,1                     ; preserve returned child PID
+        jumpg   5,native_sys_wait_copy
+        jrst    native_sys_wait_done
+native_sys_wait_copy:
+        move    1,-1(17)
+        jumpe   1,native_sys_wait_done
+        pushj   17,vm_user_words        ; remap after parent resumes
+        jumpe   1,native_sys_wait_bad_result
+        move    2,(17)
+        movem   2,(1)
+native_sys_wait_done:
+        move    1,5
+        sub     17,[2,,2]
+        popj    17,
+native_sys_wait_bad_result:
+        seto    5,
+        jrst    native_sys_wait_done
+native_sys_wait_bad:
+        sub     17,[2,,2]
+        jrst    %L137
 
 native_sys_extctl:
         hrrz    1,1
@@ -415,11 +483,12 @@ native_sys_ext_nonpipe:
         jrst    native_sys_procctl
         move    1,2                    ; user path
         push    17,3                   ; preserve mode across VM translation
-        pushj   17,vm_user_words
+        pushj   17,native_sys_map_one
         pop     17,2
         jumpe   1,pdp10_ret_neg1
         hrrz    2,2
-        jrst    file_mkfifo
+        pushj   17,file_mkfifo
+        jrst    native_sys_mapped_return
 native_sys_procctl:
         hrrz    2,2
         jrst    proc_control

@@ -17,8 +17,6 @@
 struct proc_swap_record *proc_swap_records;
 kword_t proc_swap_blocks_used;
 
-#define PROC_SWAP_HEADER_BLOCKS 1UL
-
 /* Swap slot numbers and packed block spans are bounded positive quantities.
  * Use signed working values after unpacking so their comparisons stay compact
  * on the PDP-10; packed on-disk/in-memory fields remain unchanged. */
@@ -98,29 +96,13 @@ static int
 proc_swap_transfer_words(unsigned int op, kword_t first,
     kword_t *buf, kword_t words)
 {
-        kword_t full;
-        kword_t rem;
-        kword_t block[DSK_WORDS_PER_SECTOR];
+        kword_t blocks;
 
-        full = words / DSK_WORDS_PER_SECTOR;
-        rem = words % DSK_WORDS_PER_SECTOR;
-        if (full != 0UL && proc_swap_disk_io(op, first, full, buf) != 0)
+        if (words == 0UL ||
+            (words % DSK_WORDS_PER_SECTOR) != 0UL)
                 return -1;
-        if (rem == 0UL)
-                return 0;
-        if (op == DISKSET_MRES_OP_SWAP_WRITE) {
-                fs_copy_words(buf + full * DSK_WORDS_PER_SECTOR, block,
-                    (unsigned int)rem);
-                fs_zero_words(block + rem,
-                    (unsigned int)(DSK_WORDS_PER_SECTOR - rem));
-                return proc_swap_disk_io(op, first + full, 1UL, block) == 0 ?
-                    0 : -1;
-        }
-        if (proc_swap_disk_io(op, first + full, 1UL, block) != 0)
-                return -1;
-        fs_copy_words(block, buf + full * DSK_WORDS_PER_SECTOR,
-            (unsigned int)rem);
-        return 0;
+        blocks = words / DSK_WORDS_PER_SECTOR;
+        return proc_swap_disk_io(op, first, blocks, buf) == 0 ? 0 : -1;
 }
 
 int
@@ -160,13 +142,18 @@ proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
 void
 proc_swap_detach(int slot)
 {
+        struct proc *p;
+
         if (proc_swap_records == 0 || slot < 0 || slot >= (int)proc_slots)
                 return;
-        if (proc_table != 0 && VM_PDP6_BASE(&proc_table[slot]) == 0UL &&
+        p = proc_table != 0 ? &proc_table[slot] : 0;
+        if (p != 0 && VM_PDP6_BASE(p) == 0UL &&
             proc_swap_records[slot].state != 0UL)
                 proc_swap_blocks_used -=
                     proc_swap_records[slot].state & MM_HALF_MASK;
         proc_swap_records[slot].state = 0UL;
+        if (p != 0 && PROC_HAS_UAREA(p))
+                PROC_SWAP_BACKING_WORD(p) = 0UL;
 }
 
 int
@@ -176,15 +163,11 @@ proc_swap_out(int slot)
         struct proc *p;
         kword_t base;
         kword_t words;
-        kword_t offset;
-        kword_t swap_words;
         kword_t blocks;
         kword_t first;
-        kword_t text_words;
         kword_t resident_state;
         kword_t *mem;
         unsigned int state;
-        int pure;
 
         if (proc_swap_records == 0 || proc_table == 0 || slot <= 0 ||
             slot >= (int)proc_slots || slot == (int)proc_current_slot)
@@ -192,7 +175,8 @@ proc_swap_out(int slot)
         p = &proc_table[slot];
         state = PROC_STATE(p);
         if ((state != PROC_SRUN && state != PROC_SLEEP && state != PROC_STOP) ||
-            PROC_TRANSITION(p))
+            PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) ||
+            PROC_USER_MAPPING_HELD(p))
                 return -1;
         r = &proc_swap_records[slot];
         resident_state = r->state;
@@ -200,7 +184,8 @@ proc_swap_out(int slot)
                 return -1;
         base = VM_PDP6_BASE(p);
         words = VM_SPACE_WORDS(p);
-        if (base == 0UL || words == 0UL || mm_is_pinned(base))
+        if (base == 0UL || words == 0UL || mm_is_pinned(base) ||
+            (words % DSK_WORDS_PER_SECTOR) != 0UL)
                 return -1;
 
         PROC_SET_TRANSITION(p);
@@ -209,29 +194,17 @@ proc_swap_out(int slot)
                 return -1;
         }
         mem = (kword_t *)(unsigned long)base;
+        blocks = words / DSK_WORDS_PER_SECTOR;
+        if (blocks == 0UL || proc_swap_find(blocks, &first) != 0 ||
+            proc_swap_transfer_words(DISKSET_MRES_OP_SWAP_WRITE, first,
+            mem, words) != 0)
+                goto fail_unpin;
 
-        text_words = (resident_state >> PROC_SWAP_TEXT_SHIFT) &
-            PROC_SWAP_TEXT_MASK;
-        pure = text_words != 0UL;
-        if (pure) {
-                offset = (kword_t)EXEC_USER_ORIGIN + text_words;
-                if ((long)offset > (long)words)
-                        goto fail_unpin;
-        } else {
-                offset = 0UL;
-        }
-        swap_words = words - offset;
-        blocks = PROC_SWAP_HEADER_BLOCKS +
-            (swap_words + DSK_WORDS_PER_SECTOR - 1UL) /
-            DSK_WORDS_PER_SECTOR;
-        if (blocks <= PROC_SWAP_HEADER_BLOCKS ||
-            proc_swap_find(blocks, &first) != 0)
-                goto fail_unpin;
-        if (proc_swap_transfer_words(DISKSET_MRES_OP_SWAP_WRITE, first,
-            &resident_state, 1UL) != 0 ||
-            proc_swap_transfer_words(DISKSET_MRES_OP_SWAP_WRITE,
-            first + PROC_SWAP_HEADER_BLOCKS, mem + offset, swap_words) != 0)
-                goto fail_unpin;
+        /* Keep the resident executable-backing record in the already
+         * resident u-area while the one-word swap record is reused for the
+         * disk span.  No disk header or large executive-stack bounce buffer
+         * is required. */
+        PROC_SWAP_BACKING_WORD(p) = resident_state;
         if (mm_unpin(base) != MM_OK)
                 goto fail_record;
         if (mm_free(base, MM_TYPE_PROCESS, slot) != MM_OK)
@@ -246,6 +219,7 @@ proc_swap_out(int slot)
 fail_unpin:
         (void)mm_unpin(base);
 fail_record:
+        PROC_SWAP_BACKING_WORD(p) = 0UL;
         PROC_CLEAR_TRANSITION(p);
         return -1;
 }
@@ -269,51 +243,32 @@ proc_swap_is_swapped(int slot)
 int
 proc_swap_service_one(void)
 {
-        struct proc *p;
-        int i;
-        int best;
-        int best_prio;
-        int prio;
+        int slot;
 
-        if (proc_table == 0)
+        if (proc_table == 0 ||
+            (proc_sched_cursor & PROC_SCHED_SWAP_REQUEST) == 0UL)
                 return 0;
-
-        /* proc_select_runnable() records the process it selected in the
-         * scheduler cursor before returning slot 0 for swap service.  Honor
-         * that choice first so equal-priority swapped tasks retain the same
-         * round-robin ordering as resident tasks. */
-        best = (int)proc_sched_cursor;
-        if (best > 0 && best < (int)proc_high_slot &&
-            PROC_STATE(&proc_table[best]) == PROC_SRUN &&
-            proc_swap_is_swapped(best)) {
-                if (proc_swap_in(best) == 0)
-                        return best;
-                (void)proc_event_apply((unsigned int)best, SYS_EVENT_TERM);
-                return -1;
+        slot = (int)(proc_sched_cursor & PROC_PGRP_MASK);
+        if (slot <= 0 || slot >= (int)proc_high_slot ||
+            PROC_STATE(&proc_table[slot]) != PROC_SRUN ||
+            !proc_swap_is_swapped(slot)) {
+                proc_sched_cursor = (kword_t)slot;
+                return 0;
         }
 
-        best = 0;
-        best_prio = 0;
-        for (i = 1; i < (int)proc_high_slot; ++i) {
-                p = &proc_table[i];
-                if (PROC_STATE(p) != PROC_SRUN || !proc_swap_is_swapped(i))
-                        continue;
-                prio = (int)PROC_NICE_ENCODED(p) +
-                    (int)PROC_CPU_PENALTY(p);
-                if (best == 0 || prio < best_prio) {
-                        best = i;
-                        best_prio = prio;
-                }
+        /* Keep PROC_SCHED_SWAP_REQUEST set for the complete transaction.
+         * PI6 treats that bit as slot-0 service busy and must not switch away
+         * from the permanent idle stack while synchronous swap I/O is active. */
+        if (proc_swap_in(slot) == 0) {
+                proc_sched_cursor = (kword_t)slot;
+                return slot;
         }
-        if (best == 0)
-                return 0;
-        if (proc_swap_in(best) == 0)
-                return best;
+        proc_sched_cursor = (kword_t)slot;
 
         /* proc_swap_in already performs normal MM reclaim.  A failure after
          * that point cannot be left as an SRUN process that wins scheduling
          * forever; terminate it with the normal fatal-event cleanup path. */
-        (void)proc_event_apply((unsigned int)best, SYS_EVENT_TERM);
+        (void)proc_event_apply((unsigned int)slot, SYS_EVENT_TERM);
         return -1;
 }
 
@@ -324,15 +279,10 @@ proc_swap_in(int slot)
         struct proc *p;
         kword_t base;
         kword_t words;
-        kword_t text_words;
         kword_t resident_state;
-        vnode_t backing;
-        kword_t offset;
-        kword_t swap_words;
         kword_t first;
         kword_t blocks;
         kword_t *mem;
-        int pure;
 
         if (proc_swap_records == 0 || proc_table == 0 || slot <= 0 ||
             slot >= (int)proc_slots)
@@ -340,10 +290,17 @@ proc_swap_in(int slot)
         p = &proc_table[slot];
         r = &proc_swap_records[slot];
         if (VM_PDP6_BASE(p) != 0UL || PROC_IS_FREE(p) ||
-            r->state == 0UL || PROC_TRANSITION(p))
+            r->state == 0UL || PROC_TRANSITION(p) || !PROC_HAS_UAREA(p))
                 return -1;
         words = VM_SPACE_WORDS(p);
-        if (words == 0UL)
+        resident_state = PROC_SWAP_BACKING_WORD(p);
+        if (words == 0UL || resident_state == 0UL ||
+            (words % DSK_WORDS_PER_SECTOR) != 0UL)
+                return -1;
+
+        first = (r->state >> 18U) & MM_HALF_MASK;
+        blocks = r->state & MM_HALF_MASK;
+        if (blocks == 0UL || blocks != words / DSK_WORDS_PER_SECTOR)
                 return -1;
 
         PROC_SET_TRANSITION(p);
@@ -358,59 +315,17 @@ proc_swap_in(int slot)
                 return -1;
         }
         mem = (kword_t *)(unsigned long)base;
-        fs_zero_words(mem, (unsigned int)words);
-
-        first = (r->state >> 18U) & MM_HALF_MASK;
-        blocks = r->state & MM_HALF_MASK;
-        if (blocks <= PROC_SWAP_HEADER_BLOCKS ||
-            proc_swap_transfer_words(DISKSET_MRES_OP_SWAP_READ, first,
-            &resident_state, 1UL) != 0 ||
-            resident_state == 0UL)
-                goto fail;
-        text_words = (resident_state >> PROC_SWAP_TEXT_SHIFT) &
-            PROC_SWAP_TEXT_MASK;
-        {
-                unsigned int provider;
-                unsigned int mount;
-                unsigned int kind;
-
-                provider = (unsigned int)((resident_state >>
-                    PROC_SWAP_PROVIDER_SHIFT) & PROC_SWAP_PROVIDER_MASK) +
-                    MEMFS_PROVIDER;
-                mount = (unsigned int)((resident_state >>
-                    PROC_SWAP_MOUNT_SHIFT) & PROC_SWAP_MOUNT_MASK) + 1U;
-                kind = provider == DTFS_PROVIDER ? DTFS_KIND_FILE :
-                    MEMFS_KIND_NODE;
-                backing = VFS_NODE_PACKED(provider,
-                    (mount << VFS_MOUNT_SHIFT) | kind,
-                    resident_state & PROC_SWAP_INDEX_MASK);
-        }
-        pure = text_words != 0UL;
-        if (pure) {
-                if (vfs_read_words(backing, EXEC_DXR_EXT_HDR_WORDS,
-                    mem + EXEC_USER_ORIGIN, (unsigned int)text_words) !=
-                    (int)text_words)
-                        goto fail;
-                offset = (kword_t)EXEC_USER_ORIGIN + text_words;
-        } else {
-                offset = 0UL;
-        }
-        if ((long)offset > (long)words)
-                goto fail;
-        swap_words = words - offset;
-        if (PROC_SWAP_HEADER_BLOCKS +
-            (swap_words + DSK_WORDS_PER_SECTOR - 1UL) /
-            DSK_WORDS_PER_SECTOR != blocks ||
-            proc_swap_transfer_words(DISKSET_MRES_OP_SWAP_READ,
-            first + PROC_SWAP_HEADER_BLOCKS, mem + offset, swap_words) != 0)
+        if (proc_swap_transfer_words(DISKSET_MRES_OP_SWAP_READ, first,
+            mem, words) != 0)
                 goto fail;
 
         if (mm_unpin(base) != MM_OK)
                 goto fail_free;
         VM_PDP6_SET_BASE(p, base);
         proc_swap_blocks_used -= blocks;
-        PROC_CLEAR_TRANSITION(p);
         r->state = resident_state;
+        PROC_SWAP_BACKING_WORD(p) = 0UL;
+        PROC_CLEAR_TRANSITION(p);
         return 0;
 
 fail:

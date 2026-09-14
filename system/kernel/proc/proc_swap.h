@@ -15,7 +15,8 @@
 
 struct proc_swap_record {
         /* Resident: packed executable backing + pure-text boundary.
-         * Swapped:  LH first SWAP block, RH total block count. */
+         * Swapped: LH first SWAP block, RH full-sector block count; the
+         * resident backing record is retained in the stable u-area. */
         kword_t state;
 };
 
