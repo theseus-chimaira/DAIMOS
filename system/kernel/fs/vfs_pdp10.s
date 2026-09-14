@@ -23,22 +23,16 @@ vfs_lookup:
         jumpe   3,pdp10_ret_neg1
         came    1,vfs_namespace_root
         jrst    vfs_lookup_provider
-        move    4,(2)                  ; name chars
-        caie    4,6
-        jrst    vfs_lookup_proc
+        move    5,(2)                  ; name chars
+        caie    5,6
+        jrst    vfs_lookup_proc_name
         move    4,1(2)
         camn    4,[-0333211263433]     ; DEVICE
         jrst    vfs_lookup_device_root
-vfs_lookup_proc:
-        move    4,(2)
-        caie    4,6
-        jrst    vfs_lookup_proc_name
-        move    4,1(2)
         camn    4,[-0332022362622]     ; DOMAIN
         jrst    vfs_lookup_domain_root
 vfs_lookup_proc_name:
-        move    4,(2)
-        caie    4,4
+        caie    5,4
         jrst    vfs_lookup_provider
         move    4,1(2)
         camn    4,[-0171520350000]     ; PROC
@@ -83,14 +77,13 @@ vfs_lookup_pop:
 
 vfs_lookup_device_root:
         movsi   4,020001               ; DEVICEFS root
-        movem   4,(3)
-        jrst    pdp10_ret_zero
+        jrst    vfs_lookup_root_store
 vfs_lookup_proc_root:
         movsi   4,030001               ; PROCFS root
-        movem   4,(3)
-        jrst    pdp10_ret_zero
+        jrst    vfs_lookup_root_store
 vfs_lookup_domain_root:
         move    4,[030001400000]       ; tagged DOMAIN root
+vfs_lookup_root_store:
         movem   4,(3)
         jrst    pdp10_ret_zero
 
@@ -165,6 +158,7 @@ vfs_parent_raw_asm:
         setz    3,
         movei   6,4                    ; FS_MRES_OP_PARENT
         pushj   17,fs_provider_reg_call
+vfs_parent_return:
         jumpn   1,vfs_parent_pop
         move    5,(17)
         move    4,(5)
@@ -178,25 +172,20 @@ vfs_parent_pop:
         popj    17,
 vfs_parent_namespace:
         move    4,vfs_namespace_root
-        movem   4,(2)
-        jrst    pdp10_ret_zero
+        jrst    vfs_parent_store
 vfs_parent_proc:
         ldb     4,[POINT 6,1,17]
         caie    4,1                    ; PROCFS_KIND_ROOT
         jrst    vfs_parent_proc_slot
         move    4,vfs_namespace_root
-        movem   4,(2)
-        jrst    pdp10_ret_zero
+        jrst    vfs_parent_store
 vfs_parent_proc_slot:
         caie    4,2                    ; PROCFS_KIND_PROC
         jrst    pdp10_ret_neg1
-        trne    1,0400000
-        jrst    vfs_parent_domain_slot
         movsi   4,030001               ; PROCFS root
-        movem   4,(2)
-        jrst    pdp10_ret_zero
-vfs_parent_domain_slot:
-        move    4,[030001400000]
+        trne    1,0400000              ; tagged DOMAIN process
+        tro     4,0400000
+vfs_parent_store:
         movem   4,(2)
         jrst    pdp10_ret_zero
 
@@ -212,8 +201,7 @@ vfs_parent_mount:
         ldb     3,[POINT 6,1,11]
         subi    3,1
         jumpl   3,vfs_parent_raw_asm
-        caige   3,4
-        jrst    vfs_parent_mount_check
+        cail   3,4
         jrst    vfs_parent_raw_asm
 vfs_parent_mount_check:
         move    4,vfs_mount_root(3)
@@ -227,20 +215,17 @@ vfs_parent_mount_check:
 vfs_parent_name:
         jumpe   2,pdp10_ret_neg1
         jumpe   3,pdp10_ret_neg1
-        came    1,vfs_namespace_root
-        jrst    vfs_parent_name_mount
+        camn    1,vfs_namespace_root
         jrst    pdp10_ret_neg1
 vfs_parent_name_mount:
         ldb     4,[POINT 6,1,11]
         subi    4,1
         jumpl   4,vfs_parent_name_call
-        caige   4,4
-        jrst    vfs_parent_name_check
+        cail   4,4
         jrst    vfs_parent_name_call
 vfs_parent_name_check:
         move    5,vfs_mount_root(4)
-        came    5,1
-        jrst    vfs_parent_name_call
+        camn    5,1
         move    1,vfs_mount_target(4)
 vfs_parent_name_call:
         push    17,1                   ; node after mount crossing
@@ -248,17 +233,7 @@ vfs_parent_name_call:
         ldb     7,[POINT 6,1,5]
         movei   6,5                    ; FS_MRES_OP_PARENT_NAME
         pushj   17,fs_provider_reg_call
-        jumpn   1,vfs_parent_name_pop
-        move    5,(17)
-        move    4,(5)
-        tlz     4,07700
-        move    6,-1(17)
-        and     6,[07700000000]
-        ior     4,6
-        movem   4,(5)
-vfs_parent_name_pop:
-        sub     17,[2,,2]
-        popj    17,
+        jrst    vfs_parent_return
 
 
 ; Direct request-free mutation leaves.  The fifth C argument is at -1(17).
@@ -324,6 +299,7 @@ vfs_create_policy:
         move    3,4                    ; provider c = mode
         movei   4,-2(17)               ; provider d = result nodep
         pushj   17,fs_provider_reg_call
+vfs_create_store_result:
         jumpn   1,vfs_create_done
         move    3,-2(17)
         tlz     3,07700
@@ -365,17 +341,7 @@ vfs_symlink:
         ldb     7,[POINT 6,1,5]
         movei   6,010                  ; FS_MRES_OP_SYMLINK
         pushj   17,fs_provider_reg_call
-        jumpn   1,vfs_symlink_done
-        move    3,-2(17)
-        tlz     3,07700
-        move    4,-1(17)
-        and     4,[07700000000]
-        ior     3,4
-        move    4,(17)
-        movem   3,(4)
-vfs_symlink_done:
-        sub     17,[3,,3]
-        popj    17,
+        jrst    vfs_create_store_result
 vfs_symlink_ro:
         sub     17,[5,,5]
         jrst    pdp10_ret_neg1
@@ -519,15 +485,8 @@ vfs_stat:
 
         .globl  vfs_unlink
 vfs_unlink:
-        push    17,1
-        push    17,2
-        pushj   17,vfs_readonly
-        jumpn   1,vfs_mutate2_ro
-        pop     17,2
-        pop     17,1
-        ldb     7,[POINT 6,1,5]
         movei   6,11                   ; FS_MRES_OP_UNLINK
-        jrst    fs_provider_reg_call
+        jrst    vfs_mutate2
 
         .globl  vfs_truncate
 vfs_truncate:
@@ -545,6 +504,8 @@ vfs_truncate:
 
         .globl  vfs_chmod
 vfs_chmod:
+        movei   6,14                   ; FS_MRES_OP_CHMOD
+vfs_mutate2:
         push    17,1
         push    17,2
         pushj   17,vfs_readonly
@@ -552,7 +513,6 @@ vfs_chmod:
         pop     17,2
         pop     17,1
         ldb     7,[POINT 6,1,5]
-        movei   6,14                   ; FS_MRES_OP_CHMOD
         jrst    fs_provider_reg_call
 vfs_mutate3_ro:
         sub     17,[1,,1]
@@ -686,8 +646,7 @@ vfs_writechar:
         caie    4,2                    ; DEVICEFS_PROVIDER
         jrst    vfs_writechar_regular
         ldb     4,[POINT 6,1,17]       ; VFS local kind
-        caie    4,2                    ; DEVICEFS_KIND_DEVICE
-        jrst    vfs_writechar_regular
+        cain    4,2                    ; DEVICEFS_KIND_DEVICE
         jrst    pdp10_ret_busy          ; VFS_DEVICE_IO = -3
 
 vfs_writechar_regular:
@@ -767,8 +726,7 @@ vfs_readonly:
         ldb     1,[POINT 6,1,11]        ; mount id
         subi    1,1
         jumpl   1,pdp10_ret_zero
-        caige   1,4
-        jrst    vfs_readonly_slot
+        cail   1,4
         jrst    pdp10_ret_zero
 vfs_readonly_slot:
         skipn   vfs_mount_root(1)
@@ -878,8 +836,7 @@ vfs_unmount:
         ldb     2,[POINT 6,1,11]
         subi    2,1
         jumpl   2,pdp10_ret_neg1
-        caige   2,4
-        jrst    vfs_unmount_slot
+        cail   2,4
         jrst    pdp10_ret_neg1
 vfs_unmount_slot:
         move    3,vfs_mount_root(2)

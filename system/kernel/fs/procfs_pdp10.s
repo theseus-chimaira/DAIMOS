@@ -32,15 +32,43 @@ procfs_proc_ptr:
         move    1,3
         popj    17,
 
+; AC1 = struct vfs_name *. Return AC1 = decimal value 0..255, or -1.
+; AC3 and AC7 are preserved; AC2 and AC4..AC6 are caller-scratch.
+; Names longer than three digits are rejected before the packed word is read.
+        .globl  procfs_parse_slot
+procfs_parse_slot:
+        jumpe   1,pdp10_ret_neg1
+        move    2,(1)
+        jumpe   2,pdp10_ret_neg1
+        cail    2,4
+        jrst    pdp10_ret_neg1
+        move    4,1(1)
+        setz    5,
+procfs_parse_slot_loop:
+        move    6,4
+        lsh     6,-036
+        andi    6,077
+        cail    6,020
+        cail    6,032
+        jrst    pdp10_ret_neg1
+        subi    6,020
+        imuli   5,012
+        add     5,6
+        lsh     4,6
+        sojg    2,procfs_parse_slot_loop
+        cail    5,0400
+        jrst    pdp10_ret_neg1
+        move    1,5
+        popj    17,
+
 ; AC1 = slot (0..255). Return AC1 = chars, AC2 = SIXBIT decimal name.
 ; AC3 is preserved; AC4..AC7 are caller-scratch.
+        .globl  procfs_format_slot
 procfs_format_slot:
-        setz    4,
-        move    5,1
-        divi    4,0144                  ; hundreds, remainder
-        setz    6,
-        move    7,5
-        divi    6,012                   ; tens, ones
+        move    4,1
+        idivi   4,0144                  ; hundreds, remainder
+        move    6,5
+        idivi   6,012                   ; tens, ones
         move    2,4
         lsh     2,6
         ior     2,6
@@ -58,52 +86,48 @@ procfs_format_slot:
 procfs_format_done:
         popj    17,
 
-        .globl  domainfs_lookup
-        .globl  domainfs_readdir
-        .globl  domainfs_stat
+        .globl  domainfs_exists
 
+; PROCFS and DOMAINFS share provider 3.  DOMAINFS nodes carry bit 0400000 in
+; the vnode RH; fold their namespace operations into these leaves so both
+; namespaces share decimal parsing, dirent stores and stat stores.
+;
 ; int procfs_lookup(vnode_t dir, const struct vfs_name *name, vnode_t *nodep)
         .globl  procfs_lookup
 procfs_lookup:
-        trne    1,0400000
-        jrst    domainfs_lookup
         jumpe   2,pdp10_ret_neg1
         jumpe   3,pdp10_ret_neg1
+        move    0,1
+        andi    0,0400000
         hlrz    4,1
         caie    4,030001
         jrst    procfs_lookup_proc
-        move    4,(2)
-        jumpe   4,pdp10_ret_neg1
-        cail    4,4
-        jrst    pdp10_ret_neg1
-        move    5,1(2)                 ; packed SIXBIT digits
-        setz    6,                     ; accumulated decimal slot
-procfs_lookup_digit_loop:
-        move    1,5
-        lsh     1,-036
-        andi    1,077
-        cail    1,020
-        cail    1,032
-        jrst    pdp10_ret_neg1
-        subi    1,020
-        imuli   6,012
-        add     6,1
-        lsh     5,6
-        sojg    4,procfs_lookup_digit_loop
-        cail    6,0400
-        jrst    pdp10_ret_neg1
-procfs_lookup_slot:
         move    7,3
+        move    1,2
+        pushj   17,procfs_parse_slot
+        camn    1,[-1]
+        jrst    pdp10_ret_neg1
+        move    6,1
+        jumpn   0,procfs_lookup_domain_root
+procfs_lookup_slot:
         move    1,6
         pushj   17,procfs_proc_ptr
         jumpe   1,pdp10_ret_neg1
         move    1,6
         tlo     1,030002
-        movem   1,(7)
-        jrst    pdp10_ret_zero
+        jrst    procfs_lookup_store
+procfs_lookup_domain_root:
+        move    1,6
+        pushj   17,domainfs_exists
+        jumpe   1,pdp10_ret_neg1
+        move    1,6
+        tlo     1,030002
+        tro     1,0400000
+        jrst    procfs_lookup_store
 procfs_lookup_proc:
         caie    4,030002
         jrst    pdp10_ret_neg1
+        jumpn   0,procfs_lookup_domain_proc
         move    5,2
         move    7,3
         hrrz    6,1
@@ -138,18 +162,38 @@ procfs_lookup_have_kind:
         move    1,6
         hrl     1,4
         tlo     1,030000
+        jrst    procfs_lookup_store
+procfs_lookup_domain_proc:
+        move    5,2
+        move    7,3
+        move    6,1
+        andi    6,0377
+        move    2,(5)
+        caie    2,6
+        jrst    pdp10_ret_neg1
+        move    3,1(5)
+        came    3,[0636441646563]      ; STATUS
+        jrst    pdp10_ret_neg1
+        move    1,6
+        pushj   17,domainfs_exists
+        jumpe   1,pdp10_ret_neg1
+        move    1,6
+        tlo     1,030007
+        tro     1,0400000
+procfs_lookup_store:
         movem   1,(7)
         jrst    pdp10_ret_zero
 
 ; int procfs_readdir(vnode_t dir, unsigned int off, struct vfs_dirent *ent)
         .globl  procfs_readdir
 procfs_readdir:
-        trne    1,0400000
-        jrst    domainfs_readdir
         jumpe   3,pdp10_ret_neg1
+        move    0,1
+        andi    0,0400000
         hlrz    4,1
         caie    4,030001
         jrst    procfs_readdir_proc
+        jumpn   0,procfs_readdir_domain_root
         skipn   5,proc_table
         jrst    pdp10_ret_zero
         movei   6,0
@@ -167,6 +211,20 @@ procfs_readdir_root_next:
         addi    5,PROC_WORDS
         addi    6,1
         jrst    procfs_readdir_root_loop
+procfs_readdir_domain_root:
+        move    7,2
+        movei   6,0
+procfs_readdir_domain_loop:
+        move    1,6
+        pushj   17,domainfs_exists
+        jumpe   1,procfs_readdir_domain_next
+        jumpe   7,procfs_readdir_root_found
+        subi    7,1
+procfs_readdir_domain_next:
+        addi    6,1
+        cail    6,0400
+        jrst    pdp10_ret_zero
+        jrst    procfs_readdir_domain_loop
 procfs_readdir_root_found:
         move    1,6
         pushj   17,procfs_format_slot
@@ -178,6 +236,7 @@ procfs_readdir_root_found:
 procfs_readdir_proc:
         caie    4,030002
         jrst    pdp10_ret_neg1
+        jumpn   0,procfs_readdir_domain_proc
         move    7,3
         move    6,2
         hrrz    1,1
@@ -190,10 +249,20 @@ procfs_readdir_proc:
         caie    6,0
         cain    6,3
         movei   4,4
-        caie    6,4
-        jrst    procfs_readdir_proc_store
+        cain    6,4
         movei   4,6
 procfs_readdir_proc_store:
+        movei   6,2
+        jrst    procfs_readdir_store
+procfs_readdir_domain_proc:
+        move    7,2                    ; preserve off across exists
+        andi    1,0377
+        pushj   17,domainfs_exists
+        jumpe   1,pdp10_ret_neg1
+        jumpn   7,pdp10_ret_zero
+        move    7,3
+        movei   4,6
+        move    5,[0636441646563]      ; STATUS
         movei   6,2
 procfs_readdir_store:
         movem   4,(7)
@@ -207,26 +276,25 @@ procfs_readdir_store:
 ; int procfs_stat(vnode_t node, struct vfs_stat *st)
         .globl  procfs_stat
 procfs_stat:
-        trne    1,0400000
-        jrst    domainfs_stat
         jumpe   2,pdp10_ret_neg1
         move    7,2
+        move    0,1
+        andi    0,0400000
         hlrz    5,1
         caie    5,030001
         jrst    procfs_stat_nonroot
+procfs_stat_dir:
         movei   3,1
         movei   4,0555
-        jrst    procfs_stat_store
+        jrst    procfs_stat_store_zero
 procfs_stat_nonroot:
+        jumpn   0,procfs_stat_domain
         hrrz    6,1
         move    1,6
         pushj   17,procfs_proc_ptr
         jumpe   1,pdp10_ret_neg1
-        caie    5,030002
-        jrst    procfs_stat_file
-        movei   3,1
-        movei   4,0555
-        jrst    procfs_stat_store
+        cain    5,030002
+        jrst    procfs_stat_dir
 procfs_stat_file:
         caige   5,030003
         jrst    pdp10_ret_neg1
@@ -234,19 +302,40 @@ procfs_stat_file:
         jrst    pdp10_ret_neg1
         movei   3,2
         movei   4,0444
-procfs_stat_store:
+        jrst    procfs_stat_store_zero
+procfs_stat_domain:
+        move    6,1
+        andi    6,0377
+        caie    5,030002
+        jrst    procfs_stat_domain_status
+        move    1,6
+        pushj   17,domainfs_exists
+        jumpe   1,pdp10_ret_neg1
+        jrst    procfs_stat_dir
+procfs_stat_domain_status:
+        caie    5,030007
+        jrst    pdp10_ret_neg1
+        move    1,6
+        pushj   17,domainfs_exists
+        jumpe   1,pdp10_ret_neg1
+        movei   3,2
+        movei   4,0444
+        movei   5,6
+        jrst    procfs_stat_store_words
+procfs_stat_store_zero:
+        setz    5,
+procfs_stat_store_words:
         movem   3,(7)
         movem   4,1(7)
         setzm   2(7)
-        setzm   3(7)
+        movem   5,3(7)
         jrst    pdp10_ret_zero
 
 ; int procfs_getcwd_slot(unsigned int slot, kword_t *buf, unsigned int nwords)
         .globl  procfs_getcwd_slot
 procfs_getcwd_slot:
         jumpe   2,pdp10_ret_neg1
-        cail    3,3
-        jrst    procfs_getcwd_size_ok
+        caige    3,3
         jrst    pdp10_ret_neg1
 procfs_getcwd_size_ok:
         move    6,1
@@ -276,15 +365,10 @@ procfs_state_word:
 procfs_state_not_swapped:
         move    1,procfs_state_names(3)
         movei   2,4
-        cain    3,1
-        jrst    procfs_state_len3
-        cain    3,2
-        jrst    procfs_state_len3
-        cain    3,3
-        movei   2,5
-        popj    17,
-procfs_state_len3:
+        caig    3,2                    ; active IDLE/RUN names have 3 chars
         movei   2,3
+        cain    3,3                    ; SLEEP
+        movei   2,5
         popj    17,
 procfs_state_swapped:
         move    1,[0636741600000]
@@ -333,12 +417,12 @@ procfs_status_digit2:
 procfs_status_digit_store:
         andi    6,7
         addi    6,060
+procfs_status_store_one:
         movem   6,(7)
         jrst    pdp10_ret_one
 procfs_status_space:
         movei   6,040
-        movem   6,(7)
-        jrst    pdp10_ret_one
+        jrst    procfs_status_store_one
 procfs_status_tail:
         caie    5,024
         jrst    procfs_status_cr
@@ -347,20 +431,17 @@ procfs_status_tail:
         lsh     6,-036
         andi    6,077
         addi    6,040
-        movem   6,(7)
-        jrst    pdp10_ret_one
+        jrst    procfs_status_store_one
 procfs_status_cr:
         caie    5,025
         jrst    procfs_status_lf
         movei   6,015
-        movem   6,(7)
-        jrst    pdp10_ret_one
+        jrst    procfs_status_store_one
 procfs_status_lf:
         caie    5,026
         jrst    pdp10_ret_zero
         movei   6,012
-        movem   6,(7)
-        jrst    pdp10_ret_one
+        jrst    procfs_status_store_one
 
 ; int procfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
         .globl  procfs_readchar
@@ -401,8 +482,7 @@ procfs_readchar_comm_load:
         move    4,7
         jrst    vfs_sixbit_readchar
 procfs_readchar_not_comm:
-        caie    4,030007
-        jrst    procfs_readchar_not_status
+        cain    4,030007
         jrst    procfs_status_readchar
 procfs_readchar_not_status:
         caie    4,030004

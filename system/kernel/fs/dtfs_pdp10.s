@@ -199,8 +199,7 @@ dtfs_its_valid_loop:
         movei   1,056
         move    2,010
         pushj   17,dtfs_owner
-        caie    1,037
-        jrst    dtfs_its_valid_owner
+        cain    1,037
         jrst    dtfs_its_valid_pop_false
 dtfs_its_valid_owner:
         jumpe   1,dtfs_its_valid_next
@@ -775,8 +774,7 @@ dtfs_readdir_loop:
         cain    013,020
         jrst    dtfs_readdir_its
         move    6,4
-        cain    013,010
-        jrst    dtfs_readdir_tenex_base
+        caie    013,010
         lsh     6,1                     ; native: two words/name
 
 dtfs_readdir_tenex_base:
@@ -943,8 +941,7 @@ dtfs_find_free_loop:
         pushj   17,dtfs_owner
         jumpe   1,dtfs_find_free_found
         addi    6,1
-        caig    6,01101
-        jrst    dtfs_find_free_count
+        caile   6,01101
         movei   6,1
 dtfs_find_free_count:
         addi    7,1
@@ -977,8 +974,7 @@ dtfs_find_free_native_loop:
         pushj   17,dtfs_owner
         jumpe   1,dtfs_find_free_native_found
         addi    6,1
-        caig    6,01101
-        jrst    dtfs_find_free_native_count
+        caile   6,01101
         movei   6,1
 dtfs_find_free_native_count:
         addi    7,1

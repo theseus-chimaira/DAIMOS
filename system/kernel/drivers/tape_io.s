@@ -401,8 +401,7 @@ tape_ioerr:
 tape_wait_done:
         aos @tape_account_table-1(1)    ; completed READ/WRITE request
         caie 1,2                        ; MTC read
-        cain 1,5                        ; MTC write
-        jrst tape_account_mtc_words
+        caie 1,5                        ; MTC write
         jrst tape_account_done
 
 tape_account_mtc_words:

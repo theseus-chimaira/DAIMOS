@@ -68,12 +68,19 @@ vm_extent_move(unsigned int owner, kword_t base, kword_t words)
         unsigned int old_state;
         int rc;
 
-        if (proc_table == 0 || owner >= proc_slots ||
-            owner == (unsigned int)proc_current_slot)
+#ifndef __PDP10__
+        if (proc_table == 0 || owner >= proc_slots)
+                return MM_ERR_BUSY;
+#endif
+        if (owner == (unsigned int)proc_current_slot)
                 return MM_ERR_BUSY;
         p = &proc_table[owner];
-        if (PROC_IS_FREE_OR_ZOMB(p) || PROC_TRANSITION(p) ||
-            VM_PDP6_BASE(p) != base || VM_SPACE_WORDS(p) != words ||
+#ifndef __PDP10__
+        if (PROC_IS_FREE_OR_ZOMB(p) || VM_PDP6_BASE(p) != base ||
+            VM_SPACE_WORDS(p) != words)
+                return MM_ERR_BUSY;
+#endif
+        if (PROC_TRANSITION(p) ||
             (PROC_HAS_UAREA(p) && PROC_USER_MAPPING_HELD(p)))
                 return MM_ERR_BUSY;
         old_state = PROC_STATE(p);
@@ -89,10 +96,12 @@ vm_extent_move(unsigned int owner, kword_t base, kword_t words)
         }
 
         PROC_SET_TRANSITION(p);
+#ifndef __PDP10__
         if (words == 0UL || mm_is_pinned(base)) {
                 rc = MM_ERR_BUSY;
                 goto out;
         }
+#endif
         rc = mm_alloc_aligned_noreclaim(words, VM_PDP6_ALIGN_WORDS,
             MM_TYPE_PROCESS, owner, MM_ALLOC_HIGH, &new_base);
         if (rc != MM_OK)

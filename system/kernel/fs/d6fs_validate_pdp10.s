@@ -58,8 +58,7 @@ d6fs_fcb_tail_nonsymlink:
         jumpe   7,d6fs_fcb_reserved
         jrst    d6fs_fcb_invalid
 d6fs_fcb_tail4:
-        caig    7,4                     ; regular/directory tail is 0..4
-        jrst    d6fs_fcb_reserved
+        caile    7,4                     ; regular/directory tail is 0..4
         jrst    d6fs_fcb_invalid
 
         ; Reserved representation bits and words must remain zero.

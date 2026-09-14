@@ -62,4 +62,5 @@ compatibility spelling.  For example:
 
 The PDP-6 disk boot makefile also provides `make permanent-size`.  It reports
 KCORE plus every MRES package installed by the normal full-hardware boot,
-excluding KINIT/INIT and process-private storage.
+excluding KINIT/INIT and process-private storage.  The pre-userland resident
+limit for that KCORE+MRES total is 12 Kiwords (12288 decimal words).

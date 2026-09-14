@@ -181,8 +181,7 @@ proc_tty_session_scope:
         move    4,045(4)                ; packed control word
         lsh     4,-3
         andi    4,0377                  ; session id
-        came    4,5
-        jrst    proc_tty_session_next
+        camn    4,5
         jrst    pdp10_ret_one
 proc_tty_session_next:
         addi    3,PROC_WORDS
@@ -650,8 +649,7 @@ proc_control_tty_attach:
         move    7,6
         lsh     7,-036
         andi    7,077
-        caige   7,2
-        jrst    proc_control_tty_attach_state_ok
+        cail   7,2
         jrst    pdp10_ret_neg1
 proc_control_tty_attach_state_ok:
         move    7,proc_tty_records(2)
@@ -690,8 +688,7 @@ proc_control_tty_owned:
         move    4,7
         andi    4,0377
         ldb     5,[POINT 8,045(5),32]
-        came    4,5
-        jrst    proc_control_tty_owned_bad
+        camn    4,5
         popj    17,
 proc_control_tty_owned_bad:
         seto    1,
@@ -791,9 +788,8 @@ proc_wait_event_common:
         skipn   proc_current_slot
         jrst    proc_wait_boot
         move    2,proc_current_slot
-        move    3,2
         lsh     2,1
-        add     2,3
+        add     2,proc_current_slot
         add     2,proc_table
         move    3,2(2)                 ; packed scheduler word
         tlz     3,PROC_WAIT_LH_MASK
@@ -850,9 +846,8 @@ proc_wait_child:
         tlne    2,0100                  ; ALRM interrupts user WAIT
         jrst    pdp10_ret_neg1
         move    2,proc_current_slot
-        move    3,2
         lsh     2,1
-        add     2,3
+        add     2,proc_current_slot
         add     2,proc_table
         move    3,2(2)
         tlz     3,PROC_WAIT_LH_MASK
@@ -920,8 +915,7 @@ proc_stack_watermark_loop:
         jrst    proc_stack_watermark_done
         addi    2,1
         addi    3,1
-        caile   3,PROC_KSTACK_WORDS
-        jrst    proc_stack_watermark_done
+        caig   3,PROC_KSTACK_WORDS
         jrst    proc_stack_watermark_loop
 proc_stack_watermark_done:
         camle   3,proc_stack_highwater
@@ -940,8 +934,7 @@ kernel_idle_stack_watermark_loop:
         jrst    kernel_idle_stack_watermark_done
         addi    2,1
         addi    3,1
-        caile   3,KERNEL_IDLE_STACK_WORDS
-        jrst    kernel_idle_stack_watermark_done
+        caig   3,KERNEL_IDLE_STACK_WORDS
         jrst    kernel_idle_stack_watermark_loop
 kernel_idle_stack_watermark_done:
         camle   3,kernel_idle_stack_highwater
@@ -1130,12 +1123,7 @@ proc_sched_resched_save:
         pushj   17,proc_save_kernel
 proc_sched_resched_choose:
         pushj   17,proc_sched_resched_select
-        movem   1,proc_current_slot
-        jumpe   1,proc_restore_idle
-        pushj   17,proc_uarea_slot
-        skipn   CTX_K_PC(1)
-        jrst    proc_restore_user
-        jrst    proc_restore_kernel
+        jrst    proc_sched_restore_selected
 
 ; Called once per qualified line-clock PI6 after the hardware clock flag is
 ; cleared.  User code is preemptible.  Ordinary executive code is not; only a
@@ -1174,6 +1162,7 @@ proc_sched_exec_tick:
         pushj   17,proc_save_kernel
 proc_sched_select:
         pushj   17,proc_sched_tick_select
+proc_sched_restore_selected:
         movem   1,proc_current_slot
         jumpe   1,proc_restore_idle
         pushj   17,proc_uarea_slot

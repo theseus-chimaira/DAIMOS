@@ -529,8 +529,7 @@ file_component_trailing:
         caml    5,4
         jrst    file_component_done
         ildb    7,6
-        caie    7,017
-        jrst    file_component_done
+        cain    7,017
         jrst    file_component_trailing
 
 file_component_done:
@@ -548,8 +547,7 @@ file_component_empty:
 file_getcwd:
         jumpe   1,pdp10_ret_neg1
         jumpl   2,file_getcwd_nwords_ok ; unsigned value with bit 35 set
-        cail    2,2
-        jrst    file_getcwd_nwords_ok
+        caige    2,2
         jrst    pdp10_ret_neg1
 file_getcwd_nwords_ok:
         move    5,file_table
@@ -635,8 +633,7 @@ file_getcwd_components:
 
 ; Check room for the entire component and its separator before writing either.
         move    4,015
-        cain    015,1
-        jrst    file_getcwd_no_sep_need
+        caie    015,1
         addi    4,1
 file_getcwd_no_sep_need:
         add     4,3
@@ -977,22 +974,16 @@ file_pseudo_device:
         caige   3,3
         jrst    pdp10_ret_neg1
         movei   4,7
-        movem   4,(2)
-        move    4,[0174445665143]      ; SIXBIT //DEVIC/
-        movem   4,1(2)
-        movsi   4,0450000              ; SIXBIT /E     /
-        movem   4,2(2)
-        jrst    pdp10_ret_zero
+        move    5,[0174445665143]      ; SIXBIT //DEVIC/
+        movsi   6,0450000              ; SIXBIT /E     /
+        jrst    file_pseudo_fixed3
 file_pseudo_cty:
         caige   3,4
         jrst    pdp10_ret_neg1
         movei   4,014
-        movem   4,(2)
-        move    4,[0174445665143]      ; SIXBIT //DEVIC/
-        movem   4,1(2)
-        move    4,[-0326034130660]     ; SIXBIT /E/CTY0/
-        movem   4,2(2)
-        jrst    pdp10_ret_zero
+        move    5,[0174445665143]      ; SIXBIT //DEVIC/
+        move    6,[-0326034130660]     ; SIXBIT /E/CTY0/
+        jrst    file_pseudo_fixed3
 file_pseudo_proc:
         caige   3,2
         jrst    pdp10_ret_neg1
@@ -1005,9 +996,10 @@ file_pseudo_domain:
         caige   3,3
         jrst    pdp10_ret_neg1
         movei   4,7
+        move    5,[0174457554151]      ; SIXBIT //DOMAI/
+        movsi   6,0560000              ; SIXBIT /N     /
+file_pseudo_fixed3:
         movem   4,(2)
-        move    4,[0174457554151]      ; SIXBIT //DOMAI/
-        movem   4,1(2)
-        movsi   4,0560000              ; SIXBIT /N     /
-        movem   4,2(2)
+        movem   5,1(2)
+        movem   6,2(2)
         jrst    pdp10_ret_zero

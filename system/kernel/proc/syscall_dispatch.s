@@ -71,15 +71,14 @@ native_sys_map_one:
         pushj   17,vm_user_mapping_hold
         pushj   17,vm_user_words
         jumpn   1,native_sys_map_one_ok
-        pushj   17,vm_user_mapping_release
+        jrst    vm_user_mapping_release
 native_sys_map_one_ok:
         popj    17,
 
 ; Common return for syscalls that retained a physical user mapping across a
 ; potentially blocking kernel call.  The release helper preserves AC1.
 native_sys_mapped_return:
-        pushj   17,vm_user_mapping_release
-        popj    17,
+        jrst    vm_user_mapping_release
 
 ; UUO 043 WRITE_CHARS: AC1 fd, AC2 9-bit byte pointer, AC3 chars.
 ; Preserve the one-trap bulk ABI for ordinary files and future pipe streams.
@@ -324,8 +323,7 @@ native_sys_lookup_user_path:
         jumpn   1,native_sys_lookup_user_path_bad
         move    1,(17)
         pop     17,0
-        pushj   17,vm_user_mapping_release
-        popj    17,
+        jrst    vm_user_mapping_release
 native_sys_lookup_user_path_bad:
         pop     17,0
         pushj   17,vm_user_mapping_release
@@ -475,8 +473,7 @@ native_sys_wait_bad:
 
 native_sys_extctl:
         hrrz    1,1
-        caie    1,020                  ; SYS_EXT_PIPE
-        jrst    native_sys_ext_nonpipe
+        cain    1,020                  ; SYS_EXT_PIPE
         jrst    pipe_create
 native_sys_ext_nonpipe:
         caie    1,021                  ; SYS_EXT_MKFIFO
@@ -525,8 +522,6 @@ native_sys_putchar_call:
         jrst    pdp10_ret_neg1
 %L136:
         halt    .
-        seto    1,
-        jrst    %L65
 %L137:
         seto    1,
 ; Leave the native syscall result in AC1 for mach_syscall.

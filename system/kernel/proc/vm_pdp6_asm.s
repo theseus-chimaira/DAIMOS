@@ -42,10 +42,9 @@ vm_user_words:
 vm_user_mapping_hold:
         push    17,0
         push    17,5
-        move    0,proc_current_slot
-        move    5,0
+        move    5,proc_current_slot
         lsh     5,1
-        add     5,0
+        add     5,proc_current_slot
         add     5,proc_table
         hlrz    0,(5)
         jumpe   0,vm_user_mapping_hold_done
@@ -62,10 +61,9 @@ vm_user_mapping_hold_done:
 vm_user_mapping_release:
         push    17,0
         push    17,5
-        move    0,proc_current_slot
-        move    5,0
+        move    5,proc_current_slot
         lsh     5,1
-        add     5,0
+        add     5,proc_current_slot
         add     5,proc_table
         hlrz    0,(5)
         jumpe   0,vm_user_mapping_release_done

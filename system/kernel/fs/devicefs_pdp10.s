@@ -324,8 +324,7 @@ devicefs_readchar:
         hrrz    4,1
         pushj   17,devicefs_validate_id
         jumpn   1,pdp10_ret_neg1
-        caie    6,020002
-        jrst    devicefs_readchar_not_io
+        cain    6,020002
         jrst    pdp10_ret_busy          ; VFS_DEVICE_IO
 
 devicefs_readchar_not_io:

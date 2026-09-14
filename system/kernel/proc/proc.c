@@ -118,13 +118,13 @@ extern int proc_tty_session_has(unsigned int session, unsigned int pgrp,
 void
 proc_tty_release_session(unsigned int session, unsigned int leaving_slot)
 {
-        unsigned int i;
+        int i;
 
         if (session == 0U)
                 return;
         if (proc_tty_session_has(session, 0U, leaving_slot))
                 return;
-        for (i = 0U; i < PROC_TTY_COUNT; ++i) {
+        for (i = 0; i < (int)PROC_TTY_COUNT; ++i) {
                 unsigned int record;
 
                 record = (unsigned int)proc_tty_records[i];
@@ -139,10 +139,12 @@ proc_slot_discard(unsigned int slot)
 {
         struct proc *p;
 
-        /* Process slots are bounded small positive table indices. */
+#ifndef __PDP10__
+        /* Target caller has already claimed this concrete slot. */
         if (proc_table == 0 || (int)slot <= 0 ||
             (int)slot >= (int)proc_slots)
                 return -1;
+#endif
         p = &proc_table[slot];
         if (PROC_IS_FREE(p))
                 return 0;
@@ -186,9 +188,14 @@ proc_adopt_children(unsigned int old_parent)
         unsigned int new_parent;
 
         new_parent = 0U;
+#ifdef __PDP10__
+        if (old_parent != 1U && !PROC_IS_FREE_OR_ZOMB(&proc_table[1]))
+                new_parent = 1U;
+#else
         if (old_parent != 1U && proc_slots > 1U &&
             !PROC_IS_FREE_OR_ZOMB(&proc_table[1]))
                 new_parent = 1U;
+#endif
         for (i = 1; i < (int)proc_high_slot; ++i) {
                 struct proc *child;
                 unsigned int state;
@@ -518,8 +525,10 @@ proc_nice_current(int value)
         unsigned int encoded;
 
         slot = (int)proc_current_slot;
+#ifndef __PDP10__
         if (proc_table == 0 || slot == 0 || slot >= (int)proc_slots)
                 return -1;
+#endif
         if (value < PROC_NICE_MIN)
                 value = PROC_NICE_MIN;
         if (value > PROC_NICE_MAX)
