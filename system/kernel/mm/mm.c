@@ -338,10 +338,8 @@ mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
         if (rc != MM_ERR_NOMEM && rc != MM_ERR_FRAGMENTED) {
                 return rc;
         }
-        if (proc_swap_reclaim(words, alignment,
-            type == MM_TYPE_PROCESS ? owner : PROC_NO_SLOT) != 0) {
-                return MM_ERR_NOMEM;
-        }
+        (void)proc_swap_reclaim(words, alignment,
+            type == MM_TYPE_PROCESS ? owner : PROC_NO_SLOT);
         rc = mm_alloc_aligned_noreclaim(words, alignment, type, owner,
             preference, basep);
         if (rc == MM_ERR_FRAGMENTED) {

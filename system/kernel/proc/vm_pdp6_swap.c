@@ -341,21 +341,17 @@ proc_swap_reclaim(kword_t words, kword_t alignment,
     unsigned int exclude_owner)
 {
         int victim;
-        int swapped;
 
-        (void)alignment;
         if (proc_swap_records == 0 || proc_table == 0)
                 return -1;
-        swapped = 0;
         for (;;) {
                 victim = proc_swap_victim(exclude_owner);
                 if (victim < 0)
                         break;
                 if (proc_swap_out(victim) != 0)
                         break;
-                swapped = 1;
-                if ((long)mm_total_free() >= (long)words)
+                if (mm_compact(words, alignment) == MM_OK)
                         return 0;
         }
-        return swapped ? 0 : -1;
+        return -1;
 }
