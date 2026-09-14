@@ -13,6 +13,9 @@ extern kword_t __kinit_late_end;
 extern kword_t __kinit_image_end;
 extern kword_t cty_mres_package;
 extern kword_t mres_source_end;
+#if KINIT_STACK_WATERMARK
+extern kword_t kinit_stack_highwater;
+#endif
 
 /*
  * Finish boot from the only KINIT text which remains reserved after the main
@@ -114,6 +117,15 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
          * this final code range: no allocator runs before the no-return user
          * transition, so the physically unchanged instructions and stack stay
          * safe until vm_enter_initial_user() leaves them forever. */
+#if KINIT_STACK_WATERMARK
+        {
+                unsigned int used_words;
+
+                used_words = kinit_stack_watermark_measure();
+                if ((kword_t)used_words > kinit_stack_highwater)
+                        kinit_stack_highwater = (kword_t)used_words;
+        }
+#endif
         mach_kernel_stack_base = idle_stack_base;
         if (mm_add_free(late_base, late_end - late_base) != MM_OK ||
             mm_add_free(image_end, reclaim_end - image_end) != MM_OK)

@@ -11,6 +11,9 @@
 extern kword_t sys_resident_words_immediate;
 extern kword_t __kcore_load_end;
 extern kword_t __kinit_image_end;
+#if KINIT_STACK_WATERMARK
+extern kword_t kinit_stack_highwater;
+#endif
 void kinit_late_handoff(kword_t stack_base, kword_t reclaim_end);
 
 static unsigned int mres_next_addr;
@@ -21,6 +24,18 @@ unsigned int mres_last_image_words;
 static const kword_t *module_mres_package;
 static unsigned int module_services[MODULE_SERVICE_COUNT];
 kword_t kinit_boot_handoff[2];
+
+#if KINIT_STACK_WATERMARK
+static void
+kinit_stack_watermark_record(void)
+{
+        unsigned int used_words;
+
+        used_words = kinit_stack_watermark_measure();
+        if ((kword_t)used_words > kinit_stack_highwater)
+                kinit_stack_highwater = (kword_t)used_words;
+}
+#endif
 
 static unsigned int
 mres_reloc_code(const kword_t *map, unsigned int word)
@@ -303,12 +318,18 @@ module_run_minits(void)
 void
 kinit_enter(void)
 {
-#ifdef KINIT_DEBUG
-        KINIT_TRACE(KINIT_ENTER);
-#endif
         unsigned int memory_kwords;
         kword_t kernel_stack_base;
 
+#if KINIT_STACK_WATERMARK
+        /* kinit_enter() has already allocated its fixed frame.  Mark only
+         * words above the live pushdown pointer; the unmarked prefix is
+         * therefore counted as used by the final high-water scan. */
+        kinit_stack_watermark_begin();
+#endif
+#ifdef KINIT_DEBUG
+        KINIT_TRACE(KINIT_ENTER);
+#endif
         kcore_load();
         memory_kwords = kinit_memory_kwords();
         {
@@ -348,6 +369,9 @@ kinit_enter(void)
         kinit_diag_system(memory_kwords);
         mres_init();
         module_run_minits();
+#if KINIT_STACK_WATERMARK
+        kinit_stack_watermark_record();
+#endif
         /* Dynamic kernel objects begin only after the packed permanent MRES
          * block is complete.  This keeps KCORE+MRES gapless in low memory. */
         if (mm_alloc(KERNEL_IDLE_STACK_WORDS, MM_TYPE_KERNEL_DYNAMIC, 2U,
@@ -382,9 +406,15 @@ kinit_enter(void)
                 kinit_diag_finished();
 #endif
                 kinit_boot(future_free_words);
+#if KINIT_STACK_WATERMARK
+                kinit_stack_watermark_record();
+#endif
         }
         if (proc_boot_init() != 0)
                 kinit_halt();
+#if KINIT_STACK_WATERMARK
+        kinit_stack_watermark_record();
+#endif
         {
                 kword_t reclaim_end;
                 kword_t image_end;

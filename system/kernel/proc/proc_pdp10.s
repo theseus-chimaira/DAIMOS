@@ -1184,10 +1184,17 @@ proc_idle_wait:
         jrst    proc_idle_loop
 
         .bss
+.if KINIT_STACK_WATERMARK
+        .globl  kinit_stack_highwater
+.endif
 .if PROC_STACK_WATERMARK
 proc_stack_highwater:
         .long   0
 kernel_idle_stack_highwater:
+        .long   0
+.endif
+.if KINIT_STACK_WATERMARK
+kinit_stack_highwater:
         .long   0
 .endif
 

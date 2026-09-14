@@ -12,7 +12,9 @@ typedef unsigned long kword_t;
 #define KINIT_HALF_MASK          0777777UL
 #define KINIT_KCORE_BASE         000060UL
 #define KINIT_IMAGE_BASE         030000UL
-#define KINIT_STACK_RESERVE_WORDS 04000UL
+#ifndef KINIT_STACK_RESERVE_WORDS
+#define KINIT_STACK_RESERVE_WORDS 02000UL
+#endif
 #define KERNEL_IDLE_STACK_WORDS   00100UL
 #define KINIT_BOOT_WORD0         000040UL
 #define KINIT_BOOT_WORD1         000041UL
@@ -29,6 +31,10 @@ unsigned int kinit_memory_kwords(void);
 void kinit_apr_clear(void);
 void kinit_diag_banner(void);
 void kinit_diag_system(unsigned int memory_kwords);
+#if KINIT_STACK_WATERMARK
+void kinit_stack_watermark_begin(void);
+unsigned int kinit_stack_watermark_measure(void);
+#endif
 
 void kinit_put6(kword_t word);
 void kinit_put6_spaces(unsigned int words);

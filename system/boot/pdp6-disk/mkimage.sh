@@ -3,7 +3,7 @@
 set -eu
 
 fail() { echo "mkimage: $*" >&2; exit 1; }
-map= input= kcore= kcore_map= output= core_words=0100000
+map= input= kcore= kcore_map= output= core_words=0100000 stack_words=02000
 while [ "$#" -gt 0 ]; do
         case $1 in
         --map) map=$2; shift 2 ;;
@@ -12,6 +12,7 @@ while [ "$#" -gt 0 ]; do
         --kcore-map) kcore_map=$2; shift 2 ;;
         --output) output=$2; shift 2 ;;
         --core-words) core_words=$2; shift 2 ;;
+        --stack-words) stack_words=$2; shift 2 ;;
         *) fail "unknown argument: $1" ;;
         esac
 done
@@ -32,11 +33,14 @@ sym()
 
 IMAGE_BASE=$((030000))
 KCORE_BASE=$((060))
-KINIT_MIN_STACK_WORDS=$((04000))
 case $core_words in
 *[!0-7]*) fail "invalid octal core size: $core_words" ;;
 esac
+case $stack_words in
+*[!0-7]*) fail "invalid octal stack reserve: $stack_words" ;;
+esac
 KINIT_CORE_TOP=$((0$core_words))
+KINIT_MIN_STACK_WORDS=$((0$stack_words))
 HALF_MASK=$((0777777))
 DAIMON_MAGIC=$((0444151555756))
 image_start=$((0$(sym "$map" __kinit_image_start)))
@@ -49,7 +53,7 @@ kcore_init_end=$((0$(sym "$kcore_map" __kcore_low_init_end)))
 [ "$image_start" -eq "$IMAGE_BASE" ] && [ "$image_start" -lt "$image_end" ] && \
     [ "$image_end" -le "$HALF_MASK" ] || fail "invalid KINIT image bounds"
 [ "$KINIT_CORE_TOP" -ge "$KINIT_MIN_STACK_WORDS" ] || fail "configured core is smaller than the KINIT stack reserve"
-[ "$image_end" -le $((KINIT_CORE_TOP - KINIT_MIN_STACK_WORDS)) ] || fail "KINIT image leaves less than 2K words of stack in configured core"
+[ "$image_end" -le $((KINIT_CORE_TOP - KINIT_MIN_STACK_WORDS)) ] || fail "KINIT image leaves less than the configured stack reserve"
 [ "$image_start" -le "$load_begin" ] && [ "$load_begin" -le "$load_end" ] && \
     [ "$load_end" -le "$image_end" ] || fail "invalid KCORE load slot"
 [ "$image_start" -le "$entry" ] && [ "$entry" -lt "$image_end" ] || fail "invalid KINIT entry"

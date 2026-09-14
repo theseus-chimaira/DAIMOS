@@ -11,6 +11,8 @@ PDP10_CC != cc="${CC}"; case "$$cc" in kcc) echo "${PDP10_PREFIX}/bin/kcc" ;; gc
 CFLAGS = -std=gnu99 -Os -march=pdp6 -mcpu=pdp6
 MKBOOTBANNER ?= ${PDP10_PREFIX}/bin/mkbootbanner
 KINIT_DEBUG ?= 0
+KINIT_STACK_RESERVE_WORDS ?= 02000
+KINIT_STACK_WATERMARK ?= 0
 DTFS_TENEX ?= 0
 DTFS_ITS ?= 0
 PROC_BOOT_USERS ?= 1
@@ -236,7 +238,7 @@ kcore: ${KCORE_FIXED_ASM} ${MRES_ASM}
 
 ${KINIT_C_ASM} ${KINIT_LATE_C_ASM}: ${KINIT_SRCS} ${KINIT_LATE_SRCS} ${KERNEL_HEADERS} ${VERSION_FILE}
 	@mkdir -p ${BUILD}
-	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_CC} ${CFLAGS} -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
+	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_CC} ${CFLAGS} -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DKINIT_STACK_RESERVE_WORDS=${KINIT_STACK_RESERVE_WORDS} -DKINIT_STACK_WATERMARK=${KINIT_STACK_WATERMARK} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
 
 ${BUILD}/bootbanner_generated.s: ${VERSION_FILE}
 	@mkdir -p ${BUILD}
@@ -273,9 +275,13 @@ ${BUILD}/dtfs.s: fs/dtfs.c fs/dtfs_chain_walk_pdp10.s fs/dtfs_resize_pdp10.s ${K
 	${PDP10_CC} ${CFLAGS} -DDTFS_ENABLE_TENEX=${DTFS_TENEX} -DDTFS_ENABLE_ITS=${DTFS_ITS} ${INCLUDES} -S fs/dtfs.c -o $@.c
 	@cat $@.c > $@; if test "${DTFS_TENEX}" = 1 -o "${DTFS_ITS}" = 1; then cat fs/dtfs_chain_walk_pdp10.s fs/dtfs_resize_pdp10.s >> $@; fi; rm -f $@.c
 
+${BUILD}/kinit_io.s: boot/kinit_io.s
+	@mkdir -p ${BUILD}
+	{ echo ".set KINIT_STACK_WATERMARK,${KINIT_STACK_WATERMARK}"; echo ".set KINIT_STACK_RESERVE_WORDS,${KINIT_STACK_RESERVE_WORDS}"; cat boot/kinit_io.s; } > $@
+
 ${BUILD}/proc_pdp10.s: proc/proc_pdp10.s
 	@mkdir -p ${BUILD}
-	{ echo ".set PROC_STACK_WATERMARK,${PROC_STACK_WATERMARK}"; cat proc/proc_pdp10.s; } > $@
+	{ echo ".set PROC_STACK_WATERMARK,${PROC_STACK_WATERMARK}"; echo ".set KINIT_STACK_WATERMARK,${KINIT_STACK_WATERMARK}"; cat proc/proc_pdp10.s; } > $@
 
 ${BUILD}/proc_run_pdp10.s: proc/proc_run_pdp10.s
 	@mkdir -p ${BUILD}
@@ -321,7 +327,6 @@ COPY_ASM_SRCS = core/ret_pdp10.s \
 	drivers/dsk_io.s \
 	drivers/tape_io.s \
 	drivers/slv_io.s \
-	boot/kinit_io.s \
 	modules/module_io.s \
 	boot/kinit_late_begin.s \
 	boot/kinit_late_end.s
@@ -362,7 +367,6 @@ COPY_ASM_TARGETS = $(BUILD)/ret_pdp10.s \
 	$(BUILD)/dsk_io.s \
 	$(BUILD)/tape_io.s \
 	$(BUILD)/slv_io.s \
-	$(BUILD)/kinit_io.s \
 	$(BUILD)/module_io.s \
 	$(BUILD)/kinit_late_begin.s \
 	$(BUILD)/kinit_late_end.s

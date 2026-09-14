@@ -14,8 +14,9 @@
         .entry __start
 __start:
         ; Keep the Stage1 pushdown list above the complete KINIT image.
-        ; KINIT may extend past 073040 before control is transferred.
-        movei 017,076000
+        ; 076400 leaves 768 words for Stage1 itself on a 32K machine while
+        ; permitting instrumented KINIT images to extend beyond 076000.
+        movei 017,076400
         pushj 017,install_bootstrap_sixbit
         setom 000040
         setom 000041

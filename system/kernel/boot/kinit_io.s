@@ -102,3 +102,42 @@ kinit_apr_clear:
 kinit_halt:
         halt .
         jrst kinit_halt
+
+.if KINIT_STACK_WATERMARK
+        .globl kinit_stack_watermark_begin
+        .globl kinit_stack_watermark_measure
+        .globl __kinit_image_end
+
+; Fill the unused portion of the disposable KINIT pushdown list.  The caller's
+; fixed frame and this PUSHJ return word are intentionally left unmarked so
+; they count as stack use in the final high-water measurement.
+kinit_stack_watermark_begin:
+        hrrz 01,017
+        addi 01,1
+        movei 02,__kinit_image_end
+        addi 02,KINIT_STACK_RESERVE_WORDS
+        move 03,[0525252525252]
+kinit_stack_watermark_fill:
+        camle 01,02
+        popj 017,
+        movem 03,0(01)
+        aoja 01,kinit_stack_watermark_fill
+
+; Return the highest stack word touched, measured from __kinit_image_end.
+; Scanning from the top tolerates arbitrary values in the initially live frame.
+kinit_stack_watermark_measure:
+        movei 02,__kinit_image_end
+        addi 02,KINIT_STACK_RESERVE_WORDS
+        movei 04,__kinit_image_end
+        move 03,[0525252525252]
+kinit_stack_watermark_scan:
+        came 03,0(02)
+        jrst kinit_stack_watermark_found
+        camle 02,04
+        sojg 02,kinit_stack_watermark_scan
+        move 02,04
+kinit_stack_watermark_found:
+        sub 02,04
+        move 01,02
+        popj 017,
+.endif
