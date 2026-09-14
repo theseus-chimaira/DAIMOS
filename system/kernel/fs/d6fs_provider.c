@@ -52,8 +52,7 @@ d6fs_provider_resize_fcb(vnode_t node,
         if (((unsigned int)(unsigned long)d6fs_provider_reader.opaque &
             D6FS_PROVIDER_MOUNT_WRITABLE) == 0U)
                 return -1;
-        __builtin_memcpy(old_fcb, fcb,
-            D6FS_FCB_RESERVED0 * sizeof(old_fcb[0]));
+        fs_copy_words(fcb, old_fcb, D6FS_FCB_RESERVED0);
         extent_count = (int)fi->extent_count;
         if (new_words == 0UL)
                 new_tail = 0U;
@@ -176,8 +175,7 @@ d6fs_provider_resize_fcb(vnode_t node,
 
 rollback:
         (void)d6fs_provider_free_file_tail(fcb, old_blocks);
-        __builtin_memcpy(fcb, old_fcb,
-            D6FS_FCB_RESERVED0 * sizeof(old_fcb[0]));
+        fs_copy_words(old_fcb, fcb, D6FS_FCB_RESERVED0);
         return -1;
 }
 
@@ -380,8 +378,7 @@ d6fs_provider_unlink(vnode_t dir, const struct vfs_name *name)
             fcb, &fi) != 0 ||
             (fi.flags & (D6FS_FLAG_NOUNLINK | D6FS_FLAG_IMMUTABLE)) != 0U)
                 return -1;
-        __builtin_memcpy(old_fcb, fcb,
-            D6FS_FCB_RESERVED0 * sizeof(old_fcb[0]));
+        fs_copy_words(fcb, old_fcb, D6FS_FCB_RESERVED0);
         if (fi.type == D6FS_TYPE_DIR && fi.size_words != 0UL) {
                 struct d6fs_dirent_info child;
                 unsigned int s;

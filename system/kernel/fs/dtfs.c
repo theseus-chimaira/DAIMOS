@@ -653,14 +653,19 @@ dtfs_create(vnode_t dir, const struct vfs_name *name,
     unsigned int mode, vnode_t *nodep)
 {
         unsigned int slot;
+#if DTFS_ENABLE_TENEX || DTFS_ENABLE_ITS
         unsigned int personality;
+#endif
 
         if (!dtfs_is_root(dir) || nodep == 0 || dtfs_load(dir) != 0 ||
             dtfs_scan_slot(dir, name, 0) != -1)
                 return -1;
+#if DTFS_ENABLE_TENEX || DTFS_ENABLE_ITS
         personality = dtfs_personality(dir);
+#endif
         if (dtfs_scan_slot(dir, 0, &slot) != 0)
                 return -1;
+#if DTFS_ENABLE_TENEX
         if (personality == DTFS_MEDIA_TENEX) {
                 unsigned int block;
 
@@ -681,7 +686,10 @@ dtfs_create(vnode_t dir, const struct vfs_name *name,
                         dtfs_dir[DTFS_TENEX_EXT_BASE + slot] = 0UL;
                         return -1;
                 }
-        } else if (personality == DTFS_MEDIA_ITS) {
+        } else
+#endif
+#if DTFS_ENABLE_ITS
+        if (personality == DTFS_MEDIA_ITS) {
                 if (dtfs_foreign_set_name(slot, name, 1) != 0)
                         return -1;
                 if (dtfs_commit(dir) != 0) {
@@ -689,7 +697,9 @@ dtfs_create(vnode_t dir, const struct vfs_name *name,
                         dtfs_dir[slot * 2U + 1U] = 0UL;
                         return -1;
                 }
-        } else {
+        } else
+#endif
+        {
                 dtfs_set_name(slot, name);
                 dtfs_set_last_words(slot, 0U);
                 dtfs_set_exec(slot, (mode & 0111U) != 0U);
@@ -707,19 +717,26 @@ int
 dtfs_unlink(vnode_t dir, const struct vfs_name *name)
 {
         unsigned int slot;
+#if DTFS_ENABLE_TENEX
         unsigned int block;
         unsigned int next;
         unsigned int blocks;
         unsigned int i;
+#endif
+#if DTFS_ENABLE_TENEX || DTFS_ENABLE_ITS
         unsigned int personality;
+#endif
         vnode_t node;
 
         if (!dtfs_is_root(dir) || dtfs_load(dir) != 0 ||
             dtfs_scan_slot(dir, name, &slot) != 0)
                 return -1;
+#if DTFS_ENABLE_TENEX || DTFS_ENABLE_ITS
         personality = dtfs_personality(dir);
+#endif
         node = VFS_NODE_PACKED(DTFS_PROVIDER,
             (VFS_MOUNT_ID(dir) << VFS_MOUNT_SHIFT) | DTFS_KIND_FILE, slot);
+#if DTFS_ENABLE_TENEX
         if (personality == DTFS_MEDIA_TENEX) {
                 blocks = dtfs_block_info(node, slot, &block);
                 if (blocks == 0U || block == 0U)
@@ -749,12 +766,16 @@ dtfs_unlink(vnode_t dir, const struct vfs_name *name)
                 }
                 return 0;
         }
+#endif
         if (dtfs_resize(node, 0U) != 0)
                 return -1;
+#if DTFS_ENABLE_ITS
         if (personality == DTFS_MEDIA_ITS) {
                 dtfs_dir[slot * 2U] = 0UL;
                 dtfs_dir[slot * 2U + 1U] = 0UL;
-        } else {
+        } else
+#endif
+        {
                 dtfs_clear_slot(slot);
         }
         return dtfs_commit(dir);
@@ -765,7 +786,9 @@ dtfs_rename(vnode_t olddir, const struct vfs_name *oldname,
     vnode_t newdir, const struct vfs_name *newname)
 {
         unsigned int slot;
+#if DTFS_ENABLE_TENEX || DTFS_ENABLE_ITS
         unsigned int personality;
+#endif
 
         if (!dtfs_is_root(olddir) || !dtfs_is_root(newdir) ||
             VFS_MOUNT_ID(olddir) != VFS_MOUNT_ID(newdir) ||
@@ -773,12 +796,15 @@ dtfs_rename(vnode_t olddir, const struct vfs_name *oldname,
             dtfs_scan_slot(olddir, oldname, &slot) != 0 ||
             dtfs_scan_slot(olddir, newname, 0) != -1)
                 return -1;
+#if DTFS_ENABLE_TENEX || DTFS_ENABLE_ITS
         personality = dtfs_personality(olddir);
         if (personality != 0U) {
                 if (dtfs_foreign_set_name(slot, newname,
                     personality == DTFS_MEDIA_ITS) != 0)
                         return -1;
-        } else {
+        } else
+#endif
+        {
                 dtfs_set_name(slot, newname);
         }
         return dtfs_commit(olddir);

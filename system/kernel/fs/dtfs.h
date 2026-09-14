@@ -38,37 +38,5 @@ int dtfs_sync(vnode_t node);
 int dtfs_dtc_read(unsigned int unit, unsigned int block, kword_t *buf);
 int dtfs_dtc_write(unsigned int unit, unsigned int block, kword_t *buf);
 
-/*
- * Counted Type-551 transfer ABI.  The resident service keeps the historical
- * one-block entry points; callers encode (count-1)*0200 in the LH of block.
- * This costs no extra MRES export or installed service pointer.
- */
-static inline int
-dtfs_dtc_read_run(unsigned int unit, unsigned int block,
-    unsigned int count, kword_t *buf)
-{
-        kword_t request;
-
-        if (count == 0U || block > 01101U ||
-            count > 01102U - block || buf == 0)
-                return -1;
-        request = (kword_t)block |
-            ((kword_t)(count - 1U) * 0200UL << 18);
-        return dtfs_dtc_read(unit, (unsigned int)request, buf);
-}
-
-static inline int
-dtfs_dtc_write_run(unsigned int unit, unsigned int block,
-    unsigned int count, kword_t *buf)
-{
-        kword_t request;
-
-        if (count == 0U || block > 01101U ||
-            count > 01102U - block || buf == 0)
-                return -1;
-        request = (kword_t)block |
-            ((kword_t)(count - 1U) * 0200UL << 18);
-        return dtfs_dtc_write(unit, (unsigned int)request, buf);
-}
 
 #endif

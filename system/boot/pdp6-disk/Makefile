@@ -13,6 +13,7 @@ MKDSK ?= $(PDP10_PREFIX)/bin/mkdsk
 MKD6FS ?= $(PDP10_PREFIX)/bin/mkd6fs
 LOGSTORE ?= $(PDP10_PREFIX)/bin/logstore
 SIMH_PDP6 ?= $(PDP10_PREFIX)/bin/pdp6
+BOOT_CORE_WORDS ?= 01000000
 PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
 PDP10_OBJDUMP ?= $(PDP10_PREFIX)/bin/pdp10-objdump
 
@@ -429,7 +430,8 @@ $(IMAGE_RAW): $(IMAGE_RIM) $(IMAGE_MAP)
 
 $(IMAGE_WORDS): $(IMAGE_RAW) $(IMAGE_MAP) $(KCORE_STREAM) $(KCORE_MAP) mkimage.sh
 	./mkimage.sh --map $(IMAGE_MAP) --input $(IMAGE_RAW) \
-	    --kcore $(KCORE_STREAM) --kcore-map $(KCORE_MAP) --output $@
+	    --kcore $(KCORE_STREAM) --kcore-map $(KCORE_MAP) \
+	    --core-words $(BOOT_CORE_WORDS) --output $@
 
 $(STAGE1_DXR): $(STAGE1_SRC) $(BUILD)
 	$(DAS) $(DASFLAGS) -k -o $@ $<

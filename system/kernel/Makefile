@@ -4,6 +4,11 @@ BUILD_ROOT ?= ${PROJECT_ROOT}/build
 BUILD ?= ${BUILD_ROOT}/system/kernel
 PDP10_PREFIX ?= ${HOME}/cross
 PDP10_GCC ?= ${PDP10_PREFIX}/bin/pdp10-dec-none-gcc
+# KCC is the normal compiler.  A command-line CC=gcc selects the existing
+# PDP-10 GCC driver; any other explicit CC value is used verbatim.
+CC = kcc
+PDP10_CC != cc="${CC}"; case "$$cc" in kcc) echo "${PDP10_PREFIX}/bin/kcc" ;; gcc) echo "${PDP10_GCC}" ;; *) echo "$$cc" ;; esac
+CFLAGS = -std=gnu99 -Os -march=pdp6 -mcpu=pdp6
 MKBOOTBANNER ?= ${PDP10_PREFIX}/bin/mkbootbanner
 KINIT_DEBUG ?= 0
 DTFS_TENEX ?= 0
@@ -17,7 +22,7 @@ VM_BACKEND_ASM = proc/vm_${VM_BACKEND}_asm.s
 VM_SWAP_C = proc/vm_${VM_BACKEND}_swap.c
 VERSION_FILE = ${PROJECT_ROOT}/VERSION
 DAIMON_VERSION != cat ${VERSION_FILE}
-INCLUDES = -I. -Iboot -Icore -Idrivers -Ifs -Iipc -Imm -Imodules -Iproc -Istorage
+INCLUDES = -I. -Iboot -Icore -Idrivers -Ifs -Iipc -Imm -Imodules -Iproc -Istorage -I${PDP10_PREFIX}/include
 
 KERNEL_HEADERS = boot/kboot.h \
 	boot/kinit.h \
@@ -231,7 +236,7 @@ kcore: ${KCORE_FIXED_ASM} ${MRES_ASM}
 
 ${KINIT_C_ASM} ${KINIT_LATE_C_ASM}: ${KINIT_SRCS} ${KINIT_LATE_SRCS} ${KERNEL_HEADERS} ${VERSION_FILE}
 	@mkdir -p ${BUILD}
-	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_GCC} -std=c99 -Os -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
+	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_CC} ${CFLAGS} -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
 
 ${BUILD}/bootbanner_generated.s: ${VERSION_FILE}
 	@mkdir -p ${BUILD}
@@ -239,15 +244,15 @@ ${BUILD}/bootbanner_generated.s: ${VERSION_FILE}
 
 ${KCORE_C_ASM}: ${KCORE_C_SRCS} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; ${PDP10_GCC} -std=c99 -Os -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S "$$src" -o "$@"
+	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; ${PDP10_CC} ${CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S "$$src" -o "$@"
 
 ${BUILD}/vm_backend.s: ${VM_BACKEND_C} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	${PDP10_GCC} -std=c99 -Os -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S ${VM_BACKEND_C} -o $@
+	${PDP10_CC} ${CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S ${VM_BACKEND_C} -o $@
 
 ${BUILD}/proc_swap.s: ${VM_SWAP_C} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	${PDP10_GCC} -std=c99 -Os -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S ${VM_SWAP_C} -o $@
+	${PDP10_CC} ${CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S ${VM_SWAP_C} -o $@
 
 ${BUILD}/vm_backend_asm.s: ${VM_BACKEND_ASM}
 	@mkdir -p ${BUILD}
@@ -255,17 +260,17 @@ ${BUILD}/vm_backend_asm.s: ${VM_BACKEND_ASM}
 
 ${BUILD}/d6fs.s: fs/d6fs.c ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	${PDP10_GCC} -std=c99 -Os ${INCLUDES} -S fs/d6fs.c -o $@
+	${PDP10_CC} ${CFLAGS} ${INCLUDES} -S fs/d6fs.c -o $@
 
 ${BUILD}/d6fs_provider.s: fs/d6fs_provider.c fs/d6fs_provider_mutation_pdp10.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	${PDP10_GCC} -std=c99 -Os ${INCLUDES} -S fs/d6fs_provider.c -o $@.c
+	${PDP10_CC} ${CFLAGS} ${INCLUDES} -S fs/d6fs_provider.c -o $@.c
 	cat $@.c fs/d6fs_provider_mutation_pdp10.s > $@
 	rm -f $@.c
 
 ${BUILD}/dtfs.s: fs/dtfs.c fs/dtfs_chain_walk_pdp10.s fs/dtfs_resize_pdp10.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	${PDP10_GCC} -std=c99 -Os -DDTFS_ENABLE_TENEX=${DTFS_TENEX} -DDTFS_ENABLE_ITS=${DTFS_ITS} ${INCLUDES} -S fs/dtfs.c -o $@.c
+	${PDP10_CC} ${CFLAGS} -DDTFS_ENABLE_TENEX=${DTFS_TENEX} -DDTFS_ENABLE_ITS=${DTFS_ITS} ${INCLUDES} -S fs/dtfs.c -o $@.c
 	@cat $@.c > $@; if test "${DTFS_TENEX}" = 1 -o "${DTFS_ITS}" = 1; then cat fs/dtfs_chain_walk_pdp10.s fs/dtfs_resize_pdp10.s >> $@; fi; rm -f $@.c
 
 ${BUILD}/proc_pdp10.s: proc/proc_pdp10.s
