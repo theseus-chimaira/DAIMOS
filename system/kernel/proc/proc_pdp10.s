@@ -15,6 +15,7 @@
         .equ    PROC_WAIT_EVENT_LH,020000
         .equ    PROC_WAIT_CHILD_LH,040000
         .equ    PROC_WAIT_INTR_LH,060000
+        .equ    PROC_SCHED_QUANTUM_TICKS,4
         .equ    PROC_TRANSITION_RH,0200000
         .equ    PROC_FILE_TABLE_OFFSET,047
         .equ    PROC_USTACK_BASE,0107
@@ -34,6 +35,7 @@
         .globl  proc_high_slot
         .globl  proc_current_slot
         .globl  proc_sched_cursor
+        .globl  proc_sched_deferred_ticks
         .globl  mach_kernel_stack_base
         .globl  proc_wait_event
         .globl  proc_wait_event_intr
@@ -1146,19 +1148,29 @@ proc_sched_tick_ready:
         move    1,pdp10_pi_level6
         tlnn    1,010000
         jrst    proc_sched_exec_tick
+
+        ; AC2 is already saved by clk_pi_service, so it is safe to use as the
+        ; one-word quantum counter without saving the full user context.
+        aos     2,proc_sched_deferred_ticks
+        caige   2,PROC_SCHED_QUANTUM_TICKS
+        jrst    proc_sched_tick_fast_return
         pushj   17,proc_save_user
         jrst    proc_sched_select
+proc_sched_tick_fast_return:
+        popj    17,
 proc_sched_exec_tick:
         move    1,proc_current_slot
         jumpe   1,proc_sched_select
         pushj   17,proc_slot_ptr
         hlrz    2,2(1)
         andi    2,PROC_STATE_LH_MASK
-        caie    2,PROC_STATE_SLEEP
+        caie    2,PROC_STATE_RUN
+        jrst    proc_sched_exec_switch
         popj    17,
-        ; Sleep is the only executive-tick case that needs the kernel
-        ; context saved.  Fall through directly instead of jumping to
-        ; the immediately following instruction.
+proc_sched_exec_switch:
+        ; SLEEP and STOP both require a switch.  In particular, a real clock
+        ; tick can coincide with a software reschedule request after TSTP;
+        ; clk_pi_service consumes that request before arriving here.
         pushj   17,proc_save_kernel
 proc_sched_select:
         pushj   17,proc_sched_tick_select

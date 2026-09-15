@@ -14,6 +14,7 @@
 #define PROC_WORDS             3U
 #define PROC_NO_SLOT         0400U
 #define PROC_SCHED_SWAP_REQUEST 0400UL
+#define PROC_SCHED_QUANTUM_TICKS    4U
 
 #define PROC_FREE   0U
 #define PROC_SIDL   1U
@@ -141,6 +142,7 @@ extern unsigned int proc_slots;
 extern unsigned int proc_high_slot;
 extern kword_t proc_current_slot;
 extern kword_t proc_sched_cursor;
+extern kword_t proc_sched_deferred_ticks;
 extern kword_t mach_kernel_stack_base;
 
 int proc_boot_init(void);

@@ -222,6 +222,9 @@ proc_sched_cursor:
 proc_sched_kick:
         .block 1                       ; unreachable PI offset 013
         .block 1                       ; PI7 stack slot, offset 014
+        .globl proc_sched_deferred_ticks
+proc_sched_deferred_ticks:
+        .block 1
 
         .text
 ; Save the PI state and suppress new priority interrupts while MM publishes a

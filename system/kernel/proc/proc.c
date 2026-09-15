@@ -618,12 +618,17 @@ proc_select_runnable(int account_tick)
 unsigned int
 proc_sched_resched_select(void)
 {
-        return proc_select_runnable(0);
+        int account_quantum;
+
+        account_quantum = proc_sched_deferred_ticks != 0UL;
+        proc_sched_deferred_ticks = 0UL;
+        return proc_select_runnable(account_quantum);
 }
 
 unsigned int
 proc_sched_tick_select(void)
 {
+        proc_sched_deferred_ticks = 0UL;
         return proc_select_runnable(1);
 }
 
