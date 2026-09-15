@@ -540,29 +540,61 @@ proc_nice_current(int value)
 }
 
 static unsigned int
-proc_select_runnable(void)
+proc_select_runnable(int account_tick)
 {
         int n;
         int limit;
         int best;
         int best_prio;
+        int cur;
+        int age_tick;
+        int slot;
 
         if (proc_table == 0 || (int)proc_high_slot <= 1)
                 return 0U;
         limit = (int)proc_high_slot;
         best = 0;
         best_prio = 0;
-        {
-                int slot;
+        cur = (int)proc_current_slot;
+        age_tick = 0;
+        if (account_tick && ++proc_sched_age_phase >= 64U) {
+                proc_sched_age_phase = 0U;
+                age_tick = 1;
+        }
 
-                slot = (int)(proc_sched_cursor & PROC_PGRP_MASK);
-                for (n = 1; n < limit; ++n) {
-                        struct proc *p;
-                        int prio;
+        slot = (int)(proc_sched_cursor & PROC_PGRP_MASK);
+        for (n = 1; n < limit; ++n) {
+                struct proc *p;
+                int prio;
 
-                        if (++slot >= limit)
-                                slot = 1;
-                        p = &proc_table[slot];
+                if (++slot >= limit)
+                        slot = 1;
+                p = &proc_table[slot];
+                if (account_tick && !PROC_IS_FREE(p)) {
+                        unsigned int cpu;
+
+                        cpu = PROC_CPU_PENALTY(p);
+                        if (cpu != 0U)
+                                --cpu;
+                        if (slot == cur && PROC_STATE(p) == PROC_SRUN &&
+                            !PROC_TRANSITION(p)) {
+                                cpu += 2U;
+                                if (cpu > (unsigned int)PROC_CPU_MASK)
+                                        cpu = (unsigned int)PROC_CPU_MASK;
+                        }
+                        proc_set_cpu(p, cpu);
+                        if (PROC_STATE(p) == PROC_SLEEP) {
+                                unsigned int age;
+
+                                age = PROC_SLEEP_AGE(p);
+                                if (age_tick &&
+                                    age < (unsigned int)PROC_SLEEP_MASK)
+                                        ++age;
+                                proc_set_sleep_age(p, age);
+                        } else if (PROC_SLEEP_AGE(p) != 0U) {
+                                proc_set_sleep_age(p, 0U);
+                        }
+                }
                 if (PROC_STATE(p) != PROC_SRUN || PROC_TRANSITION(p))
                         continue;
                 if (!VM_SPACE_ACTIVE(p) && !proc_swap_is_swapped(slot))
@@ -571,7 +603,6 @@ proc_select_runnable(void)
                 if (best == 0 || prio < best_prio) {
                         best = slot;
                         best_prio = prio;
-                }
                 }
         }
         if (best != 0) {
@@ -587,56 +618,13 @@ proc_select_runnable(void)
 unsigned int
 proc_sched_resched_select(void)
 {
-        return proc_select_runnable();
+        return proc_select_runnable(0);
 }
 
 unsigned int
 proc_sched_tick_select(void)
 {
-        int cur;
-        int i;
-        int limit;
-        int age_tick;
-
-        if (proc_table == 0 || (int)proc_high_slot <= 1)
-                return 0U;
-        cur = (int)proc_current_slot;
-        limit = (int)proc_high_slot;
-        age_tick = 0;
-        if (++proc_sched_age_phase >= 64U) {
-                proc_sched_age_phase = 0U;
-                age_tick = 1;
-        }
-
-        for (i = 1; i < limit; ++i) {
-                struct proc *p;
-                unsigned int cpu;
-
-                p = &proc_table[i];
-                if (PROC_IS_FREE(p))
-                        continue;
-                cpu = PROC_CPU_PENALTY(p);
-                if (cpu != 0U)
-                        --cpu;
-                if (i == cur && PROC_STATE(p) == PROC_SRUN &&
-                    !PROC_TRANSITION(p)) {
-                        cpu += 2U;
-                        if (cpu > (unsigned int)PROC_CPU_MASK)
-                                cpu = (unsigned int)PROC_CPU_MASK;
-                }
-                proc_set_cpu(p, cpu);
-                if (PROC_STATE(p) == PROC_SLEEP) {
-                        unsigned int age;
-
-                        age = PROC_SLEEP_AGE(p);
-                        if (age_tick && age < (unsigned int)PROC_SLEEP_MASK)
-                                ++age;
-                        proc_set_sleep_age(p, age);
-                } else if (PROC_SLEEP_AGE(p) != 0U) {
-                        proc_set_sleep_age(p, 0U);
-                }
-        }
-        return proc_select_runnable();
+        return proc_select_runnable(1);
 }
 
 int
