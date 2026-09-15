@@ -13,10 +13,11 @@
         .globl __start
         .entry __start
 __start:
-        ; Keep the Stage1 pushdown list above the complete KINIT image.
-        ; 076400 leaves 768 words for Stage1 itself on a 32K machine while
-        ; permitting instrumented KINIT images to extend beyond 076000.
-        movei 017,076400
+        ; Keep the Stage1 pushdown list below the KINIT load window.
+        ; Stage1 plus BSS occupies only low core, while KINIT always starts at
+        ; 030000.  Starting at 020000 therefore leaves 4096 words of stack
+        ; headroom and cannot be overwritten as KINIT grows toward top of core.
+        movei 017,020000
         pushj 017,install_bootstrap_sixbit
         setom 000040
         setom 000041

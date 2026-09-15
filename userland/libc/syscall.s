@@ -38,6 +38,7 @@
         .globl dsys_getpid
         .globl dsys_procctl
         .globl dsys_pipe
+        .globl dsys_exec
 
 dsys_exit:             uuo 040,0(1)
                        popj 17,
@@ -100,6 +101,10 @@ dsys_getpid:           uuo 076,0
 dsys_procctl:          uuo 077,0(1)
                        popj 17,
 dsys_pipe:             movei 1,020
+                       uuo 077,0(1)
+                       popj 17,
+dsys_exec:             move 2,1
+                       movei 1,022
                        uuo 077,0(1)
                        popj 17,
         .globl dsys_mkfifo

@@ -44,9 +44,13 @@
 #define DPY_X_PUTWORD           1U
 #define DPY_X_CLK_PI_SERVICE_CALL 2U
 #define TTY_X_PUTCHAR           0U
-#define TTY_X_CTY_PUTCHAR_ADDR  1U
-#define TTY_X_DCS_PUTCHAR_ADDR  2U
-#define TTY_X_GE_PUTCHAR_ADDR   3U
+#define TTY_X_GETCHAR           1U
+#define TTY_X_CTY_PUTCHAR_ADDR  2U
+#define TTY_X_DCS_PUTCHAR_ADDR  3U
+#define TTY_X_GE_PUTCHAR_ADDR   4U
+#define TTY_X_CTY_GETCHAR_ADDR  5U
+#define TTY_X_DCS_GETCHAR_ADDR  6U
+#define TTY_X_GE_GETCHAR_ADDR   7U
 #define WCNSLS_X_READ           0U
 #define OCNSLS_X_READ           0U
 #define TAPE_X_HANDLER           0U
@@ -698,13 +702,21 @@ tty_minit(void)
         unsigned int cty_putchar;
         unsigned int dcs_putchar;
         unsigned int ge_putchar;
+        unsigned int cty_getchar;
+        unsigned int dcs_getchar;
+        unsigned int ge_getchar;
         unsigned int address;
+        unsigned int service;
 
         name = (kword_t)SIXBIT("TTY   ");
         cty_putchar = diag_putchar_addr;
         dcs_putchar = module_service_get(MODULE_SERVICE_DCS_PUTCHAR);
         ge_putchar = module_service_get(MODULE_SERVICE_GE_PUTCHAR);
-        if (cty_putchar == 0U && dcs_putchar == 0U && ge_putchar == 0U) {
+        cty_getchar = module_service_get(MODULE_SERVICE_CTY_GETCHAR);
+        dcs_getchar = module_service_get(MODULE_SERVICE_DCS_GETCHAR);
+        ge_getchar = module_service_get(MODULE_SERVICE_GE_GETCHAR);
+        if (cty_putchar == 0U && dcs_putchar == 0U && ge_putchar == 0U &&
+            cty_getchar == 0U && dcs_getchar == 0U && ge_getchar == 0U) {
                 minit_diag_nodev(name);
                 return;
         }
@@ -722,8 +734,24 @@ tty_minit(void)
         if (ge_putchar != 0U)
                 storage_patch_module_jump(base,
                     (kword_t *)(unsigned long)address, ge_putchar);
-        module_service_set(MODULE_SERVICE_TTY_PUTCHAR,
-            minit_export(name, base, TTY_X_PUTCHAR));
+        address = minit_export(name, base, TTY_X_CTY_GETCHAR_ADDR);
+        if (cty_getchar != 0U)
+                storage_patch_module_jump(base,
+                    (kword_t *)(unsigned long)address, cty_getchar);
+        address = minit_export(name, base, TTY_X_DCS_GETCHAR_ADDR);
+        if (dcs_getchar != 0U)
+                storage_patch_module_jump(base,
+                    (kword_t *)(unsigned long)address, dcs_getchar);
+        address = minit_export(name, base, TTY_X_GE_GETCHAR_ADDR);
+        if (ge_getchar != 0U)
+                storage_patch_module_jump(base,
+                    (kword_t *)(unsigned long)address, ge_getchar);
+
+        service = minit_export(name, base, TTY_X_PUTCHAR);
+        module_service_set(MODULE_SERVICE_TTY_PUTCHAR, service);
+        storage_patch_jump(&native_sys_putchar_call, service);
+        service = minit_export(name, base, TTY_X_GETCHAR);
+        storage_patch_jump(&native_sys_getchar_call, service);
         minit_diag_loaded(name);
 }
 

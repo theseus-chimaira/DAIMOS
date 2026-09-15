@@ -222,6 +222,7 @@ IMAGE_WORDS = $(BUILD)/kinit.words
 USERLAND_BUILD_ROOT = $(BUILD)/userland-build
 DSH_DXR = $(USERLAND_BUILD_ROOT)/userland/dsh.dxr
 SYSTEM_INIT_DXR ?= $(DSH_DXR)
+SYSTEM_DSH_DXR ?= $(DSH_DXR)
 USERLAND_INPUTS = $(PROJECT_ROOT)/userland/libc/Makefile \
 	$(PROJECT_ROOT)/userland/libc/crt0.s \
 	$(PROJECT_ROOT)/userland/libc/dsys.h \
@@ -348,8 +349,10 @@ $(DPY_MRES_OBJ): $(BUILD)/dpy_io.dobj $(KCORE_MAP)
 
 $(TTY_MRES_OBJ): $(BUILD)/tty_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/tty-mres.dxr -M $(BUILD)/tty-mres.map \
-	    -R $@ -N tty_mres_package -X tty_putchar -X tty_cty_putchar_address \
-	    -X tty_dcs_putchar_address -X tty_ge_putchar_address $(BUILD)/tty_io.dobj
+	    -R $@ -N tty_mres_package -X tty_putchar -X tty_getchar -X tty_cty_putchar_address \
+	    -X tty_dcs_putchar_address -X tty_ge_putchar_address \
+	    -X tty_cty_getchar_address -X tty_dcs_getchar_address \
+	    -X tty_ge_getchar_address $(BUILD)/tty_io.dobj
 
 $(WCNSLS_MRES_OBJ): $(BUILD)/wcnsls_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/wcnsls-mres.dxr -M $(BUILD)/wcnsls-mres.map \
@@ -444,7 +447,7 @@ $(STAGE1_TAPE): $(STAGE1_DXR)
 	$(DXRCONVERT) --pdp6-readin -b 060 $< $@
 	printf '\252' >> $@
 
-$(DISK_IMAGE): $(IMAGE_WORDS) $(SYSTEM_INIT_DXR)
+$(DISK_IMAGE): $(IMAGE_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_DSH_DXR)
 	rm -rf $(DISK_DIR)
 	$(MKDSK) -n 1 -m clean -p $(IMAGE_WORDS) -o $(DISK_DIR) \
 	    --d6fs-layout --logstore-blocks $(D6FS_LOGSTORE_BLOCKS) \
@@ -452,7 +455,9 @@ $(DISK_IMAGE): $(IMAGE_WORDS) $(SYSTEM_INIT_DXR)
 	$(MKD6FS) -n 1 -d $(DISK_DIR) \
 	    -D /MOUNT/RAMFS0:0755 -D /TEMP:0555 \
 	    -D /MOUNT/DT0:0755 -D /MOUNT/DT1:0755 -D /MOUNT/DT2:0755 \
-	    -f "/SYSTEM/INIT:$(SYSTEM_INIT_DXR):555:dxr"
+	    -D /SYSTEM/EXEC:0555 \
+	    -f "/SYSTEM/INIT:$(SYSTEM_INIT_DXR):555:dxr" \
+	    -f "/SYSTEM/EXEC/DSH:$(SYSTEM_DSH_DXR):555:dxr"
 	$(LOGSTORE) -n 1 -d $(DISK_DIR) --init
 
 $(SIMH_INI): simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE)

@@ -857,10 +857,12 @@ proc_control_tty_setfg:
         pop     17,4                   ; tty id
         jumpe   1,pdp10_ret_neg1
         move    5,proc_tty_records(4)
-        andi    5,0377
-        move    6,2
+        move    6,5
+        lsh     6,-010
+        andi    6,0377                  ; old foreground pgrp
+        xor     6,2                     ; changed pgrp bits only
         lsh     6,010
-        ior     5,6
+        xor     5,6                     ; preserve session and deferred input
         movem   5,proc_tty_records(4)
         move    1,2
         popj    17,

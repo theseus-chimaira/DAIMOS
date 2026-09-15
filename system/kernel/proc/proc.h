@@ -124,6 +124,8 @@
 #define PROC_TTY_DETACHED               1U
 #define PROC_TTY_ATTACHED_BASE          2U
 #define PROC_TTY_COUNT                  21U
+#define PROC_TTY_PENDING_SHIFT           16U
+#define PROC_TTY_PENDING_MASK          0777UL
 #define PROC_ZOMB_SESSION_MASK       0377UL
 #define PROC_ZOMB_SESSION_SHIFT          0U
 #define PROC_ZOMB_DOMAIN_MASK        0377UL
@@ -161,7 +163,10 @@ int proc_slot_discard(unsigned int slot);
 int proc_child_hierarchy(unsigned int child_slot, unsigned int mode,
     unsigned int requested_pgrp);
 int proc_tty_read_enter(void);
-int proc_tty_input(unsigned int ch);
+int proc_tty_input(unsigned int tty, unsigned int ch);
+int proc_tty_output(unsigned int ch);
+int proc_tty_pending_take(unsigned int tty);
+int proc_tty_pending_store(unsigned int tty, unsigned int ch);
 void proc_sched_resched_current(void);
 kword_t proc_scope_id(const struct proc *p);
 int proc_wait_child(void);

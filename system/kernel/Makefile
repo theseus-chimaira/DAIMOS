@@ -7,7 +7,7 @@ PDP10_GCC ?= ${PDP10_PREFIX}/bin/pdp10-dec-none-gcc
 # KCC is the normal compiler.  A command-line CC=gcc selects the existing
 # PDP-10 GCC driver; any other explicit CC value is used verbatim.
 CC = kcc
-KCCFLAGS ?= -Pgnu99 -O -x=pdp6 -m=gas
+KCCFLAGS ?= -Pgnu99 -O2 -x=pdp6 -m=gas
 GCCFLAGS ?= -std=gnu99 -Os -march=pdp6 -mcpu=pdp6
 CFLAGS ?=
 PDP10_CC != cc="${CC}"; case "$$cc" in kcc) echo "${PDP10_PREFIX}/bin/kcc" ;; gcc) echo "${PDP10_GCC}" ;; *) echo "$$cc" ;; esac

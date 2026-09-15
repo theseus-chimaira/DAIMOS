@@ -1,7 +1,8 @@
 ; ge_io.s -- compact interrupt-driven PDP-6 GE/GTY driver.
 ;
-; GE/GTY owns PI4 independently.  DCS uses PI2, so this handler contains only
-; the two GE terminal devices and needs no cross-driver dispatch glue.
+; GE/GTY owns PI4 independently.  One hardware input path serves four logical
+; consoles.  Readers request one console; bytes for another console are
+; deferred in that logical TTY's existing process-session record.
 
         .globl devicefs_io_in
         .globl devicefs_io_out
@@ -9,56 +10,87 @@
         .globl ge_pi_handler
         .globl ge_getchar
         .globl ge_putchar
+        .globl proc_tty_pending_take
+        .globl proc_tty_pending_store
+        .globl proc_wait_event_intr
+        .globl proc_wakeup_event
         .globl pdp10_pi_handler_return
         .globl pdp10_ret_ok
         .globl pdp10_ret_arg
         .globl pdp10_ret_busy
 
-; ge_rx_word: zero idle, -1 waiting, otherwise 4,,raw-GTYI-word (ready).
-; ge_tx_state: nonzero while one complete GE output frame is owned.
+; ge_rx_word is zero when empty; a raw GTYI word has LH bit 4 set while ready.
+; ge_tx_state is nonzero while one complete GE output frame is owned.
 ge_pi_handler:
         conso 0070,00010
         jrst pdp10_pi_handler_return
-        skipl ge_rx_word
+        skipe ge_rx_word
         jrst ge_pi_gtyi_disable
         datai 0070,1
         aos devicefs_io_in+7
         tlo 1,4
         movem 1,ge_rx_word
+        setom ge_rx_event
+        movei 1,ge_rx_event
+        pushj 17,proc_wakeup_event
 ge_pi_gtyi_disable:
         cono 0070,0
         jrst pdp10_pi_handler_return
 
-; Return GE_PACK(console, character), or GE_E_BUSY if another read is waiting.
+; AC1 = requested GE console 0..3.  Return one byte from that exact console.
 ge_getchar:
-        move 1,ge_rx_word
-        jumpg 1,ge_get_ready
-        jumpl 1,pdp10_ret_busy
+        caile 1,3
+        jrst pdp10_ret_arg
+        push 17,1
+ge_getchar_loop:
+        move 1,(17)
+        addi 1,021                   ; GE N is logical TTY 17+N
+        pushj 17,proc_tty_pending_take
+        jumpge 1,ge_getchar_done
 
-        ; Consume a character which arrived while input PI was disabled.
+        move 2,ge_rx_word
+        jumpn 2,ge_getchar_ready
         consz 0070,00010
-        jrst ge_get_hardware
-
-        setom ge_rx_word
+        jrst ge_getchar_hardware
+        setzm ge_rx_event
         cono 0070,000004
-ge_get_wait:
-        skipg 1,ge_rx_word
-        jrst ge_get_wait
+        skipe ge_rx_word
+        jrst ge_getchar_loop
+        movei 1,ge_rx_event
+        pushj 17,proc_wait_event_intr
+        jumpn 1,ge_getchar_error
+        jrst ge_getchar_loop
 
-ge_get_hardware:
-        datai 0070,1
+ge_getchar_hardware:
+        datai 0070,2
         aos devicefs_io_in+7
-        jrst ge_get_unpack_raw
-
-ge_get_ready:
+        tlo 2,4
+ge_getchar_ready:
         setzm ge_rx_word
-        tlz 1,4
-ge_get_unpack_raw:
-        ldb 2,[POINT 2,1,17]
-        lsh 2,010
+        tlz 2,4
+        ldb 3,[POINT 2,2,17]
+        camn 3,(17)
+        jrst ge_getchar_ready_ours
+        move 1,3
+        addi 1,021
+        andi 2,0177
+        pushj 17,proc_tty_pending_store
+        setom ge_rx_event
+        movei 1,ge_rx_event
+        pushj 17,proc_wakeup_event
+        jrst ge_getchar_loop
+
+ge_getchar_ready_ours:
+        move 1,2
         andi 1,0177
-        ior 1,2
-        popj 017,
+ge_getchar_done:
+        sub 17,[1,,1]
+        popj 17,
+ge_getchar_error:
+        move 2,1
+        sub 17,[1,,1]
+        move 1,2
+        popj 17,
 
 ; AC1 = decoded 7-bit GE byte.  Caller owns ge_tx_state bit 0.
 ge_put_decoded:
@@ -78,16 +110,9 @@ ge_put_decoded_wait:
         popj 017,
 
 ; AC1 = GE_PACK(console, byte).  Return 0 or GE_E_*.
-; Each character is a complete GE message: SOH, address, status, STX, byte,
-; ETX, longitudinal parity.  The parity byte simplifies to address XOR byte
-; XOR 1 because STX XOR ETX is 1 and status is zero.
 ge_putchar:
         skipe ge_tx_state
         jrst pdp10_ret_busy
-        ; GTYO is deliberately polled: PI4 services GTYI only.  Clear any
-        ; stale GTYO PI assignment left by firmware, diagnostics, or a warm
-        ; restart before emitting a frame, otherwise DONE can retrigger PI4
-        ; with no output leaf to claim it.  CONO 0 preserves the DONE flag.
         cono 0750,0
 ge_putchar_idle:
         move 4,1
@@ -116,11 +141,11 @@ ge_putchar_idle:
         pushj 017,ge_put_decoded
         setzm ge_tx_state
         jrst pdp10_ret_ok
+
         .bss
 ge_rx_word:
         .block 1
+ge_rx_event:
+        .block 1
 ge_tx_state:
         .block 1
-
-; Device-local accounting state; absent devices consume no fixed KCORE.
-        .bss

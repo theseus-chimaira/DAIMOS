@@ -35,6 +35,7 @@ int dsys_getpid(void);
 int dsys_procctl(unsigned int op, unsigned int arg);
 kword_t dsys_pipe(void);
 int dsys_mkfifo(kword_t *p, unsigned int mode);
+int dsys_exec(kword_t *p);
 int dsys_chdir(kword_t *p);
 int dsys_getcwd(kword_t *p, unsigned int n);
 int dsys_procinfo(unsigned int s, struct sys_procinfo *p);

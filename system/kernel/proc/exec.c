@@ -30,6 +30,7 @@ exec_load_process(struct proc *p, unsigned int owner,
         if (p == 0 || path == 0 ||
             file_lookup_path(path, &node) != 0 ||
             vfs_stat(node, &st) != 0 || st.type != VFS_TYPE_REG ||
+            file_check_access(node, 01U) != 0 ||
             st.size_words < EXEC_DXR_BASE_HDR_WORDS ||
             vfs_read_words(node, 0U, hdr, EXEC_DXR_BASE_HDR_WORDS) !=
             (int)EXEC_DXR_BASE_HDR_WORDS ||
@@ -90,4 +91,64 @@ fail:
         if (vm_space_destroy(p, owner) == 0)
                 PROC_SET_META_LH(p, 0UL);
         return -1;
+}
+
+
+/* Replace the current user image while preserving its process identity and
+ * stable u-area.  The replacement VM is fully loaded before the old VM is
+ * touched.  exec_load_process() temporarily publishes the staged executable
+ * backing in the current slot's swap record; preserve and restore that word
+ * until the commit point so a failed EXEC leaves the old image executable. */
+int
+exec_replace_current(const kword_t *path, kword_t *entry_stack)
+{
+        struct proc staged;
+        struct proc *current;
+        unsigned int slot;
+        kword_t old_swap;
+        kword_t new_swap;
+        kword_t entry;
+        kword_t stack;
+
+        if (path == 0 || entry_stack == 0 || proc_table == 0)
+                return -1;
+        slot = (unsigned int)proc_current_slot;
+        if (slot == 0U || slot >= proc_slots)
+                return -1;
+        current = &proc_table[slot];
+        if (!PROC_HAS_UAREA(current) || !VM_SPACE_ACTIVE(current) ||
+            proc_swap_records == 0)
+                return -1;
+
+        old_swap = proc_swap_records[slot].state;
+        staged.meta = current->meta;
+        staged.vm_state = 0UL;
+        staged.sched = current->sched;
+        if (exec_load_process(&staged, slot, path) != 0) {
+                proc_swap_records[slot].state = old_swap;
+                return -1;
+        }
+        entry = PROC_ENTRY(&staged);
+        stack = VM_SPACE_WORDS(&staged) - (kword_t)EXEC_DXR_STACK_WORDS - 1U;
+        new_swap = proc_swap_records[slot].state;
+        proc_swap_records[slot].state = old_swap;
+
+        /* The mapped pathname is no longer referenced.  Clear the hold before
+         * freeing its containing VM; the failure path restores it because the
+         * syscall mapper still owns the hold until it returns an error. */
+        PROC_CTL_WORD(current) &= ~PROC_USER_MAP_BIT;
+        if (vm_space_destroy(current, slot) != 0) {
+                PROC_CTL_WORD(current) |= PROC_USER_MAP_BIT;
+                (void)vm_space_destroy(&staged, slot);
+                proc_swap_records[slot].state = old_swap;
+                return -1;
+        }
+
+        current->vm_state = staged.vm_state;
+        staged.vm_state = 0UL;
+        proc_swap_records[slot].state = new_swap;
+        PROC_SWAP_BACKING_WORD(current) = 0UL;
+        entry_stack[0] = entry;
+        entry_stack[1] = stack;
+        return 0;
 }

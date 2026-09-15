@@ -27,5 +27,6 @@
  * addresses are bound by MINIT after the corresponding MRES modules load.
  */
 int tty_putchar(kword_t tty_char);
+int tty_getchar(unsigned int tty);
 
 #endif

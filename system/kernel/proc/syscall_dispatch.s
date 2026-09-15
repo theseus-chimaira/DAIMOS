@@ -21,10 +21,13 @@
         .globl  proc_control
         .globl  proc_tty_read_enter
         .globl  proc_tty_input
+        .globl  proc_tty_output
         .globl  proc_current_slot
         .globl  pipe_create
         .globl  file_mkfifo
         .globl  file_writechar_reserve
+        .globl  exec_replace_current
+        .globl  proc_exec_enter
 exec_native_syscall:
         ; Recover the monitor-UUO opcode from the trapped instruction.
         ; AC0 cannot be an index register on the PDP-6: index field zero
@@ -482,6 +485,8 @@ native_sys_extctl:
         cain    1,020                  ; SYS_EXT_PIPE
         jrst    pipe_create
 native_sys_ext_nonpipe:
+        cain    1,022                  ; SYS_EXT_EXEC
+        jrst    native_sys_exec
         caie    1,021                  ; SYS_EXT_MKFIFO
         jrst    native_sys_procctl
         move    1,2                    ; user path
@@ -492,6 +497,26 @@ native_sys_ext_nonpipe:
         hrrz    2,2
         pushj   17,file_mkfifo
         jrst    native_sys_mapped_return
+
+; EXEC path is AC2.  Two stable kernel-stack words receive entry and stack.
+; A failed replacement still owns the mapped-path hold and returns normally;
+; success has committed a new VM and must never return through the old image.
+native_sys_exec:
+        move    1,2
+        pushj   17,native_sys_map_one
+        jumpe   1,pdp10_ret_neg1
+        add     17,[2,,2]
+        movei   2,-1(17)
+        pushj   17,exec_replace_current
+        jumpn   1,native_sys_exec_bad
+        move    1,-1(17)               ; replacement entry
+        move    2,(17)                  ; replacement user stack
+        sub     17,[2,,2]
+        jrst    proc_exec_enter
+native_sys_exec_bad:
+        sub     17,[2,,2]
+        jrst    native_sys_mapped_return
+
 native_sys_procctl:
         hrrz    2,2
         jrst    proc_control
@@ -504,25 +529,32 @@ native_sys_getchar:
         popj    17,
 native_sys_getchar_policy:
         pushj   17,proc_tty_read_enter
-        jumpn   1,%L137
+        jumpl   1,%L137
+        push    17,1                   ; logical controlling TTY
 native_sys_getchar_again:
         pushj   17,native_sys_getchar_call
-        jumpl   1,%L65                 ; no installed CTY input service
-        ; CTY is the only installed input service.
+        jumpl   1,native_sys_getchar_error
+        move    2,1                    ; character
+        pop     17,1                   ; logical TTY
         pushj   17,proc_tty_input
         camn    1,[-2]                 ; consumed job-control character
         jrst    native_sys_getchar_policy
         jrst    %L65
+native_sys_getchar_error:
+        sub     17,[1,,1]
+        jrst    %L65
 
-        ; MINIT patches the right half of this one-word tail-call target to
-        ; CTY getchar.  The CTY service then returns directly to this routine's
-        ; caller, avoiding a redundant inner PUSHJ/POPJ pair.
+        ; MINIT first supplies the CTY bootstrap target and later retargets
+        ; this word to the generic logical-TTY input dispatcher.
         .globl  native_sys_getchar_call
 native_sys_getchar_call:
         jrst    pdp10_ret_neg1
 
 native_sys_putchar:
-        ; MINIT patches this one-word tail-call target to CTY putchar.
+        ; Bind the byte to the caller's controlling logical TTY before the
+        ; MRES dispatcher selects CTY, DCS, or GE.
+        pushj   17,proc_tty_output
+        jumpl   1,pdp10_ret_neg1
         .globl  native_sys_putchar_call
 native_sys_putchar_call:
         jrst    pdp10_ret_neg1

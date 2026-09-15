@@ -1,10 +1,9 @@
-; dcs_io.s -- compact resident PDP-6 Type 630 DCS driver.
+; dcs_io.s -- compact PDP-6 Type 630 DCS driver.
 ;
-; Receive service uses the hardware scanner and PI2.  Input is armed only while
-; dcs_getchar is waiting, so no resident queue is required.  The interrupt
-; handler obeys the KCORE PI ABI and clobbers AC1 only.
-;
-; Type 630 IOT semantics follow the PDP-6 Handbook directly.
+; The hardware has one scanner for all sixteen lines.  Readers name the line
+; they want; a scanner result for another line is deferred in that logical
+; TTY's existing process-session record by proc_tty_pending_store().  One MRES
+; ready word and event are therefore sufficient for all DCS lines.
 
         .globl devicefs_io_in
         .globl devicefs_io_out
@@ -12,19 +11,21 @@
         .globl dcs_pi_handler
         .globl dcs_getchar
         .globl dcs_putchar
+        .globl proc_tty_pending_take
+        .globl proc_tty_pending_store
+        .globl proc_wait_event_intr
+        .globl proc_wakeup_event
         .globl pdp10_pi_handler_return
         .globl pdp10_ret_ok
         .globl pdp10_ret_arg
-        .globl pdp10_ret_busy
 
-; dcs_rx_word is zero when idle, -1 while a receive is pending, and the packed
-; nonnegative line/byte result once the PI handler has serviced the scanner.
+; dcs_rx_word is zero when empty and packed(line,byte)+1 when ready.  The +1
+; keeps line 0 / NUL distinct from the empty marker.
 dcs_pi_handler:
         conso 0300,000010
         jrst pdp10_pi_handler_return
-        skipl dcs_rx_word
-        jrst pdp10_pi_handler_return
-dcs_pi_receive:
+        skipe dcs_rx_word
+        jrst dcs_pi_disable
         coni 0304,1
         andi 1,077
         lsh 1,010
@@ -33,21 +34,67 @@ dcs_pi_receive:
         aos devicefs_io_in+6
         andi 1,0377
         iorm 1,dcs_rx_word
+        aos dcs_rx_word
+        setom dcs_rx_event
+        movei 1,dcs_rx_event
+        pushj 17,proc_wakeup_event
+dcs_pi_disable:
         cono 0300,0
         jrst pdp10_pi_handler_return
 
-; Return DCS_PACK(line, byte), or DCS_E_BUSY (-3) if another receive is active.
+; AC1 = requested DCS line 0..15.  Return one byte from that exact line.
 dcs_getchar:
-        move 1,dcs_rx_word
-        jumpn 1,pdp10_ret_busy
-        setom dcs_rx_word
-        cono 0300,000012
+        caile 1,017
+        jrst pdp10_ret_arg
+        push 17,1
+dcs_getchar_loop:
+        move 1,(17)
+        addi 1,1                     ; DCS line N is logical TTY N+1
+        pushj 17,proc_tty_pending_take
+        jumpge 1,dcs_getchar_done
 
-dcs_getchar_wait:
-        move 1,dcs_rx_word
-        jumpl 1,dcs_getchar_wait
+        move 2,dcs_rx_word
+        jumpn 2,dcs_getchar_ready
+        setzm dcs_rx_event
+        ; Clearing the event precedes arming and a second ready check, so a
+        ; PI between these instructions cannot be lost.
+        cono 0300,000012
+        skipe dcs_rx_word
+        jrst dcs_getchar_loop
+        movei 1,dcs_rx_event
+        pushj 17,proc_wait_event_intr
+        jumpn 1,dcs_getchar_error
+        jrst dcs_getchar_loop
+
+dcs_getchar_ready:
         setzm dcs_rx_word
-        popj 017,
+        subi 2,1
+        move 3,2
+        lsh 3,-010
+        andi 3,077
+        camn 3,(17)
+        jrst dcs_getchar_ready_ours
+        move 1,3
+        addi 1,1
+        andi 2,0377
+        pushj 17,proc_tty_pending_store
+        ; Wake a reader of the line for which this byte was deferred.
+        setom dcs_rx_event
+        movei 1,dcs_rx_event
+        pushj 17,proc_wakeup_event
+        jrst dcs_getchar_loop
+
+dcs_getchar_ready_ours:
+        move 1,2
+        andi 1,0377
+dcs_getchar_done:
+        sub 17,[1,,1]
+        popj 17,
+dcs_getchar_error:
+        move 2,1
+        sub 17,[1,,1]
+        move 1,2
+        popj 17,
 
 ; AC1 = DCS_PACK(line, byte).  Return 0 or DCS_E_ARG (-1).
 dcs_putchar:
@@ -63,6 +110,5 @@ dcs_putchar:
         .bss
 dcs_rx_word:
         .block 1
-
-; Device-local accounting state; absent devices consume no fixed KCORE.
-        .bss
+dcs_rx_event:
+        .block 1

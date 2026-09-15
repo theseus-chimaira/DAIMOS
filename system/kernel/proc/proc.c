@@ -5,6 +5,7 @@
 #include "proc_swap.h"
 #include "procfs.h"
 #include "syscall.h"
+#include "tty.h"
 
 #define PROC_UAREA_MM_OWNER_BASE 01000U
 
@@ -377,7 +378,9 @@ proc_event_apply(unsigned int slot, unsigned int event)
         return 0;
 }
 
-/* The only installed input service is CTY, logical TTY 0. */
+/* Return the logical terminal which supplies the current process input.
+ * A process with no controlling terminal retains the historical CTY fallback
+ * used during early userspace bootstrap.  DETACHED is deliberately an error. */
 int
 proc_tty_read_enter(void)
 {
@@ -386,22 +389,25 @@ proc_tty_read_enter(void)
         p = &proc_table[(unsigned int)proc_current_slot];
         for (;;) {
                 unsigned int state;
-                unsigned int record;
+                unsigned int tty;
+                kword_t record;
                 unsigned int session;
                 unsigned int pgrp;
 
                 state = PROC_TTY_STATE(p);
                 if (state == PROC_TTY_NO_TTY)
                         return 0;
-                if (state != PROC_TTY_ATTACHED_BASE)
+                if (state < PROC_TTY_ATTACHED_BASE ||
+                    state >= PROC_TTY_ATTACHED_BASE + PROC_TTY_COUNT)
                         return -1;
-                record = (unsigned int)proc_tty_records[0];
+                tty = state - PROC_TTY_ATTACHED_BASE;
+                record = proc_tty_records[tty];
                 session = PROC_SESSION(p);
                 if (PROC_TTY_REC_SESSION(record) != session)
                         return -1;
                 pgrp = PROC_PGRP(p);
                 if (PROC_TTY_REC_PGRP(record) == pgrp)
-                        return 0;
+                        return (int)tty;
                 if (proc_event_send(pgrp, SYS_EVENT_TSTP, 1) != 0)
                         return -1;
                 /* A self TSTP requests an immediate PI6 reschedule.  This
@@ -411,20 +417,25 @@ proc_tty_read_enter(void)
 }
 
 int
-proc_tty_input(unsigned int ch)
+proc_tty_input(unsigned int tty, unsigned int ch)
 {
         struct proc *p;
         unsigned int state;
-        unsigned int record;
+        kword_t record;
         unsigned int pgrp;
 
+        if (tty >= PROC_TTY_COUNT)
+                return -1;
         p = &proc_table[(unsigned int)proc_current_slot];
         state = PROC_TTY_STATE(p);
-        if (state == PROC_TTY_NO_TTY)
+        if (state == PROC_TTY_NO_TTY) {
+                if (tty != 0U)
+                        return -1;
                 return (int)(ch & 0177U);
-        if (state != PROC_TTY_ATTACHED_BASE)
+        }
+        if (state != PROC_TTY_ATTACHED_BASE + tty)
                 return -1;
-        record = (unsigned int)proc_tty_records[0];
+        record = proc_tty_records[tty];
         if (PROC_TTY_REC_SESSION(record) != PROC_SESSION(p))
                 return -1;
         pgrp = PROC_TTY_REC_PGRP(record);
@@ -441,6 +452,72 @@ proc_tty_input(unsigned int ch)
                 return -2;
         }
         return (int)ch;
+}
+
+/* Bind terminal output to the process controlling TTY.  Output is not gated
+ * by the foreground pgrp (DAIMOS has no TOSTOP mode); it is only required to
+ * belong to the controlling session.  NO_TTY keeps the bootstrap CTY path. */
+int
+proc_tty_output(unsigned int ch)
+{
+        struct proc *p;
+        unsigned int state;
+        unsigned int tty;
+        kword_t record;
+
+        p = &proc_table[(unsigned int)proc_current_slot];
+        state = PROC_TTY_STATE(p);
+        if (state == PROC_TTY_NO_TTY)
+                return (int)TTY_PACK(TTY_ID_CTY, ch);
+        if (state < PROC_TTY_ATTACHED_BASE ||
+            state >= PROC_TTY_ATTACHED_BASE + PROC_TTY_COUNT)
+                return -1;
+        tty = state - PROC_TTY_ATTACHED_BASE;
+        record = proc_tty_records[tty];
+        if (PROC_TTY_REC_SESSION(record) != PROC_SESSION(p))
+                return -1;
+        return (int)TTY_PACK(tty, ch);
+}
+
+/* DCS and GE each have one hardware scanner, but several logical terminals.
+ * Their MRES readers defer an input byte for another line into otherwise
+ * unused high bits of that terminal's existing session record.  Encoding
+ * byte+1 leaves zero as the empty marker and costs no additional per-TTY RAM. */
+int
+proc_tty_pending_take(unsigned int tty)
+{
+        kword_t record;
+        unsigned int encoded;
+
+        if (tty >= PROC_TTY_COUNT)
+                return -1;
+        record = proc_tty_records[tty];
+        encoded = (unsigned int)((record >> PROC_TTY_PENDING_SHIFT) &
+            PROC_TTY_PENDING_MASK);
+        if (encoded == 0U)
+                return -1;
+        record &= ~((kword_t)PROC_TTY_PENDING_MASK <<
+            PROC_TTY_PENDING_SHIFT);
+        proc_tty_records[tty] = record;
+        return (int)(encoded - 1U);
+}
+
+int
+proc_tty_pending_store(unsigned int tty, unsigned int ch)
+{
+        kword_t record;
+        kword_t field;
+
+        if (tty >= PROC_TTY_COUNT || ch > TTY_DATA_MASK)
+                return -1;
+        record = proc_tty_records[tty];
+        field = (record >> PROC_TTY_PENDING_SHIFT) & PROC_TTY_PENDING_MASK;
+        if (field != 0UL)
+                return -1;
+        record |= ((kword_t)(ch + 1U) & PROC_TTY_PENDING_MASK) <<
+            PROC_TTY_PENDING_SHIFT;
+        proc_tty_records[tty] = record;
+        return 0;
 }
 
 int
