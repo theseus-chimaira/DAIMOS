@@ -64,5 +64,9 @@ compatibility spelling.  For example:
 
 The PDP-6 disk boot makefile also provides `make permanent-size`.  It reports
 KCORE plus every MRES package installed by the normal full-hardware boot,
-excluding KINIT/INIT and process-private storage.  The pre-userland resident
-limit for that KCORE+MRES total is 12 Kiwords (12288 decimal words).
+excluding KINIT/INIT and process-private storage.  Resident size is an
+optimization target rather than an unconditional acceptance ceiling: the KCC
+build aims for about 13 Kiwords (13312 decimal words), while the GCC build
+retains the tighter 12 Kiword (12288 word) optimization target.  DAIMOS-testkit
+can impose an explicit hard budget with `DAIMOS_RESIDENT_WORDS_MAX`; the
+architectural permanent-address sanity bound remains independently enforced.
