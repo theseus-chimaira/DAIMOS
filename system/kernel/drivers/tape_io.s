@@ -52,7 +52,7 @@ tape_pi_dtc_status:
         jumpe 2,pdp10_pi_dispatch_done
         trnn 1,0000001
         jrst pdp10_pi_dispatch_done
-        jrst tape_pi_dtc_done
+        jrst tape_pi_done
 
 tape_pi_mtc_write_status:
         seto 2,
@@ -71,37 +71,30 @@ tape_pi_mtc_idle_check:
         trnn 1,0000001
         jrst pdp10_pi_dispatch_done
 
-tape_pi_dtc_done:
-        movns storage_state
-        pushj 017,tape_dtc_wakeup
-        jrst tape_pi_cleanup
-
 tape_pi_done:
         movns storage_state
-        jrst tape_pi_cleanup
+        jrst tape_pi_wake_cleanup
 
 tape_pi_error:
         aos devicefs_storage_errors+1   ; MTC0
-        movei 1,7
-        movem 1,storage_state
-tape_pi_cleanup:
-        cono 0224,0
-        cono 0210,0
-        cono 0200,0
-        jrst pdp10_pi_dispatch_done
+        jrst tape_pi_error_common
 
 tape_pi_dtc_block_error:
         aos devicefs_storage_errors     ; DTC0
+        move 1,dtc_request_unit
+        setzm dtc_motion(1)
+tape_pi_error_common:
         movei 1,7
         movem 1,storage_state
-        move 1,dtc_request_unit
-        move 2,1
-        lsh 2,3
-        iori 2,0200000
-        cono 0210,0(2)
+tape_pi_wake_cleanup:
+        pushj 017,tape_transfer_wakeup
+tape_pi_cleanup:
+        ; CONO DTC,0 stops every selected Type-551 transport, so the common
+        ; owner cleanup also covers DTC block errors without a second
+        ; unit-select/stop sequence.
+        cono 0224,0
+        cono 0210,0
         cono 0200,0
-        setzm dtc_motion(1)
-        pushj 017,tape_dtc_wakeup
         jrst pdp10_pi_dispatch_done
 
 ; PI3 tape leaf.  Reverse DECtape transfers are serviced one word at a time;
@@ -170,7 +163,7 @@ tape_dct_keep_forward:
         cono 0210,0(1)
         cono 0200,0
         movns storage_state
-        pushj 017,tape_dtc_wakeup
+        pushj 017,tape_transfer_wakeup
         jrst pdp10_pi_dispatch_done
 
 tape_dct_mtc_read_full:
@@ -204,10 +197,11 @@ tape_dct_mtc_write_drain:
         cono 0200,0(1)
         jrst pdp10_pi_dispatch_done
 
-; Complete a DECtape block event and wake a process sleeping on it.
-tape_dtc_wakeup:
-        setom dtc_transfer_event
-        movei 1,dtc_transfer_event
+; Complete the single shared tape data-transfer event.  DTC and MTC are
+; mutually exclusive owners of Type-136, so one word covers both drivers.
+tape_transfer_wakeup:
+        setom tape_transfer_event
+        movei 1,tape_transfer_event
         jrst proc_wakeup_event
 
 ; Direct PI3 block setup shared inside the tape package.
@@ -218,6 +212,8 @@ tape_setup_write:
         move 4,tape_dct_blko
 tape_setup_common:
         movem 3,storage_count
+        ; Arm the event before either controller can begin issuing PI requests.
+        setzm tape_transfer_event
         movem 4,000046
         movei 4,tape_dct_count_done
         hrrm 4,tape_dct_select
@@ -344,7 +340,6 @@ dtc_block_setup_direction:
         movem 4,000046
 dtc_block_setup_state:
         movem 1,dtc_request_unit
-        setzm dtc_transfer_event
         lsh 1,3
         skipn dtc_request_write
         jrst dtc_block_start_read
@@ -354,27 +349,19 @@ dtc_block_setup_state:
         ior 1,dtc_request_reverse
         cono 0210,0(1)
         cono 0200,003443
-        jrst dtc_transfer_wait
+        jrst tape_transfer_wait
 dtc_block_start_read:
         setom storage_state
         iori 1,0220305
         ior 1,dtc_request_reverse
         cono 0200,004043
         cono 0210,0(1)
-        jrst dtc_transfer_wait
-
-dtc_transfer_wait:
-        movei 1,dtc_transfer_event
-        pushj 017,proc_wait_event
-        jrst tape_wait
+        jrst tape_transfer_wait
 
 dtc_search_fail:
         aos devicefs_storage_errors     ; DTC0 search failure
         setzm dtc_motion(1)
-        lsh 1,3
-        iori 1,0200000
-        cono 0210,0(1)
-        cono 0200,0
+        ; tape_ioerr performs the authoritative DTC/DCT owner reset.
         jrst tape_ioerr
 
 ; Compact Type-516 service.  AC4 selects READ/WRITE/control operation.
@@ -445,6 +432,9 @@ mtc_rw_start:
         cono 0224,000005
         cono 0200,0(5)
 
+tape_transfer_wait:
+        movei 1,tape_transfer_event
+        pushj 017,proc_wait_event
 tape_wait:
         move 1,storage_state
         jumpl 1,tape_wait
@@ -488,7 +478,7 @@ tape_account_table:
 dtc_request_unit: .block 1
 dtc_request_write: .block 1
 dtc_request_reverse: .block 1
-dtc_transfer_event: .block 1
+tape_transfer_event: .block 1
 dtc_motion: .block 010
 
 ; Device-local accounting state; absent devices consume no fixed KCORE.
