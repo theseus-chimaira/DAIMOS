@@ -58,6 +58,9 @@
 #define PROC_STATE_MASK        07UL
 #define PROC_STATE_SHIFT       33U
 #define PROC_SCHED_RH_MASK  PROC_HALF_MASK
+#define PROC_CPU_SLEEP_BITS \
+        (((kword_t)PROC_CPU_MASK << PROC_CPU_SHIFT) | \
+        ((kword_t)PROC_SLEEP_MASK << PROC_SLEEP_SHIFT))
 #define PROC_STATE_BITS \
         ((kword_t)PROC_STATE_MASK << PROC_STATE_SHIFT)
 #define PROC_STATE_LO_BITS \

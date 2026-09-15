@@ -15,6 +15,7 @@
         .equ    PROC_WAIT_EVENT_LH,020000
         .equ    PROC_WAIT_CHILD_LH,040000
         .equ    PROC_WAIT_INTR_LH,060000
+        .equ    PROC_CPU_SLEEP_LH_MASK,017700
         .equ    PROC_SCHED_QUANTUM_TICKS,4
         .equ    PROC_TRANSITION_RH,0200000
         .equ    PROC_FILE_TABLE_OFFSET,047
@@ -462,6 +463,7 @@ proc_notify_parent_wake:
         hllz    4,4                    ; clear wait channel
         tlz     4,PROC_WAIT_LH_MASK
         tlz     4,0100000              ; SLEEP->RUN, STOP remains STOP
+        tlz     4,PROC_CPU_SLEEP_LH_MASK
         movem   4,2(2)
         pushj   17,proc_runq_add
 proc_notify_parent_done:
@@ -939,6 +941,7 @@ proc_wakeup_scan:
         tlz     4,PROC_WAIT_LH_MASK
         hllz    4,4                    ; clear wait channel
         tlz     4,0100000              ; SLEEP->RUN, STOP remains STOP
+        tlz     4,PROC_CPU_SLEEP_LH_MASK
         movem   4,2(2)
         push    17,1                    ; preserve event pointer
         move    1,3

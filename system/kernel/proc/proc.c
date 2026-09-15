@@ -386,6 +386,7 @@ proc_event_apply(unsigned int slot, unsigned int event)
                 PROC_CTL_WORD(p) = ctl;
                 if ((ctl & PROC_STOP_BITS) == 0UL && state == PROC_STOP) {
                         if (PROC_WAIT_CLASS(p) == PROC_WAIT_NONE) {
+                                p->sched &= ~PROC_CPU_SLEEP_BITS;
                                 PROC_SET_STATE(p, PROC_SRUN);
                                 proc_runq_add(slot);
                         } else {
@@ -402,7 +403,8 @@ proc_event_apply(unsigned int slot, unsigned int event)
             (PROC_WAIT_CLASS(p) == PROC_WAIT_CHILD ||
             PROC_WAIT_CLASS(p) == PROC_WAIT_INTR)) {
                 p->sched &= ~(PROC_WAIT_BITS | PROC_SCHED_RH_MASK |
-                    ((kword_t)01UL << PROC_STATE_SHIFT));
+                    ((kword_t)01UL << PROC_STATE_SHIFT) |
+                    PROC_CPU_SLEEP_BITS);
                 if (state == PROC_SLEEP)
                         proc_runq_add(slot);
         }
@@ -596,7 +598,7 @@ proc_nice_current(int value)
 }
 
 static unsigned int
-proc_select_runnable(int account_tick)
+proc_select_runnable(unsigned int elapsed_ticks)
 {
         int limit;
         int best;
@@ -605,6 +607,7 @@ proc_select_runnable(int account_tick)
         int cur;
         int age_tick;
         int slot;
+        unsigned int phase;
 
         if (proc_table == 0 || (int)proc_high_slot <= 1)
                 return 0U;
@@ -614,47 +617,37 @@ proc_select_runnable(int account_tick)
         best_rank = 0;
         cur = (int)(proc_sched_cursor & PROC_PGRP_MASK);
         age_tick = 0;
-        if (account_tick && ++proc_sched_age_phase >= 64U) {
-                proc_sched_age_phase = 0U;
-                age_tick = 1;
+        if (elapsed_ticks != 0U) {
+                phase = proc_sched_age_phase + elapsed_ticks;
+                if (phase >= 64U) {
+                        phase -= 64U;
+                        age_tick = 1;
+                }
+                proc_sched_age_phase = phase;
         }
 
-        /* Accounting still uses the compact descriptor table.  Selection no
-         * longer does: it walks only PROC_SRUN entries through sched RH. */
-        if (account_tick) {
+        /* Sleep age is used only by swap victim selection.  It advances on
+         * the original 64-clock boundary, so the descriptor table is touched
+         * once per 64 elapsed ticks rather than once per scheduling quantum. */
+        if (age_tick) {
                 struct proc *p;
 
                 p = &proc_table[1];
                 for (slot = 1; slot < limit; ++slot, ++p) {
-                        unsigned int cpu;
+                        unsigned int age;
 
-                        if (PROC_IS_FREE(p))
+                        if (PROC_STATE(p) != PROC_SLEEP)
                                 continue;
-                        cpu = PROC_CPU_PENALTY(p);
-                        if (cpu != 0U)
-                                --cpu;
-                        if (slot == (int)proc_current_slot &&
-                            PROC_STATE(p) == PROC_SRUN &&
-                            !PROC_TRANSITION(p)) {
-                                cpu += 2U;
-                                if (cpu > (unsigned int)PROC_CPU_MASK)
-                                        cpu = (unsigned int)PROC_CPU_MASK;
-                        }
-                        proc_set_cpu(p, cpu);
-                        if (PROC_STATE(p) == PROC_SLEEP) {
-                                unsigned int age;
-
-                                age = PROC_SLEEP_AGE(p);
-                                if (age_tick &&
-                                    age < (unsigned int)PROC_SLEEP_MASK)
-                                        ++age;
-                                proc_set_sleep_age(p, age);
-                        } else if (PROC_SLEEP_AGE(p) != 0U) {
-                                proc_set_sleep_age(p, 0U);
-                        }
+                        age = PROC_SLEEP_AGE(p);
+                        if (age < (unsigned int)PROC_SLEEP_MASK)
+                                proc_set_sleep_age(p, age + 1U);
                 }
         }
 
+        /* Recent CPU is relevant only while a process competes to run.
+         * Account exactly the elapsed clock ticks while walking the run queue:
+         * the current job accumulates penalty, competitors decay.  Blocking
+         * wakeups clear dynamic CPU/sleep accounting before requeueing. */
         slot = (int)(proc_runq_head & PROC_SCHED_RH_MASK);
         while (slot != 0) {
                 struct proc *p;
@@ -662,6 +655,24 @@ proc_select_runnable(int account_tick)
                 int rank;
 
                 p = &proc_table[slot];
+                if (elapsed_ticks != 0U) {
+                        unsigned int cpu;
+
+                        cpu = PROC_CPU_PENALTY(p);
+                        if (slot == (int)proc_current_slot &&
+                            !PROC_TRANSITION(p)) {
+                                if (cpu == 0U)
+                                        ++cpu;
+                                cpu += elapsed_ticks;
+                                if (cpu > (unsigned int)PROC_CPU_MASK)
+                                        cpu = (unsigned int)PROC_CPU_MASK;
+                        } else if (cpu > elapsed_ticks) {
+                                cpu -= elapsed_ticks;
+                        } else {
+                                cpu = 0U;
+                        }
+                        proc_set_cpu(p, cpu);
+                }
                 if (!PROC_TRANSITION(p) &&
                     (VM_SPACE_ACTIVE(p) || proc_swap_is_swapped(slot))) {
                         prio = (int)proc_effective(p);
@@ -690,18 +701,23 @@ proc_select_runnable(int account_tick)
 unsigned int
 proc_sched_resched_select(void)
 {
-        int account_quantum;
+        unsigned int elapsed_ticks;
 
-        account_quantum = proc_sched_deferred_ticks != 0UL;
+        elapsed_ticks = (unsigned int)proc_sched_deferred_ticks;
         proc_sched_deferred_ticks = 0UL;
-        return proc_select_runnable(account_quantum);
+        return proc_select_runnable(elapsed_ticks);
 }
 
 unsigned int
 proc_sched_tick_select(void)
 {
+        unsigned int elapsed_ticks;
+
+        elapsed_ticks = (unsigned int)proc_sched_deferred_ticks;
         proc_sched_deferred_ticks = 0UL;
-        return proc_select_runnable(1);
+        if (elapsed_ticks == 0U)
+                elapsed_ticks = 1U;
+        return proc_select_runnable(elapsed_ticks);
 }
 
 int
