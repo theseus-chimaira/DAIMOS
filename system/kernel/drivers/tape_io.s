@@ -249,8 +249,14 @@ dtc_search_wait:
         trne 4,0000002
         jrst dtc_search_turn
         conso 0200,0001000
-        jrst dtc_search_wait
+        jrst dtc_search_wait_more
         datai 0200,4
+        jrst dtc_search_have_block
+dtc_search_wait_more:
+        sosle storage_count
+        jrst dtc_search_wait
+        jrst dtc_search_fail
+dtc_search_have_block:
         andi 4,001777
         move 5,1
         move 6,4
@@ -276,6 +282,12 @@ dtc_search_continue:
         pushj 017,dtc_search_command
         jrst dtc_search_wait
 dtc_search_command:
+        ; Bound each block-search wait.  The DTC status path can otherwise
+        ; spin forever if the transport disappears or stops producing block
+        ; marks.  storage_count is free until the actual 128-word transfer
+        ; is armed, so reuse it rather than adding resident driver state.
+        movei 4,0777777
+        movem 4,storage_count
         move 4,1
         lsh 4,3
         iori 4,0220200
@@ -372,15 +384,25 @@ mtc_control_command:
         ior 1,4
         cono 0224,0
         cono 0220,0(1)
+        ; Control commands are polled because they do not use the data-channel
+        ; PI path.  Bound that polling loop so an offline/stuck transport cannot
+        ; hang the kernel.  storage_count is otherwise unused for control ops.
+        movei 2,0777777
+        movem 2,storage_count
 mtc_control_wait:
         coni 0224,2
         trnn 2,0000001
-        jrst mtc_control_wait
+        jrst mtc_control_wait_more
         trne 2,0020000
-        jrst mtc_control_wait
+        jrst mtc_control_wait_more
         trnn 2,0400520
         jrst pdp10_ret_ok
         aos devicefs_storage_errors+1   ; MTC0 control error
+        jrst tape_ioerr
+mtc_control_wait_more:
+        sosle storage_count
+        jrst mtc_control_wait
+        aos devicefs_storage_errors+1   ; MTC0 control timeout
         jrst tape_ioerr
 mtc_rw_start:
         movem 3,storage_state
