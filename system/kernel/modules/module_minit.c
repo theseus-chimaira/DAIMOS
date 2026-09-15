@@ -58,6 +58,7 @@
 #define DSK_X_READ_SECTOR        1U
 #define DSK_X_WRITE_SECTOR       2U
 #define DSK_X_DCT_HANDLER        3U
+#define DSK_X_WATCHDOG           4U
 
 #define SLV_PI_MASK             0000007UL
 #define SLV_CO_CLEAR_IRQ        0000010UL
@@ -84,6 +85,7 @@ extern kword_t storage_pi_dsk_jump;
 extern kword_t storage_pi_tape_jump;
 extern kword_t storage_dct_dsk_jump;
 extern kword_t storage_dct_tape_jump;
+extern kword_t storage_clock_dsk_jump;
 
 extern kword_t dsk270_read_jump;
 extern kword_t dsk270_write_jump;
@@ -895,6 +897,8 @@ storage_minit(unsigned int kind, kword_t name)
                             read_service);
                         module_service_set(MODULE_SERVICE_DSK_WRITE_SECTOR,
                             write_service);
+                        storage_patch_jump(&storage_clock_dsk_jump,
+                            minit_export(name, base, DSK_X_WATCHDOG));
                 }
         }
         minit_diag_ok(name);

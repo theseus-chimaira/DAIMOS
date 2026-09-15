@@ -363,7 +363,8 @@ $(OCNSLS_MRES_OBJ): $(BUILD)/ocnsls_io.dobj $(KCORE_MAP)
 $(DSK_MRES_OBJ): $(BUILD)/dsk_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dsk-mres.dxr -M $(BUILD)/dsk-mres.map \
 	    -R $@ -N dsk_mres_package -X dsk_pi_handler -X dsk_read_sector \
-	    -X dsk_write_sector -X dsk_dct_handler $(BUILD)/dsk_io.dobj
+	    -X dsk_write_sector -X dsk_dct_handler -X dsk_watchdog_tick \
+	    $(BUILD)/dsk_io.dobj
 
 $(TAPE_MRES_OBJ): $(BUILD)/tape_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/tape-mres.dxr -M $(BUILD)/tape-mres.map \

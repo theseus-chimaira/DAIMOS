@@ -25,6 +25,7 @@ extern kword_t storage_pi_dsk_jump;
 extern kword_t storage_dct_dsk_jump;
 extern kword_t storage_pi_tape_jump;
 extern kword_t storage_dct_tape_jump;
+extern kword_t storage_clock_dsk_jump;
 extern kword_t dsk270_read_jump;
 extern kword_t dsk270_write_jump;
 extern kword_t fs_memfs_service_jump;
@@ -48,6 +49,7 @@ static kword_t *const module_fixed_bindings[] = {
         &storage_dct_dsk_jump,
         &storage_pi_tape_jump,
         &storage_dct_tape_jump,
+        &storage_clock_dsk_jump,
         &dsk270_read_jump,
         &dsk270_write_jump,
         &fs_memfs_service_jump,

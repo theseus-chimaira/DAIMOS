@@ -19,6 +19,7 @@
         .globl storage_state
         .globl storage_iowd
         .globl storage_count
+        .globl storage_clock_dsk_jump
         .globl pdp10_pi_dispatch_done
 
 storage_pi_handler:
@@ -42,6 +43,13 @@ storage_dct_dsk_jump:
         jrst pdp10_pi_dispatch_done
 storage_dct_tape_jump:
         jrst pdp10_pi_dispatch_done
+
+; CLK calls this fixed KCORE trampoline once per qualified line-clock tick.
+; MINIT retargets it to the DSK watchdog when the DSK MRES is present.
+storage_clock_dsk_jump:
+        jrst storage_clock_noop
+storage_clock_noop:
+        popj 017,
 
 ; PI3 and PI5 each have exactly one registered storage router.  Leaf drivers
 ; may therefore use AC2 internally and bypass the generic AOBJN fanout tail

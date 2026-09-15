@@ -396,6 +396,12 @@ tape_wait:
         caie 1,7
         jrst tape_wait_done
 tape_ioerr:
+        ; Error exits must release the shared Type-136 channel as completely
+        ; as the PI completion path.  Otherwise a failed polled/control path
+        ; can leave DCT or a tape controller selected for the next owner.
+        cono 0224,0
+        cono 0210,0
+        cono 0200,0
         setzm storage_state
         jrst    pdp10_ret_neg5
 tape_wait_done:

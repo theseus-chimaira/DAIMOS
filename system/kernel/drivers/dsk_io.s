@@ -10,6 +10,7 @@
         .text
         .globl dsk_pi_handler
         .globl dsk_dct_handler
+        .globl dsk_watchdog_tick
         .globl dsk_enqueue
         .globl dsk_queue
         .globl dsk_current_cyl
@@ -117,6 +118,23 @@ dsk_fail_runtime:
         setzm dsk_active_request
         addi 1,2
         jrst proc_wakeup_event
+
+; One watchdog word covers the single active DSK270 transfer.  CLK calls this
+; at 60 Hz even while slot-0 swap service suppresses scheduler preemption.
+; Five seconds is deliberately generous for real hardware while still making
+; a lost interrupt/controller hang finite for both sleeping and slot-0 callers.
+dsk_watchdog_tick:
+        skipn dsk_active_request
+        popj 017,
+        sub dsk_active_request,[1,,0]
+        hlrz 1,dsk_active_request
+        jumpe 1,dsk_watchdog_timeout
+        popj 017,
+dsk_watchdog_timeout:
+        cono 0270,0
+        cono 0200,0
+        pushj 017,dsk_fail_runtime
+        popj 017,
 
 ; Build direct PI3 block transfer and its -count,,buffer-1 IOWD.
 dsk_setup_read:
@@ -268,6 +286,7 @@ dsk_start_write:
         pushj 017,dsk_setup_write
         hrroi 3,0777774
 dsk_start_go:
+        hrli 6,0454                  ; 300 ticks = 5 seconds at 60 Hz
         movem 6,dsk_active_request
         movem 3,storage_state
         datao 0270,1
