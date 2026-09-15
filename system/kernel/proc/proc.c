@@ -18,26 +18,6 @@ extern struct file *file_table;
 extern int proc_event_send(unsigned int target, unsigned int event, int group);
 extern int proc_session_teardown(unsigned int leader_slot, kword_t leader_ctl);
 
-static inline void
-proc_set_field(struct proc *p, kword_t mask, unsigned int shift,
-    unsigned int value)
-{
-        p->sched = (p->sched & ~(mask << shift)) |
-            (((kword_t)value & mask) << shift);
-}
-
-static inline void
-proc_set_cpu(struct proc *p, unsigned int value)
-{
-        proc_set_field(p, PROC_CPU_MASK, PROC_CPU_SHIFT, value);
-}
-
-static inline void
-proc_set_sleep_age(struct proc *p, unsigned int value)
-{
-        proc_set_field(p, PROC_SLEEP_MASK, PROC_SLEEP_SHIFT, value);
-}
-
 static unsigned int
 proc_effective(const struct proc *p)
 {
@@ -593,54 +573,44 @@ proc_nice_current(int value)
                 value = PROC_NICE_MAX;
         p = &proc_table[slot];
         encoded = (unsigned int)(value + (int)PROC_NICE_BIAS);
-        proc_set_field(p, PROC_NICE_MASK, PROC_NICE_SHIFT, encoded);
+        p->sched = (p->sched &
+            ~((kword_t)PROC_NICE_MASK << PROC_NICE_SHIFT)) |
+            ((kword_t)encoded << PROC_NICE_SHIFT);
         return value;
 }
 
 static unsigned int
-proc_select_runnable(unsigned int elapsed_ticks)
+proc_select_runnable(int elapsed_ticks)
 {
-        int limit;
         int best;
         int best_prio;
         int best_rank;
         int cur;
-        int age_tick;
         int slot;
-        unsigned int phase;
 
         if (proc_table == 0 || (int)proc_high_slot <= 1)
                 return 0U;
-        limit = (int)proc_high_slot;
         best = 0;
         best_prio = 0;
         best_rank = 0;
         cur = (int)(proc_sched_cursor & PROC_PGRP_MASK);
-        age_tick = 0;
-        if (elapsed_ticks != 0U) {
-                phase = proc_sched_age_phase + elapsed_ticks;
-                if (phase >= 64U) {
-                        phase -= 64U;
-                        age_tick = 1;
-                }
-                proc_sched_age_phase = phase;
-        }
-
         /* Sleep age is used only by swap victim selection.  It advances on
          * the original 64-clock boundary, so the descriptor table is touched
          * once per 64 elapsed ticks rather than once per scheduling quantum. */
-        if (age_tick) {
-                struct proc *p;
+        if (elapsed_ticks != 0) {
+                proc_sched_age_phase += (unsigned int)elapsed_ticks;
+                if (proc_sched_age_phase >= 64U) {
+                        struct proc *p;
 
-                p = &proc_table[1];
-                for (slot = 1; slot < limit; ++slot, ++p) {
-                        unsigned int age;
-
-                        if (PROC_STATE(p) != PROC_SLEEP)
-                                continue;
-                        age = PROC_SLEEP_AGE(p);
-                        if (age < (unsigned int)PROC_SLEEP_MASK)
-                                proc_set_sleep_age(p, age + 1U);
+                        proc_sched_age_phase -= 64U;
+                        p = &proc_table[1];
+                        for (slot = 1; slot < (int)proc_high_slot;
+                            ++slot, ++p) {
+                                if (PROC_STATE(p) == PROC_SLEEP &&
+                                    PROC_SLEEP_AGE(p) < PROC_SLEEP_MASK)
+                                        p->sched +=
+                                            (kword_t)1UL << PROC_SLEEP_SHIFT;
+                        }
                 }
         }
 
@@ -655,30 +625,35 @@ proc_select_runnable(unsigned int elapsed_ticks)
                 int rank;
 
                 p = &proc_table[slot];
-                if (elapsed_ticks != 0U) {
-                        unsigned int cpu;
+                if (elapsed_ticks != 0) {
+                        int cpu;
 
-                        cpu = PROC_CPU_PENALTY(p);
+                        cpu = (int)PROC_CPU_PENALTY(p);
                         if (slot == (int)proc_current_slot &&
                             !PROC_TRANSITION(p)) {
-                                if (cpu == 0U)
+                                if (cpu == 0)
                                         ++cpu;
                                 cpu += elapsed_ticks;
-                                if (cpu > (unsigned int)PROC_CPU_MASK)
-                                        cpu = (unsigned int)PROC_CPU_MASK;
+                                if (cpu > (int)PROC_CPU_MASK)
+                                        cpu = (int)PROC_CPU_MASK;
                         } else if (cpu > elapsed_ticks) {
                                 cpu -= elapsed_ticks;
                         } else {
-                                cpu = 0U;
+                                cpu = 0;
                         }
-                        proc_set_cpu(p, cpu);
+                        p->sched = (p->sched &
+                            ~((kword_t)PROC_CPU_MASK << PROC_CPU_SHIFT)) |
+                            ((kword_t)(unsigned int)cpu << PROC_CPU_SHIFT);
                 }
                 if (!PROC_TRANSITION(p) &&
                     (VM_SPACE_ACTIVE(p) || proc_swap_is_swapped(slot))) {
                         prio = (int)proc_effective(p);
-                        rank = slot - cur;
-                        if (rank <= 0)
-                                rank += limit - 1;
+                        /* Slots fit in eight bits.  Mod-256 distance preserves
+                         * cyclic slot order; distance zero is the current slot
+                         * and therefore sorts after every other candidate. */
+                        rank = (slot - cur) & (int)PROC_PGRP_MASK;
+                        if (rank == 0)
+                                rank = (int)PROC_PGRP_MASK + 1;
                         if (best == 0 || prio < best_prio ||
                             (prio == best_prio && rank < best_rank)) {
                                 best = slot;
@@ -701,9 +676,9 @@ proc_select_runnable(unsigned int elapsed_ticks)
 unsigned int
 proc_sched_resched_select(void)
 {
-        unsigned int elapsed_ticks;
+        int elapsed_ticks;
 
-        elapsed_ticks = (unsigned int)proc_sched_deferred_ticks;
+        elapsed_ticks = (int)proc_sched_deferred_ticks;
         proc_sched_deferred_ticks = 0UL;
         return proc_select_runnable(elapsed_ticks);
 }
@@ -711,12 +686,12 @@ proc_sched_resched_select(void)
 unsigned int
 proc_sched_tick_select(void)
 {
-        unsigned int elapsed_ticks;
+        int elapsed_ticks;
 
-        elapsed_ticks = (unsigned int)proc_sched_deferred_ticks;
+        elapsed_ticks = (int)proc_sched_deferred_ticks;
         proc_sched_deferred_ticks = 0UL;
-        if (elapsed_ticks == 0U)
-                elapsed_ticks = 1U;
+        if (elapsed_ticks == 0)
+                elapsed_ticks = 1;
         return proc_select_runnable(elapsed_ticks);
 }
 
