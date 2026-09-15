@@ -22,6 +22,8 @@
         .globl pdp10_ret_ok
         .globl pdp10_ret_arg
         .globl pdp10_ret_busy
+        .globl proc_wait_event
+        .globl proc_wakeup_event
 
 ; Polled controller/search paths use wall-clock timeouts.  storage_count is
 ; negative only while one of these timers is armed; storage_clock_tick moves
@@ -50,7 +52,7 @@ tape_pi_dtc_status:
         jumpe 2,pdp10_pi_dispatch_done
         trnn 1,0000001
         jrst pdp10_pi_dispatch_done
-        jrst tape_pi_done
+        jrst tape_pi_dtc_done
 
 tape_pi_mtc_write_status:
         seto 2,
@@ -68,6 +70,11 @@ tape_pi_mtc_status:
 tape_pi_mtc_idle_check:
         trnn 1,0000001
         jrst pdp10_pi_dispatch_done
+
+tape_pi_dtc_done:
+        movns storage_state
+        pushj 017,tape_dtc_wakeup
+        jrst tape_pi_cleanup
 
 tape_pi_done:
         movns storage_state
@@ -94,6 +101,7 @@ tape_pi_dtc_block_error:
         cono 0210,0(2)
         cono 0200,0
         setzm dtc_motion(1)
+        pushj 017,tape_dtc_wakeup
         jrst pdp10_pi_dispatch_done
 
 ; PI3 tape leaf.  Reverse DECtape transfers are serviced one word at a time;
@@ -162,6 +170,7 @@ tape_dct_keep_forward:
         cono 0210,0(1)
         cono 0200,0
         movns storage_state
+        pushj 017,tape_dtc_wakeup
         jrst pdp10_pi_dispatch_done
 
 tape_dct_mtc_read_full:
@@ -194,6 +203,12 @@ tape_dct_mtc_write_drain:
         andi 1,0777770
         cono 0200,0(1)
         jrst pdp10_pi_dispatch_done
+
+; Complete a DECtape block event and wake a process sleeping on it.
+tape_dtc_wakeup:
+        setom dtc_transfer_event
+        movei 1,dtc_transfer_event
+        jrst proc_wakeup_event
 
 ; Direct PI3 block setup shared inside the tape package.
 tape_setup_read:
@@ -329,6 +344,7 @@ dtc_block_setup_direction:
         movem 4,000046
 dtc_block_setup_state:
         movem 1,dtc_request_unit
+        setzm dtc_transfer_event
         lsh 1,3
         skipn dtc_request_write
         jrst dtc_block_start_read
@@ -338,13 +354,18 @@ dtc_block_setup_state:
         ior 1,dtc_request_reverse
         cono 0210,0(1)
         cono 0200,003443
-        jrst tape_wait
+        jrst dtc_transfer_wait
 dtc_block_start_read:
         setom storage_state
         iori 1,0220305
         ior 1,dtc_request_reverse
         cono 0200,004043
         cono 0210,0(1)
+        jrst dtc_transfer_wait
+
+dtc_transfer_wait:
+        movei 1,dtc_transfer_event
+        pushj 017,proc_wait_event
         jrst tape_wait
 
 dtc_search_fail:
@@ -467,6 +488,7 @@ tape_account_table:
 dtc_request_unit: .block 1
 dtc_request_write: .block 1
 dtc_request_reverse: .block 1
+dtc_transfer_event: .block 1
 dtc_motion: .block 010
 
 ; Device-local accounting state; absent devices consume no fixed KCORE.
