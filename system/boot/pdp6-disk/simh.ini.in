@@ -14,6 +14,7 @@ set dtc enabled
 set dtc0 enabled
 set dtc1 enabled
 set dtc2 enabled
+set mtc dct=03
 set mtc enabled
 set mtc0 enabled
 set mtc1 enabled
