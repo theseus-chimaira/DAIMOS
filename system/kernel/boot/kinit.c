@@ -4,6 +4,7 @@
 #include "mres.h"
 #include "kboot.h"
 #include "mm.h"
+#include "mm_internal.h"
 #include "module_runtime.h"
 #include "proc.h"
 
@@ -155,13 +156,19 @@ mres_install(const kword_t *package, unsigned int *basep)
                 dst[init_words + i] = 0;
         if (mres_owner_next == 0U || mres_owner_next > MODULE_RUNTIME_MAX ||
             MODULE_RUNTIME_INIT_WORDS(module_runtime_descs[mres_owner_next]) !=
-            0UL || mm_pin((kword_t)base) != MM_OK)
+            0UL)
                 goto fail;
-        /* Relocation maps remain only in disposable KINIT packages.  Resident
-         * boot modules are pinned, so retaining a second copy solely for
-         * mm_move_module() would waste permanent kernel space. */
+        /* Packed boot MRES is permanent.  Commit it out of the general MM
+         * table immediately: its runtime descriptor retains the service base,
+         * while MM must spend descriptors only on memory that can later move
+         * or be reclaimed. */
         module_runtime_descs[mres_owner_next] =
             ((kword_t)init_words << 18U) | (kword_t)base;
+        if (mm_boot_reserve((kword_t)base, MM_TYPE_MODULE, mres_owner_next) !=
+            MM_OK) {
+                module_runtime_descs[mres_owner_next] = 0UL;
+                goto fail;
+        }
         mres_next_addr = base + init_words + bss_words;
         *basep = base;
         mres_last_owner = mres_owner_next;

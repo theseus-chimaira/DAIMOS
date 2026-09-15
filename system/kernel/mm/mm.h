@@ -8,10 +8,12 @@
  *
  * Descriptors are kept in physical-base order.  Each descriptor uses only two
  * PDP-10 words so the allocator has a small fixed resident footprint.  The
- * initial limit is deliberately modest; descriptor exhaustion is reported
- * separately from core exhaustion and can be raised after measurement.
+ * The measured runtime limit is 20.  Packed boot MRES is committed out of
+ * allocator bookkeeping during KINIT, so these slots are reserved for memory
+ * that can still move or be reclaimed.  Descriptor exhaustion remains distinct
+ * from core exhaustion.
  */
-#define MM_MAX_EXTENTS          36
+#define MM_MAX_EXTENTS          20
 
 #define MM_TYPE_FREE            0U
 #define MM_TYPE_PROCESS         1U

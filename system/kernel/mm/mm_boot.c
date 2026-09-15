@@ -8,6 +8,29 @@ mm_boot_init(kword_t core_words)
         mm_extent_count = 0U;
 }
 
+/* Permanently remove an allocated boot range from allocator bookkeeping.
+ * KCORE and packed MRES are never movable or reclaimable after KINIT, so
+ * retaining one descriptor per resident package only wastes scarce resident
+ * descriptor space.  The range becomes unmanaged, not free. */
+int
+mm_boot_reserve(kword_t base, unsigned int type, unsigned int owner)
+{
+        int i;
+
+        for (i = 0; i < mm_extent_count; ++i)
+                if (MM_EXTENT_BASE(&mm_extents[i]) == base)
+                        break;
+        if (i >= mm_extent_count ||
+            MM_EXTENT_TYPE(&mm_extents[i]) != type ||
+            MM_EXTENT_OWNER(&mm_extents[i]) != owner ||
+            MM_EXTENT_PINS(&mm_extents[i]) != 0U)
+                return MM_ERR_INVAL;
+        while (++i < mm_extent_count)
+                mm_extents[i - 1] = mm_extents[i];
+        --mm_extent_count;
+        return MM_OK;
+}
+
 int
 mm_alloc(kword_t words, unsigned int type, unsigned int owner,
     unsigned int preference, kword_t *basep)
