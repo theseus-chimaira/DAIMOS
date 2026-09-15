@@ -60,71 +60,73 @@ static int
 mm_find_fit(kword_t words, kword_t alignment, unsigned int preference,
     kword_t *basep)
 {
-        kword_t arena_base;
-        kword_t arena_end;
-        kword_t cursor;
-        kword_t extent_base;
-        kword_t extent_end;
-        kword_t candidate;
-        kword_t high_candidate;
+        int arena_base;
+        int arena_end;
+        int cursor;
+        int extent_base;
+        int extent_end;
+        int candidate;
+        int high_candidate;
+        int request;
+        int align;
         int have_high;
         int arena;
         int i;
 
+        request = (int)words;
+        align = (int)alignment;
         have_high = 0;
-        high_candidate = 0UL;
+        high_candidate = 0;
         i = 0;
         for (arena = 0; arena < mm_arena_count; ++arena) {
-                arena_base = MM_ARENA_BASE(mm_arenas[arena]);
-                arena_end = arena_base + MM_ARENA_WORDS(mm_arenas[arena]);
+                arena_base = (int)MM_ARENA_BASE(mm_arenas[arena]);
+                arena_end = arena_base +
+                    (int)MM_ARENA_WORDS(mm_arenas[arena]);
                 cursor = arena_base;
                 while (i < mm_extent_count &&
-                    MM_EXTENT_BASE(&mm_extents[i]) < arena_base)
+                    (int)MM_EXTENT_BASE(&mm_extents[i]) < arena_base)
                         ++i;
                 while (i < mm_extent_count) {
-                        extent_base = MM_EXTENT_BASE(&mm_extents[i]);
+                        extent_base = (int)MM_EXTENT_BASE(&mm_extents[i]);
                         if (extent_base >= arena_end)
                                 break;
                         if (extent_base > cursor) {
                                 if (preference == MM_ALLOC_LOW) {
-                                        candidate = (cursor + alignment - 1UL) &
-                                            ~(alignment - 1UL);
-                                        if ((long)candidate >= (long)cursor &&
-                                            (long)words <=
-                                            (long)(extent_base - candidate)) {
-                                                *basep = candidate;
+                                        candidate = (cursor + align - 1) &
+                                            ~(align - 1);
+                                        if (candidate >= cursor &&
+                                            request <= extent_base - candidate) {
+                                                *basep = (kword_t)candidate;
                                                 return 1;
                                         }
-                                } else if ((long)(extent_base - cursor) >=
-                                    (long)words) {
-                                        candidate = (extent_base - words) &
-                                            ~(alignment - 1UL);
-                                        if ((long)candidate >= (long)cursor) {
+                                } else if (extent_base - cursor >= request) {
+                                        candidate = (extent_base - request) &
+                                            ~(align - 1);
+                                        if (candidate >= cursor) {
                                                 high_candidate = candidate;
                                                 have_high = 1;
                                         }
                                 }
                         }
                         extent_end = extent_base +
-                            MM_EXTENT_WORDS(&mm_extents[i]);
+                            (int)MM_EXTENT_WORDS(&mm_extents[i]);
                         if (extent_end > cursor)
                                 cursor = extent_end;
                         ++i;
                 }
                 if (arena_end > cursor) {
                         if (preference == MM_ALLOC_LOW) {
-                                candidate = (cursor + alignment - 1UL) &
-                                    ~(alignment - 1UL);
-                                if ((long)candidate >= (long)cursor &&
-                                    (long)words <=
-                                    (long)(arena_end - candidate)) {
-                                        *basep = candidate;
+                                candidate = (cursor + align - 1) &
+                                    ~(align - 1);
+                                if (candidate >= cursor &&
+                                    request <= arena_end - candidate) {
+                                        *basep = (kword_t)candidate;
                                         return 1;
                                 }
-                        } else if ((long)(arena_end - cursor) >= (long)words) {
-                                candidate = (arena_end - words) &
-                                    ~(alignment - 1UL);
-                                if ((long)candidate >= (long)cursor) {
+                        } else if (arena_end - cursor >= request) {
+                                candidate = (arena_end - request) &
+                                    ~(align - 1);
+                                if (candidate >= cursor) {
                                         high_candidate = candidate;
                                         have_high = 1;
                                 }
@@ -132,7 +134,7 @@ mm_find_fit(kword_t words, kword_t alignment, unsigned int preference,
                 }
         }
         if (have_high) {
-                *basep = high_candidate;
+                *basep = (kword_t)high_candidate;
                 return 1;
         }
         return 0;

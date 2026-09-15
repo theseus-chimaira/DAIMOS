@@ -1072,7 +1072,9 @@ dtfs_transfer_words(vnode_t node, unsigned int off, kword_t *buf,
                     dtfs_resize(node, need) != 0)
                         return -1;
         }
+#if DTFS_ENABLE_ITS
 transfer:
+#endif
         return dtfs_chain_walk(dtfs_unit(node), slot, off, buf,
             nwords, mapoff, writing);
 }

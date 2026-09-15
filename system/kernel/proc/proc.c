@@ -18,17 +18,18 @@ extern struct file *file_table;
 extern int proc_event_send(unsigned int target, unsigned int event, int group);
 extern int proc_session_teardown(unsigned int leader_slot, kword_t leader_ctl);
 
-static unsigned int
-proc_effective(const struct proc *p)
-{
-        return PROC_NICE_ENCODED(p) + PROC_CPU_PENALTY(p);
-}
-
-static inline unsigned int
-proc_uarea_owner(unsigned int slot)
-{
-        return PROC_UAREA_MM_OWNER_BASE + slot;
-}
+/* KCC emits calls for tiny C helpers here.  Keep scheduler-common
+ * expressions explicit so selection does not pay those calls. */
+#define PROC_EFFECTIVE(p) \
+        (PROC_NICE_ENCODED(p) + PROC_CPU_PENALTY(p))
+#define PROC_UAREA_OWNER(slot) (PROC_UAREA_MM_OWNER_BASE + (slot))
+#ifdef __PDP10__
+#define PROC_SWAP_RECORD_PRESENT(slot) \
+        (proc_swap_records[(slot)].state != 0UL)
+#else
+#define PROC_SWAP_RECORD_PRESENT(slot) \
+        (proc_swap_records != 0 && proc_swap_records[(slot)].state != 0UL)
+#endif
 
 static int
 proc_uarea_release(unsigned int slot, struct proc *p)
@@ -39,7 +40,7 @@ proc_uarea_release(unsigned int slot, struct proc *p)
                 return 0;
         base = PROC_UAREA_BASE(p);
         if (base == 0UL || mm_free(base, MM_TYPE_KERNEL_DYNAMIC,
-            proc_uarea_owner(slot)) != MM_OK)
+            PROC_UAREA_OWNER(slot)) != MM_OK)
                 return -1;
         p->meta &= ~((kword_t)PROC_F_UAREA << PROC_FLAGS_SHIFT);
         PROC_SET_META_LH(p, 0UL);
@@ -104,15 +105,17 @@ proc_runq_remove(unsigned int slot)
 #endif
 
 
-static inline void
-proc_ctl_set(struct proc *p, kword_t mask, unsigned int shift,
-    unsigned int value)
+#define PROC_REPORT_BITS \
+        ((kword_t)PROC_REPORT_MASK << PROC_REPORT_SHIFT)
+
+static void
+proc_report_set(struct proc *p, unsigned int report)
 {
         kword_t ctl;
 
         ctl = PROC_CTL_WORD(p);
-        ctl &= ~(mask << shift);
-        ctl |= ((kword_t)value & mask) << shift;
+        ctl &= ~PROC_REPORT_BITS;
+        ctl |= ((kword_t)report & PROC_REPORT_MASK) << PROC_REPORT_SHIFT;
         PROC_CTL_WORD(p) = ctl;
 }
 
@@ -187,25 +190,12 @@ proc_slot_discard(unsigned int slot)
         return 0;
 }
 
-static inline void
-proc_queue_event(struct proc *p, unsigned int event)
-{
-        kword_t ctl;
-
-        ctl = PROC_CTL_WORD(p);
-        if (event == SYS_EVENT_PIPE)
-                ctl |= PROC_PIPE_EVENT_BIT;
-        else
-                ctl |= (kword_t)SYS_EVENT_BIT(event) << PROC_EVENT_SHIFT;
-        PROC_CTL_WORD(p) = ctl;
-}
-
 extern void proc_notify_parent(unsigned int parent);
 
 static void
 proc_child_report(struct proc *child, unsigned int report)
 {
-        proc_ctl_set(child, PROC_REPORT_MASK, PROC_REPORT_SHIFT, report);
+        proc_report_set(child, report);
         proc_notify_parent(PROC_PARENT_SLOT(child));
 }
 
@@ -310,26 +300,6 @@ proc_exit_finish(int status)
         return proc_has_live_user();
 }
 
-static inline int
-proc_event_kill(unsigned int slot, unsigned int event)
-{
-        struct proc *p;
-        struct file *saved;
-
-        if (slot == (unsigned int)proc_current_slot) {
-                file_close_all();
-                proc_exit_current((int)(SYS_WAIT_EVENT_FLAG | event));
-                return -1;
-        }
-        p = &proc_table[slot];
-        saved = file_table;
-        file_table = (struct file *)(unsigned long)
-            (PROC_UAREA_BASE(p) + PROC_FILE_TABLE_OFFSET);
-        file_close_all();
-        file_table = saved;
-        return proc_finish_slot(slot, SYS_WAIT_EVENT_FLAG | event);
-}
-
 int
 proc_event_apply(unsigned int slot, unsigned int event)
 {
@@ -341,13 +311,30 @@ proc_event_apply(unsigned int slot, unsigned int event)
         state = PROC_STATE(p);
 
         /* Fatal events are reported through the zombie wait status.  Their
-         * pending bit would live only in the u-area that proc_event_kill()
-         * immediately releases, so do not create dead state. */
-        if (event <= SYS_EVENT_HUP || event == SYS_EVENT_PIPE)
-                return proc_event_kill(slot, event);
-        proc_queue_event(p, event);
+         * pending bit would live only in the u-area released below, so do not
+         * create dead state. */
+        if (event <= SYS_EVENT_HUP || event == SYS_EVENT_PIPE) {
+                struct file *saved;
+
+                if (slot == (unsigned int)proc_current_slot) {
+                        file_close_all();
+                        proc_exit_current((int)(SYS_WAIT_EVENT_FLAG | event));
+                        return -1;
+                }
+                saved = file_table;
+                file_table = (struct file *)(unsigned long)
+                    (PROC_UAREA_BASE(p) + PROC_FILE_TABLE_OFFSET);
+                file_close_all();
+                file_table = saved;
+                return proc_finish_slot(slot, SYS_WAIT_EVENT_FLAG | event);
+        }
+        ctl = PROC_CTL_WORD(p);
+        if (event == SYS_EVENT_PIPE)
+                ctl |= PROC_PIPE_EVENT_BIT;
+        else
+                ctl |= (kword_t)SYS_EVENT_BIT(event) << PROC_EVENT_SHIFT;
+        PROC_CTL_WORD(p) = ctl;
         if (event == SYS_EVENT_TSTP) {
-                ctl = PROC_CTL_WORD(p);
                 if ((ctl & PROC_STOP_JOB_BIT) != 0UL)
                         return 0;
                 PROC_CTL_WORD(p) = ctl | PROC_STOP_JOB_BIT;
@@ -359,7 +346,6 @@ proc_event_apply(unsigned int slot, unsigned int event)
                 return 0;
         }
         if (event == SYS_EVENT_CONT) {
-                ctl = PROC_CTL_WORD(p);
                 if ((ctl & PROC_STOP_JOB_BIT) == 0UL)
                         return 0;
                 ctl &= ~PROC_STOP_JOB_BIT;
@@ -499,9 +485,7 @@ proc_wait_status(unsigned int selector, kword_t *statusp, unsigned int flags)
                                 report = PROC_WAIT_REPORT(child);
                                 if (report == PROC_REPORT_STOPPED ||
                                     report == PROC_REPORT_CONTINUED) {
-                                        proc_ctl_set(child, PROC_REPORT_MASK,
-                                            PROC_REPORT_SHIFT,
-                                            PROC_REPORT_NONE);
+                                        proc_report_set(child, PROC_REPORT_NONE);
                                         if (statusp != 0)
                                                 *statusp = SYS_WAIT_STATUS(
                                                     report + 1U, report + 2U);
@@ -646,8 +630,8 @@ proc_select_runnable(int elapsed_ticks)
                             ((kword_t)(unsigned int)cpu << PROC_CPU_SHIFT);
                 }
                 if (!PROC_TRANSITION(p) &&
-                    (VM_SPACE_ACTIVE(p) || proc_swap_is_swapped(slot))) {
-                        prio = (int)proc_effective(p);
+                    (VM_SPACE_ACTIVE(p) || PROC_SWAP_RECORD_PRESENT(slot))) {
+                        prio = (int)PROC_EFFECTIVE(p);
                         /* Slots fit in eight bits.  Mod-256 distance preserves
                          * cyclic slot order; distance zero is the current slot
                          * and therefore sorts after every other candidate. */
@@ -665,7 +649,7 @@ proc_select_runnable(int elapsed_ticks)
         }
         if (best != 0) {
                 proc_sched_cursor = (kword_t)best;
-                if (proc_swap_is_swapped(best)) {
+                if (!VM_SPACE_ACTIVE(&proc_table[best])) {
                         proc_sched_cursor |= PROC_SCHED_SWAP_REQUEST;
                         return 0U;
                 }
@@ -733,7 +717,7 @@ proc_swap_victim(unsigned int exclude_owner)
                         if (PROC_WAIT_CLASS(p) != PROC_WAIT_NONE)
                                 score += 040;
                 } else {
-                        score = 01000 + (int)proc_effective(p);
+                        score = 01000 + (int)PROC_EFFECTIVE(p);
                         if (nice > 0)
                                 score += 02000 + nice * 010;
                 }
