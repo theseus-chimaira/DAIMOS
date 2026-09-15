@@ -60,6 +60,10 @@
 #define SYS_PROCCTL_TTY_DETACH   012U
 #define SYS_PROCCTL_TTY_GETFG    013U
 #define SYS_PROCCTL_TTY_SETFG    014U
+#define SYS_PROCCTL_GETUID       015U
+#define SYS_PROCCTL_GETGID       016U
+#define SYS_PROCCTL_SETUID       017U
+#define SYS_PROCCTL_SETGID       020U
 
 /* Compact controlling-terminal state returned by GETTTY. */
 #define SYS_TTY_NO_TTY            0U

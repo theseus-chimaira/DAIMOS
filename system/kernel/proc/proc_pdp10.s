@@ -19,8 +19,9 @@
         .equ    PROC_SCHED_QUANTUM_TICKS,4
         .equ    PROC_TRANSITION_RH,0200000
         .equ    PROC_FILE_TABLE_OFFSET,047
-        .equ    PROC_USTACK_BASE,0107
-        .equ    PROC_KSTACK_WORDS,0310
+        .equ    PROC_CRED_OFFSET,0107
+        .equ    PROC_USTACK_BASE,0110
+        .equ    PROC_KSTACK_WORDS,0307
         .equ    KERNEL_IDLE_STACK_WORDS,0100
 
         .equ    CTX_U_PC,020
@@ -594,7 +595,7 @@ proc_child_set:
         .globl  proc_tty_release_session
 proc_control:
         jumpl   1,pdp10_ret_neg1
-        caile   1,014
+        caile   1,020
         jrst    pdp10_ret_neg1
         move    3,proc_current_slot
         move    4,3
@@ -616,6 +617,10 @@ proc_control_table:
         .word   proc_control_tty_detach
         .word   proc_control_tty_getfg
         .word   proc_control_tty_setfg
+        .word   proc_control_getuid
+        .word   proc_control_getgid
+        .word   proc_control_setuid
+        .word   proc_control_setgid
 
 proc_control_getpgrp:
         jumpn   2,pdp10_ret_neg1
@@ -793,6 +798,48 @@ proc_control_tty_getfg:
         move    1,7
         lsh     1,-010
         andi    1,0377
+        popj    17,
+
+proc_control_getuid:
+        jumpn   2,pdp10_ret_neg1
+        hlrz    5,(4)
+        hlrz    1,PROC_CRED_OFFSET(5)
+        popj    17,
+
+proc_control_getgid:
+        jumpn   2,pdp10_ret_neg1
+        hlrz    5,(4)
+        hrrz    1,PROC_CRED_OFFSET(5)
+        popj    17,
+
+; UID 0 may install login credentials.  An ordinary process may only request
+; its current UID/GID, so it cannot acquire another identity.
+proc_control_setuid:
+        caile   2,0777777
+        jrst    pdp10_ret_neg1
+        hlrz    5,(4)
+        hlrz    6,PROC_CRED_OFFSET(5)
+        jumpe   6,proc_control_setuid_ok
+        came    2,6
+        jrst    pdp10_ret_neg1
+proc_control_setuid_ok:
+        hrlm    2,PROC_CRED_OFFSET(5)
+        move    1,2
+        popj    17,
+
+proc_control_setgid:
+        caile   2,0777777
+        jrst    pdp10_ret_neg1
+        hlrz    5,(4)
+        move    6,PROC_CRED_OFFSET(5)
+        hlrz    7,6
+        jumpe   7,proc_control_setgid_ok
+        hrrz    7,6
+        came    2,7
+        jrst    pdp10_ret_neg1
+proc_control_setgid_ok:
+        hrrm    2,PROC_CRED_OFFSET(5)
+        move    1,2
         popj    17,
 
 proc_control_tty_setfg:

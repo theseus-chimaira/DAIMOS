@@ -684,6 +684,8 @@ file_getcwd_pseudo_tail:
 ; int file_symlink(const kword_t *target, const kword_t *linkpath)
 ; Save target and character count below one parent-vnode/name record.
         .globl  vfs_symlink
+        .globl  file_check_access
+        .globl  file_check_owner
         .globl  file_symlink
 file_symlink:
         jumpe   1,pdp10_ret_neg1
@@ -699,6 +701,10 @@ file_symlink:
         movei   2,-5(17)              ; dir
         movei   3,-4(17)              ; leaf
         pushj   17,file_parent_path
+        jumpn   1,file_symlink_fail
+        move    1,-5(17)
+        movei   2,3
+        pushj   17,file_check_access
         jumpn   1,file_symlink_fail
         move    1,-5(17)              ; dir
         movei   2,-4(17)              ; leaf
@@ -729,6 +735,14 @@ file_rename:
         movei   3,-012(17)             ; oldname
         pushj   17,file_parent_path
         jumpn   1,file_rename_fail
+        move    1,-5(17)
+        movei   2,3
+        pushj   17,file_check_access
+        jumpn   1,file_rename_fail
+        move    1,-013(17)
+        movei   2,3
+        pushj   17,file_check_access
+        jumpn   1,file_rename_fail
         move    1,-014(17)             ; saved newpath
         movei   2,-5(17)               ; newdir
         movei   3,-4(17)               ; newname
@@ -748,26 +762,30 @@ file_rename_fail:
         jrst    file_rename_done
 
 ; int file_chdir(const kword_t *path)
-; Five locals hold one vnode followed by a four-word vfs_stat.
+; Seven locals hold one vnode followed by a six-word vfs_stat.
         .globl  file_chdir
 file_chdir:
-        add     17,[5,,5]
-        movei   2,-4(17)
+        add     17,[7,,7]
+        movei   2,-6(17)
         pushj   17,file_lookup_path
         jumpn   1,file_chdir_fail
-        move    1,-4(17)
-        movei   2,-3(17)
+        move    1,-6(17)
+        movei   2,-5(17)
         pushj   17,vfs_stat
         jumpn   1,file_chdir_fail
-        move    3,-3(17)
+        move    3,-5(17)
         caie    3,1                    ; VFS_TYPE_DIR
         jrst    file_chdir_fail
-        move    1,-4(17)
+        move    1,-6(17)
+        movei   2,1
+        pushj   17,file_check_access
+        jumpn   1,file_chdir_fail
+        move    1,-6(17)
         move    2,file_table
         movem   1,-1(2)
         setz    1,
 file_chdir_done:
-        sub     17,[5,,5]
+        sub     17,[7,,7]
         popj    17,
 file_chdir_fail:
         seto    1,
@@ -794,6 +812,10 @@ file_make_node:
         movei   2,-5(17)
         movei   3,-4(17)
         pushj   17,file_parent_path
+        jumpn   1,file_make_node_fail
+        move    1,-5(17)
+        movei   2,3
+        pushj   17,file_check_access
         jumpn   1,file_make_node_fail
         move    3,-6(17)
         move    1,-5(17)
@@ -823,6 +845,10 @@ file_unlink:
         pushj   17,file_parent_path
         jumpn   1,file_unlink_fail
         move    1,-6(17)
+        movei   2,3
+        pushj   17,file_check_access
+        jumpn   1,file_unlink_fail
+        move    1,-6(17)
         movei   2,-5(17)
         movei   3,(17)
         pushj   17,vfs_lookup
@@ -850,6 +876,10 @@ file_truncate:
         add     17,[1,,1]
         movei   2,(17)
         pushj   17,file_lookup_path
+        jumpn   1,file_path_onearg_fail
+        move    1,(17)
+        movei   2,2
+        pushj   17,file_check_access
         jumpn   1,file_path_onearg_fail
         move    3,-1(17)
         move    2,3

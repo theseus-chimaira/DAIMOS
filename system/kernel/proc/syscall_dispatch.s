@@ -341,11 +341,17 @@ native_sys_chmod:
         push    17,2
         pushj   17,native_sys_lookup_user_path
         jumpe   1,native_sys_chmod_bad
+        push    17,1                   ; vnode
+        pushj   17,file_check_owner
+        jumpn   1,native_sys_chmod_owner_bad
+        pop     17,1
         pop     17,2
         hrrz    2,2
         jrst    vfs_chmod
+native_sys_chmod_owner_bad:
+        pop     17,0                   ; vnode
 native_sys_chmod_bad:
-        pop     17,0
+        pop     17,0                   ; saved mode
         jrst    %L137
 
 native_sys_dtfs_format:

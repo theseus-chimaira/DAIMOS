@@ -47,6 +47,8 @@ struct file {
 /* FILE descriptors and cwd are process-private and live in the stable
  * process u-area.  KCORE retains only a pointer to the current table. */
 int file_lookup_path(const kword_t *path, vnode_t *nodep);
+int file_check_access(vnode_t node, unsigned int need);
+int file_check_owner(vnode_t node);
 int file_open(const kword_t *path, unsigned int flags);
 int file_close(int fd);
 int file_dup(int fd);

@@ -1020,6 +1020,10 @@ d6fs_provider_stat:
         movem   1,(2)                    ; st->type
         move    1,-7(17)                 ; info.mode
         movem   1,1(2)                   ; st->mode
+        move    1,-4(17)                 ; info.uid
+        movem   1,4(2)                   ; st->uid
+        move    1,-3(17)                 ; info.gid
+        movem   1,5(2)                   ; st->gid
         move    4,-2(17)                 ; info.size_words
         movem   4,3(2)                   ; st->size_words
         jumpe   4,d6fs_provider_stat_zero_chars

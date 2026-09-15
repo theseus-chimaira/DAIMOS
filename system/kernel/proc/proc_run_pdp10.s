@@ -18,7 +18,8 @@
         .equ    PROC_FDCTL_OFFSET,045
         .equ    PROC_FILE_CWD_OFFSET,046
         .equ    PROC_FILE_TABLE_OFFSET,047
-        .equ    PROC_USTACK_BASE,0107
+        .equ    PROC_CRED_OFFSET,0107
+        .equ    PROC_USTACK_BASE,0110
         .equ    PROC_UAREA_OWNER_BASE,01000
         .equ    MM_TYPE_KERNEL_DYNAMIC,3
         .equ    EXEC_DXR_STACK_WORDS,02000
@@ -232,6 +233,9 @@ proc_run_watermark_loop:
         jrst    proc_run_claimed_bad
         move    4,-1(7)
         movem   4,PROC_FILE_CWD_OFFSET(014)
+        ; file_table points at parent u-area 047; credentials are at 0107.
+        move    4,040(7)
+        movem   4,PROC_CRED_OFFSET(014)
         setz    4,                      ; child-fd duplicate bitmap
         hrrz    3,3(010)
         jumpe   3,proc_run_map_done

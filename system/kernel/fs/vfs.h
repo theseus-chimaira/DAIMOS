@@ -89,6 +89,8 @@ struct vfs_stat {
         unsigned int mode;
         kword_t size_chars;
         kword_t size_words;
+        unsigned int uid;
+        unsigned int gid;
 };
 
 int vfs_name_valid(const struct vfs_name *name);

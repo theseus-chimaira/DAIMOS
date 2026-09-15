@@ -1,8 +1,64 @@
 #include "file.h"
 #include "fs_mres.h"
 #include "../ipc/pipe.h"
+#include "../proc/proc.h"
 
 extern struct file *file_table;
+
+/* UNIX owner/group/other selection.  There are intentionally no supplementary
+ * groups in 0.9.  Bootstrap/kernel context and UID 0 are privileged. */
+static int
+file_access_stat(const struct vfs_stat *st, unsigned int need)
+{
+        struct proc *p;
+        unsigned int uid;
+        unsigned int gid;
+        unsigned int bits;
+
+        if (st == 0 || (need & ~07U) != 0U)
+                return -1;
+        if (proc_table == 0 || proc_current_slot == 0UL)
+                return 0;
+        p = &proc_table[(unsigned int)proc_current_slot];
+        if (!PROC_HAS_UAREA(p))
+                return 0;
+        uid = PROC_UID(p);
+        if (uid == 0U)
+                return 0;
+        gid = PROC_GID(p);
+        bits = st->mode;
+        if (uid == st->uid)
+                bits >>= 6U;
+        else if (gid == st->gid)
+                bits >>= 3U;
+        return (bits & need) == need ? 0 : -1;
+}
+
+int
+file_check_access(vnode_t node, unsigned int need)
+{
+        struct vfs_stat st;
+
+        if (vfs_stat(node, &st) != 0)
+                return -1;
+        return file_access_stat(&st, need);
+}
+
+int
+file_check_owner(vnode_t node)
+{
+        struct vfs_stat st;
+        struct proc *p;
+
+        if (vfs_stat(node, &st) != 0)
+                return -1;
+        if (proc_table == 0 || proc_current_slot == 0UL)
+                return 0;
+        p = &proc_table[(unsigned int)proc_current_slot];
+        if (!PROC_HAS_UAREA(p) || PROC_UID(p) == 0U)
+                return 0;
+        return PROC_UID(p) == st.uid ? 0 : -1;
+}
 
 extern int file_component(const kword_t *path, unsigned int *posp,
     struct vfs_name *name);
@@ -67,6 +123,8 @@ file_walk_path_at(const kword_t *path, int parent_only,
                         return 0;
                 }
                 /* file_component() bounds both values by the path limit. */
+                if (file_check_access(node, 01U) != 0)
+                        return -1;
                 if (parent_only && (int)pos >= (int)n) {
                         if (file_name_dot(&name) || file_name_dotdot(&name))
                                 return -1;
@@ -147,11 +205,24 @@ file_open(const kword_t *path, unsigned int flags)
         if (file_lookup_path(path, &node) != 0) {
                 if ((flags & FILE_O_CREAT) == 0U ||
                     file_parent_path(path, &dir, &leaf) != 0 ||
+                    file_check_access(dir, 03U) != 0 ||
                     vfs_create(dir, &leaf, 0666U, &node) != 0)
                         return -1;
         }
         if (vfs_stat(node, &st) != 0)
                 return -1;
+        {
+                unsigned int need;
+
+                need = 0U;
+                if ((flags & FILE_O_READ) != 0U)
+                        need |= 04U;
+                if ((flags & FILE_O_WRITE) != 0U ||
+                    (flags & FILE_O_TRUNC) != 0U)
+                        need |= 02U;
+                if (file_access_stat(&st, need) != 0)
+                        return -1;
+        }
         if ((flags & FILE_O_TRUNC) != 0U && st.type == VFS_TYPE_REG) {
                 if (vfs_truncate(node, 0U, 0) != 0)
                         return -1;

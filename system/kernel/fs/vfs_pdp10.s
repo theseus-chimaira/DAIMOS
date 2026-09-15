@@ -475,6 +475,9 @@ vfs_readdir_raw:
 
         .globl  vfs_stat
 vfs_stat:
+        ; Providers without persistent ownership are root-owned by default.
+        setzm   4(2)
+        setzm   5(2)
         ldb     7,[POINT 6,1,5]
         cain    7,2
         jrst    devicefs_stat

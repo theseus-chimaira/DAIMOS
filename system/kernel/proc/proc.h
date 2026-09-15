@@ -97,7 +97,8 @@
 #define PROC_FDCTL_OFFSET        0045UL
 #define PROC_FILE_CWD_OFFSET     0046UL
 #define PROC_FILE_TABLE_OFFSET   0047UL
-#define PROC_USTACK_BASE         0107UL
+#define PROC_CRED_OFFSET         0107UL
+#define PROC_USTACK_BASE         0110UL
 #define PROC_SESSION_MASK         0377UL
 #define PROC_SESSION_SHIFT            3U
 #define PROC_DOMAIN_MASK          0377UL
@@ -208,6 +209,11 @@ void proc_sched_pi_tick(void);
 #define PROC_UAREA_WORD(p, off) \
         (((kword_t *)(unsigned long)PROC_UAREA_BASE(p))[(off)])
 #define PROC_CTL_WORD(p) PROC_UAREA_WORD((p), PROC_FDCTL_OFFSET)
+#define PROC_CRED_WORD(p) PROC_UAREA_WORD((p), PROC_CRED_OFFSET)
+#define PROC_UID(p) \
+        ((unsigned int)((PROC_CRED_WORD(p) >> 18U) & 0777777UL))
+#define PROC_GID(p) \
+        ((unsigned int)(PROC_CRED_WORD(p) & 0777777UL))
 #define PROC_SWAP_BACKING_WORD(p) \
         PROC_UAREA_WORD((p), PROC_SWAP_BACKING_OFFSET)
 #define PROC_USER_MAPPING_HELD(p) \
