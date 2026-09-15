@@ -15,7 +15,7 @@
         .globl pdp10_ret_busy
 
 ; ge_rx_word: zero idle, -1 waiting, otherwise 4,,raw-GTYI-word (ready).
-; ge_tx_state: bit 0 owns one complete GE frame; bit 1 awaits GTYO DONE.
+; ge_tx_state: nonzero while one complete GE output frame is owned.
 ge_pi_handler:
         conso 0070,00010
         jrst pdp10_pi_handler_return
@@ -84,6 +84,11 @@ ge_put_decoded_wait:
 ge_putchar:
         skipe ge_tx_state
         jrst pdp10_ret_busy
+        ; GTYO is deliberately polled: PI4 services GTYI only.  Clear any
+        ; stale GTYO PI assignment left by firmware, diagnostics, or a warm
+        ; restart before emitting a frame, otherwise DONE can retrigger PI4
+        ; with no output leaf to claim it.  CONO 0 preserves the DONE flag.
+        cono 0750,0
 ge_putchar_idle:
         move 4,1
         ldb 5,[POINT 6,1,27]
