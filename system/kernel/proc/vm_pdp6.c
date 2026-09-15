@@ -90,6 +90,7 @@ vm_extent_move(unsigned int owner, kword_t base, kword_t words)
                 ctl = PROC_CTL_WORD(p);
                 ctl |= (kword_t)PROC_STOP_MM << PROC_STOP_SHIFT;
                 PROC_CTL_WORD(p) = ctl;
+                proc_runq_remove(owner);
                 PROC_SET_STATE(p, PROC_STOP);
         } else if (old_state == PROC_SRUN) {
                 return MM_ERR_BUSY;
@@ -132,8 +133,11 @@ out:
                 ctl &= ~((kword_t)PROC_STOP_MM << PROC_STOP_SHIFT);
                 PROC_CTL_WORD(p) = ctl;
                 if ((ctl & ((kword_t)PROC_STOP_MASK <<
-                    PROC_STOP_SHIFT)) == 0UL)
+                    PROC_STOP_SHIFT)) == 0UL) {
                         PROC_SET_STATE(p, old_state);
+                        if (old_state == PROC_SRUN)
+                                proc_runq_add(owner);
+                }
         }
         return rc;
 }

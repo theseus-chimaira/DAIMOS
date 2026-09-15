@@ -38,6 +38,7 @@ proc_boot_init(void)
         proc_slots = slots;
         proc_high_slot = 1U;
         proc_sched_age_phase = 0U;
+        proc_runq_head = 0UL;
         if (proc_swap_boot_init(slots) != 0) {
                 proc_table = 0;
                 proc_slots = 0U;

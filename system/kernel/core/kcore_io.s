@@ -225,6 +225,9 @@ proc_sched_kick:
         .globl proc_sched_deferred_ticks
 proc_sched_deferred_ticks:
         .block 1
+        .globl proc_runq_head
+proc_runq_head:
+        .block 1
 
         .text
 ; Save the PI state and suppress new priority interrupts while MM publishes a

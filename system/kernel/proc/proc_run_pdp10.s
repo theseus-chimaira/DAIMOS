@@ -43,6 +43,7 @@
         .globl  proc_child_hierarchy
         .globl  proc_scope_id
         .globl  proc_tty_records
+        .globl  proc_runq_add
 
 proc_run_block:
         push    17,010
@@ -271,6 +272,8 @@ proc_run_map_done:
         pushj   17,pipe_add_refs
         movsi   4,PROC_SCHED_SRUN_LH
         movem   4,2(013)
+        move    1,012
+        pushj   17,proc_runq_add
         move    1,012
         jrst    proc_run_return
 

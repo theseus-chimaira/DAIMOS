@@ -89,6 +89,7 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
                 if (proc_user_context_init(slot, entry, stack,
                     (kword_t)slot, 0UL, 0UL) != 0)
                         return;
+                proc_runq_add(slot);
                 PROC_SET_PGRP(p, 1U);
                 PROC_UAREA_WORD(p, PROC_FDCTL_OFFSET) =
                     ((kword_t)1U << PROC_SESSION_SHIFT) |

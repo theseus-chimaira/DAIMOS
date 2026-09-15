@@ -39,9 +39,10 @@
 
 /*
  * sched LH: nice:6, recent-CPU:4, sleep-age:3, wait-class:2, state:3.
- * sched RH is the wait channel.  Nice is stored biased by 20.  The small
- * recent-CPU and sleep-age fields deliberately saturate; the scheduler is
- * intended to stay cheap enough for a rotating process-table scan.
+ * sched RH is state-dependent: a wait channel while sleeping, the intrusive
+ * runnable-queue link while PROC_SRUN, and zombie scope after exit.  Nice is
+ * stored biased by 20.  The small recent-CPU and sleep-age fields deliberately
+ * saturate.
  */
 #define PROC_NICE_MIN       (-20)
 #define PROC_NICE_MAX          19
@@ -143,6 +144,7 @@ extern unsigned int proc_high_slot;
 extern kword_t proc_current_slot;
 extern kword_t proc_sched_cursor;
 extern kword_t proc_sched_deferred_ticks;
+extern kword_t proc_runq_head;
 extern kword_t mach_kernel_stack_base;
 
 int proc_boot_init(void);
@@ -163,6 +165,8 @@ kword_t proc_comm(const struct proc *p);
 int proc_wait_event(volatile kword_t *eventp);
 int proc_wait_event_intr(volatile kword_t *eventp);
 void proc_wakeup_event(volatile kword_t *eventp);
+void proc_runq_add(unsigned int slot);
+void proc_runq_remove(unsigned int slot);
 unsigned int proc_sched_tick_select(void);
 unsigned int proc_sched_resched_select(void);
 int proc_nice_value(int slot);
@@ -239,6 +243,7 @@ void proc_sched_pi_tick(void);
 #define PROC_IS_FREE_OR_ZOMB(p) \
         (((p)->sched & PROC_STATE_LO_BITS) == 0UL)
 #define PROC_WAIT_CHANNEL(p) ((kword_t)((p)->sched & PROC_SCHED_RH_MASK))
+#define PROC_RUNQ_NEXT(p) ((unsigned int)((p)->sched & PROC_SCHED_RH_MASK))
 #define PROC_ZOMB_SESSION(p) \
         ((unsigned int)(((p)->sched >> PROC_ZOMB_SESSION_SHIFT) & \
         PROC_ZOMB_SESSION_MASK))

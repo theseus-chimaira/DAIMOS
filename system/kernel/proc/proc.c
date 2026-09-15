@@ -76,6 +76,53 @@ proc_slot_zero(struct proc *p)
         p->sched = 0UL;
 }
 
+#ifndef __PDP10__
+/* Target helpers are compact PDP-10 assembly.  Keep the same intrusive-list
+ * semantics in host tests so queue invariants are exercised there too. */
+void
+proc_runq_add(unsigned int slot)
+{
+        struct proc *p;
+
+        if (proc_table == 0 || slot == 0U || slot >= proc_slots)
+                return;
+        p = &proc_table[slot];
+        if (PROC_STATE(p) != PROC_SRUN)
+                return;
+        p->sched = (p->sched & ~PROC_SCHED_RH_MASK) |
+            (proc_runq_head & PROC_SCHED_RH_MASK);
+        proc_runq_head = (kword_t)slot;
+}
+
+void
+proc_runq_remove(unsigned int slot)
+{
+        unsigned int cur;
+        unsigned int prev;
+        struct proc *p;
+
+        if (proc_table == 0 || slot == 0U || slot >= proc_slots)
+                return;
+        prev = 0U;
+        cur = (unsigned int)(proc_runq_head & PROC_SCHED_RH_MASK);
+        while (cur != 0U && cur != slot) {
+                prev = cur;
+                cur = PROC_RUNQ_NEXT(&proc_table[cur]);
+        }
+        if (cur == 0U)
+                return;
+        p = &proc_table[slot];
+        cur = PROC_RUNQ_NEXT(p);
+        if (prev == 0U)
+                proc_runq_head = (kword_t)cur;
+        else
+                proc_table[prev].sched =
+                    (proc_table[prev].sched & ~PROC_SCHED_RH_MASK) |
+                    (kword_t)cur;
+        p->sched &= ~PROC_SCHED_RH_MASK;
+}
+#endif
+
 
 static inline void
 proc_ctl_set(struct proc *p, kword_t mask, unsigned int shift,
@@ -154,6 +201,7 @@ proc_slot_discard(unsigned int slot)
             PROC_ZOMB_SESSION_MASK), slot);
         if (proc_uarea_release(slot, p) != 0)
                 return -1;
+        proc_runq_remove(slot);
         proc_slot_zero(p);
         proc_trim_high();
         return 0;
@@ -248,6 +296,7 @@ proc_finish_slot(unsigned int slot, unsigned int status)
             PROC_ZOMB_SESSION_MASK), slot);
         if (proc_uarea_release(slot, p) != 0)
                 return -1;
+        proc_runq_remove(slot);
         proc_adopt_children(slot);
 
         if (parent == 0U) {
@@ -322,6 +371,7 @@ proc_event_apply(unsigned int slot, unsigned int event)
                 if ((ctl & PROC_STOP_JOB_BIT) != 0UL)
                         return 0;
                 PROC_CTL_WORD(p) = ctl | PROC_STOP_JOB_BIT;
+                proc_runq_remove(slot);
                 PROC_SET_STATE(p, PROC_STOP);
                 proc_child_report(p, PROC_REPORT_STOPPED);
                 if (slot == (unsigned int)proc_current_slot)
@@ -335,8 +385,12 @@ proc_event_apply(unsigned int slot, unsigned int event)
                 ctl &= ~PROC_STOP_JOB_BIT;
                 PROC_CTL_WORD(p) = ctl;
                 if ((ctl & PROC_STOP_BITS) == 0UL && state == PROC_STOP) {
-                        PROC_SET_STATE(p, PROC_WAIT_CLASS(p) == PROC_WAIT_NONE ?
-                            PROC_SRUN : PROC_SLEEP);
+                        if (PROC_WAIT_CLASS(p) == PROC_WAIT_NONE) {
+                                PROC_SET_STATE(p, PROC_SRUN);
+                                proc_runq_add(slot);
+                        } else {
+                                PROC_SET_STATE(p, PROC_SLEEP);
+                        }
                 }
                 proc_child_report(p, PROC_REPORT_CONTINUED);
                 return 0;
@@ -349,6 +403,8 @@ proc_event_apply(unsigned int slot, unsigned int event)
             PROC_WAIT_CLASS(p) == PROC_WAIT_INTR)) {
                 p->sched &= ~(PROC_WAIT_BITS | PROC_SCHED_RH_MASK |
                     ((kword_t)01UL << PROC_STATE_SHIFT));
+                if (state == PROC_SLEEP)
+                        proc_runq_add(slot);
         }
         return 0;
 }
@@ -542,10 +598,10 @@ proc_nice_current(int value)
 static unsigned int
 proc_select_runnable(int account_tick)
 {
-        int n;
         int limit;
         int best;
         int best_prio;
+        int best_rank;
         int cur;
         int age_tick;
         int slot;
@@ -555,28 +611,30 @@ proc_select_runnable(int account_tick)
         limit = (int)proc_high_slot;
         best = 0;
         best_prio = 0;
-        cur = (int)proc_current_slot;
+        best_rank = 0;
+        cur = (int)(proc_sched_cursor & PROC_PGRP_MASK);
         age_tick = 0;
         if (account_tick && ++proc_sched_age_phase >= 64U) {
                 proc_sched_age_phase = 0U;
                 age_tick = 1;
         }
 
-        slot = (int)(proc_sched_cursor & PROC_PGRP_MASK);
-        for (n = 1; n < limit; ++n) {
+        /* Accounting still uses the compact descriptor table.  Selection no
+         * longer does: it walks only PROC_SRUN entries through sched RH. */
+        if (account_tick) {
                 struct proc *p;
-                int prio;
 
-                if (++slot >= limit)
-                        slot = 1;
-                p = &proc_table[slot];
-                if (account_tick && !PROC_IS_FREE(p)) {
+                p = &proc_table[1];
+                for (slot = 1; slot < limit; ++slot, ++p) {
                         unsigned int cpu;
 
+                        if (PROC_IS_FREE(p))
+                                continue;
                         cpu = PROC_CPU_PENALTY(p);
                         if (cpu != 0U)
                                 --cpu;
-                        if (slot == cur && PROC_STATE(p) == PROC_SRUN &&
+                        if (slot == (int)proc_current_slot &&
+                            PROC_STATE(p) == PROC_SRUN &&
                             !PROC_TRANSITION(p)) {
                                 cpu += 2U;
                                 if (cpu > (unsigned int)PROC_CPU_MASK)
@@ -595,15 +653,29 @@ proc_select_runnable(int account_tick)
                                 proc_set_sleep_age(p, 0U);
                         }
                 }
-                if (PROC_STATE(p) != PROC_SRUN || PROC_TRANSITION(p))
-                        continue;
-                if (!VM_SPACE_ACTIVE(p) && !proc_swap_is_swapped(slot))
-                        continue;
-                prio = proc_effective(p);
-                if (best == 0 || prio < best_prio) {
-                        best = slot;
-                        best_prio = prio;
+        }
+
+        slot = (int)(proc_runq_head & PROC_SCHED_RH_MASK);
+        while (slot != 0) {
+                struct proc *p;
+                int prio;
+                int rank;
+
+                p = &proc_table[slot];
+                if (!PROC_TRANSITION(p) &&
+                    (VM_SPACE_ACTIVE(p) || proc_swap_is_swapped(slot))) {
+                        prio = (int)proc_effective(p);
+                        rank = slot - cur;
+                        if (rank <= 0)
+                                rank += limit - 1;
+                        if (best == 0 || prio < best_prio ||
+                            (prio == best_prio && rank < best_rank)) {
+                                best = slot;
+                                best_prio = prio;
+                                best_rank = rank;
+                        }
                 }
+                slot = (int)PROC_RUNQ_NEXT(p);
         }
         if (best != 0) {
                 proc_sched_cursor = (kword_t)best;

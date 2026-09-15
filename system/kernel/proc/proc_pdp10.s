@@ -36,6 +36,7 @@
         .globl  proc_current_slot
         .globl  proc_sched_cursor
         .globl  proc_sched_deferred_ticks
+        .globl  proc_runq_head
         .globl  mach_kernel_stack_base
         .globl  proc_wait_event
         .globl  proc_wait_event_intr
@@ -64,6 +65,8 @@
         .globl  file_table
         .globl  vm_activate_current
         .globl  proc_slot_ptr
+        .globl  proc_runq_add
+        .globl  proc_runq_remove
         .globl  proc_trim_high
 
 ; Remove only trailing FREE descriptors; interior holes remain reusable.
@@ -89,6 +92,51 @@ proc_slot_ptr:
         lsh     1,1
         add     1,2                    ; 3 * slot
         add     1,proc_table
+        popj    17,
+
+; Intrusive runnable queue.  PROC_SRUN owns sched RH, so the link costs no
+; per-process storage.  Add is O(1); remove is O(number of runnable jobs), but
+; removal occurs only on state transitions rather than on ordinary quanta.
+; AC1 = slot.  Preserve AC1..AC4 so the event/wait assembly can call these
+; helpers without enlarging its save frames.
+proc_runq_add:
+        move    5,1
+        imuli   5,3
+        add     5,proc_table
+        hlrz    0,2(5)
+        andi    0,PROC_STATE_LH_MASK
+        caie    0,PROC_STATE_RUN
+        popj    17,
+        move    6,proc_runq_head
+        hrrm    6,2(5)
+        movem   1,proc_runq_head
+        popj    17,
+
+proc_runq_remove:
+        move    5,proc_runq_head       ; AC5 = current slot
+        setz    6,                     ; AC6 = predecessor slot
+proc_runq_remove_scan:
+        jumpe   5,proc_runq_remove_done
+        camn    5,1
+        jrst    proc_runq_remove_found
+        move    6,5
+        imuli   5,3
+        add     5,proc_table
+        hrrz    5,2(5)                 ; follow current sched RH
+        jrst    proc_runq_remove_scan
+proc_runq_remove_found:
+        move    7,1
+        imuli   7,3
+        add     7,proc_table
+        hrrz    0,2(7)                 ; successor of target
+        jumpe   6,proc_runq_remove_head
+        imuli   6,3
+        add     6,proc_table
+        hrrm    0,2(6)
+        popj    17,
+proc_runq_remove_head:
+        movem   0,proc_runq_head
+proc_runq_remove_done:
         popj    17,
 
 ; AC1 = slot.  Return AC1 = stable physical u-area base, AC2 clobbered.
@@ -415,6 +463,7 @@ proc_notify_parent_wake:
         tlz     4,PROC_WAIT_LH_MASK
         tlz     4,0100000              ; SLEEP->RUN, STOP remains STOP
         movem   4,2(2)
+        pushj   17,proc_runq_add
 proc_notify_parent_done:
         popj    17,
 
@@ -789,6 +838,10 @@ proc_wait_event_common:
         jrst    pdp10_ret_zero
         skipn   proc_current_slot
         jrst    proc_wait_boot
+        push    17,1                    ; preserve event pointer
+        move    1,proc_current_slot
+        pushj   17,proc_runq_remove
+        pop     17,1
         move    2,proc_current_slot
         lsh     2,1
         add     2,proc_current_slot
@@ -818,6 +871,8 @@ proc_wait_raced:
         tlo     3,PROC_STATE_RUN
         hllz    3,3
         movem   3,2(2)
+        move    1,proc_current_slot
+        pushj   17,proc_runq_add
         jrst    pdp10_ret_zero
 
 proc_wait_intr_return:
@@ -847,6 +902,8 @@ proc_wait_child:
         move    2,-2(2)
         tlne    2,0100                  ; ALRM interrupts user WAIT
         jrst    pdp10_ret_neg1
+        move    1,proc_current_slot
+        pushj   17,proc_runq_remove
         move    2,proc_current_slot
         lsh     2,1
         add     2,proc_current_slot
@@ -883,6 +940,11 @@ proc_wakeup_scan:
         hllz    4,4                    ; clear wait channel
         tlz     4,0100000              ; SLEEP->RUN, STOP remains STOP
         movem   4,2(2)
+        push    17,1                    ; preserve event pointer
+        move    1,3
+        pushj   17,proc_runq_add
+        pop     17,1
+proc_wakeup_after_runq:
         ; If the CPU is in the scheduler idle loop, request PI6 now instead
         ; of adding up to one clock tick of wakeup latency.
         skipn   proc_current_slot
