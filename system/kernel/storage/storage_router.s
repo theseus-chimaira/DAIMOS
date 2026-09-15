@@ -19,6 +19,7 @@
         .globl storage_state
         .globl storage_iowd
         .globl storage_count
+        .globl storage_clock_tick
         .globl storage_clock_dsk_jump
         .globl pdp10_pi_dispatch_done
 
@@ -44,8 +45,14 @@ storage_dct_dsk_jump:
 storage_dct_tape_jump:
         jrst pdp10_pi_dispatch_done
 
-; CLK calls this fixed KCORE trampoline once per qualified line-clock tick.
-; MINIT retargets it to the DSK watchdog when the DSK MRES is present.
+; CLK calls this fixed KCORE service once per qualified line-clock tick.
+; A negative storage_count is a shared wall-clock timeout used only while a
+; polled storage operation is waiting; positive transfer word counts are left
+; alone.  Fall through to the DSK watchdog trampoline so both services share
+; one clock call and no additional resident timer state.
+storage_clock_tick:
+        skipge storage_count
+        aos storage_count
 storage_clock_dsk_jump:
         jrst storage_clock_noop
 storage_clock_noop:

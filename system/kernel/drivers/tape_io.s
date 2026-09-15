@@ -23,6 +23,15 @@
         .globl pdp10_ret_arg
         .globl pdp10_ret_busy
 
+; Polled controller/search paths use wall-clock timeouts.  storage_count is
+; negative only while one of these timers is armed; storage_clock_tick moves
+; negative counts toward zero at 60 Hz without disturbing positive transfer
+; word counts.  MTC spacing/rewind may legitimately span a full reel.
+        .set DTC_SEARCH_TIMEOUT_TICKS,0454       ; 5 seconds
+        .set MTC_CONTROL_TIMEOUT_TICKS,0151440   ; 15 minutes
+        .set DTC_SEARCH_TIMEOUT_NEG_RH,01000000-DTC_SEARCH_TIMEOUT_TICKS
+        .set MTC_CONTROL_TIMEOUT_NEG_RH,01000000-MTC_CONTROL_TIMEOUT_TICKS
+
 ; PI5 status leaf selected by the fixed Type-136 owner router.
 tape_pi_handler:
         move 2,storage_state
@@ -253,9 +262,9 @@ dtc_search_wait:
         datai 0200,4
         jrst dtc_search_have_block
 dtc_search_wait_more:
-        sosle storage_count
-        jrst dtc_search_wait
+        skipn storage_count
         jrst dtc_search_fail
+        jrst dtc_search_wait
 dtc_search_have_block:
         andi 4,001777
         move 5,1
@@ -282,11 +291,10 @@ dtc_search_continue:
         pushj 017,dtc_search_command
         jrst dtc_search_wait
 dtc_search_command:
-        ; Bound each block-search wait.  The DTC status path can otherwise
-        ; spin forever if the transport disappears or stops producing block
-        ; marks.  storage_count is free until the actual 128-word transfer
-        ; is armed, so reuse it rather than adding resident driver state.
-        movei 4,0777777
+        ; Bound each block-search wait by elapsed line-clock time, not by CPU
+        ; instruction count.  Long device motion must not expire faster on a
+        ; faster processor or simulator.
+        hrroi 4,DTC_SEARCH_TIMEOUT_NEG_RH
         movem 4,storage_count
         move 4,1
         lsh 4,3
@@ -385,9 +393,9 @@ mtc_control_command:
         cono 0224,0
         cono 0220,0(1)
         ; Control commands are polled because they do not use the data-channel
-        ; PI path.  Bound that polling loop so an offline/stuck transport cannot
-        ; hang the kernel.  storage_count is otherwise unused for control ops.
-        movei 2,0777777
+        ; PI path.  Use a long wall-clock timeout: spacing and rewind can span
+        ; a full physical reel, so an instruction-count limit is incorrect.
+        hrroi 2,MTC_CONTROL_TIMEOUT_NEG_RH
         movem 2,storage_count
 mtc_control_wait:
         coni 0224,2
@@ -396,14 +404,18 @@ mtc_control_wait:
         trne 2,0020000
         jrst mtc_control_wait_more
         trnn 2,0400520
-        jrst pdp10_ret_ok
+        jrst mtc_control_ok
         aos devicefs_storage_errors+1   ; MTC0 control error
         jrst tape_ioerr
 mtc_control_wait_more:
-        sosle storage_count
+        skipe storage_count
         jrst mtc_control_wait
+mtc_control_timeout:
         aos devicefs_storage_errors+1   ; MTC0 control timeout
         jrst tape_ioerr
+mtc_control_ok:
+        setzm storage_count
+        jrst pdp10_ret_ok
 mtc_rw_start:
         movem 3,storage_state
         lsh 1,4
@@ -428,18 +440,15 @@ tape_ioerr:
         jrst    pdp10_ret_neg5
 tape_wait_done:
         aos @tape_account_table-1(1)    ; completed READ/WRITE request
-        caie 1,2                        ; MTC read
-        caie 1,5                        ; MTC write
-        jrst tape_account_done
-
-tape_account_mtc_words:
         move 2,storage_count
-        caie 1,2
-        jrst tape_account_mtc_write
+        caie 1,2                        ; MTC read
+        jrst tape_account_mtc_write_check
         addm 2,devicefs_mtc_words_read
         jrst tape_account_done
 
-tape_account_mtc_write:
+tape_account_mtc_write_check:
+        caie 1,5                        ; MTC write
+        jrst tape_account_done
         addm 2,devicefs_mtc_words_written
 
 tape_account_done:

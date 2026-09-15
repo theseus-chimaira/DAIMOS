@@ -8,7 +8,7 @@
         .globl proc_sched_pi_tick
         .globl proc_sched_pi_resched
         .globl proc_sched_kick
-        .globl storage_clock_dsk_jump
+        .globl storage_clock_tick
 
 ; APR and the line clock share one PDP-6 PIA.  PI6 therefore still requires
 ; the clock flag qualification before this handler claims the interrupt.
@@ -27,7 +27,7 @@ clk_pi_service:
         jrst clk_pi_kick
         aos clk_tick_count
         cono 0000,003006
-        pushj 017,storage_clock_dsk_jump
+        pushj 017,storage_clock_tick
         setzm proc_sched_kick
         pushj 017,proc_sched_pi_tick
         jrst clk_pi_service_done
