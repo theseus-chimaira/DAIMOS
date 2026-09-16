@@ -131,6 +131,7 @@ vm_enter_initial_user_start:
 vm_pdp6_apr:
         .word 0
 
+        .text
 ; void proc_exec_enter(entry, stack) -- no return.
 ; EXEC has already committed the replacement VM while retaining the stable
 ; u-area.  Activate the new mapping, reset the private kernel stack to its
