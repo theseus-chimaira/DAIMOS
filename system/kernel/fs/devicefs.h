@@ -16,7 +16,7 @@
 /* STATS files contain unlabeled 12-digit octal values, one per line.
  * Stream/special: reads, writes, errors.
  * Storage/aggregate: reads, writes, native units read, native units written,
- * errors.  Native units are DTC/D6SET blocks, MTC words, and DSK sectors.
+ * errors.  Native units are DTC/D6SET/DRM blocks, MTC words, and DSK sectors.
  * D6SET LOG uses the five-line storage order.
  * D6SET SWAP contains three current-state lines: total, used, free blocks.
  */
@@ -38,7 +38,8 @@
 #define DEVICEFS_DEV_DSK0            14U
 #define DEVICEFS_DEV_SLV0            15U
 #define DEVICEFS_DEV_D6SET0          16U
-#define DEVICEFS_DEV_COUNT           17U
+#define DEVICEFS_DEV_DRM0            17U
+#define DEVICEFS_DEV_COUNT           18U
 
 #define DEVICEFS_PRESENT(id)         (1UL << (id))
 

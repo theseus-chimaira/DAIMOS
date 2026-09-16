@@ -9,6 +9,7 @@
 #include "dcs.h"
 #include "ge.h"
 #include "dpy.h"
+#include "drm236.h"
 #include "tty.h"
 #include "wcnsls.h"
 #include "ocnsls.h"
@@ -63,6 +64,13 @@
 #define DSK_X_WRITE_SECTOR       2U
 #define DSK_X_DCT_HANDLER        3U
 #define DSK_X_WATCHDOG           4U
+#define DRM_X_HANDLER             0U
+#define DRM_X_READ_BLOCK          1U
+#define DRM_X_WRITE_BLOCK         2U
+
+#define DRM_PROBE_PI              7U
+#define DRM_PI_MASK               0000007UL
+#define DRM_NATIVE_PI_LEVEL       2U
 
 #define SLV_PI_MASK             0000007UL
 #define SLV_CO_CLEAR_IRQ        0000010UL
@@ -93,6 +101,8 @@ extern kword_t storage_clock_dsk_jump;
 
 extern kword_t dsk270_read_jump;
 extern kword_t dsk270_write_jump;
+extern kword_t drm236_read_jump;
+extern kword_t drm236_write_jump;
 extern kword_t native_sys_getchar_call;
 extern kword_t native_sys_putchar_call;
 
@@ -932,6 +942,34 @@ storage_minit(unsigned int kind, kword_t name)
         minit_diag_ok(name);
 }
 
+void
+drm236_minit(void)
+{
+        kword_t name;
+        kword_t st;
+        unsigned int base;
+        unsigned int handler;
+        unsigned int read_service;
+        unsigned int write_service;
+
+        name = (kword_t)SIXBIT("DRM236");
+        st = minit_drm236_probe();
+        if ((st & DRM_PI_MASK) != DRM_PROBE_PI) {
+                minit_diag_nodev(name);
+                return;
+        }
+        base = minit_install(name);
+        handler = minit_export(name, base, DRM_X_HANDLER);
+        read_service = minit_export(name, base, DRM_X_READ_BLOCK);
+        write_service = minit_export(name, base, DRM_X_WRITE_BLOCK);
+        minit_register(name, DRM_NATIVE_PI_LEVEL, handler);
+        storage_patch_jump(&drm236_read_jump, read_service);
+        storage_patch_jump(&drm236_write_jump, write_service);
+        module_service_set(MODULE_SERVICE_DRM_READ_BLOCK, read_service);
+        module_service_set(MODULE_SERVICE_DRM_WRITE_BLOCK, write_service);
+        minit_diag_ok(name);
+}
+
 
 void
 memfs_minit(void)
@@ -1082,6 +1120,9 @@ devicefs_minit(void)
                 devicefs_names[DEVICEFS_DEV_SLV0] = (kword_t)SIXBIT("SLV0  ");
         if (module_service_get(MODULE_SERVICE_D6FS) != 0U)
                 devicefs_names[DEVICEFS_DEV_D6SET0] = (kword_t)SIXBIT("D6SET0");
+        if (module_service_get(MODULE_SERVICE_DRM_READ_BLOCK) != 0U &&
+            module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK) != 0U)
+                devicefs_names[DEVICEFS_DEV_DRM0] = (kword_t)SIXBIT("DRM0  ");
 }
 
 void

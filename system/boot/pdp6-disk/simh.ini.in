@@ -8,6 +8,16 @@ set cp enabled
 set ptr enabled
 set ptp enabled
 set dsk enabled
+set dp enabled
+set dr enabled
+set dr0 enabled
+set dr0 writeenabled
+set dr1 enabled
+set dr1 writeenabled
+set dr2 enabled
+set dr2 writeenabled
+set dr3 enabled
+set dr3 writeenabled
 set dct enabled
 set dtc dct=04
 set dtc enabled
@@ -54,6 +64,10 @@ attach -q dtc1 @DTC1_IMAGE@
 attach -q dtc2 @DTC2_IMAGE@
 attach -q mtc0 @MTC0_IMAGE@
 attach -q mtc1 @MTC1_IMAGE@
+attach -q -n dr0 @DR0_IMAGE@
+attach -q -n dr1 @DR1_IMAGE@
+attach -q -n dr2 @DR2_IMAGE@
+attach -q -n dr3 @DR3_IMAGE@
 
 go 020
 exit

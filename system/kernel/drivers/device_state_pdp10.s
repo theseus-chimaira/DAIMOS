@@ -7,7 +7,7 @@
         .bss
         .globl  devicefs_names
 devicefs_names:
-        .block  021                    ; frozen detected-device SIXBIT names
+        .block  022                    ; frozen detected-device SIXBIT names
 
         .globl  devicefs_io_in
         .globl  mach_user_sp
@@ -58,6 +58,8 @@ storage_count:
         .globl  devicefs_storage_errors
         .globl  devicefs_mtc_words_read
         .globl  devicefs_mtc_words_written
+        .globl  devicefs_drm_reads
+        .globl  devicefs_drm_writes
         .globl  devicefs_d6set_reads
         .globl  devicefs_d6set_writes
         .globl  devicefs_d6set_blocks_read
@@ -69,9 +71,12 @@ storage_count:
         .globl  devicefs_log_errors
         .globl  devicefs_d6set_members
 
-; Indexed by DEVICEFS id - DTC0 (014): DTC0, MTC0, DSK0, SLV0, D6SET0.
-devicefs_storage_errors:       .block 5
+; Indexed by DEVICEFS id - DTC0 (014): DTC0, MTC0, DSK0, SLV0, D6SET0,
+; DRM0.  Appending DRM0 preserves all existing offsets.
+devicefs_storage_errors:       .block 6
 
+devicefs_drm_reads:            .block 1
+devicefs_drm_writes:           .block 1
 devicefs_mtc_words_read:       .block 1
 devicefs_mtc_words_written:    .block 1
 devicefs_d6set_reads:          .block 1
@@ -84,3 +89,11 @@ devicefs_log_writes:           .block 1
 devicefs_log_blocks_read:      .block 1
 devicefs_log_blocks_written:   .block 1
 devicefs_log_errors:           .block 1
+
+; Type-167 has one DMA engine independent of the Type-136 storage router.
+; These words are fixed because process wait channels and the PI handler may
+; reference them while the movable DRM236 MRES itself is relocated.
+        .globl  drm236_active_request
+        .globl  drm236_idle_event
+drm236_active_request:         .block 1
+drm236_idle_event:             .block 1

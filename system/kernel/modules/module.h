@@ -31,7 +31,9 @@ extern kword_t __minit_table_end;
 #define MODULE_SERVICE_D6FS              23U
 #define MODULE_SERVICE_SLV_HANDLER       24U
 #define MODULE_SERVICE_DISKSET           25U
-#define MODULE_SERVICE_COUNT             26U
+#define MODULE_SERVICE_DRM_READ_BLOCK    26U
+#define MODULE_SERVICE_DRM_WRITE_BLOCK   27U
+#define MODULE_SERVICE_COUNT             28U
 
 void module_run_minits(void);
 const kword_t *module_current_mres(void);
@@ -72,6 +74,7 @@ void minit_wcnsls_cono(kword_t word);
 kword_t minit_wcnsls_datai(void);
 void minit_wcnsls_plot(kword_t word);
 kword_t minit_storage_probe(unsigned int kind);
+kword_t minit_drm236_probe(void);
 kword_t minit_slv_coni(void);
 void minit_slv_cono(kword_t word);
 

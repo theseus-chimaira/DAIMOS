@@ -8,6 +8,8 @@
         .globl  devicefs_storage_errors
         .globl  devicefs_mtc_words_read
         .globl  devicefs_mtc_words_written
+        .globl  devicefs_drm_reads
+        .globl  devicefs_drm_writes
         .globl  devicefs_d6set_reads
         .globl  devicefs_d6set_writes
         .globl  devicefs_d6set_blocks_read
@@ -27,8 +29,8 @@
 
 ; Capability masks indexed by device id.  TTY0 has output accounting at the
 ; logical terminal layer in addition to the physical backend accounting.
-; IN:  CTY0 PTR0 CR0 DCS0 GE0 WCNSLS OCNSLS DTC0 MTC0 DSK0
-; OUT: CTY0 PTP0 CP0 DCS0 GE0 DPY0 TTY0 WCNSLS DTC0 MTC0 DSK0
+; IN:  CTY0 PTR0 CR0 DCS0 GE0 WCNSLS OCNSLS DTC0 MTC0 DSK0 DRM0
+; OUT: CTY0 PTP0 CP0 DCS0 GE0 DPY0 TTY0 WCNSLS DTC0 MTC0 DSK0 DRM0
 
 ; Derive 3/4/6-character device name length from trailing SIXBIT blanks.
 ; input AC5=name word, output AC6=chars.
@@ -44,7 +46,7 @@ devicefs_name_length:
 
 ; Validate AC4 as a present device id.  Return 0/-1 in AC1.
 devicefs_validate_id:
-        cail    4,021
+        cail    4,022
         jrst    pdp10_ret_neg1
         skipn   5,devicefs_names(4)
         jrst    pdp10_ret_neg1
@@ -61,7 +63,7 @@ devicefs_lookup:
         jrst    devicefs_lookup_dir
         movei   4,0
 devicefs_lookup_scan:
-        cail    4,021
+        cail    4,022
         jrst    pdp10_ret_neg1
         skipn   5,devicefs_names(4)
         jrst    devicefs_lookup_next
@@ -163,9 +165,14 @@ devicefs_io_type:
         movei   7,4                    ; block
         popj    17,
 devicefs_io_type_maybe_mount:
+        cain    0,021                  ; DRM0
+        jrst    devicefs_io_type_block
         caie    0,020
         jrst    devicefs_io_type_char
         movei   7,5                    ; mount source
+        popj    17,
+devicefs_io_type_block:
+        movei   7,4                    ; block
         popj    17,
 devicefs_io_type_char:
         movei   7,3                    ; char
@@ -183,7 +190,7 @@ devicefs_readdir:
         movei   5,0
         movei   7,0
 devicefs_readdir_scan:
-        cail    5,021
+        cail    5,022
         jrst    pdp10_ret_zero
         skipn   6,devicefs_names(5)
         jrst    devicefs_readdir_next
@@ -280,9 +287,14 @@ devicefs_stat_not_root:
         movei   5,4
         jrst    devicefs_stat_device_mode
 devicefs_stat_maybe_mount:
+        cain    4,021                  ; DRM0
+        jrst    devicefs_stat_block
         caie    4,020
         jrst    devicefs_stat_char
         movei   5,5
+        jrst    devicefs_stat_device_mode
+devicefs_stat_block:
+        movei   5,4
         jrst    devicefs_stat_device_mode
 devicefs_stat_char:
         movei   5,3
@@ -398,9 +410,16 @@ devicefs_stats_select_device:
         subi    0,014
         jrst    devicefs_stats_device_native
 devicefs_stats_device_maybe_d6:
+        cain    4,021                  ; DRM0 is one native block/request
+        jrst    devicefs_stats_device_drm
         caie    4,020
         jrst    devicefs_stats_device_simple_error
         movei   0,3
+devicefs_stats_device_drm_done:
+        jrst    devicefs_stats_device_native
+devicefs_stats_device_drm:
+        movei   0,4
+        jrst    devicefs_stats_device_drm_done
 devicefs_stats_device_native:
         caie    6,4
         jrst    devicefs_stats_device_native_value
@@ -417,6 +436,8 @@ devicefs_stats_device_native_value:
         jrst    devicefs_stats_native_mtc
         cain    0,3                    ; D6SET has aggregate block volume
         jrst    devicefs_stats_native_d6
+        cain    0,4                    ; DRM has sparse block counters
+        jrst    devicefs_stats_native_drm
         ; DTC and DSK are one native unit per request.
         jumpe   5,devicefs_stats_device_reads
         jrst    devicefs_stats_device_writes
@@ -425,6 +446,10 @@ devicefs_stats_native_mtc:
         jrst    devicefs_stats_emit
 devicefs_stats_native_d6:
         move    1,devicefs_d6set_blocks_read(5)
+        jrst    devicefs_stats_emit
+devicefs_stats_native_drm:
+        jumpe   5,devicefs_stats_drm_reads
+        move    1,devicefs_drm_writes
         jrst    devicefs_stats_emit
 
 devicefs_stats_device_simple_error:
@@ -437,6 +462,8 @@ devicefs_stats_device_simple_error:
         jrst    devicefs_stats_emit
 
 devicefs_stats_device_reads:
+        cain    4,021
+        jrst    devicefs_stats_drm_reads
         cain    4,020
         jrst    devicefs_stats_d6_reads
         movei   0,1
@@ -445,11 +472,16 @@ devicefs_stats_device_reads:
         jrst    devicefs_stats_zero
         move    1,devicefs_io_in(4)
         jrst    devicefs_stats_emit
+devicefs_stats_drm_reads:
+        move    1,devicefs_drm_reads
+        jrst    devicefs_stats_emit
 devicefs_stats_d6_reads:
         move    1,devicefs_d6set_reads
         jrst    devicefs_stats_emit
 
 devicefs_stats_device_writes:
+        cain    4,021
+        jrst    devicefs_stats_drm_writes
         cain    4,020
         jrst    devicefs_stats_d6_writes
         movei   0,1
@@ -457,6 +489,9 @@ devicefs_stats_device_writes:
         tdnn    0,[073751]
         jrst    devicefs_stats_zero
         move    1,devicefs_io_out(4)
+        jrst    devicefs_stats_emit
+devicefs_stats_drm_writes:
+        move    1,devicefs_drm_writes
         jrst    devicefs_stats_emit
 devicefs_stats_d6_writes:
         move    1,devicefs_d6set_writes

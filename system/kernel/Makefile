@@ -40,6 +40,7 @@ KERNEL_HEADERS = boot/kboot.h \
 	drivers/dcs.h \
 	drivers/dpy.h \
 	drivers/dsk270.h \
+	drivers/drm236.h \
 	drivers/ge.h \
 	drivers/ocnsls.h \
 	drivers/pt.h \
@@ -135,6 +136,7 @@ KCORE_VM_ASM = $(BUILD)/vm_backend.s \
 
 KCORE_FIXED_SRCS = core/ret_pdp10.s \
 	drivers/dsk270_pdp10.s \
+	drivers/drm236_pdp10.s \
 	core/kfmt_pdp10.s \
 	fs/vfs_pdp10.s \
 	fs/fs_mres_pdp10.s \
@@ -163,6 +165,7 @@ KCORE_FIXED_ASM = $(BUILD)/exec.s \
 	$(BUILD)/proc_swap.s \
 	$(BUILD)/ret_pdp10.s \
 	$(BUILD)/dsk270_pdp10.s \
+	$(BUILD)/drm236_pdp10.s \
 	$(BUILD)/kfmt_pdp10.s \
 	$(BUILD)/vfs_pdp10.s \
 	$(BUILD)/fs_mres_pdp10.s \
@@ -206,6 +209,7 @@ MRES_FIXED_SRCS = fs/d6fs_validate_pdp10.s \
 	drivers/wcnsls_io.s \
 	drivers/ocnsls_io.s \
 	drivers/dsk_io.s \
+	drivers/drm236_io.s \
 	drivers/tape_io.s \
 	drivers/slv_io.s
 
@@ -230,6 +234,7 @@ MRES_ASM = $(BUILD)/dtfs.s \
 	$(BUILD)/wcnsls_io.s \
 	$(BUILD)/ocnsls_io.s \
 	$(BUILD)/dsk_io.s \
+	$(BUILD)/drm236_io.s \
 	$(BUILD)/tape_io.s \
 	$(BUILD)/slv_io.s
 
@@ -296,6 +301,7 @@ ${BUILD}/dtfs_pdp10.s: fs/dtfs_pdp10.s
 
 COPY_ASM_SRCS = core/ret_pdp10.s \
 	drivers/dsk270_pdp10.s \
+	drivers/drm236_pdp10.s \
 	core/kfmt_pdp10.s \
 	fs/vfs_pdp10.s \
 	fs/fs_mres_pdp10.s \
@@ -328,6 +334,7 @@ COPY_ASM_SRCS = core/ret_pdp10.s \
 	drivers/wcnsls_io.s \
 	drivers/ocnsls_io.s \
 	drivers/dsk_io.s \
+	drivers/drm236_io.s \
 	drivers/tape_io.s \
 	drivers/slv_io.s \
 	modules/module_io.s \
@@ -336,6 +343,7 @@ COPY_ASM_SRCS = core/ret_pdp10.s \
 
 COPY_ASM_TARGETS = $(BUILD)/ret_pdp10.s \
 	$(BUILD)/dsk270_pdp10.s \
+	$(BUILD)/drm236_pdp10.s \
 	$(BUILD)/kfmt_pdp10.s \
 	$(BUILD)/vfs_pdp10.s \
 	$(BUILD)/fs_mres_pdp10.s \
@@ -368,6 +376,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret_pdp10.s \
 	$(BUILD)/wcnsls_io.s \
 	$(BUILD)/ocnsls_io.s \
 	$(BUILD)/dsk_io.s \
+	$(BUILD)/drm236_io.s \
 	$(BUILD)/tape_io.s \
 	$(BUILD)/slv_io.s \
 	$(BUILD)/module_io.s \

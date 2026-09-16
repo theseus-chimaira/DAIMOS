@@ -35,6 +35,7 @@
         .globl minit_wcnsls_datai
         .globl minit_wcnsls_plot
         .globl minit_storage_probe
+        .globl minit_drm236_probe
         .globl minit_slv_coni
         .globl minit_slv_cono
 
@@ -180,6 +181,13 @@ minit_storage_probe_dsk:
         coni 0270,1
         cono 0270,0
         hlrz 1,1
+        popj 017,
+; Probe the Type 167 I/O Processor independently of Type-136 storage.
+; Use PI level 7 only as a recognizable probe value, then leave DP disabled.
+minit_drm236_probe:
+        cono 0010,7
+        coni 0010,1
+        cono 0010,0
         popj 017,
 minit_slv_coni:
         coni 0020,1
