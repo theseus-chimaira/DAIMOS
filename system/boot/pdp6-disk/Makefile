@@ -219,10 +219,15 @@ IMAGE_RIM = $(BUILD)/kinit.rim
 IMAGE_RAW = $(BUILD)/kinit.raw.words
 IMAGE_WORDS = $(BUILD)/kinit.words
 
-USERLAND_BUILD_ROOT = $(BUILD)/userland-build
+USERLAND_BUILD_ROOT ?= $(BUILD)/userland-build
+INIT_DXR = $(USERLAND_BUILD_ROOT)/userland/init.dxr
+LOGIN_DXR = $(USERLAND_BUILD_ROOT)/userland/login.dxr
 DSH_DXR = $(USERLAND_BUILD_ROOT)/userland/dsh.dxr
-SYSTEM_INIT_DXR ?= $(DSH_DXR)
+SYSTEM_INIT_DXR ?= $(INIT_DXR)
+SYSTEM_LOGIN_DXR ?= $(LOGIN_DXR)
 SYSTEM_DSH_DXR ?= $(DSH_DXR)
+SYSTEM_INITTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/inittab
+SYSTEM_PASSWD_TEXT ?= $(PROJECT_ROOT)/userland/config/passwd
 USERLAND_INPUTS = $(PROJECT_ROOT)/userland/libc/Makefile \
 	$(PROJECT_ROOT)/userland/libc/crt0.s \
 	$(PROJECT_ROOT)/userland/libc/dsys.h \
@@ -232,11 +237,17 @@ USERLAND_INPUTS = $(PROJECT_ROOT)/userland/libc/Makefile \
 	$(PROJECT_ROOT)/userland/libc/syscall_helpers.s \
 	$(PROJECT_ROOT)/userland/libc/u.c \
 	$(PROJECT_ROOT)/userland/libc/u.h \
+	$(PROJECT_ROOT)/userland/libc/text.c \
+	$(PROJECT_ROOT)/userland/libc/text.h \
 	$(PROJECT_ROOT)/userland/exec/COMMANDS \
 	$(PROJECT_ROOT)/userland/exec/cmd.h \
 	$(PROJECT_ROOT)/userland/exec/commands.c \
 	$(PROJECT_ROOT)/userland/exec/standalone.c \
 	$(PROJECT_ROOT)/userland/dsh/dsh.c \
+	$(PROJECT_ROOT)/userland/init/init.c \
+	$(PROJECT_ROOT)/userland/login/login.c \
+	$(PROJECT_ROOT)/userland/config/inittab \
+	$(PROJECT_ROOT)/userland/config/passwd \
 	$(PROJECT_ROOT)/userland/Makefile \
 	$(PROJECT_ROOT)/system/kernel/proc/syscall.h
 
@@ -255,6 +266,8 @@ MTC0_IMAGE = $(MEDIA_DIR)/mtc0.tap
 MTC1_IMAGE = $(MEDIA_DIR)/mtc1.tap
 PTP_OUTPUT = $(MEDIA_DIR)/ptp.out
 CP_OUTPUT = $(MEDIA_DIR)/cp.out
+SIMH_DCS0_PORT ?= 1101
+SIMH_GE0_PORT ?= 1201
 
 .PHONY: image boot permanent-size clean
 
@@ -413,7 +426,7 @@ $(KCORE_EMBED_ASM): kcore-embed.s.in $(KCORE_MAP) $(BUILD)
 $(KCORE_EMBED_OBJ): $(KCORE_EMBED_ASM)
 	$(DAS) $(DASFLAGS) -c -o $@ $<
 
-$(DSH_DXR): $(USERLAND_INPUTS)
+$(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR): $(USERLAND_INPUTS)
 	$(MAKE) -C $(PROJECT_ROOT)/userland build BUILD_ROOT='$(USERLAND_BUILD_ROOT)' \
 	    PDP10_PREFIX='$(PDP10_PREFIX)'
 
@@ -447,7 +460,7 @@ $(STAGE1_TAPE): $(STAGE1_DXR)
 	$(DXRCONVERT) --pdp6-readin -b 060 $< $@
 	printf '\252' >> $@
 
-$(DISK_IMAGE): $(IMAGE_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_DSH_DXR)
+$(DISK_IMAGE): $(IMAGE_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_LOGIN_DXR) $(SYSTEM_DSH_DXR) $(SYSTEM_INITTAB_TEXT) $(SYSTEM_PASSWD_TEXT)
 	rm -rf $(DISK_DIR)
 	$(MKDSK) -n 1 -m clean -p $(IMAGE_WORDS) -o $(DISK_DIR) \
 	    --d6fs-layout --logstore-blocks $(D6FS_LOGSTORE_BLOCKS) \
@@ -455,9 +468,16 @@ $(DISK_IMAGE): $(IMAGE_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_DSH_DXR)
 	$(MKD6FS) -n 1 -d $(DISK_DIR) \
 	    -D /MOUNT/RAMFS0:0755 -D /TEMP:0555 \
 	    -D /MOUNT/DT0:0755 -D /MOUNT/DT1:0755 -D /MOUNT/DT2:0755 \
-	    -D /SYSTEM/EXEC:0555 \
+	    -D /SYSTEM:0555 -D /SYSTEM/EXEC:0555 -D /SYSTEM/LIB:0555 \
+	    -D /SYSTEM/INCLUDE:0555 -D /SYSTEM/MANUAL:0555 -D /SYSTEM/SOURCE:0555 \
+	    -D /OPTION:0555 -D /OPTION/EXEC:0555 -D /OPTION/LIB:0555 \
+	    -D /OPTION/INCLUDE:0555 -D /OPTION/MANUAL:0555 -D /OPTION/SOURCE:0555 \
+	    -D /CONFIG:0755 \
 	    -f "/SYSTEM/INIT:$(SYSTEM_INIT_DXR):555:dxr" \
-	    -f "/SYSTEM/EXEC/DSH:$(SYSTEM_DSH_DXR):555:dxr"
+	    -f "/SYSTEM/EXEC/LOGIN:$(SYSTEM_LOGIN_DXR):555:dxr" \
+	    -f "/SYSTEM/EXEC/DSH:$(SYSTEM_DSH_DXR):555:dxr" \
+	    -f "/CONFIG/INITTAB:$(SYSTEM_INITTAB_TEXT):644:text" \
+	    -f "/CONFIG/PASSWD:$(SYSTEM_PASSWD_TEXT):600:text"
 	$(LOGSTORE) -n 1 -d $(DISK_DIR) --init
 
 $(SIMH_INI): simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE)
@@ -472,7 +492,9 @@ $(SIMH_INI): simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE)
 	    -e 's|@MTC0_IMAGE@|$(MTC0_IMAGE)|g' \
 	    -e 's|@MTC1_IMAGE@|$(MTC1_IMAGE)|g' \
 	    -e 's|@PTP_OUTPUT@|$(PTP_OUTPUT)|g' \
-	    -e 's|@CP_OUTPUT@|$(CP_OUTPUT)|g' $< > $@
+	    -e 's|@CP_OUTPUT@|$(CP_OUTPUT)|g' \
+	    -e 's|@DCS0_PORT@|$(SIMH_DCS0_PORT)|g' \
+	    -e 's|@GE0_PORT@|$(SIMH_GE0_PORT)|g' $< > $@
 
 image: $(SIMH_INI)
 

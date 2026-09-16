@@ -8,11 +8,26 @@ DLINK ?= $(PDP10_PREFIX)/bin/dlink
 CPPFLAGS = -I$(PROJECT_ROOT)/system/kernel/boot -I$(PROJECT_ROOT)/system/kernel/core -I$(PROJECT_ROOT)/system/kernel/drivers -I$(PROJECT_ROOT)/system/kernel/fs -I$(PROJECT_ROOT)/system/kernel/mm -I$(PROJECT_ROOT)/system/kernel/modules -I$(PROJECT_ROOT)/system/kernel/proc -I$(PROJECT_ROOT)/system/kernel/storage -I$(PROJECT_ROOT)/userland/libc -I$(PROJECT_ROOT)/userland/exec
 CFLAGS = -std=c99 -Os
 
-CHECK_SRCS = libc/u.c exec/commands.c exec/standalone.c dsh/dsh.c
+CHECK_SRCS = libc/u.c libc/text.c exec/commands.c exec/standalone.c dsh/dsh.c init/init.c login/login.c
 CHECK_ASMS = $(CHECK_SRCS:%.c=$(USERLAND_BUILD)/check/%.s)
+COMMON_C_SRCS = libc/u.c libc/text.c
+COMMON_S_SRCS = libc/crt0.s libc/syscall.s libc/syscall_helpers.s
+
+INIT_C_SRCS = $(COMMON_C_SRCS) init/init.c
+INIT_C_OBJS = $(INIT_C_SRCS:%.c=$(USERLAND_BUILD)/init/%.dobj)
+INIT_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/init/%.dobj)
+INIT_DXR = $(USERLAND_BUILD)/init.dxr
+INIT_MAP = $(USERLAND_BUILD)/init.map
+
+LOGIN_C_SRCS = $(COMMON_C_SRCS) login/login.c
+LOGIN_C_OBJS = $(LOGIN_C_SRCS:%.c=$(USERLAND_BUILD)/login/%.dobj)
+LOGIN_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/login/%.dobj)
+LOGIN_DXR = $(USERLAND_BUILD)/login.dxr
+LOGIN_MAP = $(USERLAND_BUILD)/login.map
+
 DSH_C_SRCS = libc/u.c exec/commands.c dsh/dsh.c
 DSH_C_OBJS = $(DSH_C_SRCS:%.c=$(USERLAND_BUILD)/dsh/%.dobj)
-DSH_S_SRCS = libc/crt0.s libc/syscall_helpers.s
+DSH_S_SRCS = $(COMMON_S_SRCS)
 DSH_S_OBJS = $(DSH_S_SRCS:%.s=$(USERLAND_BUILD)/dsh/%.dobj)
 DSH_DXR = $(USERLAND_BUILD)/dsh.dxr
 DSH_MAP = $(USERLAND_BUILD)/dsh.map
@@ -20,13 +35,31 @@ DSH_MAP = $(USERLAND_BUILD)/dsh.map
 .DEFAULT_GOAL := build
 .PHONY: build check clean
 
-build: $(DSH_DXR)
+build: $(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR)
 
-check: $(CHECK_ASMS) $(DSH_DXR)
+check: $(CHECK_ASMS) build
 
 $(USERLAND_BUILD)/check/%.s: %.c
 	mkdir -p $(dir $@)
 	$(PDP10_GCC) $(CFLAGS) $(CPPFLAGS) -S $< -o $@
+
+$(USERLAND_BUILD)/init/%.dobj: %.c
+	mkdir -p $(dir $@)
+	$(PDP10_GCC) $(CFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -c -o $@ $(@:.dobj=.s)
+
+$(USERLAND_BUILD)/init/%.dobj: %.s
+	mkdir -p $(dir $@)
+	$(DAS) $(DASFLAGS) -c -o $@ $<
+
+$(USERLAND_BUILD)/login/%.dobj: %.c
+	mkdir -p $(dir $@)
+	$(PDP10_GCC) $(CFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -c -o $@ $(@:.dobj=.s)
+
+$(USERLAND_BUILD)/login/%.dobj: %.s
+	mkdir -p $(dir $@)
+	$(DAS) $(DASFLAGS) -c -o $@ $<
 
 $(USERLAND_BUILD)/dsh/%.dobj: %.c
 	mkdir -p $(dir $@)
@@ -36,6 +69,14 @@ $(USERLAND_BUILD)/dsh/%.dobj: %.c
 $(USERLAND_BUILD)/dsh/%.dobj: %.s
 	mkdir -p $(dir $@)
 	$(DAS) $(DASFLAGS) -c -o $@ $<
+
+$(INIT_DXR): $(INIT_C_OBJS) $(INIT_S_OBJS)
+	libgcc=`$(PDP10_GCC) -print-libgcc-file-name`; \
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(INIT_MAP) $(INIT_S_OBJS) $(INIT_C_OBJS) $$libgcc
+
+$(LOGIN_DXR): $(LOGIN_C_OBJS) $(LOGIN_S_OBJS)
+	libgcc=`$(PDP10_GCC) -print-libgcc-file-name`; \
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(LOGIN_MAP) $(LOGIN_S_OBJS) $(LOGIN_C_OBJS) $$libgcc
 
 $(DSH_DXR): $(DSH_C_OBJS) $(DSH_S_OBJS)
 	libgcc=`$(PDP10_GCC) -print-libgcc-file-name`; \

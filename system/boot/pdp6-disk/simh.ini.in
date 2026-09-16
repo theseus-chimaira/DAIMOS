@@ -43,6 +43,10 @@ attach -q -n cp @CP_OUTPUT@
 deposit ptr time 1
 attach -q dsk0 @DISK_IMAGE@
 
+; Simulator serial transports for the first multi-terminal userspace login.
+attach -q dcs0 @DCS0_PORT@
+attach -q ge0 @GE0_PORT@
+
 ; Writable blank media for interactive DTFS/storage testing.  The files are
 ; persistent until make clean removes the build tree.
 attach -q dtc0 @DTC0_IMAGE@
