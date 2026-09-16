@@ -12,9 +12,22 @@
         .globl kinit_apr_clear
 
 ; void kinit_put6(kword_t word)
+; Keep KINIT diagnostics inside the KINIT image.  Stage1 installs a fixed
+; 077760 helper for its own failures, but the disposable KINIT stack grows
+; upward from the loaded image and may legitimately overwrite that scratch
+; area before late boot diagnostics run.
 kinit_put6:
-        pushj 017,077760
-        popj 017,
+        move 02,01
+        movei 06,06
+kinit_put6_loop:
+        move 03,02
+        lsh 03,-036
+        andi 03,077
+        addi 03,040
+        pushj 017,knl_putc
+        lsh 02,06
+        sojg 06,kinit_put6_loop
+        jrst knl_wait
 
 ; Polling CR/LF, deliberately independent of CTY module state.
 kinit_newline:
@@ -22,10 +35,13 @@ kinit_newline:
         pushj 017,knl_putc
         movei 03,012
 knl_putc:
+        pushj 017,knl_wait
+        datao 0120,03
+        popj 017,
+knl_wait:
         coni 0120,04
         trne 04,0020
-        jrst knl_putc
-        datao 0120,03
+        jrst knl_wait
         popj 017,
 
 ; void kinit_call18(unsigned int address)
