@@ -590,30 +590,30 @@ vfs_readchar:
         cain    4,2
         jrst    devicefs_readchar
 
-        add     17,[010,,010]
-        movem   1,-7(17)               ; node
-        movem   2,-6(17)               ; character offset
-        movem   3,-5(17)               ; result pointer
-        movei   2,-4(17)               ; struct vfs_stat
+        add     17,[011,,011]
+        movem   1,-010(17)             ; node
+        movem   2,-7(17)               ; character offset
+        movem   3,-6(17)               ; result pointer
+        movei   2,-5(17)               ; six-word struct vfs_stat
         pushj   17,vfs_stat
         jumpn   1,vfs_readchar_fail
-        move    1,-4(17)               ; st.type
+        move    1,-5(17)               ; st.type
         caie    1,2                    ; VFS_TYPE_REG
         jrst    vfs_readchar_fail
 
         ; Compare unsigned character offset with st.size_chars.
-        move    2,-6(17)
+        move    2,-7(17)
         tlc     2,0400000
-        move    3,-2(17)
+        move    3,-3(17)
         tlc     3,0400000
         caml    2,3
         jrst    vfs_readchar_eof
 
-        move    2,-6(17)
+        move    2,-7(17)
         move    4,2
         andi    4,3                    ; quarter-word number
         lsh     2,-2                   ; word offset
-        move    1,-7(17)
+        move    1,-010(17)
         movei   3,(17)                 ; one-word buffer
         movei   5,4                    ; preserve bi across call in stack
         movem   4,-1(17)
@@ -629,7 +629,7 @@ vfs_readchar:
         move    6,(17)
         lsh     6,-033(5)              ; right by 27 - 9*bi
         andi    6,0777
-        move    3,-5(17)
+        move    3,-6(17)
         movem   6,(3)
         movei   1,1
         jrst    vfs_readchar_done
@@ -639,7 +639,7 @@ vfs_readchar_eof:
 vfs_readchar_fail:
         seto    1,
 vfs_readchar_done:
-        sub     17,[010,,010]
+        sub     17,[011,,011]
         popj    17,
 
 ; int vfs_writechar(vnode_t node, kword_t off, unsigned int ch)
@@ -653,36 +653,36 @@ vfs_writechar:
         jrst    pdp10_ret_busy          ; VFS_DEVICE_IO = -3
 
 vfs_writechar_regular:
-        add     17,[010,,010]
-        movem   1,-7(17)               ; node
-        movem   2,-6(17)               ; character offset
-        movem   3,-5(17)               ; character
-        movei   2,-4(17)               ; struct vfs_stat
+        add     17,[011,,011]
+        movem   1,-010(17)             ; node
+        movem   2,-7(17)               ; character offset
+        movem   3,-6(17)               ; character
+        movei   2,-5(17)               ; six-word struct vfs_stat
         pushj   17,vfs_stat
         jumpn   1,vfs_writechar_fail
-        move    1,-4(17)
+        move    1,-5(17)
         caie    1,2                    ; VFS_TYPE_REG
         jrst    vfs_writechar_fail
 
-        move    2,-6(17)
+        move    2,-7(17)
         addi    2,1
         movem   2,(17)                 ; end_chars; later fifth argument
         addi    2,3
         lsh     2,-2                   ; ceil(end_chars / 4)
-        move    3,-1(17)               ; st.size_words
+        move    3,-2(17)               ; st.size_words
         camle   2,3
         jrst    vfs_writechar_grow
 vfs_writechar_after_grow:
-        move    2,-6(17)
+        move    2,-7(17)
         lsh     2,-2                   ; word offset
         movem   2,-1(17)
         setzm   -4(17)                 ; read beyond EOF as zero word
-        move    1,-7(17)
+        move    1,-010(17)
         movei   3,-4(17)
         movei   4,1
         pushj   17,vfs_read_words
 
-        move    3,-6(17)
+        move    3,-7(17)
         andi    3,3                    ; quarter-word number
         move    4,3
         lsh     4,3
@@ -692,13 +692,13 @@ vfs_writechar_after_grow:
         movei   4,0777
         lsh     4,0(5)
         andca   4,-4(17)
-        move    3,-5(17)
+        move    3,-6(17)
         andi    3,0777
         lsh     3,0(5)
         ior     4,3
         movem   4,-4(17)
 
-        move    1,-7(17)
+        move    1,-010(17)
         move    2,-1(17)
         movei   3,-4(17)
         movei   4,1
@@ -709,7 +709,7 @@ vfs_writechar_after_grow:
         jrst    vfs_writechar_done
 
 vfs_writechar_grow:
-        move    1,-7(17)
+        move    1,-010(17)
         move    3,(17)                  ; end_chars
         pushj   17,vfs_truncate
         jumpn   1,vfs_writechar_fail
@@ -718,7 +718,7 @@ vfs_writechar_grow:
 vfs_writechar_fail:
         seto    1,
 vfs_writechar_done:
-        sub     17,[010,,010]
+        sub     17,[011,,011]
         popj    17,
 
 ; Compact mount policy.  The four-entry namespace table is a bounded PDP-6
@@ -771,22 +771,22 @@ vfs_mount_check_target:
         push    17,2
         push    17,3
         push    17,4
-        add     17,[4,,4]               ; struct vfs_stat
-        movei   2,-3(17)
-        move    1,-7(17)
+        add     17,[6,,6]               ; six-word struct vfs_stat
+        movei   2,-5(17)
+        move    1,-011(17)
         pushj   17,vfs_stat
         jumpn   1,vfs_mount_stat_fail
-        move    6,-3(17)                ; st.type
-        move    1,-7(17)
-        move    2,-6(17)
-        move    3,-5(17)
-        move    4,-4(17)
-        sub     17,[010,,010]
+        move    6,-5(17)                ; st.type
+        move    1,-011(17)
+        move    2,-010(17)
+        move    3,-7(17)
+        move    4,-6(17)
+        sub     17,[012,,012]
         caie    6,1                     ; VFS_TYPE_DIR
         jrst    pdp10_ret_neg1
         jrst    vfs_mount_find
 vfs_mount_stat_fail:
-        sub     17,[010,,010]
+        sub     17,[012,,012]
         jrst    pdp10_ret_neg1
 
 vfs_mount_find:
