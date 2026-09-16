@@ -52,6 +52,12 @@ resident in the normal boot.  All implemented SIMH devices are enabled, three
 DECtape and two magtape transports are attached, and the D6FS boot image
 pre-creates `/MOUNT/DT0`, `/MOUNT/DT1`, and `/MOUNT/DT2`.
 
+The standard `make boot` invocation is a three-login PDP-6 boot.  CTY uses the
+invoking terminal, DCS0 listens on host TCP port 1101, and GE0 listens on host
+TCP port 1201.  `/CONFIG/INITTAB` starts one respawning LOGIN on each of those
+logical terminals.  The ports may be overridden with `SIMH_DCS0_PORT` and
+`SIMH_GE0_PORT`; `make boot` prints the active endpoints before starting SIMH.
+
 For diagnostic foreign-personality builds use `DTFS_TENEX=1 DTFS_ITS=1`.
 
 DSH accepts `MOUNT` as the normal DTFS mount command; `MOUNT.DTFS` remains as a

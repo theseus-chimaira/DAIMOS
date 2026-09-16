@@ -2,6 +2,8 @@
 
 BUILD_ROOT ?= $(CURDIR)/build
 PDP10_PREFIX ?= $(HOME)/cross
+SIMH_DCS0_PORT ?= 1101
+SIMH_GE0_PORT ?= 1201
 
 .PHONY: build install kinit boot permanent-size clean
 
@@ -15,7 +17,13 @@ kinit:
 	$(MAKE) -C system kinit BUILD_ROOT='$(BUILD_ROOT)'
 
 boot:
-	$(MAKE) -C system/boot/pdp6-disk boot BUILD_ROOT='$(BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'
+	@printf '%s\n' 'DAIMOS PDP-6 login terminals:' \
+	    '  CTY   current terminal' \
+	    '  DCS0  127.0.0.1:$(SIMH_DCS0_PORT)' \
+	    '  GE0   127.0.0.1:$(SIMH_GE0_PORT)'
+	$(MAKE) -C system/boot/pdp6-disk boot BUILD_ROOT='$(BUILD_ROOT)' \
+	    PDP10_PREFIX='$(PDP10_PREFIX)' SIMH_DCS0_PORT='$(SIMH_DCS0_PORT)' \
+	    SIMH_GE0_PORT='$(SIMH_GE0_PORT)'
 
 permanent-size:
 	$(MAKE) -C system/boot/pdp6-disk permanent-size BUILD_ROOT='$(BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'
