@@ -500,10 +500,9 @@ proc_scope_live:
 proc_child_hierarchy:
         move    7,1                    ; child slot
         move    6,3                    ; requested pgrp
-        move    5,proc_current_slot    ; parent slot
-        move    4,5
+        move    4,proc_current_slot    ; parent slot * 3
         lsh     4,1
-        add     4,5
+        add     4,proc_current_slot
         add     4,proc_table           ; parent descriptor
         hlrz    3,(4)
         move    3,045(3)               ; parent control word
@@ -597,10 +596,9 @@ proc_control:
         jumpl   1,pdp10_ret_neg1
         caile   1,020
         jrst    pdp10_ret_neg1
-        move    3,proc_current_slot
-        move    4,3
+        move    4,proc_current_slot
         lsh     4,1
-        add     4,3
+        add     4,proc_current_slot
         add     4,proc_table
         jrst    @proc_control_table(1)
 proc_control_table:
@@ -801,15 +799,13 @@ proc_control_tty_getfg:
         popj    17,
 
 proc_control_getuid:
-        jumpn   2,pdp10_ret_neg1
-        hlrz    5,(4)
-        hlrz    1,PROC_CRED_OFFSET(5)
-        popj    17,
-
 proc_control_getgid:
         jumpn   2,pdp10_ret_neg1
         hlrz    5,(4)
-        hrrz    1,PROC_CRED_OFFSET(5)
+        hlrz    6,PROC_CRED_OFFSET(5)
+        cain    1,015                  ; GETUID keeps LH, GETGID selects RH
+        hrrz    6,PROC_CRED_OFFSET(5)
+        move    1,6
         popj    17,
 
 ; UID 0 may install login credentials.  An ordinary process may only request
@@ -874,17 +870,16 @@ proc_control_tty_setfg:
 ; int proc_tty_read_enter(void)
 proc_tty_read_enter:
 proc_tty_read_enter_retry:
-        move    4,proc_current_slot
-        move    5,4
+        move    5,proc_current_slot
         lsh     5,1
-        add     5,4
+        add     5,proc_current_slot
         add     5,proc_table
         hlrz    6,(5)
-        move    7,045(6)
-        move    1,7
-        lsh     1,-036                 ; packed TTY state
+        hlrz    1,045(6)
+        lsh     1,-014                 ; packed TTY state
         jumpe   1,pdp10_ret_zero       ; NO_TTY -> historical CTY
         subi    1,2                    ; attached state -> tty id
+        jumpl   1,pdp10_ret_neg1        ; DETACHED becomes -1
         cail    1,025
         jrst    pdp10_ret_neg1
         move    2,proc_tty_records(1)
@@ -893,9 +888,7 @@ proc_tty_read_enter_retry:
         ldb     4,[POINT 8,045(6),32]
         came    3,4
         jrst    pdp10_ret_neg1
-        move    3,2
-        lsh     3,-010
-        andi    3,0377                 ; foreground pgrp
+        ldb     3,[POINT 8,proc_tty_records(1),27] ; foreground pgrp
         hrrz    4,(5)
         andi    4,0377                 ; current pgrp
         camn    3,4
@@ -913,15 +906,13 @@ proc_tty_input:
         move    5,2                    ; character
         cail    4,025
         jrst    pdp10_ret_neg1
-        move    6,proc_current_slot
-        move    7,6
+        move    7,proc_current_slot
         lsh     7,1
-        add     7,6
+        add     7,proc_current_slot
         add     7,proc_table
         hlrz    010,(7)
-        move    011,045(010)
-        move    3,011
-        lsh     3,-036                 ; TTY state
+        hlrz    3,045(010)
+        lsh     3,-014                 ; TTY state
         jumpn   3,proc_tty_input_attached
         jumpn   4,pdp10_ret_neg1       ; NO_TTY accepts CTY only
         move    1,5
@@ -937,9 +928,7 @@ proc_tty_input_attached:
         ldb     6,[POINT 8,045(010),32]
         came    3,6
         jrst    pdp10_ret_neg1
-        move    6,012
-        lsh     6,-010
-        andi    6,0377                 ; foreground pgrp
+        ldb     6,[POINT 8,proc_tty_records(4),27] ; foreground pgrp
         jumpe   6,pdp10_ret_neg1
         hrrz    3,(7)
         andi    3,0377
@@ -970,17 +959,16 @@ proc_tty_input_char:
 ; int proc_tty_output(unsigned int ch)
 proc_tty_output:
         move    4,1                    ; character
-        move    5,proc_current_slot
-        move    6,5
+        move    6,proc_current_slot
         lsh     6,1
-        add     6,5
+        add     6,proc_current_slot
         add     6,proc_table
         hlrz    7,(6)
-        move    2,045(7)
-        move    1,2
-        lsh     1,-036
+        hlrz    1,045(7)
+        lsh     1,-014
         jumpe   1,proc_tty_output_pack_cty
         subi    1,2                    ; tty id
+        jumpl   1,pdp10_ret_neg1        ; DETACHED becomes -1
         cail    1,025
         jrst    pdp10_ret_neg1
         move    3,proc_tty_records(1)
@@ -1023,11 +1011,9 @@ proc_tty_pending_store:
         lsh     3,-020
         andi    3,0777
         jumpn   3,pdp10_ret_neg1
-        move    3,2
-        addi    3,1
-        andi    3,0777
-        lsh     3,020
-        ior     4,3
+        addi    2,1                    ; validated byte 0..0377 -> marker 1..0400
+        lsh     2,020
+        ior     4,2
         movem   4,proc_tty_records(1)
         jrst    pdp10_ret_zero
 

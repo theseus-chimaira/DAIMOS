@@ -58,7 +58,7 @@ ge_getchar_loop:
         jrst ge_getchar_loop
         movei 1,ge_rx_event
         pushj 17,proc_wait_event_intr
-        jumpn 1,ge_getchar_error
+        jumpn 1,ge_getchar_done
         jrst ge_getchar_loop
 
 ge_getchar_hardware:
@@ -85,11 +85,6 @@ ge_getchar_ready_ours:
         andi 1,0177
 ge_getchar_done:
         sub 17,[1,,1]
-        popj 17,
-ge_getchar_error:
-        move 2,1
-        sub 17,[1,,1]
-        move 1,2
         popj 17,
 
 ; AC1 = decoded 7-bit GE byte.  Caller owns ge_tx_state bit 0.

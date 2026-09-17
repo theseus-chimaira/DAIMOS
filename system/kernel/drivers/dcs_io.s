@@ -63,7 +63,7 @@ dcs_getchar_loop:
         jrst dcs_getchar_loop
         movei 1,dcs_rx_event
         pushj 17,proc_wait_event_intr
-        jumpn 1,dcs_getchar_error
+        jumpn 1,dcs_getchar_done
         jrst dcs_getchar_loop
 
 dcs_getchar_ready:
@@ -89,11 +89,6 @@ dcs_getchar_ready_ours:
         andi 1,0377
 dcs_getchar_done:
         sub 17,[1,,1]
-        popj 17,
-dcs_getchar_error:
-        move 2,1
-        sub 17,[1,,1]
-        move 1,2
         popj 17,
 
 ; AC1 = DCS_PACK(line, byte).  Return 0 or DCS_E_ARG (-1).

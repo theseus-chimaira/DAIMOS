@@ -183,12 +183,10 @@ drm236_poll_error:
 ; runtime ownership words in otherwise-unused ids 017/020, so extending the
 ; arrays through DRM0 costs no additional fixed KCORE.
 drm236_account_success:
-        caie    4,DRM_DR_WRITE
-        jrst    drm236_account_read
-        aos     devicefs_drm_writes
-        jrst    pdp10_ret_ok
-drm236_account_read:
+        trne    4,010                   ; READ 0230 has bit 010, WRITE 0220 does not
         aos     devicefs_drm_reads
+        trnn    4,010
+        aos     devicefs_drm_writes
         jrst    pdp10_ret_ok
 
 drm236_account_error:

@@ -26,7 +26,7 @@ THE KCORE+MRES LINK TOTAL, THE EQUIVALENT CURRENT ACCEPTANCE LIMIT IS:
     KCORE + MRES <= 14288 DECIMAL WORDS
 
 THE CURRENT KCC SHRINK CANDIDATE MEASURES 14275 WORDS OF KCORE+MRES.  ITS
-PERMANENT HIGH-WATER ADDRESS IS 033762 OCTAL (14322 DECIMAL), 13 WORDS BELOW
+PERMANENT HIGH-WATER ADDRESS IS 033762 OCTAL (14302 DECIMAL), 13 WORDS BELOW
 THE HARD PERMANENT CEILING OF 033777 OCTAL (14335 DECIMAL).  THE KCC BUILD IS
 THE ACCEPTANCE BUILD.  GCC MAY BE MEASURED FOR CODE-QUALITY COMPARISON BUT DOES
 NOT RELAX THE KCC LIMIT.
@@ -464,3 +464,15 @@ STORAGE-SCHEDULER IMPROVEMENTS REMAIN RECORDED 0.9 WORK AND MAY BE RESUMED WHEN
 USERSPACE REQUIRES THEM OR THE USERSPACE PHASE REACHES A SUITABLE BREAKPOINT.
 
 STATE: CURRENT DEVELOPMENT ORDER.
+
+
+## 2026-09-17 POST-FREEZE HEADROOM PASS
+
+The incremental v13 shrink pass reduces the verified permanent extent to
+`PERMANENT_LAST 033736` (14302 decimal), 33 words below the hard `033777`
+ceiling.  It also corrects the PDP-6 native TTY handling of the DETACHED state
+before array indexing.  DCS/GE interruptible-input cleanup, compact current-slot
+addressing, shared GETUID/GETGID decoding, and a one-word DRM accounting
+reduction provide the additional headroom.  Full fresh LOGIN acceptance remains
+required because the current simulator/bootstrap test setup also stalls on the
+unchanged control tree before the userspace sentinel.
