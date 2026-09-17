@@ -48,13 +48,13 @@ exec_load_process(struct proc *p, unsigned int owner,
             dxr_flags == (EXEC_DXR_F_PURE | EXEC_DXR_F_IMPURE))
                 return -1;
         reloc_words = (image_words + 35) / 36;
-        if (st.size_words == (kword_t)EXEC_DXR_BASE_HDR_WORDS +
-            (kword_t)image_words + (kword_t)reloc_words) {
-                header_words = EXEC_DXR_BASE_HDR_WORDS;
-                text_words = 0;
-        } else if (st.size_words == (kword_t)EXEC_DXR_EXT_HDR_WORDS +
-            (kword_t)image_words + (kword_t)reloc_words) {
-                if (vfs_read_words(node, 2U, &hdr[2], 1U) != 1 ||
+        process_words = (int)EXEC_DXR_BASE_HDR_WORDS + image_words +
+            reloc_words;
+        header_words = EXEC_DXR_BASE_HDR_WORDS;
+        text_words = 0;
+        if (st.size_words != (kword_t)process_words) {
+                if (st.size_words != (kword_t)(process_words + 1) ||
+                    vfs_read_words(node, 2U, &hdr[2], 1U) != 1 ||
                     (unsigned int)(hdr[2] & EXEC_HALF_MASK) !=
                     EXEC_DXR_TEXT_TAG)
                         return -1;
@@ -62,8 +62,6 @@ exec_load_process(struct proc *p, unsigned int owner,
                 if (text_words > image_words)
                         return -1;
                 header_words = EXEC_DXR_EXT_HDR_WORDS;
-        } else {
-                return -1;
         }
         process_words = (int)EXEC_USER_ORIGIN + image_words + bss_words +
             (int)EXEC_DXR_STACK_WORDS;
@@ -107,8 +105,6 @@ exec_replace_current(const kword_t *path, kword_t *entry_stack)
         unsigned int slot;
         kword_t old_swap;
         kword_t new_swap;
-        kword_t entry;
-        kword_t stack;
 
         if (path == 0 || entry_stack == 0 || proc_table == 0)
                 return -1;
@@ -122,14 +118,10 @@ exec_replace_current(const kword_t *path, kword_t *entry_stack)
 
         old_swap = proc_swap_records[slot].state;
         staged.meta = current->meta;
-        staged.vm_state = 0UL;
-        staged.sched = current->sched;
         if (exec_load_process(&staged, slot, path) != 0) {
                 proc_swap_records[slot].state = old_swap;
                 return -1;
         }
-        entry = PROC_ENTRY(&staged);
-        stack = VM_SPACE_WORDS(&staged) - (kword_t)EXEC_DXR_STACK_WORDS - 1U;
         new_swap = proc_swap_records[slot].state;
         proc_swap_records[slot].state = old_swap;
 
@@ -145,10 +137,10 @@ exec_replace_current(const kword_t *path, kword_t *entry_stack)
         }
 
         current->vm_state = staged.vm_state;
-        staged.vm_state = 0UL;
         proc_swap_records[slot].state = new_swap;
         PROC_SWAP_BACKING_WORD(current) = 0UL;
-        entry_stack[0] = entry;
-        entry_stack[1] = stack;
+        entry_stack[0] = PROC_ENTRY(&staged);
+        entry_stack[1] = VM_SPACE_WORDS(&staged) -
+            (kword_t)EXEC_DXR_STACK_WORDS - 1U;
         return 0;
 }

@@ -69,9 +69,7 @@ dcs_getchar_loop:
 dcs_getchar_ready:
         setzm dcs_rx_word
         subi 2,1
-        move 3,2
-        lsh 3,-010
-        andi 3,077
+        ldb 3,[POINT 6,2,27]
         camn 3,(17)
         jrst dcs_getchar_ready_ours
         move 1,3
