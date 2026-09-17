@@ -7,6 +7,31 @@
 ; file_pdp10.s -- compact resident FILE/path primitives for PDP-6/PDP-10.
         .text
 
+; int file_check_access(vnode_t node, unsigned int need)
+; KCC builds a large save frame around the short stat/access sequence.  Keep
+; the policy itself in C (file_access_stat) and replace only this target-side
+; wrapper.  The seventh stack word preserves NEED across vfs_stat().
+        .globl  file_check_access
+        .globl  file_access_stat
+        .globl  vfs_stat
+file_check_access:
+        caile   2,7
+        jrst    pdp10_ret_neg1
+        add     17,[7,,7]
+        movem   2,-6(17)
+        movei   2,-5(17)               ; six-word struct vfs_stat
+        pushj   17,vfs_stat
+        jumpn   1,file_check_access_fail
+        movei   1,-5(17)
+        move    2,-6(17)
+        pushj   17,file_access_stat
+        jrst    file_check_access_done
+file_check_access_fail:
+        seto    1,
+file_check_access_done:
+        sub     17,[7,,7]
+        popj    17,
+
         .globl  file_path_char
         .globl  vfs_name_char
 ; unsigned int file_path_char(path, pos)
