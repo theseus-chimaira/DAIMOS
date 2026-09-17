@@ -21,15 +21,69 @@ file_check_access:
         movem   2,-6(17)
         movei   2,-5(17)               ; six-word struct vfs_stat
         pushj   17,vfs_stat
-        jumpn   1,file_check_access_fail
+        jumpn   1,file_check_access_done
         movei   1,-5(17)
         move    2,-6(17)
         pushj   17,file_access_stat
-        jrst    file_check_access_done
-file_check_access_fail:
-        seto    1,
 file_check_access_done:
         sub     17,[7,,7]
+        popj    17,
+
+; int file_access_stat(const struct vfs_stat *st, unsigned int need)
+        .globl  proc_table
+        .globl  proc_current_slot
+file_access_stat:
+        pushj   17,file_current_cred
+        hlrz    7,6
+        jumpe   7,pdp10_ret_zero
+        move    5,1(1)
+        came    7,4(1)
+        jrst    file_access_group
+        lsh     5,-6
+        jrst    file_access_test
+file_access_group:
+        hrrz    6,6
+        came    6,5(1)
+        jrst    file_access_test
+        lsh     5,-3
+file_access_test:
+        and     5,2
+        came    5,2
+        jrst    pdp10_ret_neg1
+        jrst    pdp10_ret_zero
+
+; Return current uid,,gid in AC6, or zero for bootstrap/no-uarea context.
+file_current_cred:
+        skipn   3,proc_table
+        jrst    file_current_cred_zero
+        skipn   4,proc_current_slot
+        jrst    file_current_cred_zero
+        imuli   4,3
+        add     4,3
+        move    5,(4)
+        trnn    5,0400000
+        jrst    file_current_cred_zero
+        hlrz    5,5
+        move    6,0107(5)
+        popj    17,
+file_current_cred_zero:
+        setz    6,
+        popj    17,
+
+; int file_check_owner(vnode_t node)
+file_check_owner:
+        add     17,[6,,6]
+        movei   2,-5(17)
+        pushj   17,vfs_stat
+        jumpn   1,file_owner_done       ; vfs_stat already returns -1
+        pushj   17,file_current_cred
+        hlrz    6,6
+        jumpe   6,file_owner_done       ; AC1 is still zero
+        camn    6,-1(17)                ; owner match keeps AC1 zero
+        jrst    file_owner_done
+        seto    1,
+file_owner_done:
+        sub     17,[6,,6]
         popj    17,
 
         .globl  file_path_char

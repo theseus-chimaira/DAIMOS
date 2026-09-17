@@ -410,16 +410,13 @@ devicefs_stats_select_device:
         subi    0,014
         jrst    devicefs_stats_device_native
 devicefs_stats_device_maybe_d6:
-        cain    4,021                  ; DRM0 is one native block/request
-        jrst    devicefs_stats_device_drm
-        caie    4,020
+        caile   4,017                  ; 020 D6SET, 021 DRM
+        jrst    devicefs_stats_device_extended_native
         jrst    devicefs_stats_device_simple_error
-        movei   0,3
-devicefs_stats_device_drm_done:
+devicefs_stats_device_extended_native:
+        move    0,4
+        subi    0,015                  ; 020 -> 3, 021 -> 4
         jrst    devicefs_stats_device_native
-devicefs_stats_device_drm:
-        movei   0,4
-        jrst    devicefs_stats_device_drm_done
 devicefs_stats_device_native:
         caie    6,4
         jrst    devicefs_stats_device_native_value
@@ -436,9 +433,7 @@ devicefs_stats_device_native_value:
         jrst    devicefs_stats_native_mtc
         cain    0,3                    ; D6SET has aggregate block volume
         jrst    devicefs_stats_native_d6
-        cain    0,4                    ; DRM has sparse block counters
-        jrst    devicefs_stats_native_drm
-        ; DTC and DSK are one native unit per request.
+        ; DTC, DSK and DRM are one native unit per request.
         jumpe   5,devicefs_stats_device_reads
         jrst    devicefs_stats_device_writes
 devicefs_stats_native_mtc:
@@ -447,11 +442,6 @@ devicefs_stats_native_mtc:
 devicefs_stats_native_d6:
         move    1,devicefs_d6set_blocks_read(5)
         jrst    devicefs_stats_emit
-devicefs_stats_native_drm:
-        jumpe   5,devicefs_stats_drm_reads
-        move    1,devicefs_drm_writes
-        jrst    devicefs_stats_emit
-
 devicefs_stats_device_simple_error:
         caie    6,2
         jrst    pdp10_ret_zero
@@ -462,41 +452,19 @@ devicefs_stats_device_simple_error:
         jrst    devicefs_stats_emit
 
 devicefs_stats_device_reads:
-        cain    4,021
-        jrst    devicefs_stats_drm_reads
-        cain    4,020
-        jrst    devicefs_stats_d6_reads
         movei   0,1
         lsh     0,0(4)
         tdnn    0,[076325]
         jrst    devicefs_stats_zero
         move    1,devicefs_io_in(4)
         jrst    devicefs_stats_emit
-devicefs_stats_drm_reads:
-        move    1,devicefs_drm_reads
-        jrst    devicefs_stats_emit
-devicefs_stats_d6_reads:
-        move    1,devicefs_d6set_reads
-        jrst    devicefs_stats_emit
-
 devicefs_stats_device_writes:
-        cain    4,021
-        jrst    devicefs_stats_drm_writes
-        cain    4,020
-        jrst    devicefs_stats_d6_writes
         movei   0,1
         lsh     0,0(4)
         tdnn    0,[073751]
         jrst    devicefs_stats_zero
         move    1,devicefs_io_out(4)
         jrst    devicefs_stats_emit
-devicefs_stats_drm_writes:
-        move    1,devicefs_drm_writes
-        jrst    devicefs_stats_emit
-devicefs_stats_d6_writes:
-        move    1,devicefs_d6set_writes
-        jrst    devicefs_stats_emit
-
 devicefs_stats_zero:
         setz    1,
 

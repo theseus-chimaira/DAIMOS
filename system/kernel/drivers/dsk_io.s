@@ -26,6 +26,7 @@
         .globl proc_table
         .globl proc_current_slot
         .globl proc_wait_event
+        .globl storage_request_init
         .globl proc_wakeup_event
 
 ; PI5 DSK status leaf.  AC2 may be used because pdp10_pi_dispatch_done bypasses the
@@ -167,12 +168,8 @@ dsk_sector_request:
         jrst dsk_boot_request
 
 dsk_runtime_request:
-        hrlz 5,1
-        hrr 5,2
-        push 017,5
-        push 017,4
-        setz 5,
-        push 017,5
+        add 017,[3,,3]
+        pushj 017,storage_request_init
         movei 1,-2(017)
 dsk_runtime_submit:
         ; Slot 0 performs synchronous swap I/O on the permanent idle stack.

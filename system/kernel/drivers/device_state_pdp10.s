@@ -31,6 +31,15 @@ vfs_namespace_root:
 vfs_mount_ro:
         .block  1                      ; 011 TTY0 has no IN
         .block  5                      ; 012..016 remaining IN counters
+        .globl  drm236_active_request
+        .globl  devicefs_d6set_reads
+        .globl  devicefs_drm_reads
+drm236_active_request:
+        .block  1                      ; 017 SLV0 has no IN
+devicefs_d6set_reads:
+        .block  1                      ; 020 D6SET0 request reads
+devicefs_drm_reads:
+        .block  1                      ; 021 DRM0 reads
 
         .globl  devicefs_io_out
         .globl  mach_kernel_sp
@@ -50,6 +59,15 @@ storage_iowd:
 storage_count:
         .block  1                      ; 013 OCNSLS has no OUT
         .block  3                      ; 014..016 OUT counters
+        .globl  drm236_idle_event
+        .globl  devicefs_d6set_writes
+        .globl  devicefs_drm_writes
+drm236_idle_event:
+        .block  1                      ; 017 SLV0 has no OUT
+devicefs_d6set_writes:
+        .block  1                      ; 020 D6SET0 request writes
+devicefs_drm_writes:
+        .block  1                      ; 021 DRM0 writes
 
 
 ; Sparse extended DEVICEFS accounting.  The legacy io_in/io_out arrays above
@@ -75,12 +93,8 @@ storage_count:
 ; DRM0.  Appending DRM0 preserves all existing offsets.
 devicefs_storage_errors:       .block 6
 
-devicefs_drm_reads:            .block 1
-devicefs_drm_writes:           .block 1
 devicefs_mtc_words_read:       .block 1
 devicefs_mtc_words_written:    .block 1
-devicefs_d6set_reads:          .block 1
-devicefs_d6set_writes:         .block 1
 devicefs_d6set_blocks_read:    .block 1
 devicefs_d6set_blocks_written: .block 1
 
@@ -90,10 +104,15 @@ devicefs_log_blocks_read:      .block 1
 devicefs_log_blocks_written:   .block 1
 devicefs_log_errors:           .block 1
 
-; Type-167 has one DMA engine independent of the Type-136 storage router.
-; These words are fixed because process wait channels and the PI handler may
-; reference them while the movable DRM236 MRES itself is relocated.
-        .globl  drm236_active_request
-        .globl  drm236_idle_event
-drm236_active_request:         .block 1
-drm236_idle_event:             .block 1
+
+        .text
+        .globl  storage_request_init
+; Reserve three words in the caller before entering.  Fill the standard
+; address,,buffer / operation / completion descriptor used by block drivers.
+storage_request_init:
+        hrlz    5,1
+        hrr     5,2
+        movem   5,-3(017)
+        movem   4,-2(017)
+        setzm   -1(017)
+        popj    017,

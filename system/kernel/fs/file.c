@@ -8,10 +8,9 @@ extern struct file *file_table;
 /* UNIX owner/group/other selection.  There are intentionally no supplementary
  * groups in 0.9.  Bootstrap/kernel context and UID 0 are privileged. */
 #ifdef __PDP10__
-int
+extern int file_access_stat(const struct vfs_stat *st, unsigned int need);
 #else
 static int
-#endif
 file_access_stat(const struct vfs_stat *st, unsigned int need)
 {
         struct proc *p;
@@ -38,7 +37,6 @@ file_access_stat(const struct vfs_stat *st, unsigned int need)
         return (bits & need) == need ? 0 : -1;
 }
 
-#ifndef __PDP10__
 int
 file_check_access(vnode_t node, unsigned int need)
 {
@@ -48,7 +46,6 @@ file_check_access(vnode_t node, unsigned int need)
                 return -1;
         return file_access_stat(&st, need);
 }
-#endif
 
 int
 file_check_owner(vnode_t node)
@@ -65,6 +62,7 @@ file_check_owner(vnode_t node)
                 return 0;
         return PROC_UID(p) == st.uid ? 0 : -1;
 }
+#endif
 
 extern int file_component(const kword_t *path, unsigned int *posp,
     struct vfs_name *name);

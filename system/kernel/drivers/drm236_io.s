@@ -19,6 +19,7 @@
         .globl  pdp10_ret_neg1
         .globl  proc_table
         .globl  proc_wait_event
+        .globl  storage_request_init
         .globl  proc_wakeup_event
 
         .set    DRM_DP_ERROR,0100060
@@ -51,12 +52,8 @@ drm236_request:
         ;   0: Type-236 address,,core buffer
         ;   1: Type-236 operation (READ or WRITE)
         ;   2: completion event (0 pending, 1 success, -1 failure)
-        hrlz    5,1
-        hrr     5,2
-        push    017,5
-        push    017,4
-        setz    5,
-        push    017,5
+        add     017,[3,,3]
+        pushj   017,storage_request_init
 
 drm236_runtime_retry:
         movei   1,-2(017)
@@ -69,8 +66,7 @@ drm236_runtime_retry:
         move    1,(017)
         move    4,-1(017)               ; preserve operation for accounting
         sub     017,[3,,3]
-        caie    1,1
-        jrst    drm236_account_error
+        sojn    1,drm236_account_error
         jrst    drm236_account_success
 
 ; Close the active-request/completion race in the same way as the filesystem
@@ -86,24 +82,27 @@ drm236_runtime_busy:
 
 ; Start the stack descriptor named by AC1 using PI channel 2.
 drm236_start_active:
-        move    5,(1)
-        hlrz    4,5                     ; Type-236 address
-        hrrz    2,5                     ; core buffer
-        move    5,1(1)                  ; READ/WRITE command
-        caie    5,DRM_DR_WRITE
-        jrst    drm236_start_read
-        cono    0010,0100+DRM_PI_LEVEL
-        jrst    drm236_start_dp
-drm236_start_read:
-        cono    0010,DRM_PI_LEVEL
-drm236_start_dp:
-        move    3,[-0200,,0]
-        hrr     3,2
-        datao   0010,3
-        datao   0400,4
+        move    6,(1)
+        move    4,1(1)                  ; READ/WRITE command
+        hrrz    2,6                     ; core buffer
+        hlrz    1,6                     ; Type-236 address
+        setz    3,                      ; DP read: device -> core
+        trnn    4,010                   ; READ 0230 has bit 010; WRITE 0220 does not
+        movei   3,0100                  ; DP write: core -> device
+        movei   5,DRM_PI_LEVEL
+        jrst    drm236_start_hw
+
+; Common Type-167/236 transfer start. AC1 address, AC2 buffer, AC3 DP
+; direction, AC4 drum operation, AC5 PI bits (zero for polled boot I/O).
+drm236_start_hw:
+        cono    0010,0(3)
+        move    6,[-0200,,0]
+        hrr     6,2
+        datao   0010,6
+        datao   0400,1
         cono    0400,DRM_DR_SELECT
-        addi    5,DRM_PI_LEVEL
-        cono    0400,0(5)
+        add     4,5
+        cono    0400,0(4)
         popj    017,
 
 ; PI2 receives two completions for a normal transfer.  Type 167 completion is
@@ -147,14 +146,8 @@ drm236_pi_finish:
 
 ; Early-boot polled path.  AC1 address, AC2 buffer, AC3 DP direction, AC4 DR op.
 drm236_poll_request:
-        cono    0010,0(3)
-        move    5,[-0200,,0]
-        hrr     5,2
-        datao   0010,5
-        datao   0400,1
-        cono    0400,DRM_DR_SELECT
-        cono    0400,0(4)
-
+        setz    5,
+        pushj   017,drm236_start_hw
         movei   5,DRM_POLL_LIMIT
 drm236_poll_dp:
         coni    0010,6
@@ -186,8 +179,9 @@ drm236_poll_error:
         cono    0400,DRM_DR_CLEAR_DESELECT
         jrst    drm236_account_error
 
-; Keep DRM accounting sparse: DEVICEFS ids 017 and 020 have no ordinary I/O
-; counters, so extending the legacy dense arrays through DRM0 would waste RAM.
+; DRM0 occupies DEVICEFS id 021.  The dense counter slots also host the
+; runtime ownership words in otherwise-unused ids 017/020, so extending the
+; arrays through DRM0 costs no additional fixed KCORE.
 drm236_account_success:
         caie    4,DRM_DR_WRITE
         jrst    drm236_account_read

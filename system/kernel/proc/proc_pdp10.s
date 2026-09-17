@@ -813,31 +813,25 @@ proc_control_getgid:
         popj    17,
 
 ; UID 0 may install login credentials.  An ordinary process may only request
-; its current UID/GID, so it cannot acquire another identity.
+; its current UID/GID, so it cannot acquire another identity.  SETUID (017)
+; and SETGID (020) share the path; AC1 still contains the dispatch opcode.
 proc_control_setuid:
-        caile   2,0777777
-        jrst    pdp10_ret_neg1
-        hlrz    5,(4)
-        hlrz    6,PROC_CRED_OFFSET(5)
-        jumpe   6,proc_control_setuid_ok
-        came    2,6
-        jrst    pdp10_ret_neg1
-proc_control_setuid_ok:
-        hrlm    2,PROC_CRED_OFFSET(5)
-        move    1,2
-        popj    17,
-
 proc_control_setgid:
+proc_control_setcred:
         caile   2,0777777
         jrst    pdp10_ret_neg1
         hlrz    5,(4)
         move    6,PROC_CRED_OFFSET(5)
-        hlrz    7,6
-        jumpe   7,proc_control_setgid_ok
+        hlrz    7,6                    ; current UID controls privilege
+        jumpe   7,proc_control_setcred_store
+        caie    1,017                  ; SETUID compares UID, SETGID compares GID
         hrrz    7,6
         came    2,7
         jrst    pdp10_ret_neg1
-proc_control_setgid_ok:
+proc_control_setcred_store:
+        cain    1,017                  ; SETUID executes only the LH store
+        hrlm    2,PROC_CRED_OFFSET(5)
+        caie    1,017                  ; SETGID executes only the RH store
         hrrm    2,PROC_CRED_OFFSET(5)
         move    1,2
         popj    17,
