@@ -738,6 +738,7 @@ proc_control_tty_owned:
         move    1,6
         lsh     1,-036
         subi    1,2
+        jumpl   1,proc_control_tty_owned_bad ; DETACHED becomes -1
         cail    1,025
         jrst    proc_control_tty_owned_bad
         move    7,proc_tty_records(1)
@@ -793,9 +794,7 @@ proc_control_tty_getfg:
         jumpn   2,pdp10_ret_neg1
         pushj   17,proc_control_tty_owned
         jumpl   1,pdp10_ret_neg1
-        move    1,7
-        lsh     1,-010
-        andi    1,0377
+        ldb     1,[POINT 8,7,27]
         popj    17,
 
 proc_control_getuid:

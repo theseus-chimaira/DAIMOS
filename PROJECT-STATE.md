@@ -490,3 +490,13 @@ passes.  The full EXEC replacement/session tests still time out before their
 sentinel on both this candidate and the unchanged v13 control, so fresh LOGIN
 and full replacement acceptance remain required when the simulator/bootstrap
 control issue is resolved.
+
+## 2026-09-17 NATIVE TTY OWNERSHIP BOUNDS FIX
+
+The native controlling-TTY ownership helper now rejects the DETACHED sentinel
+before indexing `proc_tty_records`.  DETACHED becomes -1 after subtracting the
+attached-state base, so an upper-bound-only signed `CAIL` was insufficient.
+The added lower-bound guard is size-neutral because GETFG foreground-pgrp
+extraction was compacted at the same time.  The permanent measurement remains
+`KCORE+MRES 14239`, `PERMANENT_LAST 033716` (14286 decimal), leaving 49 words
+below the hard `033777` ceiling.
