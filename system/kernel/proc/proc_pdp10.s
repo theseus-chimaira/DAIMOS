@@ -867,6 +867,176 @@ proc_control_tty_setfg:
         move    1,2
         popj    17,
 
+; Compact target implementations of the five multi-terminal data-path helpers.
+; The C versions remain available to host tests.  Re-deriving the current
+; process/u-area here is smaller than KCC's call/save frames on each helper.
+        .globl  proc_tty_read_enter
+        .globl  proc_tty_input
+        .globl  proc_tty_output
+        .globl  proc_tty_pending_take
+        .globl  proc_tty_pending_store
+        .globl  pdp10_ret_neg2
+
+; int proc_tty_read_enter(void)
+proc_tty_read_enter:
+proc_tty_read_enter_retry:
+        move    4,proc_current_slot
+        move    5,4
+        lsh     5,1
+        add     5,4
+        add     5,proc_table
+        hlrz    6,(5)
+        move    7,045(6)
+        move    1,7
+        lsh     1,-036                 ; packed TTY state
+        jumpe   1,pdp10_ret_zero       ; NO_TTY -> historical CTY
+        subi    1,2                    ; attached state -> tty id
+        cail    1,025
+        jrst    pdp10_ret_neg1
+        move    2,proc_tty_records(1)
+        move    3,2
+        andi    3,0377                 ; record session
+        ldb     4,[POINT 8,045(6),32]
+        came    3,4
+        jrst    pdp10_ret_neg1
+        move    3,2
+        lsh     3,-010
+        andi    3,0377                 ; foreground pgrp
+        hrrz    4,(5)
+        andi    4,0377                 ; current pgrp
+        camn    3,4
+        popj    17,                    ; AC1 still tty id
+        move    1,3
+        movei   2,3                    ; SYS_EVENT_TSTP
+        movei   3,1                    ; group delivery
+        pushj   17,proc_event_send
+        jumpn   1,pdp10_ret_neg1
+        jrst    proc_tty_read_enter_retry
+
+; int proc_tty_input(unsigned int tty, unsigned int ch)
+proc_tty_input:
+        move    4,1                    ; tty
+        move    5,2                    ; character
+        cail    4,025
+        jrst    pdp10_ret_neg1
+        move    6,proc_current_slot
+        move    7,6
+        lsh     7,1
+        add     7,6
+        add     7,proc_table
+        hlrz    010,(7)
+        move    011,045(010)
+        move    3,011
+        lsh     3,-036                 ; TTY state
+        jumpn   3,proc_tty_input_attached
+        jumpn   4,pdp10_ret_neg1       ; NO_TTY accepts CTY only
+        move    1,5
+        andi    1,0177
+        popj    17,
+proc_tty_input_attached:
+        subi    3,2
+        came    3,4
+        jrst    pdp10_ret_neg1
+        move    012,proc_tty_records(4)
+        move    3,012
+        andi    3,0377
+        ldb     6,[POINT 8,045(010),32]
+        came    3,6
+        jrst    pdp10_ret_neg1
+        move    6,012
+        lsh     6,-010
+        andi    6,0377                 ; foreground pgrp
+        jumpe   6,pdp10_ret_neg1
+        hrrz    3,(7)
+        andi    3,0377
+        came    6,3
+        jrst    pdp10_ret_neg1
+        move    5,5
+        andi    5,0177
+        caie    5,3                    ; ^C
+        jrst    proc_tty_input_tstp
+        move    1,6
+        movei   2,0                    ; SYS_EVENT_INT
+        movei   3,1
+        pushj   17,proc_event_send
+        jrst    pdp10_ret_neg2
+proc_tty_input_tstp:
+        caie    5,032                  ; ^Z
+        jrst    proc_tty_input_char
+        move    1,6
+        movei   2,3                    ; SYS_EVENT_TSTP
+        movei   3,1
+        pushj   17,proc_event_send
+        jumpn   1,pdp10_ret_neg1
+        jrst    pdp10_ret_neg2
+proc_tty_input_char:
+        move    1,5
+        popj    17,
+
+; int proc_tty_output(unsigned int ch)
+proc_tty_output:
+        move    4,1                    ; character
+        move    5,proc_current_slot
+        move    6,5
+        lsh     6,1
+        add     6,5
+        add     6,proc_table
+        hlrz    7,(6)
+        move    2,045(7)
+        move    1,2
+        lsh     1,-036
+        jumpe   1,proc_tty_output_pack_cty
+        subi    1,2                    ; tty id
+        cail    1,025
+        jrst    pdp10_ret_neg1
+        move    3,proc_tty_records(1)
+        andi    3,0377
+        ldb     5,[POINT 8,045(7),32]
+        came    3,5
+        jrst    pdp10_ret_neg1
+        lsh     1,010
+        andi    4,0377
+        ior     1,4
+        popj    17,
+proc_tty_output_pack_cty:
+        move    1,4
+        andi    1,0377
+        popj    17,
+
+; int proc_tty_pending_take(unsigned int tty)
+proc_tty_pending_take:
+        cail    1,025
+        jrst    pdp10_ret_neg1
+        move    2,proc_tty_records(1)
+        move    3,2
+        lsh     3,-020
+        andi    3,0777
+        jumpe   3,pdp10_ret_neg1
+        and     2,[777600177777]       ; clear pending byte field
+        movem   2,proc_tty_records(1)
+        move    1,3
+        subi    1,1
+        popj    17,
+
+; int proc_tty_pending_store(unsigned int tty, unsigned int ch)
+proc_tty_pending_store:
+        cail    1,025
+        jrst    pdp10_ret_neg1
+        caile   2,0377
+        jrst    pdp10_ret_neg1
+        move    4,proc_tty_records(1)
+        move    3,4
+        lsh     3,-020
+        andi    3,0777
+        jumpn   3,pdp10_ret_neg1
+        move    3,2
+        addi    3,1
+        andi    3,0777
+        lsh     3,020
+        ior     4,3
+        movem   4,proc_tty_records(1)
+        jrst    pdp10_ret_zero
+
 ; int proc_wait_event(volatile kword_t *eventp)
 ; Internal event waits are noninterruptible.  User-visible waits use
 ; proc_wait_event_intr and return -1 when ALRM is already pending or wakes them.

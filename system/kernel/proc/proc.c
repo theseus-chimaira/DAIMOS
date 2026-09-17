@@ -378,6 +378,7 @@ proc_event_apply(unsigned int slot, unsigned int event)
         return 0;
 }
 
+#ifndef __PDP10__
 /* Return the logical terminal which supplies the current process input.
  * A process with no controlling terminal retains the historical CTY fallback
  * used during early userspace bootstrap.  DETACHED is deliberately an error. */
@@ -519,6 +520,7 @@ proc_tty_pending_store(unsigned int tty, unsigned int ch)
         proc_tty_records[tty] = record;
         return 0;
 }
+#endif
 
 int
 proc_wait_status(unsigned int selector, kword_t *statusp, unsigned int flags)

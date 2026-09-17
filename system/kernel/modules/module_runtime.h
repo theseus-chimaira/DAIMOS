@@ -3,7 +3,7 @@
 
 #include "kcore.h"
 
-#define MODULE_RUNTIME_MAX       19U
+#define MODULE_RUNTIME_MAX       20U
 #define MODULE_DYNAMIC_BIND_MAX  8U
 #define MODULE_HALF_MASK         0777777UL
 

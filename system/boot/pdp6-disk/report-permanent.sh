@@ -47,6 +47,7 @@ mres_objects()
         wcnsls)  echo 'wcnsls_io' ;;
         ocnsls)  echo 'ocnsls_io' ;;
         dsk)     echo 'dsk_io' ;;
+        drm)     echo 'drm236_io' ;;
         tape)    echo 'tape_io' ;;
         slv)     echo 'slv_io' ;;
         memfs)   echo 'memfs_pdp10' ;;
@@ -75,7 +76,7 @@ object_words()
 
 total=$kcore
 for name in cty clk ptr ptp cr cp dcs ge dpy tty wcnsls ocnsls dsk tape slv \
-    memfs dtfs diskset d6fs; do
+    drm memfs dtfs diskset d6fs; do
         package="$build/$name-mres.dobj"
         [ -f "$package" ] || { echo "missing MRES package: $package" >&2; exit 1; }
         words=0
