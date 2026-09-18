@@ -46,6 +46,7 @@
 #define SYS_EXT_PIPE               020U
 #define SYS_EXT_MKFIFO             021U
 #define SYS_EXT_EXEC               022U
+#define SYS_EXT_GETTIME            023U
 
 /* Compact process hierarchy/control operations for UUO 077. */
 #define SYS_PROCCTL_GETPGRP       0U

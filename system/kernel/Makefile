@@ -44,6 +44,7 @@ KERNEL_HEADERS = boot/kboot.h \
 	drivers/ge.h \
 	drivers/ocnsls.h \
 	drivers/pt.h \
+	drivers/pclk.h \
 	drivers/slv.h \
 	drivers/tty.h \
 	drivers/wcnsls.h \
@@ -149,6 +150,7 @@ KCORE_FIXED_SRCS = core/ret_pdp10.s \
 	drivers/device_state_pdp10.s \
 	fs/devicefs_pdp10.s \
 	proc/syscall_info_pdp10.s \
+	drivers/pclk_pdp10.s \
 	proc/syscall_dispatch.s \
 	proc/mach_user.s \
 	core/kcore_io.s \
@@ -178,6 +180,7 @@ KCORE_FIXED_ASM = $(BUILD)/exec.s \
 	$(BUILD)/device_state_pdp10.s \
 	$(BUILD)/devicefs_pdp10.s \
 	$(BUILD)/syscall_info_pdp10.s \
+	$(BUILD)/pclk_pdp10.s \
 	$(BUILD)/syscall_dispatch.s \
 	$(BUILD)/mach_user.s \
 	$(BUILD)/vm_backend_asm.s \
@@ -312,6 +315,7 @@ COPY_ASM_SRCS = core/ret_pdp10.s \
 	drivers/device_state_pdp10.s \
 	fs/devicefs_pdp10.s \
 	proc/syscall_info_pdp10.s \
+	drivers/pclk_pdp10.s \
 	proc/syscall_dispatch.s \
 	proc/mach_user.s \
 	core/kcore_io.s \
@@ -354,6 +358,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret_pdp10.s \
 	$(BUILD)/device_state_pdp10.s \
 	$(BUILD)/devicefs_pdp10.s \
 	$(BUILD)/syscall_info_pdp10.s \
+	$(BUILD)/pclk_pdp10.s \
 	$(BUILD)/syscall_dispatch.s \
 	$(BUILD)/mach_user.s \
 	$(BUILD)/kcore_io.s \

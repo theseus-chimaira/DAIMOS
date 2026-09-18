@@ -28,6 +28,7 @@
         .globl  file_writechar_reserve
         .globl  exec_replace_current
         .globl  proc_exec_enter
+        .globl  pclk_time36
 exec_native_syscall:
         ; Recover the monitor-UUO opcode from the trapped instruction.
         ; AC0 cannot be an index register on the PDP-6: index field zero
@@ -485,6 +486,8 @@ native_sys_extctl:
         cain    1,020                  ; SYS_EXT_PIPE
         jrst    pipe_create
 native_sys_ext_nonpipe:
+        cain    1,023                  ; SYS_EXT_GETTIME
+        jrst    pclk_time36
         cain    1,022                  ; SYS_EXT_EXEC
         jrst    native_sys_exec
         caie    1,021                  ; SYS_EXT_MKFIFO
