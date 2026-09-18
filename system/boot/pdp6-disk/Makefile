@@ -278,8 +278,11 @@ PTP_OUTPUT = $(MEDIA_DIR)/ptp.out
 CP_OUTPUT = $(MEDIA_DIR)/cp.out
 SIMH_DCS0_PORT ?= 1101
 SIMH_GE0_PORT ?= 1201
+SIMH_PCLK_MODE ?= REALTIME
 
-.PHONY: image boot permanent-size clean
+.PHONY: image boot permanent-size clean force-simh-config
+
+force-simh-config:
 
 $(BUILD):
 	mkdir -p $@
@@ -442,7 +445,7 @@ $(KCORE_EMBED_ASM): kcore-embed.s.in $(KCORE_MAP) $(BUILD)
 $(KCORE_EMBED_OBJ): $(KCORE_EMBED_ASM)
 	$(DAS) $(DASFLAGS) -c -o $@ $<
 
-$(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR): $(USERLAND_INPUTS)
+$(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR) &: $(USERLAND_INPUTS)
 	$(MAKE) -C $(PROJECT_ROOT)/userland build BUILD_ROOT='$(USERLAND_BUILD_ROOT)' \
 	    PDP10_PREFIX='$(PDP10_PREFIX)'
 
@@ -496,7 +499,11 @@ $(DISK_IMAGE): $(IMAGE_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_LOGIN_DXR) $(SYSTEM_DS
 	    -f "/CONFIG/PASSWD:$(SYSTEM_PASSWD_TEXT):600:text"
 	$(LOGSTORE) -n 1 -d $(DISK_DIR) --init
 
-$(SIMH_INI): simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE)
+$(SIMH_INI): simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE) force-simh-config
+	@case '$(SIMH_PCLK_MODE)' in \
+	  REALTIME|HISTORICAL) ;; \
+	  *) echo "SIMH_PCLK_MODE must be REALTIME or HISTORICAL" >&2; exit 2 ;; \
+	esac
 	mkdir -p $(MEDIA_DIR)
 	touch $(DTC0_IMAGE) $(DTC1_IMAGE) $(DTC2_IMAGE) $(MTC0_IMAGE) $(MTC1_IMAGE) \
 	    $(DR0_IMAGE) $(DR1_IMAGE) $(DR2_IMAGE) $(DR3_IMAGE)
@@ -515,7 +522,8 @@ $(SIMH_INI): simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE)
 	    -e 's|@PTP_OUTPUT@|$(PTP_OUTPUT)|g' \
 	    -e 's|@CP_OUTPUT@|$(CP_OUTPUT)|g' \
 	    -e 's|@DCS0_PORT@|$(SIMH_DCS0_PORT)|g' \
-	    -e 's|@GE0_PORT@|$(SIMH_GE0_PORT)|g' $< > $@
+	    -e 's|@GE0_PORT@|$(SIMH_GE0_PORT)|g' \
+	    -e 's|@PCLK_MODE@|$(SIMH_PCLK_MODE)|g' $< > $@
 
 image: $(SIMH_INI)
 

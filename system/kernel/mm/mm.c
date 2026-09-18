@@ -312,6 +312,13 @@ mm_compact(kword_t words, kword_t alignment)
 }
 
 int
+mm_alloc(kword_t words, unsigned int type, unsigned int owner,
+    unsigned int preference, kword_t *basep)
+{
+        return mm_alloc_aligned(words, 1UL, type, owner, preference, basep);
+}
+
+int
 mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
     unsigned int owner, unsigned int preference, kword_t *basep)
 {

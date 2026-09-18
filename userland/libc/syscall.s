@@ -31,6 +31,7 @@
         .globl dsys_unmount
         .globl dsys_flock
         .globl dsys_dup
+        .globl dsys_dup2
         .globl dsys_symlink
         .globl dsys_nice
         .globl dsys_run
@@ -109,6 +110,11 @@ dsys_exec:             move 2,1
                        uuo 077,0(1)
                        popj 17,
 dsys_gettime:          movei 1,023
+                       uuo 077,0(1)
+                       popj 17,
+dsys_dup2:             move 3,2
+                       move 2,1
+                       movei 1,024
                        uuo 077,0(1)
                        popj 17,
         .globl dsys_mkfifo

@@ -5,7 +5,7 @@
 ; cost.  The child u-area contains explicit descriptor inheritance state.
 ;
 ; C ABI entry:
-;   AC1 = physical address of struct sys_run_v1
+;   AC1 = physical address of struct sys_run_v2
 ;   AC2 = user words available from AC1 through end of user extent
 ; Return AC1 = child PID/slot, or -1.
 
@@ -23,10 +23,14 @@
         .equ    PROC_UAREA_OWNER_BASE,01000
         .equ    MM_TYPE_KERNEL_DYNAMIC,3
         .equ    EXEC_DXR_STACK_WORDS,02000
-        .equ    RUN_MIN_WORDS,011
-        .equ    RUN_FIXED_WORDS,7
+        .equ    RUN_VERSION,2
+        .equ    RUN_MIN_WORDS,010
+        .equ    RUN_FIXED_WORDS,6
         .equ    RUN_MAX_FDMAP,020
+        .equ    RUN_MAX_ARGC,020
+        .equ    RUN_MAX_ENVC,020
         .equ    RUN_MAX_PATH_CHARS,0146
+        .equ    RUN_MAX_ARG_CHARS,0146
         .equ    PROC_TTY_COUNT,025
 
         .text
@@ -45,6 +49,7 @@
         .globl  proc_scope_id
         .globl  proc_tty_records
         .globl  proc_runq_add
+        .globl  vm_space_startup
 
 proc_run_block:
         push    17,010
@@ -64,7 +69,7 @@ proc_run_block:
         caige   011,RUN_MIN_WORDS
         jrst    proc_run_bad
         hlrz    3,(010)
-        caie    3,1
+        caie    3,RUN_VERSION
         jrst    proc_run_bad
         hrrz    3,(010)
         caige   3,RUN_MIN_WORDS
@@ -72,32 +77,64 @@ proc_run_block:
         camle   3,011
         jrst    proc_run_bad
         move    011,3
+
+        ; Every scalar count is a nonnegative 18-bit value.
         move    4,3(010)
         hrrz    3,4
         came    3,4
         jrst    proc_run_bad
         caile   3,RUN_MAX_FDMAP
         jrst    proc_run_bad
+        move    4,4(010)
+        hrrz    3,4
+        came    3,4
+        jrst    proc_run_bad
+        caile   3,RUN_MAX_ARGC
+        jrst    proc_run_bad
+        move    4,5(010)
+        hrrz    3,4
+        came    3,4
+        jrst    proc_run_bad
+        caile   3,RUN_MAX_ENVC
+        jrst    proc_run_bad
 
+        ; Validate path and all inline startup records within the mapped block.
+        move    7,010
+        add     7,011
         move    014,010
         addi    014,RUN_FIXED_WORDS
-        move    4,(014)
-        hrrz    5,4
-        came    4,5
+        caml    014,7
         jrst    proc_run_bad
-        jumpe   4,proc_run_bad
-        caile   4,RUN_MAX_PATH_CHARS
-        jrst    proc_run_bad
-        addi    4,5
-        move    5,4
-        setz    4,
-        divi    4,6
-        addi    4,1
+        move    1,014
+        movei   2,RUN_MAX_PATH_CHARS
+        movei   3,1
+        pushj   17,proc_run_record_words
+        jumpe   1,proc_run_bad
         move    015,014
-        add     015,4
-        addi    4,RUN_FIXED_WORDS
-        add     4,3(010)
-        came    4,011
+        add     015,1
+        camle   015,7
+        jrst    proc_run_bad
+
+        hrrz    5,4(010)
+        hrrz    6,5(010)
+        add     5,6
+proc_run_record_scan:
+        jumpe   5,proc_run_records_done
+        caml    015,7
+        jrst    proc_run_bad
+        move    1,015
+        movei   2,RUN_MAX_ARG_CHARS
+        setz    3,
+        pushj   17,proc_run_record_words
+        jumpe   1,proc_run_bad
+        add     015,1
+        camle   015,7
+        jrst    proc_run_bad
+        sojg    5,proc_run_record_scan
+proc_run_records_done:
+        hrrz    4,3(010)
+        add     4,015
+        came    4,7
         jrst    proc_run_bad
 
         movei   012,1
@@ -200,15 +237,35 @@ proc_run_watermark_loop:
         jrst    proc_run_watermark_loop
 .endif
 
-        move    4,4(010)
+        ; Locate first argv record and let the machine VM backend relocate
+        ; argv/environment into the child image.
+        move    6,010
+        addi    6,RUN_FIXED_WORDS
+        move    1,6
+        movei   2,RUN_MAX_PATH_CHARS
+        movei   3,1
+        pushj   17,proc_run_record_words
+        jumpe   1,proc_run_claimed_bad
+        add     6,1
+        add     17,[4,,4]
+        move    1,013
+        move    2,6
+        hrrz    3,4(010)
+        lsh     3,022
+        hrrz    4,5(010)
+        ior     3,4
+        movei   4,-3(17)
+        pushj   17,vm_space_startup
+        jumpn   1,proc_run_startup_failed
+        move    4,-3(17)
         movem   4,1(014)
-        move    4,5(010)
+        move    4,-2(17)
         movem   4,2(014)
-        move    4,6(010)
+        move    4,-1(17)
         movem   4,3(014)
-        hlrz    4,1(013)
-        subi    4,EXEC_DXR_STACK_WORDS+1
+        move    4,(17)
         movem   4,017(014)
+        sub     17,[4,,4]
         hrrz    4,011
         tlo     4,010000
         movem   4,020(014)
@@ -280,6 +337,28 @@ proc_run_map_done:
         pushj   17,proc_runq_add
         move    1,012
         jrst    proc_run_return
+
+proc_run_startup_failed:
+        sub     17,[4,,4]
+        jrst    proc_run_claimed_bad
+
+; Return AC1 = words occupied by one counted SIXBIT record, or zero.
+; AC1 = physical record pointer, AC2 = max chars, AC3 != 0 requires nonempty.
+proc_run_record_words:
+        move    4,(1)
+        hrrz    1,4
+        came    1,4
+        jrst    pdp10_ret_zero
+        skipn   3
+        jrst    proc_run_record_limit
+        jumpe   1,pdp10_ret_zero
+proc_run_record_limit:
+        camle   1,2
+        jrst    pdp10_ret_zero
+        addi    1,5
+        idivi   1,6
+        addi    1,1
+        popj    17,
 
 proc_run_claimed_bad:
         move    1,012

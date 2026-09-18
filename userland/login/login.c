@@ -65,6 +65,36 @@ parse_uint(const char *s, unsigned int *vp)
 }
 
 static int
+parse_s6_uint(const kword_t *s, unsigned int *vp)
+{
+        unsigned int i;
+        unsigned int n;
+        unsigned int wi;
+        unsigned int sh;
+        unsigned int ch;
+        unsigned int v;
+
+        if (s == 0 || vp == 0)
+                return -1;
+        n = (unsigned int)(s[0] & 0777777UL);
+        if (n == 0U || n > 6U)
+                return -1;
+        v = 0U;
+        for (i = 0U; i < n; ++i) {
+                wi = 1U + i / 6U;
+                sh = 30U - (i % 6U) * 6U;
+                ch = (unsigned int)(((s[wi] >> sh) & 077UL) + 040UL);
+                if (ch < '0' || ch > '9')
+                        return -1;
+                v = v * 10U + ch - '0';
+                if (v > SYS_TTY_ID_MAX)
+                        return -1;
+        }
+        *vp = v;
+        return 0;
+}
+
+static int
 split_passwd(char *line, char **field)
 {
         unsigned int n;
@@ -84,7 +114,7 @@ split_passwd(char *line, char **field)
 }
 
 static int
-login_getline(char *buf, unsigned int size, int echo, int upper)
+login_getline(char *buf, unsigned int size, int upper)
 {
         unsigned int n;
         int ch;
@@ -93,30 +123,18 @@ login_getline(char *buf, unsigned int size, int echo, int upper)
         for (;;) {
                 ch = dsys_readchar(0);
                 if (ch == -2)
-                        continue;
+                        return -1;
                 if (ch < 0)
                         return -1;
                 if (ch == '\r' || ch == '\n') {
-                        if (echo)
-                                (void)u_crlf(1);
                         buf[n] = 0;
                         return (int)n;
-                }
-                if (ch == 010 || ch == 0177) {
-                        if (n != 0U) {
-                                --n;
-                                if (echo)
-                                        (void)u_puts(1, "\b \b");
-                        }
-                        continue;
                 }
                 if (ch < 040 || ch > 0176 || n + 1U >= size)
                         continue;
                 if (upper && ch >= 'a' && ch <= 'z')
                         ch -= 'a' - 'A';
                 buf[n++] = (char)ch;
-                if (echo)
-                        (void)u_putc(1, ch);
         }
 }
 
@@ -163,6 +181,32 @@ find_account(const char *name, struct login_account *account)
 }
 
 static int
+exec_shell(const kword_t *path)
+{
+        kword_t block[SYS_EXEC_V1_FIXED_WORDS + 2U * U_PATH_WORDS];
+        struct sys_exec_v1 *exec;
+        unsigned int path_words;
+        unsigned int total;
+        unsigned int i;
+
+        path_words = 1U + ((unsigned int)path[0] + 5U) / 6U;
+        if (path_words > U_PATH_WORDS)
+                return -1;
+        total = SYS_EXEC_V1_FIXED_WORDS + 2U * path_words;
+        for (i = 0U; i < total; ++i)
+                block[i] = 0UL;
+        exec = (struct sys_exec_v1 *)block;
+        exec->version_words = SYS_RUN_HEADER(SYS_EXEC_VERSION_1, total);
+        exec->argc = 1UL;
+        exec->envc = 0UL;
+        for (i = 0U; i < path_words; ++i) {
+                block[SYS_EXEC_V1_FIXED_WORDS + i] = path[i];
+                block[SYS_EXEC_V1_FIXED_WORDS + path_words + i] = path[i];
+        }
+        return dsys_exec(exec);
+}
+
+static int
 setup_tty(unsigned int tty)
 {
         int pgrp;
@@ -177,18 +221,24 @@ setup_tty(unsigned int tty)
         if (pgrp < 0 || dsys_procctl(SYS_PROCCTL_TTY_SETFG,
             (unsigned int)pgrp) != pgrp)
                 return -1;
+        if (dsys_procctl(SYS_PROCCTL_TTY_SETMODE,
+            SYS_TTY_MODE_COOKED) != (int)SYS_TTY_MODE_COOKED)
+                return -1;
         return 0;
 }
 
 int
-main(unsigned int tty)
+main(int argc, kword_t **argv, kword_t **envp)
 {
         struct login_account account;
         char name[LOGIN_NAME_MAX + 1U];
         char password[LOGIN_PASS_MAX + 1U];
+        unsigned int tty;
         int auth;
 
-        if (setup_tty(tty) != 0) {
+        (void)envp;
+        if (argc < 2 || argv == 0 || parse_s6_uint(argv[1], &tty) != 0 ||
+            setup_tty(tty) != 0) {
                 (void)u_puts(2, "LOGIN: TTY FAILED");
                 (void)u_crlf(2);
                 (void)dsys_exit(1);
@@ -196,7 +246,7 @@ main(unsigned int tty)
         }
         for (;;) {
                 (void)u_puts(1, "LOGIN: ");
-                if (login_getline(name, sizeof(name), 1, 1) < 0)
+                if (login_getline(name, sizeof(name), 1) < 0)
                         break;
                 auth = find_account(name, &account);
                 if (auth != 0) {
@@ -206,8 +256,16 @@ main(unsigned int tty)
                 }
                 if (account.password[0] != 0) {
                         (void)u_puts(1, "PASSWORD: ");
-                        if (login_getline(password, sizeof(password), 0, 0) < 0)
+                        if (dsys_procctl(SYS_PROCCTL_TTY_SETMODE,
+                            SYS_TTY_MODE_CANONICAL | SYS_TTY_MODE_SIGNALS) < 0)
                                 break;
+                        if (login_getline(password, sizeof(password), 0) < 0) {
+                                (void)dsys_procctl(SYS_PROCCTL_TTY_SETMODE,
+                                    SYS_TTY_MODE_COOKED);
+                                break;
+                        }
+                        (void)dsys_procctl(SYS_PROCCTL_TTY_SETMODE,
+                            SYS_TTY_MODE_COOKED);
                         (void)u_crlf(1);
                         if (!text_eq(password, account.password)) {
                                 (void)u_puts(1, "LOGIN INCORRECT");
@@ -222,7 +280,7 @@ main(unsigned int tty)
                         (void)u_crlf(2);
                         break;
                 }
-                if (dsys_exec(account.shell) != 0) {
+                if (exec_shell(account.shell) != 0) {
                         (void)u_puts(2, "LOGIN: EXEC FAILED");
                         (void)u_crlf(2);
                 }

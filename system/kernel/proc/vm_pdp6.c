@@ -3,6 +3,7 @@
 #include "mm.h"
 #include "mm_internal.h"
 #include "proc_swap.h"
+#include "exec.h"
 
 int
 vm_space_create(struct proc *p, unsigned int owner, kword_t words)
@@ -33,6 +34,71 @@ vm_space_load_file(struct proc *p, vnode_t node, kword_t file_offset,
         return vfs_read_words(node, file_offset,
             (kword_t *)(unsigned long)(base + user_offset), words) ==
             (int)words ? 0 : -1;
+}
+
+int
+vm_space_startup(struct proc *p, const kword_t *records,
+    kword_t counts, kword_t *startup)
+{
+        unsigned int argc;
+        unsigned int envc;
+        unsigned int i;
+        unsigned int nwords;
+        unsigned int vector_words;
+        unsigned int total_words;
+        unsigned int string_off;
+        unsigned int source_off;
+        kword_t start;
+        kword_t base;
+        kword_t *dst;
+
+        if (p == 0 || records == 0 || startup == 0 || !VM_SPACE_ACTIVE(p))
+                return -1;
+        argc = (unsigned int)((counts >> 18U) & PROC_HALF_MASK);
+        envc = (unsigned int)(counts & PROC_HALF_MASK);
+        vector_words = argc + (envc == 0U ? 0U : envc + 1U);
+        total_words = vector_words;
+        source_off = 0U;
+        for (i = 0U; i < argc + envc; ++i) {
+                nwords = 1U + ((unsigned int)records[source_off] + 5U) / 6U;
+                if (total_words + nwords < total_words)
+                        return -1;
+                total_words += nwords;
+                source_off += nwords;
+        }
+        if (total_words > (unsigned int)EXEC_DXR_STACK_WORDS)
+                return -1;
+
+        start = VM_SPACE_WORDS(p) - (kword_t)EXEC_DXR_STACK_WORDS;
+        startup[0] = (kword_t)argc;
+        startup[1] = argc == 0U ? 0UL : start;
+        startup[2] = envc == 0U ? 0UL : start + (kword_t)argc;
+        startup[3] = total_words == 0U ? start - 1UL :
+            start + (kword_t)total_words - 1UL;
+        if (total_words == 0U)
+                return 0;
+
+        base = VM_PDP6_BASE(p);
+        dst = (kword_t *)(unsigned long)(base + start);
+        string_off = vector_words;
+        source_off = 0U;
+        for (i = 0U; i < argc; ++i) {
+                nwords = 1U + ((unsigned int)records[source_off] + 5U) / 6U;
+                dst[i] = start + (kword_t)string_off;
+                fs_copy_words(&records[source_off], &dst[string_off], nwords);
+                source_off += nwords;
+                string_off += nwords;
+        }
+        for (i = 0U; i < envc; ++i) {
+                nwords = 1U + ((unsigned int)records[source_off] + 5U) / 6U;
+                dst[argc + i] = start + (kword_t)string_off;
+                fs_copy_words(&records[source_off], &dst[string_off], nwords);
+                source_off += nwords;
+                string_off += nwords;
+        }
+        if (envc != 0U)
+                dst[argc + envc] = 0UL;
+        return 0;
 }
 
 int

@@ -75,13 +75,6 @@ mm_boot_reserve(kword_t base, unsigned int type, unsigned int owner)
         return MM_OK;
 }
 
-int
-mm_alloc(kword_t words, unsigned int type, unsigned int owner,
-    unsigned int preference, kword_t *basep)
-{
-        return mm_alloc_aligned(words, 1UL, type, owner, preference, basep);
-}
-
 kword_t
 mm_largest_free(void)
 {

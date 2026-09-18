@@ -17,6 +17,9 @@ unsigned int proc_sched_age_phase;
 extern struct file *file_table;
 
 extern int proc_event_send(unsigned int target, unsigned int event, int group);
+#ifdef __PDP10__
+extern int native_sys_putchar_call(kword_t tty_char);
+#endif
 extern int proc_session_teardown(unsigned int leader_slot, kword_t leader_ctl);
 
 /* KCC emits calls for tiny C helpers here.  Keep scheduler-common
@@ -143,6 +146,314 @@ proc_report_set(struct proc *p, unsigned int report)
  * packing save substantially more KCORE instructions in every control path. */
 kword_t proc_tty_records[PROC_TTY_COUNT];
 
+/* Canonical input storage is allocated only while a line is active.  Two
+ * 18-bit managed-core bases share each pointer word, so all 21 terminals cost
+ * only eleven fixed words rather than reserving a line array per terminal. */
+#define PROC_TTY_LINE_PTR_WORDS ((PROC_TTY_COUNT + 1U) / 2U)
+#define PROC_TTY_LINE_MM_OWNER_BASE 02000U
+#define PROC_TTY_LINE_CHARS         120U
+#define PROC_TTY_LINE_PACK          5U
+#define PROC_TTY_LINE_DATA_WORDS \
+        ((PROC_TTY_LINE_CHARS + PROC_TTY_LINE_PACK - 1U) / PROC_TTY_LINE_PACK)
+#define PROC_TTY_LINE_WORDS         (1U + PROC_TTY_LINE_DATA_WORDS)
+#define PROC_TTY_LINE_LEN_MASK      0377UL
+#define PROC_TTY_LINE_DRAIN_SHIFT   8U
+#define PROC_TTY_LINE_DRAIN_MASK    0377UL
+#define PROC_TTY_LINE_READY         ((kword_t)1UL << 16U)
+#define PROC_TTY_LINE_NL            ((kword_t)1UL << 17U)
+#define PROC_TTY_LINE_EOF           ((kword_t)1UL << 18U)
+
+#ifdef __PDP10__
+kword_t proc_tty_line_bases[PROC_TTY_LINE_PTR_WORDS];
+#else
+static kword_t proc_tty_line_bases[PROC_TTY_LINE_PTR_WORDS];
+#endif
+
+static unsigned int
+proc_tty_mode(unsigned int tty)
+{
+        return (unsigned int)((proc_tty_records[tty] >> PROC_TTY_MODE_SHIFT) &
+            PROC_TTY_MODE_MASK);
+}
+
+#ifdef __PDP10__
+extern kword_t proc_tty_line_base_get(unsigned int tty);
+extern void proc_tty_line_base_set(unsigned int tty, kword_t base);
+#else
+static kword_t
+proc_tty_line_base_get(unsigned int tty)
+{
+        kword_t word;
+
+        word = proc_tty_line_bases[tty >> 1U];
+        if ((tty & 1U) != 0U)
+                return (word >> 18U) & PROC_HALF_MASK;
+        return word & PROC_HALF_MASK;
+}
+
+static void
+proc_tty_line_base_set(unsigned int tty, kword_t base)
+{
+        kword_t *word;
+
+        word = &proc_tty_line_bases[tty >> 1U];
+        base &= PROC_HALF_MASK;
+        if ((tty & 1U) != 0U)
+                *word = (*word & PROC_HALF_MASK) | (base << 18U);
+        else
+                *word = (*word & (PROC_HALF_MASK << 18U)) | base;
+}
+
+#endif
+
+void
+proc_tty_line_reset(unsigned int tty)
+{
+        kword_t base;
+
+        if (tty >= PROC_TTY_COUNT)
+                return;
+        base = proc_tty_line_base_get(tty);
+        if (base == 0UL)
+                return;
+        if (mm_free(base, MM_TYPE_KERNEL_DYNAMIC,
+            PROC_TTY_LINE_MM_OWNER_BASE + tty) == MM_OK)
+                proc_tty_line_base_set(tty, 0UL);
+}
+
+int
+proc_tty_mode_set(unsigned int tty, unsigned int mode)
+{
+        kword_t record;
+
+        if (tty >= PROC_TTY_COUNT || (mode & ~PROC_TTY_MODE_MASK) != 0U)
+                return -1;
+        if (proc_tty_mode(tty) == mode)
+                return (int)mode;
+        proc_tty_line_reset(tty);
+        if (proc_tty_line_base_get(tty) != 0UL)
+                return -1;
+        record = proc_tty_records[tty];
+        record &= ~(((kword_t)PROC_TTY_MODE_MASK << PROC_TTY_MODE_SHIFT) |
+            PROC_TTY_CR_PENDING);
+        record |= (kword_t)mode << PROC_TTY_MODE_SHIFT;
+        proc_tty_records[tty] = record;
+        return (int)mode;
+}
+
+#ifdef __PDP10__
+kword_t *
+#else
+static kword_t *
+#endif
+proc_tty_line_ensure(unsigned int tty)
+{
+        kword_t base;
+        kword_t *line;
+        unsigned int i;
+
+        base = proc_tty_line_base_get(tty);
+        if (base == 0UL) {
+                if (mm_alloc(PROC_TTY_LINE_WORDS, MM_TYPE_KERNEL_DYNAMIC,
+                    PROC_TTY_LINE_MM_OWNER_BASE + tty, MM_ALLOC_LOW,
+                    &base) != MM_OK)
+                        return 0;
+                line = (kword_t *)(unsigned long)base;
+                for (i = 0U; i < PROC_TTY_LINE_WORDS; ++i)
+                        line[i] = 0UL;
+                proc_tty_line_base_set(tty, base);
+        }
+        return (kword_t *)(unsigned long)base;
+}
+
+#ifdef __PDP10__
+extern void proc_tty_line_put(kword_t *line, unsigned int pos,
+    unsigned int ch);
+extern unsigned int proc_tty_line_get(kword_t *line, unsigned int pos);
+#else
+static void
+proc_tty_line_put(kword_t *line, unsigned int pos, unsigned int ch)
+{
+        unsigned int wi;
+        unsigned int shift;
+        kword_t mask;
+
+        wi = 1U + pos / PROC_TTY_LINE_PACK;
+        shift = (PROC_TTY_LINE_PACK - 1U -
+            (pos % PROC_TTY_LINE_PACK)) * 7U;
+        mask = (kword_t)0177UL << shift;
+        line[wi] = (line[wi] & ~mask) | (((kword_t)ch & 0177UL) << shift);
+}
+
+static unsigned int
+proc_tty_line_get(kword_t *line, unsigned int pos)
+{
+        unsigned int wi;
+        unsigned int shift;
+
+        wi = 1U + pos / PROC_TTY_LINE_PACK;
+        shift = (PROC_TTY_LINE_PACK - 1U -
+            (pos % PROC_TTY_LINE_PACK)) * 7U;
+        return (unsigned int)((line[wi] >> shift) & 0177UL);
+}
+
+#endif
+
+#ifdef __PDP10__
+void
+#else
+static void
+#endif
+proc_tty_echo(unsigned int tty, unsigned int ch)
+{
+#ifdef __PDP10__
+        (void)native_sys_putchar_call(TTY_PACK(tty, ch));
+#else
+        (void)tty_putchar(TTY_PACK(tty, ch));
+#endif
+}
+
+#ifdef __PDP10__
+void
+#else
+static void
+#endif
+proc_tty_echo_erase(unsigned int tty)
+{
+        proc_tty_echo(tty, 010U);
+        proc_tty_echo(tty, 040U);
+        proc_tty_echo(tty, 010U);
+}
+
+/* Return one already-cooked byte, EOF, or INPUT_REPEAT when hardware input is
+ * still required.  The first canonical read allocates its compact line block
+ * here, before the caller enters a blocking hardware-input path. */
+#ifndef __PDP10__
+int
+proc_tty_line_take(unsigned int tty)
+{
+        kword_t *line;
+        kword_t header;
+        unsigned int len;
+        unsigned int drain;
+        unsigned int ch;
+
+        if (tty >= PROC_TTY_COUNT)
+                return -1;
+        if ((proc_tty_mode(tty) & PROC_TTY_MODE_CANONICAL) == 0U)
+                return PROC_TTY_INPUT_REPEAT;
+        line = proc_tty_line_ensure(tty);
+        if (line == 0)
+                return -1;
+        header = line[0];
+        if ((header & PROC_TTY_LINE_READY) == 0UL)
+                return PROC_TTY_INPUT_REPEAT;
+        len = (unsigned int)(header & PROC_TTY_LINE_LEN_MASK);
+        drain = (unsigned int)((header >> PROC_TTY_LINE_DRAIN_SHIFT) &
+            PROC_TTY_LINE_DRAIN_MASK);
+        if (drain < len) {
+                ch = proc_tty_line_get(line, drain++);
+                line[0] = (header & ~((kword_t)PROC_TTY_LINE_DRAIN_MASK <<
+                    PROC_TTY_LINE_DRAIN_SHIFT)) |
+                    ((kword_t)drain << PROC_TTY_LINE_DRAIN_SHIFT);
+                if (drain == len && (header & PROC_TTY_LINE_NL) == 0UL)
+                        proc_tty_line_reset(tty);
+                return (int)ch;
+        }
+        if ((header & PROC_TTY_LINE_NL) != 0UL) {
+                proc_tty_line_reset(tty);
+                return 012;
+        }
+        if ((header & PROC_TTY_LINE_EOF) != 0UL) {
+                proc_tty_line_reset(tty);
+                return PROC_TTY_INPUT_EOF;
+        }
+        proc_tty_line_reset(tty);
+        return PROC_TTY_INPUT_EOF;
+}
+
+#endif
+
+/* Process one byte after controlling-TTY and foreground-pgrp validation. */
+#ifndef __PDP10__
+int
+proc_tty_canon_input(unsigned int tty, unsigned int ch)
+{
+        kword_t *line;
+        kword_t header;
+        unsigned int len;
+        unsigned int mode;
+
+        if (tty >= PROC_TTY_COUNT)
+                return -1;
+        mode = proc_tty_mode(tty);
+        if ((mode & PROC_TTY_MODE_CANONICAL) == 0U)
+                return (int)(ch & 0177U);
+        ch &= 0177U;
+        if ((proc_tty_records[tty] & PROC_TTY_CR_PENDING) != 0UL) {
+                proc_tty_records[tty] &= ~PROC_TTY_CR_PENDING;
+                if (ch == 012U)
+                        return PROC_TTY_INPUT_REPEAT;
+        }
+        line = proc_tty_line_ensure(tty);
+        if (line == 0)
+                return -1;
+        header = line[0];
+        if ((header & PROC_TTY_LINE_READY) != 0UL)
+                return proc_tty_line_take(tty);
+        len = (unsigned int)(header & PROC_TTY_LINE_LEN_MASK);
+        if (ch == 015U || ch == 012U) {
+                if (ch == 015U)
+                        proc_tty_records[tty] |= PROC_TTY_CR_PENDING;
+                line[0] = header | PROC_TTY_LINE_READY | PROC_TTY_LINE_NL;
+                if ((mode & PROC_TTY_MODE_ECHO) != 0U) {
+                        proc_tty_echo(tty, 015U);
+                        proc_tty_echo(tty, 012U);
+                }
+                return proc_tty_line_take(tty);
+        }
+        if (ch == 010U || ch == 0177U) {
+                if (len != 0U) {
+                        --len;
+                        line[0] = (header & ~PROC_TTY_LINE_LEN_MASK) |
+                            (kword_t)len;
+                        if ((mode & PROC_TTY_MODE_ECHO) != 0U)
+                                proc_tty_echo_erase(tty);
+                }
+                return PROC_TTY_INPUT_REPEAT;
+        }
+        if (ch == 025U) {
+                if ((mode & PROC_TTY_MODE_ECHO) != 0U) {
+                        while (len != 0U) {
+                                --len;
+                                proc_tty_echo_erase(tty);
+                        }
+                }
+                line[0] = header & ~PROC_TTY_LINE_LEN_MASK;
+                return PROC_TTY_INPUT_REPEAT;
+        }
+        if (ch == 004U) {
+                if (len == 0U)
+                        line[0] = header | PROC_TTY_LINE_READY |
+                            PROC_TTY_LINE_EOF;
+                else
+                        line[0] = header | PROC_TTY_LINE_READY;
+                return proc_tty_line_take(tty);
+        }
+        if (len >= PROC_TTY_LINE_CHARS) {
+                if ((mode & PROC_TTY_MODE_ECHO) != 0U)
+                        proc_tty_echo(tty, 007U);
+                return PROC_TTY_INPUT_REPEAT;
+        }
+        proc_tty_line_put(line, len, ch);
+        line[0] = (header & ~PROC_TTY_LINE_LEN_MASK) | (kword_t)(len + 1U);
+        if ((mode & PROC_TTY_MODE_ECHO) != 0U && ch >= 040U && ch <= 0176U)
+                proc_tty_echo(tty, ch);
+        return PROC_TTY_INPUT_REPEAT;
+}
+
+#endif
+
 extern int proc_tty_session_has(unsigned int session, unsigned int pgrp,
     unsigned int skip_slot);
 
@@ -159,8 +470,10 @@ proc_tty_release_session(unsigned int session, unsigned int leaving_slot)
                 unsigned int record;
 
                 record = (unsigned int)proc_tty_records[i];
-                if (PROC_TTY_REC_SESSION(record) == session)
+                if (PROC_TTY_REC_SESSION(record) == session) {
+                        proc_tty_line_reset((unsigned int)i);
                         proc_tty_records[i] = 0UL;
+                }
         }
 }
 
@@ -443,15 +756,19 @@ proc_tty_input(unsigned int tty, unsigned int ch)
         if (pgrp == 0U || pgrp != PROC_PGRP(p))
                 return -1;
         ch &= 0177U;
-        if (ch == 003U) {
-                (void)proc_event_send(pgrp, SYS_EVENT_INT, 1);
-                return -2;
+        if ((proc_tty_mode(tty) & PROC_TTY_MODE_SIGNALS) != 0U) {
+                if (ch == 003U) {
+                        (void)proc_event_send(pgrp, SYS_EVENT_INT, 1);
+                        return PROC_TTY_INPUT_REPEAT;
+                }
+                if (ch == 032U) {
+                        if (proc_event_send(pgrp, SYS_EVENT_TSTP, 1) != 0)
+                                return -1;
+                        return PROC_TTY_INPUT_REPEAT;
+                }
         }
-        if (ch == 032U) {
-                if (proc_event_send(pgrp, SYS_EVENT_TSTP, 1) != 0)
-                        return -1;
-                return -2;
-        }
+        if ((proc_tty_mode(tty) & PROC_TTY_MODE_CANONICAL) != 0U)
+                return proc_tty_canon_input(tty, ch);
         return (int)ch;
 }
 

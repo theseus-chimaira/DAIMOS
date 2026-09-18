@@ -21,6 +21,7 @@
         .globl  proc_control
         .globl  proc_tty_read_enter
         .globl  proc_tty_input
+        .globl  proc_tty_line_take
         .globl  proc_tty_output
         .globl  proc_current_slot
         .globl  pipe_create
@@ -488,6 +489,8 @@ native_sys_extctl:
 native_sys_ext_nonpipe:
         cain    1,023                  ; SYS_EXT_GETTIME
         jrst    pclk_time36
+        cain    1,024                  ; SYS_EXT_DUP2
+        jrst    native_sys_dup2
         cain    1,022                  ; SYS_EXT_EXEC
         jrst    native_sys_exec
         caie    1,021                  ; SYS_EXT_MKFIFO
@@ -501,24 +504,35 @@ native_sys_ext_nonpipe:
         pushj   17,file_mkfifo
         jrst    native_sys_mapped_return
 
-; EXEC path is AC2.  Two stable kernel-stack words receive entry and stack.
-; A failed replacement still owns the mapped-path hold and returns normally;
-; success has committed a new VM and must never return through the old image.
+; EXEC AC2 points at an inline, versioned launch block.  Five stable
+; kernel-stack words receive entry, stack, argc, argv, and envp.  Success has
+; committed a new VM and must never return through the old image.
 native_sys_exec:
         move    1,2
         pushj   17,native_sys_map_one
         jumpe   1,pdp10_ret_neg1
-        add     17,[2,,2]
-        movei   2,-1(17)
+        move    2,4
+        add     2,3
+        sub     2,1                    ; mapped parent words available
+        add     17,[5,,5]
+        movei   3,-4(17)
         pushj   17,exec_replace_current
         jumpn   1,native_sys_exec_bad
-        move    1,-1(17)               ; replacement entry
-        move    2,(17)                  ; replacement user stack
-        sub     17,[2,,2]
+        move    1,-4(17)               ; replacement entry
+        move    2,-3(17)               ; replacement user stack
+        move    3,-2(17)               ; argc
+        move    4,-1(17)               ; argv
+        move    5,(17)                  ; envp
+        sub     17,[5,,5]
         jrst    proc_exec_enter
 native_sys_exec_bad:
-        sub     17,[2,,2]
+        sub     17,[5,,5]
         jrst    native_sys_mapped_return
+
+native_sys_dup2:
+        hrrz    1,2                    ; old fd
+        hrrz    2,3                    ; replacement fd
+        jrst    file_dup2
 
 native_sys_procctl:
         hrrz    2,2
@@ -534,14 +548,21 @@ native_sys_getchar_policy:
         pushj   17,proc_tty_read_enter
         jumpl   1,%L137
         push    17,1                   ; logical controlling TTY
+        pushj   17,proc_tty_line_take  ; drain cooked data before hardware
+        came    1,[-3]
+        jrst    native_sys_getchar_buffered
+        move    1,(17)                 ; restore logical TTY
 native_sys_getchar_again:
         pushj   17,native_sys_getchar_call
         jumpl   1,native_sys_getchar_error
         move    2,1                    ; character
         pop     17,1                   ; logical TTY
         pushj   17,proc_tty_input
-        camn    1,[-2]                 ; consumed job-control character
+        camn    1,[-3]                 ; consumed/editing/signal: retry
         jrst    native_sys_getchar_policy
+        jrst    %L65
+native_sys_getchar_buffered:
+        sub     17,[1,,1]
         jrst    %L65
 native_sys_getchar_error:
         sub     17,[1,,1]

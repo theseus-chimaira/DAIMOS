@@ -52,6 +52,7 @@ int file_check_owner(vnode_t node);
 int file_open(const kword_t *path, unsigned int flags);
 int file_close(int fd);
 int file_dup(int fd);
+int file_dup2(int oldfd, int newfd);
 int file_lock(int fd, unsigned int op);
 void file_unlock_mount(unsigned int mount_id);
 void file_close_all(void);

@@ -594,11 +594,15 @@ proc_child_set:
         .globl  proc_tty_release_session
 proc_control:
         jumpl   1,pdp10_ret_neg1
-        caile   1,020
+        caile   1,027
         jrst    pdp10_ret_neg1
-        move    4,proc_current_slot
+        ; AC3 is the current slot/session identity used by NEWSESSION,
+        ; NEWDOMAIN, and the TTY ownership operations below.  Do not depend
+        ; on an arbitrary user AC3 value surviving the syscall trap.
+        move    3,proc_current_slot
+        move    4,3
         lsh     4,1
-        add     4,proc_current_slot
+        add     4,3
         add     4,proc_table
         jrst    @proc_control_table(1)
 proc_control_table:
@@ -618,7 +622,14 @@ proc_control_table:
         .word   proc_control_getuid
         .word   proc_control_getgid
         .word   proc_control_setuid
-        .word   proc_control_setgid
+        .word   pdp10_ret_neg1         ; 020 reserved by UUO-077 extension bank
+        .word   pdp10_ret_neg1         ; 021 reserved by UUO-077 extension bank
+        .word   pdp10_ret_neg1         ; 022 reserved by UUO-077 extension bank
+        .word   pdp10_ret_neg1         ; 023 reserved by UUO-077 extension bank
+        .word   pdp10_ret_neg1         ; 024 reserved by UUO-077 extension bank
+        .word   proc_control_setgid    ; 025
+        .word   proc_control_tty_getmode ; 026
+        .word   proc_control_tty_setmode ; 027
 
 proc_control_getpgrp:
         jumpn   2,pdp10_ret_neg1
@@ -720,6 +731,7 @@ proc_control_tty_attach_claim:
         andi    1,0377
         lsh     1,010
         ior     1,3
+        ior     1,[01600000000]         ; canonical + echo + signals
         movem   1,proc_tty_records(2)
 proc_control_tty_attach_set:
         addi    2,2                    ; encoded ATTACHED(tty)
@@ -757,6 +769,11 @@ proc_control_tty_detach:
         jumpl   1,pdp10_ret_neg1
         came    5,3                    ; only the session leader detaches
         jrst    pdp10_ret_neg1
+        push    17,5                   ; line reset is C and may use ACs
+        push    17,1
+        pushj   17,proc_tty_line_reset
+        pop     17,1
+        pop     17,5
         setzm   proc_tty_records(1)
         move    1,5                    ; session
         movei   2,1                    ; DETACHED
@@ -797,6 +814,37 @@ proc_control_tty_getfg:
         ldb     1,[POINT 8,7,27]
         popj    17,
 
+
+proc_control_tty_getmode:
+        jumpn   2,pdp10_ret_neg1
+        pushj   17,proc_control_tty_owned
+        jumpl   1,pdp10_ret_neg1
+        move    1,7
+        lsh     1,-031
+        andi    1,07
+        popj    17,
+
+proc_control_tty_setmode:
+        tdne    2,[-010]
+        jrst    pdp10_ret_neg1
+        push    17,2                   ; requested mode
+        pushj   17,proc_control_tty_owned
+        jumpl   1,proc_control_tty_setmode_bad
+        move    6,proc_current_slot
+        lsh     6,1
+        add     6,proc_current_slot
+        add     6,proc_table
+        hrrz    6,(6)
+        andi    6,0377                 ; caller pgrp
+        ldb     5,[POINT 8,proc_tty_records(1),27]
+        came    5,6                    ; only foreground owner changes mode
+        jrst    proc_control_tty_setmode_bad
+        pop     17,2
+        jrst    proc_tty_mode_set
+proc_control_tty_setmode_bad:
+        sub     17,[1,,1]
+        jrst    pdp10_ret_neg1
+
 proc_control_getuid:
 proc_control_getgid:
         jumpn   2,pdp10_ret_neg1
@@ -809,7 +857,7 @@ proc_control_getgid:
 
 ; UID 0 may install login credentials.  An ordinary process may only request
 ; its current UID/GID, so it cannot acquire another identity.  SETUID (017)
-; and SETGID (020) share the path; AC1 still contains the dispatch opcode.
+; and SETGID (025) share the path; AC1 still contains the dispatch opcode.
 proc_control_setuid:
 proc_control_setgid:
 proc_control_setcred:
@@ -864,7 +912,302 @@ proc_control_tty_setfg:
         .globl  proc_tty_output
         .globl  proc_tty_pending_take
         .globl  proc_tty_pending_store
+        .globl  proc_tty_line_take
+        .globl  proc_tty_canon_input
+        .globl  proc_tty_line_reset
+        .globl  proc_tty_mode_set
         .globl  pdp10_ret_neg2
+        .globl  pdp10_ret_neg3
+
+; Packed canonical-line base helpers: two 18-bit MM bases per word.
+        .globl  proc_tty_line_bases
+        .globl  proc_tty_line_base_get
+proc_tty_line_base_get:
+        move    3,1
+        lsh     3,-1
+        move    3,proc_tty_line_bases(3)
+        trnn    1,1
+        jrst    proc_tty_line_base_get_even
+        lsh     3,-022
+proc_tty_line_base_get_even:
+        andi    3,0777777
+        move    1,3
+        popj    17,
+
+        .globl  proc_tty_line_base_set
+proc_tty_line_base_set:
+        move    3,1
+        lsh     3,-1
+        trne    1,1
+        jrst    proc_tty_line_base_set_odd
+        hrrm    2,proc_tty_line_bases(3)
+        popj    17,
+proc_tty_line_base_set_odd:
+        hrlz    2,2
+        hllm    2,proc_tty_line_bases(3)
+        popj    17,
+
+; Packed canonical-line byte helpers.  KCC expands the divide/remainder
+; and variable shifts substantially; keep the target versions compact.
+        .globl  proc_tty_line_put
+proc_tty_line_put:
+        move    6,3                    ; preserve character
+        idivi   2,5                    ; AC2=word index, AC3=byte index
+        addi    2,1                    ; word zero is the line header
+        add     2,1                    ; AC2=&line[word]
+        movei   4,4
+        sub     4,3
+        imuli   4,7                    ; shift=(4-byte)*7
+        movei   5,0177
+        lsh     5,0(4)                 ; mask
+        move    7,0(2)
+        setcm   5,5
+        and     7,5
+        andi    6,0177
+        lsh     6,0(4)
+        ior     7,6
+        movem   7,0(2)
+        popj    17,
+
+        .globl  proc_tty_line_get
+proc_tty_line_get:
+        idivi   2,5                    ; AC2=word index, AC3=byte index
+        addi    2,1
+        add     2,1
+        movei   4,4
+        sub     4,3
+        imuli   4,7
+        move    5,0(2)
+        movn    4,4
+        lsh     5,0(4)
+        andi    5,0177
+        move    1,5
+        popj    17,
+
+; int proc_tty_line_take(unsigned int tty)
+; Drain one cooked byte, allocate the bounded line block before a hardware
+; read, or return -3 when the caller must obtain another device byte.
+proc_tty_line_take:
+        cail    1,025
+        jrst    pdp10_ret_neg1
+        move    2,proc_tty_records(1)
+        move    3,2
+        lsh     3,-031
+        trnn    3,01                   ; RAW mode never allocates a line
+        jrst    pdp10_ret_neg3
+        push    17,1                   ; tty survives allocator/helper calls
+        pushj   17,proc_tty_line_ensure
+        jumpe   1,proc_tty_line_take_bad
+        move    7,1                    ; line base; byte helper preserves AC7
+        move    6,0(7)                 ; line header
+        trnn    6,0200000              ; READY
+        jrst    proc_tty_line_take_more
+        move    2,6
+        andi    2,0377                 ; length
+        move    3,6
+        lsh     3,-010
+        andi    3,0377                 ; drain index
+        camge   3,2
+        jrst    proc_tty_line_take_byte
+        trne    6,0400000              ; submitted by CR/LF
+        jrst    proc_tty_line_take_nl
+        jrst    proc_tty_line_take_eof ; explicit EOF or exhausted partial
+proc_tty_line_take_byte:
+        move    4,3
+        addi    4,1                    ; new drain index
+        and     6,[-0177401]           ; clear old drain field
+        move    5,4
+        lsh     5,010
+        ior     6,5
+        movem   6,0(7)
+        move    1,7
+        move    2,3
+        pushj   17,proc_tty_line_get
+        move    2,6
+        andi    2,0377                 ; length
+        move    3,6
+        lsh     3,-010
+        andi    3,0377                 ; updated drain index
+        came    3,2
+        jrst    proc_tty_line_take_ret
+        trne    6,0400000              ; newline remains for next read
+        jrst    proc_tty_line_take_ret
+        push    17,1                   ; final byte of partial ^D line
+        move    1,-1(17)               ; tty below saved byte
+        pushj   17,proc_tty_line_reset
+        pop     17,1
+proc_tty_line_take_ret:
+        sub     17,[1,,1]              ; discard saved tty
+        popj    17,
+proc_tty_line_take_nl:
+        move    1,0(17)
+        pushj   17,proc_tty_line_reset
+        sub     17,[1,,1]
+        movei   1,012
+        popj    17,
+proc_tty_line_take_eof:
+        move    1,0(17)
+        pushj   17,proc_tty_line_reset
+        sub     17,[1,,1]
+        jrst    pdp10_ret_neg2
+proc_tty_line_take_more:
+        sub     17,[1,,1]
+        jrst    pdp10_ret_neg3
+proc_tty_line_take_bad:
+        sub     17,[1,,1]
+        jrst    pdp10_ret_neg1
+
+; int proc_tty_canon_input(unsigned int tty, unsigned int ch)
+; Target canonical editor.  AC10-AC13 are saved because the echo/MM helpers
+; may use all caller-scratch ACs; this also preserves the KCC ABI.
+proc_tty_canon_input:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        move    10,1                   ; tty
+        move    11,2                   ; input byte
+        cail    10,025
+        jrst    proc_tty_canon_bad
+        move    3,proc_tty_records(10)
+        move    13,3
+        lsh     13,-031
+        andi    13,07                  ; mode bits
+        trnn    13,01
+        jrst    proc_tty_canon_raw
+        andi    11,0177
+        move    4,3
+        lsh     4,-034                 ; suppress LF immediately after CR
+        trnn    4,1
+        jrst    proc_tty_canon_no_cr_pending
+        move    4,[02000000000]
+        andcam  4,proc_tty_records(10)
+        caie    11,012
+        jrst    proc_tty_canon_no_cr_pending
+        jrst    proc_tty_canon_repeat
+proc_tty_canon_no_cr_pending:
+        move    1,10
+        pushj   17,proc_tty_line_base_get
+        move    12,1                   ; line block was allocated pre-read
+        jumpe   12,proc_tty_canon_bad
+        move    6,0(12)                ; header
+        trne    6,0200000              ; already submitted
+        jrst    proc_tty_canon_take
+        move    7,6
+        andi    7,0377                 ; current length
+        caie    11,015                 ; CR
+        jrst    proc_tty_canon_check_lf
+        move    4,[02000000000]
+        iorm    4,proc_tty_records(10) ; remember CR so a following LF vanishes
+        jrst    proc_tty_canon_newline
+proc_tty_canon_check_lf:
+        cain    11,012                 ; bare LF is also a newline
+        jrst    proc_tty_canon_newline
+        caie    11,010                 ; BS
+        cain    11,0177                ; DEL
+        jrst    proc_tty_canon_erase
+        caie    11,025                 ; ^U
+        jrst    proc_tty_canon_not_kill
+        trnn    13,02                  ; echo each erased column when enabled
+        jrst    proc_tty_canon_kill_store
+        push    17,7
+proc_tty_canon_kill_loop:
+        skipn   0(17)
+        jrst    proc_tty_canon_kill_done
+        sos     0(17)
+        move    1,10
+        pushj   17,proc_tty_echo_erase
+        jrst    proc_tty_canon_kill_loop
+proc_tty_canon_kill_done:
+        sub     17,[1,,1]
+proc_tty_canon_kill_store:
+        and     6,[-0400]              ; length = 0
+        movem   6,0(12)
+        jrst    proc_tty_canon_repeat
+proc_tty_canon_not_kill:
+        caie    11,004                 ; ^D
+        jrst    proc_tty_canon_not_eof
+        skipn   7
+        iori    6,01200000             ; READY|EOF for an empty line
+        skipe   7
+        iori    6,0200000              ; submit nonempty partial line
+        movem   6,0(12)
+        jrst    proc_tty_canon_take
+proc_tty_canon_not_eof:
+        cail    7,0170                 ; 120-byte bounded canonical line
+        jrst    proc_tty_canon_full
+        move    4,6
+        and     4,[-0400]
+        move    5,7
+        addi    5,1
+        ior     4,5
+        movem   4,0(12)                ; commit length before helper call
+        move    1,12
+        move    2,7
+        move    3,11
+        pushj   17,proc_tty_line_put
+        trnn    13,02
+        jrst    proc_tty_canon_repeat
+        caige   11,040
+        jrst    proc_tty_canon_repeat
+        caile   11,0176
+        jrst    proc_tty_canon_repeat
+        move    1,10
+        move    2,11
+        pushj   17,proc_tty_echo
+        jrst    proc_tty_canon_repeat
+proc_tty_canon_newline:
+        iori    6,0600000              ; READY|NL
+        movem   6,0(12)
+        trnn    13,02
+        jrst    proc_tty_canon_take
+        move    1,10
+        movei   2,015
+        pushj   17,proc_tty_echo
+        move    1,10
+        movei   2,012
+        pushj   17,proc_tty_echo
+        jrst    proc_tty_canon_take
+proc_tty_canon_erase:
+        jumpe   7,proc_tty_canon_repeat
+        subi    7,1
+        and     6,[-0400]
+        ior     6,7
+        movem   6,0(12)
+        trnn    13,02
+        jrst    proc_tty_canon_repeat
+        move    1,10
+        pushj   17,proc_tty_echo_erase
+        jrst    proc_tty_canon_repeat
+proc_tty_canon_full:
+        trnn    13,02
+        jrst    proc_tty_canon_repeat
+        move    1,10
+        movei   2,007
+        pushj   17,proc_tty_echo
+proc_tty_canon_repeat:
+        movni   1,3
+        jrst    proc_tty_canon_return
+proc_tty_canon_raw:
+        move    1,11
+        andi    1,0177
+        jrst    proc_tty_canon_return
+proc_tty_canon_bad:
+        seto    1,
+        jrst    proc_tty_canon_return
+proc_tty_canon_take:
+        move    1,10
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        jrst    proc_tty_line_take
+proc_tty_canon_return:
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
 
 ; int proc_tty_read_enter(void)
 proc_tty_read_enter:
@@ -909,8 +1252,8 @@ proc_tty_input:
         lsh     7,1
         add     7,proc_current_slot
         add     7,proc_table
-        hlrz    010,(7)
-        hlrz    3,045(010)
+        hlrz    2,(7)                  ; u-area; keep callee-saved AC10+ intact
+        hlrz    3,045(2)
         lsh     3,-014                 ; TTY state
         jumpn   3,proc_tty_input_attached
         jumpn   4,pdp10_ret_neg1       ; NO_TTY accepts CTY only
@@ -921,10 +1264,10 @@ proc_tty_input_attached:
         subi    3,2
         came    3,4
         jrst    pdp10_ret_neg1
-        move    012,proc_tty_records(4)
-        move    3,012
+        move    1,proc_tty_records(4)  ; retain record until mode extraction
+        move    3,1
         andi    3,0377
-        ldb     6,[POINT 8,045(010),32]
+        ldb     6,[POINT 8,045(2),32]
         came    3,6
         jrst    pdp10_ret_neg1
         ldb     6,[POINT 8,proc_tty_records(4),27] ; foreground pgrp
@@ -933,24 +1276,34 @@ proc_tty_input_attached:
         andi    3,0377
         came    6,3
         jrst    pdp10_ret_neg1
-        move    5,5
         andi    5,0177
+        move    3,1
+        lsh     3,-031
+        andi    3,07                   ; canonical/echo/signals mode
+        trnn    3,04                   ; SIGNALS disabled: do not consume ^C/^Z
+        jrst    proc_tty_input_mode
         caie    5,3                    ; ^C
         jrst    proc_tty_input_tstp
         move    1,6
         movei   2,0                    ; SYS_EVENT_INT
         movei   3,1
         pushj   17,proc_event_send
-        jrst    pdp10_ret_neg2
+        jrst    pdp10_ret_neg3         ; consumed: caller retries
 proc_tty_input_tstp:
         caie    5,032                  ; ^Z
-        jrst    proc_tty_input_char
+        jrst    proc_tty_input_mode
         move    1,6
         movei   2,3                    ; SYS_EVENT_TSTP
         movei   3,1
         pushj   17,proc_event_send
         jumpn   1,pdp10_ret_neg1
-        jrst    pdp10_ret_neg2
+        jrst    pdp10_ret_neg3         ; consumed: caller retries
+proc_tty_input_mode:
+        trnn    3,01                   ; RAW: return byte directly
+        jrst    proc_tty_input_char
+        move    1,4                    ; canonical helper(tty, ch)
+        move    2,5
+        jrst    proc_tty_canon_input
 proc_tty_input_char:
         move    1,5
         popj    17,

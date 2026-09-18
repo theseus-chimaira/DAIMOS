@@ -132,26 +132,28 @@ vm_pdp6_apr:
         .word 0
 
         .text
-; void proc_exec_enter(entry, stack) -- no return.
-; EXEC has already committed the replacement VM while retaining the stable
-; u-area.  Activate the new mapping, reset the private kernel stack to its
-; base, clear the initial C argument registers, and enter the new image in
-; user mode.  The next user PI/syscall repopulates saved context normally.
+; void proc_exec_enter(entry, stack, argc, argv, envp) -- no return.
+; EXEC has committed the replacement VM while retaining the stable u-area.
+; Preserve the startup ACs while activating the new mapping, reset the private
+; kernel stack, and enter the replacement image with the same ABI as RUN.
         .globl proc_exec_enter
 proc_exec_enter:
         move 7,1                    ; new entry
         move 6,2                    ; new user stack
+        move 010,3                  ; argc
+        move 011,4                  ; argv
+        move 012,5                  ; envp
         pushj 17,vm_activate_current
         move 1,proc_current_slot
         pushj 17,proc_slot_ptr
         hlrz 5,(1)                  ; stable u-area base
         move 17,5
-        addi 17,0110                  ; PROC_USTACK_BASE
+        addi 17,0110                ; PROC_USTACK_BASE
         movem 17,000021(5)
         movem 17,mach_kernel_sp
         setz 0,
-        setz 1,
-        setz 2,
-        setz 3,
+        move 1,010
+        move 2,011
+        move 3,012
         move 17,6
         jrst 1,(7)

@@ -16,6 +16,7 @@
 
 int exec_load_process(struct proc *p, unsigned int owner,
     const kword_t *path);
-int exec_replace_current(const kword_t *path, kword_t *entry_stack);
+int exec_replace_current(const kword_t *block,
+    unsigned int available_words, kword_t *entry_startup);
 
 #endif

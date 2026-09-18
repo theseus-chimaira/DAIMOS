@@ -47,6 +47,7 @@
 #define SYS_EXT_MKFIFO             021U
 #define SYS_EXT_EXEC               022U
 #define SYS_EXT_GETTIME            023U
+#define SYS_EXT_DUP2               024U
 
 /* Compact process hierarchy/control operations for UUO 077. */
 #define SYS_PROCCTL_GETPGRP       0U
@@ -65,7 +66,16 @@
 #define SYS_PROCCTL_GETUID       015U
 #define SYS_PROCCTL_GETGID       016U
 #define SYS_PROCCTL_SETUID       017U
-#define SYS_PROCCTL_SETGID       020U
+#define SYS_PROCCTL_SETGID       025U
+#define SYS_PROCCTL_TTY_GETMODE  026U
+#define SYS_PROCCTL_TTY_SETMODE  027U
+
+#define SYS_TTY_MODE_CANONICAL   01U
+#define SYS_TTY_MODE_ECHO        02U
+#define SYS_TTY_MODE_SIGNALS     04U
+#define SYS_TTY_MODE_COOKED \
+        (SYS_TTY_MODE_CANONICAL | SYS_TTY_MODE_ECHO | SYS_TTY_MODE_SIGNALS)
+#define SYS_TTY_MODE_RAW         0U
 
 /* Compact controlling-terminal state returned by GETTTY. */
 #define SYS_TTY_NO_TTY            0U
@@ -100,11 +110,14 @@
         (SYS_EVENT_TARGET_MASK | (SYS_EVENT_CODE_MASK << SYS_EVENT_CODE_SHIFT))
 #define SYS_EVENT_BIT(event)      (1U << (event))
 
-#define SYS_RUN_VERSION_1       1U
-#define SYS_RUN_V1_FIXED_WORDS  7U
-#define SYS_RUN_V1_MIN_WORDS    9U
-#define SYS_RUN_FD_MAX         16U
-#define SYS_RUN_PATH_MAX_CHARS 102U
+#define SYS_RUN_VERSION_2         2U
+#define SYS_RUN_V2_FIXED_WORDS    6U
+#define SYS_RUN_V2_MIN_WORDS      8U
+#define SYS_RUN_FD_MAX           16U
+#define SYS_RUN_ARG_MAX          16U
+#define SYS_RUN_ENV_MAX          16U
+#define SYS_RUN_PATH_MAX_CHARS  102U
+#define SYS_RUN_ARG_MAX_CHARS   102U
 #define SYS_RUN_PGRP_INHERIT    0U
 #define SYS_RUN_PGRP_NEW        1U
 #define SYS_RUN_PGRP_JOIN       2U
@@ -114,6 +127,10 @@
 #define SYS_RUN_HEADER(version, words) \
         ((((kword_t)(version) & 0777777UL) << 18U) | \
         ((kword_t)(words) & 0777777UL))
+
+#define SYS_EXEC_VERSION_1        1U
+#define SYS_EXEC_V1_FIXED_WORDS   3U
+#define SYS_EXEC_V1_MIN_WORDS     5U
 
 #define SYS_WAIT_NOHANG         0001U
 #define SYS_WAIT_PGRP_FLAG      0400U
@@ -157,14 +174,25 @@
 
 #define SYS_PROC_SLOTS       256U
 
-struct sys_run_v1 {
+/*
+ * RUN V2 is self-contained: path, argc counted SIXBIT argument records,
+ * envc counted SIXBIT NAME=VALUE records, then fd mappings follow this
+ * fixed header inline.  No user pointers are embedded in the launch block.
+ */
+struct sys_run_v2 {
         kword_t version_words;
         kword_t flags;
         kword_t pgrp;
         kword_t fdmap_count;
-        kword_t ac1;
-        kword_t ac2;
-        kword_t ac3;
+        kword_t argc;
+        kword_t envc;
+        kword_t path[1];
+};
+
+struct sys_exec_v1 {
+        kword_t version_words;
+        kword_t argc;
+        kword_t envc;
         kword_t path[1];
 };
 
@@ -188,7 +216,7 @@ struct sys_meminfo {
         kword_t file_slots_total;
 };
 
-int proc_run_block(const struct sys_run_v1 *args, unsigned int available_words);
+int proc_run_block(const struct sys_run_v2 *args, unsigned int available_words);
 int proc_wait_status(unsigned int selector, kword_t *statusp, unsigned int flags);
 int proc_control(unsigned int op, unsigned int arg);
 int sys_procinfo(unsigned int slot, struct sys_procinfo *info);

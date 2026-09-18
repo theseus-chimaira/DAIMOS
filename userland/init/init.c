@@ -125,31 +125,55 @@ load_inittab(void)
 static int
 spawn_entry(struct init_entry *e)
 {
-        kword_t block[SYS_RUN_V1_FIXED_WORDS + U_PATH_WORDS + 3U];
-        struct sys_run_v1 *run;
+        kword_t block[SYS_RUN_V2_FIXED_WORDS + 2U * U_PATH_WORDS +
+            3U + 3U];
+        struct sys_run_v2 *run;
+        kword_t tty_arg[2];
+        char tty_text[3];
         unsigned int path_words;
+        unsigned int tty_words;
+        unsigned int arg0_off;
+        unsigned int arg1_off;
         unsigned int map_off;
-        unsigned int total;
         unsigned int i;
+        unsigned int total;
         int pid;
 
         path_words = 1U + ((unsigned int)e->path[0] + 5U) / 6U;
         if (path_words > U_PATH_WORDS)
                 return -1;
-        map_off = SYS_RUN_V1_FIXED_WORDS + path_words;
+        if (e->tty >= 10U) {
+                tty_text[0] = (char)('0' + e->tty / 10U);
+                tty_text[1] = (char)('0' + e->tty % 10U);
+                tty_text[2] = 0;
+        } else {
+                tty_text[0] = (char)('0' + e->tty);
+                tty_text[1] = 0;
+        }
+        if (u_s6_pack(tty_arg, 2U, tty_text) != 0)
+                return -1;
+        tty_words = 1U + ((unsigned int)tty_arg[0] + 5U) / 6U;
+
+        arg0_off = SYS_RUN_V2_FIXED_WORDS + path_words;
+        arg1_off = arg0_off + path_words;
+        map_off = arg1_off + tty_words;
         total = map_off + 3U;
         for (i = 0U; i < total; ++i)
                 block[i] = 0UL;
-        run = (struct sys_run_v1 *)block;
-        run->version_words = SYS_RUN_HEADER(SYS_RUN_VERSION_1, total);
+
+        run = (struct sys_run_v2 *)block;
+        run->version_words = SYS_RUN_HEADER(SYS_RUN_VERSION_2, total);
         run->flags = SYS_RUN_PGRP_INHERIT;
         run->pgrp = 0UL;
         run->fdmap_count = 3UL;
-        run->ac1 = (kword_t)e->tty;
-        run->ac2 = 0UL;
-        run->ac3 = 0UL;
-        for (i = 0U; i < path_words; ++i)
-                block[SYS_RUN_V1_FIXED_WORDS + i] = e->path[i];
+        run->argc = 2UL;
+        run->envc = 0UL;
+        for (i = 0U; i < path_words; ++i) {
+                block[SYS_RUN_V2_FIXED_WORDS + i] = e->path[i];
+                block[arg0_off + i] = e->path[i];
+        }
+        for (i = 0U; i < tty_words; ++i)
+                block[arg1_off + i] = tty_arg[i];
         block[map_off] = SYS_RUN_FD_MAP(0U, 0U);
         block[map_off + 1U] = SYS_RUN_FD_MAP(1U, 1U);
         block[map_off + 2U] = SYS_RUN_FD_MAP(2U, 2U);

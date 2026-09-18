@@ -33,6 +33,8 @@ int vm_space_load_file(struct proc *p, vnode_t node, kword_t file_offset,
     kword_t user_offset, unsigned int words);
 int vm_space_destroy(struct proc *p, unsigned int owner);
 int vm_space_can_swap(const struct proc *p);
+int vm_space_startup(struct proc *p, const kword_t *records,
+    kword_t counts, kword_t *startup);
 
 /* Called by physical MM for an unpinned MM_TYPE_PROCESS extent. */
 int vm_extent_move(unsigned int owner, kword_t base, kword_t words);

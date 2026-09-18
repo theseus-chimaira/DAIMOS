@@ -315,6 +315,54 @@ file_dup_return:
         move    1,3
         popj    17,
 
+; int file_dup2(int oldfd, int newfd)
+; Validate both descriptors before changing NEWFD.  If NEWFD is open, close it
+; first; file_close leaves the descriptor intact when its sync fails.  OLD/NEW
+; equality is a no-op.  Descriptor copying intentionally matches file_dup().
+        .globl  file_dup2
+file_dup2:
+        caile   2,017                   ; FILE_FD_MAX
+        jrst    pdp10_ret_neg1
+        push    17,1                    ; old fd
+        push    17,2                    ; new fd
+        pushj   17,file_find
+        jumpe   1,file_dup2_bad
+        move    2,-1(17)                ; old fd
+        came    2,(17)                  ; old == new?
+        jrst    file_dup2_replace
+        move    1,(17)
+        jrst    file_dup2_done
+file_dup2_replace:
+        move    2,(17)
+        lsh     2,1
+        add     2,file_table
+        skipn   (2)
+        jrst    file_dup2_copy
+        move    1,(17)
+        pushj   17,file_close
+        jumpn   1,file_dup2_bad
+file_dup2_copy:
+        move    1,-1(17)
+        pushj   17,file_find
+        jumpe   1,file_dup2_bad         ; cannot fail after validation
+        move    2,(17)
+        lsh     2,1
+        add     2,file_table
+        move    3,(1)
+        movem   3,(2)
+        move    4,1(1)
+        movem   4,1(2)
+        move    1,3
+        pushj   17,pipe_add_ref         ; no-op for non-pipe descriptors
+        move    1,(17)
+        jrst    file_dup2_done
+file_dup2_bad:
+        seto    1,
+file_dup2_done:
+        pop     17,2
+        pop     17,2
+        popj    17,
+
 ; int file_lock(int fd, unsigned int op)
 ; The packed node word carries both the canonical vnode and descriptor state.
 ; FLOCK compares canonical vnode bits and the four-bit dup-family token

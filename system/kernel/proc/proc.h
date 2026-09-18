@@ -126,6 +126,17 @@
 #define PROC_TTY_COUNT                  21U
 #define PROC_TTY_PENDING_SHIFT           16U
 #define PROC_TTY_PENDING_MASK          0777UL
+#define PROC_TTY_MODE_SHIFT               25U
+#define PROC_TTY_MODE_MASK               07UL
+#define PROC_TTY_MODE_CANONICAL          01U
+#define PROC_TTY_MODE_ECHO               02U
+#define PROC_TTY_MODE_SIGNALS            04U
+#define PROC_TTY_MODE_COOKED \
+        (PROC_TTY_MODE_CANONICAL | PROC_TTY_MODE_ECHO | \
+        PROC_TTY_MODE_SIGNALS)
+#define PROC_TTY_CR_PENDING              ((kword_t)1UL << 28U)
+#define PROC_TTY_INPUT_EOF               -2
+#define PROC_TTY_INPUT_REPEAT            -3
 #define PROC_ZOMB_SESSION_MASK       0377UL
 #define PROC_ZOMB_SESSION_SHIFT          0U
 #define PROC_ZOMB_DOMAIN_MASK        0377UL
@@ -164,6 +175,10 @@ int proc_child_hierarchy(unsigned int child_slot, unsigned int mode,
     unsigned int requested_pgrp);
 int proc_tty_read_enter(void);
 int proc_tty_input(unsigned int tty, unsigned int ch);
+int proc_tty_line_take(unsigned int tty);
+int proc_tty_canon_input(unsigned int tty, unsigned int ch);
+void proc_tty_line_reset(unsigned int tty);
+int proc_tty_mode_set(unsigned int tty, unsigned int mode);
 int proc_tty_output(unsigned int ch);
 int proc_tty_pending_take(unsigned int tty);
 int proc_tty_pending_store(unsigned int tty, unsigned int ch);

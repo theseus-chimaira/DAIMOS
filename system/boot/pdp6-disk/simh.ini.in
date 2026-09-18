@@ -1,6 +1,11 @@
 set -q -n log @SIMH_LOG@
 set cpu 256k
 
+; PCLK is standard DAIMOS wall-clock hardware.  Enable it explicitly so the
+; boot configuration does not depend on simulator compile-time/default flags.
+set pclk enabled
+set pclk @PCLK_MODE@
+
 ; Full DAIMOS hardware configuration.  Keep every implemented PDP-6 device
 ; online so MINIT loads the corresponding resident driver package.
 set cr enabled

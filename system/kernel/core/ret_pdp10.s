@@ -7,6 +7,7 @@
         .globl  pdp10_ret_arg
         .globl  pdp10_ret_busy
         .globl  pdp10_ret_neg2
+        .globl  pdp10_ret_neg3
         .globl  pdp10_ret_neg4
         .globl  pdp10_ret_neg5
 
@@ -26,6 +27,7 @@ pdp10_ret_arg:
         popj    017,
 
 pdp10_ret_busy:
+pdp10_ret_neg3:
         hrroi   1,0777775
         popj    017,
 

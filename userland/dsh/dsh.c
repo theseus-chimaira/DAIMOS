@@ -133,6 +133,9 @@ main(void)
         int argc;
         int rc;
 
+        if (dsys_procctl(SYS_PROCCTL_TTY_SETMODE, SYS_TTY_MODE_RAW) !=
+            (int)SYS_TTY_MODE_RAW)
+                return 1;
         (void)u_puts(1, "DSH V1");
         (void)u_crlf(1);
         for (;;) {
@@ -143,6 +146,7 @@ main(void)
                 rc = dsh_run(argc);
                 if (rc == 1000) break;
         }
+        (void)dsys_procctl(SYS_PROCCTL_TTY_SETMODE, SYS_TTY_MODE_COOKED);
         (void)dsys_exit(0);
         return 0;
 }

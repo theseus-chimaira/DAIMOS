@@ -1,11 +1,11 @@
 PDP10_PREFIX ?=
 BUILD_ROOT ?= $(CURDIR)/../build
 BUILD := $(BUILD_ROOT)/libc
-CC := $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
+CC := $(PDP10_PREFIX)/bin/kcc
 DAS := $(PDP10_PREFIX)/bin/das
 DASFLAGS ?= -O
 DARC := $(PDP10_PREFIX)/bin/darc
-CFLAGS := -std=c99 -Os -fno-builtin -fno-common
+CFLAGS := -Pgnu99 -O -x=pdp6 -m=gas
 OBJS := $(BUILD)/memcpy.dobj $(BUILD)/memmove.dobj
 LIBC := $(BUILD)/libc.a
 
