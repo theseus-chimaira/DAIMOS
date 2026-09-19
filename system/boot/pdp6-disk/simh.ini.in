@@ -12,6 +12,7 @@ set cr enabled
 set cp enabled
 set ptr enabled
 set ptp enabled
+set lpt enabled
 set dsk enabled
 set dp enabled
 set dr enabled
@@ -55,6 +56,7 @@ deposit 027 254000000021
 attach -q ptr @STAGE1_TAPE@
 attach -q -n ptp @PTP_OUTPUT@
 attach -q -n cp @CP_OUTPUT@
+attach -q -n lpt @LPT_OUTPUT@
 deposit ptr time 1
 attach -q dsk0 @DISK_IMAGE@
 

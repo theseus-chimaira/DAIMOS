@@ -165,11 +165,22 @@ d6fs_reader_get_block:
         push    17,011
         move    010,1
         move    011,2
+        move    1,010
+        move    2,011
+        pushj   17,d6fs_cache_fetch      ; clean dynamic-cache lookup
+        jumpn   1,d6fs_get_block_cache_hit
         movei   3,fs_block_workspace     ; shared transfer block
         move    1,1(010)                 ; opaque
         move    2,011
         pushj   17,d6fs_diskset_read     ; fixed MINIT-patched DISKSET read
         jumpn   1,d6fs_get_block_read_fail
+        movem   011,3(010)
+        move    1,010
+        move    2,011
+        pushj   17,d6fs_cache_store      ; miss becomes a clean cache entry
+        movei   1,fs_block_workspace
+        jrst    d6fs_get_block_read_done
+d6fs_get_block_cache_hit:
         movem   011,3(010)
         movei   1,fs_block_workspace
         jrst    d6fs_get_block_read_done
@@ -785,6 +796,9 @@ d6fs_reader_commit_cache:
         pushj   17,d6fs_diskset_write
         jumpn   1,d6fs_reader_commit_fail_saved
         movem   011,3(010)
+        move    1,010
+        move    2,011
+        pushj   17,d6fs_cache_store      ; refresh only after write-through
         setz    1,
         jrst    d6fs_reader_commit_done
 d6fs_reader_commit_fail_saved:
@@ -1128,7 +1142,9 @@ d6fs_provider_prepare_unmount:
         aos     d6fs_provider_reader+2
 d6fs_provider_unmount_done:
         setzm   d6fs_provider_reader+1   ; opaque
-        setom   d6fs_provider_reader+3   ; cache invalid
+        setom   d6fs_provider_reader+3   ; last-block cache invalid
+        setz    1,
+        pushj   17,d6fs_cache_reclaim    ; discard all clean dynamic cache
         jrst    pdp10_ret_zero
 
 ; int d6fs_provider_chmod(vnode_t node, unsigned int mode)
@@ -1439,3 +1455,194 @@ d6fs_provider_parent_name_fail:
 d6fs_provider_parent_name_done:
         sub     17,[015,,015]
         popj    17,
+
+; Reclaimable D6FS clean-block cache.
+;
+; Each 0405-word managed-core slab contains two clean 0200-word blocks:
+;   000 next slab base
+;   001 key0, 002 key1
+;   003 logical0, 004 logical1
+;   005..0204 block0, 0205..0404 block1
+;
+; The cache wraps the existing serialized fs_block_workspace.  Hits copy into
+; that workspace; write-through commits copy back only after successful media
+; I/O.  Therefore every slab is clean and reclaim never blocks on filesystem
+; I/O.  Cache growth uses mm_alloc_aligned_noreclaim to avoid allocator
+; recursion when the ordinary allocator invokes d6fs_cache_reclaim.
+        .globl  mm_alloc_aligned_noreclaim
+        .globl  mm_free
+
+        .equ    D6FS_CACHE_SLAB_WORDS,0405
+        .equ    D6FS_CACHE_MAX_SLABS,4
+        .equ    D6FS_CACHE_MM_OWNER,6
+
+        .globl  d6fs_cache_fetch
+; int d6fs_cache_fetch(reader, logical)
+d6fs_cache_fetch:
+        jumpe   1,pdp10_ret_zero
+        move    4,1(1)                  ; mount/device key
+        move    3,d6fs_cache_head
+d6fs_cache_fetch_loop:
+        jumpe   3,pdp10_ret_zero
+        came    4,1(3)
+        jrst    d6fs_cache_fetch_slot1
+        came    2,3(3)
+        jrst    d6fs_cache_fetch_slot1
+        movei   5,5(3)
+        jrst    d6fs_cache_fetch_copy
+d6fs_cache_fetch_slot1:
+        came    4,2(3)
+        jrst    d6fs_cache_fetch_next
+        came    2,4(3)
+        jrst    d6fs_cache_fetch_next
+        movei   5,0205(3)
+d6fs_cache_fetch_copy:
+        movei   6,fs_block_workspace
+        hrl     6,5
+        blt     6,fs_block_workspace+0177
+        jrst    pdp10_ret_one
+d6fs_cache_fetch_next:
+        move    3,(3)
+        jrst    d6fs_cache_fetch_loop
+
+        .globl  d6fs_cache_store
+; void d6fs_cache_store(reader, logical)
+; The cache is tiny, so a linear scan is cheaper than resident hash metadata.
+d6fs_cache_store:
+        jumpe   1,d6fs_cache_store_done
+        push    17,010
+        push    17,011
+        push    17,012
+        move    010,1                   ; reader
+        move    011,2                   ; logical
+        move    012,1(1)                ; mount/device key
+        move    3,d6fs_cache_head
+d6fs_cache_store_scan:
+        jumpe   3,d6fs_cache_store_grow
+        ; Prefer an exact hit, but an unused slot is safe to fill immediately:
+        ; the head-first lookup will see this fresh copy before any older dup.
+        came    012,1(3)
+        jrst    d6fs_cache_store_slot0_free
+        camn    011,3(3)
+        jrst    d6fs_cache_store_slot0
+ d6fs_cache_store_slot0_free:
+        move    4,3(3)
+        camn    4,[-1]
+        jrst    d6fs_cache_store_slot0
+        came    012,2(3)
+        jrst    d6fs_cache_store_slot1_free
+        camn    011,4(3)
+        jrst    d6fs_cache_store_slot1
+ d6fs_cache_store_slot1_free:
+        move    4,4(3)
+        camn    4,[-1]
+        jrst    d6fs_cache_store_slot1
+        move    3,(3)
+        jrst    d6fs_cache_store_scan
+
+; Allocate one two-block slab without invoking reclaim.  The six-argument C
+; ABI places preference/basep in two stack argument words; a third word holds
+; the returned base itself.
+d6fs_cache_store_grow:
+        move    4,d6fs_cache_slabs
+        caige   4,D6FS_CACHE_MAX_SLABS
+        jrst    d6fs_cache_store_alloc
+        jrst    d6fs_cache_store_evict
+
+d6fs_cache_store_alloc:
+        add     17,[3,,3]
+        setzm   -2(17)                  ; returned base
+        movei   1,-2(17)
+        movem   1,-1(17)               ; arg 6: basep
+        movei   1,1
+        movem   1,(17)                  ; arg 5: MM_ALLOC_HIGH
+        movei   1,D6FS_CACHE_SLAB_WORDS
+        movei   2,1                    ; alignment
+        movei   3,3                    ; MM_TYPE_KERNEL_DYNAMIC
+        movei   4,D6FS_CACHE_MM_OWNER
+        pushj   17,mm_alloc_aligned_noreclaim
+        jumpn   1,d6fs_cache_store_alloc_fail
+        move    3,-2(17)
+        jumpe   3,d6fs_cache_store_alloc_fail
+        sub     17,[3,,3]
+        move    4,d6fs_cache_head
+        movem   4,(3)
+        setom   2(3)                    ; slot 1 key invalid
+        setom   4(3)                    ; slot 1 logical invalid
+        movem   3,d6fs_cache_head
+        aos     d6fs_cache_slabs
+        jrst    d6fs_cache_store_slot0
+
+d6fs_cache_store_alloc_fail:
+        sub     17,[3,,3]
+        ; Allocation failure is not an I/O failure.  Keep operating uncached.
+        skipn   d6fs_cache_head
+        jrst    d6fs_cache_store_restore
+
+d6fs_cache_store_evict:
+        move    3,d6fs_cache_head
+        move    4,d6fs_cache_hand
+        xori    4,1
+        andi    4,1
+        movem   4,d6fs_cache_hand
+        jumpn   4,d6fs_cache_store_slot1
+
+d6fs_cache_store_slot0:
+        movem   012,1(3)
+        movem   011,3(3)
+        movei   5,5(3)
+        jrst    d6fs_cache_store_copy
+
+d6fs_cache_store_slot1:
+        movem   012,2(3)
+        movem   011,4(3)
+        movei   5,0205(3)
+
+d6fs_cache_store_copy:
+        movei   4,fs_block_workspace
+        hrl     5,4
+        move    6,5
+        addi    6,0177
+        blt     5,(6)
+
+d6fs_cache_store_restore:
+        pop     17,012
+        pop     17,011
+        pop     17,010
+d6fs_cache_store_done:
+        popj    17,
+
+        .globl  d6fs_cache_reclaim
+; int d6fs_cache_reclaim(words)
+; Return the number of whole slabs released.  WORDS is advisory; releasing all
+; clean slabs gives the allocator maximum opportunity to avoid process swap.
+d6fs_cache_reclaim:
+        push    17,010
+        push    17,011
+        move    010,d6fs_cache_head
+        setz    011,
+        setzm   d6fs_cache_head
+        setzm   d6fs_cache_slabs
+        setzm   d6fs_cache_hand
+d6fs_cache_reclaim_loop:
+        jumpe   010,d6fs_cache_reclaim_done
+        push    17,(010)                ; preserve next across mm_free
+        move    1,010
+        movei   2,3                    ; MM_TYPE_KERNEL_DYNAMIC
+        movei   3,D6FS_CACHE_MM_OWNER
+        pushj   17,mm_free
+        pop     17,010
+        jumpn   1,d6fs_cache_reclaim_loop
+        aoj     011,
+        jrst    d6fs_cache_reclaim_loop
+d6fs_cache_reclaim_done:
+        move    1,011
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+        .bss
+ d6fs_cache_head:   .block 1
+ d6fs_cache_slabs:  .block 1
+ d6fs_cache_hand:   .block 1
+        .text

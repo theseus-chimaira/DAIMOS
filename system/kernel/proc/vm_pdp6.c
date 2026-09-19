@@ -125,10 +125,10 @@ vm_space_can_swap(const struct proc *p)
 }
 
 int
-vm_extent_move(unsigned int owner, kword_t base, kword_t words)
+vm_extent_move(unsigned int owner, kword_t base, kword_t words,
+    kword_t new_base)
 {
         struct proc *p;
-        kword_t new_base;
         kword_t *src;
         kword_t *dst;
         unsigned int old_state;
@@ -146,7 +146,8 @@ vm_extent_move(unsigned int owner, kword_t base, kword_t words)
             VM_SPACE_WORDS(p) != words)
                 return MM_ERR_BUSY;
 #endif
-        if (PROC_TRANSITION(p) ||
+        if (new_base == base || (new_base & (VM_PDP6_ALIGN_WORDS - 1UL)) != 0UL ||
+            PROC_TRANSITION(p) ||
             (PROC_HAS_UAREA(p) && PROC_USER_MAPPING_HELD(p)))
                 return MM_ERR_BUSY;
         old_state = PROC_STATE(p);
@@ -163,34 +164,17 @@ vm_extent_move(unsigned int owner, kword_t base, kword_t words)
         }
 
         PROC_SET_TRANSITION(p);
-#ifndef __PDP10__
-        if (words == 0UL || mm_is_pinned(base)) {
-                rc = MM_ERR_BUSY;
-                goto out;
-        }
-#endif
-        rc = mm_alloc_aligned_noreclaim(words, VM_PDP6_ALIGN_WORDS,
-            MM_TYPE_PROCESS, owner, MM_ALLOC_HIGH, &new_base);
-        if (rc != MM_OK)
-                goto out;
-        if ((long)new_base <= (long)base) {
-                (void)mm_free(new_base, MM_TYPE_PROCESS, owner);
-                rc = MM_ERR_FRAGMENTED;
-                goto out;
-        }
-
-        src = (kword_t *)(unsigned long)base;
-        dst = (kword_t *)(unsigned long)new_base;
-        fs_copy_words(src, dst, (unsigned int)words);
-        VM_PDP6_SET_BASE(p, new_base);
-        rc = mm_free(base, MM_TYPE_PROCESS, owner);
-        if (rc != MM_OK) {
-                VM_PDP6_SET_BASE(p, base);
-                (void)mm_free(new_base, MM_TYPE_PROCESS, owner);
-                goto out;
-        }
         rc = MM_OK;
-out:
+#ifndef __PDP10__
+        if (words == 0UL || mm_is_pinned(base))
+                rc = MM_ERR_BUSY;
+#endif
+        if (rc == MM_OK) {
+                src = (kword_t *)(unsigned long)base;
+                dst = (kword_t *)(unsigned long)new_base;
+                fs_move_words(src, dst, (unsigned int)words);
+                VM_PDP6_SET_BASE(p, new_base);
+        }
         PROC_CLEAR_TRANSITION(p);
         if (PROC_HAS_UAREA(p)) {
                 kword_t ctl;

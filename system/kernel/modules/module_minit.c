@@ -5,6 +5,7 @@
 #include "cty.h"
 #include "clk.h"
 #include "pt.h"
+#include "lpt.h"
 #include "card.h"
 #include "dcs.h"
 #include "ge.h"
@@ -500,6 +501,26 @@ ptp_minit(void)
         minit_ptp_cono(PT_NATIVE_PI_LEVEL);
         module_service_set(MODULE_SERVICE_PTP_PUTCHAR,
             minit_export(name, base, PTP_X_PUTCHAR));
+        minit_diag_ok(name);
+}
+
+void
+lpt_minit(void)
+{
+        kword_t name;
+        kword_t st;
+        name = (kword_t)SIXBIT("LPT   ");
+        /* No PI level is needed by the small synchronous driver.  DONE is
+         * software-settable on the PDP-6/SIMH interface and primes DATAO. */
+        minit_lpt_cono(LPT_ST_DONE);
+        st = minit_lpt_coni();
+        if ((st & LPT_ST_DONE) == 0UL) {
+                minit_lpt_cono(0);
+                minit_diag_nodev(name);
+                return;
+        }
+        module_service_set(MODULE_SERVICE_LPT_PUTCHAR,
+            (unsigned int)(unsigned long)&lpt_putchar);
         minit_diag_ok(name);
 }
 
@@ -1075,6 +1096,8 @@ d6fs_minit(void)
             minit_export(name, base, 4U), diskset_read_addr);
         storage_patch_module_jump(base, (kword_t *)(unsigned long)
             minit_export(name, base, 5U), diskset_write_addr);
+        storage_patch_jump(&d6fs_cache_reclaim_jump,
+            minit_export(name, base, 6U));
         minit_diag_loaded(name);
 }
 
@@ -1090,6 +1113,8 @@ devicefs_minit(void)
                 devicefs_names[DEVICEFS_DEV_PTR0] = (kword_t)SIXBIT("PTR0  ");
         if (module_service_get(MODULE_SERVICE_PTP_PUTCHAR) != 0U)
                 devicefs_names[DEVICEFS_DEV_PTP0] = (kword_t)SIXBIT("PTP0  ");
+        if (module_service_get(MODULE_SERVICE_LPT_PUTCHAR) != 0U)
+                devicefs_names[DEVICEFS_DEV_LPT0] = (kword_t)SIXBIT("LPT0  ");
         if (module_service_get(MODULE_SERVICE_CR_READ_CARD) != 0U)
                 devicefs_names[DEVICEFS_DEV_CR0] = (kword_t)SIXBIT("CR0   ");
         if (module_service_get(MODULE_SERVICE_CP_PUNCH_CARD) != 0U)

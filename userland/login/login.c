@@ -181,28 +181,111 @@ find_account(const char *name, struct login_account *account)
 }
 
 static int
-exec_shell(const kword_t *path)
+env_pack_pair(kword_t *dst, const char *key, const kword_t *value)
 {
-        kword_t block[SYS_EXEC_V1_FIXED_WORDS + 2U * U_PATH_WORDS];
+        unsigned int pos;
+        unsigned int i;
+        unsigned int wi;
+        unsigned int sh;
+        unsigned int ch;
+
+        for (i = 0U; i < U_PATH_WORDS; ++i)
+                dst[i] = 0UL;
+        pos = 0U;
+        for (i = 0U; key[i] != 0; ++i) {
+                if (pos >= SYS_RUN_ARG_MAX_CHARS)
+                        return -1;
+                wi = 1U + pos / 6U;
+                sh = 30U - (pos % 6U) * 6U;
+                dst[wi] |= ((kword_t)(((unsigned int)key[i] - 040U) & 077U)) << sh;
+                ++pos;
+        }
+        if (pos >= SYS_RUN_ARG_MAX_CHARS)
+                return -1;
+        wi = 1U + pos / 6U;
+        sh = 30U - (pos % 6U) * 6U;
+        dst[wi] |= ((kword_t)('=' - 040U)) << sh;
+        ++pos;
+        for (i = 0U; i < (unsigned int)value[0]; ++i) {
+                if (pos >= SYS_RUN_ARG_MAX_CHARS)
+                        return -1;
+                ch = (unsigned int)((value[1U + i / 6U] >>
+                    (30U - (i % 6U) * 6U)) & 077UL);
+                wi = 1U + pos / 6U;
+                sh = 30U - (pos % 6U) * 6U;
+                dst[wi] |= (kword_t)ch << sh;
+                ++pos;
+        }
+        dst[0] = (kword_t)pos;
+        return 0;
+}
+
+static int
+env_pack_text_pair(kword_t *dst, const char *key, const char *value)
+{
+        kword_t packed[U_PATH_WORDS];
+
+        if (u_s6_pack(packed, U_PATH_WORDS, value) != 0)
+                return -1;
+        return env_pack_pair(dst, key, packed);
+}
+
+static unsigned int
+record_words(const kword_t *record)
+{
+        return 1U + ((unsigned int)record[0] + 5U) / 6U;
+}
+
+static int
+exec_shell(const kword_t *path, const kword_t *home, const char *name)
+{
+        kword_t block[SYS_EXEC_V1_FIXED_WORDS + 7U * U_PATH_WORDS];
+        kword_t record[U_PATH_WORDS];
         struct sys_exec_v1 *exec;
+        const char *path_env;
         unsigned int path_words;
+        unsigned int words;
         unsigned int total;
         unsigned int i;
 
-        path_words = 1U + ((unsigned int)path[0] + 5U) / 6U;
+        path_words = record_words(path);
         if (path_words > U_PATH_WORDS)
                 return -1;
-        total = SYS_EXEC_V1_FIXED_WORDS + 2U * path_words;
-        for (i = 0U; i < total; ++i)
-                block[i] = 0UL;
+        total = SYS_EXEC_V1_FIXED_WORDS;
+        for (i = 0U; i < path_words; ++i)
+                block[total++] = path[i];
+        for (i = 0U; i < path_words; ++i)
+                block[total++] = path[i];
+
+#define APPEND_ENV_RECORD() \
+        do { \
+                words = record_words(record); \
+                for (i = 0U; i < words; ++i) \
+                        block[total++] = record[i]; \
+        } while (0)
+
+        if (env_pack_pair(record, "HOME", home) != 0)
+                return -1;
+        APPEND_ENV_RECORD();
+        path_env = "/SYSTEM/EXEC:/OPTION/BASE/EXEC";
+        if (env_pack_text_pair(record, "PATH", path_env) != 0)
+                return -1;
+        APPEND_ENV_RECORD();
+        if (env_pack_text_pair(record, "USER", name) != 0)
+                return -1;
+        APPEND_ENV_RECORD();
+        if (env_pack_text_pair(record, "LOGNAME", name) != 0)
+                return -1;
+        APPEND_ENV_RECORD();
+        if (env_pack_pair(record, "SHELL", path) != 0)
+                return -1;
+        APPEND_ENV_RECORD();
+#undef APPEND_ENV_RECORD
+
         exec = (struct sys_exec_v1 *)block;
         exec->version_words = SYS_RUN_HEADER(SYS_EXEC_VERSION_1, total);
         exec->argc = 1UL;
-        exec->envc = 0UL;
-        for (i = 0U; i < path_words; ++i) {
-                block[SYS_EXEC_V1_FIXED_WORDS + i] = path[i];
-                block[SYS_EXEC_V1_FIXED_WORDS + path_words + i] = path[i];
-        }
+        exec->envc = 5UL;
         return dsys_exec(exec);
 }
 
@@ -275,12 +358,12 @@ main(int argc, kword_t **argv, kword_t **envp)
                 }
                 if (dsys_procctl(SYS_PROCCTL_SETGID, account.gid) < 0 ||
                     dsys_procctl(SYS_PROCCTL_SETUID, account.uid) < 0 ||
-                    dsys_chdir(account.home) != 0) {
+                    dsys_umask(022U) < 0 || dsys_chdir(account.home) != 0) {
                         (void)u_puts(2, "LOGIN: SESSION FAILED");
                         (void)u_crlf(2);
                         break;
                 }
-                if (exec_shell(account.shell) != 0) {
+                if (exec_shell(account.shell, account.home, name) != 0) {
                         (void)u_puts(2, "LOGIN: EXEC FAILED");
                         (void)u_crlf(2);
                 }

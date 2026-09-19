@@ -148,7 +148,7 @@ proc_exec_enter:
         pushj 17,proc_slot_ptr
         hlrz 5,(1)                  ; stable u-area base
         move 17,5
-        addi 17,0110                ; PROC_USTACK_BASE
+        addi 17,0111                ; PROC_USTACK_BASE
         movem 17,000021(5)
         movem 17,mach_kernel_sp
         setz 0,

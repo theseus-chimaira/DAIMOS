@@ -1,5 +1,6 @@
 ; vfs_pdp10.s -- compact resident VFS primitives for PDP-6/PDP-10.
         .text
+        .globl  file_table
         .globl  pdp10_ret_zero
         .globl  pdp10_ret_one
         .globl  pdp10_ret_neg1
@@ -257,6 +258,10 @@ vfs_mkfifo:
 vfs_mkdir:
         movei   5,7                    ; FS_MRES_OP_MKDIR
 vfs_create_common:
+        move    6,file_table
+        move    6,041(6)               ; u-area 0110: process umask
+        andca   6,3                    ; mode &= ~umask
+        move    3,6
         push    17,4                   ; nodep as C arg 5
         move    4,3
         move    3,2

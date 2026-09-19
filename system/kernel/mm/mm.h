@@ -63,7 +63,6 @@ int mm_free(kword_t base, unsigned int type, unsigned int owner);
 int mm_pin(kword_t base);
 int mm_unpin(kword_t base);
 int mm_is_pinned(kword_t base);
-int mm_move_module(unsigned int owner);
 int mm_compact(kword_t words, kword_t alignment);
 kword_t mm_total_free(void);
 kword_t mm_largest_free(void);

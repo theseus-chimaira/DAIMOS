@@ -211,56 +211,72 @@ mm_is_pinned(kword_t base)
         return i < mm_extent_count && MM_EXTENT_PINS(&mm_extents[i]) != 0U;
 }
 
-int
-mm_move_module(unsigned int owner)
+extern kword_t mach_pi_disable(void);
+extern void mach_pi_restore(kword_t state);
+
+/* Move one allocated extent without allocating a replacement descriptor or
+ * replacement image.  While PI is disabled, remove only its descriptor from
+ * the fit search: its old physical range then participates in the candidate
+ * free span, which permits an overlap-safe slide into a gap smaller than the
+ * object itself.  Restore the descriptor before invoking the owner backend so
+ * pin/state validation continues to see a normal MM allocation. */
+static int
+mm_move_extent(int slot, kword_t alignment, unsigned int preference)
 {
-        struct mm_extent *extent;
+        struct mm_extent moved;
         kword_t old_base;
         kword_t new_base;
         kword_t words;
-        int i;
+        kword_t pi_state;
+        unsigned int owner;
+        int insert;
         int rc;
 
-        if (module_moves_enabled == 0U || owner == 0U ||
-            owner > MODULE_RUNTIME_MAX ||
-            MODULE_RUNTIME_INIT_WORDS(module_runtime_descs[owner]) == 0UL)
-                return MM_ERR_BUSY;
-        old_base = MODULE_RUNTIME_BASE(module_runtime_descs[owner]);
-        if (old_base == 0UL)
-                return MM_ERR_INVAL;
-        i = mm_find_base(old_base);
-        extent = i < mm_extent_count ? &mm_extents[i] : 0;
-        if (extent == 0 || MM_EXTENT_TYPE(extent) != MM_TYPE_MODULE ||
-            MM_EXTENT_OWNER(extent) != owner)
-                return MM_ERR_INVAL;
-        if (MM_EXTENT_PINS(extent) != 0U)
-                return MM_ERR_BUSY;
-        words = MM_EXTENT_WORDS(extent);
+        moved = mm_extents[slot];
+        old_base = MM_EXTENT_BASE(&moved);
+        words = MM_EXTENT_WORDS(&moved);
 
-        rc = mm_alloc_aligned_noreclaim(words, 1UL, MM_TYPE_MODULE, owner,
-            MM_ALLOC_LOW, &new_base);
-        if (rc != MM_OK)
-                return rc;
-        if ((long)new_base >= (long)old_base) {
-                (void)mm_free(new_base, MM_TYPE_MODULE, owner);
+        pi_state = mach_pi_disable();
+        mm_delete(slot);
+        rc = mm_find_fit(words, alignment, preference, &new_base) ?
+            MM_OK : MM_ERR_FRAGMENTED;
+        (void)mm_extent_insert(slot, &moved);
+        if (rc != MM_OK ||
+            (preference == MM_ALLOC_LOW ? new_base >= old_base :
+            new_base <= old_base)) {
+                mach_pi_restore(pi_state);
                 return MM_ERR_FRAGMENTED;
         }
-        if (module_runtime_move(owner, new_base, (unsigned int)words) != 0) {
-                (void)mm_free(new_base, MM_TYPE_MODULE, owner);
-                return MM_ERR_INVAL;
+
+        owner = MM_EXTENT_OWNER(&moved);
+        if (preference == MM_ALLOC_LOW) {
+                if (module_moves_enabled == 0U || owner == 0U ||
+                    owner > MODULE_RUNTIME_MAX ||
+                    MODULE_RUNTIME_INIT_WORDS(module_runtime_descs[owner]) == 0UL ||
+                    MODULE_RUNTIME_BASE(module_runtime_descs[owner]) != old_base ||
+                    module_runtime_move(owner, (unsigned int)new_base,
+                    (unsigned int)words) != 0)
+                        rc = MM_ERR_BUSY;
+        } else {
+                rc = vm_extent_move(owner, old_base, words, new_base);
         }
-        rc = mm_free(old_base, MM_TYPE_MODULE, owner);
-        if (rc != MM_OK)
-                return rc;
-        return MM_OK;
+        if (rc == MM_OK) {
+                moved.span = mm_span(new_base, words);
+                mm_delete(slot);
+                insert = 0;
+                while (insert < mm_extent_count &&
+                    MM_EXTENT_BASE(&mm_extents[insert]) < new_base)
+                        ++insert;
+                (void)mm_extent_insert(insert, &moved);
+        }
+        mach_pi_restore(pi_state);
+        return rc;
 }
 
 int
 mm_compact(kword_t words, kword_t alignment)
 {
         struct mm_extent *extent;
-        kword_t base;
-        unsigned int owner;
         int i;
 
         if (words == 0UL || alignment == 0UL ||
@@ -276,12 +292,8 @@ mm_compact(kword_t words, kword_t alignment)
         while (i < mm_extent_count) {
                 extent = &mm_extents[i];
                 if (MM_EXTENT_TYPE(extent) != MM_TYPE_MODULE ||
-                    MM_EXTENT_PINS(extent) != 0U) {
-                        ++i;
-                        continue;
-                }
-                owner = MM_EXTENT_OWNER(extent);
-                if (mm_move_module(owner) != MM_OK) {
+                    MM_EXTENT_PINS(extent) != 0U ||
+                    mm_move_extent(i, 1UL, MM_ALLOC_LOW) != MM_OK) {
                         ++i;
                         continue;
                 }
@@ -294,13 +306,9 @@ mm_compact(kword_t words, kword_t alignment)
         while (i < mm_extent_count) {
                 extent = &mm_extents[i];
                 if (MM_EXTENT_TYPE(extent) != MM_TYPE_PROCESS ||
-                    MM_EXTENT_PINS(extent) != 0U) {
-                        ++i;
-                        continue;
-                }
-                base = MM_EXTENT_BASE(extent);
-                owner = MM_EXTENT_OWNER(extent);
-                if (vm_extent_move(owner, base, MM_EXTENT_WORDS(extent)) != MM_OK) {
+                    MM_EXTENT_PINS(extent) != 0U ||
+                    mm_move_extent(i, VM_EXTENT_ALIGN_WORDS,
+                    MM_ALLOC_HIGH) != MM_OK) {
                         ++i;
                         continue;
                 }
@@ -322,24 +330,38 @@ int
 mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
     unsigned int owner, unsigned int preference, kword_t *basep)
 {
-        int attempt;
         int rc;
 
-        for (attempt = 0; attempt != 2; ++attempt) {
-                rc = mm_alloc_aligned_noreclaim(words, alignment, type, owner,
-                    preference, basep);
-                if (rc == MM_ERR_FRAGMENTED) {
-                        rc = mm_compact(words, alignment);
-                        if (rc == MM_OK)
-                                rc = mm_alloc_aligned_noreclaim(words, alignment,
-                                    type, owner, preference, basep);
-                }
-                if (rc == MM_OK ||
-                    (rc != MM_ERR_NOMEM && rc != MM_ERR_FRAGMENTED))
-                        return rc;
-                if (attempt == 0)
-                        (void)proc_swap_reclaim(words, alignment,
-                            type == MM_TYPE_PROCESS ? owner : PROC_NO_SLOT);
+        rc = mm_alloc_aligned_noreclaim(words, alignment, type, owner,
+            preference, basep);
+        if (rc == MM_OK ||
+            (rc != MM_ERR_NOMEM && rc != MM_ERR_FRAGMENTED &&
+            rc != MM_ERR_DESCRIPTORS))
+                return rc;
+
+        (void)fs_d6fs_cache_reclaim(words);
+        rc = mm_alloc_aligned_noreclaim(words, alignment, type, owner,
+            preference, basep);
+        if (rc == MM_ERR_FRAGMENTED) {
+                rc = mm_compact(words, alignment);
+                if (rc == MM_OK)
+                        rc = mm_alloc_aligned_noreclaim(words, alignment,
+                            type, owner, preference, basep);
+        }
+        if (rc == MM_OK ||
+            (rc != MM_ERR_NOMEM && rc != MM_ERR_FRAGMENTED &&
+            rc != MM_ERR_DESCRIPTORS))
+                return rc;
+
+        (void)proc_swap_reclaim(words, alignment,
+            type == MM_TYPE_PROCESS ? owner : PROC_NO_SLOT);
+        rc = mm_alloc_aligned_noreclaim(words, alignment, type, owner,
+            preference, basep);
+        if (rc == MM_ERR_FRAGMENTED) {
+                rc = mm_compact(words, alignment);
+                if (rc == MM_OK)
+                        rc = mm_alloc_aligned_noreclaim(words, alignment,
+                            type, owner, preference, basep);
         }
         return rc;
 }

@@ -7,7 +7,7 @@
         .bss
         .globl  devicefs_names
 devicefs_names:
-        .block  022                    ; frozen detected-device SIXBIT names
+        .block  023                    ; frozen detected-device SIXBIT names
 
         .globl  devicefs_io_in
         .globl  mach_user_sp
@@ -40,6 +40,7 @@ devicefs_d6set_reads:
         .block  1                      ; 020 D6SET0 request reads
 devicefs_drm_reads:
         .block  1                      ; 021 DRM0 reads
+        .block  1                      ; 022 LPT0 has no IN
 
         .globl  devicefs_io_out
         .globl  mach_kernel_sp
@@ -68,6 +69,7 @@ devicefs_d6set_writes:
         .block  1                      ; 020 D6SET0 request writes
 devicefs_drm_writes:
         .block  1                      ; 021 DRM0 writes
+        .block  1                      ; 022 LPT0 OUT
 
 
 ; Sparse extended DEVICEFS accounting.  The legacy io_in/io_out arrays above

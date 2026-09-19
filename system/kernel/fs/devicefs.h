@@ -39,7 +39,8 @@
 #define DEVICEFS_DEV_SLV0            15U
 #define DEVICEFS_DEV_D6SET0          16U
 #define DEVICEFS_DEV_DRM0            17U
-#define DEVICEFS_DEV_COUNT           18U
+#define DEVICEFS_DEV_LPT0            18U
+#define DEVICEFS_DEV_COUNT           19U
 
 #define DEVICEFS_PRESENT(id)         (1UL << (id))
 

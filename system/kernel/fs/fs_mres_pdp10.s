@@ -101,6 +101,18 @@ fs_dtfs_service_jump:
         jrst    fs_mres_no_service
 fs_d6fs_service_jump:
         jrst    fs_mres_no_service
+
+; KCORE memory-pressure bridge to the movable D6FS clean-cache reclaimer.
+; AC1=requested allocation size; return number of released cache slabs.
+        .globl  fs_d6fs_cache_reclaim
+        .globl  d6fs_cache_reclaim_jump
+fs_d6fs_cache_reclaim:
+        hrrz    4,d6fs_cache_reclaim_jump
+        cain    4,fs_mres_no_service
+        jrst    pdp10_ret_zero
+        jrst    (4)
+d6fs_cache_reclaim_jump:
+        jrst    fs_mres_no_service
 fs_mres_no_service:
         hrroi   1,1
         popj    17,
@@ -117,6 +129,31 @@ fs_copy_words:
         subi    2,1
         blt     4,(2)
 fs_copy_words_done:
+        popj    17,
+
+        .globl  fs_move_words
+; void fs_move_words(src, dst, count)
+; Overlap-safe resident word move.  Forward/non-overlapping copies retain the
+; BLT fast path; an upward overlapping move walks backwards.
+; AC1=src, AC2=dst, AC3=count.  AC4 is scratch.
+fs_move_words:
+        jumpe   3,fs_move_words_done
+        move    4,2
+        sub     4,1                    ; delta = dst - src
+        jumple  4,fs_copy_words       ; dst <= src: forward copy is safe
+        sub     4,3
+        jumpge  4,fs_copy_words       ; dst >= src + count: no overlap
+        add     1,3
+        subi    1,1
+        add     2,3
+        subi    2,1
+fs_move_words_back:
+        move    4,(1)
+        movem   4,(2)
+        subi    1,1
+        subi    2,1
+        sojg    3,fs_move_words_back
+fs_move_words_done:
         popj    17,
 
         .globl  fs_words_equal

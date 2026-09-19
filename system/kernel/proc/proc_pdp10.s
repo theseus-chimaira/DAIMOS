@@ -20,8 +20,9 @@
         .equ    PROC_TRANSITION_RH,0200000
         .equ    PROC_FILE_TABLE_OFFSET,047
         .equ    PROC_CRED_OFFSET,0107
-        .equ    PROC_USTACK_BASE,0110
-        .equ    PROC_KSTACK_WORDS,0307
+        .equ    PROC_UMASK_OFFSET,0110
+        .equ    PROC_USTACK_BASE,0111
+        .equ    PROC_KSTACK_WORDS,0306
         .equ    KERNEL_IDLE_STACK_WORDS,0100
 
         .equ    CTX_U_PC,020
@@ -65,6 +66,7 @@
         .globl  mach_user_sp
         .globl  mach_syscall_save
         .globl  file_table
+        .globl  file_find
         .globl  vm_activate_current
         .globl  proc_slot_ptr
         .globl  proc_runq_add
@@ -594,7 +596,7 @@ proc_child_set:
         .globl  proc_tty_release_session
 proc_control:
         jumpl   1,pdp10_ret_neg1
-        caile   1,027
+        caile   1,031
         jrst    pdp10_ret_neg1
         ; AC3 is the current slot/session identity used by NEWSESSION,
         ; NEWDOMAIN, and the TTY ownership operations below.  Do not depend
@@ -630,6 +632,8 @@ proc_control_table:
         .word   proc_control_setgid    ; 025
         .word   proc_control_tty_getmode ; 026
         .word   proc_control_tty_setmode ; 027
+        .word   proc_control_isatty    ; 030
+        .word   proc_control_umask     ; 031
 
 proc_control_getpgrp:
         jumpn   2,pdp10_ret_neg1
@@ -877,6 +881,29 @@ proc_control_setcred_store:
         caie    1,017                  ; SETGID executes only the RH store
         hrrm    2,PROC_CRED_OFFSET(5)
         move    1,2
+        popj    17,
+
+; Return the logical controlling TTY id when FD names the CTY0 conduit.
+; A redirected/closed/non-terminal descriptor, or a process without an attached
+; controlling terminal, returns -1.  The TTY ownership helper also verifies the
+; session association instead of trusting process-local state alone.
+proc_control_isatty:
+        move    1,2
+        pushj   17,file_find
+        jumpe   1,pdp10_ret_neg1
+        move    1,(1)
+        tlz     1,707070               ; strip packed FILE metadata
+        camn    1,[020002000000]       ; DEVICEFS CTY0 IO endpoint
+        jrst    proc_control_tty_owned
+        jrst    pdp10_ret_neg1
+
+; Classic umask semantics: install ARG low nine bits and return the old mask.
+; The word is process-private, inherited by RUN and retained by EXEC.
+proc_control_umask:
+        andi    2,0777
+        hlrz    5,(4)
+        move    1,PROC_UMASK_OFFSET(5)
+        movem   2,PROC_UMASK_OFFSET(5)
         popj    17,
 
 proc_control_tty_setfg:

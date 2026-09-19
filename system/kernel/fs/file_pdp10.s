@@ -142,6 +142,7 @@ file_path_setchar:
         .globl  pipe_add_ref
         .globl  pipe_close_ref
         .globl  pipe_fifo_detach
+        .globl  lpt_putchar
 
 ; int file_readchar(int fd)
 ; Validate the descriptor exactly as the C wrapper did, then advance the
@@ -239,7 +240,13 @@ file_writechar_vfs:
         tlz     1,707070
         camn    1,[020002000000]
         jrst    file_writechar_cty
+        camn    1,[020002000022]       ; DEVICEFS LPT0 IO endpoint
+        jrst    file_writechar_lpt
         seto    1,
+        jrst    file_writechar_done
+file_writechar_lpt:
+        move    1,(17)                 ; original character
+        pushj   17,lpt_putchar
         jrst    file_writechar_done
 file_writechar_cty:
         move    1,[-3]
@@ -862,10 +869,6 @@ file_rename:
         movei   3,-012(17)             ; oldname
         pushj   17,file_parent_path
         jumpn   1,file_rename_fail
-        move    1,-5(17)
-        movei   2,3
-        pushj   17,file_check_access
-        jumpn   1,file_rename_fail
         move    1,-013(17)
         movei   2,3
         pushj   17,file_check_access
@@ -874,6 +877,10 @@ file_rename:
         movei   2,-5(17)               ; newdir
         movei   3,-4(17)               ; newname
         pushj   17,file_parent_path
+        jumpn   1,file_rename_fail
+        move    1,-5(17)
+        movei   2,3
+        pushj   17,file_check_access
         jumpn   1,file_rename_fail
         move    1,-013(17)
         movei   2,-012(17)

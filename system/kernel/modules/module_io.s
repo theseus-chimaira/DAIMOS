@@ -19,6 +19,8 @@
         .globl minit_ptr_cono
         .globl minit_ptp_coni
         .globl minit_ptp_cono
+        .globl minit_lpt_coni
+        .globl minit_lpt_cono
         .globl minit_cr_coni
         .globl minit_cr_cono
         .globl minit_cp_coni
@@ -114,6 +116,12 @@ minit_ptp_coni:
         popj 017,
 minit_ptp_cono:
         cono 0100,0(1)
+        popj 017,
+minit_lpt_coni:
+        coni 0124,1
+        popj 017,
+minit_lpt_cono:
+        cono 0124,0(1)
         popj 017,
 minit_cr_coni:
         coni 0150,1

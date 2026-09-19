@@ -4,6 +4,7 @@
         .globl clk_minit
         .globl ptr_minit
         .globl ptp_minit
+        .globl lpt_minit
         .globl cr_minit
         .globl cp_minit
         .globl dcs_minit
@@ -69,6 +70,7 @@ __minit_table_begin:
         .word clk_minit,,clk_mres_package
         .word ptr_minit,,ptr_mres_package
         .word ptp_minit,,ptp_mres_package
+        .word lpt_minit,,0
         .word cr_minit,,cr_mres_package
         .word cp_minit,,cp_mres_package
         .word dcs_minit,,dcs_mres_package

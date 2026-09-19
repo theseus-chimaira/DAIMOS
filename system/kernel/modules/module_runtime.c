@@ -9,9 +9,6 @@ kword_t module_runtime_descs[MODULE_RUNTIME_MAX + 1U];
 kword_t module_dynamic_bindings[MODULE_DYNAMIC_BIND_MAX];
 
 extern kword_t pdp10_pi_handlers[PDP10_PI_HANDLER_CAPACITY];
-extern kword_t mach_pi_disable(void);
-extern void mach_pi_restore(kword_t state);
-
 /* Fixed KCORE words whose RH is patched by MINIT to a module entry point. */
 extern kword_t pdp10_pi_level1_dispatch_jump;
 extern kword_t pdp10_pi_level2_dispatch_jump;
@@ -36,6 +33,7 @@ extern kword_t fs_dtfs_service_jump;
 extern kword_t sys_dtfs_format_jump;
 extern kword_t sys_dtfs_mount_jump;
 extern kword_t fs_d6fs_service_jump;
+extern kword_t d6fs_cache_reclaim_jump;
 extern kword_t diskset_runtime_service_jump;
 
 static kword_t *const module_fixed_bindings[] = {
@@ -62,6 +60,7 @@ static kword_t *const module_fixed_bindings[] = {
         &sys_dtfs_format_jump,
         &sys_dtfs_mount_jump,
         &fs_d6fs_service_jump,
+        &d6fs_cache_reclaim_jump,
         &diskset_runtime_service_jump
 };
 
@@ -90,10 +89,9 @@ module_runtime_move(unsigned int owner, unsigned int new_base,
         kword_t *src;
         kword_t *dst;
         const kword_t *map;
-        kword_t pi_state;
         int i;
 
-        /* mm_move_module() owns owner/state/range validation. */
+        /* The MM direct-move path owns owner/state/range validation. */
         d = module_runtime_descs[owner];
         old_base = (int)MODULE_RUNTIME_BASE(d);
         init_words = (int)MODULE_RUNTIME_INIT_WORDS(d);
@@ -101,10 +99,11 @@ module_runtime_move(unsigned int owner, unsigned int new_base,
             (int)MODULE_RUNTIME_MAP_WORDS(d);
         src = (kword_t *)(unsigned long)old_base;
         dst = (kword_t *)(unsigned long)new_base;
-        fs_copy_words(src, dst, (unsigned int)total_words);
-        /* Modules are packed downward, so relocation is a single base
-         * subtraction.  Walk the two-bit map sequentially; division by 18 in
-         * the inner loop is unnecessarily expensive on PDP-6. */
+        /* MM holds PI disabled across the copy, relocation, publication,
+         * and extent-descriptor rebase. */
+        fs_move_words(src, dst, (unsigned int)total_words);
+        /* Walk the two-bit map sequentially; division by 18 in the inner loop
+         * is unnecessarily expensive on PDP-6. */
         map = dst + image_words;
         {
                 int delta;
@@ -146,7 +145,6 @@ module_runtime_move(unsigned int owner, unsigned int new_base,
                 }
         }
 
-        pi_state = mach_pi_disable();
         for (i = 0; i < (int)MODULE_FIXED_BIND_COUNT; ++i)
                 module_retarget(module_fixed_bindings[i], old_base, new_base,
                     image_words);
@@ -175,6 +173,5 @@ module_runtime_move(unsigned int owner, unsigned int new_base,
         module_runtime_descs[owner] =
             (d & ~MODULE_HALF_MASK) |
             ((kword_t)new_base & MODULE_HALF_MASK);
-        mach_pi_restore(pi_state);
         return 0;
 }

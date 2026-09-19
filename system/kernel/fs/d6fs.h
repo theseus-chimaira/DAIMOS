@@ -152,6 +152,9 @@ int d6fs_dirent_decode_valid(const kword_t ent[D6FS_DIRENT_WORDS],
     unsigned int fcb_count, struct d6fs_dirent_info *info);
 const kword_t *d6fs_reader_get_block(struct d6fs_reader *reader,
     kword_t logical);
+int d6fs_cache_fetch(struct d6fs_reader *reader, kword_t logical);
+void d6fs_cache_store(struct d6fs_reader *reader, kword_t logical);
+int d6fs_cache_reclaim(kword_t words);
 int d6fs_reader_fcb(struct d6fs_reader *reader, unsigned int fcb_index,
     kword_t fcb[D6FS_FCB_WORDS], struct d6fs_fcb_info *info);
 kword_t d6fs_file_block(const kword_t fcb[D6FS_FCB_RESERVED0],

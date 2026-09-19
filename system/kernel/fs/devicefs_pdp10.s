@@ -30,7 +30,7 @@
 ; Capability masks indexed by device id.  TTY0 has output accounting at the
 ; logical terminal layer in addition to the physical backend accounting.
 ; IN:  CTY0 PTR0 CR0 DCS0 GE0 WCNSLS OCNSLS DTC0 MTC0 DSK0 DRM0
-; OUT: CTY0 PTP0 CP0 DCS0 GE0 DPY0 TTY0 WCNSLS DTC0 MTC0 DSK0 DRM0
+; OUT: CTY0 PTP0 CP0 DCS0 GE0 DPY0 TTY0 WCNSLS DTC0 MTC0 DSK0 DRM0 LPT0
 
 ; Derive 3/4/6-character device name length from trailing SIXBIT blanks.
 ; input AC5=name word, output AC6=chars.
@@ -46,7 +46,7 @@ devicefs_name_length:
 
 ; Validate AC4 as a present device id.  Return 0/-1 in AC1.
 devicefs_validate_id:
-        cail    4,022
+        cail    4,023
         jrst    pdp10_ret_neg1
         skipn   5,devicefs_names(4)
         jrst    pdp10_ret_neg1
@@ -63,7 +63,7 @@ devicefs_lookup:
         jrst    devicefs_lookup_dir
         movei   4,0
 devicefs_lookup_scan:
-        cail    4,022
+        cail    4,023
         jrst    pdp10_ret_neg1
         skipn   5,devicefs_names(4)
         jrst    devicefs_lookup_next
@@ -410,6 +410,8 @@ devicefs_stats_select_device:
         subi    0,014
         jrst    devicefs_stats_device_native
 devicefs_stats_device_maybe_d6:
+        cain    4,022                  ; LPT is a simple output stream
+        jrst    devicefs_stats_device_simple_error
         caile   4,017                  ; 020 D6SET, 021 DRM
         jrst    devicefs_stats_device_extended_native
         jrst    devicefs_stats_device_simple_error
@@ -446,6 +448,8 @@ devicefs_stats_device_simple_error:
         caie    6,2
         jrst    pdp10_ret_zero
         setz    1,
+        cain    4,022                  ; LPT has no storage-error counter
+        jrst    devicefs_stats_emit
         caige   4,014
         jrst    devicefs_stats_emit
         move    1,devicefs_storage_errors-014(4)
@@ -461,7 +465,7 @@ devicefs_stats_device_reads:
 devicefs_stats_device_writes:
         movei   0,1
         lsh     0,0(4)
-        tdnn    0,[073751]
+        tdnn    0,[01073751]
         jrst    devicefs_stats_zero
         move    1,devicefs_io_out(4)
         jrst    devicefs_stats_emit

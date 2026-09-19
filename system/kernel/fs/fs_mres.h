@@ -40,6 +40,8 @@ struct fs_mres_request {
 extern kword_t fs_memfs_service_jump;
 extern kword_t fs_dtfs_service_jump;
 extern kword_t fs_d6fs_service_jump;
+extern kword_t d6fs_cache_reclaim_jump;
+int fs_d6fs_cache_reclaim(kword_t words);
 extern kword_t diskset_runtime_service_jump;
 int diskset_runtime_reg_call(unsigned int op, kword_t a, kword_t b, kword_t c);
 extern kword_t sys_memfs_usage_call;
@@ -47,6 +49,7 @@ extern kword_t sys_dtfs_format_jump;
 extern kword_t sys_dtfs_mount_jump;
 
 void fs_copy_words(const kword_t *src, kword_t *dst, unsigned int count);
+void fs_move_words(const kword_t *src, kword_t *dst, unsigned int count);
 int fs_words_equal(const kword_t *a, const kword_t *b, unsigned int count);
 void fs_zero_words(kword_t *dst, unsigned int count);
 void fs_zero_block_workspace(void);

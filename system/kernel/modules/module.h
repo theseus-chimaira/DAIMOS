@@ -33,7 +33,8 @@ extern kword_t __minit_table_end;
 #define MODULE_SERVICE_DISKSET           25U
 #define MODULE_SERVICE_DRM_READ_BLOCK    26U
 #define MODULE_SERVICE_DRM_WRITE_BLOCK   27U
-#define MODULE_SERVICE_COUNT             28U
+#define MODULE_SERVICE_LPT_PUTCHAR       28U
+#define MODULE_SERVICE_COUNT             29U
 
 void module_run_minits(void);
 const kword_t *module_current_mres(void);
@@ -58,6 +59,8 @@ kword_t minit_ptr_coni(void);
 void minit_ptr_cono(kword_t word);
 kword_t minit_ptp_coni(void);
 void minit_ptp_cono(kword_t word);
+kword_t minit_lpt_coni(void);
+void minit_lpt_cono(kword_t word);
 kword_t minit_cr_coni(void);
 void minit_cr_cono(kword_t word);
 kword_t minit_cp_coni(void);

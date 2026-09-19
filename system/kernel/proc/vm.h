@@ -37,7 +37,9 @@ int vm_space_startup(struct proc *p, const kword_t *records,
     kword_t counts, kword_t *startup);
 
 /* Called by physical MM for an unpinned MM_TYPE_PROCESS extent. */
-int vm_extent_move(unsigned int owner, kword_t base, kword_t words);
+#define VM_EXTENT_ALIGN_WORDS 02000UL
+int vm_extent_move(unsigned int owner, kword_t base, kword_t words,
+    kword_t new_base);
 
 /* Machine backend entries used directly by the PDP-10 assembly paths. */
 void vm_enter_initial_user(struct proc *p, kword_t entry, kword_t stack,

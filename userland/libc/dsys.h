@@ -34,6 +34,10 @@ int dsys_run(struct sys_run_v2 *args);
 int dsys_wait(unsigned int selector, kword_t *status, unsigned int flags);
 int dsys_getpid(void);
 int dsys_procctl(unsigned int op, unsigned int arg);
+#define dsys_isatty(fd) \
+        dsys_procctl(SYS_PROCCTL_ISATTY, (unsigned int)(fd))
+#define dsys_umask(mask) \
+        dsys_procctl(SYS_PROCCTL_UMASK, (unsigned int)(mask))
 kword_t dsys_pipe(void);
 int dsys_mkfifo(kword_t *p, unsigned int mode);
 int dsys_exec(struct sys_exec_v1 *args);
