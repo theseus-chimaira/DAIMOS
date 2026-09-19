@@ -22,22 +22,34 @@
 vfs_lookup:
         jumpe   2,pdp10_ret_neg1
         jumpe   3,pdp10_ret_neg1
-        came    1,vfs_namespace_root
+        camn    1,vfs_namespace_root
+        jrst    vfs_lookup_root_names
+        move    4,monitorfs_names+7    ; /MONITOR vnode
+        came    1,4
         jrst    vfs_lookup_provider
+        movei   4,monitorfs_names+010  ; PROC, DOMAIN, DEVICES
+        movei   0,3
+        jrst    vfs_lookup_builtin_start
+vfs_lookup_root_names:
+        movei   4,monitorfs_names      ; DEV, MONITOR
+        movei   0,2
+vfs_lookup_builtin_start:
         move    5,(2)                  ; name chars
-        caie    5,6
-        jrst    vfs_lookup_proc_name
-        move    4,1(2)
-        camn    4,[-0333211263433]     ; DEVICE
-        jrst    vfs_lookup_device_root
-        camn    4,[-0332022362622]     ; DOMAIN
-        jrst    vfs_lookup_domain_root
-vfs_lookup_proc_name:
-        caie    5,4
+vfs_lookup_builtin_loop:
+        came    5,(4)
+        jrst    vfs_lookup_builtin_next
+        move    6,1(2)
+        came    6,1(4)
+        jrst    vfs_lookup_builtin_next
+        move    6,2(2)
+        came    6,2(4)
+        jrst    vfs_lookup_builtin_next
+        move    4,3(4)                 ; vnode from shared name table
+        jrst    vfs_lookup_root_store
+vfs_lookup_builtin_next:
+        addi    4,4
+        sojg    0,vfs_lookup_builtin_loop
         jrst    vfs_lookup_provider
-        move    4,1(2)
-        camn    4,[-0171520350000]     ; PROC
-        jrst    vfs_lookup_proc_root
 
 vfs_lookup_provider:
         push    17,1                   ; original directory
@@ -76,14 +88,6 @@ vfs_lookup_pop:
         sub     17,[2,,2]
         popj    17,
 
-vfs_lookup_device_root:
-        movsi   4,020001               ; DEVICEFS root
-        jrst    vfs_lookup_root_store
-vfs_lookup_proc_root:
-        movsi   4,030001               ; PROCFS root
-        jrst    vfs_lookup_root_store
-vfs_lookup_domain_root:
-        move    4,[030001400000]       ; tagged DOMAIN root
 vfs_lookup_root_store:
         movem   4,(3)
         jrst    pdp10_ret_zero
@@ -92,6 +96,16 @@ vfs_lookup_root_store:
         .globl  vfs_readdir
 vfs_readdir:
         jumpe   3,pdp10_ret_neg1
+        move    4,monitorfs_names+7    ; /MONITOR
+        came    1,4
+        jrst    vfs_readdir_general
+        cail    2,3
+        jrst    pdp10_ret_zero
+        move    4,2
+        lsh     4,2
+        addi    4,monitorfs_names+010
+        jrst    vfs_readdir_table
+vfs_readdir_general:
         push    17,1                   ; dir
         push    17,2                   ; requested offset
         push    17,3                   ; dirent
@@ -111,35 +125,16 @@ vfs_readdir_count:
         jrst    vfs_readdir_count
 vfs_readdir_extra:
         move    4,-2(17)               ; requested offset
-        came    4,(17)
-        jrst    vfs_readdir_try_proc
-        movei   4,6
-        move    5,[-0333211263433]     ; DEVICE
-        jrst    vfs_readdir_emit
-vfs_readdir_try_proc:
-        move    5,(17)
-        addi    5,1
-        came    4,5
-        jrst    vfs_readdir_try_domain
-        movei   4,4
-        move    5,[-0171520350000]     ; PROC
-        jrst    vfs_readdir_emit
-vfs_readdir_try_domain:
-        addi    5,1
-        came    4,5
+        sub     4,(17)                  ; built-in index after mounted entries
+        jumpl   4,vfs_readdir_zero
+        caige   4,2
+        jrst    vfs_readdir_builtin
         jrst    vfs_readdir_zero
-        movei   4,6
-        move    5,[-0332022362622]     ; DOMAIN
-vfs_readdir_emit:
+vfs_readdir_builtin:
+        lsh     4,2                    ; four-word name-table record
+        addi    4,monitorfs_names
         move    3,-1(17)
-        movem   4,(3)
-        movem   5,1(3)
-        setzm   2(3)
-        setzm   3(3)
-        setzm   4(3)
-        movei   4,1                    ; VFS_TYPE_DIR
-        movem   4,5(3)
-        movei   1,1
+        pushj   17,vfs_readdir_table
         jrst    vfs_readdir_done
 vfs_readdir_zero:
         setz    1,
@@ -147,11 +142,25 @@ vfs_readdir_done:
         sub     17,[4,,4]
         popj    17,
 
+; AC4 -> static four-word MonitorFS name record, AC3 -> dirent.
+vfs_readdir_table:
+        move    5,(4)
+        movem   5,(3)
+        move    5,1(4)
+        movem   5,1(3)
+        move    5,2(4)
+        movem   5,2(3)
+        setzm   3(3)
+        setzm   4(3)
+        movei   5,1                    ; VFS_TYPE_DIR
+        movem   5,5(3)
+        jrst    pdp10_ret_one
+
 ; Common parent lookup after mount-root crossing.  AC1=node, AC2=parentp.
 vfs_parent_raw_asm:
         ldb     7,[POINT 6,1,5]
         cain    7,2
-        jrst    vfs_parent_namespace
+        jrst    vfs_parent_device
         cain    7,3
         jrst    vfs_parent_proc
         push    17,1                   ; original node for mount inheritance
@@ -174,18 +183,28 @@ vfs_parent_pop:
 vfs_parent_namespace:
         move    4,vfs_namespace_root
         jrst    vfs_parent_store
+vfs_parent_device:
+        ldb     4,[POINT 6,1,17]
+        jumpe   4,vfs_parent_namespace ; /DEV
+        cain    4,1                    ; /MONITOR/DEVICES
+        jrst    vfs_parent_monitor
+        caie    4,3                    ; state-view device directory
+        jrst    pdp10_ret_neg1
+        move    4,monitorfs_names+023  ; /MONITOR/DEVICES
+        jrst    vfs_parent_store
+vfs_parent_monitor:
+        move    4,monitorfs_names+7    ; /MONITOR
+        jrst    vfs_parent_store
 vfs_parent_proc:
         ldb     4,[POINT 6,1,17]
-        caie    4,1                    ; PROCFS_KIND_ROOT
-        jrst    vfs_parent_proc_slot
-        move    4,vfs_namespace_root
-        jrst    vfs_parent_store
-vfs_parent_proc_slot:
-        caie    4,2                    ; PROCFS_KIND_PROC
+        jumpe   4,vfs_parent_namespace ; /MONITOR
+        cain    4,1                    ; PROC/DOMAIN root
+        jrst    vfs_parent_monitor
+        caie    4,2                    ; process/domain ID directory
         jrst    pdp10_ret_neg1
-        movsi   4,030001               ; PROCFS root
-        trne    1,0400000              ; tagged DOMAIN process
-        tro     4,0400000
+        movsi   4,030001               ; /MONITOR/PROC
+        trne    1,0400000
+        tro     4,0400000              ; /MONITOR/DOMAIN
 vfs_parent_store:
         movem   4,(2)
         jrst    pdp10_ret_zero
@@ -212,29 +231,105 @@ vfs_parent_mount_check:
         jrst    vfs_parent_raw_asm
 
 ; int vfs_parent_name(node, parentp, namep)
+; MonitorFS directories use this same component-name path as mounted providers,
+; so getcwd needs no synthetic absolute-path formatter.
         .globl  vfs_parent_name
+        .globl  devicefs_names
 vfs_parent_name:
         jumpe   2,pdp10_ret_neg1
         jumpe   3,pdp10_ret_neg1
         camn    1,vfs_namespace_root
         jrst    pdp10_ret_neg1
-vfs_parent_name_mount:
         ldb     4,[POINT 6,1,11]
         subi    4,1
-        jumpl   4,vfs_parent_name_call
-        cail   4,4
-        jrst    vfs_parent_name_call
-vfs_parent_name_check:
+        jumpl   4,vfs_parent_name_dispatch
+        cail    4,4
+        jrst    vfs_parent_name_dispatch
         move    5,vfs_mount_root(4)
         camn    5,1
         move    1,vfs_mount_target(4)
-vfs_parent_name_call:
-        push    17,1                   ; node after mount crossing
-        push    17,2                   ; parent output pointer
+vfs_parent_name_dispatch:
         ldb     7,[POINT 6,1,5]
+        cain    7,2
+        jrst    monitorfs_parent_name
+        cain    7,3
+        jrst    monitorfs_parent_name
+        push    17,1
+        push    17,2
         movei   6,5                    ; FS_MRES_OP_PARENT_NAME
         pushj   17,fs_provider_reg_call
         jrst    vfs_parent_return
+
+; AC1=node, AC2=parentp, AC3=namep.  Only directories need a component name.
+monitorfs_parent_name:
+        push    17,1
+        push    17,3
+        pushj   17,vfs_parent_raw_asm
+        jumpn   1,monitorfs_parent_name_fail
+        move    6,-1(17)               ; original node
+        move    7,(17)                  ; namep
+        ldb     5,[POINT 6,6,5]
+        cain    5,2
+        jrst    monitorfs_parent_name_device
+
+        ; Provider 3: MONITOR, PROC/DOMAIN, or an ID directory.
+        ldb     4,[POINT 6,6,17]
+        jumpe   4,monitorfs_name_monitor
+        cain    4,1
+        jrst    monitorfs_name_proc_domain
+        caie    4,2
+        jrst    monitorfs_parent_name_fail
+        hrrz    1,6
+        andi    1,0377
+        pushj   17,procfs_format_slot
+        movem   1,(7)
+        movem   2,1(7)
+        jrst    monitorfs_parent_name_done
+monitorfs_name_proc_domain:
+        movei   4,monitorfs_names+010   ; PROC record
+        trne    6,0400000
+        addi    4,4                    ; DOMAIN record
+        jrst    monitorfs_name_record
+monitorfs_name_monitor:
+        movei   4,monitorfs_names+4    ; MONITOR record
+        jrst    monitorfs_name_record
+
+monitorfs_parent_name_device:
+        ldb     4,[POINT 6,6,17]
+        jumpe   4,monitorfs_name_dev
+        cain    4,1
+        jrst    monitorfs_name_devices
+        caie    4,3
+        jrst    monitorfs_parent_name_fail
+        hrrz    4,6
+        cail    4,023
+        jrst    monitorfs_parent_name_fail
+        skipn   5,devicefs_names(4)
+        jrst    monitorfs_parent_name_fail
+        movem   5,1(7)
+        movei   1,devicefs_names(4)
+        movei   2,6
+        pushj   17,vfs_sixbit_name_chars
+        movem   1,(7)
+        jrst    monitorfs_parent_name_done
+monitorfs_name_dev:
+        movei   4,monitorfs_names
+        jrst    monitorfs_name_record
+monitorfs_name_devices:
+        movei   4,monitorfs_names+020
+monitorfs_name_record:
+        move    5,(4)
+        movem   5,(7)
+        move    5,1(4)
+        movem   5,1(7)
+        move    5,2(4)
+        movem   5,2(7)
+monitorfs_parent_name_done:
+        sub     17,[2,,2]
+        jrst    pdp10_ret_zero
+monitorfs_parent_name_fail:
+        sub     17,[2,,2]
+        jrst    pdp10_ret_neg1
 
 
 ; Direct request-free mutation leaves.  The fifth C argument is at -1(17).
@@ -890,6 +985,32 @@ vfs_unmount_unlock:
 vfs_unmount_fail:
         sub     17,[2,,2]
         jrst    pdp10_ret_neg1
+
+        .data
+        .globl  monitorfs_names
+; Four words per static MonitorFS namespace component: length, two SIXBIT
+; words, and canonical vnode.  Lookup, readdir, and getcwd share this table.
+monitorfs_names:
+        .word   3
+        .word   0444566000000
+        .word   0
+        .word   020000000000           ; DEV
+        .word   7
+        .word   0555756516457
+        .word   0620000000000
+        .word   030000000000           ; MONITOR
+        .word   4
+        .word   0606257430000
+        .word   0
+        .word   030001000000           ; PROC
+        .word   6
+        .word   0445755415156
+        .word   0
+        .word   030001400000           ; DOMAIN
+        .word   7
+        .word   0444566514345
+        .word   0630000000000
+        .word   020001000000           ; DEVICES
 
         .bss
         .globl  vfs_mount_target

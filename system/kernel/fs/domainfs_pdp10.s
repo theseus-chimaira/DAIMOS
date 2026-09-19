@@ -31,34 +31,16 @@
         .globl  procfs_parse_slot
         .globl  procfs_format_slot
 
-; AC1 = domain ID.  Return AC1 = 1 if at least one active process belongs to
-; the domain, otherwise zero.  AC3 and AC7 are preserved; AC6 returns the ID.
+; AC1 = domain ID. Return AC1 = 1 if at least one active process belongs to
+; the domain, otherwise zero.  Reuse the STATUS scanner with no output buffer.
         .globl  domainfs_exists
 domainfs_exists:
-        skipn   4,proc_table
-        jrst    pdp10_ret_zero
-        move    6,1
-        movei   5,0
-domainfs_exists_loop:
-        caml    5,proc_high_slot
-        jrst    pdp10_ret_zero
-        hlrz    2,2(4)
-        andi    2,PROC_STATE_LH_MASK
-        jumpe   2,domainfs_exists_next
-        move    1,4
-        pushj   17,proc_scope_id
-        lsh     1,-DOMAIN_SHIFT
-        andi    1,DOMAIN_MASK
-        camn    1,6
-        jrst    pdp10_ret_one
-domainfs_exists_next:
-        addi    4,PROC_WORDS
-        aoja    5,domainfs_exists_loop
+        move    5,1                    ; requested domain
+        setz    7,                     ; no status buffer => existence only
+        jrst    domainfs_scan
 
-; Fill six DOMAIN/ID/STATUS words at AC2 for domain AC1.  Return the process
-; count in AC1.  The layout is:
-;   DID, processes, resident user words, swapped processes,
-;   swap sectors, stopped processes.
+; Fill six DOMAIN/ID/STATUS words at AC2 for domain AC1.  The same scan serves
+; existence tests so process-table/domain matching is not duplicated.
 domainfs_status:
         move    7,2
         move    5,1
@@ -68,47 +50,49 @@ domainfs_status:
         setzm   3(7)
         setzm   4(7)
         setzm   5(7)
+domainfs_scan:
         skipn   6,proc_table
-        jrst    domainfs_status_done
+        jrst    domainfs_scan_done
         movei   4,0
-domainfs_status_loop:
+domainfs_scan_loop:
         caml    4,proc_high_slot
-        jrst    domainfs_status_done
+        jrst    domainfs_scan_done
         hlrz    3,2(6)
         andi    3,PROC_STATE_LH_MASK
-        jumpe   3,domainfs_status_next
+        jumpe   3,domainfs_scan_next
         move    1,6
         pushj   17,proc_scope_id
         lsh     1,-DOMAIN_SHIFT
         andi    1,DOMAIN_MASK
         came    1,5
-        jrst    domainfs_status_next
+        jrst    domainfs_scan_next
+        jumpe   7,pdp10_ret_one
         aos     1(7)
         cain    3,PROC_STATE_ZOMB_LH
-        jrst    domainfs_status_next
-domainfs_status_live:
+        jrst    domainfs_scan_next
         hrrz    1,1(6)
-        jumpe   1,domainfs_status_nonresident
+        jumpe   1,domainfs_scan_nonresident
         hlrz    1,1(6)
         addm    1,2(7)
-        jrst    domainfs_status_stop
-domainfs_status_nonresident:
-        jumpe   4,domainfs_status_stop
+        jrst    domainfs_scan_stop
+domainfs_scan_nonresident:
+        jumpe   4,domainfs_scan_stop
         skipn   1,proc_swap_records
-        jrst    domainfs_status_stop
+        jrst    domainfs_scan_stop
         add     1,4
         skipn   2,(1)
-        jrst    domainfs_status_stop
+        jrst    domainfs_scan_stop
         aos     3(7)
         hrrz    2,2
         addm    2,4(7)
-domainfs_status_stop:
+domainfs_scan_stop:
         cain    3,PROC_STATE_STOP_LH
         aos     5(7)
-domainfs_status_next:
+domainfs_scan_next:
         addi    6,PROC_WORDS
-        aoja    4,domainfs_status_loop
-domainfs_status_done:
+        aoja    4,domainfs_scan_loop
+domainfs_scan_done:
+        jumpe   7,pdp10_ret_zero
         move    1,1(7)
         popj    17,
 
@@ -156,26 +140,3 @@ domainfs_read_done:
 domainfs_read_missing:
         sub     17,[011,,011]
         jrst    pdp10_ret_neg1
-
-; int domainfs_getcwd_did(unsigned int did, kword_t *buf,
-;     unsigned int nwords)
-        .globl  domainfs_getcwd_did
-domainfs_getcwd_did:
-        jumpe   2,pdp10_ret_neg1
-        caige   3,3
-        jrst    pdp10_ret_neg1
-        move    3,1                    ; domain ID; exists preserves AC3
-        move    7,2                    ; output; exists preserves AC7
-        pushj   17,domainfs_exists
-        jumpe   1,pdp10_ret_neg1
-        move    1,3
-        move    3,7                    ; format_slot preserves AC3
-        pushj   17,procfs_format_slot
-        addi    1,010
-        movem   1,(3)
-        move    1,[0174457554151]      ; /DOMAI
-        movem   1,1(3)
-        lsh     2,-014
-        ior     2,[0561700000000]      ; N/ + left-justified decimal ID
-        movem   2,2(3)
-        jrst    pdp10_ret_zero

@@ -246,23 +246,3 @@ domainfs_read_words(vnode_t node, unsigned int off, kword_t *buf,
                 buf[i] = status[off + i];
         return (int)count;
 }
-
-int
-domainfs_getcwd_did(unsigned int did, kword_t *buf, unsigned int nwords)
-{
-        struct vfs_name name;
-        kword_t tail;
-        unsigned int i;
-
-        if (buf == 0 || nwords < 3U || !domainfs_exists(did))
-                return -1;
-        domainfs_name_id(did, &name);
-        buf[0] = 8UL + (kword_t)name.chars;
-        buf[1] = VFS_SIX6('/','D','O','M','A','I');
-        tail = VFS_SIXCHAR('N') << 30U;
-        tail |= VFS_SIXCHAR('/') << 24U;
-        for (i = 0U; i < name.chars; ++i)
-                tail |= (kword_t)vfs_name_char(&name, i) << (18U - i * 6U);
-        buf[2] = tail;
-        return 0;
-}

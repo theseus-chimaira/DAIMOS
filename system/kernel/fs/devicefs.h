@@ -12,6 +12,7 @@
 #define DEVICEFS_KIND_MEMBERS        5U
 #define DEVICEFS_KIND_SWAP_STATS     6U
 #define DEVICEFS_KIND_LOG_STATS      7U
+#define DEVICEFS_KIND_IOROOT         0U
 
 /* STATS files contain unlabeled 12-digit octal values, one per line.
  * Stream/special: reads, writes, errors.

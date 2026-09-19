@@ -11,6 +11,7 @@
 #define PROCFS_KIND_WORDS            5U
 #define PROCFS_KIND_COMM             6U
 #define PROCFS_KIND_STATUS           7U
+#define MONITORFS_KIND_ROOT           0U
 
 #define PROCFS_DOMAIN_TAG        0400000U
 #define PROCFS_DOMAIN_ID(node) \

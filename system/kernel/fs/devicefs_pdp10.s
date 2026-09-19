@@ -59,8 +59,11 @@ devicefs_lookup:
         jumpe   2,pdp10_ret_neg1
         jumpe   3,pdp10_ret_neg1
         hlrz    4,1
-        caie    4,020001               ; DEVICEFS root
+        move    0,4
+        subi    0,020000               ; root selector: DEV=0, DEVICES=1
+        caile   0,1
         jrst    devicefs_lookup_dir
+        addi    0,2                    ; result kind: endpoint=2, state dir=3
         movei   4,0
 devicefs_lookup_scan:
         cail    4,023
@@ -72,8 +75,10 @@ devicefs_lookup_scan:
         pushj   17,devicefs_name_length
         came    6,(2)
         jrst    devicefs_lookup_next
+        move    5,0
+        addi    5,020000               ; provider 2 + selected local kind
+        hrl     4,5
         move    5,4
-        tlo     5,020003               ; device directory
         jrst    devicefs_lookup_store
 
 devicefs_lookup_next:
@@ -87,15 +92,6 @@ devicefs_lookup_dir:
         pushj   17,devicefs_validate_id
         jumpn   1,pdp10_ret_neg1
         move    5,(2)
-        caie    5,2
-        jrst    devicefs_lookup_stats
-        move    5,1(2)
-        came    5,[0515700000000]      ; IO
-        jrst    pdp10_ret_neg1
-        move    5,4
-        tlo     5,020002
-        jrst    devicefs_lookup_store
-
 devicefs_lookup_stats:
         caie    5,5
         jrst    devicefs_lookup_d6extra
@@ -185,12 +181,16 @@ devicefs_readdir:
         jumpe   3,pdp10_ret_neg1
         move    4,3
         hlrz    5,1
-        caie    5,020001
+        move    0,5
+        subi    0,020000
+        caile   0,1
         jrst    devicefs_readdir_dir
+        xori    0,1                    ; DEV -> 1, DEVICES -> 0
+        addi    0,1                    ; DEV=2 (I/O type), DEVICES=1 (dir)
         movei   5,0
         movei   7,0
 devicefs_readdir_scan:
-        cail    5,022
+        cail    5,023
         jrst    pdp10_ret_zero
         skipn   6,devicefs_names(5)
         jrst    devicefs_readdir_next
@@ -202,8 +202,16 @@ devicefs_readdir_next:
         jrst    devicefs_readdir_scan
 
 devicefs_readdir_found:
+        move    1,5                    ; preserve device id across name length
         move    5,6
         pushj   17,devicefs_name_length
+        caie    0,2
+        jrst    devicefs_readdir_found_dir
+        move    0,1
+        pushj   17,devicefs_io_type
+        move    4,3
+        jrst    devicefs_readdir_store
+devicefs_readdir_found_dir:
         movei   7,1                    ; directory
         jrst    devicefs_readdir_store
 
@@ -215,18 +223,10 @@ devicefs_readdir_dir:
         pushj   17,devicefs_validate_id
         jumpn   1,pdp10_ret_neg1
         move    4,3
-        jumpe   2,devicefs_readdir_io
-        caie    2,1
-        jrst    devicefs_readdir_d6extra
-        move    5,[0636441646300]      ; STATS
-        movei   6,5
-        movei   7,2                    ; regular
-        jrst    devicefs_readdir_store
-
-devicefs_readdir_d6extra:
-        caie    0,020                  ; D6SET0 only
+        jumpe   2,devicefs_readdir_stats
+        caie    0,020                  ; extras exist only on D6SET0
         jrst    pdp10_ret_zero
-        caie    2,2
+        caie    2,1
         jrst    devicefs_readdir_swap
         movei   6,7
         move    5,[0554555424562]      ; MEMBER
@@ -236,28 +236,24 @@ devicefs_readdir_d6extra:
         movem   5,2(4)
         movei   7,2
         jrst    devicefs_readdir_store_tail
-
+devicefs_readdir_stats:
+        move    5,[0636441646300]      ; STATS
+        movei   6,5
+        movei   7,2                    ; regular
+        jrst    devicefs_readdir_store
 devicefs_readdir_swap:
-        caie    2,3
+        caie    2,2
         jrst    devicefs_readdir_log
         move    5,[0636741600000]      ; SWAP
         movei   6,4
         movei   7,2
         jrst    devicefs_readdir_store
-
 devicefs_readdir_log:
-        caie    2,4
+        caie    2,3
         jrst    pdp10_ret_zero
         move    5,[0545747000000]      ; LOG
         movei   6,3
         movei   7,2
-        jrst    devicefs_readdir_store
-
-devicefs_readdir_io:
-        move    5,[0515700000000]      ; IO
-        movei   6,2
-        pushj   17,devicefs_io_type
-        move    4,3
         jrst    devicefs_readdir_store
 
 
@@ -267,8 +263,11 @@ devicefs_stat:
         jumpe   2,pdp10_ret_neg1
         hlrz    3,1
         hrrz    4,1
-        caie    3,020001
+        cain    3,020001
+        jrst    devicefs_stat_root
+        caie    3,020000
         jrst    devicefs_stat_not_root
+devicefs_stat_root:
         movei   5,1
         movei   6,0555
         jrst    devicefs_stat_store

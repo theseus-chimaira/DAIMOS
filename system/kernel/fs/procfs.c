@@ -329,17 +329,4 @@ procfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
         return kfmt_u18_decimal_readchar(value, off, chp);
 }
 
-/* Assembly file_getcwd uses this for synthetic /PROC/<slot> directories. */
-int
-procfs_getcwd_slot(unsigned int slot, kword_t *buf, unsigned int nwords)
-{
-        struct vfs_name name;
-
-        if (buf == 0 || nwords < 3U || !procfs_slot_active(slot))
-                return -1;
-        procfs_format_slot(slot, &name);
-        buf[0] = 6UL + (kword_t)name.chars;
-        buf[1] = VFS_SIX6('/','P','R','O','C','/');
-        buf[2] = name.words[0];
-        return 0;
-}
+/* Assembly file_getcwd uses this for /MONITOR/PROC/<slot> directories. */

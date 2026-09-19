@@ -690,10 +690,10 @@ file_getcwd_nwords_ok:
         move    4,vfs_namespace_root
 file_getcwd_have_node:
         ldb     5,[POINT 6,4,5]
-        caige   5,4
-        jrst    file_getcwd_pseudo_tail
+        caige   5,2
+        jrst    pdp10_ret_neg1
         caile   5,6
-        jrst    file_getcwd_pseudo_tail
+        jrst    pdp10_ret_neg1
 
 ; The 0121-word local area is one parent vnode followed by sixteen five-word
 ; vfs_name records.  AC15 is reused as output count after the upward walk.
@@ -806,13 +806,6 @@ file_getcwd_return:
         pop     17,011
         pop     17,010
         popj    17,
-
-; Non-MEMFS cwd formatting stays in the existing shared C helper.
-file_getcwd_pseudo_tail:
-        move    3,2
-        move    2,1
-        move    1,4
-        jrst    file_getcwd_pseudo
 
 
 ; int file_symlink(const kword_t *target, const kword_t *linkpath)
@@ -1099,71 +1092,3 @@ file_new_fd_store:
         setzm   1(4)
         move    1,5
         popj    17,
-
-; int file_getcwd_pseudo(vnode_t node, kword_t *buf,
-;     unsigned int nwords)
-; Only fixed DAIMOS synthetic directories can be current directories.
-        .globl  file_getcwd_pseudo
-        .globl  procfs_getcwd_slot
-        .globl  domainfs_getcwd_did
-file_getcwd_pseudo:
-        move    4,2
-        move    5,3
-        jumpe   5,file_pseudo_zero_done
-file_pseudo_zero:
-        setzm   (4)
-        addi    4,1
-        sojg    5,file_pseudo_zero
-file_pseudo_zero_done:
-        camn    1,[020001000000]       ; /DEVICE
-        jrst    file_pseudo_device
-        camn    1,[020003000000]       ; /DEVICE/CTY0
-        jrst    file_pseudo_cty
-        camn    1,[030001000000]       ; /PROC
-        jrst    file_pseudo_proc
-        camn    1,[030001400000]       ; /DOMAIN
-        jrst    file_pseudo_domain
-        hlrz    4,1
-        caie    4,030002               ; /PROC or /DOMAIN/<id>
-        jrst    pdp10_ret_neg1
-        hrrz    1,1
-        trne    1,0400000
-        jrst    file_pseudo_domain_id
-        ; AC2 already points at buf; AC3 is nwords.
-        jrst    procfs_getcwd_slot
-file_pseudo_domain_id:
-        andi    1,0377
-        jrst    domainfs_getcwd_did
-file_pseudo_device:
-        caige   3,3
-        jrst    pdp10_ret_neg1
-        movei   4,7
-        move    5,[0174445665143]      ; SIXBIT //DEVIC/
-        movsi   6,0450000              ; SIXBIT /E     /
-        jrst    file_pseudo_fixed3
-file_pseudo_cty:
-        caige   3,4
-        jrst    pdp10_ret_neg1
-        movei   4,014
-        move    5,[0174445665143]      ; SIXBIT //DEVIC/
-        move    6,[-0326034130660]     ; SIXBIT /E/CTY0/
-        jrst    file_pseudo_fixed3
-file_pseudo_proc:
-        caige   3,2
-        jrst    pdp10_ret_neg1
-        movei   4,5
-        movem   4,(2)
-        move    4,[0176062574300]      ; SIXBIT //PROC /
-        movem   4,1(2)
-        jrst    pdp10_ret_zero
-file_pseudo_domain:
-        caige   3,3
-        jrst    pdp10_ret_neg1
-        movei   4,7
-        move    5,[0174457554151]      ; SIXBIT //DOMAI/
-        movsi   6,0560000              ; SIXBIT /N     /
-file_pseudo_fixed3:
-        movem   4,(2)
-        movem   5,1(2)
-        movem   6,2(2)
-        jrst    pdp10_ret_zero

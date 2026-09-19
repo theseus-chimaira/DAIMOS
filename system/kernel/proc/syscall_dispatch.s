@@ -337,7 +337,7 @@ native_sys_lookup_user_path_bad:
 ; Return the DTC0 vnode for a valid translated user path, or zero on failure.
 native_sys_dtc0_path:
         pushj   17,native_sys_lookup_user_path
-        came    1,[020003000014]        ; DEVICEFS DTC0 directory
+        came    1,[020002000014]        ; /DEV/DTC0 direct endpoint
         jrst    pdp10_ret_zero
         popj    17,
 

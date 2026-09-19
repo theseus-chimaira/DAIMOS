@@ -109,6 +109,7 @@ procfs_lookup:
         jrst    pdp10_ret_neg1
         move    6,1
         jumpn   0,procfs_lookup_domain_root
+        jrst    procfs_lookup_slot
 procfs_lookup_slot:
         move    1,6
         pushj   17,procfs_proc_ptr
@@ -198,6 +199,7 @@ procfs_readdir:
         jrst    pdp10_ret_zero
         movei   6,0
         movei   7,0
+        jrst    procfs_readdir_root_loop
 procfs_readdir_root_loop:
         caml    6,proc_high_slot
         jrst    pdp10_ret_zero
@@ -281,6 +283,8 @@ procfs_stat:
         move    0,1
         andi    0,0400000
         hlrz    5,1
+        cain    5,030000               ; MonitorFS root
+        jrst    procfs_stat_dir
         caie    5,030001
         jrst    procfs_stat_nonroot
 procfs_stat_dir:
@@ -331,25 +335,6 @@ procfs_stat_store_words:
         movem   5,3(7)
         jrst    pdp10_ret_zero
 
-; int procfs_getcwd_slot(unsigned int slot, kword_t *buf, unsigned int nwords)
-        .globl  procfs_getcwd_slot
-procfs_getcwd_slot:
-        jumpe   2,pdp10_ret_neg1
-        caige    3,3
-        jrst    pdp10_ret_neg1
-procfs_getcwd_size_ok:
-        move    6,1
-        move    7,2
-        pushj   17,procfs_proc_ptr
-        jumpe   1,pdp10_ret_neg1
-        move    1,6
-        pushj   17,procfs_format_slot
-        addi    1,6
-        movem   1,(7)
-        move    4,[0176062574317]
-        movem   4,1(7)
-        movem   2,2(7)
-        jrst    pdp10_ret_zero
 
 ; Return printable process-state SIXBIT word and length.
 ; AC1 = struct proc *, AC2 = slot. Return AC1 = word, AC2 = chars.
