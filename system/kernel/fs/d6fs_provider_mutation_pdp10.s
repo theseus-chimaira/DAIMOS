@@ -1,5 +1,6 @@
         .text
         .globl  d6fs_provider_write_dirent
+        .globl  pclk_time36
 ; int d6fs_provider_write_dirent(dir, slot, di)
 ;
 ; The directory FCB has already passed d6fs_provider_fcb validation.  D6FS
@@ -70,6 +71,13 @@ d6fs_provider_write_dirent_store:
         pushj   17,d6fs_reader_write_words
         caie    1,6
         jrst    d6fs_provider_write_dirent_fail
+        pushj   17,pclk_time36
+        movem   1,-035(17)               ; directory FCB MTIME: -040 + 3
+        movei   1,d6fs_provider_reader
+        hrrz    2,010                    ; directory FCB index
+        movei   3,-040(17)
+        pushj   17,d6fs_reader_put_fcb
+        jumpn   1,d6fs_provider_write_dirent_fail
         setz    1,
         jrst    d6fs_provider_write_dirent_done
 

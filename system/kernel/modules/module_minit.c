@@ -18,7 +18,7 @@
 #include "slv.h"
 #include "fs_mres.h"
 #include "diskset_mres.h"
-#include "devicefs.h"
+#include "monitorfs.h"
 #include "module_runtime.h"
 
 #define CTY_X_HANDLER           0U
@@ -1102,52 +1102,52 @@ d6fs_minit(void)
 }
 
 void
-devicefs_minit(void)
+mfsdev_minit(void)
 {
         if (module_service_get(MODULE_SERVICE_CTY_PUTCHAR) != 0U &&
             module_service_get(MODULE_SERVICE_CTY_GETCHAR) != 0U)
-                devicefs_names[DEVICEFS_DEV_CTY0] = (kword_t)SIXBIT("CTY0  ");
+                mfsdev_names[MONITORFS_DEV_CTY0] = (kword_t)SIXBIT("CTY0  ");
         if (module_service_get(MODULE_SERVICE_CLK_TICKS) != 0U)
-                devicefs_names[DEVICEFS_DEV_CLK0] = (kword_t)SIXBIT("CLK0  ");
+                mfsdev_names[MONITORFS_DEV_CLK0] = (kword_t)SIXBIT("CLK0  ");
         if (module_service_get(MODULE_SERVICE_PTR_GETCHAR) != 0U)
-                devicefs_names[DEVICEFS_DEV_PTR0] = (kword_t)SIXBIT("PTR0  ");
+                mfsdev_names[MONITORFS_DEV_PTR0] = (kword_t)SIXBIT("PTR0  ");
         if (module_service_get(MODULE_SERVICE_PTP_PUTCHAR) != 0U)
-                devicefs_names[DEVICEFS_DEV_PTP0] = (kword_t)SIXBIT("PTP0  ");
+                mfsdev_names[MONITORFS_DEV_PTP0] = (kword_t)SIXBIT("PTP0  ");
         if (module_service_get(MODULE_SERVICE_LPT_PUTCHAR) != 0U)
-                devicefs_names[DEVICEFS_DEV_LPT0] = (kword_t)SIXBIT("LPT0  ");
+                mfsdev_names[MONITORFS_DEV_LPT0] = (kword_t)SIXBIT("LPT0  ");
         if (module_service_get(MODULE_SERVICE_CR_READ_CARD) != 0U)
-                devicefs_names[DEVICEFS_DEV_CR0] = (kword_t)SIXBIT("CR0   ");
+                mfsdev_names[MONITORFS_DEV_CR0] = (kword_t)SIXBIT("CR0   ");
         if (module_service_get(MODULE_SERVICE_CP_PUNCH_CARD) != 0U)
-                devicefs_names[DEVICEFS_DEV_CP0] = (kword_t)SIXBIT("CP0   ");
+                mfsdev_names[MONITORFS_DEV_CP0] = (kword_t)SIXBIT("CP0   ");
         if (module_service_get(MODULE_SERVICE_DCS_GETCHAR) != 0U &&
             module_service_get(MODULE_SERVICE_DCS_PUTCHAR) != 0U)
-                devicefs_names[DEVICEFS_DEV_DCS0] = (kword_t)SIXBIT("DCS0  ");
+                mfsdev_names[MONITORFS_DEV_DCS0] = (kword_t)SIXBIT("DCS0  ");
         if (module_service_get(MODULE_SERVICE_GE_GETCHAR) != 0U &&
             module_service_get(MODULE_SERVICE_GE_PUTCHAR) != 0U)
-                devicefs_names[DEVICEFS_DEV_GE0] = (kword_t)SIXBIT("GE0   ");
+                mfsdev_names[MONITORFS_DEV_GE0] = (kword_t)SIXBIT("GE0   ");
         if (module_service_get(MODULE_SERVICE_DPY_PUTWORD) != 0U)
-                devicefs_names[DEVICEFS_DEV_DPY0] = (kword_t)SIXBIT("DPY0  ");
+                mfsdev_names[MONITORFS_DEV_DPY0] = (kword_t)SIXBIT("DPY0  ");
         if (module_service_get(MODULE_SERVICE_TTY_PUTCHAR) != 0U)
-                devicefs_names[DEVICEFS_DEV_TTY0] = (kword_t)SIXBIT("TTY0  ");
+                mfsdev_names[MONITORFS_DEV_TTY0] = (kword_t)SIXBIT("TTY0  ");
         if (module_service_get(MODULE_SERVICE_WCNSLS_READ) != 0U)
-                devicefs_names[DEVICEFS_DEV_WCNSLS] = (kword_t)SIXBIT("WCNSLS");
+                mfsdev_names[MONITORFS_DEV_WCNSLS] = (kword_t)SIXBIT("WCNSLS");
         if (module_service_get(MODULE_SERVICE_OCNSLS_READ) != 0U)
-                devicefs_names[DEVICEFS_DEV_OCNSLS] = (kword_t)SIXBIT("OCNSLS");
+                mfsdev_names[MONITORFS_DEV_OCNSLS] = (kword_t)SIXBIT("OCNSLS");
         if (module_service_get(MODULE_SERVICE_DTC_READ_BLOCK) != 0U &&
             module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK) != 0U)
-                devicefs_names[DEVICEFS_DEV_DTC0] = (kword_t)SIXBIT("DTC0  ");
+                mfsdev_names[MONITORFS_DEV_DTC0] = (kword_t)SIXBIT("DTC0  ");
         if (module_service_get(MODULE_SERVICE_MTC) != 0U)
-                devicefs_names[DEVICEFS_DEV_MTC0] = (kword_t)SIXBIT("MTC0  ");
+                mfsdev_names[MONITORFS_DEV_MTC0] = (kword_t)SIXBIT("MTC0  ");
         if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) != 0U &&
             module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U)
-                devicefs_names[DEVICEFS_DEV_DSK0] = (kword_t)SIXBIT("DSK0  ");
+                mfsdev_names[MONITORFS_DEV_DSK0] = (kword_t)SIXBIT("DSK0  ");
         if (module_service_get(MODULE_SERVICE_SLV_HANDLER) != 0U)
-                devicefs_names[DEVICEFS_DEV_SLV0] = (kword_t)SIXBIT("SLV0  ");
+                mfsdev_names[MONITORFS_DEV_SLV0] = (kword_t)SIXBIT("SLV0  ");
         if (module_service_get(MODULE_SERVICE_D6FS) != 0U)
-                devicefs_names[DEVICEFS_DEV_D6SET0] = (kword_t)SIXBIT("D6SET0");
+                mfsdev_names[MONITORFS_DEV_D6SET0] = (kword_t)SIXBIT("D6SET0");
         if (module_service_get(MODULE_SERVICE_DRM_READ_BLOCK) != 0U &&
             module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK) != 0U)
-                devicefs_names[DEVICEFS_DEV_DRM0] = (kword_t)SIXBIT("DRM0  ");
+                mfsdev_names[MONITORFS_DEV_DRM0] = (kword_t)SIXBIT("DRM0  ");
 }
 
 void

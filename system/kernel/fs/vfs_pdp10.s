@@ -13,8 +13,8 @@
         .globl  vfs_mount_target
         .globl  vfs_mount_root
         .globl  vfs_namespace_root
-        .globl  devicefs_lookup
-        .globl  procfs_lookup
+        .globl  mfsdev_lookup
+        .globl  mfsproc_lookup
         .globl  pipe_fifo_mount_busy
 
 ; int vfs_lookup(dir, name, nodep)
@@ -27,12 +27,12 @@ vfs_lookup:
         move    4,monitorfs_names+7    ; /MONITOR vnode
         came    1,4
         jrst    vfs_lookup_provider
-        movei   4,monitorfs_names+010  ; PROC, DOMAIN, DEVICES
+        movei   4,monitorfs_names+014  ; PROCESSES, DOMAINS, DEVICES
         movei   0,3
         jrst    vfs_lookup_builtin_start
 vfs_lookup_root_names:
-        movei   4,monitorfs_names      ; DEV, MONITOR
-        movei   0,2
+        movei   4,monitorfs_names      ; DEV, MONITOR, PROC alias
+        movei   0,3
 vfs_lookup_builtin_start:
         move    5,(2)                  ; name chars
 vfs_lookup_builtin_loop:
@@ -58,15 +58,15 @@ vfs_lookup_provider:
         cain    7,2
         jrst    vfs_lookup_device
         cain    7,3
-        jrst    vfs_lookup_procfs
+        jrst    vfs_lookup_monitor_process
         movei   6,1                    ; FS_MRES_OP_LOOKUP
         pushj   17,fs_provider_reg_call
         jrst    vfs_lookup_return
 vfs_lookup_device:
-        pushj   17,devicefs_lookup
+        pushj   17,mfsdev_lookup
         jrst    vfs_lookup_return
-vfs_lookup_procfs:
-        pushj   17,procfs_lookup
+vfs_lookup_monitor_process:
+        pushj   17,mfsproc_lookup
 vfs_lookup_return:
         jumpn   1,vfs_lookup_pop
         move    5,(17)                 ; output pointer
@@ -103,7 +103,7 @@ vfs_readdir:
         jrst    pdp10_ret_zero
         move    4,2
         lsh     4,2
-        addi    4,monitorfs_names+010
+        addi    4,monitorfs_names+014
         jrst    vfs_readdir_table
 vfs_readdir_general:
         push    17,1                   ; dir
@@ -190,7 +190,7 @@ vfs_parent_device:
         jrst    vfs_parent_monitor
         caie    4,3                    ; state-view device directory
         jrst    pdp10_ret_neg1
-        move    4,monitorfs_names+023  ; /MONITOR/DEVICES
+        move    4,monitorfs_names+027  ; /MONITOR/DEVICES
         jrst    vfs_parent_store
 vfs_parent_monitor:
         move    4,monitorfs_names+7    ; /MONITOR
@@ -202,7 +202,7 @@ vfs_parent_proc:
         jrst    vfs_parent_monitor
         caie    4,2                    ; process/domain ID directory
         jrst    pdp10_ret_neg1
-        movsi   4,030001               ; /MONITOR/PROC
+        movsi   4,030001               ; /MONITOR/PROCESSES
         trne    1,0400000
         tro     4,0400000              ; /MONITOR/DOMAIN
 vfs_parent_store:
@@ -234,7 +234,7 @@ vfs_parent_mount_check:
 ; MonitorFS directories use this same component-name path as mounted providers,
 ; so getcwd needs no synthetic absolute-path formatter.
         .globl  vfs_parent_name
-        .globl  devicefs_names
+        .globl  mfsdev_names
 vfs_parent_name:
         jumpe   2,pdp10_ret_neg1
         jumpe   3,pdp10_ret_neg1
@@ -281,14 +281,15 @@ monitorfs_parent_name:
         jrst    monitorfs_parent_name_fail
         hrrz    1,6
         andi    1,0377
-        pushj   17,procfs_format_slot
+        pushj   17,mfsproc_format_slot
+        move    7,(17)                 ; formatter uses AC7
         movem   1,(7)
         movem   2,1(7)
         jrst    monitorfs_parent_name_done
 monitorfs_name_proc_domain:
-        movei   4,monitorfs_names+010   ; PROC record
+        movei   4,monitorfs_names+014   ; PROCESSES record
         trne    6,0400000
-        addi    4,4                    ; DOMAIN record
+        addi    4,4                    ; DOMAINS record
         jrst    monitorfs_name_record
 monitorfs_name_monitor:
         movei   4,monitorfs_names+4    ; MONITOR record
@@ -304,10 +305,10 @@ monitorfs_parent_name_device:
         hrrz    4,6
         cail    4,023
         jrst    monitorfs_parent_name_fail
-        skipn   5,devicefs_names(4)
+        skipn   5,mfsdev_names(4)
         jrst    monitorfs_parent_name_fail
         movem   5,1(7)
-        movei   1,devicefs_names(4)
+        movei   1,mfsdev_names(4)
         movei   2,6
         pushj   17,vfs_sixbit_name_chars
         movem   1,(7)
@@ -316,7 +317,7 @@ monitorfs_name_dev:
         movei   4,monitorfs_names
         jrst    monitorfs_name_record
 monitorfs_name_devices:
-        movei   4,monitorfs_names+020
+        movei   4,monitorfs_names+024
 monitorfs_name_record:
         move    5,(4)
         movem   5,(7)
@@ -558,18 +559,18 @@ vfs_name_chars_next:
 ; the dynamic provider.  Tail-calling the resident register bridge avoids an
 ; executive programmed-operator trap while retaining the compact request-free
 ; ABI and the movable-provider indirection.
-        .globl  devicefs_readdir
-        .globl  procfs_readdir
-        .globl  devicefs_stat
-        .globl  procfs_stat
+        .globl  mfsdev_readdir
+        .globl  mfsproc_readdir
+        .globl  mfsdev_stat
+        .globl  mfsproc_stat
 
         .globl  vfs_readdir_raw
 vfs_readdir_raw:
         ldb     7,[POINT 6,1,5]
         cain    7,2
-        jrst    devicefs_readdir
+        jrst    mfsdev_readdir
         cain    7,3
-        jrst    procfs_readdir
+        jrst    mfsproc_readdir
         movei   6,2                    ; FS_MRES_OP_READDIR
         jrst    fs_provider_reg_call
 
@@ -578,11 +579,12 @@ vfs_stat:
         ; Providers without persistent ownership are root-owned by default.
         setzm   4(2)
         setzm   5(2)
+        setzm   6(2)                    ; mtime unknown unless provider supplies it
         ldb     7,[POINT 6,1,5]
         cain    7,2
-        jrst    devicefs_stat
+        jrst    mfsdev_stat
         cain    7,3
-        jrst    procfs_stat
+        jrst    mfsproc_stat
         movei   6,3                    ; FS_MRES_OP_STAT
         jrst    fs_provider_reg_call
 
@@ -623,14 +625,49 @@ vfs_mutate2_ro:
         sub     17,[2,,2]
         jrst    pdp10_ret_neg1
 
-        .globl  domainfs_read_words
+; D6FS reuses its CHMOD provider operation as a compact private setattr
+; channel.  Other providers never see these command values.
+; AC2 command 0100000 = CHOWN, AC3 = uid,,gid.
+; AC2 command 0100001 = UTIME, AC3 = TIME36.
+        .globl  vfs_chown
+        .globl  vfs_utime
+vfs_chown:
+        move    4,2
+        lsh     4,022                  ; uid to LH (18 bits)
+        andi    3,0777777
+        ior     3,4
+        movei   2,0100000
+        jrst    vfs_d6fs_setattr
+vfs_utime:
+        move    3,2
+        movei   2,0100001
+vfs_d6fs_setattr:
+        ldb     7,[POINT 6,1,5]
+        caie    7,6                    ; D6FS provider only
+        jrst    pdp10_ret_neg1
+        push    17,1
+        push    17,2
+        push    17,3
+        pushj   17,vfs_readonly
+        jumpn   1,vfs_d6fs_setattr_ro
+        pop     17,3
+        pop     17,2
+        pop     17,1
+        movei   6,14                   ; D6FS private setattr via CHMOD slot
+        ldb     7,[POINT 6,1,5]
+        jrst    fs_provider_reg_call
+vfs_d6fs_setattr_ro:
+        sub     17,[3,,3]
+        jrst    pdp10_ret_neg1
+
+        .globl  mfsdom_read_words
         .globl  vfs_read_words
 vfs_read_words:
         ldb     7,[POINT 6,1,5]
         caie    7,3
         jrst    vfs_read_words_provider
         trne    1,0400000
-        jrst    domainfs_read_words
+        jrst    mfsdom_read_words
         jrst    pdp10_ret_neg1
 vfs_read_words_provider:
         movei   6,15                   ; FS_MRES_OP_READ_WORDS
@@ -677,8 +714,8 @@ fs_block_workspace:
 ; Character I/O is deliberately handwritten.  The C versions need large
 ; callee-save frames around the short stat/read/write sequence.  These leaf
 ; wrappers use only caller-scratch ACs and ordinary PDP-6 stack operations.
-        .globl  procfs_readchar
-        .globl  devicefs_readchar
+        .globl  mfsproc_readchar
+        .globl  mfsdev_readchar
 
 ; int vfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
         .globl  vfs_readchar
@@ -686,34 +723,34 @@ vfs_readchar:
         jumpe   3,pdp10_ret_neg1
         ldb     4,[POINT 6,1,5]
         cain    4,3
-        jrst    procfs_readchar
+        jrst    mfsproc_readchar
         cain    4,2
-        jrst    devicefs_readchar
+        jrst    mfsdev_readchar
 
-        add     17,[011,,011]
-        movem   1,-010(17)             ; node
-        movem   2,-7(17)               ; character offset
-        movem   3,-6(17)               ; result pointer
-        movei   2,-5(17)               ; six-word struct vfs_stat
+        add     17,[012,,012]
+        movem   1,-011(17)             ; node
+        movem   2,-010(17)             ; character offset
+        movem   3,-7(17)               ; result pointer
+        movei   2,-6(17)               ; seven-word struct vfs_stat
         pushj   17,vfs_stat
         jumpn   1,vfs_readchar_fail
-        move    1,-5(17)               ; st.type
+        move    1,-6(17)               ; st.type
         caie    1,2                    ; VFS_TYPE_REG
         jrst    vfs_readchar_fail
 
         ; Compare unsigned character offset with st.size_chars.
-        move    2,-7(17)
+        move    2,-010(17)
         tlc     2,0400000
-        move    3,-3(17)
+        move    3,-4(17)
         tlc     3,0400000
         caml    2,3
         jrst    vfs_readchar_eof
 
-        move    2,-7(17)
+        move    2,-010(17)
         move    4,2
         andi    4,3                    ; quarter-word number
         lsh     2,-2                   ; word offset
-        move    1,-010(17)
+        move    1,-011(17)
         movei   3,(17)                 ; one-word buffer
         movei   5,4                    ; preserve bi across call in stack
         movem   4,-1(17)
@@ -729,7 +766,7 @@ vfs_readchar:
         move    6,(17)
         lsh     6,-033(5)              ; right by 27 - 9*bi
         andi    6,0777
-        move    3,-6(17)
+        move    3,-7(17)
         movem   6,(3)
         movei   1,1
         jrst    vfs_readchar_done
@@ -739,50 +776,50 @@ vfs_readchar_eof:
 vfs_readchar_fail:
         seto    1,
 vfs_readchar_done:
-        sub     17,[011,,011]
+        sub     17,[012,,012]
         popj    17,
 
 ; int vfs_writechar(vnode_t node, kword_t off, unsigned int ch)
         .globl  vfs_writechar
 vfs_writechar:
         ldb     4,[POINT 6,1,5]
-        caie    4,2                    ; DEVICEFS_PROVIDER
+        caie    4,2                    ; MonitorFS device view_PROVIDER
         jrst    vfs_writechar_regular
         ldb     4,[POINT 6,1,17]       ; VFS local kind
-        cain    4,2                    ; DEVICEFS_KIND_DEVICE
+        cain    4,2                    ; MonitorFS device view_KIND_DEVICE
         jrst    pdp10_ret_busy          ; VFS_DEVICE_IO = -3
 
 vfs_writechar_regular:
-        add     17,[011,,011]
-        movem   1,-010(17)             ; node
-        movem   2,-7(17)               ; character offset
-        movem   3,-6(17)               ; character
-        movei   2,-5(17)               ; six-word struct vfs_stat
+        add     17,[012,,012]
+        movem   1,-011(17)             ; node
+        movem   2,-010(17)             ; character offset
+        movem   3,-7(17)               ; character
+        movei   2,-6(17)               ; seven-word struct vfs_stat
         pushj   17,vfs_stat
         jumpn   1,vfs_writechar_fail
-        move    1,-5(17)
+        move    1,-6(17)
         caie    1,2                    ; VFS_TYPE_REG
         jrst    vfs_writechar_fail
 
-        move    2,-7(17)
+        move    2,-010(17)
         addi    2,1
         movem   2,(17)                 ; end_chars; later fifth argument
         addi    2,3
         lsh     2,-2                   ; ceil(end_chars / 4)
-        move    3,-2(17)               ; st.size_words
+        move    3,-3(17)               ; st.size_words
         camle   2,3
         jrst    vfs_writechar_grow
 vfs_writechar_after_grow:
-        move    2,-7(17)
+        move    2,-010(17)
         lsh     2,-2                   ; word offset
         movem   2,-1(17)
         setzm   -4(17)                 ; read beyond EOF as zero word
-        move    1,-010(17)
+        move    1,-011(17)
         movei   3,-4(17)
         movei   4,1
         pushj   17,vfs_read_words
 
-        move    3,-7(17)
+        move    3,-010(17)
         andi    3,3                    ; quarter-word number
         move    4,3
         lsh     4,3
@@ -792,13 +829,13 @@ vfs_writechar_after_grow:
         movei   4,0777
         lsh     4,0(5)
         andca   4,-4(17)
-        move    3,-6(17)
+        move    3,-7(17)
         andi    3,0777
         lsh     3,0(5)
         ior     4,3
         movem   4,-4(17)
 
-        move    1,-010(17)
+        move    1,-011(17)
         move    2,-1(17)
         movei   3,-4(17)
         movei   4,1
@@ -809,7 +846,7 @@ vfs_writechar_after_grow:
         jrst    vfs_writechar_done
 
 vfs_writechar_grow:
-        move    1,-010(17)
+        move    1,-011(17)
         move    3,(17)                  ; end_chars
         pushj   17,vfs_truncate
         jumpn   1,vfs_writechar_fail
@@ -818,7 +855,7 @@ vfs_writechar_grow:
 vfs_writechar_fail:
         seto    1,
 vfs_writechar_done:
-        sub     17,[011,,011]
+        sub     17,[012,,012]
         popj    17,
 
 ; Compact mount policy.  The four-entry namespace table is a bounded PDP-6
@@ -871,22 +908,22 @@ vfs_mount_check_target:
         push    17,2
         push    17,3
         push    17,4
-        add     17,[6,,6]               ; six-word struct vfs_stat
-        movei   2,-5(17)
-        move    1,-011(17)
+        add     17,[7,,7]               ; seven-word struct vfs_stat
+        movei   2,-6(17)
+        move    1,-012(17)
         pushj   17,vfs_stat
         jumpn   1,vfs_mount_stat_fail
-        move    6,-5(17)                ; st.type
-        move    1,-011(17)
-        move    2,-010(17)
-        move    3,-7(17)
-        move    4,-6(17)
-        sub     17,[012,,012]
+        move    6,-6(17)                ; st.type
+        move    1,-012(17)
+        move    2,-011(17)
+        move    3,-010(17)
+        move    4,-7(17)
+        sub     17,[013,,013]
         caie    6,1                     ; VFS_TYPE_DIR
         jrst    pdp10_ret_neg1
         jrst    vfs_mount_find
 vfs_mount_stat_fail:
-        sub     17,[012,,012]
+        sub     17,[013,,013]
         jrst    pdp10_ret_neg1
 
 vfs_mount_find:
@@ -991,6 +1028,7 @@ vfs_unmount_fail:
 ; Four words per static MonitorFS namespace component: length, two SIXBIT
 ; words, and canonical vnode.  Lookup, readdir, and getcwd share this table.
 monitorfs_names:
+        ; root namespace: DEV, MONITOR, PROC(alias)
         .word   3
         .word   0444566000000
         .word   0
@@ -1002,11 +1040,16 @@ monitorfs_names:
         .word   4
         .word   0606257430000
         .word   0
-        .word   030001000000           ; PROC
-        .word   6
+        .word   030001000000           ; PROC alias == PROCESSES
+        ; /MONITOR children
+        .word   9
+        .word   0606257434563
+        .word   0634563000000
+        .word   030001000000           ; PROCESSES
+        .word   7
         .word   0445755415156
-        .word   0
-        .word   030001400000           ; DOMAIN
+        .word   0630000000000
+        .word   030001400000           ; DOMAINS
         .word   7
         .word   0444566514345
         .word   0630000000000

@@ -5,11 +5,11 @@
 ; disk controller is entirely separate in dsk_io.s.
 
         .text
-        .globl devicefs_io_in
-        .globl devicefs_io_out
-        .globl devicefs_storage_errors
-        .globl devicefs_mtc_words_read
-        .globl devicefs_mtc_words_written
+        .globl mfsdev_io_in
+        .globl mfsdev_io_out
+        .globl mfsdev_storage_errors
+        .globl mfsdev_mtc_words_read
+        .globl mfsdev_mtc_words_written
         .globl tape_pi_handler
         .globl tape_dct_handler
         .globl dtc_read_block
@@ -76,11 +76,11 @@ tape_pi_done:
         jrst tape_pi_wake_cleanup
 
 tape_pi_error:
-        aos devicefs_storage_errors+1   ; MTC0
+        aos mfsdev_storage_errors+1   ; MTC0
         jrst tape_pi_error_common
 
 tape_pi_dtc_block_error:
-        aos devicefs_storage_errors     ; DTC0
+        aos mfsdev_storage_errors     ; DTC0
         move 1,dtc_request_unit
         setzm dtc_motion(1)
 tape_pi_error_common:
@@ -359,7 +359,7 @@ dtc_block_start_read:
         jrst tape_transfer_wait
 
 dtc_search_fail:
-        aos devicefs_storage_errors     ; DTC0 search failure
+        aos mfsdev_storage_errors     ; DTC0 search failure
         setzm dtc_motion(1)
         ; tape_ioerr performs the authoritative DTC/DCT owner reset.
         jrst tape_ioerr
@@ -413,13 +413,13 @@ mtc_control_wait:
         jrst mtc_control_wait_more
         trnn 2,0400520
         jrst mtc_control_ok
-        aos devicefs_storage_errors+1   ; MTC0 control error
+        aos mfsdev_storage_errors+1   ; MTC0 control error
         jrst tape_ioerr
 mtc_control_wait_more:
         skipe storage_count
         jrst mtc_control_wait
 mtc_control_timeout:
-        aos devicefs_storage_errors+1   ; MTC0 control timeout
+        aos mfsdev_storage_errors+1   ; MTC0 control timeout
         jrst tape_ioerr
 mtc_control_ok:
         setzm storage_count
@@ -454,25 +454,25 @@ tape_wait_done:
         move 2,storage_count
         caie 1,2                        ; MTC read
         jrst tape_account_mtc_write_check
-        addm 2,devicefs_mtc_words_read
+        addm 2,mfsdev_mtc_words_read
         jrst tape_account_done
 
 tape_account_mtc_write_check:
         caie 1,5                        ; MTC write
         jrst tape_account_done
-        addm 2,devicefs_mtc_words_written
+        addm 2,mfsdev_mtc_words_written
 
 tape_account_done:
         setzm storage_state
         jrst pdp10_ret_ok
 
 tape_account_table:
-        .word devicefs_io_in+014
-        .word devicefs_io_in+015
-        .word devicefs_io_in+016
-        .word devicefs_io_out+016
-        .word devicefs_io_out+015
-        .word devicefs_io_out+014
+        .word mfsdev_io_in+014
+        .word mfsdev_io_in+015
+        .word mfsdev_io_in+016
+        .word mfsdev_io_out+016
+        .word mfsdev_io_out+015
+        .word mfsdev_io_out+014
 
         .bss
 dtc_request_unit: .block 1

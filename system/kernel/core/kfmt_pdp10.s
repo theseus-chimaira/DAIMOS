@@ -4,7 +4,7 @@
         .globl  pdp10_ret_one
         .globl  pdp10_ret_neg1
 
-; PROCFS formats only process slots and process sizes.  Both values fit in
+; MonitorFS process view formats only process slots and process sizes.  Both values fit in
 ; an 18-bit PDP-10 halfword, so a six-decade table is sufficient here.
 kfmt_u18_pow10:
         .long   0303240                 ; 100000 decimal

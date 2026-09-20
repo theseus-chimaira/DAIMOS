@@ -4,9 +4,9 @@
 ; contains only disk controller policy, queueing, and transfer leaf
 ; handlers.  The shared router is the sole generic PI3/PI5 handler.
 
-        .globl devicefs_io_in
-        .globl devicefs_io_out
-        .globl devicefs_storage_errors
+        .globl mfsdev_io_in
+        .globl mfsdev_io_out
+        .globl mfsdev_storage_errors
         .text
         .globl dsk_pi_handler
         .globl dsk_dct_handler
@@ -57,10 +57,10 @@ dsk_pi_idle:
         aos 1,2(2)
         move 1,1(2)
         jumpn 1,dsk_pi_account_write
-        movei 1,devicefs_io_in+016
+        movei 1,mfsdev_io_in+016
         jrst dsk_pi_account_done
 dsk_pi_account_write:
-        movei 1,devicefs_io_out+016
+        movei 1,mfsdev_io_out+016
 dsk_pi_account_done:
         aos (1)                         ; completed sector request
         hrrz 1,dsk_active_request
@@ -112,7 +112,7 @@ dsk_dct_read_done:
         jrst pdp10_pi_dispatch_done
 
 dsk_fail_runtime:
-        aos devicefs_storage_errors+2   ; DSK0
+        aos mfsdev_storage_errors+2   ; DSK0
         hrrz 1,dsk_active_request
         setom 2(1)
         setzm storage_state
@@ -318,8 +318,8 @@ dsk_wait_done:
         jrst pdp10_ret_ok
 
 dsk_account_table:
-        .word devicefs_io_in+016
-        .word devicefs_io_out+016
+        .word mfsdev_io_in+016
+        .word mfsdev_io_out+016
 
         .bss
 dsk_active_request: .block 1

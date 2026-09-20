@@ -30,6 +30,10 @@
         .globl  exec_replace_current
         .globl  proc_exec_enter
         .globl  pclk_time36
+        .globl  vfs_utime
+        .globl  vfs_chown
+        .globl  file_rmdir
+        .globl  file_check_root
 exec_native_syscall:
         ; Recover the monitor-UUO opcode from the trapped instruction.
         ; AC0 cannot be an index register on the PDP-6: index field zero
@@ -484,6 +488,14 @@ native_sys_wait_bad:
 
 native_sys_extctl:
         hrrz    1,1
+        cain    1,032                  ; SYS_EXT_SEEK
+        jrst    native_sys_seek
+        cain    1,033                  ; SYS_EXT_CHOWN
+        jrst    native_sys_chown
+        cain    1,034                  ; SYS_EXT_RMDIR
+        jrst    native_sys_rmdir
+        cain    1,035                  ; SYS_EXT_UTIME
+        jrst    native_sys_utime
         cain    1,020                  ; SYS_EXT_PIPE
         jrst    pipe_create
 native_sys_ext_nonpipe:
@@ -533,6 +545,53 @@ native_sys_dup2:
         hrrz    1,2                    ; old fd
         hrrz    2,3                    ; replacement fd
         jrst    file_dup2
+
+native_sys_seek:
+        hrrz    1,2                    ; fd
+        move    2,3                    ; signed character offset
+        hrrz    3,4                    ; SYS_SEEK_*
+        jrst    file_seek
+
+native_sys_chown:
+        push    17,2                    ; path
+        push    17,3                    ; uid
+        push    17,4                    ; gid
+        pushj   17,file_check_root
+        jumpn   1,native_sys_chown_fail
+        move    1,-2(17)               ; path
+        pushj   17,native_sys_lookup_user_path
+        jumpe   1,native_sys_chown_fail
+        move    2,-1(17)               ; uid
+        move    3,(17)                 ; gid
+        sub     17,[3,,3]
+        jrst    vfs_chown
+native_sys_chown_fail:
+        sub     17,[3,,3]
+        jrst    pdp10_ret_neg1
+
+native_sys_rmdir:
+        move    1,2
+        pushj   17,native_sys_map_one
+        jumpe   1,pdp10_ret_neg1
+        pushj   17,file_rmdir
+        jrst    native_sys_mapped_return
+
+native_sys_utime:
+        push    17,3                    ; TIME36
+        move    1,2                    ; path
+        pushj   17,native_sys_lookup_user_path
+        jumpe   1,native_sys_utime_fail
+        push    17,1                    ; vnode
+        pushj   17,file_check_owner
+        jumpn   1,native_sys_utime_owner_fail
+        pop     17,1
+        pop     17,2                    ; TIME36
+        jrst    vfs_utime
+native_sys_utime_owner_fail:
+        pop     17,0
+native_sys_utime_fail:
+        sub     17,[1,,1]
+        jrst    pdp10_ret_neg1
 
 native_sys_procctl:
         hrrz    2,2

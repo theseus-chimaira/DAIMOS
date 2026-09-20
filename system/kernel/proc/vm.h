@@ -14,7 +14,7 @@
  *
  * PDP-6 stores the contiguous physical relocation base in the private RH.
  * Paged machines may instead store a page-map/address-space handle there.
- * Generic process, exec, scheduler, procfs, and physical-MM code must not
+ * Generic process, exec, scheduler, MonitorFS process view, and physical-MM code must not
  * interpret the private half.
  */
 #define VM_SPACE_WORDS(p) \

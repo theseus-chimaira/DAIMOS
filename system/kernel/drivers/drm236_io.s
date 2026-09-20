@@ -11,9 +11,9 @@
         .globl  drm236_write_block_service
         .globl  drm236_active_request
         .globl  drm236_idle_event
-        .globl  devicefs_drm_reads
-        .globl  devicefs_drm_writes
-        .globl  devicefs_storage_errors
+        .globl  mfsdev_drm_reads
+        .globl  mfsdev_drm_writes
+        .globl  mfsdev_storage_errors
         .globl  pdp10_pi_dispatch_done
         .globl  pdp10_ret_ok
         .globl  pdp10_ret_neg1
@@ -179,16 +179,16 @@ drm236_poll_error:
         cono    0400,DRM_DR_CLEAR_DESELECT
         jrst    drm236_account_error
 
-; DRM0 occupies DEVICEFS id 021.  The dense counter slots also host the
+; DRM0 occupies MonitorFS device view id 021.  The dense counter slots also host the
 ; runtime ownership words in otherwise-unused ids 017/020, so extending the
 ; arrays through DRM0 costs no additional fixed KCORE.
 drm236_account_success:
         trne    4,010                   ; READ 0230 has bit 010, WRITE 0220 does not
-        aos     devicefs_drm_reads
+        aos     mfsdev_drm_reads
         trnn    4,010
-        aos     devicefs_drm_writes
+        aos     mfsdev_drm_writes
         jrst    pdp10_ret_ok
 
 drm236_account_error:
-        aos     devicefs_storage_errors+5
+        aos     mfsdev_storage_errors+5
         jrst    pdp10_ret_neg1

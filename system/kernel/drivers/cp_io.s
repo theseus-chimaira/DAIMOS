@@ -1,5 +1,5 @@
 ; cp_io.s -- resident PDP-6 card-punch driver.
-        .globl devicefs_io_out
+        .globl mfsdev_io_out
         .text
         .globl cp_pi_handler
         .globl cp_punch_card
@@ -25,7 +25,7 @@ cp_pi_data:
         move 1,(1)
         andi 1,07777
         datao 0110,1
-        aos devicefs_io_out+5
+        aos mfsdev_io_out+5
         setom cp_iowd
         cono 0110,010207
         jrst pdp10_pi_handler_return
@@ -34,7 +34,7 @@ cp_pi_more:
         move 1,(1)
         andi 1,07777
         datao 0110,1
-        aos devicefs_io_out+5
+        aos mfsdev_io_out+5
         jrst pdp10_pi_handler_return
 
 cp_punch_card:

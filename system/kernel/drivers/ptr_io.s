@@ -1,7 +1,7 @@
 ; ptr_io.s -- resident PDP-6 paper-tape reader driver.
 ; The PI7 leaf is local so a PTR-only machine does not load the other IO7
 ; devices.  Interrupt handlers preserve AC2/AC3 as required by PI fanout.
-        .globl devicefs_io_in
+        .globl mfsdev_io_in
         .text
         .globl ptr_pi_handler
         .globl ptr_getchar
@@ -16,7 +16,7 @@ ptr_pi_handler:
         skipn ptr_state
         jrst ptr_pi_prefetch
         datai 0104,ptr_state
-        aos devicefs_io_in+2
+        aos mfsdev_io_in+2
         aos ptr_state
         cono 0104,0
         jrst pdp10_pi_handler_return
@@ -45,7 +45,7 @@ ptr_get_wait:
         jrst pdp10_ret_neg2
 ptr_get_hardware:
         datai 0104,3
-        aos devicefs_io_in+2
+        aos mfsdev_io_in+2
         cono 0104,0
         andi 3,0377
         movem 3,(4)

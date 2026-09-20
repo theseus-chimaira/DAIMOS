@@ -3,7 +3,7 @@
 #include "mm.h"
 #include "vm.h"
 #include "proc_swap.h"
-#include "procfs.h"
+#include "monitorfs.h"
 #include "syscall.h"
 #include "tty.h"
 

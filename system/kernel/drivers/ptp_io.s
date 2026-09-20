@@ -1,5 +1,5 @@
 ; ptp_io.s -- resident PDP-6 paper-tape punch driver.
-        .globl devicefs_io_out
+        .globl mfsdev_io_out
         .text
         .globl ptp_pi_handler
         .globl ptp_putchar
@@ -27,7 +27,7 @@ ptp_putchar:
         cono 0100,0007
         andi 1,0377
         datao 0100,1
-        aos devicefs_io_out+3
+        aos mfsdev_io_out+3
         movei 2,0200000
 ptp_putchar_wait:
         skipn ptp_state

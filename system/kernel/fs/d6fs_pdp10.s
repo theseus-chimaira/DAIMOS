@@ -1038,6 +1038,8 @@ d6fs_provider_stat:
         movem   1,4(2)                   ; st->uid
         move    1,-3(17)                 ; info.gid
         movem   1,5(2)                   ; st->gid
+        move    1,-1(17)                 ; info.mtime
+        movem   1,6(2)                   ; st->mtime
         move    4,-2(17)                 ; info.size_words
         movem   4,3(2)                   ; st->size_words
         jumpe   4,d6fs_provider_stat_zero_chars
@@ -1147,36 +1149,57 @@ d6fs_provider_unmount_done:
         pushj   17,d6fs_cache_reclaim    ; discard all clean dynamic cache
         jrst    pdp10_ret_zero
 
+        .globl  pclk_time36
+
 ; int d6fs_provider_chmod(vnode_t node, unsigned int mode)
-; Store the two live arguments beside the FCB/info scratch instead of saving
-; callee-saved registers solely to carry them across validation.
+; The VFS also uses this provider slot as a private compact setattr channel:
+;   AC2 0100000, AC3 uid,,gid  -> CHOWN
+;   AC2 0100001, AC3 TIME36    -> UTIME
+; Ordinary chmod keeps AC2 <= 07777.  One implementation avoids extra MRES
+; vector entries while keeping the external VFS operations distinct.
         .globl  d6fs_provider_chmod
 d6fs_provider_chmod:
-        add     17,[034,,034]            ; FCB + info + node + mode
-        movem   1,-1(17)                 ; node
-        movem   2,(17)                   ; requested mode
-        movei   2,-033(17)               ; 020-word FCB scratch
-        movei   3,-013(17)               ; 012-word decoded info
+        add     17,[035,,035]            ; FCB + info + node/cmd/value
+        movem   1,-2(17)                 ; node
+        movem   2,-1(17)                 ; mode or private command
+        movem   3,(17)                   ; private value
+        movei   2,-034(17)               ; 020-word FCB scratch
+        movei   3,-014(17)               ; 012-word decoded info
         pushj   17,d6fs_provider_fcb
         jumpn   1,d6fs_provider_chmod_fail
-        skipn   -013(17)                 ; FREE FCB
+        skipn   -014(17)                 ; FREE FCB
         jrst    d6fs_provider_chmod_fail
-        move    4,-012(17)               ; info.flags
+        move    4,-013(17)               ; info.flags
         trne    4,020                     ; D6FS_FLAG_IMMUTABLE
         jrst    d6fs_provider_chmod_fail
-        move    4,-033(17)               ; FCB META
-        move    5,(17)
+        move    5,-1(17)
+        cain    5,0100000
+        jrst    d6fs_provider_chown_store
+        cain    5,0100001
+        jrst    d6fs_provider_utime_store
+        caile   5,07777
+        jrst    d6fs_provider_chmod_fail
+        move    4,-034(17)               ; FCB META
         dpb     5,[POINT 12,4,23]        ; replace mode bits 12..23
-        movem   4,-033(17)
+        movem   4,-034(17)
+        jrst    d6fs_provider_attr_commit
+d6fs_provider_chown_store:
+        move    4,(17)
+        movem   4,-033(17)               ; FCB OWNER
+        jrst    d6fs_provider_attr_commit
+d6fs_provider_utime_store:
+        move    4,(17)
+        movem   4,-031(17)               ; FCB MTIME (word 3)
+d6fs_provider_attr_commit:
         movei   1,d6fs_provider_reader
-        hrrz    2,-1(17)
-        movei   3,-033(17)
+        hrrz    2,-2(17)
+        movei   3,-034(17)
         pushj   17,d6fs_reader_put_fcb
         jrst    d6fs_provider_chmod_done
 d6fs_provider_chmod_fail:
         seto    1,
 d6fs_provider_chmod_done:
-        sub     17,[034,,034]
+        sub     17,[035,,035]
         popj    17,
 
 ; int d6fs_provider_truncate(vnode_t node, unsigned int words,
@@ -1212,6 +1235,13 @@ d6fs_provider_truncate_type_ok:
         movei   3,-014(17)
         move    4,-1(17)
         pushj   17,d6fs_provider_resize_fcb
+        jumpn   1,d6fs_provider_truncate_fail
+        pushj   17,pclk_time36
+        movem   1,-031(17)               ; FCB MTIME
+        movei   1,d6fs_provider_reader
+        hrrz    2,-2(17)
+        movei   3,-034(17)
+        pushj   17,d6fs_reader_put_fcb
         jrst    d6fs_provider_truncate_done
 d6fs_provider_truncate_fail:
         seto    1,
@@ -1321,19 +1351,40 @@ d6fs_provider_write_words_type_ok:
 d6fs_provider_write_words_append_ok:
         move    5,-3(17)
         add     5,-1(17)                 ; need = off + nwords
-        camg    5,-7(17)                 ; resize only when need > old size
+        caml    5,-7(17)
+        jrst    d6fs_provider_write_words_extent_check
+        jrst    d6fs_provider_write_words_store
+d6fs_provider_write_words_extent_check:
+        ; A write can extend the logical character length without allocating
+        ; another word.  Compare final-word tails when NEED == old size so a
+        ; second/third/fourth character in the last word becomes visible.
+        move    1,-016(17)               ; type
+        move    2,5                      ; candidate size in words
+        move    3,(17)                   ; requested size_chars
+        pushj   17,d6fs_provider_tail
+        movem   1,(17)                   ; outgoing arg 5: candidate tail
+        move    4,-3(17)
+        add     4,-1(17)                 ; recompute need after helper call
+        camg    4,-7(17)
+        jrst    d6fs_provider_write_words_same_words
+        jrst    d6fs_provider_write_words_resize
+d6fs_provider_write_words_same_words:
+        caml    4,-7(17)                 ; NEED < old size: overwrite only
+        jrst    d6fs_provider_write_words_tail_check
+        jrst    d6fs_provider_write_words_store
+d6fs_provider_write_words_tail_check:
+        skipn   5,-013(17)               ; old tail 0 means final word is full
+        jrst    d6fs_provider_write_words_store
+        skipn   6,(17)                   ; new tail 0 extends to a full word
+        jrst    d6fs_provider_write_words_resize
+        camg    6,5                      ; extend only when new tail is larger
         jrst    d6fs_provider_write_words_store
 d6fs_provider_write_words_resize:
-        move    1,-016(17)               ; type
-        move    2,5                      ; new size in words
-        move    3,(17)                   ; size_chars
-        pushj   17,d6fs_provider_tail
-        movem   1,(17)                   ; outgoing arg 5: tail
         move    1,-4(17)                 ; node
         movei   2,-036(17)               ; FCB
         movei   3,-016(17)               ; info
         move    4,-3(17)
-        add     4,-1(17)                 ; recompute need after helper call
+        add     4,-1(17)                 ; new size in words
         pushj   17,d6fs_provider_resize_fcb
         jumpn   1,d6fs_provider_write_words_fail
 d6fs_provider_write_words_store:
@@ -1344,6 +1395,16 @@ d6fs_provider_write_words_store:
         move    3,-3(17)
         move    4,-2(17)
         pushj   17,d6fs_reader_write_words
+        jumpl   1,d6fs_provider_write_words_fail
+        movem   1,(17)                   ; preserve transferred word count
+        pushj   17,pclk_time36
+        movem   1,-033(17)               ; FCB MTIME: -036 + 3
+        movei   1,d6fs_provider_reader
+        hrrz    2,-4(17)
+        movei   3,-036(17)
+        pushj   17,d6fs_reader_put_fcb
+        jumpn   1,d6fs_provider_write_words_fail
+        move    1,(17)
         jrst    d6fs_provider_write_words_done
 d6fs_provider_write_words_fail:
         seto    1,

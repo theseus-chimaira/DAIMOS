@@ -1,5 +1,5 @@
 ; cr_io.s -- resident PDP-6 card-reader driver.
-        .globl devicefs_io_in
+        .globl mfsdev_io_in
         .text
         .globl cr_pi_handler
         .globl cr_read_card
@@ -28,7 +28,7 @@ cr_pi_more:
         movem 1,cr_iowd
 cr_pi_xfer:
         datai 0150,(1)
-        aos devicefs_io_in+4
+        aos mfsdev_io_in+4
         jrst pdp10_pi_handler_return
 
 cr_read_card:

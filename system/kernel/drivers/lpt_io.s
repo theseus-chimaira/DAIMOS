@@ -1,7 +1,7 @@
 ; lpt_io.s -- resident PDP-6 line-printer output driver.
         .text
         .globl  lpt_putchar
-        .globl  devicefs_io_out
+        .globl  mfsdev_io_out
         .globl  pdp10_ret_ok
         .globl  pdp10_ret_neg2
         .globl  pdp10_ret_neg4
@@ -39,5 +39,5 @@ lpt_putchar_wait:
         jrst    pdp10_ret_neg2
 
 lpt_putchar_done:
-        aos     devicefs_io_out+022
+        aos     mfsdev_io_out+022
         jrst    pdp10_ret_ok

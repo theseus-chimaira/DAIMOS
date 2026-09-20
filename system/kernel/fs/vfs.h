@@ -91,6 +91,7 @@ struct vfs_stat {
         kword_t size_words;
         unsigned int uid;
         unsigned int gid;
+        kword_t mtime;
 };
 
 int vfs_name_valid(const struct vfs_name *name);
@@ -126,6 +127,8 @@ int vfs_rename(vnode_t olddir, const struct vfs_name *oldname,
     vnode_t newdir, const struct vfs_name *newname);
 int vfs_truncate(vnode_t node, unsigned int words, kword_t size_chars);
 int vfs_chmod(vnode_t node, unsigned int mode);
+int vfs_chown(vnode_t node, unsigned int uid, unsigned int gid);
+int vfs_utime(vnode_t node, kword_t mtime);
 int vfs_read_words(vnode_t node, unsigned int off, kword_t *buf,
     unsigned int nwords);
 int vfs_write_words(vnode_t node, unsigned int off,

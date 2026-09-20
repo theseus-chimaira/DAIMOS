@@ -2,6 +2,13 @@
 #include "fs_mres.h"
 #include "../proc/proc.h"
 
+#ifdef __PDP10__
+extern kword_t pclk_time36(void);
+#define D6FS_NOW() pclk_time36()
+#else
+#define D6FS_NOW() 0UL
+#endif
+
 struct d6fs_reader d6fs_provider_reader;
 
 void d6fs_provider_set_extent(kword_t fcb[D6FS_FCB_WORDS],
@@ -325,6 +332,7 @@ d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
         fs_zero_words(fcb, D6FS_FCB_WORDS);
         fcb[D6FS_FCB_META] = ((kword_t)type << 33) |
             ((kword_t)(mode & 07777U) << 12);
+        fcb[D6FS_FCB_MTIME] = D6FS_NOW();
         if (proc_table != 0 && proc_current_slot != 0UL &&
             PROC_HAS_UAREA(&proc_table[(unsigned int)proc_current_slot])) {
                 struct proc *p;

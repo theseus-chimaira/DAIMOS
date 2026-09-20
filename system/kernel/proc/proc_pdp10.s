@@ -893,7 +893,7 @@ proc_control_isatty:
         jumpe   1,pdp10_ret_neg1
         move    1,(1)
         tlz     1,707070               ; strip packed FILE metadata
-        camn    1,[020002000000]       ; DEVICEFS CTY0 IO endpoint
+        camn    1,[020002000000]       ; MonitorFS device view CTY0 IO endpoint
         jrst    proc_control_tty_owned
         jrst    pdp10_ret_neg1
 

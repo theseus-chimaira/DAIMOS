@@ -4,8 +4,8 @@
 ; consoles.  Readers request one console; bytes for another console are
 ; deferred in that logical TTY's existing process-session record.
 
-        .globl devicefs_io_in
-        .globl devicefs_io_out
+        .globl mfsdev_io_in
+        .globl mfsdev_io_out
         .text
         .globl ge_pi_handler
         .globl ge_getchar
@@ -27,7 +27,7 @@ ge_pi_handler:
         skipe ge_rx_word
         jrst ge_pi_gtyi_disable
         datai 0070,1
-        aos devicefs_io_in+7
+        aos mfsdev_io_in+7
         tlo 1,4
         movem 1,ge_rx_word
         setom ge_rx_event
@@ -63,7 +63,7 @@ ge_getchar_loop:
 
 ge_getchar_hardware:
         datai 0070,2
-        aos devicefs_io_in+7
+        aos mfsdev_io_in+7
         tlo 2,4
 ge_getchar_ready:
         setzm ge_rx_word
@@ -98,7 +98,7 @@ ge_put_decoded:
         iori 1,0100
         xori 1,0177
         datao 0750,1
-        aos devicefs_io_out+7
+        aos mfsdev_io_out+7
 ge_put_decoded_wait:
         conso 0750,00100
         jrst ge_put_decoded_wait

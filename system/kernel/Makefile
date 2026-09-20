@@ -52,12 +52,11 @@ KERNEL_HEADERS = boot/kboot.h \
 	fs/d6fs.h \
 	fs/d6fs_boot.h \
 	fs/d6fs_provider.h \
-	fs/devicefs.h \
+	fs/monitorfs.h \
 	fs/dtfs.h \
 	fs/file.h \
 	fs/fs_mres.h \
 	fs/memfs.h \
-	fs/procfs.h \
 	fs/vfs.h \
 	ipc/pipe.h \
 	mm/mm.h \
@@ -120,14 +119,12 @@ KINIT_FIXED_SRCS = boot/kinit_io.s \
 KINIT_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${BUILD}/kinit_io.s ${BUILD}/module_io.s ${BUILD}/bootbanner_generated.s ${BUILD}/kinit_late_begin.s ${BUILD}/kinit_late_end.s
 
 KCORE_C_SRCS = proc/exec.c \
-	fs/devicefs.c \
-	mm/mm.c \
+		mm/mm.c \
 	modules/module_runtime.c \
 	proc/proc.c \
 	fs/file.c
 
 KCORE_C_ASM = $(BUILD)/exec.s \
-	$(BUILD)/devicefs.s \
 	$(BUILD)/mm.s \
 	$(BUILD)/module_runtime.s \
 	$(BUILD)/proc.s \
@@ -144,12 +141,9 @@ KCORE_FIXED_SRCS = core/ret_pdp10.s \
 	fs/fs_mres_pdp10.s \
 	fs/file_pdp10.s \
 	ipc/pipe_pdp10.s \
-	fs/procfs_pdp10.s \
-	fs/domainfs_pdp10.s \
-	proc/proc_pdp10.s \
+		proc/proc_pdp10.s \
 	proc/proc_run_pdp10.s \
 	drivers/device_state_pdp10.s \
-	fs/devicefs_pdp10.s \
 	proc/syscall_info_pdp10.s \
 	drivers/pclk_pdp10.s \
 	drivers/lpt_io.s \
@@ -160,7 +154,6 @@ KCORE_FIXED_SRCS = core/ret_pdp10.s \
 	core/kcore_end.s
 
 KCORE_FIXED_ASM = $(BUILD)/exec.s \
-	$(BUILD)/devicefs.s \
 	$(BUILD)/mm.s \
 	$(BUILD)/module_runtime.s \
 	$(BUILD)/proc.s \
@@ -175,12 +168,10 @@ KCORE_FIXED_ASM = $(BUILD)/exec.s \
 	$(BUILD)/fs_mres_pdp10.s \
 	$(BUILD)/file_pdp10.s \
 	$(BUILD)/pipe_pdp10.s \
-	$(BUILD)/procfs_pdp10.s \
-	$(BUILD)/domainfs_pdp10.s \
+	$(BUILD)/monitorfs_pdp10.s \
 	$(BUILD)/proc_pdp10.s \
 	$(BUILD)/proc_run_pdp10.s \
 	$(BUILD)/device_state_pdp10.s \
-	$(BUILD)/devicefs_pdp10.s \
 	$(BUILD)/syscall_info_pdp10.s \
 	$(BUILD)/pclk_pdp10.s \
 	$(BUILD)/lpt_io.s \
@@ -313,10 +304,7 @@ COPY_ASM_SRCS = core/ret_pdp10.s \
 	fs/fs_mres_pdp10.s \
 	fs/file_pdp10.s \
 	ipc/pipe_pdp10.s \
-	fs/procfs_pdp10.s \
-	fs/domainfs_pdp10.s \
-	drivers/device_state_pdp10.s \
-	fs/devicefs_pdp10.s \
+		drivers/device_state_pdp10.s \
 	proc/syscall_info_pdp10.s \
 	drivers/pclk_pdp10.s \
 	drivers/lpt_io.s \
@@ -357,10 +345,8 @@ COPY_ASM_TARGETS = $(BUILD)/ret_pdp10.s \
 	$(BUILD)/fs_mres_pdp10.s \
 	$(BUILD)/file_pdp10.s \
 	$(BUILD)/pipe_pdp10.s \
-	$(BUILD)/procfs_pdp10.s \
-	$(BUILD)/domainfs_pdp10.s \
+	$(BUILD)/monitorfs_pdp10.s \
 	$(BUILD)/device_state_pdp10.s \
-	$(BUILD)/devicefs_pdp10.s \
 	$(BUILD)/syscall_info_pdp10.s \
 	$(BUILD)/pclk_pdp10.s \
 	$(BUILD)/lpt_io.s \

@@ -32,6 +32,7 @@
         .globl dsys_flock
         .globl dsys_dup
         .globl dsys_dup2
+        .globl dsys_seek
         .globl dsys_symlink
         .globl dsys_nice
         .globl dsys_run
@@ -41,6 +42,9 @@
         .globl dsys_pipe
         .globl dsys_exec
         .globl dsys_gettime
+        .globl dsys_utime
+        .globl dsys_rmdir
+        .globl dsys_chown
 
 dsys_exit:             uuo 040,0(1)
                        popj 17,
@@ -115,6 +119,27 @@ dsys_gettime:          movei 1,023
 dsys_dup2:             move 3,2
                        move 2,1
                        movei 1,024
+                       uuo 077,0(1)
+                       popj 17,
+dsys_seek:             move 4,3
+                       move 3,2
+                       move 2,1
+                       movei 1,032
+                       uuo 077,0(1)
+                       popj 17,
+dsys_chown:            move 4,3
+                       move 3,2
+                       move 2,1
+                       movei 1,033
+                       uuo 077,0(1)
+                       popj 17,
+dsys_rmdir:            move 2,1
+                       movei 1,034
+                       uuo 077,0(1)
+                       popj 17,
+dsys_utime:            move 3,2
+                       move 2,1
+                       movei 1,035
                        uuo 077,0(1)
                        popj 17,
         .globl dsys_mkfifo

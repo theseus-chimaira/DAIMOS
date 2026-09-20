@@ -221,7 +221,10 @@ cmd_stat(int argc, kword_t **argv, struct u_io *io)
                     u_put_uint(io->out_fd, st.type) != 0 || u_puts(io->out_fd, " CHARS ") != 0 ||
                     u_put_uint(io->out_fd, st.size_chars) != 0 || u_puts(io->out_fd, " WORDS ") != 0 ||
                     u_put_uint(io->out_fd, st.size_words) != 0 || u_puts(io->out_fd, " MODE ") != 0 ||
-                    u_put_octal(io->out_fd, st.mode, 4U) != 0 || u_crlf(io->out_fd) != 0) return 1;
+                    u_put_octal(io->out_fd, st.mode, 4U) != 0 || u_puts(io->out_fd, " UID ") != 0 ||
+                    u_put_uint(io->out_fd, st.uid) != 0 || u_puts(io->out_fd, " GID ") != 0 ||
+                    u_put_uint(io->out_fd, st.gid) != 0 || u_puts(io->out_fd, " MTIME ") != 0 ||
+                    u_put_octal(io->out_fd, st.mtime, 12U) != 0 || u_crlf(io->out_fd) != 0) return 1;
         }
         return rc;
 }
@@ -229,12 +232,18 @@ cmd_stat(int argc, kword_t **argv, struct u_io *io)
 static int
 cmd_touch(int argc, kword_t **argv, struct u_io *io)
 {
-        int i, fd, rc = 0;
+        kword_t now;
+        int i, fd, rc;
+
         if (argc < 2) return cmd_err(io, "TOUCH", 0);
+        now = dsys_gettime();
+        if (now == 0UL) return cmd_err(io, "TOUCH", 0);
+        rc = 0;
         for (i = 1; i < argc; ++i) {
                 fd = dsys_open(argv[i], SYS_O_WRONLY | SYS_O_CREAT | SYS_O_APPEND);
-                if (fd < 0) rc = cmd_err(io, "TOUCH", argv[i]);
-                else if (dsys_close(fd) != 0) rc = 1;
+                if (fd < 0) { rc = cmd_err(io, "TOUCH", argv[i]); continue; }
+                if (dsys_close(fd) != 0 || dsys_utime(argv[i], now) != 0)
+                        rc = cmd_err(io, "TOUCH", argv[i]);
         }
         return rc;
 }
@@ -299,6 +308,91 @@ cmd_chmod(int argc, kword_t **argv, struct u_io *io)
                 return cmd_err(io, "CHMOD", 0);
         return dsys_chmod(argv[2], mode) == 0 ? 0 :
             cmd_err(io, "CHMOD", argv[2]);
+}
+
+static int
+cmd_uint_arg(const kword_t *arg, unsigned int *vp)
+{
+        unsigned int i, n, wi, sh, ch, v;
+
+        if (arg == 0 || vp == 0) return -1;
+        n = (unsigned int)(arg[0] & 0777777UL);
+        if (n == 0U || n > 6U) return -1;
+        v = 0U;
+        for (i = 0U; i < n; ++i) {
+                wi = 1U + i / 6U;
+                sh = 30U - (i % 6U) * 6U;
+                ch = (unsigned int)(((arg[wi] >> sh) & 077UL) + 040U);
+                if (ch < '0' || ch > '9') return -1;
+                v = v * 10U + (ch - '0');
+                if (v > 0777777U) return -1;
+        }
+        *vp = v;
+        return 0;
+}
+
+static int
+cmd_chown(int argc, kword_t **argv, struct u_io *io)
+{
+        unsigned int uid, gid;
+        int i, rc;
+
+        if (argc < 4 || cmd_uint_arg(argv[1], &uid) != 0 ||
+            cmd_uint_arg(argv[2], &gid) != 0)
+                return cmd_err(io, "CHOWN", 0);
+        rc = 0;
+        for (i = 3; i < argc; ++i)
+                if (dsys_chown(argv[i], uid, gid) != 0)
+                        rc = cmd_err(io, "CHOWN", argv[i]);
+        return rc;
+}
+
+static int
+cmd_rmdir(int argc, kword_t **argv, struct u_io *io)
+{
+        int i, rc;
+
+        if (argc < 2) return cmd_err(io, "RMDIR", 0);
+        rc = 0;
+        for (i = 1; i < argc; ++i)
+                if (dsys_rmdir(argv[i]) != 0)
+                        rc = cmd_err(io, "RMDIR", argv[i]);
+        return rc;
+}
+
+static int
+cmd_put2(int fd, unsigned int v)
+{
+        return u_putc(fd, '0' + (int)((v / 10U) % 10U)) != 0 ||
+            u_putc(fd, '0' + (int)(v % 10U)) != 0;
+}
+
+static int
+cmd_date(int argc, kword_t **argv, struct u_io *io)
+{
+        kword_t t;
+        unsigned int bcd, year, month, day, hour, minute, second;
+
+        (void)argv;
+        if (argc != 1) return cmd_err(io, "DATE", 0);
+        t = dsys_gettime();
+        if (t == 0UL) return cmd_err(io, "DATE", 0);
+        bcd = (unsigned int)((t >> 26) & 0377UL);
+        year = ((bcd >> 4) & 017U) * 10U + (bcd & 017U);
+        year += (t & 0200000000000UL) != 0UL ? 2100U : 2000U;
+        month = (unsigned int)((t >> 22) & 017UL);
+        day = (unsigned int)((t >> 17) & 037UL);
+        hour = (unsigned int)((t >> 12) & 037UL);
+        minute = (unsigned int)((t >> 6) & 077UL);
+        second = (unsigned int)(t & 077UL);
+        if (u_put_uint(io->out_fd, year) != 0 || u_putc(io->out_fd, '-') != 0 ||
+            cmd_put2(io->out_fd, month) != 0 || u_putc(io->out_fd, '-') != 0 ||
+            cmd_put2(io->out_fd, day) != 0 || u_putc(io->out_fd, ' ') != 0 ||
+            cmd_put2(io->out_fd, hour) != 0 || u_putc(io->out_fd, ':') != 0 ||
+            cmd_put2(io->out_fd, minute) != 0 || u_putc(io->out_fd, ':') != 0 ||
+            cmd_put2(io->out_fd, second) != 0 || u_puts(io->out_fd, " UTC") != 0)
+                return 1;
+        return u_crlf(io->out_fd);
 }
 
 static unsigned int
@@ -624,8 +718,11 @@ cmd_dispatch(int argc, kword_t **argv, struct u_io *io)
         if (cmd_name_eq(argv[0], "PWD")) return cmd_pwd(argc, argv, io);
         if (cmd_name_eq(argv[0], "STAT")) return cmd_stat(argc, argv, io);
         if (cmd_name_eq(argv[0], "TOUCH")) return cmd_touch(argc, argv, io);
+        if (cmd_name_eq(argv[0], "DATE")) return cmd_date(argc, argv, io);
+        if (cmd_name_eq(argv[0], "RMDIR")) return cmd_rmdir(argc, argv, io);
         if (cmd_name_eq(argv[0], "CP")) return cmd_cp(argc, argv, io);
         if (cmd_name_eq(argv[0], "CHMOD")) return cmd_chmod(argc, argv, io);
+        if (cmd_name_eq(argv[0], "CHOWN")) return cmd_chown(argc, argv, io);
         if (cmd_name_eq(argv[0], "MKFS.DTFS")) return cmd_mkfs_dtfs(argc, argv, io);
         if (cmd_name_eq(argv[0], "FSCK.DTFS")) return cmd_fsck_dtfs(argc, argv, io);
         if (cmd_name_eq(argv[0], "MOUNT")) return cmd_mount_dtfs(argc, argv, io);

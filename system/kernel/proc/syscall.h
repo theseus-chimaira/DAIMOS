@@ -48,6 +48,14 @@
 #define SYS_EXT_EXEC               022U
 #define SYS_EXT_GETTIME            023U
 #define SYS_EXT_DUP2               024U
+#define SYS_EXT_SEEK               032U
+#define SYS_EXT_CHOWN              033U
+#define SYS_EXT_RMDIR              034U
+#define SYS_EXT_UTIME              035U
+
+#define SYS_SEEK_SET                0U
+#define SYS_SEEK_CUR                1U
+#define SYS_SEEK_END                2U
 
 /* Compact process hierarchy/control operations for UUO 077. */
 #define SYS_PROCCTL_GETPGRP       0U

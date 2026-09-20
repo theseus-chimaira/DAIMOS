@@ -10,23 +10,23 @@
 ; int file_check_access(vnode_t node, unsigned int need)
 ; KCC builds a large save frame around the short stat/access sequence.  Keep
 ; the policy itself in C (file_access_stat) and replace only this target-side
-; wrapper.  The seventh stack word preserves NEED across vfs_stat().
+; wrapper.  The eighth stack word preserves NEED across the seven-word vfs_stat().
         .globl  file_check_access
         .globl  file_access_stat
         .globl  vfs_stat
 file_check_access:
         caile   2,7
         jrst    pdp10_ret_neg1
-        add     17,[7,,7]
-        movem   2,-6(17)
-        movei   2,-5(17)               ; six-word struct vfs_stat
+        add     17,[010,,010]
+        movem   2,-7(17)
+        movei   2,-6(17)               ; seven-word struct vfs_stat
         pushj   17,vfs_stat
         jumpn   1,file_check_access_done
-        movei   1,-5(17)
-        move    2,-6(17)
+        movei   1,-6(17)
+        move    2,-7(17)
         pushj   17,file_access_stat
 file_check_access_done:
-        sub     17,[7,,7]
+        sub     17,[010,,010]
         popj    17,
 
 ; int file_access_stat(const struct vfs_stat *st, unsigned int need)
@@ -70,20 +70,28 @@ file_current_cred_zero:
         setz    6,
         popj    17,
 
+; int file_check_root(void)
+        .globl  file_check_root
+file_check_root:
+        pushj   17,file_current_cred
+        hlrz    1,6
+        jumpe   1,pdp10_ret_zero
+        jrst    pdp10_ret_neg1
+
 ; int file_check_owner(vnode_t node)
 file_check_owner:
-        add     17,[6,,6]
-        movei   2,-5(17)
+        add     17,[7,,7]
+        movei   2,-6(17)
         pushj   17,vfs_stat
         jumpn   1,file_owner_done       ; vfs_stat already returns -1
         pushj   17,file_current_cred
         hlrz    6,6
         jumpe   6,file_owner_done       ; AC1 is still zero
-        camn    6,-1(17)                ; owner match keeps AC1 zero
+        camn    6,-2(17)                ; owner match keeps AC1 zero
         jrst    file_owner_done
         seto    1,
 file_owner_done:
-        sub     17,[6,,6]
+        sub     17,[7,,7]
         popj    17,
 
         .globl  file_path_char
@@ -175,7 +183,7 @@ file_readchar_vfs:
         jrst    file_readchar_result
         move    1,(010)
         tlz     1,707070
-        camn    1,[020002000000]       ; DEVICEFS CTY0 IO endpoint
+        camn    1,[020002000000]       ; MonitorFS device view CTY0 IO endpoint
         jrst    file_readchar_cty
         seto    1,                     ; other device streams are unsupported
         jrst    file_readchar_done
@@ -240,7 +248,7 @@ file_writechar_vfs:
         tlz     1,707070
         camn    1,[020002000000]
         jrst    file_writechar_cty
-        camn    1,[020002000022]       ; DEVICEFS LPT0 IO endpoint
+        camn    1,[020002000022]       ; MonitorFS device view LPT0 IO endpoint
         jrst    file_writechar_lpt
         seto    1,
         jrst    file_writechar_done
@@ -889,30 +897,30 @@ file_rename_fail:
         jrst    file_rename_done
 
 ; int file_chdir(const kword_t *path)
-; Seven locals hold one vnode followed by a six-word vfs_stat.
+; Eight locals hold one vnode followed by a seven-word vfs_stat.
         .globl  file_chdir
 file_chdir:
-        add     17,[7,,7]
-        movei   2,-6(17)
+        add     17,[010,,010]
+        movei   2,-7(17)
         pushj   17,file_lookup_path
         jumpn   1,file_chdir_fail
-        move    1,-6(17)
-        movei   2,-5(17)
+        move    1,-7(17)
+        movei   2,-6(17)
         pushj   17,vfs_stat
         jumpn   1,file_chdir_fail
-        move    3,-5(17)
+        move    3,-6(17)
         caie    3,1                    ; VFS_TYPE_DIR
         jrst    file_chdir_fail
-        move    1,-6(17)
+        move    1,-7(17)
         movei   2,1
         pushj   17,file_check_access
         jumpn   1,file_chdir_fail
-        move    1,-6(17)
+        move    1,-7(17)
         move    2,file_table
         movem   1,-1(2)
         setz    1,
 file_chdir_done:
-        sub     17,[7,,7]
+        sub     17,[010,,010]
         popj    17,
 file_chdir_fail:
         seto    1,
@@ -959,40 +967,69 @@ file_make_node_fail:
         jrst    file_make_node_done
 
 ; int file_unlink(const kword_t *path)
-; Seven stack words hold one parent vnode, one five-word name and the vnode
-; being removed.  Detaching every successful unlink is cheap: non-FIFO vnodes
-; are absent from the active FIFO list, while FIFO detach prevents later vnode
-; index reuse from joining an old live stream.
-        .globl  vfs_unlink
+; int file_rmdir(const kword_t *path)
+; Both operations share permission, lookup and provider removal.  UNLINK rejects
+; directories; RMDIR accepts only directories.  D6FS/provider removal already
+; enforces directory emptiness.
         .globl  file_unlink
+        .globl  file_rmdir
 file_unlink:
-        add     17,[7,,7]
+        setz    2,
+        jrst    file_remove
+file_rmdir:
+        movei   2,1
+file_remove:
+        push    17,2                    ; want directory
+        add     17,[7,,7]               ; dir + leaf + target vnode
         movei   2,-6(17)
         movei   3,-5(17)
         pushj   17,file_parent_path
-        jumpn   1,file_unlink_fail
+        jumpn   1,file_remove_fail
         move    1,-6(17)
         movei   2,3
         pushj   17,file_check_access
-        jumpn   1,file_unlink_fail
+        jumpn   1,file_remove_fail
         move    1,-6(17)
         movei   2,-5(17)
         movei   3,(17)
         pushj   17,vfs_lookup
-        jumpn   1,file_unlink_fail
+        jumpn   1,file_remove_fail
+        add     17,[7,,7]               ; seven-word stat scratch
+        move    1,-7(17)                ; target vnode
+        movei   2,-6(17)
+        pushj   17,vfs_stat
+        jumpn   1,file_remove_stat_fail
+        move    3,-6(17)                ; st.type
+        move    4,-016(17)              ; want directory
+        jumpe   4,file_remove_need_nondir
+        caie    3,1                    ; VFS_TYPE_DIR
+        jrst    file_remove_stat_fail
+        jrst    file_remove_type_ok
+file_remove_need_nondir:
+        caie    3,1
+        jrst    file_remove_type_ok
+        jrst    file_remove_stat_fail
+file_remove_type_ok:
+        sub     17,[7,,7]
         move    1,-6(17)
         movei   2,-5(17)
         pushj   17,vfs_unlink
-        jumpn   1,file_unlink_done
-        move    1,(17)
+        jumpn   1,file_remove_done
+        skipe   -7(17)                  ; saved want-directory flag
+        jrst    file_remove_ok
+        move    1,(17)                  ; removed target vnode
         pushj   17,pipe_fifo_detach
+file_remove_ok:
         setz    1,
-file_unlink_done:
+file_remove_done:
         sub     17,[7,,7]
+        sub     17,[1,,1]
         popj    17,
-file_unlink_fail:
+file_remove_stat_fail:
+        sub     17,[7,,7]
+file_remove_fail:
         seto    1,
-        jrst    file_unlink_done
+        jrst    file_remove_done
 
 ; int file_truncate(const kword_t *path, kword_t size_chars)
 ; One saved size argument plus one vnode local.
@@ -1091,4 +1128,58 @@ file_new_fd_store:
         movem   1,(4)
         setzm   1(4)
         move    1,5
+        popj    17,
+
+; kword_t file_seek(int fd, kword_t offset, unsigned int whence)
+; Seekable regular files already carry a full 36-bit character offset in the
+; second descriptor word.  SET and CUR therefore need no provider call; END
+; obtains the current file size through stat.  Negative resulting offsets are
+; rejected.  Return the new character offset, or -1.
+        .globl  file_seek
+file_seek:
+        push    17,2                    ; signed offset
+        push    17,3                    ; whence
+        pushj   17,file_find
+        jumpe   1,file_seek_fail
+        move    4,(1)
+        tlnn    4,000030                ; regular/lock state only
+        jrst    file_seek_fail
+        move    5,(17)
+        jumpe   5,file_seek_set
+        caie    5,1
+        jrst    file_seek_end_check
+        move    2,-1(17)
+        add     2,1(1)
+        jrst    file_seek_store
+file_seek_set:
+        move    2,-1(17)
+        jrst    file_seek_store
+file_seek_end_check:
+        caie    5,2
+        jrst    file_seek_fail
+        push    17,1                    ; descriptor pointer
+        add     17,[7,,7]               ; seven-word struct vfs_stat
+        move    1,-7(17)
+        move    1,(1)
+        tlz     1,707070                ; canonical vnode
+        movei   2,-6(17)
+        pushj   17,vfs_stat
+        jumpn   1,file_seek_end_fail
+        move    2,-011(17)              ; saved offset
+        add     2,-4(17)                ; st.size_chars
+        move    1,-7(17)                ; descriptor pointer
+        sub     17,[7,,7]
+        sub     17,[1,,1]
+file_seek_store:
+        jumpl   2,file_seek_fail
+        movem   2,1(1)
+        move    1,2
+        jrst    file_seek_done
+file_seek_end_fail:
+        sub     17,[7,,7]
+        sub     17,[1,,1]
+file_seek_fail:
+        seto    1,
+file_seek_done:
+        sub     17,[2,,2]
         popj    17,
