@@ -18,6 +18,7 @@ extern kword_t pdp10_pi_level5_dispatch_jump;
 extern kword_t pdp10_pi_level6_dispatch_jump;
 extern kword_t native_sys_putchar_call;
 extern kword_t native_sys_getchar_call;
+extern kword_t sys_dtc_read_block_jump;
 extern kword_t storage_pi_dsk_jump;
 extern kword_t storage_dct_dsk_jump;
 extern kword_t storage_pi_tape_jump;
@@ -33,8 +34,10 @@ extern kword_t fs_dtfs_service_jump;
 extern kword_t sys_dtfs_format_jump;
 extern kword_t sys_dtfs_mount_jump;
 extern kword_t fs_d6fs_service_jump;
+extern kword_t fs_tsfs_service_jump;
+extern kword_t sys_tsfs_mount_jump;
 extern kword_t d6fs_cache_reclaim_jump;
-extern kword_t diskset_runtime_service_jump;
+extern kword_t blockset_runtime_service_jump;
 
 static kword_t *const module_fixed_bindings[] = {
         &pdp10_pi_level1_dispatch_jump,
@@ -45,6 +48,7 @@ static kword_t *const module_fixed_bindings[] = {
         &pdp10_pi_level6_dispatch_jump,
         &native_sys_putchar_call,
         &native_sys_getchar_call,
+        &sys_dtc_read_block_jump,
         &storage_pi_dsk_jump,
         &storage_dct_dsk_jump,
         &storage_pi_tape_jump,
@@ -60,8 +64,10 @@ static kword_t *const module_fixed_bindings[] = {
         &sys_dtfs_format_jump,
         &sys_dtfs_mount_jump,
         &fs_d6fs_service_jump,
+        &fs_tsfs_service_jump,
+        &sys_tsfs_mount_jump,
         &d6fs_cache_reclaim_jump,
-        &diskset_runtime_service_jump
+        &blockset_runtime_service_jump
 };
 
 #define MODULE_FIXED_BIND_COUNT \

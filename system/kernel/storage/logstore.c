@@ -1,12 +1,12 @@
 #include "logstore.h"
-#include "diskset_boot.h"
+#include "blockset_boot.h"
 
 static void
-logstore_zero_block(kword_t block[DISKSET_BLOCK_WORDS])
+logstore_zero_block(kword_t block[BLOCKSET_BLOCK_WORDS])
 {
         unsigned int i;
 
-        for (i = 0U; i < DISKSET_BLOCK_WORDS; ++i)
+        for (i = 0U; i < BLOCKSET_BLOCK_WORDS; ++i)
                 block[i] = 0UL;
 }
 
@@ -21,7 +21,7 @@ logstore_record_commit(kword_t sequence, unsigned int payload_words)
 }
 
 int
-logstore_record_valid(const kword_t block[DISKSET_BLOCK_WORDS])
+logstore_record_valid(const kword_t block[BLOCKSET_BLOCK_WORDS])
 {
         unsigned int payload_words;
 
@@ -29,13 +29,13 @@ logstore_record_valid(const kword_t block[DISKSET_BLOCK_WORDS])
                 return 0;
         payload_words = (unsigned int)(block[3] & 0777777UL);
         return payload_words <= LOGSTORE_PAYLOAD_WORDS &&
-            block[DISKSET_BLOCK_WORDS - 1U] ==
+            block[BLOCKSET_BLOCK_WORDS - 1U] ==
             logstore_record_commit(block[1], payload_words);
 }
 
 int
 logstore_recover(struct logstore *log,
-    kword_t scratch[DISKSET_BLOCK_WORDS])
+    kword_t scratch[BLOCKSET_BLOCK_WORDS])
 {
         kword_t blocks;
         kword_t best_sequence;
@@ -45,7 +45,7 @@ logstore_recover(struct logstore *log,
 
         if (log == 0 || scratch == 0)
                 return -1;
-        blocks = diskset_boot_log_blocks();
+        blocks = blockset_boot_log_blocks();
         if (blocks < 3UL)
                 return -1;
         capacity = (unsigned int)(blocks - 2UL);
@@ -53,7 +53,7 @@ logstore_recover(struct logstore *log,
         best_sequence = 0UL;
         best_slot = 0U;
         for (slot = 0U; slot < capacity; ++slot) {
-                if (diskset_boot_log_read((kword_t)(slot + 2U), scratch) != 0)
+                if (blockset_boot_log_read((kword_t)(slot + 2U), scratch) != 0)
                         return -1;
                 if (logstore_record_valid(scratch) &&
                     scratch[1] > best_sequence) {
@@ -75,7 +75,7 @@ logstore_recover(struct logstore *log,
 int
 logstore_append(struct logstore *log, unsigned int severity,
     unsigned int source, kword_t timestamp, const kword_t *payload,
-    unsigned int payload_words, kword_t scratch[DISKSET_BLOCK_WORDS])
+    unsigned int payload_words, kword_t scratch[BLOCKSET_BLOCK_WORDS])
 {
         kword_t sequence;
         unsigned int i;
@@ -97,9 +97,9 @@ logstore_append(struct logstore *log, unsigned int severity,
             ((kword_t)source << 18) | (kword_t)payload_words;
         for (i = 0U; i < payload_words; ++i)
                 scratch[4U + i] = payload[i] & LOGSTORE_WORD_MASK;
-        scratch[DISKSET_BLOCK_WORDS - 1U] =
+        scratch[BLOCKSET_BLOCK_WORDS - 1U] =
             logstore_record_commit(sequence, payload_words);
-        if (diskset_boot_log_write((kword_t)(log->next_slot + 2U),
+        if (blockset_boot_log_write((kword_t)(log->next_slot + 2U),
             scratch) != 0)
                 return -1;
 

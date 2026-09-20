@@ -503,6 +503,10 @@ native_sys_ext_nonpipe:
         jrst    pclk_time36
         cain    1,024                  ; SYS_EXT_DUP2
         jrst    native_sys_dup2
+        cain    1,040                  ; SYS_EXT_DTC_READ_BLOCK
+        jrst    native_sys_dtc_read_block
+        cain    1,041                  ; SYS_EXT_TSFS_MOUNT
+        jrst    native_sys_tsfs_mount
         cain    1,022                  ; SYS_EXT_EXEC
         jrst    native_sys_exec
         caie    1,021                  ; SYS_EXT_MKFIFO
@@ -540,6 +544,81 @@ native_sys_exec:
 native_sys_exec_bad:
         sub     17,[5,,5]
         jrst    native_sys_mapped_return
+
+
+; Read one raw 128-word DECtape block for transient userspace media discovery.
+; AC2=unit, AC3=physical block, AC4=user buffer.  The scanner/checksum logic
+; deliberately remains outside the resident kernel.
+native_sys_dtc_read_block:
+        move    6,2
+        move    7,3
+        move    1,4
+        pushj   17,native_sys_map_one
+        jumpe   1,pdp10_ret_neg1
+        move    5,3                     ; logical mapping end
+        add     5,4                     ; physical one-past mapping end
+        move    3,1                     ; mapped destination
+        move    0,1
+        addi    0,0200                  ; 128 words required
+        camle   0,5
+        jrst    native_sys_dtc_read_bad
+        hrrz    1,6
+        hrrz    2,7
+        .globl  sys_dtc_read_block_jump
+sys_dtc_read_block_jump:
+        pushj   17,pdp10_ret_neg1
+        jrst    native_sys_mapped_return
+native_sys_dtc_read_bad:
+        pushj   17,vm_user_mapping_release
+        jrst    pdp10_ret_neg1
+
+
+; Mount one already-scanned TSFS set.  Discovery/checksum work stays in
+; userspace; only the compact 20-word handoff is copied into the provider.
+; AC2=user handoff, AC3=user mount path, AC4=flags.
+native_sys_tsfs_mount:
+        push    17,010
+        push    17,011
+        move    010,3                    ; mount path
+        move    011,4                    ; flags
+        move    1,2
+        pushj   17,native_sys_map_one
+        jumpe   1,native_sys_tsfs_mount_bad0
+        move    5,3
+        add     5,4                      ; one-past mapped user extent
+        move    0,1
+        addi    0,022                    ; through handoff words 16/17
+        camle   0,5
+        jrst    native_sys_tsfs_mount_bad_map
+        push    17,020(1)                ; file MEMBER,,START_BLOCK
+        push    17,021(1)                ; file BLOCKS,,RECORD_COUNT
+        pushj   17,vm_user_mapping_release
+        move    1,010
+        pushj   17,native_sys_lookup_user_path
+        jumpe   1,native_sys_tsfs_mount_bad_stack
+        move    2,1                      ; mounted-on vnode
+        movei   1,-1(17)                 ; compact two-word resident metadata
+        move    3,011                    ; flags
+        push    17,0                     ; returned root scratch
+        movei   4,(17)
+        .globl  sys_tsfs_mount_jump
+sys_tsfs_mount_jump:
+        pushj   17,pdp10_ret_neg1
+        pop     17,0
+        sub     17,[2,,2]
+        pop     17,011
+        pop     17,010
+        popj    17,
+native_sys_tsfs_mount_bad_map:
+        pushj   17,vm_user_mapping_release
+native_sys_tsfs_mount_bad0:
+        seto    1,
+        pop     17,011
+        pop     17,010
+        popj    17,
+native_sys_tsfs_mount_bad_stack:
+        sub     17,[2,,2]
+        jrst    native_sys_tsfs_mount_bad0
 
 native_sys_dup2:
         hrrz    1,2                    ; old fd

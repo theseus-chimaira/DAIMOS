@@ -52,10 +52,20 @@
 #define SYS_EXT_CHOWN              033U
 #define SYS_EXT_RMDIR              034U
 #define SYS_EXT_UTIME              035U
+#define SYS_EXT_DTC_READ_BLOCK     040U
+#define SYS_EXT_TSFS_MOUNT         041U
 
 #define SYS_SEEK_SET                0U
 #define SYS_SEEK_CUR                1U
 #define SYS_SEEK_END                2U
+
+/* Userspace-validated TSFS mount handoff.  The transient scanner validates
+ * media metadata before the kernel sees this compact runtime description. */
+#define SYS_TSFS_MOUNT_WORDS         20U
+#define SYS_TSFS_FILE_LOC            16U /* MEMBER,,START_BLOCK */
+#define SYS_TSFS_FILE_SHAPE          17U /* BLOCKS,,RECORD_COUNT */
+#define SYS_TSFS_EXTENT_LOC          18U /* MEMBER,,START_BLOCK */
+#define SYS_TSFS_EXTENT_SHAPE        19U /* BLOCKS,,RECORD_COUNT */
 
 /* Compact process hierarchy/control operations for UUO 077. */
 #define SYS_PROCCTL_GETPGRP       0U

@@ -10,6 +10,7 @@
 #include "dcs.h"
 #include "ge.h"
 #include "dpy.h"
+#include "dsk270.h"
 #include "drm236.h"
 #include "tty.h"
 #include "wcnsls.h"
@@ -17,7 +18,8 @@
 #include "storage.h"
 #include "slv.h"
 #include "fs_mres.h"
-#include "diskset_mres.h"
+#include "blockset_mres.h"
+#include "blockset_boot.h"
 #include "monitorfs.h"
 #include "module_runtime.h"
 
@@ -84,13 +86,13 @@ static unsigned int tape_mres_base;
 static unsigned int dsk_mres_base;
 static unsigned int storage_router_registered;
 static unsigned int module_dynamic_binding_count;
-static unsigned int diskset_read_addr;
-static unsigned int diskset_write_addr;
-unsigned int diskset_state_addr;
-unsigned int diskset_total_addr;
-unsigned int d6fs_diskset_read_addr;
-unsigned int d6fs_diskset_write_addr;
+static unsigned int blockset_read_addr;
+static unsigned int blockset_write_addr;
+unsigned int blockset_state_addr;
+unsigned int d6fs_block_read_addr;
+unsigned int d6fs_block_write_addr;
 unsigned int d6fs_provider_reader_addr;
+unsigned int d6fs_direct_map_addr;
 
 extern kword_t storage_pi_handler;
 extern kword_t storage_dct_handler;
@@ -105,6 +107,7 @@ extern kword_t dsk270_write_jump;
 extern kword_t drm236_read_jump;
 extern kword_t drm236_write_jump;
 extern kword_t native_sys_getchar_call;
+extern kword_t sys_dtc_read_block_jump;
 extern kword_t native_sys_putchar_call;
 
 
@@ -936,6 +939,8 @@ storage_minit(unsigned int kind, kword_t name)
         if (kind == 0U) {
                 module_service_set(MODULE_SERVICE_DTC_READ_BLOCK,
                     minit_export(name, base, TAPE_X_DTC_READ_BLOCK));
+                storage_patch_jump(&sys_dtc_read_block_jump,
+                    minit_export(name, base, TAPE_X_DTC_READ_BLOCK));
                 module_service_set(MODULE_SERVICE_DTC_WRITE_BLOCK,
                     minit_export(name, base, TAPE_X_DTC_WRITE_BLOCK));
         } else if (kind == 1U) {
@@ -1042,31 +1047,45 @@ dtfs_minit(void)
                     minit_export(name, base, 3U));
                 storage_patch_jump(&sys_dtfs_mount_jump,
                     minit_export(name, base, 4U));
+                storage_patch_jump(&fs_tsfs_service_jump,
+                    minit_export(name, base, 5U));
+                storage_patch_jump(&sys_tsfs_mount_jump,
+                    minit_export(name, base, 6U));
                 module_service_set(MODULE_SERVICE_DTFS, service);
         }
         minit_diag_loaded(name);
 }
 
 void
-diskset_minit(void)
+blockset_minit(void)
 {
         kword_t name;
         unsigned int base;
         unsigned int service;
+        unsigned int read_addr;
+        unsigned int write_addr;
 
-        name = (kword_t)SIXBIT("DSET  ");
-        if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) == 0U) {
+        name = (kword_t)SIXBIT("BSET  ");
+        if (blockset_boot_member_count_hint() <= 1U)
+                return;
+        if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) == 0U ||
+            module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) == 0U) {
                 minit_diag_nodrv(name);
                 return;
         }
+        read_addr = (unsigned int)(unsigned long)&dsk270_read_sector;
+        write_addr = (unsigned int)(unsigned long)&dsk270_write_sector;
         base = minit_install(name);
         service = minit_export(name, base, 0U);
-        diskset_state_addr = minit_export(name, base, 1U);
-        diskset_total_addr = minit_export(name, base, 2U);
-        diskset_read_addr = minit_export(name, base, 3U);
-        diskset_write_addr = minit_export(name, base, 4U);
-        storage_patch_jump(&diskset_runtime_service_jump, service);
-        module_service_set(MODULE_SERVICE_DISKSET, service);
+        blockset_state_addr = minit_export(name, base, 1U);
+        blockset_read_addr = minit_export(name, base, 2U);
+        blockset_write_addr = minit_export(name, base, 3U);
+        storage_patch_module_jump(base, (kword_t *)(unsigned long)
+            minit_export(name, base, 4U), read_addr);
+        storage_patch_module_jump(base, (kword_t *)(unsigned long)
+            minit_export(name, base, 5U), write_addr);
+        storage_patch_jump(&blockset_runtime_service_jump, service);
+        module_service_set(MODULE_SERVICE_BLOCKSET, service);
         minit_diag_loaded(name);
 }
 
@@ -1075,9 +1094,29 @@ d6fs_minit(void)
 {
         kword_t name;
         unsigned int base;
+        unsigned int members;
+        unsigned int read_addr;
+        unsigned int write_addr;
+        unsigned int callback_read;
+        unsigned int callback_write;
 
         name = (kword_t)SIXBIT("D6FS  ");
-        if (module_service_get(MODULE_SERVICE_DISKSET) == 0U) {
+        members = blockset_boot_member_count_hint();
+        if (members == 0U)
+                return;
+        if (members == 1U) {
+                if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) == 0U ||
+                    module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) == 0U) {
+                        minit_diag_nodrv(name);
+                        return;
+                }
+                read_addr = (unsigned int)(unsigned long)&dsk270_read_sector;
+                write_addr = (unsigned int)(unsigned long)&dsk270_write_sector;
+        } else {
+                read_addr = blockset_read_addr;
+                write_addr = blockset_write_addr;
+        }
+        if (read_addr == 0U || write_addr == 0U) {
                 minit_diag_nodrv(name);
                 return;
         }
@@ -1089,15 +1128,33 @@ d6fs_minit(void)
                 storage_patch_jump(&fs_d6fs_service_jump, service);
                 module_service_set(MODULE_SERVICE_D6FS, service);
         }
-        d6fs_diskset_read_addr = minit_export(name, base, 1U);
-        d6fs_diskset_write_addr = minit_export(name, base, 2U);
+        d6fs_block_read_addr = minit_export(name, base, 1U);
+        d6fs_block_write_addr = minit_export(name, base, 2U);
         d6fs_provider_reader_addr = minit_export(name, base, 3U);
-        storage_patch_module_jump(base, (kword_t *)(unsigned long)
-            minit_export(name, base, 4U), diskset_read_addr);
-        storage_patch_module_jump(base, (kword_t *)(unsigned long)
-            minit_export(name, base, 5U), diskset_write_addr);
-        storage_patch_jump(&d6fs_cache_reclaim_jump,
-            minit_export(name, base, 6U));
+        callback_read = minit_export(name, base, 4U);
+        callback_write = minit_export(name, base, 5U);
+        storage_patch_jump(&d6fs_cache_reclaim_jump, minit_export(name, base, 6U));
+        d6fs_direct_map_addr = minit_export(name, base, 7U);
+        if (members == 1U) {
+                unsigned int direct_read;
+                unsigned int direct_write;
+
+                direct_read = minit_export(name, base, 8U);
+                direct_write = minit_export(name, base, 9U);
+                storage_patch_module_jump(base,
+                    (kword_t *)(unsigned long)callback_read, direct_read);
+                storage_patch_module_jump(base,
+                    (kword_t *)(unsigned long)callback_write, direct_write);
+                storage_patch_module_jump(base, (kword_t *)(unsigned long)
+                    minit_export(name, base, 10U), read_addr);
+                storage_patch_module_jump(base, (kword_t *)(unsigned long)
+                    minit_export(name, base, 11U), write_addr);
+        } else {
+                storage_patch_module_jump(base,
+                    (kword_t *)(unsigned long)callback_read, read_addr);
+                storage_patch_module_jump(base,
+                    (kword_t *)(unsigned long)callback_write, write_addr);
+        }
         minit_diag_loaded(name);
 }
 

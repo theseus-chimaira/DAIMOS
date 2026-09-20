@@ -54,6 +54,7 @@ KERNEL_HEADERS = boot/kboot.h \
 	fs/d6fs_provider.h \
 	fs/monitorfs.h \
 	fs/dtfs.h \
+	fs/tsfs.h \
 	fs/file.h \
 	fs/fs_mres.h \
 	fs/memfs.h \
@@ -72,10 +73,10 @@ KERNEL_HEADERS = boot/kboot.h \
 	proc/syscall.h \
 	proc/vm.h \
 	${VM_BACKEND_H} \
-	storage/diskset.h \
-	storage/diskset_boot.h \
-	storage/diskset_layout.h \
-	storage/diskset_mres.h \
+	storage/blockset.h \
+	storage/blockset_boot.h \
+	storage/blockset_layout.h \
+	storage/blockset_mres.h \
 	storage/logstore.h \
 	storage/storage.h
 
@@ -86,7 +87,7 @@ KINIT_SRCS = boot/kinit.c \
 	boot/kinit_boot.c \
 	fs/d6fs_boot.c \
 	fs/d6fs_super_boot.c \
-	storage/diskset_boot.c \
+	storage/blockset_boot.c \
 	storage/logstore.c \
 	proc/proc_boot.c \
 	proc/proc_swap_boot.c
@@ -98,7 +99,7 @@ KINIT_C_ASM = $(BUILD)/kinit.s \
 	$(BUILD)/kinit_boot.s \
 	$(BUILD)/d6fs_boot.s \
 	$(BUILD)/d6fs_super_boot.s \
-	$(BUILD)/diskset_boot.s \
+	$(BUILD)/blockset_boot.s \
 	$(BUILD)/logstore.s \
 	$(BUILD)/proc_boot.s \
 	$(BUILD)/proc_swap_boot.s
@@ -139,6 +140,7 @@ KCORE_FIXED_SRCS = core/ret_pdp10.s \
 	core/kfmt_pdp10.s \
 	fs/vfs_pdp10.s \
 	fs/fs_mres_pdp10.s \
+	fs/tsfs_pdp10.s \
 	fs/file_pdp10.s \
 	ipc/pipe_pdp10.s \
 		proc/proc_pdp10.s \
@@ -166,6 +168,7 @@ KCORE_FIXED_ASM = $(BUILD)/exec.s \
 	$(BUILD)/kfmt_pdp10.s \
 	$(BUILD)/vfs_pdp10.s \
 	$(BUILD)/fs_mres_pdp10.s \
+	$(BUILD)/tsfs_pdp10.s \
 	$(BUILD)/file_pdp10.s \
 	$(BUILD)/pipe_pdp10.s \
 	$(BUILD)/monitorfs_pdp10.s \
@@ -183,10 +186,12 @@ KCORE_FIXED_ASM = $(BUILD)/exec.s \
 	$(BUILD)/kcore_end.s
 
 MRES_C_SRCS = fs/d6fs.c \
-	fs/d6fs_provider.c
+	fs/d6fs_provider.c \
+	fs/tsfs.c
 
 MRES_C_ASM = $(BUILD)/d6fs.s \
-	$(BUILD)/d6fs_provider.s
+	$(BUILD)/d6fs_provider.s \
+	$(BUILD)/tsfs.s
 
 MRES_FIXED_SRCS = fs/d6fs_validate_pdp10.s \
 	drivers/cty_io.s \
@@ -195,12 +200,13 @@ MRES_FIXED_SRCS = fs/d6fs_validate_pdp10.s \
 	drivers/ptp_io.s \
 	drivers/cr_io.s \
 	drivers/cp_io.s \
-	storage/diskset_dispatch.s \
+	storage/blockset_dispatch.s \
 	drivers/dcs_io.s \
 	drivers/ge_io.s \
 	drivers/dpy_io.s \
 	drivers/tty_io.s \
 	fs/dtfs_pdp10.s \
+	fs/tsfs_pdp10.s \
 	fs/memfs_pdp10.s \
 	fs/d6fs_pdp10.s \
 	drivers/wcnsls_io.s \
@@ -211,6 +217,7 @@ MRES_FIXED_SRCS = fs/d6fs_validate_pdp10.s \
 	drivers/slv_io.s
 
 MRES_ASM = $(BUILD)/dtfs.s \
+	$(BUILD)/tsfs.s \
 	$(BUILD)/d6fs.s \
 	$(BUILD)/d6fs_provider.s \
 	$(BUILD)/d6fs_validate_pdp10.s \
@@ -220,12 +227,13 @@ MRES_ASM = $(BUILD)/dtfs.s \
 	$(BUILD)/ptp_io.s \
 	$(BUILD)/cr_io.s \
 	$(BUILD)/cp_io.s \
-	$(BUILD)/diskset_dispatch.s \
+	$(BUILD)/blockset_dispatch.s \
 	$(BUILD)/dcs_io.s \
 	$(BUILD)/ge_io.s \
 	$(BUILD)/dpy_io.s \
 	$(BUILD)/tty_io.s \
 	$(BUILD)/dtfs_pdp10.s \
+	$(BUILD)/tsfs_pdp10.s \
 	$(BUILD)/memfs_pdp10.s \
 	$(BUILD)/d6fs_pdp10.s \
 	$(BUILD)/wcnsls_io.s \
@@ -280,6 +288,10 @@ ${BUILD}/dtfs.s: fs/dtfs.c fs/dtfs_chain_walk_pdp10.s fs/dtfs_resize_pdp10.s ${K
 	${PDP10_CC} ${PDP10_CFLAGS} -DDTFS_ENABLE_TENEX=${DTFS_TENEX} -DDTFS_ENABLE_ITS=${DTFS_ITS} ${INCLUDES} -S fs/dtfs.c -o $@.c
 	@cat $@.c > $@; if test "${DTFS_TENEX}" = 1 -o "${DTFS_ITS}" = 1; then cat fs/dtfs_chain_walk_pdp10.s fs/dtfs_resize_pdp10.s >> $@; fi; rm -f $@.c
 
+${BUILD}/tsfs.s: fs/tsfs.c ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S fs/tsfs.c -o $@
+
 ${BUILD}/kinit_io.s: boot/kinit_io.s
 	@mkdir -p ${BUILD}
 	{ echo ".set KINIT_STACK_WATERMARK,${KINIT_STACK_WATERMARK}"; echo ".set KINIT_STACK_RESERVE_WORDS,${KINIT_STACK_RESERVE_WORDS}"; cat boot/kinit_io.s; } > $@
@@ -302,6 +314,7 @@ COPY_ASM_SRCS = core/ret_pdp10.s \
 	core/kfmt_pdp10.s \
 	fs/vfs_pdp10.s \
 	fs/fs_mres_pdp10.s \
+	fs/tsfs_pdp10.s \
 	fs/file_pdp10.s \
 	ipc/pipe_pdp10.s \
 		drivers/device_state_pdp10.s \
@@ -320,7 +333,7 @@ COPY_ASM_SRCS = core/ret_pdp10.s \
 	drivers/ptp_io.s \
 	drivers/cr_io.s \
 	drivers/cp_io.s \
-	storage/diskset_dispatch.s \
+	storage/blockset_dispatch.s \
 	drivers/dcs_io.s \
 	drivers/ge_io.s \
 	drivers/dpy_io.s \
@@ -343,6 +356,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret_pdp10.s \
 	$(BUILD)/kfmt_pdp10.s \
 	$(BUILD)/vfs_pdp10.s \
 	$(BUILD)/fs_mres_pdp10.s \
+	$(BUILD)/tsfs_pdp10.s \
 	$(BUILD)/file_pdp10.s \
 	$(BUILD)/pipe_pdp10.s \
 	$(BUILD)/monitorfs_pdp10.s \
@@ -362,7 +376,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret_pdp10.s \
 	$(BUILD)/ptp_io.s \
 	$(BUILD)/cr_io.s \
 	$(BUILD)/cp_io.s \
-	$(BUILD)/diskset_dispatch.s \
+	$(BUILD)/blockset_dispatch.s \
 	$(BUILD)/dcs_io.s \
 	$(BUILD)/ge_io.s \
 	$(BUILD)/dpy_io.s \

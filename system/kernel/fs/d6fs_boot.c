@@ -1,7 +1,7 @@
 #include "d6fs_boot.h"
 #include "d6fs_provider.h"
 #include "kinit.h"
-#include "diskset_boot.h"
+#include "blockset_boot.h"
 
 /* KINIT-only scratch used while probing and mounting the root D6FS.
  * It is reclaimed with KINIT and does not consume resident FS storage. */
@@ -28,11 +28,11 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
             super->total_blocks == 0UL || super->fcb_count == 0UL ||
             super->root_fcb >= super->fcb_count ||
             d6fs_provider_reader_addr == 0U ||
-            d6fs_diskset_read_addr == 0U)
+            d6fs_block_read_addr == 0U)
                 return -1;
 
         writable = (flags & VFS_MOUNT_RDONLY) == 0U &&
-            d6fs_diskset_write_addr != 0U && diskset_boot_writable() > 0;
+            d6fs_block_write_addr != 0U && blockset_boot_writable() > 0;
         if (!writable)
                 flags |= VFS_MOUNT_RDONLY;
 
@@ -65,11 +65,11 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
                         goto fail;
                 dirty_block = copy == 0U ? super_b : super_a;
                 scratch = d6fs_boot_block_buffer();
-                if (diskset_boot_read(dirty_block, scratch) != 0)
+                if (blockset_boot_read(dirty_block, scratch) != 0)
                         goto fail;
                 scratch[D6FS_SB_SEQUENCE] = super->sequence + 1UL;
                 scratch[D6FS_SB_STATE] = D6FS_STATE_DIRTY;
-                if (diskset_boot_write(dirty_block, scratch) != 0)
+                if (blockset_boot_write(dirty_block, scratch) != 0)
                         goto fail;
                 reader->super.sequence = super->sequence + 1UL;
                 reader->opaque = (void *)(unsigned long)(id |
@@ -102,16 +102,27 @@ d6fs_boot_mount_root(unsigned int flags)
         struct vfs_stat st;
 
         scratch = d6fs_boot_block_buffer();
-        rc = diskset_boot_discover(&super_a, &super_b);
+        rc = blockset_boot_discover(&super_a, &super_b);
         if (rc != 0)
                 return rc;
-        total = diskset_boot_blocks();
+        if (d6fs_direct_map_addr != 0U) {
+                unsigned int direct_unit;
+                kword_t direct_base;
+                kword_t direct_blocks;
+                kword_t direct_tail;
+
+                if (blockset_boot_direct(&direct_unit, &direct_base,
+                    &direct_blocks, &direct_tail) != 0)
+                        *(kword_t *)(unsigned long)d6fs_direct_map_addr =
+                            ((kword_t)direct_unit << 18U) | direct_base;
+        }
+        total = blockset_boot_blocks();
         if (total == 0UL || super_a >= total || super_b >= total ||
-            super_a == super_b || diskset_boot_read(super_a, scratch) != 0)
+            super_a == super_b || blockset_boot_read(super_a, scratch) != 0)
                 return -1;
         for (i = 0U; i < D6FS_SUPER_WORDS; ++i)
                 a[i] = scratch[i];
-        if (diskset_boot_read(super_b, scratch) != 0)
+        if (blockset_boot_read(super_b, scratch) != 0)
                 return -1;
         for (i = 0U; i < D6FS_SUPER_WORDS; ++i)
                 b[i] = scratch[i];

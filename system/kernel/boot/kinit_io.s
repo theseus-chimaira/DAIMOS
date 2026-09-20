@@ -70,10 +70,10 @@ kinit_call_fs_request:
         move    6,(6)                  ; operation, after final pointer use
         jrst    (7)
 
-        .globl  kinit_call_diskset_request
-kinit_call_diskset_request:
+        .globl  kinit_call_blockset_request
+kinit_call_blockset_request:
         move    4,1                    ; service address
-        move    5,2                    ; four-word diskset request
+        move    5,2                    ; four-word blockset request
         move    3,3(5)
         move    2,2(5)
         move    1,1(5)

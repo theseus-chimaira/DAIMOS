@@ -4,36 +4,130 @@
         .globl fs_memfs_service_jump
         .globl fs_dtfs_service_jump
         .globl fs_d6fs_service_jump
+        .globl fs_tsfs_service_jump
         .globl fs_mres_no_service
         .globl proc_wait_event
         .globl proc_wakeup_event
 
-        .globl diskset_runtime_reg_call
-        .globl diskset_runtime_reg_enter
-        .globl diskset_runtime_service_jump
+        .globl blockset_runtime_reg_call
+        .globl blockset_runtime_reg_enter
+        .globl blockset_runtime_service_jump
+        .globl blockset_direct_configure
+        .globl dsk270_read_sector
+        .globl dsk270_write_sector
 
-; Stable KCORE register bridge to the movable DISKSET MRES dispatcher.
+; Stable KCORE register bridge to the movable BLOCKSET MRES dispatcher.
 ; C ABI: AC1=operation, AC2=a, AC3=b, AC4=c.  The movable export keeps a
 ; two-word legacy request entry, so its register entry is target+2.
-diskset_runtime_reg_call:
+blockset_runtime_reg_call:
         move    5,1
         move    1,2
         move    2,3
         move    3,4
 
 ; Assembly register entry: AC5=operation, AC1..AC3=a..c.  AC4 is scratch.
-; This keeps fixed KCORE callers from depending on movable DISKSET symbols.
-diskset_runtime_reg_enter:
-        hrrz    4,diskset_runtime_service_jump
+; This keeps fixed KCORE callers from depending on movable BLOCKSET symbols.
+blockset_runtime_reg_enter:
+        cain    5,6                    ; BLOCKSET_MRES_OP_TAIL_BLOCKS
+        jrst    blockset_direct_tail_blocks
+        cain    5,7                    ; BLOCKSET_MRES_OP_TAIL_READ
+        jrst    blockset_direct_tail_read
+        cain    5,010                  ; BLOCKSET_MRES_OP_TAIL_WRITE
+        jrst    blockset_direct_tail_write
+        hrrz    4,blockset_runtime_service_jump
         cain    4,fs_mres_no_service
         jrst    fs_mres_no_service
         jrst    (4)
-diskset_runtime_service_jump:
+blockset_runtime_service_jump:
         jrst    fs_mres_no_service
+
+; Root swap-tail service shared by singleton and multi-member BLOCKSET roots.
+; direct_map/data describe the singleton fast path.  direct_tail is always the
+; total logical tail span.  When BLOCKSET is installed, op 10 maps each tail
+; logical block; otherwise the singleton arithmetic below is used directly.
+blockset_direct_configure:
+        move    5,1
+        lsh     5,022
+        ior     5,2
+        movem   5,blockset_direct_map
+        movem   3,blockset_direct_blocks
+        movem   4,blockset_direct_tail
+        popj    17,
+
+blockset_direct_tail_read:
+        setz    4,
+        jrst    blockset_direct_tail_io
+blockset_direct_tail_write:
+        movei   4,1
+
+blockset_direct_tail_io:
+        jumpe   2,pdp10_ret_zero
+        jumpe   3,pdp10_ret_neg1
+        jumpl   1,pdp10_ret_neg1
+        jumpl   2,pdp10_ret_neg1
+        move    6,blockset_direct_tail
+        jumpe   6,pdp10_ret_neg1
+        caml    1,6
+        jrst    pdp10_ret_neg1
+        sub     6,1
+        camle   2,6
+        jrst    pdp10_ret_neg1
+        aos     mfsdev_d6set_reads(4)
+        addm    2,mfsdev_d6set_blocks_read(4)
+        add     17,[6,,6]
+        movei   0,-5(17)
+        hrli    0,010
+        blt     0,(17)
+        move    010,3                  ; buffer
+        move    011,1                  ; logical tail block
+        move    012,2                  ; count
+        move    013,4                  ; write flag
+
+blockset_direct_tail_loop:
+        hrrz    4,blockset_runtime_service_jump
+        cain    4,fs_mres_no_service
+        jrst    blockset_direct_tail_single
+        move    1,011
+        movei   5,012                  ; BLOCKSET_MRES_OP_TAIL_MAP
+        pushj   17,(4)
+        jumpl   1,blockset_direct_tail_done
+        jrst    blockset_direct_tail_mapped
+
+blockset_direct_tail_single:
+        hlrz    1,blockset_direct_map
+        hrrz    2,blockset_direct_map
+        add     2,blockset_direct_blocks
+        add     2,011
+
+blockset_direct_tail_mapped:
+        move    3,010
+        jumpe   013,blockset_direct_tail_read_one
+        pushj   17,dsk270_write_sector
+        jrst    blockset_direct_tail_after_one
+blockset_direct_tail_read_one:
+        pushj   17,dsk270_read_sector
+blockset_direct_tail_after_one:
+        jumpe   1,blockset_direct_tail_after_ok
+        aos     mfsdev_storage_errors+4
+        jrst    blockset_direct_tail_done
+blockset_direct_tail_after_ok:
+        addi    010,0200
+        aoj     011,
+        sojn    012,blockset_direct_tail_loop
+        setz    1,
+blockset_direct_tail_done:
+        movei   0,010
+        hrli    0,-5(17)
+        blt     0,013
+        sub     17,[6,,6]
+        popj    17,
+blockset_direct_tail_blocks:
+        move    1,blockset_direct_tail
+        popj    17,
 
 ; Register provider ABI used by the private PDP-6 UUO bridge:
 ;   AC6       FS_MRES_OP_*
-;   AC7       provider number (4 MEMFS, 5 DTFS, 6 D6FS)
+;   AC7       provider number (4 MEMFS, 5 DTFS, 6 D6FS, 7 TSFS)
 ;   AC1..AC5 request a..e
 ;
 ; MINIT already maintains one movable service jump per provider.  Its target
@@ -42,7 +136,7 @@ diskset_runtime_service_jump:
 fs_provider_reg_call:
         caige   7,4
         jrst    fs_mres_no_service
-        caile   7,6
+        caile   7,7
         jrst    fs_mres_no_service
         caie    7,4                    ; MEMFS never sleeps; no shared block
         jrst    fs_provider_serialized
@@ -52,7 +146,7 @@ fs_provider_reg_call:
         jrst    fs_mres_no_service
         jrst    (7)
 
-; DTFS and D6FS share fs_block_workspace and provider state across calls.
+; DTFS, TSFS and D6FS share fs_block_workspace and provider state across calls.
 ; A physical disk request may sleep, so another process can otherwise enter
 ; the provider while the first request is suspended and corrupt that state.
 ; Serialize those providers across the complete call.  The saved arguments
@@ -100,6 +194,8 @@ fs_memfs_service_jump:
 fs_dtfs_service_jump:
         jrst    fs_mres_no_service
 fs_d6fs_service_jump:
+        jrst    fs_mres_no_service
+fs_tsfs_service_jump:
         jrst    fs_mres_no_service
 
 ; KCORE memory-pressure bridge to the movable D6FS clean-cache reclaimer.
@@ -254,3 +350,8 @@ fs_mres_context_vector_dispatch:
         .data
 fs_provider_ready:
         .word   1
+
+        .bss
+blockset_direct_map:    .block 1
+blockset_direct_blocks: .block 1
+blockset_direct_tail:   .block 1

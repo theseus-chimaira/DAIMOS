@@ -16,9 +16,10 @@
 #define D6FS_RUNTIME_SUPER_BLOCK(reader, copy) ((reader)->super.fs_uuid[(copy)])
 
 /* KINIT-only relocated D6FS runtime destinations and callback addresses. */
-extern unsigned int d6fs_diskset_read_addr;
-extern unsigned int d6fs_diskset_write_addr;
+extern unsigned int d6fs_block_read_addr;
+extern unsigned int d6fs_block_write_addr;
 extern unsigned int d6fs_provider_reader_addr;
+extern unsigned int d6fs_direct_map_addr;
 
 int d6fs_provider_lookup(vnode_t dir, const struct vfs_name *name,
     vnode_t *nodep);

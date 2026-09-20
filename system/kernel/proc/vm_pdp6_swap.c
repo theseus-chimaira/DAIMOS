@@ -1,6 +1,6 @@
 #include "proc_swap.h"
 #include "vm_pdp6.h"
-#include "diskset_mres.h"
+#include "blockset_mres.h"
 #include "d6fs_provider.h"
 #include "dtfs.h"
 #include "memfs.h"
@@ -26,7 +26,7 @@ proc_swap_disk_blocks(void)
 {
         int rc;
 
-        rc = diskset_runtime_reg_call(DISKSET_MRES_OP_SWAP_BLOCKS,
+        rc = blockset_runtime_reg_call(BLOCKSET_MRES_OP_TAIL_BLOCKS,
             0UL, 0UL, 0UL);
         return rc > 0 ? (kword_t)rc : 0UL;
 }
@@ -35,7 +35,7 @@ static int
 proc_swap_disk_io(unsigned int op, kword_t block, kword_t count,
     kword_t *buffer)
 {
-        return diskset_runtime_reg_call(op, block, count,
+        return blockset_runtime_reg_call(op, block, count,
             (kword_t)(unsigned long)buffer);
 }
 
@@ -204,7 +204,7 @@ proc_swap_out(int slot)
         mem = (kword_t *)(unsigned long)base;
         blocks = words / DSK_WORDS_PER_SECTOR;
         if (blocks == 0UL || proc_swap_find(blocks, &first) != 0 ||
-            proc_swap_transfer_words(DISKSET_MRES_OP_SWAP_WRITE, first,
+            proc_swap_transfer_words(BLOCKSET_MRES_OP_TAIL_WRITE, first,
             mem, words) != 0)
                 goto fail_unpin;
 
@@ -326,7 +326,7 @@ proc_swap_in(int slot)
                 return -1;
         }
         mem = (kword_t *)(unsigned long)base;
-        if (proc_swap_transfer_words(DISKSET_MRES_OP_SWAP_READ, first,
+        if (proc_swap_transfer_words(BLOCKSET_MRES_OP_TAIL_READ, first,
             mem, words) != 0)
                 goto fail;
 

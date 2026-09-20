@@ -677,6 +677,66 @@ cmd_df(int argc, kword_t **argv, struct u_io *io)
         return 0;
 }
 
+static unsigned int
+cmd_record_words(const kword_t *record)
+{
+        return 1U + ((unsigned int)record[0] + 5U) / 6U;
+}
+
+/*
+ * Keep TSFS discovery in a short-lived helper rather than linking the
+ * scanner into DSH.  RUN returns a child PID; wait for that exact process so
+ * the helper's text and scan buffers disappear again before the prompt.
+ */
+static int
+cmd_mount_tsfs(int argc, kword_t **argv, struct u_io *io)
+{
+        kword_t block[SYS_RUN_V2_FIXED_WORDS + 4U * U_PATH_WORDS + 3U];
+        kword_t path[U_PATH_WORDS];
+        struct sys_run_v2 *run;
+        kword_t status;
+        unsigned int path_words;
+        unsigned int arg_words;
+        unsigned int total;
+        unsigned int i;
+        int pid;
+
+        if (argc != 3)
+                return cmd_err(io, "MOUNT.TSFS", 0);
+        if (u_s6_pack(path, U_PATH_WORDS, "/SYSTEM/EXEC/MOUNT.TSFS") != 0)
+                return 1;
+        path_words = cmd_record_words(path);
+        total = SYS_RUN_V2_FIXED_WORDS;
+        for (i = 0U; i < path_words; ++i)
+                block[total++] = path[i];
+        for (i = 0U; i < path_words; ++i)
+                block[total++] = path[i];
+        arg_words = cmd_record_words(argv[1]);
+        for (i = 0U; i < arg_words; ++i)
+                block[total++] = argv[1][i];
+        arg_words = cmd_record_words(argv[2]);
+        for (i = 0U; i < arg_words; ++i)
+                block[total++] = argv[2][i];
+        block[total++] = SYS_RUN_FD_MAP(0U, (unsigned int)io->in_fd);
+        block[total++] = SYS_RUN_FD_MAP(1U, (unsigned int)io->out_fd);
+        block[total++] = SYS_RUN_FD_MAP(2U, (unsigned int)io->err_fd);
+
+        run = (struct sys_run_v2 *)block;
+        run->version_words = SYS_RUN_HEADER(SYS_RUN_VERSION_2, total);
+        run->flags = SYS_RUN_PGRP_INHERIT;
+        run->pgrp = 0UL;
+        run->fdmap_count = 3UL;
+        run->argc = 3UL;
+        run->envc = 0UL;
+        pid = dsys_run(run);
+        if (pid < 0)
+                return 1;
+        if (dsys_wait((unsigned int)pid, &status, 0U) != pid ||
+            SYS_WAIT_STATUS_KIND(status) != SYS_WAIT_EXITED)
+                return 1;
+        return SYS_WAIT_STATUS_VALUE(status) == 0U ? 0 : 1;
+}
+
 static int
 cmd_halt(int argc, kword_t **argv, struct u_io *io)
 {
@@ -727,6 +787,7 @@ cmd_dispatch(int argc, kword_t **argv, struct u_io *io)
         if (cmd_name_eq(argv[0], "FSCK.DTFS")) return cmd_fsck_dtfs(argc, argv, io);
         if (cmd_name_eq(argv[0], "MOUNT")) return cmd_mount_dtfs(argc, argv, io);
         if (cmd_name_eq(argv[0], "MOUNT.DTFS")) return cmd_mount_dtfs(argc, argv, io);
+        if (cmd_name_eq(argv[0], "MOUNT.TSFS")) return cmd_mount_tsfs(argc, argv, io);
         if (cmd_name_eq(argv[0], "UNMOUNT")) return cmd_unmount(argc, argv, io);
         if (cmd_name_eq(argv[0], "MV")) return cmd_mv(argc, argv, io);
         if (cmd_name_eq(argv[0], "HEXDUMP")) return cmd_hexdump(argc, argv, io);

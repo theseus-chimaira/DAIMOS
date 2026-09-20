@@ -88,7 +88,6 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/fs/d6fs.h \
 	$(KERNEL_DIR)/fs/d6fs_boot.c \
 	$(KERNEL_DIR)/fs/d6fs_boot.h \
-	$(KERNEL_DIR)/fs/d6fs_mres.c \
 	$(KERNEL_DIR)/fs/d6fs_pdp10.s \
 	$(KERNEL_DIR)/fs/d6fs_provider.c \
 	$(KERNEL_DIR)/fs/d6fs_provider.h \
@@ -97,9 +96,11 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/fs/d6fs_validate_pdp10.s \
 	$(KERNEL_DIR)/fs/monitorfs.h \
 	$(KERNEL_DIR)/fs/dtfs.c \
+	$(KERNEL_DIR)/fs/tsfs.c \
 	$(KERNEL_DIR)/fs/dtfs.h \
 	$(KERNEL_DIR)/fs/dtfs_chain_walk_pdp10.s \
 	$(KERNEL_DIR)/fs/dtfs_pdp10.s \
+	$(KERNEL_DIR)/fs/tsfs_pdp10.s \
 	$(KERNEL_DIR)/fs/dtfs_resize_pdp10.s \
 	$(KERNEL_DIR)/fs/file.c \
 	$(KERNEL_DIR)/fs/file.h \
@@ -147,12 +148,12 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/proc/vm_$(VM_BACKEND)_asm.s \
 	$(KERNEL_DIR)/proc/syscall_info_pdp10.s \
 	$(KERNEL_DIR)/drivers/pclk_pdp10.s \
-	$(KERNEL_DIR)/storage/diskset.h \
-	$(KERNEL_DIR)/storage/diskset_boot.c \
-	$(KERNEL_DIR)/storage/diskset_boot.h \
-	$(KERNEL_DIR)/storage/diskset_dispatch.s \
-	$(KERNEL_DIR)/storage/diskset_layout.h \
-	$(KERNEL_DIR)/storage/diskset_mres.h \
+	$(KERNEL_DIR)/storage/blockset.h \
+	$(KERNEL_DIR)/storage/blockset_boot.c \
+	$(KERNEL_DIR)/storage/blockset_boot.h \
+	$(KERNEL_DIR)/storage/blockset_dispatch.s \
+	$(KERNEL_DIR)/storage/blockset_layout.h \
+	$(KERNEL_DIR)/storage/blockset_mres.h \
 	$(KERNEL_DIR)/storage/logstore.c \
 	$(KERNEL_DIR)/storage/logstore.h \
 	$(KERNEL_DIR)/storage/logstore_drain.c \
@@ -160,11 +161,11 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/storage/storage.h \
 	$(KERNEL_DIR)/storage/storage_router.s
 
-KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot d6fs_boot d6fs_super_boot diskset_boot logstore proc_boot proc_swap_boot kinit_io module_io bootbanner_generated
+KINIT_NAMES = kinit kinit_diag module_minit kfs_boot kinit_boot d6fs_boot d6fs_super_boot blockset_boot logstore proc_boot proc_swap_boot kinit_io module_io bootbanner_generated
 KINIT_LATE_NAMES = kinit_late_begin proc_late mm_boot kinit_late kinit_late_end
-KINIT_ASM = $(KINIT_BUILD)/kinit.s $(KINIT_BUILD)/kinit_diag.s $(KINIT_BUILD)/module_minit.s $(KINIT_BUILD)/kfs_boot.s $(KINIT_BUILD)/kinit_boot.s $(KINIT_BUILD)/d6fs_boot.s $(KINIT_BUILD)/d6fs_super_boot.s $(KINIT_BUILD)/diskset_boot.s $(KINIT_BUILD)/logstore.s $(KINIT_BUILD)/proc_boot.s $(KINIT_BUILD)/proc_swap_boot.s $(KINIT_BUILD)/kinit_io.s $(KINIT_BUILD)/module_io.s $(KINIT_BUILD)/bootbanner_generated.s
+KINIT_ASM = $(KINIT_BUILD)/kinit.s $(KINIT_BUILD)/kinit_diag.s $(KINIT_BUILD)/module_minit.s $(KINIT_BUILD)/kfs_boot.s $(KINIT_BUILD)/kinit_boot.s $(KINIT_BUILD)/d6fs_boot.s $(KINIT_BUILD)/d6fs_super_boot.s $(KINIT_BUILD)/blockset_boot.s $(KINIT_BUILD)/logstore.s $(KINIT_BUILD)/proc_boot.s $(KINIT_BUILD)/proc_swap_boot.s $(KINIT_BUILD)/kinit_io.s $(KINIT_BUILD)/module_io.s $(KINIT_BUILD)/bootbanner_generated.s
 KINIT_LATE_ASM = $(KINIT_BUILD)/kinit_late_begin.s $(KINIT_BUILD)/proc_late.s $(KINIT_BUILD)/mm_boot.s $(KINIT_BUILD)/kinit_late.s $(KINIT_BUILD)/kinit_late_end.s
-KINIT_OBJS = $(BUILD)/kinit.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kfs_boot.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/diskset_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj
+KINIT_OBJS = $(BUILD)/kinit.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kfs_boot.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj
 KINIT_LATE_OBJS = $(BUILD)/kinit_late_begin.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj
 
 KCORE_C_NAMES = exec vfs mm module_runtime proc vm_backend proc_swap file
@@ -176,8 +177,8 @@ KCORE_FIXED_ASM = $(KCORE_BUILD)/exec.s $(KCORE_BUILD)/mm.s $(KCORE_BUILD)/modul
 KCORE_FIXED_OBJS = $(BUILD)/exec.dobj $(BUILD)/mm.dobj $(BUILD)/module_runtime.dobj $(BUILD)/proc.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/ret_pdp10.dobj $(BUILD)/dsk270_pdp10.dobj $(BUILD)/drm236_pdp10.dobj $(BUILD)/kfmt_pdp10.dobj $(BUILD)/vfs_pdp10.dobj $(BUILD)/fs_mres_pdp10.dobj $(BUILD)/file_pdp10.dobj $(BUILD)/pipe_pdp10.dobj $(BUILD)/monitorfs_pdp10.dobj $(BUILD)/proc_pdp10.dobj $(BUILD)/proc_run_pdp10.dobj $(BUILD)/device_state_pdp10.dobj $(BUILD)/syscall_info_pdp10.dobj $(BUILD)/pclk_pdp10.dobj $(BUILD)/lpt_io.dobj $(BUILD)/syscall_dispatch.dobj $(BUILD)/mach_user.dobj $(BUILD)/vm_backend_asm.dobj $(BUILD)/kcore_io.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj
 MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io dcs_io ge_io dpy_io \
 	tty_io wcnsls_io ocnsls_io dsk_io drm236_io tape_io slv_io memfs_pdp10 \
-	dtfs dtfs_pdp10 diskset_dispatch d6fs d6fs_provider d6fs_validate_pdp10 d6fs_pdp10
-MRES_ASM = $(KCORE_BUILD)/cty_io.s $(KCORE_BUILD)/clk_io.s $(KCORE_BUILD)/ptr_io.s $(KCORE_BUILD)/ptp_io.s $(KCORE_BUILD)/cr_io.s $(KCORE_BUILD)/cp_io.s $(KCORE_BUILD)/dcs_io.s $(KCORE_BUILD)/ge_io.s $(KCORE_BUILD)/dpy_io.s $(KCORE_BUILD)/tty_io.s $(KCORE_BUILD)/wcnsls_io.s $(KCORE_BUILD)/ocnsls_io.s $(KCORE_BUILD)/dsk_io.s $(KCORE_BUILD)/drm236_io.s $(KCORE_BUILD)/tape_io.s $(KCORE_BUILD)/slv_io.s $(KCORE_BUILD)/memfs_pdp10.s $(KCORE_BUILD)/dtfs.s $(KCORE_BUILD)/dtfs_pdp10.s $(KCORE_BUILD)/diskset_dispatch.s $(KCORE_BUILD)/d6fs.s $(KCORE_BUILD)/d6fs_provider.s $(KCORE_BUILD)/d6fs_validate_pdp10.s $(KCORE_BUILD)/d6fs_pdp10.s
+	dtfs dtfs_pdp10 tsfs tsfs_pdp10 blockset_dispatch d6fs d6fs_provider d6fs_validate_pdp10 d6fs_pdp10
+MRES_ASM = $(KCORE_BUILD)/cty_io.s $(KCORE_BUILD)/clk_io.s $(KCORE_BUILD)/ptr_io.s $(KCORE_BUILD)/ptp_io.s $(KCORE_BUILD)/cr_io.s $(KCORE_BUILD)/cp_io.s $(KCORE_BUILD)/dcs_io.s $(KCORE_BUILD)/ge_io.s $(KCORE_BUILD)/dpy_io.s $(KCORE_BUILD)/tty_io.s $(KCORE_BUILD)/wcnsls_io.s $(KCORE_BUILD)/ocnsls_io.s $(KCORE_BUILD)/dsk_io.s $(KCORE_BUILD)/drm236_io.s $(KCORE_BUILD)/tape_io.s $(KCORE_BUILD)/slv_io.s $(KCORE_BUILD)/memfs_pdp10.s $(KCORE_BUILD)/dtfs.s $(KCORE_BUILD)/dtfs_pdp10.s $(KCORE_BUILD)/tsfs.s $(KCORE_BUILD)/tsfs_pdp10.s $(KCORE_BUILD)/blockset_dispatch.s $(KCORE_BUILD)/d6fs.s $(KCORE_BUILD)/d6fs_provider.s $(KCORE_BUILD)/d6fs_validate_pdp10.s $(KCORE_BUILD)/d6fs_pdp10.s
 
 KCORE_DXR = $(BUILD)/kcore.dxr
 KCORE_MAP = $(BUILD)/kcore.map
@@ -204,13 +205,13 @@ TAPE_MRES_OBJ = $(BUILD)/tape-mres.dobj
 SLV_MRES_OBJ = $(BUILD)/slv-mres.dobj
 MEMFS_MRES_OBJ = $(BUILD)/memfs-mres.dobj
 DTFS_MRES_OBJ = $(BUILD)/dtfs-mres.dobj
-DISKSET_MRES_OBJ = $(BUILD)/diskset-mres.dobj
+BLOCKSET_MRES_OBJ = $(BUILD)/blockset-mres.dobj
 D6FS_MRES_OBJ = $(BUILD)/d6fs-mres.dobj
 MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PTR_MRES_OBJ) \
 	$(PTP_MRES_OBJ) $(CR_MRES_OBJ) $(CP_MRES_OBJ) \
 	$(DCS_MRES_OBJ) $(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) \
 	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(TAPE_MRES_OBJ) $(DSK_MRES_OBJ) $(DRM_MRES_OBJ) \
-	$(DISKSET_MRES_OBJ) $(MEMFS_MRES_OBJ) $(DTFS_MRES_OBJ) $(D6FS_MRES_OBJ) \
+	$(BLOCKSET_MRES_OBJ) $(MEMFS_MRES_OBJ) $(DTFS_MRES_OBJ) $(D6FS_MRES_OBJ) \
 	$(SLV_MRES_OBJ)
 
 MINIT_TABLE_OBJ = $(BUILD)/module-table-runtime.dobj
@@ -225,9 +226,13 @@ USERLAND_BUILD_ROOT ?= $(BUILD)/userland-build
 INIT_DXR = $(USERLAND_BUILD_ROOT)/userland/init.dxr
 LOGIN_DXR = $(USERLAND_BUILD_ROOT)/userland/login.dxr
 DSH_DXR = $(USERLAND_BUILD_ROOT)/userland/dsh.dxr
+TSFSPROBE_DXR = $(USERLAND_BUILD_ROOT)/userland/tsfsprobe.dxr
+MOUNTTSFS_DXR = $(USERLAND_BUILD_ROOT)/userland/mounttsfs.dxr
 SYSTEM_INIT_DXR ?= $(INIT_DXR)
 SYSTEM_LOGIN_DXR ?= $(LOGIN_DXR)
 SYSTEM_DSH_DXR ?= $(DSH_DXR)
+SYSTEM_TSFSPROBE_DXR ?= $(TSFSPROBE_DXR)
+SYSTEM_MOUNTTSFS_DXR ?= $(MOUNTTSFS_DXR)
 SYSTEM_INITTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/inittab
 SYSTEM_PASSWD_TEXT ?= $(PROJECT_ROOT)/userland/config/passwd
 USERLAND_INPUTS = $(PROJECT_ROOT)/userland/libc/Makefile \
@@ -248,6 +253,10 @@ USERLAND_INPUTS = $(PROJECT_ROOT)/userland/libc/Makefile \
 	$(PROJECT_ROOT)/userland/dsh/dsh.c \
 	$(PROJECT_ROOT)/userland/init/init.c \
 	$(PROJECT_ROOT)/userland/login/login.c \
+	$(PROJECT_ROOT)/userland/tsfs/tsfs_scan.h \
+	$(PROJECT_ROOT)/userland/tsfs/tsfs_scan.c \
+	$(PROJECT_ROOT)/userland/tsfs/tsfsprobe.c \
+	$(PROJECT_ROOT)/userland/tsfs/mount_tsfs.c \
 	$(PROJECT_ROOT)/userland/config/inittab \
 	$(PROJECT_ROOT)/userland/config/passwd \
 	$(PROJECT_ROOT)/userland/Makefile \
@@ -298,7 +307,7 @@ $(KINIT_ASM) $(KINIT_LATE_ASM): $(KINIT_STAMP)
 $(KCORE_FIXED_ASM) $(MRES_ASM): $(KCORE_STAMP)
 	@test -f $@
 
-KERNEL_ASM_OBJS = $(BUILD)/kinit.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kfs_boot.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/diskset_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj $(BUILD)/kinit_late_begin.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj $(BUILD)/exec.dobj $(BUILD)/mm.dobj $(BUILD)/module_runtime.dobj $(BUILD)/proc.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/ret_pdp10.dobj $(BUILD)/dsk270_pdp10.dobj $(BUILD)/drm236_pdp10.dobj $(BUILD)/kfmt_pdp10.dobj $(BUILD)/vfs_pdp10.dobj $(BUILD)/fs_mres_pdp10.dobj $(BUILD)/file_pdp10.dobj $(BUILD)/pipe_pdp10.dobj $(BUILD)/monitorfs_pdp10.dobj $(BUILD)/proc_pdp10.dobj $(BUILD)/proc_run_pdp10.dobj $(BUILD)/device_state_pdp10.dobj $(BUILD)/syscall_info_pdp10.dobj $(BUILD)/pclk_pdp10.dobj $(BUILD)/syscall_dispatch.dobj $(BUILD)/mach_user.dobj $(BUILD)/vm_backend_asm.dobj $(BUILD)/kcore_io.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj $(BUILD)/cty_io.dobj $(BUILD)/clk_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj $(BUILD)/lpt_io.dobj $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj $(BUILD)/dcs_io.dobj $(BUILD)/ge_io.dobj $(BUILD)/dpy_io.dobj $(BUILD)/tty_io.dobj $(BUILD)/wcnsls_io.dobj $(BUILD)/ocnsls_io.dobj $(BUILD)/dsk_io.dobj $(BUILD)/drm236_io.dobj $(BUILD)/tape_io.dobj $(BUILD)/slv_io.dobj $(BUILD)/memfs_pdp10.dobj $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(BUILD)/diskset_dispatch.dobj $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate_pdp10.dobj $(BUILD)/d6fs_pdp10.dobj
+KERNEL_ASM_OBJS = $(BUILD)/kinit.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kfs_boot.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj $(BUILD)/kinit_late_begin.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj $(BUILD)/exec.dobj $(BUILD)/mm.dobj $(BUILD)/module_runtime.dobj $(BUILD)/proc.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/ret_pdp10.dobj $(BUILD)/dsk270_pdp10.dobj $(BUILD)/drm236_pdp10.dobj $(BUILD)/kfmt_pdp10.dobj $(BUILD)/vfs_pdp10.dobj $(BUILD)/fs_mres_pdp10.dobj $(BUILD)/file_pdp10.dobj $(BUILD)/pipe_pdp10.dobj $(BUILD)/monitorfs_pdp10.dobj $(BUILD)/proc_pdp10.dobj $(BUILD)/proc_run_pdp10.dobj $(BUILD)/device_state_pdp10.dobj $(BUILD)/syscall_info_pdp10.dobj $(BUILD)/pclk_pdp10.dobj $(BUILD)/syscall_dispatch.dobj $(BUILD)/mach_user.dobj $(BUILD)/vm_backend_asm.dobj $(BUILD)/kcore_io.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj $(BUILD)/cty_io.dobj $(BUILD)/clk_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj $(BUILD)/lpt_io.dobj $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj $(BUILD)/dcs_io.dobj $(BUILD)/ge_io.dobj $(BUILD)/dpy_io.dobj $(BUILD)/tty_io.dobj $(BUILD)/wcnsls_io.dobj $(BUILD)/ocnsls_io.dobj $(BUILD)/dsk_io.dobj $(BUILD)/drm236_io.dobj $(BUILD)/tape_io.dobj $(BUILD)/slv_io.dobj $(BUILD)/memfs_pdp10.dobj $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_pdp10.dobj $(BUILD)/blockset_dispatch.dobj $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate_pdp10.dobj $(BUILD)/d6fs_pdp10.dobj
 
 $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM)
 	@mkdir -p $(BUILD)
@@ -412,27 +421,30 @@ $(MEMFS_MRES_OBJ): $(BUILD)/memfs_pdp10.dobj $(KCORE_MAP)
 	    -R $@ -N memfs_mres_package -X memfs_mres_dispatch -X memfs_mres_usage \
 	    $(BUILD)/memfs_pdp10.dobj
 
-$(DTFS_MRES_OBJ): $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(KCORE_MAP)
+$(DTFS_MRES_OBJ): $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_pdp10.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dtfs-mres.dxr -M $(BUILD)/dtfs-mres.map \
 	    -R $@ -N dtfs_mres_package -X dtfs_mres_dispatch \
 	    -X dtfs_dtc_read_jump -X dtfs_dtc_write_jump \
 	    -X dtfs_format_unit -X dtfs_mount_unit \
-	    $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj
+	    -X tsfs_mres_dispatch -X tsfs_mount_set \
+	    $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_pdp10.dobj
 
-$(DISKSET_MRES_OBJ): $(BUILD)/diskset_dispatch.dobj $(KCORE_MAP)
-	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/diskset-mres.dxr -M $(BUILD)/diskset-mres.map \
-	    -R $@ -N diskset_mres_package -X diskset_mres_dispatch \
-	    -X diskset_boot -X diskset_total_blocks \
-	    -X diskset_read_block -X diskset_write_block \
-	    $(BUILD)/diskset_dispatch.dobj
+$(BLOCKSET_MRES_OBJ): $(BUILD)/blockset_dispatch.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/blockset-mres.dxr -M $(BUILD)/blockset-mres.map \
+	    -R $@ -N blockset_mres_package -X blockset_mres_dispatch \
+	    -X blockset_boot -X blockset_read_block -X blockset_write_block \
+	    -X blockset_backend_read_jump -X blockset_backend_write_jump \
+	    $(BUILD)/blockset_dispatch.dobj
 
 $(D6FS_MRES_OBJ): $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate_pdp10.dobj $(BUILD)/d6fs_pdp10.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/d6fs-mres.dxr -M $(BUILD)/d6fs-mres.map \
 	    -R $@ -N d6fs_mres_package -X d6fs_mres_dispatch \
-	    -X d6fs_diskset_read -X d6fs_diskset_write \
+	    -X d6fs_block_read -X d6fs_block_write \
 	    -X d6fs_provider_reader \
-	    -X d6fs_diskset_read_jump -X d6fs_diskset_write_jump \
-	    -X d6fs_cache_reclaim \
+	    -X d6fs_block_read_jump -X d6fs_block_write_jump \
+	    -X d6fs_cache_reclaim -X d6fs_direct_map \
+	    -X d6fs_direct_read -X d6fs_direct_write \
+	    -X d6fs_direct_read_jump -X d6fs_direct_write_jump \
 	    $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate_pdp10.dobj $(BUILD)/d6fs_pdp10.dobj
 
 $(KCORE_EMBED_ASM): kcore-embed.s.in $(KCORE_MAP) $(BUILD)
@@ -443,7 +455,7 @@ $(KCORE_EMBED_ASM): kcore-embed.s.in $(KCORE_MAP) $(BUILD)
 $(KCORE_EMBED_OBJ): $(KCORE_EMBED_ASM)
 	$(DAS) $(DASFLAGS) -c -o $@ $<
 
-$(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR) &: $(USERLAND_INPUTS)
+$(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR) &: $(USERLAND_INPUTS)
 	$(MAKE) -C $(PROJECT_ROOT)/userland build BUILD_ROOT='$(USERLAND_BUILD_ROOT)' \
 	    PDP10_PREFIX='$(PDP10_PREFIX)'
 
@@ -477,7 +489,7 @@ $(STAGE1_TAPE): $(STAGE1_DXR)
 	$(DXRCONVERT) --pdp6-readin -b 060 $< $@
 	printf '\252' >> $@
 
-$(DISK_IMAGE): $(IMAGE_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_LOGIN_DXR) $(SYSTEM_DSH_DXR) $(SYSTEM_INITTAB_TEXT) $(SYSTEM_PASSWD_TEXT)
+$(DISK_IMAGE): $(IMAGE_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_LOGIN_DXR) $(SYSTEM_DSH_DXR) $(SYSTEM_TSFSPROBE_DXR) $(SYSTEM_MOUNTTSFS_DXR) $(SYSTEM_INITTAB_TEXT) $(SYSTEM_PASSWD_TEXT)
 	rm -rf $(DISK_DIR)
 	$(MKDSK) -n 1 -m clean -p $(IMAGE_WORDS) -o $(DISK_DIR) \
 	    --d6fs-layout --logstore-blocks $(D6FS_LOGSTORE_BLOCKS) \
@@ -493,6 +505,8 @@ $(DISK_IMAGE): $(IMAGE_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_LOGIN_DXR) $(SYSTEM_DS
 	    -f "/SYSTEM/INIT:$(SYSTEM_INIT_DXR):555:dxr" \
 	    -f "/SYSTEM/EXEC/LOGIN:$(SYSTEM_LOGIN_DXR):555:dxr" \
 	    -f "/SYSTEM/EXEC/DSH:$(SYSTEM_DSH_DXR):555:dxr" \
+	    -f "/SYSTEM/EXEC/TSFSPROBE:$(SYSTEM_TSFSPROBE_DXR):555:dxr" \
+	    -f "/SYSTEM/EXEC/MOUNT.TSFS:$(SYSTEM_MOUNTTSFS_DXR):555:dxr" \
 	    -f "/CONFIG/INITTAB:$(SYSTEM_INITTAB_TEXT):644:text" \
 	    -f "/CONFIG/PASSWD:$(SYSTEM_PASSWD_TEXT):600:text"
 	$(LOGSTORE) -n 1 -d $(DISK_DIR) --init
@@ -527,7 +541,8 @@ $(SIMH_INI): simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE) force-simh-config
 image: $(SIMH_INI)
 
 permanent-size: $(KCORE_MAP) $(MRES_PACKAGE_OBJS)
-	@./report-permanent.sh --kcore-map $(KCORE_MAP) --build $(BUILD) --objdump $(PDP10_OBJDUMP)
+	@./report-permanent.sh --kcore-map $(KCORE_MAP) --build $(BUILD) \
+	    --objdump $(PDP10_OBJDUMP) --omit-blockset
 
 boot:
 	rm -rf $(DISK_DIR) $(SIMH_INI)

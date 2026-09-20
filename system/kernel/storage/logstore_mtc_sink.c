@@ -7,12 +7,12 @@ extern int logstore_tape_io(unsigned int unit, int op, kword_t *buffer,
 
 int
 logstore_mtc_sink(void *context,
-    const kword_t record[DISKSET_BLOCK_WORDS], unsigned int words)
+    const kword_t record[BLOCKSET_BLOCK_WORDS], unsigned int words)
 {
         unsigned int unit;
         int status;
 
-        if (context == 0 || record == 0 || words != DISKSET_BLOCK_WORDS)
+        if (context == 0 || record == 0 || words != BLOCKSET_BLOCK_WORDS)
                 return -1;
         unit = *(const unsigned int *)context;
         status = logstore_tape_io(unit, MTC_OP_STATUS, 0, 0U);

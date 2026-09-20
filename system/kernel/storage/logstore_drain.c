@@ -1,5 +1,5 @@
 #include "logstore.h"
-#include "diskset_boot.h"
+#include "blockset_boot.h"
 
 static kword_t
 logstore_state_commit(kword_t generation, kword_t next_sequence,
@@ -13,21 +13,21 @@ logstore_state_commit(kword_t generation, kword_t next_sequence,
 }
 
 static int
-logstore_state_valid(const kword_t block[DISKSET_BLOCK_WORDS],
+logstore_state_valid(const kword_t block[BLOCKSET_BLOCK_WORDS],
     unsigned int capacity)
 {
         return block[0] == LOGSTORE_STATE_MAGIC && block[1] != 0UL &&
             block[2] != 0UL && block[4] == (kword_t)capacity &&
-            block[DISKSET_BLOCK_WORDS - 1U] ==
+            block[BLOCKSET_BLOCK_WORDS - 1U] ==
             logstore_state_commit(block[1], block[2], block[3], capacity);
 }
 
 static void
-logstore_zero_block(kword_t block[DISKSET_BLOCK_WORDS])
+logstore_zero_block(kword_t block[BLOCKSET_BLOCK_WORDS])
 {
         unsigned int i;
 
-        for (i = 0U; i < DISKSET_BLOCK_WORDS; ++i)
+        for (i = 0U; i < BLOCKSET_BLOCK_WORDS; ++i)
                 block[i] = 0UL;
 }
 
@@ -47,7 +47,7 @@ logstore_oldest_sequence(const struct logstore *log)
 static int
 logstore_drain_write_state(const struct logstore *log,
     struct logstore_drain *drain, kword_t next_sequence,
-    kword_t lost_records, kword_t scratch[DISKSET_BLOCK_WORDS])
+    kword_t lost_records, kword_t scratch[BLOCKSET_BLOCK_WORDS])
 {
         kword_t generation;
         unsigned int copy;
@@ -63,10 +63,10 @@ logstore_drain_write_state(const struct logstore *log,
         scratch[2] = next_sequence;
         scratch[3] = lost_records;
         scratch[4] = (kword_t)log->capacity;
-        scratch[DISKSET_BLOCK_WORDS - 1U] =
+        scratch[BLOCKSET_BLOCK_WORDS - 1U] =
             logstore_state_commit(generation, next_sequence,
             lost_records, log->capacity);
-        if (diskset_boot_log_write((kword_t)copy, scratch) != 0)
+        if (blockset_boot_log_write((kword_t)copy, scratch) != 0)
                 return -1;
         drain->state_generation = generation;
         drain->state_copy = copy;
@@ -77,7 +77,7 @@ logstore_drain_write_state(const struct logstore *log,
 
 int
 logstore_drain_recover(const struct logstore *log,
-    struct logstore_drain *drain, kword_t scratch[DISKSET_BLOCK_WORDS])
+    struct logstore_drain *drain, kword_t scratch[BLOCKSET_BLOCK_WORDS])
 {
         kword_t best_generation;
         kword_t oldest;
@@ -93,7 +93,7 @@ logstore_drain_recover(const struct logstore *log,
         drain->state_generation = 0UL;
         drain->state_copy = LOGSTORE_STATE_NONE;
         for (slot = 0U; slot < 2U; ++slot) {
-                if (diskset_boot_log_read((kword_t)slot, scratch) != 0)
+                if (blockset_boot_log_read((kword_t)slot, scratch) != 0)
                         return -1;
                 if (logstore_state_valid(scratch, log->capacity) &&
                     (!have_state || scratch[1] > best_generation)) {
@@ -114,7 +114,7 @@ logstore_drain_recover(const struct logstore *log,
 int
 logstore_drain_one(const struct logstore *log,
     struct logstore_drain *drain, logstore_sink_fn sink, void *context,
-    kword_t scratch[DISKSET_BLOCK_WORDS])
+    kword_t scratch[BLOCKSET_BLOCK_WORDS])
 {
         kword_t oldest;
         kword_t lost;
@@ -142,11 +142,11 @@ logstore_drain_one(const struct logstore *log,
         slot = log->next_slot + log->capacity - (unsigned int)distance;
         if (slot >= log->capacity)
                 slot -= log->capacity;
-        if (diskset_boot_log_read((kword_t)(slot + 2U), scratch) != 0 ||
+        if (blockset_boot_log_read((kword_t)(slot + 2U), scratch) != 0 ||
             !logstore_record_valid(scratch) ||
             scratch[1] != drain->next_sequence)
                 return -1;
-        status = sink(context, scratch, DISKSET_BLOCK_WORDS);
+        status = sink(context, scratch, BLOCKSET_BLOCK_WORDS);
         if (status != 0)
                 return status;
         return logstore_drain_write_state(log, drain,

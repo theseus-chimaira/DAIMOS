@@ -45,6 +45,8 @@
         .globl dsys_utime
         .globl dsys_rmdir
         .globl dsys_chown
+        .globl dsys_dtc_read_block
+        .globl dsys_tsfs_mount
 
 dsys_exit:             uuo 040,0(1)
                        popj 17,
@@ -148,3 +150,21 @@ dsys_mkfifo:           move 3,2
                        movei 1,021
                        uuo 077,0(1)
                        popj 17,
+
+; Read one 128-word DECtape block into a userspace buffer.
+; AC1=unit, AC2=block, AC3=buffer; UUO 077 extension uses AC1 as selector.
+dsys_dtc_read_block:    move 4,3
+                        move 3,2
+                        move 2,1
+                        movei 1,040
+                        uuo 077,0(1)
+                        popj 17,
+
+; Mount a userspace-validated TSFS handoff.
+; C: AC1=handoff, AC2=target, AC3=flags.
+dsys_tsfs_mount:        move 4,3
+                        move 3,2
+                        move 2,1
+                        movei 1,041
+                        uuo 077,0(1)
+                        popj 17,

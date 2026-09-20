@@ -35,12 +35,12 @@ d6fs_range_valid(kword_t start, kword_t blocks, kword_t total)
 
 int
 d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
-    kword_t diskset_blocks)
+    kword_t blockset_blocks)
 {
         struct d6fs_super_info info;
         kword_t magic_version;
 
-        if (sb == 0 || diskset_blocks == 0UL ||
+        if (sb == 0 || blockset_blocks == 0UL ||
             d6fs_super_decode(sb, &info) != 0)
                 return 0;
         magic_version = (D6FS_MAGIC & ~077UL) | D6FS_FORMAT_VERSION;
@@ -49,7 +49,7 @@ d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
             sb[D6FS_SB_RESERVED1] != 0UL ||
             sb[D6FS_SB_RESERVED] != 0UL ||
             info.state > D6FS_STATE_DIRTY || info.total_blocks == 0UL ||
-            info.total_blocks > diskset_blocks ||
+            info.total_blocks > blockset_blocks ||
             info.total_blocks > D6FS_LOGICAL_BLOCK_MASK + 1UL ||
             info.fcb_count == 0U || info.fcb_count > D6FS_FCB_MASK ||
             info.root_fcb >= info.fcb_count ||
@@ -67,7 +67,7 @@ d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
 
 int
 d6fs_super_select(const kword_t a[D6FS_SUPER_WORDS],
-    const kword_t b[D6FS_SUPER_WORDS], kword_t diskset_blocks,
+    const kword_t b[D6FS_SUPER_WORDS], kword_t blockset_blocks,
     struct d6fs_super_info *info, unsigned int *copyp)
 {
         struct d6fs_super_info ai;
@@ -78,8 +78,8 @@ d6fs_super_select(const kword_t a[D6FS_SUPER_WORDS],
 
         if (a == 0 || b == 0 || info == 0 || copyp == 0)
                 return -1;
-        av = d6fs_super_valid(a, diskset_blocks);
-        bv = d6fs_super_valid(b, diskset_blocks);
+        av = d6fs_super_valid(a, blockset_blocks);
+        bv = d6fs_super_valid(b, blockset_blocks);
         if (!av && !bv)
                 return -1;
         if (av && d6fs_super_decode(a, &ai) != 0)

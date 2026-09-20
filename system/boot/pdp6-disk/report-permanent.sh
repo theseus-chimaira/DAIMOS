@@ -3,18 +3,20 @@ set -eu
 
 usage()
 {
-        echo "usage: $0 --kcore-map MAP --build DIR --objdump TOOL" >&2
+        echo "usage: $0 --kcore-map MAP --build DIR --objdump TOOL [--omit-blockset]" >&2
         exit 2
 }
 
 kmap=
 build=
 objdump=
+omit_blockset=0
 while [ $# -gt 0 ]; do
         case "$1" in
         --kcore-map) [ $# -ge 2 ] || usage; kmap=$2; shift 2 ;;
         --build) [ $# -ge 2 ] || usage; build=$2; shift 2 ;;
         --objdump) [ $# -ge 2 ] || usage; objdump=$2; shift 2 ;;
+        --omit-blockset) omit_blockset=1; shift ;;
         *) usage ;;
         esac
 done
@@ -51,8 +53,8 @@ mres_objects()
         tape)    echo 'tape_io' ;;
         slv)     echo 'slv_io' ;;
         memfs)   echo 'memfs_pdp10' ;;
-        dtfs)    echo 'dtfs dtfs_pdp10' ;;
-        diskset) echo 'diskset_dispatch' ;;
+        dtfs)    echo 'dtfs dtfs_pdp10 tsfs tsfs_pdp10' ;;
+        blockset) echo 'blockset_dispatch' ;;
         d6fs)    echo 'd6fs d6fs_provider d6fs_validate_pdp10 d6fs_pdp10' ;;
         *) return 1 ;;
         esac
@@ -76,7 +78,7 @@ object_words()
 
 total=$kcore
 for name in cty clk ptr ptp cr cp dcs ge dpy tty wcnsls ocnsls dsk tape slv \
-    drm memfs dtfs diskset d6fs; do
+    drm memfs dtfs blockset d6fs; do
         package="$build/$name-mres.dobj"
         [ -f "$package" ] || { echo "missing MRES package: $package" >&2; exit 1; }
         words=0
@@ -89,8 +91,15 @@ for name in cty clk ptr ptp cr cp dcs ge dpy tty wcnsls ocnsls dsk tape slv \
                 esac
                 words=$((words + n))
         done
-        printf 'MRES %-8s %06o %6d\n' "$name" "$words" "$words"
-        total=$((total + words))
+        resident=$words
+        if [ "$name" = blockset ] && [ "$omit_blockset" -eq 1 ]; then
+                resident=0
+                printf 'MRES %-8s %06o %6d\n' "$name" "$resident" "$resident"
+                printf 'PKG  %-8s %06o %6d\n' "$name" "$words" "$words"
+        else
+                printf 'MRES %-8s %06o %6d\n' "$name" "$resident" "$resident"
+        fi
+        total=$((total + resident))
 done
 printf 'KCORE+MRES      %06o %6d\n' "$total" "$total"
 last=$((060 + total - 1))

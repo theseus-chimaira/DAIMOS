@@ -172,7 +172,7 @@ d6fs_reader_get_block:
         movei   3,fs_block_workspace     ; shared transfer block
         move    1,1(010)                 ; opaque
         move    2,011
-        pushj   17,d6fs_diskset_read     ; fixed MINIT-patched DISKSET read
+        pushj   17,d6fs_block_read     ; fixed MINIT-patched BLOCKSET read
         jumpn   1,d6fs_get_block_read_fail
         movem   011,3(010)
         move    1,010
@@ -576,22 +576,50 @@ d6fs_freemap_set_done:
 
         .globl  fs_copy_words
 
-        .globl  d6fs_diskset_read
-        .globl  d6fs_diskset_read_jump
-; Reader callbacks use (opaque, logical, block).  DISKSET block I/O uses
-; (logical, block).  MINIT patches the tail jump once at boot.
-d6fs_diskset_read:
+        .globl  d6fs_block_read
+        .globl  d6fs_block_read_jump
+; Reader callbacks use (opaque, logical, block).  MINIT patches the generic
+; tail jumps either to BLOCKSET (multi-member) or to the singleton adapter.
+d6fs_block_read:
         move    1,2
         move    2,3
-d6fs_diskset_read_jump:
+d6fs_block_read_jump:
         jrst    0
 
-        .globl  d6fs_diskset_write
-        .globl  d6fs_diskset_write_jump
-d6fs_diskset_write:
+        .globl  d6fs_block_write
+        .globl  d6fs_block_write_jump
+d6fs_block_write:
         move    1,2
         move    2,3
-d6fs_diskset_write_jump:
+d6fs_block_write_jump:
+        jrst    0
+
+        .globl  d6fs_direct_map
+        .globl  d6fs_direct_read
+        .globl  d6fs_direct_write
+        .globl  d6fs_direct_read_jump
+        .globl  d6fs_direct_write_jump
+; Singleton adapter.  d6fs_direct_map packs unit,,base and is filled only
+; after KINIT validates the DSK boot descriptor.  The raw DSK ABI already is
+; (unit, sector, buffer), so this path adds only the physical base.
+d6fs_direct_read:
+        move    3,2                    ; BLOCKSET ABI buffer -> raw AC3
+        move    2,1                    ; logical -> raw physical block
+        move    4,d6fs_direct_map
+        hlrz    1,4                    ; raw unit
+        hrrz    4,4                    ; physical base
+        add     2,4
+d6fs_direct_read_jump:
+        jrst    0
+
+d6fs_direct_write:
+        move    3,2
+        move    2,1
+        move    4,d6fs_direct_map
+        hlrz    1,4
+        hrrz    4,4
+        add     2,4
+d6fs_direct_write_jump:
         jrst    0
 
         .globl  fs_zero_block_workspace
@@ -793,7 +821,7 @@ d6fs_reader_commit_cache:
         move    1,1(010)                 ; opaque
         move    2,011
         movei   3,fs_block_workspace
-        pushj   17,d6fs_diskset_write
+        pushj   17,d6fs_block_write
         jumpn   1,d6fs_reader_commit_fail_saved
         movem   011,3(010)
         move    1,010
@@ -1707,3 +1735,6 @@ d6fs_cache_reclaim_done:
  d6fs_cache_slabs:  .block 1
  d6fs_cache_hand:   .block 1
         .text
+
+        .bss
+d6fs_direct_map: .block 1

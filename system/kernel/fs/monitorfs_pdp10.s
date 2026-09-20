@@ -21,7 +21,7 @@
         .globl  mfsdev_log_errors
         .globl  mfsdev_d6set_members
         .globl  proc_swap_blocks_used
-        .globl  diskset_runtime_reg_enter
+        .globl  blockset_runtime_reg_enter
 
 ; Full MonitorFS runtime operations.  MINIT freezes detected device names
 ; into mfsdev_names; a zero slot means that device is absent.
@@ -381,8 +381,8 @@ mfsdev_swap_line_loop:
 mfsdev_swap_select:
         cail    6,3
         jrst    pdp10_ret_zero
-        movei   5,6                   ; DISKSET_MRES_OP_SWAP_BLOCKS
-        pushj   17,diskset_runtime_reg_enter
+        movei   5,6                   ; BLOCKSET_MRES_OP_TAIL_BLOCKS
+        pushj   17,blockset_runtime_reg_enter
         jumpe   6,mfsdev_stats_emit
         cain    6,1
         jrst    mfsdev_swap_used

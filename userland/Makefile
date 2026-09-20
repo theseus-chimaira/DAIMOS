@@ -8,7 +8,7 @@ DLINK ?= $(PDP10_PREFIX)/bin/dlink
 CPPFLAGS = -I$(PROJECT_ROOT)/system/kernel/boot -I$(PROJECT_ROOT)/system/kernel/core -I$(PROJECT_ROOT)/system/kernel/drivers -I$(PROJECT_ROOT)/system/kernel/fs -I$(PROJECT_ROOT)/system/kernel/mm -I$(PROJECT_ROOT)/system/kernel/modules -I$(PROJECT_ROOT)/system/kernel/proc -I$(PROJECT_ROOT)/system/kernel/storage -I$(PROJECT_ROOT)/userland/libc -I$(PROJECT_ROOT)/userland/exec
 KCCFLAGS ?= -Pgnu99 -O -x=pdp6 -m=gas
 
-CHECK_SRCS = libc/u.c libc/text.c exec/commands.c exec/standalone.c dsh/dsh.c init/init.c login/login.c
+CHECK_SRCS = libc/u.c libc/text.c exec/commands.c exec/standalone.c dsh/dsh.c init/init.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c tsfs/mount_tsfs.c
 CHECK_ASMS = $(CHECK_SRCS:%.c=$(USERLAND_BUILD)/check/%.s)
 COMMON_C_SRCS = libc/u.c libc/text.c
 COMMON_S_SRCS = libc/crt0.s libc/syscall.s libc/syscall_helpers.s
@@ -32,10 +32,22 @@ DSH_S_OBJS = $(DSH_S_SRCS:%.s=$(USERLAND_BUILD)/dsh/%.dobj)
 DSH_DXR = $(USERLAND_BUILD)/dsh.dxr
 DSH_MAP = $(USERLAND_BUILD)/dsh.map
 
+TSFSPROBE_C_SRCS = $(COMMON_C_SRCS) tsfs/tsfs_scan.c tsfs/tsfsprobe.c
+TSFSPROBE_C_OBJS = $(TSFSPROBE_C_SRCS:%.c=$(USERLAND_BUILD)/tsfsprobe/%.dobj)
+TSFSPROBE_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/tsfsprobe/%.dobj)
+TSFSPROBE_DXR = $(USERLAND_BUILD)/tsfsprobe.dxr
+TSFSPROBE_MAP = $(USERLAND_BUILD)/tsfsprobe.map
+
+MOUNTTSFS_C_SRCS = $(COMMON_C_SRCS) tsfs/tsfs_scan.c tsfs/mount_tsfs.c
+MOUNTTSFS_C_OBJS = $(MOUNTTSFS_C_SRCS:%.c=$(USERLAND_BUILD)/mounttsfs/%.dobj)
+MOUNTTSFS_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/mounttsfs/%.dobj)
+MOUNTTSFS_DXR = $(USERLAND_BUILD)/mounttsfs.dxr
+MOUNTTSFS_MAP = $(USERLAND_BUILD)/mounttsfs.map
+
 .DEFAULT_GOAL := build
 .PHONY: build check clean
 
-build: $(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR)
+build: $(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR)
 
 check: $(CHECK_ASMS) build
 
@@ -78,6 +90,30 @@ $(LOGIN_DXR): $(LOGIN_C_OBJS) $(LOGIN_S_OBJS)
 
 $(DSH_DXR): $(DSH_C_OBJS) $(DSH_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(DSH_MAP) $(DSH_S_OBJS) $(DSH_C_OBJS)
+
+$(USERLAND_BUILD)/tsfsprobe/%.dobj: %.c
+	mkdir -p $(dir $@)
+	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -c -o $@ $(@:.dobj=.s)
+
+$(USERLAND_BUILD)/tsfsprobe/%.dobj: %.s
+	mkdir -p $(dir $@)
+	$(DAS) $(DASFLAGS) -c -o $@ $<
+
+$(TSFSPROBE_DXR): $(TSFSPROBE_C_OBJS) $(TSFSPROBE_S_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(TSFSPROBE_MAP) $(TSFSPROBE_S_OBJS) $(TSFSPROBE_C_OBJS)
+
+$(USERLAND_BUILD)/mounttsfs/%.dobj: %.c
+	mkdir -p $(dir $@)
+	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -c -o $@ $(@:.dobj=.s)
+
+$(USERLAND_BUILD)/mounttsfs/%.dobj: %.s
+	mkdir -p $(dir $@)
+	$(DAS) $(DASFLAGS) -c -o $@ $<
+
+$(MOUNTTSFS_DXR): $(MOUNTTSFS_C_OBJS) $(MOUNTTSFS_S_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(MOUNTTSFS_MAP) $(MOUNTTSFS_S_OBJS) $(MOUNTTSFS_C_OBJS)
 
 clean:
 	rm -rf $(USERLAND_BUILD)
