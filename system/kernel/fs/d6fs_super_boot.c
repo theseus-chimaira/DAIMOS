@@ -33,8 +33,6 @@ d6fs_super_decode(const kword_t sb[D6FS_SUPER_WORDS],
         info->fcb_count = (unsigned int)sb[D6FS_SB_FCB_COUNT];
         info->freemap_start = sb[D6FS_SB_FREEMAP_START];
         info->freemap_blocks = sb[D6FS_SB_FREEMAP_BLOCKS];
-        info->summary_start = sb[D6FS_SB_SUMMARY_START];
-        info->summary_blocks = sb[D6FS_SB_SUMMARY_BLOCKS];
         return 0;
 }
 
@@ -61,6 +59,8 @@ d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
         kword_t swap_blocks;
         kword_t log_start;
         kword_t log_blocks;
+        kword_t summary_start;
+        kword_t summary_blocks;
         kword_t magic_version;
 
         if (sb == 0 || blockset_blocks == 0UL ||
@@ -77,6 +77,8 @@ d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
         log_blocks = (((high >> D6FS_RES_LOG_HI_SHIFT) &
             D6FS_RESERVATION_LEN_HIGH_MASK) << 12U) |
             (sb[D6FS_SB_LOG_RESERVATION] & D6FS_RESERVATION_LEN_LOW_MASK);
+        summary_start = sb[D6FS_SB_SUMMARY_START];
+        summary_blocks = sb[D6FS_SB_SUMMARY_BLOCKS];
         magic_version = (D6FS_MAGIC & ~077UL) | D6FS_FORMAT_VERSION;
         if (sb[D6FS_SB_MAGIC_VERSION] != magic_version ||
             info.state > D6FS_STATE_DIRTY || info.total_blocks == 0UL ||
@@ -94,7 +96,7 @@ d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
             info.total_blocks) ||
             !d6fs_range_valid(info.freemap_start, info.freemap_blocks,
             info.total_blocks) ||
-            !d6fs_range_valid(info.summary_start, info.summary_blocks,
+            !d6fs_range_valid(summary_start, summary_blocks,
             info.total_blocks) ||
             !d6fs_optional_range_valid(log_start, log_blocks,
             info.total_blocks))
@@ -106,7 +108,7 @@ d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
             d6fs_ranges_overlap(log_start, log_blocks,
             info.freemap_start, info.freemap_blocks) ||
             d6fs_ranges_overlap(log_start, log_blocks,
-            info.summary_start, info.summary_blocks))
+            summary_start, summary_blocks))
                 return 0;
         return 1;
 }

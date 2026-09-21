@@ -894,8 +894,7 @@ vfs_mount:
         caml    4,[01000000]            ; index <= 0777777
         jrst    pdp10_ret_neg1
         move    5,-1(17)                ; flags
-        cail    5,0
-        cail    5,2                     ; RW or RDONLY only
+        trne    5,0777756              ; only RDONLY(1) | STORAGE_PIN(020)
         jrst    pdp10_ret_neg1
         jumpn   1,vfs_mount_check_target
         skipe   vfs_namespace_root
@@ -952,18 +951,9 @@ vfs_mount_found:
         ior     5,4
         movem   1,vfs_mount_target(7)
         movem   5,vfs_mount_root(7)
-        move    6,-1(17)
-        caie    6,1
-        jrst    vfs_mount_clear_ro
-        movei   6,1
-        lsh     6,0(7)
-        iorm    6,vfs_mount_ro
-        jrst    vfs_mount_store
-vfs_mount_clear_ro:
-        hrroi   6,0777776
-        rot     6,(7)
-        andm    6,vfs_mount_ro
-vfs_mount_store:
+        move    0,-1(17)               ; packed VFS_MOUNT_* flags
+        lsh     0,0(7)                  ; place RO and pin bits for slot
+        iorm    0,vfs_mount_ro
         move    6,-2(17)
         movem   5,(6)
         jumpn   1,pdp10_ret_zero
@@ -981,6 +971,10 @@ vfs_unmount:
 vfs_unmount_slot:
         move    3,vfs_mount_root(2)
         came    3,1
+        jrst    pdp10_ret_neg1
+        movei   4,020
+        lsh     4,0(2)
+        tdne    4,vfs_mount_ro
         jrst    pdp10_ret_neg1
         push    17,1                    ; root
         push    17,2                    ; slot

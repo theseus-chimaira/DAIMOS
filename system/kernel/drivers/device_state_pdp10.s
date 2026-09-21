@@ -29,7 +29,7 @@ file_table:
 vfs_namespace_root:
         .block  1                      ; 010 DPY0 has no IN
 vfs_mount_ro:
-        .block  1                      ; 011 TTY0 has no IN
+        .block  1                      ; packed VFS RO bits 0..3, storage-pin bits 4..7
         .block  5                      ; 012..016 remaining IN counters
         .globl  drm236_active_request
         .globl  mfsdev_d6set_reads

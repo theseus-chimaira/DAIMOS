@@ -52,9 +52,7 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
                 return -1;
         }
 
-        reader->alloc_cursor = super->summary_start + super->summary_blocks;
-        if (reader->alloc_cursor >= super->total_blocks)
-                reader->alloc_cursor = 0UL;
+        reader->alloc_cursor = super->fs_uuid[0];
 
         reader->opaque = (void *)(unsigned long)id;
         reader->super = *super;
@@ -137,15 +135,18 @@ d6fs_boot_mount_root(unsigned int flags)
         if (d6fs_super_select(a, b, total, &super, &copy) != 0)
                 return -1;
         selected = copy == 0U ? a : b;
+        super.fs_uuid[0] = selected[D6FS_SB_SUMMARY_START] +
+            selected[D6FS_SB_SUMMARY_BLOCKS];
+        if (super.fs_uuid[0] >= super.total_blocks)
+                super.fs_uuid[0] = 0UL;
         high = selected[D6FS_SB_RESERVATION_HIGH];
         swap_blocks = (((high >> D6FS_RES_SWAP_HI_SHIFT) &
             D6FS_RESERVATION_LEN_HIGH_MASK) << 12U) |
             (selected[D6FS_SB_SWAP_RESERVATION] &
             D6FS_RESERVATION_LEN_LOW_MASK);
         tail_blocks = blockset_direct_tail;
-        if (swap_blocks == 0UL)
-                swap_blocks = tail_blocks;
-        else if (swap_blocks > tail_blocks)
+        if ((swap_blocks == 0UL && tail_blocks != 0UL) ||
+            swap_blocks > tail_blocks)
                 return -1;
         blockset_direct_blocks = total;
         blockset_direct_tail = swap_blocks;
@@ -160,6 +161,8 @@ d6fs_boot_mount_root(unsigned int flags)
             (super_b >= log_start && super_b - log_start < log_blocks)))
                 return -1;
         logstore_boot_configure(log_start, log_blocks);
+        if ((swap_blocks | log_blocks) != 0UL)
+                flags |= VFS_MOUNT_STORAGE_PIN;
         rc = d6fs_boot_runtime_init(&super, flags, super_a, super_b, copy);
         if (rc != 0)
                 return rc;

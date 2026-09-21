@@ -61,6 +61,7 @@ typedef kword_t vnode_t;
 #define VFS_NMOUNT           4U
 #define VFS_MOUNT_RW         0U
 #define VFS_MOUNT_RDONLY     1U
+#define VFS_MOUNT_STORAGE_PIN 020U
 #define VFS_ERR_UNSUPPORTED  (-2)
 #define VFS_DEVICE_IO        (-3)
 #define VFS_LOCK_SHARED      1U

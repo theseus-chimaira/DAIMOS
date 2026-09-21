@@ -120,8 +120,6 @@ struct d6fs_super_info {
         unsigned int fcb_count;
         kword_t freemap_start;
         kword_t freemap_blocks;
-        kword_t summary_start;
-        kword_t summary_blocks;
 };
 
 struct d6fs_reader {
