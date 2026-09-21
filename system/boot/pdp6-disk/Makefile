@@ -431,7 +431,7 @@ $(DTFS_MRES_OBJ): $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(BUILD)/tsfs.dobj
 
 $(BLOCKSET_MRES_OBJ): $(BUILD)/blockset_dispatch.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/blockset-mres.dxr -M $(BUILD)/blockset-mres.map \
-	    -R $@ -N blockset_mres_package -X blockset_mres_dispatch \
+	    -R $@ -N blockset_mres_package -X blockset_tail_map \
 	    -X blockset_boot -X blockset_read_block -X blockset_write_block \
 	    -X blockset_backend_read_jump -X blockset_backend_write_jump \
 	    $(BUILD)/blockset_dispatch.dobj

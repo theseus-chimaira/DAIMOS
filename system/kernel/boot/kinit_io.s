@@ -80,6 +80,16 @@ kinit_call_blockset_request:
         move    5,(5)                  ; operation, after final pointer use
         jrst    (4)
 
+; Direct BLOCKSET I/O adapter used only while KINIT is resident.
+; C ABI: address, logical block, buffer.  Installed root read/write exports use
+; AC1=logical and AC2=buffer, so no permanent request dispatcher is needed.
+        .globl  kinit_call_blockset_io
+kinit_call_blockset_io:
+        move    4,1
+        move    1,2
+        move    2,3
+        jrst    (4)
+
 ; kword_t kinit_call18_1(unsigned int address, kword_t arg)
 kinit_call18_1:
         move 03,01

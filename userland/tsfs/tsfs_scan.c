@@ -264,14 +264,57 @@ table_checksum_ok(const struct tsfs_scan_result *scan,
 }
 
 static int
+extent_record_ok(const struct tsfs_scan_result *scan,
+    const struct tsfs_table_info *extent, unsigned int index,
+    unsigned int file_words, kword_t inline_location)
+{
+        kword_t block[TSFS_BLOCK_WORDS];
+        const kword_t *r;
+        unsigned int per_block;
+        unsigned int table_block;
+        unsigned int slot;
+        unsigned int member;
+        unsigned int start;
+        unsigned int blocks;
+        unsigned int flags;
+
+        if (!extent->present || extent->record_words != EXTENT_WORDS ||
+            index >= extent->records)
+                return 0;
+        per_block = TSFS_BLOCK_WORDS / EXTENT_WORDS;
+        table_block = index / per_block;
+        slot = index % per_block;
+        if (table_block >= extent->blocks ||
+            dsys_dtc_read_block(scan->unit[extent->member],
+            extent->block + table_block, block) != 0)
+                return 0;
+        r = block + slot * EXTENT_WORDS;
+        if (r[0] != 0 || r[1] != inline_location)
+                return 0;
+        member = (unsigned int)((r[1] >> 18) & HALF18);
+        start = (unsigned int)(r[1] & HALF18);
+        flags = (unsigned int)((r[2] >> 18) & HALF18);
+        blocks = (unsigned int)(r[2] & HALF18);
+        if (member >= scan->members || start < 3U || flags != 0U ||
+            blocks == 0U || start + blocks > scan->blocks[member] ||
+            file_words == 0U ||
+            (kword_t)file_words > (kword_t)blocks * TSFS_BLOCK_WORDS ||
+            (blocks > 1U && (kword_t)file_words <=
+            (kword_t)(blocks - 1U) * TSFS_BLOCK_WORDS))
+                return 0;
+        return 1;
+}
+
+static int
 file_table_structure_ok(const struct tsfs_scan_result *scan,
-    const struct tsfs_table_info *t)
+    const struct tsfs_table_info *t, const struct tsfs_table_info *extent)
 {
         kword_t block[TSFS_BLOCK_WORDS];
         unsigned int unit;
         unsigned int per_block;
         unsigned int index;
         unsigned int current_block;
+        unsigned int data_files;
 
         if (t->record_words != FILE_WORDS || t->records == 0U ||
             (kword_t)t->records * FILE_WORDS >
@@ -280,6 +323,7 @@ file_table_structure_ok(const struct tsfs_scan_result *scan,
         unit = scan->unit[t->member];
         per_block = TSFS_BLOCK_WORDS / FILE_WORDS;
         current_block = 0777777U;
+        data_files = 0U;
         for (index = 0U; index < t->records; ++index) {
                 const kword_t *r;
                 unsigned int b;
@@ -288,6 +332,7 @@ file_table_structure_ok(const struct tsfs_scan_result *scan,
                 unsigned int flags;
                 unsigned int first;
                 unsigned int count;
+                unsigned int size;
 
                 b = index / per_block;
                 slot = index % per_block;
@@ -316,11 +361,23 @@ file_table_structure_ok(const struct tsfs_scan_result *scan,
                             (count != 0U && (first <= index ||
                             first + count > t->records)))
                                 return 0;
-                } else if (r[5] != 0 || r[6] != 0 || r[7] != 0) {
-                        return 0;
+                } else {
+                        size = (unsigned int)r[5];
+                        first = (unsigned int)((r[6] >> 18) & HALF18);
+                        count = (unsigned int)(r[6] & HALF18);
+                        if (size == 0U) {
+                                if (r[7] != 0 || first != 0U || count != 0U)
+                                        return 0;
+                        } else {
+                                if (count != 1U ||
+                                    !extent_record_ok(scan, extent, first, size,
+                                    r[7]))
+                                        return 0;
+                                ++data_files;
+                        }
                 }
         }
-        return 1;
+        return extent->present ? data_files == extent->records : data_files == 0U;
 }
 
 static int
@@ -382,11 +439,17 @@ scan_metadata(const struct tsfs_scan_result *scan,
         }
         if (!file_seen || file->record_words != FILE_WORDS ||
             file->records != (unsigned int)td[TD_FILE_COUNT] ||
-            !table_checksum_ok(scan, file) ||
-            !file_table_structure_ok(scan, file))
+            !table_checksum_ok(scan, file))
                 return -1;
-        /* Extent-bearing files are deliberately the next milestone. */
-        if (td[TD_EXTENT_COUNT] != 0 || extent_seen)
+        if (td[TD_EXTENT_COUNT] == 0) {
+                if (extent_seen)
+                        return -1;
+        } else if (!extent_seen || extent->record_words != EXTENT_WORDS ||
+            extent->records != (unsigned int)td[TD_EXTENT_COUNT] ||
+            !table_checksum_ok(scan, extent)) {
+                return -1;
+        }
+        if (!file_table_structure_ok(scan, file, extent))
                 return -1;
         return 0;
 }
@@ -398,7 +461,8 @@ tsfs_build_mount_handoff(const struct tsfs_scan_result *scan,
         struct tsfs_table_info file;
         struct tsfs_table_info extent;
         unsigned int i;
-        kword_t total;
+        kword_t member_map;
+        kword_t file_hi;
 
         if (scan == 0 || out == 0 || scan->members == 0U ||
             scan->members > TSFS_MAX_MEMBERS ||
@@ -407,27 +471,20 @@ tsfs_build_mount_handoff(const struct tsfs_scan_result *scan,
                 return -1;
         for (i = 0U; i < SYS_TSFS_MOUNT_WORDS; ++i)
                 out[i] = 0;
-        out[0] = (kword_t)(scan->members | (1U << 3)) << 18;
-        total = 0;
-        for (i = 0U; i < scan->members; ++i) {
-                if (scan->unit[i] > 7U || scan->blocks[i] != TSFS_BLOCK_COUNT)
-                        return -1;
-                out[2U + i] = scan->unit[i];
-                out[9U + i] = scan->blocks[i];
-                total += scan->blocks[i];
-        }
-        out[1] = total;
-        if (file.present) {
-                out[SYS_TSFS_FILE_LOC] =
-                    ((kword_t)scan->unit[file.member] << 18) | file.block;
-                out[SYS_TSFS_FILE_SHAPE] =
-                    ((kword_t)file.blocks << 18) | file.records;
-        }
+        if (!file.present)
+                return 0;
+        if (file.records >= 0100000U || scan->unit[file.member] > 7U)
+                return -1;
+        file_hi = ((kword_t)scan->unit[file.member] << 15) | file.records;
+        out[SYS_TSFS_FILE_LOC] = (file_hi << 18) | file.block;
         if (extent.present) {
-                out[SYS_TSFS_EXTENT_LOC] =
-                    ((kword_t)scan->unit[extent.member] << 18) | extent.block;
-                out[SYS_TSFS_EXTENT_SHAPE] =
-                    ((kword_t)extent.blocks << 18) | extent.records;
+                member_map = 0;
+                for (i = 0U; i < scan->members; ++i) {
+                        if (scan->unit[i] > 7U)
+                                return -1;
+                        member_map |= (kword_t)scan->unit[i] << (3U * i);
+                }
+                out[SYS_TSFS_FILE_SHAPE] = member_map;
         }
         return 0;
 }

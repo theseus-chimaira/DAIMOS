@@ -555,13 +555,12 @@ native_sys_dtc_read_block:
         move    1,4
         pushj   17,native_sys_map_one
         jumpe   1,pdp10_ret_neg1
-        move    5,3                     ; logical mapping end
-        add     5,4                     ; physical one-past mapping end
-        move    3,1                     ; mapped destination
-        move    0,1
-        addi    0,0200                  ; 128 words required
-        camle   0,5
+        add     3,4                     ; physical one-past mapping end
+        move    5,1
+        addi    5,0200                  ; 128 words required
+        camle   5,3
         jrst    native_sys_dtc_read_bad
+        move    3,1                     ; mapped destination
         hrrz    1,6
         hrrz    2,7
         .globl  sys_dtc_read_block_jump
@@ -590,14 +589,14 @@ native_sys_tsfs_mount:
         addi    0,022                    ; through handoff words 16/17
         camle   0,5
         jrst    native_sys_tsfs_mount_bad_map
-        push    17,020(1)                ; file MEMBER,,START_BLOCK
-        push    17,021(1)                ; file BLOCKS,,RECORD_COUNT
+        push    17,020(1)                ; packed FILE state
+        push    17,021(1)                ; packed member-map state
         pushj   17,vm_user_mapping_release
         move    1,010
         pushj   17,native_sys_lookup_user_path
         jumpe   1,native_sys_tsfs_mount_bad_stack
         move    2,1                      ; mounted-on vnode
-        movei   1,-1(17)                 ; compact two-word resident metadata
+        movei   1,-1(17)                 ; first of two packed state words
         move    3,011                    ; flags
         push    17,0                     ; returned root scratch
         movei   4,(17)

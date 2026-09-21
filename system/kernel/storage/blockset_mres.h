@@ -22,5 +22,7 @@ struct blockset_mres_request {
 
 /* KINIT-only relocated runtime-state destinations exported by the MRES. */
 extern unsigned int blockset_state_addr;
+extern unsigned int blockset_read_addr;
+extern unsigned int blockset_write_addr;
 
 #endif

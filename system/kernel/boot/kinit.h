@@ -44,6 +44,8 @@ kword_t kinit_call18_0(unsigned int address);
 kword_t kinit_call18_1(unsigned int address, kword_t arg);
 kword_t kinit_call_fs_request(unsigned int address, const void *req);
 kword_t kinit_call_blockset_request(unsigned int address, const void *req);
+kword_t kinit_call_blockset_io(unsigned int address, kword_t logical,
+    void *buffer);
 kword_t kinit_call18_2(unsigned int address, kword_t arg1, kword_t arg2);
 kword_t kinit_call18_3(unsigned int address, kword_t arg1, kword_t arg2,
     kword_t arg3);

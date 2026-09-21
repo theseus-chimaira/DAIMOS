@@ -38,6 +38,19 @@ main(int argc, kword_t **argv)
                 (void)u_crlf(2);
                 return 1;
         }
+        if (scan.members > 1U) {
+                kword_t probe[TSFS_BLOCK_WORDS];
+
+                (void)u_puts(1, "DBG DTC1 PRE");
+                (void)u_crlf(1);
+                if (dsys_dtc_read_block(scan.unit[1], 3U, probe) != 0) {
+                        (void)u_puts(1, "DBG DTC1 ERR");
+                        (void)u_crlf(1);
+                } else {
+                        (void)u_puts(1, "DBG DTC1 OK");
+                        (void)u_crlf(1);
+                }
+        }
         if (dsys_tsfs_mount(handoff, argv[2], SYS_MOUNT_RDONLY) != 0) {
                 (void)u_puts(2, "MOUNT.TSFS: MOUNT FAILED");
                 (void)u_crlf(2);

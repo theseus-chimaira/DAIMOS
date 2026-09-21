@@ -1,4 +1,12 @@
 #include "blockset_boot.h"
+
+/* Compact installed root descriptor; the generic mapper keeps the public
+ * seven-member descriptor layout from blockset.h. */
+#define BLOCKSET_ROOT_DESC_WORDS 10U
+#define BLOCKSET_ROOT_DESC_FLAGS 0U
+#define BLOCKSET_ROOT_DESC_TOTAL 1U
+#define BLOCKSET_ROOT_DESC_UNIT0 2U
+#define BLOCKSET_ROOT_DESC_RANGE0 6U
 #include "blockset_mres.h"
 #include "blockset_layout.h"
 #include "dsk270.h"
@@ -42,19 +50,6 @@ blockset_boot_member_count_hint(void)
                 if (blockset_boot_half(index) != BLOCKSET_BOOT_UNUSED_HALF)
                         ++members;
         return members;
-}
-
-static int
-blockset_boot_call(struct blockset_mres_request *req)
-{
-        unsigned int address;
-
-        if (req == 0)
-                return -1;
-        address = module_service_get(MODULE_SERVICE_BLOCKSET);
-        if (address == 0U)
-                return -1;
-        return (int)kinit_call_blockset_request(address, req);
 }
 
 static int
@@ -150,16 +145,17 @@ blockset_boot_configure(const struct blockset *config)
             module_service_get(MODULE_SERVICE_BLOCKSET) == 0U)
                 return -1;
         runtime = (kword_t *)(unsigned long)blockset_state_addr;
-        for (i = 0U; i < BLOCKSET_DESCRIPTOR_WORDS; ++i)
+        for (i = 0U; i < BLOCKSET_ROOT_DESC_WORDS; ++i)
                 runtime[i] = 0UL;
-        runtime[BLOCKSET_DESC_TOTAL] = total;
+        runtime[BLOCKSET_ROOT_DESC_TOTAL] = total;
         for (i = 0U; i < config->members; ++i) {
-                runtime[BLOCKSET_DESC_UNIT0 + i] =
+                runtime[BLOCKSET_ROOT_DESC_UNIT0 + i] =
                     (kword_t)config->unit[i];
-                runtime[BLOCKSET_DESC_RANGE0 + i] =
-                    (config->base[i] << 18U) | config->blocks[i];
+                runtime[BLOCKSET_ROOT_DESC_RANGE0 + i] =
+                    (config->base[i] << 18U) |
+                    (config->base[i] + config->blocks[i]);
         }
-        runtime[BLOCKSET_DESC_FLAGS] =
+        runtime[BLOCKSET_ROOT_DESC_FLAGS] =
             ((kword_t)(config->members |
             (config->policy << BLOCKSET_DESC_POLICY_SHIFT)) << 18U) |
             config->tail_blocks;
@@ -262,28 +258,17 @@ blockset_boot_discover(kword_t *super_ap, kword_t *super_bp)
         return 0;
 }
 
-static int
-blockset_boot_simple(unsigned int op, kword_t logical, const void *buffer)
-{
-        struct blockset_mres_request req;
-
-        req.op = (kword_t)op;
-        req.a = logical;
-        req.b = (kword_t)(unsigned long)buffer;
-        req.c = 0UL;
-        return blockset_boot_call(&req);
-}
-
 int
 blockset_boot_read(kword_t blockno, kword_t block[BLOCKSET_BLOCK_WORDS])
 {
-        if (blockset_boot_state.members == 1U) {
-                if (block == 0 || blockno >= blockset_boot_total)
-                        return -1;
+        if (block == 0 || blockno >= blockset_boot_total)
+                return -1;
+        if (blockset_boot_state.members == 1U)
                 return dsk270_read_sector(blockset_boot_state.unit[0],
                     blockset_boot_state.base[0] + blockno, block);
-        }
-        return blockset_boot_simple(BLOCKSET_MRES_OP_READ_BLOCK, blockno, block);
+        if (blockset_read_addr == 0U)
+                return -1;
+        return (int)kinit_call_blockset_io(blockset_read_addr, blockno, block);
 }
 
 kword_t
@@ -299,20 +284,22 @@ blockset_boot_writable(void)
                 return 0;
         if (blockset_boot_state.members == 1U)
                 return module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U;
-        return blockset_boot_simple(BLOCKSET_MRES_OP_WRITABLE, 0UL, 0);
+        return blockset_write_addr != 0U;
 }
 
 int
 blockset_boot_write(kword_t blockno,
     const kword_t block[BLOCKSET_BLOCK_WORDS])
 {
-        if (blockset_boot_state.members == 1U) {
-                if (block == 0 || blockno >= blockset_boot_total)
-                        return -1;
+        if (block == 0 || blockno >= blockset_boot_total)
+                return -1;
+        if (blockset_boot_state.members == 1U)
                 return dsk270_write_sector(blockset_boot_state.unit[0],
                     blockset_boot_state.base[0] + blockno, block);
-        }
-        return blockset_boot_simple(BLOCKSET_MRES_OP_WRITE_BLOCK, blockno, block);
+        if (blockset_write_addr == 0U)
+                return -1;
+        return (int)kinit_call_blockset_io(blockset_write_addr, blockno,
+            (void *)block);
 }
 
 int
