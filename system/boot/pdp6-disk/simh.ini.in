@@ -1,5 +1,5 @@
 set -q -n log @SIMH_LOG@
-set cpu 256k
+set cpu @CPU_KWORDS@k
 
 ; PCLK is standard DAIMOS wall-clock hardware.  Enable it explicitly so the
 ; boot configuration does not depend on simulator compile-time/default flags.

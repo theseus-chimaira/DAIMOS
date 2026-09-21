@@ -210,8 +210,7 @@ fs_d6fs_cache_reclaim:
 d6fs_cache_reclaim_jump:
         jrst    fs_mres_no_service
 fs_mres_no_service:
-        hrroi   1,1
-        popj    17,
+        jrst    pdp10_ret_neg1
 
         .globl  fs_copy_words
 ; void fs_copy_words(src, dst, count)

@@ -2,6 +2,7 @@
         .text
         .globl  fs_mres_vector_dispatch
         .globl  pdp10_ret_zero
+        .globl  pdp10_ret_neg1
         .globl  tsfs_mres_dispatch
         .globl  tsfs_lookup
         .globl  tsfs_readdir
@@ -91,9 +92,9 @@ tsfs_node_record:
         cain    5,1
         jrst    tsfs_node_record_root
         caie    5,2
-        jrst    tsfs_node_record_bad
+        jrst    pdp10_ret_neg1
         hrrz    2,1                    ; ordinary record index
-        jumpe   2,tsfs_node_record_bad
+        jumpe   2,pdp10_ret_neg1
         jrst    tsfs_file_record
 
 tsfs_node_record_root:
@@ -110,19 +111,15 @@ tsfs_node_record_empty:
         movei   1,1
         popj    17,
 
-tsfs_node_record_bad:
-        hrroi   1,1
-        popj    17,
-
 ; Shared non-root parent decode.
 ; AC1=node.  Return parent vnode in AC1 and the source record pointer in AC2.
 tsfs_parent_common:
         hlrz    4,1
         andi    4,077
         caie    4,2                    ; TSFS_KIND_NODE only
-        jrst    tsfs_parent_common_bad
+        jrst    pdp10_ret_neg1
         hrrz    2,1
-        jumpe   2,tsfs_parent_common_bad
+        jumpe   2,pdp10_ret_neg1
         push    17,010
         move    010,1
         pushj   17,tsfs_file_record
@@ -147,14 +144,10 @@ tsfs_parent_common_pop:
         pop     17,010
         popj    17,
 
-tsfs_parent_common_bad:
-        hrroi   1,1
-        popj    17,
-
 ; int tsfs_parent(vnode, vnode_t *parentp)
         .globl  tsfs_parent
 tsfs_parent:
-        jumpe   2,tsfs_parent_bad
+        jumpe   2,pdp10_ret_neg1
         hlrz    4,1
         andi    4,077
         cain    4,1                    ; mounted root is its own parent
@@ -172,16 +165,12 @@ tsfs_parent_root:
         movem   1,(2)
         setz    1,
         popj    17,
-tsfs_parent_bad:
-        hrroi   1,1
-        popj    17,
-
 ; int tsfs_parent_name(vnode, vnode_t *parentp, struct vfs_name *namep)
         .globl  tsfs_parent_name
         .globl  vfs_sixbit_name_chars
 tsfs_parent_name:
-        jumpe   2,tsfs_parent_name_bad
-        jumpe   3,tsfs_parent_name_bad
+        jumpe   2,pdp10_ret_neg1
+        jumpe   3,pdp10_ret_neg1
         push    17,010
         push    17,011
         move    010,2                  ; parent result
@@ -206,14 +195,10 @@ tsfs_parent_name_pop:
         pop     17,011
         pop     17,010
         popj    17,
-tsfs_parent_name_bad:
-        hrroi   1,1
-        popj    17,
-
 ; int tsfs_stat(vnode, struct vfs_stat *st)
         .globl  tsfs_stat
 tsfs_stat:
-        jumpe   2,tsfs_stat_bad
+        jumpe   2,pdp10_ret_neg1
         push    17,010
         move    010,2
         pushj   17,tsfs_node_record
@@ -252,13 +237,9 @@ tsfs_stat_pop_bad:
 tsfs_stat_pop:
         pop     17,010
         popj    17,
-tsfs_stat_bad:
-        hrroi   1,1
-        popj    17,
-
 ; int tsfs_readdir(vnode dir, unsigned int off, struct vfs_dirent *ent)
 tsfs_readdir:
-        jumpe   3,tsfs_readdir_bad
+        jumpe   3,pdp10_ret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -317,10 +298,6 @@ tsfs_readdir_pop:
         pop     17,011
         pop     17,010
         popj    17,
-tsfs_readdir_bad:
-        hrroi   1,1
-        popj    17,
-
 ; int tsfs_read_words(vnode node, unsigned int off, kword_t *buf,
 ;     unsigned int nwords)
 ; V1 mount validation guarantees exactly one contiguous tape-local extent for
@@ -328,7 +305,7 @@ tsfs_readdir_bad:
 ; member,,start-block; transient userspace verifies the cache against the
 ; checksummed canonical extent table before handing the mount to the kernel.
 tsfs_read_words:
-        jumpe   4,tsfs_read_words_zero
+        jumpe   4,pdp10_ret_zero
         add     17,[5,,5]
         movei   0,-4(17)
         hrli    0,010
@@ -412,10 +389,6 @@ tsfs_read_words_restore:
         sub     17,[5,,5]
         popj    17,
 
-tsfs_read_words_zero:
-        setz    1,
-        popj    17,
-
 ; ---------------------------------------------------------------------------
 ; Mount and lookup policy.  The userspace handoff has already been fully
 ; validated; the kernel receives two packed runtime words.  Re-check only the
@@ -429,7 +402,7 @@ tsfs_read_words_zero:
 
 tsfs_mount_set:
         caie    3,1                    ; VFS_MOUNT_RDONLY
-        jrst    tsfs_mount_bad
+        jrst    pdp10_ret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -496,14 +469,10 @@ tsfs_mount_pop:
         pop     17,011
         pop     17,010
         popj    17,
-tsfs_mount_bad:
-        hrroi   1,1
-        popj    17,
-
 ; int tsfs_lookup(vnode dir, const struct vfs_name *name, vnode_t *nodep)
 tsfs_lookup:
-        jumpe   2,tsfs_lookup_bad
-        jumpe   3,tsfs_lookup_bad
+        jumpe   2,pdp10_ret_neg1
+        jumpe   3,pdp10_ret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -564,9 +533,6 @@ tsfs_lookup_pop:
         pop     17,012
         pop     17,011
         pop     17,010
-        popj    17,
-tsfs_lookup_bad:
-        hrroi   1,1
         popj    17,
 
         .bss

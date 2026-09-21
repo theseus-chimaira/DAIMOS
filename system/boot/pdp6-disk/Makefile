@@ -1,3 +1,4 @@
+.PHONY: force-minit-config
 PROJECT_ROOT != cd ../../.. && pwd
 KERNEL_DIR = $(PROJECT_ROOT)/system/kernel
 BUILD_ROOT ?= $(PROJECT_ROOT)/build
@@ -13,8 +14,18 @@ MKDSK ?= $(PDP10_PREFIX)/bin/mkdsk
 MKD6FS ?= $(PDP10_PREFIX)/bin/mkd6fs
 LOGSTORE ?= $(PDP10_PREFIX)/bin/logstore
 SIMH_PDP6 ?= $(PDP10_PREFIX)/bin/pdp6
-BOOT_CORE_WORDS ?= 01000000
+BOOT_PROFILE ?= full
+ifneq ($(filter $(BOOT_PROFILE),full lowmem),$(BOOT_PROFILE))
+$(error unsupported BOOT_PROFILE=$(BOOT_PROFILE); expected full or lowmem)
+endif
 KINIT_STACK_RESERVE_WORDS ?= 02000
+ifeq ($(BOOT_PROFILE),lowmem)
+BOOT_CORE_WORDS ?= 0100000
+SIMH_CPU_KWORDS ?= 32
+else
+BOOT_CORE_WORDS ?= 01000000
+SIMH_CPU_KWORDS ?= 256
+endif
 KINIT_STACK_WATERMARK ?= 0
 PDP10_GCC ?= $(PDP10_PREFIX)/bin/pdp10-dec-none-gcc
 PDP10_OBJDUMP ?= $(PDP10_PREFIX)/bin/pdp10-objdump
@@ -207,13 +218,22 @@ MEMFS_MRES_OBJ = $(BUILD)/memfs-mres.dobj
 DTFS_MRES_OBJ = $(BUILD)/dtfs-mres.dobj
 BLOCKSET_MRES_OBJ = $(BUILD)/blockset-mres.dobj
 D6FS_MRES_OBJ = $(BUILD)/d6fs-mres.dobj
+ifeq ($(BOOT_PROFILE),lowmem)
+MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(DCS_MRES_OBJ) \
+	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(DSK_MRES_OBJ) $(BLOCKSET_MRES_OBJ) \
+	$(D6FS_MRES_OBJ)
+KINIT_FULL = 0
+else
 MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PTR_MRES_OBJ) \
 	$(PTP_MRES_OBJ) $(CR_MRES_OBJ) $(CP_MRES_OBJ) \
 	$(DCS_MRES_OBJ) $(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) \
 	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(TAPE_MRES_OBJ) $(DSK_MRES_OBJ) $(DRM_MRES_OBJ) \
 	$(BLOCKSET_MRES_OBJ) $(MEMFS_MRES_OBJ) $(DTFS_MRES_OBJ) $(D6FS_MRES_OBJ) \
 	$(SLV_MRES_OBJ)
+KINIT_FULL = 1
+endif
 
+MINIT_TABLE_ASM = $(BUILD)/module-table-runtime.s
 MINIT_TABLE_OBJ = $(BUILD)/module-table-runtime.dobj
 END_OBJ = $(BUILD)/image-end.dobj
 IMAGE_DXR = $(BUILD)/kinit.dxr
@@ -313,7 +333,12 @@ $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM
 	@mkdir -p $(BUILD)
 	@base=`basename "$@" .dobj`; src=; if test -f "$(KINIT_BUILD)/$$base.s"; then src="$(KINIT_BUILD)/$$base.s"; elif test -f "$(KCORE_BUILD)/$$base.s"; then src="$(KCORE_BUILD)/$$base.s"; fi; test -n "$$src"; $(DAS) $(DASFLAGS) -c -o "$@" "$$src"
 
-$(MINIT_TABLE_OBJ): $(KERNEL_DIR)/modules/module_table.s $(BUILD)
+force-minit-config:
+
+$(MINIT_TABLE_ASM): $(KERNEL_DIR)/modules/module_table.s force-minit-config | $(BUILD)
+	{ echo ".set KINIT_FULL,$(KINIT_FULL)"; cat $<; } > $@
+
+$(MINIT_TABLE_OBJ): $(MINIT_TABLE_ASM) $(BUILD)
 	$(DAS) $(DASFLAGS) -c -o $@ $<
 
 $(END_OBJ): image-end.s $(BUILD)
@@ -520,6 +545,7 @@ $(SIMH_INI): simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE) force-simh-config
 	touch $(DTC0_IMAGE) $(DTC1_IMAGE) $(DTC2_IMAGE) $(MTC0_IMAGE) $(MTC1_IMAGE) \
 	    $(DR0_IMAGE) $(DR1_IMAGE) $(DR2_IMAGE) $(DR3_IMAGE)
 	sed -e 's|@SIMH_LOG@|$(SIMH_LOG)|g' \
+	    -e 's|@CPU_KWORDS@|$(SIMH_CPU_KWORDS)|g' \
 	    -e 's|@STAGE1_TAPE@|$(STAGE1_TAPE)|g' \
 	    -e 's|@DISK_IMAGE@|$(DISK_IMAGE)|g' \
 	    -e 's|@DTC0_IMAGE@|$(DTC0_IMAGE)|g' \

@@ -3,7 +3,7 @@ set -eu
 
 usage()
 {
-        echo "usage: $0 --kcore-map MAP --build DIR --objdump TOOL [--omit-blockset]" >&2
+        echo "usage: $0 --kcore-map MAP --build DIR --objdump TOOL [--omit-blockset] [--limit OCTAL]" >&2
         exit 2
 }
 
@@ -11,16 +11,22 @@ kmap=
 build=
 objdump=
 omit_blockset=0
+limit_arg=040000
 while [ $# -gt 0 ]; do
         case "$1" in
         --kcore-map) [ $# -ge 2 ] || usage; kmap=$2; shift 2 ;;
         --build) [ $# -ge 2 ] || usage; build=$2; shift 2 ;;
         --objdump) [ $# -ge 2 ] || usage; objdump=$2; shift 2 ;;
         --omit-blockset) omit_blockset=1; shift ;;
+        --limit) [ $# -ge 2 ] || usage; limit_arg=$2; shift 2 ;;
         *) usage ;;
         esac
 done
 [ -n "$kmap" ] && [ -n "$build" ] && [ -n "$objdump" ] || usage
+case "$limit_arg" in
+''|*[!0-7]*) echo "invalid octal limit: $limit_arg" >&2; exit 2 ;;
+esac
+limit=$((0$limit_arg))
 
 end=$(awk '$1 == "__kcore_low_end" { print $2; exit }' "$kmap")
 [ -n "$end" ] || { echo "missing __kcore_low_end" >&2; exit 1; }
@@ -77,6 +83,7 @@ object_words()
 }
 
 total=$kcore
+blockset_words=0
 for name in cty clk ptr ptp cr cp dcs ge dpy tty wcnsls ocnsls dsk tape slv \
     drm memfs dtfs blockset d6fs; do
         package="$build/$name-mres.dobj"
@@ -92,6 +99,9 @@ for name in cty clk ptr ptp cr cp dcs ge dpy tty wcnsls ocnsls dsk tape slv \
                 words=$((words + n))
         done
         resident=$words
+        if [ "$name" = blockset ]; then
+                blockset_words=$words
+        fi
         if [ "$name" = blockset ] && [ "$omit_blockset" -eq 1 ]; then
                 resident=0
                 printf 'MRES %-8s %06o %6d\n' "$name" "$resident" "$resident"
@@ -104,3 +114,29 @@ done
 printf 'KCORE+MRES      %06o %6d\n' "$total" "$total"
 last=$((060 + total - 1))
 printf 'PERMANENT_LAST  %06o %6d\n' "$last" "$last"
+
+check_limit()
+{
+        label=$1
+        high=$2
+        distance=$((limit - high))
+        free=$((distance - 1))
+        printf '%-16s limit=%06o distance=%d free=%d\n' "$label" "$limit" \
+            "$distance" "$free"
+        if [ "$high" -ge "$limit" ]; then
+                printf '%s exceeds permanent-address limit %06o: last=%06o\n' \
+                    "$label" "$limit" "$high" >&2
+                return 1
+        fi
+}
+
+status=0
+check_limit 'SINGLE_ROOT' "$last" || status=1
+if [ "$omit_blockset" -eq 1 ]; then
+        multi_total=$((total + blockset_words))
+        multi_last=$((060 + multi_total - 1))
+        printf 'MULTI_ROOT       %06o %6d\n' "$multi_total" "$multi_total"
+        printf 'MULTI_LAST       %06o %6d\n' "$multi_last" "$multi_last"
+        check_limit 'MULTI_ROOT' "$multi_last" || status=1
+fi
+exit "$status"
