@@ -53,8 +53,8 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
         }
 
         reader->alloc_cursor = super->fs_uuid[0];
-
-        reader->opaque = (void *)(unsigned long)id;
+        reader->opaque = (super->fs_uuid[1] << D6FS_PROVIDER_SUMMARY_SHIFT) |
+            (kword_t)id;
         reader->super = *super;
         D6FS_RUNTIME_SUPER_BLOCK(reader, 0U) = super_a;
         D6FS_RUNTIME_SUPER_BLOCK(reader, 1U) = super_b;
@@ -72,9 +72,8 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
                 if (blockset_boot_write(dirty_block, scratch) != 0)
                         goto fail;
                 reader->super.sequence = super->sequence + 1UL;
-                reader->opaque = (void *)(unsigned long)(id |
-                    D6FS_PROVIDER_MOUNT_WRITABLE |
-                    ((copy ^ 1U) ? D6FS_PROVIDER_MOUNT_COPY : 0U));
+                reader->opaque |= (kword_t)D6FS_PROVIDER_MOUNT_WRITABLE |
+                    (kword_t)((copy ^ 1U) ? D6FS_PROVIDER_MOUNT_COPY : 0U);
         }
 
         return 0;
@@ -139,6 +138,7 @@ d6fs_boot_mount_root(unsigned int flags)
             selected[D6FS_SB_SUMMARY_BLOCKS];
         if (super.fs_uuid[0] >= super.total_blocks)
                 super.fs_uuid[0] = 0UL;
+        super.fs_uuid[1] = selected[D6FS_SB_SUMMARY_START];
         high = selected[D6FS_SB_RESERVATION_HIGH];
         swap_blocks = (((high >> D6FS_RES_SWAP_HI_SHIFT) &
             D6FS_RESERVATION_LEN_HIGH_MASK) << 12U) |

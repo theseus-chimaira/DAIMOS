@@ -48,11 +48,10 @@ d6fs_range_valid(kword_t start, kword_t blocks, kword_t total)
         return blocks != 0UL && start < total && blocks <= total - start;
 }
 
-int
-d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
-    kword_t blockset_blocks)
+static int
+d6fs_super_decode_valid(const kword_t sb[D6FS_SUPER_WORDS],
+    kword_t blockset_blocks, struct d6fs_super_info *info)
 {
-        struct d6fs_super_info info;
         kword_t fcb_blocks;
         kword_t high;
         kword_t swap_start;
@@ -63,8 +62,8 @@ d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
         kword_t summary_blocks;
         kword_t magic_version;
 
-        if (sb == 0 || blockset_blocks == 0UL ||
-            d6fs_super_decode(sb, &info) != 0)
+        if (sb == 0 || info == 0 || blockset_blocks == 0UL ||
+            d6fs_super_decode(sb, info) != 0)
                 return 0;
         high = sb[D6FS_SB_RESERVATION_HIGH];
         swap_start = sb[D6FS_SB_SWAP_RESERVATION] >>
@@ -81,32 +80,33 @@ d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
         summary_blocks = sb[D6FS_SB_SUMMARY_BLOCKS];
         magic_version = (D6FS_MAGIC & ~077UL) | D6FS_FORMAT_VERSION;
         if (sb[D6FS_SB_MAGIC_VERSION] != magic_version ||
-            info.state > D6FS_STATE_DIRTY || info.total_blocks == 0UL ||
-            info.total_blocks > blockset_blocks ||
-            info.total_blocks > D6FS_LOGICAL_BLOCK_MASK + 1UL ||
+            info->state > D6FS_STATE_DIRTY || info->total_blocks == 0UL ||
+            info->total_blocks > blockset_blocks ||
+            info->total_blocks > D6FS_LOGICAL_BLOCK_MASK + 1UL ||
             (high & D6FS_RESERVATION_RESERVED_MASK) != 0UL ||
             (swap_blocks == 0UL ? swap_start != 0UL :
             (swap_start != blockset_blocks ||
             swap_blocks > D6FS_LOGICAL_BLOCK_MASK + 1UL - swap_start)) ||
-            info.fcb_count == 0U || info.fcb_count > D6FS_FCB_MASK ||
-            info.root_fcb >= info.fcb_count ||
-            !d6fs_range_valid(info.fcb_start,
-            ((kword_t)info.fcb_count * D6FS_FCB_WORDS +
+            info->fcb_count == 0U || info->fcb_count > D6FS_FCB_MASK ||
+            info->root_fcb >= info->fcb_count ||
+            !d6fs_range_valid(info->fcb_start,
+            ((kword_t)info->fcb_count * D6FS_FCB_WORDS +
             D6FS_BLOCK_WORDS - 1UL) / D6FS_BLOCK_WORDS,
-            info.total_blocks) ||
-            !d6fs_range_valid(info.freemap_start, info.freemap_blocks,
-            info.total_blocks) ||
+            info->total_blocks) ||
+            !d6fs_range_valid(info->freemap_start, info->freemap_blocks,
+            info->total_blocks) ||
+            summary_blocks != 1UL ||
             !d6fs_range_valid(summary_start, summary_blocks,
-            info.total_blocks) ||
+            info->total_blocks) ||
             !d6fs_optional_range_valid(log_start, log_blocks,
-            info.total_blocks))
+            info->total_blocks))
                 return 0;
-        fcb_blocks = ((kword_t)info.fcb_count * D6FS_FCB_WORDS +
+        fcb_blocks = ((kword_t)info->fcb_count * D6FS_FCB_WORDS +
             D6FS_BLOCK_WORDS - 1UL) / D6FS_BLOCK_WORDS;
         if (d6fs_ranges_overlap(log_start, log_blocks,
-            info.fcb_start, fcb_blocks) ||
+            info->fcb_start, fcb_blocks) ||
             d6fs_ranges_overlap(log_start, log_blocks,
-            info.freemap_start, info.freemap_blocks) ||
+            info->freemap_start, info->freemap_blocks) ||
             d6fs_ranges_overlap(log_start, log_blocks,
             summary_start, summary_blocks))
                 return 0;
@@ -126,13 +126,9 @@ d6fs_super_select(const kword_t a[D6FS_SUPER_WORDS],
 
         if (a == 0 || b == 0 || info == 0 || copyp == 0)
                 return -1;
-        av = d6fs_super_valid(a, blockset_blocks);
-        bv = d6fs_super_valid(b, blockset_blocks);
+        av = d6fs_super_decode_valid(a, blockset_blocks, &ai);
+        bv = d6fs_super_decode_valid(b, blockset_blocks, &bi);
         if (!av && !bv)
-                return -1;
-        if (av && d6fs_super_decode(a, &ai) != 0)
-                return -1;
-        if (bv && d6fs_super_decode(b, &bi) != 0)
                 return -1;
         if (av && bv) {
                 if (!d6fs_uuid_equal(ai.fs_uuid, bi.fs_uuid))

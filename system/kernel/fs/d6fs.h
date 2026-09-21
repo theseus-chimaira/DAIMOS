@@ -124,7 +124,7 @@ struct d6fs_super_info {
 
 struct d6fs_reader {
         kword_t alloc_cursor;
-        void *opaque;
+        kword_t opaque;
         struct d6fs_super_info super;
 };
 
@@ -146,8 +146,6 @@ int d6fs_fcb_decode_valid(const kword_t fcb[D6FS_FCB_WORDS],
 /* Fixed 16-word dual-superblock decode and structural validation. */
 int d6fs_super_decode(const kword_t sb[D6FS_SUPER_WORDS],
     struct d6fs_super_info *info);
-int d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
-    kword_t blockset_blocks);
 int d6fs_super_select(const kword_t a[D6FS_SUPER_WORDS],
     const kword_t b[D6FS_SUPER_WORDS], kword_t blockset_blocks,
     struct d6fs_super_info *info, unsigned int *copyp);

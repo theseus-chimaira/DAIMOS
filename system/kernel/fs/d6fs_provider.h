@@ -9,6 +9,10 @@
 #define D6FS_PROVIDER_MOUNT_ID_MASK   077U
 #define D6FS_PROVIDER_MOUNT_WRITABLE  0100U
 #define D6FS_PROVIDER_MOUNT_COPY      0200U
+#define D6FS_PROVIDER_STATE_MASK      07777UL
+#define D6FS_PROVIDER_SUMMARY_SHIFT   12U
+#define D6FS_PROVIDER_SUMMARY_START(reader) \
+        ((reader)->opaque >> D6FS_PROVIDER_SUMMARY_SHIFT)
 
 /* The filesystem UUID is needed only while KINIT selects the superblock.
  * After that, reuse those two resident reader words for the physical dual-

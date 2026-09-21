@@ -57,7 +57,7 @@ d6fs_provider_resize_fcb(vnode_t node,
         int i;
         int extent_count;
 
-        if (((unsigned int)(unsigned long)d6fs_provider_reader.opaque &
+        if (((unsigned int)d6fs_provider_reader.opaque &
             D6FS_PROVIDER_MOUNT_WRITABLE) == 0U)
                 return -1;
         fs_copy_words(fcb, old_fcb, D6FS_FCB_RESERVED0);
