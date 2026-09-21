@@ -8,7 +8,6 @@
         .globl blockset_map_block
         .globl blockset_read_block
         .globl blockset_write_block
-        .globl blockset_tail_map
         .globl blockset_boot
         .globl blockset_backend_read_jump
         .globl blockset_backend_write_jump
@@ -74,21 +73,6 @@ blockset_block_done:
 blockset_block_return:
         popj 17,
 
-; Map one logical root-tail block.  Validation, transfer looping, and
-; accounting are shared in fixed KCORE so singleton and multi-member roots do
-; not carry two copies of the same swap-tail machinery.
-; AC1=logical tail block; returns AC1=unit, AC2=physical block, or AC1=-1.
-blockset_tail_map:
-        hrrz 5,blockset_boot             ; validated equal tail size
-        setz 0,
-        div 0,5                          ; member AC0, local block AC1
-        move 6,blockset_boot+6(0)
-        move 2,1
-        hrrz 3,6
-        add 2,3
-        move 1,blockset_boot+2(0)
-        popj 17,
-
 ; Homogeneous root backend.
 blockset_backend_read:
 blockset_backend_read_jump:
@@ -97,8 +81,8 @@ blockset_backend_write:
 blockset_backend_write_jump:
         jrst 0
 
-; The package service export points directly at blockset_tail_map.  Ops 6/7/8
-; are handled in fixed KCORE; op 10 is the only movable BLOCKSET operation.
+; The package service export points directly at blockset_map_block.
+; Fixed KCORE offsets raw-tail requests past the filesystem-visible span.
 
         .bss
 ; Packed DSK root descriptor: four units plus four ranges.

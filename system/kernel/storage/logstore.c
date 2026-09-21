@@ -1,6 +1,38 @@
 #include "logstore.h"
 #include "blockset_boot.h"
 
+static kword_t logstore_boot_start;
+static kword_t logstore_boot_count;
+
+void
+logstore_boot_configure(kword_t start, kword_t blocks)
+{
+        logstore_boot_start = start;
+        logstore_boot_count = blocks;
+}
+
+kword_t
+logstore_boot_blocks(void)
+{
+        return logstore_boot_count;
+}
+
+int
+logstore_boot_read(kword_t blockno, kword_t block[BLOCKSET_BLOCK_WORDS])
+{
+        if (blockno >= logstore_boot_count)
+                return -1;
+        return blockset_boot_read(logstore_boot_start + blockno, block);
+}
+
+int
+logstore_boot_write(kword_t blockno,
+    const kword_t block[BLOCKSET_BLOCK_WORDS])
+{
+        if (blockno >= logstore_boot_count)
+                return -1;
+        return blockset_boot_write(logstore_boot_start + blockno, block);
+}
 static void
 logstore_zero_block(kword_t block[BLOCKSET_BLOCK_WORDS])
 {
@@ -45,7 +77,7 @@ logstore_recover(struct logstore *log,
 
         if (log == 0 || scratch == 0)
                 return -1;
-        blocks = blockset_boot_log_blocks();
+        blocks = logstore_boot_blocks();
         if (blocks < 3UL)
                 return -1;
         capacity = (unsigned int)(blocks - 2UL);
@@ -53,7 +85,7 @@ logstore_recover(struct logstore *log,
         best_sequence = 0UL;
         best_slot = 0U;
         for (slot = 0U; slot < capacity; ++slot) {
-                if (blockset_boot_log_read((kword_t)(slot + 2U), scratch) != 0)
+                if (logstore_boot_read((kword_t)(slot + 2U), scratch) != 0)
                         return -1;
                 if (logstore_record_valid(scratch) &&
                     scratch[1] > best_sequence) {
@@ -99,7 +131,7 @@ logstore_append(struct logstore *log, unsigned int severity,
                 scratch[4U + i] = payload[i] & LOGSTORE_WORD_MASK;
         scratch[BLOCKSET_BLOCK_WORDS - 1U] =
             logstore_record_commit(sequence, payload_words);
-        if (blockset_boot_log_write((kword_t)(log->next_slot + 2U),
+        if (logstore_boot_write((kword_t)(log->next_slot + 2U),
             scratch) != 0)
                 return -1;
 

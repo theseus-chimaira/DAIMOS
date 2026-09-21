@@ -25,8 +25,6 @@
  * D6FS/LOGSTORE I/O still needs its validated mapping here. */
 static struct blockset blockset_boot_state;
 static kword_t blockset_boot_total;
-static kword_t blockset_boot_log_start;
-static kword_t blockset_boot_log_count;
 
 static kword_t
 blockset_boot_half(unsigned int index)
@@ -135,11 +133,12 @@ blockset_boot_configure(const struct blockset *config)
         blockset_boot_state.members = config->members;
 
         if (config->members == 1U) {
-                blockset_direct_configure(config->unit[0], config->base[0],
+                blockset_direct_configure(config->unit[0],
+                    config->base[0] + config->blocks[0],
                     config->blocks[0], config->tail_blocks);
                 return 0;
         }
-        blockset_direct_configure(0U, 0UL, 0UL,
+        blockset_direct_configure(0U, 0UL, total,
             config->tail_blocks * (kword_t)config->members);
         if (blockset_state_addr == 0U ||
             module_service_get(MODULE_SERVICE_BLOCKSET) == 0U)
@@ -147,13 +146,15 @@ blockset_boot_configure(const struct blockset *config)
         runtime = (kword_t *)(unsigned long)blockset_state_addr;
         for (i = 0U; i < BLOCKSET_ROOT_DESC_WORDS; ++i)
                 runtime[i] = 0UL;
-        runtime[BLOCKSET_ROOT_DESC_TOTAL] = total;
+        runtime[BLOCKSET_ROOT_DESC_TOTAL] = total +
+            config->tail_blocks * (kword_t)config->members;
         for (i = 0U; i < config->members; ++i) {
                 runtime[BLOCKSET_ROOT_DESC_UNIT0 + i] =
                     (kword_t)config->unit[i];
                 runtime[BLOCKSET_ROOT_DESC_RANGE0 + i] =
                     (config->base[i] << 18U) |
-                    (config->base[i] + config->blocks[i]);
+                    (config->base[i] + config->blocks[i] +
+                    config->tail_blocks);
         }
         runtime[BLOCKSET_ROOT_DESC_FLAGS] =
             ((kword_t)(config->members |
@@ -239,8 +240,6 @@ blockset_boot_discover(kword_t *super_ap, kword_t *super_bp)
         config.members = members;
         config.policy = BLOCKSET_POLICY_INTERLEAVE;
         config.tail_blocks = first_swap_tail;
-        blockset_boot_log_start = first_logstore_start;
-        blockset_boot_log_count = first_logstore_blocks;
         rc = blockset_boot_configure(&config);
         if (rc != 0)
                 return rc;
@@ -314,28 +313,4 @@ blockset_boot_direct(unsigned int *unitp, kword_t *basep,
         *blocksp = blockset_boot_state.blocks[0];
         *tailp = blockset_boot_state.tail_blocks;
         return 1;
-}
-
-kword_t
-blockset_boot_log_blocks(void)
-{
-        return blockset_boot_log_count;
-}
-
-int
-blockset_boot_log_read(kword_t blockno,
-    kword_t block[BLOCKSET_BLOCK_WORDS])
-{
-        if (blockno >= blockset_boot_log_count)
-                return -1;
-        return blockset_boot_read(blockset_boot_log_start + blockno, block);
-}
-
-int
-blockset_boot_log_write(kword_t blockno,
-    const kword_t block[BLOCKSET_BLOCK_WORDS])
-{
-        if (blockno >= blockset_boot_log_count)
-                return -1;
-        return blockset_boot_write(blockset_boot_log_start + blockno, block);
 }

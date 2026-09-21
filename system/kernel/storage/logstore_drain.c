@@ -66,7 +66,7 @@ logstore_drain_write_state(const struct logstore *log,
         scratch[BLOCKSET_BLOCK_WORDS - 1U] =
             logstore_state_commit(generation, next_sequence,
             lost_records, log->capacity);
-        if (blockset_boot_log_write((kword_t)copy, scratch) != 0)
+        if (logstore_boot_write((kword_t)copy, scratch) != 0)
                 return -1;
         drain->state_generation = generation;
         drain->state_copy = copy;
@@ -93,7 +93,7 @@ logstore_drain_recover(const struct logstore *log,
         drain->state_generation = 0UL;
         drain->state_copy = LOGSTORE_STATE_NONE;
         for (slot = 0U; slot < 2U; ++slot) {
-                if (blockset_boot_log_read((kword_t)slot, scratch) != 0)
+                if (logstore_boot_read((kword_t)slot, scratch) != 0)
                         return -1;
                 if (logstore_state_valid(scratch, log->capacity) &&
                     (!have_state || scratch[1] > best_generation)) {
@@ -142,7 +142,7 @@ logstore_drain_one(const struct logstore *log,
         slot = log->next_slot + log->capacity - (unsigned int)distance;
         if (slot >= log->capacity)
                 slot -= log->capacity;
-        if (blockset_boot_log_read((kword_t)(slot + 2U), scratch) != 0 ||
+        if (logstore_boot_read((kword_t)(slot + 2U), scratch) != 0 ||
             !logstore_record_valid(scratch) ||
             scratch[1] != drain->next_sequence)
                 return -1;

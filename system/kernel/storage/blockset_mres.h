@@ -11,7 +11,6 @@
 #define BLOCKSET_MRES_OP_TAIL_READ    7U
 #define BLOCKSET_MRES_OP_TAIL_WRITE   8U
 #define BLOCKSET_MRES_OP_MAP          9U
-#define BLOCKSET_MRES_OP_TAIL_MAP     10U
 
 struct blockset_mres_request {
         kword_t op;

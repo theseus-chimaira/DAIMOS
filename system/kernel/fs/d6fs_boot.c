@@ -2,6 +2,7 @@
 #include "d6fs_provider.h"
 #include "kinit.h"
 #include "blockset_boot.h"
+#include "logstore.h"
 
 /* KINIT-only scratch used while probing and mounting the root D6FS.
  * It is reclaimed with KINIT and does not consume resident FS storage. */
@@ -92,6 +93,10 @@ d6fs_boot_mount_root(unsigned int flags)
         kword_t a[D6FS_SUPER_WORDS];
         kword_t b[D6FS_SUPER_WORDS];
         struct d6fs_super_info super;
+        const kword_t *selected;
+        kword_t high;
+        kword_t log_start;
+        kword_t log_blocks;
         kword_t *scratch;
         kword_t super_a;
         kword_t super_b;
@@ -128,6 +133,19 @@ d6fs_boot_mount_root(unsigned int flags)
                 b[i] = scratch[i];
         if (d6fs_super_select(a, b, total, &super, &copy) != 0)
                 return -1;
+        selected = copy == 0U ? a : b;
+        high = selected[D6FS_SB_RESERVATION_HIGH];
+        log_start = selected[D6FS_SB_LOG_RESERVATION] >>
+            D6FS_RESERVATION_START_SHIFT;
+        log_blocks = (((high >> D6FS_RESERVATION_LOG_HIGH_SHIFT) &
+            D6FS_RESERVATION_LEN_HIGH_MASK) << 12U) |
+            (selected[D6FS_SB_LOG_RESERVATION] &
+            D6FS_RESERVATION_LEN_LOW_MASK);
+        if (log_blocks != 0UL &&
+            ((super_a >= log_start && super_a - log_start < log_blocks) ||
+            (super_b >= log_start && super_b - log_start < log_blocks)))
+                return -1;
+        logstore_boot_configure(log_start, log_blocks);
         rc = d6fs_boot_runtime_init(&super, flags, super_a, super_b, copy);
         if (rc != 0)
                 return rc;

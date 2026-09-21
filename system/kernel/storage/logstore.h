@@ -27,6 +27,12 @@ struct logstore_drain {
         unsigned int state_copy;
 };
 
+void logstore_boot_configure(kword_t start, kword_t blocks);
+kword_t logstore_boot_blocks(void);
+int logstore_boot_read(kword_t blockno, kword_t block[BLOCKSET_BLOCK_WORDS]);
+int logstore_boot_write(kword_t blockno,
+    const kword_t block[BLOCKSET_BLOCK_WORDS]);
+
 typedef int (*logstore_sink_fn)(void *context,
     const kword_t record[BLOCKSET_BLOCK_WORDS], unsigned int words);
 

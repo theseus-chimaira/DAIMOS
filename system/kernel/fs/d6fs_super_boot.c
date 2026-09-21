@@ -1,5 +1,22 @@
 #include "d6fs.h"
 
+static int
+d6fs_optional_range_valid(kword_t start, kword_t blocks, kword_t total)
+{
+        if (blocks == 0UL)
+                return start == 0UL;
+        return start < total && blocks <= total - start;
+}
+
+static int
+d6fs_ranges_overlap(kword_t astart, kword_t ablocks,
+    kword_t bstart, kword_t bblocks)
+{
+        if (ablocks == 0UL || bblocks == 0UL)
+                return 0;
+        return astart < bstart + bblocks && bstart < astart + ablocks;
+}
+
 int
 d6fs_super_decode(const kword_t sb[D6FS_SUPER_WORDS],
     struct d6fs_super_info *info)
@@ -38,19 +55,29 @@ d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
     kword_t blockset_blocks)
 {
         struct d6fs_super_info info;
+        kword_t fcb_blocks;
+        kword_t high;
+        kword_t log_start;
+        kword_t log_blocks;
         kword_t magic_version;
 
         if (sb == 0 || blockset_blocks == 0UL ||
             d6fs_super_decode(sb, &info) != 0)
                 return 0;
+        high = sb[D6FS_SB_RESERVATION_HIGH];
+        log_start = sb[D6FS_SB_LOG_RESERVATION] >>
+            D6FS_RESERVATION_START_SHIFT;
+        log_blocks = (((high >> D6FS_RESERVATION_LOG_HIGH_SHIFT) &
+            D6FS_RESERVATION_LEN_HIGH_MASK) << 12U) |
+            (sb[D6FS_SB_LOG_RESERVATION] & D6FS_RESERVATION_LEN_LOW_MASK);
         magic_version = (D6FS_MAGIC & ~077UL) | D6FS_FORMAT_VERSION;
         if (sb[D6FS_SB_MAGIC_VERSION] != magic_version ||
-            sb[D6FS_SB_RESERVED0] != 0UL ||
-            sb[D6FS_SB_RESERVED1] != 0UL ||
-            sb[D6FS_SB_RESERVED] != 0UL ||
             info.state > D6FS_STATE_DIRTY || info.total_blocks == 0UL ||
             info.total_blocks > blockset_blocks ||
             info.total_blocks > D6FS_LOGICAL_BLOCK_MASK + 1UL ||
+            sb[D6FS_SB_SWAP_RESERVATION] != 0UL ||
+            (high >> D6FS_RESERVATION_SWAP_HIGH_SHIFT) != 0UL ||
+            (high & D6FS_RESERVATION_RESERVED_MASK) != 0UL ||
             info.fcb_count == 0U || info.fcb_count > D6FS_FCB_MASK ||
             info.root_fcb >= info.fcb_count ||
             !d6fs_range_valid(info.fcb_start,
@@ -60,7 +87,18 @@ d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
             !d6fs_range_valid(info.freemap_start, info.freemap_blocks,
             info.total_blocks) ||
             !d6fs_range_valid(info.summary_start, info.summary_blocks,
+            info.total_blocks) ||
+            !d6fs_optional_range_valid(log_start, log_blocks,
             info.total_blocks))
+                return 0;
+        fcb_blocks = ((kword_t)info.fcb_count * D6FS_FCB_WORDS +
+            D6FS_BLOCK_WORDS - 1UL) / D6FS_BLOCK_WORDS;
+        if (d6fs_ranges_overlap(log_start, log_blocks,
+            info.fcb_start, fcb_blocks) ||
+            d6fs_ranges_overlap(log_start, log_blocks,
+            info.freemap_start, info.freemap_blocks) ||
+            d6fs_ranges_overlap(log_start, log_blocks,
+            info.summary_start, info.summary_blocks))
                 return 0;
         return 1;
 }

@@ -16,12 +16,5 @@ int blockset_boot_write(kword_t blockno,
 int blockset_boot_direct(unsigned int *unitp, kword_t *basep,
     kword_t *blocksp, kword_t *tailp);
 
-/* Legacy boot-label LOGSTORE range.  This remains KINIT-only; BLOCKSET has
- * no resident LOGSTORE semantics. */
-kword_t blockset_boot_log_blocks(void);
-int blockset_boot_log_read(kword_t blockno,
-    kword_t block[BLOCKSET_BLOCK_WORDS]);
-int blockset_boot_log_write(kword_t blockno,
-    const kword_t block[BLOCKSET_BLOCK_WORDS]);
 
 #endif

@@ -88,7 +88,7 @@ blockset_direct_tail_loop:
         cain    4,fs_mres_no_service
         jrst    blockset_direct_tail_single
         move    1,011
-        movei   5,012                  ; BLOCKSET_MRES_OP_TAIL_MAP
+        add     1,blockset_direct_blocks ; offset past filesystem data
         pushj   17,(4)
         jumpl   1,blockset_direct_tail_done
         jrst    blockset_direct_tail_mapped
@@ -96,7 +96,6 @@ blockset_direct_tail_loop:
 blockset_direct_tail_single:
         hlrz    1,blockset_direct_map
         hrrz    2,blockset_direct_map
-        add     2,blockset_direct_blocks
         add     2,011
 
 blockset_direct_tail_mapped:

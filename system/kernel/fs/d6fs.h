@@ -59,8 +59,8 @@ extern kword_t fs_block_workspace[D6FS_BLOCK_WORDS];
 #define D6FS_SB_STATE             002U
 #define D6FS_SB_FS_UUID0          003U
 #define D6FS_SB_FS_UUID1          004U
-#define D6FS_SB_RESERVED0         005U
-#define D6FS_SB_RESERVED1         006U
+#define D6FS_SB_SWAP_RESERVATION 005U
+#define D6FS_SB_LOG_RESERVATION  006U
 #define D6FS_SB_TOTAL_BLOCKS      007U
 #define D6FS_SB_ROOT_FCB          010U
 #define D6FS_SB_FCB_START         011U
@@ -69,7 +69,14 @@ extern kword_t fs_block_workspace[D6FS_BLOCK_WORDS];
 #define D6FS_SB_FREEMAP_BLOCKS    014U
 #define D6FS_SB_SUMMARY_START     015U
 #define D6FS_SB_SUMMARY_BLOCKS    016U
-#define D6FS_SB_RESERVED          017U
+#define D6FS_SB_RESERVATION_HIGH 017U
+
+#define D6FS_RESERVATION_START_SHIFT 12U
+#define D6FS_RESERVATION_LEN_LOW_MASK 07777UL
+#define D6FS_RESERVATION_LEN_HIGH_MASK 07777UL
+#define D6FS_RESERVATION_SWAP_HIGH_SHIFT 24U
+#define D6FS_RESERVATION_LOG_HIGH_SHIFT 12U
+#define D6FS_RESERVATION_RESERVED_MASK 07777UL
 
 struct d6fs_fcb_info {
         unsigned int type;
