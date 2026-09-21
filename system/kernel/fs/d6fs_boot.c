@@ -2,6 +2,7 @@
 #include "d6fs_provider.h"
 #include "kinit.h"
 #include "blockset_boot.h"
+#include "fs_mres.h"
 #include "logstore.h"
 
 /* KINIT-only scratch used while probing and mounting the root D6FS.
@@ -95,8 +96,10 @@ d6fs_boot_mount_root(unsigned int flags)
         struct d6fs_super_info super;
         const kword_t *selected;
         kword_t high;
+        kword_t swap_blocks;
         kword_t log_start;
         kword_t log_blocks;
+        kword_t tail_blocks;
         kword_t *scratch;
         kword_t super_a;
         kword_t super_b;
@@ -135,9 +138,20 @@ d6fs_boot_mount_root(unsigned int flags)
                 return -1;
         selected = copy == 0U ? a : b;
         high = selected[D6FS_SB_RESERVATION_HIGH];
+        swap_blocks = (((high >> D6FS_RES_SWAP_HI_SHIFT) &
+            D6FS_RESERVATION_LEN_HIGH_MASK) << 12U) |
+            (selected[D6FS_SB_SWAP_RESERVATION] &
+            D6FS_RESERVATION_LEN_LOW_MASK);
+        tail_blocks = blockset_direct_tail;
+        if (swap_blocks == 0UL)
+                swap_blocks = tail_blocks;
+        else if (swap_blocks > tail_blocks)
+                return -1;
+        blockset_direct_blocks = total;
+        blockset_direct_tail = swap_blocks;
         log_start = selected[D6FS_SB_LOG_RESERVATION] >>
             D6FS_RESERVATION_START_SHIFT;
-        log_blocks = (((high >> D6FS_RESERVATION_LOG_HIGH_SHIFT) &
+        log_blocks = (((high >> D6FS_RES_LOG_HI_SHIFT) &
             D6FS_RESERVATION_LEN_HIGH_MASK) << 12U) |
             (selected[D6FS_SB_LOG_RESERVATION] &
             D6FS_RESERVATION_LEN_LOW_MASK);

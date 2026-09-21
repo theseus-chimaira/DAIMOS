@@ -57,6 +57,8 @@ d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
         struct d6fs_super_info info;
         kword_t fcb_blocks;
         kword_t high;
+        kword_t swap_start;
+        kword_t swap_blocks;
         kword_t log_start;
         kword_t log_blocks;
         kword_t magic_version;
@@ -65,9 +67,14 @@ d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
             d6fs_super_decode(sb, &info) != 0)
                 return 0;
         high = sb[D6FS_SB_RESERVATION_HIGH];
+        swap_start = sb[D6FS_SB_SWAP_RESERVATION] >>
+            D6FS_RESERVATION_START_SHIFT;
+        swap_blocks = (((high >> D6FS_RES_SWAP_HI_SHIFT) &
+            D6FS_RESERVATION_LEN_HIGH_MASK) << 12U) |
+            (sb[D6FS_SB_SWAP_RESERVATION] & D6FS_RESERVATION_LEN_LOW_MASK);
         log_start = sb[D6FS_SB_LOG_RESERVATION] >>
             D6FS_RESERVATION_START_SHIFT;
-        log_blocks = (((high >> D6FS_RESERVATION_LOG_HIGH_SHIFT) &
+        log_blocks = (((high >> D6FS_RES_LOG_HI_SHIFT) &
             D6FS_RESERVATION_LEN_HIGH_MASK) << 12U) |
             (sb[D6FS_SB_LOG_RESERVATION] & D6FS_RESERVATION_LEN_LOW_MASK);
         magic_version = (D6FS_MAGIC & ~077UL) | D6FS_FORMAT_VERSION;
@@ -75,9 +82,10 @@ d6fs_super_valid(const kword_t sb[D6FS_SUPER_WORDS],
             info.state > D6FS_STATE_DIRTY || info.total_blocks == 0UL ||
             info.total_blocks > blockset_blocks ||
             info.total_blocks > D6FS_LOGICAL_BLOCK_MASK + 1UL ||
-            sb[D6FS_SB_SWAP_RESERVATION] != 0UL ||
-            (high >> D6FS_RESERVATION_SWAP_HIGH_SHIFT) != 0UL ||
             (high & D6FS_RESERVATION_RESERVED_MASK) != 0UL ||
+            (swap_blocks == 0UL ? swap_start != 0UL :
+            (swap_start != blockset_blocks ||
+            swap_blocks > D6FS_LOGICAL_BLOCK_MASK + 1UL - swap_start)) ||
             info.fcb_count == 0U || info.fcb_count > D6FS_FCB_MASK ||
             info.root_fcb >= info.fcb_count ||
             !d6fs_range_valid(info.fcb_start,

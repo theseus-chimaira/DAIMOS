@@ -13,6 +13,8 @@
         .globl blockset_runtime_reg_enter
         .globl blockset_runtime_service_jump
         .globl blockset_direct_configure
+        .globl blockset_direct_blocks
+        .globl blockset_direct_tail
         .globl dsk270_read_sector
         .globl dsk270_write_sector
 

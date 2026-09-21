@@ -47,6 +47,8 @@ extern kword_t blockset_runtime_service_jump;
 int blockset_runtime_reg_call(unsigned int op, kword_t a, kword_t b, kword_t c);
 void blockset_direct_configure(unsigned int unit, kword_t tail_base,
     kword_t blocks, kword_t tail_blocks);
+extern kword_t blockset_direct_blocks;
+extern kword_t blockset_direct_tail;
 extern kword_t sys_memfs_usage_call;
 extern kword_t sys_dtfs_format_jump;
 extern kword_t sys_dtfs_mount_jump;
