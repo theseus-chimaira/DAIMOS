@@ -64,8 +64,6 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
         D6FS_READER_CACHE_BLOCK(reader) = D6FS_CACHE_INVALID;
 
         if (writable) {
-                if (super->state != D6FS_STATE_CLEAN)
-                        goto fail;
                 dirty_block = copy == 0U ? super_b : super_a;
                 scratch = d6fs_boot_block_buffer();
                 if (blockset_boot_read(dirty_block, scratch) != 0)

@@ -43,6 +43,15 @@ d6fs_uuid_equal(const kword_t a[2], const kword_t b[2])
 }
 
 static int
+d6fs_sequence_newer(kword_t a, kword_t b)
+{
+        kword_t delta;
+
+        delta = (a - b) & 0777777777777UL;
+        return delta != 0UL && delta < 0400000000000UL;
+}
+
+static int
 d6fs_range_valid(kword_t start, kword_t blocks, kword_t total)
 {
         return blocks != 0UL && start < total && blocks <= total - start;
@@ -139,23 +148,25 @@ d6fs_super_select(const kword_t a[D6FS_SUPER_WORDS],
                                         return -1;
                         *info = ai;
                         *copyp = 0U;
-                        return 0;
-                }
-                if (bi.sequence > ai.sequence) {
+                } else if (d6fs_sequence_newer(bi.sequence, ai.sequence)) {
                         *info = bi;
                         *copyp = 1U;
-                } else {
+                } else if (d6fs_sequence_newer(ai.sequence, bi.sequence)) {
                         *info = ai;
                         *copyp = 0U;
+                } else {
+                        return -1;
                 }
-                return 0;
-        }
-        if (av) {
+        } else if (av) {
                 *info = ai;
                 *copyp = 0U;
         } else {
                 *info = bi;
                 *copyp = 1U;
         }
-        return 0;
+
+        /* DIRTY is a recovery marker, never a mountable filesystem state.
+         * Writable metadata may already have changed after that generation was
+         * published, so falling back to an older CLEAN copy would be unsafe. */
+        return info->state == D6FS_STATE_CLEAN ? 0 : -1;
 }
