@@ -89,7 +89,7 @@ KINIT_SRCS = boot/kinit.c \
 	fs/d6fs_boot.c \
 	fs/d6fs_super_boot.c \
 	storage/blockset_boot.c \
-	storage/logstore.c \
+	storage/logstore_boot.c \
 	proc/proc_boot.c \
 	proc/proc_swap_boot.c
 
@@ -101,7 +101,7 @@ KINIT_C_ASM = $(BUILD)/kinit.s \
 	$(BUILD)/d6fs_boot.s \
 	$(BUILD)/d6fs_super_boot.s \
 	$(BUILD)/blockset_boot.s \
-	$(BUILD)/logstore.s \
+	$(BUILD)/logstore_boot.s \
 	$(BUILD)/proc_boot.s \
 	$(BUILD)/proc_swap_boot.s
 

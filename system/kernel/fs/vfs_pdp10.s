@@ -878,6 +878,25 @@ vfs_readonly_slot:
         move    1,2
         popj    17,
 
+; int vfs_storage_release(mount, flags)
+; Clear selected active reservation ownership for exactly one mounted instance.
+        .globl  vfs_storage_release
+vfs_storage_release:
+        sojl    1,pdp10_ret_neg1       ; public mount id -> zero-based slot
+        cail    1,4
+        jrst    pdp10_ret_neg1
+        trne    2,0777357              ; only SWAP(020) | LOGSTORE(0400)
+        jrst    pdp10_ret_neg1
+        jumpe   2,pdp10_ret_zero
+        move    4,2
+        lsh     4,0(1)
+        move    5,vfs_mount_ro
+        and    5,4
+        came    5,4                    ; caller may release only owned types
+        jrst    pdp10_ret_neg1
+        andcam  4,vfs_mount_ro
+        jrst    pdp10_ret_zero
+
 ; int vfs_mount(target, provider, kind, index, flags, rootp)
         .globl  vfs_mount
 vfs_mount:
@@ -894,8 +913,20 @@ vfs_mount:
         caml    4,[01000000]            ; index <= 0777777
         jrst    pdp10_ret_neg1
         move    5,-1(17)                ; flags
-        trne    5,0777756              ; only RDONLY(1) | STORAGE_PIN(020)
+        trne    5,0777356              ; RDONLY(1), SWAP(020), LOGSTORE(0400)
         jrst    pdp10_ret_neg1
+        move    0,vfs_mount_ro
+        trnn    5,020                   ; one active swap owner system-wide
+        jrst    vfs_mount_check_log_owner
+        move    6,0
+        andi    6,0360
+        jumpn   6,pdp10_ret_neg1
+vfs_mount_check_log_owner:
+        trnn    5,0400                  ; one active logstore owner system-wide
+        jrst    vfs_mount_owner_ok
+        andi    0,07400
+        jumpn   0,pdp10_ret_neg1
+vfs_mount_owner_ok:
         jumpn   1,vfs_mount_check_target
         skipe   vfs_namespace_root
         jrst    pdp10_ret_neg1
@@ -972,7 +1003,7 @@ vfs_unmount_slot:
         move    3,vfs_mount_root(2)
         came    3,1
         jrst    pdp10_ret_neg1
-        movei   4,020
+        movei   4,0420                 ; swap(020) | logstore(0400) for slot 0
         lsh     4,0(2)
         tdne    4,vfs_mount_ro
         jrst    pdp10_ret_neg1

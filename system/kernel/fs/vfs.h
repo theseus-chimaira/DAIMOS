@@ -61,7 +61,10 @@ typedef kword_t vnode_t;
 #define VFS_NMOUNT           4U
 #define VFS_MOUNT_RW         0U
 #define VFS_MOUNT_RDONLY     1U
-#define VFS_MOUNT_STORAGE_PIN 020U
+#define VFS_MOUNT_STORAGE_SWAP      020U
+#define VFS_MOUNT_STORAGE_LOGSTORE  0400U
+#define VFS_MOUNT_STORAGE_MASK \
+        (VFS_MOUNT_STORAGE_SWAP | VFS_MOUNT_STORAGE_LOGSTORE)
 #define VFS_ERR_UNSUPPORTED  (-2)
 #define VFS_DEVICE_IO        (-3)
 #define VFS_LOCK_SHARED      1U
@@ -138,6 +141,7 @@ int vfs_readchar(vnode_t node, kword_t off, unsigned int *chp);
 int vfs_writechar(vnode_t node, kword_t off, unsigned int ch);
 int vfs_sync(vnode_t node);
 
+int vfs_storage_release(unsigned int mount, unsigned int flags);
 int vfs_mount(vnode_t target, unsigned int provider,
     unsigned int kind, unsigned int index, unsigned int flags,
     vnode_t *rootp);

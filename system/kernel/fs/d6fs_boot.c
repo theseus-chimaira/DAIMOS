@@ -167,18 +167,30 @@ d6fs_boot_mount_root(unsigned int flags)
             ((super_a >= log_start && super_a - log_start < log_blocks) ||
             (super_b >= log_start && super_b - log_start < log_blocks)))
                 return -1;
+        blockset_direct_tail = swap_blocks;
         logstore_boot_configure(log_start, log_blocks);
-        if ((swap_blocks | log_blocks) != 0UL)
-                flags |= VFS_MOUNT_STORAGE_PIN;
+        if (swap_blocks != 0UL)
+                flags |= VFS_MOUNT_STORAGE_SWAP;
+        if (log_blocks != 0UL)
+                flags |= VFS_MOUNT_STORAGE_LOGSTORE;
         rc = d6fs_boot_runtime_init(&super, alloc_cursor, summary_start,
             flags, super_a, super_b, copy);
-        if (rc != 0)
+        if (rc != 0) {
+                blockset_direct_tail = 0UL;
+                logstore_boot_configure(0UL, 0UL);
                 return rc;
+        }
         if (vfs_namespace_root == VFS_NODE_NONE ||
             vfs_stat(vfs_namespace_root, &st) != 0 ||
             st.type != VFS_TYPE_DIR) {
-                if (vfs_namespace_root != VFS_NODE_NONE)
+                if (vfs_namespace_root != VFS_NODE_NONE) {
+                        i = VFS_MOUNT_ID(vfs_namespace_root);
+                        (void)vfs_storage_release(i,
+                            flags & VFS_MOUNT_STORAGE_MASK);
+                        blockset_direct_tail = 0UL;
+                        logstore_boot_configure(0UL, 0UL);
                         (void)vfs_unmount(vfs_namespace_root);
+                }
                 return -1;
         }
         return 0;
