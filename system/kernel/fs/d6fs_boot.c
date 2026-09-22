@@ -29,12 +29,12 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
         if (super == 0 || copy > 1U || super_a == super_b ||
             super->total_blocks == 0UL || super->fcb_count == 0UL ||
             super->root_fcb >= super->fcb_count ||
-            d6fs_provider_reader_addr == 0U ||
-            d6fs_block_read_addr == 0U)
+            d6fs_active_reader == 0 ||
+            d6fs_backing_read_addr == 0U)
                 return -1;
 
         writable = (flags & VFS_MOUNT_RDONLY) == 0U &&
-            d6fs_block_write_addr != 0U && blockset_boot_writable() > 0;
+            d6fs_backing_write_addr != 0U && blockset_boot_writable() > 0;
         if (!writable)
                 flags |= VFS_MOUNT_RDONLY;
 
@@ -46,8 +46,8 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
             super->root_fcb, flags, &root) != 0)
                 return -1;
         id = VFS_MOUNT_ID(root);
-        reader = (struct d6fs_reader *)(unsigned long)d6fs_provider_reader_addr;
-        if (reader->opaque != 0) {
+        reader = d6fs_active_reader;
+        if (reader == 0 || id != 1U || reader->opaque != 0) {
                 (void)vfs_unmount(root);
                 return -1;
         }
@@ -56,6 +56,7 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
         reader->opaque = (super->fs_uuid[1] << D6FS_PROVIDER_SUMMARY_SHIFT) |
             (kword_t)id;
         reader->super = *super;
+        reader->backing.blocks = super->total_blocks;
         D6FS_RUNTIME_SUPER_BLOCK(reader, 0U) = super_a;
         D6FS_RUNTIME_SUPER_BLOCK(reader, 1U) = super_b;
         D6FS_READER_CACHE_BLOCK(reader) = D6FS_CACHE_INVALID;
@@ -79,8 +80,8 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
         return 0;
 
 fail:
-        reader->opaque = 0;
-        D6FS_READER_CACHE_BLOCK(reader) = D6FS_CACHE_INVALID;
+        /* Preserve the mount id until VFS/provider teardown has released the
+         * dynamic reader.  PREPARE_UNMOUNT owns reader destruction. */
         (void)vfs_unmount(root);
         return -1;
 }
@@ -110,15 +111,19 @@ d6fs_boot_mount_root(unsigned int flags)
         rc = blockset_boot_discover(&super_a, &super_b);
         if (rc != 0)
                 return rc;
-        if (d6fs_direct_map_addr != 0U) {
+        if (d6fs_active_reader != 0) {
                 unsigned int direct_unit;
                 kword_t direct_base;
                 kword_t direct_blocks;
                 kword_t direct_tail;
+                struct d6fs_reader *reader;
 
+                reader = d6fs_active_reader;
+                if (reader == 0)
+                        return -1;
                 if (blockset_boot_direct(&direct_unit, &direct_base,
                     &direct_blocks, &direct_tail) != 0)
-                        *(kword_t *)(unsigned long)d6fs_direct_map_addr =
+                        reader->backing.opaque =
                             ((kword_t)direct_unit << 18U) | direct_base;
         }
         total = blockset_boot_blocks();

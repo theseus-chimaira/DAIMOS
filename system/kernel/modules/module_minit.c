@@ -18,6 +18,7 @@
 #include "storage.h"
 #include "slv.h"
 #include "fs_mres.h"
+#include "d6fs.h"
 #include "blockset_mres.h"
 #include "blockset_boot.h"
 #include "monitorfs.h"
@@ -89,10 +90,8 @@ static unsigned int module_dynamic_binding_count;
 unsigned int blockset_read_addr;
 unsigned int blockset_write_addr;
 unsigned int blockset_state_addr;
-unsigned int d6fs_block_read_addr;
-unsigned int d6fs_block_write_addr;
-unsigned int d6fs_provider_reader_addr;
-unsigned int d6fs_direct_map_addr;
+unsigned int d6fs_backing_read_addr;
+unsigned int d6fs_backing_write_addr;
 
 extern kword_t storage_pi_handler;
 extern kword_t storage_dct_handler;
@@ -109,6 +108,7 @@ extern kword_t drm236_write_jump;
 extern kword_t native_sys_getchar_call;
 extern kword_t sys_dtc_read_block_jump;
 extern kword_t native_sys_putchar_call;
+extern int d6fs_reader_bootstrap_call(kword_t backing_ops);
 
 
 static unsigned int pi_level_count[PDP10_PI_LEVELS + 1U];
@@ -1093,6 +1093,7 @@ void
 d6fs_minit(void)
 {
         kword_t name;
+        kword_t backing_ops;
         unsigned int base;
         unsigned int members;
         unsigned int read_addr;
@@ -1121,39 +1122,41 @@ d6fs_minit(void)
                 return;
         }
         base = minit_install(name);
+        d6fs_backing_read_addr = minit_export(name, base, 1U);
+        d6fs_backing_write_addr = minit_export(name, base, 2U);
+        callback_read = minit_export(name, base, 3U);
+        callback_write = minit_export(name, base, 4U);
+        storage_patch_jump(&d6fs_cache_reclaim_jump, minit_export(name, base, 5U));
+        if (members == 1U) {
+                unsigned int direct_read;
+                unsigned int direct_write;
+
+                direct_read = minit_export(name, base, 6U);
+                direct_write = minit_export(name, base, 7U);
+                backing_ops = ((kword_t)direct_read << 18U) |
+                    (kword_t)direct_write;
+                storage_patch_module_jump(base, (kword_t *)(unsigned long)
+                    minit_export(name, base, 8U), read_addr);
+                storage_patch_module_jump(base, (kword_t *)(unsigned long)
+                    minit_export(name, base, 9U), write_addr);
+        } else {
+                backing_ops = ((kword_t)d6fs_backing_read_addr << 18U) |
+                    (kword_t)d6fs_backing_write_addr;
+                storage_patch_module_jump(base,
+                    (kword_t *)(unsigned long)callback_read, read_addr);
+                storage_patch_module_jump(base,
+                    (kword_t *)(unsigned long)callback_write, write_addr);
+        }
+        if (d6fs_reader_bootstrap_call(backing_ops) != 0) {
+                minit_diag_notok(name);
+                return;
+        }
         {
                 unsigned int service;
 
                 service = minit_export(name, base, 0U);
                 storage_patch_jump(&fs_d6fs_service_jump, service);
                 module_service_set(MODULE_SERVICE_D6FS, service);
-        }
-        d6fs_block_read_addr = minit_export(name, base, 1U);
-        d6fs_block_write_addr = minit_export(name, base, 2U);
-        d6fs_provider_reader_addr = minit_export(name, base, 3U);
-        callback_read = minit_export(name, base, 4U);
-        callback_write = minit_export(name, base, 5U);
-        storage_patch_jump(&d6fs_cache_reclaim_jump, minit_export(name, base, 6U));
-        d6fs_direct_map_addr = minit_export(name, base, 7U);
-        if (members == 1U) {
-                unsigned int direct_read;
-                unsigned int direct_write;
-
-                direct_read = minit_export(name, base, 8U);
-                direct_write = minit_export(name, base, 9U);
-                storage_patch_module_jump(base,
-                    (kword_t *)(unsigned long)callback_read, direct_read);
-                storage_patch_module_jump(base,
-                    (kword_t *)(unsigned long)callback_write, direct_write);
-                storage_patch_module_jump(base, (kword_t *)(unsigned long)
-                    minit_export(name, base, 10U), read_addr);
-                storage_patch_module_jump(base, (kword_t *)(unsigned long)
-                    minit_export(name, base, 11U), write_addr);
-        } else {
-                storage_patch_module_jump(base,
-                    (kword_t *)(unsigned long)callback_read, read_addr);
-                storage_patch_module_jump(base,
-                    (kword_t *)(unsigned long)callback_write, write_addr);
         }
         minit_diag_loaded(name);
 }

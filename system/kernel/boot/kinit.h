@@ -40,15 +40,11 @@ void kinit_put6(kword_t word);
 void kinit_put6_spaces(unsigned int words);
 void kinit_newline(void);
 void kinit_call18(unsigned int address);
-kword_t kinit_call18_0(unsigned int address);
 kword_t kinit_call18_1(unsigned int address, kword_t arg);
 kword_t kinit_call_fs_request(unsigned int address, const void *req);
 kword_t kinit_call_blockset_request(unsigned int address, const void *req);
 kword_t kinit_call_blockset_io(unsigned int address, kword_t logical,
     void *buffer);
-kword_t kinit_call18_2(unsigned int address, kword_t arg1, kword_t arg2);
-kword_t kinit_call18_3(unsigned int address, kword_t arg1, kword_t arg2,
-    kword_t arg3);
 void kinit_halt(void);
 void kinit_user_trap_init(void);
 void kcore_boot_handoff(kword_t stack_base, kword_t reclaim_base,

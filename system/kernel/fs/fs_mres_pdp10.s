@@ -352,6 +352,9 @@ fs_provider_ready:
         .word   1
 
         .bss
+        .globl  d6fs_active_reader
+; Active D6FS dispatch pointer only.  Reader state itself is dynamic/mount-owned.
+d6fs_active_reader:  .block 1
 blockset_direct_map:    .block 1
 blockset_direct_blocks: .block 1
 blockset_direct_tail:   .block 1

@@ -61,7 +61,7 @@ mres_objects()
         memfs)   echo 'memfs_pdp10' ;;
         dtfs)    echo 'dtfs dtfs_pdp10 tsfs tsfs_pdp10' ;;
         blockset) echo 'blockset_dispatch' ;;
-        d6fs)    echo 'd6fs d6fs_provider d6fs_validate_pdp10 d6fs_pdp10' ;;
+        d6fs)    echo 'fs_backing_pdp10 d6fs d6fs_provider d6fs_validate_pdp10 d6fs_pdp10' ;;
         *) return 1 ;;
         esac
 }

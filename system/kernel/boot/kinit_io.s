@@ -4,10 +4,7 @@
         .globl kinit_put6
         .globl kinit_newline
         .globl kinit_call18
-        .globl kinit_call18_0
         .globl kinit_call18_1
-        .globl kinit_call18_2
-        .globl kinit_call18_3
         .globl kinit_halt
         .globl kinit_apr_clear
 
@@ -46,12 +43,6 @@ knl_wait:
 
 ; void kinit_call18(unsigned int address)
 kinit_call18:
-        andi 01,0777777
-        pushj 017,(01)
-        popj 017,
-
-; kword_t kinit_call18_0(unsigned int address)
-kinit_call18_0:
         andi 01,0777777
         pushj 017,(01)
         popj 017,
@@ -96,26 +87,6 @@ kinit_call18_1:
         move 01,02
         andi 03,0777777
         pushj 017,(03)
-        popj 017,
-
-; kword_t kinit_call18_2(unsigned int address, kword_t arg1, kword_t arg2)
-kinit_call18_2:
-        move 04,01
-        move 01,02
-        move 02,03
-        andi 04,0777777
-        pushj 017,(04)
-        popj 017,
-
-; kword_t kinit_call18_3(unsigned int address, kword_t arg1, kword_t arg2,
-;     kword_t arg3)
-kinit_call18_3:
-        move 05,01
-        move 01,02
-        move 02,03
-        move 03,04
-        andi 05,0777777
-        pushj 017,(05)
         popj 017,
 
 ; Clear the APR flag left by an intentional nonexistent-memory probe.

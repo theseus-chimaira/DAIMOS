@@ -77,6 +77,7 @@ KERNEL_HEADERS = boot/kboot.h \
 	storage/blockset_boot.h \
 	storage/blockset_layout.h \
 	storage/blockset_mres.h \
+	storage/fs_backing.h \
 	storage/logstore.h \
 	storage/storage.h
 
@@ -201,6 +202,7 @@ MRES_FIXED_SRCS = fs/d6fs_validate_pdp10.s \
 	drivers/cr_io.s \
 	drivers/cp_io.s \
 	storage/blockset_dispatch.s \
+	storage/fs_backing_pdp10.s \
 	drivers/dcs_io.s \
 	drivers/ge_io.s \
 	drivers/dpy_io.s \
@@ -228,6 +230,7 @@ MRES_ASM = $(BUILD)/dtfs.s \
 	$(BUILD)/cr_io.s \
 	$(BUILD)/cp_io.s \
 	$(BUILD)/blockset_dispatch.s \
+	$(BUILD)/fs_backing_pdp10.s \
 	$(BUILD)/dcs_io.s \
 	$(BUILD)/ge_io.s \
 	$(BUILD)/dpy_io.s \
@@ -334,6 +337,7 @@ COPY_ASM_SRCS = core/ret_pdp10.s \
 	drivers/cr_io.s \
 	drivers/cp_io.s \
 	storage/blockset_dispatch.s \
+	storage/fs_backing_pdp10.s \
 	drivers/dcs_io.s \
 	drivers/ge_io.s \
 	drivers/dpy_io.s \
@@ -377,6 +381,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret_pdp10.s \
 	$(BUILD)/cr_io.s \
 	$(BUILD)/cp_io.s \
 	$(BUILD)/blockset_dispatch.s \
+	$(BUILD)/fs_backing_pdp10.s \
 	$(BUILD)/dcs_io.s \
 	$(BUILD)/ge_io.s \
 	$(BUILD)/dpy_io.s \

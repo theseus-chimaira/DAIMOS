@@ -169,10 +169,10 @@ d6fs_reader_get_block:
         move    2,011
         pushj   17,d6fs_cache_fetch      ; clean dynamic-cache lookup
         jumpn   1,d6fs_get_block_cache_hit
-        movei   3,fs_block_workspace     ; shared transfer block
-        move    1,1(010)                 ; opaque
+        movei   1,014(010)               ; embedded struct fs_backing
         move    2,011
-        pushj   17,d6fs_block_read     ; fixed MINIT-patched BLOCKSET read
+        movei   3,fs_block_workspace     ; shared transfer block
+        pushj   17,fs_backing_read
         jumpn   1,d6fs_get_block_read_fail
         movem   011,3(010)
         move    1,010
@@ -371,7 +371,7 @@ d6fs_free_run_done:
 ; int d6fs_provider_alloc_run(max_blocks, startp, blocksp)
 ;
 ; Selection only: this routine never changes the free map.  It is provider
-; private: the sole production caller always allocates from d6fs_provider_reader.
+; private: the provider call operates on the currently selected mount reader.
 ; STARTP/BLOCKSP are scratch outputs while scanning and are undefined on error.
 d6fs_provider_alloc_run:
         jumpe   1,pdp10_ret_neg1
@@ -385,21 +385,23 @@ d6fs_provider_alloc_run:
         move    011,1                    ; max_blocks
         move    012,2                    ; startp
         move    013,3                    ; blocksp
-        move    2,d6fs_provider_reader   ; normalized alloc_cursor
-        caml    2,d6fs_provider_reader+6
+        move    4,d6fs_active_reader   ; active reader
+        move    2,(4)                    ; normalized alloc_cursor
+        caml    2,6(4)
         jrst    d6fs_provider_alloc_run_fail
         setz    010,                     ; scanned
         setzm   (013)                    ; running count / blocksp
 
 d6fs_provider_alloc_run_loop:
-        caml    010,d6fs_provider_reader+6
+        move    4,d6fs_active_reader
+        caml    010,6(4)
         jrst    d6fs_provider_alloc_run_end
-        move    2,d6fs_provider_reader
+        move    2,(4)
         add     2,010                    ; logical = cursor + scanned
-        caml    2,d6fs_provider_reader+6
-        sub     2,d6fs_provider_reader+6 ; one wrap is sufficient
+        caml    2,6(4)
+        sub     2,6(4)                   ; one wrap is sufficient
         move    014,2                    ; preserve current across helper
-        movei   1,d6fs_provider_reader
+        move    1,d6fs_active_reader
         pushj   17,d6fs_freemap_state
         jumpl   1,d6fs_provider_alloc_run_fail
         jumpn   1,d6fs_provider_alloc_run_used
@@ -574,52 +576,8 @@ d6fs_freemap_set_done:
 
 
         .globl  fs_copy_words
-
-        .globl  d6fs_block_read
-        .globl  d6fs_block_read_jump
-; Reader callbacks use (opaque, logical, block).  MINIT patches the generic
-; tail jumps either to BLOCKSET (multi-member) or to the singleton adapter.
-d6fs_block_read:
-        move    1,2
-        move    2,3
-d6fs_block_read_jump:
-        jrst    0
-
-        .globl  d6fs_block_write
-        .globl  d6fs_block_write_jump
-d6fs_block_write:
-        move    1,2
-        move    2,3
-d6fs_block_write_jump:
-        jrst    0
-
-        .globl  d6fs_direct_map
-        .globl  d6fs_direct_read
-        .globl  d6fs_direct_write
-        .globl  d6fs_direct_read_jump
-        .globl  d6fs_direct_write_jump
-; Singleton adapter.  d6fs_direct_map packs unit,,base and is filled only
-; after KINIT validates the DSK boot descriptor.  The raw DSK ABI already is
-; (unit, sector, buffer), so this path adds only the physical base.
-d6fs_direct_read:
-        move    3,2                    ; BLOCKSET ABI buffer -> raw AC3
-        move    2,1                    ; logical -> raw physical block
-        move    4,d6fs_direct_map
-        hlrz    1,4                    ; raw unit
-        hrrz    4,4                    ; physical base
-        add     2,4
-d6fs_direct_read_jump:
-        jrst    0
-
-d6fs_direct_write:
-        move    3,2
-        move    2,1
-        move    4,d6fs_direct_map
-        hlrz    1,4
-        hrrz    4,4
-        add     2,4
-d6fs_direct_write_jump:
-        jrst    0
+        .globl  fs_backing_read
+        .globl  fs_backing_write
 
         .globl  fs_zero_block_workspace
         .globl  fs_mres_vector_dispatch
@@ -643,6 +601,13 @@ d6fs_direct_write_jump:
 ; object creator.  The wrappers only reshape the generic request ABI.
 d6fs_mres_dispatch:
 d6fs_mres_reg_dispatch:
+        move    7,d6fs_active_reader
+        jumpe   7,pdp10_ret_neg1
+        move    0,1(7)                  ; reader->opaque
+        andi    0,077                   ; reader mount id
+        ldb     7,[POINT 6,1,11]        ; vnode mount id
+        came    7,0
+        jrst    pdp10_ret_neg1
         move    7,[d6fs_mres_vector]
         jrst    fs_mres_vector_dispatch
 
@@ -817,10 +782,10 @@ d6fs_reader_commit_cache:
         push    17,011
         move    010,1
         move    011,2
-        move    1,1(010)                 ; opaque
+        movei   1,014(010)               ; embedded struct fs_backing
         move    2,011
         movei   3,fs_block_workspace
-        pushj   17,d6fs_block_write
+        pushj   17,fs_backing_write
         jumpn   1,d6fs_reader_commit_fail_saved
         movem   011,3(010)
         move    1,010
@@ -920,7 +885,7 @@ d6fs_provider_free_tail_loop:
         camn    1,[-1]
         jrst    d6fs_provider_free_tail_ok
         move    2,1
-        movei   1,d6fs_provider_reader
+        move    1,d6fs_active_reader
         setz    3,
         pushj   17,d6fs_freemap_set
         jumpn   1,d6fs_provider_free_tail_done
@@ -986,7 +951,7 @@ d6fs_provider_dirent:
         sub     5,3
         caige   5,6                      ; malformed short final dirent?
         jrst    d6fs_provider_dirent_fail
-        movei   1,d6fs_provider_reader
+        move    1,d6fs_active_reader
         movei   2,-042(17)
         movei   4,-010(17)               ; 6-word raw dirent scratch
         movei   5,6
@@ -995,7 +960,8 @@ d6fs_provider_dirent:
         caie    1,6
         jrst    d6fs_provider_dirent_fail
         movei   1,-010(17)
-        move    2,d6fs_provider_reader+011 ; super.fcb_count
+        move    2,d6fs_active_reader
+        move    2,011(2)                 ; super.fcb_count
         move    3,-1(17)
         pushj   17,d6fs_dirent_decode_valid
         jumpe   1,d6fs_provider_dirent_fail
@@ -1017,14 +983,8 @@ d6fs_provider_dirent_done:
 d6fs_provider_fcb:
         move    6,2
         move    7,3
-        ldb     4,[POINT 6,1,11]
-        jumpe   4,pdp10_ret_neg1
-        move    5,d6fs_provider_reader+1
-        andi    5,077
-        came    4,5
-        jrst    pdp10_ret_neg1
         hrrz    2,1
-        movei   1,d6fs_provider_reader
+        move    1,d6fs_active_reader
         move    3,6
         move    4,7
         jrst    d6fs_reader_fcb
@@ -1120,7 +1080,7 @@ d6fs_provider_read_words:
         caie    1,3                      ; D6FS_TYPE_SYMLINK
         jrst    d6fs_provider_read_words_fail
 d6fs_provider_read_words_ok:
-        movei   1,d6fs_provider_reader
+        move    1,d6fs_active_reader
         movei   2,-034(17)
         move    3,-2(17)
         move    4,-1(17)
@@ -1135,45 +1095,44 @@ d6fs_provider_read_words_done:
 ; int d6fs_provider_sync(vnode_t node)
         .globl  d6fs_provider_sync
 d6fs_provider_sync:
-        ldb     1,[POINT 6,1,11]
-        jumpe   1,pdp10_ret_neg1
-        move    2,d6fs_provider_reader+1
-        andi    2,077
-        came    1,2
-        jrst    pdp10_ret_neg1
         jrst    pdp10_ret_zero
 
 ; int d6fs_provider_prepare_unmount(vnode_t root)
         .globl  d6fs_provider_prepare_unmount
 d6fs_provider_prepare_unmount:
-        pushj   17,d6fs_provider_sync
-        jumpn   1,pdp10_ret_neg1
-        move    4,d6fs_provider_reader+1
+        move    5,d6fs_active_reader
+        move    4,1(5)
         trnn    4,0100                    ; D6FS_PROVIDER_MOUNT_WRITABLE
         jrst    d6fs_provider_unmount_done
-        movei   2,d6fs_provider_reader+4 ; fs_uuid[] reused for super blocks
+        movei   2,4(5)                   ; fs_uuid[] reused for super blocks
         trnn    4,0200                    ; D6FS_PROVIDER_MOUNT_COPY
         addi    2,1
         move    2,(2)
         push    17,2                      ; keep target across get_block
-        movei   1,d6fs_provider_reader
+        move    1,5
         pushj   17,d6fs_reader_get_block
         pop     17,2
         jumpe   1,pdp10_ret_neg1
-        move    4,d6fs_provider_reader+2
+        move    5,d6fs_active_reader
+        move    4,2(5)
         addi    4,1
         movem   4,fs_block_workspace+1   ; sequence
         setzm   fs_block_workspace+2     ; D6FS_STATE_CLEAN
-        movei   1,d6fs_provider_reader
+        move    1,5
         movei   3,fs_block_workspace
         pushj   17,d6fs_reader_write_block
         jumpn   1,pdp10_ret_neg1
-        aos     d6fs_provider_reader+2
+        move    5,d6fs_active_reader
+        aos     2(5)
 d6fs_provider_unmount_done:
-        setzm   d6fs_provider_reader+1   ; opaque
-        setom   d6fs_provider_reader+3   ; last-block cache invalid
         setz    1,
         pushj   17,d6fs_cache_reclaim    ; discard all clean dynamic cache
+        move    1,d6fs_active_reader
+        movei   2,3                      ; MM_TYPE_KERNEL_DYNAMIC
+        movei   3,010                    ; D6FS_READER_MM_OWNER
+        pushj   17,mm_free
+        jumpn   1,pdp10_ret_neg1
+        setzm   d6fs_active_reader
         jrst    pdp10_ret_zero
 
         .globl  pclk_time36
@@ -1218,7 +1177,7 @@ d6fs_provider_utime_store:
         move    4,(17)
         movem   4,-031(17)               ; FCB MTIME (word 3)
 d6fs_provider_attr_commit:
-        movei   1,d6fs_provider_reader
+        move    1,d6fs_active_reader
         hrrz    2,-2(17)
         movei   3,-034(17)
         pushj   17,d6fs_reader_put_fcb
@@ -1265,7 +1224,7 @@ d6fs_provider_truncate_type_ok:
         jumpn   1,d6fs_provider_truncate_fail
         pushj   17,pclk_time36
         movem   1,-031(17)               ; FCB MTIME
-        movei   1,d6fs_provider_reader
+        move    1,d6fs_active_reader
         hrrz    2,-2(17)
         movei   3,-034(17)
         pushj   17,d6fs_reader_put_fcb
@@ -1321,10 +1280,11 @@ d6fs_provider_parent:
         jumpn   1,d6fs_provider_parent_fail
         move    1,-1(17)
         hrrz    4,1
-        camn    4,d6fs_provider_reader+7 ; root_fcb: root is its own parent
+        move    5,d6fs_active_reader
+        camn    4,7(5)                   ; root_fcb: root is its own parent
         jrst    d6fs_provider_parent_store
         move    4,-2(17)                 ; fi.parent_fcb
-        caml    4,d6fs_provider_reader+011 ; reject parent outside FCB table
+        caml    4,011(5)                 ; reject parent outside FCB table
         jrst    d6fs_provider_parent_fail
         and     1,[07700000000]
         tlo     1,1
@@ -1417,7 +1377,7 @@ d6fs_provider_write_words_resize:
 d6fs_provider_write_words_store:
         move    5,-1(17)
         movem   5,(17)                   ; outgoing arg 5: nwords
-        movei   1,d6fs_provider_reader
+        move    1,d6fs_active_reader
         movei   2,-036(17)
         move    3,-3(17)
         move    4,-2(17)
@@ -1426,7 +1386,7 @@ d6fs_provider_write_words_store:
         movem   1,(17)                   ; preserve transferred word count
         pushj   17,pclk_time36
         movem   1,-033(17)               ; FCB MTIME: -036 + 3
-        movei   1,d6fs_provider_reader
+        move    1,d6fs_active_reader
         hrrz    2,-4(17)
         movei   3,-036(17)
         pushj   17,d6fs_reader_put_fcb
@@ -1696,9 +1656,9 @@ d6fs_cache_reclaim_none:
         popj    17,
 
         .bss
-; Left half: future D6FS context-array base.  Right half: cache slab base.
+; Left half: reserved for the future D6FS per-mount context-vector pointer.
+; Right half: cache slab base.
 d6fs_cache_state:  .block 1
         .text
 
         .bss
-d6fs_direct_map: .block 1

@@ -40,6 +40,30 @@
         .globl minit_drm236_probe
         .globl minit_slv_coni
         .globl minit_slv_cono
+        .globl d6fs_reader_bootstrap_call
+        .globl d6fs_active_reader
+        .globl mm_alloc
+
+; Allocate the boot-root D6FS reader from managed core.  The reader is
+; mount-owned dynamic state; this helper is reclaimed with KINIT.
+; AC1=packed backing callbacks.  d6fs_active_reader is the fixed KCORE
+; active-reader word and also serves as mm_alloc's basep.
+d6fs_reader_bootstrap_call:
+        push 017,1                       ; backing.ops
+        push 017,[d6fs_active_reader]  ; fifth arg: basep
+        movei 1,017
+        movei 2,3
+        movei 3,010
+        setz 4,
+        pushj 017,mm_alloc
+        jumpn 1,d6fs_reader_bootstrap_done
+        move 5,d6fs_active_reader
+        setzm 015(5)                    ; backing.opaque
+        move 4,-1(017)                  ; saved backing.ops
+        movem 4,014(5)
+d6fs_reader_bootstrap_done:
+        sub 017,[2,,2]
+        popj 017,
 
 ; Install the fixed PDP-6 PI vectors and clear their private AC save cells.
 ; KINIT has already copied the Stage1 040/041 handoff into KCORE, so PI no

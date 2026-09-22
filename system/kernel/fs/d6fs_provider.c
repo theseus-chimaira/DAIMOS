@@ -9,8 +9,6 @@ extern kword_t pclk_time36(void);
 #define D6FS_NOW() 0UL
 #endif
 
-struct d6fs_reader d6fs_provider_reader;
-
 void d6fs_provider_set_extent(kword_t fcb[D6FS_FCB_WORDS],
     unsigned int index, kword_t start, kword_t blocks);
 void d6fs_provider_clear_extent(kword_t fcb[D6FS_FCB_WORDS],
@@ -38,6 +36,7 @@ int d6fs_provider_readdir(vnode_t dir, unsigned int off,
 int d6fs_provider_parent_name(vnode_t node, vnode_t *parentp,
     struct vfs_name *namep);
 
+#ifndef __PDP10__
 int
 d6fs_provider_resize_fcb(vnode_t node,
     kword_t fcb[D6FS_FCB_WORDS], struct d6fs_fcb_info *fi,
@@ -57,7 +56,7 @@ d6fs_provider_resize_fcb(vnode_t node,
         int i;
         int extent_count;
 
-        if (((unsigned int)d6fs_provider_reader.opaque &
+        if (((unsigned int)d6fs_active_reader->opaque &
             D6FS_PROVIDER_MOUNT_WRITABLE) == 0U)
                 return -1;
         fs_copy_words(fcb, old_fcb, D6FS_FCB_RESERVED0);
@@ -69,7 +68,7 @@ d6fs_provider_resize_fcb(vnode_t node,
                 long n;
 
                 n = (long)((new_words + 0177UL) >> 7);
-                if (n > (long)d6fs_provider_reader.super.total_blocks)
+                if (n > (long)d6fs_active_reader->super.total_blocks)
                         return -1;
                 new_blocks = n;
         }
@@ -87,16 +86,16 @@ d6fs_provider_resize_fcb(vnode_t node,
                         while (need != 0UL &&
                             last_blocks < D6FS_EXTENT_MAX_BLOCKS) {
                                 candidate = last_start + last_blocks;
-                                if (candidate >= (long)d6fs_provider_reader.super.total_blocks)
+                                if (candidate >= (long)d6fs_active_reader->super.total_blocks)
                                         break;
                                 allocated = d6fs_freemap_state(
-                                    &d6fs_provider_reader, candidate);
+                                    d6fs_active_reader, candidate);
                                 if (allocated != 0)
                                         break;
                                 if (d6fs_reader_zero_block(
-                                    &d6fs_provider_reader, candidate) != 0)
+                                    d6fs_active_reader, candidate) != 0)
                                         goto rollback;
-                                if (d6fs_freemap_set(&d6fs_provider_reader,
+                                if (d6fs_freemap_set(d6fs_active_reader,
                                     candidate, 1U) != 0)
                                         goto rollback;
                                 ++last_blocks;
@@ -118,13 +117,13 @@ d6fs_provider_resize_fcb(vnode_t node,
                         }
                         for (candidate = 0; candidate < (long)blocks; ++candidate) {
                                 if (d6fs_reader_zero_block(
-                                    &d6fs_provider_reader,
+                                    d6fs_active_reader,
                                     start + candidate) == 0 &&
-                                    d6fs_freemap_set(&d6fs_provider_reader,
+                                    d6fs_freemap_set(d6fs_active_reader,
                                     start + candidate, 1U) == 0)
                                         continue;
                                 if (candidate != 0)
-                                        (void)d6fs_free_run(&d6fs_provider_reader,
+                                        (void)d6fs_free_run(d6fs_active_reader,
                                             start, candidate);
                                 goto rollback;
                         }
@@ -132,10 +131,10 @@ d6fs_provider_resize_fcb(vnode_t node,
                         d6fs_provider_set_extent(fcb, i, start, blocks);
                         ++extent_count;
                         need -= blocks;
-                        d6fs_provider_reader.alloc_cursor = start + blocks;
-                        if ((long)d6fs_provider_reader.alloc_cursor >=
-                            (long)d6fs_provider_reader.super.total_blocks)
-                                d6fs_provider_reader.alloc_cursor = 0UL;
+                        d6fs_active_reader->alloc_cursor = start + blocks;
+                        if ((long)d6fs_active_reader->alloc_cursor >=
+                            (long)d6fs_active_reader->super.total_blocks)
+                                d6fs_active_reader->alloc_cursor = 0UL;
                 }
         } else if (new_blocks < old_blocks) {
                 kword_t keep;
@@ -167,7 +166,7 @@ d6fs_provider_resize_fcb(vnode_t node,
             ((kword_t)new_tail << 8) |
             ((kword_t)extent_count << 4);
         fcb[D6FS_FCB_SIZE] = new_words;
-        if (d6fs_reader_put_fcb(&d6fs_provider_reader,
+        if (d6fs_reader_put_fcb(d6fs_active_reader,
             VFS_INDEX(node), fcb) != 0) {
                 if (new_blocks > old_blocks)
                         goto rollback;
@@ -182,10 +181,17 @@ d6fs_provider_resize_fcb(vnode_t node,
         return 0;
 
 rollback:
+        /* Make newly added extents visible to the file-block walker before
+         * releasing the grown tail.  The normal metadata publication has not
+         * happened yet on this failure path. */
+        fcb[D6FS_FCB_META] = (fcb[D6FS_FCB_META] & ~0360UL) |
+            ((kword_t)extent_count << 4);
         (void)d6fs_provider_free_file_tail(fcb, old_blocks);
         fs_copy_words(old_fcb, fcb, D6FS_FCB_RESERVED0);
         return -1;
 }
+
+#endif
 
 int
 d6fs_provider_scan_slot(vnode_t dir, const struct vfs_name *name,
@@ -251,8 +257,8 @@ d6fs_provider_free_fcb(unsigned int *indexp)
         struct d6fs_fcb_info fi;
         unsigned int i;
 
-        for (i = 1U; i < d6fs_provider_reader.super.fcb_count; ++i) {
-                if (d6fs_reader_fcb(&d6fs_provider_reader, i, fcb, &fi) != 0)
+        for (i = 1U; i < d6fs_active_reader->super.fcb_count; ++i) {
+                if (d6fs_reader_fcb(d6fs_active_reader, i, fcb, &fi) != 0)
                         continue;
                 if (fi.type == D6FS_TYPE_FREE) {
                         *indexp = i;
@@ -297,7 +303,7 @@ d6fs_provider_write_dirent(vnode_t dir, unsigned int slot,
                 if (d6fs_provider_resize_fcb(dir, fcb, &fi, need, tail) != 0)
                         return -1;
         }
-        return d6fs_reader_write_words(&d6fs_provider_reader, fcb,
+        return d6fs_reader_write_words(d6fs_active_reader, fcb,
             off, raw,
             D6FS_DIRENT_WORDS) == (int)D6FS_DIRENT_WORDS ? 0 : -1;
 }
@@ -342,7 +348,7 @@ d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
                     (kword_t)PROC_GID(p);
         }
         fcb[D6FS_FCB_PARENT] = (kword_t)VFS_INDEX(dir) << 18;
-        if (d6fs_reader_put_fcb(&d6fs_provider_reader, index, fcb) != 0)
+        if (d6fs_reader_put_fcb(d6fs_active_reader, index, fcb) != 0)
                 return -1;
         node = VFS_NODE_PACKED(D6FS_PROVIDER,
             (VFS_MOUNT_ID(dir) << VFS_MOUNT_SHIFT) | D6FS_KIND_NODE, index);
@@ -355,7 +361,7 @@ d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
                 tail = value - (words - 1U) * 6U;
                 if (d6fs_provider_resize_fcb(node, fcb, &fi, words, tail) != 0)
                         goto fail_fcb;
-                if (d6fs_reader_write_words(&d6fs_provider_reader, fcb, 0UL,
+                if (d6fs_reader_write_words(d6fs_active_reader, fcb, 0UL,
                     payload, words) != (int)words)
                         goto fail_symlink;
         }
@@ -377,7 +383,7 @@ fail_symlink:
         (void)d6fs_provider_resize_fcb(node, fcb, &fi, 0UL, 0U);
 fail_fcb:
         fs_zero_words(fcb, D6FS_FCB_WORDS);
-        (void)d6fs_reader_put_fcb(&d6fs_provider_reader, index, fcb);
+        (void)d6fs_reader_put_fcb(d6fs_active_reader, index, fcb);
         return -1;
 }
 
@@ -391,7 +397,7 @@ d6fs_provider_unlink(vnode_t dir, const struct vfs_name *name)
         unsigned int slot;
 
         if (d6fs_provider_scan_slot(dir, name, &slot, &di) != 0 ||
-            d6fs_reader_fcb(&d6fs_provider_reader, di.child_fcb,
+            d6fs_reader_fcb(d6fs_active_reader, di.child_fcb,
             fcb, &fi) != 0 ||
             (fi.flags & (D6FS_FLAG_NOUNLINK | D6FS_FLAG_IMMUTABLE)) != 0U)
                 return -1;
@@ -415,7 +421,7 @@ d6fs_provider_unlink(vnode_t dir, const struct vfs_name *name)
         if (d6fs_provider_write_dirent(dir, slot, 0) != 0)
                 return -1;
         fs_zero_words(fcb, D6FS_FCB_WORDS);
-        if (d6fs_reader_put_fcb(&d6fs_provider_reader,
+        if (d6fs_reader_put_fcb(d6fs_active_reader,
             di.child_fcb, fcb) != 0)
                 return -1;
         if (d6fs_provider_free_file_tail(old_fcb, 0UL) != 0) {
@@ -441,7 +447,7 @@ d6fs_provider_rename(vnode_t olddir,
         if (VFS_MOUNT_ID(olddir) != VFS_MOUNT_ID(newdir) ||
             d6fs_provider_scan_slot(olddir, oldname, &oldslot, &di) != 0 ||
             d6fs_provider_scan_slot(newdir, newname, 0, 0) == 0 ||
-            d6fs_reader_fcb(&d6fs_provider_reader, di.child_fcb,
+            d6fs_reader_fcb(d6fs_active_reader, di.child_fcb,
             fcb, &fi) != 0 ||
             (fi.flags & (D6FS_FLAG_NOUNLINK | D6FS_FLAG_IMMUTABLE)) != 0U)
                 return -1;
@@ -469,7 +475,7 @@ d6fs_provider_rename(vnode_t olddir,
                 if (d6fs_provider_write_dirent(olddir, oldslot, 0) != 0)
                         return -1;
                 fcb[D6FS_FCB_PARENT] = (kword_t)VFS_INDEX(newdir) << 18;
-                if (d6fs_reader_put_fcb(&d6fs_provider_reader,
+                if (d6fs_reader_put_fcb(d6fs_active_reader,
                     di.child_fcb, fcb) != 0) {
                         (void)d6fs_provider_write_dirent(olddir, oldslot,
                             &old_di);
@@ -477,7 +483,7 @@ d6fs_provider_rename(vnode_t olddir,
                 }
                 if (d6fs_provider_write_dirent(newdir, newslot, &di) != 0) {
                         fcb[D6FS_FCB_PARENT] = (kword_t)old_parent << 18;
-                        (void)d6fs_reader_put_fcb(&d6fs_provider_reader,
+                        (void)d6fs_reader_put_fcb(d6fs_active_reader,
                             di.child_fcb, fcb);
                         (void)d6fs_provider_write_dirent(olddir, oldslot,
                             &old_di);

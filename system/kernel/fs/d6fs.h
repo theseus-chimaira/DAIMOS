@@ -2,6 +2,7 @@
 #define DAIMON_D6FS_H
 
 #include "kcore.h"
+#include "fs_backing.h"
 
 #define D6FS_BLOCK_WORDS          0200U
 extern kword_t fs_block_workspace[D6FS_BLOCK_WORDS];
@@ -126,6 +127,7 @@ struct d6fs_reader {
         kword_t alloc_cursor;
         kword_t opaque;
         struct d6fs_super_info super;
+        struct fs_backing backing;
 };
 
 /* super.state is boot-only; after mount it is the runtime cache tag. */
