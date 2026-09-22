@@ -610,6 +610,8 @@ d6fs_mres_reg_dispatch:
         move    7,d6fs_reader_slots(7)
         jumpe   7,pdp10_ret_neg1
         movem   7,d6fs_active_reader
+        cain    6,024                    ; FS_MRES_OP_D6FS_REMOUNT (20)
+        jrst    d6fs_provider_toggle_state
         move    7,[d6fs_mres_vector]
         jrst    fs_mres_vector_dispatch
 
@@ -637,13 +639,6 @@ d6fs_mount_validated:
         came    5,6(1)                   ; super.total_blocks must agree
         jrst    pdp10_ret_neg1
         skipe   3(1)                     ; secondary mounts must be clean
-        jrst    pdp10_ret_neg1
-        hlrz    0,017(1)                 ; direct DSK unit 0..3
-        caile   0,3
-        jrst    pdp10_ret_neg1
-        hrrz    0,017(1)                 ; base + capacity within DSK media
-        add     0,5
-        caile   0,0130000
         jrst    pdp10_ret_neg1
 
         push    17,1                     ; handoff
@@ -678,8 +673,7 @@ d6fs_mount_validated:
         move    5,(17)
         movem   5,d6fs_reader_slots(7)
         movem   5,d6fs_active_reader
-        move    6,1(5)                   ; handoff word 1: raw summary start
-        lsh     6,014
+        move    6,1(5)                   ; prepacked summary/copy state
         move    4,7                      ; vfs_mount leaves zero-based slot AC7
         addi    4,1                      ; public mount id
         ior     6,4
@@ -1190,18 +1184,16 @@ d6fs_provider_read_words_done:
 d6fs_provider_sync:
         jrst    pdp10_ret_zero
 
-; int d6fs_provider_prepare_unmount(vnode_t root)
-        .globl  d6fs_provider_prepare_unmount
-d6fs_provider_prepare_unmount:
+; Publish the opposite A/B superblock and toggle CLEAN/DIRTY state.
+; All D6FS writes are synchronous and the dynamic cache is clean-only, so this
+; publication is the complete persistent barrier for RO/RW transitions.
+d6fs_provider_toggle_state:
         move    5,d6fs_active_reader
         move    4,1(5)
-        trnn    4,0100                    ; D6FS_PROVIDER_MOUNT_WRITABLE
-        jrst    d6fs_provider_unmount_done
-        movei   2,014(5)                 ; reader->super_block[]
-        trnn    4,0200                    ; D6FS_PROVIDER_MOUNT_COPY
-        addi    2,1
-        move    2,(2)
-        push    17,2                      ; keep target across get_block
+        move    2,015(5)                 ; current A -> publish B
+        trne    4,0200                    ; current B -> publish A
+        move    2,014(5)
+        push    17,2
         move    1,5
         pushj   17,d6fs_reader_get_block
         pop     17,2
@@ -1210,19 +1202,37 @@ d6fs_provider_prepare_unmount:
         move    4,2(5)
         addi    4,1
         movem   4,fs_block_workspace+1   ; sequence
-        setzm   fs_block_workspace+2     ; D6FS_STATE_CLEAN
+        ldb     4,[POINT 1,1(5),29]      ; current writable bit
+        xori    4,1                      ; media state: RW->CLEAN, RO->DIRTY
+        movem   4,fs_block_workspace+2
         move    1,5
         movei   3,fs_block_workspace
         pushj   17,d6fs_reader_write_block
         jumpn   1,pdp10_ret_neg1
         move    5,d6fs_active_reader
         aos     2(5)
+        movei   4,0300                   ; WRITABLE | COPY
+        xorm    4,1(5)
+        ldb     4,[POINT 6,1(5),35]      ; mount id
+        movei   6,1
+        lsh     6,-1(4)
+        xorm    6,vfs_mount_ro           ; VFS policy changes after publication
+        jrst    pdp10_ret_zero
+
+; int d6fs_provider_prepare_unmount(vnode_t root)
+        .globl  d6fs_provider_prepare_unmount
+d6fs_provider_prepare_unmount:
+        move    5,d6fs_active_reader
+        move    4,1(5)
+        trnn    4,0100                    ; D6FS_PROVIDER_MOUNT_WRITABLE
+        jrst    d6fs_provider_unmount_done
+        pushj   17,d6fs_provider_toggle_state
+        jumpn   1,pdp10_ret_neg1
 d6fs_provider_unmount_done:
         setz    1,
         pushj   17,d6fs_cache_reclaim    ; discard all clean dynamic cache
         move    5,d6fs_active_reader
-        move    4,1(5)
-        andi    4,077                    ; mount id
+        ldb     4,[POINT 6,1(5),35]      ; mount id
         subi    4,1                      ; VFS mount ids are 1..4
         push    17,4                     ; mm_free may clobber argument ACs
         move    1,5

@@ -146,6 +146,7 @@ int vfs_mount(vnode_t target, unsigned int provider,
     unsigned int kind, unsigned int index, unsigned int flags,
     vnode_t *rootp);
 int vfs_unmount(vnode_t root);
+int vfs_remount(vnode_t node);
 int vfs_readonly(vnode_t node);
 extern vnode_t vfs_namespace_root;
 

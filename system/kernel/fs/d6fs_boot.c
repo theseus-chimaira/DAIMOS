@@ -55,7 +55,8 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
 
         reader->alloc_cursor = alloc_cursor;
         reader->opaque = (summary_start << D6FS_PROVIDER_SUMMARY_SHIFT) |
-            (kword_t)id;
+            (kword_t)id |
+            (kword_t)(copy ? D6FS_PROVIDER_MOUNT_COPY : 0U);
         reader->super = *super;
         reader->backing.blocks = super->total_blocks;
         D6FS_RUNTIME_SUPER_BLOCK(reader, 0U) = super_a;
@@ -74,8 +75,8 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
                 if (blockset_boot_write(dirty_block, scratch) != 0)
                         goto fail;
                 reader->super.sequence = super->sequence + 1UL;
-                reader->opaque |= (kword_t)D6FS_PROVIDER_MOUNT_WRITABLE |
-                    (kword_t)((copy ^ 1U) ? D6FS_PROVIDER_MOUNT_COPY : 0U);
+                reader->opaque ^= (kword_t)D6FS_PROVIDER_MOUNT_COPY;
+                reader->opaque |= (kword_t)D6FS_PROVIDER_MOUNT_WRITABLE;
         }
 
         return 0;

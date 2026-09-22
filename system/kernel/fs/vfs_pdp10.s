@@ -915,18 +915,11 @@ vfs_mount:
         move    5,-1(17)                ; flags
         trne    5,0777356              ; RDONLY(1), SWAP(020), LOGSTORE(0400)
         jrst    pdp10_ret_neg1
-        move    0,vfs_mount_ro
-        trnn    5,020                   ; one active swap owner system-wide
-        jrst    vfs_mount_check_log_owner
-        move    6,0
-        andi    6,0360
-        jumpn   6,pdp10_ret_neg1
-vfs_mount_check_log_owner:
-        trnn    5,0400                  ; one active logstore owner system-wide
-        jrst    vfs_mount_owner_ok
-        andi    0,07400
-        jumpn   0,pdp10_ret_neg1
-vfs_mount_owner_ok:
+        move    6,5
+        andi    6,0420                  ; requested swap/logstore ownership
+        imuli   6,017                   ; expand slot-0 bits over four slots
+        tdne    6,vfs_mount_ro
+        jrst    pdp10_ret_neg1
         jumpn   1,vfs_mount_check_target
         skipe   vfs_namespace_root
         jrst    pdp10_ret_neg1
@@ -990,6 +983,16 @@ vfs_mount_found:
         jumpn   1,pdp10_ret_zero
         movem   5,vfs_namespace_root
         jrst    pdp10_ret_zero
+
+; int vfs_remount(node)
+; Kernel/storage-internal D6FS remount.  Callers supply a D6FS vnode; the
+; provider selects the mount context and changes VFS policy only after media
+; publication succeeds.
+        .globl  vfs_remount
+vfs_remount:
+        movei   6,024                   ; FS_MRES_OP_D6FS_REMOUNT
+        movei   7,6                      ; D6FS_PROVIDER
+        jrst    fs_provider_reg_call
 
 ; int vfs_unmount(root)
         .globl  vfs_unmount

@@ -27,6 +27,7 @@
  * directed to a specific provider MRES, so global sparse numbering only wastes
  * resident vector words. */
 #define FS_MRES_OP_MEMFS_USAGE          20U
+#define FS_MRES_OP_D6FS_REMOUNT         20U
 
 struct fs_mres_request {
         kword_t op;
