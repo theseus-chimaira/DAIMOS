@@ -1049,8 +1049,6 @@ dtfs_minit(void)
                     minit_export(name, base, 4U));
                 storage_patch_jump(&fs_tsfs_service_jump,
                     minit_export(name, base, 5U));
-                storage_patch_jump(&sys_tsfs_mount_jump,
-                    minit_export(name, base, 6U));
                 module_service_set(MODULE_SERVICE_DTFS, service);
         }
         minit_diag_loaded(name);

@@ -47,6 +47,7 @@
         .globl dsys_chown
         .globl dsys_dtc_read_block
         .globl dsys_tsfs_mount
+        .globl dsys_d6fs_mount
 
 dsys_exit:             uuo 040,0(1)
                        popj 17,
@@ -160,11 +161,20 @@ dsys_dtc_read_block:    move 4,3
                         uuo 077,0(1)
                         popj 17,
 
-; Mount a userspace-validated TSFS handoff.
-; C: AC1=handoff, AC2=target, AC3=flags.
+; Mount userspace-validated TSFS runtime state (two words).
+; C: AC1=state, AC2=target, AC3=flags.
 dsys_tsfs_mount:        move 4,3
                         move 3,2
                         move 2,1
                         movei 1,041
+                        uuo 077,0(1)
+                        popj 17,
+
+; Mount a userspace-validated D6FS handoff.
+; C: AC1=handoff, AC2=target, AC3=flags.
+dsys_d6fs_mount:        move 4,3
+                        move 3,2
+                        move 2,1
+                        movei 1,042
                         uuo 077,0(1)
                         popj 17,

@@ -14,10 +14,9 @@
 #define D6FS_PROVIDER_SUMMARY_START(reader) \
         ((reader)->opaque >> D6FS_PROVIDER_SUMMARY_SHIFT)
 
-/* The filesystem UUID is needed only while KINIT selects the superblock.
- * After that, reuse those two resident reader words for the physical dual-
- * superblock locations needed by the writable unmount commit. */
-#define D6FS_RUNTIME_SUPER_BLOCK(reader, copy) ((reader)->super.fs_uuid[(copy)])
+/* Keep media identity and physical superblock locations distinct.  Readers
+ * are managed-core mount state, so these two words do not consume KCORE/MRES. */
+#define D6FS_RUNTIME_SUPER_BLOCK(reader, copy) ((reader)->super_block[(copy)])
 
 extern struct d6fs_reader *d6fs_active_reader;
 

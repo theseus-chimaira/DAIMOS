@@ -169,7 +169,7 @@ d6fs_reader_get_block:
         move    2,011
         pushj   17,d6fs_cache_fetch      ; clean dynamic-cache lookup
         jumpn   1,d6fs_get_block_cache_hit
-        movei   1,014(010)               ; embedded struct fs_backing
+        movei   1,016(010)               ; embedded struct fs_backing
         move    2,011
         movei   3,fs_block_workspace     ; shared transfer block
         pushj   17,fs_backing_read
@@ -601,15 +601,108 @@ d6fs_freemap_set_done:
 ; object creator.  The wrappers only reshape the generic request ABI.
 d6fs_mres_dispatch:
 d6fs_mres_reg_dispatch:
-        move    7,d6fs_active_reader
-        jumpe   7,pdp10_ret_neg1
-        move    0,1(7)                  ; reader->opaque
-        andi    0,077                   ; reader mount id
-        ldb     7,[POINT 6,1,11]        ; vnode mount id
-        came    7,0
+        cain    6,022                    ; FS_MRES_OP_MOUNT_UNIT (18)
+        jrst    d6fs_mount_validated
+        ldb     7,[POINT 6,1,11]        ; vnode mount id 1..4
+        sojl    7,pdp10_ret_neg1        ; convert to zero-based slot
+        caile   7,3
         jrst    pdp10_ret_neg1
+        move    7,d6fs_reader_slots(7)
+        jumpe   7,pdp10_ret_neg1
+        movem   7,d6fs_active_reader
         move    7,[d6fs_mres_vector]
         jrst    fs_mres_vector_dispatch
+
+
+
+        .globl  vfs_mount
+        .globl  mm_alloc
+        .globl  mm_free
+; Provider-private runtime mount entry.
+; AC1=validated 17-word handoff, AC2=target vnode, AC3=flags.
+; Secondary mounts are read-only until the later remount/recovery phase defines
+; the complete writable transition protocol.
+d6fs_mount_validated:
+        jumpe   1,pdp10_ret_neg1
+        caie    3,1                      ; VFS_MOUNT_RDONLY
+        jrst    pdp10_ret_neg1
+        move    5,016(1)                 ; versioned handoff marker
+        came    5,[044066263602]
+        jrst    pdp10_ret_neg1
+
+        ; The transient scanner owns full filesystem validation.  Resident
+        ; code checks only fields needed to keep provider/backing dispatch safe.
+        move    5,020(1)                 ; backing.blocks / total capacity
+        jumpe   5,pdp10_ret_neg1
+        came    5,6(1)                   ; super.total_blocks must agree
+        jrst    pdp10_ret_neg1
+        skipe   3(1)                     ; secondary mounts must be clean
+        jrst    pdp10_ret_neg1
+        hlrz    0,017(1)                 ; direct DSK unit 0..3
+        caile   0,3
+        jrst    pdp10_ret_neg1
+        hrrz    0,017(1)                 ; base + capacity within DSK media
+        add     0,5
+        caile   0,0130000
+        jrst    pdp10_ret_neg1
+
+        push    17,1                     ; handoff
+        push    17,2                     ; target vnode
+        push    17,[0]                   ; allocated reader base
+        movei   5,(17)                   ; mm_alloc basep -> local stack word
+        push    17,5                     ; fifth mm_alloc arg
+        movei   1,021                    ; struct d6fs_reader
+        movei   2,3                      ; MM_TYPE_KERNEL_DYNAMIC
+        movei   3,010                    ; D6FS_READER_MM_OWNER
+        setz    4,                       ; no alignment requirement
+        pushj   17,mm_alloc
+        sub     17,[1,,1]
+        jumpn   1,d6fs_mount_bad
+
+        move    5,(17)                   ; new mount-owned reader
+        move    4,5                      ; BLT handoff into dynamic reader
+        hrl     4,-2(17)
+        blt     4,020(5)
+
+        movei   6,016(5)                 ; temporary root-vnode scratch
+        push    17,6                     ; sixth arg: rootp
+        push    17,[1]                   ; fifth arg: VFS_MOUNT_RDONLY
+        move    1,-3(17)                 ; target vnode
+        movei   2,6                      ; D6FS_PROVIDER
+        movei   3,1                      ; D6FS_KIND_NODE
+        move    4,7(5)                   ; root_fcb
+        pushj   17,vfs_mount
+        sub     17,[2,,2]
+        jumpn   1,d6fs_mount_free
+
+        move    5,(17)
+        movem   5,d6fs_reader_slots(7)
+        movem   5,d6fs_active_reader
+        move    6,1(5)                   ; handoff word 1: raw summary start
+        lsh     6,014
+        move    4,7                      ; vfs_mount leaves zero-based slot AC7
+        addi    4,1                      ; public mount id
+        ior     6,4
+        movem   6,1(5)
+        move    4,[fs_backing_direct_read,,fs_backing_direct_write]
+        movem   4,016(5)                 ; replace root scratch with trusted ops
+        setom   3(5)                     ; D6FS_CACHE_INVALID
+        setz    1,
+        jrst    d6fs_mount_done
+
+d6fs_mount_free:
+        move    1,(17)                   ; new reader was never installed
+        movei   2,3
+        movei   3,010
+        pushj   17,mm_free
+        seto    1,
+        jrst    d6fs_mount_done
+
+d6fs_mount_bad:
+        seto    1,
+d6fs_mount_done:
+        sub     17,[3,,3]
+        popj    17,
 
 d6fs_mres_create:
         movei   5,1                     ; regular file type
@@ -782,7 +875,7 @@ d6fs_reader_commit_cache:
         push    17,011
         move    010,1
         move    011,2
-        movei   1,014(010)               ; embedded struct fs_backing
+        movei   1,016(010)               ; embedded struct fs_backing
         move    2,011
         movei   3,fs_block_workspace
         pushj   17,fs_backing_write
@@ -1104,7 +1197,7 @@ d6fs_provider_prepare_unmount:
         move    4,1(5)
         trnn    4,0100                    ; D6FS_PROVIDER_MOUNT_WRITABLE
         jrst    d6fs_provider_unmount_done
-        movei   2,4(5)                   ; fs_uuid[] reused for super blocks
+        movei   2,014(5)                 ; reader->super_block[]
         trnn    4,0200                    ; D6FS_PROVIDER_MOUNT_COPY
         addi    2,1
         move    2,(2)
@@ -1127,13 +1220,23 @@ d6fs_provider_prepare_unmount:
 d6fs_provider_unmount_done:
         setz    1,
         pushj   17,d6fs_cache_reclaim    ; discard all clean dynamic cache
-        move    1,d6fs_active_reader
+        move    5,d6fs_active_reader
+        move    4,1(5)
+        andi    4,077                    ; mount id
+        subi    4,1                      ; VFS mount ids are 1..4
+        push    17,4                     ; mm_free may clobber argument ACs
+        move    1,5
         movei   2,3                      ; MM_TYPE_KERNEL_DYNAMIC
         movei   3,010                    ; D6FS_READER_MM_OWNER
         pushj   17,mm_free
-        jumpn   1,pdp10_ret_neg1
+        jumpn   1,d6fs_provider_unmount_free_fail
+        pop     17,4
+        setzm   d6fs_reader_slots(4)
         setzm   d6fs_active_reader
         jrst    pdp10_ret_zero
+d6fs_provider_unmount_free_fail:
+        pop     17,4
+        jrst    pdp10_ret_neg1
 
         .globl  pclk_time36
 
@@ -1513,8 +1616,8 @@ d6fs_provider_parent_name_done:
 ;   005..0204 block0, 0205..0404 block1
 ;
 ; A single slab keeps dynamic RAM bounded while retaining two hot blocks.  The
-; permanent state word packs the slab pointer in its right half; the left half
-; is reserved for the future D6FS per-mount context-array pointer.
+; permanent state word keeps only the slab pointer in its right half.  Mount
+; reader pointers use the compact fixed four-word table in KCORE.
         .globl  mm_alloc_aligned_noreclaim
         .globl  mm_free
 
@@ -1646,7 +1749,7 @@ d6fs_cache_reclaim:
         movei   3,D6FS_CACHE_MM_OWNER
         pushj   17,mm_free
         jumpn   1,d6fs_cache_reclaim_none
-        hllzs   d6fs_cache_state       ; preserve future context-array pointer
+        setzm   d6fs_cache_state       ; sole state is the reclaimed slab
         movei   1,1
         pop     17,010
         popj    17,
@@ -1656,7 +1759,6 @@ d6fs_cache_reclaim_none:
         popj    17,
 
         .bss
-; Left half: reserved for the future D6FS per-mount context-vector pointer.
 ; Right half: cache slab base.
 d6fs_cache_state:  .block 1
         .text

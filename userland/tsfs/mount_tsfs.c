@@ -51,7 +51,8 @@ main(int argc, kword_t **argv)
                         (void)u_crlf(1);
                 }
         }
-        if (dsys_tsfs_mount(handoff, argv[2], SYS_MOUNT_RDONLY) != 0) {
+        if (dsys_tsfs_mount(&handoff[SYS_TSFS_FILE_LOC], argv[2],
+            SYS_MOUNT_RDONLY) != 0) {
                 (void)u_puts(2, "MOUNT.TSFS: MOUNT FAILED");
                 (void)u_crlf(2);
                 return 1;

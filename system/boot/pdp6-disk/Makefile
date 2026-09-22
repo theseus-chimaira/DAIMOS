@@ -451,7 +451,7 @@ $(DTFS_MRES_OBJ): $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(BUILD)/tsfs.dobj
 	    -R $@ -N dtfs_mres_package -X dtfs_mres_dispatch \
 	    -X dtfs_dtc_read_jump -X dtfs_dtc_write_jump \
 	    -X dtfs_format_unit -X dtfs_mount_unit \
-	    -X tsfs_mres_dispatch -X tsfs_mount_set \
+	    -X tsfs_mres_dispatch \
 	    $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_pdp10.dobj
 
 $(BLOCKSET_MRES_OBJ): $(BUILD)/blockset_dispatch.dobj $(KCORE_MAP)

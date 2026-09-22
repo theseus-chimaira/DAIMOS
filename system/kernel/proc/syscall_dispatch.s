@@ -507,6 +507,8 @@ native_sys_ext_nonpipe:
         jrst    native_sys_dtc_read_block
         cain    1,041                  ; SYS_EXT_TSFS_MOUNT
         jrst    native_sys_tsfs_mount
+        cain    1,042                  ; SYS_EXT_D6FS_MOUNT
+        jrst    native_sys_d6fs_mount
         cain    1,022                  ; SYS_EXT_EXEC
         jrst    native_sys_exec
         caie    1,021                  ; SYS_EXT_MKFIFO
@@ -572,52 +574,54 @@ native_sys_dtc_read_bad:
         jrst    pdp10_ret_neg1
 
 
-; Mount one already-scanned TSFS set.  Discovery/checksum work stays in
-; userspace; only the compact 20-word handoff is copied into the provider.
-; AC2=user handoff, AC3=user mount path, AC4=flags.
+; Mount one userspace-validated filesystem handoff.  TSFS passes its compact
+; two-word runtime state; D6FS passes the 17-word reader seed.  Both providers
+; use FS_MRES_OP_MOUNT_UNIT through the normal serialized provider dispatcher.
 native_sys_tsfs_mount:
-        push    17,010
-        push    17,011
-        move    010,3                    ; mount path
-        move    011,4                    ; flags
-        move    1,2
+        movei   5,2                      ; compact TSFS runtime words
+        movei   6,7                      ; TSFS_PROVIDER
+        jrst    native_sys_mount_handoff
+
+native_sys_d6fs_mount:
+        movei   5,021                    ; D6FS_MOUNT_WORDS
+        movei   6,6                      ; D6FS_PROVIDER
+
+        .globl  fs_provider_reg_call
+native_sys_mount_handoff:
+        push    17,5                     ; handoff words
+        push    17,6                     ; provider
+        push    17,2                     ; user handoff
+        push    17,4                     ; mount flags
+        move    1,3                     ; resolve target before retaining map
+        pushj   17,native_sys_lookup_user_path
+        jumpe   1,native_sys_mount_handoff_bad4
+        push    17,1                     ; target vnode
+        move    1,-2(17)                 ; user handoff
         pushj   17,native_sys_map_one
-        jumpe   1,native_sys_tsfs_mount_bad0
+        jumpe   1,native_sys_mount_handoff_bad5
+        move    0,1
+        add     0,-4(17)                 ; one-past required handoff
         move    5,3
         add     5,4                      ; one-past mapped user extent
-        move    0,1
-        addi    0,022                    ; through handoff words 16/17
         camle   0,5
-        jrst    native_sys_tsfs_mount_bad_map
-        push    17,020(1)                ; packed FILE state
-        push    17,021(1)                ; packed member-map state
+        jrst    native_sys_mount_handoff_bad_map
+        move    2,(17)                   ; mounted-on vnode
+        move    3,-1(17)                 ; VFS_MOUNT_* flags
+        move    7,-3(17)                 ; provider
+        movei   6,022                    ; FS_MRES_OP_MOUNT_UNIT
+        setz    4,                       ; MOUNT_UNIT returns no vnode to user
+        pushj   17,fs_provider_reg_call
         pushj   17,vm_user_mapping_release
-        move    1,010
-        pushj   17,native_sys_lookup_user_path
-        jumpe   1,native_sys_tsfs_mount_bad_stack
-        move    2,1                      ; mounted-on vnode
-        movei   1,-1(17)                 ; first of two packed state words
-        move    3,011                    ; flags
-        push    17,0                     ; returned root scratch
-        movei   4,(17)
-        .globl  sys_tsfs_mount_jump
-sys_tsfs_mount_jump:
-        pushj   17,pdp10_ret_neg1
-        pop     17,0
-        sub     17,[2,,2]
-        pop     17,011
-        pop     17,010
+        sub     17,[5,,5]
         popj    17,
-native_sys_tsfs_mount_bad_map:
+native_sys_mount_handoff_bad_map:
         pushj   17,vm_user_mapping_release
-native_sys_tsfs_mount_bad0:
-        seto    1,
-        pop     17,011
-        pop     17,010
-        popj    17,
-native_sys_tsfs_mount_bad_stack:
-        sub     17,[2,,2]
-        jrst    native_sys_tsfs_mount_bad0
+native_sys_mount_handoff_bad5:
+        sub     17,[5,,5]
+        jrst    pdp10_ret_neg1
+native_sys_mount_handoff_bad4:
+        sub     17,[4,,4]
+        jrst    pdp10_ret_neg1
 
 native_sys_dup2:
         hrrz    1,2                    ; old fd

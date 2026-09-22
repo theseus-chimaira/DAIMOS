@@ -44,6 +44,15 @@ extern kword_t fs_block_workspace[D6FS_BLOCK_WORDS];
 #define D6FS_MAGIC                044066263662UL
 #define D6FS_FORMAT_VERSION       2U
 
+/* Runtime secondary-mount handoff.  A transient scanner performs full media
+ * validation.  The layout mirrors struct d6fs_reader so one BLT can seed the
+ * dynamic state, except word 1 is the unshifted summary block and word 016 is
+ * a version marker which resident code replaces with trusted callbacks. */
+#define D6FS_MOUNT_WORDS          021U
+#define D6FS_MOUNT_MARKER         016U
+#define D6FS_MOUNT_BACKING_BLOCKS 020U
+#define D6FS_MOUNT_MAGIC          044066263602UL
+
 /* FCB word numbers, octal as in the format document. */
 #define D6FS_FCB_META             000U
 #define D6FS_FCB_OWNER            001U
@@ -127,6 +136,7 @@ struct d6fs_reader {
         kword_t alloc_cursor;
         kword_t opaque;
         struct d6fs_super_info super;
+        kword_t super_block[2];
         struct fs_backing backing;
 };
 

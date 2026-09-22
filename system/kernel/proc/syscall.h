@@ -54,6 +54,7 @@
 #define SYS_EXT_UTIME              035U
 #define SYS_EXT_DTC_READ_BLOCK     040U
 #define SYS_EXT_TSFS_MOUNT         041U
+#define SYS_EXT_D6FS_MOUNT         042U
 
 #define SYS_SEEK_SET                0U
 #define SYS_SEEK_CUR                1U

@@ -12,6 +12,8 @@
         .globl  tsfs_read_words
 
 tsfs_mres_dispatch:
+        cain    6,022                    ; FS_MRES_OP_MOUNT_UNIT
+        jrst    tsfs_mount_set
         move    7,[tsfs_mres_vector]
         jrst    fs_mres_vector_dispatch
 

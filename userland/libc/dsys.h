@@ -48,6 +48,7 @@ int dsys_exec(struct sys_exec_v1 *args);
 kword_t dsys_gettime(void);
 int dsys_dtc_read_block(unsigned int unit, unsigned int block, kword_t *buf);
 int dsys_tsfs_mount(kword_t *handoff, kword_t *path, unsigned int flags);
+int dsys_d6fs_mount(kword_t *handoff, kword_t *path, unsigned int flags);
 int dsys_chdir(kword_t *p);
 int dsys_getcwd(kword_t *p, unsigned int n);
 int dsys_procinfo(unsigned int s, struct sys_procinfo *p);

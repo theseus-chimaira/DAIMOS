@@ -19,6 +19,9 @@ unsigned int d6fs_provider_tail(unsigned int type, kword_t words,
     kword_t size_chars);
 int d6fs_provider_alloc_run(kword_t max_blocks,
     kword_t *startp, kword_t *blocksp);
+int d6fs_provider_resize_fcb(vnode_t node,
+    kword_t fcb[D6FS_FCB_WORDS], struct d6fs_fcb_info *fi,
+    kword_t new_words, unsigned int new_tail);
 
 int d6fs_provider_scan_slot(vnode_t dir,
     const struct vfs_name *name, unsigned int *slotp,

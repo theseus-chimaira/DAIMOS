@@ -17,7 +17,8 @@ d6fs_boot_block_buffer(void)
 
 static int
 d6fs_boot_runtime_init(const struct d6fs_super_info *super,
-    unsigned int flags, kword_t super_a, kword_t super_b, unsigned int copy)
+    kword_t alloc_cursor, kword_t summary_start, unsigned int flags,
+    kword_t super_a, kword_t super_b, unsigned int copy)
 {
         struct d6fs_reader *reader;
         vnode_t root;
@@ -52,8 +53,8 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
                 return -1;
         }
 
-        reader->alloc_cursor = super->fs_uuid[0];
-        reader->opaque = (super->fs_uuid[1] << D6FS_PROVIDER_SUMMARY_SHIFT) |
+        reader->alloc_cursor = alloc_cursor;
+        reader->opaque = (summary_start << D6FS_PROVIDER_SUMMARY_SHIFT) |
             (kword_t)id;
         reader->super = *super;
         reader->backing.blocks = super->total_blocks;
@@ -102,6 +103,8 @@ d6fs_boot_mount_root(unsigned int flags)
         kword_t super_a;
         kword_t super_b;
         kword_t total;
+        kword_t alloc_cursor;
+        kword_t summary_start;
         unsigned int copy;
         unsigned int i;
         int rc;
@@ -139,11 +142,10 @@ d6fs_boot_mount_root(unsigned int flags)
         if (d6fs_super_select(a, b, total, &super, &copy) != 0)
                 return -1;
         selected = copy == 0U ? a : b;
-        super.fs_uuid[0] = selected[D6FS_SB_SUMMARY_START] +
-            selected[D6FS_SB_SUMMARY_BLOCKS];
-        if (super.fs_uuid[0] >= super.total_blocks)
-                super.fs_uuid[0] = 0UL;
-        super.fs_uuid[1] = selected[D6FS_SB_SUMMARY_START];
+        summary_start = selected[D6FS_SB_SUMMARY_START];
+        alloc_cursor = summary_start + selected[D6FS_SB_SUMMARY_BLOCKS];
+        if (alloc_cursor >= super.total_blocks)
+                alloc_cursor = 0UL;
         high = selected[D6FS_SB_RESERVATION_HIGH];
         swap_blocks = (((high >> D6FS_RES_SWAP_HI_SHIFT) &
             D6FS_RESERVATION_LEN_HIGH_MASK) << 12U) |
@@ -168,7 +170,8 @@ d6fs_boot_mount_root(unsigned int flags)
         logstore_boot_configure(log_start, log_blocks);
         if ((swap_blocks | log_blocks) != 0UL)
                 flags |= VFS_MOUNT_STORAGE_PIN;
-        rc = d6fs_boot_runtime_init(&super, flags, super_a, super_b, copy);
+        rc = d6fs_boot_runtime_init(&super, alloc_cursor, summary_start,
+            flags, super_a, super_b, copy);
         if (rc != 0)
                 return rc;
         if (vfs_namespace_root == VFS_NODE_NONE ||
