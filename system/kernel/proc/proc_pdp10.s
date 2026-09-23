@@ -955,10 +955,10 @@ proc_tty_line_base_get:
         move    3,proc_tty_line_bases(3)
         trnn    1,1
         jrst    proc_tty_line_base_get_even
-        lsh     3,-022
+        hlrz    1,3
+        popj    17,
 proc_tty_line_base_get_even:
-        andi    3,0777777
-        move    1,3
+        hrrz    1,3
         popj    17,
 
         .globl  proc_tty_line_base_set

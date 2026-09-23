@@ -59,6 +59,12 @@ d6fs_reader_bootstrap_call:
         pushj 017,mm_alloc
         jumpn 1,d6fs_reader_bootstrap_done
         move 5,d6fs_active_reader
+        move 6,5
+        movei 7,021
+d6fs_reader_bootstrap_zero:
+        setzm 0(6)
+        addi 6,1
+        sojg 7,d6fs_reader_bootstrap_zero
         setzm 017(5)                    ; backing.opaque
         move 4,-1(017)                  ; saved backing.ops
         movem 4,016(5)

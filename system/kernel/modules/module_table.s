@@ -104,9 +104,9 @@ __minit_table_begin:
         .word memfs_minit,,memfs_mres_package
         .word dtfs_minit,,dtfs_mres_package
 .endif
-        .word d6fs_minit,,d6fs_mres_package
 .if KINIT_FULL
         .word slv_minit,,slv_mres_package
 .endif
+        .word d6fs_minit,,d6fs_mres_package
         .word mfsdev_minit,,0
 __minit_table_end:

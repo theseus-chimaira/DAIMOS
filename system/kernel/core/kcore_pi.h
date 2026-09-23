@@ -6,7 +6,7 @@
 #define PDP10_PI_LEVELS              7U
 #define PDP10_PI_LEVEL_MIN           1U
 #define PDP10_PI_LEVEL_MAX           7U
-#define PDP10_PI_HANDLER_CAPACITY    12U
+#define PDP10_PI_HANDLER_CAPACITY    13U
 #define PDP10_PI_LOW_SPAN_COUNT       3U
 #define PDP10_PI_RESIDENT_SPAN_COUNT  (PDP10_PI_LEVELS - PDP10_PI_LOW_SPAN_COUNT)
 #define PDP10_PI_MASK(level)         (0200U >> (level))

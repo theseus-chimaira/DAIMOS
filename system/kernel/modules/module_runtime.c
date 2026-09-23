@@ -71,6 +71,7 @@ static kword_t *const module_fixed_bindings[] = {
 #define MODULE_FIXED_BIND_COUNT \
         (sizeof(module_fixed_bindings) / sizeof(module_fixed_bindings[0]))
 
+#ifndef __PDP10__
 static void
 module_retarget(kword_t *slot, int old_base, int new_base, int image_words)
 {
@@ -179,3 +180,4 @@ module_runtime_move(unsigned int owner, unsigned int new_base,
             ((kword_t)new_base & MODULE_HALF_MASK);
         return 0;
 }
+#endif /* !__PDP10__ */

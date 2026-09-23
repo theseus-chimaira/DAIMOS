@@ -28,10 +28,12 @@ THE HARD ARCHITECTURAL KERNEL BUDGET IS BELOW 16K WORDS INCLUDING FIXED
 RESIDENT AND IRREDUCIBLE SCRATCH MEMORY.  RECLAIMABLE MANAGED-CORE CACHE IS
 ACCOUNTED SEPARATELY.  KCC IS THE ACCEPTANCE BUILD.
 
-CURRENT EXTENT-READ MEASUREMENT (2026-09-21):
+CURRENT EXTENT-READ MEASUREMENT (2026-09-23, AFTER THE ROOT-LOGIN FIXES,
+MODULE-RUNTIME ASSEMBLY SHRINK, AND RESIDENT D6LZ DECODER):
 
-- DEFAULT SINGLE-DISK ROOT: KCORE+MRES 16277 WORDS, PERMANENT_LAST 037704.
-- ACTIVE MULTI-MEMBER DSK ROOT: KCORE+MRES 16318 WORDS, PERMANENT_LAST 037755.
+- KCORE: 10102 WORDS.
+- ACTIVE MULTI-MEMBER DSK ROOT: KCORE+MRES 16338 WORDS, WITH 46 PERMANENT
+  WORD ADDRESSES FREE BELOW 040000.
 
 D6FS MRES IS 2367 WORDS WITH THE GENERIC 34-WORD FS_BACKING OBJECT INCLUDED.
 THE IMMEDIATELY PRECEDING REBASED BACKING/MOUNT-OWNED-READER STATE MEASURED
@@ -55,9 +57,12 @@ DYNAMIC CACHE RAM FROM ABOUT 1044 WORDS TO 261 WORDS AND RECOVERS 24 RESIDENT
 WORDS.  REAL 32K WRITE/READ/COPY/RENAME/UNLINK TESTING PASSES WITH THIS CACHE.
 
 
-THE ACTIVE MULTI-MEMBER CONFIGURATION HAS 18 UNUSED PERMANENT WORD ADDRESSES
-AFTER THE LAST OCCUPIED WORD; THE SINGLE-ROOT CONFIGURATION HAS 59.  THESE
-OCCUPIED WORD.  THE 2026-09-21 HEADROOM PASS RECOVERED 19 RESIDENT WORDS
+THE ACTIVE MULTI-MEMBER CONFIGURATION HAS 46 UNUSED PERMANENT WORD ADDRESSES
+AFTER THE LAST OCCUPIED WORD.  THE 2026-09-23 PASS FIRST FIXED THREE REAL
+BOOT/LOGIN CORRECTNESS DEFECTS WHICH INCREASED THE CORRECTED KCORE BASELINE TO
+10133 WORDS, THEN RECOVERED 114 WORDS BY REPLACING MODULE_RUNTIME_MOVE WITH A
+TARGET ASSEMBLY IMPLEMENTATION.  THE RESIDENT D6LZ DECODER COSTS 83 WORDS,
+LEAVING KCORE AT 10102 WORDS.  THE 2026-09-21 HEADROOM PASS RECOVERED 19 RESIDENT WORDS
 WITHOUT CHANGING STORAGE SEMANTICS.  THE 14288-WORD SHRINK TARGET REMAINS AN
 ADVISORY OPTIMIZATION GOAL, NOT A SECOND ARCHITECTURAL LIMIT.  `MAKE PERMANENT-SIZE` MUST BE RUN AFTER MATERIAL
 KERNEL CHANGES.  `MAKE PERMANENT-SIZE` NOW REPORTS BOTH THE SINGLE-DISK AND
@@ -134,8 +139,9 @@ INSTANCE from a transiently validated handoff; TSFS and D6FS share the generic
 serialized MOUNT_UNIT syscall bridge.  PDP-6 target regressions execute the
 production selector, secondary-mount path, and cache lookup and prove distinct
 reader, UUID/superblock, backing, mount-slot, and cache identities.  FULL
-TWO-MEDIA SIMH ACCEPTANCE IS STILL BLOCKED BEFORE USERSPACE BY THE INDEPENDENT
-`SLV FAIL` BOOT GATE, SO IT IS NOT CLAIMED AS PASSED.  PDP-6 TARGET REGRESSION
+TWO-MEDIA SIMH ACCEPTANCE IS NO LONGER BLOCKED BY `SLV FAIL`: THE 2026-09-23
+BOOT FIX MOVES SLV INSTALLATION BEFORE D6FS FIRST ALLOCATES MANAGED CORE, KEEPS
+THE LINKED MRES SOURCE ORDER IN SYNC, AND CORRECTS THE PI-HANDLER TABLE SIZE.  PDP-6 TARGET REGRESSION
 NOW EXECUTES THE PRODUCTION VFS MOUNT/RELEASE/UNMOUNT PATH AND PROVES TYPED
 SWAP/LOGSTORE OWNERSHIP, CROSS-MOUNT EXCLUSIVITY, INDEPENDENT RELEASE, AND
 UNMOUNT REJECTION WHILE A RESERVATION REMAINS ACTIVE.  D6FS FLUSH/CLEAN
@@ -795,10 +801,31 @@ is complete and is the patch-freeze baseline for the next storage item.
 
 The common disk/drum BADMAP runtime mapper is NOT yet landed.  Experimental fixed-KCORE
 forms were rejected because they consumed essentially all remaining permanent headroom.
-The accepted baseline therefore remains unchanged at D6FS MRES 2367 words, with 18 free
-permanent addresses in the multi-member profile.  The next implementation must preserve
+The D6FS MRES itself remains 2367 words.  The later 2026-09-23 kernel optimization and
+resident decompressor work leaves 46 free permanent addresses in the multi-member profile.  The next implementation must preserve
 that baseline on clean media; the preferred direction is an optional/movable mapper whose
 exception table is allocated only when non-empty bad-media metadata is present.
 
 Do not describe BADMAP as implemented until the clean-media full/32K size gates and
 badmap-present DSK/DRM translation regressions pass.
+
+
+## 2026-09-23 ROOT login, module move, and D6LZ kernel decoder
+
+Real PDP-6 SIMH acceptance now passes INIT -> LOGIN -> ROOT -> DSH V1 -> EXIT ->
+LOGIN.  The fixes were: install/link SLV before D6FS performs its first managed-core
+allocation; make the C PI-handler capacity and assembly storage agree at 13 handlers;
+zero the complete boot D6FS reader allocation; and use proper halfword extraction in
+`proc_tty_line_base_get` so an even TTY never returns the adjacent packed odd-TTY base.
+
+`module_runtime_move` now has a PDP-6/PDP-10 assembly implementation while the C
+reference remains for host tests.  The target implementation reclaims 114 KCORE words
+and preserves RH/LH relocation, fixed bindings, PI bindings, and dynamic bindings whose
+slot moves with the module.
+
+The kernel now also contains the D6LZ36 decompressor as resident assembly.  The stream
+uses 36-token control words and 7-bit distance/length fields (distance 1..128, length
+3..130).  Decoding uses the caller's output as history and allocates no dictionary or
+workspace.  The resident target implementation costs 83 KCORE words in the accepted
+build.  No filesystem, executable-loader, boot-image, or userspace consumer is enabled by
+this patch; compression format adoption remains a separate step.

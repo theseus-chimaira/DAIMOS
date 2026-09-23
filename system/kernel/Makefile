@@ -122,13 +122,13 @@ KINIT_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${BUILD}/kinit_io.s ${BUILD}/modu
 
 KCORE_C_SRCS = proc/exec.c \
 		mm/mm.c \
+	core/d6lz.c \
 	modules/module_runtime.c \
 	proc/proc.c \
 	fs/file.c
 
 KCORE_C_ASM = $(BUILD)/exec.s \
 	$(BUILD)/mm.s \
-	$(BUILD)/module_runtime.s \
 	$(BUILD)/proc.s \
 	$(BUILD)/file.s
 
@@ -157,6 +157,7 @@ KCORE_FIXED_SRCS = core/ret_pdp10.s \
 	core/kcore_end.s
 
 KCORE_FIXED_ASM = $(BUILD)/exec.s \
+	$(BUILD)/d6lz.s \
 	$(BUILD)/mm.s \
 	$(BUILD)/module_runtime.s \
 	$(BUILD)/proc.s \
@@ -263,6 +264,18 @@ ${BUILD}/bootbanner_generated.s: ${VERSION_FILE}
 ${KCORE_C_ASM}: ${KCORE_C_SRCS} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S "$$src" -o "$@"
+
+${BUILD}/d6lz.s: core/d6lz.c core/d6lz_pdp10.s core/d6lz.h ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S core/d6lz.c -o $@.c
+	cat $@.c core/d6lz_pdp10.s > $@
+	rm -f $@.c
+
+${BUILD}/module_runtime.s: modules/module_runtime.c modules/module_runtime_pdp10.s ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S modules/module_runtime.c -o $@.c
+	cat $@.c modules/module_runtime_pdp10.s > $@
+	rm -f $@.c
 
 ${BUILD}/vm_backend.s: ${VM_BACKEND_C} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
