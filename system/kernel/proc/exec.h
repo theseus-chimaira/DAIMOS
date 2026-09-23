@@ -5,7 +5,8 @@
 
 #define EXEC_DXR_BASE_HDR_WORDS     2U
 #define EXEC_DXR_EXT_HDR_WORDS      3U
-#define EXEC_DXR_BSS_MASK           0177777U
+#define EXEC_DXR_BSS_MASK           0077777U
+#define EXEC_DXR_F_COMPRESSED       0100000U
 #define EXEC_DXR_F_PURE             0200000U
 #define EXEC_DXR_F_IMPURE           0400000U
 #define EXEC_DXR_STACK_WORDS        02000U

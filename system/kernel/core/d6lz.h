@@ -17,5 +17,7 @@
 
 int d6lz36_decode(kword_t *dst, unsigned int dst_words,
     const kword_t *src, unsigned int src_words, unsigned int *src_usedp);
+int d6lz36_decode_vfs(kword_t node, kword_t file_offset,
+    unsigned int src_words, kword_t dst_words_addr);
 
 #endif

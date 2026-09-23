@@ -825,7 +825,27 @@ slot moves with the module.
 
 The kernel now also contains the D6LZ36 decompressor as resident assembly.  The stream
 uses 36-token control words and 7-bit distance/length fields (distance 1..128, length
-3..130).  Decoding uses the caller's output as history and allocates no dictionary or
-workspace.  The resident target implementation costs 83 KCORE words in the accepted
-build.  No filesystem, executable-loader, boot-image, or userspace consumer is enabled by
-this patch; compression format adoption remains a separate step.
+3..130).  Decoding uses the caller's output as history and allocates no dictionary buffer.
+The executable loader has now adopted D6LZ36 through the explicit DXR flag 0100000; it
+never infers compression from payload contents.  Compressed executables are DXR2: the
+three-word header is followed by a variable D6LZ payload and the ordinary relocation
+bitmap.  The image is decompressed directly into process memory before normal relocation.
+
+Native `/SYSTEM/EXEC/D6LZ -X` and host `d6lz -x/-X` produce the flagged executable
+format.  Native D6LZ uses a bounded 258-word history/lookahead ring plus one 37-word
+output group and does not buffer the whole input.  Host and target regressions independently
+validate the payload and relocation map; real PDP-6 SIMH acceptance compresses a native
+program, executes the compressed result, and reaches INIT's respawned LOGIN.
+
+The VFS compressed-exec frontend initially increased KCORE from the prior 10102-word
+resident-D6LZ state to 10126 words.  A follow-up assembly cleanup shares the identical
+DXR2 third-header-word validation path between compressed and ordinary DXR2 executables,
+reclaiming 17 words and reducing KCORE to 10109 words.  A second peephole pass removes
+five more words by inverting three compare/branch pairs and dropping a redundant success
+clear.  Current KCORE is 10104 words and full multi-member accounting leaves 44 free
+permanent addresses below 040000.  ROOT-login and compressed-exec acceptance both pass
+at this size, but another substantial resident feature still requires more headroom work.
+
+Real native executable manuals now exist in SIXMD/S6REC form under `/SYSTEM/MANUAL` for
+INIT, LOGIN, TSFSPROBE, MOUNT.TSFS, and D6LZ.  DSH is intentionally excluded from this
+manual pass.

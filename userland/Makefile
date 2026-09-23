@@ -8,7 +8,7 @@ DLINK ?= $(PDP10_PREFIX)/bin/dlink
 CPPFLAGS = -I$(PROJECT_ROOT)/system/kernel/boot -I$(PROJECT_ROOT)/system/kernel/core -I$(PROJECT_ROOT)/system/kernel/drivers -I$(PROJECT_ROOT)/system/kernel/fs -I$(PROJECT_ROOT)/system/kernel/mm -I$(PROJECT_ROOT)/system/kernel/modules -I$(PROJECT_ROOT)/system/kernel/proc -I$(PROJECT_ROOT)/system/kernel/storage -I$(PROJECT_ROOT)/userland/libc -I$(PROJECT_ROOT)/userland/exec
 KCCFLAGS ?= -Pgnu99 -O -x=pdp6 -m=gas
 
-CHECK_SRCS = libc/u.c libc/text.c exec/commands.c exec/standalone.c dsh/dsh.c init/init.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c tsfs/mount_tsfs.c
+CHECK_SRCS = libc/u.c libc/text.c exec/commands.c exec/standalone.c dsh/dsh.c init/init.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c tsfs/mount_tsfs.c d6lz/d6lz.c
 CHECK_ASMS = $(CHECK_SRCS:%.c=$(USERLAND_BUILD)/check/%.s)
 COMMON_C_SRCS = libc/u.c libc/text.c
 COMMON_S_SRCS = libc/crt0.s libc/syscall.s libc/syscall_helpers.s
@@ -44,10 +44,16 @@ MOUNTTSFS_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/mounttsfs/%.dobj)
 MOUNTTSFS_DXR = $(USERLAND_BUILD)/mounttsfs.dxr
 MOUNTTSFS_MAP = $(USERLAND_BUILD)/mounttsfs.map
 
+D6LZ_C_SRCS = libc/u.c d6lz/d6lz.c
+D6LZ_C_OBJS = $(D6LZ_C_SRCS:%.c=$(USERLAND_BUILD)/d6lz/%.dobj)
+D6LZ_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/d6lz/%.dobj)
+D6LZ_DXR = $(USERLAND_BUILD)/d6lz.dxr
+D6LZ_MAP = $(USERLAND_BUILD)/d6lz.map
+
 .DEFAULT_GOAL := build
 .PHONY: build check clean
 
-build: $(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR)
+build: $(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR) $(D6LZ_DXR)
 
 check: $(CHECK_ASMS) build
 
@@ -114,6 +120,18 @@ $(USERLAND_BUILD)/mounttsfs/%.dobj: %.s
 
 $(MOUNTTSFS_DXR): $(MOUNTTSFS_C_OBJS) $(MOUNTTSFS_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(MOUNTTSFS_MAP) $(MOUNTTSFS_S_OBJS) $(MOUNTTSFS_C_OBJS)
+
+$(USERLAND_BUILD)/d6lz/%.dobj: %.c
+	mkdir -p $(dir $@)
+	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -c -o $@ $(@:.dobj=.s)
+
+$(USERLAND_BUILD)/d6lz/%.dobj: %.s
+	mkdir -p $(dir $@)
+	$(DAS) $(DASFLAGS) -c -o $@ $<
+
+$(D6LZ_DXR): $(D6LZ_C_OBJS) $(D6LZ_S_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(D6LZ_MAP) $(D6LZ_S_OBJS) $(D6LZ_C_OBJS)
 
 clean:
 	rm -rf $(USERLAND_BUILD)

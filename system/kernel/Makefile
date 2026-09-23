@@ -127,8 +127,7 @@ KCORE_C_SRCS = proc/exec.c \
 	proc/proc.c \
 	fs/file.c
 
-KCORE_C_ASM = $(BUILD)/exec.s \
-	$(BUILD)/mm.s \
+KCORE_C_ASM = $(BUILD)/mm.s \
 	$(BUILD)/proc.s \
 	$(BUILD)/file.s
 
@@ -264,6 +263,13 @@ ${BUILD}/bootbanner_generated.s: ${VERSION_FILE}
 ${KCORE_C_ASM}: ${KCORE_C_SRCS} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S "$$src" -o "$@"
+
+
+${BUILD}/exec.s: proc/exec.c proc/exec_load_pdp10.s ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S proc/exec.c -o $@.c
+	cat $@.c proc/exec_load_pdp10.s > $@
+	rm -f $@.c
 
 ${BUILD}/d6lz.s: core/d6lz.c core/d6lz_pdp10.s core/d6lz.h ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
