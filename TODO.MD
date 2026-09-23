@@ -317,3 +317,14 @@ PORT ALGORITHMS AND COMMAND BEHAVIOR, NOT OBSOLETE KERNEL ABIS.
 
 - IMPLEMENT RECOVERY/SINGLE-USER FLOW USING BOOTABLE RECOVERY DECTAPE MEDIA AND
   THE NORMAL FILESYSTEM/MAINTENANCE TOOLS.
+
+### 2026-09-23 D6FS patch-freeze note
+
+- DONE: unify D6FS backing, mount-owned readers, multi-mount state, typed reservation
+  lifetime, RO/RW remount, crash recovery, and maintenance/integrity state.
+- NEXT: finish the common disk/drum BADMAP mapper.  No experimental mapper is part of
+  the accepted kernel yet.  Clean media must retain the current permanent headroom;
+  prefer optional/movable runtime mapping with dynamically allocated exception entries.
+- AFTER BADMAP: finish DBOOT semantic cleanup, close D6FS cache regression coverage,
+  repair/consolidate the canonical kernel/storage harnesses, and run the final D6FS
+  acceptance/optimization pass before moving on to TSFS completion.

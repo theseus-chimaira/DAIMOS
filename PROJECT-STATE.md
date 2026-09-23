@@ -787,3 +787,18 @@ ARE IMPLEMENTED AND TARGET-VALIDATED.
 
 STATE: PCLK/GETTIME AND D6FS MTIME/STAT/DATE/TOUCH INTEGRATION ARE IMPLEMENTED.
 REMAINING SIMH/DAIMOS PCLK ACCEPTANCE CONTINUES IN PARALLEL.
+
+## 2026-09-23 D6FS patch freeze / BADMAP status
+
+The cumulative D6FS kernel/storage work through crash recovery and maintenance/integrity
+is complete and is the patch-freeze baseline for the next storage item.
+
+The common disk/drum BADMAP runtime mapper is NOT yet landed.  Experimental fixed-KCORE
+forms were rejected because they consumed essentially all remaining permanent headroom.
+The accepted baseline therefore remains unchanged at D6FS MRES 2367 words, with 18 free
+permanent addresses in the multi-member profile.  The next implementation must preserve
+that baseline on clean media; the preferred direction is an optional/movable mapper whose
+exception table is allocated only when non-empty bad-media metadata is present.
+
+Do not describe BADMAP as implemented until the clean-media full/32K size gates and
+badmap-present DSK/DRM translation regressions pass.
