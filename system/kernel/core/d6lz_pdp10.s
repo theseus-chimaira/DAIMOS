@@ -21,8 +21,8 @@
         .equ D6LZ_VFS_LOCALS,012         ; vnode, offset, eight-word window
 
 d6lz36_decode_vfs:
-        ; d6lz36_decode_core clobbers AC10/AC11.  AC12..AC15 keep VFS state
-        ; across vfs_read_words(), which follows the normal C ABI.
+        ; The resumable core keeps control state in callee-saved AC10/AC11.
+        ; AC12..AC15 keep the remaining VFS state across vfs_read_words().
         ; Reserve saved-AC slots plus locals in one step, then BLT AC10..AC15
         ; into the bottom six words.  This is five resident words smaller than
         ; six PUSH/POP pairs plus a separate local allocation.
@@ -38,12 +38,10 @@ d6lz36_decode_vfs:
         move    15,3                    ; compressed words not yet read
         jumpe   13,d6lz_vfs_error
         jumpe   12,d6lz_vfs_error
-        setz    7,                      ; zero => load a control word
+        setz    11,                     ; zero => load a control word
 
 d6lz_vfs_refill:
         jumpe   15,d6lz_vfs_error       ; core requested data past EOF
-        move    10,6                    ; preserve core state over VFS call
-        move    11,7
         move    1,-011(17)              ; vnode
         move    2,-010(17)              ; file offset
         movei   3,-07(17)               ; eight-word input window
@@ -51,20 +49,13 @@ d6lz_vfs_refill:
         caige   15,D6LZ_VFS_WINDOW
         move    4,15                    ; final short window
         pushj   17,vfs_read_words
-        move    6,10
-        move    7,11
         jumpe   1,d6lz_vfs_error
         sub     15,1                    ; words still unread from file
         addm    1,-010(17)              ; advance file offset
 
         move    4,1                    ; source-window words returned
         movei   3,-07(17)
-        move    1,12                   ; restore resumable core state
-        move    2,13
-        move    5,14
         pushj   17,d6lz36_decode_core
-        move    12,1
-        move    13,2
         jumpe   0,d6lz_vfs_success
         jumpl   0,d6lz_vfs_error
         jrst    d6lz_vfs_refill         ; +1 = NEED_INPUT

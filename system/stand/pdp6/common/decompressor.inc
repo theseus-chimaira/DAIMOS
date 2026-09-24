@@ -7,14 +7,14 @@
 ; VFS decoder resumes this exact core.
 ;
 ; Resumable ABI (d6lz36_decode_core):
-;   AC1 = current destination
-;   AC2 = destination words remaining
+;   AC12 = current destination
+;   AC13 = destination words remaining
 ;   AC3 = current source window
 ;   AC4 = source-window words remaining
-;   AC5 = destination base
-;   AC6 = current control word
-;   AC7 = control tokens remaining (zero means load a new control word)
-; AC10 and AC11 are scratch and MUST already be saved by a C-ABI caller.
+;   AC14 = destination base
+;   AC10 = current control word
+;   AC11 = control tokens remaining (zero means load a new control word)
+; AC6 and AC7 are scratch.  A C-ABI caller preserves AC10/AC11 automatically.
 ; Return AC0 = 0 complete, +1 needs another source window, -1 malformed.
 ; All other state ACs are preserved across NEED_INPUT and may be resumed.
 ;
@@ -30,55 +30,53 @@
 ; and KCORE links the identical words at their final address.
 d6lz36_decode_core:
 d6lz_image_start:
-        jumpn   7,d6lz_fixed_base+(d6lz_have_control-d6lz_image_start)
+        jumpn   11,d6lz_fixed_base+(d6lz_have_control-d6lz_image_start)
 
 d6lz_load_control:
         sojl    4,d6lz_fixed_base+(d6lz_core_need_input-d6lz_image_start)
-        move    6,0(3)
+        move    10,0(3)
         aoj     3,
-        movei   7,044                  ; 36 control bits
+        movei   11,044                  ; 36 control bits
 
 d6lz_have_control:
         sojl    4,d6lz_fixed_base+(d6lz_core_need_input-d6lz_image_start)
         move    0,0(3)                 ; token
         aoj     3,
-        jumpl   6,d6lz_fixed_base+(d6lz_match-d6lz_image_start)
+        jumpl   10,d6lz_fixed_base+(d6lz_match-d6lz_image_start)
 
 d6lz_literal:
-        movem   0,0(1)
-        aoj     1,
-        subi    2,1
-        jrst    d6lz_fixed_base+(d6lz_token_done-d6lz_image_start)
+        movem   0,0(12)
+        aoj     12,
+        soja    13,d6lz_fixed_base+(d6lz_token_done-d6lz_image_start)
 
 d6lz_match:
-        move    11,0                   ; descriptor bits 14..35 must be zero
-        lsh     11,-016
-        jumpn   11,d6lz_fixed_base+(d6lz_core_error-d6lz_image_start)
+        move    7,0                    ; descriptor bits 14..35 must be zero
+        lsh     7,-016
+        jumpn   7,d6lz_fixed_base+(d6lz_core_error-d6lz_image_start)
 
-        move    10,0                   ; match source = dst - distance
-        andi    10,0177
-        aoj     10,
-        movn    10,10
-        add     10,1
-        camge   10,5
+        move    6,0                    ; match source = dst - distance
+        andi    6,0177
+        movni   6,1(6)
+        add     6,12
+        camge   6,14
         jrst    d6lz_fixed_base+(d6lz_core_error-d6lz_image_start)
 
         lsh     0,-7                   ; validated token leaves 7-bit length
         addi    0,3
-        sub     2,0
-        jumpl   2,d6lz_fixed_base+(d6lz_core_error-d6lz_image_start)
+        sub     13,0
+        jumpl   13,d6lz_fixed_base+(d6lz_core_error-d6lz_image_start)
 
 d6lz_match_loop:
-        move    11,0(10)
-        movem   11,0(1)
-        aoj     10,
-        aoj     1,
+        move    7,0(6)
+        movem   7,0(12)
+        aoj     6,
+        aoj     12,
         sojg    0,d6lz_fixed_base+(d6lz_match_loop-d6lz_image_start)
 
 d6lz_token_done:
-        lsh     6,1
-        jumpe   2,d6lz_fixed_base+(d6lz_core_success-d6lz_image_start)
-        sojg    7,d6lz_fixed_base+(d6lz_have_control-d6lz_image_start)
+        lsh     10,1
+        jumpe   13,d6lz_fixed_base+(d6lz_core_success-d6lz_image_start)
+        sojg    11,d6lz_fixed_base+(d6lz_have_control-d6lz_image_start)
         jrst    d6lz_fixed_base+(d6lz_load_control-d6lz_image_start)
 
 d6lz_core_need_input:

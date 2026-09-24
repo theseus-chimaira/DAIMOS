@@ -392,13 +392,13 @@ stage1_handoff:
         blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
 
         ; Expand the opaque boot image into its normal KINIT load address.
-        movei 01,030000
-        move 02,kinit_stack_base
-        subi 02,030000
+        movei 012,030000
+        move 013,kinit_stack_base
+        subi 013,030000
         move 03,kinit_stack_base
         move 04,compressed_words
-        move 05,01                    ; output base for match validation
-        setz 07,                       ; force first control-word load
+        move 014,012                  ; output base for match validation
+        setz 011,                      ; force first control-word load
         pushj 017,d6lz_fixed_base      ; execute installed low-core core
         jumpn 00,fail_decompress
         jumpn 04,fail_decompress        ; exact compressed payload required
