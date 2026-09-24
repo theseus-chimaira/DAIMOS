@@ -1,9 +1,19 @@
+## 2026-09-24 minimal real-time scheduler
+
+- The generic single-owner real-time scheduler extension is implemented. `SYS_EXT_RTCTL` is extended selector 043; commands are DISABLE=0, ENABLE=1, and YIELD=2.
+- A runnable RT owner outranks normal nice/recent-CPU candidates and is not quantum-preempted. Hardware/device interrupts and clock accounting remain enabled. Blocking suspends RT preference while retaining ownership; wakeup raises the existing software PI6 reschedule so preference returns immediately.
+- DISABLE and YIELD release ownership; exit/fatal process teardown clears it. CTY `CTRL-\` (octal 034) is an operator escape while RT ownership exists: the character is consumed and ownership is cleared in interrupt context.
+- No second run queue, per-process RT allocation, deadline/budget machinery, or music-specific kernel interface was added. RT state costs one permanent owner word.
+- Real PDP-6 SIMH regressions pass for quantum suppression, block/wake preference, exclusivity, YIELD/DISABLE/exit release, and CTY forced revocation. Host MM/scheduler selection coverage also passes.
+- The older `daimos-scheduler-multiproc` regression still reports the same context-corruption trace on the untouched consolidated-v3 baseline and on the RT tree; this is a pre-existing acceptance defect and remains open separately.
+- Same-toolchain permanent-size comparison: baseline KCORE 9,921, CTY MRES 56, multi-root free 266; with RT KCORE 9,980, CTY MRES 62, multi-root free 201. Total permanent headroom cost is 65 words.
+
 ## 2026-09-24 consolidated kernel headroom sweep
 
 - All accepted 2026-09-24 resident-size sweeps are consolidated in this state.
-- KCORE is 9,921 words with the current KCC toolchain.
+- The pre-RT baseline KCORE is 9,921 words with the current KCC toolchain.
 - D6FS MRES is 2,338 words; DTFS/TSFS MRES is 2,041 words.
-- Full multi-root permanent high water is 16,117 words, leaving 266 permanent word addresses free below 040000.
+- The pre-RT baseline full multi-root permanent high water is 16,117 words, leaving 266 permanent word addresses free below 040000.
 - The sweep keeps the compressed-exec/D6LZ ABI unchanged and combines the one-pass EXEC startup builder, compact EXEC validation/rollback and counted-SIXBIT target validator, PDP-6 VM bound cleanup, compact DTFS target walkers, compact D6FS scan/provider contracts, and the corrected GETGID target branch.
 - Validation passed: `mm-core`, `target-module-runtime-pdp6`, `target-d6lz-pdp6`, `test-daimos-userspace-bootstrap`, `test-host-d6lz-exec`, `test-daimos-d6lz-native-exec`, `test-daimos-exec-replace`, and `test-daimos-exec-child-session`.
 - This section supersedes the earlier 2026-09-23/24 intermediate headroom measurements below; those remain historical checkpoints only.
@@ -38,14 +48,16 @@ THE HARD ARCHITECTURAL KERNEL BUDGET IS BELOW 16K WORDS INCLUDING FIXED
 RESIDENT AND IRREDUCIBLE SCRATCH MEMORY.  RECLAIMABLE MANAGED-CORE CACHE IS
 ACCOUNTED SEPARATELY.  KCC IS THE ACCEPTANCE BUILD.
 
-CURRENT EXTENT-READ MEASUREMENT (2026-09-24, AFTER THE CONSOLIDATED
-HEADROOM SWEEP):
+CURRENT MEASUREMENT (2026-09-24, AFTER THE MINIMAL RT SCHEDULER):
 
-- KCORE: 9921 WORDS.
+- KCORE: 9980 WORDS.
+- CTY MRES: 62 WORDS.
 - D6FS MRES: 2338 WORDS.
 - DTFS/TSFS MRES: 2041 WORDS.
-- ACTIVE MULTI-MEMBER DSK ROOT: PERMANENT HIGH WATER 16117 WORDS, WITH 266
-  WORD ADDRESSES FREE BELOW 040000.
+- ACTIVE MULTI-MEMBER DSK ROOT: MULTI_LAST 16182 WORDS, WITH 201 WORD
+  ADDRESSES FREE BELOW 040000.
+- SAME-TOOLCHAIN PRE-RT BASELINE: KCORE 9921, CTY MRES 56, MULTI_LAST 16117,
+  266 FREE.  THE COMPLETE RT FACILITY THEREFORE COSTS 65 PERMANENT WORDS.
 
 D6FS MRES IS 2367 WORDS WITH THE GENERIC 34-WORD FS_BACKING OBJECT INCLUDED.
 THE IMMEDIATELY PRECEDING REBASED BACKING/MOUNT-OWNED-READER STATE MEASURED
@@ -69,7 +81,7 @@ DYNAMIC CACHE RAM FROM ABOUT 1044 WORDS TO 261 WORDS AND RECOVERS 24 RESIDENT
 WORDS.  REAL 32K WRITE/READ/COPY/RENAME/UNLINK TESTING PASSES WITH THIS CACHE.
 
 
-THE ACTIVE MULTI-MEMBER CONFIGURATION HAS 266 UNUSED PERMANENT WORD ADDRESSES
+THE ACTIVE MULTI-MEMBER CONFIGURATION HAS 201 UNUSED PERMANENT WORD ADDRESSES
 AFTER THE LAST OCCUPIED WORD.  THE 2026-09-23 PASS FIRST FIXED THREE REAL
 BOOT/LOGIN CORRECTNESS DEFECTS WHICH INCREASED THE CORRECTED KCORE BASELINE TO
 10133 WORDS, THEN RECOVERED 114 WORDS BY REPLACING MODULE_RUNTIME_MOVE WITH A
@@ -81,7 +93,7 @@ KERNEL CHANGES.  `MAKE PERMANENT-SIZE` NOW REPORTS BOTH THE SINGLE-DISK AND
 MULTI-MEMBER ROOT HIGH-WATER MARKS AND FAILS IF EITHER REACHES OR CROSSES THE
 040000 PERMANENT-ADDRESS LIMIT.
 
-STATE: WITHIN THE HARD LIMIT WITH 266 WORDS OF CURRENT PERMANENT HEADROOM;
+STATE: WITHIN THE HARD LIMIT WITH 201 WORDS OF CURRENT PERMANENT HEADROOM;
 RESIDENT GROWTH MUST STILL BE JUSTIFIED AND SIZE-REGRESSION TESTING REMAINS MANDATORY.  THIS LIMIT IS
 SEPARATE FROM THE TRANSIENT KINIT IMAGE LIMIT ENFORCED BY THE LOWMEM BOOT PROFILE.
 
@@ -94,7 +106,7 @@ AND EXPLICIT D6LZ36 COMPRESSED EXECUTABLE LOADING ARE IMPLEMENTED.  SCRIPTED
 DCS0/GE0 TELNET ACCEPTANCE PASSES; CTY INPUT INJECTION REMAINS A HARNESS
 LIMITATION.  THE PRE-USERLAND GATE IS DELIBERATELY BROADER THAN THE MINIMUM
 NEEDED TO RUN DSH: CLOSE THE COMMON BAD-MEDIA MAPPER, D6FS-ON-DRM BINDING, THE
-MINIMAL SINGLE-OWNER REAL-TIME SCHEDULER MODE, REMAINING PCLK/32K ACCEPTANCE,
+IMPLEMENTED MINIMAL SINGLE-OWNER REAL-TIME SCHEDULER MODE AS A REGRESSION BASELINE, REMAINING PCLK/32K ACCEPTANCE,
 FULL READ-ONLY TSFS INCLUDING MULTI-EXTENT/CROSS-MEMBER D6LZ36-COMPRESSED FILE
 DATA, ADVANCED DSK/DRM SCHEDULING, THE RUNTIME MOVABLE-MODULE LOADER, LOGSTORE
 RUNTIME/DRAIN COMPLETION, AND REMAINING BOOT-POLICY MIGRATION INTO INIT//CONFIG

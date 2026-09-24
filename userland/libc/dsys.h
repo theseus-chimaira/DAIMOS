@@ -38,6 +38,7 @@ int dsys_run(struct sys_run_v2 *args);
 int dsys_wait(unsigned int selector, kword_t *status, unsigned int flags);
 int dsys_getpid(void);
 int dsys_procctl(unsigned int op, unsigned int arg);
+int dsys_rtctl(unsigned int command);
 #define dsys_isatty(fd) \
         dsys_procctl(SYS_PROCCTL_ISATTY, (unsigned int)(fd))
 #define dsys_umask(mask) \

@@ -55,6 +55,11 @@
 #define SYS_EXT_DTC_READ_BLOCK     040U
 #define SYS_EXT_TSFS_MOUNT         041U
 #define SYS_EXT_D6FS_MOUNT         042U
+#define SYS_EXT_RTCTL              043U
+
+#define SYS_RTCTL_DISABLE            0U
+#define SYS_RTCTL_ENABLE             1U
+#define SYS_RTCTL_YIELD              2U
 
 #define SYS_SEEK_SET                0U
 #define SYS_SEEK_CUR                1U

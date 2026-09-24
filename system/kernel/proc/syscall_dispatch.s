@@ -19,6 +19,7 @@
         .globl  proc_run_block
         .globl  proc_wait_status
         .globl  proc_control
+        .globl  proc_rt_control
         .globl  proc_tty_read_enter
         .globl  proc_tty_input
         .globl  proc_tty_line_take
@@ -509,6 +510,8 @@ native_sys_ext_nonpipe:
         jrst    native_sys_tsfs_mount
         cain    1,042                  ; SYS_EXT_D6FS_MOUNT
         jrst    native_sys_d6fs_mount
+        cain    1,043                  ; SYS_EXT_RTCTL
+        jrst    native_sys_rtctl
         cain    1,022                  ; SYS_EXT_EXEC
         jrst    native_sys_exec
         caie    1,021                  ; SYS_EXT_MKFIFO
@@ -674,6 +677,10 @@ native_sys_utime_owner_fail:
 native_sys_utime_fail:
         sub     17,[1,,1]
         jrst    pdp10_ret_neg1
+
+native_sys_rtctl:
+        hrrz    1,2
+        jrst    proc_rt_control
 
 native_sys_procctl:
         hrrz    2,2

@@ -42,6 +42,7 @@
         .globl dsys_pipe
         .globl dsys_exec
         .globl dsys_gettime
+        .globl dsys_rtctl
         .globl dsys_utime
         .globl dsys_rmdir
         .globl dsys_chown
@@ -117,6 +118,10 @@ dsys_exec:             move 2,1
                        uuo 077,0(1)
                        popj 17,
 dsys_gettime:          movei 1,023
+                       uuo 077,0(1)
+                       popj 17,
+dsys_rtctl:            move 2,1
+                       movei 1,043
                        uuo 077,0(1)
                        popj 17,
 dsys_dup2:             move 3,2

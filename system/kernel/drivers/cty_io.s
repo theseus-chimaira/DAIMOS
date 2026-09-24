@@ -15,6 +15,7 @@
         .globl cty_rx_event
         .globl proc_wait_event_intr
         .globl proc_wakeup_event
+        .globl proc_rt_owner
         .globl pdp10_pi_handler_return
         .globl pdp10_ret_ok
         .globl pdp10_ret_busy
@@ -30,13 +31,19 @@ cty_pi_input:
         datai 0120,1
         aos mfsdev_io_in+0
         andi 1,0177
+        caie 1,034                    ; CTRL-\: operator RT escape
+        jrst cty_pi_input_normal
+        skipn proc_rt_owner
+        jrst cty_pi_input_normal
+        setzm proc_rt_owner
+        jrst pdp10_pi_handler_return
+cty_pi_input_normal:
         addi 1,1
         movem 1,cty_rx_pending
         setom cty_rx_event
         movei 1,cty_rx_event
         pushj 17,proc_wakeup_event
         jrst pdp10_pi_handler_return
-
 ; AC1 = 7-bit character.  Return 0, CTY_E_BUSY (-3), or CTY_E_TIMEOUT (-2).
 cty_putchar:
         move 2,cty_tx_pending

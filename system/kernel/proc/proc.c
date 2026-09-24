@@ -564,6 +564,8 @@ proc_finish_slot(unsigned int slot, unsigned int status)
         kword_t ctl;
 
         p = &proc_table[slot];
+        if ((unsigned int)proc_rt_owner == slot)
+                proc_rt_owner = 0UL;
         parent = PROC_PARENT_SLOT(p);
         pgrp = PROC_PGRP(p);
         ctl = PROC_CTL_WORD(p);
@@ -959,6 +961,7 @@ proc_nice_current(int value)
         return value;
 }
 
+
 static unsigned int
 proc_select_runnable(int elapsed_ticks)
 {
@@ -991,6 +994,20 @@ proc_select_runnable(int elapsed_ticks)
                                         p->sched +=
                                             (kword_t)1UL << PROC_SLEEP_SHIFT;
                         }
+                }
+        }
+
+        if (proc_rt_owner != 0UL) {
+                struct proc *p;
+
+                p = &proc_table[(unsigned int)proc_rt_owner];
+                if (PROC_STATE(p) == PROC_SRUN && !PROC_TRANSITION(p)) {
+                        proc_sched_cursor = proc_rt_owner;
+                        if (!VM_SPACE_ACTIVE(p)) {
+                                proc_sched_cursor |= PROC_SCHED_SWAP_REQUEST;
+                                return 0U;
+                        }
+                        return (unsigned int)proc_rt_owner;
                 }
         }
 

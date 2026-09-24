@@ -165,6 +165,7 @@ extern kword_t proc_current_slot;
 extern kword_t proc_sched_cursor;
 extern kword_t proc_sched_deferred_ticks;
 extern kword_t proc_runq_head;
+extern kword_t proc_rt_owner;
 extern kword_t mach_kernel_stack_base;
 
 int proc_boot_init(void);
@@ -198,6 +199,7 @@ unsigned int proc_sched_tick_select(void);
 unsigned int proc_sched_resched_select(void);
 int proc_nice_value(int slot);
 int proc_nice_current(int value);
+int proc_rt_control(unsigned int command);
 int proc_swap_victim(unsigned int exclude_owner);
 int proc_user_context_init(unsigned int slot, kword_t entry, kword_t stack,
     kword_t ac1, kword_t ac2, kword_t ac3);

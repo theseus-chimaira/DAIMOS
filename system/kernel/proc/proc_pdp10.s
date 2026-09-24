@@ -50,6 +50,7 @@
         .globl  proc_sched_resched_select
         .globl  proc_sched_pi_resched
         .globl  proc_sched_kick
+        .globl  proc_rt_owner
         .globl  proc_sched_resched_current
         .globl  proc_swap_service_one
         .globl  proc_record_kernel_sp
@@ -201,6 +202,39 @@ proc_record_kernel_sp:
         pop     17,1
         popj    17,
 
+
+
+; int proc_rt_control(unsigned int command)
+; One RT owner exists system-wide.  ENABLE is idempotent for the owner;
+; DISABLE and YIELD both release ownership and immediately enter the normal
+; scheduler.  AC1 carries the command/result; AC2..AC4 are caller-scratch.
+        .globl  proc_rt_control
+proc_rt_control:
+        move    2,proc_current_slot
+        jumpe   2,pdp10_ret_neg1
+        cain    1,1                    ; SYS_RTCTL_ENABLE
+        jrst    proc_rt_enable
+        caie    1,0                    ; SYS_RTCTL_DISABLE
+        cain    1,2                    ; SYS_RTCTL_YIELD
+        jrst    proc_rt_release
+        jrst    pdp10_ret_neg1
+proc_rt_enable:
+        skipn   3,proc_rt_owner
+        jrst    proc_rt_claim
+        came    3,2
+        jrst    pdp10_ret_neg1
+        jrst    pdp10_ret_zero
+proc_rt_claim:
+        movem   2,proc_rt_owner
+        jrst    pdp10_ret_zero
+proc_rt_release:
+        camn    2,proc_rt_owner
+        jrst    proc_rt_release_owner
+        jrst    pdp10_ret_neg1
+proc_rt_release_owner:
+        setzm   proc_rt_owner
+        pushj   17,proc_sched_resched_current
+        jrst    pdp10_ret_zero
 
 ; int proc_tty_session_has(unsigned int session, unsigned int pgrp,
 ;     unsigned int skip_slot)
@@ -1526,8 +1560,10 @@ proc_wakeup_scan:
         pushj   17,proc_runq_add
         pop     17,1
 proc_wakeup_after_runq:
-        ; If the CPU is in the scheduler idle loop, request PI6 now instead
-        ; of adding up to one clock tick of wakeup latency.
+        ; The RT owner regains preference immediately when its wait completes.
+        ; Idle wakeups likewise request PI6 instead of waiting for a clock tick.
+        camn    3,proc_rt_owner
+        jrst    proc_wakeup_kick
         skipn   proc_current_slot
         jrst    proc_wakeup_kick
         jrst    proc_wakeup_next
@@ -1795,6 +1831,10 @@ proc_sched_tick_ready:
         ; AC2 is already saved by clk_pi_service, so it is safe to use as the
         ; one-word quantum counter without saving the full user context.
         aos     2,proc_sched_deferred_ticks
+        move    2,proc_rt_owner
+        camn    2,proc_current_slot
+        popj    17,                     ; RT owner: clock runs, no quantum switch
+        move    2,proc_sched_deferred_ticks
         caige   2,PROC_SCHED_QUANTUM_TICKS
         jrst    proc_sched_tick_fast_return
         pushj   17,proc_save_user
