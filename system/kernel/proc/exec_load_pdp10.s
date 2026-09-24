@@ -23,6 +23,32 @@
         .globl  proc_swap_attach
         .globl  d6lz36_decode_vfs
 
+
+; unsigned int exec_record_words(const kword_t *record, int nonempty)
+; AC1=validated mapped record pointer, AC2=nonempty flag.  Return AC1=record
+; words, or zero for an invalid counted SIXBIT record.  EXEC has already
+; established that AC1 points inside the mapped launch block.
+        .globl  exec_record_words
+exec_record_words:
+        move    3,(1)
+        tlnn    3,0777777              ; counted length must fit RH
+        jrst    exec_record_half_ok
+        jrst    exec_record_bad
+exec_record_half_ok:
+        jumpe   2,exec_record_length_ok
+        jumpe   3,exec_record_bad      ; path record must be nonempty
+exec_record_length_ok:
+        caile   3,0146                 ; 102 characters maximum
+        jrst    exec_record_bad
+        move    1,3
+        addi    1,5
+        idivi   1,6
+        addi    1,1                    ; count word plus SIXBIT payload
+        popj    17,
+exec_record_bad:
+        setz    1,
+        popj    17,
+
 exec_load_process:
         push    17,10
         push    17,11

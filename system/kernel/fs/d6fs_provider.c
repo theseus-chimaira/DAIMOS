@@ -211,16 +211,13 @@ d6fs_provider_scan_slot(vnode_t dir, const struct vfs_name *name,
                 if (!vfs_name_valid(name))
                         return -1;
                 hash = d6fs_name_hash24(name->words, name->chars);
-        } else if (slotp == 0) {
-                return -1;
         }
         have_empty = 0;
         for (slot = 0U;; ++slot) {
                 rc = d6fs_provider_dirent(dir, slot, &di);
                 if (rc == 0) {
                         if (name != 0) {
-                                if (slotp != 0)
-                                        *slotp = have_empty ? empty_slot : slot;
+                                *slotp = have_empty ? empty_slot : slot;
                                 return 1;
                         }
                         *slotp = slot;
@@ -235,7 +232,7 @@ d6fs_provider_scan_slot(vnode_t dir, const struct vfs_name *name,
                         return 0;
                 }
                 if (di.child_fcb == 0U) {
-                        if (slotp != 0 && dip == 0 && !have_empty) {
+                        if (dip == 0 && !have_empty) {
                                 empty_slot = slot;
                                 have_empty = 1;
                         }
@@ -244,8 +241,7 @@ d6fs_provider_scan_slot(vnode_t dir, const struct vfs_name *name,
                 if (di.hash != hash ||
                     !fs_words_equal(di.name, name->words, VFS_NAME_WORDS))
                         continue;
-                if (slotp != 0)
-                        *slotp = slot;
+                *slotp = slot;
                 if (dip != 0)
                         *dip = di;
                 return 0;
@@ -330,10 +326,13 @@ d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
         unsigned int words;
         unsigned int tail;
 
+#ifndef __PDP10__
         if (nodep == 0 || (type != D6FS_TYPE_REG && type != D6FS_TYPE_DIR &&
             type != D6FS_TYPE_SYMLINK && type != D6FS_TYPE_FIFO) ||
-            (type == D6FS_TYPE_SYMLINK && (payload == 0 || value == 0U)) ||
-            d6fs_provider_scan_slot(dir, name, &slot, 0) == 0 ||
+            (type == D6FS_TYPE_SYMLINK && (payload == 0 || value == 0U)))
+                return -1;
+#endif
+        if (d6fs_provider_scan_slot(dir, name, &slot, 0) == 0 ||
             d6fs_provider_free_fcb(&index) != 0)
                 return -1;
 
@@ -449,7 +448,7 @@ d6fs_provider_rename(vnode_t olddir,
 
         if (VFS_MOUNT_ID(olddir) != VFS_MOUNT_ID(newdir) ||
             d6fs_provider_scan_slot(olddir, oldname, &oldslot, &di) != 0 ||
-            d6fs_provider_scan_slot(newdir, newname, 0, 0) == 0 ||
+            d6fs_provider_scan_slot(newdir, newname, &newslot, 0) == 0 ||
             d6fs_reader_fcb(d6fs_active_reader, di.child_fcb,
             fcb, &fi) != 0 ||
             (fi.flags & (D6FS_FLAG_NOUNLINK | D6FS_FLAG_IMMUTABLE)) != 0U)

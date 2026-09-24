@@ -854,7 +854,7 @@ proc_control_getgid:
         jumpn   2,pdp10_ret_neg1
         hlrz    5,(4)
         hlrz    6,PROC_CRED_OFFSET(5)
-        cain    1,015                  ; GETUID keeps LH, GETGID selects RH
+        caie    1,015                  ; GETUID keeps LH, GETGID selects RH
         hrrz    6,PROC_CRED_OFFSET(5)
         move    1,6
         popj    17,

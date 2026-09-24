@@ -253,6 +253,7 @@ dtfs_block_info(vnode_t node, unsigned int slot, unsigned int *firstp)
 }
 #endif /* !__PDP10__ */
 #else
+#ifndef __PDP10__
 unsigned int
 dtfs_block_info(vnode_t node, unsigned int slot, unsigned int *firstp)
 {
@@ -280,6 +281,7 @@ dtfs_block_info(vnode_t node, unsigned int slot, unsigned int *firstp)
         }
         return count;
 }
+#endif /* !__PDP10__ */
 #endif
 
 extern unsigned int dtfs_block_info(vnode_t node, unsigned int slot,
@@ -819,7 +821,7 @@ dtfs_truncate(vnode_t node, unsigned int words, kword_t size_chars)
 
 extern int dtfs_chmod(vnode_t node, unsigned int mode);
 
-#if !DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS
+#if !defined(__PDP10__) && !DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS
 int
 dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
     kword_t *buf, unsigned int nwords, unsigned int mapoff, int writing)

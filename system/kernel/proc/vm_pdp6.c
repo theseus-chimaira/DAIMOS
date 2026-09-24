@@ -14,8 +14,11 @@ vm_space_create(struct proc *p, unsigned int owner, kword_t words)
 
         alloc_words = (words + VM_PDP6_ALIGN_WORDS - 1UL) &
             ~(VM_PDP6_ALIGN_WORDS - 1UL);
-        if (alloc_words > PROC_HALF_MASK ||
-            mm_alloc_aligned(alloc_words, VM_PDP6_ALIGN_WORDS,
+#ifndef __PDP10__
+        if (alloc_words > PROC_HALF_MASK)
+                return -1;
+#endif
+        if (mm_alloc_aligned(alloc_words, VM_PDP6_ALIGN_WORDS,
             MM_TYPE_PROCESS, owner, MM_ALLOC_HIGH, &base) != MM_OK)
                 return -1;
         mem = (kword_t *)(unsigned long)base;
@@ -44,60 +47,37 @@ vm_space_startup(struct proc *p, const kword_t *records,
         unsigned int envc;
         unsigned int i;
         unsigned int nwords;
-        unsigned int vector_words;
-        unsigned int total_words;
         unsigned int string_off;
         unsigned int source_off;
         kword_t start;
         kword_t base;
         kword_t *dst;
 
+#ifndef __PDP10__
         if (p == 0 || records == 0 || startup == 0 || !VM_SPACE_ACTIVE(p))
                 return -1;
+#endif
         argc = (unsigned int)((counts >> 18U) & PROC_HALF_MASK);
         envc = (unsigned int)(counts & PROC_HALF_MASK);
-        vector_words = argc + (envc == 0U ? 0U : envc + 1U);
-        total_words = vector_words;
-        source_off = 0U;
-        for (i = 0U; i < argc + envc; ++i) {
-                nwords = 1U + ((unsigned int)records[source_off] + 5U) / 6U;
-                if (total_words + nwords < total_words)
-                        return -1;
-                total_words += nwords;
-                source_off += nwords;
-        }
-        if (total_words > (unsigned int)EXEC_DXR_STACK_WORDS)
-                return -1;
-
         start = VM_SPACE_WORDS(p) - (kword_t)EXEC_DXR_STACK_WORDS;
         startup[0] = (kword_t)argc;
         startup[1] = argc == 0U ? 0UL : start;
         startup[2] = envc == 0U ? 0UL : start + (kword_t)argc;
-        startup[3] = total_words == 0U ? start - 1UL :
-            start + (kword_t)total_words - 1UL;
-        if (total_words == 0U)
-                return 0;
 
         base = VM_PDP6_BASE(p);
         dst = (kword_t *)(unsigned long)(base + start);
-        string_off = vector_words;
+        string_off = argc + envc + (envc != 0U);
         source_off = 0U;
-        for (i = 0U; i < argc; ++i) {
+        for (i = 0U; i < argc + envc; ++i) {
                 nwords = 1U + ((unsigned int)records[source_off] + 5U) / 6U;
                 dst[i] = start + (kword_t)string_off;
                 fs_copy_words(&records[source_off], &dst[string_off], nwords);
                 source_off += nwords;
                 string_off += nwords;
         }
-        for (i = 0U; i < envc; ++i) {
-                nwords = 1U + ((unsigned int)records[source_off] + 5U) / 6U;
-                dst[argc + i] = start + (kword_t)string_off;
-                fs_copy_words(&records[source_off], &dst[string_off], nwords);
-                source_off += nwords;
-                string_off += nwords;
-        }
         if (envc != 0U)
                 dst[argc + envc] = 0UL;
+        startup[3] = start + (kword_t)string_off - 1UL;
         return 0;
 }
 

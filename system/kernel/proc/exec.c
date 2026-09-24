@@ -129,18 +129,24 @@ fail:
 
 
 /* Return words occupied by one validated counted SIXBIT record. */
+#ifdef __PDP10__
+extern unsigned int exec_record_words(const kword_t *record, int nonempty);
+#else
 static unsigned int
-exec_record_words(const kword_t *record, unsigned int max_chars, int nonempty)
+exec_record_words(const kword_t *record, int nonempty)
 {
         unsigned int chars;
 
-        if (record == 0 || (record[0] & ~PROC_HALF_MASK) != 0UL)
+        if (record == 0)
+                return 0U;
+        if ((record[0] & ~PROC_HALF_MASK) != 0UL)
                 return 0U;
         chars = (unsigned int)record[0];
-        if ((nonempty && chars == 0U) || chars > max_chars)
+        if ((nonempty && chars == 0U) || chars > SYS_RUN_ARG_MAX_CHARS)
                 return 0U;
         return 1U + (chars + 5U) / 6U;
 }
+#endif
 
 /* Replace the current user image while preserving its process identity and
  * stable u-area.  EXEC V1 is an inline, bounded launch block using the same
@@ -169,65 +175,66 @@ exec_replace_current(const kword_t *block,
         unsigned int envc;
         unsigned int i;
 
-        if (args == 0 || entry_startup == 0 || proc_table == 0 ||
-            available_words < SYS_EXEC_V1_MIN_WORDS)
-                return -1;
+#ifndef __PDP10__
+        if (args == 0 || entry_startup == 0 || proc_table == 0)
+                goto invalid;
+#endif
+        if (available_words < SYS_EXEC_V1_MIN_WORDS)
+                goto invalid;
         if ((unsigned int)((args->version_words >> 18U) & PROC_HALF_MASK) !=
             SYS_EXEC_VERSION_1)
-                return -1;
+                goto invalid;
         words = (unsigned int)(args->version_words & PROC_HALF_MASK);
         if (words < SYS_EXEC_V1_MIN_WORDS || words > available_words)
-                return -1;
+                goto invalid;
         if ((args->argc & ~PROC_HALF_MASK) != 0UL ||
             (args->envc & ~PROC_HALF_MASK) != 0UL)
-                return -1;
+                goto invalid;
         argc = (unsigned int)args->argc;
         envc = (unsigned int)args->envc;
         if (argc > SYS_RUN_ARG_MAX || envc > SYS_RUN_ENV_MAX)
-                return -1;
+                goto invalid;
 
         end = (const kword_t *)args + words;
         path = &args->path[0];
-        if (path >= end)
-                return -1;
-        i = exec_record_words(path, SYS_RUN_PATH_MAX_CHARS, 1);
+        i = exec_record_words(path, 1);
         if (i == 0U || path + i > end)
-                return -1;
+                goto invalid;
         records = path + i;
         scan = records;
         for (i = 0U; i < argc + envc; ++i) {
                 unsigned int record_words;
 
                 if (scan >= end)
-                        return -1;
-                record_words = exec_record_words(scan,
-                    SYS_RUN_ARG_MAX_CHARS, 0);
+                        goto invalid;
+                record_words = exec_record_words(scan, 0);
                 if (record_words == 0U || scan + record_words > end)
-                        return -1;
+                        goto invalid;
                 scan += record_words;
         }
         if (scan != end)
-                return -1;
+                goto invalid;
 
         slot = (unsigned int)proc_current_slot;
+#ifndef __PDP10__
         if (slot == 0U || slot >= proc_slots)
-                return -1;
+                goto invalid;
+#endif
         current = &proc_table[slot];
+#ifndef __PDP10__
         if (!PROC_HAS_UAREA(current) || !VM_SPACE_ACTIVE(current) ||
             proc_swap_records == 0)
-                return -1;
+                goto invalid;
+#endif
 
         old_swap = proc_swap_records[slot].state;
         staged.meta = current->meta;
-        if (exec_load_process(&staged, slot, path) != 0) {
-                proc_swap_records[slot].state = old_swap;
-                return -1;
-        }
+        if (exec_load_process(&staged, slot, path) != 0)
+                goto restore_swap_fail;
         counts = ((kword_t)argc << 18U) | (kword_t)envc;
         if (vm_space_startup(&staged, records, counts, startup) != 0) {
                 (void)vm_space_destroy(&staged, slot);
-                proc_swap_records[slot].state = old_swap;
-                return -1;
+                goto restore_swap_fail;
         }
         new_swap = proc_swap_records[slot].state;
         proc_swap_records[slot].state = old_swap;
@@ -238,8 +245,7 @@ exec_replace_current(const kword_t *block,
         if (vm_space_destroy(current, slot) != 0) {
                 PROC_CTL_WORD(current) |= PROC_USER_MAP_BIT;
                 (void)vm_space_destroy(&staged, slot);
-                proc_swap_records[slot].state = old_swap;
-                return -1;
+                goto restore_swap_fail;
         }
 
         current->vm_state = staged.vm_state;
@@ -251,4 +257,9 @@ exec_replace_current(const kword_t *block,
         entry_startup[3] = startup[1];
         entry_startup[4] = startup[2];
         return 0;
+
+restore_swap_fail:
+        proc_swap_records[slot].state = old_swap;
+invalid:
+        return -1;
 }

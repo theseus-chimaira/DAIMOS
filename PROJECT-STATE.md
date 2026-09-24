@@ -1,3 +1,13 @@
+## 2026-09-24 consolidated kernel headroom sweep
+
+- All accepted 2026-09-24 resident-size sweeps are consolidated in this state.
+- KCORE is 9,921 words with the current KCC toolchain.
+- D6FS MRES is 2,338 words; DTFS/TSFS MRES is 2,041 words.
+- Full multi-root permanent high water is 16,117 words, leaving 266 permanent word addresses free below 040000.
+- The sweep keeps the compressed-exec/D6LZ ABI unchanged and combines the one-pass EXEC startup builder, compact EXEC validation/rollback and counted-SIXBIT target validator, PDP-6 VM bound cleanup, compact DTFS target walkers, compact D6FS scan/provider contracts, and the corrected GETGID target branch.
+- Validation passed: `mm-core`, `target-module-runtime-pdp6`, `target-d6lz-pdp6`, `test-daimos-userspace-bootstrap`, `test-host-d6lz-exec`, `test-daimos-d6lz-native-exec`, `test-daimos-exec-replace`, and `test-daimos-exec-child-session`.
+- This section supersedes the earlier 2026-09-23/24 intermediate headroom measurements below; those remain historical checkpoints only.
+
 # DAIMOS PROJECT STATE
 
 DATE: 2026-09-22
@@ -28,11 +38,13 @@ THE HARD ARCHITECTURAL KERNEL BUDGET IS BELOW 16K WORDS INCLUDING FIXED
 RESIDENT AND IRREDUCIBLE SCRATCH MEMORY.  RECLAIMABLE MANAGED-CORE CACHE IS
 ACCOUNTED SEPARATELY.  KCC IS THE ACCEPTANCE BUILD.
 
-CURRENT EXTENT-READ MEASUREMENT (2026-09-23, AFTER THE ROOT-LOGIN FIXES,
-MODULE-RUNTIME ASSEMBLY SHRINK, AND RESIDENT D6LZ DECODER):
+CURRENT EXTENT-READ MEASUREMENT (2026-09-24, AFTER THE CONSOLIDATED
+HEADROOM SWEEP):
 
-- KCORE: 10102 WORDS.
-- ACTIVE MULTI-MEMBER DSK ROOT: KCORE+MRES 16338 WORDS, WITH 46 PERMANENT
+- KCORE: 9921 WORDS.
+- D6FS MRES: 2338 WORDS.
+- DTFS/TSFS MRES: 2041 WORDS.
+- ACTIVE MULTI-MEMBER DSK ROOT: PERMANENT HIGH WATER 16117 WORDS, WITH 266
   WORD ADDRESSES FREE BELOW 040000.
 
 D6FS MRES IS 2367 WORDS WITH THE GENERIC 34-WORD FS_BACKING OBJECT INCLUDED.
@@ -57,7 +69,7 @@ DYNAMIC CACHE RAM FROM ABOUT 1044 WORDS TO 261 WORDS AND RECOVERS 24 RESIDENT
 WORDS.  REAL 32K WRITE/READ/COPY/RENAME/UNLINK TESTING PASSES WITH THIS CACHE.
 
 
-THE ACTIVE MULTI-MEMBER CONFIGURATION HAS 46 UNUSED PERMANENT WORD ADDRESSES
+THE ACTIVE MULTI-MEMBER CONFIGURATION HAS 266 UNUSED PERMANENT WORD ADDRESSES
 AFTER THE LAST OCCUPIED WORD.  THE 2026-09-23 PASS FIRST FIXED THREE REAL
 BOOT/LOGIN CORRECTNESS DEFECTS WHICH INCREASED THE CORRECTED KCORE BASELINE TO
 10133 WORDS, THEN RECOVERED 114 WORDS BY REPLACING MODULE_RUNTIME_MOVE WITH A
@@ -69,8 +81,8 @@ KERNEL CHANGES.  `MAKE PERMANENT-SIZE` NOW REPORTS BOTH THE SINGLE-DISK AND
 MULTI-MEMBER ROOT HIGH-WATER MARKS AND FAILS IF EITHER REACHES OR CROSSES THE
 040000 PERMANENT-ADDRESS LIMIT.
 
-STATE: WITHIN THE HARD LIMIT BUT WITH LITTLE PERMANENT HEADROOM; RESIDENT GROWTH
-MUST BE JUSTIFIED AND SIZE-REGRESSION TESTING REMAINS MANDATORY.  THIS LIMIT IS
+STATE: WITHIN THE HARD LIMIT WITH 266 WORDS OF CURRENT PERMANENT HEADROOM;
+RESIDENT GROWTH MUST STILL BE JUSTIFIED AND SIZE-REGRESSION TESTING REMAINS MANDATORY.  THIS LIMIT IS
 SEPARATE FROM THE TRANSIENT KINIT IMAGE LIMIT ENFORCED BY THE LOWMEM BOOT PROFILE.
 
 ## 3. CURRENT DEVELOPMENT PHASE
@@ -849,3 +861,16 @@ at this size, but another substantial resident feature still requires more headr
 Real native executable manuals now exist in SIXMD/S6REC form under `/SYSTEM/MANUAL` for
 INIT, LOGIN, TSFSPROBE, MOUNT.TSFS, and D6LZ.  DSH is intentionally excluded from this
 manual pass.
+
+## 2026-09-24 kernel/provider headroom sweep checkpoint
+
+The current accepted sweep state keeps KCORE at 9942 words while reducing the native
+DTFS/TSFS MRES from 2051 to 2041 words and D6FS from 2367 to 2338 words.  The DTFS
+saving comes from using the existing PDP-10 chain-walk/block-info assembly in the native
+configuration; focused chain-walk and resize regressions pass.  The D6FS savings come
+from tightening internal slot-output and create-object contracts only where the VFS/PDP-6
+call boundary already guarantees the removed checks; host/reference checks remain.
+
+Current multi-root permanent accounting is 16138 words, leaving 245 permanent words free
+below 040000.  ROOT bootstrap, pre-DSH filesystem closure, and credential/filesystem
+regressions pass at this checkpoint.
