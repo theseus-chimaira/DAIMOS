@@ -94,7 +94,9 @@ unsigned int blockset_write_addr;
 unsigned int blockset_state_addr;
 unsigned int d6fs_backing_read_addr;
 unsigned int d6fs_backing_write_addr;
+#if KINIT_BADMAP
 static kword_t *badmap_runtime_state;
+#endif
 
 extern kword_t storage_pi_handler;
 extern kword_t storage_dct_handler;
@@ -1099,6 +1101,8 @@ blockset_minit(void)
         (void)blockset_boot_discover(&super_a, &super_b);
 }
 
+#if KINIT_BADMAP
+
 void
 badmap_minit(void)
 {
@@ -1207,6 +1211,7 @@ badmap_post_minits(void)
         }
         badmap_runtime_state[1] = table_base;
 }
+#endif
 
 void
 d6fs_minit(void)

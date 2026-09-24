@@ -9,7 +9,9 @@
 #define BLOCKSET_ROOT_DESC_RANGE0 6U
 #include "blockset_mres.h"
 #include "blockset_layout.h"
+#if KINIT_BADMAP
 #include "badmap.h"
+#endif
 #include "dsk270.h"
 #include "kinit.h"
 #include "module.h"
@@ -26,9 +28,11 @@
  * D6FS/LOGSTORE I/O still needs its validated mapping here. */
 static struct blockset blockset_boot_state;
 static kword_t blockset_boot_total;
+#if KINIT_BADMAP
 static kword_t blockset_boot_badmap_start;
 static kword_t blockset_boot_badmap_blocks;
 static kword_t blockset_badmap_scratch[BLOCKSET_BLOCK_WORDS];
+#endif
 
 static kword_t
 blockset_boot_half(unsigned int index)
@@ -247,8 +251,10 @@ blockset_boot_discover(kword_t *super_ap, kword_t *super_bp)
         rc = blockset_boot_configure(&config);
         if (rc != 0)
                 return rc;
+#if KINIT_BADMAP
         blockset_boot_badmap_start = first_badmap_start;
         blockset_boot_badmap_blocks = first_badmap_blocks;
+#endif
         {
                 kword_t packed;
 
@@ -338,6 +344,8 @@ blockset_boot_member(unsigned int index, unsigned int *unitp, kword_t *basep,
         return 1;
 }
 
+#if KINIT_BADMAP
+
 unsigned int
 blockset_boot_badmap_count(void)
 {
@@ -412,3 +420,5 @@ blockset_boot_badmap_load(kword_t *entries, unsigned int count)
         }
         return copied == count ? 0 : -1;
 }
+
+#endif

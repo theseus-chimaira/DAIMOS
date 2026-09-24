@@ -74,11 +74,18 @@ stage1_magic_ok:
         movem 05,entry_addr
 
         hlrz 011,buffer+000002
-        jumpe 011,fail_khead
         movem 011,compressed_words
+        jumpn 011,stage1_compressed_stream
+        ; LOWMEM raw stream: load the final image directly.  This avoids the
+        ; image-plus-compressed-staging requirement, which cannot fit in 32K.
+        hlrz 011,buffer+000001
+        movei 010,030000
+        jrst stage1_stream_begin
+stage1_compressed_stream:
         ; Stage compressed words immediately after the final uncompressed image.
         ; The source is therefore disjoint from the destination during expansion.
         move 010,kinit_stack_base
+stage1_stream_begin:
         movei 06,buffer+000003
         movei 07,0175
         pushj 017,copy_stream_words
@@ -91,6 +98,8 @@ load_image_loop:
         pushj 017,copy_stream_words
         jumpn 01,load_image_loop
 load_image_done:
+        skipn compressed_words
+        jrst stage1_enter_kinit
         ; The DSK read-in itself starts at 000060.  Install the fixed decoder
         ; only from the late handoff code, which lies above its destination.
         jrst stage1_handoff
@@ -404,6 +413,7 @@ stage1_handoff:
         jumpn 04,fail_decompress        ; exact compressed payload required
 
         ; Compressed input is dead now; KINIT may reuse it as stack.
+stage1_enter_kinit:
         move 017,kinit_stack_base
         setz 01,
         move 02,member_count
