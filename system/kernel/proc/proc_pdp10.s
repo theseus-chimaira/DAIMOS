@@ -1537,9 +1537,12 @@ proc_wait_child:
 ; PI-safe.  Wake every event sleeper, including a swapped sleeper whose
 ; logical state remains resident in the compact process descriptor.
 proc_wakeup_event:
+        push    17,0
         push    17,2
         push    17,3
         push    17,4
+        push    17,5
+        push    17,6
         movei   3,1
         move    2,proc_table
         addi    2,PROC_WORDS
@@ -1575,9 +1578,12 @@ proc_wakeup_next:
         addi    3,1
         jrst    proc_wakeup_scan
 proc_wakeup_done:
+        pop     17,6
+        pop     17,5
         pop     17,4
         pop     17,3
         pop     17,2
+        pop     17,0
         popj    17,
 
 ;. Test-only process-private kernel stack watermarking.  The untouched

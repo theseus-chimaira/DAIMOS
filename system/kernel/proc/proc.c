@@ -490,6 +490,8 @@ proc_slot_discard(unsigned int slot)
                 return -1;
 #endif
         p = &proc_table[slot];
+        if ((unsigned int)proc_rt_owner == slot)
+                proc_rt_owner = 0UL;
         if (PROC_IS_FREE(p))
                 return 0;
         if (vm_space_destroy(p, slot) != 0)

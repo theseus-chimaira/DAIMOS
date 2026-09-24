@@ -76,7 +76,7 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
                 if (init_slot != (int)slot)
                         return;
                 p = &proc_table[slot];
-                if (exec_load_process(p, slot, init_path) != 0)
+                if (exec_load_process(p, slot, init_path) < 0)
                         return;
                 PROC_SET_STATE(p, PROC_SRUN);
                 entry = PROC_ENTRY(p);

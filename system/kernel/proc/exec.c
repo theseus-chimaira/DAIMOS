@@ -31,7 +31,9 @@ exec_load_process(struct proc *p, unsigned int owner,
         int dxr_flags;
         int reloc_words;
         int compressed_words;
+        int rt_reserved;
 
+        rt_reserved = 0;
         /* DXR header fields are at most 18 bits.  Signed locals avoid KCC
          * sign-bit normalization around ordinary bounded comparisons. */
         if (p == 0 || path == 0 ||
@@ -48,12 +50,10 @@ exec_load_process(struct proc *p, unsigned int owner,
         image_words = (int)((hdr[1] >> 18U) & EXEC_HALF_MASK);
         bss_words = (int)(hdr[1] & EXEC_DXR_BSS_MASK);
         dxr_flags = (int)(hdr[1] &
-            (EXEC_DXR_F_COMPRESSED | EXEC_DXR_F_PURE | EXEC_DXR_F_IMPURE));
+            (EXEC_DXR_F_COMPRESSED | EXEC_DXR_F_PURE | EXEC_DXR_F_RT_REQUIRED));
         if (image_words == 0 || image_words > (int)EXEC_DXR_MAX_IMAGE_WORDS ||
             bss_words > (int)EXEC_DXR_MAX_BSS_WORDS ||
-            entry >= image_words ||
-            (dxr_flags & (EXEC_DXR_F_PURE | EXEC_DXR_F_IMPURE)) ==
-            (EXEC_DXR_F_PURE | EXEC_DXR_F_IMPURE))
+            entry >= image_words)
                 return -1;
         reloc_words = (image_words + 35) / 36;
         header_words = EXEC_DXR_BASE_HDR_WORDS;
@@ -91,8 +91,17 @@ exec_load_process(struct proc *p, unsigned int owner,
             (int)EXEC_DXR_STACK_WORDS;
         if (process_words > (int)EXEC_HALF_MASK)
                 return -1;
+        if ((dxr_flags & EXEC_DXR_F_RT_REQUIRED) != 0) {
+                if (proc_rt_owner != 0UL &&
+                    (unsigned int)proc_rt_owner != owner)
+                        return -1;
+                if (proc_rt_owner == 0UL) {
+                        proc_rt_owner = (kword_t)owner;
+                        rt_reserved = 1;
+                }
+        }
         if (vm_space_create(p, owner, (kword_t)process_words) != 0)
-                return -1;
+                goto fail_reserved;
         if ((dxr_flags & EXEC_DXR_F_COMPRESSED) != 0) {
                 kword_t dst_words_addr;
 
@@ -117,11 +126,15 @@ exec_load_process(struct proc *p, unsigned int owner,
             ((unsigned int)dxr_flags & EXEC_DXR_F_PURE) != 0U &&
             header_words == EXEC_DXR_EXT_HDR_WORDS) != 0)
                 goto fail;
-        return 0;
+        return (dxr_flags & EXEC_DXR_F_RT_REQUIRED) != 0 ?
+            EXEC_LOAD_RT_REQUIRED : EXEC_LOAD_OK;
 
 fail:
         if (vm_space_destroy(p, owner) == 0)
                 PROC_SET_META_LH(p, 0UL);
+fail_reserved:
+        if (rt_reserved && (unsigned int)proc_rt_owner == owner)
+                proc_rt_owner = 0UL;
         return -1;
 }
 
@@ -174,6 +187,8 @@ exec_replace_current(const kword_t *block,
         unsigned int argc;
         unsigned int envc;
         unsigned int i;
+        int load_result;
+        int old_rt_owner;
 
 #ifndef __PDP10__
         if (args == 0 || entry_startup == 0 || proc_table == 0)
@@ -228,12 +243,17 @@ exec_replace_current(const kword_t *block,
 #endif
 
         old_swap = proc_swap_records[slot].state;
+        old_rt_owner = ((unsigned int)proc_rt_owner == slot);
         staged.meta = current->meta;
-        if (exec_load_process(&staged, slot, path) != 0)
+        load_result = exec_load_process(&staged, slot, path);
+        if (load_result < 0)
                 goto restore_swap_fail;
         counts = ((kword_t)argc << 18U) | (kword_t)envc;
         if (vm_space_startup(&staged, records, counts, startup) != 0) {
                 (void)vm_space_destroy(&staged, slot);
+                if (!old_rt_owner && load_result == EXEC_LOAD_RT_REQUIRED &&
+                    (unsigned int)proc_rt_owner == slot)
+                        proc_rt_owner = 0UL;
                 goto restore_swap_fail;
         }
         new_swap = proc_swap_records[slot].state;
@@ -256,9 +276,15 @@ exec_replace_current(const kword_t *block,
         entry_startup[2] = startup[0];
         entry_startup[3] = startup[1];
         entry_startup[4] = startup[2];
+        if (old_rt_owner && load_result == EXEC_LOAD_OK &&
+            (unsigned int)proc_rt_owner == slot)
+                proc_rt_owner = 0UL;
         return 0;
 
 restore_swap_fail:
+        if (!old_rt_owner && load_result == EXEC_LOAD_RT_REQUIRED &&
+            (unsigned int)proc_rt_owner == slot)
+                proc_rt_owner = 0UL;
         proc_swap_records[slot].state = old_swap;
 invalid:
         return -1;

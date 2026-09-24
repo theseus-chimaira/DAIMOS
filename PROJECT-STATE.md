@@ -1,3 +1,13 @@
+## 2026-09-24 RT-required executable admission and PI context fix
+
+- DXR bit 0400000 is now `RT_REQUIRED`; the redundant `IMPURE` file-format state is removed. `PURE=0` is the ordinary writable/private case.
+- `dlink --rt-required` marks programs that must acquire the single RT slot before any user instruction executes. RUN/EXEC reserve at DXR header validation, before VM allocation or D6LZ decompression; a competing launch fails atomically.
+- Failed load/startup/RUN unwind releases only a reservation acquired by that attempt. Successful EXEC to a non-RT image releases an old RT ownership only after commit. D6LZ preserves the outer flag.
+- Fixed the pre-existing scheduler multiprocess corruption: PI-context `proc_wakeup_event()` called `proc_runq_add()` without preserving AC0/AC5/AC6. The PI boundary now preserves them.
+- The real-SIMH multiprocess regression is green. Its former completion-order/short-loop round-robin checks were nondeterministic host-timing assumptions; deterministic nice and equal-priority selection remain covered by `mm-v1`.
+- Real-SIMH `daimos-rt-required-v1` verifies two successful admitted children execute, a concurrent second RT-required RUN is rejected before execution, and admission succeeds again after owner teardown.
+- Current full-profile size: KCORE 10034 words, CTY MRES 62, multi-root last 037554, leaving 147 permanent addresses below 040000.
+
 ## 2026-09-24 minimal real-time scheduler
 
 - The generic single-owner real-time scheduler extension is implemented. `SYS_EXT_RTCTL` is extended selector 043; commands are DISABLE=0, ENABLE=1, and YIELD=2.
@@ -5,7 +15,7 @@
 - DISABLE and YIELD release ownership; exit/fatal process teardown clears it. CTY `CTRL-\` (octal 034) is an operator escape while RT ownership exists: the character is consumed and ownership is cleared in interrupt context.
 - No second run queue, per-process RT allocation, deadline/budget machinery, or music-specific kernel interface was added. RT state costs one permanent owner word.
 - Real PDP-6 SIMH regressions pass for quantum suppression, block/wake preference, exclusivity, YIELD/DISABLE/exit release, and CTY forced revocation. Host MM/scheduler selection coverage also passes.
-- The older `daimos-scheduler-multiproc` regression still reports the same context-corruption trace on the untouched consolidated-v3 baseline and on the RT tree; this is a pre-existing acceptance defect and remains open separately.
+- The previously observed `daimos-scheduler-multiproc` context corruption has been fixed at the PI wakeup boundary; the regression now passes.
 - Same-toolchain permanent-size comparison: baseline KCORE 9,921, CTY MRES 56, multi-root free 266; with RT KCORE 9,980, CTY MRES 62, multi-root free 201. Total permanent headroom cost is 65 words.
 
 ## 2026-09-24 consolidated kernel headroom sweep

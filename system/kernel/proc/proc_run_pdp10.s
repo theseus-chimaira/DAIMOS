@@ -204,7 +204,7 @@ proc_run_slot_found:
         move    2,012
         move    3,014
         pushj   17,exec_load_process
-        jumpn   1,proc_run_claimed_bad
+        jumpl   1,proc_run_claimed_bad
         hlrz    011,(013)
 
         add     17,[3,,3]

@@ -206,13 +206,11 @@ compress_exec(const struct vfs_stat *st)
         image_words = (hdr[1] >> 18U) & D6LZ_HALF_MASK;
         bss_words = (unsigned int)(hdr[1] & EXEC_DXR_BSS_MASK);
         flags = (unsigned int)(hdr[1] &
-            (EXEC_DXR_F_COMPRESSED | EXEC_DXR_F_PURE | EXEC_DXR_F_IMPURE));
+            (EXEC_DXR_F_COMPRESSED | EXEC_DXR_F_PURE | EXEC_DXR_F_RT_REQUIRED));
         if (image_words == 0 || image_words > EXEC_DXR_MAX_IMAGE_WORDS ||
             bss_words > EXEC_DXR_MAX_BSS_WORDS ||
             (hdr[0] & D6LZ_HALF_MASK) >= image_words ||
-            (flags & EXEC_DXR_F_COMPRESSED) != 0U ||
-            (flags & (EXEC_DXR_F_PURE | EXEC_DXR_F_IMPURE)) ==
-            (EXEC_DXR_F_PURE | EXEC_DXR_F_IMPURE))
+            (flags & EXEC_DXR_F_COMPRESSED) != 0U)
                 return -1;
         reloc_words = (image_words + 35U) / 36U;
         expected = EXEC_DXR_BASE_HDR_WORDS + image_words + reloc_words;

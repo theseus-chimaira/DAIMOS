@@ -10,6 +10,7 @@
 ;   -007 header words (2 or 3)
 ;   -005 text words
 ;   -004 compressed payload words
+;   -003 nonzero if this load acquired a new RT reservation
 
         .text
         .globl  exec_load_process
@@ -22,6 +23,7 @@
         .globl  vm_space_destroy
         .globl  proc_swap_attach
         .globl  d6lz36_decode_vfs
+        .globl  proc_rt_owner
 
 
 ; unsigned int exec_record_words(const kword_t *record, int nonempty)
@@ -61,6 +63,7 @@ exec_load_process:
         move    11,2                    ; owner
         move    12,3                    ; path
         add     17,[013,,013]
+        setzm   -003(17)                ; no new RT reservation yet
 
         jumpe   10,exec_load_fail
         jumpe   12,exec_load_fail
@@ -101,7 +104,7 @@ exec_load_read_header:
         hlrz    13,-001(17)             ; uncompressed image words
         hrrz    0,-001(17)
         move    15,0
-        andi    15,0700000              ; compressed/pure/impure flags
+        andi    15,0700000              ; compressed/pure/RT-required flags
         move    16,0
         andi    16,0077777              ; BSS words
         jumpe   13,exec_load_fail
@@ -111,10 +114,16 @@ exec_load_read_header:
         jrst    exec_load_fail
         caml    14,13                   ; entry must be inside image
         jrst    exec_load_fail
-        move    0,15
-        andi    0,0600000
-        cain    0,0600000               ; PURE and IMPURE are exclusive
+        trnn    15,0400000              ; RT_REQUIRED
+        jrst    exec_load_header_shape
+        skipn   0,proc_rt_owner
+        jrst    exec_load_rt_claim
+        came    0,11                    ; owner may replace its own image
         jrst    exec_load_fail
+        jrst    exec_load_header_shape
+exec_load_rt_claim:
+        movem   11,proc_rt_owner
+        setom   -003(17)
 
 exec_load_header_shape:
         move    4,13
@@ -225,6 +234,9 @@ exec_load_attach:
         move    3,-005(17)
         pushj   17,proc_swap_attach
         jumpn   1,exec_load_vm_fail
+        movei   1,0
+        trne    15,0400000              ; report RT_REQUIRED to caller
+        movei   1,1
         jrst    exec_load_return
 
 exec_load_vm_fail:
@@ -235,6 +247,11 @@ exec_load_vm_fail:
         hrrz    0,0(10)
         movem   0,0(10)                 ; clear entry LH after destroy
 exec_load_fail:
+        skipn   -003(17)                ; release only a reservation made here
+        jrst    exec_load_fail_result
+        camn    11,proc_rt_owner
+        setzm   proc_rt_owner
+exec_load_fail_result:
         seto    1,
 exec_load_return:
         sub     17,[013,,013]
