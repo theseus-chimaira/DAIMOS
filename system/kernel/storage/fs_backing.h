@@ -23,6 +23,12 @@ struct fs_backing {
         kword_t blocks;
 };
 
+/* Direct-device opaque encoding.  The RH remains the physical base block.
+ * The LH is normally the raw unit number; one otherwise-unused unit bit tags
+ * DRM236 so existing DSK270 handoffs remain binary compatible. */
+#define FS_BACKING_DIRECT_DRM_TAG 0400000UL
+#define FS_BACKING_DIRECT_UNIT_MASK 07UL
+
 int fs_backing_read(struct fs_backing *backing, kword_t logical,
     kword_t *block);
 int fs_backing_write(struct fs_backing *backing, kword_t logical,

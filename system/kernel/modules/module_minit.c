@@ -1255,6 +1255,8 @@ d6fs_minit(void)
         if (members == 1U && blockset_read_addr == 0U) {
                 unsigned int direct_read;
                 unsigned int direct_write;
+                unsigned int drm_read;
+                unsigned int drm_write;
 
                 direct_read = minit_export(name, base, 6U);
                 direct_write = minit_export(name, base, 7U);
@@ -1264,6 +1266,16 @@ d6fs_minit(void)
                     minit_export(name, base, 8U), read_addr);
                 storage_patch_module_jump(base, (kword_t *)(unsigned long)
                     minit_export(name, base, 9U), write_addr);
+                drm_read = module_service_get(MODULE_SERVICE_DRM_READ_BLOCK);
+                drm_write = module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK);
+                if (drm_read != 0U)
+                        storage_patch_module_jump(base,
+                            (kword_t *)(unsigned long)minit_export(name, base,
+                            10U), drm_read);
+                if (drm_write != 0U)
+                        storage_patch_module_jump(base,
+                            (kword_t *)(unsigned long)minit_export(name, base,
+                            11U), drm_write);
         } else {
                 backing_ops = ((kword_t)d6fs_backing_read_addr << 18U) |
                     (kword_t)d6fs_backing_write_addr;

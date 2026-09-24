@@ -507,6 +507,7 @@ $(D6FS_MRES_OBJ): $(BUILD)/fs_backing_pdp10.dobj $(BUILD)/d6fs.dobj $(BUILD)/d6f
 	    -X d6fs_cache_reclaim \
 	    -X fs_backing_direct_read -X fs_backing_direct_write \
 	    -X fs_backing_direct_read_jump -X fs_backing_direct_write_jump \
+	    -X fs_backing_direct_drm_read_jump -X fs_backing_direct_drm_write_jump \
 	    $(BUILD)/fs_backing_pdp10.dobj $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate_pdp10.dobj $(BUILD)/d6fs_pdp10.dobj
 
 $(KCORE_EMBED_ASM): kcore-embed.s.in $(KCORE_MAP) $(BUILD)
