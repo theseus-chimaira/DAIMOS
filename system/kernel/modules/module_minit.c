@@ -1255,8 +1255,6 @@ d6fs_minit(void)
         if (members == 1U && blockset_read_addr == 0U) {
                 unsigned int direct_read;
                 unsigned int direct_write;
-                unsigned int drm_read;
-                unsigned int drm_write;
 
                 direct_read = minit_export(name, base, 6U);
                 direct_write = minit_export(name, base, 7U);
@@ -1266,16 +1264,6 @@ d6fs_minit(void)
                     minit_export(name, base, 8U), read_addr);
                 storage_patch_module_jump(base, (kword_t *)(unsigned long)
                     minit_export(name, base, 9U), write_addr);
-                drm_read = module_service_get(MODULE_SERVICE_DRM_READ_BLOCK);
-                drm_write = module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK);
-                if (drm_read != 0U)
-                        storage_patch_module_jump(base,
-                            (kword_t *)(unsigned long)minit_export(name, base,
-                            10U), drm_read);
-                if (drm_write != 0U)
-                        storage_patch_module_jump(base,
-                            (kword_t *)(unsigned long)minit_export(name, base,
-                            11U), drm_write);
         } else {
                 backing_ops = ((kword_t)d6fs_backing_read_addr << 18U) |
                     (kword_t)d6fs_backing_write_addr;
@@ -1284,6 +1272,18 @@ d6fs_minit(void)
                 storage_patch_module_jump(base,
                     (kword_t *)(unsigned long)callback_write, write_addr);
         }
+        /* The per-mount direct adapter is also used by secondary D6FS
+         * instances.  Patch DRM independently of the root backing so a
+         * multi-DSK root does not disable later direct or interleaved DRM
+         * mounts.  Unpatched slots fail safely in the MRES. */
+        read_addr = module_service_get(MODULE_SERVICE_DRM_READ_BLOCK);
+        write_addr = module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK);
+        if (read_addr != 0U)
+                storage_patch_module_jump(base, (kword_t *)(unsigned long)
+                    minit_export(name, base, 10U), read_addr);
+        if (write_addr != 0U)
+                storage_patch_module_jump(base, (kword_t *)(unsigned long)
+                    minit_export(name, base, 11U), write_addr);
         if (d6fs_reader_bootstrap_call(backing_ops) != 0) {
                 minit_diag_notok(name);
                 return;
