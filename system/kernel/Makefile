@@ -156,7 +156,8 @@ KCORE_FIXED_SRCS = core/ret_pdp10.s \
 	storage/storage_router.s \
 	core/kcore_end.s
 
-KCORE_FIXED_ASM = $(BUILD)/exec.s \
+KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
+	$(BUILD)/exec.s \
 	$(BUILD)/d6lz.s \
 	$(BUILD)/mm.s \
 	$(BUILD)/module_runtime.s \
@@ -267,6 +268,10 @@ ${KCORE_C_ASM}: ${KCORE_C_SRCS} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S "$$src" -o "$@"
 
+
+${BUILD}/d6lz_fixed.s: ../stand/pdp6/common/decompressor.inc
+	@mkdir -p ${BUILD}
+	cp $< $@
 
 ${BUILD}/exec.s: proc/exec.c proc/exec_load_pdp10.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}

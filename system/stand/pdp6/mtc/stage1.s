@@ -1,7 +1,6 @@
 ; stage1.s -- minimal opaque-image Stage1 for PDP-6 magnetic tape.
 ;
-; Stage0 loads this loader from RIM paper tape. Stage1 installs the fixed
-; bootstrap SIXBIT helper at 077760, then reads one magnetic-tape record
+; Stage0 loads this loader from RIM paper tape. Stage1 reads one magnetic-tape record
 ; through a Type 516 control and Type 136 data control directly to 040000.
 ; The record boundary terminates the opaque image; execution starts at 040000.
 ;
@@ -17,15 +16,12 @@ start:
         setom 000040
         setom 000041
         movei 017,070000
-        pushj 017,install_bootstrap_sixbit
 
         ; Type 136: input, six 6-bit characters, device 3, move enabled.
-        movei 01,004000
-        cono 0200,0(01)
+        cono 0200,004000
 
         ; Type 516: unit 0, 556 bpi, binary parity, read forward.
-        movei 01,052400
-        cono 0220,0(01)
+        cono 0220,052400
 
         movei 01,040000
 read_loop:
@@ -49,21 +45,24 @@ read_wait:
 
         ; At least one opaque image word must have been transferred.
         caie 01,040000
-        jrst 040000
+        jrst mtc_install_decoder
         jrst bad_tape
 
+mtc_install_decoder:
+        movei 01,d6lz_image_start
+        hrl 01,01
+        hrri 01,d6lz_fixed_base
+        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
+        jrst 040000
+
 read_error:
-        move 01,msg_rderr
-        jrst diag
+        movei 01,01
+        jrst halt_stage1
 
 bad_tape:
-        move 01,msg_badtp
-
-diag:
-        pushj 017,077760
+        movei 01,02
+halt_stage1:
         halt .
-        jrst diag
+        jrst halt_stage1
 
-msg_rderr: .word 0376244456262
-msg_badtp: .word 0374241446460
-        .include "../common/boot-sixbit.inc"
+        .include "../common/decompressor.inc"

@@ -1,3 +1,14 @@
+## 2026-09-24 compressed Stage1 boot and fixed D6LZ decoder
+
+- The PDP-6 standalone loaders now share one `system/stand/pdp6/common/decompressor.inc`; the complete memory D6LZ36 decoder is 61 words and is installed at fixed address `000060`.
+- KCORE links that same source first, so the real `d6lz36_decode` symbol is physically `000060`; there is no trampoline and no second resident memory-decoder copy.  The VFS streaming frontend remains separate.
+- The production DSK boot stream is compressed.  Its three-word Stage1 header is DAIMON magic, `uncompressed_words,,entry_offset`, and `compressed_words,,0`, followed by the D6LZ36 payload.  Stage1 stages the compressed words immediately above the final uncompressed image, expands directly to `030000`, requires exact compressed-word consumption, and then reuses the dead staging range as the KINIT stack.
+- The host `pdp10-tools/d6lz -t` mode compresses the build system's one-octal-word-per-line stream without an intermediate binary-container conversion.
+- The current full-profile image is 23202 raw payload words and 21756 compressed words (about 6.2 percent smaller); this ratio is image-specific, not an ABI promise.
+- The standalone shrink sweep keeps every loader within the requested baseline+50-word stretch ceiling: DSK 351 words (+49 from 302), DTC 96 (+40 from 56), MTC 93 (+39 from 54), PTR 122 (+45 from 77).  DTC/MTC/PTR install the same fixed decoder while retaining their existing media payload contracts.
+- Permanent kernel memory is unchanged: KCORE remains 10034 words, with 188 single-root and 147 multi-root free addresses below `040000`.
+- Real SIMH acceptance on the compressed DSK path passes `INIT -> LOGIN -> DSH -> EXIT -> LOGIN`; password/no-echo, wrong-password rejection, successful login, home-directory setup, and UID/GID drop also pass.
+
 ## 2026-09-24 RT-required executable admission and PI context fix
 
 - DXR bit 0400000 is now `RT_REQUIRED`; the redundant `IMPURE` file-format state is removed. `PURE=0` is the ordinary writable/private case.
@@ -100,7 +111,7 @@ ENFORCED BY THE LOWMEM BOOT PROFILE.
 EARLY USERSPACE AND FILESYSTEM STABILIZATION ARE ACTIVE.  RUN V2 / EXEC V1,
 MULTI-TTY LOGIN, DUP2-LIKE DESCRIPTOR REPLACEMENT, BASIC TTY MODES, MONITORFS,
 THE PRE-DSH FILESYSTEM SYSCALL SET, BLOCKSET, READ-ONLY TSFS V1 DATA ACCESS,
-AND EXPLICIT D6LZ36 COMPRESSED EXECUTABLE LOADING ARE IMPLEMENTED.  SCRIPTED
+EXPLICIT D6LZ36 COMPRESSED EXECUTABLE LOADING, AND THE COMPRESSED DSK BOOT PATH ARE IMPLEMENTED.  SCRIPTED
 DCS0/GE0 TELNET ACCEPTANCE PASSES; CTY INPUT INJECTION REMAINS A HARNESS
 LIMITATION.  THE COMMON BAD-MEDIA MAPPER, MINIMAL SINGLE-OWNER RT SCHEDULER,
 ATOMIC RT_REQUIRED EXEC ADMISSION, AND THE PI-CONTEXT FIX ARE COMPLETE AND ARE

@@ -12,7 +12,6 @@ put_sixbit_word:
 put_six_loop:
         move 03,02
         lsh 03,-036
-        andi 03,077
         addi 03,040
 put_six_wait:
         coni 0120,04

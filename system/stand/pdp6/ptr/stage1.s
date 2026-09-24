@@ -7,8 +7,8 @@
 ;       word 0      payload word count
 ;       words 1..   first opaque payload -> 040000...
 ;
-; After Tape 1 Stage1 prints "CHANGE TAPE" through the SIXBIT routine just
-; already installed by Stage1, resets the reader, and waits for Tape 2.  Tape 2 is
+; After Tape 1 Stage1 prints "TAPE2 " through the installed SIXBIT helper,
+; resets the reader, and waits for Tape 2.  Tape 2 is
 ; loaded immediately after the Tape 1 high-memory payload:
 ;
 ; Tape 2:
@@ -30,45 +30,36 @@ start:
         setom 000040
         setom 000041
         movei 017,070000
-        pushj 017,install_bootstrap_sixbit
-        movei 01,0020
-        cono 0104,0(01)
+        movei 01,bootstrap_sixbit_image
+        hrl 01,01
+        hrri 01,077760
+        blt 01,077776
+        cono 0104,0020
 
 ; Read Tape 1 count.
         pushj 017,read_word
-        movem 03,tape1_count
 
 ; Load Tape 1 contiguously at 040000.
-        move 02,tape1_count
+        move 02,03
         movei 01,040000
         pushj 017,read_words
-        movem 01,tape2_base
+        move 07,01
 
-        move 01,msg_change0
+        ; One word is enough to tell the operator why the reader stopped.
+        move 01,msg_tape2
         pushj 017,077760
-        move 01,msg_change1
-        pushj 017,077760
-
-; Terminate the operator message with CR/LF.  The SIXBIT helper waits for
-; the final character, so CR may be written immediately; wait only between
-; CR and LF.
-        movei 03,015
-        datao 0120,03
-change_cr_wait:
-        coni 0120,04
-        trne 04,0020
-        jrst change_cr_wait
-        movei 03,012
-        datao 0120,03
 
 ; Reset/start the reader for Tape 2.  If no tape is present, the normal
 ; PTR wait loop simply waits until the operator supplies one.
-        movei 01,0020
-        cono 0104,0(01)
+        cono 0104,0020
         pushj 017,read_word
         move 02,03
-        move 01,tape2_base
+        move 01,07
         pushj 017,read_words
+        movei 01,d6lz_image_start
+        hrl 01,01
+        hrri 01,d6lz_fixed_base
+        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
         jrst 040000
 
 read_words:
@@ -83,27 +74,22 @@ read_word:
         setz 03,
         movei 04,05
 read_byte_loop:
-        pushj 017,ptr_getc
+        coni 0104,tmp
+        move 06,tmp
+        trnn 06,0010
+        jrst read_byte_loop
+        datai 0104,ioword
+        move 05,ioword
+        andi 05,0377
         lsh 03,010
         ior 03,05
         sojg 04,read_byte_loop
         popj 017,
 
-ptr_getc:
-ptr_wait:
-        coni 0104,tmp
-        move 06,tmp
-        trnn 06,0010
-        jrst ptr_wait
-        datai 0104,ioword
-        move 05,ioword
-        andi 05,0377
-        popj 017,
-
-tape1_count: .word 0
-tape2_base:  .word 0
 ioword:      .word 0
 tmp:         .word 0
-msg_change0: .word 0435041564745
-msg_change1: .word 0006441604500
-        .include "../common/boot-sixbit.inc"
+msg_tape2:   .word 0644160452200        ; "TAPE2 "
+bootstrap_sixbit_image:
+        .include "../common/sixbit-fixed.inc"
+
+        .include "../common/decompressor.inc"

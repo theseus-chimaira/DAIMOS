@@ -10,9 +10,8 @@
 ; The entry point is fixed at 040000.  Physical DECtape block boundaries are
 ; handled by the controller; Stage1 never buffers or restarts per block.
 ;
-; Once the helper is installed, controller/media failures are reported as
-; "?RDERR" and premature end-of-tape as "?BADTP".  Before that helper is
-; complete, errors can only be halted safely.
+; On failure AC1 is left as 1 for controller/data error or 2 for a short/bad
+; tape before Stage1 halts.  This keeps the standalone loader deliberately tiny.
 
         .text
         .globl start
@@ -23,7 +22,6 @@ start:
         setom 000040
         setom 000041
         movei 017,070000
-        pushj 017,install_bootstrap_sixbit
 
         ; DCT0: device 1 (DTC), device -> processor, move enabled.
         cono 0200,004040
@@ -46,6 +44,10 @@ load_loop:
         movem 03,0(01)
         aoj 01,
         sojg 02,load_loop
+        movei 01,d6lz_image_start
+        hrl 01,01
+        hrri 01,d6lz_fixed_base
+        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
         jrst 040000
 
 
@@ -66,17 +68,13 @@ read_wait:
         jrst read_word
 
 read_error:
-        move 01,msg_rderr
-        jrst diag
+        movei 01,01
+        jrst halt_stage1
 
 bad_tape:
-        move 01,msg_badtp
-
-diag:
-        pushj 017,077760
+        movei 01,02
+halt_stage1:
         halt .
-        jrst diag
+        jrst halt_stage1
 
-msg_rderr: .word 0376244456262
-msg_badtp: .word 0374241446460
-        .include "../common/boot-sixbit.inc"
+        .include "../common/decompressor.inc"

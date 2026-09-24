@@ -3,11 +3,18 @@
 ; This is the paper-tape/RIM Stage1 image.
 ; It scans DSK270 units 0..3, accepts
 ; compact DBC or DB0/DB1/DBX metadata,
-; reconstructs a round-robin opaque
+; reconstructs a round-robin compressed
 ; image stream across one to four
 ; members, skips each member's bad-run
-; table, loads the image at 030000,
-; and jumps to its relative entry point.
+; table, stages the D6LZ36 payload after
+; its final image range, expands it at
+; 030000, and jumps to the relative entry.
+;
+; Stream header:
+;   0  SIXBIT DAIMON
+;   1  uncompressed_words,,entry_offset
+;   2  compressed_words,,0
+;   3+ D6LZ36 payload
 
         .text
         .globl __start
@@ -18,7 +25,6 @@ __start:
         ; 030000.  Starting at 020000 therefore leaves 4096 words of stack
         ; headroom and cannot be overwritten as KINIT grows toward top of core.
         movei 017,020000
-        pushj 017,install_bootstrap_sixbit
         setom 000040
         setom 000041
         setzm any_read_ok
@@ -67,10 +73,14 @@ stage1_magic_ok:
         add 05,04
         movem 05,entry_addr
 
-        movei 010,030000
-        move 011,03
-        movei 06,buffer+000002
-        movei 07,0176
+        hlrz 011,buffer+000002
+        jumpe 011,fail_khead
+        movem 011,compressed_words
+        ; Stage compressed words immediately after the final uncompressed image.
+        ; The source is therefore disjoint from the destination during expansion.
+        move 010,kinit_stack_base
+        movei 06,buffer+000003
+        movei 07,0175
         pushj 017,copy_stream_words
         jumpe 01,load_image_done
 load_image_loop:
@@ -81,13 +91,9 @@ load_image_loop:
         pushj 017,copy_stream_words
         jumpn 01,load_image_loop
 load_image_done:
-        ; Start the disposable KINIT stack immediately after the loaded image.
-        ; This maximizes stack headroom on a 32K machine and removes the old
-        ; fixed 076000 placement assumption.
-        move 017,kinit_stack_base
-        setz 01,
-        move 02,member_count
-        jrst @entry_addr
+        ; The DSK read-in itself starts at 000060.  Install the fixed decoder
+        ; only from the late handoff code, which lies above its destination.
+        jrst stage1_handoff
 
 ; Locate DBOOT on current_unit.
 ; AC1 = 1 if a usable descriptor was stored.
@@ -370,23 +376,41 @@ fail_khead:
         jrst fail_common
 fail_read:
         movei 01,000004
+        jrst fail_common
+fail_decompress:
+        movei 01,000005
 fail_common:
-        move 05,01
-        move 01,msg_nodsk-1(05)
-        pushj 017,077760
-        move 01,05
-halt_stage1:
         movem 01,stage1_last_error
+halt_stage1:
         halt .
         jrst halt_stage1
 
+stage1_handoff:
+        movei 01,d6lz_image_start
+        hrl 01,01
+        hrri 01,d6lz_fixed_base
+        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
+
+        ; Expand the opaque boot image into its normal KINIT load address.
+        ; The fifth C ABI argument (src_usedp) is zero in the caller slot.
+        movei 01,030000
+        move 02,kinit_stack_base
+        subi 02,030000
+        move 03,kinit_stack_base
+        move 04,compressed_words
+        setzm 0(017)
+        pushj 017,d6lz36_decode
+        jumpn 01,fail_decompress
+        jumpn 04,fail_decompress        ; exact compressed payload required
+
+        ; Compressed input is dead now; KINIT may reuse it as stack.
+        move 017,kinit_stack_base
+        setz 01,
+        move 02,member_count
+        jrst @entry_addr
 
 daimon_magic: .word 0444151555756
-msg_nodsk:    .word 0375657446353
-msg_noset:    .word 0375657634564
-msg_khead:    .word 0375350454144
-msg_read:     .word 0376245414400
-        .include "../common/boot-sixbit.inc"
+        .include "../common/decompressor.inc"
         .bss
 any_read_ok: .block 01
 current_unit: .block 01
@@ -402,6 +426,7 @@ last_badmap_sector: .block 01
 stream_member: .block 01
 entry_addr: .block 01
 kinit_stack_base: .block 01
+compressed_words: .block 01
 stage1_last_error: .block 01
 member_unit: .block 04
 member_bad_count: .block 04
