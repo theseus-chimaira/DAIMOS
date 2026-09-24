@@ -15,8 +15,10 @@
 #define D6LZ36_MIN_MATCH    3U
 #define D6LZ36_MAX_MATCH    130U
 
+#if !defined(__PDP10__) || defined(D6LZ_TEST_MEMORY_ABI)
 int d6lz36_decode(kword_t *dst, unsigned int dst_words,
     const kword_t *src, unsigned int src_words);
+#endif
 int d6lz36_decode_vfs(kword_t node, kword_t file_offset,
     unsigned int src_words, kword_t dst_words_addr);
 

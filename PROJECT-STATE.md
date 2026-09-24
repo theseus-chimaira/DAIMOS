@@ -1,12 +1,12 @@
 ## 2026-09-24 compressed Stage1 boot and fixed D6LZ decoder
 
-- The PDP-6 standalone loaders now share one `system/stand/pdp6/common/decompressor.inc`; the resumable memory/VFS D6LZ36 core is 57 words including the memory wrapper and is installed at fixed address `000060`.
-- KCORE links that same source first, so the real `d6lz36_decode` symbol is physically `000060`; there is no trampoline and no second resident token decoder.  The VFS path is now a small eight-word refill frontend that resumes the same low-core token engine.
+- The PDP-6 standalone loaders now share one `system/stand/pdp6/common/decompressor.inc`; the resumable D6LZ36 token core is 42 words and is installed at fixed address `000060`; the Stage1-only generic memory wrapper has been removed from permanent low core.
+- KCORE links that same source first, so `d6lz36_decode_core` is physically `000060`; there is no trampoline and no second resident token decoder.  Every internal transfer in the carried Stage1 image is encoded against `000060+offset`, so the copied image is independently executable.  The VFS path is a small eight-word refill frontend that resumes the same low-core token engine.
 - The production DSK boot stream is compressed.  Its three-word Stage1 header is DAIMON magic, `uncompressed_words,,entry_offset`, and `compressed_words,,0`, followed by the D6LZ36 payload.  Stage1 stages the compressed words immediately above the final uncompressed image, expands directly to `030000`, requires exact compressed-word consumption, and then reuses the dead staging range as the KINIT stack.
 - The host `pdp10-tools/d6lz -t` mode compresses the build system's one-octal-word-per-line stream without an intermediate binary-container conversion.
 - The current full-profile image is 23202 raw payload words and 21756 compressed words (about 6.2 percent smaller); this ratio is image-specific, not an ABI promise.
-- The standalone shrink sweep keeps every loader within the requested baseline+50-word stretch ceiling: DSK 347 words (+45 from 302), DTC 92 (+36 from 56), MTC 88 (+34 from 54), PTR 118 (+41 from 77).  DTC/MTC/PTR install the same fixed decoder while retaining their existing media payload contracts.
-- The final fold/shrink sweep reduces permanent KCORE to 10006 words, 28 below the 10034-word compressed-boot baseline, with 216 single-root and 175 multi-root free addresses below `040000`.
+- The standalone shrink sweep keeps every loader within the requested baseline+50-word stretch ceiling: DSK 333 words (+31 from 302), DTC 77 (+21 from 56), MTC 73 (+19 from 54), PTR 103 (+26 from 77).  DTC/MTC/PTR install the same fixed decoder while retaining their existing media payload contracts.
+- The structural fixed-core sweep reduces permanent KCORE to 9991 words, 43 below the 10034-word compressed-boot baseline and 15 below the previous 10006-word folded tree, with 231 single-root and 190 multi-root free addresses below `040000`.
 - Real SIMH acceptance on the compressed DSK path passes `INIT -> LOGIN -> DSH -> EXIT -> LOGIN`; password/no-echo, wrong-password rejection, successful login, home-directory setup, and UID/GID drop also pass.
 
 ## 2026-09-24 RT-required executable admission and PI context fix
@@ -17,7 +17,7 @@
 - Fixed the pre-existing scheduler multiprocess corruption: PI-context `proc_wakeup_event()` called `proc_runq_add()` without preserving AC0/AC5/AC6. The PI boundary now preserves them.
 - The real-SIMH multiprocess regression is green. Its former completion-order/short-loop round-robin checks were nondeterministic host-timing assumptions; deterministic nice and equal-priority selection remain covered by `mm-v1`.
 - Real-SIMH `daimos-rt-required-v1` verifies two successful admitted children execute, a concurrent second RT-required RUN is rejected before execution, and admission succeeds again after owner teardown.
-- Current full-profile size: KCORE 10006 words, CTY MRES 62, multi-root last 037520, leaving 175 permanent addresses below 040000.
+- Current full-profile size: KCORE 9991 words, CTY MRES 62, multi-root last 037501, leaving 190 permanent addresses below 040000.
 
 ## 2026-09-24 minimal real-time scheduler
 
@@ -72,14 +72,14 @@ ACCOUNTED SEPARATELY.  KCC IS THE ACCEPTANCE BUILD.
 CURRENT MEASUREMENT (2026-09-24, CURRENT RT_REQUIRED/BADMAP-CAPABLE TREE,
 REBUILT WITH THE SUPPLIED KCC/DAS/DLINK TOOLCHAIN):
 
-- KCORE: 10006 WORDS.
+- KCORE: 9991 WORDS.
 - CTY MRES: 62 WORDS.
 - D6FS MRES: 2338 WORDS.
 - DTFS/TSFS MRES: 2041 WORDS.
-- KCORE+MRES: 16120 WORDS.
-- SINGLE-MEMBER ROOT: PERMANENT_LAST 037447, 216 FREE WORD ADDRESSES BELOW
+- KCORE+MRES: 16105 WORDS.
+- SINGLE-MEMBER ROOT: PERMANENT_LAST 037430, 231 FREE WORD ADDRESSES BELOW
   040000.
-- ACTIVE MULTI-MEMBER DSK ROOT: MULTI_LAST 037520, 175 FREE WORD ADDRESSES
+- ACTIVE MULTI-MEMBER DSK ROOT: MULTI_LAST 037501, 190 FREE WORD ADDRESSES
   BELOW 040000.
 - ROOT BLOCKSET PACKAGE: 41 WORDS; A SINGLE-MEMBER ROOT BYPASSES IT.
 
@@ -101,7 +101,7 @@ SECOND ARCHITECTURAL LIMIT.  `MAKE PERMANENT-SIZE` MUST BE RUN AFTER MATERIAL
 KERNEL CHANGES; IT REPORTS BOTH SINGLE- AND MULTI-MEMBER ROOT HIGH-WATER MARKS
 AND FAILS IF EITHER REACHES OR CROSSES 040000.
 
-STATE: WITHIN THE HARD LIMIT WITH 175 WORDS OF CURRENT MULTI-MEMBER PERMANENT
+STATE: WITHIN THE HARD LIMIT WITH 190 WORDS OF CURRENT MULTI-MEMBER PERMANENT
 HEADROOM.  RESIDENT GROWTH MUST STILL BE JUSTIFIED AND SIZE-REGRESSION TESTING
 REMAINS MANDATORY.  THIS LIMIT IS SEPARATE FROM THE TRANSIENT KINIT IMAGE LIMIT
 ENFORCED BY THE LOWMEM BOOT PROFILE.
@@ -718,10 +718,10 @@ CURRENT-STATE AUTHORITY.
 
 THE STANDARD PETIT PCLK ENABLEMENT, NORMAL KCC USERSPACE CONVERSION, AND
 BOUNDED RUN/EXEC STARTUP ABI AND MINIMAL TTY LINE DISCIPLINE ARE IMPLEMENTED.
-THE CURRENT DEFAULT SINGLE-DISK BUILD MEASURES 16120 WORDS OF INSTALLED
-KCORE+MRES WITH PERMANENT_LAST 037447, LEAVING 216 PERMANENT WORD ADDRESSES
+THE CURRENT DEFAULT SINGLE-DISK BUILD MEASURES 16105 WORDS OF INSTALLED
+KCORE+MRES WITH PERMANENT_LAST 037430, LEAVING 231 PERMANENT WORD ADDRESSES
 BELOW 040000.  AN ACTIVE MULTI-MEMBER DSK ROOT ADDS THE 41-WORD ROOT BLOCKSET
-PACKAGE FOR 16161 WORDS AND MULTI_LAST 037520, LEAVING 175 ADDRESSES.
+PACKAGE FOR 16161 WORDS AND MULTI_LAST 037501, LEAVING 175 ADDRESSES.
 KEEP 14288 WORDS AS AN ADVISORY OPTIMIZATION GOAL
 DURING BRING-UP, BUT KEEP THE BELOW-16K ARCHITECTURAL LIMIT HARD.  KEEP THE
 PASSING DCS0/GE0 SCRIPTED-TELNET LOGIN REGRESSION; COMPLETE CTY INPUT

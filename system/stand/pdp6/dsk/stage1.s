@@ -397,9 +397,10 @@ stage1_handoff:
         subi 02,030000
         move 03,kinit_stack_base
         move 04,compressed_words
-        setzm 0(017)
-        pushj 017,d6lz36_decode
-        jumpn 01,fail_decompress
+        move 05,01                    ; output base for match validation
+        setz 07,                       ; force first control-word load
+        pushj 017,d6lz_fixed_base      ; execute installed low-core core
+        jumpn 00,fail_decompress
         jumpn 04,fail_decompress        ; exact compressed payload required
 
         ; Compressed input is dead now; KINIT may reuse it as stack.
