@@ -21,6 +21,8 @@
 #include "d6fs.h"
 #include "blockset_mres.h"
 #include "blockset_boot.h"
+#include "badmap.h"
+#include "mm.h"
 #include "monitorfs.h"
 #include "module_runtime.h"
 
@@ -92,6 +94,7 @@ unsigned int blockset_write_addr;
 unsigned int blockset_state_addr;
 unsigned int d6fs_backing_read_addr;
 unsigned int d6fs_backing_write_addr;
+static kword_t *badmap_runtime_state;
 
 extern kword_t storage_pi_handler;
 extern kword_t storage_dct_handler;
@@ -1058,33 +1061,151 @@ void
 blockset_minit(void)
 {
         kword_t name;
+        kword_t super_a;
+        kword_t super_b;
         unsigned int base;
+        unsigned int members;
         unsigned int service;
         unsigned int read_addr;
         unsigned int write_addr;
 
         name = (kword_t)SIXBIT("BSET  ");
-        if (blockset_boot_member_count_hint() <= 1U)
+        members = blockset_boot_member_count_hint();
+        if (members == 0U)
                 return;
         if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) == 0U ||
             module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) == 0U) {
                 minit_diag_nodrv(name);
                 return;
         }
-        read_addr = (unsigned int)(unsigned long)&dsk270_read_sector;
-        write_addr = (unsigned int)(unsigned long)&dsk270_write_sector;
+        if (members > 1U) {
+                read_addr = (unsigned int)(unsigned long)&dsk270_read_sector;
+                write_addr = (unsigned int)(unsigned long)&dsk270_write_sector;
+                base = minit_install(name);
+                service = minit_export(name, base, 0U);
+                blockset_state_addr = minit_export(name, base, 1U);
+                blockset_read_addr = minit_export(name, base, 2U);
+                blockset_write_addr = minit_export(name, base, 3U);
+                storage_patch_module_jump(base, (kword_t *)(unsigned long)
+                    minit_export(name, base, 4U), read_addr);
+                storage_patch_module_jump(base, (kword_t *)(unsigned long)
+                    minit_export(name, base, 5U), write_addr);
+                storage_patch_jump(&blockset_runtime_service_jump, service);
+                module_service_set(MODULE_SERVICE_BLOCKSET, service);
+                minit_diag_loaded(name);
+        }
+        /* Discover/configure now, while BADMAP's later MINIT can still inspect
+         * the validated physical layout before D6FS is installed. */
+        (void)blockset_boot_discover(&super_a, &super_b);
+}
+
+void
+badmap_minit(void)
+{
+        kword_t name;
+        kword_t base_block;
+        kword_t blocks;
+        kword_t tail;
+        kword_t *entries;
+        kword_t *state;
+        unsigned int base;
+        unsigned int count;
+        unsigned int i;
+        unsigned int members;
+        unsigned int unit;
+        unsigned int read_addr;
+        unsigned int write_addr;
+        unsigned int service;
+
+        count = blockset_boot_badmap_count();
+        if (count == 0U)
+                return;
+        entries = blockset_boot_badmap_staged();
+        if (blockset_boot_badmap_load(entries, count) != 0) {
+                minit_diag_notok((kword_t)SIXBIT("BADMAP"));
+                return;
+        }
+        name = (kword_t)SIXBIT("BADMAP");
+        members = blockset_boot_member_count_hint();
         base = minit_install(name);
         service = minit_export(name, base, 0U);
-        blockset_state_addr = minit_export(name, base, 1U);
+        state = (kword_t *)(unsigned long)minit_export(name, base, 1U);
+        badmap_runtime_state = state;
         blockset_read_addr = minit_export(name, base, 2U);
         blockset_write_addr = minit_export(name, base, 3U);
+        read_addr = (unsigned int)(unsigned long)&dsk270_read_sector;
+        write_addr = (unsigned int)(unsigned long)&dsk270_write_sector;
         storage_patch_module_jump(base, (kword_t *)(unsigned long)
             minit_export(name, base, 4U), read_addr);
         storage_patch_module_jump(base, (kword_t *)(unsigned long)
             minit_export(name, base, 5U), write_addr);
+        state[0] = (kword_t)count;
+        /* KINIT staging is valid through module_run_minits().  The post-MINIT
+         * finalizer copies these words into managed runtime storage only after
+         * the packed permanent MRES block is complete. */
+        state[1] = (kword_t)(unsigned long)entries;
+        state[2] = (kword_t)members;
+        for (i = 0U; i < members; ++i) {
+                if (!blockset_boot_member(i, &unit, &base_block, &blocks, &tail)) {
+                        minit_diag_notok(name);
+                        return;
+                }
+                state[3U + i] = (kword_t)unit;
+                if (i == 0U && members == 1U) {
+                        state[7] = base_block;
+                        state[8] = blocks + tail;
+                }
+        }
+        if (members > 1U)
+                storage_patch_module_jump(base, (kword_t *)(unsigned long)
+                    minit_export(name, base, 6U),
+                    module_service_get(MODULE_SERVICE_BLOCKSET));
         storage_patch_jump(&blockset_runtime_service_jump, service);
         module_service_set(MODULE_SERVICE_BLOCKSET, service);
         minit_diag_loaded(name);
+}
+
+void
+badmap_post_minits(void)
+{
+        kword_t table_base;
+        kword_t *dst;
+        kword_t *src;
+        unsigned int count;
+        unsigned int i;
+
+        if (badmap_runtime_state == 0)
+                return;
+        count = (unsigned int)badmap_runtime_state[0];
+        src = (kword_t *)(unsigned long)badmap_runtime_state[1];
+        if (badmap_runtime_state[2] != 1UL || badmap_runtime_state[3] != 0UL ||
+            badmap_runtime_state[7] == 0UL || badmap_runtime_state[8] == 0UL)
+                minit_diag_notok((kword_t)SIXBIT("BMGEO "));
+        if (count == 0U || src == 0 ||
+            mm_alloc((kword_t)count, MM_TYPE_KERNEL_DYNAMIC, BADMAP_MM_OWNER,
+            MM_ALLOC_LOW, &table_base) != MM_OK)
+                kinit_halt();
+        dst = (kword_t *)(unsigned long)table_base;
+        {
+                kword_t first_word;
+                first_word = src[0];
+        /* mm_alloc() does not alter payload words.  Copy overlap-safely because
+         * the newly allocated low extent may cover the reclaimable KINIT
+         * staging block itself. */
+        if (dst > src && dst < src + count) {
+                i = count;
+                while (i != 0U) {
+                        --i;
+                        dst[i] = src[i];
+                }
+        } else {
+                for (i = 0U; i < count; ++i)
+                        dst[i] = src[i];
+        }
+                if (dst[0] != first_word)
+                        minit_diag_notok((kword_t)SIXBIT("BMTBL "));
+        }
+        badmap_runtime_state[1] = table_base;
 }
 
 void
@@ -1103,7 +1224,13 @@ d6fs_minit(void)
         members = blockset_boot_member_count_hint();
         if (members == 0U)
                 return;
-        if (members == 1U) {
+        if (blockset_read_addr != 0U || blockset_write_addr != 0U) {
+                /* BLOCKSET and optional BADMAP publish the logical backing
+                 * callbacks here.  A singleton without either package keeps
+                 * the direct DSK path and pays no resident dispatch cost. */
+                read_addr = blockset_read_addr;
+                write_addr = blockset_write_addr;
+        } else if (members == 1U) {
                 if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) == 0U ||
                     module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) == 0U) {
                         minit_diag_nodrv(name);
@@ -1112,8 +1239,8 @@ d6fs_minit(void)
                 read_addr = (unsigned int)(unsigned long)&dsk270_read_sector;
                 write_addr = (unsigned int)(unsigned long)&dsk270_write_sector;
         } else {
-                read_addr = blockset_read_addr;
-                write_addr = blockset_write_addr;
+                minit_diag_nodrv(name);
+                return;
         }
         if (read_addr == 0U || write_addr == 0U) {
                 minit_diag_nodrv(name);
@@ -1125,7 +1252,7 @@ d6fs_minit(void)
         callback_read = minit_export(name, base, 3U);
         callback_write = minit_export(name, base, 4U);
         storage_patch_jump(&d6fs_cache_reclaim_jump, minit_export(name, base, 5U));
-        if (members == 1U) {
+        if (members == 1U && blockset_read_addr == 0U) {
                 unsigned int direct_read;
                 unsigned int direct_write;
 

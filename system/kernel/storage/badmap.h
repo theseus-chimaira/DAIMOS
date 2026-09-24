@@ -1,0 +1,13 @@
+#ifndef DAIMON_BADMAP_H
+#define DAIMON_BADMAP_H
+
+#include "kcore.h"
+
+#define BADMAP_MAGIC             0442642414422UL
+#define BADMAP_HEADER_WORDS      4U
+#define BADMAP_LOC_MEMBER_SHIFT  16U
+#define BADMAP_LOC_MEMBER_MASK   03U
+#define BADMAP_LOC_BLOCK_MASK    0177777UL
+#define BADMAP_MM_OWNER          7U
+
+#endif

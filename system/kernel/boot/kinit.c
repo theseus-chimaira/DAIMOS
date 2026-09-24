@@ -376,6 +376,7 @@ kinit_enter(void)
         kinit_diag_system(memory_kwords);
         mres_init();
         module_run_minits();
+        badmap_post_minits();
 #if KINIT_STACK_WATERMARK
         kinit_stack_watermark_record();
 #endif

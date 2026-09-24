@@ -9,6 +9,7 @@
 #define BLOCKSET_ROOT_DESC_RANGE0 6U
 #include "blockset_mres.h"
 #include "blockset_layout.h"
+#include "badmap.h"
 #include "dsk270.h"
 #include "kinit.h"
 #include "module.h"
@@ -25,6 +26,9 @@
  * D6FS/LOGSTORE I/O still needs its validated mapping here. */
 static struct blockset blockset_boot_state;
 static kword_t blockset_boot_total;
+static kword_t blockset_boot_badmap_start;
+static kword_t blockset_boot_badmap_blocks;
+static kword_t blockset_badmap_scratch[BLOCKSET_BLOCK_WORDS];
 
 static kword_t
 blockset_boot_half(unsigned int index)
@@ -243,6 +247,8 @@ blockset_boot_discover(kword_t *super_ap, kword_t *super_bp)
         rc = blockset_boot_configure(&config);
         if (rc != 0)
                 return rc;
+        blockset_boot_badmap_start = first_badmap_start;
+        blockset_boot_badmap_blocks = first_badmap_blocks;
         {
                 kword_t packed;
 
@@ -262,12 +268,12 @@ blockset_boot_read(kword_t blockno, kword_t block[BLOCKSET_BLOCK_WORDS])
 {
         if (block == 0 || blockno >= blockset_boot_total)
                 return -1;
+        if (blockset_read_addr != 0U)
+                return (int)kinit_call_blockset_io(blockset_read_addr, blockno, block);
         if (blockset_boot_state.members == 1U)
                 return dsk270_read_sector(blockset_boot_state.unit[0],
                     blockset_boot_state.base[0] + blockno, block);
-        if (blockset_read_addr == 0U)
-                return -1;
-        return (int)kinit_call_blockset_io(blockset_read_addr, blockno, block);
+        return -1;
 }
 
 kword_t
@@ -281,9 +287,11 @@ blockset_boot_writable(void)
 {
         if (blockset_boot_state.members == 0U)
                 return 0;
+        if (blockset_write_addr != 0U)
+                return 1;
         if (blockset_boot_state.members == 1U)
                 return module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U;
-        return blockset_write_addr != 0U;
+        return 0;
 }
 
 int
@@ -292,13 +300,13 @@ blockset_boot_write(kword_t blockno,
 {
         if (block == 0 || blockno >= blockset_boot_total)
                 return -1;
+        if (blockset_write_addr != 0U)
+                return (int)kinit_call_blockset_io(blockset_write_addr, blockno,
+                    (void *)block);
         if (blockset_boot_state.members == 1U)
                 return dsk270_write_sector(blockset_boot_state.unit[0],
                     blockset_boot_state.base[0] + blockno, block);
-        if (blockset_write_addr == 0U)
-                return -1;
-        return (int)kinit_call_blockset_io(blockset_write_addr, blockno,
-            (void *)block);
+        return -1;
 }
 
 int
@@ -313,4 +321,94 @@ blockset_boot_direct(unsigned int *unitp, kword_t *basep,
         *blocksp = blockset_boot_state.blocks[0];
         *tailp = blockset_boot_state.tail_blocks;
         return 1;
+}
+
+
+int
+blockset_boot_member(unsigned int index, unsigned int *unitp, kword_t *basep,
+    kword_t *blocksp, kword_t *tailp)
+{
+        if (index >= blockset_boot_state.members || unitp == 0 || basep == 0 ||
+            blocksp == 0 || tailp == 0)
+                return 0;
+        *unitp = blockset_boot_state.unit[index];
+        *basep = blockset_boot_state.base[index];
+        *blocksp = blockset_boot_state.blocks[index];
+        *tailp = blockset_boot_state.tail_blocks;
+        return 1;
+}
+
+unsigned int
+blockset_boot_badmap_count(void)
+{
+        kword_t capacity;
+        kword_t count;
+
+        if (blockset_boot_badmap_blocks != 1UL ||
+            blockset_boot_read(blockset_boot_badmap_start,
+            blockset_badmap_scratch) != 0 ||
+            blockset_badmap_scratch[0] != BADMAP_MAGIC)
+                return 0U;
+        capacity = BLOCKSET_BLOCK_WORDS - BADMAP_HEADER_WORDS;
+        count = blockset_badmap_scratch[2];
+        if (count > capacity || count > 0777777UL)
+                return 0U;
+        return (unsigned int)count;
+}
+
+kword_t *
+blockset_boot_badmap_staged(void)
+{
+        return blockset_badmap_scratch + BADMAP_HEADER_WORDS;
+}
+
+int
+blockset_boot_badmap_load(kword_t *entries, unsigned int count)
+{
+        kword_t previous;
+        unsigned int copied;
+        unsigned int b;
+        unsigned int i;
+
+        if (entries == 0 || count == 0U ||
+            count != blockset_boot_badmap_count())
+                return -1;
+        copied = 0U;
+        previous = 0UL;
+        for (b = 0U; b < (unsigned int)blockset_boot_badmap_blocks &&
+            copied < count; ++b) {
+                unsigned int first;
+                unsigned int limit;
+
+                if (blockset_boot_read(blockset_boot_badmap_start + b,
+                    blockset_badmap_scratch) != 0)
+                        return -1;
+                first = b == 0U ? BADMAP_HEADER_WORDS : 0U;
+                limit = BLOCKSET_BLOCK_WORDS;
+                for (i = first; i < limit && copied < count; ++i) {
+                        kword_t word;
+                        kword_t source;
+                        kword_t replacement;
+                        unsigned int sm;
+                        unsigned int rm;
+
+                        word = blockset_badmap_scratch[i];
+                        source = (word >> 18) & 0777777UL;
+                        replacement = word & 0777777UL;
+                        sm = (unsigned int)((source >> BADMAP_LOC_MEMBER_SHIFT) &
+                            BADMAP_LOC_MEMBER_MASK);
+                        rm = (unsigned int)((replacement >> BADMAP_LOC_MEMBER_SHIFT) &
+                            BADMAP_LOC_MEMBER_MASK);
+                        if (sm >= blockset_boot_state.members ||
+                            rm >= blockset_boot_state.members ||
+                            (source & BADMAP_LOC_BLOCK_MASK) >= DSK270_SECTORS_PER_UNIT ||
+                            (replacement & BADMAP_LOC_BLOCK_MASK) >= DSK270_SECTORS_PER_UNIT ||
+                            source == replacement ||
+                            (copied != 0U && source <= previous))
+                                return -1;
+                        entries[copied++] = word;
+                        previous = source;
+                }
+        }
+        return copied == count ? 0 : -1;
 }

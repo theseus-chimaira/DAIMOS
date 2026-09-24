@@ -22,6 +22,7 @@
         .globl memfs_minit
         .globl dtfs_minit
         .globl blockset_minit
+        .globl badmap_minit
         .globl d6fs_minit
         .globl mfsdev_minit
         .globl cty_mres_package
@@ -51,6 +52,7 @@
         .globl dtfs_mres_package
 .endif
         .globl blockset_mres_package
+        .globl badmap_mres_package
         .globl d6fs_mres_package
         .globl __kinit_image_start
         .globl __minit_table_begin
@@ -100,6 +102,7 @@ __minit_table_begin:
         .word drm236_minit,,drm236_mres_package
 .endif
         .word blockset_minit,,blockset_mres_package
+        .word badmap_minit,,badmap_mres_package
 .if KINIT_FULL
         .word memfs_minit,,memfs_mres_package
         .word dtfs_minit,,dtfs_mres_package

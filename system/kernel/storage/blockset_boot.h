@@ -15,6 +15,11 @@ int blockset_boot_write(kword_t blockno,
 /* Return 1 for a validated directly addressable singleton. */
 int blockset_boot_direct(unsigned int *unitp, kword_t *basep,
     kword_t *blocksp, kword_t *tailp);
+int blockset_boot_member(unsigned int index, unsigned int *unitp,
+    kword_t *basep, kword_t *blocksp, kword_t *tailp);
+unsigned int blockset_boot_badmap_count(void);
+int blockset_boot_badmap_load(kword_t *entries, unsigned int count);
+kword_t *blockset_boot_badmap_staged(void);
 
 
 #endif

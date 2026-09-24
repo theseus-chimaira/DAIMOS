@@ -273,12 +273,14 @@ THE KERNEL FALLBACK IS REMOVED.  GENERIC VFS MOUNT PINNING FOR ACTIVE
 RESERVATIONS IS IMPLEMENTED.  FILESYSTEM-INDEPENDENT PER-MOUNT BACKING,
 MULTIPLE D6FS CONTEXTS, TYPED RESERVATION OWNERSHIP, CLEAN UNMOUNT, RO/RW
 REMOUNT, AND THE CONSERVATIVE V2 CRASH-RECOVERY CONTRACT ARE IMPLEMENTED.
-BAD-MEDIA REMAPPING MUST BE ONE COMMON STORAGE-SET MECHANISM FOR DISKS AND DRUMS
-BELOW D6FS, SWAP, AND LOGSTORE; DO NOT DUPLICATE MAPS IN DSK270/DRM236 OR IN
-FILESYSTEM CODE.  THE CURRENT BLOCKSET BOOT DECODER READS BADMAP LOCATION
-FIELDS BUT THE RUNTIME PATH DOES NOT LOAD OR APPLY THEM, AND BOTH PHYSICAL
-DRIVERS ONLY REPORT I/O FAILURE.  MULTI-MOUNT D6FS STATE MUST NOT ASSUME A
-SINGLE GLOBAL FILESYSTEM.
+BAD-MEDIA REMAPPING IS ONE COMMON STORAGE-SET MECHANISM BELOW D6FS, SWAP, AND
+LOGSTORE; DSK270/DRM236 DO NOT CARRY DUPLICATE MAPS.  THE OPTIONAL BADMAP MRES
+IS INSTALLED ONLY WHEN THE PERSISTENT MAP CONTAINS EXCEPTIONS.  IT USES ONE
+36-BIT SOURCE,,SPARE WORD PER EXCEPTION, KEEPS LOGICAL BLOCK NUMBERS STABLE,
+AND MAPS BOTH THE EXPORTED FILESYSTEM/LOGSTORE SPACE AND THE RAW SWAP TAIL.
+CLEAN MEDIA INSTALLS NO BADMAP MRES AND ALLOCATES NO EXCEPTION TABLE.  PHYSICAL
+DRIVERS CONTINUE TO OWN DEVICE-SPECIFIC RETRY/ERROR REPORTING.  MULTI-MOUNT
+D6FS STATE MUST NOT ASSUME A SINGLE GLOBAL FILESYSTEM.
 
 ## 5. DEVELOPMENT PRIORITY
 
@@ -854,22 +856,40 @@ FROZEN UNTIL IMPLEMENTATION.  MUSIC-SPECIFIC AUDIO POLICY REMAINS USERSPACE AND
 SIMULATOR/HARDWARE TIMING SUPPORT; DAIMOS DOES NOT ADD /DEV/MUSIC OR A POSIX
 REAL-TIME PRIORITY FRAMEWORK FOR THIS FEATURE.
 
-STATE: DESIGN FROZEN FOR THE PRE-USERLAND GATE; NOT YET IMPLEMENTED.
+STATE: IMPLEMENTED 2026-09-24.  `SYS_EXT_RTCTL` PROVIDES DISABLE/ENABLE/YIELD;
+DXR2 `RT_REQUIRED` PERFORMS ATOMIC SINGLE-SLOT ADMISSION BEFORE THE FIRST USER
+INSTRUCTION, AND CTY CTRL-\ PROVIDES FORCED OPERATOR REVOCATION.  THE REAL-SIMH
+RT, FORCED-REVOKE, AND RT-REQUIRED ADMISSION REGRESSIONS PASS.
 
-## 2026-09-23 D6FS patch freeze / BADMAP status
+## 2026-09-24 common BADMAP runtime mapper
 
-The cumulative D6FS kernel/storage work through crash recovery and maintenance/integrity
-is complete and is the patch-freeze baseline for the next storage item.
+The common storage-set BADMAP mapper is implemented and accepted.  Persistent
+metadata stores sorted 36-bit source,,spare exception words; each 18-bit locator
+contains a two-bit member index and a sixteen-bit member-local physical block.
+`d6bad` copies the source sector to a reserved physical spare before publishing
+the mapping, so an insertion never shifts an existing logical address.
 
-The common disk/drum BADMAP runtime mapper is NOT yet landed.  Experimental fixed-KCORE
-forms were rejected because they consumed essentially all remaining permanent headroom.
-The D6FS MRES itself remains 2367 words.  The later 2026-09-23 kernel optimization and
-resident decompressor work leaves 46 free permanent addresses in the multi-member profile.  The next implementation must preserve
-that baseline on clean media; the preferred direction is an optional/movable mapper whose
-exception table is allocated only when non-empty bad-media metadata is present.
+Runtime mapping lives in an optional movable `BADMAP` MRES.  Clean media do not
+install that package and do not allocate a runtime exception table.  A same-toolchain
+comparison against the RT/PI-fixed baseline gives the identical clean-media result:
+resident 16148 words, last permanent address 037503, 188 addresses free below
+040000.  The table itself uses one managed-core word per active exception.
 
-Do not describe BADMAP as implemented until the clean-media full/32K size gates and
-badmap-present DSK/DRM translation regressions pass.
+The production mapper regression passes with both DSK270 and DRM236 geometries and
+includes the unified raw-tail namespace used by process swap.  A real PDP-6 SIMH
+root regression copies both D6FS superblocks to BADMAP spares, destroys the original
+physical sectors, and still reaches LOGIN with `BADMAP LOADED` and `D6FS LOADED`.
+Host maintenance regressions cover D6FS, logstore, pack/fsck, and raw swap-tail
+geometry.
+
+During integration, `d6swap --resize-tail` was found to consume the physical spare
+reserve because it recomputed usable blocks as `sectors-base-new_tail`.  It now
+preserves each member's existing `sectors-base-usable-old_tail` spare reserve, so
+stable physical BADMAP locators remain outside D6FS and swap after a resize.
+
+Online retirement policy remains intentionally conservative: device-specific retry
+and recovered-data handling belong to DSK270/DRM236; an unrecoverable read is still
+data loss rather than grounds for manufacturing replacement contents.
 
 
 ## 2026-09-23 ROOT login, module move, and D6LZ kernel decoder
