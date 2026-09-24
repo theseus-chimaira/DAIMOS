@@ -1,12 +1,12 @@
 ## 2026-09-24 compressed Stage1 boot and fixed D6LZ decoder
 
-- The PDP-6 standalone loaders now share one `system/stand/pdp6/common/decompressor.inc`; the complete memory D6LZ36 decoder is 61 words and is installed at fixed address `000060`.
-- KCORE links that same source first, so the real `d6lz36_decode` symbol is physically `000060`; there is no trampoline and no second resident memory-decoder copy.  The VFS streaming frontend remains separate.
+- The PDP-6 standalone loaders now share one `system/stand/pdp6/common/decompressor.inc`; the resumable memory/VFS D6LZ36 core is 57 words including the memory wrapper and is installed at fixed address `000060`.
+- KCORE links that same source first, so the real `d6lz36_decode` symbol is physically `000060`; there is no trampoline and no second resident token decoder.  The VFS path is now a small eight-word refill frontend that resumes the same low-core token engine.
 - The production DSK boot stream is compressed.  Its three-word Stage1 header is DAIMON magic, `uncompressed_words,,entry_offset`, and `compressed_words,,0`, followed by the D6LZ36 payload.  Stage1 stages the compressed words immediately above the final uncompressed image, expands directly to `030000`, requires exact compressed-word consumption, and then reuses the dead staging range as the KINIT stack.
 - The host `pdp10-tools/d6lz -t` mode compresses the build system's one-octal-word-per-line stream without an intermediate binary-container conversion.
 - The current full-profile image is 23202 raw payload words and 21756 compressed words (about 6.2 percent smaller); this ratio is image-specific, not an ABI promise.
-- The standalone shrink sweep keeps every loader within the requested baseline+50-word stretch ceiling: DSK 351 words (+49 from 302), DTC 96 (+40 from 56), MTC 93 (+39 from 54), PTR 122 (+45 from 77).  DTC/MTC/PTR install the same fixed decoder while retaining their existing media payload contracts.
-- Permanent kernel memory is unchanged: KCORE remains 10034 words, with 188 single-root and 147 multi-root free addresses below `040000`.
+- The standalone shrink sweep keeps every loader within the requested baseline+50-word stretch ceiling: DSK 347 words (+45 from 302), DTC 92 (+36 from 56), MTC 88 (+34 from 54), PTR 118 (+41 from 77).  DTC/MTC/PTR install the same fixed decoder while retaining their existing media payload contracts.
+- The final fold/shrink sweep reduces permanent KCORE to 10006 words, 28 below the 10034-word compressed-boot baseline, with 216 single-root and 175 multi-root free addresses below `040000`.
 - Real SIMH acceptance on the compressed DSK path passes `INIT -> LOGIN -> DSH -> EXIT -> LOGIN`; password/no-echo, wrong-password rejection, successful login, home-directory setup, and UID/GID drop also pass.
 
 ## 2026-09-24 RT-required executable admission and PI context fix
@@ -17,7 +17,7 @@
 - Fixed the pre-existing scheduler multiprocess corruption: PI-context `proc_wakeup_event()` called `proc_runq_add()` without preserving AC0/AC5/AC6. The PI boundary now preserves them.
 - The real-SIMH multiprocess regression is green. Its former completion-order/short-loop round-robin checks were nondeterministic host-timing assumptions; deterministic nice and equal-priority selection remain covered by `mm-v1`.
 - Real-SIMH `daimos-rt-required-v1` verifies two successful admitted children execute, a concurrent second RT-required RUN is rejected before execution, and admission succeeds again after owner teardown.
-- Current full-profile size: KCORE 10034 words, CTY MRES 62, multi-root last 037554, leaving 147 permanent addresses below 040000.
+- Current full-profile size: KCORE 10006 words, CTY MRES 62, multi-root last 037520, leaving 175 permanent addresses below 040000.
 
 ## 2026-09-24 minimal real-time scheduler
 
@@ -72,21 +72,21 @@ ACCOUNTED SEPARATELY.  KCC IS THE ACCEPTANCE BUILD.
 CURRENT MEASUREMENT (2026-09-24, CURRENT RT_REQUIRED/BADMAP-CAPABLE TREE,
 REBUILT WITH THE SUPPLIED KCC/DAS/DLINK TOOLCHAIN):
 
-- KCORE: 10034 WORDS.
+- KCORE: 10006 WORDS.
 - CTY MRES: 62 WORDS.
 - D6FS MRES: 2338 WORDS.
 - DTFS/TSFS MRES: 2041 WORDS.
-- KCORE+MRES: 16148 WORDS.
-- SINGLE-MEMBER ROOT: PERMANENT_LAST 037503, 188 FREE WORD ADDRESSES BELOW
+- KCORE+MRES: 16120 WORDS.
+- SINGLE-MEMBER ROOT: PERMANENT_LAST 037447, 216 FREE WORD ADDRESSES BELOW
   040000.
-- ACTIVE MULTI-MEMBER DSK ROOT: MULTI_LAST 037554, 147 FREE WORD ADDRESSES
+- ACTIVE MULTI-MEMBER DSK ROOT: MULTI_LAST 037520, 175 FREE WORD ADDRESSES
   BELOW 040000.
 - ROOT BLOCKSET PACKAGE: 41 WORDS; A SINGLE-MEMBER ROOT BYPASSES IT.
 
 THE SAME-TOOLCHAIN CONSOLIDATED PRE-RT BASELINE WAS KCORE 9921, CTY MRES 56,
 AND 266 FREE MULTI-ROOT ADDRESSES.  THE INTERMEDIATE RT-ONLY TREE MEASURED
 KCORE 9980 AND 201 FREE MULTI-ROOT ADDRESSES.  THOSE FIGURES ARE HISTORICAL
-CHECKPOINTS, NOT THE CURRENT SIZE.  THE CURRENT 147-WORD MARGIN INCLUDES THE
+CHECKPOINTS, NOT THE CURRENT SIZE.  THE CURRENT 175-WORD MARGIN INCLUDES THE
 RT_REQUIRED ADMISSION/PI FIX AND THE BADMAP-CAPABLE CLEAN-MEDIA TREE.  BADMAP
 ITSELF IS OPTIONAL MOVABLE MRES AND ALLOCATES ITS EXCEPTION ARRAY ONLY WHEN
 PERSISTENT REMAPS EXIST.
@@ -101,7 +101,7 @@ SECOND ARCHITECTURAL LIMIT.  `MAKE PERMANENT-SIZE` MUST BE RUN AFTER MATERIAL
 KERNEL CHANGES; IT REPORTS BOTH SINGLE- AND MULTI-MEMBER ROOT HIGH-WATER MARKS
 AND FAILS IF EITHER REACHES OR CROSSES 040000.
 
-STATE: WITHIN THE HARD LIMIT WITH 147 WORDS OF CURRENT MULTI-MEMBER PERMANENT
+STATE: WITHIN THE HARD LIMIT WITH 175 WORDS OF CURRENT MULTI-MEMBER PERMANENT
 HEADROOM.  RESIDENT GROWTH MUST STILL BE JUSTIFIED AND SIZE-REGRESSION TESTING
 REMAINS MANDATORY.  THIS LIMIT IS SEPARATE FROM THE TRANSIENT KINIT IMAGE LIMIT
 ENFORCED BY THE LOWMEM BOOT PROFILE.
@@ -718,10 +718,10 @@ CURRENT-STATE AUTHORITY.
 
 THE STANDARD PETIT PCLK ENABLEMENT, NORMAL KCC USERSPACE CONVERSION, AND
 BOUNDED RUN/EXEC STARTUP ABI AND MINIMAL TTY LINE DISCIPLINE ARE IMPLEMENTED.
-THE CURRENT DEFAULT SINGLE-DISK BUILD MEASURES 16148 WORDS OF INSTALLED
-KCORE+MRES WITH PERMANENT_LAST 037503, LEAVING 188 PERMANENT WORD ADDRESSES
+THE CURRENT DEFAULT SINGLE-DISK BUILD MEASURES 16120 WORDS OF INSTALLED
+KCORE+MRES WITH PERMANENT_LAST 037447, LEAVING 216 PERMANENT WORD ADDRESSES
 BELOW 040000.  AN ACTIVE MULTI-MEMBER DSK ROOT ADDS THE 41-WORD ROOT BLOCKSET
-PACKAGE FOR 16189 WORDS AND PERMANENT_LAST 037554, LEAVING 147 ADDRESSES.
+PACKAGE FOR 16161 WORDS AND MULTI_LAST 037520, LEAVING 175 ADDRESSES.
 KEEP 14288 WORDS AS AN ADVISORY OPTIMIZATION GOAL
 DURING BRING-UP, BUT KEEP THE BELOW-16K ARCHITECTURAL LIMIT HARD.  KEEP THE
 PASSING DCS0/GE0 SCRIPTED-TELNET LOGIN REGRESSION; COMPLETE CTY INPUT
@@ -754,7 +754,7 @@ MEMORY; (4) COMPLETE THE MEASURED DSK/DRM MECHANICAL SCHEDULING PASS; (5)
 COMPLETE RUNTIME MOVABLE-MODULE LOAD/RELOCATION/BIND/REFERENCE/UNLOAD; (6)
 COMPLETE LOGSTORE NORMAL-RUNTIME/DRAIN OPERATION AND MOVE THE REMAINING
 OPTIONAL-MOUNT/SWAP/LOGSTORE BOOT POLICY INTO INIT//CONFIG.  KEEP THE CURRENT
-147-WORD PERMANENT MARGIN AND ALL D6FS/BADMAP/RT REGRESSIONS AS HARD GATES.
+175-WORD PERMANENT MARGIN AND ALL D6FS/BADMAP/RT REGRESSIONS AS HARD GATES.
 ONLY AFTER THIS COMPLETE PRE-USERLAND GATE IS CLOSED SHOULD SUBSTANTIAL DSH
 AND SELF-HOSTING WORK RESUME.
 
@@ -876,9 +876,11 @@ the mapping, so an insertion never shifts an existing logical address.
 
 Runtime mapping lives in an optional movable `BADMAP` MRES.  Clean media do not
 install that package and do not allocate a runtime exception table.  A same-toolchain
-comparison against the RT/PI-fixed baseline gives the identical clean-media result:
-resident 16148 words, last permanent address 037503, 188 addresses free below
-040000.  The table itself uses one managed-core word per active exception.
+landing-time comparison against the RT/PI-fixed baseline gave the identical
+clean-media result: resident 16148 words, last permanent address 037503, 188
+addresses free below 040000.  This is a historical BADMAP landing checkpoint;
+the current folded-D6LZ size is recorded in section 2 above.  The table itself
+uses one managed-core word per active exception.
 
 The production mapper regression passes with both DSK270 and DRM236 geometries and
 includes the unified raw-tail namespace used by process swap.  A real PDP-6 SIMH
@@ -919,7 +921,7 @@ three-word header is followed by a variable D6LZ payload and the ordinary reloca
 bitmap.  The image is decompressed directly into process memory before normal relocation.
 
 Native `/SYSTEM/EXEC/D6LZ -X` and host `d6lz -x/-X` produce the flagged executable
-format.  Native D6LZ uses a bounded 258-word history/lookahead ring plus one 37-word
+format.  Native D6LZ uses a bounded 257-word history/lookahead ring plus one 37-word
 output group and does not buffer the whole input.  Host and target regressions independently
 validate the payload and relocation map; real PDP-6 SIMH acceptance compresses a native
 program, executes the compressed result, and reaches INIT's respawned LOGIN.

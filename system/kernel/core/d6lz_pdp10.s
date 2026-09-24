@@ -1,116 +1,86 @@
-; Allocation-free D6LZ36 VFS streaming decoder for PDP-6/PDP-10.
+; Allocation-free D6LZ36 VFS streaming frontend for PDP-6/PDP-10.
 ;
-; The memory decoder d6lz36_decode is the common fixed low-core routine from
-; system/stand/pdp6/common/decompressor.inc.  It is linked first in KCORE at
-; 000060 and installed at the same address by every PDP-6 Stage1.
+; The complete token engine is the fixed low-core d6lz36_decode_core from
+; system/stand/pdp6/common/decompressor.inc.  VFS only refills an eight-word
+; source window and preserves the resumable decoder state around vfs_read_words.
 ;
 ; VFS entry:
 ;   AC1=vnode, AC2=file_offset, AC3=compressed_words,
 ;   AC4=dst_words,,dst_address.
 ;
-; VFS input uses one stack scratch word, so compressed EXEC loading allocates
-; no compressed-input buffer.
+; Eight input words are temporary stack storage, not permanent kernel RAM.
+; Compared with the previous one-word frontend this also reduces VFS calls by
+; up to 8x while keeping the memory/Stage1 decoder free of per-word calls.
 
         .text
         .globl d6lz36_decode_vfs
+        .globl d6lz36_decode_core
         .globl vfs_read_words
 
+        .equ D6LZ_VFS_WINDOW,010
+        .equ D6LZ_VFS_LOCALS,012         ; vnode, offset, eight-word window
+
 d6lz36_decode_vfs:
-        push    17,10
-        push    17,11
-        push    17,13
-        push    17,15
-        push    17,1                    ; local -4: vnode
-        push    17,[0]                  ; local -3: one-word input scratch
-        push    17,2                    ; local -2: current file offset
-        push    17,[0]                  ; local -1: control word
-        hlrz    11,4                   ; output words remaining
-        hrrz    10,4                   ; current output address
-        push    17,10                   ; local  0: output base
-        move    13,3                   ; compressed words remaining
-        jumpe   13,d6lz_error
-        jumpe   11,d6lz_error
-        jumpe   10,d6lz_error
-        setz    15,                    ; zero means load control
+        ; d6lz36_decode_core clobbers AC10/AC11.  AC12..AC15 keep VFS state
+        ; across vfs_read_words(), which follows the normal C ABI.
+        ; Reserve saved-AC slots plus locals in one step, then BLT AC10..AC15
+        ; into the bottom six words.  This is five resident words smaller than
+        ; six PUSH/POP pairs plus a separate local allocation.
+        add     17,[020,,020]
+        movei   0,-017(17)
+        hrli    0,010
+        blt     0,-012(17)
+        movem   1,-011(17)              ; vnode
+        movem   2,-010(17)              ; current file offset
+        hlrz    13,4                    ; output words remaining
+        hrrz    12,4                    ; current output address
+        move    14,12                   ; output base
+        move    15,3                    ; compressed words not yet read
+        jumpe   13,d6lz_vfs_error
+        jumpe   12,d6lz_vfs_error
+        setz    7,                      ; zero => load a control word
 
-d6lz_vfs_token_loop:
-        jumpn   15,d6lz_vfs_have_control
-        pushj   17,d6lz_vfs_getword
-        movem   5,-1(17)               ; control word
-        movsi   15,0400000             ; control bit 35
-
-d6lz_vfs_have_control:
-        pushj   17,d6lz_vfs_getword
-
-        move    0,-1(17)               ; control word
-        and     0,15
-        jumpe   0,d6lz_literal
-
-        move    0,5                    ; descriptor bits 14..35 must be zero
-        lsh     0,-016
-        jumpn   0,d6lz_error
-
-        move    0,5                    ; length = next7 + 3
-        lsh     0,-7
-        andi    0,0177
-        addi    0,3
-
-        andi    5,0177                 ; match source = dst - distance
-        addi    5,1
-        movn    5,5
-        add     5,10
-        camge   5,0(17)                ; output base
-        jrst    d6lz_error
-        camge   11,0
-        jrst    d6lz_error
-        sub     11,0
-
-d6lz_match_loop:
-        move    4,0(5)
-        movem   4,0(10)
-        addi    5,1
-        addi    10,1
-        sojg    0,d6lz_match_loop
-        jrst    d6lz_token_done
-
-d6lz_literal:
-        movem   5,0(10)
-        addi    10,1
-        subi    11,1
-
-d6lz_token_done:
-        lsh     15,-1
-        jumpn   11,d6lz_vfs_token_loop
-        jumpn   13,d6lz_error          ; exact compressed payload required
-
-d6lz_success:
-        setz    1,
-        jrst    d6lz_return
-
-; Return next compressed VFS word in AC5.  Helper return is at (17), so the
-; output-base/control/offset/scratch/vnode locals are -1..-5(17).
-d6lz_vfs_getword:
-        sojl    13,d6lz_vfs_getword_fail
-        move    1,-5(17)               ; vnode
-        move    2,-3(17)               ; file offset
-        movei   3,-4(17)               ; scratch word
-        movei   4,1
+d6lz_vfs_refill:
+        jumpe   15,d6lz_vfs_error       ; core requested data past EOF
+        move    10,6                    ; preserve core state over VFS call
+        move    11,7
+        move    1,-011(17)              ; vnode
+        move    2,-010(17)              ; file offset
+        movei   3,-07(17)               ; eight-word input window
+        movei   4,D6LZ_VFS_WINDOW
+        caige   15,D6LZ_VFS_WINDOW
+        move    4,15                    ; final short window
         pushj   17,vfs_read_words
-        caie    1,1
-        jrst    d6lz_vfs_getword_fail
-        move    5,-4(17)
-        aos     -3(17)                  ; file offset++
-        popj    17,
-d6lz_vfs_getword_fail:
-        pop     17,0                   ; discard helper return PC
-        jrst    d6lz_error
+        move    6,10
+        move    7,11
+        jumpe   1,d6lz_vfs_error
+        sub     15,1                    ; words still unread from file
+        addm    1,-010(17)              ; advance file offset
 
-d6lz_error:
+        move    4,1                    ; source-window words returned
+        movei   3,-07(17)
+        move    1,12                   ; restore resumable core state
+        move    2,13
+        move    5,14
+        pushj   17,d6lz36_decode_core
+        move    12,1
+        move    13,2
+        jumpe   0,d6lz_vfs_success
+        jumpl   0,d6lz_vfs_error
+        jrst    d6lz_vfs_refill         ; +1 = NEED_INPUT
+
+d6lz_vfs_success:
+        jumpn   4,d6lz_vfs_error        ; exact compressed payload required
+        jumpn   15,d6lz_vfs_error
+        setz    1,
+        jrst    d6lz_vfs_return
+
+d6lz_vfs_error:
         seto    1,
-d6lz_return:
-        sub     17,[5,,5]              ; discard five locals
-        pop     17,15
-        pop     17,13
-        pop     17,11
-        pop     17,10
+d6lz_vfs_return:
+        movei   0,-017(17)
+        hrl     0,0
+        hrri    0,010
+        blt     0,015                   ; restore AC10..AC15
+        sub     17,[020,,020]
         popj    17,

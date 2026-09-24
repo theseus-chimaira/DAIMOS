@@ -392,7 +392,6 @@ stage1_handoff:
         blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
 
         ; Expand the opaque boot image into its normal KINIT load address.
-        ; The fifth C ABI argument (src_usedp) is zero in the caller slot.
         movei 01,030000
         move 02,kinit_stack_base
         subi 02,030000

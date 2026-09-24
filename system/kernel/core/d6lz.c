@@ -9,7 +9,7 @@
 
 int
 d6lz36_decode(kword_t *dst, unsigned int dst_words,
-    const kword_t *src, unsigned int src_words, unsigned int *src_usedp)
+    const kword_t *src, unsigned int src_words)
 {
         kword_t control;
         kword_t control_mask;
@@ -20,8 +20,9 @@ d6lz36_decode(kword_t *dst, unsigned int dst_words,
         unsigned int length;
         unsigned int i;
 
-        if ((dst == 0 && dst_words != 0U) ||
-            (src == 0 && src_words != 0U))
+        if (dst_words == 0U)
+                return 0;
+        if (dst == 0 || src == 0)
                 return -1;
 
         sp = 0U;
@@ -56,8 +57,6 @@ d6lz36_decode(kword_t *dst, unsigned int dst_words,
                 }
                 control_mask >>= 1;
         }
-        if (src_usedp != 0)
-                *src_usedp = sp;
         return 0;
 }
 #endif

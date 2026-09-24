@@ -46,7 +46,9 @@ read_wait:
         ; At least one opaque image word must have been transferred.
         caie 01,040000
         jrst mtc_install_decoder
-        jrst bad_tape
+bad_tape:
+        movei 01,02
+        jrst halt_stage1
 
 mtc_install_decoder:
         movei 01,d6lz_image_start
@@ -57,10 +59,6 @@ mtc_install_decoder:
 
 read_error:
         movei 01,01
-        jrst halt_stage1
-
-bad_tape:
-        movei 01,02
 halt_stage1:
         halt .
         jrst halt_stage1
