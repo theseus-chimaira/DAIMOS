@@ -166,7 +166,7 @@ dsys_dtc_read_block:    move 4,3
                         uuo 077,0(1)
                         popj 17,
 
-; Mount userspace-validated TSFS runtime state (two words).
+; Mount userspace-validated TSFS runtime state (three words).
 ; C: AC1=state, AC2=target, AC3=flags.
 dsys_tsfs_mount:        move 4,3
                         move 3,2

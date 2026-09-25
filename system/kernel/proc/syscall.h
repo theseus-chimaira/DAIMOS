@@ -70,7 +70,7 @@
 #define SYS_TSFS_MOUNT_WORDS         20U
 #define SYS_TSFS_FILE_LOC            16U /* packed FILE runtime state */
 #define SYS_TSFS_FILE_SHAPE          17U /* packed EXTENT/member-map state */
-#define SYS_TSFS_EXTENT_LOC          18U /* reserved */
+#define SYS_TSFS_EXTENT_LOC          18U /* packed EXTENT runtime state */
 #define SYS_TSFS_EXTENT_SHAPE        19U /* reserved */
 
 /* Compact process hierarchy/control operations for UUO 077. */

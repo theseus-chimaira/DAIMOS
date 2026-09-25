@@ -35,6 +35,7 @@ tsfs_mres_vector:
 ; cannot be both DTFS and TSFS.  tsfs_file_shape supplies the second word:
 ;   dtfs_media[slot]       (DTC_UNIT << 15 | RECORD_COUNT),,START_BLOCK
 ;   tsfs_file_shape[slot]  packed logical->physical DTC map
+;   tsfs_extent_media[slot] (DTC_UNIT << 15 | RECORD_COUNT),,START_BLOCK
 ;
 ; Providers are serialized around fs_block_workspace.  Therefore metadata
 ; records can be consumed directly from that workspace until the next DTC
@@ -42,44 +43,62 @@ tsfs_mres_vector:
 ; time.  Media checksum/structural validation remains in transient userspace.
         .globl  dtfs_media
         .globl  tsfs_file_shape
+        .globl  tsfs_extent_media
         .globl  fs_block_workspace
         .globl  dtfs_dtc_read
         .globl  tsfs_file_record
         .globl  tsfs_node_record
 
 ; kword_t *tsfs_file_record(vnode, index)
-; Return pointer into fs_block_workspace, or -1.
+; kword_t *tsfs_extent_record(vnode, index)
+; Both fixed-record tables use the same locator format.  AC3 selects the
+; per-mount locator array; AC6 packs BLOCK_SHIFT,,SLOT_MASK.  Record-word
+; shift is 7 + BLOCK_SHIFT because every DTC block contains 128 words.
 tsfs_file_record:
+        movei   3,dtfs_media
+        move    6,[-4,,017]            ; 16 eight-word records per block
+        jrst    tsfs_table_record
+
+tsfs_extent_record:
+        movei   3,tsfs_extent_media
+        move    6,[-5,,037]            ; 32 four-word records per block
+
+tsfs_table_record:
         push    17,010
         move    010,2                  ; stable record index
-        hlrz    4,1                    ; provider,,kind/mount
-        lsh     4,-6                   ; mount id into low six bits
+        hlrz    4,1
+        lsh     4,-6
         andi    4,077
-        subi    4,1                    ; mount ids are one based
-        hlrz    5,dtfs_media(4)
+        subi    4,1
+        add     3,4                    ; selected mount locator
+        hlrz    5,(3)
         andi    5,077777               ; 15-bit record count
-        caml    010,5                  ; index >= record count
-        jrst    tsfs_file_record_bad
+        caml    010,5
+        jrst    tsfs_table_record_bad
 
         move    2,010
-        lsh     2,-4                   ; table block = index / 16
-        hrrz    5,dtfs_media(4)
-        add     2,5                    ; physical DECtape block
-        hlrz    1,dtfs_media(4)
-        lsh     1,-017                 ; physical DTC unit (15 decimal)
+        hlre    7,6                    ; negative log2(records/block)
+        lsh     2,0(7)
+        hrrz    5,(3)
+        add     2,5                    ; physical table block
+        hlrz    1,(3)
+        lsh     1,-017                 ; physical DTC unit
         movei   3,fs_block_workspace
         pushj   17,dtfs_dtc_read
-        jumpn   1,tsfs_file_record_done
+        jumpn   1,tsfs_table_record_done
 
         move    1,010
-        andi    1,017
-        lsh     1,3                    ; slot * eight words
+        hrrz    7,6
+        and     1,7                    ; slot inside table block
+        hlre    7,6
+        addi    7,7                    ; log2(record words)
+        lsh     1,0(7)
         addi    1,fs_block_workspace
-        jrst    tsfs_file_record_done
+        jrst    tsfs_table_record_done
 
-tsfs_file_record_bad:
+tsfs_table_record_bad:
         hrroi   1,1
-tsfs_file_record_done:
+tsfs_table_record_done:
         pop     17,010
         popj    17,
 
@@ -302,105 +321,218 @@ tsfs_readdir_pop:
         popj    17,
 ; int tsfs_read_words(vnode node, unsigned int off, kword_t *buf,
 ;     unsigned int nwords)
-; V1 mount validation guarantees exactly one contiguous tape-local extent for
-; every nonempty regular file.  FILE_AUX caches that extent's logical
-; member,,start-block; transient userspace verifies the cache against the
-; checksummed canonical extent table before handing the mount to the kernel.
+; TSFS V1 regular data uses fixed 0400-word restart extents. The transient
+; validator guarantees exact logical coverage. Each extent is either STORED
+; (flag 0, one/two physical blocks) or D6LZ (flag 1, exactly one physical
+; block with a two-word restart header). Direct restart indexing avoids a
+; resident extent walk. D6LZ output is transient managed core and is freed
+; before return.
+        .globl  mm_alloc
+        .globl  mm_free
+        .globl  d6lz36_decode_core
+        .equ    TSFS_EXT_STORED,0
+        .equ    TSFS_EXT_D6LZ,1
+        .equ    TSFS_RESTART_WORDS,0400
+        .equ    TSFS_DECODE_OWNER,011
+
 tsfs_read_words:
         jumpe   4,pdp10_ret_zero
-        add     17,[5,,5]
-        movei   0,-4(17)
-        hrli    0,010
-        blt     0,(17)                  ; save AC10..AC14
-        move    010,3                   ; destination base
-        move    011,2                   ; file word offset
-        move    012,4                   ; requested count
-        move    013,1                   ; vnode until mount decode
-
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        push    17,014
+        push    17,015
+        push    17,016
+        move    010,3
+        move    011,2
+        move    012,4
+        move    013,1
         pushj   17,tsfs_node_record
-        caig    1,1                    ; pointer must exceed synthetic root
-        jrst    tsfs_read_words_fail
-
+        caig    1,1
+        jrst    tsfs_read_words_fail0
         hrrz    5,(1)
-        caie    5,2                    ; regular file only
-        jrst    tsfs_read_words_fail
-        move    5,5(1)                 ; file size
+        caie    5,2
+        jrst    tsfs_read_words_fail0
+        move    5,5(1)
         caml    011,5
-        jrst    tsfs_read_words_eof
+        jrst    tsfs_read_words_eof0
         sub     5,011
         camle   012,5
-        move    012,5                  ; total=min(request,available)
-        move    6,7(1)                 ; inline member,,start block
-
+        move    012,5
+        move    6,6(1)
+        hlrz    014,6
+        hrrz    015,6
+        jumpe   015,tsfs_read_words_fail0
+        push    17,012                  ; total clipped count
         hlrz    4,013
         lsh     4,-6
         andi    4,077
         subi    4,1
-        move    013,tsfs_file_shape(4) ; logical->physical DTC map
+        move    016,tsfs_file_shape(4)
 
-        hlrz    5,6                    ; logical member
+tsfs_read_restart:
+        move    2,011
+        lsh     2,-010                  ; restart number = offset / 0400
+        caml    2,015
+        jrst    tsfs_read_words_fail
+        add     2,014
+        move    1,013
+        pushj   17,tsfs_extent_record
+        jumpl   1,tsfs_read_words_fail
+        move    6,1(1)
+        hlrz    5,6
         imuli   5,3
         movn    5,5
-        lsh     013,0(5)
-        andi    013,7                  ; physical DTC unit
-        hrlz    013,013                ; physical unit,,0
-        hrr     013,6                  ; physical unit,,extent start block
-        move    5,011
-        lsh     5,-7
-        add     013,5                  ; first physical data block
-        andi    011,0177               ; first-block word offset
-        move    014,012                ; return count after clipping
+        move    7,016
+        lsh     7,0(5)
+        andi    7,7
+        hrlz    7,7
+        hrr     7,6
+        move    6,2(1)
+        hlrz    5,6
+        cain    5,TSFS_EXT_D6LZ
+        jrst    tsfs_read_d6lz
+        jumpn   5,tsfs_read_words_fail
 
-tsfs_read_words_loop:
-        hlrz    1,013
-        hrrz    2,013
+tsfs_read_stored:
+        move    5,011
+        andi    5,0377
+        move    6,5
+        lsh     6,-7
+        add     7,6
+        andi    5,0177
+        hlrz    1,7
+        hrrz    2,7
         movei   3,fs_block_workspace
         pushj   17,dtfs_dtc_read
         jumpn   1,tsfs_read_words_fail
+        move    5,011
+        andi    5,0177
         movei   6,0200
-        sub     6,011                  ; available in block
+        sub     6,5
         camle   6,012
-        move    6,012                  ; take=min(block room, remaining)
+        move    6,012
+        movei   7,0400
+        move    1,011
+        andi    1,0377
+        sub     7,1
+        camle   6,7
+        move    6,7
         movei   1,fs_block_workspace
-        add     1,011
+        add     1,5
         move    2,010
         move    3,6
         pushj   17,fs_copy_words
-        add     010,6                  ; advance destination
-        sub     012,6                  ; consume request
-        jumpe   012,tsfs_read_words_done
-        setz    011,
-        aos     013                    ; next block, preserve unit in LH
-        jrst    tsfs_read_words_loop
+        add     010,6
+        add     011,6
+        sub     012,6
+        jumpn   012,tsfs_read_restart
+        jrst    tsfs_read_words_done
+
+tsfs_read_d6lz:
+        hrrz    6,6
+        caie    6,1
+        jrst    tsfs_read_words_fail
+        hlrz    1,7
+        hrrz    2,7
+        movei   3,fs_block_workspace
+        pushj   17,dtfs_dtc_read
+        jumpn   1,tsfs_read_words_fail
+        move    6,fs_block_workspace
+        jumpe   6,tsfs_read_words_fail
+        caile   6,TSFS_RESTART_WORDS
+        jrst    tsfs_read_words_fail
+        move    7,fs_block_workspace+1
+        jumpe   7,tsfs_read_words_fail
+        caile   7,0176
+        jrst    tsfs_read_words_fail
+        push    17,[0]
+        movei   5,(17)
+        push    17,5
+        move    1,6
+        movei   2,3
+        movei   3,TSFS_DECODE_OWNER
+        setz    4,
+        pushj   17,mm_alloc
+        sub     17,[1,,1]
+        jumpn   1,tsfs_read_d6lz_drop
+        ; The fixed D6LZ core uses AC10..AC15 as resumable state.  Save our
+        ; read cursor/state as one six-word BLT block around the call.
+        add     17,[6,,6]
+        movei   0,-5(17)
+        hrli    0,010
+        blt     0,(17)
+        move    12,-6(17)
+        move    13,fs_block_workspace
+        move    14,12
+        movei   3,fs_block_workspace+2
+        move    4,fs_block_workspace+1
+        setz    11,
+        pushj   17,d6lz36_decode_core
+        move    7,0
+        movei   0,-5(17)
+        hrl     0,0
+        hrri    0,010
+        blt     0,015
+        sub     17,[6,,6]
+        jumpn   7,tsfs_read_d6lz_free
+        jumpn   4,tsfs_read_d6lz_free
+        move    5,011
+        andi    5,0377
+        move    6,fs_block_workspace
+        sub     6,5
+        camle   6,012
+        move    6,012
+        move    1,(17)
+        add     1,5
+        move    2,010
+        move    3,6
+        pushj   17,fs_copy_words
+        add     010,6
+        add     011,6
+        sub     012,6
+        move    1,(17)
+        movei   2,3
+        movei   3,TSFS_DECODE_OWNER
+        pushj   17,mm_free
+        sub     17,[1,,1]
+        jumpn   1,tsfs_read_words_fail
+        jumpn   012,tsfs_read_restart
+        jrst    tsfs_read_words_done
+
+tsfs_read_d6lz_free:
+        move    1,(17)
+        movei   2,3
+        movei   3,TSFS_DECODE_OWNER
+        pushj   17,mm_free
+tsfs_read_d6lz_drop:
+        sub     17,[1,,1]
+        jrst    tsfs_read_words_fail
 
 tsfs_read_words_done:
-        move    1,014
-        jrst    tsfs_read_words_restore
-
-tsfs_read_words_eof:
-        setz    1,
+        move    1,(17)
+        sub     17,[1,,1]
         jrst    tsfs_read_words_restore
 
 tsfs_read_words_fail:
+        sub     17,[1,,1]
+tsfs_read_words_fail0:
         hrroi   1,1
+        jrst    tsfs_read_words_restore
+
+tsfs_read_words_eof0:
+        setz    1,
 
 tsfs_read_words_restore:
-        movei   0,010
-        hrli    0,-4(17)
-        blt     0,014
-        sub     17,[5,,5]
+        pop     17,016
+        pop     17,015
+        pop     17,014
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
         popj    17,
-
-; ---------------------------------------------------------------------------
-; Mount and lookup policy.  The userspace handoff has already been fully
-; validated; the kernel receives two packed runtime words.  Re-check only the
-; physical file-table address that resident metadata reads can dereference.
-; ---------------------------------------------------------------------------
-        .globl  vfs_mount
-        .globl  vfs_name_valid
-        .globl  fs_words_equal
-        .globl  tsfs_mount_set
-        .globl  tsfs_lookup
 
 tsfs_mount_set:
         caie    3,1                    ; VFS_MOUNT_RDONLY
@@ -408,7 +540,7 @@ tsfs_mount_set:
         push    17,010
         push    17,011
         push    17,012
-        move    010,1                  ; two-word metadata handoff
+        move    010,1                  ; three-word metadata handoff
         move    011,2                  ; mount target
         move    012,4                  ; returned root pointer
 
@@ -427,10 +559,25 @@ tsfs_mount_set:
         jrst    tsfs_mount_pop_bad
         caile   4,01101                ; last physical DECtape block
         jrst    tsfs_mount_pop_bad
+        move    5,2(010)               ; packed EXTENT state or zero
+        jumpe   5,tsfs_mount_do
+        hlrz    4,5
+        move    7,4
+        andi    7,077777               ; extent record count
+        jumpe   7,tsfs_mount_pop_bad
+        lsh     4,-017                 ; DTC unit
+        caile   4,7
+        jrst    tsfs_mount_pop_bad
+        hrrz    4,5
+        caige   4,3
+        jrst    tsfs_mount_pop_bad
+        caile   4,01101
+        jrst    tsfs_mount_pop_bad
         jrst    tsfs_mount_do
 
 tsfs_mount_empty:
         jumpn   6,tsfs_mount_pop_bad
+        jumpn   2(010),tsfs_mount_pop_bad
 
 tsfs_mount_do:
         push    17,0                   ; root scratch
@@ -453,6 +600,8 @@ tsfs_mount_do:
         movem   5,dtfs_media(4)
         move    5,1(010)
         movem   5,tsfs_file_shape(4)
+        move    5,2(010)
+        movem   5,tsfs_extent_media(4)
         move    5,(17)
         movem   5,(012)
         setz    1,
@@ -538,4 +687,5 @@ tsfs_lookup_pop:
         popj    17,
 
         .bss
-tsfs_file_shape:       .block 4        ; one shape word per VFS mount
+tsfs_file_shape:       .block 4        ; logical->physical map per mount
+tsfs_extent_media:      .block 4        ; extent-table locator per mount

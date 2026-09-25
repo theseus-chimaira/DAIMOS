@@ -29,6 +29,13 @@
 #define TSFS_FILE_FLAG_REG         2U
 #define TSFS_FILE_FLAG_MASK        3U
 
+/* Regular-file payloads use fixed restart extents.  Metadata is never
+ * compressed.  A payload extent is always explicitly STORED or D6LZ. */
+#define TSFS_EXTENT_FLAG_STORED    0U
+#define TSFS_EXTENT_FLAG_D6LZ      1U
+#define TSFS_EXTENT_FLAG_MASK      1U
+#define TSFS_RESTART_WORDS         0400U
+
 int tsfs_mount_set(const kword_t *handoff, vnode_t target,
     unsigned int flags, vnode_t *rootp);
 int tsfs_lookup(vnode_t dir, const struct vfs_name *name,

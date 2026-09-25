@@ -39,6 +39,9 @@
 #define TABLE_EXTENT 2U
 #define FILE_WORDS 8U
 #define EXTENT_WORDS 4U
+#define EXTENT_FLAG_STORED 0U
+#define EXTENT_FLAG_D6LZ 1U
+#define RESTART_WORDS 0400U
 
 struct tsfs_member_info {
         kword_t id_hi;
@@ -264,44 +267,68 @@ table_checksum_ok(const struct tsfs_scan_result *scan,
 }
 
 static int
-extent_record_ok(const struct tsfs_scan_result *scan,
-    const struct tsfs_table_info *extent, unsigned int index,
-    unsigned int file_words, kword_t inline_location)
+extent_range_ok(const struct tsfs_scan_result *scan,
+    const struct tsfs_table_info *extent, unsigned int first,
+    unsigned int count, unsigned int file_words)
 {
         kword_t block[TSFS_BLOCK_WORDS];
-        const kword_t *r;
         unsigned int per_block;
-        unsigned int table_block;
-        unsigned int slot;
-        unsigned int member;
-        unsigned int start;
-        unsigned int blocks;
-        unsigned int flags;
+        unsigned int current_block;
+        unsigned int i;
 
         if (!extent->present || extent->record_words != EXTENT_WORDS ||
-            index >= extent->records)
+            count == 0U || first >= extent->records ||
+            count > extent->records - first || file_words == 0U ||
+            count != (file_words + RESTART_WORDS - 1U) / RESTART_WORDS)
                 return 0;
         per_block = TSFS_BLOCK_WORDS / EXTENT_WORDS;
-        table_block = index / per_block;
-        slot = index % per_block;
-        if (table_block >= extent->blocks ||
-            dsys_dtc_read_block(scan->unit[extent->member],
-            extent->block + table_block, block) != 0)
-                return 0;
-        r = block + slot * EXTENT_WORDS;
-        if (r[0] != 0 || r[1] != inline_location)
-                return 0;
-        member = (unsigned int)((r[1] >> 18) & HALF18);
-        start = (unsigned int)(r[1] & HALF18);
-        flags = (unsigned int)((r[2] >> 18) & HALF18);
-        blocks = (unsigned int)(r[2] & HALF18);
-        if (member >= scan->members || start < 3U || flags != 0U ||
-            blocks == 0U || start + blocks > scan->blocks[member] ||
-            file_words == 0U ||
-            (kword_t)file_words > (kword_t)blocks * TSFS_BLOCK_WORDS ||
-            (blocks > 1U && (kword_t)file_words <=
-            (kword_t)(blocks - 1U) * TSFS_BLOCK_WORDS))
-                return 0;
+        current_block = 0777777U;
+        for (i = 0U; i < count; ++i) {
+                const kword_t *r;
+                unsigned int index;
+                unsigned int table_block;
+                unsigned int slot;
+                unsigned int member;
+                unsigned int start;
+                unsigned int flags;
+                unsigned int blocks;
+                unsigned int words;
+
+                index = first + i;
+                table_block = index / per_block;
+                slot = index % per_block;
+                if (table_block >= extent->blocks)
+                        return 0;
+                if (table_block != current_block) {
+                        if (dsys_dtc_read_block(scan->unit[extent->member],
+                            extent->block + table_block, block) != 0)
+                                return 0;
+                        current_block = table_block;
+                }
+                r = block + slot * EXTENT_WORDS;
+                if ((unsigned int)r[0] != i * RESTART_WORDS)
+                        return 0;
+                member = (unsigned int)((r[1] >> 18) & HALF18);
+                start = (unsigned int)(r[1] & HALF18);
+                flags = (unsigned int)((r[2] >> 18) & HALF18);
+                blocks = (unsigned int)(r[2] & HALF18);
+                words = file_words - i * RESTART_WORDS;
+                if (words > RESTART_WORDS)
+                        words = RESTART_WORDS;
+                if (member >= scan->members || start < 3U ||
+                    start + blocks > scan->blocks[member])
+                        return 0;
+                if (flags == EXTENT_FLAG_STORED) {
+                        if (blocks != (words + TSFS_BLOCK_WORDS - 1U) /
+                            TSFS_BLOCK_WORDS)
+                                return 0;
+                } else if (flags == EXTENT_FLAG_D6LZ) {
+                        if (blocks != 1U || words <= TSFS_BLOCK_WORDS)
+                                return 0;
+                } else {
+                        return 0;
+                }
+        }
         return 1;
 }
 
@@ -314,7 +341,7 @@ file_table_structure_ok(const struct tsfs_scan_result *scan,
         unsigned int per_block;
         unsigned int index;
         unsigned int current_block;
-        unsigned int data_files;
+        unsigned int used_extents;
 
         if (t->record_words != FILE_WORDS || t->records == 0U ||
             (kword_t)t->records * FILE_WORDS >
@@ -323,7 +350,7 @@ file_table_structure_ok(const struct tsfs_scan_result *scan,
         unit = scan->unit[t->member];
         per_block = TSFS_BLOCK_WORDS / FILE_WORDS;
         current_block = 0777777U;
-        data_files = 0U;
+        used_extents = 0U;
         for (index = 0U; index < t->records; ++index) {
                 const kword_t *r;
                 unsigned int b;
@@ -369,15 +396,16 @@ file_table_structure_ok(const struct tsfs_scan_result *scan,
                                 if (r[7] != 0 || first != 0U || count != 0U)
                                         return 0;
                         } else {
-                                if (count != 1U ||
-                                    !extent_record_ok(scan, extent, first, size,
-                                    r[7]))
+                                if (first != used_extents ||
+                                    !extent_range_ok(scan, extent, first,
+                                    count, size))
                                         return 0;
-                                ++data_files;
+                                used_extents += count;
                         }
                 }
         }
-        return extent->present ? data_files == extent->records : data_files == 0U;
+        return extent->present ? used_extents == extent->records :
+            used_extents == 0U;
 }
 
 static int
@@ -485,6 +513,13 @@ tsfs_build_mount_handoff(const struct tsfs_scan_result *scan,
                         member_map |= (kword_t)scan->unit[i] << (3U * i);
                 }
                 out[SYS_TSFS_FILE_SHAPE] = member_map;
+                if (extent.records >= 0100000U ||
+                    scan->unit[extent.member] > 7U)
+                        return -1;
+                file_hi = ((kword_t)scan->unit[extent.member] << 15) |
+                    extent.records;
+                out[SYS_TSFS_EXTENT_LOC] =
+                    (file_hi << 18) | extent.block;
         }
         return 0;
 }

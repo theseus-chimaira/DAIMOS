@@ -578,10 +578,10 @@ native_sys_dtc_read_bad:
 
 
 ; Mount one userspace-validated filesystem handoff.  TSFS passes its compact
-; two-word runtime state; D6FS passes the 17-word reader seed.  Both providers
+; three-word runtime state; D6FS passes the 17-word reader seed.  Both providers
 ; use FS_MRES_OP_MOUNT_UNIT through the normal serialized provider dispatcher.
 native_sys_tsfs_mount:
-        movei   5,2                      ; compact TSFS runtime words
+        movei   5,3                      ; compact TSFS runtime words
         movei   6,7                      ; TSFS_PROVIDER
         jrst    native_sys_mount_handoff
 
