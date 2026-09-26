@@ -420,7 +420,7 @@ PORT ALGORITHMS AND COMMAND BEHAVIOR, NOT OBSOLETE KERNEL ABIS.
 - IMPLEMENT RECOVERY/SINGLE-USER FLOW USING BOOTABLE RECOVERY DECTAPE MEDIA AND
   THE NORMAL FILESYSTEM/MAINTENANCE TOOLS.
 
-### 2026-09-23 D6FS patch-freeze note
+### HISTORICAL 2026-09-23 D6FS patch-freeze note
 
 - DONE: unify D6FS backing, mount-owned readers, multi-mount state, typed reservation
   lifetime, RO/RW remount, crash recovery, and maintenance/integrity state.
@@ -428,5 +428,5 @@ PORT ALGORITHMS AND COMMAND BEHAVIOR, NOT OBSOLETE KERNEL ABIS.
   package, dynamically allocated one-word-per-exception table, stable physical spares,
   DSK/DRM mapper regression, and destroyed-superblock real-SIMH acceptance.  Clean
   media retain the exact RT/PI-fixed permanent-size result.
-- NEXT: keep D6FS/BADMAP regressions passing while completing D6FS-on-DRM,
-  repair/consolidate the canonical kernel/storage harnesses, then complete TSFS.
+- HISTORICAL NEXT STEP: D6FS-on-DRM, canonical storage-harness consolidation,
+  and TSFS described here are complete.  Retain this note only as freeze provenance.

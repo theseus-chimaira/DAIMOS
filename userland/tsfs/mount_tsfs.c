@@ -5,8 +5,8 @@ tsfs_seed_unit(const kword_t *path, unsigned int *unitp)
 {
         unsigned int unit;
         static const char *const names[8] = {
-                "/DEVICE/DTC0", "/DEVICE/DTC1", "/DEVICE/DTC2", "/DEVICE/DTC3",
-                "/DEVICE/DTC4", "/DEVICE/DTC5", "/DEVICE/DTC6", "/DEVICE/DTC7"
+                "/DEV/DTC0", "/DEV/DTC1", "/DEV/DTC2", "/DEV/DTC3",
+                "/DEV/DTC4", "/DEV/DTC5", "/DEV/DTC6", "/DEV/DTC7"
         };
 
         if (path == 0 || unitp == 0)
@@ -28,7 +28,7 @@ main(int argc, kword_t **argv)
         unsigned int seed;
 
         if (argc != 3 || tsfs_seed_unit(argv[1], &seed) != 0) {
-                (void)u_puts(2, "USAGE: MOUNT.TSFS /DEVICE/DTCN TARGET");
+                (void)u_puts(2, "USAGE: MOUNT.TSFS /DEV/DTCN TARGET");
                 (void)u_crlf(2);
                 return 1;
         }

@@ -1,3 +1,10 @@
+## 2026-09-26 documentation and TSFS mount namespace reconciliation
+
+- Corrected `MOUNT.TSFS` to use the current `/DEV/DTC0` through `/DEV/DTC7` VFS endpoints.  The obsolete `/DEVICE` namespace had survived in the helper, manual, and TSFS mount regressions even though the kernel exposes `/DEV/DTCn`.
+- `make -C userland check` passes with the corrected helper and rebuilds `mounttsfs.dxr` successfully using the supplied KCC/DAS/DLINK toolchain.
+- Reconciled the active project-state wording with the current 2026-09-26 permanent-size measurement and completed D6FS/DRM, TSFS, BADMAP, and BLOCKSET work.  Historical measurements remain explicitly historical.
+- Rewrote the stale boot/module documentation in `pdp10-doc`: the current Stage1/KINIT contract is the two-word low-core member handoff plus the complete image at 030000; the abandoned 073000 BOOTINFO, DMANIF, separate KRES payload, and opaque INIT-stream design is no longer described as current.
+
 ## 2026-09-26 direct DRM236 Stage1 boot
 
 - Added a native PDP-6 DRM236 Stage1 at `system/stand/pdp6/drm/stage1.s`.  It deliberately reuses the DSK Stage1 DBOOT contract: DBC/DB0/DB1/DBX discovery, member-mask assembly, bad-run skipping, round-robin bootstream reconstruction, three-word DAIMON header handling, raw LOWMEM streaming, and D6LZ36 expansion are unchanged in structure.
@@ -290,7 +297,7 @@ INFLATION AND A SECOND RESIDENT DECODER ARE NOT USED.  MKTSFS EMITS THE FINAL
 ENCODING AND TSFSCHECK VALIDATES EXTENT CHECKSUMS, PHYSICAL OVERLAP, RESTART
 GEOMETRY, AND EXACT D6LZ DECODE LENGTH.
 
-CURRENT SIZE STATE 2026-09-22: THE DEFAULT SINGLE-DISK CONFIGURATION MEASURES
+HISTORICAL SIZE STATE 2026-09-22: THE DEFAULT SINGLE-DISK CONFIGURATION MEASURES
 16277 KCORE+MRES WITH PERMANENT_LAST 037704.  AN ACTIVE MULTI-MEMBER DSK ROOT
 ADDS THE 41-WORD ROOT BLOCKSET PACKAGE FOR 16318 KCORE+MRES AND
 PERMANENT_LAST 037755; 18 UNUSED WORD ADDRESSES REMAIN AFTER THE LAST OCCUPIED
@@ -302,7 +309,7 @@ POLLING DTC READER IS TO BE ADDED.
 
 ## 4B. STORAGE MIGRATION STATE
 
-STATE: DESIGN ACCEPTED, MIGRATION NOT YET COMPLETE.  LOGSTORE OWNERSHIP HAS MOVED
+STATE: STORAGE OWNERSHIP MIGRATION IS SUBSTANTIALLY COMPLETE.  LOGSTORE OWNERSHIP HAS MOVED
 INTO D6FS V2 SUPERBLOCK METADATA AND KINIT LOGSTORE I/O NOW USES GENERIC
 BLOCKSET I/O.  SWAP OWNERSHIP IS NOW ALSO PERSISTED IN D6FS V2: NEW MEDIA STORE
 THE ACTIVE LOGICAL START/LENGTH, KINIT VALIDATES IT AGAINST THE PHYSICAL RAW-TAIL
@@ -336,9 +343,9 @@ WHERE THIS DOES NOT COST MEANINGFUL RAM OR TIME.  MACHINE-SPECIFIC FAST PATHS
 REMAIN PERMITTED AND IMPORTANT.
 
 STATE: MOSTLY IMPLEMENTED.  BLOCKSET NOW PROVIDES THE GENERIC MULTI-MEMBER
-INTERLEAVE/CONCAT BOUNDARY; SINGLETON D6FS BYPASSES IT.  DRM/DTC CONSUMERS STILL
-NEED THEIR REMAINING BINDING/EXTENT WORK, BUT THE SET MAPPER ITSELF IS NO LONGER
-DSK270-SPECIFIC.
+INTERLEAVE/CONCAT BOUNDARY; SINGLETON D6FS BYPASSES IT.  DRM/D6FS AND DTC/TSFS CONSUMERS ARE BOUND THROUGH THE GENERIC STORAGE LAYERS;
+THE SET MAPPER IS NO LONGER DSK270-SPECIFIC.  THE REMAINING STORAGE WORK IS
+MECHANICAL SCHEDULING AND NORMAL-RUNTIME LOGSTORE SERVICE, NOT PROVIDER BINDING.
 
 ## 7. REPLACEABLE VM/MM BACKEND
 
@@ -393,8 +400,9 @@ FORMATION REMAIN IN DSK270/DRM236; ONLY THE EXCEPTION TRANSLATION AND PERSISTENT
 MAP FORMAT ARE SHARED.  AN UNRECOVERABLE READ STILL REPORTS DATA LOSS; A
 REPLACEMENT BLOCK CANNOT RECONSTRUCT CONTENT THAT COULD NOT BE READ.
 
-STATE: DESIGN ACCEPTED, NOT IMPLEMENTED.  IMPLEMENT THE GENERIC STORAGE-SET
-MAPPER BEFORE DUPLICATING ANY DISK-ONLY OR DRUM-ONLY BAD-BLOCK FACILITY.
+STATE: IMPLEMENTED.  THE OPTIONAL BADMAP PACKAGE IS INSTALLED ONLY WHEN THE
+PERSISTENT STORAGE-SET MAP CONTAINS EXCEPTIONS; CLEAN MEDIA PAYS NO BADMAP MRES
+COST.  KEEP DEVICE-SPECIFIC RETRY/ERROR POLICY BELOW THIS COMMON MAPPER.
 
 ## 10. COMPATIBILITY PERSONALITIES
 
@@ -797,7 +805,7 @@ PCLK/32K ACCEPTANCE AND TSFS V1 ARE COMPLETE.  CURRENT ORDER IS:
 (1) COMPLETE THE MEASURED DSK/DRM MECHANICAL SCHEDULING PASS; (2) COMPLETE
 RUNTIME MOVABLE-MODULE LOAD/RELOCATION/BIND/REFERENCE/UNLOAD; (3) COMPLETE
 LOGSTORE NORMAL-RUNTIME/DRAIN OPERATION AND MOVE THE REMAINING OPTIONAL-MOUNT/
-SWAP/LOGSTORE BOOT POLICY INTO INIT//CONFIG.  KEEP THE CURRENT 26-WORD
+SWAP/LOGSTORE BOOT POLICY INTO INIT//CONFIG.  KEEP THE CURRENT 72-WORD
 MULTI-ROOT PERMANENT MARGIN AND ALL D6FS/BADMAP/RT/TSFS REGRESSIONS AS HARD
 GATES.
 ONLY AFTER THIS COMPLETE PRE-USERLAND GATE IS CLOSED SHOULD SUBSTANTIAL DSH
@@ -977,7 +985,7 @@ resident-D6LZ state to 10126 words.  A follow-up assembly cleanup shares the ide
 DXR2 third-header-word validation path between compressed and ordinary DXR2 executables,
 reclaiming 17 words and reducing KCORE to 10109 words.  A second peephole pass removes
 five more words by inverting three compare/branch pairs and dropping a redundant success
-clear.  Current KCORE is 10104 words and full multi-member accounting leaves 44 free
+clear.  The then-current KCORE was 10104 words and full multi-member accounting leaves 44 free
 permanent addresses below 040000.  ROOT-login and compressed-exec acceptance both pass
 at this size, but another substantial resident feature still requires more headroom work.
 
@@ -987,13 +995,13 @@ manual pass.
 
 ## 2026-09-24 kernel/provider headroom sweep checkpoint
 
-The current accepted sweep state keeps KCORE at 9942 words while reducing the native
+The then-current accepted sweep state kept KCORE at 9942 words while reducing the native
 DTFS/TSFS MRES from 2051 to 2041 words and D6FS from 2367 to 2338 words.  The DTFS
 saving comes from using the existing PDP-10 chain-walk/block-info assembly in the native
 configuration; focused chain-walk and resize regressions pass.  The D6FS savings come
 from tightening internal slot-output and create-object contracts only where the VFS/PDP-6
 call boundary already guarantees the removed checks; host/reference checks remain.
 
-Current multi-root permanent accounting is 16138 words, leaving 245 permanent words free
+The then-current multi-root permanent accounting was 16138 words, leaving 245 permanent words free
 below 040000.  ROOT bootstrap, pre-DSH filesystem closure, and credential/filesystem
 regressions pass at this checkpoint.
