@@ -15,7 +15,7 @@
 - The current full-profile image is 23202 raw payload words and 21756 compressed words (about 6.2 percent smaller); this ratio is image-specific, not an ABI promise.
 - The production D6FS image now installs compressed DXR2 forms of `/SYSTEM/EXEC/LOGIN` and `/SYSTEM/EXEC/DSH` by default while retaining the ordinary uncompressed build products.  Current measurements are LOGIN 2524 -> 2125 words (15.8 percent smaller) and DSH 5312 -> 4197 words (21.0 percent smaller), for 1514 words (19.3 percent) combined.  `SYSTEM_LOGIN_DXR` and `SYSTEM_DSH_DXR` remain overrideable for recovery/tests.  Default-image SIMH acceptance executes both compressed programs through INIT -> LOGIN -> DSH -> EXIT -> LOGIN and passes the password/no-echo/home/UID-GID-drop regression.
 - The standalone shrink sweep keeps every loader within the requested baseline+50-word stretch ceiling: DSK 331 words (+29 from 302), DTC 75 (+19 from 56), MTC 71 (+17 from 54), PTR 101 (+24 from 77).  DTC/MTC/PTR install the same fixed decoder while retaining their existing media payload contracts.
-- The final micro-shrink keeps the fixed core at 40 words and reduces permanent KCORE to 9980 words, 54 below the 10034-word compressed-boot baseline and 11 below the previous 9991-word structural tree, with 242 single-root and 201 multi-root free addresses below `040000`.  The saving comes from aligning the resumable core state with the VFS callee-saved registers and two instruction-level folds; a follow-up micro-sweep found no further >10-word opportunity without structural/API changes.
+- At this 2026-09-24 checkpoint, the final micro-shrink kept the fixed core at 40 words and reduced permanent KCORE to 9980 words, 54 below the 10034-word compressed-boot baseline and 11 below the previous 9991-word structural tree, with 242 single-root and 201 multi-root free addresses below `040000`.  These are historical checkpoint figures; the current measurement is in section 2.  The saving came from aligning the resumable core state with the VFS callee-saved registers and two instruction-level folds; a follow-up micro-sweep found no further >10-word opportunity without structural/API changes.
 - Real SIMH acceptance on the compressed DSK path passes `INIT -> LOGIN -> DSH -> EXIT -> LOGIN`; password/no-echo, wrong-password rejection, successful login, home-directory setup, and UID/GID drop also pass.
 
 ## 2026-09-24 RT-required executable admission and PI context fix
@@ -26,7 +26,7 @@
 - Fixed the pre-existing scheduler multiprocess corruption: PI-context `proc_wakeup_event()` called `proc_runq_add()` without preserving AC0/AC5/AC6. The PI boundary now preserves them.
 - The real-SIMH multiprocess regression is green. Its former completion-order/short-loop round-robin checks were nondeterministic host-timing assumptions; deterministic nice and equal-priority selection remain covered by `mm-v1`.
 - Real-SIMH `daimos-rt-required-v1` verifies two successful admitted children execute, a concurrent second RT-required RUN is rejected before execution, and admission succeeds again after owner teardown.
-- Current full-profile size: KCORE 9980 words, CTY MRES 62, D6FS MRES 2371, multi-root last 037527, leaving 168 permanent addresses below 040000.
+- Measurement at this RT-required checkpoint: KCORE 9980 words, CTY MRES 62, D6FS MRES 2371, multi-root last 037527, leaving 168 permanent addresses below 040000.  This is historical; section 2 owns the current measurement.
 
 ## 2026-09-24 minimal real-time scheduler
 
@@ -757,10 +757,10 @@ CURRENT-STATE AUTHORITY.
 
 THE STANDARD PETIT PCLK ENABLEMENT, NORMAL KCC USERSPACE CONVERSION, AND
 BOUNDED RUN/EXEC STARTUP ABI AND MINIMAL TTY LINE DISCIPLINE ARE IMPLEMENTED.
-THE CURRENT DEFAULT SINGLE-DISK BUILD MEASURES 16269 WORDS OF INSTALLED
-KCORE+MRES WITH PERMANENT_LAST 037674, LEAVING 67 PERMANENT WORD ADDRESSES
-BELOW 040000.  AN ACTIVE MULTI-MEMBER DSK ROOT ADDS THE 41-WORD ROOT BLOCKSET
-PACKAGE FOR 16310 WORDS AND MULTI_LAST 037745, LEAVING 26 ADDRESSES.
+THE CURRENT 2026-09-26 SINGLE-MEMBER BUILD MEASURES 16223 WORDS OF INSTALLED
+KCORE+MRES WITH PERMANENT_LAST 037616, LEAVING 113 PERMANENT WORD ADDRESSES
+BELOW 040000.  AN ACTIVE MULTI-MEMBER ROOT ADDS THE 41-WORD ROOT BLOCKSET
+PACKAGE FOR 16264 WORDS AND MULTI_LAST 037667, LEAVING 72 ADDRESSES.
 KEEP 14288 WORDS AS AN ADVISORY OPTIMIZATION GOAL
 DURING BRING-UP, BUT KEEP THE BELOW-16K ARCHITECTURAL LIMIT HARD.  KEEP THE
 PASSING DCS0/GE0 SCRIPTED-TELNET LOGIN REGRESSION; COMPLETE CTY INPUT
