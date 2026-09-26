@@ -33,6 +33,7 @@
         .set    DRM_DR_READ,0000230
         .set    DRM_PI_LEVEL,2
         .set    DRM_POLL_LIMIT,0777777
+        .set    DRM_POLL_PASSES,010
 
 ; AC1 = Type-236 18-bit address, AC2 = core buffer.
 drm236_read_block_service:
@@ -148,6 +149,11 @@ drm236_pi_finish:
 drm236_poll_request:
         setz    5,
         pushj   017,drm236_start_hw
+        ; A Type-236 request may wait almost one full 8192-word revolution.
+        ; Keep the inner counter 18-bit/PDP-6-friendly and repeat it enough
+        ; times for simulator instruction-rate scaling as well as real hardware.
+        movei   7,DRM_POLL_PASSES
+drm236_poll_dp_outer:
         movei   5,DRM_POLL_LIMIT
 drm236_poll_dp:
         coni    0010,6
@@ -156,10 +162,13 @@ drm236_poll_dp:
         trne    6,DRM_DP_DONE
         jrst    drm236_poll_dp_done
         sojg    5,drm236_poll_dp
+        sojg    7,drm236_poll_dp_outer
         jrst    drm236_poll_error
 
 drm236_poll_dp_done:
         cono    0010,0
+        movei   7,DRM_POLL_PASSES
+drm236_poll_dr_outer:
         movei   5,DRM_POLL_LIMIT
 drm236_poll_dr:
         coni    0400,6
@@ -168,6 +177,7 @@ drm236_poll_dr:
         trne    6,DRM_DR_DONE
         jrst    drm236_poll_success
         sojg    5,drm236_poll_dr
+        sojg    7,drm236_poll_dr_outer
         jrst    drm236_poll_error
 
 drm236_poll_success:

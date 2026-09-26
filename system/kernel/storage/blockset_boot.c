@@ -9,10 +9,16 @@
 #define BLOCKSET_ROOT_DESC_RANGE0 6U
 #include "blockset_mres.h"
 #include "blockset_layout.h"
+#include "d6fs_boot.h"
 #if KINIT_BADMAP
 #include "badmap.h"
 #endif
 #include "dsk270.h"
+#if KINIT_FULL
+#include "drm236.h"
+#include "fs_backing.h"
+#include "root_select.h"
+#endif
 #include "kinit.h"
 #include "module.h"
 #include "monitorfs.h"
@@ -28,6 +34,48 @@
  * D6FS/LOGSTORE I/O still needs its validated mapping here. */
 static struct blockset blockset_boot_state;
 static kword_t blockset_boot_total;
+static kword_t blockset_boot_super_a;
+static kword_t blockset_boot_super_b;
+
+#if KINIT_FULL
+static int
+blockset_boot_is_drm(void)
+{
+        return root_select_class() == KINIT_ROOT_DRM;
+}
+#else
+#define blockset_boot_is_drm() 0
+#endif
+
+static kword_t
+blockset_boot_unit_limit(void)
+{
+#if KINIT_FULL
+        if (blockset_boot_is_drm())
+                return DRM236_BLOCKS_PER_UNIT;
+#endif
+        return DSK270_SECTORS_PER_UNIT;
+}
+
+static int
+blockset_boot_phys_read(unsigned int unit, kword_t block, kword_t *buf)
+{
+#if KINIT_FULL
+        if (blockset_boot_is_drm())
+                return drm236_read_block(unit, block, buf);
+#endif
+        return dsk270_read_sector(unit, block, buf);
+}
+
+static int
+blockset_boot_phys_write(unsigned int unit, kword_t block, const kword_t *buf)
+{
+#if KINIT_FULL
+        if (blockset_boot_is_drm())
+                return drm236_write_block(unit, block, buf);
+#endif
+        return dsk270_write_sector(unit, block, buf);
+}
 #if KINIT_BADMAP
 static kword_t blockset_boot_badmap_start;
 static kword_t blockset_boot_badmap_blocks;
@@ -63,10 +111,12 @@ blockset_boot_layout_decode(const kword_t block[BLOCKSET_BLOCK_WORDS],
     struct blockset_layout *layout)
 {
         kword_t range;
+        kword_t unit_blocks;
 
         if (block == 0 || layout == 0 ||
             block[BLOCKSET_LAYOUT_MAGIC_WORD] != BLOCKSET_LAYOUT_MAGIC_D6FSR2)
                 return -1;
+        unit_blocks = blockset_boot_unit_limit();
         range = block[BLOCKSET_LAYOUT_RANGE_WORD];
         layout->base = (range >> 18) & BLOCKSET_BOOT_HALF_MASK;
         layout->usable_blocks = range & BLOCKSET_BOOT_HALF_MASK;
@@ -79,10 +129,10 @@ blockset_boot_layout_decode(const kword_t block[BLOCKSET_BLOCK_WORDS],
         layout->badmap_start = block[BLOCKSET_LAYOUT_BADMAP_START];
         layout->badmap_blocks = block[BLOCKSET_LAYOUT_BADMAP_BLOCKS];
         if (layout->usable_blocks == 0UL ||
-            layout->swap_tail_blocks >= DSK270_SECTORS_PER_UNIT ||
-            layout->base >= DSK270_SECTORS_PER_UNIT ||
-            layout->usable_blocks > DSK270_SECTORS_PER_UNIT - layout->base ||
-            layout->swap_tail_blocks > DSK270_SECTORS_PER_UNIT -
+            layout->swap_tail_blocks >= unit_blocks ||
+            layout->base >= unit_blocks ||
+            layout->usable_blocks > unit_blocks - layout->base ||
+            layout->swap_tail_blocks > unit_blocks -
             layout->base - layout->usable_blocks ||
             layout->super_a == layout->super_b ||
             layout->super_a > BLOCKSET_BOOT_HALF_MASK ||
@@ -107,22 +157,25 @@ blockset_boot_configure(const struct blockset *config)
 {
         kword_t *runtime;
         kword_t total;
+        kword_t unit_blocks;
+        unsigned int direct_selector;
         unsigned int i;
 
         if (config == 0 || config->members == 0U ||
             config->members > BLOCKSET_MAX_MEMBERS ||
             config->policy != BLOCKSET_POLICY_INTERLEAVE)
                 return -1;
+        unit_blocks = blockset_boot_unit_limit();
         total = 0UL;
         for (i = 0U; i < config->members; ++i) {
                 if (config->blocks[i] == 0UL ||
                     (i != 0U && config->policy == BLOCKSET_POLICY_INTERLEAVE &&
                     config->blocks[i] != config->blocks[0]) ||
                     config->unit[i] >= DSK270_UNITS ||
-                    config->base[i] >= DSK270_SECTORS_PER_UNIT ||
-                    config->blocks[i] > DSK270_SECTORS_PER_UNIT -
+                    config->base[i] >= unit_blocks ||
+                    config->blocks[i] > unit_blocks -
                     config->base[i] ||
-                    config->tail_blocks > DSK270_SECTORS_PER_UNIT -
+                    config->tail_blocks > unit_blocks -
                     config->base[i] - config->blocks[i])
                         return -1;
                 total += config->blocks[i];
@@ -140,14 +193,27 @@ blockset_boot_configure(const struct blockset *config)
         blockset_boot_total = total;
         blockset_boot_state.members = config->members;
 
+#if KINIT_FULL
+        direct_selector = blockset_boot_is_drm() ?
+            (unsigned int)(FS_BACKING_DIRECT_DRM_TAG | config->unit[0]) :
+            config->unit[0];
+#else
+        direct_selector = config->unit[0];
+#endif
         if (config->members == 1U) {
-                blockset_direct_configure(config->unit[0],
+                blockset_direct_configure(direct_selector,
                     config->base[0] + config->blocks[0],
                     config->blocks[0], config->tail_blocks);
                 return 0;
         }
+#if KINIT_FULL
+        blockset_direct_configure(blockset_boot_is_drm() ?
+            (unsigned int)FS_BACKING_DIRECT_DRM_TAG : 0U, 0UL, total,
+            config->tail_blocks * (kword_t)config->members);
+#else
         blockset_direct_configure(0U, 0UL, total,
             config->tail_blocks * (kword_t)config->members);
+#endif
         if (blockset_state_addr == 0U ||
             module_service_get(MODULE_SERVICE_BLOCKSET) == 0U)
                 return -1;
@@ -176,7 +242,7 @@ blockset_boot_discover(kword_t *super_ap, kword_t *super_bp)
 {
         struct blockset config;
         struct blockset_layout layout;
-        kword_t descriptor[BLOCKSET_BLOCK_WORDS];
+        kword_t *descriptor;
         unsigned int index;
         unsigned int members;
         unsigned int unit;
@@ -194,6 +260,12 @@ blockset_boot_discover(kword_t *super_ap, kword_t *super_bp)
 
         if (super_ap == 0 || super_bp == 0)
                 return -1;
+        if (blockset_boot_state.members != 0U) {
+                *super_ap = blockset_boot_super_a;
+                *super_bp = blockset_boot_super_b;
+                return 0;
+        }
+        descriptor = d6fs_boot_block_buffer();
         members = 0U;
         first_super_a = 0UL;
         first_super_b = 0UL;
@@ -210,7 +282,7 @@ blockset_boot_discover(kword_t *super_ap, kword_t *super_bp)
                 unit = (unsigned int)((half >> BLOCKSET_BOOT_UNIT_SHIFT) &
                     BLOCKSET_BOOT_UNIT_MASK);
                 locator = half & BLOCKSET_BOOT_LOCATOR_MASK;
-                if (dsk270_read_sector(unit, locator, descriptor) != 0)
+                if (blockset_boot_phys_read(unit, locator, descriptor) != 0)
                         return -1;
                 if (descriptor[BLOCKSET_LAYOUT_MAGIC_WORD] !=
                     BLOCKSET_LAYOUT_MAGIC_D6FSR2)
@@ -264,6 +336,8 @@ blockset_boot_discover(kword_t *super_ap, kword_t *super_bp)
                             (3U + 3U * index);
                 mfsdev_d6set_members = packed;
         }
+        blockset_boot_super_a = first_super_a;
+        blockset_boot_super_b = first_super_b;
         *super_ap = first_super_a;
         *super_bp = first_super_b;
         return 0;
@@ -277,7 +351,7 @@ blockset_boot_read(kword_t blockno, kword_t block[BLOCKSET_BLOCK_WORDS])
         if (blockset_read_addr != 0U)
                 return (int)kinit_call_blockset_io(blockset_read_addr, blockno, block);
         if (blockset_boot_state.members == 1U)
-                return dsk270_read_sector(blockset_boot_state.unit[0],
+                return blockset_boot_phys_read(blockset_boot_state.unit[0],
                     blockset_boot_state.base[0] + blockno, block);
         return -1;
 }
@@ -296,7 +370,9 @@ blockset_boot_writable(void)
         if (blockset_write_addr != 0U)
                 return 1;
         if (blockset_boot_state.members == 1U)
-                return module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U;
+                return blockset_boot_is_drm() ?
+                    module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK) != 0U :
+                    module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U;
         return 0;
 }
 
@@ -310,7 +386,7 @@ blockset_boot_write(kword_t blockno,
                 return (int)kinit_call_blockset_io(blockset_write_addr, blockno,
                     (void *)block);
         if (blockset_boot_state.members == 1U)
-                return dsk270_write_sector(blockset_boot_state.unit[0],
+                return blockset_boot_phys_write(blockset_boot_state.unit[0],
                     blockset_boot_state.base[0] + blockno, block);
         return -1;
 }
@@ -409,8 +485,8 @@ blockset_boot_badmap_load(kword_t *entries, unsigned int count)
                             BADMAP_LOC_MEMBER_MASK);
                         if (sm >= blockset_boot_state.members ||
                             rm >= blockset_boot_state.members ||
-                            (source & BADMAP_LOC_BLOCK_MASK) >= DSK270_SECTORS_PER_UNIT ||
-                            (replacement & BADMAP_LOC_BLOCK_MASK) >= DSK270_SECTORS_PER_UNIT ||
+                            (source & BADMAP_LOC_BLOCK_MASK) >= blockset_boot_unit_limit() ||
+                            (replacement & BADMAP_LOC_BLOCK_MASK) >= blockset_boot_unit_limit() ||
                             source == replacement ||
                             (copied != 0U && source <= previous))
                                 return -1;

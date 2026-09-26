@@ -159,7 +159,7 @@ dtfs_scan_slot(vnode_t node, const struct vfs_name *name,
                         continue;
                 dtfs_foreign_name(slot, &media_name, its);
                 if (media_name.chars != name->chars ||
-                    !fs_words_equal(media_name.words, name->words,
+                    !vfs_name_words_equal(media_name.words, name->words,
                     VFS_NAME_WORDS))
                         continue;
                 if (slotp != 0)
@@ -710,8 +710,7 @@ dtfs_create(vnode_t dir, const struct vfs_name *name,
                         return -1;
                 }
         }
-        *nodep = VFS_NODE_PACKED(DTFS_PROVIDER,
-            (VFS_MOUNT_ID(dir) << VFS_MOUNT_SHIFT) | DTFS_KIND_FILE, slot);
+        *nodep = VFS_NODE_PACKED(DTFS_PROVIDER, DTFS_KIND_FILE, slot);
         return 0;
 }
 

@@ -347,7 +347,7 @@ read_loop:
         jrst return_one
 read_dsk_fail_end:
 read_dsk_fail:
-        cono 0270,030000
+        cono 0270,030200
         jrst return_zero
 
 wait_dfr:
@@ -375,24 +375,11 @@ return_one:
         popj 017,
 
 fail_nodsk:
-        movei 01,000001
-        jrst fail_common
 fail_noset:
-        movei 01,000002
-        jrst fail_common
 fail_khead:
-        movei 01,000003
-        jrst fail_common
 fail_read:
-        movei 01,000004
-        jrst fail_common
 fail_decompress:
-        movei 01,000005
-fail_common:
-        movem 01,stage1_last_error
-halt_stage1:
-        halt .
-        jrst halt_stage1
+        jrst stage1_fail_b1
 
 stage1_handoff:
         movei 01,d6lz_image_start
@@ -420,6 +407,7 @@ stage1_enter_kinit:
         jrst @entry_addr
 
 daimon_magic: .word 0444151555756
+        .include "../common/stage1-error.inc"
         .include "../common/decompressor.inc"
         .bss
 any_read_ok: .block 01
@@ -437,7 +425,6 @@ stream_member: .block 01
 entry_addr: .block 01
 kinit_stack_base: .block 01
 compressed_words: .block 01
-stage1_last_error: .block 01
 member_unit: .block 04
 member_bad_count: .block 04
 member_next_sector: .block 04

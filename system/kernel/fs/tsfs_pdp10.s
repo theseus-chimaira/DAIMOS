@@ -84,7 +84,11 @@ tsfs_table_record:
         hlrz    1,(3)
         lsh     1,-017                 ; physical DTC unit
         movei   3,fs_block_workspace
+        ; DTC I/O uses AC4-AC7.  Preserve the packed table shape in AC6
+        ; because the record offset is derived from it after the read.
+        push    17,6
         pushj   17,dtfs_dtc_read
+        pop     17,6
         jumpn   1,tsfs_table_record_done
 
         move    1,010
@@ -147,16 +151,13 @@ tsfs_parent_common:
         jumpl   1,tsfs_parent_common_pop
         move    5,1                    ; record pointer
         hlrz    2,(5)                  ; parent record index
-        hllz    1,010
         jumpn   2,tsfs_parent_common_node
-        hlrz    3,1
-        andi    3,0777700              ; provider + mount id
-        iori    3,1                    ; TSFS_KIND_ROOT
-        hrl     1,3
+        movsi   1,070001               ; provider 7, local ROOT kind
         jrst    tsfs_parent_common_ok
 
 tsfs_parent_common_node:
-        hrr     1,2                    ; input already has NODE local kind
+        movsi   1,070002               ; provider 7, local NODE kind
+        hrr     1,2
 
 tsfs_parent_common_ok:
         move    2,5                    ; record pointer for parent_name
@@ -199,14 +200,10 @@ tsfs_parent_name:
         pushj   17,tsfs_parent_common
         jumpn   1,tsfs_parent_name_pop
         movem   1,(010)
-        movei   4,1(011)               ; name.words destination
-        movei   5,1(2)                 ; record NAME0 source
-        hrl     4,5
-        blt     4,4(011)
-        movei   1,1(011)
-        movei   2,030
-        pushj   17,vfs_sixbit_name_chars
-        movem   1,(011)
+        movei   1,1(2)                 ; record NAME0 source
+        move    2,011                   ; struct vfs_name *
+        pushj   17,vfs_name_from_words
+        move    1,(011)
         jumpe   1,tsfs_parent_name_fail
         setz    1,
         jrst    tsfs_parent_name_pop
@@ -287,14 +284,9 @@ tsfs_readdir:
         move    5,1                    ; child record pointer
         hrrz    011,(5)                ; preserve child flags across call
 
-        movei   4,1(012)               ; ent->name.words
-        movei   3,1(5)                 ; record NAME0
-        hrl     4,3
-        blt     4,4(012)
-        movei   1,1(012)
-        movei   2,030
-        pushj   17,vfs_sixbit_name_chars
-        movem   1,0(012)
+        movei   1,1(5)                 ; record NAME0
+        move    2,012                   ; ent->name
+        pushj   17,vfs_name_from_words
 
         cain    011,1
         jrst    tsfs_readdir_dir
@@ -659,15 +651,13 @@ tsfs_lookup_loop:
         move    1,5
         movei   2,1(011)               ; vfs_name.words
         movei   3,4
-        pushj   17,fs_words_equal
+        pushj   17,vfs_name_words_equal
         jumpn   1,tsfs_lookup_found
         aoja    013,tsfs_lookup_loop
 
 tsfs_lookup_found:
-        hllz    4,010
-        tlz     4,077                   ; clear local kind
-        tlo     4,2                     ; TSFS_KIND_NODE
-        hrr     4,013
+        hrrz    4,013
+        tlo     4,070002                ; provider 7, local NODE kind
         movem   4,(012)
         setz    1,
         jrst    tsfs_lookup_pop

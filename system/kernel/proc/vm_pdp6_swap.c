@@ -3,6 +3,7 @@
 #include "blockset_mres.h"
 #include "d6fs_provider.h"
 #include "dtfs.h"
+#include "tsfs.h"
 #include "memfs.h"
 #include "exec.h"
 #include "fs_mres.h"
@@ -122,11 +123,13 @@ proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
         provider = VFS_PROVIDER(backing);
         mount = VFS_MOUNT_ID(backing);
         kind = VFS_LOCAL_KIND(backing);
-        if (provider < MEMFS_PROVIDER || provider > D6FS_PROVIDER ||
+        /* Executable-backing provider IDs are deliberately contiguous.
+         * Even providers (MEMFS/D6FS) use local node kind 1; odd providers
+         * (DTFS/TSFS) use local file/node kind 2.  Keep the one-word swap
+         * record validation compact while covering all four providers. */
+        if (provider < MEMFS_PROVIDER || provider > TSFS_PROVIDER ||
             mount == 0U || mount > VFS_NMOUNT ||
-            (provider == MEMFS_PROVIDER && kind != MEMFS_KIND_NODE) ||
-            (provider == DTFS_PROVIDER && kind != DTFS_KIND_FILE) ||
-            (provider == D6FS_PROVIDER && kind != D6FS_KIND_NODE))
+            kind != 1U + (provider & 1U))
                 return -1;
         if (pure == 0U)
                 text_words = 0UL;

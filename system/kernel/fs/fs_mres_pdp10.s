@@ -17,6 +17,8 @@
         .globl blockset_direct_tail
         .globl dsk270_read_sector
         .globl dsk270_write_sector
+        .globl drm236_read_block
+        .globl drm236_write_block
 
 ; Stable KCORE register bridge to the movable BLOCKSET MRES dispatcher.
 ; C ABI: AC1=operation, AC2=a, AC3=b, AC4=c.  The movable export keeps a
@@ -102,11 +104,21 @@ blockset_direct_tail_single:
 
 blockset_direct_tail_mapped:
         move    3,010
+        hlrz    0,blockset_direct_map
+        trne    0,0400000
+        jrst    blockset_direct_tail_drm
         jumpe   013,blockset_direct_tail_read_one
         pushj   17,dsk270_write_sector
         jrst    blockset_direct_tail_after_one
 blockset_direct_tail_read_one:
         pushj   17,dsk270_read_sector
+        jrst    blockset_direct_tail_after_one
+blockset_direct_tail_drm:
+        jumpe   013,blockset_direct_tail_drm_read
+        pushj   17,drm236_write_block
+        jrst    blockset_direct_tail_after_one
+blockset_direct_tail_drm_read:
+        pushj   17,drm236_read_block
 blockset_direct_tail_after_one:
         jumpe   1,blockset_direct_tail_after_ok
         aos     mfsdev_storage_errors+4
@@ -251,21 +263,6 @@ fs_move_words_back:
         sojg    3,fs_move_words_back
 fs_move_words_done:
         popj    17,
-
-        .globl  fs_words_equal
-; int fs_words_equal(a, b, count)
-; Return 1 when count words match, otherwise 0.
-fs_words_equal:
-        jumpe   3,fs_words_equal_yes
-fs_words_equal_loop:
-        move    4,(1)
-        came    4,(2)
-        jrst    pdp10_ret_zero
-        aoj     1,
-        aoj     2,
-        sojg    3,fs_words_equal_loop
-fs_words_equal_yes:
-        jrst    pdp10_ret_one
 
         .globl  fs_zero_words
 ; void fs_zero_words(dst, count)

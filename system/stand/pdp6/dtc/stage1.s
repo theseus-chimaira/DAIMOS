@@ -10,8 +10,8 @@
 ; The entry point is fixed at 040000.  Physical DECtape block boundaries are
 ; handled by the controller; Stage1 never buffers or restarts per block.
 ;
-; On failure AC1 is left as 1 for controller/data error or 2 for a short/bad
-; tape before Stage1 halts.  This keeps the standalone loader deliberately tiny.
+; Every fatal loader/media failure prints the compact halfword diagnostic ?B1
+; and halts.  Stage1 deliberately does not spend words on detailed errors.
 
         .text
         .globl start
@@ -68,13 +68,8 @@ read_wait:
         jrst read_word
 
 read_error:
-        movei 01,01
-        jrst halt_stage1
-
 bad_tape:
-        movei 01,02
-halt_stage1:
-        halt .
-        jrst halt_stage1
+        jrst stage1_fail_b1
 
+        .include "../common/stage1-error.inc"
         .include "../common/decompressor.inc"

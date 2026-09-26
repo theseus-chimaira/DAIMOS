@@ -17,6 +17,7 @@
         .globl mtc_minit
         .globl dsk_minit
         .globl drm236_minit
+        .globl root_select_minit
         .globl storage_minit
         .globl slv_minit
         .globl memfs_minit
@@ -105,6 +106,7 @@ __minit_table_begin:
 .if KINIT_FULL
         .word drm236_minit,,drm236_mres_package
 .endif
+        .word root_select_minit,,0
         .word blockset_minit,,blockset_mres_package
 .if KINIT_BADMAP
         .word badmap_minit,,badmap_mres_package

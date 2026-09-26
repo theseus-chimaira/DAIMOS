@@ -264,8 +264,7 @@ dtfs_parent:
         jumpe   5,pdp10_ret_neg1
         pushj   17,dtfs_is_file
         jumpe   1,pdp10_ret_neg1
-        and     4,[07700000000]         ; retain mount id
-        tlo     4,050001                 ; DTFS provider + root local kind
+        movsi   4,050001                 ; provider 5, local ROOT kind
         movem   4,(5)
         jrst    pdp10_ret_zero
         .globl  dtfs_sync
@@ -550,9 +549,8 @@ dtfs_lookup:
         pushj   17,dtfs_native_scan_slot
         .endif
         jumpn   1,dtfs_lookup_fail
-        and     010,[07700000000]       ; retain mount id
-        tlo     010,050002              ; DTFS provider + file local kind
-        hrr     010,(17)                ; slot index
+        hrrz    010,(17)                ; slot index
+        tlo     010,050002              ; provider 5, local FILE kind
         movem   010,(012)
         setz    1,
         jrst    dtfs_lookup_return

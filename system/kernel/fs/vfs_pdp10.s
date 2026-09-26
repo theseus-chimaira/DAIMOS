@@ -488,6 +488,38 @@ vfs_name_valid:
         jrst    pdp10_ret_zero
         jrst    pdp10_ret_one
 
+; int vfs_name_words_equal(const kword_t *a, const kword_t *b,
+;     unsigned int count)
+; Shared canonical VFS-name word comparison.  Callers use four words for a
+; packed on-media name and five for a complete struct vfs_name.
+        .globl  vfs_name_words_equal
+vfs_name_words_equal:
+        jumpe   3,vfs_name_words_equal_yes
+vfs_name_words_equal_loop:
+        move    4,(1)
+        came    4,(2)
+        jrst    pdp10_ret_zero
+        aoj     1,
+        aoj     2,
+        sojg    3,vfs_name_words_equal_loop
+vfs_name_words_equal_yes:
+        jrst    pdp10_ret_one
+
+; void vfs_name_from_words(const kword_t *src, struct vfs_name *dst)
+; Copy one canonical four-word packed SIXBIT name and derive its character
+; count.  Filesystem providers use this when materializing names from media.
+        .globl  vfs_name_from_words
+vfs_name_from_words:
+        move    4,2
+        movei   5,1(2)
+        hrl     5,1
+        blt     5,4(2)
+        movei   1,1(4)
+        movei   2,030
+        pushj   17,vfs_sixbit_name_chars
+        movem   1,(4)
+        popj    17,
+
 ; int vfs_name_is6(const struct vfs_name *name, kword_t word,
 ;     unsigned int chars)
         .globl  vfs_name_is6

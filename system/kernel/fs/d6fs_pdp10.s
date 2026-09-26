@@ -1363,12 +1363,8 @@ d6fs_provider_lookup:
         movei   4,-011(17)               ; decoded dirent scratch
         pushj   17,d6fs_provider_scan_slot
         jumpn   1,d6fs_provider_lookup_fail
-        move    1,-1(17)
-        and     1,[07700000000]
-        tlo     1,1
-        hrrz    4,-2(17)                 ; di.child_fcb
-        ior     1,4
-        tlo     1,060000
+        hrrz    1,-2(17)                 ; di.child_fcb
+        tlo     1,060001                 ; provider 6, local NODE kind
         move    2,(17)
         movem   1,(2)
         setz    1,
@@ -1391,18 +1387,16 @@ d6fs_provider_parent:
         movei   3,-013(17)               ; 012-word decoded FCB info
         pushj   17,d6fs_provider_fcb
         jumpn   1,d6fs_provider_parent_fail
-        move    1,-1(17)
-        hrrz    4,1
+        hrrz    4,-1(17)                ; node index
         move    5,d6fs_active_reader
         camn    4,7(5)                   ; root_fcb: root is its own parent
-        jrst    d6fs_provider_parent_store
+        jrst    d6fs_provider_parent_build
         move    4,-2(17)                 ; fi.parent_fcb
         caml    4,011(5)                 ; reject parent outside FCB table
         jrst    d6fs_provider_parent_fail
-        and     1,[07700000000]
-        tlo     1,1
-        ior     1,4
-        tlo     1,060000
+d6fs_provider_parent_build:
+        move    1,4
+        tlo     1,060001                 ; provider 6, local NODE kind
 d6fs_provider_parent_store:
         move    2,(17)
         movem   1,(2)
@@ -1540,15 +1534,8 @@ d6fs_provider_readdir_loop:
         came    4,-3(17)
         jrst    d6fs_provider_readdir_next
         movei   1,-014(17)               ; di.name
-        move    2,-2(17)
-        addi    2,1                      ; ent->name.words
-        movei   3,4
-        pushj   17,fs_copy_words
-        movei   1,-014(17)
-        movei   2,030                    ; VFS_NAME_MAX_CHARS
-        pushj   17,vfs_sixbit_name_chars
-        move    2,-2(17)
-        movem   1,(2)                    ; ent->name.chars
+        move    2,-2(17)                 ; ent->name
+        pushj   17,vfs_name_from_words
         move    1,-7(17)                 ; di.type
         pushj   17,d6fs_provider_vtype
         move    2,-2(17)
@@ -1580,8 +1567,9 @@ d6fs_provider_parent_name:
         movei   2,(17)                   ; parent scratch
         pushj   17,d6fs_provider_parent
         jumpn   1,d6fs_provider_parent_name_fail
-        move    4,(17)
-        camn    4,-4(17)                 ; root/self has no parent name
+        hrrz    4,(17)
+        hrrz    5,-4(17)
+        camn    4,5                      ; root/self has no parent name
         jrst    d6fs_provider_parent_name_fail
         setzm   -1(17)                   ; slot
 d6fs_provider_parent_name_loop:
@@ -1595,14 +1583,8 @@ d6fs_provider_parent_name_loop:
         came    4,5
         jrst    d6fs_provider_parent_name_next
         movei   1,-014(17)               ; di.name
-        movei   2,030
-        pushj   17,vfs_sixbit_name_chars
-        move    2,-2(17)
-        movem   1,(2)                    ; namep->chars
-        addi    2,1
-        movei   1,-014(17)
-        movei   3,4
-        pushj   17,fs_copy_words
+        move    2,-2(17)                 ; namep
+        pushj   17,vfs_name_from_words
         move    1,(17)
         move    2,-3(17)
         movem   1,(2)

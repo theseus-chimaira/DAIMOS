@@ -17,6 +17,7 @@ KINIT_DEBUG ?= 0
 KINIT_STACK_RESERVE_WORDS ?= 02000
 KINIT_STACK_WATERMARK ?= 0
 KINIT_BADMAP ?= 1
+KINIT_FULL ?= 1
 DTFS_TENEX ?= 0
 DTFS_ITS ?= 0
 PROC_BOOT_USERS ?= 1
@@ -32,6 +33,8 @@ INCLUDES = -I. -Iboot -Icore -Idrivers -Ifs -Iipc -Imm -Imodules -Iproc -Istorag
 
 KERNEL_HEADERS = boot/kboot.h \
 	boot/kinit.h \
+	boot/root_select.h \
+	boot/tsfs_boot.h \
 	core/kcore.h \
 	core/kcore_pi.h \
 	core/kfmt.h \
@@ -88,6 +91,8 @@ KINIT_SRCS = boot/kinit.c \
 	modules/module_minit.c \
 	boot/kfs_boot.c \
 	boot/kinit_boot.c \
+	boot/root_select.c \
+	boot/tsfs_boot.c \
 	fs/d6fs_boot.c \
 	fs/d6fs_super_boot.c \
 	storage/blockset_boot.c \
@@ -100,6 +105,8 @@ KINIT_C_ASM = $(BUILD)/kinit.s \
 	$(BUILD)/module_minit.s \
 	$(BUILD)/kfs_boot.s \
 	$(BUILD)/kinit_boot.s \
+	$(BUILD)/root_select.s \
+	$(BUILD)/tsfs_boot.s \
 	$(BUILD)/d6fs_boot.s \
 	$(BUILD)/d6fs_super_boot.s \
 	$(BUILD)/blockset_boot.s \
@@ -259,7 +266,7 @@ kcore: ${KCORE_FIXED_ASM} ${MRES_ASM}
 
 ${KINIT_C_ASM} ${KINIT_LATE_C_ASM}: ${KINIT_SRCS} ${KINIT_LATE_SRCS} ${KERNEL_HEADERS} ${VERSION_FILE}
 	@mkdir -p ${BUILD}
-	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DKINIT_STACK_RESERVE_WORDS=${KINIT_STACK_RESERVE_WORDS} -DKINIT_STACK_WATERMARK=${KINIT_STACK_WATERMARK} -DKINIT_BADMAP=${KINIT_BADMAP} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
+	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DKINIT_STACK_RESERVE_WORDS=${KINIT_STACK_RESERVE_WORDS} -DKINIT_STACK_WATERMARK=${KINIT_STACK_WATERMARK} -DKINIT_BADMAP=${KINIT_BADMAP} -DKINIT_FULL=${KINIT_FULL} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
 
 ${BUILD}/bootbanner_generated.s: ${VERSION_FILE}
 	@mkdir -p ${BUILD}

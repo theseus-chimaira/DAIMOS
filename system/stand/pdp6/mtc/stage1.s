@@ -47,8 +47,7 @@ read_wait:
         caie 01,040000
         jrst mtc_install_decoder
 bad_tape:
-        movei 01,02
-        jrst halt_stage1
+        jrst stage1_fail_b1
 
 mtc_install_decoder:
         movei 01,d6lz_image_start
@@ -58,9 +57,7 @@ mtc_install_decoder:
         jrst 040000
 
 read_error:
-        movei 01,01
-halt_stage1:
-        halt .
-        jrst halt_stage1
+        jrst stage1_fail_b1
 
+        .include "../common/stage1-error.inc"
         .include "../common/decompressor.inc"

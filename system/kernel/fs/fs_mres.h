@@ -56,7 +56,6 @@ extern kword_t sys_dtfs_mount_jump;
 
 void fs_copy_words(const kword_t *src, kword_t *dst, unsigned int count);
 void fs_move_words(const kword_t *src, kword_t *dst, unsigned int count);
-int fs_words_equal(const kword_t *a, const kword_t *b, unsigned int count);
 void fs_zero_words(kword_t *dst, unsigned int count);
 void fs_zero_block_workspace(void);
 

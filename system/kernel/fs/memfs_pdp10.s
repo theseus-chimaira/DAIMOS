@@ -271,7 +271,7 @@ memfs_slot:
 ; Return the child slot directly, or -1.
         .globl  memfs_find_child
 memfs_find_child:
-        push    17,010                  ; name survives fs_words_equal
+        push    17,010                  ; name survives name comparison
         move    010,3
         move    7,1                     ; fs; helper leaves AC7 alone
         move    0,2                     ; parent
@@ -289,8 +289,8 @@ memfs_find_child_loop:
         jrst    memfs_find_child_next
         move    1,5
         move    2,010
-        movei   3,5                    ; chars + four SIXBIT words
-        pushj   17,fs_words_equal
+        movei   3,5                    ; chars + four packed SIXBIT words
+        pushj   17,vfs_name_words_equal
         jumpn   1,memfs_find_child_found
 memfs_find_child_next:
         addi    5,010
@@ -746,7 +746,7 @@ memfs_mres_fs:
         .block  6
         .text
 
-        .globl  fs_words_equal
+        .globl  vfs_name_words_equal
         .globl  fs_zero_words
         .globl  fs_mres_context_vector_dispatch
         .globl  memfs_mres_dispatch

@@ -20,6 +20,22 @@ typedef unsigned long kword_t;
 #define KINIT_BOOT_WORD1         000041UL
 #define KINIT_MACHINE_NAME       "PDP6  "
 
+/* Console SW low five bits are the V0.9 root selector. */
+#define KINIT_ROOT_CLASS_MASK     0000007UL
+#define KINIT_ROOT_ORD_SHIFT      3U
+#define KINIT_ROOT_ORD_MASK       0000030UL
+#define KINIT_ROOT_SELECT_MASK    0000037UL
+#define KINIT_ROOT_AUTO           0U
+#define KINIT_ROOT_DSK            1U
+#define KINIT_ROOT_DTC            2U
+#define KINIT_ROOT_DRM            3U
+#define KINIT_ROOT_RAM            4U
+
+/* Fatal early-boot diagnostics are one SIXBIT halfword, printed without CR/LF. */
+#define KINIT_ERR_B1              0374221UL
+#define KINIT_ERR_RT              0376264UL
+#define KINIT_ERR_MT              0375564UL
+
 extern kword_t kinit_boot_handoff[2];
 
 #define KINIT_LH(w) \
@@ -39,6 +55,8 @@ unsigned int kinit_stack_watermark_measure(void);
 void kinit_put6(kword_t word);
 void kinit_put6_spaces(unsigned int words);
 void kinit_newline(void);
+void kinit_error18(kword_t code);
+kword_t kinit_read_switches(void);
 void kinit_call18(unsigned int address);
 kword_t kinit_call18_1(unsigned int address, kword_t arg);
 kword_t kinit_call_fs_request(unsigned int address, const void *req);

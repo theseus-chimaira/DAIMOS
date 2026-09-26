@@ -5,8 +5,10 @@ PDP10_PREFIX ?= $(HOME)/cross
 SIMH_DCS0_PORT ?= 1101
 SIMH_GE0_PORT ?= 1201
 SIMH_PCLK_MODE ?= REALTIME
+ROOT ?= auto
+ROOTSET ?= 1
 
-.PHONY: build install kinit boot permanent-size clean
+.PHONY: build install kinit boot disk-boot permanent-size clean
 
 build:
 	$(MAKE) -C system build BUILD_ROOT='$(BUILD_ROOT)'
@@ -25,7 +27,11 @@ boot:
 	    '  PCLK  $(SIMH_PCLK_MODE)'
 	$(MAKE) -C system/boot/pdp6-disk boot BUILD_ROOT='$(BUILD_ROOT)' \
 	    PDP10_PREFIX='$(PDP10_PREFIX)' SIMH_DCS0_PORT='$(SIMH_DCS0_PORT)' \
-	    SIMH_GE0_PORT='$(SIMH_GE0_PORT)' SIMH_PCLK_MODE='$(SIMH_PCLK_MODE)'
+	    SIMH_GE0_PORT='$(SIMH_GE0_PORT)' SIMH_PCLK_MODE='$(SIMH_PCLK_MODE)' \
+	    ROOT='$(ROOT)' ROOTSET='$(ROOTSET)'
+
+disk-boot:
+	$(MAKE) boot ROOT='$(ROOT)' ROOTSET='$(ROOTSET)'
 
 permanent-size:
 	$(MAKE) -C system/boot/pdp6-disk permanent-size BUILD_ROOT='$(BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'

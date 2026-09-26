@@ -3,6 +3,8 @@
         .text
         .globl kinit_put6
         .globl kinit_newline
+        .globl kinit_error18
+        .globl kinit_read_switches
         .globl kinit_call18
         .globl kinit_call18_1
         .globl kinit_halt
@@ -25,6 +27,32 @@ kinit_put6_loop:
         lsh 02,06
         sojg 06,kinit_put6_loop
         jrst knl_wait
+
+; void kinit_error18(kword_t code)
+; Print one three-character SIXBIT halfword from AC1, then halt.  Keep this
+; separate from kinit_put6(): fatal early-boot paths need neither six padding
+; characters nor a CR/LF.
+kinit_error18:
+        move 02,01
+        movei 06,03
+kinit_error18_loop:
+        move 03,02
+        lsh 03,-014
+        andi 03,077
+        addi 03,040
+        pushj 017,knl_putc
+        lsh 02,06
+        sojg 06,kinit_error18_loop
+        pushj 017,knl_wait
+kinit_error18_halt:
+        halt .
+        jrst kinit_error18_halt
+
+; kword_t kinit_read_switches(void)
+; PDP-6 APR DATAI exposes the 36-bit console switch register.
+kinit_read_switches:
+        datai 0000,01
+        popj 017,
 
 ; Polling CR/LF, deliberately independent of CTY module state.
 kinit_newline:
@@ -80,6 +108,14 @@ kinit_call_blockset_io:
         move    1,2
         move    2,3
         jrst    (4)
+
+        .globl  kinit_call_storage_io
+kinit_call_storage_io:
+        move    5,1                    ; service address
+        move    1,2                    ; physical unit
+        move    2,3                    ; physical block
+        move    3,4                    ; 128-word buffer
+        jrst    (5)
 
 ; kword_t kinit_call18_1(unsigned int address, kword_t arg)
 kinit_call18_1:

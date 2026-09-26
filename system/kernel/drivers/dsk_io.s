@@ -74,7 +74,7 @@ dsk_pi_boot_done:
         jrst pdp10_pi_dispatch_done
 
 dsk_pi_error:
-        cono 0270,0
+        cono 0270,030200
         cono 0200,0
         skipn dsk_active_request
         jrst dsk_pi_boot_error

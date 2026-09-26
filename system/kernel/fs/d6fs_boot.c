@@ -4,6 +4,10 @@
 #include "blockset_boot.h"
 #include "fs_mres.h"
 #include "logstore.h"
+#include "fs_backing.h"
+#if KINIT_FULL
+#include "root_select.h"
+#endif
 
 /* KINIT-only scratch used while probing and mounting the root D6FS.
  * It is reclaimed with KINIT and does not consume resident FS storage. */
@@ -125,8 +129,13 @@ d6fs_boot_mount_root(unsigned int flags)
                         return -1;
                 if (blockset_boot_direct(&direct_unit, &direct_base,
                     &direct_blocks, &direct_tail) != 0)
-                        reader->backing.opaque =
-                            ((kword_t)direct_unit << 18U) | direct_base;
+                        reader->backing.opaque = ((kword_t)direct_unit << 18U) |
+                            direct_base;
+#if KINIT_FULL
+                        if (root_select_class() == KINIT_ROOT_DRM)
+                                reader->backing.opaque |=
+                                    (kword_t)FS_BACKING_DIRECT_DRM_TAG << 18U;
+#endif
         }
         total = blockset_boot_blocks();
         if (total == 0UL || super_a >= total || super_b >= total ||

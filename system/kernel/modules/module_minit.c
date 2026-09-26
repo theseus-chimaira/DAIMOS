@@ -21,6 +21,9 @@
 #include "d6fs.h"
 #include "blockset_mres.h"
 #include "blockset_boot.h"
+#if KINIT_FULL
+#include "root_select.h"
+#endif
 #include "badmap.h"
 #include "mm.h"
 #include "monitorfs.h"
@@ -1059,6 +1062,29 @@ dtfs_minit(void)
         minit_diag_loaded(name);
 }
 
+static int
+root_block_services(unsigned int *readp, unsigned int *writep)
+{
+        if (readp == 0 || writep == 0)
+                return -1;
+#if KINIT_FULL
+        if (root_select_class() == KINIT_ROOT_DRM) {
+                if (module_service_get(MODULE_SERVICE_DRM_READ_BLOCK) == 0U ||
+                    module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK) == 0U)
+                        return -1;
+                *readp = (unsigned int)(unsigned long)&drm236_read_block;
+                *writep = (unsigned int)(unsigned long)&drm236_write_block;
+                return 0;
+        }
+#endif
+        if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) == 0U ||
+            module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) == 0U)
+                return -1;
+        *readp = (unsigned int)(unsigned long)&dsk270_read_sector;
+        *writep = (unsigned int)(unsigned long)&dsk270_write_sector;
+        return 0;
+}
+
 void
 blockset_minit(void)
 {
@@ -1075,14 +1101,11 @@ blockset_minit(void)
         members = blockset_boot_member_count_hint();
         if (members == 0U)
                 return;
-        if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) == 0U ||
-            module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) == 0U) {
+        if (root_block_services(&read_addr, &write_addr) != 0) {
                 minit_diag_nodrv(name);
                 return;
         }
         if (members > 1U) {
-                read_addr = (unsigned int)(unsigned long)&dsk270_read_sector;
-                write_addr = (unsigned int)(unsigned long)&dsk270_write_sector;
                 base = minit_install(name);
                 service = minit_export(name, base, 0U);
                 blockset_state_addr = minit_export(name, base, 1U);
@@ -1137,8 +1160,10 @@ badmap_minit(void)
         badmap_runtime_state = state;
         blockset_read_addr = minit_export(name, base, 2U);
         blockset_write_addr = minit_export(name, base, 3U);
-        read_addr = (unsigned int)(unsigned long)&dsk270_read_sector;
-        write_addr = (unsigned int)(unsigned long)&dsk270_write_sector;
+        if (root_block_services(&read_addr, &write_addr) != 0) {
+                minit_diag_nodrv(name);
+                return;
+        }
         storage_patch_module_jump(base, (kword_t *)(unsigned long)
             minit_export(name, base, 4U), read_addr);
         storage_patch_module_jump(base, (kword_t *)(unsigned long)
@@ -1236,13 +1261,10 @@ d6fs_minit(void)
                 read_addr = blockset_read_addr;
                 write_addr = blockset_write_addr;
         } else if (members == 1U) {
-                if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) == 0U ||
-                    module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) == 0U) {
+                if (root_block_services(&read_addr, &write_addr) != 0) {
                         minit_diag_nodrv(name);
                         return;
                 }
-                read_addr = (unsigned int)(unsigned long)&dsk270_read_sector;
-                write_addr = (unsigned int)(unsigned long)&dsk270_write_sector;
         } else {
                 minit_diag_nodrv(name);
                 return;
@@ -1285,10 +1307,12 @@ d6fs_minit(void)
         write_addr = module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK);
         if (read_addr != 0U)
                 storage_patch_module_jump(base, (kword_t *)(unsigned long)
-                    minit_export(name, base, 10U), read_addr);
+                    minit_export(name, base, 10U),
+                    (unsigned int)(unsigned long)&drm236_read_block);
         if (write_addr != 0U)
                 storage_patch_module_jump(base, (kword_t *)(unsigned long)
-                    minit_export(name, base, 11U), write_addr);
+                    minit_export(name, base, 11U),
+                    (unsigned int)(unsigned long)&drm236_write_block);
         if (d6fs_reader_bootstrap_call(backing_ops) != 0) {
                 minit_diag_notok(name);
                 return;
