@@ -4,7 +4,7 @@
 - The device leaf is DRM-specific: one DAIMOS 128-word block maps to a Type-236 address as `unit<<16 | block<<3`, and the loader uses the proven early Type-167/236 polled DMA sequence with bounded multi-pass DP/DR completion waits.
 - `ROOT=drum` now builds and attaches `stage1-drm.pt`; other root profiles retain `stage1-dsk.pt`.  A real PDP-6 SIMH run with DSK0 deliberately unattached reaches `DRM236 OK`, `D6FS LOADED`, `INIT V1`, and `LOGIN:` from DR0, proving that the bootstream itself comes from DRM rather than switching to DRM only after DSK-loaded KINIT starts.
 - `daimos-testkit` has a permanent direct-DRM-Stage1 regression that rebuilds the drum profile, removes DSK0 from the simulator configuration, and requires the INIT/LOGIN path.
-- Revalidation with the newly uploaded tool archives found an independent DSK-root `?RT` halt after `D6FS LOADED`.  The untouched pre-DRM-Stage1 base commit `79bd176` fails identically, so this is not a regression from the DRM loader change.  It remains a separate high-priority root-selection/toolchain-integration issue.
+- The independent DSK-root `?RT` halt found during that revalidation is fixed. KINIT root discovery had regressed from Stage1 by probing all four physical DSK units before evaluating a complete root. With only DSK0 attached, the unnecessary DSK1 probe fails and leaves the Type-270 path unusable for the subsequent BLOCKSET descriptor reread. KINIT now evaluates discovered sets after each unit and stops as soon as the requested root ordinal is complete. Default/explicit DSK boot again reaches `INIT V1` and `LOGIN:` with DSK1-3 unattached; later ordinals and multi-member sets continue scanning only as far as required.
 
 ## 2026-09-24 compressed Stage1 boot and fixed D6LZ decoder
 
@@ -124,8 +124,9 @@ BUFFER ADDRESS.  THE EARLY POLLED TYPE-167/236 DRIVER ALSO NOW ALLOWS
 A BOUNDED MULTI-PASS WAIT LONG ENOUGH FOR ONE WORST-CASE DRUM
 REVOLUTION UNDER SIMH INSTRUCTION-RATE SCALING.  DIRECT DRM STAGE1 NOW ALSO
 REACHES LOGIN WITH DSK0 UNATTACHED.  A 2026-09-26 RECHECK WITH THE NEWLY
-UPLOADED TOOL ARCHIVES FOUND A SEPARATE DSK-ROOT ?RT FAILURE THAT IS ALSO
-PRESENT IN THE UNMODIFIED PRE-STAGE1 BASE; SEE THE CURRENT CLOSURE NOTE ABOVE.
+UPLOADED TOOL ARCHIVES FOUND A SEPARATE DSK-ROOT ?RT FAILURE THAT WAS ALSO
+PRESENT IN THE UNMODIFIED PRE-STAGE1 BASE.  IT IS NOW CLOSED BY INCREMENTAL
+KINIT ROOT DISCOVERY; SEE THE CURRENT CLOSURE NOTE ABOVE.
 
 D6FS USES A SINGLE RECLAIMABLE TWO-BLOCK CACHE SLAB; A MOUNT OWNS ITS MANAGED-
 CORE READER/BACKING STATE.  EXACT EARLIER D6FS/MRES SIZE ARCHAEOLOGY IS KEPT IN
