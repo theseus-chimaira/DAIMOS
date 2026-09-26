@@ -63,6 +63,8 @@ kword_t kinit_call_fs_request(unsigned int address, const void *req);
 kword_t kinit_call_blockset_request(unsigned int address, const void *req);
 kword_t kinit_call_blockset_io(unsigned int address, kword_t logical,
     void *buffer);
+kword_t kinit_call_storage_io(unsigned int address, unsigned int unit,
+    kword_t block, void *buffer);
 void kinit_halt(void);
 void kinit_user_trap_init(void);
 void kcore_boot_handoff(kword_t stack_base, kword_t reclaim_base,
