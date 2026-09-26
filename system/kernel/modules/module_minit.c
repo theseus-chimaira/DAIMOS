@@ -471,6 +471,7 @@ clk_minit(void)
         minit_diag_hz();
 }
 
+#if KINIT_FULL
 void
 ptr_minit(void)
 {
@@ -597,6 +598,8 @@ cp_minit(void)
 }
 
 
+#endif
+
 void
 dcs_minit(void)
 {
@@ -665,6 +668,7 @@ ge_minit(void)
 extern kword_t minit_dpy_banner_words[];
 extern kword_t minit_dpy_banner_words_end[];
 
+#if KINIT_FULL
 static void
 minit_dpy_word(kword_t name, unsigned int putword, kword_t word)
 {
@@ -736,6 +740,8 @@ dpy_minit(void)
         minit_diag_ok(name);
 }
 
+#endif
+
 void
 tty_minit(void)
 {
@@ -800,6 +806,7 @@ tty_minit(void)
 extern kword_t minit_wcnsls_banner_glyphs[];
 extern kword_t minit_wcnsls_banner_glyphs_end[];
 
+#if KINIT_FULL
 static void
 minit_wcnsls_glyph(kword_t glyph, unsigned int x)
 {
@@ -865,6 +872,8 @@ ocnsls_minit(void)
             minit_export(name, base, OCNSLS_X_READ));
         minit_diag_loaded(name);
 }
+
+#endif
 
 static void
 storage_patch_jump(kword_t *word, unsigned int address)
@@ -976,6 +985,7 @@ storage_minit(unsigned int kind, kword_t name)
         minit_diag_ok(name);
 }
 
+#if KINIT_FULL
 void
 drm236_minit(void)
 {
@@ -1061,6 +1071,8 @@ dtfs_minit(void)
         }
         minit_diag_loaded(name);
 }
+
+#endif
 
 static int
 root_block_services(unsigned int *readp, unsigned int *writep)
@@ -1376,6 +1388,7 @@ mfsdev_minit(void)
                 mfsdev_names[MONITORFS_DEV_DRM0] = (kword_t)SIXBIT("DRM0  ");
 }
 
+#if KINIT_FULL
 void
 slv_minit(void)
 {
@@ -1401,3 +1414,4 @@ slv_minit(void)
         }
         minit_diag_ok(name);
 }
+#endif

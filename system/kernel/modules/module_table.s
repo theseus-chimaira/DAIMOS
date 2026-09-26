@@ -2,26 +2,36 @@
         .text
         .globl cty_minit
         .globl clk_minit
+.if KINIT_FULL
         .globl ptr_minit
         .globl ptp_minit
         .globl lpt_minit
         .globl cr_minit
         .globl cp_minit
+.endif
         .globl dcs_minit
         .globl ge_minit
+.if KINIT_FULL
         .globl dpy_minit
+.endif
         .globl tty_minit
+.if KINIT_FULL
         .globl wcnsls_minit
         .globl ocnsls_minit
         .globl dtc_minit
         .globl mtc_minit
+.endif
         .globl dsk_minit
+.if KINIT_FULL
         .globl drm236_minit
+.endif
         .globl root_select_minit
         .globl storage_minit
+.if KINIT_FULL
         .globl slv_minit
         .globl memfs_minit
         .globl dtfs_minit
+.endif
         .globl blockset_minit
 .if KINIT_BADMAP
         .globl badmap_minit
