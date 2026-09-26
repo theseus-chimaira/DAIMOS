@@ -65,66 +65,70 @@ root_select_d6fs(unsigned int root_class, unsigned int ordinal)
         unsigned int index;
         unsigned int mask;
         unsigned int member;
+        unsigned int scan_unit;
         unsigned int unit;
         unsigned int physical;
         unsigned int found;
 
         for (unit = 0U; unit < ROOT_D6FS_UNITS; ++unit)
-                root_scan_unit(root_class, unit);
-        found = 0U;
-        for (unit = 0U; unit < ROOT_D6FS_UNITS; ++unit) {
-                info = root_info[unit];
-                if ((info & ROOT_INFO_VALID) == 0UL)
-                        continue;
-                mask = (unsigned int)((info >> ROOT_INFO_MASK_SHIFT) & 017U);
-                index = (unsigned int)(info & 03U);
-                if ((mask & ((1U << index) - 1U)) != 0U)
-                        continue;
-                handoff[0] = 0777777777777UL;
-                handoff[1] = 0777777777777UL;
-                for (member = 0U; member < ROOT_D6FS_UNITS; ++member) {
-                        if ((mask & (1U << member)) == 0U)
+                root_info[unit] = 0UL;
+        for (scan_unit = 0U; scan_unit < ROOT_D6FS_UNITS; ++scan_unit) {
+                root_scan_unit(root_class, scan_unit);
+                found = 0U;
+                for (unit = 0U; unit <= scan_unit; ++unit) {
+                        info = root_info[unit];
+                        if ((info & ROOT_INFO_VALID) == 0UL)
                                 continue;
-                        for (physical = 0U; physical < ROOT_D6FS_UNITS;
-                            ++physical) {
-                                kword_t candidate;
-                                unsigned int cmask;
-                                unsigned int cindex;
-
-                                candidate = root_info[physical];
-                                if ((candidate & ROOT_INFO_VALID) == 0UL)
+                        mask = (unsigned int)((info >> ROOT_INFO_MASK_SHIFT) & 017U);
+                        index = (unsigned int)(info & 03U);
+                        if ((mask & ((1U << index) - 1U)) != 0U)
+                                continue;
+                        handoff[0] = 0777777777777UL;
+                        handoff[1] = 0777777777777UL;
+                        for (member = 0U; member < ROOT_D6FS_UNITS; ++member) {
+                                if ((mask & (1U << member)) == 0U)
                                         continue;
-                                cmask = (unsigned int)((candidate >>
-                                    ROOT_INFO_MASK_SHIFT) & 017U);
-                                cindex = (unsigned int)(candidate & 03U);
-                                if (cmask == mask && cindex == member)
+                                for (physical = 0U; physical <= scan_unit;
+                                    ++physical) {
+                                        kword_t candidate;
+                                        unsigned int cmask;
+                                        unsigned int cindex;
+
+                                        candidate = root_info[physical];
+                                        if ((candidate & ROOT_INFO_VALID) == 0UL)
+                                                continue;
+                                        cmask = (unsigned int)((candidate >>
+                                            ROOT_INFO_MASK_SHIFT) & 017U);
+                                        cindex = (unsigned int)(candidate & 03U);
+                                        if (cmask == mask && cindex == member)
+                                                break;
+                                }
+                                if (physical > scan_unit)
                                         break;
+                                {
+                                        kword_t half;
+                                        half = ((kword_t)physical << 16U) |
+                                            ((root_info[physical] >> ROOT_INFO_LOC_SHIFT) &
+                                            0177777UL);
+                                        if ((member & 1U) == 0U)
+                                                handoff[member / 2U] =
+                                                    (handoff[member / 2U] & 0777777UL) |
+                                                    (half << 18U);
+                                        else
+                                                handoff[member / 2U] =
+                                                    (handoff[member / 2U] &
+                                                    0777777000000UL) | half;
+                                }
                         }
-                        if (physical == ROOT_D6FS_UNITS)
-                                break;
-                        {
-                                kword_t half;
-                                half = ((kword_t)physical << 16U) |
-                                    ((root_info[physical] >> ROOT_INFO_LOC_SHIFT) &
-                                    0177777UL);
-                                if ((member & 1U) == 0U)
-                                        handoff[member / 2U] =
-                                            (handoff[member / 2U] & 0777777UL) |
-                                            (half << 18U);
-                                else
-                                        handoff[member / 2U] =
-                                            (handoff[member / 2U] &
-                                            0777777000000UL) | half;
-                        }
+                        if (member != ROOT_D6FS_UNITS &&
+                            (mask & (1U << member)) != 0U)
+                                continue;
+                        if (found++ != ordinal)
+                                continue;
+                        kinit_boot_handoff[0] = handoff[0];
+                        kinit_boot_handoff[1] = handoff[1];
+                        return 0;
                 }
-                if (member != ROOT_D6FS_UNITS &&
-                    (mask & (1U << member)) != 0U)
-                        continue;
-                if (found++ != ordinal)
-                        continue;
-                kinit_boot_handoff[0] = handoff[0];
-                kinit_boot_handoff[1] = handoff[1];
-                return 0;
         }
         return -1;
 }
