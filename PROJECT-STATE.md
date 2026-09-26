@@ -1,3 +1,11 @@
+## 2026-09-26 direct DRM236 Stage1 boot
+
+- Added a native PDP-6 DRM236 Stage1 at `system/stand/pdp6/drm/stage1.s`.  It deliberately reuses the DSK Stage1 DBOOT contract: DBC/DB0/DB1/DBX discovery, member-mask assembly, bad-run skipping, round-robin bootstream reconstruction, three-word DAIMON header handling, raw LOWMEM streaming, and D6LZ36 expansion are unchanged in structure.
+- The device leaf is DRM-specific: one DAIMOS 128-word block maps to a Type-236 address as `unit<<16 | block<<3`, and the loader uses the proven early Type-167/236 polled DMA sequence with bounded multi-pass DP/DR completion waits.
+- `ROOT=drum` now builds and attaches `stage1-drm.pt`; other root profiles retain `stage1-dsk.pt`.  A real PDP-6 SIMH run with DSK0 deliberately unattached reaches `DRM236 OK`, `D6FS LOADED`, `INIT V1`, and `LOGIN:` from DR0, proving that the bootstream itself comes from DRM rather than switching to DRM only after DSK-loaded KINIT starts.
+- `daimos-testkit` has a permanent direct-DRM-Stage1 regression that rebuilds the drum profile, removes DSK0 from the simulator configuration, and requires the INIT/LOGIN path.
+- Revalidation with the newly uploaded tool archives found an independent DSK-root `?RT` halt after `D6FS LOADED`.  The untouched pre-DRM-Stage1 base commit `79bd176` fails identically, so this is not a regression from the DRM loader change.  It remains a separate high-priority root-selection/toolchain-integration issue.
+
 ## 2026-09-24 compressed Stage1 boot and fixed D6LZ decoder
 
 - The PDP-6 standalone loaders now share one `system/stand/pdp6/common/decompressor.inc`; the resumable D6LZ36 token core is 40 words and is installed at fixed address `000060`; the Stage1-only generic memory wrapper has been removed from permanent low core.
@@ -114,8 +122,10 @@ D6FS_BOOT_BLOCK_BUFFER() PROTOTYPE IN BLOCKSET_BOOT: KCC THEREFORE
 TREATED ITS POINTER RETURN AS AN INTEGER AND CORRUPTED THE DESCRIPTOR
 BUFFER ADDRESS.  THE EARLY POLLED TYPE-167/236 DRIVER ALSO NOW ALLOWS
 A BOUNDED MULTI-PASS WAIT LONG ENOUGH FOR ONE WORST-CASE DRUM
-REVOLUTION UNDER SIMH INSTRUCTION-RATE SCALING.  DSK/D6FS STILL
-REACHES LOGIN ON THE SAME TREE.
+REVOLUTION UNDER SIMH INSTRUCTION-RATE SCALING.  DIRECT DRM STAGE1 NOW ALSO
+REACHES LOGIN WITH DSK0 UNATTACHED.  A 2026-09-26 RECHECK WITH THE NEWLY
+UPLOADED TOOL ARCHIVES FOUND A SEPARATE DSK-ROOT ?RT FAILURE THAT IS ALSO
+PRESENT IN THE UNMODIFIED PRE-STAGE1 BASE; SEE THE CURRENT CLOSURE NOTE ABOVE.
 
 D6FS USES A SINGLE RECLAIMABLE TWO-BLOCK CACHE SLAB; A MOUNT OWNS ITS MANAGED-
 CORE READER/BACKING STATE.  EXACT EARLIER D6FS/MRES SIZE ARCHAEOLOGY IS KEPT IN
