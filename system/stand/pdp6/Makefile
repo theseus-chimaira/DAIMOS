@@ -1,4 +1,4 @@
-BUILD_SUBDIRS = dsk dtc mtc ptr
+BUILD_SUBDIRS = dsk drm dtc mtc ptr
 PDP6_STAND_DIR != pwd
 BUILD_ROOT ?= ${PDP6_STAND_DIR}/../../../build
 BUILD ?= ${BUILD_ROOT}/system/stand/pdp6

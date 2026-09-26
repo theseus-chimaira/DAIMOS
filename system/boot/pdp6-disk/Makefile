@@ -321,11 +321,16 @@ USERLAND_INPUTS = $(PROJECT_ROOT)/userland/libc/Makefile \
 	$(PROJECT_ROOT)/userland/Makefile \
 	$(PROJECT_ROOT)/system/kernel/proc/syscall.h
 
-STAGE1_SRC = $(PROJECT_ROOT)/system/stand/pdp6/dsk/stage1.s
+ifeq ($(ROOT),drum)
+STAGE1_DEVICE = drm
+else
+STAGE1_DEVICE = dsk
+endif
+STAGE1_SRC = $(PROJECT_ROOT)/system/stand/pdp6/$(STAGE1_DEVICE)/stage1.s
 STAGE1_COMMON = $(PROJECT_ROOT)/system/stand/pdp6/common/decompressor.inc \
 	$(PROJECT_ROOT)/system/stand/pdp6/common/stage1-error.inc
-STAGE1_DXR = $(BUILD)/stage1-dsk.dxr
-STAGE1_TAPE = $(BUILD)/stage1-dsk.pt
+STAGE1_DXR = $(BUILD)/stage1-$(STAGE1_DEVICE).dxr
+STAGE1_TAPE = $(BUILD)/stage1-$(STAGE1_DEVICE).pt
 DISK_DIR = $(BUILD)/disk
 DISK_IMAGE = $(DISK_DIR)/dsk0.dsk
 SIMH_INI = $(BUILD)/boot.ini
