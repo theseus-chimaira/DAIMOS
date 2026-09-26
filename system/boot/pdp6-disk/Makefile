@@ -61,6 +61,8 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/boot/kinit_late.c \
 	$(KERNEL_DIR)/boot/kinit_late_begin.s \
 	$(KERNEL_DIR)/boot/kinit_late_end.s \
+	$(KERNEL_DIR)/boot/root_select.c \
+	$(KERNEL_DIR)/boot/root_select.h \
 	$(KERNEL_DIR)/core/d6lz.c \
 	$(KERNEL_DIR)/core/d6lz.h \
 	$(KERNEL_DIR)/core/d6lz_pdp10.s \
