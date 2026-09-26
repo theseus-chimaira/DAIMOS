@@ -26,6 +26,9 @@ root_scan_unit(unsigned int root_class, unsigned int unit)
         unsigned int mask;
         unsigned int sector;
 
+#if !KINIT_FULL
+        (void)root_class;
+#endif
         block = d6fs_boot_block_buffer();
         root_info[unit] = 0UL;
 #if KINIT_FULL

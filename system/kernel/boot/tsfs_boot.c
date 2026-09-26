@@ -401,4 +401,6 @@ tsfs_boot_mount_root(void)
         return 0;
 }
 
+#else
+typedef int tsfs_boot_lowmem_translation_unit;
 #endif
