@@ -134,7 +134,6 @@ KINIT_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${BUILD}/kinit_io.s ${BUILD}/modu
 KCORE_C_SRCS = proc/exec.c \
 		mm/mm.c \
 	core/d6lz.c \
-	modules/module_runtime.c \
 	proc/proc.c \
 	fs/file.c
 
@@ -170,7 +169,6 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/exec.s \
 	$(BUILD)/d6lz.s \
 	$(BUILD)/mm.s \
-	$(BUILD)/module_runtime.s \
 	$(BUILD)/proc.s \
 	$(BUILD)/file.s \
 	$(BUILD)/vm_backend.s \

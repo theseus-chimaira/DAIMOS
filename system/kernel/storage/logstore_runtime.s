@@ -2,7 +2,7 @@
 ;
 ; KINIT performs the full record scan and installs the recovered producer
 ; cursor.  This MRES deliberately owns no 128-word scratch buffer and no sink
-; policy.  Its first slice only publishes status and bounded raw LOGSTORE I/O.
+; policy.  It publishes status, bounded raw LOGSTORE I/O, commit-last append, and wait/wake.
 ;
 ; Register service ABI:
 ;   AC5=1 STATUS: returns AC1=next sequence, AC2=capacity,,next slot,
@@ -10,6 +10,7 @@
 ;   AC5=2 READ:  AC1=relative LOGSTORE block, AC2=128-word buffer
 ;   AC5=3 WRITE: AC1=relative LOGSTORE block, AC2=128-word buffer
 ;   AC5=4 APPEND: AC1=caller-owned 128-word LSREC1 scratch block
+;   AC5=5 WAIT: AC1=observed next sequence; sleep until it changes
 ;
 ; State words:
 ;   0 root-logical LOGSTORE start
@@ -17,6 +18,7 @@
 ;   2 next producer sequence
 ;   3 capacity,,next slot
 ;   4 zero for BLOCKSET mapping; otherwise (unit+1),,physical root base
+;   5 append event flag used by WAIT
 
         .text
         .globl  logstore_mres_dispatch
@@ -24,6 +26,8 @@
         .globl  logstore_backend_read_jump
         .globl  logstore_backend_write_jump
         .globl  pdp10_ret_neg1
+        .globl  proc_wait_event
+        .globl  proc_wakeup_event
 
 logstore_mres_dispatch:
         cain    5,1
@@ -32,9 +36,28 @@ logstore_mres_dispatch:
         jrst    logstore_read
         cain    5,3
         jrst    logstore_write
-        caie    5,4
+        cain    5,4
+        jrst    logstore_append
+        caie    5,5
         jrst    pdp10_ret_neg1
-        ; Fall through to APPEND.
+        ; WAIT is keyed by the producer sequence observed by userspace.  Clear
+        ; the event, recheck the sequence, then sleep.  proc_wait_event checks
+        ; the flag again after arming the process, closing the append/sleep race.
+        camn    1,logstore_mres_state+2
+        jrst    logstore_wait_arm
+        setz    1,
+        popj    17,
+logstore_wait_arm:
+        setzm   logstore_mres_state+5
+        camn    1,logstore_mres_state+2
+        jrst    logstore_wait_sleep
+        setz    1,
+        popj    17,
+logstore_wait_sleep:
+        movei   1,logstore_mres_state+5
+        pushj   17,proc_wait_event
+        setz    1,
+        popj    17,
 
 ; Append uses a caller-owned 128-word scratch block.  The caller supplies
 ; timestamp/metadata/payload in words 2..126.  LOGSTORE owns word 0 magic,
@@ -74,6 +97,9 @@ logstore_append:
         setz    7,
         hrrm    7,logstore_mres_state+3
         aos     logstore_mres_state+2
+        setom   logstore_mres_state+5
+        movei   1,logstore_mres_state+5
+        pushj   17,proc_wakeup_event
         setz    1,
 logstore_append_done:
         popj    17,
@@ -123,4 +149,4 @@ logstore_io_direct:
 
         .bss
 logstore_mres_state:
-        .block  5
+        .block  6

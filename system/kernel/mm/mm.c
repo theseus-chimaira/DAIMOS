@@ -1,6 +1,5 @@
 #include "mm.h"
 #include "vm.h"
-#include "module_runtime.h"
 #include "proc_swap.h"
 #include "fs_mres.h"
 
@@ -221,7 +220,7 @@ extern void mach_pi_restore(kword_t state);
  * object itself.  Restore the descriptor before invoking the owner backend so
  * pin/state validation continues to see a normal MM allocation. */
 static int
-mm_move_extent(int slot, kword_t alignment, unsigned int preference)
+mm_move_extent(int slot, kword_t alignment)
 {
         struct mm_extent moved;
         kword_t old_base;
@@ -238,28 +237,16 @@ mm_move_extent(int slot, kword_t alignment, unsigned int preference)
 
         pi_state = mach_pi_disable();
         mm_delete(slot);
-        rc = mm_find_fit(words, alignment, preference, &new_base) ?
+        rc = mm_find_fit(words, alignment, MM_ALLOC_HIGH, &new_base) ?
             MM_OK : MM_ERR_FRAGMENTED;
         (void)mm_extent_insert(slot, &moved);
-        if (rc != MM_OK ||
-            (preference == MM_ALLOC_LOW ? new_base >= old_base :
-            new_base <= old_base)) {
+        if (rc != MM_OK || new_base <= old_base) {
                 mach_pi_restore(pi_state);
                 return MM_ERR_FRAGMENTED;
         }
 
         owner = MM_EXTENT_OWNER(&moved);
-        if (preference == MM_ALLOC_LOW) {
-                if (module_moves_enabled == 0U || owner == 0U ||
-                    owner > MODULE_RUNTIME_MAX ||
-                    MODULE_RUNTIME_INIT_WORDS(module_runtime_descs[owner]) == 0UL ||
-                    MODULE_RUNTIME_BASE(module_runtime_descs[owner]) != old_base ||
-                    module_runtime_move(owner, (unsigned int)new_base,
-                    (unsigned int)words) != 0)
-                        rc = MM_ERR_BUSY;
-        } else {
-                rc = vm_extent_move(owner, old_base, words, new_base);
-        }
+        rc = vm_extent_move(owner, old_base, words, new_base);
         if (rc == MM_OK) {
                 moved.span = mm_span(new_base, words);
                 mm_delete(slot);
@@ -291,24 +278,9 @@ mm_compact(kword_t words, kword_t alignment)
         i = 0;
         while (i < mm_extent_count) {
                 extent = &mm_extents[i];
-                if (MM_EXTENT_TYPE(extent) != MM_TYPE_MODULE ||
-                    MM_EXTENT_PINS(extent) != 0U ||
-                    mm_move_extent(i, 1UL, MM_ALLOC_LOW) != MM_OK) {
-                        ++i;
-                        continue;
-                }
-                if (mm_has_aligned_fit(words, alignment))
-                        return MM_OK;
-                i = 0;
-        }
-
-        i = 0;
-        while (i < mm_extent_count) {
-                extent = &mm_extents[i];
                 if (MM_EXTENT_TYPE(extent) != MM_TYPE_PROCESS ||
                     MM_EXTENT_PINS(extent) != 0U ||
-                    mm_move_extent(i, VM_EXTENT_ALIGN_WORDS,
-                    MM_ALLOC_HIGH) != MM_OK) {
+                    mm_move_extent(i, VM_EXTENT_ALIGN_WORDS) != MM_OK) {
                         ++i;
                         continue;
                 }

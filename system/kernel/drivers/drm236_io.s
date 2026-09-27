@@ -10,7 +10,7 @@
         .globl  drm236_read_block_service
         .globl  drm236_write_block_service
         .globl  drm236_active_request
-        .globl  drm236_idle_event
+        .globl  drm236_pending_request
         .globl  mfsdev_drm_reads
         .globl  mfsdev_drm_writes
         .globl  mfsdev_storage_errors
@@ -58,28 +58,44 @@ drm236_request:
 
 drm236_runtime_retry:
         movei   1,-2(017)
+        skipn   drm236_active_request
+        jrst    drm236_runtime_claim
+
+; Minimal assumption-free scheduler: retain exactly one pending request in the
+; existing state word.  There is no rotational/timing model.  If the FIFO slot
+; is occupied, wait for the active owner to complete and retry.  Slot 0 uses
+; the same path: proc_wait_event polls there, while PI completion promotes the
+; pending descriptor directly, so no scheduler wakeup is required for handoff.
+drm236_runtime_queue:
+        skipe   drm236_pending_request
+        jrst    drm236_runtime_queue_full
+        movem   1,drm236_pending_request
+        ; Close the completion/enqueue race.  If the previous owner completed
+        ; before seeing this pending pointer, claim the now-idle engine here.
         skipe   drm236_active_request
-        jrst    drm236_runtime_busy
+        jrst    drm236_runtime_wait
+        setzm   drm236_pending_request
+drm236_runtime_claim:
         movem   1,drm236_active_request
         pushj   017,drm236_start_active
+drm236_runtime_wait:
         movei   1,(017)
         pushj   017,proc_wait_event
+        jrst    drm236_runtime_finish
+
+drm236_runtime_queue_full:
+        skipn   1,drm236_active_request
+        jrst    drm236_runtime_retry
+        addi    1,2
+        pushj   017,proc_wait_event
+        jrst    drm236_runtime_retry
+
+drm236_runtime_finish:
         move    1,(017)
         move    4,-1(017)               ; preserve operation for accounting
         sub     017,[3,,3]
         sojn    1,drm236_account_error
         jrst    drm236_account_success
-
-; Close the active-request/completion race in the same way as the filesystem
-; provider lock: clear the wait event first, then recheck ownership before
-; sleeping.  An interrupt between the recheck and wait sets the event nonzero.
-drm236_runtime_busy:
-        setzm   drm236_idle_event
-        skipn   drm236_active_request
-        jrst    drm236_runtime_retry
-        movei   1,drm236_idle_event
-        pushj   017,proc_wait_event
-        jrst    drm236_runtime_retry
 
 ; Start the stack descriptor named by AC1 using PI channel 2.
 drm236_start_active:
@@ -138,11 +154,13 @@ drm236_pi_finish:
         jrst    pdp10_pi_dispatch_done
         movem   2,2(1)
         setzm   drm236_active_request
-        setom   drm236_idle_event
         addi    1,2
         pushj   017,proc_wakeup_event
-        movei   1,drm236_idle_event
-        pushj   017,proc_wakeup_event
+        skipn   1,drm236_pending_request
+        jrst    pdp10_pi_dispatch_done
+        setzm   drm236_pending_request
+        movem   1,drm236_active_request
+        pushj   017,drm236_start_active
         jrst    pdp10_pi_dispatch_done
 
 ; Early-boot polled path.  AC1 address, AC2 buffer, AC3 DP direction, AC4 DR op.

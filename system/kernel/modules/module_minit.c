@@ -28,7 +28,6 @@
 #include "badmap.h"
 #include "mm.h"
 #include "monitorfs.h"
-#include "module_runtime.h"
 
 #define CTY_X_HANDLER           0U
 #define CTY_X_PUTCHAR           1U
@@ -98,7 +97,6 @@ static unsigned int clk_pi_service_addr;
 static unsigned int tape_mres_base;
 static unsigned int dsk_mres_base;
 static unsigned int storage_router_registered;
-static unsigned int module_dynamic_binding_count;
 unsigned int blockset_read_addr;
 unsigned int blockset_write_addr;
 unsigned int blockset_state_addr;
@@ -122,6 +120,8 @@ extern kword_t drm236_read_jump;
 extern kword_t drm236_write_jump;
 extern kword_t native_sys_getchar_call;
 extern kword_t sys_dtc_read_block_jump;
+extern kword_t sys_logstore_service_jump;
+extern kword_t sys_mtc_service_jump;
 extern kword_t native_sys_putchar_call;
 extern int d6fs_reader_bootstrap_call(kword_t backing_ops);
 
@@ -893,17 +893,8 @@ static void
 storage_patch_module_jump(unsigned int base, kword_t *word,
     unsigned int address)
 {
-        kword_t offset;
-
+        (void)base;
         storage_patch_jump(word, address);
-        if (mres_last_owner == 0U || mres_last_owner > MODULE_RUNTIME_MAX ||
-            module_dynamic_binding_count >= MODULE_DYNAMIC_BIND_MAX)
-                return;
-        offset = (kword_t)(unsigned long)word - (kword_t)base;
-        if (offset >= mres_last_image_words)
-                return;
-        module_dynamic_bindings[module_dynamic_binding_count++] =
-            ((kword_t)mres_last_owner << 18U) | offset;
 }
 
 static void
@@ -968,8 +959,11 @@ storage_minit(unsigned int kind, kword_t name)
                 module_service_set(MODULE_SERVICE_DTC_WRITE_BLOCK,
                     minit_export(name, base, TAPE_X_DTC_WRITE_BLOCK));
         } else if (kind == 1U) {
-                module_service_set(MODULE_SERVICE_MTC,
-                    minit_export(name, base, TAPE_X_MTC_SERVICE));
+                unsigned int mtc_service;
+
+                mtc_service = minit_export(name, base, TAPE_X_MTC_SERVICE);
+                module_service_set(MODULE_SERVICE_MTC, mtc_service);
+                storage_patch_jump(&sys_mtc_service_jump, mtc_service);
         } else {
                 {
                         unsigned int read_service;
@@ -1194,6 +1188,7 @@ logstore_minit(void)
         state[3] = ((kword_t)recovered.capacity << 18) |
             (kword_t)recovered.next_slot;
         state[4] = packed;
+        state[5] = 0UL;
         storage_patch_module_jump(base,
             (kword_t *)(unsigned long)minit_export(name, base,
             LOGSTORE_X_READ_JUMP), read_addr);
@@ -1201,6 +1196,7 @@ logstore_minit(void)
             (kword_t *)(unsigned long)minit_export(name, base,
             LOGSTORE_X_WRITE_JUMP), write_addr);
         module_service_set(MODULE_SERVICE_LOGSTORE, service);
+        storage_patch_jump(&sys_logstore_service_jump, service);
         minit_diag_loaded(name);
 }
 #endif

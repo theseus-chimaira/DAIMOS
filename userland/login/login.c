@@ -1,4 +1,5 @@
 #include "text.h"
+#include "logevent.h"
 
 #define LOGIN_LINE_MAX 127U
 #define LOGIN_NAME_MAX 31U
@@ -333,6 +334,8 @@ main(int argc, kword_t **argv, kword_t **envp)
                         break;
                 auth = find_account(name, &account);
                 if (auth != 0) {
+                        (void)ulog_event(ULOG_SEV_WARNING, ULOG_SRC_LOGIN,
+                            ULOG_LOGIN_FAIL, (kword_t)tty);
                         (void)u_puts(1, "LOGIN INCORRECT");
                         (void)u_crlf(1);
                         continue;
@@ -351,19 +354,27 @@ main(int argc, kword_t **argv, kword_t **envp)
                             SYS_TTY_MODE_COOKED);
                         (void)u_crlf(1);
                         if (!text_eq(password, account.password)) {
+                                (void)ulog_event(ULOG_SEV_WARNING, ULOG_SRC_LOGIN,
+                                    ULOG_LOGIN_FAIL, (kword_t)tty);
                                 (void)u_puts(1, "LOGIN INCORRECT");
                                 (void)u_crlf(1);
                                 continue;
                         }
                 }
+                (void)ulog_event(ULOG_SEV_INFO, ULOG_SRC_LOGIN,
+                    ULOG_LOGIN_OK, (kword_t)account.uid);
                 if (dsys_procctl(SYS_PROCCTL_SETGID, account.gid) < 0 ||
                     dsys_procctl(SYS_PROCCTL_SETUID, account.uid) < 0 ||
                     dsys_umask(022U) < 0 || dsys_chdir(account.home) != 0) {
+                        (void)ulog_event(ULOG_SEV_ERROR, ULOG_SRC_LOGIN,
+                            ULOG_LOGIN_SESSION_FAIL, (kword_t)tty);
                         (void)u_puts(2, "LOGIN: SESSION FAILED");
                         (void)u_crlf(2);
                         break;
                 }
                 if (exec_shell(account.shell, account.home, name) != 0) {
+                        (void)ulog_event(ULOG_SEV_ERROR, ULOG_SRC_LOGIN,
+                            ULOG_LOGIN_EXEC_FAIL, (kword_t)tty);
                         (void)u_puts(2, "LOGIN: EXEC FAILED");
                         (void)u_crlf(2);
                 }

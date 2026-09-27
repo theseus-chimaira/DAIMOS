@@ -110,4 +110,6 @@ logstore_append(struct logstore *log, unsigned int severity,
         return 0;
 }
 
+#else
+typedef int logstore_lowmem_no_code_t;
 #endif

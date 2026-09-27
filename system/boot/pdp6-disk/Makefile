@@ -181,7 +181,6 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/storage/blockset_mres.h \
 	$(KERNEL_DIR)/storage/logstore.c \
 	$(KERNEL_DIR)/storage/logstore_boot.c \
-	$(KERNEL_DIR)/storage/logstore.c \
 	$(KERNEL_DIR)/storage/logstore.h \
 	$(KERNEL_DIR)/storage/logstore_drain.c \
 	$(KERNEL_DIR)/storage/logstore_mtc_sink.c \
@@ -195,13 +194,13 @@ KINIT_LATE_ASM = $(KINIT_BUILD)/kinit_late_begin.s $(KINIT_BUILD)/proc_late.s $(
 KINIT_OBJS = $(BUILD)/kinit.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kfs_boot.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/root_select.dobj $(BUILD)/tsfs_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/logstore_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj
 KINIT_LATE_OBJS = $(BUILD)/kinit_late_begin.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj
 
-KCORE_C_NAMES = exec d6lz vfs mm module_runtime proc vm_backend proc_swap file
+KCORE_C_NAMES = exec d6lz vfs mm proc vm_backend proc_swap file
 KCORE_FIXED_NAMES = $(KCORE_C_NAMES) ret_pdp10 \
 	dsk270_pdp10 drm236_pdp10 kfmt_pdp10 vfs_pdp10 fs_mres_pdp10 file_pdp10 monitorfs_pdp10 proc_pdp10 proc_run_pdp10 \
 	device_state_pdp10 syscall_info_pdp10 pclk_pdp10 lpt_io \
 	syscall_dispatch mach_user vm_backend_asm kcore_io storage_router kcore_end
-KCORE_FIXED_ASM = $(KCORE_BUILD)/d6lz_fixed.s $(KCORE_BUILD)/exec.s $(KCORE_BUILD)/d6lz.s $(KCORE_BUILD)/mm.s $(KCORE_BUILD)/module_runtime.s $(KCORE_BUILD)/proc.s $(KCORE_BUILD)/vm_backend.s $(KCORE_BUILD)/proc_swap.s $(KCORE_BUILD)/file.s $(KCORE_BUILD)/ret_pdp10.s $(KCORE_BUILD)/dsk270_pdp10.s $(KCORE_BUILD)/drm236_pdp10.s $(KCORE_BUILD)/kfmt_pdp10.s $(KCORE_BUILD)/vfs_pdp10.s $(KCORE_BUILD)/fs_mres_pdp10.s $(KCORE_BUILD)/file_pdp10.s $(KCORE_BUILD)/pipe_pdp10.s $(KCORE_BUILD)/monitorfs_pdp10.s $(KCORE_BUILD)/proc_pdp10.s $(KCORE_BUILD)/proc_run_pdp10.s $(KCORE_BUILD)/device_state_pdp10.s $(KCORE_BUILD)/syscall_info_pdp10.s $(KCORE_BUILD)/pclk_pdp10.s $(KCORE_BUILD)/lpt_io.s $(KCORE_BUILD)/syscall_dispatch.s $(KCORE_BUILD)/mach_user.s $(KCORE_BUILD)/vm_backend_asm.s $(KCORE_BUILD)/kcore_io.s $(KCORE_BUILD)/storage_router.s $(KCORE_BUILD)/kcore_end.s
-KCORE_FIXED_OBJS = $(BUILD)/d6lz_fixed.dobj $(BUILD)/exec.dobj $(BUILD)/d6lz.dobj $(BUILD)/mm.dobj $(BUILD)/module_runtime.dobj $(BUILD)/proc.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/ret_pdp10.dobj $(BUILD)/dsk270_pdp10.dobj $(BUILD)/drm236_pdp10.dobj $(BUILD)/kfmt_pdp10.dobj $(BUILD)/vfs_pdp10.dobj $(BUILD)/fs_mres_pdp10.dobj $(BUILD)/file_pdp10.dobj $(BUILD)/pipe_pdp10.dobj $(BUILD)/monitorfs_pdp10.dobj $(BUILD)/proc_pdp10.dobj $(BUILD)/proc_run_pdp10.dobj $(BUILD)/device_state_pdp10.dobj $(BUILD)/syscall_info_pdp10.dobj $(BUILD)/pclk_pdp10.dobj $(BUILD)/lpt_io.dobj $(BUILD)/syscall_dispatch.dobj $(BUILD)/mach_user.dobj $(BUILD)/vm_backend_asm.dobj $(BUILD)/kcore_io.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj
+KCORE_FIXED_ASM = $(KCORE_BUILD)/d6lz_fixed.s $(KCORE_BUILD)/exec.s $(KCORE_BUILD)/d6lz.s $(KCORE_BUILD)/mm.s $(KCORE_BUILD)/proc.s $(KCORE_BUILD)/vm_backend.s $(KCORE_BUILD)/proc_swap.s $(KCORE_BUILD)/file.s $(KCORE_BUILD)/ret_pdp10.s $(KCORE_BUILD)/dsk270_pdp10.s $(KCORE_BUILD)/drm236_pdp10.s $(KCORE_BUILD)/kfmt_pdp10.s $(KCORE_BUILD)/vfs_pdp10.s $(KCORE_BUILD)/fs_mres_pdp10.s $(KCORE_BUILD)/file_pdp10.s $(KCORE_BUILD)/pipe_pdp10.s $(KCORE_BUILD)/monitorfs_pdp10.s $(KCORE_BUILD)/proc_pdp10.s $(KCORE_BUILD)/proc_run_pdp10.s $(KCORE_BUILD)/device_state_pdp10.s $(KCORE_BUILD)/syscall_info_pdp10.s $(KCORE_BUILD)/pclk_pdp10.s $(KCORE_BUILD)/lpt_io.s $(KCORE_BUILD)/syscall_dispatch.s $(KCORE_BUILD)/mach_user.s $(KCORE_BUILD)/vm_backend_asm.s $(KCORE_BUILD)/kcore_io.s $(KCORE_BUILD)/storage_router.s $(KCORE_BUILD)/kcore_end.s
+KCORE_FIXED_OBJS = $(BUILD)/d6lz_fixed.dobj $(BUILD)/exec.dobj $(BUILD)/d6lz.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/ret_pdp10.dobj $(BUILD)/dsk270_pdp10.dobj $(BUILD)/drm236_pdp10.dobj $(BUILD)/kfmt_pdp10.dobj $(BUILD)/vfs_pdp10.dobj $(BUILD)/fs_mres_pdp10.dobj $(BUILD)/file_pdp10.dobj $(BUILD)/pipe_pdp10.dobj $(BUILD)/monitorfs_pdp10.dobj $(BUILD)/proc_pdp10.dobj $(BUILD)/proc_run_pdp10.dobj $(BUILD)/device_state_pdp10.dobj $(BUILD)/syscall_info_pdp10.dobj $(BUILD)/pclk_pdp10.dobj $(BUILD)/lpt_io.dobj $(BUILD)/syscall_dispatch.dobj $(BUILD)/mach_user.dobj $(BUILD)/vm_backend_asm.dobj $(BUILD)/kcore_io.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj
 MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io dcs_io ge_io dpy_io \
 	tty_io wcnsls_io ocnsls_io dsk_io drm236_io tape_io slv_io memfs_pdp10 \
 	dtfs dtfs_pdp10 tsfs tsfs_pdp10 blockset_dispatch badmap_dispatch fs_backing_pdp10 d6fs d6fs_provider d6fs_validate_pdp10 d6fs_pdp10
@@ -276,12 +275,14 @@ DSH_D6LZ_DXR = $(USERLAND_BUILD_ROOT)/userland/dsh.d6lz.dxr
 TSFSPROBE_DXR = $(USERLAND_BUILD_ROOT)/userland/tsfsprobe.dxr
 MOUNTTSFS_DXR = $(USERLAND_BUILD_ROOT)/userland/mounttsfs.dxr
 D6LZ_DXR = $(USERLAND_BUILD_ROOT)/userland/d6lz.dxr
+LOGDRAIN_DXR = $(USERLAND_BUILD_ROOT)/userland/logdrain.dxr
 SYSTEM_INIT_DXR ?= $(INIT_DXR)
 SYSTEM_LOGIN_DXR ?= $(LOGIN_D6LZ_DXR)
 SYSTEM_DSH_DXR ?= $(DSH_D6LZ_DXR)
 SYSTEM_TSFSPROBE_DXR ?= $(TSFSPROBE_DXR)
 SYSTEM_MOUNTTSFS_DXR ?= $(MOUNTTSFS_DXR)
 SYSTEM_D6LZ_DXR ?= $(D6LZ_DXR)
+SYSTEM_LOGDRAIN_DXR ?= $(LOGDRAIN_DXR)
 SYSTEM_INITTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/inittab
 SYSTEM_PASSWD_TEXT ?= $(PROJECT_ROOT)/userland/config/passwd
 MANUAL_BUILD = $(BUILD)/manual
@@ -290,13 +291,16 @@ SYSTEM_LOGIN_MANUAL_SRC = $(PROJECT_ROOT)/userland/manual/LOGIN.SIXMD
 SYSTEM_TSFSPROBE_MANUAL_SRC = $(PROJECT_ROOT)/userland/manual/TSFSPROBE.SIXMD
 SYSTEM_MOUNTTSFS_MANUAL_SRC = $(PROJECT_ROOT)/userland/manual/MOUNT.TSFS.SIXMD
 SYSTEM_D6LZ_MANUAL_SRC = $(PROJECT_ROOT)/userland/manual/D6LZ.SIXMD
+SYSTEM_LOGDRAIN_MANUAL_SRC = $(PROJECT_ROOT)/userland/manual/LOGDRAIN.SIXMD
 SYSTEM_INIT_MANUAL = $(MANUAL_BUILD)/INIT.s6rec
 SYSTEM_LOGIN_MANUAL = $(MANUAL_BUILD)/LOGIN.s6rec
 SYSTEM_TSFSPROBE_MANUAL = $(MANUAL_BUILD)/TSFSPROBE.s6rec
 SYSTEM_MOUNTTSFS_MANUAL = $(MANUAL_BUILD)/MOUNT.TSFS.s6rec
 SYSTEM_D6LZ_MANUAL = $(MANUAL_BUILD)/D6LZ.s6rec
+SYSTEM_LOGDRAIN_MANUAL = $(MANUAL_BUILD)/LOGDRAIN.s6rec
 SYSTEM_MANUALS = $(SYSTEM_INIT_MANUAL) $(SYSTEM_LOGIN_MANUAL) \
-	$(SYSTEM_TSFSPROBE_MANUAL) $(SYSTEM_MOUNTTSFS_MANUAL) $(SYSTEM_D6LZ_MANUAL)
+	$(SYSTEM_TSFSPROBE_MANUAL) $(SYSTEM_MOUNTTSFS_MANUAL) $(SYSTEM_D6LZ_MANUAL) \
+	$(SYSTEM_LOGDRAIN_MANUAL)
 USERLAND_INPUTS = $(PROJECT_ROOT)/userland/libc/Makefile \
 	$(PROJECT_ROOT)/userland/libc/crt0.s \
 	$(PROJECT_ROOT)/userland/libc/dsys.h \
@@ -308,6 +312,7 @@ USERLAND_INPUTS = $(PROJECT_ROOT)/userland/libc/Makefile \
 	$(PROJECT_ROOT)/userland/libc/u.h \
 	$(PROJECT_ROOT)/userland/libc/text.c \
 	$(PROJECT_ROOT)/userland/libc/text.h \
+	$(PROJECT_ROOT)/userland/logstore/logdrain.c \
 	$(PROJECT_ROOT)/userland/exec/COMMANDS \
 	$(PROJECT_ROOT)/userland/exec/cmd.h \
 	$(PROJECT_ROOT)/userland/exec/commands.c \
@@ -377,7 +382,7 @@ $(KINIT_ASM) $(KINIT_LATE_ASM): $(KINIT_STAMP)
 $(KCORE_FIXED_ASM) $(MRES_ASM): $(KCORE_STAMP)
 	@test -f $@
 
-KERNEL_ASM_OBJS = $(BUILD)/kinit.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kfs_boot.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/root_select.dobj $(BUILD)/tsfs_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/logstore_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj $(BUILD)/kinit_late_begin.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj $(BUILD)/d6lz_fixed.dobj $(BUILD)/exec.dobj $(BUILD)/d6lz.dobj $(BUILD)/mm.dobj $(BUILD)/module_runtime.dobj $(BUILD)/proc.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/ret_pdp10.dobj $(BUILD)/dsk270_pdp10.dobj $(BUILD)/drm236_pdp10.dobj $(BUILD)/kfmt_pdp10.dobj $(BUILD)/vfs_pdp10.dobj $(BUILD)/fs_mres_pdp10.dobj $(BUILD)/file_pdp10.dobj $(BUILD)/pipe_pdp10.dobj $(BUILD)/monitorfs_pdp10.dobj $(BUILD)/proc_pdp10.dobj $(BUILD)/proc_run_pdp10.dobj $(BUILD)/device_state_pdp10.dobj $(BUILD)/syscall_info_pdp10.dobj $(BUILD)/pclk_pdp10.dobj $(BUILD)/syscall_dispatch.dobj $(BUILD)/mach_user.dobj $(BUILD)/vm_backend_asm.dobj $(BUILD)/kcore_io.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj $(BUILD)/cty_io.dobj $(BUILD)/clk_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj $(BUILD)/lpt_io.dobj $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj $(BUILD)/dcs_io.dobj $(BUILD)/ge_io.dobj $(BUILD)/dpy_io.dobj $(BUILD)/tty_io.dobj $(BUILD)/wcnsls_io.dobj $(BUILD)/ocnsls_io.dobj $(BUILD)/dsk_io.dobj $(BUILD)/drm236_io.dobj $(BUILD)/tape_io.dobj $(BUILD)/slv_io.dobj $(BUILD)/memfs_pdp10.dobj $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_pdp10.dobj $(BUILD)/blockset_dispatch.dobj $(BUILD)/badmap_dispatch.dobj $(BUILD)/fs_backing_pdp10.dobj $(BUILD)/logstore_runtime.dobj $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate_pdp10.dobj $(BUILD)/d6fs_pdp10.dobj
+KERNEL_ASM_OBJS = $(BUILD)/kinit.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kfs_boot.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/root_select.dobj $(BUILD)/tsfs_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/logstore_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj $(BUILD)/kinit_late_begin.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj $(BUILD)/d6lz_fixed.dobj $(BUILD)/exec.dobj $(BUILD)/d6lz.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/ret_pdp10.dobj $(BUILD)/dsk270_pdp10.dobj $(BUILD)/drm236_pdp10.dobj $(BUILD)/kfmt_pdp10.dobj $(BUILD)/vfs_pdp10.dobj $(BUILD)/fs_mres_pdp10.dobj $(BUILD)/file_pdp10.dobj $(BUILD)/pipe_pdp10.dobj $(BUILD)/monitorfs_pdp10.dobj $(BUILD)/proc_pdp10.dobj $(BUILD)/proc_run_pdp10.dobj $(BUILD)/device_state_pdp10.dobj $(BUILD)/syscall_info_pdp10.dobj $(BUILD)/pclk_pdp10.dobj $(BUILD)/syscall_dispatch.dobj $(BUILD)/mach_user.dobj $(BUILD)/vm_backend_asm.dobj $(BUILD)/kcore_io.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj $(BUILD)/cty_io.dobj $(BUILD)/clk_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj $(BUILD)/lpt_io.dobj $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj $(BUILD)/dcs_io.dobj $(BUILD)/ge_io.dobj $(BUILD)/dpy_io.dobj $(BUILD)/tty_io.dobj $(BUILD)/wcnsls_io.dobj $(BUILD)/ocnsls_io.dobj $(BUILD)/dsk_io.dobj $(BUILD)/drm236_io.dobj $(BUILD)/tape_io.dobj $(BUILD)/slv_io.dobj $(BUILD)/memfs_pdp10.dobj $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_pdp10.dobj $(BUILD)/blockset_dispatch.dobj $(BUILD)/badmap_dispatch.dobj $(BUILD)/fs_backing_pdp10.dobj $(BUILD)/logstore_runtime.dobj $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate_pdp10.dobj $(BUILD)/d6fs_pdp10.dobj
 
 $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM)
 	@mkdir -p $(BUILD)
@@ -562,7 +567,10 @@ $(SYSTEM_MOUNTTSFS_MANUAL): $(SYSTEM_MOUNTTSFS_MANUAL_SRC) | $(MANUAL_BUILD)
 $(SYSTEM_D6LZ_MANUAL): $(SYSTEM_D6LZ_MANUAL_SRC) | $(MANUAL_BUILD)
 	$(S6FILTER) $< > $@
 
-$(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR) $(D6LZ_DXR) &: $(USERLAND_INPUTS)
+$(SYSTEM_LOGDRAIN_MANUAL): $(SYSTEM_LOGDRAIN_MANUAL_SRC) | $(MANUAL_BUILD)
+	$(S6FILTER) $< > $@
+
+$(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR) $(D6LZ_DXR) $(LOGDRAIN_DXR) &: $(USERLAND_INPUTS)
 	$(MAKE) -C $(PROJECT_ROOT)/userland build BUILD_ROOT='$(USERLAND_BUILD_ROOT)' \
 	    PDP10_PREFIX='$(PDP10_PREFIX)'
 
@@ -629,7 +637,7 @@ $(STAGE1_TAPE): $(STAGE1_DXR)
 	$(DXRCONVERT) --pdp6-readin -b 060 $< $@
 	printf '\252' >> $@
 
-$(DISK_IMAGE): $(IMAGE_BOOT_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_LOGIN_DXR) $(SYSTEM_DSH_DXR) $(SYSTEM_TSFSPROBE_DXR) $(SYSTEM_MOUNTTSFS_DXR) $(SYSTEM_D6LZ_DXR) $(SYSTEM_INITTAB_TEXT) $(SYSTEM_PASSWD_TEXT) $(SYSTEM_MANUALS)
+$(DISK_IMAGE): $(IMAGE_BOOT_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_LOGIN_DXR) $(SYSTEM_DSH_DXR) $(SYSTEM_TSFSPROBE_DXR) $(SYSTEM_MOUNTTSFS_DXR) $(SYSTEM_D6LZ_DXR) $(SYSTEM_LOGDRAIN_DXR) $(SYSTEM_INITTAB_TEXT) $(SYSTEM_PASSWD_TEXT) $(SYSTEM_MANUALS)
 	rm -rf $(DISK_DIR)
 	$(MKDSK) -n 1 -m clean -p $(IMAGE_BOOT_WORDS) -o $(DISK_DIR) \
 	    --d6fs-layout --logstore-blocks $(D6FS_LOGSTORE_BLOCKS) \
@@ -649,11 +657,13 @@ $(DISK_IMAGE): $(IMAGE_BOOT_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_LOGIN_DXR) $(SYST
 	    -f "/SYSTEM/EXEC/TSFSPROBE:$(SYSTEM_TSFSPROBE_DXR):555:dxr" \
 	    -f "/SYSTEM/EXEC/MOUNT.TSFS:$(SYSTEM_MOUNTTSFS_DXR):555:dxr" \
 	    -f "/SYSTEM/EXEC/D6LZ:$(SYSTEM_D6LZ_DXR):555:dxr" \
+	    -f "/SYSTEM/EXEC/LOGDRAIN:$(SYSTEM_LOGDRAIN_DXR):555:dxr" \
 	    -f "/SYSTEM/MANUAL/INIT:$(SYSTEM_INIT_MANUAL):444:binwords" \
 	    -f "/SYSTEM/MANUAL/LOGIN:$(SYSTEM_LOGIN_MANUAL):444:binwords" \
 	    -f "/SYSTEM/MANUAL/TSFSPROBE:$(SYSTEM_TSFSPROBE_MANUAL):444:binwords" \
 	    -f "/SYSTEM/MANUAL/MOUNT.TSFS:$(SYSTEM_MOUNTTSFS_MANUAL):444:binwords" \
 	    -f "/SYSTEM/MANUAL/D6LZ:$(SYSTEM_D6LZ_MANUAL):444:binwords" \
+	    -f "/SYSTEM/MANUAL/LOGDRAIN:$(SYSTEM_LOGDRAIN_MANUAL):444:binwords" \
 	    -f "/CONFIG/INITTAB:$(SYSTEM_INITTAB_TEXT):644:text" \
 	    -f "/CONFIG/PASSWD:$(SYSTEM_PASSWD_TEXT):600:text"
 	$(LOGSTORE) -n 1 -d $(DISK_DIR) --init

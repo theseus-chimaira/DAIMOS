@@ -56,6 +56,17 @@
 #define SYS_EXT_TSFS_MOUNT         041U
 #define SYS_EXT_D6FS_MOUNT         042U
 #define SYS_EXT_RTCTL              043U
+#define SYS_EXT_LOGCTL             044U
+
+#define SYS_LOGCTL_STATUS             0U
+#define SYS_LOGCTL_READ_BLOCK         1U
+#define SYS_LOGCTL_WRITE_BLOCK        2U
+#define SYS_LOGCTL_MTC_STATUS         3U
+#define SYS_LOGCTL_MTC_WRITE          4U
+#define SYS_LOGCTL_MTC_FILEMARK       5U
+#define SYS_LOGCTL_MTC_REWIND         6U
+#define SYS_LOGCTL_WAIT               7U
+#define SYS_LOGCTL_APPEND            010U
 
 #define SYS_RTCTL_DISABLE            0U
 #define SYS_RTCTL_ENABLE             1U

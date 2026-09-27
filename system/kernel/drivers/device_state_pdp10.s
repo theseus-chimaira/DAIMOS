@@ -60,11 +60,11 @@ storage_iowd:
 storage_count:
         .block  1                      ; 013 OCNSLS has no OUT
         .block  3                      ; 014..016 OUT counters
-        .globl  drm236_idle_event
+        .globl  drm236_pending_request
         .globl  mfsdev_d6set_writes
         .globl  mfsdev_drm_writes
-drm236_idle_event:
-        .block  1                      ; 017 SLV0 has no OUT
+drm236_pending_request:
+        .block  1                      ; 017 SLV0 has no OUT; one-request DRM FIFO
 mfsdev_d6set_writes:
         .block  1                      ; 020 D6SET0 request writes
 mfsdev_drm_writes:

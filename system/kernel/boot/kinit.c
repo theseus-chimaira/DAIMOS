@@ -5,7 +5,6 @@
 #include "kboot.h"
 #include "mm.h"
 #include "mm_internal.h"
-#include "module_runtime.h"
 #include "proc.h"
 
 
@@ -121,7 +120,7 @@ mres_install(const kword_t *package, unsigned int *basep)
 
                 image_words = (kword_t)init_words + (kword_t)bss_words;
                 if (image_words > KINIT_HALF_MASK ||
-                    mres_owner_next > MODULE_RUNTIME_MAX ||
+                    mres_owner_next > MM_OWNER_MASK ||
                     mm_alloc(image_words, MM_TYPE_MODULE, mres_owner_next,
                     MM_ALLOC_LOW, &alloc_base) != MM_OK)
                         return -1;
@@ -154,21 +153,14 @@ mres_install(const kword_t *package, unsigned int *basep)
         }
         for (i = 0U; i < bss_words; ++i)
                 dst[init_words + i] = 0;
-        if (mres_owner_next == 0U || mres_owner_next > MODULE_RUNTIME_MAX ||
-            MODULE_RUNTIME_INIT_WORDS(module_runtime_descs[mres_owner_next]) !=
-            0UL)
+        if (mres_owner_next == 0U || mres_owner_next > MM_OWNER_MASK)
                 goto fail;
         /* Packed boot MRES is permanent.  Commit it out of the general MM
-         * table immediately: its runtime descriptor retains the service base,
-         * while MM must spend descriptors only on memory that can later move
-         * or be reclaimed. */
-        module_runtime_descs[mres_owner_next] =
-            ((kword_t)init_words << 18U) | (kword_t)base;
+         * table immediately; MM descriptors are reserved for memory that can
+         * later move or be reclaimed. */
         if (mm_boot_reserve((kword_t)base, MM_TYPE_MODULE, mres_owner_next) !=
-            MM_OK) {
-                module_runtime_descs[mres_owner_next] = 0UL;
+            MM_OK)
                 goto fail;
-        }
         mres_next_addr = base + init_words + bss_words;
         *basep = base;
         mres_last_owner = mres_owner_next;
@@ -319,7 +311,6 @@ module_run_minits(void)
                         kinit_halt();
         }
         module_mres_package = 0;
-        module_moves_enabled = 1U;
 }
 
 void

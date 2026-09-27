@@ -512,6 +512,8 @@ native_sys_ext_nonpipe:
         jrst    native_sys_d6fs_mount
         cain    1,043                  ; SYS_EXT_RTCTL
         jrst    native_sys_rtctl
+        cain    1,044                  ; SYS_EXT_LOGCTL
+        jrst    native_sys_logctl
         cain    1,022                  ; SYS_EXT_EXEC
         jrst    native_sys_exec
         caie    1,021                  ; SYS_EXT_MKFIFO
@@ -524,6 +526,163 @@ native_sys_ext_nonpipe:
         hrrz    2,2
         pushj   17,file_mkfifo
         jrst    native_sys_mapped_return
+
+
+; Privileged LOGSTORE drain transport.  AC2=SYS_LOGCTL_*, AC3=argument,
+; AC4=user buffer where required.  Sink policy and drain-state recovery remain
+; in userland; these patched jumps expose only the already-resident LOGSTORE
+; and MTC services.
+native_sys_logctl:
+        push    17,2
+        push    17,3
+        push    17,4
+        pushj   17,file_check_root
+        jumpn   1,native_sys_logctl_bad3
+        move    5,-2(17)               ; operation
+        caile   5,010
+        jrst    native_sys_logctl_bad3
+        cain    5,0                    ; STATUS
+        jrst    native_sys_logctl_status
+        cain    5,1                    ; READ BLOCK
+        jrst    native_sys_logctl_logio
+        cain    5,2                    ; WRITE BLOCK
+        jrst    native_sys_logctl_logio
+        cain    5,3                    ; MTC STATUS
+        jrst    native_sys_logctl_mtc_status
+        cain    5,4                    ; MTC WRITE
+        jrst    native_sys_logctl_mtc_write
+        cain    5,5                    ; MTC FILEMARK
+        jrst    native_sys_logctl_mtc_filemark
+        cain    5,7                    ; LOGSTORE WAIT
+        jrst    native_sys_logctl_wait
+        cain    5,010                  ; LOGSTORE APPEND
+        jrst    native_sys_logctl_append
+        ; MTC REWIND
+        move    1,-1(17)               ; unit
+        movei   4,0000400
+        pushj   17,sys_mtc_service_jump
+        jrst    native_sys_logctl_done3
+
+native_sys_logctl_status:
+        move    1,(17)                 ; user status[3]
+        pushj   17,native_sys_map_one
+        jumpe   1,native_sys_logctl_bad3
+        move    6,1
+        move    0,1
+        addi    0,3
+        move    7,3
+        add     7,4
+        camle   0,7
+        jrst    native_sys_logctl_bad_map3
+        movei   5,1
+        pushj   17,sys_logstore_service_jump
+        movem   1,(6)
+        movem   2,1(6)
+        movem   3,2(6)
+        pushj   17,vm_user_mapping_release
+        setz    1,
+        jrst    native_sys_logctl_done3
+
+native_sys_logctl_logio:
+        move    1,(17)                 ; user 128-word block
+        pushj   17,native_sys_map_one
+        jumpe   1,native_sys_logctl_bad3
+        move    6,1
+        move    0,1
+        addi    0,0200
+        move    7,3
+        add     7,4
+        camle   0,7
+        jrst    native_sys_logctl_bad_map3
+        move    1,-1(17)               ; relative block
+        move    2,6
+        move    5,-2(17)
+        addi    5,1                    ; LOGSTORE MRES READ=2/WRITE=3
+        pushj   17,sys_logstore_service_jump
+        push    17,1
+        pushj   17,vm_user_mapping_release
+        pop     17,1
+        jrst    native_sys_logctl_done3
+
+native_sys_logctl_mtc_status:
+        move    1,(17)                 ; user status word
+        pushj   17,native_sys_map_one
+        jumpe   1,native_sys_logctl_bad3
+        move    6,1
+        move    1,-1(17)               ; unit
+        movei   4,1
+        pushj   17,sys_mtc_service_jump
+        movem   1,(6)
+        pushj   17,vm_user_mapping_release
+        setz    1,
+        jrst    native_sys_logctl_done3
+
+native_sys_logctl_mtc_write:
+        move    1,(17)                 ; user record
+        pushj   17,native_sys_map_one
+        jumpe   1,native_sys_logctl_bad3
+        move    6,1
+        move    0,1
+        addi    0,0200
+        move    7,3
+        add     7,4
+        camle   0,7
+        jrst    native_sys_logctl_bad_map3
+        move    1,-1(17)               ; unit
+        move    2,6
+        movei   3,0200
+        seto    4,                     ; MTC_OP_WRITE
+        pushj   17,sys_mtc_service_jump
+        push    17,1
+        pushj   17,vm_user_mapping_release
+        pop     17,1
+        jrst    native_sys_logctl_done3
+
+native_sys_logctl_mtc_filemark:
+        move    1,-1(17)               ; unit
+        movei   4,0001400
+        pushj   17,sys_mtc_service_jump
+        jrst    native_sys_logctl_done3
+
+native_sys_logctl_wait:
+        move    1,-1(17)               ; producer sequence seen by caller
+        movei   5,5                    ; LOGSTORE_MRES_OP_WAIT
+        pushj   17,sys_logstore_service_jump
+        jrst    native_sys_logctl_done3
+
+native_sys_logctl_append:
+        move    1,(17)                 ; user 128-word record scratch
+        pushj   17,native_sys_map_one
+        jumpe   1,native_sys_logctl_bad3
+        move    6,1
+        move    0,1
+        addi    0,0200
+        move    7,3
+        add     7,4
+        camle   0,7
+        jrst    native_sys_logctl_bad_map3
+        move    1,6
+        movei   5,4                    ; LOGSTORE_MRES_OP_APPEND
+        pushj   17,sys_logstore_service_jump
+        push    17,1
+        pushj   17,vm_user_mapping_release
+        pop     17,1
+        jrst    native_sys_logctl_done3
+
+native_sys_logctl_bad_map3:
+        pushj   17,vm_user_mapping_release
+native_sys_logctl_bad3:
+        seto    1,
+native_sys_logctl_done3:
+        sub     17,[3,,3]
+        popj    17,
+
+        .globl  sys_logstore_service_jump
+sys_logstore_service_jump:
+        jrst    pdp10_ret_neg1
+        .globl  sys_mtc_service_jump
+sys_mtc_service_jump:
+        jrst    pdp10_ret_neg1
 
 ; EXEC AC2 points at an inline, versioned launch block.  Five stable
 ; kernel-stack words receive entry, stack, argc, argv, and envp.  Success has

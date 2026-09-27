@@ -1,4 +1,5 @@
 #include "text.h"
+#include "logevent.h"
 
 #define INIT_MAX_ENTRIES 8U
 #define INIT_LINE_MAX 127U
@@ -205,8 +206,12 @@ main(void)
                 (void)dsys_exit(1);
                 return 1;
         }
+        (void)ulog_event(ULOG_SEV_INFO, ULOG_SRC_INIT, ULOG_INIT_READY,
+            (kword_t)init_count);
         for (i = 0U; i < init_count; ++i) {
                 if (spawn_entry(&init_entries[i]) != 0) {
+                        (void)ulog_event(ULOG_SEV_ERROR, ULOG_SRC_INIT,
+                            ULOG_INIT_RUN_FAIL, (kword_t)i);
                         (void)u_puts(2, "INIT: RUN FAILED");
                         (void)u_crlf(2);
                 }
@@ -223,6 +228,8 @@ main(void)
                         init_entries[i].pid = 0U;
                         if (init_entries[i].action == INIT_RESPAWN &&
                             spawn_entry(&init_entries[i]) != 0) {
+                                (void)ulog_event(ULOG_SEV_ERROR, ULOG_SRC_INIT,
+                                    ULOG_INIT_RESPAWN_FAIL, (kword_t)i);
                                 (void)u_puts(2, "INIT: RESPAWN FAILED");
                                 (void)u_crlf(2);
                         }

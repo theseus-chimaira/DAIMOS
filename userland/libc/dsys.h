@@ -39,6 +39,7 @@ int dsys_wait(unsigned int selector, kword_t *status, unsigned int flags);
 int dsys_getpid(void);
 int dsys_procctl(unsigned int op, unsigned int arg);
 int dsys_rtctl(unsigned int command);
+int dsys_logctl(unsigned int op, kword_t arg, kword_t *buf);
 #define dsys_isatty(fd) \
         dsys_procctl(SYS_PROCCTL_ISATTY, (unsigned int)(fd))
 #define dsys_umask(mask) \
