@@ -24,6 +24,7 @@
         .globl dsk_minit
 .if KINIT_FULL
         .globl drm236_minit
+        .globl logstore_minit
 .endif
         .globl root_select_minit
         .globl storage_minit
@@ -60,6 +61,7 @@
         .globl dsk_mres_package
 .if KINIT_FULL
         .globl drm236_mres_package
+        .globl logstore_mres_package
         .globl slv_mres_package
         .globl memfs_mres_package
         .globl dtfs_mres_package
@@ -118,6 +120,9 @@ __minit_table_begin:
 .endif
         .word root_select_minit,,0
         .word blockset_minit,,blockset_mres_package
+.if KINIT_FULL
+        .word logstore_minit,,logstore_mres_package
+.endif
 .if KINIT_BADMAP
         .word badmap_minit,,badmap_mres_package
 .endif

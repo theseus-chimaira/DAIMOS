@@ -12,6 +12,12 @@ logstore_boot_configure(kword_t start, kword_t blocks)
 }
 
 kword_t
+logstore_boot_start_block(void)
+{
+        return logstore_boot_start;
+}
+
+kword_t
 logstore_boot_blocks(void)
 {
         return logstore_boot_count;

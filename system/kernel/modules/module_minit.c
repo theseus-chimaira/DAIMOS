@@ -21,6 +21,7 @@
 #include "d6fs.h"
 #include "blockset_mres.h"
 #include "blockset_boot.h"
+#include "logstore.h"
 #if KINIT_FULL
 #include "root_select.h"
 #endif
@@ -76,6 +77,12 @@
 #define DRM_X_HANDLER             0U
 #define DRM_X_READ_BLOCK          1U
 #define DRM_X_WRITE_BLOCK         2U
+
+#define LOGSTORE_X_DISPATCH       0U
+#define LOGSTORE_X_STATE          1U
+#define LOGSTORE_X_READ_JUMP      2U
+#define LOGSTORE_X_WRITE_JUMP     3U
+
 
 #define DRM_PROBE_PI              7U
 #define DRM_PI_MASK               0000007UL
@@ -1135,6 +1142,68 @@ blockset_minit(void)
          * the validated physical layout before D6FS is installed. */
         (void)blockset_boot_discover(&super_a, &super_b);
 }
+
+#if KINIT_FULL
+void
+logstore_minit(void)
+{
+        struct logstore recovered;
+        static kword_t scratch[BLOCKSET_BLOCK_WORDS];
+        kword_t *state;
+        kword_t base_block;
+        kword_t blocks;
+        kword_t tail;
+        kword_t packed;
+        kword_t name;
+        unsigned int base;
+        unsigned int members;
+        unsigned int read_addr;
+        unsigned int write_addr;
+        unsigned int service;
+        unsigned int unit;
+
+        if (logstore_boot_blocks() < 3UL)
+                return;
+        if (logstore_recover(&recovered, scratch) != 0) {
+                minit_diag_notok((kword_t)SIXBIT("LOGSTR"));
+                return;
+        }
+        members = blockset_boot_member_count_hint();
+        if (members == 0U)
+                return;
+        name = (kword_t)SIXBIT("LOGSTR");
+        base = minit_install(name);
+        service = minit_export(name, base, LOGSTORE_X_DISPATCH);
+        state = (kword_t *)(unsigned long)minit_export(name, base,
+            LOGSTORE_X_STATE);
+        if (members == 1U) {
+                if (!blockset_boot_member(0U, &unit, &base_block, &blocks,
+                    &tail) || root_block_services(&read_addr, &write_addr) != 0)
+                        minit_fatal(name);
+                packed = ((kword_t)(unit + 1U) << 18) | base_block;
+        } else {
+                if (blockset_read_addr == 0U || blockset_write_addr == 0U)
+                        minit_fatal(name);
+                read_addr = blockset_read_addr;
+                write_addr = blockset_write_addr;
+                packed = 0UL;
+        }
+        state[0] = logstore_boot_start_block();
+        state[1] = logstore_boot_blocks();
+        state[2] = recovered.next_sequence;
+        state[3] = ((kword_t)recovered.capacity << 18) |
+            (kword_t)recovered.next_slot;
+        state[4] = packed;
+        storage_patch_module_jump(base,
+            (kword_t *)(unsigned long)minit_export(name, base,
+            LOGSTORE_X_READ_JUMP), read_addr);
+        storage_patch_module_jump(base,
+            (kword_t *)(unsigned long)minit_export(name, base,
+            LOGSTORE_X_WRITE_JUMP), write_addr);
+        module_service_set(MODULE_SERVICE_LOGSTORE, service);
+        minit_diag_loaded(name);
+}
+#endif
 
 #if KINIT_BADMAP
 

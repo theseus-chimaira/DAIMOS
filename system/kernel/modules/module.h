@@ -34,7 +34,8 @@ extern kword_t __minit_table_end;
 #define MODULE_SERVICE_DRM_READ_BLOCK    26U
 #define MODULE_SERVICE_DRM_WRITE_BLOCK   27U
 #define MODULE_SERVICE_LPT_PUTCHAR       28U
-#define MODULE_SERVICE_COUNT             29U
+#define MODULE_SERVICE_LOGSTORE          29U
+#define MODULE_SERVICE_COUNT             30U
 
 void module_run_minits(void);
 void badmap_post_minits(void);

@@ -97,6 +97,7 @@ KINIT_SRCS = boot/kinit.c \
 	fs/d6fs_super_boot.c \
 	storage/blockset_boot.c \
 	storage/logstore_boot.c \
+	storage/logstore.c \
 	proc/proc_boot.c \
 	proc/proc_swap_boot.c
 
@@ -111,6 +112,7 @@ KINIT_C_ASM = $(BUILD)/kinit.s \
 	$(BUILD)/d6fs_super_boot.s \
 	$(BUILD)/blockset_boot.s \
 	$(BUILD)/logstore_boot.s \
+	$(BUILD)/logstore.s \
 	$(BUILD)/proc_boot.s \
 	$(BUILD)/proc_swap_boot.s
 
@@ -214,6 +216,7 @@ MRES_FIXED_SRCS = fs/d6fs_validate_pdp10.s \
 	storage/blockset_dispatch.s \
 	storage/badmap_dispatch.s \
 	storage/fs_backing_pdp10.s \
+	storage/logstore_runtime.s \
 	drivers/dcs_io.s \
 	drivers/ge_io.s \
 	drivers/dpy_io.s \
@@ -243,6 +246,7 @@ MRES_ASM = $(BUILD)/dtfs.s \
 	$(BUILD)/blockset_dispatch.s \
 	$(BUILD)/badmap_dispatch.s \
 	$(BUILD)/fs_backing_pdp10.s \
+	$(BUILD)/logstore_runtime.s \
 	$(BUILD)/dcs_io.s \
 	$(BUILD)/ge_io.s \
 	$(BUILD)/dpy_io.s \
@@ -374,6 +378,7 @@ COPY_ASM_SRCS = core/ret_pdp10.s \
 	storage/blockset_dispatch.s \
 	storage/badmap_dispatch.s \
 	storage/fs_backing_pdp10.s \
+	storage/logstore_runtime.s \
 	drivers/dcs_io.s \
 	drivers/ge_io.s \
 	drivers/dpy_io.s \
@@ -419,6 +424,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret_pdp10.s \
 	$(BUILD)/blockset_dispatch.s \
 	$(BUILD)/badmap_dispatch.s \
 	$(BUILD)/fs_backing_pdp10.s \
+	$(BUILD)/logstore_runtime.s \
 	$(BUILD)/dcs_io.s \
 	$(BUILD)/ge_io.s \
 	$(BUILD)/dpy_io.s \

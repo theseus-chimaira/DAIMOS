@@ -61,6 +61,7 @@ mres_objects()
         memfs)   echo 'memfs_pdp10' ;;
         dtfs)    echo 'dtfs dtfs_pdp10 tsfs tsfs_pdp10' ;;
         blockset) echo 'blockset_dispatch' ;;
+        logstore) echo 'logstore_runtime' ;;
         d6fs)    echo 'fs_backing_pdp10 d6fs d6fs_provider d6fs_validate_pdp10 d6fs_pdp10' ;;
         *) return 1 ;;
         esac
@@ -85,7 +86,7 @@ object_words()
 total=$kcore
 blockset_words=0
 for name in cty clk ptr ptp cr cp dcs ge dpy tty wcnsls ocnsls dsk tape slv \
-    drm memfs dtfs blockset d6fs; do
+    drm memfs dtfs blockset logstore d6fs; do
         package="$build/$name-mres.dobj"
         [ -f "$package" ] || { echo "missing MRES package: $package" >&2; exit 1; }
         words=0

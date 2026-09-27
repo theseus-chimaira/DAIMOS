@@ -1,3 +1,4 @@
+#if !defined(KINIT_FULL) || KINIT_FULL
 #include "logstore.h"
 
 static void
@@ -108,3 +109,5 @@ logstore_append(struct logstore *log, unsigned int severity,
         log->next_sequence = sequence + 1UL;
         return 0;
 }
+
+#endif

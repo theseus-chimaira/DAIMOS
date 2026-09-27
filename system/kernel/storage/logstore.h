@@ -13,6 +13,10 @@
 #define LOGSTORE_DRAIN_EMPTY    1
 #define LOGSTORE_DRAIN_REEL     2
 
+#define LOGSTORE_MRES_OP_STATUS      1U
+#define LOGSTORE_MRES_OP_READ_BLOCK  2U
+#define LOGSTORE_MRES_OP_WRITE_BLOCK 3U
+
 struct logstore {
         kword_t next_sequence;
         unsigned int next_slot;
@@ -28,6 +32,7 @@ struct logstore_drain {
 };
 
 void logstore_boot_configure(kword_t start, kword_t blocks);
+kword_t logstore_boot_start_block(void);
 kword_t logstore_boot_blocks(void);
 int logstore_boot_read(kword_t blockno, kword_t block[BLOCKSET_BLOCK_WORDS]);
 int logstore_boot_write(kword_t blockno,
