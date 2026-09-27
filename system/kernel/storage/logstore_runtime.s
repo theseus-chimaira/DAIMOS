@@ -9,6 +9,7 @@
 ;                AC3=LOGSTORE blocks
 ;   AC5=2 READ:  AC1=relative LOGSTORE block, AC2=128-word buffer
 ;   AC5=3 WRITE: AC1=relative LOGSTORE block, AC2=128-word buffer
+;   AC5=4 APPEND: AC1=caller-owned 128-word LSREC1 scratch block
 ;
 ; State words:
 ;   0 root-logical LOGSTORE start
@@ -31,7 +32,51 @@ logstore_mres_dispatch:
         jrst    logstore_read
         cain    5,3
         jrst    logstore_write
+        caie    5,4
         jrst    pdp10_ret_neg1
+        ; Fall through to APPEND.
+
+; Append uses a caller-owned 128-word scratch block.  The caller supplies
+; timestamp/metadata/payload in words 2..126.  LOGSTORE owns word 0 magic,
+; word 1 sequence, and word 127 commit trailer.  State advances only after the
+; backing write succeeds.
+logstore_append:
+        jumpe   1,pdp10_ret_neg1
+        move    4,1                     ; stable caller scratch pointer
+        move    6,logstore_mres_state+2 ; next sequence
+        jumpe   6,pdp10_ret_neg1
+        move    0,6
+        aoje    0,pdp10_ret_neg1        ; reject 36-bit sequence exhaustion
+        hrrz    7,3(4)                  ; payload words
+        caile   7,0173                  ; 123 payload words maximum
+        jrst    pdp10_ret_neg1
+        move    0,[0546362454321]       ; SIXBIT /LSREC1/
+        movem   0,(4)
+        movem   6,1(4)
+        move    1,7
+        lsh     1,022                   ; payload_words << 18
+        add     1,6
+        add     1,0
+        setcm   1,1
+        tro     1,1
+        movem   1,0177(4)
+
+        hrrz    1,logstore_mres_state+3 ; producer slot
+        addi    1,2                     ; skip state A/B
+        move    2,4
+        pushj   17,logstore_write
+        jumpn   1,logstore_append_done
+
+        hrrz    7,logstore_mres_state+3
+        aoj     7,
+        hlrz    0,logstore_mres_state+3
+        caml    7,0
+        setz    7,
+        hrrm    7,logstore_mres_state+3
+        aos     logstore_mres_state+2
+        setz    1,
+logstore_append_done:
+        popj    17,
 
 logstore_status:
         move    1,logstore_mres_state+2

@@ -16,6 +16,7 @@
 #define LOGSTORE_MRES_OP_STATUS      1U
 #define LOGSTORE_MRES_OP_READ_BLOCK  2U
 #define LOGSTORE_MRES_OP_WRITE_BLOCK 3U
+#define LOGSTORE_MRES_OP_APPEND      4U
 
 struct logstore {
         kword_t next_sequence;
