@@ -1296,7 +1296,7 @@ proc_tty_read_enter_retry:
         andi    4,0377                 ; current pgrp
         camn    3,4
         popj    17,                    ; AC1 still tty id
-        move    1,3
+        move    1,4                    ; stop the current background pgrp
         movei   2,3                    ; SYS_EVENT_TSTP
         movei   3,1                    ; group delivery
         pushj   17,proc_event_send
