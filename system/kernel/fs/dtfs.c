@@ -472,7 +472,9 @@ dtfs_mount_unit(unsigned int unit, vnode_t target,
                 return -1;
         format = VFS_MOUNT_ID(root);
         dtfs_patch_media(format, media);
-        dtfs_cache_mount = format;
+        /* Userspace validated the media in its own buffer.  Our shared
+         * resident directory cache has not been populated for this mount. */
+        dtfs_cache_mount = 0U;
         *rootp = root;
         return 0;
 }
