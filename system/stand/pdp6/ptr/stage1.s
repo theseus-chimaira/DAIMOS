@@ -1,22 +1,25 @@
-; stage1.s -- two-tape opaque-image Stage1 for PDP-6 paper tape.
+; stage1.s -- two-tape D6LZ36 Stage1 for PDP-6 paper tape.
 ;
 ; Stage0 loads this loader from RIM paper tape.  Stage1 then reads two raw
 ; five-byte 36-bit-word streams.  Each tape starts with a word count.
 ;
 ; Tape 1:
-;       word 0      payload word count
-;       words 1..   first opaque payload -> 040000...
+;       word 0      tape payload word count
+;       word 1      SIXBIT DAIMON
+;       word 2      uncompressed_words,,entry_offset
+;       word 3      compressed_words,,0
+;       words 4..   first compressed segment
 ;
 ; After Tape 1 Stage1 prints "TAPE2 " through the installed SIXBIT helper,
 ; resets the reader, and waits for Tape 2.  Tape 2 is
-; loaded immediately after the Tape 1 high-memory payload:
+; loaded immediately after the Tape 1 compressed segment:
 ;
-; Tape 2:
-;       word 0      payload word count
-;       remainder   second opaque payload  -> 040000 + tape1_count
+;       word 0      remaining compressed word count
+;       remainder   second compressed segment
 ;
-; When Tape 2 is complete Stage1 enters the first payload at 040000.  Image
-; contents are deliberately opaque to Stage1; there is no image validation.
+; The two compressed segments are staged contiguously immediately above the
+; final uncompressed image, expanded at 030000 by the shared fixed low-core
+; decoder, then entered at the header-relative entry point.
 ;
 ; The PDP-6 Type 760 PTR interface has no reader-error status bit, so a reader
 ; that cannot produce the next character simply never raises DONE.
@@ -36,14 +39,26 @@ start:
         blt 01,077776
         cono 0104,0020
 
-; Read Tape 1 count.
+        ; Read Tape 1 count and the normal compressed-image header.
         pushj 017,read_word
-
-; Load Tape 1 contiguously at 040000.
         move 02,03
-        movei 01,040000
+        pushj 017,read_word
+        came 03,daimon_magic
+        jrst bad_tape
+        pushj 017,read_word
+        hlrz 07,03
+        movem 07,image_words
+        hrrz 016,03
+        addi 016,030000
+        pushj 017,read_word
+        hlrz 07,03
+        movem 07,compressed_words
+        subi 02,03
+        move 07,02
+        movei 01,030000
+        add 01,image_words
         pushj 017,read_words
-        move 07,01
+        movem 01,stage_ptr
 
         ; One word is enough to tell the operator why the reader stopped.
         move 01,msg_tape2
@@ -54,13 +69,25 @@ start:
         cono 0104,0020
         pushj 017,read_word
         move 02,03
-        move 01,07
+        move 01,stage_ptr
         pushj 017,read_words
+
         movei 01,d6lz_image_start
         hrl 01,01
         hrri 01,d6lz_fixed_base
         blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
-        jrst 040000
+
+        movei 012,030000
+        move 013,image_words
+        move 03,012
+        add 03,013
+        move 04,compressed_words
+        move 014,012
+        setz 011,
+        pushj 017,d6lz_fixed_base
+        jumpn 00,bad_tape
+        jumpn 04,bad_tape
+        jrst 0(016)
 
 read_words:
 read_loop:
@@ -86,10 +113,18 @@ read_byte_loop:
         sojg 04,read_byte_loop
         popj 017,
 
+bad_tape:
+        halt .
+
 ioword:      .word 0
 tmp:         .word 0
 msg_tape2:   .word 0644160452200        ; "TAPE2 "
+daimon_magic:.word 0444151555756
 bootstrap_sixbit_image:
         .include "../common/sixbit-fixed.inc"
 
         .include "../common/decompressor.inc"
+        .bss
+image_words:      .block 1
+compressed_words: .block 1
+stage_ptr:        .block 1
