@@ -1,8 +1,16 @@
-; stage1.s -- minimal opaque-image Stage1 for PDP-6 magnetic tape.
+; stage1.s -- D6LZ36 boot-image Stage1 for PDP-6 magnetic tape.
 ;
-; Stage0 loads this loader from RIM paper tape. Stage1 reads one magnetic-tape record
-; through a Type 516 control and Type 136 data control directly to 040000.
-; The record boundary terminates the opaque image; execution starts at 040000.
+; Stage0 loads this loader from RIM paper tape.  Stage1 reads one magnetic-tape
+; record through a Type 516 control and Type 136 data control.  The record is:
+;
+;       word 0      SIXBIT DAIMON
+;       word 1      uncompressed_words,,entry_offset
+;       word 2      compressed_words,,0
+;       remainder   D6LZ36 payload
+;
+; Compressed input is staged immediately after the final image range, expanded
+; at 030000 by the shared fixed low-core decoder, and entered at the relative
+; entry point.
 ;
 ; Do not test the Type 516 PARITY_ERR bit here. The historical PDP-6 SIMH
 ; 7-track implementation asserts it spuriously on ordinary legacy tape images.
@@ -23,13 +31,51 @@ start:
         ; Type 516: unit 0, 556 bpi, binary parity, read forward.
         cono 0220,052400
 
-        movei 01,040000
-read_loop:
+        pushj 017,read_word
+        came 03,daimon_magic
+        jrst bad_tape
+        pushj 017,read_word
+        hlrz 013,03
+        jumpe 013,bad_tape
+        hrrz 05,03
+        addi 05,030000
+        pushj 017,read_word
+        hlrz 04,03
+        jumpe 04,bad_tape
+
+        movei 01,030000
+        add 01,013
+        move 02,04
+load_loop:
+        pushj 017,read_word
+        movem 03,0(01)
+        aoj 01,
+        sojg 02,load_loop
+
+        movei 01,d6lz_image_start
+        hrl 01,01
+        hrri 01,d6lz_fixed_base
+        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
+
+        movei 012,030000
+        move 03,012
+        add 03,013
+        move 014,012
+        setz 011,
+mtc_decode:
+        pushj 017,d6lz_fixed_base
+mtc_decode_done:
+        jumpn 00,bad_tape
+        jumpn 04,bad_tape
+        jrst 0(05)
+
+; Return the next 36-bit DCT word in AC3.  Reaching EOR before the declared
+; payload is complete is a truncated-image failure.
+read_word:
         conso 0200,001000
         jrst read_wait
-        datai 0200,0(01)
-        aoj 01,
-        jrst read_loop
+        datai 0200,03
+        popj 017,
 
 read_wait:
         ; PARITY_ERR is intentionally omitted; see file comment above.
@@ -37,27 +83,15 @@ read_wait:
         jrst read_error
         consz 0224,0400400
         jrst bad_tape
-        conso 0224,0000004
-        jrst read_loop
-        ; EOR may precede delivery of the final DCT word.
-        consz 0200,0002000
-        jrst read_loop
-
-        ; At least one opaque image word must have been transferred.
-        caie 01,040000
-        jrst mtc_install_decoder
-bad_tape:
-        jrst stage1_fail_b1
-
-mtc_install_decoder:
-        movei 01,d6lz_image_start
-        hrl 01,01
-        hrri 01,d6lz_fixed_base
-        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
-        jrst 040000
+        ; EOR may precede delivery of the final DCT word.  The compressed
+        ; header gives us an exact word count, so keep waiting for DCT DONE
+        ; until that declared payload has arrived instead of treating EOR as
+        ; an early EOF indication.
+        jrst read_word
 
 read_error:
-        jrst stage1_fail_b1
-
+bad_tape:
+        movei 01,01                  ; compact reason: generic MTC Stage1
         .include "../common/stage1-error.inc"
+daimon_magic: .word 0444151555756
         .include "../common/decompressor.inc"
