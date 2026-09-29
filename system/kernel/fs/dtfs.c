@@ -589,7 +589,7 @@ dtfs_mount_unit(unsigned int unit, vnode_t target,
 #else
         media = unit | (format - SYS_DTFS_TYPE_NATIVE);
 #endif
-        if (vfs_mount(target, DTFS_PROVIDER, DTFS_KIND_ROOT, 0U,
+        if (vfs_mount_prevalidated(target, DTFS_PROVIDER, DTFS_KIND_ROOT, 0U,
             flags & VFS_MOUNT_RDONLY, &root) != 0)
                 return -1;
         format = VFS_MOUNT_ID(root);

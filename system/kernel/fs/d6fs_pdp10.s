@@ -617,7 +617,7 @@ d6fs_mres_reg_dispatch:
 
 
 
-        .globl  vfs_mount
+        .globl  vfs_mount_prevalidated
         .globl  mm_alloc
         .globl  mm_free
 ; Provider-private runtime mount entry.
@@ -666,7 +666,7 @@ d6fs_mount_validated:
         movei   2,6                      ; D6FS_PROVIDER
         movei   3,1                      ; D6FS_KIND_NODE
         move    4,7(5)                   ; root_fcb
-        pushj   17,vfs_mount
+        pushj   17,vfs_mount_prevalidated
         sub     17,[2,,2]
         jumpn   1,d6fs_mount_free
 
@@ -674,7 +674,7 @@ d6fs_mount_validated:
         movem   5,d6fs_reader_slots(7)
         movem   5,d6fs_active_reader
         move    6,1(5)                   ; prepacked summary/copy state
-        move    4,7                      ; vfs_mount leaves zero-based slot AC7
+        move    4,7                      ; mount helper leaves zero-based slot AC7
         addi    4,1                      ; public mount id
         ior     6,4
         movem   6,1(5)

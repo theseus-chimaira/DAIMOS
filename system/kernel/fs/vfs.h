@@ -148,6 +148,9 @@ int vfs_storage_release(unsigned int mount, unsigned int flags);
 int vfs_mount(vnode_t target, unsigned int provider,
     unsigned int kind, unsigned int index, unsigned int flags,
     vnode_t *rootp);
+int vfs_mount_prevalidated(vnode_t target, unsigned int provider,
+    unsigned int kind, unsigned int index, unsigned int flags,
+    vnode_t *rootp);
 int vfs_unmount(vnode_t root);
 int vfs_remount(vnode_t node);
 int vfs_readonly(vnode_t node);

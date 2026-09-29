@@ -510,14 +510,18 @@ vfs_name_words_equal_yes:
 ; count.  Filesystem providers use this when materializing names from media.
         .globl  vfs_name_from_words
 vfs_name_from_words:
-        move    4,2
+        push    17,1                    ; source words
+        push    17,2                    ; destination vfs_name
+        movei   2,030
+        pushj   17,vfs_sixbit_name_chars
+        move    4,1                    ; derived character count
+        move    1,-1(17)
+        move    2,(17)
         movei   5,1(2)
         hrl     5,1
         blt     5,4(2)
-        movei   1,1(4)
-        movei   2,030
-        pushj   17,vfs_sixbit_name_chars
-        movem   1,(4)
+        movem   4,(2)
+        sub     17,[2,,2]
         popj    17,
 
 ; int vfs_name_is6(const struct vfs_name *name, kword_t word,
@@ -930,8 +934,20 @@ vfs_storage_release:
         jrst    pdp10_ret_zero
 
 ; int vfs_mount(target, provider, kind, index, flags, rootp)
+; int vfs_mount_prevalidated(target, provider, kind, index, flags, rootp)
+;
+; Runtime provider MOUNT_UNIT calls are already serialized.  Their syscall
+; front-end validates the target directory before entering that lock, then
+; uses the prevalidated entry below so vfs_mount does not recursively invoke
+; another provider (and deadlock on the same serialization word).
         .globl  vfs_mount
+        .globl  vfs_mount_prevalidated
 vfs_mount:
+        setz    0,                       ; validate nonzero target below
+        jrst    vfs_mount_common
+vfs_mount_prevalidated:
+        movei   0,1                     ; caller already validated target
+vfs_mount_common:
         skipn   -2(17)                  ; rootp
         jrst    pdp10_ret_neg1
         jumpe   2,pdp10_ret_neg1
@@ -952,11 +968,13 @@ vfs_mount:
         imuli   6,017                   ; expand slot-0 bits over four slots
         tdne    6,vfs_mount_ro
         jrst    pdp10_ret_neg1
-        jumpn   1,vfs_mount_check_target
+        jumpn   1,vfs_mount_nonroot_target
         skipe   vfs_namespace_root
         jrst    pdp10_ret_neg1
         jrst    vfs_mount_find
 
+vfs_mount_nonroot_target:
+        jumpn   0,vfs_mount_find
 vfs_mount_check_target:
         ; Preserve the four register arguments around vfs_stat().
         push    17,1

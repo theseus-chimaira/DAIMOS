@@ -758,6 +758,19 @@ native_sys_mount_handoff:
         pushj   17,native_sys_lookup_user_path
         jumpe   1,native_sys_mount_handoff_bad4
         push    17,1                     ; target vnode
+        ; Validate the mount point before fs_provider_reg_call takes the
+        ; serialized filesystem-provider lock.  Provider MOUNT_UNIT may call
+        ; vfs_mount_prevalidated(), but must never recurse through vfs_stat()
+        ; while holding that same lock.
+        add     17,[7,,7]               ; struct vfs_stat
+        move    1,-7(17)                ; target vnode
+        movei   2,-6(17)                ; stat result
+        pushj   17,vfs_stat
+        jumpn   1,native_sys_mount_handoff_bad_stat
+        move    0,-6(17)                ; st.type
+        sub     17,[7,,7]
+        caie    0,1                     ; VFS_TYPE_DIR
+        jrst    native_sys_mount_handoff_bad5
         move    1,-2(17)                 ; user handoff
         pushj   17,native_sys_map_one
         jumpe   1,native_sys_mount_handoff_bad5
@@ -771,11 +784,20 @@ native_sys_mount_handoff:
         move    3,-1(17)                 ; VFS_MOUNT_* flags
         move    7,-3(17)                 ; provider
         movei   6,022                    ; FS_MRES_OP_MOUNT_UNIT
-        setz    4,                       ; MOUNT_UNIT returns no vnode to user
+        ; The provider ABI always supplies AC4 as rootp.  Runtime callers do
+        ; not need the mounted root vnode, but TSFS still writes it through
+        ; that pointer just like the boot-time MOUNT_UNIT path.  Give the
+        ; provider a kernel-stack scratch word rather than a null pointer.
+        push    17,0
+        movei   4,(17)
         pushj   17,fs_provider_reg_call
+        sub     17,[1,,1]
         pushj   17,vm_user_mapping_release
         sub     17,[5,,5]
         popj    17,
+native_sys_mount_handoff_bad_stat:
+        sub     17,[7,,7]
+        jrst    native_sys_mount_handoff_bad5
 native_sys_mount_handoff_bad_map:
         pushj   17,vm_user_mapping_release
 native_sys_mount_handoff_bad5:
