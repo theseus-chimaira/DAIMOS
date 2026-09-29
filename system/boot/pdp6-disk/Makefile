@@ -14,6 +14,7 @@ D6LZ_HOST ?= $(PDP10_PREFIX)/bin/d6lz
 MKDSK ?= $(PDP10_PREFIX)/bin/mkdsk
 MKD6FS ?= $(PDP10_PREFIX)/bin/mkd6fs
 MKDT ?= $(PDP10_PREFIX)/bin/mkdt
+MKTSFS ?= $(PDP10_PREFIX)/bin/mktsfs
 MKTAP ?= $(PDP10_PREFIX)/bin/mktap
 WORDS2PT ?= $(PDP10_PREFIX)/bin/words2pt
 S6FILTER ?= $(PDP10_PREFIX)/bin/s6filter
@@ -360,12 +361,21 @@ MEDIA_DIR = $(BUILD)/media
 DTC0_IMAGE = $(MEDIA_DIR)/dtc0.tap
 DTC1_IMAGE = $(MEDIA_DIR)/dtc1.tap
 DTC2_IMAGE = $(MEDIA_DIR)/dtc2.tap
+TSFS_ROOT_MANIFEST = $(BUILD)/tsfs-root.manifest
+TSFS_ROOT_PREFIX = $(MEDIA_DIR)/tsfs-root
+TSFS_ROOT_IMAGE = $(TSFS_ROOT_PREFIX)0.dta
 MTC0_IMAGE = $(MEDIA_DIR)/mtc0.tap
 MTC1_IMAGE = $(MEDIA_DIR)/mtc1.tap
 DR0_IMAGE = $(MEDIA_DIR)/dr0.drm
 DR1_IMAGE = $(MEDIA_DIR)/dr1.drm
 DR2_IMAGE = $(MEDIA_DIR)/dr2.drm
 DR3_IMAGE = $(MEDIA_DIR)/dr3.drm
+
+ifeq ($(ROOT),tape)
+ROOT_MEDIA_DEPS = $(TSFS_ROOT_IMAGE)
+else
+ROOT_MEDIA_DEPS =
+endif
 PTP_OUTPUT = $(MEDIA_DIR)/ptp.out
 CP_OUTPUT = $(MEDIA_DIR)/cp.out
 LPT_OUTPUT = $(MEDIA_DIR)/lpt.out
@@ -384,6 +394,9 @@ SIMH_PCLK_MODE ?= REALTIME
 force-simh-config:
 
 $(BUILD):
+	mkdir -p $@
+
+$(MEDIA_DIR): | $(BUILD)
 	mkdir -p $@
 
 $(KINIT_STAMP): $(KERNEL_INPUTS) $(BUILD)
@@ -686,7 +699,30 @@ $(DISK_IMAGE): $(IMAGE_BOOT_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_LOGIN_DXR) $(SYST
 	    -f "/CONFIG/PASSWD:$(SYSTEM_PASSWD_TEXT):600:text"
 	$(LOGSTORE) -n 1 -d $(DISK_DIR) --init
 
-$(BOOT_MEDIA_STAMP): $(IMAGE_BOOT_WORDS) $(DISK_IMAGE) $(STAGE1_TAPE) | $(BUILD)
+$(TSFS_ROOT_IMAGE): $(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR) \
+	$(SYSTEM_INITTAB_TEXT) $(SYSTEM_PASSWD_TEXT) | $(MEDIA_DIR)
+	@set -eu; \
+	tmp='$(TSFS_ROOT_MANIFEST).tmp.$$$$'; \
+	trap 'rm -f "$$tmp"' 0 1 2 3 15; \
+	{ \
+	  echo 'D /MOUNT'; \
+	  echo 'D /MOUNT/RAMFS0'; \
+	  echo 'D /TEMP'; \
+	  echo 'D /SYSTEM'; \
+	  echo 'D /SYSTEM/EXEC'; \
+	  echo 'D /CONFIG'; \
+	  printf 'F /SYSTEM/INIT %s\n' '$(INIT_DXR)'; \
+	  printf 'F /SYSTEM/EXEC/LOGIN %s\n' '$(LOGIN_DXR)'; \
+	  printf 'F /SYSTEM/EXEC/DSH %s\n' '$(DSH_DXR)'; \
+	  printf 'T /CONFIG/INITTAB %s\n' '$(SYSTEM_INITTAB_TEXT)'; \
+	  printf 'T /CONFIG/PASSWD %s\n' '$(SYSTEM_PASSWD_TEXT)'; \
+	} > "$$tmp"; \
+	mv "$$tmp" '$(TSFS_ROOT_MANIFEST)'; \
+	trap - 0 1 2 3 15
+	$(MKTSFS) -n 1 -i 1:1 -g 1 -m '$(TSFS_ROOT_MANIFEST)' \
+	    -o '$(TSFS_ROOT_PREFIX)'
+
+$(BOOT_MEDIA_STAMP): $(IMAGE_BOOT_WORDS) $(DISK_IMAGE) $(STAGE1_TAPE) $(ROOT_MEDIA_DEPS) | $(BUILD)
 	@set -eu; \
 	if [ '$(BOOT_PROFILE)' = lowmem ] && [ '$(STAGE1_DEVICE)' != dsk ]; then \
 		echo 'BOOT_PROFILE=lowmem currently requires BOOT=dsk' >&2; exit 2; \
@@ -712,6 +748,13 @@ $(BOOT_MEDIA_STAMP): $(IMAGE_BOOT_WORDS) $(DISK_IMAGE) $(STAGE1_TAPE) | $(BUILD)
 	    '$(WORDS2PT)' -t ptr -p '$(PTR_BOOT1_WORDS)' -o '$(PTR_BOOT1)'; \
 	    '$(WORDS2PT)' -t ptr -p '$(PTR_BOOT2_WORDS)' -o '$(PTR_BOOT2)' ;; \
 	esac; \
+	if [ '$(ROOT)' = tape ]; then \
+	  if [ '$(STAGE1_DEVICE)' = dtc ]; then \
+	    cp '$(TSFS_ROOT_IMAGE)' '$(DTC1_IMAGE)'; \
+	  else \
+	    cp '$(TSFS_ROOT_IMAGE)' '$(DTC0_IMAGE)'; \
+	  fi; \
+	fi; \
 	{ \
 	  if [ '$(STAGE1_DEVICE)' = ptr ]; then \
 	    echo 'break 060'; \
