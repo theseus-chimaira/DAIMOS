@@ -375,10 +375,19 @@ return_one:
         popj 017,
 
 fail_nodsk:
+        movei 01,01
+        jrst stage1_fail_b1
 fail_noset:
+        movei 01,02
+        jrst stage1_fail_b1
 fail_khead:
+        movei 01,03
+        jrst stage1_fail_b1
 fail_read:
+        movei 01,04
+        jrst stage1_fail_b1
 fail_decompress:
+        movei 01,05
         jrst stage1_fail_b1
 
 stage1_handoff:
