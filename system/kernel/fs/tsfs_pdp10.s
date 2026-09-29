@@ -3,6 +3,7 @@
         .globl  fs_mres_vector_dispatch
         .globl  pdp10_ret_zero
         .globl  pdp10_ret_neg1
+        .globl  vfs_mount_prevalidated
         .globl  tsfs_mres_dispatch
         .globl  tsfs_lookup
         .globl  tsfs_readdir
@@ -569,7 +570,8 @@ tsfs_mount_set:
 
 tsfs_mount_empty:
         jumpn   6,tsfs_mount_pop_bad
-        jumpn   2(010),tsfs_mount_pop_bad
+        move    5,2(010)
+        jumpn   5,tsfs_mount_pop_bad
 
 tsfs_mount_do:
         push    17,0                   ; root scratch
@@ -580,7 +582,7 @@ tsfs_mount_do:
         movei   2,7                    ; TSFS_PROVIDER
         movei   3,1                    ; TSFS_KIND_ROOT
         setz    4,
-        pushj   17,vfs_mount
+        pushj   17,vfs_mount_prevalidated
         sub     17,[2,,2]
         jumpn   1,tsfs_mount_drop_bad
 
@@ -595,7 +597,9 @@ tsfs_mount_do:
         move    5,2(010)
         movem   5,tsfs_extent_media(4)
         move    5,(17)
+        jumpe   012,tsfs_mount_no_root_return
         movem   5,(012)
+tsfs_mount_no_root_return:
         setz    1,
         jrst    tsfs_mount_drop
 
