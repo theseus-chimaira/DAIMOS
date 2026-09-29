@@ -26,7 +26,6 @@
         .globl dsys_write_chars
         .globl dsys_halt
         .globl dsys_chmod
-        .globl dsys_dtfs_format
         .globl dsys_dtfs_mount
         .globl dsys_unmount
         .globl dsys_flock
@@ -48,6 +47,7 @@
         .globl dsys_rmdir
         .globl dsys_chown
         .globl dsys_dtc_read_block
+        .globl dsys_dtc_write_block
         .globl dsys_tsfs_mount
         .globl dsys_d6fs_mount
 
@@ -88,8 +88,6 @@ dsys_writechar:        uuo 062,0(1)
 dsys_halt:             uuo 063,0
                        popj 17,
 dsys_chmod:            uuo 064,0(1)
-                       popj 17,
-dsys_dtfs_format:      uuo 065,0(1)
                        popj 17,
 dsys_dtfs_mount:       uuo 066,0(1)
                        popj 17,
@@ -170,6 +168,16 @@ dsys_dtc_read_block:    move 4,3
                         move 3,2
                         move 2,1
                         movei 1,040
+                        uuo 077,0(1)
+                        popj 17,
+
+; Write one 128-word DECtape block from a userspace buffer.  This extension
+; is root-only in the kernel and exists so transient MKFS policy need not
+; occupy the resident DTFS package.
+dsys_dtc_write_block:   move 4,3
+                        move 3,2
+                        move 2,1
+                        movei 1,045
                         uuo 077,0(1)
                         popj 17,
 

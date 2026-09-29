@@ -19,6 +19,7 @@ extern kword_t pdp10_pi_level6_dispatch_jump;
 extern kword_t native_sys_putchar_call;
 extern kword_t native_sys_getchar_call;
 extern kword_t sys_dtc_read_block_jump;
+extern kword_t sys_dtc_write_block_jump;
 extern kword_t storage_pi_dsk_jump;
 extern kword_t storage_dct_dsk_jump;
 extern kword_t storage_pi_tape_jump;
@@ -31,7 +32,6 @@ extern kword_t drm236_write_jump;
 extern kword_t fs_memfs_service_jump;
 extern kword_t sys_memfs_usage_call;
 extern kword_t fs_dtfs_service_jump;
-extern kword_t sys_dtfs_format_jump;
 extern kword_t sys_dtfs_mount_jump;
 extern kword_t fs_d6fs_service_jump;
 extern kword_t fs_tsfs_service_jump;
@@ -48,6 +48,7 @@ static kword_t *const module_fixed_bindings[] = {
         &native_sys_putchar_call,
         &native_sys_getchar_call,
         &sys_dtc_read_block_jump,
+        &sys_dtc_write_block_jump,
         &storage_pi_dsk_jump,
         &storage_dct_dsk_jump,
         &storage_pi_tape_jump,
@@ -60,7 +61,6 @@ static kword_t *const module_fixed_bindings[] = {
         &fs_memfs_service_jump,
         &sys_memfs_usage_call,
         &fs_dtfs_service_jump,
-        &sys_dtfs_format_jump,
         &sys_dtfs_mount_jump,
         &fs_d6fs_service_jump,
         &fs_tsfs_service_jump,

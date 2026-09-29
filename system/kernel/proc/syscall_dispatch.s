@@ -365,19 +365,8 @@ native_sys_chmod_bad:
         jrst    %L137
 
 native_sys_dtfs_format:
-        ; AC1 device path, AC2 DTFS management control word.
-        push    17,2
-        pushj   17,native_sys_dtc0_path
-        pop     17,2
-        jumpe   1,%L137
-        hrrz    2,2
-        move    3,2
-        andi    3,07
-        caile   3,1
-        jrst    %L137
-        movei   1,0                     ; DTC0 unit
-        .globl  sys_dtfs_format_jump
-sys_dtfs_format_jump:
+        ; Formatting policy is transient userspace.  Preserve the legacy
+        ; syscall number as an explicit unsupported operation.
         jrst    pdp10_ret_neg1
 
 native_sys_dtfs_mount:
@@ -514,6 +503,8 @@ native_sys_ext_nonpipe:
         jrst    native_sys_rtctl
         cain    1,044                  ; SYS_EXT_LOGCTL
         jrst    native_sys_logctl
+        cain    1,045                  ; SYS_EXT_DTC_WRITE_BLOCK
+        jrst    native_sys_dtc_write_block
         cain    1,022                  ; SYS_EXT_EXEC
         jrst    native_sys_exec
         caie    1,021                  ; SYS_EXT_MKFIFO
@@ -714,25 +705,59 @@ native_sys_exec_bad:
 ; AC2=unit, AC3=physical block, AC4=user buffer.  The scanner/checksum logic
 ; deliberately remains outside the resident kernel.
 native_sys_dtc_read_block:
+        push    17,010
+        setz    010,                    ; read operation
+        jrst    native_sys_dtc_block
+
+; Root-only raw DECtape block write used by transient filesystem formatters.
+; AC2=unit, AC3=physical block, AC4=user source buffer.
+native_sys_dtc_write_block:
+        push    17,2
+        push    17,3
+        push    17,4
+        pushj   17,file_check_root
+        jumpn   1,native_sys_dtc_write_denied
+        move    2,-2(17)
+        move    3,-1(17)
+        move    4,(17)
+        sub     17,[3,,3]
+        push    17,010
+        movei   010,1                   ; write operation
+
+native_sys_dtc_block:
         move    6,2
         move    7,3
         move    1,4
         pushj   17,native_sys_map_one
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,native_sys_dtc_block_bad_map
         add     3,4                     ; physical one-past mapping end
         move    5,1
         addi    5,0200                  ; 128 words required
         camle   5,3
-        jrst    native_sys_dtc_read_bad
-        move    3,1                     ; mapped destination
+        jrst    native_sys_dtc_block_bad
+        move    3,1                     ; mapped buffer
         hrrz    1,6
         hrrz    2,7
+        jumpn   010,native_sys_dtc_write_call
         .globl  sys_dtc_read_block_jump
 sys_dtc_read_block_jump:
         pushj   17,pdp10_ret_neg1
+        jrst    native_sys_dtc_block_done
+native_sys_dtc_write_call:
+        .globl  sys_dtc_write_block_jump
+sys_dtc_write_block_jump:
+        pushj   17,pdp10_ret_neg1
+native_sys_dtc_block_done:
+        pop     17,010
         jrst    native_sys_mapped_return
-native_sys_dtc_read_bad:
+native_sys_dtc_block_bad:
         pushj   17,vm_user_mapping_release
+native_sys_dtc_block_bad_map:
+        pop     17,010
+        jrst    pdp10_ret_neg1
+
+native_sys_dtc_write_denied:
+        sub     17,[3,,3]
         jrst    pdp10_ret_neg1
 
 

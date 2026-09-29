@@ -57,6 +57,7 @@
 #define SYS_EXT_D6FS_MOUNT         042U
 #define SYS_EXT_RTCTL              043U
 #define SYS_EXT_LOGCTL             044U
+#define SYS_EXT_DTC_WRITE_BLOCK    045U
 
 #define SYS_LOGCTL_STATUS             0U
 #define SYS_LOGCTL_READ_BLOCK         1U

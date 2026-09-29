@@ -51,7 +51,6 @@ void blockset_direct_configure(unsigned int unit, kword_t tail_base,
 extern kword_t blockset_direct_blocks;
 extern kword_t blockset_direct_tail;
 extern kword_t sys_memfs_usage_call;
-extern kword_t sys_dtfs_format_jump;
 extern kword_t sys_dtfs_mount_jump;
 
 void fs_copy_words(const kword_t *src, kword_t *dst, unsigned int count);

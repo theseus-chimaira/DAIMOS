@@ -122,6 +122,7 @@ extern kword_t drm236_read_jump;
 extern kword_t drm236_write_jump;
 extern kword_t native_sys_getchar_call;
 extern kword_t sys_dtc_read_block_jump;
+extern kword_t sys_dtc_write_block_jump;
 extern kword_t sys_logstore_service_jump;
 extern kword_t sys_mtc_service_jump;
 extern kword_t native_sys_putchar_call;
@@ -960,6 +961,8 @@ storage_minit(unsigned int kind, kword_t name)
                     minit_export(name, base, TAPE_X_DTC_READ_BLOCK));
                 module_service_set(MODULE_SERVICE_DTC_WRITE_BLOCK,
                     minit_export(name, base, TAPE_X_DTC_WRITE_BLOCK));
+                storage_patch_jump(&sys_dtc_write_block_jump,
+                    minit_export(name, base, TAPE_X_DTC_WRITE_BLOCK));
         } else if (kind == 1U) {
                 unsigned int mtc_service;
 
@@ -1064,14 +1067,12 @@ dtfs_minit(void)
                 state_addr = minit_export(name, base, 2U);
                 storage_patch_module_jump(base,
                     (kword_t *)(unsigned long)state_addr, write_addr);
-                storage_patch_jump(&sys_dtfs_format_jump,
-                    minit_export(name, base, 3U));
                 storage_patch_jump(&sys_dtfs_mount_jump,
-                    minit_export(name, base, 4U));
+                    minit_export(name, base, 3U));
                 storage_patch_jump(&fs_tsfs_service_jump,
-                    minit_export(name, base, 5U));
+                    minit_export(name, base, 4U));
                 dtfs_runtime_dir_ptr = (kword_t *)(unsigned long)
-                    minit_export(name, base, 6U);
+                    minit_export(name, base, 5U);
                 *dtfs_runtime_dir_ptr = 0UL;
                 module_service_set(MODULE_SERVICE_DTFS, service);
         }

@@ -10,8 +10,6 @@
 #define DTFS_FILE_SLOTS      22U
 #define DTFS_NAME_MAX_CHARS  11U
 
-/* Native-media management used by the mount/format syscalls. */
-int dtfs_format_unit(unsigned int unit, unsigned int op);
 int dtfs_mount_unit(unsigned int unit, vnode_t target,
     unsigned int flags, vnode_t *rootp);
 
