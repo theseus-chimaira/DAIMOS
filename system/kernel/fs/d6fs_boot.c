@@ -68,9 +68,16 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
         D6FS_READER_CACHE_BLOCK(reader) = D6FS_CACHE_INVALID;
 
         if (writable) {
+                kword_t selected_block;
+
                 dirty_block = copy == 0U ? super_b : super_a;
+                selected_block = copy == 0U ? super_a : super_b;
                 scratch = d6fs_boot_block_buffer();
-                if (blockset_boot_read(dirty_block, scratch) != 0)
+                /* Rebuild the alternate from the selected valid superblock.
+                 * The alternate may be corrupt; mutating it in place would
+                 * preserve a bad magic/layout and make the new DIRTY
+                 * generation invalid. */
+                if (blockset_boot_read(selected_block, scratch) != 0)
                         goto fail;
                 scratch[D6FS_SB_SEQUENCE] = super->sequence + 1UL;
                 scratch[D6FS_SB_STATE] = D6FS_STATE_DIRTY;

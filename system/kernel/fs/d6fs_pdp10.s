@@ -911,7 +911,9 @@ d6fs_reader_zero_block:
         jumpe   1,pdp10_ret_neg1
         caml    2,6(1)
         jrst    pdp10_ret_neg1
+        push    17,2                     ; zero helper clobbers AC2 to 0177
         pushj   17,fs_zero_block_workspace
+        pop     17,2                     ; restore requested logical block
         jrst    d6fs_reader_commit_cache
 
 ; Compact D6FS provider metadata/growth helpers.  These are leaf-sized
