@@ -8,6 +8,7 @@ PDP10_PREFIX ?= $(HOME)/cross
 DAS ?= $(PDP10_PREFIX)/bin/das
 DASFLAGS ?= -O
 DLINK ?= $(PDP10_PREFIX)/bin/dlink
+P10FOLD ?= $(PDP10_PREFIX)/bin/p10fold
 DXRCONVERT ?= $(PDP10_PREFIX)/bin/dxrconvert
 MKSTREAM ?= $(PDP10_PREFIX)/bin/mkstream
 D6LZ_HOST ?= $(PDP10_PREFIX)/bin/d6lz
@@ -213,6 +214,9 @@ MRES_ASM = $(KCORE_BUILD)/cty_io.s $(KCORE_BUILD)/clk_io.s $(KCORE_BUILD)/ptr_io
 
 KCORE_DXR = $(BUILD)/kcore.dxr
 KCORE_MAP = $(BUILD)/kcore.map
+KCORE_FOLD_PLAN = $(BUILD)/kcore.fold
+# Pre-self-hosting fold scope: only runtime-proven handwritten assembler.
+KCORE_FOLD_OBJS = $(BUILD)/proc_pdp10.dobj $(BUILD)/proc_run_pdp10.dobj
 KCORE_RIM = $(BUILD)/kcore.rim
 KCORE_STREAM = $(BUILD)/kcore.stream
 KCORE_EMBED_ASM = $(BUILD)/kcore-embed.s
@@ -430,9 +434,13 @@ $(MINIT_TABLE_OBJ): $(MINIT_TABLE_ASM) $(BUILD)
 $(END_OBJ): image-end.s $(BUILD)
 	$(DAS) $(DASFLAGS) -c -o $@ $<
 
-$(KCORE_DXR): $(KCORE_FIXED_OBJS)
+$(KCORE_FOLD_PLAN): $(KCORE_FOLD_OBJS) $(P10FOLD)
+	$(P10FOLD) -m 4 -P $@ $(KCORE_FOLD_OBJS) >/dev/null
+
+$(KCORE_DXR): $(KCORE_FIXED_OBJS) $(KCORE_FOLD_PLAN)
 	libgcc=`$(PDP10_GCC) -print-libgcc-file-name`; \
-	$(DLINK) -b 060 -o $@ -M $(KCORE_MAP) $(KCORE_FIXED_OBJS) $$libgcc
+	$(DLINK) -b 060 --fold-plan $(KCORE_FOLD_PLAN) -o $@ -M $(KCORE_MAP) \
+	    $(KCORE_FIXED_OBJS) $$libgcc
 
 $(KCORE_MAP): $(KCORE_DXR)
 	@test -f $@
