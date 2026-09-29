@@ -24,7 +24,10 @@ __start:
 start:
         setom 000040
         setom 000041
-        movei 017,070000
+        ; Keep the pushdown list below the KINIT output window.  The full
+        ; compressed image expands from 030000 upward and would overwrite a
+        ; historical 070000 stack before the decoder returns.
+        movei 017,020000
 
         ; DCT0: device 1 (DTC), device -> processor, move enabled.
         cono 0200,004040
@@ -56,24 +59,7 @@ load_loop:
         movem 03,0(01)
         aoj 01,
         sojg 02,load_loop
-
-        movei 01,d6lz_image_start
-        hrl 01,01
-        hrri 01,d6lz_fixed_base
-        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
-
-        movei 012,030000
-        move 03,012
-        add 03,013
-        move 014,012
-        setz 011,
-        pushj 017,d6lz_fixed_base
-        jumpn 00,bad_tape
-        jumpn 04,bad_tape
-        setz 01,
-        setz 02,
-        jrst 0(05)
-
+        jrst stage1_handoff
 
 ; Return the next 36-bit DCT word in AC3.  DTC status B distinguishes genuine
 ; controller/data errors from reaching the end zone before the declared image
@@ -92,9 +78,39 @@ read_wait:
         jrst read_word
 
 read_error:
-bad_tape:
-        jrst stage1_fail_b1
+        jrst bad_tape
 
 daimon_magic: .word 0444151555756
-        .include "../common/stage1-error.inc"
         .include "../common/decompressor.inc"
+
+; Keep the handoff above the installed decoder destination (000060..000127).
+; Production Stage0 loads this Stage1 at 000060, so executing the handoff from
+; the early part of the loader would be overwritten by the BLT itself.
+stage1_handoff:
+        movei 01,d6lz_image_start
+        hrl 01,01
+        hrri 01,d6lz_fixed_base
+        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
+
+        movei 012,030000
+        move 03,012
+        add 03,013
+        move 014,012
+        setz 011,
+        pushj 017,d6lz_fixed_base
+        jumpn 00,bad_tape
+        jumpn 04,bad_tape
+        ; Match DSK/DRM handoff semantics: KINIT's bootstrap pushdown list
+        ; begins immediately after the expanded image.  Leaving AC17 on the
+        ; low Stage1 stack would let kcore_load overwrite live return words.
+        move 017,012
+        setz 01,
+        setz 02,
+        jrst 0(05)
+
+; This diagnostic must remain above the decoder destination.  Decoder failure
+; is detected only after 000060..000127 has been overwritten by the installed
+; low-core image.
+bad_tape:
+        jrst stage1_fail_b1
+        .include "../common/stage1-error.inc"

@@ -33,10 +33,14 @@ set dtc enabled
 set dtc0 enabled
 set dtc1 enabled
 set dtc2 enabled
-set mtc dct=03
+; Type 516 MTC uses DCT channel 0 in the simulator and DAIMOS driver model.
+; The boot/runtime media format is seven-track binary tape.
+set mtc dct=0
 set mtc enabled
 set mtc0 enabled
+set mtc0 7t
 set mtc1 enabled
+set mtc1 7t
 set dcs enabled
 set dcs lines=8
 set ge enabled
@@ -79,5 +83,5 @@ attach -q dr1 @DR1_IMAGE@
 attach -q dr2 @DR2_IMAGE@
 attach -q dr3 @DR3_IMAGE@
 
-go 020
+@BOOT_COMMANDS@
 exit

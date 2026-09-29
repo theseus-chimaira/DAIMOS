@@ -13,11 +13,15 @@ MKSTREAM ?= $(PDP10_PREFIX)/bin/mkstream
 D6LZ_HOST ?= $(PDP10_PREFIX)/bin/d6lz
 MKDSK ?= $(PDP10_PREFIX)/bin/mkdsk
 MKD6FS ?= $(PDP10_PREFIX)/bin/mkd6fs
+MKDT ?= $(PDP10_PREFIX)/bin/mkdt
+MKTAP ?= $(PDP10_PREFIX)/bin/mktap
+WORDS2PT ?= $(PDP10_PREFIX)/bin/words2pt
 S6FILTER ?= $(PDP10_PREFIX)/bin/s6filter
 LOGSTORE ?= $(PDP10_PREFIX)/bin/logstore
 SIMH_PDP6 ?= $(PDP10_PREFIX)/bin/pdp6
 ROOT ?= auto
 ROOTSET ?= 1
+BOOT ?= auto
 BOOT_PROFILE ?= full
 ifneq ($(filter $(BOOT_PROFILE),full lowmem),$(BOOT_PROFILE))
 $(error unsupported BOOT_PROFILE=$(BOOT_PROFILE); expected full or lowmem)
@@ -330,14 +334,22 @@ USERLAND_INPUTS = $(PROJECT_ROOT)/userland/libc/Makefile \
 	$(PROJECT_ROOT)/userland/Makefile \
 	$(PROJECT_ROOT)/system/kernel/proc/syscall.h
 
+ifeq ($(BOOT),auto)
 ifeq ($(ROOT),drum)
 STAGE1_DEVICE = drm
 else
 STAGE1_DEVICE = dsk
 endif
+else
+STAGE1_DEVICE = $(BOOT)
+endif
+ifneq ($(filter $(STAGE1_DEVICE),dsk drm dtc mtc ptr),$(STAGE1_DEVICE))
+$(error unsupported BOOT=$(BOOT); expected auto, dsk, drm, dtc, mtc, or ptr)
+endif
 STAGE1_SRC = $(PROJECT_ROOT)/system/stand/pdp6/$(STAGE1_DEVICE)/stage1.s
 STAGE1_COMMON = $(PROJECT_ROOT)/system/stand/pdp6/common/decompressor.inc \
-	$(PROJECT_ROOT)/system/stand/pdp6/common/stage1-error.inc
+	$(PROJECT_ROOT)/system/stand/pdp6/common/stage1-error.inc \
+	$(PROJECT_ROOT)/system/stand/pdp6/common/sixbit-fixed.inc
 STAGE1_DXR = $(BUILD)/stage1-$(STAGE1_DEVICE).dxr
 STAGE1_TAPE = $(BUILD)/stage1-$(STAGE1_DEVICE).pt
 DISK_DIR = $(BUILD)/disk
@@ -357,6 +369,12 @@ DR3_IMAGE = $(MEDIA_DIR)/dr3.drm
 PTP_OUTPUT = $(MEDIA_DIR)/ptp.out
 CP_OUTPUT = $(MEDIA_DIR)/cp.out
 LPT_OUTPUT = $(MEDIA_DIR)/lpt.out
+BOOT_MEDIA_STAMP = $(BUILD)/.boot-media-$(STAGE1_DEVICE)
+BOOT_COMMANDS = $(BUILD)/boot-commands-$(STAGE1_DEVICE).simh
+PTR_BOOT1_WORDS = $(BUILD)/ptr-boot1.words
+PTR_BOOT2_WORDS = $(BUILD)/ptr-boot2.words
+PTR_BOOT1 = $(MEDIA_DIR)/ptr-boot1.pt
+PTR_BOOT2 = $(MEDIA_DIR)/ptr-boot2.pt
 SIMH_DCS0_PORT ?= 1101
 SIMH_GE0_PORT ?= 1201
 SIMH_PCLK_MODE ?= REALTIME
@@ -668,7 +686,49 @@ $(DISK_IMAGE): $(IMAGE_BOOT_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_LOGIN_DXR) $(SYST
 	    -f "/CONFIG/PASSWD:$(SYSTEM_PASSWD_TEXT):600:text"
 	$(LOGSTORE) -n 1 -d $(DISK_DIR) --init
 
-$(SIMH_INI): simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE) force-simh-config
+$(BOOT_MEDIA_STAMP): $(IMAGE_BOOT_WORDS) $(DISK_IMAGE) $(STAGE1_TAPE) | $(BUILD)
+	@set -eu; \
+	if [ '$(BOOT_PROFILE)' = lowmem ] && [ '$(STAGE1_DEVICE)' != dsk ]; then \
+		echo 'BOOT_PROFILE=lowmem currently requires BOOT=dsk' >&2; exit 2; \
+	fi; \
+	mkdir -p '$(MEDIA_DIR)'; \
+	touch '$(DTC0_IMAGE)' '$(DTC1_IMAGE)' '$(DTC2_IMAGE)' '$(MTC0_IMAGE)' '$(MTC1_IMAGE)' \
+	    '$(DR0_IMAGE)' '$(DR1_IMAGE)' '$(DR2_IMAGE)' '$(DR3_IMAGE)'; \
+	if [ '$(ROOT)' = drum ] || [ '$(STAGE1_DEVICE)' = drm ]; then \
+		cp '$(DISK_IMAGE)' '$(DR0_IMAGE)'; \
+	fi; \
+	case '$(STAGE1_DEVICE)' in \
+	  dsk|drm) : ;; \
+	  dtc) '$(MKDT)' -t dtc -p '$(IMAGE_COMPRESSED_WORDS)' -o '$(DTC0_IMAGE)' ;; \
+	  mtc) '$(MKTAP)' -t mtc -p '$(IMAGE_COMPRESSED_WORDS)' -o '$(MTC0_IMAGE)' ;; \
+	  ptr) \
+	    cwords=$$(tail -n +4 '$(IMAGE_COMPRESSED_WORDS)' | wc -l | tr -d ' '); \
+	    first=$$(( (cwords + 1) / 2 )); second=$$(( cwords - first )); \
+	    test $$first -gt 0; test $$second -gt 0; \
+	    { printf '%012o\n' $$((first + 3)); head -n 3 '$(IMAGE_COMPRESSED_WORDS)'; \
+	      tail -n +4 '$(IMAGE_COMPRESSED_WORDS)' | head -n $$first; } > '$(PTR_BOOT1_WORDS)'; \
+	    { printf '%012o\n' $$second; tail -n +4 '$(IMAGE_COMPRESSED_WORDS)' | \
+	      tail -n +$$((first + 1)); } > '$(PTR_BOOT2_WORDS)'; \
+	    '$(WORDS2PT)' -t ptr -p '$(PTR_BOOT1_WORDS)' -o '$(PTR_BOOT1)'; \
+	    '$(WORDS2PT)' -t ptr -p '$(PTR_BOOT2_WORDS)' -o '$(PTR_BOOT2)' ;; \
+	esac; \
+	{ \
+	  if [ '$(STAGE1_DEVICE)' = ptr ]; then \
+	    echo 'break 060'; \
+	    echo 'go 020'; \
+	    echo 'nobreak 060'; \
+	    echo 'detach ptr'; \
+	    echo 'attach -q ptr $(PTR_BOOT1)'; \
+	    echo 'deposit ptr time 1'; \
+	    echo 'expect "TAPE2" detach ptr; attach -q ptr $(PTR_BOOT2); deposit ptr time 1; continue'; \
+	    echo 'go 060'; \
+	  else \
+	    echo 'go 020'; \
+	  fi; \
+	} > '$(BOOT_COMMANDS)'; \
+	touch '$@'
+
+$(SIMH_INI): simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE) $(BOOT_MEDIA_STAMP) force-simh-config
 	@case '$(SIMH_PCLK_MODE)' in \
 	  REALTIME|HISTORICAL) ;; \
 	  *) echo "SIMH_PCLK_MODE must be REALTIME or HISTORICAL" >&2; exit 2 ;; \
@@ -686,10 +746,6 @@ $(SIMH_INI): simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE) force-simh-config
 	esac; \
 	root_switch=$$((root_class + (($(ROOTSET) - 1) << 3))); \
 	printf '%o\n' $$root_switch > $(BUILD)/root-switch.tmp
-	mkdir -p $(MEDIA_DIR)
-	touch $(DTC0_IMAGE) $(DTC1_IMAGE) $(DTC2_IMAGE) $(MTC0_IMAGE) $(MTC1_IMAGE) \
-	    $(DR0_IMAGE) $(DR1_IMAGE) $(DR2_IMAGE) $(DR3_IMAGE)
-	@if [ "$(ROOT)" = drum ]; then cp $(DISK_IMAGE) $(DR0_IMAGE); fi
 	root_switch=`cat $(BUILD)/root-switch.tmp`; rm -f $(BUILD)/root-switch.tmp; \
 	sed -e 's|@SIMH_LOG@|$(SIMH_LOG)|g' \
 	    -e 's|@CPU_KWORDS@|$(SIMH_CPU_KWORDS)|g' \
@@ -710,7 +766,10 @@ $(SIMH_INI): simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE) force-simh-config
 	    -e 's|@DCS0_PORT@|$(SIMH_DCS0_PORT)|g' \
 	    -e 's|@GE0_PORT@|$(SIMH_GE0_PORT)|g' \
 	    -e 's|@PCLK_MODE@|$(SIMH_PCLK_MODE)|g' \
-	    -e "s|@ROOT_SWITCH@|$$root_switch|g" $< > $@
+	    -e "s|@ROOT_SWITCH@|$$root_switch|g" $< > $@.tmp; \
+	awk -v f='$(BOOT_COMMANDS)' '{ if ($$0 == "@BOOT_COMMANDS@") { while ((getline l < f) > 0) print l; close(f); next } print }' \
+	    $@.tmp > $@; \
+	rm -f $@.tmp
 
 image: $(SIMH_INI)
 

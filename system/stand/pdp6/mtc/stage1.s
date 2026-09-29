@@ -23,7 +23,10 @@ __start:
 start:
         setom 000040
         setom 000041
-        movei 017,070000
+        ; Keep the pushdown list below the KINIT output window.  A 070000
+        ; return word lies inside the current full KINIT image and is destroyed
+        ; during decompression.
+        movei 017,020000
 
         ; Type 136: input, six 6-bit characters, device 3, move enabled.
         cono 0200,004000
@@ -51,23 +54,7 @@ load_loop:
         movem 03,0(01)
         aoj 01,
         sojg 02,load_loop
-
-        movei 01,d6lz_image_start
-        hrl 01,01
-        hrri 01,d6lz_fixed_base
-        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
-
-        movei 012,030000
-        move 03,012
-        add 03,013
-        move 014,012
-        setz 011,
-mtc_decode:
-        pushj 017,d6lz_fixed_base
-mtc_decode_done:
-        jumpn 00,bad_tape
-        jumpn 04,bad_tape
-        jrst 0(05)
+        jrst stage1_handoff
 
 ; Return the next 36-bit DCT word in AC3.  Reaching EOR before the declared
 ; payload is complete is a truncated-image failure.
@@ -83,15 +70,36 @@ read_wait:
         jrst read_error
         consz 0224,0400400
         jrst bad_tape
-        ; EOR may precede delivery of the final DCT word.  The compressed
-        ; header gives us an exact word count, so keep waiting for DCT DONE
-        ; until that declared payload has arrived instead of treating EOR as
-        ; an early EOF indication.
+        ; Large boot files span multiple SIMH tape records because the PDP-6
+        ; MTC device buffer is 32 KiB.  EOR means the current record is fully
+        ; consumed; restart READ on the next record and continue satisfying the
+        ; exact word count from the compressed-image header.
+        consz 0224,0000004
+        cono 0220,052400
         jrst read_word
 
 read_error:
-bad_tape:
-        movei 01,01                  ; compact reason: generic MTC Stage1
-        .include "../common/stage1-error.inc"
+        jrst bad_tape
 daimon_magic: .word 0444151555756
         .include "../common/decompressor.inc"
+
+; Execute the decoder installation from above its low-core destination.
+stage1_handoff:
+        movei 01,d6lz_image_start
+        hrl 01,01
+        hrri 01,d6lz_fixed_base
+        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
+
+        movei 012,030000
+        move 03,012
+        add 03,013
+        move 014,012
+        setz 011,
+        pushj 017,d6lz_fixed_base
+        jumpn 00,bad_tape
+        jumpn 04,bad_tape
+        move 017,012                  ; KINIT stack starts at image end
+        jrst 0(05)
+
+bad_tape:
+        .include "../common/stage1-error.inc"

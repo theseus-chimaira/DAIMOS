@@ -32,7 +32,9 @@ __start:
 start:
         setom 000040
         setom 000041
-        movei 017,070000
+        ; Keep the pushdown list below the KINIT output window.  The full image
+        ; expands through 070000, so a stack there corrupts the decoder return.
+        movei 017,020000
         movei 01,bootstrap_sixbit_image
         hrl 01,01
         hrri 01,077760
@@ -54,7 +56,6 @@ start:
         hlrz 07,03
         movem 07,compressed_words
         subi 02,03
-        move 07,02
         movei 01,030000
         add 01,image_words
         pushj 017,read_words
@@ -71,23 +72,7 @@ start:
         move 02,03
         move 01,stage_ptr
         pushj 017,read_words
-
-        movei 01,d6lz_image_start
-        hrl 01,01
-        hrri 01,d6lz_fixed_base
-        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
-
-        movei 012,030000
-        move 013,image_words
-        move 03,012
-        add 03,013
-        move 04,compressed_words
-        move 014,012
-        setz 011,
-        pushj 017,d6lz_fixed_base
-        jumpn 00,bad_tape
-        jumpn 04,bad_tape
-        jrst 0(016)
+        jrst stage1_handoff
 
 read_words:
 read_loop:
@@ -105,18 +90,13 @@ read_byte_loop:
         move 06,tmp
         trnn 06,0010
         jrst read_byte_loop
-        datai 0104,ioword
-        move 05,ioword
+        datai 0104,05
         andi 05,0377
         lsh 03,010
         ior 03,05
         sojg 04,read_byte_loop
         popj 017,
 
-bad_tape:
-        halt .
-
-ioword:      .word 0
 tmp:         .word 0
 msg_tape2:   .word 0644160452200        ; "TAPE2 "
 daimon_magic:.word 0444151555756
@@ -124,6 +104,31 @@ bootstrap_sixbit_image:
         .include "../common/sixbit-fixed.inc"
 
         .include "../common/decompressor.inc"
+
+; Production Stage0 loads PTR Stage1 at 000060.  Keep the decoder-copy and
+; post-copy instructions above the installed 000060 decoder image.
+stage1_handoff:
+        movei 01,d6lz_image_start
+        hrl 01,01
+        hrri 01,d6lz_fixed_base
+        blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
+
+        movei 012,030000
+        move 013,image_words
+        move 03,012
+        add 03,013
+        move 04,compressed_words
+        move 014,012
+        setz 011,
+        pushj 017,d6lz_fixed_base
+        jumpn 00,bad_tape
+        jumpn 04,bad_tape
+        move 017,012                  ; KINIT stack starts at image end
+        jrst 0(016)
+
+; Keep the post-decode failure target above the installed decoder image.
+bad_tape:
+        halt .
         .bss
 image_words:      .block 1
 compressed_words: .block 1
