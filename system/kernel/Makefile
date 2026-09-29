@@ -58,6 +58,7 @@ KERNEL_HEADERS = boot/kboot.h \
 	fs/d6fs_provider.h \
 	fs/monitorfs.h \
 	fs/dtfs.h \
+	fs/dtfs_media.h \
 	fs/tsfs.h \
 	fs/file.h \
 	fs/fs_mres.h \

@@ -128,6 +128,7 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/fs/dtfs.c \
 	$(KERNEL_DIR)/fs/tsfs.c \
 	$(KERNEL_DIR)/fs/dtfs.h \
+	$(KERNEL_DIR)/fs/dtfs_media.h \
 	$(KERNEL_DIR)/fs/dtfs_chain_walk_pdp10.s \
 	$(KERNEL_DIR)/fs/dtfs_pdp10.s \
 	$(KERNEL_DIR)/fs/tsfs_pdp10.s \
@@ -283,6 +284,7 @@ LOGIN_D6LZ_DXR = $(USERLAND_BUILD_ROOT)/userland/login.d6lz.dxr
 DSH_D6LZ_DXR = $(USERLAND_BUILD_ROOT)/userland/dsh.d6lz.dxr
 TSFSPROBE_DXR = $(USERLAND_BUILD_ROOT)/userland/tsfsprobe.dxr
 MOUNTTSFS_DXR = $(USERLAND_BUILD_ROOT)/userland/mounttsfs.dxr
+DTFSPROBE_DXR = $(USERLAND_BUILD_ROOT)/userland/dtfsprobe.dxr
 D6LZ_DXR = $(USERLAND_BUILD_ROOT)/userland/d6lz.dxr
 LOGDRAIN_DXR = $(USERLAND_BUILD_ROOT)/userland/logdrain.dxr
 SYSTEM_INIT_DXR ?= $(INIT_DXR)
@@ -290,6 +292,7 @@ SYSTEM_LOGIN_DXR ?= $(LOGIN_D6LZ_DXR)
 SYSTEM_DSH_DXR ?= $(DSH_D6LZ_DXR)
 SYSTEM_TSFSPROBE_DXR ?= $(TSFSPROBE_DXR)
 SYSTEM_MOUNTTSFS_DXR ?= $(MOUNTTSFS_DXR)
+SYSTEM_DTFSPROBE_DXR ?= $(DTFSPROBE_DXR)
 SYSTEM_D6LZ_DXR ?= $(D6LZ_DXR)
 SYSTEM_LOGDRAIN_DXR ?= $(LOGDRAIN_DXR)
 SYSTEM_INITTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/inittab
@@ -334,10 +337,14 @@ USERLAND_INPUTS = $(PROJECT_ROOT)/userland/libc/Makefile \
 	$(PROJECT_ROOT)/userland/tsfs/tsfs_scan.c \
 	$(PROJECT_ROOT)/userland/tsfs/tsfsprobe.c \
 	$(PROJECT_ROOT)/userland/tsfs/mount_tsfs.c \
+	$(PROJECT_ROOT)/userland/dtfs/dtfs_probe.h \
+	$(PROJECT_ROOT)/userland/dtfs/dtfs_probe.c \
+	$(PROJECT_ROOT)/userland/dtfs/dtfsprobe.c \
 	$(PROJECT_ROOT)/userland/config/inittab \
 	$(PROJECT_ROOT)/userland/config/passwd \
 	$(PROJECT_ROOT)/userland/Makefile \
-	$(PROJECT_ROOT)/system/kernel/proc/syscall.h
+	$(PROJECT_ROOT)/system/kernel/proc/syscall.h \
+	$(PROJECT_ROOT)/system/kernel/fs/dtfs_media.h
 
 ifeq ($(BOOT),auto)
 ifeq ($(ROOT),drum)
@@ -609,7 +616,7 @@ $(SYSTEM_D6LZ_MANUAL): $(SYSTEM_D6LZ_MANUAL_SRC) | $(MANUAL_BUILD)
 $(SYSTEM_LOGDRAIN_MANUAL): $(SYSTEM_LOGDRAIN_MANUAL_SRC) | $(MANUAL_BUILD)
 	$(S6FILTER) $< > $@
 
-$(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR) $(D6LZ_DXR) $(LOGDRAIN_DXR) &: $(USERLAND_INPUTS)
+$(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR) $(DTFSPROBE_DXR) $(D6LZ_DXR) $(LOGDRAIN_DXR) &: $(USERLAND_INPUTS)
 	$(MAKE) -C $(PROJECT_ROOT)/userland build BUILD_ROOT='$(USERLAND_BUILD_ROOT)' \
 	    PDP10_PREFIX='$(PDP10_PREFIX)'
 
@@ -676,7 +683,7 @@ $(STAGE1_TAPE): $(STAGE1_DXR)
 	$(DXRCONVERT) --pdp6-readin -b 060 $< $@
 	printf '\252' >> $@
 
-$(DISK_IMAGE): $(IMAGE_BOOT_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_LOGIN_DXR) $(SYSTEM_DSH_DXR) $(SYSTEM_TSFSPROBE_DXR) $(SYSTEM_MOUNTTSFS_DXR) $(SYSTEM_D6LZ_DXR) $(SYSTEM_LOGDRAIN_DXR) $(SYSTEM_INITTAB_TEXT) $(SYSTEM_PASSWD_TEXT) $(SYSTEM_MANUALS)
+$(DISK_IMAGE): $(IMAGE_BOOT_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_LOGIN_DXR) $(SYSTEM_DSH_DXR) $(SYSTEM_TSFSPROBE_DXR) $(SYSTEM_MOUNTTSFS_DXR) $(SYSTEM_DTFSPROBE_DXR) $(SYSTEM_D6LZ_DXR) $(SYSTEM_LOGDRAIN_DXR) $(SYSTEM_INITTAB_TEXT) $(SYSTEM_PASSWD_TEXT) $(SYSTEM_MANUALS)
 	rm -rf $(DISK_DIR)
 	$(MKDSK) -n 1 -m clean -p $(IMAGE_BOOT_WORDS) -o $(DISK_DIR) \
 	    --d6fs-layout --logstore-blocks $(D6FS_LOGSTORE_BLOCKS) \
@@ -695,6 +702,7 @@ $(DISK_IMAGE): $(IMAGE_BOOT_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_LOGIN_DXR) $(SYST
 	    -f "/SYSTEM/EXEC/DSH:$(SYSTEM_DSH_DXR):555:dxr" \
 	    -f "/SYSTEM/EXEC/TSFSPROBE:$(SYSTEM_TSFSPROBE_DXR):555:dxr" \
 	    -f "/SYSTEM/EXEC/MOUNT.TSFS:$(SYSTEM_MOUNTTSFS_DXR):555:dxr" \
+	    -f "/SYSTEM/EXEC/DTFSPROBE:$(SYSTEM_DTFSPROBE_DXR):555:dxr" \
 	    -f "/SYSTEM/EXEC/D6LZ:$(SYSTEM_D6LZ_DXR):555:dxr" \
 	    -f "/SYSTEM/EXEC/LOGDRAIN:$(SYSTEM_LOGDRAIN_DXR):555:dxr" \
 	    -f "/SYSTEM/MANUAL/INIT:$(SYSTEM_INIT_MANUAL):444:binwords" \
@@ -707,7 +715,7 @@ $(DISK_IMAGE): $(IMAGE_BOOT_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_LOGIN_DXR) $(SYST
 	    -f "/CONFIG/PASSWD:$(SYSTEM_PASSWD_TEXT):600:text"
 	$(LOGSTORE) -n 1 -d $(DISK_DIR) --init
 
-$(TSFS_ROOT_IMAGE): $(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR) \
+$(TSFS_ROOT_IMAGE): $(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR) $(DTFSPROBE_DXR) \
 	$(SYSTEM_INITTAB_TEXT) $(SYSTEM_PASSWD_TEXT) | $(MEDIA_DIR)
 	@set -eu; \
 	tmp='$(TSFS_ROOT_MANIFEST).tmp.$$$$'; \
@@ -722,6 +730,7 @@ $(TSFS_ROOT_IMAGE): $(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR) \
 	  printf 'F /SYSTEM/INIT %s\n' '$(INIT_DXR)'; \
 	  printf 'F /SYSTEM/EXEC/LOGIN %s\n' '$(LOGIN_DXR)'; \
 	  printf 'F /SYSTEM/EXEC/DSH %s\n' '$(DSH_DXR)'; \
+	  printf 'F /SYSTEM/EXEC/DTFSPROBE %s\n' '$(DTFSPROBE_DXR)'; \
 	  printf 'T /CONFIG/INITTAB %s\n' '$(SYSTEM_INITTAB_TEXT)'; \
 	  printf 'T /CONFIG/PASSWD %s\n' '$(SYSTEM_PASSWD_TEXT)'; \
 	} > "$$tmp"; \

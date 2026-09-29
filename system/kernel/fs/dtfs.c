@@ -1,4 +1,5 @@
 #include "dtfs.h"
+#include "dtfs_media.h"
 #include "fs_mres.h"
 #include "syscall.h"
 
@@ -8,49 +9,6 @@
 #ifndef DTFS_ENABLE_ITS
 #define DTFS_ENABLE_ITS 0
 #endif
-
-#define DTFS_BLOCK_WORDS      0200U
-#define DTFS_BLOCKS           01102U
-#define DTFS_LAST_BLOCK       01101U
-#define DTFS_DIR_BLOCK        0144U       /* TENEX/native: decimal 100 */
-#define DTFS_ITS_DIR_BLOCK    0100U       /* ITS: octal 100 */
-#define DTFS_MAP_WORDS        0123U       /* decimal 83 */
-#define DTFS_NAME_BASE        0123U
-#define DTFS_TENEX_EXT_BASE   0151U       /* decimal 105 */
-#define DTFS_MAGIC_WORD       0177U
-#define DTFS_DATA_WORDS       0177U
-
-#define DTFS_OWNER_FREE       000U
-#define DTFS_OWNER_NATIVE_TAG 035U
-#define DTFS_OWNER_RESERVED   036U
-#define DTFS_OWNER_INVALID    037U
-#define DTFS_NATIVE_MAGIC     0446446632021UL
-#define DTFS_TENEX_MAX_FILE   026U
-#define DTFS_ITS_FILE_SLOTS   027U       /* 23 decimal */
-#define DTFS_ITS_NAME_WORDS   056U       /* 23 two-word names */
-#define DTFS_ITS_MAP_ENTRIES  01076U     /* 82 words, seven 5-bit bytes each */
-#define DTFS_ITS_END          037U
-#define DTFS_ITS_DIR_OWNER    033U
-#define DTFS_ITS_END_BLOCK    01067U
-#define DTFS_ITS_MAP_FIRST    056U
-#define DTFS_ITS_MAP_DIR      067U
-#define DTFS_ITS_MAP_LAST     0177U
-#define DTFS_ITS_MAP_RESERVED 0757367573674UL
-#define DTFS_ITS_MAP_DIRWORD  0660000000000UL
-#define DTFS_ITS_MAP_END      0777777777776UL
-#define DTFS_TENEX_RESERVED   036U
-#define DTFS_TENEX_INVALID    037U
-
-#define DTFS_NEXT_SHIFT       18U
-#define DTFS_FIRST_SHIFT      8U
-#define DTFS_BLOCKNO_MASK     01777UL
-#define DTFS_COUNT_MASK       0377UL
-#define DTFS_NAME2_MASK       0777777777700UL
-#define DTFS_TENEX_EXT_MASK   0777777000000UL
-
-#define DTFS_MEDIA_UNIT_MASK  07U
-#define DTFS_MEDIA_TENEX      010U
-#define DTFS_MEDIA_ITS        020U
 
 /* One directory and one transfer block are shared by every DTFS mount.
  * On the PDP-6 the directory cache is allocated from managed kernel memory
@@ -76,14 +34,6 @@ extern void dtfs_set_owner(unsigned int base, unsigned int index,
 int dtfs_chain_walk(unsigned int unit, unsigned int slot,
     unsigned int off, kword_t *buf, unsigned int nwords,
     unsigned int mapoff, int writing);
-
-extern int dtfs_native_valid(void);
-
-extern int dtfs_its_valid(void);
-
-
-extern int dtfs_tenex_valid(unsigned int unit, int deep);
-
 
 extern unsigned int dtfs_personality(vnode_t node);
 #if !DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS
@@ -492,47 +442,6 @@ dtfs_resize(vnode_t node, unsigned int words)
 extern int dtfs_resize(vnode_t node, unsigned int words);
 #endif
 
-static int
-dtfs_detect_unit(unsigned int unit, unsigned int type, int deep)
-{
-#if !DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS
-        (void)deep;
-        if (type != SYS_DTFS_TYPE_AUTO && type != SYS_DTFS_TYPE_NATIVE)
-                return -1;
-        if (dtfs_dtc_read(unit, DTFS_DIR_BLOCK, dtfs_dir) != 0 ||
-            !dtfs_native_valid())
-                return -1;
-        return SYS_DTFS_TYPE_NATIVE;
-#else
-        /* TYPE is always masked by both private callers. */
-#if DTFS_ENABLE_TENEX
-        if (type != SYS_DTFS_TYPE_ITS) {
-#else
-        if (type != SYS_DTFS_TYPE_ITS) {
-#endif
-                if (dtfs_dtc_read(unit, DTFS_DIR_BLOCK, dtfs_dir) == 0) {
-                        if (type != SYS_DTFS_TYPE_TENEX &&
-                            dtfs_native_valid())
-                                return SYS_DTFS_TYPE_NATIVE;
-#if DTFS_ENABLE_TENEX
-                        if (type != SYS_DTFS_TYPE_NATIVE &&
-                            dtfs_tenex_valid(unit, deep))
-                                return SYS_DTFS_TYPE_TENEX;
-#endif
-                }
-                if (type != SYS_DTFS_TYPE_AUTO)
-                        return -1;
-        }
-#if DTFS_ENABLE_ITS
-        if (dtfs_dtc_read(unit, DTFS_ITS_DIR_BLOCK, dtfs_dir) == 0 &&
-            dtfs_its_valid())
-                return SYS_DTFS_TYPE_ITS;
-#endif
-        return -1;
-#endif
-}
-
-
 int
 dtfs_format_unit(unsigned int unit, unsigned int ctl)
 {
@@ -541,10 +450,8 @@ dtfs_format_unit(unsigned int unit, unsigned int ctl)
 
         op = ctl & 07U;
         type = ctl & SYS_DTFS_TYPE_MASK;
-        if (unit > 7U || op > SYS_DTFS_CTL_CHECK)
+        if (unit > 7U || op != SYS_DTFS_CTL_FORMAT)
                 return -1;
-        if (op == SYS_DTFS_CTL_CHECK)
-                return dtfs_detect_unit(unit, type, 1);
         if (type == SYS_DTFS_TYPE_NATIVE) {
                 fs_zero_words(dtfs_dir, DTFS_BLOCK_WORDS);
                 /* Fixed native map markers: entries 0, 100, and 578..580. */
@@ -593,14 +500,20 @@ dtfs_mount_unit(unsigned int unit, vnode_t target,
         if (unit > 7U || rootp == 0 ||
             (flags & ~(VFS_MOUNT_RDONLY | SYS_DTFS_TYPE_MASK)) != 0U)
                 return -1;
-        format = dtfs_detect_unit(unit, flags & SYS_DTFS_TYPE_MASK, 0);
-        if ((int)format < 0)
-                return -1;
-#if !DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS
-        media = unit;
-#else
-        media = unit | (format - SYS_DTFS_TYPE_NATIVE);
+        format = flags & SYS_DTFS_TYPE_MASK;
+        if (format == SYS_DTFS_TYPE_NATIVE) {
+                media = unit;
+#if DTFS_ENABLE_TENEX
+        } else if (format == SYS_DTFS_TYPE_TENEX) {
+                media = unit | DTFS_MEDIA_TENEX;
 #endif
+#if DTFS_ENABLE_ITS
+        } else if (format == SYS_DTFS_TYPE_ITS) {
+                media = unit | DTFS_MEDIA_ITS;
+#endif
+        } else {
+                return -1;
+        }
         if (vfs_mount_prevalidated(target, DTFS_PROVIDER, DTFS_KIND_ROOT, 0U,
             flags & VFS_MOUNT_RDONLY, &root) != 0)
                 return -1;

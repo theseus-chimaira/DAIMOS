@@ -25,7 +25,6 @@ int dsys_chown(kword_t *p, unsigned int uid, unsigned int gid);
 int dsys_rmdir(kword_t *p);
 int dsys_utime(kword_t *p, kword_t mtime);
 int dsys_dtfs_format(kword_t *p, unsigned int t);
-int dsys_dtfs_check(kword_t *p, unsigned int t);
 int dsys_dtfs_mount(kword_t *d, kword_t *p, unsigned int f);
 int dsys_unmount(kword_t *p);
 int dsys_flock(int fd, unsigned int op);

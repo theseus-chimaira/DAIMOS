@@ -74,106 +74,6 @@ dtfs_set_owner:
         movem   3,(1)
         popj    17,
 
-.if DTFS_ENABLE_TENEX
-; TENEX directory validation, including the optional fsck/deep chain pass.
-; The allocation index and slot ranges are small non-negative constants, so
-; direct CAIGE loops avoid GCC's signed-range scaffolding.
-        .globl  dtfs_chain_walk
-        .globl  dtfs_tenex_valid
-dtfs_tenex_valid:
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
-        move    010,1                   ; unit for optional deep walk
-        move    011,2                   ; deep flag
-        move    6,dtfs_dir              ; dynamic directory-cache base
-
-; TENEX DECTAP.MAC DTINID/DIRTHR structural markers.
-        move    4,(6)
-        lsh     4,-032
-        caie    4,01736
-        jrst    dtfs_tenex_valid_false
-        ldb     4,[POINT 5,016(6),9]
-        caie    4,036
-        jrst    dtfs_tenex_valid_false
-        move    4,0122(6)
-        and     4,[07777776]
-        came    4,[07777776]
-        jrst    dtfs_tenex_valid_false
-
-; Validate all 578 allocation entries and remember which file owners occur.
-        setz    012,                    ; seen owner bitmap
-        setz    013,                    ; allocation index
-dtfs_tenex_valid_map_loop:
-        setz    1,
-        move    2,013
-        pushj   17,dtfs_owner
-        cail    1,027
-        jrst    dtfs_tenex_valid_special_owner
-        jumpe   1,dtfs_tenex_valid_map_next
-        move    4,1
-        add     4,6
-        skipn   0122(4)                 ; NAME_BASE + owner - 1
-        jrst    dtfs_tenex_valid_false
-        movei   4,1
-        lsh     4,-1(1)                 ; bit owner-1
-        ior     012,4
-        jrst    dtfs_tenex_valid_map_next
-dtfs_tenex_valid_special_owner:
-        cail    1,036
-        cail    1,040
-        jrst    dtfs_tenex_valid_false
-
-dtfs_tenex_valid_map_next:
-        addi    013,1
-        caige   013,01102
-        jrst    dtfs_tenex_valid_map_loop
-
-; Every named slot must own at least one block; an empty NAME may not carry an
-; EXT.  Deep CHECK additionally validates the complete block chain in-place.
-        setz    013,
-dtfs_tenex_valid_slot_loop:
-        move    6,dtfs_dir
-        add     6,013
-        skipn   0123(6)
-        jrst    dtfs_tenex_valid_empty_slot
-        move    4,012
-        movn    5,013
-        lsh     4,0(5)
-        trnn    4,1
-        jrst    dtfs_tenex_valid_false
-        jumpe   011,dtfs_tenex_valid_slot_next
-        move    1,010
-        move    2,013
-        setz    3,
-        setz    4,
-        add     17,[2,,2]
-        setzm   (17)                    ; fifth argument nwords = 0
-        movei   5,1
-        movem   5,-1(17)                ; sixth argument map offset = 1
-        pushj   17,dtfs_chain_walk
-        sub     17,[2,,2]
-        jumpl   1,dtfs_tenex_valid_false
-        jrst    dtfs_tenex_valid_slot_next
-dtfs_tenex_valid_empty_slot:
-        move    6,dtfs_dir
-        add     6,013
-        skipn   0151(6)
-        jrst    dtfs_tenex_valid_slot_next
-        jrst    dtfs_tenex_valid_false
-
-dtfs_tenex_valid_slot_next:
-        addi    013,1
-        caige   013,026
-        jrst    dtfs_tenex_valid_slot_loop
-        movei   1,1
-        jrst    dtfs_tenex_valid_return
-dtfs_tenex_valid_false:
-        setz    1,
-dtfs_tenex_valid_return:
-.endif
-
 dtfs_restore4:
         pop     17,013
 dtfs_restore3:
@@ -184,60 +84,9 @@ dtfs_restore1:
         pop     17,010
         popj    17,
 
-.if DTFS_ENABLE_ITS
-; ITS directory structural validation.  Keep the fixed UTAPE markers and
-; owner/name consistency scan in one compact target loop.
-        .globl  dtfs_its_valid
-dtfs_its_valid:
-        move    6,dtfs_dir
-        move    1,056(6)
-        andcm   1,[1]
-        came    1,[0757367573674]
-        jrst    dtfs_its_valid_false
-        move    1,067(6)
-        lsh     1,-037                  ; owner is the top five bits
-        caie    1,033
-        jrst    dtfs_its_valid_false
-        move    1,0177(6)
-        andcm   1,[1]
-        came    1,[0777777777776]
-        jrst    dtfs_its_valid_false
-        push    17,010
-        movei   010,7
-
-dtfs_its_valid_loop:
-        movei   1,056
-        move    2,010
-        pushj   17,dtfs_owner
-        cain    1,037
-        jrst    dtfs_its_valid_pop_false
-dtfs_its_valid_owner:
-        jumpe   1,dtfs_its_valid_next
-        caile   1,027
-        jrst    dtfs_its_valid_next
-        subi    1,1
-        lsh     1,1
-        add     1,dtfs_dir
-        skipn   (1)
-        skipe   1(1)
-        jrst    dtfs_its_valid_next
-        jrst    dtfs_its_valid_pop_false
-
-dtfs_its_valid_next:
-        addi    010,1
-        caige   010,01067
-        jrst    dtfs_its_valid_loop
-        pop     17,010
-        jrst    pdp10_ret_one
-dtfs_its_valid_pop_false:
-        pop     17,010
-dtfs_its_valid_false:
-        jrst    pdp10_ret_zero
-
 ; Compact vnode predicates.  The vnode encoding is provider:6, kind/mount:12,
 ; index:18.  Mask provider plus local kind in one operation; mount-id and file
 ; index remain independent tests.
-.endif
 
         .globl  dtfs_is_root
 dtfs_is_root:
@@ -754,71 +603,38 @@ dtfs_personality:
         xct     dtfs_personality_xct-1(2)
         popj    17,
 
-; Shared cached directory loader.  Keep only mount id and packed media across
-; the DTC/validator calls; unit and personality are cheap masks of MEDIA.
+; Shared cached directory loader.  Mount-time userspace validation has already
+; established the media personality; runtime only reloads the selected
+; directory block when another DTFS/TSFS mount displaced the cache.
         .globl  dtfs_cache_mount
         .globl  dtfs_media
-        .globl  dtfs_native_valid
 
 dtfs_load:
         push    17,010
-        push    17,011
         ldb     010,[POINT 6,1,11]      ; mount id
         move    4,dtfs_cache_mount
         camn    4,010
         jrst    dtfs_load_ok
-        move    011,dtfs_media-1(010)   ; unit + personality
-        move    1,011
+        move    4,dtfs_media-1(010)     ; unit + personality
+        move    1,4
         andi    1,7                     ; unit
-        xct     dtfs_personality_xct-1(010)
-        move    4,1                     ; personality
         movei   2,0144                  ; native/TENEX directory
 .if DTFS_ENABLE_ITS
-        cain    4,020
+        trne    4,020
         movei   2,0100                  ; ITS directory
 .endif
         move    3,dtfs_dir
         pushj   17,dtfs_dtc_read
         jumpn   1,dtfs_load_fail
-        xct     dtfs_personality_xct-1(010)
-        move    4,1
-.if DTFS_ENABLE_ITS
-        cain    4,020
-        jrst    dtfs_load_validate_its
-.endif
-.if DTFS_ENABLE_TENEX
-        cain    4,010
-        jrst    dtfs_load_validate_tenex
-.endif
-        pushj   17,dtfs_native_valid
-        jrst    dtfs_load_validated
-
-.if DTFS_ENABLE_ITS
-dtfs_load_validate_its:
-        pushj   17,dtfs_its_valid
-        jrst    dtfs_load_validated
-.endif
-
-.if DTFS_ENABLE_TENEX
-dtfs_load_validate_tenex:
-        move    1,011
-        andi    1,7
-        setz    2,
-        pushj   17,dtfs_tenex_valid
-.endif
-
-dtfs_load_validated:
-        jumpe   1,dtfs_load_fail
         movem   010,dtfs_cache_mount
 
 dtfs_load_ok:
-        setz    1,
-        jrst    dtfs_load_return
+        pop     17,010
+        jrst    pdp10_ret_zero
 
 dtfs_load_fail:
-        seto    1,
-dtfs_load_return:
-        jrst    dtfs_restore2
+        pop     17,010
+        jrst    pdp10_ret_neg1
 
 .else
 ; Native-only build: packed media contains only the unit.
@@ -830,7 +646,6 @@ dtfs_patch_media:
 
         .globl  dtfs_cache_mount
         .globl  dtfs_media
-        .globl  dtfs_native_valid
 
 dtfs_load:
         push    17,010
@@ -844,8 +659,6 @@ dtfs_load:
         move    3,dtfs_dir
         pushj   17,dtfs_dtc_read
         jumpn   1,dtfs_load_native_fail
-        pushj   17,dtfs_native_valid
-        jumpe   1,dtfs_load_native_fail
         movem   010,dtfs_cache_mount
 dtfs_load_native_ok:
         pop     17,010
@@ -855,35 +668,6 @@ dtfs_load_native_fail:
         jrst    pdp10_ret_neg1
 
 .endif
-
-; Native directory validation.  The three post-media map entries are a fixed
-; tiny range, so use a direct CAIG loop instead of GCC's signed-range code.
-dtfs_native_valid:
-        move    6,dtfs_dir
-        move    1,0177(6)
-        came    1,[0446446632021]
-        jrst    pdp10_ret_zero
-        setzb   1,2
-        pushj   17,dtfs_owner
-        caie    1,036
-        jrst    pdp10_ret_zero
-        setz    1,
-        movei   2,0144
-        pushj   17,dtfs_owner
-        caie    1,036
-        jrst    pdp10_ret_zero
-        movei   4,01102
-
-dtfs_native_valid_loop:
-        setz    1,
-        move    2,4
-        pushj   17,dtfs_owner
-        caie    1,035
-        jrst    pdp10_ret_zero
-        addi    4,1
-        caig    4,01104
-        jrst    dtfs_native_valid_loop
-        jrst    pdp10_ret_one
 
 
 .if DTFS_ENABLE_FOREIGN

@@ -6,7 +6,6 @@
 
         .globl dsys_write_nonets
         .globl dsys_mkdir
-        .globl dsys_dtfs_check
 
 dsys_write_nonets:
         move 4,[POINT 9,0,8]
@@ -20,7 +19,3 @@ dsys_mkdir:
         uuo 051,0(1)
         popj 17,
 
-dsys_dtfs_check:
-        iori 2,1
-        uuo 065,0(1)
-        popj 17,

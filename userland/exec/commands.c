@@ -427,6 +427,12 @@ cmd_opt_name(const kword_t *arg, unsigned int off, unsigned int len,
         return name[len] == 0;
 }
 
+static unsigned int
+cmd_record_words(const kword_t *record)
+{
+        return 1U + ((unsigned int)record[0] + 5U) / 6U;
+}
+
 static int
 cmd_dtfs_options(const kword_t *arg, unsigned int *flagsp,
     unsigned int *typep)
@@ -495,6 +501,59 @@ cmd_mkfs_dtfs(int argc, kword_t **argv, struct u_io *io)
 }
 
 static int
+cmd_dtfs_probe(kword_t *device, int deep, struct u_io *io)
+{
+        kword_t block[SYS_RUN_V2_FIXED_WORDS + 4U * U_PATH_WORDS + 3U];
+        kword_t path[U_PATH_WORDS];
+        kword_t deep_arg[U_PATH_WORDS];
+        struct sys_run_v2 *run;
+        kword_t status;
+        unsigned int words;
+        unsigned int total;
+        unsigned int i;
+        unsigned int value;
+        int pid;
+
+        if (u_s6_pack(path, U_PATH_WORDS, "/SYSTEM/EXEC/DTFSPROBE") != 0 ||
+            (deep && u_s6_pack(deep_arg, U_PATH_WORDS, "DEEP") != 0))
+                return -1;
+        total = SYS_RUN_V2_FIXED_WORDS;
+        words = cmd_record_words(path);
+        for (i = 0U; i < words; ++i)
+                block[total++] = path[i];
+        for (i = 0U; i < words; ++i)
+                block[total++] = path[i];
+        words = cmd_record_words(device);
+        for (i = 0U; i < words; ++i)
+                block[total++] = device[i];
+        if (deep) {
+                words = cmd_record_words(deep_arg);
+                for (i = 0U; i < words; ++i)
+                        block[total++] = deep_arg[i];
+        }
+        block[total++] = SYS_RUN_FD_MAP(0U, (unsigned int)io->in_fd);
+        block[total++] = SYS_RUN_FD_MAP(1U, (unsigned int)io->out_fd);
+        block[total++] = SYS_RUN_FD_MAP(2U, (unsigned int)io->err_fd);
+
+        run = (struct sys_run_v2 *)block;
+        run->version_words = SYS_RUN_HEADER(SYS_RUN_VERSION_2, total);
+        run->flags = SYS_RUN_PGRP_INHERIT;
+        run->pgrp = 0UL;
+        run->fdmap_count = 3UL;
+        run->argc = deep ? 3UL : 2UL;
+        run->envc = 0UL;
+        pid = dsys_run(run);
+        if (pid < 0 || dsys_wait((unsigned int)pid, &status, 0U) != pid ||
+            SYS_WAIT_STATUS_KIND(status) != SYS_WAIT_EXITED)
+                return -1;
+        value = SYS_WAIT_STATUS_VALUE(status);
+        if (value != SYS_DTFS_TYPE_NATIVE && value != SYS_DTFS_TYPE_TENEX &&
+            value != SYS_DTFS_TYPE_ITS)
+                return -1;
+        return (int)value;
+}
+
+static int
 cmd_fsck_dtfs(int argc, kword_t **argv, struct u_io *io)
 {
         unsigned int flags;
@@ -514,8 +573,9 @@ cmd_fsck_dtfs(int argc, kword_t **argv, struct u_io *io)
         }
         if (flags != SYS_MOUNT_RDONLY)
                 return cmd_err(io, "FSCK.DTFS", 0);
-        found = dsys_dtfs_check(device, type);
-        if (found < 0)
+        found = cmd_dtfs_probe(device, 1, io);
+        if (found < 0 || (type != SYS_DTFS_TYPE_AUTO &&
+            found != (int)type))
                 return cmd_err(io, "FSCK.DTFS", device);
         if (u_puts(io->out_fd, "FSCK.DTFS ") != 0)
                 return 1;
@@ -540,6 +600,7 @@ cmd_mount_dtfs(int argc, kword_t **argv, struct u_io *io)
         unsigned int type;
         kword_t *device;
         kword_t *target;
+        int found;
 
         flags = SYS_MOUNT_RDONLY;
         type = SYS_DTFS_TYPE_AUTO;
@@ -553,7 +614,11 @@ cmd_mount_dtfs(int argc, kword_t **argv, struct u_io *io)
         } else {
                 return cmd_err(io, "MOUNT.DTFS", 0);
         }
-        return dsys_dtfs_mount(device, target, flags | type) == 0 ? 0 :
+        found = cmd_dtfs_probe(device, 0, io);
+        if (found < 0 || (type != SYS_DTFS_TYPE_AUTO &&
+            found != (int)type))
+                return cmd_err(io, "MOUNT.DTFS", device);
+        return dsys_dtfs_mount(device, target, flags | (unsigned int)found) == 0 ? 0 :
             cmd_err(io, "MOUNT.DTFS", target);
 }
 
@@ -675,12 +740,6 @@ cmd_df(int argc, kword_t **argv, struct u_io *io)
             u_crlf(io->out_fd) != 0)
                 return 1;
         return 0;
-}
-
-static unsigned int
-cmd_record_words(const kword_t *record)
-{
-        return 1U + ((unsigned int)record[0] + 5U) / 6U;
 }
 
 /*
