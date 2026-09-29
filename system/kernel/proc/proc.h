@@ -190,6 +190,11 @@ void proc_sched_resched_current(void);
 kword_t proc_scope_id(const struct proc *p);
 int proc_wait_child(void);
 kword_t proc_comm(const struct proc *p);
+int proc_image_text_readchar(unsigned int slot, unsigned int view,
+    kword_t off, unsigned int *chp);
+#define PROC_IMAGE_VIEW_NAME         0U
+#define PROC_IMAGE_VIEW_CMDLINE      1U
+#define PROC_IMAGE_VIEW_ENVIRONMENT  2U
 int proc_wait_event(volatile kword_t *eventp);
 int proc_wait_event_intr(volatile kword_t *eventp);
 void proc_wakeup_event(volatile kword_t *eventp);

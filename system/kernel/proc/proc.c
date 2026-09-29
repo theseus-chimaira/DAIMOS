@@ -6,6 +6,7 @@
 #include "monitorfs.h"
 #include "syscall.h"
 #include "tty.h"
+#include "exec.h"
 
 #define PROC_UAREA_MM_OWNER_BASE 01000U
 
@@ -21,6 +22,138 @@ extern int proc_event_send(unsigned int target, unsigned int event, int group);
 extern int native_sys_putchar_call(kword_t tty_char);
 #endif
 extern int proc_session_teardown(unsigned int leader_slot, kword_t leader_ctl);
+
+#ifndef __PDP10__
+static int
+proc_image_record_char(const struct proc *p, kword_t record,
+    unsigned int pos, unsigned int *chp)
+{
+        kword_t count;
+        kword_t word;
+        unsigned int shift;
+
+        if (vm_space_inspect_word(p, record, &count) != 0 ||
+            count > SYS_RUN_ARG_MAX_CHARS || pos >= (unsigned int)count)
+                return 0;
+        if (vm_space_inspect_word(p, record + 1UL + (kword_t)(pos / 6U),
+            &word) != 0)
+                return -1;
+        shift = 30U - 6U * (pos % 6U);
+        *chp = 040U + (unsigned int)((word >> shift) & 077UL);
+        return 1;
+}
+
+static int
+proc_image_record_info(const struct proc *p, kword_t vector,
+    unsigned int index, kword_t *recordp, unsigned int *charsp)
+{
+        kword_t record;
+        kword_t chars;
+
+        if (vm_space_inspect_word(p, vector + (kword_t)index, &record) != 0 ||
+            record >= VM_SPACE_WORDS(p) ||
+            vm_space_inspect_word(p, record, &chars) != 0 ||
+            chars > SYS_RUN_ARG_MAX_CHARS)
+                return -1;
+        *recordp = record;
+        *charsp = (unsigned int)chars;
+        return 0;
+}
+
+int
+proc_image_text_readchar(unsigned int slot, unsigned int view, kword_t off,
+    unsigned int *chp)
+{
+        const struct proc *p;
+        kword_t meta;
+        kword_t counts;
+        kword_t vector;
+        kword_t record;
+        unsigned int argc;
+        unsigned int envc;
+        unsigned int first;
+        unsigned int count;
+        unsigned int i;
+        unsigned int chars;
+        unsigned int start;
+        unsigned int pos;
+        int rc;
+
+        if (chp == 0 || proc_table == 0 || slot >= proc_high_slot ||
+            PROC_IS_FREE(&proc_table[slot]) ||
+            !VM_SPACE_ACTIVE(&proc_table[slot]) ||
+            VM_SPACE_WORDS(&proc_table[slot]) < EXEC_DXR_STACK_WORDS)
+                return 0;
+        p = &proc_table[slot];
+        meta = VM_SPACE_WORDS(p) - (kword_t)EXEC_DXR_STACK_WORDS;
+        if (vm_space_inspect_word(p, meta, &counts) != 0)
+                return 0;
+        argc = (unsigned int)((counts >> 18U) & PROC_HALF_MASK);
+        envc = (unsigned int)(counts & PROC_HALF_MASK);
+        if (argc > SYS_RUN_ARG_MAX || envc > SYS_RUN_ENV_MAX)
+                return 0;
+        vector = meta + 1UL;
+
+        if (view == PROC_IMAGE_VIEW_NAME) {
+                if (argc == 0U || proc_image_record_info(p, vector, 0U,
+                    &record, &chars) != 0)
+                        return 0;
+                start = 0U;
+                for (i = 0U; i < chars; ++i) {
+                        rc = proc_image_record_char(p, record, i, chp);
+                        if (rc <= 0)
+                                return rc;
+                        if (*chp == (unsigned int)'/')
+                                start = i + 1U;
+                }
+                if (off >= (kword_t)(chars - start))
+                        return 0;
+                return proc_image_record_char(p, record,
+                    start + (unsigned int)off, chp);
+        }
+
+        if (view == PROC_IMAGE_VIEW_CMDLINE) {
+                first = 0U;
+                count = argc;
+        } else if (view == PROC_IMAGE_VIEW_ENVIRONMENT) {
+                first = argc;
+                count = envc;
+        } else {
+                return -1;
+        }
+
+        pos = (unsigned int)off;
+        for (i = 0U; i < count; ++i) {
+                if (proc_image_record_info(p, vector, first + i,
+                    &record, &chars) != 0)
+                        return 0;
+                if (pos < chars)
+                        return proc_image_record_char(p, record, pos, chp);
+                pos -= chars;
+                if (i + 1U != count) {
+                        if (view == PROC_IMAGE_VIEW_CMDLINE) {
+                                if (pos == 0U) {
+                                        *chp = (unsigned int)' ';
+                                        return 1;
+                                }
+                                --pos;
+                        } else {
+                                if (pos == 0U) {
+                                        *chp = 015U;
+                                        return 1;
+                                }
+                                --pos;
+                                if (pos == 0U) {
+                                        *chp = 012U;
+                                        return 1;
+                                }
+                                --pos;
+                        }
+                }
+        }
+        return 0;
+}
+#endif
 
 /* KCC emits calls for tiny C helpers here.  Keep scheduler-common
  * expressions explicit so selection does not pay those calls. */
@@ -442,6 +575,16 @@ proc_tty_canon_input(unsigned int tty, unsigned int ch)
         }
         if (len >= PROC_TTY_LINE_CHARS) {
                 if ((mode & PROC_TTY_MODE_ECHO) != 0U)
+                        proc_tty_echo(tty, 007U);
+                return PROC_TTY_INPUT_REPEAT;
+        }
+        /* DAIMOS cooked input is systemwide SIXBIT text.  Normalize before
+         * both buffering and echo so applications never need private case
+         * folding and what the user sees is exactly what they receive. */
+        if (ch >= (unsigned int)'a' && ch <= (unsigned int)'z')
+                ch -= (unsigned int)('a' - 'A');
+        if (ch < 040U || ch > 0137U) {
+                if (ch > 0137U && (mode & PROC_TTY_MODE_ECHO) != 0U)
                         proc_tty_echo(tty, 007U);
                 return PROC_TTY_INPUT_REPEAT;
         }

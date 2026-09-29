@@ -115,7 +115,7 @@ split_passwd(char *line, char **field)
 }
 
 static int
-login_getline(char *buf, unsigned int size, int upper)
+login_getline(char *buf, unsigned int size)
 {
         unsigned int n;
         int ch;
@@ -133,8 +133,6 @@ login_getline(char *buf, unsigned int size, int upper)
                 }
                 if (ch < 040 || ch > 0176 || n + 1U >= size)
                         continue;
-                if (upper && ch >= 'a' && ch <= 'z')
-                        ch -= 'a' - 'A';
                 buf[n++] = (char)ch;
         }
 }
@@ -330,7 +328,7 @@ main(int argc, kword_t **argv, kword_t **envp)
         }
         for (;;) {
                 (void)u_puts(1, "LOGIN: ");
-                if (login_getline(name, sizeof(name), 1) < 0)
+                if (login_getline(name, sizeof(name)) < 0)
                         break;
                 auth = find_account(name, &account);
                 if (auth != 0) {
@@ -345,7 +343,7 @@ main(int argc, kword_t **argv, kword_t **envp)
                         if (dsys_procctl(SYS_PROCCTL_TTY_SETMODE,
                             SYS_TTY_MODE_CANONICAL | SYS_TTY_MODE_SIGNALS) < 0)
                                 break;
-                        if (login_getline(password, sizeof(password), 0) < 0) {
+                        if (login_getline(password, sizeof(password)) < 0) {
                                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETMODE,
                                     SYS_TTY_MODE_COOKED);
                                 break;

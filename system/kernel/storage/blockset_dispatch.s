@@ -60,11 +60,14 @@ blockset_block_io:
         pushj 17,blockset_map_block
         move 3,4
         jumpl 1,pdp10_ret_neg1
-        aos mfsdev_d6set_reads(5)
-        aos mfsdev_d6set_blocks_read(5)
-        jumpe 5,blockset_block_read
+        jumpe 5,blockset_block_read_account
+        aos mfsdev_d6set_writes
+        aos mfsdev_d6set_blocks_written
         pushj 17,blockset_backend_write
         jrst blockset_block_done
+blockset_block_read_account:
+        aos mfsdev_d6set_reads
+        aos mfsdev_d6set_blocks_read
 blockset_block_read:
         pushj 17,blockset_backend_read
 blockset_block_done:

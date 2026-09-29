@@ -35,6 +35,8 @@ int vm_space_destroy(struct proc *p, unsigned int owner);
 int vm_space_can_swap(const struct proc *p);
 int vm_space_startup(struct proc *p, const kword_t *records,
     kword_t counts, kword_t *startup);
+int vm_space_inspect_word(const struct proc *p, kword_t offset,
+    kword_t *wordp);
 
 /* Called by physical MM for an unpinned MM_TYPE_PROCESS extent. */
 #define VM_EXTENT_ALIGN_WORDS 02000UL

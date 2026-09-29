@@ -58,16 +58,41 @@ int mfsdev_readdir(vnode_t dir, unsigned int off,
 int mfsdev_stat(vnode_t node, struct vfs_stat *st);
 int mfsdev_readchar(vnode_t node, kword_t off, unsigned int *chp);
 
-/* Process and domain views use the compact provider-3 vnode encoding. */
+/* Provider 3 uses three object kinds only.  Leaf identity is uniformly
+ * encoded in the provider-private 18-bit key rather than vnode kind bits:
+ * bits 0..7 hold the process/domain id, bits 8..10 hold the leaf selector,
+ * and bit 17 selects the domain namespace.  This keeps canonical vnode kinds
+ * <= 3 so struct file metadata packing remains unchanged. */
 #define MONITORFS_PROCESS_KIND_ROOT   1U
-#define MONITORFS_PROCESS_KIND_PROC   2U
-#define MONITORFS_PROCESS_KIND_PPID   3U
-#define MONITORFS_PROCESS_KIND_STATE  4U
-#define MONITORFS_PROCESS_KIND_WORDS  5U
-#define MONITORFS_PROCESS_KIND_COMM   6U
-#define MONITORFS_PROCESS_KIND_STATUS 7U
+#define MONITORFS_PROCESS_KIND_DIR    2U
+#define MONITORFS_PROCESS_KIND_FILE   3U
+#define MONITORFS_PROCESS_ID_MASK     0377U
+#define MONITORFS_PROCESS_LEAF_SHIFT     8U
+#define MONITORFS_PROCESS_LEAF_MASK      07U
 #define MONITORFS_DOMAIN_TAG          0400000U
-#define MONITORFS_DOMAIN_ID(node) (VFS_INDEX(node) & ~MONITORFS_DOMAIN_TAG)
+#define MONITORFS_PROCESS_ID(node) (VFS_INDEX(node) & MONITORFS_PROCESS_ID_MASK)
+#define MONITORFS_PROCESS_LEAF(node) \
+        ((VFS_INDEX(node) >> MONITORFS_PROCESS_LEAF_SHIFT) & \
+        MONITORFS_PROCESS_LEAF_MASK)
+#define MONITORFS_PROCESS_INDEX(slot, leaf) \
+        (((slot) & MONITORFS_PROCESS_ID_MASK) | \
+        (((leaf) & MONITORFS_PROCESS_LEAF_MASK) << \
+        MONITORFS_PROCESS_LEAF_SHIFT))
+#define MONITORFS_DOMAIN_ID(node) MONITORFS_PROCESS_ID(node)
 #define MONITORFS_IS_DOMAIN(node) ((VFS_INDEX(node) & MONITORFS_DOMAIN_TAG) != 0U)
+
+#define MONITORFS_PROCESS_LEAF_PPID         0U
+#define MONITORFS_PROCESS_LEAF_STATE        1U
+#define MONITORFS_PROCESS_LEAF_WORDS        2U
+#define MONITORFS_PROCESS_LEAF_NAME         3U
+#define MONITORFS_PROCESS_LEAF_CMDLINE      4U
+#define MONITORFS_PROC_LEAF_ENV             5U
+
+#define MONITORFS_DOMAIN_LEAF_PROCESSES   0U
+#define MONITORFS_DOMAIN_LEAF_WORDS       1U
+#define MONITORFS_DOMAIN_LEAF_SWAPPED     2U
+#define MONITORFS_DOMAIN_LEAF_SWAPWORDS   3U
+#define MONITORFS_DOMAIN_LEAF_STOPPED     4U
+#define MONITORFS_DOMAIN_LEAF_PIDS        5U
 
 #endif

@@ -696,14 +696,11 @@ vfs_d6fs_setattr_ro:
         sub     17,[3,,3]
         jrst    pdp10_ret_neg1
 
-        .globl  mfsdom_read_words
         .globl  vfs_read_words
 vfs_read_words:
         ldb     7,[POINT 6,1,5]
         caie    7,3
         jrst    vfs_read_words_provider
-        trne    1,0400000
-        jrst    mfsdom_read_words
         jrst    pdp10_ret_neg1
 vfs_read_words_provider:
         movei   6,15                   ; FS_MRES_OP_READ_WORDS

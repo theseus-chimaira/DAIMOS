@@ -44,13 +44,21 @@ fs_backing_write:
         .globl  fs_backing_root_write
         .globl  fs_backing_root_read_jump
         .globl  fs_backing_root_write_jump
+        .globl  mfsdev_d6set_reads
+        .globl  mfsdev_d6set_writes
+        .globl  mfsdev_d6set_blocks_read
+        .globl  mfsdev_d6set_blocks_written
 fs_backing_root_read:
+        aos     mfsdev_d6set_reads
+        aos     mfsdev_d6set_blocks_read
         move    1,2
         move    2,3
 fs_backing_root_read_jump:
         jrst    0
 
 fs_backing_root_write:
+        aos     mfsdev_d6set_writes
+        aos     mfsdev_d6set_blocks_written
         move    1,2
         move    2,3
 fs_backing_root_write_jump:
@@ -60,8 +68,9 @@ fs_backing_root_write_jump:
 ; selectors 0..3 retain the historical DSK270 ABI.  Selector bit 0400000
 ; chooses DRM236.  Bit 0200000 changes the low four selector bits from one unit
 ; number into a four-member mask and applies the same equal-size one-block
-; INTERLEAVE policy as BLOCKSET.  This compact V0.9 encoding avoids a per-mount
-; descriptor for the fixed four-unit DSK270/DRM236 geometry.
+; INTERLEAVE policy as BLOCKSET.  Bit 0100000 marks only the boot root so the
+; shared direct adapter can account D6SET logical I/O without counting
+; unrelated secondary D6FS mounts.  No extra resident descriptor is needed.
 ;
 ; The DRM jumps default to failure and MINIT patches them only when the DRM236
 ; service is present, so an untrusted handoff cannot jump through address zero.
@@ -83,6 +92,16 @@ fs_backing_direct_io:
         move    4,1
         hlrz    6,4                     ; preserve selector/device flags
         hrrz    4,4                     ; common physical base
+        trnn    6,0100000               ; singleton boot-root logical I/O?
+        jrst    fs_backing_direct_not_root
+        jumpe   7,fs_backing_direct_root_read
+        aos     mfsdev_d6set_writes
+        aos     mfsdev_d6set_blocks_written
+        jrst    fs_backing_direct_not_root
+fs_backing_direct_root_read:
+        aos     mfsdev_d6set_reads
+        aos     mfsdev_d6set_blocks_read
+fs_backing_direct_not_root:
         trnn    6,0200000               ; compact INTERLEAVE set?
         jrst    fs_backing_direct_single
 

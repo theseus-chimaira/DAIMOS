@@ -1197,6 +1197,18 @@ proc_tty_canon_not_kill:
 proc_tty_canon_not_eof:
         cail    7,0170                 ; 120-byte bounded canonical line
         jrst    proc_tty_canon_full
+        ; Cooked DAIMOS input is systemwide SIXBIT text.  Fold lowercase
+        ; before both storage and echo, then reject printable non-SIXBIT.
+        caige   11,0141                ; 'a'
+        jrst    proc_tty_canon_sixbit_range
+        caile   11,0172                ; 'z'
+        jrst    proc_tty_canon_sixbit_range
+        subi    11,040                 ; ASCII lowercase -> uppercase
+proc_tty_canon_sixbit_range:
+        caige   11,040
+        jrst    proc_tty_canon_repeat
+        caile   11,0137                ; '_' is highest ASCII SIXBIT glyph
+        jrst    proc_tty_canon_full    ; bell + retry
         move    4,6
         and     4,[-0400]
         move    5,7

@@ -135,14 +135,17 @@ d6fs_boot_mount_root(unsigned int flags)
                 if (reader == 0)
                         return -1;
                 if (blockset_boot_direct(&direct_unit, &direct_base,
-                    &direct_blocks, &direct_tail) != 0)
+                    &direct_blocks, &direct_tail) != 0) {
                         reader->backing.opaque = ((kword_t)direct_unit << 18U) |
                             direct_base;
+                        reader->backing.opaque |=
+                            (kword_t)FS_BACKING_DIRECT_ROOT_TAG << 18U;
 #if KINIT_FULL
                         if (root_select_class() == KINIT_ROOT_DRM)
                                 reader->backing.opaque |=
                                     (kword_t)FS_BACKING_DIRECT_DRM_TAG << 18U;
 #endif
+                }
         }
         total = blockset_boot_blocks();
         if (total == 0UL || super_a >= total || super_b >= total ||

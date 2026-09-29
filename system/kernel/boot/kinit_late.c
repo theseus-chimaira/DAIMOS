@@ -34,12 +34,16 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
         kword_t stack;
         kword_t first_entry;
         kword_t first_stack;
+        kword_t first_argc;
+        kword_t first_argv;
+        kword_t first_envp;
         kword_t late_base;
         kword_t late_end;
         kword_t image_end;
         kword_t source_begin;
         kword_t source_end;
         kword_t init_path[3];
+        kword_t startup[4];
 
         late_base = (kword_t)(unsigned long)&__kinit_late_begin;
         late_end = (kword_t)(unsigned long)&__kinit_late_end;
@@ -71,6 +75,9 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
                 return;
         first_entry = 0UL;
         first_stack = 0UL;
+        first_argc = 0UL;
+        first_argv = 0UL;
+        first_envp = 0UL;
         for (slot = 1U; slot <= (unsigned int)PROC_BOOT_USERS; ++slot) {
                 init_slot = proc_slot_claim(0U);
                 if (init_slot != (int)slot)
@@ -80,14 +87,19 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
                         return;
                 PROC_SET_STATE(p, PROC_SRUN);
                 entry = PROC_ENTRY(p);
-                stack = VM_SPACE_WORDS(p) -
-                    (kword_t)EXEC_DXR_STACK_WORDS - 1U;
+                if (vm_space_startup(p, init_path,
+                    (kword_t)1U << 18U, startup) != 0)
+                        return;
+                stack = startup[3];
                 if (slot == 1U) {
                         first_entry = entry;
                         first_stack = stack;
+                        first_argc = startup[0];
+                        first_argv = startup[1];
+                        first_envp = startup[2];
                 }
                 if (proc_user_context_init(slot, entry, stack,
-                    (kword_t)slot, 0UL, 0UL) != 0)
+                    startup[0], startup[1], startup[2]) != 0)
                         return;
                 proc_runq_add(slot);
                 PROC_SET_PGRP(p, 1U);
@@ -132,5 +144,5 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
             mm_add_free(image_end, reclaim_end - image_end) != MM_OK)
                 return;
         vm_enter_initial_user(p, first_entry, first_stack,
-            1UL, 0UL, 0UL);
+            first_argc, first_argv, first_envp);
 }

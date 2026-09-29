@@ -82,33 +82,27 @@ mfsproc_format_slot(unsigned int slot, struct vfs_name *name)
         mfsproc_name_set(name, word, chars);
 }
 
-#define MONITORFS_PROCESS_FILE_COUNT 5U
-#define MONITORFS_PROCESS_FILE_LEN_BITS 3U
-#define MONITORFS_PROCESS_FILE_LEN_MASK 07UL
-#define MONITORFS_PROCESS_FILE_LENGTHS \
-        ((kword_t)4U | ((kword_t)5U << 3) | ((kword_t)5U << 6) | \
-        ((kword_t)4U << 9) | ((kword_t)6U << 12))
+#define MONITORFS_PROCESS_FILE_COUNT 6U
 
-static const kword_t mfsproc_file_names[MONITORFS_PROCESS_FILE_COUNT] = {
-        VFS_SIX6('P','P','I','D',' ',' '),
-        VFS_SIX6('S','T','A','T','E',' '),
-        VFS_SIX6('W','O','R','D','S',' '),
-        VFS_SIX6('C','O','M','M',' ',' '),
-        VFS_SIX6('S','T','A','T','U','S')
+static const struct vfs_name mfsproc_file_names[MONITORFS_PROCESS_FILE_COUNT] = {
+        { 4U, { VFS_SIX6('P','P','I','D',' ',' '), 0UL, 0UL, 0UL } },
+        { 5U, { VFS_SIX6('S','T','A','T','E',' '), 0UL, 0UL, 0UL } },
+        { 5U, { VFS_SIX6('W','O','R','D','S',' '), 0UL, 0UL, 0UL } },
+        { 4U, { VFS_SIX6('N','A','M','E',' ',' '), 0UL, 0UL, 0UL } },
+        { 7U, { VFS_SIX6('C','M','D','L','I','N'),
+            VFS_SIX6('E',' ',' ',' ',' ',' '), 0UL, 0UL } },
+        { 11U, { VFS_SIX6('E','N','V','I','R','O'),
+            VFS_SIX6('N','M','E','N','T',' '), 0UL, 0UL } }
 };
 
-static inline unsigned int
-mfsproc_file_chars(unsigned int index)
+static int
+mfsproc_name_equal(const struct vfs_name *a, const struct vfs_name *b)
 {
-        return (unsigned int)((MONITORFS_PROCESS_FILE_LENGTHS >>
-            (index * MONITORFS_PROCESS_FILE_LEN_BITS)) & MONITORFS_PROCESS_FILE_LEN_MASK);
+        return a->chars == b->chars &&
+            vfs_name_words_equal(a->words, b->words, VFS_NAME_WORDS);
 }
 
-static inline int
-mfsproc_file_kind(unsigned int kind)
-{
-        return kind >= MONITORFS_PROCESS_KIND_PPID && kind <= MONITORFS_PROCESS_KIND_STATUS;
-}
+static int mfsdom_readchar(vnode_t node, kword_t off, unsigned int *chp);
 
 int
 mfsproc_lookup(vnode_t dir, const struct vfs_name *name, vnode_t *nodep)
@@ -123,25 +117,23 @@ mfsproc_lookup(vnode_t dir, const struct vfs_name *name, vnode_t *nodep)
                 if (mfsproc_parse_slot(name, &slot) != 0 ||
                     !mfsproc_slot_active(slot))
                         return -1;
-                *nodep = VFS_NODE(MONITORFS_PROCESS_PROVIDER, MONITORFS_PROCESS_KIND_PROC, slot);
+                *nodep = VFS_NODE(MONITORFS_PROCESS_PROVIDER,
+                    MONITORFS_PROCESS_KIND_DIR, slot);
                 return 0;
         }
-        if (kind != MONITORFS_PROCESS_KIND_PROC)
+        if (kind != MONITORFS_PROCESS_KIND_DIR)
                 return -1;
-        slot = VFS_INDEX(dir);
+        slot = MONITORFS_PROCESS_ID(dir);
         if (!mfsproc_slot_active(slot))
                 return -1;
-        for (kind = MONITORFS_PROCESS_KIND_PPID; kind <= MONITORFS_PROCESS_KIND_STATUS; ++kind) {
-                unsigned int index;
-
-                index = kind - MONITORFS_PROCESS_KIND_PPID;
-                if (vfs_name_is6(name, mfsproc_file_names[index],
-                    mfsproc_file_chars(index)))
+        for (kind = 0U; kind < MONITORFS_PROCESS_FILE_COUNT; ++kind)
+                if (mfsproc_name_equal(name, &mfsproc_file_names[kind]))
                         break;
-        }
-        if (kind > MONITORFS_PROCESS_KIND_STATUS)
+        if (kind >= MONITORFS_PROCESS_FILE_COUNT)
                 return -1;
-        *nodep = VFS_NODE(MONITORFS_PROCESS_PROVIDER, kind, slot);
+        *nodep = VFS_NODE(MONITORFS_PROCESS_PROVIDER,
+            MONITORFS_PROCESS_KIND_FILE,
+            MONITORFS_PROCESS_INDEX(slot, kind));
         return 0;
 }
 
@@ -170,12 +162,13 @@ mfsproc_readdir(vnode_t dir, unsigned int off, struct vfs_dirent *ent)
                 }
                 return 0;
         }
-        if (kind != MONITORFS_PROCESS_KIND_PROC || !mfsproc_slot_active(VFS_INDEX(dir)))
+        if (kind != MONITORFS_PROCESS_KIND_DIR ||
+            !mfsproc_slot_active(MONITORFS_PROCESS_ID(dir)))
                 return -1;
         if (off >= MONITORFS_PROCESS_FILE_COUNT)
                 return 0;
-        mfsproc_dirent_set(ent, mfsproc_file_names[off],
-            mfsproc_file_chars(off), VFS_TYPE_REG);
+        ent->name = mfsproc_file_names[off];
+        ent->type = VFS_TYPE_REG;
         return 1;
 }
 
@@ -188,14 +181,16 @@ mfsproc_stat(vnode_t node, struct vfs_stat *st)
         if (st == 0 || VFS_PROVIDER(node) != MONITORFS_PROCESS_PROVIDER)
                 return -1;
         kind = VFS_LOCAL_KIND(node);
-        slot = VFS_INDEX(node);
+        slot = MONITORFS_PROCESS_ID(node);
         if (kind == MONITORFS_PROCESS_KIND_ROOT) {
                 st->type = VFS_TYPE_DIR;
                 st->mode = 0555U;
-        } else if (kind == MONITORFS_PROCESS_KIND_PROC && mfsproc_slot_active(slot)) {
+        } else if (kind == MONITORFS_PROCESS_KIND_DIR && mfsproc_slot_active(slot)) {
                 st->type = VFS_TYPE_DIR;
                 st->mode = 0555U;
-        } else if (mfsproc_file_kind(kind) && mfsproc_slot_active(slot)) {
+        } else if (kind == MONITORFS_PROCESS_KIND_FILE &&
+            MONITORFS_PROCESS_LEAF(node) < MONITORFS_PROCESS_FILE_COUNT &&
+            mfsproc_slot_active(slot)) {
                 st->type = VFS_TYPE_REG;
                 st->mode = 0444U;
         } else {
@@ -203,75 +198,6 @@ mfsproc_stat(vnode_t node, struct vfs_stat *st)
         }
         st->size_chars = 0UL;
         st->size_words = 0UL;
-        return 0;
-}
-
-/*
- * STATUS is deliberately one vnode kind: struct file stores descriptor
- * metadata in vnode bits that are otherwise zero only while local kinds stay
- * in 0..7.  IDs are fixed-width three-digit octal values so the PDP-6 can
- * emit them with shifts/masks instead of resident decimal division code:
- *
- *   PID PPID PGRP SID DID S\r\n
- */
-static int
-mfsproc_status_readchar(struct proc *p, unsigned int slot, kword_t off,
-    unsigned int *chp)
-{
-        unsigned int field;
-        unsigned int pos;
-        unsigned int value;
-        unsigned int state;
-
-        if (off < 20UL) {
-                field = (unsigned int)off >> 2;
-                pos = (unsigned int)off & 3U;
-                if (pos == 3U) {
-                        *chp = (unsigned int)' ';
-                        return 1;
-                }
-                if (field == 0U)
-                        value = slot;
-                else if (field == 1U)
-                        value = PROC_PARENT_SLOT(p);
-                else if (field == 2U)
-                        value = PROC_PGRP(p);
-                else {
-                        value = (unsigned int)proc_scope_id(p);
-                        if (field != 3U)
-                                value >>= PROC_ZOMB_DOMAIN_SHIFT;
-                        value &= (unsigned int)PROC_ZOMB_SESSION_MASK;
-                }
-                *chp = (unsigned int)'0' +
-                    ((value >> ((2U - pos) * 3U)) & 07U);
-                return 1;
-        }
-        if (off == 20UL) {
-                state = PROC_STATE(p);
-                if (state == PROC_ZOMB)
-                        *chp = (unsigned int)'Z';
-                else if (slot != 0U && !VM_SPACE_ACTIVE(p))
-                        *chp = (unsigned int)'W';
-                else if (state == PROC_SIDL)
-                        *chp = (unsigned int)'I';
-                else if (state == PROC_SRUN)
-                        *chp = (unsigned int)'R';
-                else if (state == PROC_SLEEP)
-                        *chp = (unsigned int)'S';
-                else if (state == PROC_STOP)
-                        *chp = (unsigned int)'T';
-                else
-                        *chp = (unsigned int)'F';
-                return 1;
-        }
-        if (off == 21UL) {
-                *chp = 015U;
-                return 1;
-        }
-        if (off == 22UL) {
-                *chp = 012U;
-                return 1;
-        }
         return 0;
 }
 
@@ -283,21 +209,31 @@ mfsproc_readchar(vnode_t node, kword_t off, unsigned int *chp)
         kword_t name;
         unsigned int chars;
         unsigned int kind;
+        unsigned int leaf;
         unsigned int slot;
         unsigned int state;
 
         if (chp == 0 || VFS_PROVIDER(node) != MONITORFS_PROCESS_PROVIDER)
                 return -1;
+        if (MONITORFS_IS_DOMAIN(node))
+                return mfsdom_readchar(node, off, chp);
         kind = VFS_LOCAL_KIND(node);
-        slot = VFS_INDEX(node);
-        if (!mfsproc_file_kind(kind) || !mfsproc_slot_active(slot))
+        slot = MONITORFS_PROCESS_ID(node);
+        leaf = MONITORFS_PROCESS_LEAF(node);
+        if (kind != MONITORFS_PROCESS_KIND_FILE ||
+            leaf >= MONITORFS_PROCESS_FILE_COUNT || !mfsproc_slot_active(slot))
                 return -1;
         p = &proc_table[slot];
-        if (kind == MONITORFS_PROCESS_KIND_COMM)
-                return vfs_sixbit_readchar(proc_comm(p), 6U, off, chp);
-        if (kind == MONITORFS_PROCESS_KIND_STATUS)
-                return mfsproc_status_readchar(p, slot, off, chp);
-        if (kind == MONITORFS_PROCESS_KIND_STATE) {
+        if (leaf == MONITORFS_PROCESS_LEAF_NAME)
+                return proc_image_text_readchar(slot, PROC_IMAGE_VIEW_NAME,
+                    off, chp);
+        if (leaf == MONITORFS_PROCESS_LEAF_CMDLINE)
+                return proc_image_text_readchar(slot, PROC_IMAGE_VIEW_CMDLINE,
+                    off, chp);
+        if (leaf == MONITORFS_PROC_LEAF_ENV)
+                return proc_image_text_readchar(slot,
+                    PROC_IMAGE_VIEW_ENVIRONMENT, off, chp);
+        if (leaf == MONITORFS_PROCESS_LEAF_STATE) {
                 state = PROC_STATE(p);
                 chars = 4U;
                 if (state == PROC_ZOMB) {
@@ -320,9 +256,9 @@ mfsproc_readchar(vnode_t node, kword_t off, unsigned int *chp)
                 }
                 return vfs_sixbit_readchar(name, chars, off, chp);
         }
-        if (kind == MONITORFS_PROCESS_KIND_PPID)
+        if (leaf == MONITORFS_PROCESS_LEAF_PPID)
                 value = (kword_t)PROC_PARENT_SLOT(p);
-        else if (kind == MONITORFS_PROCESS_KIND_WORDS)
+        else if (leaf == MONITORFS_PROCESS_LEAF_WORDS)
                 value = VM_SPACE_WORDS(p);
         else
                 return -1;
@@ -337,7 +273,20 @@ mfsproc_readchar(vnode_t node, kword_t off, unsigned int *chp)
 #include "proc_swap.h"
 #include "vm.h"
 
-#define MonitorFS domain view_STATUS_WORDS 6U
+#define MONITORFS_DOMAIN_STATUS_WORDS 6U
+
+static const struct vfs_name mfsdom_file_names[] = {
+        { 9U, { VFS_SIX6('P','R','O','C','E','S'),
+            VFS_SIX6('S','E','S',' ',' ',' '), 0UL, 0UL } },
+        { 5U, { VFS_SIX6('W','O','R','D','S',' '), 0UL, 0UL, 0UL } },
+        { 7U, { VFS_SIX6('S','W','A','P','P','E'),
+            VFS_SIX6('D',' ',' ',' ',' ',' '), 0UL, 0UL } },
+        { 9U, { VFS_SIX6('S','W','A','P','W','O'),
+            VFS_SIX6('R','D','S',' ',' ',' '), 0UL, 0UL } },
+        { 7U, { VFS_SIX6('S','T','O','P','P','E'),
+            VFS_SIX6('D',' ',' ',' ',' ',' '), 0UL, 0UL } },
+        { 4U, { VFS_SIX6('P','I','D','S',' ',' '), 0UL, 0UL, 0UL } }
+};
 
 static unsigned int
 mfsdom_proc_domain(const struct proc *p)
@@ -427,7 +376,7 @@ mfsdom_name_id(unsigned int did, struct vfs_name *name)
 }
 
 static void
-mfsdom_status(unsigned int did, kword_t status[MonitorFS domain view_STATUS_WORDS])
+mfsdom_status(unsigned int did, kword_t status[MONITORFS_DOMAIN_STATUS_WORDS])
 {
         struct proc *p;
         unsigned int slot;
@@ -454,8 +403,8 @@ mfsdom_status(unsigned int did, kword_t status[MonitorFS domain view_STATUS_WORD
                 } else if (slot != 0U && proc_swap_records != 0 &&
                     proc_swap_records[slot].state != 0UL) {
                         ++status[3];
-                        status[4] += proc_swap_records[slot].state &
-                            PROC_HALF_MASK;
+                        status[4] += (proc_swap_records[slot].state &
+                            PROC_HALF_MASK) * 0200UL;
                 }
                 if (PROC_STATE(p) == PROC_STOP)
                         ++status[5];
@@ -475,18 +424,26 @@ mfsdom_lookup(vnode_t dir, const struct vfs_name *name, vnode_t *nodep)
         if (kind == MONITORFS_PROCESS_KIND_ROOT) {
                 if (mfsdom_parse_id(name, &did) != 0 || !mfsdom_exists(did))
                         return -1;
-                *nodep = VFS_NODE(MONITORFS_PROCESS_PROVIDER, MONITORFS_PROCESS_KIND_PROC,
+                *nodep = VFS_NODE(MONITORFS_PROCESS_PROVIDER,
+                    MONITORFS_PROCESS_KIND_DIR,
                     MONITORFS_DOMAIN_TAG | did);
                 return 0;
         }
-        if (kind != MONITORFS_PROCESS_KIND_PROC)
+        if (kind != MONITORFS_PROCESS_KIND_DIR)
                 return -1;
         did = MONITORFS_PROCESS_ID(dir);
-        if (!mfsdom_exists(did) ||
-            !vfs_name_is6(name, VFS_SIX6('S','T','A','T','U','S'), 6U))
+        if (!mfsdom_exists(did))
                 return -1;
-        *nodep = VFS_NODE(MONITORFS_PROCESS_PROVIDER, MONITORFS_PROCESS_KIND_STATUS,
-            MONITORFS_DOMAIN_TAG | did);
+        for (kind = 0U; kind < sizeof(mfsdom_file_names) /
+            sizeof(mfsdom_file_names[0]); ++kind)
+                if (mfsproc_name_equal(name, &mfsdom_file_names[kind]))
+                        break;
+        if (kind >= sizeof(mfsdom_file_names) /
+            sizeof(mfsdom_file_names[0]))
+                return -1;
+        *nodep = VFS_NODE(MONITORFS_PROCESS_PROVIDER,
+            MONITORFS_PROCESS_KIND_FILE,
+            MONITORFS_DOMAIN_TAG | MONITORFS_PROCESS_INDEX(did, kind));
         return 0;
 }
 
@@ -498,16 +455,13 @@ mfsdom_readdir(vnode_t dir, unsigned int off, struct vfs_dirent *ent)
 
         if (ent == 0 || !MONITORFS_IS_DOMAIN(dir))
                 return -1;
-        if (VFS_LOCAL_KIND(dir) == MONITORFS_PROCESS_KIND_PROC) {
+        if (VFS_LOCAL_KIND(dir) == MONITORFS_PROCESS_KIND_DIR) {
                 if (!mfsdom_exists(MONITORFS_PROCESS_ID(dir)))
                         return -1;
-                if (off != 0U)
+                if (off >= sizeof(mfsdom_file_names) /
+                    sizeof(mfsdom_file_names[0]))
                         return 0;
-                ent->name.chars = 6U;
-                ent->name.words[0] = VFS_SIX6('S','T','A','T','U','S');
-                ent->name.words[1] = 0UL;
-                ent->name.words[2] = 0UL;
-                ent->name.words[3] = 0UL;
+                ent->name = mfsdom_file_names[off];
                 ent->type = VFS_TYPE_REG;
                 return 1;
         }
@@ -538,16 +492,17 @@ mfsdom_stat(vnode_t node, struct vfs_stat *st)
                 st->type = VFS_TYPE_DIR;
                 st->mode = 0555U;
                 st->size_words = 0UL;
-        } else if (kind == MONITORFS_PROCESS_KIND_PROC &&
+        } else if (kind == MONITORFS_PROCESS_KIND_DIR &&
             mfsdom_exists(MONITORFS_PROCESS_ID(node))) {
                 st->type = VFS_TYPE_DIR;
                 st->mode = 0555U;
                 st->size_words = 0UL;
-        } else if (kind == MONITORFS_PROCESS_KIND_STATUS &&
+        } else if (kind == MONITORFS_PROCESS_KIND_FILE &&
+            MONITORFS_PROCESS_LEAF(node) <= MONITORFS_DOMAIN_LEAF_PIDS &&
             mfsdom_exists(MONITORFS_PROCESS_ID(node))) {
                 st->type = VFS_TYPE_REG;
                 st->mode = 0444U;
-                st->size_words = MonitorFS domain view_STATUS_WORDS;
+                st->size_words = 0UL;
         } else {
                 return -1;
         }
@@ -555,28 +510,48 @@ mfsdom_stat(vnode_t node, struct vfs_stat *st)
         return 0;
 }
 
-int
-mfsdom_read_words(vnode_t node, unsigned int off, kword_t *buf,
-    unsigned int nwords)
+static int
+mfsdom_readchar(vnode_t node, kword_t off, unsigned int *chp)
 {
-        kword_t status[MonitorFS domain view_STATUS_WORDS];
+        kword_t status[MONITORFS_DOMAIN_STATUS_WORDS];
         unsigned int did;
-        unsigned int count;
-        unsigned int i;
+        unsigned int leaf;
+        unsigned int line;
+        unsigned int pos;
+        unsigned int slot;
+        unsigned int seen;
+        unsigned int value;
 
-        if (buf == 0 || !MONITORFS_IS_DOMAIN(node) ||
-            VFS_LOCAL_KIND(node) != MONITORFS_PROCESS_KIND_STATUS)
+        if (chp == 0 || !MONITORFS_IS_DOMAIN(node) ||
+            VFS_LOCAL_KIND(node) != MONITORFS_PROCESS_KIND_FILE)
                 return -1;
-        did = MONITORFS_PROCESS_ID(node);
-        if (!mfsdom_exists(did))
+        did = MONITORFS_DOMAIN_ID(node);
+        leaf = MONITORFS_PROCESS_LEAF(node);
+        if (!mfsdom_exists(did) || leaf > MONITORFS_DOMAIN_LEAF_PIDS)
                 return -1;
-        if (off >= MonitorFS domain view_STATUS_WORDS)
-                return 0;
-        count = MonitorFS domain view_STATUS_WORDS - off;
-        if (count > nwords)
-                count = nwords;
-        mfsdom_status(did, status);
-        for (i = 0U; i < count; ++i)
-                buf[i] = status[off + i];
-        return (int)count;
+        if (leaf != MONITORFS_DOMAIN_LEAF_PIDS) {
+                mfsdom_status(did, status);
+                value = (unsigned int)status[leaf + 1U];
+                return kfmt_u18_decimal_readchar((kword_t)value, off, chp);
+        }
+
+        line = (unsigned int)(off / 5UL);
+        pos = (unsigned int)(off % 5UL);
+        seen = 0U;
+        for (slot = 0U; slot < proc_high_slot; ++slot) {
+                if (!mfsdom_slot_active(slot) ||
+                    mfsdom_proc_domain(&proc_table[slot]) != did)
+                        continue;
+                if (seen++ != line)
+                        continue;
+                if (pos == 3U)
+                        *chp = 015U;
+                else if (pos == 4U)
+                        *chp = 012U;
+                else
+                        *chp = (unsigned int)'0' +
+                            ((slot >> ((2U - pos) * 3U)) & 07U);
+                return 1;
+        }
+        return 0;
 }

@@ -76,8 +76,14 @@ blockset_direct_tail_io:
         sub     6,1
         camle   2,6
         jrst    pdp10_ret_neg1
-        aos     mfsdev_d6set_reads(4)
-        addm    2,mfsdev_d6set_blocks_read(4)
+        jumpe   4,blockset_direct_tail_account_read
+        aos     mfsdev_d6set_writes
+        addm    2,mfsdev_d6set_blocks_written
+        jrst    blockset_direct_tail_account_done
+blockset_direct_tail_account_read:
+        aos     mfsdev_d6set_reads
+        addm    2,mfsdev_d6set_blocks_read
+blockset_direct_tail_account_done:
         add     17,[6,,6]
         movei   0,-5(17)
         hrli    0,010

@@ -61,25 +61,45 @@ vm_space_startup(struct proc *p, const kword_t *records,
         envc = (unsigned int)(counts & PROC_HALF_MASK);
         start = VM_SPACE_WORDS(p) - (kword_t)EXEC_DXR_STACK_WORDS;
         startup[0] = (kword_t)argc;
-        startup[1] = argc == 0U ? 0UL : start;
-        startup[2] = envc == 0U ? 0UL : start + (kword_t)argc;
+        /* Keep one process-image metadata word immediately before argv.
+         * MonitorFS can reconstruct COMM/CMDLINE/ENVIRONMENT from the live
+         * image without adding per-process resident kernel state. */
+        startup[1] = argc == 0U ? 0UL : start + 1UL;
+        startup[2] = envc == 0U ? 0UL : start + 1UL + (kword_t)argc;
 
         base = VM_PDP6_BASE(p);
         dst = (kword_t *)(unsigned long)(base + start);
-        string_off = argc + envc + (envc != 0U);
+        dst[0] = counts;
+        string_off = 1U + argc + envc + (envc != 0U);
         source_off = 0U;
         for (i = 0U; i < argc + envc; ++i) {
                 nwords = 1U + ((unsigned int)records[source_off] + 5U) / 6U;
-                dst[i] = start + (kword_t)string_off;
+                dst[1U + i] = start + (kword_t)string_off;
                 fs_copy_words(&records[source_off], &dst[string_off], nwords);
                 source_off += nwords;
                 string_off += nwords;
         }
         if (envc != 0U)
-                dst[argc + envc] = 0UL;
+                dst[1U + argc + envc] = 0UL;
         startup[3] = start + (kword_t)string_off - 1UL;
         return 0;
 }
+
+#ifndef __PDP10__
+int
+vm_space_inspect_word(const struct proc *p, kword_t offset, kword_t *wordp)
+{
+        kword_t base;
+
+        if (p == 0 || wordp == 0 || offset >= VM_SPACE_WORDS(p))
+                return -1;
+        base = VM_PDP6_BASE(p);
+        if (base == 0UL)
+                return -1;
+        *wordp = ((const kword_t *)(unsigned long)base)[offset];
+        return 0;
+}
+#endif
 
 int
 vm_space_destroy(struct proc *p, unsigned int owner)
