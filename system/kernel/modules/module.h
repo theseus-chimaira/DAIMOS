@@ -38,6 +38,7 @@ extern kword_t __minit_table_end;
 #define MODULE_SERVICE_COUNT             30U
 
 void module_run_minits(void);
+void dtfs_post_minits(void);
 void badmap_post_minits(void);
 const kword_t *module_current_mres(void);
 void module_service_set(unsigned int service, unsigned int address);

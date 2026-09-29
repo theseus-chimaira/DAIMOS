@@ -49,7 +49,8 @@ dtfs_owner:
         move    2,3
         lsh     2,2
         add     2,3                     ; remainder * 5
-        move    1,dtfs_dir(1)
+        add     1,dtfs_dir              ; dynamic directory-cache base
+        move    1,(1)
         lsh     1,-037(2)               ; right by 31 - remainder * 5
         andi    1,037
         popj    17,
@@ -66,10 +67,11 @@ dtfs_set_owner:
         sub     5,2                     ; left shift = 31 - remainder * 5
         movei   3,037
         lsh     3,0(5)
-        andca   3,dtfs_dir(1)
+        add     1,dtfs_dir              ; dynamic directory-cache base
+        andca   3,(1)
         lsh     4,0(5)
         ior     3,4
-        movem   3,dtfs_dir(1)
+        movem   3,(1)
         popj    17,
 
 .if DTFS_ENABLE_TENEX
@@ -85,16 +87,17 @@ dtfs_tenex_valid:
         push    17,013
         move    010,1                   ; unit for optional deep walk
         move    011,2                   ; deep flag
+        move    6,dtfs_dir              ; dynamic directory-cache base
 
 ; TENEX DECTAP.MAC DTINID/DIRTHR structural markers.
-        move    4,dtfs_dir
+        move    4,(6)
         lsh     4,-032
         caie    4,01736
         jrst    dtfs_tenex_valid_false
-        ldb     4,[POINT 5,dtfs_dir+016,9]
+        ldb     4,[POINT 5,016(6),9]
         caie    4,036
         jrst    dtfs_tenex_valid_false
-        move    4,dtfs_dir+0122
+        move    4,0122(6)
         and     4,[07777776]
         came    4,[07777776]
         jrst    dtfs_tenex_valid_false
@@ -109,7 +112,9 @@ dtfs_tenex_valid_map_loop:
         cail    1,027
         jrst    dtfs_tenex_valid_special_owner
         jumpe   1,dtfs_tenex_valid_map_next
-        skipn   dtfs_dir+0122(1)        ; NAME_BASE + owner - 1
+        move    4,1
+        add     4,6
+        skipn   0122(4)                 ; NAME_BASE + owner - 1
         jrst    dtfs_tenex_valid_false
         movei   4,1
         lsh     4,-1(1)                 ; bit owner-1
@@ -129,7 +134,9 @@ dtfs_tenex_valid_map_next:
 ; EXT.  Deep CHECK additionally validates the complete block chain in-place.
         setz    013,
 dtfs_tenex_valid_slot_loop:
-        skipn   dtfs_dir+0123(013)
+        move    6,dtfs_dir
+        add     6,013
+        skipn   0123(6)
         jrst    dtfs_tenex_valid_empty_slot
         move    4,012
         movn    5,013
@@ -150,7 +157,9 @@ dtfs_tenex_valid_slot_loop:
         jumpl   1,dtfs_tenex_valid_false
         jrst    dtfs_tenex_valid_slot_next
 dtfs_tenex_valid_empty_slot:
-        skipn   dtfs_dir+0151(013)
+        move    6,dtfs_dir
+        add     6,013
+        skipn   0151(6)
         jrst    dtfs_tenex_valid_slot_next
         jrst    dtfs_tenex_valid_false
 
@@ -180,15 +189,16 @@ dtfs_restore1:
 ; owner/name consistency scan in one compact target loop.
         .globl  dtfs_its_valid
 dtfs_its_valid:
-        move    1,dtfs_dir+056
+        move    6,dtfs_dir
+        move    1,056(6)
         andcm   1,[1]
         came    1,[0757367573674]
         jrst    dtfs_its_valid_false
-        move    1,dtfs_dir+067
+        move    1,067(6)
         lsh     1,-037                  ; owner is the top five bits
         caie    1,033
         jrst    dtfs_its_valid_false
-        move    1,dtfs_dir+0177
+        move    1,0177(6)
         andcm   1,[1]
         came    1,[0777777777776]
         jrst    dtfs_its_valid_false
@@ -207,8 +217,9 @@ dtfs_its_valid_owner:
         jrst    dtfs_its_valid_next
         subi    1,1
         lsh     1,1
-        skipn   dtfs_dir(1)
-        skipe   dtfs_dir+1(1)
+        add     1,dtfs_dir
+        skipn   (1)
+        skipe   1(1)
         jrst    dtfs_its_valid_next
         jrst    dtfs_its_valid_pop_false
 
@@ -314,13 +325,15 @@ dtfs_foreign_name:
         skipn   3
         jrst    dtfs_foreign_name_tenex
         lsh     1,1
-        move    5,dtfs_dir(1)
-        move    6,dtfs_dir+1(1)
+        add     1,dtfs_dir
+        move    5,(1)
+        move    6,1(1)
         movei   7,6                     ; ITS extension limit
         jrst    dtfs_foreign_name_have_words
 dtfs_foreign_name_tenex:
-        move    5,dtfs_dir+0123(1)
-        move    6,dtfs_dir+0151(1)
+        add     1,dtfs_dir
+        move    5,0123(1)
+        move    6,0151(1)
         movei   7,3                     ; TENEX extension limit
 dtfs_foreign_name_have_words:
         movem   5,1(010)
@@ -385,14 +398,17 @@ dtfs_foreign_set_name:
         jumpe   2,dtfs_foreign_set_name_fail
         skipn   3
         jrst    dtfs_foreign_set_name_tenex_setup
-        move    010,1
-        lsh     010,1
-        addi    010,dtfs_dir
+        move    0,1
+        lsh     0,1
+        move    010,dtfs_dir
+        add     010,0
         tlo     010,1                   ; ITS layout tag in LH
         movei   7,6                     ; maximum EXT length
         jrst    dtfs_foreign_set_name_setup_done
 dtfs_foreign_set_name_tenex_setup:
-        movei   010,dtfs_dir+0123(1)
+        move    010,dtfs_dir
+        add     010,1
+        addi    010,0123
         movei   7,3
 dtfs_foreign_set_name_setup_done:
         move    3,(2)                   ; total characters
@@ -468,6 +484,120 @@ dtfs_foreign_set_name_fail:
 dtfs_foreign_set_name_return:
         jrst    dtfs_restore1
 
+; int dtfs_scan_slot(node, name, slotp)
+; Target replacement for KCC's large foreign-media scan.  AC10..AC14 retain
+; the three arguments, media personality and slot across helper calls.  The
+; five-word temporary vfs_name lives only on the executive stack.
+        .globl  dtfs_scan_slot
+        .globl  vfs_name_valid
+        .globl  vfs_name_words_equal
+dtfs_scan_slot:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        push    17,014
+        move    010,1                  ; node
+        move    011,2                  ; name or zero
+        move    012,3                  ; slotp or zero
+        move    1,010
+        pushj   17,dtfs_personality
+        move    013,1                  ; media personality
+        jumpe   013,dtfs_scan_native
+
+        jumpe   011,dtfs_scan_begin
+        move    1,011
+        pushj   17,vfs_name_valid
+        jumpe   1,dtfs_scan_bad_name
+        move    1,(011)                ; name character count
+        cain    013,020                ; ITS permits NAME.EXT up to 13 chars
+        jrst    dtfs_scan_its_len
+        caile   1,012                  ; TENEX limit = 10 decimal
+        jrst    dtfs_scan_bad_name
+        jrst    dtfs_scan_begin
+dtfs_scan_its_len:
+        caile   1,015                  ; ITS limit = 13 decimal
+        jrst    dtfs_scan_bad_name
+
+dtfs_scan_begin:
+        setz    014,                   ; slot
+        add     17,[5,,5]              ; temporary struct vfs_name
+dtfs_scan_loop:
+        cain    013,020
+        jrst    dtfs_scan_its_empty
+        move    4,014
+        add     4,dtfs_dir
+        skipn   0123(4)
+        jrst    dtfs_scan_empty
+        jrst    dtfs_scan_present
+dtfs_scan_its_empty:
+        move    4,014
+        lsh     4,1
+        add     4,dtfs_dir
+        skipe   (4)
+        jrst    dtfs_scan_present
+        skipn   1(4)
+        jrst    dtfs_scan_empty
+
+dtfs_scan_present:
+        jumpe   011,dtfs_scan_next
+        move    1,014
+        movei   2,-4(17)
+        setz    3,
+        cain    013,020
+        movei   3,1
+        pushj   17,dtfs_foreign_name
+        move    1,-4(17)
+        came    1,(011)
+        jrst    dtfs_scan_next
+        movei   1,-3(17)
+        movei   2,1(011)
+        movei   3,4
+        pushj   17,vfs_name_words_equal
+        jumpn   1,dtfs_scan_found
+        jrst    dtfs_scan_next
+
+dtfs_scan_empty:
+        jumpn   011,dtfs_scan_next
+dtfs_scan_found:
+        jumpe   012,dtfs_scan_ok
+        movem   014,(012)
+dtfs_scan_ok:
+        setz    1,
+        jrst    dtfs_scan_drop
+
+dtfs_scan_next:
+        addi    014,1
+        cain    013,020
+        jrst    dtfs_scan_its_limit
+        caige   014,026                ; native/TENEX slots = 22 decimal
+        jrst    dtfs_scan_loop
+        jrst    dtfs_scan_not_found
+dtfs_scan_its_limit:
+        caige   014,027                ; ITS slots = 23 decimal
+        jrst    dtfs_scan_loop
+dtfs_scan_not_found:
+        seto    1,
+dtfs_scan_drop:
+        sub     17,[5,,5]
+        jrst    dtfs_scan_return
+
+dtfs_scan_bad_name:
+        hrroi   1,2
+        jrst    dtfs_scan_return
+
+dtfs_scan_native:
+        move    1,011
+        move    2,012
+        pushj   17,dtfs_native_scan_slot
+dtfs_scan_return:
+        pop     17,014
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
         .endif
 
 ; Compact provider lookup.  Preserve the three live arguments and one slot
@@ -494,13 +624,14 @@ dtfs_native_scan_slot:
         jrst    pdp10_ret_neg2
 dtfs_native_scan_begin:
         setz    3,                       ; slot
-        movei   4,0123                   ; DTFS_NAME_BASE
+        move    7,dtfs_dir
+        addi    7,0123                   ; DTFS_NAME_BASE
 dtfs_native_scan_loop:
         jumpe   1,dtfs_native_scan_empty
-        move    5,dtfs_dir(4)
+        move    5,(7)
         came    5,1(1)
         jrst    dtfs_native_scan_next
-        move    5,dtfs_dir+1(4)
+        move    5,1(7)
         andcmi  5,077                    ; ignore native tail-count bits
         move    6,2(1)
         andcmi  6,077
@@ -508,10 +639,10 @@ dtfs_native_scan_loop:
         jrst    dtfs_native_scan_next
         jrst    dtfs_native_scan_match
 dtfs_native_scan_empty:
-        skipn   dtfs_dir(4)
+        skipn   (7)
         jrst    dtfs_native_scan_match
 dtfs_native_scan_next:
-        addi    4,2
+        addi    7,2
         addi    3,1
         caige   3,026                    ; DTFS_FILE_SLOTS = 22
         jrst    dtfs_native_scan_loop
@@ -644,7 +775,7 @@ dtfs_load:
         movei   2,0144                  ; native/TENEX directory
         cain    4,020
         movei   2,0100                  ; ITS directory
-        movei   3,dtfs_dir
+        move    3,dtfs_dir
         pushj   17,dtfs_dtc_read
         jumpn   1,dtfs_load_fail
         xct     dtfs_personality_xct-1(010)
@@ -700,7 +831,7 @@ dtfs_load:
         move    1,dtfs_media-1(010)
         andi    1,7
         movei   2,0144
-        movei   3,dtfs_dir
+        move    3,dtfs_dir
         pushj   17,dtfs_dtc_read
         jumpn   1,dtfs_load_native_fail
         pushj   17,dtfs_native_valid
@@ -718,7 +849,8 @@ dtfs_load_native_fail:
 ; Native directory validation.  The three post-media map entries are a fixed
 ; tiny range, so use a direct CAIG loop instead of GCC's signed-range code.
 dtfs_native_valid:
-        move    1,dtfs_dir+0177
+        move    6,dtfs_dir
+        move    1,0177(6)
         came    1,[0446446632021]
         jrst    pdp10_ret_zero
         setzb   1,2
@@ -777,16 +909,18 @@ dtfs_readdir_loop:
 
 dtfs_readdir_tenex_base:
         addi    6,0123                  ; DTFS_NAME_BASE
-        skipn   dtfs_dir(6)
+        add     6,dtfs_dir
+        skipn   (6)
         jrst    dtfs_readdir_next
         jrst    dtfs_readdir_present
 
 dtfs_readdir_its:
         move    6,4
         lsh     6,1
-        skipe   dtfs_dir(6)
+        add     6,dtfs_dir
+        skipe   (6)
         jrst    dtfs_readdir_present
-        skipn   dtfs_dir+1(6)
+        skipn   1(6)
         jrst    dtfs_readdir_next
 
 dtfs_readdir_present:
@@ -797,9 +931,9 @@ dtfs_readdir_present:
         cain    013,010
         jrst    dtfs_readdir_name_tenex
 
-        move    7,dtfs_dir(6)
+        move    7,(6)
         movem   7,1(012)
-        move    7,dtfs_dir+1(6)
+        move    7,1(6)
         andcmi  7,077
         movem   7,2(012)
         setzm   3(012)
@@ -871,13 +1005,14 @@ dtfs_readdir_native_loop:
         move    6,4
         lsh     6,1
         addi    6,0123
-        skipn   dtfs_dir(6)
+        add     6,dtfs_dir
+        skipn   (6)
         jrst    dtfs_readdir_native_next
         came    5,010
         jrst    dtfs_readdir_native_seen
-        move    7,dtfs_dir(6)
+        move    7,(6)
         movem   7,1(011)
-        move    7,dtfs_dir+1(6)
+        move    7,1(6)
         andcmi  7,077
         movem   7,2(011)
         setzm   3(011)
@@ -1018,9 +1153,12 @@ dtfs_size_words_native:
         jumpe   1,dtfs_size_words_zero
         move    4,011
         lsh     4,1
-        move    2,dtfs_dir+0124(4)
+        add     4,dtfs_dir
+        move    2,0124(4)
         andi    2,077
-        move    3,dtfs_dir+026(011)
+        move    3,011
+        add     3,dtfs_dir
+        move    3,026(3)
         trne    3,1
         iori    2,0100
         cail    2,1
@@ -1046,9 +1184,12 @@ dtfs_size_words:
         jumpe   1,dtfs_size_words_native_zero
         move    4,010
         lsh     4,1
-        move    2,dtfs_dir+0124(4)
+        add     4,dtfs_dir
+        move    2,0124(4)
         andi    2,077
-        move    3,dtfs_dir+026(010)
+        move    3,010
+        add     3,dtfs_dir
+        move    3,026(3)
         trne    3,1
         iori    2,0100
         cail    2,1
@@ -1070,11 +1211,12 @@ dtfs_size_words_native_zero:
         .globl  dtfs_set_name
 dtfs_set_name:
         lsh     1,1
-        move    3,dtfs_dir+0124(1)
+        add     1,dtfs_dir
+        move    3,0124(1)
         andi    3,077
         move    4,1(2)
-        movem   4,dtfs_dir+0123(1)
+        movem   4,0123(1)
         move    4,2(2)
         dpb     3,[POINT 6,4,35]
-        movem   4,dtfs_dir+0124(1)
+        movem   4,0124(1)
         popj    17,

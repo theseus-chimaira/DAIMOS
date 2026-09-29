@@ -52,8 +52,15 @@
 #define DTFS_MEDIA_TENEX      010U
 #define DTFS_MEDIA_ITS        020U
 
-/* One directory and one transfer block are shared by every DTFS mount. */
+/* One directory and one transfer block are shared by every DTFS mount.
+ * On the PDP-6 the directory cache is allocated from managed kernel memory
+ * after MRES packing, so 128 cache words do not consume scarce permanent
+ * low-core address space.  Host/reference builds keep the simple array. */
+#ifdef __PDP10__
+kword_t *dtfs_dir;
+#else
 kword_t dtfs_dir[DTFS_BLOCK_WORDS];
+#endif
 #define dtfs_block fs_block_workspace
 unsigned int dtfs_cache_mount;
 /* Unit number and the read-only foreign-media personality share one word. */
@@ -124,6 +131,10 @@ extern int dtfs_foreign_set_name(unsigned int slot,
 #define dtfs_scan_slot(node, name, slotp) \
         dtfs_native_scan_slot((name), (slotp))
 #else
+#ifdef __PDP10__
+extern int dtfs_scan_slot(vnode_t node, const struct vfs_name *name,
+    unsigned int *slotp);
+#else
 int
 dtfs_scan_slot(vnode_t node, const struct vfs_name *name,
     unsigned int *slotp)
@@ -168,6 +179,7 @@ dtfs_scan_slot(vnode_t node, const struct vfs_name *name,
         }
         return -1;
 }
+#endif /* !__PDP10__ */
 
 #endif
 

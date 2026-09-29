@@ -19,6 +19,7 @@
 #include "slv.h"
 #include "fs_mres.h"
 #include "d6fs.h"
+#include "dtfs.h"
 #include "blockset_mres.h"
 #include "blockset_boot.h"
 #include "logstore.h"
@@ -97,6 +98,7 @@ static unsigned int clk_pi_service_addr;
 static unsigned int tape_mres_base;
 static unsigned int dsk_mres_base;
 static unsigned int storage_router_registered;
+static kword_t *dtfs_runtime_dir_ptr;
 unsigned int blockset_read_addr;
 unsigned int blockset_write_addr;
 unsigned int blockset_state_addr;
@@ -1068,9 +1070,25 @@ dtfs_minit(void)
                     minit_export(name, base, 4U));
                 storage_patch_jump(&fs_tsfs_service_jump,
                     minit_export(name, base, 5U));
+                dtfs_runtime_dir_ptr = (kword_t *)(unsigned long)
+                    minit_export(name, base, 6U);
+                *dtfs_runtime_dir_ptr = 0UL;
                 module_service_set(MODULE_SERVICE_DTFS, service);
         }
         minit_diag_loaded(name);
+}
+
+void
+dtfs_post_minits(void)
+{
+        kword_t cache_base;
+
+        if (dtfs_runtime_dir_ptr == 0)
+                return;
+        if (mm_alloc(0200UL, MM_TYPE_KERNEL_DYNAMIC, DTFS_CACHE_MM_OWNER,
+            MM_ALLOC_LOW, &cache_base) != MM_OK)
+                kinit_halt();
+        *dtfs_runtime_dir_ptr = cache_base;
 }
 
 #endif

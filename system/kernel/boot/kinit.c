@@ -367,6 +367,7 @@ kinit_enter(void)
         kinit_diag_system(memory_kwords);
         mres_init();
         module_run_minits();
+        dtfs_post_minits();
 #if KINIT_BADMAP
         badmap_post_minits();
 #endif

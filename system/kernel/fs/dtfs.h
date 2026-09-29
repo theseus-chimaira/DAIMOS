@@ -4,6 +4,7 @@
 #include "vfs.h"
 
 #define DTFS_PROVIDER        5U
+#define DTFS_CACHE_MM_OWNER 012U
 #define DTFS_KIND_ROOT       1U
 #define DTFS_KIND_FILE       2U
 #define DTFS_FILE_SLOTS      22U

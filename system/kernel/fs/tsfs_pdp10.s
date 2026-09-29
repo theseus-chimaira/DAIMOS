@@ -330,13 +330,11 @@ tsfs_readdir_pop:
 
 tsfs_read_words:
         jumpe   4,pdp10_ret_zero
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
-        push    17,014
-        push    17,015
-        push    17,016
+        ; AC10..AC16 form one contiguous callee-save block.
+        add     17,[7,,7]
+        movei   0,-6(17)
+        hrli    0,010
+        blt     0,(17)
         move    010,3
         move    011,2
         move    012,4
@@ -518,13 +516,11 @@ tsfs_read_words_eof0:
         setz    1,
 
 tsfs_read_words_restore:
-        pop     17,016
-        pop     17,015
-        pop     17,014
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
+        movei   0,-6(17)
+        hrl     0,0
+        hrri    0,010
+        blt     0,016
+        sub     17,[7,,7]
         popj    17,
 
 tsfs_mount_set:
