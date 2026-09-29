@@ -631,7 +631,7 @@ cmd_ps(int argc, kword_t **argv, struct u_io *io)
 static int
 cmd_devs(int argc, kword_t **argv, struct u_io *io)
 {
-        static kword_t dev[3] = { 7UL, VFS_SIX6('/','D','E','V','I','C'), VFS_SIX6('E',' ',' ',' ',' ',' ') };
+        static kword_t dev[2] = { 4UL, VFS_SIX6('/','D','E','V',' ',' ') };
         (void)argc; (void)argv;
         return cmd_ls_one(dev, io);
 }
