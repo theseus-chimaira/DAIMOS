@@ -773,29 +773,39 @@ dtfs_load:
         xct     dtfs_personality_xct-1(010)
         move    4,1                     ; personality
         movei   2,0144                  ; native/TENEX directory
+.if DTFS_ENABLE_ITS
         cain    4,020
         movei   2,0100                  ; ITS directory
+.endif
         move    3,dtfs_dir
         pushj   17,dtfs_dtc_read
         jumpn   1,dtfs_load_fail
         xct     dtfs_personality_xct-1(010)
         move    4,1
+.if DTFS_ENABLE_ITS
         cain    4,020
         jrst    dtfs_load_validate_its
+.endif
+.if DTFS_ENABLE_TENEX
         cain    4,010
         jrst    dtfs_load_validate_tenex
+.endif
         pushj   17,dtfs_native_valid
         jrst    dtfs_load_validated
 
+.if DTFS_ENABLE_ITS
 dtfs_load_validate_its:
         pushj   17,dtfs_its_valid
         jrst    dtfs_load_validated
+.endif
 
+.if DTFS_ENABLE_TENEX
 dtfs_load_validate_tenex:
         move    1,011
         andi    1,7
         setz    2,
         pushj   17,dtfs_tenex_valid
+.endif
 
 dtfs_load_validated:
         jumpe   1,dtfs_load_fail

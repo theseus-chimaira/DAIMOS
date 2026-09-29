@@ -22,6 +22,7 @@ dtfs_resize:
 	jrst dtfs_r_80
 	move 1,-3(017)
 	pushj 17,dtfs_personality
+	.if DTFS_ENABLE_ITS
 	caie 1,020
 	jrst dtfs_r_84
 	move 1,-3(017)
@@ -29,6 +30,7 @@ dtfs_resize:
 	movei 3,0
 	pushj 17,dtfs_its_resize
 	jrst dtfs_r_170
+	.endif
 dtfs_r_84:
 	movei 6,010
 	came 1,6

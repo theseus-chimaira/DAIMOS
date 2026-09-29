@@ -326,7 +326,7 @@ ${BUILD}/d6fs_provider.s: fs/d6fs_provider.c fs/d6fs_provider_mutation_pdp10.s $
 ${BUILD}/dtfs.s: fs/dtfs.c fs/dtfs_chain_walk_pdp10.s fs/dtfs_resize_pdp10.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} -DDTFS_ENABLE_TENEX=${DTFS_TENEX} -DDTFS_ENABLE_ITS=${DTFS_ITS} ${INCLUDES} -S fs/dtfs.c -o $@.c
-	@cat $@.c > $@; cat fs/dtfs_chain_walk_pdp10.s >> $@; if test "${DTFS_TENEX}" = 1 -o "${DTFS_ITS}" = 1; then cat fs/dtfs_resize_pdp10.s >> $@; fi; rm -f $@.c
+	@cat $@.c > $@; cat fs/dtfs_chain_walk_pdp10.s >> $@; if test "${DTFS_TENEX}" = 1 -o "${DTFS_ITS}" = 1; then { echo ".set DTFS_ENABLE_TENEX,${DTFS_TENEX}"; echo ".set DTFS_ENABLE_ITS,${DTFS_ITS}"; cat fs/dtfs_resize_pdp10.s; } >> $@; fi; rm -f $@.c
 
 ${BUILD}/tsfs.s: fs/tsfs.c ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
