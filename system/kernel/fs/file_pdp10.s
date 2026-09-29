@@ -700,7 +700,7 @@ file_getcwd_have_node:
         ldb     5,[POINT 6,4,5]
         caige   5,2
         jrst    pdp10_ret_neg1
-        caile   5,6
+        caile   5,7                    ; provider 7 is TSFS
         jrst    pdp10_ret_neg1
 
 ; The 0121-word local area is one parent vnode followed by sixteen five-word
