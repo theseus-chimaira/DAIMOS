@@ -88,6 +88,7 @@ mfsdev_lookup_next:
 mfsdev_lookup_dir:
         caie    4,020003
         jrst    pdp10_ret_neg1
+        move    7,3                    ; mfsleaf_lookup uses AC3 scratch
         hrrz    6,1
         move    4,6
         pushj   17,mfsdev_validate_id
@@ -112,6 +113,7 @@ mfsdev_lookup_leaf_kind:
         add     5,4
         hrl     6,5
         move    5,6
+        move    3,7
 
 mfsdev_lookup_store:
         movem   5,(3)
@@ -592,27 +594,32 @@ mfsproc_format_done:
 
         .globl  mfsdom_exists
 
-; Seven-leaf name tables use three words per entry:
-;   chars, first SIXBIT word, second SIXBIT word.
-; All process/domain leaf names fit in at most 11 characters.
+; Leaf-name tables use two words per entry.  Every leaf is at most 11
+; characters, so the low SIXBIT slot of word 2 is otherwise zero; store the
+; character count in those low six bits.  This saves one permanent word per
+; leaf without adding a separate length table.
 ; AC1=name pointer, AC2=table pointer, AC0=entry count.
 ; Return AC1=leaf index or -1.
 mfsleaf_lookup:
         setz    4,
 mfsleaf_lookup_loop:
-        move    5,(1)
-        came    5,(2)
+        move    5,(1)                  ; requested character count
+        move    3,1(2)
+        andi    3,077                  ; packed table character count
+        came    5,3
         jrst    mfsleaf_lookup_next
         move    5,1(1)
-        came    5,1(2)
+        came    5,(2)
         jrst    mfsleaf_lookup_next
         move    5,2(1)
-        came    5,2(2)
+        move    3,1(2)
+        andcmi  3,077                  ; remove packed character count
+        came    5,3
         jrst    mfsleaf_lookup_next
         move    1,4
         popj    17,
 mfsleaf_lookup_next:
-        addi    2,3
+        addi    2,2
         aoj     4,
         caml    4,0
         jrst    mfsleaf_lookup_missing
@@ -627,13 +634,14 @@ mfsleaf_readdir:
         jrst    pdp10_ret_zero
         move    4,2
         lsh     4,1
-        add     4,2                    ; index * 3
         add     1,4
-        move    4,(1)
-        movem   4,(3)
         move    4,1(1)
-        movem   4,1(3)
-        move    4,2(1)
+        move    5,4
+        andi    5,077                  ; character count
+        movem   5,(3)
+        andcmi  4,077                  ; second packed SIXBIT word
+        move    5,(1)
+        movem   5,1(3)
         movem   4,2(3)
         setzm   3(3)
         setzm   4(3)
@@ -713,11 +721,6 @@ mfsproc_lookup_domain_proc:
         jumpl   1,pdp10_ret_neg1
         move    4,1
 mfsdom_lookup_found:
-        push    17,4                   ; mfsdom_exists uses AC4 while scanning
-        move    1,6
-        pushj   17,mfsdom_exists
-        jumpe   1,mfsdom_lookup_missing
-        pop     17,4
         move    1,6
         move    0,4
         lsh     0,010                  ; selector into index bits 8..
@@ -725,9 +728,6 @@ mfsdom_lookup_found:
         tlo     1,030003               ; one uniform domain-file kind
         tro     1,0400000
         jrst    mfsproc_lookup_store
-mfsdom_lookup_missing:
-        sub     17,[1,,1]
-        jrst    pdp10_ret_neg1
 mfsproc_lookup_store:
         movem   1,(7)
         jrst    pdp10_ret_zero
@@ -798,12 +798,7 @@ mfsproc_readdir_proc:
         movei   0,6
         jrst    mfsleaf_readdir
 mfsproc_readdir_domain_proc:
-        move    7,2                    ; preserve off across exists
-        andi    1,0377
-        pushj   17,mfsdom_exists
-        jumpe   1,pdp10_ret_neg1
         movei   1,mfsdom_leaf_names
-        move    2,7
         movei   0,6
         ; AC3 still holds the caller's dirent pointer.
         jrst    mfsleaf_readdir
@@ -857,16 +852,10 @@ mfsproc_stat_domain:
         andi    6,0377
         caie    5,030002
         jrst    mfsproc_stat_domain_status
-        move    1,6
-        pushj   17,mfsdom_exists
-        jumpe   1,pdp10_ret_neg1
         jrst    mfsproc_stat_dir
 mfsproc_stat_domain_status:
         caie    5,030003
         jrst    pdp10_ret_neg1
-        move    1,6
-        pushj   17,mfsdom_exists
-        jumpe   1,pdp10_ret_neg1
         movei   3,2
         movei   4,0444
         jrst    mfsproc_stat_store_zero
@@ -923,158 +912,113 @@ mfsproc_state_swapped:
 ; VIEW 1: argv records separated by one space
 ; VIEW 2: environment records separated by CR LF
 ;
-; AC1=slot, AC2=view, AC3=character offset, AC4=result pointer.
+; AC1=validated struct proc *, AC2=view, AC3=character offset,
+; AC4=result pointer.
         .globl  proc_image_text_readchar
 proc_image_text_readchar:
         jumpe   4,pdp10_ret_neg1
-        caile   1,0377
-        jrst    pdp10_ret_zero
-        caml    1,proc_high_slot
-        jrst    pdp10_ret_zero
-        skipn   5,proc_table
-        jrst    pdp10_ret_zero
-
-        ; Preserve only callee-save ACs used by the bounded scanner.
+        ; AC10..AC15 are callee-save.  The scanner deliberately uses them as
+        ; its compact persistent state while AC1..AC7 remain call scratch.
         push    17,010
         push    17,011
         push    17,012
         push    17,013
         push    17,014
         push    17,015
-        push    17,016
-        move    016,2                  ; view
-        move    012,3                  ; requested output offset
-        move    013,4                  ; output pointer
-
-        ; proc = proc_table + slot*3.
-        move    6,1
-        lsh     6,1
-        add     6,1
-        add     5,6
-        move    7,1(5)                 ; vm_state: user words,,physical base
-        hlrz    6,7
-        caige   6,02000                ; no standard startup area
-        jrst    mfsproc_image_eof
-        hrrz    010,7                  ; current physical user-image base
+        move    5,4                    ; output pointer
+        move    6,3                    ; requested character offset
+        move    7,2                    ; view
+        move    4,1(1)                 ; vm_state: user words,,physical base
+        hrrz    010,4                  ; current physical user-image base
         jumpe   010,mfsproc_image_eof  ; swapped/nonresident
-        subi    6,02000                ; logical metadata offset
-        add     6,010                  ; physical metadata address
-        move    7,(6)                  ; argc,,envc
-        hlrz    014,7                  ; argc
-        hrrz    015,7                  ; envc
-        caile   014,020                ; SYS_RUN_ARG_MAX = 16
-        jrst    mfsproc_image_eof
-        caile   015,020                ; SYS_RUN_ENV_MAX = 16
-        jrst    mfsproc_image_eof
-        movei   011,1(6)               ; physical argv/env vector
+        hlrz    011,4
+        subi    011,02000              ; startup metadata logical offset
+        add     011,010                ; physical metadata address
+        move    4,(011)                ; argc,,envc
+        hlrz    012,4                  ; argc
+        hrrz    013,4                  ; envc
+        addi    011,1                  ; physical argv/env vector
 
-        jumpe   016,mfsproc_image_name
-        cain    016,1
-        jrst    mfsproc_image_cmdline
-        cain    016,2
-        jrst    mfsproc_image_environment
-        jrst    mfsproc_image_bad
+        jumpe   7,mfsproc_image_name
+        cain    7,1
+        jrst    mfsproc_image_vector
+        add     011,012                ; ENVIRONMENT begins after argv
+        move    012,013                ; envc becomes remaining record count
+        jrst    mfsproc_image_vector
 
 mfsproc_image_name:
-        jumpe   014,mfsproc_image_eof
-        move    011,(011)               ; logical argv[0] record offset
-        add     011,010                 ; physical record address
-        move    015,(011)               ; counted SIXBIT chars
-        caile   015,0146                ; SYS_RUN_ARG_MAX_CHARS = 102
-        jrst    mfsproc_image_eof
-        setz    5,                      ; scan position
-        setz    6,                      ; basename start
+        jumpe   012,mfsproc_image_eof
+        move    013,(011)              ; logical argv[0] record offset
+        add     013,010                ; physical record address
+        move    012,(013)              ; counted SIXBIT chars
+        move    014,012                ; scan backwards for final '/'
+        setz    015,                   ; basename start
 mfsproc_image_name_scan:
-        caml    5,015
-        jrst    mfsproc_image_name_have_start
-        move    1,011
-        move    2,5
+        sojl    014,mfsproc_image_name_have_start
+        move    1,013
+        move    2,014
         pushj   17,mfsproc_image_record_char
-        jumpl   1,mfsproc_image_bad
-        caie    1,057                   ; '/'
-        jrst    mfsproc_image_name_next
-        movei   6,1(5)
-mfsproc_image_name_next:
-        aoja    5,mfsproc_image_name_scan
+        caie    1,057                  ; '/'
+        jrst    mfsproc_image_name_scan
+        movei   015,1(014)
 mfsproc_image_name_have_start:
-        move    5,015
-        sub     5,6                     ; basename length
-        caml    012,5
+        move    3,012
+        sub     3,015                  ; basename length
+        caml    6,3
         jrst    mfsproc_image_eof
-        move    2,012
-        add     2,6
-        move    1,011
+        move    1,013
+        move    2,6
+        add     2,015
         pushj   17,mfsproc_image_record_char
-        jumpl   1,mfsproc_image_bad
-        movem   1,(013)
-        jrst    mfsproc_image_one
-
-mfsproc_image_cmdline:
-        setz    5,                      ; first vector index
-        move    6,014                   ; record count
-        jrst    mfsproc_image_vector_scan
-
-mfsproc_image_environment:
-        move    5,014                   ; first env vector index = argc
-        move    6,015                   ; record count = envc
-
-; AC5=current vector index, AC6=remaining records, AC12=remaining output off.
-mfsproc_image_vector_scan:
-        jumpe   6,mfsproc_image_eof
-        move    1,011
-        add     1,5
-        move    1,(1)                   ; logical record offset
-        add     1,010                   ; physical record address
-        move    7,(1)                   ; counted SIXBIT chars
-        caile   7,0146
-        jrst    mfsproc_image_eof
-        caml    012,7
-        jrst    mfsproc_image_vector_after_record
-        move    2,012
-        pushj   17,mfsproc_image_record_char
-        jumpl   1,mfsproc_image_bad
-        movem   1,(013)
-        jrst    mfsproc_image_one
-
-mfsproc_image_vector_after_record:
-        sub     012,7
-        subi    6,1
-        jumpe   6,mfsproc_image_eof     ; no separator after final record
-        cain    016,1
-        jrst    mfsproc_image_cmd_sep
-        ; Environment separator is CR LF.
-        jumpe   012,mfsproc_image_emit_cr
-        caie    012,1
-        jrst    mfsproc_image_env_skip_sep
-        movei   1,012
-        jrst    mfsproc_image_emit
-mfsproc_image_env_skip_sep:
-        subi    012,2
-        aoja    5,mfsproc_image_vector_scan
-mfsproc_image_emit_cr:
-        movei   1,015
-        jrst    mfsproc_image_emit
-
-mfsproc_image_cmd_sep:
-        jumpn   012,mfsproc_image_cmd_skip_sep
-        movei   1,040
-        jrst    mfsproc_image_emit
-mfsproc_image_cmd_skip_sep:
-        subi    012,1
-        aoja    5,mfsproc_image_vector_scan
-
-mfsproc_image_emit:
-        movem   1,(013)
-mfsproc_image_one:
+        movem   1,(5)
         movei   1,1
         jrst    mfsproc_image_done
+
+; CMDLINE starts with argv[0] and AC12 already holds argc.  ENVIRONMENT has
+; adjusted AC11/AC12 above.  Rescan on every character request: MonitorFS is a
+; diagnostic path, so a little CPU is cheaper than resident parser state.
+mfsproc_image_vector:
+        jumpe   012,mfsproc_image_eof
+        move    1,(011)                ; logical counted-record offset
+        add     1,010                  ; physical counted-record address
+        move    3,(1)                  ; record character count
+        caml    6,3
+        jrst    mfsproc_image_vector_after
+        move    2,6
+        pushj   17,mfsproc_image_record_char
+        movem   1,(5)
+        movei   1,1
+        jrst    mfsproc_image_done
+mfsproc_image_vector_after:
+        sub     6,3
+        soje    012,mfsproc_image_eof
+        cain    7,1                    ; CMDLINE uses one space separator
+        jrst    mfsproc_image_cmd_sep
+        jumpe   6,mfsproc_image_cr
+        cain    6,1
+        jrst    mfsproc_image_lf
+        subi    6,2                    ; skip ENVIRONMENT CR LF separator
+        aoja    011,mfsproc_image_vector
+mfsproc_image_cmd_sep:
+        jumpe   6,mfsproc_image_space
+        subi    6,1
+        aoja    011,mfsproc_image_vector
+mfsproc_image_space:
+        movei   1,040
+        jrst    mfsproc_image_emit
+mfsproc_image_cr:
+        movei   1,015
+        jrst    mfsproc_image_emit
+mfsproc_image_lf:
+        movei   1,012
+mfsproc_image_emit:
+        movem   1,(5)
+        movei   1,1
+        jrst    mfsproc_image_done
+
 mfsproc_image_eof:
         setz    1,
-        jrst    mfsproc_image_done
-mfsproc_image_bad:
-        seto    1,
 mfsproc_image_done:
-        pop     17,016
         pop     17,015
         pop     17,014
         pop     17,013
@@ -1083,20 +1027,14 @@ mfsproc_image_done:
         pop     17,010
         popj    17,
 
-; Return one unpacked ASCII/SIXBIT character from a counted record.
-; AC1=physical record address, AC2=character index; result in AC1 or -1.
-; Clobbers only caller-scratch AC1..4.
+; Return one unpacked ASCII/SIXBIT character from a trusted counted record.
+; AC1=physical record address, AC2=character index.  RUN/EXEC created both the
+; vector and record, so bounds were already validated when the image was made.
 mfsproc_image_record_char:
-        move    3,(1)
-        caml    2,3
-        jrst    pdp10_ret_neg1
-        caile   3,0146
-        jrst    pdp10_ret_neg1
         move    3,2
         idivi   3,6                    ; AC3 quotient, AC4 remainder
         add     3,1
-        addi    3,1                    ; skip count word
-        move    1,(3)
+        move    1,1(3)                 ; skip count word
         imuli   4,6
         subi    4,036                  ; shift -30..0
         lsh     1,0(4)
@@ -1120,32 +1058,21 @@ mfsproc_readchar:
         hrrz    2,6
         lsh     2,-010
         andi    2,7                    ; uniform leaf selector 0..6
-        cain    2,3                    ; NAME -> image view 0
-        jrst    mfsproc_readchar_image_name
-        cain    2,4                    ; CMDLINE -> image view 1
-        jrst    mfsproc_readchar_image_cmd
-        cain    2,5                    ; ENVIRONMENT -> image view 2
-        jrst    mfsproc_readchar_image_env
+        caige   2,3
+        jrst    mfsproc_readchar_basic
+        caile   2,5
+        jrst    pdp10_ret_neg1
+        subi    2,3                    ; NAME/CMDLINE/ENVIRONMENT -> 0/1/2
+        move    3,5
+        move    4,7
+        jrst    proc_image_text_readchar
+mfsproc_readchar_basic:
         cain    2,1
         jrst    mfsproc_readchar_state
         jumpe   2,mfsproc_readchar_ppid
         cain    2,2
         jrst    mfsproc_readchar_words
         jrst    pdp10_ret_neg1
-mfsproc_readchar_image_name:
-        setz    2,
-        jrst    mfsproc_readchar_image
-mfsproc_readchar_image_cmd:
-        movei   2,1
-        jrst    mfsproc_readchar_image
-mfsproc_readchar_image_env:
-        movei   2,2
-mfsproc_readchar_image:
-        hrrz    1,6
-        andi    1,0377                 ; slot
-        move    3,5
-        move    4,7
-        jrst    proc_image_text_readchar
 mfsproc_readchar_state:
         hrrz    2,6
         andi    2,0377                 ; state helper uses slot for swap state
@@ -1165,59 +1092,42 @@ mfsproc_readchar_number:
 
         .data
 mfsdev_leaf_names:
-        .word   2                       ; IO
         .word   0515700000000
-        .word   0
-        .word   5                       ; STATS
+        .word   2
         .word   0636441646300
-        .word   0
-        .word   7                       ; MEMBERS
+        .word   5
         .word   0554555424562
-        .word   0630000000000
-        .word   4                       ; SWAP
+        .word   0630000000007
         .word   0636741600000
-        .word   0
-        .word   3                       ; LOG
+        .word   4
         .word   0545747000000
-        .word   0
+        .word   3
 mfsproc_leaf_names:
-        .word   4                       ; PPID
         .word   0606051440000
-        .word   0
-        .word   5                       ; STATE
+        .word   4
         .word   0636441644500
-        .word   0
-        .word   5                       ; WORDS
+        .word   5
         .word   0675762446300
-        .word   0
-        .word   4                       ; NAME
+        .word   5
         .word   0564155450000
-        .word   0
-        .word   7                       ; CMDLINE
+        .word   4
         .word   0435544545156
-        .word   0450000000000
-        .word   013                     ; ENVIRONMENT
+        .word   0450000000007
         .word   0455666516257
-        .word   0565545566400
+        .word   0565545566413
 mfsdom_leaf_names:
-        .word   011                     ; PROCESSES
         .word   0606257434563
-        .word   0634563000000
-        .word   5                       ; WORDS
+        .word   0634563000011
         .word   0675762446300
-        .word   0
-        .word   7                       ; SWAPPED
+        .word   5
         .word   0636741606045
-        .word   0440000000000
-        .word   011                     ; SWAPWORDS
+        .word   0440000000007
         .word   0636741606757
-        .word   0624463000000
-        .word   7                       ; STOPPED
+        .word   0624463000011
         .word   0636457606045
-        .word   0440000000000
-        .word   4                       ; PIDS
+        .word   0440000000007
         .word   0605144630000
-        .word   0
+        .word   4
 mfsproc_state_names:
         .word   0466245450000
         .word   0514454000000
@@ -1260,78 +1170,93 @@ mfsproc_state_names:
         .globl  mfsproc_format_slot
 
 ; AC1 = domain ID. Return AC1 = 1 if at least one active process belongs to
-; the domain, otherwise zero.  Reuse the STATUS scanner with no output buffer.
+; the domain, otherwise zero.  Reuse the requested-metric scanner.
         .globl  mfsdom_exists
 mfsdom_exists:
-        ; Predicate callers retain their namespace state in AC3/AC6/AC7.
-        ; The shared scanner uses all three, so preserve them here.
+        ; Namespace walkers retain their loop state in AC3/AC6/AC7.
         push    17,3
         push    17,6
         push    17,7
-        move    5,1                    ; requested domain
-        setz    7,                     ; no status buffer => existence only
-        pushj   17,mfsdom_scan
+        movei   2,0                    ; PROCESSES metric
+        pushj   17,mfsdom_metric
+        jumpl   1,mfsdom_exists_no
+        movei   1,1
+        jrst    mfsdom_exists_done
+mfsdom_exists_no:
+        setz    1,
+mfsdom_exists_done:
         pop     17,7
         pop     17,6
         pop     17,3
         popj    17,
 
-; Fill six transient aggregate words at AC2 for domain AC1.  The same scan
-; serves existence tests so process-table/domain matching is not duplicated.
-mfsdom_status:
-        move    7,2
-        move    5,1
-        movem   1,(7)
-        setzm   1(7)
-        setzm   2(7)
-        setzm   3(7)
-        setzm   4(7)
-        setzm   5(7)
-mfsdom_scan:
+; AC1=domain id, AC2=metric selector 0..4.  Return the selected aggregate in
+; AC1, or -1 when no active process belongs to the domain.
+mfsdom_metric:
+        move    5,1                    ; requested domain
+        move    4,2                    ; selected metric
+        setz    7,                     ; accumulator
+        setz    0,                     ; seen flag
         skipn   6,proc_table
-        jrst    mfsdom_scan_done
-        movei   4,0
-mfsdom_scan_loop:
-        caml    4,proc_high_slot
-        jrst    mfsdom_scan_done
-        hlrz    3,2(6)
-        andi    3,PROC_STATE_LH_MASK
-        jumpe   3,mfsdom_scan_next
+        jrst    mfsdom_metric_done
+        setz    3,                     ; process slot
+mfsdom_metric_loop:
+        caml    3,proc_high_slot
+        jrst    mfsdom_metric_done
+        hlrz    2,2(6)
+        andi    2,PROC_STATE_LH_MASK   ; process state in LH form
+        jumpe   2,mfsdom_metric_next
         move    1,6
         pushj   17,proc_scope_id
         lsh     1,-DOMAIN_SHIFT
         andi    1,DOMAIN_MASK
         came    1,5
-        jrst    mfsdom_scan_next
-        jumpe   7,pdp10_ret_one
-        aos     1(7)
-        cain    3,PROC_STATE_ZOMB_LH
-        jrst    mfsdom_scan_next
+        jrst    mfsdom_metric_next
+        movei   0,1
+        jumpe   4,mfsdom_metric_inc
+        hlrz    2,2(6)                 ; proc_scope_id may clobber AC2
+        andi    2,PROC_STATE_LH_MASK
+        cain    2,PROC_STATE_ZOMB_LH
+        jrst    mfsdom_metric_next
+        cain    4,4                    ; STOPPED
+        jrst    mfsdom_metric_stopped
+        caie    4,1                    ; WORDS
+        jrst    mfsdom_metric_swap
         hrrz    1,1(6)
-        jumpe   1,mfsdom_scan_nonresident
+        jumpe   1,mfsdom_metric_next
         hlrz    1,1(6)
-        addm    1,2(7)
-        jrst    mfsdom_scan_stop
-mfsdom_scan_nonresident:
-        jumpe   4,mfsdom_scan_stop
+        add     7,1
+        jrst    mfsdom_metric_next
+mfsdom_metric_swap:
+        caige   4,2
+        jrst    mfsdom_metric_next
+        caile   4,3
+        jrst    mfsdom_metric_next
+        hrrz    1,1(6)
+        jumpn   1,mfsdom_metric_next
+        jumpe   3,mfsdom_metric_next
         skipn   1,proc_swap_records
-        jrst    mfsdom_scan_stop
-        add     1,4
+        jrst    mfsdom_metric_next
+        add     1,3
         skipn   2,(1)
-        jrst    mfsdom_scan_stop
-        aos     3(7)
+        jrst    mfsdom_metric_next
+        cain    4,2
+        jrst    mfsdom_metric_inc
         hrrz    2,2
         lsh     2,7                    ; swap blocks -> words
-        addm    2,4(7)
-mfsdom_scan_stop:
-        cain    3,PROC_STATE_STOP_LH
-        aos     5(7)
-mfsdom_scan_next:
+        add     7,2
+        jrst    mfsdom_metric_next
+mfsdom_metric_stopped:
+        caie    2,PROC_STATE_STOP_LH
+        jrst    mfsdom_metric_next
+mfsdom_metric_inc:
+        aoj     7,
+mfsdom_metric_next:
         addi    6,PROC_WORDS
-        aoja    4,mfsdom_scan_loop
-mfsdom_scan_done:
-        jumpe   7,pdp10_ret_zero
-        move    1,1(7)
+        aoja    3,mfsdom_metric_loop
+mfsdom_metric_done:
+        jumpe   0,pdp10_ret_neg1
+        move    1,7
         popj    17,
 
 ; Character view for derived domain leaves.  PROCESSES/WORDS/SWAPPED/
@@ -1352,98 +1277,62 @@ mfsdom_readchar:
         caile   4,4
         jrst    pdp10_ret_neg1
 
-        ; Six status words plus selector/off/chp.
-        add     17,[011,,011]
-        movem   4,-2(17)
-        movem   2,-1(17)
-        movem   3,(17)
+        push    17,2                   ; character offset
+        push    17,3                   ; output pointer
         move    1,6
-        movei   2,-010(17)
-        pushj   17,mfsdom_status
-        jumpe   1,mfsdom_readchar_missing
-        move    4,-2(17)
-        movei   1,-010(17)
-        addi    1,1(4)                 ; selectors 0..4 map to words 1..5
-        move    1,(1)
-        move    2,-1(17)
-        move    3,(17)
-        sub     17,[011,,011]
+        move    2,4
+        pushj   17,mfsdom_metric
+        jumpl   1,mfsdom_readchar_missing
+        pop     17,3
+        pop     17,2
         jrst    kfmt_u18_decimal_readchar
 mfsdom_readchar_missing:
-        sub     17,[011,,011]
+        sub     17,[2,,2]
         jrst    pdp10_ret_neg1
 
 mfsdom_pids_readchar:
-        ; PIDS is one fixed "ooo\r\n" line per current member PID.  Divide
-        ; the character offset by five with subtraction; at most 256 slots
-        ; makes this smaller than resident division support.
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
-        setz    010,                   ; requested member ordinal
-        move    011,2                  ; character offset within/after lines
-mfsdom_pids_div5:
-        caige   011,5
-        jrst    mfsdom_pids_div_done
-        subi    011,5
-        aoja    010,mfsdom_pids_div5
-mfsdom_pids_div_done:
-        move    012,3                  ; chp
-        move    013,6                  ; requested domain
+        ; Compact single-line PIDS: fixed "ooo " records.  Four characters
+        ; per PID makes ordinal/remainder a shift and mask instead of division.
+        move    0,3                    ; output pointer
+        move    3,2
+        lsh     3,-2                   ; requested member ordinal
+        move    5,2
+        andi    5,3                    ; character within record
+        move    7,6                    ; requested domain
         skipn   6,proc_table
         jrst    mfsdom_pids_eof
         movei   4,0                    ; process slot
 mfsdom_pids_scan:
         caml    4,proc_high_slot
         jrst    mfsdom_pids_eof
-        hlrz    3,2(6)
-        andi    3,PROC_STATE_LH_MASK
-        jumpe   3,mfsdom_pids_next
+        hlrz    2,2(6)
+        andi    2,PROC_STATE_LH_MASK
+        jumpe   2,mfsdom_pids_next
         move    1,6
         pushj   17,proc_scope_id
         lsh     1,-DOMAIN_SHIFT
         andi    1,DOMAIN_MASK
-        came    1,013
+        came    1,7
         jrst    mfsdom_pids_next
-        jumpe   010,mfsdom_pids_found
-        subi    010,1
+        jumpe   3,mfsdom_pids_found
+        subi    3,1
 mfsdom_pids_next:
         addi    6,PROC_WORDS
         aoja    4,mfsdom_pids_scan
 mfsdom_pids_found:
-        move    5,011
         caie    5,3
-        jrst    mfsdom_pids_not_cr
-        movei   1,015
-        jrst    mfsdom_pids_store
-mfsdom_pids_not_cr:
-        caie    5,4
         jrst    mfsdom_pids_digit
-        movei   1,012
+        movei   1,040
         jrst    mfsdom_pids_store
 mfsdom_pids_digit:
         move    1,4
-        jumpe   5,mfsdom_pids_digit0
-        caie    5,1
-        jrst    mfsdom_pids_digit2
-        lsh     1,-3
-        jrst    mfsdom_pids_digit_store
-mfsdom_pids_digit0:
-        lsh     1,-6
-mfsdom_pids_digit2:
-mfsdom_pids_digit_store:
+        imuli   5,-3
+        addi    5,6                    ; shifts 6,3,0
+        lsh     1,0(5)
         andi    1,7
         addi    1,060
 mfsdom_pids_store:
-        movem   1,(012)
-        movei   1,1
-        jrst    mfsdom_pids_pop
+        movem   1,(0)
+        jrst    pdp10_ret_one
 mfsdom_pids_eof:
-        setz    1,
-mfsdom_pids_pop:
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    pdp10_ret_zero
