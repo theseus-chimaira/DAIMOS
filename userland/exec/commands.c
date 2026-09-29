@@ -1,4 +1,5 @@
 #include "cmd.h"
+#include "dtfs_media.h"
 
 static int
 cmd_name_eq(const kword_t *s, const char *name)
@@ -488,15 +489,43 @@ cmd_dtfs_options(const kword_t *arg, unsigned int *flagsp,
 static int
 cmd_mkfs_dtfs(int argc, kword_t **argv, struct u_io *io)
 {
+        kword_t dir[DTFS_BLOCK_WORDS];
         unsigned int flags;
+        unsigned int i;
+        unsigned int block;
         unsigned int type;
 
         if (argc != 4 || !u_s6_eq(argv[1], "-O") ||
             cmd_dtfs_options(argv[2], &flags, &type) != 0 ||
             (type != SYS_DTFS_TYPE_NATIVE && type != SYS_DTFS_TYPE_TENEX &&
-            type != SYS_DTFS_TYPE_ITS) || flags != SYS_MOUNT_RDONLY)
+            type != SYS_DTFS_TYPE_ITS) || flags != SYS_MOUNT_RDONLY ||
+            !u_s6_eq(argv[3], "/DEV/DTC0"))
                 return cmd_err(io, "MKFS.DTFS", 0);
-        return dsys_dtfs_format(argv[3], type) == 0 ? 0 :
+        for (i = 0U; i != DTFS_BLOCK_WORDS; ++i)
+                dir[i] = 0UL;
+        block = DTFS_DIR_BLOCK;
+        if (type == SYS_DTFS_TYPE_NATIVE) {
+                dir[0] = (kword_t)DTFS_OWNER_RESERVED << 31U;
+                dir[14] = (kword_t)DTFS_OWNER_RESERVED << 21U;
+                dir[82] = ((kword_t)DTFS_OWNER_NATIVE_TAG << 11U) |
+                    ((kword_t)DTFS_OWNER_NATIVE_TAG << 6U) |
+                    ((kword_t)DTFS_OWNER_NATIVE_TAG << 1U);
+                dir[DTFS_MAGIC_WORD] = DTFS_NATIVE_MAGIC;
+        } else if (type == SYS_DTFS_TYPE_TENEX) {
+                dir[0] = ((kword_t)DTFS_TENEX_RESERVED << 31U) |
+                    ((kword_t)DTFS_TENEX_RESERVED << 26U);
+                dir[14] = (kword_t)DTFS_TENEX_RESERVED << 26U;
+                dir[82] = ((kword_t)DTFS_TENEX_INVALID << 16U) |
+                    ((kword_t)DTFS_TENEX_INVALID << 11U) |
+                    ((kword_t)DTFS_TENEX_INVALID << 6U) |
+                    ((kword_t)DTFS_TENEX_INVALID << 1U);
+        } else {
+                dir[DTFS_ITS_MAP_FIRST] = DTFS_ITS_MAP_RESERVED;
+                dir[DTFS_ITS_MAP_DIR] = DTFS_ITS_MAP_DIRWORD;
+                dir[DTFS_ITS_MAP_LAST] = DTFS_ITS_MAP_END;
+                block = DTFS_ITS_DIR_BLOCK;
+        }
+        return dsys_dtc_write_block(0U, block, dir) == 0 ? 0 :
             cmd_err(io, "MKFS.DTFS", argv[3]);
 }
 

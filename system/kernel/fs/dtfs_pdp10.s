@@ -16,7 +16,6 @@
         .globl  dtfs_read_words
         .globl  dtfs_write_words
         .globl  dtfs_sync
-        .globl  dtfs_format_unit
         .globl  dtfs_mount_unit
 
 dtfs_mres_dispatch:

@@ -443,53 +443,6 @@ extern int dtfs_resize(vnode_t node, unsigned int words);
 #endif
 
 int
-dtfs_format_unit(unsigned int unit, unsigned int ctl)
-{
-        unsigned int op;
-        unsigned int type;
-
-        op = ctl & 07U;
-        type = ctl & SYS_DTFS_TYPE_MASK;
-        if (unit > 7U || op != SYS_DTFS_CTL_FORMAT)
-                return -1;
-        if (type == SYS_DTFS_TYPE_NATIVE) {
-                fs_zero_words(dtfs_dir, DTFS_BLOCK_WORDS);
-                /* Fixed native map markers: entries 0, 100, and 578..580. */
-                dtfs_dir[0] = (kword_t)DTFS_OWNER_RESERVED << 31U;
-                dtfs_dir[14] = (kword_t)DTFS_OWNER_RESERVED << 21U;
-                dtfs_dir[82] = ((kword_t)DTFS_OWNER_NATIVE_TAG << 11U) |
-                    ((kword_t)DTFS_OWNER_NATIVE_TAG << 6U) |
-                    ((kword_t)DTFS_OWNER_NATIVE_TAG << 1U);
-                dtfs_dir[DTFS_MAGIC_WORD] = DTFS_NATIVE_MAGIC;
-#if DTFS_ENABLE_TENEX
-        } else if (type == SYS_DTFS_TYPE_TENEX) {
-                fs_zero_words(dtfs_dir, DTFS_BLOCK_WORDS);
-                dtfs_dir[0] = ((kword_t)DTFS_TENEX_RESERVED << 31U) |
-                    ((kword_t)DTFS_TENEX_RESERVED << 26U);
-                dtfs_dir[14] = (kword_t)DTFS_TENEX_RESERVED << 26U;
-                dtfs_dir[82] = ((kword_t)DTFS_TENEX_INVALID << 16U) |
-                    ((kword_t)DTFS_TENEX_INVALID << 11U) |
-                    ((kword_t)DTFS_TENEX_INVALID << 6U) |
-                    ((kword_t)DTFS_TENEX_INVALID << 1U);
-#endif
-#if DTFS_ENABLE_ITS
-        } else if (type == SYS_DTFS_TYPE_ITS) {
-                fs_zero_words(dtfs_dir, DTFS_BLOCK_WORDS);
-                dtfs_dir[DTFS_ITS_MAP_FIRST] = DTFS_ITS_MAP_RESERVED;
-                dtfs_dir[DTFS_ITS_MAP_DIR] = DTFS_ITS_MAP_DIRWORD;
-                dtfs_dir[DTFS_ITS_MAP_LAST] = DTFS_ITS_MAP_END;
-                dtfs_cache_mount = 0U;
-                return dtfs_dtc_write(unit, DTFS_ITS_DIR_BLOCK,
-                    dtfs_dir);
-#endif
-        } else {
-                return -1;
-        }
-        dtfs_cache_mount = 0U;
-        return dtfs_dtc_write(unit, DTFS_DIR_BLOCK, dtfs_dir);
-}
-
-int
 dtfs_mount_unit(unsigned int unit, vnode_t target,
     unsigned int flags, vnode_t *rootp)
 {
