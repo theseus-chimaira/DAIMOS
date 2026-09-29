@@ -530,6 +530,7 @@ tsfs_read_words_restore:
 tsfs_mount_set:
         caie    3,1                    ; VFS_MOUNT_RDONLY
         jrst    pdp10_ret_neg1
+        jumpe   4,pdp10_ret_neg1       ; provider ABI requires rootp
         push    17,010
         push    17,011
         push    17,012
@@ -597,9 +598,7 @@ tsfs_mount_do:
         move    5,2(010)
         movem   5,tsfs_extent_media(4)
         move    5,(17)
-        jumpe   012,tsfs_mount_no_root_return
         movem   5,(012)
-tsfs_mount_no_root_return:
         setz    1,
         jrst    tsfs_mount_drop
 
