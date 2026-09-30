@@ -12,8 +12,9 @@
 
 /*
  * A node is deliberately seven PDP-10 words.  The low 18 bits of meta hold
- * type/mode/flags, while the high half holds the parent slot.  data packs
- * the pool/image word offset in the high half and its length in the low.
+ * type/mode/flags, while the high half holds the parent slot.  For mutable
+ * files data packs the resident physical word address in the high half and
+ * logical length in the low; immutable image nodes retain image offsets.
  */
 struct memfs_node {
         struct vfs_name name;
@@ -24,8 +25,8 @@ struct memfs_node {
 struct memfs {
         struct memfs_node *nodes;
         unsigned int node_count;
-        kword_t *pool;
-        unsigned int pool_words;
+        kword_t *pool;             /* reserved; mutable data is demand-backed */
+        unsigned int pool_words;   /* configured mutable-data word ceiling */
         unsigned int used_words;
         const kword_t *image_data;
 };
@@ -57,6 +58,9 @@ int memfs_read_words(const struct memfs *fs, vnode_t node,
     unsigned int off, kword_t *buf, unsigned int nwords);
 int memfs_write_words(struct memfs *fs, vnode_t node,
     unsigned int off, const kword_t *buf, unsigned int nwords);
+
+void memfs_data_init(kword_t limit);
+void memfs_data_destroy(void);
 
 
 #endif

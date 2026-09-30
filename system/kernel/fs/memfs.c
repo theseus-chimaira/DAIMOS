@@ -78,7 +78,7 @@ memfs_new_node(struct memfs *fs, vnode_t dir,
             ((kword_t)(type & MEMFS_TYPE_MASK) << MEMFS_TYPE_SHIFT) |
             ((kword_t)(mode & MEMFS_MODE_MASK) << MEMFS_MODE_SHIFT) |
             (kword_t)(MEMFS_F_USED | MEMFS_F_WRITABLE);
-        np->data = (kword_t)(fs->used_words & MEMFS_HALF_MASK) << 18U;
+        np->data = 0UL;
         *nodep = memfs_node_handle(slot);
         return 0;
 }
@@ -108,9 +108,6 @@ memfs_mkdir(struct memfs *fs, vnode_t dir,
 }
 
 extern int memfs_has_children(const struct memfs *fs, unsigned int slot);
-
-extern void memfs_shift_after(struct memfs *fs, unsigned int start,
-    int delta, unsigned int exclude);
 
 extern int memfs_resize(struct memfs *fs, unsigned int slot,
     unsigned int words);

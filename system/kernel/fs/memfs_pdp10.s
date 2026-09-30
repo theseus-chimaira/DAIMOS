@@ -5,132 +5,6 @@
         .globl  kret_zero
         .globl  kret_neg1
 
-; void memfs_shift_after(struct memfs *fs, unsigned int start,
-;     int delta, unsigned int exclude)
-        .globl  memfs_shift_after
-memfs_shift_after:
-        move    5,(1)           ; nodes
-        addi    5,7             ; slot 1, nodes are exactly 7 words
-        movei   6,1
-memfs_shift_check:
-        camge   6,1(1)          ; i >= node_count
-        jrst    memfs_shift_body
-        popj    17,
-memfs_shift_body:
-        camn    6,4
-        jrst    memfs_shift_next
-        move    7,5(5)          ; meta
-        andi    7,3             ; USED/IMAGE
-        caie    7,1             ; used and not image-backed
-        jrst    memfs_shift_next
-        hlrz    7,6(5)          ; data word offset
-        camge   7,2
-        jrst    memfs_shift_next
-        add     7,3             ; signed delta
-        hrlm    7,6(5)          ; preserve low-half data length
-memfs_shift_next:
-        addi    6,1
-        addi    5,7
-        jrst    memfs_shift_check
-
-; int memfs_resize(struct memfs *fs, unsigned int slot,
-;     unsigned int words)
-; fs layout: nodes,node_count,pool,pool_words,used_words,image_data.
-; node layout is 7 words; meta at +5, packed data at +6.
-        .globl  memfs_resize
-memfs_resize:
-        move    4,2
-        imuli   4,7
-        add     4,(1)           ; node = fs->nodes + slot
-        move    0,5(4)
-        andi    0,6             ; require WRITABLE and reject IMAGE
-        caie    0,4
-        jrst    kret_neg1
-        hrrz    5,6(4)          ; old word count
-        camn    3,5
-        jrst    memfs_resize_ok
-        hlrz    6,6(4)          ; data start
-        jumpl   3,memfs_resize_grow ; unsigned high half is always > old
-        camg    3,5             ; new > old => grow
-        jrst    memfs_resize_shrink
-memfs_resize_grow:
-
-; Grow the node by delta = new-old. Move following pool words upward,
-; clear the inserted gap, then relocate later mutable-node offsets.
-        move    7,3
-        sub     7,5             ; delta
-        jumpl   7,kret_neg1 ; cannot fit in the small resident pool
-        move    0,3(1)
-        sub     0,4(1)          ; available pool words
-        camle   7,0
-        jrst    kret_neg1
-        add     5,6             ; old end / shift threshold
-        hrrm    3,6(4)          ; install new length; preserve data start
-        move    4,2             ; exclude slot for shift_after
-        move    0,2(1)          ; pool base
-        move    2,0
-        add     2,4(1)          ; src = pool + used_words
-        move    3,2
-        add     3,7             ; dst = src + delta
-        move    6,0
-        add     6,5             ; stop = pool + old end
-memfs_resize_grow_move:
-        camg    2,6
-        jrst    memfs_resize_grow_zero_setup
-        subi    2,1
-        subi    3,1
-        move    0,(2)
-        movem   0,(3)
-        jrst    memfs_resize_grow_move
-memfs_resize_grow_zero_setup:
-        move    2,6
-        move    3,6
-        add     3,7             ; end of inserted gap
-memfs_resize_grow_zero:
-        caml    2,3
-        jrst    memfs_resize_grow_done
-        setzm   (2)
-        addi    2,1
-        jrst    memfs_resize_grow_zero
-memfs_resize_grow_done:
-        addm    7,4(1)
-        move    2,5             ; start = old end
-        move    3,7             ; positive delta
-        pushj   17,memfs_shift_after
-        jrst    memfs_resize_ok
-
-; Shrink by delta = old-new. Move following pool words downward and then
-; relocate later mutable-node offsets by -delta.
-memfs_resize_shrink:
-        move    7,5
-        sub     7,3             ; delta = old-new
-        add     5,6             ; old end / shift threshold
-        hrrm    3,6(4)          ; install new length; preserve data start
-        move    4,2             ; exclude slot
-        move    0,2(1)          ; pool base
-        add     6,3             ; new end
-        add     6,0             ; dst = pool + new end
-        move    3,6
-        add     3,7             ; src = dst + delta = old end
-        add     0,4(1)          ; end = pool + used_words
-memfs_resize_shrink_move:
-        caml    3,0
-        jrst    memfs_resize_shrink_done
-        move    2,(3)
-        movem   2,(6)
-        addi    3,1
-        addi    6,1
-        jrst    memfs_resize_shrink_move
-memfs_resize_shrink_done:
-        move    2,4(1)
-        sub     2,7
-        movem   2,4(1)
-        move    2,5             ; start = old end
-        movn    3,7             ; negative delta
-        pushj   17,memfs_shift_after
-memfs_resize_ok:
-        jrst    kret_zero
-
 ; int memfs_read_words(const struct memfs *fs, vnode_t node,
 ;     unsigned int off, kword_t *buf, unsigned int nwords)
         .globl  memfs_read_words
@@ -161,7 +35,7 @@ memfs_read_count:
         add     2,5(1)          ; image_data
         jrst    memfs_read_source
 memfs_read_pool:
-        add     2,2(1)          ; pool
+        ; Mutable data words are direct physical addresses.
 memfs_read_source:
         add     2,3
         move    1,2             ; source
@@ -220,12 +94,12 @@ memfs_write_grow:
         jumpn   6,kret_neg1
 
 memfs_write_ready:
-; Recompute np after resize and copy nwords into the mutable pool.
+; Recompute np after resize and copy nwords into its resident extent.
         move    5,2
         imuli   5,7
         add     5,(7)           ; np
         hlrz    6,6(5)
-        add     6,2(7)          ; pool + data word
+        ; Mutable data words are direct physical addresses.
         add     6,3             ; + off
         move    1,0             ; source
         move    2,6             ; destination
@@ -412,8 +286,7 @@ memfs_new_free_found:
         dpb     4,[POINT 3,5(6),20]     ; type
         move    4,013
         dpb     4,[POINT 12,5(6),32]    ; mode
-        move    4,4(010)                ; used_words
-        hrlzm   4,6(6)
+        setzm   6(6)                     ; no data allocation yet
         hrrz    1,7
         tlo     1,040001
         movem   1,(014)
@@ -733,6 +606,8 @@ memfs_mres_fs:
         .globl  fs_mres_context_vector_dispatch
         .globl  mm_alloc
         .globl  mm_free
+        .globl  memfs_data_init
+        .globl  memfs_data_destroy
         .globl  vfs_mount
         .globl  memfs_mres_dispatch
         .globl  memfs_lookup
@@ -747,11 +622,10 @@ memfs_mres_fs:
 
 ; Create the singleton MEMFS instance on demand.
 ;
-; V0.9 keeps one compact allocation deliberately.  Measured growable-node and
-; growable-node+pool prototypes added roughly 76 and 121 permanent MRES words
-; respectively, while per-file MM extents would exhaust the global 20-entry
-; extent table.  Future dynamic backing should replace (not layer on top of)
-; the pool/compaction machinery, likely after the MM descriptor design changes.
+; Namespace nodes remain one compact allocation.  Mutable file data is
+; demand-allocated by memfs_data in a bounded number of MM chunks; its free
+; lists live inside free chunk storage.  Growth may relocate the affected file
+; but never compacts unrelated files, and a completely free chunk returns to MM.
 ;
 ; AC1 = already-resolved mount-point vnode
 ; AC2 = total words to allocate
@@ -772,7 +646,7 @@ memfs_mres_mount_size_ok:
         push    17,[0]                  ; allocation base
         movei   5,(17)
         push    17,5                    ; fifth mm_alloc arg: basep
-        move    1,-2(17)
+        movei   1,0700                  ; allocate namespace only
         movei   2,3                     ; MM_TYPE_KERNEL_DYNAMIC
         movei   3,011                   ; MEMFS_MM_OWNER
         setz    4,                      ; MM_ALLOC_LOW
@@ -790,14 +664,14 @@ memfs_mres_mount_size_ok:
         movem   5,memfs_mres_fs
         movei   6,0100                  ; 64 node slots
         movem   6,memfs_mres_fs+1
-        move    6,5
-        addi    6,0700
-        movem   6,memfs_mres_fs+2       ; file-data pool
-        move    6,-1(17)
-        subi    6,0700
+        setzm   memfs_mres_fs+2         ; no preallocated data pool
+        move    6,-1(17)                ; requested total-word ceiling
+        subi    6,0700                  ; preserve old data-capacity semantics
         movem   6,memfs_mres_fs+3
-        setzm   memfs_mres_fs+4         ; used pool words
+        setzm   memfs_mres_fs+4         ; logical file words in use
         setzm   memfs_mres_fs+5         ; no immutable image backing
+        move    1,6
+        pushj   17,memfs_data_init
 
         push    17,[0]                  ; mounted-root scratch
         movei   6,(17)
@@ -826,12 +700,14 @@ memfs_mres_mount_done:
         sub     17,[3,,3]
         popj    17,
 
-; Release the singleton allocation when VFS unmounts MEMFS.  VFS has already
+; Release all demand data and the namespace allocation when VFS unmounts MEMFS.  VFS has already
 ; rejected active FIFO users and synchronized the provider before this call,
-; so no live vnode may retain the pool after the allocation is returned.
+; so no live vnode may retain storage after the allocations are returned.
 memfs_mres_prepare_unmount:
         push    17,1                    ; struct memfs * context
-        move    1,(1)                   ; dynamic allocation base
+        pushj   17,memfs_data_destroy   ; release demand-allocated data chunks
+        move    1,(17)
+        move    1,(1)                   ; namespace allocation base
         jumpe   1,memfs_mres_unmount_bad
         movei   2,3                     ; MM_TYPE_KERNEL_DYNAMIC
         movei   3,011                   ; MEMFS_MM_OWNER
