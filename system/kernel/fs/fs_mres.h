@@ -44,7 +44,9 @@ extern kword_t fs_d6fs_service_jump;
 extern kword_t fs_tsfs_service_jump;
 extern kword_t d6fs_cache_reclaim_jump;
 extern kword_t memfs_reclaim_jump;
+extern kword_t memfs_shutdown_jump;
 int fs_memory_reclaim(kword_t words, unsigned int level);
+int fs_memfs_shutdown(void);
 extern kword_t blockset_runtime_service_jump;
 int blockset_runtime_reg_call(unsigned int op, kword_t a, kword_t b, kword_t c);
 void blockset_direct_configure(unsigned int unit, kword_t tail_base,

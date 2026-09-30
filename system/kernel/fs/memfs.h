@@ -9,6 +9,7 @@
 #define MEMFS_F_USED                 0001U
 #define MEMFS_F_IMAGE                0002U
 #define MEMFS_F_WRITABLE             0004U
+#define MEMFS_MOUNT_PERSIST          0002U
 
 /*
  * A node is deliberately seven PDP-10 words.  The low 18 bits of meta hold

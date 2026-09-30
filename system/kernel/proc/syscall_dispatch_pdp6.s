@@ -680,25 +680,27 @@ native_sys_dtc_write_denied:
 
 
 ; Root-only MEMFS mount requested by userspace policy.  AC2 is the user target
-; pathname and AC3 is the total number of words to devote to MEMFS.  Allocation
+; pathname, AC3 is the total number of words to devote to MEMFS, and AC4 holds
+; MEMFS mount-policy flags.  Allocation
 ; and filesystem-specific validation remain inside the MEMFS MRES.
 native_sys_memfs_mount:
         push    17,2
         push    17,3
+        push    17,4
         pushj   17,file_check_root
         jumpn   1,native_sys_memfs_mount_bad
-        move    1,-1(17)
+        move    1,-2(17)
         pushj   17,native_sys_lookup_user_path
         jumpe   1,native_sys_memfs_mount_bad
-        move    2,(17)
-        setz    3,                      ; VFS_MOUNT_RW
+        move    2,-1(17)
+        move    3,(17)
         movei   6,023                   ; FS_MRES_OP_MEMFS_MOUNT
         movei   7,4                     ; MEMFS_PROVIDER
         pushj   17,fs_provider_reg_call
-        sub     17,[2,,2]
+        sub     17,[3,,3]
         popj    17,
 native_sys_memfs_mount_bad:
-        sub     17,[2,,2]
+        sub     17,[3,,3]
         jrst    kret_neg1
 
 
@@ -876,6 +878,8 @@ native_sys_putchar:
 native_sys_putchar_call:
         jrst    kret_neg1
 %L136:
+        pushj   17,fs_memfs_shutdown
+        jumpn   1,kret_neg1
         halt    .
 %L137:
         seto    1,

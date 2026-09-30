@@ -233,6 +233,18 @@ d6fs_cache_reclaim_jump:
         jrst    fs_mres_no_service
 memfs_reclaim_jump:
         jrst    fs_mres_no_service
+
+; Orderly-halt bridge.  Volatile/unmounted MEMFS returns immediately in MRES;
+; a persistent instance commits its snapshot before the hardware HALT.
+        .globl  fs_memfs_shutdown
+        .globl  memfs_shutdown_jump
+fs_memfs_shutdown:
+        hrrz    4,memfs_shutdown_jump
+        cain    4,fs_mres_no_service
+        jrst    kret_zero
+        jrst    (4)
+memfs_shutdown_jump:
+        jrst    fs_mres_no_service
 fs_mres_no_service:
         jrst    kret_neg1
 

@@ -670,14 +670,15 @@ memfs_mres_fs:
 ;
 ; AC1 = already-resolved mount-point vnode
 ; AC2 = total words to allocate
-; AC3 = mount flags (MEMFS currently supports read/write only)
+; AC3 = MEMFS mount-policy flags; bit 0002 requests persistent backing.
 ;
 ; 64 seven-word nodes consume the first 0700 words.  Require at least
 ; 01100 words for file data so the existing 02000-word minimum is unchanged.  Dynamic owner 011 is reserved for the singleton MEMFS allocation.
 memfs_mres_mount:
         skipe   memfs_mres_fs
         jrst    kret_neg1          ; singleton already instantiated
-        jumpn   3,kret_neg1        ; VFS_MOUNT_RW is zero
+        trne    3,07775
+        jrst    kret_neg1          ; reject unknown policy bits
         cail    2,02000
         jrst    memfs_mres_mount_size_ok
         jrst    kret_neg1
@@ -773,6 +774,12 @@ memfs_mres_usage:
         movem   2,1(1)
         move    2,memfs_mres_fs+3       ; pool_words
         movem   2,2(1)
+        jrst    kret_zero
+
+; Shutdown hook.  Snapshot publication is added behind this entry; until a
+; persistent mount is active this is intentionally a zero-cost provider no-op.
+        .globl  memfs_mres_shutdown
+memfs_mres_shutdown:
         jrst    kret_zero
 
 ; CREATE op multiplexes regular files and FIFO nodes so FIFO support costs

@@ -6,6 +6,7 @@
         .text
         .globl dsys_memfs_mount
 dsys_memfs_mount:
+        move    4,3
         move    3,2
         move    2,1
         movei   1,046

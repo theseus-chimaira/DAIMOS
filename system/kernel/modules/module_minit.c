@@ -1071,6 +1071,8 @@ memfs_minit(void)
                     minit_export(name, base, 1U));
                 storage_patch_jump(&memfs_reclaim_jump,
                     minit_export(name, base, 2U));
+                storage_patch_jump(&memfs_shutdown_jump,
+                    minit_export(name, base, 3U));
                 module_service_set(MODULE_SERVICE_MEMFS, service);
         }
         minit_diag_loaded(name);

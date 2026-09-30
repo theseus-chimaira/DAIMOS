@@ -572,7 +572,7 @@ $(SLV_MRES_OBJ): $(BUILD)/slv_io.dobj $(KCORE_MAP)
 
 $(MEMFS_MRES_OBJ): $(BUILD)/memfs_data.dobj $(BUILD)/memfs_pdp10.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/memfs-mres.dxr -M $(BUILD)/memfs-mres.map \
-	    -R $@ -N memfs_mres_package -X memfs_mres_dispatch -X memfs_mres_usage -X memfs_data_reclaim \
+	    -R $@ -N memfs_mres_package -X memfs_mres_dispatch -X memfs_mres_usage -X memfs_data_reclaim -X memfs_mres_shutdown \
 	    $(BUILD)/memfs_data.dobj $(BUILD)/memfs_pdp10.dobj
 
 $(DTFS_MRES_FOLD_PLAN): $(BUILD)/dtfs_pdp10.dobj $(BUILD)/tsfs_pdp10.dobj $(P10FOLD)

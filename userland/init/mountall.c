@@ -39,7 +39,7 @@ parse_uint(const char *s, unsigned int *vp)
 /*
  * FSTAB V1 contains policy, not device discovery:
  *
- *     MEMFS:/existing/mount/point:words
+ *     MEMFS:/existing/mount/point:words[:PERSIST]
  *
  * Blank lines and comments beginning with '#' are ignored.  MEMFS is a
  * singleton provider, so at most one MEMFS entry can succeed.
@@ -49,14 +49,18 @@ mount_line(char *line, int *temp_memfs)
 {
         char *target;
         char *words_text;
+        char *flags_text;
         kword_t path[U_PATH_WORDS];
         unsigned int words;
+        unsigned int flags;
         unsigned int i;
 
         if (line[0] == 0 || line[0] == '#')
                 return 1;
         target = 0;
         words_text = 0;
+        flags_text = 0;
+        flags = 0U;
         for (i = 0U; line[i] != 0; ++i) {
                 if (line[i] != ':')
                         continue;
@@ -65,6 +69,8 @@ mount_line(char *line, int *temp_memfs)
                         target = &line[i + 1U];
                 else if (words_text == 0)
                         words_text = &line[i + 1U];
+                else if (flags_text == 0)
+                        flags_text = &line[i + 1U];
                 else
                         return -1;
         }
@@ -72,7 +78,12 @@ mount_line(char *line, int *temp_memfs)
             parse_uint(words_text, &words) != 0 ||
             u_s6_pack(path, U_PATH_WORDS, target) != 0)
                 return -1;
-        if (dsys_memfs_mount(path, words) != 0)
+        if (flags_text != 0) {
+                if (!text_eq(flags_text, "PERSIST"))
+                        return -1;
+                flags = 0002U;
+        }
+        if (dsys_memfs_mount(path, words, flags) != 0)
                 return -1;
         if (text_eq(target, "/TEMP"))
                 *temp_memfs = 1;
