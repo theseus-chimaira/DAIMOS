@@ -1,0 +1,111 @@
+/**
+ * @file d6lz_pdp6.s
+ * @brief PDP-6 VFS frontend for the resident D6LZ36 decoder.
+ *
+ * D6LZ36 token decoding lives in the fixed low-core decoder from
+ * system/stand/pdp6/common/decompressor.inc.  Stage1 installs that decoder at
+ * 000060 and KCORE links the same image at the same address.  This file is the
+ * resident filesystem-facing adapter: it reads compressed words through VFS,
+ * feeds bounded source windows to the resumable low-core engine, and maps its
+ * result to the kernel C calling convention.
+ *
+ * The implementation is specifically PDP-6 code.  It assumes 18-bit address
+ * halves, an AC17 pushdown stack, PDP-6 BLT semantics, and the fixed decoder
+ * entry at 000060.  A future later-PDP-10 implementation may therefore use a
+ * different source file and machine-specific instructions without weakening
+ * the PDP-6 baseline.
+ *
+ * No permanent decode buffer exists.  Each call reserves sixteen stack words:
+ * six words save AC10..AC15, two words retain the vnode and file offset, and
+ * eight words form the VFS refill window.  The output buffer itself is the LZ
+ * history and must remain valid until decoding finishes.
+ */
+
+        .text
+        .globl d6lz36_decode_vfs
+        .globl d6lz36_decode_core
+        .globl vfs_read_words
+
+/** Number of compressed words fetched per VFS refill. */
+        .equ D6LZ_VFS_WINDOW,010
+
+/** Two persistent VFS words plus the eight-word refill window. */
+        .equ D6LZ_VFS_LOCALS,012
+
+/**
+ * @brief Decode one exactly framed D6LZ36 VFS payload into memory.
+ *
+ * C ABI input:
+ *   AC1 = vnode
+ *   AC2 = compressed payload word offset in the vnode
+ *   AC3 = exact compressed payload length in words
+ *   AC4 = output_word_count,,destination_address
+ *
+ * C ABI output:
+ *   AC1 = 0 on success, -1 on malformed input, invalid geometry, premature
+ *         EOF, VFS failure, or non-exact compressed-payload consumption.
+ *
+ * AC10..AC15 are callee-saved and restored before return.  AC0..AC7 may be
+ * clobbered according to the normal kernel ABI.  AC17 is the pushdown pointer;
+ * this routine advances it by sixteen words for the complete frame and
+ * restores it exactly before POPJ.
+ *
+ * The low-core decoder owns resumable state in AC10..AC14.  AC15 holds the
+ * number of compressed words not yet fetched from VFS.  vfs_read_words() may
+ * clobber caller-saved ACs, so vnode and file offset live in stack locals and
+ * the source pointer is reconstructed after every refill.  The decoder's +1
+ * NEED_INPUT result resumes the same state with the next window; zero is
+ * accepted only when both the current window and the declared payload have
+ * been consumed exactly.
+ */
+d6lz36_decode_vfs:
+        ; Reserve the whole frame once and save AC10..AC15 with one BLT.
+        add     17,[020,,020]
+        movei   0,-017(17)
+        hrli    0,010
+        blt     0,-012(17)
+        movem   1,-011(17)              ; vnode
+        movem   2,-010(17)              ; current file offset
+        hlrz    13,4                    ; output words remaining
+        hrrz    12,4                    ; current output address
+        move    14,12                   ; output base
+        move    15,3                    ; compressed words not yet read
+        jumpe   13,d6lz_vfs_error
+        jumpe   12,d6lz_vfs_error
+        setz    11,                     ; zero => load a control word
+
+d6lz_vfs_refill:
+        jumpe   15,d6lz_vfs_error       ; core requested data past EOF
+        move    1,-011(17)              ; vnode
+        move    2,-010(17)              ; file offset
+        movei   3,-07(17)               ; eight-word input window
+        movei   4,D6LZ_VFS_WINDOW
+        caige   15,D6LZ_VFS_WINDOW
+        move    4,15                    ; final short window
+        pushj   17,vfs_read_words
+        jumpe   1,d6lz_vfs_error
+        sub     15,1                    ; words still unread from file
+        addm    1,-010(17)              ; advance file offset
+
+        move    4,1                    ; source-window words returned
+        movei   3,-07(17)
+        pushj   17,d6lz36_decode_core
+        jumpe   0,d6lz_vfs_success
+        jumpl   0,d6lz_vfs_error
+        jrst    d6lz_vfs_refill         ; +1 = NEED_INPUT
+
+d6lz_vfs_success:
+        jumpn   4,d6lz_vfs_error        ; exact compressed payload required
+        jumpn   15,d6lz_vfs_error
+        setz    1,
+        jrst    d6lz_vfs_return
+
+d6lz_vfs_error:
+        seto    1,
+d6lz_vfs_return:
+        movei   0,-017(17)
+        hrl     0,0
+        hrri    0,010
+        blt     0,015                   ; restore AC10..AC15
+        sub     17,[020,,020]
+        popj    17,

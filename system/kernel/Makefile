@@ -129,7 +129,6 @@ KINIT_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${BUILD}/kinit_io.s ${BUILD}/modu
 
 KCORE_C_SRCS = proc/exec.c \
 		mm/mm.c \
-	core/d6lz.c \
 	proc/proc.c \
 	fs/file.c
 
@@ -285,11 +284,9 @@ ${BUILD}/exec.s: proc/exec.c proc/exec_load_pdp10.s ${KERNEL_HEADERS}
 	cat $@.c proc/exec_load_pdp10.s > $@
 	rm -f $@.c
 
-${BUILD}/d6lz.s: core/d6lz.c core/d6lz_pdp10.s core/d6lz.h ${KERNEL_HEADERS}
+${BUILD}/d6lz.s: core/d6lz_pdp6.s
 	@mkdir -p ${BUILD}
-	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S core/d6lz.c -o $@.c
-	cat $@.c core/d6lz_pdp10.s > $@
-	rm -f $@.c
+	cp core/d6lz_pdp6.s $@
 
 ${BUILD}/module_runtime.s: modules/module_runtime.c modules/module_runtime_pdp10.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
