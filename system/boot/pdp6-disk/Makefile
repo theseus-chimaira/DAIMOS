@@ -212,8 +212,19 @@ MRES_ASM = $(KCORE_BUILD)/cty_io.s $(KCORE_BUILD)/clk_io.s $(KCORE_BUILD)/ptr_io
 KCORE_DXR = $(BUILD)/kcore.dxr
 KCORE_MAP = $(BUILD)/kcore.map
 KCORE_FOLD_PLAN = $(BUILD)/kcore.fold
-# Pre-self-hosting fold scope: only runtime-proven handwritten assembler.
-KCORE_FOLD_OBJS = $(BUILD)/proc_pdp10.dobj $(BUILD)/proc_run_pdp10.dobj
+# Pre-self-hosting fold scope: all handwritten KCORE assembler.  Generated
+# KCC output remains deliberately excluded until self-hosting/code-generator
+# canonicalization work.  P10FOLD selects only relocation-safe zero-cost donors.
+KCORE_FOLD_OBJS = $(BUILD)/ret_pdp10.dobj \
+	$(BUILD)/dsk270_pdp10.dobj $(BUILD)/drm236_pdp10.dobj \
+	$(BUILD)/kfmt_pdp10.dobj $(BUILD)/vfs_pdp10.dobj \
+	$(BUILD)/fs_mres_pdp10.dobj $(BUILD)/file_pdp10.dobj \
+	$(BUILD)/pipe_pdp10.dobj $(BUILD)/monitorfs_pdp10.dobj \
+	$(BUILD)/proc_pdp10.dobj $(BUILD)/proc_run_pdp10.dobj \
+	$(BUILD)/device_state_pdp10.dobj $(BUILD)/syscall_info_pdp10.dobj \
+	$(BUILD)/pclk_pdp10.dobj $(BUILD)/lpt_io.dobj \
+	$(BUILD)/syscall_dispatch.dobj $(BUILD)/mach_user.dobj \
+	$(BUILD)/kcore_io.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj
 KCORE_RIM = $(BUILD)/kcore.rim
 KCORE_STREAM = $(BUILD)/kcore.stream
 KCORE_EMBED_ASM = $(BUILD)/kcore-embed.s
