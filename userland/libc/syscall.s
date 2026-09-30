@@ -43,6 +43,7 @@
         .globl dsys_gettime
         .globl dsys_rtctl
         .globl dsys_logctl
+        .globl dsys_storagectl
         .globl dsys_utime
         .globl dsys_rmdir
         .globl dsys_chown
@@ -125,6 +126,10 @@ dsys_logctl:          move 4,3
                        move 3,2
                        move 2,1
                        movei 1,044
+                       uuo 077,0(1)
+                       popj 17,
+dsys_storagectl:      move 2,1
+                       movei 1,047
                        uuo 077,0(1)
                        popj 17,
 dsys_dup2:             move 3,2

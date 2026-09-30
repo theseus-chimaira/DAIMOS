@@ -11,6 +11,7 @@
 ;   AC5=3 WRITE: AC1=relative LOGSTORE block, AC2=128-word buffer
 ;   AC5=4 APPEND: AC1=caller-owned 128-word LSREC1 scratch block
 ;   AC5=5 WAIT: AC1=observed next sequence; sleep until it changes
+;   AC5=6 ENABLE: AC1=0 disables appends, nonzero enables them
 ;
 ; State words:
 ;   0 root-logical LOGSTORE start
@@ -19,6 +20,7 @@
 ;   3 capacity,,next slot
 ;   4 zero for BLOCKSET mapping; otherwise (unit+1),,physical root base
 ;   5 append event flag used by WAIT
+;   6 append-enabled flag; policy is activated by PID 1
 
         .text
         .globl  logstore_mres_dispatch
@@ -38,6 +40,8 @@ logstore_mres_dispatch:
         jrst    logstore_write
         cain    5,4
         jrst    logstore_append
+        cain    5,6
+        jrst    logstore_enable
         caie    5,5
         jrst    kret_neg1
         ; WAIT is keyed by the producer sequence observed by userspace.  Clear
@@ -64,6 +68,8 @@ logstore_wait_sleep:
 ; word 1 sequence, and word 127 commit trailer.  State advances only after the
 ; backing write succeeds.
 logstore_append:
+        skipn   logstore_mres_state+6
+        jrst    kret_neg1
         jumpe   1,kret_neg1
         move    4,1                     ; stable caller scratch pointer
         move    6,logstore_mres_state+2 ; next sequence
@@ -102,6 +108,14 @@ logstore_append:
         pushj   17,proc_wakeup_event
         setz    1,
 logstore_append_done:
+        popj    17,
+
+logstore_enable:
+        setzm   logstore_mres_state+6
+        jumpe   1,logstore_enable_done
+        setom   logstore_mres_state+6
+logstore_enable_done:
+        setz    1,
         popj    17,
 
 logstore_status:
@@ -149,4 +163,4 @@ logstore_io_direct:
 
         .bss
 logstore_mres_state:
-        .block  6
+        .block  7

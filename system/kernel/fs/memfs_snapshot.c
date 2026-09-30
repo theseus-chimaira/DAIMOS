@@ -32,7 +32,7 @@ int memfs_snapshot_mount(struct memfs *fs, unsigned int flags)
         snapshot_enabled = 0;
         if ((flags & MEMFS_MOUNT_PERSIST) == 0U)
                 return 0;
-        if (swap_store_blocks == 0UL)
+        if (!swap_store_enabled || swap_store_blocks == 0UL)
                 return -1;
         blocks = 1UL + (SNAP_META_WORDS / DSK_WORDS_PER_SECTOR) +
             ((fs->pool_words + DSK_WORDS_PER_SECTOR - 1UL) / DSK_WORDS_PER_SECTOR);

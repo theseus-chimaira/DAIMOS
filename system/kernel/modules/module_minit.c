@@ -1249,6 +1249,7 @@ logstore_minit(void)
             (kword_t)recovered.next_slot;
         state[4] = packed;
         state[5] = 0UL;
+        state[6] = 0UL;
         storage_patch_module_jump(base,
             (kword_t *)(unsigned long)minit_export(name, base,
             LOGSTORE_X_READ_JUMP), read_addr);

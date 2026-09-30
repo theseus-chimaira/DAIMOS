@@ -8,6 +8,7 @@
 extern kword_t *swap_store_bitmap;
 extern kword_t swap_store_blocks;
 extern kword_t swap_store_blocks_used;
+extern unsigned int swap_store_enabled;
 
 unsigned int swap_store_bitmap_words(kword_t blocks);
 void swap_store_init(kword_t *bitmap, kword_t blocks);

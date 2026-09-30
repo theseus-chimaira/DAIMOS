@@ -15,6 +15,68 @@ struct init_entry {
 
 static struct init_entry init_entries[INIT_MAX_ENTRIES];
 static unsigned int init_count;
+static int text_eq(const char *a, const char *b);
+
+static int
+load_system_policy(void)
+{
+        struct u_text_reader r;
+        char line[INIT_LINE_MAX + 1U];
+        char *key;
+        char *value[1];
+        unsigned int active;
+        unsigned int seen;
+        int n;
+
+        active = SYS_STORAGECTL_SWAP | SYS_STORAGECTL_LOGSTORE;
+        seen = 0U;
+        r.fd = -1;
+        if (u_text_open(&r, "/CONFIG/SYSTEM") != 0)
+                goto activate;
+        for (;;) {
+                n = u_text_getline(&r, line, sizeof(line));
+                if (n == U_TEXT_EOF)
+                        break;
+                if (n < 0)
+                        goto bad;
+                n = u_text_key(line, &key, value, 1U);
+                if (n == 0)
+                        continue;
+                if (n != 1)
+                        goto bad;
+                if (text_eq(key, "SWAP")) {
+                        if ((seen & 1U) != 0U)
+                                goto bad;
+                        seen |= 1U;
+                        if (text_eq(value[0], "AUTO"))
+                                active |= SYS_STORAGECTL_SWAP;
+                        else if (text_eq(value[0], "OFF"))
+                                active &= ~SYS_STORAGECTL_SWAP;
+                        else
+                                goto bad;
+                } else if (text_eq(key, "LOGSTORE")) {
+                        if ((seen & 2U) != 0U)
+                                goto bad;
+                        seen |= 2U;
+                        if (text_eq(value[0], "AUTO"))
+                                active |= SYS_STORAGECTL_LOGSTORE;
+                        else if (text_eq(value[0], "OFF"))
+                                active &= ~SYS_STORAGECTL_LOGSTORE;
+                        else
+                                goto bad;
+                } else {
+                        goto bad;
+                }
+        }
+        u_text_close(&r);
+activate:
+        /* An unavailable AUTO service is harmless; discovery remains KINIT's. */
+        (void)dsys_storagectl(active);
+        return 0;
+bad:
+        u_text_close(&r);
+        return -1;
+}
 
 static int
 text_eq(const char *a, const char *b)
@@ -208,6 +270,10 @@ main(void)
         }
         (void)u_puts(1, "INIT V1");
         (void)u_crlf(1);
+        if (load_system_policy() != 0) {
+                (void)u_puts(2, "INIT: BAD SYSTEM POLICY");
+                (void)u_crlf(2);
+        }
         mount_status = run_mountall();
         if (mount_status == 2) {
                 (void)u_puts(2, "INIT: WARNING: MEMFS NOT MOUNTED ON /TEMP");

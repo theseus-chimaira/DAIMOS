@@ -15,6 +15,7 @@
 kword_t *swap_store_bitmap;
 kword_t swap_store_blocks;
 kword_t swap_store_blocks_used;
+unsigned int swap_store_enabled;
 
 unsigned int
 swap_store_bitmap_words(kword_t blocks)
@@ -29,6 +30,7 @@ swap_store_init(kword_t *bitmap, kword_t blocks)
         swap_store_bitmap = bitmap;
         swap_store_blocks = blocks;
         swap_store_blocks_used = 0UL;
+        swap_store_enabled = 0U;
 }
 
 static int
@@ -68,7 +70,8 @@ swap_store_alloc(kword_t blocks, kword_t *firstp)
         kword_t first;
         kword_t i;
 
-        if (blocks == 0UL || firstp == 0 || swap_store_bitmap == 0 ||
+        if (!swap_store_enabled || blocks == 0UL || firstp == 0 ||
+            swap_store_bitmap == 0 ||
             blocks > swap_store_blocks - swap_store_blocks_used)
                 return -1;
         for (first = 0UL; first <= swap_store_blocks - blocks; ++first) {

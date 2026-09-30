@@ -41,6 +41,7 @@
         .globl  vfs_chown
         .globl  file_rmdir
         .globl  file_check_root
+        .globl  swap_store_enabled
 /** @brief Decode low-core monitor UUO 040..077 and tail-dispatch its handler. */
 exec_native_syscall:
         ; Recover the monitor-UUO opcode from the trapped instruction.
@@ -408,7 +409,7 @@ native_sys_extctl:
         hrrz    5,1
         subi    5,020
         jumpl   5,native_sys_procctl
-        caile   5,026
+        caile   5,027
         jrst    native_sys_procctl
         move    6,5
         andi    5,1
@@ -431,6 +432,31 @@ native_sys_ext_table:
         .word   native_sys_d6fs_mount,,native_sys_rtctl
         .word   native_sys_logctl,,native_sys_dtc_write_block
         .word   native_sys_memfs_mount,,native_sys_procctl
+        .word   native_sys_storagectl,,native_sys_procctl
+
+; PID-1/root storage activation policy.  Discovery and module installation
+; remain boot work; this call only enables or disables an available service.
+native_sys_storagectl:
+        push    17,2
+        pushj   17,file_check_root
+        jumpn   1,native_sys_storagectl_bad
+        move    6,(17)                 ; activation mask
+        jumpl   6,native_sys_storagectl_bad
+        caile   6,3
+        jrst    native_sys_storagectl_bad
+        move    1,6
+        andi    1,1
+        movem   1,swap_store_enabled
+        move    1,6
+        andi    1,2
+        movei   5,6                    ; LOGSTORE MRES ENABLE
+        pushj   17,sys_logstore_service_jump
+        jrst    native_sys_storagectl_done
+native_sys_storagectl_bad:
+        seto    1,
+native_sys_storagectl_done:
+        sub     17,[1,,1]
+        popj    17,
 
 native_sys_mkfifo:
         move    1,2                    ; user path
