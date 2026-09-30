@@ -22,7 +22,7 @@
 #define FS_MRES_OP_PREPARE_UNMOUNT     16U
 #define FS_MRES_OP_FORMAT_UNIT         17U
 #define FS_MRES_OP_MOUNT_UNIT          18U
-#define FS_MRES_OP_MEMFS_INIT          19U
+#define FS_MRES_OP_MEMFS_MOUNT         19U
 /* Provider-private operation 20 is intentionally reused.  Calls are already
  * directed to a specific provider MRES, so global sparse numbering only wastes
  * resident vector words. */

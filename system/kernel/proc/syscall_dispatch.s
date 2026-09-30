@@ -505,6 +505,8 @@ native_sys_ext_nonpipe:
         jrst    native_sys_logctl
         cain    1,045                  ; SYS_EXT_DTC_WRITE_BLOCK
         jrst    native_sys_dtc_write_block
+        cain    1,046                  ; SYS_EXT_MEMFS_MOUNT
+        jrst    native_sys_memfs_mount
         cain    1,022                  ; SYS_EXT_EXEC
         jrst    native_sys_exec
         caie    1,021                  ; SYS_EXT_MKFIFO
@@ -758,6 +760,29 @@ native_sys_dtc_block_bad_map:
 
 native_sys_dtc_write_denied:
         sub     17,[3,,3]
+        jrst    pdp10_ret_neg1
+
+
+; Root-only MEMFS mount requested by userspace policy.  AC2 is the user target
+; pathname and AC3 is the total number of words to devote to MEMFS.  Allocation
+; and filesystem-specific validation remain inside the MEMFS MRES.
+native_sys_memfs_mount:
+        push    17,2
+        push    17,3
+        pushj   17,file_check_root
+        jumpn   1,native_sys_memfs_mount_bad
+        move    1,-1(17)
+        pushj   17,native_sys_lookup_user_path
+        jumpe   1,native_sys_memfs_mount_bad
+        move    2,(17)
+        setz    3,                      ; VFS_MOUNT_RW
+        movei   6,023                   ; FS_MRES_OP_MEMFS_MOUNT
+        movei   7,4                     ; MEMFS_PROVIDER
+        pushj   17,fs_provider_reg_call
+        sub     17,[2,,2]
+        popj    17,
+native_sys_memfs_mount_bad:
+        sub     17,[2,,2]
         jrst    pdp10_ret_neg1
 
 

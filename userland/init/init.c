@@ -185,11 +185,32 @@ spawn_entry(struct init_entry *e)
         return 0;
 }
 
+static int
+run_mountall(void)
+{
+        struct init_entry e;
+        kword_t status;
+        int pid;
+
+        e.tty = 0U;
+        e.action = INIT_ONCE;
+        e.pid = 0U;
+        if (u_s6_pack(e.path, U_PATH_WORDS, "/SYSTEM/EXEC/MOUNTALL") != 0 ||
+            spawn_entry(&e) != 0)
+                return -1;
+        pid = dsys_wait(e.pid, &status, 0U);
+        if (pid != (int)e.pid ||
+            SYS_WAIT_STATUS_KIND(status) != SYS_WAIT_EXITED)
+                return -1;
+        return (int)SYS_WAIT_STATUS_VALUE(status);
+}
+
 int
 main(void)
 {
         kword_t status;
         unsigned int i;
+        int mount_status;
         int pid;
 
         if (dsys_getpid() != 1) {
@@ -200,6 +221,14 @@ main(void)
         }
         (void)u_puts(1, "INIT V1");
         (void)u_crlf(1);
+        mount_status = run_mountall();
+        if (mount_status == 2) {
+                (void)u_puts(2, "INIT: WARNING: MEMFS NOT MOUNTED ON /TEMP");
+                (void)u_crlf(2);
+        } else if (mount_status != 0) {
+                (void)u_puts(2, "INIT: MOUNTALL FAILED");
+                (void)u_crlf(2);
+        }
         if (load_inittab() != 0) {
                 (void)u_puts(2, "INIT: NO INITTAB");
                 (void)u_crlf(2);

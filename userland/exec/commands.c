@@ -737,11 +737,11 @@ cmd_free(int argc, kword_t **argv, struct u_io *io)
         kword_t accounted;
         (void)argc; (void)argv;
         if (dsys_meminfo(&m) != 0) return cmd_err(io, "FREE", 0);
-        accounted = m.resident_words + m.process_words + m.ramfs_used_words;
+        accounted = m.resident_words + m.process_words + m.memfs_used_words;
         if (u_puts(io->out_fd, "TOTAL ") != 0 || u_put_uint(io->out_fd, m.total_words) != 0 || u_crlf(io->out_fd) != 0 ||
             u_puts(io->out_fd, "RESIDENT ") != 0 || u_put_uint(io->out_fd, m.resident_words) != 0 || u_crlf(io->out_fd) != 0 ||
             u_puts(io->out_fd, "PROCESS ") != 0 || u_put_uint(io->out_fd, m.process_words) != 0 || u_crlf(io->out_fd) != 0 ||
-            u_puts(io->out_fd, "RAMFS ") != 0 || u_put_uint(io->out_fd, m.ramfs_used_words) != 0 || u_crlf(io->out_fd) != 0) return 1;
+            u_puts(io->out_fd, "MEMFS ") != 0 || u_put_uint(io->out_fd, m.memfs_used_words) != 0 || u_crlf(io->out_fd) != 0) return 1;
         if (m.total_words != 0 && m.total_words >= accounted) {
                 if (u_puts(io->out_fd, "UNACCOUNTED ") != 0 || u_put_uint(io->out_fd, m.total_words - accounted) != 0 || u_crlf(io->out_fd) != 0) return 1;
         }
@@ -758,12 +758,12 @@ cmd_df(int argc, kword_t **argv, struct u_io *io)
         (void)argv;
         if (dsys_meminfo(&m) != 0)
                 return cmd_err(io, "DF", 0);
-        free_words = m.ramfs_capacity_words >= m.ramfs_used_words ?
-            m.ramfs_capacity_words - m.ramfs_used_words : 0;
-        if (u_puts(io->out_fd, "RAMFS0 USED ") != 0 ||
-            u_put_uint(io->out_fd, m.ramfs_used_words) != 0 ||
+        free_words = m.memfs_capacity_words >= m.memfs_used_words ?
+            m.memfs_capacity_words - m.memfs_used_words : 0;
+        if (u_puts(io->out_fd, "MEMFS USED ") != 0 ||
+            u_put_uint(io->out_fd, m.memfs_used_words) != 0 ||
             u_puts(io->out_fd, " CAPACITY ") != 0 ||
-            u_put_uint(io->out_fd, m.ramfs_capacity_words) != 0 ||
+            u_put_uint(io->out_fd, m.memfs_capacity_words) != 0 ||
             u_puts(io->out_fd, " FREE ") != 0 ||
             u_put_uint(io->out_fd, free_words) != 0 ||
             u_crlf(io->out_fd) != 0)
@@ -844,8 +844,8 @@ cmd_memstat(int argc, kword_t **argv, struct u_io *io)
         FIELD("TOTAL ", m.total_words);
         FIELD("RESIDENT ", m.resident_words);
         FIELD("PROCESS-WORDS ", m.process_words);
-        FIELD("RAMFS-USED ", m.ramfs_used_words);
-        FIELD("RAMFS-CAPACITY ", m.ramfs_capacity_words);
+        FIELD("MEMFS-USED ", m.memfs_used_words);
+        FIELD("MEMFS-CAPACITY ", m.memfs_capacity_words);
         FIELD("PROC-SLOTS ", m.process_slots_used);
         FIELD("PROC-SLOTS-MAX ", m.process_slots_total);
         FIELD("FILE-SLOTS ", m.file_slots_used);

@@ -1,0 +1,3 @@
+# DAIMOS FSTAB V1
+# The 32K low-memory profile deliberately leaves MEMFS unmounted.
+# INIT therefore reports that /TEMP is not memory-backed on this profile.

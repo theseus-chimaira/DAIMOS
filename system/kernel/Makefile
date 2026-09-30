@@ -31,8 +31,7 @@ VERSION_FILE = ${PROJECT_ROOT}/VERSION
 DAIMON_VERSION != cat ${VERSION_FILE}
 INCLUDES = -I. -Iboot -Icore -Idrivers -Ifs -Iipc -Imm -Imodules -Iproc -Istorage -I${PDP10_PREFIX}/include
 
-KERNEL_HEADERS = boot/kboot.h \
-	boot/kinit.h \
+KERNEL_HEADERS = boot/kinit.h \
 	boot/root_select.h \
 	boot/tsfs_boot.h \
 	core/kcore.h \
@@ -90,7 +89,6 @@ KERNEL_HEADERS = boot/kboot.h \
 KINIT_SRCS = boot/kinit.c \
 	boot/kinit_diag.c \
 	modules/module_minit.c \
-	boot/kfs_boot.c \
 	boot/kinit_boot.c \
 	boot/root_select.c \
 	boot/tsfs_boot.c \
@@ -105,7 +103,6 @@ KINIT_SRCS = boot/kinit.c \
 KINIT_C_ASM = $(BUILD)/kinit.s \
 	$(BUILD)/kinit_diag.s \
 	$(BUILD)/module_minit.s \
-	$(BUILD)/kfs_boot.s \
 	$(BUILD)/kinit_boot.s \
 	$(BUILD)/root_select.s \
 	$(BUILD)/tsfs_boot.s \

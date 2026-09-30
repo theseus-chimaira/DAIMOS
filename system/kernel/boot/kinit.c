@@ -2,7 +2,6 @@
 #include "kcore.h"
 #include "module.h"
 #include "mres.h"
-#include "kboot.h"
 #include "mm.h"
 #include "mm_internal.h"
 #include "proc.h"
@@ -367,7 +366,9 @@ kinit_enter(void)
         kinit_diag_system(memory_kwords);
         mres_init();
         module_run_minits();
+#if KINIT_FULL
         dtfs_post_minits();
+#endif
 #if KINIT_BADMAP
         badmap_post_minits();
 #endif
@@ -397,17 +398,15 @@ kinit_enter(void)
         {
                 kword_t image_end;
                 kword_t reclaim_end;
-                kword_t future_free_words;
 
                 image_end = (kword_t)(unsigned long)&__kinit_image_end;
                 reclaim_end = image_end + KINIT_STACK_RESERVE_WORDS;
                 if (reclaim_end > mm_core_words)
                         kinit_halt();
-                future_free_words = reclaim_end - KINIT_IMAGE_BASE;
 #ifdef KINIT_DEBUG
                 kinit_diag_finished();
 #endif
-                kinit_boot(future_free_words);
+                kinit_boot();
 #if KINIT_STACK_WATERMARK
                 kinit_stack_watermark_record();
 #endif

@@ -87,14 +87,14 @@ sys_resident_words_immediate:
 sys_memfs_usage_call:
         pushj   17,pdp10_ret_neg1
         pop     17,2                    ; restore struct sys_meminfo pointer
-        jumpn   1,sys_meminfo_no_ramfs
+        jumpn   1,sys_meminfo_no_memfs
         move    4,3(2)
         move    5,4(2)
-        jrst    sys_meminfo_have_ramfs
-sys_meminfo_no_ramfs:
+        jrst    sys_meminfo_have_memfs
+sys_meminfo_no_memfs:
         movei   4,0
         movei   5,0
-sys_meminfo_have_ramfs:
+sys_meminfo_have_memfs:
         ; Commit MEMFS results before reusing AC4 as an index register.
         movem   4,3(2)
         movem   5,4(2)

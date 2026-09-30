@@ -1069,10 +1069,13 @@ vfs_unmount_slot:
         move    1,-1(17)
         move    3,1
         lsh     3,-036
+        cain    3,4                     ; MEMFS_PROVIDER
+        jrst    vfs_unmount_prepare
         caie    3,6                     ; D6FS_PROVIDER
         jrst    vfs_unmount_after_prepare
+vfs_unmount_prepare:
         movei   6,020                   ; FS_MRES_OP_PREPARE_UNMOUNT
-        movei   7,6
+        move    7,3
         pushj   17,fs_provider_reg_call
         jumpn   1,vfs_unmount_fail
         move    2,(17)

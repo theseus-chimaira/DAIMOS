@@ -1,5 +1,4 @@
 #include "kinit.h"
-#include "kboot.h"
 #include "d6fs_boot.h"
 #include "root_select.h"
 #include "tsfs_boot.h"
@@ -34,7 +33,7 @@ root_has_init(void)
 }
 
 void
-kinit_boot(kword_t future_free_words)
+kinit_boot(void)
 {
         unsigned int root_class;
         int rc;
@@ -54,6 +53,4 @@ kinit_boot(kword_t future_free_words)
                 rc = -1;
         if (rc != 0 || !root_has_init())
                 kinit_error18(KINIT_ERR_RT);
-        if (kfs_boot_mount_ramfs(future_free_words) != 0)
-                kinit_error18(KINIT_ERR_MT);
 }

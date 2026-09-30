@@ -58,6 +58,7 @@
 #define SYS_EXT_RTCTL              043U
 #define SYS_EXT_LOGCTL             044U
 #define SYS_EXT_DTC_WRITE_BLOCK    045U
+#define SYS_EXT_MEMFS_MOUNT        046U
 
 #define SYS_LOGCTL_STATUS             0U
 #define SYS_LOGCTL_READ_BLOCK         1U
@@ -246,8 +247,8 @@ struct sys_meminfo {
         kword_t total_words;
         kword_t resident_words;
         kword_t process_words;
-        kword_t ramfs_used_words;
-        kword_t ramfs_capacity_words;
+        kword_t memfs_used_words;
+        kword_t memfs_capacity_words;
         kword_t process_slots_used;
         kword_t process_slots_total;
         kword_t file_slots_used;

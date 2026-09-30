@@ -749,6 +749,9 @@ memfs_mres_fs:
         .globl  vfs_name_words_equal
         .globl  fs_zero_words
         .globl  fs_mres_context_vector_dispatch
+        .globl  mm_alloc
+        .globl  mm_free
+        .globl  vfs_mount
         .globl  memfs_mres_dispatch
         .globl  memfs_lookup
         .globl  memfs_create
@@ -760,13 +763,101 @@ memfs_mres_fs:
         .globl  memfs_read_words
         .globl  memfs_write_words
 
-; Initialize singleton state from the KINIT-provided six-word struct.
-memfs_mres_init:
-        jumpe   2,pdp10_ret_neg1
-        hrl     2,2
-        hrri    2,memfs_mres_fs
-        blt     2,memfs_mres_fs+5
+; Create the singleton MEMFS instance on demand.
+;
+; AC1 = already-resolved mount-point vnode
+; AC2 = total words to allocate
+; AC3 = mount flags (MEMFS currently supports read/write only)
+;
+; 64 eight-word nodes consume the first 01000 words.  Require another 01000
+; words for file data so a configured MEMFS cannot consist almost entirely of
+; metadata.  Dynamic owner 011 is reserved for the singleton MEMFS allocation.
+memfs_mres_mount:
+        skipe   memfs_mres_fs
+        jrst    pdp10_ret_neg1          ; singleton already instantiated
+        jumpn   3,pdp10_ret_neg1        ; VFS_MOUNT_RW is zero
+        cail    2,02000
+        jrst    memfs_mres_mount_size_ok
+        jrst    pdp10_ret_neg1
+memfs_mres_mount_size_ok:
+        push    17,1                    ; target vnode
+        push    17,2                    ; total words
+        push    17,[0]                  ; allocation base
+        movei   5,(17)
+        push    17,5                    ; fifth mm_alloc arg: basep
+        move    1,-2(17)
+        movei   2,3                     ; MM_TYPE_KERNEL_DYNAMIC
+        movei   3,011                   ; MEMFS_MM_OWNER
+        setz    4,                      ; MM_ALLOC_LOW
+        pushj   17,mm_alloc
+        sub     17,[1,,1]
+        jumpn   1,memfs_mres_mount_bad
+
+        move    1,(17)
+        movei   2,01000
+        pushj   17,fs_zero_words
+        move    5,(17)
+        move    6,[0207775]             ; DIR, mode 0777, USED|WRITABLE
+        movem   6,5(5)                  ; root-node meta
+
+        movem   5,memfs_mres_fs
+        movei   6,0100                  ; 64 node slots
+        movem   6,memfs_mres_fs+1
+        move    6,5
+        addi    6,01000
+        movem   6,memfs_mres_fs+2       ; file-data pool
+        move    6,-1(17)
+        subi    6,01000
+        movem   6,memfs_mres_fs+3
+        setzm   memfs_mres_fs+4         ; used pool words
+        setzm   memfs_mres_fs+5         ; no immutable image backing
+
+        push    17,[0]                  ; mounted-root scratch
+        movei   6,(17)
+        push    17,6                    ; sixth arg: rootp
+        push    17,[0]                  ; fifth arg: VFS_MOUNT_RW
+        move    1,-5(17)                ; target vnode
+        movei   2,4                     ; MEMFS_PROVIDER
+        movei   3,1                     ; MEMFS_KIND_NODE
+        setz    4,                      ; root node slot
+        pushj   17,vfs_mount
+        sub     17,[3,,3]
+        jumpe   1,memfs_mres_mount_done
+
+        movei   1,memfs_mres_fs
+        movei   2,6
+        pushj   17,fs_zero_words
+        move    1,(17)
+        movei   2,3
+        movei   3,011
+        pushj   17,mm_free
+        seto    1,
+        jrst    memfs_mres_mount_done
+memfs_mres_mount_bad:
+        seto    1,
+memfs_mres_mount_done:
+        sub     17,[3,,3]
+        popj    17,
+
+; Release the singleton allocation when VFS unmounts MEMFS.  VFS has already
+; rejected active FIFO users and synchronized the provider before this call,
+; so no live vnode may retain the pool after the allocation is returned.
+memfs_mres_prepare_unmount:
+        push    17,1                    ; struct memfs * context
+        move    1,(1)                   ; dynamic allocation base
+        jumpe   1,memfs_mres_unmount_bad
+        movei   2,3                     ; MM_TYPE_KERNEL_DYNAMIC
+        movei   3,011                   ; MEMFS_MM_OWNER
+        pushj   17,mm_free
+        jumpn   1,memfs_mres_unmount_bad
+        move    1,(17)
+        movei   2,6
+        pushj   17,fs_zero_words
+        sub     17,[1,,1]
         jrst    pdp10_ret_zero
+memfs_mres_unmount_bad:
+        sub     17,[1,,1]
+        jrst    pdp10_ret_neg1
 
 ; MEMINFO calls this exported entry directly; overwrite request a/b.
         .globl  memfs_mres_usage
@@ -788,11 +879,10 @@ memfs_mres_create:
 
 memfs_mres_dispatch:
 memfs_mres_reg_dispatch:
-        caie    6,023                   ; 19 decimal: MEMFS_INIT
-        jrst    memfs_mres_not_init
-        move    2,1                     ; request a = init state
-        jrst    memfs_mres_init
-memfs_mres_not_init:
+        caie    6,023                   ; 19 decimal: MEMFS_MOUNT
+        jrst    memfs_mres_not_mount
+        jrst    memfs_mres_mount
+memfs_mres_not_mount:
         move    7,[memfs_mres_vector]
         movei   0,memfs_mres_fs
         jrst    fs_mres_context_vector_dispatch
@@ -806,5 +896,5 @@ memfs_mres_vector:
         .word   memfs_unlink,,memfs_rename
         .word   memfs_truncate_words,,memfs_chmod
         .word   memfs_read_words,,memfs_write_words
-        .word   pdp10_ret_zero,,0
+        .word   pdp10_ret_zero,,memfs_mres_prepare_unmount
         .text

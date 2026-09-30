@@ -19,6 +19,13 @@ INIT_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/init/%.dobj)
 INIT_DXR = $(USERLAND_BUILD)/init.dxr
 INIT_MAP = $(USERLAND_BUILD)/init.map
 
+MOUNTALL_C_SRCS = $(COMMON_C_SRCS) init/mountall.c
+MOUNTALL_C_OBJS = $(MOUNTALL_C_SRCS:%.c=$(USERLAND_BUILD)/mountall/%.dobj)
+MOUNTALL_S_SRCS = $(COMMON_S_SRCS) init/memfs_mount.s
+MOUNTALL_S_OBJS = $(MOUNTALL_S_SRCS:%.s=$(USERLAND_BUILD)/mountall/%.dobj)
+MOUNTALL_DXR = $(USERLAND_BUILD)/mountall.dxr
+MOUNTALL_MAP = $(USERLAND_BUILD)/mountall.map
+
 LOGIN_C_SRCS = $(COMMON_C_SRCS) libc/logevent.c login/login.c
 LOGIN_C_OBJS = $(LOGIN_C_SRCS:%.c=$(USERLAND_BUILD)/login/%.dobj)
 LOGIN_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/login/%.dobj)
@@ -65,7 +72,7 @@ LOGDRAIN_MAP = $(USERLAND_BUILD)/logdrain.map
 .DEFAULT_GOAL := build
 .PHONY: build check clean
 
-build: $(INIT_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR) $(DTFSPROBE_DXR) $(D6LZ_DXR) $(LOGDRAIN_DXR)
+build: $(INIT_DXR) $(MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR) $(DTFSPROBE_DXR) $(D6LZ_DXR) $(LOGDRAIN_DXR)
 
 check: $(CHECK_ASMS) build
 
@@ -102,6 +109,18 @@ $(USERLAND_BUILD)/dsh/%.dobj: %.s
 
 $(INIT_DXR): $(INIT_C_OBJS) $(INIT_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(INIT_MAP) $(INIT_S_OBJS) $(INIT_C_OBJS)
+
+$(USERLAND_BUILD)/mountall/%.dobj: %.c
+	mkdir -p $(dir $@)
+	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -c -o $@ $(@:.dobj=.s)
+
+$(USERLAND_BUILD)/mountall/%.dobj: %.s
+	mkdir -p $(dir $@)
+	$(DAS) $(DASFLAGS) -c -o $@ $<
+
+$(MOUNTALL_DXR): $(MOUNTALL_C_OBJS) $(MOUNTALL_S_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(MOUNTALL_MAP) $(MOUNTALL_S_OBJS) $(MOUNTALL_C_OBJS)
 
 $(LOGIN_DXR): $(LOGIN_C_OBJS) $(LOGIN_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(LOGIN_MAP) $(LOGIN_S_OBJS) $(LOGIN_C_OBJS)

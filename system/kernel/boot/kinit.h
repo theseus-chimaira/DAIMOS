@@ -34,7 +34,6 @@ typedef unsigned long kword_t;
 /* Fatal early-boot diagnostics are one SIXBIT halfword, printed without CR/LF. */
 #define KINIT_ERR_B1              0374221UL
 #define KINIT_ERR_RT              0376264UL
-#define KINIT_ERR_MT              0375564UL
 
 extern kword_t kinit_boot_handoff[2];
 
@@ -69,7 +68,7 @@ void kinit_halt(void);
 void kinit_user_trap_init(void);
 void kcore_boot_handoff(kword_t stack_base, kword_t reclaim_base,
     kword_t reclaim_words);
-void kinit_boot(kword_t future_free_words);
+void kinit_boot(void);
 
 #ifdef KINIT_DEBUG
 void kinit_diag_finished(void);
