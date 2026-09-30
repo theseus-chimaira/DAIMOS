@@ -79,6 +79,7 @@ file_check_root:
         jrst    pdp10_ret_neg1
 
 ; int file_check_owner(vnode_t node)
+        .globl  file_check_owner
 file_check_owner:
         add     17,[7,,7]
         movei   2,-6(17)
@@ -210,15 +211,8 @@ file_readchar_fail:
         jrst    file_readchar_done
 
 ; int file_writechar(int fd, unsigned int ch)
-; int file_writechar_reserve(int fd, unsigned int ch, unsigned int reserve)
-; The reserve entry is used by WRITE_CHARS.  On a pipe, reserve is the number
-; of characters still required in the current atomic chunk.  Ordinary VFS
-; streams ignore AC3.
         .globl  file_writechar
-        .globl  file_writechar_reserve
 file_writechar:
-        movei   3,1
-file_writechar_reserve:
         push    17,010
         push    17,2
         pushj   17,file_find
@@ -512,17 +506,14 @@ file_read_words:
         tlnn    4,400000                ; FILE_META_READ
         jrst    file_read_words_fail
         move    010,1
-        move    2,1(010)
-        lsh     2,-2                    ; character offset -> word offset
+        move    2,1(010)                ; word offset
         move    1,(010)
         tlz     1,707070                ; canonical vnode
         move    3,-1(17)
         move    4,(17)
         pushj   17,vfs_read_words
         jumple  1,file_read_words_done
-        move    4,1
-        lsh     4,2
-        addm    4,1(010)
+        addm    1,1(010)
 file_read_words_done:
         sub     17,[2,,2]
         pop     17,010
@@ -531,19 +522,15 @@ file_read_words_fail:
         seto    1,
         jrst    file_read_words_done
 
-; int file_write_words(int fd, const kword_t *buf, unsigned int nwords,
-;     kword_t size_chars)
-; The caller's size_chars word remains at the top of our local argument stack,
-; exactly where vfs_write_words sees its fifth C argument after PUSHJ.
+; int file_write_words(int fd, const kword_t *buf, unsigned int nwords)
         .globl  file_write_words
 file_write_words:
         push    17,010
         push    17,2                    ; buf
         push    17,3                    ; nwords
-        push    17,4                    ; size_chars / VFS arg 5
         pushj   17,file_find
         jumpe   1,file_write_words_fail
-        skipn   -2(17)                  ; buf
+        skipn   -1(17)                  ; buf
         jrst    file_write_words_fail
         move    4,(1)
         tlne    4,100000                ; FILE_META_DIR
@@ -551,19 +538,16 @@ file_write_words:
         tlnn    4,200000                ; FILE_META_WRITE
         jrst    file_write_words_fail
         move    010,1
-        move    2,1(010)
-        lsh     2,-2
+        move    2,1(010)                ; word offset
         move    1,(010)
         tlz     1,707070                ; canonical vnode
-        move    3,-2(17)
-        move    4,-1(17)
+        move    3,-1(17)
+        move    4,(17)
         pushj   17,vfs_write_words
         jumple  1,file_write_words_done
-        move    4,1
-        lsh     4,2
-        addm    4,1(010)
+        addm    1,1(010)
 file_write_words_done:
-        sub     17,[3,,3]
+        sub     17,[2,,2]
         pop     17,010
         popj    17,
 file_write_words_fail:
@@ -817,10 +801,9 @@ file_getcwd_return:
 
 
 ; int file_symlink(const kword_t *target, const kword_t *linkpath)
-; Save target and character count below one parent-vnode/name record.
+; TARGET is one counted packed-SIXBIT path record.
         .globl  vfs_symlink
         .globl  file_check_access
-        .globl  file_check_owner
         .globl  file_symlink
 file_symlink:
         jumpe   1,pdp10_ret_neg1
@@ -830,7 +813,6 @@ file_symlink:
         cail    3,0147                 ; FILE_PATH_MAX_CHARS + 1
         jrst    pdp10_ret_neg1
         push    17,1                   ; target
-        push    17,3                   ; chars
         add     17,[6,,6]
         move    1,2                    ; linkpath
         movei   2,-5(17)              ; dir
@@ -841,18 +823,13 @@ file_symlink:
         movei   2,3
         pushj   17,file_check_access
         jumpn   1,file_symlink_fail
-        move    1,-5(17)              ; dir
-        movei   2,-4(17)              ; leaf
-        move    3,-7(17)              ; target
-        addi    3,1
-        move    4,-6(17)              ; chars
-        movei   5,-5(17)              ; reuse dir slot for output vnode
-        push    17,5
+        move    1,-5(17)
+        movei   2,-4(17)
+        move    3,-6(17)               ; counted target
+        movei   4,-5(17)              ; output vnode
         pushj   17,vfs_symlink
-        sub     17,[1,,1]
 file_symlink_done:
         sub     17,[6,,6]
-        pop     17,3
         pop     17,2
         popj    17,
 file_symlink_fail:
@@ -1031,8 +1008,8 @@ file_remove_fail:
         seto    1,
         jrst    file_remove_done
 
-; int file_truncate(const kword_t *path, kword_t size_chars)
-; One saved size argument plus one vnode local.
+ ; int file_truncate(const kword_t *path, kword_t words)
+; One saved word-count argument plus one vnode local.
         .globl  vfs_truncate
         .globl  file_truncate
 file_truncate:
@@ -1045,10 +1022,7 @@ file_truncate:
         movei   2,2
         pushj   17,file_check_access
         jumpn   1,file_path_onearg_fail
-        move    3,-1(17)
-        move    2,3
-        addi    2,3
-        lsh     2,-2
+        move    2,-1(17)
         move    1,(17)
         pushj   17,vfs_truncate
 file_truncate_done:
@@ -1131,10 +1105,10 @@ file_new_fd_store:
         popj    17,
 
 ; kword_t file_seek(int fd, kword_t offset, unsigned int whence)
-; Seekable regular files already carry a full 36-bit character offset in the
+; Seekable regular files carry a full 36-bit word offset in the
 ; second descriptor word.  SET and CUR therefore need no provider call; END
 ; obtains the current file size through stat.  Negative resulting offsets are
-; rejected.  Return the new character offset, or -1.
+; rejected.  Return the new word offset, or -1.
         .globl  file_seek
 file_seek:
         push    17,2                    ; signed offset
@@ -1166,7 +1140,7 @@ file_seek_end_check:
         pushj   17,vfs_stat
         jumpn   1,file_seek_end_fail
         move    2,-011(17)              ; saved offset
-        add     2,-4(17)                ; st.size_chars
+        add     2,-3(17)                ; st.size_words
         move    1,-7(17)                ; descriptor pointer
         sub     17,[7,,7]
         sub     17,[1,,1]

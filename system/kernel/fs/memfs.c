@@ -195,7 +195,7 @@ memfs_chmod(struct memfs *fs, vnode_t node, unsigned int mode)
 
 int
 memfs_truncate_words(struct memfs *fs, vnode_t node,
-    unsigned int words, kword_t size_chars)
+    unsigned int words)
 {
         unsigned int slot;
 
@@ -203,7 +203,6 @@ memfs_truncate_words(struct memfs *fs, vnode_t node,
             NODE_TYPE(&fs->nodes[slot]) != VFS_TYPE_REG ||
             memfs_resize(fs, slot, words) != 0)
                 return -1;
-        fs->nodes[slot].size_chars = size_chars;
         return 0;
 }
 
@@ -211,5 +210,4 @@ extern int memfs_read_words(const struct memfs *fs, vnode_t node,
     unsigned int off, kword_t *buf, unsigned int nwords);
 
 extern int memfs_write_words(struct memfs *fs, vnode_t node,
-    unsigned int off, const kword_t *buf, unsigned int nwords,
-    kword_t size_chars);
+    unsigned int off, const kword_t *buf, unsigned int nwords);

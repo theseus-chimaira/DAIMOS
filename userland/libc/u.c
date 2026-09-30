@@ -1,9 +1,87 @@
 #include "u.h"
 
+#define U_TEXT_SINK_DATA_WORDS 43U
+#define U_TEXT_SINK_MAX_CHARS  (U_TEXT_SINK_DATA_WORDS * 6U)
+#define U_S6REC_TEXT_HEADER     (1UL << 30)
+
+static int u_text_sink_fd = -1;
+static unsigned int u_text_sink_chars;
+static kword_t u_text_sink_record[U_TEXT_SINK_DATA_WORDS + 1U];
+
+static int
+u_text_sink_emit(int empty)
+{
+        unsigned int words;
+        int rc;
+
+        if (u_text_sink_fd < 0)
+                return 1;
+        if (u_text_sink_chars == 0U && !empty)
+                return 0;
+        u_text_sink_record[0] = U_S6REC_TEXT_HEADER |
+            (kword_t)u_text_sink_chars;
+        words = 1U + (u_text_sink_chars + 5U) / 6U;
+        rc = dsys_write_words(u_text_sink_fd, u_text_sink_record, words);
+        if (rc != (int)words)
+                return 1;
+        u_text_sink_chars = 0U;
+        for (words = 1U; words <= U_TEXT_SINK_DATA_WORDS; ++words)
+                u_text_sink_record[words] = 0UL;
+        return 0;
+}
+
+int
+u_text_sink_attach(int fd)
+{
+        unsigned int i;
+
+        if (fd < 0 || u_text_sink_fd >= 0)
+                return -1;
+        u_text_sink_fd = fd;
+        u_text_sink_chars = 0U;
+        for (i = 0U; i <= U_TEXT_SINK_DATA_WORDS; ++i)
+                u_text_sink_record[i] = 0UL;
+        return 0;
+}
+
+int
+u_text_sink_flush(void)
+{
+        return u_text_sink_emit(0);
+}
+
+int
+u_text_sink_detach(void)
+{
+        int rc;
+
+        if (u_text_sink_fd < 0)
+                return 0;
+        rc = u_text_sink_emit(0);
+        u_text_sink_fd = -1;
+        return rc == 0 ? 0 : -1;
+}
+
 int
 u_putc(int fd, int ch)
 {
-        return dsys_writechar(fd, ch) == 0 ? 0 : 1;
+        unsigned int slot;
+        unsigned int shift;
+
+        if (fd != u_text_sink_fd)
+                return dsys_writechar(fd, ch) == 0 ? 0 : 1;
+        if (ch == '\r')
+                return 0;
+        if (ch == '\n')
+                return u_text_sink_emit(1);
+        if (ch < 040 || ch > 0137 ||
+            u_text_sink_chars >= U_TEXT_SINK_MAX_CHARS)
+                return 1;
+        slot = u_text_sink_chars++;
+        shift = 30U - (slot % 6U) * 6U;
+        u_text_sink_record[1U + slot / 6U] |=
+            ((kword_t)((unsigned int)ch - 040U)) << shift;
+        return 0;
 }
 
 int
@@ -11,11 +89,6 @@ u_puts(int fd, const char *s)
 {
         unsigned int i;
         if (s == 0) return 1;
-        if (fd == 1 || fd == 2) {
-                for (i = 0U; s[i] != 0; ++i) ;
-                if (i == 0U) return 0;
-                return dsys_write_chars(fd, s, i) == 0 ? 0 : 1;
-        }
         for (i = 0U; s[i] != 0; ++i)
                 if (u_putc(fd, (unsigned char)s[i]) != 0) return 1;
         return 0;
@@ -24,9 +97,6 @@ u_puts(int fd, const char *s)
 int
 u_crlf(int fd)
 {
-        static const char crlf[2] = { '\r', '\n' };
-        if (fd == 1 || fd == 2)
-                return dsys_write_chars(fd, crlf, 2U) == 0 ? 0 : 1;
         return u_putc(fd, '\r') != 0 || u_putc(fd, '\n') != 0;
 }
 

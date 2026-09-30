@@ -110,14 +110,24 @@ dsh_run(int argc)
                 if (i + 1 >= argc) return 1;
                 outfd = dsys_open(dsh_argv[i + 1], SYS_O_WRONLY |
                     SYS_O_CREAT | (append == 2 ? SYS_O_APPEND : SYS_O_TRUNC));
-                if (outfd < 0) return 1;
+                if (outfd < 0)
+                        return 1;
+                if (u_text_sink_attach(outfd) != 0) {
+                        (void)dsys_close(outfd);
+                        return 1;
+                }
                 io.out_fd = outfd;
                 outpath = dsh_argv[i + 1];
                 argc = i;
                 break;
         }
         rc = cmd_dispatch(argc, dsh_argv, &io);
-        if (outfd >= 0 && dsys_close(outfd) != 0) rc = 1;
+        if (outfd >= 0) {
+                if (u_text_sink_detach() != 0)
+                        rc = 1;
+                if (dsys_close(outfd) != 0)
+                        rc = 1;
+        }
         if (rc != 0 && outpath != 0) {
                 (void)u_put_s6(io.err_fd, dsh_argv[0]);
                 (void)u_puts(io.err_fd, ": ");

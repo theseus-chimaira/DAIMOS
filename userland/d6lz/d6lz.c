@@ -21,7 +21,7 @@ static unsigned int d6lz_avail;
 static kword_t d6lz_left;
 static int d6lz_infd;
 static int d6lz_outfd;
-static kword_t d6lz_out_chars;
+static kword_t d6lz_out_words;
 
 static int
 s6_same(const kword_t *a, const kword_t *b)
@@ -113,9 +113,9 @@ best_match(unsigned int *distp)
 static int
 write_words(const kword_t *words, unsigned int n)
 {
-        d6lz_out_chars += (kword_t)n * 4U;
-        return dsys_write_words(d6lz_outfd, (kword_t *)words, n,
-            d6lz_out_chars) == (int)n ? 0 : -1;
+        d6lz_out_words += (kword_t)n;
+        return dsys_write_words(d6lz_outfd, (kword_t *)words, n) ==
+            (int)n ? 0 : -1;
 }
 
 static int
@@ -181,7 +181,6 @@ copy_words(kword_t words)
 static int
 compress_raw(const struct vfs_stat *st)
 {
-        if (st->size_chars != st->size_words * 4U) return -1;
         return compress_words(st->size_words);
 }
 
@@ -197,8 +196,7 @@ compress_exec(const struct vfs_stat *st)
         unsigned int bss_words;
         unsigned int flags;
 
-        if (st->size_chars != st->size_words * 4U ||
-            st->size_words < EXEC_DXR_BASE_HDR_WORDS ||
+        if (st->size_words < EXEC_DXR_BASE_HDR_WORDS ||
             dsys_read_words(d6lz_infd, hdr, EXEC_DXR_BASE_HDR_WORDS) !=
             (int)EXEC_DXR_BASE_HDR_WORDS ||
             ((hdr[0] >> 18U) & D6LZ_HALF_MASK) != D6LZ_DXR_MAGIC)
@@ -229,7 +227,7 @@ compress_exec(const struct vfs_stat *st)
         hdr[1] |= EXEC_DXR_F_COMPRESSED;
         if (header_words == EXEC_DXR_BASE_HDR_WORDS)
                 hdr[2] = EXEC_DXR_TEXT_TAG;
-        if (dsys_seek(d6lz_infd, header_words * 4U, SYS_SEEK_SET) ==
+        if (dsys_seek(d6lz_infd, header_words, SYS_SEEK_SET) ==
             (kword_t)-1)
                 return -1;
         if (write_words(hdr, EXEC_DXR_EXT_HDR_WORDS) != 0 ||
@@ -283,7 +281,7 @@ main(int argc, kword_t **argv)
                 (void)dsys_close(d6lz_infd);
                 return fail("OUTPUT", outpath);
         }
-        d6lz_out_chars = 0;
+        d6lz_out_words = 0;
         rc = exec_mode ? compress_exec(&st) : compress_raw(&st);
         if (dsys_close(d6lz_infd) != 0) rc = -1;
         if (dsys_close(d6lz_outfd) != 0) rc = -1;

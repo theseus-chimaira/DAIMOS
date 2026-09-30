@@ -53,8 +53,6 @@ d6fs_provider_write_dirent_raw_done:
         addi    4,6                      ; need
         camg    4,-011(17)               ; fi.size_words
         jrst    d6fs_provider_write_dirent_store
-        movei   5,4                      ; directory entries use four chars/word
-        movem   5,(17)                   ; fifth argument: tail
         move    1,010
         movei   2,-040(17)
         movei   3,-020(17)
@@ -132,7 +130,7 @@ d6fs_provider_free_fcb_done:
         sub     17,[034,,034]
         popj    17,
         .globl  d6fs_provider_resize_fcb
-; int d6fs_provider_resize_fcb(node, fcb, fi, new_words, new_tail)
+; int d6fs_provider_resize_fcb(node, fcb, fi, new_words)
 ;
 ; PDP-10 implementation of the complete resize transaction.  The portable C
 ; implementation remains the reference for non-PDP-10 builds.  Keeping the
@@ -142,7 +140,7 @@ d6fs_provider_free_fcb_done:
 ; Frame (036 words):
 ;   -033..-025 saved AC010..AC016
 ;   -024..-010 saved old FCB (015 words)
-;   -007 node, -006 fcb, -005 fi, -004 new_words, -003 new_tail
+;   -007 node, -006 fcb, -005 fi, -004 new_words, -003 reserved
 ;   -002 old_blocks, -001 new_blocks, 0 new extent_count
 ;   -035 returned start, -034 returned blocks (growth scratch)
 d6fs_provider_resize_fcb:
@@ -158,9 +156,6 @@ d6fs_provider_resize_fcb:
         movem   2,-6(17)
         movem   3,-5(17)
         movem   4,-4(17)
-        move    5,-037(17)               ; fifth C argument: new_tail
-        movem   5,-3(17)
-
         move    1,d6fs_active_reader
         jumpe   1,d6fs_resize_fail
         move    2,1(1)
@@ -174,9 +169,6 @@ d6fs_provider_resize_fcb:
         move    1,-5(17)
         move    2,4(1)                    ; fi.extent_count
         movem   2,(17)
-        skipn   -4(17)
-        setzm   -3(17)                    ; zero-size file has zero tail
-
         move    2,7(1)                    ; fi.size_words
         addi    2,0177
         lsh     2,-7
@@ -368,9 +360,6 @@ d6fs_resize_publish:
         move    6,-6(17)
         move    1,(6)
         and     1,[-07761]
-        move    4,-3(17)
-        lsh     4,010
-        ior     1,4
         move    5,014
         lsh     5,4
         ior     1,5
@@ -402,8 +391,7 @@ d6fs_resize_update_info:
         movem   2,4(1)                   ; fi.extent_count
         move    2,-4(17)
         movem   2,7(1)                   ; fi.size_words
-        move    2,-3(17)
-        movem   2,3(1)                   ; fi.tail
+        setzm   3(1)                   ; former tail field is reserved
         setz    1,
         jrst    d6fs_resize_done
 

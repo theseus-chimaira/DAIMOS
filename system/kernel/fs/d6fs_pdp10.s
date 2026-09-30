@@ -715,7 +715,8 @@ d6fs_mres_create_common:
         jrst    d6fs_mres_create_call
 
 d6fs_mres_symlink:
-        move    6,-1(17)                ; incoming C arg 5: nodep
+        move    6,4                     ; nodep
+        setz    4,                      ; symlink mode/value unused
         movei   5,3                     ; symlink type
 d6fs_mres_create_call:
         add     17,[2,,2]
@@ -984,37 +985,6 @@ d6fs_provider_free_tail_ok:
 d6fs_provider_free_tail_done:
         jrst    d6fs_restore2
 
-        .globl  d6fs_provider_tail
-; unsigned int d6fs_provider_tail(type, words, size_chars)
-d6fs_provider_tail:
-        jumpe   2,pdp10_ret_zero
-        caie    1,3                     ; D6FS_TYPE_SYMLINK
-        jrst    d6fs_provider_tail_four
-        subi    2,1
-        move    5,2
-        lsh     2,2
-        lsh     5,1
-        add     2,5                     ; base = (words - 1) * 6
-        movei   4,6
-        jrst    d6fs_provider_tail_check
-d6fs_provider_tail_four:
-        subi    2,1
-        lsh     2,2                     ; base = (words - 1) * 4
-        movei   4,4
-d6fs_provider_tail_check:
-        camg    3,2
-        jrst    d6fs_provider_tail_full
-        move    5,2
-        add     5,4
-        camle   3,5
-        jrst    d6fs_provider_tail_full
-        sub     3,2
-        move    1,3
-        popj    17,
-d6fs_provider_tail_full:
-        move    1,4
-        popj    17,
-
 ; int d6fs_provider_dirent(vnode_t dir, unsigned int slot,
 ;     struct d6fs_dirent_info *di)
 ; Keep only fixed scratch objects and the two live input values on the stack.
@@ -1092,54 +1062,31 @@ d6fs_provider_vtype_ops:
         movei   1,7                     ; FIFO -> VFS_TYPE_FIFO
 
 ; int d6fs_provider_stat(vnode_t node, struct vfs_stat *st)
-; Decode only FCB info, then derive the character size directly.  D6FS tail
-; zero means a full final word, so only a nonzero tail needs correction.
         .globl  d6fs_provider_stat
 d6fs_provider_stat:
         jumpe   2,pdp10_ret_neg1
         add     17,[013,,013]            ; info + st pointer
-        movem   2,-012(17)               ; keep st outside decoded info
+        movem   2,-012(17)
         movei   2,0
-        movei   3,-011(17)               ; 012-word decoded info
+        movei   3,-011(17)
         pushj   17,d6fs_provider_fcb
         jumpn   1,d6fs_provider_stat_fail
-        skipn   1,-011(17)               ; info.type; FREE is invalid
+        skipn   1,-011(17)
         jrst    d6fs_provider_stat_fail
         pushj   17,d6fs_provider_vtype
         move    2,-012(17)
         movem   1,(2)                    ; st->type
-        move    1,-7(17)                 ; info.mode
+        move    1,-7(17)
         movem   1,1(2)                   ; st->mode
-        move    1,-4(17)                 ; info.uid
+        setzm   2(2)                     ; reserved
+        move    1,-2(17)
+        movem   1,3(2)                   ; st->size_words
+        move    1,-4(17)
         movem   1,4(2)                   ; st->uid
-        move    1,-3(17)                 ; info.gid
+        move    1,-3(17)
         movem   1,5(2)                   ; st->gid
-        move    1,-1(17)                 ; info.mtime
+        move    1,-1(17)
         movem   1,6(2)                   ; st->mtime
-        move    4,-2(17)                 ; info.size_words
-        movem   4,3(2)                   ; st->size_words
-        jumpe   4,d6fs_provider_stat_zero_chars
-        move    1,-011(17)               ; info.type
-        cain    1,3                      ; D6FS_TYPE_SYMLINK
-        jrst    d6fs_provider_stat_symlink
-        imuli   4,4
-        skipn   1,-6(17)                 ; info.tail
-        jrst    d6fs_provider_stat_store_chars
-        subi    4,4
-        add     4,1
-        jrst    d6fs_provider_stat_store_chars
-d6fs_provider_stat_symlink:
-        imuli   4,6
-        skipn   1,-6(17)                 ; info.tail
-        jrst    d6fs_provider_stat_store_chars
-        subi    4,6
-        add     4,1
-d6fs_provider_stat_store_chars:
-        movem   4,2(2)
-        setz    1,
-        jrst    d6fs_provider_stat_done
-d6fs_provider_stat_zero_chars:
-        setzm   2(2)
         setz    1,
         jrst    d6fs_provider_stat_done
 d6fs_provider_stat_fail:
@@ -1303,34 +1250,23 @@ d6fs_provider_chmod_done:
         sub     17,[035,,035]
         popj    17,
 
-; int d6fs_provider_truncate(vnode_t node, unsigned int words,
-;     kword_t size_chars)
-; Keep the FCB/info and live arguments in one compact frame, then pass the
-; computed tail in the normal fifth-argument stack slot to resize_fcb.
+; int d6fs_provider_truncate(vnode_t node, unsigned int words)
         .globl  d6fs_provider_resize_fcb
         .globl  d6fs_provider_truncate
 d6fs_provider_truncate:
-        add     17,[035,,035]            ; FCB + info + node/words/arg5
+        add     17,[035,,035]
         movem   1,-2(17)                 ; node
         movem   2,-1(17)                 ; words
-        movem   3,(17)                   ; size_chars, later new_tail
-        movei   2,-034(17)               ; FCB scratch
-        movei   3,-014(17)               ; decoded info
+        movei   2,-034(17)
+        movei   3,-014(17)
         pushj   17,d6fs_provider_fcb
         jumpn   1,d6fs_provider_truncate_fail
-        move    1,-014(17)               ; info.type
-        cain    1,1                      ; D6FS_TYPE_REG
-        jrst    d6fs_provider_truncate_type_ok
-        caie    1,3                      ; D6FS_TYPE_SYMLINK
+        move    1,-014(17)
+        caie    1,1                      ; regular files only
         jrst    d6fs_provider_truncate_fail
-d6fs_provider_truncate_type_ok:
-        move    4,-013(17)               ; info.flags
+        move    4,-013(17)
         trne    4,021                    ; APPEND | IMMUTABLE
         jrst    d6fs_provider_truncate_fail
-        move    2,-1(17)
-        move    3,(17)
-        pushj   17,d6fs_provider_tail
-        movem   1,(17)                   ; outgoing arg 5: new_tail
         move    1,-2(17)
         movei   2,-034(17)
         movei   3,-014(17)
@@ -1338,7 +1274,7 @@ d6fs_provider_truncate_type_ok:
         pushj   17,d6fs_provider_resize_fcb
         jumpn   1,d6fs_provider_truncate_fail
         pushj   17,pclk_time36
-        movem   1,-031(17)               ; FCB MTIME
+        movem   1,-031(17)
         move    1,d6fs_active_reader
         hrrz    2,-2(17)
         movei   3,-034(17)
@@ -1411,90 +1347,56 @@ d6fs_provider_parent_done:
         popj    17,
 
 ; int d6fs_provider_write_words(vnode_t node, unsigned int off,
-;     const kword_t *buf, unsigned int nwords, kword_t size_chars)
-; Keep all live arguments beside the FCB/info scratch.  The top frame word is
-; reused as the outgoing fifth argument first for resize_fcb (tail), then for
-; reader_write_words (nwords).
+;     const kword_t *buf, unsigned int nwords)
         .globl  d6fs_provider_write_words
         .globl  d6fs_reader_write_words
 d6fs_provider_write_words:
         jumpe   3,pdp10_ret_neg1
-        add     17,[037,,037]            ; FCB + info + node/off/buf/nwords/arg5
+        add     17,[037,,037]
         movem   1,-4(17)                 ; node
         movem   2,-3(17)                 ; off
         movem   3,-2(17)                 ; buf
         movem   4,-1(17)                 ; nwords
-        move    5,-040(17)               ; incoming arg 5: size_chars
-        movem   5,(17)
-        movei   2,-036(17)               ; 020-word FCB scratch
-        movei   3,-016(17)               ; 012-word decoded info
+        movei   2,-036(17)
+        movei   3,-016(17)
         pushj   17,d6fs_provider_fcb
         jumpn   1,d6fs_provider_write_words_fail
-        move    1,-016(17)               ; info.type
-        cain    1,1                      ; D6FS_TYPE_REG
-        jrst    d6fs_provider_write_words_type_ok
-        caie    1,3                      ; D6FS_TYPE_SYMLINK
+        move    1,-016(17)
+        caie    1,1                      ; regular files only
         jrst    d6fs_provider_write_words_fail
-d6fs_provider_write_words_type_ok:
-        move    4,-015(17)               ; info.flags
+        move    4,-015(17)
         trne    4,020                    ; D6FS_FLAG_IMMUTABLE
         jrst    d6fs_provider_write_words_fail
         trnn    4,1                      ; D6FS_FLAG_APPEND
         jrst    d6fs_provider_write_words_append_ok
-        move    5,-3(17)                 ; APPEND requires off == old size
-        came    5,-7(17)                 ; info.size_words
+        move    5,-3(17)
+        came    5,-7(17)                 ; append requires off == old size
         jrst    d6fs_provider_write_words_fail
 d6fs_provider_write_words_append_ok:
         move    5,-3(17)
         add     5,-1(17)                 ; need = off + nwords
-        caml    5,-7(17)
-        jrst    d6fs_provider_write_words_extent_check
-        jrst    d6fs_provider_write_words_store
-d6fs_provider_write_words_extent_check:
-        ; A write can extend the logical character length without allocating
-        ; another word.  Compare final-word tails when NEED == old size so a
-        ; second/third/fourth character in the last word becomes visible.
-        move    1,-016(17)               ; type
-        move    2,5                      ; candidate size in words
-        move    3,(17)                   ; requested size_chars
-        pushj   17,d6fs_provider_tail
-        movem   1,(17)                   ; outgoing arg 5: candidate tail
-        move    4,-3(17)
-        add     4,-1(17)                 ; recompute need after helper call
-        camg    4,-7(17)
-        jrst    d6fs_provider_write_words_same_words
+        camle   5,-7(17)                 ; need <= old size: overwrite only
         jrst    d6fs_provider_write_words_resize
-d6fs_provider_write_words_same_words:
-        caml    4,-7(17)                 ; NEED < old size: overwrite only
-        jrst    d6fs_provider_write_words_tail_check
-        jrst    d6fs_provider_write_words_store
-d6fs_provider_write_words_tail_check:
-        skipn   5,-013(17)               ; old tail 0 means final word is full
-        jrst    d6fs_provider_write_words_store
-        skipn   6,(17)                   ; new tail 0 extends to a full word
-        jrst    d6fs_provider_write_words_resize
-        camg    6,5                      ; extend only when new tail is larger
         jrst    d6fs_provider_write_words_store
 d6fs_provider_write_words_resize:
-        move    1,-4(17)                 ; node
-        movei   2,-036(17)               ; FCB
-        movei   3,-016(17)               ; info
-        move    4,-3(17)
-        add     4,-1(17)                 ; new size in words
+        move    1,-4(17)
+        movei   2,-036(17)
+        movei   3,-016(17)
+        move    4,5
         pushj   17,d6fs_provider_resize_fcb
         jumpn   1,d6fs_provider_write_words_fail
 d6fs_provider_write_words_store:
         move    5,-1(17)
-        movem   5,(17)                   ; outgoing arg 5: nwords
+        movem   5,(17)                   ; fifth arg: nwords
         move    1,d6fs_active_reader
         movei   2,-036(17)
         move    3,-3(17)
         move    4,-2(17)
         pushj   17,d6fs_reader_write_words
         jumpl   1,d6fs_provider_write_words_fail
-        movem   1,(17)                   ; preserve transferred word count
+        movem   1,(17)
         pushj   17,pclk_time36
-        movem   1,-033(17)               ; FCB MTIME: -036 + 3
+        movem   1,-033(17)
         move    1,d6fs_active_reader
         hrrz    2,-4(17)
         movei   3,-036(17)

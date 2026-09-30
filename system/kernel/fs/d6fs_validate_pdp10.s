@@ -44,21 +44,8 @@ d6fs_fcb_decode_valid:
         move    7,4(4)
         caile   7,7                     ; at most seven extents
         jrst    d6fs_fcb_invalid
-        move    7,3(4)
-        caie    6,3
-        jrst    d6fs_fcb_tail_nonsymlink
-        caig    7,6                     ; symlink tail is 0..6
+        skipn   7,3(4)                  ; former tail field is reserved zero
         jrst    d6fs_fcb_reserved
-d6fs_fcb_invalid:
-        setz    1,
-        jrst    d6fs_fcb_done
-d6fs_fcb_tail_nonsymlink:
-        caie    6,4                     ; FIFO tail is exactly zero
-        jrst    d6fs_fcb_tail4
-        jumpe   7,d6fs_fcb_reserved
-        jrst    d6fs_fcb_invalid
-d6fs_fcb_tail4:
-        caile    7,4                     ; regular/directory tail is 0..4
         jrst    d6fs_fcb_invalid
 
         ; Reserved representation bits and words must remain zero.
@@ -131,6 +118,10 @@ d6fs_fcb_extent_next:
         camle   7,010
         jrst    d6fs_fcb_invalid
         movei   1,1
+        jrst    d6fs_fcb_done
+
+d6fs_fcb_invalid:
+        setz    1,
 
 d6fs_fcb_done:
         pop     17,011

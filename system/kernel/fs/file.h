@@ -17,7 +17,7 @@
 #define FILE_FD_MAX          15U
 
 /*
- * FILE descriptors use two words.  The complete 36-bit character offset is
+ * FILE descriptors use two words.  The complete 36-bit word offset is
  * kept intact.  Descriptor metadata occupies the nine bits which are known
  * zero in every canonical DAIMOS vnode: providers, mount ids and local kinds
  * are all 0..7 even though VFS reserves six bits for each field.
@@ -31,7 +31,7 @@
  */
 struct file {
         kword_t node_meta;
-        kword_t off_chars;
+        kword_t offset;
 };
 
 #define FILE_NODE_VNODE_MASK       070707777777UL
@@ -61,8 +61,7 @@ void file_close_all(void);
 int file_readchar(int fd);
 int file_writechar(int fd, unsigned int ch);
 int file_read_words(int fd, kword_t *buf, unsigned int nwords);
-int file_write_words(int fd, const kword_t *buf, unsigned int nwords,
-    kword_t size_chars);
+int file_write_words(int fd, const kword_t *buf, unsigned int nwords);
 int file_readdir(int fd, struct vfs_dirent *ent);
 int file_stat_path(const kword_t *path, struct vfs_stat *st);
 int file_mkdir(const kword_t *path, unsigned int mode);
@@ -70,7 +69,7 @@ int file_mkfifo(const kword_t *path, unsigned int mode);
 int file_symlink(const kword_t *target, const kword_t *linkpath);
 int file_unlink(const kword_t *path);
 int file_rmdir(const kword_t *path);
-int file_truncate(const kword_t *path, kword_t chars);
+int file_truncate(const kword_t *path, kword_t words);
 int file_rename(const kword_t *oldpath, const kword_t *newpath);
 int file_chdir(const kword_t *path);
 int file_getcwd(kword_t *buf, unsigned int nwords);

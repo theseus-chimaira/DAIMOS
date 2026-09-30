@@ -28,7 +28,7 @@ struct sink_state {
         unsigned int unit;
         unsigned int severity;
         int fd;
-        kword_t file_chars;
+        kword_t file_words;
         kword_t path[U_PATH_WORDS];
         kword_t oldpath[U_PATH_WORDS];
 };
@@ -219,12 +219,12 @@ sink_file_open(struct sink_state *s)
                         (void)dsys_unlink(s->oldpath);
                         if (dsys_rename(s->path, s->oldpath) != 0)
                                 return -1;
-                        s->file_chars = 0UL;
+                        s->file_words = 0UL;
                 } else {
-                        s->file_chars = st.size_chars;
+                        s->file_words = st.size_words;
                 }
         } else {
-                s->file_chars = 0UL;
+                s->file_words = 0UL;
         }
         s->fd = dsys_open(s->path,
             SYS_O_WRONLY | SYS_O_CREAT | SYS_O_APPEND);
@@ -273,11 +273,10 @@ sink_record(struct sink_state *s, const kword_t *record)
                 return console_record(record, s->severity);
         if (s->kind == SINK_FILE) {
                 n = dsys_write_words(s->fd, (kword_t *)record,
-                    BLOCKSET_BLOCK_WORDS,
-                    s->file_chars + BLOCKSET_BLOCK_WORDS * 4UL);
+                    BLOCKSET_BLOCK_WORDS);
                 if (n != (int)BLOCKSET_BLOCK_WORDS)
                         return -1;
-                s->file_chars += BLOCKSET_BLOCK_WORDS * 4UL;
+                s->file_words += BLOCKSET_BLOCK_WORDS;
                 return 0;
         }
         if (s->kind == SINK_MTC) {

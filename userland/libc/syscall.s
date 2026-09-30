@@ -23,7 +23,6 @@
         .globl dsys_meminfo
         .globl dsys_readchar
         .globl dsys_writechar
-        .globl dsys_write_chars
         .globl dsys_halt
         .globl dsys_chmod
         .globl dsys_dtfs_mount
@@ -56,8 +55,6 @@ dsys_exit:             uuo 040,0(1)
 dsys_open:             uuo 041,0(1)
                        popj 17,
 dsys_close:            uuo 042,0(1)
-                       popj 17,
-dsys_write_chars:      uuo 043,0(1)
                        popj 17,
 dsys_chdir:            uuo 045,0(1)
                        popj 17,

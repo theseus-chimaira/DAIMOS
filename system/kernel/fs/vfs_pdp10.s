@@ -416,35 +416,32 @@ vfs_create_ro:
         sub     17,[5,,5]
         jrst    pdp10_ret_neg1
 
-; int vfs_symlink(dir, name, target, target_chars, nodep)
+; int vfs_symlink(dir, name, counted_target, nodep)
         .globl  vfs_symlink
 vfs_symlink:
-        skipn   5,-1(17)
-        jrst    pdp10_ret_neg1
+        jumpe   4,pdp10_ret_neg1
         push    17,1
         push    17,2
         push    17,3
         push    17,4
-        push    17,5
         pushj   17,vfs_readonly
         jumpn   1,vfs_symlink_ro
-        pop     17,5
         pop     17,4
         pop     17,3
         pop     17,2
         pop     17,1
         add     17,[3,,3]
-        movem   5,(17)
+        movem   4,(17)                  ; caller nodep
         movem   1,-1(17)
-        setzm   -2(17)
-        move    5,4                    ; request e normally nodep; use result ptr
-        movei   5,-2(17)
+        setzm   -2(17)                  ; provider result vnode
+        movei   4,-2(17)               ; request d = provider nodep
+        setz    5,                      ; request e unused
         ldb     7,[POINT 6,1,5]
         movei   6,010                  ; FS_MRES_OP_SYMLINK
         pushj   17,fs_provider_reg_call
         jrst    vfs_create_store_result
 vfs_symlink_ro:
-        sub     17,[5,,5]
+        sub     17,[4,,4]
         jrst    pdp10_ret_neg1
 
 ; int vfs_rename(olddir, oldname, newdir, newname)
@@ -633,15 +630,16 @@ vfs_unlink:
 vfs_truncate:
         push    17,1
         push    17,2
-        push    17,3
         pushj   17,vfs_readonly
-        jumpn   1,vfs_mutate3_ro
-        pop     17,3
+        jumpn   1,vfs_truncate_ro
         pop     17,2
         pop     17,1
         ldb     7,[POINT 6,1,5]
         movei   6,13                   ; FS_MRES_OP_TRUNCATE
         jrst    fs_provider_reg_call
+vfs_truncate_ro:
+        sub     17,[2,,2]
+        jrst    pdp10_ret_neg1
 
         .globl  vfs_chmod
 vfs_chmod:
@@ -718,7 +716,6 @@ vfs_write_words:
         pop     17,3
         pop     17,2
         pop     17,1
-        move    5,-1(17)               ; request e / C arg 5: size_chars
         ldb     7,[POINT 6,1,5]
         movei   6,16                   ; FS_MRES_OP_WRITE_WORDS
         jrst    fs_provider_reg_call
@@ -744,9 +741,7 @@ fs_block_workspace:
         .block  0200
         .text
 
-; Character I/O is deliberately handwritten.  The C versions need large
-; callee-save frames around the short stat/read/write sequence.  These leaf
-; wrappers use only caller-scratch ACs and ordinary PDP-6 stack operations.
+; Character I/O is stream/device-only.  Regular files are word streams.
         .globl  mfsproc_readchar
         .globl  mfsdev_readchar
 
@@ -759,137 +754,18 @@ vfs_readchar:
         jrst    mfsproc_readchar
         cain    4,2
         jrst    mfsdev_readchar
-
-        add     17,[012,,012]
-        movem   1,-011(17)             ; node
-        movem   2,-010(17)             ; character offset
-        movem   3,-7(17)               ; result pointer
-        movei   2,-6(17)               ; seven-word struct vfs_stat
-        pushj   17,vfs_stat
-        jumpn   1,vfs_readchar_fail
-        move    1,-6(17)               ; st.type
-        caie    1,2                    ; VFS_TYPE_REG
-        jrst    vfs_readchar_fail
-
-        ; Compare unsigned character offset with st.size_chars.
-        move    2,-010(17)
-        tlc     2,0400000
-        move    3,-4(17)
-        tlc     3,0400000
-        caml    2,3
-        jrst    vfs_readchar_eof
-
-        move    2,-010(17)
-        move    4,2
-        andi    4,3                    ; quarter-word number
-        lsh     2,-2                   ; word offset
-        move    1,-011(17)
-        movei   3,(17)                 ; one-word buffer
-        movei   5,4                    ; preserve bi across call in stack
-        movem   4,-1(17)
-        movei   4,1
-        pushj   17,vfs_read_words
-        caie    1,1
-        jrst    vfs_readchar_fail
-
-        move    4,-1(17)
-        move    5,4
-        lsh     5,3
-        add     5,4                    ; 9 * bi
-        move    6,(17)
-        lsh     6,-033(5)              ; right by 27 - 9*bi
-        andi    6,0777
-        move    3,-7(17)
-        movem   6,(3)
-        movei   1,1
-        jrst    vfs_readchar_done
-vfs_readchar_eof:
-        setz    1,
-        jrst    vfs_readchar_done
-vfs_readchar_fail:
-        seto    1,
-vfs_readchar_done:
-        sub     17,[012,,012]
-        popj    17,
+        jrst    pdp10_ret_neg1
 
 ; int vfs_writechar(vnode_t node, kword_t off, unsigned int ch)
         .globl  vfs_writechar
 vfs_writechar:
         ldb     4,[POINT 6,1,5]
-        caie    4,2                    ; MonitorFS device view_PROVIDER
-        jrst    vfs_writechar_regular
-        ldb     4,[POINT 6,1,17]       ; VFS local kind
-        cain    4,2                    ; MonitorFS device view_KIND_DEVICE
+        caie    4,2
+        jrst    pdp10_ret_neg1
+        ldb     4,[POINT 6,1,17]
+        caie    4,2
+        jrst    pdp10_ret_neg1
         jrst    pdp10_ret_busy          ; VFS_DEVICE_IO = -3
-
-vfs_writechar_regular:
-        add     17,[012,,012]
-        movem   1,-011(17)             ; node
-        movem   2,-010(17)             ; character offset
-        movem   3,-7(17)               ; character
-        movei   2,-6(17)               ; seven-word struct vfs_stat
-        pushj   17,vfs_stat
-        jumpn   1,vfs_writechar_fail
-        move    1,-6(17)
-        caie    1,2                    ; VFS_TYPE_REG
-        jrst    vfs_writechar_fail
-
-        move    2,-010(17)
-        addi    2,1
-        movem   2,(17)                 ; end_chars; later fifth argument
-        addi    2,3
-        lsh     2,-2                   ; ceil(end_chars / 4)
-        move    3,-3(17)               ; st.size_words
-        camle   2,3
-        jrst    vfs_writechar_grow
-vfs_writechar_after_grow:
-        move    2,-010(17)
-        lsh     2,-2                   ; word offset
-        movem   2,-1(17)
-        setzm   -4(17)                 ; read beyond EOF as zero word
-        move    1,-011(17)
-        movei   3,-4(17)
-        movei   4,1
-        pushj   17,vfs_read_words
-
-        move    3,-010(17)
-        andi    3,3                    ; quarter-word number
-        move    4,3
-        lsh     4,3
-        add     4,3                    ; 9 * bi
-        movei   5,033
-        sub     5,4                    ; shift = 27 - 9*bi
-        movei   4,0777
-        lsh     4,0(5)
-        andca   4,-4(17)
-        move    3,-7(17)
-        andi    3,0777
-        lsh     3,0(5)
-        ior     4,3
-        movem   4,-4(17)
-
-        move    1,-011(17)
-        move    2,-1(17)
-        movei   3,-4(17)
-        movei   4,1
-        pushj   17,vfs_write_words
-        caie    1,1
-        jrst    vfs_writechar_fail
-        setz    1,
-        jrst    vfs_writechar_done
-
-vfs_writechar_grow:
-        move    1,-011(17)
-        move    3,(17)                  ; end_chars
-        pushj   17,vfs_truncate
-        jumpn   1,vfs_writechar_fail
-        jrst    vfs_writechar_after_grow
-
-vfs_writechar_fail:
-        seto    1,
-vfs_writechar_done:
-        sub     17,[012,,012]
-        popj    17,
 
 ; Compact mount policy.  The four-entry namespace table is a bounded PDP-6
 ; structure, so keeping the policy in fixed assembly avoids the C callee-save

@@ -1,7 +1,7 @@
 ; syscall_dispatch.s -- native PDP-6 monitor-UUO syscall dispatcher.
 ;
 ; Monitor UUOs 040..077 are the conventional userspace syscall ABI.  UUO 043
-; is the bulk character-stream write path.  The hardware
+; is intentionally unused in the SIXBIT-only 0.9/1.0 ABI.  The hardware
 ; leaves the trapped UUO at 000040 and its computed effective address at
 ; 000041.  mach_user materializes that effective address in AC1, so real
 ; arguments arrive here in AC1..AC4 and AC1 also carries the result.
@@ -27,7 +27,6 @@
         .globl  proc_current_slot
         .globl  pipe_create
         .globl  file_mkfifo
-        .globl  file_writechar_reserve
         .globl  exec_replace_current
         .globl  proc_exec_enter
         .globl  pclk_time36
@@ -54,7 +53,7 @@ exec_native_half_select:
         hrrz    5,exec_native_table(6)
 exec_native_table:
         .word   %L66,,%L67
-        .word   %L72,,native_sys_write_chars
+        .word   %L72,,pdp10_ret_neg1
         .word   native_sys_getchar,,%L75
         .word   %L80,,%L90
         .word   %L97,,%L102
@@ -89,84 +88,6 @@ native_sys_map_one_ok:
 ; potentially blocking kernel call.  The release helper preserves AC1.
 native_sys_mapped_return:
         jrst    vm_user_mapping_release
-
-; UUO 043 WRITE_CHARS: AC1 fd, AC2 9-bit byte pointer, AC3 chars.
-; Preserve the one-trap bulk ABI for ordinary files and future pipe streams.
-; CTY remains fast enough for bring-up; the later pipe bulk step may specialize
-; device/pipe transfer after measurements without changing this ABI.
-native_sys_write_chars:
-        ; AC10-12 carry the translated stream cursor across pipe calls.
-        ; They are callee-saved by the PDP-10 C ABI; the original user values
-        ; are restored before leaving the syscall.
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,1                  ; fd
-        push    17,2                  ; user byte pointer
-        push    17,3                  ; chunk counter scratch
-        hrrz    011,3                 ; characters remaining
-        jumpe   011,native_sys_write_chars_empty
-        move    010,2
-        hrrz    1,2
-        pushj   17,native_sys_map_one
-        jumpe   1,native_sys_write_chars_map_fail
-        hrr     010,1                 ; translated byte pointer
-        add     3,4                   ; one-past physical user end
-        move    012,3
-
-        ; The first pipe character in each <= PIPE_BUF chunk waits for enough
-        ; room for the complete chunk.  The remaining calls reduce that
-        ; reservation one character at a time.  Executive code does not
-        ; schedule another process between these non-waiting calls, preserving
-        ; atomicity without a separate pipe reservation object.
-native_sys_write_chars_chunk:
-        move    1,011
-        caile   1,0200                ; PIPE_BUF = 128 characters
-        movei   1,0200
-        movem   1,(17)
-
-native_sys_write_chars_loop:
-        hrrz    4,010
-        caml    4,012
-        jrst    native_sys_write_chars_fail
-        ldb     2,010
-        move    1,-2(17)              ; saved fd
-        hrrz    1,1
-        move    3,(17)                ; remaining atomic reservation
-        pushj   17,file_writechar_reserve
-        camn    1,[-3]                ; VFS_DEVICE_IO
-        jrst    native_sys_write_chars_device
-        jumpn   1,native_sys_write_chars_fail
-native_sys_write_chars_next:
-        soje    011,native_sys_write_chars_ok
-        ibp     010
-        sosle   (17)
-        jrst    native_sys_write_chars_loop
-        jrst    native_sys_write_chars_chunk
-native_sys_write_chars_device:
-        move    1,2
-        pushj   17,native_sys_putchar
-        jumpn   1,native_sys_write_chars_fail
-        jrst    native_sys_write_chars_next
-native_sys_write_chars_empty:
-        setz    1,
-        jrst    native_sys_write_chars_restore
-native_sys_write_chars_ok:
-        setz    1,
-native_sys_write_chars_done:
-        pushj   17,vm_user_mapping_release
-native_sys_write_chars_restore:
-        sub     17,[3,,3]
-        pop     17,012
-        pop     17,011
-        pop     17,010
-        popj    17,
-native_sys_write_chars_fail:
-        seto    1,
-        jrst    native_sys_write_chars_done
-native_sys_write_chars_map_fail:
-        seto    1,
-        jrst    native_sys_write_chars_restore
 
 %L66:
         push    17,1
@@ -216,17 +137,15 @@ native_sys_write_chars_map_fail:
         pushj   17,file_read_words
         jrst    native_sys_mapped_return
 %L86:
-        ; AC1 fd, AC2 buffer, AC3 word count, AC4 buffer size.
+        ; AC1 fd, AC2 buffer, AC3 word count.
         move    6,1
         move    7,3
-        move    5,4
         move    1,2
         pushj   17,native_sys_map_one
         jumpe   1,%L137
         move    2,1
         hrrz    1,6
         hrrz    3,7
-        move    4,5
         pushj   17,file_write_words
         jrst    native_sys_mapped_return
 ; Translate two user pointers in AC1/AC2.  Return mapped pointers in AC1/AC2

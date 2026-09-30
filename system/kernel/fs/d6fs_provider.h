@@ -43,10 +43,9 @@ int d6fs_provider_unlink(vnode_t dir, const struct vfs_name *name);
 int d6fs_provider_rename(vnode_t olddir,
     const struct vfs_name *oldname, vnode_t newdir,
     const struct vfs_name *newname);
-int d6fs_provider_truncate(vnode_t node, unsigned int words,
-    kword_t size_chars);
+int d6fs_provider_truncate(vnode_t node, unsigned int words);
 int d6fs_provider_chmod(vnode_t node, unsigned int mode);
 int d6fs_provider_write_words(vnode_t node, unsigned int off,
-    const kword_t *buf, unsigned int nwords, kword_t size_chars);
+    const kword_t *buf, unsigned int nwords);
 
 #endif

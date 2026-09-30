@@ -85,7 +85,7 @@ struct vfs_dirent {
 struct vfs_stat {
         unsigned int type;
         unsigned int mode;
-        kword_t size_chars;
+        kword_t reserved;
         kword_t size_words;
         unsigned int uid;
         unsigned int gid;
@@ -122,18 +122,18 @@ int vfs_mkfifo(vnode_t dir, const struct vfs_name *name,
 int vfs_mkdir(vnode_t dir, const struct vfs_name *name,
     unsigned int mode, vnode_t *nodep);
 int vfs_symlink(vnode_t dir, const struct vfs_name *name,
-    const kword_t *target, unsigned int target_chars, vnode_t *nodep);
+    const kword_t *target, vnode_t *nodep);
 int vfs_unlink(vnode_t dir, const struct vfs_name *name);
 int vfs_rename(vnode_t olddir, const struct vfs_name *oldname,
     vnode_t newdir, const struct vfs_name *newname);
-int vfs_truncate(vnode_t node, unsigned int words, kword_t size_chars);
+int vfs_truncate(vnode_t node, unsigned int words);
 int vfs_chmod(vnode_t node, unsigned int mode);
 int vfs_chown(vnode_t node, unsigned int uid, unsigned int gid);
 int vfs_utime(vnode_t node, kword_t mtime);
 int vfs_read_words(vnode_t node, unsigned int off, kword_t *buf,
     unsigned int nwords);
 int vfs_write_words(vnode_t node, unsigned int off,
-    const kword_t *buf, unsigned int nwords, kword_t size_chars);
+    const kword_t *buf, unsigned int nwords);
 int vfs_readchar(vnode_t node, kword_t off, unsigned int *chp);
 int vfs_writechar(vnode_t node, kword_t off, unsigned int ch);
 int vfs_sync(vnode_t node);

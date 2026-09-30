@@ -196,7 +196,7 @@ mfsproc_stat(vnode_t node, struct vfs_stat *st)
         } else {
                 return -1;
         }
-        st->size_chars = 0UL;
+        st->reserved = 0UL;
         st->size_words = 0UL;
         return 0;
 }
@@ -506,7 +506,7 @@ mfsdom_stat(vnode_t node, struct vfs_stat *st)
         } else {
                 return -1;
         }
-        st->size_chars = 0UL;
+        st->reserved = 0UL;
         return 0;
 }
 

@@ -499,7 +499,7 @@ dtfs_stat(vnode_t node, struct vfs_stat *st)
                 st->type = VFS_TYPE_DIR;
                 st->mode = (personality != 0U && vfs_readonly(node)) ?
                     0555U : 0777U;
-                st->size_chars = 0;
+                st->reserved = 0;
                 st->size_words = 0;
                 return 0;
         }
@@ -523,7 +523,7 @@ dtfs_stat(vnode_t node, struct vfs_stat *st)
             (personality != 0U ? 0666U : 0666U |
             ((dtfs_dir[slot] & 1UL) != 0 ? 0111U : 0U));
         st->size_words = words;
-        st->size_chars = (kword_t)words * 4U;
+        st->reserved = 0;
         return 0;
 }
 
@@ -692,9 +692,8 @@ dtfs_rename(vnode_t olddir, const struct vfs_name *oldname,
 }
 
 int
-dtfs_truncate(vnode_t node, unsigned int words, kword_t size_chars)
+dtfs_truncate(vnode_t node, unsigned int words)
 {
-        (void)size_chars;
         return dtfs_resize(node, words);
 }
 
@@ -969,9 +968,8 @@ dtfs_read_words(vnode_t node, unsigned int off, kword_t *buf,
 
 int
 dtfs_write_words(vnode_t node, unsigned int off,
-    const kword_t *buf, unsigned int nwords, kword_t size_chars)
+    const kword_t *buf, unsigned int nwords)
 {
-        (void)size_chars;
         return dtfs_transfer_words(node, off, (kword_t *)buf,
             nwords, 1);
 }

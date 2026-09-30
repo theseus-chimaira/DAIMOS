@@ -11,14 +11,13 @@
 #define MEMFS_F_WRITABLE             0004U
 
 /*
- * A node is deliberately eight PDP-10 words.  The low 18 bits of meta hold
+ * A node is deliberately seven PDP-10 words.  The low 18 bits of meta hold
  * type/mode/flags, while the high half holds the parent slot.  data packs
  * the pool/image word offset in the high half and its length in the low.
  */
 struct memfs_node {
         struct vfs_name name;
         kword_t meta;
-        kword_t size_chars;
         kword_t data;
 };
 
@@ -51,14 +50,13 @@ int memfs_rename(struct memfs *fs, vnode_t olddir,
     const struct vfs_name *oldname, vnode_t newdir,
     const struct vfs_name *newname);
 int memfs_truncate_words(struct memfs *fs, vnode_t node,
-    unsigned int words, kword_t size_chars);
+    unsigned int words);
 int memfs_chmod(struct memfs *fs, vnode_t node,
     unsigned int mode);
 int memfs_read_words(const struct memfs *fs, vnode_t node,
     unsigned int off, kword_t *buf, unsigned int nwords);
 int memfs_write_words(struct memfs *fs, vnode_t node,
-    unsigned int off, const kword_t *buf, unsigned int nwords,
-    kword_t size_chars);
+    unsigned int off, const kword_t *buf, unsigned int nwords);
 
 
 #endif

@@ -1,4 +1,5 @@
 #include "cmd.h"
+#include "text.h"
 #include "dtfs_media.h"
 
 static int
@@ -68,59 +69,34 @@ cmd_echo(int argc, kword_t **argv, struct u_io *io)
 static int
 cmd_cat(int argc, kword_t **argv, struct u_io *io)
 {
-        struct vfs_stat st;
-        kword_t buf[32];
-        kword_t remaining;
-        unsigned int nchars;
+        struct u_text_reader r;
+        char line[259];
         int i;
-        int fd;
-        int ch;
         int n;
         int rc;
 
         if (argc < 2) return cmd_err(io, "CAT", 0);
         rc = 0;
         for (i = 1; i < argc; ++i) {
-                if (dsys_stat(argv[i], &st) != 0) {
-                        rc = cmd_err(io, "CAT", argv[i]);
-                        continue;
-                }
-                fd = dsys_open(argv[i], SYS_O_RDONLY);
-                if (fd < 0) { rc = cmd_err(io, "CAT", argv[i]); continue; }
-
-                if ((io->out_fd == 1 || io->out_fd == 2) &&
-                    st.type == VFS_TYPE_REG && st.size_chars != 0) {
-                        remaining = st.size_chars;
-                        while (remaining != 0) {
-                                n = dsys_read_words(fd, buf, 32U);
-                                if (n < 0) break;
-                                if (n == 0) { rc = 1; break; }
-                                nchars = (unsigned int)n * 4U;
-                                if ((kword_t)nchars > remaining)
-                                        nchars = (unsigned int)remaining;
-                                if (dsys_write_nonets(io->out_fd, buf, nchars) != 0) {
-                                        rc = 1;
-                                        break;
-                                }
-                                remaining -= (kword_t)nchars;
-                        }
-                        if (remaining == 0 || rc != 0) {
-                                if (dsys_close(fd) != 0) rc = 1;
+                r.fd = -1;
+                {
+                        int fd = dsys_open(argv[i], SYS_O_RDONLY);
+                        if (fd < 0 || u_text_open_fd(&r, fd) != 0) {
+                                if (fd >= 0) (void)dsys_close(fd);
+                                rc = cmd_err(io, "CAT", argv[i]);
                                 continue;
                         }
-                        /* Pseudo-files may report REG but expose only the
-                         * character interface.  A failed READ_WORDS does not
-                         * advance the descriptor, so continue exactly there. */
                 }
                 for (;;) {
-                        ch = dsys_readchar(fd);
-                        if (ch == -2) break;
-                        if (ch < 0 || u_putc(io->out_fd, ch) != 0) {
+                        n = u_text_getline(&r, line, sizeof(line));
+                        if (n == U_TEXT_EOF) break;
+                        if (n < 0 || u_puts(io->out_fd, line) != 0 ||
+                            u_crlf(io->out_fd) != 0) {
                                 rc = 1;
                                 break;
                         }
                 }
-                if (dsys_close(fd) != 0) rc = 1;
+                u_text_close(&r);
         }
         return rc;
 }
@@ -219,8 +195,7 @@ cmd_stat(int argc, kword_t **argv, struct u_io *io)
         for (i = 1; i < argc; ++i) {
                 if (dsys_stat(argv[i], &st) != 0) { rc = cmd_err(io, "STAT", argv[i]); continue; }
                 if (u_put_s6(io->out_fd, argv[i]) != 0 || u_puts(io->out_fd, " TYPE ") != 0 ||
-                    u_put_uint(io->out_fd, st.type) != 0 || u_puts(io->out_fd, " CHARS ") != 0 ||
-                    u_put_uint(io->out_fd, st.size_chars) != 0 || u_puts(io->out_fd, " WORDS ") != 0 ||
+                    u_put_uint(io->out_fd, st.type) != 0 || u_puts(io->out_fd, " WORDS ") != 0 ||
                     u_put_uint(io->out_fd, st.size_words) != 0 || u_puts(io->out_fd, " MODE ") != 0 ||
                     u_put_octal(io->out_fd, st.mode, 4U) != 0 || u_puts(io->out_fd, " UID ") != 0 ||
                     u_put_uint(io->out_fd, st.uid) != 0 || u_puts(io->out_fd, " GID ") != 0 ||
@@ -254,7 +229,6 @@ cmd_cp(int argc, kword_t **argv, struct u_io *io)
 {
         struct vfs_stat st;
         kword_t buf[127];
-        kword_t chars;
         int in, out, n, rc;
 
         if (argc != 3) return cmd_err(io, "CP", 0);
@@ -265,14 +239,11 @@ cmd_cp(int argc, kword_t **argv, struct u_io *io)
         out = dsys_open(argv[2], SYS_O_WRONLY | SYS_O_CREAT | SYS_O_TRUNC);
         if (out < 0) { (void)dsys_close(in); return cmd_err(io, "CP", argv[2]); }
         rc = 0;
-        chars = 0;
         for (;;) {
                 n = dsys_read_words(in, buf, 127U);
                 if (n == 0) break;
                 if (n < 0) { rc = 1; break; }
-                chars += (kword_t)(unsigned int)n * 4U;
-                if (chars > st.size_chars) chars = st.size_chars;
-                if (dsys_write_words(out, buf, (unsigned int)n, chars) != n) {
+                if (dsys_write_words(out, buf, (unsigned int)n) != n) {
                         rc = 1;
                         break;
                 }

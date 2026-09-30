@@ -10,7 +10,7 @@
         .globl  memfs_shift_after
 memfs_shift_after:
         move    5,(1)           ; nodes
-        addi    5,010           ; slot 1, nodes are exactly 8 words
+        addi    5,7             ; slot 1, nodes are exactly 7 words
         movei   6,1
 memfs_shift_check:
         camge   6,1(1)          ; i >= node_count
@@ -23,33 +23,33 @@ memfs_shift_body:
         andi    7,3             ; USED/IMAGE
         caie    7,1             ; used and not image-backed
         jrst    memfs_shift_next
-        hlrz    7,7(5)          ; data word offset
+        hlrz    7,6(5)          ; data word offset
         camge   7,2
         jrst    memfs_shift_next
         add     7,3             ; signed delta
-        hrlm    7,7(5)          ; preserve low-half data length
+        hrlm    7,6(5)          ; preserve low-half data length
 memfs_shift_next:
         addi    6,1
-        addi    5,010
+        addi    5,7
         jrst    memfs_shift_check
 
 ; int memfs_resize(struct memfs *fs, unsigned int slot,
 ;     unsigned int words)
 ; fs layout: nodes,node_count,pool,pool_words,used_words,image_data.
-; node layout is 8 words; meta at +5, packed data at +7.
+; node layout is 7 words; meta at +5, packed data at +6.
         .globl  memfs_resize
 memfs_resize:
         move    4,2
-        lsh     4,3
+        imuli   4,7
         add     4,(1)           ; node = fs->nodes + slot
         move    0,5(4)
         andi    0,6             ; require WRITABLE and reject IMAGE
         caie    0,4
         jrst    pdp10_ret_neg1
-        hrrz    5,7(4)          ; old word count
+        hrrz    5,6(4)          ; old word count
         camn    3,5
         jrst    memfs_resize_ok
-        hlrz    6,7(4)          ; data start
+        hlrz    6,6(4)          ; data start
         jumpl   3,memfs_resize_grow ; unsigned high half is always > old
         camg    3,5             ; new > old => grow
         jrst    memfs_resize_shrink
@@ -65,7 +65,7 @@ memfs_resize_grow:
         camle   7,0
         jrst    pdp10_ret_neg1
         add     5,6             ; old end / shift threshold
-        hrrm    3,7(4)          ; install new length; preserve data start
+        hrrm    3,6(4)          ; install new length; preserve data start
         move    4,2             ; exclude slot for shift_after
         move    0,2(1)          ; pool base
         move    2,0
@@ -105,7 +105,7 @@ memfs_resize_shrink:
         move    7,5
         sub     7,3             ; delta = old-new
         add     5,6             ; old end / shift threshold
-        hrrm    3,7(4)          ; install new length; preserve data start
+        hrrm    3,6(4)          ; install new length; preserve data start
         move    4,2             ; exclude slot
         move    0,2(1)          ; pool base
         add     6,3             ; new end
@@ -145,7 +145,7 @@ memfs_read_words:
         jrst    pdp10_ret_neg1
         move    4,6
         andi    4,2             ; IMAGE flag for source selection
-        hrrz    6,7(5)          ; stored words
+        hrrz    6,6(5)          ; stored words
         jumpl   3,pdp10_ret_zero ; unsigned off exceeds 18-bit length
         caml    3,6             ; off < stored words
         jrst    pdp10_ret_zero
@@ -156,7 +156,7 @@ memfs_read_words:
         camle   6,7
         move    6,7
 memfs_read_count:
-        hlrz    2,7(5)
+        hlrz    2,6(5)
         jumpe   4,memfs_read_pool
         add     2,5(1)          ; image_data
         jrst    memfs_read_source
@@ -172,8 +172,7 @@ memfs_read_source:
         popj    17,
 
 ; int memfs_write_words(struct memfs *fs, vnode_t node,
-;     unsigned int off, const kword_t *buf, unsigned int nwords,
-;     kword_t size_chars)
+;     unsigned int off, const kword_t *buf, unsigned int nwords)
         .globl  memfs_write_words
 memfs_write_words:
         jumpe   4,pdp10_ret_neg1
@@ -199,7 +198,7 @@ memfs_write_words:
         camge   1,4             ; need >= off (unsigned) => no overflow
         jrst    pdp10_ret_neg1
 memfs_write_need_ok:
-        hrrz    4,7(5)          ; current word count
+        hrrz    4,6(5)          ; current word count
         jumpl   6,memfs_write_grow
         camg    6,4
         jrst    memfs_write_ready
@@ -223,9 +222,9 @@ memfs_write_grow:
 memfs_write_ready:
 ; Recompute np after resize and copy nwords into the mutable pool.
         move    5,2
-        lsh     5,3
+        imuli   5,7
         add     5,(7)           ; np
-        hlrz    6,7(5)
+        hlrz    6,6(5)
         add     6,2(7)          ; pool + data word
         add     6,3             ; + off
         move    1,0             ; source
@@ -233,15 +232,6 @@ memfs_write_ready:
         move    3,-1(17)        ; count
         pushj   17,fs_copy_words
 
-memfs_write_size:
-; size_chars is unsigned 36-bit state, so compare after toggling sign bits.
-        move    6,-2(17)
-        move    0,6
-        tlc     0,0400000
-        move    7,6(5)
-        tlc     7,0400000
-        camle   0,7
-        movem   6,6(5)
         move    1,-1(17)
         popj    17,
 
@@ -258,7 +248,7 @@ memfs_slot:
         caml    4,1(1)
         jrst    pdp10_ret_neg1
         move    5,4
-        lsh     5,3
+        imuli   5,7
         add     5,(1)
         move    6,5(5)
         trnn    6,1
@@ -276,7 +266,7 @@ memfs_find_child:
         move    7,1                     ; fs; helper leaves AC7 alone
         move    0,2                     ; parent
         move    5,(7)
-        addi    5,010                   ; slot 1
+        addi    5,7                     ; slot 1
         movei   6,1
 memfs_find_child_loop:
         caml    6,1(7)
@@ -293,7 +283,7 @@ memfs_find_child_loop:
         pushj   17,vfs_name_words_equal
         jumpn   1,memfs_find_child_found
 memfs_find_child_next:
-        addi    5,010
+        addi    5,7
         addi    6,1
         jrst    memfs_find_child_loop
 memfs_find_child_found:
@@ -307,7 +297,7 @@ memfs_find_child_done:
 ; void memfs_clear_node(struct memfs_node *np)
         .globl  memfs_clear_node
 memfs_clear_node:
-        movei   2,010
+        movei   2,7
         jrst    fs_zero_words
 
 ; Compact namespace/mutation operations.  The slot helpers above return
@@ -394,7 +384,7 @@ memfs_new_node:
         pushj   17,memfs_find_child
         jumpge  1,memfs_new_fail        ; duplicate name
         move    3,(010)
-        addi    3,010                   ; slot 1
+        addi    3,7                     ; slot 1
         movei   4,1
 memfs_new_free_loop:
         caml    4,1(010)
@@ -402,13 +392,13 @@ memfs_new_free_loop:
         move    5,5(3)
         trnn    5,1
         jrst    memfs_new_free_found
-        addi    3,010
+        addi    3,7
         addi    4,1
         jrst    memfs_new_free_loop
 memfs_new_free_found:
         move    7,4                     ; new slot
         move    6,7
-        lsh     6,3
+        imuli   6,7
         add     6,(010)                 ; np
         move    1,6
         pushj   17,memfs_clear_node
@@ -423,7 +413,7 @@ memfs_new_free_found:
         move    4,013
         dpb     4,[POINT 12,5(6),32]    ; mode
         move    4,4(010)                ; used_words
-        hrlzm   4,7(6)
+        hrlzm   4,6(6)
         hrrz    1,7
         tlo     1,040001
         movem   1,(014)
@@ -464,7 +454,7 @@ memfs_unlink:
         jumpl   1,memfs_restore4_fail
         move    013,1                   ; victim slot
         move    3,(010)
-        addi    3,010                   ; slot 1
+        addi    3,7                     ; slot 1
         movei   4,1
 memfs_unlink_child_loop:
         caml    4,1(010)
@@ -476,12 +466,12 @@ memfs_unlink_child_loop:
         camn    5,013
         jrst    memfs_restore4_fail
 memfs_unlink_child_next:
-        addi    3,010
+        addi    3,7
         addi    4,1
         jrst    memfs_unlink_child_loop
 memfs_unlink_no_children:
         move    4,013
-        lsh     4,3
+        imuli   4,7
         add     4,(010)
         ldb     5,[POINT 3,5(4),20]
         caie    5,2
@@ -493,7 +483,7 @@ memfs_unlink_no_children:
         jumpn   1,memfs_restore4_fail
 memfs_unlink_clear:
         move    1,013
-        lsh     1,3
+        imuli   1,7
         add     1,(010)
         pushj   17,memfs_clear_node
         jrst    memfs_restore4_zero
@@ -552,7 +542,7 @@ memfs_rename:
         pushj   17,memfs_find_child
         jumpge  1,memfs_rename_fail     ; destination exists
         move    4,011
-        lsh     4,3
+        imuli   4,7
         add     4,(010)                 ; victim np
         ldb     5,[POINT 3,5(4),20]
         caie    5,1
@@ -566,7 +556,7 @@ memfs_rename_up:
         caml    7,1(010)
         jrst    memfs_rename_fail
         move    5,7
-        lsh     5,3
+        imuli   5,7
         add     5,(010)
         move    6,5(5)
         trnn    6,1
@@ -575,7 +565,7 @@ memfs_rename_up:
         jrst    memfs_rename_up
 memfs_rename_apply:
         move    4,011
-        lsh     4,3
+        imuli   4,7
         add     4,(010)
         hrlm    016,5(4)
         move    1,4
@@ -617,30 +607,23 @@ memfs_chmod:
         .globl  memfs_truncate_words
 memfs_truncate_words:
         push    17,1                     ; fs
-        push    17,4                     ; size chars
         push    17,0                     ; slot placeholder
         pushj   17,memfs_slot           ; words remain in AC3
         jumpl   1,memfs_truncate_fail
-        movem   1,(17)                  ; slot
+        movem   1,(17)                   ; slot
         ldb     4,[POINT 3,5(5),20]
         caie    4,2
         jrst    memfs_truncate_fail
-        move    2,(17)                  ; slot
-        move    1,-2(17)                ; fs
+        move    2,(17)
+        move    1,-1(17)
         pushj   17,memfs_resize
         jumpn   1,memfs_truncate_fail
-        move    4,(17)
-        lsh     4,3
-        move    5,-2(17)
-        add     4,(5)
-        move    5,-1(17)                ; size chars
-        movem   5,6(4)
         setz    1,
         jrst    memfs_truncate_done
 memfs_truncate_fail:
         seto    1,
 memfs_truncate_done:
-        sub     17,[3,,3]
+        sub     17,[2,,2]
         popj    17,
 
 ; int memfs_readdir(const struct memfs *fs, vnode_t dir,
@@ -660,7 +643,7 @@ memfs_readdir:
         jrst    pdp10_ret_neg1
 
         move    5,(1)
-        addi    5,010                   ; slot 1
+        addi    5,7                     ; slot 1
         movei   6,1
         movei   0,0                     ; matching-entry ordinal
 memfs_readdir_loop:
@@ -676,7 +659,7 @@ memfs_readdir_loop:
         jrst    memfs_readdir_found
         addi    0,1
 memfs_readdir_next:
-        addi    5,010
+        addi    5,7
         addi    6,1
         jrst    memfs_readdir_loop
 memfs_readdir_found:
@@ -699,9 +682,8 @@ memfs_stat:
         movem   4,(3)
         ldb     4,[POINT 12,5(5),32]
         movem   4,1(3)
-        move    4,6(5)
-        movem   4,2(3)
-        hrrz    4,7(5)
+        setzm   2(3)                    ; reserved
+        hrrz    4,6(5)
         movem   4,3(3)
         jrst    pdp10_ret_zero
 
@@ -721,7 +703,7 @@ memfs_parent:
         caml    5,1(1)
         jrst    pdp10_ret_neg1
         move    7,5
-        lsh     7,3
+        imuli   7,7
         add     7,(1)
         move    0,5(7)
         trnn    0,1
@@ -769,9 +751,8 @@ memfs_mres_fs:
 ; AC2 = total words to allocate
 ; AC3 = mount flags (MEMFS currently supports read/write only)
 ;
-; 64 eight-word nodes consume the first 01000 words.  Require another 01000
-; words for file data so a configured MEMFS cannot consist almost entirely of
-; metadata.  Dynamic owner 011 is reserved for the singleton MEMFS allocation.
+; 64 seven-word nodes consume the first 0700 words.  Require at least
+; 01100 words for file data so the existing 02000-word minimum is unchanged.  Dynamic owner 011 is reserved for the singleton MEMFS allocation.
 memfs_mres_mount:
         skipe   memfs_mres_fs
         jrst    pdp10_ret_neg1          ; singleton already instantiated
@@ -794,7 +775,7 @@ memfs_mres_mount_size_ok:
         jumpn   1,memfs_mres_mount_bad
 
         move    1,(17)
-        movei   2,01000
+        movei   2,0700
         pushj   17,fs_zero_words
         move    5,(17)
         move    6,[0207775]             ; DIR, mode 0777, USED|WRITABLE
@@ -804,10 +785,10 @@ memfs_mres_mount_size_ok:
         movei   6,0100                  ; 64 node slots
         movem   6,memfs_mres_fs+1
         move    6,5
-        addi    6,01000
+        addi    6,0700
         movem   6,memfs_mres_fs+2       ; file-data pool
         move    6,-1(17)
-        subi    6,01000
+        subi    6,0700
         movem   6,memfs_mres_fs+3
         setzm   memfs_mres_fs+4         ; used pool words
         setzm   memfs_mres_fs+5         ; no immutable image backing

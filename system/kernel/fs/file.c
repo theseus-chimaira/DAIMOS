@@ -148,15 +148,19 @@ file_walk_path_at(const kword_t *path, int parent_only,
                     vfs_stat(next, &st) != 0)
                         return -1;
                 if (st.type == VFS_TYPE_SYMLINK) {
-                        /* One counter spans target recursion and resumed suffixes. */
-                        if (*depthp == FILE_SYMLINK_MAX || st.size_chars == 0UL ||
-                            st.size_chars > FILE_PATH_MAX_CHARS)
+                        /* Symlinks store one counted SIXBIT path record. */
+                        if (*depthp == FILE_SYMLINK_MAX ||
+                            st.size_words < 2UL ||
+                            st.size_words > FILE_PATH_WORDS)
                                 return -1;
-                        target_chars = (unsigned int)st.size_chars;
-                        target_words = (target_chars + 5U) / 6U;
-                        target[0] = target_chars;
-                        if (vfs_read_words(next, 0U, &target[1], target_words) !=
-                            (int)target_words ||
+                        target_words = (unsigned int)st.size_words;
+                        if (vfs_read_words(next, 0U, target, target_words) !=
+                            (int)target_words)
+                                return -1;
+                        target_chars = (unsigned int)target[0];
+                        if (target_chars == 0U ||
+                            target_chars > FILE_PATH_MAX_CHARS ||
+                            target_words != 1U + (target_chars + 5U) / 6U ||
                             (++*depthp, file_walk_path_at(target, 0, node,
                             depthp, &next, 0)) != 0)
                                 return -1;
@@ -228,9 +232,8 @@ file_open(const kword_t *path, unsigned int flags)
                         return -1;
         }
         if ((flags & FILE_O_TRUNC) != 0U && st.type == VFS_TYPE_REG) {
-                if (vfs_truncate(node, 0U, 0) != 0)
+                if (vfs_truncate(node, 0U) != 0)
                         return -1;
-                st.size_chars = 0;
         }
         fd = file_new_fd(node, flags, st.type == VFS_TYPE_DIR);
         if (fd < 0)
@@ -240,18 +243,18 @@ file_open(const kword_t *path, unsigned int flags)
                 node = pipe_fifo_open(node, fp->node_meta);
                 if (node == VFS_NODE_NONE) {
                         fp->node_meta = 0UL;
-                        fp->off_chars = 0UL;
+                        fp->offset = 0UL;
                         return -1;
                 }
                 fp->node_meta = node |
                     (fp->node_meta & ~FILE_NODE_VNODE_MASK);
-                fp->off_chars = 0UL;
+                fp->offset = 0UL;
                 return fd;
         }
         if (st.type == VFS_TYPE_REG)
                 fp->node_meta |= FILE_META_REGULAR;
         if ((flags & FILE_O_APPEND) != 0U)
-                fp->off_chars = st.size_chars;
+                fp->offset = st.size_words;
         return fd;
 }
 

@@ -52,10 +52,7 @@ d6fs_fcb_decode_valid(const kword_t fcb[D6FS_FCB_WORDS],
         info->parent_fcb =
             (unsigned int)((fcb[D6FS_FCB_PARENT] >> 18) & D6FS_FCB_MASK);
         if (info->type > D6FS_TYPE_FIFO ||
-            info->extent_count > D6FS_EXTENTS ||
-            (info->type == D6FS_TYPE_SYMLINK ? info->tail > 6U :
-            info->type == D6FS_TYPE_FIFO ? info->tail != 0U :
-            info->tail > 4U))
+            info->extent_count > D6FS_EXTENTS || info->tail != 0U)
                 return 0;
         if ((fcb[D6FS_FCB_META] & 017UL) |
             (fcb[D6FS_FCB_PARENT] & D6FS_FCB_MASK) |

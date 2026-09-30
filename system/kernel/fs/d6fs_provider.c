@@ -15,13 +15,11 @@ void d6fs_provider_clear_extent(kword_t fcb[D6FS_FCB_WORDS],
     unsigned int index);
 int d6fs_provider_free_file_tail(const kword_t fcb[D6FS_FCB_RESERVED0],
     kword_t first_file_block);
-unsigned int d6fs_provider_tail(unsigned int type, kword_t words,
-    kword_t size_chars);
 int d6fs_provider_alloc_run(kword_t max_blocks,
     kword_t *startp, kword_t *blocksp);
 int d6fs_provider_resize_fcb(vnode_t node,
     kword_t fcb[D6FS_FCB_WORDS], struct d6fs_fcb_info *fi,
-    kword_t new_words, unsigned int new_tail);
+    kword_t new_words);
 
 int d6fs_provider_scan_slot(vnode_t dir,
     const struct vfs_name *name, unsigned int *slotp,
@@ -43,7 +41,7 @@ int d6fs_provider_parent_name(vnode_t node, vnode_t *parentp,
 int
 d6fs_provider_resize_fcb(vnode_t node,
     kword_t fcb[D6FS_FCB_WORDS], struct d6fs_fcb_info *fi,
-    kword_t new_words, unsigned int new_tail)
+    kword_t new_words)
 {
         kword_t old_fcb[D6FS_FCB_RESERVED0];
         long old_blocks;
@@ -64,8 +62,6 @@ d6fs_provider_resize_fcb(vnode_t node,
                 return -1;
         fs_copy_words(fcb, old_fcb, D6FS_FCB_RESERVED0);
         extent_count = (int)fi->extent_count;
-        if (new_words == 0UL)
-                new_tail = 0U;
         old_blocks = (long)((fi->size_words + 0177UL) >> 7);
         {
                 long n;
@@ -163,10 +159,9 @@ d6fs_provider_resize_fcb(vnode_t node,
                         d6fs_provider_clear_extent(fcb, i);
         }
 
-        /* Resize changes only size, tail, and extent count.  Preserve every
-         * other on-disk metadata bit exactly as it was read. */
+        /* Resize changes only size and extent count.  The former tail bits
+         * are reserved zero in the SIXBIT-only format. */
         fcb[D6FS_FCB_META] = (fcb[D6FS_FCB_META] & ~07760UL) |
-            ((kword_t)new_tail << 8) |
             ((kword_t)extent_count << 4);
         fcb[D6FS_FCB_SIZE] = new_words;
         if (d6fs_reader_put_fcb(d6fs_active_reader,
@@ -180,7 +175,7 @@ d6fs_provider_resize_fcb(vnode_t node,
                 return -1;
         fi->extent_count = extent_count;
         fi->size_words = new_words;
-        fi->tail = new_tail;
+        fi->tail = 0U;
         return 0;
 
 rollback:
@@ -280,7 +275,6 @@ d6fs_provider_write_dirent(vnode_t dir, unsigned int slot,
         kword_t raw[D6FS_DIRENT_WORDS];
         kword_t need;
         kword_t off;
-        unsigned int tail;
 
         if (d6fs_provider_fcb(dir, fcb, &fi) != 0 ||
             fi.type != D6FS_TYPE_DIR ||
@@ -297,11 +291,9 @@ d6fs_provider_write_dirent(vnode_t dir, unsigned int slot,
         }
         off = (kword_t)slot * D6FS_DIRENT_WORDS;
         need = off + D6FS_DIRENT_WORDS;
-        if (need > fi.size_words) {
-                tail = 4U;
-                if (d6fs_provider_resize_fcb(dir, fcb, &fi, need, tail) != 0)
-                        return -1;
-        }
+        if (need > fi.size_words &&
+            d6fs_provider_resize_fcb(dir, fcb, &fi, need) != 0)
+                return -1;
         return d6fs_reader_write_words(d6fs_active_reader, fcb,
             off, raw,
             D6FS_DIRENT_WORDS) == (int)D6FS_DIRENT_WORDS ? 0 : -1;
@@ -324,12 +316,11 @@ d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
         unsigned int slot;
         unsigned int mode;
         unsigned int words;
-        unsigned int tail;
 
 #ifndef __PDP10__
         if (nodep == 0 || (type != D6FS_TYPE_REG && type != D6FS_TYPE_DIR &&
             type != D6FS_TYPE_SYMLINK && type != D6FS_TYPE_FIFO) ||
-            (type == D6FS_TYPE_SYMLINK && (payload == 0 || value == 0U)))
+            (type == D6FS_TYPE_SYMLINK && (payload == 0 || payload[0] == 0UL)))
                 return -1;
 #endif
         if (d6fs_provider_scan_slot(dir, name, &slot, 0) == 0 ||
@@ -358,9 +349,8 @@ d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
                 fi.type = type;
                 fi.extent_count = 0U;
                 fi.size_words = 0UL;
-                words = (value + 5U) / 6U;
-                tail = value - (words - 1U) * 6U;
-                if (d6fs_provider_resize_fcb(node, fcb, &fi, words, tail) != 0)
+                words = 1U + ((unsigned int)payload[0] + 5U) / 6U;
+                if (d6fs_provider_resize_fcb(node, fcb, &fi, words) != 0)
                         goto fail_fcb;
                 if (d6fs_reader_write_words(d6fs_active_reader, fcb, 0UL,
                     payload, words) != (int)words)
@@ -381,7 +371,7 @@ d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
         return 0;
 
 fail_symlink:
-        (void)d6fs_provider_resize_fcb(node, fcb, &fi, 0UL, 0U);
+        (void)d6fs_provider_resize_fcb(node, fcb, &fi, 0UL);
 fail_fcb:
         fs_zero_words(fcb, D6FS_FCB_WORDS);
         (void)d6fs_reader_put_fcb(d6fs_active_reader, index, fcb);

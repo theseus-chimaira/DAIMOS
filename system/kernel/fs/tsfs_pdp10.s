@@ -236,8 +236,7 @@ tsfs_stat:
         movem   4,1(010)
         move    4,5(1)                 ; FILE_SIZE_WORDS
         movem   4,3(010)
-        lsh     4,2                    ; current word files carry four chars
-        movem   4,2(010)
+        setzm   2(010)                  ; reserved
         setz    1,
         jrst    tsfs_stat_pop
 

@@ -4,15 +4,7 @@
 
         .text
 
-        .globl dsys_write_nonets
         .globl dsys_mkdir
-
-dsys_write_nonets:
-        move 4,[POINT 9,0,8]
-        hrr 4,2
-        move 2,4
-        uuo 043,0(1)
-        popj 17,
 
 dsys_mkdir:
         movei 2,0777
