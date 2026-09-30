@@ -18,8 +18,6 @@ KINIT_STACK_RESERVE_WORDS ?= 02000
 KINIT_STACK_WATERMARK ?= 0
 KINIT_BADMAP ?= 1
 KINIT_FULL ?= 1
-DTFS_TENEX ?= 0
-DTFS_ITS ?= 0
 PROC_BOOT_USERS ?= 1
 PROC_STACK_WATERMARK ?= 0
 VM_BACKEND ?= pdp6
@@ -323,8 +321,8 @@ ${BUILD}/d6fs_provider.s: fs/d6fs_provider.c fs/d6fs_provider_mutation_pdp10.s $
 
 ${BUILD}/dtfs.s: fs/dtfs.c fs/dtfs_chain_walk_pdp10.s fs/dtfs_resize_pdp10.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	${PDP10_CC} ${PDP10_CFLAGS} -DDTFS_ENABLE_TENEX=${DTFS_TENEX} -DDTFS_ENABLE_ITS=${DTFS_ITS} ${INCLUDES} -S fs/dtfs.c -o $@.c
-	@cat $@.c > $@; cat fs/dtfs_chain_walk_pdp10.s >> $@; if test "${DTFS_TENEX}" = 1 -o "${DTFS_ITS}" = 1; then { echo ".set DTFS_ENABLE_TENEX,${DTFS_TENEX}"; echo ".set DTFS_ENABLE_ITS,${DTFS_ITS}"; cat fs/dtfs_resize_pdp10.s; } >> $@; fi; rm -f $@.c
+	${PDP10_CC} ${PDP10_CFLAGS} -DDTFS_ENABLE_TENEX=1 -DDTFS_ENABLE_ITS=1 ${INCLUDES} -S fs/dtfs.c -o $@.c
+	@cat $@.c fs/dtfs_chain_walk_pdp10.s > $@; { echo ".set DTFS_ENABLE_TENEX,1"; echo ".set DTFS_ENABLE_ITS,1"; cat fs/dtfs_resize_pdp10.s; } >> $@; rm -f $@.c
 
 ${BUILD}/tsfs.s: fs/tsfs.c ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
@@ -344,7 +342,7 @@ ${BUILD}/proc_run_pdp10.s: proc/proc_run_pdp10.s
 
 ${BUILD}/dtfs_pdp10.s: fs/dtfs_pdp10.s
 	@mkdir -p ${BUILD}
-	@foreign=0; if test "${DTFS_TENEX}" = 1 -o "${DTFS_ITS}" = 1; then foreign=1; fi; { echo ".set DTFS_ENABLE_TENEX,${DTFS_TENEX}"; echo ".set DTFS_ENABLE_ITS,${DTFS_ITS}"; echo ".set DTFS_ENABLE_FOREIGN,$$foreign"; cat fs/dtfs_pdp10.s; } > $@
+	@{ echo ".set DTFS_ENABLE_TENEX,1"; echo ".set DTFS_ENABLE_ITS,1"; echo ".set DTFS_ENABLE_FOREIGN,1"; cat fs/dtfs_pdp10.s; } > $@
 
 COPY_ASM_SRCS = core/ret_pdp10.s \
 	drivers/dsk270_pdp10.s \
