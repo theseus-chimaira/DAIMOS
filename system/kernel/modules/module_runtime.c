@@ -49,7 +49,9 @@ extern kword_t memfs_reclaim_jump;
 extern kword_t memfs_shutdown_jump;
 extern kword_t blockset_runtime_service_jump;
 
-static kword_t *const module_fixed_bindings[] = {
+/* Consumed directly by module_runtime_pdp6.s; keep external linkage so host
+ * compilation and the target assembler agree that this is a live ABI object. */
+kword_t *const module_fixed_bindings[] = {
         &pdp10_pi_level1_dispatch_jump,
         &pdp10_pi_level2_dispatch_jump,
         &pdp10_pi_level3_dispatch_jump,
@@ -80,6 +82,3 @@ static kword_t *const module_fixed_bindings[] = {
         &memfs_shutdown_jump,
         &blockset_runtime_service_jump
 };
-
-#define MODULE_FIXED_BIND_COUNT \
-        (sizeof(module_fixed_bindings) / sizeof(module_fixed_bindings[0]))
