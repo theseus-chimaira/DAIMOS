@@ -747,6 +747,12 @@ memfs_mres_fs:
 
 ; Create the singleton MEMFS instance on demand.
 ;
+; V0.9 keeps one compact allocation deliberately.  Measured growable-node and
+; growable-node+pool prototypes added roughly 76 and 121 permanent MRES words
+; respectively, while per-file MM extents would exhaust the global 20-entry
+; extent table.  Future dynamic backing should replace (not layer on top of)
+; the pool/compaction machinery, likely after the MM descriptor design changes.
+;
 ; AC1 = already-resolved mount-point vnode
 ; AC2 = total words to allocate
 ; AC3 = mount flags (MEMFS currently supports read/write only)
