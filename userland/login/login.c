@@ -96,25 +96,6 @@ parse_s6_uint(const kword_t *s, unsigned int *vp)
 }
 
 static int
-split_passwd(char *line, char **field)
-{
-        unsigned int n;
-        unsigned int i;
-
-        field[0] = line;
-        n = 1U;
-        for (i = 0U; line[i] != 0; ++i) {
-                if (line[i] != ':')
-                        continue;
-                if (n >= 6U)
-                        return -1;
-                line[i] = 0;
-                field[n++] = &line[i + 1U];
-        }
-        return n == 6U ? 0 : -1;
-}
-
-static int
 login_getline(char *buf, unsigned int size)
 {
         unsigned int n;
@@ -159,9 +140,10 @@ find_account(const char *name, struct login_account *account)
                         result = -1;
                         break;
                 }
-                if (line[0] == 0 || line[0] == '#')
+                n = u_text_fields(line, f, 6U);
+                if (n == 0)
                         continue;
-                if (split_passwd(line, f) != 0 || !text_eq(f[0], name))
+                if (n != 6 || !text_eq(f[0], name))
                         continue;
                 if (parse_uint(f[2], &account->uid) != 0 ||
                     parse_uint(f[3], &account->gid) != 0 ||

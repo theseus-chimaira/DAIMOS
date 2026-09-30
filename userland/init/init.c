@@ -53,32 +53,19 @@ parse_uint(const char *s, unsigned int *vp)
 static int
 parse_entry(char *line, struct init_entry *e)
 {
-        char *action;
-        char *path;
-        unsigned int i;
+        char *field[3];
+        int n;
 
-        if (line[0] == 0 || line[0] == '#')
+        n = u_text_fields(line, field, 3U);
+        if (n == 0)
                 return 1;
-        action = 0;
-        path = 0;
-        for (i = 0U; line[i] != 0; ++i) {
-                if (line[i] != ':')
-                        continue;
-                line[i] = 0;
-                if (action == 0)
-                        action = &line[i + 1U];
-                else if (path == 0)
-                        path = &line[i + 1U];
-                else
-                        return -1;
-        }
-        if (action == 0 || path == 0 || parse_uint(line, &e->tty) != 0 ||
+        if (n != 3 || parse_uint(field[0], &e->tty) != 0 ||
             e->tty > SYS_TTY_ID_MAX ||
-            u_s6_pack(e->path, U_PATH_WORDS, path) != 0)
+            u_s6_pack(e->path, U_PATH_WORDS, field[2]) != 0)
                 return -1;
-        if (text_eq(action, "RESPAWN"))
+        if (text_eq(field[1], "RESPAWN"))
                 e->action = INIT_RESPAWN;
-        else if (text_eq(action, "ONCE"))
+        else if (text_eq(field[1], "ONCE"))
                 e->action = INIT_ONCE;
         else
                 return -1;

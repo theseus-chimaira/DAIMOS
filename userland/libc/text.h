@@ -20,4 +20,18 @@ int u_text_open_fd(struct u_text_reader *r, int fd);
 int u_text_getline(struct u_text_reader *r, char *buf, unsigned int size);
 void u_text_close(struct u_text_reader *r);
 
+/*
+ * Small allocation-free configuration helpers.  Both modify LINE in place
+ * and return pointers into it.  Applications retain ownership of field
+ * meaning and validation.
+ *
+ * u_text_fields(): colon-delimited records; empty fields are significant.
+ * u_text_key():    KEY = VALUE VALUE ... records; an empty RHS is valid.
+ *
+ * Return the number of fields/values, 0 for blank/comment lines, or -1 for a
+ * malformed record or insufficient caller pointer space.
+ */
+int u_text_fields(char *line, char **field, unsigned int max_fields);
+int u_text_key(char *line, char **key, char **value, unsigned int max_values);
+
 #endif

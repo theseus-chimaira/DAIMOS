@@ -47,45 +47,28 @@ parse_uint(const char *s, unsigned int *vp)
 static int
 mount_line(char *line, int *temp_memfs)
 {
-        char *target;
-        char *words_text;
-        char *flags_text;
+        char *field[4];
         kword_t path[U_PATH_WORDS];
         unsigned int words;
         unsigned int flags;
-        unsigned int i;
+        int n;
 
-        if (line[0] == 0 || line[0] == '#')
+        n = u_text_fields(line, field, 4U);
+        if (n == 0)
                 return 1;
-        target = 0;
-        words_text = 0;
-        flags_text = 0;
         flags = 0U;
-        for (i = 0U; line[i] != 0; ++i) {
-                if (line[i] != ':')
-                        continue;
-                line[i] = 0;
-                if (target == 0)
-                        target = &line[i + 1U];
-                else if (words_text == 0)
-                        words_text = &line[i + 1U];
-                else if (flags_text == 0)
-                        flags_text = &line[i + 1U];
-                else
-                        return -1;
-        }
-        if (target == 0 || words_text == 0 || !text_eq(line, "MEMFS") ||
-            parse_uint(words_text, &words) != 0 ||
-            u_s6_pack(path, U_PATH_WORDS, target) != 0)
+        if ((n != 3 && n != 4) || !text_eq(field[0], "MEMFS") ||
+            parse_uint(field[2], &words) != 0 ||
+            u_s6_pack(path, U_PATH_WORDS, field[1]) != 0)
                 return -1;
-        if (flags_text != 0) {
-                if (!text_eq(flags_text, "PERSIST"))
+        if (n == 4) {
+                if (!text_eq(field[3], "PERSIST"))
                         return -1;
                 flags = 0002U;
         }
         if (dsys_memfs_mount(path, words, flags) != 0)
                 return -1;
-        if (text_eq(target, "/TEMP"))
+        if (text_eq(field[1], "/TEMP"))
                 *temp_memfs = 1;
         return 0;
 }
