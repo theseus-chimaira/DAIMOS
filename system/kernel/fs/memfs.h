@@ -11,6 +11,11 @@
 #define MEMFS_F_WRITABLE             0004U
 #define MEMFS_MOUNT_PERSIST          0002U
 
+#define MEMFS_SNAPSHOT_MAGIC         055464663UL
+#define MEMFS_SNAPSHOT_VERSION       1UL
+#define MEMFS_SNAPSHOT_HEADER_WORDS  6U
+
+
 /*
  * A node is deliberately seven PDP-10 words.  The low 18 bits of meta hold
  * type/mode/flags, while the high half holds the parent slot.  For mutable
@@ -31,6 +36,9 @@ struct memfs {
         unsigned int used_words;
         const kword_t *image_data;
 };
+
+int memfs_snapshot_mount(struct memfs *fs, unsigned int flags);
+int memfs_snapshot_shutdown(void);
 
 int memfs_lookup(const struct memfs *fs, vnode_t dir,
     const struct vfs_name *name, vnode_t *nodep);

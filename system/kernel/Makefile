@@ -198,11 +198,13 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 MRES_C_SRCS = fs/d6fs.c \
 	fs/d6fs_provider.c \
 	fs/memfs_data.c \
+	fs/memfs_snapshot.c \
 	fs/tsfs.c
 
 MRES_C_ASM = $(BUILD)/d6fs.s \
 	$(BUILD)/d6fs_provider.s \
 	$(BUILD)/memfs_data.s \
+	$(BUILD)/memfs_snapshot.s \
 	$(BUILD)/tsfs.s
 
 MRES_FIXED_SRCS = fs/d6fs_validate_pdp10.s \
@@ -236,6 +238,7 @@ MRES_ASM = $(BUILD)/dtfs.s \
 	$(BUILD)/d6fs.s \
 	$(BUILD)/d6fs_provider.s \
 	$(BUILD)/memfs_data.s \
+	$(BUILD)/memfs_snapshot.s \
 	$(BUILD)/d6fs_validate_pdp10.s \
 	$(BUILD)/cty_io.s \
 	$(BUILD)/clk_io.s \
@@ -320,6 +323,10 @@ ${BUILD}/d6fs.s: fs/d6fs.c ${KERNEL_HEADERS}
 ${BUILD}/memfs_data.s: fs/memfs_data.c ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S fs/memfs_data.c -o $@
+
+${BUILD}/memfs_snapshot.s: fs/memfs_snapshot.c ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S fs/memfs_snapshot.c -o $@
 
 ${BUILD}/d6fs_provider.s: fs/d6fs_provider.c fs/d6fs_provider_mutation_pdp10.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}

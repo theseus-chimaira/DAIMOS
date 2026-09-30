@@ -640,6 +640,8 @@ memfs_parent_ok:
         .globl  memfs_mres_fs
 memfs_mres_fs:
         .block  6
+memfs_mount_flags:
+        .block  1
         .text
 
         .globl  vfs_name_words_equal
@@ -649,6 +651,7 @@ memfs_mres_fs:
         .globl  mm_free
         .globl  memfs_data_init
         .globl  memfs_data_destroy
+        .globl  memfs_snapshot_mount
         .globl  vfs_mount
         .globl  memfs_mres_dispatch
         .globl  memfs_lookup
@@ -679,6 +682,7 @@ memfs_mres_mount:
         jrst    kret_neg1          ; singleton already instantiated
         trne    3,07775
         jrst    kret_neg1          ; reject unknown policy bits
+        movem   3,memfs_mount_flags
         cail    2,02000
         jrst    memfs_mres_mount_size_ok
         jrst    kret_neg1
@@ -717,6 +721,11 @@ memfs_mres_mount_size_ok:
         movei   1,memfs_mres_fs
         move    2,6
         pushj   17,memfs_data_init
+
+        movei   1,memfs_mres_fs
+        move    2,memfs_mount_flags
+        pushj   17,memfs_snapshot_mount
+        jumpn   1,memfs_mres_mount_bad
 
         push    17,[0]                  ; mounted-root scratch
         movei   6,(17)
@@ -780,7 +789,7 @@ memfs_mres_usage:
 ; persistent mount is active this is intentionally a zero-cost provider no-op.
         .globl  memfs_mres_shutdown
 memfs_mres_shutdown:
-        jrst    kret_zero
+        jrst    memfs_snapshot_shutdown
 
 ; CREATE op multiplexes regular files and FIFO nodes so FIFO support costs
 ; no additional permanent provider-vector slot.  Bit 010000 is outside the
