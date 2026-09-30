@@ -1,16 +1,31 @@
-; Compact PDP-6/PDP-10 executable loader.
-; AC1=struct proc *, AC2=owner slot, AC3=counted SIXBIT path.
-;
-; Stack locals after the seven saved ACs and 013-word frame:
-;   -012 vnode
-;   -011..-003 struct vfs_stat (7 words; -006 is size_words)
-;   -002..0 header words 0..2
-; After validation, unused stat words are reused:
-;   -010 relocation-map words
-;   -007 header words (2 or 3)
-;   -005 text words
-;   -004 compressed payload words
-;   -003 nonzero if this load acquired a new RT reservation
+/**
+ * @file exec_load.s
+ * @brief Compact resident DXR loader for the PDP-6/PDP-10 family.
+ *
+ * exec_load_process() validates a regular executable, checks execute access,
+ * accepts DXR1 or DXR2 shape, optionally decompresses D6LZ36 payload directly
+ * into the new VM, attaches pure-text swap backing, and publishes the initial
+ * process entry/state only after the image is complete.  A failed load destroys
+ * the staged VM and releases only an RT reservation acquired by this attempt.
+ *
+ * DXR2 is mandatory for compressed executables and carries the TX2 text-word
+ * count used by pure backing.  RT_REQUIRED reserves the single proc_rt_owner;
+ * an owner may replace its own RT image without dropping the reservation.
+ *
+ * Entry ABI for exec_load_process(): AC1=struct proc *, AC2=owner slot,
+ * AC3=counted SIXBIT path.  AC10..AC16 are callee-saved as one contiguous BLT
+ * block.  The combined 022-word frame contains those seven saved ACs plus the
+ * following 013-word local area:
+ *   -012       vnode
+ *   -011..-003 struct vfs_stat (seven words; -006 is size_words)
+ *   -002..0    DXR header words 0..2
+ * After validation, dead stat fields are reused for:
+ *   -010 relocation-map words
+ *   -007 header words (2 or 3)
+ *   -005 text words
+ *   -004 compressed payload words
+ *   -003 nonzero if this load acquired a new RT reservation
+ */
 
         .text
         .globl  exec_load_process
@@ -25,44 +40,60 @@
         .globl  d6lz36_decode_vfs
         .globl  proc_rt_owner
 
+        .equ    EXEC_DXR_MAGIC,0447062      ; SIXBIT /DXR/
+        .equ    EXEC_DXR_TEXT_TAG,0647022   ; SIXBIT /TX2/
+        .equ    EXEC_SCHED_SIDL_LH,0100024  ; SIDL + default nice bias
 
-; unsigned int exec_record_words(const kword_t *record, int nonempty)
-; AC1=validated mapped record pointer, AC2=nonempty flag.  Return AC1=record
-; words, or zero for an invalid counted SIXBIT record.  EXEC has already
-; established that AC1 points inside the mapped launch block.
+
+/**
+ * @brief Validate one counted-SIXBIT startup record and return its word span.
+ * @param AC1 Validated mapped record pointer.
+ * @param AC2 Nonzero when an empty record is forbidden.
+ * @return AC1 = count word + packed payload words, or zero if invalid.
+ *
+ * EXEC has already established that AC1 lies inside the mapped launch block;
+ * this helper validates only the 18-bit character count and 102-character
+ * bounded-record contract. AC2/AC3 are caller-scratch.
+ */
         .globl  exec_record_words
 exec_record_words:
         move    3,(1)
-        tlnn    3,0777777              ; counted length must fit RH
-        jrst    exec_record_half_ok
+        tlne    3,0777777              ; counted length must fit RH
         jrst    exec_record_bad
-exec_record_half_ok:
         jumpe   2,exec_record_length_ok
         jumpe   3,exec_record_bad      ; path record must be nonempty
 exec_record_length_ok:
         caile   3,0146                 ; 102 characters maximum
         jrst    exec_record_bad
         move    1,3
-        addi    1,5
+        addi    1,013                  ; ceil(chars/6)+1 = (chars+11)/6
         idivi   1,6
-        addi    1,1                    ; count word plus SIXBIT payload
         popj    17,
 exec_record_bad:
         setz    1,
         popj    17,
 
+/**
+ * @brief Validate and load one DXR executable into an already allocated process.
+ * @param AC1 Process descriptor to populate.
+ * @param AC2 Process/VM owner slot.
+ * @param AC3 Counted SIXBIT executable path.
+ * @return AC1 = EXEC_LOAD_OK, EXEC_LOAD_RT_REQUIRED, or -1 on failure.
+ *
+ * The routine creates the VM only after validating file/header shape, and any
+ * failure after VM creation destroys that staged VM before returning.  Entry PC
+ * and runnable-state fields are published only after the payload has loaded.
+ */
 exec_load_process:
-        push    17,10
-        push    17,11
-        push    17,12
-        push    17,13
-        push    17,14
-        push    17,15
-        push    17,16
+        ; Reserve locals plus the seven saved ACs in one step.  AC10..AC16
+        ; are contiguous, so BLT is both smaller and faster than seven PUSHes.
+        add     17,[022,,022]
+        movei   0,-021(17)
+        hrli    0,010
+        blt     0,-013(17)
         move    10,1                    ; proc
         move    11,2                    ; owner
         move    12,3                    ; path
-        add     17,[013,,013]
         setzm   -003(17)                ; no new RT reservation yet
 
         jumpe   10,exec_load_fail
@@ -97,15 +128,14 @@ exec_load_read_header:
         caie    1,2
         jrst    exec_load_fail
         hlrz    0,-002(17)
-        caie    0,0447062               ; SIXBIT /DXR/
+        caie    0,EXEC_DXR_MAGIC
         jrst    exec_load_fail
 
         hrrz    14,-002(17)             ; entry
         hlrz    13,-001(17)             ; uncompressed image words
-        hrrz    0,-001(17)
-        move    15,0
+        hrrz    15,-001(17)
+        move    16,15
         andi    15,0700000              ; compressed/pure/RT-required flags
-        move    16,0
         andi    16,0077777              ; BSS words
         jumpe   13,exec_load_fail
         caile   13,036000
@@ -147,13 +177,12 @@ exec_load_header_shape:
         jrst    exec_load_dxr2_header
 
 exec_load_plain_shape:
-        move    0,13
-        add     0,-010(17)
-        addi    0,2                     ; DXR1 expected words
-        camn    0,-006(17)
-        jrst    exec_load_create_vm
-        addi    0,1                     ; DXR2 expected words
-        came    0,-006(17)
+        move    0,-006(17)              ; actual file words
+        sub     0,13
+        sub     0,-010(17)
+        subi    0,2                     ; 0=DXR1, 1=DXR2
+        jumpe   0,exec_load_create_vm
+        caie    0,1
         jrst    exec_load_fail
 
 exec_load_dxr2_header:
@@ -165,15 +194,14 @@ exec_load_dxr2_header:
         caie    1,1
         jrst    exec_load_fail
         hrrz    0,(17)
-        caie    0,0647022               ; SIXBIT /TX2/
+        caie    0,EXEC_DXR_TEXT_TAG
         jrst    exec_load_fail
         hlrz    0,(17)
         camle   0,13                    ; text_words <= image_words
         jrst    exec_load_fail
 exec_load_dxr2_header_ok:
         movem   0,-005(17)
-        movei   0,3
-        movem   0,-007(17)
+        aos     -007(17)                ; header_words: DXR1 2 -> DXR2 3
 
 exec_load_create_vm:
         move    3,13
@@ -186,11 +214,9 @@ exec_load_create_vm:
 
         trnn    15,0100000
         jrst    exec_load_plain_image
-        hrlz    4,13
-        hrrz    0,1(10)                 ; VM physical base
-        addi    0,020
-        andi    0,0777777
-        ior     4,0                     ; image_words,,destination
+        hrrz    4,1(10)                 ; VM physical base
+        addi    4,020                    ; destination = base + user origin
+        hrl     4,13                    ; image_words,,destination
         move    1,12
         move    2,-007(17)
         move    3,-004(17)
@@ -216,18 +242,13 @@ exec_load_image_ok:
         hrlz    1,1
         ior     0,1
         movem   0,0(10)
-        movsi   0,024                   ; default nice bias
-        tlz     0,0700000
-        tlo     0,0100000               ; PROC_SIDL
+        movsi   0,EXEC_SCHED_SIDL_LH
         movem   0,2(10)
 
-        setz    4,                      ; pure backing defaults false
-        trnn    15,0200000
-        jrst    exec_load_attach
-        move    0,-007(17)
-        caie    0,3
-        jrst    exec_load_attach
-        movei   4,1
+        move    4,-007(17)              ; validated header_words is 2 or 3
+        subi    4,2                     ; DXR2 => 1, DXR1 => 0
+        trnn    15,0200000              ; non-pure images never keep backing
+        setz    4,
 exec_load_attach:
         move    1,11
         move    2,12
@@ -244,8 +265,7 @@ exec_load_vm_fail:
         move    2,11
         pushj   17,vm_space_destroy
         jumpn   1,exec_load_fail
-        hrrz    0,0(10)
-        movem   0,0(10)                 ; clear entry LH after destroy
+        hrrzs   0(10)                   ; clear entry LH after destroy
 exec_load_fail:
         skipn   -003(17)                ; release only a reservation made here
         jrst    exec_load_fail_result
@@ -254,12 +274,9 @@ exec_load_fail:
 exec_load_fail_result:
         seto    1,
 exec_load_return:
-        sub     17,[013,,013]
-        pop     17,16
-        pop     17,15
-        pop     17,14
-        pop     17,13
-        pop     17,12
-        pop     17,11
-        pop     17,10
+        ; Restore the contiguous callee-saved range with one BLT.
+        movei   0,010
+        hrli    0,-021(17)
+        blt     0,016
+        sub     17,[022,,022]
         popj    17,

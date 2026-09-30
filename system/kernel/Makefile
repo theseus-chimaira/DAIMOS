@@ -148,10 +148,10 @@ KCORE_FIXED_SRCS = core/ret.s \
 	fs/tsfs_pdp10.s \
 	fs/file_pdp10.s \
 	ipc/pipe_pdp10.s \
-		proc/proc_pdp10.s \
-	proc/proc_run_pdp10.s \
+		proc/proc_pdp6.s \
+	proc/proc_run.s \
 	drivers/device_state.s \
-	proc/syscall_info_pdp10.s \
+	proc/syscall_info.s \
 	drivers/pclk.s \
 	drivers/lpt_io.s \
 	proc/syscall_dispatch.s \
@@ -178,10 +178,10 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/file_pdp10.s \
 	$(BUILD)/pipe_pdp10.s \
 	$(BUILD)/monitorfs_pdp10.s \
-	$(BUILD)/proc_pdp10.s \
-	$(BUILD)/proc_run_pdp10.s \
+	$(BUILD)/proc_pdp6.s \
+	$(BUILD)/proc_run.s \
 	$(BUILD)/device_state.s \
-	$(BUILD)/syscall_info_pdp10.s \
+	$(BUILD)/syscall_info.s \
 	$(BUILD)/pclk.s \
 	$(BUILD)/lpt_io.s \
 	$(BUILD)/syscall_dispatch.s \
@@ -278,10 +278,10 @@ ${BUILD}/d6lz_fixed.s: ../stand/pdp6/common/decompressor.inc
 	@mkdir -p ${BUILD}
 	cp $< $@
 
-${BUILD}/exec.s: proc/exec.c proc/exec_load_pdp10.s ${KERNEL_HEADERS}
+${BUILD}/exec.s: proc/exec.c proc/exec_load.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S proc/exec.c -o $@.c
-	cat $@.c proc/exec_load_pdp10.s > $@
+	cat $@.c proc/exec_load.s > $@
 	rm -f $@.c
 
 ${BUILD}/d6lz.s: core/d6lz_pdp6.s
@@ -331,13 +331,13 @@ ${BUILD}/kinit_io_pdp6.s: boot/kinit_io_pdp6.s
 	@mkdir -p ${BUILD}
 	{ echo ".set KINIT_STACK_WATERMARK,${KINIT_STACK_WATERMARK}"; echo ".set KINIT_STACK_RESERVE_WORDS,${KINIT_STACK_RESERVE_WORDS}"; cat boot/kinit_io_pdp6.s; } > $@
 
-${BUILD}/proc_pdp10.s: proc/proc_pdp10.s
+${BUILD}/proc_pdp6.s: proc/proc_pdp6.s
 	@mkdir -p ${BUILD}
-	{ echo ".set PROC_STACK_WATERMARK,${PROC_STACK_WATERMARK}"; echo ".set KINIT_STACK_WATERMARK,${KINIT_STACK_WATERMARK}"; cat proc/proc_pdp10.s; } > $@
+	{ echo ".set PROC_STACK_WATERMARK,${PROC_STACK_WATERMARK}"; echo ".set KINIT_STACK_WATERMARK,${KINIT_STACK_WATERMARK}"; cat proc/proc_pdp6.s; } > $@
 
-${BUILD}/proc_run_pdp10.s: proc/proc_run_pdp10.s
+${BUILD}/proc_run.s: proc/proc_run.s
 	@mkdir -p ${BUILD}
-	{ echo ".set PROC_STACK_WATERMARK,${PROC_STACK_WATERMARK}"; cat proc/proc_run_pdp10.s; } > $@
+	{ echo ".set PROC_STACK_WATERMARK,${PROC_STACK_WATERMARK}"; cat proc/proc_run.s; } > $@
 
 ${BUILD}/dtfs_pdp10.s: Makefile fs/dtfs_pdp10.s
 	@mkdir -p ${BUILD}
@@ -353,7 +353,7 @@ COPY_ASM_SRCS = core/ret.s \
 	fs/file_pdp10.s \
 	ipc/pipe_pdp10.s \
 		drivers/device_state.s \
-	proc/syscall_info_pdp10.s \
+	proc/syscall_info.s \
 	drivers/pclk.s \
 	drivers/lpt_io.s \
 	proc/syscall_dispatch.s \
@@ -399,7 +399,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret.s \
 	$(BUILD)/pipe_pdp10.s \
 	$(BUILD)/monitorfs_pdp10.s \
 	$(BUILD)/device_state.s \
-	$(BUILD)/syscall_info_pdp10.s \
+	$(BUILD)/syscall_info.s \
 	$(BUILD)/pclk.s \
 	$(BUILD)/lpt_io.s \
 	$(BUILD)/syscall_dispatch.s \

@@ -1,4 +1,4 @@
-; syscall_info_pdp10.s -- compact runtime-sized PROCINFO/MEMINFO syscalls.
+; syscall_info.s -- compact runtime-sized PROCINFO/MEMINFO syscalls.
         .text
         .globl  kret_zero
         .globl  kret_neg1

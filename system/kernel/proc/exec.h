@@ -1,3 +1,12 @@
+/**
+ * @file exec.h
+ * @brief DAIMOS DXR executable format and resident EXEC loader interface.
+ *
+ * DXR images contain a two-word base header, optional TX2 extension word, image
+ * payload, and a two-bit relocation map.  Compressed images require the TX2
+ * extension; PURE images may retain file backing for swap/reload; RT_REQUIRED
+ * reserves the single real-time owner slot while the image is active.
+ */
 #ifndef DAIMON_EXEC_H
 #define DAIMON_EXEC_H
 
@@ -18,8 +27,10 @@
 #define EXEC_LOAD_OK                 0
 #define EXEC_LOAD_RT_REQUIRED        1
 
+/** Load and validate one DXR image into a process VM. */
 int exec_load_process(struct proc *p, unsigned int owner,
     const kword_t *path);
+/** Transactionally replace the current process image from an EXEC V1 block. */
 int exec_replace_current(const kword_t *block,
     unsigned int available_words, kword_t *entry_startup);
 

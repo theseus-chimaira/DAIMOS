@@ -1,4 +1,4 @@
-; proc_run_pdp10.s -- compact resident RUN construction for PDP-6.
+; proc_run.s -- compact resident RUN construction for PDP-6.
 ;
 ; RUN is implemented here rather than keeping the boot-time C constructor
 ; resident.  The three-word process descriptor remains the permanent table

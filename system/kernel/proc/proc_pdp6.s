@@ -1,4 +1,4 @@
-; proc_pdp10.s -- PDP-6 scheduler context switch and event sleep/wakeup.
+; proc_pdp6.s -- PDP-6 scheduler context switch and event sleep/wakeup.
 ;
 ; proc_table is allocated after memory discovery.  Each active process owns a
 ; stable executive u-area allocated from kernel-dynamic core.  Saved CPU/syscall
