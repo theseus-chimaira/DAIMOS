@@ -39,6 +39,7 @@
         .globl dsys_getpid
         .globl dsys_procctl
         .globl dsys_pipe
+        .globl dsys_pipe_words
         .globl dsys_exec
         .globl dsys_gettime
         .globl dsys_rtctl
@@ -109,6 +110,9 @@ dsys_getpid:           uuo 076,0
 dsys_procctl:          uuo 077,0(1)
                        popj 17,
 dsys_pipe:             movei 1,020
+                       uuo 077,0(1)
+                       popj 17,
+dsys_pipe_words:       movei 1,025
                        uuo 077,0(1)
                        popj 17,
 dsys_exec:             move 2,1

@@ -13,15 +13,11 @@
 ; count in bits 7..14.  Tail is derived as (head + count) & 0177.  refs is
 ; readers,,writers in two 18-bit halves.
 ;
-; Post-0.9 note: a future typed pipe facility may add fixed packing modes for
-; 9-bit C bytes, 18-bit halfwords, and 36-bit words if real callers require
-; them.  Do not turn this into a generic arbitrary-width bitstream: every
-; extra per-pipe mode adds metadata and dispatch in this hot path.  SIXBIT
-; (6-bit) pipes are also deliberately not used for normal shell streams because
-; CR/LF and control characters would require escaping and variable-length
-; accounting.  DAIMOS 0.9 therefore keeps one simple 7-bit character-stream
-; representation; wider modes are an explicit post-0.9 feature, not part of
-; the current pipe ABI.
+; Two deliberately fixed payload modes exist.  PIPE_KIND_STREAM is the packed
+; 7-bit shell/FIFO stream above.  PIPE_KIND_WORD is an anonymous native 36-bit
+; queue using the same 032 data words as 032 direct ring slots.  Word pipes
+; use READ_WORDS/WRITE_WORDS and never enter the character packing path.
+; Do not generalize this into arbitrary-width packing without a real caller.
         .text
         .globl  file_table
         .globl  mm_alloc_aligned
@@ -119,7 +115,17 @@ pipe_fifo_unlink_done:
 ; kword_t pipe_create(void)
         .globl  pipe_create
 pipe_create:
+        movei   1,1                     ; PIPE_KIND_STREAM
+        jrst    pipe_create_kind
+
+; kword_t pipe_create_words(void)
+        .globl  pipe_create_words
+pipe_create_words:
+        movei   1,2                     ; PIPE_KIND_WORD
+pipe_create_kind:
         push    17,010
+        push    17,011
+        move    011,1
         skipn   2,file_table
         jrst    pipe_create_fail
         movei   010,020                 ; first free fd sentinel
@@ -149,7 +155,8 @@ pipe_create_alloc:
         movem   4,3(1)
         movei   4,1
         movem   4,5(1)                  ; writers may initially proceed
-        tlo     1,070001                ; PIPE_PROVIDER, PIPE_KIND_STREAM
+        hrl     1,011                   ; local kind into vnode LH
+        tlo     1,070000                ; PIPE_PROVIDER
 
         move    2,file_table
         hlrz    3,010
@@ -171,6 +178,7 @@ pipe_create_alloc:
 pipe_create_fail:
         seto    1,
 pipe_create_done:
+        pop     17,011
         pop     17,010
         popj    17,
 
@@ -373,6 +381,141 @@ pipe_write_broken:
 pipe_write_bad:
         seto    1,
 pipe_write_done:
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; int pipe_read_words(vnode_t node, kword_t *buf, unsigned int nwords)
+; Block only while no data is available, then return up to the currently
+; queued amount.  The native ring has exactly PIPE_BUFFER_WORDS (032) slots.
+        .globl  pipe_read_words
+pipe_read_words:
+        push    17,010
+        push    17,011
+        push    17,012
+        hrrz    010,1                   ; pipe object
+        move    011,2                   ; destination
+        hrrz    012,3                   ; requested words
+        jumpe   010,pipe_read_words_bad
+        jumpe   011,pipe_read_words_bad
+        jumpe   012,pipe_read_words_zero
+pipe_read_words_retry:
+        ldb     4,[POINT 8,2(010),28]   ; queued words
+        jumpn   4,pipe_read_words_have
+        hrrz    5,3(010)                ; writers
+        jumpe   5,pipe_read_words_eof
+        movei   1,4(010)
+        pushj   17,pipe_wait_event
+        jumpl   1,pipe_read_words_bad
+        jrst    pipe_read_words_retry
+pipe_read_words_have:
+        camle   4,012
+        move    4,012                   ; transfer=min(count, requested)
+        move    012,4                   ; preserve return count
+        move    5,2(010)
+        andi    5,0177                  ; head
+pipe_read_words_loop:
+        movei   1,6(010)
+        add     1,5
+        move    1,(1)
+        movem   1,(011)
+        addi    011,1
+        addi    5,1
+        caige   5,032
+        jrst    pipe_read_words_nowrap
+        setz    5,
+pipe_read_words_nowrap:
+        sojg    4,pipe_read_words_loop
+        ldb     4,[POINT 8,2(010),28]
+        sub     4,012
+        lsh     4,7
+        ior     5,4
+        movem   5,2(010)
+        movei   1,5(010)
+        pushj   17,pipe_signal_event
+        move    1,012
+        jrst    pipe_read_words_done
+pipe_read_words_eof:
+pipe_read_words_zero:
+        setz    1,
+        jrst    pipe_read_words_done
+pipe_read_words_bad:
+        seto    1,
+pipe_read_words_done:
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; int pipe_write_words(vnode_t node, const kword_t *buf, unsigned int nwords)
+; As with regular word writes, a positive return is the number transferred.
+; A full pipe sleeps until at least one slot is available, then transfers as
+; much of this request as fits.  This keeps bounded-buffer progress semantics
+; without requiring an arbitrarily large atomic word record.
+        .globl  pipe_write_words
+pipe_write_words:
+        push    17,010
+        push    17,011
+        push    17,012
+        hrrz    010,1
+        move    011,2                   ; source
+        hrrz    012,3                   ; requested words
+        jumpe   010,pipe_write_words_bad
+        jumpe   011,pipe_write_words_bad
+        jumpe   012,pipe_write_words_zero
+pipe_write_words_retry:
+        hlrz    4,3(010)                ; readers
+        jumpe   4,pipe_write_words_broken
+        ldb     5,[POINT 8,2(010),28]   ; queued words
+        movei   6,032
+        sub     6,5                     ; free slots
+        jumpe   6,pipe_write_words_wait
+        camle   6,012
+        move    6,012                   ; transfer=min(free, requested)
+        move    012,6                   ; preserve return count
+        move    4,2(010)
+        andi    4,0177                  ; head
+        add     4,5                     ; tail=head+count
+        cail    4,032
+        subi    4,032
+pipe_write_words_loop:
+        move    1,(011)
+        move    2,4
+        addi    2,6(010)
+        movem   1,(2)
+        addi    011,1
+        addi    4,1
+        caige   4,032
+        jrst    pipe_write_words_nowrap
+        setz    4,
+pipe_write_words_nowrap:
+        sojg    6,pipe_write_words_loop
+        move    4,2(010)
+        andi    4,0177                  ; unchanged head
+        add     5,012
+        lsh     5,7
+        ior     4,5
+        movem   4,2(010)
+        movei   1,4(010)
+        pushj   17,pipe_signal_event
+        move    1,012
+        jrst    pipe_write_words_done
+pipe_write_words_wait:
+        movei   1,5(010)
+        pushj   17,pipe_wait_event
+        jumpl   1,pipe_write_words_bad
+        jrst    pipe_write_words_retry
+pipe_write_words_broken:
+        move    1,proc_current_slot
+        movei   2,7                     ; SYS_EVENT_PIPE
+        pushj   17,proc_event_apply
+pipe_write_words_bad:
+        seto    1,
+        jrst    pipe_write_words_done
+pipe_write_words_zero:
+        setz    1,
+pipe_write_words_done:
+        pop     17,012
         pop     17,011
         pop     17,010
         popj    17,

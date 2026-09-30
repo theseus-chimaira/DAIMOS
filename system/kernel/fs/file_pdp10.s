@@ -148,6 +148,8 @@ file_path_setchar:
         .globl  vfs_writechar
         .globl  pipe_readchar
         .globl  pipe_writechar
+        .globl  pipe_read_words
+        .globl  pipe_write_words
         .globl  pipe_add_ref
         .globl  pipe_close_ref
         .globl  pipe_fifo_detach
@@ -174,6 +176,8 @@ file_readchar:
         lsh     4,-036                 ; provider
         caie    4,7                    ; PIPE_PROVIDER
         jrst    file_readchar_vfs
+        tlne    1,2                    ; PIPE_KIND_WORD is not a char stream
+        jrst    file_readchar_fail
         pushj   17,pipe_readchar
         jrst    file_readchar_done
 file_readchar_vfs:
@@ -229,6 +233,8 @@ file_writechar:
         lsh     5,-036                 ; provider
         caie    5,7                    ; PIPE_PROVIDER
         jrst    file_writechar_vfs
+        tlne    1,2                    ; PIPE_KIND_WORD is not a char stream
+        jrst    file_writechar_fail
         move    2,(17)
         pushj   17,pipe_writechar
         jrst    file_writechar_done
@@ -509,6 +515,19 @@ file_read_words:
         move    2,1(010)                ; word offset
         move    1,(010)
         tlz     1,707070                ; canonical vnode
+        move    5,1
+        lsh     5,-036
+        caie    5,7                     ; PIPE_PROVIDER
+        jrst    file_read_words_vfs
+        tlne    1,2                     ; require PIPE_KIND_WORD
+        jrst    file_read_words_pipe
+        jrst    file_read_words_fail
+file_read_words_pipe:
+        move    2,-1(17)
+        move    3,(17)
+        pushj   17,pipe_read_words
+        jrst    file_read_words_done    ; pipe offsets are meaningless
+file_read_words_vfs:
         move    3,-1(17)
         move    4,(17)
         pushj   17,vfs_read_words
@@ -541,6 +560,19 @@ file_write_words:
         move    2,1(010)                ; word offset
         move    1,(010)
         tlz     1,707070                ; canonical vnode
+        move    5,1
+        lsh     5,-036
+        caie    5,7                     ; PIPE_PROVIDER
+        jrst    file_write_words_vfs
+        tlne    1,2                     ; require PIPE_KIND_WORD
+        jrst    file_write_words_pipe
+        jrst    file_write_words_fail
+file_write_words_pipe:
+        move    2,-1(17)
+        move    3,(17)
+        pushj   17,pipe_write_words
+        jrst    file_write_words_done   ; pipe offsets are meaningless
+file_write_words_vfs:
         move    3,-1(17)
         move    4,(17)
         pushj   17,vfs_write_words
