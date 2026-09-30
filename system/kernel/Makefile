@@ -141,7 +141,7 @@ KCORE_VM_ASM = $(BUILD)/vm_backend.s \
 
 KCORE_FIXED_SRCS = core/ret.s \
 	drivers/dsk270_pdp10.s \
-	drivers/drm236_pdp10.s \
+	drivers/drm236.s \
 	core/kfmt_pdp6.s \
 	fs/vfs_pdp10.s \
 	fs/fs_mres_pdp10.s \
@@ -170,7 +170,7 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/proc_swap.s \
 	$(BUILD)/ret.s \
 	$(BUILD)/dsk270_pdp10.s \
-	$(BUILD)/drm236_pdp10.s \
+	$(BUILD)/drm236.s \
 	$(BUILD)/kfmt_pdp6.s \
 	$(BUILD)/vfs_pdp10.s \
 	$(BUILD)/fs_mres_pdp10.s \
@@ -345,7 +345,7 @@ ${BUILD}/dtfs_pdp10.s: Makefile fs/dtfs_pdp10.s
 
 COPY_ASM_SRCS = core/ret.s \
 	drivers/dsk270_pdp10.s \
-	drivers/drm236_pdp10.s \
+	drivers/drm236.s \
 	core/kfmt_pdp6.s \
 	fs/vfs_pdp10.s \
 	fs/fs_mres_pdp10.s \
@@ -390,7 +390,7 @@ COPY_ASM_SRCS = core/ret.s \
 
 COPY_ASM_TARGETS = $(BUILD)/ret.s \
 	$(BUILD)/dsk270_pdp10.s \
-	$(BUILD)/drm236_pdp10.s \
+	$(BUILD)/drm236.s \
 	$(BUILD)/kfmt_pdp6.s \
 	$(BUILD)/vfs_pdp10.s \
 	$(BUILD)/fs_mres_pdp10.s \
