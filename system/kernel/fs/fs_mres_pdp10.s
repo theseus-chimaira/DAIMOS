@@ -223,6 +223,18 @@ fs_d6fs_cache_reclaim:
         jrst    (4)
 d6fs_cache_reclaim_jump:
         jrst    fs_mres_no_service
+
+; KCORE memory-pressure bridge to demand-backed MEMFS eviction.
+; AC1=requested allocation size; return released resident words.
+        .globl  fs_memfs_reclaim
+        .globl  memfs_reclaim_jump
+fs_memfs_reclaim:
+        hrrz    4,memfs_reclaim_jump
+        cain    4,fs_mres_no_service
+        jrst    kret_zero
+        jrst    (4)
+memfs_reclaim_jump:
+        jrst    fs_mres_no_service
 fs_mres_no_service:
         jrst    kret_neg1
 

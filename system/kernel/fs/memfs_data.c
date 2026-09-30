@@ -10,6 +10,10 @@
  */
 #include "memfs.h"
 #include "mm.h"
+#include "fs_mres.h"
+#include "storage.h"
+#include "blockset_mres.h"
+#include "swap_store.h"
 
 #define MEMFS_DATA_CHUNKS       4U
 #define MEMFS_DATA_CHUNK_WORDS  02000UL
@@ -23,19 +27,22 @@ struct memfs_data_chunk {
 };
 
 static struct memfs_data_chunk memfs_data_chunks[MEMFS_DATA_CHUNKS];
+static struct memfs *memfs_data_fs;
 static kword_t memfs_data_limit;
 static kword_t memfs_data_capacity;
+static int memfs_data_allocating;
 
 static kword_t
 memfs_alloc_words(kword_t words)
 {
-        if (words < 2UL)
-                return 2UL;
-        return (words + 1UL) & ~1UL;
+        if (words < DSK_WORDS_PER_SECTOR)
+                return DSK_WORDS_PER_SECTOR;
+        return ((words + DSK_WORDS_PER_SECTOR - 1UL) /
+            DSK_WORDS_PER_SECTOR) * DSK_WORDS_PER_SECTOR;
 }
 
 void
-memfs_data_init(kword_t limit)
+memfs_data_init(struct memfs *fs, kword_t limit)
 {
         unsigned int i;
 
@@ -44,7 +51,8 @@ memfs_data_init(kword_t limit)
                 memfs_data_chunks[i].words = 0UL;
                 memfs_data_chunks[i].free = 0UL;
         }
-        memfs_data_limit = limit & ~1UL;
+        memfs_data_fs = fs;
+        memfs_data_limit = limit;
         memfs_data_capacity = 0UL;
 }
 
@@ -87,6 +95,7 @@ memfs_data_alloc(kword_t words, kword_t *basep)
         kword_t chunk_words;
         kword_t need;
         kword_t remaining;
+        int rc;
         unsigned int i;
 
         need = memfs_alloc_words(words);
@@ -106,9 +115,14 @@ memfs_data_alloc(kword_t words, kword_t *basep)
         remaining = memfs_data_limit - memfs_data_capacity;
         chunk_words = need > MEMFS_DATA_CHUNK_WORDS ? need : MEMFS_DATA_CHUNK_WORDS;
         if (chunk_words > remaining)
-                chunk_words = remaining & ~1UL;
-        if (chunk_words < need || mm_alloc(chunk_words, MM_TYPE_KERNEL_DYNAMIC,
-            MEMFS_DATA_MM_OWNER, MM_ALLOC_LOW, &base) != MM_OK)
+                chunk_words = (remaining / DSK_WORDS_PER_SECTOR) * DSK_WORDS_PER_SECTOR;
+        if (chunk_words < need)
+                return -1;
+        memfs_data_allocating = 1;
+        rc = mm_alloc(chunk_words, MM_TYPE_KERNEL_DYNAMIC,
+            MEMFS_DATA_MM_OWNER, MM_ALLOC_LOW, &base);
+        memfs_data_allocating = 0;
+        if (rc != MM_OK)
                 return -1;
         cp = &memfs_data_chunks[i];
         cp->base = base;
@@ -185,6 +199,54 @@ memfs_data_free(kword_t base, kword_t words)
         }
 }
 
+static void
+memfs_backing_drop(unsigned int slot)
+{
+        kword_t span;
+
+        if (memfs_data_fs == 0 || memfs_data_fs->pool == 0)
+                return;
+        span = memfs_data_fs->pool[slot];
+        if (span != 0UL) {
+                swap_store_free((span >> 18U) & MEMFS_HALF_MASK,
+                    span & MEMFS_HALF_MASK);
+                memfs_data_fs->pool[slot] = 0UL;
+        }
+}
+
+int
+memfs_data_ensure(struct memfs *fs, unsigned int slot)
+{
+        struct memfs_node *np;
+        kword_t base;
+        kword_t span;
+        kword_t words;
+
+        if (fs == 0 || fs != memfs_data_fs || slot >= fs->node_count)
+                return -1;
+        np = &fs->nodes[slot];
+        words = np->data & MEMFS_HALF_MASK;
+        if (words == 0UL || ((np->data >> 18U) & MEMFS_HALF_MASK) != 0UL)
+                return 0;
+        span = fs->pool[slot];
+        if (span == 0UL || memfs_data_alloc(words, &base) != 0)
+                return -1;
+        if (blockset_runtime_reg_call(BLOCKSET_MRES_OP_TAIL_READ,
+            (span >> 18U) & MEMFS_HALF_MASK, span & MEMFS_HALF_MASK, base) != 0UL) {
+                memfs_data_free(base, words);
+                return -1;
+        }
+        np->data = ((base & MEMFS_HALF_MASK) << 18U) | words;
+        return 0;
+}
+
+void
+memfs_data_dirty(unsigned int slot)
+{
+        if (memfs_data_fs != 0 && slot < memfs_data_fs->node_count)
+                memfs_backing_drop(slot);
+}
+
 int
 memfs_resize(struct memfs *fs, unsigned int slot, unsigned int words)
 {
@@ -201,12 +263,15 @@ memfs_resize(struct memfs *fs, unsigned int slot, unsigned int words)
         if ((np->meta & 06UL) != MEMFS_F_WRITABLE)
                 return -1;
         oldwords = (unsigned int)(np->data & MEMFS_HALF_MASK);
+        if (oldwords != 0U && memfs_data_ensure(fs, slot) != 0)
+                return -1;
         oldbase = (np->data >> 18U) & MEMFS_HALF_MASK;
         if (words == oldwords)
                 return 0;
         if (words == 0U) {
                 if (oldbase != 0UL)
                         memfs_data_free(oldbase, oldwords);
+                memfs_backing_drop(slot);
                 np->data = 0UL;
                 fs->used_words -= oldwords;
                 return 0;
@@ -217,14 +282,85 @@ memfs_resize(struct memfs *fs, unsigned int slot, unsigned int words)
         for (i = 0U; i < copy; ++i)
                 ((kword_t *)(unsigned long)base)[i] =
                     ((kword_t *)(unsigned long)oldbase)[i];
-        for (; i < words; ++i)
+        for (; (kword_t)i < memfs_alloc_words((kword_t)words); ++i)
                 ((kword_t *)(unsigned long)base)[i] = 0UL;
         if (oldbase != 0UL)
                 memfs_data_free(oldbase, oldwords);
+        memfs_backing_drop(slot);
         np->data = ((base & MEMFS_HALF_MASK) << 18U) |
             ((kword_t)words & MEMFS_HALF_MASK);
         fs->used_words = fs->used_words - oldwords + words;
         return 0;
+}
+
+static kword_t
+memfs_evict_chunk(struct memfs_data_chunk *cp)
+{
+        struct memfs *fs;
+        unsigned int slot;
+
+        fs = memfs_data_fs;
+        if (fs == 0 || cp->base == 0UL)
+                return 0UL;
+        for (slot = 1U; slot < fs->node_count; ++slot) {
+                struct memfs_node *np;
+                kword_t base;
+                kword_t blocks;
+                kword_t first;
+                kword_t words;
+
+                np = &fs->nodes[slot];
+                base = (np->data >> 18U) & MEMFS_HALF_MASK;
+                words = np->data & MEMFS_HALF_MASK;
+                if (words == 0UL || base < cp->base ||
+                    base >= cp->base + cp->words || fs->pool[slot] != 0UL)
+                        continue;
+                blocks = memfs_alloc_words(words) / DSK_WORDS_PER_SECTOR;
+                if (swap_store_alloc_memfs(blocks, &first) != 0)
+                        return 0UL;
+                if (blockset_runtime_reg_call(BLOCKSET_MRES_OP_TAIL_WRITE,
+                    first, blocks, base) != 0UL) {
+                        swap_store_free(first, blocks);
+                        return 0UL;
+                }
+                fs->pool[slot] = ((first & MEMFS_HALF_MASK) << 18U) | blocks;
+        }
+        for (slot = 1U; slot < fs->node_count; ++slot) {
+                struct memfs_node *np;
+                kword_t base;
+
+                np = &fs->nodes[slot];
+                base = (np->data >> 18U) & MEMFS_HALF_MASK;
+                if (base >= cp->base && base < cp->base + cp->words)
+                        np->data &= MEMFS_HALF_MASK;
+        }
+        {
+                kword_t base;
+                kword_t words;
+
+                base = cp->base;
+                words = cp->words;
+                if (mm_free(base, MM_TYPE_KERNEL_DYNAMIC,
+                    MEMFS_DATA_MM_OWNER) != MM_OK)
+                        return 0UL;
+                cp->base = cp->words = cp->free = 0UL;
+                memfs_data_capacity -= words;
+                return words;
+        }
+}
+
+kword_t
+memfs_data_reclaim(kword_t wanted)
+{
+        kword_t released;
+        unsigned int i;
+
+        if (memfs_data_allocating)
+                return 0UL;
+        released = 0UL;
+        for (i = 0U; i < MEMFS_DATA_CHUNKS && released < wanted; ++i)
+                released += memfs_evict_chunk(&memfs_data_chunks[i]);
+        return released;
 }
 
 void
@@ -232,10 +368,13 @@ memfs_data_destroy(void)
 {
         unsigned int i;
 
+        if (memfs_data_fs != 0)
+                for (i = 0U; i < memfs_data_fs->node_count; ++i)
+                        memfs_backing_drop(i);
         for (i = 0U; i < MEMFS_DATA_CHUNKS; ++i) {
                 if (memfs_data_chunks[i].base != 0UL)
                         (void)mm_free(memfs_data_chunks[i].base,
                             MM_TYPE_KERNEL_DYNAMIC, MEMFS_DATA_MM_OWNER);
         }
-        memfs_data_init(0UL);
+        memfs_data_init(0, 0UL);
 }

@@ -2,6 +2,8 @@
         .text
         .globl  vfs_name_valid
         .globl  fs_copy_words
+        .globl  memfs_data_ensure
+        .globl  memfs_data_dirty
         .globl  kret_zero
         .globl  kret_neg1
 
@@ -14,6 +16,7 @@ memfs_read_words:
         move    7,1             ; preserve fs across slot validation
         pushj   17,memfs_slot   ; AC5=np, AC6=meta
         jumpl   1,kret_neg1
+        move    2,1             ; preserve slot for possible fault-in
         ldb     1,[POINT 3,5(5),20]
         caie    1,2             ; regular file
         jrst    kret_neg1
@@ -30,6 +33,28 @@ memfs_read_words:
         camle   6,7
         move    6,7
 memfs_read_count:
+        jumpn   4,memfs_read_source_ready
+        push    17,0            ; destination
+        push    17,3            ; off
+        push    17,6            ; count
+        push    17,2            ; slot
+        push    17,1            ; fs
+        pushj   17,memfs_data_ensure
+        jumpn   1,memfs_read_ensure_fail
+        pop     17,7            ; fs
+        pop     17,1
+        pop     17,6
+        pop     17,3
+        pop     17,0
+        move    5,1
+        imuli   5,7
+        add     5,(7)
+        setz    4,
+        jrst    memfs_read_source_ready
+memfs_read_ensure_fail:
+        sub     17,[5,,5]
+        jrst    kret_neg1
+memfs_read_source_ready:
         hlrz    2,6(5)
         jumpe   4,memfs_read_pool
         add     2,5(1)          ; image_data
@@ -95,6 +120,19 @@ memfs_write_grow:
 
 memfs_write_ready:
 ; Recompute np after resize and copy nwords into its resident extent.
+        push    17,7
+        push    17,2
+        push    17,3
+        push    17,0
+        move    1,7
+        pushj   17,memfs_data_ensure
+        jumpn   1,memfs_write_ensure_fail
+        move    1,-2(17)
+        pushj   17,memfs_data_dirty
+        pop     17,0
+        pop     17,3
+        pop     17,2
+        pop     17,7
         move    5,2
         imuli   5,7
         add     5,(7)           ; np
@@ -108,6 +146,9 @@ memfs_write_ready:
 
         move    1,-1(17)
         popj    17,
+memfs_write_ensure_fail:
+        sub     17,[4,,4]
+        jrst    kret_neg1
 
 ; int memfs_slot(const struct memfs *fs, vnode_t node)
 ; Return the validated slot directly, or -1.  On success AC5=np, AC6=meta.
@@ -646,7 +687,7 @@ memfs_mres_mount_size_ok:
         push    17,[0]                  ; allocation base
         movei   5,(17)
         push    17,5                    ; fifth mm_alloc arg: basep
-        movei   1,0700                  ; allocate namespace only
+        movei   1,01000                 ; nodes + 64 backing descriptors
         movei   2,3                     ; MM_TYPE_KERNEL_DYNAMIC
         movei   3,011                   ; MEMFS_MM_OWNER
         setz    4,                      ; MM_ALLOC_LOW
@@ -655,7 +696,7 @@ memfs_mres_mount_size_ok:
         jumpn   1,memfs_mres_mount_bad
 
         move    1,(17)
-        movei   2,0700
+        movei   2,01000
         pushj   17,fs_zero_words
         move    5,(17)
         move    6,[0207775]             ; DIR, mode 0777, USED|WRITABLE
@@ -664,13 +705,16 @@ memfs_mres_mount_size_ok:
         movem   5,memfs_mres_fs
         movei   6,0100                  ; 64 node slots
         movem   6,memfs_mres_fs+1
-        setzm   memfs_mres_fs+2         ; no preallocated data pool
+        move    7,5
+        addi    7,0700
+        movem   7,memfs_mres_fs+2       ; per-node swap backing descriptors
         move    6,-1(17)                ; requested total-word ceiling
         subi    6,0700                  ; preserve old data-capacity semantics
         movem   6,memfs_mres_fs+3
         setzm   memfs_mres_fs+4         ; logical file words in use
         setzm   memfs_mres_fs+5         ; no immutable image backing
-        move    1,6
+        movei   1,memfs_mres_fs
+        move    2,6
         pushj   17,memfs_data_init
 
         push    17,[0]                  ; mounted-root scratch

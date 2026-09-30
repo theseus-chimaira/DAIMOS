@@ -59,8 +59,11 @@ int memfs_read_words(const struct memfs *fs, vnode_t node,
 int memfs_write_words(struct memfs *fs, vnode_t node,
     unsigned int off, const kword_t *buf, unsigned int nwords);
 
-void memfs_data_init(kword_t limit);
+void memfs_data_init(struct memfs *fs, kword_t limit);
 void memfs_data_destroy(void);
+int memfs_data_ensure(struct memfs *fs, unsigned int slot);
+void memfs_data_dirty(unsigned int slot);
+kword_t memfs_data_reclaim(kword_t wanted);
 
 
 #endif
