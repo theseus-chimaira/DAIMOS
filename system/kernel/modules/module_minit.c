@@ -77,6 +77,7 @@
 #define TTY_X_CTY_GETCHAR_ADDR  5U
 #define TTY_X_DCS_GETCHAR_ADDR  6U
 #define TTY_X_GE_GETCHAR_ADDR   7U
+#define TTY_X_WRITE_S6REC       8U
 #define WCNSLS_X_READ           0U
 #define OCNSLS_X_READ           0U
 #define TAPE_X_HANDLER           0U
@@ -137,6 +138,7 @@ extern kword_t sys_dtc_write_block_jump;
 extern kword_t sys_logstore_service_jump;
 extern kword_t sys_mtc_service_jump;
 extern kword_t native_sys_putchar_call;
+extern kword_t tty_write_s6rec_jump;
 extern int d6fs_reader_bootstrap_call(kword_t backing_ops);
 
 
@@ -839,6 +841,8 @@ tty_minit(void)
         storage_patch_jump(&native_sys_putchar_call, service);
         service = minit_export(name, base, TTY_X_GETCHAR);
         storage_patch_jump(&native_sys_getchar_call, service);
+        service = minit_export(name, base, TTY_X_WRITE_S6REC);
+        storage_patch_jump(&tty_write_s6rec_jump, service);
         minit_diag_loaded(name);
 }
 

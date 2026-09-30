@@ -22,6 +22,7 @@
         .globl tty_dcs_getchar_address
         .globl tty_ge_getchar_address
         .globl kret_arg
+        .globl proc_tty_output
 
 /**
  * @brief Dispatch one packed logical-terminal output byte.
@@ -78,3 +79,79 @@ tty_ge_getchar_address:
 tty_getchar_cty:
 tty_cty_getchar_address:
         jrst kret_arg
+
+; int tty_write_s6rec(const kword_t *words, unsigned int nwords)
+; Render exactly one complete S6REC text record to the caller's controlling
+; logical TTY.  The caller supplies the whole record; raw terminal bytes
+; continue to use WRITECHAR and never pass through this decoder.
+        .globl tty_write_s6rec
+tty_write_s6rec:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        push    17,014
+        move    010,1                   ; record base
+        hrrz    011,2                   ; supplied/return word count
+        jumpe   011,tty_s6_zero
+
+        ; Resolve/validate the controlling TTY once per call.  Keep only its
+        ; packed id prefix; the probe space is not emitted.
+        movei   1,040
+        pushj   17,proc_tty_output
+        jumpl   1,tty_s6_bad
+        andi    1,037400                ; TTY_ID_MASK << 8
+        move    012,1
+
+        move    3,(010)
+        ldb     4,[POINT 6,3,5]
+        caie    4,1                     ; S6REC TEXT
+        jrst    tty_s6_bad
+        and     3,[077777777]           ; character count
+        move    013,3
+
+        ; One divide per record validates the complete frame before output.
+        move    4,3
+        addi    4,5
+        idivi   4,6                     ; ceil(chars/6)
+        addi    4,1                     ; header + payload words
+        came    4,011                   ; exactly one complete record
+        jrst    tty_s6_bad
+
+        move    014,[POINT 6,0]
+        movei   7,1(010)
+        hrr     014,7
+        jumpe   013,tty_s6_eol
+tty_s6_char_loop:
+        ildb    2,014
+        addi    2,040                   ; SIXBIT -> terminal ASCII
+        move    1,012
+        ior     1,2
+        pushj   17,tty_putchar
+        jumpn   1,tty_s6_bad
+        sojg    013,tty_s6_char_loop
+
+tty_s6_eol:
+        move    1,012
+        ori     1,015
+        pushj   17,tty_putchar
+        jumpn   1,tty_s6_bad
+        move    1,012
+        ori     1,012
+        pushj   17,tty_putchar
+        jumpn   1,tty_s6_bad
+
+        move    1,011
+        jrst    tty_s6_done
+tty_s6_zero:
+        setz    1,
+        jrst    tty_s6_done
+tty_s6_bad:
+        seto    1,
+tty_s6_done:
+        pop     17,014
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,

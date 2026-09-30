@@ -54,4 +54,7 @@ int tty_putchar(kword_t tty_char);
  */
 int tty_getchar(unsigned int tty);
 
+/** Render exactly one complete S6REC text record on the controlling TTY. */
+int tty_write_s6rec(const kword_t *words, unsigned int nwords);
+
 #endif

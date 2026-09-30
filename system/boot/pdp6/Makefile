@@ -548,7 +548,7 @@ $(TTY_MRES_OBJ): $(BUILD)/tty_io.dobj $(KCORE_MAP)
 	    -R $@ -N tty_mres_package -X tty_putchar -X tty_getchar -X tty_cty_putchar_address \
 	    -X tty_dcs_putchar_address -X tty_ge_putchar_address \
 	    -X tty_cty_getchar_address -X tty_dcs_getchar_address \
-	    -X tty_ge_getchar_address $(BUILD)/tty_io.dobj
+	    -X tty_ge_getchar_address -X tty_write_s6rec $(BUILD)/tty_io.dobj
 
 $(WCNSLS_MRES_OBJ): $(BUILD)/wcnsls_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/wcnsls-mres.dxr -M $(BUILD)/wcnsls-mres.map \
