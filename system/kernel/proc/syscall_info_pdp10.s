@@ -119,8 +119,7 @@ sys_meminfo_proc_loop:
         add     1,7
 sys_meminfo_proc_next:
         addi    4,PROC_WORDS
-        addi    6,1
-        jrst    sys_meminfo_proc_loop
+        aoja    6,sys_meminfo_proc_loop
 sys_meminfo_proc_done:
         movem   1,2(2)
         movem   3,5(2)

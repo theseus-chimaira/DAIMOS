@@ -728,8 +728,7 @@ file_getcwd_up:
         pushj   17,vfs_parent_name
         jumpn   1,file_getcwd_local_fail
         move    010,(17)
-        addi    013,1
-        jrst    file_getcwd_up
+        aoja    013,file_getcwd_up
 
 file_getcwd_up_done:
 ; Capacity is the number of SIXBIT characters in buf[1..nwords-1].

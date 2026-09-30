@@ -453,8 +453,7 @@ native_sys_logctl:
         move    5,-2(17)               ; operation
         caile   5,010
         jrst    native_sys_logctl_bad3
-        cain    5,0                    ; STATUS
-        jrst    native_sys_logctl_status
+        jumpe   5,native_sys_logctl_status ; STATUS
         cain    5,1                    ; READ BLOCK
         jrst    native_sys_logctl_logio
         cain    5,2                    ; WRITE BLOCK

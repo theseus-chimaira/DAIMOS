@@ -219,8 +219,7 @@ vfs_parent:
         jrst    kret_zero
 vfs_parent_mount:
         ldb     3,[POINT 6,1,11]
-        subi    3,1
-        jumpl   3,vfs_parent_raw_asm
+        sojl    3,vfs_parent_raw_asm
         cail   3,4
         jrst    vfs_parent_raw_asm
 vfs_parent_mount_check:
@@ -241,8 +240,7 @@ vfs_parent_name:
         camn    1,vfs_namespace_root
         jrst    kret_neg1
         ldb     4,[POINT 6,1,11]
-        subi    4,1
-        jumpl   4,vfs_parent_name_dispatch
+        sojl    4,vfs_parent_name_dispatch
         cail    4,4
         jrst    vfs_parent_name_dispatch
         move    5,vfs_mount_root(4)
@@ -773,8 +771,7 @@ vfs_writechar:
         .globl  vfs_readonly
 vfs_readonly:
         ldb     1,[POINT 6,1,11]        ; mount id
-        subi    1,1
-        jumpl   1,kret_zero
+        sojl    1,kret_zero
         cail   1,4
         jrst    kret_zero
 vfs_readonly_slot:
@@ -921,8 +918,7 @@ vfs_remount:
         .globl  vfs_unmount
 vfs_unmount:
         ldb     2,[POINT 6,1,11]
-        subi    2,1
-        jumpl   2,kret_neg1
+        sojl    2,kret_neg1
         cail   2,4
         jrst    kret_neg1
 vfs_unmount_slot:

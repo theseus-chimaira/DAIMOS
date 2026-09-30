@@ -73,8 +73,7 @@ mfsdev_lookup_scan:
         jrst    mfsdev_lookup_store
 
 mfsdev_lookup_next:
-        addi    4,1
-        jrst    mfsdev_lookup_scan
+        aoja    4,mfsdev_lookup_scan
 
 mfsdev_lookup_dir:
         caie    4,020003
@@ -168,8 +167,7 @@ mfsdev_readdir_scan:
         jrst    mfsdev_readdir_found
         addi    7,1
 mfsdev_readdir_next:
-        addi    5,1
-        jrst    mfsdev_readdir_scan
+        aoja    5,mfsdev_readdir_scan
 
 mfsdev_readdir_found:
         move    1,5                    ; preserve device id across name length
@@ -700,8 +698,7 @@ mfsproc_readdir_root_loop:
         addi    7,1
 mfsproc_readdir_root_next:
         addi    5,PROC_WORDS
-        addi    6,1
-        jrst    mfsproc_readdir_root_loop
+        aoja    6,mfsproc_readdir_root_loop
 mfsproc_readdir_domain_root:
         move    7,2
         movei   6,0

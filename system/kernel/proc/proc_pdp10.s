@@ -273,8 +273,7 @@ proc_tty_session_scope:
         jrst    kret_one
 proc_tty_session_next:
         addi    3,PROC_WORDS
-        addi    2,1
-        jrst    proc_tty_session_scan
+        aoja    2,proc_tty_session_scan
 ; int proc_session_teardown(unsigned int leader_slot, kword_t leader_ctl)
 ; Session-leader exit path.  A controlling TTY is encoded directly in the
 ; leader control word, so teardown needs no permanent session table or TTY
@@ -464,8 +463,7 @@ proc_has_live_user_scan:
         and     4,[0300000000000]      ; FREE/ZOMB have low state bits clear
         jumpn   4,kret_one
         addi    3,PROC_WORDS
-        addi    2,1
-        jrst    proc_has_live_user_scan
+        aoja    2,proc_has_live_user_scan
 ; void proc_notify_parent(unsigned int parent)
 ; Queue CHLD and wake a parent blocked in WAIT.  The descriptor is decoded
 ; once; unlike the former C helper chain, the wake path does not revalidate
@@ -1587,8 +1585,7 @@ proc_wakeup_kick:
         cono    0004,004002
 proc_wakeup_next:
         addi    2,PROC_WORDS
-        addi    3,1
-        jrst    proc_wakeup_scan
+        aoja    3,proc_wakeup_scan
 proc_wakeup_done:
         pop     17,6
         pop     17,5

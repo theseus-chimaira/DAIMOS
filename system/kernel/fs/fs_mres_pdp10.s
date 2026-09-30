@@ -271,8 +271,7 @@ fs_move_words_done:
 fs_zero_words:
         jumpe   2,fs_zero_words_done
         setzm   (1)
-        subi    2,1
-        jumpe   2,fs_zero_words_done
+        soje    2,fs_zero_words_done
         move    3,1
         aoj     3,
         hrl     3,1
