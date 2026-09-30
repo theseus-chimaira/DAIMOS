@@ -16,6 +16,16 @@
 
 #include "kcore_pi.h"
 
+/*
+ * Paper-tape word framing over the common WORDTOKEN8 layout.  Four-byte
+ * groups are canonical WORDTOKEN8 words and therefore leave the low nibble
+ * zero.  A final partial group stores its valid-byte count (1..3) in that
+ * otherwise-unused nibble.  Values 4..15 are invalid encodings.
+ */
+#define PT_WORD_BYTES            4U
+#define PT_WORD_COUNT_MASK       017UL
+#define PT_WORD_PARTIAL_MAX      3U
+
 /** Paper-tape punch I/O device number. */
 #define PTP_DEVICE              0100U
 /** Paper-tape reader I/O device number. */
@@ -48,6 +58,7 @@
  * @return PT_E_OK, PT_E_ARG, PT_E_BUSY, or PT_E_TIMEOUT.
  */
 int ptr_getchar(int *cp);
+int ptr_read_words(kword_t *words, unsigned int nwords);
 /** @brief Resident PI7 completion/prefetch entry for PTR. */
 void ptr_pi_handler(void);
 
@@ -57,6 +68,7 @@ void ptr_pi_handler(void);
  * @return PT_E_OK, PT_E_BUSY, PT_E_IO, or PT_E_TIMEOUT.
  */
 int ptp_putchar(int c);
+int ptp_write_words(const kword_t *words, unsigned int nwords);
 /** @brief Resident PI7 completion entry for PTP. */
 void ptp_pi_handler(void);
 

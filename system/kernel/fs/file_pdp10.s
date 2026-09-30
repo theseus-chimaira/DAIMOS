@@ -152,6 +152,8 @@ file_path_setchar:
         .globl  lpt_putchar
         .globl  tty_write_s6rec_jump
         .globl  tty_read_s6rec_jump
+        .globl  ptr_read_words_jump
+        .globl  ptp_write_words_jump
 
 ; int file_readchar(int fd)
 ; Validate the descriptor exactly as the C wrapper did, then advance the
@@ -494,6 +496,8 @@ file_read_words:
         move    2,1(010)                ; word offset
         move    1,(010)
         tlz     1,707070                ; canonical vnode
+        camn    1,[020002000002]        ; PTR0
+        jrst    file_read_words_ptr
         camn    1,[020002000000]        ; CTY0 controlling-TTY proxy
         jrst    file_read_words_tty
         move    3,-1(17)
@@ -504,6 +508,11 @@ file_read_words_tty:
         move    1,-1(17)                ; mapped S6REC destination
         move    2,(17)                  ; destination capacity
         pushj   17,tty_read_s6rec_jump
+        jrst    file_read_words_result
+file_read_words_ptr:
+        move    1,-1(17)                ; mapped PT8 destination
+        move    2,(17)                  ; destination word capacity
+        pushj   17,ptr_read_words_jump
 file_read_words_result:
         jumple  1,file_read_words_done
         addm    1,1(010)
@@ -534,6 +543,8 @@ file_write_words:
         move    2,1(010)                ; word offset
         move    1,(010)
         tlz     1,707070                ; canonical vnode
+        camn    1,[020002000003]        ; PTP0
+        jrst    file_write_words_ptp
         camn    1,[020002000000]        ; CTY0 controlling-TTY proxy
         jrst    file_write_words_tty
         move    3,-1(17)
@@ -544,6 +555,11 @@ file_write_words_tty:
         move    1,-1(17)                ; mapped S6REC words
         move    2,(17)                  ; supplied word count
         pushj   17,tty_write_s6rec_jump
+        jrst    file_write_words_result
+file_write_words_ptp:
+        move    1,-1(17)                ; mapped PT8 source
+        move    2,(17)                  ; supplied word count
+        pushj   17,ptp_write_words_jump
 file_write_words_result:
         jumple  1,file_write_words_done
         addm    1,1(010)
@@ -559,6 +575,10 @@ file_write_words_fail:
 tty_write_s6rec_jump:
         jrst    kret_neg1
 tty_read_s6rec_jump:
+        jrst    kret_neg1
+ptr_read_words_jump:
+        jrst    kret_neg1
+ptp_write_words_jump:
         jrst    kret_neg1
 
 ; int file_readdir(int fd, struct vfs_dirent *ent)

@@ -29,6 +29,8 @@ extern kword_t native_sys_putchar_call;
 extern kword_t native_sys_getchar_call;
 extern kword_t tty_write_s6rec_jump;
 extern kword_t tty_read_s6rec_jump;
+extern kword_t ptr_read_words_jump;
+extern kword_t ptp_write_words_jump;
 extern kword_t sys_dtc_read_block_jump;
 extern kword_t sys_dtc_write_block_jump;
 extern kword_t storage_pi_dsk_jump;
@@ -63,6 +65,8 @@ kword_t *const module_fixed_bindings[] = {
         &native_sys_getchar_call,
         &tty_write_s6rec_jump,
         &tty_read_s6rec_jump,
+        &ptr_read_words_jump,
+        &ptp_write_words_jump,
         &sys_dtc_read_block_jump,
         &sys_dtc_write_block_jump,
         &storage_pi_dsk_jump,
