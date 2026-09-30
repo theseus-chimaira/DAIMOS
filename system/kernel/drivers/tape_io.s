@@ -1,8 +1,26 @@
-; tape_io.s -- resident PDP-6 DECtape and magnetic-tape Type-136 driver.
-;
-; DTC and MTC share this MRES because both are tape transports using the same
-; slow physical motion and substantial common DCT setup/status machinery.  The
-; disk controller is entirely separate in dsk_io.s.
+/**
+ * @file tape_io.s
+ * @brief Resident PDP-6 DECtape and Type 516 magnetic-tape driver.
+ *
+ * DTC and MTC share one MRES because both transports use the Type 136 data
+ * channel and substantial common transfer/event machinery. The disk controller
+ * is independent in dsk_io.s. KINIT installs this package once when either tape
+ * controller is present, then publishes only the services belonging to the
+ * detected controller(s).
+ *
+ * storage_state is the shared tape-operation discriminator while a transfer is
+ * active. The negative data-transfer states are deliberately chosen so MOVNS
+ * on completion yields direct indices into tape_account_table:
+ *   -1 DTC read, -2 MTC read, -5 MTC write, -6 DTC write.
+ * State 7 is the common I/O-error result. Positive/zero storage_count values are
+ * transfer word counts; negative values are wall-clock timeout countdowns aged
+ * by storage_clock_tick at 60 Hz.
+ *
+ * DTC keeps a one-word motion estimate per unit so sequential requests can
+ * choose direction without first stopping every transport. Any global DTC stop
+ * invalidates all eight estimates. Runtime transfer completion uses one event
+ * word because DTC and MTC are mutually exclusive Type 136 owners.
+ */
 
         .text
         .globl mfsdev_io_in
@@ -23,10 +41,12 @@
         .globl proc_wait_event
         .globl proc_wakeup_event
 
-; Polled controller/search paths use wall-clock timeouts.  storage_count is
-; negative only while one of these timers is armed; storage_clock_tick moves
-; negative counts toward zero at 60 Hz without disturbing positive transfer
-; word counts.  MTC spacing/rewind may legitimately span a full reel.
+/**
+ * Polled controller/search paths use wall-clock timeouts. storage_count is
+ * negative only while one of these timers is armed; storage_clock_tick moves
+ * negative counts toward zero at 60 Hz without disturbing positive transfer
+ * word counts. MTC spacing/rewind may legitimately span a full reel.
+ */
         ; One 18-bit DECtape end-to-end traversal is roughly 32 seconds at
         ; nominal line speed.  A transport may legitimately coast near the
         ; opposite end while another member is being scanned, so allow one
@@ -38,7 +58,17 @@
         .set DTC_SEARCH_TIMEOUT_NEG_RH,01000000-DTC_SEARCH_TIMEOUT_TICKS
         .set MTC_CONTROL_TIMEOUT_NEG_RH,01000000-MTC_CONTROL_TIMEOUT_TICKS
 
-; PI5 status leaf selected by the fixed Type-136 owner router.
+/**
+ * @brief Service DTC/MTC PI5 status for the current Type 136 tape owner.
+ * @return Does not return normally; jumps to pdp10_pi_dispatch_done.
+ *
+ * AC1/AC2 are scratch under the direct storage-router completion ABI. DTC and
+ * MTC status/error interpretation is selected entirely from storage_state.
+ * Successful controller completion negates the active negative state so the
+ * waiter sees 1/2/5/6; errors publish state 7 and increment the device-specific
+ * MonitorFS storage-error counter. Cleanup releases all tape-side Type 136
+ * ownership and invalidates cached DECtape motion after a global stop.
+ */
 tape_pi_handler:
         move 2,storage_state
         aoje 2,tape_pi_dtc_status
@@ -105,8 +135,16 @@ tape_pi_cleanup:
         pushj 017,dtc_forget_motion
         jrst pdp10_pi_dispatch_done
 
-; PI3 tape leaf.  Reverse DECtape transfers are serviced one word at a time;
-; forward transfers reach this entry only when BLKI/BLKO falls through.
+/**
+ * @brief Service Type 136 PI3 data-channel requests for the active tape owner.
+ * @return Does not return normally; jumps to pdp10_pi_dispatch_done.
+ *
+ * Reverse DECtape transfers are serviced one word at a time because the memory
+ * address walks backward; forward DTC and MTC transfers use BLKI/BLKO and reach
+ * the common completion selector only when the block instruction falls through.
+ * The selector is self-patched for the two extra DCT acknowledgements required
+ * by write pipelines.
+ */
 tape_dct_handler:
         skipn dtc_request_reverse
         jrst tape_dct_select
@@ -205,14 +243,20 @@ tape_dct_mtc_write_drain:
         cono 0200,0(1)
         jrst pdp10_pi_dispatch_done
 
-; Complete the single shared tape data-transfer event.  DTC and MTC are
-; mutually exclusive owners of Type-136, so one word covers both drivers.
+/** @brief Publish the single shared tape transfer event and wake its waiter. */
 tape_transfer_wakeup:
         setom tape_transfer_event
         movei 1,tape_transfer_event
         jrst proc_wakeup_event
 
-; Direct PI3 block setup shared inside the tape package.
+/**
+ * @brief Build the common Type 136 direct-transfer IOWD and PI3 vector.
+ * @param AC2 Buffer address; @param AC3 positive transfer word count.
+ * @return storage_count/storage_iowd and low-memory DCT vector armed.
+ *
+ * AC4 is scratch. The event is cleared before the DCT vector becomes live,
+ * preventing completion from racing ahead of waiter initialization.
+ */
 tape_setup_read:
         move 4,tape_dct_blki
         jrst tape_setup_common
@@ -235,11 +279,15 @@ tape_dct_blki:
 tape_dct_blko:
         blko 0200,storage_iowd
 
-; AC1 unit, AC2 physical block 0..01101, AC3 destination of 128 words.
+/**
+ * @brief Read one 128-word DECtape physical block.
+ * @param AC1 Unit 0..7; @param AC2 block 0..01101; @param AC3 destination.
+ * @return AC1 = 0, busy/argument status, or storage I/O error.
+ */
 dtc_read_block:
         setz 4,
         jrst dtc_block_start
-; AC1 unit, AC2 physical block, AC3 source of 128 words.
+/** @brief Write one 128-word DECtape physical block; ABI matches read. */
 dtc_write_block:
         movei 4,1
 dtc_block_start:
@@ -372,7 +420,19 @@ dtc_search_fail:
         ; tape_ioerr performs the authoritative DTC/DCT owner reset.
         jrst tape_ioerr
 
-; Compact Type-516 service.  AC4 selects READ/WRITE/control operation.
+/**
+ * @brief Execute one Type 516 magnetic-tape data or control operation.
+ * @param AC1 Unit 0..7.
+ * @param AC2 Data buffer for read/write operations.
+ * @param AC3 Positive word count for read/write operations.
+ * @param AC4 Operation selector: 0 read, negative write, positive control.
+ * @return AC1 = 0/status for successful operations or negative kernel error.
+ *
+ * Control selector 1 is the compact synchronous status query used by LOGCTL;
+ * other positive values are passed through as Type 516 control command bits.
+ * Data transfers use the shared event/PI path; motion/control commands poll with
+ * a long wall-clock timeout because rewind/spacing can traverse a whole reel.
+ */
 mtc_service:
         skipe storage_state
         jrst kret_busy
@@ -459,9 +519,10 @@ tape_ioerr:
         setzm storage_state
         jrst    kret_neg5
 
-; CONO DTC,0 stops all eight Type-551 transports.  dtc_motion is a per-unit
-; estimate used only while motion is continuous; once the controller has
-; globally stopped the drives, all estimates must be forgotten together.
+/**
+ * @brief Invalidate every DECtape motion estimate after a global controller stop.
+ * @return Normal AC17 return; AC1 clobbered by BLT setup.
+ */
 dtc_forget_motion:
         setzm dtc_motion
         move 1,[dtc_motion,,dtc_motion+1]
@@ -469,19 +530,14 @@ dtc_forget_motion:
         popj 017,
 tape_wait_done:
         aos @tape_account_table-1(1)    ; completed READ/WRITE request
-        move 2,storage_count
-        caie 1,2                        ; MTC read
-        jrst tape_account_mtc_write_check
-        jrst tape_account_done
-
-tape_account_mtc_write_check:
-        caie 1,5                        ; MTC write
-        jrst tape_account_done
-
-tape_account_done:
         setzm storage_state
         jrst kret_ok
 
+/**
+ * Completion accounting indexed by positive completed storage_state.
+ * Slots 3/4 correspond to DSK states and are unreachable from this MRES; they
+ * keep the state number usable directly as a compact table index.
+ */
 tape_account_table:
         .word mfsdev_io_in+014
         .word mfsdev_io_in+015
@@ -491,11 +547,13 @@ tape_account_table:
         .word mfsdev_io_out+014
 
         .bss
+/** DECtape unit owning the active request. */
 dtc_request_unit: .block 1
+/** Nonzero for DECtape write, zero for read. */
 dtc_request_write: .block 1
+/** Zero forward; 0010000 when the active DECtape request runs in reverse. */
 dtc_request_reverse: .block 1
+/** Shared DTC/MTC process event for one Type 136 tape data transfer. */
 tape_transfer_event: .block 1
+/** Signed per-unit last-block+direction motion estimate for eight DTC units. */
 dtc_motion: .block 010
-
-; Device-local accounting state; absent devices consume no fixed KCORE.
-        .bss
