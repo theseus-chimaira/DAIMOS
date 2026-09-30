@@ -22,13 +22,10 @@
 ; 10 owner, 11 new base, 12 total words, 13 old base,
 ; 14 image words, 15 initialized words, 16 saved descriptor.
 module_runtime_move:
-        push    17,10
-        push    17,11
-        push    17,12
-        push    17,13
-        push    17,14
-        push    17,15
-        push    17,16
+        add     17,[7,,7]
+        movei   0,-6(17)
+        hrli    0,10
+        blt     0,(17)
         move    10,1
         move    11,2
         move    12,3
@@ -125,13 +122,10 @@ module_runtime_pi_loop:
         hrrm    11,16
         movem   16,module_runtime_descs(10)
         setz    1,
-        pop     17,16
-        pop     17,15
-        pop     17,14
-        pop     17,13
-        pop     17,12
-        pop     17,11
-        pop     17,10
+        movei   0,10
+        hrli    0,-6(17)
+        blt     0,16
+        sub     17,[7,,7]
         popj    17,
 
 ; AC1 = address of a binding word.  Retarget its RH if it points into the

@@ -689,13 +689,10 @@ file_getcwd_have_node:
 
 ; The 0121-word local area is one parent vnode followed by sixteen five-word
 ; vfs_name records.  AC15 is reused as output count after the upward walk.
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
-        push    17,014
-        push    17,015
-        add     17,[0121,,0121]
+        add     17,[0127,,0127]
+        movei   0,-0126(17)
+        hrli    0,010
+        blt     0,-0121(17)
         move    010,4                    ; current node
         move    011,1                    ; output buffer
         move    012,2                    ; output words
@@ -789,13 +786,10 @@ file_getcwd_store_len:
 file_getcwd_local_fail:
         seto    1,
 file_getcwd_return:
-        sub     17,[0121,,0121]
-        pop     17,015
-        pop     17,014
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
+        movei   0,010
+        hrli    0,-0126(17)
+        blt     0,015
+        sub     17,[0127,,0127]
         popj    17,
 
 

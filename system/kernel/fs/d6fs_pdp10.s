@@ -377,11 +377,10 @@ d6fs_provider_alloc_run:
         jumpe   1,kret_neg1
         jumpe   2,kret_neg1
         jumpe   3,kret_neg1
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
-        push    17,014
+        add     17,[5,,5]
+        movei   0,-4(17)
+        hrli    0,010
+        blt     0,(17)
         move    011,1                    ; max_blocks
         move    012,2                    ; startp
         move    013,3                    ; blocksp
@@ -522,11 +521,10 @@ d6fs_freemap_set:
         jumpe   1,kret_neg1
         caml    2,6(1)
         jrst    kret_neg1
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
-        push    17,014
+        add     17,[5,,5]
+        movei   0,-4(17)
+        hrli    0,010
+        blt     0,(17)
         move    010,1
         move    011,2
         move    014,3
@@ -765,13 +763,10 @@ d6fs_reader_write_words:
 ; Save the common loop state plus one transfer-tail address.  The original
 ; fifth C argument is therefore nine words below the resulting stack top.
 d6fs_reader_rw_save:
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
-        push    17,014
-        push    17,015
-        push    17,016
+        add     17,[7,,7]
+        movei   7,-6(17)
+        hrli    7,010
+        blt     7,(17)
         push    17,0                     ; transfer tail
         move    010,1                    ; reader
         move    011,2                    ; fcb

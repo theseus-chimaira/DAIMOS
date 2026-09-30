@@ -17,9 +17,9 @@
 #include "proc_swap.h"
 #include "syscall.h"
 
-/* Target exec_load_process() and exec_record_words() are implemented in
+/* Target exec_load_process() and sixbit_record_words() are implemented in
  * exec_load.s so KCORE does not carry the larger compiler-generated bodies. */
-extern unsigned int exec_record_words(const kword_t *record, int nonempty);
+extern unsigned int sixbit_record_words(const kword_t *record, int nonempty);
 
 
 
@@ -78,7 +78,7 @@ exec_replace_current(const kword_t *block,
 
         end = (const kword_t *)args + words;
         path = &args->path[0];
-        i = exec_record_words(path, 1);
+        i = sixbit_record_words(path, 1);
         if (i == 0U || path + i > end)
                 goto invalid;
         records = path + i;
@@ -88,7 +88,7 @@ exec_replace_current(const kword_t *block,
 
                 if (scan >= end)
                         goto invalid;
-                record_words = exec_record_words(scan, 0);
+                record_words = sixbit_record_words(scan, 0);
                 if (record_words == 0U || scan + record_words > end)
                         goto invalid;
                 scan += record_words;

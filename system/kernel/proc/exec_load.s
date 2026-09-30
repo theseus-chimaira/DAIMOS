@@ -52,24 +52,24 @@
  * @return AC1 = count word + packed payload words, or zero if invalid.
  *
  * EXEC has already established that AC1 lies inside the mapped launch block;
- * this helper validates only the 18-bit character count and 102-character
- * bounded-record contract. AC2/AC3 are caller-scratch.
+ * this helper validates the 18-bit character count and the common DAIMOS
+ * 102-character bounded-record contract. AC2/AC3 are caller-scratch.
  */
-        .globl  exec_record_words
-exec_record_words:
+        .globl  sixbit_record_words
+sixbit_record_words:
         move    3,(1)
         tlne    3,0777777              ; counted length must fit RH
-        jrst    exec_record_bad
-        jumpe   2,exec_record_length_ok
-        jumpe   3,exec_record_bad      ; path record must be nonempty
-exec_record_length_ok:
+        jrst    sixbit_record_bad
+        jumpe   2,sixbit_record_length_ok
+        jumpe   3,sixbit_record_bad    ; caller requires nonempty
+sixbit_record_length_ok:
         caile   3,0146                 ; 102 characters maximum
-        jrst    exec_record_bad
+        jrst    sixbit_record_bad
         move    1,3
         addi    1,013                  ; ceil(chars/6)+1 = (chars+11)/6
         idivi   1,6
         popj    17,
-exec_record_bad:
+sixbit_record_bad:
         setz    1,
         popj    17,
 

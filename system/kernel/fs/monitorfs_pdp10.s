@@ -858,12 +858,10 @@ proc_image_text_readchar:
         jumpe   4,kret_neg1
         ; AC10..AC15 are callee-save.  The scanner deliberately uses them as
         ; its compact persistent state while AC1..AC7 remain call scratch.
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
-        push    17,014
-        push    17,015
+        add     17,[6,,6]
+        movei   0,-5(17)
+        hrli    0,010
+        blt     0,(17)
         move    5,4                    ; output pointer
         move    6,3                    ; requested character offset
         move    7,2                    ; view
@@ -958,12 +956,10 @@ mfsproc_image_emit:
 mfsproc_image_eof:
         setz    1,
 mfsproc_image_done:
-        pop     17,015
-        pop     17,014
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
+        movei   0,010
+        hrli    0,-5(17)
+        blt     0,015
+        sub     17,[6,,6]
         popj    17,
 
 ; Return one unpacked ASCII/SIXBIT character from a trusted counted record.

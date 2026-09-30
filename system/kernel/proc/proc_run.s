@@ -51,6 +51,7 @@
         .globl  proc_tty_records
         .globl  proc_runq_add
         .globl  vm_space_startup
+        .globl  sixbit_record_words
 
 proc_run_block:
         add     17,[6,,6]
@@ -104,9 +105,8 @@ proc_run_block:
         caml    014,7
         jrst    proc_run_bad
         move    1,014
-        movei   2,RUN_MAX_PATH_CHARS
-        movei   3,1
-        pushj   17,proc_run_record_words
+        movei   2,1
+        pushj   17,sixbit_record_words
         jumpe   1,proc_run_bad
         move    015,014
         add     015,1
@@ -121,9 +121,8 @@ proc_run_record_scan:
         caml    015,7
         jrst    proc_run_bad
         move    1,015
-        movei   2,RUN_MAX_ARG_CHARS
-        setz    3,
-        pushj   17,proc_run_record_words
+        setz    2,
+        pushj   17,sixbit_record_words
         jumpe   1,proc_run_bad
         add     015,1
         camle   015,7
@@ -237,9 +236,8 @@ proc_run_watermark_loop:
         ; argv/environment into the child image.
         movei   6,RUN_FIXED_WORDS(010)
         move    1,6
-        movei   2,RUN_MAX_PATH_CHARS
-        movei   3,1
-        pushj   17,proc_run_record_words
+        movei   2,1
+        pushj   17,sixbit_record_words
         jumpe   1,proc_run_claimed_bad
         add     6,1
         add     17,[4,,4]
@@ -336,21 +334,6 @@ proc_run_map_done:
 proc_run_startup_failed:
         sub     17,[4,,4]
         jrst    proc_run_claimed_bad
-
-; Return AC1 = words occupied by one counted SIXBIT record, or zero.
-; AC1 = physical record pointer, AC2 = max chars, AC3 != 0 requires nonempty.
-proc_run_record_words:
-        move    1,(1)
-        tlne    1,0777777              ; counted length must fit RH
-        jrst    kret_zero
-        jumpe   3,proc_run_record_limit
-        jumpe   1,kret_zero
-proc_run_record_limit:
-        camle   1,2
-        jrst    kret_zero
-        addi    1,013                  ; ceil(chars/6)+1 = (chars+11)/6
-        idivi   1,6
-        popj    17,
 
 proc_run_claimed_bad:
         move    1,012

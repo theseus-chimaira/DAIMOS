@@ -614,11 +614,10 @@ tsfs_mount_pop:
 tsfs_lookup:
         jumpe   2,kret_neg1
         jumpe   3,kret_neg1
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
-        push    17,014
+        add     17,[5,,5]
+        movei   0,-4(17)
+        hrli    0,010
+        blt     0,(17)
         move    010,1                  ; directory vnode
         move    011,2                  ; requested component
         move    012,3                  ; result vnode pointer
@@ -667,11 +666,10 @@ tsfs_lookup_local_bad:
 tsfs_lookup_pop_bad:
         hrroi   1,1
 tsfs_lookup_pop:
-        pop     17,014
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
+        movei   0,010
+        hrli    0,-4(17)
+        blt     0,014
+        sub     17,[5,,5]
         popj    17,
 
         .bss
