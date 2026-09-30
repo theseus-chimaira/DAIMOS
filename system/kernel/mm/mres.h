@@ -34,7 +34,5 @@ int mres_install(const kword_t *package, unsigned int *basep);
 /** Resolve one package export index to its installed absolute address. */
 unsigned int mres_export(const kword_t *package, unsigned int base,
     unsigned int index);
-/** Invoke an installed MRES entry using the standard request ABI. */
-int mres_call(unsigned int address, void *request);
 
 #endif
