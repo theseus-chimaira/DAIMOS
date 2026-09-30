@@ -6,9 +6,12 @@
 ;
 ; struct pipe word offsets:
 ;   0 next_fifo, 1 fifo_node, 2 state, 3 refs,
-;   4 read_event, 5 write_event, 6..045 packed 9-bit data.
-; state packs head in bits 0..6 and count in bits 7..14.  Tail is derived as
-; (head + count) & 0177.  refs is readers,,writers in two 18-bit halves.
+;   4 read_event, 5 write_event, 6..037 packed 7-bit stream data.
+; Five characters occupy each 36-bit word at shifts 0,7,14,21,28; the top bit
+; is unused.  The 032-word buffer therefore holds 130 physical slots, of which
+; the existing 128-character ring is used.  state packs head in bits 0..6 and
+; count in bits 7..14.  Tail is derived as (head + count) & 0177.  refs is
+; readers,,writers in two 18-bit halves.
         .text
         .globl  file_table
         .globl  mm_alloc_aligned
@@ -20,7 +23,7 @@
         .globl  proc_event_apply
         .globl  proc_current_slot
 
-; Allocate and zero a 046-word pipe object.  AC1 is fifo_node, zero for an
+; Allocate and zero a 040-word pipe object.  AC1 is fifo_node, zero for an
 ; anonymous pipe.  Return the stable low-18-bit physical base or zero.
 pipe_alloc:
         push    17,010
@@ -30,7 +33,7 @@ pipe_alloc:
         movei   1,-2(17)
         movem   1,-1(17)               ; arg 6: basep
         setzm   (17)                    ; arg 5: MM_ALLOC_LOW
-        movei   1,046                   ; words
+        movei   1,040                   ; words
         movei   2,1                     ; alignment
         movei   3,3                     ; MM_TYPE_KERNEL_DYNAMIC
         movei   4,5                     ; PIPE_MM_OWNER
@@ -39,7 +42,7 @@ pipe_alloc:
         move    1,-2(17)
         jumpe   1,pipe_alloc_fail
         ; MM extent bases are 18-bit physical addresses by construction.
-        movei   2,046
+        movei   2,040
         pushj   17,fs_zero_words
         move    1,-2(17)
         movem   010,1(1)
@@ -270,19 +273,15 @@ pipe_read_retry:
         ldb     2,[POINT 8,2(010),28]
         jumpe   2,pipe_read_empty
         move    3,2(010)
-        andi    3,0177
-        movei   4,3
-        andcm   4,3
-        move    5,4
-        lsh     5,3
-        add     4,5
+        andi    3,0177                  ; ring character index
         move    5,3
-        lsh     5,-2
+        idivi   5,5                     ; AC5=word index, AC6=slot 0..4
+        imuli   6,7                     ; bit shift within packed word
         add     5,010
         move    1,6(5)
-        movn    4,4
+        movn    4,6
         lsh     1,0(4)
-        andi    1,0777
+        andi    1,0177
         addi    3,1
         andi    3,0177
         subi    2,1
@@ -311,18 +310,15 @@ pipe_read_error_done:
         pop     17,010
         popj    17,
 
-; int pipe_writechar(vnode_t node, unsigned int ch, unsigned int reserve)
+; int pipe_writechar(vnode_t node, unsigned int ch)
         .globl  pipe_writechar
 pipe_writechar:
         push    17,010
         push    17,011
-        push    17,012
         hrrz    010,1
         move    011,2
-        move    012,3
         jumpe   010,pipe_write_bad
-        jumpe   012,pipe_write_bad
-        caile   012,0200
+        caile   011,0177                 ; pipes are 7-bit character streams
         jrst    pipe_write_bad
 pipe_write_retry:
         hlrz    4,3(010)
@@ -330,29 +326,23 @@ pipe_write_retry:
         ldb     5,[POINT 8,2(010),28]
         movei   6,0200
         sub     6,5
-        sub     6,012
-        jumpl   6,pipe_write_wait
+        jumpe   6,pipe_write_wait
         move    4,2(010)
-        andi    4,0177
+        andi    4,0177                  ; head
         move    2,4
-        add     2,5
+        add     2,5                     ; tail = head + count
         andi    2,0177
-        movei   6,3
-        andcm   6,2
-        move    7,6
-        lsh     7,3
-        add     6,7
-        movei   7,0777
-        lsh     7,0(6)
-        move    3,2
-        lsh     3,-2
-        add     3,010
-        andca   7,6(3)
+        move    6,2
+        idivi   6,5                     ; AC6=word index, AC7=slot 0..4
+        imuli   7,7                     ; bit shift
+        movei   3,0177
+        lsh     3,0(7)                  ; field mask
+        add     6,010
+        andca   3,6(6)                  ; clear old packed character
         move    1,011
-        andi    1,0777
-        lsh     1,0(6)
-        ior     7,1
-        movem   7,6(3)
+        lsh     1,0(7)
+        ior     3,1
+        movem   3,6(6)
         addi    5,1
         lsh     5,7
         ior     4,5
@@ -373,7 +363,6 @@ pipe_write_broken:
 pipe_write_bad:
         seto    1,
 pipe_write_done:
-        pop     17,012
         pop     17,011
         pop     17,010
         popj    17,
