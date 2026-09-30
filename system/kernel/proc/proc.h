@@ -5,12 +5,14 @@
 
 /*
  * Process slots are a logical resource, not a promise that every process is
- * resident.  The table is allocated after physical-core discovery and is
- * sized 64/128/256 slots.  All interfaces use an 8-bit slot/PID field so the
- * architectural maximum is fixed at 256 even on smaller machines.
+ * resident.  The boot-time table size is chosen to keep idle descriptor and
+ * swap-record overhead small while leaving realistic concurrency headroom:
+ * 24/40/64/88/128/192/256 slots as core increases from 32K through >256K.
+ * The external slot/PID field remains 8 bits, so 256 is the architectural
+ * format maximum even when a smaller table is allocated at boot.
  */
 #define PROC_MAX_SLOTS       256U
-#define PROC_MIN_SLOTS        64U
+#define PROC_MIN_SLOTS        24U
 #define PROC_WORDS             3U
 #define PROC_NO_SLOT         0400U
 #define PROC_SCHED_SWAP_REQUEST 0400UL

@@ -11,9 +11,17 @@ unsigned int
 proc_slots_for_core(kword_t core_words)
 {
         if (core_words <= 0100000UL)
-                return 64U;
+                return 24U;
+        if (core_words <= 0200000UL)
+                return 40U;
         if (core_words <= 0300000UL)
+                return 64U;
+        if (core_words <= 0400000UL)
+                return 88U;
+        if (core_words <= 0600000UL)
                 return 128U;
+        if (core_words <= 01000000UL)
+                return 192U;
         return PROC_MAX_SLOTS;
 }
 
