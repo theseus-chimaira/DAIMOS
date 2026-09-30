@@ -1,3 +1,13 @@
+/**
+ * @file vm_pdp6_swap.c
+ * @brief Resident PDP-6 process swap-out, swap-in, and reclaim policy.
+ *
+ * Swapping uses the D6FS blockset tail as raw full-sector backing. A resident
+ * process's one-word record describes executable backing; on swap-out that
+ * word is saved in the stable u-area and the record is reused for first-block
+ * and block-count. Swap-in runs from slot-0 executive context so synchronous
+ * storage I/O never suspends on a process stack whose user extent is absent.
+ */
 #include "proc_swap.h"
 #include "vm_pdp6.h"
 #include "blockset_mres.h"
@@ -22,24 +32,7 @@ kword_t proc_swap_blocks_used;
  * Use signed working values after unpacking so their comparisons stay compact
  * on the PDP-10; packed on-disk/in-memory fields remain unchanged. */
 
-static inline kword_t
-proc_swap_disk_blocks(void)
-{
-        int rc;
-
-        rc = blockset_runtime_reg_call(BLOCKSET_MRES_OP_TAIL_BLOCKS,
-            0UL, 0UL, 0UL);
-        return rc > 0 ? (kword_t)rc : 0UL;
-}
-
-static int
-proc_swap_disk_io(unsigned int op, kword_t block, kword_t count,
-    kword_t *buffer)
-{
-        return blockset_runtime_reg_call(op, block, count,
-            (kword_t)(unsigned long)buffer);
-}
-
+/** Find the first nonoverlapping free span in the configured swap tail. */
 static int
 proc_swap_find(kword_t block_words, kword_t *startp)
 {
@@ -51,8 +44,9 @@ proc_swap_find(kword_t block_words, kword_t *startp)
         if (block_words == 0UL || startp == 0)
                 return -1;
         blocks = (long)block_words;
-        total = (long)proc_swap_disk_blocks();
-        if (blocks > total)
+        total = (long)blockset_runtime_reg_call(BLOCKSET_MRES_OP_TAIL_BLOCKS,
+            0UL, 0UL, 0UL);
+        if (total <= 0L || blocks > total)
                 return -1;
         start = 0L;
         for (;;) {
@@ -93,6 +87,7 @@ proc_swap_find(kword_t block_words, kword_t *startp)
         }
 }
 
+/** Transfer a sector-aligned process extent to or from raw swap-tail blocks. */
 static int
 proc_swap_transfer_words(unsigned int op, kword_t first,
     kword_t *buf, kword_t words)
@@ -103,9 +98,11 @@ proc_swap_transfer_words(unsigned int op, kword_t first,
             (words % DSK_WORDS_PER_SECTOR) != 0UL)
                 return -1;
         blocks = words / DSK_WORDS_PER_SECTOR;
-        return proc_swap_disk_io(op, first, blocks, buf) == 0 ? 0 : -1;
+        return blockset_runtime_reg_call(op, first, blocks,
+            (kword_t)(unsigned long)buf) == 0 ? 0 : -1;
 }
 
+/** Pack resident executable backing and PURE-text metadata into one record word. */
 int
 proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
     unsigned int pure)
@@ -139,6 +136,7 @@ proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
         return 0;
 }
 
+/** Drop resident/swapped backing state and account released swap blocks. */
 void
 proc_swap_detach(int slot)
 {
@@ -154,6 +152,7 @@ proc_swap_detach(int slot)
                 PROC_SWAP_BACKING_WORD(p) = 0UL;
 }
 
+/** Pin, write, free, and atomically publish one process as nonresident. */
 int
 proc_swap_out(int slot)
 {
@@ -219,6 +218,7 @@ fail_record:
         return -1;
 }
 
+/** Return true for a live nontransition process whose image is on swap. */
 int
 proc_swap_is_swapped(int slot)
 {
@@ -232,6 +232,7 @@ proc_swap_is_swapped(int slot)
 /* Run one swap-in transaction from slot-0 executive context.  Selection is
  * deliberately derived from the existing scheduler fields, so no permanent
  * request queue or per-process swap scheduling state is needed. */
+/** Service the scheduler's single pending slot-0 swap-in request. */
 int
 proc_swap_service_one(void)
 {
@@ -263,6 +264,7 @@ proc_swap_service_one(void)
         return -1;
 }
 
+/** Allocate, restore, and republish one swapped process image. */
 int
 proc_swap_in(int slot)
 {
@@ -324,6 +326,7 @@ fail_free:
         return -1;
 }
 
+/** Swap victims until MM compaction can satisfy the requested free extent. */
 int
 proc_swap_reclaim(kword_t words, kword_t alignment,
     unsigned int exclude_owner)

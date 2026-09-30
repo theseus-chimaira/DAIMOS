@@ -1,8 +1,13 @@
-; vm_pdp6.s -- PDP-6 process-address-space backend.
-;
-; Generic kernel code treats struct proc word 1 as opaque VM state except for
-; its LH logical-space size.  This backend stores the 02000-word-aligned
-; physical relocation base in the private RH.
+/**
+ * @file vm_pdp6_asm.s
+ * @brief PDP-6 APR activation, user mapping, and no-return user-entry paths.
+ *
+ * Generic kernel code treats struct proc word 1 as opaque VM state except for
+ * its LH logical-space size. This backend stores the 02000-word-aligned
+ * physical relocation base in RH and programs the PDP-6 APR relocation/
+ * protection word directly. These routines are machine-specific and therefore
+ * correctly retain the _pdp6 suffix.
+ */
 
         .text
         .globl  vm_user_words
@@ -17,12 +22,11 @@
         .globl  mach_kernel_sp
         .globl  kret_zero
 
-; AC1 = logical user word address.
-; Return AC1 = executive-accessible mapped address, or zero if invalid.
-; AC3 = logical end of the contiguous mapping; AC4 = mapping bias, so callers
-; needing the remaining span can compute AC4+AC3-AC1.  Keeping these outputs
-; preserves the old PDP-6 hot-path instruction count while allowing a pager
-; backend to provide a different executive mapping window.
+/**
+ * @brief Translate one logical user address into the current physical mapping.
+ * @param AC1 Logical user word address.
+ * @return AC1 mapped executive address or zero; AC3 logical end, AC4 bias.
+ */
 vm_user_words:
         hrrz    1,1
         caige   1,020
@@ -75,22 +79,22 @@ vm_user_mapping_release_done:
         pop     17,0
         popj    17,
 
-; Activate the current process address space for user return.
+/** @brief Program the PDP-6 APR for the current process's resident VM. */
 vm_activate_current:
         move    1,proc_current_slot
         pushj   17,proc_slot_ptr
-        hlrz    2,1(1)
-        subi    2,02000
-        hrlz    2,2
-        hrrz    3,1(1)
-        hrr     2,3
+        move    2,1(1)                  ; user words,,physical base
+        sub     2,[02000,,0]            ; APR LH stores words-02000
         movem   2,vm_pdp6_apr
         datao   0000,vm_pdp6_apr
         popj    17,
 
-; void vm_enter_initial_user(struct proc *p, entry, stack, ac1, ac2, ac3)
-; The boot-only transition keeps the existing PDP-6 ABI, but obtains the
-; relocation base from the backend-private RH of p->vm_state.
+/**
+ * @brief Enter the first user process after KINIT; does not normally return.
+ *
+ * The bootstrap ABI supplies process, entry, stack and initial AC1-AC3. The
+ * relocation base comes from backend-private vm_state RH.
+ */
 vm_enter_initial_user:
         move 5,-1(17)
         move 6,-2(17)
@@ -132,10 +136,12 @@ vm_pdp6_apr:
         .word 0
 
         .text
-; void proc_exec_enter(entry, stack, argc, argv, envp) -- no return.
-; EXEC has committed the replacement VM while retaining the stable u-area.
-; Preserve the startup ACs while activating the new mapping, reset the private
-; kernel stack, and enter the replacement image with the same ABI as RUN.
+/**
+ * @brief Enter a committed EXEC replacement image; does not return.
+ *
+ * Preserve startup ACs, activate the new APR mapping, reset the stable private
+ * kernel stack, and enter with the same argc/argv/envp ABI as initial RUN.
+ */
         .globl proc_exec_enter
 proc_exec_enter:
         move 7,1                    ; new entry

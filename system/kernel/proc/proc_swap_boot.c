@@ -1,9 +1,18 @@
+/**
+ * @file proc_swap_boot.c
+ * @brief Transient boot allocation of the compact process swap-record table.
+ *
+ * The table size follows the runtime process-slot count selected after memory
+ * discovery. Its storage survives KINIT in kernel-dynamic managed core; this
+ * compilation unit itself is reclaimable boot code.
+ */
 #include "proc_swap.h"
 #include "fs_mres.h"
 #include "mm.h"
 
 #define PROC_SWAP_MM_OWNER 4U
 
+/** Allocate, zero, and publish the per-slot swap-record table. */
 int
 proc_swap_boot_init(unsigned int slots)
 {

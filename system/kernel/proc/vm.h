@@ -1,3 +1,11 @@
+/**
+ * @file vm.h
+ * @brief Machine-independent process-VM boundary used by EXEC, MM, and proc.
+ *
+ * struct proc exposes only logical user-space size; the RH backend state is
+ * deliberately opaque to generic code. The PDP-6 backend stores a contiguous
+ * relocation base there, while future paged machines may store a map handle.
+ */
 #ifndef DAIMON_VM_H
 #define DAIMON_VM_H
 
@@ -28,9 +36,11 @@
  * backend.  Keeping those policy checks generic avoids duplicate resident
  * code in every machine implementation.
  */
+/** Allocate a new backend address space for one process. */
 int vm_space_create(struct proc *p, unsigned int owner, kword_t words);
 int vm_space_load_file(struct proc *p, vnode_t node, kword_t file_offset,
     kword_t user_offset, unsigned int words);
+/** Destroy the current backend address space and detach swap backing. */
 int vm_space_destroy(struct proc *p, unsigned int owner);
 int vm_space_can_swap(const struct proc *p);
 int vm_space_startup(struct proc *p, const kword_t *records,
@@ -40,6 +50,7 @@ int vm_space_inspect_word(const struct proc *p, kword_t offset,
 
 /* Called by physical MM for an unpinned MM_TYPE_PROCESS extent. */
 #define VM_EXTENT_ALIGN_WORDS 02000UL
+/** Move one inactive physical process extent during MM compaction. */
 int vm_extent_move(unsigned int owner, kword_t base, kword_t words,
     kword_t new_base);
 

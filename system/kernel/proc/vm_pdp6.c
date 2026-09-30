@@ -1,3 +1,12 @@
+/**
+ * @file vm_pdp6.c
+ * @brief Resident PDP-6 contiguous process-address-space backend.
+ *
+ * User images occupy one 02000-word-aligned physical extent managed by MM.
+ * This file allocates, populates, destroys, inspects, and compacts those
+ * extents. The current process is never moved; inactive processes are stopped
+ * transactionally while fs_move_words() rebases their physical allocation.
+ */
 #include "vm_pdp6.h"
 #include "fs_mres.h"
 #include "mm.h"
@@ -5,6 +14,7 @@
 #include "proc_swap.h"
 #include "exec.h"
 
+/** Allocate and zero one aligned contiguous PDP-6 user extent. */
 int
 vm_space_create(struct proc *p, unsigned int owner, kword_t words)
 {
@@ -23,6 +33,7 @@ vm_space_create(struct proc *p, unsigned int owner, kword_t words)
         return 0;
 }
 
+/** Read executable words directly into a logical offset of the resident extent. */
 int
 vm_space_load_file(struct proc *p, vnode_t node, kword_t file_offset,
     kword_t user_offset, unsigned int words)
@@ -35,6 +46,7 @@ vm_space_load_file(struct proc *p, vnode_t node, kword_t file_offset,
             (int)words ? 0 : -1;
 }
 
+/** Pack argc/argv/environment records into the reserved top-of-image stack area. */
 int
 vm_space_startup(struct proc *p, const kword_t *records,
     kword_t counts, kword_t *startup)
@@ -78,6 +90,7 @@ vm_space_startup(struct proc *p, const kword_t *records,
 }
 
 
+/** Release a resident extent, detach backing metadata, and clear VM state. */
 int
 vm_space_destroy(struct proc *p, unsigned int owner)
 {
@@ -92,6 +105,7 @@ vm_space_destroy(struct proc *p, unsigned int owner)
         return 0;
 }
 
+/** Return whether a resident extent is movable to swap rather than MM-pinned. */
 int
 vm_space_can_swap(const struct proc *p)
 {
@@ -101,6 +115,7 @@ vm_space_can_swap(const struct proc *p)
         return base != 0UL && !mm_is_pinned(base);
 }
 
+/** Move one inactive process extent and republish its physical relocation base. */
 int
 vm_extent_move(unsigned int owner, kword_t base, kword_t words,
     kword_t new_base)
@@ -109,7 +124,6 @@ vm_extent_move(unsigned int owner, kword_t base, kword_t words,
         kword_t *src;
         kword_t *dst;
         unsigned int old_state;
-        int rc;
 
         if (owner == (unsigned int)proc_current_slot)
                 return MM_ERR_BUSY;
@@ -132,13 +146,10 @@ vm_extent_move(unsigned int owner, kword_t base, kword_t words,
         }
 
         PROC_SET_TRANSITION(p);
-        rc = MM_OK;
-        if (rc == MM_OK) {
-                src = (kword_t *)(unsigned long)base;
-                dst = (kword_t *)(unsigned long)new_base;
-                fs_move_words(src, dst, (unsigned int)words);
-                VM_PDP6_SET_BASE(p, new_base);
-        }
+        src = (kword_t *)(unsigned long)base;
+        dst = (kword_t *)(unsigned long)new_base;
+        fs_move_words(src, dst, (unsigned int)words);
+        VM_PDP6_SET_BASE(p, new_base);
         PROC_CLEAR_TRANSITION(p);
         if (PROC_HAS_UAREA(p)) {
                 kword_t ctl;
@@ -153,5 +164,5 @@ vm_extent_move(unsigned int owner, kword_t base, kword_t words,
                                 proc_runq_add(owner);
                 }
         }
-        return rc;
+        return MM_OK;
 }
