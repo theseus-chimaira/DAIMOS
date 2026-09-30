@@ -56,5 +56,7 @@ int tty_getchar(unsigned int tty);
 
 /** Render exactly one complete S6REC text record on the controlling TTY. */
 int tty_write_s6rec(const kword_t *words, unsigned int nwords);
+/** Read one cooked canonical line as one S6REC text record. */
+int tty_read_s6rec(kword_t *words, unsigned int nwords);
 
 #endif

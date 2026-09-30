@@ -23,6 +23,13 @@
         .globl tty_ge_getchar_address
         .globl kret_arg
         .globl proc_tty_output
+        .globl proc_tty_read_enter
+        .globl proc_tty_input
+        .globl proc_tty_line_base_get
+        .globl proc_tty_line_ensure
+        .globl proc_tty_line_get
+        .globl proc_tty_line_reset
+        .globl proc_tty_records
 
 /**
  * @brief Dispatch one packed logical-terminal output byte.
@@ -149,6 +156,150 @@ tty_s6_zero:
 tty_s6_bad:
         seto    1,
 tty_s6_done:
+        pop     17,014
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; int tty_read_s6rec(kword_t *words, unsigned int nwords)
+; Return one complete canonical line as one S6REC TEXT record.  The existing
+; character line discipline remains authoritative: this routine only drains a
+; READY line in bulk.  RAW terminals reject word reads and continue to use
+; READCHAR.  AC16 carries a cooked character only for the rare one-character
+; partial-^D/empty-newline case where legacy line_take already freed the line.
+        .globl tty_read_s6rec
+tty_read_s6rec:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        push    17,014
+        push    17,015
+        push    17,016
+        move    011,1                   ; destination
+        hrrz    012,2                   ; capacity in words
+        jumpe   011,tty_s6_read_bad
+        jumpe   012,tty_s6_read_zero
+
+        pushj   17,proc_tty_read_enter
+        jumpl   1,tty_s6_read_bad
+        move    010,1                   ; logical controlling tty
+        move    3,proc_tty_records(010)
+        lsh     3,-031                  ; mode bits at 25..27
+        trnn    3,01                    ; canonical mode required
+        jrst    tty_s6_read_bad
+        move    1,010
+        pushj   17,proc_tty_line_ensure ; allocation only; does not drain READY
+        jumpe   1,tty_s6_read_bad
+
+        seto    016,                    ; no fallback cooked byte pending
+tty_s6_read_check:
+        move    1,010
+        pushj   17,proc_tty_line_base_get
+        jumpe   1,tty_s6_read_not_ready
+        move    013,1                   ; canonical line base
+        move    6,(013)
+        trnn    6,0200000               ; READY
+        jrst    tty_s6_read_not_ready
+
+        move    015,6
+        andi    015,0377                ; line character count
+        move    4,015
+        addi    4,5
+        idivi   4,6
+        move    014,4                   ; packed payload words
+        addi    4,1                     ; S6REC header + payload words
+        camle   4,012
+        jrst    tty_s6_read_bad         ; leave READY line untouched
+        move    012,4                   ; final return count
+
+        move    5,[010000000000]        ; S6REC TEXT type 1
+        ior     5,015
+        movem   5,(011)
+        jumpe   014,tty_s6_read_reset
+        movei   5,1(011)                ; destination first payload word
+        hrli    5,1(013)                ; source first canonical SIXBIT word
+        move    6,014
+        add     6,011
+        blt     5,0(6)                  ; copy payload words in one PDP-6 BLT
+tty_s6_read_reset:
+        move    1,010
+        pushj   17,proc_tty_line_reset
+        move    1,012
+        jrst    tty_s6_read_done
+
+tty_s6_read_not_ready:
+        jumpge  016,tty_s6_read_fallback
+        ; tty_getchar may block and context-switch.  Preserve all live bulk
+        ; read state on the process-private kernel stack across that wait;
+        ; resumed kernel scratch registers are not an ABI storage location.
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,016
+        move    1,010
+        pushj   17,tty_getchar
+        push    17,1                    ; hardware result survives restores
+        move    016,-1(17)
+        move    012,-2(17)
+        move    011,-3(17)
+        move    010,-4(17)
+        pop     17,1
+        sub     17,[4,,4]
+        jumpl   1,tty_s6_read_bad
+        move    2,1
+        move    1,010
+        pushj   17,proc_tty_input
+        camn    1,[-3]                  ; editing/signal: need another byte
+        jrst    tty_s6_read_again
+        camn    1,[-2]                  ; empty ^D
+        jrst    tty_s6_read_zero
+        jumpl   1,tty_s6_read_bad
+        move    016,1                   ; legacy path may have drained byte 0
+        jrst    tty_s6_read_check
+tty_s6_read_again:
+        seto    016,
+        jrst    tty_s6_read_check
+
+; Legacy canonical line_take frees an empty newline immediately and also frees
+; a one-character partial ^D line while returning its only character.  Rebuild
+; those two record shapes without introducing a second line-discipline mode.
+tty_s6_read_fallback:
+        caie    016,012                 ; newline means an empty text record
+        jrst    tty_s6_read_single
+        movei   3,1
+        camg    3,012
+        jrst    tty_s6_read_empty_store
+        jrst    tty_s6_read_bad
+tty_s6_read_empty_store:
+        move    3,[010000000000]
+        movem   3,(011)
+        movei   1,1
+        jrst    tty_s6_read_done
+tty_s6_read_single:
+        movei   3,2
+        camg    3,012
+        jrst    tty_s6_read_single_store
+        jrst    tty_s6_read_bad
+tty_s6_read_single_store:
+        move    3,[010000000001]        ; TEXT, length 1
+        movem   3,(011)
+        subi    016,040
+        lsh     016,036                 ; first SIXBIT slot
+        movem   016,1(011)
+        movei   1,2
+        jrst    tty_s6_read_done
+
+tty_s6_read_zero:
+        setz    1,
+        jrst    tty_s6_read_done
+tty_s6_read_bad:
+        seto    1,
+tty_s6_read_done:
+        pop     17,016
+        pop     17,015
         pop     17,014
         pop     17,013
         pop     17,012

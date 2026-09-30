@@ -151,6 +151,7 @@ file_path_setchar:
         .globl  pipe_fifo_detach
         .globl  lpt_putchar
         .globl  tty_write_s6rec_jump
+        .globl  tty_read_s6rec_jump
 
 ; int file_readchar(int fd)
 ; Validate the descriptor exactly as the C wrapper did, then advance the
@@ -493,22 +494,17 @@ file_read_words:
         move    2,1(010)                ; word offset
         move    1,(010)
         tlz     1,707070                ; canonical vnode
-        move    5,1
-        lsh     5,-036
-        caie    5,7                     ; PIPE_PROVIDER
-        jrst    file_read_words_vfs
-        tlne    1,2                     ; require PIPE_KIND_WORD
-        jrst    file_read_words_pipe
-        jrst    file_read_words_fail
-file_read_words_pipe:
-        move    2,-1(17)
-        move    3,(17)
-        pushj   17,pipe_read_words
-        jrst    file_read_words_done    ; pipe offsets are meaningless
-file_read_words_vfs:
+        camn    1,[020002000000]        ; CTY0 controlling-TTY proxy
+        jrst    file_read_words_tty
         move    3,-1(17)
         move    4,(17)
         pushj   17,vfs_read_words
+        jrst    file_read_words_result
+file_read_words_tty:
+        move    1,-1(17)                ; mapped S6REC destination
+        move    2,(17)                  ; destination capacity
+        pushj   17,tty_read_s6rec_jump
+file_read_words_result:
         jumple  1,file_read_words_done
         addm    1,1(010)
 file_read_words_done:
@@ -561,6 +557,8 @@ file_write_words_fail:
 
 ; Patched by TTY MINIT when the logical-terminal MRES is installed.
 tty_write_s6rec_jump:
+        jrst    kret_neg1
+tty_read_s6rec_jump:
         jrst    kret_neg1
 
 ; int file_readdir(int fd, struct vfs_dirent *ent)

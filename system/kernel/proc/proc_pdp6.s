@@ -1031,23 +1031,25 @@ proc_tty_line_base_set_odd:
         hllm    2,proc_tty_line_bases(3)
         popj    17,
 
-; Packed canonical-line byte helpers.  KCC expands the divide/remainder
-; and variable shifts substantially; keep the target versions compact.
+; Packed canonical-line SIXBIT helpers.  Cooked input admits only ASCII
+; 040..0137, so storing the canonical line as six native SIXBIT tokens/word
+; saves dynamic RAM and makes bulk S6REC reads a direct word copy.  READCHAR
+; still sees ASCII because line_get adds 040 on extraction.
         .globl  proc_tty_line_put
 proc_tty_line_put:
         move    6,3                    ; preserve character
-        idivi   2,5                    ; AC2=word index, AC3=byte index
+        subi    6,040                  ; ASCII -> SIXBIT
+        idivi   2,6                    ; AC2=word index, AC3=token index
         addi    2,1                    ; word zero is the line header
         add     2,1                    ; AC2=&line[word]
-        movei   4,4
+        movei   4,5
         sub     4,3
-        imuli   4,7                    ; shift=(4-byte)*7
-        movei   5,0177
+        imuli   4,6                    ; shift=(5-token)*6
+        movei   5,077
         lsh     5,0(4)                 ; mask
         move    7,0(2)
         setcm   5,5
         and     7,5
-        andi    6,0177
         lsh     6,0(4)
         ior     7,6
         movem   7,0(2)
@@ -1055,16 +1057,17 @@ proc_tty_line_put:
 
         .globl  proc_tty_line_get
 proc_tty_line_get:
-        idivi   2,5                    ; AC2=word index, AC3=byte index
+        idivi   2,6                    ; AC2=word index, AC3=token index
         addi    2,1
         add     2,1
-        movei   4,4
+        movei   4,5
         sub     4,3
-        imuli   4,7
+        imuli   4,6
         move    5,0(2)
         movn    4,4
         lsh     5,0(4)
-        andi    5,0177
+        andi    5,077
+        addi    5,040                  ; SIXBIT -> ASCII
         move    1,5
         popj    17,
 
