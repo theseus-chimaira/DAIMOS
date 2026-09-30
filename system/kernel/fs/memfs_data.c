@@ -355,7 +355,7 @@ memfs_data_reclaim(kword_t wanted)
         kword_t released;
         unsigned int i;
 
-        if (memfs_data_allocating)
+        if (memfs_data_allocating || swap_store_blocks == 0UL)
                 return 0UL;
         released = 0UL;
         for (i = 0U; i < MEMFS_DATA_CHUNKS && released < wanted; ++i)
