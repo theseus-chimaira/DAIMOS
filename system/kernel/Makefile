@@ -139,10 +139,10 @@ KCORE_C_ASM = $(BUILD)/mm.s \
 KCORE_VM_ASM = $(BUILD)/vm_backend.s \
 	$(BUILD)/proc_swap.s
 
-KCORE_FIXED_SRCS = core/ret_pdp10.s \
+KCORE_FIXED_SRCS = core/ret.s \
 	drivers/dsk270_pdp10.s \
 	drivers/drm236_pdp10.s \
-	core/kfmt_pdp10.s \
+	core/kfmt_pdp6.s \
 	fs/vfs_pdp10.s \
 	fs/fs_mres_pdp10.s \
 	fs/tsfs_pdp10.s \
@@ -156,7 +156,7 @@ KCORE_FIXED_SRCS = core/ret_pdp10.s \
 	drivers/lpt_io.s \
 	proc/syscall_dispatch.s \
 	proc/mach_user.s \
-	core/kcore_io.s \
+	core/kcore_io_pdp6.s \
 	storage/storage_router.s \
 	core/kcore_end.s
 
@@ -168,10 +168,10 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/file.s \
 	$(BUILD)/vm_backend.s \
 	$(BUILD)/proc_swap.s \
-	$(BUILD)/ret_pdp10.s \
+	$(BUILD)/ret.s \
 	$(BUILD)/dsk270_pdp10.s \
 	$(BUILD)/drm236_pdp10.s \
-	$(BUILD)/kfmt_pdp10.s \
+	$(BUILD)/kfmt_pdp6.s \
 	$(BUILD)/vfs_pdp10.s \
 	$(BUILD)/fs_mres_pdp10.s \
 	$(BUILD)/tsfs_pdp10.s \
@@ -187,7 +187,7 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/syscall_dispatch.s \
 	$(BUILD)/mach_user.s \
 	$(BUILD)/vm_backend_asm.s \
-	$(BUILD)/kcore_io.s \
+	$(BUILD)/kcore_io_pdp6.s \
 	$(BUILD)/storage_router.s \
 	$(BUILD)/kcore_end.s
 
@@ -343,10 +343,10 @@ ${BUILD}/dtfs_pdp10.s: Makefile fs/dtfs_pdp10.s
 	@mkdir -p ${BUILD}
 	@{ echo ".set DTFS_ENABLE_TENEX,1"; echo ".set DTFS_ENABLE_ITS,1"; echo ".set DTFS_ENABLE_FOREIGN,1"; cat fs/dtfs_pdp10.s; } > $@
 
-COPY_ASM_SRCS = core/ret_pdp10.s \
+COPY_ASM_SRCS = core/ret.s \
 	drivers/dsk270_pdp10.s \
 	drivers/drm236_pdp10.s \
-	core/kfmt_pdp10.s \
+	core/kfmt_pdp6.s \
 	fs/vfs_pdp10.s \
 	fs/fs_mres_pdp10.s \
 	fs/tsfs_pdp10.s \
@@ -358,7 +358,7 @@ COPY_ASM_SRCS = core/ret_pdp10.s \
 	drivers/lpt_io.s \
 	proc/syscall_dispatch.s \
 	proc/mach_user.s \
-	core/kcore_io.s \
+	core/kcore_io_pdp6.s \
 	storage/storage_router.s \
 	core/kcore_end.s \
 	fs/d6fs_validate_pdp10.s \
@@ -388,10 +388,10 @@ COPY_ASM_SRCS = core/ret_pdp10.s \
 	boot/kinit_late_begin.s \
 	boot/kinit_late_end.s
 
-COPY_ASM_TARGETS = $(BUILD)/ret_pdp10.s \
+COPY_ASM_TARGETS = $(BUILD)/ret.s \
 	$(BUILD)/dsk270_pdp10.s \
 	$(BUILD)/drm236_pdp10.s \
-	$(BUILD)/kfmt_pdp10.s \
+	$(BUILD)/kfmt_pdp6.s \
 	$(BUILD)/vfs_pdp10.s \
 	$(BUILD)/fs_mres_pdp10.s \
 	$(BUILD)/tsfs_pdp10.s \
@@ -404,7 +404,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret_pdp10.s \
 	$(BUILD)/lpt_io.s \
 	$(BUILD)/syscall_dispatch.s \
 	$(BUILD)/mach_user.s \
-	$(BUILD)/kcore_io.s \
+	$(BUILD)/kcore_io_pdp6.s \
 	$(BUILD)/storage_router.s \
 	$(BUILD)/kcore_end.s \
 	$(BUILD)/d6fs_validate_pdp10.s \

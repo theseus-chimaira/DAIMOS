@@ -1,5 +1,5 @@
 /**
- * @file kcore_io.s
+ * @file kcore_io_pdp6.s
  * @brief Minimal resident PDP-6 priority-interrupt runtime.
  *
  * The seven PDP-6 PI levels enter through fixed low-core JSR vectors installed
