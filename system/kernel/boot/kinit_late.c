@@ -1,3 +1,20 @@
+/**
+ * @file kinit_late.c
+ * @brief Final KINIT reclamation and transition to the initial user process.
+ *
+ * This file is linked into the protected tail of the transient KINIT image.
+ * It runs after ordinary KINIT code and most embedded MRES source images have
+ * become reclaimable.  Its job is to publish those remaining transient ranges
+ * to MM, create the configured initial user processes, establish their minimal
+ * console file state, switch the kernel to its permanent idle stack, release
+ * the final KINIT code/stack reserve, and enter the first INIT process.
+ *
+ * The final release is intentionally unusual: kinit_late_start() publishes the
+ * memory containing its own executing instructions.  This is safe because PI
+ * remains disabled and no allocator runs between that publication and the
+ * non-returning vm_enter_initial_user() transition.
+ */
+
 #include "exec.h"
 #include "kinit.h"
 #include "vm.h"
@@ -17,18 +34,29 @@ extern kword_t mres_source_end;
 extern kword_t kinit_stack_highwater;
 #endif
 
-/*
- * Finish boot from the only KINIT text which remains reserved after the main
- * bootstrap image is published to MM.  The final mm_add_free() deliberately
- * publishes the instructions which are still executing.  That is safe on the
- * PDP-6 because mm_add_free() changes only MM descriptors; PI is still off and
- * no allocator is called before vm_enter_initial_user() transfers control to INIT.
+/**
+ * @brief Finish bootstrap and enter the first INIT process.
+ *
+ * The linker divides transient KINIT storage into reclaimable prefix/source
+ * ranges and this protected late tail.  The function validates those linker
+ * boundaries before publishing any range to MM.  It then creates
+ * PROC_BOOT_USERS copies of /SYSTEM/INIT, initializes their saved user
+ * contexts and CTY descriptors, queues them runnable, and remembers the first
+ * process's entry state for the final machine transition.
+ *
+ * Only after all operations which can allocate memory or enter VFS are done is
+ * the permanent idle stack published as the kernel stack.  The late text and
+ * bootstrap-stack reserve are then returned to MM.  No allocator may run after
+ * that point: execution must proceed directly to vm_enter_initial_user().
+ *
+ * @param idle_stack_base Base of the permanent idle/exit kernel stack.
+ * @param reclaim_end First word after the transient KINIT stack reserve.
  */
 void
 kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
 {
         struct proc *p;
-        int init_slot;
+        kword_t *uarea;
         unsigned int slot;
         kword_t entry;
         kword_t stack;
@@ -73,14 +101,8 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
 
         if (PROC_BOOT_USERS < 1 || PROC_BOOT_USERS >= PROC_MAX_SLOTS)
                 return;
-        first_entry = 0UL;
-        first_stack = 0UL;
-        first_argc = 0UL;
-        first_argv = 0UL;
-        first_envp = 0UL;
         for (slot = 1U; slot <= (unsigned int)PROC_BOOT_USERS; ++slot) {
-                init_slot = proc_slot_claim(0U);
-                if (init_slot != (int)slot)
+                if (proc_slot_claim(0U) != (int)slot)
                         return;
                 p = &proc_table[slot];
                 if (exec_load_process(p, slot, init_path) < 0)
@@ -103,21 +125,22 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
                         return;
                 proc_runq_add(slot);
                 PROC_SET_PGRP(p, 1U);
-                PROC_UAREA_WORD(p, PROC_FDCTL_OFFSET) =
+                uarea = (kword_t *)(unsigned long)PROC_UAREA_BASE(p);
+                uarea[PROC_FDCTL_OFFSET] =
                     ((kword_t)1U << PROC_SESSION_SHIFT) |
                     ((kword_t)1U << PROC_DOMAIN_SHIFT);
-                PROC_UAREA_WORD(p, PROC_FILE_TABLE_OFFSET) =
+                uarea[PROC_FILE_TABLE_OFFSET] =
                     VFS_NODE_PACKED(MONITORFS_DEVICE_PROVIDER, MONITORFS_KIND_DEVICE,
                     MONITORFS_DEV_CTY0) | FILE_META_READ;
-                PROC_UAREA_WORD(p, PROC_FILE_TABLE_OFFSET + 1U) = 0UL;
-                PROC_UAREA_WORD(p, PROC_FILE_TABLE_OFFSET + 2U) =
+                uarea[PROC_FILE_TABLE_OFFSET + 1U] = 0UL;
+                uarea[PROC_FILE_TABLE_OFFSET + 2U] =
                     VFS_NODE_PACKED(MONITORFS_DEVICE_PROVIDER, MONITORFS_KIND_DEVICE,
                     MONITORFS_DEV_CTY0) | FILE_META_WRITE;
-                PROC_UAREA_WORD(p, PROC_FILE_TABLE_OFFSET + 3U) = 0UL;
-                PROC_UAREA_WORD(p, PROC_FILE_TABLE_OFFSET + 4U) =
+                uarea[PROC_FILE_TABLE_OFFSET + 3U] = 0UL;
+                uarea[PROC_FILE_TABLE_OFFSET + 4U] =
                     VFS_NODE_PACKED(MONITORFS_DEVICE_PROVIDER, MONITORFS_KIND_DEVICE,
                     MONITORFS_DEV_CTY0) | FILE_META_WRITE;
-                PROC_UAREA_WORD(p, PROC_FILE_TABLE_OFFSET + 5U) = 0UL;
+                uarea[PROC_FILE_TABLE_OFFSET + 5U] = 0UL;
         }
 
         p = &proc_table[1];
