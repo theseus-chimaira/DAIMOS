@@ -53,7 +53,7 @@ KERNEL_HEADERS = boot/kinit.h \
 	drivers/tty.h \
 	drivers/wcnsls.h \
 	fs/d6fs.h \
-	fs/d6fs_boot.h \
+	boot/d6fs_boot.h \
 	fs/d6fs_provider.h \
 	fs/monitorfs.h \
 	fs/dtfs.h \
@@ -92,8 +92,8 @@ KINIT_SRCS = boot/kinit.c \
 	boot/kinit_boot.c \
 	boot/root_select.c \
 	boot/tsfs_boot.c \
-	fs/d6fs_boot.c \
-	fs/d6fs_super_boot.c \
+	boot/d6fs_boot.c \
+	boot/d6fs_super_boot.c \
 	storage/blockset_boot.c \
 	storage/logstore_boot.c \
 	storage/logstore.c \

@@ -114,13 +114,13 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/drivers/wcnsls_io.s \
 	$(KERNEL_DIR)/fs/d6fs.c \
 	$(KERNEL_DIR)/fs/d6fs.h \
-	$(KERNEL_DIR)/fs/d6fs_boot.c \
-	$(KERNEL_DIR)/fs/d6fs_boot.h \
+	$(KERNEL_DIR)/boot/d6fs_boot.c \
+	$(KERNEL_DIR)/boot/d6fs_boot.h \
 	$(KERNEL_DIR)/fs/d6fs_pdp10.s \
 	$(KERNEL_DIR)/fs/d6fs_provider.c \
 	$(KERNEL_DIR)/fs/d6fs_provider.h \
 	$(KERNEL_DIR)/fs/d6fs_provider_mutation_pdp10.s \
-	$(KERNEL_DIR)/fs/d6fs_super_boot.c \
+	$(KERNEL_DIR)/boot/d6fs_super_boot.c \
 	$(KERNEL_DIR)/fs/d6fs_validate_pdp10.s \
 	$(KERNEL_DIR)/fs/monitorfs.h \
 	$(KERNEL_DIR)/fs/dtfs.c \

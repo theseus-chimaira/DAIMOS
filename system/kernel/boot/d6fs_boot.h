@@ -5,6 +5,7 @@
 #include "d6fs.h"
 
 int d6fs_boot_mount_root(unsigned int flags);
+int d6fs_boot_select(unsigned int root_class, unsigned int ordinal);
 kword_t *d6fs_boot_block_buffer(void);
 
 #endif
