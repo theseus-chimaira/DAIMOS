@@ -29,6 +29,8 @@
 #define CARD_COLUMNS            80U
 /** Low 12 bits of a card column; PDP-10 bits 24..35. */
 #define CARD_COLUMN_MASK        07777UL
+/** Packed WORDTOKEN12 words required for one complete 80-column card. */
+#define CARD_WORDS              27U
 /** Bounded polling count used while waiting for device progress. */
 #define CARD_WAIT_READY         0200000U
 
@@ -98,6 +100,8 @@
  * column at a time.  Only one read may be active at once.
  */
 int cr_read_card(kword_t cols[CARD_COLUMNS]);
+/** Read one card as 27 WORDTOKEN12 words; the final third token is zero. */
+int cr_read_words(kword_t words[CARD_WORDS], unsigned int nwords);
 
 /**
  * @brief Punch one complete 80-column card.
@@ -108,6 +112,8 @@ int cr_read_card(kword_t cols[CARD_COLUMNS]);
  * fetches columns asynchronously in response to DATA REQUEST interrupts.
  */
 int cp_punch_card(const kword_t cols[CARD_COLUMNS]);
+/** Punch one complete 27-word WORDTOKEN12 card image. */
+int cp_write_words(const kword_t words[CARD_WORDS], unsigned int nwords);
 
 /** @brief Resident PI7 entry for the optional card-reader MRES. */
 void cr_pi_handler(void);

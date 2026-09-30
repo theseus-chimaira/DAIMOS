@@ -520,12 +520,12 @@ $(PTP_MRES_OBJ): $(BUILD)/ptp_io.dobj $(KCORE_MAP)
 
 $(CR_MRES_OBJ): $(BUILD)/cr_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/cr-mres.dxr -M $(BUILD)/cr-mres.map \
-	    -R $@ -N cr_mres_package -X cr_pi_handler -X cr_read_card \
+	    -R $@ -N cr_mres_package -X cr_pi_handler -X cr_read_card -X cr_read_words \
 	    $(BUILD)/cr_io.dobj
 
 $(CP_MRES_OBJ): $(BUILD)/cp_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/cp-mres.dxr -M $(BUILD)/cp-mres.map \
-	    -R $@ -N cp_mres_package -X cp_pi_handler -X cp_punch_card \
+	    -R $@ -N cp_mres_package -X cp_pi_handler -X cp_punch_card -X cp_write_words \
 	    $(BUILD)/cp_io.dobj
 
 $(DCS_MRES_OBJ): $(BUILD)/dcs_io.dobj $(KCORE_MAP)

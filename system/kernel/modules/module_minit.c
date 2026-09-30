@@ -60,8 +60,10 @@
 #define PTP_X_WRITE_WORDS        2U
 #define CR_X_HANDLER             0U
 #define CR_X_READ_CARD           1U
+#define CR_X_READ_WORDS          2U
 #define CP_X_HANDLER             0U
 #define CP_X_PUNCH_CARD          1U
+#define CP_X_WRITE_WORDS         2U
 #define DCS_X_HANDLER           0U
 #define DCS_X_GETCHAR           1U
 #define DCS_X_PUTCHAR           2U
@@ -145,6 +147,8 @@ extern kword_t tty_write_s6rec_jump;
 extern kword_t tty_read_s6rec_jump;
 extern kword_t ptr_read_words_jump;
 extern kword_t ptp_write_words_jump;
+extern kword_t cr_read_words_jump;
+extern kword_t cp_write_words_jump;
 extern int d6fs_reader_bootstrap_call(kword_t backing_ops);
 
 
@@ -611,6 +615,8 @@ cr_minit(void)
             CR_CO_CLR_END_CARD | CR_CO_CLR_DATA_MISS);
         module_service_set(MODULE_SERVICE_CR_READ_CARD,
             minit_export(name, base, CR_X_READ_CARD));
+        storage_patch_jump(&cr_read_words_jump,
+            minit_export(name, base, CR_X_READ_WORDS));
         minit_diag_ok(name);
 }
 
@@ -641,6 +647,8 @@ cp_minit(void)
         minit_cp_cono((kword_t)CARD_NATIVE_PI_LEVEL | CP_CO_CLR_PUNCH);
         module_service_set(MODULE_SERVICE_CP_PUNCH_CARD,
             minit_export(name, base, CP_X_PUNCH_CARD));
+        storage_patch_jump(&cp_write_words_jump,
+            minit_export(name, base, CP_X_WRITE_WORDS));
         minit_diag_ok(name);
 }
 
