@@ -1,5 +1,7 @@
 #!/bin/sh
-# Install the fixed KCORE stream in the linked KINIT load slot.
+# Build the final PDP-6 boot image by installing the fixed KCORE word stream
+# into the load slot reserved inside linked KINIT.  Link-map bounds are checked
+# before patching so a KCORE/KINIT layout mismatch cannot produce boot media.
 set -eu
 
 fail() { echo "mkimage: $*" >&2; exit 1; }
@@ -25,7 +27,13 @@ sym()
 {
         file=$1
         name=$2
-        value=$(awk -v name="$name" '$1 == name { print $2; exit }' "$file")
+        value=
+        while read sym_name sym_value rest; do
+                if [ "$sym_name" = "$name" ]; then
+                        value=$sym_value
+                        break
+                fi
+        done < "$file"
         [ -n "$value" ] || fail "missing link symbol: $name"
         case $value in *[!0-7]*) fail "invalid octal link symbol $name=$value" ;; esac
         printf '%s\n' "$value"

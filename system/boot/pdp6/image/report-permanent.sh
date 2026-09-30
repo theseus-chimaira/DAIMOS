@@ -1,4 +1,7 @@
 #!/bin/sh
+# Report permanent KCORE+MRES occupancy against the configured PDP-6 address
+# ceiling.  MRES package headers/relocation maps are disposable KINIT material;
+# only each installed text+data+BSS extent contributes to permanent residency.
 set -eu
 
 usage()
@@ -28,7 +31,13 @@ case "$limit_arg" in
 esac
 limit=$((0$limit_arg))
 
-end=$(awk '$1 == "__kcore_low_end" { print $2; exit }' "$kmap")
+end=
+while read sym_name sym_value rest; do
+        if [ "$sym_name" = "__kcore_low_end" ]; then
+                end=$sym_value
+                break
+        fi
+done < "$kmap"
 [ -n "$end" ] || { echo "missing __kcore_low_end" >&2; exit 1; }
 # KCORE starts at executive location 060.  Linker-map addresses are octal.
 kcore=$((0$end - 060))
@@ -69,18 +78,18 @@ mres_objects()
 
 object_words()
 {
-        "$objdump" -h "$1" | awk '
-            NR == 1 {
-                t = d = b = 0
-                for (i = 1; i <= NF; ++i) {
-                        split($i, a, "=")
-                        if (a[1] == "text") t = a[2]
-                        else if (a[1] == "data") d = a[2]
-                        else if (a[1] == "bss") b = a[2]
-                }
-                print t + d + b
-                exit
-            }'
+        set -- $("$objdump" -h "$1")
+        text=0
+        data=0
+        bss=0
+        for field in "$@"; do
+                case "$field" in
+                text=*) text=${field#text=} ;;
+                data=*) data=${field#data=} ;;
+                bss=*)  bss=${field#bss=} ;;
+                esac
+        done
+        printf '%d\n' $((text + data + bss))
 }
 
 total=$kcore

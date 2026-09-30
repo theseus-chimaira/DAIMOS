@@ -476,7 +476,13 @@ $(KCORE_RIM): $(KCORE_DXR)
 	$(DXRCONVERT) --simh -b 060 $< $@
 
 $(KCORE_STREAM): $(KCORE_RIM) $(KCORE_MAP)
-	end=`awk '$$1 == "__kcore_low_init_end" { print $$2 }' $(KCORE_MAP)`; \
+	@end=; \
+	while read name value rest; do \
+		if test "$$name" = "__kcore_low_init_end"; then \
+			end=$$value; \
+			break; \
+		fi; \
+	done < $(KCORE_MAP); \
 	test -n "$$end"; words=$$((0$$end - 060)); words=`printf '%o' "$$words"`; \
 	$(MKSTREAM) -i $(KCORE_RIM) -o $@ -b 060 -w "$$words"
 
@@ -606,10 +612,29 @@ $(D6FS_MRES_OBJ): $(BUILD)/fs_backing_pdp10.dobj $(BUILD)/d6fs.dobj $(BUILD)/d6f
 	    -X fs_backing_direct_drm_read_jump -X fs_backing_direct_drm_write_jump \
 	    $(BUILD)/fs_backing_pdp10.dobj $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate_pdp10.dobj $(BUILD)/d6fs_pdp10.dobj
 
-$(KCORE_EMBED_ASM): image/kcore-embed.s.in $(KCORE_MAP) $(BUILD)
-	end=`awk '$$1 == "__kcore_low_init_end" { print $$2 }' $(KCORE_MAP)`; \
-	test -n "$$end"; words=$$((0$$end - 060)); words=`printf '%o' "$$words"`; \
-	sed "s/@KCORE_INIT_WORDS@/$$words/" $< > $@
+# KINIT contains one load slot whose size must exactly match initialized KCORE.
+# Read the absolute end symbol using shell built-ins only, then emit the tiny
+# assembler reservation directly.  This deliberately avoids AWK/sed so the
+# step remains suitable for a small future native DAIMOS build environment.
+$(KCORE_EMBED_ASM): $(KCORE_MAP) $(BUILD)
+	@end=; \
+	while read name value rest; do \
+		if test "$$name" = "__kcore_low_init_end"; then \
+			end=$$value; \
+			break; \
+		fi; \
+	done < $(KCORE_MAP); \
+	test -n "$$end"; \
+	words=$$((0$$end - 060)); \
+	{ \
+		printf '%s\n' \
+		    '        .text' \
+		    '        .globl __kcore_load_begin' \
+		    '        .globl __kcore_load_end' \
+		    '__kcore_load_begin:'; \
+		printf '        .block %o\n' "$$words"; \
+		printf '%s\n' '__kcore_load_end:'; \
+	} > $@
 
 $(KCORE_EMBED_OBJ): $(KCORE_EMBED_ASM)
 	$(DAS) $(DASFLAGS) -c -o $@ $<
@@ -670,7 +695,13 @@ $(IMAGE_RIM): $(IMAGE_DXR)
 	$(DXRCONVERT) --simh -b 030000 $< $@
 
 $(IMAGE_RAW): $(IMAGE_RIM) $(IMAGE_MAP)
-	end=`awk '$$1 == "__kinit_image_end" { print $$2 }' $(IMAGE_MAP)`; \
+	@end=; \
+	while read name value rest; do \
+		if test "$$name" = "__kinit_image_end"; then \
+			end=$$value; \
+			break; \
+		fi; \
+	done < $(IMAGE_MAP); \
 	test -n "$$end"; words=$$((0$$end - 030000)); words=`printf '%o' "$$words"`; \
 	$(MKSTREAM) -i $(IMAGE_RIM) -o $@ -b 030000 -w "$$words"
 
@@ -861,8 +892,13 @@ $(SIMH_INI): simh/simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE) $(BOOT_MEDIA_STAMP) f
 	    -e 's|@GE0_PORT@|$(SIMH_GE0_PORT)|g' \
 	    -e 's|@PCLK_MODE@|$(SIMH_PCLK_MODE)|g' \
 	    -e "s|@ROOT_SWITCH@|$$root_switch|g" $< > $@.tmp; \
-	awk -v f='$(BOOT_COMMANDS)' '{ if ($$0 == "@BOOT_COMMANDS@") { while ((getline l < f) > 0) print l; close(f); next } print }' \
-	    $@.tmp > $@; \
+	while IFS= read -r line || test -n "$$line"; do \
+		if test "$$line" = "@BOOT_COMMANDS@"; then \
+			cat '$(BOOT_COMMANDS)'; \
+		else \
+			printf '%s\n' "$$line"; \
+		fi; \
+	done < $@.tmp > $@; \
 	rm -f $@.tmp
 
 image: $(SIMH_INI)

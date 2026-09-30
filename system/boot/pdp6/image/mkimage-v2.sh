@@ -1,5 +1,7 @@
 #!/system/bin/sh
-# Install the fixed KCORE stream in the linked KINIT load slot.
+# Native-system variant of mkimage.sh.  Install the fixed KCORE stream into the
+# linked KINIT load slot while using only shell/tool assumptions intended for a
+# future DAIMOS-hosted build environment.
 set -eu
 
 fail() { echo "mkimage-v2: $*" >&2; exit 1; }
@@ -23,7 +25,13 @@ sym()
 {
         file=$1
         name=$2
-        value=$(awk -v name="$name" '$1 == name { print $2; exit }' "$file")
+        value=
+        while read sym_name sym_value rest; do
+                if [ "$sym_name" = "$name" ]; then
+                        value=$sym_value
+                        break
+                fi
+        done < "$file"
         [ -n "$value" ] || fail "missing link symbol: $name"
         case $value in *[!0-7]*) fail "invalid octal link symbol $name=$value" ;; esac
         printf '%s\n' "$value"

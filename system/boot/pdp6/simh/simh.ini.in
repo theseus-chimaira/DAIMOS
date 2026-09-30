@@ -1,3 +1,8 @@
+; Full PDP-6 simulator configuration template for the DAIMOS boot-image build.
+; Make substitutes media paths, core size, root selector, and PCLK policy.
+; This file is emulator packaging only; construction of KCORE/KINIT images does
+; not require SIMH itself.
+
 set -q -n log @SIMH_LOG@
 set cpu @CPU_KWORDS@k
 
