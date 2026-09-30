@@ -22,7 +22,6 @@
         .globl tty_dcs_getchar_address
         .globl tty_ge_getchar_address
         .globl kret_arg
-        .globl mfsdev_io_out
 
 /**
  * @brief Dispatch one packed logical-terminal output byte.
@@ -39,7 +38,6 @@ tty_putchar:
         caile 2,020
         jrst tty_putchar_ge
         subi 1,0400
-        aos mfsdev_io_out+011
 tty_dcs_putchar_address:
         jrst kret_arg
 
@@ -47,12 +45,10 @@ tty_putchar_ge:
         caile 2,024
         jrst kret_arg
         subi 1,010400
-        aos mfsdev_io_out+011
 tty_ge_putchar_address:
         jrst kret_arg
 
 tty_putchar_cty:
-        aos mfsdev_io_out+011
 tty_cty_putchar_address:
         jrst kret_arg
 

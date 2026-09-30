@@ -10,7 +10,6 @@
  */
         .text
         .globl  lpt_putchar
-        .globl  mfsdev_io_out
         .globl  kret_ok
         .globl  kret_neg2
         .globl  kret_neg4
@@ -46,5 +45,4 @@ lpt_putchar_send:
         jrst    lpt_putchar_wait
 
 lpt_putchar_done:
-        aos     mfsdev_io_out+022
         jrst    kret_ok

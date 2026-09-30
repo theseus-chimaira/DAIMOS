@@ -77,10 +77,8 @@ blockset_direct_tail_io:
         camle   2,6
         jrst    kret_neg1
         jumpe   4,blockset_direct_tail_account_read
-        aos     mfsdev_d6set_writes
         jrst    blockset_direct_tail_account_done
 blockset_direct_tail_account_read:
-        aos     mfsdev_d6set_reads
 blockset_direct_tail_account_done:
         add     17,[6,,6]
         movei   0,-5(17)
@@ -125,7 +123,6 @@ blockset_direct_tail_drm_read:
         pushj   17,drm236_read_block
 blockset_direct_tail_after_one:
         jumpe   1,blockset_direct_tail_after_ok
-        aos     mfsdev_storage_errors+4
         jrst    blockset_direct_tail_done
 blockset_direct_tail_after_ok:
         addi    010,0200

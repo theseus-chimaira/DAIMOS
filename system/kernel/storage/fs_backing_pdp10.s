@@ -44,17 +44,13 @@ fs_backing_write:
         .globl  fs_backing_root_write
         .globl  fs_backing_root_read_jump
         .globl  fs_backing_root_write_jump
-        .globl  mfsdev_d6set_reads
-        .globl  mfsdev_d6set_writes
 fs_backing_root_read:
-        aos     mfsdev_d6set_reads
         move    1,2
         move    2,3
 fs_backing_root_read_jump:
         jrst    0
 
 fs_backing_root_write:
-        aos     mfsdev_d6set_writes
         move    1,2
         move    2,3
 fs_backing_root_write_jump:
@@ -91,10 +87,8 @@ fs_backing_direct_io:
         trnn    6,0100000               ; singleton boot-root logical I/O?
         jrst    fs_backing_direct_not_root
         jumpe   7,fs_backing_direct_root_read
-        aos     mfsdev_d6set_writes
         jrst    fs_backing_direct_not_root
 fs_backing_direct_root_read:
-        aos     mfsdev_d6set_reads
 fs_backing_direct_not_root:
         trnn    6,0200000               ; compact INTERLEAVE set?
         jrst    fs_backing_direct_single

@@ -16,8 +16,6 @@
  */
 
         .text
-        .globl mfsdev_io_in
-        .globl mfsdev_io_out
         .globl cty_pi_handler
         .globl cty_putchar
         .globl cty_getchar
@@ -50,7 +48,6 @@ cty_pi_input:
         conso 0120,0040
         jrst pdp10_pi_handler_return
         datai 0120,1
-        aos mfsdev_io_in+0
         andi 1,0177
         caie 1,034                    ; CTRL-\: operator RT escape
         jrst cty_pi_input_normal
@@ -89,7 +86,6 @@ cty_putchar_ready:
         setom cty_tx_pending
         andi 1,0177
         datao 0120,1
-        aos mfsdev_io_out+0
         movei 2,0200000
 cty_putchar_wait_done:
         move 3,cty_tx_pending
@@ -118,7 +114,6 @@ cty_getchar_loop:
         conso 0120,0040
         jrst cty_getchar_sleep
         datai 0120,1
-        aos mfsdev_io_in+0
         andi 1,0177
         popj 017,
 cty_getchar_sleep:

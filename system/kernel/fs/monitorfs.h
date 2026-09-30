@@ -9,17 +9,13 @@
 #define MONITORFS_KIND_DEVICE         2U
 #define MONITORFS_KIND_DEVDIR        3U
 #define MONITORFS_KIND_CTYDIR         MONITORFS_KIND_DEVDIR
-#define MONITORFS_KIND_STATS          4U
 #define MONITORFS_KIND_MEMBERS        5U
 #define MONITORFS_KIND_SWAP_STATS     6U
 #define MONITORFS_KIND_IOROOT         0U
 
-/* STATS files contain three unlabeled 12-digit octal values: reads, writes,
- * and errors.  Request accounting is deliberately uniform across stream,
- * storage, and aggregate devices; DAIMOS 0.9/1.0 does not keep separate
- * lifetime word/block-volume counters.  D6SET SWAP is separate live state and
- * contains total, used, and free blocks.
- */
+/* D6SET SWAP is live allocation state, not lifetime I/O accounting; it
+ * contains total, used, and free blocks.  DAIMOS 0.9/1.0 deliberately omits
+ * per-device lifetime read/write/error counters from resident memory. */
 
 #define MONITORFS_DEV_CTY0            0U
 #define MONITORFS_DEV_CLK0            1U
@@ -43,9 +39,6 @@
 #define MONITORFS_DEV_COUNT           19U
 
 #define MONITORFS_PRESENT(id)         (1UL << (id))
-
-#define MONITORFS_IO_IN_COUNT         MONITORFS_DEV_COUNT
-#define MONITORFS_IO_OUT_COUNT        MONITORFS_DEV_COUNT
 
 extern kword_t mfsdev_names[MONITORFS_DEV_COUNT];
 extern kword_t mfsdev_d6set_members;

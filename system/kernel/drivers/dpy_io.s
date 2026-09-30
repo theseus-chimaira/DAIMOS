@@ -14,7 +14,6 @@
  * BSS flag and this code exist only when the optional DPY MRES is installed.
  */
 
-        .globl mfsdev_io_out
         .text
         .globl dpy_pi_handler
         .globl dpy_putword
@@ -57,7 +56,6 @@ dpy_putword:
 dpy_put_start:
         setom dpy_pending
         datao 0130,1
-        aos mfsdev_io_out+010
 dpy_put_wait:
         skipe dpy_pending
         jrst dpy_put_wait
