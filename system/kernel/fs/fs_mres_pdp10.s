@@ -212,27 +212,25 @@ fs_d6fs_service_jump:
 fs_tsfs_service_jump:
         jrst    fs_mres_no_service
 
-; KCORE memory-pressure bridge to the movable D6FS clean-cache reclaimer.
-; AC1=requested allocation size; return number of released cache slabs.
-        .globl  fs_d6fs_cache_reclaim
+; KCORE memory-pressure bridge for reclaimable filesystem memory.
+; AC1=requested words, AC2=0 cheap/discardable cache, AC2=1 backed eviction.
+; Provider-specific backing policy stays in each independently movable MRES.
+        .globl  fs_memory_reclaim
         .globl  d6fs_cache_reclaim_jump
-fs_d6fs_cache_reclaim:
+        .globl  memfs_reclaim_jump
+fs_memory_reclaim:
+        jumpn   2,fs_memory_reclaim_memfs
         hrrz    4,d6fs_cache_reclaim_jump
+        cain    4,fs_mres_no_service
+        jrst    kret_zero
+        jrst    (4)
+fs_memory_reclaim_memfs:
+        hrrz    4,memfs_reclaim_jump
         cain    4,fs_mres_no_service
         jrst    kret_zero
         jrst    (4)
 d6fs_cache_reclaim_jump:
         jrst    fs_mres_no_service
-
-; KCORE memory-pressure bridge to demand-backed MEMFS eviction.
-; AC1=requested allocation size; return released resident words.
-        .globl  fs_memfs_reclaim
-        .globl  memfs_reclaim_jump
-fs_memfs_reclaim:
-        hrrz    4,memfs_reclaim_jump
-        cain    4,fs_mres_no_service
-        jrst    kret_zero
-        jrst    (4)
 memfs_reclaim_jump:
         jrst    fs_mres_no_service
 fs_mres_no_service:

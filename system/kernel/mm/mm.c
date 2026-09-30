@@ -359,8 +359,9 @@ mm_alloc(kword_t words, unsigned int type, unsigned int owner,
  * @brief Allocate with reclaim/compaction/swap pressure handling.
  * @return MM_OK or the final MM_ERR_* status.
  *
- * The three stages are: direct attempt; cache reclaim followed by retry and
- * compaction if fragmented; MEMFS eviction; then process-swap reclaim.
+ * The three pressure stages are: cheap filesystem-cache discard, backed
+ * filesystem eviction, then process-swap reclaim.  MM sees only reclaim
+ * classes; provider-specific D6FS/MEMFS policy stays behind fs_memory_reclaim.
  * Only MM_ERR_NOMEM, MM_ERR_FRAGMENTED, and MM_ERR_DESCRIPTORS advance to the
  * next pressure stage. All validation/busy errors return immediately.
  */
@@ -383,10 +384,8 @@ mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
                 }
                 if (rc == MM_OK || rc < MM_ERR_DESCRIPTORS || stage == 3)
                         return rc;
-                if (stage == 0)
-                        (void)fs_d6fs_cache_reclaim(words);
-                else if (stage == 1)
-                        (void)fs_memfs_reclaim(words);
+                if (stage < 2)
+                        (void)fs_memory_reclaim(words, (unsigned int)stage);
                 else
                         (void)proc_swap_reclaim(words, alignment,
                             type == MM_TYPE_PROCESS ? owner : PROC_NO_SLOT);
