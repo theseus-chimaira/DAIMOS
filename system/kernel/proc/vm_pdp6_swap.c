@@ -19,6 +19,7 @@
 #include "fs_mres.h"
 #include "mm.h"
 #include "storage.h"
+#include "swap_store.h"
 #include "syscall.h"
 
 #if EXEC_DXR_MAX_IMAGE_WORDS > PROC_SWAP_TEXT_MASK
@@ -31,61 +32,6 @@ kword_t proc_swap_blocks_used;
 /* Swap slot numbers and packed block spans are bounded positive quantities.
  * Use signed working values after unpacking so their comparisons stay compact
  * on the PDP-10; packed on-disk/in-memory fields remain unchanged. */
-
-/** Find the first nonoverlapping free span in the configured swap tail. */
-static int
-proc_swap_find(kword_t block_words, kword_t *startp)
-{
-        long blocks;
-        long total;
-        long start;
-        int i;
-
-        if (block_words == 0UL || startp == 0)
-                return -1;
-        blocks = (long)block_words;
-        total = (long)blockset_runtime_reg_call(BLOCKSET_MRES_OP_TAIL_BLOCKS,
-            0UL, 0UL, 0UL);
-        if (total <= 0L || blocks > total)
-                return -1;
-        start = 0L;
-        for (;;) {
-                long next;
-                int conflict;
-
-                if (start > total - blocks)
-                        return -1;
-                next = start;
-                conflict = 0;
-                for (i = 0; i < (int)proc_slots; ++i) {
-                        kword_t span;
-                        long first;
-                        long count;
-                        long end;
-
-                        if (VM_PDP6_BASE(&proc_table[i]) != 0UL)
-                                continue;
-                        span = proc_swap_records[i].state;
-                        count = (long)(span & MM_HALF_MASK);
-                        if (count == 0L)
-                                continue;
-                        first = (long)((span >> 18U) & MM_HALF_MASK);
-                        end = first + count;
-                        if (start < end && first < start + blocks) {
-                                if (end > next)
-                                        next = end;
-                                conflict = 1;
-                        }
-                }
-                if (!conflict) {
-                        *startp = (kword_t)start;
-                        return 0;
-                }
-                if (next <= start)
-                        return -1;
-                start = next;
-        }
-}
 
 /** Transfer a sector-aligned process extent to or from raw swap-tail blocks. */
 static int
@@ -144,9 +90,12 @@ proc_swap_detach(int slot)
 
         p = &proc_table[slot];
         if (VM_PDP6_BASE(p) == 0UL &&
-            proc_swap_records[slot].state != 0UL)
+            proc_swap_records[slot].state != 0UL) {
+                swap_store_free((proc_swap_records[slot].state >> 18U) &
+                    MM_HALF_MASK, proc_swap_records[slot].state & MM_HALF_MASK);
                 proc_swap_blocks_used -=
                     proc_swap_records[slot].state & MM_HALF_MASK;
+        }
         proc_swap_records[slot].state = 0UL;
         if (PROC_HAS_UAREA(p))
                 PROC_SWAP_BACKING_WORD(p) = 0UL;
@@ -189,8 +138,10 @@ proc_swap_out(int slot)
         }
         mem = (kword_t *)(unsigned long)base;
         blocks = words / DSK_WORDS_PER_SECTOR;
-        if (blocks == 0UL || proc_swap_find(blocks, &first) != 0 ||
-            proc_swap_transfer_words(BLOCKSET_MRES_OP_TAIL_WRITE, first,
+        first = swap_store_blocks;
+        if (blocks == 0UL || swap_store_alloc(blocks, &first) != 0)
+                goto fail_unpin;
+        if (proc_swap_transfer_words(BLOCKSET_MRES_OP_TAIL_WRITE, first,
             mem, words) != 0)
                 goto fail_unpin;
 
@@ -213,6 +164,8 @@ proc_swap_out(int slot)
 fail_unpin:
         (void)mm_unpin(base);
 fail_record:
+        if (first < swap_store_blocks)
+                swap_store_free(first, blocks);
         PROC_SWAP_BACKING_WORD(p) = 0UL;
         PROC_CLEAR_TRANSITION(p);
         return -1;
@@ -308,6 +261,7 @@ proc_swap_in(int slot)
                 goto fail_free;
         VM_PDP6_SET_BASE(p, base);
         proc_swap_blocks_used -= blocks;
+        swap_store_free(first, blocks);
         r->state = resident_state;
         PROC_SWAP_BACKING_WORD(p) = 0UL;
         PROC_CLEAR_TRANSITION(p);
