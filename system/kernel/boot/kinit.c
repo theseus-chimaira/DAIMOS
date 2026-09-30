@@ -1,3 +1,8 @@
+/**
+ * @file kinit.c
+ * @brief Transient kernel initialization and permanent MRES installation.
+ */
+
 #include "kinit.h"
 #include "kcore.h"
 #include "module.h"
@@ -51,8 +56,8 @@ kinit_stack_watermark_record(void)
 }
 #endif
 
-/*
- * Copy fixed KCORE from its embedded KINIT image to low memory.
+/**
+ * @brief Copy fixed KCORE from its embedded KINIT image to low memory.
  *
  * Initialized words are copied from the embedded image and KCORE BSS is
  * cleared explicitly.  This establishes the permanent resident core before
@@ -84,8 +89,8 @@ kcore_load(void)
                 *dst++ = 0;
 }
 
-/*
- * Initialize the permanent MRES placement state.
+/**
+ * @brief Initialize the permanent MRES placement state.
  *
  * MRES packages are laid out contiguously above KCORE so the permanent kernel
  * occupies one gapless low-memory range and leaves maximum contiguous core for
@@ -104,8 +109,8 @@ mres_init(void)
         mres_last_image_words = 0U;
 }
 
-/*
- * Validate, relocate, and install one MRES package into permanent low memory.
+/**
+ * @brief Validate, relocate, and install one MRES package into permanent low memory.
  *
  * The package contains an initialized image, BSS size, packed relocation map,
  * and exported entry offsets.  The image is allocated at the next required
@@ -113,8 +118,9 @@ mres_init(void)
  * halfwords, zero-filled through BSS, then converted from a temporary MM
  * allocation into a boot reservation.
  *
- * Returns zero and stores the installed base on success; returns -1 without
- * advancing permanent-placement state if validation or installation fails.
+ * @param package MRES package image to validate and install.
+ * @param basep Receives the installed absolute base address.
+ * @return 0 on success, -1 on validation or installation failure.
  */
 int
 mres_install(const kword_t *package, unsigned int *basep)
@@ -229,11 +235,16 @@ fail:
         return -1;
 }
 
-/*
- * Resolve one exported MRES entry to its installed absolute address.
+/**
+ * @brief Resolve one exported MRES entry to its installed absolute address.
  *
  * Export offsets are packed two per PDP-10 word in the package header.  A zero
  * result denotes an invalid package, export index, or address overflow.
+ *
+ * @param package Source MRES package containing the export table.
+ * @param base Installed package base address.
+ * @param index Zero-based export index.
+ * @return Absolute exported address, or zero if the request is invalid.
  */
 unsigned int
 mres_export(const kword_t *package, unsigned int base, unsigned int index)
@@ -257,8 +268,8 @@ mres_export(const kword_t *package, unsigned int base, unsigned int index)
         return base + offset;
 }
 
-/*
- * Preserve the two-word Stage1-to-KINIT boot handoff.
+/**
+ * @brief Preserve the two-word Stage1-to-KINIT boot handoff.
  *
  * Stage1 leaves controller/root-selection information in fixed low memory.
  * KINIT copies it into private storage before low memory is reused by KCORE
@@ -284,11 +295,13 @@ kinit_save_boot_handoff(void)
         kinit_boot_handoff[1] = *boot1;
 }
 
-/*
- * Return the MRES package associated with the MINIT currently executing.
+/**
+ * @brief Return the MRES package associated with the MINIT currently executing.
  *
  * MINIT routines use this to install or export their own resident package
  * without embedding package addresses in each individual initializer.
+ *
+ * @return Current package address, or NULL when no MINIT package is active.
  */
 const kword_t *
 module_current_mres(void)
@@ -296,11 +309,14 @@ module_current_mres(void)
         return module_mres_package;
 }
 
-/*
- * Publish an installed module service address for later MINIT consumers.
+/**
+ * @brief Publish an installed module service address for later MINIT consumers.
  *
  * Service zero is reserved as "not available"; out-of-range service numbers
  * are ignored so callers cannot overwrite unrelated boot state.
+ *
+ * @param service Service-table index.
+ * @param address Installed 18-bit service entry address.
  */
 void
 module_service_set(unsigned int service, unsigned int address)
@@ -309,10 +325,13 @@ module_service_set(unsigned int service, unsigned int address)
                 module_services[service] = address;
 }
 
-/*
- * Look up a service address published by an earlier MINIT.
+/**
+ * @brief Look up a service address published by an earlier MINIT.
  *
  * Zero means the service is absent or the requested service number is invalid.
+ *
+ * @param service Service-table index.
+ * @return Installed service address, or zero if absent/invalid.
  */
 unsigned int
 module_service_get(unsigned int service)
@@ -322,8 +341,8 @@ module_service_get(unsigned int service)
         return module_services[service];
 }
 
-/*
- * Execute the linker-generated module initialization table in order.
+/**
+ * @brief Execute the linker-generated module initialization table in order.
  *
  * The table is first copied to the KINIT stack because its linked source area
  * is released to the memory manager before MINIT processing completes.  Each
@@ -419,8 +438,8 @@ module_run_minits(void)
         module_mres_package = 0;
 }
 
-/*
- * Perform the complete transient kernel initialization sequence.
+/**
+ * @brief Perform the complete transient kernel initialization sequence.
  *
  * This entry establishes KCORE and the boot memory map, preserves the Stage1
  * handoff, installs interrupt and module services, packs all permanent MRES
