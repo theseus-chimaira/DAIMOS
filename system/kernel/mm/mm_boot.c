@@ -1,12 +1,28 @@
+/**
+ * @file mm_boot.c
+ * @brief Disposable boot-time construction of DAIMOS managed-core arenas.
+ *
+ * KINIT_LATE uses this file while converting the loader's physical-memory
+ * picture into the compact permanent MM representation.  Free physical ranges
+ * are kept as at most MM_MAX_ARENAS packed span words; allocated objects stay
+ * in the permanent mm_extents[] table.  When a boot MRES is committed at an
+ * arena edge, mm_boot_reserve() removes its descriptor and trims that arena so
+ * the installed resident image becomes permanently unmanaged core.
+ *
+ * This code is reclaimed with KINIT_LATE.  Prefer simple, auditable boot-time
+ * logic over permanent-code micro-optimizations here.
+ */
 #include "mm.h"
 #include "mm_internal.h"
 
+/** Pack a managed boot arena as size,,base. */
 static kword_t
 mm_arena_span(kword_t base, kword_t words)
 {
         return ((words & MM_HALF_MASK) << 18U) | (base & MM_HALF_MASK);
 }
 
+/** Delete one arena descriptor while preserving physical-base order. */
 static void
 mm_arena_delete(int slot)
 {
@@ -15,6 +31,7 @@ mm_arena_delete(int slot)
         --mm_arena_count;
 }
 
+/** Reset permanent MM bookkeeping before KINIT publishes free ranges. */
 void
 mm_boot_init(kword_t core_words)
 {
@@ -23,9 +40,13 @@ mm_boot_init(kword_t core_words)
         mm_arena_count = 0;
 }
 
-/* Permanently remove an allocated boot range from managed core.  Packed boot
- * MRES is allocated at an arena edge, so committing it only trims that arena;
- * the range becomes unmanaged rather than free. */
+/**
+ * Permanently remove an allocated boot range from managed core.
+ *
+ * Packed boot MRES is allocated at an arena edge, so committing it only trims
+ * that arena; the range becomes unmanaged rather than free.  The descriptor is
+ * removed only after type, owner, pin state, and edge placement are validated.
+ */
 int
 mm_boot_reserve(kword_t base, unsigned int type, unsigned int owner)
 {
@@ -75,6 +96,7 @@ mm_boot_reserve(kword_t base, unsigned int type, unsigned int owner)
         return MM_OK;
 }
 
+/** Return the largest contiguous free run in the current boot arena map. */
 kword_t
 mm_largest_free(void)
 {
@@ -113,9 +135,14 @@ mm_largest_free(void)
         return largest;
 }
 
-/* Add a physically free boot-time range to the managed arena set.  Adjacent
- * arenas are merged immediately; allocations remain separate descriptors and
- * therefore need no free-space descriptors or coalescing. */
+/**
+ * Add a physically free boot-time range to the managed arena set.
+ *
+ * Adjacent arenas are merged immediately; allocations remain separate extent
+ * descriptors and therefore need no free-space descriptors or runtime
+ * coalescing.  Overlap with either an allocation or an existing arena is
+ * rejected rather than silently normalised.
+ */
 int
 mm_add_free(kword_t base, kword_t words)
 {
