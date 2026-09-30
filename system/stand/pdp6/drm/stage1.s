@@ -1,4 +1,18 @@
-; PDP-6 DRM236/DBOOT V1 Stage1.
+/**
+ * @file stage1.s
+ * @brief PDP-6 Type-236 drum DBOOT Stage-1 loader for compressed KINIT.
+ *
+ * Stage0 loads this read-in image at 000060. It scans drum units 0..3 for the
+ * same DBC/DB0/DB1/DBX set metadata used by DSK, reconstructs one round-robin
+ * stream across all members, skips bad runs, and stages the compressed payload
+ * above the final image. The shared D6LZ36 decoder is copied to 000060 and
+ * expands KINIT at 030000 before entry.
+ *
+ * Type-236 media addresses are 16-word groups; DAIMOS DBOOT blocks are 128
+ * words. Transfers use the Type-167 processor synchronously with bounded waits.
+ * At KINIT handoff AC17 points just above the image, AC1=0, and AC2 is the
+ * DBOOT member-count hint; other Stage-1 scratch registers are non-contractual.
+ */
 ;
 ; This is the paper-tape/RIM Stage1 image.
 ; It scans DRM236 units 0..3, accepts
@@ -66,6 +80,9 @@ stage1_have_set:
 stage1_magic_ok:
         hlrz 03,buffer+000001
         hrrz 04,buffer+000001
+        jumpe 03,fail_khead
+        caml 04,03
+        jrst fail_khead
         movei 05,030000
         add 05,03
         movem 05,kinit_stack_base

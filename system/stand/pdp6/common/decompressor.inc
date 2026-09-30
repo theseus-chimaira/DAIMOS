@@ -1,3 +1,17 @@
+/**
+ * @file decompressor.inc
+ * @brief Fixed-address PDP-6 D6LZ36 resumable decoder shared by Stage-1/KCORE.
+ *
+ * Every Stage-1 carries this exact image and copies it to executive address
+ * 000060 before invoking it. Internal transfers target that installed image,
+ * so the source copy may reside anywhere. KCORE links the same source at
+ * 000060 for runtime refill/decompression.
+ *
+ * Resumable ABI: AC12 destination cursor, AC13 output words remaining, AC3
+ * source cursor, AC4 input words remaining, AC14 output base, AC10 control
+ * word, AC11 control tokens remaining. AC6/AC7 are scratch. AC0 returns 0 on
+ * completion, +1 for another source window, or -1 for malformed input.
+ */
 ; Compact D6LZ36 resumable token core at fixed low core 000060.
 ;
 ; Every PDP-6 Stage1 carries these exact words and copies

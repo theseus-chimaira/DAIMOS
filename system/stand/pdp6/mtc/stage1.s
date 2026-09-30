@@ -1,6 +1,19 @@
-; stage1.s -- D6LZ36 boot-image Stage1 for PDP-6 magnetic tape.
+/**
+ * @file stage1.s
+ * @brief PDP-6 Type-516 magnetic-tape Stage-1 loader for compressed KINIT.
+ *
+ * Stage0 loads this image at 000060. Stage-1 reads unit 0 through Type-516 and
+ * Type-136, continuing across tape-record boundaries until the declared
+ * compressed word count is satisfied. The payload is staged above final KINIT
+ * and expanded at 030000 by the common decoder copied to low core.
+ *
+ * Header validation requires nonzero image/compressed lengths and entry_offset
+ * strictly inside the image. The historical SIMH parity-error indication is
+ * intentionally ignored because it is spuriously asserted on valid legacy
+ * seven-track images. AC17 is reset above KINIT immediately before entry.
+ */
 ;
-; Stage0 loads this loader from RIM paper tape.  Stage1 reads one magnetic-tape
+; Stage1 reads one magnetic-tape
 ; record through a Type 516 control and Type 136 data control.  The record is:
 ;
 ;       word 0      SIXBIT DAIMON
@@ -41,6 +54,8 @@ start:
         hlrz 013,03
         jumpe 013,bad_tape
         hrrz 05,03
+        caml 05,013
+        jrst bad_tape
         addi 05,030000
         pushj 017,read_word
         hlrz 04,03

@@ -1,3 +1,6 @@
+# Top-level standalone/bootstrap build dispatcher. Machine-specific standalone
+# programs live below system/stand/<machine>; this file only fans out selected
+# architectures and keeps their generated files below BUILD_ROOT.
 BUILD_SUBDIRS = pdp6
 STAND_DIR != pwd
 BUILD_ROOT ?= ${STAND_DIR}/../../build

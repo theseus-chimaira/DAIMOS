@@ -1,3 +1,11 @@
+/**
+ * @file sixbit-out.inc
+ * @brief Relocatable PDP-6 CTY SIXBIT-word output helper.
+ *
+ * Entry AC1 is one packed six-character SIXBIT word and AC17 is the pushdown
+ * pointer. AC2/AC3/AC4/AC6 are clobbered. CTY device 0120 is polled and the
+ * routine waits for the final character to leave the interface before return.
+ */
 ; Common PDP-6 CTY SIXBIT word output.
 ;
 ; Entry:

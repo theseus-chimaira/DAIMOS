@@ -1,5 +1,10 @@
-; Pre-relocated image of sixbit-out.inc for 077760..077776.
-; Keep this exactly 15 words; tests compare it with a freshly assembled helper.
+/**
+ * @file sixbit-fixed.inc
+ * @brief Exact pre-relocated 15-word image of sixbit-out.inc at 077760.
+ *
+ * Keep this byte-for-byte synchronized with the assembled helper. Stage-1
+ * copies these words to 077760..077776 for fixed-address operator output.
+ */
         .word 0200100000001
         .word 0201300000006
         .word 0200140000002

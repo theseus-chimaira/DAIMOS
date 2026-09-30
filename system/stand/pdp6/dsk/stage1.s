@@ -1,4 +1,19 @@
-; PDP-6 HDD/DBOOT V1 Stage1.
+/**
+ * @file stage1.s
+ * @brief PDP-6 DSK270 DBOOT Stage-1 loader for compressed KINIT images.
+ *
+ * Stage0 read-in loads this relocatable image at 000060. It scans DSK270 units
+ * 0..3 for DBC or DB0/DB1/DBX metadata, reconstructs a round-robin DBOOT stream
+ * across one to four members, skips bad-run metadata, and validates the DAIMON
+ * stream header. Compressed data is staged above the final KINIT image,
+ * expanded at 030000 using the shared fixed decoder installed at 000060, then
+ * control transfers to the header-relative KINIT entry.
+ *
+ * Low-memory images may carry compressed_words=0 and are loaded directly at
+ * 030000. Stage-1 uses AC17 as its temporary pushdown pointer. At handoff AC17
+ * is moved to the first word after KINIT; AC1 is zero and AC2 carries the DBOOT
+ * member-count hint. KINIT does not otherwise depend on Stage-1 scratch ACs.
+ */
 ;
 ; This is the paper-tape/RIM Stage1 image.
 ; It scans DSK270 units 0..3, accepts
@@ -66,6 +81,9 @@ stage1_have_set:
 stage1_magic_ok:
         hlrz 03,buffer+000001
         hrrz 04,buffer+000001
+        jumpe 03,fail_khead
+        caml 04,03
+        jrst fail_khead
         movei 05,030000
         add 05,03
         movem 05,kinit_stack_base

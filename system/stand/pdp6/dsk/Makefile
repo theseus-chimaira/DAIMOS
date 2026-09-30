@@ -1,3 +1,4 @@
+# Production PDP-6 DSK270 Stage-1 read-in image, loaded by Stage0 at 000060.
 PROJECT_ROOT != cd ../../../.. && pwd
 BUILD ?= ${PROJECT_ROOT}/build/system/stand/pdp6/dsk
 PDP10_PREFIX ?= ${HOME}/cross

@@ -1,3 +1,13 @@
+/**
+ * @file load-check.inc
+ * @brief Generic opaque-image header validation fragment for Stage-1 loaders.
+ *
+ * Inputs are AC2=magic and AC6=image_words,,entry_offset; the including source
+ * supplies a `fail` label. Success leaves AC2=image words, AC3=entry offset,
+ * and AC7=absolute entry. The generic load window is 040000..060000.
+ * Current production compressed loaders use their own 030000-specific path;
+ * this fragment remains a reusable/reference helper.
+ */
 ; Common DAIMON opaque-image header validation.
 ;
 ; Inputs:

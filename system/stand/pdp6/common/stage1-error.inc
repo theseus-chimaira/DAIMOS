@@ -1,3 +1,11 @@
+/**
+ * @file stage1-error.inc
+ * @brief Minimal fatal Stage-1 console diagnostic and halt path.
+ *
+ * Prints the three-character SIXBIT halfword "?B1" through CTY device 0120,
+ * then halts forever. AC2/AC3/AC4/AC6 are clobbered. No KINIT services or
+ * initialized runtime state are required.
+ */
 ; Common fatal Stage1 diagnostic.
 ;
 ; Print the three-character SIXBIT halfword ?B1 and halt.  The packed

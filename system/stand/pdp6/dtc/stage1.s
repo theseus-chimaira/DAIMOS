@@ -1,6 +1,19 @@
-; stage1.s -- D6LZ36 boot-image Stage1 for PDP-6 DECtape.
+/**
+ * @file stage1.s
+ * @brief PDP-6 DECtape Stage-1 loader for a sequential compressed KINIT stream.
+ *
+ * Stage0 loads this loader from read-in paper tape at 000060. Stage-1 starts
+ * DECtape unit 0 forward through Type-136 DCT0 and consumes one logical word
+ * stream independent of physical DECtape block boundaries. Compressed input is
+ * staged immediately above the declared final image, the common decoder is
+ * installed at 000060, and KINIT is expanded at 030000.
+ *
+ * Header validation requires nonzero image/compressed lengths and an entry
+ * offset strictly inside the final image. At handoff AC17 points above the
+ * expanded KINIT and AC1/AC2 are cleared; other scratch ACs are non-contractual.
+ */
 ;
-; Stage0 loads this loader from RIM paper tape.  Stage1 starts DECtape unit 0
+; Stage1 starts DECtape unit 0
 ; reading forward through the Type 136 data control.  The DECtape stream is:
 ;
 ;       word 0      SIXBIT DAIMON

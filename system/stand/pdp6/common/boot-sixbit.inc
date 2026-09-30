@@ -1,6 +1,11 @@
-; Install the fixed bootstrap SIXBIT helper at 077760..077776.
-; AC17 must be a valid pushdown pointer before entry.
-; Clobbers AC1.
+/**
+ * @file boot-sixbit.inc
+ * @brief Install the fixed bootstrap SIXBIT helper at 077760..077776.
+ *
+ * The destination is bootstrap scratch storage only. Stage-1 code may call
+ * 077760 after installation without retaining another relocatable helper near
+ * the low-core decoder. AC17 must be a valid pushdown pointer; AC1 is clobbered.
+ */
 install_bootstrap_sixbit:
         movei 01,bootstrap_sixbit_image
         hrl 01,01

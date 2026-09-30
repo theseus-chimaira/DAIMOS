@@ -1,3 +1,5 @@
+# PDP-6 standalone Stage-1 aggregate build. Each backend builds the production
+# read-in bootstrap for one physical boot medium.
 BUILD_SUBDIRS = dsk drm dtc mtc ptr
 PDP6_STAND_DIR != pwd
 BUILD_ROOT ?= ${PDP6_STAND_DIR}/../../../build

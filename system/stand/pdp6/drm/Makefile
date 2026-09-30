@@ -1,3 +1,4 @@
+# Production PDP-6 Type-236 drum Stage-1 read-in image, loaded at 000060.
 PROJECT_ROOT != cd ../../../.. && pwd
 BUILD ?= ${PROJECT_ROOT}/build/system/stand/pdp6/drm
 PDP10_PREFIX ?= ${HOME}/cross

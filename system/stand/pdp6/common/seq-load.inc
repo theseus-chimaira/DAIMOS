@@ -1,3 +1,12 @@
+/**
+ * @file seq-load.inc
+ * @brief Generic sequential-device Stage-1 body for opaque images.
+ *
+ * The including backend supplies `read_words`: AC1=destination, AC2=nonzero
+ * word count. This fragment validates the header, loads the image at 040000,
+ * sets AC17=070000, clears AC1/AC2, and transfers to the validated entry.
+ * It is not used by the current compressed DTC/MTC/PTR production loaders.
+ */
 ; Common Stage1 body for sequential opaque-image boot devices.
 ;
 ; Backend contract:

@@ -1,6 +1,19 @@
-; stage1.s -- two-tape D6LZ36 Stage1 for PDP-6 paper tape.
+/**
+ * @file stage1.s
+ * @brief PDP-6 two-payload-paper-tape Stage-1 loader for compressed KINIT.
+ *
+ * Stage0 loads this loader at 000060. Stage-1 reads a counted first payload
+ * tape containing the DAIMON header and first compressed segment, prompts
+ * "TAPE2 ", resets the reader, then appends a counted second compressed
+ * segment. Both segments must exactly equal the declared compressed-word count.
+ * The fixed D6LZ36 decoder is then installed at 000060 and expands KINIT at
+ * 030000. AC17 is reset above the image before entry.
+ *
+ * Type-760 PTR exposes no reader-error status; a missing tape therefore waits
+ * indefinitely for DONE rather than producing a distinct media error.
+ */
 ;
-; Stage0 loads this loader from RIM paper tape.  Stage1 then reads two raw
+; Stage1 then reads two raw
 ; five-byte 36-bit-word streams.  Each tape starts with a word count.
 ;
 ; Tape 1:
@@ -44,16 +57,22 @@ start:
         ; Read Tape 1 count and the normal compressed-image header.
         pushj 017,read_word
         move 02,03
+        caige 02,04
+        jrst bad_tape
         pushj 017,read_word
         came 03,daimon_magic
         jrst bad_tape
         pushj 017,read_word
         hlrz 07,03
+        jumpe 07,bad_tape
         movem 07,image_words
         hrrz 016,03
+        caml 016,07
+        jrst bad_tape
         addi 016,030000
         pushj 017,read_word
         hlrz 07,03
+        jumpe 07,bad_tape
         movem 07,compressed_words
         subi 02,03
         movei 01,030000
@@ -70,6 +89,13 @@ start:
         cono 0104,0020
         pushj 017,read_word
         move 02,03
+        jumpe 02,bad_tape
+        move 07,stage_ptr
+        subi 07,030000
+        sub 07,image_words
+        add 07,02
+        came 07,compressed_words
+        jrst bad_tape
         move 01,stage_ptr
         pushj 017,read_words
         jrst stage1_handoff

@@ -1,3 +1,5 @@
+# Production PDP-6 DECtape Stage-1 read-in image. Isolated tests may relocate
+# their copy, but the standalone artifact matches the real Stage0 load address.
 PROJECT_ROOT != cd ../../../.. && pwd
 BUILD ?= ${PROJECT_ROOT}/build/system/stand/pdp6/dtc
 PDP10_PREFIX ?= ${HOME}/cross
@@ -9,7 +11,7 @@ STAGE1_COMMON = ${PROJECT_ROOT}/system/stand/pdp6/common/decompressor.inc \
 	${PROJECT_ROOT}/system/stand/pdp6/common/stage1-error.inc
 STAGE1_DXR = ${BUILD}/stage1-dtc-v1.dxr
 STAGE1_TAPE = ${BUILD}/stage1-dtc-v1.pt
-STAGE1_BASE = 060000
+STAGE1_BASE = 060
 
 .PHONY: build clean
 
