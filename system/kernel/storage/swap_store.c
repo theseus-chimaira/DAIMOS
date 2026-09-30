@@ -10,6 +10,7 @@
 #include "swap_store.h"
 
 #define SWAP_BITMAP_BITS 36U
+#define SWAP_PROCESS_RESERVE 0200UL
 
 kword_t *swap_store_bitmap;
 kword_t swap_store_blocks;
@@ -84,6 +85,21 @@ swap_store_alloc(kword_t blocks, kword_t *firstp)
                 first += i;
         }
         return -1;
+}
+
+/** Allocate MEMFS backing while retaining the original process-swap capacity. */
+int
+swap_store_alloc_memfs(kword_t blocks, kword_t *firstp)
+{
+        kword_t free_blocks;
+        kword_t reserve;
+
+        reserve = swap_store_blocks < SWAP_PROCESS_RESERVE ?
+            swap_store_blocks : SWAP_PROCESS_RESERVE;
+        free_blocks = swap_store_blocks - swap_store_blocks_used;
+        if (free_blocks <= reserve || blocks > free_blocks - reserve)
+                return -1;
+        return swap_store_alloc(blocks, firstp);
 }
 
 void
