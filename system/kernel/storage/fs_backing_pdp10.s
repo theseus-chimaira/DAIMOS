@@ -46,11 +46,8 @@ fs_backing_write:
         .globl  fs_backing_root_write_jump
         .globl  mfsdev_d6set_reads
         .globl  mfsdev_d6set_writes
-        .globl  mfsdev_d6set_blocks_read
-        .globl  mfsdev_d6set_blocks_written
 fs_backing_root_read:
         aos     mfsdev_d6set_reads
-        aos     mfsdev_d6set_blocks_read
         move    1,2
         move    2,3
 fs_backing_root_read_jump:
@@ -58,7 +55,6 @@ fs_backing_root_read_jump:
 
 fs_backing_root_write:
         aos     mfsdev_d6set_writes
-        aos     mfsdev_d6set_blocks_written
         move    1,2
         move    2,3
 fs_backing_root_write_jump:
@@ -96,11 +92,9 @@ fs_backing_direct_io:
         jrst    fs_backing_direct_not_root
         jumpe   7,fs_backing_direct_root_read
         aos     mfsdev_d6set_writes
-        aos     mfsdev_d6set_blocks_written
         jrst    fs_backing_direct_not_root
 fs_backing_direct_root_read:
         aos     mfsdev_d6set_reads
-        aos     mfsdev_d6set_blocks_read
 fs_backing_direct_not_root:
         trnn    6,0200000               ; compact INTERLEAVE set?
         jrst    fs_backing_direct_single

@@ -17,8 +17,6 @@
         .globl mfsdev_storage_errors
         .globl mfsdev_d6set_reads
         .globl mfsdev_d6set_writes
-        .globl mfsdev_d6set_blocks_read
-        .globl mfsdev_d6set_blocks_written
 
 ; Compact root descriptor layout, in words.  The boot root has at most
 ; four DSK270 members; the separate generic mapper retains the seven-member
@@ -62,12 +60,10 @@ blockset_block_io:
         jumpl 1,pdp10_ret_neg1
         jumpe 5,blockset_block_read_account
         aos mfsdev_d6set_writes
-        aos mfsdev_d6set_blocks_written
         pushj 17,blockset_backend_write
         jrst blockset_block_done
 blockset_block_read_account:
         aos mfsdev_d6set_reads
-        aos mfsdev_d6set_blocks_read
 blockset_block_read:
         pushj 17,blockset_backend_read
 blockset_block_done:

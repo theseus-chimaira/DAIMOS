@@ -40,7 +40,8 @@ mfsdev_d6set_reads:
         .block  1                      ; 020 D6SET0 request reads
 mfsdev_drm_reads:
         .block  1                      ; 021 DRM0 reads
-        .block  1                      ; 022 LPT0 has no IN
+        ; 022 LPT0 has no IN.  Its unreachable logical slot aliases the next
+        ; word, mfsdev_io_out[CTY0], rather than consuming a dead KCORE word.
 
         .globl  mfsdev_io_out
         .globl  mach_kernel_sp
@@ -72,39 +73,19 @@ mfsdev_drm_writes:
         .block  1                      ; 022 LPT0 OUT
 
 
-; Sparse extended MonitorFS device view accounting.  The legacy io_in/io_out arrays above
-; remain the per-device completed READS/WRITES counters.  Only statistics
-; which cannot be derived from those counters consume additional KCORE words.
+; Sparse extended MonitorFS device view accounting.  The dense io_in/io_out
+; arrays above are the per-device completed READS/WRITES counters.  Keep only
+; storage error totals which cannot be derived from those request counters.
         .globl  mfsdev_storage_errors
-        .globl  mfsdev_mtc_words_read
-        .globl  mfsdev_mtc_words_written
         .globl  mfsdev_drm_reads
         .globl  mfsdev_drm_writes
         .globl  mfsdev_d6set_reads
         .globl  mfsdev_d6set_writes
-        .globl  mfsdev_d6set_blocks_read
-        .globl  mfsdev_d6set_blocks_written
-        .globl  mfsdev_log_reads
-        .globl  mfsdev_log_writes
-        .globl  mfsdev_log_blocks_read
-        .globl  mfsdev_log_blocks_written
-        .globl  mfsdev_log_errors
         .globl  mfsdev_d6set_members
 
 ; Indexed by MonitorFS device view id - DTC0 (014): DTC0, MTC0, DSK0, SLV0, D6SET0,
 ; DRM0.  Appending DRM0 preserves all existing offsets.
 mfsdev_storage_errors:       .block 6
-
-mfsdev_mtc_words_read:       .block 1
-mfsdev_mtc_words_written:    .block 1
-mfsdev_d6set_blocks_read:    .block 1
-mfsdev_d6set_blocks_written: .block 1
-
-mfsdev_log_reads:            .block 1
-mfsdev_log_writes:           .block 1
-mfsdev_log_blocks_read:      .block 1
-mfsdev_log_blocks_written:   .block 1
-mfsdev_log_errors:           .block 1
 
 
         .text

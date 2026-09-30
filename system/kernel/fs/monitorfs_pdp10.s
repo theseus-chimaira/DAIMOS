@@ -6,19 +6,10 @@
         .globl  mfsdev_io_in
         .globl  mfsdev_io_out
         .globl  mfsdev_storage_errors
-        .globl  mfsdev_mtc_words_read
-        .globl  mfsdev_mtc_words_written
         .globl  mfsdev_drm_reads
         .globl  mfsdev_drm_writes
         .globl  mfsdev_d6set_reads
         .globl  mfsdev_d6set_writes
-        .globl  mfsdev_d6set_blocks_read
-        .globl  mfsdev_d6set_blocks_written
-        .globl  mfsdev_log_reads
-        .globl  mfsdev_log_writes
-        .globl  mfsdev_log_blocks_read
-        .globl  mfsdev_log_blocks_written
-        .globl  mfsdev_log_errors
         .globl  mfsdev_d6set_members
         .globl  proc_swap_blocks_used
         .globl  blockset_runtime_reg_enter
@@ -98,13 +89,13 @@ mfsdev_lookup_dir:
         movei   0,2                    ; ordinary device: IO, STATS
         caie    6,020                  ; D6SET0 has three extra leaves
         jrst    mfsdev_lookup_leaf
-        movei   0,5
+        movei   0,4                    ; IO, STATS, MEMBERS, SWAP
 mfsdev_lookup_leaf:
         pushj   17,mfsleaf_lookup
         jumpl   1,pdp10_ret_neg1
         move    4,1                    ; leaf index
         jumpe   4,mfsdev_lookup_leaf_io
-        addi    4,3                    ; STATS=4, MEMBERS=5, SWAP=6, LOG=7
+        addi    4,3                    ; STATS=4, MEMBERS=5, SWAP=6
         jrst    mfsdev_lookup_leaf_kind
 mfsdev_lookup_leaf_io:
         movei   4,2
@@ -206,7 +197,7 @@ mfsdev_readdir_dir:
         movei   0,2
         caie    6,020
         jrst    mfsdev_readdir_leaf
-        movei   0,5
+        movei   0,4                    ; IO, STATS, MEMBERS, SWAP
 mfsdev_readdir_leaf:
         push    17,2                   ; preserve leaf offset for IO type
         pushj   17,mfsleaf_readdir
@@ -269,7 +260,7 @@ mfsdev_stat_device_mode:
 mfsdev_stat_file:
         caige   3,020004
         jrst    pdp10_ret_neg1
-        caile   3,020007
+        caile   3,020006
         jrst    pdp10_ret_neg1
         cain    3,020004
         jrst    mfsdev_stat_file_ok
@@ -310,13 +301,8 @@ mfsdev_readchar_not_io:
         jrst    pdp10_ret_neg1
         cain    6,020005
         jrst    mfsdev_members_readchar
-        cain    6,020006
-        jrst    mfsdev_stats_swap
-        caie    6,020007
+        caie    6,020006
         jrst    pdp10_ret_neg1
-        movei   5,mfsdev_log_reads
-        jrst    mfsdev_stats_readchar
-
 mfsdev_stats_swap:
         ; SWAP reports live allocation state, not lifetime I/O accounting.
         ; Lines are TOTAL, USED, FREE blocks.
@@ -362,59 +348,25 @@ mfsdev_stats_select:
         jrst    mfsdev_stats_emit
 
 mfsdev_stats_select_device:
-        cain    6,0
-        jrst    mfsdev_stats_device_read_line
+        jumpe   6,mfsdev_stats_device_read_line
         cain    6,1
         jrst    mfsdev_stats_device_write_line
-        caige   4,014
-        jrst    mfsdev_stats_device_simple_error
-        caile   4,016
-        jrst    mfsdev_stats_device_maybe_d6
-        move    0,4
-        subi    0,014
-        jrst    mfsdev_stats_device_native
-mfsdev_stats_device_maybe_d6:
-        cain    4,022                  ; LPT is a simple output stream
-        jrst    mfsdev_stats_device_simple_error
-        caile   4,017                  ; 020 D6SET, 021 DRM
-        jrst    mfsdev_stats_device_extended_native
-        jrst    mfsdev_stats_device_simple_error
-mfsdev_stats_device_extended_native:
-        move    0,4
-        subi    0,015                  ; 020 -> 3, 021 -> 4
-        jrst    mfsdev_stats_device_native
-mfsdev_stats_device_native:
-        caie    6,4
-        jrst    mfsdev_stats_device_native_value
+        caie    6,2                    ; third and final line is errors
+        jrst    pdp10_ret_zero
+        setz    1,                     ; non-storage devices report zero
+        caige   4,014                  ; DTC0 is first storage-error slot
+        jrst    mfsdev_stats_emit
+        caile   4,021                  ; DRM0 is last storage-error slot
+        jrst    mfsdev_stats_emit
         move    1,mfsdev_storage_errors-014(4)
-        jrst    mfsdev_stats_emit
-mfsdev_stats_device_native_value:
-        caige   6,2
-        jrst    pdp10_ret_zero
-        caile   6,3
-        jrst    pdp10_ret_zero
-        move    5,6
-        subi    5,2                    ; read/write selector
-        cain    0,1                    ; MTC has separate word volume
-        jrst    mfsdev_stats_native_mtc
-        cain    0,3                    ; D6SET has aggregate block volume
-        jrst    mfsdev_stats_native_d6
-        ; DTC, DSK and DRM are one native unit per request.
-        jumpe   5,mfsdev_stats_device_reads
-        jrst    mfsdev_stats_device_writes
-mfsdev_stats_native_mtc:
-        move    1,mfsdev_mtc_words_read(5)
-        jrst    mfsdev_stats_emit
-mfsdev_stats_native_d6:
-        move    1,mfsdev_d6set_blocks_read(5)
         jrst    mfsdev_stats_emit
 
 mfsdev_stats_device_read_line:
-        cain    4,020                  ; D6SET logical request counter
+        cain    4,020                  ; D6SET is an aggregate mount source
         jrst    mfsdev_stats_d6_reads
         jrst    mfsdev_stats_device_reads
 mfsdev_stats_device_write_line:
-        cain    4,020                  ; D6SET logical request counter
+        cain    4,020
         jrst    mfsdev_stats_d6_writes
         jrst    mfsdev_stats_device_writes
 mfsdev_stats_d6_reads:
@@ -422,16 +374,6 @@ mfsdev_stats_d6_reads:
         jrst    mfsdev_stats_emit
 mfsdev_stats_d6_writes:
         move    1,mfsdev_d6set_writes
-        jrst    mfsdev_stats_emit
-mfsdev_stats_device_simple_error:
-        caie    6,2
-        jrst    pdp10_ret_zero
-        setz    1,
-        cain    4,022                  ; LPT has no storage-error counter
-        jrst    mfsdev_stats_emit
-        caige   4,014
-        jrst    mfsdev_stats_emit
-        move    1,mfsdev_storage_errors-014(4)
         jrst    mfsdev_stats_emit
 
 mfsdev_stats_device_reads:
@@ -1100,8 +1042,6 @@ mfsdev_leaf_names:
         .word   0630000000007
         .word   0636741600000
         .word   4
-        .word   0545747000000
-        .word   3
 mfsproc_leaf_names:
         .word   0606051440000
         .word   4

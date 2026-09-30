@@ -8,8 +8,6 @@
         .globl mfsdev_io_in
         .globl mfsdev_io_out
         .globl mfsdev_storage_errors
-        .globl mfsdev_mtc_words_read
-        .globl mfsdev_mtc_words_written
         .globl tape_pi_handler
         .globl tape_dct_handler
         .globl dtc_read_block
@@ -474,13 +472,11 @@ tape_wait_done:
         move 2,storage_count
         caie 1,2                        ; MTC read
         jrst tape_account_mtc_write_check
-        addm 2,mfsdev_mtc_words_read
         jrst tape_account_done
 
 tape_account_mtc_write_check:
         caie 1,5                        ; MTC write
         jrst tape_account_done
-        addm 2,mfsdev_mtc_words_written
 
 tape_account_done:
         setzm storage_state

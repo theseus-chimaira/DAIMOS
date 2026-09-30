@@ -12,15 +12,13 @@
 #define MONITORFS_KIND_STATS          4U
 #define MONITORFS_KIND_MEMBERS        5U
 #define MONITORFS_KIND_SWAP_STATS     6U
-#define MONITORFS_KIND_LOG_STATS      7U
 #define MONITORFS_KIND_IOROOT         0U
 
-/* STATS files contain unlabeled 12-digit octal values, one per line.
- * Stream/special: reads, writes, errors.
- * Storage/aggregate: reads, writes, native units read, native units written,
- * errors.  Native units are DTC/D6SET/DRM blocks, MTC words, and DSK sectors.
- * D6SET LOG uses the five-line storage order.
- * D6SET SWAP contains three current-state lines: total, used, free blocks.
+/* STATS files contain three unlabeled 12-digit octal values: reads, writes,
+ * and errors.  Request accounting is deliberately uniform across stream,
+ * storage, and aggregate devices; DAIMOS 0.9/1.0 does not keep separate
+ * lifetime word/block-volume counters.  D6SET SWAP is separate live state and
+ * contains total, used, and free blocks.
  */
 
 #define MONITORFS_DEV_CTY0            0U
