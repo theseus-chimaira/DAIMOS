@@ -290,10 +290,12 @@ mach_pi_disable:
  * @param AC1 CONI PI state returned by mach_pi_disable().
  * @return Preserves AC1 and all other accumulators.
  *
- * State bit 000200 means PI was globally enabled.  TRNN skips the CONO when
- * that bit is clear, so level-enable state is never rewritten.
+ * State bit 000200 means PI was globally enabled.  If it was clear, return
+ * without touching PI state; otherwise re-enable the global PI gate.  The
+ * individual level-enable bits are never rewritten.
  */
 mach_pi_restore:
         trnn 1,000200
+        popj 017,
         cono 0004,000200
         popj 017,
