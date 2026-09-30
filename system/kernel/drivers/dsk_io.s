@@ -20,9 +20,9 @@
         .globl storage_state
         .globl storage_iowd
         .globl storage_count
-        .globl pdp10_ret_ok
-        .globl pdp10_ret_zero
-        .globl pdp10_ret_busy
+        .globl kret_ok
+        .globl kret_zero
+        .globl kret_busy
         .globl proc_table
         .globl proc_current_slot
         .globl proc_wait_event
@@ -212,7 +212,7 @@ dsk_runtime_slot0_wait:
 dsk_runtime_finish:
         move 1,(017)
         sub 017,[3,,3]
-        sojn 1,pdp10_ret_neg5
+        sojn 1,kret_neg5
         popj 017,
 dsk_runtime_busy:
         hrroi 1,0777775
@@ -229,7 +229,7 @@ dsk_enqueue:
         hlrz 5,dsk_queue(4)
         jumpe 5,dsk_enqueue_first
         hrrz 6,dsk_queue(4)
-        jumpn 6,pdp10_ret_busy
+        jumpn 6,kret_busy
         hrrm 1,dsk_queue(4)
         move 6,dsk_current_cyl(4)
         sub 2,6
@@ -242,7 +242,7 @@ dsk_enqueue:
         hrlm 1,dsk_queue(4)
         hrrm 5,dsk_queue(4)
 dsk_enqueue_ok:
-        jrst pdp10_ret_zero
+        jrst kret_zero
 dsk_enqueue_first:
         hrlm 1,dsk_queue(4)
         jrst dsk_enqueue_ok
@@ -288,11 +288,11 @@ dsk_start_go:
         movem 3,storage_state
         datao 0270,1
         cono 0270,000125
-        jrst pdp10_ret_zero
+        jrst kret_zero
 
 dsk_boot_request:
         skipe storage_state
-        jrst pdp10_ret_busy
+        jrst kret_busy
         movei 3,0200
         jumpe 4,dsk_boot_read
         pushj 017,dsk_setup_write
@@ -311,11 +311,11 @@ dsk_wait:
         caie 1,7
         jrst dsk_wait_done
         setzm storage_state
-        jrst    pdp10_ret_neg5
+        jrst    kret_neg5
 dsk_wait_done:
         aos @dsk_account_table-3(1)     ; completed sector request
         setzm storage_state
-        jrst pdp10_ret_ok
+        jrst kret_ok
 
 dsk_account_table:
         .word mfsdev_io_in+016

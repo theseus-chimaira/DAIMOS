@@ -65,17 +65,17 @@ blockset_direct_tail_write:
         movei   4,1
 
 blockset_direct_tail_io:
-        jumpe   2,pdp10_ret_zero
-        jumpe   3,pdp10_ret_neg1
-        jumpl   1,pdp10_ret_neg1
-        jumpl   2,pdp10_ret_neg1
+        jumpe   2,kret_zero
+        jumpe   3,kret_neg1
+        jumpl   1,kret_neg1
+        jumpl   2,kret_neg1
         move    6,blockset_direct_tail
-        jumpe   6,pdp10_ret_neg1
+        jumpe   6,kret_neg1
         caml    1,6
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         sub     6,1
         camle   2,6
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         jumpe   4,blockset_direct_tail_account_read
         aos     mfsdev_d6set_writes
         jrst    blockset_direct_tail_account_done
@@ -222,12 +222,12 @@ fs_tsfs_service_jump:
 fs_d6fs_cache_reclaim:
         hrrz    4,d6fs_cache_reclaim_jump
         cain    4,fs_mres_no_service
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         jrst    (4)
 d6fs_cache_reclaim_jump:
         jrst    fs_mres_no_service
 fs_mres_no_service:
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
         .globl  fs_copy_words
 ; void fs_copy_words(src, dst, count)

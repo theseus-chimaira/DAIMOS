@@ -7,32 +7,32 @@
         .text
         .globl  fs_backing_read
         .globl  fs_backing_write
-        .globl  pdp10_ret_neg1
+        .globl  kret_neg1
 
 ; int fs_backing_read(backing, logical, block)
 ; Callback ABI: AC1=opaque, AC2=logical, AC3=block.
 fs_backing_read:
-        jumpe   1,pdp10_ret_neg1
-        jumpe   3,pdp10_ret_neg1
-        jumpl   2,pdp10_ret_neg1
+        jumpe   1,kret_neg1
+        jumpe   3,kret_neg1
+        jumpl   2,kret_neg1
         caml    2,2(1)
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    4,(1)
         hlrz    4,4
-        jumpe   4,pdp10_ret_neg1
+        jumpe   4,kret_neg1
         move    1,1(1)
         jrst    (4)
 
 ; int fs_backing_write(backing, logical, block)
 fs_backing_write:
-        jumpe   1,pdp10_ret_neg1
-        jumpe   3,pdp10_ret_neg1
-        jumpl   2,pdp10_ret_neg1
+        jumpe   1,kret_neg1
+        jumpe   3,kret_neg1
+        jumpl   2,kret_neg1
         caml    2,2(1)
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    4,(1)
         hrrz    4,4
-        jumpe   4,pdp10_ret_neg1
+        jumpe   4,kret_neg1
         move    1,1(1)
         jrst    (4)
 
@@ -102,7 +102,7 @@ fs_backing_direct_not_root:
         ; Count the present units in the four-bit member mask.
         move    0,6
         andi    0,017
-        jumpe   0,pdp10_ret_neg1
+        jumpe   0,kret_neg1
         setz    5,
 fs_backing_direct_count:
         trne    0,1
@@ -151,6 +151,6 @@ fs_backing_direct_read_jump:
 fs_backing_direct_drm:
         jumpe   7,fs_backing_direct_drm_read_jump
 fs_backing_direct_drm_write_jump:
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 fs_backing_direct_drm_read_jump:
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1

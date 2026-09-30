@@ -2,9 +2,9 @@
         .text
         .globl  lpt_putchar
         .globl  mfsdev_io_out
-        .globl  pdp10_ret_ok
-        .globl  pdp10_ret_neg2
-        .globl  pdp10_ret_neg4
+        .globl  kret_ok
+        .globl  kret_neg2
+        .globl  kret_neg4
 
 ; AC1 = 7-bit character.  Return 0, -4 on printer error, -2 on timeout.
 ;
@@ -18,11 +18,11 @@ lpt_putchar:
 lpt_putchar_ready:
         coni    0124,2
         trne    2,000400
-        jrst    pdp10_ret_neg4
+        jrst    kret_neg4
         trne    2,000100
         jrst    lpt_putchar_send
         sojg    3,lpt_putchar_ready
-        jrst    pdp10_ret_neg2
+        jrst    kret_neg2
 
 lpt_putchar_send:
         andi    1,0177
@@ -32,12 +32,12 @@ lpt_putchar_send:
 lpt_putchar_wait:
         coni    0124,2
         trne    2,000400
-        jrst    pdp10_ret_neg4
+        jrst    kret_neg4
         trne    2,000100
         jrst    lpt_putchar_done
         sojg    3,lpt_putchar_wait
-        jrst    pdp10_ret_neg2
+        jrst    kret_neg2
 
 lpt_putchar_done:
         aos     mfsdev_io_out+022
-        jrst    pdp10_ret_ok
+        jrst    kret_ok

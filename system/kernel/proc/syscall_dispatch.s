@@ -7,8 +7,8 @@
 ; arguments arrive here in AC1..AC4 and AC1 also carries the result.
 
         .text
-        .globl  pdp10_ret_zero
-        .globl  pdp10_ret_neg1
+        .globl  kret_zero
+        .globl  kret_neg1
         .globl  vm_user_words
         .globl  vm_user_mapping_hold
         .globl  vm_user_mapping_release
@@ -53,7 +53,7 @@ exec_native_half_select:
         hrrz    5,exec_native_table(6)
 exec_native_table:
         .word   %L66,,%L67
-        .word   %L72,,pdp10_ret_neg1
+        .word   %L72,,kret_neg1
         .word   native_sys_getchar,,%L75
         .word   %L80,,%L90
         .word   %L97,,%L102
@@ -163,7 +163,7 @@ native_sys_two_paths:
         popj    17,
 native_sys_two_paths_bad:
         pushj   17,vm_user_mapping_release
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 %L90:
         ; AC1 path, AC2 stat buffer.
@@ -245,7 +245,7 @@ native_sys_writechar_done:
 ; The one-word scratch lives on the current process's private kernel stack.
 native_sys_lookup_user_path:
         pushj   17,native_sys_map_one
-        jumpe   1,pdp10_ret_zero
+        jumpe   1,kret_zero
         push    17,0
         movei   2,(17)
         pushj   17,file_lookup_path
@@ -256,13 +256,13 @@ native_sys_lookup_user_path:
 native_sys_lookup_user_path_bad:
         pop     17,0
         pushj   17,vm_user_mapping_release
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 ; Return the DTC0 vnode for a valid translated user path, or zero on failure.
 native_sys_dtc0_path:
         pushj   17,native_sys_lookup_user_path
         came    1,[020002000014]        ; /DEV/DTC0 direct endpoint
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         popj    17,
 
 native_sys_chmod:
@@ -286,7 +286,7 @@ native_sys_chmod_bad:
 native_sys_dtfs_format:
         ; Formatting policy is transient userspace.  Preserve the legacy
         ; syscall number as an explicit unsupported operation.
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 native_sys_dtfs_mount:
         ; AC1 device path, AC2 mount path, AC3 flags.
@@ -308,7 +308,7 @@ native_sys_dtfs_mount:
         movei   4,(17)
         .globl  sys_dtfs_mount_jump
 sys_dtfs_mount_jump:
-        pushj   17,pdp10_ret_neg1
+        pushj   17,kret_neg1
         pop     17,0                    ; result scratch
         popj    17,
 native_sys_dtfs_mount_bad2:
@@ -434,7 +434,7 @@ native_sys_ext_nonpipe:
         push    17,3                   ; preserve mode across VM translation
         pushj   17,native_sys_map_one
         pop     17,2
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         hrrz    2,2
         pushj   17,file_mkfifo
         jrst    native_sys_mapped_return
@@ -591,10 +591,10 @@ native_sys_logctl_done3:
 
         .globl  sys_logstore_service_jump
 sys_logstore_service_jump:
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         .globl  sys_mtc_service_jump
 sys_mtc_service_jump:
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 ; EXEC AC2 points at an inline, versioned launch block.  Five stable
 ; kernel-stack words receive entry, stack, argc, argv, and envp.  Success has
@@ -602,7 +602,7 @@ sys_mtc_service_jump:
 native_sys_exec:
         move    1,2
         pushj   17,native_sys_map_one
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         move    2,4
         add     2,3
         sub     2,1                    ; mapped parent words available
@@ -662,12 +662,12 @@ native_sys_dtc_block:
         jumpn   010,native_sys_dtc_write_call
         .globl  sys_dtc_read_block_jump
 sys_dtc_read_block_jump:
-        pushj   17,pdp10_ret_neg1
+        pushj   17,kret_neg1
         jrst    native_sys_dtc_block_done
 native_sys_dtc_write_call:
         .globl  sys_dtc_write_block_jump
 sys_dtc_write_block_jump:
-        pushj   17,pdp10_ret_neg1
+        pushj   17,kret_neg1
 native_sys_dtc_block_done:
         pop     17,010
         jrst    native_sys_mapped_return
@@ -675,11 +675,11 @@ native_sys_dtc_block_bad:
         pushj   17,vm_user_mapping_release
 native_sys_dtc_block_bad_map:
         pop     17,010
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 native_sys_dtc_write_denied:
         sub     17,[3,,3]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 
 ; Root-only MEMFS mount requested by userspace policy.  AC2 is the user target
@@ -702,7 +702,7 @@ native_sys_memfs_mount:
         popj    17,
 native_sys_memfs_mount_bad:
         sub     17,[2,,2]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 
 ; Mount one userspace-validated filesystem handoff.  TSFS passes its compact
@@ -771,10 +771,10 @@ native_sys_mount_handoff_bad_map:
         pushj   17,vm_user_mapping_release
 native_sys_mount_handoff_bad5:
         sub     17,[5,,5]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 native_sys_mount_handoff_bad4:
         sub     17,[4,,4]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 native_sys_dup2:
         hrrz    1,2                    ; old fd
@@ -802,12 +802,12 @@ native_sys_chown:
         jrst    vfs_chown
 native_sys_chown_fail:
         sub     17,[3,,3]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 native_sys_rmdir:
         move    1,2
         pushj   17,native_sys_map_one
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         pushj   17,file_rmdir
         jrst    native_sys_mapped_return
 
@@ -826,7 +826,7 @@ native_sys_utime_owner_fail:
         pop     17,0
 native_sys_utime_fail:
         sub     17,[1,,1]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 native_sys_rtctl:
         hrrz    1,2
@@ -870,16 +870,16 @@ native_sys_getchar_error:
         ; this word to the generic logical-TTY input dispatcher.
         .globl  native_sys_getchar_call
 native_sys_getchar_call:
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 native_sys_putchar:
         ; Bind the byte to the caller's controlling logical TTY before the
         ; MRES dispatcher selects CTY, DCS, or GE.
         pushj   17,proc_tty_output
-        jumpl   1,pdp10_ret_neg1
+        jumpl   1,kret_neg1
         .globl  native_sys_putchar_call
 native_sys_putchar_call:
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 %L136:
         halt    .
 %L137:

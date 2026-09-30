@@ -13,52 +13,52 @@
  * alias the same tail where kernel status conventions share a numeric value.
  */
         .text
-        .globl  pdp10_ret_zero
-        .globl  pdp10_ret_one
-        .globl  pdp10_ret_neg1
-        .globl  pdp10_ret_ok
-        .globl  pdp10_ret_arg
-        .globl  pdp10_ret_busy
-        .globl  pdp10_ret_neg2
-        .globl  pdp10_ret_neg3
-        .globl  pdp10_ret_neg4
-        .globl  pdp10_ret_neg5
+        .globl  kret_zero
+        .globl  kret_one
+        .globl  kret_neg1
+        .globl  kret_ok
+        .globl  kret_arg
+        .globl  kret_busy
+        .globl  kret_neg2
+        .globl  kret_neg3
+        .globl  kret_neg4
+        .globl  kret_neg5
 
 /** @brief Return 0 in AC1; also the generic success (`ok`) tail. */
-pdp10_ret_zero:
-pdp10_ret_ok:
+kret_zero:
+kret_ok:
         movei   1,0
         popj    017,
 
 
 /** @brief Return 1 in AC1. */
-pdp10_ret_one:
+kret_one:
         movei   1,1
         popj    017,
 
 /** @brief Return -1 in AC1; also the generic invalid-argument tail. */
-pdp10_ret_neg1:
-pdp10_ret_arg:
+kret_neg1:
+kret_arg:
         seto    1,
         popj    017,
 
 /** @brief Return -3 in AC1; also the generic busy/device-I/O tail. */
-pdp10_ret_busy:
-pdp10_ret_neg3:
+kret_busy:
+kret_neg3:
         hrroi   1,0777775
         popj    017,
 
 /** @brief Return -2 in AC1. */
-pdp10_ret_neg2:
+kret_neg2:
         hrroi   1,0777776
         popj    017,
 
 /** @brief Return -4 in AC1. */
-pdp10_ret_neg4:
+kret_neg4:
         hrroi   1,0777774
         popj    017,
 
 /** @brief Return -5 in AC1. */
-pdp10_ret_neg5:
+kret_neg5:
         hrroi   1,0777773
         popj    017,

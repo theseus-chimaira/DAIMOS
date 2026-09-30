@@ -11,9 +11,9 @@
         .globl blockset_boot
         .globl blockset_backend_read_jump
         .globl blockset_backend_write_jump
-        .globl pdp10_ret_neg1
-        .globl pdp10_ret_zero
-        .globl pdp10_ret_one
+        .globl kret_neg1
+        .globl kret_zero
+        .globl kret_one
         .globl mfsdev_storage_errors
         .globl mfsdev_d6set_reads
         .globl mfsdev_d6set_writes
@@ -30,9 +30,9 @@
 ; DSK270 members, so it does not carry the generic CONCAT descriptor mapper.
 ; AC1=logical; returns AC1=unit, AC2=physical block, or AC1=-1.
 blockset_map_block:
-        jumpl 1,pdp10_ret_neg1
+        jumpl 1,kret_neg1
         caml 1,blockset_boot+1
-        jrst pdp10_ret_neg1
+        jrst kret_neg1
         hlrz 7,blockset_boot
         andi 7,07
         setz 0,
@@ -57,7 +57,7 @@ blockset_block_io:
         move 4,2                         ; internal callers supply a buffer
         pushj 17,blockset_map_block
         move 3,4
-        jumpl 1,pdp10_ret_neg1
+        jumpl 1,kret_neg1
         jumpe 5,blockset_block_read_account
         aos mfsdev_d6set_writes
         pushj 17,blockset_backend_write

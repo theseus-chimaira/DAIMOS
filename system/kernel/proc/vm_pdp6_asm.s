@@ -15,7 +15,7 @@
         .globl  proc_slot_ptr
         .globl  proc_record_kernel_sp
         .globl  mach_kernel_sp
-        .globl  pdp10_ret_zero
+        .globl  kret_zero
 
 ; AC1 = logical user word address.
 ; Return AC1 = executive-accessible mapped address, or zero if invalid.
@@ -26,11 +26,11 @@
 vm_user_words:
         hrrz    1,1
         caige   1,020
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         hlrz    3,vm_pdp6_apr
         addi    3,02000
         caml    1,3
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         hrrz    4,vm_pdp6_apr
         add     1,4
         popj    17,

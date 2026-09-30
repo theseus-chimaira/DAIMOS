@@ -1,10 +1,10 @@
 ; vfs_pdp10.s -- compact resident VFS primitives for PDP-6/PDP-10.
         .text
         .globl  file_table
-        .globl  pdp10_ret_zero
-        .globl  pdp10_ret_one
-        .globl  pdp10_ret_neg1
-        .globl  pdp10_ret_busy
+        .globl  kret_zero
+        .globl  kret_one
+        .globl  kret_neg1
+        .globl  kret_busy
 
 
 ; Compact namespace operations.  These use the permanent register-provider
@@ -20,8 +20,8 @@
 ; int vfs_lookup(dir, name, nodep)
         .globl  vfs_lookup
 vfs_lookup:
-        jumpe   2,pdp10_ret_neg1
-        jumpe   3,pdp10_ret_neg1
+        jumpe   2,kret_neg1
+        jumpe   3,kret_neg1
         camn    1,vfs_namespace_root
         jrst    vfs_lookup_root_names
         move    4,monitorfs_names+7    ; /MONITOR vnode
@@ -90,17 +90,17 @@ vfs_lookup_pop:
 
 vfs_lookup_root_store:
         movem   4,(3)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 ; int vfs_readdir(dir, off, ent)
         .globl  vfs_readdir
 vfs_readdir:
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         move    4,monitorfs_names+7    ; /MONITOR
         came    1,4
         jrst    vfs_readdir_general
         cail    2,3
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         move    4,2
         lsh     4,2
         addi    4,monitorfs_names+014
@@ -154,7 +154,7 @@ vfs_readdir_table:
         setzm   4(3)
         movei   5,1                    ; VFS_TYPE_DIR
         movem   5,5(3)
-        jrst    pdp10_ret_one
+        jrst    kret_one
 
 ; Common parent lookup after mount-root crossing.  AC1=node, AC2=parentp.
 vfs_parent_raw_asm:
@@ -189,7 +189,7 @@ vfs_parent_device:
         cain    4,1                    ; /MONITOR/DEVICES
         jrst    vfs_parent_monitor
         caie    4,3                    ; state-view device directory
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    4,monitorfs_names+027  ; /MONITOR/DEVICES
         jrst    vfs_parent_store
 vfs_parent_monitor:
@@ -201,22 +201,22 @@ vfs_parent_proc:
         cain    4,1                    ; PROC/DOMAIN root
         jrst    vfs_parent_monitor
         caie    4,2                    ; process/domain ID directory
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         movsi   4,030001               ; /MONITOR/PROCESSES
         trne    1,0400000
         tro     4,0400000              ; /MONITOR/DOMAIN
 vfs_parent_store:
         movem   4,(2)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 ; int vfs_parent(node, parentp)
         .globl  vfs_parent
 vfs_parent:
-        jumpe   2,pdp10_ret_neg1
+        jumpe   2,kret_neg1
         came    1,vfs_namespace_root
         jrst    vfs_parent_mount
         movem   1,(2)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 vfs_parent_mount:
         ldb     3,[POINT 6,1,11]
         subi    3,1
@@ -236,10 +236,10 @@ vfs_parent_mount_check:
         .globl  vfs_parent_name
         .globl  mfsdev_names
 vfs_parent_name:
-        jumpe   2,pdp10_ret_neg1
-        jumpe   3,pdp10_ret_neg1
+        jumpe   2,kret_neg1
+        jumpe   3,kret_neg1
         camn    1,vfs_namespace_root
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         ldb     4,[POINT 6,1,11]
         subi    4,1
         jumpl   4,vfs_parent_name_dispatch
@@ -327,15 +327,15 @@ monitorfs_name_record:
         movem   5,2(7)
 monitorfs_parent_name_done:
         sub     17,[2,,2]
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 monitorfs_parent_name_fail:
         sub     17,[2,,2]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 
 ; Direct request-free mutation leaves.  The fifth C argument is at -1(17).
         .globl  fs_provider_reg_call
-        .globl  pdp10_ret_neg2
+        .globl  kret_neg2
         .globl  vfs_create_op
         .globl  vfs_create
 vfs_create:
@@ -346,7 +346,7 @@ vfs_mkfifo:
         ldb     5,[POINT 6,1,5]
         andi    5,075                  ; providers 4 and 6 both become 4
         caie    5,4
-        jrst    pdp10_ret_neg2
+        jrst    kret_neg2
         ori     3,010000               ; private CREATE-as-FIFO marker
         movei   5,6                    ; reuse FS_MRES_OP_CREATE
         jrst    vfs_create_common
@@ -370,12 +370,12 @@ vfs_create_common:
 ; int vfs_create_op(op, dir, name, mode, nodep)
 vfs_create_op:
         skipn   5,-1(17)
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         ldb     7,[POINT 6,2,5]
         caie    1,7                    ; MKDIR
         jrst    vfs_create_policy
         cain    7,5                    ; DTFS has no directories
-        jrst    pdp10_ret_neg2
+        jrst    kret_neg2
 vfs_create_policy:
         push    17,1
         push    17,2
@@ -414,12 +414,12 @@ vfs_create_done:
         popj    17,
 vfs_create_ro:
         sub     17,[5,,5]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 ; int vfs_symlink(dir, name, counted_target, nodep)
         .globl  vfs_symlink
 vfs_symlink:
-        jumpe   4,pdp10_ret_neg1
+        jumpe   4,kret_neg1
         push    17,1
         push    17,2
         push    17,3
@@ -442,7 +442,7 @@ vfs_symlink:
         jrst    vfs_create_store_result
 vfs_symlink_ro:
         sub     17,[4,,4]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 ; int vfs_rename(olddir, oldname, newdir, newname)
         .globl  vfs_rename
@@ -463,27 +463,27 @@ vfs_rename:
         ldb     7,[POINT 6,1,5]
         ldb     5,[POINT 6,3,5]
         came    7,5
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         ldb     5,[POINT 6,1,11]
         ldb     0,[POINT 6,3,11]
         came    5,0
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         movei   6,012                  ; FS_MRES_OP_RENAME
         jrst    fs_provider_reg_call
 vfs_rename_ro:
         sub     17,[4,,4]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
         .globl  vfs_name_valid
 ; int vfs_name_valid(const struct vfs_name *name)
 ; Common filesystem namespace rule: non-empty SIXBIT names fit VFS_NAME_WORDS.
 vfs_name_valid:
-        jumpe   1,pdp10_ret_zero
+        jumpe   1,kret_zero
         move    2,(1)
-        jumple  2,pdp10_ret_zero
+        jumple  2,kret_zero
         caile   2,030                    ; VFS_NAME_MAX_CHARS = 24
-        jrst    pdp10_ret_zero
-        jrst    pdp10_ret_one
+        jrst    kret_zero
+        jrst    kret_one
 
 ; int vfs_name_words_equal(const kword_t *a, const kword_t *b,
 ;     unsigned int count)
@@ -495,12 +495,12 @@ vfs_name_words_equal:
 vfs_name_words_equal_loop:
         move    4,(1)
         came    4,(2)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         aoj     1,
         aoj     2,
         sojg    3,vfs_name_words_equal_loop
 vfs_name_words_equal_yes:
-        jrst    pdp10_ret_one
+        jrst    kret_one
 
 ; void vfs_name_from_words(const kword_t *src, struct vfs_name *dst)
 ; Copy one canonical four-word packed SIXBIT name and derive its character
@@ -528,18 +528,18 @@ vfs_name_is6:
         ; Current callers always pass a valid vfs_name pointer.
         camn    3,(1)
         came    2,1(1)
-        jrst    pdp10_ret_zero
-        jrst    pdp10_ret_one
+        jrst    kret_zero
+        jrst    kret_one
 
 ; int vfs_sixbit_readchar(kword_t word, unsigned int nchars, kword_t off,
 ;     unsigned int *chp)
         .globl  vfs_sixbit_readchar
 vfs_sixbit_readchar:
-        jumpe   4,pdp10_ret_neg1
-        jumpl   2,pdp10_ret_neg1
+        jumpe   4,kret_neg1
+        jumpl   2,kret_neg1
         caile   2,6
-        jrst    pdp10_ret_neg1
-        jumpl   3,pdp10_ret_zero
+        jrst    kret_neg1
+        jumpl   3,kret_zero
         caml    3,2
         jrst    vfs_sixchar_tail
         move    6,3
@@ -551,7 +551,7 @@ vfs_sixbit_readchar:
         addi    5,040
 vfs_sixchar_store:
         movem   5,(4)
-        jrst    pdp10_ret_one
+        jrst    kret_one
 vfs_sixchar_tail:
         came    3,2
         jrst    vfs_sixchar_lf
@@ -560,7 +560,7 @@ vfs_sixchar_tail:
 vfs_sixchar_lf:
         addi    2,1
         came    3,2
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         movei   5,012                  ; LF
         jrst    vfs_sixchar_store
 
@@ -568,10 +568,10 @@ vfs_sixchar_lf:
 ; Return the last nonzero character position in a packed SIXBIT name.
         .globl  vfs_sixbit_name_chars
 vfs_sixbit_name_chars:
-        jumpe   1,pdp10_ret_zero
-        jumpe   2,pdp10_ret_zero
+        jumpe   1,kret_zero
+        jumpe   2,kret_zero
         caile   2,030                    ; VFS names are at most 24 chars
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         move    3,[POINT 6,0]
         hrr     3,1
         setz    4,                       ; last nonzero position
@@ -639,7 +639,7 @@ vfs_truncate:
         jrst    fs_provider_reg_call
 vfs_truncate_ro:
         sub     17,[2,,2]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
         .globl  vfs_chmod
 vfs_chmod:
@@ -657,7 +657,7 @@ vfs_mutate3_ro:
         sub     17,[1,,1]
 vfs_mutate2_ro:
         sub     17,[2,,2]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 ; D6FS reuses its CHMOD provider operation as a compact private setattr
 ; channel.  Other providers never see these command values.
@@ -678,7 +678,7 @@ vfs_utime:
 vfs_d6fs_setattr:
         ldb     7,[POINT 6,1,5]
         caie    7,6                    ; D6FS provider only
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         push    17,1
         push    17,2
         push    17,3
@@ -692,14 +692,14 @@ vfs_d6fs_setattr:
         jrst    fs_provider_reg_call
 vfs_d6fs_setattr_ro:
         sub     17,[3,,3]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
         .globl  vfs_read_words
 vfs_read_words:
         ldb     7,[POINT 6,1,5]
         caie    7,3
         jrst    vfs_read_words_provider
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 vfs_read_words_provider:
         movei   6,15                   ; FS_MRES_OP_READ_WORDS
         jrst    fs_provider_reg_call
@@ -721,14 +721,14 @@ vfs_write_words:
         jrst    fs_provider_reg_call
 vfs_write_words_ro:
         sub     17,[4,,4]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
         .globl  vfs_sync
 vfs_sync:
         ldb     7,[POINT 6,1,5]
         cail    7,5                    ; DTFS_PROVIDER
         cail    7,7                    ; one past D6FS_PROVIDER
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         movei   6,17                   ; FS_MRES_OP_SYNC
         jrst    fs_provider_reg_call
 
@@ -748,24 +748,24 @@ fs_block_workspace:
 ; int vfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
         .globl  vfs_readchar
 vfs_readchar:
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         ldb     4,[POINT 6,1,5]
         cain    4,3
         jrst    mfsproc_readchar
         cain    4,2
         jrst    mfsdev_readchar
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 ; int vfs_writechar(vnode_t node, kword_t off, unsigned int ch)
         .globl  vfs_writechar
 vfs_writechar:
         ldb     4,[POINT 6,1,5]
         caie    4,2
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         ldb     4,[POINT 6,1,17]
         caie    4,2
-        jrst    pdp10_ret_neg1
-        jrst    pdp10_ret_busy          ; VFS_DEVICE_IO = -3
+        jrst    kret_neg1
+        jrst    kret_busy          ; VFS_DEVICE_IO = -3
 
 ; Compact mount policy.  The four-entry namespace table is a bounded PDP-6
 ; structure, so keeping the policy in fixed assembly avoids the C callee-save
@@ -774,12 +774,12 @@ vfs_writechar:
 vfs_readonly:
         ldb     1,[POINT 6,1,11]        ; mount id
         subi    1,1
-        jumpl   1,pdp10_ret_zero
+        jumpl   1,kret_zero
         cail   1,4
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 vfs_readonly_slot:
         skipn   vfs_mount_root(1)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         move    2,vfs_mount_ro
         movn    3,1
         lsh     2,0(3)
@@ -791,20 +791,20 @@ vfs_readonly_slot:
 ; Clear selected active reservation ownership for exactly one mounted instance.
         .globl  vfs_storage_release
 vfs_storage_release:
-        sojl    1,pdp10_ret_neg1       ; public mount id -> zero-based slot
+        sojl    1,kret_neg1       ; public mount id -> zero-based slot
         cail    1,4
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         trne    2,0777357              ; only SWAP(020) | LOGSTORE(0400)
-        jrst    pdp10_ret_neg1
-        jumpe   2,pdp10_ret_zero
+        jrst    kret_neg1
+        jumpe   2,kret_zero
         move    4,2
         lsh     4,0(1)
         move    5,vfs_mount_ro
         and    5,4
         came    5,4                    ; caller may release only owned types
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         andcam  4,vfs_mount_ro
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 ; int vfs_mount(target, provider, kind, index, flags, rootp)
 ; int vfs_mount_prevalidated(target, provider, kind, index, flags, rootp)
@@ -822,28 +822,28 @@ vfs_mount_prevalidated:
         movei   0,1                     ; caller already validated target
 vfs_mount_common:
         skipn   -2(17)                  ; rootp
-        jrst    pdp10_ret_neg1
-        jumpe   2,pdp10_ret_neg1
+        jrst    kret_neg1
+        jumpe   2,kret_neg1
         cail    2,0
         cail    2,0100                  ; provider <= 077
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         cail    3,0
         cail    3,0100                  ; local kind <= 077
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         cail    4,0
         caml    4,[01000000]            ; index <= 0777777
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    5,-1(17)                ; flags
         trne    5,0777356              ; RDONLY(1), SWAP(020), LOGSTORE(0400)
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    6,5
         andi    6,0420                  ; requested swap/logstore ownership
         imuli   6,017                   ; expand slot-0 bits over four slots
         tdne    6,vfs_mount_ro
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         jumpn   1,vfs_mount_nonroot_target
         skipe   vfs_namespace_root
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         jrst    vfs_mount_find
 
 vfs_mount_nonroot_target:
@@ -866,11 +866,11 @@ vfs_mount_check_target:
         move    4,-7(17)
         sub     17,[013,,013]
         caie    6,1                     ; VFS_TYPE_DIR
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         jrst    vfs_mount_find
 vfs_mount_stat_fail:
         sub     17,[013,,013]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 vfs_mount_find:
         setz    7,
@@ -879,11 +879,11 @@ vfs_mount_find_loop:
         jrst    vfs_mount_found
         move    6,vfs_mount_target(7)
         camn    6,1
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         addi    7,1
         caige   7,4
         jrst    vfs_mount_find_loop
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 vfs_mount_found:
         ; root = provider:6 | mount/kind:12 | index:18.
@@ -903,9 +903,9 @@ vfs_mount_found:
         iorm    0,vfs_mount_ro
         move    6,-2(17)
         movem   5,(6)
-        jumpn   1,pdp10_ret_zero
+        jumpn   1,kret_zero
         movem   5,vfs_namespace_root
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 ; int vfs_remount(node)
 ; Kernel/storage-internal D6FS remount.  Callers supply a D6FS vnode; the
@@ -922,17 +922,17 @@ vfs_remount:
 vfs_unmount:
         ldb     2,[POINT 6,1,11]
         subi    2,1
-        jumpl   2,pdp10_ret_neg1
+        jumpl   2,kret_neg1
         cail   2,4
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 vfs_unmount_slot:
         move    3,vfs_mount_root(2)
         came    3,1
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         movei   4,0420                 ; swap(020) | logstore(0400) for slot 0
         lsh     4,0(2)
         tdne    4,vfs_mount_ro
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         push    17,1                    ; root
         push    17,2                    ; slot
         movei   1,1(2)                  ; public mount id is slot + 1
@@ -972,10 +972,10 @@ vfs_unmount_unlock:
         rot     3,(2)
         andm    3,vfs_mount_ro
         sub     17,[2,,2]
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 vfs_unmount_fail:
         sub     17,[2,,2]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
         .data
         .globl  monitorfs_names

@@ -15,9 +15,9 @@
         .globl proc_wait_event_intr
         .globl proc_wakeup_event
         .globl pdp10_pi_handler_return
-        .globl pdp10_ret_ok
-        .globl pdp10_ret_arg
-        .globl pdp10_ret_busy
+        .globl kret_ok
+        .globl kret_arg
+        .globl kret_busy
 
 ; ge_rx_word is zero when empty; a raw GTYI word has LH bit 4 set while ready.
 ; ge_tx_state is nonzero while one complete GE output frame is owned.
@@ -40,7 +40,7 @@ ge_pi_gtyi_disable:
 ; AC1 = requested GE console 0..3.  Return one byte from that exact console.
 ge_getchar:
         caile 1,3
-        jrst pdp10_ret_arg
+        jrst kret_arg
         push 17,1
 ge_getchar_loop:
         move 1,(17)
@@ -107,13 +107,13 @@ ge_put_decoded_wait:
 ; AC1 = GE_PACK(console, byte).  Return 0 or GE_E_*.
 ge_putchar:
         skipe ge_tx_state
-        jrst pdp10_ret_busy
+        jrst kret_busy
         cono 0750,0
 ge_putchar_idle:
         move 4,1
         ldb 5,[POINT 6,1,27]
         caile 5,3
-        jrst pdp10_ret_arg
+        jrst kret_arg
         setom ge_tx_state
         movei 1,1
         pushj 017,ge_put_decoded
@@ -135,7 +135,7 @@ ge_putchar_idle:
         xori 1,1
         pushj 017,ge_put_decoded
         setzm ge_tx_state
-        jrst pdp10_ret_ok
+        jrst kret_ok
 
         .bss
 ge_rx_word:

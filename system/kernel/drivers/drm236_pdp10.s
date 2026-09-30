@@ -8,7 +8,7 @@
         .globl  drm236_write_block
         .globl  drm236_read_jump
         .globl  drm236_write_jump
-        .globl  pdp10_ret_neg1
+        .globl  kret_neg1
 
 ; int drm236_read_block(unsigned unit, kword_t block, kword_t *buf)
 ; int drm236_write_block(unsigned unit, kword_t block, const kword_t *buf)
@@ -21,13 +21,13 @@ drm236_write_block:
         movei   4,1
 
 drm236_block_io:
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         trne    1,0777774              ; units 0..3 only
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         tlne    2,0777777              ; block must fit RH18
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         cail    2,020000               ; 8192 blocks per drum
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
         ; Type-236 address = unit<<16 | block<<3 (16-word groups).
         lsh     1,020

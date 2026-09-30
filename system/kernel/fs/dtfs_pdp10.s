@@ -1,7 +1,7 @@
 ; dtfs_pdp10.s -- DTFS runtime and boot-patched DTC veneers.
         .text
 
-	.globl pdp10_ret_neg2
+	.globl kret_neg2
         .globl  fs_mres_vector_dispatch
         .globl  dtfs_mres_dispatch
         .globl  dtfs_lookup
@@ -28,7 +28,7 @@ dtfs_mres_vector:
         .word   dtfs_lookup,,dtfs_readdir
         .word   dtfs_stat,,dtfs_parent
         .word   0,,dtfs_create
-        .word   pdp10_ret_neg2,,0
+        .word   kret_neg2,,0
         .word   dtfs_unlink,,dtfs_rename
         .word   dtfs_truncate,,dtfs_chmod
         .word   dtfs_read_words,,dtfs_write_words
@@ -92,26 +92,26 @@ dtfs_is_root:
         move    2,1
         and     2,[770077000000]
         came    2,[050001000000]       ; DTFS provider, root local kind
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         move    2,1
         and     2,[007700000000]       ; non-zero mount id required
-        jumpe   2,pdp10_ret_zero
-        jrst    pdp10_ret_one
+        jumpe   2,kret_zero
+        jrst    kret_one
 
         .globl  dtfs_is_file
 dtfs_is_file:
         move    2,1
         and     2,[770077000000]
         came    2,[050002000000]       ; DTFS provider, file local kind
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         move    2,1
         and     2,[007700000000]
-        jumpe   2,pdp10_ret_zero
+        jumpe   2,kret_zero
         move    2,1
         andi    2,0777777
         cail    2,027                  ; ITS has 23 file slots
-        jrst    pdp10_ret_zero
-        jrst    pdp10_ret_one
+        jrst    kret_zero
+        jrst    kret_one
 
 ; Flat DTFS parent and sync operations need only vnode classification.  The
 ; local predicates touch AC1/AC2 only, so AC4/AC5 can retain the original
@@ -120,12 +120,12 @@ dtfs_is_file:
 dtfs_parent:
         move    4,1                     ; original file vnode
         move    5,2                     ; vnode_t *parentp
-        jumpe   5,pdp10_ret_neg1
+        jumpe   5,kret_neg1
         pushj   17,dtfs_is_file
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         movsi   4,050001                 ; provider 5, local ROOT kind
         movem   4,(5)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         .globl  dtfs_sync
 dtfs_sync:
         move    4,1
@@ -133,9 +133,9 @@ dtfs_sync:
         jumpn   1,dtfs_sync_ok
         move    1,4
         pushj   17,dtfs_is_file
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
 dtfs_sync_ok:
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 ; DTC veneers.  MINIT patches the RH of each JRST with the installed DTC
 ; service entry.  The DTFS and DTC ABIs are identical: AC1=unit, AC2=block,
 ; AC3=buffer, so the tail jump needs no argument shuffling or resident pointer.
@@ -463,13 +463,13 @@ dtfs_scan_return:
 dtfs_native_scan_slot:
         jumpe   1,dtfs_native_scan_begin
         move    4,(1)
-        jumple  4,pdp10_ret_neg2
+        jumple  4,kret_neg2
         caile   4,013                    ; DTFS_NAME_MAX_CHARS = 11
-        jrst    pdp10_ret_neg2
+        jrst    kret_neg2
         skipe   3(1)
-        jrst    pdp10_ret_neg2
+        jrst    kret_neg2
         skipe   4(1)
-        jrst    pdp10_ret_neg2
+        jrst    kret_neg2
 dtfs_native_scan_begin:
         setz    3,                       ; slot
         move    7,dtfs_dir
@@ -494,14 +494,14 @@ dtfs_native_scan_next:
         addi    3,1
         caige   3,026                    ; DTFS_FILE_SLOTS = 22
         jrst    dtfs_native_scan_loop
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 dtfs_native_scan_match:
-        jumpe   2,pdp10_ret_zero
+        jumpe   2,kret_zero
         movem   3,(2)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
-        .globl  pdp10_ret_zero
-        .globl  pdp10_ret_neg1
+        .globl  kret_zero
+        .globl  kret_neg1
 
 dtfs_lookup:
         push    17,010
@@ -573,7 +573,7 @@ dtfs_chmod_have_exec:
 dtfs_chmod_fail:
         pop     17,011
         pop     17,010
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 .if DTFS_ENABLE_FOREIGN
 ; Per-mount personality instructions are patched once by mount.  XCT turns a
@@ -629,11 +629,11 @@ dtfs_load:
 
 dtfs_load_ok:
         pop     17,010
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 dtfs_load_fail:
         pop     17,010
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 .else
 ; Native-only build: packed media contains only the unit.
@@ -661,10 +661,10 @@ dtfs_load:
         movem   010,dtfs_cache_mount
 dtfs_load_native_ok:
         pop     17,010
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 dtfs_load_native_fail:
         pop     17,010
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 .endif
 
@@ -907,11 +907,11 @@ dtfs_find_free_native_count:
         caige   7,01101
         jrst    dtfs_find_free_native_loop
         pop     17,010
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 dtfs_find_free_native_found:
         movem   6,(010)
         pop     17,010
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 .endif
 
         .globl  dtfs_block_info

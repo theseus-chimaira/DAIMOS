@@ -13,7 +13,7 @@
         .globl tty_cty_getchar_address
         .globl tty_dcs_getchar_address
         .globl tty_ge_getchar_address
-        .globl pdp10_ret_arg
+        .globl kret_arg
         .globl mfsdev_io_out
 
 tty_putchar:
@@ -24,20 +24,20 @@ tty_putchar:
         subi 1,0400
         aos mfsdev_io_out+011
 tty_dcs_putchar_address:
-        jrst pdp10_ret_arg
+        jrst kret_arg
 
 tty_putchar_ge:
         caile 2,024
-        jrst pdp10_ret_arg
+        jrst kret_arg
         subi 1,010400
         aos mfsdev_io_out+011
 tty_ge_putchar_address:
-        jrst pdp10_ret_arg
+        jrst kret_arg
 
 tty_putchar_cty:
         aos mfsdev_io_out+011
 tty_cty_putchar_address:
-        jrst pdp10_ret_arg
+        jrst kret_arg
 
 ; AC1 = logical TTY id.  DCS/GE backends receive their zero-based line id and
 ; return a character from that exact logical line.
@@ -47,15 +47,15 @@ tty_getchar:
         jrst tty_getchar_ge
         subi 1,1
 tty_dcs_getchar_address:
-        jrst pdp10_ret_arg
+        jrst kret_arg
 
 tty_getchar_ge:
         caile 1,024
-        jrst pdp10_ret_arg
+        jrst kret_arg
         subi 1,021
 tty_ge_getchar_address:
-        jrst pdp10_ret_arg
+        jrst kret_arg
 
 tty_getchar_cty:
 tty_cty_getchar_address:
-        jrst pdp10_ret_arg
+        jrst kret_arg

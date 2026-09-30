@@ -1,8 +1,8 @@
 ; tsfs_pdp10.s -- read-only TSFS provider dispatcher.
         .text
         .globl  fs_mres_vector_dispatch
-        .globl  pdp10_ret_zero
-        .globl  pdp10_ret_neg1
+        .globl  kret_zero
+        .globl  kret_neg1
         .globl  vfs_mount_prevalidated
         .globl  tsfs_mres_dispatch
         .globl  tsfs_lookup
@@ -27,7 +27,7 @@ tsfs_mres_vector:
         .word   0,,0
         .word   0,,0
         .word   tsfs_read_words,,0
-        .word   pdp10_ret_zero,,0
+        .word   kret_zero,,0
         .text
 
 ; Compact metadata helpers.
@@ -118,9 +118,9 @@ tsfs_node_record:
         cain    5,1
         jrst    tsfs_node_record_root
         caie    5,2
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         hrrz    2,1                    ; ordinary record index
-        jumpe   2,pdp10_ret_neg1
+        jumpe   2,kret_neg1
         jrst    tsfs_file_record
 
 tsfs_node_record_root:
@@ -143,9 +143,9 @@ tsfs_parent_common:
         hlrz    4,1
         andi    4,077
         caie    4,2                    ; TSFS_KIND_NODE only
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         hrrz    2,1
-        jumpe   2,pdp10_ret_neg1
+        jumpe   2,kret_neg1
         push    17,010
         move    010,1
         pushj   17,tsfs_file_record
@@ -170,7 +170,7 @@ tsfs_parent_common_pop:
 ; int tsfs_parent(vnode, vnode_t *parentp)
         .globl  tsfs_parent
 tsfs_parent:
-        jumpe   2,pdp10_ret_neg1
+        jumpe   2,kret_neg1
         hlrz    4,1
         andi    4,077
         cain    4,1                    ; mounted root is its own parent
@@ -192,8 +192,8 @@ tsfs_parent_root:
         .globl  tsfs_parent_name
         .globl  vfs_sixbit_name_chars
 tsfs_parent_name:
-        jumpe   2,pdp10_ret_neg1
-        jumpe   3,pdp10_ret_neg1
+        jumpe   2,kret_neg1
+        jumpe   3,kret_neg1
         push    17,010
         push    17,011
         move    010,2                  ; parent result
@@ -217,7 +217,7 @@ tsfs_parent_name_pop:
 ; int tsfs_stat(vnode, struct vfs_stat *st)
         .globl  tsfs_stat
 tsfs_stat:
-        jumpe   2,pdp10_ret_neg1
+        jumpe   2,kret_neg1
         push    17,010
         move    010,2
         pushj   17,tsfs_node_record
@@ -257,7 +257,7 @@ tsfs_stat_pop:
         popj    17,
 ; int tsfs_readdir(vnode dir, unsigned int off, struct vfs_dirent *ent)
 tsfs_readdir:
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -328,7 +328,7 @@ tsfs_readdir_pop:
         .equ    TSFS_DECODE_OWNER,011
 
 tsfs_read_words:
-        jumpe   4,pdp10_ret_zero
+        jumpe   4,kret_zero
         ; AC10..AC16 form one contiguous callee-save block.
         add     17,[7,,7]
         movei   0,-6(17)
@@ -524,8 +524,8 @@ tsfs_read_words_restore:
 
 tsfs_mount_set:
         caie    3,1                    ; VFS_MOUNT_RDONLY
-        jrst    pdp10_ret_neg1
-        jumpe   4,pdp10_ret_neg1       ; provider ABI requires rootp
+        jrst    kret_neg1
+        jumpe   4,kret_neg1       ; provider ABI requires rootp
         push    17,010
         push    17,011
         push    17,012
@@ -612,8 +612,8 @@ tsfs_mount_pop:
         popj    17,
 ; int tsfs_lookup(vnode dir, const struct vfs_name *name, vnode_t *nodep)
 tsfs_lookup:
-        jumpe   2,pdp10_ret_neg1
-        jumpe   3,pdp10_ret_neg1
+        jumpe   2,kret_neg1
+        jumpe   3,kret_neg1
         push    17,010
         push    17,011
         push    17,012

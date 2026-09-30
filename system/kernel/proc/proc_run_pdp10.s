@@ -177,17 +177,17 @@ proc_run_id_scan:
         hrrz    2,(3)
         andi    2,0377                  ; process group
         camn    2,012
-        jrst    pdp10_ret_one
+        jrst    kret_one
         move    1,3
         pushj   17,proc_scope_id        ; packed domain,,session in RH
         move    2,1
         andi    2,0377
         camn    2,012
-        jrst    pdp10_ret_one
+        jrst    kret_one
         lsh     1,-010
         andi    1,0377
         camn    1,012
-        jrst    pdp10_ret_one
+        jrst    kret_one
         addi    3,PROC_WORDS
         aoja    4,proc_run_id_scan
 proc_run_id_tty_begin:
@@ -196,9 +196,9 @@ proc_run_id_tty_loop:
         move    2,proc_tty_records(4)
         andi    2,0377                  ; controlling session
         camn    2,012
-        jrst    pdp10_ret_one
+        jrst    kret_one
         sojge   4,proc_run_id_tty_loop
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 proc_run_slot_found:
         move    1,013
         move    2,012
@@ -351,13 +351,13 @@ proc_run_record_words:
         move    4,(1)
         hrrz    1,4
         came    1,4
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         skipn   3
         jrst    proc_run_record_limit
-        jumpe   1,pdp10_ret_zero
+        jumpe   1,kret_zero
 proc_run_record_limit:
         camle   1,2
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         addi    1,5
         idivi   1,6
         addi    1,1

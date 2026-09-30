@@ -1,7 +1,7 @@
 ; syscall_info_pdp10.s -- compact runtime-sized PROCINFO/MEMINFO syscalls.
         .text
-        .globl  pdp10_ret_zero
-        .globl  pdp10_ret_neg1
+        .globl  kret_zero
+        .globl  kret_neg1
         .globl  file_table
         .globl  proc_table
         .globl  proc_slots
@@ -19,7 +19,7 @@
         .globl  sys_procinfo
 sys_procinfo:
         caml    1,proc_slots
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    4,1                    ; preserve slot
         move    5,1
         lsh     5,1
@@ -27,7 +27,7 @@ sys_procinfo:
         add     5,proc_table           ; AC5 -> struct proc
         hlrz    3,2(5)
         andi    3,PROC_STATE_LH_MASK
-        jumpe   3,pdp10_ret_neg1       ; FREE slots are not processes
+        jumpe   3,kret_neg1       ; FREE slots are not processes
         movem   4,(2)                  ; pid is the process-table slot
         move    3,(5)
         move    6,3
@@ -50,7 +50,7 @@ sys_procinfo_swapper:
         move    3,proc_comm_words
 sys_procinfo_comm:
         movem   3,4(2)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 ; int sys_meminfo(struct sys_meminfo *info)
         .globl  sys_meminfo
@@ -85,7 +85,7 @@ sys_resident_words_immediate:
         movei   1,2(2)
         push    17,2                    ; MRES calls may clobber AC2
 sys_memfs_usage_call:
-        pushj   17,pdp10_ret_neg1
+        pushj   17,kret_neg1
         pop     17,2                    ; restore struct sys_meminfo pointer
         jumpn   1,sys_meminfo_no_memfs
         move    4,3(2)
@@ -128,4 +128,4 @@ sys_meminfo_proc_done:
         movem   3,6(2)
         movei   3,015
         movem   3,010(2)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero

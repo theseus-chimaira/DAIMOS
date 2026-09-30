@@ -1,5 +1,5 @@
 /**
- * @file kinit_late_begin.s
+ * @file kinit_late_begin_pdp6.s
  * @brief Entry boundary and machine-level helpers for protected late KINIT.
  *
  * This object begins the KINIT text range which must remain unavailable to the
@@ -8,8 +8,11 @@
  * final allocating/VFS work, then releases the range immediately before the
  * no-return transition to the initial user process.
  *
- * AC17 is the PDP-6/PDP-10 C pushdown pointer.  C arguments arrive in AC1,
- * AC2, ... according to the kernel calling convention.
+ * This is the PDP-6 baseline entry object because it installs the user-UUO
+ * trap directly in PDP-6 low core at physical 000041.  Later PDP-10 memory
+ * management and trap implementations may require a different entry path.
+ * AC17 is the C pushdown pointer; C arguments arrive in AC1, AC2, ...
+ * according to the kernel calling convention.
  */
 
         .text

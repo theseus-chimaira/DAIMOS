@@ -4,8 +4,8 @@
         .globl cp_pi_handler
         .globl cp_punch_card
         .globl pdp10_pi_handler_return
-        .globl pdp10_ret_arg
-        .globl pdp10_ret_busy
+        .globl kret_arg
+        .globl kret_busy
 
 cp_pi_handler:
         coni 0110,1
@@ -38,9 +38,9 @@ cp_pi_more:
         jrst pdp10_pi_handler_return
 
 cp_punch_card:
-        jumpe 1,pdp10_ret_arg
+        jumpe 1,kret_arg
         skipe cp_iowd
-        jrst pdp10_ret_neg4
+        jrst kret_neg4
         subi 1,1
         hrli 1,0777660
         movem 1,cp_iowd
@@ -52,10 +52,10 @@ cp_punch_wait:
         sojg 2,cp_punch_wait
         setzm cp_iowd
         cono 0110,0007
-        jrst pdp10_ret_neg2
+        jrst kret_neg2
 cp_punch_done:
         consz 0110,05000
-        jrst pdp10_ret_busy
+        jrst kret_busy
         movei 1,0120
         popj 017,
 

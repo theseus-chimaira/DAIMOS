@@ -7,7 +7,7 @@
 
         .text
         .globl blockset_map_descriptor
-        .globl pdp10_ret_neg1
+        .globl kret_neg1
 
 ; Reentrant mapper.
 ;   AC1 = packed descriptor pointer
@@ -15,27 +15,27 @@
 ; Returns AC1=physical unit, AC2=physical block, or AC1=-1.
 ; The descriptor is read-only and no global mapping state is used.
 blockset_map_descriptor:
-        jumpe 1,pdp10_ret_neg1
-        jumpl 2,pdp10_ret_neg1
+        jumpe 1,kret_neg1
+        jumpl 2,kret_neg1
         move 4,1                         ; descriptor
         move 1,2                         ; logical working value
         caml 1,1(4)                      ; total
-        jrst pdp10_ret_neg1
+        jrst kret_neg1
         hlrz 0,(4)                       ; flags
         move 5,0
         andi 5,07                        ; member count
-        jumpe 5,pdp10_ret_neg1
+        jumpe 5,kret_neg1
         andi 0,070                       ; policy field
         jumpe 0,blockset_map_interleave
         caie 0,010                       ; CONCAT == 1 << 3
-        jrst pdp10_ret_neg1
+        jrst kret_neg1
 
 ; CONCAT maps consecutive logical windows to consecutive members.
 blockset_map_concat:
         setz 7,
 blockset_map_concat_loop:
         caml 7,5
-        jrst pdp10_ret_neg1
+        jrst kret_neg1
         move 6,4
         add 6,7
         hrrz 0,011(6)                    ; member length

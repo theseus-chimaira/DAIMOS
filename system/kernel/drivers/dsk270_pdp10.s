@@ -8,7 +8,7 @@
         .globl  dsk270_write_sector
         .globl  dsk270_read_jump
         .globl  dsk270_write_jump
-        .globl  pdp10_ret_neg1
+        .globl  kret_neg1
 
 ; int dsk270_read_sector(unsigned unit, kword_t sector, kword_t *buf)
 ; int dsk270_write_sector(unsigned unit, kword_t sector, const kword_t *buf)
@@ -21,13 +21,13 @@ dsk270_write_sector:
         movei   4,1                    ; write selector
 
 dsk270_sector_io:
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         trne    1,0777774              ; units 0..3 only
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         tlne    2,0777777              ; sector must fit RH18
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         cail    2,0130000              ; 02000 cyl * 054 sectors/cyl
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 dsk270_sector_addr:
         ; raw = unit<<16 | (sector/054)<<6 | sector%054

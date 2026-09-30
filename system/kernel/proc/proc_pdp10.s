@@ -55,9 +55,9 @@
         .globl  proc_swap_service_one
         .globl  proc_record_kernel_sp
         .globl  proc_exit_current
-        .globl  pdp10_ret_zero
-        .globl  pdp10_ret_one
-        .globl  pdp10_ret_neg1
+        .globl  kret_zero
+        .globl  kret_one
+        .globl  kret_neg1
         .globl  pdp10_pi_level6
         .globl  pdp10_pi_sp_save
         .globl  mach_pi_disable
@@ -211,30 +211,30 @@ proc_record_kernel_sp:
         .globl  proc_rt_control
 proc_rt_control:
         move    2,proc_current_slot
-        jumpe   2,pdp10_ret_neg1
+        jumpe   2,kret_neg1
         cain    1,1                    ; SYS_RTCTL_ENABLE
         jrst    proc_rt_enable
         caie    1,0                    ; SYS_RTCTL_DISABLE
         cain    1,2                    ; SYS_RTCTL_YIELD
         jrst    proc_rt_release
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 proc_rt_enable:
         skipn   3,proc_rt_owner
         jrst    proc_rt_claim
         came    3,2
-        jrst    pdp10_ret_neg1
-        jrst    pdp10_ret_zero
+        jrst    kret_neg1
+        jrst    kret_zero
 proc_rt_claim:
         movem   2,proc_rt_owner
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 proc_rt_release:
         camn    2,proc_rt_owner
         jrst    proc_rt_release_owner
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 proc_rt_release_owner:
         setzm   proc_rt_owner
         pushj   17,proc_sched_resched_current
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 ; int proc_tty_session_has(unsigned int session, unsigned int pgrp,
 ;     unsigned int skip_slot)
@@ -250,7 +250,7 @@ proc_tty_session_has:
         addi    3,PROC_WORDS
 proc_tty_session_scan:
         caml    2,proc_high_slot
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         camn    2,7
         jrst    proc_tty_session_next
         move    4,2(3)                 ; packed scheduler word
@@ -270,7 +270,7 @@ proc_tty_session_scope:
         lsh     4,-3
         andi    4,0377                  ; session id
         camn    4,5
-        jrst    pdp10_ret_one
+        jrst    kret_one
 proc_tty_session_next:
         addi    3,PROC_WORDS
         addi    2,1
@@ -459,10 +459,10 @@ proc_has_live_user:
         addi    3,PROC_WORDS
 proc_has_live_user_scan:
         caml    2,proc_high_slot
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         move    4,2(3)                 ; packed scheduler word
         and     4,[0300000000000]      ; FREE/ZOMB have low state bits clear
-        jumpn   4,pdp10_ret_one
+        jumpn   4,kret_one
         addi    3,PROC_WORDS
         addi    2,1
         jrst    proc_has_live_user_scan
@@ -521,7 +521,7 @@ proc_scope_id:
 proc_scope_live:
         hrrz    2,(1)
         trnn    2,0400000              ; u-area present
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         hlrz    2,(1)
         move    1,045(2)
         lsh     1,-3
@@ -548,27 +548,27 @@ proc_child_hierarchy:
         caie    2,1
         jrst    proc_child_join
 ; NEW pgrp.
-        jumpn   6,pdp10_ret_neg1
+        jumpn   6,kret_neg1
         move    1,7
         jrst    proc_child_set
 proc_child_inherit:
-        jumpn   6,pdp10_ret_neg1
+        jumpn   6,kret_neg1
         hrrz    1,(4)
         andi    1,0377
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         jrst    proc_child_set
 proc_child_join:
         caie    2,2
-        jrst    pdp10_ret_neg1
-        jumpe   6,pdp10_ret_neg1
+        jrst    kret_neg1
+        jumpe   6,kret_neg1
         caile   6,0377
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         movei   1,1                    ; scan slot
         move    2,proc_table
         addi    2,3
 proc_child_join_loop:
         caml    1,proc_high_slot
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         ; FREE has all state bits clear.  Preserve the original sched word in
         ; AC4 only long enough to classify zombie/live scope below.
         hlrz    4,2(2)
@@ -618,7 +618,7 @@ proc_child_set:
         and     5,[770001777770]
         ior     6,5
         movem   6,045(4)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 ; int proc_control(unsigned int op, unsigned int arg)
 ; Compact native PROCCTL dispatcher.  The syscall dispatcher guarantees a live
@@ -629,9 +629,9 @@ proc_child_set:
         .globl  proc_tty_records
         .globl  proc_tty_release_session
 proc_control:
-        jumpl   1,pdp10_ret_neg1
+        jumpl   1,kret_neg1
         caile   1,031
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         ; AC3 is the current slot/session identity used by NEWSESSION,
         ; NEWDOMAIN, and the TTY ownership operations below.  Do not depend
         ; on an arbitrary user AC3 value surviving the syscall trap.
@@ -658,11 +658,11 @@ proc_control_table:
         .word   proc_control_getuid
         .word   proc_control_getgid
         .word   proc_control_setuid
-        .word   pdp10_ret_neg1         ; 020 reserved by UUO-077 extension bank
-        .word   pdp10_ret_neg1         ; 021 reserved by UUO-077 extension bank
-        .word   pdp10_ret_neg1         ; 022 reserved by UUO-077 extension bank
-        .word   pdp10_ret_neg1         ; 023 reserved by UUO-077 extension bank
-        .word   pdp10_ret_neg1         ; 024 reserved by UUO-077 extension bank
+        .word   kret_neg1         ; 020 reserved by UUO-077 extension bank
+        .word   kret_neg1         ; 021 reserved by UUO-077 extension bank
+        .word   kret_neg1         ; 022 reserved by UUO-077 extension bank
+        .word   kret_neg1         ; 023 reserved by UUO-077 extension bank
+        .word   kret_neg1         ; 024 reserved by UUO-077 extension bank
         .word   proc_control_setgid    ; 025
         .word   proc_control_tty_getmode ; 026
         .word   proc_control_tty_setmode ; 027
@@ -670,23 +670,23 @@ proc_control_table:
         .word   proc_control_umask     ; 031
 
 proc_control_getpgrp:
-        jumpn   2,pdp10_ret_neg1
+        jumpn   2,kret_neg1
         hrrz    1,(4)
         andi    1,0377
         popj    17,
 proc_control_getsession:
-        jumpn   2,pdp10_ret_neg1
+        jumpn   2,kret_neg1
         hlrz    5,(4)
         ldb     1,[POINT 8,045(5),32]
         popj    17,
 proc_control_getdomain:
-        jumpn   2,pdp10_ret_neg1
+        jumpn   2,kret_neg1
         hlrz    5,(4)
         ldb     1,[POINT 8,045(5),24]
         popj    17,
 
 proc_control_newsession:
-        jumpn   2,pdp10_ret_neg1
+        jumpn   2,kret_neg1
         hlrz    5,(4)
         ldb     1,[POINT 8,045(5),32]   ; old session for TTY release
         move    6,(4)
@@ -704,14 +704,14 @@ proc_control_newsession:
         popj    17,
 
 proc_control_newdomain:
-        jumpn   2,pdp10_ret_neg1
+        jumpn   2,kret_neg1
         hlrz    5,(4)
         dpb     3,[POINT 8,045(5),24]
         move    1,3
         popj    17,
 
 proc_control_getevents:
-        jumpn   2,pdp10_ret_neg1
+        jumpn   2,kret_neg1
         hlrz    5,(4)
         ldb     1,[POINT 7,045(5),16]
         move    6,045(5)
@@ -729,7 +729,7 @@ proc_control_event_pgrp:
         movei   3,1
 proc_control_event:
         tdne    2,[-04000]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    1,2
         andi    1,0377
         lsh     2,-010
@@ -737,7 +737,7 @@ proc_control_event:
         jrst    proc_event_send
 
 proc_control_gettty:
-        jumpn   2,pdp10_ret_neg1
+        jumpn   2,kret_neg1
         hlrz    5,(4)
         move    1,045(5)
         lsh     1,-036
@@ -745,24 +745,24 @@ proc_control_gettty:
 
 proc_control_tty_attach:
         cail    2,025
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         hlrz    5,(4)
         move    6,045(5)
         ldb     7,[POINT 8,045(5),32]
         came    7,3
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    7,6
         lsh     7,-036
         andi    7,077
         cail   7,2
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 proc_control_tty_attach_state_ok:
         move    7,proc_tty_records(2)
         move    1,7
         andi    1,0377
         jumpe   1,proc_control_tty_attach_claim
         came    1,3
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         jrst    proc_control_tty_attach_set
 proc_control_tty_attach_claim:
         hrrz    1,(4)
@@ -802,11 +802,11 @@ proc_control_tty_owned_bad:
         popj    17,
 
 proc_control_tty_detach:
-        jumpn   2,pdp10_ret_neg1
+        jumpn   2,kret_neg1
         pushj   17,proc_control_tty_owned
-        jumpl   1,pdp10_ret_neg1
+        jumpl   1,kret_neg1
         came    5,3                    ; only the session leader detaches
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         push    17,5                   ; line reset is C and may use ACs
         push    17,1
         pushj   17,proc_tty_line_reset
@@ -816,7 +816,7 @@ proc_control_tty_detach:
         move    1,5                    ; session
         movei   2,1                    ; DETACHED
         pushj   17,proc_tty_set_session_state
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 ; AC1=session, AC2=packed TTY state.  Update every live member.  AC2 is
 ; preserved so ATTACH can recover and return its TTY id without stack traffic.
@@ -846,17 +846,17 @@ proc_tty_set_session_state_next:
         aoja    3,proc_tty_set_session_state_loop
 
 proc_control_tty_getfg:
-        jumpn   2,pdp10_ret_neg1
+        jumpn   2,kret_neg1
         pushj   17,proc_control_tty_owned
-        jumpl   1,pdp10_ret_neg1
+        jumpl   1,kret_neg1
         ldb     1,[POINT 8,7,27]
         popj    17,
 
 
 proc_control_tty_getmode:
-        jumpn   2,pdp10_ret_neg1
+        jumpn   2,kret_neg1
         pushj   17,proc_control_tty_owned
-        jumpl   1,pdp10_ret_neg1
+        jumpl   1,kret_neg1
         move    1,7
         lsh     1,-031
         andi    1,07
@@ -864,7 +864,7 @@ proc_control_tty_getmode:
 
 proc_control_tty_setmode:
         tdne    2,[-010]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         push    17,2                   ; requested mode
         pushj   17,proc_control_tty_owned
         jumpl   1,proc_control_tty_setmode_bad
@@ -881,11 +881,11 @@ proc_control_tty_setmode:
         jrst    proc_tty_mode_set
 proc_control_tty_setmode_bad:
         sub     17,[1,,1]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 proc_control_getuid:
 proc_control_getgid:
-        jumpn   2,pdp10_ret_neg1
+        jumpn   2,kret_neg1
         hlrz    5,(4)
         hlrz    6,PROC_CRED_OFFSET(5)
         caie    1,015                  ; GETUID keeps LH, GETGID selects RH
@@ -900,7 +900,7 @@ proc_control_setuid:
 proc_control_setgid:
 proc_control_setcred:
         caile   2,0777777
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         hlrz    5,(4)
         move    6,PROC_CRED_OFFSET(5)
         hlrz    7,6                    ; current UID controls privilege
@@ -908,7 +908,7 @@ proc_control_setcred:
         caie    1,017                  ; SETUID compares UID, SETGID compares GID
         hrrz    7,6
         came    2,7
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 proc_control_setcred_store:
         cain    1,017                  ; SETUID executes only the LH store
         hrlm    2,PROC_CRED_OFFSET(5)
@@ -924,12 +924,12 @@ proc_control_setcred_store:
 proc_control_isatty:
         move    1,2
         pushj   17,file_find
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         move    1,(1)
         tlz     1,707070               ; strip packed FILE metadata
         camn    1,[020002000000]       ; MonitorFS device view CTY0 IO endpoint
         jrst    proc_control_tty_owned
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 ; Classic umask semantics: install ARG low nine bits and return the old mask.
 ; The word is process-private, inherited by RUN and retained by EXEC.
@@ -941,11 +941,11 @@ proc_control_umask:
         popj    17,
 
 proc_control_tty_setfg:
-        jumpe   2,pdp10_ret_neg1
+        jumpe   2,kret_neg1
         caile   2,0377
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         pushj   17,proc_control_tty_owned
-        jumpl   1,pdp10_ret_neg1
+        jumpl   1,kret_neg1
         push    17,1                   ; tty id
         push    17,2                   ; requested pgrp
         move    1,5                    ; session
@@ -953,7 +953,7 @@ proc_control_tty_setfg:
         pushj   17,proc_tty_session_has
         pop     17,2
         pop     17,4                   ; tty id
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         move    5,proc_tty_records(4)
         move    6,5
         lsh     6,-010
@@ -977,8 +977,8 @@ proc_control_tty_setfg:
         .globl  proc_tty_canon_input
         .globl  proc_tty_line_reset
         .globl  proc_tty_mode_set
-        .globl  pdp10_ret_neg2
-        .globl  pdp10_ret_neg3
+        .globl  kret_neg2
+        .globl  kret_neg3
 
 ; Packed canonical-line base helpers: two 18-bit MM bases per word.
         .globl  proc_tty_line_bases
@@ -1050,12 +1050,12 @@ proc_tty_line_get:
 ; read, or return -3 when the caller must obtain another device byte.
 proc_tty_line_take:
         cail    1,025
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    2,proc_tty_records(1)
         move    3,2
         lsh     3,-031
         trnn    3,01                   ; RAW mode never allocates a line
-        jrst    pdp10_ret_neg3
+        jrst    kret_neg3
         push    17,1                   ; tty survives allocator/helper calls
         pushj   17,proc_tty_line_ensure
         jumpe   1,proc_tty_line_take_bad
@@ -1110,13 +1110,13 @@ proc_tty_line_take_eof:
         move    1,0(17)
         pushj   17,proc_tty_line_reset
         sub     17,[1,,1]
-        jrst    pdp10_ret_neg2
+        jrst    kret_neg2
 proc_tty_line_take_more:
         sub     17,[1,,1]
-        jrst    pdp10_ret_neg3
+        jrst    kret_neg3
 proc_tty_line_take_bad:
         sub     17,[1,,1]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 ; int proc_tty_canon_input(unsigned int tty, unsigned int ch)
 ; Target canonical editor.  AC10-AC13 are saved because the echo/MM helpers
@@ -1292,17 +1292,17 @@ proc_tty_read_enter_retry:
         hlrz    6,(5)
         hlrz    1,045(6)
         lsh     1,-014                 ; packed TTY state
-        jumpe   1,pdp10_ret_zero       ; NO_TTY -> historical CTY
+        jumpe   1,kret_zero       ; NO_TTY -> historical CTY
         subi    1,2                    ; attached state -> tty id
-        jumpl   1,pdp10_ret_neg1        ; DETACHED becomes -1
+        jumpl   1,kret_neg1        ; DETACHED becomes -1
         cail    1,025
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    2,proc_tty_records(1)
         move    3,2
         andi    3,0377                 ; record session
         ldb     4,[POINT 8,045(6),32]
         came    3,4
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         ldb     3,[POINT 8,proc_tty_records(1),27] ; foreground pgrp
         hrrz    4,(5)
         andi    4,0377                 ; current pgrp
@@ -1312,7 +1312,7 @@ proc_tty_read_enter_retry:
         movei   2,3                    ; SYS_EVENT_TSTP
         movei   3,1                    ; group delivery
         pushj   17,proc_event_send
-        jumpn   1,pdp10_ret_neg1
+        jumpn   1,kret_neg1
         jrst    proc_tty_read_enter_retry
 
 ; int proc_tty_input(unsigned int tty, unsigned int ch)
@@ -1320,7 +1320,7 @@ proc_tty_input:
         move    4,1                    ; tty
         move    5,2                    ; character
         cail    4,025
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    7,proc_current_slot
         lsh     7,1
         add     7,proc_current_slot
@@ -1329,26 +1329,26 @@ proc_tty_input:
         hlrz    3,045(2)
         lsh     3,-014                 ; TTY state
         jumpn   3,proc_tty_input_attached
-        jumpn   4,pdp10_ret_neg1       ; NO_TTY accepts CTY only
+        jumpn   4,kret_neg1       ; NO_TTY accepts CTY only
         move    1,5
         andi    1,0177
         popj    17,
 proc_tty_input_attached:
         subi    3,2
         came    3,4
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    1,proc_tty_records(4)  ; retain record until mode extraction
         move    3,1
         andi    3,0377
         ldb     6,[POINT 8,045(2),32]
         came    3,6
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         ldb     6,[POINT 8,proc_tty_records(4),27] ; foreground pgrp
-        jumpe   6,pdp10_ret_neg1
+        jumpe   6,kret_neg1
         hrrz    3,(7)
         andi    3,0377
         came    6,3
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         andi    5,0177
         move    3,1
         lsh     3,-031
@@ -1361,7 +1361,7 @@ proc_tty_input_attached:
         movei   2,0                    ; SYS_EVENT_INT
         movei   3,1
         pushj   17,proc_event_send
-        jrst    pdp10_ret_neg3         ; consumed: caller retries
+        jrst    kret_neg3         ; consumed: caller retries
 proc_tty_input_tstp:
         caie    5,032                  ; ^Z
         jrst    proc_tty_input_mode
@@ -1369,8 +1369,8 @@ proc_tty_input_tstp:
         movei   2,3                    ; SYS_EVENT_TSTP
         movei   3,1
         pushj   17,proc_event_send
-        jumpn   1,pdp10_ret_neg1
-        jrst    pdp10_ret_neg3         ; consumed: caller retries
+        jumpn   1,kret_neg1
+        jrst    kret_neg3         ; consumed: caller retries
 proc_tty_input_mode:
         trnn    3,01                   ; RAW: return byte directly
         jrst    proc_tty_input_char
@@ -1393,14 +1393,14 @@ proc_tty_output:
         lsh     1,-014
         jumpe   1,proc_tty_output_pack_cty
         subi    1,2                    ; tty id
-        jumpl   1,pdp10_ret_neg1        ; DETACHED becomes -1
+        jumpl   1,kret_neg1        ; DETACHED becomes -1
         cail    1,025
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    3,proc_tty_records(1)
         andi    3,0377
         ldb     5,[POINT 8,045(7),32]
         came    3,5
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         lsh     1,010
         andi    4,0377
         ior     1,4
@@ -1413,12 +1413,12 @@ proc_tty_output_pack_cty:
 ; int proc_tty_pending_take(unsigned int tty)
 proc_tty_pending_take:
         cail    1,025
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    2,proc_tty_records(1)
         move    3,2
         lsh     3,-020
         andi    3,0777
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         and     2,[777600177777]       ; clear pending byte field
         movem   2,proc_tty_records(1)
         move    1,3
@@ -1428,32 +1428,32 @@ proc_tty_pending_take:
 ; int proc_tty_pending_store(unsigned int tty, unsigned int ch)
 proc_tty_pending_store:
         cail    1,025
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         caile   2,0377
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    4,proc_tty_records(1)
         move    3,4
         lsh     3,-020
         andi    3,0777
-        jumpn   3,pdp10_ret_neg1
+        jumpn   3,kret_neg1
         addi    2,1                    ; validated byte 0..0377 -> marker 1..0400
         lsh     2,020
         ior     4,2
         movem   4,proc_tty_records(1)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 ; int proc_wait_event(volatile kword_t *eventp)
 ; Internal event waits are noninterruptible.  User-visible waits use
 ; proc_wait_event_intr and return -1 when ALRM is already pending or wakes them.
 proc_wait_event_intr:
         skipe   (1)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         skipn   proc_current_slot
         jrst    proc_wait_event
         move    2,file_table
         move    2,-2(2)                 ; packed control word at u-area 045
         tlne    2,0100                  ; pending ALRM (event 5)
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         movsi   4,PROC_WAIT_INTR_LH
         jrst    proc_wait_event_common
 
@@ -1461,7 +1461,7 @@ proc_wait_event:
         movsi   4,PROC_WAIT_EVENT_LH
 proc_wait_event_common:
         skipe   (1)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         skipn   proc_current_slot
         jrst    proc_wait_boot
         push    17,1                    ; preserve event pointer
@@ -1485,11 +1485,11 @@ proc_wait_event_common:
         cono    0004,004002             ; software request at PI level 6
         tlne    4,040000                ; INTR class, not internal EVENT
         jrst    proc_wait_intr_return
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 proc_wait_boot:
         skipn   (1)
         jrst    proc_wait_boot
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 proc_wait_raced:
         move    3,2(2)
         tlz     3,PROC_WAIT_LH_MASK
@@ -1499,14 +1499,14 @@ proc_wait_raced:
         movem   3,2(2)
         move    1,proc_current_slot
         pushj   17,proc_runq_add
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 proc_wait_intr_return:
         move    2,file_table
         move    2,-2(2)
         tlne    2,0100                  ; ALRM remained pending across sleep
-        jrst    pdp10_ret_neg1
-        jrst    pdp10_ret_zero
+        jrst    kret_neg1
+        jrst    kret_zero
 
 
 ; Request an immediate software PI6 reschedule after the caller has changed
@@ -1523,11 +1523,11 @@ proc_sched_resched_current:
 ; but none is reportable, arm a child wait and request PI6 immediately.
 proc_wait_child:
         skipn   proc_current_slot
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    2,file_table
         move    2,-2(2)
         tlne    2,0100                  ; ALRM interrupts user WAIT
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    1,proc_current_slot
         pushj   17,proc_runq_remove
         move    2,proc_current_slot

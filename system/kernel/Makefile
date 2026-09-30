@@ -120,12 +120,12 @@ KINIT_LATE_C_ASM = $(BUILD)/proc_late.s \
 	$(BUILD)/mm_boot.s \
 	$(BUILD)/kinit_late.s
 
-KINIT_FIXED_SRCS = boot/kinit_io.s \
+KINIT_FIXED_SRCS = boot/kinit_io_pdp6.s \
 	modules/module_io.s \
-	boot/kinit_late_begin.s \
+	boot/kinit_late_begin_pdp6.s \
 	boot/kinit_late_end.s
 
-KINIT_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${BUILD}/kinit_io.s ${BUILD}/module_io.s ${BUILD}/bootbanner_generated.s ${BUILD}/kinit_late_begin.s ${BUILD}/kinit_late_end.s
+KINIT_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${BUILD}/kinit_io_pdp6.s ${BUILD}/module_io.s ${BUILD}/bootbanner_generated.s ${BUILD}/kinit_late_begin_pdp6.s ${BUILD}/kinit_late_end.s
 
 KCORE_C_SRCS = proc/exec.c \
 		mm/mm.c \
@@ -327,9 +327,9 @@ ${BUILD}/tsfs.s: fs/tsfs.c ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S fs/tsfs.c -o $@
 
-${BUILD}/kinit_io.s: boot/kinit_io.s
+${BUILD}/kinit_io_pdp6.s: boot/kinit_io_pdp6.s
 	@mkdir -p ${BUILD}
-	{ echo ".set KINIT_STACK_WATERMARK,${KINIT_STACK_WATERMARK}"; echo ".set KINIT_STACK_RESERVE_WORDS,${KINIT_STACK_RESERVE_WORDS}"; cat boot/kinit_io.s; } > $@
+	{ echo ".set KINIT_STACK_WATERMARK,${KINIT_STACK_WATERMARK}"; echo ".set KINIT_STACK_RESERVE_WORDS,${KINIT_STACK_RESERVE_WORDS}"; cat boot/kinit_io_pdp6.s; } > $@
 
 ${BUILD}/proc_pdp10.s: proc/proc_pdp10.s
 	@mkdir -p ${BUILD}
@@ -385,7 +385,7 @@ COPY_ASM_SRCS = core/ret.s \
 	drivers/tape_io.s \
 	drivers/slv_io.s \
 	modules/module_io.s \
-	boot/kinit_late_begin.s \
+	boot/kinit_late_begin_pdp6.s \
 	boot/kinit_late_end.s
 
 COPY_ASM_TARGETS = $(BUILD)/ret.s \
@@ -431,7 +431,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret.s \
 	$(BUILD)/tape_io.s \
 	$(BUILD)/slv_io.s \
 	$(BUILD)/module_io.s \
-	$(BUILD)/kinit_late_begin.s \
+	$(BUILD)/kinit_late_begin_pdp6.s \
 	$(BUILD)/kinit_late_end.s
 
 ${COPY_ASM_TARGETS}: ${COPY_ASM_SRCS}

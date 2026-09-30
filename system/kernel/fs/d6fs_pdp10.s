@@ -4,21 +4,21 @@
 ; paths.  They implement the on-disk D6FS V2 bit layout directly; policy and
 ; crash-ordering remain in C.
         .text
-        .globl  pdp10_ret_zero
-        .globl  pdp10_ret_one
-        .globl  pdp10_ret_neg1
+        .globl  kret_zero
+        .globl  kret_one
+        .globl  kret_neg1
 
 ; FCB decode/validation is implemented in d6fs.c.
 
         .globl  d6fs_dirent_decode_valid
 ; int d6fs_dirent_decode_valid(ent, fcb_count, info)
 d6fs_dirent_decode_valid:
-        jumpe   1,pdp10_ret_zero
-        jumpe   2,pdp10_ret_zero
-        jumpe   3,pdp10_ret_zero
+        jumpe   1,kret_zero
+        jumpe   2,kret_zero
+        jumpe   3,kret_zero
         move    4,5(1)
         trne    4,0777777                ; low half must be zero
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         move    5,3
         hrl     5,1
         blt     5,3(3)                   ; copy four packed name words
@@ -39,30 +39,30 @@ d6fs_dirent_decode_valid:
         ior     6,3(1)
         ior     6,5                      ; raw word 4 must also be zero
         jumpe   6,d6fs_dirent_valid
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 d6fs_dirent_used:
         caml    4,2                      ; child_fcb >= fcb_count
-        jrst    pdp10_ret_zero
-        jumpe   6,pdp10_ret_zero    ; FREE type forbidden
+        jrst    kret_zero
+        jumpe   6,kret_zero    ; FREE type forbidden
         caile   6,4
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         move    4,(1)
         ior     4,1(1)
         ior     4,2(1)
         ior     4,3(1)
-        jumpe   4,pdp10_ret_zero
+        jumpe   4,kret_zero
 
 d6fs_dirent_valid:
-        jrst    pdp10_ret_one
+        jrst    kret_one
 
         .globl  d6fs_extent_decode
 ; int d6fs_extent_decode(run, high, startp, blocksp)
 d6fs_extent_decode:
-        jumpe   3,pdp10_ret_neg1
-        jumpe   4,pdp10_ret_neg1
+        jumpe   3,kret_neg1
+        jumpe   4,kret_neg1
         tdne    2,[-040]                 ; high must fit five bits
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         ldb     5,[POINT 24,1,23]
         movem   5,(3)
         lsh     2,014
@@ -70,13 +70,13 @@ d6fs_extent_decode:
         ior     2,1
         addi    2,1
         movem   2,(4)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
         .globl  d6fs_extent_high_get
 ; unsigned int d6fs_extent_high_get(word, extent)
 d6fs_extent_high_get:
         caile   2,6
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         move    3,2
         lsh     3,2
         add     3,2                      ; shift = extent * 5
@@ -92,9 +92,9 @@ d6fs_extent_high_get:
 ; only 24 bits, so the sentinel cannot collide with valid media.
         .globl  d6fs_file_block
 d6fs_file_block:
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         ldb     3,[POINT 4,(1),31]       ; extent_count
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         move    4,5(1)                   ; packed length-high fields
         movei   5,6(1)                   ; current extent run
 
@@ -125,10 +125,10 @@ d6fs_file_block_next:
 ; Hash packed SIXBIT directly with ILDB; this avoids C division/modulo and
 ; per-character word shifting.  SIXBIT bytes are converted to ASCII by +040.
 d6fs_name_hash24:
-        jumpe   1,pdp10_ret_zero
-        jumpe   2,pdp10_ret_zero
+        jumpe   1,kret_zero
+        jumpe   2,kret_zero
         caile   2,030                    ; maximum 24 characters
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         move    3,[POINT 6,0]
         hrr     3,1
         setz    4,                       ; h
@@ -156,9 +156,9 @@ d6fs_hash_loop:
 ; A successful load always exposes reader->cache, so return that address
 ; directly instead of forcing every caller to allocate a pointer temporary.
 d6fs_reader_get_block:
-        jumpe   1,pdp10_ret_zero
+        jumpe   1,kret_zero
         caml    2,6(1)                   ; logical >= total_blocks
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         camn    2,3(1)                   ; cache hit
         jrst    d6fs_get_block_hit
         push    17,010
@@ -199,10 +199,10 @@ d6fs_get_block_hit:
 ; eight aligned FCBs.  Use shifts/masks and BLT instead of compiler division
 ; and a sixteen-iteration copy loop.
 d6fs_reader_fcb:
-        jumpe   1,pdp10_ret_neg1
-        jumpe   4,pdp10_ret_neg1
+        jumpe   1,kret_neg1
+        jumpe   4,kret_neg1
         caml    2,011(1)                 ; index >= fcb_count
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -243,10 +243,10 @@ d6fs_reader_fcb_done:
         .globl  d6fs_reader_put_fcb
 ; int d6fs_reader_put_fcb(reader, index, fcb)
 d6fs_reader_put_fcb:
-        jumpe   1,pdp10_ret_neg1
-        jumpe   3,pdp10_ret_neg1
+        jumpe   1,kret_neg1
+        jumpe   3,kret_neg1
         caml    2,011(1)
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -301,9 +301,9 @@ d6fs_bitmap_mask:
 ; int d6fs_freemap_state(reader, logical)
 ; Return 0 free, 1 allocated, -1 on I/O/range error.
 d6fs_freemap_state:
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         caml    2,6(1)
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -338,14 +338,14 @@ d6fs_freemap_state_done:
 ; Clear one contiguous allocation run.  Keep this with the bitmap primitives so
 ; callers do not pay a compiler-generated loop around d6fs_freemap_set().
 d6fs_free_run:
-        jumpe   1,pdp10_ret_neg1
-        jumpe   3,pdp10_ret_neg1
+        jumpe   1,kret_neg1
+        jumpe   3,kret_neg1
         caml    2,6(1)                   ; start >= total_blocks
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    4,6(1)
         sub     4,2                      ; blocks available from start
         camle   3,4
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -374,9 +374,9 @@ d6fs_free_run_done:
 ; private: the provider call operates on the currently selected mount reader.
 ; STARTP/BLOCKSP are scratch outputs while scanning and are undefined on error.
 d6fs_provider_alloc_run:
-        jumpe   1,pdp10_ret_neg1
-        jumpe   2,pdp10_ret_neg1
-        jumpe   3,pdp10_ret_neg1
+        jumpe   1,kret_neg1
+        jumpe   2,kret_neg1
+        jumpe   3,kret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -445,9 +445,9 @@ d6fs_provider_alloc_run_done:
 ; Internal: return 1 if map block has a free valid bit, 0 if full, -1 error.
 ; Scan whole 36-bit words instead of testing as many as 4608 individual bits.
 d6fs_map_block_has_free_i:
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         caml    2,013(1)
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    010,1
         move    011,2
         move    3,2
@@ -458,7 +458,7 @@ d6fs_map_block_has_free_i:
         movei   012,011000
         add     2,012(1)
         pushj   17,d6fs_reader_get_block
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         move    2,012
         idivi   2,044                     ; AC2 full words, AC3 remainder
         move    4,1                       ; current bitmap word
@@ -468,12 +468,12 @@ d6fs_map_block_has_free_i:
 d6fs_map_scan_words:
         move    6,(4)
         came    6,[-1]
-        jrst    pdp10_ret_one
+        jrst    kret_one
         addi    4,1
         sojg    5,d6fs_map_scan_words
 
 d6fs_map_scan_partial:
-        jumpe   3,pdp10_ret_zero
+        jumpe   3,kret_zero
         movei   5,044
         sub     5,3                       ; 36 - remainder
         seto    6,
@@ -481,8 +481,8 @@ d6fs_map_scan_partial:
         move    7,(4)
         and     7,6
         camn    7,6
-        jrst    pdp10_ret_zero
-        jrst    pdp10_ret_one
+        jrst    kret_zero
+        jrst    kret_one
 
 ; Internal summary bit setter: reader AC1, map index AC2, boolean AC3.
 d6fs_summary_set_i:
@@ -492,7 +492,7 @@ d6fs_summary_set_i:
         move    014,3
         move    1,2
         pushj   17,d6fs_bitmap_pos
-        jumpn   1,pdp10_ret_neg1          ; V2 summary always fits one block
+        jumpn   1,kret_neg1          ; V2 summary always fits one block
         move    011,1(010)                 ; packed runtime state
         lsh     011,-014                   ; summary_start in upper 24 bits
         move    012,2                      ; word index
@@ -501,7 +501,7 @@ d6fs_summary_set_i:
         move    2,1
         move    1,010
         pushj   17,d6fs_reader_get_block
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         add     1,012
         move    012,1                     ; address of bitmap word
         move    1,013
@@ -519,9 +519,9 @@ d6fs_summary_commit:
         .globl  d6fs_freemap_set
 ; int d6fs_freemap_set(reader, logical, allocated)
 d6fs_freemap_set:
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         caml    2,6(1)
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         push    17,010
         push    17,011
         push    17,012
@@ -604,11 +604,11 @@ d6fs_mres_reg_dispatch:
         cain    6,022                    ; FS_MRES_OP_MOUNT_UNIT (18)
         jrst    d6fs_mount_validated
         ldb     7,[POINT 6,1,11]        ; vnode mount id 1..4
-        sojl    7,pdp10_ret_neg1        ; convert to zero-based slot
+        sojl    7,kret_neg1        ; convert to zero-based slot
         caile   7,3
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    7,d6fs_reader_slots(7)
-        jumpe   7,pdp10_ret_neg1
+        jumpe   7,kret_neg1
         movem   7,d6fs_active_reader
         cain    6,024                    ; FS_MRES_OP_D6FS_REMOUNT (20)
         jrst    d6fs_provider_toggle_state
@@ -625,21 +625,21 @@ d6fs_mres_reg_dispatch:
 ; Secondary mounts are read-only until the later remount/recovery phase defines
 ; the complete writable transition protocol.
 d6fs_mount_validated:
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         caie    3,1                      ; VFS_MOUNT_RDONLY
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    5,016(1)                 ; versioned handoff marker
         came    5,[044066263602]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
         ; The transient scanner owns full filesystem validation.  Resident
         ; code checks only fields needed to keep provider/backing dispatch safe.
         move    5,020(1)                 ; backing.blocks / total capacity
-        jumpe   5,pdp10_ret_neg1
+        jumpe   5,kret_neg1
         came    5,6(1)                   ; super.total_blocks must agree
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         skipe   3(1)                     ; secondary mounts must be clean
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
         push    17,1                     ; handoff
         push    17,2                     ; target vnode
@@ -746,20 +746,20 @@ d6fs_mres_vector:
 ; block, avoiding a per-block read/write mode test.
         .globl  d6fs_reader_read_words
 d6fs_reader_read_words:
-        jumpe   1,pdp10_ret_neg1
-        jumpe   2,pdp10_ret_neg1
-        jumpe   4,pdp10_ret_neg1
+        jumpe   1,kret_neg1
+        jumpe   2,kret_neg1
+        jumpe   4,kret_neg1
         move    5,2(2)                   ; file size in words
         caml    3,5                      ; off >= size
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         movei   0,d6fs_reader_read_transfer
         jrst    d6fs_reader_rw_save
 
         .globl  d6fs_reader_write_words
 d6fs_reader_write_words:
-        jumpe   1,pdp10_ret_neg1
-        jumpe   2,pdp10_ret_neg1
-        jumpe   4,pdp10_ret_neg1
+        jumpe   1,kret_neg1
+        jumpe   2,kret_neg1
+        jumpe   4,kret_neg1
         movei   0,d6fs_reader_write_transfer
 
 ; Save the common loop state plus one transfer-tail address.  The original
@@ -889,15 +889,15 @@ d6fs_reader_commit_done:
 d6fs_reader_commit_invalidate:
         setom   3(1)
 d6fs_reader_commit_bad:
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
         .globl  d6fs_reader_write_block
 ; int d6fs_reader_write_block(reader, logical, block)
 d6fs_reader_write_block:
-        jumpe   1,pdp10_ret_neg1
-        jumpe   3,pdp10_ret_neg1
+        jumpe   1,kret_neg1
+        jumpe   3,kret_neg1
         caml    2,6(1)
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         camn    3,[fs_block_workspace]
         jrst    d6fs_reader_write_block_commit
         movei   4,fs_block_workspace
@@ -909,9 +909,9 @@ d6fs_reader_write_block_commit:
         .globl  d6fs_reader_zero_block
 ; int d6fs_reader_zero_block(reader, logical)
 d6fs_reader_zero_block:
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         caml    2,6(1)
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         push    17,2                     ; zero helper clobbers AC2 to 0177
         pushj   17,fs_zero_block_workspace
         pop     17,2                     ; restore requested logical block
@@ -991,7 +991,7 @@ d6fs_provider_free_tail_done:
 ; This avoids GCC's five-register save area on this heavily shared helper.
         .globl  d6fs_provider_dirent
 d6fs_provider_dirent:
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         add     17,[043,,043]            ; FCB + info + raw + slot/di + arg5
         movem   2,-2(17)                 ; slot
         movem   3,-1(17)                 ; decoded dirent output
@@ -1064,7 +1064,7 @@ d6fs_provider_vtype_ops:
 ; int d6fs_provider_stat(vnode_t node, struct vfs_stat *st)
         .globl  d6fs_provider_stat
 d6fs_provider_stat:
-        jumpe   2,pdp10_ret_neg1
+        jumpe   2,kret_neg1
         add     17,[013,,013]            ; info + st pointer
         movem   2,-012(17)
         movei   2,0
@@ -1101,7 +1101,7 @@ d6fs_provider_stat_done:
 ; fifth-argument slot for d6fs_reader_read_words.
         .globl  d6fs_provider_read_words
 d6fs_provider_read_words:
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         add     17,[035,,035]            ; FCB + info + off/buf/nwords
         movem   2,-2(17)                 ; off
         movem   3,-1(17)                 ; buf
@@ -1131,7 +1131,7 @@ d6fs_provider_read_words_done:
 ; int d6fs_provider_sync(vnode_t node)
         .globl  d6fs_provider_sync
 d6fs_provider_sync:
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 ; Publish the opposite A/B superblock and toggle CLEAN/DIRTY state.
 ; All D6FS writes are synchronous and the dynamic cache is clean-only, so this
@@ -1146,7 +1146,7 @@ d6fs_provider_toggle_state:
         move    1,5
         pushj   17,d6fs_reader_get_block
         pop     17,2
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         move    5,d6fs_active_reader
         move    4,2(5)
         addi    4,1
@@ -1157,7 +1157,7 @@ d6fs_provider_toggle_state:
         move    1,5
         movei   3,fs_block_workspace
         pushj   17,d6fs_reader_write_block
-        jumpn   1,pdp10_ret_neg1
+        jumpn   1,kret_neg1
         move    5,d6fs_active_reader
         aos     2(5)
         movei   4,0300                   ; WRITABLE | COPY
@@ -1166,7 +1166,7 @@ d6fs_provider_toggle_state:
         movei   6,1
         lsh     6,-1(4)
         xorm    6,vfs_mount_ro           ; VFS policy changes after publication
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 ; int d6fs_provider_prepare_unmount(vnode_t root)
         .globl  d6fs_provider_prepare_unmount
@@ -1176,7 +1176,7 @@ d6fs_provider_prepare_unmount:
         trnn    4,0100                    ; D6FS_PROVIDER_MOUNT_WRITABLE
         jrst    d6fs_provider_unmount_done
         pushj   17,d6fs_provider_toggle_state
-        jumpn   1,pdp10_ret_neg1
+        jumpn   1,kret_neg1
 d6fs_provider_unmount_done:
         setz    1,
         pushj   17,d6fs_cache_reclaim    ; discard all clean dynamic cache
@@ -1192,10 +1192,10 @@ d6fs_provider_unmount_done:
         pop     17,4
         setzm   d6fs_reader_slots(4)
         setzm   d6fs_active_reader
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 d6fs_provider_unmount_free_fail:
         pop     17,4
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
         .globl  pclk_time36
 
@@ -1293,7 +1293,7 @@ d6fs_provider_truncate_done:
         .globl  d6fs_provider_scan_slot
         .globl  d6fs_provider_lookup
 d6fs_provider_lookup:
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         add     17,[012,,012]
         movem   1,-1(17)                 ; directory vnode
         movem   3,(17)                   ; output pointer
@@ -1317,7 +1317,7 @@ d6fs_provider_lookup_done:
 ; Keep the vnode and destination beside one decoded FCB-info scratch area.
         .globl  d6fs_provider_parent
 d6fs_provider_parent:
-        jumpe   2,pdp10_ret_neg1
+        jumpe   2,kret_neg1
         add     17,[014,,014]
         movem   1,-1(17)                 ; node
         movem   2,(17)                   ; parentp
@@ -1351,7 +1351,7 @@ d6fs_provider_parent_done:
         .globl  d6fs_provider_write_words
         .globl  d6fs_reader_write_words
 d6fs_provider_write_words:
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         add     17,[037,,037]
         movem   1,-4(17)                 ; node
         movem   2,-3(17)                 ; off
@@ -1417,7 +1417,7 @@ d6fs_provider_write_words_done:
 ; required around the helper calls.
         .globl  d6fs_provider_readdir
 d6fs_provider_readdir:
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         add     17,[015,,015]            ; di[8] + dir/off/ent/slot/seen
         movem   1,-4(17)
         movem   2,-3(17)
@@ -1462,8 +1462,8 @@ d6fs_provider_readdir_done:
 ;     struct vfs_name *namep)
         .globl  d6fs_provider_parent_name
 d6fs_provider_parent_name:
-        jumpe   2,pdp10_ret_neg1
-        jumpe   3,pdp10_ret_neg1
+        jumpe   2,kret_neg1
+        jumpe   3,kret_neg1
         add     17,[015,,015]            ; di[8] + node/parentp/namep/slot/parent
         movem   1,-4(17)
         movem   2,-3(17)
@@ -1523,9 +1523,9 @@ d6fs_provider_parent_name_done:
         .globl  d6fs_cache_fetch
 ; int d6fs_cache_fetch(reader, logical)
 d6fs_cache_fetch:
-        jumpe   1,pdp10_ret_zero
+        jumpe   1,kret_zero
         hrrz    3,d6fs_cache_state
-        jumpe   3,pdp10_ret_zero
+        jumpe   3,kret_zero
         move    4,1(1)                  ; mount/device key
         came    4,1(3)
         jrst    d6fs_cache_fetch_slot1
@@ -1535,15 +1535,15 @@ d6fs_cache_fetch:
         jrst    d6fs_cache_fetch_copy
 d6fs_cache_fetch_slot1:
         came    4,2(3)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         came    2,4(3)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         movei   5,0205(3)
 d6fs_cache_fetch_copy:
         movei   6,fs_block_workspace
         hrl     6,5
         blt     6,fs_block_workspace+0177
-        jrst    pdp10_ret_one
+        jrst    kret_one
 
         .globl  d6fs_cache_store
 ; void d6fs_cache_store(reader, logical)

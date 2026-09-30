@@ -4,8 +4,8 @@
         .globl ptp_pi_handler
         .globl ptp_putchar
         .globl pdp10_pi_handler_return
-        .globl pdp10_ret_busy
-        .globl pdp10_ret_ok
+        .globl kret_busy
+        .globl kret_ok
 
 ptp_pi_handler:
         conso 0100,0010
@@ -17,12 +17,12 @@ ptp_pi_handler:
 ; AC1 = byte.  Return 0, PT_E_BUSY (-3), PT_E_IO (-4), or timeout (-2).
 ptp_putchar:
         skipe ptp_state
-        jrst pdp10_ret_busy
+        jrst kret_busy
         coni 0100,2
         trne 2,0100
-        jrst pdp10_ret_neg4
+        jrst kret_neg4
         trne 2,0020
-        jrst pdp10_ret_busy
+        jrst kret_busy
         setom ptp_state
         cono 0100,0007
         andi 1,0377
@@ -31,12 +31,12 @@ ptp_putchar:
         movei 2,0200000
 ptp_putchar_wait:
         skipn ptp_state
-        jrst pdp10_ret_ok
+        jrst kret_ok
         sojg 2,ptp_putchar_wait
         setzm ptp_state
         cono 0100,0007
 ptp_ret_timeout:
-        jrst    pdp10_ret_neg2
+        jrst    kret_neg2
         .bss
 ptp_state:
         .block 1

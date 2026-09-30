@@ -25,7 +25,7 @@
         .globl  logstore_mres_state
         .globl  logstore_backend_read_jump
         .globl  logstore_backend_write_jump
-        .globl  pdp10_ret_neg1
+        .globl  kret_neg1
         .globl  proc_wait_event
         .globl  proc_wakeup_event
 
@@ -39,7 +39,7 @@ logstore_mres_dispatch:
         cain    5,4
         jrst    logstore_append
         caie    5,5
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         ; WAIT is keyed by the producer sequence observed by userspace.  Clear
         ; the event, recheck the sequence, then sleep.  proc_wait_event checks
         ; the flag again after arming the process, closing the append/sleep race.
@@ -64,15 +64,15 @@ logstore_wait_sleep:
 ; word 1 sequence, and word 127 commit trailer.  State advances only after the
 ; backing write succeeds.
 logstore_append:
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         move    4,1                     ; stable caller scratch pointer
         move    6,logstore_mres_state+2 ; next sequence
-        jumpe   6,pdp10_ret_neg1
+        jumpe   6,kret_neg1
         move    0,6
-        aoje    0,pdp10_ret_neg1        ; reject 36-bit sequence exhaustion
+        aoje    0,kret_neg1        ; reject 36-bit sequence exhaustion
         hrrz    7,3(4)                  ; payload words
         caile   7,0173                  ; 123 payload words maximum
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    0,[0546362454321]       ; SIXBIT /LSREC1/
         movem   0,(4)
         movem   6,1(4)
@@ -118,10 +118,10 @@ logstore_write:
 
 ; AC1 relative block, AC2 buffer, AC5 write flag.
 logstore_io:
-        jumpe   2,pdp10_ret_neg1
-        jumpl   1,pdp10_ret_neg1
+        jumpe   2,kret_neg1
+        jumpl   1,kret_neg1
         caml    1,logstore_mres_state+1
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    4,2
         add     1,logstore_mres_state
         move    6,logstore_mres_state+4

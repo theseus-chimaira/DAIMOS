@@ -18,9 +18,9 @@
  * complete conversion state; the routine has no writable static storage.
  */
         .text
-        .globl  pdp10_ret_zero
-        .globl  pdp10_ret_one
-        .globl  pdp10_ret_neg1
+        .globl  kret_zero
+        .globl  kret_one
+        .globl  kret_neg1
 
 /** Decimal divisors for the six possible digits of an unsigned 18-bit value. */
 kfmt_u18_pow10:
@@ -55,7 +55,7 @@ kfmt_u18_pow10:
  */
         .globl  kfmt_u18_decimal_readchar
 kfmt_u18_decimal_readchar:
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         movei   4,0
 kfmt_u18_first:
         move    6,kfmt_u18_pow10(4)
@@ -67,7 +67,7 @@ kfmt_u18_first:
 kfmt_u18_found:
         movei   6,6
         sub     6,4
-        jumpl   2,pdp10_ret_zero
+        jumpl   2,kret_zero
         camge   2,6
         jrst    kfmt_u18_digit
         came    2,6
@@ -77,7 +77,7 @@ kfmt_u18_found:
 kfmt_u18_lf:
         addi    6,1
         came    2,6
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         movei   6,012
         jrst    kfmt_u18_store
 kfmt_u18_digit:
@@ -97,4 +97,4 @@ kfmt_u18_digit_ready:
         addi    6,060
 kfmt_u18_store:
         movem   6,(3)
-        jrst    pdp10_ret_one
+        jrst    kret_one

@@ -1,8 +1,8 @@
 ; monitorfs_pdp10.s -- compact resident MonitorFS primitives.
         .text
-        .globl  pdp10_ret_busy
-        .globl  pdp10_ret_zero
-        .globl  pdp10_ret_neg1
+        .globl  kret_busy
+        .globl  kret_zero
+        .globl  kret_neg1
         .globl  mfsdev_io_in
         .globl  mfsdev_io_out
         .globl  mfsdev_storage_errors
@@ -38,17 +38,17 @@ mfsdev_name_length:
 ; Validate AC4 as a present device id.  Return 0/-1 in AC1.
 mfsdev_validate_id:
         cail    4,023
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         skipn   5,mfsdev_names(4)
-        jrst    pdp10_ret_neg1
-        jrst    pdp10_ret_zero
+        jrst    kret_neg1
+        jrst    kret_zero
 
 ; int mfsdev_lookup(vnode_t dir, const struct vfs_name *name,
 ;     vnode_t *nodep)
         .globl  mfsdev_lookup
 mfsdev_lookup:
-        jumpe   2,pdp10_ret_neg1
-        jumpe   3,pdp10_ret_neg1
+        jumpe   2,kret_neg1
+        jumpe   3,kret_neg1
         hlrz    4,1
         move    0,4
         subi    0,020000               ; root selector: DEV=0, DEVICES=1
@@ -58,7 +58,7 @@ mfsdev_lookup:
         movei   4,0
 mfsdev_lookup_scan:
         cail    4,023
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         skipn   5,mfsdev_names(4)
         jrst    mfsdev_lookup_next
         came    5,1(2)
@@ -78,12 +78,12 @@ mfsdev_lookup_next:
 
 mfsdev_lookup_dir:
         caie    4,020003
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    7,3                    ; mfsleaf_lookup uses AC3 scratch
         hrrz    6,1
         move    4,6
         pushj   17,mfsdev_validate_id
-        jumpn   1,pdp10_ret_neg1
+        jumpn   1,kret_neg1
         move    1,2
         movei   2,mfsdev_leaf_names
         movei   0,2                    ; ordinary device: IO, STATS
@@ -92,7 +92,7 @@ mfsdev_lookup_dir:
         movei   0,4                    ; IO, STATS, MEMBERS, SWAP
 mfsdev_lookup_leaf:
         pushj   17,mfsleaf_lookup
-        jumpl   1,pdp10_ret_neg1
+        jumpl   1,kret_neg1
         move    4,1                    ; leaf index
         jumpe   4,mfsdev_lookup_leaf_io
         addi    4,3                    ; STATS=4, MEMBERS=5, SWAP=6
@@ -108,7 +108,7 @@ mfsdev_lookup_leaf_kind:
 
 mfsdev_lookup_store:
         movem   5,(3)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 
 ; Store ent name/type and return 1. AC4=ent, AC5=word, AC6=chars, AC7=type.
@@ -120,7 +120,7 @@ mfsdev_readdir_store_tail:
         setzm   3(4)
         setzm   4(4)
         movem   7,5(4)
-        jrst    pdp10_ret_one
+        jrst    kret_one
 
 ; Set AC7 to the VFS dirent type for an IO endpoint.  AC0=device id.
 mfsdev_io_type:
@@ -148,7 +148,7 @@ mfsdev_io_type_char:
 ;     struct vfs_dirent *ent)
         .globl  mfsdev_readdir
 mfsdev_readdir:
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         move    4,3
         hlrz    5,1
         move    0,5
@@ -161,7 +161,7 @@ mfsdev_readdir:
         movei   7,0
 mfsdev_readdir_scan:
         cail    5,023
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         skipn   6,mfsdev_names(5)
         jrst    mfsdev_readdir_next
         camn    7,2
@@ -187,11 +187,11 @@ mfsdev_readdir_found_dir:
 
 mfsdev_readdir_dir:
         caie    5,020003
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         hrrz    0,1
         move    4,0
         pushj   17,mfsdev_validate_id
-        jumpn   1,pdp10_ret_neg1
+        jumpn   1,kret_neg1
         move    6,0                    ; preserve device id
         movei   1,mfsdev_leaf_names
         movei   0,2
@@ -216,7 +216,7 @@ mfsdev_readdir_leaf_done:
 ; int mfsdev_stat(vnode_t node, struct vfs_stat *st)
         .globl  mfsdev_stat
 mfsdev_stat:
-        jumpe   2,pdp10_ret_neg1
+        jumpe   2,kret_neg1
         hlrz    3,1
         hrrz    4,1
         cain    3,020001
@@ -230,7 +230,7 @@ mfsdev_stat_root:
 
 mfsdev_stat_not_root:
         pushj   17,mfsdev_validate_id
-        jumpn   1,pdp10_ret_neg1
+        jumpn   1,kret_neg1
         cain    3,020003
         jrst    mfsdev_stat_dir
         caie    3,020002
@@ -259,13 +259,13 @@ mfsdev_stat_device_mode:
 
 mfsdev_stat_file:
         caige   3,020004
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         caile   3,020006
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         cain    3,020004
         jrst    mfsdev_stat_file_ok
         caie    4,020                  ; extra files exist only on D6SET0
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 mfsdev_stat_file_ok:
         movei   5,2
         movei   6,0444
@@ -280,29 +280,29 @@ mfsdev_stat_store:
         movem   6,1(2)
         setzm   2(2)
         setzm   3(2)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 
 ; int mfsdev_readchar(vnode_t node, kword_t off, unsigned int *chp)
         .globl  mfsdev_readchar
 mfsdev_readchar:
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         hlrz    6,1                    ; validate_id clobbers AC5
         hrrz    4,1
         pushj   17,mfsdev_validate_id
-        jumpn   1,pdp10_ret_neg1
+        jumpn   1,kret_neg1
         cain    6,020002
-        jrst    pdp10_ret_busy          ; VFS_DEVICE_IO
+        jrst    kret_busy          ; VFS_DEVICE_IO
 
 mfsdev_readchar_not_io:
         cain    6,020004
         jrst    mfsdev_stats_device
         caie    4,020                  ; remaining files are D6SET0 only
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         cain    6,020005
         jrst    mfsdev_members_readchar
         caie    6,020006
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 mfsdev_stats_swap:
         ; SWAP reports live allocation state, not lifetime I/O accounting.
         ; Lines are TOTAL, USED, FREE blocks.
@@ -314,7 +314,7 @@ mfsdev_swap_line_loop:
         aoja    6,mfsdev_swap_line_loop
 mfsdev_swap_select:
         cail    6,3
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         movei   5,6                   ; BLOCKSET_MRES_OP_TAIL_BLOCKS
         pushj   17,blockset_runtime_reg_enter
         jumpe   6,mfsdev_stats_emit
@@ -342,7 +342,7 @@ mfsdev_stats_line_loop:
 mfsdev_stats_select:
         jumpe   5,mfsdev_stats_select_device
         cail    6,5
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         add     5,6
         move    1,(5)
         jrst    mfsdev_stats_emit
@@ -352,7 +352,7 @@ mfsdev_stats_select_device:
         cain    6,1
         jrst    mfsdev_stats_device_write_line
         caie    6,2                    ; third and final line is errors
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         setz    1,                     ; non-storage devices report zero
         caige   4,014                  ; DTC0 is first storage-error slot
         jrst    mfsdev_stats_emit
@@ -412,7 +412,7 @@ mfsdev_stats_eol:
         movei   0,012
 mfsdev_stats_store:
         movem   0,(3)
-        jrst    pdp10_ret_one
+        jrst    kret_one
 
 ; D6SET MEMBERS is one fixed four-character line per configured member:
 ; two octal unit digits plus CR LF.  D6SET currently contains only DSK units,
@@ -424,7 +424,7 @@ mfsdev_members_readchar:
         move    0,5
         andi    0,7                    ; member count
         caml    6,0
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         andi    2,3                    ; column = off % 4
         jumpe   2,mfsdev_members_zero
         caie    2,1
@@ -456,9 +456,9 @@ mfsdev_members_store:
         .equ    PROC_STATE_LH_MASK,0700000
 
         .text
-        .globl  pdp10_ret_zero
-        .globl  pdp10_ret_one
-        .globl  pdp10_ret_neg1
+        .globl  kret_zero
+        .globl  kret_one
+        .globl  kret_neg1
         .globl  proc_table
         .globl  proc_slots
         .globl  proc_high_slot
@@ -467,16 +467,16 @@ mfsdev_members_store:
 ; AC2..AC4 are caller-scratch.
 mfsproc_proc_ptr:
         skipn   2,proc_table
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         caml    1,proc_slots
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         move    3,1
         lsh     3,1
         add     3,1
         add     3,2
         hlrz    4,2(3)
         andi    4,PROC_STATE_LH_MASK
-        jumpe   4,pdp10_ret_zero
+        jumpe   4,kret_zero
         move    1,3
         popj    17,
 
@@ -485,11 +485,11 @@ mfsproc_proc_ptr:
 ; Names longer than three digits are rejected before the packed word is read.
         .globl  mfsproc_parse_slot
 mfsproc_parse_slot:
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         move    2,(1)
-        jumpe   2,pdp10_ret_neg1
+        jumpe   2,kret_neg1
         cail    2,4
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    4,1(1)
         setz    5,
 mfsproc_parse_slot_loop:
@@ -498,14 +498,14 @@ mfsproc_parse_slot_loop:
         andi    6,077
         cail    6,020
         cail    6,032
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         subi    6,020
         imuli   5,012
         add     5,6
         lsh     4,6
         sojg    2,mfsproc_parse_slot_loop
         cail    5,0400
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    1,5
         popj    17,
 
@@ -573,7 +573,7 @@ mfsleaf_lookup_missing:
 ; AC1=table pointer, AC2=leaf index, AC3=struct vfs_dirent *, AC0=count.
 mfsleaf_readdir:
         caml    2,0
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         move    4,2
         lsh     4,1
         add     1,4
@@ -589,7 +589,7 @@ mfsleaf_readdir:
         setzm   4(3)
         movei   4,2
         movem   4,5(3)
-        jrst    pdp10_ret_one
+        jrst    kret_one
 
 ; MonitorFS process view and MonitorFS domain view share provider 3.  MonitorFS domain view nodes carry bit 0400000 in
 ; the vnode RH; fold their namespace operations into these leaves so both
@@ -598,8 +598,8 @@ mfsleaf_readdir:
 ; int mfsproc_lookup(vnode_t dir, const struct vfs_name *name, vnode_t *nodep)
         .globl  mfsproc_lookup
 mfsproc_lookup:
-        jumpe   2,pdp10_ret_neg1
-        jumpe   3,pdp10_ret_neg1
+        jumpe   2,kret_neg1
+        jumpe   3,kret_neg1
         move    0,1
         andi    0,0400000
         hlrz    4,1
@@ -609,28 +609,28 @@ mfsproc_lookup:
         move    1,2
         pushj   17,mfsproc_parse_slot
         camn    1,[-1]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    6,1
         jumpn   0,mfsproc_lookup_domain_root
         jrst    mfsproc_lookup_slot
 mfsproc_lookup_slot:
         move    1,6
         pushj   17,mfsproc_proc_ptr
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         move    1,6
         tlo     1,030002
         jrst    mfsproc_lookup_store
 mfsproc_lookup_domain_root:
         move    1,6
         pushj   17,mfsdom_exists
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         move    1,6
         tlo     1,030002
         tro     1,0400000
         jrst    mfsproc_lookup_store
 mfsproc_lookup_proc:
         caie    4,030002
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         jumpn   0,mfsproc_lookup_domain_proc
         move    5,2
         move    7,3
@@ -638,12 +638,12 @@ mfsproc_lookup_proc:
         andi    6,0377                 ; low eight index bits are PID
         move    1,6
         pushj   17,mfsproc_proc_ptr
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         move    1,5
         movei   2,mfsproc_leaf_names
         movei   0,6
         pushj   17,mfsleaf_lookup
-        jumpl   1,pdp10_ret_neg1
+        jumpl   1,kret_neg1
         move    4,1
 mfsproc_lookup_have_leaf:
         move    1,6
@@ -660,7 +660,7 @@ mfsproc_lookup_domain_proc:
         movei   2,mfsdom_leaf_names
         movei   0,6
         pushj   17,mfsleaf_lookup
-        jumpl   1,pdp10_ret_neg1
+        jumpl   1,kret_neg1
         move    4,1
 mfsdom_lookup_found:
         move    1,6
@@ -672,12 +672,12 @@ mfsdom_lookup_found:
         jrst    mfsproc_lookup_store
 mfsproc_lookup_store:
         movem   1,(7)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 ; int mfsproc_readdir(vnode_t dir, unsigned int off, struct vfs_dirent *ent)
         .globl  mfsproc_readdir
 mfsproc_readdir:
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         move    0,1
         andi    0,0400000
         hlrz    4,1
@@ -685,13 +685,13 @@ mfsproc_readdir:
         jrst    mfsproc_readdir_proc
         jumpn   0,mfsproc_readdir_domain_root
         skipn   5,proc_table
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         movei   6,0
         movei   7,0
         jrst    mfsproc_readdir_root_loop
 mfsproc_readdir_root_loop:
         caml    6,proc_high_slot
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         hlrz    4,2(5)
         andi    4,PROC_STATE_LH_MASK
         jumpe   4,mfsproc_readdir_root_next
@@ -714,7 +714,7 @@ mfsproc_readdir_domain_loop:
 mfsproc_readdir_domain_next:
         addi    6,1
         cail    6,0400
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         jrst    mfsproc_readdir_domain_loop
 mfsproc_readdir_root_found:
         move    1,6
@@ -726,14 +726,14 @@ mfsproc_readdir_root_found:
         jrst    mfsproc_readdir_store
 mfsproc_readdir_proc:
         caie    4,030002
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         jumpn   0,mfsproc_readdir_domain_proc
         move    7,3
         move    6,2
         hrrz    1,1
         andi    1,0377
         pushj   17,mfsproc_proc_ptr
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         movei   1,mfsproc_leaf_names
         move    2,6
         move    3,7
@@ -751,12 +751,12 @@ mfsproc_readdir_store:
         setzm   3(7)
         setzm   4(7)
         movem   6,5(7)
-        jrst    pdp10_ret_one
+        jrst    kret_one
 
 ; int mfsproc_stat(vnode_t node, struct vfs_stat *st)
         .globl  mfsproc_stat
 mfsproc_stat:
-        jumpe   2,pdp10_ret_neg1
+        jumpe   2,kret_neg1
         move    7,2
         move    0,1
         andi    0,0400000
@@ -775,17 +775,17 @@ mfsproc_stat_nonroot:
         andi    6,0377
         move    1,6
         pushj   17,mfsproc_proc_ptr
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         cain    5,030002
         jrst    mfsproc_stat_dir
 mfsproc_stat_file:
         caie    5,030003
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         hrrz    4,1
         lsh     4,-010
         andi    4,7
         caile   4,5                    ; six process leaves, 0..5
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         movei   3,2
         movei   4,0444
         jrst    mfsproc_stat_store_zero
@@ -797,7 +797,7 @@ mfsproc_stat_domain:
         jrst    mfsproc_stat_dir
 mfsproc_stat_domain_status:
         caie    5,030003
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         movei   3,2
         movei   4,0444
         jrst    mfsproc_stat_store_zero
@@ -808,7 +808,7 @@ mfsproc_stat_store_words:
         movem   4,1(7)
         setzm   2(7)
         movem   5,3(7)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 
 ; Return printable process-state SIXBIT word and length.
@@ -858,7 +858,7 @@ mfsproc_state_swapped:
 ; AC4=result pointer.
         .globl  proc_image_text_readchar
 proc_image_text_readchar:
-        jumpe   4,pdp10_ret_neg1
+        jumpe   4,kret_neg1
         ; AC10..AC15 are callee-save.  The scanner deliberately uses them as
         ; its compact persistent state while AC1..AC7 remain call scratch.
         push    17,010
@@ -986,24 +986,24 @@ mfsproc_image_record_char:
 mfsproc_readchar:
         trne    1,0400000
         jrst    mfsdom_readchar
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         move    7,3
         move    5,2
         move    6,1
         hlrz    4,1
         caie    4,030003               ; one uniform process-file kind
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         hrrz    1,6
         andi    1,0377
         pushj   17,mfsproc_proc_ptr
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         hrrz    2,6
         lsh     2,-010
         andi    2,7                    ; uniform leaf selector 0..6
         caige   2,3
         jrst    mfsproc_readchar_basic
         caile   2,5
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         subi    2,3                    ; NAME/CMDLINE/ENVIRONMENT -> 0/1/2
         move    3,5
         move    4,7
@@ -1014,7 +1014,7 @@ mfsproc_readchar_basic:
         jumpe   2,mfsproc_readchar_ppid
         cain    2,2
         jrst    mfsproc_readchar_words
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 mfsproc_readchar_state:
         hrrz    2,6
         andi    2,0377                 ; state helper uses slot for swap state
@@ -1099,9 +1099,9 @@ mfsproc_state_names:
         .equ    DOMAIN_STATUS_WORDS,6
 
         .text
-        .globl  pdp10_ret_zero
-        .globl  pdp10_ret_one
-        .globl  pdp10_ret_neg1
+        .globl  kret_zero
+        .globl  kret_one
+        .globl  kret_neg1
         .globl  proc_table
         .globl  proc_high_slot
         .globl  proc_swap_records
@@ -1195,7 +1195,7 @@ mfsdom_metric_next:
         addi    6,PROC_WORDS
         aoja    3,mfsdom_metric_loop
 mfsdom_metric_done:
-        jumpe   0,pdp10_ret_neg1
+        jumpe   0,kret_neg1
         move    1,7
         popj    17,
 
@@ -1203,10 +1203,10 @@ mfsdom_metric_done:
 ; SWAPWORDS/STOPPED are formatted from the transient aggregate scan. PIDS scans the
 ; live process table and stores no membership list in resident memory.
 mfsdom_readchar:
-        jumpe   3,pdp10_ret_neg1
+        jumpe   3,kret_neg1
         hlrz    4,1
         caie    4,030003
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         hrrz    4,1
         move    6,4
         andi    6,DOMAIN_MASK          ; domain ID
@@ -1215,7 +1215,7 @@ mfsdom_readchar:
         cain    4,5
         jrst    mfsdom_pids_readchar
         caile   4,4
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
         push    17,2                   ; character offset
         push    17,3                   ; output pointer
@@ -1228,7 +1228,7 @@ mfsdom_readchar:
         jrst    kfmt_u18_decimal_readchar
 mfsdom_readchar_missing:
         sub     17,[2,,2]
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 mfsdom_pids_readchar:
         ; Compact single-line PIDS: fixed "ooo " records.  Four characters
@@ -1273,6 +1273,6 @@ mfsdom_pids_digit:
         addi    1,060
 mfsdom_pids_store:
         movem   1,(0)
-        jrst    pdp10_ret_one
+        jrst    kret_one
 mfsdom_pids_eof:
-        jrst    pdp10_ret_zero
+        jrst    kret_zero

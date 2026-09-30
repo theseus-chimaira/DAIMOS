@@ -16,7 +16,7 @@
         .globl  vfs_stat
 file_check_access:
         caile   2,7
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         add     17,[010,,010]
         movem   2,-7(17)
         movei   2,-6(17)               ; seven-word struct vfs_stat
@@ -35,7 +35,7 @@ file_check_access_done:
 file_access_stat:
         pushj   17,file_current_cred
         hlrz    7,6
-        jumpe   7,pdp10_ret_zero
+        jumpe   7,kret_zero
         move    5,1(1)
         came    7,4(1)
         jrst    file_access_group
@@ -49,8 +49,8 @@ file_access_group:
 file_access_test:
         and     5,2
         came    5,2
-        jrst    pdp10_ret_neg1
-        jrst    pdp10_ret_zero
+        jrst    kret_neg1
+        jrst    kret_zero
 
 ; Return current uid,,gid in AC6, or zero for bootstrap/no-uarea context.
 file_current_cred:
@@ -75,8 +75,8 @@ file_current_cred_zero:
 file_check_root:
         pushj   17,file_current_cred
         hlrz    1,6
-        jumpe   1,pdp10_ret_zero
-        jrst    pdp10_ret_neg1
+        jumpe   1,kret_zero
+        jrst    kret_neg1
 
 ; int file_check_owner(vnode_t node)
         .globl  file_check_owner
@@ -141,9 +141,9 @@ file_path_setchar:
         movem   5,1(1)
         popj    17,
 
-        .globl  pdp10_ret_zero
-        .globl  pdp10_ret_one
-        .globl  pdp10_ret_neg1
+        .globl  kret_zero
+        .globl  kret_one
+        .globl  kret_neg1
         .globl  vfs_readchar
         .globl  vfs_writechar
         .globl  pipe_readchar
@@ -300,7 +300,7 @@ file_close_fail:
         .globl  file_dup
 file_dup:
         pushj   17,file_find
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         move    2,file_table
         movei   3,0                    ; returned descriptor
         movei   4,020                  ; FILE_NFILE = 16
@@ -310,7 +310,7 @@ file_dup_scan:
         addi    2,2
         addi    3,1
         sojg    4,file_dup_scan
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 file_dup_store:
         move    4,(1)
         movem   4,(2)
@@ -331,7 +331,7 @@ file_dup_return:
         .globl  file_dup2
 file_dup2:
         caile   2,017                   ; FILE_FD_MAX
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         push    17,1                    ; old fd
         push    17,2                    ; new fd
         pushj   17,file_find
@@ -381,14 +381,14 @@ file_lock:
         push    17,2                    ; file_find may clobber operation
         pushj   17,file_find
         pop     17,2
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         move    4,(1)                   ; selected packed node/state
         tlnn    4,000030                ; regular state is nonzero
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         caige   2,1                    ; SHARED..UNLOCK are 1..3
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         caile   2,3
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    6,file_lock_modes-1(2)
         jumpe   6,file_lock_update      ; unlock cannot conflict
 
@@ -409,9 +409,9 @@ file_lock_check:
 ; An exclusive request conflicts with either lock.  A shared request conflicts
 ; only with exclusive (state 11); shared itself is state 10.
         tlne    6,000010                ; requested exclusive?
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         tlne    4,000010                ; candidate exclusive?
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 file_lock_check_next:
         addi    2,2
         sojg    3,file_lock_check
@@ -440,7 +440,7 @@ file_lock_update_store:
 file_lock_update_next:
         addi    2,2
         sojg    3,file_lock_update_loop
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 file_lock_modes:
         .long   000020000000            ; VFS_LOCK_SHARED
@@ -590,9 +590,9 @@ file_readdir_fail:
 ; repeatedly dividing, shifting, decoding to ASCII, and re-encoding.
         .globl  file_component
 file_component:
-        jumpe   1,pdp10_ret_neg1
-        jumpe   2,pdp10_ret_neg1
-        jumpe   3,pdp10_ret_neg1
+        jumpe   1,kret_neg1
+        jumpe   2,kret_neg1
+        jumpe   3,kret_neg1
         move    4,(1)           ; total path characters
         move    5,(2)           ; current character position
         caml    5,4             ; pos >= n
@@ -637,7 +637,7 @@ file_component_start:
 
 file_component_copy:
         cain    0,030           ; maximum is 24 characters
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         idpb    7,1
         addi    0,1
         addi    5,1
@@ -661,20 +661,20 @@ file_component_trailing:
 file_component_done:
         movem   0,(3)
         movem   5,(2)
-        jrst    pdp10_ret_one
+        jrst    kret_one
 file_component_empty:
         movem   5,(2)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
 
 ; int file_getcwd(kword_t *buf, unsigned int nwords)
 ;
 ; Construct cwd paths directly as packed SIXBIT.
         .globl  file_getcwd
 file_getcwd:
-        jumpe   1,pdp10_ret_neg1
+        jumpe   1,kret_neg1
         jumpl   2,file_getcwd_nwords_ok ; unsigned value with bit 35 set
         caige    2,2
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 file_getcwd_nwords_ok:
         move    5,file_table
         move    4,-1(5)
@@ -683,9 +683,9 @@ file_getcwd_nwords_ok:
 file_getcwd_have_node:
         ldb     5,[POINT 6,4,5]
         caige   5,2
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         caile   5,7                    ; provider 7 is TSFS
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 
 ; The 0121-word local area is one parent vnode followed by sixteen five-word
 ; vfs_name records.  AC15 is reused as output count after the upward walk.
@@ -806,12 +806,12 @@ file_getcwd_return:
         .globl  file_check_access
         .globl  file_symlink
 file_symlink:
-        jumpe   1,pdp10_ret_neg1
-        jumpe   2,pdp10_ret_neg1
+        jumpe   1,kret_neg1
+        jumpe   2,kret_neg1
         move    3,(1)
         cail    3,1
         cail    3,0147                 ; FILE_PATH_MAX_CHARS + 1
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         push    17,1                   ; target
         add     17,[6,,6]
         move    1,2                    ; linkpath
@@ -1056,13 +1056,13 @@ file_path_onearg_done:
 ; File descriptors 0..15 map directly onto the 16 FILE records.
         .globl  file_find
 file_find:
-        jumpl   1,pdp10_ret_zero
+        jumpl   1,kret_zero
         caile   1,017
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         lsh     1,1
         add     1,file_table
         skipn   (1)
-        jrst    pdp10_ret_zero
+        jrst    kret_zero
         popj    17,
 
 ; int file_new_fd(vnode_t node, unsigned int flags, int isdir)
@@ -1090,7 +1090,7 @@ file_new_fd_scan:
         addi    5,1
         sojg    6,file_new_fd_scan
 file_new_fd_fail:
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
 file_new_fd_store:
 ; Scatter fd bits 0..2 into LH 007000 and bit 3 into LH 000040.
         move    0,5

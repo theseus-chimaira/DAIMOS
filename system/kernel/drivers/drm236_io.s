@@ -15,8 +15,8 @@
         .globl  mfsdev_drm_writes
         .globl  mfsdev_storage_errors
         .globl  pdp10_pi_dispatch_done
-        .globl  pdp10_ret_ok
-        .globl  pdp10_ret_neg1
+        .globl  kret_ok
+        .globl  kret_neg1
         .globl  proc_table
         .globl  proc_wait_event
         .globl  storage_request_init
@@ -215,8 +215,8 @@ drm236_account_success:
         aos     mfsdev_drm_reads
         trnn    4,010
         aos     mfsdev_drm_writes
-        jrst    pdp10_ret_ok
+        jrst    kret_ok
 
 drm236_account_error:
         aos     mfsdev_storage_errors+5
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1

@@ -60,9 +60,9 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/boot/kinit.h \
 	$(KERNEL_DIR)/boot/kinit_boot.c \
 	$(KERNEL_DIR)/boot/kinit_diag.c \
-	$(KERNEL_DIR)/boot/kinit_io.s \
+	$(KERNEL_DIR)/boot/kinit_io_pdp6.s \
 	$(KERNEL_DIR)/boot/kinit_late.c \
-	$(KERNEL_DIR)/boot/kinit_late_begin.s \
+	$(KERNEL_DIR)/boot/kinit_late_begin_pdp6.s \
 	$(KERNEL_DIR)/boot/kinit_late_end.s \
 	$(KERNEL_DIR)/boot/root_select.c \
 	$(KERNEL_DIR)/boot/root_select.h \
@@ -190,18 +190,18 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/storage/storage.h \
 	$(KERNEL_DIR)/storage/storage_router.s
 
-KINIT_NAMES = kinit kinit_diag module_minit kinit_boot root_select d6fs_boot d6fs_super_boot blockset_boot logstore_boot logstore proc_boot proc_swap_boot kinit_io module_io bootbanner_generated
-KINIT_LATE_NAMES = kinit_late_begin proc_late mm_boot kinit_late kinit_late_end
-KINIT_ASM = $(KINIT_BUILD)/kinit.s $(KINIT_BUILD)/kinit_diag.s $(KINIT_BUILD)/module_minit.s $(KINIT_BUILD)/kinit_boot.s $(KINIT_BUILD)/root_select.s $(KINIT_BUILD)/d6fs_boot.s $(KINIT_BUILD)/d6fs_super_boot.s $(KINIT_BUILD)/blockset_boot.s $(KINIT_BUILD)/logstore_boot.s $(KINIT_BUILD)/proc_boot.s $(KINIT_BUILD)/proc_swap_boot.s $(KINIT_BUILD)/kinit_io.s $(KINIT_BUILD)/module_io.s $(KINIT_BUILD)/bootbanner_generated.s
-KINIT_LATE_ASM = $(KINIT_BUILD)/kinit_late_begin.s $(KINIT_BUILD)/proc_late.s $(KINIT_BUILD)/mm_boot.s $(KINIT_BUILD)/kinit_late.s $(KINIT_BUILD)/kinit_late_end.s
-KINIT_OBJS = $(BUILD)/kinit.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/root_select.dobj $(BUILD)/tsfs_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/logstore_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj
-KINIT_LATE_OBJS = $(BUILD)/kinit_late_begin.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj
+KINIT_NAMES = kinit kinit_diag module_minit kinit_boot root_select d6fs_boot d6fs_super_boot blockset_boot logstore_boot logstore proc_boot proc_swap_boot kinit_io_pdp6 module_io bootbanner_generated
+KINIT_LATE_NAMES = kinit_late_begin_pdp6 proc_late mm_boot kinit_late kinit_late_end
+KINIT_ASM = $(KINIT_BUILD)/kinit.s $(KINIT_BUILD)/kinit_diag.s $(KINIT_BUILD)/module_minit.s $(KINIT_BUILD)/kinit_boot.s $(KINIT_BUILD)/root_select.s $(KINIT_BUILD)/d6fs_boot.s $(KINIT_BUILD)/d6fs_super_boot.s $(KINIT_BUILD)/blockset_boot.s $(KINIT_BUILD)/logstore_boot.s $(KINIT_BUILD)/proc_boot.s $(KINIT_BUILD)/proc_swap_boot.s $(KINIT_BUILD)/kinit_io_pdp6.s $(KINIT_BUILD)/module_io.s $(KINIT_BUILD)/bootbanner_generated.s
+KINIT_LATE_ASM = $(KINIT_BUILD)/kinit_late_begin_pdp6.s $(KINIT_BUILD)/proc_late.s $(KINIT_BUILD)/mm_boot.s $(KINIT_BUILD)/kinit_late.s $(KINIT_BUILD)/kinit_late_end.s
+KINIT_OBJS = $(BUILD)/kinit.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/root_select.dobj $(BUILD)/tsfs_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/logstore_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io_pdp6.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj
+KINIT_LATE_OBJS = $(BUILD)/kinit_late_begin_pdp6.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj
 
 KCORE_C_NAMES = exec d6lz vfs mm proc vm_backend proc_swap file
-KCORE_FIXED_NAMES = $(KCORE_C_NAMES) ret_pdp10 \
-	dsk270_pdp10 drm236_pdp10 kfmt_pdp10 vfs_pdp10 fs_mres_pdp10 file_pdp10 monitorfs_pdp10 proc_pdp10 proc_run_pdp10 \
+KCORE_FIXED_NAMES = $(KCORE_C_NAMES) ret \
+	dsk270_pdp10 drm236_pdp10 kfmt_pdp6 vfs_pdp10 fs_mres_pdp10 file_pdp10 monitorfs_pdp10 proc_pdp10 proc_run_pdp10 \
 	device_state_pdp10 syscall_info_pdp10 pclk_pdp10 lpt_io \
-	syscall_dispatch mach_user vm_backend_asm kcore_io storage_router kcore_end
+	syscall_dispatch mach_user vm_backend_asm kcore_io_pdp6 storage_router kcore_end
 KCORE_FIXED_ASM = $(KCORE_BUILD)/d6lz_fixed.s $(KCORE_BUILD)/exec.s $(KCORE_BUILD)/d6lz.s $(KCORE_BUILD)/mm.s $(KCORE_BUILD)/proc.s $(KCORE_BUILD)/vm_backend.s $(KCORE_BUILD)/proc_swap.s $(KCORE_BUILD)/file.s $(KCORE_BUILD)/ret.s $(KCORE_BUILD)/dsk270_pdp10.s $(KCORE_BUILD)/drm236_pdp10.s $(KCORE_BUILD)/kfmt_pdp6.s $(KCORE_BUILD)/vfs_pdp10.s $(KCORE_BUILD)/fs_mres_pdp10.s $(KCORE_BUILD)/file_pdp10.s $(KCORE_BUILD)/pipe_pdp10.s $(KCORE_BUILD)/monitorfs_pdp10.s $(KCORE_BUILD)/proc_pdp10.s $(KCORE_BUILD)/proc_run_pdp10.s $(KCORE_BUILD)/device_state_pdp10.s $(KCORE_BUILD)/syscall_info_pdp10.s $(KCORE_BUILD)/pclk_pdp10.s $(KCORE_BUILD)/lpt_io.s $(KCORE_BUILD)/syscall_dispatch.s $(KCORE_BUILD)/mach_user.s $(KCORE_BUILD)/vm_backend_asm.s $(KCORE_BUILD)/kcore_io_pdp6.s $(KCORE_BUILD)/storage_router.s $(KCORE_BUILD)/kcore_end.s
 KCORE_FIXED_OBJS = $(BUILD)/d6lz_fixed.dobj $(BUILD)/exec.dobj $(BUILD)/d6lz.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/ret.dobj $(BUILD)/dsk270_pdp10.dobj $(BUILD)/drm236_pdp10.dobj $(BUILD)/kfmt_pdp6.dobj $(BUILD)/vfs_pdp10.dobj $(BUILD)/fs_mres_pdp10.dobj $(BUILD)/file_pdp10.dobj $(BUILD)/pipe_pdp10.dobj $(BUILD)/monitorfs_pdp10.dobj $(BUILD)/proc_pdp10.dobj $(BUILD)/proc_run_pdp10.dobj $(BUILD)/device_state_pdp10.dobj $(BUILD)/syscall_info_pdp10.dobj $(BUILD)/pclk_pdp10.dobj $(BUILD)/lpt_io.dobj $(BUILD)/syscall_dispatch.dobj $(BUILD)/mach_user.dobj $(BUILD)/vm_backend_asm.dobj $(BUILD)/kcore_io_pdp6.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj
 MRES_NAMES = cty_io clk_io ptr_io ptp_io cr_io cp_io dcs_io ge_io dpy_io \
@@ -215,16 +215,16 @@ KCORE_FOLD_PLAN = $(BUILD)/kcore.fold
 # Pre-self-hosting fold scope: all handwritten KCORE assembler.  Generated
 # KCC output remains deliberately excluded until self-hosting/code-generator
 # canonicalization work.  P10FOLD selects only relocation-safe zero-cost donors.
-KCORE_FOLD_OBJS = $(BUILD)/ret_pdp10.dobj \
+KCORE_FOLD_OBJS = $(BUILD)/ret.dobj \
 	$(BUILD)/dsk270_pdp10.dobj $(BUILD)/drm236_pdp10.dobj \
-	$(BUILD)/kfmt_pdp10.dobj $(BUILD)/vfs_pdp10.dobj \
+	$(BUILD)/kfmt_pdp6.dobj $(BUILD)/vfs_pdp10.dobj \
 	$(BUILD)/fs_mres_pdp10.dobj $(BUILD)/file_pdp10.dobj \
 	$(BUILD)/pipe_pdp10.dobj $(BUILD)/monitorfs_pdp10.dobj \
 	$(BUILD)/proc_pdp10.dobj $(BUILD)/proc_run_pdp10.dobj \
 	$(BUILD)/device_state_pdp10.dobj $(BUILD)/syscall_info_pdp10.dobj \
 	$(BUILD)/pclk_pdp10.dobj $(BUILD)/lpt_io.dobj \
 	$(BUILD)/syscall_dispatch.dobj $(BUILD)/mach_user.dobj \
-	$(BUILD)/kcore_io.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj
+	$(BUILD)/kcore_io_pdp6.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj
 KCORE_RIM = $(BUILD)/kcore.rim
 KCORE_STREAM = $(BUILD)/kcore.stream
 KCORE_EMBED_ASM = $(BUILD)/kcore-embed.s
@@ -444,7 +444,7 @@ $(KINIT_ASM) $(KINIT_LATE_ASM): $(KINIT_STAMP)
 $(KCORE_FIXED_ASM) $(MRES_ASM): $(KCORE_STAMP)
 	@test -f $@
 
-KERNEL_ASM_OBJS = $(BUILD)/kinit.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/root_select.dobj $(BUILD)/tsfs_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/logstore_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj $(BUILD)/kinit_late_begin.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj $(BUILD)/d6lz_fixed.dobj $(BUILD)/exec.dobj $(BUILD)/d6lz.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/ret.dobj $(BUILD)/dsk270_pdp10.dobj $(BUILD)/drm236_pdp10.dobj $(BUILD)/kfmt_pdp6.dobj $(BUILD)/vfs_pdp10.dobj $(BUILD)/fs_mres_pdp10.dobj $(BUILD)/file_pdp10.dobj $(BUILD)/pipe_pdp10.dobj $(BUILD)/monitorfs_pdp10.dobj $(BUILD)/proc_pdp10.dobj $(BUILD)/proc_run_pdp10.dobj $(BUILD)/device_state_pdp10.dobj $(BUILD)/syscall_info_pdp10.dobj $(BUILD)/pclk_pdp10.dobj $(BUILD)/syscall_dispatch.dobj $(BUILD)/mach_user.dobj $(BUILD)/vm_backend_asm.dobj $(BUILD)/kcore_io_pdp6.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj $(BUILD)/cty_io.dobj $(BUILD)/clk_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj $(BUILD)/lpt_io.dobj $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj $(BUILD)/dcs_io.dobj $(BUILD)/ge_io.dobj $(BUILD)/dpy_io.dobj $(BUILD)/tty_io.dobj $(BUILD)/wcnsls_io.dobj $(BUILD)/ocnsls_io.dobj $(BUILD)/dsk_io.dobj $(BUILD)/drm236_io.dobj $(BUILD)/tape_io.dobj $(BUILD)/slv_io.dobj $(BUILD)/memfs_pdp10.dobj $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_pdp10.dobj $(BUILD)/blockset_dispatch.dobj $(BUILD)/badmap_dispatch.dobj $(BUILD)/fs_backing_pdp10.dobj $(BUILD)/logstore_runtime.dobj $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate_pdp10.dobj $(BUILD)/d6fs_pdp10.dobj
+KERNEL_ASM_OBJS = $(BUILD)/kinit.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/root_select.dobj $(BUILD)/tsfs_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/logstore_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io_pdp6.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj $(BUILD)/kinit_late_begin_pdp6.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj $(BUILD)/d6lz_fixed.dobj $(BUILD)/exec.dobj $(BUILD)/d6lz.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/ret.dobj $(BUILD)/dsk270_pdp10.dobj $(BUILD)/drm236_pdp10.dobj $(BUILD)/kfmt_pdp6.dobj $(BUILD)/vfs_pdp10.dobj $(BUILD)/fs_mres_pdp10.dobj $(BUILD)/file_pdp10.dobj $(BUILD)/pipe_pdp10.dobj $(BUILD)/monitorfs_pdp10.dobj $(BUILD)/proc_pdp10.dobj $(BUILD)/proc_run_pdp10.dobj $(BUILD)/device_state_pdp10.dobj $(BUILD)/syscall_info_pdp10.dobj $(BUILD)/pclk_pdp10.dobj $(BUILD)/syscall_dispatch.dobj $(BUILD)/mach_user.dobj $(BUILD)/vm_backend_asm.dobj $(BUILD)/kcore_io_pdp6.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj $(BUILD)/cty_io.dobj $(BUILD)/clk_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj $(BUILD)/lpt_io.dobj $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj $(BUILD)/dcs_io.dobj $(BUILD)/ge_io.dobj $(BUILD)/dpy_io.dobj $(BUILD)/tty_io.dobj $(BUILD)/wcnsls_io.dobj $(BUILD)/ocnsls_io.dobj $(BUILD)/dsk_io.dobj $(BUILD)/drm236_io.dobj $(BUILD)/tape_io.dobj $(BUILD)/slv_io.dobj $(BUILD)/memfs_pdp10.dobj $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_pdp10.dobj $(BUILD)/blockset_dispatch.dobj $(BUILD)/badmap_dispatch.dobj $(BUILD)/fs_backing_pdp10.dobj $(BUILD)/logstore_runtime.dobj $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate_pdp10.dobj $(BUILD)/d6fs_pdp10.dobj
 
 $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM)
 	@mkdir -p $(BUILD)

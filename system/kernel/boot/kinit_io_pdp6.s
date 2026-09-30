@@ -1,5 +1,5 @@
 /**
- * @file kinit_io.s
+ * @file kinit_io_pdp6.s
  * @brief Disposable KINIT console, call-adapter, APR, and stack helpers.
  *
  * These routines exist only while the transient KINIT image is resident.
@@ -9,8 +9,11 @@
  * module exports, APR cleanup after memory probing, and optional bootstrap
  * stack watermarking.
  *
- * Register names are PDP-6/PDP-10 accumulators.  AC17 is the C pushdown
- * pointer; ordinary C arguments arrive in AC1, AC2, ... as noted below.
+ * This is the PDP-6 baseline implementation.  It directly uses PDP-6 APR and
+ * console device I/O instructions and device numbers, so later PDP-10 systems
+ * may provide machine-specific implementations without carrying these
+ * assumptions forward.  AC17 is the C pushdown pointer; ordinary C arguments
+ * arrive in AC1, AC2, ... as noted below.
  */
 
         .text
@@ -118,8 +121,7 @@ knl_wait:
  */
 kinit_call18:
         andi 01,0777777
-        pushj 017,(01)
-        popj 017,
+        jrst (01)
 
 /**
  * @brief Adapt a C filesystem request structure to the compact register ABI.
@@ -209,8 +211,7 @@ kinit_call18_1:
         move 03,01
         move 01,02
         andi 03,0777777
-        pushj 017,(03)
-        popj 017,
+        jrst (03)
 
 /**
  * @brief Clear the APR condition left by an intentional NXM memory probe.

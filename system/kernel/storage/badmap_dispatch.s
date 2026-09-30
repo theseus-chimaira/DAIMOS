@@ -12,7 +12,7 @@
         .globl badmap_backend_read_jump
         .globl badmap_backend_write_jump
         .globl badmap_base_map_jump
-        .globl pdp10_ret_neg1
+        .globl kret_neg1
 
 ; state layout:
 ;   0 count
@@ -25,7 +25,7 @@
 ; AC1=logical block; return AC1=physical unit, AC2=member-local block.
 badmap_map_block:
         pushj   17,badmap_base_map
-        jumpl   1,pdp10_ret_neg1
+        jumpl   1,kret_neg1
         move    6,1                     ; physical unit
         move    7,2                     ; physical block
         setz    4,                      ; member index
@@ -35,7 +35,7 @@ badmap_find_member:
         jrst    badmap_have_member
 badmap_find_member_next:
         caml    4,badmap_members
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         jrst    badmap_find_member
 badmap_have_member:
         move    5,4
@@ -74,9 +74,9 @@ badmap_base_map:
 badmap_base_map_jump:
         jrst    badmap_direct_map
 badmap_direct_map:
-        jumpl   1,pdp10_ret_neg1
+        jumpl   1,kret_neg1
         caml    1,badmap_direct_blocks
-        jrst    pdp10_ret_neg1
+        jrst    kret_neg1
         move    2,badmap_direct_base
         add     2,1
         move    1,badmap_unit0
@@ -93,7 +93,7 @@ badmap_block_io:
         pushj   17,badmap_map_block
         pop     17,5
         pop     17,3                    ; DSK backend buffer argument
-        jumpl   1,pdp10_ret_neg1
+        jumpl   1,kret_neg1
         jumpe   5,badmap_block_read
 badmap_backend_write:
 badmap_backend_write_jump:

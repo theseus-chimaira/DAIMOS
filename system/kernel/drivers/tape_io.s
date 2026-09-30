@@ -17,9 +17,9 @@
         .globl storage_state
         .globl storage_iowd
         .globl storage_count
-        .globl pdp10_ret_ok
-        .globl pdp10_ret_arg
-        .globl pdp10_ret_busy
+        .globl kret_ok
+        .globl kret_arg
+        .globl kret_busy
         .globl proc_wait_event
         .globl proc_wakeup_event
 
@@ -244,14 +244,14 @@ dtc_write_block:
         movei 4,1
 dtc_block_start:
         skipe storage_state
-        jrst pdp10_ret_busy
+        jrst kret_busy
         caile 1,7
-        jrst pdp10_ret_arg
+        jrst kret_arg
         hlrz 6,2
         addi 6,0200
         hrrzs 2
         caile 2,01101
-        jrst pdp10_ret_arg
+        jrst kret_arg
         movem 4,dtc_request_write
         setzm dtc_request_reverse
         movei 7,7
@@ -375,20 +375,20 @@ dtc_search_fail:
 ; Compact Type-516 service.  AC4 selects READ/WRITE/control operation.
 mtc_service:
         skipe storage_state
-        jrst pdp10_ret_busy
+        jrst kret_busy
         caile 1,7
-        jrst pdp10_ret_arg
+        jrst kret_arg
         jumpe 4,mtc_read_words
         jumpge 4,mtc_control
 mtc_write_words:
-        jumple 3,pdp10_ret_arg
+        jumple 3,kret_arg
         pushj 017,tape_setup_write
         hrroi 3,0777773
         movei 4,051005
         movei 5,003403
         jrst mtc_rw_start
 mtc_read_words:
-        jumple 3,pdp10_ret_arg
+        jumple 3,kret_arg
         pushj 017,tape_setup_read
         hrroi 3,0777776
         movei 4,052405
@@ -431,7 +431,7 @@ mtc_control_timeout:
         jrst tape_ioerr
 mtc_control_ok:
         setzm storage_count
-        jrst pdp10_ret_ok
+        jrst kret_ok
 mtc_rw_start:
         movem 3,storage_state
         lsh 1,4
@@ -457,7 +457,7 @@ tape_ioerr:
         cono 0200,0
         pushj 017,dtc_forget_motion
         setzm storage_state
-        jrst    pdp10_ret_neg5
+        jrst    kret_neg5
 
 ; CONO DTC,0 stops all eight Type-551 transports.  dtc_motion is a per-unit
 ; estimate used only while motion is continuous; once the controller has
@@ -480,7 +480,7 @@ tape_account_mtc_write_check:
 
 tape_account_done:
         setzm storage_state
-        jrst pdp10_ret_ok
+        jrst kret_ok
 
 tape_account_table:
         .word mfsdev_io_in+014

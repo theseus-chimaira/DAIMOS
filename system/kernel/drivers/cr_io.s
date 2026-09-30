@@ -4,8 +4,8 @@
         .globl cr_pi_handler
         .globl cr_read_card
         .globl pdp10_pi_handler_return
-        .globl pdp10_ret_arg
-        .globl pdp10_ret_busy
+        .globl kret_arg
+        .globl kret_busy
 
 cr_pi_handler:
         coni 0150,1
@@ -32,15 +32,15 @@ cr_pi_xfer:
         jrst pdp10_pi_handler_return
 
 cr_read_card:
-        jumpe 1,pdp10_ret_arg
+        jumpe 1,kret_arg
         skipe cr_iowd
-        jrst pdp10_ret_neg4
+        jrst kret_neg4
         movei 2,0200000
 cr_read_ready_wait:
         consz 0150,0100
         jrst cr_read_start
         sojg 2,cr_read_ready_wait
-        jrst pdp10_ret_neg2
+        jrst kret_neg2
 cr_read_start:
         subi 1,1
         hrli 1,0777660
@@ -53,10 +53,10 @@ cr_read_done_wait:
         sojg 2,cr_read_done_wait
         setzm cr_iowd
         cono 0150,0007
-        jrst pdp10_ret_neg2
+        jrst kret_neg2
 cr_read_done:
         consz 0150,0400
-        jrst pdp10_ret_busy
+        jrst kret_busy
         movei 1,0120
         popj 017,
 

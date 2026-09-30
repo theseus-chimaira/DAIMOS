@@ -6,9 +6,9 @@
         .globl ptr_pi_handler
         .globl ptr_getchar
         .globl pdp10_pi_handler_return
-        .globl pdp10_ret_arg
-        .globl pdp10_ret_busy
-        .globl pdp10_ret_ok
+        .globl kret_arg
+        .globl kret_busy
+        .globl kret_ok
 
 ptr_pi_handler:
         conso 0104,0010
@@ -26,11 +26,11 @@ ptr_pi_prefetch:
 
 ; AC1 = int *destination.  Return 0 or PT_E_ARG/BUSY/TIMEOUT.
 ptr_getchar:
-        jumpe 1,pdp10_ret_arg
+        jumpe 1,kret_arg
         move 4,1
         move 2,ptr_state
         jumpg 2,ptr_get_software
-        jumpl 2,pdp10_ret_busy
+        jumpl 2,kret_busy
         consz 0104,0010
         jrst ptr_get_hardware
         setom ptr_state
@@ -42,7 +42,7 @@ ptr_get_wait:
         sojg 5,ptr_get_wait
         setzm ptr_state
         cono 0104,0
-        jrst pdp10_ret_neg2
+        jrst kret_neg2
 ptr_get_hardware:
         datai 0104,3
         aos mfsdev_io_in+2
@@ -56,7 +56,7 @@ ptr_get_software:
         movem 2,(4)
         setzm ptr_state
 ptr_get_ok:
-        jrst pdp10_ret_ok
+        jrst kret_ok
 
         .bss
 ptr_state:

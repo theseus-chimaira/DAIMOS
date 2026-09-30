@@ -16,8 +16,8 @@
         .globl proc_wait_event_intr
         .globl proc_wakeup_event
         .globl pdp10_pi_handler_return
-        .globl pdp10_ret_ok
-        .globl pdp10_ret_arg
+        .globl kret_ok
+        .globl kret_arg
 
 ; dcs_rx_word is zero when empty and packed(line,byte)+1 when ready.  The +1
 ; keeps line 0 / NUL distinct from the empty marker.
@@ -45,7 +45,7 @@ dcs_pi_disable:
 ; AC1 = requested DCS line 0..15.  Return one byte from that exact line.
 dcs_getchar:
         caile 1,017
-        jrst pdp10_ret_arg
+        jrst kret_arg
         push 17,1
 dcs_getchar_loop:
         move 1,(17)
@@ -93,12 +93,12 @@ dcs_getchar_done:
 dcs_putchar:
         ldb 2,[POINT 6,1,27]
         caile 2,017
-        jrst pdp10_ret_arg
+        jrst kret_arg
         cono 0304,0(2)
         andi 1,0377
         datao 0300,1
         aos mfsdev_io_out+6
-        jrst pdp10_ret_ok
+        jrst kret_ok
 
         .bss
 dcs_rx_word:
