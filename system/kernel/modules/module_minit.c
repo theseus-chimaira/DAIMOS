@@ -88,10 +88,6 @@
 #define DRM_PI_MASK               0000007UL
 #define DRM_NATIVE_PI_LEVEL       2U
 
-#define SLV_PI_MASK             0000007UL
-#define SLV_CO_CLEAR_IRQ        0000010UL
-#define SLV_PROBE_PI            7U
-
 static unsigned int diag_putchar_addr;
 static unsigned int clk_pi_handler_addr;
 static unsigned int clk_pi_service_addr;
