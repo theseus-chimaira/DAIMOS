@@ -15,6 +15,15 @@ extern kword_t kinit_stack_highwater;
 #endif
 void kinit_late_handoff(kword_t stack_base, kword_t reclaim_end);
 
+/*
+ * State used while permanent MRES packages are installed.
+ *
+ * mres_next_addr is the first free permanent word above KCORE/MRES.
+ * mres_owner_next supplies temporary MM ownership while an MRES is copied.
+ * The last-owner fields let MINIT consumers identify the package just placed.
+ * module_mres_package names the package belonging to the MINIT currently
+ * running, and module_services is the boot-time service-address directory.
+ */
 static unsigned int mres_next_addr;
 static unsigned int mres_owner_next;
 kword_t mres_source_end;
@@ -25,6 +34,12 @@ static unsigned int module_services[MODULE_SERVICE_COUNT];
 kword_t kinit_boot_handoff[2];
 
 #if KINIT_STACK_WATERMARK
+/*
+ * Record the largest observed KINIT pushdown-list usage.
+ *
+ * Watermark builds use this at selected boot boundaries so stack sizing can be
+ * verified without keeping any measurement machinery in the resident kernel.
+ */
 static void
 kinit_stack_watermark_record(void)
 {
@@ -36,6 +51,13 @@ kinit_stack_watermark_record(void)
 }
 #endif
 
+/*
+ * Copy fixed KCORE from its embedded KINIT image to low memory.
+ *
+ * Initialized words are copied from the embedded image and KCORE BSS is
+ * cleared explicitly.  This establishes the permanent resident core before
+ * any MRES packages are placed immediately above it.
+ */
 void
 kcore_load(void)
 {
@@ -62,6 +84,13 @@ kcore_load(void)
                 *dst++ = 0;
 }
 
+/*
+ * Initialize the permanent MRES placement state.
+ *
+ * MRES packages are laid out contiguously above KCORE so the permanent kernel
+ * occupies one gapless low-memory range and leaves maximum contiguous core for
+ * later dynamic allocations and user processes.
+ */
 void
 mres_init(void)
 {
@@ -75,6 +104,18 @@ mres_init(void)
         mres_last_image_words = 0U;
 }
 
+/*
+ * Validate, relocate, and install one MRES package into permanent low memory.
+ *
+ * The package contains an initialized image, BSS size, packed relocation map,
+ * and exported entry offsets.  The image is allocated at the next required
+ * permanent address, relocated by adding its final base to marked PDP-10
+ * halfwords, zero-filled through BSS, then converted from a temporary MM
+ * allocation into a boot reservation.
+ *
+ * Returns zero and stores the installed base on success; returns -1 without
+ * advancing permanent-placement state if validation or installation fails.
+ */
 int
 mres_install(const kword_t *package, unsigned int *basep)
 {
@@ -188,6 +229,12 @@ fail:
         return -1;
 }
 
+/*
+ * Resolve one exported MRES entry to its installed absolute address.
+ *
+ * Export offsets are packed two per PDP-10 word in the package header.  A zero
+ * result denotes an invalid package, export index, or address overflow.
+ */
 unsigned int
 mres_export(const kword_t *package, unsigned int base, unsigned int index)
 {
@@ -210,6 +257,13 @@ mres_export(const kword_t *package, unsigned int base, unsigned int index)
         return base + offset;
 }
 
+/*
+ * Preserve the two-word Stage1-to-KINIT boot handoff.
+ *
+ * Stage1 leaves controller/root-selection information in fixed low memory.
+ * KINIT copies it into private storage before low memory is reused by KCORE
+ * and permanent packages.
+ */
 void
 kinit_save_boot_handoff(void)
 {
@@ -230,12 +284,24 @@ kinit_save_boot_handoff(void)
         kinit_boot_handoff[1] = *boot1;
 }
 
+/*
+ * Return the MRES package associated with the MINIT currently executing.
+ *
+ * MINIT routines use this to install or export their own resident package
+ * without embedding package addresses in each individual initializer.
+ */
 const kword_t *
 module_current_mres(void)
 {
         return module_mres_package;
 }
 
+/*
+ * Publish an installed module service address for later MINIT consumers.
+ *
+ * Service zero is reserved as "not available"; out-of-range service numbers
+ * are ignored so callers cannot overwrite unrelated boot state.
+ */
 void
 module_service_set(unsigned int service, unsigned int address)
 {
@@ -243,6 +309,11 @@ module_service_set(unsigned int service, unsigned int address)
                 module_services[service] = address;
 }
 
+/*
+ * Look up a service address published by an earlier MINIT.
+ *
+ * Zero means the service is absent or the requested service number is invalid.
+ */
 unsigned int
 module_service_get(unsigned int service)
 {
@@ -251,9 +322,24 @@ module_service_get(unsigned int service)
         return module_services[service];
 }
 
+/*
+ * Execute the linker-generated module initialization table in order.
+ *
+ * The table is first copied to the KINIT stack because its linked source area
+ * is released to the memory manager before MINIT processing completes.  Each
+ * MINIT may install an MRES and publish services.  MRES source packages are
+ * linked in last-use order, allowing their transient source images to be
+ * returned to free memory incrementally; this is required to keep boot viable
+ * on the 32K PDP-6 profile.
+ */
 void
 module_run_minits(void)
 {
+        /*
+         * The MINIT table is deliberately bounded at 040 words (32 decimal).
+         * Keeping the copy fixed-size avoids a dynamic allocation while the
+         * permanent MRES block is still being assembled.
+         */
         kword_t minit_table[040];
         const kword_t *p;
         const kword_t *end;
@@ -333,6 +419,20 @@ module_run_minits(void)
         module_mres_package = 0;
 }
 
+/*
+ * Perform the complete transient kernel initialization sequence.
+ *
+ * This entry establishes KCORE and the boot memory map, preserves the Stage1
+ * handoff, installs interrupt and module services, packs all permanent MRES
+ * packages, allocates the permanent idle stack, mounts and validates the root
+ * filesystem, initializes process state, and finally transfers to the late
+ * handoff that starts normal operation and reclaims KINIT.
+ *
+ * Ordering is significant: permanent MRES placement must finish before any
+ * movable dynamic kernel allocation is allowed into the low-memory gap, and
+ * the KINIT image/bootstrap stack cannot be reclaimed until all boot-only code
+ * has finished using them.
+ */
 void
 kinit_enter(void)
 {
@@ -356,6 +456,10 @@ kinit_enter(void)
                 kword_t low_base;
                 kword_t image_end;
 
+                /*
+                 * kinit_memory_kwords() reports 1024-word units.  The PDP-6
+                 * allocator and all linker addresses are expressed in words.
+                 */
                 core_words = (kword_t)memory_kwords << 10U;
                 low_base = (kword_t)(unsigned long)&__kcore_low_end;
                 image_end = (kword_t)(unsigned long)&__kinit_image_end;
@@ -409,11 +513,21 @@ kinit_enter(void)
                 kword_t *idle_stack;
                 unsigned int i;
 
+                /*
+                 * Fill unused idle-stack words with their own addresses.
+                 * The process-stack watermark code later detects the first
+                 * overwritten sentinel without needing a separate bitmap.
+                 */
                 idle_stack = (kword_t *)(unsigned long)kernel_stack_base;
                 for (i = 1U; i < (unsigned int)KERNEL_IDLE_STACK_WORDS; ++i)
                         idle_stack[i] = kernel_stack_base + (kword_t)i;
         }
 #endif
+        /*
+         * SYS_MEMINFO uses a patched immediate for permanent resident words.
+         * The permanent range starts at KINIT_KCORE_BASE and ends at the first
+         * word after the packed MRES block.
+         */
         sys_resident_words_immediate =
             (sys_resident_words_immediate & ~((kword_t)KINIT_HALF_MASK)) |
             (kword_t)(mres_next_addr - KINIT_KCORE_BASE);
