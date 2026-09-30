@@ -2,8 +2,9 @@
 ;
 ; C arguments arrive in AC1..AC4.  The UUO effective address carries arg0,
 ; leaving AC2..AC4 as the remaining real arguments.  The kernel returns the
-; result in AC1.  UUO 043 is the bulk character-stream write path;
-; opcodes 074..077 remain reserved for future ABI extension.
+; result in AC1.  Direct monitor UUO 043 is unused; extension suboperation
+; 043 under the multiplexed UUO 077 is SYS_EXT_RTCTL.  Regular files use the
+; word-stream calls and character devices/pipes use READCHAR/WRITECHAR.
 
         .text
 
