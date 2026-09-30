@@ -1,3 +1,12 @@
+/**
+ * @file proc_boot.c
+ * @brief Transient boot-time allocation of the runtime-sized process tables.
+ *
+ * Process-slot count scales with discovered core rather than reserving the
+ * architectural 256-slot maximum on small machines.  The table and matching
+ * swap records are allocated from kernel-dynamic managed core and survive KINIT;
+ * this compilation unit itself is reclaimable boot code.
+ */
 #include "proc.h"
 #include "fs_mres.h"
 #include "mm.h"
@@ -7,6 +16,7 @@
 
 extern unsigned int proc_sched_age_phase;
 
+/** Map physical-core size to the process-slot policy tier. */
 unsigned int
 proc_slots_for_core(kword_t core_words)
 {
@@ -25,6 +35,7 @@ proc_slots_for_core(kword_t core_words)
         return PROC_MAX_SLOTS;
 }
 
+/** Allocate, zero, and publish process/swap tables after MM discovery. */
 int
 proc_boot_init(void)
 {

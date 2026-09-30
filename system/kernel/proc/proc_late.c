@@ -1,3 +1,13 @@
+/**
+ * @file proc_late.c
+ * @brief Late-KINIT process-slot claiming and initial user-context construction.
+ *
+ * Once MM and the runtime process table exist, this transient code claims a
+ * descriptor for a new process and allocates its stable executive u-area.  The
+ * u-area layout is consumed directly by proc_pdp6.s; initial user PC, SP, AC1-3,
+ * kernel SP, credentials/file state, and optional stack-watermark pattern are
+ * established before the process becomes runnable.
+ */
 #include "proc.h"
 #include "fs_mres.h"
 #include "mm.h"
@@ -9,6 +19,7 @@
 #define PROC_CTX_STACK      PROC_USTACK_BASE
 #define PROC_UAREA_MM_OWNER_BASE 01000U
 
+/** Claim the first FREE user slot and initialize it in SIDL state. */
 int
 proc_slot_claim(unsigned int parent_slot)
 {
@@ -33,6 +44,7 @@ proc_slot_claim(unsigned int parent_slot)
         return -1;
 }
 
+/** Allocate/zero one u-area and seed its initial PDP-6 execution context. */
 int
 proc_user_context_init(unsigned int slot, kword_t entry, kword_t stack,
     kword_t ac1, kword_t ac2, kword_t ac3)

@@ -1,11 +1,18 @@
-; proc_pdp6.s -- PDP-6 scheduler context switch and event sleep/wakeup.
-;
-; proc_table is allocated after memory discovery.  Each active process owns a
-; stable executive u-area allocated from kernel-dynamic core.  Saved CPU/syscall
-; state ends at 044, followed immediately by cwd/file state and the private
-; kernel pushdown list.  User extents may move or swap independently; the u-area
-; remains resident so a sleeping executive continuation keeps valid stack
-; addresses.
+/**
+ * @file proc_pdp6.s
+ * @brief PDP-6 process control, event/TTY hot paths, and context switching.
+ *
+ * proc_table is allocated after memory discovery. Each active process owns a
+ * stable executive u-area allocated from kernel-dynamic core. Saved CPU/syscall
+ * state ends at 044, followed by cwd/file state and the private kernel pushdown
+ * list. User VM extents may move or swap independently; the u-area stays
+ * resident so sleeping kernel continuations retain valid stack addresses.
+ *
+ * This is specifically the PDP-6 baseline implementation: PI level 6, low-core
+ * PI vectors, software PI requests, user/executive return state, and context
+ * frame layout are machine-specific. Later PDP-10 implementations may replace
+ * these paths while preserving the proc.h process/u-area ABI.
+ */
 
         .equ    PROC_WORDS,3
         .equ    PROC_STATE_LH_MASK,0700000
@@ -91,7 +98,11 @@ proc_trim_high_loop:
         movem   1,proc_high_slot
         jrst    proc_trim_high_loop
 
-; AC1 = slot.  Return AC1 = address of its three-word struct proc, AC2 clobbered.
+/**
+ * @brief Convert a process slot to its three-word descriptor address.
+ * @param AC1 Process slot.
+ * @return AC1 Descriptor address; AC2 clobbered.
+ */
 proc_slot_ptr:
         move    2,1
         lsh     1,1
@@ -99,11 +110,12 @@ proc_slot_ptr:
         add     1,proc_table
         popj    17,
 
-; Intrusive runnable queue.  PROC_SRUN owns sched RH, so the link costs no
-; per-process storage.  Add is O(1); remove is O(number of runnable jobs), but
-; removal occurs only on state transitions rather than on ordinary quanta.
-; AC1 = slot.  Preserve AC1..AC4 so the event/wait assembly can call these
-; helpers without enlarging its save frames.
+/**
+ * @brief Maintain the intrusive runnable queue stored in sched RH.
+ *
+ * Add is O(1); removal is O(number of runnable jobs) but occurs only on state
+ * transitions. AC1 is the slot. AC1..AC4 are preserved for event/wait callers.
+ */
 proc_runq_add:
         move    5,1
         imuli   5,3
@@ -144,18 +156,23 @@ proc_runq_remove_head:
 proc_runq_remove_done:
         popj    17,
 
-; AC1 = slot.  Return AC1 = stable physical u-area base, AC2 clobbered.
-; meta LH is repurposed from initial entry PC once the user context is built.
+/**
+ * @brief Return the stable physical u-area base for one slot.
+ * @param AC1 Process slot.
+ * @return AC1 U-area base; AC2 clobbered.
+ */
 proc_uarea_slot:
         pushj   17,proc_slot_ptr
         hlrz    1,(1)
         popj    17,
 
-; EXIT is entered by JRST from the syscall dispatcher.  The current C stack
-; therefore lives inside the process u-area and must not survive mm_free().
-; Disable PI, switch to the permanent slot-0 stack, release the process, then
-; either idle until another runnable process is selected by the clock PI or
-; halt for the normal final-user shutdown.
+/**
+ * @brief Terminate the current process after escaping its private kernel stack.
+ *
+ * EXIT enters by JRST from syscall dispatch. PI is disabled, execution moves to
+ * the permanent slot-0 stack, and proc_exit_finish() may then free the u-area.
+ * The machine idles for another runnable process or halts after the final user.
+ */
 proc_exit_current:
         move    3,1                    ; preserve low 18-bit exit status
         pushj   17,mach_pi_disable
@@ -183,9 +200,12 @@ proc_exit_halt:
         halt
         jrst    .-1
 
-; Initial user entry must leave the next syscall using the process-private
-; kernel stack rather than KCORE's bootstrap/idle stack.  Preserve the
-; initial-user argument ACs while publishing that stack pointer.
+/**
+ * @brief Publish the current process-private kernel stack after first user entry.
+ *
+ * Initial argument ACs are preserved while CTX_U_KSP, mach_kernel_sp, and the
+ * process-local file-table base are switched away from the bootstrap stack.
+ */
 proc_record_kernel_sp:
         push    17,1
         push    17,2
@@ -204,10 +224,14 @@ proc_record_kernel_sp:
 
 
 
-; int proc_rt_control(unsigned int command)
-; One RT owner exists system-wide.  ENABLE is idempotent for the owner;
-; DISABLE and YIELD both release ownership and immediately enter the normal
-; scheduler.  AC1 carries the command/result; AC2..AC4 are caller-scratch.
+/**
+ * @brief Control the singleton real-time scheduler ownership slot.
+ * @param AC1 SYS_RTCTL_DISABLE, ENABLE, or YIELD.
+ * @return AC1 zero on success or -1 on invalid/non-owner requests.
+ *
+ * ENABLE is idempotent for the owner; DISABLE and YIELD release ownership and
+ * immediately re-enter normal scheduling. AC2..AC4 are caller-scratch.
+ */
         .globl  proc_rt_control
 proc_rt_control:
         move    2,proc_current_slot
@@ -274,11 +298,12 @@ proc_tty_session_scope:
 proc_tty_session_next:
         addi    3,PROC_WORDS
         aoja    2,proc_tty_session_scan
-; int proc_session_teardown(unsigned int leader_slot, kword_t leader_ctl)
-; Session-leader exit path.  A controlling TTY is encoded directly in the
-; leader control word, so teardown needs no permanent session table or TTY
-; census.  V0.9 HUP is unconditionally fatal, so clearing the session TTY
-; record and delivering HUP also guarantees that stopped jobs cannot survive.
+/**
+ * @brief Tear down a session leader's controlling TTY and HUP its members.
+ *
+ * AC1 is leader slot and AC2 its packed control word. TTY ownership is encoded
+ * directly in process/TTY records, so no permanent session table is required.
+ */
         .globl  proc_session_teardown
         .globl  proc_event_apply
         .globl  proc_tty_records
@@ -332,10 +357,12 @@ proc_session_teardown_return:
         pop     17,010
         popj    17,
 
-; int proc_event_send(unsigned int target, unsigned int event, int group)
-; Validate one PID or scan one process group, then hand actual state changes to
-; proc_event_apply.  The group scan packs its two boolean results into the LH
-; of AC14 while the RH remains the slot index, avoiding GCC's large C frame.
+/**
+ * @brief Validate and deliver an event to one PID or process group.
+ *
+ * AC1=target, AC2=event, AC3=group flag. Group delivery scans the compact table
+ * and delegates actual state transitions to proc_event_apply().
+ */
         .globl  proc_event_send
         .globl  proc_event_apply
 proc_event_send:
@@ -1116,9 +1143,12 @@ proc_tty_line_take_bad:
         sub     17,[1,,1]
         jrst    kret_neg1
 
-; int proc_tty_canon_input(unsigned int tty, unsigned int ch)
-; Target canonical editor.  AC10-AC13 are saved because the echo/MM helpers
-; may use all caller-scratch ACs; this also preserves the KCC ABI.
+/**
+ * @brief Process one input byte through the resident canonical TTY editor.
+ *
+ * AC1=TTY, AC2=character. AC10..AC13 preserve editor state across echo/MM
+ * helpers and satisfy the KCC callee-save ABI.
+ */
 proc_tty_canon_input:
         push    17,010
         push    17,011
@@ -1280,7 +1310,7 @@ proc_tty_canon_return:
         pop     17,010
         popj    17,
 
-; int proc_tty_read_enter(void)
+/** @brief Enter or resume a blocking read on the current controlling TTY. */
 proc_tty_read_enter:
 proc_tty_read_enter_retry:
         move    5,proc_current_slot
@@ -1313,7 +1343,7 @@ proc_tty_read_enter_retry:
         jumpn   1,kret_neg1
         jrst    proc_tty_read_enter_retry
 
-; int proc_tty_input(unsigned int tty, unsigned int ch)
+/** @brief Route one hardware input byte to the owning foreground process group. */
 proc_tty_input:
         move    4,1                    ; tty
         move    5,2                    ; character
@@ -1379,7 +1409,7 @@ proc_tty_input_char:
         move    1,5
         popj    17,
 
-; int proc_tty_output(unsigned int ch)
+/** @brief Emit one packed TTY output character after ownership validation. */
 proc_tty_output:
         move    4,1                    ; character
         move    6,proc_current_slot
@@ -1440,9 +1470,14 @@ proc_tty_pending_store:
         movem   4,proc_tty_records(1)
         jrst    kret_zero
 
-; int proc_wait_event(volatile kword_t *eventp)
-; Internal event waits are noninterruptible.  User-visible waits use
-; proc_wait_event_intr and return -1 when ALRM is already pending or wakes them.
+/**
+ * @brief Sleep on a kernel event, optionally allowing ALRM interruption.
+ * @param AC1 Event-word address.
+ *
+ * proc_wait_event() is noninterruptible. proc_wait_event_intr() rejects an
+ * already-pending ALRM and returns -1 when ALRM interrupts the user-visible
+ * wait. Both paths remove the current process from the run queue before PI6.
+ */
 proc_wait_event_intr:
         skipe   (1)
         jrst    kret_zero
@@ -1507,10 +1542,12 @@ proc_wait_intr_return:
         jrst    kret_zero
 
 
-; Request an immediate software PI6 reschedule after the caller has changed
-; the current process state (for example native job-control TSTP).  The PI
-; saves the executive continuation and will resume it after the process is
-; made runnable again.
+/**
+ * @brief Request an immediate software PI6 reschedule.
+ *
+ * Call after changing current-process state, for example job-control TSTP.
+ * PI6 saves the executive continuation and resumes it once runnable again.
+ */
 proc_sched_resched_current:
         setom   proc_sched_kick
         cono    0004,004002
@@ -1543,9 +1580,13 @@ proc_wait_child:
         cono    0004,004002
         jrst    proc_wait_intr_return
 
-; void proc_wakeup_event(volatile kword_t *eventp)
-; PI-safe.  Wake every event sleeper, including a swapped sleeper whose
-; logical state remains resident in the compact process descriptor.
+/**
+ * @brief Wake every process sleeping on one kernel event word.
+ * @param AC1 Event-word address.
+ *
+ * PI-safe. Swapped sleepers are included because logical sleep state remains
+ * resident in the compact process descriptor.
+ */
 proc_wakeup_event:
         push    17,0
         push    17,2

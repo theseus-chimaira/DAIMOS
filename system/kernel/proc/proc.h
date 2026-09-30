@@ -1,3 +1,13 @@
+/**
+ * @file proc.h
+ * @brief Compact DAIMOS process-table, u-area, scheduler, session, and TTY ABI.
+ *
+ * A process descriptor is exactly three 36-bit words.  Stable executive state
+ * is kept in a separately allocated u-area whose layout is shared with the
+ * PDP-6 assembly context switcher.  Constants in this header therefore form a
+ * kernel-internal ABI: changes to field widths or offsets must be reflected in
+ * proc_pdp6.s and the corresponding validation tests.
+ */
 #ifndef DAIMON_PROC_H
 #define DAIMON_PROC_H
 
@@ -154,6 +164,7 @@
 #define PROC_KSTACK_WORDS \
         (PROC_SWAP_BACKING_OFFSET - PROC_USTACK_BASE)
 
+/** Three-word resident process descriptor. */
 struct proc {
         kword_t meta;
         kword_t vm_state;       /* LH user words, RH backend-private VM state. */
@@ -170,10 +181,14 @@ extern kword_t proc_runq_head;
 extern kword_t proc_rt_owner;
 extern kword_t mach_kernel_stack_base;
 
+/** Allocate and initialize the runtime-sized process and swap tables. */
 int proc_boot_init(void);
 unsigned int proc_slots_for_core(kword_t core_words);
+/** Claim a FREE process slot and initialize its parent/scheduler state. */
 int proc_slot_claim(unsigned int parent_slot);
+/** Complete EXIT after switching away from the dying process kernel stack. */
 int proc_exit_finish(int status);
+/** Apply a validated event to one process descriptor. */
 int proc_event_apply(unsigned int slot, unsigned int event);
 void proc_exit_current(int status);
 int proc_slot_discard(unsigned int slot);
@@ -208,6 +223,7 @@ int proc_nice_value(int slot);
 int proc_nice_current(int value);
 int proc_rt_control(unsigned int command);
 int proc_swap_victim(unsigned int exclude_owner);
+/** Allocate a stable u-area and seed the initial user/kernel context. */
 int proc_user_context_init(unsigned int slot, kword_t entry, kword_t stack,
     kword_t ac1, kword_t ac2, kword_t ac3);
 void proc_sched_pi_tick(void);

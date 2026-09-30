@@ -1,3 +1,15 @@
+/**
+ * @file proc.c
+ * @brief Resident process, scheduler, session, event, and TTY policy.
+ *
+ * The three-word process table keeps only compact identity, VM, scheduling,
+ * and zombie state.  Per-process executive state lives in a stable dynamically
+ * allocated u-area so user VM extents may move or swap without invalidating a
+ * sleeping kernel continuation.  Hand-written PDP-6 context switching, event
+ * wakeup, process-control, and cooked-TTY hot paths live in proc_pdp6.s; this
+ * file supplies the policy and resource-lifetime operations that are clearer
+ * and smaller in C.
+ */
 #include "proc.h"
 #include "fs_mres.h"
 #include "mm.h"
@@ -30,6 +42,7 @@ extern int proc_session_teardown(unsigned int leader_slot, kword_t leader_ctl);
 #define PROC_SWAP_RECORD_PRESENT(slot) \
         (proc_swap_records[(slot)].state != 0UL)
 
+/** Release one process's stable kernel u-area back to managed core. */
 static int
 proc_uarea_release(unsigned int slot, struct proc *p)
 {
@@ -48,6 +61,7 @@ proc_uarea_release(unsigned int slot, struct proc *p)
 
 extern void proc_trim_high(void);
 
+/** Reset a descriptor to the canonical FREE representation. */
 static void
 proc_slot_zero(struct proc *p)
 {
@@ -61,6 +75,7 @@ proc_slot_zero(struct proc *p)
 #define PROC_REPORT_BITS \
         ((kword_t)PROC_REPORT_MASK << PROC_REPORT_SHIFT)
 
+/** Replace the pending STOP/CONT wait report encoded in the u-area. */
 static void
 proc_report_set(struct proc *p, unsigned int report)
 {
@@ -114,16 +129,14 @@ kword_t proc_tty_records[PROC_TTY_COUNT];
 
 kword_t proc_tty_line_bases[PROC_TTY_LINE_PTR_WORDS];
 
-static unsigned int
-proc_tty_mode(unsigned int tty)
-{
-        return (unsigned int)((proc_tty_records[tty] >> PROC_TTY_MODE_SHIFT) &
-            PROC_TTY_MODE_MASK);
-}
+#define PROC_TTY_MODE(tty) \
+        ((unsigned int)((proc_tty_records[(tty)] >> PROC_TTY_MODE_SHIFT) & \
+        PROC_TTY_MODE_MASK))
 
 extern kword_t proc_tty_line_base_get(unsigned int tty);
 extern void proc_tty_line_base_set(unsigned int tty, kword_t base);
 
+/** Free one TTY's dynamically allocated canonical-input line buffer. */
 void
 proc_tty_line_reset(unsigned int tty)
 {
@@ -139,6 +152,7 @@ proc_tty_line_reset(unsigned int tty)
                 proc_tty_line_base_set(tty, 0UL);
 }
 
+/** Change TTY input mode, discarding any partially cooked input line. */
 int
 proc_tty_mode_set(unsigned int tty, unsigned int mode)
 {
@@ -146,7 +160,7 @@ proc_tty_mode_set(unsigned int tty, unsigned int mode)
 
         if (tty >= PROC_TTY_COUNT || (mode & ~PROC_TTY_MODE_MASK) != 0U)
                 return -1;
-        if (proc_tty_mode(tty) == mode)
+        if (PROC_TTY_MODE(tty) == mode)
                 return (int)mode;
         proc_tty_line_reset(tty);
         if (proc_tty_line_base_get(tty) != 0UL)
@@ -159,12 +173,12 @@ proc_tty_mode_set(unsigned int tty, unsigned int mode)
         return (int)mode;
 }
 
+/** Allocate and zero the compact canonical-input buffer for one TTY on demand. */
 kword_t *
 proc_tty_line_ensure(unsigned int tty)
 {
         kword_t base;
         kword_t *line;
-        unsigned int i;
 
         base = proc_tty_line_base_get(tty);
         if (base == 0UL) {
@@ -173,8 +187,7 @@ proc_tty_line_ensure(unsigned int tty)
                     &base) != MM_OK)
                         return 0;
                 line = (kword_t *)(unsigned long)base;
-                for (i = 0U; i < PROC_TTY_LINE_WORDS; ++i)
-                        line[i] = 0UL;
+                fs_zero_words(line, PROC_TTY_LINE_WORDS);
                 proc_tty_line_base_set(tty, base);
         }
         return (kword_t *)(unsigned long)base;
@@ -184,12 +197,14 @@ extern void proc_tty_line_put(kword_t *line, unsigned int pos,
     unsigned int ch);
 extern unsigned int proc_tty_line_get(kword_t *line, unsigned int pos);
 
+/** Emit one character through the resident TTY output service. */
 void
 proc_tty_echo(unsigned int tty, unsigned int ch)
 {
         (void)native_sys_putchar_call(TTY_PACK(tty, ch));
 }
 
+/** Echo the conventional backspace-space-backspace erase sequence. */
 void
 proc_tty_echo_erase(unsigned int tty)
 {
@@ -207,6 +222,7 @@ proc_tty_echo_erase(unsigned int tty)
 extern int proc_tty_session_has(unsigned int session, unsigned int pgrp,
     unsigned int skip_slot);
 
+/** Release TTY ownership when the final process in a session exits. */
 void
 proc_tty_release_session(unsigned int session, unsigned int leaving_slot)
 {
@@ -228,6 +244,7 @@ proc_tty_release_session(unsigned int session, unsigned int leaving_slot)
 }
 
 
+/** Destroy an uncommitted process slot and all resources already attached to it. */
 int
 proc_slot_discard(unsigned int slot)
 {
@@ -252,6 +269,7 @@ proc_slot_discard(unsigned int slot)
 
 extern void proc_notify_parent(unsigned int parent);
 
+/** Publish STOP/CONT status and wake the child's parent. */
 static void
 proc_child_report(struct proc *child, unsigned int report)
 {
@@ -259,6 +277,7 @@ proc_child_report(struct proc *child, unsigned int report)
         proc_notify_parent(PROC_PARENT_SLOT(child));
 }
 
+/** Reparent children to PID 1, or reap orphan zombies when INIT is absent. */
 static void
 proc_adopt_children(unsigned int old_parent)
 {
@@ -294,6 +313,7 @@ extern int proc_has_live_user(void);
 
 /* Release one process after its file table is closed.  The caller must never
  * run on the target u-area stack while this function executes. */
+/** Release heavy process resources and publish FREE or ZOMB terminal state. */
 static int
 proc_finish_slot(unsigned int slot, unsigned int status)
 {
@@ -344,6 +364,7 @@ proc_finish_slot(unsigned int slot, unsigned int status)
  * Heavy process resources are released immediately.  A child with a live
  * parent keeps only its three-word descriptor as a zombie until WAIT reaps it.
  */
+/** Finish EXIT after assembly has moved execution off the dying u-area stack. */
 int
 proc_exit_finish(int status)
 {
@@ -356,6 +377,7 @@ proc_exit_finish(int status)
         return proc_has_live_user();
 }
 
+/** Apply one validated event to a process, including fatal/STOP/CONT semantics. */
 int
 proc_event_apply(unsigned int slot, unsigned int event)
 {
@@ -434,6 +456,7 @@ proc_event_apply(unsigned int slot, unsigned int event)
 }
 
 
+/** Reap or report a matching child according to WAIT selector and NOHANG policy. */
 int
 proc_wait_status(unsigned int selector, kword_t *statusp, unsigned int flags)
 {
@@ -503,6 +526,7 @@ proc_wait_status(unsigned int selector, kword_t *statusp, unsigned int flags)
 
 
 
+/** Clamp and set the current process nice value; return the effective value. */
 int
 proc_nice_current(int value)
 {
@@ -524,6 +548,7 @@ proc_nice_current(int value)
 }
 
 
+/** Score the intrusive run queue and select the next resident runnable process. */
 static unsigned int
 proc_select_runnable(int elapsed_ticks)
 {
@@ -632,6 +657,7 @@ proc_select_runnable(int elapsed_ticks)
         return (unsigned int)best;
 }
 
+/** Select after an explicit reschedule, charging any deferred clock ticks. */
 unsigned int
 proc_sched_resched_select(void)
 {
@@ -642,6 +668,7 @@ proc_sched_resched_select(void)
         return proc_select_runnable(elapsed_ticks);
 }
 
+/** Select after a clock quantum; charge at least one elapsed tick. */
 unsigned int
 proc_sched_tick_select(void)
 {
@@ -654,6 +681,7 @@ proc_sched_tick_select(void)
         return proc_select_runnable(elapsed_ticks);
 }
 
+/** Choose the best swappable noncurrent process, or -1 when none is suitable. */
 int
 proc_swap_victim(unsigned int exclude_owner)
 {
