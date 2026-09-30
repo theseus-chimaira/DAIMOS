@@ -11,7 +11,7 @@
 #define D6LZ_HALF_MASK 0777777UL
 #define D6LZ_WORD_MASK 0777777777777UL
 #define D6LZ_DXR_MAGIC \
-    ((VFS_SIX6('D','X','R',' ',' ',' ') >> 18U) & D6LZ_HALF_MASK)
+    ((PDP10_SIX6('D','X','R',' ',' ',' ') >> 18U) & D6LZ_HALF_MASK)
 
 static kword_t d6lz_ring[D6LZ_RING];
 static kword_t d6lz_group[D6LZ_GROUP_TOKENS + 1U];

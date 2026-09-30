@@ -22,10 +22,10 @@ root_has_init(void)
         vnode_t system;
         vnode_t init;
 
-        root_name(&name, VFS_SIX6('S', 'Y', 'S', 'T', 'E', 'M'), 6U);
+        root_name(&name, PDP10_SIX6('S', 'Y', 'S', 'T', 'E', 'M'), 6U);
         if (vfs_lookup(vfs_namespace_root, &name, &system) != 0)
                 return 0;
-        root_name(&name, VFS_SIX6('I', 'N', 'I', 'T', ' ', ' '), 4U);
+        root_name(&name, PDP10_SIX6('I', 'N', 'I', 'T', ' ', ' '), 4U);
         if (vfs_lookup(system, &name, &init) != 0 ||
             vfs_stat(init, &st) != 0 || st.type != VFS_TYPE_REG)
                 return 0;

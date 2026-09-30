@@ -2,6 +2,7 @@
 #define DAIMON_VFS_H
 
 #include "kcore.h"
+#include <pdp10-sixbit.h>
 
 /* Compact vnode handle: provider:6, kind/mount:12, index:18. */
 typedef kword_t vnode_t;
@@ -70,13 +71,6 @@ typedef kword_t vnode_t;
 #define VFS_LOCK_SHARED      1U
 #define VFS_LOCK_EXCLUSIVE   2U
 #define VFS_LOCK_UNLOCK      3U
-
-/* Compile-time PDP-10 SIXBIT packing, also usable by host tests. */
-#define VFS_SIXCHAR(ch)      ((kword_t)(((unsigned int)(ch) - 040U) & 077U))
-#define VFS_SIX6(a,b,c,d,e,f) \
-        ((VFS_SIXCHAR(a) << 30) | (VFS_SIXCHAR(b) << 24) | \
-        (VFS_SIXCHAR(c) << 18) | (VFS_SIXCHAR(d) << 12) | \
-        (VFS_SIXCHAR(e) << 6) | VFS_SIXCHAR(f))
 
 struct vfs_name {
         unsigned int chars;

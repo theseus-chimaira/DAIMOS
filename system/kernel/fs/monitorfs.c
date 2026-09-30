@@ -41,10 +41,10 @@ mfsproc_parse_slot(const struct vfs_name *name, unsigned int *slotp)
         value = 0U;
         for (i = 0U; i < name->chars; ++i) {
                 ch = vfs_name_char(name, i);
-                if (ch < (unsigned int)VFS_SIXCHAR('0') ||
-                    ch > (unsigned int)VFS_SIXCHAR('9'))
+                if (ch < (unsigned int)PDP10_SIXCHAR('0') ||
+                    ch > (unsigned int)PDP10_SIXCHAR('9'))
                         return -1;
-                value = value * 10U + ch - (unsigned int)VFS_SIXCHAR('0');
+                value = value * 10U + ch - (unsigned int)PDP10_SIXCHAR('0');
         }
         if (value >= PROC_MAX_SLOTS)
                 return -1;
@@ -67,16 +67,16 @@ mfsproc_format_slot(unsigned int slot, struct vfs_name *name)
         word = 0UL;
         chars = 0U;
         if (hundreds != 0U) {
-                word |= VFS_SIXCHAR('0' + hundreds) << 30U;
-                word |= VFS_SIXCHAR('0' + tens) << 24U;
-                word |= VFS_SIXCHAR('0' + ones) << 18U;
+                word |= PDP10_SIXCHAR('0' + hundreds) << 30U;
+                word |= PDP10_SIXCHAR('0' + tens) << 24U;
+                word |= PDP10_SIXCHAR('0' + ones) << 18U;
                 chars = 3U;
         } else if (tens != 0U) {
-                word |= VFS_SIXCHAR('0' + tens) << 30U;
-                word |= VFS_SIXCHAR('0' + ones) << 24U;
+                word |= PDP10_SIXCHAR('0' + tens) << 30U;
+                word |= PDP10_SIXCHAR('0' + ones) << 24U;
                 chars = 2U;
         } else {
-                word |= VFS_SIXCHAR('0' + ones) << 30U;
+                word |= PDP10_SIXCHAR('0' + ones) << 30U;
                 chars = 1U;
         }
         mfsproc_name_set(name, word, chars);
@@ -85,14 +85,14 @@ mfsproc_format_slot(unsigned int slot, struct vfs_name *name)
 #define MONITORFS_PROCESS_FILE_COUNT 6U
 
 static const struct vfs_name mfsproc_file_names[MONITORFS_PROCESS_FILE_COUNT] = {
-        { 4U, { VFS_SIX6('P','P','I','D',' ',' '), 0UL, 0UL, 0UL } },
-        { 5U, { VFS_SIX6('S','T','A','T','E',' '), 0UL, 0UL, 0UL } },
-        { 5U, { VFS_SIX6('W','O','R','D','S',' '), 0UL, 0UL, 0UL } },
-        { 4U, { VFS_SIX6('N','A','M','E',' ',' '), 0UL, 0UL, 0UL } },
-        { 7U, { VFS_SIX6('C','M','D','L','I','N'),
-            VFS_SIX6('E',' ',' ',' ',' ',' '), 0UL, 0UL } },
-        { 11U, { VFS_SIX6('E','N','V','I','R','O'),
-            VFS_SIX6('N','M','E','N','T',' '), 0UL, 0UL } }
+        { 4U, { PDP10_SIX6('P','P','I','D',' ',' '), 0UL, 0UL, 0UL } },
+        { 5U, { PDP10_SIX6('S','T','A','T','E',' '), 0UL, 0UL, 0UL } },
+        { 5U, { PDP10_SIX6('W','O','R','D','S',' '), 0UL, 0UL, 0UL } },
+        { 4U, { PDP10_SIX6('N','A','M','E',' ',' '), 0UL, 0UL, 0UL } },
+        { 7U, { PDP10_SIX6('C','M','D','L','I','N'),
+            PDP10_SIX6('E',' ',' ',' ',' ',' '), 0UL, 0UL } },
+        { 11U, { PDP10_SIX6('E','N','V','I','R','O'),
+            PDP10_SIX6('N','M','E','N','T',' '), 0UL, 0UL } }
 };
 
 static int
@@ -237,22 +237,22 @@ mfsproc_readchar(vnode_t node, kword_t off, unsigned int *chp)
                 state = PROC_STATE(p);
                 chars = 4U;
                 if (state == PROC_ZOMB) {
-                        name = VFS_SIX6('Z','O','M','B',' ',' ');
+                        name = PDP10_SIX6('Z','O','M','B',' ',' ');
                 } else if (slot != 0U && !VM_SPACE_ACTIVE(p)) {
-                        name = VFS_SIX6('S','W','A','P',' ',' ');
+                        name = PDP10_SIX6('S','W','A','P',' ',' ');
                 } else if (state == PROC_SIDL) {
-                        name = VFS_SIX6('I','D','L',' ',' ',' ');
+                        name = PDP10_SIX6('I','D','L',' ',' ',' ');
                         chars = 3U;
                 } else if (state == PROC_SRUN) {
-                        name = VFS_SIX6('R','U','N',' ',' ',' ');
+                        name = PDP10_SIX6('R','U','N',' ',' ',' ');
                         chars = 3U;
                 } else if (state == PROC_SLEEP) {
-                        name = VFS_SIX6('S','L','E','E','P',' ');
+                        name = PDP10_SIX6('S','L','E','E','P',' ');
                         chars = 5U;
                 } else if (state == PROC_STOP) {
-                        name = VFS_SIX6('S','T','O','P',' ',' ');
+                        name = PDP10_SIX6('S','T','O','P',' ',' ');
                 } else {
-                        name = VFS_SIX6('F','R','E','E',' ',' ');
+                        name = PDP10_SIX6('F','R','E','E',' ',' ');
                 }
                 return vfs_sixbit_readchar(name, chars, off, chp);
         }
@@ -276,16 +276,16 @@ mfsproc_readchar(vnode_t node, kword_t off, unsigned int *chp)
 #define MONITORFS_DOMAIN_STATUS_WORDS 6U
 
 static const struct vfs_name mfsdom_file_names[] = {
-        { 9U, { VFS_SIX6('P','R','O','C','E','S'),
-            VFS_SIX6('S','E','S',' ',' ',' '), 0UL, 0UL } },
-        { 5U, { VFS_SIX6('W','O','R','D','S',' '), 0UL, 0UL, 0UL } },
-        { 7U, { VFS_SIX6('S','W','A','P','P','E'),
-            VFS_SIX6('D',' ',' ',' ',' ',' '), 0UL, 0UL } },
-        { 9U, { VFS_SIX6('S','W','A','P','W','O'),
-            VFS_SIX6('R','D','S',' ',' ',' '), 0UL, 0UL } },
-        { 7U, { VFS_SIX6('S','T','O','P','P','E'),
-            VFS_SIX6('D',' ',' ',' ',' ',' '), 0UL, 0UL } },
-        { 4U, { VFS_SIX6('P','I','D','S',' ',' '), 0UL, 0UL, 0UL } }
+        { 9U, { PDP10_SIX6('P','R','O','C','E','S'),
+            PDP10_SIX6('S','E','S',' ',' ',' '), 0UL, 0UL } },
+        { 5U, { PDP10_SIX6('W','O','R','D','S',' '), 0UL, 0UL, 0UL } },
+        { 7U, { PDP10_SIX6('S','W','A','P','P','E'),
+            PDP10_SIX6('D',' ',' ',' ',' ',' '), 0UL, 0UL } },
+        { 9U, { PDP10_SIX6('S','W','A','P','W','O'),
+            PDP10_SIX6('R','D','S',' ',' ',' '), 0UL, 0UL } },
+        { 7U, { PDP10_SIX6('S','T','O','P','P','E'),
+            PDP10_SIX6('D',' ',' ',' ',' ',' '), 0UL, 0UL } },
+        { 4U, { PDP10_SIX6('P','I','D','S',' ',' '), 0UL, 0UL, 0UL } }
 };
 
 static unsigned int
@@ -333,10 +333,10 @@ mfsdom_parse_id(const struct vfs_name *name, unsigned int *didp)
         value = 0U;
         for (i = 0U; i < name->chars; ++i) {
                 ch = vfs_name_char(name, i);
-                if (ch < (unsigned int)VFS_SIXCHAR('0') ||
-                    ch > (unsigned int)VFS_SIXCHAR('9'))
+                if (ch < (unsigned int)PDP10_SIXCHAR('0') ||
+                    ch > (unsigned int)PDP10_SIXCHAR('9'))
                         return -1;
-                value = value * 10U + ch - (unsigned int)VFS_SIXCHAR('0');
+                value = value * 10U + ch - (unsigned int)PDP10_SIXCHAR('0');
         }
         if (value >= PROC_MAX_SLOTS)
                 return -1;
@@ -357,16 +357,16 @@ mfsdom_name_id(unsigned int did, struct vfs_name *name)
         o = did % 10U;
         word = 0UL;
         if (h != 0U) {
-                word = VFS_SIXCHAR('0' + h) << 30U;
-                word |= VFS_SIXCHAR('0' + t) << 24U;
-                word |= VFS_SIXCHAR('0' + o) << 18U;
+                word = PDP10_SIXCHAR('0' + h) << 30U;
+                word |= PDP10_SIXCHAR('0' + t) << 24U;
+                word |= PDP10_SIXCHAR('0' + o) << 18U;
                 name->chars = 3U;
         } else if (t != 0U) {
-                word = VFS_SIXCHAR('0' + t) << 30U;
-                word |= VFS_SIXCHAR('0' + o) << 24U;
+                word = PDP10_SIXCHAR('0' + t) << 30U;
+                word |= PDP10_SIXCHAR('0' + o) << 24U;
                 name->chars = 2U;
         } else {
-                word = VFS_SIXCHAR('0' + o) << 30U;
+                word = PDP10_SIXCHAR('0' + o) << 30U;
                 name->chars = 1U;
         }
         name->words[0] = word;

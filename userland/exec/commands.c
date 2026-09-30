@@ -162,7 +162,7 @@ cmd_ls_one(kword_t *path, struct u_io *io)
 static int
 cmd_ls(int argc, kword_t **argv, struct u_io *io)
 {
-        static kword_t dot[2] = { 1UL, VFS_SIX6('.',' ',' ',' ',' ',' ') };
+        static kword_t dot[2] = { 1UL, PDP10_SIX6('.',' ',' ',' ',' ',' ') };
         int i;
         int rc;
         if (argc < 2) return cmd_ls_one(dot, io);
@@ -725,7 +725,7 @@ cmd_ps(int argc, kword_t **argv, struct u_io *io)
 static int
 cmd_devs(int argc, kword_t **argv, struct u_io *io)
 {
-        static kword_t dev[2] = { 4UL, VFS_SIX6('/','D','E','V',' ',' ') };
+        static kword_t dev[2] = { 4UL, PDP10_SIX6('/','D','E','V',' ',' ') };
         (void)argc; (void)argv;
         return cmd_ls_one(dev, io);
 }

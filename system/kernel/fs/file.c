@@ -70,13 +70,13 @@ extern int file_component(const kword_t *path, unsigned int *posp,
 static int
 file_name_dot(const struct vfs_name *name)
 {
-        return vfs_name_is6(name, VFS_SIX6('.',' ',' ',' ',' ',' '), 1U);
+        return vfs_name_is6(name, PDP10_SIX6('.',' ',' ',' ',' ',' '), 1U);
 }
 
 static int
 file_name_dotdot(const struct vfs_name *name)
 {
-        return vfs_name_is6(name, VFS_SIX6('.','.',' ',' ',' ',' '), 2U);
+        return vfs_name_is6(name, PDP10_SIX6('.','.',' ',' ',' ',' '), 2U);
 }
 
 #define FILE_PATH_WORDS       18U

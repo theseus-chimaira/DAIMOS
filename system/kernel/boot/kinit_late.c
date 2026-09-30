@@ -63,8 +63,8 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
                 return;
 
         init_path[0] = 12UL;
-        init_path[1] = VFS_SIX6('/', 'S', 'Y', 'S', 'T', 'E');
-        init_path[2] = VFS_SIX6('M', '/', 'I', 'N', 'I', 'T');
+        init_path[1] = PDP10_SIX6('/', 'S', 'Y', 'S', 'T', 'E');
+        init_path[2] = PDP10_SIX6('M', '/', 'I', 'N', 'I', 'T');
 
         proc_table[0].meta = 0UL;
         VM_SPACE_RESET(&proc_table[0]);

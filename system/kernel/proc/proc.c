@@ -1060,13 +1060,13 @@ proc_comm(const struct proc *p)
         unsigned int slot;
 
         if (p == 0 || proc_table == 0)
-                return VFS_SIX6('U','S','E','R',' ',' ');
+                return PDP10_SIX6('U','S','E','R',' ',' ');
         slot = (unsigned int)(p - proc_table);
         if (slot == 0U)
-                return VFS_SIX6('S','W','A','P','P','E');
+                return PDP10_SIX6('S','W','A','P','P','E');
         if (slot == 1U)
-                return VFS_SIX6('I','N','I','T',' ',' ');
-        return VFS_SIX6('U','S','E','R',' ',' ');
+                return PDP10_SIX6('I','N','I','T',' ',' ');
+        return PDP10_SIX6('U','S','E','R',' ',' ');
 }
 #endif
 

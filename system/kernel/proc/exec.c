@@ -10,7 +10,7 @@
 #define EXEC_HALF_MASK 0777777UL
 #define EXEC_WORD_MASK 0777777777777UL
 #define EXEC_DXR_MAGIC \
-    ((VFS_SIX6('D','X','R',' ',' ',' ') >> 18) & EXEC_HALF_MASK)
+    ((PDP10_SIX6('D','X','R',' ',' ',' ') >> 18) & EXEC_HALF_MASK)
 
 
 

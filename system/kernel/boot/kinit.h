@@ -87,27 +87,7 @@ typedef unsigned long kword_t;
  *                          mounted root does not contain /SYSTEM/INIT.
  */
 
-/**
- * @brief Pack one ASCII character into its six-bit PDP-10 value.
- *
- * Unlike SIXBIT(), this is a C integer constant expression and can therefore
- * be used in static initializers under KCC.
- */
-#define KINIT_SIXCHAR(ch) \
-        ((kword_t)(((unsigned int)(ch) - 040U) & 077U))
-
-/** Pack six characters into one 36-bit SIXBIT word at compile time. */
-#define KINIT_SIX6(a,b,c,d,e,f) \
-        ((KINIT_SIXCHAR(a) << 30) | (KINIT_SIXCHAR(b) << 24) | \
-        (KINIT_SIXCHAR(c) << 18) | (KINIT_SIXCHAR(d) << 12) | \
-        (KINIT_SIXCHAR(e) << 6) | KINIT_SIXCHAR(f))
-
-/** Pack three characters into one 18-bit SIXBIT halfword at compile time. */
-#define KINIT_SIX3(a,b,c) \
-        ((KINIT_SIXCHAR(a) << 12) | (KINIT_SIXCHAR(b) << 6) | \
-        KINIT_SIXCHAR(c))
-
-#define KINIT_ERR_RT              KINIT_SIX3('?', 'R', 'T')
+#define KINIT_ERR_RT              PDP10_SIX3('?', 'R', 'T')
 
 /** @brief Saved private copy of the two fixed Stage1 handoff words. */
 extern kword_t kinit_boot_handoff[2];
