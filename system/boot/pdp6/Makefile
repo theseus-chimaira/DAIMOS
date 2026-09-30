@@ -248,6 +248,7 @@ TAPE_MRES_OBJ = $(BUILD)/tape-mres.dobj
 SLV_MRES_OBJ = $(BUILD)/slv-mres.dobj
 MEMFS_MRES_OBJ = $(BUILD)/memfs-mres.dobj
 DTFS_MRES_OBJ = $(BUILD)/dtfs-mres.dobj
+DTFS_MRES_FOLD_PLAN = $(BUILD)/dtfs-mres.fold
 BLOCKSET_MRES_OBJ = $(BUILD)/blockset-mres.dobj
 BADMAP_MRES_OBJ = $(BUILD)/badmap-mres.dobj
 LOGSTORE_MRES_OBJ = $(BUILD)/logstore-mres.dobj
@@ -573,8 +574,12 @@ $(MEMFS_MRES_OBJ): $(BUILD)/memfs_pdp10.dobj $(KCORE_MAP)
 	    -R $@ -N memfs_mres_package -X memfs_mres_dispatch -X memfs_mres_usage \
 	    $(BUILD)/memfs_pdp10.dobj
 
-$(DTFS_MRES_OBJ): $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_pdp10.dobj $(KCORE_MAP)
+$(DTFS_MRES_FOLD_PLAN): $(BUILD)/dtfs_pdp10.dobj $(BUILD)/tsfs_pdp10.dobj $(P10FOLD)
+	$(P10FOLD) -m 4 -P $@ $(BUILD)/dtfs_pdp10.dobj $(BUILD)/tsfs_pdp10.dobj >/dev/null
+
+$(DTFS_MRES_OBJ): $(BUILD)/dtfs.dobj $(BUILD)/dtfs_pdp10.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_pdp10.dobj $(KCORE_MAP) $(DTFS_MRES_FOLD_PLAN)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dtfs-mres.dxr -M $(BUILD)/dtfs-mres.map \
+	    --fold-plan $(DTFS_MRES_FOLD_PLAN) \
 	    -R $@ -N dtfs_mres_package -X dtfs_mres_dispatch \
 	    -X dtfs_dtc_read_jump -X dtfs_dtc_write_jump \
 	    -X dtfs_mount_unit -X tsfs_mres_dispatch -X dtfs_dir \
@@ -863,8 +868,7 @@ $(SIMH_INI): simh/simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE) $(BOOT_MEDIA_STAMP) f
 	  disk) root_class=1 ;; \
 	  tape) root_class=2 ;; \
 	  drum) root_class=3 ;; \
-	  ram)  root_class=4 ;; \
-	  *) echo "ROOT must be auto, disk, tape, drum, or ram" >&2; exit 2 ;; \
+	  *) echo "ROOT must be auto, disk, tape, or drum" >&2; exit 2 ;; \
 	esac; \
 	case '$(ROOTSET)' in 1|2|3|4) ;; \
 	  *) echo "ROOTSET must be 1, 2, 3, or 4" >&2; exit 2 ;; \
