@@ -379,14 +379,14 @@ mfsdev_stats_d6_writes:
 mfsdev_stats_device_reads:
         movei   0,1
         lsh     0,0(4)
-        tdnn    0,[076325]
+        tdnn    0,[0476325]
         jrst    mfsdev_stats_zero
         move    1,mfsdev_io_in(4)
         jrst    mfsdev_stats_emit
 mfsdev_stats_device_writes:
         movei   0,1
         lsh     0,0(4)
-        tdnn    0,[01073751]
+        tdnn    0,[01473751]
         jrst    mfsdev_stats_zero
         move    1,mfsdev_io_out(4)
         jrst    mfsdev_stats_emit
