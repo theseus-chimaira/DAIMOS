@@ -319,6 +319,8 @@ ${BUILD}/d6fs_provider.s: fs/d6fs_provider.c fs/d6fs_provider_mutation_pdp10.s $
 	cat $@.c fs/d6fs_provider_mutation_pdp10.s > $@
 	rm -f $@.c
 
+# DAIMOS 0.9/1.0 always includes native, TENEX, and ITS DECtape support.
+# These compatibility paths are deliberately not build-time options.
 ${BUILD}/dtfs.s: fs/dtfs.c fs/dtfs_chain_walk_pdp10.s fs/dtfs_resize_pdp10.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} -DDTFS_ENABLE_TENEX=1 -DDTFS_ENABLE_ITS=1 ${INCLUDES} -S fs/dtfs.c -o $@.c
