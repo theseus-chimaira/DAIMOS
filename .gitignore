@@ -21,4 +21,4 @@ build/
 *.swp
 *.swo
 .core
-core
+/core
