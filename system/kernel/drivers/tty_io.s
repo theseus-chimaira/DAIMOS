@@ -1,8 +1,16 @@
-; tty_io.s -- compact logical-terminal I/O dispatcher.
-;
-; Terminal 0 is CTY, 1..16 are DCS lines 0..15, and 17..20 are GE consoles.
-; MINIT patches the six backend tail jumps below.  Missing backends retain the
-; shared argument-error target.  Tail jumps reuse the caller return PC.
+/**
+ * @file tty_io.s
+ * @brief Resident logical-terminal dispatcher over CTY, DCS, and GE backends.
+ *
+ * Logical terminal 0 is CTY, 1..16 map to DCS lines 0..15, and 17..20 map to
+ * GE consoles 0..3. MINIT patches the six backend tail jumps after the
+ * corresponding physical MRES packages are installed. Missing backends retain
+ * kret_arg, making an unavailable physical device indistinguishable from an
+ * invalid logical id at this lowest dispatch layer.
+ *
+ * All backend calls are tail jumps: the physical driver returns directly to
+ * the original caller, so TTY adds no stack frame or resident call wrapper.
+ */
 
         .text
         .globl tty_putchar
@@ -16,6 +24,15 @@
         .globl kret_arg
         .globl mfsdev_io_out
 
+/**
+ * @brief Dispatch one packed logical-terminal output byte.
+ * @param AC1 TTY_PACK(id, byte).
+ * @return Directly from the selected backend or kret_arg.
+ *
+ * AC2 is scratch for the six-bit logical id. DCS and GE ids are translated in
+ * place to the zero-based packed line format expected by those drivers. One
+ * MonitorFS logical-TTY output operation is counted before a valid tail jump.
+ */
 tty_putchar:
         ldb 2,[POINT 6,1,27]
         jumpe 2,tty_putchar_cty
@@ -39,8 +56,14 @@ tty_putchar_cty:
 tty_cty_putchar_address:
         jrst kret_arg
 
-; AC1 = logical TTY id.  DCS/GE backends receive their zero-based line id and
-; return a character from that exact logical line.
+/**
+ * @brief Dispatch one blocking logical-terminal input request.
+ * @param AC1 Logical TTY id 0..20.
+ * @return Directly from the selected physical backend or kret_arg.
+ *
+ * DCS/GE ids are translated in AC1 to zero-based physical line numbers. CTY
+ * receives no line argument. No additional state or buffer is owned by TTY.
+ */
 tty_getchar:
         jumpe 1,tty_getchar_cty
         caile 1,020
