@@ -152,7 +152,7 @@ KCORE_FIXED_SRCS = core/ret.s \
 	proc/proc_run_pdp10.s \
 	drivers/device_state_pdp10.s \
 	proc/syscall_info_pdp10.s \
-	drivers/pclk_pdp10.s \
+	drivers/pclk.s \
 	drivers/lpt_io.s \
 	proc/syscall_dispatch.s \
 	proc/mach_user.s \
@@ -182,7 +182,7 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/proc_run_pdp10.s \
 	$(BUILD)/device_state_pdp10.s \
 	$(BUILD)/syscall_info_pdp10.s \
-	$(BUILD)/pclk_pdp10.s \
+	$(BUILD)/pclk.s \
 	$(BUILD)/lpt_io.s \
 	$(BUILD)/syscall_dispatch.s \
 	$(BUILD)/mach_user.s \
@@ -354,7 +354,7 @@ COPY_ASM_SRCS = core/ret.s \
 	ipc/pipe_pdp10.s \
 		drivers/device_state_pdp10.s \
 	proc/syscall_info_pdp10.s \
-	drivers/pclk_pdp10.s \
+	drivers/pclk.s \
 	drivers/lpt_io.s \
 	proc/syscall_dispatch.s \
 	proc/mach_user.s \
@@ -400,7 +400,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret.s \
 	$(BUILD)/monitorfs_pdp10.s \
 	$(BUILD)/device_state_pdp10.s \
 	$(BUILD)/syscall_info_pdp10.s \
-	$(BUILD)/pclk_pdp10.s \
+	$(BUILD)/pclk.s \
 	$(BUILD)/lpt_io.s \
 	$(BUILD)/syscall_dispatch.s \
 	$(BUILD)/mach_user.s \
