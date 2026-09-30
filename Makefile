@@ -25,7 +25,7 @@ boot:
 	    '  DCS0  127.0.0.1:$(SIMH_DCS0_PORT)' \
 	    '  GE0   127.0.0.1:$(SIMH_GE0_PORT)' \
 	    '  PCLK  $(SIMH_PCLK_MODE)'
-	$(MAKE) -C system/boot/pdp6-disk boot BUILD_ROOT='$(BUILD_ROOT)' \
+	$(MAKE) -C system/boot/pdp6 boot BUILD_ROOT='$(BUILD_ROOT)' \
 	    PDP10_PREFIX='$(PDP10_PREFIX)' SIMH_DCS0_PORT='$(SIMH_DCS0_PORT)' \
 	    SIMH_GE0_PORT='$(SIMH_GE0_PORT)' SIMH_PCLK_MODE='$(SIMH_PCLK_MODE)' \
 	    ROOT='$(ROOT)' ROOTSET='$(ROOTSET)'
@@ -34,7 +34,7 @@ disk-boot:
 	$(MAKE) boot ROOT='$(ROOT)' ROOTSET='$(ROOTSET)'
 
 permanent-size:
-	$(MAKE) -C system/boot/pdp6-disk permanent-size BUILD_ROOT='$(BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'
+	$(MAKE) -C system/boot/pdp6 permanent-size BUILD_ROOT='$(BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'
 
 clean:
 	$(MAKE) -C userland/libc clean BUILD_ROOT='$(BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'

@@ -2,7 +2,7 @@
 PROJECT_ROOT != cd ../../.. && pwd
 KERNEL_DIR = $(PROJECT_ROOT)/system/kernel
 BUILD_ROOT ?= $(PROJECT_ROOT)/build
-BUILD ?= $(BUILD_ROOT)/system/boot/pdp6-disk
+BUILD ?= $(BUILD_ROOT)/system/boot/pdp6
 PDP10_PREFIX ?= $(HOME)/cross
 
 DAS ?= $(PDP10_PREFIX)/bin/das
@@ -458,7 +458,7 @@ $(MINIT_TABLE_ASM): $(KERNEL_DIR)/modules/module_table.s force-minit-config | $(
 $(MINIT_TABLE_OBJ): $(MINIT_TABLE_ASM) $(BUILD)
 	$(DAS) $(DASFLAGS) -c -o $@ $<
 
-$(END_OBJ): image-end.s $(BUILD)
+$(END_OBJ): image/image-end.s $(BUILD)
 	$(DAS) $(DASFLAGS) -c -o $@ $<
 
 $(KCORE_FOLD_PLAN): $(KCORE_FOLD_OBJS) $(P10FOLD)
@@ -606,7 +606,7 @@ $(D6FS_MRES_OBJ): $(BUILD)/fs_backing_pdp10.dobj $(BUILD)/d6fs.dobj $(BUILD)/d6f
 	    -X fs_backing_direct_drm_read_jump -X fs_backing_direct_drm_write_jump \
 	    $(BUILD)/fs_backing_pdp10.dobj $(BUILD)/d6fs.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate_pdp10.dobj $(BUILD)/d6fs_pdp10.dobj
 
-$(KCORE_EMBED_ASM): kcore-embed.s.in $(KCORE_MAP) $(BUILD)
+$(KCORE_EMBED_ASM): image/kcore-embed.s.in $(KCORE_MAP) $(BUILD)
 	end=`awk '$$1 == "__kcore_low_init_end" { print $$2 }' $(KCORE_MAP)`; \
 	test -n "$$end"; words=$$((0$$end - 060)); words=`printf '%o' "$$words"`; \
 	sed "s/@KCORE_INIT_WORDS@/$$words/" $< > $@
@@ -674,8 +674,8 @@ $(IMAGE_RAW): $(IMAGE_RIM) $(IMAGE_MAP)
 	test -n "$$end"; words=$$((0$$end - 030000)); words=`printf '%o' "$$words"`; \
 	$(MKSTREAM) -i $(IMAGE_RIM) -o $@ -b 030000 -w "$$words"
 
-$(IMAGE_WORDS): $(IMAGE_RAW) $(IMAGE_MAP) $(KCORE_STREAM) $(KCORE_MAP) mkimage.sh
-	./mkimage.sh --map $(IMAGE_MAP) --input $(IMAGE_RAW) \
+$(IMAGE_WORDS): $(IMAGE_RAW) $(IMAGE_MAP) $(KCORE_STREAM) $(KCORE_MAP) image/mkimage.sh
+	./image/mkimage.sh --map $(IMAGE_MAP) --input $(IMAGE_RAW) \
 	    --kcore $(KCORE_STREAM) --kcore-map $(KCORE_MAP) \
 	    --core-words $(BOOT_CORE_WORDS) \
 	    --stack-words $(KINIT_STACK_RESERVE_WORDS) --output $@
@@ -822,7 +822,7 @@ $(BOOT_MEDIA_STAMP): $(IMAGE_BOOT_WORDS) $(DISK_IMAGE) $(STAGE1_TAPE) $(ROOT_MED
 	} > '$(BOOT_COMMANDS)'; \
 	touch '$@'
 
-$(SIMH_INI): simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE) $(BOOT_MEDIA_STAMP) force-simh-config
+$(SIMH_INI): simh/simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE) $(BOOT_MEDIA_STAMP) force-simh-config
 	@case '$(SIMH_PCLK_MODE)' in \
 	  REALTIME|HISTORICAL) ;; \
 	  *) echo "SIMH_PCLK_MODE must be REALTIME or HISTORICAL" >&2; exit 2 ;; \
@@ -868,7 +868,7 @@ $(SIMH_INI): simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE) $(BOOT_MEDIA_STAMP) force-
 image: $(SIMH_INI)
 
 permanent-size: $(KCORE_MAP) $(MRES_PACKAGE_OBJS)
-	@./report-permanent.sh --kcore-map $(KCORE_MAP) --build $(BUILD) \
+	@./image/report-permanent.sh --kcore-map $(KCORE_MAP) --build $(BUILD) \
 	    --objdump $(PDP10_OBJDUMP) --omit-blockset
 
 boot:
