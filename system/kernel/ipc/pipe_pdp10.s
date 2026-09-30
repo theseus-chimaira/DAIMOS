@@ -12,6 +12,16 @@
 ; the existing 128-character ring is used.  state packs head in bits 0..6 and
 ; count in bits 7..14.  Tail is derived as (head + count) & 0177.  refs is
 ; readers,,writers in two 18-bit halves.
+;
+; Post-0.9 note: a future typed pipe facility may add fixed packing modes for
+; 9-bit C bytes, 18-bit halfwords, and 36-bit words if real callers require
+; them.  Do not turn this into a generic arbitrary-width bitstream: every
+; extra per-pipe mode adds metadata and dispatch in this hot path.  SIXBIT
+; (6-bit) pipes are also deliberately not used for normal shell streams because
+; CR/LF and control characters would require escaping and variable-length
+; accounting.  DAIMOS 0.9 therefore keeps one simple 7-bit character-stream
+; representation; wider modes are an explicit post-0.9 feature, not part of
+; the current pipe ABI.
         .text
         .globl  file_table
         .globl  mm_alloc_aligned
