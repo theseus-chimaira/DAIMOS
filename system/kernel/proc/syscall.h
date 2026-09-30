@@ -1,3 +1,11 @@
+/**
+ * @file syscall.h
+ * @brief DAIMOS userspace monitor-UUO numbers, extension ABI, and wire structs.
+ *
+ * Monitor UUOs 040..077 form the compact native syscall bank. UUO 077
+ * multiplexes process control and less-common extensions. Structures here are
+ * userspace/kernel ABI objects and therefore use fixed packed word layouts.
+ */
 #ifndef DAIMON_SYSCALL_H
 #define DAIMON_SYSCALL_H
 
@@ -261,7 +269,7 @@ int proc_control(unsigned int op, unsigned int arg);
 int sys_procinfo(unsigned int slot, struct sys_procinfo *info);
 int sys_meminfo(struct sys_meminfo *info);
 
-/* Called by mach_user.s; consumes the fixed native syscall AC snapshot. */
+/* Called by mach_user_pdp6.s; consumes the fixed native syscall AC snapshot. */
 int exec_native_syscall(void);
 
 #endif

@@ -1,5 +1,5 @@
 /**
- * @file vm_pdp6_asm.s
+ * @file vm_pdp6.s
  * @brief PDP-6 APR activation, user mapping, and no-return user-entry paths.
  *
  * Generic kernel code treats struct proc word 1 as opaque VM state except for

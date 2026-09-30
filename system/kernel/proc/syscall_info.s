@@ -1,4 +1,12 @@
-; syscall_info.s -- compact runtime-sized PROCINFO/MEMINFO syscalls.
+/**
+ * @file syscall_info.s
+ * @brief Compact generic PROCINFO and MEMINFO query implementations.
+ *
+ * These routines inspect packed process/file/MM state without depending on
+ * PDP-6 trap mechanics, so the source intentionally has no machine suffix.
+ * MEMINFO reuses its destination fields as a temporary filesystem request to
+ * avoid a resident scratch buffer.
+ */
         .text
         .globl  kret_zero
         .globl  kret_neg1
@@ -15,7 +23,12 @@
         .equ    PROC_STATE_LH_MASK,0700000
         .equ    PROC_UAREA_RH,0400000
 
-; int sys_procinfo(unsigned int slot, struct sys_procinfo *info)
+/**
+ * @brief Fill one sys_procinfo record for a live process-table slot.
+ * @param AC1 Slot/PID.
+ * @param AC2 Validated result pointer.
+ * @return Zero or -1 for an invalid/FREE slot.
+ */
         .globl  sys_procinfo
 sys_procinfo:
         caml    1,proc_slots
@@ -52,7 +65,11 @@ sys_procinfo_comm:
         movem   3,4(2)
         jrst    kret_zero
 
-; int sys_meminfo(struct sys_meminfo *info)
+/**
+ * @brief Fill runtime memory, MEMFS, process-slot, and file-slot counters.
+ * @param AC1 Validated sys_meminfo pointer.
+ * @return Zero; unavailable optional MEMFS statistics are reported as zero.
+ */
         .globl  sys_meminfo
 sys_meminfo:
         move    2,1                    ; validated info pointer
@@ -76,12 +93,9 @@ sys_resident_words_immediate:
 ; Reuse info[2..8] as the seven-word filesystem request.  These fields are
 ; filled with their final values after the optional MEMFS call returns.
         setzm   2(2)
-        setzm   3(2)
-        setzm   4(2)
-        setzm   5(2)
-        setzm   6(2)
-        setzm   7(2)
-        setzm   010(2)
+        movei   1,3(2)
+        hrli    1,2(2)
+        blt     1,010(2)
         movei   1,2(2)
         push    17,2                    ; MRES calls may clobber AC2
 sys_memfs_usage_call:

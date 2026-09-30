@@ -23,7 +23,7 @@ PROC_STACK_WATERMARK ?= 0
 VM_BACKEND ?= pdp6
 VM_BACKEND_C = proc/vm_${VM_BACKEND}.c
 VM_BACKEND_H = proc/vm_${VM_BACKEND}.h
-VM_BACKEND_ASM = proc/vm_${VM_BACKEND}_asm.s
+VM_BACKEND_FIXED = proc/vm_${VM_BACKEND}.s
 VM_SWAP_C = proc/vm_${VM_BACKEND}_swap.c
 VERSION_FILE = ${PROJECT_ROOT}/VERSION
 DAIMON_VERSION != cat ${VERSION_FILE}
@@ -154,8 +154,8 @@ KCORE_FIXED_SRCS = core/ret.s \
 	proc/syscall_info.s \
 	drivers/pclk.s \
 	drivers/lpt_io.s \
-	proc/syscall_dispatch.s \
-	proc/mach_user.s \
+	proc/syscall_dispatch_pdp6.s \
+	proc/mach_user_pdp6.s \
 	core/kcore_io_pdp6.s \
 	storage/storage_router.s \
 	core/kcore_end.s
@@ -184,9 +184,9 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/syscall_info.s \
 	$(BUILD)/pclk.s \
 	$(BUILD)/lpt_io.s \
-	$(BUILD)/syscall_dispatch.s \
-	$(BUILD)/mach_user.s \
-	$(BUILD)/vm_backend_asm.s \
+	$(BUILD)/syscall_dispatch_pdp6.s \
+	$(BUILD)/mach_user_pdp6.s \
+	$(BUILD)/vm_backend_pdp6.s \
 	$(BUILD)/kcore_io_pdp6.s \
 	$(BUILD)/storage_router.s \
 	$(BUILD)/kcore_end.s
@@ -302,9 +302,9 @@ ${BUILD}/proc_swap.s: ${VM_SWAP_C} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S ${VM_SWAP_C} -o $@
 
-${BUILD}/vm_backend_asm.s: ${VM_BACKEND_ASM}
+${BUILD}/vm_backend_pdp6.s: ${VM_BACKEND_FIXED}
 	@mkdir -p ${BUILD}
-	cp ${VM_BACKEND_ASM} $@
+	cp ${VM_BACKEND_FIXED} $@
 
 ${BUILD}/d6fs.s: fs/d6fs.c ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
@@ -356,8 +356,8 @@ COPY_ASM_SRCS = core/ret.s \
 	proc/syscall_info.s \
 	drivers/pclk.s \
 	drivers/lpt_io.s \
-	proc/syscall_dispatch.s \
-	proc/mach_user.s \
+	proc/syscall_dispatch_pdp6.s \
+	proc/mach_user_pdp6.s \
 	core/kcore_io_pdp6.s \
 	storage/storage_router.s \
 	core/kcore_end.s \
@@ -402,8 +402,8 @@ COPY_ASM_TARGETS = $(BUILD)/ret.s \
 	$(BUILD)/syscall_info.s \
 	$(BUILD)/pclk.s \
 	$(BUILD)/lpt_io.s \
-	$(BUILD)/syscall_dispatch.s \
-	$(BUILD)/mach_user.s \
+	$(BUILD)/syscall_dispatch_pdp6.s \
+	$(BUILD)/mach_user_pdp6.s \
 	$(BUILD)/kcore_io_pdp6.s \
 	$(BUILD)/storage_router.s \
 	$(BUILD)/kcore_end.s \

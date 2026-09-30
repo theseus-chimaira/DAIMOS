@@ -1,10 +1,17 @@
-; syscall_dispatch.s -- native PDP-6 monitor-UUO syscall dispatcher.
-;
-; Monitor UUOs 040..077 are the conventional userspace syscall ABI.  UUO 043
-; is intentionally unused in the SIXBIT-only 0.9/1.0 ABI.  The hardware
-; leaves the trapped UUO at 000040 and its computed effective address at
-; 000041.  mach_user materializes that effective address in AC1, so real
-; arguments arrive here in AC1..AC4 and AC1 also carries the result.
+/**
+ * @file syscall_dispatch_pdp6.s
+ * @brief Resident PDP-6 native monitor-UUO syscall dispatcher.
+ *
+ * Monitor UUOs 040..077 are the userspace syscall ABI. PDP-6 hardware leaves
+ * the trapped instruction at low-core 000040; mach_user_pdp6.s materializes
+ * its computed effective address in AC1, while AC2..AC4 carry remaining
+ * arguments. AC1 is also the syscall result.
+ *
+ * User pointers are translated only while the current VM mapping is held.
+ * Blocking operations must either retain that hold intentionally or keep only
+ * logical pointers and remap after wakeup. UUO 077 uses a compact packed
+ * extension table; unassigned extension opcodes fall through to PROCCTL.
+ */
 
         .text
         .globl  kret_zero
@@ -34,6 +41,7 @@
         .globl  vfs_chown
         .globl  file_rmdir
         .globl  file_check_root
+/** @brief Decode low-core monitor UUO 040..077 and tail-dispatch its handler. */
 exec_native_syscall:
         ; Recover the monitor-UUO opcode from the trapped instruction.
         ; AC0 cannot be an index register on the PDP-6: index field zero
@@ -73,9 +81,10 @@ native_sys_getpid:
         move    1,proc_current_slot
         popj    17,
 
-; Translate one user pointer while marking the current user extent immovable.
-; Success returns the mapped pointer in AC1 with the hold still active.  A
-; failed translation drops the hold before returning zero.
+/**
+ * @brief Translate one user pointer while holding the current VM immovable.
+ * @return AC1 mapped pointer, or zero after releasing the hold on failure.
+ */
 native_sys_map_one:
         pushj   17,vm_user_mapping_hold
         pushj   17,vm_user_words
@@ -148,8 +157,7 @@ native_sys_mapped_return:
         hrrz    3,7
         pushj   17,file_write_words
         jrst    native_sys_mapped_return
-; Translate two user pointers in AC1/AC2.  Return mapped pointers in AC1/AC2
-; or -1 in AC1.  The three pathname syscalls share this cold validation path.
+/** @brief Translate two user pointers under one VM mapping hold. */
 native_sys_two_paths:
         pushj   17,vm_user_mapping_hold
         pushj   17,vm_user_words
@@ -395,41 +403,37 @@ native_sys_wait_bad:
         sub     17,[2,,2]
         jrst    %L137
 
+/** @brief Dispatch UUO-077 extension opcodes while preserving AC1 for PROCCTL. */
 native_sys_extctl:
-        hrrz    1,1
-        cain    1,032                  ; SYS_EXT_SEEK
-        jrst    native_sys_seek
-        cain    1,033                  ; SYS_EXT_CHOWN
-        jrst    native_sys_chown
-        cain    1,034                  ; SYS_EXT_RMDIR
-        jrst    native_sys_rmdir
-        cain    1,035                  ; SYS_EXT_UTIME
-        jrst    native_sys_utime
-        cain    1,020                  ; SYS_EXT_PIPE
-        jrst    pipe_create
-native_sys_ext_nonpipe:
-        cain    1,023                  ; SYS_EXT_GETTIME
-        jrst    pclk_time36
-        cain    1,024                  ; SYS_EXT_DUP2
-        jrst    native_sys_dup2
-        cain    1,040                  ; SYS_EXT_DTC_READ_BLOCK
-        jrst    native_sys_dtc_read_block
-        cain    1,041                  ; SYS_EXT_TSFS_MOUNT
-        jrst    native_sys_tsfs_mount
-        cain    1,042                  ; SYS_EXT_D6FS_MOUNT
-        jrst    native_sys_d6fs_mount
-        cain    1,043                  ; SYS_EXT_RTCTL
-        jrst    native_sys_rtctl
-        cain    1,044                  ; SYS_EXT_LOGCTL
-        jrst    native_sys_logctl
-        cain    1,045                  ; SYS_EXT_DTC_WRITE_BLOCK
-        jrst    native_sys_dtc_write_block
-        cain    1,046                  ; SYS_EXT_MEMFS_MOUNT
-        jrst    native_sys_memfs_mount
-        cain    1,022                  ; SYS_EXT_EXEC
-        jrst    native_sys_exec
-        caie    1,021                  ; SYS_EXT_MKFIFO
+        hrrz    5,1
+        caige   5,020
         jrst    native_sys_procctl
+        caile   5,046
+        jrst    native_sys_procctl
+        subi    5,020
+        move    6,5
+        andi    5,1
+        lsh     6,-1
+        xct     native_sys_ext_half_select(5)
+        jrst    (5)
+native_sys_ext_half_select:
+        hlrz    5,native_sys_ext_table(6)
+        hrrz    5,native_sys_ext_table(6)
+native_sys_ext_table:
+        .word   pipe_create,,native_sys_mkfifo
+        .word   native_sys_exec,,pclk_time36
+        .word   native_sys_dup2,,native_sys_procctl
+        .word   native_sys_procctl,,native_sys_procctl
+        .word   native_sys_procctl,,native_sys_procctl
+        .word   native_sys_seek,,native_sys_chown
+        .word   native_sys_rmdir,,native_sys_utime
+        .word   native_sys_procctl,,native_sys_procctl
+        .word   native_sys_dtc_read_block,,native_sys_tsfs_mount
+        .word   native_sys_d6fs_mount,,native_sys_rtctl
+        .word   native_sys_logctl,,native_sys_dtc_write_block
+        .word   native_sys_memfs_mount,,native_sys_procctl
+
+native_sys_mkfifo:
         move    1,2                    ; user path
         push    17,3                   ; preserve mode across VM translation
         pushj   17,native_sys_map_one
@@ -859,8 +863,6 @@ native_sys_getchar_again:
         jrst    native_sys_getchar_policy
         jrst    %L65
 native_sys_getchar_buffered:
-        sub     17,[1,,1]
-        jrst    %L65
 native_sys_getchar_error:
         sub     17,[1,,1]
         jrst    %L65
