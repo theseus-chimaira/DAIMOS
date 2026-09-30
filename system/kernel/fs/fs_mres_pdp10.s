@@ -223,23 +223,19 @@ fs_tsfs_service_jump:
 
 ; KCORE memory-pressure bridge for reclaimable filesystem memory.
 ; AC1=requested words, AC2=0 cheap/discardable cache, AC2=1 backed eviction.
-; Provider-specific backing policy stays in each independently movable MRES.
+; The clean BCACHE L1 is common KCORE state; backed MEMFS eviction remains in
+; its independently movable MRES.
         .globl  fs_memory_reclaim
-        .globl  d6fs_cache_reclaim_jump
+        .globl  bcache_reclaim
         .globl  memfs_reclaim_jump
 fs_memory_reclaim:
         jumpn   2,fs_memory_reclaim_memfs
-        hrrz    4,d6fs_cache_reclaim_jump
-        cain    4,fs_mres_no_service
-        jrst    kret_zero
-        jrst    (4)
+        jrst    bcache_reclaim
 fs_memory_reclaim_memfs:
         hrrz    4,memfs_reclaim_jump
         cain    4,fs_mres_no_service
         jrst    kret_zero
         jrst    (4)
-d6fs_cache_reclaim_jump:
-        jrst    fs_mres_no_service
 memfs_reclaim_jump:
         jrst    fs_mres_no_service
 

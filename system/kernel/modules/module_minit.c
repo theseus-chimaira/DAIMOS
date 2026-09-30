@@ -1445,19 +1445,18 @@ d6fs_minit(void)
         d6fs_backing_write_addr = minit_export(name, base, 2U);
         callback_read = minit_export(name, base, 3U);
         callback_write = minit_export(name, base, 4U);
-        storage_patch_jump(&d6fs_cache_reclaim_jump, minit_export(name, base, 5U));
         if (members == 1U && blockset_read_addr == 0U) {
                 unsigned int direct_read;
                 unsigned int direct_write;
 
-                direct_read = minit_export(name, base, 6U);
-                direct_write = minit_export(name, base, 7U);
+                direct_read = minit_export(name, base, 5U);
+                direct_write = minit_export(name, base, 6U);
                 backing_ops = ((kword_t)direct_read << 18U) |
                     (kword_t)direct_write;
                 storage_patch_module_jump(base, (kword_t *)(unsigned long)
-                    minit_export(name, base, 8U), read_addr);
+                    minit_export(name, base, 7U), read_addr);
                 storage_patch_module_jump(base, (kword_t *)(unsigned long)
-                    minit_export(name, base, 9U), write_addr);
+                    minit_export(name, base, 8U), write_addr);
         } else {
                 backing_ops = ((kword_t)d6fs_backing_read_addr << 18U) |
                     (kword_t)d6fs_backing_write_addr;
@@ -1474,11 +1473,11 @@ d6fs_minit(void)
         write_addr = module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK);
         if (read_addr != 0U)
                 storage_patch_module_jump(base, (kword_t *)(unsigned long)
-                    minit_export(name, base, 10U),
+                    minit_export(name, base, 9U),
                     (unsigned int)(unsigned long)&drm236_read_block);
         if (write_addr != 0U)
                 storage_patch_module_jump(base, (kword_t *)(unsigned long)
-                    minit_export(name, base, 11U),
+                    minit_export(name, base, 10U),
                     (unsigned int)(unsigned long)&drm236_write_block);
         if (d6fs_reader_bootstrap_call(backing_ops) != 0) {
                 minit_diag_notok(name);

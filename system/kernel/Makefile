@@ -81,6 +81,7 @@ KERNEL_HEADERS = boot/kinit.h \
 	storage/blockset_layout.h \
 	storage/blockset_mres.h \
 	storage/auxstore.h \
+	storage/bcache.h \
 	storage/bstore.h \
 	storage/fs_backing.h \
 	storage/logstore.h \
@@ -163,6 +164,7 @@ KCORE_FIXED_SRCS = core/ret.s \
 	proc/syscall_dispatch_pdp6.s \
 	proc/mach_user_pdp6.s \
 	core/kcore_io_pdp6.s \
+	storage/bcache_pdp6.s \
 	storage/storage_router.s \
 	core/kcore_end.s
 
@@ -195,6 +197,7 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/mach_user_pdp6.s \
 	$(BUILD)/vm_backend_pdp6.s \
 	$(BUILD)/kcore_io_pdp6.s \
+	$(BUILD)/bcache_pdp6.s \
 	$(BUILD)/storage_router.s \
 	$(BUILD)/kcore_end.s
 
@@ -426,6 +429,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret.s \
 	$(BUILD)/syscall_dispatch_pdp6.s \
 	$(BUILD)/mach_user_pdp6.s \
 	$(BUILD)/kcore_io_pdp6.s \
+	$(BUILD)/bcache_pdp6.s \
 	$(BUILD)/storage_router.s \
 	$(BUILD)/kcore_end.s \
 	$(BUILD)/d6fs_validate_pdp10.s \

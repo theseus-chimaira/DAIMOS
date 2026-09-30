@@ -44,7 +44,6 @@ extern kword_t fs_dtfs_service_jump;
 extern kword_t sys_dtfs_mount_jump;
 extern kword_t fs_d6fs_service_jump;
 extern kword_t fs_tsfs_service_jump;
-extern kword_t d6fs_cache_reclaim_jump;
 extern kword_t memfs_reclaim_jump;
 extern kword_t memfs_shutdown_jump;
 extern kword_t blockset_runtime_service_jump;
@@ -77,7 +76,6 @@ kword_t *const module_fixed_bindings[] = {
         &sys_dtfs_mount_jump,
         &fs_d6fs_service_jump,
         &fs_tsfs_service_jump,
-        &d6fs_cache_reclaim_jump,
         &memfs_reclaim_jump,
         &memfs_shutdown_jump,
         &blockset_runtime_service_jump

@@ -150,6 +150,9 @@ d6fs_hash_loop:
 
 
         .globl  fs_block_workspace
+        .globl  bcache_fetch
+        .globl  bcache_store
+        .globl  bcache_reclaim
         .globl  d6fs_reader_get_block
 ; const kword_t *d6fs_reader_get_block(reader, logical)
 ;
@@ -163,11 +166,17 @@ d6fs_reader_get_block:
         jrst    d6fs_get_block_hit
         push    17,010
         push    17,011
+        push    17,012
         move    010,1
         move    011,2
-        move    1,010
-        move    2,011
-        pushj   17,d6fs_cache_fetch      ; clean dynamic-cache lookup
+        move    012,1(010)               ; low six bits are VFS mount id
+        andi    012,077
+        iori    012,01000                ; BCACHE_SOURCE_D6FS
+        lsh     012,030                  ; SOURCE12,,BLOCK24
+        ior     012,011
+        move    1,012
+        movei   2,fs_block_workspace
+        pushj   17,bcache_fetch
         jumpn   1,d6fs_get_block_cache_hit
         movei   1,016(010)               ; embedded struct fs_backing
         move    2,011
@@ -175,9 +184,9 @@ d6fs_reader_get_block:
         pushj   17,fs_backing_read
         jumpn   1,d6fs_get_block_read_fail
         movem   011,3(010)
-        move    1,010
-        move    2,011
-        pushj   17,d6fs_cache_store      ; miss becomes a clean cache entry
+        move    1,012
+        movei   2,fs_block_workspace
+        pushj   17,bcache_store          ; miss becomes a clean cache entry
         movei   1,fs_block_workspace
         jrst    d6fs_get_block_read_done
 d6fs_get_block_cache_hit:
@@ -187,7 +196,7 @@ d6fs_get_block_cache_hit:
 d6fs_get_block_read_fail:
         setz    1,
 d6fs_get_block_read_done:
-        jrst    d6fs_restore2
+        jrst    d6fs_restore3
 d6fs_get_block_hit:
         movei   1,fs_block_workspace
         popj    17,
@@ -863,24 +872,30 @@ d6fs_reader_commit_cache:
         jrst    d6fs_reader_commit_invalidate
         push    17,010
         push    17,011
+        push    17,012
         move    010,1
         move    011,2
+        move    012,1(010)
+        andi    012,077
+        iori    012,01000                ; BCACHE_SOURCE_D6FS
+        lsh     012,030
+        ior     012,011
         movei   1,016(010)               ; embedded struct fs_backing
         move    2,011
         movei   3,fs_block_workspace
         pushj   17,fs_backing_write
         jumpn   1,d6fs_reader_commit_fail_saved
         movem   011,3(010)
-        move    1,010
-        move    2,011
-        pushj   17,d6fs_cache_store      ; refresh only after write-through
+        move    1,012
+        movei   2,fs_block_workspace
+        pushj   17,bcache_store          ; refresh only after write-through
         setz    1,
         jrst    d6fs_reader_commit_done
 d6fs_reader_commit_fail_saved:
         setom   3(010)
         seto    1,
 d6fs_reader_commit_done:
-        jrst    d6fs_restore2
+        jrst    d6fs_restore3
 d6fs_reader_commit_invalidate:
         setom   3(1)
 d6fs_reader_commit_bad:
@@ -1174,7 +1189,7 @@ d6fs_provider_prepare_unmount:
         jumpn   1,kret_neg1
 d6fs_provider_unmount_done:
         setz    1,
-        pushj   17,d6fs_cache_reclaim    ; discard all clean dynamic cache
+        pushj   17,bcache_reclaim        ; source id may be reused after unmount
         move    5,d6fs_active_reader
         ldb     4,[POINT 6,1(5),35]      ; mount id
         subi    4,1                      ; VFS mount ids are 1..4
@@ -1497,161 +1512,5 @@ d6fs_provider_parent_name_fail:
 d6fs_provider_parent_name_done:
         sub     17,[015,,015]
         popj    17,
-
-; Reclaimable D6FS clean-block cache.
-;
-; One 0405-word managed-core slab contains two fully-associative clean blocks:
-;   000 eviction hand
-;   001 key0, 002 key1
-;   003 logical0, 004 logical1
-;   005..0204 block0, 0205..0404 block1
-;
-; A single slab keeps dynamic RAM bounded while retaining two hot blocks.  The
-; permanent state word keeps only the slab pointer in its right half.  Mount
-; reader pointers use the compact fixed four-word table in KCORE.
-        .globl  mm_alloc_aligned_noreclaim
-        .globl  mm_free
-
-        .equ    D6FS_CACHE_SLAB_WORDS,0405
-        .equ    D6FS_CACHE_MM_OWNER,6
-
-        .globl  d6fs_cache_fetch
-; int d6fs_cache_fetch(reader, logical)
-d6fs_cache_fetch:
-        jumpe   1,kret_zero
-        hrrz    3,d6fs_cache_state
-        jumpe   3,kret_zero
-        move    4,1(1)                  ; mount/device key
-        came    4,1(3)
-        jrst    d6fs_cache_fetch_slot1
-        came    2,3(3)
-        jrst    d6fs_cache_fetch_slot1
-        movei   5,5(3)
-        jrst    d6fs_cache_fetch_copy
-d6fs_cache_fetch_slot1:
-        came    4,2(3)
-        jrst    kret_zero
-        came    2,4(3)
-        jrst    kret_zero
-        movei   5,0205(3)
-d6fs_cache_fetch_copy:
-        movei   6,fs_block_workspace
-        hrl     6,5
-        blt     6,fs_block_workspace+0177
-        jrst    kret_one
-
-        .globl  d6fs_cache_store
-; void d6fs_cache_store(reader, logical)
-d6fs_cache_store:
-        jumpe   1,d6fs_cache_store_done
-        push    17,010
-        push    17,011
-        push    17,012
-        move    010,1                   ; reader
-        move    011,2                   ; logical
-        move    012,1(1)                ; mount/device key
-        hrrz    3,d6fs_cache_state
-        jumpn   3,d6fs_cache_store_scan
-
-; Allocate the sole slab without invoking reclaim.  The six-argument C ABI
-; places preference/basep in two stack argument words; a third word holds the
-; returned base itself.
-d6fs_cache_store_alloc:
-        add     17,[3,,3]
-        setzm   -2(17)                  ; returned base
-        movei   1,-2(17)
-        movem   1,-1(17)               ; arg 6: basep
-        movei   1,1
-        movem   1,(17)                  ; arg 5: MM_ALLOC_HIGH
-        movei   1,D6FS_CACHE_SLAB_WORDS
-        movei   2,1                    ; alignment
-        movei   3,3                    ; MM_TYPE_KERNEL_DYNAMIC
-        movei   4,D6FS_CACHE_MM_OWNER
-        pushj   17,mm_alloc_aligned_noreclaim
-        jumpn   1,d6fs_cache_store_alloc_fail
-        move    3,-2(17)
-        jumpe   3,d6fs_cache_store_alloc_fail
-        sub     17,[3,,3]
-        setzm   (3)                    ; eviction hand
-        setom   1(3)                   ; slot 0 key invalid
-        setom   2(3)                   ; slot 1 key invalid
-        setom   3(3)                   ; slot 0 logical invalid
-        setom   4(3)                   ; slot 1 logical invalid
-        hrrm    3,d6fs_cache_state
-        jrst    d6fs_cache_store_scan
-
-d6fs_cache_store_alloc_fail:
-        sub     17,[3,,3]
-        jrst    d6fs_cache_store_restore
-
-d6fs_cache_store_scan:
-        came    012,1(3)
-        jrst    d6fs_cache_store_check1
-        camn    011,3(3)
-        jrst    d6fs_cache_store_slot0
-d6fs_cache_store_check1:
-        came    012,2(3)
-        jrst    d6fs_cache_store_choose
-        camn    011,4(3)
-        jrst    d6fs_cache_store_slot1
-
-; Miss: alternate the victim between the two slots.
-d6fs_cache_store_choose:
-        move    4,(3)
-        xori    4,1
-        andi    4,1
-        movem   4,(3)
-        jumpn   4,d6fs_cache_store_slot1
-
-d6fs_cache_store_slot0:
-        movem   012,1(3)
-        movem   011,3(3)
-        movei   5,5(3)
-        jrst    d6fs_cache_store_copy
-
-d6fs_cache_store_slot1:
-        movem   012,2(3)
-        movem   011,4(3)
-        movei   5,0205(3)
-
-d6fs_cache_store_copy:
-        movei   4,fs_block_workspace
-        hrl     5,4
-        move    6,5
-        addi    6,0177
-        blt     5,(6)
-
-d6fs_cache_store_restore:
-        pop     17,012
-        pop     17,011
-        pop     17,010
-d6fs_cache_store_done:
-        popj    17,
-
-        .globl  d6fs_cache_reclaim
-; int d6fs_cache_reclaim(words)
-; Return one when the sole clean slab was released, otherwise zero.
-d6fs_cache_reclaim:
-        push    17,010
-        hrrz    010,d6fs_cache_state
-        jumpe   010,d6fs_cache_reclaim_none
-        move    1,010
-        movei   2,3                    ; MM_TYPE_KERNEL_DYNAMIC
-        movei   3,D6FS_CACHE_MM_OWNER
-        pushj   17,mm_free
-        jumpn   1,d6fs_cache_reclaim_none
-        setzm   d6fs_cache_state       ; sole state is the reclaimed slab
-        movei   1,1
-        pop     17,010
-        popj    17,
-d6fs_cache_reclaim_none:
-        setz    1,
-        pop     17,010
-        popj    17,
-
-        .bss
-; Right half: cache slab base.
-d6fs_cache_state:  .block 1
-        .text
 
         .bss

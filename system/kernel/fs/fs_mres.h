@@ -42,7 +42,6 @@ extern kword_t fs_memfs_service_jump;
 extern kword_t fs_dtfs_service_jump;
 extern kword_t fs_d6fs_service_jump;
 extern kword_t fs_tsfs_service_jump;
-extern kword_t d6fs_cache_reclaim_jump;
 extern kword_t memfs_reclaim_jump;
 extern kword_t memfs_shutdown_jump;
 int fs_memory_reclaim(kword_t words, unsigned int level);
