@@ -1,4 +1,16 @@
-; module_table.s -- MINIT/MRES pairs for built-in modules.
+/**
+ * @file module_table.s
+ * @brief Link-ordered table of built-in KINIT MINIT/MRES module pairs.
+ *
+ * KINIT walks __minit_table_begin..__minit_table_end in order. The left half of
+ * each word is the transient MINIT entry and the right half is its relocatable
+ * resident MRES package, or zero for boot-only setup. Ordering encodes service
+ * dependencies: console/clock and raw storage precede filesystem consumers,
+ * while MonitorFS registration runs after resident services are published.
+ *
+ * DTC, MTC, and DSK use tiny entry stubs to select one shared Type-136 storage
+ * MINIT implementation without duplicating probe/install logic.
+ */
         .text
         .globl cty_minit
         .globl clk_minit

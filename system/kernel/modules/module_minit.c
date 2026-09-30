@@ -1,3 +1,17 @@
+/**
+ * @file module_minit.c
+ * @brief Transient KINIT probe/install logic for built-in DAIMOS modules.
+ *
+ * MINIT functions run in module_table.s order. Each probes its PDP-6 device or
+ * prerequisite service, installs the associated MRES package when usable,
+ * patches resident call/jump sites, registers PI handlers, and publishes boot
+ * services for later MINIT consumers. This file is reclaimed with KINIT; only
+ * the installed MRES images and patched KCORE words remain resident.
+ *
+ * Hardware probes deliberately avoid resident-driver dependencies because they
+ * execute before those drivers exist. Fatal installation/ABI failures halt the
+ * boot; absent optional hardware is normally omitted from the boot log.
+ */
 #include "kinit.h"
 #include "module.h"
 #include "mres.h"
@@ -150,6 +164,7 @@ minit_pi_span(unsigned int start, unsigned int count)
         return (neg_count << 18) | (kword_t)(start & 0777777U);
 }
 
+/** Rebuild compact PI handler spans and direct/single-handler dispatch jumps. */
 static void
 minit_pi_reindex(void)
 {
@@ -187,6 +202,7 @@ minit_pi_reindex(void)
         }
 }
 
+/** Initialize PDP-6 low-core PI vectors and empty transient handler tables. */
 void
 module_pi_init(void)
 {
@@ -204,6 +220,7 @@ module_pi_init(void)
                 *minit_pi_span_slot(i) = 0;
 }
 
+/** Register one handler while preserving handlers grouped by PI level. */
 int
 module_pi_register(unsigned int level, unsigned int handler)
 {
@@ -233,6 +250,7 @@ module_pi_register(unsigned int level, unsigned int handler)
         return 0;
 }
 
+/** Unregister one handler and compact/reindex the PI dispatch table. */
 int
 module_pi_unregister(unsigned int level, unsigned int handler)
 {
@@ -390,6 +408,7 @@ minit_fatal(kword_t name)
         kinit_halt();
 }
 
+/** Install the current MINIT's MRES package or halt with its device name. */
 static unsigned int
 minit_install(kword_t name)
 {
@@ -402,6 +421,7 @@ minit_install(kword_t name)
         return base;
 }
 
+/** Resolve one export from the current relocated MRES package or halt. */
 static unsigned int
 minit_export(kword_t name, unsigned int base, unsigned int index)
 {
@@ -413,6 +433,7 @@ minit_export(kword_t name, unsigned int base, unsigned int index)
         return address;
 }
 
+/** Register a resident PI handler and enable its hardware PI level. */
 static void
 minit_register(kword_t name, unsigned int level, unsigned int handler)
 {
@@ -421,6 +442,7 @@ minit_register(kword_t name, unsigned int level, unsigned int handler)
         minit_pi_enable(level);
 }
 
+/** @brief Probe CTY, install its resident driver, and publish console I/O. */
 void
 cty_minit(void)
 {
@@ -449,6 +471,7 @@ cty_minit(void)
         minit_diag_ok(name);
 }
 
+/** @brief Probe the APR line clock and install/publish the resident clock service. */
 void
 clk_minit(void)
 {
@@ -478,6 +501,7 @@ clk_minit(void)
 }
 
 #if KINIT_FULL
+/** @brief Probe the paper-tape reader and install its resident input service. */
 void
 ptr_minit(void)
 {
@@ -500,6 +524,7 @@ ptr_minit(void)
         minit_diag_ok(name);
 }
 
+/** @brief Probe the paper-tape punch and install its resident output service. */
 void
 ptp_minit(void)
 {
@@ -522,6 +547,7 @@ ptp_minit(void)
         minit_diag_ok(name);
 }
 
+/** @brief Probe the synchronous line printer and publish its resident entry. */
 void
 lpt_minit(void)
 {
@@ -542,6 +568,7 @@ lpt_minit(void)
         minit_diag_ok(name);
 }
 
+/** @brief Probe the card reader, install its MRES, and register its PI handler. */
 void
 cr_minit(void)
 {
@@ -574,6 +601,7 @@ cr_minit(void)
         minit_diag_ok(name);
 }
 
+/** @brief Probe the card punch, install its MRES, and register its PI handler. */
 void
 cp_minit(void)
 {
@@ -606,6 +634,7 @@ cp_minit(void)
 
 #endif
 
+/** @brief Probe DCS terminal hardware and publish resident character I/O. */
 void
 dcs_minit(void)
 {
@@ -632,6 +661,7 @@ dcs_minit(void)
         minit_diag_ok(name);
 }
 
+/** @brief Probe GE terminal input/output interfaces and publish resident I/O. */
 void
 ge_minit(void)
 {
@@ -692,6 +722,7 @@ minit_dpy_banner(kword_t name, unsigned int putword)
                 minit_dpy_word(name, putword, *word);
 }
 
+/** @brief Probe the display, install its combined clock/display PI service, and banner. */
 void
 dpy_minit(void)
 {
@@ -748,6 +779,7 @@ dpy_minit(void)
 
 #endif
 
+/** @brief Bind the TTY multiplexer to whichever CTY/DCS/GE services were installed. */
 void
 tty_minit(void)
 {
@@ -845,6 +877,7 @@ minit_wcnsls_banner(void)
         }
 }
 
+/** @brief Probe WCNSLS, install its resident service, and emit the boot banner. */
 void
 wcnsls_minit(void)
 {
@@ -866,6 +899,7 @@ wcnsls_minit(void)
         minit_diag_loaded(name);
 }
 
+/** @brief Probe OCNSLS and install/publish its resident read service. */
 void
 ocnsls_minit(void)
 {
@@ -938,6 +972,7 @@ storage_install(unsigned int kind, kword_t name)
         return base;
 }
 
+/** @brief Shared Type-136 DTC/MTC/DSK probe/install path selected by kind. */
 void
 storage_minit(unsigned int kind, kword_t name)
 {
@@ -988,6 +1023,7 @@ storage_minit(unsigned int kind, kword_t name)
 }
 
 #if KINIT_FULL
+/** @brief Probe Type-167/236 drum hardware and install resident block I/O. */
 void
 drm236_minit(void)
 {
@@ -1017,6 +1053,7 @@ drm236_minit(void)
 }
 
 
+/** @brief Install the MEMFS resident service when the package is available. */
 void
 memfs_minit(void)
 {
@@ -1037,6 +1074,7 @@ memfs_minit(void)
         minit_diag_loaded(name);
 }
 
+/** @brief Install DTFS after DECtape block services are available. */
 void
 dtfs_minit(void)
 {
@@ -1075,6 +1113,7 @@ dtfs_minit(void)
         minit_diag_loaded(name);
 }
 
+/** @brief Finish DTFS runtime bindings after all MINITs have run. */
 void
 dtfs_post_minits(void)
 {
@@ -1113,6 +1152,7 @@ root_block_services(unsigned int *readp, unsigned int *writep)
         return 0;
 }
 
+/** @brief Select root block services and install the blockset abstraction. */
 void
 blockset_minit(void)
 {
@@ -1153,6 +1193,7 @@ blockset_minit(void)
 }
 
 #if KINIT_FULL
+/** @brief Install runtime logstore over the selected writable block backend. */
 void
 logstore_minit(void)
 {
@@ -1218,6 +1259,7 @@ logstore_minit(void)
 
 #if KINIT_BADMAP
 
+/** @brief Install bad-block translation state over the selected block backend. */
 void
 badmap_minit(void)
 {
@@ -1286,6 +1328,7 @@ badmap_minit(void)
         minit_diag_loaded(name);
 }
 
+/** @brief Publish final badmap/blockset bindings after storage MINIT completion. */
 void
 badmap_post_minits(void)
 {
@@ -1330,6 +1373,7 @@ badmap_post_minits(void)
 }
 #endif
 
+/** @brief Install D6FS over blockset and create the boot-root reader state. */
 void
 d6fs_minit(void)
 {
@@ -1419,6 +1463,7 @@ d6fs_minit(void)
         minit_diag_loaded(name);
 }
 
+/** @brief Register MonitorFS device namespace after module services are known. */
 void
 mfsdev_minit(void)
 {
@@ -1469,6 +1514,7 @@ mfsdev_minit(void)
 }
 
 #if KINIT_FULL
+/** @brief Probe/install SLV and publish its interrupt handler service. */
 void
 slv_minit(void)
 {

@@ -288,10 +288,10 @@ ${BUILD}/d6lz.s: core/d6lz_pdp6.s
 	@mkdir -p ${BUILD}
 	cp core/d6lz_pdp6.s $@
 
-${BUILD}/module_runtime.s: modules/module_runtime.c modules/module_runtime_pdp10.s ${KERNEL_HEADERS}
+${BUILD}/module_runtime.s: modules/module_runtime.c modules/module_runtime_pdp6.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S modules/module_runtime.c -o $@.c
-	cat $@.c modules/module_runtime_pdp10.s > $@
+	cat $@.c modules/module_runtime_pdp6.s > $@
 	rm -f $@.c
 
 ${BUILD}/vm_backend.s: ${VM_BACKEND_C} ${KERNEL_HEADERS}

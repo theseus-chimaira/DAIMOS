@@ -1,5 +1,15 @@
-; Compact PDP-6/PDP-10 module relocation path.
-; C reference semantics remain in module_runtime.c for host tests.
+/**
+ * @file module_runtime_pdp6.s
+ * @brief Compact PDP-6 runtime movable-module relocation primitive.
+ *
+ * This is the target implementation of the deferred module_runtime_move() ABI.
+ * It copies image+retained relocation map, applies two-bit LH/RH relocations,
+ * retargets fixed/dynamic bindings and PI handlers, then publishes the new base.
+ * The future MM caller must validate the move and keep PI disabled throughout.
+ * The code uses only PDP-6-compatible instructions; later PDP-10 models may
+ * eventually gain separate optimized implementations. It is not linked into
+ * today's KCORE because runtime movable modules remain a post-overlay feature.
+ */
 
         .text
         .globl  module_runtime_move

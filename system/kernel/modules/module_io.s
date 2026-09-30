@@ -1,4 +1,12 @@
-; module_io.s -- disposable MINIT-only raw device and PI setup primitives.
+/**
+ * @file module_io.s
+ * @brief Disposable PDP-6 MINIT raw-device, PI, and boot-reader primitives.
+ *
+ * These routines are linked into KINIT, not permanent KCORE. They provide the
+ * direct CONI/CONO/DATAI/DATAO probes needed before resident MRES drivers are
+ * installed, initialize the fixed PDP-6 PI vectors, and allocate/seed the D6FS
+ * boot reader. All code here is reclaimed after KINIT handoff.
+ */
         .text
         .globl minit_pi_low_init
         .globl minit_pi_hw_clear

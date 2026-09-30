@@ -1,3 +1,12 @@
+/**
+ * @file module_runtime.c
+ * @brief Reference semantics for deferred runtime movable-module relocation.
+ *
+ * This file defines the descriptor/binding state and a host/reference version
+ * of module_runtime_move(). PDP-6 target builds use the compact assembly move
+ * path in module_runtime_pdp6.s; the C implementation documents and tests the
+ * intended semantics. The facility is not currently wired into MM compaction.
+ */
 #include "module_runtime.h"
 #include "fs_mres.h"
 #include "kcore_pi.h"
@@ -72,6 +81,7 @@ static kword_t *const module_fixed_bindings[] = {
         (sizeof(module_fixed_bindings) / sizeof(module_fixed_bindings[0]))
 
 #ifndef __PDP10__
+/** Retarget one RH18 binding when it points inside the moved image. */
 static void
 module_retarget(kword_t *slot, int old_base, int new_base, int image_words)
 {
@@ -83,6 +93,14 @@ module_retarget(kword_t *slot, int old_base, int new_base, int image_words)
                     (kword_t)(new_base + address - old_base);
 }
 
+/**
+ * @brief Copy, relocate, and republish an already validated movable module.
+ * @return Zero after successful relocation/publication.
+ *
+ * The caller must hold PI disabled and owns all allocation/range validation.
+ * Fixed KCORE bindings, dynamic binding locations, and PI-handler addresses are
+ * retargeted before the runtime descriptor publishes the new base.
+ */
 int
 module_runtime_move(unsigned int owner, unsigned int new_base,
     unsigned int total_words)

@@ -1,11 +1,23 @@
+/**
+ * @file module.h
+ * @brief KINIT module discovery, service publication, and MINIT I/O interface.
+ *
+ * Built-in modules are boot-time MINIT/MRES pairs. MINIT code probes hardware,
+ * installs the associated resident MRES package when needed, registers PI
+ * handlers, and publishes resident service entry points through a transient
+ * KINIT service directory. Raw minit_* I/O helpers exist only before resident
+ * drivers are available and are reclaimed with KINIT.
+ */
 #ifndef DAIMON_MODULE_H
 #define DAIMON_MODULE_H
 
 #include "kinit.h"
 
+/** Linker-delimited table of built-in MINIT/MRES pairs. */
 extern kword_t __minit_table_begin;
 extern kword_t __minit_table_end;
 
+/** Boot-time service indexes; zero means "service not published". */
 #define MODULE_SERVICE_PTP_PUTCHAR      1U
 #define MODULE_SERVICE_CR_READ_CARD     2U
 #define MODULE_SERVICE_CP_PUNCH_CARD    3U
@@ -37,15 +49,22 @@ extern kword_t __minit_table_end;
 #define MODULE_SERVICE_LOGSTORE          29U
 #define MODULE_SERVICE_COUNT             30U
 
+/** Execute every built-in MINIT/MRES pair in table order. */
 void module_run_minits(void);
 void dtfs_post_minits(void);
 void badmap_post_minits(void);
+/** Return the MRES package associated with the MINIT currently executing. */
 const kword_t *module_current_mres(void);
+/** Publish one resident service entry point during KINIT. */
 void module_service_set(unsigned int service, unsigned int address);
+/** Return a published resident service address, or zero when unavailable. */
 unsigned int module_service_get(unsigned int service);
 
+/** Install low-core PI vectors and initialize transient PI registration state. */
 void module_pi_init(void);
+/** Add one resident handler to a PDP-6 PI level. */
 int module_pi_register(unsigned int level, unsigned int handler);
+/** Remove one previously registered resident PI handler. */
 int module_pi_unregister(unsigned int level, unsigned int handler);
 void minit_pi_low_init(void);
 void minit_pi_hw_clear(void);
