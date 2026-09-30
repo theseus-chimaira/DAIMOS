@@ -243,7 +243,7 @@ cmd_cp(int argc, kword_t **argv, struct u_io *io)
                 n = dsys_read_words(in, buf, 127U);
                 if (n == 0) break;
                 if (n < 0) { rc = 1; break; }
-                if (dsys_write_words(out, buf, (unsigned int)n) != n) {
+                if (u_write_words_all(out, buf, (unsigned int)n) != 0) {
                         rc = 1;
                         break;
                 }

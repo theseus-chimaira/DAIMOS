@@ -8,6 +8,32 @@ static int u_text_sink_fd = -1;
 static unsigned int u_text_sink_chars;
 static kword_t u_text_sink_record[U_TEXT_SINK_DATA_WORDS + 1U];
 
+int
+u_write_words_all(int fd, const kword_t *words, unsigned int nwords)
+{
+        unsigned int done;
+        int rc;
+
+        if (fd < 0 || (words == 0 && nwords != 0U))
+                return -1;
+        if (nwords == 0U)
+                return 0;
+        rc = dsys_write_words(fd, (kword_t *)words, nwords);
+        if (rc == (int)nwords)
+                return 0;
+        if (rc <= 0 || (unsigned int)rc > nwords)
+                return -1;
+        done = (unsigned int)rc;
+        while (done < nwords) {
+                rc = dsys_write_words(fd, (kword_t *)&words[done],
+                    nwords - done);
+                if (rc <= 0 || (unsigned int)rc > nwords - done)
+                        return -1;
+                done += (unsigned int)rc;
+        }
+        return 0;
+}
+
 static int
 u_text_sink_emit(int empty)
 {
@@ -21,8 +47,8 @@ u_text_sink_emit(int empty)
         u_text_sink_record[0] = U_S6REC_TEXT_HEADER |
             (kword_t)u_text_sink_chars;
         words = 1U + (u_text_sink_chars + 5U) / 6U;
-        rc = dsys_write_words(u_text_sink_fd, u_text_sink_record, words);
-        if (rc != (int)words)
+        rc = u_write_words_all(u_text_sink_fd, u_text_sink_record, words);
+        if (rc != 0)
                 return 1;
         u_text_sink_chars = 0U;
         for (words = 1U; words <= U_TEXT_SINK_DATA_WORDS; ++words)

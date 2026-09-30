@@ -19,6 +19,7 @@ int u_put_s6(int fd, const kword_t *s);
 int u_put_uint(int fd, kword_t v);
 int u_put_octal(int fd, kword_t v, unsigned int digits);
 int u_crlf(int fd);
+int u_write_words_all(int fd, const kword_t *words, unsigned int nwords);
 int u_text_sink_attach(int fd);
 int u_text_sink_flush(void);
 int u_text_sink_detach(void);

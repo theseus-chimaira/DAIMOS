@@ -113,9 +113,10 @@ best_match(unsigned int *distp)
 static int
 write_words(const kword_t *words, unsigned int n)
 {
+        if (u_write_words_all(d6lz_outfd, words, n) != 0)
+                return -1;
         d6lz_out_words += (kword_t)n;
-        return dsys_write_words(d6lz_outfd, (kword_t *)words, n) ==
-            (int)n ? 0 : -1;
+        return 0;
 }
 
 static int

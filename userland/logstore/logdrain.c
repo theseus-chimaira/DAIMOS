@@ -272,9 +272,8 @@ sink_record(struct sink_state *s, const kword_t *record)
         if (s->kind == SINK_CONSOLE)
                 return console_record(record, s->severity);
         if (s->kind == SINK_FILE) {
-                n = dsys_write_words(s->fd, (kword_t *)record,
-                    BLOCKSET_BLOCK_WORDS);
-                if (n != (int)BLOCKSET_BLOCK_WORDS)
+                n = u_write_words_all(s->fd, record, BLOCKSET_BLOCK_WORDS);
+                if (n != 0)
                         return -1;
                 s->file_words += BLOCKSET_BLOCK_WORDS;
                 return 0;
