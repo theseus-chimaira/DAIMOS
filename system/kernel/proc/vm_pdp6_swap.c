@@ -218,17 +218,6 @@ fail_record:
         return -1;
 }
 
-/** Return true for a live nontransition process whose image is on swap. */
-int
-proc_swap_is_swapped(int slot)
-{
-        struct proc *p;
-
-        p = &proc_table[slot];
-        return !PROC_IS_FREE(p) && VM_PDP6_BASE(p) == 0UL &&
-            proc_swap_records[slot].state != 0UL && !PROC_TRANSITION(p);
-}
-
 /* Run one swap-in transaction from slot-0 executive context.  Selection is
  * deliberately derived from the existing scheduler fields, so no permanent
  * request queue or per-process swap scheduling state is needed. */
@@ -236,14 +225,20 @@ proc_swap_is_swapped(int slot)
 int
 proc_swap_service_one(void)
 {
+        struct proc *p;
         int slot;
 
         if ((proc_sched_cursor & PROC_SCHED_SWAP_REQUEST) == 0UL)
                 return 0;
         slot = (int)(proc_sched_cursor & PROC_PGRP_MASK);
-        if (slot <= 0 || slot >= (int)proc_high_slot ||
-            PROC_STATE(&proc_table[slot]) != PROC_SRUN ||
-            !proc_swap_is_swapped(slot)) {
+        if (slot <= 0 || slot >= (int)proc_high_slot) {
+                proc_sched_cursor = (kword_t)slot;
+                return 0;
+        }
+        p = &proc_table[slot];
+        if (PROC_STATE(p) != PROC_SRUN || PROC_IS_FREE(p) ||
+            VM_PDP6_BASE(p) != 0UL || proc_swap_records[slot].state == 0UL ||
+            PROC_TRANSITION(p)) {
                 proc_sched_cursor = (kword_t)slot;
                 return 0;
         }

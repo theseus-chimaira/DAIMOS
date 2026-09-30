@@ -211,12 +211,10 @@ proc_record_kernel_sp:
         push    17,2
         move    1,proc_current_slot
         pushj   17,proc_uarea_slot
-        move    2,1
-        addi    2,PROC_USTACK_BASE
+        movei   2,PROC_USTACK_BASE(1)
         movem   2,CTX_U_KSP(1)
         movem   2,mach_kernel_sp
-        move    2,1
-        addi    2,PROC_FILE_TABLE_OFFSET
+        movei   2,PROC_FILE_TABLE_OFFSET(1)
         movem   2,file_table
         pop     17,2
         pop     17,1
@@ -1099,8 +1097,7 @@ proc_tty_line_take:
         jrst    proc_tty_line_take_nl
         jrst    proc_tty_line_take_eof ; explicit EOF or exhausted partial
 proc_tty_line_take_byte:
-        move    4,3
-        addi    4,1                    ; new drain index
+        movei   4,1(3)                 ; new drain index
         and     6,[-0177401]           ; clear old drain field
         move    5,4
         lsh     5,010
@@ -1239,8 +1236,7 @@ proc_tty_canon_sixbit_range:
         jrst    proc_tty_canon_full    ; bell + retry
         move    4,6
         and     4,[-0400]
-        move    5,7
-        addi    5,1
+        movei   5,1(7)
         ior     4,5
         movem   4,0(12)                ; commit length before helper call
         move    1,12
@@ -1775,8 +1771,7 @@ proc_restore_user:
         move    1,proc_current_slot
         pushj   17,proc_uarea_slot
         move    2,1
-        move    3,1
-        addi    3,PROC_FILE_TABLE_OFFSET
+        movei   3,PROC_FILE_TABLE_OFFSET(1)
         movem   3,file_table
         move    0,0(2)
         move    4,4(2)
@@ -1818,8 +1813,7 @@ proc_restore_kernel:
         move    1,proc_current_slot
         pushj   17,proc_uarea_slot
         move    2,1
-        move    3,1
-        addi    3,PROC_FILE_TABLE_OFFSET
+        movei   3,PROC_FILE_TABLE_OFFSET(1)
         movem   3,file_table
         move    0,CTX_K_AC0+0(2)
         move    4,CTX_K_AC0+4(2)

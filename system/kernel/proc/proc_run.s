@@ -53,12 +53,10 @@
         .globl  vm_space_startup
 
 proc_run_block:
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
-        push    17,014
-        push    17,015
+        add     17,[6,,6]
+        movei   0,-5(17)
+        hrli    0,010
+        blt     0,(17)
         move    010,1
         move    011,2
 
@@ -102,8 +100,7 @@ proc_run_block:
         ; Validate path and all inline startup records within the mapped block.
         move    7,010
         add     7,011
-        move    014,010
-        addi    014,RUN_FIXED_WORDS
+        movei   014,RUN_FIXED_WORDS(010)
         caml    014,7
         jrst    proc_run_bad
         move    1,014
@@ -153,8 +150,7 @@ proc_run_slot_loop:
         setzm   1(013)
         movsi   4,PROC_SCHED_SIDL_LH
         movem   4,2(013)
-        move    4,012
-        addi    4,1
+        movei   4,1(012)
         camle   4,proc_high_slot
         movem   4,proc_high_slot
         jrst    proc_run_slot_found
@@ -215,8 +211,7 @@ proc_run_slot_found:
         movei   1,PROC_UAREA_WORDS
         movei   2,1
         movei   3,MM_TYPE_KERNEL_DYNAMIC
-        move    4,012
-        addi    4,PROC_UAREA_OWNER_BASE
+        movei   4,PROC_UAREA_OWNER_BASE(012)
         pushj   17,mm_alloc_aligned
         move    014,-2(17)
         sub     17,[3,,3]
@@ -240,8 +235,7 @@ proc_run_watermark_loop:
 
         ; Locate first argv record and let the machine VM backend relocate
         ; argv/environment into the child image.
-        move    6,010
-        addi    6,RUN_FIXED_WORDS
+        movei   6,RUN_FIXED_WORDS(010)
         move    1,6
         movei   2,RUN_MAX_PATH_CHARS
         movei   3,1
@@ -270,8 +264,7 @@ proc_run_watermark_loop:
         hrrz    4,011
         tlo     4,010000
         movem   4,020(014)
-        move    4,014
-        addi    4,PROC_USTACK_BASE
+        movei   4,PROC_USTACK_BASE(014)
         movem   4,021(014)
 
         hrlm    014,(013)
@@ -331,8 +324,7 @@ proc_run_map_next:
         addi    015,1
         sojg    3,proc_run_map_loop
 proc_run_map_done:
-        move    1,014
-        addi    1,PROC_FILE_TABLE_OFFSET
+        movei   1,PROC_FILE_TABLE_OFFSET(014)
         pushj   17,pipe_add_refs
         movsi   4,PROC_SCHED_SRUN_LH
         movem   4,2(013)
@@ -348,19 +340,16 @@ proc_run_startup_failed:
 ; Return AC1 = words occupied by one counted SIXBIT record, or zero.
 ; AC1 = physical record pointer, AC2 = max chars, AC3 != 0 requires nonempty.
 proc_run_record_words:
-        move    4,(1)
-        hrrz    1,4
-        came    1,4
+        move    1,(1)
+        tlne    1,0777777              ; counted length must fit RH
         jrst    kret_zero
-        skipn   3
-        jrst    proc_run_record_limit
+        jumpe   3,proc_run_record_limit
         jumpe   1,kret_zero
 proc_run_record_limit:
         camle   1,2
         jrst    kret_zero
-        addi    1,5
+        addi    1,013                  ; ceil(chars/6)+1 = (chars+11)/6
         idivi   1,6
-        addi    1,1
         popj    17,
 
 proc_run_claimed_bad:
@@ -369,10 +358,8 @@ proc_run_claimed_bad:
 proc_run_bad:
         seto    1,
 proc_run_return:
-        pop     17,015
-        pop     17,014
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
+        movei   0,010
+        hrli    0,-5(17)
+        blt     0,015
+        sub     17,[6,,6]
         popj    17,

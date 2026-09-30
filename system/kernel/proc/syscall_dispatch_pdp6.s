@@ -406,11 +406,10 @@ native_sys_wait_bad:
 /** @brief Dispatch UUO-077 extension opcodes while preserving AC1 for PROCCTL. */
 native_sys_extctl:
         hrrz    5,1
-        caige   5,020
-        jrst    native_sys_procctl
-        caile   5,046
-        jrst    native_sys_procctl
         subi    5,020
+        jumpl   5,native_sys_procctl
+        caile   5,026
+        jrst    native_sys_procctl
         move    6,5
         andi    5,1
         lsh     6,-1
@@ -483,8 +482,7 @@ native_sys_logctl_status:
         pushj   17,native_sys_map_one
         jumpe   1,native_sys_logctl_bad3
         move    6,1
-        move    0,1
-        addi    0,3
+        movei   0,3(1)
         move    7,3
         add     7,4
         camle   0,7
@@ -503,8 +501,7 @@ native_sys_logctl_logio:
         pushj   17,native_sys_map_one
         jumpe   1,native_sys_logctl_bad3
         move    6,1
-        move    0,1
-        addi    0,0200
+        movei   0,0200(1)
         move    7,3
         add     7,4
         camle   0,7
@@ -537,8 +534,7 @@ native_sys_logctl_mtc_write:
         pushj   17,native_sys_map_one
         jumpe   1,native_sys_logctl_bad3
         move    6,1
-        move    0,1
-        addi    0,0200
+        movei   0,0200(1)
         move    7,3
         add     7,4
         camle   0,7
@@ -570,8 +566,7 @@ native_sys_logctl_append:
         pushj   17,native_sys_map_one
         jumpe   1,native_sys_logctl_bad3
         move    6,1
-        move    0,1
-        addi    0,0200
+        movei   0,0200(1)
         move    7,3
         add     7,4
         camle   0,7
@@ -655,8 +650,7 @@ native_sys_dtc_block:
         pushj   17,native_sys_map_one
         jumpe   1,native_sys_dtc_block_bad_map
         add     3,4                     ; physical one-past mapping end
-        move    5,1
-        addi    5,0200                  ; 128 words required
+        movei   5,0200(1)              ; 128 words required
         camle   5,3
         jrst    native_sys_dtc_block_bad
         move    3,1                     ; mapped buffer

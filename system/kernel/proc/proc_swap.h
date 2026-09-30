@@ -44,7 +44,6 @@ void proc_swap_detach(int slot);
 int proc_swap_out(int slot);
 /** Restore one swapped process image into a new aligned resident extent. */
 int proc_swap_in(int slot);
-int proc_swap_is_swapped(int slot);
 int proc_swap_service_one(void);
 /** Reclaim process VM until MM can satisfy a requested extent or no victim remains. */
 int proc_swap_reclaim(kword_t words, kword_t alignment,
