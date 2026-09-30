@@ -1,8 +1,19 @@
-; dsk_io.s -- resident PDP-6 DSK270 driver, independent of tape support.
-;
-; Type-136 ownership/state lives in fixed KCORE storage_router.s.  This MRES
-; contains only disk controller policy, queueing, and transfer leaf
-; handlers.  The shared router is the sole generic PI3/PI5 handler.
+/**
+ * @file dsk_io.s
+ * @brief Resident PDP-6 Type 270 disk controller and request scheduler.
+ *
+ * Type 136 DCT ownership/state lives in fixed KCORE storage_router.s. This
+ * optional MRES contains only disk-specific PI leaves, one-sector transfer
+ * setup, a bounded two-request-per-unit elevator queue, and a five-second
+ * active-transfer watchdog. The shared router is the sole generic PI3/PI5
+ * entry point.
+ *
+ * Runtime requests use three-word descriptors on caller kernel stacks. The
+ * active-request word packs a 300-tick watchdog countdown in its left half and
+ * the 18-bit descriptor pointer in its right half. Each dsk_queue word packs
+ * q0 in the left half and q1 in the right half, avoiding separate queue-node
+ * storage. dsk_current_cyl keeps only the raw cylinder field for each unit.
+ */
 
         .globl mfsdev_io_in
         .globl mfsdev_io_out
@@ -29,8 +40,16 @@
         .globl storage_request_init
         .globl proc_wakeup_event
 
-; PI5 DSK status leaf.  AC2 may be used because pdp10_pi_dispatch_done bypasses the
-; generic fanout cursor and restores interrupted ACs directly.
+/**
+ * @brief Service the Type 270 PI5 status/idle/error leaf.
+ * @return Does not return normally; jumps to pdp10_pi_dispatch_done.
+ *
+ * AC1 and AC2 are scratch here because the storage router's direct completion
+ * path restores interrupted ACs rather than resuming generic PI fanout. Runtime
+ * idle completion sets the request event to +1 and accounts the operation;
+ * boot completion converts the negative storage_state code to 3/4 for the
+ * polling path. Controller errors fail the active request or set boot state 7.
+ */
 dsk_pi_handler:
         coni 0270,1
         trne 1,001777
@@ -56,13 +75,7 @@ dsk_pi_idle:
         jrst dsk_pi_boot_done
         aos 1,2(2)
         move 1,1(2)
-        jumpn 1,dsk_pi_account_write
-        movei 1,mfsdev_io_in+016
-        jrst dsk_pi_account_done
-dsk_pi_account_write:
-        movei 1,mfsdev_io_out+016
-dsk_pi_account_done:
-        aos (1)                         ; completed sector request
+        aos @dsk_account_table(1)       ; operation 0=read, 1=write
         hrrz 1,dsk_active_request
         setzm storage_state
         setzm dsk_active_request
@@ -85,8 +98,14 @@ dsk_pi_boot_error:
         movem 2,storage_state
         jrst pdp10_pi_dispatch_done
 
-; PI3 final-word leaf.  Reads can end immediately; writes need the two DCT
-; drain requests required by the Type-270 pipeline before ending the sector.
+/**
+ * @brief Service the Type 136 PI3 final-word/drain sequence.
+ * @return Does not return normally; jumps to pdp10_pi_dispatch_done.
+ *
+ * Reads end the sector immediately. Writes require two additional DCT drain
+ * acknowledgements before END/CLEAR because the Type 270 pipeline still owns
+ * buffered words. dsk_dct_select is a one-word self-patched state jump.
+ */
 dsk_dct_handler:
 dsk_dct_select:
         jrst dsk_dct_count_done
@@ -120,10 +139,13 @@ dsk_fail_runtime:
         addi 1,2
         jrst proc_wakeup_event
 
-; One watchdog word covers the single active DSK270 transfer.  CLK calls this
-; at 60 Hz even while slot-0 swap service suppresses scheduler preemption.
-; Five seconds is deliberately generous for real hardware while still making
-; a lost interrupt/controller hang finite for both sleeping and slot-0 callers.
+/**
+ * @brief Age and fail the single active Type 270 request after five seconds.
+ *
+ * CLK calls this at 60 Hz even while slot-0 swap service suppresses scheduler
+ * preemption. The left half of dsk_active_request is the remaining tick count;
+ * its right half is the request descriptor pointer and is unchanged by SUB.
+ */
 dsk_watchdog_tick:
         skipn dsk_active_request
         popj 017,
@@ -137,7 +159,11 @@ dsk_watchdog_timeout:
         pushj 017,dsk_fail_runtime
         popj 017,
 
-; Build direct PI3 block transfer and its -count,,buffer-1 IOWD.
+/**
+ * @brief Build the direct PI3 transfer instruction and -count,,buffer-1 IOWD.
+ * @param AC2 Buffer address; @param AC3 word count (normally 0200).
+ * @return storage_iowd and low-memory DCT vector prepared; AC4 clobbered.
+ */
 dsk_setup_read:
         move 4,dsk_dct_blki
         jrst dsk_setup_common
@@ -220,8 +246,15 @@ dsk_runtime_submit_fail:
         sub 017,[3,,3]
         popj 017,
 
-; Two pending 18-bit descriptor pointers per unit share one word.  q0 is
-; the LH and is next by one-way elevator distance; q1 is the RH later request.
+/**
+ * @brief Insert a runtime descriptor into its unit's two-entry elevator queue.
+ * @param AC1 Descriptor address; descriptor word 0 contains rawaddr,,buffer.
+ * @return AC1 = 0, or STORAGE_E_BUSY when both pending slots are occupied.
+ *
+ * q0 is the left-half descriptor pointer and is ordered nearest at/above the
+ * current cylinder; q1 is the later right-half request. No queue node storage
+ * exists beyond the four packed dsk_queue words.
+ */
 dsk_enqueue:
         hlrz 2,(1)
         move 4,2
@@ -259,9 +292,9 @@ dsk_dispatch_scan:
         aobjn 4,dsk_dispatch_scan
         popj 017,
 dsk_dispatch_found:
-        hrlz 2,dsk_queue(4)
-        movem 2,dsk_queue(4)
+        hrlzs 2,dsk_queue(4)          ; promote q1 RH -> q0 LH, clear q1
 
+/** @brief Decode AC1 descriptor, arm watchdog state, and start one sector. */
 dsk_start_active:
         move 4,1
         move 3,(4)
@@ -322,9 +355,9 @@ dsk_account_table:
         .word mfsdev_io_out+016
 
         .bss
+/** Active request: watchdog ticks in LH, 18-bit descriptor pointer in RH. */
 dsk_active_request: .block 1
+/** Last serviced raw cylinder field for each of four physical units. */
 dsk_current_cyl: .block 4
+/** Four packed two-entry queues: q0 descriptor in LH, q1 descriptor in RH. */
 dsk_queue: .block 4
-
-; Device-local accounting state; absent devices consume no fixed KCORE.
-        .bss

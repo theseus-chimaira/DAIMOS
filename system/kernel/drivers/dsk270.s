@@ -1,8 +1,14 @@
-; dsk270_pdp10.s -- compact KCORE bridge to the resident DSK270 MRES service.
-;
-; The public C-facing API remains sector based.  Unit/sector validation and
-; Type-270 address formation live here so the physical driver does not spend a
-; generated-C helper frame on every operation.
+/**
+ * @file dsk270.s
+ * @brief Generic KCORE bridge to the resident PDP-6 Type 270 disk service.
+ *
+ * The public API remains unit/sector based. Validation and conversion to the
+ * Type 270 raw address live here so the optional MRES does not carry a C helper
+ * frame on every operation. MINIT patches the read/write tail jumps to the
+ * relocated DSK services when the hardware is present.
+ *
+ * No PDP-10-only instruction is used, so this bridge has no model suffix.
+ */
         .text
         .globl  dsk270_read_sector
         .globl  dsk270_write_sector
@@ -10,9 +16,16 @@
         .globl  dsk270_write_jump
         .globl  kret_neg1
 
-; int dsk270_read_sector(unsigned unit, kword_t sector, kword_t *buf)
-; int dsk270_write_sector(unsigned unit, kword_t sector, const kword_t *buf)
-; C arguments: AC1 unit, AC2 sector, AC3 buffer.
+/**
+ * @brief Read one validated physical Type 270 sector.
+ * @param AC1 Unit 0..3.
+ * @param AC2 Sector 0..0127777 (45055 decimal).
+ * @param AC3 Nonzero 128-word destination buffer.
+ * @return AC1 = 0 on success or negative storage error on failure.
+ *
+ * AC5/AC6 are clobbered by IDIVI while converting linear sector to cylinder
+ * and sector-within-cylinder. AC4 selects the patched read/write tail.
+ */
 dsk270_read_sector:
         setz    4,                      ; read selector
         jrst    dsk270_sector_io

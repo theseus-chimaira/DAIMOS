@@ -140,7 +140,7 @@ KCORE_VM_ASM = $(BUILD)/vm_backend.s \
 	$(BUILD)/proc_swap.s
 
 KCORE_FIXED_SRCS = core/ret.s \
-	drivers/dsk270_pdp10.s \
+	drivers/dsk270.s \
 	drivers/drm236.s \
 	core/kfmt_pdp6.s \
 	fs/vfs_pdp10.s \
@@ -169,7 +169,7 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/vm_backend.s \
 	$(BUILD)/proc_swap.s \
 	$(BUILD)/ret.s \
-	$(BUILD)/dsk270_pdp10.s \
+	$(BUILD)/dsk270.s \
 	$(BUILD)/drm236.s \
 	$(BUILD)/kfmt_pdp6.s \
 	$(BUILD)/vfs_pdp10.s \
@@ -344,7 +344,7 @@ ${BUILD}/dtfs_pdp10.s: Makefile fs/dtfs_pdp10.s
 	@{ echo ".set DTFS_ENABLE_TENEX,1"; echo ".set DTFS_ENABLE_ITS,1"; echo ".set DTFS_ENABLE_FOREIGN,1"; cat fs/dtfs_pdp10.s; } > $@
 
 COPY_ASM_SRCS = core/ret.s \
-	drivers/dsk270_pdp10.s \
+	drivers/dsk270.s \
 	drivers/drm236.s \
 	core/kfmt_pdp6.s \
 	fs/vfs_pdp10.s \
@@ -389,7 +389,7 @@ COPY_ASM_SRCS = core/ret.s \
 	boot/kinit_late_end.s
 
 COPY_ASM_TARGETS = $(BUILD)/ret.s \
-	$(BUILD)/dsk270_pdp10.s \
+	$(BUILD)/dsk270.s \
 	$(BUILD)/drm236.s \
 	$(BUILD)/kfmt_pdp6.s \
 	$(BUILD)/vfs_pdp10.s \
