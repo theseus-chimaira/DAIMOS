@@ -14,10 +14,6 @@ vm_space_create(struct proc *p, unsigned int owner, kword_t words)
 
         alloc_words = (words + VM_PDP6_ALIGN_WORDS - 1UL) &
             ~(VM_PDP6_ALIGN_WORDS - 1UL);
-#ifndef __PDP10__
-        if (alloc_words > PROC_HALF_MASK)
-                return -1;
-#endif
         if (mm_alloc_aligned(alloc_words, VM_PDP6_ALIGN_WORDS,
             MM_TYPE_PROCESS, owner, MM_ALLOC_HIGH, &base) != MM_OK)
                 return -1;
@@ -53,10 +49,6 @@ vm_space_startup(struct proc *p, const kword_t *records,
         kword_t base;
         kword_t *dst;
 
-#ifndef __PDP10__
-        if (p == 0 || records == 0 || startup == 0 || !VM_SPACE_ACTIVE(p))
-                return -1;
-#endif
         argc = (unsigned int)((counts >> 18U) & PROC_HALF_MASK);
         envc = (unsigned int)(counts & PROC_HALF_MASK);
         start = VM_SPACE_WORDS(p) - (kword_t)EXEC_DXR_STACK_WORDS;
@@ -85,21 +77,6 @@ vm_space_startup(struct proc *p, const kword_t *records,
         return 0;
 }
 
-#ifndef __PDP10__
-int
-vm_space_inspect_word(const struct proc *p, kword_t offset, kword_t *wordp)
-{
-        kword_t base;
-
-        if (p == 0 || wordp == 0 || offset >= VM_SPACE_WORDS(p))
-                return -1;
-        base = VM_PDP6_BASE(p);
-        if (base == 0UL)
-                return -1;
-        *wordp = ((const kword_t *)(unsigned long)base)[offset];
-        return 0;
-}
-#endif
 
 int
 vm_space_destroy(struct proc *p, unsigned int owner)
@@ -134,18 +111,9 @@ vm_extent_move(unsigned int owner, kword_t base, kword_t words,
         unsigned int old_state;
         int rc;
 
-#ifndef __PDP10__
-        if (proc_table == 0 || owner >= proc_slots)
-                return MM_ERR_BUSY;
-#endif
         if (owner == (unsigned int)proc_current_slot)
                 return MM_ERR_BUSY;
         p = &proc_table[owner];
-#ifndef __PDP10__
-        if (PROC_IS_FREE_OR_ZOMB(p) || VM_PDP6_BASE(p) != base ||
-            VM_SPACE_WORDS(p) != words)
-                return MM_ERR_BUSY;
-#endif
         if (new_base == base || (new_base & (VM_PDP6_ALIGN_WORDS - 1UL)) != 0UL ||
             PROC_TRANSITION(p) ||
             (PROC_HAS_UAREA(p) && PROC_USER_MAPPING_HELD(p)))
@@ -165,10 +133,6 @@ vm_extent_move(unsigned int owner, kword_t base, kword_t words,
 
         PROC_SET_TRANSITION(p);
         rc = MM_OK;
-#ifndef __PDP10__
-        if (words == 0UL || mm_is_pinned(base))
-                rc = MM_ERR_BUSY;
-#endif
         if (rc == MM_OK) {
                 src = (kword_t *)(unsigned long)base;
                 dst = (kword_t *)(unsigned long)new_base;

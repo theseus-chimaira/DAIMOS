@@ -1,11 +1,11 @@
 /**
  * @file module_runtime.c
- * @brief Reference semantics for deferred runtime movable-module relocation.
+ * @brief Shared state for deferred runtime movable-module relocation.
  *
- * This file defines the descriptor/binding state and a host/reference version
- * of module_runtime_move(). PDP-6 target builds use the compact assembly move
- * path in module_runtime_pdp6.s; the C implementation documents and tests the
- * intended semantics. The facility is not currently wired into MM compaction.
+ * This file defines the descriptor/binding state consumed by the compact
+ * PDP-6 relocation primitive in module_runtime_pdp6.s. The facility is not
+ * currently wired into MM compaction; it remains groundwork for the deferred
+ * post-overlay movable-module stage.
  */
 #include "module_runtime.h"
 #include "fs_mres.h"
@@ -79,123 +79,3 @@ static kword_t *const module_fixed_bindings[] = {
 
 #define MODULE_FIXED_BIND_COUNT \
         (sizeof(module_fixed_bindings) / sizeof(module_fixed_bindings[0]))
-
-#ifndef __PDP10__
-/** Retarget one RH18 binding when it points inside the moved image. */
-static void
-module_retarget(kword_t *slot, int old_base, int new_base, int image_words)
-{
-        int address;
-
-        address = (int)(*slot & MODULE_HALF_MASK);
-        if (address >= old_base && address - old_base < image_words)
-                *slot = (*slot & ~MODULE_HALF_MASK) |
-                    (kword_t)(new_base + address - old_base);
-}
-
-/**
- * @brief Copy, relocate, and republish an already validated movable module.
- * @return Zero after successful relocation/publication.
- *
- * The caller must hold PI disabled and owns all allocation/range validation.
- * Fixed KCORE bindings, dynamic binding locations, and PI-handler addresses are
- * retargeted before the runtime descriptor publishes the new base.
- */
-int
-module_runtime_move(unsigned int owner, unsigned int new_base,
-    unsigned int total_words)
-{
-        kword_t d;
-        int old_base;
-        int image_words;
-        int init_words;
-        kword_t *src;
-        kword_t *dst;
-        const kword_t *map;
-        int i;
-
-        /* The MM direct-move path owns owner/state/range validation. */
-        d = module_runtime_descs[owner];
-        old_base = (int)MODULE_RUNTIME_BASE(d);
-        init_words = (int)MODULE_RUNTIME_INIT_WORDS(d);
-        image_words = (int)total_words -
-            (int)MODULE_RUNTIME_MAP_WORDS(d);
-        src = (kword_t *)(unsigned long)old_base;
-        dst = (kword_t *)(unsigned long)new_base;
-        /* MM holds PI disabled across the copy, relocation, publication,
-         * and extent-descriptor rebase. */
-        fs_move_words(src, dst, (unsigned int)total_words);
-        /* Walk the two-bit map sequentially; division by 18 in the inner loop
-         * is unnecessarily expensive on PDP-6. */
-        map = dst + image_words;
-        {
-                int delta;
-                kword_t bits;
-                unsigned int slot;
-                unsigned int map_index;
-
-                delta = old_base - new_base;
-                bits = map[0];
-                slot = 0U;
-                map_index = 0U;
-                for (i = 0; i < init_words; ++i) {
-                        unsigned int code;
-                        kword_t word;
-                        int half;
-
-                        code = (unsigned int)((bits >> 34U) & 03UL);
-                        bits <<= 2U;
-                        if (++slot == 18U) {
-                                slot = 0U;
-                                ++map_index;
-                                if (i + 1 < init_words)
-                                        bits = map[map_index];
-                        }
-                        if (code == MRES_RELOC_NONE)
-                                continue;
-                        word = dst[i];
-                        if ((code & MRES_RELOC_LH18) != 0U) {
-                                half = (int)((word >> 18U) & MODULE_HALF_MASK);
-                                word = (word & MODULE_HALF_MASK) |
-                                    ((kword_t)(half - delta) << 18U);
-                        }
-                        if ((code & MRES_RELOC_RH18) != 0U) {
-                                half = (int)(word & MODULE_HALF_MASK);
-                                word = (word & ~MODULE_HALF_MASK) |
-                                    (kword_t)(half - delta);
-                        }
-                        dst[i] = word;
-                }
-        }
-
-        for (i = 0; i < (int)MODULE_FIXED_BIND_COUNT; ++i)
-                module_retarget(module_fixed_bindings[i], old_base, new_base,
-                    image_words);
-        for (i = 0; i < (int)MODULE_DYNAMIC_BIND_MAX; ++i) {
-                kword_t source;
-                unsigned int source_owner;
-                kword_t offset;
-                int source_base;
-
-                source = module_dynamic_bindings[i];
-                if (source == 0UL)
-                        break;
-                source_owner = (unsigned int)((source >> 18U) & MODULE_HALF_MASK);
-                offset = source & MODULE_HALF_MASK;
-                if (source_owner == owner)
-                        source_base = new_base;
-                else
-                        source_base = (int)MODULE_RUNTIME_BASE(
-                            module_runtime_descs[source_owner]);
-                module_retarget((kword_t *)(unsigned long)(source_base + offset),
-                    old_base, new_base, image_words);
-        }
-        for (i = 0; i < (int)PDP10_PI_HANDLER_CAPACITY; ++i)
-                module_retarget(&pdp10_pi_handlers[i], old_base, new_base,
-                    image_words);
-        module_runtime_descs[owner] =
-            (d & ~MODULE_HALF_MASK) |
-            ((kword_t)new_base & MODULE_HALF_MASK);
-        return 0;
-}
-#endif /* !__PDP10__ */

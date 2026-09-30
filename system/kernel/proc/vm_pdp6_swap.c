@@ -115,11 +115,6 @@ proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
         unsigned int mount;
         unsigned int kind;
 
-#ifndef __PDP10__
-        if (proc_swap_records == 0 || slot < 0 || slot >= (int)proc_slots ||
-            backing == VFS_NODE_NONE)
-                return -1;
-#endif
         provider = VFS_PROVIDER(backing);
         mount = VFS_MOUNT_ID(backing);
         kind = VFS_LOCAL_KIND(backing);
@@ -149,13 +144,7 @@ proc_swap_detach(int slot)
 {
         struct proc *p;
 
-#ifndef __PDP10__
-        if (proc_swap_records == 0 || slot < 0 || slot >= (int)proc_slots)
-                return;
-        p = proc_table != 0 ? &proc_table[slot] : 0;
-#else
         p = &proc_table[slot];
-#endif
         if (VM_PDP6_BASE(p) == 0UL &&
             proc_swap_records[slot].state != 0UL)
                 proc_swap_blocks_used -=
@@ -178,11 +167,6 @@ proc_swap_out(int slot)
         kword_t *mem;
         unsigned int state;
 
-#ifndef __PDP10__
-        if (proc_swap_records == 0 || proc_table == 0 || slot <= 0 ||
-            slot >= (int)proc_slots || slot == (int)proc_current_slot)
-                return -1;
-#endif
         p = &proc_table[slot];
         state = PROC_STATE(p);
         if ((state != PROC_SRUN && state != PROC_SLEEP && state != PROC_STOP) ||
@@ -240,11 +224,6 @@ proc_swap_is_swapped(int slot)
 {
         struct proc *p;
 
-#ifndef __PDP10__
-        if (proc_swap_records == 0 || proc_table == 0 || slot <= 0 ||
-            slot >= (int)proc_slots)
-                return 0;
-#endif
         p = &proc_table[slot];
         return !PROC_IS_FREE(p) && VM_PDP6_BASE(p) == 0UL &&
             proc_swap_records[slot].state != 0UL && !PROC_TRANSITION(p);
@@ -296,11 +275,6 @@ proc_swap_in(int slot)
         kword_t blocks;
         kword_t *mem;
 
-#ifndef __PDP10__
-        if (proc_swap_records == 0 || proc_table == 0 || slot <= 0 ||
-            slot >= (int)proc_slots)
-                return -1;
-#endif
         p = &proc_table[slot];
         r = &proc_swap_records[slot];
         if (VM_PDP6_BASE(p) != 0UL || PROC_IS_FREE(p) ||
@@ -356,10 +330,6 @@ proc_swap_reclaim(kword_t words, kword_t alignment,
 {
         int victim;
 
-#ifndef __PDP10__
-        if (proc_swap_records == 0 || proc_table == 0)
-                return -1;
-#endif
         for (;;) {
                 victim = proc_swap_victim(exclude_owner);
                 if (victim < 0)

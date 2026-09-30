@@ -18,155 +18,17 @@ unsigned int proc_sched_age_phase;
 extern struct file *file_table;
 
 extern int proc_event_send(unsigned int target, unsigned int event, int group);
-#ifdef __PDP10__
 extern int native_sys_putchar_call(kword_t tty_char);
-#endif
 extern int proc_session_teardown(unsigned int leader_slot, kword_t leader_ctl);
 
-#ifndef __PDP10__
-static int
-proc_image_record_char(const struct proc *p, kword_t record,
-    unsigned int pos, unsigned int *chp)
-{
-        kword_t count;
-        kword_t word;
-        unsigned int shift;
-
-        if (vm_space_inspect_word(p, record, &count) != 0 ||
-            count > SYS_RUN_ARG_MAX_CHARS || pos >= (unsigned int)count)
-                return 0;
-        if (vm_space_inspect_word(p, record + 1UL + (kword_t)(pos / 6U),
-            &word) != 0)
-                return -1;
-        shift = 30U - 6U * (pos % 6U);
-        *chp = 040U + (unsigned int)((word >> shift) & 077UL);
-        return 1;
-}
-
-static int
-proc_image_record_info(const struct proc *p, kword_t vector,
-    unsigned int index, kword_t *recordp, unsigned int *charsp)
-{
-        kword_t record;
-        kword_t chars;
-
-        if (vm_space_inspect_word(p, vector + (kword_t)index, &record) != 0 ||
-            record >= VM_SPACE_WORDS(p) ||
-            vm_space_inspect_word(p, record, &chars) != 0 ||
-            chars > SYS_RUN_ARG_MAX_CHARS)
-                return -1;
-        *recordp = record;
-        *charsp = (unsigned int)chars;
-        return 0;
-}
-
-int
-proc_image_text_readchar(unsigned int slot, unsigned int view, kword_t off,
-    unsigned int *chp)
-{
-        const struct proc *p;
-        kword_t meta;
-        kword_t counts;
-        kword_t vector;
-        kword_t record;
-        unsigned int argc;
-        unsigned int envc;
-        unsigned int first;
-        unsigned int count;
-        unsigned int i;
-        unsigned int chars;
-        unsigned int start;
-        unsigned int pos;
-        int rc;
-
-        if (chp == 0 || proc_table == 0 || slot >= proc_high_slot ||
-            PROC_IS_FREE(&proc_table[slot]) ||
-            !VM_SPACE_ACTIVE(&proc_table[slot]) ||
-            VM_SPACE_WORDS(&proc_table[slot]) < EXEC_DXR_STACK_WORDS)
-                return 0;
-        p = &proc_table[slot];
-        meta = VM_SPACE_WORDS(p) - (kword_t)EXEC_DXR_STACK_WORDS;
-        if (vm_space_inspect_word(p, meta, &counts) != 0)
-                return 0;
-        argc = (unsigned int)((counts >> 18U) & PROC_HALF_MASK);
-        envc = (unsigned int)(counts & PROC_HALF_MASK);
-        if (argc > SYS_RUN_ARG_MAX || envc > SYS_RUN_ENV_MAX)
-                return 0;
-        vector = meta + 1UL;
-
-        if (view == PROC_IMAGE_VIEW_NAME) {
-                if (argc == 0U || proc_image_record_info(p, vector, 0U,
-                    &record, &chars) != 0)
-                        return 0;
-                start = 0U;
-                for (i = 0U; i < chars; ++i) {
-                        rc = proc_image_record_char(p, record, i, chp);
-                        if (rc <= 0)
-                                return rc;
-                        if (*chp == (unsigned int)'/')
-                                start = i + 1U;
-                }
-                if (off >= (kword_t)(chars - start))
-                        return 0;
-                return proc_image_record_char(p, record,
-                    start + (unsigned int)off, chp);
-        }
-
-        if (view == PROC_IMAGE_VIEW_CMDLINE) {
-                first = 0U;
-                count = argc;
-        } else if (view == PROC_IMAGE_VIEW_ENVIRONMENT) {
-                first = argc;
-                count = envc;
-        } else {
-                return -1;
-        }
-
-        pos = (unsigned int)off;
-        for (i = 0U; i < count; ++i) {
-                if (proc_image_record_info(p, vector, first + i,
-                    &record, &chars) != 0)
-                        return 0;
-                if (pos < chars)
-                        return proc_image_record_char(p, record, pos, chp);
-                pos -= chars;
-                if (i + 1U != count) {
-                        if (view == PROC_IMAGE_VIEW_CMDLINE) {
-                                if (pos == 0U) {
-                                        *chp = (unsigned int)' ';
-                                        return 1;
-                                }
-                                --pos;
-                        } else {
-                                if (pos == 0U) {
-                                        *chp = 015U;
-                                        return 1;
-                                }
-                                --pos;
-                                if (pos == 0U) {
-                                        *chp = 012U;
-                                        return 1;
-                                }
-                                --pos;
-                        }
-                }
-        }
-        return 0;
-}
-#endif
 
 /* KCC emits calls for tiny C helpers here.  Keep scheduler-common
  * expressions explicit so selection does not pay those calls. */
 #define PROC_EFFECTIVE(p) \
         (PROC_NICE_ENCODED(p) + PROC_CPU_PENALTY(p))
 #define PROC_UAREA_OWNER(slot) (PROC_UAREA_MM_OWNER_BASE + (slot))
-#ifdef __PDP10__
 #define PROC_SWAP_RECORD_PRESENT(slot) \
         (proc_swap_records[(slot)].state != 0UL)
-#else
-#define PROC_SWAP_RECORD_PRESENT(slot) \
-        (proc_swap_records != 0 && proc_swap_records[(slot)].state != 0UL)
-#endif
 
 static int
 proc_uarea_release(unsigned int slot, struct proc *p)
@@ -194,52 +56,6 @@ proc_slot_zero(struct proc *p)
         p->sched = 0UL;
 }
 
-#ifndef __PDP10__
-/* Target helpers are compact PDP-10 assembly.  Keep the same intrusive-list
- * semantics in host tests so queue invariants are exercised there too. */
-void
-proc_runq_add(unsigned int slot)
-{
-        struct proc *p;
-
-        if (proc_table == 0 || slot == 0U || slot >= proc_slots)
-                return;
-        p = &proc_table[slot];
-        if (PROC_STATE(p) != PROC_SRUN)
-                return;
-        p->sched = (p->sched & ~PROC_SCHED_RH_MASK) |
-            (proc_runq_head & PROC_SCHED_RH_MASK);
-        proc_runq_head = (kword_t)slot;
-}
-
-void
-proc_runq_remove(unsigned int slot)
-{
-        unsigned int cur;
-        unsigned int prev;
-        struct proc *p;
-
-        if (proc_table == 0 || slot == 0U || slot >= proc_slots)
-                return;
-        prev = 0U;
-        cur = (unsigned int)(proc_runq_head & PROC_SCHED_RH_MASK);
-        while (cur != 0U && cur != slot) {
-                prev = cur;
-                cur = PROC_RUNQ_NEXT(&proc_table[cur]);
-        }
-        if (cur == 0U)
-                return;
-        p = &proc_table[slot];
-        cur = PROC_RUNQ_NEXT(p);
-        if (prev == 0U)
-                proc_runq_head = (kword_t)cur;
-        else
-                proc_table[prev].sched =
-                    (proc_table[prev].sched & ~PROC_SCHED_RH_MASK) |
-                    (kword_t)cur;
-        p->sched &= ~PROC_SCHED_RH_MASK;
-}
-#endif
 
 
 #define PROC_REPORT_BITS \
@@ -296,11 +112,7 @@ kword_t proc_tty_records[PROC_TTY_COUNT];
 #define PROC_TTY_LINE_NL            ((kword_t)1UL << 17U)
 #define PROC_TTY_LINE_EOF           ((kword_t)1UL << 18U)
 
-#ifdef __PDP10__
 kword_t proc_tty_line_bases[PROC_TTY_LINE_PTR_WORDS];
-#else
-static kword_t proc_tty_line_bases[PROC_TTY_LINE_PTR_WORDS];
-#endif
 
 static unsigned int
 proc_tty_mode(unsigned int tty)
@@ -309,35 +121,8 @@ proc_tty_mode(unsigned int tty)
             PROC_TTY_MODE_MASK);
 }
 
-#ifdef __PDP10__
 extern kword_t proc_tty_line_base_get(unsigned int tty);
 extern void proc_tty_line_base_set(unsigned int tty, kword_t base);
-#else
-static kword_t
-proc_tty_line_base_get(unsigned int tty)
-{
-        kword_t word;
-
-        word = proc_tty_line_bases[tty >> 1U];
-        if ((tty & 1U) != 0U)
-                return (word >> 18U) & PROC_HALF_MASK;
-        return word & PROC_HALF_MASK;
-}
-
-static void
-proc_tty_line_base_set(unsigned int tty, kword_t base)
-{
-        kword_t *word;
-
-        word = &proc_tty_line_bases[tty >> 1U];
-        base &= PROC_HALF_MASK;
-        if ((tty & 1U) != 0U)
-                *word = (*word & PROC_HALF_MASK) | (base << 18U);
-        else
-                *word = (*word & (PROC_HALF_MASK << 18U)) | base;
-}
-
-#endif
 
 void
 proc_tty_line_reset(unsigned int tty)
@@ -374,11 +159,7 @@ proc_tty_mode_set(unsigned int tty, unsigned int mode)
         return (int)mode;
 }
 
-#ifdef __PDP10__
 kword_t *
-#else
-static kword_t *
-#endif
 proc_tty_line_ensure(unsigned int tty)
 {
         kword_t base;
@@ -399,58 +180,17 @@ proc_tty_line_ensure(unsigned int tty)
         return (kword_t *)(unsigned long)base;
 }
 
-#ifdef __PDP10__
 extern void proc_tty_line_put(kword_t *line, unsigned int pos,
     unsigned int ch);
 extern unsigned int proc_tty_line_get(kword_t *line, unsigned int pos);
-#else
-static void
-proc_tty_line_put(kword_t *line, unsigned int pos, unsigned int ch)
-{
-        unsigned int wi;
-        unsigned int shift;
-        kword_t mask;
 
-        wi = 1U + pos / PROC_TTY_LINE_PACK;
-        shift = (PROC_TTY_LINE_PACK - 1U -
-            (pos % PROC_TTY_LINE_PACK)) * 7U;
-        mask = (kword_t)0177UL << shift;
-        line[wi] = (line[wi] & ~mask) | (((kword_t)ch & 0177UL) << shift);
-}
-
-static unsigned int
-proc_tty_line_get(kword_t *line, unsigned int pos)
-{
-        unsigned int wi;
-        unsigned int shift;
-
-        wi = 1U + pos / PROC_TTY_LINE_PACK;
-        shift = (PROC_TTY_LINE_PACK - 1U -
-            (pos % PROC_TTY_LINE_PACK)) * 7U;
-        return (unsigned int)((line[wi] >> shift) & 0177UL);
-}
-
-#endif
-
-#ifdef __PDP10__
 void
-#else
-static void
-#endif
 proc_tty_echo(unsigned int tty, unsigned int ch)
 {
-#ifdef __PDP10__
         (void)native_sys_putchar_call(TTY_PACK(tty, ch));
-#else
-        (void)tty_putchar(TTY_PACK(tty, ch));
-#endif
 }
 
-#ifdef __PDP10__
 void
-#else
-static void
-#endif
 proc_tty_echo_erase(unsigned int tty)
 {
         proc_tty_echo(tty, 010U);
@@ -461,141 +201,8 @@ proc_tty_echo_erase(unsigned int tty)
 /* Return one already-cooked byte, EOF, or INPUT_REPEAT when hardware input is
  * still required.  The first canonical read allocates its compact line block
  * here, before the caller enters a blocking hardware-input path. */
-#ifndef __PDP10__
-int
-proc_tty_line_take(unsigned int tty)
-{
-        kword_t *line;
-        kword_t header;
-        unsigned int len;
-        unsigned int drain;
-        unsigned int ch;
-
-        if (tty >= PROC_TTY_COUNT)
-                return -1;
-        if ((proc_tty_mode(tty) & PROC_TTY_MODE_CANONICAL) == 0U)
-                return PROC_TTY_INPUT_REPEAT;
-        line = proc_tty_line_ensure(tty);
-        if (line == 0)
-                return -1;
-        header = line[0];
-        if ((header & PROC_TTY_LINE_READY) == 0UL)
-                return PROC_TTY_INPUT_REPEAT;
-        len = (unsigned int)(header & PROC_TTY_LINE_LEN_MASK);
-        drain = (unsigned int)((header >> PROC_TTY_LINE_DRAIN_SHIFT) &
-            PROC_TTY_LINE_DRAIN_MASK);
-        if (drain < len) {
-                ch = proc_tty_line_get(line, drain++);
-                line[0] = (header & ~((kword_t)PROC_TTY_LINE_DRAIN_MASK <<
-                    PROC_TTY_LINE_DRAIN_SHIFT)) |
-                    ((kword_t)drain << PROC_TTY_LINE_DRAIN_SHIFT);
-                if (drain == len && (header & PROC_TTY_LINE_NL) == 0UL)
-                        proc_tty_line_reset(tty);
-                return (int)ch;
-        }
-        if ((header & PROC_TTY_LINE_NL) != 0UL) {
-                proc_tty_line_reset(tty);
-                return 012;
-        }
-        if ((header & PROC_TTY_LINE_EOF) != 0UL) {
-                proc_tty_line_reset(tty);
-                return PROC_TTY_INPUT_EOF;
-        }
-        proc_tty_line_reset(tty);
-        return PROC_TTY_INPUT_EOF;
-}
-
-#endif
 
 /* Process one byte after controlling-TTY and foreground-pgrp validation. */
-#ifndef __PDP10__
-int
-proc_tty_canon_input(unsigned int tty, unsigned int ch)
-{
-        kword_t *line;
-        kword_t header;
-        unsigned int len;
-        unsigned int mode;
-
-        if (tty >= PROC_TTY_COUNT)
-                return -1;
-        mode = proc_tty_mode(tty);
-        if ((mode & PROC_TTY_MODE_CANONICAL) == 0U)
-                return (int)(ch & 0177U);
-        ch &= 0177U;
-        if ((proc_tty_records[tty] & PROC_TTY_CR_PENDING) != 0UL) {
-                proc_tty_records[tty] &= ~PROC_TTY_CR_PENDING;
-                if (ch == 012U)
-                        return PROC_TTY_INPUT_REPEAT;
-        }
-        line = proc_tty_line_ensure(tty);
-        if (line == 0)
-                return -1;
-        header = line[0];
-        if ((header & PROC_TTY_LINE_READY) != 0UL)
-                return proc_tty_line_take(tty);
-        len = (unsigned int)(header & PROC_TTY_LINE_LEN_MASK);
-        if (ch == 015U || ch == 012U) {
-                if (ch == 015U)
-                        proc_tty_records[tty] |= PROC_TTY_CR_PENDING;
-                line[0] = header | PROC_TTY_LINE_READY | PROC_TTY_LINE_NL;
-                if ((mode & PROC_TTY_MODE_ECHO) != 0U) {
-                        proc_tty_echo(tty, 015U);
-                        proc_tty_echo(tty, 012U);
-                }
-                return proc_tty_line_take(tty);
-        }
-        if (ch == 010U || ch == 0177U) {
-                if (len != 0U) {
-                        --len;
-                        line[0] = (header & ~PROC_TTY_LINE_LEN_MASK) |
-                            (kword_t)len;
-                        if ((mode & PROC_TTY_MODE_ECHO) != 0U)
-                                proc_tty_echo_erase(tty);
-                }
-                return PROC_TTY_INPUT_REPEAT;
-        }
-        if (ch == 025U) {
-                if ((mode & PROC_TTY_MODE_ECHO) != 0U) {
-                        while (len != 0U) {
-                                --len;
-                                proc_tty_echo_erase(tty);
-                        }
-                }
-                line[0] = header & ~PROC_TTY_LINE_LEN_MASK;
-                return PROC_TTY_INPUT_REPEAT;
-        }
-        if (ch == 004U) {
-                if (len == 0U)
-                        line[0] = header | PROC_TTY_LINE_READY |
-                            PROC_TTY_LINE_EOF;
-                else
-                        line[0] = header | PROC_TTY_LINE_READY;
-                return proc_tty_line_take(tty);
-        }
-        if (len >= PROC_TTY_LINE_CHARS) {
-                if ((mode & PROC_TTY_MODE_ECHO) != 0U)
-                        proc_tty_echo(tty, 007U);
-                return PROC_TTY_INPUT_REPEAT;
-        }
-        /* DAIMOS cooked input is systemwide SIXBIT text.  Normalize before
-         * both buffering and echo so applications never need private case
-         * folding and what the user sees is exactly what they receive. */
-        if (ch >= (unsigned int)'a' && ch <= (unsigned int)'z')
-                ch -= (unsigned int)('a' - 'A');
-        if (ch < 040U || ch > 0137U) {
-                if (ch > 0137U && (mode & PROC_TTY_MODE_ECHO) != 0U)
-                        proc_tty_echo(tty, 007U);
-                return PROC_TTY_INPUT_REPEAT;
-        }
-        proc_tty_line_put(line, len, ch);
-        line[0] = (header & ~PROC_TTY_LINE_LEN_MASK) | (kword_t)(len + 1U);
-        if ((mode & PROC_TTY_MODE_ECHO) != 0U && ch >= 040U && ch <= 0176U)
-                proc_tty_echo(tty, ch);
-        return PROC_TTY_INPUT_REPEAT;
-}
-
-#endif
 
 extern int proc_tty_session_has(unsigned int session, unsigned int pgrp,
     unsigned int skip_slot);
@@ -626,12 +233,6 @@ proc_slot_discard(unsigned int slot)
 {
         struct proc *p;
 
-#ifndef __PDP10__
-        /* Target caller has already claimed this concrete slot. */
-        if (proc_table == 0 || (int)slot <= 0 ||
-            (int)slot >= (int)proc_slots)
-                return -1;
-#endif
         p = &proc_table[slot];
         if ((unsigned int)proc_rt_owner == slot)
                 proc_rt_owner = 0UL;
@@ -665,14 +266,8 @@ proc_adopt_children(unsigned int old_parent)
         unsigned int new_parent;
 
         new_parent = 0U;
-#ifdef __PDP10__
         if (old_parent != 1U && !PROC_IS_FREE_OR_ZOMB(&proc_table[1]))
                 new_parent = 1U;
-#else
-        if (old_parent != 1U && proc_slots > 1U &&
-            !PROC_IS_FREE_OR_ZOMB(&proc_table[1]))
-                new_parent = 1U;
-#endif
         for (i = 1; i < (int)proc_high_slot; ++i) {
                 struct proc *child;
                 unsigned int state;
@@ -838,153 +433,6 @@ proc_event_apply(unsigned int slot, unsigned int event)
         return 0;
 }
 
-#ifndef __PDP10__
-/* Return the logical terminal which supplies the current process input.
- * A process with no controlling terminal retains the historical CTY fallback
- * used during early userspace bootstrap.  DETACHED is deliberately an error. */
-int
-proc_tty_read_enter(void)
-{
-        struct proc *p;
-
-        p = &proc_table[(unsigned int)proc_current_slot];
-        for (;;) {
-                unsigned int state;
-                unsigned int tty;
-                kword_t record;
-                unsigned int session;
-                unsigned int pgrp;
-
-                state = PROC_TTY_STATE(p);
-                if (state == PROC_TTY_NO_TTY)
-                        return 0;
-                if (state < PROC_TTY_ATTACHED_BASE ||
-                    state >= PROC_TTY_ATTACHED_BASE + PROC_TTY_COUNT)
-                        return -1;
-                tty = state - PROC_TTY_ATTACHED_BASE;
-                record = proc_tty_records[tty];
-                session = PROC_SESSION(p);
-                if (PROC_TTY_REC_SESSION(record) != session)
-                        return -1;
-                pgrp = PROC_PGRP(p);
-                if (PROC_TTY_REC_PGRP(record) == pgrp)
-                        return (int)tty;
-                if (proc_event_send(pgrp, SYS_EVENT_TSTP, 1) != 0)
-                        return -1;
-                /* A self TSTP requests an immediate PI6 reschedule.  This
-                 * continuation resumes here after CONT and rechecks whether
-                 * the group actually owns the terminal before consuming input. */
-        }
-}
-
-int
-proc_tty_input(unsigned int tty, unsigned int ch)
-{
-        struct proc *p;
-        unsigned int state;
-        kword_t record;
-        unsigned int pgrp;
-
-        if (tty >= PROC_TTY_COUNT)
-                return -1;
-        p = &proc_table[(unsigned int)proc_current_slot];
-        state = PROC_TTY_STATE(p);
-        if (state == PROC_TTY_NO_TTY) {
-                if (tty != 0U)
-                        return -1;
-                return (int)(ch & 0177U);
-        }
-        if (state != PROC_TTY_ATTACHED_BASE + tty)
-                return -1;
-        record = proc_tty_records[tty];
-        if (PROC_TTY_REC_SESSION(record) != PROC_SESSION(p))
-                return -1;
-        pgrp = PROC_TTY_REC_PGRP(record);
-        if (pgrp == 0U || pgrp != PROC_PGRP(p))
-                return -1;
-        ch &= 0177U;
-        if ((proc_tty_mode(tty) & PROC_TTY_MODE_SIGNALS) != 0U) {
-                if (ch == 003U) {
-                        (void)proc_event_send(pgrp, SYS_EVENT_INT, 1);
-                        return PROC_TTY_INPUT_REPEAT;
-                }
-                if (ch == 032U) {
-                        if (proc_event_send(pgrp, SYS_EVENT_TSTP, 1) != 0)
-                                return -1;
-                        return PROC_TTY_INPUT_REPEAT;
-                }
-        }
-        if ((proc_tty_mode(tty) & PROC_TTY_MODE_CANONICAL) != 0U)
-                return proc_tty_canon_input(tty, ch);
-        return (int)ch;
-}
-
-/* Bind terminal output to the process controlling TTY.  Output is not gated
- * by the foreground pgrp (DAIMOS has no TOSTOP mode); it is only required to
- * belong to the controlling session.  NO_TTY keeps the bootstrap CTY path. */
-int
-proc_tty_output(unsigned int ch)
-{
-        struct proc *p;
-        unsigned int state;
-        unsigned int tty;
-        kword_t record;
-
-        p = &proc_table[(unsigned int)proc_current_slot];
-        state = PROC_TTY_STATE(p);
-        if (state == PROC_TTY_NO_TTY)
-                return (int)TTY_PACK(TTY_ID_CTY, ch);
-        if (state < PROC_TTY_ATTACHED_BASE ||
-            state >= PROC_TTY_ATTACHED_BASE + PROC_TTY_COUNT)
-                return -1;
-        tty = state - PROC_TTY_ATTACHED_BASE;
-        record = proc_tty_records[tty];
-        if (PROC_TTY_REC_SESSION(record) != PROC_SESSION(p))
-                return -1;
-        return (int)TTY_PACK(tty, ch);
-}
-
-/* DCS and GE each have one hardware scanner, but several logical terminals.
- * Their MRES readers defer an input byte for another line into otherwise
- * unused high bits of that terminal's existing session record.  Encoding
- * byte+1 leaves zero as the empty marker and costs no additional per-TTY RAM. */
-int
-proc_tty_pending_take(unsigned int tty)
-{
-        kword_t record;
-        unsigned int encoded;
-
-        if (tty >= PROC_TTY_COUNT)
-                return -1;
-        record = proc_tty_records[tty];
-        encoded = (unsigned int)((record >> PROC_TTY_PENDING_SHIFT) &
-            PROC_TTY_PENDING_MASK);
-        if (encoded == 0U)
-                return -1;
-        record &= ~((kword_t)PROC_TTY_PENDING_MASK <<
-            PROC_TTY_PENDING_SHIFT);
-        proc_tty_records[tty] = record;
-        return (int)(encoded - 1U);
-}
-
-int
-proc_tty_pending_store(unsigned int tty, unsigned int ch)
-{
-        kword_t record;
-        kword_t field;
-
-        if (tty >= PROC_TTY_COUNT || ch > TTY_DATA_MASK)
-                return -1;
-        record = proc_tty_records[tty];
-        field = (record >> PROC_TTY_PENDING_SHIFT) & PROC_TTY_PENDING_MASK;
-        if (field != 0UL)
-                return -1;
-        record |= ((kword_t)(ch + 1U) & PROC_TTY_PENDING_MASK) <<
-            PROC_TTY_PENDING_SHIFT;
-        proc_tty_records[tty] = record;
-        return 0;
-}
-#endif
 
 int
 proc_wait_status(unsigned int selector, kword_t *statusp, unsigned int flags)
@@ -1053,34 +501,7 @@ proc_wait_status(unsigned int selector, kword_t *statusp, unsigned int flags)
         }
 }
 
-#ifndef __PDP10__
-kword_t
-proc_comm(const struct proc *p)
-{
-        unsigned int slot;
 
-        if (p == 0 || proc_table == 0)
-                return PDP10_SIX6('U','S','E','R',' ',' ');
-        slot = (unsigned int)(p - proc_table);
-        if (slot == 0U)
-                return PDP10_SIX6('S','W','A','P','P','E');
-        if (slot == 1U)
-                return PDP10_SIX6('I','N','I','T',' ',' ');
-        return PDP10_SIX6('U','S','E','R',' ',' ');
-}
-#endif
-
-#ifndef __PDP10__
-int
-proc_nice_value(int slot)
-{
-        if (proc_table == 0 || slot <= 0 || slot >= (int)proc_slots ||
-            PROC_IS_FREE(&proc_table[slot]))
-                return 0;
-        return (int)PROC_NICE_ENCODED(&proc_table[slot]) -
-            (int)PROC_NICE_BIAS;
-}
-#endif
 
 int
 proc_nice_current(int value)
@@ -1090,10 +511,6 @@ proc_nice_current(int value)
         unsigned int encoded;
 
         slot = (int)proc_current_slot;
-#ifndef __PDP10__
-        if (proc_table == 0 || slot == 0 || slot >= (int)proc_slots)
-                return -1;
-#endif
         if (value < PROC_NICE_MIN)
                 value = PROC_NICE_MIN;
         if (value > PROC_NICE_MAX)
@@ -1246,10 +663,6 @@ proc_swap_victim(unsigned int exclude_owner)
         int best;
         int best_score;
 
-#ifndef __PDP10__
-        if (proc_table == 0)
-                return -1;
-#endif
         exclude = (int)exclude_owner;
         best = 0;
         best_score = 0;

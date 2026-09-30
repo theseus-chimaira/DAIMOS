@@ -13,12 +13,8 @@
 /* One directory and one transfer block are shared by every DTFS mount.
  * On the PDP-6 the directory cache is allocated from managed kernel memory
  * after MRES packing, so 128 cache words do not consume scarce permanent
- * low-core address space.  Host/reference builds keep the simple array. */
-#ifdef __PDP10__
+ * low-core address space. */
 kword_t *dtfs_dir;
-#else
-kword_t dtfs_dir[DTFS_BLOCK_WORDS];
-#endif
 #define dtfs_block fs_block_workspace
 unsigned int dtfs_cache_mount;
 /* Unit number and the read-only foreign-media personality share one word. */
@@ -81,55 +77,8 @@ extern int dtfs_foreign_set_name(unsigned int slot,
 #define dtfs_scan_slot(node, name, slotp) \
         dtfs_native_scan_slot((name), (slotp))
 #else
-#ifdef __PDP10__
 extern int dtfs_scan_slot(vnode_t node, const struct vfs_name *name,
     unsigned int *slotp);
-#else
-int
-dtfs_scan_slot(vnode_t node, const struct vfs_name *name,
-    unsigned int *slotp)
-{
-        struct vfs_name media_name;
-        unsigned int slot;
-        unsigned int personality;
-        int empty;
-        int its;
-
-        personality = dtfs_personality(node);
-        if (personality == 0U)
-                return dtfs_native_scan_slot(name, slotp);
-        its = personality == DTFS_MEDIA_ITS;
-        if (name != 0 && (!vfs_name_valid(name) ||
-            name->chars > (its ? 13U : 10U)))
-                return -2;
-        for (slot = 0U; slot != (its ? DTFS_ITS_FILE_SLOTS :
-            DTFS_FILE_SLOTS); ++slot) {
-                if (its)
-                        empty = dtfs_dir[slot * 2U] == 0UL &&
-                            dtfs_dir[slot * 2U + 1U] == 0UL;
-                else
-                        empty = dtfs_dir[DTFS_NAME_BASE + slot] == 0UL;
-                if (name == 0) {
-                        if (!empty)
-                                continue;
-                        if (slotp != 0)
-                                *slotp = slot;
-                        return 0;
-                }
-                if (empty)
-                        continue;
-                dtfs_foreign_name(slot, &media_name, its);
-                if (media_name.chars != name->chars ||
-                    !vfs_name_words_equal(media_name.words, name->words,
-                    VFS_NAME_WORDS))
-                        continue;
-                if (slotp != 0)
-                        *slotp = slot;
-                return 0;
-        }
-        return -1;
-}
-#endif /* !__PDP10__ */
 
 #endif
 
@@ -175,75 +124,7 @@ dtfs_set_exec(unsigned int slot, int executable)
     ((kword_t)(first) << DTFS_FIRST_SHIFT) | (kword_t)(count))
 
 #if DTFS_ENABLE_TENEX || DTFS_ENABLE_ITS
-#ifndef __PDP10__
-unsigned int
-dtfs_block_info(vnode_t node, unsigned int slot, unsigned int *firstp)
-{
-        unsigned int block;
-        unsigned int owner;
-        unsigned int count;
-        unsigned int mapoff;
-        unsigned int media;
-        unsigned int unit;
-
-        owner = slot + 1U;
-        count = 0U;
-        if (firstp != 0)
-                *firstp = 0U;
-        media = dtfs_media[VFS_MOUNT_ID(node) - 1U];
-        if ((media & DTFS_MEDIA_ITS) != 0U) {
-                for (block = 0U; block != DTFS_ITS_MAP_ENTRIES; ++block)
-                        if (dtfs_owner(DTFS_ITS_NAME_WORDS, block) == owner)
-                                ++count;
-                return count;
-        }
-        mapoff = (media & DTFS_MEDIA_TENEX) != 0U;
-        unit = media & DTFS_MEDIA_UNIT_MASK;
-        for (block = 1U; block != DTFS_LAST_BLOCK + 1U; ++block) {
-                if (dtfs_owner(0U, block - mapoff) != owner)
-                        continue;
-                ++count;
-                if (firstp != 0 && *firstp == 0U) {
-                        if (dtfs_dtc_read(unit, block, dtfs_block) != 0)
-                                return 0U;
-                        if (((dtfs_block[0] >> DTFS_FIRST_SHIFT) &
-                            DTFS_BLOCKNO_MASK) == block)
-                                *firstp = block;
-                }
-        }
-        return count;
-}
-#endif /* !__PDP10__ */
 #else
-#ifndef __PDP10__
-unsigned int
-dtfs_block_info(vnode_t node, unsigned int slot, unsigned int *firstp)
-{
-        unsigned int block;
-        unsigned int count;
-        unsigned int owner;
-        unsigned int unit;
-
-        owner = slot + 1U;
-        count = 0U;
-        if (firstp != 0)
-                *firstp = 0U;
-        unit = dtfs_media[VFS_MOUNT_ID(node) - 1U] & DTFS_MEDIA_UNIT_MASK;
-        for (block = 1U; block != DTFS_LAST_BLOCK + 1U; ++block) {
-                if (dtfs_owner(0U, block) != owner)
-                        continue;
-                ++count;
-                if (firstp != 0 && *firstp == 0U) {
-                        if (dtfs_dtc_read(unit, block, dtfs_block) != 0)
-                                return 0U;
-                        if (((dtfs_block[0] >> DTFS_FIRST_SHIFT) &
-                            DTFS_BLOCKNO_MASK) == block)
-                                *firstp = block;
-                }
-        }
-        return count;
-}
-#endif /* !__PDP10__ */
 #endif
 
 extern unsigned int dtfs_block_info(vnode_t node, unsigned int slot,
@@ -315,7 +196,7 @@ commit:
 
 #endif
 
-#if !defined(__PDP10__) || (!DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS)
+#if !DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS
 static int
 dtfs_resize(vnode_t node, unsigned int words)
 {
@@ -699,214 +580,6 @@ dtfs_truncate(vnode_t node, unsigned int words)
 
 extern int dtfs_chmod(vnode_t node, unsigned int mode);
 
-#if !defined(__PDP10__) && !DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS
-int
-dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
-    kword_t *buf, unsigned int nwords, unsigned int mapoff, int writing)
-{
-        unsigned int blocks;
-        unsigned int first;
-        unsigned int block;
-        unsigned int count;
-        unsigned int take;
-        unsigned int done;
-        unsigned int seen;
-        unsigned int words;
-        unsigned int remaining;
-
-        (void)mapoff;
-        blocks = 0U;
-        first = 0U;
-        for (block = 1U; block != DTFS_LAST_BLOCK + 1U; ++block) {
-                if (dtfs_owner(0U, block) != slot + 1U)
-                        continue;
-                ++blocks;
-                if (first == 0U &&
-                    dtfs_dtc_read(unit, block, dtfs_block) == 0 &&
-                    ((dtfs_block[0] >> DTFS_FIRST_SHIFT) &
-                    DTFS_BLOCKNO_MASK) == block)
-                        first = block;
-        }
-        if (first == 0U)
-                return blocks == 0U ? 0 : -1;
-        block = first;
-        done = 0U;
-        words = 0U;
-        seen = 0U;
-        for (;;) {
-                if (block == 0U || block > DTFS_LAST_BLOCK ||
-                    dtfs_owner(0U, block) != slot + 1U ||
-                    dtfs_dtc_read(unit, block, dtfs_block) != 0 ||
-                    ((dtfs_block[0] >> DTFS_FIRST_SHIFT) &
-                    DTFS_BLOCKNO_MASK) != first)
-                        return -1;
-                count = (unsigned int)(dtfs_block[0] & DTFS_COUNT_MASK);
-                /* DTFS_COUNT_MASK keeps count in the positive signed range. */
-                if ((int)count > (int)DTFS_DATA_WORDS)
-                        return -1;
-                words += count;
-                if (buf != 0) {
-                        /* A negative cast denotes an unsigned offset past it. */
-                        if ((long)off >= 0L && (long)off < (long)count) {
-                                take = count - off;
-                                remaining = nwords - done;
-                                /* Underflow is a large unsigned remainder. */
-                                if ((long)remaining >= 0L &&
-                                    (long)take > (long)remaining)
-                                        take = remaining;
-                                if (writing) {
-                                        fs_copy_words(&buf[done],
-                                            &dtfs_block[1U + off], take);
-                                        if (dtfs_dtc_write(unit, block,
-                                            dtfs_block) != 0)
-                                                return -1;
-                                } else {
-                                        fs_copy_words(&dtfs_block[1U + off],
-                                            &buf[done], take);
-                                }
-                                done += take;
-                                off = 0U;
-                                if (done == nwords)
-                                        return (int)done;
-                        } else {
-                                off -= count;
-                        }
-                }
-                block = DTFS_HDR_NEXT(dtfs_block[0]);
-                ++seen;
-                if (block == 0U) {
-                        if (seen != blocks)
-                                return -1;
-                        return buf != 0 ? (int)done : (int)words;
-                }
-                if (count == 0U || seen == blocks)
-                        return -1;
-        }
-}
-#else
-#ifndef __PDP10__
-int
-dtfs_chain_walk(unsigned int unit, unsigned int slot, unsigned int off,
-    kword_t *buf, unsigned int nwords, unsigned int mapoff, int writing)
-{
-        unsigned int blocks;
-        unsigned int first;
-        unsigned int block;
-        unsigned int count;
-        unsigned int take;
-        unsigned int done;
-        unsigned int seen;
-        unsigned int words;
-        unsigned int data_base;
-        unsigned int owner;
-        unsigned int last_block;
-        int its;
-
-        owner = slot + 1U;
-        its = mapoff == DTFS_ITS_NAME_WORDS;
-        if (its) {
-                done = 0U;
-                block = 1U;
-                last_block = writing ? DTFS_ITS_END_BLOCK + 1U :
-                    DTFS_ITS_MAP_ENTRIES + 1U;
-                goto its_scan;
-        }
-
-        blocks = 0U;
-        first = 0U;
-        for (block = 1U; block != DTFS_LAST_BLOCK + 1U; ++block) {
-                if (dtfs_owner(0U, block - mapoff) != owner)
-                        continue;
-                ++blocks;
-                if (first == 0U &&
-                    dtfs_dtc_read(unit, block, dtfs_block) == 0 &&
-                    ((dtfs_block[0] >> DTFS_FIRST_SHIFT) &
-                    DTFS_BLOCKNO_MASK) == block)
-                        first = block;
-        }
-        if (first == 0U)
-                return mapoff == 0U && blocks == 0U ? 0 : -1;
-        block = first;
-        done = 0U;
-        words = 0U;
-        seen = 0U;
-chain_scan:
-        if (block == 0U || block > DTFS_LAST_BLOCK ||
-            dtfs_owner(0U, block - mapoff) != owner ||
-            dtfs_dtc_read(unit, block, dtfs_block) != 0 ||
-            ((dtfs_block[0] >> DTFS_FIRST_SHIFT) &
-            DTFS_BLOCKNO_MASK) != first)
-                return -1;
-        count = (unsigned int)(dtfs_block[0] & DTFS_COUNT_MASK);
-        if (count > DTFS_DATA_WORDS)
-                return -1;
-        words += count;
-        if (buf == 0)
-                goto chain_next;
-        data_base = 1U;
-        goto transfer_block;
-
-its_scan:
-        if (block == last_block)
-                return writing ? -1 : (int)done;
-        count = dtfs_owner(DTFS_ITS_NAME_WORDS, block - 1U);
-        if (!writing && count == DTFS_ITS_END)
-                return (int)done;
-        if (count != owner) {
-                ++block;
-                goto its_scan;
-        }
-        count = DTFS_BLOCK_WORDS;
-        if (off >= count) {
-                off -= count;
-                ++block;
-                goto its_scan;
-        }
-        if (dtfs_dtc_read(unit, block, dtfs_block) != 0)
-                return -1;
-        data_base = 0U;
-
-transfer_block:
-        if (off < count) {
-                take = count - off;
-                if (take > nwords - done)
-                        take = nwords - done;
-                if (writing) {
-                        fs_copy_words(&buf[done],
-                            &dtfs_block[data_base + off], take);
-                        if (dtfs_dtc_write(unit, block, dtfs_block) != 0)
-                                return -1;
-                } else {
-                        fs_copy_words(&dtfs_block[data_base + off],
-                            &buf[done], take);
-                }
-                done += take;
-                off = 0U;
-                if (done == nwords)
-                        return (int)done;
-        } else {
-                off -= count;
-        }
-        if (its) {
-                ++block;
-                goto its_scan;
-        }
-
-chain_next:
-        block = DTFS_HDR_NEXT(dtfs_block[0]);
-        ++seen;
-        if (block == 0U) {
-                if (seen != blocks)
-                        return -1;
-                return buf != 0 ? (int)done : (int)words;
-        }
-        if (count == 0U || seen == blocks)
-                return -1;
-        goto chain_scan;
-}
-#endif /* !__PDP10__ */
-
-#endif
 
 static int
 dtfs_transfer_words(vnode_t node, unsigned int off, kword_t *buf,
