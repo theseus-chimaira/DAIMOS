@@ -10,6 +10,7 @@
 #include "blockset_mres.h"
 #include "blockset_layout.h"
 #include "logstore.h"
+#include "auxstore.h"
 #include "d6fs_boot.h"
 #if KINIT_BADMAP
 #include "badmap.h"
@@ -342,7 +343,9 @@ blockset_boot_discover(kword_t *super_ap, kword_t *super_bp)
         /* The validated descriptor owns raw LOGSTORE placement.  Publish it
          * during MINIT so the runtime LOGSTORE MRES can recover before KINIT
          * later mounts D6FS. */
-        logstore_boot_configure(first_logstore_start, first_logstore_blocks);
+        if (auxstore_logstore_blocks == 0UL)
+                logstore_boot_configure(first_logstore_start,
+                    first_logstore_blocks);
         *super_ap = first_super_a;
         *super_bp = first_super_b;
         return 0;

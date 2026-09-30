@@ -80,9 +80,10 @@ KERNEL_HEADERS = boot/kinit.h \
 	storage/blockset_boot.h \
 	storage/blockset_layout.h \
 	storage/blockset_mres.h \
+	storage/auxstore.h \
+	storage/bstore.h \
 	storage/fs_backing.h \
 	storage/logstore.h \
-	storage/swap_store.h \
 	storage/storage.h
 
 KINIT_SRCS = boot/kinit.c \
@@ -94,6 +95,7 @@ KINIT_SRCS = boot/kinit.c \
 	boot/d6fs_boot.c \
 	boot/d6fs_super_boot.c \
 	storage/blockset_boot.c \
+	storage/auxstore_boot.c \
 	storage/logstore_boot.c \
 	storage/logstore.c \
 	proc/proc_boot.c \
@@ -108,6 +110,7 @@ KINIT_C_ASM = $(BUILD)/kinit.s \
 	$(BUILD)/d6fs_boot.s \
 	$(BUILD)/d6fs_super_boot.s \
 	$(BUILD)/blockset_boot.s \
+	$(BUILD)/auxstore_boot.s \
 	$(BUILD)/logstore_boot.s \
 	$(BUILD)/logstore.s \
 	$(BUILD)/proc_boot.s \
@@ -131,12 +134,12 @@ KINIT_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${BUILD}/kinit_io_pdp6.s ${BUILD}
 KCORE_C_SRCS = proc/exec.c \
 		mm/mm.c \
 	proc/proc.c \
-	storage/swap_store.c \
+	storage/backstore.c \
 	fs/file.c
 
 KCORE_C_ASM = $(BUILD)/mm.s \
 	$(BUILD)/proc.s \
-	$(BUILD)/swap_store.s \
+	$(BUILD)/backstore.s \
 	$(BUILD)/file.s
 
 KCORE_VM_ASM = $(BUILD)/vm_backend.s \
@@ -168,7 +171,7 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/d6lz.s \
 	$(BUILD)/mm.s \
 	$(BUILD)/proc.s \
-	$(BUILD)/swap_store.s \
+	$(BUILD)/backstore.s \
 	$(BUILD)/file.s \
 	$(BUILD)/vm_backend.s \
 	$(BUILD)/proc_swap.s \

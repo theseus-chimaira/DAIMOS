@@ -2,6 +2,7 @@
 #define DAIMON_VFS_H
 
 #include "kcore.h"
+#include "storage.h"
 #include <pdp10-sixbit.h>
 
 /* Compact vnode handle: provider:6, kind/mount:12, index:18. */
@@ -151,6 +152,6 @@ int vfs_readonly(vnode_t node);
 extern vnode_t vfs_namespace_root;
 
 /* Shared 128-word synchronous filesystem transfer workspace. */
-extern kword_t fs_block_workspace[0200];
+extern kword_t fs_block_workspace[BSTORE_BLOCK_WORDS];
 
 #endif

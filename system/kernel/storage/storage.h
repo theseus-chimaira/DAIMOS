@@ -1,6 +1,13 @@
 #ifndef DAIMON_STORAGE_H
 #define DAIMON_STORAGE_H
 
+#include "kcore.h"
+
+/* Common DAIMOS storage quantum.  Filesystems, raw backing, disk sectors,
+ * drum blocks, and DECtape blocks deliberately share this 128-word unit. */
+#define BSTORE_BLOCK_WORDS       0200U
+extern kword_t fs_block_workspace[BSTORE_BLOCK_WORDS];
+
 #define STORAGE_NATIVE_PI_LEVEL    5U
 #define STORAGE_DCT_PI_LEVEL       3U
 #define STORAGE_ST_PI_MASK         0000007UL
@@ -28,7 +35,7 @@
 #define MTC_SO_ENABLE_EOR       0000004UL
 #define MTC_CO_UNIT_SHIFT       4U
 
-#define DSK_WORDS_PER_SECTOR    0200U
+#define DSK_WORDS_PER_SECTOR    BSTORE_BLOCK_WORDS
 #define DSK_ST_ERROR_MASK       0001777UL
 #define DSK_ST_DFR              0040000UL
 #define DSK_ST_IDS              0400000UL

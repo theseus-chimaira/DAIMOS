@@ -12,11 +12,12 @@
 #define DAIMON_DRM236_H
 
 #include "kcore.h"
+#include "storage.h"
 
 /** Number of supported Type 236 drum units. */
 #define DRM236_UNITS             4U
 /** DAIMOS physical block size in 36-bit words. */
-#define DRM236_WORDS_PER_BLOCK   0200U
+#define DRM236_WORDS_PER_BLOCK   BSTORE_BLOCK_WORDS
 /** Number of 128-word blocks per drum unit. */
 #define DRM236_BLOCKS_PER_UNIT   020000U
 /** Native Type 236 address granularity: 16 words per hardware group. */

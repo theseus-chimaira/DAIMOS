@@ -52,6 +52,7 @@ extern kword_t __minit_table_end;
 /** Execute every built-in MINIT/MRES pair in table order. */
 void module_run_minits(void);
 void dtfs_post_minits(void);
+void auxstore_post_minits(void);
 void badmap_post_minits(void);
 /** Return the MRES package associated with the MINIT currently executing. */
 const kword_t *module_current_mres(void);

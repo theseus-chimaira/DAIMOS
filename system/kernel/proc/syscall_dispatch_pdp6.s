@@ -42,7 +42,7 @@
         .globl  vfs_chown
         .globl  file_rmdir
         .globl  file_check_root
-        .globl  swap_store_enabled
+        .globl  backstore_enabled
 /** @brief Decode low-core monitor UUO 040..077 and tail-dispatch its handler. */
 exec_native_syscall:
         ; Recover the monitor-UUO opcode from the trapped instruction.
@@ -447,7 +447,7 @@ native_sys_storagectl:
         jrst    native_sys_storagectl_bad
         move    1,6
         andi    1,1
-        movem   1,swap_store_enabled
+        movem   1,backstore_enabled
         move    1,6
         andi    1,2
         movei   5,6                    ; LOGSTORE MRES ENABLE

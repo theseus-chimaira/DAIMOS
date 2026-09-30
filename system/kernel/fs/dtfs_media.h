@@ -1,10 +1,12 @@
 #ifndef DAIMON_DTFS_MEDIA_H
 #define DAIMON_DTFS_MEDIA_H
 
+#include "storage.h"
+
 /* On-media DECtape layout shared by the resident provider and transient
  * userspace probe/check helper.  Keep policy out of this header: these are
  * only format constants and the compact resident media tags. */
-#define DTFS_BLOCK_WORDS      0200U
+#define DTFS_BLOCK_WORDS      BSTORE_BLOCK_WORDS
 #define DTFS_BLOCKS           01102U
 #define DTFS_LAST_BLOCK       01101U
 #define DTFS_DIR_BLOCK        0144U

@@ -16,11 +16,12 @@
 #define DAIMON_DSK270_H
 
 #include "kcore.h"
+#include "storage.h"
 
 /** Maximum number of supported Type 270 disk units. */
 #define DSK270_UNITS             4U
 /** Physical sector size in 36-bit words. */
-#define DSK270_WORDS_PER_SECTOR  0200U
+#define DSK270_WORDS_PER_SECTOR  BSTORE_BLOCK_WORDS
 /** Sectors per cylinder: octal 054 = decimal 44. */
 #define DSK270_SECTORS_PER_CYL   054U
 /** Cylinders per unit: octal 02000 = decimal 1024. */

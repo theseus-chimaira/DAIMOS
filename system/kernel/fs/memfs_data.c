@@ -13,12 +13,14 @@
 #include "fs_mres.h"
 #include "storage.h"
 #include "blockset_mres.h"
-#include "swap_store.h"
+#include "bstore.h"
 
 #define MEMFS_DATA_CHUNKS       4U
 #define MEMFS_DATA_CHUNK_WORDS  02000UL
 #define MEMFS_DATA_MM_OWNER     011U
 #define MEMFS_HALF_MASK         0777777UL
+#define MEMFS_BACK_FIRST_MASK   0777777UL
+#define MEMFS_PROCESS_RESERVE   0200UL
 
 struct memfs_data_chunk {
         kword_t base;
@@ -203,12 +205,11 @@ static void
 memfs_backing_drop(unsigned int slot)
 {
         kword_t span;
-
         if (memfs_data_fs == 0 || memfs_data_fs->pool == 0)
                 return;
         span = memfs_data_fs->pool[slot];
         if (span != 0UL) {
-                swap_store_free((span >> 18U) & MEMFS_HALF_MASK,
+                backstore_free((span >> 18U) & MEMFS_BACK_FIRST_MASK,
                     span & MEMFS_HALF_MASK);
                 memfs_data_fs->pool[slot] = 0UL;
         }
@@ -231,8 +232,8 @@ memfs_data_ensure(struct memfs *fs, unsigned int slot)
         span = fs->pool[slot];
         if (span == 0UL || memfs_data_alloc(words, &base) != 0)
                 return -1;
-        if (blockset_runtime_reg_call(BLOCKSET_MRES_OP_TAIL_READ,
-            (span >> 18U) & MEMFS_HALF_MASK, span & MEMFS_HALF_MASK, base) != 0UL) {
+        if (backstore_read((span >> 18U) & MEMFS_BACK_FIRST_MASK,
+            span & MEMFS_HALF_MASK, (kword_t *)(unsigned long)base) != 0) {
                 memfs_data_free(base, words);
                 return -1;
         }
@@ -316,14 +317,15 @@ memfs_evict_chunk(struct memfs_data_chunk *cp)
                     base >= cp->base + cp->words || fs->pool[slot] != 0UL)
                         continue;
                 blocks = memfs_alloc_words(words) / DSK_WORDS_PER_SECTOR;
-                if (swap_store_alloc_memfs(blocks, &first) != 0)
+                if (backstore_alloc(blocks, MEMFS_PROCESS_RESERVE, &first) != 0)
                         return 0UL;
-                if (blockset_runtime_reg_call(BLOCKSET_MRES_OP_TAIL_WRITE,
-                    first, blocks, base) != 0UL) {
-                        swap_store_free(first, blocks);
+                if (backstore_write(first, blocks,
+                    (const kword_t *)(unsigned long)base) != 0) {
+                        backstore_free(first, blocks);
                         return 0UL;
                 }
-                fs->pool[slot] = ((first & MEMFS_HALF_MASK) << 18U) | blocks;
+                fs->pool[slot] = ((first & MEMFS_BACK_FIRST_MASK) << 18U) |
+                    blocks;
         }
         for (slot = 1U; slot < fs->node_count; ++slot) {
                 struct memfs_node *np;
@@ -355,7 +357,7 @@ memfs_data_reclaim(kword_t wanted)
         kword_t released;
         unsigned int i;
 
-        if (memfs_data_allocating || swap_store_blocks == 0UL)
+        if (memfs_data_allocating || backstore_blocks == 0UL)
                 return 0UL;
         released = 0UL;
         for (i = 0U; i < MEMFS_DATA_CHUNKS && released < wanted; ++i)

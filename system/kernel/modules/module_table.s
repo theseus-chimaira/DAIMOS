@@ -39,6 +39,7 @@
         .globl logstore_minit
 .endif
         .globl root_select_minit
+        .globl auxstore_minit
         .globl storage_minit
 .if KINIT_FULL
         .globl slv_minit
@@ -131,6 +132,9 @@ __minit_table_begin:
         .word drm236_minit,,drm236_mres_package
 .endif
         .word root_select_minit,,0
+.if KINIT_FULL
+        .word auxstore_minit,,0
+.endif
         .word blockset_minit,,blockset_mres_package
 .if KINIT_FULL
         .word logstore_minit,,logstore_mres_package

@@ -2,7 +2,7 @@
  * @file vm_pdp6_swap.c
  * @brief Resident PDP-6 process swap-out, swap-in, and reclaim policy.
  *
- * Swapping uses the D6FS blockset tail as raw full-sector backing. A resident
+ * Swapping uses the raw backing pool selected by the storage bridge. A resident
  * process's one-word record describes executable backing; on swap-out that
  * word is saved in the stable u-area and the record is reused for first-block
  * and block-count. Swap-in runs from slot-0 executive context so synchronous
@@ -10,7 +10,7 @@
  */
 #include "proc_swap.h"
 #include "vm_pdp6.h"
-#include "blockset_mres.h"
+#include "bstore.h"
 #include "d6fs_provider.h"
 #include "dtfs.h"
 #include "tsfs.h"
@@ -19,7 +19,6 @@
 #include "fs_mres.h"
 #include "mm.h"
 #include "storage.h"
-#include "swap_store.h"
 #include "syscall.h"
 
 #if EXEC_DXR_MAX_IMAGE_WORDS > PROC_SWAP_TEXT_MASK
@@ -33,9 +32,9 @@ kword_t proc_swap_blocks_used;
  * Use signed working values after unpacking so their comparisons stay compact
  * on the PDP-10; packed on-disk/in-memory fields remain unchanged. */
 
-/** Transfer a sector-aligned process extent to or from raw swap-tail blocks. */
+/** Transfer a block-aligned process extent to or from BACKSTORE. */
 static int
-proc_swap_transfer_words(unsigned int op, kword_t first,
+proc_swap_transfer_words(int write, kword_t first,
     kword_t *buf, kword_t words)
 {
         kword_t blocks;
@@ -44,8 +43,9 @@ proc_swap_transfer_words(unsigned int op, kword_t first,
             (words % DSK_WORDS_PER_SECTOR) != 0UL)
                 return -1;
         blocks = words / DSK_WORDS_PER_SECTOR;
-        return blockset_runtime_reg_call(op, first, blocks,
-            (kword_t)(unsigned long)buf) == 0 ? 0 : -1;
+        if (write)
+                return backstore_write(first, blocks, buf);
+        return backstore_read(first, blocks, buf);
 }
 
 /** Pack resident executable backing and PURE-text metadata into one record word. */
@@ -91,7 +91,7 @@ proc_swap_detach(int slot)
         p = &proc_table[slot];
         if (VM_PDP6_BASE(p) == 0UL &&
             proc_swap_records[slot].state != 0UL) {
-                swap_store_free((proc_swap_records[slot].state >> 18U) &
+                backstore_free((proc_swap_records[slot].state >> 18U) &
                     MM_HALF_MASK, proc_swap_records[slot].state & MM_HALF_MASK);
                 proc_swap_blocks_used -=
                     proc_swap_records[slot].state & MM_HALF_MASK;
@@ -138,11 +138,10 @@ proc_swap_out(int slot)
         }
         mem = (kword_t *)(unsigned long)base;
         blocks = words / DSK_WORDS_PER_SECTOR;
-        first = swap_store_blocks;
-        if (blocks == 0UL || swap_store_alloc(blocks, &first) != 0)
+        first = backstore_blocks;
+        if (blocks == 0UL || backstore_alloc(blocks, 0UL, &first) != 0)
                 goto fail_unpin;
-        if (proc_swap_transfer_words(BLOCKSET_MRES_OP_TAIL_WRITE, first,
-            mem, words) != 0)
+        if (proc_swap_transfer_words(1, first, mem, words) != 0)
                 goto fail_unpin;
 
         /* Keep the resident executable-backing record in the already
@@ -164,8 +163,8 @@ proc_swap_out(int slot)
 fail_unpin:
         (void)mm_unpin(base);
 fail_record:
-        if (first < swap_store_blocks)
-                swap_store_free(first, blocks);
+        if (first < backstore_blocks)
+                backstore_free(first, blocks);
         PROC_SWAP_BACKING_WORD(p) = 0UL;
         PROC_CLEAR_TRANSITION(p);
         return -1;
@@ -253,15 +252,14 @@ proc_swap_in(int slot)
                 return -1;
         }
         mem = (kword_t *)(unsigned long)base;
-        if (proc_swap_transfer_words(BLOCKSET_MRES_OP_TAIL_READ, first,
-            mem, words) != 0)
+        if (proc_swap_transfer_words(0, first, mem, words) != 0)
                 goto fail;
 
         if (mm_unpin(base) != MM_OK)
                 goto fail_free;
         VM_PDP6_SET_BASE(p, base);
         proc_swap_blocks_used -= blocks;
-        swap_store_free(first, blocks);
+        backstore_free(first, blocks);
         r->state = resident_state;
         PROC_SWAP_BACKING_WORD(p) = 0UL;
         PROC_CLEAR_TRANSITION(p);

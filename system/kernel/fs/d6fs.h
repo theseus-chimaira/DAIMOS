@@ -3,8 +3,9 @@
 
 #include "kcore.h"
 #include "fs_backing.h"
+#include "storage.h"
 
-#define D6FS_BLOCK_WORDS          0200U
+#define D6FS_BLOCK_WORDS          BSTORE_BLOCK_WORDS
 extern kword_t fs_block_workspace[D6FS_BLOCK_WORDS];
 #define D6FS_CACHE_INVALID 0777777777777UL
 #define D6FS_EXTENTS              7U

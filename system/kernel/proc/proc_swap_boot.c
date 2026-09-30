@@ -10,7 +10,7 @@
 #include "fs_mres.h"
 #include "mm.h"
 #include "blockset_mres.h"
-#include "swap_store.h"
+#include "bstore.h"
 
 #define PROC_SWAP_MM_OWNER 4U
 #define SWAP_PERSIST_MAGIC   055464663UL
@@ -30,8 +30,7 @@ proc_swap_reserve_persistent(kword_t blocks)
                 return 0;
         h = fs_block_workspace;
         last = blocks - 1UL;
-        if (blockset_runtime_reg_call(BLOCKSET_MRES_OP_TAIL_READ,
-            last, 1UL, (kword_t)(unsigned long)h) != 0UL)
+        if (backstore_read(last, 1UL, h) != 0)
                 return 0;
         if (h[0] != SWAP_PERSIST_MAGIC || h[1] != SWAP_PERSIST_VERSION)
                 return 0;
@@ -42,9 +41,9 @@ proc_swap_reserve_persistent(kword_t blocks)
                 word = (unsigned int)(b / 36UL);
                 bit = (unsigned int)(b % 36UL);
                 mask = (kword_t)1U << bit;
-                swap_store_bitmap[word] |= mask;
+                backstore_bitmap[word] |= mask;
         }
-        swap_store_blocks_used += h[3];
+        backstore_blocks_used += h[3];
         return 0;
 }
 
@@ -60,9 +59,11 @@ proc_swap_boot_init(unsigned int slots)
 
         if (proc_swap_records != 0 || slots == 0U || slots > PROC_MAX_SLOTS)
                 return -1;
-        blocks = blockset_runtime_reg_call(BLOCKSET_MRES_OP_TAIL_BLOCKS,
-            0UL, 0UL, 0UL);
-        bitmap_words = swap_store_bitmap_words(blocks);
+        blocks = backstore_blocks;
+        if (blocks == 0UL)
+                blocks = blockset_runtime_reg_call(BLOCKSET_MRES_OP_TAIL_BLOCKS,
+                    0UL, 0UL, 0UL);
+        bitmap_words = backstore_bitmap_words(blocks);
         words = (kword_t)slots * (kword_t)PROC_SWAP_RECORD_WORDS +
             (kword_t)bitmap_words;
         if (mm_alloc(words, MM_TYPE_KERNEL_DYNAMIC, PROC_SWAP_MM_OWNER,
@@ -71,7 +72,7 @@ proc_swap_boot_init(unsigned int slots)
         wp = (kword_t *)(unsigned long)base;
         fs_zero_words(wp, (unsigned int)words);
         proc_swap_records = (struct proc_swap_record *)(unsigned long)base;
-        swap_store_init(wp + slots * PROC_SWAP_RECORD_WORDS, blocks);
+        backstore_init(wp + slots * PROC_SWAP_RECORD_WORDS, blocks);
         if (proc_swap_reserve_persistent(blocks) != 0)
                 return -1;
         proc_swap_blocks_used = 0UL;

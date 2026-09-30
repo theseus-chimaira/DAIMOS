@@ -49,6 +49,8 @@ blockset_runtime_service_jump:
 ; direct_map/data describe the singleton fast path.  direct_tail is always the
 ; total logical tail span.  When BLOCKSET is installed, op 10 maps each tail
 ; logical block; otherwise the singleton arithmetic below is used directly.
+; A zero direct_blocks value identifies an explicitly configured raw range
+; such as AUXSTORE BACKSTORE and therefore bypasses BLOCKSET mapping.
 blockset_direct_configure:
         move    5,1
         lsh     5,022
@@ -58,9 +60,13 @@ blockset_direct_configure:
         movem   4,blockset_direct_tail
         popj    17,
 
+        .globl  backstore_read
+backstore_read:
 blockset_direct_tail_read:
         setz    4,
         jrst    blockset_direct_tail_io
+        .globl  backstore_write
+backstore_write:
 blockset_direct_tail_write:
         movei   4,1
 
@@ -90,6 +96,8 @@ blockset_direct_tail_account_done:
         move    013,4                  ; write flag
 
 blockset_direct_tail_loop:
+        skipn   blockset_direct_blocks
+        jrst    blockset_direct_tail_single
         hrrz    4,blockset_runtime_service_jump
         cain    4,fs_mres_no_service
         jrst    blockset_direct_tail_single
@@ -101,6 +109,7 @@ blockset_direct_tail_loop:
 
 blockset_direct_tail_single:
         hlrz    1,blockset_direct_map
+        andi    1,07                     ; strip direct-device tag bits
         hrrz    2,blockset_direct_map
         add     2,011
 

@@ -36,6 +36,7 @@
 #include "dtfs.h"
 #include "blockset_mres.h"
 #include "blockset_boot.h"
+#include "auxstore.h"
 #include "logstore.h"
 #if KINIT_FULL
 #include "root_select.h"
@@ -1197,6 +1198,17 @@ blockset_minit(void)
 }
 
 #if KINIT_FULL
+/** Discover raw auxiliary backing after all block drivers are resident. */
+void
+auxstore_minit(void)
+{
+        (void)auxstore_boot_discover();
+        if (auxstore_logstore_blocks != 0UL) {
+                logstore_boot_configure(auxstore_logstore_start,
+                    auxstore_logstore_blocks);
+        }
+}
+
 /** @brief Install runtime logstore over the selected writable block backend. */
 void
 logstore_minit(void)
@@ -1223,26 +1235,40 @@ logstore_minit(void)
                 return;
         }
         members = blockset_boot_member_count_hint();
-        if (members == 0U)
+        if (auxstore_logstore_blocks == 0UL && members == 0U)
                 return;
         name = (kword_t)SIXBIT("LOGSTR");
         base = minit_install(name);
         service = minit_export(name, base, LOGSTORE_X_DISPATCH);
         state = (kword_t *)(unsigned long)minit_export(name, base,
             LOGSTORE_X_STATE);
-        if (members == 1U) {
+        if (auxstore_logstore_blocks != 0UL) {
+                if (auxstore_kind == AUXSTORE_KIND_DRM) {
+                        read_addr = module_service_get(MODULE_SERVICE_DRM_READ_BLOCK);
+                        write_addr = module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK);
+                } else {
+                        read_addr = module_service_get(MODULE_SERVICE_DSK_READ_SECTOR);
+                        write_addr = module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR);
+                }
+                if (read_addr == 0U || write_addr == 0U)
+                        minit_fatal(name);
+                state[0] = 0UL;
+                packed = ((kword_t)(auxstore_unit + 1U) << 18U) |
+                    auxstore_logstore_start;
+        } else if (members == 1U) {
                 if (!blockset_boot_member(0U, &unit, &base_block, &blocks,
                     &tail) || root_block_services(&read_addr, &write_addr) != 0)
                         minit_fatal(name);
                 packed = ((kword_t)(unit + 1U) << 18) | base_block;
+                state[0] = logstore_boot_start_block();
         } else {
                 if (blockset_read_addr == 0U || blockset_write_addr == 0U)
                         minit_fatal(name);
                 read_addr = blockset_read_addr;
                 write_addr = blockset_write_addr;
                 packed = 0UL;
+                state[0] = logstore_boot_start_block();
         }
-        state[0] = logstore_boot_start_block();
         state[1] = logstore_boot_blocks();
         state[2] = recovered.next_sequence;
         state[3] = ((kword_t)recovered.capacity << 18) |

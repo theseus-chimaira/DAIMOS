@@ -513,6 +513,7 @@ kinit_enter(void)
         module_run_minits();
 #if KINIT_FULL
         dtfs_post_minits();
+        auxstore_post_minits();
 #endif
 #if KINIT_BADMAP
         badmap_post_minits();

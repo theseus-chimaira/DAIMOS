@@ -27,7 +27,6 @@ struct fs_backing {
  * The LH is normally the raw unit number; one otherwise-unused unit bit tags
  * DRM236 so existing DSK270 handoffs remain binary compatible. */
 #define FS_BACKING_DIRECT_DRM_TAG 0400000UL
-#define FS_BACKING_DIRECT_SET_TAG 0200000UL
 #define FS_BACKING_DIRECT_ROOT_TAG 0100000UL
 #define FS_BACKING_DIRECT_UNIT_MASK 07UL
 #define FS_BACKING_DIRECT_MEMBER_MASK 017UL
