@@ -36,19 +36,6 @@ kinit_stack_watermark_record(void)
 }
 #endif
 
-static unsigned int
-mres_reloc_code(const kword_t *map, unsigned int word)
-{
-        unsigned int slot;
-        unsigned int shift;
-        kword_t bits;
-
-        bits = map[word / 18U];
-        slot = word % 18U;
-        shift = 34U - slot * 2U;
-        return (unsigned int)((bits >> shift) & 03UL);
-}
-
 void
 kcore_load(void)
 {
@@ -60,6 +47,11 @@ kcore_load(void)
 #ifdef KINIT_DEBUG
         KINIT_TRACE(KCORE_LOAD);
 #endif
+        /*
+         * KCORE is linked as initialized words followed by BSS.  Only copy
+         * the initialized prefix from KINIT; explicitly zero the remainder
+         * so KCORE does not depend on the contents of physical low memory.
+         */
         src = &__kcore_load_begin;
         dst = (kword_t *)(unsigned long)KINIT_KCORE_BASE;
         init_end = &__kcore_low_init_end;
@@ -76,6 +68,7 @@ mres_init(void)
 #ifdef KINIT_DEBUG
         KINIT_TRACE(MRES_INIT);
 #endif
+        /* MRES packages are packed immediately above fixed KCORE. */
         mres_next_addr = (unsigned int)(unsigned long)&__kcore_low_end;
         mres_owner_next = 1U;
         mres_last_owner = 0U;
@@ -92,9 +85,13 @@ mres_install(const kword_t *package, unsigned int *basep)
         unsigned int export_words;
         unsigned int base;
         unsigned int i;
+        unsigned int reloc_slot;
+        unsigned int reloc_shift;
         const kword_t *image;
         const kword_t *map;
+        const kword_t *reloc_map;
         kword_t *dst;
+        kword_t reloc_bits;
         kword_t word;
         unsigned int code;
         unsigned int half;
@@ -131,9 +128,25 @@ mres_install(const kword_t *package, unsigned int *basep)
                         goto fail;
         }
         dst = (kword_t *)(unsigned long)base;
+        /*
+         * Each relocation-map word contains 18 two-bit entries, from bits
+         * 35..34 downward.  Walk that packed stream sequentially instead of
+         * calculating i/18 and i%18 for every image word.  Division is
+         * particularly expensive on the PDP-6, and KCC does not combine the
+         * quotient/remainder operations here.
+         */
+        reloc_map = map;
+        reloc_slot = 18U;
+        reloc_shift = 0U;
+        reloc_bits = 0UL;
         for (i = 0U; i < init_words; ++i) {
+                if (reloc_slot == 18U) {
+                        reloc_bits = *reloc_map++;
+                        reloc_slot = 0U;
+                        reloc_shift = 34U;
+                }
                 word = image[i];
-                code = mres_reloc_code(map, i);
+                code = (unsigned int)((reloc_bits >> reloc_shift) & 03UL);
                 if ((code & MRES_RELOC_LH18) != 0U) {
                         half = KINIT_LH(word);
                         if (half > KINIT_HALF_MASK - base)
@@ -149,6 +162,9 @@ mres_install(const kword_t *package, unsigned int *basep)
                             (kword_t)(half + base);
                 }
                 dst[i] = word;
+                ++reloc_slot;
+                if (reloc_shift != 0U)
+                        reloc_shift -= 2U;
         }
         for (i = 0U; i < bss_words; ++i)
                 dst[init_words + i] = 0;
@@ -203,6 +219,11 @@ kinit_save_boot_handoff(void)
 #ifdef KINIT_DEBUG
         KINIT_TRACE(KINIT_SAVE_BOOT_HANDOFF);
 #endif
+        /*
+         * Stage1 leaves its two-word handoff in fixed low memory which KINIT
+         * will shortly reuse.  Preserve it before further initialization can
+         * overwrite those locations.
+         */
         boot0 = (volatile kword_t *)(unsigned long)KINIT_BOOT_WORD0;
         boot1 = (volatile kword_t *)(unsigned long)KINIT_BOOT_WORD1;
         kinit_boot_handoff[0] = *boot0;
@@ -317,6 +338,7 @@ kinit_enter(void)
 {
         unsigned int memory_kwords;
         kword_t kernel_stack_base;
+        kword_t reclaim_end;
 
 #if KINIT_STACK_WATERMARK
         /* kinit_enter() has already allocated its fixed frame.  Mark only
@@ -395,36 +417,27 @@ kinit_enter(void)
         sys_resident_words_immediate =
             (sys_resident_words_immediate & ~((kword_t)KINIT_HALF_MASK)) |
             (kword_t)(mres_next_addr - KINIT_KCORE_BASE);
-        {
-                kword_t image_end;
-                kword_t reclaim_end;
-
-                image_end = (kword_t)(unsigned long)&__kinit_image_end;
-                reclaim_end = image_end + KINIT_STACK_RESERVE_WORDS;
-                if (reclaim_end > mm_core_words)
-                        kinit_halt();
+        /*
+         * KINIT's linked image and bootstrap stack are reclaimed together.
+         * Their physical end cannot change after this point, so compute and
+         * validate that boundary once and carry it to the late handoff.
+         */
+        reclaim_end = (kword_t)(unsigned long)&__kinit_image_end +
+            KINIT_STACK_RESERVE_WORDS;
+        if (reclaim_end > mm_core_words)
+                kinit_halt();
 #ifdef KINIT_DEBUG
-                kinit_diag_finished();
+        kinit_diag_finished();
 #endif
-                kinit_boot();
+        kinit_boot();
 #if KINIT_STACK_WATERMARK
-                kinit_stack_watermark_record();
+        kinit_stack_watermark_record();
 #endif
-        }
         if (proc_boot_init() != 0)
                 kinit_halt();
 #if KINIT_STACK_WATERMARK
         kinit_stack_watermark_record();
 #endif
-        {
-                kword_t reclaim_end;
-                kword_t image_end;
-
-                image_end = (kword_t)(unsigned long)&__kinit_image_end;
-                reclaim_end = image_end + KINIT_STACK_RESERVE_WORDS;
-                if (reclaim_end > mm_core_words)
-                        kinit_halt();
-                kinit_late_handoff(kernel_stack_base, reclaim_end);
-        }
+        kinit_late_handoff(kernel_stack_base, reclaim_end);
         kinit_halt();
 }
