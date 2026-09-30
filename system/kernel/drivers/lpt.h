@@ -36,4 +36,7 @@
  */
 int lpt_putchar(int c);
 
+/** Render exactly one complete S6REC text record using packed LP10 DATAO. */
+int lpt_write_s6rec(const kword_t *words, unsigned int nwords);
+
 #endif

@@ -111,7 +111,7 @@ __minit_table_begin:
 .if KINIT_FULL
         .word ptr_minit,,ptr_mres_package
         .word ptp_minit,,ptp_mres_package
-        .word lpt_minit,,0
+        .word lpt_minit,,lpt_mres_package
         .word cr_minit,,cr_mres_package
         .word cp_minit,,cp_mres_package
 .endif

@@ -149,7 +149,8 @@ file_path_setchar:
         .globl  pipe_add_ref
         .globl  pipe_close_ref
         .globl  pipe_fifo_detach
-        .globl  lpt_putchar
+        .globl  lpt_putchar_jump
+        .globl  lpt_write_s6rec_jump
         .globl  tty_write_s6rec_jump
         .globl  tty_read_s6rec_jump
         .globl  ptr_read_words_jump
@@ -237,7 +238,7 @@ file_writechar:
         jrst    file_writechar_done
 file_writechar_lpt:
         move    1,(17)                 ; original character
-        pushj   17,lpt_putchar
+        pushj   17,lpt_putchar_jump
         jrst    file_writechar_done
 file_writechar_cty:
         move    1,[-3]
@@ -556,6 +557,8 @@ file_write_words:
         jrst    file_write_words_ptp
         camn    1,[020002000005]        ; CP0
         jrst    file_write_words_cp
+        camn    1,[020002000022]        ; LPT0
+        jrst    file_write_words_lpt
         camn    1,[020002000000]        ; CTY0 controlling-TTY proxy
         jrst    file_write_words_tty
         move    3,-1(17)
@@ -576,6 +579,11 @@ file_write_words_cp:
         move    1,-1(17)                ; mapped CARD12 source
         move    2,(17)                  ; supplied word count
         pushj   17,cp_write_words_jump
+        jrst    file_write_words_result
+file_write_words_lpt:
+        move    1,-1(17)                ; mapped S6REC source
+        move    2,(17)                  ; supplied word count
+        pushj   17,lpt_write_s6rec_jump
 file_write_words_result:
         jumple  1,file_write_words_done
         addm    1,1(010)
@@ -599,6 +607,10 @@ ptp_write_words_jump:
 cr_read_words_jump:
         jrst    kret_neg1
 cp_write_words_jump:
+        jrst    kret_neg1
+lpt_putchar_jump:
+        jrst    kret_neg1
+lpt_write_s6rec_jump:
         jrst    kret_neg1
 
 ; int file_readdir(int fd, struct vfs_dirent *ent)

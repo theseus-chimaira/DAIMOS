@@ -58,6 +58,8 @@
 #define PTP_X_HANDLER            0U
 #define PTP_X_PUTCHAR            1U
 #define PTP_X_WRITE_WORDS        2U
+#define LPT_X_PUTCHAR            0U
+#define LPT_X_WRITE_S6REC        1U
 #define CR_X_HANDLER             0U
 #define CR_X_READ_CARD           1U
 #define CR_X_READ_WORDS          2U
@@ -149,6 +151,8 @@ extern kword_t ptr_read_words_jump;
 extern kword_t ptp_write_words_jump;
 extern kword_t cr_read_words_jump;
 extern kword_t cp_write_words_jump;
+extern kword_t lpt_putchar_jump;
+extern kword_t lpt_write_s6rec_jump;
 extern int d6fs_reader_bootstrap_call(kword_t backing_ops);
 
 
@@ -570,6 +574,8 @@ lpt_minit(void)
 {
         kword_t name;
         kword_t st;
+        unsigned int base;
+        unsigned int service;
         name = (kword_t)SIXBIT("LPT   ");
         /* No PI level is needed by the small synchronous driver.  DONE is
          * software-settable on the PDP-6/SIMH interface and primes DATAO. */
@@ -580,8 +586,12 @@ lpt_minit(void)
                 minit_diag_nodev(name);
                 return;
         }
-        module_service_set(MODULE_SERVICE_LPT_PUTCHAR,
-            (unsigned int)(unsigned long)&lpt_putchar);
+        base = minit_install(name);
+        service = minit_export(name, base, LPT_X_PUTCHAR);
+        module_service_set(MODULE_SERVICE_LPT_PUTCHAR, service);
+        storage_patch_jump(&lpt_putchar_jump, service);
+        service = minit_export(name, base, LPT_X_WRITE_S6REC);
+        storage_patch_jump(&lpt_write_s6rec_jump, service);
         minit_diag_ok(name);
 }
 

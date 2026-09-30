@@ -33,6 +33,8 @@ extern kword_t ptr_read_words_jump;
 extern kword_t ptp_write_words_jump;
 extern kword_t cr_read_words_jump;
 extern kword_t cp_write_words_jump;
+extern kword_t lpt_putchar_jump;
+extern kword_t lpt_write_s6rec_jump;
 extern kword_t sys_dtc_read_block_jump;
 extern kword_t sys_dtc_write_block_jump;
 extern kword_t storage_pi_dsk_jump;
@@ -71,6 +73,8 @@ kword_t *const module_fixed_bindings[] = {
         &ptp_write_words_jump,
         &cr_read_words_jump,
         &cp_write_words_jump,
+        &lpt_putchar_jump,
+        &lpt_write_s6rec_jump,
         &sys_dtc_read_block_jump,
         &sys_dtc_write_block_jump,
         &storage_pi_dsk_jump,

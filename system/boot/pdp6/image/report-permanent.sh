@@ -55,6 +55,7 @@ mres_objects()
         clk)     echo 'clk_io' ;;
         ptr)     echo 'ptr_io' ;;
         ptp)     echo 'ptp_io' ;;
+        lpt)     echo 'lpt_io' ;;
         cr)      echo 'cr_io' ;;
         cp)      echo 'cp_io' ;;
         dcs)     echo 'dcs_io' ;;
@@ -94,7 +95,7 @@ object_words()
 
 total=$kcore
 blockset_words=0
-for name in cty clk ptr ptp cr cp dcs ge dpy tty wcnsls ocnsls dsk tape slv \
+for name in cty clk ptr ptp lpt cr cp dcs ge dpy tty wcnsls ocnsls dsk tape slv \
     drm memfs dtfs blockset logstore d6fs; do
         package="$build/$name-mres.dobj"
         [ -f "$package" ] || { echo "missing MRES package: $package" >&2; exit 1; }
