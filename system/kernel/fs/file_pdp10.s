@@ -146,10 +146,6 @@ file_path_setchar:
         .globl  kret_neg1
         .globl  vfs_readchar
         .globl  vfs_writechar
-        .globl  pipe_readchar
-        .globl  pipe_writechar
-        .globl  pipe_read_words
-        .globl  pipe_write_words
         .globl  pipe_add_ref
         .globl  pipe_close_ref
         .globl  pipe_fifo_detach
@@ -172,15 +168,6 @@ file_readchar:
         move    010,1
         move    1,(010)
         tlz     1,707070               ; strip packed descriptor metadata
-        move    4,1
-        lsh     4,-036                 ; provider
-        caie    4,7                    ; PIPE_PROVIDER
-        jrst    file_readchar_vfs
-        tlne    1,2                    ; PIPE_KIND_WORD is not a char stream
-        jrst    file_readchar_fail
-        pushj   17,pipe_readchar
-        jrst    file_readchar_done
-file_readchar_vfs:
         move    2,1(010)
         movei   3,(17)
         pushj   17,vfs_readchar
@@ -229,16 +216,6 @@ file_writechar:
         move    010,1
         move    1,(010)
         tlz     1,707070               ; strip packed descriptor metadata
-        move    5,1
-        lsh     5,-036                 ; provider
-        caie    5,7                    ; PIPE_PROVIDER
-        jrst    file_writechar_vfs
-        tlne    1,2                    ; PIPE_KIND_WORD is not a char stream
-        jrst    file_writechar_fail
-        move    2,(17)
-        pushj   17,pipe_writechar
-        jrst    file_writechar_done
-file_writechar_vfs:
         move    3,(17)
         move    2,1(010)
         pushj   17,vfs_writechar

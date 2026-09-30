@@ -693,8 +693,12 @@ vfs_d6fs_setattr_ro:
         jrst    kret_neg1
 
         .globl  vfs_read_words
+        .globl  pipe_read_words
 vfs_read_words:
-        ldb     7,[POINT 6,1,5]
+        hlrz    7,1
+        cain    7,070001               ; PIPE_PROVIDER, PIPE_KIND_STREAM
+        jrst    pipe_read_words
+        lsh     7,-014                 ; provider
         caie    7,3
         jrst    vfs_read_words_provider
         jrst    kret_neg1
@@ -703,7 +707,11 @@ vfs_read_words_provider:
         jrst    fs_provider_reg_call
 
         .globl  vfs_write_words
+        .globl  pipe_write_words
 vfs_write_words:
+        hlrz    7,1
+        cain    7,070001               ; PIPE_PROVIDER, PIPE_KIND_STREAM
+        jrst    pipe_write_words
         push    17,1
         push    17,2
         push    17,3
