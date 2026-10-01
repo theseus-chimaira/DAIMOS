@@ -136,18 +136,46 @@ dtfs_sync:
         jumpe   1,kret_neg1
 dtfs_sync_ok:
         jrst    kret_zero
-; DTC veneers.  MINIT patches the RH of each JRST with the installed DTC
-; service entry.  The DTFS and DTC ABIs are identical: AC1=unit, AC2=block,
-; AC3=buffer, so the tail jump needs no argument shuffling or resident pointer.
+; Shared clean DTC block-cache veneers.  The key identifies the physical
+; UNIT/BLOCK, not a filesystem personality, so native DTFS, TENEX, ITS, and
+; TSFS can reuse the same clean copy.  MINIT patches the raw JRST slots below.
         .globl  dtfs_dtc_read
-        .globl  dtfs_dtc_read_jump
+        .globl  bcache_fetch
+        .globl  bcache_store
+        .globl  bcache_reclaim
 dtfs_dtc_read:
+        move    4,2                     ; physical block fits RH
+        hrl     4,1                     ; DTC key is UNIT,,BLOCK
+        push    17,4
+        push    17,3
+        move    1,4
+        move    2,3
+        pushj   17,bcache_fetch
+        jumpn   1,dtfs_dtc_read_hit
+        hlrz    1,-1(17)                ; recover DTC unit
+        hrrz    2,-1(17)                ; physical block
+        move    3,(17)                  ; caller buffer
+        pushj   17,dtfs_dtc_read_jump
+        jumpn   1,dtfs_dtc_read_done
+        move    1,-1(17)                ; successful miss becomes clean hit
+        move    2,(17)
+        pushj   17,bcache_store
+dtfs_dtc_read_hit:
+        setz    1,
+dtfs_dtc_read_done:
+        sub     17,[2,,2]
+        popj    17,
+
+        .globl  dtfs_dtc_read_jump
 dtfs_dtc_read_jump:
         jrst    0
 
         .globl  dtfs_dtc_write
-        .globl  dtfs_dtc_write_jump
 dtfs_dtc_write:
+        pushj   17,bcache_reclaim        ; invalidate before authoritative write
+        jrst    dtfs_dtc_write_jump
+
+        .globl  dtfs_dtc_write_jump
 dtfs_dtc_write_jump:
         jrst    0
 
@@ -594,6 +622,7 @@ dtfs_patch_media:
         andi    2,030
         ior     3,2
         movem   3,dtfs_personality_xct-1(1)
+        pushj   17,bcache_reclaim       ; source id may refer to new media
         popj    17,
 
         .globl  dtfs_personality
@@ -641,6 +670,7 @@ dtfs_load_fail:
 dtfs_patch_media:
         andi    2,7
         movem   2,dtfs_media-1(1)
+        pushj   17,bcache_reclaim
         popj    17,
 
         .globl  dtfs_cache_mount

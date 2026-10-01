@@ -47,6 +47,7 @@ tsfs_mres_vector:
         .globl  tsfs_extent_media
         .globl  fs_block_workspace
         .globl  dtfs_dtc_read
+        .globl  bcache_reclaim
         .globl  tsfs_file_record
         .globl  tsfs_node_record
 
@@ -592,6 +593,7 @@ tsfs_mount_do:
         movem   5,tsfs_file_shape(4)
         move    5,2(010)
         movem   5,tsfs_extent_media(4)
+        pushj   17,bcache_reclaim       ; accepted removable-media handoff
         move    5,(17)
         movem   5,(012)
         setz    1,
