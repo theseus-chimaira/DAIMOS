@@ -633,6 +633,45 @@ dtfs_personality:
         xct     dtfs_personality_xct-1(2)
         popj    17,
 
+; Mount ownership is VFS policy, never DECtape media metadata.  Four mount
+; slots pack into two words, each halfword carrying UID9,,GID9.
+        .globl  dtfs_mount_owners
+        .globl  dtfs_set_mount_owner
+dtfs_set_mount_owner:
+        sojl    1,kret_neg1              ; public mount ids are 1..4
+        caile   1,3
+        jrst    kret_neg1
+        move    3,1
+        andi    3,1
+        lsh     1,-1
+        addi    1,dtfs_mount_owners
+        jumpn   3,dtfs_set_mount_owner_right
+        hrlm    2,(1)
+        jrst    kret_zero
+dtfs_set_mount_owner_right:
+        hrrm    2,(1)
+        jrst    kret_zero
+
+        .globl  dtfs_mount_owner
+dtfs_mount_owner:
+        ldb     2,[POINT 6,1,11]
+        sojl    2,dtfs_mount_owner_zero
+        caile   2,3
+        jrst    dtfs_mount_owner_zero
+        move    3,2
+        andi    3,1
+        lsh     2,-1
+        addi    2,dtfs_mount_owners
+        jumpn   3,dtfs_mount_owner_right
+        hlrz    1,(2)
+        popj    17,
+dtfs_mount_owner_right:
+        hrrz    1,(2)
+        popj    17,
+dtfs_mount_owner_zero:
+        setz    1,
+        popj    17,
+
 ; Shared cached directory loader.  Mount-time userspace validation has already
 ; established the media personality; runtime only reloads the selected
 ; directory block when another DTFS/TSFS mount displaced the cache.
