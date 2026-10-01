@@ -265,6 +265,41 @@ proc_rt_release_owner:
         pushj   17,proc_sched_resched_current
         jrst    kret_zero
 
+/**
+ * @brief Set the current process nice value with the native privilege rule.
+ * @param AC1 Requested signed nice value.
+ * @return AC1 effective value, or -1 when a non-root process raises priority.
+ *
+ * KCC's small C version needs a save frame and several spills.  This leaf
+ * keeps the exact -20..19 clamp and UID-0 rule in caller-scratch AC2..AC4.
+ */
+        .globl  proc_nice_current
+proc_nice_current:
+        camge   1,[-024]
+        move    1,[-024]
+        camle   1,[023]
+        movei   1,023
+        move    2,proc_current_slot
+        imuli   2,PROC_WORDS
+        add     2,proc_table
+        hlrz    3,2(2)
+        andi    3,077
+        subi    3,024
+        camge   1,3
+        jrst    proc_nice_store
+        hlrz    4,(2)
+        hlrz    4,PROC_CRED_OFFSET(4)
+        jumpn   4,kret_neg1
+proc_nice_store:
+        move    3,1
+        addi    3,024
+        lsh     3,022
+        move    4,2(2)
+        tlz     4,077
+        ior     4,3
+        movem   4,2(2)
+        popj    17,
+
 ; int proc_tty_session_has(unsigned int session, unsigned int pgrp,
 ;     unsigned int skip_slot)
 ; Scan the compact process table without a C save frame.  AC1..AC3 carry
