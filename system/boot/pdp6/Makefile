@@ -187,7 +187,7 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/storage/bcache.h \
 	$(KERNEL_DIR)/storage/bcache_pdp6.s \
 	$(KERNEL_DIR)/storage/bstore.h \
-	$(KERNEL_DIR)/storage/backstore.c \
+	$(KERNEL_DIR)/storage/backstore.s \
 	$(KERNEL_DIR)/storage/auxstore_boot.c \
 	$(KERNEL_DIR)/storage/auxstore.h \
 	$(KERNEL_DIR)/storage/logstore.c \
@@ -205,8 +205,8 @@ KINIT_LATE_ASM = $(KINIT_BUILD)/kinit_late_begin_pdp6.s $(KINIT_BUILD)/proc_late
 KINIT_OBJS = $(BUILD)/kinit.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/root_select.dobj $(BUILD)/tsfs_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/auxstore_boot.dobj $(BUILD)/logstore_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io_pdp6.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj
 KINIT_LATE_OBJS = $(BUILD)/kinit_late_begin_pdp6.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj
 
-KCORE_C_NAMES = exec d6lz vfs mm proc backstore vm_backend proc_swap file
-KCORE_FIXED_NAMES = $(KCORE_C_NAMES) ret \
+KCORE_C_NAMES = exec d6lz vfs mm proc vm_backend proc_swap file
+KCORE_FIXED_NAMES = $(KCORE_C_NAMES) backstore ret \
 	dsk270 drm236 kfmt_pdp6 vfs fs_mres file_runtime monitorfs_runtime proc_pdp6 proc_run \
 	device_state syscall_info pclk \
 	syscall_dispatch_pdp6 mach_user_pdp6 vm_backend_pdp6 kcore_io_pdp6 bcache_pdp6 storage_router kcore_end

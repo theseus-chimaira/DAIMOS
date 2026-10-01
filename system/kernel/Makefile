@@ -135,12 +135,10 @@ KINIT_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${BUILD}/kinit_io_pdp6.s ${BUILD}
 KCORE_C_SRCS = proc/exec.c \
 		mm/mm.c \
 	proc/proc.c \
-	storage/backstore.c \
 	fs/file.c
 
 KCORE_C_ASM = $(BUILD)/mm.s \
 	$(BUILD)/proc.s \
-	$(BUILD)/backstore.s \
 	$(BUILD)/file.s
 
 KCORE_VM_ASM = $(BUILD)/vm_backend.s \
@@ -164,6 +162,7 @@ KCORE_FIXED_SRCS = core/ret.s \
 	proc/syscall_dispatch_pdp6.s \
 	proc/mach_user_pdp6.s \
 	core/kcore_io_pdp6.s \
+	storage/backstore.s \
 	storage/bcache_pdp6.s \
 	storage/storage_router.s \
 	core/kcore_end.s
@@ -383,6 +382,7 @@ COPY_ASM_SRCS = core/ret.s \
 	proc/syscall_dispatch_pdp6.s \
 	proc/mach_user_pdp6.s \
 	core/kcore_io_pdp6.s \
+	storage/backstore.s \
 	storage/storage_router.s \
 	core/kcore_end.s \
 	fs/d6fs_validate.s \
@@ -429,6 +429,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret.s \
 	$(BUILD)/syscall_dispatch_pdp6.s \
 	$(BUILD)/mach_user_pdp6.s \
 	$(BUILD)/kcore_io_pdp6.s \
+	$(BUILD)/backstore.s \
 	$(BUILD)/bcache_pdp6.s \
 	$(BUILD)/storage_router.s \
 	$(BUILD)/kcore_end.s \
