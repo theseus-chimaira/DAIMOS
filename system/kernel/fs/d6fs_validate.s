@@ -1,9 +1,7 @@
 ; D6FS FCB decode/validation for PDP-6/PDP-10.
-; Keep semantics identical to the host C implementation in d6fs.c.
 
         .text
-; Validate and decode one D6FS FCB.  The host implementation remains in C;
-; this compact target version avoids the much larger compiler-generated validator.
+; Validate and decode one D6FS FCB in the sole resident implementation.
         .globl  d6fs_fcb_decode_valid
 ; int d6fs_fcb_decode_valid(fcb, fs_blocks, fcb_count, info)
 d6fs_fcb_decode_valid:

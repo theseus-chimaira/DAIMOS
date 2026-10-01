@@ -989,7 +989,7 @@ proc_control_tty_setfg:
         popj    17,
 
 ; Compact target implementations of the five multi-terminal data-path helpers.
-; The C versions remain available to host tests.  Re-deriving the current
+; Re-deriving the current
 ; process/u-area here is smaller than KCC's call/save frames on each helper.
         .globl  proc_tty_read_enter
         .globl  proc_tty_input

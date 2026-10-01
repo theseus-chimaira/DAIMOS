@@ -1073,7 +1073,8 @@ mfsproc_state_names:
 
 ; Domain view -- compact MonitorFS domain-state leaves.
 ;
-; The portable MonitorFS implementation remains the host/reference implementation.  This
+; MonitorFS runtime state is implemented here directly; keep the compact
+; target representation aligned with the public VFS contract.  This
 ; Domain leaves share the compact process-view conventions so synthetic
 ; process-domain directory operations do not pay GCC frame and unsigned-
 ; arithmetic costs in permanent KCORE.

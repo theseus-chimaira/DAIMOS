@@ -1092,7 +1092,6 @@ memfs_minit(void)
                     minit_export(name, base, 2U));
                 storage_patch_jump(&memfs_shutdown_jump,
                     minit_export(name, base, 3U));
-                module_service_set(MODULE_SERVICE_MEMFS, service);
         }
         minit_diag_loaded(name);
 }
@@ -1131,7 +1130,6 @@ dtfs_minit(void)
                 dtfs_runtime_dir_ptr = (kword_t *)(unsigned long)
                     minit_export(name, base, 5U);
                 *dtfs_runtime_dir_ptr = 0UL;
-                module_service_set(MODULE_SERVICE_DTFS, service);
         }
         minit_diag_loaded(name);
 }
@@ -1300,7 +1298,6 @@ logstore_minit(void)
         storage_patch_module_jump(base,
             (kword_t *)(unsigned long)minit_export(name, base,
             LOGSTORE_X_WRITE_JUMP), write_addr);
-        module_service_set(MODULE_SERVICE_LOGSTORE, service);
         storage_patch_jump(&sys_logstore_service_jump, service);
         minit_diag_loaded(name);
 }

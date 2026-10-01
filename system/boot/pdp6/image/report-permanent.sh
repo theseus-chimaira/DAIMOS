@@ -72,7 +72,7 @@ mres_objects()
         dtfs)    echo 'dtfs dtfs_runtime tsfs tsfs_runtime' ;;
         blockset) echo 'blockset_dispatch' ;;
         logstore) echo 'logstore_runtime' ;;
-        d6fs)    echo 'fs_backing d6fs d6fs_provider d6fs_validate d6fs_runtime' ;;
+        d6fs)    echo 'fs_backing d6fs_provider d6fs_validate d6fs_runtime' ;;
         *) return 1 ;;
         esac
 }

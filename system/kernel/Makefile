@@ -200,14 +200,12 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/storage_router.s \
 	$(BUILD)/kcore_end.s
 
-MRES_C_SRCS = fs/d6fs.c \
-	fs/d6fs_provider.c \
+MRES_C_SRCS = fs/d6fs_provider.c \
 	fs/memfs_data.c \
 	fs/memfs_snapshot.c \
 	fs/tsfs.c
 
-MRES_C_ASM = $(BUILD)/d6fs.s \
-	$(BUILD)/d6fs_provider.s \
+MRES_C_ASM = $(BUILD)/d6fs_provider.s \
 	$(BUILD)/memfs_data.s \
 	$(BUILD)/memfs_snapshot.s \
 	$(BUILD)/tsfs.s
@@ -240,7 +238,6 @@ MRES_FIXED_SRCS = fs/d6fs_validate.s \
 
 MRES_ASM = $(BUILD)/dtfs.s \
 	$(BUILD)/tsfs.s \
-	$(BUILD)/d6fs.s \
 	$(BUILD)/d6fs_provider.s \
 	$(BUILD)/memfs_data.s \
 	$(BUILD)/memfs_snapshot.s \
@@ -320,10 +317,6 @@ ${BUILD}/proc_swap.s: ${VM_SWAP_C} ${KERNEL_HEADERS}
 ${BUILD}/vm_backend_pdp6.s: ${VM_BACKEND_FIXED}
 	@mkdir -p ${BUILD}
 	cp ${VM_BACKEND_FIXED} $@
-
-${BUILD}/d6fs.s: fs/d6fs.c ${KERNEL_HEADERS}
-	@mkdir -p ${BUILD}
-	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S fs/d6fs.c -o $@
 
 ${BUILD}/memfs_data.s: fs/memfs_data.c ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
