@@ -430,6 +430,7 @@ PTR_BOOT2 = $(MEDIA_DIR)/ptr-boot2.pt
 SIMH_DCS0_PORT ?= 1101
 SIMH_GE0_PORT ?= 1201
 SIMH_PCLK_MODE ?= REALTIME
+SIMH_DPY_MODE ?= HEADLESS
 
 .PHONY: image boot permanent-size clean force-simh-config
 
@@ -882,6 +883,10 @@ $(SIMH_INI): simh/simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE) $(BOOT_MEDIA_STAMP) f
 	  REALTIME|HISTORICAL) ;; \
 	  *) echo "SIMH_PCLK_MODE must be REALTIME or HISTORICAL" >&2; exit 2 ;; \
 	esac
+	@case '$(SIMH_DPY_MODE)' in \
+	  GUI|HEADLESS) ;; \
+	  *) echo "SIMH_DPY_MODE must be GUI or HEADLESS" >&2; exit 2 ;; \
+	esac
 	@case '$(ROOT)' in \
 	  auto) root_class=0 ;; \
 	  disk) root_class=1 ;; \
@@ -914,6 +919,7 @@ $(SIMH_INI): simh/simh.ini.in $(STAGE1_TAPE) $(DISK_IMAGE) $(BOOT_MEDIA_STAMP) f
 	    -e 's|@DCS0_PORT@|$(SIMH_DCS0_PORT)|g' \
 	    -e 's|@GE0_PORT@|$(SIMH_GE0_PORT)|g' \
 	    -e 's|@PCLK_MODE@|$(SIMH_PCLK_MODE)|g' \
+	    -e 's|@DPY_MODE@|$(SIMH_DPY_MODE)|g' \
 	    -e "s|@ROOT_SWITCH@|$$root_switch|g" $< > $@.tmp; \
 	while IFS= read -r line || test -n "$$line"; do \
 		if test "$$line" = "@BOOT_COMMANDS@"; then \
@@ -932,7 +938,7 @@ permanent-size: $(KCORE_MAP) $(MRES_PACKAGE_OBJS)
 
 boot:
 	rm -rf $(DISK_DIR) $(SIMH_INI)
-	$(MAKE) image
+	$(MAKE) image SIMH_DPY_MODE=GUI
 	$(SIMH_PDP6) $(SIMH_INI)
 
 clean:
