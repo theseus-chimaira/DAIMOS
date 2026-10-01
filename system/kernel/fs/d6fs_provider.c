@@ -114,13 +114,13 @@ d6fs_provider_create_object(vnode_t dir, const struct vfs_name *name,
         fcb[D6FS_FCB_META] = ((kword_t)type << 33) |
             ((kword_t)(mode & 07777U) << 12);
         fcb[D6FS_FCB_MTIME] = D6FS_NOW();
-        if (proc_table != 0 && proc_current_slot != 0UL &&
-            PROC_HAS_UAREA(&proc_table[(unsigned int)proc_current_slot])) {
-                struct proc *p;
+        {
+                kword_t owner;
 
-                p = &proc_table[(unsigned int)proc_current_slot];
-                fcb[D6FS_FCB_OWNER] = ((kword_t)PROC_UID(p) << 18U) |
-                    (kword_t)PROC_GID(p);
+                owner = vfs_current_owner();
+                fcb[D6FS_FCB_OWNER] =
+                    ((kword_t)VFS_OWNER_UID(owner) << 18U) |
+                    (kword_t)VFS_OWNER_GID(owner);
         }
         fcb[D6FS_FCB_PARENT] = (kword_t)VFS_INDEX(dir) << 18;
         if (d6fs_reader_put_fcb(d6fs_active_reader, index, fcb) != 0)

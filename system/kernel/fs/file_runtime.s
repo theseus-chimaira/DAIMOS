@@ -70,6 +70,20 @@ file_current_cred_zero:
         setz    6,
         popj    17,
 
+; kword_t vfs_current_owner(void)
+; Return one compact 18-bit UID9,,GID9 value in AC1.  Keeping this conversion
+; here gives D6FS, MEMFS, and mount-owned filesystems one credential source.
+        .globl  vfs_current_owner
+vfs_current_owner:
+        pushj   17,file_current_cred
+        hlrz    1,6
+        andi    1,0777
+        lsh     1,011
+        hrrz    2,6
+        andi    2,0777
+        ior     1,2
+        popj    17,
+
 ; int file_check_root(void)
         .globl  file_check_root
 file_check_root:

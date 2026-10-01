@@ -576,6 +576,8 @@ dtfs_chmod:
         push    17,011
         move    010,1
         move    011,2
+        caile   011,07777                 ; reject CHOWN/UTIME private commands
+        jrst    dtfs_chmod_fail
         pushj   17,dtfs_is_file
         jumpe   1,dtfs_chmod_fail
         move    1,010

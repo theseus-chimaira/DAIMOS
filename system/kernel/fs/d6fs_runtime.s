@@ -1211,7 +1211,7 @@ d6fs_provider_unmount_free_fail:
 
 ; int d6fs_provider_chmod(vnode_t node, unsigned int mode)
 ; The VFS also uses this provider slot as a private compact setattr channel:
-;   AC2 0100000, AC3 uid,,gid  -> CHOWN
+;   AC2 0100000, AC3 UID9,,GID9 -> CHOWN
 ;   AC2 0100001, AC3 TIME36    -> UTIME
 ; Ordinary chmod keeps AC2 <= 07777.  One implementation avoids extra MRES
 ; vector entries while keeping the external VFS operations distinct.
@@ -1242,8 +1242,13 @@ d6fs_provider_chmod:
         movem   4,-034(17)
         jrst    d6fs_provider_attr_commit
 d6fs_provider_chown_store:
-        move    4,(17)
-        movem   4,-033(17)               ; FCB OWNER
+        move    4,(17)                    ; compact UID9,,GID9
+        move    5,4
+        lsh     5,-011
+        lsh     5,022                     ; UID -> FCB OWNER LH
+        andi    4,0777                    ; GID -> FCB OWNER RH
+        ior     4,5
+        movem   4,-033(17)                ; preserve D6FS V2 on-media layout
         jrst    d6fs_provider_attr_commit
 d6fs_provider_utime_store:
         move    4,(17)

@@ -139,11 +139,14 @@ memfs_write_ready:
         hlrz    6,6(5)
         ; Mutable data words are direct physical addresses.
         add     6,3             ; + off
+        push    17,2            ; preserve slot across copy helper
         move    1,0             ; source
         move    2,6             ; destination
-        move    3,-1(17)        ; count
+        move    3,-2(17)        ; count (one extra saved slot word)
         pushj   17,fs_copy_words
-
+        pop     17,2
+        move    1,7
+        pushj   17,memfs_touch_slot
         move    1,-1(17)
         popj    17,
 memfs_write_ensure_fail:
@@ -253,6 +256,47 @@ memfs_restore4_fail:
         seto    1,
         jrst    memfs_restore4
 
+; Compact dynamic metadata helpers.  OWNER packs two UID9,GID9 halfwords per
+; word at nodes+01000; MTIME has one TIME36 word per slot at nodes+01040.
+; memfs_owner_get(fs, slot) -> AC1 owner18.
+memfs_owner_get:
+        move    4,2
+        andi    4,1
+        lsh     2,-1
+        addi    2,01000
+        add     2,(1)
+        jumpn   4,memfs_owner_get_right
+        hlrz    1,(2)
+        popj    17,
+memfs_owner_get_right:
+        hrrz    1,(2)
+        popj    17,
+
+; memfs_owner_set(fs, slot, owner18).
+memfs_owner_set:
+        move    4,2
+        andi    4,1
+        lsh     2,-1
+        addi    2,01000
+        add     2,(1)
+        jumpn   4,memfs_owner_set_right
+        hrlm    3,(2)
+        popj    17,
+memfs_owner_set_right:
+        hrrm    3,(2)
+        popj    17,
+
+; memfs_touch_slot(fs, slot) updates one node/directory mtime.
+memfs_touch_slot:
+        move    4,(1)
+        addi    4,01040
+        add     4,2
+        push    17,4
+        pushj   17,pclk_time36
+        pop     17,4
+        movem   1,(4)
+        popj    17,
+
         .globl  memfs_create
 memfs_create:
         movei   5,2                     ; VFS_TYPE_REG
@@ -331,6 +375,17 @@ memfs_new_free_found:
         hrrz    1,7
         tlo     1,040001
         movem   1,(014)
+        pushj   17,vfs_current_owner
+        move    3,1
+        move    1,010
+        move    2,7
+        pushj   17,memfs_owner_set
+        move    1,010
+        move    2,7
+        pushj   17,memfs_touch_slot
+        move    1,010
+        move    2,011
+        pushj   17,memfs_touch_slot
         setz    1,
         jrst    memfs_new_done
 memfs_new_fail:
@@ -400,6 +455,17 @@ memfs_unlink_clear:
         imuli   1,7
         add     1,(010)
         pushj   17,memfs_clear_node
+        move    1,010
+        move    2,013
+        setz    3,
+        pushj   17,memfs_owner_set
+        move    4,(010)
+        addi    4,01040
+        add     4,013
+        setzm   (4)
+        move    1,010
+        move    2,011
+        pushj   17,memfs_touch_slot
         jrst    memfs_restore4_zero
 
         .globl  memfs_rename
@@ -485,6 +551,15 @@ memfs_rename_apply:
         move    1,4
         hrl     1,014
         blt     1,4(4)
+        move    1,010
+        move    2,015
+        pushj   17,memfs_touch_slot
+        move    2,016
+        camn    2,015
+        jrst    memfs_rename_touch_done
+        move    1,010
+        pushj   17,memfs_touch_slot
+memfs_rename_touch_done:
         setz    1,
         jrst    memfs_rename_done
 memfs_rename_fail:
@@ -508,15 +583,47 @@ memfs_restore1:
 
         .globl  memfs_chmod
 memfs_chmod:
-        jumpe   1,kret_neg1
-        pushj   17,memfs_slot           ; mode remains in AC3
-        jumpl   1,kret_neg1
+        push    17,010
+        push    17,011
+        push    17,012
+        move    010,1                   ; fs
+        move    011,3                   ; mode or VFS_SETATTR_* command
+        move    012,4                   ; private value
+        jumpe   010,memfs_chmod_fail
+        pushj   17,memfs_slot
+        jumpl   1,memfs_chmod_fail
         trnn    6,4
-        jrst    kret_neg1
-        move    4,3
-        andi    4,07777
+        jrst    memfs_chmod_fail
+        move    2,1                     ; slot
+        cain    011,0100000             ; CHOWN: AC12 = owner18
+        jrst    memfs_chown
+        cain    011,0100001             ; UTIME: AC12 = TIME36
+        jrst    memfs_utime
+        caile   011,07777
+        jrst    memfs_chmod_fail
+        move    4,011
         dpb     4,[POINT 12,5(5),32]
-        jrst    kret_zero
+        jrst    memfs_chmod_ok
+memfs_chown:
+        move    1,010
+        move    3,012
+        pushj   17,memfs_owner_set
+        jrst    memfs_chmod_ok
+memfs_utime:
+        move    4,(010)
+        addi    4,01040
+        add     4,2
+        movem   012,(4)
+memfs_chmod_ok:
+        setz    1,
+        jrst    memfs_chmod_done
+memfs_chmod_fail:
+        seto    1,
+memfs_chmod_done:
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
 
         .globl  memfs_truncate_words
 memfs_truncate_words:
@@ -532,6 +639,9 @@ memfs_truncate_words:
         move    1,-1(17)
         pushj   17,memfs_resize
         jumpn   1,memfs_truncate_fail
+        move    1,-1(17)
+        move    2,(17)
+        pushj   17,memfs_touch_slot
         setz    1,
         jrst    memfs_truncate_done
 memfs_truncate_fail:
@@ -590,15 +700,32 @@ memfs_readdir_found:
         .globl  memfs_stat
 memfs_stat:
         jumpe   3,kret_neg1
+        move    7,1                     ; fs
+        move    0,3                     ; st
         pushj   17,memfs_slot
         jumpl   1,kret_neg1
+        move    6,1                     ; slot
         ldb     4,[POINT 3,5(5),20]
-        movem   4,(3)
+        movem   4,(0)
         ldb     4,[POINT 12,5(5),32]
-        movem   4,1(3)
-        setzm   2(3)                    ; reserved
+        movem   4,1(0)
+        setzm   2(0)                    ; reserved
         hrrz    4,6(5)
-        movem   4,3(3)
+        movem   4,3(0)
+        move    1,7
+        move    2,6
+        pushj   17,memfs_owner_get
+        move    4,1
+        lsh     4,-011
+        andi    4,0777
+        movem   4,4(0)                  ; uid
+        andi    1,0777
+        movem   1,5(0)                  ; gid
+        move    4,(7)
+        addi    4,01040
+        add     4,6
+        move    4,(4)
+        movem   4,6(0)                  ; mtime
         jrst    kret_zero
 
 ; int memfs_parent(const struct memfs *fs, vnode_t node,
@@ -652,6 +779,8 @@ memfs_mount_flags:
         .globl  memfs_data_init
         .globl  memfs_data_destroy
         .globl  memfs_snapshot_mount
+        .globl  vfs_current_owner
+        .globl  pclk_time36
         .globl  vfs_mount
         .globl  memfs_mres_dispatch
         .globl  memfs_lookup
@@ -675,8 +804,10 @@ memfs_mount_flags:
 ; AC2 = total words to allocate
 ; AC3 = MEMFS mount-policy flags; bit 0002 requests persistent backing.
 ;
-; 64 seven-word nodes consume the first 0700 words.  Require at least
-; 01100 words for file data so the existing 02000-word minimum is unchanged.  Dynamic owner 011 is reserved for the singleton MEMFS allocation.
+; 64 seven-word nodes consume 0700 words, followed by 0100 backing words,
+; 0040 packed UID9,GID9 owner words, and 0100 mtime words.  The metadata area
+; is rounded to five 0200-word blocks (01200 words) for snapshot I/O.
+; Dynamic owner 011 is reserved for the singleton MEMFS allocation.
 memfs_mres_mount:
         skipe   memfs_mres_fs
         jrst    kret_neg1          ; singleton already instantiated
@@ -692,7 +823,7 @@ memfs_mres_mount_size_ok:
         push    17,[0]                  ; allocation base
         movei   5,(17)
         push    17,5                    ; fifth mm_alloc arg: basep
-        movei   1,01000                 ; nodes + 64 backing descriptors
+        movei   1,01200                 ; block-aligned namespace metadata
         movei   2,3                     ; MM_TYPE_KERNEL_DYNAMIC
         movei   3,011                   ; MEMFS_MM_OWNER
         setz    4,                      ; MM_ALLOC_LOW
@@ -701,7 +832,7 @@ memfs_mres_mount_size_ok:
         jumpn   1,memfs_mres_mount_bad
 
         move    1,(17)
-        movei   2,01000
+        movei   2,01200
         pushj   17,fs_zero_words
         move    5,(17)
         move    6,[0107775]             ; DIR, mode 0777, USED|WRITABLE
@@ -718,6 +849,9 @@ memfs_mres_mount_size_ok:
         movem   6,memfs_mres_fs+3
         setzm   memfs_mres_fs+4         ; logical file words in use
         setzm   memfs_mres_fs+5         ; no immutable image backing
+        pushj   17,pclk_time36
+        move    5,memfs_mres_fs
+        movem   1,01040(5)              ; fresh root mtime; restore may replace it
         movei   1,memfs_mres_fs
         move    2,6
         pushj   17,memfs_data_init

@@ -62,6 +62,16 @@ typedef kword_t vnode_t;
 
 #define VFS_NMOUNT           4U
 #define VFS_ID_MASK          0777U
+#define VFS_OWNER_SHIFT      9U
+#define VFS_OWNER_PACK(uid, gid) \
+        ((((kword_t)(uid) & VFS_ID_MASK) << VFS_OWNER_SHIFT) | \
+        ((kword_t)(gid) & VFS_ID_MASK))
+#define VFS_OWNER_UID(owner) \
+        ((unsigned int)(((owner) >> VFS_OWNER_SHIFT) & VFS_ID_MASK))
+#define VFS_OWNER_GID(owner) \
+        ((unsigned int)((owner) & VFS_ID_MASK))
+#define VFS_SETATTR_CHOWN    0100000U
+#define VFS_SETATTR_UTIME    0100001U
 #define VFS_MOUNT_RW         0U
 #define VFS_MOUNT_RDONLY     1U
 #define VFS_MOUNT_STORAGE_SWAP      020U
@@ -94,6 +104,7 @@ struct vfs_stat {
         kword_t mtime;
 };
 
+kword_t vfs_current_owner(void);
 int vfs_name_valid(const struct vfs_name *name);
 int vfs_name_words_equal(const kword_t *a, const kword_t *b,
     unsigned int count);

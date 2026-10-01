@@ -7,7 +7,7 @@
 #define HALF_MASK 0777777UL
 #define TYPE_SHIFT 15U
 #define TYPE_MASK 07UL
-#define SNAP_META_WORDS 01000UL
+#define SNAP_META_WORDS MEMFS_METADATA_WORDS
 
 static int snapshot_enabled;
 static kword_t snapshot_first;

@@ -624,38 +624,38 @@ vfs_mutate2_ro:
         sub     17,[2,,2]
         jrst    kret_neg1
 
-; D6FS reuses its CHMOD provider operation as a compact private setattr
-; channel.  Other providers never see these command values.
-; AC2 command 0100000 = CHOWN, AC3 = uid,,gid.
-; AC2 command 0100001 = UTIME, AC3 = TIME36.
+; CHMOD is the compact common setattr provider slot.  Ordinary modes are <=07777;
+; private commands carry provider-independent values in AC3:
+;   AC2 0100000 = CHOWN, AC3 = UID9,,GID9
+;   AC2 0100001 = UTIME, AC3 = TIME36.
+; Providers that cannot represent an attribute reject the private command.
         .globl  vfs_chown
         .globl  vfs_utime
 vfs_chown:
-        move    4,2
-        lsh     4,022                  ; uid to LH (18 bits)
-        andi    3,0777777
-        ior     3,4
+        caile   2,0777
+        jrst    kret_neg1
+        caile   3,0777
+        jrst    kret_neg1
+        lsh     2,011
+        ior     3,2
         movei   2,0100000
-        jrst    vfs_d6fs_setattr
+        jrst    vfs_setattr
 vfs_utime:
         move    3,2
         movei   2,0100001
-vfs_d6fs_setattr:
-        ldb     7,[POINT 6,1,5]
-        caie    7,6                    ; D6FS provider only
-        jrst    kret_neg1
+vfs_setattr:
         push    17,1
         push    17,2
         push    17,3
         pushj   17,vfs_readonly
-        jumpn   1,vfs_d6fs_setattr_ro
+        jumpn   1,vfs_setattr_ro
         pop     17,3
         pop     17,2
         pop     17,1
-        movei   6,14                   ; D6FS private setattr via CHMOD slot
         ldb     7,[POINT 6,1,5]
+        movei   6,14                   ; FS_MRES_OP_CHMOD / common setattr
         jrst    fs_provider_reg_call
-vfs_d6fs_setattr_ro:
+vfs_setattr_ro:
         sub     17,[3,,3]
         jrst    kret_neg1
 

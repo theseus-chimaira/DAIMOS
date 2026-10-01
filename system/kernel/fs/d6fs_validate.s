@@ -28,8 +28,14 @@ d6fs_fcb_decode_valid:
         andi    7,017
         movem   7,4(4)                  ; extent_count
         move    7,1(1)
-        hlrzm   7,5(4)                  ; uid
-        hrrzm   7,6(4)                  ; gid
+        hlrz    5,7
+        caile   5,0777                   ; DAIMOS UID is 9 bits
+        jrst    d6fs_fcb_invalid
+        movem   5,5(4)
+        hrrz    5,7
+        caile   5,0777                   ; DAIMOS GID is 9 bits
+        jrst    d6fs_fcb_invalid
+        movem   5,6(4)
         move    7,2(1)
         movem   7,7(4)                  ; size_words
         move    7,3(1)

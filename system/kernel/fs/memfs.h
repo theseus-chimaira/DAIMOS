@@ -12,8 +12,16 @@
 #define MEMFS_MOUNT_PERSIST          0002U
 
 #define MEMFS_SNAPSHOT_MAGIC         055464663UL
-#define MEMFS_SNAPSHOT_VERSION       1UL
+#define MEMFS_SNAPSHOT_VERSION       2UL
 #define MEMFS_SNAPSHOT_HEADER_WORDS  6U
+#define MEMFS_NODE_WORDS             7U
+#define MEMFS_NODE_COUNT             0100U
+#define MEMFS_NODES_WORDS            0700U
+#define MEMFS_BACKING_OFFSET         0700U
+#define MEMFS_OWNER_OFFSET           01000U
+#define MEMFS_OWNER_WORDS            0040U
+#define MEMFS_MTIME_OFFSET           01040U
+#define MEMFS_METADATA_WORDS         01200U
 
 
 /*
