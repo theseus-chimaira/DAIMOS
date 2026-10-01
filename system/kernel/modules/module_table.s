@@ -39,7 +39,9 @@
         .globl logstore_minit
 .endif
         .globl root_select_minit
+.if KINIT_FULL
         .globl auxstore_minit
+.endif
         .globl storage_minit
 .if KINIT_FULL
         .globl slv_minit
