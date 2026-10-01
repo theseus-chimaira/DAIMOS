@@ -33,7 +33,6 @@
         .globl  proc_tty_output
         .globl  proc_current_slot
         .globl  pipe_create
-        .globl  pipe_create_words
         .globl  file_mkfifo
         .globl  exec_replace_current
         .globl  proc_exec_enter
@@ -423,7 +422,7 @@ native_sys_ext_half_select:
 native_sys_ext_table:
         .word   pipe_create,,native_sys_mkfifo
         .word   native_sys_exec,,pclk_time36
-        .word   native_sys_dup2,,pipe_create_words
+        .word   native_sys_dup2,,native_sys_procctl
         .word   native_sys_procctl,,native_sys_procctl
         .word   native_sys_procctl,,native_sys_procctl
         .word   native_sys_seek,,native_sys_chown

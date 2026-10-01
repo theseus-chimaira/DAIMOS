@@ -41,7 +41,6 @@ int dsys_logctl(unsigned int op, kword_t arg, kword_t *buf);
 #define dsys_umask(mask) \
         dsys_procctl(SYS_PROCCTL_UMASK, (unsigned int)(mask))
 kword_t dsys_pipe(void);
-kword_t dsys_pipe_words(void);
 int dsys_mkfifo(kword_t *p, unsigned int mode);
 int dsys_exec(struct sys_exec_v1 *args);
 kword_t dsys_gettime(void);
