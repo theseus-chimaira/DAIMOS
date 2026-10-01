@@ -7,7 +7,6 @@
 #include "fs_mres.h"
 #include "module.h"
 
-#define AUXSTORE_UNITS       4U
 #define AUXSTORE_HALF_MASK   0777777UL
 
 unsigned int auxstore_kind;
@@ -91,22 +90,27 @@ auxstore_try(unsigned int kind, unsigned int unit)
 int
 auxstore_boot_discover(void)
 {
-        unsigned int unit;
-
         auxstore_kind = AUXSTORE_KIND_NONE;
         auxstore_backstore_blocks = 0UL;
         auxstore_logstore_blocks = 0UL;
         auxstore_cache_blocks = 0UL;
+
+        /* V0.9 auto-discovery is deliberately limited to unit zero of each
+         * controller class.  Type-270 has no harmless media-presence probe:
+         * issuing a transfer to an unattached trailing unit can leave the
+         * controller unusable for the attached root unit.  Root discovery
+         * follows the same rule and stops before absent trailing units.  A
+         * future explicit AUXSTORE selector may name higher units without
+         * making boot guess by destructive I/O.  Systems with the intended
+         * single auxiliary drum naturally use DRM0; DSK0 is the fallback. */
         if (module_service_get(MODULE_SERVICE_DRM_READ_BLOCK) != 0U &&
-            module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK) != 0U)
-                for (unit = 0U; unit < AUXSTORE_UNITS; ++unit)
-                        if (auxstore_try(AUXSTORE_KIND_DRM, unit) == 0)
-                                return 0;
+            module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK) != 0U &&
+            auxstore_try(AUXSTORE_KIND_DRM, 0U) == 0)
+                return 0;
         if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) != 0U &&
-            module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U)
-                for (unit = 0U; unit < AUXSTORE_UNITS; ++unit)
-                        if (auxstore_try(AUXSTORE_KIND_DSK, unit) == 0)
-                                return 0;
+            module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U &&
+            auxstore_try(AUXSTORE_KIND_DSK, 0U) == 0)
+                return 0;
         return -1;
 }
 
