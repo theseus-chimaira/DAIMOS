@@ -45,6 +45,18 @@
 #include "mm.h"
 #include "monitorfs.h"
 
+/* Device presence is separate from MINIT service-address publication.
+ * /DEV consumes this transient bitmap; service slots exist only where a
+ * later MINIT genuinely needs an entry-point address. */
+static kword_t mfsdev_present;
+
+static void
+mfsdev_present_mark(unsigned int id)
+{
+        if (id < MONITORFS_DEV_COUNT)
+                mfsdev_present |= (kword_t)MONITORFS_PRESENT(id);
+}
+
 #define CTY_X_HANDLER           0U
 #define CTY_X_PUTCHAR           1U
 #define CTY_X_GETCHAR           2U
@@ -477,6 +489,7 @@ cty_minit(void)
         base = minit_export(name, base, CTY_X_GETCHAR);
         module_service_set(MODULE_SERVICE_CTY_GETCHAR, base);
         storage_patch_jump(&native_sys_getchar_call, base);
+        mfsdev_present_mark(MONITORFS_DEV_CTY0);
         minit_diag_ok(name);
 }
 
@@ -502,8 +515,8 @@ clk_minit(void)
         clk_pi_handler_addr = minit_export(name, base, CLK_X_HANDLER);
         clk_pi_service_addr = minit_export(name, base, CLK_X_PI_SERVICE);
         minit_register(name, CLK_NATIVE_PI_LEVEL, clk_pi_handler_addr);
-        module_service_set(MODULE_SERVICE_CLK_TICKS,
-            minit_export(name, base, CLK_X_TICKS));
+        (void)minit_export(name, base, CLK_X_TICKS);
+        mfsdev_present_mark(MONITORFS_DEV_CLK0);
         minit_clk_cono((kword_t)CLK_NATIVE_PI_LEVEL | CLK_APR_CO_CLEAR_FLAG |
             CLK_APR_CO_ENABLE);
         minit_diag_hz();
@@ -525,10 +538,9 @@ ptr_minit(void)
                 return;
         }
         base = minit_install(name);
-        module_service_set(MODULE_SERVICE_PTR,
-            minit_export(name, base, PTR_X_READ_WORDS));
         storage_patch_jump(&ptr_read_words_jump,
             minit_export(name, base, PTR_X_READ_WORDS));
+        mfsdev_present_mark(MONITORFS_DEV_PTR0);
         minit_ptr_cono(0);
         minit_diag_ok(name);
 }
@@ -548,10 +560,9 @@ ptp_minit(void)
                 return;
         }
         base = minit_install(name);
-        module_service_set(MODULE_SERVICE_PTP,
-            minit_export(name, base, PTP_X_WRITE_WORDS));
         storage_patch_jump(&ptp_write_words_jump,
             minit_export(name, base, PTP_X_WRITE_WORDS));
+        mfsdev_present_mark(MONITORFS_DEV_PTP0);
         minit_ptp_cono(0);
         minit_diag_ok(name);
 }
@@ -576,10 +587,10 @@ lpt_minit(void)
         }
         base = minit_install(name);
         service = minit_export(name, base, LPT_X_PUTCHAR);
-        module_service_set(MODULE_SERVICE_LPT_PUTCHAR, service);
         storage_patch_jump(&lpt_putchar_jump, service);
         service = minit_export(name, base, LPT_X_WRITE_S6REC);
         storage_patch_jump(&lpt_write_s6rec_jump, service);
+        mfsdev_present_mark(MONITORFS_DEV_LPT0);
         minit_diag_ok(name);
 }
 
@@ -607,10 +618,9 @@ cr_minit(void)
                 return;
         }
         base = minit_install(name);
-        module_service_set(MODULE_SERVICE_CR,
-            minit_export(name, base, CR_X_READ_WORDS));
         storage_patch_jump(&cr_read_words_jump,
             minit_export(name, base, CR_X_READ_WORDS));
+        mfsdev_present_mark(MONITORFS_DEV_CR0);
         minit_cr_cono(CR_CO_CLR_DRDY | CR_CO_CLR_END_CARD |
             CR_CO_CLR_DATA_MISS);
         minit_diag_ok(name);
@@ -638,10 +648,9 @@ cp_minit(void)
                 return;
         }
         base = minit_install(name);
-        module_service_set(MODULE_SERVICE_CP,
-            minit_export(name, base, CP_X_WRITE_WORDS));
         storage_patch_jump(&cp_write_words_jump,
             minit_export(name, base, CP_X_WRITE_WORDS));
+        mfsdev_present_mark(MONITORFS_DEV_CP0);
         minit_cp_cono(CP_CO_CLR_PUNCH);
         minit_diag_ok(name);
 }
@@ -672,6 +681,7 @@ dcs_minit(void)
             minit_export(name, base, DCS_X_GETCHAR));
         module_service_set(MODULE_SERVICE_DCS_PUTCHAR,
             minit_export(name, base, DCS_X_PUTCHAR));
+        mfsdev_present_mark(MONITORFS_DEV_DCS0);
         minit_dcs_cono(0);
         minit_diag_ok(name);
 }
@@ -711,6 +721,7 @@ ge_minit(void)
             minit_export(name, base, GE_X_GETCHAR));
         module_service_set(MODULE_SERVICE_GE_PUTCHAR,
             minit_export(name, base, GE_X_PUTCHAR));
+        mfsdev_present_mark(MONITORFS_DEV_GE0);
         minit_gtyi_cono(0);
         minit_gtyo_cono((kword_t)GTYO_CO_FROB);
         minit_diag_ok(name);
@@ -786,7 +797,7 @@ dpy_minit(void)
                 minit_register(name, DPY_NATIVE_PI_LEVEL, handler);
         }
 
-        module_service_set(MODULE_SERVICE_DPY_PUTWORD, putword);
+        mfsdev_present_mark(MONITORFS_DEV_DPY0);
         minit_dpy_cono((kword_t)DPY_NATIVE_PI_LEVEL);
         minit_dpy_banner(name, putword);
         minit_diag_ok(name);
@@ -849,7 +860,6 @@ tty_minit(void)
                     (kword_t *)(unsigned long)address, ge_getchar);
 
         service = minit_export(name, base, TTY_X_PUTCHAR);
-        module_service_set(MODULE_SERVICE_TTY_PUTCHAR, service);
         storage_patch_jump(&native_sys_putchar_call, service);
         service = minit_export(name, base, TTY_X_GETCHAR);
         storage_patch_jump(&native_sys_getchar_call, service);
@@ -857,6 +867,7 @@ tty_minit(void)
         storage_patch_jump(&tty_write_s6rec_jump, service);
         service = minit_export(name, base, TTY_X_READ_S6REC);
         storage_patch_jump(&tty_read_s6rec_jump, service);
+        mfsdev_present_mark(MONITORFS_DEV_TTY0);
         minit_diag_loaded(name);
 }
 
@@ -912,8 +923,8 @@ wcnsls_minit(void)
                 return;
         }
         base = minit_install(name);
-        module_service_set(MODULE_SERVICE_WCNSLS_READ,
-            minit_export(name, base, WCNSLS_X_READ));
+        (void)minit_export(name, base, WCNSLS_X_READ);
+        mfsdev_present_mark(MONITORFS_DEV_WCNSLS);
         minit_wcnsls_banner();
         minit_diag_loaded(name);
 }
@@ -927,8 +938,8 @@ ocnsls_minit(void)
 
         name = (kword_t)SIXBIT("OCNSLS");
         base = minit_install(name);
-        module_service_set(MODULE_SERVICE_OCNSLS_READ,
-            minit_export(name, base, OCNSLS_X_READ));
+        (void)minit_export(name, base, OCNSLS_X_READ);
+        mfsdev_present_mark(MONITORFS_DEV_OCNSLS);
         minit_diag_loaded(name);
 }
 
@@ -1013,12 +1024,13 @@ storage_minit(unsigned int kind, kword_t name)
                     minit_export(name, base, TAPE_X_DTC_WRITE_BLOCK));
                 storage_patch_jump(&sys_dtc_write_block_jump,
                     minit_export(name, base, TAPE_X_DTC_WRITE_BLOCK));
+                mfsdev_present_mark(MONITORFS_DEV_DTC0);
         } else if (kind == 1U) {
                 unsigned int mtc_service;
 
                 mtc_service = minit_export(name, base, TAPE_X_MTC_SERVICE);
-                module_service_set(MODULE_SERVICE_MTC, mtc_service);
                 storage_patch_jump(&sys_mtc_service_jump, mtc_service);
+                mfsdev_present_mark(MONITORFS_DEV_MTC0);
         } else {
                 {
                         unsigned int read_service;
@@ -1036,6 +1048,7 @@ storage_minit(unsigned int kind, kword_t name)
                             write_service);
                         storage_patch_jump(&storage_clock_dsk_jump,
                             minit_export(name, base, DSK_X_WATCHDOG));
+                        mfsdev_present_mark(MONITORFS_DEV_DSK0);
                 }
         }
         minit_diag_ok(name);
@@ -1068,6 +1081,7 @@ drm236_minit(void)
         storage_patch_jump(&drm236_write_jump, write_service);
         module_service_set(MODULE_SERVICE_DRM_READ_BLOCK, read_service);
         module_service_set(MODULE_SERVICE_DRM_WRITE_BLOCK, write_service);
+        mfsdev_present_mark(MONITORFS_DEV_DRM0);
         minit_diag_ok(name);
 }
 
@@ -1503,7 +1517,7 @@ d6fs_minit(void)
 
                 service = minit_export(name, base, 0U);
                 storage_patch_jump(&fs_d6fs_service_jump, service);
-                module_service_set(MODULE_SERVICE_D6FS, service);
+                mfsdev_present_mark(MONITORFS_DEV_D6SET0);
         }
         minit_diag_loaded(name);
 }
@@ -1512,50 +1526,20 @@ d6fs_minit(void)
 void
 mfsdev_minit(void)
 {
-        if (module_service_get(MODULE_SERVICE_CTY_PUTCHAR) != 0U &&
-            module_service_get(MODULE_SERVICE_CTY_GETCHAR) != 0U)
-                mfsdev_names[MONITORFS_DEV_CTY0] = (kword_t)SIXBIT("CTY0  ");
-        if (module_service_get(MODULE_SERVICE_CLK_TICKS) != 0U)
-                mfsdev_names[MONITORFS_DEV_CLK0] = (kword_t)SIXBIT("CLK0  ");
-        if (module_service_get(MODULE_SERVICE_PTR) != 0U)
-                mfsdev_names[MONITORFS_DEV_PTR0] = (kword_t)SIXBIT("PTR0  ");
-        if (module_service_get(MODULE_SERVICE_PTP) != 0U)
-                mfsdev_names[MONITORFS_DEV_PTP0] = (kword_t)SIXBIT("PTP0  ");
-        if (module_service_get(MODULE_SERVICE_LPT_PUTCHAR) != 0U)
-                mfsdev_names[MONITORFS_DEV_LPT0] = (kword_t)SIXBIT("LPT0  ");
-        if (module_service_get(MODULE_SERVICE_CR) != 0U)
-                mfsdev_names[MONITORFS_DEV_CR0] = (kword_t)SIXBIT("CR0   ");
-        if (module_service_get(MODULE_SERVICE_CP) != 0U)
-                mfsdev_names[MONITORFS_DEV_CP0] = (kword_t)SIXBIT("CP0   ");
-        if (module_service_get(MODULE_SERVICE_DCS_GETCHAR) != 0U &&
-            module_service_get(MODULE_SERVICE_DCS_PUTCHAR) != 0U)
-                mfsdev_names[MONITORFS_DEV_DCS0] = (kword_t)SIXBIT("DCS0  ");
-        if (module_service_get(MODULE_SERVICE_GE_GETCHAR) != 0U &&
-            module_service_get(MODULE_SERVICE_GE_PUTCHAR) != 0U)
-                mfsdev_names[MONITORFS_DEV_GE0] = (kword_t)SIXBIT("GE0   ");
-        if (module_service_get(MODULE_SERVICE_DPY_PUTWORD) != 0U)
-                mfsdev_names[MONITORFS_DEV_DPY0] = (kword_t)SIXBIT("DPY0  ");
-        if (module_service_get(MODULE_SERVICE_TTY_PUTCHAR) != 0U)
-                mfsdev_names[MONITORFS_DEV_TTY0] = (kword_t)SIXBIT("TTY0  ");
-        if (module_service_get(MODULE_SERVICE_WCNSLS_READ) != 0U)
-                mfsdev_names[MONITORFS_DEV_WCNSLS] = (kword_t)SIXBIT("WCNSLS");
-        if (module_service_get(MODULE_SERVICE_OCNSLS_READ) != 0U)
-                mfsdev_names[MONITORFS_DEV_OCNSLS] = (kword_t)SIXBIT("OCNSLS");
-        if (module_service_get(MODULE_SERVICE_DTC_READ_BLOCK) != 0U &&
-            module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK) != 0U)
-                mfsdev_names[MONITORFS_DEV_DTC0] = (kword_t)SIXBIT("DTC0  ");
-        if (module_service_get(MODULE_SERVICE_MTC) != 0U)
-                mfsdev_names[MONITORFS_DEV_MTC0] = (kword_t)SIXBIT("MTC0  ");
-        if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) != 0U &&
-            module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U)
-                mfsdev_names[MONITORFS_DEV_DSK0] = (kword_t)SIXBIT("DSK0  ");
-        if (module_service_get(MODULE_SERVICE_SLV_HANDLER) != 0U)
-                mfsdev_names[MONITORFS_DEV_SLV0] = (kword_t)SIXBIT("SLV0  ");
-        if (module_service_get(MODULE_SERVICE_D6FS) != 0U)
-                mfsdev_names[MONITORFS_DEV_D6SET0] = (kword_t)SIXBIT("D6SET0");
-        if (module_service_get(MODULE_SERVICE_DRM_READ_BLOCK) != 0U &&
-            module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK) != 0U)
-                mfsdev_names[MONITORFS_DEV_DRM0] = (kword_t)SIXBIT("DRM0  ");
+        static const kword_t names[MONITORFS_DEV_COUNT] = {
+                SIXBIT("CTY0  "), SIXBIT("CLK0  "), SIXBIT("PTR0  "),
+                SIXBIT("PTP0  "), SIXBIT("CR0   "), SIXBIT("CP0   "),
+                SIXBIT("DCS0  "), SIXBIT("GE0   "), SIXBIT("DPY0  "),
+                SIXBIT("TTY0  "), SIXBIT("WCNSLS"), SIXBIT("OCNSLS"),
+                SIXBIT("DTC0  "), SIXBIT("MTC0  "), SIXBIT("DSK0  "),
+                SIXBIT("SLV0  "), SIXBIT("D6SET0"), SIXBIT("DRM0  "),
+                SIXBIT("LPT0  ")
+        };
+        unsigned int i;
+
+        for (i = 0U; i < MONITORFS_DEV_COUNT; ++i)
+                if ((mfsdev_present & (kword_t)MONITORFS_PRESENT(i)) != 0UL)
+                        mfsdev_names[i] = names[i];
 }
 
 #if KINIT_FULL
@@ -1581,7 +1565,7 @@ slv_minit(void)
                 base = minit_install(name);
                 handler = minit_export(name, base, 0U);
                 minit_register(name, SLV_NATIVE_PI_LEVEL, handler);
-                module_service_set(MODULE_SERVICE_SLV_HANDLER, handler);
+                mfsdev_present_mark(MONITORFS_DEV_SLV0);
         }
         minit_diag_ok(name);
 }

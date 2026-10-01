@@ -18,33 +18,20 @@ extern kword_t __minit_table_begin;
 extern kword_t __minit_table_end;
 
 /** Boot-time service indexes; zero means "service not published". */
-#define MODULE_SERVICE_PTP              1U
-#define MODULE_SERVICE_CR               2U
-#define MODULE_SERVICE_CP               3U
-#define MODULE_SERVICE_WCNSLS_READ      4U
-#define MODULE_SERVICE_CLK_TICKS        5U
-#define MODULE_SERVICE_PTR              6U
-#define MODULE_SERVICE_OCNSLS_READ      7U
-#define MODULE_SERVICE_DCS_GETCHAR       8U
-#define MODULE_SERVICE_DCS_PUTCHAR       9U
-#define MODULE_SERVICE_TTY_PUTCHAR      10U
-#define MODULE_SERVICE_GE_GETCHAR       11U
-#define MODULE_SERVICE_GE_PUTCHAR       12U
-#define MODULE_SERVICE_DPY_PUTWORD       13U
-#define MODULE_SERVICE_DTC_READ_BLOCK    14U
-#define MODULE_SERVICE_MTC              15U
-#define MODULE_SERVICE_DSK_READ_SECTOR   16U
-#define MODULE_SERVICE_DSK_WRITE_SECTOR  17U
-#define MODULE_SERVICE_DTC_WRITE_BLOCK   18U
-#define MODULE_SERVICE_CTY_PUTCHAR       19U
-#define MODULE_SERVICE_CTY_GETCHAR       20U
-#define MODULE_SERVICE_D6FS              21U
-#define MODULE_SERVICE_SLV_HANDLER       22U
-#define MODULE_SERVICE_BLOCKSET          23U
-#define MODULE_SERVICE_DRM_READ_BLOCK    24U
-#define MODULE_SERVICE_DRM_WRITE_BLOCK   25U
-#define MODULE_SERVICE_LPT_PUTCHAR       26U
-#define MODULE_SERVICE_COUNT             27U
+#define MODULE_SERVICE_DCS_GETCHAR        1U
+#define MODULE_SERVICE_DCS_PUTCHAR        2U
+#define MODULE_SERVICE_GE_GETCHAR         3U
+#define MODULE_SERVICE_GE_PUTCHAR         4U
+#define MODULE_SERVICE_DTC_READ_BLOCK     5U
+#define MODULE_SERVICE_DSK_READ_SECTOR    6U
+#define MODULE_SERVICE_DSK_WRITE_SECTOR   7U
+#define MODULE_SERVICE_DTC_WRITE_BLOCK    8U
+#define MODULE_SERVICE_CTY_PUTCHAR        9U
+#define MODULE_SERVICE_CTY_GETCHAR       10U
+#define MODULE_SERVICE_BLOCKSET          11U
+#define MODULE_SERVICE_DRM_READ_BLOCK    12U
+#define MODULE_SERVICE_DRM_WRITE_BLOCK   13U
+#define MODULE_SERVICE_COUNT             14U
 
 /** Execute every built-in MINIT/MRES pair in table order. */
 void module_run_minits(void);
