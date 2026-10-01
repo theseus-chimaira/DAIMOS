@@ -52,20 +52,12 @@
 #define CLK_X_HANDLER           0U
 #define CLK_X_TICKS             1U
 #define CLK_X_PI_SERVICE        2U
-#define PTR_X_HANDLER            0U
-#define PTR_X_GETCHAR            1U
-#define PTR_X_READ_WORDS         2U
-#define PTP_X_HANDLER            0U
-#define PTP_X_PUTCHAR            1U
-#define PTP_X_WRITE_WORDS        2U
+#define PTR_X_READ_WORDS         0U
+#define PTP_X_WRITE_WORDS        0U
 #define LPT_X_PUTCHAR            0U
 #define LPT_X_WRITE_S6REC        1U
-#define CR_X_HANDLER             0U
-#define CR_X_READ_CARD           1U
-#define CR_X_READ_WORDS          2U
-#define CP_X_HANDLER             0U
-#define CP_X_PUNCH_CARD          1U
-#define CP_X_WRITE_WORDS         2U
+#define CR_X_READ_WORDS          0U
+#define CP_X_WRITE_WORDS         0U
 #define DCS_X_HANDLER           0U
 #define DCS_X_GETCHAR           1U
 #define DCS_X_PUTCHAR           2U
@@ -533,13 +525,11 @@ ptr_minit(void)
                 return;
         }
         base = minit_install(name);
-        minit_register(name, PT_NATIVE_PI_LEVEL,
-            minit_export(name, base, PTR_X_HANDLER));
-        module_service_set(MODULE_SERVICE_PTR_GETCHAR,
-            minit_export(name, base, PTR_X_GETCHAR));
+        module_service_set(MODULE_SERVICE_PTR,
+            minit_export(name, base, PTR_X_READ_WORDS));
         storage_patch_jump(&ptr_read_words_jump,
             minit_export(name, base, PTR_X_READ_WORDS));
-        minit_ptr_cono(PT_NATIVE_PI_LEVEL);
+        minit_ptr_cono(0);
         minit_diag_ok(name);
 }
 
@@ -558,13 +548,11 @@ ptp_minit(void)
                 return;
         }
         base = minit_install(name);
-        minit_register(name, PT_NATIVE_PI_LEVEL,
-            minit_export(name, base, PTP_X_HANDLER));
-        minit_ptp_cono(PT_NATIVE_PI_LEVEL);
-        module_service_set(MODULE_SERVICE_PTP_PUTCHAR,
-            minit_export(name, base, PTP_X_PUTCHAR));
+        module_service_set(MODULE_SERVICE_PTP,
+            minit_export(name, base, PTP_X_WRITE_WORDS));
         storage_patch_jump(&ptp_write_words_jump,
             minit_export(name, base, PTP_X_WRITE_WORDS));
+        minit_ptp_cono(0);
         minit_diag_ok(name);
 }
 
@@ -619,14 +607,12 @@ cr_minit(void)
                 return;
         }
         base = minit_install(name);
-        minit_register(name, CARD_NATIVE_PI_LEVEL,
-            minit_export(name, base, CR_X_HANDLER));
-        minit_cr_cono((kword_t)CARD_NATIVE_PI_LEVEL | CR_CO_CLR_DRDY |
-            CR_CO_CLR_END_CARD | CR_CO_CLR_DATA_MISS);
-        module_service_set(MODULE_SERVICE_CR_READ_CARD,
-            minit_export(name, base, CR_X_READ_CARD));
+        module_service_set(MODULE_SERVICE_CR,
+            minit_export(name, base, CR_X_READ_WORDS));
         storage_patch_jump(&cr_read_words_jump,
             minit_export(name, base, CR_X_READ_WORDS));
+        minit_cr_cono(CR_CO_CLR_DRDY | CR_CO_CLR_END_CARD |
+            CR_CO_CLR_DATA_MISS);
         minit_diag_ok(name);
 }
 
@@ -652,13 +638,11 @@ cp_minit(void)
                 return;
         }
         base = minit_install(name);
-        minit_register(name, CARD_NATIVE_PI_LEVEL,
-            minit_export(name, base, CP_X_HANDLER));
-        minit_cp_cono((kword_t)CARD_NATIVE_PI_LEVEL | CP_CO_CLR_PUNCH);
-        module_service_set(MODULE_SERVICE_CP_PUNCH_CARD,
-            minit_export(name, base, CP_X_PUNCH_CARD));
+        module_service_set(MODULE_SERVICE_CP,
+            minit_export(name, base, CP_X_WRITE_WORDS));
         storage_patch_jump(&cp_write_words_jump,
             minit_export(name, base, CP_X_WRITE_WORDS));
+        minit_cp_cono(CP_CO_CLR_PUNCH);
         minit_diag_ok(name);
 }
 
@@ -1536,15 +1520,15 @@ mfsdev_minit(void)
                 mfsdev_names[MONITORFS_DEV_CTY0] = (kword_t)SIXBIT("CTY0  ");
         if (module_service_get(MODULE_SERVICE_CLK_TICKS) != 0U)
                 mfsdev_names[MONITORFS_DEV_CLK0] = (kword_t)SIXBIT("CLK0  ");
-        if (module_service_get(MODULE_SERVICE_PTR_GETCHAR) != 0U)
+        if (module_service_get(MODULE_SERVICE_PTR) != 0U)
                 mfsdev_names[MONITORFS_DEV_PTR0] = (kword_t)SIXBIT("PTR0  ");
-        if (module_service_get(MODULE_SERVICE_PTP_PUTCHAR) != 0U)
+        if (module_service_get(MODULE_SERVICE_PTP) != 0U)
                 mfsdev_names[MONITORFS_DEV_PTP0] = (kword_t)SIXBIT("PTP0  ");
         if (module_service_get(MODULE_SERVICE_LPT_PUTCHAR) != 0U)
                 mfsdev_names[MONITORFS_DEV_LPT0] = (kword_t)SIXBIT("LPT0  ");
-        if (module_service_get(MODULE_SERVICE_CR_READ_CARD) != 0U)
+        if (module_service_get(MODULE_SERVICE_CR) != 0U)
                 mfsdev_names[MONITORFS_DEV_CR0] = (kword_t)SIXBIT("CR0   ");
-        if (module_service_get(MODULE_SERVICE_CP_PUNCH_CARD) != 0U)
+        if (module_service_get(MODULE_SERVICE_CP) != 0U)
                 mfsdev_names[MONITORFS_DEV_CP0] = (kword_t)SIXBIT("CP0   ");
         if (module_service_get(MODULE_SERVICE_DCS_GETCHAR) != 0U &&
             module_service_get(MODULE_SERVICE_DCS_PUTCHAR) != 0U)

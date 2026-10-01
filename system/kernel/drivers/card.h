@@ -8,11 +8,9 @@
  * the corresponding MRES package, so an absent reader or punch consumes no
  * driver text or private transfer state in permanent memory.
  *
- * Both resident drivers expose whole-card operations to KCORE.  The MRES
- * interrupt paths move one 12-bit Hollerith column per hardware request while
- * a one-word AOBJN transfer cursor records progress.  Callers supply the
- * complete 80-word card buffer and must keep it valid until the synchronous
- * operation returns.
+ * Both resident drivers expose only the packed WORDTOKEN12 whole-card
+ * operations used by the native word-I/O ABI.  Runtime transfer is synchronous
+ * and polled with the PIA disabled; one resident busy word prevents overlap.
  */
 #ifndef DAIMON_CARD_H
 #define DAIMON_CARD_H
@@ -91,35 +89,10 @@
 /** Card operation exceeded an implementation limit. */
 #define CARD_E_LIMIT           -5
 
-/**
- * @brief Read one complete 80-column card.
- * @param cols Caller-owned array receiving 80 low-12-bit column patterns.
- * @return CARD_COLUMNS on success, or a negative CARD_E_* status.
- *
- * The buffer remains live until the function returns because PI7 fills it one
- * column at a time.  Only one read may be active at once.
- */
-int cr_read_card(kword_t cols[CARD_COLUMNS]);
 /** Read one card as 27 WORDTOKEN12 words; the final third token is zero. */
 int cr_read_words(kword_t words[CARD_WORDS], unsigned int nwords);
-
-/**
- * @brief Punch one complete 80-column card.
- * @param cols Caller-owned array of 80 low-12-bit column patterns.
- * @return CARD_COLUMNS on success, or a negative CARD_E_* status.
- *
- * The buffer must remain unchanged until the function returns because PI7
- * fetches columns asynchronously in response to DATA REQUEST interrupts.
- */
-int cp_punch_card(const kword_t cols[CARD_COLUMNS]);
 /** Punch one complete 27-word WORDTOKEN12 card image. */
 int cp_write_words(const kword_t words[CARD_WORDS], unsigned int nwords);
-
-/** @brief Resident PI7 entry for the optional card-reader MRES. */
-void cr_pi_handler(void);
-
-/** @brief Resident PI7 entry for the optional card-punch MRES. */
-void cp_pi_handler(void);
 
 
 #endif

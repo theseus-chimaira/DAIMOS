@@ -18,12 +18,12 @@ extern kword_t __minit_table_begin;
 extern kword_t __minit_table_end;
 
 /** Boot-time service indexes; zero means "service not published". */
-#define MODULE_SERVICE_PTP_PUTCHAR      1U
-#define MODULE_SERVICE_CR_READ_CARD     2U
-#define MODULE_SERVICE_CP_PUNCH_CARD    3U
+#define MODULE_SERVICE_PTP              1U
+#define MODULE_SERVICE_CR               2U
+#define MODULE_SERVICE_CP               3U
 #define MODULE_SERVICE_WCNSLS_READ      4U
 #define MODULE_SERVICE_CLK_TICKS        5U
-#define MODULE_SERVICE_PTR_GETCHAR      6U
+#define MODULE_SERVICE_PTR              6U
 #define MODULE_SERVICE_OCNSLS_READ      7U
 #define MODULE_SERVICE_DCS_GETCHAR       8U
 #define MODULE_SERVICE_DCS_PUTCHAR       9U

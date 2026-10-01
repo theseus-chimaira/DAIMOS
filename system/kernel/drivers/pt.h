@@ -7,9 +7,10 @@
  * and installs each MRES separately, so a machine carrying only one device
  * pays no resident RAM/code cost for the other.
  *
- * PTR uses one state word as idle/request-active/prefetched-byte storage. PTP
- * uses one state word as an in-flight completion flag. Both services are
- * synchronous to callers but use PI7 to observe hardware completion.
+ * The resident interfaces are synchronous packed-word transfers.  KINIT uses
+ * the PI assignment bits only while probing the devices; normal runtime I/O
+ * polls the mechanical DONE/BUSY state with the PIA disabled.  Each driver
+ * keeps one busy word so a second process cannot overlap a physical transfer.
  */
 #ifndef DAIMON_PT_H
 #define DAIMON_PT_H
@@ -30,7 +31,7 @@
 #define PTP_DEVICE              0100U
 /** Paper-tape reader I/O device number. */
 #define PTR_DEVICE              0104U
-/** Native PI level used independently by PTR and PTP. */
+/** Native PI level used while KINIT probes PTR and PTP. */
 #define PT_NATIVE_PI_LEVEL      7U
 
 /** CONI/CONO bit 32: operation complete/data ready. */
@@ -52,25 +53,8 @@
 #define PT_E_BUSY              -3
 #define PT_E_IO                -4
 
-/**
- * @brief Read one eight-bit paper-tape byte.
- * @param cp Destination for the byte value 0..0377.
- * @return PT_E_OK, PT_E_ARG, PT_E_BUSY, or PT_E_TIMEOUT.
- */
-int ptr_getchar(int *cp);
 int ptr_read_words(kword_t *words, unsigned int nwords);
-/** @brief Resident PI7 completion/prefetch entry for PTR. */
-void ptr_pi_handler(void);
-
-/**
- * @brief Punch one eight-bit paper-tape byte.
- * @param c Byte value; only the low eight bits are transmitted.
- * @return PT_E_OK, PT_E_BUSY, PT_E_IO, or PT_E_TIMEOUT.
- */
-int ptp_putchar(int c);
 int ptp_write_words(const kword_t *words, unsigned int nwords);
-/** @brief Resident PI7 completion entry for PTP. */
-void ptp_pi_handler(void);
 
 
 #endif
