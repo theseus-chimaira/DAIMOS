@@ -1954,7 +1954,7 @@ proc_sched_resched_choose:
 ; cleared.  User code is preemptible.  Ordinary executive code is not; only a
 ; process which explicitly sleeps can be switched while in the kernel.
 proc_sched_pi_tick:
-        ; Maintain the compact 18-bit monotonic epoch used by SYS_EXT_SLEEP.
+        ; Maintain the compact 17-bit monotonic epoch used by SYS_EXT_SLEEP.
         ; proc_timer_next carries ACTIVE in LH bit 400000, DUE in LH bit
         ; 200000, and the next deadline in RH.  The process table is scanned
         ; only after the exact frontier tick becomes due.
@@ -1964,6 +1964,7 @@ proc_sched_pi_tick:
         tlne    2,PROC_TIMER_DUE_LH
         jrst    proc_sched_timer_done
         hrrz    1,1
+        andi    1,PROC_TIMER_CLOCK_MASK
         hrrz    2,2
         came    1,2
         jrst    proc_sched_timer_done
@@ -2048,10 +2049,12 @@ proc_timer_service:
         popj    17,
 proc_timer_service_active:
         hrrz    7,7                    ; frontier deadline
+        andi    7,PROC_TIMER_CLOCK_MASK
         hrrz    6,proc_timer_clock     ; current monotonic tick
+        andi    6,PROC_TIMER_CLOCK_MASK
         move    5,6
         sub     5,7
-        andi    5,0777777              ; ticks elapsed since frontier
+        andi    5,PROC_TIMER_CLOCK_MASK ; ticks elapsed since frontier
         setz    4,                     ; best future delta, zero = none
         movei   1,1
         move    2,proc_table
@@ -2059,25 +2062,16 @@ proc_timer_service_active:
 proc_timer_service_loop:
         caml    1,proc_high_slot
         jrst    proc_timer_service_done
-        move    0,(2)
-        trnn    0,0400000              ; no resident u-area -> no timer marker
+        hrrz    3,2(2)
+        trnn    3,PROC_TIMER_TAG_RH
         jrst    proc_timer_service_next
-        hlrz    3,0                    ; AC0 cannot be an index register
-        move    0,045(3)
-        trnn    0,04                    ; PROC_TIMER_WAIT_BIT
-        jrst    proc_timer_service_next
-        hrrz    3,2(2)                 ; process deadline
+        andi    3,PROC_TIMER_CLOCK_MASK ; process deadline
         move    0,3
         sub     0,7
-        andi    0,0777777
+        andi    0,PROC_TIMER_CLOCK_MASK
         camle   0,5                    ; deadline passed since frontier?
         jrst    proc_timer_service_future
 
-        move    0,(2)
-        hlrz    3,0                    ; use AC3 as the nonzero u-area index
-        move    0,045(3)
-        trz     0,04
-        movem   0,045(3)
         move    3,2(2)
         hlrz    0,3
         andi    0,PROC_STATE_LH_MASK
@@ -2091,9 +2085,10 @@ proc_timer_service_loop:
         movem   3,2(2)
         pushj   17,proc_runq_add
         hrrz    6,proc_timer_clock     ; runq helper clobbers AC5/AC6
+        andi    6,PROC_TIMER_CLOCK_MASK
         move    5,6
         sub     5,7
-        andi    5,0777777
+        andi    5,PROC_TIMER_CLOCK_MASK
         jrst    proc_timer_service_next
 proc_timer_service_store:
         movem   3,2(2)
@@ -2102,7 +2097,7 @@ proc_timer_service_store:
 proc_timer_service_future:
         move    0,3
         sub     0,6
-        andi    0,0777777
+        andi    0,PROC_TIMER_CLOCK_MASK
         jumpe   4,proc_timer_service_best
         camge   0,4
         jrst    proc_timer_service_best
@@ -2117,7 +2112,7 @@ proc_timer_service_done:
         jumpe   4,proc_timer_service_none
         move    1,6
         add     1,4
-        andi    1,0777777
+        andi    1,PROC_TIMER_CLOCK_MASK
         hrli    1,PROC_TIMER_ACTIVE_LH
         movem   1,proc_timer_next
         popj    17,
