@@ -145,23 +145,6 @@ kinit_call_fs_request:
         jrst    (7)
 
 /**
- * @brief Adapt a C blockset request structure to the compact register ABI.
- *
- * @param address AC1: resident blockset service address.
- * @param req AC2: address of the four-word blockset request.
- * @return Service result in AC1 according to the resident service ABI.
- */
-        .globl  kinit_call_blockset_request
-kinit_call_blockset_request:
-        move    4,1                    ; service address
-        move    5,2                    ; four-word blockset request
-        move    3,3(5)
-        move    2,2(5)
-        move    1,1(5)
-        move    5,(5)                  ; operation, after final pointer use
-        jrst    (4)
-
-/**
  * @brief Adapt direct blockset I/O from the C ABI to the resident export ABI.
  *
  * Installed root read/write exports use AC1=logical block and AC2=buffer.

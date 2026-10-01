@@ -26,12 +26,11 @@ extern kword_t __minit_table_end;
 #define MODULE_SERVICE_DSK_READ_SECTOR    6U
 #define MODULE_SERVICE_DSK_WRITE_SECTOR   7U
 #define MODULE_SERVICE_DTC_WRITE_BLOCK    8U
-#define MODULE_SERVICE_CTY_PUTCHAR        9U
-#define MODULE_SERVICE_CTY_GETCHAR       10U
-#define MODULE_SERVICE_BLOCKSET          11U
-#define MODULE_SERVICE_DRM_READ_BLOCK    12U
-#define MODULE_SERVICE_DRM_WRITE_BLOCK   13U
-#define MODULE_SERVICE_COUNT             14U
+#define MODULE_SERVICE_CTY_GETCHAR        9U
+#define MODULE_SERVICE_BLOCKSET          10U
+#define MODULE_SERVICE_DRM_READ_BLOCK    11U
+#define MODULE_SERVICE_DRM_WRITE_BLOCK   12U
+#define MODULE_SERVICE_COUNT             13U
 
 /** Execute every built-in MINIT/MRES pair in table order. */
 void module_run_minits(void);

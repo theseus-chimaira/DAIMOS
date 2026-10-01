@@ -14,8 +14,6 @@
 /* PDP-6 monitor-UUO ABI.  Direct UUO 043 is unused in the SIXBIT-only
  * 0.9/1.0 ABI; SYS_EXT_RTCTL=043 below is a UUO-077 extension suboperation.
  * 074..077 are the compact process/self-hosting extension bank. */
-#define SYS_WRITE            1U      /* unsupported legacy generic call */
-#define SYS_READ             4U      /* unsupported legacy generic call */
 #define SYS_EXIT             040U
 #define SYS_OPEN             041U
 #define SYS_CLOSE            042U

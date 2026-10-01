@@ -61,8 +61,7 @@ proc_swap_boot_init(unsigned int slots)
                 return -1;
         blocks = backstore_blocks;
         if (blocks == 0UL)
-                blocks = blockset_runtime_reg_call(BLOCKSET_MRES_OP_TAIL_BLOCKS,
-                    0UL, 0UL, 0UL);
+                blocks = blockset_tail_blocks();
         bitmap_words = backstore_bitmap_words(blocks);
         words = (kword_t)slots * (kword_t)PROC_SWAP_RECORD_WORDS +
             (kword_t)bitmap_words;

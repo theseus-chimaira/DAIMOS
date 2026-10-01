@@ -484,7 +484,6 @@ cty_minit(void)
             minit_export(name, base, CTY_X_HANDLER));
         minit_cty_cono(CTY_NATIVE_PI_LEVEL);
         diag_putchar_addr = minit_export(name, base, CTY_X_PUTCHAR);
-        module_service_set(MODULE_SERVICE_CTY_PUTCHAR, diag_putchar_addr);
         storage_patch_jump(&native_sys_putchar_call, diag_putchar_addr);
         base = minit_export(name, base, CTY_X_GETCHAR);
         module_service_set(MODULE_SERVICE_CTY_GETCHAR, base);

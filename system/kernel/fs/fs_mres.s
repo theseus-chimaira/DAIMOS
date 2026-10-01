@@ -9,9 +9,8 @@
         .globl proc_wait_event
         .globl proc_wakeup_event
 
-        .globl blockset_runtime_reg_call
-        .globl blockset_runtime_reg_enter
         .globl blockset_runtime_service_jump
+        .globl blockset_tail_blocks
         .globl blockset_direct_configure
         .globl blockset_direct_blocks
         .globl blockset_direct_tail
@@ -20,28 +19,6 @@
         .globl drm236_read_block
         .globl drm236_write_block
 
-; Stable KCORE register bridge to the movable BLOCKSET MRES dispatcher.
-; C ABI: AC1=operation, AC2=a, AC3=b, AC4=c.  The movable export keeps a
-; two-word legacy request entry, so its register entry is target+2.
-blockset_runtime_reg_call:
-        move    5,1
-        move    1,2
-        move    2,3
-        move    3,4
-
-; Assembly register entry: AC5=operation, AC1..AC3=a..c.  AC4 is scratch.
-; This keeps fixed KCORE callers from depending on movable BLOCKSET symbols.
-blockset_runtime_reg_enter:
-        cain    5,6                    ; BLOCKSET_MRES_OP_TAIL_BLOCKS
-        jrst    blockset_direct_tail_blocks
-        cain    5,7                    ; BLOCKSET_MRES_OP_TAIL_READ
-        jrst    blockset_direct_tail_read
-        cain    5,010                  ; BLOCKSET_MRES_OP_TAIL_WRITE
-        jrst    blockset_direct_tail_write
-        hrrz    4,blockset_runtime_service_jump
-        cain    4,fs_mres_no_service
-        jrst    fs_mres_no_service
-        jrst    (4)
 blockset_runtime_service_jump:
         jrst    fs_mres_no_service
 
@@ -144,7 +121,7 @@ blockset_direct_tail_done:
         blt     0,013
         sub     17,[6,,6]
         popj    17,
-blockset_direct_tail_blocks:
+blockset_tail_blocks:
         move    1,blockset_direct_tail
         popj    17,
 
@@ -153,9 +130,9 @@ blockset_direct_tail_blocks:
 ;   AC7       provider number (4 MEMFS, 5 DTFS, 6 D6FS, 7 TSFS)
 ;   AC1..AC5 request a..e
 ;
-; MINIT already maintains one movable service jump per provider.  Its target
-; is the two-word request wrapper, and the register entry is target+2.  Derive
-; that address instead of adding another permanent republished binding.
+; MINIT already maintains one movable register-dispatch service per provider.
+; Use that binding directly instead of adding another permanent republished
+; entry point.
 fs_provider_reg_call:
         caige   7,4
         jrst    fs_mres_no_service
