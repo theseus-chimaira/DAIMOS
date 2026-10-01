@@ -1216,10 +1216,13 @@ proc_tty_canon_kill_store:
 proc_tty_canon_not_kill:
         caie    11,004                 ; ^D
         jrst    proc_tty_canon_not_eof
-        skipn   7
-        iori    6,01200000             ; READY|EOF for an empty line
-        skipe   7
+        jumpn   7,proc_tty_canon_partial_eof
+        tlo     6,1                    ; EOF is bit 18, low bit of left half
+        iori    6,0200000              ; READY for an empty ^D
+        jrst    proc_tty_canon_eof_store
+proc_tty_canon_partial_eof:
         iori    6,0200000              ; submit nonempty partial line
+proc_tty_canon_eof_store:
         movem   6,0(12)
         jrst    proc_tty_canon_take
 proc_tty_canon_not_eof:
@@ -1296,12 +1299,13 @@ proc_tty_canon_bad:
         seto    1,
         jrst    proc_tty_canon_return
 proc_tty_canon_take:
-        move    1,10
         pop     17,013
         pop     17,012
         pop     17,011
         pop     17,010
-        jrst    proc_tty_line_take
+        ; Submission is non-draining.  READCHAR retries through line_take;
+        ; READ_WORDS consumes the complete packed READY line directly.
+        jrst    kret_neg3
 proc_tty_canon_return:
         pop     17,013
         pop     17,012
