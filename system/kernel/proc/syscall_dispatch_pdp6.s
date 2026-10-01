@@ -34,6 +34,7 @@
         .globl  proc_current_slot
         .globl  pipe_create
         .globl  file_mkfifo
+        .globl  file_table
         .globl  exec_replace_current
         .globl  proc_exec_enter
         .globl  pclk_time36
@@ -630,19 +631,23 @@ native_sys_exec:
         move    2,4
         add     2,3
         sub     2,1                    ; mapped parent words available
-        add     17,[5,,5]
-        movei   3,-4(17)
+        ; Successful EXEC no longer needs the old saved user AC0..AC4.
+        ; Use those five stable u-area words as the replacement startup
+        ; result buffer instead of consuming five words on the already-tight
+        ; process-private kernel stack.  Failure leaves the buffer untouched.
+        move    3,file_table
+        subi    3,047                  ; stable u-area base / saved AC0
         pushj   17,exec_replace_current
         jumpn   1,native_sys_exec_bad
-        move    1,-4(17)               ; replacement entry
-        move    2,-3(17)               ; replacement user stack
-        move    3,-2(17)               ; argc
-        move    4,-1(17)               ; argv
-        move    5,(17)                  ; envp
-        sub     17,[5,,5]
+        move    6,file_table
+        subi    6,047
+        move    1,(6)                  ; replacement entry
+        move    2,1(6)                 ; replacement user stack
+        move    3,2(6)                 ; argc
+        move    4,3(6)                 ; argv
+        move    5,4(6)                 ; envp
         jrst    proc_exec_enter
 native_sys_exec_bad:
-        sub     17,[5,,5]
         jrst    native_sys_mapped_return
 
 
