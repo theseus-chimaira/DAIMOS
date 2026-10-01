@@ -14,6 +14,7 @@
         .globl  kret_ok
         .globl  kret_neg2
         .globl  kret_neg4
+        .globl  s6rec_text_validate
 
 /**
  * @brief Write one character and synchronously wait for LP10 completion.
@@ -65,22 +66,12 @@ lpt_write_s6rec:
         push    17,015
         move    010,1                  ; record base
         hrrz    011,2                  ; supplied/return word count
-        move    3,(010)
-        ldb     4,[POINT 6,3,5]
-        caie    4,1                    ; S6REC TEXT
-        jrst    lpt_s6_bad
-        and     3,[077777777]
-        move    012,3                  ; character count
-        move    4,3
-        addi    4,5
-        idivi   4,6
-        addi    4,1
-        came    4,011                  ; exactly one complete record
-        jrst    lpt_s6_bad
-
-        move    015,[POINT 6,0]
-        movei   5,1(010)
-        hrr     015,5
+        move    1,010
+        move    2,011
+        pushj   17,s6rec_text_validate
+        jumpl   1,lpt_s6_bad
+        move    012,1                  ; character count
+        move    015,2                  ; first payload SIXBIT byte pointer
         jumpe   012,lpt_s6_eol
 lpt_s6_batch:
         setz    013,                   ; packed LP10 DATAO word
@@ -92,8 +83,7 @@ lpt_s6_char:
         lsh     2,0(7)
         ior     013,2
         subi    7,7
-        subi    012,1
-        jumpe   012,lpt_s6_flush
+        soje    012,lpt_s6_flush
         sojg    014,lpt_s6_char
 lpt_s6_flush:
         move    1,013

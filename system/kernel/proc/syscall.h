@@ -17,7 +17,6 @@
 #define SYS_EXIT             040U
 #define SYS_OPEN             041U
 #define SYS_CLOSE            042U
-#define SYS_GETCHAR          044U
 #define SYS_CHDIR            045U
 #define SYS_GETCWD           046U
 #define SYS_STAT             047U

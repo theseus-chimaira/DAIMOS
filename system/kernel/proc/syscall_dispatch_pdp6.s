@@ -63,7 +63,7 @@ exec_native_half_select:
 exec_native_table:
         .word   %L66,,%L67
         .word   %L72,,kret_neg1
-        .word   native_sys_getchar,,%L75
+        .word   kret_neg1,,%L75
         .word   %L80,,%L90
         .word   %L97,,%L102
         .word   %L107,,%L112
@@ -861,12 +861,6 @@ native_sys_procctl:
         hrrz    2,2
         jrst    proc_control
 
-native_sys_getchar:
-        ; Legacy GETCHAR follows descriptor 0 just like READCHAR.
-        movei   1,0
-        pushj   17,file_readchar
-        came    1,[-3]
-        popj    17,
 native_sys_getchar_policy:
         pushj   17,proc_tty_read_enter
         jumpl   1,%L137

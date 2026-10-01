@@ -29,6 +29,7 @@
         .globl proc_tty_line_ensure
         .globl proc_tty_line_reset
         .globl proc_tty_records
+        .globl s6rec_text_validate
 
 /**
  * @brief Dispatch one packed logical-terminal output byte.
@@ -109,24 +110,12 @@ tty_write_s6rec:
         andi    1,037400                ; TTY_ID_MASK << 8
         move    012,1
 
-        move    3,(010)
-        ldb     4,[POINT 6,3,5]
-        caie    4,1                     ; S6REC TEXT
-        jrst    tty_s6_bad
-        and     3,[077777777]           ; character count
-        move    013,3
-
-        ; One divide per record validates the complete frame before output.
-        move    4,3
-        addi    4,5
-        idivi   4,6                     ; ceil(chars/6)
-        addi    4,1                     ; header + payload words
-        came    4,011                   ; exactly one complete record
-        jrst    tty_s6_bad
-
-        move    014,[POINT 6,0]
-        movei   7,1(010)
-        hrr     014,7
+        move    1,010
+        move    2,011
+        pushj   17,s6rec_text_validate
+        jumpl   1,tty_s6_bad
+        move    013,1
+        move    014,2
         jumpe   013,tty_s6_eol
 tty_s6_char_loop:
         ildb    2,014
@@ -155,12 +144,7 @@ tty_s6_zero:
 tty_s6_bad:
         seto    1,
 tty_s6_done:
-        pop     17,014
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
-        popj    17,
+        jrst    tty_s6_common_done
 
 ; int tty_read_s6rec(kword_t *words, unsigned int nwords)
 ; Return one complete canonical line as one S6REC TEXT record.  Canonical
@@ -257,38 +241,10 @@ tty_s6_read_not_ready:
         pushj   17,proc_tty_input
         camn    1,[-3]                  ; editing, signal, or READY line
         jrst    tty_s6_read_check
-        camn    1,[-2]                  ; historical empty EOF path
-        jrst    tty_s6_read_zero
-        jumpl   1,tty_s6_read_bad
-
-        ; Historical NO_TTY/CTY input bypasses canonical storage and returns
-        ; one raw byte.  Preserve that bootstrap behavior without carrying
-        ; fallback state through the normal attached-TTY path.
-        move    015,1
-        caie    015,012                 ; newline => empty text record
-        jrst    tty_s6_read_single
-        movei   3,1
-        camg    3,012
-        jrst    tty_s6_read_empty_store
+        ; Cooked word input requires an attached canonical TTY.  NO_TTY/CTY
+        ; bootstrap input remains available through raw READCHAR; do not
+        ; synthesize S6REC records from unowned raw console bytes here.
         jrst    tty_s6_read_bad
-tty_s6_read_empty_store:
-        move    3,[010000000000]
-        movem   3,(011)
-        movei   1,1
-        jrst    tty_s6_read_done
-tty_s6_read_single:
-        movei   3,2
-        camg    3,012
-        jrst    tty_s6_read_single_store
-        jrst    tty_s6_read_bad
-tty_s6_read_single_store:
-        move    3,[010000000001]
-        movem   3,(011)
-        subi    015,040
-        lsh     015,036
-        movem   015,1(011)
-        movei   1,2
-        jrst    tty_s6_read_done
 
 tty_s6_read_zero:
         setz    1,
@@ -297,6 +253,7 @@ tty_s6_read_bad:
         seto    1,
 tty_s6_read_done:
         pop     17,015
+tty_s6_common_done:
         pop     17,014
         pop     17,013
         pop     17,012

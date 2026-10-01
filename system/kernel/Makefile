@@ -148,6 +148,7 @@ KCORE_FIXED_SRCS = core/ret.s \
 	drivers/dsk270.s \
 	drivers/drm236.s \
 	core/kfmt_pdp6.s \
+	core/s6rec.s \
 	fs/vfs.s \
 	fs/fs_mres.s \
 	fs/tsfs_runtime.s \
@@ -180,6 +181,7 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/dsk270.s \
 	$(BUILD)/drm236.s \
 	$(BUILD)/kfmt_pdp6.s \
+	$(BUILD)/s6rec.s \
 	$(BUILD)/vfs.s \
 	$(BUILD)/fs_mres.s \
 	$(BUILD)/tsfs_runtime.s \
@@ -363,6 +365,7 @@ COPY_ASM_SRCS = core/ret.s \
 	drivers/dsk270.s \
 	drivers/drm236.s \
 	core/kfmt_pdp6.s \
+	core/s6rec.s \
 	fs/vfs.s \
 	fs/fs_mres.s \
 	fs/tsfs_runtime.s \
@@ -409,6 +412,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret.s \
 	$(BUILD)/dsk270.s \
 	$(BUILD)/drm236.s \
 	$(BUILD)/kfmt_pdp6.s \
+	$(BUILD)/s6rec.s \
 	$(BUILD)/vfs.s \
 	$(BUILD)/fs_mres.s \
 	$(BUILD)/tsfs_runtime.s \
