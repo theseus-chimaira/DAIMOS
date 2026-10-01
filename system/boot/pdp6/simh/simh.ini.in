@@ -50,8 +50,8 @@ set dcs enabled
 set dcs lines=8
 set ge enabled
 set slave enabled
-set dpy window
 set dpy @DPY_MODE@
+set dpy window
 set dpy enabled
 set wcnsls cscope
 set wcnsls enabled
