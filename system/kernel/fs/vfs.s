@@ -127,7 +127,7 @@ vfs_readdir_extra:
         move    4,-2(17)               ; requested offset
         sub     4,(17)                  ; built-in index after mounted entries
         jumpl   4,vfs_readdir_zero
-        caige   4,2
+        caige   4,3
         jrst    vfs_readdir_builtin
         jrst    vfs_readdir_zero
 vfs_readdir_builtin:
