@@ -1,5 +1,5 @@
 /**
- * @file kcore_io_pdp6.s
+ * @file kcore_pi_pdp6.s
  * @brief Minimal resident PDP-6 priority-interrupt runtime.
  *
  * The seven PDP-6 PI levels enter through fixed low-core JSR vectors installed
@@ -52,6 +52,8 @@
         .globl pdp10_pi_sp_save
         .globl mach_kernel_sp
 
+        .equ PDP10_PI_HANDLER_CAPACITY,010
+
 /** @brief PI level 1 entry; saves AC1..AC3/AC17 and dispatches its span. */
 pdp10_pi_level1:
         .word 0
@@ -60,10 +62,8 @@ pdp10_pi_level1:
         movem 3,000043
         movem 17,pdp10_pi_sp_save+0
         move 1,pdp10_pi_level1
-        tlnn 1,010000
-        jrst pdp10_pi_level1_stack_ready
+        tlne 1,010000
         move 17,mach_kernel_sp
-pdp10_pi_level1_stack_ready:
         move 2,pdp10_pi_level_span+0
         movei 3,pdp10_pi_return_level1
 pdp10_pi_level1_dispatch_jump:
@@ -76,10 +76,8 @@ pdp10_pi_level2:
         movem 3,000045
         movem 17,pdp10_pi_sp_save+2
         move 1,pdp10_pi_level2
-        tlnn 1,010000
-        jrst pdp10_pi_level2_stack_ready
+        tlne 1,010000
         move 17,mach_kernel_sp
-pdp10_pi_level2_stack_ready:
         move 2,pdp10_pi_level_span+1
         movei 3,pdp10_pi_return_level2
 pdp10_pi_level2_dispatch_jump:
@@ -92,10 +90,8 @@ pdp10_pi_level3:
         movem 3,000036
         movem 17,pdp10_pi_sp_save+4
         move 1,pdp10_pi_level3
-        tlnn 1,010000
-        jrst pdp10_pi_level3_stack_ready
+        tlne 1,010000
         move 17,mach_kernel_sp
-pdp10_pi_level3_stack_ready:
         move 2,pdp10_pi_level_span+2
         movei 3,pdp10_pi_return_level3
 pdp10_pi_level3_dispatch_jump:
@@ -108,10 +104,8 @@ pdp10_pi_level4:
         movem 3,000051
         movem 17,pdp10_pi_sp_save+6
         move 1,pdp10_pi_level4
-        tlnn 1,010000
-        jrst pdp10_pi_level4_stack_ready
+        tlne 1,010000
         move 17,mach_kernel_sp
-pdp10_pi_level4_stack_ready:
         move 2,pdp10_pi_level_span+3
         movei 3,pdp10_pi_return_level4
 pdp10_pi_level4_dispatch_jump:
@@ -124,10 +118,8 @@ pdp10_pi_level5:
         movem 3,000053
         movem 17,pdp10_pi_sp_save+010
         move 1,pdp10_pi_level5
-        tlnn 1,010000
-        jrst pdp10_pi_level5_stack_ready
+        tlne 1,010000
         move 17,mach_kernel_sp
-pdp10_pi_level5_stack_ready:
         move 2,pdp10_pi_level_span+4
         movei 3,pdp10_pi_return_level5
 pdp10_pi_level5_dispatch_jump:
@@ -140,10 +132,8 @@ pdp10_pi_level6:
         movem 3,000055
         movem 17,pdp10_pi_sp_save+012
         move 1,pdp10_pi_level6
-        tlnn 1,010000
-        jrst pdp10_pi_level6_stack_ready
+        tlne 1,010000
         move 17,mach_kernel_sp
-pdp10_pi_level6_stack_ready:
         move 2,pdp10_pi_level_span+5
         movei 3,pdp10_pi_return_level6
 pdp10_pi_level6_dispatch_jump:
@@ -156,10 +146,8 @@ pdp10_pi_level7:
         movem 3,000057
         movem 17,pdp10_pi_sp_save+014
         move 1,pdp10_pi_level7
-        tlnn 1,010000
-        jrst pdp10_pi_level7_stack_ready
+        tlne 1,010000
         move 17,mach_kernel_sp
-pdp10_pi_level7_stack_ready:
         move 2,pdp10_pi_level_span+6
         movei 3,pdp10_pi_return_level7
 
@@ -225,7 +213,7 @@ pdp10_pi_return_level7:
         .bss
 /** Resident table of compact PI handler entry addresses. */
 pdp10_pi_handlers:
-        .block 015
+        .block PDP10_PI_HANDLER_CAPACITY
 /** Seven packed -count,,start dispatch spans, one per PI level. */
 pdp10_pi_level_span:
         .block 07
@@ -295,7 +283,6 @@ mach_pi_disable:
  * individual level-enable bits are never rewritten.
  */
 mach_pi_restore:
-        trnn 1,000200
-        popj 017,
+        trne 1,000200
         cono 0004,000200
         popj 017,

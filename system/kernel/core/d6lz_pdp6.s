@@ -15,10 +15,15 @@
  * different source file and machine-specific instructions without weakening
  * the PDP-6 baseline.
  *
- * No permanent decode buffer exists.  Each call reserves sixteen stack words:
+ * No permanent decode buffer exists.  Each call reserves seventy-two stack
+ * words:
  * six words save AC10..AC15, two words retain the vnode and file offset, and
- * eight words form the VFS refill window.  The output buffer itself is the LZ
- * history and must remain valid until decoding finishes.
+ * sixty-four words form the VFS refill window.  The output buffer itself is
+ * the LZ history and must remain valid until decoding finishes.  A 64-word
+ * window substantially reduces VFS/provider re-entry while leaving useful
+ * headroom in the process-private kernel stack.  A full 128-word block window
+ * was measured but rejected because its nested cold-read stack geometry is
+ * too close to the process kernel-stack limit.
  */
 
         .text
@@ -27,10 +32,14 @@
         .globl vfs_read_words
 
 /** Number of compressed words fetched per VFS refill. */
-        .equ D6LZ_VFS_WINDOW,010
-
-/** Two persistent VFS words plus the eight-word refill window. */
-        .equ D6LZ_VFS_LOCALS,012
+        .equ D6LZ_VFS_WINDOW,0100
+/** Complete frame: six saved ACs, two persistent words, and the input window. */
+        .equ D6LZ_VFS_FRAME,D6LZ_VFS_WINDOW+010
+        .equ D6LZ_VFS_SAVE_FIRST,1-D6LZ_VFS_FRAME
+        .equ D6LZ_VFS_SAVE_LAST,6-D6LZ_VFS_FRAME
+        .equ D6LZ_VFS_VNODE,7-D6LZ_VFS_FRAME
+        .equ D6LZ_VFS_OFFSET,010-D6LZ_VFS_FRAME
+        .equ D6LZ_VFS_INPUT,011-D6LZ_VFS_FRAME
 
 /**
  * @brief Decode one exactly framed D6LZ36 VFS payload into memory.
@@ -47,7 +56,7 @@
  *
  * AC10..AC15 are callee-saved and restored before return.  AC0..AC7 may be
  * clobbered according to the normal kernel ABI.  AC17 is the pushdown pointer;
- * this routine advances it by sixteen words for the complete frame and
+ * this routine advances it by D6LZ_VFS_FRAME words for the complete frame and
  * restores it exactly before POPJ.
  *
  * The low-core decoder owns resumable state in AC10..AC14.  AC15 holds the
@@ -60,12 +69,12 @@
  */
 d6lz36_decode_vfs:
         ; Reserve the whole frame once and save AC10..AC15 with one BLT.
-        add     17,[020,,020]
-        movei   0,-017(17)
+        add     17,[D6LZ_VFS_FRAME,,D6LZ_VFS_FRAME]
+        movei   0,D6LZ_VFS_SAVE_FIRST(17)
         hrli    0,010
-        blt     0,-012(17)
-        movem   1,-011(17)              ; vnode
-        movem   2,-010(17)              ; current file offset
+        blt     0,D6LZ_VFS_SAVE_LAST(17)
+        movem   1,D6LZ_VFS_VNODE(17)    ; vnode
+        movem   2,D6LZ_VFS_OFFSET(17)   ; current file offset
         hlrz    13,4                    ; output words remaining
         hrrz    12,4                    ; current output address
         move    14,12                   ; output base
@@ -76,19 +85,19 @@ d6lz36_decode_vfs:
 
 d6lz_vfs_refill:
         jumpe   15,d6lz_vfs_error       ; core requested data past EOF
-        move    1,-011(17)              ; vnode
-        move    2,-010(17)              ; file offset
-        movei   3,-07(17)               ; eight-word input window
+        move    1,D6LZ_VFS_VNODE(17)    ; vnode
+        move    2,D6LZ_VFS_OFFSET(17)   ; file offset
+        movei   3,D6LZ_VFS_INPUT(17)    ; refill window
         movei   4,D6LZ_VFS_WINDOW
         caige   15,D6LZ_VFS_WINDOW
         move    4,15                    ; final short window
         pushj   17,vfs_read_words
         jumpe   1,d6lz_vfs_error
         sub     15,1                    ; words still unread from file
-        addm    1,-010(17)              ; advance file offset
+        addm    1,D6LZ_VFS_OFFSET(17)   ; advance file offset
 
         move    4,1                    ; source-window words returned
-        movei   3,-07(17)
+        movei   3,D6LZ_VFS_INPUT(17)
         pushj   17,d6lz36_decode_core
         jumpe   0,d6lz_vfs_success
         jumpl   0,d6lz_vfs_error
@@ -103,9 +112,9 @@ d6lz_vfs_success:
 d6lz_vfs_error:
         seto    1,
 d6lz_vfs_return:
-        movei   0,-017(17)
+        movei   0,D6LZ_VFS_SAVE_FIRST(17)
         hrl     0,0
         hrri    0,010
         blt     0,015                   ; restore AC10..AC15
-        sub     17,[020,,020]
+        sub     17,[D6LZ_VFS_FRAME,,D6LZ_VFS_FRAME]
         popj    17,

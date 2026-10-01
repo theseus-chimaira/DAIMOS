@@ -12,9 +12,16 @@
         .globl  s6rec_text_validate
         .globl  kret_neg1
 
-; AC1=record base, AC2=supplied word count.
-; Return AC1=character count and AC2=POINT 6 pointer at first payload word.
-; Return AC1=-1 on malformed type/length.  AC3..AC6 are scratch.
+/**
+ * @brief Validate one complete S6REC TEXT frame for word-device output.
+ * @param AC1 Address of the first record word.
+ * @param AC2 Supplied record length in 36-bit words.
+ * @return AC1 Character count on success, or -1 for malformed type/length.
+ * @return AC2 POINT 6 byte pointer to the first payload word on success.
+ *
+ * AC3..AC6 are scratch.  The routine accepts exactly one TEXT record: the
+ * supplied word count must match the character count encoded in its header.
+ */
 s6rec_text_validate:
         move    6,1
         move    3,(1)

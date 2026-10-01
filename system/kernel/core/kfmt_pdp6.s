@@ -9,8 +9,15 @@
         .text
         .globl  kfmt_u18_sixbit
 
-; Input AC1=value 0..0777777. Return AC1=left-aligned packed SIXBIT decimal,
-; AC2=character count 1..6.
+/**
+ * @brief Format one unsigned 18-bit value as packed SIXBIT decimal.
+ * @param AC1 Unsigned input value in the range 0..0777777.
+ * @return AC1 Left-aligned packed SIXBIT decimal digits.
+ * @return AC2 Character count in the range 1..6.
+ *
+ * AC3..AC7 are scratch.  The result fits in one 36-bit word and is intended
+ * for callers which immediately wrap it in their own S6REC framing.
+ */
 kfmt_u18_sixbit:
         jumpn   1,kfmt_u18_nonzero
         move    1,[0200000000000]      ; SIXBIT "0"

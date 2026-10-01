@@ -18,6 +18,8 @@
         .extern module_dynamic_bindings
         .extern pdp10_pi_handlers
 
+        .equ PDP10_PI_HANDLER_CAPACITY,010
+
 ; Persistent registers while the move is in progress:
 ; 10 owner, 11 new base, 12 total words, 13 old base,
 ; 14 image words, 15 initialized words, 16 saved descriptor.
@@ -112,7 +114,7 @@ module_runtime_dynamic_loop:
 module_runtime_dynamic_done:
 
         movei   5,pdp10_pi_handlers
-        movei   6,015
+        movei   6,PDP10_PI_HANDLER_CAPACITY
 module_runtime_pi_loop:
         move    1,5
         pushj   17,module_runtime_retarget_asm

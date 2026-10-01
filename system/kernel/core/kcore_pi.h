@@ -4,8 +4,9 @@
  *
  * The PDP-6 exposes seven hardware PI levels.  KCORE owns the resident
  * dispatcher and handler table; MINIT constructs the compact per-level spans
- * once during boot and runtime module management may later retarget handler
- * addresses without changing the dispatcher ABI.
+ * during boot.  Runtime movable-module relocation is deliberately deferred;
+ * the current resident PI table is fixed after MINIT has installed the active
+ * hardware configuration.
  *
  * A span word is encoded as -count,,start.  The left half is the negative
  * number of handlers registered for that level and the right half is the
@@ -25,8 +26,16 @@
 /** Highest valid architectural PI level number. */
 #define PDP10_PI_LEVEL_MAX           7U
 
-/** Maximum number of resident PI handlers across all levels. */
-#define PDP10_PI_HANDLER_CAPACITY    13U
+/**
+ * Maximum resident PI handlers in the supported PDP-6 configuration.
+ *
+ * The complete current hardware set needs eight simultaneous handlers: CTY,
+ * DCS, GE, one PI6 entry (CLK alone, or the combined DPY+CLK handler when DPY
+ * is installed), the normal and DCT storage-router handlers, DRM, and SLV.
+ * PTR/PTP and CR/CP use synchronous polled runtime I/O and install no resident
+ * handler.
+ */
+#define PDP10_PI_HANDLER_CAPACITY    8U
 
 /** Convert architectural PI level 1..7 to its CONO/CONI enable-mask bit. */
 #define PDP10_PI_MASK(level)         (0200U >> (level))

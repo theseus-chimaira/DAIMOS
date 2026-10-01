@@ -19,10 +19,11 @@
  * TTY owns cooked/raw character semantics, paper tape owns its byte count,
  * and card I/O owns its 80-column record boundary.
  *
- * The helpers are static inline and width-specialized.  There is no generic
- * width argument, division, modulo, or shared KCORE routine in the hot path.
- * Assembly drivers may implement the same layout directly with fixed shifts
- * or byte pointers; this header is the authoritative source-level contract.
+ * There is deliberately no callable or inline reference codec here.  The
+ * hardware-facing assembly drivers implement these fixed layouts directly,
+ * avoiding duplicate source implementations and any generic runtime width
+ * selection.  The constants below are the authoritative source-level layout
+ * contract for C code which needs to describe the formats.
  */
 #ifndef DAIMON_WORDTOKEN_H
 #define DAIMON_WORDTOKEN_H
@@ -52,146 +53,5 @@
 #define WORDTOKEN12_MASK         07777U
 #define WORDTOKEN12_FIRST_SHIFT  24
 #define WORDTOKEN12_PAD_BITS     0U
-
-/**
- * Sequential fixed-width packer state.
- *
- * Call the width-specific begin function before the first token.  Each put
- * stores one token and returns nonzero after the final slot has been filled.
- * TOKEN must already fit the selected width; keeping validation at the caller
- * avoids an extra mask/branch in hardware and text hot loops.
- */
-struct wordtoken_pack {
-        kword_t word;
-        int shift;
-};
-
-static inline int
-wordtoken6_valid(unsigned int token)
-{
-        return token <= WORDTOKEN6_MASK;
-}
-
-static inline int
-wordtoken7_valid(unsigned int token)
-{
-        return token <= WORDTOKEN7_MASK;
-}
-
-static inline int
-wordtoken8_valid(unsigned int token)
-{
-        return token <= WORDTOKEN8_MASK;
-}
-
-static inline int
-wordtoken12_valid(unsigned int token)
-{
-        return token <= WORDTOKEN12_MASK;
-}
-
-static inline void
-wordtoken6_begin(struct wordtoken_pack *pack)
-{
-        pack->word = 0UL;
-        pack->shift = WORDTOKEN6_FIRST_SHIFT;
-}
-
-static inline int
-wordtoken6_put(struct wordtoken_pack *pack, unsigned int token)
-{
-        pack->word |= (kword_t)token << pack->shift;
-        pack->shift -= (int)WORDTOKEN6_BITS;
-        return pack->shift < 0;
-}
-
-static inline unsigned int
-wordtoken6_take(kword_t *word)
-{
-        unsigned int token;
-
-        token = (unsigned int)((*word >> WORDTOKEN6_FIRST_SHIFT) &
-            WORDTOKEN6_MASK);
-        *word <<= WORDTOKEN6_BITS;
-        return token;
-}
-
-static inline void
-wordtoken7_begin(struct wordtoken_pack *pack)
-{
-        pack->word = 0UL;
-        pack->shift = WORDTOKEN7_FIRST_SHIFT;
-}
-
-static inline int
-wordtoken7_put(struct wordtoken_pack *pack, unsigned int token)
-{
-        pack->word |= (kword_t)token << pack->shift;
-        pack->shift -= (int)WORDTOKEN7_BITS;
-        return pack->shift < 0;
-}
-
-static inline unsigned int
-wordtoken7_take(kword_t *word)
-{
-        unsigned int token;
-
-        token = (unsigned int)((*word >> WORDTOKEN7_FIRST_SHIFT) &
-            WORDTOKEN7_MASK);
-        *word <<= WORDTOKEN7_BITS;
-        return token;
-}
-
-static inline void
-wordtoken8_begin(struct wordtoken_pack *pack)
-{
-        pack->word = 0UL;
-        pack->shift = WORDTOKEN8_FIRST_SHIFT;
-}
-
-static inline int
-wordtoken8_put(struct wordtoken_pack *pack, unsigned int token)
-{
-        pack->word |= (kword_t)token << pack->shift;
-        pack->shift -= (int)WORDTOKEN8_BITS;
-        return pack->shift < 0;
-}
-
-static inline unsigned int
-wordtoken8_take(kword_t *word)
-{
-        unsigned int token;
-
-        token = (unsigned int)((*word >> WORDTOKEN8_FIRST_SHIFT) &
-            WORDTOKEN8_MASK);
-        *word <<= WORDTOKEN8_BITS;
-        return token;
-}
-
-static inline void
-wordtoken12_begin(struct wordtoken_pack *pack)
-{
-        pack->word = 0UL;
-        pack->shift = WORDTOKEN12_FIRST_SHIFT;
-}
-
-static inline int
-wordtoken12_put(struct wordtoken_pack *pack, unsigned int token)
-{
-        pack->word |= (kword_t)token << pack->shift;
-        pack->shift -= (int)WORDTOKEN12_BITS;
-        return pack->shift < 0;
-}
-
-static inline unsigned int
-wordtoken12_take(kword_t *word)
-{
-        unsigned int token;
-
-        token = (unsigned int)((*word >> WORDTOKEN12_FIRST_SHIFT) &
-            WORDTOKEN12_MASK);
-        *word <<= WORDTOKEN12_BITS;
-        return token;
-}
 
 #endif
