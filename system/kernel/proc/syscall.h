@@ -57,6 +57,7 @@
 #define SYS_EXT_CHOWN              033U
 #define SYS_EXT_RMDIR              034U
 #define SYS_EXT_UTIME              035U
+#define SYS_EXT_SLEEP              036U
 #define SYS_EXT_DTC_READ_BLOCK     040U
 #define SYS_EXT_TSFS_MOUNT         041U
 #define SYS_EXT_D6FS_MOUNT         042U
@@ -157,6 +158,10 @@
 #define SYS_EVENT_ARG_MASK \
         (SYS_EVENT_TARGET_MASK | (SYS_EVENT_CODE_MASK << SYS_EVENT_CODE_SHIFT))
 #define SYS_EVENT_BIT(event)      (1U << (event))
+
+/* Monotonic sleep uses the APR 60 Hz scheduler clock.  One scheduler-RH bit
+ * tags timed waits, leaving a 17-bit modulo deadline (~36 minutes at 60 Hz). */
+#define SYS_SLEEP_TICKS_MAX       0377777U
 
 #define SYS_RUN_VERSION_2         2U
 #define SYS_RUN_V2_FIXED_WORDS    6U

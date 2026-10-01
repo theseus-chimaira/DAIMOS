@@ -27,6 +27,7 @@
         .globl  proc_wait_status
         .globl  proc_control
         .globl  proc_rt_control
+        .globl  proc_sleep_ticks
         .globl  proc_tty_read_enter
         .globl  proc_tty_input
         .globl  proc_tty_line_take
@@ -300,6 +301,14 @@ native_sys_dtfs_format:
 
 native_sys_dtfs_mount:
         ; AC1 device path, AC2 mount path, AC3 flags.
+        push    17,1
+        push    17,2
+        push    17,3
+        pushj   17,file_check_root
+        jumpn   1,native_sys_dtfs_mount_denied
+        pop     17,3
+        pop     17,2
+        pop     17,1
         push    17,2                    ; preserve mount path
         push    17,3                    ; preserve flags
         pushj   17,native_sys_dtc0_path
@@ -325,11 +334,21 @@ native_sys_dtfs_mount_bad2:
         pop     17,0
         pop     17,0
         jrst    %L137
+native_sys_dtfs_mount_denied:
+        sub     17,[3,,3]
+        jrst    kret_neg1
 
 native_sys_unmount:
+        push    17,1
+        pushj   17,file_check_root
+        jumpn   1,native_sys_unmount_denied
+        pop     17,1
         pushj   17,native_sys_lookup_user_path
         jumpe   1,%L137
         jrst    vfs_unmount
+native_sys_unmount_denied:
+        pop     17,0
+        jrst    kret_neg1
 
 native_sys_flock:
         hrrz    1,1
@@ -428,12 +447,11 @@ native_sys_ext_table:
         .word   native_sys_procctl,,native_sys_procctl
         .word   native_sys_seek,,native_sys_chown
         .word   native_sys_rmdir,,native_sys_utime
-        .word   native_sys_procctl,,native_sys_procctl
+        .word   native_sys_sleep,,native_sys_procctl
         .word   native_sys_dtc_read_block,,native_sys_tsfs_mount
         .word   native_sys_d6fs_mount,,native_sys_rtctl
         .word   native_sys_logctl,,native_sys_dtc_write_block
-        .word   native_sys_memfs_mount,,native_sys_procctl
-        .word   native_sys_storagectl,,native_sys_procctl
+        .word   native_sys_memfs_mount,,native_sys_storagectl
 
 ; PID-1/root storage activation policy.  Discovery and module installation
 ; remain boot work; this call only enables or disables an available service.
@@ -753,9 +771,13 @@ native_sys_mount_handoff:
         push    17,6                     ; provider
         push    17,2                     ; user handoff
         push    17,4                     ; mount flags
-        move    1,3                     ; resolve target before retaining map
+        push    17,3                     ; target path survives root check
+        pushj   17,file_check_root
+        jumpn   1,native_sys_mount_handoff_denied5
+        move    1,(17)                   ; resolve target before retaining map
         pushj   17,native_sys_lookup_user_path
-        jumpe   1,native_sys_mount_handoff_bad4
+        jumpe   1,native_sys_mount_handoff_denied5
+        pop     17,0                     ; discard saved target path
         push    17,1                     ; target vnode
         ; Validate the mount point before fs_provider_reg_call takes the
         ; serialized filesystem-provider lock.  Provider MOUNT_UNIT may call
@@ -804,6 +826,9 @@ native_sys_mount_handoff_bad5:
         jrst    kret_neg1
 native_sys_mount_handoff_bad4:
         sub     17,[4,,4]
+        jrst    kret_neg1
+native_sys_mount_handoff_denied5:
+        sub     17,[5,,5]
         jrst    kret_neg1
 
 native_sys_dup2:
@@ -858,9 +883,22 @@ native_sys_utime_fail:
         sub     17,[1,,1]
         jrst    kret_neg1
 
+native_sys_sleep:
+        hrrz    1,2
+        jrst    proc_sleep_ticks
+
 native_sys_rtctl:
         hrrz    1,2
+        caie    1,1                    ; only ENABLE acquires RT privilege
         jrst    proc_rt_control
+        push    17,1
+        pushj   17,file_check_root
+        jumpn   1,native_sys_rtctl_denied
+        pop     17,1
+        jrst    proc_rt_control
+native_sys_rtctl_denied:
+        pop     17,0
+        jrst    kret_neg1
 
 native_sys_procctl:
         hrrz    2,2
@@ -903,6 +941,8 @@ native_sys_putchar:
 native_sys_putchar_call:
         jrst    kret_neg1
 %L136:
+        pushj   17,file_check_root
+        jumpn   1,kret_neg1
         pushj   17,fs_memfs_shutdown
         jumpn   1,kret_neg1
         halt    .

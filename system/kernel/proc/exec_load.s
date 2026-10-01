@@ -31,6 +31,7 @@
         .globl  exec_load_process
         .globl  file_lookup_path
         .globl  file_check_access
+        .globl  file_check_root
         .globl  vfs_stat
         .globl  vfs_read_words
         .globl  vm_space_create
@@ -146,6 +147,8 @@ exec_load_read_header:
         jrst    exec_load_fail
         trnn    15,0400000              ; RT_REQUIRED
         jrst    exec_load_header_shape
+        pushj   17,file_check_root       ; RT-required admission is privileged
+        jumpn   1,exec_load_fail
         skipn   0,proc_rt_owner
         jrst    exec_load_rt_claim
         came    0,11                    ; owner may replace its own image

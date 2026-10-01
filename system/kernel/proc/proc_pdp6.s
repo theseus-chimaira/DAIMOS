@@ -25,6 +25,10 @@
         .equ    PROC_CPU_SLEEP_LH_MASK,017700
         .equ    PROC_SCHED_QUANTUM_TICKS,4
         .equ    PROC_TRANSITION_RH,0200000
+        .equ    PROC_TIMER_ACTIVE_LH,0400000
+        .equ    PROC_TIMER_DUE_LH,0200000
+        .equ    PROC_TIMER_TAG_RH,0400000
+        .equ    PROC_TIMER_CLOCK_MASK,0377777
         .equ    PROC_FILE_TABLE_OFFSET,047
         .equ    PROC_CRED_OFFSET,0107
         .equ    PROC_UMASK_OFFSET,0110
@@ -50,6 +54,7 @@
         .globl  mach_kernel_stack_base
         .globl  proc_wait_event
         .globl  proc_wait_event_intr
+        .globl  proc_sleep_ticks
         .globl  proc_wait_child
         .globl  proc_wakeup_event
         .globl  proc_sched_pi_tick
@@ -58,6 +63,8 @@
         .globl  proc_sched_pi_resched
         .globl  proc_sched_kick
         .globl  proc_rt_owner
+        .globl  proc_timer_clock
+        .globl  proc_timer_next
         .globl  proc_sched_resched_current
         .globl  proc_swap_service_one
         .globl  proc_record_kernel_sp
@@ -383,7 +390,8 @@ proc_event_send:
         move    013,045(4)             ; caller session/domain control word
         jumpn   3,proc_event_send_group
 
-; PID delivery: target must be live, u-area resident, and in caller's domain.
+; PID delivery: target must be live, u-area resident, in caller's domain, and
+; owned by the caller unless the caller is UID 0.
         caml    010,proc_slots
         jrst    proc_event_send_fail
         move    3,010
@@ -397,6 +405,8 @@ proc_event_send:
         trnn    4,0400000               ; resident u-area flag
         jrst    proc_event_send_fail
         hlrz    4,(3)
+        pushj   17,proc_event_uid_check
+        jumpn   1,proc_event_send_fail
         move    5,045(4)
         xor     5,013
         tdne    5,[01774000]            ; domain differs
@@ -405,8 +415,9 @@ proc_event_send:
         move    2,011
         jrst    proc_event_send_apply_tail
 
-; Group delivery requires both session and domain to match.  AC14 LH bit 0
-; records any match and bit 1 records a deferred self-delivery; RH is slot.
+; Group delivery requires session/domain scope and the same UID/root rule as
+; PID delivery.  AC14 LH bit 0 records any match and bit 1 records a deferred
+; self-delivery; RH is slot.
 proc_event_send_group:
         movei   014,1
 proc_event_send_group_loop:
@@ -428,6 +439,8 @@ proc_event_send_group_loop:
         came    4,010
         jrst    proc_event_send_group_next
         hlrz    4,(3)
+        pushj   17,proc_event_uid_check
+        jumpn   1,proc_event_send_group_next
         move    5,045(4)
         xor     5,013
         tdne    5,[01777770]
@@ -472,6 +485,23 @@ proc_event_send_return:
         blt     0,014
         sub     17,[5,,5]
         popj    17,
+
+; AC4 is the target u-area base.  Permit event delivery when the caller is
+; root or when caller and target effective UIDs match.  Preserve AC4 because
+; the caller immediately uses it for target session/domain state.
+proc_event_uid_check:
+        move    2,proc_current_slot
+        move    3,2
+        lsh     3,1
+        add     3,2
+        add     3,proc_table
+        hlrz    3,(3)
+        hlrz    2,0107(3)              ; caller UID
+        jumpe   2,kret_zero            ; UID 0 may administer all users
+        hlrz    5,0107(4)              ; target UID
+        camn    2,5
+        jrst    kret_zero
+        jrst    kret_neg1
 
 ; int proc_has_live_user(void)
 ; Return true as soon as a non-FREE/non-ZOMB user descriptor is found.  The
@@ -1474,6 +1504,63 @@ proc_tty_pending_store:
         jrst    kret_zero
 
 /**
+ * @brief Sleep the current process for AC1 monotonic 60 Hz ticks.
+ *
+ * The deadline lives in sched RH while the process is asleep. RH bit 17 tags
+ * it as a timer rather than a real kernel event pointer; permanent kernel
+ * addresses live below that range. proc_timer_next keeps only the nearest
+ * deadline, so ordinary clock ticks do not scan the process table.
+ */
+proc_sleep_ticks:
+        hrrz    1,1
+        jumpe   1,kret_zero
+        move    4,1                    ; requested ticks survives runq removal
+        move    1,proc_current_slot
+        jumpe   1,kret_neg1
+        pushj   17,proc_runq_remove
+
+        move    2,proc_current_slot
+        move    3,2
+        lsh     3,1
+        add     3,2
+        add     3,proc_table            ; current descriptor
+        hrrz    1,proc_timer_clock
+        andi    1,PROC_TIMER_CLOCK_MASK
+        add     4,1
+        andi    4,PROC_TIMER_CLOCK_MASK ; wrapped 17-bit deadline
+        move    5,2(3)
+        tlz     5,PROC_WAIT_LH_MASK
+        tlo     5,PROC_WAIT_EVENT_LH
+        tlz     5,PROC_STATE_LH_MASK
+        tlo     5,PROC_STATE_SLEEP
+        movem   5,2(3)
+        move    6,4
+        ori     6,PROC_TIMER_TAG_RH
+        hrrm    6,2(3)
+
+        skipn   5,proc_timer_next
+        jrst    proc_sleep_set_next
+        tlne    5,PROC_TIMER_DUE_LH
+        jrst    proc_sleep_resched
+        hrrz    6,5                    ; old deadline distance
+        sub     6,1
+        andi    6,PROC_TIMER_CLOCK_MASK
+        move    7,4                    ; new deadline distance
+        sub     7,1
+        andi    7,PROC_TIMER_CLOCK_MASK
+        camge   7,6                    ; replace only when new is nearer
+        jrst    proc_sleep_set_next
+        jrst    proc_sleep_resched
+proc_sleep_set_next:
+        move    5,4
+        hrli    5,PROC_TIMER_ACTIVE_LH
+        movem   5,proc_timer_next
+proc_sleep_resched:
+        setom   proc_sched_kick
+        cono    0004,004002
+        jrst    kret_zero
+
+/**
  * @brief Sleep on a kernel event, optionally allowing ALRM interruption.
  * @param AC1 Event-word address.
  *
@@ -1867,6 +1954,22 @@ proc_sched_resched_choose:
 ; cleared.  User code is preemptible.  Ordinary executive code is not; only a
 ; process which explicitly sleeps can be switched while in the kernel.
 proc_sched_pi_tick:
+        ; Maintain the compact 18-bit monotonic epoch used by SYS_EXT_SLEEP.
+        ; proc_timer_next carries ACTIVE in LH bit 400000, DUE in LH bit
+        ; 200000, and the next deadline in RH.  The process table is scanned
+        ; only after the exact frontier tick becomes due.
+        aos     1,proc_timer_clock
+        skipn   2,proc_timer_next
+        jrst    proc_sched_timer_done
+        tlne    2,PROC_TIMER_DUE_LH
+        jrst    proc_sched_timer_done
+        hrrz    1,1
+        hrrz    2,2
+        came    1,2
+        jrst    proc_sched_timer_done
+        movsi   2,PROC_TIMER_DUE_LH
+        iorm    2,proc_timer_next
+proc_sched_timer_done:
 .if PROC_STACK_WATERMARK
         skipn   proc_current_slot
         pushj   17,kernel_idle_stack_watermark_scan
@@ -1875,6 +1978,9 @@ proc_sched_pi_tick:
         jrst    proc_sched_tick_idle
         jrst    proc_sched_tick_ready
 proc_sched_tick_idle:
+        move    1,proc_timer_next
+        tlne    1,PROC_TIMER_DUE_LH
+        jrst    proc_sched_select
         move    1,proc_sched_cursor
         trne    1,0400                  ; do not preempt slot-0 swap I/O
         popj    17,
@@ -1891,9 +1997,17 @@ proc_sched_tick_ready:
         move    2,proc_rt_owner
         camn    2,proc_current_slot
         popj    17,                     ; RT owner: clock runs, no quantum switch
+        move    2,proc_timer_next
+        tlne    2,PROC_TIMER_DUE_LH
+        jrst    proc_sched_timer_quantum
         move    2,proc_sched_deferred_ticks
         caige   2,PROC_SCHED_QUANTUM_TICKS
         jrst    proc_sched_tick_fast_return
+        jrst    proc_sched_timer_save_user
+proc_sched_timer_quantum:
+        movei   2,PROC_SCHED_QUANTUM_TICKS
+        movem   2,proc_sched_deferred_ticks
+proc_sched_timer_save_user:
         pushj   17,proc_save_user
         jrst    proc_sched_select
 proc_sched_tick_fast_return:
@@ -1913,6 +2027,7 @@ proc_sched_exec_switch:
         ; clk_pi_service consumes that request before arriving here.
         pushj   17,proc_save_kernel
 proc_sched_select:
+        pushj   17,proc_timer_service
         pushj   17,proc_sched_tick_select
 proc_sched_restore_selected:
         movem   1,proc_current_slot
@@ -1921,6 +2036,94 @@ proc_sched_restore_selected:
         skipn   CTX_K_PC(1)
         jrst    proc_restore_user
         jrst    proc_restore_kernel
+
+; Service the due timer frontier after the interrupted process context has
+; already been saved (or while slot 0 is idle).  AC0..AC7 are therefore free
+; scratch here.  Expired stopped jobs lose only their timer wait; CONT still
+; decides when they become runnable.
+proc_timer_service:
+        move    7,proc_timer_next
+        tlne    7,PROC_TIMER_DUE_LH
+        jrst    proc_timer_service_active
+        popj    17,
+proc_timer_service_active:
+        hrrz    7,7                    ; frontier deadline
+        hrrz    6,proc_timer_clock     ; current monotonic tick
+        move    5,6
+        sub     5,7
+        andi    5,0777777              ; ticks elapsed since frontier
+        setz    4,                     ; best future delta, zero = none
+        movei   1,1
+        move    2,proc_table
+        addi    2,PROC_WORDS
+proc_timer_service_loop:
+        caml    1,proc_high_slot
+        jrst    proc_timer_service_done
+        move    0,(2)
+        trnn    0,0400000              ; no resident u-area -> no timer marker
+        jrst    proc_timer_service_next
+        hlrz    3,0                    ; AC0 cannot be an index register
+        move    0,045(3)
+        trnn    0,04                    ; PROC_TIMER_WAIT_BIT
+        jrst    proc_timer_service_next
+        hrrz    3,2(2)                 ; process deadline
+        move    0,3
+        sub     0,7
+        andi    0,0777777
+        camle   0,5                    ; deadline passed since frontier?
+        jrst    proc_timer_service_future
+
+        move    0,(2)
+        hlrz    3,0                    ; use AC3 as the nonzero u-area index
+        move    0,045(3)
+        trz     0,04
+        movem   0,045(3)
+        move    3,2(2)
+        hlrz    0,3
+        andi    0,PROC_STATE_LH_MASK
+        tlz     3,PROC_WAIT_LH_MASK
+        hllz    3,3                    ; clear deadline/wait channel
+        tlz     3,PROC_CPU_SLEEP_LH_MASK
+        caie    0,PROC_STATE_SLEEP
+        jrst    proc_timer_service_store
+        tlz     3,PROC_STATE_LH_MASK
+        tlo     3,PROC_STATE_RUN
+        movem   3,2(2)
+        pushj   17,proc_runq_add
+        hrrz    6,proc_timer_clock     ; runq helper clobbers AC5/AC6
+        move    5,6
+        sub     5,7
+        andi    5,0777777
+        jrst    proc_timer_service_next
+proc_timer_service_store:
+        movem   3,2(2)
+        jrst    proc_timer_service_next
+
+proc_timer_service_future:
+        move    0,3
+        sub     0,6
+        andi    0,0777777
+        jumpe   4,proc_timer_service_best
+        camge   0,4
+        jrst    proc_timer_service_best
+        jrst    proc_timer_service_next
+proc_timer_service_best:
+        move    4,0
+proc_timer_service_next:
+        addi    2,PROC_WORDS
+        aoja    1,proc_timer_service_loop
+
+proc_timer_service_done:
+        jumpe   4,proc_timer_service_none
+        move    1,6
+        add     1,4
+        andi    1,0777777
+        hrli    1,PROC_TIMER_ACTIVE_LH
+        movem   1,proc_timer_next
+        popj    17,
+proc_timer_service_none:
+        setzm   proc_timer_next
+        popj    17,
 
 proc_idle_loop:
         ; Disk-backed swap-in must never run in PI context.  The scheduler
@@ -1936,6 +2139,10 @@ proc_idle_wait:
         jrst    proc_idle_loop
 
         .bss
+proc_timer_clock:
+        .block 1
+proc_timer_next:
+        .block 1
 .if KINIT_STACK_WATERMARK
         .globl  kinit_stack_highwater
 .endif

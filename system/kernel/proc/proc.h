@@ -23,6 +23,7 @@
  */
 #define PROC_MAX_SLOTS       256U
 #define PROC_MIN_SLOTS        24U
+#define PROC_ROOT_RESERVED_SLOTS 2U
 #define PROC_WORDS             3U
 #define PROC_NO_SLOT         0400U
 #define PROC_SCHED_SWAP_REQUEST 0400UL
@@ -103,7 +104,7 @@
  * ordinary two-word FILE records.  Credentials and the 9-bit process umask
  * follow the descriptor table; the umask consumes the former first kernel-stack
  * word so the fixed 0420-word u-area does not grow.  Low bit 0 carries the pipe
- * event, bit 1 marks a live direct user mapping, and bit 2 remains spare.
+ * event and bit 1 marks a live direct user mapping.
  * Session and domain IDs share this already-resident word; process-group ID
  * lives in meta RH so it survives after EXIT releases the u-area and group WAIT can
  * reap zombies.
@@ -123,6 +124,8 @@
 /* Event 7 uses one spare low control-word bit; events 0..6 stay packed. */
 #define PROC_PIPE_EVENT_BIT            01UL
 #define PROC_USER_MAP_BIT              02UL
+#define PROC_TIMER_TAG_RH            0400000UL
+#define PROC_TIMER_CLOCK_MASK         0377777UL
 #define PROC_STOP_MASK              03UL
 #define PROC_STOP_SHIFT              26U
 #define PROC_STOP_JOB                01U
@@ -179,6 +182,8 @@ extern kword_t proc_sched_cursor;
 extern kword_t proc_sched_deferred_ticks;
 extern kword_t proc_runq_head;
 extern kword_t proc_rt_owner;
+extern kword_t proc_timer_clock;
+extern kword_t proc_timer_next;
 extern kword_t mach_kernel_stack_base;
 
 /** Allocate and initialize the runtime-sized process and swap tables. */
@@ -222,6 +227,7 @@ unsigned int proc_sched_resched_select(void);
 int proc_nice_value(int slot);
 int proc_nice_current(int value);
 int proc_rt_control(unsigned int command);
+int proc_sleep_ticks(unsigned int ticks);
 int proc_swap_victim(unsigned int exclude_owner);
 /** Allocate a stable u-area and seed the initial user/kernel context. */
 int proc_user_context_init(unsigned int slot, kword_t entry, kword_t stack,

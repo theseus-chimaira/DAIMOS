@@ -45,6 +45,7 @@
         .globl dsys_logctl
         .globl dsys_storagectl
         .globl dsys_utime
+        .globl dsys_sleep
         .globl dsys_rmdir
         .globl dsys_chown
         .globl dsys_dtc_read_block
@@ -156,6 +157,10 @@ dsys_rmdir:            move 2,1
 dsys_utime:            move 3,2
                        move 2,1
                        movei 1,035
+                       uuo 077,0(1)
+                       popj 17,
+dsys_sleep:            move 2,1
+                       movei 1,036
                        uuo 077,0(1)
                        popj 17,
         .globl dsys_mkfifo

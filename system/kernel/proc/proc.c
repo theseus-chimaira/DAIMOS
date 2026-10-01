@@ -531,6 +531,7 @@ int
 proc_nice_current(int value)
 {
         int slot;
+        int current;
         struct proc *p;
         unsigned int encoded;
 
@@ -540,12 +541,17 @@ proc_nice_current(int value)
         if (value > PROC_NICE_MAX)
                 value = PROC_NICE_MAX;
         p = &proc_table[slot];
+        current = (int)PROC_NICE_ENCODED(p) - (int)PROC_NICE_BIAS;
+        if (value < current && PROC_UID(p) != 0U)
+                return -1;
         encoded = (unsigned int)(value + (int)PROC_NICE_BIAS);
         p->sched = (p->sched &
             ~((kword_t)PROC_NICE_MASK << PROC_NICE_SHIFT)) |
             ((kword_t)encoded << PROC_NICE_SHIFT);
         return value;
 }
+
+
 
 
 /** Score the intrusive run queue and select the next resident runnable process. */
