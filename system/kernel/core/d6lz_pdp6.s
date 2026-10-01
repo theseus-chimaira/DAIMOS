@@ -1,13 +1,15 @@
 /**
  * @file d6lz_pdp6.s
- * @brief PDP-6 VFS frontend for the resident D6LZ36 decoder.
+ * @brief PDP-6 runtime frontends for the resident D6LZ36 decoder.
  *
  * D6LZ36 token decoding lives in the fixed low-core decoder from
  * system/stand/pdp6/common/decompressor.inc.  Stage1 installs that decoder at
  * 000060 and KCORE links the same image at the same address.  This file is the
- * resident filesystem-facing adapter: it reads compressed words through VFS,
- * feeds bounded source windows to the resumable low-core engine, and maps its
- * result to the kernel C calling convention.
+ * resident runtime adapter.  Filesystem EXEC loads use the refill entry, which
+ * reads compressed words through VFS in bounded windows.  Callers which already
+ * hold one complete compressed stream, such as TSFS restart extents, use the
+ * direct-buffer entry and therefore share the same state setup, exact-consume
+ * checks, and AC save/restore without paying VFS/provider overhead.
  *
  * The implementation is specifically PDP-6 code.  It assumes 18-bit address
  * halves, an AC17 pushdown stack, PDP-6 BLT semantics, and the fixed decoder
@@ -28,6 +30,7 @@
 
         .text
         .globl d6lz36_decode_vfs
+        .globl d6lz36_decode_buffer
         .globl d6lz36_decode_core
         .globl vfs_read_words
 
@@ -82,6 +85,7 @@ d6lz36_decode_vfs:
         jumpe   13,d6lz_vfs_error
         jumpe   12,d6lz_vfs_error
         setz    11,                     ; zero => load a control word
+        jumpe   1,d6lz_buffer_start     ; zero vnode marks direct-buffer entry
 
 d6lz_vfs_refill:
         jumpe   15,d6lz_vfs_error       ; core requested data past EOF
@@ -98,10 +102,33 @@ d6lz_vfs_refill:
 
         move    4,1                    ; source-window words returned
         movei   3,D6LZ_VFS_INPUT(17)
+d6lz_decode_window:
         pushj   17,d6lz36_decode_core
         jumpe   0,d6lz_vfs_success
         jumpl   0,d6lz_vfs_error
         jrst    d6lz_vfs_refill         ; +1 = NEED_INPUT
+
+/**
+ * @brief Decode one complete compressed buffer through the common runtime frame.
+ * @param AC2 Address of the first compressed D6LZ36 word.
+ * @param AC3 Exact compressed word count.
+ * @param AC4 Output-word-count,,destination-address.
+ * @return AC1 Zero on exact successful decode, or -1 on malformed/truncated
+ *         input, invalid geometry, or trailing compressed words.
+ *
+ * This assembly-only entry shares the VFS frontend's AC10..AC15 save frame and
+ * result checks.  It deliberately does not copy the source into the refill
+ * window: callers such as TSFS already own a stable in-memory extent buffer.
+ */
+d6lz36_decode_buffer:
+        setz    1,                      ; select direct source in common entry
+        jrst    d6lz36_decode_vfs
+
+d6lz_buffer_start:
+        move    3,2                     ; complete in-memory source
+        move    4,15                    ; exact compressed word count
+        setz    15,                     ; no unread VFS tail remains
+        jrst    d6lz_decode_window
 
 d6lz_vfs_success:
         jumpn   4,d6lz_vfs_error        ; exact compressed payload required

@@ -322,7 +322,7 @@ tsfs_readdir_pop:
 ; before return.
         .globl  mm_alloc
         .globl  mm_free
-        .globl  d6lz36_decode_core
+        .globl  d6lz36_decode_buffer
         .equ    TSFS_EXT_STORED,0
         .equ    TSFS_EXT_D6LZ,1
         .equ    TSFS_RESTART_WORDS,0400
@@ -448,27 +448,15 @@ tsfs_read_d6lz:
         pushj   17,mm_alloc
         sub     17,[1,,1]
         jumpn   1,tsfs_read_d6lz_drop
-        ; The fixed D6LZ core uses AC10..AC15 as resumable state.  Save our
-        ; read cursor/state as one six-word BLT block around the call.
-        add     17,[6,,6]
-        movei   0,-5(17)
-        hrli    0,010
-        blt     0,(17)
-        move    12,-6(17)
-        move    13,fs_block_workspace
-        move    14,12
-        movei   3,fs_block_workspace+2
-        move    4,fs_block_workspace+1
-        setz    11,
-        pushj   17,d6lz36_decode_core
-        move    7,0
-        movei   0,-5(17)
-        hrl     0,0
-        hrri    0,010
-        blt     0,015
-        sub     17,[6,,6]
-        jumpn   7,tsfs_read_d6lz_free
-        jumpn   4,tsfs_read_d6lz_free
+        ; The common runtime frontend owns decoder-state save/restore and exact
+        ; compressed-buffer consumption.  The allocation result lives in our
+        ; current stack word; pack its address with the decoded restart length.
+        movei   2,fs_block_workspace+2
+        move    3,fs_block_workspace+1
+        move    4,(17)
+        hrl     4,fs_block_workspace
+        pushj   17,d6lz36_decode_buffer
+        jumpn   1,tsfs_read_d6lz_free
         move    5,011
         andi    5,0377
         move    6,fs_block_workspace
