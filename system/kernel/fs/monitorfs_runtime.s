@@ -767,13 +767,13 @@ mfsproc_stat_dir:
         jrst    mfsproc_stat_store_zero
 mfsproc_stat_nonroot:
         jumpn   0,mfsproc_stat_domain
+        cain    5,030002               ; resolved process directory stays usable
+        jrst    mfsproc_stat_dir       ; even after the process has disappeared
         move    6,1                    ; preserve vnode across proc lookup
         hrrz    1,6
         andi    1,0377
         pushj   17,mfsproc_proc_ptr
         jumpe   1,kret_neg1
-        cain    5,030002
-        jrst    mfsproc_stat_dir
 mfsproc_stat_file:
         caie    5,030003
         jrst    kret_neg1
