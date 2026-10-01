@@ -285,7 +285,7 @@ proc_nice_current:
         hlrz    3,2(2)
         andi    3,077
         subi    3,024
-        camge   1,3
+        caml    1,3                    ; only a numerically lower nice needs root
         jrst    proc_nice_store
         hlrz    4,(2)
         hlrz    4,PROC_CRED_OFFSET(4)
