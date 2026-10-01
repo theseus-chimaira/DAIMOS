@@ -59,7 +59,7 @@ parse_uint(const char *s, unsigned int *vp)
                         return -1;
                 v = v * 10U + (unsigned int)(s[i] - '0');
         }
-        if (v > 0777777U)
+        if (v > 0777U)
                 return -1;
         *vp = v;
         return 0;

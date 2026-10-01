@@ -261,9 +261,9 @@ void proc_sched_pi_tick(void);
 #define PROC_UMASK(p) \
         ((unsigned int)(PROC_UAREA_WORD((p), PROC_UMASK_OFFSET) & 0777UL))
 #define PROC_UID(p) \
-        ((unsigned int)((PROC_CRED_WORD(p) >> 18U) & 0777777UL))
+        ((unsigned int)((PROC_CRED_WORD(p) >> 18U) & 0777UL))
 #define PROC_GID(p) \
-        ((unsigned int)(PROC_CRED_WORD(p) & 0777777UL))
+        ((unsigned int)(PROC_CRED_WORD(p) & 0777UL))
 #define PROC_SWAP_BACKING_WORD(p) \
         PROC_UAREA_WORD((p), PROC_SWAP_BACKING_OFFSET)
 #define PROC_USER_MAPPING_HELD(p) \

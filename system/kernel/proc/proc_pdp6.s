@@ -922,7 +922,7 @@ proc_control_getgid:
 proc_control_setuid:
 proc_control_setgid:
 proc_control_setcred:
-        caile   2,0777777
+        caile   2,0777                  ; UID/GID are 9-bit IDs
         jrst    kret_neg1
         hlrz    5,(4)
         move    6,PROC_CRED_OFFSET(5)

@@ -61,6 +61,7 @@ typedef kword_t vnode_t;
 #define VFS_NAME_MAX_CHARS   (VFS_NAME_WORDS * 6U)
 
 #define VFS_NMOUNT           4U
+#define VFS_ID_MASK          0777U
 #define VFS_MOUNT_RW         0U
 #define VFS_MOUNT_RDONLY     1U
 #define VFS_MOUNT_STORAGE_SWAP      020U

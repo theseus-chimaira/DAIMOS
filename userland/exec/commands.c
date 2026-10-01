@@ -297,7 +297,7 @@ cmd_uint_arg(const kword_t *arg, unsigned int *vp)
                 ch = (unsigned int)(((arg[wi] >> sh) & 077UL) + 040U);
                 if (ch < '0' || ch > '9') return -1;
                 v = v * 10U + (ch - '0');
-                if (v > 0777777U) return -1;
+                if (v > 0777U) return -1;
         }
         *vp = v;
         return 0;
