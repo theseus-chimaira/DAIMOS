@@ -633,43 +633,23 @@ dtfs_personality:
         xct     dtfs_personality_xct-1(2)
         popj    17,
 
-; Mount ownership is VFS policy, never DECtape media metadata.  Four mount
-; slots pack into two words, each halfword carrying UID9,,GID9.
-        .globl  dtfs_mount_owners
-        .globl  dtfs_set_mount_owner
-dtfs_set_mount_owner:
-        sojl    1,kret_neg1              ; public mount ids are 1..4
-        caile   1,3
-        jrst    kret_neg1
-        move    3,1
-        andi    3,1
-        lsh     1,-1
-        addi    1,dtfs_mount_owners
-        jumpn   3,dtfs_set_mount_owner_right
-        hrlm    2,(1)
-        jrst    kret_zero
-dtfs_set_mount_owner_right:
-        hrrm    2,(1)
-        jrst    kret_zero
+ ; Mount ownership is VFS policy, never DECtape media metadata.  The high
+; half of each dtfs_media word carries compact UID9,GID9 while its low half
+; remains the existing unit/personality value.
 
-        .globl  dtfs_mount_owner
-dtfs_mount_owner:
-        ldb     2,[POINT 6,1,11]
-        sojl    2,dtfs_mount_owner_zero
-        caile   2,3
-        jrst    dtfs_mount_owner_zero
-        move    3,2
-        andi    3,1
-        lsh     2,-1
-        addi    2,dtfs_mount_owners
-        jumpn   3,dtfs_mount_owner_right
-        hlrz    1,(2)
-        popj    17,
-dtfs_mount_owner_right:
-        hrrz    1,(2)
-        popj    17,
-dtfs_mount_owner_zero:
-        setz    1,
+; void dtfs_stat_owner(vnode, struct vfs_stat *st)
+; dtfs_media LH is compact UID9,,GID9 for the mount.
+        .globl  dtfs_stat_owner
+dtfs_stat_owner:
+        ldb     3,[POINT 6,1,11]        ; mount id 1..4
+        subi    3,1
+        hlrz    4,dtfs_media(3)         ; owner18
+        move    3,4
+        lsh     3,-011
+        andi    3,0777
+        movem   3,4(2)                  ; uid
+        andi    4,0777
+        movem   4,5(2)                  ; gid
         popj    17,
 
 ; Shared cached directory loader.  Mount-time userspace validation has already
@@ -709,7 +689,6 @@ dtfs_load_fail:
 ; Native-only build: packed media contains only the unit.
         .globl  dtfs_patch_media
 dtfs_patch_media:
-        andi    2,7
         movem   2,dtfs_media-1(1)
         pushj   17,bcache_reclaim
         popj    17,

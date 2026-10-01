@@ -216,6 +216,8 @@ tsfs_parent_name_pop:
         pop     17,010
         popj    17,
 ; int tsfs_stat(vnode, struct vfs_stat *st)
+; vfs_stat() has already zeroed UID/GID/MTIME.  TSFS type flags deliberately
+; equal VFS DIR/REG values, so one masked value serves both validation/store.
         .globl  tsfs_stat
 tsfs_stat:
         jumpe   2,kret_neg1
@@ -228,40 +230,30 @@ tsfs_stat:
         move    7,1                     ; record pointer
         hrrz    4,(7)                   ; flags + mode
         move    5,4
-        andi    5,3                     ; type flags
+        andi    5,3                     ; DIR=1, REG=2 == VFS type
+        jumpe   5,tsfs_stat_pop_bad
+        caile   5,2
+        jrst    tsfs_stat_pop_bad
+        movem   5,0(010)                ; st->type
+        lsh     4,-6
+        andi    4,07777
+        movem   4,1(010)                ; st->mode
+        setzm   2(010)                  ; reserved
+        move    6,5(7)                  ; dir owner / regular size
         cain    5,1
         jrst    tsfs_stat_dir_record
-        caie    5,2
-        jrst    tsfs_stat_pop_bad
-        movei   5,2                     ; VFS_TYPE_REG
-        movem   5,0(010)
-        move    5,4
-        lsh     5,-6
-        andi    5,07777
-        movem   5,1(010)
-        move    5,5(7)                  ; FILE_SIZE_WORDS
-        movem   5,3(010)
-        move    6,7(7)                  ; regular owner in FILE_AUX
+        movem   6,3(010)                ; regular size
+        move    6,7(7)                  ; regular owner
         jrst    tsfs_stat_attrs
-
 tsfs_stat_dir_record:
-        movei   5,1                     ; VFS_TYPE_DIR
-        movem   5,0(010)
-        move    5,4
-        lsh     5,-6
-        andi    5,07777
-        movem   5,1(010)
-        setzm   3(010)
-        move    6,5(7)                  ; directory owner in SIZE_WORDS
+        setzm   3(010)                  ; directory size
 tsfs_stat_attrs:
-        setzm   2(010)                  ; reserved
         move    5,6
         lsh     5,-011
         andi    5,0777
         movem   5,4(010)                ; uid
         andi    6,0777
         movem   6,5(010)                ; gid
-        setzm   6(010)                  ; TSFS has no per-file timestamp
         setz    1,
         jrst    tsfs_stat_pop
 
@@ -272,9 +264,6 @@ tsfs_stat_synthetic_root:
         movem   4,1(010)
         setzm   2(010)
         setzm   3(010)
-        setzm   4(010)
-        setzm   5(010)
-        setzm   6(010)
         setz    1,
         jrst    tsfs_stat_pop
 

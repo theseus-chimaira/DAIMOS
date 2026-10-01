@@ -19,8 +19,8 @@
 #define MEMFS_NODES_WORDS            0700U
 #define MEMFS_BACKING_OFFSET         0700U
 #define MEMFS_OWNER_OFFSET           01000U
-#define MEMFS_OWNER_WORDS            0040U
-#define MEMFS_MTIME_OFFSET           01040U
+#define MEMFS_OWNER_WORDS            0100U
+#define MEMFS_MTIME_OFFSET           01100U
 #define MEMFS_METADATA_WORDS         01200U
 
 

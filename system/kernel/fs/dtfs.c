@@ -18,9 +18,8 @@ kword_t *dtfs_dir;
 #define dtfs_block fs_block_workspace
 unsigned int dtfs_cache_mount;
 /* Unit number and the read-only foreign-media personality share one word. */
-unsigned int dtfs_media[VFS_NMOUNT];
-/* Four mount owners pack as two UID9,GID9 halfwords per PDP-10 word. */
-kword_t dtfs_mount_owners[2];
+/* Low half carries unit/personality; high half carries mount UID9,GID9. */
+kword_t dtfs_media[VFS_NMOUNT];
 
 extern int dtfs_is_root(vnode_t node);
 extern int dtfs_is_file(vnode_t node);
@@ -34,8 +33,6 @@ int dtfs_chain_walk(unsigned int unit, unsigned int slot,
     unsigned int mapoff, int writing);
 
 extern unsigned int dtfs_personality(vnode_t node);
-extern kword_t dtfs_mount_owner(vnode_t node);
-extern void dtfs_set_mount_owner(unsigned int mount, kword_t owner);
 #if !DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS
 #define dtfs_personality(node) 0U
 #endif
@@ -356,8 +353,7 @@ dtfs_mount_unit(unsigned int unit, vnode_t target,
             flags & VFS_MOUNT_RDONLY, &root) != 0)
                 return -1;
         format = VFS_MOUNT_ID(root);
-        dtfs_patch_media(format, media);
-        dtfs_set_mount_owner(format, vfs_current_owner());
+        dtfs_patch_media(format, media | (vfs_current_owner() << 18U));
         /* Userspace validated the media in its own buffer.  Our shared
          * resident directory cache has not been populated for this mount. */
         dtfs_cache_mount = 0U;
@@ -371,15 +367,7 @@ extern int dtfs_lookup(vnode_t dir, const struct vfs_name *name,
 extern int dtfs_readdir(vnode_t dir, unsigned int off,
     struct vfs_dirent *ent);
 
-static void
-dtfs_stat_owner(vnode_t node, struct vfs_stat *st)
-{
-        kword_t owner;
-
-        owner = dtfs_mount_owner(node);
-        st->uid = VFS_OWNER_UID(owner);
-        st->gid = VFS_OWNER_GID(owner);
-}
+extern void dtfs_stat_owner(vnode_t node, struct vfs_stat *st);
 
 int
 dtfs_stat(vnode_t node, struct vfs_stat *st)
