@@ -1,4 +1,4 @@
-; pipe_pdp10.s -- native-word DAIMOS pipes/FIFOs for PDP-6/PDP-10.
+; pipe.s -- native-word DAIMOS pipes/FIFOs for PDP-6/PDP-10.
 ;
 ; IPC is deliberately representation-neutral.  Every queue element is one
 ; opaque 36-bit machine word.  SIXBIT/S6REC, terminal characters, paper-tape

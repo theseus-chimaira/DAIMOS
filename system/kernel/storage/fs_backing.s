@@ -1,4 +1,4 @@
-; fs_backing_pdp10.s -- compact filesystem-independent backing dispatch.
+; fs_backing.s -- compact filesystem-independent backing dispatch.
 ;
 ; A backing descriptor contains packed read/write callback addresses, one
 ; adapter-private word, and the exported logical block count.  No filesystem

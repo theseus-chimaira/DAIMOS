@@ -1,5 +1,4 @@
-; PDP-10 foreign DTFS chain walker.
-; Semantics are kept in the C reference in dtfs.c.
+; PDP-6/PDP-10 foreign DTFS chain walker.
         .text
         .globl dtfs_chain_walk
 dtfs_chain_walk:

@@ -4,7 +4,7 @@
 ; int d6fs_provider_write_dirent(dir, slot, di)
 ;
 ; The directory FCB has already passed d6fs_provider_fcb validation.  D6FS
-; geometry keeps both the directory offset and size below the signed PDP-10
+; geometry keeps both the directory offset and size below the signed 36-bit
 ; range, so direct CAMG comparison is equivalent to the C unsigned compare.
 ; AC010 keeps DIR, AC011 becomes the six-word directory offset, and AC012 keeps
 ; DI until the raw entry has been formed.
@@ -92,7 +92,7 @@ d6fs_provider_write_dirent_done:
 ; int d6fs_provider_free_fcb(indexp)
 ;
 ; SUPER.FCB_COUNT is validated and small (currently at most the fixed FCB
-; table capacity), so a direct PDP-10 comparison is sufficient.  The scratch
+; table capacity), so a direct machine-word comparison is sufficient.  The scratch
 ; frame is exactly one FCB plus one decoded-info object; only AC010/AC011 live
 ; across d6fs_reader_fcb calls.
 d6fs_provider_free_fcb:
@@ -132,8 +132,7 @@ d6fs_provider_free_fcb_done:
         .globl  d6fs_provider_resize_fcb
 ; int d6fs_provider_resize_fcb(node, fcb, fi, new_words)
 ;
-; PDP-10 implementation of the complete resize transaction.  The portable C
-; implementation remains the reference for non-PDP-10 builds.  Keeping the
+; PDP-6/PDP-10 implementation of the complete resize transaction.  Keeping the
 ; allocation engine and publication/rollback policy in one routine avoids the
 ; large KCC stack/call scaffolding that otherwise dominates this hot path.
 ;

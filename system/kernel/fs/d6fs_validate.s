@@ -3,7 +3,7 @@
 
         .text
 ; Validate and decode one D6FS FCB.  The host implementation remains in C;
-; this PDP-10 version avoids the much larger compiler-generated validator.
+; this compact target version avoids the much larger compiler-generated validator.
         .globl  d6fs_fcb_decode_valid
 ; int d6fs_fcb_decode_valid(fcb, fs_blocks, fcb_count, info)
 d6fs_fcb_decode_valid:

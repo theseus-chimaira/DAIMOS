@@ -1,4 +1,4 @@
-; dtfs_pdp10.s -- DTFS runtime and boot-patched DTC veneers.
+; dtfs_runtime.s -- DTFS runtime and boot-patched DTC veneers.
         .text
 
 	.globl kret_neg2

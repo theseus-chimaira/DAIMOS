@@ -150,11 +150,11 @@ KCORE_FIXED_SRCS = core/ret.s \
 	drivers/dsk270.s \
 	drivers/drm236.s \
 	core/kfmt_pdp6.s \
-	fs/vfs_pdp10.s \
-	fs/fs_mres_pdp10.s \
-	fs/tsfs_pdp10.s \
-	fs/file_pdp10.s \
-	ipc/pipe_pdp10.s \
+	fs/vfs.s \
+	fs/fs_mres.s \
+	fs/tsfs_runtime.s \
+	fs/file_runtime.s \
+	ipc/pipe.s \
 		proc/proc_pdp6.s \
 	proc/proc_run.s \
 	drivers/device_state.s \
@@ -181,12 +181,12 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/dsk270.s \
 	$(BUILD)/drm236.s \
 	$(BUILD)/kfmt_pdp6.s \
-	$(BUILD)/vfs_pdp10.s \
-	$(BUILD)/fs_mres_pdp10.s \
-	$(BUILD)/tsfs_pdp10.s \
-	$(BUILD)/file_pdp10.s \
-	$(BUILD)/pipe_pdp10.s \
-	$(BUILD)/monitorfs_pdp10.s \
+	$(BUILD)/vfs.s \
+	$(BUILD)/fs_mres.s \
+	$(BUILD)/tsfs_runtime.s \
+	$(BUILD)/file_runtime.s \
+	$(BUILD)/pipe.s \
+	$(BUILD)/monitorfs_runtime.s \
 	$(BUILD)/proc_pdp6.s \
 	$(BUILD)/proc_run.s \
 	$(BUILD)/device_state.s \
@@ -213,7 +213,7 @@ MRES_C_ASM = $(BUILD)/d6fs.s \
 	$(BUILD)/memfs_snapshot.s \
 	$(BUILD)/tsfs.s
 
-MRES_FIXED_SRCS = fs/d6fs_validate_pdp10.s \
+MRES_FIXED_SRCS = fs/d6fs_validate.s \
 	drivers/cty_io.s \
 	drivers/clk_io.s \
 	drivers/ptr_io.s \
@@ -222,16 +222,16 @@ MRES_FIXED_SRCS = fs/d6fs_validate_pdp10.s \
 	drivers/cp_io.s \
 	storage/blockset_dispatch.s \
 	storage/badmap_dispatch.s \
-	storage/fs_backing_pdp10.s \
+	storage/fs_backing.s \
 	storage/logstore_runtime.s \
 	drivers/dcs_io.s \
 	drivers/ge_io.s \
 	drivers/dpy_io.s \
 	drivers/tty_io.s \
-	fs/dtfs_pdp10.s \
-	fs/tsfs_pdp10.s \
-	fs/memfs_pdp10.s \
-	fs/d6fs_pdp10.s \
+	fs/dtfs_runtime.s \
+	fs/tsfs_runtime.s \
+	fs/memfs_runtime.s \
+	fs/d6fs_runtime.s \
 	drivers/wcnsls_io.s \
 	drivers/ocnsls_io.s \
 	drivers/dsk_io.s \
@@ -245,7 +245,7 @@ MRES_ASM = $(BUILD)/dtfs.s \
 	$(BUILD)/d6fs_provider.s \
 	$(BUILD)/memfs_data.s \
 	$(BUILD)/memfs_snapshot.s \
-	$(BUILD)/d6fs_validate_pdp10.s \
+	$(BUILD)/d6fs_validate.s \
 	$(BUILD)/cty_io.s \
 	$(BUILD)/clk_io.s \
 	$(BUILD)/ptr_io.s \
@@ -254,16 +254,16 @@ MRES_ASM = $(BUILD)/dtfs.s \
 	$(BUILD)/cp_io.s \
 	$(BUILD)/blockset_dispatch.s \
 	$(BUILD)/badmap_dispatch.s \
-	$(BUILD)/fs_backing_pdp10.s \
+	$(BUILD)/fs_backing.s \
 	$(BUILD)/logstore_runtime.s \
 	$(BUILD)/dcs_io.s \
 	$(BUILD)/ge_io.s \
 	$(BUILD)/dpy_io.s \
 	$(BUILD)/tty_io.s \
-	$(BUILD)/dtfs_pdp10.s \
-	$(BUILD)/tsfs_pdp10.s \
-	$(BUILD)/memfs_pdp10.s \
-	$(BUILD)/d6fs_pdp10.s \
+	$(BUILD)/dtfs_runtime.s \
+	$(BUILD)/tsfs_runtime.s \
+	$(BUILD)/memfs_runtime.s \
+	$(BUILD)/d6fs_runtime.s \
 	$(BUILD)/wcnsls_io.s \
 	$(BUILD)/ocnsls_io.s \
 	$(BUILD)/dsk_io.s \
@@ -334,18 +334,18 @@ ${BUILD}/memfs_snapshot.s: fs/memfs_snapshot.c ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S fs/memfs_snapshot.c -o $@
 
-${BUILD}/d6fs_provider.s: fs/d6fs_provider.c fs/d6fs_provider_mutation_pdp10.s ${KERNEL_HEADERS}
+${BUILD}/d6fs_provider.s: fs/d6fs_provider.c fs/d6fs_provider_mutation.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S fs/d6fs_provider.c -o $@.c
-	cat $@.c fs/d6fs_provider_mutation_pdp10.s > $@
+	cat $@.c fs/d6fs_provider_mutation.s > $@
 	rm -f $@.c
 
 # DAIMOS 0.9/1.0 always includes native, TENEX, and ITS DECtape support.
 # These compatibility paths are deliberately not build-time options.
-${BUILD}/dtfs.s: Makefile fs/dtfs.c fs/dtfs_chain_walk_pdp10.s fs/dtfs_resize_pdp10.s ${KERNEL_HEADERS}
+${BUILD}/dtfs.s: Makefile fs/dtfs.c fs/dtfs_chain_walk.s fs/dtfs_resize.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} -DDTFS_ENABLE_TENEX=1 -DDTFS_ENABLE_ITS=1 ${INCLUDES} -S fs/dtfs.c -o $@.c
-	@cat $@.c fs/dtfs_chain_walk_pdp10.s > $@; { echo ".set DTFS_ENABLE_TENEX,1"; echo ".set DTFS_ENABLE_ITS,1"; cat fs/dtfs_resize_pdp10.s; } >> $@; rm -f $@.c
+	@cat $@.c fs/dtfs_chain_walk.s > $@; { echo ".set DTFS_ENABLE_TENEX,1"; echo ".set DTFS_ENABLE_ITS,1"; cat fs/dtfs_resize.s; } >> $@; rm -f $@.c
 
 ${BUILD}/tsfs.s: fs/tsfs.c ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
@@ -363,19 +363,19 @@ ${BUILD}/proc_run.s: proc/proc_run.s
 	@mkdir -p ${BUILD}
 	{ echo ".set PROC_STACK_WATERMARK,${PROC_STACK_WATERMARK}"; cat proc/proc_run.s; } > $@
 
-${BUILD}/dtfs_pdp10.s: Makefile fs/dtfs_pdp10.s
+${BUILD}/dtfs_runtime.s: Makefile fs/dtfs_runtime.s
 	@mkdir -p ${BUILD}
-	@{ echo ".set DTFS_ENABLE_TENEX,1"; echo ".set DTFS_ENABLE_ITS,1"; echo ".set DTFS_ENABLE_FOREIGN,1"; cat fs/dtfs_pdp10.s; } > $@
+	@{ echo ".set DTFS_ENABLE_TENEX,1"; echo ".set DTFS_ENABLE_ITS,1"; echo ".set DTFS_ENABLE_FOREIGN,1"; cat fs/dtfs_runtime.s; } > $@
 
 COPY_ASM_SRCS = core/ret.s \
 	drivers/dsk270.s \
 	drivers/drm236.s \
 	core/kfmt_pdp6.s \
-	fs/vfs_pdp10.s \
-	fs/fs_mres_pdp10.s \
-	fs/tsfs_pdp10.s \
-	fs/file_pdp10.s \
-	ipc/pipe_pdp10.s \
+	fs/vfs.s \
+	fs/fs_mres.s \
+	fs/tsfs_runtime.s \
+	fs/file_runtime.s \
+	ipc/pipe.s \
 		drivers/device_state.s \
 	proc/syscall_info.s \
 	drivers/pclk.s \
@@ -385,7 +385,7 @@ COPY_ASM_SRCS = core/ret.s \
 	core/kcore_io_pdp6.s \
 	storage/storage_router.s \
 	core/kcore_end.s \
-	fs/d6fs_validate_pdp10.s \
+	fs/d6fs_validate.s \
 	drivers/cty_io.s \
 	drivers/clk_io.s \
 	drivers/ptr_io.s \
@@ -394,14 +394,14 @@ COPY_ASM_SRCS = core/ret.s \
 	drivers/cp_io.s \
 	storage/blockset_dispatch.s \
 	storage/badmap_dispatch.s \
-	storage/fs_backing_pdp10.s \
+	storage/fs_backing.s \
 	storage/logstore_runtime.s \
 	drivers/dcs_io.s \
 	drivers/ge_io.s \
 	drivers/dpy_io.s \
 	drivers/tty_io.s \
-	fs/memfs_pdp10.s \
-	fs/d6fs_pdp10.s \
+	fs/memfs_runtime.s \
+	fs/d6fs_runtime.s \
 	drivers/wcnsls_io.s \
 	drivers/ocnsls_io.s \
 	drivers/dsk_io.s \
@@ -416,12 +416,12 @@ COPY_ASM_TARGETS = $(BUILD)/ret.s \
 	$(BUILD)/dsk270.s \
 	$(BUILD)/drm236.s \
 	$(BUILD)/kfmt_pdp6.s \
-	$(BUILD)/vfs_pdp10.s \
-	$(BUILD)/fs_mres_pdp10.s \
-	$(BUILD)/tsfs_pdp10.s \
-	$(BUILD)/file_pdp10.s \
-	$(BUILD)/pipe_pdp10.s \
-	$(BUILD)/monitorfs_pdp10.s \
+	$(BUILD)/vfs.s \
+	$(BUILD)/fs_mres.s \
+	$(BUILD)/tsfs_runtime.s \
+	$(BUILD)/file_runtime.s \
+	$(BUILD)/pipe.s \
+	$(BUILD)/monitorfs_runtime.s \
 	$(BUILD)/device_state.s \
 	$(BUILD)/syscall_info.s \
 	$(BUILD)/pclk.s \
@@ -432,7 +432,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret.s \
 	$(BUILD)/bcache_pdp6.s \
 	$(BUILD)/storage_router.s \
 	$(BUILD)/kcore_end.s \
-	$(BUILD)/d6fs_validate_pdp10.s \
+	$(BUILD)/d6fs_validate.s \
 	$(BUILD)/cty_io.s \
 	$(BUILD)/clk_io.s \
 	$(BUILD)/ptr_io.s \
@@ -441,14 +441,14 @@ COPY_ASM_TARGETS = $(BUILD)/ret.s \
 	$(BUILD)/cp_io.s \
 	$(BUILD)/blockset_dispatch.s \
 	$(BUILD)/badmap_dispatch.s \
-	$(BUILD)/fs_backing_pdp10.s \
+	$(BUILD)/fs_backing.s \
 	$(BUILD)/logstore_runtime.s \
 	$(BUILD)/dcs_io.s \
 	$(BUILD)/ge_io.s \
 	$(BUILD)/dpy_io.s \
 	$(BUILD)/tty_io.s \
-	$(BUILD)/memfs_pdp10.s \
-	$(BUILD)/d6fs_pdp10.s \
+	$(BUILD)/memfs_runtime.s \
+	$(BUILD)/d6fs_runtime.s \
 	$(BUILD)/wcnsls_io.s \
 	$(BUILD)/ocnsls_io.s \
 	$(BUILD)/dsk_io.s \

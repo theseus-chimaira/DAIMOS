@@ -68,11 +68,11 @@ mres_objects()
         drm)     echo 'drm236_io' ;;
         tape)    echo 'tape_io' ;;
         slv)     echo 'slv_io' ;;
-        memfs)   echo 'memfs_pdp10' ;;
-        dtfs)    echo 'dtfs dtfs_pdp10 tsfs tsfs_pdp10' ;;
+        memfs)   echo 'memfs_runtime' ;;
+        dtfs)    echo 'dtfs dtfs_runtime tsfs tsfs_runtime' ;;
         blockset) echo 'blockset_dispatch' ;;
         logstore) echo 'logstore_runtime' ;;
-        d6fs)    echo 'fs_backing_pdp10 d6fs d6fs_provider d6fs_validate_pdp10 d6fs_pdp10' ;;
+        d6fs)    echo 'fs_backing d6fs d6fs_provider d6fs_validate d6fs_runtime' ;;
         *) return 1 ;;
         esac
 }

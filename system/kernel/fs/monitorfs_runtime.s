@@ -1,4 +1,4 @@
-; monitorfs_pdp10.s -- compact resident MonitorFS primitives.
+; monitorfs_runtime.s -- compact resident MonitorFS primitives.
         .text
         .globl  kret_busy
         .globl  kret_zero

@@ -10,7 +10,7 @@
  * is deliberately independent of any encoding (48 SIXBIT characters fit in
  * it when a text application chooses ordinary packed SIXBIT words).
  *
- * The object layout is private to pipe_pdp10.s:
+ * The object layout is private to pipe.s:
  *   0 active-FIFO link
  *   1 backing FIFO vnode (zero for anonymous pipes)
  *   2 ring state

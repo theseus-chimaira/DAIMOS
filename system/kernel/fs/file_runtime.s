@@ -4,7 +4,7 @@
         .globl  file_table
 
         .text
-; file_pdp10.s -- compact resident FILE/path primitives for PDP-6/PDP-10.
+; file_runtime.s -- compact resident FILE/path primitives for PDP-6/PDP-10.
         .text
 
 ; int file_check_access(vnode_t node, unsigned int need)
@@ -98,7 +98,7 @@ file_owner_done:
         .globl  file_path_char
         .globl  vfs_name_char
 ; unsigned int file_path_char(path, pos)
-; unsigned int vfs_name_char(name, pos) -- identical packed layout on PDP-10
+; unsigned int vfs_name_char(name, pos) -- identical packed 36-bit layout
 ; pos is bounded by FILE_PATH_MAX_CHARS, so signed IDIVI is sufficient and
 ; avoids constructing a 72-bit unsigned dividend for DIVI.
 vfs_name_char:

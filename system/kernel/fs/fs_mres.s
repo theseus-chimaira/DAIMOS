@@ -1,4 +1,4 @@
-; fs_mres_pdp10.s -- fixed resident bridge to optional filesystem MRES.
+; fs_mres.s -- fixed resident bridge to optional filesystem MRES.
         .text
         .globl fs_provider_reg_call
         .globl fs_memfs_service_jump

@@ -1,4 +1,4 @@
-; tsfs_pdp10.s -- read-only TSFS provider dispatcher.
+; tsfs_runtime.s -- read-only TSFS provider dispatcher.
         .text
         .globl  fs_mres_vector_dispatch
         .globl  kret_zero

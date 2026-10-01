@@ -1,4 +1,4 @@
-; d6fs_pdp10.s -- compact resident D6FS packed-format primitives.
+; d6fs_runtime.s -- compact resident D6FS packed-format primitives.
 ;
 ; These routines replace C shift/divide machinery on the PDP-6/PDP-10 hot
 ; paths.  They implement the on-disk D6FS V2 bit layout directly; policy and

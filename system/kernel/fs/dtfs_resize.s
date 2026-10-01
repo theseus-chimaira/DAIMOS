@@ -1,5 +1,5 @@
-; PDP-10 target implementation of DTFS resize.
-; Initially derived mechanically from GCC -Os output; keep host C as reference.
+; PDP-6/PDP-10 target implementation of DTFS resize.
+; Initially derived mechanically from GCC -Os output and then maintained here.
 
 .globl  dtfs_resize
 dtfs_resize:

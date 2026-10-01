@@ -1,4 +1,4 @@
-; memfs_pdp10.s -- compact resident MEMFS primitives for PDP-6/PDP-10.
+; memfs_runtime.s -- compact resident MEMFS primitives for PDP-6/PDP-10.
         .text
         .globl  vfs_name_valid
         .globl  fs_copy_words

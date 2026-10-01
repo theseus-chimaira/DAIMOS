@@ -1,4 +1,4 @@
-; vfs_pdp10.s -- compact resident VFS primitives for PDP-6/PDP-10.
+; vfs.s -- compact resident VFS primitives for PDP-6/PDP-10.
         .text
         .globl  file_table
         .globl  kret_zero
