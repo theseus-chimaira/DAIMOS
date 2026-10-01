@@ -33,6 +33,7 @@
         .equ    RUN_MAX_PATH_CHARS,0146
         .equ    RUN_MAX_ARG_CHARS,0146
         .equ    PROC_TTY_COUNT,025
+        .equ    PROC_ROOT_RESERVED_SLOTS,2
 
         .text
         .globl  proc_run_block
@@ -134,6 +135,16 @@ proc_run_records_done:
         came    4,7
         jrst    proc_run_bad
 
+        ; Keep the highest slots available to UID 0 so an ordinary account
+        ; cannot consume every process descriptor and lock out administration.
+        ; No quota state is needed: non-root allocation simply stops before
+        ; the reserved tail of the already-bounded process table.
+        move    011,proc_slots
+        move    4,file_table
+        hlrz    4,040(4)               ; u-area 0107 credential word
+        jumpe   4,proc_run_slot_limit_ready
+        subi    011,PROC_ROOT_RESERVED_SLOTS
+proc_run_slot_limit_ready:
         movei   012,1
         move    013,proc_table
         addi    013,PROC_WORDS
@@ -156,7 +167,7 @@ proc_run_slot_loop:
 proc_run_slot_next:
         addi    013,PROC_WORDS
         aos     012
-        caml    012,proc_slots
+        caml    012,011
         jrst    proc_run_bad
         jrst    proc_run_slot_loop
 
