@@ -768,9 +768,9 @@ mfsproc_stat_dir:
         jrst    mfsproc_stat_store_zero
 mfsproc_stat_nonroot:
         jumpn   0,mfsproc_stat_domain
-        hrrz    6,1
-        andi    6,0377
-        move    1,6
+        move    6,1                    ; preserve vnode across proc lookup
+        hrrz    1,6
+        andi    1,0377
         pushj   17,mfsproc_proc_ptr
         jumpe   1,kret_neg1
         cain    5,030002
@@ -778,7 +778,7 @@ mfsproc_stat_nonroot:
 mfsproc_stat_file:
         caie    5,030003
         jrst    kret_neg1
-        hrrz    4,1
+        hrrz    4,6                    ; leaf comes from original vnode
         lsh     4,-010
         andi    4,7
         caile   4,5                    ; six process leaves, 0..5
@@ -832,198 +832,281 @@ mfsproc_state_swapped:
         movei   2,4
         popj    17,
 
-; int mfsproc_readchar(vnode_t node, kword_t off, unsigned int *chp)
-        .globl  mfsproc_readchar
-        .globl  vfs_sixbit_readchar
-        .globl  kfmt_u18_decimal_readchar
+; Provider-3 pseudo-files are native S6REC word streams.  Scalar leaves
+; contain one record.  CMDLINE and ENVIRONMENT expose one record per original
+; counted SIXBIT vector entry.  This keeps record boundaries explicit and
+; removes the old character-at-offset renderer.
+        .globl  mfsproc_read_words
         .globl  proc_scope_id
+        .globl  kfmt_u18_sixbit
 
-; int proc_image_text_readchar(slot, view, off, chp)
-;
-; The PDP-6 VM descriptor already contains the resident user-image base in
-; vm_state RH and the user-word count in LH.  RUN/EXEC place one packed
-; argc,,envc metadata word at USER_WORDS-02000 followed by argv/env vectors.
-; Read that representation directly here instead of retaining a second copy
-; in permanent kernel RAM.  Swapped processes have a zero VM base and expose
-; an empty live-image view until resident again.
-;
-; VIEW 0: basename(argv[0])
-; VIEW 1: argv records separated by one space
-; VIEW 2: environment records separated by CR LF
-;
-; AC1=validated struct proc *, AC2=view, AC3=character offset,
-; AC4=result pointer.
-        .globl  proc_image_text_readchar
-proc_image_text_readchar:
+; Internal: emit one <=6-character SIXBIT word as one S6REC TEXT record.
+; AC1=packed SIXBIT, AC2=chars, AC3=serialized word offset,
+; AC4=destination, AC5=destination capacity. Return transferred words.
+mfs_s6rec_emit_word:
         jumpe   4,kret_neg1
-        ; AC10..AC15 are callee-save.  The scanner deliberately uses them as
-        ; its compact persistent state while AC1..AC7 remain call scratch.
-        add     17,[6,,6]
-        movei   0,-5(17)
-        hrli    0,010
-        blt     0,(17)
-        move    5,4                    ; output pointer
-        move    6,3                    ; requested character offset
-        move    7,2                    ; view
-        move    4,1(1)                 ; vm_state: user words,,physical base
-        hrrz    010,4                  ; current physical user-image base
-        jumpe   010,mfsproc_image_eof  ; swapped/nonresident
-        hlrz    011,4
-        subi    011,02000              ; startup metadata logical offset
-        add     011,010                ; physical metadata address
-        move    4,(011)                ; argc,,envc
-        hlrz    012,4                  ; argc
-        hrrz    013,4                  ; envc
-        addi    011,1                  ; physical argv/env vector
-
-        jumpe   7,mfsproc_image_name
-        cain    7,1
-        jrst    mfsproc_image_vector
-        add     011,012                ; ENVIRONMENT begins after argv
-        move    012,013                ; envc becomes remaining record count
-        jrst    mfsproc_image_vector
-
-mfsproc_image_name:
-        jumpe   012,mfsproc_image_eof
-        move    013,(011)              ; logical argv[0] record offset
-        add     013,010                ; physical record address
-        move    012,(013)              ; counted SIXBIT chars
-        move    014,012                ; scan backwards for final '/'
-        setz    015,                   ; basename start
-mfsproc_image_name_scan:
-        sojl    014,mfsproc_image_name_have_start
-        move    1,013
-        move    2,014
-        pushj   17,mfsproc_image_record_char
-        caie    1,057                  ; '/'
-        jrst    mfsproc_image_name_scan
-        movei   015,1(014)
-mfsproc_image_name_have_start:
-        move    3,012
-        sub     3,015                  ; basename length
-        caml    6,3
-        jrst    mfsproc_image_eof
-        move    1,013
-        move    2,6
-        add     2,015
-        pushj   17,mfsproc_image_record_char
-        movem   1,(5)
-        movei   1,1
-        jrst    mfsproc_image_done
-
-; CMDLINE starts with argv[0] and AC12 already holds argc.  ENVIRONMENT has
-; adjusted AC11/AC12 above.  Rescan on every character request: MonitorFS is a
-; diagnostic path, so a little CPU is cheaper than resident parser state.
-mfsproc_image_vector:
-        jumpe   012,mfsproc_image_eof
-        move    1,(011)                ; logical counted-record offset
-        add     1,010                  ; physical counted-record address
-        move    3,(1)                  ; record character count
-        caml    6,3
-        jrst    mfsproc_image_vector_after
-        move    2,6
-        pushj   17,mfsproc_image_record_char
-        movem   1,(5)
-        movei   1,1
-        jrst    mfsproc_image_done
-mfsproc_image_vector_after:
-        sub     6,3
-        soje    012,mfsproc_image_eof
-        cain    7,1                    ; CMDLINE uses one space separator
-        jrst    mfsproc_image_cmd_sep
-        jumpe   6,mfsproc_image_cr
-        cain    6,1
-        jrst    mfsproc_image_lf
-        subi    6,2                    ; skip ENVIRONMENT CR LF separator
-        aoja    011,mfsproc_image_vector
-mfsproc_image_cmd_sep:
-        jumpe   6,mfsproc_image_space
-        subi    6,1
-        aoja    011,mfsproc_image_vector
-mfsproc_image_space:
-        movei   1,040
-        jrst    mfsproc_image_emit
-mfsproc_image_cr:
-        movei   1,015
-        jrst    mfsproc_image_emit
-mfsproc_image_lf:
-        movei   1,012
-mfsproc_image_emit:
-        movem   1,(5)
-        movei   1,1
-        jrst    mfsproc_image_done
-
-mfsproc_image_eof:
+        jumpn   3,mfs_s6rec_emit_eof
+        caige   5,2
+        jrst    kret_neg1
+        move    6,[010000000000]
+        ior     6,2
+        movem   6,(4)
+        movem   1,1(4)
+        movei   1,2
+        popj    17,
+mfs_s6rec_emit_eof:
         setz    1,
-mfsproc_image_done:
-        movei   0,010
-        hrli    0,-5(17)
-        blt     0,015
-        sub     17,[6,,6]
         popj    17,
 
-; Return one unpacked ASCII/SIXBIT character from a trusted counted record.
-; AC1=physical record address, AC2=character index.  RUN/EXEC created both the
-; vector and record, so bounds were already validated when the image was made.
-mfsproc_image_record_char:
+; Internal: return one raw SIXBIT character from a trusted counted record.
+; AC1=record address, AC2=character index. Return AC1=0..077.
+mfsproc_image_record_sixchar:
         move    3,2
-        idivi   3,6                    ; AC3 quotient, AC4 remainder
+        idivi   3,6
         add     3,1
-        move    1,1(3)                 ; skip count word
+        move    1,1(3)
         imuli   4,6
-        subi    4,036                  ; shift -30..0
+        subi    4,036
         lsh     1,0(4)
         andi    1,077
-        addi    1,040
         popj    17,
-mfsproc_readchar:
-        trne    1,0400000
-        jrst    mfsdom_readchar
+
+; Copy one counted SIXBIT record as one S6REC TEXT record.
+; AC1=source, AC2=serialized offset, AC3=destination, AC4=capacity.
+mfs_s6rec_copy_counted:
         jumpe   3,kret_neg1
-        move    7,3
-        move    5,2
-        move    6,1
-        hlrz    4,1
-        caie    4,030003               ; one uniform process-file kind
+        jumpn   2,mfs_s6rec_copy_eof
+        move    5,(1)                  ; character count
+        move    6,5
+        addi    6,5
+        idivi   6,6                    ; payload words
+        move    7,6
+        aoj     7,                     ; total S6REC words
+        camle   7,4
         jrst    kret_neg1
-        hrrz    1,6
+        move    0,3                    ; BLT count+payload in one operation
+        hrl     0,1
+        move    4,3
+        add     4,6
+        blt     0,(4)
+        move    5,(3)
+        ior     5,[010000000000]
+        movem   5,(3)
+        move    1,7
+        popj    17,
+mfs_s6rec_copy_eof:
+        setz    1,
+        popj    17,
+
+; Serialize basename(argv[0]) as one S6REC.  The source is already counted
+; SIXBIT; only the possibly unaligned basename slice must be repacked.
+; AC1=source record, AC2=destination, AC3=capacity.
+mfs_s6rec_copy_name:
+        add     17,[4,,4]
+        movei   0,-3(17)
+        hrli    0,010
+        blt     0,(17)
+        move    010,1                  ; source
+        move    011,2                  ; destination
+        move    012,3                  ; capacity
+        move    013,(1)                ; total chars
+        move    5,013
+        setz    6,                     ; basename start
+mfs_s6rec_name_scan:
+        sojl    5,mfs_s6rec_name_found
+        move    1,010
+        move    2,5
+        pushj   17,mfsproc_image_record_sixchar
+        caie    1,017                  ; SIXBIT '/'
+        jrst    mfs_s6rec_name_scan
+        movei   6,1(5)
+mfs_s6rec_name_found:
+        sub     013,6                  ; basename chars
+        move    4,013
+        addi    4,5
+        idivi   4,6                    ; payload words
+        move    0,4
+        aoj     0,                     ; total record words
+        camle   0,012
+        jrst    mfs_s6rec_name_fail
+        move    1,[010000000000]
+        ior     1,013
+        movem   1,(011)
+        move    5,6                    ; source character index
+        move    012,011
+        aoj     012,                   ; destination payload pointer
+        jumpe   013,mfs_s6rec_name_done
+mfs_s6rec_name_word:
+        setz    7,                     ; packed output word
+        movei   6,6                    ; slots remaining
+mfs_s6rec_name_char:
+        move    1,010
+        move    2,5
+        pushj   17,mfsproc_image_record_sixchar
+        lsh     7,6
+        ior     7,1
+        aoj     5,
+        soj     6,
+        soje    013,mfs_s6rec_name_partial
+        jumpn   6,mfs_s6rec_name_char
+        movem   7,(012)
+        aoja    012,mfs_s6rec_name_word
+mfs_s6rec_name_partial:
+        imuli   6,6
+        lsh     7,0(6)
+        movem   7,(012)
+mfs_s6rec_name_done:
+        move    1,0
+        jrst    mfs_s6rec_name_restore
+mfs_s6rec_name_fail:
+        seto    1,
+mfs_s6rec_name_restore:
+        movei   0,010
+        hrli    0,-3(17)
+        blt     0,013
+        sub     17,[4,,4]
+        popj    17,
+
+; Serialize NAME/CMDLINE/ENVIRONMENT directly from live startup metadata.
+; AC1=validated proc *, AC2=leaf 3..5, AC3=serialized offset,
+; AC4=destination, AC5=capacity.
+mfsproc_image_read_words:
+        add     17,[5,,5]
+        movei   0,-4(17)
+        hrli    0,010
+        blt     0,(17)
+        move    010,2                  ; leaf
+        move    011,3                  ; serialized offset
+        move    012,4                  ; destination
+        move    013,5                  ; capacity
+        move    4,1(1)
+        hrrz    014,4                  ; resident image base
+        jumpe   014,mfsproc_image_words_eof
+        hlrz    6,4
+        subi    6,02000
+        add     6,014                  ; argc,,envc metadata
+        move    7,(6)
+        hlrz    4,7                    ; argc
+        hrrz    5,7                    ; envc
+        aoj     6,                     ; argv vector
+        cain    010,3
+        jrst    mfsproc_image_words_name
+        cain    010,4
+        jrst    mfsproc_image_words_vector
+        caie    010,5
+        jrst    mfsproc_image_words_fail
+        add     6,4                    ; environment vector
+        move    4,5                    ; envc
+mfsproc_image_words_vector:
+        jumpe   4,mfsproc_image_words_eof
+mfsproc_image_words_loop:
+        move    1,(6)
+        add     1,014                  ; counted record
+        move    2,(1)
+        addi    2,5
+        idivi   2,6
+        aoj     2,                     ; serialized words for this record
+        jumpe   011,mfsproc_image_words_emit
+        caml    011,2
+        jrst    mfsproc_image_words_next
+        jrst    mfsproc_image_words_fail
+mfsproc_image_words_next:
+        sub     011,2
+        aoj     6,
+        sojg    4,mfsproc_image_words_loop
+        jrst    mfsproc_image_words_eof
+mfsproc_image_words_emit:
+        move    2,011
+        move    3,012
+        move    4,013
+        pushj   17,mfs_s6rec_copy_counted
+        jrst    mfsproc_image_words_done
+mfsproc_image_words_name:
+        jumpn   011,mfsproc_image_words_eof
+        jumpe   4,mfsproc_image_words_eof
+        move    1,(6)
+        add     1,014
+        move    2,012
+        move    3,013
+        pushj   17,mfs_s6rec_copy_name
+        jrst    mfsproc_image_words_done
+mfsproc_image_words_eof:
+        setz    1,
+        jrst    mfsproc_image_words_done
+mfsproc_image_words_fail:
+        seto    1,
+mfsproc_image_words_done:
+        movei   0,010
+        hrli    0,-4(17)
+        blt     0,014
+        sub     17,[5,,5]
+        popj    17,
+
+; int mfsproc_read_words(vnode_t node, kword_t off, kword_t *buf,
+;     unsigned int nwords)
+mfsproc_read_words:
+        trne    1,0400000
+        jrst    mfsdom_read_words
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        move    010,2                  ; serialized word offset
+        move    011,3                  ; destination
+        move    012,4                  ; capacity
+        hlrz    4,1
+        caie    4,030003
+        jrst    mfsproc_read_words_fail
+        move    013,1
+        hrrz    1,1
         andi    1,0377
         pushj   17,mfsproc_proc_ptr
-        jumpe   1,kret_neg1
-        hrrz    2,6
+        jumpe   1,mfsproc_read_words_fail
+        hrrz    2,013
         lsh     2,-010
-        andi    2,7                    ; uniform leaf selector 0..6
+        andi    2,7
         caige   2,3
-        jrst    mfsproc_readchar_basic
+        jrst    mfsproc_read_words_basic
         caile   2,5
-        jrst    kret_neg1
-        subi    2,3                    ; NAME/CMDLINE/ENVIRONMENT -> 0/1/2
-        move    3,5
-        move    4,7
-        jrst    proc_image_text_readchar
-mfsproc_readchar_basic:
+        jrst    mfsproc_read_words_fail
+        move    3,010
+        move    4,011
+        move    5,012
+        pushj   17,mfsproc_image_read_words
+        jrst    mfsproc_read_words_done
+mfsproc_read_words_basic:
         cain    2,1
-        jrst    mfsproc_readchar_state
-        jumpe   2,mfsproc_readchar_ppid
+        jrst    mfsproc_read_words_state
+        jumpe   2,mfsproc_read_words_ppid
         cain    2,2
-        jrst    mfsproc_readchar_words
-        jrst    kret_neg1
-mfsproc_readchar_state:
-        hrrz    2,6
-        andi    2,0377                 ; state helper uses slot for swap state
+        jrst    mfsproc_read_words_words
+        jrst    mfsproc_read_words_fail
+mfsproc_read_words_state:
+        hrrz    2,013
+        andi    2,0377
         pushj   17,mfsproc_state_word
-        move    3,5
-        move    4,7
-        jrst    vfs_sixbit_readchar
-mfsproc_readchar_ppid:
+        jrst    mfsproc_read_words_emit
+mfsproc_read_words_ppid:
         ldb     1,[POINT 8,(1),27]
-        jrst    mfsproc_readchar_number
-mfsproc_readchar_words:
+        pushj   17,kfmt_u18_sixbit
+        jrst    mfsproc_read_words_emit
+mfsproc_read_words_words:
         hlrz    1,1(1)
-mfsproc_readchar_number:
-        move    2,5
-        move    3,7
-        jrst    kfmt_u18_decimal_readchar
+        pushj   17,kfmt_u18_sixbit
+mfsproc_read_words_emit:
+        move    3,010
+        move    4,011
+        move    5,012
+        pushj   17,mfs_s6rec_emit_word
+        jrst    mfsproc_read_words_done
+mfsproc_read_words_fail:
+        seto    1,
+mfsproc_read_words_done:
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
 
         .data
 mfsdev_leaf_names:
@@ -1193,80 +1276,98 @@ mfsdom_metric_done:
         move    1,7
         popj    17,
 
-; Character view for derived domain leaves.  PROCESSES/WORDS/SWAPPED/
-; SWAPWORDS/STOPPED are formatted from the transient aggregate scan. PIDS scans the
-; live process table and stores no membership list in resident memory.
-mfsdom_readchar:
-        jumpe   3,kret_neg1
+; Native S6REC word view for derived domain leaves.  Scalar metrics are
+; one record.  PIDS is a stream of fixed four-character records ("ooo "), one
+; per live member, so callers can walk it with the normal descriptor word
+; offset without an auxiliary membership list.
+mfsdom_read_words:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        move    010,2                  ; serialized word offset
+        move    011,3                  ; destination
+        move    012,4                  ; capacity
         hlrz    4,1
         caie    4,030003
-        jrst    kret_neg1
+        jrst    mfsdom_read_words_fail
         hrrz    4,1
-        move    6,4
-        andi    6,DOMAIN_MASK          ; domain ID
+        move    013,4
+        andi    013,DOMAIN_MASK        ; domain ID
         lsh     4,-010
         andi    4,7                    ; leaf selector
         cain    4,5
-        jrst    mfsdom_pids_readchar
+        jrst    mfsdom_pids_read_words
         caile   4,4
-        jrst    kret_neg1
-
-        push    17,2                   ; character offset
-        push    17,3                   ; output pointer
-        move    1,6
+        jrst    mfsdom_read_words_fail
+        move    1,013
         move    2,4
         pushj   17,mfsdom_metric
-        jumpl   1,mfsdom_readchar_missing
-        pop     17,3
-        pop     17,2
-        jrst    kfmt_u18_decimal_readchar
-mfsdom_readchar_missing:
-        sub     17,[2,,2]
-        jrst    kret_neg1
+        jumpl   1,mfsdom_read_words_fail
+        pushj   17,kfmt_u18_sixbit
+        move    3,010
+        move    4,011
+        move    5,012
+        pushj   17,mfs_s6rec_emit_word
+        jrst    mfsdom_read_words_done
 
-mfsdom_pids_readchar:
-        ; Compact single-line PIDS: fixed "ooo " records.  Four characters
-        ; per PID makes ordinal/remainder a shift and mask instead of division.
-        move    0,3                    ; output pointer
-        move    3,2
-        lsh     3,-2                   ; requested member ordinal
-        move    5,2
-        andi    5,3                    ; character within record
-        move    7,6                    ; requested domain
+mfsdom_pids_read_words:
+        trne    010,1                  ; each PID record is exactly two words
+        jrst    mfsdom_read_words_fail
+        move    3,010
+        lsh     3,-1                   ; requested member ordinal
+        move    7,013                  ; requested domain
         skipn   6,proc_table
-        jrst    mfsdom_pids_eof
-        movei   4,0                    ; process slot
-mfsdom_pids_scan:
+        jrst    mfsdom_read_words_eof
+        setz    4,                     ; process slot
+mfsdom_pids_words_scan:
         caml    4,proc_high_slot
-        jrst    mfsdom_pids_eof
+        jrst    mfsdom_read_words_eof
         hlrz    2,2(6)
         andi    2,PROC_STATE_LH_MASK
-        jumpe   2,mfsdom_pids_next
+        jumpe   2,mfsdom_pids_words_next
         move    1,6
         pushj   17,proc_scope_id
         lsh     1,-DOMAIN_SHIFT
         andi    1,DOMAIN_MASK
         came    1,7
-        jrst    mfsdom_pids_next
-        jumpe   3,mfsdom_pids_found
+        jrst    mfsdom_pids_words_next
+        jumpe   3,mfsdom_pids_words_found
         subi    3,1
-mfsdom_pids_next:
+mfsdom_pids_words_next:
         addi    6,PROC_WORDS
-        aoja    4,mfsdom_pids_scan
-mfsdom_pids_found:
-        caie    5,3
-        jrst    mfsdom_pids_digit
-        movei   1,040
-        jrst    mfsdom_pids_store
-mfsdom_pids_digit:
+        aoja    4,mfsdom_pids_words_scan
+mfsdom_pids_words_found:
         move    1,4
-        imuli   5,-3
-        addi    5,6                    ; shifts 6,3,0
-        lsh     1,0(5)
+        lsh     1,-6
         andi    1,7
-        addi    1,060
-mfsdom_pids_store:
-        movem   1,(0)
-        jrst    kret_one
-mfsdom_pids_eof:
-        jrst    kret_zero
+        addi    1,020
+        lsh     1,036                  ; first octal digit
+        move    2,4
+        lsh     2,-3
+        andi    2,7
+        addi    2,020
+        lsh     2,030                  ; second octal digit
+        ior     1,2
+        move    2,4
+        andi    2,7
+        addi    2,020
+        lsh     2,022                  ; third octal digit; fourth is space
+        ior     1,2
+        movei   2,4
+        setz    3,
+        move    4,011
+        move    5,012
+        pushj   17,mfs_s6rec_emit_word
+        jrst    mfsdom_read_words_done
+mfsdom_read_words_eof:
+        setz    1,
+        jrst    mfsdom_read_words_done
+mfsdom_read_words_fail:
+        seto    1,
+mfsdom_read_words_done:
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,

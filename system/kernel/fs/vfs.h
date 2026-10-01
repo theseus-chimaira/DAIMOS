@@ -105,8 +105,6 @@ unsigned int vfs_name_char(const struct vfs_name *name,
     unsigned int pos);
 void vfs_name_setchar(struct vfs_name *name, unsigned int pos,
     unsigned int ch);
-int vfs_sixbit_readchar(kword_t word, unsigned int nchars, kword_t off,
-    unsigned int *chp);
 
 int vfs_lookup(vnode_t dir, const struct vfs_name *name,
     vnode_t *nodep);

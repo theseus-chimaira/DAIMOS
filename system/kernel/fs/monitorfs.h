@@ -42,12 +42,18 @@
 
 extern kword_t mfsdev_names[MONITORFS_DEV_COUNT];
 extern kword_t mfsdev_d6set_members;
+int mfsproc_lookup(vnode_t dir, const struct vfs_name *name,
+    vnode_t *nodep);
+int mfsproc_readdir(vnode_t dir, unsigned int off, struct vfs_dirent *ent);
+int mfsproc_stat(vnode_t node, struct vfs_stat *st);
 int mfsdev_lookup(vnode_t dir, const struct vfs_name *name,
     vnode_t *nodep);
 int mfsdev_readdir(vnode_t dir, unsigned int off,
     struct vfs_dirent *ent);
 int mfsdev_stat(vnode_t node, struct vfs_stat *st);
 int mfsdev_readchar(vnode_t node, kword_t off, unsigned int *chp);
+int mfsproc_read_words(vnode_t node, kword_t off, kword_t *buf,
+    unsigned int nwords);
 
 /* Provider 3 uses three object kinds only.  Leaf identity is uniformly
  * encoded in the provider-private 18-bit key rather than vnode kind bits:

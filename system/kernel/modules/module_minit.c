@@ -1526,20 +1526,31 @@ d6fs_minit(void)
 void
 mfsdev_minit(void)
 {
-        static const kword_t names[MONITORFS_DEV_COUNT] = {
-                SIXBIT("CTY0  "), SIXBIT("CLK0  "), SIXBIT("PTR0  "),
-                SIXBIT("PTP0  "), SIXBIT("CR0   "), SIXBIT("CP0   "),
-                SIXBIT("DCS0  "), SIXBIT("GE0   "), SIXBIT("DPY0  "),
-                SIXBIT("TTY0  "), SIXBIT("WCNSLS"), SIXBIT("OCNSLS"),
-                SIXBIT("DTC0  "), SIXBIT("MTC0  "), SIXBIT("DSK0  "),
-                SIXBIT("SLV0  "), SIXBIT("D6SET0"), SIXBIT("DRM0  "),
-                SIXBIT("LPT0  ")
-        };
-        unsigned int i;
-
-        for (i = 0U; i < MONITORFS_DEV_COUNT; ++i)
-                if ((mfsdev_present & (kword_t)MONITORFS_PRESENT(i)) != 0UL)
-                        mfsdev_names[i] = names[i];
+#define MFSDEV_PUBLISH(id, text) \
+        do { \
+                if ((mfsdev_present & (kword_t)MONITORFS_PRESENT(id)) != 0UL) \
+                        mfsdev_names[id] = (kword_t)SIXBIT(text); \
+        } while (0)
+        MFSDEV_PUBLISH(MONITORFS_DEV_CTY0, "CTY0  ");
+        MFSDEV_PUBLISH(MONITORFS_DEV_CLK0, "CLK0  ");
+        MFSDEV_PUBLISH(MONITORFS_DEV_PTR0, "PTR0  ");
+        MFSDEV_PUBLISH(MONITORFS_DEV_PTP0, "PTP0  ");
+        MFSDEV_PUBLISH(MONITORFS_DEV_CR0, "CR0   ");
+        MFSDEV_PUBLISH(MONITORFS_DEV_CP0, "CP0   ");
+        MFSDEV_PUBLISH(MONITORFS_DEV_DCS0, "DCS0  ");
+        MFSDEV_PUBLISH(MONITORFS_DEV_GE0, "GE0   ");
+        MFSDEV_PUBLISH(MONITORFS_DEV_DPY0, "DPY0  ");
+        MFSDEV_PUBLISH(MONITORFS_DEV_TTY0, "TTY0  ");
+        MFSDEV_PUBLISH(MONITORFS_DEV_WCNSLS, "WCNSLS");
+        MFSDEV_PUBLISH(MONITORFS_DEV_OCNSLS, "OCNSLS");
+        MFSDEV_PUBLISH(MONITORFS_DEV_DTC0, "DTC0  ");
+        MFSDEV_PUBLISH(MONITORFS_DEV_MTC0, "MTC0  ");
+        MFSDEV_PUBLISH(MONITORFS_DEV_DSK0, "DSK0  ");
+        MFSDEV_PUBLISH(MONITORFS_DEV_SLV0, "SLV0  ");
+        MFSDEV_PUBLISH(MONITORFS_DEV_D6SET0, "D6SET0");
+        MFSDEV_PUBLISH(MONITORFS_DEV_DRM0, "DRM0  ");
+        MFSDEV_PUBLISH(MONITORFS_DEV_LPT0, "LPT0  ");
+#undef MFSDEV_PUBLISH
 }
 
 #if KINIT_FULL

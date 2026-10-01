@@ -529,39 +529,6 @@ vfs_name_is6:
         jrst    kret_zero
         jrst    kret_one
 
-; int vfs_sixbit_readchar(kword_t word, unsigned int nchars, kword_t off,
-;     unsigned int *chp)
-        .globl  vfs_sixbit_readchar
-vfs_sixbit_readchar:
-        jumpe   4,kret_neg1
-        jumpl   2,kret_neg1
-        caile   2,6
-        jrst    kret_neg1
-        jumpl   3,kret_zero
-        caml    3,2
-        jrst    vfs_sixchar_tail
-        move    6,3
-        imuli   6,6
-        subi    6,036
-        move    5,1
-        lsh     5,0(6)
-        andi    5,077
-        addi    5,040
-vfs_sixchar_store:
-        movem   5,(4)
-        jrst    kret_one
-vfs_sixchar_tail:
-        came    3,2
-        jrst    vfs_sixchar_lf
-        movei   5,015                  ; CR
-        jrst    vfs_sixchar_store
-vfs_sixchar_lf:
-        addi    2,1
-        came    3,2
-        jrst    kret_zero
-        movei   5,012                  ; LF
-        jrst    vfs_sixchar_store
-
 ; unsigned int vfs_sixbit_name_chars(words, maxchars)
 ; Return the last nonzero character position in a packed SIXBIT name.
         .globl  vfs_sixbit_name_chars
@@ -699,9 +666,9 @@ vfs_read_words:
         cain    7,070001               ; PIPE_PROVIDER, PIPE_KIND_STREAM
         jrst    pipe_read_words
         lsh     7,-014                 ; provider
-        caie    7,3
+        cain    7,3
+        jrst    mfsproc_read_words
         jrst    vfs_read_words_provider
-        jrst    kret_neg1
 vfs_read_words_provider:
         movei   6,15                   ; FS_MRES_OP_READ_WORDS
         jrst    fs_provider_reg_call
@@ -748,7 +715,7 @@ fs_block_workspace:
         .text
 
 ; Character I/O is stream/device-only.  Regular files are word streams.
-        .globl  mfsproc_readchar
+        .globl  mfsproc_read_words
         .globl  mfsdev_readchar
 
 ; int vfs_readchar(vnode_t node, kword_t off, unsigned int *chp)
@@ -756,8 +723,6 @@ fs_block_workspace:
 vfs_readchar:
         jumpe   3,kret_neg1
         ldb     4,[POINT 6,1,5]
-        cain    4,3
-        jrst    mfsproc_readchar
         cain    4,2
         jrst    mfsdev_readchar
         jrst    kret_neg1
