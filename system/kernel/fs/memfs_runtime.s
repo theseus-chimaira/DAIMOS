@@ -704,7 +704,7 @@ memfs_mres_mount_size_ok:
         movei   2,01000
         pushj   17,fs_zero_words
         move    5,(17)
-        move    6,[0207775]             ; DIR, mode 0777, USED|WRITABLE
+        move    6,[0107775]             ; DIR, mode 0777, USED|WRITABLE
         movem   6,5(5)                  ; root-node meta
 
         movem   5,memfs_mres_fs
