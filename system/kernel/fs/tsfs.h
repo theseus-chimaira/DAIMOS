@@ -28,6 +28,10 @@
 #define TSFS_FILE_FLAG_DIR         1U
 #define TSFS_FILE_FLAG_REG         2U
 #define TSFS_FILE_FLAG_MASK        3U
+#define TSFS_FILE_MODE_SHIFT       6U
+#define TSFS_FILE_MODE_MASK        07777U
+#define TSFS_FILE_FLAG_RESERVED    074U
+#define TSFS_FILE_OWNER_SHIFT      9U
 
 /* Regular-file payloads use fixed restart extents.  Metadata is never
  * compressed.  A payload extent is always explicitly STORED or D6LZ. */

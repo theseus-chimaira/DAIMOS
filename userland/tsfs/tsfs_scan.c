@@ -4,7 +4,7 @@
 #define HALF18 0777777UL
 #define TSFS_MAGIC 0646346630000UL
 #define TSDIR_MAGIC 0646344516200UL
-#define TSFS_VERSION ((kword_t)1U << 18)
+#define TSFS_VERSION (((kword_t)1U << 18) | 1U)
 
 #define D_MAGIC 0U
 #define D_VERSION 1U
@@ -371,8 +371,10 @@ file_table_structure_ok(const struct tsfs_scan_result *scan,
                 r = block + slot * FILE_WORDS;
                 parent = (unsigned int)((r[0] >> 18) & HALF18);
                 flags = (unsigned int)(r[0] & HALF18);
-                if (flags != 1U && flags != 2U)
+                if ((flags & 074U) != 0U ||
+                    ((flags & 3U) != 1U && (flags & 3U) != 2U))
                         return 0;
+                flags &= 3U;
                 if (index == 0U) {
                         if (parent != 0U || flags != 1U)
                                 return 0;
@@ -380,7 +382,7 @@ file_table_structure_ok(const struct tsfs_scan_result *scan,
                         return 0;
                 }
                 if (flags == 1U) {
-                        if (r[5] != 0 || r[6] != 0)
+                        if (r[5] > HALF18 || r[6] != 0)
                                 return 0;
                         first = (unsigned int)((r[7] >> 18) & HALF18);
                         count = (unsigned int)(r[7] & HALF18);

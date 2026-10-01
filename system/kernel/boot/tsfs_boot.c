@@ -9,7 +9,7 @@
 #define HALF18 0777777UL
 #define TSFS_MAGIC 0646346630000UL
 #define TSDIR_MAGIC 0646344516200UL
-#define TSFS_VERSION ((kword_t)1U << 18)
+#define TSFS_VERSION (((kword_t)1U << 18) | 1U)
 
 #define D_MAGIC 0U
 #define D_VERSION 1U

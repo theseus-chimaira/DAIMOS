@@ -809,20 +809,20 @@ $(TSFS_ROOT_IMAGE): $(INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $
 	tmp='$(TSFS_ROOT_MANIFEST).tmp.$$$$'; \
 	trap 'rm -f "$$tmp"' 0 1 2 3 15; \
 	{ \
-	  echo 'D /MOUNT'; \
-	  echo 'D /TEMP'; \
-	  echo 'D /SYSTEM'; \
-	  echo 'D /SYSTEM/EXEC'; \
-	  echo 'D /CONFIG'; \
-	  printf 'F /SYSTEM/INIT %s\n' '$(INIT_DXR)'; \
-	  printf 'F /SYSTEM/EXEC/MOUNTALL %s\n' '$(SYSTEM_MOUNTALL_DXR)'; \
-	  printf 'F /CONFIG/FSTAB %s\n' '$(SYSTEM_FSTAB_S6REC)'; \
-	  printf 'F /CONFIG/INITTAB %s\n' '$(SYSTEM_INITTAB_S6REC)'; \
-	  printf 'F /SYSTEM/EXEC/LOGIN %s\n' '$(LOGIN_DXR)'; \
-	  printf 'F /CONFIG/PASSWD %s\n' '$(SYSTEM_PASSWD_S6REC)'; \
-	  printf 'F /CONFIG/SYSTEM %s\n' '$(SYSTEM_SYSTEM_S6REC)'; \
-	  printf 'F /SYSTEM/EXEC/DSH %s\n' '$(DSH_DXR)'; \
-	  printf 'F /SYSTEM/EXEC/DTFSPROBE %s\n' '$(DTFSPROBE_DXR)'; \
+	  echo 'D /MOUNT 0755 0 0'; \
+	  echo 'D /TEMP 0777 0 0'; \
+	  echo 'D /SYSTEM 0555 0 0'; \
+	  echo 'D /SYSTEM/EXEC 0555 0 0'; \
+	  echo 'D /CONFIG 0755 0 0'; \
+	  printf 'F /SYSTEM/INIT %s 0555 0 0\n' '$(INIT_DXR)'; \
+	  printf 'F /SYSTEM/EXEC/MOUNTALL %s 0555 0 0\n' '$(SYSTEM_MOUNTALL_DXR)'; \
+	  printf 'F /CONFIG/FSTAB %s 0644 0 0\n' '$(SYSTEM_FSTAB_S6REC)'; \
+	  printf 'F /CONFIG/INITTAB %s 0644 0 0\n' '$(SYSTEM_INITTAB_S6REC)'; \
+	  printf 'F /SYSTEM/EXEC/LOGIN %s 0555 0 0\n' '$(LOGIN_DXR)'; \
+	  printf 'F /CONFIG/PASSWD %s 0600 0 0\n' '$(SYSTEM_PASSWD_S6REC)'; \
+	  printf 'F /CONFIG/SYSTEM %s 0644 0 0\n' '$(SYSTEM_SYSTEM_S6REC)'; \
+	  printf 'F /SYSTEM/EXEC/DSH %s 0555 0 0\n' '$(DSH_DXR)'; \
+	  printf 'F /SYSTEM/EXEC/DTFSPROBE %s 0555 0 0\n' '$(DTFSPROBE_DXR)'; \
 	} > "$$tmp"; \
 	mv "$$tmp" '$(TSFS_ROOT_MANIFEST)'; \
 	trap - 0 1 2 3 15

@@ -223,31 +223,58 @@ tsfs_stat:
         move    010,2
         pushj   17,tsfs_node_record
         cain    1,1
-        jrst    tsfs_stat_dir
+        jrst    tsfs_stat_synthetic_root
         jumpl   1,tsfs_stat_pop_bad
-        hrrz    4,(1)                  ; file flags
-        cain    4,1
-        jrst    tsfs_stat_dir
-        caie    4,2
+        move    7,1                     ; record pointer
+        hrrz    4,(7)                   ; flags + mode
+        move    5,4
+        andi    5,3                     ; type flags
+        cain    5,1
+        jrst    tsfs_stat_dir_record
+        caie    5,2
         jrst    tsfs_stat_pop_bad
+        movei   5,2                     ; VFS_TYPE_REG
+        movem   5,0(010)
+        move    5,4
+        lsh     5,-6
+        andi    5,07777
+        movem   5,1(010)
+        move    5,5(7)                  ; FILE_SIZE_WORDS
+        movem   5,3(010)
+        move    6,7(7)                  ; regular owner in FILE_AUX
+        jrst    tsfs_stat_attrs
 
-        movei   4,2                    ; VFS_TYPE_REG
-        movem   4,0(010)
-        movei   4,0444
-        movem   4,1(010)
-        move    4,5(1)                 ; FILE_SIZE_WORDS
-        movem   4,3(010)
+tsfs_stat_dir_record:
+        movei   5,1                     ; VFS_TYPE_DIR
+        movem   5,0(010)
+        move    5,4
+        lsh     5,-6
+        andi    5,07777
+        movem   5,1(010)
+        setzm   3(010)
+        move    6,5(7)                  ; directory owner in SIZE_WORDS
+tsfs_stat_attrs:
         setzm   2(010)                  ; reserved
+        move    5,6
+        lsh     5,-011
+        andi    5,0777
+        movem   5,4(010)                ; uid
+        andi    6,0777
+        movem   6,5(010)                ; gid
+        setzm   6(010)                  ; TSFS has no per-file timestamp
         setz    1,
         jrst    tsfs_stat_pop
 
-tsfs_stat_dir:
-        movei   4,1                    ; VFS_TYPE_DIR
+tsfs_stat_synthetic_root:
+        movei   4,1
         movem   4,0(010)
         movei   4,0555
         movem   4,1(010)
         setzm   2(010)
         setzm   3(010)
+        setzm   4(010)
+        setzm   5(010)
+        setzm   6(010)
         setz    1,
         jrst    tsfs_stat_pop
 
@@ -270,6 +297,7 @@ tsfs_readdir:
         jrst    tsfs_readdir_eof
         jumpl   1,tsfs_readdir_pop_bad
         hrrz    4,(1)
+        andi    4,3
         caie    4,1                    ; TSFS_FILE_FLAG_DIR
         jrst    tsfs_readdir_pop_bad
 
@@ -284,6 +312,7 @@ tsfs_readdir:
         jumpl   1,tsfs_readdir_pop_bad
         move    5,1                    ; child record pointer
         hrrz    011,(5)                ; preserve child flags across call
+        andi    011,3
 
         movei   1,1(5)                 ; record NAME0
         move    2,012                   ; ent->name
@@ -343,6 +372,7 @@ tsfs_read_words:
         caig    1,1
         jrst    tsfs_read_words_fail0
         hrrz    5,(1)
+        andi    5,3
         caie    5,2
         jrst    tsfs_read_words_fail0
         move    5,5(1)
@@ -620,6 +650,7 @@ tsfs_lookup:
         caig    1,1                    ; reject error/synthetic root
         jrst    tsfs_lookup_local_bad
         hrrz    4,(1)
+        andi    4,3
         caie    4,1                    ; directory record required
         jrst    tsfs_lookup_local_bad
         move    4,7(1)                 ; FILE_AUX = FIRST,,COUNT
