@@ -48,15 +48,31 @@ dsh_state_init(struct dsh_state *st, int argc, kword_t **argv,
                 st->vars[i].used = 0U;
         for (i = 0U; i < DSH_MAX_ALIASES; ++i)
                 st->aliases[i].used = 0U;
+        for (i = 0U; i < DSH_MAX_JOBS; ++i)
+                st->jobs[i].used = 0U;
         dsh_s6_clear(&st->arg0);
         for (i = 0U; i < DSH_MAX_ARGS; ++i)
                 dsh_s6_clear(&st->args[i]);
         st->argc = 0U;
         st->status = 0U;
+        st->shell_pgrp = 0U;
+        st->tty_attached = 0U;
+        st->interactive = 0U;
         st->exit_requested = 0U;
         st->exit_status = 0U;
         if (argc > 0 && argv != 0)
                 (void)dsh_s6_from_counted(&st->arg0, argv[0]);
+        {
+                int pgrp;
+                int tty;
+
+                pgrp = dsys_procctl(SYS_PROCCTL_GETPGRP, 0U);
+                if (pgrp > 0)
+                        st->shell_pgrp = (unsigned int)pgrp;
+                tty = dsys_procctl(SYS_PROCCTL_GETTTY, 0U);
+                if (tty >= 0 && SYS_TTY_IS_ATTACHED((unsigned int)tty))
+                        st->tty_attached = 1U;
+        }
         if (envp != 0) {
                 for (i = 0U; envp[i] != 0 && i < DSH_MAX_VARS; ++i)
                         if (dsh_split_env(envp[i], &name, &value) == 0)

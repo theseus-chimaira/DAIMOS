@@ -8,7 +8,7 @@ DLINK ?= $(PDP10_PREFIX)/bin/dlink
 CPPFLAGS = -I$(PROJECT_ROOT)/system/kernel/boot -I$(PROJECT_ROOT)/system/kernel/core -I$(PROJECT_ROOT)/system/kernel/drivers -I$(PROJECT_ROOT)/system/kernel/fs -I$(PROJECT_ROOT)/system/kernel/mm -I$(PROJECT_ROOT)/system/kernel/modules -I$(PROJECT_ROOT)/system/kernel/proc -I$(PROJECT_ROOT)/system/kernel/storage -I$(PROJECT_ROOT)/userland/libc -I$(PROJECT_ROOT)/userland/exec -I$(PDP10_PREFIX)/include
 KCCFLAGS ?= -Pgnu99 -O -x=pdp6 -m=gas
 
-CHECK_SRCS = libc/u.c libc/text.c exec/commands.c exec/standalone.c dsh/dsh.c dsh/dsh_s6.c dsh/dsh_env.c dsh/dsh_exec.c init/init.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c tsfs/mount_tsfs.c dtfs/dtfs_probe.c dtfs/dtfsprobe.c d6lz/d6lz.c logstore/logdrain.c
+CHECK_SRCS = libc/u.c libc/text.c exec/commands.c exec/standalone.c dsh/dsh.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c init/init.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c tsfs/mount_tsfs.c dtfs/dtfs_probe.c dtfs/dtfsprobe.c d6lz/d6lz.c logstore/logdrain.c
 CHECK_ASMS = $(CHECK_SRCS:%.c=$(USERLAND_BUILD)/check/%.s)
 COMMON_C_SRCS = libc/u.c libc/text.c
 COMMON_S_SRCS = libc/crt0.s libc/syscall.s libc/syscall_helpers.s
@@ -32,7 +32,7 @@ LOGIN_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/login/%.dobj)
 LOGIN_DXR = $(USERLAND_BUILD)/login.dxr
 LOGIN_MAP = $(USERLAND_BUILD)/login.map
 
-DSH_C_SRCS = libc/u.c libc/text.c dsh/dsh_s6.c dsh/dsh_env.c dsh/dsh_exec.c dsh/dsh.c
+DSH_C_SRCS = libc/u.c libc/text.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c dsh/dsh.c
 DSH_C_OBJS = $(DSH_C_SRCS:%.c=$(USERLAND_BUILD)/dsh/%.dobj)
 DSH_S_SRCS = $(COMMON_S_SRCS)
 DSH_S_OBJS = $(DSH_S_SRCS:%.s=$(USERLAND_BUILD)/dsh/%.dobj)

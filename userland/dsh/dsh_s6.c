@@ -10,6 +10,18 @@ dsh_s6_clear(struct dsh_s6 *s)
                 s->words[i] = 0;
 }
 
+void
+dsh_line_clear(struct dsh_line *line)
+{
+        unsigned int i;
+
+        if (line == 0)
+                return;
+        line->len = 0U;
+        for (i = 0U; i < DSH_LINE_MAX_WORDS; ++i)
+                line->words[i] = 0;
+}
+
 int
 dsh_s6_append(struct dsh_s6 *s, int ch)
 {
@@ -75,6 +87,19 @@ dsh_s6_eq_text(const struct dsh_s6 *s, const char *text)
 }
 
 int
+dsh_s6_eq_packed(const struct dsh_s6 *s, unsigned int len,
+    kword_t word0, kword_t word1)
+{
+        if (s == 0 || s->len != len)
+                return 0;
+        if (s->words[0] != word0)
+                return 0;
+        if (len > DSH_S6_CHARS_PER_WORD && s->words[1] != word1)
+                return 0;
+        return 1;
+}
+
+int
 dsh_s6_pack(const struct dsh_s6 *s, kword_t *dst, unsigned int words)
 {
         unsigned int i;
@@ -119,4 +144,17 @@ dsh_s6_put(int fd, const struct dsh_s6 *s)
         if (dsh_s6_pack(s, packed, DSH_S6_MAX_WORDS + 1U) != 0)
                 return -1;
         return u_put_s6(fd, packed);
+}
+
+int
+dsh_line_get(const struct dsh_line *line, unsigned int pos)
+{
+        unsigned int wi;
+        unsigned int sh;
+
+        if (line == 0 || pos >= line->len)
+                return 0;
+        wi = pos / DSH_S6_CHARS_PER_WORD;
+        sh = 30U - (pos % DSH_S6_CHARS_PER_WORD) * 6U;
+        return (int)(((line->words[wi] >> sh) & 077UL) + 040U);
 }
