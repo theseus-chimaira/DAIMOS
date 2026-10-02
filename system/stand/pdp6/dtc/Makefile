@@ -4,7 +4,7 @@ PROJECT_ROOT != cd ../../../.. && pwd
 BUILD ?= ${PROJECT_ROOT}/build/system/stand/pdp6/dtc
 PDP10_PREFIX ?= ${HOME}/cross
 DAS ?= ${PDP10_PREFIX}/bin/das
-DASFLAGS ?= -O
+DASFLAGS ?= -F
 DXRCONVERT ?= ${PDP10_PREFIX}/bin/dxrconvert
 STAGE1 = ${PROJECT_ROOT}/system/stand/pdp6/dtc/stage1.s
 STAGE1_COMMON = ${PROJECT_ROOT}/system/stand/pdp6/common/decompressor.inc \
@@ -21,7 +21,7 @@ ${BUILD}:
 	mkdir -p $@
 
 ${STAGE1_DXR}: ${STAGE1} ${STAGE1_COMMON} ${BUILD}
-	${DAS} ${DASFLAGS} -k -o $@ $<
+	${DAS} ${DASFLAGS} -K -O $@ $<
 
 ${STAGE1_TAPE}: ${STAGE1_DXR}
 	${DXRCONVERT} --pdp6-readin -b ${STAGE1_BASE} $< $@

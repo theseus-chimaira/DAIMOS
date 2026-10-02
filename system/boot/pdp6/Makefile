@@ -6,7 +6,7 @@ BUILD ?= $(BUILD_ROOT)/system/boot/pdp6
 PDP10_PREFIX ?= $(HOME)/cross
 
 DAS ?= $(PDP10_PREFIX)/bin/das
-DASFLAGS ?= -O
+DASFLAGS ?= -F
 DLINK ?= $(PDP10_PREFIX)/bin/dlink
 P10FOLD ?= $(PDP10_PREFIX)/bin/p10fold
 DXRCONVERT ?= $(PDP10_PREFIX)/bin/dxrconvert
@@ -328,6 +328,10 @@ SYSTEM_FSTAB_S6REC = $(SYSTEM_CONFIG_BUILD)/FSTAB.s6rec
 SYSTEM_SYSTEM_S6REC = $(SYSTEM_CONFIG_BUILD)/SYSTEM.s6rec
 SYSTEM_CONFIG_S6REC = $(SYSTEM_INITTAB_S6REC) $(SYSTEM_PASSWD_S6REC) \
 	$(SYSTEM_FSTAB_S6REC) $(SYSTEM_SYSTEM_S6REC)
+# Optional additional mkd6fs arguments are primarily useful to target tests
+# that need to place extra executables/data in an otherwise standard root.
+# Keep the default empty so production images are unchanged.
+D6FS_EXTRA_ARGS ?=
 MANUAL_BUILD = $(BUILD)/manual
 SYSTEM_INIT_MANUAL_SRC = $(PROJECT_ROOT)/userland/manual/INIT.SIXMD
 SYSTEM_LOGIN_MANUAL_SRC = $(PROJECT_ROOT)/userland/manual/LOGIN.SIXMD
@@ -461,7 +465,7 @@ KERNEL_ASM_OBJS = $(BUILD)/kinit.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_m
 
 $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM)
 	@mkdir -p $(BUILD)
-	@base=`basename "$@" .dobj`; src=; if test -f "$(KINIT_BUILD)/$$base.s"; then src="$(KINIT_BUILD)/$$base.s"; elif test -f "$(KCORE_BUILD)/$$base.s"; then src="$(KCORE_BUILD)/$$base.s"; fi; test -n "$$src"; $(DAS) $(DASFLAGS) -c -o "$@" "$$src"
+	@base=`basename "$@" .dobj`; src=; if test -f "$(KINIT_BUILD)/$$base.s"; then src="$(KINIT_BUILD)/$$base.s"; elif test -f "$(KCORE_BUILD)/$$base.s"; then src="$(KCORE_BUILD)/$$base.s"; fi; test -n "$$src"; $(DAS) $(DASFLAGS) -C -O "$@" "$$src"
 
 force-minit-config:
 
@@ -469,10 +473,10 @@ $(MINIT_TABLE_ASM): $(KERNEL_DIR)/modules/module_table.s force-minit-config | $(
 	{ echo ".set KINIT_FULL,$(KINIT_FULL)"; echo ".set KINIT_BADMAP,$(KINIT_BADMAP)"; cat $<; } > $@
 
 $(MINIT_TABLE_OBJ): $(MINIT_TABLE_ASM) $(BUILD)
-	$(DAS) $(DASFLAGS) -c -o $@ $<
+	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(END_OBJ): image/image-end.s $(BUILD)
-	$(DAS) $(DASFLAGS) -c -o $@ $<
+	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(KCORE_FOLD_PLAN): $(KCORE_FOLD_OBJS) $(P10FOLD)
 	$(P10FOLD) -m 4 -P $@ $(KCORE_FOLD_OBJS) >/dev/null
@@ -659,7 +663,7 @@ $(KCORE_EMBED_ASM): $(KCORE_MAP) $(BUILD)
 	} > $@
 
 $(KCORE_EMBED_OBJ): $(KCORE_EMBED_ASM)
-	$(DAS) $(DASFLAGS) -c -o $@ $<
+	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(SYSTEM_CONFIG_BUILD):
 	mkdir -p $@
@@ -764,7 +768,7 @@ $(IMAGE_COMPRESSED_WORDS): $(IMAGE_WORDS)
 	trap - 0 1 2 3 15
 
 $(STAGE1_DXR): $(STAGE1_SRC) $(STAGE1_COMMON) $(BUILD)
-	$(DAS) $(DASFLAGS) -k -o $@ $<
+	$(DAS) $(DASFLAGS) -K -O $@ $<
 
 $(STAGE1_TAPE): $(STAGE1_DXR)
 	$(DXRCONVERT) --pdp6-readin -b 060 $< $@
@@ -802,7 +806,8 @@ $(DISK_IMAGE): $(IMAGE_BOOT_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(S
 	    -f "/CONFIG/INITTAB:$(SYSTEM_INITTAB_S6REC):644:binwords" \
 	    -f "/CONFIG/FSTAB:$(SYSTEM_FSTAB_S6REC):644:binwords" \
 	    -f "/CONFIG/PASSWD:$(SYSTEM_PASSWD_S6REC):600:binwords" \
-	    -f "/CONFIG/SYSTEM:$(SYSTEM_SYSTEM_S6REC):644:binwords"
+	    -f "/CONFIG/SYSTEM:$(SYSTEM_SYSTEM_S6REC):644:binwords" \
+	    $(D6FS_EXTRA_ARGS)
 	$(LOGSTORE) -n 1 -d $(DISK_DIR) --init
 
 $(TSFS_ROOT_IMAGE): $(INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(DTFSPROBE_DXR) \

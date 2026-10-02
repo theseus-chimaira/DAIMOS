@@ -3,7 +3,7 @@ BUILD_ROOT ?= $(CURDIR)/../build
 BUILD := $(BUILD_ROOT)/libc
 CC := $(PDP10_PREFIX)/bin/kcc
 DAS := $(PDP10_PREFIX)/bin/das
-DASFLAGS ?= -O
+DASFLAGS ?= -F
 DARC := $(PDP10_PREFIX)/bin/darc
 CFLAGS := -Pgnu99 -O -x=pdp6 -m=gas
 OBJS := $(BUILD)/memcpy.dobj $(BUILD)/memmove.dobj
@@ -23,13 +23,13 @@ $(BUILD):
 	mkdir -p "$@"
 
 $(BUILD)/%.dobj: %.s | $(BUILD)
-	"$(DAS)" $(DASFLAGS) -c -o "$@" "$<"
+	"$(DAS)" $(DASFLAGS) -C -O "$@" "$<"
 
 $(BUILD)/%.s: %.c | $(BUILD)
 	"$(CC)" $(CFLAGS) -S "$<" -o "$@"
 
 $(BUILD)/%.dobj: $(BUILD)/%.s
-	"$(DAS)" $(DASFLAGS) -c -o "$@" "$<"
+	"$(DAS)" $(DASFLAGS) -C -O "$@" "$<"
 
 $(LIBC): $(OBJS)
 	"$(DARC)" -o "$@" $(OBJS)

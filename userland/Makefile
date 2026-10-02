@@ -3,7 +3,7 @@ BUILD_ROOT ?= $(PROJECT_ROOT)/build
 USERLAND_BUILD := $(BUILD_ROOT)/userland
 KCC ?= $(PDP10_PREFIX)/bin/kcc
 DAS ?= $(PDP10_PREFIX)/bin/das
-DASFLAGS ?= -O
+DASFLAGS ?= -F
 DLINK ?= $(PDP10_PREFIX)/bin/dlink
 CPPFLAGS = -I$(PROJECT_ROOT)/system/kernel/boot -I$(PROJECT_ROOT)/system/kernel/core -I$(PROJECT_ROOT)/system/kernel/drivers -I$(PROJECT_ROOT)/system/kernel/fs -I$(PROJECT_ROOT)/system/kernel/mm -I$(PROJECT_ROOT)/system/kernel/modules -I$(PROJECT_ROOT)/system/kernel/proc -I$(PROJECT_ROOT)/system/kernel/storage -I$(PROJECT_ROOT)/userland/libc -I$(PROJECT_ROOT)/userland/exec -I$(PDP10_PREFIX)/include
 KCCFLAGS ?= -Pgnu99 -O -x=pdp6 -m=gas
@@ -83,29 +83,29 @@ $(USERLAND_BUILD)/check/%.s: %.c
 $(USERLAND_BUILD)/init/%.dobj: %.c
 	mkdir -p $(dir $@)
 	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
-	$(DAS) $(DASFLAGS) -c -o $@ $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
 
 $(USERLAND_BUILD)/init/%.dobj: %.s
 	mkdir -p $(dir $@)
-	$(DAS) $(DASFLAGS) -c -o $@ $<
+	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(USERLAND_BUILD)/login/%.dobj: %.c
 	mkdir -p $(dir $@)
 	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
-	$(DAS) $(DASFLAGS) -c -o $@ $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
 
 $(USERLAND_BUILD)/login/%.dobj: %.s
 	mkdir -p $(dir $@)
-	$(DAS) $(DASFLAGS) -c -o $@ $<
+	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(USERLAND_BUILD)/dsh/%.dobj: %.c
 	mkdir -p $(dir $@)
 	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
-	$(DAS) $(DASFLAGS) -c -o $@ $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
 
 $(USERLAND_BUILD)/dsh/%.dobj: %.s
 	mkdir -p $(dir $@)
-	$(DAS) $(DASFLAGS) -c -o $@ $<
+	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(INIT_DXR): $(INIT_C_OBJS) $(INIT_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(INIT_MAP) $(INIT_S_OBJS) $(INIT_C_OBJS)
@@ -113,11 +113,11 @@ $(INIT_DXR): $(INIT_C_OBJS) $(INIT_S_OBJS)
 $(USERLAND_BUILD)/mountall/%.dobj: %.c
 	mkdir -p $(dir $@)
 	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
-	$(DAS) $(DASFLAGS) -c -o $@ $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
 
 $(USERLAND_BUILD)/mountall/%.dobj: %.s
 	mkdir -p $(dir $@)
-	$(DAS) $(DASFLAGS) -c -o $@ $<
+	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(MOUNTALL_DXR): $(MOUNTALL_C_OBJS) $(MOUNTALL_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(MOUNTALL_MAP) $(MOUNTALL_S_OBJS) $(MOUNTALL_C_OBJS)
@@ -131,11 +131,11 @@ $(DSH_DXR): $(DSH_C_OBJS) $(DSH_S_OBJS)
 $(USERLAND_BUILD)/tsfsprobe/%.dobj: %.c
 	mkdir -p $(dir $@)
 	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
-	$(DAS) $(DASFLAGS) -c -o $@ $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
 
 $(USERLAND_BUILD)/tsfsprobe/%.dobj: %.s
 	mkdir -p $(dir $@)
-	$(DAS) $(DASFLAGS) -c -o $@ $<
+	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(TSFSPROBE_DXR): $(TSFSPROBE_C_OBJS) $(TSFSPROBE_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(TSFSPROBE_MAP) $(TSFSPROBE_S_OBJS) $(TSFSPROBE_C_OBJS)
@@ -143,11 +143,11 @@ $(TSFSPROBE_DXR): $(TSFSPROBE_C_OBJS) $(TSFSPROBE_S_OBJS)
 $(USERLAND_BUILD)/mounttsfs/%.dobj: %.c
 	mkdir -p $(dir $@)
 	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
-	$(DAS) $(DASFLAGS) -c -o $@ $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
 
 $(USERLAND_BUILD)/mounttsfs/%.dobj: %.s
 	mkdir -p $(dir $@)
-	$(DAS) $(DASFLAGS) -c -o $@ $<
+	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(MOUNTTSFS_DXR): $(MOUNTTSFS_C_OBJS) $(MOUNTTSFS_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(MOUNTTSFS_MAP) $(MOUNTTSFS_S_OBJS) $(MOUNTTSFS_C_OBJS)
@@ -155,11 +155,11 @@ $(MOUNTTSFS_DXR): $(MOUNTTSFS_C_OBJS) $(MOUNTTSFS_S_OBJS)
 $(USERLAND_BUILD)/dtfsprobe/%.dobj: %.c
 	mkdir -p $(dir $@)
 	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
-	$(DAS) $(DASFLAGS) -c -o $@ $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
 
 $(USERLAND_BUILD)/dtfsprobe/%.dobj: %.s
 	mkdir -p $(dir $@)
-	$(DAS) $(DASFLAGS) -c -o $@ $<
+	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(DTFSPROBE_DXR): $(DTFSPROBE_C_OBJS) $(DTFSPROBE_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(DTFSPROBE_MAP) $(DTFSPROBE_S_OBJS) $(DTFSPROBE_C_OBJS)
@@ -167,11 +167,11 @@ $(DTFSPROBE_DXR): $(DTFSPROBE_C_OBJS) $(DTFSPROBE_S_OBJS)
 $(USERLAND_BUILD)/d6lz/%.dobj: %.c
 	mkdir -p $(dir $@)
 	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
-	$(DAS) $(DASFLAGS) -c -o $@ $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
 
 $(USERLAND_BUILD)/d6lz/%.dobj: %.s
 	mkdir -p $(dir $@)
-	$(DAS) $(DASFLAGS) -c -o $@ $<
+	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(D6LZ_DXR): $(D6LZ_C_OBJS) $(D6LZ_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(D6LZ_MAP) $(D6LZ_S_OBJS) $(D6LZ_C_OBJS)
@@ -179,11 +179,11 @@ $(D6LZ_DXR): $(D6LZ_C_OBJS) $(D6LZ_S_OBJS)
 $(USERLAND_BUILD)/logdrain/%.dobj: %.c
 	mkdir -p $(dir $@)
 	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
-	$(DAS) $(DASFLAGS) -c -o $@ $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
 
 $(USERLAND_BUILD)/logdrain/%.dobj: %.s
 	mkdir -p $(dir $@)
-	$(DAS) $(DASFLAGS) -c -o $@ $<
+	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(LOGDRAIN_DXR): $(LOGDRAIN_C_OBJS) $(LOGDRAIN_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(LOGDRAIN_MAP) $(LOGDRAIN_S_OBJS) $(LOGDRAIN_C_OBJS)
