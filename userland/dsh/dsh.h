@@ -13,7 +13,7 @@
 #define DSH_MAX_ALIASES         8U
 #define DSH_MAX_JOBS            4U
 #define DSH_MAX_FUNCS           4U
-#define DSH_FUNC_MAX_NODES     16U
+#define DSH_FUNC_MAX_NODES      8U
 #define DSH_FUNC_MAX_CALLS      4U
 #define DSH_SCRIPT_MAX_TOKENS  32U
 
@@ -36,7 +36,7 @@ struct dsh_token {
         int type;
         struct dsh_s6 text;
         kword_t literal_mask;
-        unsigned int quoted;
+        kword_t quote_mask;
 };
 
 struct dsh_line {
@@ -114,9 +114,13 @@ int dsh_expand(const struct dsh_state *st, const struct dsh_s6 *in,
     struct dsh_s6 *out);
 int dsh_expand_mask(const struct dsh_state *st, const struct dsh_s6 *in,
     kword_t literal_mask, struct dsh_s6 *out);
+int dsh_expand_quoted(const struct dsh_state *st, const struct dsh_s6 *in,
+    kword_t literal_mask, kword_t quote_mask, struct dsh_s6 *out,
+    kword_t *out_quote_mask);
 int dsh_execute_line(struct dsh_state *st, const struct dsh_line *line);
 int dsh_execute_file(struct dsh_state *st, const struct dsh_s6 *path);
 void dsh_script_init(struct dsh_script *script);
+void dsh_script_workspace_set(struct dsh_script *script);
 int dsh_script_feed(struct dsh_state *st, struct dsh_script *script,
     const struct dsh_line *line, int *status, unsigned int *need_more);
 int dsh_script_finish(struct dsh_state *st, struct dsh_script *script,

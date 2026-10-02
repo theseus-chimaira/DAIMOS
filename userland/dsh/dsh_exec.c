@@ -10,18 +10,24 @@
 static kword_t dsh_run_block[DSH_RUN_WORDS];
 static kword_t dsh_path_record[U_PATH_WORDS];
 static struct dsh_node dsh_nodes[DSH_PARSE_MAX_NODES];
+static unsigned int dsh_nodes_active;
+static struct dsh_script *dsh_script_workspace;
 
 struct dsh_function_store {
         unsigned int used;
         struct dsh_s6 name;
-        struct dsh_node nodes[DSH_FUNC_MAX_NODES];
+        unsigned int base;
         unsigned int root;
         unsigned int used_nodes;
 };
 
 static struct dsh_function_store dsh_functions[DSH_MAX_FUNCS];
+static struct dsh_node dsh_function_nodes[DSH_FUNC_MAX_NODES];
+static unsigned int dsh_function_nodes_used;
 
 static int dsh_s6_same(const struct dsh_s6 *a, const struct dsh_s6 *b);
+static int dsh_wild_match(const struct dsh_s6 *value,
+    const struct dsh_s6 *pattern, kword_t quote_mask);
 static int dsh_job_store(struct dsh_state *st, unsigned int pgrp,
     unsigned int last_pid, unsigned int remaining, unsigned int status,
     unsigned int stopped);
@@ -83,8 +89,58 @@ dsh_copy_function_node(struct dsh_node *dst, unsigned int *usedp,
 }
 
 static int
-dsh_define_function(const struct dsh_node *nodes, const struct dsh_node *n)
+dsh_count_function_nodes(const struct dsh_node *src, unsigned int index,
+    unsigned int *countp)
 {
+        int rc;
+
+        if (index == DSH_NONE || index >= DSH_PARSE_MAX_NODES ||
+            *countp >= DSH_FUNC_MAX_NODES)
+                return DSH_E_OVERFLOW;
+        ++*countp;
+        if (src[index].left != DSH_NONE) {
+                rc = dsh_count_function_nodes(src, src[index].left, countp);
+                if (rc != DSH_OK)
+                        return rc;
+        }
+        if (src[index].right != DSH_NONE) {
+                rc = dsh_count_function_nodes(src, src[index].right, countp);
+                if (rc != DSH_OK)
+                        return rc;
+        }
+        if (src[index].extra != DSH_NONE) {
+                rc = dsh_count_function_nodes(src, src[index].extra, countp);
+                if (rc != DSH_OK)
+                        return rc;
+        }
+        return DSH_OK;
+}
+
+static void
+dsh_remove_function_nodes(unsigned int slot)
+{
+        unsigned int base;
+        unsigned int count;
+        unsigned int i;
+        unsigned int j;
+
+        base = dsh_functions[slot].base;
+        count = dsh_functions[slot].used_nodes;
+        for (i = base + count; i < dsh_function_nodes_used; ++i)
+                dsh_function_nodes[i - count] = dsh_function_nodes[i];
+        dsh_function_nodes_used -= count;
+        for (j = 0U; j < DSH_MAX_FUNCS; ++j)
+                if (j != slot && dsh_functions[j].used &&
+                    dsh_functions[j].base > base)
+                        dsh_functions[j].base -= count;
+}
+
+static int
+dsh_define_function(struct dsh_state *st, const struct dsh_node *nodes,
+    const struct dsh_node *n)
+{
+        unsigned int needed;
+        unsigned int old_count;
         unsigned int i;
         unsigned int slot;
         int found;
@@ -93,14 +149,23 @@ dsh_define_function(const struct dsh_node *nodes, const struct dsh_node *n)
         if (n->argc == 0U || n->left == DSH_NONE)
                 return DSH_ERROR;
         found = 0;
+        old_count = 0U;
         slot = 0U;
         for (i = 0U; i < DSH_MAX_FUNCS; ++i)
                 if (dsh_functions[i].used &&
                     dsh_s6_same(&dsh_functions[i].name, &n->words[0])) {
                         slot = i;
                         found = 1;
+                        old_count = dsh_functions[i].used_nodes;
                         break;
                 }
+        needed = 0U;
+        if (dsh_count_function_nodes(nodes, n->left, &needed) != DSH_OK ||
+            dsh_function_nodes_used - old_count + needed >
+            DSH_FUNC_MAX_NODES)
+                return DSH_ERROR;
+        if (found && st->call_depth != 0U)
+                return DSH_ERROR;
         if (!found)
                 for (i = 0U; i < DSH_MAX_FUNCS; ++i)
                         if (!dsh_functions[i].used) {
@@ -110,18 +175,23 @@ dsh_define_function(const struct dsh_node *nodes, const struct dsh_node *n)
                         }
         if (!found)
                 return DSH_ERROR;
+        if (old_count != 0U)
+                dsh_remove_function_nodes(slot);
         dsh_functions[slot].used = 1U;
         if (dsh_s6_copy(&dsh_functions[slot].name, &n->words[0]) != 0)
                 return DSH_ERROR;
+        dsh_functions[slot].base = dsh_function_nodes_used;
         dsh_functions[slot].used_nodes = 0U;
         dsh_functions[slot].root = DSH_NONE;
-        rc = dsh_copy_function_node(dsh_functions[slot].nodes,
+        rc = dsh_copy_function_node(
+            &dsh_function_nodes[dsh_functions[slot].base],
             &dsh_functions[slot].used_nodes, nodes, n->left,
             &dsh_functions[slot].root);
         if (rc != DSH_OK) {
                 dsh_functions[slot].used = 0U;
                 return DSH_ERROR;
         }
+        dsh_function_nodes_used += dsh_functions[slot].used_nodes;
         return 0;
 }
 
@@ -152,7 +222,7 @@ dsh_exec_function(struct dsh_state *st, const struct dsh_function_store *fn,
         ++st->call_depth;
         st->return_requested = 0U;
         st->return_status = 0U;
-        status = dsh_exec_node(st, fn->nodes, fn->root);
+        status = dsh_exec_node(st, &dsh_function_nodes[fn->base], fn->root);
         if (st->return_requested) {
                 status = (int)st->return_status;
                 st->return_requested = 0U;
@@ -229,6 +299,55 @@ dsh_parse_uint(const struct dsh_s6 *s, unsigned int *vp)
         }
         *vp = v;
         return 0;
+}
+
+static void
+dsh_s6_swap(struct dsh_s6 *a, struct dsh_s6 *b)
+{
+        kword_t word;
+        unsigned int len;
+        unsigned int i;
+
+        len = a->len;
+        a->len = b->len;
+        b->len = len;
+        for (i = 0U; i < DSH_S6_MAX_WORDS; ++i) {
+                word = a->words[i];
+                a->words[i] = b->words[i];
+                b->words[i] = word;
+        }
+}
+
+static int
+dsh_builtin_source(struct dsh_state *st, unsigned int argc,
+    struct dsh_s6 *argv)
+{
+        unsigned int savedc;
+        unsigned int sourcec;
+        unsigned int restorec;
+        unsigned int i;
+        int rc;
+
+        if (argc < 2U)
+                return 2;
+        savedc = st->argc;
+        sourcec = argc - 2U;
+        if (argc > 2U) {
+                /* The source-argument slots are dead once copied into the
+                 * positional frame.  Swap the overwritten old values into
+                 * those existing slots instead of allocating an eight-word
+                 * frame copy on the small PDP-6 user stack. */
+                for (i = 0U; i < sourcec; ++i) {
+                        dsh_s6_swap(&st->args[i], &argv[i + 2U]);
+                }
+                st->argc = sourcec;
+        }
+        rc = dsh_execute_file(st, &argv[1]);
+        restorec = savedc < sourcec ? savedc : sourcec;
+        for (i = 0U; i < restorec; ++i)
+                dsh_s6_swap(&st->args[i], &argv[i + 2U]);
+        st->argc = savedc;
+        return rc;
 }
 
 static int
@@ -358,28 +477,8 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 return dsh_var_set(st, &argv[1], &value, 0) != 0;
         }
         if (dsh_s6_eq_text(&argv[0], "SOURCE") ||
-            dsh_s6_eq_text(&argv[0], ".")) {
-                struct dsh_s6 saved[DSH_MAX_ARGS];
-                unsigned int savedc;
-                unsigned int j;
-                int src_rc;
-
-                if (argc < 2U)
-                        return 2;
-                savedc = st->argc;
-                for (j = 0U; j < DSH_MAX_ARGS; ++j)
-                        (void)dsh_s6_copy(&saved[j], &st->args[j]);
-                if (argc > 2U) {
-                        st->argc = argc - 2U;
-                        for (j = 0U; j < st->argc; ++j)
-                                (void)dsh_s6_copy(&st->args[j], &argv[j + 2U]);
-                }
-                src_rc = dsh_execute_file(st, &argv[1]);
-                st->argc = savedc;
-                for (j = 0U; j < DSH_MAX_ARGS; ++j)
-                        (void)dsh_s6_copy(&st->args[j], &saved[j]);
-                return src_rc;
-        }
+            dsh_s6_eq_text(&argv[0], "."))
+                return dsh_builtin_source(st, argc, argv);
         if (dsh_s6_eq_text(&argv[0], "RETURN")) {
                 if (st->call_depth == 0U || argc > 2U)
                         return 2;
@@ -455,11 +554,11 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
         return -1;
 }
 
-int
-dsh_execute_file(struct dsh_state *st, const struct dsh_s6 *path)
+static int
+dsh_execute_file_with_script(struct dsh_state *st, const struct dsh_s6 *path,
+    struct dsh_script *script)
 {
         struct u_text_reader reader;
-        struct dsh_script script;
         struct dsh_line line;
         char buf[DSH_LINE_MAX_CHARS + 1U];
         unsigned int i;
@@ -479,7 +578,7 @@ dsh_execute_file(struct dsh_state *st, const struct dsh_s6 *path)
                 (void)dsys_close(fd);
                 return 1;
         }
-        dsh_script_init(&script);
+        dsh_script_init(script);
         rc = 0;
         status = 0;
         for (;;) {
@@ -512,7 +611,7 @@ dsh_execute_file(struct dsh_state *st, const struct dsh_s6 *path)
                 if (rc != 0)
                         break;
                 need_more = 0U;
-                rc = dsh_script_feed(st, &script, &line, &status,
+                rc = dsh_script_feed(st, script, &line, &status,
                     &need_more);
                 if (rc != DSH_OK) {
                         rc = DSH_ERROR;
@@ -523,7 +622,7 @@ dsh_execute_file(struct dsh_state *st, const struct dsh_s6 *path)
                         break;
         }
         if (rc == 0 && !st->exit_requested) {
-                rc = dsh_script_finish(st, &script, &status);
+                rc = dsh_script_finish(st, script, &status);
                 if (rc == DSH_OK)
                         rc = status;
                 else
@@ -533,27 +632,45 @@ dsh_execute_file(struct dsh_state *st, const struct dsh_s6 *path)
         return rc;
 }
 
-static unsigned int
-dsh_record_words(const kword_t *p)
+static int
+dsh_execute_file_outer(struct dsh_state *st, const struct dsh_s6 *path)
 {
-        return 1U + ((unsigned int)p[0] + 5U) / 6U;
+        struct dsh_script script;
+
+        return dsh_execute_file_with_script(st, path, &script);
+}
+
+int
+dsh_execute_file(struct dsh_state *st, const struct dsh_s6 *path)
+{
+        /* Parsing is complete before evaluation starts, so an executing
+         * script's token arena is free while SOURCE runs.  Reuse that arena
+         * for nested SOURCE calls rather than stacking another 32-token
+         * workspace on the PDP-6's fixed 02000-word user stack. */
+        if (dsh_script_workspace != 0)
+                return dsh_execute_file_with_script(st, path,
+                    dsh_script_workspace);
+        return dsh_execute_file_outer(st, path);
+}
+
+void
+dsh_script_workspace_set(struct dsh_script *script)
+{
+        dsh_script_workspace = script;
 }
 
 static int
 dsh_append_record(kword_t *block, unsigned int *used,
     const struct dsh_s6 *s)
 {
-        kword_t rec[DSH_REC_WORDS];
-        unsigned int i;
         unsigned int n;
 
-        if (dsh_s6_pack(s, rec, DSH_REC_WORDS) != 0)
-                return -1;
-        n = dsh_record_words(rec);
+        n = 1U + (s->len + 5U) / 6U;
         if (*used + n > DSH_RUN_WORDS)
                 return -1;
-        for (i = 0U; i < n; ++i)
-                block[(*used)++] = rec[i];
+        if (dsh_s6_pack(s, &block[*used], n) != 0)
+                return -1;
+        *used += n;
         return 0;
 }
 
@@ -561,8 +678,8 @@ static int
 dsh_append_env_record(kword_t *block, unsigned int *used,
     const struct dsh_s6 *name, const struct dsh_s6 *value)
 {
-        kword_t rec[U_ARG_WORDS];
         unsigned int len;
+        unsigned int words;
         unsigned int i;
         unsigned int pos;
         unsigned int wi;
@@ -572,33 +689,32 @@ dsh_append_env_record(kword_t *block, unsigned int *used,
         len = name->len + 1U + value->len;
         if (len > SYS_RUN_ARG_MAX_CHARS || len > (U_ARG_WORDS - 1U) * 6U)
                 return -1;
-        for (i = 0U; i < U_ARG_WORDS; ++i)
-                rec[i] = 0;
-        rec[0] = (kword_t)len;
+        words = 1U + (len + 5U) / 6U;
+        if (*used + words > DSH_RUN_WORDS)
+                return -1;
+        for (i = 0U; i < words; ++i)
+                block[*used + i] = 0;
+        block[*used] = (kword_t)len;
         pos = 0U;
         for (i = 0U; i < name->len; ++i) {
                 ch = dsh_s6_get(name, i);
-                wi = 1U + pos / 6U;
+                wi = *used + 1U + pos / 6U;
                 sh = 30U - (pos % 6U) * 6U;
-                rec[wi] |= ((kword_t)(ch - 040) & 077UL) << sh;
+                block[wi] |= ((kword_t)(ch - 040) & 077UL) << sh;
                 ++pos;
         }
-        wi = 1U + pos / 6U;
+        wi = *used + 1U + pos / 6U;
         sh = 30U - (pos % 6U) * 6U;
-        rec[wi] |= ((kword_t)('=' - 040) & 077UL) << sh;
+        block[wi] |= ((kword_t)('=' - 040) & 077UL) << sh;
         ++pos;
         for (i = 0U; i < value->len; ++i) {
                 ch = dsh_s6_get(value, i);
-                wi = 1U + pos / 6U;
+                wi = *used + 1U + pos / 6U;
                 sh = 30U - (pos % 6U) * 6U;
-                rec[wi] |= ((kword_t)(ch - 040) & 077UL) << sh;
+                block[wi] |= ((kword_t)(ch - 040) & 077UL) << sh;
                 ++pos;
         }
-        len = 1U + (len + 5U) / 6U;
-        if (*used + len > DSH_RUN_WORDS)
-                return -1;
-        for (i = 0U; i < len; ++i)
-                block[(*used)++] = rec[i];
+        *used += words;
         return 0;
 }
 
@@ -667,43 +783,49 @@ dsh_make_path(struct dsh_s6 *out, const struct dsh_s6 *dir,
         return 0;
 }
 
+static const struct dsh_s6 *
+dsh_path_value(const struct dsh_state *st)
+{
+        unsigned int i;
+
+        for (i = 0U; i < DSH_MAX_VARS; ++i)
+                if (st->vars[i].used &&
+                    dsh_s6_eq_text(&st->vars[i].name, "PATH"))
+                        return &st->vars[i].value;
+        return 0;
+}
+
 static int
-dsh_launch_external(struct dsh_state *st, unsigned int argc,
+dsh_launch_mapped(struct dsh_state *st, unsigned int argc,
     struct dsh_s6 *argv, int infd, int outfd, unsigned int pgrp_mode,
     unsigned int pgrp, int *pidp)
 {
-        struct dsh_s6 path;
         struct dsh_s6 mapped;
+        int rc;
+
+        rc = dsh_s6_pack(&argv[0], dsh_run_block, U_PATH_WORDS);
+        if (rc == 0)
+                rc = u_cmd_resolve(dsh_run_block, dsh_path_record,
+                    U_PATH_WORDS);
+        if (rc == 0)
+                rc = dsh_s6_from_counted(&mapped, dsh_path_record);
+        if (rc != 0)
+                return DSH_NOT_FOUND;
+        return dsh_launch_path(st, &mapped, argc, argv, infd, outfd,
+            pgrp_mode, pgrp, pidp);
+}
+
+static int
+dsh_launch_path_search(struct dsh_state *st, const struct dsh_s6 *pval,
+    unsigned int argc, struct dsh_s6 *argv, int infd, int outfd,
+    unsigned int pgrp_mode, unsigned int pgrp, int *pidp)
+{
+        struct dsh_s6 path;
         struct dsh_s6 dir;
-        struct dsh_s6 pname;
-        const struct dsh_s6 *pval;
         unsigned int i;
         unsigned int start;
         int rc;
 
-        for (i = 0U; i < argv[0].len; ++i)
-                if (dsh_s6_get(&argv[0], i) == '/') {
-                        rc = dsh_launch_path(st, &argv[0], argc, argv,
-                            infd, outfd, pgrp_mode, pgrp, pidp);
-                        if (rc != DSH_NOT_FOUND)
-                                return rc;
-                        if (dsh_s6_pack(&argv[0], dsh_path_record,
-                            U_PATH_WORDS) == 0 &&
-                            u_cmd_resolve(dsh_path_record, dsh_path_record,
-                            U_PATH_WORDS) == 0 &&
-                            dsh_s6_from_counted(&mapped, dsh_path_record) == 0)
-                                return dsh_launch_path(st, &mapped, argc, argv,
-                                    infd, outfd, pgrp_mode, pgrp, pidp);
-                        return DSH_NOT_FOUND;
-                }
-        dsh_s6_clear(&pname);
-        (void)dsh_s6_append(&pname, 'P');
-        (void)dsh_s6_append(&pname, 'A');
-        (void)dsh_s6_append(&pname, 'T');
-        (void)dsh_s6_append(&pname, 'H');
-        pval = dsh_var_get(st, &pname);
-        if (pval == 0)
-                return DSH_NOT_FOUND;
         start = 0U;
         for (i = 0U; i <= pval->len; ++i) {
                 if (i != pval->len && dsh_s6_get(pval, i) != ':')
@@ -717,13 +839,36 @@ dsh_launch_external(struct dsh_state *st, unsigned int argc,
                         return rc;
                 start = i + 1U;
         }
-        if (dsh_s6_pack(&argv[0], dsh_path_record, U_PATH_WORDS) == 0 &&
-            u_cmd_resolve(dsh_path_record, dsh_path_record,
-            U_PATH_WORDS) == 0 &&
-            dsh_s6_from_counted(&mapped, dsh_path_record) == 0)
-                return dsh_launch_path(st, &mapped, argc, argv, infd, outfd,
-                    pgrp_mode, pgrp, pidp);
         return DSH_NOT_FOUND;
+}
+
+static int
+dsh_launch_external(struct dsh_state *st, unsigned int argc,
+    struct dsh_s6 *argv, int infd, int outfd, unsigned int pgrp_mode,
+    unsigned int pgrp, int *pidp)
+{
+        const struct dsh_s6 *pval;
+        unsigned int i;
+        int rc;
+
+        for (i = 0U; i < argv[0].len; ++i)
+                if (dsh_s6_get(&argv[0], i) == '/') {
+                        rc = dsh_launch_path(st, &argv[0], argc, argv,
+                            infd, outfd, pgrp_mode, pgrp, pidp);
+                        if (rc != DSH_NOT_FOUND)
+                                return rc;
+                        return dsh_launch_mapped(st, argc, argv, infd, outfd,
+                            pgrp_mode, pgrp, pidp);
+                }
+        pval = dsh_path_value(st);
+        if (pval == 0)
+                return DSH_NOT_FOUND;
+        rc = dsh_launch_path_search(st, pval, argc, argv, infd, outfd,
+            pgrp_mode, pgrp, pidp);
+        if (rc != DSH_NOT_FOUND)
+                return rc;
+        return dsh_launch_mapped(st, argc, argv, infd, outfd,
+            pgrp_mode, pgrp, pidp);
 }
 
 static int
@@ -779,9 +924,52 @@ dsh_s6_same(const struct dsh_s6 *a, const struct dsh_s6 *b)
         return 1;
 }
 
+/* Match the deliberately small DSH wildcard language.  A quote-mask bit
+ * suppresses wildcard meaning for the corresponding pattern character. */
+static int
+dsh_wild_match(const struct dsh_s6 *value, const struct dsh_s6 *pattern,
+    kword_t quote_mask)
+{
+        unsigned int vi;
+        unsigned int pi;
+        unsigned int star;
+        unsigned int retry;
+        int pc;
+
+        vi = 0U;
+        pi = 0U;
+        star = DSH_NONE;
+        retry = 0U;
+        while (vi < value->len) {
+                if (pi < pattern->len) {
+                        pc = dsh_s6_get(pattern, pi);
+                        if ((quote_mask & ((kword_t)1 << pi)) == 0 &&
+                            pc == '*') {
+                                star = pi++;
+                                retry = vi;
+                                continue;
+                        }
+                        if (((quote_mask & ((kword_t)1 << pi)) == 0 &&
+                            pc == '?') || pc == dsh_s6_get(value, vi)) {
+                                ++pi;
+                                ++vi;
+                                continue;
+                        }
+                }
+                if (star == DSH_NONE)
+                        return 0;
+                pi = star + 1U;
+                vi = ++retry;
+        }
+        while (pi < pattern->len && dsh_s6_get(pattern, pi) == '*' &&
+            (quote_mask & ((kword_t)1 << pi)) == 0)
+                ++pi;
+        return pi == pattern->len;
+}
+
 static int
 dsh_alias_expand(struct dsh_state *st, struct dsh_s6 *argv,
-    unsigned int *argcp)
+    kword_t *quote_masks, unsigned int *argcp)
 {
         struct dsh_s6 repl[DSH_MAX_ARGS];
         unsigned int replc;
@@ -823,10 +1011,195 @@ dsh_alias_expand(struct dsh_state *st, struct dsh_s6 *argv,
         while (rest != 0U) {
                 --rest;
                 (void)dsh_s6_copy(&argv[replc + rest], &argv[rest + 1U]);
+                quote_masks[replc + rest] = quote_masks[rest + 1U];
         }
-        for (i = 0U; i < replc; ++i)
+        for (i = 0U; i < replc; ++i) {
                 (void)dsh_s6_copy(&argv[i], &repl[i]);
+                quote_masks[i] = 0;
+        }
         *argcp += replc - 1U;
+        return 0;
+}
+
+static int
+dsh_alias_needed(const struct dsh_state *st, const struct dsh_s6 *command)
+{
+        unsigned int i;
+
+        if (dsh_s6_eq_text(command, "ALIAS"))
+                return 0;
+        for (i = 0U; i < DSH_MAX_ALIASES; ++i)
+                if (st->aliases[i].used &&
+                    dsh_s6_same(&st->aliases[i].name, command))
+                        return 1;
+        return 0;
+}
+
+static int
+dsh_has_wild(const struct dsh_s6 *s, kword_t quote_mask)
+{
+        unsigned int i;
+        int ch;
+
+        for (i = 0U; i < s->len; ++i) {
+                ch = dsh_s6_get(s, i);
+                if ((ch == '*' || ch == '?') &&
+                    (quote_mask & ((kword_t)1 << i)) == 0)
+                        return 1;
+        }
+        return 0;
+}
+
+static int
+dsh_path_join(struct dsh_s6 *out, const struct dsh_s6 *prefix,
+    const struct dsh_s6 *name)
+{
+        unsigned int i;
+
+        dsh_s6_clear(out);
+        for (i = 0U; i < prefix->len; ++i)
+                if (dsh_s6_append(out, dsh_s6_get(prefix, i)) != 0)
+                        return -1;
+        if (prefix->len != 0U &&
+            !(prefix->len == 1U && dsh_s6_get(prefix, 0U) == '/') &&
+            dsh_s6_append(out, '/') != 0)
+                return -1;
+        for (i = 0U; i < name->len; ++i)
+                if (dsh_s6_append(out, dsh_s6_get(name, i)) != 0)
+                        return -1;
+        return 0;
+}
+
+static int
+dsh_glob_walk(const struct dsh_s6 *pattern, kword_t quote_mask,
+    unsigned int pos, const struct dsh_s6 *prefix, int saw_wild,
+    struct dsh_s6 *out, unsigned int max_out, unsigned int *countp)
+{
+        struct dsh_s6 component;
+        struct dsh_s6 next;
+        struct dsh_s6 name;
+        struct dsh_s6 dir;
+        struct vfs_dirent ent;
+        struct vfs_stat stbuf;
+        kword_t component_mask;
+        kword_t record[U_PATH_WORDS];
+        unsigned int bit;
+        int wildcard;
+        int fd;
+        int rc;
+
+        while (pos < pattern->len && dsh_s6_get(pattern, pos) == '/')
+                ++pos;
+        if (pos >= pattern->len) {
+                if (saw_wild) {
+                        if (dsh_s6_pack(prefix, record, U_PATH_WORDS) != 0 ||
+                            dsys_stat(record, &stbuf) != 0)
+                                return 0;
+                }
+                if (*countp >= max_out)
+                        return -1;
+                if (dsh_s6_copy(&out[*countp], prefix) != 0)
+                        return -1;
+                ++*countp;
+                return 0;
+        }
+
+        dsh_s6_clear(&component);
+        component_mask = 0;
+        bit = 0U;
+        while (pos < pattern->len && dsh_s6_get(pattern, pos) != '/') {
+                if (dsh_s6_append(&component,
+                    dsh_s6_get(pattern, pos)) != 0)
+                        return -1;
+                if ((quote_mask & ((kword_t)1 << pos)) != 0)
+                        component_mask |= (kword_t)1 << bit;
+                ++bit;
+                ++pos;
+        }
+        wildcard = dsh_has_wild(&component, component_mask);
+        if (!wildcard) {
+                if (dsh_path_join(&next, prefix, &component) != 0)
+                        return -1;
+                return dsh_glob_walk(pattern, quote_mask, pos, &next,
+                    saw_wild, out, max_out, countp);
+        }
+
+        if (prefix->len == 0U) {
+                dsh_s6_clear(&dir);
+                if (dsh_s6_append(&dir, '.') != 0)
+                        return -1;
+        } else if (dsh_s6_copy(&dir, prefix) != 0) {
+                return -1;
+        }
+        if (dsh_s6_pack(&dir, record, U_PATH_WORDS) != 0)
+                return 0;
+        fd = dsys_open(record, SYS_O_RDONLY);
+        if (fd < 0)
+                return 0;
+        for (;;) {
+                rc = dsys_dirread(fd, &ent);
+                if (rc <= 0)
+                        break;
+                if (u_s6_from_dirent(record, U_PATH_WORDS, &ent) != 0 ||
+                    dsh_s6_from_counted(&name, record) != 0)
+                        continue;
+                if (!dsh_wild_match(&name, &component, component_mask))
+                        continue;
+                if (dsh_path_join(&next, prefix, &name) != 0 ||
+                    dsh_glob_walk(pattern, quote_mask, pos, &next, 1,
+                    out, max_out, countp) != 0) {
+                        (void)dsys_close(fd);
+                        return -1;
+                }
+        }
+        (void)dsys_close(fd);
+        return 0;
+}
+
+static int
+dsh_glob_argv(struct dsh_s6 *argv, kword_t *quote_masks,
+    unsigned int *argcp)
+{
+        struct dsh_s6 expanded[DSH_MAX_ARGS];
+        struct dsh_s6 prefix;
+        unsigned int outc;
+        unsigned int matches;
+        unsigned int i;
+        unsigned int j;
+
+        outc = 0U;
+        for (i = 0U; i < *argcp; ++i) {
+                if (!dsh_has_wild(&argv[i], quote_masks[i])) {
+                        if (outc >= DSH_MAX_ARGS ||
+                            dsh_s6_copy(&expanded[outc], &argv[i]) != 0)
+                                return -1;
+                        ++outc;
+                        continue;
+                }
+                dsh_s6_clear(&prefix);
+                j = 0U;
+                if (argv[i].len != 0U && dsh_s6_get(&argv[i], 0U) == '/') {
+                        if (dsh_s6_append(&prefix, '/') != 0)
+                                return -1;
+                        j = 1U;
+                }
+                matches = outc;
+                if (dsh_glob_walk(&argv[i], quote_masks[i], j, &prefix, 0,
+                    expanded, DSH_MAX_ARGS, &outc) != 0)
+                        return -1;
+                if (outc == matches) {
+                        if (outc >= DSH_MAX_ARGS ||
+                            dsh_s6_copy(&expanded[outc], &argv[i]) != 0)
+                                return -1;
+                        ++outc;
+                }
+        }
+        for (i = 0U; i < outc; ++i) {
+                if (dsh_s6_copy(&argv[i], &expanded[i]) != 0)
+                        return -1;
+                quote_masks[i] = 0;
+        }
+        *argcp = outc;
         return 0;
 }
 
@@ -948,16 +1321,46 @@ static int
 dsh_expand_node_argv(struct dsh_state *st, const struct dsh_node *n,
     struct dsh_s6 *argv, unsigned int *argcp)
 {
+        kword_t quote_masks[DSH_MAX_ARGS];
+        int need_glob;
         unsigned int i;
 
         if (n->argc > DSH_MAX_ARGS)
                 return -1;
-        for (i = 0U; i < n->argc; ++i)
-                if (dsh_expand_mask(st, &n->words[i],
-                    n->literal_mask[i], &argv[i]) != 0)
+        for (i = 0U; i < n->argc; ++i) {
+                if (dsh_expand_quoted(st, &n->words[i],
+                    n->literal_mask[i], n->quote_mask[i], &argv[i],
+                    &quote_masks[i]) != 0)
                         return -1;
+        }
         *argcp = n->argc;
-        return dsh_alias_expand(st, argv, argcp);
+        if (*argcp != 0U && dsh_alias_needed(st, &argv[0]) &&
+            dsh_alias_expand(st, argv, quote_masks, argcp) != 0)
+                return -1;
+        need_glob = 0;
+        for (i = 0U; i < *argcp; ++i)
+                if (dsh_has_wild(&argv[i], quote_masks[i])) {
+                        need_glob = 1;
+                        break;
+                }
+        if (!need_glob)
+                return 0;
+        return dsh_glob_argv(argv, quote_masks, argcp);
+}
+
+static int
+dsh_exec_assignment(struct dsh_state *st, const struct dsh_s6 *word,
+    unsigned int eq, int launch_only)
+{
+        struct dsh_s6 name;
+        struct dsh_s6 value;
+
+        if (launch_only)
+                return 126;
+        if (dsh_copy_range(&name, word, 0U, eq) != 0 ||
+            dsh_copy_range(&value, word, eq + 1U, word->len) != 0)
+                return DSH_ERROR;
+        return dsh_var_set(st, &name, &value, 0) != 0;
 }
 
 static int
@@ -966,8 +1369,6 @@ dsh_exec_simple_node(struct dsh_state *st, const struct dsh_node *n,
     unsigned int pgrp, int *pidp)
 {
         struct dsh_s6 argv[DSH_MAX_ARGS];
-        struct dsh_s6 name;
-        struct dsh_s6 value;
         unsigned int argc;
         int infd;
         int outfd;
@@ -988,13 +1389,8 @@ dsh_exec_simple_node(struct dsh_state *st, const struct dsh_node *n,
                 return dsh_exec_function(st, fn, argc, argv);
         }
         if (argc == 1U && (eq = dsh_find_equal(&argv[0])) > 0) {
-                if (launch_only)
-                        return 126;
-                if (dsh_copy_range(&name, &argv[0], 0U, (unsigned int)eq) != 0 ||
-                    dsh_copy_range(&value, &argv[0], (unsigned int)eq + 1U,
-                    argv[0].len) != 0)
-                        return DSH_ERROR;
-                return dsh_var_set(st, &name, &value, 0) != 0;
+                return dsh_exec_assignment(st, &argv[0], (unsigned int)eq,
+                    launch_only);
         }
         if (dsh_open_node_fds(n, basein, baseout, &infd, &outfd) != 0)
                 return 1;
@@ -1008,7 +1404,7 @@ dsh_exec_simple_node(struct dsh_state *st, const struct dsh_node *n,
                 if (dsh_builtin_fds(infd, outfd, &savein, &saveout) != 0)
                         rc = DSH_ERROR;
                 else {
-                        rc = dsh_builtin(st, argc, argv);
+                    rc = dsh_builtin(st, argc, argv);
                         dsh_builtin_fds_restore(savein, saveout);
                 }
                 if (rc < 0)
@@ -1407,12 +1803,14 @@ dsh_exec_loop(struct dsh_state *st, const struct dsh_node *nodes,
 }
 
 static int
-dsh_exec_node(struct dsh_state *st, const struct dsh_node *nodes,
+dsh_exec_node_raw(struct dsh_state *st, const struct dsh_node *nodes,
     unsigned int node)
 {
         const struct dsh_node *n;
         struct dsh_s6 value;
         struct dsh_s6 pattern;
+        kword_t pattern_quote;
+        unsigned int arm;
         unsigned int i;
         int status;
 
@@ -1468,37 +1866,59 @@ dsh_exec_node(struct dsh_state *st, const struct dsh_node *nodes,
         case DSH_N_UNTIL:
                 return dsh_exec_loop(st, nodes, n, 1);
         case DSH_N_CASE:
-                if (n->argc < 2U ||
+                if (n->argc != 1U ||
                     dsh_expand_mask(st, &n->words[0],
-                    n->literal_mask[0], &value) != 0 ||
-                    dsh_expand_mask(st, &n->words[1],
-                    n->literal_mask[1], &pattern) != 0)
+                    n->literal_mask[0], &value) != 0)
                         return DSH_ERROR;
-                if (dsh_s6_same(&value, &pattern))
-                        return dsh_exec_node(st, nodes, n->left);
-                if (n->right != DSH_NONE)
-                        return dsh_exec_node(st, nodes, n->right);
-                return 1;
+                arm = n->left;
+                while (arm != DSH_NONE) {
+                        const struct dsh_node *a;
+
+                        a = &nodes[arm];
+                        if (a->type != DSH_N_CASE_ARM)
+                                return DSH_ERROR;
+                        for (i = 0U; i < a->argc; ++i) {
+                                if (dsh_expand_quoted(st, &a->words[i],
+                                    a->literal_mask[i], a->quote_mask[i],
+                                    &pattern, &pattern_quote) != 0)
+                                        return DSH_ERROR;
+                                if (dsh_wild_match(&value, &pattern,
+                                    pattern_quote))
+                                        return dsh_exec_node(st, nodes,
+                                            a->left);
+                        }
+                        arm = a->right;
+                }
+                return 0;
         case DSH_N_PIPE:
                 return dsh_exec_pipeline(st, nodes, node, 0);
         case DSH_N_BG:
-                if (nodes[n->left].type == DSH_N_PIPE)
+                if (nodes[n->left].type == DSH_N_PIPE ||
+                    nodes[n->left].type == DSH_N_SIMPLE)
                         return dsh_exec_pipeline(st, nodes, n->left, 1);
-                if (nodes[n->left].type == DSH_N_SIMPLE) {
-                        struct dsh_node fake[2];
-                        dsh_node_clear(&fake[0]);
-                        dsh_node_clear(&fake[1]);
-                        fake[0] = nodes[n->left];
-                        return dsh_exec_pipeline(st, fake, 0U, 1);
-                }
                 return 126;
         case DSH_N_DEF:
-                return dsh_define_function(nodes, n);
+                return dsh_define_function(st, nodes, n);
         case DSH_N_SUBST:
                 return 126;
         default:
                 return DSH_ERROR;
         }
+}
+
+/* $? is the status of the most recently executed command, not merely the
+ * status of the last complete input record.  Keep the update at the evaluator
+ * boundary so LIST/AND/OR/loop/function recursion all observe the immediately
+ * preceding command without duplicating status assignments in every AST case. */
+static int
+dsh_exec_node(struct dsh_state *st, const struct dsh_node *nodes,
+    unsigned int node)
+{
+        int status;
+
+        status = dsh_exec_node_raw(st, nodes, node);
+        st->status = (unsigned int)status;
+        return status;
 }
 
 static int
@@ -1510,7 +1930,8 @@ dsh_script_depth(struct dsh_script *script, const struct dsh_token *tokens,
 
         depth = (int)script->depth;
         for (i = 0U; i < ntokens; ++i) {
-                if (tokens[i].type != DSH_T_WORD)
+                if (DSH_TOKEN_TYPE(&tokens[i]) != DSH_T_WORD ||
+                    DSH_TOKEN_QUOTED(&tokens[i]))
                         continue;
                 if (dsh_s6_eq_text(&tokens[i].text, "IF") ||
                     dsh_s6_eq_text(&tokens[i].text, "FOR") ||
@@ -1547,31 +1968,12 @@ dsh_script_init(struct dsh_script *script)
 }
 
 static int
-dsh_script_append(struct dsh_script *script, const struct dsh_token *tokens,
-    unsigned int ntokens)
-{
-        unsigned int i;
-
-        if (ntokens == 0U)
-                return DSH_OK;
-        if (script->ntokens != 0U) {
-                if (script->ntokens >= DSH_SCRIPT_MAX_TOKENS)
-                        return DSH_E_OVERFLOW;
-                dsh_token_clear(&script->tokens[script->ntokens]);
-                script->tokens[script->ntokens].type = DSH_T_SEMI;
-                ++script->ntokens;
-        }
-        if (script->ntokens + ntokens > DSH_SCRIPT_MAX_TOKENS)
-                return DSH_E_OVERFLOW;
-        for (i = 0U; i < ntokens; ++i)
-                script->tokens[script->ntokens++] = tokens[i];
-        return DSH_OK;
-}
-
-static int
 dsh_script_execute(struct dsh_state *st, struct dsh_script *script,
     int *status)
 {
+        struct dsh_script *saved_workspace;
+        struct dsh_node *arena;
+        unsigned int base;
         unsigned int root;
         unsigned int used;
         int rc;
@@ -1580,13 +1982,22 @@ dsh_script_execute(struct dsh_state *st, struct dsh_script *script,
                 *status = 0;
                 return DSH_OK;
         }
-        rc = dsh_parse_tokens(script->tokens, script->ntokens, dsh_nodes,
-            DSH_PARSE_MAX_NODES, &root, &used);
+        base = dsh_nodes_active;
+        if (base >= DSH_PARSE_MAX_NODES)
+                return DSH_E_OVERFLOW;
+        arena = &dsh_nodes[base];
+        rc = dsh_parse_tokens(script->tokens, script->ntokens, arena,
+            DSH_PARSE_MAX_NODES - base, &root, &used);
         if (rc != DSH_OK)
                 return rc;
-        *status = dsh_exec_node(st, dsh_nodes, root);
-        st->status = (unsigned int)*status;
         dsh_script_init(script);
+        dsh_nodes_active = base + used;
+        saved_workspace = dsh_script_workspace;
+        dsh_script_workspace = script;
+        *status = dsh_exec_node(st, arena, root);
+        dsh_script_workspace = saved_workspace;
+        dsh_nodes_active = base;
+        st->status = (unsigned int)*status;
         return DSH_OK;
 }
 
@@ -1594,7 +2005,8 @@ int
 dsh_script_feed(struct dsh_state *st, struct dsh_script *script,
     const struct dsh_line *line, int *status, unsigned int *need_more)
 {
-        struct dsh_token tokens[DSH_LEX_MAX_TOKENS];
+        unsigned int base;
+        unsigned int room;
         unsigned int ntokens;
         int rc;
 
@@ -1602,20 +2014,31 @@ dsh_script_feed(struct dsh_state *st, struct dsh_script *script,
             need_more == 0)
                 return DSH_E_ARG;
         *need_more = 0U;
-        rc = dsh_lex_s6_line(line, tokens, DSH_LEX_MAX_TOKENS, &ntokens, 0);
+        base = script->ntokens;
+        if (base != 0U) {
+                if (base >= DSH_SCRIPT_MAX_TOKENS)
+                        return DSH_E_OVERFLOW;
+                dsh_token_clear(&script->tokens[base]);
+                script->tokens[base].type = DSH_T_SEMI;
+                ++base;
+        }
+        room = DSH_SCRIPT_MAX_TOKENS - base;
+        rc = dsh_lex_s6_line(line, &script->tokens[base], room,
+            &ntokens, 0);
         if (rc != DSH_OK)
                 return rc;
-        rc = dsh_script_depth(script, tokens, ntokens);
+        if (ntokens == 0U)
+                return DSH_OK;
+        rc = dsh_script_depth(script, &script->tokens[base], ntokens);
         if (rc != DSH_OK)
                 return rc;
-        rc = dsh_script_append(script, tokens, ntokens);
-        if (rc != DSH_OK)
-                return rc;
+        script->ntokens = base + ntokens;
         if (script->depth != 0U) {
                 *need_more = 1U;
                 return DSH_OK;
         }
-        return dsh_script_execute(st, script, status);
+        rc = dsh_script_execute(st, script, status);
+        return rc;
 }
 
 int
@@ -1632,17 +2055,27 @@ dsh_script_finish(struct dsh_state *st, struct dsh_script *script,
 int
 dsh_execute_line(struct dsh_state *st, const struct dsh_line *line)
 {
+        struct dsh_node *arena;
+        unsigned int base;
         unsigned int root;
         unsigned int used;
         int errpos;
+        int status;
         int rc;
 
-        rc = dsh_parse_s6_line(line, dsh_nodes, DSH_PARSE_MAX_NODES,
+        base = dsh_nodes_active;
+        if (base >= DSH_PARSE_MAX_NODES)
+                return DSH_ERROR;
+        arena = &dsh_nodes[base];
+        rc = dsh_parse_s6_line(line, arena, DSH_PARSE_MAX_NODES - base,
             &root, &used, &errpos);
         if (rc != DSH_OK) {
                 (void)u_puts(2, "DSH: SYNTAX");
                 (void)u_crlf(2);
                 return DSH_ERROR;
         }
-        return dsh_exec_node(st, dsh_nodes, root);
+        dsh_nodes_active = base + used;
+        status = dsh_exec_node(st, arena, root);
+        dsh_nodes_active = base;
+        return status;
 }

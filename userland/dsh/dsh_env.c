@@ -191,25 +191,56 @@ dsh_append_uint(struct dsh_s6 *out, unsigned int value)
         return 0;
 }
 
-int
-dsh_expand_mask(const struct dsh_state *st, const struct dsh_s6 *in,
-    kword_t literal_mask, struct dsh_s6 *out)
+static const struct dsh_s6 *
+dsh_var_get_range(const struct dsh_state *st, const struct dsh_s6 *in,
+    unsigned int first, unsigned int last)
 {
-        struct dsh_s6 name;
-        const struct dsh_s6 *value;
         unsigned int i;
+        unsigned int j;
+
+        for (i = 0U; i < DSH_MAX_VARS; ++i) {
+                if (!st->vars[i].used || st->vars[i].name.len != last - first)
+                        continue;
+                for (j = 0U; j < last - first; ++j)
+                        if (dsh_s6_get(&st->vars[i].name, j) !=
+                            dsh_s6_get(in, first + j))
+                                break;
+                if (j == last - first)
+                        return &st->vars[i].value;
+        }
+        return 0;
+}
+
+int
+dsh_expand_quoted(const struct dsh_state *st, const struct dsh_s6 *in,
+    kword_t literal_mask, kword_t quote_mask, struct dsh_s6 *out,
+    kword_t *out_quote_mask)
+{
+        const struct dsh_s6 *value;
+        unsigned int begin;
+        unsigned int first;
+        unsigned int i;
+        unsigned int last;
         unsigned int n;
         int ch;
+        int quoted;
 
         dsh_s6_clear(out);
+        if (out_quote_mask != 0)
+                *out_quote_mask = 0;
         for (i = 0U; i < in->len;) {
                 ch = dsh_s6_get(in, i++);
+                quoted = (quote_mask & ((kword_t)1 << (i - 1U))) != 0;
                 if (ch != '$' || (literal_mask & ((kword_t)1 << (i - 1U))) ||
                     i >= in->len) {
+                        begin = out->len;
                         if (dsh_s6_append(out, ch) != 0)
                                 return -1;
+                        if (quoted && out_quote_mask != 0)
+                                *out_quote_mask |= (kword_t)1 << begin;
                         continue;
                 }
+                begin = out->len;
                 ch = dsh_s6_get(in, i);
                 if (ch >= '0' && ch <= '9') {
                         ++i;
@@ -222,18 +253,27 @@ dsh_expand_mask(const struct dsh_state *st, const struct dsh_s6 *in,
                                 value = 0;
                         if (value != 0 && dsh_append_s6(out, value) != 0)
                                 return -1;
+                        if (quoted && out_quote_mask != 0)
+                                for (n = begin; n < out->len; ++n)
+                                        *out_quote_mask |= (kword_t)1 << n;
                         continue;
                 }
                 if (ch == '?') {
                         ++i;
                         if (dsh_append_uint(out, st->status) != 0)
                                 return -1;
+                        if (quoted && out_quote_mask != 0)
+                                for (n = begin; n < out->len; ++n)
+                                        *out_quote_mask |= (kword_t)1 << n;
                         continue;
                 }
                 if (ch == '#') {
                         ++i;
                         if (dsh_append_uint(out, st->argc) != 0)
                                 return -1;
+                        if (quoted && out_quote_mask != 0)
+                                for (n = begin; n < out->len; ++n)
+                                        *out_quote_mask |= (kword_t)1 << n;
                         continue;
                 }
                 if (ch == '$') {
@@ -244,6 +284,9 @@ dsh_expand_mask(const struct dsh_state *st, const struct dsh_s6 *in,
                         if (pid < 0 ||
                             dsh_append_uint(out, (unsigned int)pid) != 0)
                                 return -1;
+                        if (quoted && out_quote_mask != 0)
+                                for (n = begin; n < out->len; ++n)
+                                        *out_quote_mask |= (kword_t)1 << n;
                         continue;
                 }
                 if (ch == '@') {
@@ -257,30 +300,44 @@ dsh_expand_mask(const struct dsh_state *st, const struct dsh_s6 *in,
                                 if (dsh_append_s6(out, &st->args[a]) != 0)
                                         return -1;
                         }
+                        if (quoted && out_quote_mask != 0)
+                                for (n = begin; n < out->len; ++n)
+                                        *out_quote_mask |= (kword_t)1 << n;
                         continue;
                 }
-                dsh_s6_clear(&name);
                 if (ch == '[') {
                         ++i;
-                        while (i < in->len &&
-                            (ch = dsh_s6_get(in, i++)) != ']')
-                                if (dsh_s6_append(&name, ch) != 0)
-                                        return -1;
+                        first = i;
+                        while (i < in->len && dsh_s6_get(in, i) != ']')
+                                ++i;
+                        last = i;
+                        if (i < in->len)
+                                ++i;
                 } else {
+                        first = i;
                         while (i < in->len) {
                                 ch = dsh_s6_get(in, i);
-                                if (!dsh_name_char(ch, name.len == 0U))
+                                if (!dsh_name_char(ch, i == first))
                                         break;
                                 ++i;
-                                if (dsh_s6_append(&name, ch) != 0)
-                                        return -1;
                         }
+                        last = i;
                 }
-                value = dsh_var_get(st, &name);
+                value = dsh_var_get_range(st, in, first, last);
                 if (value != 0 && dsh_append_s6(out, value) != 0)
                         return -1;
+                if (quoted && out_quote_mask != 0)
+                        for (n = begin; n < out->len; ++n)
+                                *out_quote_mask |= (kword_t)1 << n;
         }
         return 0;
+}
+
+int
+dsh_expand_mask(const struct dsh_state *st, const struct dsh_s6 *in,
+    kword_t literal_mask, struct dsh_s6 *out)
+{
+        return dsh_expand_quoted(st, in, literal_mask, 0, out, 0);
 }
 
 int

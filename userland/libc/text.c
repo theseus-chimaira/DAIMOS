@@ -102,6 +102,42 @@ u_text_getline(struct u_text_reader *r, char *buf, unsigned int size)
         return (int)i;
 }
 
+int
+u_text_gets6(struct u_text_reader *r, kword_t *buf, unsigned int words)
+{
+        kword_t header;
+        kword_t len;
+        kword_t word;
+        unsigned int payload;
+        unsigned int i;
+        int rc;
+
+        if (r == 0 || r->fd < 0 || buf == 0 || words < 2U)
+                return U_TEXT_ERROR;
+        rc = u_text_next_word(r, &header);
+        if (rc == 0)
+                return U_TEXT_EOF;
+        if (rc != 1 ||
+            (unsigned int)((header >> U_S6REC_TYPE_SHIFT) &
+            U_S6REC_TYPE_MASK) != U_S6REC_TEXT)
+                return U_TEXT_ERROR;
+        len = header & U_S6REC_LEN_MASK;
+        payload = (unsigned int)((len + 5UL) / 6UL);
+        if (payload + 1U > words) {
+                while (payload-- != 0U)
+                        if (u_text_next_word(r, &word) != 1)
+                                return U_TEXT_ERROR;
+                return U_TEXT_ERROR;
+        }
+        buf[0] = len;
+        for (i = 0U; i < payload; ++i)
+                if (u_text_next_word(r, &buf[i + 1U]) != 1)
+                        return U_TEXT_ERROR;
+        for (i = payload + 1U; i < words; ++i)
+                buf[i] = 0;
+        return (int)len;
+}
+
 void
 u_text_close(struct u_text_reader *r)
 {

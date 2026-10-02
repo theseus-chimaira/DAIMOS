@@ -1,6 +1,7 @@
 #include "dsh.h"
 
 static struct dsh_line dsh_input_line;
+static struct dsh_state dsh_main_state;
 
 static int
 dsh_input_append(int ch)
@@ -151,34 +152,33 @@ dsh_login_profiles(struct dsh_state *st)
 }
 
 static int
-dsh_run_loop(struct dsh_state *st, int interactive)
+dsh_run_loop(struct dsh_state *st, int interactive, struct dsh_script *script)
 {
-        struct dsh_script script;
         unsigned int need_more;
         int rc;
         int status;
 
-        dsh_script_init(&script);
+        dsh_script_init(script);
         need_more = 0U;
         while (!st->exit_requested) {
                 if (interactive)
                         dsh_put_prompt(st, need_more);
                 if (dsh_getline(interactive) != 0)
                         break;
-                rc = dsh_script_feed(st, &script, &dsh_input_line,
+                rc = dsh_script_feed(st, script, &dsh_input_line,
                     &status, &need_more);
                 if (rc != DSH_OK) {
                         (void)u_puts(2, "DSH: SYNTAX");
                         (void)u_crlf(2);
                         st->status = DSH_ERROR;
-                        dsh_script_init(&script);
+                        dsh_script_init(script);
                         need_more = 0U;
                         continue;
                 }
                 st->status = (unsigned int)status;
         }
-        if (!st->exit_requested && script.ntokens != 0U) {
-                rc = dsh_script_finish(st, &script, &status);
+        if (!st->exit_requested && script->ntokens != 0U) {
+                rc = dsh_script_finish(st, script, &status);
                 st->status = rc == DSH_OK ? (unsigned int)status :
                     DSH_ERROR;
         }
@@ -188,15 +188,15 @@ dsh_run_loop(struct dsh_state *st, int interactive)
 int
 main(int argc, kword_t **argv, kword_t **envp)
 {
-        struct dsh_state state;
+        struct dsh_script script_workspace;
         struct dsh_s6 mode;
-        struct dsh_s6 script;
         int interactive;
         int login;
         int rc;
 
-        dsh_state_init(&state, argc, argv, envp);
-        interactive = dsys_isatty(0) > 0;
+        dsh_script_workspace_set(&script_workspace);
+        dsh_state_init(&dsh_main_state, argc, argv, envp);
+        interactive = dsys_isatty(0) >= 0;
         login = 0;
 
         if (argc > 1) {
@@ -210,36 +210,36 @@ main(int argc, kword_t **argv, kword_t **envp)
                         if (argc < 3 ||
                             dsh_line_from_counted(&dsh_input_line,
                             argv[2]) != 0 ||
-                            dsh_set_counted_args(&state, argv, 3U,
+                            dsh_set_counted_args(&dsh_main_state, argv, 3U,
                             (unsigned int)(argc - 3)) != 0)
                                 return DSH_ERROR;
-                        rc = dsh_execute_line(&state, &dsh_input_line);
-                        return state.exit_requested ?
-                            (int)state.exit_status : rc;
+                        rc = dsh_execute_line(&dsh_main_state,
+                            &dsh_input_line);
+                        return dsh_main_state.exit_requested ?
+                            (int)dsh_main_state.exit_status : rc;
                 } else {
-                        if (dsh_s6_copy(&script, &mode) != 0 ||
-                            dsh_s6_copy(&state.arg0, &script) != 0 ||
-                            dsh_set_counted_args(&state, argv, 2U,
+                        if (dsh_s6_copy(&dsh_main_state.arg0, &mode) != 0 ||
+                            dsh_set_counted_args(&dsh_main_state, argv, 2U,
                             (unsigned int)(argc - 2)) != 0)
                                 return DSH_ERROR;
-                        rc = dsh_execute_file(&state, &script);
-                        return state.exit_requested ?
-                            (int)state.exit_status : rc;
+                        rc = dsh_execute_file(&dsh_main_state, &mode);
+                        return dsh_main_state.exit_requested ?
+                            (int)dsh_main_state.exit_status : rc;
                 }
         }
 
-        state.interactive = interactive ? 1U : 0U;
+        dsh_main_state.interactive = interactive ? 1U : 0U;
         if (interactive &&
             dsys_procctl(SYS_PROCCTL_TTY_SETMODE, SYS_TTY_MODE_RAW) !=
             (int)SYS_TTY_MODE_RAW)
                 return 1;
         if (login)
-                dsh_login_profiles(&state);
+                dsh_login_profiles(&dsh_main_state);
         if (interactive) {
                 (void)u_puts(1, "DSH V1");
                 (void)u_crlf(1);
         }
-        rc = dsh_run_loop(&state, interactive);
+        rc = dsh_run_loop(&dsh_main_state, interactive, &script_workspace);
         if (interactive)
                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETMODE,
                     SYS_TTY_MODE_COOKED);

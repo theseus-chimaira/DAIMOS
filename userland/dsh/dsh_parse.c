@@ -15,6 +15,7 @@
 #define DSH_STOP_RPAREN 0040U
 #define DSH_STOP_END    0100U
 #define DSH_STOP_ESAC   0200U
+#define DSH_STOP_WHEN   0400U
 
 struct dsh_parser {
         const struct dsh_token *tokens;
@@ -68,6 +69,7 @@ dsh_node_clear(struct dsh_node *n)
         for (i = 0; i < DSH_PARSE_MAX_WORDS; i++) {
                 dsh_s6_clear(&n->words[i]);
                 n->literal_mask[i] = 0;
+                n->quote_mask[i] = 0;
         }
 }
 
@@ -89,6 +91,7 @@ dsh_node_clear(struct dsh_node *n)
 #define DSH_K_THEN     16U
 #define DSH_K_UNTIL    17U
 #define DSH_K_WHILE    18U
+#define DSH_K_WHEN     19U
 
 static unsigned int
 dsh_s6_kw(const struct dsh_s6 *s)
@@ -131,6 +134,8 @@ dsh_s6_kw(const struct dsh_s6 *s)
                         return DSH_K_CASE;
                 if (dsh_s6_eq_packed(s, 4U, S6_P4('T','H','E','N'), 0))
                         return DSH_K_THEN;
+                if (dsh_s6_eq_packed(s, 4U, S6_P4('W','H','E','N'), 0))
+                        return DSH_K_WHEN;
                 return 0U;
         case 5U:
                 if (dsh_s6_eq_packed(s, 5U, S6_P5('B','E','G','I','N'), 0))
@@ -149,7 +154,8 @@ dsh_s6_kw(const struct dsh_s6 *s)
 static unsigned int
 dsh_tok_kw(const struct dsh_token *t)
 {
-        if (t == 0 || t->type != DSH_T_WORD || t->quoted)
+        if (t == 0 || DSH_TOKEN_TYPE(t) != DSH_T_WORD ||
+            DSH_TOKEN_QUOTED(t))
                 return 0U;
         return dsh_s6_kw(&t->text);
 }
@@ -187,7 +193,8 @@ dsh_at_stop(const struct dsh_parser *p, unsigned int stops)
         if (p->pos >= p->ntokens)
                 return 1;
         t = &p->tokens[p->pos];
-        if ((stops & DSH_STOP_RPAREN) != 0U && t->type == DSH_T_RPAREN)
+        if ((stops & DSH_STOP_RPAREN) != 0U &&
+            DSH_TOKEN_TYPE(t) == DSH_T_RPAREN)
                 return 1;
         switch (dsh_tok_kw(t)) {
         case DSH_K_THEN:
@@ -204,6 +211,8 @@ dsh_at_stop(const struct dsh_parser *p, unsigned int stops)
                 return (stops & DSH_STOP_END) != 0U;
         case DSH_K_ESAC:
                 return (stops & DSH_STOP_ESAC) != 0U;
+        case DSH_K_WHEN:
+                return (stops & DSH_STOP_WHEN) != 0U;
         default:
                 break;
         }
@@ -237,7 +246,8 @@ dsh_expect_word(struct dsh_parser *p, unsigned int kw)
 static int
 dsh_expect_token(struct dsh_parser *p, int type, unsigned int expect)
 {
-        if (p->pos >= p->ntokens || p->tokens[p->pos].type != type)
+        if (p->pos >= p->ntokens ||
+            DSH_TOKEN_TYPE(&p->tokens[p->pos]) != type)
                 return dsh_mark_error(p, DSH_E_SYNTAX, expect);
         p->pos++;
         return DSH_OK;
@@ -265,15 +275,15 @@ dsh_parse_simple(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                 return rc;
         n = &p->nodes[node];
         while (p->pos < p->ntokens && !dsh_at_stop(p, stops)) {
-                if (p->tokens[p->pos].type == DSH_T_REDIR_IN ||
-                    p->tokens[p->pos].type == DSH_T_REDIR_OUT ||
-                    p->tokens[p->pos].type == DSH_T_APPEND) {
+                if (DSH_TOKEN_TYPE(&p->tokens[p->pos]) == DSH_T_REDIR_IN ||
+                    DSH_TOKEN_TYPE(&p->tokens[p->pos]) == DSH_T_REDIR_OUT ||
+                    DSH_TOKEN_TYPE(&p->tokens[p->pos]) == DSH_T_APPEND) {
                         int rtype;
 
-                        rtype = p->tokens[p->pos].type;
+                        rtype = DSH_TOKEN_TYPE(&p->tokens[p->pos]);
                         p->pos++;
                         if (p->pos >= p->ntokens ||
-                            p->tokens[p->pos].type != DSH_T_WORD)
+                            DSH_TOKEN_TYPE(&p->tokens[p->pos]) != DSH_T_WORD)
                                 return dsh_mark_error(p, DSH_E_SYNTAX,
                                     DSH_PE_WORD);
                         if (rtype == DSH_T_REDIR_IN) {
@@ -294,14 +304,15 @@ dsh_parse_simple(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                         p->pos++;
                         continue;
                 }
-                if (p->tokens[p->pos].type == DSH_T_DOLLAR_LPAREN) {
+                if (DSH_TOKEN_TYPE(&p->tokens[p->pos]) ==
+                    DSH_T_DOLLAR_LPAREN) {
                         rc = dsh_alloc_node(p, DSH_N_SUBST, &node);
                         if (rc != DSH_OK)
                                 return rc;
                         *out = node;
                         return DSH_OK;
                 }
-                if (p->tokens[p->pos].type != DSH_T_WORD)
+                if (DSH_TOKEN_TYPE(&p->tokens[p->pos]) != DSH_T_WORD)
                         break;
                 if (dsh_tok_kw(&p->tokens[p->pos]) == DSH_K_AND ||
                     dsh_tok_kw(&p->tokens[p->pos]) == DSH_K_OR)
@@ -315,6 +326,8 @@ dsh_parse_simple(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                         return rc;
                 n->literal_mask[n->argc] =
                     p->tokens[p->pos].literal_mask;
+                n->quote_mask[n->argc] =
+                    p->tokens[p->pos].quote_mask;
                 n->argc++;
                 p->pos++;
         }
@@ -371,7 +384,8 @@ dsh_parse_for(struct dsh_parser *p, unsigned int *out)
         int rc;
 
         p->pos++;
-        if (p->pos >= p->ntokens || p->tokens[p->pos].type != DSH_T_WORD)
+        if (p->pos >= p->ntokens ||
+            DSH_TOKEN_TYPE(&p->tokens[p->pos]) != DSH_T_WORD)
                 return dsh_mark_error(p, DSH_E_SYNTAX, DSH_PE_WORD);
         rc = dsh_alloc_node(p, DSH_N_FOR, &node);
         if (rc != DSH_OK)
@@ -381,13 +395,14 @@ dsh_parse_for(struct dsh_parser *p, unsigned int *out)
         if (rc != DSH_OK)
                 return rc;
         n->literal_mask[0] = p->tokens[p->pos].literal_mask;
+        n->quote_mask[0] = p->tokens[p->pos].quote_mask;
         n->argc = 1U;
         p->pos++;
         rc = dsh_expect_word(p, DSH_K_IN);
         if (rc != DSH_OK)
                 return rc;
         while (p->pos < p->ntokens && dsh_tok_kw(&p->tokens[p->pos]) != DSH_K_DO) {
-                if (p->tokens[p->pos].type != DSH_T_WORD)
+                if (DSH_TOKEN_TYPE(&p->tokens[p->pos]) != DSH_T_WORD)
                         return dsh_mark_error(p, DSH_E_SYNTAX,
                             DSH_PE_WORD);
                 if (n->argc >= DSH_PARSE_MAX_WORDS)
@@ -399,6 +414,8 @@ dsh_parse_for(struct dsh_parser *p, unsigned int *out)
                         return rc;
                 n->literal_mask[n->argc] =
                     p->tokens[p->pos].literal_mask;
+                n->quote_mask[n->argc] =
+                    p->tokens[p->pos].quote_mask;
                 n->argc++;
                 p->pos++;
         }
@@ -454,7 +471,8 @@ dsh_parse_def(struct dsh_parser *p, unsigned int *out)
         int rc;
 
         p->pos++;
-        if (p->pos >= p->ntokens || p->tokens[p->pos].type != DSH_T_WORD)
+        if (p->pos >= p->ntokens ||
+            DSH_TOKEN_TYPE(&p->tokens[p->pos]) != DSH_T_WORD)
                 return dsh_mark_error(p, DSH_E_SYNTAX, DSH_PE_WORD);
         rc = dsh_alloc_node(p, DSH_N_DEF, &node);
         if (rc != DSH_OK)
@@ -463,6 +481,7 @@ dsh_parse_def(struct dsh_parser *p, unsigned int *out)
         if (rc != DSH_OK)
                 return rc;
         p->nodes[node].literal_mask[0] = p->tokens[p->pos].literal_mask;
+        p->nodes[node].quote_mask[0] = p->tokens[p->pos].quote_mask;
         p->nodes[node].argc = 1U;
         p->pos++;
         rc = dsh_expect_word(p, DSH_K_DO);
@@ -483,12 +502,16 @@ static int
 dsh_parse_case(struct dsh_parser *p, unsigned int *out)
 {
         unsigned int node;
-        unsigned int then_part;
-        unsigned int else_part;
+        unsigned int arm;
+        unsigned int body;
+        unsigned int first_arm;
+        unsigned int prev_arm;
+        struct dsh_node *a;
         int rc;
 
         p->pos++;
-        if (p->pos >= p->ntokens || p->tokens[p->pos].type != DSH_T_WORD)
+        if (p->pos >= p->ntokens ||
+            DSH_TOKEN_TYPE(&p->tokens[p->pos]) != DSH_T_WORD)
                 return dsh_mark_error(p, DSH_E_SYNTAX, DSH_PE_WORD);
         rc = dsh_alloc_node(p, DSH_N_CASE, &node);
         if (rc != DSH_OK)
@@ -497,36 +520,63 @@ dsh_parse_case(struct dsh_parser *p, unsigned int *out)
         if (rc != DSH_OK)
                 return rc;
         p->nodes[node].literal_mask[0] = p->tokens[p->pos].literal_mask;
+        p->nodes[node].quote_mask[0] = p->tokens[p->pos].quote_mask;
         p->nodes[node].argc = 1U;
         p->pos++;
         rc = dsh_expect_word(p, DSH_K_IN);
         if (rc != DSH_OK)
                 return rc;
-        if (p->pos >= p->ntokens || p->tokens[p->pos].type != DSH_T_WORD)
-                return dsh_mark_error(p, DSH_E_SYNTAX, DSH_PE_WORD);
-        rc = dsh_s6_copy(&p->nodes[node].words[1], &p->tokens[p->pos].text);
-        if (rc != DSH_OK)
-                return rc;
-        p->nodes[node].literal_mask[1] = p->tokens[p->pos].literal_mask;
-        p->nodes[node].argc = 2U;
-        p->pos++;
-        rc = dsh_expect_word(p, DSH_K_THEN);
-        if (rc != DSH_OK)
-                return rc;
-        rc = dsh_parse_list(p, DSH_STOP_ELSE | DSH_STOP_ESAC, &then_part);
-        if (rc != DSH_OK)
-                return rc;
-        else_part = DSH_NONE;
-        if (dsh_accept_word(p, DSH_K_ELSE)) {
-                rc = dsh_parse_list(p, DSH_STOP_ESAC, &else_part);
+        first_arm = DSH_NONE;
+        prev_arm = DSH_NONE;
+        while (p->pos < p->ntokens &&
+            dsh_tok_kw(&p->tokens[p->pos]) != DSH_K_ESAC) {
+                if (!dsh_accept_word(p, DSH_K_WHEN))
+                        return dsh_mark_error(p, DSH_E_SYNTAX,
+                            DSH_PE_WORD);
+                rc = dsh_alloc_node(p, DSH_N_CASE_ARM, &arm);
                 if (rc != DSH_OK)
                         return rc;
+                a = &p->nodes[arm];
+                while (p->pos < p->ntokens &&
+                    dsh_tok_kw(&p->tokens[p->pos]) != DSH_K_DO) {
+                        if (DSH_TOKEN_TYPE(&p->tokens[p->pos]) != DSH_T_WORD ||
+                            a->argc >= DSH_PARSE_MAX_WORDS)
+                                return dsh_mark_error(p, DSH_E_SYNTAX,
+                                    DSH_PE_WORD);
+                        rc = dsh_s6_copy(&a->words[a->argc],
+                            &p->tokens[p->pos].text);
+                        if (rc != DSH_OK)
+                                return rc;
+                        a->literal_mask[a->argc] =
+                            p->tokens[p->pos].literal_mask;
+                        a->quote_mask[a->argc] =
+                            p->tokens[p->pos].quote_mask;
+                        a->argc++;
+                        p->pos++;
+                }
+                if (a->argc == 0U)
+                        return dsh_mark_error(p, DSH_E_SYNTAX,
+                            DSH_PE_WORD);
+                rc = dsh_expect_word(p, DSH_K_DO);
+                if (rc != DSH_OK)
+                        return rc;
+                rc = dsh_parse_list(p, DSH_STOP_WHEN | DSH_STOP_ESAC,
+                    &body);
+                if (rc != DSH_OK)
+                        return rc;
+                a->left = body;
+                if (first_arm == DSH_NONE)
+                        first_arm = arm;
+                if (prev_arm != DSH_NONE)
+                        p->nodes[prev_arm].right = arm;
+                prev_arm = arm;
         }
+        if (first_arm == DSH_NONE)
+                return dsh_mark_error(p, DSH_E_SYNTAX, DSH_PE_WORD);
         rc = dsh_expect_word(p, DSH_K_ESAC);
         if (rc != DSH_OK)
                 return rc;
-        p->nodes[node].left = then_part;
-        p->nodes[node].right = else_part;
+        p->nodes[node].left = first_arm;
         *out = node;
         return DSH_OK;
 }
@@ -577,7 +627,7 @@ dsh_parse_command(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                 return dsh_parse_case(p, out);
         if (dsh_tok_kw(t) == DSH_K_BEGIN)
                 return dsh_parse_group(p, out);
-        if (t->type == DSH_T_LPAREN)
+        if (DSH_TOKEN_TYPE(t) == DSH_T_LPAREN)
                 return dsh_parse_paren_group(p, out);
         return dsh_parse_simple(p, stops, out);
 }
@@ -593,7 +643,8 @@ dsh_parse_pipeline(struct dsh_parser *p, unsigned int stops, unsigned int *out)
         rc = dsh_parse_command(p, stops, &left);
         if (rc != DSH_OK)
                 return rc;
-        while (p->pos < p->ntokens && p->tokens[p->pos].type == DSH_T_PIPE) {
+        while (p->pos < p->ntokens &&
+            DSH_TOKEN_TYPE(&p->tokens[p->pos]) == DSH_T_PIPE) {
                 p->pos++;
                 rc = dsh_parse_command(p, stops, &right);
                 if (rc != DSH_OK)
@@ -676,8 +727,8 @@ dsh_parse_list(struct dsh_parser *p, unsigned int stops, unsigned int *out)
         int rc;
 
         while (p->pos < p->ntokens &&
-            (p->tokens[p->pos].type == DSH_T_SEMI ||
-             p->tokens[p->pos].type == DSH_T_BG))
+            (DSH_TOKEN_TYPE(&p->tokens[p->pos]) == DSH_T_SEMI ||
+             DSH_TOKEN_TYPE(&p->tokens[p->pos]) == DSH_T_BG))
                 p->pos++;
         if (p->pos >= p->ntokens || dsh_at_stop(p, stops))
                 return dsh_mark_error(p, DSH_E_SYNTAX, DSH_PE_COMMAND);
@@ -685,11 +736,11 @@ dsh_parse_list(struct dsh_parser *p, unsigned int stops, unsigned int *out)
         if (rc != DSH_OK)
                 return rc;
         while (p->pos < p->ntokens &&
-            (p->tokens[p->pos].type == DSH_T_SEMI ||
-             p->tokens[p->pos].type == DSH_T_BG)) {
+            (DSH_TOKEN_TYPE(&p->tokens[p->pos]) == DSH_T_SEMI ||
+             DSH_TOKEN_TYPE(&p->tokens[p->pos]) == DSH_T_BG)) {
                 int sep;
 
-                sep = p->tokens[p->pos].type;
+                sep = DSH_TOKEN_TYPE(&p->tokens[p->pos]);
                 p->pos++;
                 if (sep == DSH_T_BG) {
                         rc = dsh_alloc_node(p, DSH_N_BG, &node);
@@ -699,8 +750,8 @@ dsh_parse_list(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                         left = node;
                 }
                 while (p->pos < p->ntokens &&
-                    (p->tokens[p->pos].type == DSH_T_SEMI ||
-                     p->tokens[p->pos].type == DSH_T_BG))
+                    (DSH_TOKEN_TYPE(&p->tokens[p->pos]) == DSH_T_SEMI ||
+                     DSH_TOKEN_TYPE(&p->tokens[p->pos]) == DSH_T_BG))
                         p->pos++;
                 if (p->pos >= p->ntokens || dsh_at_stop(p, stops))
                         break;

@@ -16,6 +16,11 @@
 #define DSH_T_LPAREN           8
 #define DSH_T_RPAREN           9
 #define DSH_T_DOLLAR_LPAREN   10
+#define DSH_T_TYPE_MASK       017
+#define DSH_T_QUOTED          020
+
+#define DSH_TOKEN_TYPE(t)     ((t)->type & DSH_T_TYPE_MASK)
+#define DSH_TOKEN_QUOTED(t)   (((t)->type & DSH_T_QUOTED) != 0)
 
 void    dsh_token_clear(struct dsh_token *t);
 int     dsh_lex_s6_line(const struct dsh_line *line,

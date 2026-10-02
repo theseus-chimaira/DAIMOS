@@ -21,6 +21,7 @@
 #define DSH_N_SUBST             12
 #define DSH_N_DEF               13
 #define DSH_N_CASE              14
+#define DSH_N_CASE_ARM          15
 
 #define DSH_REDIR_IN          0001U
 #define DSH_REDIR_OUT         0002U
@@ -58,6 +59,7 @@ struct dsh_node {
         struct dsh_s6 redir_out;
         struct dsh_s6 words[DSH_PARSE_MAX_WORDS];
         kword_t literal_mask[DSH_PARSE_MAX_WORDS];
+        kword_t quote_mask[DSH_PARSE_MAX_WORDS];
 };
 
 void    dsh_node_clear(struct dsh_node *n);

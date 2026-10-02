@@ -30,7 +30,7 @@ dsh_token_clear(struct dsh_token *t)
         t->type = DSH_T_EOF;
         dsh_s6_clear(&t->text);
         t->literal_mask = 0;
-        t->quoted = 0U;
+        t->quote_mask = 0;
 }
 
 static int
@@ -65,7 +65,7 @@ dsh_add_word(const struct dsh_line *line, unsigned int *posp, struct dsh_token *
         while ((ch = dsh_line_ch(line, pos)) != 0) {
                 if (ch == '\'' || ch == '"') {
                         quote = ch;
-                        t->quoted = 1U;
+                        t->type |= DSH_T_QUOTED;
                         had_fragment = 1U;
                         pos++;
                         while ((ch = dsh_line_ch(line, pos)) != 0 &&
@@ -80,9 +80,13 @@ dsh_add_word(const struct dsh_line *line, unsigned int *posp, struct dsh_token *
                                                 pos += 2U;
                                                 t->literal_mask |=
                                                     (kword_t)1 << t->text.len;
+                                                t->quote_mask |=
+                                                    (kword_t)1 << t->text.len;
                                         } else {
                                                 pos++;
                                                 t->literal_mask |=
+                                                    (kword_t)1 << t->text.len;
+                                                t->quote_mask |=
                                                     (kword_t)1 << t->text.len;
                                                 rc = dsh_s6_append(&t->text,
                                                     '\\');
@@ -92,7 +96,9 @@ dsh_add_word(const struct dsh_line *line, unsigned int *posp, struct dsh_token *
                                         }
                                 } else {
                                         pos++;
-                                        if (quote == '\'' || ch != '$')
+                                        t->quote_mask |=
+                                            (kword_t)1 << t->text.len;
+                                        if (quote == '\'')
                                                 t->literal_mask |=
                                                     (kword_t)1 << t->text.len;
                                 }
@@ -113,6 +119,7 @@ dsh_add_word(const struct dsh_line *line, unsigned int *posp, struct dsh_token *
                                 return DSH_E_CHAR;
                         pos++;
                         t->literal_mask |= (kword_t)1 << t->text.len;
+                        t->quote_mask |= (kword_t)1 << t->text.len;
                         rc = dsh_s6_append(&t->text, ch);
                         if (rc != DSH_OK)
                                 return rc;
