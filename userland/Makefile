@@ -7,6 +7,24 @@ DASFLAGS ?= -F
 DLINK ?= $(PDP10_PREFIX)/bin/dlink
 CPPFLAGS = -I$(PROJECT_ROOT)/system/kernel/boot -I$(PROJECT_ROOT)/system/kernel/core -I$(PROJECT_ROOT)/system/kernel/drivers -I$(PROJECT_ROOT)/system/kernel/fs -I$(PROJECT_ROOT)/system/kernel/mm -I$(PROJECT_ROOT)/system/kernel/modules -I$(PROJECT_ROOT)/system/kernel/proc -I$(PROJECT_ROOT)/system/kernel/storage -I$(PROJECT_ROOT)/userland/libc -I$(PROJECT_ROOT)/userland/exec -I$(PDP10_PREFIX)/include
 KCCFLAGS ?= -Pgnu99 -O -x=pdp6 -m=gas
+KCC_HEADERS = $(wildcard $(PROJECT_ROOT)/userland/libc/*.h) \
+	$(wildcard $(PROJECT_ROOT)/userland/exec/*.h) \
+	$(wildcard $(PROJECT_ROOT)/userland/dsh/*.h) \
+	$(wildcard $(PROJECT_ROOT)/userland/init/*.h) \
+	$(wildcard $(PROJECT_ROOT)/userland/login/*.h) \
+	$(wildcard $(PROJECT_ROOT)/userland/tsfs/*.h) \
+	$(wildcard $(PROJECT_ROOT)/userland/dtfs/*.h) \
+	$(wildcard $(PROJECT_ROOT)/userland/d6lz/*.h) \
+	$(wildcard $(PROJECT_ROOT)/userland/logstore/*.h) \
+	$(wildcard $(PROJECT_ROOT)/system/kernel/boot/*.h) \
+	$(wildcard $(PROJECT_ROOT)/system/kernel/core/*.h) \
+	$(wildcard $(PROJECT_ROOT)/system/kernel/drivers/*.h) \
+	$(wildcard $(PROJECT_ROOT)/system/kernel/fs/*.h) \
+	$(wildcard $(PROJECT_ROOT)/system/kernel/mm/*.h) \
+	$(wildcard $(PROJECT_ROOT)/system/kernel/modules/*.h) \
+	$(wildcard $(PROJECT_ROOT)/system/kernel/proc/*.h) \
+	$(wildcard $(PROJECT_ROOT)/system/kernel/storage/*.h) \
+	$(wildcard $(PDP10_PREFIX)/include/*.h)
 
 CHECK_SRCS = libc/u.c libc/text.c exec/commands.c exec/standalone.c exec/utility.c exec/utility_standalone.c exec/xargs.c exec/sed.c exec/configctl.c dsh/dsh.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c init/init.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c tsfs/mount_tsfs.c dtfs/dtfs_probe.c dtfs/dtfsprobe.c d6lz/d6lz.c logstore/logdrain.c logstore/logcompat.c
 CHECK_ASMS = $(CHECK_SRCS:%.c=$(USERLAND_BUILD)/check/%.s)
@@ -120,7 +138,7 @@ KCC_GENERATED = $(CHECK_ASMS) $(INIT_C_OBJS) $(MOUNTALL_C_OBJS) \
 	$(LOGCOMPAT_C_OBJS) $(TSFSPROBE_C_OBJS) $(MOUNTTSFS_C_OBJS) \
 	$(DTFSPROBE_C_OBJS) $(D6LZ_C_OBJS) $(LOGDRAIN_C_OBJS)
 
-$(KCC_GENERATED): $(KCC)
+$(KCC_GENERATED): $(KCC) $(KCC_HEADERS)
 
 .DEFAULT_GOAL := build
 .PHONY: build check clean
