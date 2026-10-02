@@ -238,7 +238,7 @@ proc_tty_release_session(unsigned int session, unsigned int leaving_slot)
                 record = (unsigned int)proc_tty_records[i];
                 if (PROC_TTY_REC_SESSION(record) == session) {
                         proc_tty_line_reset((unsigned int)i);
-                        proc_tty_records[i] = 0UL;
+                        proc_tty_records[i] &= PROC_TTY_ROUTE_BITS;
                 }
         }
 }

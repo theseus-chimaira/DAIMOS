@@ -48,6 +48,8 @@
  * @return DPY_E_OK, or DPY_E_BUSY if another word is already in flight.
  */
 int dpy_putword(kword_t word);
+/** Render one terminal byte through the Type 342 character generator. */
+int dpy_putchar(unsigned int ch);
 
 /** @brief Resident PI6 entry combining APR-clock and Type 340 service. */
 void dpy_pi_handler(void);

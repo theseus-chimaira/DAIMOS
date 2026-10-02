@@ -742,6 +742,37 @@ cmd_df(int argc, kword_t **argv, struct u_io *io)
         return 0;
 }
 
+static int
+cmd_ttyout(int argc, kword_t **argv, struct u_io *io)
+{
+        unsigned int tty;
+        unsigned int sink;
+        int rc;
+
+        if ((argc != 2 && argc != 3) ||
+            cmd_uint_arg(argv[1], &tty) != 0 || tty > SYS_TTY_ID_MAX)
+                return cmd_err(io, "TTYOUT", 0);
+        if (argc == 2) {
+                rc = dsys_ttyctl(SYS_TTYCTL_GETOUT, tty, 0U);
+                if (rc < 0)
+                        return cmd_err(io, "TTYOUT", 0);
+                return u_put_uint(io->out_fd, (unsigned int)rc) != 0 ||
+                    u_crlf(io->out_fd) != 0;
+        }
+        if (u_s6_eq(argv[2], "NATIVE")) {
+                sink = SYS_TTY_SINK_NATIVE;
+        } else if (u_s6_eq(argv[2], "CTY")) {
+                sink = SYS_TTY_SINK_CTY;
+        } else if (u_s6_eq(argv[2], "DPY")) {
+                sink = SYS_TTY_SINK_DPY;
+        } else if (cmd_uint_arg(argv[2], &sink) != 0 ||
+            sink > SYS_TTY_SINK_DPY) {
+                return cmd_err(io, "TTYOUT", 0);
+        }
+        return dsys_ttyctl(SYS_TTYCTL_SETOUT, tty, sink) < 0 ?
+            cmd_err(io, "TTYOUT", 0) : 0;
+}
+
 /*
  * Keep TSFS discovery in a short-lived helper rather than linking the
  * scanner into DSH.  RUN returns a child PID; wait for that exact process so
@@ -855,6 +886,7 @@ cmd_dispatch(int argc, kword_t **argv, struct u_io *io)
         if (cmd_name_eq(argv[0], "FREE")) return cmd_free(argc, argv, io);
         if (cmd_name_eq(argv[0], "MEMSTAT")) return cmd_memstat(argc, argv, io);
         if (cmd_name_eq(argv[0], "DF")) return cmd_df(argc, argv, io);
+        if (cmd_name_eq(argv[0], "TTYOUT")) return cmd_ttyout(argc, argv, io);
         if (cmd_name_eq(argv[0], "HALT")) return cmd_halt(argc, argv, io);
         return cmd_err(io, "DSH: UNKNOWN", argv[0]);
 }

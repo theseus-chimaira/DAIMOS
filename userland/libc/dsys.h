@@ -51,6 +51,7 @@ int dsys_tsfs_mount(kword_t *handoff, kword_t *path, unsigned int flags);
 int dsys_d6fs_mount(kword_t *handoff, kword_t *path, unsigned int flags);
 int dsys_memfs_mount(kword_t *path, unsigned int words, unsigned int flags);
 int dsys_storagectl(unsigned int mask);
+int dsys_ttyctl(unsigned int op, unsigned int tty, unsigned int sink);
 int dsys_chdir(kword_t *p);
 int dsys_getcwd(kword_t *p, unsigned int n);
 int dsys_procinfo(unsigned int s, struct sys_procinfo *p);

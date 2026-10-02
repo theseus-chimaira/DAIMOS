@@ -362,7 +362,9 @@ proc_session_teardown:
         jumpl   4,proc_session_teardown_ok
         cail    4,025
         jrst    proc_session_teardown_fail
-        setzm   proc_tty_records(4)    ; ID lifetime keeps this authoritative
+        move    6,proc_tty_records(4)
+        and     6,[174000000000]       ; preserve output route
+        movem   6,proc_tty_records(4)
 
         movei   011,1
         move    012,proc_table
@@ -858,6 +860,9 @@ proc_control_tty_attach_claim:
         lsh     1,010
         ior     1,3
         ior     1,[01600000000]         ; canonical + echo + signals
+        move    6,7
+        and     6,[174000000000]         ; preserve output route
+        ior     1,6
         movem   1,proc_tty_records(2)
 proc_control_tty_attach_set:
         addi    2,2                    ; encoded ATTACHED(tty)
@@ -900,7 +905,9 @@ proc_control_tty_detach:
         pushj   17,proc_tty_line_reset
         pop     17,1
         pop     17,5
-        setzm   proc_tty_records(1)
+        move    2,proc_tty_records(1)
+        and     2,[174000000000]         ; preserve output route
+        movem   2,proc_tty_records(1)
         move    1,5                    ; session
         movei   2,1                    ; DETACHED
         pushj   17,proc_tty_set_session_state
@@ -1504,6 +1511,40 @@ proc_tty_output:
 proc_tty_output_pack_cty:
         move    1,4
         andi    1,0377
+        popj    17,
+
+; int proc_tty_output_route_get(unsigned int tty)
+; Return the effective output sink.  Zero route bits mean native tty->tty.
+        .globl  proc_tty_output_route_get
+proc_tty_output_route_get:
+        cail    1,025
+        jrst    kret_neg1
+        ldb     2,[POINT 5,proc_tty_records(1),6]
+        jumpe   2,proc_tty_output_route_native
+        subi    2,1
+        move    1,2
+        popj    17,
+proc_tty_output_route_native:
+        popj    17,
+
+; int proc_tty_output_route_set(unsigned int tty, unsigned int sink)
+; sink 077 restores native routing; otherwise 0..025 selects CTY/DCS/GE/DPY.
+        .globl  proc_tty_output_route_set
+proc_tty_output_route_set:
+        cail    1,025
+        jrst    kret_neg1
+        move    3,2
+        cain    3,077
+        jrst    proc_tty_output_route_clear
+        caile   3,025
+        jrst    kret_neg1
+        addi    3,1
+        jrst    proc_tty_output_route_store
+proc_tty_output_route_clear:
+        setz    3,
+proc_tty_output_route_store:
+        dpb     3,[POINT 5,proc_tty_records(1),6]
+        move    1,2
         popj    17,
 
 ; int proc_tty_pending_take(unsigned int tty)

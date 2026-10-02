@@ -79,6 +79,7 @@ mfsdev_present_mark(unsigned int id)
 #define DPY_X_HANDLER           0U
 #define DPY_X_PUTWORD           1U
 #define DPY_X_CLK_PI_SERVICE_CALL 2U
+#define DPY_X_PUTCHAR           3U
 #define TTY_X_PUTCHAR           0U
 #define TTY_X_GETCHAR           1U
 #define TTY_X_CTY_PUTCHAR_ADDR  2U
@@ -89,6 +90,7 @@ mfsdev_present_mark(unsigned int id)
 #define TTY_X_GE_GETCHAR_ADDR   7U
 #define TTY_X_WRITE_S6REC       8U
 #define TTY_X_READ_S6REC        9U
+#define TTY_X_DPY_PUTCHAR_ADDR 10U
 #define WCNSLS_X_READ           0U
 #define OCNSLS_X_READ           0U
 #define TAPE_X_HANDLER           0U
@@ -781,6 +783,8 @@ dpy_minit(void)
         base = minit_install(name);
         handler = minit_export(name, base, DPY_X_HANDLER);
         putword = minit_export(name, base, DPY_X_PUTWORD);
+        module_service_set(MODULE_SERVICE_DPY_PUTCHAR,
+            minit_export(name, base, DPY_X_PUTCHAR));
         address = minit_export(name, base, DPY_X_CLK_PI_SERVICE_CALL);
         if (clk_pi_service_addr != 0U)
                 storage_patch_module_jump(base,
@@ -804,7 +808,7 @@ dpy_minit(void)
 
 #endif
 
-/** @brief Bind the TTY multiplexer to whichever CTY/DCS/GE services were installed. */
+/** @brief Bind the TTY multiplexer to installed terminal input/output services. */
 void
 tty_minit(void)
 {
@@ -816,6 +820,7 @@ tty_minit(void)
         unsigned int cty_getchar;
         unsigned int dcs_getchar;
         unsigned int ge_getchar;
+        unsigned int dpy_putchar;
         unsigned int address;
         unsigned int service;
 
@@ -826,6 +831,7 @@ tty_minit(void)
         cty_getchar = module_service_get(MODULE_SERVICE_CTY_GETCHAR);
         dcs_getchar = module_service_get(MODULE_SERVICE_DCS_GETCHAR);
         ge_getchar = module_service_get(MODULE_SERVICE_GE_GETCHAR);
+        dpy_putchar = module_service_get(MODULE_SERVICE_DPY_PUTCHAR);
         if (cty_putchar == 0U && dcs_putchar == 0U && ge_putchar == 0U &&
             cty_getchar == 0U && dcs_getchar == 0U && ge_getchar == 0U) {
                 minit_diag_nodev(name);
@@ -857,6 +863,10 @@ tty_minit(void)
         if (ge_getchar != 0U)
                 storage_patch_module_jump(base,
                     (kword_t *)(unsigned long)address, ge_getchar);
+        address = minit_export(name, base, TTY_X_DPY_PUTCHAR_ADDR);
+        if (dpy_putchar != 0U)
+                storage_patch_module_jump(base,
+                    (kword_t *)(unsigned long)address, dpy_putchar);
 
         service = minit_export(name, base, TTY_X_PUTCHAR);
         storage_patch_jump(&native_sys_putchar_call, service);
