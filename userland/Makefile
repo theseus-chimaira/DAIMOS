@@ -8,7 +8,7 @@ DLINK ?= $(PDP10_PREFIX)/bin/dlink
 CPPFLAGS = -I$(PROJECT_ROOT)/system/kernel/boot -I$(PROJECT_ROOT)/system/kernel/core -I$(PROJECT_ROOT)/system/kernel/drivers -I$(PROJECT_ROOT)/system/kernel/fs -I$(PROJECT_ROOT)/system/kernel/mm -I$(PROJECT_ROOT)/system/kernel/modules -I$(PROJECT_ROOT)/system/kernel/proc -I$(PROJECT_ROOT)/system/kernel/storage -I$(PROJECT_ROOT)/userland/libc -I$(PROJECT_ROOT)/userland/exec -I$(PDP10_PREFIX)/include
 KCCFLAGS ?= -Pgnu99 -O -x=pdp6 -m=gas
 
-CHECK_SRCS = libc/u.c libc/text.c exec/commands.c exec/standalone.c dsh/dsh.c init/init.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c tsfs/mount_tsfs.c dtfs/dtfs_probe.c dtfs/dtfsprobe.c d6lz/d6lz.c logstore/logdrain.c
+CHECK_SRCS = libc/u.c libc/text.c exec/commands.c exec/standalone.c dsh/dsh.c dsh/dsh_s6.c dsh/dsh_env.c dsh/dsh_exec.c init/init.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c tsfs/mount_tsfs.c dtfs/dtfs_probe.c dtfs/dtfsprobe.c d6lz/d6lz.c logstore/logdrain.c
 CHECK_ASMS = $(CHECK_SRCS:%.c=$(USERLAND_BUILD)/check/%.s)
 COMMON_C_SRCS = libc/u.c libc/text.c
 COMMON_S_SRCS = libc/crt0.s libc/syscall.s libc/syscall_helpers.s
@@ -32,12 +32,18 @@ LOGIN_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/login/%.dobj)
 LOGIN_DXR = $(USERLAND_BUILD)/login.dxr
 LOGIN_MAP = $(USERLAND_BUILD)/login.map
 
-DSH_C_SRCS = libc/u.c libc/text.c exec/commands.c dsh/dsh.c
+DSH_C_SRCS = libc/u.c libc/text.c dsh/dsh_s6.c dsh/dsh_env.c dsh/dsh_exec.c dsh/dsh.c
 DSH_C_OBJS = $(DSH_C_SRCS:%.c=$(USERLAND_BUILD)/dsh/%.dobj)
 DSH_S_SRCS = $(COMMON_S_SRCS)
 DSH_S_OBJS = $(DSH_S_SRCS:%.s=$(USERLAND_BUILD)/dsh/%.dobj)
 DSH_DXR = $(USERLAND_BUILD)/dsh.dxr
 DSH_MAP = $(USERLAND_BUILD)/dsh.map
+
+COMMAND_C_SRCS = $(COMMON_C_SRCS) exec/commands.c exec/standalone.c
+COMMAND_C_OBJS = $(COMMAND_C_SRCS:%.c=$(USERLAND_BUILD)/command/%.dobj)
+COMMAND_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/command/%.dobj)
+COMMAND_DXR = $(USERLAND_BUILD)/command.dxr
+COMMAND_MAP = $(USERLAND_BUILD)/command.map
 
 TSFSPROBE_C_SRCS = $(COMMON_C_SRCS) tsfs/tsfs_scan.c tsfs/tsfsprobe.c
 TSFSPROBE_C_OBJS = $(TSFSPROBE_C_SRCS:%.c=$(USERLAND_BUILD)/tsfsprobe/%.dobj)
@@ -72,7 +78,7 @@ LOGDRAIN_MAP = $(USERLAND_BUILD)/logdrain.map
 .DEFAULT_GOAL := build
 .PHONY: build check clean
 
-build: $(INIT_DXR) $(MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR) $(DTFSPROBE_DXR) $(D6LZ_DXR) $(LOGDRAIN_DXR)
+build: $(INIT_DXR) $(MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(COMMAND_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR) $(DTFSPROBE_DXR) $(D6LZ_DXR) $(LOGDRAIN_DXR)
 
 check: $(CHECK_ASMS) build
 
@@ -127,6 +133,18 @@ $(LOGIN_DXR): $(LOGIN_C_OBJS) $(LOGIN_S_OBJS)
 
 $(DSH_DXR): $(DSH_C_OBJS) $(DSH_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(DSH_MAP) $(DSH_S_OBJS) $(DSH_C_OBJS)
+
+$(USERLAND_BUILD)/command/%.dobj: %.c
+	mkdir -p $(dir $@)
+	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
+
+$(USERLAND_BUILD)/command/%.dobj: %.s
+	mkdir -p $(dir $@)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+$(COMMAND_DXR): $(COMMAND_C_OBJS) $(COMMAND_S_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(COMMAND_MAP) $(COMMAND_S_OBJS) $(COMMAND_C_OBJS)
 
 $(USERLAND_BUILD)/tsfsprobe/%.dobj: %.c
 	mkdir -p $(dir $@)
