@@ -1,6 +1,7 @@
 #include "dsh.h"
 #include "dsh_lex.h"
 #include "dsh_parse.h"
+#include "cmdmap.h"
 #include "text.h"
 
 #define DSH_REC_WORDS (DSH_S6_MAX_WORDS + 1U)
@@ -672,6 +673,7 @@ dsh_launch_external(struct dsh_state *st, unsigned int argc,
     unsigned int pgrp, int *pidp)
 {
         struct dsh_s6 path;
+        struct dsh_s6 mapped;
         struct dsh_s6 dir;
         struct dsh_s6 pname;
         const struct dsh_s6 *pval;
@@ -680,9 +682,20 @@ dsh_launch_external(struct dsh_state *st, unsigned int argc,
         int rc;
 
         for (i = 0U; i < argv[0].len; ++i)
-                if (dsh_s6_get(&argv[0], i) == '/')
-                        return dsh_launch_path(st, &argv[0], argc, argv,
+                if (dsh_s6_get(&argv[0], i) == '/') {
+                        rc = dsh_launch_path(st, &argv[0], argc, argv,
                             infd, outfd, pgrp_mode, pgrp, pidp);
+                        if (rc != DSH_NOT_FOUND)
+                                return rc;
+                        if (dsh_s6_pack(&argv[0], dsh_path_record,
+                            U_PATH_WORDS) == 0 &&
+                            u_cmd_resolve(dsh_path_record, dsh_path_record,
+                            U_PATH_WORDS) == 0 &&
+                            dsh_s6_from_counted(&mapped, dsh_path_record) == 0)
+                                return dsh_launch_path(st, &mapped, argc, argv,
+                                    infd, outfd, pgrp_mode, pgrp, pidp);
+                        return DSH_NOT_FOUND;
+                }
         dsh_s6_clear(&pname);
         (void)dsh_s6_append(&pname, 'P');
         (void)dsh_s6_append(&pname, 'A');
@@ -704,6 +717,12 @@ dsh_launch_external(struct dsh_state *st, unsigned int argc,
                         return rc;
                 start = i + 1U;
         }
+        if (dsh_s6_pack(&argv[0], dsh_path_record, U_PATH_WORDS) == 0 &&
+            u_cmd_resolve(dsh_path_record, dsh_path_record,
+            U_PATH_WORDS) == 0 &&
+            dsh_s6_from_counted(&mapped, dsh_path_record) == 0)
+                return dsh_launch_path(st, &mapped, argc, argv, infd, outfd,
+                    pgrp_mode, pgrp, pidp);
         return DSH_NOT_FOUND;
 }
 

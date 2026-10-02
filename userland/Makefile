@@ -8,7 +8,7 @@ DLINK ?= $(PDP10_PREFIX)/bin/dlink
 CPPFLAGS = -I$(PROJECT_ROOT)/system/kernel/boot -I$(PROJECT_ROOT)/system/kernel/core -I$(PROJECT_ROOT)/system/kernel/drivers -I$(PROJECT_ROOT)/system/kernel/fs -I$(PROJECT_ROOT)/system/kernel/mm -I$(PROJECT_ROOT)/system/kernel/modules -I$(PROJECT_ROOT)/system/kernel/proc -I$(PROJECT_ROOT)/system/kernel/storage -I$(PROJECT_ROOT)/userland/libc -I$(PROJECT_ROOT)/userland/exec -I$(PDP10_PREFIX)/include
 KCCFLAGS ?= -Pgnu99 -O -x=pdp6 -m=gas
 
-CHECK_SRCS = libc/u.c libc/text.c exec/commands.c exec/standalone.c dsh/dsh.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c init/init.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c tsfs/mount_tsfs.c dtfs/dtfs_probe.c dtfs/dtfsprobe.c d6lz/d6lz.c logstore/logdrain.c
+CHECK_SRCS = libc/u.c libc/text.c exec/commands.c exec/standalone.c exec/utility.c exec/utility_standalone.c exec/xargs.c exec/sed.c exec/configctl.c dsh/dsh.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c init/init.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c tsfs/mount_tsfs.c dtfs/dtfs_probe.c dtfs/dtfsprobe.c d6lz/d6lz.c logstore/logdrain.c logstore/logcompat.c
 CHECK_ASMS = $(CHECK_SRCS:%.c=$(USERLAND_BUILD)/check/%.s)
 COMMON_C_SRCS = libc/u.c libc/text.c
 COMMON_S_SRCS = libc/crt0.s libc/syscall.s libc/syscall_helpers.s
@@ -32,7 +32,7 @@ LOGIN_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/login/%.dobj)
 LOGIN_DXR = $(USERLAND_BUILD)/login.dxr
 LOGIN_MAP = $(USERLAND_BUILD)/login.map
 
-DSH_C_SRCS = libc/u.c libc/text.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c dsh/dsh.c
+DSH_C_SRCS = libc/u.c libc/text.c libc/cmdmap.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c dsh/dsh.c
 DSH_C_OBJS = $(DSH_C_SRCS:%.c=$(USERLAND_BUILD)/dsh/%.dobj)
 DSH_S_SRCS = $(COMMON_S_SRCS)
 DSH_S_OBJS = $(DSH_S_SRCS:%.s=$(USERLAND_BUILD)/dsh/%.dobj)
@@ -44,6 +44,44 @@ COMMAND_C_OBJS = $(COMMAND_C_SRCS:%.c=$(USERLAND_BUILD)/command/%.dobj)
 COMMAND_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/command/%.dobj)
 COMMAND_DXR = $(USERLAND_BUILD)/command.dxr
 COMMAND_MAP = $(USERLAND_BUILD)/command.map
+
+UTILITY_C_SRCS = $(COMMON_C_SRCS) exec/utility.c exec/utility_standalone.c
+UTILITY_MISC_C_OBJS = $(UTILITY_C_SRCS:%.c=$(USERLAND_BUILD)/utility-misc/%.dobj)
+UTILITY_MISC_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/utility-misc/%.dobj)
+UTILITY_MISC_DXR = $(USERLAND_BUILD)/utility-misc.dxr
+UTILITY_MISC_MAP = $(USERLAND_BUILD)/utility-misc.map
+UTILITY_TEXT_C_OBJS = $(UTILITY_C_SRCS:%.c=$(USERLAND_BUILD)/utility-text/%.dobj)
+UTILITY_TEXT_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/utility-text/%.dobj)
+UTILITY_TEXT_DXR = $(USERLAND_BUILD)/utility-text.dxr
+UTILITY_TEXT_MAP = $(USERLAND_BUILD)/utility-text.map
+UTILITY_DOC_C_OBJS = $(UTILITY_C_SRCS:%.c=$(USERLAND_BUILD)/utility-doc/%.dobj)
+UTILITY_DOC_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/utility-doc/%.dobj)
+UTILITY_DOC_DXR = $(USERLAND_BUILD)/utility-doc.dxr
+UTILITY_DOC_MAP = $(USERLAND_BUILD)/utility-doc.map
+
+XARGS_C_SRCS = exec/xargs.c
+XARGS_C_OBJS = $(XARGS_C_SRCS:%.c=$(USERLAND_BUILD)/xargs/%.dobj)
+XARGS_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/xargs/%.dobj)
+XARGS_DXR = $(USERLAND_BUILD)/xargs.dxr
+XARGS_MAP = $(USERLAND_BUILD)/xargs.map
+
+SED_C_SRCS = $(COMMON_C_SRCS) exec/sed.c
+SED_C_OBJS = $(SED_C_SRCS:%.c=$(USERLAND_BUILD)/sed/%.dobj)
+SED_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/sed/%.dobj)
+SED_DXR = $(USERLAND_BUILD)/sed.dxr
+SED_MAP = $(USERLAND_BUILD)/sed.map
+
+CONFIGCTL_C_SRCS = $(COMMON_C_SRCS) exec/configctl.c
+CONFIGCTL_C_OBJS = $(CONFIGCTL_C_SRCS:%.c=$(USERLAND_BUILD)/configctl/%.dobj)
+CONFIGCTL_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/configctl/%.dobj)
+CONFIGCTL_DXR = $(USERLAND_BUILD)/configctl.dxr
+CONFIGCTL_MAP = $(USERLAND_BUILD)/configctl.map
+
+LOGCOMPAT_C_SRCS = $(COMMON_C_SRCS) libc/logevent.c logstore/logcompat.c
+LOGCOMPAT_C_OBJS = $(LOGCOMPAT_C_SRCS:%.c=$(USERLAND_BUILD)/logcompat/%.dobj)
+LOGCOMPAT_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/logcompat/%.dobj)
+LOGCOMPAT_DXR = $(USERLAND_BUILD)/logcompat.dxr
+LOGCOMPAT_MAP = $(USERLAND_BUILD)/logcompat.map
 
 TSFSPROBE_C_SRCS = $(COMMON_C_SRCS) tsfs/tsfs_scan.c tsfs/tsfsprobe.c
 TSFSPROBE_C_OBJS = $(TSFSPROBE_C_SRCS:%.c=$(USERLAND_BUILD)/tsfsprobe/%.dobj)
@@ -78,7 +116,7 @@ LOGDRAIN_MAP = $(USERLAND_BUILD)/logdrain.map
 .DEFAULT_GOAL := build
 .PHONY: build check clean
 
-build: $(INIT_DXR) $(MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(COMMAND_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR) $(DTFSPROBE_DXR) $(D6LZ_DXR) $(LOGDRAIN_DXR)
+build: $(INIT_DXR) $(MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(COMMAND_DXR) $(UTILITY_MISC_DXR) $(UTILITY_TEXT_DXR) $(UTILITY_DOC_DXR) $(XARGS_DXR) $(SED_DXR) $(CONFIGCTL_DXR) $(LOGCOMPAT_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR) $(DTFSPROBE_DXR) $(D6LZ_DXR) $(LOGDRAIN_DXR)
 
 check: $(CHECK_ASMS) build
 
@@ -145,6 +183,90 @@ $(USERLAND_BUILD)/command/%.dobj: %.s
 
 $(COMMAND_DXR): $(COMMAND_C_OBJS) $(COMMAND_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(COMMAND_MAP) $(COMMAND_S_OBJS) $(COMMAND_C_OBJS)
+
+$(USERLAND_BUILD)/utility-misc/%.dobj: %.c
+	mkdir -p $(dir $@)
+	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -DUTIL_GROUP=1 -S $< -o $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
+
+$(USERLAND_BUILD)/utility-misc/%.dobj: %.s
+	mkdir -p $(dir $@)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+$(UTILITY_MISC_DXR): $(UTILITY_MISC_C_OBJS) $(UTILITY_MISC_S_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(UTILITY_MISC_MAP) $(UTILITY_MISC_S_OBJS) $(UTILITY_MISC_C_OBJS)
+
+$(USERLAND_BUILD)/utility-text/%.dobj: %.c
+	mkdir -p $(dir $@)
+	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -DUTIL_GROUP=2 -S $< -o $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
+
+$(USERLAND_BUILD)/utility-text/%.dobj: %.s
+	mkdir -p $(dir $@)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+$(UTILITY_TEXT_DXR): $(UTILITY_TEXT_C_OBJS) $(UTILITY_TEXT_S_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(UTILITY_TEXT_MAP) $(UTILITY_TEXT_S_OBJS) $(UTILITY_TEXT_C_OBJS)
+
+$(USERLAND_BUILD)/utility-doc/%.dobj: %.c
+	mkdir -p $(dir $@)
+	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -DUTIL_GROUP=3 -S $< -o $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
+
+$(USERLAND_BUILD)/utility-doc/%.dobj: %.s
+	mkdir -p $(dir $@)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+$(UTILITY_DOC_DXR): $(UTILITY_DOC_C_OBJS) $(UTILITY_DOC_S_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(UTILITY_DOC_MAP) $(UTILITY_DOC_S_OBJS) $(UTILITY_DOC_C_OBJS)
+
+$(USERLAND_BUILD)/xargs/%.dobj: %.c
+	mkdir -p $(dir $@)
+	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
+
+$(USERLAND_BUILD)/xargs/%.dobj: %.s
+	mkdir -p $(dir $@)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+$(XARGS_DXR): $(XARGS_C_OBJS) $(XARGS_S_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(XARGS_MAP) $(XARGS_S_OBJS) $(XARGS_C_OBJS)
+
+$(USERLAND_BUILD)/sed/%.dobj: %.c
+	mkdir -p $(dir $@)
+	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
+
+$(USERLAND_BUILD)/sed/%.dobj: %.s
+	mkdir -p $(dir $@)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+$(SED_DXR): $(SED_C_OBJS) $(SED_S_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(SED_MAP) $(SED_S_OBJS) $(SED_C_OBJS)
+
+$(USERLAND_BUILD)/configctl/%.dobj: %.c
+	mkdir -p $(dir $@)
+	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
+
+$(USERLAND_BUILD)/configctl/%.dobj: %.s
+	mkdir -p $(dir $@)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+$(CONFIGCTL_DXR): $(CONFIGCTL_C_OBJS) $(CONFIGCTL_S_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(CONFIGCTL_MAP) $(CONFIGCTL_S_OBJS) $(CONFIGCTL_C_OBJS)
+
+$(USERLAND_BUILD)/logcompat/%.dobj: %.c
+	mkdir -p $(dir $@)
+	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
+
+$(USERLAND_BUILD)/logcompat/%.dobj: %.s
+	mkdir -p $(dir $@)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+$(LOGCOMPAT_DXR): $(LOGCOMPAT_C_OBJS) $(LOGCOMPAT_S_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(LOGCOMPAT_MAP) $(LOGCOMPAT_S_OBJS) $(LOGCOMPAT_C_OBJS)
 
 $(USERLAND_BUILD)/tsfsprobe/%.dobj: %.c
 	mkdir -p $(dir $@)

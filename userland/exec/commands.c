@@ -746,6 +746,42 @@ cmd_devs(int argc, kword_t **argv, struct u_io *io)
 }
 
 static int
+cmd_mods(int argc, kword_t **argv, struct u_io *io)
+{
+        kword_t path[U_PATH_WORDS];
+
+        (void)argc;
+        (void)argv;
+        if (u_s6_pack(path, U_PATH_WORDS, "/MONITOR/DEVICES") != 0)
+                return 1;
+        return cmd_ls_one(path, io);
+}
+
+static int
+cmd_mounts(int argc, kword_t **argv, struct u_io *io)
+{
+        struct u_text_reader r;
+        char line[192];
+        int rc;
+
+        (void)argc;
+        (void)argv;
+        if (u_puts(io->out_fd, "ROOT /") != 0 || u_crlf(io->out_fd) != 0)
+                return 1;
+        if (u_text_open(&r, "/CONFIG/FSTAB") != 0)
+                return 0;
+        while ((rc = u_text_getline(&r, line, sizeof(line))) >= 0)
+                if (line[0] != 0 && line[0] != '#' &&
+                    (u_puts(io->out_fd, line) != 0 ||
+                    u_crlf(io->out_fd) != 0)) {
+                        u_text_close(&r);
+                        return 1;
+                }
+        u_text_close(&r);
+        return rc == U_TEXT_EOF ? 0 : 1;
+}
+
+static int
 cmd_free(int argc, kword_t **argv, struct u_io *io)
 {
         struct sys_meminfo m;
@@ -944,8 +980,11 @@ cmd_dispatch(int argc, kword_t **argv, struct u_io *io)
         if (cmd_name_eq(argv[0], "HEXDUMP")) return cmd_hexdump(argc, argv, io);
         if (cmd_name_eq(argv[0], "PS")) return cmd_ps(argc, argv, io);
         if (cmd_name_eq(argv[0], "DEVS")) return cmd_devs(argc, argv, io);
+        if (cmd_name_eq(argv[0], "MODS")) return cmd_mods(argc, argv, io);
+        if (cmd_name_eq(argv[0], "MOUNTS")) return cmd_mounts(argc, argv, io);
         if (cmd_name_eq(argv[0], "FREE")) return cmd_free(argc, argv, io);
         if (cmd_name_eq(argv[0], "MEMSTAT")) return cmd_memstat(argc, argv, io);
+        if (cmd_name_eq(argv[0], "SYSCTL")) return cmd_memstat(argc, argv, io);
         if (cmd_name_eq(argv[0], "DF")) return cmd_df(argc, argv, io);
         if (cmd_name_eq(argv[0], "TTYOUT")) return cmd_ttyout(argc, argv, io);
         if (cmd_name_eq(argv[0], "HALT")) return cmd_halt(argc, argv, io);

@@ -1,65 +1,29 @@
-# LOGDRAIN
+%SIXMD 1
+# @?LOGDRAIN - DRAIN THE PERSISTENT LOGSTORE
 
-## NAME
+## @?OPERANDS
 
-LOGDRAIN - drain the persistent kernel LOGSTORE to a process-context sink
-
-## SYNOPSIS
-
-LOGDRAIN STATUS
-
-LOGDRAIN [FOLLOW] NULL
-
-LOGDRAIN [FOLLOW] FILE
-
-LOGDRAIN [FOLLOW] CONSOLE [SEVERITY]
-
-LOGDRAIN [FOLLOW] MTC [UNIT]
+### @?[STRING]
+STATUS, FOLLOW, NULL, FILE, CONSOLE, OR MTC MODE AND ITS BOUNDED ARGUMENTS.
 
 ## DESCRIPTION
 
-LOGDRAIN is a privileged process-context consumer of the D6FS-owned LOGSTORE
-reservation.  The kernel exports only bounded LOGSTORE and magnetic-tape
-transport operations.  Record selection, loss accounting, persistent drain
-state, file rotation, console formatting, and reel handling are userland
-policy.
+LOGDRAIN IS THE PRIVILEGED PROCESS CONTEXT CONSUMER OF THE KERNEL LOGSTORE.
+IT CAN REPORT STATUS, DISCARD VALIDATED RECORDS, APPEND RAW RECORDS TO THE
+SYSTEM LOG FILE, PRINT RECORDS TO A CONSOLE, OR WRITE THEM TO MAGNETIC TAPE.
 
-The drain cursor is stored redundantly in LOGSTORE blocks 0 and 1.  It is
-advanced only after the selected sink accepts a complete record.  If the
-producer overwrites undrained records, LOGDRAIN advances to the oldest record
-still present, increments the persistent lost-record count, and reports the
-gap on standard error.
+FOLLOW WAITS FOR NEW PRODUCER RECORDS AFTER CATCHING UP.  THE PERSISTENT DRAIN
+CURSOR ADVANCES ONLY AFTER THE SELECTED SINK ACCEPTS A COMPLETE RECORD.
 
-NULL validates and acknowledges records without output and is intended for
-testing or deliberate discard.
+## @?FILES
 
-FILE appends raw 128-word LSREC1 records to /LOG/SYSTEM.LOG.  At 128 records
-the file is rotated to /LOG/SYSTEM.OLD before a new SYSTEM.LOG is opened.
+### @?/LOG/SYSTEM.LOG
+CURRENT FILE SINK.
 
-CONSOLE prints records in textual form.  The optional decimal SEVERITY is the
-minimum severity printed; lower-severity records are intentionally filtered
-and acknowledged.
+### @?/LOG/SYSTEM.OLD
+PREVIOUS ROTATED FILE SINK.
 
-MTC writes complete 128-word records to the selected Type-516 magnetic-tape
-unit, default unit 0.  A finite drain writes a filemark after the final record.
-If the controller reports end-of-reel, LOGDRAIN exits without acknowledging
-the blocked record.  Replace the reel and rerun LOGDRAIN to continue at that
-record.
+## @?EXIT STATUS
 
-FOLLOW waits for new producer records after catching up.  The wait is keyed by
-the observed producer sequence and cannot miss an append between the status
-check and sleep.
-
-STATUS prints producer sequence, persistent drain sequence, cumulative lost
-record count, and ring capacity without advancing the drain.
-
-## FILES
-
-/LOG/SYSTEM.LOG
-
-/LOG/SYSTEM.OLD
-
-## SECURITY
-
-LOGDRAIN requires root privilege.  Raw LOGSTORE and MTC transport operations
-are rejected for non-root callers.
+### @?0 - OPERATION COMPLETED
+### @?1 - INVALID MODE, PRIVILEGE FAILURE, OR SINK ERROR

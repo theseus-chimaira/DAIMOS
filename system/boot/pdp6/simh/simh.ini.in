@@ -72,7 +72,10 @@ attach -q -n ptp @PTP_OUTPUT@
 attach -q -n cp @CP_OUTPUT@
 attach -q -n lpt @LPT_OUTPUT@
 deposit ptr time 1
-attach -q dsk0 @DISK_IMAGE@
+attach -q dsk0 @DSK0_IMAGE@
+attach -q dsk1 @DSK1_IMAGE@
+attach -q dsk2 @DSK2_IMAGE@
+attach -q dsk3 @DSK3_IMAGE@
 
 ; Simulator serial transports for the first multi-terminal userspace login.
 attach -q dcs0 @DCS0_PORT@
