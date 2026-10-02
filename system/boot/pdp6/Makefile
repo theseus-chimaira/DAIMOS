@@ -312,12 +312,13 @@ SYSTEM_MOUNTTSFS_DXR ?= $(MOUNTTSFS_DXR)
 SYSTEM_DTFSPROBE_DXR ?= $(DTFSPROBE_DXR)
 SYSTEM_D6LZ_DXR ?= $(D6LZ_DXR)
 SYSTEM_LOGDRAIN_DXR ?= $(LOGDRAIN_DXR)
-SYSTEM_INITTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/inittab
 SYSTEM_PASSWD_TEXT ?= $(PROJECT_ROOT)/userland/config/passwd
 SYSTEM_SYSTEM_TEXT ?= $(PROJECT_ROOT)/userland/config/system
 ifeq ($(BOOT_PROFILE),lowmem)
+SYSTEM_INITTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/inittab.lowmem
 SYSTEM_FSTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/fstab.lowmem
 else
+SYSTEM_INITTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/inittab
 SYSTEM_FSTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/fstab
 endif
 SYSTEM_CONFIG_BUILD = $(BUILD)/config

@@ -162,8 +162,11 @@ d6fs_reader_get_block:
         jumpe   1,kret_zero
         caml    2,6(1)                   ; logical >= total_blocks
         jrst    kret_zero
-        camn    2,3(1)                   ; cache hit
-        jrst    d6fs_get_block_hit
+        ; fs_block_workspace is shared by all filesystem providers.  The
+        ; reader-local tag therefore cannot prove that the workspace still
+        ; contains this D6FS block: DTFS/TSFS/MEMFS or boot code may have
+        ; reused it since the last D6FS access.  Always validate/copy through
+        ; the shared BCACHE tag instead of trusting the stale local tag.
         push    17,010
         push    17,011
         push    17,012
@@ -197,9 +200,6 @@ d6fs_get_block_read_fail:
         setz    1,
 d6fs_get_block_read_done:
         jrst    d6fs_restore3
-d6fs_get_block_hit:
-        movei   1,fs_block_workspace
-        popj    17,
 
         .globl  d6fs_reader_fcb
 ; int d6fs_reader_fcb(reader, index, fcb, info)

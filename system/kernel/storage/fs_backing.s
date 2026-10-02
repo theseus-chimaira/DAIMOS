@@ -8,6 +8,9 @@
         .globl  fs_backing_read
         .globl  fs_backing_write
         .globl  kret_neg1
+        .globl  mfsdev_d6set_reads
+        .globl  mfsdev_d6set_writes
+        .globl  mfsdev_storage_errors
 
 ; int fs_backing_read(backing, logical, block)
 ; Callback ABI: AC1=opaque, AC2=logical, AC3=block.
@@ -48,13 +51,23 @@ fs_backing_root_read:
         move    1,2
         move    2,3
 fs_backing_root_read_jump:
-        jrst    0
+        pushj   17,0
+        jumpn   1,fs_backing_root_error
+        aos     mfsdev_d6set_reads
+        popj    17,
 
 fs_backing_root_write:
         move    1,2
         move    2,3
 fs_backing_root_write_jump:
-        jrst    0
+        pushj   17,0
+        jumpn   1,fs_backing_root_error
+        aos     mfsdev_d6set_writes
+        popj    17,
+
+fs_backing_root_error:
+        aos     mfsdev_storage_errors+4 ; D6SET0 logical backing failure
+        popj    17,
 
 ; Direct-device bridge.  The opaque word packs selector,,base.  Plain
 ; selectors 0..3 retain the historical DSK270 ABI.  Selector bit 0400000
@@ -134,6 +147,8 @@ fs_backing_direct_dispatch:
         jrst    fs_backing_direct_have_unit
         move    1,5
 fs_backing_direct_have_unit:
+        trne    6,0100000               ; boot-root logical request?
+        jrst    fs_backing_direct_root
         trne    6,0400000
         jrst    fs_backing_direct_drm
         jumpe   7,fs_backing_direct_read_jump
@@ -148,3 +163,31 @@ fs_backing_direct_drm_write_jump:
         jrst    kret_neg1
 fs_backing_direct_drm_read_jump:
         jrst    kret_neg1
+
+; The root tag is the only case in which direct-device I/O also represents a
+; logical D6SET request.  Call through the same patch slots so the physical
+; driver retains its own accounting, then account the logical completion once.
+fs_backing_direct_root:
+        trne    6,0400000
+        jrst    fs_backing_direct_root_drm
+        jumpn   7,fs_backing_direct_root_write
+        pushj   17,fs_backing_direct_read_jump
+        jumpn   1,fs_backing_root_error
+        aos     mfsdev_d6set_reads
+        popj    17,
+fs_backing_direct_root_write:
+        pushj   17,fs_backing_direct_write_jump
+        jumpn   1,fs_backing_root_error
+        aos     mfsdev_d6set_writes
+        popj    17,
+fs_backing_direct_root_drm:
+        jumpn   7,fs_backing_direct_root_drm_write
+        pushj   17,fs_backing_direct_drm_read_jump
+        jumpn   1,fs_backing_root_error
+        aos     mfsdev_d6set_reads
+        popj    17,
+fs_backing_direct_root_drm_write:
+        pushj   17,fs_backing_direct_drm_write_jump
+        jumpn   1,fs_backing_root_error
+        aos     mfsdev_d6set_writes
+        popj    17,

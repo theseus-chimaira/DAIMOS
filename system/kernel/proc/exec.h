@@ -26,6 +26,8 @@
 
 #define EXEC_LOAD_OK                 0
 #define EXEC_LOAD_RT_REQUIRED        1
+#define EXEC_LOAD_NOMEM             -2
+#define EXEC_REPLACE_FATAL          -2
 
 /** Load and validate one DXR image into a process VM. */
 int exec_load_process(struct proc *p, unsigned int owner,

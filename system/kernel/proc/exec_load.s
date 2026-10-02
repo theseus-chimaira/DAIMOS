@@ -213,7 +213,7 @@ exec_load_create_vm:
         move    1,10
         move    2,11
         pushj   17,vm_space_create
-        jumpn   1,exec_load_fail
+        jumpn   1,exec_load_nomem
 
         trnn    15,0100000
         jrst    exec_load_plain_image
@@ -276,6 +276,14 @@ exec_load_fail:
         setzm   proc_rt_owner
 exec_load_fail_result:
         seto    1,
+        jrst    exec_load_return
+exec_load_nomem:
+        skipn   -003(17)                ; undo RT reservation before retry
+        jrst    exec_load_nomem_result
+        camn    11,proc_rt_owner
+        setzm   proc_rt_owner
+exec_load_nomem_result:
+        move    1,[-2]                  ; EXEC_LOAD_NOMEM
 exec_load_return:
         ; Restore the contiguous callee-saved range with one BLT.
         movei   0,010

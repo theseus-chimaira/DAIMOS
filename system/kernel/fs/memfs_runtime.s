@@ -650,17 +650,16 @@ memfs_readdir_found:
 memfs_stat:
         jumpe   3,kret_neg1
         move    7,1                     ; fs
-        move    0,3                     ; st
         pushj   17,memfs_slot
         jumpl   1,kret_neg1
         move    6,1                     ; slot
         ldb     4,[POINT 3,5(5),20]
-        movem   4,(0)
+        movem   4,(3)
         ldb     4,[POINT 12,5(5),32]
-        movem   4,1(0)
-        setzm   2(0)                    ; reserved
+        movem   4,1(3)
+        setzm   2(3)                    ; reserved
         hrrz    4,6(5)
-        movem   4,3(0)
+        movem   4,3(3)
         move    4,(7)
         addi    4,01000
         add     4,6
@@ -668,11 +667,11 @@ memfs_stat:
         move    5,1
         lsh     5,-011
         andi    5,0777
-        movem   5,4(0)                  ; uid
+        movem   5,4(3)                  ; uid
         andi    1,0777
-        movem   1,5(0)                  ; gid
+        movem   1,5(3)                  ; gid
         move    4,0100(4)               ; mtime follows owner table
-        movem   4,6(0)                  ; mtime
+        movem   4,6(3)                  ; mtime
         jrst    kret_zero
 
 ; int memfs_parent(const struct memfs *fs, vnode_t node,

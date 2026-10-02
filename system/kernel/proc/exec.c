@@ -16,10 +16,96 @@
 #include "vm.h"
 #include "proc_swap.h"
 #include "syscall.h"
+#include "mm.h"
+
+#define EXEC_LAUNCH_MM_OWNER 013U
 
 /* Target exec_load_process() and sixbit_record_words() are implemented in
  * exec_load.s so KCORE does not carry the larger compiler-generated bodies. */
 extern unsigned int sixbit_record_words(const kword_t *record, int nonempty);
+
+/*
+ * Complete only the destructive low-memory EXEC retry.  Keeping this path in
+ * a separate function is deliberate: the ordinary replacement path below is
+ * performance- and correctness-sensitive resident code whose compact KCC
+ * frame has already been validated.  A 32K machine reaches this helper only
+ * after vm_space_create() reports EXEC_LOAD_NOMEM.
+ */
+static int
+exec_replace_current_lowmem(const kword_t *block, unsigned int words,
+    struct proc *current, unsigned int slot, unsigned int argc,
+    unsigned int envc, kword_t old_swap, int old_rt_owner,
+    kword_t *entry_startup)
+{
+        const struct sys_exec_v1 *args;
+        const kword_t *path;
+        const kword_t *records;
+        struct proc staged;
+        kword_t startup[4];
+        kword_t launch_base;
+        kword_t new_swap;
+        kword_t counts;
+        kword_t *launch_copy;
+        unsigned int i;
+        int load_result;
+
+        launch_base = 0UL;
+        if (mm_alloc((kword_t)words, MM_TYPE_KERNEL_DYNAMIC,
+            EXEC_LAUNCH_MM_OWNER, MM_ALLOC_LOW, &launch_base) != MM_OK) {
+                proc_swap_records[slot].state = old_swap;
+                return -1;
+        }
+        launch_copy = (kword_t *)(unsigned long)launch_base;
+        for (i = 0U; i < words; ++i)
+                launch_copy[i] = block[i];
+
+        /* The copied launch block makes the user mapping expendable.  From
+         * this point onward failure is fatal because the old image is gone. */
+        staged.meta = current->meta;
+        PROC_CTL_WORD(current) &= ~PROC_USER_MAP_BIT;
+        if (vm_space_destroy(current, slot) != 0) {
+                PROC_CTL_WORD(current) |= PROC_USER_MAP_BIT;
+                (void)mm_free(launch_base, MM_TYPE_KERNEL_DYNAMIC,
+                    EXEC_LAUNCH_MM_OWNER);
+                proc_swap_records[slot].state = old_swap;
+                return -1;
+        }
+
+        args = (const struct sys_exec_v1 *)launch_copy;
+        path = &args->path[0];
+        i = sixbit_record_words(path, 1);
+        records = path + i;
+        load_result = exec_load_process(&staged, slot, path);
+        if (load_result < 0)
+                goto fatal;
+
+        counts = ((kword_t)argc << 18U) | (kword_t)envc;
+        if (vm_space_startup(&staged, records, counts, startup) != 0) {
+                (void)vm_space_destroy(&staged, slot);
+                goto fatal;
+        }
+        new_swap = proc_swap_records[slot].state;
+
+        current->vm_state = staged.vm_state;
+        proc_swap_records[slot].state = new_swap;
+        PROC_SWAP_BACKING_WORD(current) = 0UL;
+        entry_startup[0] = PROC_ENTRY(&staged);
+        entry_startup[1] = startup[3];
+        entry_startup[2] = startup[0];
+        entry_startup[3] = startup[1];
+        entry_startup[4] = startup[2];
+        if (old_rt_owner && load_result == EXEC_LOAD_OK &&
+            (unsigned int)proc_rt_owner == slot)
+                proc_rt_owner = 0UL;
+        (void)mm_free(launch_base, MM_TYPE_KERNEL_DYNAMIC,
+            EXEC_LAUNCH_MM_OWNER);
+        return 0;
+
+fatal:
+        (void)mm_free(launch_base, MM_TYPE_KERNEL_DYNAMIC,
+            EXEC_LAUNCH_MM_OWNER);
+        return EXEC_REPLACE_FATAL;
+}
 
 
 
@@ -103,6 +189,9 @@ exec_replace_current(const kword_t *block,
         old_rt_owner = ((unsigned int)proc_rt_owner == slot);
         staged.meta = current->meta;
         load_result = exec_load_process(&staged, slot, path);
+        if (load_result == EXEC_LOAD_NOMEM)
+                return exec_replace_current_lowmem(block, words, current,
+                    slot, argc, envc, old_swap, old_rt_owner, entry_startup);
         if (load_result < 0)
                 goto restore_swap_fail;
         counts = ((kword_t)argc << 18U) | (kword_t)envc;

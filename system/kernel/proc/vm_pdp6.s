@@ -52,9 +52,10 @@ vm_user_mapping_hold:
         add     5,proc_table
         hlrz    0,(5)
         jumpe   0,vm_user_mapping_hold_done
-        move    5,0045(0)
-        iori    5,02
-        movem   5,0045(0)
+        move    5,0                     ; AC0 cannot be an index register
+        move    0,0045(5)
+        iori    0,02
+        movem   0,0045(5)
 vm_user_mapping_hold_done:
         pop     17,5
         pop     17,0
@@ -71,9 +72,10 @@ vm_user_mapping_release:
         add     5,proc_table
         hlrz    0,(5)
         jumpe   0,vm_user_mapping_release_done
-        move    5,0045(0)
-        andcmi  5,02
-        movem   5,0045(0)
+        move    5,0                     ; AC0 cannot be an index register
+        move    0,0045(5)
+        andcmi  0,02
+        movem   0,0045(5)
 vm_user_mapping_release_done:
         pop     17,5
         pop     17,0

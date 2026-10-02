@@ -38,6 +38,7 @@
         .globl  pipe_create
         .globl  file_mkfifo
         .globl  file_table
+        .globl  file_find
         .globl  exec_replace_current
         .globl  proc_exec_enter
         .globl  pclk_time36
@@ -142,6 +143,16 @@ native_sys_mapped_return:
         ; AC1 fd, AC2 buffer, AC3 word count.
         move    6,1
         move    7,3
+        move    1,6
+        pushj   17,file_find
+        jumpe   1,native_sys_read_words_mapped
+        move    4,(1)
+        tlz     4,707070               ; canonical vnode
+        hlrz    5,4
+        caie    5,070001               ; PIPE_PROVIDER, PIPE_KIND_STREAM
+        jrst    native_sys_read_words_mapped
+        jrst    native_sys_pipe_read_words
+native_sys_read_words_mapped:
         move    1,2
         pushj   17,native_sys_map_one
         jumpe   1,%L137
@@ -154,6 +165,16 @@ native_sys_mapped_return:
         ; AC1 fd, AC2 buffer, AC3 word count.
         move    6,1
         move    7,3
+        move    1,6
+        pushj   17,file_find
+        jumpe   1,native_sys_write_words_mapped
+        move    4,(1)
+        tlz     4,707070               ; canonical vnode
+        hlrz    5,4
+        caie    5,070001               ; PIPE_PROVIDER, PIPE_KIND_STREAM
+        jrst    native_sys_write_words_mapped
+        jrst    native_sys_pipe_write_words
+native_sys_write_words_mapped:
         move    1,2
         pushj   17,native_sys_map_one
         jumpe   1,%L137
@@ -162,6 +183,89 @@ native_sys_mapped_return:
         hrrz    3,7
         pushj   17,file_write_words
         jrst    native_sys_mapped_return
+
+; Word pipes are the one READ_WORDS/WRITE_WORDS provider that may block while
+; waiting for another process.  Do not keep a translated physical user buffer
+; pinned across that sleep: doing so would make every blocked pipe endpoint
+; ineligible for process swap.  Stage at most the pipe's eight-word payload on
+; the resident per-process kernel stack and remap the logical user pointer only
+; while copying to/from that staging buffer.
+native_sys_pipe_read_words:
+        push    17,2                    ; logical user buffer
+        push    17,6                    ; fd
+        push    17,7                    ; requested words
+        add     17,[010,,010]           ; eight staging words
+
+        ; Validate the user pointer before consuming pipe data, then release
+        ; the mapping before the provider can sleep.
+        move    1,-012(17)
+        pushj   17,native_sys_map_one
+        jumpe   1,native_sys_pipe_read_bad
+        pushj   17,vm_user_mapping_release
+
+        move    1,-011(17)
+        movei   2,-7(17)
+        move    3,-010(17)
+        caile   3,010
+        movei   3,010
+        pushj   17,file_read_words
+        jumple  1,native_sys_pipe_read_done
+        move    5,1                     ; transferred words
+
+        move    1,-012(17)
+        pushj   17,native_sys_map_one
+        jumpe   1,native_sys_pipe_read_bad
+        movei   2,-7(17)
+        move    3,5
+native_sys_pipe_read_copy:
+        move    4,(2)
+        movem   4,(1)
+        addi    1,1
+        addi    2,1
+        sojg    3,native_sys_pipe_read_copy
+        move    1,5
+        pushj   17,vm_user_mapping_release
+native_sys_pipe_read_done:
+        sub     17,[013,,013]
+        popj    17,
+native_sys_pipe_read_bad:
+        seto    1,
+        jrst    native_sys_pipe_read_done
+
+native_sys_pipe_write_words:
+        push    17,2                    ; logical user buffer
+        push    17,6                    ; fd
+        push    17,7                    ; requested words
+        add     17,[010,,010]           ; eight staging words
+
+        move    1,-012(17)
+        pushj   17,native_sys_map_one
+        jumpe   1,native_sys_pipe_write_bad
+        move    5,-010(17)
+        caile   5,010
+        movei   5,010
+        movei   2,-7(17)
+        move    3,5
+        jumpe   3,native_sys_pipe_write_release
+native_sys_pipe_write_copy:
+        move    4,(1)
+        movem   4,(2)
+        addi    1,1
+        addi    2,1
+        sojg    3,native_sys_pipe_write_copy
+native_sys_pipe_write_release:
+        pushj   17,vm_user_mapping_release
+
+        move    1,-011(17)
+        movei   2,-7(17)
+        move    3,5
+        pushj   17,file_write_words
+native_sys_pipe_write_done:
+        sub     17,[013,,013]
+        popj    17,
+native_sys_pipe_write_bad:
+        seto    1,
+        jrst    native_sys_pipe_write_done
 /** @brief Translate two user pointers under one VM mapping hold. */
 native_sys_two_paths:
         pushj   17,vm_user_mapping_hold
@@ -488,13 +592,22 @@ native_sys_storagectl:
         jumpl   6,native_sys_storagectl_bad
         caile   6,3
         jrst    native_sys_storagectl_bad
-        move    1,6
-        andi    1,1
-        movem   1,backstore_enabled
+
+        ; LOGSTORE is optional.  An uninstalled service is already disabled,
+        ; so a request with the LOGSTORE bit clear must succeed rather than
+        ; making an unrelated SWAP-only STORAGECTL fail through the default
+        ; kret_neg1 patch slot.  Enabling LOGSTORE still requires the MRES.
         move    1,6
         andi    1,2
         movei   5,6                    ; LOGSTORE MRES ENABLE
         pushj   17,sys_logstore_service_jump
+        trne    6,2
+        jumpn   1,native_sys_storagectl_bad
+
+        move    1,6
+        andi    1,1
+        movem   1,backstore_enabled
+        setz    1,
         jrst    native_sys_storagectl_done
 native_sys_storagectl_bad:
         seto    1,
@@ -681,7 +794,12 @@ native_sys_exec:
         move    3,file_table
         subi    3,047                  ; stable u-area base / saved AC0
         pushj   17,exec_replace_current
-        jumpn   1,native_sys_exec_bad
+        jumpe   1,native_sys_exec_commit
+        came    1,[-2]                 ; EXEC_REPLACE_FATAL after low-core commit
+        jrst    native_sys_exec_bad
+        movei   1,1
+        jrst    proc_exit_current
+native_sys_exec_commit:
         move    6,file_table
         subi    6,047
         move    1,(6)                  ; replacement entry

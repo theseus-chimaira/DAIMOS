@@ -337,14 +337,14 @@ dtfs_foreign_set_name_next:
         jumpe   2,dtfs_foreign_set_name_fail
 
 dtfs_foreign_set_name_align:
-        movei   0,6
-        sub     0,1
-        imuli   0,6
-        lsh     5,0(0)
-        movei   0,6
-        sub     0,2
-        imuli   0,6
-        lsh     6,0(0)
+        movei   3,6
+        sub     3,1
+        imuli   3,6
+        lsh     5,0(3)                  ; AC0 cannot index on PDP-6/10
+        movei   3,6
+        sub     3,2
+        imuli   3,6
+        lsh     6,0(3)
         movem   5,(010)
         tlne    010,1
         jrst    dtfs_foreign_set_name_its_ext

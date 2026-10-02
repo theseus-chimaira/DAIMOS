@@ -73,9 +73,11 @@ cmd_cat(int argc, kword_t **argv, struct u_io *io)
         char line[259];
         int i;
         int n;
+        int own_sink;
         int rc;
 
         if (argc < 2) return cmd_err(io, "CAT", 0);
+        own_sink = u_text_sink_attach(io->out_fd) == 0;
         rc = 0;
         for (i = 1; i < argc; ++i) {
                 r.fd = -1;
@@ -98,6 +100,8 @@ cmd_cat(int argc, kword_t **argv, struct u_io *io)
                 }
                 u_text_close(&r);
         }
+        if (own_sink && u_text_sink_detach() != 0)
+                rc = 1;
         return rc;
 }
 
@@ -140,10 +144,25 @@ cmd_ls(int argc, kword_t **argv, struct u_io *io)
 {
         static kword_t dot[2] = { 1UL, PDP10_SIX6('.',' ',' ',' ',' ',' ') };
         int i;
+        int own_sink;
         int rc;
-        if (argc < 2) return cmd_ls_one(dot, io);
+
+        /* Directory listings are naturally line-oriented S6REC text.  On a
+         * terminal, batching each completed line through the existing text
+         * sink avoids one WRITECHAR trap per output character.  If DSH has
+         * already attached the sink for redirection, simply use that sink and
+         * leave its lifetime to the caller. */
+        own_sink = u_text_sink_attach(io->out_fd) == 0;
         rc = 0;
-        for (i = 1; i < argc; ++i) if (cmd_ls_one(argv[i], io) != 0) rc = 1;
+        if (argc < 2) {
+                rc = cmd_ls_one(dot, io);
+        } else {
+                for (i = 1; i < argc; ++i)
+                        if (cmd_ls_one(argv[i], io) != 0)
+                                rc = 1;
+        }
+        if (own_sink && u_text_sink_detach() != 0)
+                rc = 1;
         return rc;
 }
 
@@ -671,6 +690,8 @@ cmd_ps(int argc, kword_t **argv, struct u_io *io)
         unsigned int i;
         unsigned int slots;
         unsigned int used;
+        int own_sink;
+        int rc;
         (void)argc; (void)argv;
         slots = SYS_PROC_SLOTS;
         used = SYS_PROC_SLOTS;
@@ -679,18 +700,41 @@ cmd_ps(int argc, kword_t **argv, struct u_io *io)
                 if (m.process_slots_used <= slots)
                         used = (unsigned int)m.process_slots_used;
         }
-        if (u_puts(io->out_fd, "PID PPID S WORDS COMM") != 0 || u_crlf(io->out_fd) != 0) return 1;
+        own_sink = u_text_sink_attach(io->out_fd) == 0;
+        rc = 0;
+        if (u_puts(io->out_fd, "PID PPID S WORDS COMM") != 0 ||
+            u_crlf(io->out_fd) != 0) {
+                rc = 1;
+                goto ps_done;
+        }
         for (i = 0U; i < slots && used != 0U; ++i) {
                 if (dsys_procinfo(i, &p) != 0) continue;
                 --used;
                 if (u_put_uint(io->out_fd, p.pid) != 0 || u_putc(io->out_fd, ' ') != 0 ||
                     u_put_uint(io->out_fd, p.ppid) != 0 || u_putc(io->out_fd, ' ') != 0 ||
                     u_put_uint(io->out_fd, p.state) != 0 || u_putc(io->out_fd, ' ') != 0 ||
-                    u_put_uint(io->out_fd, p.words) != 0 || u_putc(io->out_fd, ' ') != 0) return 1;
-                { kword_t s6[2]; s6[0] = 6U; s6[1] = p.comm; if (u_put_s6(io->out_fd, s6) != 0) return 1; }
-                if (u_crlf(io->out_fd) != 0) return 1;
+                    u_put_uint(io->out_fd, p.words) != 0 || u_putc(io->out_fd, ' ') != 0) {
+                        rc = 1;
+                        goto ps_done;
+                }
+                {
+                        kword_t s6[2];
+                        s6[0] = 6U;
+                        s6[1] = p.comm;
+                        if (u_put_s6(io->out_fd, s6) != 0) {
+                                rc = 1;
+                                goto ps_done;
+                        }
+                }
+                if (u_crlf(io->out_fd) != 0) {
+                        rc = 1;
+                        goto ps_done;
+                }
         }
-        return 0;
+ps_done:
+        if (own_sink && u_text_sink_detach() != 0)
+                rc = 1;
+        return rc;
 }
 
 static int
@@ -840,9 +884,23 @@ static int
 cmd_memstat(int argc, kword_t **argv, struct u_io *io)
 {
         struct sys_meminfo m;
+        int own_sink;
+        int rc;
         (void)argc; (void)argv;
         if (dsys_meminfo(&m) != 0) return cmd_err(io, "MEMSTAT", 0);
-#define FIELD(n,v) do { if (u_puts(io->out_fd,(n)) != 0 || u_put_uint(io->out_fd,(v)) != 0 || u_crlf(io->out_fd) != 0) return 1; } while (0)
+
+        /* Normal terminal output otherwise traps once per character.  Use the
+         * existing native S6REC sink when DSH has not already attached it for
+         * redirection, reducing each MEMSTAT line to one WRITE_WORDS trap. */
+        own_sink = u_text_sink_attach(io->out_fd) == 0;
+        rc = 0;
+#define FIELD(n,v) do { \
+        if (u_puts(io->out_fd,(n)) != 0 || u_put_uint(io->out_fd,(v)) != 0 || \
+            u_crlf(io->out_fd) != 0) { \
+                rc = 1; \
+                goto memstat_done; \
+        } \
+} while (0)
         FIELD("TOTAL ", m.total_words);
         FIELD("RESIDENT ", m.resident_words);
         FIELD("PROCESS-WORDS ", m.process_words);
@@ -853,7 +911,10 @@ cmd_memstat(int argc, kword_t **argv, struct u_io *io)
         FIELD("FILE-SLOTS ", m.file_slots_used);
         FIELD("FILE-SLOTS-MAX ", m.file_slots_total);
 #undef FIELD
-        return 0;
+memstat_done:
+        if (own_sink && u_text_sink_detach() != 0)
+                rc = 1;
+        return rc;
 }
 
 int
