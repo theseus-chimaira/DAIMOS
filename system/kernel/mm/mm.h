@@ -13,8 +13,14 @@
 
 #include "kcore.h"
 
-/** Maximum simultaneously allocated physical extents tracked by MM. */
-#define MM_MAX_EXTENTS          20
+/**
+ * Maximum simultaneously allocated physical extents tracked by MM.
+ *
+ * Twenty descriptors are one short of the measured full-system peak while
+ * launching DSH's bounded eight-stage pipeline.  Incremental pipe creation
+ * keeps that peak at 21, so do not grow this table merely for pipeline depth.
+ */
+#define MM_MAX_EXTENTS          21
 /** Maximum disjoint managed physical arenas needed during/after KINIT. */
 #define MM_MAX_ARENAS           3
 

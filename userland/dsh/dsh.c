@@ -126,6 +126,26 @@ dsh_put_prompt(struct dsh_state *st, unsigned int more)
         (void)u_puts(1, more ? "> " : "# ");
 }
 
+static int
+dsh_login_profile(struct dsh_state *st, const struct dsh_s6 *path)
+{
+        struct vfs_stat sb;
+        kword_t packed[U_PATH_WORDS];
+        int rc;
+
+        if (dsh_s6_pack(path, packed, U_PATH_WORDS) != 0)
+                return DSH_ERROR;
+        if (dsys_stat(packed, &sb) != 0)
+                return 0;               /* missing profiles are optional */
+        rc = dsh_execute_file(st, path);
+        if (rc == 0)
+                return 0;
+        (void)u_puts(2, "DSH: PROFILE: ");
+        (void)dsh_s6_put(2, path);
+        (void)u_crlf(2);
+        return rc;
+}
+
 static void
 dsh_login_profiles(struct dsh_state *st)
 {
@@ -134,21 +154,29 @@ dsh_login_profiles(struct dsh_state *st)
         const struct dsh_s6 *home;
         const char *suffix;
         unsigned int i;
+        int profile_status;
+        int rc;
 
+        profile_status = 0;
         if (dsh_s6_literal(&path, "/CONFIG/DSH.PROFILE") == 0)
-                (void)dsh_execute_file(st, &path);
+                profile_status = dsh_login_profile(st, &path);
         if (dsh_s6_literal(&home_name, "HOME") != 0)
-                return;
+                goto done;
         home = dsh_var_get(st, &home_name);
         if (home == 0 || home->len == 0U)
-                return;
+                goto done;
         if (dsh_s6_copy(&path, home) != 0)
-                return;
+                goto done;
         suffix = "/.DSH.PROFILE";
         for (i = 0U; suffix[i] != 0; ++i)
                 if (dsh_s6_append(&path, suffix[i]) != 0)
-                        return;
-        (void)dsh_execute_file(st, &path);
+                        goto done;
+        rc = dsh_login_profile(st, &path);
+        if (rc != 0 && profile_status == 0)
+                profile_status = rc;
+done:
+        if (profile_status != 0)
+                st->status = (unsigned int)profile_status;
 }
 
 static int

@@ -1684,32 +1684,17 @@ dsh_pipeline_collect(const struct dsh_node *nodes, unsigned int node,
         return 0;
 }
 
-static void
-dsh_close_pipe_set(int pipes[][2], unsigned int count)
-{
-        unsigned int i;
-
-        for (i = 0U; i < count; ++i) {
-                if (pipes[i][0] >= 0) {
-                        (void)dsys_close(pipes[i][0]);
-                        pipes[i][0] = -1;
-                }
-                if (pipes[i][1] >= 0) {
-                        (void)dsys_close(pipes[i][1]);
-                        pipes[i][1] = -1;
-                }
-        }
-}
-
 static int
 dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
     unsigned int root, int background)
 {
         unsigned int stages[DSH_MAX_ARGS];
-        int pipes[DSH_MAX_ARGS - 1U][2];
         unsigned int count;
         unsigned int i;
         unsigned int pgrp;
+        int prev_read;
+        int next_read;
+        int next_write;
         int pid;
         int last_pid;
         int rc;
@@ -1719,39 +1704,38 @@ dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
         if (dsh_pipeline_collect(nodes, root, stages, &count) != 0 ||
             count == 0U)
                 return 126;
-        for (i = 0U; i + 1U < DSH_MAX_ARGS; ++i) {
-                pipes[i][0] = -1;
-                pipes[i][1] = -1;
-        }
-        for (i = 0U; i + 1U < count; ++i) {
-                pair = dsys_pipe();
-                if (pair == (kword_t)-1) {
-                        dsh_close_pipe_set(pipes, i);
-                        return DSH_ERROR;
-                }
-                pipes[i][0] = (int)((pair >> 18U) & 0777777UL);
-                pipes[i][1] = (int)(pair & 0777777UL);
-        }
         pgrp = 0U;
         last_pid = -1;
+        prev_read = -1;
         for (i = 0U; i < count; ++i) {
-                int infd = i == 0U ? 0 : pipes[i - 1U][0];
-                int outfd = i + 1U == count ? 1 : pipes[i][1];
+                int infd;
+                int outfd;
                 unsigned int mode = i == 0U ?
                     SYS_RUN_PGRP_NEW : SYS_RUN_PGRP_JOIN;
 
+                next_read = -1;
+                next_write = -1;
+                if (i + 1U < count) {
+                        pair = dsys_pipe();
+                        if (pair == (kword_t)-1) {
+                                rc = DSH_ERROR;
+                                goto pipeline_launch_fail;
+                        }
+                        next_read = (int)((pair >> 18U) & 0777777UL);
+                        next_write = (int)(pair & 0777777UL);
+                }
+                infd = prev_read >= 0 ? prev_read : 0;
+                outfd = next_write >= 0 ? next_write : 1;
                 rc = dsh_exec_simple_node(st, &nodes[stages[i]], infd,
                     outfd, 1, mode, pgrp, &pid);
                 if (rc != 0) {
-                        dsh_close_pipe_set(pipes, count - 1U);
-                        if (pgrp != 0U)
-                                (void)dsys_procctl(SYS_PROCCTL_EVENT_PGRP,
-                                    SYS_EVENT_ARG(pgrp, SYS_EVENT_TERM));
-                        if (!background && st->tty_attached)
-                                (void)dsys_procctl(SYS_PROCCTL_TTY_SETFG,
-                                    st->shell_pgrp);
-                        return rc;
+                        goto pipeline_launch_fail;
                 }
+                if (prev_read >= 0)
+                        (void)dsys_close(prev_read);
+                if (next_write >= 0)
+                        (void)dsys_close(next_write);
+                prev_read = next_read;
                 if (i == 0U) {
                         pgrp = (unsigned int)pid;
                         if (!background && st->tty_attached)
@@ -1760,7 +1744,6 @@ dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
                 }
                 last_pid = pid;
         }
-        dsh_close_pipe_set(pipes, count - 1U);
         if (background) {
                 rc = dsh_job_store(st, pgrp, (unsigned int)last_pid,
                     count, 0U, 0U);
@@ -1781,6 +1764,21 @@ dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
         if (st->interactive)
                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETMODE,
                     SYS_TTY_MODE_RAW);
+        return rc;
+
+pipeline_launch_fail:
+        if (prev_read >= 0)
+                (void)dsys_close(prev_read);
+        if (next_read >= 0)
+                (void)dsys_close(next_read);
+        if (next_write >= 0)
+                (void)dsys_close(next_write);
+        if (pgrp != 0U)
+                (void)dsys_procctl(SYS_PROCCTL_EVENT_PGRP,
+                    SYS_EVENT_ARG(pgrp, SYS_EVENT_TERM));
+        if (!background && st->tty_attached)
+                (void)dsys_procctl(SYS_PROCCTL_TTY_SETFG,
+                    st->shell_pgrp);
         return rc;
 }
 
