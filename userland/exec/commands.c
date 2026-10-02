@@ -76,9 +76,29 @@ cmd_cat(int argc, kword_t **argv, struct u_io *io)
         int own_sink;
         int rc;
 
-        if (argc < 2) return cmd_err(io, "CAT", 0);
         own_sink = u_text_sink_attach(io->out_fd) == 0;
         rc = 0;
+        if (argc < 2) {
+                r.fd = -1;
+                if (u_text_open_fd(&r, io->in_fd) != 0) {
+                        rc = cmd_err(io, "CAT", 0);
+                } else {
+                        for (;;) {
+                                n = u_text_getline(&r, line, sizeof(line));
+                                if (n == U_TEXT_EOF)
+                                        break;
+                                if (n < 0 || u_puts(io->out_fd, line) != 0 ||
+                                    u_crlf(io->out_fd) != 0) {
+                                        rc = 1;
+                                        break;
+                                }
+                        }
+                        u_text_close(&r);
+                }
+                if (own_sink && u_text_sink_detach() != 0)
+                        rc = 1;
+                return rc;
+        }
         for (i = 1; i < argc; ++i) {
                 r.fd = -1;
                 {
