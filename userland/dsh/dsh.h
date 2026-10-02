@@ -36,6 +36,7 @@ struct dsh_token {
         int type;
         struct dsh_s6 text;
         kword_t literal_mask;
+        unsigned int quoted;
 };
 
 struct dsh_line {

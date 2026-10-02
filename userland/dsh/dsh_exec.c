@@ -1392,13 +1392,11 @@ static int
 dsh_exec_loop(struct dsh_state *st, const struct dsh_node *nodes,
     const struct dsh_node *n, int until)
 {
-        unsigned int limit;
         int cond;
         int status;
 
-        limit = 64U;
         status = 0;
-        while (limit-- != 0U) {
+        for (;;) {
                 cond = dsh_exec_node(st, nodes, n->left);
                 if ((!until && cond != 0) || (until && cond == 0))
                         return status;
@@ -1406,7 +1404,6 @@ dsh_exec_loop(struct dsh_state *st, const struct dsh_node *nodes,
                 if (st->exit_requested || st->return_requested)
                         return status;
         }
-        return DSH_ERROR;
 }
 
 static int

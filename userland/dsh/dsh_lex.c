@@ -19,7 +19,7 @@ dsh_word_stop(int ch)
 {
         return ch == 0 || dsh_space(ch) || ch == ';' || ch == '&' ||
             ch == '!' || ch == '<' || ch == '>' || ch == '(' ||
-            ch == ')' || ch == '#';
+            ch == ')';
 }
 
 void
@@ -30,6 +30,7 @@ dsh_token_clear(struct dsh_token *t)
         t->type = DSH_T_EOF;
         dsh_s6_clear(&t->text);
         t->literal_mask = 0;
+        t->quoted = 0U;
 }
 
 static int
@@ -48,6 +49,7 @@ dsh_add_word(const struct dsh_line *line, unsigned int *posp, struct dsh_token *
 {
         struct dsh_token *t;
         unsigned int pos;
+        unsigned int had_fragment;
         int quote;
         int rc;
         int ch;
@@ -58,25 +60,42 @@ dsh_add_word(const struct dsh_line *line, unsigned int *posp, struct dsh_token *
         dsh_token_clear(t);
         t->type = DSH_T_WORD;
         pos = *posp;
+        had_fragment = 0U;
 
         while ((ch = dsh_line_ch(line, pos)) != 0) {
                 if (ch == '\'' || ch == '"') {
                         quote = ch;
+                        t->quoted = 1U;
+                        had_fragment = 1U;
                         pos++;
                         while ((ch = dsh_line_ch(line, pos)) != 0 &&
                             ch != quote) {
-                                pos++;
-                                if (ch == '\\') {
-                                        ch = dsh_line_ch(line, pos);
-                                        if (ch == 0)
-                                                return DSH_E_CHAR;
+                                if (quote == '"' && ch == '\\') {
+                                        int next;
+
+                                        next = dsh_line_ch(line, pos + 1U);
+                                        if (next == '"' || next == '\\' ||
+                                            next == '$') {
+                                                ch = next;
+                                                pos += 2U;
+                                                t->literal_mask |=
+                                                    (kword_t)1 << t->text.len;
+                                        } else {
+                                                pos++;
+                                                t->literal_mask |=
+                                                    (kword_t)1 << t->text.len;
+                                                rc = dsh_s6_append(&t->text,
+                                                    '\\');
+                                                if (rc != DSH_OK)
+                                                        return rc;
+                                                continue;
+                                        }
+                                } else {
                                         pos++;
-                                        t->literal_mask |=
-                                            (kword_t)1 << t->text.len;
+                                        if (quote == '\'' || ch != '$')
+                                                t->literal_mask |=
+                                                    (kword_t)1 << t->text.len;
                                 }
-                                if (quote == '\'')
-                                        t->literal_mask |=
-                                            (kword_t)1 << t->text.len;
                                 rc = dsh_s6_append(&t->text, ch);
                                 if (rc != DSH_OK)
                                         return rc;
@@ -87,6 +106,7 @@ dsh_add_word(const struct dsh_line *line, unsigned int *posp, struct dsh_token *
                         continue;
                 }
                 if (ch == '\\') {
+                        had_fragment = 1U;
                         pos++;
                         ch = dsh_line_ch(line, pos);
                         if (ch == 0)
@@ -100,13 +120,14 @@ dsh_add_word(const struct dsh_line *line, unsigned int *posp, struct dsh_token *
                 }
                 if (dsh_word_stop(ch))
                         break;
+                had_fragment = 1U;
                 pos++;
                 rc = dsh_s6_append(&t->text, ch);
                 if (rc != DSH_OK)
                         return rc;
         }
 
-        if (t->text.len == 0U)
+        if (t->text.len == 0U && !had_fragment)
                 return DSH_E_CHAR;
         *posp = pos;
         (*ntokens)++;

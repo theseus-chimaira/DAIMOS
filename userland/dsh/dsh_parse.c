@@ -149,7 +149,7 @@ dsh_s6_kw(const struct dsh_s6 *s)
 static unsigned int
 dsh_tok_kw(const struct dsh_token *t)
 {
-        if (t == 0 || t->type != DSH_T_WORD)
+        if (t == 0 || t->type != DSH_T_WORD || t->quoted)
                 return 0U;
         return dsh_s6_kw(&t->text);
 }
