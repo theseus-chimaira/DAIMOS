@@ -26,6 +26,8 @@
 #define TTY_ID_GE_BASE          17U
 /** Number of GE logical terminals. */
 #define TTY_ID_GE_COUNT         4U
+/** Type 340 display output-only sink id. */
+#define TTY_ID_DPY              025U
 /** Six-bit packed logical-terminal id mask. */
 #define TTY_ID_MASK             077U
 /** Eight-bit packed character mask. */
@@ -33,6 +35,9 @@
 
 #define TTY_E_OK                0
 #define TTY_E_INVALID          -1
+
+/** Routing sentinel: restore a logical TTY's native output device. */
+#define TTY_SINK_NATIVE         077U
 
 #define TTY_PACK(id,ch) \
         ((((kword_t)(id) & TTY_ID_MASK) << 8) | \

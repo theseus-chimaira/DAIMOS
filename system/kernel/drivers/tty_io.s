@@ -18,6 +18,7 @@
         .globl tty_cty_putchar_address
         .globl tty_dcs_putchar_address
         .globl tty_ge_putchar_address
+        .globl tty_dpy_putchar_address
         .globl tty_cty_getchar_address
         .globl tty_dcs_getchar_address
         .globl tty_ge_getchar_address
@@ -42,6 +43,16 @@
  */
 tty_putchar:
         ldb 2,[POINT 6,1,27]
+        caile 2,024
+        jrst kret_arg
+        ldb 3,[POINT 5,proc_tty_records(2),6]
+        jumpe 3,tty_putchar_route_done
+        subi 3,1
+        andi 1,0377
+        move 2,3
+        lsh 3,010
+        ior 1,3
+tty_putchar_route_done:
         jumpe 2,tty_putchar_cty
         caile 2,020
         jrst tty_putchar_ge
@@ -51,9 +62,16 @@ tty_dcs_putchar_address:
 
 tty_putchar_ge:
         caile 2,024
-        jrst kret_arg
+        jrst tty_putchar_dpy
         subi 1,010400
 tty_ge_putchar_address:
+        jrst kret_arg
+
+tty_putchar_dpy:
+        caie 2,025
+        jrst kret_arg
+        andi 1,0377
+tty_dpy_putchar_address:
         jrst kret_arg
 
 tty_putchar_cty:

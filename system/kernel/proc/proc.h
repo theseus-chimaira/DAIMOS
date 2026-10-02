@@ -153,6 +153,9 @@
         (PROC_TTY_MODE_CANONICAL | PROC_TTY_MODE_ECHO | \
         PROC_TTY_MODE_SIGNALS)
 #define PROC_TTY_CR_PENDING              ((kword_t)1UL << 28U)
+#define PROC_TTY_ROUTE_SHIFT              29U
+#define PROC_TTY_ROUTE_MASK               037UL
+#define PROC_TTY_ROUTE_BITS +        ((kword_t)PROC_TTY_ROUTE_MASK << PROC_TTY_ROUTE_SHIFT)
 #define PROC_TTY_INPUT_EOF               -2
 #define PROC_TTY_INPUT_REPEAT            -3
 #define PROC_ZOMB_SESSION_MASK       0377UL
@@ -205,6 +208,8 @@ int proc_tty_line_take(unsigned int tty);
 int proc_tty_canon_input(unsigned int tty, unsigned int ch);
 void proc_tty_line_reset(unsigned int tty);
 int proc_tty_mode_set(unsigned int tty, unsigned int mode);
+int proc_tty_output_route_get(unsigned int tty);
+int proc_tty_output_route_set(unsigned int tty, unsigned int sink);
 int proc_tty_output(unsigned int ch);
 int proc_tty_pending_take(unsigned int tty);
 int proc_tty_pending_store(unsigned int tty, unsigned int ch);

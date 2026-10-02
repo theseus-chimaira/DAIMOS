@@ -66,9 +66,18 @@
 #define SYS_EXT_DTC_WRITE_BLOCK    045U
 #define SYS_EXT_MEMFS_MOUNT        046U
 #define SYS_EXT_STORAGECTL         047U
+#define SYS_EXT_TTYCTL             050U
 
 #define SYS_STORAGECTL_SWAP        1U
 #define SYS_STORAGECTL_LOGSTORE    2U
+
+#define SYS_TTYCTL_GETOUT          0U
+#define SYS_TTYCTL_SETOUT          1U
+#define SYS_TTY_SINK_CTY           0U
+#define SYS_TTY_SINK_DCS_BASE      1U
+#define SYS_TTY_SINK_GE_BASE      17U
+#define SYS_TTY_SINK_DPY          21U
+#define SYS_TTY_SINK_NATIVE       077U
 
 #define SYS_LOGCTL_STATUS             0U
 #define SYS_LOGCTL_READ_BLOCK         1U

@@ -546,14 +546,15 @@ $(GE_MRES_OBJ): $(BUILD)/ge_io.dobj $(KCORE_MAP)
 $(DPY_MRES_OBJ): $(BUILD)/dpy_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dpy-mres.dxr -M $(BUILD)/dpy-mres.map \
 	    -R $@ -N dpy_mres_package -X dpy_pi_handler -X dpy_putword \
-	    -X dpy_clk_pi_service_call $(BUILD)/dpy_io.dobj
+	    -X dpy_clk_pi_service_call -X dpy_putchar $(BUILD)/dpy_io.dobj
 
 $(TTY_MRES_OBJ): $(BUILD)/tty_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/tty-mres.dxr -M $(BUILD)/tty-mres.map \
 	    -R $@ -N tty_mres_package -X tty_putchar -X tty_getchar -X tty_cty_putchar_address \
 	    -X tty_dcs_putchar_address -X tty_ge_putchar_address \
 	    -X tty_cty_getchar_address -X tty_dcs_getchar_address \
-	    -X tty_ge_getchar_address -X tty_write_s6rec -X tty_read_s6rec $(BUILD)/tty_io.dobj
+	    -X tty_ge_getchar_address -X tty_write_s6rec -X tty_read_s6rec \
+	    -X tty_dpy_putchar_address $(BUILD)/tty_io.dobj
 
 $(WCNSLS_MRES_OBJ): $(BUILD)/wcnsls_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/wcnsls-mres.dxr -M $(BUILD)/wcnsls-mres.map \

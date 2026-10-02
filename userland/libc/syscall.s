@@ -44,6 +44,7 @@
         .globl dsys_rtctl
         .globl dsys_logctl
         .globl dsys_storagectl
+        .globl dsys_ttyctl
         .globl dsys_utime
         .globl dsys_sleep
         .globl dsys_rmdir
@@ -131,6 +132,12 @@ dsys_logctl:          move 4,3
                        popj 17,
 dsys_storagectl:      move 2,1
                        movei 1,047
+                       uuo 077,0(1)
+                       popj 17,
+dsys_ttyctl:          move 4,3
+                       move 3,2
+                       move 2,1
+                       movei 1,050
                        uuo 077,0(1)
                        popj 17,
 dsys_dup2:             move 3,2

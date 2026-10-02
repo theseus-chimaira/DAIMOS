@@ -30,7 +30,8 @@ extern kword_t __minit_table_end;
 #define MODULE_SERVICE_BLOCKSET          10U
 #define MODULE_SERVICE_DRM_READ_BLOCK    11U
 #define MODULE_SERVICE_DRM_WRITE_BLOCK   12U
-#define MODULE_SERVICE_COUNT             13U
+#define MODULE_SERVICE_DPY_PUTCHAR       13U
+#define MODULE_SERVICE_COUNT             14U
 
 /** Execute every built-in MINIT/MRES pair in table order. */
 void module_run_minits(void);

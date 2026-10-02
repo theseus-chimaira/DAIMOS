@@ -32,6 +32,8 @@
         .globl  proc_tty_input
         .globl  proc_tty_line_take
         .globl  proc_tty_output
+        .globl  proc_tty_output_route_get
+        .globl  proc_tty_output_route_set
         .globl  proc_current_slot
         .globl  pipe_create
         .globl  file_mkfifo
@@ -429,7 +431,7 @@ native_sys_extctl:
         hrrz    5,1
         subi    5,020
         jumpl   5,native_sys_procctl
-        caile   5,027
+        caile   5,030
         jrst    native_sys_procctl
         move    6,5
         andi    5,1
@@ -452,6 +454,29 @@ native_sys_ext_table:
         .word   native_sys_d6fs_mount,,native_sys_rtctl
         .word   native_sys_logctl,,native_sys_dtc_write_block
         .word   native_sys_memfs_mount,,native_sys_storagectl
+        .word   native_sys_ttyctl,,native_sys_procctl
+
+; Root may rebind any logical terminal's output sink.  GETOUT is readable by
+; all callers; SETOUT is privileged because the route is terminal-global and
+; persists across login/session teardown.
+native_sys_ttyctl:
+        jumpe   2,native_sys_ttyctl_get
+        caie    2,1
+        jrst    kret_neg1
+        push    17,3
+        push    17,4
+        pushj   17,file_check_root
+        jumpn   1,native_sys_ttyctl_set_bad
+        move    1,-1(17)              ; logical tty
+        move    2,(17)                ; requested sink
+        sub     17,[2,,2]
+        jrst    proc_tty_output_route_set
+native_sys_ttyctl_set_bad:
+        sub     17,[2,,2]
+        jrst    kret_neg1
+native_sys_ttyctl_get:
+        move    1,3
+        jrst    proc_tty_output_route_get
 
 ; PID-1/root storage activation policy.  Discovery and module installation
 ; remain boot work; this call only enables or disables an available service.
