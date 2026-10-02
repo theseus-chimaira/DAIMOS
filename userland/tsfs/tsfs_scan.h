@@ -8,7 +8,7 @@
 #define TSFS_DESC_PRIMARY_BLOCK 1U
 #define TSFS_DESC_BACKUP_BLOCK 2U
 #define TSFS_DESC_USED_WORDS 12U
-#define TSFS_MAX_MEMBERS 7U
+#define TSFS_MAX_MEMBERS 8U
 
 struct tsfs_scan_result {
         kword_t id_hi;

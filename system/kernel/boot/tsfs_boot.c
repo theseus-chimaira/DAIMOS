@@ -26,7 +26,7 @@
 #define D_USED_WORDS 12U
 #define DESC_PRIMARY 1U
 #define DESC_BACKUP 2U
-#define MAX_MEMBERS 7U
+#define MAX_MEMBERS 8U
 
 #define TD_MAGIC 0U
 #define TD_VERSION 1U
