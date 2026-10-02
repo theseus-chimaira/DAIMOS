@@ -12,6 +12,9 @@
 #define DSH_MAX_VARS           16U
 #define DSH_MAX_ALIASES         8U
 #define DSH_MAX_JOBS            4U
+#define DSH_MAX_FUNCS           4U
+#define DSH_FUNC_MAX_NODES     16U
+#define DSH_FUNC_MAX_CALLS      4U
 #define DSH_SCRIPT_MAX_TOKENS  32U
 
 #define DSH_OK                  0
@@ -32,6 +35,7 @@ struct dsh_s6 {
 struct dsh_token {
         int type;
         struct dsh_s6 text;
+        kword_t literal_mask;
 };
 
 struct dsh_line {
@@ -74,6 +78,9 @@ struct dsh_state {
         unsigned int interactive;
         unsigned int exit_requested;
         unsigned int exit_status;
+        unsigned int return_requested;
+        unsigned int return_status;
+        unsigned int call_depth;
 };
 
 struct dsh_script {
@@ -104,6 +111,8 @@ const struct dsh_s6 *dsh_var_get(const struct dsh_state *st,
     const struct dsh_s6 *name);
 int dsh_expand(const struct dsh_state *st, const struct dsh_s6 *in,
     struct dsh_s6 *out);
+int dsh_expand_mask(const struct dsh_state *st, const struct dsh_s6 *in,
+    kword_t literal_mask, struct dsh_s6 *out);
 int dsh_execute_line(struct dsh_state *st, const struct dsh_line *line);
 int dsh_execute_file(struct dsh_state *st, const struct dsh_s6 *path);
 void dsh_script_init(struct dsh_script *script);

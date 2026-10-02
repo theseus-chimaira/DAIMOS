@@ -57,6 +57,7 @@ struct dsh_node {
         struct dsh_s6 redir_in;
         struct dsh_s6 redir_out;
         struct dsh_s6 words[DSH_PARSE_MAX_WORDS];
+        kword_t literal_mask[DSH_PARSE_MAX_WORDS];
 };
 
 void    dsh_node_clear(struct dsh_node *n);

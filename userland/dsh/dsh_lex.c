@@ -29,6 +29,7 @@ dsh_token_clear(struct dsh_token *t)
                 return;
         t->type = DSH_T_EOF;
         dsh_s6_clear(&t->text);
+        t->literal_mask = 0;
 }
 
 static int
@@ -70,7 +71,12 @@ dsh_add_word(const struct dsh_line *line, unsigned int *posp, struct dsh_token *
                                         if (ch == 0)
                                                 return DSH_E_CHAR;
                                         pos++;
+                                        t->literal_mask |=
+                                            (kword_t)1 << t->text.len;
                                 }
+                                if (quote == '\'')
+                                        t->literal_mask |=
+                                            (kword_t)1 << t->text.len;
                                 rc = dsh_s6_append(&t->text, ch);
                                 if (rc != DSH_OK)
                                         return rc;
@@ -86,6 +92,7 @@ dsh_add_word(const struct dsh_line *line, unsigned int *posp, struct dsh_token *
                         if (ch == 0)
                                 return DSH_E_CHAR;
                         pos++;
+                        t->literal_mask |= (kword_t)1 << t->text.len;
                         rc = dsh_s6_append(&t->text, ch);
                         if (rc != DSH_OK)
                                 return rc;

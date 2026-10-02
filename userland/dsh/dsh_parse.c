@@ -65,8 +65,10 @@ dsh_node_clear(struct dsh_node *n)
         n->flags = 0;
         dsh_s6_clear(&n->redir_in);
         dsh_s6_clear(&n->redir_out);
-        for (i = 0; i < DSH_PARSE_MAX_WORDS; i++)
+        for (i = 0; i < DSH_PARSE_MAX_WORDS; i++) {
                 dsh_s6_clear(&n->words[i]);
+                n->literal_mask[i] = 0;
+        }
 }
 
 #define DSH_K_AND      1U
@@ -311,6 +313,8 @@ dsh_parse_simple(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                     &p->tokens[p->pos].text);
                 if (rc != DSH_OK)
                         return rc;
+                n->literal_mask[n->argc] =
+                    p->tokens[p->pos].literal_mask;
                 n->argc++;
                 p->pos++;
         }
@@ -376,6 +380,7 @@ dsh_parse_for(struct dsh_parser *p, unsigned int *out)
         rc = dsh_s6_copy(&n->words[0], &p->tokens[p->pos].text);
         if (rc != DSH_OK)
                 return rc;
+        n->literal_mask[0] = p->tokens[p->pos].literal_mask;
         n->argc = 1U;
         p->pos++;
         rc = dsh_expect_word(p, DSH_K_IN);
@@ -392,6 +397,8 @@ dsh_parse_for(struct dsh_parser *p, unsigned int *out)
                     &p->tokens[p->pos].text);
                 if (rc != DSH_OK)
                         return rc;
+                n->literal_mask[n->argc] =
+                    p->tokens[p->pos].literal_mask;
                 n->argc++;
                 p->pos++;
         }
@@ -455,6 +462,7 @@ dsh_parse_def(struct dsh_parser *p, unsigned int *out)
         rc = dsh_s6_copy(&p->nodes[node].words[0], &p->tokens[p->pos].text);
         if (rc != DSH_OK)
                 return rc;
+        p->nodes[node].literal_mask[0] = p->tokens[p->pos].literal_mask;
         p->nodes[node].argc = 1U;
         p->pos++;
         rc = dsh_expect_word(p, DSH_K_DO);
@@ -488,6 +496,7 @@ dsh_parse_case(struct dsh_parser *p, unsigned int *out)
         rc = dsh_s6_copy(&p->nodes[node].words[0], &p->tokens[p->pos].text);
         if (rc != DSH_OK)
                 return rc;
+        p->nodes[node].literal_mask[0] = p->tokens[p->pos].literal_mask;
         p->nodes[node].argc = 1U;
         p->pos++;
         rc = dsh_expect_word(p, DSH_K_IN);
@@ -498,6 +507,7 @@ dsh_parse_case(struct dsh_parser *p, unsigned int *out)
         rc = dsh_s6_copy(&p->nodes[node].words[1], &p->tokens[p->pos].text);
         if (rc != DSH_OK)
                 return rc;
+        p->nodes[node].literal_mask[1] = p->tokens[p->pos].literal_mask;
         p->nodes[node].argc = 2U;
         p->pos++;
         rc = dsh_expect_word(p, DSH_K_THEN);

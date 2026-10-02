@@ -60,6 +60,9 @@ dsh_state_init(struct dsh_state *st, int argc, kword_t **argv,
         st->interactive = 0U;
         st->exit_requested = 0U;
         st->exit_status = 0U;
+        st->return_requested = 0U;
+        st->return_status = 0U;
+        st->call_depth = 0U;
         if (argc > 0 && argv != 0)
                 (void)dsh_s6_from_counted(&st->arg0, argv[0]);
         {
@@ -171,9 +174,26 @@ dsh_append_s6(struct dsh_s6 *dst, const struct dsh_s6 *src)
         return 0;
 }
 
+static int
+dsh_append_uint(struct dsh_s6 *out, unsigned int value)
+{
+        char digits[12];
+        unsigned int n;
+
+        n = 0U;
+        do {
+                digits[n++] = (char)('0' + value % 10U);
+                value /= 10U;
+        } while (value != 0U && n < sizeof(digits));
+        while (n != 0U)
+                if (dsh_s6_append(out, digits[--n]) != 0)
+                        return -1;
+        return 0;
+}
+
 int
-dsh_expand(const struct dsh_state *st, const struct dsh_s6 *in,
-    struct dsh_s6 *out)
+dsh_expand_mask(const struct dsh_state *st, const struct dsh_s6 *in,
+    kword_t literal_mask, struct dsh_s6 *out)
 {
         struct dsh_s6 name;
         const struct dsh_s6 *value;
@@ -184,7 +204,8 @@ dsh_expand(const struct dsh_state *st, const struct dsh_s6 *in,
         dsh_s6_clear(out);
         for (i = 0U; i < in->len;) {
                 ch = dsh_s6_get(in, i++);
-                if (ch != '$' || i >= in->len) {
+                if (ch != '$' || (literal_mask & ((kword_t)1 << (i - 1U))) ||
+                    i >= in->len) {
                         if (dsh_s6_append(out, ch) != 0)
                                 return -1;
                         continue;
@@ -204,17 +225,38 @@ dsh_expand(const struct dsh_state *st, const struct dsh_s6 *in,
                         continue;
                 }
                 if (ch == '?') {
-                        unsigned int v = st->status;
-                        char digits[4];
-                        unsigned int k = 0U;
                         ++i;
-                        do {
-                                digits[k++] = (char)('0' + v % 10U);
-                                v /= 10U;
-                        } while (v != 0U && k < sizeof(digits));
-                        while (k != 0U)
-                                if (dsh_s6_append(out, digits[--k]) != 0)
+                        if (dsh_append_uint(out, st->status) != 0)
+                                return -1;
+                        continue;
+                }
+                if (ch == '#') {
+                        ++i;
+                        if (dsh_append_uint(out, st->argc) != 0)
+                                return -1;
+                        continue;
+                }
+                if (ch == '$') {
+                        int pid;
+
+                        ++i;
+                        pid = dsys_getpid();
+                        if (pid < 0 ||
+                            dsh_append_uint(out, (unsigned int)pid) != 0)
+                                return -1;
+                        continue;
+                }
+                if (ch == '@') {
+                        unsigned int a;
+
+                        ++i;
+                        for (a = 0U; a < st->argc; ++a) {
+                                if (a != 0U &&
+                                    dsh_s6_append(out, ' ') != 0)
                                         return -1;
+                                if (dsh_append_s6(out, &st->args[a]) != 0)
+                                        return -1;
+                        }
                         continue;
                 }
                 dsh_s6_clear(&name);
@@ -239,4 +281,11 @@ dsh_expand(const struct dsh_state *st, const struct dsh_s6 *in,
                         return -1;
         }
         return 0;
+}
+
+int
+dsh_expand(const struct dsh_state *st, const struct dsh_s6 *in,
+    struct dsh_s6 *out)
+{
+        return dsh_expand_mask(st, in, 0, out);
 }

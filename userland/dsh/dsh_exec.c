@@ -10,6 +10,16 @@ static kword_t dsh_run_block[DSH_RUN_WORDS];
 static kword_t dsh_path_record[U_PATH_WORDS];
 static struct dsh_node dsh_nodes[DSH_PARSE_MAX_NODES];
 
+struct dsh_function_store {
+        unsigned int used;
+        struct dsh_s6 name;
+        struct dsh_node nodes[DSH_FUNC_MAX_NODES];
+        unsigned int root;
+        unsigned int used_nodes;
+};
+
+static struct dsh_function_store dsh_functions[DSH_MAX_FUNCS];
+
 static int dsh_s6_same(const struct dsh_s6 *a, const struct dsh_s6 *b);
 static int dsh_job_store(struct dsh_state *st, unsigned int pgrp,
     unsigned int last_pid, unsigned int remaining, unsigned int status,
@@ -22,6 +32,137 @@ static int dsh_builtin_fg(struct dsh_state *st, unsigned int argc,
     struct dsh_s6 *argv);
 static int dsh_builtin_bg(struct dsh_state *st, unsigned int argc,
     struct dsh_s6 *argv);
+static int dsh_exec_node(struct dsh_state *st,
+    const struct dsh_node *nodes, unsigned int node);
+
+static const struct dsh_function_store *
+dsh_find_function(const struct dsh_s6 *name)
+{
+        unsigned int i;
+
+        for (i = 0U; i < DSH_MAX_FUNCS; ++i)
+                if (dsh_functions[i].used &&
+                    dsh_s6_same(&dsh_functions[i].name, name))
+                        return &dsh_functions[i];
+        return 0;
+}
+
+static int
+dsh_copy_function_node(struct dsh_node *dst, unsigned int *usedp,
+    const struct dsh_node *src, unsigned int index, unsigned int *out)
+{
+        unsigned int here;
+        int rc;
+
+        if (index == DSH_NONE || index >= DSH_PARSE_MAX_NODES ||
+            *usedp >= DSH_FUNC_MAX_NODES)
+                return DSH_E_OVERFLOW;
+        here = (*usedp)++;
+        dst[here] = src[index];
+        if (src[index].left != DSH_NONE) {
+                rc = dsh_copy_function_node(dst, usedp, src,
+                    src[index].left, &dst[here].left);
+                if (rc != DSH_OK)
+                        return rc;
+        }
+        if (src[index].right != DSH_NONE) {
+                rc = dsh_copy_function_node(dst, usedp, src,
+                    src[index].right, &dst[here].right);
+                if (rc != DSH_OK)
+                        return rc;
+        }
+        if (src[index].extra != DSH_NONE) {
+                rc = dsh_copy_function_node(dst, usedp, src,
+                    src[index].extra, &dst[here].extra);
+                if (rc != DSH_OK)
+                        return rc;
+        }
+        *out = here;
+        return DSH_OK;
+}
+
+static int
+dsh_define_function(const struct dsh_node *nodes, const struct dsh_node *n)
+{
+        unsigned int i;
+        unsigned int slot;
+        int found;
+        int rc;
+
+        if (n->argc == 0U || n->left == DSH_NONE)
+                return DSH_ERROR;
+        found = 0;
+        slot = 0U;
+        for (i = 0U; i < DSH_MAX_FUNCS; ++i)
+                if (dsh_functions[i].used &&
+                    dsh_s6_same(&dsh_functions[i].name, &n->words[0])) {
+                        slot = i;
+                        found = 1;
+                        break;
+                }
+        if (!found)
+                for (i = 0U; i < DSH_MAX_FUNCS; ++i)
+                        if (!dsh_functions[i].used) {
+                                slot = i;
+                                found = 1;
+                                break;
+                        }
+        if (!found)
+                return DSH_ERROR;
+        dsh_functions[slot].used = 1U;
+        if (dsh_s6_copy(&dsh_functions[slot].name, &n->words[0]) != 0)
+                return DSH_ERROR;
+        dsh_functions[slot].used_nodes = 0U;
+        dsh_functions[slot].root = DSH_NONE;
+        rc = dsh_copy_function_node(dsh_functions[slot].nodes,
+            &dsh_functions[slot].used_nodes, nodes, n->left,
+            &dsh_functions[slot].root);
+        if (rc != DSH_OK) {
+                dsh_functions[slot].used = 0U;
+                return DSH_ERROR;
+        }
+        return 0;
+}
+
+static int
+dsh_exec_function(struct dsh_state *st, const struct dsh_function_store *fn,
+    unsigned int argc, struct dsh_s6 *argv)
+{
+        struct dsh_s6 saved_arg0;
+        struct dsh_s6 saved_args[DSH_MAX_ARGS];
+        unsigned int saved_argc;
+        unsigned int i;
+        int status;
+
+        if (st->call_depth >= DSH_FUNC_MAX_CALLS || argc == 0U)
+                return DSH_ERROR;
+        (void)dsh_s6_copy(&saved_arg0, &st->arg0);
+        saved_argc = st->argc;
+        for (i = 0U; i < DSH_MAX_ARGS; ++i)
+                (void)dsh_s6_copy(&saved_args[i], &st->args[i]);
+        (void)dsh_s6_copy(&st->arg0, &argv[0]);
+        st->argc = argc - 1U;
+        for (i = 0U; i < DSH_MAX_ARGS; ++i) {
+                if (i < st->argc)
+                        (void)dsh_s6_copy(&st->args[i], &argv[i + 1U]);
+                else
+                        dsh_s6_clear(&st->args[i]);
+        }
+        ++st->call_depth;
+        st->return_requested = 0U;
+        st->return_status = 0U;
+        status = dsh_exec_node(st, fn->nodes, fn->root);
+        if (st->return_requested) {
+                status = (int)st->return_status;
+                st->return_requested = 0U;
+        }
+        --st->call_depth;
+        (void)dsh_s6_copy(&st->arg0, &saved_arg0);
+        st->argc = saved_argc;
+        for (i = 0U; i < DSH_MAX_ARGS; ++i)
+                (void)dsh_s6_copy(&st->args[i], &saved_args[i]);
+        return status;
+}
 
 static int
 dsh_copy_range(struct dsh_s6 *dst, const struct dsh_s6 *src,
@@ -176,12 +317,21 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 return dsys_umask(mask & 0777U) < 0;
         }
         if (dsh_s6_eq_text(&argv[0], "SHIFT")) {
-                if (argc != 1U || st->argc == 0U)
+                unsigned int count;
+
+                if (argc > 2U)
+                        return 2;
+                count = 1U;
+                if (argc == 2U && dsh_parse_uint(&argv[1], &count) != 0)
+                        return 2;
+                if (count > st->argc)
                         return 1;
-                for (i = 1U; i < st->argc; ++i)
-                        (void)dsh_s6_copy(&st->args[i - 1U], &st->args[i]);
-                --st->argc;
-                dsh_s6_clear(&st->args[st->argc]);
+                for (i = count; i < st->argc; ++i)
+                        (void)dsh_s6_copy(&st->args[i - count],
+                            &st->args[i]);
+                st->argc -= count;
+                for (i = st->argc; i < DSH_MAX_ARGS; ++i)
+                        dsh_s6_clear(&st->args[i]);
                 return 0;
         }
         if (dsh_s6_eq_text(&argv[0], "READ")) {
@@ -229,8 +379,16 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                         (void)dsh_s6_copy(&st->args[j], &saved[j]);
                 return src_rc;
         }
-        if (dsh_s6_eq_text(&argv[0], "RETURN"))
-                return 2;
+        if (dsh_s6_eq_text(&argv[0], "RETURN")) {
+                if (st->call_depth == 0U || argc > 2U)
+                        return 2;
+                code = st->status;
+                if (argc == 2U && dsh_parse_uint(&argv[1], &code) != 0)
+                        return 2;
+                st->return_requested = 1U;
+                st->return_status = code & 0377U;
+                return (int)st->return_status;
+        }
         if (dsh_s6_eq_text(&argv[0], "JOBS"))
                 return dsh_builtin_jobs(st, argc, argv);
         if (dsh_s6_eq_text(&argv[0], "WAIT"))
@@ -776,7 +934,8 @@ dsh_expand_node_argv(struct dsh_state *st, const struct dsh_node *n,
         if (n->argc > DSH_MAX_ARGS)
                 return -1;
         for (i = 0U; i < n->argc; ++i)
-                if (dsh_expand(st, &n->words[i], &argv[i]) != 0)
+                if (dsh_expand_mask(st, &n->words[i],
+                    n->literal_mask[i], &argv[i]) != 0)
                         return -1;
         *argcp = n->argc;
         return dsh_alias_expand(st, argv, argcp);
@@ -797,11 +956,18 @@ dsh_exec_simple_node(struct dsh_state *st, const struct dsh_node *n,
         int saveout;
         int eq;
         int rc;
+        const struct dsh_function_store *fn;
 
         if (dsh_expand_node_argv(st, n, argv, &argc) != 0)
                 return DSH_ERROR;
         if (argc == 0U)
                 return 0;
+        fn = dsh_find_function(&argv[0]);
+        if (fn != 0) {
+                if (launch_only)
+                        return 126;
+                return dsh_exec_function(st, fn, argc, argv);
+        }
         if (argc == 1U && (eq = dsh_find_equal(&argv[0])) > 0) {
                 if (launch_only)
                         return 126;
@@ -1203,9 +1369,6 @@ dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
         return rc;
 }
 
-static int dsh_exec_node(struct dsh_state *st,
-    const struct dsh_node *nodes, unsigned int node);
-
 static int
 dsh_exec_loop(struct dsh_state *st, const struct dsh_node *nodes,
     const struct dsh_node *n, int until)
@@ -1221,7 +1384,7 @@ dsh_exec_loop(struct dsh_state *st, const struct dsh_node *nodes,
                 if ((!until && cond != 0) || (until && cond == 0))
                         return status;
                 status = dsh_exec_node(st, nodes, n->right);
-                if (st->exit_requested)
+                if (st->exit_requested || st->return_requested)
                         return status;
         }
         return DSH_ERROR;
@@ -1248,24 +1411,24 @@ dsh_exec_node(struct dsh_state *st, const struct dsh_node *nodes,
                     SYS_RUN_PGRP_INHERIT, 0U, 0);
         case DSH_N_LIST:
                 status = dsh_exec_node(st, nodes, n->left);
-                if (st->exit_requested)
+                if (st->exit_requested || st->return_requested)
                         return status;
                 return dsh_exec_node(st, nodes, n->right);
         case DSH_N_AND:
                 status = dsh_exec_node(st, nodes, n->left);
-                if (st->exit_requested || status != 0)
+                if (st->exit_requested || st->return_requested || status != 0)
                         return status;
                 return dsh_exec_node(st, nodes, n->right);
         case DSH_N_OR:
                 status = dsh_exec_node(st, nodes, n->left);
-                if (st->exit_requested || status == 0)
+                if (st->exit_requested || st->return_requested || status == 0)
                         return status;
                 return dsh_exec_node(st, nodes, n->right);
         case DSH_N_NOT:
                 return dsh_exec_node(st, nodes, n->left) == 0 ? 1 : 0;
         case DSH_N_IF:
                 status = dsh_exec_node(st, nodes, n->left);
-                if (st->exit_requested)
+                if (st->exit_requested || st->return_requested)
                         return status;
                 if (status == 0)
                         return dsh_exec_node(st, nodes, n->right);
@@ -1275,11 +1438,12 @@ dsh_exec_node(struct dsh_state *st, const struct dsh_node *nodes,
         case DSH_N_FOR:
                 status = 0;
                 for (i = 1U; i < n->argc; ++i) {
-                        if (dsh_expand(st, &n->words[i], &value) != 0 ||
+                        if (dsh_expand_mask(st, &n->words[i],
+                            n->literal_mask[i], &value) != 0 ||
                             dsh_var_set(st, &n->words[0], &value, 0) != 0)
                                 return DSH_ERROR;
                         status = dsh_exec_node(st, nodes, n->left);
-                        if (st->exit_requested)
+                        if (st->exit_requested || st->return_requested)
                                 return status;
                 }
                 return status;
@@ -1289,8 +1453,10 @@ dsh_exec_node(struct dsh_state *st, const struct dsh_node *nodes,
                 return dsh_exec_loop(st, nodes, n, 1);
         case DSH_N_CASE:
                 if (n->argc < 2U ||
-                    dsh_expand(st, &n->words[0], &value) != 0 ||
-                    dsh_expand(st, &n->words[1], &pattern) != 0)
+                    dsh_expand_mask(st, &n->words[0],
+                    n->literal_mask[0], &value) != 0 ||
+                    dsh_expand_mask(st, &n->words[1],
+                    n->literal_mask[1], &pattern) != 0)
                         return DSH_ERROR;
                 if (dsh_s6_same(&value, &pattern))
                         return dsh_exec_node(st, nodes, n->left);
@@ -1311,6 +1477,7 @@ dsh_exec_node(struct dsh_state *st, const struct dsh_node *nodes,
                 }
                 return 126;
         case DSH_N_DEF:
+                return dsh_define_function(nodes, n);
         case DSH_N_SUBST:
                 return 126;
         default:
