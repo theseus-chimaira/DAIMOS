@@ -25,7 +25,7 @@ $(BUILD):
 $(BUILD)/%.dobj: %.s | $(BUILD)
 	"$(DAS)" $(DASFLAGS) -C -O "$@" "$<"
 
-$(BUILD)/%.s: %.c | $(BUILD)
+$(BUILD)/%.s: %.c $(CC) | $(BUILD)
 	"$(CC)" $(CFLAGS) -S "$<" -o "$@"
 
 $(BUILD)/%.dobj: $(BUILD)/%.s

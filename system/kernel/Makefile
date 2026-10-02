@@ -12,6 +12,7 @@ GCCFLAGS ?= -std=gnu99 -Os -march=pdp6 -mcpu=pdp6
 CFLAGS ?=
 PDP10_CC != cc="${CC}"; case "$$cc" in kcc) echo "${PDP10_PREFIX}/bin/kcc" ;; gcc) echo "${PDP10_GCC}" ;; *) echo "$$cc" ;; esac
 PDP10_CFLAGS != cc="${CC}"; case "$$cc" in kcc) echo "${KCCFLAGS}" ;; gcc) echo "${GCCFLAGS}" ;; *) echo "${CFLAGS}" ;; esac
+PDP10_CC_DEP != set -- ${PDP10_CC}; command -v "$$1" 2>/dev/null || echo "$$1"
 MKBOOTBANNER ?= ${PDP10_PREFIX}/bin/mkbootbanner
 KINIT_DEBUG ?= 0
 KINIT_STACK_RESERVE_WORDS ?= 02000
@@ -142,6 +143,13 @@ KCORE_C_ASM = $(BUILD)/mm.s \
 
 KCORE_VM_ASM = $(BUILD)/vm_backend.s \
 	$(BUILD)/proc_swap.s
+
+PDP10_CC_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${KCORE_C_ASM} \
+	${BUILD}/exec.s ${BUILD}/module_runtime.s ${KCORE_VM_ASM} \
+	${BUILD}/memfs_data.s ${BUILD}/memfs_snapshot.s \
+	${BUILD}/d6fs_provider.s ${BUILD}/dtfs.s ${BUILD}/tsfs.s
+
+${PDP10_CC_ASM}: ${PDP10_CC_DEP}
 
 KCORE_FIXED_SRCS = core/ret.s \
 	drivers/dsk270.s \
