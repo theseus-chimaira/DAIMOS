@@ -3,7 +3,7 @@
 
 #include "u.h"
 
-/* Resolve one counted SIXBIT command name through /SYSTEM/EXEC/MAP. */
+/* Resolve one counted SIXBIT command name through /SYSTEM/LIBEXEC/MAP. */
 int u_cmd_resolve(const kword_t *command, kword_t *path,
     unsigned int path_words);
 

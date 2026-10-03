@@ -73,7 +73,8 @@ COMMAND_DXR = $(USERLAND_BUILD)/command.dxr
 COMMAND_MAP = $(USERLAND_BUILD)/command.map
 
 UTILITY_C_SRCS = $(COMMON_C_SRCS) exec/utility.c exec/utility_standalone.c
-UTILITY_MISC_C_OBJS = $(UTILITY_C_SRCS:%.c=$(USERLAND_BUILD)/utility-misc/%.dobj)
+UTILITY_MISC_C_SRCS = $(UTILITY_C_SRCS) libc/cmdmap.c
+UTILITY_MISC_C_OBJS = $(UTILITY_MISC_C_SRCS:%.c=$(USERLAND_BUILD)/utility-misc/%.dobj)
 UTILITY_MISC_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/utility-misc/%.dobj)
 UTILITY_MISC_DXR = $(USERLAND_BUILD)/utility-misc.dxr
 UTILITY_MISC_MAP = $(USERLAND_BUILD)/utility-misc.map

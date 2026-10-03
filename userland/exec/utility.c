@@ -1,4 +1,5 @@
 #include "utility.h"
+#include "cmdmap.h"
 #include "text.h"
 
 #define UTIL_LINE_CHARS 256U
@@ -210,6 +211,98 @@ util_cmd_env(int argc, kword_t **argv, kword_t **envp, struct u_io *io)
                     u_crlf(io->out_fd) != 0)
                         return 1;
         return 0;
+}
+
+
+static int
+util_which_path(const char *prefix, const kword_t *name, int outfd)
+{
+        char command[U_PATH_WORDS * 6U];
+        char path[U_PATH_WORDS * 6U];
+        kword_t packed[U_PATH_WORDS];
+        struct vfs_stat st;
+        unsigned int i;
+        unsigned int j;
+
+        if (util_s6_text(name, command, sizeof(command)) != 0)
+                return -1;
+        i = 0U;
+        while (prefix[i] != 0) {
+                if (i + 1U >= sizeof(path))
+                        return -1;
+                path[i] = prefix[i];
+                ++i;
+        }
+        j = 0U;
+        while (command[j] != 0) {
+                if (i + 1U >= sizeof(path))
+                        return -1;
+                path[i++] = command[j++];
+        }
+        path[i] = 0;
+        if (u_s6_pack(packed, U_PATH_WORDS, path) != 0 ||
+            dsys_stat(packed, &st) != 0)
+                return 0;
+        return u_puts(outfd, path) != 0 || u_crlf(outfd) != 0 ? -1 : 1;
+}
+
+static int
+util_cmd_which(int argc, kword_t **argv, struct u_io *io)
+{
+        struct vfs_stat st;
+        kword_t mapped[U_PATH_WORDS];
+        int found;
+        int rc;
+        int a;
+
+        if (argc < 2)
+                return 2;
+        rc = 0;
+        for (a = 1; a < argc; ++a) {
+                unsigned int n;
+                unsigned int i;
+                int slash;
+
+                n = util_s6_len(argv[a]);
+                slash = 0;
+                for (i = 0U; i < n; ++i)
+                        if (util_s6_ch(argv[a], i) == '/') {
+                                slash = 1;
+                                break;
+                        }
+                if (slash) {
+                        if (dsys_stat(argv[a], &st) == 0) {
+                                if (u_put_s6(io->out_fd, argv[a]) != 0 ||
+                                    u_crlf(io->out_fd) != 0)
+                                        return 1;
+                                continue;
+                        }
+                        rc = 1;
+                        continue;
+                }
+                found = util_which_path("/SYSTEM/EXEC/", argv[a],
+                    io->out_fd);
+                if (found < 0)
+                        return 1;
+                if (found == 0)
+                        found = util_which_path("/OPTION/BASE/EXEC/", argv[a],
+                            io->out_fd);
+                if (found < 0)
+                        return 1;
+                if (found != 0)
+                        continue;
+                /* Keep WHICH useful on an older image whose command map is
+                 * present but whose public EXEC symlinks are not yet. */
+                if (u_cmd_resolve(argv[a], mapped, U_PATH_WORDS) == 0) {
+                        if (u_puts(io->out_fd, "/SYSTEM/EXEC/") != 0 ||
+                            u_put_s6(io->out_fd, argv[a]) != 0 ||
+                            u_crlf(io->out_fd) != 0)
+                                return 1;
+                        continue;
+                }
+                rc = 1;
+        }
+        return rc;
 }
 #endif
 
@@ -1593,6 +1686,7 @@ utility_dispatch(int argc, kword_t **argv, kword_t **envp, struct u_io *io)
         if (util_name_eq(argv[0], "BASENAME")) return util_cmd_basename(argc, argv, io);
         if (util_name_eq(argv[0], "DIRNAME")) return util_cmd_dirname(argc, argv, io);
         if (util_name_eq(argv[0], "ENV")) return util_cmd_env(argc, argv, envp, io);
+        if (util_name_eq(argv[0], "WHICH")) return util_cmd_which(argc, argv, io);
         if (util_name_eq(argv[0], "EXPR")) return util_cmd_expr(argc, argv, io);
         if (util_name_eq(argv[0], "BC")) return util_cmd_bc(argc, argv, io);
         if (util_name_eq(argv[0], "TEST")) return util_cmd_test(argc, argv, 0);

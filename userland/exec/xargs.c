@@ -250,7 +250,7 @@ xargs_map_resolve(const kword_t *command)
                 return -1;
         xargs_s6_clear(map_path);
         {
-                static const char map_name[] = "/SYSTEM/EXEC/MAP";
+                static const char map_name[] = "/SYSTEM/LIBEXEC/MAP";
                 unsigned int i;
                 for (i = 0U; map_name[i] != 0; ++i)
                         if (xargs_s6_add(map_path, map_name[i]) != 0)
@@ -272,9 +272,9 @@ xargs_map_resolve(const kword_t *command)
                 if (xargs_command_text_eq(command, name)) {
                         unsigned int i;
                         xargs_s6_clear(xargs_path);
-                        for (i = 0U; "/SYSTEM/EXEC/"[i] != 0; ++i)
+                        for (i = 0U; "/SYSTEM/LIBEXEC/"[i] != 0; ++i)
                                 if (xargs_s6_add(xargs_path,
-                                    "/SYSTEM/EXEC/"[i]) != 0) {
+                                    "/SYSTEM/LIBEXEC/"[i]) != 0) {
                                         rc = -2;
                                         break;
                                 }
