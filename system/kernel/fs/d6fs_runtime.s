@@ -118,6 +118,7 @@ d6fs_file_block_next:
         lsh     4,-5                     ; next length-high field
         addi    5,1
         sojg    3,d6fs_file_block_loop
+        jrst    kret_neg1                ; file block lies past final extent
 
         .globl  d6fs_name_hash24
 ; kword_t d6fs_name_hash24(words, chars)

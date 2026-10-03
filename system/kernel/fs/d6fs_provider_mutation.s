@@ -345,13 +345,14 @@ d6fs_resize_shrink_loop:
         aoja    016,d6fs_resize_shrink_loop
 
 d6fs_resize_shrink_clear:
-        move    014,016
+        move    014,016                  ; freeze retained count before clearing
+d6fs_resize_shrink_clear_loop:
         cail    016,7
         jrst    d6fs_resize_publish
         move    1,010
         move    2,016
         pushj   17,d6fs_provider_clear_extent
-        aoja    016,d6fs_resize_shrink_clear
+        aoja    016,d6fs_resize_shrink_clear_loop
 
 ; Publish the new metadata atomically at the existing provider boundary.
 d6fs_resize_publish:
