@@ -14,6 +14,7 @@ P10FOLD ?= $(PDP10_PREFIX)/bin/p10fold
 DXRCONVERT ?= $(PDP10_PREFIX)/bin/dxrconvert
 MKSTREAM ?= $(PDP10_PREFIX)/bin/mkstream
 D6LZ_HOST ?= $(PDP10_PREFIX)/bin/d6lz
+DXRCHECK ?= $(PDP10_PREFIX)/bin/dxrcheck
 MKDSK ?= $(PDP10_PREFIX)/bin/mkdsk
 MKD6FS ?= $(PDP10_PREFIX)/bin/mkd6fs
 MKDT ?= $(PDP10_PREFIX)/bin/mkdt
@@ -426,6 +427,7 @@ USERLAND_INPUTS = $(PROJECT_ROOT)/userland/libc/Makefile \
 	$(PROJECT_ROOT)/userland/dsh/dsh_parse.c \
 	$(PROJECT_ROOT)/userland/dsh/dsh_parse.h \
 	$(PROJECT_ROOT)/userland/dsh/dsh_s6.c \
+	$(PROJECT_ROOT)/userland/dsh/dsh_var_pdp6.s \
 	$(PROJECT_ROOT)/userland/d6lz/d6lz.c \
 	$(PROJECT_ROOT)/userland/init/init.c \
 	$(PROJECT_ROOT)/userland/login/login.c \
@@ -809,6 +811,14 @@ $(DAIMOS_NATIVE_DARC) $(DAIMOS_NATIVE_DLINK) $(DAIMOS_NATIVE_OBJDUMP) &: \
 $(INIT_DXR) $(MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(DSHCOMP_DXR) $(COMMAND_DXR) $(UTILITY_MISC_DXR) $(UTILITY_TEXT_DXR) $(UTILITY_DOC_DXR) $(XARGS_DXR) $(SED_DXR) $(CONFIGCTL_DXR) $(MAKE_DXR) $(LOGCOMPAT_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR) $(DTFSPROBE_DXR) $(D6LZ_DXR) $(LOGDRAIN_DXR) &: $(USERLAND_INPUTS) $(PDP10_KCC)
 	$(MAKE) -C $(PROJECT_ROOT)/userland build BUILD_ROOT='$(USERLAND_BUILD_ROOT)' \
 	    PDP10_PREFIX='$(PDP10_PREFIX)'
+	@dsh_image=`$(DXRCHECK) $(DSH_DXR) | \
+	    sed -n 's/^DXR image=\([0-7][0-7]*\).*/\1/p'`; \
+	    test -n "$$dsh_image" || { \
+	        echo "cannot determine DSH image size" >&2; exit 1; }; \
+	    test "$$dsh_image" -le 036000 || { \
+	        echo "DSH image $$dsh_image exceeds EXEC limit 036000" >&2; \
+	        exit 1; \
+	    }
 
 $(LOGIN_D6LZ_DXR): $(LOGIN_DXR)
 	$(D6LZ_HOST) -x $< $@
