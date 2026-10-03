@@ -683,7 +683,8 @@ proc_swap_victim(unsigned int exclude_owner)
                 state = PROC_STATE(p);
                 if ((state != PROC_SLEEP && state != PROC_STOP &&
                     state != PROC_SRUN) || PROC_TRANSITION(p) ||
-                    (PROC_HAS_UAREA(p) && PROC_USER_MAPPING_HELD(p)))
+                    !PROC_HAS_UAREA(p) || PROC_USER_MAPPING_HELD(p) ||
+                    !PROC_SWAP_RECORD_PRESENT(i))
                         continue;
                 if (!vm_space_can_swap(p))
                         continue;
