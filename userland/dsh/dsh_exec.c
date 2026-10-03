@@ -22,6 +22,8 @@
 
 static kword_t dsh_run_block[DSH_RUN_WORDS];
 static kword_t dsh_path_record[U_PATH_WORDS];
+static struct dsh_s6 dsh_var_enum_name;
+static struct dsh_s6 dsh_var_enum_value;
 static struct dsh_node dsh_nodes[DSH_PARSE_MAX_NODES];
 static unsigned int dsh_nodes_active;
 static struct dsh_script *dsh_script_workspace;
@@ -387,6 +389,8 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 return 0;
         }
         if (dsh_s6_eq_text(&argv[0], "SET")) {
+                int listed;
+
                 if (argc == 2U) {
                         eq = dsh_find_equal(&argv[1]);
                         if (eq <= 0 ||
@@ -402,11 +406,15 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 if (argc != 1U)
                         return 2;
                 for (i = 0U; i < DSH_MAX_VARS; ++i) {
-                        if (!st->vars[i].used)
+                        listed = dsh_var_at(st, i, &dsh_var_enum_name,
+                            &dsh_var_enum_value);
+                        if (listed < 0)
+                                return 1;
+                        if (listed == 0)
                                 continue;
-                        if (dsh_s6_put(1, &st->vars[i].name) != 0 ||
+                        if (dsh_s6_put(1, &dsh_var_enum_name) != 0 ||
                             u_putc(1, '=') != 0 ||
-                            dsh_s6_put(1, &st->vars[i].value) != 0 ||
+                            dsh_s6_put(1, &dsh_var_enum_value) != 0 ||
                             u_crlf(1) != 0)
                                 return 1;
                 }
@@ -737,6 +745,7 @@ dsh_launch_path(struct dsh_state *st, const struct dsh_s6 *path,
         unsigned int used;
         unsigned int envc;
         unsigned int i;
+        int present;
         int pid;
 
         used = SYS_RUN_V2_FIXED_WORDS;
@@ -747,10 +756,16 @@ dsh_launch_path(struct dsh_state *st, const struct dsh_s6 *path,
                         return DSH_ERROR;
         envc = 0U;
         for (i = 0U; i < DSH_MAX_VARS; ++i) {
-                if (!st->vars[i].used || !st->vars[i].exported)
+                present = dsh_var_at(st, i, &dsh_var_enum_name,
+                    &dsh_var_enum_value);
+                if (present < 0)
+                        return DSH_ERROR;
+                if (present == 0)
+                        continue;
+                if (present == 1)
                         continue;
                 if (dsh_append_env_record(dsh_run_block, &used,
-                    &st->vars[i].name, &st->vars[i].value) != 0)
+                    &dsh_var_enum_name, &dsh_var_enum_value) != 0)
                         return DSH_ERROR;
                 ++envc;
         }
@@ -804,13 +819,11 @@ dsh_make_path(struct dsh_s6 *out, const struct dsh_s6 *dir,
 static const struct dsh_s6 *
 dsh_path_value(const struct dsh_state *st)
 {
-        unsigned int i;
+        struct dsh_s6 name;
 
-        for (i = 0U; i < DSH_MAX_VARS; ++i)
-                if (st->vars[i].used &&
-                    dsh_s6_eq_text(&st->vars[i].name, "PATH"))
-                        return &st->vars[i].value;
-        return 0;
+        if (dsh_s6_from_text(&name, "PATH") != 0)
+                return 0;
+        return dsh_var_get(st, &name);
 }
 
 static int

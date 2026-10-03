@@ -9,7 +9,7 @@
 #define DSH_LINE_MAX_CHARS    180U
 #define DSH_LINE_MAX_WORDS     30U
 #define DSH_MAX_ARGS            8U
-#define DSH_MAX_VARS           16U
+#define DSH_MAX_VARS           64U
 #define DSH_MAX_ALIASES         8U
 #define DSH_MAX_JOBS            4U
 #define DSH_MAX_FUNCS           4U
@@ -45,10 +45,9 @@ struct dsh_line {
 };
 
 struct dsh_var {
-        unsigned int used;
-        unsigned int exported;
-        struct dsh_s6 name;
-        struct dsh_s6 value;
+        kword_t meta;
+        kword_t name_words[DSH_S6_MAX_WORDS];
+        kword_t value_words[DSH_S6_MAX_WORDS];
 };
 
 struct dsh_alias {
@@ -111,6 +110,8 @@ int dsh_var_set(struct dsh_state *st, const struct dsh_s6 *name,
 int dsh_var_unset(struct dsh_state *st, const struct dsh_s6 *name);
 const struct dsh_s6 *dsh_var_get(const struct dsh_state *st,
     const struct dsh_s6 *name);
+int dsh_var_at(const struct dsh_state *st, unsigned int slot,
+    struct dsh_s6 *name, struct dsh_s6 *value);
 int dsh_expand(const struct dsh_state *st, const struct dsh_s6 *in,
     struct dsh_s6 *out);
 int dsh_expand_mask(const struct dsh_state *st, const struct dsh_s6 *in,

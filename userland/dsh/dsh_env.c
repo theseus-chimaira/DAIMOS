@@ -1,5 +1,7 @@
 #include "dsh.h"
 
+struct dsh_s6 dsh_var_scratch;
+
 static int
 dsh_name_char(int ch, int first)
 {
@@ -45,7 +47,7 @@ dsh_state_init(struct dsh_state *st, int argc, kword_t **argv,
         unsigned int i;
 
         for (i = 0U; i < DSH_MAX_VARS; ++i)
-                st->vars[i].used = 0U;
+                st->vars[i].meta = 0U;
         for (i = 0U; i < DSH_MAX_ALIASES; ++i)
                 st->aliases[i].used = 0U;
         for (i = 0U; i < DSH_MAX_JOBS; ++i)
@@ -84,86 +86,6 @@ dsh_state_init(struct dsh_state *st, int argc, kword_t **argv,
         }
 }
 
-int
-dsh_var_set(struct dsh_state *st, const struct dsh_s6 *name,
-    const struct dsh_s6 *value, int exported)
-{
-        unsigned int i;
-        int free_slot;
-
-        if (name == 0 || value == 0 || name->len == 0U)
-                return -1;
-        free_slot = -1;
-        for (i = 0U; i < DSH_MAX_VARS; ++i) {
-                if (!st->vars[i].used) {
-                        if (free_slot < 0)
-                                free_slot = (int)i;
-                        continue;
-                }
-                if (st->vars[i].name.len == name->len) {
-                        unsigned int j;
-                        for (j = 0U; j < name->len; ++j)
-                                if (dsh_s6_get(&st->vars[i].name, j) !=
-                                    dsh_s6_get(name, j))
-                                        break;
-                        if (j == name->len) {
-                                (void)dsh_s6_copy(&st->vars[i].value, value);
-                                if (exported >= 0)
-                                        st->vars[i].exported =
-                                            (unsigned int)exported;
-                                return 0;
-                        }
-                }
-        }
-        if (free_slot < 0)
-                return -1;
-        st->vars[free_slot].used = 1U;
-        st->vars[free_slot].exported = exported > 0;
-        (void)dsh_s6_copy(&st->vars[free_slot].name, name);
-        (void)dsh_s6_copy(&st->vars[free_slot].value, value);
-        return 0;
-}
-
-const struct dsh_s6 *
-dsh_var_get(const struct dsh_state *st, const struct dsh_s6 *name)
-{
-        unsigned int i;
-        unsigned int j;
-
-        for (i = 0U; i < DSH_MAX_VARS; ++i) {
-                if (!st->vars[i].used || st->vars[i].name.len != name->len)
-                        continue;
-                for (j = 0U; j < name->len; ++j)
-                        if (dsh_s6_get(&st->vars[i].name, j) !=
-                            dsh_s6_get(name, j))
-                                break;
-                if (j == name->len)
-                        return &st->vars[i].value;
-        }
-        return 0;
-}
-
-int
-dsh_var_unset(struct dsh_state *st, const struct dsh_s6 *name)
-{
-        unsigned int i;
-        unsigned int j;
-
-        for (i = 0U; i < DSH_MAX_VARS; ++i) {
-                if (!st->vars[i].used || st->vars[i].name.len != name->len)
-                        continue;
-                for (j = 0U; j < name->len; ++j)
-                        if (dsh_s6_get(&st->vars[i].name, j) !=
-                            dsh_s6_get(name, j))
-                                break;
-                if (j == name->len) {
-                        st->vars[i].used = 0U;
-                        return 0;
-                }
-        }
-        return 0;
-}
-
 static int
 dsh_append_s6(struct dsh_s6 *dst, const struct dsh_s6 *src)
 {
@@ -196,20 +118,14 @@ static const struct dsh_s6 *
 dsh_var_get_range(const struct dsh_state *st, const struct dsh_s6 *in,
     unsigned int first, unsigned int last)
 {
+        struct dsh_s6 name;
         unsigned int i;
-        unsigned int j;
 
-        for (i = 0U; i < DSH_MAX_VARS; ++i) {
-                if (!st->vars[i].used || st->vars[i].name.len != last - first)
-                        continue;
-                for (j = 0U; j < last - first; ++j)
-                        if (dsh_s6_get(&st->vars[i].name, j) !=
-                            dsh_s6_get(in, first + j))
-                                break;
-                if (j == last - first)
-                        return &st->vars[i].value;
-        }
-        return 0;
+        dsh_s6_clear(&name);
+        for (i = first; i < last; ++i)
+                if (dsh_s6_append(&name, dsh_s6_get(in, i)) != 0)
+                        return 0;
+        return dsh_var_get(st, &name);
 }
 
 int

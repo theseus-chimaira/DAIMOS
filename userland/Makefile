@@ -54,7 +54,7 @@ LOGIN_MAP = $(USERLAND_BUILD)/login.map
 
 DSH_C_SRCS = libc/u.c libc/text.c libc/cmdmap.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c dsh/dsh.c
 DSH_C_OBJS = $(DSH_C_SRCS:%.c=$(USERLAND_BUILD)/dsh/%.dobj)
-DSH_S_SRCS = $(COMMON_S_SRCS)
+DSH_S_SRCS = $(COMMON_S_SRCS) dsh/dsh_var_pdp6.s
 DSH_S_OBJS = $(DSH_S_SRCS:%.s=$(USERLAND_BUILD)/dsh/%.dobj)
 DSH_DXR = $(USERLAND_BUILD)/dsh.dxr
 DSH_MAP = $(USERLAND_BUILD)/dsh.map
@@ -232,8 +232,8 @@ $(MOUNTALL_DXR): $(MOUNTALL_C_OBJS) $(MOUNTALL_S_OBJS)
 $(LOGIN_DXR): $(LOGIN_C_OBJS) $(LOGIN_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(LOGIN_MAP) $(LOGIN_S_OBJS) $(LOGIN_C_OBJS)
 
-$(DSH_FOLD_PLAN): $(DSH_C_OBJS) $(DSH_S_OBJS) $(P10FOLD)
-	$(P10FOLD) -m 4 -P $@ $(DSH_S_OBJS) $(DSH_C_OBJS) >/dev/null
+$(DSH_FOLD_PLAN): $(DSH_S_OBJS) $(P10FOLD) Makefile
+	$(P10FOLD) -m 4 -P $@ $(DSH_S_OBJS) >/dev/null
 
 $(DSH_DXR): $(DSH_C_OBJS) $(DSH_S_OBJS) $(DSH_FOLD_PLAN)
 	$(DLINK) --daimos-uuo-relax -b 020 --fold-plan $(DSH_FOLD_PLAN) -o $@ -M $(DSH_MAP) $(DSH_S_OBJS) $(DSH_C_OBJS)
