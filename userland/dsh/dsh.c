@@ -250,10 +250,10 @@ dsh_getline_tty(struct dsh_state *st)
                         }
                         continue;
                 }
-                if (ch < 040 || ch > 0137)
-                        continue;
                 if (ch >= 'a' && ch <= 'z')
                         ch -= 'a' - 'A';
+                if (ch < 040 || ch > 0137)
+                        continue;
                 old_len = dsh_input_line.len;
                 if (dsh_input_insert(cursor, ch) != 0) {
                         (void)u_putc(1, 007);

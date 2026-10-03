@@ -49,6 +49,7 @@ set mtc1 7t
 set dcs enabled
 set dcs lines=8
 set ge enabled
+set ge ascii
 set slave enabled
 set dpy @DPY_MODE@
 set dpy window
