@@ -1027,7 +1027,7 @@ util_render_sixmd_line(int fd, const char *src)
 }
 
 static int
-util_render_manual(const kword_t *topic, struct u_io *io)
+util_render_manual_path(const char *path, const kword_t *topic, struct u_io *io)
 {
         struct u_text_reader r;
         char line[UTIL_LINE_CHARS];
@@ -1040,8 +1040,12 @@ util_render_manual(const kword_t *topic, struct u_io *io)
 
         if (util_s6_text(topic, name, sizeof(name)) != 0)
                 return 1;
-        if (u_text_open(&r, "/SYSTEM/MANUAL/PAGES") != 0)
-                return util_error(io, "MAN", topic);
+        if (name[0] == '[' && name[1] == 0) {
+                name[0] = 'B'; name[1] = 'R'; name[2] = 'A'; name[3] = 'C';
+                name[4] = 'K'; name[5] = 'E'; name[6] = 'T'; name[7] = 0;
+        }
+        if (u_text_open(&r, path) != 0)
+                return -1;
         found = 0;
         while ((rc = u_text_getline(&r, line, sizeof(line))) >= 0) {
                 if (found && line[0] == '%' && line[1] == 'S')
@@ -1068,9 +1072,144 @@ util_render_manual(const kword_t *topic, struct u_io *io)
                 }
         }
         u_text_close(&r);
-        if (!found)
-                return util_error(io, "MAN", topic);
-        return rc == U_TEXT_ERROR ? 1 : 0;
+        if (rc == U_TEXT_ERROR)
+                return 2;
+        return found ? 0 : 1;
+}
+
+static int
+util_render_help_path(const char *path, const kword_t *topic, struct u_io *io)
+{
+        struct u_text_reader r;
+        char line[UTIL_LINE_CHARS];
+        char name[U_ARG_WORDS * 6U];
+        unsigned int i;
+        unsigned int start;
+        unsigned int len;
+        int found;
+        int selected;
+        int rc;
+
+        if (util_s6_text(topic, name, sizeof(name)) != 0)
+                return 1;
+        if (name[0] == '[' && name[1] == 0) {
+                name[0] = 'B'; name[1] = 'R'; name[2] = 'A'; name[3] = 'C';
+                name[4] = 'K'; name[5] = 'E'; name[6] = 'T'; name[7] = 0;
+        }
+        if (u_text_open(&r, path) != 0)
+                return -1;
+        found = 0;
+        selected = 0;
+        while ((rc = u_text_getline(&r, line, sizeof(line))) >= 0) {
+                if (found && line[0] == '%' && line[1] == 'S')
+                        break;
+                if (!found) {
+                        if (line[0] != '#' || line[1] != ' ' ||
+                            line[2] != '@' || line[3] != '?')
+                                continue;
+                        start = 4U;
+                        for (len = 0U; line[start + len] != 0 &&
+                            line[start + len] != ' ' &&
+                            line[start + len] != '-'; ++len)
+                                ;
+                        for (i = 0U; name[i] != 0 && i < len; ++i)
+                                if (name[i] != line[start + i])
+                                        break;
+                        if (i != len || name[i] != 0)
+                                continue;
+                        found = 1;
+                        if (util_render_sixmd_line(io->out_fd, line) != 0) {
+                                u_text_close(&r);
+                                return 1;
+                        }
+                        continue;
+                }
+                if (line[0] == '#' && line[1] == '#' && line[2] == ' ') {
+                        selected = line[3] == '@' && line[4] == '?' &&
+                            ((line[5] == 'O' && line[6] == 'P' &&
+                            line[7] == 'T' && line[8] == 'I' &&
+                            line[9] == 'O' && line[10] == 'N' &&
+                            line[11] == 'S' && line[12] == 0) ||
+                            (line[5] == 'O' && line[6] == 'P' &&
+                            line[7] == 'E' && line[8] == 'R' &&
+                            line[9] == 'A' && line[10] == 'N' &&
+                            line[11] == 'D' && line[12] == 'S' &&
+                            line[13] == 0));
+                }
+                if (line[0] == 'U' && line[1] == 'S' && line[2] == 'A' &&
+                    line[3] == 'G' && line[4] == 'E' && line[5] == ' ' &&
+                    line[6] == 'I' && line[7] == 'S' && line[8] == ' ') {
+                        if (util_render_sixmd_line(io->out_fd, line) != 0) {
+                                u_text_close(&r);
+                                return 1;
+                        }
+                        continue;
+                }
+                if (selected && util_render_sixmd_line(io->out_fd, line) != 0) {
+                        u_text_close(&r);
+                        return 1;
+                }
+        }
+        u_text_close(&r);
+        if (rc == U_TEXT_ERROR)
+                return 2;
+        return found ? 0 : 1;
+}
+
+static int
+util_not_available(struct u_io *io, const char *what)
+{
+        return u_puts(io->err_fd, what) != 0 ||
+            u_puts(io->err_fd, " NOT AVAILABLE") != 0 ||
+            u_crlf(io->err_fd) != 0;
+}
+
+static int
+util_render_manual(const kword_t *topic, struct u_io *io)
+{
+        int rc;
+
+        rc = util_render_manual_path("/SYSTEM/MANUAL/PAGES", topic, io);
+        if (rc == 0)
+                return 0;
+        if (rc == 2) {
+                (void)util_not_available(io, "MANUAL");
+                return 1;
+        }
+        rc = util_render_manual_path("/OPTION/BASE/MANUAL/ASMUTILS/PAGES",
+                topic, io);
+        if (rc == 0)
+                return 0;
+        if (rc == 2) {
+                (void)util_not_available(io, "MANUAL");
+                return 1;
+        }
+        (void)util_not_available(io, "MANUAL");
+        return 1;
+}
+
+static int
+util_render_help(const kword_t *topic, struct u_io *io)
+{
+        int rc;
+
+        rc = util_render_help_path("/SYSTEM/MANUAL/PAGES", topic, io);
+        if (rc == 0)
+                return 0;
+        if (rc == 2) {
+                (void)util_not_available(io, "HELP");
+                return 1;
+        }
+        rc = util_render_help_path("/OPTION/BASE/MANUAL/ASMUTILS/PAGES",
+                topic, io);
+        if (rc == 0)
+                return 0;
+        if (rc == 2) {
+                (void)util_not_available(io, "HELP");
+                return 1;
+        }
+        (void)util_not_available(io, "HELP");
+        return 1;
 }
 
 static int
@@ -1082,18 +1221,14 @@ util_cmd_man(int argc, kword_t **argv, struct u_io *io)
 }
 
 static int
-util_manual_topics(struct u_io *io)
+util_manual_topics_path(const char *path, struct u_io *io)
 {
         struct u_text_reader r;
         char line[UTIL_LINE_CHARS];
         int rc;
 
-        if (u_text_open(&r, "/SYSTEM/MANUAL/INDEX") != 0)
-                return util_error(io, "HELP", 0);
-        if (u_puts(io->out_fd, "MANUAL TOPICS") != 0 || u_crlf(io->out_fd) != 0) {
-                u_text_close(&r);
-                return 1;
-        }
+        if (u_text_open(&r, path) != 0)
+                return -1;
         while ((rc = u_text_getline(&r, line, sizeof(line))) >= 0)
                 if (u_puts(io->out_fd, "  ") != 0 ||
                     u_puts(io->out_fd, line) != 0 ||
@@ -1106,39 +1241,72 @@ util_manual_topics(struct u_io *io)
 }
 
 static int
+util_manual_topics(struct u_io *io)
+{
+        int rc;
+
+        if (u_puts(io->out_fd, "MANUAL TOPICS") != 0 || u_crlf(io->out_fd) != 0)
+                return 1;
+        rc = util_manual_topics_path("/SYSTEM/MANUAL/INDEX", io);
+        if (rc != 0) {
+                (void)util_not_available(io, "HELP");
+                return 1;
+        }
+        rc = util_manual_topics_path("/OPTION/BASE/MANUAL/ASMUTILS/INDEX", io);
+        return rc > 0 ? rc : 0;
+}
+
+static int
 util_cmd_help(int argc, kword_t **argv, struct u_io *io)
 {
         if (argc == 1)
                 return util_manual_topics(io);
         if (argc == 2)
-                return util_render_manual(argv[1], io);
+                return util_render_help(argv[1], io);
         return 2;
 }
 
 static int
-util_cmd_apropos(int argc, kword_t **argv, struct u_io *io)
+util_apropos_path(const char *path, const char *needle, struct u_io *io,
+        int *foundp)
 {
         struct u_text_reader r;
-        char needle[U_ARG_WORDS * 6U];
         char line[UTIL_LINE_CHARS];
         int rc;
-        int found;
 
-        if (argc != 2 || util_s6_text(argv[1], needle, sizeof(needle)) != 0)
-                return 2;
-        if (u_text_open(&r, "/SYSTEM/MANUAL/INDEX") != 0)
-                return util_error(io, "APROPOS", 0);
-        found = 0;
+        if (u_text_open(&r, path) != 0)
+                return -1;
         while ((rc = u_text_getline(&r, line, sizeof(line))) >= 0)
                 if (util_contains(line, needle)) {
-                        found = 1;
+                        *foundp = 1;
                         if (util_put_line(io->out_fd, line) != 0) {
                                 u_text_close(&r);
                                 return 2;
                         }
                 }
         u_text_close(&r);
-        if (rc == U_TEXT_ERROR) return 2;
+        return rc == U_TEXT_ERROR ? 2 : 0;
+}
+
+static int
+util_cmd_apropos(int argc, kword_t **argv, struct u_io *io)
+{
+        char needle[U_ARG_WORDS * 6U];
+        int rc;
+        int found;
+
+        if (argc != 2 || util_s6_text(argv[1], needle, sizeof(needle)) != 0)
+                return 2;
+        found = 0;
+        rc = util_apropos_path("/SYSTEM/MANUAL/INDEX", needle, io, &found);
+        if (rc != 0) {
+                (void)util_not_available(io, "APROPOS");
+                return 1;
+        }
+        rc = util_apropos_path("/OPTION/BASE/MANUAL/ASMUTILS/INDEX", needle,
+                io, &found);
+        if (rc > 0)
+                return rc;
         return found ? 0 : 1;
 }
 #endif
