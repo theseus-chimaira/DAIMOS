@@ -42,12 +42,26 @@
 /** Another display word is still awaiting DONE. */
 #define DPY_E_BUSY             -3
 
+/** Dynamic-MM owner used by the optional persistent Type-340 display list. */
+#define DPY_LIST_MM_OWNER      014U
+
 /**
  * @brief Submit one 36-bit Type 340 instruction word and wait for DONE.
  * @param word Two packed 18-bit Type 340 display instructions.
  * @return DPY_E_OK, or DPY_E_BUSY if another word is already in flight.
  */
 int dpy_putword(kword_t word);
+/**
+ * @brief Replace the persistent Type-340 display list.
+ * @param words Packed 36-bit words, two 18-bit Type-340 instructions each.
+ * @param nwords Number of packed words; zero stops and releases the list.
+ * @return Number of accepted words, or -1 on allocation/input failure.
+ *
+ * The list is copied into demand-allocated kernel storage.  The DPY interrupt
+ * handler then recycles it without further userspace activity.  This is the
+ * native interface used by vector-display applications such as Mac Hack.
+ */
+int dpy_write_words(const kword_t *words, unsigned int nwords);
 /** Render one terminal byte through the Type 342 character generator. */
 int dpy_putchar(unsigned int ch);
 

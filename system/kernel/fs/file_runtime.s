@@ -165,6 +165,7 @@ file_path_setchar:
         .globl  pipe_fifo_detach
         .globl  lpt_putchar_jump
         .globl  lpt_write_s6rec_jump
+        .globl  dpy_write_words_jump
         .globl  tty_write_s6rec_jump
         .globl  tty_read_s6rec_jump
         .globl  ptr_read_words_jump
@@ -556,8 +557,6 @@ file_write_words:
         push    17,3                    ; nwords
         pushj   17,file_find
         jumpe   1,file_write_words_fail
-        skipn   -1(17)                  ; buf
-        jrst    file_write_words_fail
         move    4,(1)
         tlne    4,100000                ; FILE_META_DIR
         jrst    file_write_words_fail
@@ -567,6 +566,10 @@ file_write_words:
         move    2,1(010)                ; word offset
         move    1,(010)
         tlz     1,707070                ; canonical vnode
+        camn    1,[020002000010]        ; DPY0 persistent raw display list
+        jrst    file_write_words_dpy
+        skipn   -1(17)                  ; ordinary streams require a buffer
+        jrst    file_write_words_fail
         camn    1,[020002000003]        ; PTP0
         jrst    file_write_words_ptp
         camn    1,[020002000005]        ; CP0
@@ -598,6 +601,11 @@ file_write_words_lpt:
         move    1,-1(17)                ; mapped S6REC source
         move    2,(17)                  ; supplied word count
         pushj   17,lpt_write_s6rec_jump
+        jrst    file_write_words_result
+file_write_words_dpy:
+        move    1,-1(17)                ; mapped packed Type-340 words
+        move    2,(17)                  ; zero count stops/releases the list
+        pushj   17,dpy_write_words_jump
 file_write_words_result:
         jumple  1,file_write_words_done
         addm    1,1(010)
@@ -625,6 +633,8 @@ cp_write_words_jump:
 lpt_putchar_jump:
         jrst    kret_neg1
 lpt_write_s6rec_jump:
+        jrst    kret_neg1
+dpy_write_words_jump:
         jrst    kret_neg1
 
 ; int file_readdir(int fd, struct vfs_dirent *ent)

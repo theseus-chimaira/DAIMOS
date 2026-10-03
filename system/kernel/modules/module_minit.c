@@ -80,6 +80,7 @@ mfsdev_present_mark(unsigned int id)
 #define DPY_X_PUTWORD           1U
 #define DPY_X_CLK_PI_SERVICE_CALL 2U
 #define DPY_X_PUTCHAR           3U
+#define DPY_X_WRITE_WORDS       4U
 #define TTY_X_PUTCHAR           0U
 #define TTY_X_GETCHAR           1U
 #define TTY_X_CTY_PUTCHAR_ADDR  2U
@@ -159,6 +160,7 @@ extern kword_t cr_read_words_jump;
 extern kword_t cp_write_words_jump;
 extern kword_t lpt_putchar_jump;
 extern kword_t lpt_write_s6rec_jump;
+extern kword_t dpy_write_words_jump;
 extern int d6fs_reader_bootstrap_call(kword_t backing_ops);
 
 
@@ -785,6 +787,8 @@ dpy_minit(void)
         putword = minit_export(name, base, DPY_X_PUTWORD);
         module_service_set(MODULE_SERVICE_DPY_PUTCHAR,
             minit_export(name, base, DPY_X_PUTCHAR));
+        storage_patch_jump(&dpy_write_words_jump,
+            minit_export(name, base, DPY_X_WRITE_WORDS));
         address = minit_export(name, base, DPY_X_CLK_PI_SERVICE_CALL);
         if (clk_pi_service_addr != 0U)
                 storage_patch_module_jump(base,
