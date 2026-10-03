@@ -1733,10 +1733,14 @@ dsh_wait_job_slot(struct dsh_state *st, unsigned int slot, int foreground)
                 return rc;
         }
         if (foreground && st->tty_attached) {
-                (void)dsys_procctl(SYS_PROCCTL_TTY_SETFG, job->pgrp);
+                /* TTY_SETMODE is permitted only to the current foreground
+                 * process group.  Restore the stopped job's terminal-global
+                 * mode while DSH still owns the TTY, then hand foreground
+                 * ownership to the job before CONT. */
                 if (dsh_job_tty_mode(job) != DSH_JOB_TTY_NONE)
                         (void)dsys_procctl(SYS_PROCCTL_TTY_SETMODE,
                             dsh_job_tty_mode(job));
+                (void)dsys_procctl(SYS_PROCCTL_TTY_SETFG, job->pgrp);
         }
         if (dsh_job_state(job) == DSH_JOB_STOPPED && !foreground)
                 return 1;
@@ -1924,9 +1928,16 @@ dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
                 prev_read = next_read;
                 if (i == 0U) {
                         pgrp = (unsigned int)pid;
-                        if (!background && st->tty_attached)
+                        if (!background && st->tty_attached) {
+                                /* As with FG, mode must be changed while DSH
+                                 * is still the foreground owner. */
+                                if (st->interactive)
+                                        (void)dsys_procctl(
+                                            SYS_PROCCTL_TTY_SETMODE,
+                                            SYS_TTY_MODE_COOKED);
                                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETFG,
                                     pgrp);
+                        }
                 }
                 last_pid = pid;
         }
@@ -1947,9 +1958,6 @@ dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
                 (void)u_crlf(1);
                 return 0;
         }
-        if (st->interactive)
-                (void)dsys_procctl(SYS_PROCCTL_TTY_SETMODE,
-                    SYS_TTY_MODE_COOKED);
         rc = dsh_wait_pgrp(st, pgrp, (unsigned int)last_pid, count, 0U, 1);
         if (rc == 1) {
                 for (i = 0U; i < DSH_MAX_JOBS; ++i)
