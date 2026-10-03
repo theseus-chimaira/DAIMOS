@@ -7,6 +7,19 @@
 #define DSH_REC_WORDS (DSH_S6_MAX_WORDS + 1U)
 #define DSH_RUN_WORDS 192U
 
+#define DSH_JOB_STATUS_MASK      0377UL
+#define DSH_JOB_STATE_SHIFT      8U
+#define DSH_JOB_STATE_MASK       03UL
+#define DSH_JOB_TTY_SHIFT       10U
+#define DSH_JOB_TTY_MASK         017UL
+#define DSH_JOB_TTY_NONE         017U
+#define DSH_JOB_SERIAL_SHIFT    14U
+#define DSH_JOB_SERIAL_MASK 0777777UL
+
+#define DSH_JOB_RUNNING           0U
+#define DSH_JOB_STOPPED           1U
+#define DSH_JOB_DONE              2U
+
 static kword_t dsh_run_block[DSH_RUN_WORDS];
 static kword_t dsh_path_record[U_PATH_WORDS];
 static struct dsh_node dsh_nodes[DSH_PARSE_MAX_NODES];
@@ -31,7 +44,7 @@ static int dsh_wild_match(const struct dsh_s6 *value,
     const struct dsh_s6 *pattern, kword_t quote_mask);
 static int dsh_job_store(struct dsh_state *st, unsigned int pgrp,
     unsigned int last_pid, unsigned int remaining, unsigned int status,
-    unsigned int stopped);
+    unsigned int state, unsigned int tty_mode, const struct dsh_s6 *command);
 static int dsh_builtin_jobs(struct dsh_state *st, unsigned int argc,
     struct dsh_s6 *argv);
 static int dsh_builtin_wait(struct dsh_state *st, unsigned int argc,
@@ -719,6 +732,7 @@ dsh_launch_path(struct dsh_state *st, const struct dsh_s6 *path,
     unsigned int pgrp_mode, unsigned int pgrp, int *pidp)
 {
         struct sys_run_v2 *run;
+        struct vfs_stat statbuf;
         unsigned int used;
         unsigned int envc;
         unsigned int i;
@@ -752,8 +766,16 @@ dsh_launch_path(struct dsh_state *st, const struct dsh_s6 *path,
         run->argc = argc;
         run->envc = envc;
         pid = dsys_run(run);
-        if (pid < 0)
+        if (pid < 0) {
+                /* RUN deliberately has one compact failure return.  Preserve
+                 * the shell's 127=not-found / 126=found-but-not-runnable
+                 * distinction by checking namespace existence only on this
+                 * slow failure path. */
+                if (dsh_s6_pack(path, dsh_path_record, U_PATH_WORDS) == 0 &&
+                    dsys_stat(dsh_path_record, &statbuf) == 0)
+                        return 126;
                 return DSH_NOT_FOUND;
+        }
         if (pidp != 0)
                 *pidp = pid;
         return 0;
@@ -871,7 +893,9 @@ dsh_run_external(struct dsh_state *st, unsigned int argc,
     struct dsh_s6 *argv, int infd, int outfd)
 {
         kword_t status;
+        unsigned int tty_mode;
         unsigned int kind;
+        int mode;
         int pid;
         int rc;
 
@@ -886,6 +910,12 @@ dsh_run_external(struct dsh_state *st, unsigned int argc,
                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETFG,
                     (unsigned int)pid);
         rc = dsys_wait((unsigned int)pid, &status, 0U);
+        tty_mode = DSH_JOB_TTY_NONE;
+        if (rc == pid && st->tty_attached) {
+                mode = dsys_procctl(SYS_PROCCTL_TTY_GETMODE, 0U);
+                if (mode >= 0)
+                        tty_mode = (unsigned int)mode & 07U;
+        }
         if (st->tty_attached)
                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETFG,
                     st->shell_pgrp);
@@ -899,7 +929,7 @@ dsh_run_external(struct dsh_state *st, unsigned int argc,
                 return (int)SYS_WAIT_STATUS_VALUE(status);
         if (kind == SYS_WAIT_STOPPED) {
                 if (dsh_job_store(st, (unsigned int)pid, (unsigned int)pid,
-                    1U, 0U, 1U) < 0)
+                    1U, 0U, DSH_JOB_STOPPED, tty_mode, &argv[0]) < 0)
                         return DSH_ERROR;
                 return 1;
         }
@@ -1414,12 +1444,74 @@ dsh_exec_simple_node(struct dsh_state *st, const struct dsh_node *n,
         return rc;
 }
 
+static unsigned int
+dsh_job_status(const struct dsh_job *job)
+{
+        return (unsigned int)(job->meta & DSH_JOB_STATUS_MASK);
+}
+
+static unsigned int
+dsh_job_state(const struct dsh_job *job)
+{
+        return (unsigned int)((job->meta >> DSH_JOB_STATE_SHIFT) &
+            DSH_JOB_STATE_MASK);
+}
+
+static unsigned int
+dsh_job_tty_mode(const struct dsh_job *job)
+{
+        return (unsigned int)((job->meta >> DSH_JOB_TTY_SHIFT) &
+            DSH_JOB_TTY_MASK);
+}
+
+static unsigned int
+dsh_job_serial(const struct dsh_job *job)
+{
+        return (unsigned int)((job->meta >> DSH_JOB_SERIAL_SHIFT) &
+            DSH_JOB_SERIAL_MASK);
+}
+
+static void
+dsh_job_meta_set(struct dsh_job *job, unsigned int status,
+    unsigned int state, unsigned int tty_mode, unsigned int serial)
+{
+        job->meta = (kword_t)(status & DSH_JOB_STATUS_MASK) |
+            ((kword_t)(state & DSH_JOB_STATE_MASK) << DSH_JOB_STATE_SHIFT) |
+            ((kword_t)(tty_mode & DSH_JOB_TTY_MASK) << DSH_JOB_TTY_SHIFT) |
+            ((kword_t)(serial & DSH_JOB_SERIAL_MASK) << DSH_JOB_SERIAL_SHIFT);
+}
+
+static void
+dsh_job_set_state(struct dsh_job *job, unsigned int state)
+{
+        job->meta &= ~((kword_t)DSH_JOB_STATE_MASK << DSH_JOB_STATE_SHIFT);
+        job->meta |= (kword_t)(state & DSH_JOB_STATE_MASK) <<
+            DSH_JOB_STATE_SHIFT;
+}
+
+static void
+dsh_job_set_status(struct dsh_job *job, unsigned int status)
+{
+        job->meta &= ~(kword_t)DSH_JOB_STATUS_MASK;
+        job->meta |= (kword_t)(status & DSH_JOB_STATUS_MASK);
+}
+
+static void
+dsh_job_set_tty(struct dsh_job *job, unsigned int tty_mode)
+{
+        job->meta &= ~((kword_t)DSH_JOB_TTY_MASK << DSH_JOB_TTY_SHIFT);
+        job->meta |= (kword_t)(tty_mode & DSH_JOB_TTY_MASK) <<
+            DSH_JOB_TTY_SHIFT;
+}
+
 static int
 dsh_job_store(struct dsh_state *st, unsigned int pgrp,
     unsigned int last_pid, unsigned int remaining, unsigned int status,
-    unsigned int stopped)
+    unsigned int state, unsigned int tty_mode, const struct dsh_s6 *command)
 {
         unsigned int i;
+        unsigned int serial;
+        int was_used;
 
         for (i = 0U; i < DSH_MAX_JOBS; ++i)
                 if (st->jobs[i].used && st->jobs[i].pgrp == pgrp)
@@ -1430,12 +1522,20 @@ dsh_job_store(struct dsh_state *st, unsigned int pgrp,
                                 break;
         if (i == DSH_MAX_JOBS)
                 return -1;
+        was_used = st->jobs[i].used != 0U;
+        serial = was_used ? dsh_job_serial(&st->jobs[i]) :
+            (++st->job_serial & DSH_JOB_SERIAL_MASK);
+        if (serial == 0U)
+                serial = ++st->job_serial & DSH_JOB_SERIAL_MASK;
         st->jobs[i].used = 1U;
         st->jobs[i].pgrp = pgrp;
         st->jobs[i].last_pid = last_pid;
         st->jobs[i].remaining = remaining;
-        st->jobs[i].status = status;
-        st->jobs[i].stopped = stopped;
+        dsh_job_meta_set(&st->jobs[i], status, state, tty_mode, serial);
+        if (command != 0)
+                (void)dsh_s6_copy(&st->jobs[i].command, command);
+        else if (!was_used)
+                dsh_s6_clear(&st->jobs[i].command);
         return (int)i;
 }
 
@@ -1462,7 +1562,8 @@ dsh_wait_pgrp(struct dsh_state *st, unsigned int pgrp,
                 if (kind == SYS_WAIT_STOPPED) {
                         if (save_stopped &&
                             dsh_job_store(st, pgrp, last_pid, remaining,
-                            last_status, 1U) < 0)
+                            last_status, DSH_JOB_STOPPED, DSH_JOB_TTY_NONE,
+                            0) < 0)
                                 return DSH_ERROR;
                         return 1;
                 }
@@ -1471,44 +1572,76 @@ dsh_wait_pgrp(struct dsh_state *st, unsigned int pgrp,
 }
 
 static int
-dsh_job_arg(const struct dsh_s6 *arg, unsigned int *pgrpp)
+dsh_job_number_arg(const struct dsh_s6 *arg, unsigned int first,
+    unsigned int *valuep)
 {
         struct dsh_s6 number;
         unsigned int i;
-        unsigned int first;
 
-        if (arg == 0 || arg->len == 0U)
-                return -1;
-        first = dsh_s6_get(arg, 0U) == '%' ? 1U : 0U;
-        if (first >= arg->len)
+        if (arg == 0 || first >= arg->len)
                 return -1;
         dsh_s6_clear(&number);
         for (i = first; i < arg->len; ++i)
                 if (dsh_s6_append(&number, dsh_s6_get(arg, i)) != 0)
                         return -1;
-        return dsh_parse_uint(&number, pgrpp);
+        return dsh_parse_uint(&number, valuep);
 }
 
 static int
-dsh_job_find(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
+dsh_job_find(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv,
+    int stopped_only, int include_done)
 {
+        unsigned int best_serial;
+        unsigned int number;
         unsigned int pgrp;
+        unsigned int state;
         int i;
+        int best;
 
         if (argc > 2U)
                 return -2;
         if (argc == 2U) {
-                if (dsh_job_arg(&argv[1], &pgrp) != 0)
+                if (dsh_s6_get(&argv[1], 0U) == '%') {
+                        if (dsh_job_number_arg(&argv[1], 1U, &number) != 0 ||
+                            number == 0U || number > DSH_MAX_JOBS)
+                                return -2;
+                        i = (int)number - 1;
+                        if (!st->jobs[i].used)
+                                return -1;
+                        state = dsh_job_state(&st->jobs[i]);
+                        if ((!include_done && state == DSH_JOB_DONE) ||
+                            (stopped_only && state != DSH_JOB_STOPPED))
+                                return -1;
+                        return i;
+                }
+                if (dsh_job_number_arg(&argv[1], 0U, &pgrp) != 0)
                         return -2;
-                for (i = 0; i < (int)DSH_MAX_JOBS; ++i)
-                        if (st->jobs[i].used && st->jobs[i].pgrp == pgrp)
-                                return i;
+                for (i = 0; i < (int)DSH_MAX_JOBS; ++i) {
+                        if (!st->jobs[i].used || st->jobs[i].pgrp != pgrp)
+                                continue;
+                        state = dsh_job_state(&st->jobs[i]);
+                        if ((!include_done && state == DSH_JOB_DONE) ||
+                            (stopped_only && state != DSH_JOB_STOPPED))
+                                return -1;
+                        return i;
+                }
                 return -1;
         }
-        for (i = (int)DSH_MAX_JOBS - 1; i >= 0; --i)
-                if (st->jobs[i].used)
-                        return i;
-        return -1;
+        best = -1;
+        best_serial = 0U;
+        for (i = 0; i < (int)DSH_MAX_JOBS; ++i) {
+                if (!st->jobs[i].used)
+                        continue;
+                state = dsh_job_state(&st->jobs[i]);
+                if ((!include_done && state == DSH_JOB_DONE) ||
+                    (stopped_only && state != DSH_JOB_STOPPED))
+                        continue;
+                if (best < 0 || dsh_job_serial(&st->jobs[i]) > best_serial) {
+                        best = i;
+                        best_serial = dsh_job_serial(&st->jobs[i]);
+                }
+        }
+        return best;
 }
 
 static void
@@ -1532,15 +1665,16 @@ dsh_job_poll_one(struct dsh_state *st, unsigned int slot)
                         if (job->remaining != 0U)
                                 --job->remaining;
                         if ((unsigned int)pid == job->last_pid)
-                                job->status = SYS_WAIT_STATUS_VALUE(status);
+                                dsh_job_set_status(job,
+                                    SYS_WAIT_STATUS_VALUE(status));
                         if (job->remaining == 0U) {
-                                job->used = 0U;
+                                dsh_job_set_state(job, DSH_JOB_DONE);
                                 return;
                         }
                 } else if (kind == SYS_WAIT_STOPPED)
-                        job->stopped = 1U;
+                        dsh_job_set_state(job, DSH_JOB_STOPPED);
                 else if (kind == SYS_WAIT_CONTINUED)
-                        job->stopped = 0U;
+                        dsh_job_set_state(job, DSH_JOB_RUNNING);
         }
 }
 
@@ -1549,6 +1683,7 @@ dsh_builtin_jobs(struct dsh_state *st, unsigned int argc,
     struct dsh_s6 *argv)
 {
         unsigned int i;
+        unsigned int state;
 
         (void)argv;
         if (argc != 1U)
@@ -1558,12 +1693,24 @@ dsh_builtin_jobs(struct dsh_state *st, unsigned int argc,
         for (i = 0U; i < DSH_MAX_JOBS; ++i) {
                 if (!st->jobs[i].used)
                         continue;
-                (void)u_putc(1, '[');
-                (void)u_put_uint(1, (kword_t)st->jobs[i].pgrp);
-                (void)u_puts(1, "] ");
-                (void)u_puts(1, st->jobs[i].stopped ?
-                    "STOPPED" : "RUNNING");
+                state = dsh_job_state(&st->jobs[i]);
+                (void)u_putc(1, '%');
+                (void)u_put_uint(1, (kword_t)(i + 1U));
+                (void)u_putc(1, ' ');
+                (void)u_puts(1, state == DSH_JOB_STOPPED ? "STOPPED" :
+                    state == DSH_JOB_DONE ? "DONE" : "RUNNING");
+                if (state == DSH_JOB_DONE) {
+                        (void)u_putc(1, ' ');
+                        (void)u_put_uint(1,
+                            (kword_t)dsh_job_status(&st->jobs[i]));
+                }
+                if (st->jobs[i].command.len != 0U) {
+                        (void)u_putc(1, ' ');
+                        (void)dsh_s6_put(1, &st->jobs[i].command);
+                }
                 (void)u_crlf(1);
+                if (state == DSH_JOB_DONE)
+                        st->jobs[i].used = 0U;
         }
         return 0;
 }
@@ -1579,12 +1726,21 @@ dsh_wait_job_slot(struct dsh_state *st, unsigned int slot, int foreground)
                 return 0;
         dsh_job_poll_one(st, slot);
         if (!job->used)
-                return (int)job->status;
-        if (foreground && st->tty_attached)
+                return 0;
+        if (dsh_job_state(job) == DSH_JOB_DONE) {
+                rc = (int)dsh_job_status(job);
+                job->used = 0U;
+                return rc;
+        }
+        if (foreground && st->tty_attached) {
                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETFG, job->pgrp);
-        if (job->stopped && !foreground)
+                if (dsh_job_tty_mode(job) != DSH_JOB_TTY_NONE)
+                        (void)dsys_procctl(SYS_PROCCTL_TTY_SETMODE,
+                            dsh_job_tty_mode(job));
+        }
+        if (dsh_job_state(job) == DSH_JOB_STOPPED && !foreground)
                 return 1;
-        if (job->stopped) {
+        if (dsh_job_state(job) == DSH_JOB_STOPPED) {
                 if (dsys_procctl(SYS_PROCCTL_EVENT_PGRP,
                     SYS_EVENT_ARG(job->pgrp, SYS_EVENT_CONT)) < 0) {
                         if (foreground && st->tty_attached)
@@ -1592,13 +1748,23 @@ dsh_wait_job_slot(struct dsh_state *st, unsigned int slot, int foreground)
                                     st->shell_pgrp);
                         return 1;
                 }
-                job->stopped = 0U;
+                dsh_job_set_state(job, DSH_JOB_RUNNING);
         }
         rc = dsh_wait_pgrp(st, job->pgrp, job->last_pid,
-            job->remaining, job->status, foreground);
-        if (foreground && st->tty_attached)
+            job->remaining, dsh_job_status(job), 1);
+        if (foreground && st->tty_attached) {
+                int mode;
+
+                mode = dsys_procctl(SYS_PROCCTL_TTY_GETMODE, 0U);
+                if (mode >= 0 && job->used &&
+                    dsh_job_state(job) == DSH_JOB_STOPPED)
+                        dsh_job_set_tty(job, (unsigned int)mode & 07U);
                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETFG, st->shell_pgrp);
-        if (rc != 1 || !job->stopped)
+                if (st->interactive)
+                        (void)dsys_procctl(SYS_PROCCTL_TTY_SETMODE,
+                            SYS_TTY_MODE_RAW);
+        }
+        if (rc != 1 || dsh_job_state(job) != DSH_JOB_STOPPED)
                 job->used = 0U;
         return rc;
 }
@@ -1614,7 +1780,7 @@ dsh_builtin_wait(struct dsh_state *st, unsigned int argc,
         if (argc > 2U)
                 return 2;
         if (argc == 2U) {
-                slot = dsh_job_find(st, argc, argv);
+                slot = dsh_job_find(st, argc, argv, 0, 1);
                 if (slot == -2)
                         return 2;
                 if (slot < 0)
@@ -1633,7 +1799,7 @@ dsh_builtin_fg(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
 {
         int slot;
 
-        slot = dsh_job_find(st, argc, argv);
+        slot = dsh_job_find(st, argc, argv, 0, 0);
         if (slot == -2)
                 return 2;
         if (slot < 0)
@@ -1647,7 +1813,7 @@ dsh_builtin_bg(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
         struct dsh_job *job;
         int slot;
 
-        slot = dsh_job_find(st, argc, argv);
+        slot = dsh_job_find(st, argc, argv, 1, 0);
         if (slot == -2)
                 return 2;
         if (slot < 0)
@@ -1656,7 +1822,7 @@ dsh_builtin_bg(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
         if (dsys_procctl(SYS_PROCCTL_EVENT_PGRP,
             SYS_EVENT_ARG(job->pgrp, SYS_EVENT_CONT)) < 0)
                 return 1;
-        job->stopped = 0U;
+        dsh_job_set_state(job, DSH_JOB_RUNNING);
         return 0;
 }
 
@@ -1679,10 +1845,34 @@ dsh_pipeline_collect(const struct dsh_node *nodes, unsigned int node,
         return 0;
 }
 
+static void
+dsh_pipeline_label(const struct dsh_node *nodes, const unsigned int *stages,
+    unsigned int count, struct dsh_s6 *label)
+{
+        const struct dsh_s6 *word;
+        unsigned int i;
+        unsigned int j;
+
+        dsh_s6_clear(label);
+        for (i = 0U; i < count && label->len < DSH_S6_MAX_CHARS; ++i) {
+                if (i != 0U) {
+                        if (dsh_s6_append(label, ' ') != 0 ||
+                            dsh_s6_append(label, '!') != 0 ||
+                            dsh_s6_append(label, ' ') != 0)
+                                return;
+                }
+                word = &nodes[stages[i]].words[0];
+                for (j = 0U; j < word->len; ++j)
+                        if (dsh_s6_append(label, dsh_s6_get(word, j)) != 0)
+                                return;
+        }
+}
+
 static int
 dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
     unsigned int root, int background)
 {
+        struct dsh_s6 label;
         unsigned int stages[DSH_MAX_ARGS];
         unsigned int count;
         unsigned int i;
@@ -1699,6 +1889,7 @@ dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
         if (dsh_pipeline_collect(nodes, root, stages, &count) != 0 ||
             count == 0U)
                 return 126;
+        dsh_pipeline_label(nodes, stages, count, &label);
         pgrp = 0U;
         last_pid = -1;
         prev_read = -1;
@@ -1741,12 +1932,18 @@ dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
         }
         if (background) {
                 rc = dsh_job_store(st, pgrp, (unsigned int)last_pid,
-                    count, 0U, 0U);
-                if (rc < 0)
+                    count, 0U, DSH_JOB_RUNNING, DSH_JOB_TTY_NONE, &label);
+                if (rc < 0) {
+                        (void)u_puts(2, "DSH: JOB TABLE FULL");
+                        (void)u_crlf(2);
+                        (void)dsys_procctl(SYS_PROCCTL_EVENT_PGRP,
+                            SYS_EVENT_ARG(pgrp, SYS_EVENT_TERM));
+                        (void)dsh_wait_pgrp(st, pgrp,
+                            (unsigned int)last_pid, count, 0U, 0);
                         return DSH_ERROR;
-                (void)u_putc(1, '[');
-                (void)u_put_uint(1, (kword_t)pgrp);
-                (void)u_putc(1, ']');
+                }
+                (void)u_putc(1, '%');
+                (void)u_put_uint(1, (kword_t)((unsigned int)rc + 1U));
                 (void)u_crlf(1);
                 return 0;
         }
@@ -1754,6 +1951,23 @@ dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETMODE,
                     SYS_TTY_MODE_COOKED);
         rc = dsh_wait_pgrp(st, pgrp, (unsigned int)last_pid, count, 0U, 1);
+        if (rc == 1) {
+                for (i = 0U; i < DSH_MAX_JOBS; ++i)
+                        if (st->jobs[i].used && st->jobs[i].pgrp == pgrp) {
+                                (void)dsh_s6_copy(&st->jobs[i].command,
+                                    &label);
+                                if (st->tty_attached) {
+                                        int mode;
+
+                                        mode = dsys_procctl(
+                                            SYS_PROCCTL_TTY_GETMODE, 0U);
+                                        if (mode >= 0)
+                                                dsh_job_set_tty(&st->jobs[i],
+                                                    (unsigned int)mode & 07U);
+                                }
+                                break;
+                        }
+        }
         if (st->tty_attached)
                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETFG, st->shell_pgrp);
         if (st->interactive)

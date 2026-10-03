@@ -62,8 +62,8 @@ struct dsh_job {
         unsigned int pgrp;
         unsigned int last_pid;
         unsigned int remaining;
-        unsigned int status;
-        unsigned int stopped;
+        kword_t meta;
+        struct dsh_s6 command;
 };
 
 struct dsh_state {
@@ -82,6 +82,7 @@ struct dsh_state {
         unsigned int return_requested;
         unsigned int return_status;
         unsigned int call_depth;
+        unsigned int job_serial;
 };
 
 struct dsh_script {

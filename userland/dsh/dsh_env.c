@@ -63,6 +63,7 @@ dsh_state_init(struct dsh_state *st, int argc, kword_t **argv,
         st->return_requested = 0U;
         st->return_status = 0U;
         st->call_depth = 0U;
+        st->job_serial = 0U;
         if (argc > 0 && argv != 0)
                 (void)dsh_s6_from_counted(&st->arg0, argv[0]);
         {
