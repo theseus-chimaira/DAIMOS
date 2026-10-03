@@ -280,12 +280,23 @@ file_close:
         move    2,(1)                  ; packed descriptor for pipe refs
         move    1,2
         tlz     1,707070
+        camn    1,[020002000010]       ; DPY0 owns a persistent raw list
+        jrst    file_close_dpy
         move    3,1
         lsh     3,-036                 ; provider
         caie    3,7                    ; PIPE_PROVIDER
         jrst    file_close_vfs
         pushj   17,pipe_close_ref
         jrst    file_close_finish
+file_close_dpy:
+        ; WRITE_WORDS with a zero count resets DPY and frees its dynamic list.
+        ; Ignore the stop result: descriptor close must still complete even if
+        ; the optional DPY service disappeared during shutdown.
+        setz    1,
+        setz    2,
+        pushj   17,dpy_write_words_jump
+        move    1,(010)
+        tlz     1,707070
 file_close_vfs:
         pushj   17,vfs_sync
 file_close_finish:
