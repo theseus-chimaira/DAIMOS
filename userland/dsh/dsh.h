@@ -14,7 +14,7 @@
 #define DSH_MAX_JOBS            4U
 #define DSH_MAX_FUNCS           4U
 #define DSH_FUNC_MAX_NODES      8U
-#define DSH_FUNC_MAX_CALLS      4U
+#define DSH_FUNC_MAX_CALLS      3U
 #define DSH_SCRIPT_MAX_TOKENS  32U
 
 #define DSH_OK                  0

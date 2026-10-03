@@ -26,6 +26,7 @@ static struct dsh_node dsh_function_nodes[DSH_FUNC_MAX_NODES];
 static unsigned int dsh_function_nodes_used;
 
 static int dsh_s6_same(const struct dsh_s6 *a, const struct dsh_s6 *b);
+static void dsh_s6_swap(struct dsh_s6 *a, struct dsh_s6 *b);
 static int dsh_wild_match(const struct dsh_s6 *value,
     const struct dsh_s6 *pattern, kword_t quote_mask);
 static int dsh_job_store(struct dsh_state *st, unsigned int pgrp,
@@ -199,26 +200,20 @@ static int
 dsh_exec_function(struct dsh_state *st, const struct dsh_function_store *fn,
     unsigned int argc, struct dsh_s6 *argv)
 {
-        struct dsh_s6 saved_arg0;
-        struct dsh_s6 saved_args[DSH_MAX_ARGS];
         unsigned int saved_argc;
         unsigned int i;
         int status;
 
         if (st->call_depth >= DSH_FUNC_MAX_CALLS || argc == 0U)
                 return DSH_ERROR;
-        (void)dsh_s6_copy(&saved_arg0, &st->arg0);
         saved_argc = st->argc;
-        for (i = 0U; i < DSH_MAX_ARGS; ++i)
-                (void)dsh_s6_copy(&saved_args[i], &st->args[i]);
-        (void)dsh_s6_copy(&st->arg0, &argv[0]);
+        /* argv remains live for the duration of this call.  Swap the old
+         * positional frame into those otherwise-dead argument records rather
+         * than stacking another 9 SIXBIT records for every recursion level. */
+        dsh_s6_swap(&st->arg0, &argv[0]);
         st->argc = argc - 1U;
-        for (i = 0U; i < DSH_MAX_ARGS; ++i) {
-                if (i < st->argc)
-                        (void)dsh_s6_copy(&st->args[i], &argv[i + 1U]);
-                else
-                        dsh_s6_clear(&st->args[i]);
-        }
+        for (i = 0U; i < st->argc; ++i)
+                dsh_s6_swap(&st->args[i], &argv[i + 1U]);
         ++st->call_depth;
         st->return_requested = 0U;
         st->return_status = 0U;
@@ -228,10 +223,10 @@ dsh_exec_function(struct dsh_state *st, const struct dsh_function_store *fn,
                 st->return_requested = 0U;
         }
         --st->call_depth;
-        (void)dsh_s6_copy(&st->arg0, &saved_arg0);
+        for (i = 0U; i < st->argc; ++i)
+                dsh_s6_swap(&st->args[i], &argv[i + 1U]);
+        dsh_s6_swap(&st->arg0, &argv[0]);
         st->argc = saved_argc;
-        for (i = 0U; i < DSH_MAX_ARGS; ++i)
-                (void)dsh_s6_copy(&st->args[i], &saved_args[i]);
         return status;
 }
 
