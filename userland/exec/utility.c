@@ -1418,6 +1418,74 @@ util_walk(const kword_t *path, unsigned int depth, int tree, struct u_io *io)
         return rc < 0 ? 1 : 0;
 }
 
+#define UTIL_DU_MAX_DEPTH 12U
+
+static int
+util_du_walk(const kword_t *path, unsigned int depth, kword_t *totalp,
+    struct u_io *io)
+{
+        struct vfs_stat st;
+        struct vfs_dirent ent;
+        kword_t child[U_PATH_WORDS];
+        kword_t total;
+        kword_t child_total;
+        int fd;
+        int rc;
+
+        if (dsys_stat((kword_t *)path, &st) != 0)
+                return 1;
+        total = st.size_words;
+        if (st.type == VFS_TYPE_DIR && depth < UTIL_DU_MAX_DEPTH) {
+                fd = dsys_open((kword_t *)path, SYS_O_RDONLY);
+                if (fd < 0)
+                        return 1;
+                rc = 0;
+                while ((rc = dsys_dirread(fd, &ent)) > 0) {
+                        kword_t name[U_PATH_WORDS];
+                        if (u_s6_from_dirent(name, U_PATH_WORDS, &ent) != 0)
+                                continue;
+                        if (u_s6_eq(name, ".") || u_s6_eq(name, ".."))
+                                continue;
+                        if (util_append_name(child, U_PATH_WORDS, path,
+                            &ent) != 0 || util_du_walk(child, depth + 1U,
+                            &child_total, io) != 0) {
+                                (void)dsys_close(fd);
+                                return 1;
+                        }
+                        total += child_total;
+                }
+                if (dsys_close(fd) != 0 || rc < 0)
+                        return 1;
+        }
+        if (u_put_uint(io->out_fd, total) != 0 ||
+            u_putc(io->out_fd, ' ') != 0 ||
+            u_put_s6(io->out_fd, path) != 0 ||
+            u_crlf(io->out_fd) != 0)
+                return 1;
+        *totalp = total;
+        return 0;
+}
+
+static int
+util_cmd_du(int argc, kword_t **argv, struct u_io *io)
+{
+        kword_t dot[U_PATH_WORDS];
+        kword_t total;
+        int a;
+        int rc;
+
+        if (argc == 1) {
+                if (u_s6_pack(dot, U_PATH_WORDS, ".") != 0)
+                        return 1;
+                return util_du_walk(dot, 0U, &total, io);
+        }
+        rc = 0;
+        for (a = 1; a < argc; ++a)
+                if (util_du_walk(argv[a], 0U, &total, io) != 0)
+                        rc = 1;
+        return rc;
+}
+
 static int
 util_cmd_tree_find(int argc, kword_t **argv, struct u_io *io, int tree)
 {
@@ -1549,6 +1617,7 @@ utility_dispatch(int argc, kword_t **argv, kword_t **envp, struct u_io *io)
         if (util_name_eq(argv[0], "APROPOS")) return util_cmd_apropos(argc, argv, io);
         if (util_name_eq(argv[0], "TREE")) return util_cmd_tree_find(argc, argv, io, 1);
         if (util_name_eq(argv[0], "FIND")) return util_cmd_tree_find(argc, argv, io, 0);
+        if (util_name_eq(argv[0], "DU")) return util_cmd_du(argc, argv, io);
 #endif
 #if UTIL_GROUP == 1
         if (util_name_eq(argv[0], "CAL")) return util_cmd_cal(argc, argv, io);
