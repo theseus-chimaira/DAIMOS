@@ -40,6 +40,7 @@ static unsigned int dsh_function_nodes_used;
 
 static int dsh_s6_same(const struct dsh_s6 *a, const struct dsh_s6 *b);
 static void dsh_s6_swap(struct dsh_s6 *a, struct dsh_s6 *b);
+static int dsh_s6_from_text(struct dsh_s6 *s, const char *text);
 static int dsh_wild_match(const struct dsh_s6 *value,
     const struct dsh_s6 *pattern, kword_t quote_mask);
 static int dsh_job_store(struct dsh_state *st, unsigned int pgrp,
@@ -934,6 +935,57 @@ dsh_run_external(struct dsh_state *st, unsigned int argc,
                 return 1;
         }
         return DSH_ERROR;
+}
+
+int
+dsh_complete_external(struct dsh_state *st, int mode,
+    const struct dsh_s6 *word, struct dsh_s6 *match)
+{
+        struct dsh_s6 path;
+        struct dsh_s6 argv[3];
+        kword_t rec[DSH_REC_WORDS];
+        kword_t pair;
+        kword_t status;
+        unsigned int chars;
+        unsigned int words;
+        int readfd;
+        int writefd;
+        int pid;
+        int n;
+        int rc;
+
+        (void)dsh_s6_from_text(&path, "/SYSTEM/LIBEXEC/DSHCOMP");
+        (void)dsh_s6_from_text(&argv[0], "DSHCOMP");
+        dsh_s6_clear(&argv[1]);
+        (void)dsh_s6_append(&argv[1], mode);
+        (void)dsh_s6_copy(&argv[2], word);
+        pair = dsys_pipe();
+        if (pair == (kword_t)-1)
+                return 0;
+        readfd = (int)((pair >> 18U) & 0777777UL);
+        writefd = (int)(pair & 0777777UL);
+        rc = dsh_launch_path(st, &path, 3U, argv, 0, writefd,
+            SYS_RUN_PGRP_INHERIT, 0U, &pid);
+        (void)dsys_close(writefd);
+        if (rc != 0)
+                goto failed;
+        if (dsys_wait((unsigned int)pid, &status, 0U) != pid ||
+            SYS_WAIT_STATUS_KIND(status) != SYS_WAIT_EXITED ||
+            SYS_WAIT_STATUS_VALUE(status) != 0U)
+                goto failed;
+        n = dsys_read_words(readfd, rec, DSH_REC_WORDS);
+        if (n < 2)
+                goto failed;
+        chars = (unsigned int)(rec[0] & 0777777UL);
+        words = 1U + (chars + 5U) / 6U;
+        if (chars == 0U || chars > DSH_S6_MAX_CHARS ||
+            words != (unsigned int)n)
+                goto failed;
+        (void)dsys_close(readfd);
+        return dsh_s6_from_counted(match, rec) == 0 ? 1 : 0;
+failed:
+        (void)dsys_close(readfd);
+        return 0;
 }
 
 static int
