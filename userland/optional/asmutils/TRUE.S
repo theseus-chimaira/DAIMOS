@@ -1,0 +1,7 @@
+; TRUE -- RETURN SUCCESS.
+.ENTRY START
+.TEXT
+START:
+        SETZ    1,
+        PUSHJ   17,U_EXIT
+.INCLUDE "BASE.S"

@@ -1,0 +1,23 @@
+; SIX2ASCII -- S6REC TEXT RECORDS TO ASCII CRLF LINES.
+.ENTRY START
+.TEXT
+START:
+        MOVEM   1,U_ARGC
+        MOVEM   2,U_ARGV
+S2A_LOOP:
+        SETZ    1,
+        PUSHJ   17,U_S6R_READ
+        JUMPL   1,S2A_FAIL
+        JUMPE   1,S2A_DONE
+        MOVEI   1,01
+        PUSHJ   17,U_LINE_WRITE
+        JUMPL   1,S2A_FAIL
+        JRST    S2A_LOOP
+S2A_DONE:
+        SETZ    1,
+        PUSHJ   17,U_EXIT
+S2A_FAIL:
+        MOVEI   1,01
+        PUSHJ   17,U_EXIT
+.INCLUDE "S6REC.S"
+.INCLUDE "BASE.S"

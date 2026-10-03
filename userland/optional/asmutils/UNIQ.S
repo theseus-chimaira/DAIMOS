@@ -1,0 +1,57 @@
+; UNIQ -- REMOVE ADJACENT DUPLICATE S6REC RECORDS.
+.ENTRY START
+.TEXT
+START:
+        MOVEM   1,U_ARGC
+        MOVEM   2,U_ARGV
+        SETZM   UNIQ_HAVE
+UNIQ_READ:
+        SETZ    1,
+        PUSHJ   17,U_S6R_READ
+        JUMPL   1,UNIQ_FAIL
+        JUMPE   1,UNIQ_DONE
+        MOVE    10,02
+        SKIPN   UNIQ_HAVE
+        JRST    UNIQ_KEEP
+        CAME    10,UNIQ_LEN
+        JRST    UNIQ_KEEP
+        SETZ    11,
+UNIQ_CMP:
+        CAML    11,010
+        JRST    UNIQ_READ
+        MOVE    3,U_REC_CHARS(011)
+        CAME    3,UNIQ_PREV(011)
+        JRST    UNIQ_KEEP
+        ADDI    11,01
+        JRST    UNIQ_CMP
+UNIQ_KEEP:
+        MOVEM   10,UNIQ_LEN
+        MOVEI   1,01
+        MOVEM   1,UNIQ_HAVE
+        SETZ    11,
+UNIQ_COPY:
+        CAML    11,010
+        JRST    UNIQ_WRITE
+        MOVE    3,U_REC_CHARS(011)
+        MOVEM   3,UNIQ_PREV(011)
+        ADDI    11,01
+        JRST    UNIQ_COPY
+UNIQ_WRITE:
+        MOVEI   1,01
+        MOVE    2,010
+        PUSHJ   17,U_S6R_WRITE
+        JUMPL   1,UNIQ_FAIL
+        JRST    UNIQ_READ
+UNIQ_DONE:
+        SETZ    1,
+        PUSHJ   17,U_EXIT
+UNIQ_FAIL:
+        MOVEI   1,01
+        PUSHJ   17,U_EXIT
+.DATA
+UNIQ_HAVE: .WORD 0
+UNIQ_LEN: .WORD 0
+.BSS
+UNIQ_PREV: .BLOCK 0170
+.INCLUDE "S6REC.S"
+.INCLUDE "BASE.S"

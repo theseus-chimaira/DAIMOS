@@ -1,0 +1,23 @@
+; ASCII2SIX -- ASCII OR UTF-9 LINES TO S6REC TEXT RECORDS.
+.ENTRY START
+.TEXT
+START:
+        MOVEM   1,U_ARGC
+        MOVEM   2,U_ARGV
+A2S_LOOP:
+        SETZ    1,
+        PUSHJ   17,U_LINE_READ
+        JUMPL   1,A2S_FAIL
+        JUMPE   1,A2S_DONE
+        MOVEI   1,01
+        PUSHJ   17,U_S6R_WRITE
+        JUMPL   1,A2S_FAIL
+        JRST    A2S_LOOP
+A2S_DONE:
+        SETZ    1,
+        PUSHJ   17,U_EXIT
+A2S_FAIL:
+        MOVEI   1,01
+        PUSHJ   17,U_EXIT
+.INCLUDE "S6REC.S"
+.INCLUDE "BASE.S"
