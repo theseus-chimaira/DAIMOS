@@ -584,13 +584,23 @@ dsh_parse_case(struct dsh_parser *p, unsigned int *out)
 static int
 dsh_parse_group(struct dsh_parser *p, unsigned int *out)
 {
+        unsigned int body;
+        unsigned int node;
         int rc;
 
         p->pos++;
-        rc = dsh_parse_list(p, DSH_STOP_END, out);
+        rc = dsh_parse_list(p, DSH_STOP_END, &body);
         if (rc != DSH_OK)
                 return rc;
-        return dsh_expect_word(p, DSH_K_END);
+        rc = dsh_expect_word(p, DSH_K_END);
+        if (rc != DSH_OK)
+                return rc;
+        rc = dsh_alloc_node(p, DSH_N_GROUP, &node);
+        if (rc != DSH_OK)
+                return rc;
+        p->nodes[node].left = body;
+        *out = node;
+        return DSH_OK;
 }
 
 static int
@@ -721,8 +731,8 @@ dsh_parse_andor(struct dsh_parser *p, unsigned int stops, unsigned int *out)
 static int
 dsh_parse_list(struct dsh_parser *p, unsigned int stops, unsigned int *out)
 {
-        unsigned int left;
-        unsigned int right;
+        unsigned int result;
+        unsigned int current;
         unsigned int node;
         int rc;
 
@@ -732,9 +742,10 @@ dsh_parse_list(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                 p->pos++;
         if (p->pos >= p->ntokens || dsh_at_stop(p, stops))
                 return dsh_mark_error(p, DSH_E_SYNTAX, DSH_PE_COMMAND);
-        rc = dsh_parse_andor(p, stops, &left);
+        rc = dsh_parse_andor(p, stops, &current);
         if (rc != DSH_OK)
                 return rc;
+        result = DSH_NONE;
         while (p->pos < p->ntokens &&
             (DSH_TOKEN_TYPE(&p->tokens[p->pos]) == DSH_T_SEMI ||
              DSH_TOKEN_TYPE(&p->tokens[p->pos]) == DSH_T_BG)) {
@@ -746,8 +757,18 @@ dsh_parse_list(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                         rc = dsh_alloc_node(p, DSH_N_BG, &node);
                         if (rc != DSH_OK)
                                 return rc;
-                        p->nodes[node].left = left;
-                        left = node;
+                        p->nodes[node].left = current;
+                        current = node;
+                }
+                if (result == DSH_NONE) {
+                        result = current;
+                } else {
+                        rc = dsh_alloc_node(p, DSH_N_LIST, &node);
+                        if (rc != DSH_OK)
+                                return rc;
+                        p->nodes[node].left = result;
+                        p->nodes[node].right = current;
+                        result = node;
                 }
                 while (p->pos < p->ntokens &&
                     (DSH_TOKEN_TYPE(&p->tokens[p->pos]) == DSH_T_SEMI ||
@@ -755,17 +776,27 @@ dsh_parse_list(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                         p->pos++;
                 if (p->pos >= p->ntokens || dsh_at_stop(p, stops))
                         break;
-                rc = dsh_parse_andor(p, stops, &right);
+                rc = dsh_parse_andor(p, stops, &current);
                 if (rc != DSH_OK)
                         return rc;
-                rc = dsh_alloc_node(p, DSH_N_LIST, &node);
-                if (rc != DSH_OK)
-                        return rc;
-                p->nodes[node].left = left;
-                p->nodes[node].right = right;
-                left = node;
         }
-        *out = left;
+        if (p->pos >= p->ntokens || dsh_at_stop(p, stops)) {
+                if (result == DSH_NONE) {
+                        result = current;
+                } else if (result != current) {
+                        /* A trailing separator already committed current. */
+                        if (p->nodes[result].type != DSH_N_LIST ||
+                            p->nodes[result].right != current) {
+                                rc = dsh_alloc_node(p, DSH_N_LIST, &node);
+                                if (rc != DSH_OK)
+                                        return rc;
+                                p->nodes[node].left = result;
+                                p->nodes[node].right = current;
+                                result = node;
+                        }
+                }
+        }
+        *out = result;
         return DSH_OK;
 }
 

@@ -1,4 +1,5 @@
 #include "dsh.h"
+#include "text.h"
 
 static struct dsh_line dsh_input_line;
 static struct dsh_state dsh_main_state;
@@ -21,7 +22,7 @@ dsh_input_append(int ch)
 }
 
 static int
-dsh_getline(int echo)
+dsh_getline_tty(int echo)
 {
         int ch;
 
@@ -52,6 +53,30 @@ dsh_getline(int echo)
                 if (dsh_input_append(ch) == 0 && echo)
                         (void)u_putc(1, ch);
         }
+}
+
+static int
+dsh_getline_text(struct u_text_reader *reader)
+{
+        kword_t record[DSH_LINE_MAX_WORDS + 1U];
+        unsigned int len;
+        unsigned int words;
+        unsigned int i;
+        int rc;
+
+        rc = u_text_gets6(reader, record, DSH_LINE_MAX_WORDS + 1U);
+        if (rc < 0)
+                return -1;
+        len = (unsigned int)record[0];
+        if (len > DSH_LINE_MAX_CHARS)
+                return -1;
+        dsh_line_clear(&dsh_input_line);
+        dsh_input_line.len = len;
+        words = (len + DSH_S6_CHARS_PER_WORD - 1U) /
+            DSH_S6_CHARS_PER_WORD;
+        for (i = 0U; i < words; ++i)
+                dsh_input_line.words[i] = record[i + 1U];
+        return 0;
 }
 
 static int
@@ -182,16 +207,21 @@ done:
 static int
 dsh_run_loop(struct dsh_state *st, int interactive, struct dsh_script *script)
 {
+        struct u_text_reader reader;
         unsigned int need_more;
         int rc;
         int status;
 
+        reader.fd = -1;
+        if (!interactive && u_text_open_fd(&reader, 0) != 0)
+                return DSH_ERROR;
         dsh_script_init(script);
         need_more = 0U;
         while (!st->exit_requested) {
                 if (interactive)
                         dsh_put_prompt(st, need_more);
-                if (dsh_getline(interactive) != 0)
+                if ((interactive ? dsh_getline_tty(1) :
+                    dsh_getline_text(&reader)) != 0)
                         break;
                 rc = dsh_script_feed(st, script, &dsh_input_line,
                     &status, &need_more);
@@ -210,6 +240,8 @@ dsh_run_loop(struct dsh_state *st, int interactive, struct dsh_script *script)
                 st->status = rc == DSH_OK ? (unsigned int)status :
                     DSH_ERROR;
         }
+        if (!interactive)
+                u_text_close(&reader);
         return st->exit_requested ? (int)st->exit_status : (int)st->status;
 }
 

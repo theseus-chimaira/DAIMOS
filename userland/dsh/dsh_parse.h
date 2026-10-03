@@ -22,6 +22,7 @@
 #define DSH_N_DEF               13
 #define DSH_N_CASE              14
 #define DSH_N_CASE_ARM          15
+#define DSH_N_GROUP             16
 
 #define DSH_REDIR_IN          0001U
 #define DSH_REDIR_OUT         0002U

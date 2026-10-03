@@ -1872,6 +1872,351 @@ dsh_pipeline_label(const struct dsh_node *nodes, const unsigned int *stages,
         }
 }
 
+struct dsh_emit {
+        int fd;
+        unsigned int chars;
+};
+
+static int
+dsh_emit_char(struct dsh_emit *out, int ch)
+{
+        if (ch < 040 || ch > 0137 || out->chars >= DSH_LINE_MAX_CHARS)
+                return -1;
+        if (u_putc(out->fd, ch) != 0)
+                return -1;
+        ++out->chars;
+        return 0;
+}
+
+static int
+dsh_emit_text(struct dsh_emit *out, const char *text)
+{
+        unsigned int i;
+
+        for (i = 0U; text[i] != 0; ++i)
+                if (dsh_emit_char(out, (unsigned char)text[i]) != 0)
+                        return -1;
+        return 0;
+}
+
+static int
+dsh_emit_record(struct dsh_emit *out)
+{
+        if (u_crlf(out->fd) != 0)
+                return -1;
+        out->chars = 0U;
+        return 0;
+}
+
+/* Recreate one parsed word without changing expansion or wildcard semantics.
+ * literal_mask characters are escaped.  quote_mask-only runs are emitted in
+ * double quotes so variables still expand while wildcard/space meaning stays
+ * suppressed.  Empty words are explicitly quoted. */
+static int
+dsh_emit_word(struct dsh_emit *out, const struct dsh_s6 *word,
+    kword_t literal_mask, kword_t quote_mask)
+{
+        unsigned int i;
+        int quoted;
+        int ch;
+
+        if (word->len == 0U)
+                return dsh_emit_text(out, "''");
+        quoted = 0;
+        for (i = 0U; i < word->len; ++i) {
+                ch = dsh_s6_get(word, i);
+                if ((literal_mask & ((kword_t)1 << i)) != 0) {
+                        if (quoted) {
+                                if (dsh_emit_char(out, '"') != 0)
+                                        return -1;
+                                quoted = 0;
+                        }
+                        if (dsh_emit_char(out, '\\') != 0 ||
+                            dsh_emit_char(out, ch) != 0)
+                                return -1;
+                        continue;
+                }
+                if ((quote_mask & ((kword_t)1 << i)) != 0) {
+                        if (!quoted) {
+                                if (dsh_emit_char(out, '"') != 0)
+                                        return -1;
+                                quoted = 1;
+                        }
+                        if (dsh_emit_char(out, ch) != 0)
+                                return -1;
+                        continue;
+                }
+                if (quoted) {
+                        if (dsh_emit_char(out, '"') != 0)
+                                return -1;
+                        quoted = 0;
+                }
+                if (dsh_emit_char(out, ch) != 0)
+                        return -1;
+        }
+        if (quoted && dsh_emit_char(out, '"') != 0)
+                return -1;
+        return 0;
+}
+
+/* Redirection paths are currently literal in the executor.  Quote the whole
+ * path so reparsing in the worker cannot introduce variable/glob semantics. */
+static int
+dsh_emit_literal_word(struct dsh_emit *out, const struct dsh_s6 *word)
+{
+        unsigned int i;
+        int ch;
+
+        if (dsh_emit_char(out, '\'') != 0)
+                return -1;
+        for (i = 0U; i < word->len; ++i) {
+                ch = dsh_s6_get(word, i);
+                if (ch == '\'') {
+                        if (dsh_emit_char(out, '\'') != 0 ||
+                            dsh_emit_char(out, '\\') != 0 ||
+                            dsh_emit_char(out, '\'') != 0 ||
+                            dsh_emit_char(out, '\'') != 0)
+                                return -1;
+                } else if (dsh_emit_char(out, ch) != 0) {
+                        return -1;
+                }
+        }
+        return dsh_emit_char(out, '\'');
+}
+
+static int dsh_emit_node(struct dsh_emit *out, const struct dsh_node *nodes,
+    unsigned int node);
+
+static int
+dsh_emit_simple(struct dsh_emit *out, const struct dsh_node *n)
+{
+        unsigned int i;
+
+        for (i = 0U; i < n->argc; ++i) {
+                if (i != 0U && dsh_emit_char(out, ' ') != 0)
+                        return -1;
+                if (dsh_emit_word(out, &n->words[i], n->literal_mask[i],
+                    n->quote_mask[i]) != 0)
+                        return -1;
+        }
+        if ((n->flags & DSH_REDIR_IN) != 0U) {
+                if (dsh_emit_text(out, " < ") != 0 ||
+                    dsh_emit_literal_word(out, &n->redir_in) != 0)
+                        return -1;
+        }
+        if ((n->flags & DSH_REDIR_OUT) != 0U) {
+                if (dsh_emit_text(out,
+                    (n->flags & DSH_REDIR_APPEND) != 0U ? " >> " : " > ") !=
+                    0 || dsh_emit_literal_word(out, &n->redir_out) != 0)
+                        return -1;
+        }
+        return 0;
+}
+
+static int
+dsh_emit_case(struct dsh_emit *out, const struct dsh_node *nodes,
+    const struct dsh_node *n)
+{
+        const struct dsh_node *arm;
+        unsigned int index;
+        unsigned int i;
+
+        if (dsh_emit_text(out, "CASE ") != 0 ||
+            dsh_emit_word(out, &n->words[0], n->literal_mask[0],
+            n->quote_mask[0]) != 0 || dsh_emit_text(out, " IN ") != 0)
+                return -1;
+        index = n->left;
+        while (index != DSH_NONE) {
+                arm = &nodes[index];
+                if (arm->type != DSH_N_CASE_ARM ||
+                    dsh_emit_text(out, "WHEN ") != 0)
+                        return -1;
+                for (i = 0U; i < arm->argc; ++i) {
+                        if (i != 0U && dsh_emit_char(out, ' ') != 0)
+                                return -1;
+                        if (dsh_emit_word(out, &arm->words[i],
+                            arm->literal_mask[i], arm->quote_mask[i]) != 0)
+                                return -1;
+                }
+                if (dsh_emit_text(out, " DO ") != 0 ||
+                    dsh_emit_node(out, nodes, arm->left) != 0 ||
+                    dsh_emit_char(out, ' ') != 0)
+                        return -1;
+                index = arm->right;
+        }
+        return dsh_emit_text(out, "ESAC");
+}
+
+static int
+dsh_emit_node(struct dsh_emit *out, const struct dsh_node *nodes,
+    unsigned int node)
+{
+        const struct dsh_node *n;
+        unsigned int i;
+        const char *word;
+
+        if (node == DSH_NONE)
+                return -1;
+        n = &nodes[node];
+        switch (n->type) {
+        case DSH_N_EMPTY:
+                return dsh_emit_text(out, "TRUE");
+        case DSH_N_SIMPLE:
+                return dsh_emit_simple(out, n);
+        case DSH_N_LIST:
+                if (dsh_emit_node(out, nodes, n->left) != 0 ||
+                    dsh_emit_char(out, ';') != 0 || dsh_emit_record(out) != 0)
+                        return -1;
+                return dsh_emit_node(out, nodes, n->right);
+        case DSH_N_AND:
+        case DSH_N_OR:
+        case DSH_N_PIPE:
+                if (dsh_emit_node(out, nodes, n->left) != 0)
+                        return -1;
+                word = n->type == DSH_N_AND ? " AND " :
+                    (n->type == DSH_N_OR ? " OR " : " ! ");
+                if (dsh_emit_text(out, word) != 0)
+                        return -1;
+                return dsh_emit_node(out, nodes, n->right);
+        case DSH_N_NOT:
+                if (dsh_emit_text(out, "NOT ") != 0)
+                        return -1;
+                return dsh_emit_node(out, nodes, n->left);
+        case DSH_N_IF:
+                if (dsh_emit_text(out, "IF ") != 0 ||
+                    dsh_emit_node(out, nodes, n->left) != 0 ||
+                    dsh_emit_text(out, " THEN ") != 0 ||
+                    dsh_emit_node(out, nodes, n->right) != 0)
+                        return -1;
+                if (n->extra != DSH_NONE &&
+                    (dsh_emit_text(out, " ELSE ") != 0 ||
+                    dsh_emit_node(out, nodes, n->extra) != 0))
+                        return -1;
+                return dsh_emit_text(out, " FI");
+        case DSH_N_FOR:
+                if (dsh_emit_text(out, "FOR ") != 0 ||
+                    dsh_emit_word(out, &n->words[0], n->literal_mask[0],
+                    n->quote_mask[0]) != 0 || dsh_emit_text(out, " IN") != 0)
+                        return -1;
+                for (i = 1U; i < n->argc; ++i)
+                        if (dsh_emit_char(out, ' ') != 0 ||
+                            dsh_emit_word(out, &n->words[i],
+                            n->literal_mask[i], n->quote_mask[i]) != 0)
+                                return -1;
+                if (dsh_emit_text(out, " DO ") != 0 ||
+                    dsh_emit_node(out, nodes, n->left) != 0)
+                        return -1;
+                return dsh_emit_text(out, " DONE");
+        case DSH_N_WHILE:
+        case DSH_N_UNTIL:
+                word = n->type == DSH_N_WHILE ? "WHILE " : "UNTIL ";
+                if (dsh_emit_text(out, word) != 0 ||
+                    dsh_emit_node(out, nodes, n->left) != 0 ||
+                    dsh_emit_text(out, " DO ") != 0 ||
+                    dsh_emit_node(out, nodes, n->right) != 0)
+                        return -1;
+                return dsh_emit_text(out, " DONE");
+        case DSH_N_CASE:
+                return dsh_emit_case(out, nodes, n);
+        case DSH_N_GROUP:
+                if (dsh_emit_text(out, "BEGIN ") != 0 ||
+                    dsh_emit_node(out, nodes, n->left) != 0)
+                        return -1;
+                return dsh_emit_text(out, " END");
+        case DSH_N_DEF:
+                if (dsh_emit_text(out, "DEF ") != 0 ||
+                    dsh_emit_word(out, &n->words[0], n->literal_mask[0],
+                    n->quote_mask[0]) != 0 || dsh_emit_text(out, " DO ") != 0 ||
+                    dsh_emit_node(out, nodes, n->left) != 0)
+                        return -1;
+                return dsh_emit_text(out, " DONE");
+        case DSH_N_BG:
+                if (dsh_emit_node(out, nodes, n->left) != 0)
+                        return -1;
+                return dsh_emit_text(out, " &");
+        default:
+                return -1;
+        }
+}
+
+static int
+dsh_s6_from_text(struct dsh_s6 *s, const char *text)
+{
+        unsigned int i;
+
+        dsh_s6_clear(s);
+        for (i = 0U; text[i] != 0; ++i)
+                if (dsh_s6_append(s, (unsigned char)text[i]) != 0)
+                        return -1;
+        return 0;
+}
+
+static int
+dsh_exec_background_group(struct dsh_state *st, const struct dsh_node *nodes,
+    const struct dsh_node *group)
+{
+        struct dsh_s6 path;
+        struct dsh_s6 argv[1];
+        struct dsh_s6 label;
+        struct dsh_emit out;
+        kword_t pair;
+        int read_fd;
+        int write_fd;
+        int pid;
+        int slot;
+        int rc;
+
+        if (dsh_s6_from_text(&path, "/SYSTEM/EXEC/DSH") != 0 ||
+            dsh_s6_from_text(&argv[0], "DSH") != 0 ||
+            dsh_s6_from_text(&label, "BEGIN") != 0)
+                return DSH_ERROR;
+        pair = dsys_pipe();
+        if (pair == (kword_t)-1)
+                return DSH_ERROR;
+        read_fd = (int)((pair >> 18U) & 0777777UL);
+        write_fd = (int)(pair & 0777777UL);
+        rc = dsh_launch_path(st, &path, 1U, argv, read_fd, 1,
+            SYS_RUN_PGRP_NEW, 0U, &pid);
+        (void)dsys_close(read_fd);
+        if (rc != 0) {
+                (void)dsys_close(write_fd);
+                return rc;
+        }
+        out.fd = write_fd;
+        out.chars = 0U;
+        rc = u_text_sink_attach(write_fd);
+        if (rc == 0) {
+                rc = dsh_emit_node(&out, nodes, group->left);
+                if (rc == 0)
+                        rc = dsh_emit_record(&out);
+                if (u_text_sink_detach() != 0)
+                        rc = -1;
+        }
+        (void)dsys_close(write_fd);
+        if (rc != 0) {
+                (void)dsys_procctl(SYS_PROCCTL_EVENT_PGRP,
+                    SYS_EVENT_ARG((unsigned int)pid, SYS_EVENT_TERM));
+                (void)dsh_wait_pgrp(st, (unsigned int)pid, (unsigned int)pid,
+                    1U, 0U, 0);
+                return DSH_ERROR;
+        }
+        slot = dsh_job_store(st, (unsigned int)pid, (unsigned int)pid, 1U,
+            0U, DSH_JOB_RUNNING, DSH_JOB_TTY_NONE, &label);
+        if (slot < 0) {
+                (void)u_puts(2, "DSH: JOB TABLE FULL");
+                (void)u_crlf(2);
+                (void)dsys_procctl(SYS_PROCCTL_EVENT_PGRP,
+                    SYS_EVENT_ARG((unsigned int)pid, SYS_EVENT_TERM));
+                (void)dsh_wait_pgrp(st, (unsigned int)pid, (unsigned int)pid,
+                    1U, 0U, 0);
+                return DSH_ERROR;
+        }
+        (void)u_putc(1, '%');
+        (void)u_put_uint(1, (kword_t)((unsigned int)slot + 1U));
+        (void)u_crlf(1);
+        return 0;
+}
+
 static int
 dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
     unsigned int root, int background)
@@ -2105,12 +2450,17 @@ dsh_exec_node_raw(struct dsh_state *st, const struct dsh_node *nodes,
                         arm = a->right;
                 }
                 return 0;
+        case DSH_N_GROUP:
+                return dsh_exec_node(st, nodes, n->left);
         case DSH_N_PIPE:
                 return dsh_exec_pipeline(st, nodes, node, 0);
         case DSH_N_BG:
                 if (nodes[n->left].type == DSH_N_PIPE ||
                     nodes[n->left].type == DSH_N_SIMPLE)
                         return dsh_exec_pipeline(st, nodes, n->left, 1);
+                if (nodes[n->left].type == DSH_N_GROUP)
+                        return dsh_exec_background_group(st, nodes,
+                            &nodes[n->left]);
                 return 126;
         case DSH_N_DEF:
                 return dsh_define_function(st, nodes, n);
