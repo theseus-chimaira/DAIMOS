@@ -14,7 +14,7 @@
         .equ    PROC_SCHED_SIDL_LH,0100024
         .equ    PROC_SCHED_SRUN_LH,0200024
         .equ    PROC_F_UAREA_RH,0400000
-        .equ    PROC_UAREA_WORDS,0420
+        .equ    PROC_UAREA_WORDS,0430
         .equ    PROC_FDCTL_OFFSET,045
         .equ    PROC_FILE_CWD_OFFSET,046
         .equ    PROC_FILE_TABLE_OFFSET,047

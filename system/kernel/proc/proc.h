@@ -98,7 +98,7 @@
  * consumes that value and repurposes the same half-word as the stable u-area
  * physical base; the three-word process descriptor therefore does not grow.
  */
-#define PROC_UAREA_WORDS        0420UL
+#define PROC_UAREA_WORDS        0430UL
 /*
  * One compact control word precedes cwd/file state.  Descriptors 0..15 are
  * ordinary two-word FILE records.  Credentials and the 9-bit process umask
