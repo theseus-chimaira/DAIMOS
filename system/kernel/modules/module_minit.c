@@ -77,9 +77,10 @@ mfsdev_present_mark(unsigned int id)
 #define GE_X_GETCHAR            1U
 #define GE_X_PUTCHAR            2U
 #define DPY_X_HANDLER           0U
-#define DPY_X_PUTWORD           1U
+#define DPY_X_CLOCK_HANDLER     1U
 #define DPY_X_CLK_PI_SERVICE_CALL 2U
 #define DPY_X_PUTCHAR           3U
+#define DPY_X_BANNER_INIT       4U
 #define TTY_X_PUTCHAR           0U
 #define TTY_X_GETCHAR           1U
 #define TTY_X_CTY_PUTCHAR_ADDR  2U
@@ -732,24 +733,7 @@ extern kword_t minit_dpy_banner_words[];
 extern kword_t minit_dpy_banner_words_end[];
 
 #if KINIT_FULL
-static void
-minit_dpy_word(kword_t name, unsigned int putword, kword_t word)
-{
-        if (kinit_call18_1(putword, word) != DPY_E_OK)
-                minit_fatal(name);
-}
-
-static void
-minit_dpy_banner(kword_t name, unsigned int putword)
-{
-        kword_t *word;
-
-        for (word = minit_dpy_banner_words;
-            word != minit_dpy_banner_words_end; ++word)
-                minit_dpy_word(name, putword, *word);
-}
-
-/** @brief Probe the display, install its combined clock/display PI service, and banner. */
+/** @brief Probe the display and install its low-priority refresh service. */
 void
 dpy_minit(void)
 {
@@ -758,7 +742,7 @@ dpy_minit(void)
         kword_t probe;
         unsigned int base;
         unsigned int handler;
-        unsigned int putword;
+        unsigned int clock_handler;
         unsigned int address;
 
         name = (kword_t)SIXBIT("DPY   ");
@@ -782,27 +766,40 @@ dpy_minit(void)
         minit_dpy_cono(0);
         base = minit_install(name);
         handler = minit_export(name, base, DPY_X_HANDLER);
-        putword = minit_export(name, base, DPY_X_PUTWORD);
+        clock_handler = minit_export(name, base, DPY_X_CLOCK_HANDLER);
         module_service_set(MODULE_SERVICE_DPY_PUTCHAR,
             minit_export(name, base, DPY_X_PUTCHAR));
+        address = minit_export(name, base, DPY_X_BANNER_INIT);
+        if (minit_dpy_banner_words_end - minit_dpy_banner_words != 5 ||
+            kinit_call18_1(address,
+            (kword_t)(unsigned long)minit_dpy_banner_words) != 0)
+                minit_fatal(name);
         address = minit_export(name, base, DPY_X_CLK_PI_SERVICE_CALL);
         if (clk_pi_service_addr != 0U)
                 storage_patch_module_jump(base,
                     (kword_t *)(unsigned long)address, clk_pi_service_addr);
 
-        /* DPY and the APR line clock share one PI6 table entry. */
+        /* Keep DPY DONE at the lowest priority without consuming a ninth
+         * resident handler-table slot.  The ordinary PI7 prologue already has
+         * a span-load word; patch it to the DPY pre-handler only when the
+         * display is actually present.  No-DPY systems retain the exact
+         * original instruction and therefore pay neither space nor cycles. */
+        /* pdp10_pi_level7_span_load is normally a MOVE, not an existing
+         * patchable JRST.  Replace the complete instruction only in the
+         * DPY-present configuration; merely patching its RH would turn it
+         * into MOVE 2,handler and corrupt PI dispatch. */
+        pdp10_pi_level7_span_load = (kword_t)0254000000000UL |
+            (kword_t)(handler & KINIT_HALF_MASK);
+        minit_pi_enable(DPY_NATIVE_PI_LEVEL);
         if (clk_pi_handler_addr != 0U) {
                 if (module_pi_unregister(CLK_NATIVE_PI_LEVEL,
                     clk_pi_handler_addr) != 0 ||
-                    module_pi_register(DPY_NATIVE_PI_LEVEL, handler) != 0)
+                    module_pi_register(CLK_NATIVE_PI_LEVEL, clock_handler) != 0)
                         minit_fatal(name);
-        } else {
-                minit_register(name, DPY_NATIVE_PI_LEVEL, handler);
         }
 
         mfsdev_present_mark(MONITORFS_DEV_DPY0);
         minit_dpy_cono((kword_t)DPY_NATIVE_PI_LEVEL);
-        minit_dpy_banner(name, putword);
         minit_diag_ok(name);
 }
 

@@ -43,8 +43,9 @@ clk_pi_handler:
  *
  * @return Returns to the caller through AC17 with AC2 and AC3 unchanged.
  *
- * The routine is also called by the DPY shared PI6 handler.  A set APR clock
- * flag denotes a real 60 Hz tick: increment clk_tick_count, clear/re-enable the
+ * The routine is also called by the optional DPY clock wrapper when a Type 340
+ * is installed. A set APR clock flag denotes a real 60 Hz tick: increment
+ * clk_tick_count, clear/re-enable the
  * hardware flag, advance storage timers, consume any pending software kick,
  * and run the scheduler tick path.  Without a clock flag, a nonzero
  * proc_sched_kick requests an immediate reschedule only; it must not increment

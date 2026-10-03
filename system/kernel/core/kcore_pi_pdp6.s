@@ -148,6 +148,8 @@ pdp10_pi_level7:
         move 1,pdp10_pi_level7
         tlne 1,010000
         move 17,mach_kernel_sp
+        .globl pdp10_pi_level7_span_load
+pdp10_pi_level7_span_load:
         move 2,pdp10_pi_level_span+6
         movei 3,pdp10_pi_return_level7
 
@@ -206,6 +208,7 @@ pdp10_pi_return_level5:
 pdp10_pi_return_level6:
         move 3,000055
         jrst 012,@pdp10_pi_level6
+        .globl pdp10_pi_return_level7
 pdp10_pi_return_level7:
         move 3,000057
         jrst 012,@pdp10_pi_level7

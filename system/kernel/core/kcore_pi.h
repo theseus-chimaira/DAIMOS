@@ -29,11 +29,12 @@
 /**
  * Maximum resident PI handlers in the supported PDP-6 configuration.
  *
- * The complete current hardware set needs eight simultaneous handlers: CTY,
- * DCS, GE, one PI6 entry (CLK alone, or the combined DPY+CLK handler when DPY
- * is installed), the normal and DCT storage-router handlers, DRM, and SLV.
- * PTR/PTP and CR/CP use synchronous polled runtime I/O and install no resident
- * handler.
+ * The complete current hardware set needs eight simultaneous table handlers:
+ * CTY, DCS, GE, one PI6 entry (CLK alone, or the optional DPY clock wrapper),
+ * the normal and DCT storage-router handlers, DRM, and SLV.  DPY DONE uses a
+ * PI7 pre-handler patched into the existing level-7 prologue and therefore
+ * consumes no table slot. PTR/PTP and CR/CP use synchronous polled runtime I/O
+ * and install no resident handler.
  */
 #define PDP10_PI_HANDLER_CAPACITY    8U
 
@@ -56,5 +57,9 @@ extern kword_t pdp10_pi_level3_dispatch_jump;
 extern kword_t pdp10_pi_level4_dispatch_jump;
 extern kword_t pdp10_pi_level5_dispatch_jump;
 extern kword_t pdp10_pi_level6_dispatch_jump;
+/** Existing PI7 span-load word, patchable to an optional pre-handler. */
+extern kword_t pdp10_pi_level7_span_load;
+/** Level-7 return stub used by the optional DPY PI7 pre-handler. */
+extern kword_t pdp10_pi_return_level7;
 
 #endif
