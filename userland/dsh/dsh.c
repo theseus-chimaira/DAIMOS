@@ -38,6 +38,20 @@ dsh_getline_tty(int echo)
                                 (void)u_crlf(1);
                         return 0;
                 }
+                if (ch == 003) {
+                        /* Interactive DSH owns a RAW/no-echo TTY while it is
+                         * editing, so the kernel deliberately does not turn
+                         * Ctrl-C into a process event here.  Cancel the whole
+                         * logical shell input locally.  Foreground children
+                         * run in signal-enabled cooked mode and therefore keep
+                         * the normal kernel Ctrl-C process-group semantics. */
+                        dsh_line_clear(&dsh_input_line);
+                        if (echo) {
+                                (void)u_puts(1, "^C");
+                                (void)u_crlf(1);
+                        }
+                        return 1;
+                }
                 if (ch == 010 || ch == 0177) {
                         if (dsh_input_line.len != 0U) {
                                 --dsh_input_line.len;
@@ -220,9 +234,16 @@ dsh_run_loop(struct dsh_state *st, int interactive, struct dsh_script *script)
         while (!st->exit_requested) {
                 if (interactive)
                         dsh_put_prompt(st, need_more);
-                if ((interactive ? dsh_getline_tty(1) :
-                    dsh_getline_text(&reader)) != 0)
+                rc = interactive ? dsh_getline_tty(1) :
+                    dsh_getline_text(&reader);
+                if (rc < 0)
                         break;
+                if (rc > 0) {
+                        st->status = 1U;
+                        dsh_script_init(script);
+                        need_more = 0U;
+                        continue;
+                }
                 rc = dsh_script_feed(st, script, &dsh_input_line,
                     &status, &need_more);
                 if (rc != DSH_OK) {
