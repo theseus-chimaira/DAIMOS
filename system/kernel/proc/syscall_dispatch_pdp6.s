@@ -581,7 +581,7 @@ native_sys_extctl:
         hrrz    5,1
         subi    5,020
         jumpl   5,native_sys_procctl
-        caile   5,030
+        caile   5,031
         jrst    native_sys_procctl
         move    6,5
         andi    5,1
@@ -604,7 +604,7 @@ native_sys_ext_table:
         .word   native_sys_d6fs_mount,,native_sys_rtctl
         .word   native_sys_logctl,,native_sys_dtc_write_block
         .word   native_sys_memfs_mount,,native_sys_storagectl
-        .word   native_sys_ttyctl,,native_sys_procctl
+        .word   native_sys_ttyctl,,native_sys_fsinfo
 
 ; Root may rebind any logical terminal's output sink.  GETOUT is readable by
 ; all callers; SETOUT is privileged because the route is terminal-global and
@@ -627,6 +627,90 @@ native_sys_ttyctl_set_bad:
 native_sys_ttyctl_get:
         move    1,3
         jrst    proc_tty_output_route_get
+
+; FSINFO AC2=zero-based mount slot, AC3=user struct sys_fsinfo pointer.
+; Return 1 for an occupied slot, 0 for an empty slot, -1 on error.  Provider
+; accounting runs before translating the user pointer because DTFS/D6FS may
+; sleep for media I/O and should not pin the caller's user mapping while doing
+; so.  The existing vnode path walker then formats the active mount target.
+native_sys_fsinfo:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        push    17,014
+        push    17,015
+        move    010,3                   ; logical user result pointer
+        hrrz    011,2                   ; slot
+        caile   011,3
+        jrst    native_sys_fsinfo_bad
+        move    012,vfs_mount_root(011)
+        jumpe   012,native_sys_fsinfo_empty
+        move    013,vfs_mount_target(011)
+        jumpn   013,native_sys_fsinfo_have_path
+        move    013,vfs_namespace_root  ; root mount is '/'
+native_sys_fsinfo_have_path:
+        ldb     014,[POINT 6,012,5]      ; provider
+        movei   015,1
+        lsh     015,0(011)              ; slot's VFS_MOUNT_RDONLY bit
+        tdne    015,vfs_mount_ro
+        jrst    native_sys_fsinfo_ro
+        setz    015,
+        jrst    native_sys_fsinfo_space
+native_sys_fsinfo_ro:
+        movei   015,1
+native_sys_fsinfo_space:
+        move    1,012
+        movei   6,025                   ; FS_MRES_OP_SPACE
+        move    7,014
+        pushj   17,fs_provider_reg_call
+        jumpl   1,native_sys_fsinfo_bad
+        push    17,1                    ; total words
+        push    17,2                    ; used words
+
+        move    1,010
+        pushj   17,native_sys_map_one
+        jumpe   1,native_sys_fsinfo_bad_space
+        move    6,010
+        addi    6,027                   ; 23-word sys_fsinfo record
+        camle   6,3                     ; logical end from vm_user_words
+        jrst    native_sys_fsinfo_bad_map
+        move    6,1                     ; mapped result base
+        move    5,011
+        addi    5,1
+        movem   5,(6)                   ; public mount id
+        movem   014,1(6)               ; provider
+        movem   015,2(6)               ; flags
+        move    5,-1(17)
+        movem   5,3(6)                 ; total words
+        move    5,(17)
+        movem   5,4(6)                 ; used words
+        move    1,013
+        movei   2,5(6)
+        movei   3,022                   ; SYS_FSINFO_PATH_WORDS
+        pushj   17,file_getpath
+        jumpn   1,native_sys_fsinfo_bad_map
+        pushj   17,vm_user_mapping_release
+        movei   1,1
+        sub     17,[2,,2]
+        jrst    native_sys_fsinfo_restore
+native_sys_fsinfo_bad_map:
+        pushj   17,vm_user_mapping_release
+native_sys_fsinfo_bad_space:
+        sub     17,[2,,2]
+native_sys_fsinfo_bad:
+        seto    1,
+        jrst    native_sys_fsinfo_restore
+native_sys_fsinfo_empty:
+        setz    1,
+native_sys_fsinfo_restore:
+        pop     17,015
+        pop     17,014
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
 
 ; PID-1/root storage activation policy.  Discovery and module installation
 ; remain boot work; this call only enables or disables an available service.

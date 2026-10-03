@@ -886,9 +886,19 @@ memfs_mres_reg_dispatch:
         jrst    memfs_mres_not_mount
         jrst    memfs_mres_mount
 memfs_mres_not_mount:
+        cain    6,025                   ; FS_MRES_OP_SPACE
+        jrst    memfs_mres_space
         move    7,[memfs_mres_vector]
         movei   0,memfs_mres_fs
         jrst    fs_mres_context_vector_dispatch
+
+; SPACE returns total/used logical data words in AC1/AC2.
+memfs_mres_space:
+        skipn   memfs_mres_fs
+        jrst    kret_neg1
+        move    1,memfs_mres_fs+3
+        move    2,memfs_mres_fs+4
+        popj    17,
 
         .data
 memfs_mres_vector:

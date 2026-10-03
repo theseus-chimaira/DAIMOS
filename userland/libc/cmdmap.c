@@ -61,7 +61,7 @@ cmdmap_command_eq(const kword_t *command, const kword_t *line,
 static int
 cmdmap_make_target(kword_t *line, unsigned int words, unsigned int start)
 {
-        static const char prefix[] = "/SYSTEM/EXEC/";
+        static const char prefix[] = "/SYSTEM/LIBEXEC/";
         unsigned int line_len;
         unsigned int prefix_len;
         unsigned int target_len;
@@ -98,7 +98,7 @@ u_cmd_resolve(const kword_t *command, kword_t *path, unsigned int path_words)
 
         if (command == 0 || path == 0 || path_words == 0U)
                 return -1;
-        if (u_text_open(&r, "/SYSTEM/EXEC/MAP") != 0)
+        if (u_text_open(&r, "/SYSTEM/LIBEXEC/MAP") != 0)
                 return -1;
         while ((rc = u_text_gets6(&r, path, path_words)) >= 0) {
                 len = (unsigned int)rc;

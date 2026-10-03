@@ -48,7 +48,7 @@ write_match(const char *text)
 }
 
 static int
-complete_command(const kword_t *prefix)
+complete_command(const kword_t *prefix, int list)
 {
         struct u_text_reader r;
         char line[COMP_CHARS + 1U];
@@ -63,23 +63,36 @@ complete_command(const kword_t *prefix)
         while ((rc = u_text_getline(&r, line, sizeof(line))) >= 0) {
                 if (!prefix_text(prefix, line))
                         continue;
-                if (found) {
-                        u_text_close(&r);
-                        return 1;
+                if (list) {
+                        if (u_puts(1, line) != 0 || u_crlf(1) != 0) {
+                                u_text_close(&r);
+                                return 1;
+                        }
+                        found = 1;
+                        continue;
                 }
-                for (i = 0U; line[i] != 0; ++i)
-                        match[i] = line[i];
-                match[i] = 0;
-                found = 1;
+                if (!found) {
+                        for (i = 0U; line[i] != 0; ++i)
+                                match[i] = line[i];
+                        match[i] = 0;
+                        found = 1;
+                } else {
+                        for (i = 0U; match[i] != 0 && line[i] != 0 &&
+                            match[i] == line[i]; ++i)
+                                ;
+                        match[i] = 0;
+                }
         }
         u_text_close(&r);
         if (rc == U_TEXT_ERROR || !found)
                 return 1;
+        if (list)
+                return 0;
         return write_match(match);
 }
 
 static int
-complete_path(const kword_t *word)
+complete_path(const kword_t *word, int list)
 {
         struct vfs_dirent ent;
         kword_t dirrec[COMP_WORDS];
@@ -100,8 +113,8 @@ complete_path(const kword_t *word)
         while (slash != 0U && s6_get(word, slash - 1U) != '/')
                 --slash;
         if (slash == 0U) {
-                dir[0] = '.';
-                dir[1] = 0;
+                if (dsys_getcwd(dirrec, COMP_WORDS) != 0)
+                        return 1;
         } else if (slash == 1U) {
                 dir[0] = '/';
                 dir[1] = 0;
@@ -110,7 +123,7 @@ complete_path(const kword_t *word)
                         dir[i] = (char)s6_get(word, i);
                 dir[slash - 1U] = 0;
         }
-        if (u_s6_pack(dirrec, COMP_WORDS, dir) != 0)
+        if (slash != 0U && u_s6_pack(dirrec, COMP_WORDS, dir) != 0)
                 return 1;
         fd = dsys_open(dirrec, SYS_O_RDONLY);
         if (fd < 0)
@@ -129,29 +142,47 @@ complete_path(const kword_t *word)
                 candidate[slash + nlen] = 0;
                 if (!prefix_text(word, candidate))
                         continue;
-                if (found) {
-                        (void)dsys_close(fd);
-                        return 1;
+                if (list) {
+                        if (u_puts(1, candidate) != 0 ||
+                            (ent.type == VFS_TYPE_DIR && u_putc(1, '/') != 0) ||
+                            u_crlf(1) != 0) {
+                                (void)dsys_close(fd);
+                                return 1;
+                        }
+                        found = 1;
+                        continue;
                 }
-                for (i = 0U; candidate[i] != 0; ++i)
-                        match[i] = candidate[i];
-                match[i] = 0;
-                found = 1;
+                if (!found) {
+                        for (i = 0U; candidate[i] != 0; ++i)
+                                match[i] = candidate[i];
+                        match[i] = 0;
+                        found = 1;
+                } else {
+                        for (i = 0U; match[i] != 0 && candidate[i] != 0 &&
+                            match[i] == candidate[i]; ++i)
+                                ;
+                        match[i] = 0;
+                }
         }
         (void)dsys_close(fd);
         if (rc < 0 || !found)
                 return 1;
+        if (list)
+                return 0;
         return write_match(match);
 }
 
 int
 main(int argc, kword_t **argv)
 {
+        int mode;
+
         if (argc != 3 || argv == 0 || s6_len(argv[1]) != 1U)
                 return 2;
-        if (s6_get(argv[1], 0U) == 'C')
-                return complete_command(argv[2]);
-        if (s6_get(argv[1], 0U) == 'P')
-                return complete_path(argv[2]);
+        mode = s6_get(argv[1], 0U);
+        if (mode == 'C' || mode == 'A')
+                return complete_command(argv[2], mode == 'A');
+        if (mode == 'P' || mode == 'L')
+                return complete_path(argv[2], mode == 'L');
         return 2;
 }

@@ -20,8 +20,56 @@
 
 dtfs_mres_dispatch:
 dtfs_mres_reg_dispatch:
+        cain    6,025                   ; FS_MRES_OP_SPACE
+        jrst    dtfs_space
         move    7,[dtfs_mres_vector]
         jrst    fs_mres_vector_dispatch
+
+; Return total/used physical data words for the mounted DECtape.  Reserved
+; directory/format blocks are already marked non-free in every supported
+; allocation map, so the same census covers native, TENEX and ITS media.
+dtfs_space:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        ldb     4,[POINT 6,1,11]        ; public mount id
+        sojl    4,dtfs_space_fail
+        caile   4,3
+        jrst    dtfs_space_fail
+        move    5,dtfs_media(4)
+        hrrz    5,5
+        andi    5,030                   ; personality
+        setz    010,                    ; map-base offset
+        setz    013,                    ; block-number -> map-index offset
+        cain    5,020                   ; ITS
+        movei   010,056                 ; DTFS_ITS_NAME_WORDS
+        jumpe   5,dtfs_space_scan       ; native uses block number directly
+        movei   013,1                   ; TENEX/ITS use block-1
+dtfs_space_scan:
+        movei   011,1                   ; physical block 1..01101
+        setz    012,                    ; used blocks
+dtfs_space_loop:
+        move    1,010
+        move    2,011
+        sub     2,013
+        pushj   17,dtfs_owner
+        jumpe   1,dtfs_space_next
+        aoj     012,
+dtfs_space_next:
+        aoj     011,
+        caile   011,01101
+        jrst    dtfs_space_done
+        jrst    dtfs_space_loop
+dtfs_space_done:
+        movei   1,01101
+        lsh     1,7                     ; 128 words/block
+        move    2,012
+        lsh     2,7
+        jrst    dtfs_restore4
+dtfs_space_fail:
+        seto    1,
+        jrst    dtfs_restore4
 
         .data
 dtfs_mres_vector:

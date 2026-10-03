@@ -972,6 +972,17 @@ dsh_complete_external(struct dsh_state *st, int mode,
         dsh_s6_clear(&argv[1]);
         (void)dsh_s6_append(&argv[1], mode);
         (void)dsh_s6_copy(&argv[2], word);
+        if (mode == 'A' || mode == 'L') {
+                rc = dsh_launch_path(st, &path, 3U, argv, 0, 1,
+                    SYS_RUN_PGRP_INHERIT, 0U, &pid);
+                if (rc != 0)
+                        return 0;
+                if (dsys_wait((unsigned int)pid, &status, 0U) != pid ||
+                    SYS_WAIT_STATUS_KIND(status) != SYS_WAIT_EXITED ||
+                    SYS_WAIT_STATUS_VALUE(status) != 0U)
+                        return 0;
+                return 1;
+        }
         pair = dsys_pipe();
         if (pair == (kword_t)-1)
                 return 0;

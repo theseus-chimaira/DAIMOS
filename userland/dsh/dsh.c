@@ -117,7 +117,7 @@ dsh_history_add(void)
 }
 
 static int
-dsh_complete_tab(struct dsh_state *st, unsigned int *cursorp)
+dsh_complete_tab(struct dsh_state *st, unsigned int *cursorp, int list_ambiguous)
 {
         struct dsh_s6 word;
         struct dsh_s6 match;
@@ -151,8 +151,22 @@ dsh_complete_tab(struct dsh_state *st, unsigned int *cursorp)
          * completion.  Rich syntax-aware completion belongs in the helper
          * only if measurements later justify passing parser context. */
         mode = start == 0U ? 'C' : 'P';
-        if (!dsh_complete_external(st, mode, &word, &match) ||
-            match.len <= word.len)
+        if (!dsh_complete_external(st, mode, &word, &match))
+                return 0;
+        if (match.len == word.len) {
+                if (!list_ambiguous)
+                        return 2;
+                if (u_crlf(1) != 0 ||
+                    !dsh_complete_external(st, mode == 'C' ? 'A' : 'L',
+                    &word, 0))
+                        return 0;
+                dsh_put_prompt(st, 0U);
+                for (i = 0U; i < dsh_input_line.len; ++i)
+                        (void)u_putc(1, dsh_line_get(&dsh_input_line, i));
+                *cursorp = dsh_input_line.len;
+                return 1;
+        }
+        if (match.len < word.len)
                 return 0;
         for (i = word.len; i < match.len; ++i) {
                 ch = dsh_s6_get(&match, i);
@@ -173,17 +187,21 @@ dsh_getline_tty(struct dsh_state *st)
         unsigned int tail;
         unsigned int i;
         int history_pos;
+        int tab_pending;
         int ch;
 
         dsh_line_clear(&dsh_input_line);
         cursor = 0U;
         history_pos = -1;
+        tab_pending = 0;
         for (;;) {
                 ch = dsys_readchar(0);
                 if (ch == -2)
                         continue;
                 if (ch < 0)
                         return -1;
+                if (ch != '\t')
+                        tab_pending = 0;
                 if (ch == '\r' || ch == '\n') {
                         (void)u_crlf(1);
                         dsh_history_add();
@@ -232,7 +250,15 @@ dsh_getline_tty(struct dsh_state *st)
                         continue;
                 }
                 if (ch == '\t') {
-                        if (!dsh_complete_tab(st, &cursor))
+                        int cr;
+
+                        cr = dsh_complete_tab(st, &cursor, tab_pending);
+                        if (cr == 2) {
+                                tab_pending = 1;
+                                continue;
+                        }
+                        tab_pending = 0;
+                        if (!cr)
                                 (void)u_putc(1, 007);
                         continue;
                 }

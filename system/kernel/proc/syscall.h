@@ -67,6 +67,18 @@
 #define SYS_EXT_MEMFS_MOUNT        046U
 #define SYS_EXT_STORAGECTL         047U
 #define SYS_EXT_TTYCTL             050U
+#define SYS_EXT_FSINFO             051U
+
+#define SYS_FSINFO_PATH_WORDS      18U
+
+struct sys_fsinfo {
+        kword_t mount_id;
+        kword_t provider;
+        kword_t flags;
+        kword_t total_words;
+        kword_t used_words;
+        kword_t path[SYS_FSINFO_PATH_WORDS];
+};
 
 #define SYS_STORAGECTL_SWAP        1U
 #define SYS_STORAGECTL_LOGSTORE    2U

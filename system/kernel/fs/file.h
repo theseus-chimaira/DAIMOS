@@ -73,6 +73,7 @@ int file_truncate(const kword_t *path, kword_t words);
 int file_rename(const kword_t *oldpath, const kword_t *newpath);
 int file_chdir(const kword_t *path);
 int file_getcwd(kword_t *buf, unsigned int nwords);
+int file_getpath(vnode_t node, kword_t *buf, unsigned int nwords);
 unsigned int file_used_slots(void);
 
 #endif

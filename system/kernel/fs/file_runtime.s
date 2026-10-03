@@ -744,16 +744,30 @@ file_component_empty:
 ; Construct cwd paths directly as packed SIXBIT.
         .globl  file_getcwd
 file_getcwd:
-        jumpe   1,kret_neg1
-        jumpl   2,file_getcwd_nwords_ok ; unsigned value with bit 35 set
-        caige    2,2
-        jrst    kret_neg1
-file_getcwd_nwords_ok:
         move    5,file_table
         move    4,-1(5)
         jumpn   4,file_getcwd_have_node
         move    4,vfs_namespace_root
 file_getcwd_have_node:
+        jrst    file_getpath_common
+
+; int file_getpath(vnode_t node, kword_t *buf, unsigned int nwords)
+;
+; Shared vnode-to-absolute-path formatter.  GETCWD selects the process cwd
+; above; mount/status callers may supply another namespace vnode without
+; keeping a second resident mount-name table.
+        .globl  file_getpath
+file_getpath:
+        move    4,1                    ; vnode
+        move    1,2                    ; output buffer
+        move    2,3                    ; output words
+file_getpath_common:
+        jumpe   1,kret_neg1
+        jumpe   4,kret_neg1
+        jumpl   2,file_getpath_nwords_ok ; unsigned value with bit 35 set
+        caige   2,2
+        jrst    kret_neg1
+file_getpath_nwords_ok:
         ldb     5,[POINT 6,4,5]
         caige   5,2
         jrst    kret_neg1

@@ -620,8 +620,83 @@ d6fs_mres_reg_dispatch:
         movem   7,d6fs_active_reader
         cain    6,024                    ; FS_MRES_OP_D6FS_REMOUNT (20)
         jrst    d6fs_provider_toggle_state
+        cain    6,025                    ; FS_MRES_OP_SPACE (21)
+        jrst    d6fs_provider_space
         move    7,[d6fs_mres_vector]
         jrst    fs_mres_vector_dispatch
+
+; Return exact filesystem capacity and allocated words.  Scan the freemap a
+; word at a time; counting set bits with x &= x-1 makes cost proportional to
+; map words plus allocated blocks rather than to total filesystem blocks.
+d6fs_provider_space:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        push    17,014
+        push    17,015
+        push    17,016
+        move    010,d6fs_active_reader
+        move    011,6(010)              ; valid bits remaining
+        setz    012,                    ; map block index
+        setz    013,                    ; allocated blocks
+d6fs_provider_space_map:
+        jumpe   011,d6fs_provider_space_done
+        caml    012,013(010)            ; freemap_blocks
+        jrst    d6fs_provider_space_fail
+        move    2,012(010)              ; freemap_start
+        add     2,012
+        move    1,010
+        pushj   17,d6fs_reader_get_block
+        jumpe   1,d6fs_provider_space_fail
+        move    014,1                   ; current map word
+        move    015,011                 ; valid bits in this map block
+        camle   015,[011000]
+        movei   015,011000
+        move    5,015
+        idivi   5,044                   ; AC5 full words, AC6 remainder
+        move    016,5
+        move    4,6                     ; keep tail-bit count off AC17
+d6fs_provider_space_words:
+        jumpe   016,d6fs_provider_space_partial
+        move    1,(014)
+d6fs_provider_space_bits:
+        jumpe   1,d6fs_provider_space_word_done
+        move    2,1
+        subi    2,1
+        and     1,2
+        aoj     013,
+        jrst    d6fs_provider_space_bits
+d6fs_provider_space_word_done:
+        aoj     014,
+        sojg    016,d6fs_provider_space_words
+d6fs_provider_space_partial:
+        jumpe   4,d6fs_provider_space_next_map
+        movei   2,044
+        sub     2,4                     ; 36 - valid tail bits
+        seto    3,
+        lsh     3,0(2)                  ; valid bits are MSB-first
+        move    1,(014)
+        and     1,3
+d6fs_provider_space_tail_bits:
+        jumpe   1,d6fs_provider_space_next_map
+        move    2,1
+        subi    2,1
+        and     1,2
+        aoj     013,
+        jrst    d6fs_provider_space_tail_bits
+d6fs_provider_space_next_map:
+        sub     011,015
+        aoja    012,d6fs_provider_space_map
+d6fs_provider_space_done:
+        move    1,6(010)
+        lsh     1,7                     ; 128 words/block
+        move    2,013
+        lsh     2,7
+        jrst    d6fs_restore7
+d6fs_provider_space_fail:
+        seto    1,
+        jrst    d6fs_restore7
 
 
 

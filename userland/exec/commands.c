@@ -1,4 +1,6 @@
 #include "cmd.h"
+
+static int cmd_mounts(int argc, kword_t **argv, struct u_io *io);
 #include "text.h"
 #include "dtfs_media.h"
 
@@ -662,6 +664,14 @@ cmd_mount_dtfs(int argc, kword_t **argv, struct u_io *io)
 }
 
 static int
+cmd_mount(int argc, kword_t **argv, struct u_io *io)
+{
+        if (argc == 1)
+                return cmd_mounts(argc, argv, io);
+        return cmd_mount_dtfs(argc, argv, io);
+}
+
+static int
 cmd_unmount(int argc, kword_t **argv, struct u_io *io)
 {
         if (argc != 2) return cmd_err(io, "UNMOUNT", 0);
@@ -778,27 +788,81 @@ cmd_mods(int argc, kword_t **argv, struct u_io *io)
 }
 
 static int
+cmd_put_fsname(int fd, kword_t provider)
+{
+        switch ((unsigned int)provider) {
+        case 4U: return u_puts(fd, "MEMFS");
+        case 5U: return u_puts(fd, "DTFS");
+        case 6U: return u_puts(fd, "D6FS");
+        case 7U: return u_puts(fd, "TSFS");
+        default: return u_puts(fd, "FS");
+        }
+}
+
+static int
 cmd_mounts(int argc, kword_t **argv, struct u_io *io)
 {
-        struct u_text_reader r;
-        char line[192];
+        struct sys_fsinfo info;
+        unsigned int slot;
         int rc;
 
-        (void)argc;
         (void)argv;
-        if (u_puts(io->out_fd, "ROOT /") != 0 || u_crlf(io->out_fd) != 0)
-                return 1;
-        if (u_text_open(&r, "/CONFIG/FSTAB") != 0)
-                return 0;
-        while ((rc = u_text_getline(&r, line, sizeof(line))) >= 0)
-                if (line[0] != 0 && line[0] != '#' &&
-                    (u_puts(io->out_fd, line) != 0 ||
-                    u_crlf(io->out_fd) != 0)) {
-                        u_text_close(&r);
+        if (argc != 1)
+                return cmd_err(io, "MOUNT", 0);
+        for (slot = 0U; slot < VFS_NMOUNT; ++slot) {
+                rc = dsys_fsinfo(slot, &info);
+                if (rc < 0)
+                        return cmd_err(io, "MOUNT", 0);
+                if (rc == 0)
+                        continue;
+                if (cmd_put_fsname(io->out_fd, info.provider) != 0 ||
+                    u_putc(io->out_fd, ' ') != 0 ||
+                    u_put_s6(io->out_fd, info.path) != 0)
                         return 1;
-                }
-        u_text_close(&r);
-        return rc == U_TEXT_EOF ? 0 : 1;
+                if ((info.flags & SYS_MOUNT_RDONLY) != 0U &&
+                    u_puts(io->out_fd, " RO") != 0)
+                        return 1;
+                if (u_crlf(io->out_fd) != 0)
+                        return 1;
+        }
+        return 0;
+}
+
+static int
+cmd_df(int argc, kword_t **argv, struct u_io *io)
+{
+        struct sys_fsinfo info;
+        kword_t free_words;
+        unsigned int slot;
+        int rc;
+
+        (void)argv;
+        if (argc != 1)
+                return cmd_err(io, "DF", 0);
+        if (u_puts(io->out_fd, "FILESYSTEM MOUNT TOTAL USED FREE") != 0 ||
+            u_crlf(io->out_fd) != 0)
+                return 1;
+        for (slot = 0U; slot < VFS_NMOUNT; ++slot) {
+                rc = dsys_fsinfo(slot, &info);
+                if (rc < 0)
+                        return cmd_err(io, "DF", 0);
+                if (rc == 0)
+                        continue;
+                free_words = info.total_words >= info.used_words ?
+                    info.total_words - info.used_words : 0UL;
+                if (cmd_put_fsname(io->out_fd, info.provider) != 0 ||
+                    u_putc(io->out_fd, ' ') != 0 ||
+                    u_put_s6(io->out_fd, info.path) != 0 ||
+                    u_putc(io->out_fd, ' ') != 0 ||
+                    u_put_uint(io->out_fd, info.total_words) != 0 ||
+                    u_putc(io->out_fd, ' ') != 0 ||
+                    u_put_uint(io->out_fd, info.used_words) != 0 ||
+                    u_putc(io->out_fd, ' ') != 0 ||
+                    u_put_uint(io->out_fd, free_words) != 0 ||
+                    u_crlf(io->out_fd) != 0)
+                        return 1;
+        }
+        return 0;
 }
 
 static int
@@ -816,29 +880,6 @@ cmd_free(int argc, kword_t **argv, struct u_io *io)
         if (m.total_words != 0 && m.total_words >= accounted) {
                 if (u_puts(io->out_fd, "UNACCOUNTED ") != 0 || u_put_uint(io->out_fd, m.total_words - accounted) != 0 || u_crlf(io->out_fd) != 0) return 1;
         }
-        return 0;
-}
-
-static int
-cmd_df(int argc, kword_t **argv, struct u_io *io)
-{
-        struct sys_meminfo m;
-        kword_t free_words;
-
-        (void)argc;
-        (void)argv;
-        if (dsys_meminfo(&m) != 0)
-                return cmd_err(io, "DF", 0);
-        free_words = m.memfs_capacity_words >= m.memfs_used_words ?
-            m.memfs_capacity_words - m.memfs_used_words : 0;
-        if (u_puts(io->out_fd, "MEMFS USED ") != 0 ||
-            u_put_uint(io->out_fd, m.memfs_used_words) != 0 ||
-            u_puts(io->out_fd, " CAPACITY ") != 0 ||
-            u_put_uint(io->out_fd, m.memfs_capacity_words) != 0 ||
-            u_puts(io->out_fd, " FREE ") != 0 ||
-            u_put_uint(io->out_fd, free_words) != 0 ||
-            u_crlf(io->out_fd) != 0)
-                return 1;
         return 0;
 }
 
@@ -992,7 +1033,7 @@ cmd_dispatch(int argc, kword_t **argv, struct u_io *io)
         if (cmd_name_eq(argv[0], "CHOWN")) return cmd_chown(argc, argv, io);
         if (cmd_name_eq(argv[0], "MKFS.DTFS")) return cmd_mkfs_dtfs(argc, argv, io);
         if (cmd_name_eq(argv[0], "FSCK.DTFS")) return cmd_fsck_dtfs(argc, argv, io);
-        if (cmd_name_eq(argv[0], "MOUNT")) return cmd_mount_dtfs(argc, argv, io);
+        if (cmd_name_eq(argv[0], "MOUNT")) return cmd_mount(argc, argv, io);
         if (cmd_name_eq(argv[0], "MOUNT.DTFS")) return cmd_mount_dtfs(argc, argv, io);
         if (cmd_name_eq(argv[0], "MOUNT.TSFS")) return cmd_mount_tsfs(argc, argv, io);
         if (cmd_name_eq(argv[0], "UNMOUNT")) return cmd_unmount(argc, argv, io);

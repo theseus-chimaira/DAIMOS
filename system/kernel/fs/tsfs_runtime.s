@@ -15,8 +15,19 @@
 tsfs_mres_dispatch:
         cain    6,022                    ; FS_MRES_OP_MOUNT_UNIT
         jrst    tsfs_mount_set
+        cain    6,025                    ; FS_MRES_OP_SPACE
+        jrst    tsfs_space
         move    7,[tsfs_mres_vector]
         jrst    fs_mres_vector_dispatch
+
+; TSFS is immutable.  Report the complete DECtape member span as both total
+; and used so available space is correctly zero rather than implying writable
+; capacity which TSFS cannot allocate.
+tsfs_space:
+        movei   1,01102
+        lsh     1,7
+        move    2,1
+        popj    17,
 
         .data
 tsfs_mres_vector:
