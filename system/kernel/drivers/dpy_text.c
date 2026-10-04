@@ -6,12 +6,14 @@
  * allocated lazily on the first terminal byte sent to DPY.  The resident
  * module keeps only a base pointer and cursor/ring state.
  *
- * Each logical row has 17 words of packed seven-bit terminal characters
- * (five characters per word) and a fixed 29-word native Type-342 cache slot.
- * 84 columns are therefore preserved without case loss while still keeping
- * rows independently movable.  The native slots contain only character-mode
- * words and are position independent; the refresh driver supplies the frame
- * setup and then streams logical rows in ring order.
+ * Each logical row has 14 words of packed SIXBIT terminal characters
+ * (six characters per word) and a fixed 29-word native Type-342 cache slot.
+ * Ordinary DPY TTY text is deliberately uppercase-only: lowercase input is
+ * normalized before storage.  The Type-342 shifted set is used only for the
+ * few SIXBIT punctuation glyphs that are not present in the primary set.
+ * The native slots contain only character-mode words and are position
+ * independent; the refresh driver supplies the frame setup and then streams
+ * logical rows in ring order.
  */
 
 #include "dpy.h"
@@ -20,7 +22,7 @@
 #define DPY_TEXT_MM_OWNER        014U
 #define DPY_TEXT_COLS            84U
 #define DPY_TEXT_ROWS            42U
-#define DPY_TEXT_ROW_WORDS       17U
+#define DPY_TEXT_ROW_WORDS       14U
 #define DPY_TEXT_CHAR_WORDS      (DPY_TEXT_ROWS * DPY_TEXT_ROW_WORDS)
 #define DPY_TEXT_LENGTH_WORDS    DPY_TEXT_ROWS
 #define DPY_TEXT_PROG_WORDS      29U
@@ -68,9 +70,9 @@ dpy_cell_get(unsigned int prow, unsigned int col)
         kword_t word;
         unsigned int shift;
 
-        word = dpy_words()[prow * DPY_TEXT_ROW_WORDS + col / 5U];
-        shift = 29U - (col % 5U) * 7U;
-        return (unsigned int)((word >> shift) & 0177UL);
+        word = dpy_words()[prow * DPY_TEXT_ROW_WORDS + col / 6U];
+        shift = 30U - (col % 6U) * 6U;
+        return (unsigned int)((word >> shift) & 077UL);
 }
 
 static void
@@ -80,38 +82,43 @@ dpy_cell_set(unsigned int prow, unsigned int col, unsigned int ch)
         kword_t mask;
         unsigned int shift;
 
-        word = &dpy_words()[prow * DPY_TEXT_ROW_WORDS + col / 5U];
-        shift = 29U - (col % 5U) * 7U;
-        mask = (kword_t)0177UL << shift;
-        *word = (*word & ~mask) | (((kword_t)(ch & 0177U)) << shift);
+        word = &dpy_words()[prow * DPY_TEXT_ROW_WORDS + col / 6U];
+        shift = 30U - (col % 6U) * 6U;
+        mask = (kword_t)077UL << shift;
+        *word = (*word & ~mask) | (((kword_t)(ch & 077U)) << shift);
 }
 
 static unsigned int
-dpy_code(unsigned int ch, unsigned int *lowerp)
+dpy_code(unsigned int ch, unsigned int *shiftp)
 {
-        *lowerp = 0U;
-        if (ch >= 040U && ch <= 077U)
-                return ch;
-        if (ch >= 0101U && ch <= 0132U)
-                return ch & 077U;
-        if (ch >= 0141U && ch <= 0172U) {
-                *lowerp = 1U;
-                return ch - 0140U;
-        }
+        *shiftp = 0U;
+        if (ch == 0U)
+                return 040U;            /* SIXBIT space */
+        if (ch <= 037U)
+                return ch + 040U;       /* ! through ? */
+        if (ch >= 041U && ch <= 072U)
+                return ch - 040U;       /* A through Z */
 
-        *lowerp = 1U;
-        if (ch == 0134U) return 052U;
-        if (ch == 0133U) return 053U;
-        if (ch == 0135U) return 054U;
-        if (ch == 0173U) return 055U;
-        if (ch == 0175U) return 056U;
-        if (ch == 0137U) return 060U;
-        if (ch == 0174U) return 062U;
-        if (ch == 0140U) return 066U;
-        if (ch == 0136U) return 067U;
-        if (ch == 0176U) return 043U;
-        *lowerp = 0U;
+        /* These SIXBIT punctuation characters live only in the Type-342
+         * shifted set.  '@' (040) has no useful native Type-342 glyph. */
+        *shiftp = 1U;
+        if (ch == 073U) return 053U;    /* [ */
+        if (ch == 074U) return 052U;    /* \ */
+        if (ch == 075U) return 054U;    /* ] */
+        if (ch == 076U) return 067U;    /* ^ */
+        if (ch == 077U) return 060U;    /* _ */
+        *shiftp = 0U;
         return DPY_T342_BAD;
+}
+
+static unsigned int
+dpy_sixbit(unsigned int ch)
+{
+        if (ch >= 0141U && ch <= 0172U)
+                ch -= 040U;             /* stream TTY is uppercase-only */
+        if (ch >= 040U && ch <= 0137U)
+                return ch - 040U;
+        return 037U;                    /* unsupported printable -> '?' */
 }
 
 static void
@@ -135,7 +142,7 @@ dpy_compile_row(unsigned int prow)
         kword_t *prog;
         unsigned int col;
         unsigned int code;
-        unsigned int lower;
+        unsigned int shift;
         unsigned int shifted;
         unsigned int ncode;
         unsigned int nwords;
@@ -149,11 +156,11 @@ dpy_compile_row(unsigned int prow)
         ncode = 0U;
         shifted = 0U;
         for (col = 0U; col < DPY_TEXT_COLS; ++col) {
-                code = dpy_code(dpy_cell_get(prow, col), &lower);
-                if (lower != shifted) {
+                code = dpy_code(dpy_cell_get(prow, col), &shift);
+                if (shift != shifted) {
                         dpy_emit_code(prog, &ncode,
-                            lower != 0U ? DPY_T342_SO : DPY_T342_SI);
-                        shifted = lower;
+                            shift != 0U ? DPY_T342_SO : DPY_T342_SI);
+                        shifted = shift;
                 }
                 dpy_emit_code(prog, &ncode, code);
         }
@@ -174,7 +181,7 @@ dpy_clear_row(unsigned int prow)
         unsigned int col;
 
         for (col = 0U; col < DPY_TEXT_COLS; ++col)
-                dpy_cell_set(prow, col, 040U);
+                dpy_cell_set(prow, col, 0U);
         dpy_compile_row(prow);
 }
 
@@ -259,7 +266,7 @@ dpy_text_putchar(unsigned int ch)
                         stop = DPY_TEXT_COLS;
                 prow = dpy_phys_row(dpy_text_row);
                 while (dpy_text_col < stop)
-                        dpy_cell_set(prow, dpy_text_col++, 040U);
+                        dpy_cell_set(prow, dpy_text_col++, 0U);
                 dpy_compile_row(prow);
                 if (dpy_text_col >= DPY_TEXT_COLS) {
                         dpy_text_col = 0U;
@@ -271,7 +278,7 @@ dpy_text_putchar(unsigned int ch)
                 return 0;
 
         prow = dpy_phys_row(dpy_text_row);
-        dpy_cell_set(prow, dpy_text_col, ch);
+        dpy_cell_set(prow, dpy_text_col, dpy_sixbit(ch));
         ++dpy_text_col;
         dpy_compile_row(prow);
         if (dpy_text_col >= DPY_TEXT_COLS) {

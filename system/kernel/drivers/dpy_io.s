@@ -41,8 +41,8 @@
         .globl dpy_text_active
 
         .equ DPY_TEXT_ROWS,052
-        .equ DPY_TEXT_LENGTH_OFF,01312
-        .equ DPY_TEXT_PROG_OFF,01364
+        .equ DPY_TEXT_LENGTH_OFF,01114
+        .equ DPY_TEXT_PROG_OFF,01166
         .equ DPY_TEXT_PROG_WORDS,035
 
 /**
