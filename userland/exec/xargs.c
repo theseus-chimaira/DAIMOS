@@ -6,7 +6,6 @@
 #define XARGS_INPUT_WORDS       8U
 #define XARGS_RUN_WORDS       192U
 #define XARGS_ARENA_WORDS     160U
-#define XARGS_MAP_TOKEN_CHARS   24U
 
 struct xargs_reader {
         int fd;
@@ -192,109 +191,6 @@ xargs_reader_char(struct xargs_reader *reader)
 }
 
 static int
-xargs_map_token(struct xargs_reader *reader, char *token,
-    unsigned int size)
-{
-        unsigned int used;
-        int ch;
-
-        used = 0U;
-        do {
-                ch = xargs_reader_char(reader);
-                if (ch < 0)
-                        return ch;
-        } while (ch == ' ' || ch == '\t' || ch == '\n');
-        for (;;) {
-                if (used + 1U >= size)
-                        return -2;
-                token[used++] = (char)ch;
-                ch = xargs_reader_char(reader);
-                if (ch < 0 || ch == ' ' || ch == '\t' || ch == '\n')
-                        break;
-        }
-        token[used] = 0;
-        return 1;
-}
-
-static int
-xargs_command_text_eq(const kword_t *command, const char *text)
-{
-        unsigned int len;
-        unsigned int start;
-        unsigned int i;
-
-        len = (unsigned int)(command[0] & 0777777UL);
-        start = 0U;
-        for (i = 0U; i < len; ++i)
-                if (xargs_s6_get(command, i) == '/')
-                        start = i + 1U;
-        for (i = 0U; start + i < len && text[i] != 0; ++i)
-                if (xargs_s6_get(command, start + i) !=
-                    (unsigned char)text[i])
-                        return 0;
-        return start + i == len && text[i] == 0;
-}
-
-static int
-xargs_map_resolve(const kword_t *command)
-{
-        struct xargs_reader reader;
-        kword_t map_path[U_PATH_WORDS];
-        char name[XARGS_MAP_TOKEN_CHARS + 1U];
-        char target[XARGS_MAP_TOKEN_CHARS + 1U];
-        int fd;
-        int rc;
-
-        xargs_s6_clear(map_path);
-        if (xargs_path_prefix("/SYSTEM/EXEC/", xargs_echo) != 0)
-                return -1;
-        xargs_s6_clear(map_path);
-        {
-                static const char map_name[] = "/SYSTEM/LIBEXEC/MAP";
-                unsigned int i;
-                for (i = 0U; map_name[i] != 0; ++i)
-                        if (xargs_s6_add(map_path, map_name[i]) != 0)
-                                return -1;
-        }
-        fd = dsys_open(map_path, SYS_O_RDONLY);
-        if (fd < 0)
-                return -1;
-        xargs_reader_init(&reader, fd);
-        for (;;) {
-                rc = xargs_map_token(&reader, name, sizeof(name));
-                if (rc < 0)
-                        break;
-                rc = xargs_map_token(&reader, target, sizeof(target));
-                if (rc < 0) {
-                        rc = -2;
-                        break;
-                }
-                if (xargs_command_text_eq(command, name)) {
-                        unsigned int i;
-                        xargs_s6_clear(xargs_path);
-                        for (i = 0U; "/SYSTEM/LIBEXEC/"[i] != 0; ++i)
-                                if (xargs_s6_add(xargs_path,
-                                    "/SYSTEM/LIBEXEC/"[i]) != 0) {
-                                        rc = -2;
-                                        break;
-                                }
-                        if (rc == -2)
-                                break;
-                        for (i = 0U; target[i] != 0; ++i)
-                                if (xargs_s6_add(xargs_path, target[i]) != 0) {
-                                        rc = -2;
-                                        break;
-                                }
-                        if (rc != -2)
-                                rc = 0;
-                        break;
-                }
-        }
-        (void)dsys_close(fd);
-        return rc == 0 ? 0 : -1;
-}
-
-static int
 xargs_append_run(unsigned int *usedp, const kword_t *record)
 {
         unsigned int words;
@@ -371,8 +267,6 @@ xargs_run_search(unsigned int argc, kword_t **argv, kword_t **envp)
                         xargs_path[i] = argv[0][i];
                 if (dsys_stat(xargs_path, &st) == 0)
                         return xargs_run_path(xargs_path, argc, argv, envp);
-                if (xargs_map_resolve(argv[0]) == 0)
-                        return xargs_run_path(xargs_path, argc, argv, envp);
                 return XARGS_STATUS_NOT_FOUND;
         }
         if (xargs_path_prefix("/SYSTEM/EXEC/", argv[0]) == 0 &&
@@ -380,8 +274,6 @@ xargs_run_search(unsigned int argc, kword_t **argv, kword_t **envp)
                 return xargs_run_path(xargs_path, argc, argv, envp);
         if (xargs_path_prefix("/OPTION/BASE/EXEC/", argv[0]) == 0 &&
             dsys_stat(xargs_path, &st) == 0)
-                return xargs_run_path(xargs_path, argc, argv, envp);
-        if (xargs_map_resolve(argv[0]) == 0)
                 return xargs_run_path(xargs_path, argc, argv, envp);
         return XARGS_STATUS_NOT_FOUND;
 }

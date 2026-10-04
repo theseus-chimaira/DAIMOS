@@ -1,5 +1,4 @@
 #include "utility.h"
-#include "cmdmap.h"
 #include "text.h"
 
 #define UTIL_LINE_CHARS 256U
@@ -12,6 +11,38 @@
 #define UTIL_GROUP 1
 #endif
 
+#ifndef DAIMOS_UTILITY_PROGRAM
+#define DAIMOS_UTILITY_PROGRAM 0
+#endif
+
+#define UTIL_NEEDS_S6_TEXT \
+    (DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_WHICH || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_HEAD || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_GREP || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_WC || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TAIL || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_CUT || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_SORT || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_STRINGS || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_MAN || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_HELP || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_APROPOS || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TREE || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_FIND || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_DU)
+
+#define UTIL_NEEDS_S6 \
+    (UTIL_NEEDS_S6_TEXT || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_BASENAME || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_DIRNAME || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_EXPR || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_BC || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TEST || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_BRACKET || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_CAL || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_DD)
+
+#if UTIL_NEEDS_S6
 static unsigned int
 util_s6_len(const kword_t *s)
 {
@@ -28,25 +59,9 @@ util_s6_ch(const kword_t *s, unsigned int pos)
         sh = 30U - (pos % 6U) * 6U;
         return (int)(((s[1U + pos / 6U] >> sh) & 077UL) + 040UL);
 }
+#endif
 
-static int
-util_name_eq(const kword_t *s, const char *name)
-{
-        unsigned int n;
-        unsigned int start;
-        unsigned int i;
-
-        n = util_s6_len(s);
-        start = 0U;
-        for (i = 0U; i < n; ++i)
-                if (util_s6_ch(s, i) == '/')
-                        start = i + 1U;
-        for (i = 0U; name[i] != 0; ++i)
-                if (start + i >= n || util_s6_ch(s, start + i) != name[i])
-                        return 0;
-        return start + i == n;
-}
-
+#if UTIL_NEEDS_S6_TEXT
 static int
 util_s6_text(const kword_t *s, char *dst, unsigned int size)
 {
@@ -61,7 +76,18 @@ util_s6_text(const kword_t *s, char *dst, unsigned int size)
         dst[n] = 0;
         return 0;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_CMP || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_HEAD || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_GREP || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_WC || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TEE || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TAIL || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_CUT || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_SORT || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_DD || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_STRINGS
 static int
 util_error(struct u_io *io, const char *name, const kword_t *arg)
 {
@@ -72,7 +98,15 @@ util_error(struct u_io *io, const char *name, const kword_t *arg)
         (void)u_crlf(io->err_fd);
         return 1;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_HEAD || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_GREP || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_WC || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TAIL || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_CUT || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_SORT || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_STRINGS
 static int
 util_open_text_arg(struct u_text_reader *r, const kword_t *arg)
 {
@@ -82,13 +116,24 @@ util_open_text_arg(struct u_text_reader *r, const kword_t *arg)
                 return -1;
         return u_text_open(r, path);
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_DIRNAME || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_HEAD || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_GREP || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TEE || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TAIL || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_SORT || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_APROPOS || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_CAL
 static int
 util_put_line(int fd, const char *line)
 {
         return u_puts(fd, line) != 0 || u_crlf(fd) != 0;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TEE
 static int
 util_write_s6rec_line(int fd, const char *line)
 {
@@ -118,7 +163,15 @@ util_write_s6rec_line(int fd, const char *line)
         words = 1U + (chars + 5U) / 6U;
         return u_write_words_all(fd, record, words);
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TEST || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_BRACKET || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_HEAD || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TAIL || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_CUT || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_DD || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_CAL
 static int
 util_parse_uint(const kword_t *arg, unsigned int *out)
 {
@@ -140,8 +193,10 @@ util_parse_uint(const kword_t *arg, unsigned int *out)
         *out = v;
         return 0;
 }
+#endif
 
 #if UTIL_GROUP == 1
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_CHECK
 static int
 util_cmd_check(int argc, kword_t **argv, struct u_io *io)
 {
@@ -152,7 +207,9 @@ util_cmd_check(int argc, kword_t **argv, struct u_io *io)
                 return 2;
         return dsys_stat(argv[1], &st) == 0 ? 0 : 1;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_BASENAME
 static int
 util_cmd_basename(int argc, kword_t **argv, struct u_io *io)
 {
@@ -172,7 +229,9 @@ util_cmd_basename(int argc, kword_t **argv, struct u_io *io)
                         return 1;
         return u_crlf(io->out_fd) != 0;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_DIRNAME
 static int
 util_cmd_dirname(int argc, kword_t **argv, struct u_io *io)
 {
@@ -195,7 +254,9 @@ util_cmd_dirname(int argc, kword_t **argv, struct u_io *io)
                         return 1;
         return u_crlf(io->out_fd) != 0;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_ENV
 static int
 util_cmd_env(int argc, kword_t **argv, kword_t **envp, struct u_io *io)
 {
@@ -212,8 +273,9 @@ util_cmd_env(int argc, kword_t **argv, kword_t **envp, struct u_io *io)
                         return 1;
         return 0;
 }
+#endif
 
-
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_WHICH
 static int
 util_which_path(const char *prefix, const kword_t *name, int outfd)
 {
@@ -250,7 +312,6 @@ static int
 util_cmd_which(int argc, kword_t **argv, struct u_io *io)
 {
         struct vfs_stat st;
-        kword_t mapped[U_PATH_WORDS];
         int found;
         int rc;
         int a;
@@ -291,22 +352,15 @@ util_cmd_which(int argc, kword_t **argv, struct u_io *io)
                         return 1;
                 if (found != 0)
                         continue;
-                /* Keep WHICH useful on an older image whose command map is
-                 * present but whose public EXEC symlinks are not yet. */
-                if (u_cmd_resolve(argv[a], mapped, U_PATH_WORDS) == 0) {
-                        if (u_puts(io->out_fd, "/SYSTEM/EXEC/") != 0 ||
-                            u_put_s6(io->out_fd, argv[a]) != 0 ||
-                            u_crlf(io->out_fd) != 0)
-                                return 1;
-                        continue;
-                }
                 rc = 1;
         }
         return rc;
 }
 #endif
+#endif
 
 #if UTIL_GROUP == 2
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_CMP
 static int
 util_cmd_cmp(int argc, kword_t **argv, struct u_io *io)
 {
@@ -363,7 +417,9 @@ util_cmd_cmp(int argc, kword_t **argv, struct u_io *io)
         (void)dsys_close(fb);
         return 0;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_HEAD
 static int
 util_cmd_head(int argc, kword_t **argv, struct u_io *io)
 {
@@ -413,7 +469,10 @@ util_cmd_head(int argc, kword_t **argv, struct u_io *io)
         return 0;
 }
 #endif
+#endif
 
+#if (UTIL_GROUP == 2 && DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_GREP) || \
+    (UTIL_GROUP == 3 && DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_APROPOS)
 static int
 util_contains(const char *line, const char *pat)
 {
@@ -430,8 +489,10 @@ util_contains(const char *line, const char *pat)
         }
         return 0;
 }
+#endif
 
 #if UTIL_GROUP == 2
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_GREP
 static int
 util_cmd_grep(int argc, kword_t **argv, struct u_io *io)
 {
@@ -460,7 +521,9 @@ util_cmd_grep(int argc, kword_t **argv, struct u_io *io)
                 return 2;
         return found ? 0 : 1;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_WC
 static int
 util_cmd_wc(int argc, kword_t **argv, struct u_io *io)
 {
@@ -501,7 +564,9 @@ util_cmd_wc(int argc, kword_t **argv, struct u_io *io)
                 return 1;
         return 0;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TEE
 static int
 util_cmd_tee(int argc, kword_t **argv, struct u_io *io)
 {
@@ -531,8 +596,11 @@ util_cmd_tee(int argc, kword_t **argv, struct u_io *io)
         return rc == U_TEXT_ERROR ? 1 : 0;
 }
 #endif
+#endif
 
-#if UTIL_GROUP == 1
+#if UTIL_GROUP == 1 && \
+    (DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_EXPR || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_BC)
 struct util_expr {
         const char *s;
         unsigned int pos;
@@ -798,7 +866,11 @@ util_cmd_bc(int argc, kword_t **argv, struct u_io *io)
                 return 0;
         return 2;
 }
+#endif
 
+#if UTIL_GROUP == 1 && \
+    (DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TEST || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_BRACKET)
 static int
 util_s6_same(const kword_t *a, const kword_t *b)
 {
@@ -875,6 +947,7 @@ util_cmd_test(int argc, kword_t **argv, int bracket)
 #endif
 
 #if UTIL_GROUP == 2
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TAIL
 static int
 util_cmd_tail(int argc, kword_t **argv, struct u_io *io)
 {
@@ -917,7 +990,9 @@ util_cmd_tail(int argc, kword_t **argv, struct u_io *io)
         }
         return 0;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_CUT
 static int
 util_cmd_cut(int argc, kword_t **argv, struct u_io *io)
 {
@@ -956,7 +1031,9 @@ util_cmd_cut(int argc, kword_t **argv, struct u_io *io)
         u_text_close(&r);
         return rc == U_TEXT_ERROR ? 1 : 0;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_SORT
 static int
 util_strcmp(const char *a, const char *b)
 {
@@ -1013,7 +1090,9 @@ util_cmd_sort(int argc, kword_t **argv, struct u_io *io)
                 if (util_put_line(io->out_fd, lines[i]) != 0) return 1;
         return 0;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_DD
 static int
 util_cmd_dd(int argc, kword_t **argv, struct u_io *io)
 {
@@ -1062,29 +1141,11 @@ util_cmd_dd(int argc, kword_t **argv, struct u_io *io)
         return copied == 0U && count != 0U ? 1 : 0;
 }
 #endif
+#endif
 
 #if UTIL_GROUP == 3
-static int
-util_path_from_parts(kword_t *dst, unsigned int words, const char *prefix,
-    const kword_t *tail)
-{
-        char text[U_PATH_WORDS * 6U];
-        unsigned int used;
-        unsigned int i;
-
-        used = 0U;
-        for (i = 0U; prefix[i] != 0; ++i) {
-                if (used + 1U >= sizeof(text)) return -1;
-                text[used++] = prefix[i];
-        }
-        for (i = 0U; i < util_s6_len(tail); ++i) {
-                if (used + 1U >= sizeof(text)) return -1;
-                text[used++] = (char)util_s6_ch(tail, i);
-        }
-        text[used] = 0;
-        return u_s6_pack(dst, words, text);
-}
-
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_MAN || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_HELP
 static int
 util_render_sixmd_line(int fd, const char *src)
 {
@@ -1118,7 +1179,9 @@ util_render_sixmd_line(int fd, const char *src)
         if (heading != 0 && u_crlf(fd) != 0) return 1;
         return u_crlf(fd) != 0;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_MAN
 static int
 util_render_manual_path(const char *path, const kword_t *topic, struct u_io *io)
 {
@@ -1169,7 +1232,9 @@ util_render_manual_path(const char *path, const kword_t *topic, struct u_io *io)
                 return 2;
         return found ? 0 : 1;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_HELP
 static int
 util_render_help_path(const char *path, const kword_t *topic, struct u_io *io)
 {
@@ -1248,7 +1313,11 @@ util_render_help_path(const char *path, const kword_t *topic, struct u_io *io)
                 return 2;
         return found ? 0 : 1;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_MAN || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_HELP || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_APROPOS
 static int
 util_not_available(struct u_io *io, const char *what)
 {
@@ -1256,7 +1325,9 @@ util_not_available(struct u_io *io, const char *what)
             u_puts(io->err_fd, " NOT AVAILABLE") != 0 ||
             u_crlf(io->err_fd) != 0;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_MAN
 static int
 util_render_manual(const kword_t *topic, struct u_io *io)
 {
@@ -1280,7 +1351,9 @@ util_render_manual(const kword_t *topic, struct u_io *io)
         (void)util_not_available(io, "MANUAL");
         return 1;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_HELP
 static int
 util_render_help(const kword_t *topic, struct u_io *io)
 {
@@ -1303,14 +1376,6 @@ util_render_help(const kword_t *topic, struct u_io *io)
         }
         (void)util_not_available(io, "HELP");
         return 1;
-}
-
-static int
-util_cmd_man(int argc, kword_t **argv, struct u_io *io)
-{
-        if (argc != 2)
-                return 2;
-        return util_render_manual(argv[1], io);
 }
 
 static int
@@ -1348,7 +1413,19 @@ util_manual_topics(struct u_io *io)
         rc = util_manual_topics_path("/OPTION/BASE/MANUAL/ASMUTILS/INDEX", io);
         return rc > 0 ? rc : 0;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_MAN
+static int
+util_cmd_man(int argc, kword_t **argv, struct u_io *io)
+{
+        if (argc != 2)
+                return 2;
+        return util_render_manual(argv[1], io);
+}
+#endif
+
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_HELP
 static int
 util_cmd_help(int argc, kword_t **argv, struct u_io *io)
 {
@@ -1358,7 +1435,9 @@ util_cmd_help(int argc, kword_t **argv, struct u_io *io)
                 return util_render_help(argv[1], io);
         return 2;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_APROPOS
 static int
 util_apropos_path(const char *path, const char *needle, struct u_io *io,
         int *foundp)
@@ -1403,8 +1482,10 @@ util_cmd_apropos(int argc, kword_t **argv, struct u_io *io)
         return found ? 0 : 1;
 }
 #endif
+#endif
 
 #if UTIL_GROUP == 2
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_STRINGS
 static int
 util_cmd_strings(int argc, kword_t **argv, struct u_io *io)
 {
@@ -1448,8 +1529,12 @@ util_cmd_strings(int argc, kword_t **argv, struct u_io *io)
         return 0;
 }
 #endif
+#endif
 
 #if UTIL_GROUP == 3
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TREE || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_FIND || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_DU
 static int
 util_append_name(kword_t *dst, unsigned int words, const kword_t *base,
     const struct vfs_dirent *ent)
@@ -1475,7 +1560,10 @@ util_append_name(kword_t *dst, unsigned int words, const kword_t *base,
         text[used] = 0;
         return u_s6_pack(dst, words, text);
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TREE || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_FIND
 static int
 util_walk(const kword_t *path, unsigned int depth, int tree, struct u_io *io)
 {
@@ -1510,7 +1598,9 @@ util_walk(const kword_t *path, unsigned int depth, int tree, struct u_io *io)
         (void)dsys_close(fd);
         return rc < 0 ? 1 : 0;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_DU
 #define UTIL_DU_MAX_DEPTH 12U
 
 static int
@@ -1578,7 +1668,10 @@ util_cmd_du(int argc, kword_t **argv, struct u_io *io)
                         rc = 1;
         return rc;
 }
+#endif
 
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TREE || \
+    DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_FIND
 static int
 util_cmd_tree_find(int argc, kword_t **argv, struct u_io *io, int tree)
 {
@@ -1597,8 +1690,9 @@ util_cmd_tree_find(int argc, kword_t **argv, struct u_io *io, int tree)
         return rc;
 }
 #endif
+#endif
 
-#if UTIL_GROUP == 1
+#if UTIL_GROUP == 1 && DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_CAL
 static int
 util_leap(unsigned int year)
 {
@@ -1675,46 +1769,96 @@ util_cmd_cal(int argc, kword_t **argv, struct u_io *io)
 
 
 int
-utility_dispatch(int argc, kword_t **argv, kword_t **envp, struct u_io *io)
+UTILITY_PROGRAM_ENTRY(DAIMOS_UTILITY_TOKEN)(int argc, kword_t **argv,
+    kword_t **envp, struct u_io *io)
 {
         if (argc <= 0 || argv == 0 || io == 0)
                 return 1;
-#if UTIL_GROUP == 1
-        if (util_name_eq(argv[0], "TRUE")) return 0;
-        if (util_name_eq(argv[0], "FALSE")) return 1;
-        if (util_name_eq(argv[0], "CHECK")) return util_cmd_check(argc, argv, io);
-        if (util_name_eq(argv[0], "BASENAME")) return util_cmd_basename(argc, argv, io);
-        if (util_name_eq(argv[0], "DIRNAME")) return util_cmd_dirname(argc, argv, io);
-        if (util_name_eq(argv[0], "ENV")) return util_cmd_env(argc, argv, envp, io);
-        if (util_name_eq(argv[0], "WHICH")) return util_cmd_which(argc, argv, io);
-        if (util_name_eq(argv[0], "EXPR")) return util_cmd_expr(argc, argv, io);
-        if (util_name_eq(argv[0], "BC")) return util_cmd_bc(argc, argv, io);
-        if (util_name_eq(argv[0], "TEST")) return util_cmd_test(argc, argv, 0);
-        if (util_name_eq(argv[0], "[")) return util_cmd_test(argc, argv, 1);
-        if (util_name_eq(argv[0], "BRACKET")) return util_cmd_test(argc, argv, 1);
+#if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TRUE
+        (void)envp;
+        return 0;
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_FALSE
+        (void)envp;
+        return 1;
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_CHECK
+        (void)envp;
+        return util_cmd_check(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_BASENAME
+        (void)envp;
+        return util_cmd_basename(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_DIRNAME
+        (void)envp;
+        return util_cmd_dirname(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_ENV
+        return util_cmd_env(argc, argv, envp, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_WHICH
+        (void)envp;
+        return util_cmd_which(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_EXPR
+        (void)envp;
+        return util_cmd_expr(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_BC
+        (void)envp;
+        return util_cmd_bc(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TEST
+        (void)envp;
+        return util_cmd_test(argc, argv, 0);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_BRACKET
+        (void)envp;
+        return util_cmd_test(argc, argv, 1);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_CAL
+        (void)envp;
+        return util_cmd_cal(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_CMP
+        (void)envp;
+        return util_cmd_cmp(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_HEAD
+        (void)envp;
+        return util_cmd_head(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_GREP
+        (void)envp;
+        return util_cmd_grep(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_WC
+        (void)envp;
+        return util_cmd_wc(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TEE
+        (void)envp;
+        return util_cmd_tee(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TAIL
+        (void)envp;
+        return util_cmd_tail(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_CUT
+        (void)envp;
+        return util_cmd_cut(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_SORT
+        (void)envp;
+        return util_cmd_sort(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_DD
+        (void)envp;
+        return util_cmd_dd(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_STRINGS
+        (void)envp;
+        return util_cmd_strings(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_MAN
+        (void)envp;
+        return util_cmd_man(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_HELP
+        (void)envp;
+        return util_cmd_help(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_APROPOS
+        (void)envp;
+        return util_cmd_apropos(argc, argv, io);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_TREE
+        (void)envp;
+        return util_cmd_tree_find(argc, argv, io, 1);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_FIND
+        (void)envp;
+        return util_cmd_tree_find(argc, argv, io, 0);
+#elif DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_DU
+        (void)envp;
+        return util_cmd_du(argc, argv, io);
+#else
+        (void)envp;
+        return 2;
 #endif
-#if UTIL_GROUP == 2
-        if (util_name_eq(argv[0], "CMP")) return util_cmd_cmp(argc, argv, io);
-        if (util_name_eq(argv[0], "HEAD")) return util_cmd_head(argc, argv, io);
-        if (util_name_eq(argv[0], "GREP")) return util_cmd_grep(argc, argv, io);
-        if (util_name_eq(argv[0], "WC")) return util_cmd_wc(argc, argv, io);
-        if (util_name_eq(argv[0], "TEE")) return util_cmd_tee(argc, argv, io);
-        if (util_name_eq(argv[0], "TAIL")) return util_cmd_tail(argc, argv, io);
-        if (util_name_eq(argv[0], "CUT")) return util_cmd_cut(argc, argv, io);
-        if (util_name_eq(argv[0], "SORT")) return util_cmd_sort(argc, argv, io);
-        if (util_name_eq(argv[0], "DD")) return util_cmd_dd(argc, argv, io);
-        if (util_name_eq(argv[0], "STRINGS")) return util_cmd_strings(argc, argv, io);
-#endif
-#if UTIL_GROUP == 3
-        if (util_name_eq(argv[0], "MAN")) return util_cmd_man(argc, argv, io);
-        if (util_name_eq(argv[0], "HELP")) return util_cmd_help(argc, argv, io);
-        if (util_name_eq(argv[0], "APROPOS")) return util_cmd_apropos(argc, argv, io);
-        if (util_name_eq(argv[0], "TREE")) return util_cmd_tree_find(argc, argv, io, 1);
-        if (util_name_eq(argv[0], "FIND")) return util_cmd_tree_find(argc, argv, io, 0);
-        if (util_name_eq(argv[0], "DU")) return util_cmd_du(argc, argv, io);
-#endif
-#if UTIL_GROUP == 1
-        if (util_name_eq(argv[0], "CAL")) return util_cmd_cal(argc, argv, io);
-#endif
-        return util_error(io, "UTILITY: UNKNOWN", argv[0]);
 }

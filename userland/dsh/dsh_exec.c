@@ -1,7 +1,6 @@
 #include "dsh.h"
 #include "dsh_lex.h"
 #include "dsh_parse.h"
-#include "cmdmap.h"
 #include "text.h"
 
 #define DSH_REC_WORDS (DSH_S6_MAX_WORDS + 1U)
@@ -783,6 +782,9 @@ dsh_launch_path(struct dsh_state *st, const struct dsh_s6 *path,
         run->envc = envc;
         pid = dsys_run(run);
         if (pid < 0) {
+                (void)u_puts(2, "RUNDBG PID=");
+                (void)u_put_uint(2, (kword_t)pid);
+                (void)u_crlf(2);
                 /* RUN deliberately has one compact failure return.  Preserve
                  * the shell's 127=not-found / 126=found-but-not-runnable
                  * distinction by checking namespace existence only on this
@@ -827,26 +829,6 @@ dsh_path_value(const struct dsh_state *st)
 }
 
 static int
-dsh_launch_mapped(struct dsh_state *st, unsigned int argc,
-    struct dsh_s6 *argv, int infd, int outfd, unsigned int pgrp_mode,
-    unsigned int pgrp, int *pidp)
-{
-        struct dsh_s6 mapped;
-        int rc;
-
-        rc = dsh_s6_pack(&argv[0], dsh_run_block, U_PATH_WORDS);
-        if (rc == 0)
-                rc = u_cmd_resolve(dsh_run_block, dsh_path_record,
-                    U_PATH_WORDS);
-        if (rc == 0)
-                rc = dsh_s6_from_counted(&mapped, dsh_path_record);
-        if (rc != 0)
-                return DSH_NOT_FOUND;
-        return dsh_launch_path(st, &mapped, argc, argv, infd, outfd,
-            pgrp_mode, pgrp, pidp);
-}
-
-static int
 dsh_launch_path_search(struct dsh_state *st, const struct dsh_s6 *pval,
     unsigned int argc, struct dsh_s6 *argv, int infd, int outfd,
     unsigned int pgrp_mode, unsigned int pgrp, int *pidp)
@@ -886,20 +868,14 @@ dsh_launch_external(struct dsh_state *st, unsigned int argc,
                 if (dsh_s6_get(&argv[0], i) == '/') {
                         rc = dsh_launch_path(st, &argv[0], argc, argv,
                             infd, outfd, pgrp_mode, pgrp, pidp);
-                        if (rc != DSH_NOT_FOUND)
-                                return rc;
-                        return dsh_launch_mapped(st, argc, argv, infd, outfd,
-                            pgrp_mode, pgrp, pidp);
+                        return rc;
                 }
         pval = dsh_path_value(st);
         if (pval == 0)
                 return DSH_NOT_FOUND;
         rc = dsh_launch_path_search(st, pval, argc, argv, infd, outfd,
             pgrp_mode, pgrp, pidp);
-        if (rc != DSH_NOT_FOUND)
-                return rc;
-        return dsh_launch_mapped(st, argc, argv, infd, outfd,
-            pgrp_mode, pgrp, pidp);
+        return rc;
 }
 
 static int
@@ -2339,6 +2315,17 @@ dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
                 outfd = next_write >= 0 ? next_write : 1;
                 rc = dsh_exec_simple_node(st, &nodes[stages[i]], infd,
                     outfd, 1, mode, pgrp, &pid);
+                (void)u_puts(2, "PIPEDBG I=");
+                (void)u_put_uint(2, i);
+                (void)u_puts(2, " MODE=");
+                (void)u_put_uint(2, mode);
+                (void)u_puts(2, " PGRP=");
+                (void)u_put_uint(2, pgrp);
+                (void)u_puts(2, " PID=");
+                (void)u_put_uint(2, (kword_t)(pid < 0 ? 0777777 : pid));
+                (void)u_puts(2, " RC=");
+                (void)u_put_uint(2, (kword_t)(rc < 0 ? 0777777 : rc));
+                (void)u_crlf(2);
                 if (rc != 0) {
                         goto pipeline_launch_fail;
                 }

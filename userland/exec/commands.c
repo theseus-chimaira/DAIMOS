@@ -1,49 +1,14 @@
 #include "cmd.h"
 
+#ifndef DAIMOS_CMD_PROGRAM
+#define DAIMOS_CMD_PROGRAM 0
+#endif
+
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MOUNT
 static int cmd_mounts(int argc, kword_t **argv, struct u_io *io);
+#endif
 #include "text.h"
 #include "dtfs_media.h"
-
-static int
-cmd_name_eq(const kword_t *s, const char *name)
-{
-        kword_t base[U_ARG_WORDS];
-        unsigned int n;
-        unsigned int i;
-        unsigned int start;
-        unsigned int out;
-        unsigned int wi;
-        unsigned int sh;
-        unsigned int ch;
-
-        if (s == 0)
-                return 0;
-        n = (unsigned int)(s[0] & 0777777UL);
-        start = 0U;
-        for (i = 0U; i < n; ++i) {
-                wi = 1U + i / 6U;
-                sh = 30U - (i % 6U) * 6U;
-                ch = (unsigned int)(((s[wi] >> sh) & 077UL) + 040U);
-                if (ch == '/')
-                        start = i + 1U;
-        }
-        for (i = 0U; i < U_ARG_WORDS; ++i)
-                base[i] = 0;
-        out = 0U;
-        for (i = start; i < n; ++i) {
-                wi = 1U + i / 6U;
-                sh = 30U - (i % 6U) * 6U;
-                ch = (unsigned int)(((s[wi] >> sh) & 077UL) + 040U);
-                wi = 1U + out / 6U;
-                if (wi >= U_ARG_WORDS)
-                        return 0;
-                sh = 30U - (out % 6U) * 6U;
-                base[wi] |= ((kword_t)((ch - 040U) & 077U)) << sh;
-                ++out;
-        }
-        base[0] = out;
-        return u_s6_eq(base, name);
-}
 
 static int
 cmd_err(struct u_io *io, const char *name, kword_t *path)
@@ -57,6 +22,7 @@ cmd_err(struct u_io *io, const char *name, kword_t *path)
         return 1;
 }
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_ECHO
 static int
 cmd_echo(int argc, kword_t **argv, struct u_io *io)
 {
@@ -67,7 +33,9 @@ cmd_echo(int argc, kword_t **argv, struct u_io *io)
         }
         return u_crlf(io->out_fd);
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CAT
 static int
 cmd_cat(int argc, kword_t **argv, struct u_io *io)
 {
@@ -126,7 +94,11 @@ cmd_cat(int argc, kword_t **argv, struct u_io *io)
                 rc = 1;
         return rc;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_LS || \
+    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_DEVS || \
+    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MODS
 static int
 cmd_ls_one(kword_t *path, struct u_io *io)
 {
@@ -160,7 +132,9 @@ cmd_ls_one(kword_t *path, struct u_io *io)
         }
         return dsys_close(fd) != 0;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_LS
 static int
 cmd_ls(int argc, kword_t **argv, struct u_io *io)
 {
@@ -187,7 +161,9 @@ cmd_ls(int argc, kword_t **argv, struct u_io *io)
                 rc = 1;
         return rc;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MKDIR
 static int
 cmd_mkdir(int argc, kword_t **argv, struct u_io *io)
 {
@@ -208,7 +184,9 @@ cmd_mkdir(int argc, kword_t **argv, struct u_io *io)
         }
         return rc;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_RM
 static int
 cmd_rm(int argc, kword_t **argv, struct u_io *io)
 {
@@ -217,7 +195,9 @@ cmd_rm(int argc, kword_t **argv, struct u_io *io)
         for (i = 1; i < argc; ++i) if (dsys_unlink(argv[i]) != 0) rc = cmd_err(io, "RM", argv[i]);
         return rc;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_PWD
 static int
 cmd_pwd(int argc, kword_t **argv, struct u_io *io)
 {
@@ -226,7 +206,9 @@ cmd_pwd(int argc, kword_t **argv, struct u_io *io)
         if (dsys_getcwd(path, U_PATH_WORDS) != 0) return cmd_err(io, "PWD", 0);
         return u_put_s6(io->out_fd, path) != 0 || u_crlf(io->out_fd) != 0;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_STAT
 static int
 cmd_stat(int argc, kword_t **argv, struct u_io *io)
 {
@@ -245,7 +227,9 @@ cmd_stat(int argc, kword_t **argv, struct u_io *io)
         }
         return rc;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_TOUCH
 static int
 cmd_touch(int argc, kword_t **argv, struct u_io *io)
 {
@@ -264,7 +248,9 @@ cmd_touch(int argc, kword_t **argv, struct u_io *io)
         }
         return rc;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CP
 static int
 cmd_cp(int argc, kword_t **argv, struct u_io *io)
 {
@@ -292,7 +278,9 @@ cmd_cp(int argc, kword_t **argv, struct u_io *io)
         if (dsys_close(in) != 0 || dsys_close(out) != 0) rc = 1;
         return rc;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CHMOD
 static int
 cmd_octal_mode(const kword_t *arg, unsigned int *modep)
 {
@@ -322,7 +310,10 @@ cmd_chmod(int argc, kword_t **argv, struct u_io *io)
         return dsys_chmod(argv[2], mode) == 0 ? 0 :
             cmd_err(io, "CHMOD", argv[2]);
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CHOWN || \
+    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_TTYOUT
 static int
 cmd_uint_arg(const kword_t *arg, unsigned int *vp)
 {
@@ -343,7 +334,9 @@ cmd_uint_arg(const kword_t *arg, unsigned int *vp)
         *vp = v;
         return 0;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CHOWN
 static int
 cmd_chown(int argc, kword_t **argv, struct u_io *io)
 {
@@ -359,7 +352,9 @@ cmd_chown(int argc, kword_t **argv, struct u_io *io)
                         rc = cmd_err(io, "CHOWN", argv[i]);
         return rc;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_RMDIR
 static int
 cmd_rmdir(int argc, kword_t **argv, struct u_io *io)
 {
@@ -372,7 +367,9 @@ cmd_rmdir(int argc, kword_t **argv, struct u_io *io)
                         rc = cmd_err(io, "RMDIR", argv[i]);
         return rc;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_DATE
 static int
 cmd_put2(int fd, unsigned int v)
 {
@@ -407,7 +404,12 @@ cmd_date(int argc, kword_t **argv, struct u_io *io)
                 return 1;
         return u_crlf(io->out_fd);
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MKFS_DTFS || \
+    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_FSCK_DTFS || \
+    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MOUNT_DTFS || \
+    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MOUNT
 static unsigned int
 cmd_arg_char(const kword_t *arg, unsigned int off)
 {
@@ -497,7 +499,9 @@ cmd_dtfs_options(const kword_t *arg, unsigned int *flagsp,
         *typep = type;
         return 0;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MKFS_DTFS
 static int
 cmd_mkfs_dtfs(int argc, kword_t **argv, struct u_io *io)
 {
@@ -540,7 +544,11 @@ cmd_mkfs_dtfs(int argc, kword_t **argv, struct u_io *io)
         return dsys_dtc_write_block(0U, block, dir) == 0 ? 0 :
             cmd_err(io, "MKFS.DTFS", argv[3]);
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_FSCK_DTFS || \
+    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MOUNT_DTFS || \
+    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MOUNT
 static int
 cmd_dtfs_probe(kword_t *device, int deep, struct u_io *io)
 {
@@ -593,7 +601,9 @@ cmd_dtfs_probe(kword_t *device, int deep, struct u_io *io)
                 return -1;
         return (int)value;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_FSCK_DTFS
 static int
 cmd_fsck_dtfs(int argc, kword_t **argv, struct u_io *io)
 {
@@ -633,7 +643,10 @@ cmd_fsck_dtfs(int argc, kword_t **argv, struct u_io *io)
                 return 1;
         return 0;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MOUNT_DTFS || \
+    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MOUNT
 static int
 cmd_mount_dtfs(int argc, kword_t **argv, struct u_io *io)
 {
@@ -662,7 +675,9 @@ cmd_mount_dtfs(int argc, kword_t **argv, struct u_io *io)
         return dsys_dtfs_mount(device, target, flags | (unsigned int)found) == 0 ? 0 :
             cmd_err(io, "MOUNT.DTFS", target);
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MOUNT
 static int
 cmd_mount(int argc, kword_t **argv, struct u_io *io)
 {
@@ -670,7 +685,9 @@ cmd_mount(int argc, kword_t **argv, struct u_io *io)
                 return cmd_mounts(argc, argv, io);
         return cmd_mount_dtfs(argc, argv, io);
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_UNMOUNT
 static int
 cmd_unmount(int argc, kword_t **argv, struct u_io *io)
 {
@@ -678,14 +695,18 @@ cmd_unmount(int argc, kword_t **argv, struct u_io *io)
         return dsys_unmount(argv[1]) == 0 ? 0 :
             cmd_err(io, "UNMOUNT", argv[1]);
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MV
 static int
 cmd_mv(int argc, kword_t **argv, struct u_io *io)
 {
         if (argc != 3) return cmd_err(io, "MV", 0);
         return dsys_rename(argv[1], argv[2]) == 0 ? 0 : cmd_err(io, "MV", argv[1]);
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_HEXDUMP
 static int
 cmd_hexdump(int argc, kword_t **argv, struct u_io *io)
 {
@@ -711,7 +732,9 @@ cmd_hexdump(int argc, kword_t **argv, struct u_io *io)
         }
         return rc;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_PS
 static int
 cmd_ps(int argc, kword_t **argv, struct u_io *io)
 {
@@ -766,7 +789,9 @@ ps_done:
                 rc = 1;
         return rc;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_DEVS
 static int
 cmd_devs(int argc, kword_t **argv, struct u_io *io)
 {
@@ -774,7 +799,9 @@ cmd_devs(int argc, kword_t **argv, struct u_io *io)
         (void)argc; (void)argv;
         return cmd_ls_one(dev, io);
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MODS
 static int
 cmd_mods(int argc, kword_t **argv, struct u_io *io)
 {
@@ -786,7 +813,11 @@ cmd_mods(int argc, kword_t **argv, struct u_io *io)
                 return 1;
         return cmd_ls_one(path, io);
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MOUNTS || \
+    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MOUNT || \
+    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_DF
 static int
 cmd_put_fsname(int fd, kword_t provider)
 {
@@ -798,7 +829,10 @@ cmd_put_fsname(int fd, kword_t provider)
         default: return u_puts(fd, "FS");
         }
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MOUNTS || \
+    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MOUNT
 static int
 cmd_mounts(int argc, kword_t **argv, struct u_io *io)
 {
@@ -827,7 +861,9 @@ cmd_mounts(int argc, kword_t **argv, struct u_io *io)
         }
         return 0;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_DF
 static int
 cmd_df(int argc, kword_t **argv, struct u_io *io)
 {
@@ -864,7 +900,9 @@ cmd_df(int argc, kword_t **argv, struct u_io *io)
         }
         return 0;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_FREE
 static int
 cmd_free(int argc, kword_t **argv, struct u_io *io)
 {
@@ -882,7 +920,9 @@ cmd_free(int argc, kword_t **argv, struct u_io *io)
         }
         return 0;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_TTYOUT
 static int
 cmd_ttyout(int argc, kword_t **argv, struct u_io *io)
 {
@@ -913,61 +953,9 @@ cmd_ttyout(int argc, kword_t **argv, struct u_io *io)
         return dsys_ttyctl(SYS_TTYCTL_SETOUT, tty, sink) < 0 ?
             cmd_err(io, "TTYOUT", 0) : 0;
 }
+#endif
 
-/*
- * Keep TSFS discovery in a short-lived helper rather than linking the
- * scanner into DSH.  RUN returns a child PID; wait for that exact process so
- * the helper's text and scan buffers disappear again before the prompt.
- */
-static int
-cmd_mount_tsfs(int argc, kword_t **argv, struct u_io *io)
-{
-        kword_t block[SYS_RUN_V2_FIXED_WORDS + 4U * U_PATH_WORDS + 3U];
-        kword_t path[U_PATH_WORDS];
-        struct sys_run_v2 *run;
-        kword_t status;
-        unsigned int path_words;
-        unsigned int arg_words;
-        unsigned int total;
-        unsigned int i;
-        int pid;
-
-        if (argc != 3)
-                return cmd_err(io, "MOUNT.TSFS", 0);
-        if (u_s6_pack(path, U_PATH_WORDS, "/SYSTEM/EXEC/MOUNT.TSFS") != 0)
-                return 1;
-        path_words = cmd_record_words(path);
-        total = SYS_RUN_V2_FIXED_WORDS;
-        for (i = 0U; i < path_words; ++i)
-                block[total++] = path[i];
-        for (i = 0U; i < path_words; ++i)
-                block[total++] = path[i];
-        arg_words = cmd_record_words(argv[1]);
-        for (i = 0U; i < arg_words; ++i)
-                block[total++] = argv[1][i];
-        arg_words = cmd_record_words(argv[2]);
-        for (i = 0U; i < arg_words; ++i)
-                block[total++] = argv[2][i];
-        block[total++] = SYS_RUN_FD_MAP(0U, (unsigned int)io->in_fd);
-        block[total++] = SYS_RUN_FD_MAP(1U, (unsigned int)io->out_fd);
-        block[total++] = SYS_RUN_FD_MAP(2U, (unsigned int)io->err_fd);
-
-        run = (struct sys_run_v2 *)block;
-        run->version_words = SYS_RUN_HEADER(SYS_RUN_VERSION_2, total);
-        run->flags = SYS_RUN_PGRP_INHERIT;
-        run->pgrp = 0UL;
-        run->fdmap_count = 3UL;
-        run->argc = 3UL;
-        run->envc = 0UL;
-        pid = dsys_run(run);
-        if (pid < 0)
-                return 1;
-        if (dsys_wait((unsigned int)pid, &status, 0U) != pid ||
-            SYS_WAIT_STATUS_KIND(status) != SYS_WAIT_EXITED)
-                return 1;
-        return SYS_WAIT_STATUS_VALUE(status) == 0U ? 0 : 1;
-}
-
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_HALT
 static int
 cmd_halt(int argc, kword_t **argv, struct u_io *io)
 {
@@ -976,7 +964,10 @@ cmd_halt(int argc, kword_t **argv, struct u_io *io)
         (void)io;
         return dsys_halt() == 0 ? 0 : 1;
 }
+#endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MEMSTAT || \
+    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_SYSCTL
 static int
 cmd_memstat(int argc, kword_t **argv, struct u_io *io)
 {
@@ -1013,41 +1004,73 @@ memstat_done:
                 rc = 1;
         return rc;
 }
+#endif
 
 int
-cmd_dispatch(int argc, kword_t **argv, struct u_io *io)
+CMD_PROGRAM_ENTRY(DAIMOS_CMD_TOKEN)(int argc, kword_t **argv,
+    struct u_io *io)
 {
         if (argc <= 0 || argv == 0 || io == 0) return 1;
-        if (cmd_name_eq(argv[0], "ECHO")) return cmd_echo(argc, argv, io);
-        if (cmd_name_eq(argv[0], "CAT")) return cmd_cat(argc, argv, io);
-        if (cmd_name_eq(argv[0], "LS")) return cmd_ls(argc, argv, io);
-        if (cmd_name_eq(argv[0], "MKDIR")) return cmd_mkdir(argc, argv, io);
-        if (cmd_name_eq(argv[0], "RM")) return cmd_rm(argc, argv, io);
-        if (cmd_name_eq(argv[0], "PWD")) return cmd_pwd(argc, argv, io);
-        if (cmd_name_eq(argv[0], "STAT")) return cmd_stat(argc, argv, io);
-        if (cmd_name_eq(argv[0], "TOUCH")) return cmd_touch(argc, argv, io);
-        if (cmd_name_eq(argv[0], "DATE")) return cmd_date(argc, argv, io);
-        if (cmd_name_eq(argv[0], "RMDIR")) return cmd_rmdir(argc, argv, io);
-        if (cmd_name_eq(argv[0], "CP")) return cmd_cp(argc, argv, io);
-        if (cmd_name_eq(argv[0], "CHMOD")) return cmd_chmod(argc, argv, io);
-        if (cmd_name_eq(argv[0], "CHOWN")) return cmd_chown(argc, argv, io);
-        if (cmd_name_eq(argv[0], "MKFS.DTFS")) return cmd_mkfs_dtfs(argc, argv, io);
-        if (cmd_name_eq(argv[0], "FSCK.DTFS")) return cmd_fsck_dtfs(argc, argv, io);
-        if (cmd_name_eq(argv[0], "MOUNT")) return cmd_mount(argc, argv, io);
-        if (cmd_name_eq(argv[0], "MOUNT.DTFS")) return cmd_mount_dtfs(argc, argv, io);
-        if (cmd_name_eq(argv[0], "MOUNT.TSFS")) return cmd_mount_tsfs(argc, argv, io);
-        if (cmd_name_eq(argv[0], "UNMOUNT")) return cmd_unmount(argc, argv, io);
-        if (cmd_name_eq(argv[0], "MV")) return cmd_mv(argc, argv, io);
-        if (cmd_name_eq(argv[0], "HEXDUMP")) return cmd_hexdump(argc, argv, io);
-        if (cmd_name_eq(argv[0], "PS")) return cmd_ps(argc, argv, io);
-        if (cmd_name_eq(argv[0], "DEVS")) return cmd_devs(argc, argv, io);
-        if (cmd_name_eq(argv[0], "MODS")) return cmd_mods(argc, argv, io);
-        if (cmd_name_eq(argv[0], "MOUNTS")) return cmd_mounts(argc, argv, io);
-        if (cmd_name_eq(argv[0], "FREE")) return cmd_free(argc, argv, io);
-        if (cmd_name_eq(argv[0], "MEMSTAT")) return cmd_memstat(argc, argv, io);
-        if (cmd_name_eq(argv[0], "SYSCTL")) return cmd_memstat(argc, argv, io);
-        if (cmd_name_eq(argv[0], "DF")) return cmd_df(argc, argv, io);
-        if (cmd_name_eq(argv[0], "TTYOUT")) return cmd_ttyout(argc, argv, io);
-        if (cmd_name_eq(argv[0], "HALT")) return cmd_halt(argc, argv, io);
-        return cmd_err(io, "DSH: UNKNOWN", argv[0]);
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_ECHO
+        return cmd_echo(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CAT
+        return cmd_cat(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_LS
+        return cmd_ls(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MKDIR
+        return cmd_mkdir(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_RM
+        return cmd_rm(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_PWD
+        return cmd_pwd(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_STAT
+        return cmd_stat(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_TOUCH
+        return cmd_touch(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_DATE
+        return cmd_date(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_RMDIR
+        return cmd_rmdir(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CP
+        return cmd_cp(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CHMOD
+        return cmd_chmod(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CHOWN
+        return cmd_chown(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MKFS_DTFS
+        return cmd_mkfs_dtfs(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_FSCK_DTFS
+        return cmd_fsck_dtfs(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MOUNT
+        return cmd_mount(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MOUNT_DTFS
+        return cmd_mount_dtfs(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_UNMOUNT
+        return cmd_unmount(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MV
+        return cmd_mv(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_HEXDUMP
+        return cmd_hexdump(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_PS
+        return cmd_ps(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_DEVS
+        return cmd_devs(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MODS
+        return cmd_mods(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MOUNTS
+        return cmd_mounts(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_FREE
+        return cmd_free(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MEMSTAT || \
+      DAIMOS_CMD_PROGRAM == CMD_PROGRAM_SYSCTL
+        return cmd_memstat(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_DF
+        return cmd_df(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_TTYOUT
+        return cmd_ttyout(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_HALT
+        return cmd_halt(argc, argv, io);
+#else
+        return cmd_err(io, "EXEC: BAD PROGRAM", argv[0]);
+#endif
 }

@@ -3,7 +3,44 @@
 
 #include "u.h"
 
-int utility_dispatch(int argc, kword_t **argv, kword_t **envp,
-    struct u_io *io);
+#define UTILITY_PROGRAM_TRUE      1
+#define UTILITY_PROGRAM_FALSE     2
+#define UTILITY_PROGRAM_CHECK     3
+#define UTILITY_PROGRAM_BASENAME  4
+#define UTILITY_PROGRAM_DIRNAME   5
+#define UTILITY_PROGRAM_ENV       6
+#define UTILITY_PROGRAM_WHICH     7
+#define UTILITY_PROGRAM_EXPR      8
+#define UTILITY_PROGRAM_BC        9
+#define UTILITY_PROGRAM_TEST     10
+#define UTILITY_PROGRAM_BRACKET  11
+#define UTILITY_PROGRAM_CAL      12
+#define UTILITY_PROGRAM_CMP      13
+#define UTILITY_PROGRAM_HEAD     14
+#define UTILITY_PROGRAM_GREP     15
+#define UTILITY_PROGRAM_WC       16
+#define UTILITY_PROGRAM_TEE      17
+#define UTILITY_PROGRAM_TAIL     18
+#define UTILITY_PROGRAM_CUT      19
+#define UTILITY_PROGRAM_SORT     20
+#define UTILITY_PROGRAM_DD       21
+#define UTILITY_PROGRAM_STRINGS  22
+#define UTILITY_PROGRAM_MAN      23
+#define UTILITY_PROGRAM_HELP     24
+#define UTILITY_PROGRAM_APROPOS  25
+#define UTILITY_PROGRAM_TREE     26
+#define UTILITY_PROGRAM_FIND     27
+#define UTILITY_PROGRAM_DU       28
+
+#define UTILITY_ENTRY_JOIN1(a, b) a##b
+#define UTILITY_ENTRY_JOIN(a, b) UTILITY_ENTRY_JOIN1(a, b)
+#define UTILITY_PROGRAM_ENTRY(token) UTILITY_ENTRY_JOIN(utility_program_, token)
+
+#ifndef DAIMOS_UTILITY_TOKEN
+#define DAIMOS_UTILITY_TOKEN CHECK
+#endif
+
+int UTILITY_PROGRAM_ENTRY(DAIMOS_UTILITY_TOKEN)(int argc, kword_t **argv,
+    kword_t **envp, struct u_io *io);
 
 #endif

@@ -15,7 +15,7 @@ main(int argc, kword_t **argv)
          * the same bounded text sink used by the other standalone utilities. */
         sink = dsys_isatty(io.out_fd) < 0 &&
             u_text_sink_attach(io.out_fd) == 0;
-        rc = cmd_dispatch(argc, argv, &io);
+        rc = CMD_PROGRAM_ENTRY(DAIMOS_CMD_TOKEN)(argc, argv, &io);
         if (sink && u_text_sink_detach() != 0)
                 rc = 1;
         return rc;

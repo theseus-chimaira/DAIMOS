@@ -2,33 +2,8 @@
 #include "logevent.h"
 #include "logstore.h"
 
+#if LOGCOMPAT_PROGRAM == 2
 static kword_t log_block[BLOCKSET_BLOCK_WORDS];
-
-static int
-log_name_eq(const kword_t *arg, const char *name)
-{
-        unsigned int n;
-        unsigned int start;
-        unsigned int i;
-        unsigned int sh;
-        int ch;
-
-        n = (unsigned int)(arg[0] & 0777777UL);
-        start = 0U;
-        for (i = 0U; i < n; ++i) {
-                sh = 30U - (i % 6U) * 6U;
-                ch = (int)(((arg[1U + i / 6U] >> sh) & 077UL) + 040UL);
-                if (ch == '/') start = i + 1U;
-        }
-        for (i = 0U; name[i] != 0; ++i) {
-                if (start + i >= n) return 0;
-                sh = 30U - ((start + i) % 6U) * 6U;
-                ch = (int)(((arg[1U + (start + i) / 6U] >> sh) & 077UL) +
-                    040UL);
-                if (ch != name[i]) return 0;
-        }
-        return start + i == n;
-}
 
 static int
 log_record_valid(const kword_t *record)
@@ -69,7 +44,9 @@ log_print_record(const kword_t *record)
                         return 1;
         return u_crlf(1) != 0;
 }
+#endif
 
+#if LOGCOMPAT_PROGRAM == 1
 static int
 logd_main(void)
 {
@@ -80,7 +57,9 @@ logd_main(void)
         (void)ulog_event(ULOG_SEV_INFO, ULOG_SRC_INIT, ULOG_INIT_READY, 0UL);
         return u_puts(1, "LOGSTORE READY") != 0 || u_crlf(1) != 0;
 }
+#endif
 
+#if LOGCOMPAT_PROGRAM == 2
 static int
 logdump_main(void)
 {
@@ -119,15 +98,19 @@ logdump_main(void)
         }
         return 0;
 }
+#endif
 
 int
 main(int argc, kword_t **argv)
 {
-        if (argc != 1 || argv == 0 || argv[0] == 0)
+        (void)argv;
+        if (argc != 1)
                 return 2;
-        if (log_name_eq(argv[0], "LOGD"))
-                return logd_main();
-        if (log_name_eq(argv[0], "LOGDUMP"))
-                return logdump_main();
+#if LOGCOMPAT_PROGRAM == 1
+        return logd_main();
+#elif LOGCOMPAT_PROGRAM == 2
+        return logdump_main();
+#else
         return 2;
+#endif
 }
