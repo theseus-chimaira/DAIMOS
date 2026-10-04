@@ -121,6 +121,55 @@ dtfs_set_owner:
         movem   3,(1)
         popj    17,
 
+; Compact native-directory field mutations shared by create/unlink/resize.
+; All use only caller-scratch AC1..AC5 and the dynamic dtfs_dir base.
+        .globl  dtfs_clear_slot
+dtfs_clear_slot:
+        move    2,1
+        lsh     2,1
+        addi    2,0123                  ; DTFS_NAME_BASE
+        add     2,dtfs_dir
+        setzm   (2)
+        setzm   1(2)
+        move    2,1
+        add     2,dtfs_dir
+        movni   3,2                     ; all ones except low bit
+        andm    3,(2)                   ; executable bit
+        andm    3,026(2)                ; high count bit at 22+slot
+        popj    17,
+
+        .globl  dtfs_set_last_words
+dtfs_set_last_words:
+        move    5,2                     ; preserve count bit 6
+        lsh     5,-6
+        andi    5,1
+        move    3,1
+        lsh     3,1
+        addi    3,0124                  ; second name word
+        add     3,dtfs_dir
+        move    4,(3)
+        trz     4,077
+        andi    2,077
+        ior     4,2
+        movem   4,(3)
+        move    3,1
+        add     3,dtfs_dir
+        move    4,026(3)
+        trz     4,1
+        ior     4,5
+        movem   4,026(3)
+        popj    17,
+
+        .globl  dtfs_set_exec
+dtfs_set_exec:
+        move    3,1
+        add     3,dtfs_dir
+        move    4,(3)
+        trz     4,1
+        ior     4,2                     ; callers pass exactly 0/1
+        movem   4,(3)
+        popj    17,
+
 dtfs_restore4:
         pop     17,013
 dtfs_restore3:

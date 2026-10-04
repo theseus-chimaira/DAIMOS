@@ -85,35 +85,10 @@ extern int dtfs_scan_slot(vnode_t node, const struct vfs_name *name,
 
 extern void dtfs_set_name(unsigned int slot, const struct vfs_name *name);
 
-static void
-dtfs_clear_slot(unsigned int slot)
-{
-        unsigned int base;
+extern void dtfs_clear_slot(unsigned int slot);
+extern void dtfs_set_last_words(unsigned int slot, unsigned int words);
+extern void dtfs_set_exec(unsigned int slot, int executable);
 
-        base = DTFS_NAME_BASE + slot * 2U;
-        dtfs_dir[base] = 0;
-        dtfs_dir[base + 1U] = 0;
-        dtfs_dir[slot] &= ~1UL;
-        dtfs_dir[22U + slot] &= ~1UL;
-}
-
-static void
-dtfs_set_last_words(unsigned int slot, unsigned int words)
-{
-        unsigned int wi;
-
-        wi = DTFS_NAME_BASE + slot * 2U + 1U;
-        dtfs_dir[wi] = (dtfs_dir[wi] & ~077UL) | (words & 077U);
-        dtfs_dir[22U + slot] = (dtfs_dir[22U + slot] & ~1UL) |
-            ((words >> 6U) & 1U);
-}
-
-void
-dtfs_set_exec(unsigned int slot, int executable)
-{
-        /* Both callers pass a C relational expression, hence exactly 0/1. */
-        dtfs_dir[slot] = (dtfs_dir[slot] & ~1UL) | (kword_t)executable;
-}
 
 /* These are pure on-media field operations.  Keep them as expressions so the
  * PDP-10 compiler emits LDB/shift-OR sequences at the use site rather than
