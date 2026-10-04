@@ -526,14 +526,11 @@ make_assignment(char *line, unsigned int flags)
 static int
 make_suffix_rule_name(const char *name)
 {
-        unsigned int i;
-
         if (name == 0 || name[0] != '.' || name[1] == 0)
                 return 0;
-        for (i = 1U; name[i] != 0; ++i)
-                if (name[i] == '.' && name[i + 1U] != 0)
-                        return 1;
-        return 0;
+        if (make_streq(name, ".PHONY") || make_streq(name, ".SUFFIXES"))
+                return 0;
+        return 1;
 }
 
 static int
@@ -769,8 +766,10 @@ make_source_rule(const char *target, struct make_implicit *imp)
         const char *dot;
         const char *rn;
         const char *second;
+        const char *source_end;
         unsigned int stem_len;
         unsigned int src_len;
+        unsigned int target_len;
         unsigned int i;
         struct make_result sr;
 
@@ -781,8 +780,6 @@ make_source_rule(const char *target, struct make_implicit *imp)
                 else if (target[i] == '.')
                         dot = &target[i];
         }
-        if (dot == 0)
-                return -1;
         for (i = 0U; i < make_rule_count; ++i) {
                 if ((make_rules[i].flags & MAKE_RULE_SUFFIX) == 0U ||
                     make_rules[i].recipe_head == MAKE_NONE)
@@ -791,10 +788,22 @@ make_source_rule(const char *target, struct make_implicit *imp)
                 second = rn + 1;
                 while (*second != 0 && *second != '.')
                         ++second;
-                if (*second != '.' || !make_streq(second, dot))
-                        continue;
-                stem_len = (unsigned int)(dot - target);
-                src_len = (unsigned int)(second - rn);
+                if (*second == '.') {
+                        if (dot == 0 || !make_streq(second, dot))
+                                continue;
+                        stem_len = (unsigned int)(dot - target);
+                        source_end = second;
+                } else {
+                        /* Classic single-suffix rule: .S: builds FOO from
+                         * FOO.S.  It applies only to a target with no suffix
+                         * in its final path component. */
+                        if (dot != 0)
+                                continue;
+                        target_len = make_strlen(target);
+                        stem_len = target_len;
+                        source_end = second;
+                }
+                src_len = (unsigned int)(source_end - rn);
                 if (stem_len + src_len > MAKE_NAME_MAX)
                         continue;
                 for (src_len = 0U; src_len < stem_len; ++src_len) {
@@ -803,7 +812,7 @@ make_source_rule(const char *target, struct make_implicit *imp)
                 }
                 imp->stem[stem_len] = 0;
                 for (src_len = 0U; rn[src_len] != 0 &&
-                    &rn[src_len] < second; ++src_len)
+                    &rn[src_len] < source_end; ++src_len)
                         imp->source[stem_len + src_len] = rn[src_len];
                 imp->source[stem_len + src_len] = 0;
                 if (make_find_rule(imp->source) >= 0 ||
@@ -813,6 +822,26 @@ make_source_rule(const char *target, struct make_implicit *imp)
                 }
         }
         return -1;
+}
+
+/*
+ * A zero mtime is the native representation used by immutable image-seeded
+ * files and by filesystems which cannot supply a creation time.  Such a
+ * prerequisite cannot be ordered against a real timestamp, but repeatedly
+ * rebuilding forever is worse and makes source trees shipped on D6FS/TSFS
+ * unusable with INSTALL.  Once a target has a valid timestamp, treat a zero
+ * prerequisite as older.  Malformed nonzero timestamps remain conservative
+ * and force a rebuild.
+ */
+static int
+make_dep_requires_update(const struct make_result *dep,
+    const struct make_result *target)
+{
+        if (!target->exists || !target->valid)
+                return 1;
+        if (dep->valid)
+                return dep->mtime > target->mtime;
+        return dep->mtime != 0UL;
 }
 
 static unsigned int
@@ -1018,8 +1047,8 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                                         goto fail;
                                 continue;
                         }
-                        if (dep.changed || !dep.valid || !target.valid ||
-                            !target.exists || dep.mtime > target.mtime)
+                        if (dep.changed ||
+                            make_dep_requires_update(&dep, &target))
                                 need = 1U;
                 }
         }
@@ -1029,8 +1058,8 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                 rc = make_build(imp.source, &dep, depth + 1U);
                 if (rc != 0)
                         goto fail;
-                if (dep.changed || !dep.valid || !target.valid ||
-                    !target.exists || dep.mtime > target.mtime)
+                if (dep.changed ||
+                    make_dep_requires_update(&dep, &target))
                         need = 1U;
         }
         if (failed)
@@ -1049,8 +1078,7 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                         dri = make_find_rule(depname);
                         if ((dri >= 0 && (make_rules[dri].flags &
                             (MAKE_RULE_CHANGED | MAKE_RULE_PHONY)) != 0U) ||
-                            !dep.valid || !target.valid || !target.exists ||
-                            dep.mtime > target.mtime)
+                            make_dep_requires_update(&dep, &target))
                                 if (make_newer_add(depname) != 0)
                                         goto fail;
                 }
@@ -1062,8 +1090,7 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                 sri = make_find_rule(imp.source);
                 if ((sri >= 0 && (make_rules[sri].flags &
                     (MAKE_RULE_CHANGED | MAKE_RULE_PHONY)) != 0U) ||
-                    !dep.valid || !target.valid || !target.exists ||
-                    dep.mtime > target.mtime)
+                    make_dep_requires_update(&dep, &target))
                         if (make_newer_add(imp.source) != 0)
                                 goto fail;
         }

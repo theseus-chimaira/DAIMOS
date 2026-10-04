@@ -782,9 +782,6 @@ dsh_launch_path(struct dsh_state *st, const struct dsh_s6 *path,
         run->envc = envc;
         pid = dsys_run(run);
         if (pid < 0) {
-                (void)u_puts(2, "RUNDBG PID=");
-                (void)u_put_uint(2, (kword_t)pid);
-                (void)u_crlf(2);
                 /* RUN deliberately has one compact failure return.  Preserve
                  * the shell's 127=not-found / 126=found-but-not-runnable
                  * distinction by checking namespace existence only on this
