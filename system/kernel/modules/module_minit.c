@@ -308,6 +308,38 @@ module_pi_unregister(unsigned int level, unsigned int handler)
         return 0;
 }
 
+/**
+ * @brief Replace one handler without changing the compact PI span.
+ *
+ * This is required when the hardware level is already live.  An
+ * unregister/register pair temporarily leaves the level without a handler;
+ * an interrupt arriving in that window cannot be acknowledged and traps
+ * KINIT in the empty dispatch path.
+ */
+int
+module_pi_replace(unsigned int level, unsigned int old_handler,
+    unsigned int new_handler)
+{
+        unsigned int start;
+        unsigned int count;
+        unsigned int i;
+
+        if (level < PDP10_PI_LEVEL_MIN || level > PDP10_PI_LEVEL_MAX ||
+            old_handler == 0U || new_handler == 0U)
+                return -1;
+        start = 0U;
+        for (i = PDP10_PI_LEVEL_MIN; i < level; ++i)
+                start += pi_level_count[i];
+        count = pi_level_count[level];
+        for (i = start; i < start + count; ++i) {
+                if ((unsigned int)pdp10_pi_handlers[i] == old_handler) {
+                        pdp10_pi_handlers[i] = (kword_t)new_handler;
+                        return 0;
+                }
+        }
+        return -1;
+}
+
 static void
 minit_pi_enable(unsigned int level)
 {
@@ -792,9 +824,8 @@ dpy_minit(void)
             (kword_t)(handler & KINIT_HALF_MASK);
         minit_pi_enable(DPY_NATIVE_PI_LEVEL);
         if (clk_pi_handler_addr != 0U) {
-                if (module_pi_unregister(CLK_NATIVE_PI_LEVEL,
-                    clk_pi_handler_addr) != 0 ||
-                    module_pi_register(CLK_NATIVE_PI_LEVEL, clock_handler) != 0)
+                if (module_pi_replace(CLK_NATIVE_PI_LEVEL,
+                    clk_pi_handler_addr, clock_handler) != 0)
                         minit_fatal(name);
         }
 
