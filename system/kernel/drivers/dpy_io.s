@@ -131,6 +131,10 @@ dpy_clock_handler:
         camn 1,dpy_clk_last_tick
         jrst pdp10_pi_handler_return
         movem 1,dpy_clk_last_tick
+        ; A userspace raw-program writer refreshes this short lease on every
+        ; frame.  While it is nonzero the normal retained-text refresh stays
+        ; out of the way.  If the writer exits, the lease expires by itself
+        ; and text refresh resumes without a close/ioctl cleanup path.
         skipn dpy_raw_hold
         jrst dpy_clock_text
         sos dpy_raw_hold
@@ -216,17 +220,32 @@ dpy_put_wait:
 dpy_put_ok:
         jrst kret_ok
 
-/** Execute one complete userspace native Type-340 program. */
+/**
+ * @brief Execute one complete userspace native Type-340 program.
+ * @param AC1 Program words.
+ * @param AC2 Number of 36-bit words.
+ * @return AC1 = words executed, or zero for an empty program.
+ *
+ * This is the raw /DEV/DPY0 transport used by DPYVIEW.  It owns no retained
+ * graphics buffer: userspace replays the program at refresh rate.  A short
+ * raw lease suppresses the ordinary text refresher while frames keep arriving.
+ * The first word is always relative to Type-340 reset state.
+ *
+ * AC4..AC7 are caller-scratch.  The routine is synchronous so the mapped
+ * userspace source buffer remains valid until every word has reached DONE.
+ */
 dpy_write_words:
         jumpe 2,dpy_write_words_zero
-        move 4,1
-        move 5,2
-        move 6,2
-        movei 7,4
+        move 4,1                     ; current source
+        move 5,2                     ; remaining
+        move 6,2                     ; original count / return value
+        movei 7,4                    ; four 60-Hz ticks ~= 67 ms
         movem 7,dpy_raw_hold
 dpy_write_wait_idle:
         skipe dpy_pending
         jrst dpy_write_wait_idle
+        ; Start each submission from a deterministic display state.  DPYVIEW
+        ; submits a complete frame in one WRITE_WORDS call.
         cono 0130,000107
         setzm dpy_refresh_iowd
 dpy_write_loop:
@@ -274,7 +293,7 @@ dpy_refresh_divider:
 /** Last resident CLK tick observed by the stackless PI6 display hook. */
 dpy_clk_last_tick:
         .block 1
-/** Remaining real line-clock ticks for raw-display ownership. */
+/** Remaining real line-clock ticks for userspace raw-display ownership. */
 dpy_raw_hold:
         .block 1
 /** AOBJN state: negative remaining count in LH, current banner address in RH. */

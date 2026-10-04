@@ -968,17 +968,24 @@ cmd_halt(int argc, kword_t **argv, struct u_io *io)
 
 #if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_DPYVIEW
 #define DPYVIEW_MAX_WORDS 1024U
+
 static kword_t dpyview_words[DPYVIEW_MAX_WORDS];
+
 static int
 cmd_dpyview(int argc, kword_t **argv, struct u_io *io)
 {
         kword_t dpy_path[U_PATH_WORDS];
         unsigned int used;
-        int fd, dpy, n;
+        int fd;
+        int dpy;
+        int n;
 
-        if (argc != 2) return cmd_err(io, "DPYVIEW", 0);
+        if (argc != 2)
+                return cmd_err(io, "DPYVIEW", 0);
         fd = dsys_open(argv[1], SYS_O_RDONLY);
-        if (fd < 0) return cmd_err(io, "DPYVIEW", argv[1]);
+        if (fd < 0)
+                return cmd_err(io, "DPYVIEW", argv[1]);
+
         used = 0U;
         while (used < DPYVIEW_MAX_WORDS) {
                 n = dsys_read_words(fd, &dpyview_words[used],
@@ -987,7 +994,8 @@ cmd_dpyview(int argc, kword_t **argv, struct u_io *io)
                         (void)dsys_close(fd);
                         return cmd_err(io, "DPYVIEW", argv[1]);
                 }
-                if (n == 0) break;
+                if (n == 0)
+                        break;
                 used += (unsigned int)n;
         }
         if (used == DPYVIEW_MAX_WORDS) {
@@ -999,10 +1007,19 @@ cmd_dpyview(int argc, kword_t **argv, struct u_io *io)
                 }
         }
         (void)dsys_close(fd);
-        if (used == 0U) return cmd_err(io, "DPYVIEW: EMPTY", argv[1]);
-        if (u_s6_pack(dpy_path, U_PATH_WORDS, "/DEV/DPY0") != 0) return 1;
+        if (used == 0U)
+                return cmd_err(io, "DPYVIEW: EMPTY", argv[1]);
+
+        if (u_s6_pack(dpy_path, U_PATH_WORDS, "/DEV/DPY0") != 0)
+                return 1;
         dpy = dsys_open(dpy_path, SYS_O_WRONLY);
-        if (dpy < 0) return cmd_err(io, "DPYVIEW: NO DPY", dpy_path);
+        if (dpy < 0)
+                return cmd_err(io, "DPYVIEW: NO DPY", dpy_path);
+
+        /* Type 340 is a refresh display.  Replay the complete native program
+         * every two line-clock ticks (30 Hz).  The kernel raw lease suppresses
+         * retained TTY refresh while these frames continue to arrive and
+         * expires automatically when this process exits. */
         for (;;) {
                 n = dsys_write_words(dpy, dpyview_words, used);
                 if (n != (int)used) {
