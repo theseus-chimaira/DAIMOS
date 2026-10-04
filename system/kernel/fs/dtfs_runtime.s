@@ -709,6 +709,77 @@ dtfs_lookup_return:
 
 ; Native chmod only.  Foreign personalities are read-only at this provider
 ; entry.  Keep NODE/MODE in callee-saved ACs across C helpers.
+        .globl  dtfs_rename
+; int dtfs_rename(olddir, oldname, newdir, newname)
+; Cold metadata path.  Four callee-saved ACs retain the arguments and one
+; stack word retains the source slot while helper calls use caller-scratch ACs.
+dtfs_rename:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        push    17,[0]                  ; source slot
+        move    010,1                   ; olddir
+        move    011,2                   ; oldname
+        move    012,3                   ; newdir
+        move    013,4                   ; newname
+
+        pushj   17,dtfs_is_root
+        jumpe   1,dtfs_rename_fail
+        move    1,012
+        pushj   17,dtfs_is_root
+        jumpe   1,dtfs_rename_fail
+        move    1,010
+        xor     1,012
+        and     1,[007700000000]        ; mount ids must match
+        jumpn   1,dtfs_rename_fail
+        move    1,010
+        pushj   17,dtfs_load
+        jumpn   1,dtfs_rename_fail
+
+        move    1,010
+        move    2,011
+        movei   3,(17)
+        pushj   17,dtfs_scan_slot
+        jumpn   1,dtfs_rename_fail
+        move    1,010
+        move    2,013
+        setz    3,
+        pushj   17,dtfs_scan_slot
+        aoje    1,dtfs_rename_name      ; exactly -1 means destination absent
+        jrst    dtfs_rename_fail
+
+dtfs_rename_name:
+        .if DTFS_ENABLE_FOREIGN
+        move    1,010
+        pushj   17,dtfs_personality
+        jumpe   1,dtfs_rename_native
+        move    4,1
+        move    1,(17)                  ; source slot
+        move    2,013                   ; new name
+        setz    3,
+        cain    4,020                   ; ITS personality flag to helper
+        movei   3,1
+        pushj   17,dtfs_foreign_set_name
+        jumpn   1,dtfs_rename_fail
+        jrst    dtfs_rename_commit
+        .endif
+
+dtfs_rename_native:
+        move    1,(17)
+        move    2,013
+        pushj   17,dtfs_set_name
+
+dtfs_rename_commit:
+        move    1,010
+        pushj   17,dtfs_commit
+        jrst    dtfs_rename_done
+dtfs_rename_fail:
+        seto    1,
+dtfs_rename_done:
+        sub     17,[1,,1]
+        jrst    dtfs_restore4
+
 dtfs_chmod:
         push    17,010
         push    17,011

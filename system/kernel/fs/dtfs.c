@@ -513,34 +513,7 @@ dtfs_unlink(vnode_t dir, const struct vfs_name *name)
         return dtfs_commit(dir);
 }
 
-int
-dtfs_rename(vnode_t olddir, const struct vfs_name *oldname,
-    vnode_t newdir, const struct vfs_name *newname)
-{
-        unsigned int slot;
-#if DTFS_ENABLE_TENEX || DTFS_ENABLE_ITS
-        unsigned int personality;
-#endif
-
-        if (!dtfs_is_root(olddir) || !dtfs_is_root(newdir) ||
-            VFS_MOUNT_ID(olddir) != VFS_MOUNT_ID(newdir) ||
-            dtfs_load(olddir) != 0 ||
-            dtfs_scan_slot(olddir, oldname, &slot) != 0 ||
-            dtfs_scan_slot(olddir, newname, 0) != -1)
-                return -1;
-#if DTFS_ENABLE_TENEX || DTFS_ENABLE_ITS
-        personality = dtfs_personality(olddir);
-        if (personality != 0U) {
-                if (dtfs_foreign_set_name(slot, newname,
-                    personality == DTFS_MEDIA_ITS) != 0)
-                        return -1;
-        } else
-#endif
-        {
-                dtfs_set_name(slot, newname);
-        }
-        return dtfs_commit(olddir);
-}
+/* dtfs_rename is implemented compactly in dtfs_runtime.s. */
 
 int
 dtfs_truncate(vnode_t node, unsigned int words)
