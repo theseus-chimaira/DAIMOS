@@ -11,9 +11,10 @@
  * Ordinary DPY TTY text is deliberately uppercase-only: lowercase input is
  * normalized before storage.  The Type-342 shifted set is used only for the
  * few SIXBIT punctuation glyphs that are not present in the primary set.
- * The native slots contain only character-mode words and are position
- * independent; the refresh driver supplies the frame setup and then streams
- * logical rows in ring order.
+ * The native slots contain only the visible prefix of each row followed by
+ * CR/LF.  Trailing spaces are never refreshed.  dpy_text_rows_used bounds the
+ * highest logical row that can contain visible text, so the refresh driver
+ * also omits all trailing blank rows.
  */
 
 #include "dpy.h"
@@ -43,6 +44,7 @@
 kword_t dpy_text_base;
 kword_t dpy_text_top;
 kword_t dpy_text_active;
+kword_t dpy_text_rows_used;
 
 static unsigned int dpy_text_row;
 static unsigned int dpy_text_col;
@@ -141,6 +143,7 @@ dpy_compile_row(unsigned int prow)
         kword_t *words;
         kword_t *prog;
         unsigned int col;
+        unsigned int last;
         unsigned int code;
         unsigned int shift;
         unsigned int shifted;
@@ -153,9 +156,13 @@ dpy_compile_row(unsigned int prow)
         for (i = 0U; i < DPY_TEXT_PROG_WORDS; ++i)
                 prog[i] = 0UL;
 
+        last = DPY_TEXT_COLS;
+        while (last != 0U && dpy_cell_get(prow, last - 1U) == 0U)
+                --last;
+
         ncode = 0U;
         shifted = 0U;
-        for (col = 0U; col < DPY_TEXT_COLS; ++col) {
+        for (col = 0U; col < last; ++col) {
                 code = dpy_code(dpy_cell_get(prow, col), &shift);
                 if (shift != shifted) {
                         dpy_emit_code(prog, &ncode,
@@ -200,6 +207,7 @@ dpy_text_start(void)
 
         dpy_text_base = base;
         dpy_text_top = 0UL;
+        dpy_text_rows_used = 0UL;
         dpy_text_row = 0U;
         dpy_text_col = 0U;
         for (row = 0U; row < DPY_TEXT_ROWS; ++row)
@@ -219,6 +227,7 @@ dpy_scroll(void)
                 dpy_text_top = 0UL;
         dpy_clear_row(old_top);
         dpy_text_row = DPY_TEXT_ROWS - 1U;
+        dpy_text_rows_used = (kword_t)(DPY_TEXT_ROWS - 1U);
 }
 
 static void
@@ -256,6 +265,7 @@ dpy_text_putchar(unsigned int ch)
                 for (row = 0U; row < DPY_TEXT_ROWS; ++row)
                         dpy_clear_row(row);
                 dpy_text_top = 0UL;
+                dpy_text_rows_used = 0UL;
                 dpy_text_row = 0U;
                 dpy_text_col = 0U;
                 return 0;
@@ -279,6 +289,8 @@ dpy_text_putchar(unsigned int ch)
 
         prow = dpy_phys_row(dpy_text_row);
         dpy_cell_set(prow, dpy_text_col, dpy_sixbit(ch));
+        if (dpy_text_rows_used < (kword_t)(dpy_text_row + 1U))
+                dpy_text_rows_used = (kword_t)(dpy_text_row + 1U);
         ++dpy_text_col;
         dpy_compile_row(prow);
         if (dpy_text_col >= DPY_TEXT_COLS) {

@@ -39,6 +39,7 @@
         .globl dpy_text_base
         .globl dpy_text_top
         .globl dpy_text_active
+        .globl dpy_text_rows_used
 
         .equ DPY_TEXT_ROWS,052
         .equ DPY_TEXT_LENGTH_OFF,01114
@@ -76,7 +77,7 @@ dpy_pi_handler:
         ; The setup span has row = -1.  Thereafter each exhausted row selects
         ; the next physical row through the 42-row scroll ring.
         aos 1,dpy_refresh_row
-        cail 1,DPY_TEXT_ROWS
+        caml 1,dpy_text_rows_used
         jrst dpy_pi_refresh_complete
         add 1,dpy_text_top
         cail 1,DPY_TEXT_ROWS
