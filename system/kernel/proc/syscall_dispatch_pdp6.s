@@ -766,14 +766,8 @@ native_sys_logctl:
 
 native_sys_logctl_status:
         move    1,(17)                 ; user status[3]
-        pushj   17,native_sys_map_one
-        jumpe   1,native_sys_logctl_bad3
-        move    6,1
-        movei   0,3(1)
-        move    7,3
-        add     7,4
-        camle   0,7
-        jrst    native_sys_logctl_bad_map3
+        movei   5,3
+        pushj   17,native_sys_logctl_map
         movei   5,1
         pushj   17,sys_logstore_service_jump
         movem   1,(6)
@@ -785,14 +779,8 @@ native_sys_logctl_status:
 
 native_sys_logctl_logio:
         move    1,(17)                 ; user 128-word block
-        pushj   17,native_sys_map_one
-        jumpe   1,native_sys_logctl_bad3
-        move    6,1
-        movei   0,0200(1)
-        move    7,3
-        add     7,4
-        camle   0,7
-        jrst    native_sys_logctl_bad_map3
+        movei   5,0200
+        pushj   17,native_sys_logctl_map
         move    1,-1(17)               ; relative block
         move    2,6
         move    5,-2(17)
@@ -818,14 +806,8 @@ native_sys_logctl_mtc_status:
 
 native_sys_logctl_mtc_write:
         move    1,(17)                 ; user record
-        pushj   17,native_sys_map_one
-        jumpe   1,native_sys_logctl_bad3
-        move    6,1
-        movei   0,0200(1)
-        move    7,3
-        add     7,4
-        camle   0,7
-        jrst    native_sys_logctl_bad_map3
+        movei   5,0200
+        pushj   17,native_sys_logctl_map
         move    1,-1(17)               ; unit
         move    2,6
         movei   3,0200
@@ -850,14 +832,8 @@ native_sys_logctl_wait:
 
 native_sys_logctl_append:
         move    1,(17)                 ; user 128-word record scratch
-        pushj   17,native_sys_map_one
-        jumpe   1,native_sys_logctl_bad3
-        move    6,1
-        movei   0,0200(1)
-        move    7,3
-        add     7,4
-        camle   0,7
-        jrst    native_sys_logctl_bad_map3
+        movei   5,0200
+        pushj   17,native_sys_logctl_map
         move    1,6
         movei   5,4                    ; LOGSTORE_MRES_OP_APPEND
         pushj   17,sys_logstore_service_jump
@@ -865,6 +841,21 @@ native_sys_logctl_append:
         pushj   17,vm_user_mapping_release
         pop     17,1
         jrst    native_sys_logctl_done3
+
+; Map AC1 and require AC5 contiguous user words.  AC6 receives the mapped
+; base.  All LOGCTL users share the same three-word syscall frame, so failure
+; can tail directly into its common unwind.  AC5 survives VM mapping helpers.
+native_sys_logctl_map:
+        pushj   17,native_sys_map_one
+        jumpe   1,native_sys_logctl_bad3
+        move    6,1
+        move    0,1
+        add     0,5
+        move    7,3
+        add     7,4
+        camle   0,7
+        jrst    native_sys_logctl_bad_map3
+        popj    17,
 
 native_sys_logctl_bad_map3:
         pushj   17,vm_user_mapping_release
