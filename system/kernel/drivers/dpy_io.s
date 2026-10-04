@@ -60,18 +60,24 @@ dpy_pi_handler:
         movei 3,pdp10_pi_return_level7
         conso 0130,000200
         jrst pdp10_pi_dispatch
-        setzm dpy_pending
         cono 0130,000007
+        ; dpy_pending denotes ownership of the Type-344 DATAO stream, not
+        ; merely one outstanding word.  Keep it asserted throughout a
+        ; retained refresh frame so a higher-priority PI6 clock interrupt
+        ; cannot observe a false idle window between DONE and the next DATAO.
+        ; A zero refresh cursor identifies the standalone dpy_putword path.
+        skipn dpy_refresh_iowd
+        jrst dpy_pi_refresh_complete
         move 1,dpy_refresh_iowd
         aobjn 1,dpy_pi_refresh_send
         skipn dpy_text_active
-        jrst pdp10_pi_dispatch
+        jrst dpy_pi_refresh_complete
 
         ; The setup span has row = -1.  Thereafter each exhausted row selects
         ; the next physical row through the 42-row scroll ring.
         aos 1,dpy_refresh_row
         cail 1,DPY_TEXT_ROWS
-        jrst pdp10_pi_dispatch
+        jrst dpy_pi_refresh_complete
         add 1,dpy_text_top
         cail 1,DPY_TEXT_ROWS
         subi 1,DPY_TEXT_ROWS
@@ -81,7 +87,7 @@ dpy_pi_handler:
         addi 1,DPY_TEXT_LENGTH_OFF
         add 1,dpy_refresh_phys
         hrrz 1,(1)                    ; compiled words in this physical row
-        jumpe 1,pdp10_pi_dispatch
+        jumpe 1,dpy_pi_refresh_complete
         addi 1,1                      ; AOBJN initial count is -(n + 1)
         movn 1,1
         lsh 1,022
@@ -95,13 +101,16 @@ dpy_pi_handler:
         hrrm 1,dpy_refresh_iowd
         move 1,dpy_refresh_iowd
         aobjn 1,dpy_pi_refresh_send
-        jrst pdp10_pi_dispatch
+        jrst dpy_pi_refresh_complete
 dpy_pi_refresh_send:
         movem 1,dpy_refresh_iowd
         hrrz 1,1
         move 1,(1)
-        setom dpy_pending
         datao 0130,1
+        jrst pdp10_pi_dispatch
+dpy_pi_refresh_complete:
+        setzm dpy_refresh_iowd
+        setzm dpy_pending
         jrst pdp10_pi_dispatch
 
 /**
@@ -193,6 +202,7 @@ dpy_putword:
         skipe dpy_pending
         jrst kret_busy
 dpy_put_start:
+        setzm dpy_refresh_iowd
         setom dpy_pending
         datao 0130,1
 dpy_put_wait:

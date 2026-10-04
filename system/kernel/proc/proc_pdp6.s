@@ -2014,6 +2014,14 @@ proc_restore_idle:
 ; tick: save the sleeping executive continuation and select a runnable process
 ; without charging recent CPU or aging sleepers.
 proc_sched_pi_resched:
+        ; PI6 may preempt the lower-priority PI7 device path.  Never save or
+        ; replace an executive continuation while PI7 is held: that
+        ; continuation is the nested PI7 frame, not an ordinary process
+        ; kernel context.  Abandoning it would resume user code with PI7 still
+        ; held and permanently mask subsequent PI7 requests.
+        coni    0004,1
+        trne    1,000400               ; CONI PI: PIH level 7 = bit 0400
+        popj    17,
         move    1,proc_current_slot
         jumpn   1,proc_sched_resched_save
         move    1,proc_sched_cursor
@@ -2051,6 +2059,15 @@ proc_sched_timer_done:
         skipn   proc_current_slot
         pushj   17,kernel_idle_stack_watermark_scan
 .endif
+        ; A real PI6 clock tick may nest inside PI7.  Timekeeping above is
+        ; safe, but a process switch is not: proc_save_kernel would save the
+        ; nested PI7 continuation and proc_restore_* could return directly to
+        ; user mode, leaving PI7 set in the hardware hold register forever.
+        ; Defer only the scheduling decision; the next 60 Hz tick retries it
+        ; after PI7 has dismissed normally.
+        coni    0004,1
+        trne    1,000400               ; CONI PI: PIH level 7 = bit 0400
+        popj    17,
         skipn   proc_current_slot
         jrst    proc_sched_tick_idle
         jrst    proc_sched_tick_ready
