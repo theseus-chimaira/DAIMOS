@@ -311,7 +311,7 @@ CONFIGCTL_DXR = $(USERLAND_BUILD_ROOT)/userland/configctl.dxr
 MAKE_DXR = $(USERLAND_BUILD_ROOT)/userland/make.dxr
 SYSTEM_COMMAND_NAMES = ECHO CAT LS MKDIR RM PWD STAT TOUCH DATE RMDIR CP CHMOD \
 	CHOWN MKFS.DTFS FSCK.DTFS MOUNT MOUNT.DTFS UNMOUNT MV HEXDUMP PS DEVS \
-	MODS MOUNTS FREE MEMSTAT SYSCTL DF TTYOUT HALT
+	MODS MOUNTS FREE MEMSTAT SYSCTL DF TTYOUT HALT DPYVIEW
 SYSTEM_UTILITY_MISC_NAMES = TRUE FALSE CHECK BASENAME DIRNAME ENV WHICH EXPR BC \
 	TEST BRACKET CAL
 SYSTEM_UTILITY_TEXT_NAMES = CMP HEAD GREP WC TEE TAIL CUT SORT DD STRINGS
@@ -631,7 +631,7 @@ $(DPY_MRES_OBJ): $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dpy-mres.dxr -M $(BUILD)/dpy-mres.map \
 	    -R $@ -N dpy_mres_package -X dpy_pi_handler -X dpy_clock_handler \
 	    -X dpy_clk_tick_load -X dpy_putchar \
-	    -X dpy_banner_init \
+	    -X dpy_banner_init -X dpy_write_words \
 	    $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj
 
 $(TTY_MRES_OBJ): $(BUILD)/tty_io.dobj $(KCORE_MAP)

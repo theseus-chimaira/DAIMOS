@@ -966,6 +966,57 @@ cmd_halt(int argc, kword_t **argv, struct u_io *io)
 }
 #endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_DPYVIEW
+#define DPYVIEW_MAX_WORDS 1024U
+static kword_t dpyview_words[DPYVIEW_MAX_WORDS];
+static int
+cmd_dpyview(int argc, kword_t **argv, struct u_io *io)
+{
+        kword_t dpy_path[U_PATH_WORDS];
+        unsigned int used;
+        int fd, dpy, n;
+
+        if (argc != 2) return cmd_err(io, "DPYVIEW", 0);
+        fd = dsys_open(argv[1], SYS_O_RDONLY);
+        if (fd < 0) return cmd_err(io, "DPYVIEW", argv[1]);
+        used = 0U;
+        while (used < DPYVIEW_MAX_WORDS) {
+                n = dsys_read_words(fd, &dpyview_words[used],
+                    DPYVIEW_MAX_WORDS - used);
+                if (n < 0) {
+                        (void)dsys_close(fd);
+                        return cmd_err(io, "DPYVIEW", argv[1]);
+                }
+                if (n == 0) break;
+                used += (unsigned int)n;
+        }
+        if (used == DPYVIEW_MAX_WORDS) {
+                kword_t extra;
+                n = dsys_read_words(fd, &extra, 1U);
+                if (n != 0) {
+                        (void)dsys_close(fd);
+                        return cmd_err(io, "DPYVIEW: TOO LARGE", argv[1]);
+                }
+        }
+        (void)dsys_close(fd);
+        if (used == 0U) return cmd_err(io, "DPYVIEW: EMPTY", argv[1]);
+        if (u_s6_pack(dpy_path, U_PATH_WORDS, "/DEV/DPY0") != 0) return 1;
+        dpy = dsys_open(dpy_path, SYS_O_WRONLY);
+        if (dpy < 0) return cmd_err(io, "DPYVIEW: NO DPY", dpy_path);
+        for (;;) {
+                n = dsys_write_words(dpy, dpyview_words, used);
+                if (n != (int)used) {
+                        (void)dsys_close(dpy);
+                        return cmd_err(io, "DPYVIEW: WRITE", dpy_path);
+                }
+                if (dsys_sleep(2U) != 0) {
+                        (void)dsys_close(dpy);
+                        return 0;
+                }
+        }
+}
+#endif
+
 #if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MEMSTAT || \
     DAIMOS_CMD_PROGRAM == CMD_PROGRAM_SYSCTL
 static int
@@ -1070,6 +1121,8 @@ CMD_PROGRAM_ENTRY(DAIMOS_CMD_TOKEN)(int argc, kword_t **argv,
         return cmd_ttyout(argc, argv, io);
 #elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_HALT
         return cmd_halt(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_DPYVIEW
+        return cmd_dpyview(argc, argv, io);
 #else
         return cmd_err(io, "EXEC: BAD PROGRAM", argv[0]);
 #endif

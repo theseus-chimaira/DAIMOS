@@ -26,6 +26,7 @@
         .globl dpy_pi_handler
         .globl dpy_clock_handler
         .globl dpy_putword
+        .globl dpy_write_words
         .globl dpy_putchar
         .globl dpy_banner_init
         .globl dpy_clk_tick_load
@@ -130,6 +131,11 @@ dpy_clock_handler:
         camn 1,dpy_clk_last_tick
         jrst pdp10_pi_handler_return
         movem 1,dpy_clk_last_tick
+        skipn dpy_raw_hold
+        jrst dpy_clock_text
+        sos dpy_raw_hold
+        jrst pdp10_pi_handler_return
+dpy_clock_text:
         sosle dpy_refresh_divider
         jrst pdp10_pi_handler_return
         movei 1,2
@@ -210,6 +216,34 @@ dpy_put_wait:
 dpy_put_ok:
         jrst kret_ok
 
+/** Execute one complete userspace native Type-340 program. */
+dpy_write_words:
+        jumpe 2,dpy_write_words_zero
+        move 4,1
+        move 5,2
+        move 6,2
+        movei 7,4
+        movem 7,dpy_raw_hold
+dpy_write_wait_idle:
+        skipe dpy_pending
+        jrst dpy_write_wait_idle
+        cono 0130,000107
+        setzm dpy_refresh_iowd
+dpy_write_loop:
+        move 1,(4)
+        setom dpy_pending
+        datao 0130,1
+dpy_write_wait_done:
+        skipe dpy_pending
+        jrst dpy_write_wait_done
+        addi 4,1
+        sojg 5,dpy_write_loop
+        move 1,6
+        popj 17,
+dpy_write_words_zero:
+        setz 1,
+        popj 17,
+
 /**
  * @brief Update the retained Type-342 terminal image.
  * @param AC1 ASCII byte.
@@ -239,6 +273,9 @@ dpy_refresh_divider:
         .block 1
 /** Last resident CLK tick observed by the stackless PI6 display hook. */
 dpy_clk_last_tick:
+        .block 1
+/** Remaining real line-clock ticks for raw-display ownership. */
+dpy_raw_hold:
         .block 1
 /** AOBJN state: negative remaining count in LH, current banner address in RH. */
 dpy_refresh_iowd:

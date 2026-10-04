@@ -169,6 +169,7 @@ file_path_setchar:
         .globl  tty_read_s6rec_jump
         .globl  ttydpy_putchar_jump
         .globl  ttydpy_getchar_jump
+        .globl  dpy_write_words_jump
         .globl  ptr_read_words_jump
         .globl  ptp_write_words_jump
         .globl  cr_read_words_jump
@@ -586,6 +587,8 @@ file_write_words:
         jrst    file_write_words_cp
         camn    1,[020002000022]        ; LPT0
         jrst    file_write_words_lpt
+        camn    1,[020002000010]        ; DPY0 native display program
+        jrst    file_write_words_dpy
         camn    1,[020002000000]        ; CTY0 controlling-TTY proxy
         jrst    file_write_words_tty
         move    3,-1(17)
@@ -611,6 +614,11 @@ file_write_words_lpt:
         move    1,-1(17)                ; mapped S6REC source
         move    2,(17)                  ; supplied word count
         pushj   17,lpt_write_s6rec_jump
+        jrst    file_write_words_result
+file_write_words_dpy:
+        move    1,-1(17)                ; mapped native Type-340 words
+        move    2,(17)                  ; complete frame word count
+        pushj   17,dpy_write_words_jump
 file_write_words_result:
         jumple  1,file_write_words_done
         addm    1,1(010)
@@ -642,6 +650,8 @@ lpt_write_s6rec_jump:
 ttydpy_putchar_jump:
         jrst    kret_neg1
 ttydpy_getchar_jump:
+        jrst    kret_neg1
+dpy_write_words_jump:
         jrst    kret_neg1
 
 ; int file_readdir(int fd, struct vfs_dirent *ent)
