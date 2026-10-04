@@ -27,7 +27,8 @@ dtfs_mres_reg_dispatch:
 
 ; Return total/used physical data words for the mounted DECtape.  Reserved
 ; directory/format blocks are already marked non-free in every supported
-; allocation map, so the same census covers native, TENEX and ITS media.
+; allocation map.  The supported PDP-6 build uses native DTFS only; dormant
+; TENEX/ITS compatibility remains behind disabled assembly guards.
 dtfs_space:
         push    17,010
         push    17,011
@@ -1240,7 +1241,32 @@ dtfs_load_fail:
         jrst    kret_neg1
 
 .else
-; Native-only build: packed media contains only the unit.
+; Native-only build: packed media contains only the unit in RH; LH still stores
+; the mount owner used by VFS stat/access policy.
+        .globl  dtfs_stat_owner
+dtfs_stat_owner:
+        ldb     3,[POINT 6,1,11]
+        subi    3,1
+        hlrz    4,dtfs_media(3)
+        move    3,4
+        lsh     3,-011
+        andi    3,0777
+        movem   3,4(2)
+        andi    4,0777
+        movem   4,5(2)
+        popj    17,
+
+        .globl  dtfs_personality
+dtfs_personality:
+        setz    1,
+        popj    17,
+
+        .globl  dtfs_scan_slot
+dtfs_scan_slot:
+        move    1,2
+        move    2,3
+        jrst    dtfs_native_scan_slot
+
         .globl  dtfs_patch_media
 dtfs_patch_media:
         movem   2,dtfs_media-1(1)

@@ -172,7 +172,7 @@ commit:
 
 #endif
 
-#if !DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS
+#if !DTFS_ENABLE_TENEX && !DTFS_ENABLE_ITS && !defined(DTFS_EXTERNAL_RESIZE)
 static int
 dtfs_resize(vnode_t node, unsigned int words)
 {

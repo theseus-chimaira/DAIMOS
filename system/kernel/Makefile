@@ -346,12 +346,13 @@ ${BUILD}/d6fs_provider.s: fs/d6fs_provider.c fs/d6fs_provider_mutation.s ${KERNE
 	cat $@.c fs/d6fs_provider_mutation.s > $@
 	rm -f $@.c
 
-# DAIMOS 0.9/1.0 always includes native, TENEX, and ITS DECtape support.
-# These compatibility paths are deliberately not build-time options.
+# PDP-6 production builds use native DTFS only.  TENEX/ITS compatibility is
+# disabled to keep the resident DECtape filesystem compact.  The target keeps
+# the hand-maintained assembly resize implementation independently.
 ${BUILD}/dtfs.s: Makefile fs/dtfs.c fs/dtfs_chain_walk.s fs/dtfs_resize.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	${PDP10_CC} ${PDP10_CFLAGS} -DDTFS_ENABLE_TENEX=1 -DDTFS_ENABLE_ITS=1 ${INCLUDES} -S fs/dtfs.c -o $@.c
-	@cat $@.c fs/dtfs_chain_walk.s > $@; { echo ".set DTFS_ENABLE_TENEX,1"; echo ".set DTFS_ENABLE_ITS,1"; cat fs/dtfs_resize.s; } >> $@; rm -f $@.c
+	${PDP10_CC} ${PDP10_CFLAGS} -DDTFS_ENABLE_TENEX=0 -DDTFS_ENABLE_ITS=0 -DDTFS_EXTERNAL_RESIZE=1 ${INCLUDES} -S fs/dtfs.c -o $@.c
+	@cat $@.c fs/dtfs_chain_walk.s > $@; { echo ".set DTFS_ENABLE_TENEX,0"; echo ".set DTFS_ENABLE_ITS,0"; cat fs/dtfs_resize.s; } >> $@; rm -f $@.c
 
 ${BUILD}/tsfs.s: fs/tsfs.c ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
@@ -371,7 +372,7 @@ ${BUILD}/proc_run.s: proc/proc_run.s
 
 ${BUILD}/dtfs_runtime.s: Makefile fs/dtfs_runtime.s
 	@mkdir -p ${BUILD}
-	@{ echo ".set DTFS_ENABLE_TENEX,1"; echo ".set DTFS_ENABLE_ITS,1"; echo ".set DTFS_ENABLE_FOREIGN,1"; cat fs/dtfs_runtime.s; } > $@
+	@{ echo ".set DTFS_ENABLE_TENEX,0"; echo ".set DTFS_ENABLE_ITS,0"; echo ".set DTFS_ENABLE_FOREIGN,0"; cat fs/dtfs_runtime.s; } > $@
 
 COPY_ASM_SRCS = core/ret.s \
 	drivers/dsk270.s \
