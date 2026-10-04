@@ -2024,6 +2024,15 @@ proc_sched_pi_resched:
         popj    17,
         move    1,proc_current_slot
         jumpn   1,proc_sched_resched_save
+        ; Slot 0 is also used while KINIT still owns the bootstrap executive
+        ; stack.  Only the permanent idle loop is a schedulable slot-0
+        ; context; switching away from any other executive continuation would
+        ; strand clk_pi_service's save frame on the old stack.
+        hrrz    1,pdp10_pi_level6
+        caige   1,proc_idle_loop
+        popj    17,
+        cail    1,proc_idle_loop_end
+        popj    17,
         move    1,proc_sched_cursor
         trne    1,0400                  ; slot-0 swap service owns idle stack
         popj    17,
@@ -2055,10 +2064,6 @@ proc_sched_pi_tick:
         movsi   2,PROC_TIMER_DUE_LH
         iorm    2,proc_timer_next
 proc_sched_timer_done:
-.if PROC_STACK_WATERMARK
-        skipn   proc_current_slot
-        pushj   17,kernel_idle_stack_watermark_scan
-.endif
         ; A real PI6 clock tick may nest inside PI7.  Timekeeping above is
         ; safe, but a process switch is not: proc_save_kernel would save the
         ; nested PI7 continuation and proc_restore_* could return directly to
@@ -2069,8 +2074,21 @@ proc_sched_timer_done:
         trne    1,000400               ; CONI PI: PIH level 7 = bit 0400
         popj    17,
         skipn   proc_current_slot
-        jrst    proc_sched_tick_idle
+        jrst    proc_sched_tick_idle_check
         jrst    proc_sched_tick_ready
+proc_sched_tick_idle_check:
+        ; proc_current_slot == 0 is ambiguous during bootstrap.  Permit a
+        ; slot-0 context switch only when PI6 interrupted the real idle loop.
+        ; KINIT and other bootstrap executive code must run to completion on
+        ; the stack on which clk_pi_service saved AC2/AC3.
+        hrrz    1,pdp10_pi_level6
+        caige   1,proc_idle_loop
+        popj    17,
+        cail    1,proc_idle_loop_end
+        popj    17,
+.if PROC_STACK_WATERMARK
+        pushj   17,kernel_idle_stack_watermark_scan
+.endif
 proc_sched_tick_idle:
         move    1,proc_timer_next
         tlne    1,PROC_TIMER_DUE_LH
@@ -2225,6 +2243,7 @@ proc_idle_loop:
         cono    0004,004002
 proc_idle_wait:
         jrst    proc_idle_loop
+proc_idle_loop_end:
 
         .bss
 proc_timer_clock:
