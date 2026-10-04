@@ -1024,6 +1024,8 @@ proc_control_isatty:
         tlz     1,707070               ; strip packed FILE metadata
         camn    1,[020002000000]       ; MonitorFS device view CTY0 IO endpoint
         jrst    proc_control_tty_owned
+        camn    1,[020002000023]       ; TTYDPY0 is TTY0 with DPY output
+        jrst    proc_control_tty_owned
         jrst    kret_neg1
 
 ; Classic umask semantics: install ARG low nine bits and return the old mask.

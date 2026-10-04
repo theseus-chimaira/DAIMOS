@@ -37,7 +37,7 @@ mfsdev_name_length:
 
 ; Validate AC4 as a present device id.  Return 0/-1 in AC1.
 mfsdev_validate_id:
-        cail    4,023
+        cail    4,024
         jrst    kret_neg1
         skipn   5,mfsdev_names(4)
         jrst    kret_neg1
@@ -57,15 +57,28 @@ mfsdev_lookup:
         addi    0,2                    ; result kind: endpoint=2, state dir=3
         movei   4,0
 mfsdev_lookup_scan:
-        cail    4,023
+        cail    4,024
         jrst    kret_neg1
         skipn   5,mfsdev_names(4)
         jrst    mfsdev_lookup_next
+        caie    4,023                  ; TTYDPY0 is the sole >6-char device
+        jrst    mfsdev_lookup_short
+        movei   6,7
+        came    6,(2)
+        jrst    mfsdev_lookup_next
+        came    5,[646471446071]       ; SIXBIT /TTYDPY/
+        jrst    mfsdev_lookup_next
+        move    6,2(2)
+        came    6,[200000000000]       ; SIXBIT /0     /
+        jrst    mfsdev_lookup_next
+        jrst    mfsdev_lookup_match
+mfsdev_lookup_short:
         came    5,1(2)
         jrst    mfsdev_lookup_next
         pushj   17,mfsdev_name_length
         came    6,(2)
         jrst    mfsdev_lookup_next
+mfsdev_lookup_match:
         move    5,0
         addi    5,020000               ; provider 2 + selected local kind
         hrl     4,5
@@ -159,7 +172,7 @@ mfsdev_readdir:
         movei   5,0
         movei   7,0
 mfsdev_readdir_scan:
-        cail    5,023
+        cail    5,024
         jrst    kret_zero
         skipn   6,mfsdev_names(5)
         jrst    mfsdev_readdir_next
@@ -171,6 +184,28 @@ mfsdev_readdir_next:
 
 mfsdev_readdir_found:
         move    1,5                    ; preserve device id across name length
+        caie    1,023
+        jrst    mfsdev_readdir_found_short
+        movei   6,7
+        move    5,[646471446071]       ; SIXBIT /TTYDPY/
+        move    4,3                    ; struct vfs_dirent *
+        caie    0,2
+        jrst    mfsdev_readdir_ttydpy_dir
+        move    0,1
+        pushj   17,mfsdev_io_type
+        jrst    mfsdev_readdir_ttydpy_store
+mfsdev_readdir_ttydpy_dir:
+        movei   7,1
+mfsdev_readdir_ttydpy_store:
+        movem   6,(4)
+        movem   5,1(4)
+        move    5,[200000000000]       ; SIXBIT /0     /
+        movem   5,2(4)
+        setzm   3(4)
+        setzm   4(4)
+        movem   7,5(4)
+        jrst    kret_one
+mfsdev_readdir_found_short:
         move    5,6
         pushj   17,mfsdev_name_length
         caie    0,2
@@ -359,10 +394,14 @@ mfsdev_stats_select_device:
         jrst    mfsdev_stats_emit
 
 mfsdev_stats_device_read_line:
+        cain    4,023                  ; TTYDPY0 input is CTY0
+        jrst    mfsdev_stats_ttydpy_reads
         cain    4,020                  ; D6SET is an aggregate mount source
         jrst    mfsdev_stats_d6_reads
         jrst    mfsdev_stats_device_reads
 mfsdev_stats_device_write_line:
+        cain    4,023                  ; TTYDPY0 output is DPY0
+        jrst    mfsdev_stats_ttydpy_writes
         cain    4,020
         jrst    mfsdev_stats_d6_writes
         jrst    mfsdev_stats_device_writes
@@ -371,6 +410,12 @@ mfsdev_stats_d6_reads:
         jrst    mfsdev_stats_emit
 mfsdev_stats_d6_writes:
         move    1,mfsdev_d6set_writes
+        jrst    mfsdev_stats_emit
+mfsdev_stats_ttydpy_reads:
+        move    1,mfsdev_io_in
+        jrst    mfsdev_stats_emit
+mfsdev_stats_ttydpy_writes:
+        move    1,mfsdev_io_out+010
         jrst    mfsdev_stats_emit
 
 mfsdev_stats_device_reads:

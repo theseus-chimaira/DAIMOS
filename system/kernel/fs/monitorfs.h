@@ -36,7 +36,8 @@
 #define MONITORFS_DEV_D6SET0          16U
 #define MONITORFS_DEV_DRM0            17U
 #define MONITORFS_DEV_LPT0            18U
-#define MONITORFS_DEV_COUNT           19U
+#define MONITORFS_DEV_TTYDPY0         19U
+#define MONITORFS_DEV_COUNT           20U
 
 #define MONITORFS_PRESENT(id)         (1UL << (id))
 

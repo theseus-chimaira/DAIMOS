@@ -19,6 +19,8 @@
         .globl tty_dcs_putchar_address
         .globl tty_ge_putchar_address
         .globl tty_dpy_putchar_address
+        .globl tty_ttydpy_putchar
+        .globl tty_ttydpy_getchar
         .globl tty_cty_getchar_address
         .globl tty_dcs_getchar_address
         .globl tty_ge_getchar_address
@@ -104,6 +106,22 @@ tty_ge_getchar_address:
 tty_getchar_cty:
 tty_cty_getchar_address:
         jrst kret_arg
+
+/**
+ * @brief Composite Type-340 terminal raw input.
+ * @return Directly from the CTY0 physical input backend.
+ */
+tty_ttydpy_getchar:
+        jrst tty_cty_getchar_address
+
+/**
+ * @brief Composite Type-340 terminal raw output.
+ * @param AC1 Terminal byte; high bits are ignored.
+ * @return Directly from the DPY retained-text backend.
+ */
+tty_ttydpy_putchar:
+        andi 1,0377
+        jrst tty_dpy_putchar_address
 
 ; int tty_write_s6rec(const kword_t *words, unsigned int nwords)
 ; Render exactly one complete S6REC text record to the caller's controlling

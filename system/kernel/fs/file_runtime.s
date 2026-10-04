@@ -167,6 +167,8 @@ file_path_setchar:
         .globl  lpt_write_s6rec_jump
         .globl  tty_write_s6rec_jump
         .globl  tty_read_s6rec_jump
+        .globl  ttydpy_putchar_jump
+        .globl  ttydpy_getchar_jump
         .globl  ptr_read_words_jump
         .globl  ptp_write_words_jump
         .globl  cr_read_words_jump
@@ -198,7 +200,12 @@ file_readchar:
         tlz     1,707070
         camn    1,[020002000000]       ; MonitorFS device view CTY0 IO endpoint
         jrst    file_readchar_cty
+        camn    1,[020002000023]       ; TTYDPY0: CTY0 input + DPY0 output
+        jrst    file_readchar_ttydpy
         seto    1,                     ; other device streams are unsupported
+        jrst    file_readchar_done
+file_readchar_ttydpy:
+        pushj   17,ttydpy_getchar_jump
         jrst    file_readchar_done
 file_readchar_cty:
         move    1,[-3]
@@ -248,7 +255,13 @@ file_writechar:
         jrst    file_writechar_cty
         camn    1,[020002000022]       ; MonitorFS device view LPT0 IO endpoint
         jrst    file_writechar_lpt
+        camn    1,[020002000023]       ; TTYDPY0
+        jrst    file_writechar_ttydpy
         seto    1,
+        jrst    file_writechar_done
+file_writechar_ttydpy:
+        move    1,(17)                 ; original character
+        pushj   17,ttydpy_putchar_jump
         jrst    file_writechar_done
 file_writechar_lpt:
         move    1,(17)                 ; original character
@@ -625,6 +638,10 @@ cp_write_words_jump:
 lpt_putchar_jump:
         jrst    kret_neg1
 lpt_write_s6rec_jump:
+        jrst    kret_neg1
+ttydpy_putchar_jump:
+        jrst    kret_neg1
+ttydpy_getchar_jump:
         jrst    kret_neg1
 
 ; int file_readdir(int fd, struct vfs_dirent *ent)

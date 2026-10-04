@@ -19,9 +19,9 @@
  */
         .bss
         .globl  mfsdev_names
-/** Frozen detected-device SIXBIT names, indexed by MonitorFS device id 0..022. */
+/** Frozen detected-device SIXBIT names, indexed by MonitorFS device id 0..023. */
 mfsdev_names:
-        .block  023                    ; frozen detected-device SIXBIT names
+        .block  024                    ; frozen detected-device SIXBIT names
 
         .globl  mfsdev_io_in
         .globl  mach_user_sp
