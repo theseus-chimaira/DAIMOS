@@ -579,6 +579,96 @@ dtfs_native_scan_match:
         .globl  kret_zero
         .globl  kret_neg1
 
+        .globl  dtfs_mount_unit
+        .globl  vfs_mount_prevalidated
+        .globl  vfs_current_owner
+; int dtfs_mount_unit(unit, target, flags, rootp)
+; Cold mount-control path.  AC10=media, AC11=target, AC12=flags/mount id,
+; AC13=rootp.  One stack local holds the prevalidated mounted root vnode.
+dtfs_mount_unit:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        move    010,1                   ; unit, later packed media
+        move    011,2                   ; target vnode
+        move    012,3                   ; flags
+        move    013,4                   ; rootp
+
+        ; Unsigned unit <= 7, non-null output, and only RO/type flag bits.
+        move    1,010
+        tlc     1,0400000
+        camg    1,[0400000000007]
+        skipn   013
+        jrst    dtfs_mount_unit_fail
+        move    1,012
+        and     1,[-032]
+        jumpn   1,dtfs_mount_unit_fail
+
+        ; Preserve the C feature gates: unsupported foreign personalities
+        ; must be rejected even though their flag values are syntactically valid.
+        move    1,012
+        andi    1,030
+        cain    1,010                   ; SYS_DTFS_TYPE_NATIVE
+        jrst    dtfs_mount_unit_media_ready
+        .if DTFS_ENABLE_TENEX
+        cain    1,020
+        jrst    dtfs_mount_unit_tenex
+        .endif
+        .if DTFS_ENABLE_ITS
+        cain    1,030
+        jrst    dtfs_mount_unit_its
+        .endif
+        jrst    dtfs_mount_unit_fail
+        .if DTFS_ENABLE_TENEX
+dtfs_mount_unit_tenex:
+        iori    010,010                 ; DTFS_MEDIA_TENEX
+        jrst    dtfs_mount_unit_media_ready
+        .endif
+        .if DTFS_ENABLE_ITS
+dtfs_mount_unit_its:
+        iori    010,020                 ; DTFS_MEDIA_ITS
+        .endif
+dtfs_mount_unit_media_ready:
+
+        push    17,[0]                  ; root local
+        movei   1,(17)                  ; sixth argument: &root
+        push    17,1
+        move    1,012
+        andi    1,1                     ; fifth argument: read-only bit
+        push    17,1
+        move    1,011
+        movei   2,5                     ; DTFS_PROVIDER
+        movei   3,1                     ; DTFS_KIND_ROOT
+        setz    4,                      ; index 0
+        pushj   17,vfs_mount_prevalidated
+        sub     17,[2,,2]
+        jumpn   1,dtfs_mount_unit_fail_local
+
+        hlrz    012,(17)
+        lsh     012,-6
+        andi    012,077                 ; mount id
+        pushj   17,vfs_current_owner
+        lsh     1,022                   ; owner18 into LH
+        move    2,010
+        ior     2,1                     ; media | owner18
+        move    1,012
+        pushj   17,dtfs_patch_media
+        setzm   dtfs_cache_mount
+        move    1,(17)
+        movem   1,(013)
+        setz    1,
+        jrst    dtfs_mount_unit_done_local
+
+dtfs_mount_unit_fail_local:
+        seto    1,
+dtfs_mount_unit_done_local:
+        sub     17,[1,,1]
+        jrst    dtfs_restore4
+dtfs_mount_unit_fail:
+        seto    1,
+        jrst    dtfs_restore4
+
 dtfs_lookup:
         push    17,010
         push    17,011

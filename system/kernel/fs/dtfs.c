@@ -324,42 +324,7 @@ dtfs_resize(vnode_t node, unsigned int words)
 extern int dtfs_resize(vnode_t node, unsigned int words);
 #endif
 
-int
-dtfs_mount_unit(unsigned int unit, vnode_t target,
-    unsigned int flags, vnode_t *rootp)
-{
-        vnode_t root;
-        unsigned int format;
-        unsigned int media;
-
-        if (unit > 7U || rootp == 0 ||
-            (flags & ~(VFS_MOUNT_RDONLY | SYS_DTFS_TYPE_MASK)) != 0U)
-                return -1;
-        format = flags & SYS_DTFS_TYPE_MASK;
-        if (format == SYS_DTFS_TYPE_NATIVE) {
-                media = unit;
-#if DTFS_ENABLE_TENEX
-        } else if (format == SYS_DTFS_TYPE_TENEX) {
-                media = unit | DTFS_MEDIA_TENEX;
-#endif
-#if DTFS_ENABLE_ITS
-        } else if (format == SYS_DTFS_TYPE_ITS) {
-                media = unit | DTFS_MEDIA_ITS;
-#endif
-        } else {
-                return -1;
-        }
-        if (vfs_mount_prevalidated(target, DTFS_PROVIDER, DTFS_KIND_ROOT, 0U,
-            flags & VFS_MOUNT_RDONLY, &root) != 0)
-                return -1;
-        format = VFS_MOUNT_ID(root);
-        dtfs_patch_media(format, media | (vfs_current_owner() << 18U));
-        /* Userspace validated the media in its own buffer.  Our shared
-         * resident directory cache has not been populated for this mount. */
-        dtfs_cache_mount = 0U;
-        *rootp = root;
-        return 0;
-}
+/* dtfs_mount_unit is implemented compactly in dtfs_runtime.s. */
 
 extern int dtfs_lookup(vnode_t dir, const struct vfs_name *name,
     vnode_t *nodep);
