@@ -17,10 +17,10 @@
  *         entry, stack, argc, argv, envp result and word 5 is temporary
  *   AC1 return = 0 success, -1 before destructive commit, -2 after it
  *
- * AC10..AC16 are preserved.  The local frame is 13 octal words: seven saved
- * ACs, a three-word staged proc, and one launch-copy base word.  Startup is
- * built directly in the caller's expendable saved-AC scratch after the old
- * image has been destroyed, avoiding a second four-word staging buffer.
+ * AC10..AC16 are preserved.  The local frame holds seven saved ACs plus one
+ * launch-copy base word.  After vm_space_destroy() succeeds the old image is
+ * already irrecoverable, so the retry loads directly into the current process
+ * descriptor instead of maintaining a staged three-word proc copy.
  */
 
         .text
@@ -32,8 +32,9 @@
         .globl  exec_load_process
         .globl  sixbit_record_words
         .globl  proc_current_slot
-        .globl  proc_table
+        .globl  proc_slot_ptr
         .globl  proc_rt_owner
+        .globl  fs_copy_words
 
         .equ    EXEC_LAUNCH_MM_OWNER,013
         .equ    MM_TYPE_KERNEL_DYNAMIC,3
@@ -43,11 +44,10 @@
         .equ    EXEC_LOAD_RT_REQUIRED,1
 
         ; Frame offsets relative to the fully advanced AC17.
-        .equ    EXEC_LM_SAVE_FIRST,-012
-        .equ    EXEC_LM_SAVE_LAST,-004
-        .equ    EXEC_LM_LAUNCH,-003
-        .equ    EXEC_LM_STAGED,-002
-        .equ    EXEC_LM_FRAME,013
+        .equ    EXEC_LM_SAVE_FIRST,-010
+        .equ    EXEC_LM_SAVE_LAST,-002
+        .equ    EXEC_LM_LAUNCH,-001
+        .equ    EXEC_LM_FRAME,011
 
 exec_replace_current_lowmem:
         add     17,[EXEC_LM_FRAME,,EXEC_LM_FRAME]
@@ -61,11 +61,10 @@ exec_replace_current_lowmem:
         move    13,4                    ; caller result vector
         move    14,proc_current_slot
 
-        ; Compute current process descriptor: proc_table + slot * 3.
-        move    15,14
-        lsh     15,1
-        add     15,14
-        add     15,proc_table
+        ; Descriptor lookup is cold here; reuse the resident slot helper.
+        move    1,14
+        pushj   17,proc_slot_ptr
+        move    15,1
 
         ; Allocate a transient copy before invalidating the mapped user source.
         setzm   EXEC_LM_LAUNCH(17)
@@ -79,19 +78,12 @@ exec_replace_current_lowmem:
         sub     17,[1,,1]
         jumpn   1,exec_lowmem_alloc_fail
 
-        ; The source and destination are distinct MM extents.  Build the PDP-6
-        ; BLT source,,destination pointer in AC2 and copy all validated words.
+        ; The source and destination are distinct MM extents.  Reuse the
+        ; resident overlap-safe word copier rather than open-coding BLT setup.
+        move    1,10
         move    2,EXEC_LM_LAUNCH(17)
-        hrl     2,10
-        move    3,EXEC_LM_LAUNCH(17)
-        add     3,11
-        subi    3,1
-        blt     2,0(3)
-
-        ; Seed the staged descriptor with the old process metadata.  Once the
-        ; old VM is destroyed the copied launch block is the only source used.
-        move    1,(15)
-        movem   1,EXEC_LM_STAGED(17)
+        move    3,11
+        pushj   17,fs_copy_words
 
         ; Release the direct user-map hold before destroying its containing VM.
         hlrz    2,1
@@ -121,14 +113,14 @@ exec_lowmem_old_gone:
         add     1,10
         move    11,1                    ; argv/env record stream
 
-        movei   1,EXEC_LM_STAGED(17)
+        move    1,15
         move    2,14
         move    3,10
         pushj   17,exec_load_process
         move    16,1
         jumpl   1,exec_lowmem_fatal
 
-        movei   1,EXEC_LM_STAGED(17)
+        move    1,15
         move    2,11
         move    3,12
         movei   4,2(13)                 ; argc,argv,envp,stack -> result[2..5]
@@ -137,17 +129,14 @@ exec_lowmem_old_gone:
 
         ; The replacement VM exists but startup construction failed.  Release
         ; it before returning the fatal-after-commit indication.
-        movei   1,EXEC_LM_STAGED(17)
+        move    1,15
         move    2,14
         pushj   17,vm_space_destroy
         jrst    exec_lowmem_fatal
 
 exec_lowmem_commit:
-        ; Publish only the newly loaded VM state.  exec_load_process already
+        ; exec_load_process populated the current descriptor directly and
         ; attached the replacement executable backing in proc_swap_records.
-        move    1,EXEC_LM_STAGED+1(17)
-        movem   1,1(15)
-
         ; The old u-area survives VM replacement; no swapped-image descriptor
         ; may remain there after the replacement becomes resident.
         hlrz    1,(15)
@@ -155,7 +144,7 @@ exec_lowmem_commit:
 
         ; Return entry PC and move the temporary stack word from result[5]
         ; into its public slot.  argc/argv/envp are already in result[2..4].
-        hlrz    1,EXEC_LM_STAGED(17)
+        hlrz    1,(15)
         movem   1,(13)
         move    1,5(13)
         movem   1,1(13)
