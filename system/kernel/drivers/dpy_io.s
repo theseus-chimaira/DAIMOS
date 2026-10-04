@@ -36,6 +36,8 @@
         .globl pdp10_pi_return_level7
         .globl kret_ok
         .globl kret_busy
+        .globl mm_alloc
+        .globl mm_free
         .globl dpy_text_putchar
         .globl dpy_text_base
         .globl dpy_text_top
@@ -63,6 +65,23 @@ dpy_pi_handler:
         conso 0130,000200
         jrst pdp10_pi_dispatch
         cono 0130,000007
+        ; Persistent raw-list mode owns the controller continuously.  Keep
+        ; dpy_pending asserted and recycle exactly one packed word per DONE.
+        skipn dpy_list_base
+        jrst dpy_pi_retained_done
+        move 1,dpy_list_next
+        came 1,dpy_list_end
+        jrst dpy_pi_list_have
+        move 1,dpy_list_base
+dpy_pi_list_have:
+        addi 1,1
+        movem 1,dpy_list_next
+        subi 1,1
+        move 1,(1)
+        datao 0130,1
+        jrst dpy_pi_dispatch_return
+
+dpy_pi_retained_done:
         ; dpy_pending denotes ownership of the Type-344 DATAO stream, not
         ; merely one outstanding word.  Keep it asserted throughout a
         ; retained refresh frame so a higher-priority PI6 clock interrupt
@@ -221,15 +240,6 @@ dpy_clock_handler:
         camn 1,dpy_clk_last_tick
         jrst pdp10_pi_handler_return
         movem 1,dpy_clk_last_tick
-        ; A userspace raw-program writer refreshes this short lease on every
-        ; frame.  While it is nonzero the normal retained-text refresh stays
-        ; out of the way.  If the writer exits, the lease expires by itself
-        ; and text refresh resumes without a close/ioctl cleanup path.
-        skipn dpy_raw_hold
-        jrst dpy_clock_text
-        sos dpy_raw_hold
-        jrst pdp10_pi_handler_return
-dpy_clock_text:
         sosle dpy_refresh_divider
         jrst pdp10_pi_handler_return
         movei 1,2
@@ -300,6 +310,10 @@ dpy_banner_copy:
  * only after dpy_pi_handler observes DONE and clears the flag.
  */
 dpy_putword:
+        skipn dpy_list_base
+        jrst dpy_putword_idle
+        jrst kret_busy
+dpy_putword_idle:
         skipe dpy_pending
         jrst kret_busy
 dpy_put_start:
@@ -313,46 +327,100 @@ dpy_put_ok:
         jrst kret_ok
 
 /**
- * @brief Execute one complete userspace native Type-340 program.
- * @param AC1 Program words.
- * @param AC2 Number of 36-bit words.
- * @return AC1 = words executed, or zero for an empty program.
+ * @brief Replace or stop the persistent userspace Type-340 display list.
+ * @param AC1 Source packed-word address; ignored when AC2 is zero.
+ * @param AC2 Packed 36-bit word count; zero stops/releases the active list.
+ * @return AC1 = accepted word count, or -1 on allocation/input failure.
  *
- * This is the raw /DEV/DPY0 transport used by DPYVIEW.  It owns no retained
- * graphics buffer: userspace replays the program at refresh rate.  A short
- * raw lease suppresses the ordinary text refresher while frames keep arriving.
- * The first word is always relative to Type-340 reset state.
- *
- * AC4..AC7 are caller-scratch.  The routine is synchronous so the mapped
- * userspace source buffer remains valid until every word has reached DONE.
+ * Replacement is transactional with respect to allocation: the old list keeps
+ * refreshing while the new list is copied.  Publication runs with the DPY PIA
+ * disabled, so PI7 never observes partially initialized list state.  While a
+ * list is active dpy_pending remains asserted and ordinary retained-text refresh
+ * naturally stays idle.  Stopping the list releases its dynamic extent and the
+ * next 30-Hz clock tick resumes native-block TTY refresh.
  */
 dpy_write_words:
-        jumpe 2,dpy_write_words_zero
-        move 4,1                     ; current source
-        move 5,2                     ; remaining
-        move 6,2                     ; original count / return value
-        movei 7,4                    ; four 60-Hz ticks ~= 67 ms
-        movem 7,dpy_raw_hold
-dpy_write_wait_idle:
-        skipe dpy_pending
-        jrst dpy_write_wait_idle
-        ; Start each submission from a deterministic display state.  DPYVIEW
-        ; submits a complete frame in one WRITE_WORDS call.
-        cono 0130,000107
-        setzm dpy_refresh_iowd
-dpy_write_loop:
-        move 1,(4)
-        setom dpy_pending
-        datao 0130,1
-dpy_write_wait_done:
-        skipe dpy_pending
-        jrst dpy_write_wait_done
-        addi 4,1
-        sojg 5,dpy_write_loop
-        move 1,6
-        popj 17,
-dpy_write_words_zero:
+        push 17,010
+        push 17,011
+        move 010,1                    ; mapped source
+        move 011,2                    ; requested packed words
+        jumpe 011,dpy_list_stop
+        jumpe 010,dpy_list_fail
+
+        push 17,[0]                   ; allocation-result local
+        movei 5,(17)
+        push 17,5                     ; fifth mm_alloc argument
+        move 1,011
+        movei 2,3                     ; MM_TYPE_KERNEL_DYNAMIC
+        movei 3,014                   ; DPY dynamic-list owner
+        setz 4,                       ; MM_ALLOC_LOW
+        pushj 17,mm_alloc
+        sub 17,[1,,1]
+        jumpn 1,dpy_list_alloc_fail
+        move 6,(17)                   ; new list base
+        jumpe 6,dpy_list_alloc_fail
+
+        ; Copy mapped userspace words before taking over the controller.
         setz 1,
+        hrl 1,010
+        hrr 1,6
+        move 2,6
+        add 2,011
+        subi 2,1
+        blt 1,(2)
+
+        ; Disable DONE interrupts, reset execution and atomically publish the
+        ; complete replacement.  dpy_pending remains asserted for list life.
+        move 7,dpy_list_base          ; old extent, if any
+        setzm dpy_list_base
+        cono 0130,000100              ; INIT, PIA disabled
+        setzm dpy_refresh_iowd
+        move 1,6
+        add 1,011
+        movem 1,dpy_list_end
+        movei 1,1(6)
+        movem 1,dpy_list_next
+        movem 6,dpy_list_base
+        setom dpy_pending
+        move 1,(6)
+        datao 0130,1
+        cono 0130,000007              ; normal low-priority DONE PIA
+
+        jumpe 7,dpy_list_installed
+        move 1,7
+        movei 2,3
+        movei 3,014
+        pushj 17,mm_free
+dpy_list_installed:
+        move 1,011
+        sub 17,[1,,1]
+        jrst dpy_list_done
+
+dpy_list_alloc_fail:
+        sub 17,[1,,1]
+dpy_list_fail:
+        seto 1,
+        jrst dpy_list_done
+
+dpy_list_stop:
+        move 7,dpy_list_base
+        setzm dpy_list_base            ; PI7 must stop recycling first
+        cono 0130,000100               ; INIT, PIA disabled
+        setzm dpy_list_next
+        setzm dpy_list_end
+        setzm dpy_refresh_iowd
+        setzm dpy_pending
+        cono 0130,000007
+        jumpe 7,dpy_list_stopped
+        move 1,7
+        movei 2,3
+        movei 3,014
+        pushj 17,mm_free
+dpy_list_stopped:
+        setz 1,
+dpy_list_done:
+        pop 17,011
+        pop 17,010
         popj 17,
 
 /**
@@ -394,8 +462,14 @@ dpy_refresh_divider:
 /** Last resident CLK tick observed by the stackless PI6 display hook. */
 dpy_clk_last_tick:
         .block 1
-/** Remaining real line-clock ticks for userspace raw-display ownership. */
-dpy_raw_hold:
+/** Base of the active persistent raw display list, or zero. */
+dpy_list_base:
+        .block 1
+/** Address of the next packed word to submit on DONE. */
+dpy_list_next:
+        .block 1
+/** One-past-end address of the active persistent display list. */
+dpy_list_end:
         .block 1
 /** AOBJN state: negative remaining count in LH, current banner address in RH. */
 dpy_refresh_iowd:

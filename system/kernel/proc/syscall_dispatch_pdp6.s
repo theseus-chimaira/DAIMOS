@@ -167,6 +167,7 @@ native_sys_read_words_mapped:
         ; AC1 fd, AC2 buffer, AC3 word count.
         move    6,1
         move    7,3
+        jumpe   7,native_sys_write_words_zero
         move    1,6
         pushj   17,file_find
         jumpe   1,native_sys_write_words_mapped
@@ -185,6 +186,14 @@ native_sys_write_words_mapped:
         hrrz    3,7
         pushj   17,file_write_words
         jrst    native_sys_mapped_return
+native_sys_write_words_zero:
+        ; Zero-word device commands do not dereference a user buffer.  DPY0
+        ; uses this to stop/release a persistent display list without forcing
+        ; callers to provide a meaningless mapped address.
+        hrrz    1,6
+        setz    2,
+        setz    3,
+        jrst    file_write_words
 
 ; Word pipes and canonical TTY reads may block.  Do not keep a translated
 ; physical user buffer pinned across that sleep: doing so makes the process

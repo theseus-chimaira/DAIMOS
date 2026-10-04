@@ -42,6 +42,8 @@
 #define DPY_E_OK                0
 /** Another display word is still awaiting DONE. */
 #define DPY_E_BUSY             -3
+/** Dynamic-MM owner shared by the optional persistent Type-340 raw list. */
+#define DPY_LIST_MM_OWNER      014U
 
 /**
  * @brief Submit one 36-bit Type 340 instruction word and wait for DONE.
@@ -49,6 +51,8 @@
  * @return DPY_E_OK, or DPY_E_BUSY if another word is already in flight.
  */
 int dpy_putword(kword_t word);
+/** Replace the persistent raw Type-340 list; nwords==0 stops/releases it. */
+int dpy_write_words(const kword_t *words, unsigned int nwords);
 /** Update the retained 84x42 Type-342 terminal for one output byte. */
 int dpy_putchar(unsigned int ch);
 

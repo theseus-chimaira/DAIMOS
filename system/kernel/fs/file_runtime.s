@@ -293,12 +293,21 @@ file_close:
         move    2,(1)                  ; packed descriptor for pipe refs
         move    1,2
         tlz     1,707070
+        camn    1,[020002000010]       ; DPY0 owns a persistent raw list
+        jrst    file_close_dpy
         move    3,1
         lsh     3,-036                 ; provider
         caie    3,7                    ; PIPE_PROVIDER
         jrst    file_close_vfs
         pushj   17,pipe_close_ref
         jrst    file_close_finish
+file_close_dpy:
+        ; Zero-word WRITE_WORDS stops the active raw list and frees its extent.
+        setz    1,
+        setz    2,
+        pushj   17,dpy_write_words_jump
+        move    1,(010)
+        tlz     1,707070
 file_close_vfs:
         pushj   17,vfs_sync
 file_close_finish:
@@ -616,8 +625,8 @@ file_write_words_lpt:
         pushj   17,lpt_write_s6rec_jump
         jrst    file_write_words_result
 file_write_words_dpy:
-        move    1,-1(17)                ; mapped native Type-340 words
-        move    2,(17)                  ; complete frame word count
+        move    1,-1(17)                ; mapped packed Type-340 words
+        move    2,(17)                  ; zero count stops/releases the list
         pushj   17,dpy_write_words_jump
 file_write_words_result:
         jumple  1,file_write_words_done
