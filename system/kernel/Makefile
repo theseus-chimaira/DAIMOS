@@ -330,9 +330,11 @@ ${BUILD}/vm_backend_pdp6.s: ${VM_BACKEND_FIXED}
 	@mkdir -p ${BUILD}
 	cp ${VM_BACKEND_FIXED} $@
 
-${BUILD}/dpy_text.s: drivers/dpy_text.c ${KERNEL_HEADERS}
+${BUILD}/dpy_text.s: drivers/dpy_text.c drivers/dpy_text_compile_pdp6.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S drivers/dpy_text.c -o $@
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S drivers/dpy_text.c -o $@.c
+	cat $@.c drivers/dpy_text_compile_pdp6.s > $@
+	rm -f $@.c
 
 ${BUILD}/memfs_data.s: fs/memfs_data.c ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}

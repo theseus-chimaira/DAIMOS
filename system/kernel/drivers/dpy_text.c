@@ -28,17 +28,13 @@
 #define DPY_TEXT_LENGTH_WORDS    DPY_TEXT_ROWS
 #define DPY_TEXT_PROG_WORDS      29U
 #define DPY_TEXT_PROG_TOTAL      (DPY_TEXT_ROWS * DPY_TEXT_PROG_WORDS)
-#define DPY_TEXT_INTENSITY_WORDS 32U
 #define DPY_TEXT_LENGTH_OFF      DPY_TEXT_CHAR_WORDS
 #define DPY_TEXT_PROG_OFF        (DPY_TEXT_LENGTH_OFF + DPY_TEXT_LENGTH_WORDS)
-#define DPY_TEXT_INTENSITY_OFF   (DPY_TEXT_PROG_OFF + DPY_TEXT_PROG_TOTAL)
-#define DPY_TEXT_ALLOC_WORDS     (DPY_TEXT_INTENSITY_OFF + DPY_TEXT_INTENSITY_WORDS)
+#define DPY_TEXT_ALLOC_WORDS     (DPY_TEXT_PROG_OFF + DPY_TEXT_PROG_TOTAL)
 
 #define DPY_T342_SI              035U
-#define DPY_T342_SO              036U
 #define DPY_T342_CR              034U
 #define DPY_T342_LF              033U
-#define DPY_T342_BAD             077U
 
 /* Read directly by dpy_io.s. */
 kword_t dpy_text_base;
@@ -49,148 +45,13 @@ kword_t dpy_text_rows_used;
 static unsigned int dpy_text_row;
 static unsigned int dpy_text_col;
 
-static kword_t *
-dpy_words(void)
-{
-        return (kword_t *)(unsigned long)dpy_text_base;
-}
-
-static unsigned int
-dpy_phys_row(unsigned int logical)
-{
-        unsigned int row;
-
-        row = (unsigned int)dpy_text_top + logical;
-        if (row >= DPY_TEXT_ROWS)
-                row -= DPY_TEXT_ROWS;
-        return row;
-}
-
-static unsigned int
-dpy_cell_get(unsigned int prow, unsigned int col)
-{
-        kword_t word;
-        unsigned int shift;
-
-        word = dpy_words()[prow * DPY_TEXT_ROW_WORDS + col / 6U];
-        shift = 30U - (col % 6U) * 6U;
-        return (unsigned int)((word >> shift) & 077UL);
-}
-
-static void
-dpy_cell_set(unsigned int prow, unsigned int col, unsigned int ch)
-{
-        kword_t *word;
-        kword_t mask;
-        unsigned int shift;
-
-        word = &dpy_words()[prow * DPY_TEXT_ROW_WORDS + col / 6U];
-        shift = 30U - (col % 6U) * 6U;
-        mask = (kword_t)077UL << shift;
-        *word = (*word & ~mask) | (((kword_t)(ch & 077U)) << shift);
-}
-
-static unsigned int
-dpy_code(unsigned int ch, unsigned int *shiftp)
-{
-        *shiftp = 0U;
-        if (ch == 0U)
-                return 040U;            /* SIXBIT space */
-        if (ch <= 037U)
-                return ch + 040U;       /* ! through ? */
-        if (ch >= 041U && ch <= 072U)
-                return ch - 040U;       /* A through Z */
-
-        /* These SIXBIT punctuation characters live only in the Type-342
-         * shifted set.  '@' (040) has no useful native Type-342 glyph. */
-        *shiftp = 1U;
-        if (ch == 073U) return 053U;    /* [ */
-        if (ch == 074U) return 052U;    /* \ */
-        if (ch == 075U) return 054U;    /* ] */
-        if (ch == 076U) return 067U;    /* ^ */
-        if (ch == 077U) return 060U;    /* _ */
-        *shiftp = 0U;
-        return DPY_T342_BAD;
-}
-
-static unsigned int
-dpy_sixbit(unsigned int ch)
-{
-        if (ch >= 0141U && ch <= 0172U)
-                ch -= 040U;             /* stream TTY is uppercase-only */
-        if (ch >= 040U && ch <= 0137U)
-                return ch - 040U;
-        return 037U;                    /* unsupported printable -> '?' */
-}
-
-static void
-dpy_emit_code(kword_t *prog, unsigned int *ncode, unsigned int code)
-{
-        unsigned int word;
-        unsigned int slot;
-        unsigned int shift;
-
-        word = *ncode / 6U;
-        slot = *ncode % 6U;
-        shift = 30U - slot * 6U;
-        prog[word] |= ((kword_t)(code & 077U)) << shift;
-        ++*ncode;
-}
-
-static void
-dpy_compile_row(unsigned int prow)
-{
-        kword_t *words;
-        kword_t *prog;
-        unsigned int col;
-        unsigned int last;
-        unsigned int code;
-        unsigned int shift;
-        unsigned int shifted;
-        unsigned int ncode;
-        unsigned int nwords;
-        unsigned int i;
-
-        words = dpy_words();
-        prog = &words[DPY_TEXT_PROG_OFF + prow * DPY_TEXT_PROG_WORDS];
-        for (i = 0U; i < DPY_TEXT_PROG_WORDS; ++i)
-                prog[i] = 0UL;
-
-        last = DPY_TEXT_COLS;
-        while (last != 0U && dpy_cell_get(prow, last - 1U) == 0U)
-                --last;
-
-        ncode = 0U;
-        shifted = 0U;
-        for (col = 0U; col < last; ++col) {
-                code = dpy_code(dpy_cell_get(prow, col), &shift);
-                if (shift != shifted) {
-                        dpy_emit_code(prog, &ncode,
-                            shift != 0U ? DPY_T342_SO : DPY_T342_SI);
-                        shifted = shift;
-                }
-                dpy_emit_code(prog, &ncode, code);
-        }
-        if (shifted != 0U)
-                dpy_emit_code(prog, &ncode, DPY_T342_SI);
-        while (((ncode + 2U) % 6U) != 0U)
-                dpy_emit_code(prog, &ncode, DPY_T342_SI);
-        dpy_emit_code(prog, &ncode, DPY_T342_CR);
-        dpy_emit_code(prog, &ncode, DPY_T342_LF);
-
-        nwords = ncode / 6U;
-        words[DPY_TEXT_LENGTH_OFF + prow] = (kword_t)nwords;
-}
-
-static void
-dpy_clear_row(unsigned int prow)
-{
-        unsigned int col;
-
-        for (col = 0U; col < DPY_TEXT_COLS; ++col)
-                dpy_cell_set(prow, col, 0U);
-        dpy_compile_row(prow);
-}
+/* Fixed-width Type-342 row compilation is substantially smaller and faster
+ * in PDP-6 assembly than KCC's repeated /6 and %6 helper expansion. */
+extern void dpy_compile_row(unsigned int prow);
+extern unsigned int dpy_phys_row(unsigned int logical);
+extern void dpy_cell_set(unsigned int prow, unsigned int col, unsigned int ch);
+extern unsigned int dpy_sixbit(unsigned int ch);
+extern void dpy_clear_row(unsigned int prow);
 
 static int
 dpy_text_start(void)
