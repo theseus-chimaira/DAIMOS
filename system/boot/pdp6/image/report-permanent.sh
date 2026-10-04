@@ -60,7 +60,7 @@ mres_objects()
         cp)      echo 'cp_io' ;;
         dcs)     echo 'dcs_io' ;;
         ge)      echo 'ge_io' ;;
-        dpy)     echo 'dpy_io' ;;
+        dpy)     echo 'dpy_io dpy_text' ;;
         tty)     echo 'tty_io' ;;
         wcnsls)  echo 'wcnsls_io' ;;
         ocnsls)  echo 'ocnsls_io' ;;

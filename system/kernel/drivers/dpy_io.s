@@ -144,6 +144,15 @@ dpy_refresh_start:
         aobjn 1,dpy_refresh_start_send
         popj 017,
 dpy_refresh_banner:
+        ; Mark this span as a banner frame, not as the text setup span.
+        ; dpy_text_active may become nonzero while the banner is still in
+        ; flight.  Without this sentinel the final banner DONE would then
+        ; fall into the text-row continuation path and feed character words
+        ; without first executing dpy_text_setup_words.  Depending on the
+        ; banner's ending mode those words can STOP the Type 340 and leave
+        ; dpy_pending set forever.
+        movei 1,DPY_TEXT_ROWS
+        movem 1,dpy_refresh_row
         move 1,[-6,,dpy_banner_words-1]
         aobjn 1,dpy_refresh_start_send
         popj 017,
