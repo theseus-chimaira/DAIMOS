@@ -29,6 +29,8 @@
         .globl  mm_free
         .globl  vm_space_destroy
         .globl  vm_space_startup
+        .globl  vm_user_mapping_hold
+        .globl  vm_user_mapping_release
         .globl  exec_load_process
         .globl  sixbit_record_words
         .globl  proc_current_slot
@@ -86,10 +88,7 @@ exec_replace_current_lowmem:
         pushj   17,fs_copy_words
 
         ; Release the direct user-map hold before destroying its containing VM.
-        hlrz    2,1
-        move    3,PROC_FDCTL_OFFSET(2)
-        trz     3,PROC_USER_MAP_BIT
-        movem   3,PROC_FDCTL_OFFSET(2)
+        pushj   17,vm_user_mapping_release
 
         move    1,15
         move    2,14
@@ -98,9 +97,7 @@ exec_replace_current_lowmem:
 
         ; Destruction failed before proc_swap_detach; the old image remains
         ; valid, so restore its user-map hold and return non-destructively.
-        hlrz    1,(15)
-        movei   2,PROC_USER_MAP_BIT
-        iorm    2,PROC_FDCTL_OFFSET(1)
+        pushj   17,vm_user_mapping_hold
         seto    16,
         jrst    exec_lowmem_free
 
