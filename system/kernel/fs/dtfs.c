@@ -358,73 +358,7 @@ extern int dtfs_parent(vnode_t node, vnode_t *parentp);
 
 /* dtfs_create is implemented compactly in dtfs_runtime.s. */
 
-int
-dtfs_unlink(vnode_t dir, const struct vfs_name *name)
-{
-        unsigned int slot;
-#if DTFS_ENABLE_TENEX
-        unsigned int block;
-        unsigned int next;
-        unsigned int blocks;
-        unsigned int i;
-#endif
-#if DTFS_ENABLE_TENEX || DTFS_ENABLE_ITS
-        unsigned int personality;
-#endif
-        vnode_t node;
-
-        if (!dtfs_is_root(dir) || dtfs_load(dir) != 0 ||
-            dtfs_scan_slot(dir, name, &slot) != 0)
-                return -1;
-#if DTFS_ENABLE_TENEX || DTFS_ENABLE_ITS
-        personality = dtfs_personality(dir);
-#endif
-        node = VFS_NODE_PACKED(DTFS_PROVIDER,
-            (VFS_MOUNT_ID(dir) << VFS_MOUNT_SHIFT) | DTFS_KIND_FILE, slot);
-#if DTFS_ENABLE_TENEX
-        if (personality == DTFS_MEDIA_TENEX) {
-                blocks = dtfs_block_info(node, slot, &block);
-                if (blocks == 0U || block == 0U)
-                        return -1;
-                next = block;
-                for (i = 0U; i != blocks; ++i) {
-                        block = next;
-                        if (block == 0U || block > DTFS_LAST_BLOCK ||
-                            dtfs_owner(0U, block - 1U) != slot + 1U ||
-                            dtfs_dtc_read(dtfs_unit(dir), block,
-                            dtfs_block) != 0) {
-                                dtfs_cache_mount = 0U;
-                                return -1;
-                        }
-                        next = DTFS_HDR_NEXT(dtfs_block[0]);
-                        dtfs_set_owner(0U, block - 1U, DTFS_OWNER_FREE);
-                }
-                if (next != 0U) {
-                        dtfs_cache_mount = 0U;
-                        return -1;
-                }
-                dtfs_dir[DTFS_NAME_BASE + slot] = 0UL;
-                dtfs_dir[DTFS_TENEX_EXT_BASE + slot] = 0UL;
-                if (dtfs_commit(dir) != 0) {
-                        dtfs_cache_mount = 0U;
-                        return -1;
-                }
-                return 0;
-        }
-#endif
-        if (dtfs_resize(node, 0U) != 0)
-                return -1;
-#if DTFS_ENABLE_ITS
-        if (personality == DTFS_MEDIA_ITS) {
-                dtfs_dir[slot * 2U] = 0UL;
-                dtfs_dir[slot * 2U + 1U] = 0UL;
-        } else
-#endif
-        {
-                dtfs_clear_slot(slot);
-        }
-        return dtfs_commit(dir);
-}
+/* dtfs_unlink is implemented compactly in dtfs_runtime.s. */
 
 /* dtfs_rename is implemented compactly in dtfs_runtime.s. */
 

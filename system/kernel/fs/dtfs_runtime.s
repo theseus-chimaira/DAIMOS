@@ -914,6 +914,146 @@ dtfs_create_done:
         pop     17,014
         jrst    dtfs_restore4
 
+        .globl  dtfs_unlink
+; int dtfs_unlink(dir, name)
+; AC10=dir, AC11=name, AC12=slot, AC13=personality, AC14=file vnode,
+; AC15=remaining TENEX blocks.  Two stack locals hold next/current block.
+dtfs_unlink:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        push    17,014
+        push    17,015
+        add     17,[2,,2]
+        move    010,1
+        move    011,2
+
+        pushj   17,dtfs_is_root
+        jumpe   1,dtfs_unlink_fail
+        move    1,010
+        pushj   17,dtfs_load
+        jumpn   1,dtfs_unlink_fail
+        move    1,010
+        move    2,011
+        movei   3,-1(17)               ; slot local
+        pushj   17,dtfs_scan_slot
+        jumpn   1,dtfs_unlink_fail
+        move    012,-1(17)
+
+        .if DTFS_ENABLE_FOREIGN
+        move    1,010
+        pushj   17,dtfs_personality
+        move    013,1
+        .else
+        setz    013,
+        .endif
+
+        ; Convert mounted ROOT vnode to FILE while preserving provider/mount.
+        move    014,010
+        tlc     014,000003              ; ROOT(1) XOR 3 = FILE(2)
+        hrr     014,012
+
+        .if DTFS_ENABLE_TENEX
+        cain    013,010
+        jrst    dtfs_unlink_tenex
+        .endif
+        jrst    dtfs_unlink_regular
+
+        .if DTFS_ENABLE_TENEX
+dtfs_unlink_tenex:
+        move    1,014
+        move    2,012
+        movei   3,(17)                  ; first block -> next local
+        pushj   17,dtfs_block_info
+        move    015,1                   ; remaining block count
+        jumpe   015,dtfs_unlink_fail
+        skipn   (17)
+        jrst    dtfs_unlink_fail
+
+dtfs_unlink_tenex_loop:
+        move    4,(17)
+        movem   4,-1(17)                ; current block
+        jumpe   4,dtfs_unlink_corrupt
+        caile   4,01101                 ; DTFS_LAST_BLOCK
+        jrst    dtfs_unlink_corrupt
+        setz    1,
+        move    2,4
+        subi    2,1
+        pushj   17,dtfs_owner
+        move    3,012
+        addi    3,1
+        came    1,3
+        jrst    dtfs_unlink_corrupt
+        move    1,010
+        pushj   17,dtfs_unit
+        move    2,-1(17)
+        movei   3,fs_block_workspace
+        pushj   17,dtfs_dtc_read
+        jumpn   1,dtfs_unlink_corrupt
+        hlrz    4,fs_block_workspace
+        andi    4,01777                 ; DTFS_HDR_NEXT
+        movem   4,(17)
+        setz    1,
+        move    2,-1(17)
+        subi    2,1
+        setz    3,
+        pushj   17,dtfs_set_owner
+        sojg    015,dtfs_unlink_tenex_loop
+        skipn   (17)
+        jrst    dtfs_unlink_tenex_clear
+dtfs_unlink_corrupt:
+        setzm   dtfs_cache_mount
+        jrst    dtfs_unlink_fail
+
+dtfs_unlink_tenex_clear:
+        move    4,012
+        add     4,dtfs_dir
+        setzm   0123(4)
+        setzm   0151(4)
+        move    1,010
+        pushj   17,dtfs_commit
+        jumpe   1,dtfs_unlink_success
+        setzm   dtfs_cache_mount
+        jrst    dtfs_unlink_fail
+        .endif
+
+dtfs_unlink_regular:
+        move    1,014
+        setz    2,
+        pushj   17,dtfs_resize
+        jumpn   1,dtfs_unlink_fail
+        .if DTFS_ENABLE_ITS
+        cain    013,020
+        jrst    dtfs_unlink_its_clear
+        .endif
+        move    1,012
+        pushj   17,dtfs_clear_slot
+        jrst    dtfs_unlink_commit
+        .if DTFS_ENABLE_ITS
+dtfs_unlink_its_clear:
+        move    4,012
+        lsh     4,1
+        add     4,dtfs_dir
+        setzm   (4)
+        setzm   1(4)
+        .endif
+
+dtfs_unlink_commit:
+        move    1,010
+        pushj   17,dtfs_commit
+        jrst    dtfs_unlink_done
+dtfs_unlink_success:
+        setz    1,
+        jrst    dtfs_unlink_done
+dtfs_unlink_fail:
+        seto    1,
+dtfs_unlink_done:
+        sub     17,[2,,2]
+        pop     17,015
+        pop     17,014
+        jrst    dtfs_restore4
+
         .globl  dtfs_rename
 ; int dtfs_rename(olddir, oldname, newdir, newname)
 ; Cold metadata path.  Four callee-saved ACs retain the arguments and one
