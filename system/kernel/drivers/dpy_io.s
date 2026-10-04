@@ -62,28 +62,16 @@ dpy_pi_handler:
         jrst pdp10_pi_dispatch
         setzm dpy_pending
         cono 0130,000007
-        skipn dpy_refresh_iowd
-        jrst pdp10_pi_dispatch
-
-        ; BLKO updates the resident IOWD in place and feeds the next display
-        ; word directly.  Non-final transfers skip the following JRST; the
-        ; final transfer falls through so the next row can be prepared while
-        ; the just-issued word is still being displayed.
-        blko 0130,dpy_refresh_iowd
-        jrst dpy_pi_refresh_span_done
-        setom dpy_pending
-        jrst pdp10_pi_dispatch
-
-dpy_pi_refresh_span_done:
-        setom dpy_pending
+        move 1,dpy_refresh_iowd
+        aobjn 1,dpy_pi_refresh_send
         skipn dpy_text_active
-        jrst dpy_pi_refresh_frame_done
+        jrst pdp10_pi_dispatch
 
         ; The setup span has row = -1.  Thereafter each exhausted row selects
         ; the next physical row through the 42-row scroll ring.
         aos 1,dpy_refresh_row
         cail 1,DPY_TEXT_ROWS
-        jrst dpy_pi_refresh_frame_done
+        jrst pdp10_pi_dispatch
         add 1,dpy_text_top
         cail 1,DPY_TEXT_ROWS
         subi 1,DPY_TEXT_ROWS
@@ -93,7 +81,8 @@ dpy_pi_refresh_span_done:
         addi 1,DPY_TEXT_LENGTH_OFF
         add 1,dpy_refresh_phys
         hrrz 1,(1)                    ; compiled words in this physical row
-        jumpe 1,dpy_pi_refresh_frame_done
+        jumpe 1,pdp10_pi_dispatch
+        addi 1,1                      ; AOBJN initial count is -(n + 1)
         movn 1,1
         lsh 1,022
         hllm 1,dpy_refresh_iowd
@@ -104,9 +93,8 @@ dpy_pi_refresh_span_done:
         addi 1,DPY_TEXT_PROG_OFF
         subi 1,1
         hrrm 1,dpy_refresh_iowd
-        jrst pdp10_pi_dispatch
-dpy_pi_refresh_frame_done:
-        setzm dpy_refresh_iowd
+        move 1,dpy_refresh_iowd
+        aobjn 1,dpy_pi_refresh_send
         jrst pdp10_pi_dispatch
 dpy_pi_refresh_send:
         movem 1,dpy_refresh_iowd
@@ -152,18 +140,12 @@ dpy_refresh_start:
         jrst dpy_refresh_banner
         seto 1,
         movem 1,dpy_refresh_row
-        move 1,[-2,,dpy_text_setup_words-1]
-        movem 1,dpy_refresh_iowd
-        setom dpy_pending
-        blko 0130,dpy_refresh_iowd
-        jrst dpy_refresh_start_done
-dpy_refresh_start_done:
+        move 1,[-3,,dpy_text_setup_words-1]
+        aobjn 1,dpy_refresh_start_send
         popj 017,
 dpy_refresh_banner:
-        move 1,[-5,,dpy_banner_words-1]
-        movem 1,dpy_refresh_iowd
-        setom dpy_pending
-        blko 0130,dpy_refresh_iowd
+        move 1,[-6,,dpy_banner_words-1]
+        aobjn 1,dpy_refresh_start_send
         popj 017,
 dpy_refresh_start_send:
         movem 1,dpy_refresh_iowd
