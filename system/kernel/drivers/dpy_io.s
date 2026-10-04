@@ -3,10 +3,10 @@
  * @brief Resident interrupt-driven PDP-6 Type 340 display driver.
  *
  * DPY device 0130 uses PI7, the PDP-6's lowest interrupt priority.  The APR
- * line clock remains on PI6.  When both devices are present MINIT replaces the
- * ordinary CLK PI6 entry with dpy_clock_handler, whose only extra job is to
- * start one display refresh every second real 60 Hz tick.  DPY DONE interrupts
- * are independently handled on PI7.
+ * line clock remains on PI6.  When both devices are present MINIT patches the
+ * CLK handler's post-service JRST to dpy_clock_handler.  The hook is stackless
+ * and starts one display refresh every second real 60 Hz tick.  DPY DONE
+ * interrupts are independently handled on PI7.
  *
  * Exactly one display word may be in flight. dpy_pending is set before DATAO
  * and cleared only by a real DONE interrupt, so a caller cannot observe
@@ -28,7 +28,7 @@
         .globl dpy_putword
         .globl dpy_putchar
         .globl dpy_banner_init
-        .globl dpy_clk_pi_service_call
+        .globl dpy_clk_tick_load
         .globl pdp10_pi_handler_return
         .globl pdp10_pi_dispatch
         .globl pdp10_pi_level_span
@@ -115,33 +115,31 @@ dpy_pi_refresh_complete:
         jrst pdp10_pi_dispatch
 
 /**
- * @brief PI6 clock wrapper installed only while a Type 340 is present.
+ * @brief Stackless post-CLK hook installed only while a Type 340 is present.
  *
- * Software PI6 scheduler kicks have no APR clock flag and therefore pass
- * straight to CLK without consuming the display divider.  A real line-clock
- * tick first receives the normal CLK service, then every second tick starts a
- * refresh.  Systems without DPY never install this wrapper and execute the
- * original CLK handler with no display overhead.
+ * The ordinary CLK PI6 handler has already acknowledged/service the event.
+ * Compare its monotonic tick counter with the last value observed by DPY:
+ * software PI6 scheduler kicks leave the counter unchanged and return
+ * immediately, while each real line-clock tick advances it.  No PUSHJ is
+ * permitted here: KINIT may be interrupted with AC17 pointing into low AC
+ * storage, where PUSHJ could overwrite dispatcher AC2/AC3.
  */
 dpy_clock_handler:
-        conso 0000,01000
-        jrst dpy_clock_service
-dpy_clk_pi_service_call:
-        pushj 017,kret_ok
+ dpy_clk_tick_load:
+        move 1,0
+        camn 1,dpy_clk_last_tick
+        jrst pdp10_pi_handler_return
+        movem 1,dpy_clk_last_tick
         sosle dpy_refresh_divider
         jrst pdp10_pi_handler_return
         movei 1,2
         movem 1,dpy_refresh_divider
-        pushj 017,dpy_refresh_start
-        jrst pdp10_pi_handler_return
-dpy_clock_service:
-        pushj 017,dpy_clk_pi_service_call
-        jrst pdp10_pi_handler_return
+        jrst dpy_refresh_start
 
-/** Start one asynchronous replay of the retained display list when idle. */
+/** Start one asynchronous replay and tail-return through the PI6 dispatcher. */
 dpy_refresh_start:
         skipe dpy_pending
-        popj 017,
+        jrst pdp10_pi_handler_return
         ; The generated banner is a complete frame relative to Type-340 reset
         ; state.  Restore that state before every replay so character/mode and
         ; beam position left by the previous frame cannot accumulate.
@@ -152,7 +150,7 @@ dpy_refresh_start:
         movem 1,dpy_refresh_row
         move 1,[-3,,dpy_text_setup_words-1]
         aobjn 1,dpy_refresh_start_send
-        popj 017,
+        jrst pdp10_pi_handler_return
 dpy_refresh_banner:
         ; Mark this span as a banner frame, not as the text setup span.
         ; dpy_text_active may become nonzero while the banner is still in
@@ -165,14 +163,14 @@ dpy_refresh_banner:
         movem 1,dpy_refresh_row
         move 1,[-6,,dpy_banner_words-1]
         aobjn 1,dpy_refresh_start_send
-        popj 017,
+        jrst pdp10_pi_handler_return
 dpy_refresh_start_send:
         movem 1,dpy_refresh_iowd
         hrrz 1,1
         move 1,(1)
         setom dpy_pending
         datao 0130,1
-        popj 017,
+        jrst pdp10_pi_handler_return
 
 /**
  * @brief Retain the transient KINIT boot display list for periodic replay.
@@ -238,6 +236,9 @@ dpy_pending:
         .block 1
 /** Two-to-one line-clock divider: 60 Hz clock -> 30 Hz display refresh. */
 dpy_refresh_divider:
+        .block 1
+/** Last resident CLK tick observed by the stackless PI6 display hook. */
+dpy_clk_last_tick:
         .block 1
 /** AOBJN state: negative remaining count in LH, current banner address in RH. */
 dpy_refresh_iowd:

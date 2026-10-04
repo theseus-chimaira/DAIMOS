@@ -89,23 +89,11 @@
         .globl __kinit_image_start
         .globl __minit_table_begin
         .globl __minit_table_end
+        .globl dtc_minit
+        .globl mtc_minit
+        .globl dsk_minit
 
 __kinit_image_start:
-
-; The three Type-136 storage devices share one MINIT implementation.  Tiny
-; entry stubs provide the device kind without duplicating probe/install code.
-dtc_minit:
-        setz 1,
-        move 2,[0446443000000]          ; SIXBIT /DTC   /
-        jrst storage_minit
-mtc_minit:
-        movei 1,1
-        move 2,[0556443000000]          ; SIXBIT /MTC   /
-        jrst storage_minit
-dsk_minit:
-        movei 1,2
-        move 2,[0446353222720]          ; SIXBIT /DSK270/
-        jrst storage_minit
 
 __minit_table_begin:
         .word cty_minit,,cty_mres_package

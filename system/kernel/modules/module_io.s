@@ -8,6 +8,29 @@
  * boot reader. All code here is reclaimed after KINIT handoff.
  */
         .text
+        .globl dtc_minit
+        .globl mtc_minit
+        .globl dsk_minit
+        .globl storage_minit
+
+; The three Type-136 storage devices share one C MINIT implementation.  Keep
+; these tiny entry stubs with live KINIT code, not in module_table.s: the
+; linker-generated MINIT table is copied to the KINIT stack and its source
+; prefix is deliberately reclaimed before MINIT processing finishes.  Table
+; entries therefore must not point back into that reclaimed prefix.
+dtc_minit:
+        setz 1,
+        move 2,[0446443000000]          ; SIXBIT /DTC   /
+        jrst storage_minit
+mtc_minit:
+        movei 1,1
+        move 2,[0556443000000]          ; SIXBIT /MTC   /
+        jrst storage_minit
+dsk_minit:
+        movei 1,2
+        move 2,[0446353222720]          ; SIXBIT /DSK270/
+        jrst storage_minit
+
         .globl minit_pi_low_init
         .globl minit_pi_hw_clear
         .globl minit_pi_hw_set

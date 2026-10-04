@@ -64,6 +64,8 @@ mfsdev_present_mark(unsigned int id)
 #define CLK_X_HANDLER           0U
 #define CLK_X_TICKS             1U
 #define CLK_X_PI_SERVICE        2U
+#define CLK_X_POST_HANDLER      3U
+#define CLK_X_TICK_COUNT        4U
 #define PTR_X_READ_WORDS         0U
 #define PTP_X_WRITE_WORDS        0U
 #define LPT_X_PUTCHAR            0U
@@ -78,7 +80,7 @@ mfsdev_present_mark(unsigned int id)
 #define GE_X_PUTCHAR            2U
 #define DPY_X_HANDLER           0U
 #define DPY_X_CLOCK_HANDLER     1U
-#define DPY_X_CLK_PI_SERVICE_CALL 2U
+#define DPY_X_CLK_TICK_LOAD     2U
 #define DPY_X_PUTCHAR           3U
 #define DPY_X_BANNER_INIT       4U
 #define TTY_X_PUTCHAR           0U
@@ -92,6 +94,8 @@ mfsdev_present_mark(unsigned int id)
 #define TTY_X_WRITE_S6REC       8U
 #define TTY_X_READ_S6REC        9U
 #define TTY_X_DPY_PUTCHAR_ADDR 10U
+#define TTY_X_TTYDPY_PUTCHAR   11U
+#define TTY_X_TTYDPY_GETCHAR   12U
 #define WCNSLS_X_READ           0U
 #define OCNSLS_X_READ           0U
 #define TAPE_X_HANDLER           0U
@@ -121,6 +125,8 @@ mfsdev_present_mark(unsigned int id)
 static unsigned int diag_putchar_addr;
 static unsigned int clk_pi_handler_addr;
 static unsigned int clk_pi_service_addr;
+static unsigned int clk_pi_post_handler_addr;
+static unsigned int clk_tick_count_addr;
 static unsigned int tape_mres_base;
 static unsigned int dsk_mres_base;
 static unsigned int storage_router_registered;
@@ -160,6 +166,8 @@ extern kword_t cr_read_words_jump;
 extern kword_t cp_write_words_jump;
 extern kword_t lpt_putchar_jump;
 extern kword_t lpt_write_s6rec_jump;
+extern kword_t ttydpy_putchar_jump;
+extern kword_t ttydpy_getchar_jump;
 extern int d6fs_reader_bootstrap_call(kword_t backing_ops);
 
 
@@ -306,38 +314,6 @@ module_pi_unregister(unsigned int level, unsigned int handler)
         --pi_level_count[level];
         minit_pi_reindex();
         return 0;
-}
-
-/**
- * @brief Replace one handler without changing the compact PI span.
- *
- * This is required when the hardware level is already live.  An
- * unregister/register pair temporarily leaves the level without a handler;
- * an interrupt arriving in that window cannot be acknowledged and traps
- * KINIT in the empty dispatch path.
- */
-int
-module_pi_replace(unsigned int level, unsigned int old_handler,
-    unsigned int new_handler)
-{
-        unsigned int start;
-        unsigned int count;
-        unsigned int i;
-
-        if (level < PDP10_PI_LEVEL_MIN || level > PDP10_PI_LEVEL_MAX ||
-            old_handler == 0U || new_handler == 0U)
-                return -1;
-        start = 0U;
-        for (i = PDP10_PI_LEVEL_MIN; i < level; ++i)
-                start += pi_level_count[i];
-        count = pi_level_count[level];
-        for (i = start; i < start + count; ++i) {
-                if ((unsigned int)pdp10_pi_handlers[i] == old_handler) {
-                        pdp10_pi_handlers[i] = (kword_t)new_handler;
-                        return 0;
-                }
-        }
-        return -1;
 }
 
 static void
@@ -550,6 +526,9 @@ clk_minit(void)
         clk_pi_service_addr = minit_export(name, base, CLK_X_PI_SERVICE);
         minit_register(name, CLK_NATIVE_PI_LEVEL, clk_pi_handler_addr);
         (void)minit_export(name, base, CLK_X_TICKS);
+        clk_pi_post_handler_addr = minit_export(name, base,
+            CLK_X_POST_HANDLER);
+        clk_tick_count_addr = minit_export(name, base, CLK_X_TICK_COUNT);
         mfsdev_present_mark(MONITORFS_DEV_CLK0);
         minit_clk_cono((kword_t)CLK_NATIVE_PI_LEVEL | CLK_APR_CO_CLEAR_FLAG |
             CLK_APR_CO_ENABLE);
@@ -806,10 +785,10 @@ dpy_minit(void)
             kinit_call18_1(address,
             (kword_t)(unsigned long)minit_dpy_banner_words) != 0)
                 minit_fatal(name);
-        address = minit_export(name, base, DPY_X_CLK_PI_SERVICE_CALL);
-        if (clk_pi_service_addr != 0U)
-                storage_patch_module_jump(base,
-                    (kword_t *)(unsigned long)address, clk_pi_service_addr);
+        address = minit_export(name, base, DPY_X_CLK_TICK_LOAD);
+        if (clk_tick_count_addr != 0U)
+                storage_patch_jump((kword_t *)(unsigned long)address,
+                    clk_tick_count_addr);
 
         /* Keep DPY DONE at the lowest priority without consuming a ninth
          * resident handler-table slot.  The ordinary PI7 prologue already has
@@ -823,11 +802,10 @@ dpy_minit(void)
         pdp10_pi_level7_span_load = (kword_t)0254000000000UL |
             (kword_t)(handler & KINIT_HALF_MASK);
         minit_pi_enable(DPY_NATIVE_PI_LEVEL);
-        if (clk_pi_handler_addr != 0U) {
-                if (module_pi_replace(CLK_NATIVE_PI_LEVEL,
-                    clk_pi_handler_addr, clock_handler) != 0)
-                        minit_fatal(name);
-        }
+        if (clk_pi_post_handler_addr != 0U)
+                storage_patch_jump(
+                    (kword_t *)(unsigned long)clk_pi_post_handler_addr,
+                    clock_handler);
 
         mfsdev_present_mark(MONITORFS_DEV_DPY0);
         minit_dpy_cono((kword_t)DPY_NATIVE_PI_LEVEL);
@@ -904,6 +882,13 @@ tty_minit(void)
         storage_patch_jump(&tty_write_s6rec_jump, service);
         service = minit_export(name, base, TTY_X_READ_S6REC);
         storage_patch_jump(&tty_read_s6rec_jump, service);
+        if (dpy_putchar != 0U && cty_getchar != 0U) {
+                service = minit_export(name, base, TTY_X_TTYDPY_PUTCHAR);
+                storage_patch_jump(&ttydpy_putchar_jump, service);
+                service = minit_export(name, base, TTY_X_TTYDPY_GETCHAR);
+                storage_patch_jump(&ttydpy_getchar_jump, service);
+                mfsdev_present_mark(MONITORFS_DEV_TTYDPY0);
+        }
         mfsdev_present_mark(MONITORFS_DEV_TTY0);
         minit_diag_loaded(name);
 }
@@ -1587,6 +1572,7 @@ mfsdev_minit(void)
         MFSDEV_PUBLISH(MONITORFS_DEV_D6SET0, "D6SET0");
         MFSDEV_PUBLISH(MONITORFS_DEV_DRM0, "DRM0  ");
         MFSDEV_PUBLISH(MONITORFS_DEV_LPT0, "LPT0  ");
+        MFSDEV_PUBLISH(MONITORFS_DEV_TTYDPY0, "TTYDPY");
 #undef MFSDEV_PUBLISH
 }
 

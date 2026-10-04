@@ -9,14 +9,15 @@
  * qualified tick.  Software PI6 requests use the same entry to reschedule a
  * sleeping process without fabricating elapsed time.
  *
- * APR and the line clock share one PDP-6 PIA.  The Type 340 display may also
- * share PI6, so clk_pi_service must test the APR clock flag before treating an
- * interrupt as a timer tick.  The generic PI dispatcher keeps its span cursor
- * in AC2 and its level-return address in AC3; this service therefore saves both
- * on AC17 before calling scheduler code and restores them before returning.
+ * APR and the line clock share one PDP-6 PIA.  The Type 340 display may attach
+ * a post-service hook to the clock handler, but the CLK handler itself remains
+ * the registered PI6 owner.  The generic PI dispatcher keeps its span cursor
+ * in AC2 and its level-return address in AC3; clk_pi_service preserves both in
+ * resident words because scheduler work may change the active kernel stack.
  */
         .text
         .globl clk_pi_handler
+        .globl clk_pi_post_handler
         .globl clk_pi_service
         .globl clk_ticks
         .globl clk_tick_count
@@ -36,6 +37,7 @@
  */
 clk_pi_handler:
         pushj 017,clk_pi_service
+clk_pi_post_handler:
         jrst pdp10_pi_handler_return
 
 /**
@@ -51,13 +53,18 @@ clk_pi_handler:
  * proc_sched_kick requests an immediate reschedule only; it must not increment
  * time, age sleepers, or charge a quantum.
  *
- * AC1 may be clobbered by the called services.  AC2/AC3 are pushed because the
- * generic PI dispatcher requires them to survive every handler.  AC17 is used
- * only as a balanced kernel stack; no persistent state lives on the stack.
+ * AC1 may be clobbered by the called services.  AC2/AC3 live in dedicated
+ * resident save words because the generic PI dispatcher requires them to
+ * survive every handler and the scheduler may switch kernel stacks.
  */
 clk_pi_service:
-        push 017,2
-        push 017,3
+        ; AC2/AC3 belong to the compact PI dispatcher, not to the scheduler.
+        ; Do not preserve them on AC17: proc_sched_pi_tick may select another
+        ; process/kernel-stack context before returning here.  PI6 cannot nest
+        ; itself, so one resident save pair is sufficient and remains valid
+        ; across any such scheduling decision.
+        movem 2,clk_pi_saved_ac2
+        movem 3,clk_pi_saved_ac3
         conso 0000,01000
         jrst clk_pi_kick
         aos clk_tick_count
@@ -75,8 +82,8 @@ clk_pi_kick:
         setzm proc_sched_kick
         pushj 017,proc_sched_pi_resched
 clk_pi_service_done:
-        pop 017,3
-        pop 017,2
+        move 3,clk_pi_saved_ac3
+        move 2,clk_pi_saved_ac2
         popj 017,
 
 /**
@@ -94,4 +101,10 @@ clk_ticks:
         .bss
 /** Resident 36-bit tick counter; initialized to zero when the MRES is installed. */
 clk_tick_count:
+        .block 1
+/** PI6 dispatcher cursor saved across scheduler/storage service calls. */
+clk_pi_saved_ac2:
+        .block 1
+/** PI6 level-return stub saved across scheduler/storage service calls. */
+clk_pi_saved_ac3:
         .block 1

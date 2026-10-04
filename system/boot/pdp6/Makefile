@@ -588,6 +588,7 @@ $(CTY_MRES_OBJ): $(BUILD)/cty_io.dobj $(KCORE_MAP)
 $(CLK_MRES_OBJ): $(BUILD)/clk_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/clk-mres.dxr -M $(BUILD)/clk-mres.map \
 	    -R $@ -N clk_mres_package -X clk_pi_handler -X clk_ticks -X clk_pi_service \
+	    -X clk_pi_post_handler -X clk_tick_count \
 	    $(BUILD)/clk_io.dobj
 
 $(PTR_MRES_OBJ): $(BUILD)/ptr_io.dobj $(KCORE_MAP)
@@ -628,7 +629,7 @@ $(GE_MRES_OBJ): $(BUILD)/ge_io.dobj $(KCORE_MAP)
 $(DPY_MRES_OBJ): $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dpy-mres.dxr -M $(BUILD)/dpy-mres.map \
 	    -R $@ -N dpy_mres_package -X dpy_pi_handler -X dpy_clock_handler \
-	    -X dpy_clk_pi_service_call -X dpy_putchar \
+	    -X dpy_clk_tick_load -X dpy_putchar \
 	    -X dpy_banner_init \
 	    $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj
 
@@ -638,7 +639,8 @@ $(TTY_MRES_OBJ): $(BUILD)/tty_io.dobj $(KCORE_MAP)
 	    -X tty_dcs_putchar_address -X tty_ge_putchar_address \
 	    -X tty_cty_getchar_address -X tty_dcs_getchar_address \
 	    -X tty_ge_getchar_address -X tty_write_s6rec -X tty_read_s6rec \
-	    -X tty_dpy_putchar_address $(BUILD)/tty_io.dobj
+	    -X tty_dpy_putchar_address -X tty_ttydpy_putchar -X tty_ttydpy_getchar \
+	    $(BUILD)/tty_io.dobj
 
 $(WCNSLS_MRES_OBJ): $(BUILD)/wcnsls_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/wcnsls-mres.dxr -M $(BUILD)/wcnsls-mres.map \

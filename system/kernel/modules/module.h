@@ -51,9 +51,6 @@ void module_pi_init(void);
 int module_pi_register(unsigned int level, unsigned int handler);
 /** Remove one previously registered resident PI handler. */
 int module_pi_unregister(unsigned int level, unsigned int handler);
-/** Replace one handler in place without opening an interrupt-unhandled gap. */
-int module_pi_replace(unsigned int level, unsigned int old_handler,
-    unsigned int new_handler);
 void minit_pi_low_init(void);
 void minit_pi_hw_clear(void);
 void minit_pi_hw_set(kword_t mask);
