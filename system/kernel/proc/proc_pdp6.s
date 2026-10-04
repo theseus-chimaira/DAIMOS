@@ -419,11 +419,9 @@ proc_event_send:
         cail    011,6                   ; CHLD and above are not user-sendable
         jrst    proc_event_send_fail
 
-        move    4,012
-        lsh     4,1
-        add     4,012
-        add     4,proc_table
-        hlrz    4,(4)
+        move    1,012
+        pushj   17,proc_slot_ptr
+        hlrz    4,(1)
         move    013,045(4)             ; caller session/domain control word
         jumpn   3,proc_event_send_group
 
@@ -431,10 +429,9 @@ proc_event_send:
 ; owned by the caller unless the caller is UID 0.
         caml    010,proc_slots
         jrst    proc_event_send_fail
-        move    3,010
-        lsh     3,1
-        add     3,010
-        add     3,proc_table
+        move    1,010
+        pushj   17,proc_slot_ptr
+        move    3,1
         move    4,2(3)
         and     4,[0300000000000]
         jumpe   4,proc_event_send_fail
@@ -527,12 +524,9 @@ proc_event_send_return:
 ; root or when caller and target effective UIDs match.  Preserve AC4 because
 ; the caller immediately uses it for target session/domain state.
 proc_event_uid_check:
-        move    2,proc_current_slot
-        move    3,2
-        lsh     3,1
-        add     3,2
-        add     3,proc_table
-        hlrz    3,(3)
+        move    1,proc_current_slot
+        pushj   17,proc_slot_ptr
+        hlrz    3,(1)
         hlrz    2,0107(3)              ; caller UID
         jumpe   2,kret_zero            ; UID 0 may administer all users
         hlrz    5,0107(4)              ; target UID
@@ -1540,8 +1534,7 @@ proc_tty_output_route_set:
         jrst    proc_tty_output_route_clear
         caile   3,025
         jrst    kret_neg1
-        addi    3,1
-        jrst    proc_tty_output_route_store
+        aoja    3,proc_tty_output_route_store
 proc_tty_output_route_clear:
         setz    3,
 proc_tty_output_route_store:
@@ -1597,11 +1590,9 @@ proc_sleep_ticks:
         jumpe   1,kret_neg1
         pushj   17,proc_runq_remove
 
-        move    2,proc_current_slot
-        move    3,2
-        lsh     3,1
-        add     3,2
-        add     3,proc_table            ; current descriptor
+        move    1,proc_current_slot
+        pushj   17,proc_slot_ptr
+        move    3,1                    ; current descriptor
         hrrz    1,proc_timer_clock
         andi    1,PROC_TIMER_CLOCK_MASK
         add     4,1
@@ -1733,10 +1724,9 @@ proc_wait_child:
         jrst    kret_neg1
         move    1,proc_current_slot
         pushj   17,proc_runq_remove
-        move    2,proc_current_slot
-        lsh     2,1
-        add     2,proc_current_slot
-        add     2,proc_table
+        move    1,proc_current_slot
+        pushj   17,proc_slot_ptr
+        move    2,1
         move    3,2(2)
         tlz     3,PROC_WAIT_LH_MASK
         tlo     3,PROC_WAIT_CHILD_LH

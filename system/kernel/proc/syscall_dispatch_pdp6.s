@@ -208,84 +208,64 @@ native_sys_tty_read_words:
         push    17,6                    ; fd
         push    17,7                    ; requested words
         add     17,[025,,025]           ; 21 staging words
-
-        ; Validate the logical destination before allowing the TTY reader to
-        ; block or stop this process, then release the mapping across sleep.
-        move    1,-027(17)
-        pushj   17,native_sys_map_one
-        jumpe   1,native_sys_tty_read_bad
-        pushj   17,vm_user_mapping_release
-
-        move    1,-026(17)
-        movei   2,-024(17)
-        move    3,-025(17)
-        caile   3,025
-        movei   3,025
-        pushj   17,file_read_words
-        jumple  1,native_sys_tty_read_done
-        move    5,1                     ; transferred words
-
-        move    1,-027(17)
-        pushj   17,native_sys_map_one
-        jumpe   1,native_sys_tty_read_bad
-        movei   2,-024(17)
-        move    3,5
-native_sys_tty_read_copy:
-        move    4,(2)
-        movem   4,(1)
-        addi    1,1
-        addi    2,1
-        sojg    3,native_sys_tty_read_copy
-        move    1,5
-        pushj   17,vm_user_mapping_release
-native_sys_tty_read_done:
+        movei   1,-027(17)              ; metadata frame base
+        movei   2,025                   ; maximum staged words
+        pushj   17,native_sys_blocking_read_words
         sub     17,[030,,030]
         popj    17,
-native_sys_tty_read_bad:
-        seto    1,
-        jrst    native_sys_tty_read_done
 
 native_sys_pipe_read_words:
         push    17,2                    ; logical user buffer
         push    17,6                    ; fd
         push    17,7                    ; requested words
         add     17,[010,,010]           ; eight staging words
-
-        ; Validate the user pointer before consuming pipe data, then release
-        ; the mapping before the provider can sleep.
-        move    1,-012(17)
-        pushj   17,native_sys_map_one
-        jumpe   1,native_sys_pipe_read_bad
-        pushj   17,vm_user_mapping_release
-
-        move    1,-011(17)
-        movei   2,-7(17)
-        move    3,-010(17)
-        caile   3,010
-        movei   3,010
-        pushj   17,file_read_words
-        jumple  1,native_sys_pipe_read_done
-        move    5,1                     ; transferred words
-
-        move    1,-012(17)
-        pushj   17,native_sys_map_one
-        jumpe   1,native_sys_pipe_read_bad
-        movei   2,-7(17)
-        move    3,5
-native_sys_pipe_read_copy:
-        move    4,(2)
-        movem   4,(1)
-        addi    1,1
-        addi    2,1
-        sojg    3,native_sys_pipe_read_copy
-        move    1,5
-        pushj   17,vm_user_mapping_release
-native_sys_pipe_read_done:
+        movei   1,-012(17)              ; metadata frame base
+        movei   2,010                   ; maximum staged words
+        pushj   17,native_sys_blocking_read_words
         sub     17,[013,,013]
         popj    17,
-native_sys_pipe_read_bad:
+
+; Shared blocking-read core.
+; AC1 points at three caller-owned frame words: logical user buffer, fd and
+; requested count.  The staging area follows immediately.  AC2 is the staging
+; capacity.  Only the short mapping/copy sections pin user memory; the provider
+; call itself may sleep or stop the caller safely.
+native_sys_blocking_read_words:
+        push    17,1                    ; caller frame base
+        push    17,2                    ; staging capacity / result count
+        move    4,-1(17)
+        move    1,(4)                   ; validate logical destination first
+        pushj   17,native_sys_map_one
+        jumpe   1,native_sys_blocking_read_bad
+        pushj   17,vm_user_mapping_release
+
+        move    4,-1(17)
+        move    1,1(4)                  ; fd
+        movei   2,3(4)                  ; kernel staging area
+        move    3,2(4)                  ; requested words
+        camle   3,(17)
+        move    3,(17)
+        pushj   17,file_read_words
+        jumple  1,native_sys_blocking_read_done
+        movem   1,(17)                  ; transferred words
+
+        move    4,-1(17)
+        move    1,(4)                   ; remap logical destination
+        pushj   17,native_sys_map_one
+        jumpe   1,native_sys_blocking_read_bad
+        move    2,1                     ; mapped user destination
+        move    4,-1(17)                ; caller frame base
+        movei   1,3(4)                  ; kernel staging source
+        move    3,(17)                  ; transferred words
+        pushj   17,fs_copy_words
+        move    1,(17)
+        pushj   17,vm_user_mapping_release
+native_sys_blocking_read_done:
+        sub     17,[2,,2]
+        popj    17,
+native_sys_blocking_read_bad:
         seto    1,
-        jrst    native_sys_pipe_read_done
+        jrst    native_sys_blocking_read_done
 
 native_sys_pipe_write_words:
         push    17,2                    ; logical user buffer
@@ -299,16 +279,9 @@ native_sys_pipe_write_words:
         move    5,-010(17)
         caile   5,010
         movei   5,010
-        movei   2,-7(17)
+        movei   2,-7(17)                ; kernel staging destination
         move    3,5
-        jumpe   3,native_sys_pipe_write_release
-native_sys_pipe_write_copy:
-        move    4,(1)
-        movem   4,(2)
-        addi    1,1
-        addi    2,1
-        sojg    3,native_sys_pipe_write_copy
-native_sys_pipe_write_release:
+        pushj   17,fs_copy_words         ; zero count is accepted
         pushj   17,vm_user_mapping_release
 
         move    1,-011(17)
@@ -643,82 +616,69 @@ native_sys_ttyctl_get:
 ; sleep for media I/O and should not pin the caller's user mapping while doing
 ; so.  The existing vnode path walker then formats the active mount target.
 native_sys_fsinfo:
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
-        push    17,014
-        push    17,015
-        move    010,3                   ; logical user result pointer
-        hrrz    011,2                   ; slot
-        caile   011,3
+        ; Seven-word fixed frame:
+        ;   user pointer, target vnode, mount id, provider, flags, total, used.
+        ; Keeping the five public scalar fields contiguous permits one BLT
+        ; copyout and gives every exit the same unwind depth.
+        add     17,[7,,7]
+        movem   3,-6(17)                ; logical user result pointer
+        hrrz    4,2                     ; zero-based mount slot
+        caile   4,3
         jrst    native_sys_fsinfo_bad
-        move    012,vfs_mount_root(011)
-        jumpe   012,native_sys_fsinfo_empty
-        move    013,vfs_mount_target(011)
-        jumpn   013,native_sys_fsinfo_have_path
-        move    013,vfs_namespace_root  ; root mount is '/'
+        move    5,vfs_mount_root(4)
+        jumpe   5,native_sys_fsinfo_empty
+        move    6,vfs_mount_target(4)
+        jumpn   6,native_sys_fsinfo_have_path
+        move    6,vfs_namespace_root    ; root mount is '/'
 native_sys_fsinfo_have_path:
-        ldb     014,[POINT 6,012,5]      ; provider
-        movei   015,1
-        lsh     015,0(011)              ; slot's VFS_MOUNT_RDONLY bit
-        tdne    015,vfs_mount_ro
-        jrst    native_sys_fsinfo_ro
-        setz    015,
-        jrst    native_sys_fsinfo_space
-native_sys_fsinfo_ro:
-        movei   015,1
-native_sys_fsinfo_space:
-        move    1,012
+        movem   6,-5(17)                ; target vnode
+        move    6,4
+        addi    6,1
+        movem   6,-4(17)                ; public mount id
+        ldb     7,[POINT 6,5,5]         ; provider
+        movem   7,-3(17)
+        movei   0,1
+        lsh     0,0(4)
+        tdnn    0,vfs_mount_ro
+        setz    0,
+        movem   0,-2(17)                ; VFS_MOUNT_RDONLY
+
+        move    1,5                     ; root vnode
         movei   6,025                   ; FS_MRES_OP_SPACE
-        move    7,014
         pushj   17,fs_provider_reg_call
         jumpl   1,native_sys_fsinfo_bad
-        push    17,1                    ; total words
-        push    17,2                    ; used words
+        movem   1,-1(17)                ; total words
+        movem   2,(17)                  ; used words
 
-        move    1,010
+        move    1,-6(17)
         pushj   17,native_sys_map_one
-        jumpe   1,native_sys_fsinfo_bad_space
-        move    6,010
+        jumpe   1,native_sys_fsinfo_bad
+        move    6,-6(17)
         addi    6,027                   ; 23-word sys_fsinfo record
         camle   6,3                     ; logical end from vm_user_words
         jrst    native_sys_fsinfo_bad_map
-        move    6,1                     ; mapped result base
-        move    5,011
-        addi    5,1
-        movem   5,(6)                   ; public mount id
-        movem   014,1(6)               ; provider
-        movem   015,2(6)               ; flags
-        move    5,-1(17)
-        movem   5,3(6)                 ; total words
-        move    5,(17)
-        movem   5,4(6)                 ; used words
-        move    1,013
-        movei   2,5(6)
+        move    4,1                     ; mapped result base (AC0 cannot index)
+        movei   5,-4(17)                ; five contiguous scalar fields
+        move    6,4
+        hrl     6,5
+        blt     6,4(4)
+        move    1,-5(17)                ; target vnode
+        movei   2,5(4)
         movei   3,022                   ; SYS_FSINFO_PATH_WORDS
         pushj   17,file_getpath
         jumpn   1,native_sys_fsinfo_bad_map
         pushj   17,vm_user_mapping_release
         movei   1,1
-        sub     17,[2,,2]
-        jrst    native_sys_fsinfo_restore
+        jrst    native_sys_fsinfo_done
 native_sys_fsinfo_bad_map:
         pushj   17,vm_user_mapping_release
-native_sys_fsinfo_bad_space:
-        sub     17,[2,,2]
 native_sys_fsinfo_bad:
         seto    1,
-        jrst    native_sys_fsinfo_restore
+        jrst    native_sys_fsinfo_done
 native_sys_fsinfo_empty:
         setz    1,
-native_sys_fsinfo_restore:
-        pop     17,015
-        pop     17,014
-        pop     17,013
-        pop     17,012
-        pop     17,011
-        pop     17,010
+native_sys_fsinfo_done:
+        sub     17,[7,,7]
         popj    17,
 
 ; PID-1/root storage activation policy.  Discovery and module installation
@@ -1053,6 +1013,7 @@ native_sys_d6fs_mount:
         movei   6,6                      ; D6FS_PROVIDER
 
         .globl  fs_provider_reg_call
+        .globl  fs_copy_words
 native_sys_mount_handoff:
         push    17,5                     ; handoff words
         push    17,6                     ; provider

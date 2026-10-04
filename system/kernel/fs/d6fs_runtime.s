@@ -633,9 +633,6 @@ d6fs_provider_space:
         push    17,011
         push    17,012
         push    17,013
-        push    17,014
-        push    17,015
-        push    17,016
         move    010,d6fs_active_reader
         move    011,6(010)              ; valid bits remaining
         setz    012,                    ; map block index
@@ -649,17 +646,15 @@ d6fs_provider_space_map:
         move    1,010
         pushj   17,d6fs_reader_get_block
         jumpe   1,d6fs_provider_space_fail
-        move    014,1                   ; current map word
-        move    015,011                 ; valid bits in this map block
-        camle   015,[011000]
-        movei   015,011000
-        move    5,015
-        idivi   5,044                   ; AC5 full words, AC6 remainder
-        move    016,5
-        move    4,6                     ; keep tail-bit count off AC17
+        move    4,1                     ; current map word
+        move    5,011                   ; valid bits in this map block
+        camle   5,[011000]
+        movei   5,011000
+        move    6,5
+        idivi   6,044                   ; AC6 full words, AC7 remainder
 d6fs_provider_space_words:
-        jumpe   016,d6fs_provider_space_partial
-        move    1,(014)
+        jumpe   6,d6fs_provider_space_partial
+        move    1,(4)
 d6fs_provider_space_bits:
         jumpe   1,d6fs_provider_space_word_done
         move    2,1
@@ -668,35 +663,31 @@ d6fs_provider_space_bits:
         aoj     013,
         jrst    d6fs_provider_space_bits
 d6fs_provider_space_word_done:
-        aoj     014,
-        sojg    016,d6fs_provider_space_words
+        aoj     4,
+        sojg    6,d6fs_provider_space_words
+        jumpe   7,d6fs_provider_space_next_map
 d6fs_provider_space_partial:
-        jumpe   4,d6fs_provider_space_next_map
         movei   2,044
-        sub     2,4                     ; 36 - valid tail bits
+        sub     2,7                     ; 36 - valid tail bits
         seto    3,
         lsh     3,0(2)                  ; valid bits are MSB-first
-        move    1,(014)
+        move    1,(4)
         and     1,3
-d6fs_provider_space_tail_bits:
-        jumpe   1,d6fs_provider_space_next_map
-        move    2,1
-        subi    2,1
-        and     1,2
-        aoj     013,
-        jrst    d6fs_provider_space_tail_bits
+        setz    7,                      ; tail consumed on this pass
+        movei   6,1                    ; reuse common popcount completion
+        jrst    d6fs_provider_space_bits
 d6fs_provider_space_next_map:
-        sub     011,015
+        sub     011,5
         aoja    012,d6fs_provider_space_map
 d6fs_provider_space_done:
         move    1,6(010)
         lsh     1,7                     ; 128 words/block
         move    2,013
         lsh     2,7
-        jrst    d6fs_restore7
+        jrst    d6fs_restore4
 d6fs_provider_space_fail:
         seto    1,
-        jrst    d6fs_restore7
+        jrst    d6fs_restore4
 
 
 

@@ -61,20 +61,18 @@ mfsdev_lookup_scan:
         jrst    kret_neg1
         skipn   5,mfsdev_names(4)
         jrst    mfsdev_lookup_next
-        caie    4,023                  ; TTYDPY0 is the sole >6-char device
+        came    5,1(2)                 ; first SIXBIT name word is universal
+        jrst    mfsdev_lookup_next
+        caie    4,023                  ; TTYDPY0 alone has a seventh character
         jrst    mfsdev_lookup_short
         movei   6,7
         came    6,(2)
-        jrst    mfsdev_lookup_next
-        came    5,[646471446071]       ; SIXBIT /TTYDPY/
         jrst    mfsdev_lookup_next
         move    6,2(2)
         came    6,[200000000000]       ; SIXBIT /0     /
         jrst    mfsdev_lookup_next
         jrst    mfsdev_lookup_match
 mfsdev_lookup_short:
-        came    5,1(2)
-        jrst    mfsdev_lookup_next
         pushj   17,mfsdev_name_length
         came    6,(2)
         jrst    mfsdev_lookup_next
@@ -128,6 +126,10 @@ mfsdev_readdir_store:
         movem   6,(4)
         movem   5,1(4)
         setzm   2(4)
+        caie    1,023                  ; TTYDPY0 carries its final '0' in word 2
+        jrst    mfsdev_readdir_store_tail
+        move    5,[200000000000]
+        movem   5,2(4)
 mfsdev_readdir_store_tail:
         setzm   3(4)
         setzm   4(4)
@@ -184,30 +186,14 @@ mfsdev_readdir_next:
 
 mfsdev_readdir_found:
         move    1,5                    ; preserve device id across name length
+        move    5,6                    ; first SIXBIT name word
         caie    1,023
         jrst    mfsdev_readdir_found_short
-        movei   6,7
-        move    5,[646471446071]       ; SIXBIT /TTYDPY/
-        move    4,3                    ; struct vfs_dirent *
-        caie    0,2
-        jrst    mfsdev_readdir_ttydpy_dir
-        move    0,1
-        pushj   17,mfsdev_io_type
-        jrst    mfsdev_readdir_ttydpy_store
-mfsdev_readdir_ttydpy_dir:
-        movei   7,1
-mfsdev_readdir_ttydpy_store:
-        movem   6,(4)
-        movem   5,1(4)
-        move    5,[200000000000]       ; SIXBIT /0     /
-        movem   5,2(4)
-        setzm   3(4)
-        setzm   4(4)
-        movem   7,5(4)
-        jrst    kret_one
+        movei   6,7                    ; TTYDPY0
+        jrst    mfsdev_readdir_found_type
 mfsdev_readdir_found_short:
-        move    5,6
         pushj   17,mfsdev_name_length
+mfsdev_readdir_found_type:
         caie    0,2
         jrst    mfsdev_readdir_found_dir
         move    0,1

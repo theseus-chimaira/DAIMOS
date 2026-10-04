@@ -301,10 +301,10 @@ ${BUILD}/d6lz_fixed.s: ../stand/pdp6/common/decompressor.inc
 	@mkdir -p ${BUILD}
 	cp $< $@
 
-${BUILD}/exec.s: proc/exec.c proc/exec_load.s ${KERNEL_HEADERS}
+${BUILD}/exec.s: proc/exec.c proc/exec_lowmem_pdp6.s proc/exec_load.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S proc/exec.c -o $@.c
-	cat $@.c proc/exec_load.s > $@
+	cat $@.c proc/exec_lowmem_pdp6.s proc/exec_load.s > $@
 	rm -f $@.c
 
 ${BUILD}/d6lz.s: core/d6lz_pdp6.s

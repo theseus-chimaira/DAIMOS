@@ -301,11 +301,19 @@ monitorfs_parent_name_device:
         caie    4,3
         jrst    monitorfs_parent_name_fail
         hrrz    4,6
-        cail    4,023
+        cail    4,024
         jrst    monitorfs_parent_name_fail
         skipn   5,mfsdev_names(4)
         jrst    monitorfs_parent_name_fail
         movem   5,1(7)
+        caie    4,023                  ; TTYDPY0 is the sole seven-char name
+        jrst    monitorfs_parent_name_device_short
+        movei   1,7
+        movem   1,(7)
+        move    1,[200000000000]       ; SIXBIT /0     /
+        movem   1,2(7)
+        jrst    monitorfs_parent_name_done
+monitorfs_parent_name_device_short:
         movei   1,mfsdev_names(4)
         movei   2,6
         pushj   17,vfs_sixbit_name_chars
