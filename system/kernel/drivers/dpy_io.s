@@ -35,6 +35,15 @@
         .globl pdp10_pi_return_level7
         .globl kret_ok
         .globl kret_busy
+        .globl dpy_text_putchar
+        .globl dpy_text_base
+        .globl dpy_text_top
+        .globl dpy_text_active
+
+        .equ DPY_TEXT_ROWS,052
+        .equ DPY_TEXT_LENGTH_OFF,01312
+        .equ DPY_TEXT_PROG_OFF,01364
+        .equ DPY_TEXT_PROG_WORDS,035
 
 /**
  * @brief PI7 pre-handler for a possible Type 340 DONE interrupt.
@@ -53,6 +62,37 @@ dpy_pi_handler:
         jrst pdp10_pi_dispatch
         setzm dpy_pending
         cono 0130,000007
+        move 1,dpy_refresh_iowd
+        aobjn 1,dpy_pi_refresh_send
+        skipn dpy_text_active
+        jrst pdp10_pi_dispatch
+
+        ; The setup span has row = -1.  Thereafter each exhausted row selects
+        ; the next physical row through the 42-row scroll ring.
+        aos 1,dpy_refresh_row
+        cail 1,DPY_TEXT_ROWS
+        jrst pdp10_pi_dispatch
+        add 1,dpy_text_top
+        cail 1,DPY_TEXT_ROWS
+        subi 1,DPY_TEXT_ROWS
+        movem 1,dpy_refresh_phys
+
+        move 1,dpy_text_base
+        addi 1,DPY_TEXT_LENGTH_OFF
+        add 1,dpy_refresh_phys
+        hrrz 1,(1)                    ; compiled words in this physical row
+        jumpe 1,pdp10_pi_dispatch
+        addi 1,1                      ; AOBJN initial count is -(n + 1)
+        movn 1,1
+        lsh 1,022
+        hllm 1,dpy_refresh_iowd
+
+        move 1,dpy_refresh_phys
+        imuli 1,DPY_TEXT_PROG_WORDS
+        add 1,dpy_text_base
+        addi 1,DPY_TEXT_PROG_OFF
+        subi 1,1
+        hrrm 1,dpy_refresh_iowd
         move 1,dpy_refresh_iowd
         aobjn 1,dpy_pi_refresh_send
         jrst pdp10_pi_dispatch
@@ -96,6 +136,14 @@ dpy_refresh_start:
         ; state.  Restore that state before every replay so character/mode and
         ; beam position left by the previous frame cannot accumulate.
         cono 0130,000107              ; INIT + retain low-priority data PIA 7
+        skipn dpy_text_active
+        jrst dpy_refresh_banner
+        seto 1,
+        movem 1,dpy_refresh_row
+        move 1,[-3,,dpy_text_setup_words-1]
+        aobjn 1,dpy_refresh_start_send
+        popj 017,
+dpy_refresh_banner:
         move 1,[-6,,dpy_banner_words-1]
         aobjn 1,dpy_refresh_start_send
         popj 017,
@@ -145,62 +193,24 @@ dpy_put_ok:
         jrst kret_ok
 
 /**
- * @brief Render one terminal byte with the Type 342 character generator.
+ * @brief Update the retained Type-342 terminal image.
  * @param AC1 ASCII byte.
- * @return dpy_putword() status.
+ * @return dpy_text_putchar() status.
  *
- * Every call is self contained: PARAM->CHAR, SI/SO + character/control + ESC.
- * Thus no cursor/shift state is retained in resident RAM.  Type 342 CR/LF are
- * native controls; shifted code 072 is the six-unit cursor-left used for BS.
+ * The C helper allocates the dynamic text/cache extent on first use and
+ * updates the appropriate cached row.  Ordinary terminal output performs no
+ * Type-340 DATAO and never waits for DONE.
  */
 dpy_putchar:
-        andi 1,0377
-        movei 2,035                  ; SI / primary character set
-        caie 1,010
-        jrst dpy_putchar_lf
-        movei 2,036                  ; SO / shifted set
-        movei 1,072                  ; cursor left six units
-        jrst dpy_putchar_pack
-dpy_putchar_lf:
-        caie 1,012
-        jrst dpy_putchar_cr
-        movei 1,033
-        jrst dpy_putchar_pack
-dpy_putchar_cr:
-        caie 1,015
-        jrst dpy_putchar_lower
-        movei 1,034
-        jrst dpy_putchar_pack
-dpy_putchar_lower:
-        caige 1,0141
-        jrst dpy_putchar_primary
-        caile 1,0172
-        jrst dpy_putchar_bad
-        subi 1,0140
-        movei 2,036                  ; SO / lower-case set
-        jrst dpy_putchar_pack
-dpy_putchar_primary:
-        caige 1,040
-        jrst dpy_putchar_bad
-        caile 1,077
-        jrst dpy_putchar_upper
-        jrst dpy_putchar_pack
-dpy_putchar_upper:
-        caige 1,0101
-        jrst dpy_putchar_bad
-        caile 1,0132
-        jrst dpy_putchar_bad
-        andi 1,077                   ; A..Z -> Type-342 codes 1..032
-        jrst dpy_putchar_pack
-dpy_putchar_bad:
-        movei 1,077                  ; unsupported byte -> '?'
-dpy_putchar_pack:
-        lsh 2,014                    ; first Type-342 character
-        lsh 1,6
-        ior 1,2
-        ori 1,037                    ; ESC returns display to parameter mode
-        hrli 1,060000                ; left half: PARAM -> CHAR mode
-        jrst dpy_putword
+        jrst dpy_text_putchar
+
+        .data
+; Complete frame setup.  Word 0 sets scale 2 and intensity 4, enters POINT,
+; and loads X=0.  Word 1 loads Y=974 and returns through PARAM into CHAR.
+; Cached rows thereafter contain only Type-342 character-mode words.
+dpy_text_setup_words:
+        .word 0020134020000
+        .word 0201716060000
 
         .bss
 /** Nonzero while one DATAO word is awaiting the Type 340 DONE interrupt. */
@@ -211,6 +221,12 @@ dpy_refresh_divider:
         .block 1
 /** AOBJN state: negative remaining count in LH, current banner address in RH. */
 dpy_refresh_iowd:
+        .block 1
+/** Logical text row currently being streamed; -1 denotes setup span. */
+dpy_refresh_row:
+        .block 1
+/** Physical ring row selected while crossing one compiled row boundary. */
+dpy_refresh_phys:
         .block 1
 /** Compact KINIT banner; mkbootbanner currently emits exactly five words. */
 dpy_banner_words:

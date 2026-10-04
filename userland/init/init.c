@@ -8,6 +8,7 @@
 
 struct init_entry {
         unsigned int tty;
+        unsigned int output_sink;
         unsigned int action;
         unsigned int pid;
         kword_t path[U_PATH_WORDS];
@@ -115,16 +116,23 @@ parse_uint(const char *s, unsigned int *vp)
 static int
 parse_entry(char *line, struct init_entry *e)
 {
-        char *field[3];
+        char *field[4];
         int n;
 
-        n = u_text_fields(line, field, 3U);
+        n = u_text_fields(line, field, 4U);
         if (n == 0)
                 return 1;
-        if (n != 3 || parse_uint(field[0], &e->tty) != 0 ||
+        if ((n != 3 && n != 4) || parse_uint(field[0], &e->tty) != 0 ||
             e->tty > SYS_TTY_ID_MAX ||
             u_s6_pack(e->path, U_PATH_WORDS, field[2]) != 0)
                 return -1;
+        e->output_sink = SYS_TTY_SINK_NATIVE;
+        if (n == 4) {
+                if (text_eq(field[3], "DPY"))
+                        e->output_sink = SYS_TTY_SINK_DPY;
+                else if (!text_eq(field[3], "NATIVE"))
+                        return -1;
+        }
         if (text_eq(field[1], "RESPAWN"))
                 e->action = INIT_RESPAWN;
         else if (text_eq(field[1], "ONCE"))
@@ -189,6 +197,10 @@ spawn_entry(struct init_entry *e)
         unsigned int total;
         int pid;
 
+        if (e->output_sink != SYS_TTY_SINK_NATIVE &&
+            dsys_ttyctl(SYS_TTYCTL_SETOUT, e->tty, e->output_sink) < 0)
+                return -1;
+
         path_words = 1U + ((unsigned int)e->path[0] + 5U) / 6U;
         if (path_words > U_PATH_WORDS)
                 return -1;
@@ -242,6 +254,7 @@ run_mountall(void)
         int pid;
 
         e.tty = 0U;
+        e.output_sink = SYS_TTY_SINK_NATIVE;
         e.action = INIT_ONCE;
         e.pid = 0U;
         if (u_s6_pack(e.path, U_PATH_WORDS, "/SYSTEM/EXEC/MOUNTALL") != 0 ||

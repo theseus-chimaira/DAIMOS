@@ -210,11 +210,13 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/kcore_end.s
 
 MRES_C_SRCS = fs/d6fs_provider.c \
+	drivers/dpy_text.c \
 	fs/memfs_data.c \
 	fs/memfs_snapshot.c \
 	fs/tsfs.c
 
 MRES_C_ASM = $(BUILD)/d6fs_provider.s \
+	$(BUILD)/dpy_text.s \
 	$(BUILD)/memfs_data.s \
 	$(BUILD)/memfs_snapshot.s \
 	$(BUILD)/tsfs.s
@@ -248,6 +250,7 @@ MRES_FIXED_SRCS = fs/d6fs_validate.s \
 MRES_ASM = $(BUILD)/dtfs.s \
 	$(BUILD)/tsfs.s \
 	$(BUILD)/d6fs_provider.s \
+	$(BUILD)/dpy_text.s \
 	$(BUILD)/memfs_data.s \
 	$(BUILD)/memfs_snapshot.s \
 	$(BUILD)/d6fs_validate.s \
@@ -326,6 +329,10 @@ ${BUILD}/proc_swap.s: ${VM_SWAP_C} ${KERNEL_HEADERS}
 ${BUILD}/vm_backend_pdp6.s: ${VM_BACKEND_FIXED}
 	@mkdir -p ${BUILD}
 	cp ${VM_BACKEND_FIXED} $@
+
+${BUILD}/dpy_text.s: drivers/dpy_text.c ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S drivers/dpy_text.c -o $@
 
 ${BUILD}/memfs_data.s: fs/memfs_data.c ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}

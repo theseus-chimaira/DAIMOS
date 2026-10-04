@@ -4,9 +4,9 @@
  *
  * The display is optional. KINIT probes device 0130, initializes it, installs
  * the DPY MRES package, and publishes the terminal-output service only when
- * the controller responds correctly. The resident driver keeps one pending
- * flag because the Type 340 accepts one 36-bit DATAO word and raises DONE
- * after completing its second 18-bit display instruction.
+ * the controller responds correctly. The large 84x42 terminal store is not
+ * MRES BSS: it is one MM_TYPE_KERNEL_DYNAMIC extent allocated lazily on the
+ * first actual DPY terminal output.
  *
  * DPY DONE interrupts run at PI7, the lowest PDP-6 priority.  When CLK is also
  * present, KINIT substitutes a DPY-owned PI6 wrapper that first performs the
@@ -49,7 +49,7 @@
  * @return DPY_E_OK, or DPY_E_BUSY if another word is already in flight.
  */
 int dpy_putword(kword_t word);
-/** Render one terminal byte through the Type 342 character generator. */
+/** Update the retained 84x42 Type-342 terminal for one output byte. */
 int dpy_putchar(unsigned int ch);
 
 /** @brief Resident low-priority PI7 Type 340 DONE pre-handler. */
