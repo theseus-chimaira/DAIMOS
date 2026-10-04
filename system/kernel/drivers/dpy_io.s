@@ -43,9 +43,9 @@
         .globl dpy_text_rows_used
 
         .equ DPY_TEXT_ROWS,052
-        .equ DPY_TEXT_LENGTH_OFF,01114
-        .equ DPY_TEXT_PROG_OFF,01166
-        .equ DPY_TEXT_PROG_WORDS,035
+        .equ DPY_TEXT_BLOCKS,016
+        .equ DPY_TEXT_ROW_WORDS,034
+        .equ DPY_TEXT_ROW_END,017
 
 /**
  * @brief PI7 pre-handler for a possible Type 340 DONE interrupt.
@@ -75,44 +75,134 @@ dpy_pi_handler:
         skipn dpy_text_active
         jrst dpy_pi_refresh_complete
 
-        ; The setup span has row = -1.  Thereafter each exhausted row selects
-        ; the next physical row through the 42-row scroll ring.
-        aos 1,dpy_refresh_row
-        caml 1,dpy_text_rows_used
-        jrst dpy_pi_refresh_complete
-        add 1,dpy_text_top
-        cail 1,DPY_TEXT_ROWS
-        subi 1,DPY_TEXT_ROWS
-        movem 1,dpy_refresh_phys
+        ; A banner frame keeps row=DPY_TEXT_ROWS as a non-text sentinel.
+        ; Text setup uses row=-1.  Normal row/block spans use row >= 0 and the
+        ; packed dpy_refresh_block word (LH=end block, RH=next block).
+        move  1,dpy_refresh_row
+        cain  1,DPY_TEXT_ROWS
+        jrst  dpy_pi_refresh_complete
+        jumpl 1,dpy_pi_text_next_row
+        hrrz  2,dpy_refresh_block
+        caie  2,DPY_TEXT_ROW_END
+        jrst  dpy_pi_text_next_block
 
-        move 1,dpy_text_base
-        addi 1,DPY_TEXT_LENGTH_OFF
-        add 1,dpy_refresh_phys
-        hrrz 1,(1)                    ; compiled words in this physical row
-        jumpe 1,dpy_pi_refresh_complete
-        addi 1,1                      ; AOBJN initial count is -(n + 1)
-        movn 1,1
-        lsh 1,022
-        hllm 1,dpy_refresh_iowd
+dpy_pi_text_next_row:
+        aos   1,dpy_refresh_row
+        caml  1,dpy_text_rows_used
+        jrst  dpy_pi_refresh_complete
 
-        move 1,dpy_refresh_phys
-        imuli 1,DPY_TEXT_PROG_WORDS
-        add 1,dpy_text_base
-        addi 1,DPY_TEXT_PROG_OFF
-        subi 1,1
-        hrrm 1,dpy_refresh_iowd
-        move 1,dpy_refresh_iowd
+        ; Locate the final nonblank six-cell block.  Zero word 0 defines a
+        ; blank block regardless of stale word 1, so clearing a row costs only
+        ; fourteen stores.  Store last+1 in LH and start block zero in RH.
+        move  2,1
+        add   2,dpy_text_top
+        cail  2,DPY_TEXT_ROWS
+        subi  2,DPY_TEXT_ROWS
+        imuli 2,DPY_TEXT_ROW_WORDS
+        add   2,dpy_text_base
+        addi  2,032                    ; first word of block 13
+        movei 3,DPY_TEXT_BLOCKS
+dpy_pi_text_find_last:
+        jumpe 3,dpy_pi_text_blank_row
+        skipe (2)
+        jrst  dpy_pi_text_found_last
+        subi  2,2
+        soja  3,dpy_pi_text_find_last
+dpy_pi_text_blank_row:
+        setzm dpy_refresh_block        ; completely blank row: CR/LF only
+        jrst  dpy_pi_text_next_block
+dpy_pi_text_found_last:
+        setzm dpy_refresh_block
+        hrlm  3,dpy_refresh_block
+
+dpy_pi_text_next_block:
+        hrrz  2,dpy_refresh_block
+        hlrz  3,dpy_refresh_block
+        caml  2,3
+        jrst  dpy_pi_text_row_end
+
+        ; Recompute the physical ring row at block boundaries.  AC2/AC3 are
+        ; the PI dispatcher's private scratch and are restored before generic
+        ; PI7 dispatch; no interrupted-context AC is borrowed here.
+        move  1,dpy_refresh_row
+        add   1,dpy_text_top
+        cail  1,DPY_TEXT_ROWS
+        subi  1,DPY_TEXT_ROWS
+        imuli 1,DPY_TEXT_ROW_WORDS
+        add   1,dpy_text_base
+        move  3,2
+        lsh   3,1
+        add   1,3                     ; native block address
+        skipn (1)
+        jrst  dpy_pi_text_blank_block
+        skipn 1(1)
+        jrst  dpy_pi_text_simple_block
+
+        ; Fixed-pair complex blocks explicitly select SI/SO before every glyph.
+        ; Remember only the final cell's state so a following simple/blank block
+        ; can be prefixed by one non-printing SI word when necessary.
+        move  3,1(1)
+        lsh   3,-6
+        andi  3,077
+        caie  3,036                   ; DPY_T342_SO
+        jrst  dpy_pi_text_complex_primary
+        setom dpy_refresh_shifted
+        jrst  dpy_pi_text_complex_send
+dpy_pi_text_complex_primary:
+        setzm dpy_refresh_shifted
+dpy_pi_text_complex_send:
+        addi  2,1
+        hrrm  2,dpy_refresh_block
+        subi  1,1
+        hrli  1,-3                    ; two words: initial AOBJN count -(2+1)
+        jrst  dpy_pi_refresh_prime
+
+dpy_pi_text_simple_block:
+        skipn dpy_refresh_shifted
+        jrst  dpy_pi_text_simple_send
+        setzm dpy_refresh_shifted
+        move  1,[-2,,dpy_text_si_word-1]
+        jrst  dpy_pi_refresh_prime    ; retry same block after shift reset
+dpy_pi_text_simple_send:
+        addi  2,1
+        hrrm  2,dpy_refresh_block
+        subi  1,1
+        hrli  1,-2
+        jrst  dpy_pi_refresh_prime
+
+dpy_pi_text_blank_block:
+        skipn dpy_refresh_shifted
+        jrst  dpy_pi_text_blank_send
+        setzm dpy_refresh_shifted
+        move  1,[-2,,dpy_text_si_word-1]
+        jrst  dpy_pi_refresh_prime    ; retry same block after shift reset
+dpy_pi_text_blank_send:
+        addi  2,1
+        hrrm  2,dpy_refresh_block
+        move  1,[-2,,dpy_text_blank_word-1]
+        jrst  dpy_pi_refresh_prime
+
+dpy_pi_text_row_end:
+        setzm dpy_refresh_shifted      ; row-end word begins with SI padding
+        movei 2,DPY_TEXT_ROW_END
+        hrrm  2,dpy_refresh_block
+        move  1,[-2,,dpy_text_row_end_word-1]
+
+dpy_pi_refresh_prime:
         aobjn 1,dpy_pi_refresh_send
-        jrst dpy_pi_refresh_complete
+        jrst  dpy_pi_refresh_complete
 dpy_pi_refresh_send:
         movem 1,dpy_refresh_iowd
         hrrz 1,1
         move 1,(1)
         datao 0130,1
-        jrst pdp10_pi_dispatch
+        jrst dpy_pi_dispatch_return
 dpy_pi_refresh_complete:
         setzm dpy_refresh_iowd
         setzm dpy_pending
+dpy_pi_dispatch_return:
+        move 2,pdp10_pi_level_span+6
+        movei 3,pdp10_pi_return_level7
         jrst pdp10_pi_dispatch
 
 /**
@@ -158,6 +248,8 @@ dpy_refresh_start:
         jrst dpy_refresh_banner
         seto 1,
         movem 1,dpy_refresh_row
+        setzm dpy_refresh_block
+        setzm dpy_refresh_shifted
         move 1,[-3,,dpy_text_setup_words-1]
         aobjn 1,dpy_refresh_start_send
         jrst pdp10_pi_handler_return
@@ -278,10 +370,19 @@ dpy_putchar:
         .data
 ; Complete frame setup.  Word 0 sets scale 2 and intensity 4, enters POINT,
 ; and loads X=0.  Word 1 loads Y=974 and returns through PARAM into CHAR.
-; Cached rows thereafter contain only Type-342 character-mode words.
+; Native text blocks thereafter contain only Type-342 character-mode words.
 dpy_text_setup_words:
         .word 0020134020000
         .word 0201716060000
+; One blank six-cell block in primary character mode.
+dpy_text_blank_word:
+        .word 0404040404040
+; Non-printing primary-set reset between a shifted complex block and a simple.
+dpy_text_si_word:
+        .word 0353535353535
+; End one logical row while staying in the primary set.
+dpy_text_row_end_word:
+        .word 0353535353433
 
         .bss
 /** Nonzero while one DATAO word is awaiting the Type 340 DONE interrupt. */
@@ -302,8 +403,11 @@ dpy_refresh_iowd:
 /** Logical text row currently being streamed; -1 denotes setup span. */
 dpy_refresh_row:
         .block 1
-/** Physical ring row selected while crossing one compiled row boundary. */
-dpy_refresh_phys:
+/** Packed native-block cursor: LH=last block + 1, RH=next block/sentinel. */
+dpy_refresh_block:
+        .block 1
+/** Nonzero when the preceding complex block's final cell selected SO. */
+dpy_refresh_shifted:
         .block 1
 /** Compact KINIT banner; mkbootbanner currently emits exactly five words. */
 dpy_banner_words:

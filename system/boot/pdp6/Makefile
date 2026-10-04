@@ -91,8 +91,8 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/drivers/dcs_io.s \
 	$(KERNEL_DIR)/drivers/device_state.s \
 	$(KERNEL_DIR)/drivers/dpy.h \
-	$(KERNEL_DIR)/drivers/dpy_text.c \
-	$(KERNEL_DIR)/drivers/dpy_text_compile_pdp6.s \
+	$(KERNEL_DIR)/drivers/dpy_text_control_pdp6.s \
+	$(KERNEL_DIR)/drivers/dpy_text_blocks_pdp6.s \
 	$(KERNEL_DIR)/drivers/dpy_io.s \
 	$(KERNEL_DIR)/drivers/dsk270.h \
 	$(KERNEL_DIR)/drivers/drm236.h \
