@@ -356,69 +356,7 @@ dtfs_stat(vnode_t node, struct vfs_stat *st)
 extern int dtfs_parent(vnode_t node, vnode_t *parentp);
 
 
-int
-dtfs_create(vnode_t dir, const struct vfs_name *name,
-    unsigned int mode, vnode_t *nodep)
-{
-        unsigned int slot;
-#if DTFS_ENABLE_TENEX || DTFS_ENABLE_ITS
-        unsigned int personality;
-#endif
-
-        if (!dtfs_is_root(dir) || nodep == 0 || dtfs_load(dir) != 0 ||
-            dtfs_scan_slot(dir, name, 0) != -1)
-                return -1;
-#if DTFS_ENABLE_TENEX || DTFS_ENABLE_ITS
-        personality = dtfs_personality(dir);
-#endif
-        if (dtfs_scan_slot(dir, 0, &slot) != 0)
-                return -1;
-#if DTFS_ENABLE_TENEX
-        if (personality == DTFS_MEDIA_TENEX) {
-                unsigned int block;
-
-                if (dtfs_find_free_block(1U, 1, &block) != 0 ||
-                    dtfs_foreign_set_name(slot, name, 0) != 0)
-                        return -1;
-                fs_zero_block_workspace();
-                dtfs_block[0] = DTFS_HEADER(0U, block, 0U);
-                if (dtfs_dtc_write(dtfs_unit(dir), block, dtfs_block) != 0) {
-                        dtfs_dir[DTFS_NAME_BASE + slot] = 0UL;
-                        dtfs_dir[DTFS_TENEX_EXT_BASE + slot] = 0UL;
-                        return -1;
-                }
-                dtfs_set_owner(0U, block - 1U, slot + 1U);
-                if (dtfs_commit(dir) != 0) {
-                        dtfs_set_owner(0U, block - 1U, DTFS_OWNER_FREE);
-                        dtfs_dir[DTFS_NAME_BASE + slot] = 0UL;
-                        dtfs_dir[DTFS_TENEX_EXT_BASE + slot] = 0UL;
-                        return -1;
-                }
-        } else
-#endif
-#if DTFS_ENABLE_ITS
-        if (personality == DTFS_MEDIA_ITS) {
-                if (dtfs_foreign_set_name(slot, name, 1) != 0)
-                        return -1;
-                if (dtfs_commit(dir) != 0) {
-                        dtfs_dir[slot * 2U] = 0UL;
-                        dtfs_dir[slot * 2U + 1U] = 0UL;
-                        return -1;
-                }
-        } else
-#endif
-        {
-                dtfs_set_name(slot, name);
-                dtfs_set_last_words(slot, 0U);
-                dtfs_set_exec(slot, (mode & 0111U) != 0U);
-                if (dtfs_commit(dir) != 0) {
-                        dtfs_clear_slot(slot);
-                        return -1;
-                }
-        }
-        *nodep = VFS_NODE_PACKED(DTFS_PROVIDER, DTFS_KIND_FILE, slot);
-        return 0;
-}
+/* dtfs_create is implemented compactly in dtfs_runtime.s. */
 
 int
 dtfs_unlink(vnode_t dir, const struct vfs_name *name)

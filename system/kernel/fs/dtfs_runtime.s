@@ -758,6 +758,162 @@ dtfs_lookup_return:
 
 ; Native chmod only.  Foreign personalities are read-only at this provider
 ; entry.  Keep NODE/MODE in callee-saved ACs across C helpers.
+        .globl  dtfs_create
+        .globl  fs_zero_block_workspace
+        .globl  fs_block_workspace
+; int dtfs_create(dir, name, mode, nodep)
+; Transactional metadata creation.  AC10..AC15 retain C arguments, selected
+; slot and personality; one stack word is reused for the TENEX data block.
+dtfs_create:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        push    17,014
+        push    17,015
+        push    17,[0]
+        move    010,1                   ; dir
+        move    011,2                   ; name
+        move    012,3                   ; mode
+        move    013,4                   ; nodep
+
+        pushj   17,dtfs_is_root
+        jumpe   1,dtfs_create_fail
+        skipn   013
+        jrst    dtfs_create_fail
+        move    1,010
+        pushj   17,dtfs_load
+        jumpn   1,dtfs_create_fail
+        move    1,010
+        move    2,011
+        setz    3,
+        pushj   17,dtfs_scan_slot
+        aoje    1,dtfs_create_find_slot ; exactly -1 means name absent
+        jrst    dtfs_create_fail
+
+dtfs_create_find_slot:
+        .if DTFS_ENABLE_FOREIGN
+        move    1,010
+        pushj   17,dtfs_personality
+        move    015,1
+        .else
+        setz    015,
+        .endif
+        move    1,010
+        setz    2,
+        movei   3,(17)
+        pushj   17,dtfs_scan_slot
+        jumpn   1,dtfs_create_fail
+        move    014,(17)                ; free directory slot
+
+        .if DTFS_ENABLE_TENEX
+        cain    015,010
+        jrst    dtfs_create_tenex
+        .endif
+        .if DTFS_ENABLE_ITS
+        cain    015,020
+        jrst    dtfs_create_its
+        .endif
+        jrst    dtfs_create_native
+
+        .if DTFS_ENABLE_TENEX
+dtfs_create_tenex:
+        movei   1,1
+        movei   2,1
+        movei   3,(17)
+        pushj   17,dtfs_find_free_block
+        jumpn   1,dtfs_create_fail
+        move    1,014
+        move    2,011
+        setz    3,
+        pushj   17,dtfs_foreign_set_name
+        jumpn   1,dtfs_create_fail
+        pushj   17,fs_zero_block_workspace
+        move    2,(17)
+        lsh     2,010                   ; DTFS_HEADER(0, block, 0)
+        movem   2,fs_block_workspace
+        move    1,010
+        pushj   17,dtfs_unit
+        move    2,(17)
+        movei   3,fs_block_workspace
+        pushj   17,dtfs_dtc_write
+        jumpn   1,dtfs_create_tenex_clear
+
+        setz    1,
+        move    2,(17)
+        subi    2,1
+        move    3,014
+        addi    3,1
+        pushj   17,dtfs_set_owner
+        move    1,010
+        pushj   17,dtfs_commit
+        jumpe   1,dtfs_create_success
+        setz    1,
+        move    2,(17)
+        subi    2,1
+        setz    3,
+        pushj   17,dtfs_set_owner
+dtfs_create_tenex_clear:
+        move    4,014
+        add     4,dtfs_dir
+        setzm   0123(4)                 ; TENEX NAME
+        setzm   0151(4)                 ; TENEX EXT
+        jrst    dtfs_create_fail
+        .endif
+
+        .if DTFS_ENABLE_ITS
+dtfs_create_its:
+        move    1,014
+        move    2,011
+        movei   3,1
+        pushj   17,dtfs_foreign_set_name
+        jumpn   1,dtfs_create_fail
+        move    1,010
+        pushj   17,dtfs_commit
+        jumpe   1,dtfs_create_success
+        move    4,014
+        lsh     4,1
+        add     4,dtfs_dir
+        setzm   (4)
+        setzm   1(4)
+        jrst    dtfs_create_fail
+        .endif
+
+dtfs_create_native:
+        move    1,014
+        move    2,011
+        pushj   17,dtfs_set_name
+        move    1,014
+        setz    2,
+        pushj   17,dtfs_set_last_words
+        move    1,014
+        move    2,012
+        andi    2,0111
+        jumpe   2,dtfs_create_native_exec
+        movei   2,1
+dtfs_create_native_exec:
+        pushj   17,dtfs_set_exec
+        move    1,010
+        pushj   17,dtfs_commit
+        jumpe   1,dtfs_create_success
+        move    1,014
+        pushj   17,dtfs_clear_slot
+        jrst    dtfs_create_fail
+
+dtfs_create_success:
+        move    2,014
+        tlo     2,050002                ; provider-local DTFS FILE vnode
+        movem   2,(013)
+        setz    1,
+        jrst    dtfs_create_done
+dtfs_create_fail:
+        seto    1,
+dtfs_create_done:
+        sub     17,[1,,1]
+        pop     17,015
+        pop     17,014
+        jrst    dtfs_restore4
+
         .globl  dtfs_rename
 ; int dtfs_rename(olddir, oldname, newdir, newname)
 ; Cold metadata path.  Four callee-saved ACs retain the arguments and one
