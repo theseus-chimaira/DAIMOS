@@ -394,7 +394,8 @@ PICTURE_FILES != set -- '$(PICTURE_DIR)'/*; for src do \
 PICTURE_NAME_ERRORS != for src in $(PICTURE_FILES); do \
 	leaf=$$(basename "$$src" | tr '[:lower:]' '[:upper:]'); \
 	case "$$leaf" in ''|*[!A-Z0-9._+-]*) printf '%s ' "$$src" ;; esac; \
-	if test $${#leaf} -gt 24; then printf '%s ' "$$src"; fi; \
+	n=$$(printf '%s' "$$leaf" | wc -c); \
+	if test "$$n" -gt 24; then printf '%s ' "$$src"; fi; \
 	done
 ifneq ($(strip $(PICTURE_NAME_ERRORS)),)
 $(error picture filenames must map to <=24 characters from A-Z, 0-9, dot, underscore, plus, or minus: $(PICTURE_NAME_ERRORS))
