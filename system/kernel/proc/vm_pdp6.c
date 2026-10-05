@@ -33,6 +33,7 @@ vm_space_create(struct proc *p, unsigned int owner, kword_t words)
         return 0;
 }
 
+#ifndef VM_SPACE_LOAD_FILE_PDP6_ASM
 /** Read executable words directly into a logical offset of the resident extent. */
 int
 vm_space_load_file(struct proc *p, vnode_t node, kword_t file_offset,
@@ -45,6 +46,7 @@ vm_space_load_file(struct proc *p, vnode_t node, kword_t file_offset,
             (kword_t *)(unsigned long)(base + user_offset), words) ==
             (int)words ? 0 : -1;
 }
+#endif /* VM_SPACE_LOAD_FILE_PDP6_ASM */
 
 /** Pack argc/argv/environment records into the reserved top-of-image stack area. */
 #ifndef VM_SPACE_STARTUP_PDP6_ASM

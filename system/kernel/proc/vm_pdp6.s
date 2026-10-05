@@ -16,9 +16,11 @@
         .globl  vm_activate_current
         .globl  vm_enter_initial_user
         .globl  vm_space_startup
+        .globl  vm_space_load_file
         .globl  vm_extent_move
         .globl  fs_copy_words
         .globl  fs_move_words
+        .globl  vfs_read_words
         .globl  proc_runq_add
         .globl  proc_runq_remove
         .globl  proc_current_slot
@@ -90,6 +92,30 @@ vm_activate_current:
         movem   2,vm_pdp6_apr
         datao   0000,vm_pdp6_apr
         popj    17,
+
+/**
+ * @brief Read executable words directly into one logical user-space offset.
+ *
+ * @param AC1 Process descriptor.
+ * @param AC2 Executable vnode.
+ * @param AC3 File word offset.
+ * @param AC4 Logical user word offset.
+ * @param -1(AC17) Requested word count (fifth C argument).
+ * @return AC1 zero only when the provider returned the complete word count.
+ */
+vm_space_load_file:
+        move    6,2                    ; vnode
+        move    7,3                    ; file offset
+        hrrz    5,1(1)                 ; physical relocation base
+        add     5,4                    ; physical destination
+        move    4,-1(17)               ; requested words
+        move    1,6
+        move    2,7
+        move    3,5
+        pushj   17,vfs_read_words
+        came    1,-1(17)
+        jrst    kret_neg1
+        jrst    kret_zero
 
 /**
  * @brief Pack argv/environment records into the process startup area.
