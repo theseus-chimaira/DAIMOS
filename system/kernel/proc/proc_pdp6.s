@@ -2054,11 +2054,22 @@ proc_save_kernel_tail:
 
 ; Restore user ACs and PI return state for proc_current_slot.
 proc_restore_user:
-        move    1,proc_current_slot
-        pushj   17,proc_uarea_slot
+        ; proc_sched_restore_selected already supplies the selected u-area.
+        move    2,1                    ; user AC-image base
+        movei   3,proc_restore_user_tail
+        jrst    proc_restore_pi_common
+
+; Restore a previously sleeping executive context and its syscall globals.
+proc_restore_kernel:
+        ; Kernel ACs have the same relative image layout at CTX_K_AC0.
         move    2,1
-        move    1,CTX_U_PC(2)
-        movem   1,pdp10_pi_level6
+        addi    2,CTX_K_AC0
+        movei   3,proc_restore_kernel_tail
+
+; AC2 = saved AC-image base, AC3 = context-specific continuation.  PI6 saved
+; AC1..AC3/AC17 in low core before either path ran, so their image offsets are
+; identical for user and sleeping-executive contexts.
+proc_restore_pi_common:
         move    1,1(2)
         movem   1,000032
         move    1,2(2)
@@ -2067,6 +2078,11 @@ proc_restore_user:
         movem   1,000055
         move    1,017(2)
         movem   1,pdp10_pi_sp_save+012
+        jrst    0(3)
+
+proc_restore_user_tail:
+        move    1,CTX_U_PC(2)
+        movem   1,pdp10_pi_level6
         move    1,CTX_U_KSP(2)
         movem   1,mach_kernel_sp
         pushj   17,vm_activate_current
@@ -2077,27 +2093,15 @@ proc_restore_user:
         movem   3,file_table
         jrst    proc_restore_common
 
-; Restore a previously sleeping executive context and its syscall globals.
-proc_restore_kernel:
-        move    1,proc_current_slot
-        pushj   17,proc_uarea_slot
-        move    2,1
-        move    1,CTX_K_PC(2)
+proc_restore_kernel_tail:
+        move    1,-1(2)                ; CTX_K_PC
         movem   1,pdp10_pi_level6
-        setzm   CTX_K_PC(2)
-        move    1,CTX_K_AC0+1(2)
-        movem   1,000032
-        move    1,CTX_K_AC0+2(2)
-        movem   1,000033
-        move    1,CTX_K_AC0+3(2)
-        movem   1,000055
-        move    1,CTX_K_AC0+017(2)
-        movem   1,pdp10_pi_sp_save+012
-        move    1,CTX_M_USER_SP(2)
+        setzm   -1(2)
+        move    1,020(2)               ; CTX_M_USER_SP
         movem   1,mach_user_sp
-        move    1,CTX_M_SYSCALL_SAVE(2)
+        move    1,021(2)               ; CTX_M_SYSCALL_SAVE
         movem   1,mach_syscall_save
-        move    1,CTX_U_KSP(2)
+        move    1,-2(2)                ; CTX_U_KSP
         movem   1,mach_kernel_sp
         pushj   17,vm_activate_current
         move    1,proc_current_slot
