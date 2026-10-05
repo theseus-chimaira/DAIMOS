@@ -41,7 +41,7 @@
         .equ    PROC_CRED_OFFSET,0107
         .equ    PROC_UMASK_OFFSET,0110
         .equ    PROC_USTACK_BASE,0111
-        .equ    PROC_KSTACK_WORDS,0306
+        .equ    PROC_KSTACK_WORDS,0316
         .equ    KERNEL_IDLE_STACK_WORDS,0100
 
         .equ    CTX_U_PC,020

@@ -84,7 +84,7 @@ dsk_minit:
 d6fs_reader_bootstrap_call:
         push 017,1                       ; backing.ops
         push 017,[d6fs_active_reader]  ; fifth arg: basep
-        movei 1,021
+        movei 1,016
         movei 2,3
         movei 3,010
         setz 4,
@@ -92,14 +92,14 @@ d6fs_reader_bootstrap_call:
         jumpn 1,d6fs_reader_bootstrap_done
         move 5,d6fs_active_reader
         move 6,5
-        movei 7,021
+        movei 7,016
 d6fs_reader_bootstrap_zero:
         setzm 0(6)
         addi 6,1
         sojg 7,d6fs_reader_bootstrap_zero
-        setzm 017(5)                    ; backing.opaque
+        setzm 014(5)                    ; backing.opaque
         move 4,-1(017)                  ; saved backing.ops
-        movem 4,016(5)
+        movem 4,013(5)
         movem 5,d6fs_reader_slots        ; root is VFS mount id 1
 d6fs_reader_bootstrap_done:
         sub 017,[2,,2]

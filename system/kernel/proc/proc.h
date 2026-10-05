@@ -103,7 +103,7 @@
  * One compact control word precedes cwd/file state.  Descriptors 0..15 are
  * ordinary two-word FILE records.  Credentials and the 9-bit process umask
  * follow the descriptor table; the umask consumes the former first kernel-stack
- * word so the fixed 0420-word u-area does not grow.  Low bit 0 carries the pipe
+ * word.  Low bit 0 carries the pipe
  * event and bit 1 marks a live direct user mapping.
  * Session and domain IDs share this already-resident word; process-group ID
  * lives in meta RH so it survives after EXIT releases the u-area and group WAIT can
