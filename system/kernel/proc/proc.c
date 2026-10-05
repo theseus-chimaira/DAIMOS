@@ -269,13 +269,6 @@ proc_slot_discard(unsigned int slot)
 
 extern void proc_notify_parent(unsigned int parent);
 
-/** Publish STOP/CONT status and wake the child's parent. */
-static void
-proc_child_report(struct proc *child, unsigned int report)
-{
-        proc_report_set(child, report);
-        proc_notify_parent(PROC_PARENT_SLOT(child));
-}
 
 /** Reparent children to PID 1, or reap orphan zombies when INIT is absent. */
 static void
@@ -314,7 +307,7 @@ extern int proc_has_live_user(void);
 /* Release one process after its file table is closed.  The caller must never
  * run on the target u-area stack while this function executes. */
 /** Release heavy process resources and publish FREE or ZOMB terminal state. */
-static int
+int
 proc_finish_slot(unsigned int slot, unsigned int status)
 {
         struct proc *p;
@@ -377,6 +370,7 @@ proc_exit_finish(int status)
         return proc_has_live_user();
 }
 
+#ifndef PROC_EVENT_APPLY_PDP6_ASM
 /** Apply one validated event to a process, including fatal/STOP/CONT semantics. */
 int
 proc_event_apply(unsigned int slot, unsigned int event)
@@ -454,6 +448,7 @@ proc_event_apply(unsigned int slot, unsigned int event)
         }
         return 0;
 }
+#endif /* PROC_EVENT_APPLY_PDP6_ASM */
 
 
 /** Reap or report a matching child according to WAIT selector and NOHANG policy. */

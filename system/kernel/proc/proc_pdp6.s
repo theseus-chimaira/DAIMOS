@@ -69,6 +69,7 @@
         .globl  proc_swap_service_one
         .globl  proc_record_kernel_sp
         .globl  proc_exit_current
+        .globl  proc_finish_slot
         .globl  kret_zero
         .globl  kret_one
         .globl  kret_neg1
@@ -407,6 +408,155 @@ proc_session_teardown_return:
  */
         .globl  proc_event_send
         .globl  proc_event_apply
+; int proc_event_apply(unsigned int slot, unsigned int event)
+; Hot validated event-delivery path.  AC10=slot, AC11=event, AC12=descriptor
+; survive calls into the existing resource/runq/parent-notify helpers.
+proc_event_apply:
+        push    17,010
+        push    17,011
+        push    17,012
+        move    010,1
+        move    011,2
+        move    012,1
+        lsh     012,1
+        add     012,1
+        add     012,proc_table
+
+        ; INT/TERM/HUP (0..2) and PIPE (7) are fatal.
+        caile   011,2
+        jrst    proc_event_check_pipe
+        jrst    proc_event_fatal
+proc_event_check_pipe:
+        caie    011,7
+        jrst    proc_event_nonfatal
+proc_event_fatal:
+        came    010,proc_current_slot
+        jrst    proc_event_fatal_other
+        pushj   17,file_close_all
+        move    1,011
+        iori    1,0400000               ; SYS_WAIT_EVENT_FLAG
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        jrst    proc_exit_current
+
+proc_event_fatal_other:
+        hlrz    1,(012)
+        addi    1,047                   ; target private file table
+        exch    1,file_table            ; AC1 = caller file table
+        push    17,1
+        pushj   17,file_close_all
+        pop     17,1
+        movem   1,file_table
+        move    1,010
+        move    2,011
+        iori    2,0400000
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        jrst    proc_finish_slot
+
+proc_event_nonfatal:
+        ; Events 3..6 map directly to the packed pending-event bitmap.
+        hlrz    6,(012)
+        move    4,045(6)
+        movei   5,1
+        lsh     5,0(011)
+        lsh     5,023                   ; PROC_EVENT_SHIFT = 19 decimal
+        ior     4,5
+        movem   4,045(6)
+
+        caie    011,3                   ; TSTP
+        jrst    proc_event_cont
+        tlne    4,0400                  ; already job-control stopped
+        jrst    proc_event_ok
+        tlo     4,0400                  ; PROC_STOP_JOB_BIT
+        tlz     4,06000                 ; replace wait report
+        tlo     4,02000                 ; PROC_REPORT_STOPPED
+        movem   4,045(6)
+        move    1,010
+        pushj   17,proc_runq_remove
+        move    5,2(012)
+        tlz     5,PROC_STATE_LH_MASK
+        tlo     5,0600000               ; PROC_STOP
+        movem   5,2(012)
+        pushj   17,proc_event_notify_parent
+        came    010,proc_current_slot
+        jrst    proc_event_ok
+        pushj   17,proc_sched_resched_current
+        jrst    proc_event_ok
+
+proc_event_cont:
+        caie    011,4                   ; CONT
+        jrst    proc_event_alrm
+        tlnn    4,0400
+        jrst    proc_event_ok
+        tlz     4,0400
+        tlz     4,06000
+        tlo     4,04000                 ; PROC_REPORT_CONTINUED
+        movem   4,045(6)
+        tlne    4,01400                 ; another stop reason remains
+        jrst    proc_event_cont_report
+        hlrz    5,2(012)
+        andi    5,PROC_STATE_LH_MASK
+        caie    5,0600000               ; PROC_STOP
+        jrst    proc_event_cont_report
+        move    5,2(012)
+        move    3,5
+        lsh     3,-037
+        andi    3,3                     ; saved wait class
+        jumpn   3,proc_event_cont_sleep
+        and     5,[-017700000001]        ; clear recent-CPU/sleep-age fields
+        tlz     5,PROC_STATE_LH_MASK
+        tlo     5,PROC_STATE_RUN
+        movem   5,2(012)
+        move    1,010
+        pushj   17,proc_runq_add
+        jrst    proc_event_cont_report
+proc_event_cont_sleep:
+        tlz     5,PROC_STATE_LH_MASK
+        tlo     5,PROC_STATE_SLEEP
+        movem   5,2(012)
+proc_event_cont_report:
+        pushj   17,proc_event_notify_parent
+        jrst    proc_event_ok
+
+proc_event_alrm:
+        caie    011,5                   ; CHLD only sets its pending bit
+        jrst    proc_event_ok
+        move    5,2(012)
+        move    3,5
+        lsh     3,-037
+        andi    3,3
+        cain    3,2                    ; PROC_WAIT_CHILD
+        jrst    proc_event_alrm_wake
+        caie    3,3                    ; PROC_WAIT_INTR
+        jrst    proc_event_ok
+proc_event_alrm_wake:
+        hlrz    3,5
+        andi    3,PROC_STATE_LH_MASK
+        movsi   5,0600077              ; clear wait/RH/CPU age; SLEEP -> RUN
+        andb    5,2(012)
+        caie    3,PROC_STATE_SLEEP
+        jrst    proc_event_ok
+        move    1,010
+        pushj   17,proc_runq_add
+        jrst    proc_event_ok
+
+; STOP/CONT publish one parent report after the child state/control word is set.
+proc_event_notify_parent:
+        hrrz    1,(012)
+        lsh     1,-010
+        andi    1,0377
+        jrst    proc_notify_parent
+
+proc_event_ok:
+        setz    1,
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
 proc_event_send:
         add     17,[5,,5]
         movei   0,-4(17)
