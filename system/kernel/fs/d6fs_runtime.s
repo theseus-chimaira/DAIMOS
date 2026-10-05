@@ -1351,16 +1351,10 @@ d6fs_provider_truncate:
         jumpn   1,d6fs_provider_truncate_fail
         pushj   17,pclk_time36
         movem   1,-031(17)
-        move    1,d6fs_active_reader
-        hrrz    2,-2(17)
-        movei   3,-034(17)
-        pushj   17,d6fs_reader_put_fcb
-        jrst    d6fs_provider_truncate_done
+        ; CHMOD/CHOWN/UTIME use the identical FCB commit and 035-word frame.
+        jrst    d6fs_provider_attr_commit
 d6fs_provider_truncate_fail:
-        seto    1,
-d6fs_provider_truncate_done:
-        sub     17,[035,,035]
-        popj    17,
+        jrst    d6fs_provider_chmod_fail
 
 ; int d6fs_provider_lookup(vnode_t dir, const struct vfs_name *name,
 ;     vnode_t *nodep)

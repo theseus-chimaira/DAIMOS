@@ -555,6 +555,8 @@ tsfs_mount_set:
         move    5,0(010)               ; packed FILE state
         move    6,1(010)               ; packed member-map state
         jumpe   5,tsfs_mount_empty
+        setz    6,                     ; 0=FILE record, 1=EXTENT record
+tsfs_mount_validate_media:
         hlrz    4,5
         move    7,4
         andi    7,077777               ; 15-bit record count
@@ -567,21 +569,10 @@ tsfs_mount_set:
         jrst    tsfs_mount_pop_bad
         caile   4,01101                ; last physical DECtape block
         jrst    tsfs_mount_pop_bad
+        jumpn   6,tsfs_mount_do
         move    5,2(010)               ; packed EXTENT state or zero
         jumpe   5,tsfs_mount_do
-        hlrz    4,5
-        move    7,4
-        andi    7,077777               ; extent record count
-        jumpe   7,tsfs_mount_pop_bad
-        lsh     4,-017                 ; DTC unit
-        caile   4,7
-        jrst    tsfs_mount_pop_bad
-        hrrz    4,5
-        caige   4,3
-        jrst    tsfs_mount_pop_bad
-        caile   4,01101
-        jrst    tsfs_mount_pop_bad
-        jrst    tsfs_mount_do
+        aoja    6,tsfs_mount_validate_media
 
 tsfs_mount_empty:
         jumpn   6,tsfs_mount_pop_bad

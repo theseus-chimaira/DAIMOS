@@ -209,15 +209,24 @@ d6fs_resize_grow:
         lsh     1,0(2)
         andi    1,037
         move    3,010
+        pushj   17,d6fs_resize_decode_extent
+
+; Decode one packed FCB extent during resize.  This path is used only by
+; truncate/grow metadata work, so one PUSHJ saves the duplicated nine-word
+; unpack sequence without adding overhead to normal file I/O.
+; AC1 = packed high-start bits, AC3 = FCB base, AC16 = extent index.
+; Returns AC12 = start block, AC13 = block count.
+d6fs_resize_decode_extent:
         addi    3,6
         add     3,016
         move    2,(3)
-        ldb     012,[POINT 24,2,23]      ; last_start
+        ldb     012,[POINT 24,2,23]
         andi    2,07777
         lsh     1,014
         ior     2,1
         addi    2,1
-        move    013,2                    ; last_blocks
+        move    013,2
+        popj    17,
 
 d6fs_resize_extend_loop:
         jumpe   015,d6fs_resize_publish
@@ -325,15 +334,7 @@ d6fs_resize_shrink_loop:
         lsh     1,0(2)
         andi    1,037
         move    3,011
-        addi    3,6
-        add     3,016
-        move    2,(3)
-        ldb     012,[POINT 24,2,23]
-        andi    2,07777
-        lsh     1,014
-        ior     2,1
-        addi    2,1
-        move    013,2
+        pushj   17,d6fs_resize_decode_extent
         camle   013,015
         move    013,015
         move    1,010
