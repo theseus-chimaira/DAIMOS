@@ -1,6 +1,7 @@
 .PHONY: force-minit-config
 PROJECT_ROOT != cd ../../.. && pwd
 KERNEL_DIR = $(PROJECT_ROOT)/system/kernel
+PICTURE_DIR ?= $(PROJECT_ROOT)/pictures
 BUILD_ROOT ?= $(PROJECT_ROOT)/build
 BUILD ?= $(BUILD_ROOT)/system/boot/pdp6
 PDP10_PREFIX ?= $(HOME)/cross
@@ -382,6 +383,26 @@ SYSTEM_CONFIG_S6REC = $(SYSTEM_INITTAB_S6REC) $(SYSTEM_PASSWD_S6REC) \
 # that need to place extra executables/data in an otherwise standard root.
 # Keep the default empty so production images are unchanged.
 D6FS_EXTRA_ARGS ?=
+
+# Host-side picture staging.  img2dpic emits DAIMOS binary-word files, so the
+# media builders can import them directly without target-side conversion.
+# Host basenames are folded to uppercase for the SIXBIT filesystem namespace.
+# Keep names shell-safe because mkd6fs receives file specifications on argv.
+PICTURE_FILES != set -- '$(PICTURE_DIR)'/*; for src do \
+	if test -f "$$src"; then printf '%s\n' "$$src"; fi; \
+	done
+PICTURE_NAME_ERRORS != for src in $(PICTURE_FILES); do \
+	leaf=$$(basename "$$src" | tr '[:lower:]' '[:upper:]'); \
+	case "$$leaf" in ''|*[!A-Z0-9._+-]*) printf '%s ' "$$src" ;; esac; \
+	if test $${#leaf} -gt 24; then printf '%s ' "$$src"; fi; \
+	done
+ifneq ($(strip $(PICTURE_NAME_ERRORS)),)
+$(error picture filenames must map to <=24 characters from A-Z, 0-9, dot, underscore, plus, or minus: $(PICTURE_NAME_ERRORS))
+endif
+PICTURE_D6FS_ARGS != for src in $(PICTURE_FILES); do \
+	leaf=$$(basename "$$src" | tr '[:lower:]' '[:upper:]'); \
+	printf '%s ' "-f /PICTURES/$$leaf:$$src:444:binwords"; \
+	done
 MANUAL_BUILD = $(BUILD)/manual
 SYSTEM_MANUAL_SRCS = $(wildcard $(PROJECT_ROOT)/userland/manual/*.SIXMD) \
 	$(DAS_MANUAL) $(DAIMOS_TOOLS_MANUALS)
@@ -934,7 +955,7 @@ D6FS_ROOT_DEPS = $(IMAGE_BOOT_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_MOUNTALL_DXR) \
 	$(SYSTEM_LOGDRAIN_DXR) $(DAS_NATIVE_DRIVER) $(DAS_NATIVE_PHASE1) \
 	$(DAS_NATIVE_PHASE2) $(DAIMOS_NATIVE_DARC) $(DAIMOS_NATIVE_DLINK) \
 	$(DAIMOS_NATIVE_OBJDUMP) $(SYSTEM_CONFIG_S6REC) \
-	$(SYSTEM_MANUALS) $(ASMUTILS_SOURCE_S6REC)
+	$(SYSTEM_MANUALS) $(ASMUTILS_SOURCE_S6REC) $(PICTURE_FILES)
 
 define D6FS_ROOT_ARGS
 	-D /TEMP:0777 \
@@ -946,6 +967,7 @@ define D6FS_ROOT_ARGS
 	-D /OPTION/BASE/LIB:0555 -D /OPTION/BASE/INCLUDE:0555 \
 	-D /OPTION/BASE/MANUAL:0555 -D /OPTION/BASE/SOURCE:0555 \
 	-D /OPTION/BASE/SOURCE/ASMUTILS:0755 \
+	-D /PICTURES:0555 \
 	-D /CONFIG:0755 \
 	-f "/SYSTEM/INIT:$(SYSTEM_INIT_DXR):555:dxr" \
 	-f "/SYSTEM/EXEC/MOUNTALL:$(SYSTEM_MOUNTALL_DXR):555:dxr" \
@@ -974,6 +996,7 @@ define D6FS_ROOT_ARGS
 	-f "/CONFIG/FSTAB:$(SYSTEM_FSTAB_S6REC):644:binwords" \
 	-f "/CONFIG/PASSWD:$(SYSTEM_PASSWD_S6REC):600:binwords" \
 	-f "/CONFIG/SYSTEM:$(SYSTEM_SYSTEM_S6REC):644:binwords" \
+	$(PICTURE_D6FS_ARGS) \
 	$(D6FS_EXTRA_ARGS)
 endef
 
@@ -1002,7 +1025,7 @@ TSFS_ROOT_COMMAND_NAMES = ECHO CAT LS MKDIR RM PWD STAT TOUCH CP MV HEXDUMP PS \
 TSFS_ROOT_COMMAND_DXRS = $(addprefix $(USERLAND_BUILD_ROOT)/userland/program/,$(addsuffix .d6lz.dxr,$(TSFS_ROOT_COMMAND_NAMES)))
 
 $(TSFS_ROOT_IMAGE): $(INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFS_ROOT_COMMAND_DXRS) $(DTFSPROBE_DXR) \
-	$(SYSTEM_CONFIG_S6REC) | $(MEDIA_DIR)
+	$(SYSTEM_CONFIG_S6REC) $(PICTURE_FILES) | $(MEDIA_DIR)
 	@set -eu; \
 	tmp='$(TSFS_ROOT_MANIFEST).tmp.$$$$'; \
 	trap 'rm -f "$$tmp"' 0 1 2 3 15; \
@@ -1011,6 +1034,7 @@ $(TSFS_ROOT_IMAGE): $(INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $
 	  echo 'D /TEMP 0777 0 0'; \
 	  echo 'D /SYSTEM 0555 0 0'; \
 	  echo 'D /SYSTEM/EXEC 0555 0 0'; \
+	  echo 'D /PICTURES 0555 0 0'; \
 	  echo 'D /CONFIG 0755 0 0'; \
 	  printf 'F /SYSTEM/INIT %s 0555 0 0\n' '$(INIT_DXR)'; \
 	  printf 'F /SYSTEM/EXEC/MOUNTALL %s 0555 0 0\n' '$(SYSTEM_MOUNTALL_DXR)'; \
@@ -1022,6 +1046,10 @@ $(TSFS_ROOT_IMAGE): $(INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $
 	  printf 'F /SYSTEM/EXEC/DSH %s 0555 0 0\n' '$(DSH_DXR)'; \
 	  for cmd in $(TSFS_ROOT_COMMAND_NAMES); do \
 	    printf 'F /SYSTEM/EXEC/%s %s 0555 0 0\n' "$$cmd" "$(USERLAND_BUILD_ROOT)/userland/program/$$cmd.d6lz.dxr"; \
+	  done; \
+	  for src in $(PICTURE_FILES); do \
+	    leaf=$$(basename "$$src" | tr '[:lower:]' '[:upper:]'); \
+	    printf 'F /PICTURES/%s %s 0444 0 0\n' "$$leaf" "$$src"; \
 	  done; \
 	  printf 'F /SYSTEM/EXEC/DTFSPROBE %s 0555 0 0\n' '$(DTFSPROBE_DXR)'; \
 	} > "$$tmp"; \
