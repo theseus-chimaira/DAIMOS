@@ -16,7 +16,11 @@
         .globl  vm_activate_current
         .globl  vm_enter_initial_user
         .globl  vm_space_startup
+        .globl  vm_extent_move
         .globl  fs_copy_words
+        .globl  fs_move_words
+        .globl  proc_runq_add
+        .globl  proc_runq_remove
         .globl  proc_current_slot
         .globl  proc_current_ptr
         .globl  proc_table
@@ -180,6 +184,119 @@ vm_startup_finish:
         hrli    0,-6(17)
         blt     0,16
         sub     17,kconst_7_7
+        popj    17,
+
+/**
+ * @brief Move one inactive process extent and publish the new PDP-6 base.
+ *
+ * @param AC1 Owner/process slot.
+ * @param AC2 Old physical base.
+ * @param AC3 Extent words.
+ * @param AC4 New aligned physical base.
+ * @return AC1 MM_OK or MM_ERR_BUSY (-5).
+ *
+ * Keep the complete transaction in AC10..AC15 instead of KCC's spill frame.
+ * The u-area STOP_MM bit excludes user execution while the physical image is
+ * copied; the transition bit excludes scheduler/swap races.
+ */
+vm_extent_move:
+        add     17,kconst_6_6
+        movei   0,-5(17)
+        hrli    0,10
+        blt     0,(17)
+        move    10,1                   ; owner
+        move    11,2                   ; old base
+        move    12,3                   ; words
+        move    13,4                   ; new base
+
+        camn    10,proc_current_slot
+        jrst    vm_extent_move_busy
+        move    14,10
+        lsh     14,1
+        add     14,10
+        add     14,proc_table
+        camn    13,11
+        jrst    vm_extent_move_busy
+        move    1,13
+        trne    1,01777
+        jrst    vm_extent_move_busy
+        move    1,(14)
+        trne    1,0200000              ; transition
+        jrst    vm_extent_move_busy
+        trnn    1,0400000              ; stable u-area present
+        jrst    vm_extent_move_state
+        hlrz    2,1
+        move    2,045(2)
+        trne    2,02                   ; translated user mapping held
+        jrst    vm_extent_move_busy
+
+vm_extent_move_state:
+        move    15,2(14)
+        lsh     15,-041                ; original process state
+        move    1,(14)
+        trnn    1,0400000
+        jrst    vm_extent_move_nouarea
+
+        hlrz    2,1
+        move    3,045(2)
+        movsi   4,01000                ; PROC_STOP_MM in control LH
+        ior     3,4
+        movem   3,045(2)
+        move    1,10
+        pushj   17,proc_runq_remove
+        move    1,2(14)
+        tlz     1,0700000
+        tlo     1,0600000              ; PROC_STOP
+        movem   1,2(14)
+        jrst    vm_extent_move_mark
+
+vm_extent_move_nouarea:
+        caie    15,2                   ; resident SRUN without u-area cannot move
+        jrst    vm_extent_move_mark
+        jrst    vm_extent_move_busy
+
+vm_extent_move_mark:
+        movei   1,0200000
+        iorm    1,(14)
+        move    1,11
+        move    2,13
+        move    3,12
+        pushj   17,fs_move_words
+        hrrm    13,1(14)
+        move    1,(14)
+        andcmi  1,0200000
+        movem   1,(14)
+
+        trnn    1,0400000
+        jrst    vm_extent_move_ok
+        hlrz    2,1
+        move    3,045(2)
+        tlz     3,01000                ; clear only PROC_STOP_MM
+        movem   3,045(2)
+        tlne    3,01400                ; another stop reason remains
+        jrst    vm_extent_move_ok
+        move    1,2(14)
+        tlz     1,0700000
+        move    2,15
+        andi    2,7
+        lsh     2,041
+        ior     1,2
+        movem   1,2(14)
+        caie    15,2
+        jrst    vm_extent_move_ok
+        move    1,10
+        pushj   17,proc_runq_add
+
+vm_extent_move_ok:
+        setz    1,
+        jrst    vm_extent_move_restore
+vm_extent_move_busy:
+        movni   1,5
+vm_extent_move_restore:
+        movei   0,10
+        hrli    0,-5(17)
+        blt     0,15
+        sub     17,kconst_6_6
         popj    17,
 
 /**

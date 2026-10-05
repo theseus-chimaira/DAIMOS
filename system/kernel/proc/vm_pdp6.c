@@ -119,6 +119,7 @@ vm_space_can_swap(const struct proc *p)
 }
 #endif /* VM_SPACE_CAN_SWAP_PDP6_ASM */
 
+#ifndef VM_EXTENT_MOVE_PDP6_ASM
 /** Move one inactive process extent and republish its physical relocation base. */
 int
 vm_extent_move(unsigned int owner, kword_t base, kword_t words,
@@ -170,3 +171,4 @@ vm_extent_move(unsigned int owner, kword_t base, kword_t words,
         }
         return MM_OK;
 }
+#endif /* VM_EXTENT_MOVE_PDP6_ASM */
