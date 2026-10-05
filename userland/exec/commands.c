@@ -977,7 +977,7 @@ cmd_clear(int argc, kword_t **argv, struct u_io *io)
 #endif
 
 #if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_DPYVIEW
-#define DPYVIEW_MAX_WORDS 1024U
+#define DPYVIEW_MAX_WORDS 32256U
 
 static kword_t dpyview_words[DPYVIEW_MAX_WORDS];
 
