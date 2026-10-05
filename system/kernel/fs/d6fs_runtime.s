@@ -161,7 +161,7 @@ d6fs_hash_loop:
 ; directly instead of forcing every caller to allocate a pointer temporary.
 d6fs_reader_get_block:
         jumpe   1,kret_zero
-        caml    2,6(1)                   ; logical >= total_blocks
+        caml    2,3(1)                   ; logical >= total_blocks
         jrst    kret_zero
         ; fs_block_workspace is shared by all filesystem providers.  The
         ; reader-local tag therefore cannot prove that the workspace still
@@ -182,7 +182,7 @@ d6fs_reader_get_block:
         movei   2,fs_block_workspace
         pushj   17,bcache_fetch
         jumpn   1,d6fs_get_block_cache_hit
-        movei   1,016(010)               ; embedded struct fs_backing
+        movei   1,013(010)               ; embedded struct fs_backing
         move    2,011
         movei   3,fs_block_workspace     ; shared transfer block
         pushj   17,fs_backing_read
@@ -209,7 +209,7 @@ d6fs_get_block_read_done:
 d6fs_reader_fcb:
         jumpe   1,kret_neg1
         jumpe   4,kret_neg1
-        caml    2,011(1)                 ; index >= fcb_count
+        caml    2,6(1)                   ; index >= fcb_count
         jrst    kret_neg1
         push    17,010
         push    17,011
@@ -221,7 +221,7 @@ d6fs_reader_fcb:
         move    013,2                    ; index
         move    5,2
         lsh     5,-3                     ; index / 8
-        add     5,010(010)               ; fcb_start + block index
+        add     5,5(010)                 ; fcb_start + block index
         move    2,5
         move    1,010
         pushj   17,d6fs_reader_get_block
@@ -236,8 +236,8 @@ d6fs_reader_fcb:
         blt     5,017(011)
         move    1,011
 d6fs_reader_fcb_decode_cache:
-        move    2,6(010)                 ; total_blocks
-        move    3,011(010)               ; fcb_count
+        move    2,3(010)                 ; total_blocks
+        move    3,6(010)                 ; fcb_count
         move    4,012
         pushj   17,d6fs_fcb_decode_valid
         jumpe   1,d6fs_reader_fcb_fail
@@ -253,7 +253,7 @@ d6fs_reader_fcb_done:
 d6fs_reader_put_fcb:
         jumpe   1,kret_neg1
         jumpe   3,kret_neg1
-        caml    2,011(1)
+        caml    2,6(1)
         jrst    kret_neg1
         push    17,010
         push    17,011
@@ -264,7 +264,7 @@ d6fs_reader_put_fcb:
         move    012,2                    ; index
         move    013,2
         lsh     013,-3
-        add     013,010(010)             ; logical FCB block
+        add     013,5(010)               ; logical FCB block
         move    1,010
         move    2,013
         pushj   17,d6fs_reader_get_block
@@ -310,7 +310,7 @@ d6fs_bitmap_mask:
 ; Return 0 free, 1 allocated, -1 on I/O/range error.
 d6fs_freemap_state:
         jumpe   1,kret_neg1
-        caml    2,6(1)
+        caml    2,3(1)
         jrst    kret_neg1
         push    17,010
         push    17,011
@@ -318,11 +318,11 @@ d6fs_freemap_state:
         move    010,1                     ; reader
         move    1,2
         pushj   17,d6fs_bitmap_pos
-        caml    1,013(010)                ; map block >= freemap_blocks
+        caml    1,010(010)                ; map block >= freemap_blocks
         jrst    d6fs_freemap_state_fail
         move    011,2                     ; word index
         move    012,3                     ; bit index
-        add     1,012(010)                ; freemap_start + mbi
+        add     1,7(010)                  ; freemap_start + mbi
         move    2,1
         move    1,010
         pushj   17,d6fs_reader_get_block
@@ -348,9 +348,9 @@ d6fs_freemap_state_done:
 d6fs_free_run:
         jumpe   1,kret_neg1
         jumpe   3,kret_neg1
-        caml    2,6(1)                   ; start >= total_blocks
+        caml    2,3(1)                   ; start >= total_blocks
         jrst    kret_neg1
-        move    4,6(1)
+        move    4,3(1)
         sub     4,2                      ; blocks available from start
         camle   3,4
         jrst    kret_neg1
@@ -394,19 +394,19 @@ d6fs_provider_alloc_run:
         move    013,3                    ; blocksp
         move    4,d6fs_active_reader   ; active reader
         move    2,(4)                    ; normalized alloc_cursor
-        caml    2,6(4)
+        caml    2,3(4)
         jrst    d6fs_provider_alloc_run_fail
         setz    010,                     ; scanned
         setzm   (013)                    ; running count / blocksp
 
 d6fs_provider_alloc_run_loop:
         move    4,d6fs_active_reader
-        caml    010,6(4)
+        caml    010,3(4)
         jrst    d6fs_provider_alloc_run_end
         move    2,(4)
         add     2,010                    ; logical = cursor + scanned
-        caml    2,6(4)
-        sub     2,6(4)                   ; one wrap is sufficient
+        caml    2,3(4)
+        sub     2,3(4)                   ; one wrap is sufficient
         move    014,2                    ; preserve current across helper
         move    1,d6fs_active_reader
         pushj   17,d6fs_freemap_state
@@ -453,17 +453,17 @@ d6fs_provider_alloc_run_done:
 ; Scan whole 36-bit words instead of testing as many as 4608 individual bits.
 d6fs_map_block_has_free_i:
         jumpe   1,kret_neg1
-        caml    2,013(1)
+        caml    2,010(1)
         jrst    kret_neg1
         move    010,1
         move    011,2
         move    3,2
         imuli   3,011000                  ; first logical block represented
-        move    012,6(1)
+        move    012,3(1)
         sub     012,3                     ; valid bits remaining
         camle   012,[011000]
         movei   012,011000
-        add     2,012(1)
+        add     2,7(1)
         pushj   17,d6fs_reader_get_block
         jumpe   1,kret_neg1
         move    2,012
@@ -527,7 +527,7 @@ d6fs_summary_commit:
 ; int d6fs_freemap_set(reader, logical, allocated)
 d6fs_freemap_set:
         jumpe   1,kret_neg1
-        caml    2,6(1)
+        caml    2,3(1)
         jrst    kret_neg1
         add     17,kconst_5_5
         movei   0,-4(17)
@@ -538,12 +538,12 @@ d6fs_freemap_set:
         move    014,3
         move    1,2
         pushj   17,d6fs_bitmap_pos
-        caml    1,013(010)
+        caml    1,010(010)
         jrst    d6fs_freemap_set_fail
         move    011,1                     ; map block index
         move    012,2                     ; word index
         move    013,3                     ; bit index
-        add     1,012(010)
+        add     1,7(010)
         move    2,1
         move    1,010
         pushj   17,d6fs_reader_get_block
@@ -559,7 +559,7 @@ d6fs_freemap_clear:
         andcam  1,(012)
 d6fs_freemap_commit:
         move    2,011
-        add     2,012(010)
+        add     2,7(010)
         move    1,010
         pushj   17,d6fs_reader_commit_cache
         jumpn   1,d6fs_freemap_set_fail
@@ -632,14 +632,14 @@ d6fs_provider_space:
         push    17,012
         push    17,013
         move    010,d6fs_active_reader
-        move    011,6(010)              ; valid bits remaining
+        move    011,3(010)              ; valid bits remaining
         setz    012,                    ; map block index
         setz    013,                    ; allocated blocks
 d6fs_provider_space_map:
         jumpe   011,d6fs_provider_space_done
-        caml    012,013(010)            ; freemap_blocks
+        caml    012,010(010)            ; freemap_blocks
         jrst    d6fs_provider_space_fail
-        move    2,012(010)              ; freemap_start
+        move    2,7(010)                ; freemap_start
         add     2,012
         move    1,010
         pushj   17,d6fs_reader_get_block
@@ -678,7 +678,7 @@ d6fs_provider_space_next_map:
         sub     011,5
         aoja    012,d6fs_provider_space_map
 d6fs_provider_space_done:
-        move    1,6(010)
+        move    1,3(010)
         lsh     1,7                     ; 128 words/block
         move    2,013
         lsh     2,7
@@ -693,32 +693,29 @@ d6fs_provider_space_fail:
         .globl  mm_alloc
         .globl  mm_free
 ; Provider-private runtime mount entry.
-; AC1=validated 17-word handoff, AC2=target vnode, AC3=flags.
+; AC1=validated 14-word handoff, AC2=target vnode, AC3=flags.
 ; Secondary mounts are read-only until the later remount/recovery phase defines
 ; the complete writable transition protocol.
 d6fs_mount_validated:
         jumpe   1,kret_neg1
         caie    3,1                      ; VFS_MOUNT_RDONLY
         jrst    kret_neg1
-        move    5,016(1)                 ; versioned handoff marker
+        move    5,013(1)                 ; versioned handoff marker
         came    5,[044066263602]
         jrst    kret_neg1
 
         ; The transient scanner owns full filesystem validation.  Resident
         ; code checks only fields needed to keep provider/backing dispatch safe.
-        move    5,020(1)                 ; backing.blocks / total capacity
+        move    5,015(1)                 ; backing.blocks / total capacity
         jumpe   5,kret_neg1
-        came    5,6(1)                   ; super.total_blocks must agree
+        came    5,3(1)                   ; total_blocks must agree
         jrst    kret_neg1
-        skipe   3(1)                     ; secondary mounts must be clean
-        jrst    kret_neg1
-
         push    17,1                     ; handoff
         push    17,2                     ; target vnode
         push    17,[0]                   ; allocated reader base
         movei   5,(17)                   ; mm_alloc basep -> local stack word
         push    17,5                     ; fifth mm_alloc arg
-        movei   1,021                    ; struct d6fs_reader
+        movei   1,016                    ; struct d6fs_reader
         movei   2,3                      ; MM_TYPE_KERNEL_DYNAMIC
         movei   3,010                    ; D6FS_READER_MM_OWNER
         setz    4,                       ; no alignment requirement
@@ -729,15 +726,15 @@ d6fs_mount_validated:
         move    5,(17)                   ; new mount-owned reader
         move    4,5                      ; BLT handoff into dynamic reader
         hrl     4,-2(17)
-        blt     4,020(5)
+        blt     4,015(5)
 
-        movei   6,016(5)                 ; temporary root-vnode scratch
+        movei   6,013(5)                 ; temporary root-vnode scratch
         push    17,6                     ; sixth arg: rootp
         push    17,[1]                   ; fifth arg: VFS_MOUNT_RDONLY
         move    1,-3(17)                 ; target vnode
         movei   2,6                      ; D6FS_PROVIDER
         movei   3,1                      ; D6FS_KIND_NODE
-        move    4,7(5)                   ; root_fcb
+        move    4,4(5)                   ; root_fcb
         pushj   17,vfs_mount_prevalidated
         sub     17,kconst_2_2
         jumpn   1,d6fs_mount_free
@@ -751,7 +748,7 @@ d6fs_mount_validated:
         ior     6,4
         movem   6,1(5)
         move    4,[fs_backing_direct_read,,fs_backing_direct_write]
-        movem   4,016(5)                 ; replace root scratch with trusted ops
+        movem   4,013(5)                 ; replace root scratch with trusted ops
         setz    1,
         jrst    d6fs_mount_done
 
@@ -932,7 +929,7 @@ d6fs_reader_commit_cache:
         move    4,1(1)                   ; packed mount state
         trnn    4,0100                    ; D6FS_PROVIDER_MOUNT_WRITABLE
         jrst    d6fs_reader_commit_invalidate
-        caml    2,6(1)                   ; logical >= total_blocks
+        caml    2,3(1)                   ; logical >= total_blocks
         jrst    d6fs_reader_commit_invalidate
         push    17,010
         push    17,011
@@ -944,7 +941,7 @@ d6fs_reader_commit_cache:
         iori    012,01000                ; BCACHE_SOURCE_D6FS
         lsh     012,030
         ior     012,011
-        movei   1,016(010)               ; embedded struct fs_backing
+        movei   1,013(010)               ; embedded struct fs_backing
         move    2,011
         movei   3,fs_block_workspace
         pushj   17,fs_backing_write
@@ -967,7 +964,7 @@ d6fs_reader_commit_bad:
 d6fs_reader_write_block:
         jumpe   1,kret_neg1
         jumpe   3,kret_neg1
-        caml    2,6(1)
+        caml    2,3(1)
         jrst    kret_neg1
         camn    3,[fs_block_workspace]
         jrst    d6fs_reader_write_block_commit
@@ -981,7 +978,7 @@ d6fs_reader_write_block_commit:
 ; int d6fs_reader_zero_block(reader, logical)
 d6fs_reader_zero_block:
         jumpe   1,kret_neg1
-        caml    2,6(1)
+        caml    2,3(1)
         jrst    kret_neg1
         push    17,2                     ; zero helper clobbers AC2 to 0177
         pushj   17,fs_zero_block_workspace
@@ -1091,7 +1088,7 @@ d6fs_provider_dirent:
         jrst    d6fs_provider_dirent_fail
         movei   1,-010(17)
         move    2,d6fs_active_reader
-        move    2,011(2)                 ; super.fcb_count
+        move    2,6(2)                   ; fcb_count
         move    3,-1(17)
         pushj   17,d6fs_dirent_decode_valid
         jumpe   1,d6fs_provider_dirent_fail
@@ -1210,9 +1207,9 @@ d6fs_provider_sync:
 d6fs_provider_toggle_state:
         move    5,d6fs_active_reader
         move    4,1(5)
-        move    2,015(5)                 ; current A -> publish B
+        move    2,012(5)                 ; current A -> publish B
         trne    4,0200                    ; current B -> publish A
-        move    2,014(5)
+        move    2,011(5)
         push    17,2
         move    1,5
         pushj   17,d6fs_reader_get_block
@@ -1396,10 +1393,10 @@ d6fs_provider_parent:
         jumpn   1,d6fs_provider_parent_fail
         hrrz    4,-1(17)                ; node index
         move    5,d6fs_active_reader
-        camn    4,7(5)                   ; root_fcb: root is its own parent
+        camn    4,4(5)                   ; root_fcb: root is its own parent
         jrst    d6fs_provider_parent_build
         move    4,-2(17)                 ; fi.parent_fcb
-        caml    4,011(5)                 ; reject parent outside FCB table
+        caml    4,6(5)                   ; reject parent outside FCB table
         jrst    d6fs_provider_parent_fail
 d6fs_provider_parent_build:
         move    1,4

@@ -975,7 +975,7 @@ native_sys_tsfs_mount:
         jrst    native_sys_mount_handoff
 
 native_sys_d6fs_mount:
-        movei   5,021                    ; D6FS_MOUNT_WORDS
+        movei   5,016                    ; D6FS_MOUNT_WORDS
         movei   6,6                      ; D6FS_PROVIDER
 
         .globl  fs_provider_reg_call

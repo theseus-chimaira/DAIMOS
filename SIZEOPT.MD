@@ -13,10 +13,10 @@ THE PRIMARY TARGET IS THE FULLY CONFIGURED PERMANENT PDP-6 IMAGE:
 THE CURRENT MEASURED BASELINE AFTER THE COMPACT PDP-6 SWAP TRANSACTIONS IS:
 
     KCORE      022612   9610 WORDS
-    MULTI_ROOT 037610
-    MULTI_LAST 037667
+    MULTI_ROOT 037606
+    MULTI_LAST 037665
 
-THE IMAGE IS THEREFORE 73 ADDRESS WORDS BELOW 040000.
+THE IMAGE IS THEREFORE 75 ADDRESS WORDS BELOW 040000.
 
 SIZE WORK MUST NOT ADD HIDDEN PERMANENT RAM, GENERAL METADATA, OR A HOT-PATH
 INDIRECTION WHICH COSTS MORE THAN THE SAVING.  RAM USE IS THE PRIMARY
@@ -27,28 +27,7 @@ TABLES LINEAR UNLESS MEASUREMENT PROVES A BETTER REPRESENTATION.
 
 ## 2. RESIDENT/DYNAMIC RAM STRUCTURE AUDITS
 
-### 2.1 TRIM POST-MOUNT FILESYSTEM AND STORAGE STATE
-
-AUDIT LIVE STATE AFTER KINIT/MINIT and remove fields used only for discovery,
-validation, or handoff.  Do not introduce a second copied runtime structure
-unless it is smaller overall.
-
-PRIMARY TARGETS:
-
-- D6FS runtime reader/provider state.
-- DTFS/TSFS mount state.
-- MEMFS provider state.
-- LOGSTORE state.
-- BLOCKSET/BADMAP state.
-- AUXSTORE handoff state.
-
-D6FS is especially worth checking for superblock fields whose invariants are
-already established before ordinary runtime I/O.
-
-EXPECTED VALUE: potentially high dynamic-RAM saving; possible secondary KCORE
-saving from fewer copies and offset operations.
-
-### 2.2 U-AREA AND KERNEL-STACK LIFETIME OVERLAYS
+### 2.1 U-AREA AND KERNEL-STACK LIFETIME OVERLAYS
 
 AUDIT process-private temporaries and stack frames whose lifetimes cannot
 overlap.  Candidate storage may be overlaid only when the sleeping-kernel
@@ -59,7 +38,7 @@ continuations require a stable kernel stack.
 
 GOAL: reduce per-process resident RAM without adding scheduler state.
 
-### 2.3 LARGE SHARED SCRATCH / REFILL WINDOWS
+### 2.2 LARGE SHARED SCRATCH / REFILL WINDOWS
 
 RECHECK large non-process scratch which is serialized by existing VFS/provider
 locking.  Shared scratch is preferable to duplicating full-block or refill
@@ -132,10 +111,11 @@ VALID PERMANENT-SIZE RESULT.
 
 ## 6. CURRENT ORDER
 
-1. POST-MOUNT FILESYSTEM/STORAGE STATE TRIM.
-2. DATA-LAYOUT AND MONITORFS METADATA AUDIT.
-3. FINAL CROSS-DOMAIN P10FOLD / PATCH-TO-FOLD CENSUS.
-4. FINAL LINKED-IMAGE DEAD-DATA AUDIT.
+1. U-AREA AND KERNEL-STACK LIFETIME OVERLAYS.
+2. LARGE SHARED SCRATCH / REFILL WINDOWS.
+3. DATA-LAYOUT AND MONITORFS METADATA AUDIT.
+4. FINAL CROSS-DOMAIN P10FOLD / PATCH-TO-FOLD CENSUS.
+5. FINAL LINKED-IMAGE DEAD-DATA AUDIT.
 
 CONTINUE THIS SWEEP UNTIL EVERY LIVE IDEA ABOVE HAS BEEN MEASURED AND EITHER
 LANDED OR REMOVED AS EXHAUSTED.  CROSSING 040000 IS A REQUIRED MILESTONE, NOT
