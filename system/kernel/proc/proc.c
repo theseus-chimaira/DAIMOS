@@ -227,6 +227,7 @@ extern int proc_tty_session_has(unsigned int session, unsigned int pgrp,
     unsigned int skip_slot);
 
 /** Release TTY ownership when the final process in a session exits. */
+#ifndef PROC_TTY_RELEASE_PDP6_ASM
 void
 proc_tty_release_session(unsigned int session, unsigned int leaving_slot)
 {
@@ -246,6 +247,7 @@ proc_tty_release_session(unsigned int session, unsigned int leaving_slot)
                 }
         }
 }
+#endif
 
 
 /** Destroy an uncommitted process slot and all resources already attached to it. */

@@ -103,6 +103,8 @@
         .globl  proc_trim_high
         .globl  proc_uarea_release
         .globl  proc_tty_release_session
+        .globl  proc_tty_line_reset
+        .globl  proc_tty_session_has
         .globl  proc_session_teardown
         .globl  proc_notify_parent
         .globl  vm_space_destroy
@@ -509,6 +511,44 @@ proc_uarea_release:
 proc_uarea_release_fail:
         pop     17,10
         jrst    kret_neg1
+
+/**
+ * @brief Release TTY ownership when the final process in a session exits.
+ * @param AC1 Session id.
+ * @param AC2 Slot which is leaving the session.
+ *
+ * The existing compact process-table scanner determines whether another
+ * member remains.  Only when the session becomes empty do we scan the 21 TTY
+ * records, discard any cooked line buffer, and preserve only output routing.
+ */
+proc_tty_release_session:
+        push    17,10
+        push    17,11
+        move    10,1
+        jumpe   10,proc_tty_release_done
+        move    3,2
+        move    1,10
+        setz    2,
+        pushj   17,proc_tty_session_has
+        jumpn   1,proc_tty_release_done
+        setz    11,
+proc_tty_release_loop:
+        cail    11,025
+        jrst    proc_tty_release_done
+        move    1,proc_tty_records(11)
+        andi    1,0377
+        came    1,10
+        jrst    proc_tty_release_next
+        move    1,11
+        pushj   17,proc_tty_line_reset
+        movsi   1,0174000
+        andb    1,proc_tty_records(11)
+proc_tty_release_next:
+        aoja    11,proc_tty_release_loop
+proc_tty_release_done:
+        pop     17,11
+        pop     17,10
+        popj    17,
 
 ; Remove only trailing FREE descriptors; interior holes remain reusable.
 proc_trim_high:
