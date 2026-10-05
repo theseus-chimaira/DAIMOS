@@ -41,8 +41,8 @@
         .equ    EXEC_LAUNCH_MM_OWNER,013
         .equ    MM_TYPE_KERNEL_DYNAMIC,3
         .equ    PROC_USER_MAP_BIT,2
-        .equ    PROC_FDCTL_OFFSET,045
-        .equ    PROC_SWAP_BACKING_OFFSET,0427
+        .equ    PROC_FDCTL_OFFSET,024
+        .equ    PROC_SWAP_BACKING_OFFSET,0406
         .equ    EXEC_LOAD_RT_REQUIRED,1
         .equ    EXEC_LOAD_NOMEM,-2
 

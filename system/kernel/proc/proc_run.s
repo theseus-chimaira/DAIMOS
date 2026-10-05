@@ -14,13 +14,13 @@
         .equ    PROC_SCHED_SIDL_LH,0100024
         .equ    PROC_SCHED_SRUN_LH,0200024
         .equ    PROC_F_UAREA_RH,0400000
-        .equ    PROC_UAREA_WORDS,0430
-        .equ    PROC_FDCTL_OFFSET,045
-        .equ    PROC_FILE_CWD_OFFSET,046
-        .equ    PROC_FILE_TABLE_OFFSET,047
-        .equ    PROC_CRED_OFFSET,0107
-        .equ    PROC_UMASK_OFFSET,0110
-        .equ    PROC_USTACK_BASE,0111
+        .equ    PROC_UAREA_WORDS,0407
+        .equ    PROC_FDCTL_OFFSET,024
+        .equ    PROC_FILE_CWD_OFFSET,025
+        .equ    PROC_FILE_TABLE_OFFSET,026
+        .equ    PROC_CRED_OFFSET,066
+        .equ    PROC_UMASK_OFFSET,067
+        .equ    PROC_USTACK_BASE,070
         .equ    PROC_UAREA_OWNER_BASE,01000
         .equ    MM_TYPE_KERNEL_DYNAMIC,3
         .equ    EXEC_DXR_STACK_WORDS,02000
@@ -141,7 +141,7 @@ proc_run_records_done:
         ; the reserved tail of the already-bounded process table.
         move    011,proc_slots
         move    4,file_table
-        hlrz    4,040(4)               ; u-area 0107 credential word
+        hlrz    4,040(4)               ; u-area 066 credential word
         jumpe   4,proc_run_slot_limit_ready
         subi    011,PROC_ROOT_RESERVED_SLOTS
 proc_run_slot_limit_ready:
@@ -298,7 +298,7 @@ proc_run_watermark_loop:
         jrst    proc_run_filetable_bad
         move    4,-1(7)
         movem   4,PROC_FILE_CWD_OFFSET(014)
-        ; file_table points at parent u-area 047; credentials/umask are 0107/0110.
+        ; file_table points at parent u-area 026; credentials/umask are 066/067.
         move    4,040(7)
         movem   4,PROC_CRED_OFFSET(014)
         move    4,041(7)

@@ -65,9 +65,9 @@ vm_user_mapping_hold:
         hlrz    0,(5)
         jumpe   0,vm_user_mapping_hold_done
         move    5,0                     ; AC0 cannot be an index register
-        move    0,0045(5)
+        move    0,0024(5)
         iori    0,02
-        movem   0,0045(5)
+        movem   0,0024(5)
 vm_user_mapping_hold_done:
         pop     17,5
         pop     17,0
@@ -82,9 +82,9 @@ vm_user_mapping_release:
         hlrz    0,(5)
         jumpe   0,vm_user_mapping_release_done
         move    5,0                     ; AC0 cannot be an index register
-        move    0,0045(5)
+        move    0,0024(5)
         andcmi  0,02
-        movem   0,0045(5)
+        movem   0,0024(5)
 vm_user_mapping_release_done:
         pop     17,5
         pop     17,0
@@ -335,7 +335,7 @@ vm_extent_move:
         trnn    1,0400000              ; stable u-area present
         jrst    vm_extent_move_state
         hlrz    2,1
-        move    2,045(2)
+        move    2,024(2)
         trne    2,02                   ; translated user mapping held
         jrst    vm_extent_move_busy
 
@@ -347,10 +347,10 @@ vm_extent_move_state:
         jrst    vm_extent_move_nouarea
 
         hlrz    2,1
-        move    3,045(2)
+        move    3,024(2)
         movsi   4,01000                ; PROC_STOP_MM in control LH
         ior     3,4
-        movem   3,045(2)
+        movem   3,024(2)
         move    1,10
         pushj   17,proc_runq_remove
         move    1,2(14)
@@ -379,9 +379,9 @@ vm_extent_move_mark:
         trnn    1,0400000
         jrst    vm_extent_move_ok
         hlrz    2,1
-        move    3,045(2)
+        move    3,024(2)
         tlz     3,01000                ; clear only PROC_STOP_MM
-        movem   3,045(2)
+        movem   3,024(2)
         tlne    3,01400                ; another stop reason remains
         jrst    vm_extent_move_ok
         move    1,2(14)
@@ -472,7 +472,7 @@ proc_exec_enter:
         move 1,proc_current_ptr
         hlrz 5,(1)                  ; stable u-area base
         move 17,5
-        addi 17,0111                ; PROC_USTACK_BASE
+        addi 17,070                 ; PROC_USTACK_BASE
         movem 17,000021(5)
         movem 17,mach_kernel_sp
         setz 0,

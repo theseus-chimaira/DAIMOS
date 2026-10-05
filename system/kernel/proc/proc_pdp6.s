@@ -36,20 +36,18 @@
         .equ    PROC_TIMER_DUE_LH,0200000
         .equ    PROC_TIMER_TAG_RH,0400000
         .equ    PROC_TIMER_CLOCK_MASK,0377777
-        .equ    PROC_FDCTL_OFFSET,045
-        .equ    PROC_FILE_TABLE_OFFSET,047
-        .equ    PROC_CRED_OFFSET,0107
-        .equ    PROC_UMASK_OFFSET,0110
-        .equ    PROC_USTACK_BASE,0111
+        .equ    PROC_FDCTL_OFFSET,024
+        .equ    PROC_FILE_TABLE_OFFSET,026
+        .equ    PROC_CRED_OFFSET,066
+        .equ    PROC_UMASK_OFFSET,067
+        .equ    PROC_USTACK_BASE,070
         .equ    PROC_KSTACK_WORDS,0316
         .equ    KERNEL_IDLE_STACK_WORDS,0100
 
-        .equ    CTX_U_PC,020
-        .equ    CTX_U_KSP,021
-        .equ    CTX_K_PC,022
-        .equ    CTX_K_AC0,023
-        .equ    CTX_M_USER_SP,043
-        .equ    CTX_M_SYSCALL_SAVE,044
+        .equ    CTX_PC,020
+        .equ    CTX_KSP,021
+        .equ    CTX_M_USER_SP,022
+        .equ    CTX_M_SYSCALL_SAVE,023
 
         .text
         .globl  proc_table
@@ -724,7 +722,7 @@ proc_wait_status_report:
         trnn    6,0400000              ; PROC_F_UAREA << PROC_FLAGS_SHIFT
         jrst    proc_wait_status_next
         hlrz    2,6                    ; u-area base
-        move    3,045(2)
+        move    3,PROC_FDCTL_OFFSET(2)
         move    1,3
         lsh     1,-034
         andi    1,3                    ; PROC_WAIT_REPORT
@@ -734,7 +732,7 @@ proc_wait_status_report:
         jrst    proc_wait_status_next
 proc_wait_status_have_report:
         tlz     3,06000                ; clear PROC_REPORT_BITS
-        movem   3,045(2)
+        movem   3,PROC_FDCTL_OFFSET(2)
         jumpe   011,proc_wait_status_report_done
         move    3,1
         addi    3,1                    ; report+1 -> wait status kind
@@ -809,7 +807,7 @@ proc_exit_halt:
 /**
  * @brief Publish the current process-private kernel stack after first user entry.
  *
- * Initial argument ACs are preserved while CTX_U_KSP, mach_kernel_sp, and the
+ * Initial argument ACs are preserved while CTX_KSP, mach_kernel_sp, and the
  * process-local file-table base are switched away from the bootstrap stack.
  */
 proc_record_kernel_sp:
@@ -818,7 +816,7 @@ proc_record_kernel_sp:
         move    1,proc_current_slot
         pushj   17,proc_uarea_slot
         movei   2,PROC_USTACK_BASE(1)
-        movem   2,CTX_U_KSP(1)
+        movem   2,CTX_KSP(1)
         movem   2,mach_kernel_sp
         movei   2,PROC_FILE_TABLE_OFFSET(1)
         movem   2,file_table
@@ -927,7 +925,7 @@ proc_tty_session_scope:
         trnn    4,0400000               ; resident u-area flag
         jrst    proc_tty_session_next
         hlrz    4,(3)                   ; stable u-area base
-        move    4,045(4)                ; packed control word
+        move    4,PROC_FDCTL_OFFSET(4)                ; packed control word
         lsh     4,-3
         andi    4,0377                  ; session id
         camn    4,5
@@ -975,7 +973,7 @@ proc_session_teardown_loop:
         trnn    3,0400000              ; no stable u-area: FREE/ZOMB
         jrst    proc_session_teardown_next
         hlrz    4,(012)
-        ldb     5,[POINT 8,045(4),32]
+        ldb     5,[POINT 8,PROC_FDCTL_OFFSET(4),32]
         came    5,010
         jrst    proc_session_teardown_next
         move    1,011
@@ -1038,7 +1036,7 @@ proc_event_fatal:
 
 proc_event_fatal_other:
         hlrz    1,(012)
-        addi    1,047                   ; target private file table
+        addi    1,PROC_FILE_TABLE_OFFSET ; target private file table
         exch    1,file_table            ; AC1 = caller file table
         push    17,1
         pushj   17,file_close_all
@@ -1055,12 +1053,12 @@ proc_event_fatal_other:
 proc_event_nonfatal:
         ; Events 3..6 map directly to the packed pending-event bitmap.
         hlrz    6,(012)
-        move    4,045(6)
+        move    4,PROC_FDCTL_OFFSET(6)
         movei   5,1
         lsh     5,0(011)
         lsh     5,023                   ; PROC_EVENT_SHIFT = 19 decimal
         ior     4,5
-        movem   4,045(6)
+        movem   4,PROC_FDCTL_OFFSET(6)
 
         caie    011,3                   ; TSTP
         jrst    proc_event_cont
@@ -1069,7 +1067,7 @@ proc_event_nonfatal:
         tlo     4,0400                  ; PROC_STOP_JOB_BIT
         tlz     4,06000                 ; replace wait report
         tlo     4,02000                 ; PROC_REPORT_STOPPED
-        movem   4,045(6)
+        movem   4,PROC_FDCTL_OFFSET(6)
         move    1,010
         pushj   17,proc_runq_remove
         move    5,2(012)
@@ -1090,7 +1088,7 @@ proc_event_cont:
         tlz     4,0400
         tlz     4,06000
         tlo     4,04000                 ; PROC_REPORT_CONTINUED
-        movem   4,045(6)
+        movem   4,PROC_FDCTL_OFFSET(6)
         tlne    4,01400                 ; another stop reason remains
         jrst    proc_event_cont_report
         hlrz    5,2(012)
@@ -1168,7 +1166,7 @@ proc_event_send:
         move    1,012
         pushj   17,proc_slot_ptr
         hlrz    4,(1)
-        move    013,045(4)             ; caller session/domain control word
+        move    013,PROC_FDCTL_OFFSET(4)             ; caller session/domain control word
         jumpn   3,proc_event_send_group
 
 ; PID delivery: target must be live, u-area resident, in caller's domain, and
@@ -1187,7 +1185,7 @@ proc_event_send:
         hlrz    4,(3)
         pushj   17,proc_event_uid_check
         jumpn   1,proc_event_send_fail
-        move    5,045(4)
+        move    5,PROC_FDCTL_OFFSET(4)
         xor     5,013
         tdne    5,[01774000]            ; domain differs
         jrst    proc_event_send_fail
@@ -1221,7 +1219,7 @@ proc_event_send_group_loop:
         hlrz    4,(3)
         pushj   17,proc_event_uid_check
         jumpn   1,proc_event_send_group_next
-        move    5,045(4)
+        move    5,PROC_FDCTL_OFFSET(4)
         xor     5,013
         tdne    5,[01777770]
         jrst    proc_event_send_group_next
@@ -1272,9 +1270,9 @@ proc_event_send_return:
 proc_event_uid_check:
         move    1,proc_current_ptr
         hlrz    3,(1)
-        hlrz    2,0107(3)              ; caller UID
+        hlrz    2,PROC_CRED_OFFSET(3)              ; caller UID
         jumpe   2,kret_zero            ; UID 0 may administer all users
-        hlrz    5,0107(4)              ; target UID
+        hlrz    5,PROC_CRED_OFFSET(4)              ; target UID
         camn    2,5
         jrst    kret_zero
         jrst    kret_neg1
@@ -1315,7 +1313,7 @@ proc_notify_parent:
         jumpe   4,proc_notify_parent_done
         hlrz    4,(2)
         movsi   3,0200                 ; pending CHLD in control-word LH
-        iorm    3,045(4)
+        iorm    3,PROC_FDCTL_OFFSET(4)
         move    4,2(2)
         xor     4,[0340000000000]      ; SLEEP + WAIT_CHILD
         and     4,[0760000000000]
@@ -1352,7 +1350,7 @@ proc_scope_live:
         trnn    2,0400000              ; u-area present
         jrst    kret_zero
         hlrz    2,(1)
-        move    1,045(2)
+        move    1,PROC_FDCTL_OFFSET(2)
         lsh     1,-3
         andi    1,0177777
         popj    17,
@@ -1367,7 +1365,7 @@ proc_child_hierarchy:
         move    6,3                    ; requested pgrp
         move    4,proc_current_ptr     ; parent descriptor
         hlrz    3,(4)
-        move    3,045(3)               ; parent control word
+        move    3,PROC_FDCTL_OFFSET(3)               ; parent control word
         ldb     5,[POINT 8,3,32]       ; parent session
 
         jumpe   2,proc_child_inherit
@@ -1416,7 +1414,7 @@ proc_child_join_live:
         trnn    4,0400000
         jrst    proc_child_join_next
         hlrz    4,(2)
-        ldb     4,[POINT 8,045(4),32]
+        ldb     4,[POINT 8,PROC_FDCTL_OFFSET(4),32]
 proc_child_join_scope:
         came    4,5
         jrst    proc_child_join_next
@@ -1438,12 +1436,12 @@ proc_child_set:
         ior     4,1
         movem   4,(2)
         hlrz    4,(2)
-        move    6,045(4)
+        move    6,PROC_FDCTL_OFFSET(4)
         and     6,[007776000007]       ; clear session/domain/TTY
         move    5,3
         and     5,[770001777770]
         ior     6,5
-        movem   6,045(4)
+        movem   6,PROC_FDCTL_OFFSET(4)
         jrst    kret_zero
 
 ; int proc_control(unsigned int op, unsigned int arg)
@@ -1494,27 +1492,27 @@ proc_control_getpgrp:
 proc_control_getsession:
         jumpn   2,kret_neg1
         hlrz    5,(4)
-        ldb     1,[POINT 8,045(5),32]
+        ldb     1,[POINT 8,PROC_FDCTL_OFFSET(5),32]
         popj    17,
 proc_control_getdomain:
         jumpn   2,kret_neg1
         hlrz    5,(4)
-        ldb     1,[POINT 8,045(5),24]
+        ldb     1,[POINT 8,PROC_FDCTL_OFFSET(5),24]
         popj    17,
 
 proc_control_newsession:
         jumpn   2,kret_neg1
         hlrz    5,(4)
-        ldb     1,[POINT 8,045(5),32]   ; old session for TTY release
+        ldb     1,[POINT 8,PROC_FDCTL_OFFSET(5),32]   ; old session for TTY release
         move    6,(4)
         andcmi  6,0377                 ; preserve LH, clear pgrp in RH
         move    7,3
         andi    7,0377
         ior     6,7
         movem   6,(4)
-        dpb     3,[POINT 8,045(5),32]
+        dpb     3,[POINT 8,PROC_FDCTL_OFFSET(5),32]
         hrloi   6,07777
-        andm    6,045(5)               ; TTY state -> NO_TTY
+        andm    6,PROC_FDCTL_OFFSET(5)               ; TTY state -> NO_TTY
         move    2,3                    ; leaving slot
         pushj   17,proc_tty_release_session
         move    1,proc_current_slot
@@ -1523,20 +1521,20 @@ proc_control_newsession:
 proc_control_newdomain:
         jumpn   2,kret_neg1
         hlrz    5,(4)
-        dpb     3,[POINT 8,045(5),24]
+        dpb     3,[POINT 8,PROC_FDCTL_OFFSET(5),24]
         move    1,3
         popj    17,
 
 proc_control_getevents:
         jumpn   2,kret_neg1
         hlrz    5,(4)
-        ldb     1,[POINT 7,045(5),16]
-        move    6,045(5)
+        ldb     1,[POINT 7,PROC_FDCTL_OFFSET(5),16]
+        move    6,PROC_FDCTL_OFFSET(5)
         trne    6,1
         iori    1,0200
         hrloi   6,0777401
         andcmi  6,1
-        andm    6,045(5)
+        andm    6,PROC_FDCTL_OFFSET(5)
         popj    17,
 
 proc_control_event_pid:
@@ -1556,7 +1554,7 @@ proc_control_event:
 proc_control_gettty:
         jumpn   2,kret_neg1
         hlrz    5,(4)
-        move    1,045(5)
+        move    1,PROC_FDCTL_OFFSET(5)
         lsh     1,-036
         popj    17,
 
@@ -1564,8 +1562,8 @@ proc_control_tty_attach:
         cail    2,025
         jrst    kret_neg1
         hlrz    5,(4)
-        move    6,045(5)
-        ldb     7,[POINT 8,045(5),32]
+        move    6,PROC_FDCTL_OFFSET(5)
+        ldb     7,[POINT 8,PROC_FDCTL_OFFSET(5),32]
         came    7,3
         jrst    kret_neg1
         move    7,6
@@ -1604,7 +1602,7 @@ proc_control_tty_attach_set:
 ; This shared cold path replaces three copies in DETACH/GETFG/SETFG.
 proc_control_tty_owned:
         hlrz    5,(4)
-        move    6,045(5)
+        move    6,PROC_FDCTL_OFFSET(5)
         move    1,6
         lsh     1,-036
         subi    1,2
@@ -1614,7 +1612,7 @@ proc_control_tty_owned:
         move    7,proc_tty_records(1)
         move    4,7
         andi    4,0377
-        ldb     5,[POINT 8,045(5),32]
+        ldb     5,[POINT 8,PROC_FDCTL_OFFSET(5),32]
         camn    4,5
         popj    17,
 proc_control_tty_owned_bad:
@@ -1656,13 +1654,13 @@ proc_tty_set_session_state_loop:
         trnn    5,0400000              ; no stable u-area: FREE/ZOMB
         jrst    proc_tty_set_session_state_next
         hlrz    5,(4)
-        ldb     1,[POINT 8,045(5),32]
+        ldb     1,[POINT 8,PROC_FDCTL_OFFSET(5),32]
         came    1,7
         jrst    proc_tty_set_session_state_next
-        move    1,045(5)
+        move    1,PROC_FDCTL_OFFSET(5)
         tlz     1,0770000
         ior     1,6
-        movem   1,045(5)
+        movem   1,PROC_FDCTL_OFFSET(5)
 proc_tty_set_session_state_next:
         addi    4,PROC_WORDS
         aoja    3,proc_tty_set_session_state_loop
@@ -2119,7 +2117,7 @@ proc_tty_read_enter:
 proc_tty_read_enter_retry:
         move    5,proc_current_ptr
         hlrz    6,(5)
-        hlrz    1,045(6)
+        hlrz    1,PROC_FDCTL_OFFSET(6)
         lsh     1,-014                 ; packed TTY state
         jumpe   1,kret_zero       ; NO_TTY -> historical CTY
         subi    1,2                    ; attached state -> tty id
@@ -2129,7 +2127,7 @@ proc_tty_read_enter_retry:
         move    2,proc_tty_records(1)
         move    3,2
         andi    3,0377                 ; record session
-        ldb     4,[POINT 8,045(6),32]
+        ldb     4,[POINT 8,PROC_FDCTL_OFFSET(6),32]
         came    3,4
         jrst    kret_neg1
         ldb     3,[POINT 8,proc_tty_records(1),27] ; foreground pgrp
@@ -2152,7 +2150,7 @@ proc_tty_input:
         jrst    kret_neg1
         move    7,proc_current_ptr
         hlrz    2,(7)                  ; u-area; keep callee-saved AC10+ intact
-        hlrz    3,045(2)
+        hlrz    3,PROC_FDCTL_OFFSET(2)
         lsh     3,-014                 ; TTY state
         jumpn   3,proc_tty_input_attached
         jumpn   4,kret_neg1       ; NO_TTY accepts CTY only
@@ -2166,7 +2164,7 @@ proc_tty_input_attached:
         move    1,proc_tty_records(4)  ; retain record until mode extraction
         move    3,1
         andi    3,0377
-        ldb     6,[POINT 8,045(2),32]
+        ldb     6,[POINT 8,PROC_FDCTL_OFFSET(2),32]
         came    3,6
         jrst    kret_neg1
         ldb     6,[POINT 8,proc_tty_records(4),27] ; foreground pgrp
@@ -2212,7 +2210,7 @@ proc_tty_output:
         move    4,1                    ; character
         move    6,proc_current_ptr
         hlrz    7,(6)
-        hlrz    1,045(7)
+        hlrz    1,PROC_FDCTL_OFFSET(7)
         lsh     1,-014
         jumpe   1,proc_tty_output_pack_cty
         subi    1,2                    ; tty id
@@ -2221,7 +2219,7 @@ proc_tty_output:
         jrst    kret_neg1
         move    3,proc_tty_records(1)
         andi    3,0377
-        ldb     5,[POINT 8,045(7),32]
+        ldb     5,[POINT 8,PROC_FDCTL_OFFSET(7),32]
         came    3,5
         jrst    kret_neg1
         lsh     1,010
@@ -2363,7 +2361,7 @@ proc_wait_event_intr:
         skipn   proc_current_slot
         jrst    proc_wait_event
         move    2,file_table
-        move    2,-2(2)                 ; packed control word at u-area 045
+        move    2,-2(2)                 ; packed process control word
         tlne    2,0100                  ; pending ALRM (event 5)
         jrst    kret_neg1
         movsi   4,PROC_WAIT_INTR_LH
@@ -2566,9 +2564,9 @@ proc_save_user:
         movei   3,proc_save_user_tail
         jrst    proc_save_common
 
-; Save a sleeping executive context.  Kernel AC0..AC17 occupy the same relative
-; shape as the user AC image, beginning at CTX_K_AC0.  Point AC2 at that image
-; and share the register-copy hot path rather than duplicating twenty stores.
+; Save a sleeping executive context.  User-preemption and sleeping-executive
+; contexts cannot coexist for one process, so both states share AC0..AC17.
+; The private kernel stack already carries the syscall's eventual user return.
 proc_save_kernel:
         move    1,proc_current_slot
         pushj   17,proc_uarea_slot
@@ -2576,7 +2574,6 @@ proc_save_kernel:
         pushj   17,proc_stack_watermark_scan
 .endif
         move    2,1
-        addi    2,CTX_K_AC0
         movei   3,proc_save_kernel_tail
 
 ; AC2 = destination AC0 base, AC3 = continuation.  PI entry already preserved
@@ -2598,20 +2595,20 @@ proc_save_common:
 
 proc_save_user_tail:
         move    1,pdp10_pi_level6
-        movem   1,CTX_U_PC(2)
+        movem   1,CTX_PC(2)
         move    1,mach_kernel_sp
-        movem   1,CTX_U_KSP(2)
+        movem   1,CTX_KSP(2)
         popj    17,
 
 proc_save_kernel_tail:
         move    1,pdp10_pi_level6
-        movem   1,-1(2)                ; CTX_K_PC
+        movem   1,CTX_PC(2)
         move    1,mach_user_sp
-        movem   1,020(2)               ; CTX_M_USER_SP
+        movem   1,CTX_M_USER_SP(2)
         move    1,mach_syscall_save
-        movem   1,021(2)               ; CTX_M_SYSCALL_SAVE
+        movem   1,CTX_M_SYSCALL_SAVE(2)
         move    1,mach_kernel_sp
-        movem   1,-2(2)                ; CTX_U_KSP
+        movem   1,CTX_KSP(2)
         popj    17,
 
 ; Restore user ACs and PI return state for proc_current_slot.
@@ -2623,9 +2620,7 @@ proc_restore_user:
 
 ; Restore a previously sleeping executive context and its syscall globals.
 proc_restore_kernel:
-        ; Kernel ACs have the same relative image layout at CTX_K_AC0.
         move    2,1
-        addi    2,CTX_K_AC0
         movei   3,proc_restore_kernel_tail
 
 ; AC2 = saved AC-image base, AC3 = context-specific continuation.  PI6 saved
@@ -2643,9 +2638,9 @@ proc_restore_pi_common:
         jrst    0(3)
 
 proc_restore_user_tail:
-        move    1,CTX_U_PC(2)
+        move    1,CTX_PC(2)
         movem   1,pdp10_pi_level6
-        move    1,CTX_U_KSP(2)
+        move    1,CTX_KSP(2)
         movem   1,mach_kernel_sp
         pushj   17,vm_activate_current
         move    1,proc_current_slot
@@ -2656,14 +2651,14 @@ proc_restore_user_tail:
         jrst    proc_restore_common
 
 proc_restore_kernel_tail:
-        move    1,-1(2)                ; CTX_K_PC
+        move    1,CTX_PC(2)
         movem   1,pdp10_pi_level6
-        setzm   -1(2)
-        move    1,020(2)               ; CTX_M_USER_SP
+        setzm   CTX_PC(2)
+        move    1,CTX_M_USER_SP(2)
         movem   1,mach_user_sp
-        move    1,021(2)               ; CTX_M_SYSCALL_SAVE
+        move    1,CTX_M_SYSCALL_SAVE(2)
         movem   1,mach_syscall_save
-        move    1,-2(2)                ; CTX_U_KSP
+        move    1,CTX_KSP(2)
         movem   1,mach_kernel_sp
         pushj   17,vm_activate_current
         move    1,proc_current_slot
@@ -2671,7 +2666,6 @@ proc_restore_kernel_tail:
         move    2,1
         movei   3,PROC_FILE_TABLE_OFFSET(1)
         movem   3,file_table
-        addi    2,CTX_K_AC0
 
 ; AC2 points at the saved AC0 image for either a user or sleeping-kernel
 ; context.  AC1..AC3 are PI-saved scratch and are restored by the PI return
@@ -2830,7 +2824,8 @@ proc_sched_restore_selected:
         pushj   17,proc_slot_ptr
         movem   1,proc_current_ptr
         hlrz    1,(1)
-        skipn   CTX_K_PC(1)
+        move    2,CTX_PC(1)
+        tlne    2,010000               ; saved PI return is user mode
         jrst    proc_restore_user
         jrst    proc_restore_kernel
 

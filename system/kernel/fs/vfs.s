@@ -361,7 +361,7 @@ vfs_mkdir:
         movei   5,7                    ; FS_MRES_OP_MKDIR
 vfs_create_common:
         move    6,file_table
-        move    6,041(6)               ; u-area 0110: process umask
+        move    6,041(6)               ; u-area 067: process umask
         andca   6,3                    ; mode &= ~umask
         move    3,6
         push    17,4                   ; nodep as C arg 5

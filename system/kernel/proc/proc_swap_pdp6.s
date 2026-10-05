@@ -43,8 +43,8 @@
         .equ    PROC_TRANSITION_RH,0200000
         .equ    PROC_UAREA_RH,0400000
         .equ    PROC_USER_MAP_BIT,02
-        .equ    PROC_FDCTL_OFFSET,045
-        .equ    PROC_SWAP_BACKING_OFFSET,0427
+        .equ    PROC_FDCTL_OFFSET,024
+        .equ    PROC_SWAP_BACKING_OFFSET,0406
         .equ    MM_TYPE_PROCESS,1
         .equ    MM_ALLOC_HIGH,1
         .equ    VM_PDP6_ALIGN_WORDS,02000

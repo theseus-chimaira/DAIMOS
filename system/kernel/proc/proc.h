@@ -88,8 +88,12 @@
 
 /*
  * Each active process allocates a stable executive u-area from
- * kernel-dynamic core.  It contains saved CPU/syscall context followed by that
- * process's private cwd/file table and kernel stack.  The u-area never moves
+ * kernel-dynamic core.  It contains one overlaid CPU context image followed by
+ * that process's private cwd/file table and kernel stack.  User-preemption and
+ * sleeping-executive register images are mutually exclusive: a sleeping
+ * syscall keeps its eventual user-return frame on the stable private kernel
+ * stack, so both scheduler states share AC0..AC17 and the saved PI return word.
+ * The u-area never moves
  * with the relocatable
  * user extent and remains resident while the process is swapped, so a sleeping
  * executive continuation cannot retain stale physical stack addresses.
@@ -98,7 +102,7 @@
  * consumes that value and repurposes the same half-word as the stable u-area
  * physical base; the three-word process descriptor therefore does not grow.
  */
-#define PROC_UAREA_WORDS        0430UL
+#define PROC_UAREA_WORDS        0407UL
 /*
  * One compact control word precedes cwd/file state.  Descriptors 0..15 are
  * ordinary two-word FILE records.  Credentials and the 9-bit process umask
@@ -109,12 +113,12 @@
  * lives in meta RH so it survives after EXIT releases the u-area and group WAIT can
  * reap zombies.
  */
-#define PROC_FDCTL_OFFSET        0045UL
-#define PROC_FILE_CWD_OFFSET     0046UL
-#define PROC_FILE_TABLE_OFFSET   0047UL
-#define PROC_CRED_OFFSET         0107UL
-#define PROC_UMASK_OFFSET        0110UL
-#define PROC_USTACK_BASE         0111UL
+#define PROC_FDCTL_OFFSET        0024UL
+#define PROC_FILE_CWD_OFFSET     0025UL
+#define PROC_FILE_TABLE_OFFSET   0026UL
+#define PROC_CRED_OFFSET         0066UL
+#define PROC_UMASK_OFFSET        0067UL
+#define PROC_USTACK_BASE         0070UL
 #define PROC_SESSION_MASK         0377UL
 #define PROC_SESSION_SHIFT            3U
 #define PROC_DOMAIN_MASK          0377UL

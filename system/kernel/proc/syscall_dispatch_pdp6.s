@@ -873,7 +873,7 @@ native_sys_exec:
         ; result buffer instead of consuming five words on the already-tight
         ; process-private kernel stack.  Failure leaves the buffer untouched.
         move    3,file_table
-        subi    3,047                  ; stable u-area base / saved AC0
+        subi    3,026                  ; stable u-area base / saved AC0
         pushj   17,exec_replace_current
         jumpe   1,native_sys_exec_commit
         came    1,[-2]                 ; EXEC_REPLACE_FATAL after low-core commit
@@ -882,7 +882,7 @@ native_sys_exec:
         jrst    proc_exit_current
 native_sys_exec_commit:
         move    6,file_table
-        subi    6,047
+        subi    6,026
         move    1,(6)                  ; replacement entry
         move    2,1(6)                 ; replacement user stack
         move    3,2(6)                 ; argc

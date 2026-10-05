@@ -19,7 +19,7 @@
         .globl  mm_core_words
 
         .equ    PROC_WORDS,3
-        .equ    PROC_UAREA_WORDS,0430
+        .equ    PROC_UAREA_WORDS,0407
         .equ    PROC_STATE_LH_MASK,0700000
         .equ    PROC_UAREA_RH,0400000
 

@@ -81,7 +81,7 @@ file_current_cred:
         trnn    7,0400000
         jrst    file_current_cred_zero
         hlrz    7,7
-        move    6,0107(7)
+        move    6,066(7)
         popj    17,
 
 file_current_cred_zero:
