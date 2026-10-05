@@ -18,6 +18,13 @@
         .equ    PROC_STATE_LH_MASK,0700000
         .equ    PROC_STATE_RUN,0200000
         .equ    PROC_STATE_SLEEP,0300000
+        .equ    PROC_STATE_STOP,0600000
+        .equ    PROC_NICE_LH_MASK,077
+        .equ    PROC_CPU_LH_MASK,017
+        .equ    PROC_SLEEP_LH_MASK,07
+        .equ    PROC_WAIT_LH_FIELD_MASK,03
+        .equ    PROC_NICE_BIAS,024
+        .equ    PROC_USER_MAP_BIT,2
         .equ    PROC_WAIT_LH_MASK,060000
         .equ    PROC_WAIT_EVENT_LH,020000
         .equ    PROC_WAIT_CHILD_LH,040000
@@ -29,6 +36,7 @@
         .equ    PROC_TIMER_DUE_LH,0200000
         .equ    PROC_TIMER_TAG_RH,0400000
         .equ    PROC_TIMER_CLOCK_MASK,0377777
+        .equ    PROC_FDCTL_OFFSET,045
         .equ    PROC_FILE_TABLE_OFFSET,047
         .equ    PROC_CRED_OFFSET,0107
         .equ    PROC_UMASK_OFFSET,0110
@@ -67,6 +75,9 @@
         .globl  proc_timer_next
         .globl  proc_sched_resched_current
         .globl  proc_swap_service_one
+        .globl  proc_swap_records
+        .globl  mm_is_pinned
+        .globl  proc_swap_victim
         .globl  proc_record_kernel_sp
         .globl  proc_exit_current
         .globl  proc_finish_slot
@@ -2345,6 +2356,118 @@ proc_timer_service_done:
         popj    17,
 proc_timer_service_none:
         setzm   proc_timer_next
+        popj    17,
+
+; Choose the best noncurrent resident process for swap-out.
+; This cold memory-pressure path mirrors proc.c scoring but keeps loop state in
+; callee-saved AC10..AC16 rather than KCC's eleven-word stack frame.
+; AC10 exclude slot, AC11 scan slot, AC12 descriptor, AC13 best slot,
+; AC14 best score, AC15 sched LH, AC16 candidate score.
+proc_swap_victim:
+        add     17,[7,,7]
+        movei   0,-6(17)
+        hrli    0,010
+        blt     0,(17)                  ; save AC10..AC16
+        move    010,1                   ; excluded owner
+        movei   011,1
+        move    012,proc_table
+        addi    012,PROC_WORDS
+        setz    013,                    ; no best slot yet
+        setz    014,                    ; best score
+
+proc_swap_victim_loop:
+        caml    011,proc_high_slot
+        jrst    proc_swap_victim_done
+        camn    011,010
+        jrst    proc_swap_victim_next
+        camn    011,proc_current_slot
+        jrst    proc_swap_victim_next
+
+        hlrz    015,2(012)              ; packed scheduling LH
+        move    016,015
+        andi    016,PROC_STATE_LH_MASK
+        caie    016,PROC_STATE_SLEEP
+        cain    016,PROC_STATE_STOP
+        jrst    proc_swap_victim_state_ok
+        caie    016,PROC_STATE_RUN
+        jrst    proc_swap_victim_next
+
+proc_swap_victim_state_ok:
+        move    1,(012)                 ; meta
+        trne    1,PROC_TRANSITION_RH
+        jrst    proc_swap_victim_next
+        trnn    1,0400000               ; PROC_F_UAREA in meta RH
+        jrst    proc_swap_victim_next
+        hlrz    1,1                     ; stable u-area base
+        move    2,PROC_FDCTL_OFFSET(1)
+        trne    2,PROC_USER_MAP_BIT
+        jrst    proc_swap_victim_next
+        move    1,proc_swap_records
+        add     1,011
+        skipn   (1)
+        jrst    proc_swap_victim_next
+        hrrz    1,1(012)                ; resident VM relocation base
+        jumpe   1,proc_swap_victim_next
+        pushj   17,mm_is_pinned
+        jumpn   1,proc_swap_victim_next
+
+        ; Sleeping/stopped jobs strongly outrank runnable jobs.  Preserve the
+        ; exact C policy score so victim choice does not change.
+        move    1,015
+        andi    1,PROC_STATE_LH_MASK
+        caie    1,PROC_STATE_SLEEP
+        cain    1,PROC_STATE_STOP
+        jrst    proc_swap_victim_sleep_score
+
+        move    016,015                 ; recent CPU penalty
+        lsh     016,-6
+        andi    016,PROC_CPU_LH_MASK
+        move    1,015                   ; biased nice
+        andi    1,PROC_NICE_LH_MASK
+        add     016,1
+        addi    016,01000
+        caig    1,PROC_NICE_BIAS
+        jrst    proc_swap_victim_consider
+        subi    1,PROC_NICE_BIAS
+        lsh     1,3                     ; *010
+        add     016,1
+        addi    016,02000
+        jrst    proc_swap_victim_consider
+
+proc_swap_victim_sleep_score:
+        move    016,015
+        lsh     016,-012                ; sleep age is LH bits 10..12
+        andi    016,PROC_SLEEP_LH_MASK
+        lsh     016,6                   ; *0100
+        addi    016,04000
+        move    1,015
+        lsh     1,-015                  ; wait class is LH bits 13..14
+        andi    1,PROC_WAIT_LH_FIELD_MASK
+        jumpe   1,proc_swap_victim_consider
+        addi    016,040
+
+proc_swap_victim_consider:
+        jumpe   013,proc_swap_victim_take
+        camg    016,014
+        jrst    proc_swap_victim_next
+proc_swap_victim_take:
+        move    013,011
+        move    014,016
+
+proc_swap_victim_next:
+        addi    012,PROC_WORDS
+        aoja    011,proc_swap_victim_loop
+
+proc_swap_victim_done:
+        move    1,013
+        jumpn   1,proc_swap_victim_return
+        seto    1,
+proc_swap_victim_return:
+        movei   0,-6(17)
+        hrl     0,0
+        hrri    0,010
+        blt     0,016                   ; restore AC10..AC16
+        sub     17,[7,,7]
         popj    17,
 
 proc_idle_loop:

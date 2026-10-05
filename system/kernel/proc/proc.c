@@ -371,6 +371,14 @@ proc_exit_finish(int status)
 }
 
 #ifndef PROC_EVENT_APPLY_PDP6_ASM
+/** Publish STOP/CONT status and wake the child's parent in the C fallback. */
+static void
+proc_child_report(struct proc *child, unsigned int report)
+{
+        proc_report_set(child, report);
+        proc_notify_parent(PROC_PARENT_SLOT(child));
+}
+
 /** Apply one validated event to a process, including fatal/STOP/CONT semantics. */
 int
 proc_event_apply(unsigned int slot, unsigned int event)
@@ -654,6 +662,7 @@ proc_sched_tick_select(void)
         return proc_select_runnable(elapsed_ticks);
 }
 
+#ifndef PROC_SWAP_VICTIM_PDP6_ASM
 /** Choose the best swappable noncurrent process, or -1 when none is suitable. */
 int
 proc_swap_victim(unsigned int exclude_owner)
@@ -701,3 +710,4 @@ proc_swap_victim(unsigned int exclude_owner)
         }
         return best == 0 ? -1 : best;
 }
+#endif /* PROC_SWAP_VICTIM_PDP6_ASM */

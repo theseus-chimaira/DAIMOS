@@ -294,7 +294,7 @@ ${BUILD}/bootbanner_generated.s: ${VERSION_FILE}
 
 ${KCORE_C_ASM}: ${KCORE_C_SRCS} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	@base=`basename "$@" .s`; src=; extra=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; if test "$$base" = proc; then extra=-DPROC_EVENT_APPLY_PDP6_ASM=1; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S "$$src" -o "$@"
+	@base=`basename "$@" .s`; src=; extra=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; if test "$$base" = proc; then extra="-DPROC_EVENT_APPLY_PDP6_ASM=1 -DPROC_SWAP_VICTIM_PDP6_ASM=1"; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S "$$src" -o "$@"
 
 
 ${BUILD}/d6lz_fixed.s: ../stand/pdp6/common/decompressor.inc
@@ -319,7 +319,7 @@ ${BUILD}/module_runtime.s: modules/module_runtime.c modules/module_runtime_pdp6.
 
 ${BUILD}/vm_backend.s: ${VM_BACKEND_C} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S ${VM_BACKEND_C} -o $@
+	@extra=; if test "${VM_BACKEND}" = pdp6; then extra=-DVM_SPACE_CAN_SWAP_PDP6_ASM=1; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S ${VM_BACKEND_C} -o $@
 
 ${BUILD}/proc_swap.s: ${VM_SWAP_C} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}

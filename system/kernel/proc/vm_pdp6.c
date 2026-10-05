@@ -105,6 +105,7 @@ vm_space_destroy(struct proc *p, unsigned int owner)
         return 0;
 }
 
+#ifndef VM_SPACE_CAN_SWAP_PDP6_ASM
 /** Return whether a resident extent is movable to swap rather than MM-pinned. */
 int
 vm_space_can_swap(const struct proc *p)
@@ -114,6 +115,7 @@ vm_space_can_swap(const struct proc *p)
         base = VM_PDP6_BASE(p);
         return base != 0UL && !mm_is_pinned(base);
 }
+#endif /* VM_SPACE_CAN_SWAP_PDP6_ASM */
 
 /** Move one inactive process extent and republish its physical relocation base. */
 int
