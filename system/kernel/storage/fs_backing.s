@@ -97,11 +97,6 @@ fs_backing_direct_io:
         move    4,1
         hlrz    6,4                     ; preserve selector/device flags
         hrrz    4,4                     ; common physical base
-        trnn    6,0100000               ; singleton boot-root logical I/O?
-        jrst    fs_backing_direct_not_root
-        jumpe   7,fs_backing_direct_root_read
-        jrst    fs_backing_direct_not_root
-fs_backing_direct_root_read:
 fs_backing_direct_not_root:
         trnn    6,0200000               ; compact INTERLEAVE set?
         jrst    fs_backing_direct_single
@@ -172,22 +167,21 @@ fs_backing_direct_root:
         jrst    fs_backing_direct_root_drm
         jumpn   7,fs_backing_direct_root_write
         pushj   17,fs_backing_direct_read_jump
-        jumpn   1,fs_backing_root_error
-        aos     mfsdev_d6set_reads
-        popj    17,
+        jrst    fs_backing_direct_root_done
 fs_backing_direct_root_write:
         pushj   17,fs_backing_direct_write_jump
-        jumpn   1,fs_backing_root_error
-        aos     mfsdev_d6set_writes
-        popj    17,
+        jrst    fs_backing_direct_root_done
 fs_backing_direct_root_drm:
         jumpn   7,fs_backing_direct_root_drm_write
         pushj   17,fs_backing_direct_drm_read_jump
-        jumpn   1,fs_backing_root_error
-        aos     mfsdev_d6set_reads
-        popj    17,
+        jrst    fs_backing_direct_root_done
 fs_backing_direct_root_drm_write:
         pushj   17,fs_backing_direct_drm_write_jump
+fs_backing_direct_root_done:
         jumpn   1,fs_backing_root_error
+        jumpe   7,fs_backing_direct_root_read_done
         aos     mfsdev_d6set_writes
+        popj    17,
+fs_backing_direct_root_read_done:
+        aos     mfsdev_d6set_reads
         popj    17,

@@ -210,7 +210,12 @@ proc_run_slot_found:
         move    2,012
         move    3,014
         pushj   17,exec_load_process
-        jumpl   1,proc_run_claimed_bad
+        jumpge  1,proc_run_exec_ok
+        came    1,[-2]
+        jrst    proc_run_exec_bad
+        movei   2,011
+        jrst    proc_run_claimed_bad
+proc_run_exec_ok:
         hlrz    011,(013)
 
         add     17,[3,,3]
@@ -225,8 +230,8 @@ proc_run_slot_found:
         pushj   17,mm_alloc_aligned
         move    014,-2(17)
         sub     17,[3,,3]
-        jumpn   1,proc_run_claimed_bad
-        jumpe   014,proc_run_claimed_bad
+        jumpn   1,proc_run_mm_bad
+        jumpe   014,proc_run_mm_bad
 
         move    1,014
         movei   2,PROC_UAREA_WORDS
@@ -249,7 +254,7 @@ proc_run_watermark_loop:
         move    1,6
         movei   2,1
         pushj   17,sixbit_record_words
-        jumpe   1,proc_run_claimed_bad
+        jumpe   1,proc_run_start_record_bad
         add     6,1
         add     17,[4,,4]
         move    1,013
@@ -287,10 +292,10 @@ proc_run_watermark_loop:
         move    2,1(010)
         move    3,2(010)
         pushj   17,proc_child_hierarchy
-        jumpn   1,proc_run_claimed_bad
+        jumpn   1,proc_run_hierarchy_bad
 
         skipn   7,file_table
-        jrst    proc_run_claimed_bad
+        jrst    proc_run_filetable_bad
         move    4,-1(7)
         movem   4,PROC_FILE_CWD_OFFSET(014)
         ; file_table points at parent u-area 047; credentials/umask are 0107/0110.
@@ -306,7 +311,7 @@ proc_run_map_loop:
         move    1,2
         and     1,[017,,017]
         came    1,2
-        jrst    proc_run_claimed_bad
+        jrst    proc_run_fdmap_bad
         hlrz    1,2
         andi    1,017                   ; child fd 0..15
         hrrz    2,2
@@ -314,14 +319,14 @@ proc_run_map_loop:
         movei   7,1
         lsh     7,0(1)
         tdne    4,7
-        jrst    proc_run_claimed_bad
+        jrst    proc_run_fdmap_bad
         ior     4,7
 
         move    7,2
         lsh     7,1
         add     7,file_table
         skipn   (7)
-        jrst    proc_run_claimed_bad
+        jrst    proc_run_fdmap_bad
         lsh     1,1
         add     1,014
         addi    1,PROC_FILE_TABLE_OFFSET
@@ -344,6 +349,15 @@ proc_run_map_done:
 
 proc_run_startup_failed:
         sub     17,[4,,4]
+        jrst    proc_run_claimed_bad
+
+proc_run_exec_bad:
+proc_run_mm_bad:
+proc_run_start_record_bad:
+proc_run_startup_bad:
+proc_run_hierarchy_bad:
+proc_run_filetable_bad:
+proc_run_fdmap_bad:
         jrst    proc_run_claimed_bad
 
 proc_run_claimed_bad:

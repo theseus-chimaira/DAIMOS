@@ -21,10 +21,17 @@ file_check_access:
         movem   2,-7(17)
         movei   2,-6(17)               ; seven-word struct vfs_stat
         pushj   17,vfs_stat
-        jumpn   1,file_check_access_done
+        jumpn   1,file_check_access_stat_bad
         movei   1,-6(17)
         move    2,-7(17)
         pushj   17,file_access_stat
+        jumpn   1,file_check_access_perm_bad
+        jrst    file_check_access_done
+file_check_access_stat_bad:
+        movni   1,2
+        jrst    file_check_access_done
+file_check_access_perm_bad:
+        movni   1,3
 file_check_access_done:
         sub     17,[010,,010]
         popj    17,

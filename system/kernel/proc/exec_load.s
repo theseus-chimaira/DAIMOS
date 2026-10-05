@@ -96,7 +96,6 @@ exec_load_process:
         move    11,2                    ; owner
         move    12,3                    ; path
         setzm   -003(17)                ; no new RT reservation yet
-
         jumpe   10,exec_load_fail
         jumpe   12,exec_load_fail
         move    1,12

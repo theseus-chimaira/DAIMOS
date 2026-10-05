@@ -1332,11 +1332,12 @@ static int
 util_render_manual(const kword_t *topic, struct u_io *io)
 {
         int rc;
+        int primary;
 
-        rc = util_render_manual_path("/SYSTEM/MANUAL/PAGES", topic, io);
-        if (rc == 0)
+        primary = util_render_manual_path("/SYSTEM/MANUAL/PAGES", topic, io);
+        if (primary == 0)
                 return 0;
-        if (rc == 2) {
+        if (primary == 2) {
                 (void)util_not_available(io, "MANUAL");
                 return 1;
         }
@@ -1348,7 +1349,13 @@ util_render_manual(const kword_t *topic, struct u_io *io)
                 (void)util_not_available(io, "MANUAL");
                 return 1;
         }
-        (void)util_not_available(io, "MANUAL");
+        if (primary < 0 && rc < 0) {
+                (void)util_not_available(io, "MANUAL");
+                return 1;
+        }
+        (void)u_puts(io->err_fd, "MAN: NO ENTRY: ");
+        (void)u_put_s6(io->err_fd, topic);
+        (void)u_crlf(io->err_fd);
         return 1;
 }
 #endif
@@ -1652,15 +1659,15 @@ util_du_walk(const kword_t *path, unsigned int depth, kword_t *totalp,
 static int
 util_cmd_du(int argc, kword_t **argv, struct u_io *io)
 {
-        kword_t dot[U_PATH_WORDS];
+        kword_t cwd[U_PATH_WORDS];
         kword_t total;
         int a;
         int rc;
 
         if (argc == 1) {
-                if (u_s6_pack(dot, U_PATH_WORDS, ".") != 0)
+                if (dsys_getcwd(cwd, U_PATH_WORDS) != 0)
                         return 1;
-                return util_du_walk(dot, 0U, &total, io);
+                return util_du_walk(cwd, 0U, &total, io);
         }
         rc = 0;
         for (a = 1; a < argc; ++a)
