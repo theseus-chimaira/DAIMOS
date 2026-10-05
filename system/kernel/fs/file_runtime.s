@@ -13,7 +13,15 @@
 ; wrapper.  The eighth stack word preserves NEED across the seven-word vfs_stat().
         .globl  file_check_access
         .globl  file_access_stat
+        .globl  file_open
+        .globl  file_lookup_path
+        .globl  file_parent_path
         .globl  vfs_stat
+        .globl  vfs_create
+        .globl  vfs_truncate
+        .globl  pipe_fifo_open
+        .globl  file_new_fd
+        .globl  file_table
 file_check_access:
         caile   2,7
         jrst    kret_neg1
@@ -75,8 +83,140 @@ file_current_cred:
         hlrz    7,7
         move    6,0107(7)
         popj    17,
+
 file_current_cred_zero:
         setz    6,
+        popj    17,
+
+; int file_open(const kword_t *path, unsigned int flags)
+; Compact PDP-6 spelling of the C policy.  AC10 keeps PATH, AC11 FLAGS,
+; AC12 the allocated fd and AC13 its struct file pointer.  The 14-word local
+; record contains node, parent dir, five-word leaf name, and seven-word stat.
+file_open:
+        push    17,10
+        push    17,11
+        push    17,12
+        push    17,13
+        move    10,1
+        move    11,2
+        add     17,[016,,016]
+
+        movei   2,-015(17)             ; node
+        move    1,10
+        pushj   17,file_lookup_path
+        jumpe   1,file_open_stat
+
+        trnn    11,010                 ; FILE_O_CREAT
+        jrst    file_open_fail
+        movei   3,-013(17)             ; leaf
+        movei   2,-014(17)             ; parent dir
+        move    1,10
+        pushj   17,file_parent_path
+        jumpn   1,file_open_fail
+        move    1,-014(17)
+        movei   2,3                    ; write + search
+        pushj   17,file_check_access
+        jumpn   1,file_open_fail
+        move    1,-014(17)
+        movei   2,-013(17)
+        movei   3,0666
+        movei   4,-015(17)
+        pushj   17,vfs_create
+        jumpn   1,file_open_fail
+
+file_open_stat:
+        move    1,-015(17)
+        movei   2,-6(17)
+        pushj   17,vfs_stat
+        jumpn   1,file_open_fail
+
+        setz    12,                    ; requested access mask
+        trnn    11,1                   ; FILE_O_READ
+        jrst    file_open_need_write
+        tro     12,4
+file_open_need_write:
+        trne    11,2                   ; FILE_O_WRITE
+        jrst    file_open_add_write
+        trnn    11,020                 ; FILE_O_TRUNC
+        jrst    file_open_access
+file_open_add_write:
+        tro     12,2
+file_open_access:
+        movei   1,-6(17)
+        move    2,12
+        pushj   17,file_access_stat
+        jumpn   1,file_open_fail
+
+        trnn    11,020
+        jrst    file_open_newfd
+        move    1,-6(17)               ; st.type
+        caie    1,2                    ; VFS_TYPE_REG
+        jrst    file_open_newfd
+        move    1,-015(17)
+        setz    2,
+        pushj   17,vfs_truncate
+        jumpn   1,file_open_fail
+
+file_open_newfd:
+        setz    3,
+        move    1,-6(17)
+        caie    1,1                    ; VFS_TYPE_DIR
+        jrst    file_open_newfd_call
+        movei   3,1
+file_open_newfd_call:
+        move    1,-015(17)
+        move    2,11
+        pushj   17,file_new_fd
+        jumpl   1,file_open_return
+        move    12,1
+        move    13,1
+        ash     13,1
+        add     13,file_table
+
+        move    1,-6(17)
+        caie    1,7                    ; VFS_TYPE_FIFO
+        jrst    file_open_regular
+        move    1,-015(17)
+        move    2,(13)
+        pushj   17,pipe_fifo_open
+        jumpe   1,file_open_fifo_fail
+        move    2,(13)
+        and     2,[-070710000000]
+        ior     1,2
+        movem   1,(13)
+        setzm   1(13)
+        move    1,12
+        jrst    file_open_return
+
+file_open_fifo_fail:
+        setzm   (13)
+        setzm   1(13)
+        seto    1,
+        jrst    file_open_return
+
+file_open_regular:
+        move    1,-6(17)
+        caie    1,2                    ; VFS_TYPE_REG
+        jrst    file_open_append
+        movsi   1,010                  ; FILE_META_REGULAR
+        iorm    1,(13)
+file_open_append:
+        trnn    11,4                   ; FILE_O_APPEND
+        jrst    file_open_success
+        move    1,-3(17)               ; st.size_words
+        movem   1,1(13)
+file_open_success:
+        move    1,12
+        jrst    file_open_return
+
+file_open_fail:
+        seto    1,
+file_open_return:
+        sub     17,[016,,016]
+        pop     17,13
+        pop     17,12
+        pop     17,11
+        pop     17,10
         popj    17,
 
 ; kword_t vfs_current_owner(void)

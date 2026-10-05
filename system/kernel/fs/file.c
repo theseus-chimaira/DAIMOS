@@ -145,6 +145,7 @@ file_parent_path(const kword_t *path, vnode_t *dirp,
 extern struct file *file_find(int fd);
 extern int file_new_fd(vnode_t node, unsigned int flags, int isdir);
 
+#ifndef FILE_OPEN_PDP6_ASM
 int
 file_open(const kword_t *path, unsigned int flags)
 {
@@ -202,6 +203,7 @@ file_open(const kword_t *path, unsigned int flags)
                 fp->offset = st.size_words;
         return fd;
 }
+#endif
 
 
 
