@@ -207,7 +207,6 @@ d6fs_boot_runtime_init(const struct d6fs_super_info *super,
         reader->backing.blocks = super->total_blocks;
         D6FS_RUNTIME_SUPER_BLOCK(reader, 0U) = super_a;
         D6FS_RUNTIME_SUPER_BLOCK(reader, 1U) = super_b;
-        D6FS_READER_CACHE_BLOCK(reader) = D6FS_CACHE_INVALID;
 
         if (writable) {
                 kword_t selected_block;

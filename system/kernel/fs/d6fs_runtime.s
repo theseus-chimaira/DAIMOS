@@ -187,14 +187,12 @@ d6fs_reader_get_block:
         movei   3,fs_block_workspace     ; shared transfer block
         pushj   17,fs_backing_read
         jumpn   1,d6fs_get_block_read_fail
-        movem   011,3(010)
         move    1,012
         movei   2,fs_block_workspace
         pushj   17,bcache_store          ; miss becomes a clean cache entry
         movei   1,fs_block_workspace
         jrst    d6fs_get_block_read_done
 d6fs_get_block_cache_hit:
-        movem   011,3(010)
         movei   1,fs_block_workspace
         jrst    d6fs_get_block_read_done
 d6fs_get_block_read_fail:
@@ -754,7 +752,6 @@ d6fs_mount_validated:
         movem   6,1(5)
         move    4,[fs_backing_direct_read,,fs_backing_direct_write]
         movem   4,016(5)                 ; replace root scratch with trusted ops
-        setom   3(5)                     ; D6FS_CACHE_INVALID
         setz    1,
         jrst    d6fs_mount_done
 
@@ -952,19 +949,16 @@ d6fs_reader_commit_cache:
         movei   3,fs_block_workspace
         pushj   17,fs_backing_write
         jumpn   1,d6fs_reader_commit_fail_saved
-        movem   011,3(010)
         move    1,012
         movei   2,fs_block_workspace
         pushj   17,bcache_store          ; refresh only after write-through
         setz    1,
         jrst    d6fs_reader_commit_done
 d6fs_reader_commit_fail_saved:
-        setom   3(010)
         seto    1,
 d6fs_reader_commit_done:
         jrst    d6fs_restore3
 d6fs_reader_commit_invalidate:
-        setom   3(1)
 d6fs_reader_commit_bad:
         jrst    kret_neg1
 

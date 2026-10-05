@@ -142,8 +142,8 @@ struct d6fs_reader {
         struct fs_backing backing;
 };
 
-/* super.state is boot-only; after mount it is the runtime cache tag. */
-#define D6FS_READER_CACHE_BLOCK(reader) ((reader)->super.state)
+/* super.state is boot-only.  Runtime block identity is owned by BCACHE;
+ * resident D6FS deliberately keeps no second private cache tag. */
 
 /*
  * Encode/decode one inline extent.  The run word stores START24|LENLOW12;
