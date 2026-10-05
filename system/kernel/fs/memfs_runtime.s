@@ -6,6 +6,7 @@
         .globl  memfs_data_dirty
         .globl  kret_zero
         .globl  kret_neg1
+        .globl  kret_neg2
 
 ; int memfs_read_words(const struct memfs *fs, vnode_t node,
 ;     unsigned int off, kword_t *buf, unsigned int nwords)
@@ -212,6 +213,31 @@ memfs_find_child_fail:
 memfs_find_child_done:
         jrst    memfs_restore1
 
+; Validate one writable parent directory and look up NAME beneath it.
+; AC1=fs, AC2=directory vnode, AC3=name.  Return AC1=child slot or -1 when
+; absent, AC2=validated parent slot.  Invalid names/parents return -2 so CREATE
+; can distinguish a valid absent child from an invalid mutation context.
+memfs_mutation_child:
+        move    7,1
+        move    0,2
+        move    1,3
+        pushj   17,vfs_name_valid
+        jumpe   1,kret_neg2
+        move    1,7
+        move    2,0
+        pushj   17,memfs_slot
+        jumpl   1,kret_neg2
+        move    2,1
+        ldb     4,[POINT 3,5(5),20]
+        caie    4,1
+        jrst    kret_neg2
+        trnn    6,4
+        jrst    kret_neg2
+        move    1,7
+        pushj   17,memfs_find_child
+        move    2,0                    ; find_child preserves parent slot in AC0
+        popj    17,
+
 ; void memfs_clear_node(struct memfs_node *np)
         .globl  memfs_clear_node
 memfs_clear_node:
@@ -295,24 +321,15 @@ memfs_new_node:
         move    015,5                   ; type
         jumpe   010,memfs_new_fail
         jumpe   014,memfs_new_fail
-        move    1,012
-        pushj   17,vfs_name_valid
-        jumpe   1,memfs_new_fail
-        move    1,010
-        move    2,011
-        pushj   17,memfs_slot
-        jumpl   1,memfs_new_fail
-        move    011,1                   ; parent slot
-        ldb     4,[POINT 3,5(5),20]
-        caie    4,1
-        jrst    memfs_new_fail
-        trnn    6,4                     ; parent writable
-        jrst    memfs_new_fail
         move    1,010
         move    2,011
         move    3,012
-        pushj   17,memfs_find_child
-        jumpge  1,memfs_new_fail        ; duplicate name
+        pushj   17,memfs_mutation_child
+        camn    1,[-1]
+        jrst    memfs_new_parent_ok     ; valid parent, no duplicate child
+        jrst    memfs_new_fail
+memfs_new_parent_ok:
+        move    011,2                   ; parent slot
         move    3,(010)
         addi    3,7                     ; slot 1
         movei   4,1
@@ -374,24 +391,12 @@ memfs_unlink:
         move    011,2                   ; dir, then parent
         move    012,3                   ; name
         jumpe   010,memfs_restore4_fail
-        move    1,012
-        pushj   17,vfs_name_valid
-        jumpe   1,memfs_restore4_fail
-        move    1,010
-        move    2,011
-        pushj   17,memfs_slot
-        jumpl   1,memfs_restore4_fail
-        move    011,1
-        ldb     4,[POINT 3,5(5),20]
-        caie    4,1
-        jrst    memfs_restore4_fail
-        trnn    6,4
-        jrst    memfs_restore4_fail
         move    1,010
         move    2,011
         move    3,012
-        pushj   17,memfs_find_child
+        pushj   17,memfs_mutation_child
         jumpl   1,memfs_restore4_fail
+        move    011,2                   ; parent slot
         move    013,1                   ; victim slot
         move    3,(010)
         addi    3,7                     ; slot 1
@@ -453,43 +458,22 @@ memfs_rename:
         move    013,4                   ; newdir
         move    014,7                   ; newname
         jumpe   010,memfs_rename_fail
-        move    1,012
-        pushj   17,vfs_name_valid
-        jumpe   1,memfs_rename_fail
-        move    1,014
-        pushj   17,vfs_name_valid
-        jumpe   1,memfs_rename_fail
         move    1,010
         move    2,011
-        pushj   17,memfs_slot
-        jumpl   1,memfs_rename_fail
-        move    015,1                   ; old parent
-        ldb     4,[POINT 3,5(5),20]
-        caie    4,1
-        jrst    memfs_rename_fail
-        trnn    6,4
-        jrst    memfs_rename_fail
-        move    1,010
-        move    2,013
-        pushj   17,memfs_slot
-        jumpl   1,memfs_rename_fail
-        move    016,1                   ; new parent
-        ldb     4,[POINT 3,5(5),20]
-        caie    4,1
-        jrst    memfs_rename_fail
-        trnn    6,4
-        jrst    memfs_rename_fail
-        move    1,010
-        move    2,015
         move    3,012
-        pushj   17,memfs_find_child
+        pushj   17,memfs_mutation_child
         jumpl   1,memfs_rename_fail
+        move    015,2                   ; old parent
         move    011,1                   ; victim slot
         move    1,010
-        move    2,016
+        move    2,013
         move    3,014
-        pushj   17,memfs_find_child
-        jumpge  1,memfs_rename_fail     ; destination exists
+        pushj   17,memfs_mutation_child
+        camn    1,[-1]
+        jrst    memfs_rename_target_ok  ; valid parent, destination absent
+        jrst    memfs_rename_fail
+memfs_rename_target_ok:
+        move    016,2                   ; new parent
         move    4,011
         imuli   4,7
         add     4,(010)                 ; victim np
