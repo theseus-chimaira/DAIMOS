@@ -53,18 +53,20 @@ file_access_test:
         jrst    kret_zero
 
 ; Return current uid,,gid in AC6, or zero for bootstrap/no-uarea context.
+; AC2..AC4 are preserved so short privilege checks do not need to spill normal
+; syscall arguments.  AC5..AC7 are caller-scratch in these resident wrappers.
 file_current_cred:
-        skipn   3,proc_table
+        skipn   5,proc_table
         jrst    file_current_cred_zero
-        skipn   4,proc_current_slot
+        skipn   6,proc_current_slot
         jrst    file_current_cred_zero
-        imuli   4,3
-        add     4,3
-        move    5,(4)
-        trnn    5,0400000
+        imuli   6,3
+        add     6,5
+        move    7,(6)
+        trnn    7,0400000
         jrst    file_current_cred_zero
-        hlrz    5,5
-        move    6,0107(5)
+        hlrz    7,7
+        move    6,0107(7)
         popj    17,
 file_current_cred_zero:
         setz    6,

@@ -434,14 +434,11 @@ native_sys_dtfs_format:
         jrst    kret_neg1
 
 native_sys_dtfs_mount:
-        ; AC1 device path, AC2 mount path, AC3 flags.
+        ; AC1 device path, AC2 mount path, AC3 flags.  file_check_root preserves
+        ; AC2..AC4, so only the AC1 path needs saving across the privilege test.
         push    17,1
-        push    17,2
-        push    17,3
         pushj   17,file_check_root
         jumpn   1,native_sys_dtfs_mount_denied
-        pop     17,3
-        pop     17,2
         pop     17,1
         push    17,2                    ; preserve mount path
         push    17,3                    ; preserve flags
@@ -469,7 +466,7 @@ native_sys_dtfs_mount_bad2:
         pop     17,0
         jrst    %L137
 native_sys_dtfs_mount_denied:
-        sub     17,[3,,3]
+        pop     17,0
         jrst    kret_neg1
 
 native_sys_unmount:
@@ -595,17 +592,11 @@ native_sys_ttyctl:
         jumpe   2,native_sys_ttyctl_get
         caie    2,1
         jrst    kret_neg1
-        push    17,3
-        push    17,4
         pushj   17,file_check_root
-        jumpn   1,native_sys_ttyctl_set_bad
-        move    1,-1(17)              ; logical tty
-        move    2,(17)                ; requested sink
-        sub     17,[2,,2]
+        jumpn   1,kret_neg1
+        move    1,3                    ; logical tty
+        move    2,4                    ; requested sink
         jrst    proc_tty_output_route_set
-native_sys_ttyctl_set_bad:
-        sub     17,[2,,2]
-        jrst    kret_neg1
 native_sys_ttyctl_get:
         move    1,3
         jrst    proc_tty_output_route_get
@@ -684,10 +675,9 @@ native_sys_fsinfo_done:
 ; PID-1/root storage activation policy.  Discovery and module installation
 ; remain boot work; this call only enables or disables an available service.
 native_sys_storagectl:
-        push    17,2
         pushj   17,file_check_root
         jumpn   1,native_sys_storagectl_bad
-        move    6,(17)                 ; activation mask
+        move    6,2                    ; activation mask
         jumpl   6,native_sys_storagectl_bad
         caile   6,3
         jrst    native_sys_storagectl_bad
@@ -716,7 +706,6 @@ native_sys_storagectl_log_ok:
 native_sys_storagectl_bad:
         seto    1,
 native_sys_storagectl_done:
-        sub     17,[1,,1]
         popj    17,
 
 native_sys_mkfifo:
@@ -918,15 +907,8 @@ native_sys_dtc_read_block:
 ; Root-only raw DECtape block write used by transient filesystem formatters.
 ; AC2=unit, AC3=physical block, AC4=user source buffer.
 native_sys_dtc_write_block:
-        push    17,2
-        push    17,3
-        push    17,4
         pushj   17,file_check_root
-        jumpn   1,native_sys_dtc_write_denied
-        move    2,-2(17)
-        move    3,-1(17)
-        move    4,(17)
-        sub     17,[3,,3]
+        jumpn   1,kret_neg1
         push    17,010
         movei   010,1                   ; write operation
 
@@ -959,10 +941,6 @@ native_sys_dtc_block_bad:
         pushj   17,vm_user_mapping_release
 native_sys_dtc_block_bad_map:
         pop     17,010
-        jrst    kret_neg1
-
-native_sys_dtc_write_denied:
-        sub     17,[3,,3]
         jrst    kret_neg1
 
 
@@ -1130,14 +1108,10 @@ native_sys_rtctl:
         hrrz    1,2
         caie    1,1                    ; only ENABLE acquires RT privilege
         jrst    proc_rt_control
-        push    17,1
         pushj   17,file_check_root
-        jumpn   1,native_sys_rtctl_denied
-        pop     17,1
+        jumpn   1,kret_neg1
+        hrrz    1,2
         jrst    proc_rt_control
-native_sys_rtctl_denied:
-        pop     17,0
-        jrst    kret_neg1
 
 native_sys_procctl:
         hrrz    2,2
