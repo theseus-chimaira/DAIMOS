@@ -43,12 +43,14 @@
         .globl dpy_text_active
         .globl dpy_text_rows_used
 
-        .equ DPY_TEXT_ROWS,052
+        .equ DPY_TEXT_ROWS,056
         .equ DPY_TEXT_BLOCKS,016
         .equ DPY_TEXT_ROW_WORDS,034
-        .equ DPY_REFRESH_BANNER,052
-        .equ DPY_REFRESH_ONESHOT,053
-        .equ DPY_REFRESH_TRAILER,054
+        ; Refresh-only states must never overlap a valid logical text row.
+        ; Keep them immediately above the 0..55-octal row-number range.
+        .equ DPY_REFRESH_BANNER,056
+        .equ DPY_REFRESH_ONESHOT,057
+        .equ DPY_REFRESH_TRAILER,060
 
 /**
  * @brief PI7 span-completion handler for the ITS-style Type-340 BLKO channel.
