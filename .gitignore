@@ -22,3 +22,8 @@ build/
 *.swo
 .core
 /core
+
+# Local picture inputs converted by img2dpic.  The directory itself is kept by
+# pictures/.gitignore; user picture payloads never belong in the repository.
+/pictures/*
+!/pictures/.gitignore
