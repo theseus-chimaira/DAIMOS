@@ -2,7 +2,8 @@
  * @file dpy_text_blocks_pdp6.s
  * @brief Native six-cell Type-342 block store for the retained DPY terminal.
  *
- * Each 84-column row has fourteen independently replayable two-word blocks.
+ * Each of 46 84-column rows has fourteen independently replayable two-word
+ * blocks.
  * A zero first word means six blank cells.  A zero second word means the first
  * word is six primary-set Type-342 glyphs and can be sent directly.  A nonzero
  * second word marks a complex block: both words contain three fixed

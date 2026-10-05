@@ -42,7 +42,7 @@
         .globl dpy_text_active
         .globl dpy_text_rows_used
 
-        .equ DPY_TEXT_ROWS,052
+        .equ DPY_TEXT_ROWS,056
         .equ DPY_TEXT_BLOCKS,016
         .equ DPY_TEXT_ROW_WORDS,034
         .equ DPY_TEXT_ROW_END,017
@@ -369,11 +369,11 @@ dpy_putchar:
 
         .data
 ; Complete frame setup.  Word 0 sets scale 2 and intensity 4, enters POINT,
-; and loads X=0.  Word 1 loads Y=974 and returns through PARAM into CHAR.
+; and loads X=0.  Word 1 loads Y=1010 and returns through PARAM into CHAR.
 ; Native text blocks thereafter contain only Type-342 character-mode words.
 dpy_text_setup_words:
         .word 0020134020000
-        .word 0201716060000
+        .word 0201762060000
 ; One blank six-cell block in primary character mode.
 dpy_text_blank_word:
         .word 0404040404040
