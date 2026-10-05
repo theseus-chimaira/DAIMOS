@@ -1169,7 +1169,7 @@ permanent-size: $(KCORE_MAP) $(MRES_PACKAGE_OBJS)
 
 boot:
 	rm -rf $(DISK_DIR) $(DRUM_DIR) $(SIMH_INI)
-	$(MAKE) image SIMH_DPY_MODE=GUI DPY_LOGIN=1
+	$(MAKE) image SIMH_DPY_MODE=GUI DPY_LOGIN=0
 	$(SIMH_PDP6) $(SIMH_INI)
 
 clean:
