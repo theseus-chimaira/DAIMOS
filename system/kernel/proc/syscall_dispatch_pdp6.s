@@ -258,7 +258,7 @@ native_sys_blocking_read_words:
         move    1,(17)
         pushj   17,vm_user_mapping_release
 native_sys_blocking_read_done:
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         popj    17,
 native_sys_blocking_read_bad:
         seto    1,
@@ -380,7 +380,7 @@ native_sys_two_paths_bad:
         andi    1,0777
         pushj   17,native_sys_putchar
 native_sys_writechar_done:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jrst    %L65
 
 ; Translate and resolve one user pathname.  Return its vnode in AC1, or zero.
@@ -543,13 +543,13 @@ native_sys_wait_copy:
         movem   2,(1)
 native_sys_wait_done:
         move    1,5
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         popj    17,
 native_sys_wait_bad_result:
         seto    5,
         jrst    native_sys_wait_done
 native_sys_wait_bad:
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         jrst    %L137
 
 /** @brief Dispatch UUO-077 extension opcodes while preserving AC1 for PROCCTL. */
@@ -608,7 +608,7 @@ native_sys_fsinfo:
         ;   user pointer, target vnode, mount id, provider, flags, total, used.
         ; Keeping the five public scalar fields contiguous permits one BLT
         ; copyout and gives every exit the same unwind depth.
-        add     17,[7,,7]
+        add     17,kconst_7_7
         movem   3,-6(17)                ; logical user result pointer
         hrrz    4,2                     ; zero-based mount slot
         caile   4,3
@@ -666,7 +666,7 @@ native_sys_fsinfo_bad:
 native_sys_fsinfo_empty:
         setz    1,
 native_sys_fsinfo_done:
-        sub     17,[7,,7]
+        sub     17,kconst_7_7
         popj    17,
 
 ; PID-1/root storage activation policy.  Discovery and module installation
@@ -848,7 +848,7 @@ native_sys_logctl_bad_map3:
 native_sys_logctl_bad3:
         seto    1,
 native_sys_logctl_done3:
-        sub     17,[3,,3]
+        sub     17,kconst_3_3
         popj    17,
 
         .globl  sys_logstore_service_jump
@@ -959,10 +959,10 @@ native_sys_memfs_mount:
         movei   6,023                   ; FS_MRES_OP_MEMFS_MOUNT
         movei   7,4                     ; MEMFS_PROVIDER
         pushj   17,fs_provider_reg_call
-        sub     17,[3,,3]
+        sub     17,kconst_3_3
         popj    17,
 native_sys_memfs_mount_bad:
-        sub     17,[3,,3]
+        sub     17,kconst_3_3
         jrst    kret_neg1
 
 
@@ -997,13 +997,13 @@ native_sys_mount_handoff:
         ; serialized filesystem-provider lock.  Provider MOUNT_UNIT may call
         ; vfs_mount_prevalidated(), but must never recurse through vfs_stat()
         ; while holding that same lock.
-        add     17,[7,,7]               ; struct vfs_stat
+        add     17,kconst_7_7               ; struct vfs_stat
         move    1,-7(17)                ; target vnode
         movei   2,-6(17)                ; stat result
         pushj   17,vfs_stat
         jumpn   1,native_sys_mount_handoff_bad_stat
         move    0,-6(17)                ; st.type
-        sub     17,[7,,7]
+        sub     17,kconst_7_7
         caie    0,1                     ; VFS_TYPE_DIR
         jrst    native_sys_mount_handoff_bad5
         move    1,-2(17)                 ; user handoff
@@ -1026,23 +1026,23 @@ native_sys_mount_handoff:
         push    17,0
         movei   4,(17)
         pushj   17,fs_provider_reg_call
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         pushj   17,vm_user_mapping_release
-        sub     17,[5,,5]
+        sub     17,kconst_5_5
         popj    17,
 native_sys_mount_handoff_bad_stat:
-        sub     17,[7,,7]
+        sub     17,kconst_7_7
         jrst    native_sys_mount_handoff_bad5
 native_sys_mount_handoff_bad_map:
         pushj   17,vm_user_mapping_release
 native_sys_mount_handoff_bad5:
-        sub     17,[5,,5]
+        sub     17,kconst_5_5
         jrst    kret_neg1
 native_sys_mount_handoff_bad4:
-        sub     17,[4,,4]
+        sub     17,kconst_4_4
         jrst    kret_neg1
 native_sys_mount_handoff_denied5:
-        sub     17,[5,,5]
+        sub     17,kconst_5_5
         jrst    kret_neg1
 
 native_sys_dup2:
@@ -1067,10 +1067,10 @@ native_sys_chown:
         jumpe   1,native_sys_chown_fail
         move    2,-1(17)               ; uid
         move    3,(17)                 ; gid
-        sub     17,[3,,3]
+        sub     17,kconst_3_3
         jrst    vfs_chown
 native_sys_chown_fail:
-        sub     17,[3,,3]
+        sub     17,kconst_3_3
         jrst    kret_neg1
 
 native_sys_rmdir:
@@ -1094,7 +1094,7 @@ native_sys_utime:
 native_sys_utime_owner_fail:
         pop     17,0
 native_sys_utime_fail:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jrst    kret_neg1
 
 native_sys_sleep:
@@ -1133,7 +1133,7 @@ native_sys_getchar_again:
         jrst    %L65
 native_sys_getchar_buffered:
 native_sys_getchar_error:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jrst    %L65
 
         ; MINIT first supplies the CTY bootstrap target and later retargets

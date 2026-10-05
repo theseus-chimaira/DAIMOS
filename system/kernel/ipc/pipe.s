@@ -43,7 +43,7 @@ pipe_alloc:
         movei   3,5                     ; PIPE_MM_OWNER
         setz    4,                      ; MM_ALLOC_LOW
         pushj   17,mm_alloc
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jumpn   1,pipe_alloc_fail
         move    1,(17)
         jumpe   1,pipe_alloc_fail
@@ -56,7 +56,7 @@ pipe_alloc:
 pipe_alloc_fail:
         setz    1,
 pipe_alloc_done:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         pop     17,010
         popj    17,
 

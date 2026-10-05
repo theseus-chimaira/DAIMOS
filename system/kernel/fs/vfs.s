@@ -85,7 +85,7 @@ vfs_lookup_mount_loop:
         jrst    vfs_lookup_mount_loop
         movem   4,(5)
 vfs_lookup_pop:
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         popj    17,
 
 vfs_lookup_root_store:
@@ -139,7 +139,7 @@ vfs_readdir_builtin:
 vfs_readdir_zero:
         setz    1,
 vfs_readdir_done:
-        sub     17,[4,,4]
+        sub     17,kconst_4_4
         popj    17,
 
 ; AC4 -> static four-word MonitorFS name record, AC3 -> dirent.
@@ -178,7 +178,7 @@ vfs_parent_return:
         ior     4,6
         movem   4,(5)
 vfs_parent_pop:
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         popj    17,
 vfs_parent_namespace:
         move    4,vfs_namespace_root
@@ -332,10 +332,10 @@ monitorfs_name_record:
         move    5,2(4)
         movem   5,2(7)
 monitorfs_parent_name_done:
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         jrst    kret_zero
 monitorfs_parent_name_fail:
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         jrst    kret_neg1
 
 
@@ -370,7 +370,7 @@ vfs_create_common:
         move    2,1
         move    1,5
         pushj   17,vfs_create_op
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         popj    17,
 
 ; int vfs_create_op(op, dir, name, mode, nodep)
@@ -396,7 +396,7 @@ vfs_create_policy:
         pop     17,3
         pop     17,2
         pop     17,6                   ; operation
-        add     17,[3,,3]
+        add     17,kconst_3_3
         movem   5,(17)                 ; caller nodep
         movem   2,-1(17)               ; dir for mount inheritance
         setzm   -2(17)                 ; provider result node
@@ -416,10 +416,10 @@ vfs_create_store_result:
         move    4,(17)
         movem   3,(4)
 vfs_create_done:
-        sub     17,[3,,3]
+        sub     17,kconst_3_3
         popj    17,
 vfs_create_ro:
-        sub     17,[5,,5]
+        sub     17,kconst_5_5
         jrst    kret_neg1
 
 ; int vfs_symlink(dir, name, counted_target, nodep)
@@ -436,7 +436,7 @@ vfs_symlink:
         pop     17,3
         pop     17,2
         pop     17,1
-        add     17,[3,,3]
+        add     17,kconst_3_3
         movem   4,(17)                  ; caller nodep
         movem   1,-1(17)
         setzm   -2(17)                  ; provider result vnode
@@ -447,7 +447,7 @@ vfs_symlink:
         pushj   17,fs_provider_reg_call
         jrst    vfs_create_store_result
 vfs_symlink_ro:
-        sub     17,[4,,4]
+        sub     17,kconst_4_4
         jrst    kret_neg1
 
 ; int vfs_rename(olddir, oldname, newdir, newname)
@@ -477,7 +477,7 @@ vfs_rename:
         movei   6,012                  ; FS_MRES_OP_RENAME
         jrst    fs_provider_reg_call
 vfs_rename_ro:
-        sub     17,[4,,4]
+        sub     17,kconst_4_4
         jrst    kret_neg1
 
         .globl  vfs_name_valid
@@ -524,7 +524,7 @@ vfs_name_from_words:
         hrl     5,1
         blt     5,4(2)
         movem   4,(2)
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         popj    17,
 
 ; int vfs_name_is6(const struct vfs_name *name, kword_t word,
@@ -611,7 +611,7 @@ vfs_truncate:
         movei   6,13                   ; FS_MRES_OP_TRUNCATE
         jrst    fs_provider_reg_call
 vfs_truncate_ro:
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         jrst    kret_neg1
 
         .globl  vfs_chmod
@@ -627,9 +627,9 @@ vfs_mutate2:
         ldb     7,[POINT 6,1,5]
         jrst    fs_provider_reg_call
 vfs_mutate3_ro:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
 vfs_mutate2_ro:
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         jrst    kret_neg1
 
 ; CHMOD is the compact common setattr provider slot.  Ordinary modes are <=07777;
@@ -664,7 +664,7 @@ vfs_setattr:
         movei   6,14                   ; FS_MRES_OP_CHMOD / common setattr
         jrst    fs_provider_reg_call
 vfs_setattr_ro:
-        sub     17,[3,,3]
+        sub     17,kconst_3_3
         jrst    kret_neg1
 
         .globl  vfs_read_words
@@ -701,7 +701,7 @@ vfs_write_words:
         movei   6,16                   ; FS_MRES_OP_WRITE_WORDS
         jrst    fs_provider_reg_call
 vfs_write_words_ro:
-        sub     17,[4,,4]
+        sub     17,kconst_4_4
         jrst    kret_neg1
 
         .globl  vfs_sync
@@ -832,7 +832,7 @@ vfs_mount_check_target:
         push    17,2
         push    17,3
         push    17,4
-        add     17,[7,,7]               ; seven-word struct vfs_stat
+        add     17,kconst_7_7               ; seven-word struct vfs_stat
         movei   2,-6(17)
         move    1,-012(17)
         pushj   17,vfs_stat
@@ -948,10 +948,10 @@ vfs_unmount_unlock:
         hrroi   3,0777776
         rot     3,(2)
         andm    3,vfs_mount_ro
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         jrst    kret_zero
 vfs_unmount_fail:
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         jrst    kret_neg1
 
         .data

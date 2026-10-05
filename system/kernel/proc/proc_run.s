@@ -55,7 +55,7 @@
         .globl  sixbit_record_words
 
 proc_run_block:
-        add     17,[6,,6]
+        add     17,kconst_6_6
         movei   0,-5(17)
         hrli    0,010
         blt     0,(17)
@@ -218,7 +218,7 @@ proc_run_slot_found:
 proc_run_exec_ok:
         hlrz    011,(013)
 
-        add     17,[3,,3]
+        add     17,kconst_3_3
         setzm   -2(17)
         movei   4,-2(17)
         movem   4,-1(17)
@@ -229,7 +229,7 @@ proc_run_exec_ok:
         movei   4,PROC_UAREA_OWNER_BASE(012)
         pushj   17,mm_alloc_aligned
         move    014,-2(17)
-        sub     17,[3,,3]
+        sub     17,kconst_3_3
         jumpn   1,proc_run_mm_bad
         jumpe   014,proc_run_mm_bad
 
@@ -256,7 +256,7 @@ proc_run_watermark_loop:
         pushj   17,sixbit_record_words
         jumpe   1,proc_run_start_record_bad
         add     6,1
-        add     17,[4,,4]
+        add     17,kconst_4_4
         move    1,013
         move    2,6
         hrrz    3,4(010)
@@ -274,7 +274,7 @@ proc_run_watermark_loop:
         movem   4,3(014)
         move    4,(17)
         movem   4,017(014)
-        sub     17,[4,,4]
+        sub     17,kconst_4_4
         hrrz    4,011
         tlo     4,010000
         movem   4,020(014)
@@ -348,7 +348,7 @@ proc_run_map_done:
         jrst    proc_run_return
 
 proc_run_startup_failed:
-        sub     17,[4,,4]
+        sub     17,kconst_4_4
         jrst    proc_run_claimed_bad
 
 proc_run_exec_bad:
@@ -369,5 +369,5 @@ proc_run_return:
         movei   0,010
         hrli    0,-5(17)
         blt     0,015
-        sub     17,[6,,6]
+        sub     17,kconst_6_6
         popj    17,

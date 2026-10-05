@@ -48,7 +48,7 @@ bcache_store:
 
 ; Allocate without invoking reclaim, otherwise cache allocation could recurse
 ; through fs_memory_reclaim().  The third stack word is the returned base.
-        add     17,[3,,3]
+        add     17,kconst_3_3
         setzm   -2(17)
         movei   1,-2(17)
         movem   1,-1(17)               ; arg 6: basep
@@ -62,7 +62,7 @@ bcache_store:
         jumpn   1,bcache_store_alloc_fail
         move    3,-2(17)
         jumpe   3,bcache_store_alloc_fail
-        sub     17,[3,,3]
+        sub     17,kconst_3_3
         setzm   (3)                     ; alternating victim hand
         setom   1(3)                    ; invalid tag 0
         setom   2(3)                    ; invalid tag 1
@@ -70,7 +70,7 @@ bcache_store:
         jrst    bcache_store_scan
 
 bcache_store_alloc_fail:
-        sub     17,[3,,3]
+        sub     17,kconst_3_3
         jrst    bcache_store_restore
 
 bcache_store_scan:

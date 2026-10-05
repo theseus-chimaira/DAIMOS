@@ -63,7 +63,7 @@ blockset_direct_tail_io:
         jrst    blockset_direct_tail_account_done
 blockset_direct_tail_account_read:
 blockset_direct_tail_account_done:
-        add     17,[6,,6]
+        add     17,kconst_6_6
         movei   0,-5(17)
         hrli    0,010
         blt     0,(17)
@@ -119,7 +119,7 @@ blockset_direct_tail_done:
         movei   0,010
         hrli    0,-5(17)
         blt     0,013
-        sub     17,[6,,6]
+        sub     17,kconst_6_6
         popj    17,
 blockset_tail_blocks:
         move    1,blockset_direct_tail
@@ -155,7 +155,7 @@ fs_provider_serialized:
         ; Keep the original request registers on the process-private stack
         ; for the entire lock wait.  A resumed waiter may lose live scratch
         ; ACs while another process owns the provider.
-        add     17,[7,,7]
+        add     17,kconst_7_7
         movei   0,-6(17)
         hrli    0,1
         blt     0,(17)
@@ -166,7 +166,7 @@ fs_provider_lock_retry:
         movei   0,1
         hrli    0,-6(17)
         blt     0,7
-        sub     17,[7,,7]
+        sub     17,kconst_7_7
         subi    7,4
         hrrz    7,fs_memfs_service_jump(7)
         cain    7,fs_mres_no_service
@@ -324,10 +324,10 @@ fs_mres_vector_target_none:
 fs_mres_vector_dispatch:
         pushj   17,fs_mres_vector_target
         jumpe   7,fs_mres_no_service
-        add     17,[1,,1]               ; reserve C arg 5
+        add     17,kconst_1_1               ; reserve C arg 5
         movem   5,(17)
         pushj   17,(7)
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         popj    17,
 
         .globl  fs_mres_context_vector_dispatch
@@ -337,7 +337,7 @@ fs_mres_vector_dispatch:
 fs_mres_context_vector_dispatch:
         pushj   17,fs_mres_vector_target
         jumpe   7,fs_mres_no_service
-        add     17,[2,,2]
+        add     17,kconst_2_2
         movem   4,(17)                  ; arg 5 = request d
         movem   5,-1(17)                ; arg 6 = request e
         move    4,3
@@ -345,7 +345,7 @@ fs_mres_context_vector_dispatch:
         move    2,1
         move    1,0                     ; arg 1 = context
         pushj   17,(7)
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         popj    17,
 
         .data

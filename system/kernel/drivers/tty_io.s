@@ -270,7 +270,7 @@ tty_s6_read_not_ready:
         move    011,-2(17)
         move    010,-3(17)
         pop     17,1
-        sub     17,[3,,3]
+        sub     17,kconst_3_3
         jumpl   1,tty_s6_read_bad
         move    2,1
         move    1,010

@@ -104,7 +104,7 @@ file_check_root:
 ; int file_check_owner(vnode_t node)
         .globl  file_check_owner
 file_check_owner:
-        add     17,[7,,7]
+        add     17,kconst_7_7
         movei   2,-6(17)
         pushj   17,vfs_stat
         jumpn   1,file_owner_done       ; vfs_stat already returns -1
@@ -115,7 +115,7 @@ file_check_owner:
         jrst    file_owner_done
         seto    1,
 file_owner_done:
-        sub     17,[7,,7]
+        sub     17,kconst_7_7
         popj    17,
 
         .globl  file_path_char
@@ -232,7 +232,7 @@ file_readchar_ok:
         aos     1(010)
         move    1,(17)
 file_readchar_done:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         pop     17,010
         popj    17,
 file_readchar_fail:
@@ -632,7 +632,7 @@ file_words_result:
         jumple  1,file_words_done
         addm    1,1(010)
 file_words_done:
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         pop     17,010
         popj    17,
 file_words_fail:
@@ -684,7 +684,7 @@ file_readdir:
         jumple  1,file_readdir_done
         aos     1(010)
 file_readdir_done:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         pop     17,010
         popj    17,
 file_readdir_fail:
@@ -929,7 +929,7 @@ file_symlink:
         cail    3,0147                 ; FILE_PATH_MAX_CHARS + 1
         jrst    kret_neg1
         push    17,1                   ; target
-        add     17,[6,,6]
+        add     17,kconst_6_6
         move    1,2                    ; linkpath
         movei   2,-5(17)              ; dir
         movei   3,-4(17)              ; leaf
@@ -945,7 +945,7 @@ file_symlink:
         movei   4,-5(17)              ; output vnode
         pushj   17,vfs_symlink
 file_symlink_done:
-        sub     17,[6,,6]
+        sub     17,kconst_6_6
         pop     17,2
         popj    17,
 file_symlink_fail:
@@ -1036,7 +1036,7 @@ file_mkfifo:
         movei   010,vfs_mkfifo
 file_make_node:
         push    17,2
-        add     17,[6,,6]
+        add     17,kconst_6_6
         movei   2,-5(17)
         movei   3,-4(17)
         pushj   17,file_parent_path
@@ -1051,7 +1051,7 @@ file_make_node:
         movei   4,-5(17)
         pushj   17,(010)
 file_make_node_done:
-        sub     17,[6,,6]
+        sub     17,kconst_6_6
         pop     17,2
         pop     17,010
         popj    17,
@@ -1073,7 +1073,7 @@ file_rmdir:
         movei   2,1
 file_remove:
         push    17,2                    ; want directory
-        add     17,[7,,7]               ; dir + leaf + target vnode
+        add     17,kconst_7_7               ; dir + leaf + target vnode
         movei   2,-6(17)
         movei   3,-5(17)
         pushj   17,file_parent_path
@@ -1087,7 +1087,7 @@ file_remove:
         movei   3,(17)
         pushj   17,vfs_lookup
         jumpn   1,file_remove_fail
-        add     17,[7,,7]               ; seven-word stat scratch
+        add     17,kconst_7_7               ; seven-word stat scratch
         move    1,-7(17)                ; target vnode
         movei   2,-6(17)
         pushj   17,vfs_stat
@@ -1103,7 +1103,7 @@ file_remove_need_nondir:
         jrst    file_remove_type_ok
         jrst    file_remove_stat_fail
 file_remove_type_ok:
-        sub     17,[7,,7]
+        sub     17,kconst_7_7
         move    1,-6(17)
         movei   2,-5(17)
         pushj   17,vfs_unlink
@@ -1115,11 +1115,11 @@ file_remove_type_ok:
 file_remove_ok:
         setz    1,
 file_remove_done:
-        sub     17,[7,,7]
-        sub     17,[1,,1]
+        sub     17,kconst_7_7
+        sub     17,kconst_1_1
         popj    17,
 file_remove_stat_fail:
-        sub     17,[7,,7]
+        sub     17,kconst_7_7
 file_remove_fail:
         seto    1,
         jrst    file_remove_done
@@ -1130,7 +1130,7 @@ file_remove_fail:
         .globl  file_truncate
 file_truncate:
         push    17,2
-        add     17,[1,,1]
+        add     17,kconst_1_1
         movei   2,(17)
         pushj   17,file_lookup_path
         jumpn   1,file_path_onearg_fail
@@ -1151,7 +1151,7 @@ file_truncate_done:
         .globl  file_stat_path
 file_stat_path:
         push    17,2
-        add     17,[1,,1]
+        add     17,kconst_1_1
         movei   2,(17)
         pushj   17,file_lookup_path
         jumpn   1,file_stat_path_fail
@@ -1164,7 +1164,7 @@ file_stat_path_fail:
 file_path_onearg_fail:
         seto    1,
 file_path_onearg_done:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         pop     17,2
         popj    17,
 
@@ -1248,7 +1248,7 @@ file_seek_end_check:
         caie    5,2
         jrst    file_seek_fail
         push    17,1                    ; descriptor pointer
-        add     17,[7,,7]               ; seven-word struct vfs_stat
+        add     17,kconst_7_7               ; seven-word struct vfs_stat
         move    1,-7(17)
         move    1,(1)
         tlz     1,707070                ; canonical vnode
@@ -1258,18 +1258,18 @@ file_seek_end_check:
         move    2,-011(17)              ; saved offset
         add     2,-3(17)                ; st.size_words
         move    1,-7(17)                ; descriptor pointer
-        sub     17,[7,,7]
-        sub     17,[1,,1]
+        sub     17,kconst_7_7
+        sub     17,kconst_1_1
 file_seek_store:
         jumpl   2,file_seek_fail
         movem   2,1(1)
         move    1,2
         jrst    file_seek_done
 file_seek_end_fail:
-        sub     17,[7,,7]
-        sub     17,[1,,1]
+        sub     17,kconst_7_7
+        sub     17,kconst_1_1
 file_seek_fail:
         seto    1,
 file_seek_done:
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         popj    17,

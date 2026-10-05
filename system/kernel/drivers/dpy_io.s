@@ -300,7 +300,7 @@ dpy_write_words:
         movei 3,014                   ; DPY dynamic-list owner
         setz 4,                       ; MM_ALLOC_LOW
         pushj 17,mm_alloc
-        sub 17,[1,,1]
+        sub 17,kconst_1_1
         jumpn 1,dpy_list_alloc_fail
         move 6,(17)                   ; new list base
         jumpe 6,dpy_list_alloc_fail
@@ -345,11 +345,11 @@ dpy_list_installed:
         ; native display program.  Count requests, not 30-Hz hardware replays.
         aos mfsdev_io_out+010
         move 1,011
-        sub 17,[1,,1]
+        sub 17,kconst_1_1
         jrst dpy_list_done
 
 dpy_list_alloc_fail:
-        sub 17,[1,,1]
+        sub 17,kconst_1_1
 dpy_list_fail:
         seto 1,
         jrst dpy_list_done

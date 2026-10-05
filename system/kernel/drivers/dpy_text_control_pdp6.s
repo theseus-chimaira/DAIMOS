@@ -60,19 +60,19 @@ dpy_text_start:
         movei   3,DPY_TEXT_MM_OWNER
         setz    4,                     ; MM_ALLOC_LOW
         pushj   17,mm_alloc
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jumpn   1,dpy_text_start_fail
         move    1,0(17)
         movem   1,dpy_text_base
         pushj   17,dpy_text_clear_all
         movei   1,1
         movem   1,dpy_text_active
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
 dpy_text_zero:
         setz    1,
         popj    17,
 dpy_text_start_fail:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         seto    1,
         popj    17,
 
@@ -166,7 +166,7 @@ dpy_text_tab_loop:
         aos     dpy_text_col
         jrst    dpy_text_tab_loop
 dpy_text_tab_done:
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         pushj   17,dpy_text_wrap
         jrst    dpy_text_zero
 

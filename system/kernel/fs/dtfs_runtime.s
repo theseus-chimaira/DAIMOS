@@ -257,7 +257,7 @@ dtfs_dtc_read:
 dtfs_dtc_read_hit:
         setz    1,
 dtfs_dtc_read_done:
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         popj    17,
 
         .globl  dtfs_dtc_read_jump
@@ -491,7 +491,7 @@ dtfs_scan_its_len:
 
 dtfs_scan_begin:
         setz    014,                   ; slot
-        add     17,[5,,5]              ; temporary struct vfs_name
+        add     17,kconst_5_5              ; temporary struct vfs_name
 dtfs_scan_loop:
         cain    013,020
         jrst    dtfs_scan_its_empty
@@ -549,7 +549,7 @@ dtfs_scan_its_limit:
 dtfs_scan_not_found:
         seto    1,
 dtfs_scan_drop:
-        sub     17,[5,,5]
+        sub     17,kconst_5_5
         jrst    dtfs_scan_return
 
 dtfs_scan_bad_name:
@@ -688,7 +688,7 @@ dtfs_mount_unit_media_ready:
         movei   3,1                     ; DTFS_KIND_ROOT
         setz    4,                      ; index 0
         pushj   17,vfs_mount_prevalidated
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         jumpn   1,dtfs_mount_unit_fail_local
 
         hlrz    012,(17)
@@ -709,7 +709,7 @@ dtfs_mount_unit_media_ready:
 dtfs_mount_unit_fail_local:
         seto    1,
 dtfs_mount_unit_done_local:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jrst    dtfs_restore4
 dtfs_mount_unit_fail:
         seto    1,
@@ -906,7 +906,7 @@ dtfs_create_success:
 dtfs_create_fail:
         seto    1,
 dtfs_create_done:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         pop     17,015
         pop     17,014
         jrst    dtfs_restore4
@@ -922,7 +922,7 @@ dtfs_unlink:
         push    17,013
         push    17,014
         push    17,015
-        add     17,[2,,2]
+        add     17,kconst_2_2
         move    010,1
         move    011,2
 
@@ -1046,7 +1046,7 @@ dtfs_unlink_success:
 dtfs_unlink_fail:
         seto    1,
 dtfs_unlink_done:
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         pop     17,015
         pop     17,014
         jrst    dtfs_restore4
@@ -1119,7 +1119,7 @@ dtfs_rename_commit:
 dtfs_rename_fail:
         seto    1,
 dtfs_rename_done:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jrst    dtfs_restore4
 
 dtfs_chmod:
@@ -1555,12 +1555,12 @@ dtfs_size_words:
         pushj   17,dtfs_unit
         move    2,011
         setzb   3,4
-        add     17,[2,,2]
+        add     17,kconst_2_2
         setzm   (17)                    ; fifth argument nwords = 0
         movei   5,1
         movem   5,-1(17)                ; sixth argument map offset = 1
         pushj   17,dtfs_chain_walk
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         jumpl   1,dtfs_size_words_zero
         jrst    dtfs_size_words_return
 

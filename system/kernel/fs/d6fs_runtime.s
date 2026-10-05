@@ -385,7 +385,7 @@ d6fs_provider_alloc_run:
         jumpe   1,kret_neg1
         jumpe   2,kret_neg1
         jumpe   3,kret_neg1
-        add     17,[5,,5]
+        add     17,kconst_5_5
         movei   0,-4(17)
         hrli    0,010
         blt     0,(17)
@@ -529,7 +529,7 @@ d6fs_freemap_set:
         jumpe   1,kret_neg1
         caml    2,6(1)
         jrst    kret_neg1
-        add     17,[5,,5]
+        add     17,kconst_5_5
         movei   0,-4(17)
         hrli    0,010
         blt     0,(17)
@@ -723,7 +723,7 @@ d6fs_mount_validated:
         movei   3,010                    ; D6FS_READER_MM_OWNER
         setz    4,                       ; no alignment requirement
         pushj   17,mm_alloc
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jumpn   1,d6fs_mount_bad
 
         move    5,(17)                   ; new mount-owned reader
@@ -739,7 +739,7 @@ d6fs_mount_validated:
         movei   3,1                      ; D6FS_KIND_NODE
         move    4,7(5)                   ; root_fcb
         pushj   17,vfs_mount_prevalidated
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         jumpn   1,d6fs_mount_free
 
         move    5,(17)
@@ -766,7 +766,7 @@ d6fs_mount_free:
 d6fs_mount_bad:
         seto    1,
 d6fs_mount_done:
-        sub     17,[3,,3]
+        sub     17,kconst_3_3
         popj    17,
 
 d6fs_mres_create:
@@ -790,11 +790,11 @@ d6fs_mres_symlink:
         setz    4,                      ; symlink mode/value unused
         movei   5,3                     ; symlink type
 d6fs_mres_create_call:
-        add     17,[2,,2]
+        add     17,kconst_2_2
         movem   5,(17)                  ; C arg 5: type
         movem   6,-1(17)                ; C arg 6: nodep
         pushj   17,d6fs_provider_create_object
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         popj    17,
 
         .data
@@ -836,7 +836,7 @@ d6fs_reader_write_words:
 ; Save the common loop state plus one transfer-tail address.  The original
 ; fifth C argument is therefore nine words below the resulting stack top.
 d6fs_reader_rw_save:
-        add     17,[7,,7]
+        add     17,kconst_7_7
         movei   7,-6(17)
         hrli    7,010
         blt     7,(17)

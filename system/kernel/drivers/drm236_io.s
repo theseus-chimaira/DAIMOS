@@ -65,7 +65,7 @@ drm236_request:
         ;   0: Type-236 address,,core buffer
         ;   1: Type-236 operation (READ or WRITE)
         ;   2: completion event (0 pending, 1 success, -1 failure)
-        add     017,[3,,3]
+        add     017,kconst_3_3
         pushj   017,storage_request_init
 
 drm236_runtime_retry:
@@ -105,7 +105,7 @@ drm236_runtime_queue_full:
 drm236_runtime_finish:
         move    1,(017)
         move    4,-1(017)               ; preserve operation for accounting
-        sub     017,[3,,3]
+        sub     017,kconst_3_3
         sojn    1,drm236_account_error
         jrst    drm236_account_success
 

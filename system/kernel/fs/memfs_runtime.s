@@ -53,7 +53,7 @@ memfs_read_count:
         setz    4,
         jrst    memfs_read_source_ready
 memfs_read_ensure_fail:
-        sub     17,[5,,5]
+        sub     17,kconst_5_5
         jrst    kret_neg1
 memfs_read_source_ready:
         hlrz    2,6(5)
@@ -151,7 +151,7 @@ memfs_write_ready:
         move    1,-1(17)
         popj    17,
 memfs_write_ensure_fail:
-        sub     17,[4,,4]
+        sub     17,kconst_4_4
         jrst    kret_neg1
 
 ; int memfs_slot(const struct memfs *fs, vnode_t node)
@@ -577,7 +577,7 @@ memfs_truncate_words:
 memfs_truncate_fail:
         seto    1,
 memfs_truncate_done:
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         popj    17,
 
 ; int memfs_readdir(const struct memfs *fs, vnode_t dir,
@@ -754,7 +754,7 @@ memfs_mres_mount_size_ok:
         movei   3,011                   ; MEMFS_MM_OWNER
         setz    4,                      ; MM_ALLOC_LOW
         pushj   17,mm_alloc
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jumpn   1,memfs_mres_mount_bad
 
         move    1,(17)
@@ -796,7 +796,7 @@ memfs_mres_mount_size_ok:
         movei   3,1                     ; MEMFS_KIND_NODE
         setz    4,                      ; root node slot
         pushj   17,vfs_mount
-        sub     17,[3,,3]
+        sub     17,kconst_3_3
         jumpe   1,memfs_mres_mount_done
 
         movei   1,memfs_mres_fs
@@ -811,7 +811,7 @@ memfs_mres_mount_size_ok:
 memfs_mres_mount_bad:
         seto    1,
 memfs_mres_mount_done:
-        sub     17,[3,,3]
+        sub     17,kconst_3_3
         popj    17,
 
 ; Release all demand data and the namespace allocation when VFS unmounts MEMFS.  VFS has already
@@ -830,10 +830,10 @@ memfs_mres_prepare_unmount:
         move    1,(17)
         movei   2,6
         pushj   17,fs_zero_words
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jrst    kret_zero
 memfs_mres_unmount_bad:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jrst    kret_neg1
 
 ; MEMINFO calls this exported entry directly; overwrite request a/b.

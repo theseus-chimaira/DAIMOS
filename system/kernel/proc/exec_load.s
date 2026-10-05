@@ -233,7 +233,7 @@ exec_load_plain_image:
         move    1,10
         move    2,12
         pushj   17,vm_space_load_file
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jumpn   1,exec_load_vm_fail
 
 exec_load_image_ok:

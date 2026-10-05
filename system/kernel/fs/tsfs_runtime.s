@@ -360,7 +360,7 @@ tsfs_readdir_pop:
 tsfs_read_words:
         jumpe   4,kret_zero
         ; AC10..AC16 form one contiguous callee-save block.
-        add     17,[7,,7]
+        add     17,kconst_7_7
         movei   0,-6(17)
         hrli    0,010
         blt     0,(17)
@@ -476,7 +476,7 @@ tsfs_read_d6lz:
         movei   3,TSFS_DECODE_OWNER
         setz    4,
         pushj   17,mm_alloc
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jumpn   1,tsfs_read_d6lz_drop
         ; The common runtime frontend owns decoder-state save/restore and exact
         ; compressed-buffer consumption.  The allocation result lives in our
@@ -505,7 +505,7 @@ tsfs_read_d6lz:
         movei   2,3
         movei   3,TSFS_DECODE_OWNER
         pushj   17,mm_free
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jumpn   1,tsfs_read_words_fail
         jumpn   012,tsfs_read_restart
         jrst    tsfs_read_words_done
@@ -516,16 +516,16 @@ tsfs_read_d6lz_free:
         movei   3,TSFS_DECODE_OWNER
         pushj   17,mm_free
 tsfs_read_d6lz_drop:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jrst    tsfs_read_words_fail
 
 tsfs_read_words_done:
         move    1,(17)
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jrst    tsfs_read_words_restore
 
 tsfs_read_words_fail:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
 tsfs_read_words_fail0:
         hrroi   1,1
         jrst    tsfs_read_words_restore
@@ -538,7 +538,7 @@ tsfs_read_words_restore:
         hrl     0,0
         hrri    0,010
         blt     0,016
-        sub     17,[7,,7]
+        sub     17,kconst_7_7
         popj    17,
 
 tsfs_mount_set:
@@ -589,7 +589,7 @@ tsfs_mount_do:
         movei   3,1                    ; TSFS_KIND_ROOT
         setz    4,
         pushj   17,vfs_mount_prevalidated
-        sub     17,[2,,2]
+        sub     17,kconst_2_2
         jumpn   1,tsfs_mount_drop_bad
 
         hlrz    4,(17)                 ; provider,,kind/mount
@@ -611,7 +611,7 @@ tsfs_mount_do:
 tsfs_mount_drop_bad:
         hrroi   1,1
 tsfs_mount_drop:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jrst    tsfs_mount_pop
 
 tsfs_mount_pop_bad:
@@ -625,7 +625,7 @@ tsfs_mount_pop:
 tsfs_lookup:
         jumpe   2,kret_neg1
         jumpe   3,kret_neg1
-        add     17,[5,,5]
+        add     17,kconst_5_5
         movei   0,-4(17)
         hrli    0,010
         blt     0,(17)
@@ -681,7 +681,7 @@ tsfs_lookup_pop:
         movei   0,010
         hrli    0,-4(17)
         blt     0,014
-        sub     17,[5,,5]
+        sub     17,kconst_5_5
         popj    17,
 
         .bss

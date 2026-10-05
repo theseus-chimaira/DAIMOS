@@ -203,7 +203,7 @@ dtfs_cw_319:
 ; Foreign DTFS allocation-map census / first-block finder.
         .globl dtfs_block_info
 dtfs_block_info:
-	add 017,[6,,6]
+	add 017,kconst_6_6
 	movei 0,-5(017)
 	hrli 0,010
 	blt 0,(017)
@@ -266,5 +266,5 @@ dtfs_bi_51:
 	movei 0,010
 	hrli 0,-5(017)
 	blt 0,015
-	sub 017,[6,,6]
+	sub 017,kconst_6_6
 	popj 17,

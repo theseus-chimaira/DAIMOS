@@ -103,13 +103,13 @@ vm_enter_initial_user:
         movei 0,1(17)
         hrli 0,010
         blt 0,7(17)
-        add 17,[7,,7]
+        add 17,kconst_7_7
         pushj 17,vm_enter_initial_user_start
         movei 0,-6(17)
         hrl 0,0
         hrri 0,010
         blt 0,016
-        sub 17,[7,,7]
+        sub 17,kconst_7_7
         popj 17,
 
 vm_enter_initial_user_start:

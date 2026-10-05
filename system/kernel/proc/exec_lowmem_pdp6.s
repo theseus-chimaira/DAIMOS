@@ -77,7 +77,7 @@ exec_replace_current_lowmem:
         movei   3,EXEC_LAUNCH_MM_OWNER
         setz    4,                      ; MM_ALLOC_LOW
         pushj   17,mm_alloc
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jumpn   1,exec_lowmem_alloc_fail
 
         ; The source and destination are distinct MM extents.  Reuse the

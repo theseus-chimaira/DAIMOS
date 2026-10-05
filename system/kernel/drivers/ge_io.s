@@ -105,7 +105,7 @@ ge_getchar_ready_ours:
         move 1,2
         andi 1,0177
 ge_getchar_done:
-        sub 17,[1,,1]
+        sub 17,kconst_1_1
         popj 17,
 
 /**

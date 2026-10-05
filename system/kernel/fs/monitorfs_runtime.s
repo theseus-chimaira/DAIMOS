@@ -932,7 +932,7 @@ mfs_s6rec_copy_eof:
 ; SIXBIT; only the possibly unaligned basename slice must be repacked.
 ; AC1=source record, AC2=destination, AC3=capacity.
 mfs_s6rec_copy_name:
-        add     17,[4,,4]
+        add     17,kconst_4_4
         movei   0,-3(17)
         hrli    0,010
         blt     0,(17)
@@ -994,14 +994,14 @@ mfs_s6rec_name_restore:
         movei   0,010
         hrli    0,-3(17)
         blt     0,013
-        sub     17,[4,,4]
+        sub     17,kconst_4_4
         popj    17,
 
 ; Serialize NAME/CMDLINE/ENVIRONMENT directly from live startup metadata.
 ; AC1=validated proc *, AC2=leaf 3..5, AC3=serialized offset,
 ; AC4=destination, AC5=capacity.
 mfsproc_image_read_words:
-        add     17,[5,,5]
+        add     17,kconst_5_5
         movei   0,-4(17)
         hrli    0,010
         blt     0,(17)
@@ -1069,7 +1069,7 @@ mfsproc_image_words_done:
         movei   0,010
         hrli    0,-4(17)
         blt     0,014
-        sub     17,[5,,5]
+        sub     17,kconst_5_5
         popj    17,
 
 ; int mfsproc_read_words(vnode_t node, kword_t off, kword_t *buf,

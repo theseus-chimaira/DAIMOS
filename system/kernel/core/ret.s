@@ -23,6 +23,13 @@
         .globl  kret_neg3
         .globl  kret_neg4
         .globl  kret_neg5
+        .globl  kconst_1_1
+        .globl  kconst_2_2
+        .globl  kconst_3_3
+        .globl  kconst_4_4
+        .globl  kconst_5_5
+        .globl  kconst_6_6
+        .globl  kconst_7_7
 
 /** @brief Return 0 in AC1; also the generic success (`ok`) tail. */
 kret_zero:
@@ -62,3 +69,17 @@ kret_neg4:
 kret_neg5:
         hrroi   1,0777773
         popj    017,
+
+/*
+ * Shared stack-adjust literals.  DAS coalesces repeated literals within one
+ * object, but independently linked KCORE/MRES objects otherwise each retain
+ * their own copy.  These immutable words are therefore cheaper as one KCORE
+ * constant set referenced by every resident object.
+ */
+kconst_1_1: .word 1,,1
+kconst_2_2: .word 2,,2
+kconst_3_3: .word 3,,3
+kconst_4_4: .word 4,,4
+kconst_5_5: .word 5,,5
+kconst_6_6: .word 6,,6
+kconst_7_7: .word 7,,7

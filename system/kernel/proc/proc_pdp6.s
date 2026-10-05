@@ -569,7 +569,7 @@ proc_event_ok:
         popj    17,
 
 proc_event_send:
-        add     17,[5,,5]
+        add     17,kconst_5_5
         movei   0,-4(17)
         hrli    0,010
         blt     0,(17)                 ; preserve AC10..AC14
@@ -666,7 +666,7 @@ proc_event_send_apply_tail:
         movei   0,010
         hrli    0,-4(17)
         blt     0,014
-        sub     17,[5,,5]
+        sub     17,kconst_5_5
         jrst    proc_event_apply
 
 proc_event_send_fail:
@@ -678,7 +678,7 @@ proc_event_send_return:
         movei   0,010
         hrli    0,-4(17)
         blt     0,014
-        sub     17,[5,,5]
+        sub     17,kconst_5_5
         popj    17,
 
 ; AC4 is the target u-area base.  Permit event delivery when the caller is
@@ -1124,7 +1124,7 @@ proc_control_tty_setmode:
         pop     17,2
         jrst    proc_tty_mode_set
 proc_control_tty_setmode_bad:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jrst    kret_neg1
 
 proc_control_getuid:
@@ -1346,24 +1346,24 @@ proc_tty_line_take_byte:
         pushj   17,proc_tty_line_reset
         pop     17,1
 proc_tty_line_take_ret:
-        sub     17,[1,,1]              ; discard saved tty
+        sub     17,kconst_1_1              ; discard saved tty
         popj    17,
 proc_tty_line_take_nl:
         move    1,0(17)
         pushj   17,proc_tty_line_reset
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         movei   1,012
         popj    17,
 proc_tty_line_take_eof:
         move    1,0(17)
         pushj   17,proc_tty_line_reset
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jrst    kret_neg2
 proc_tty_line_take_more:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jrst    kret_neg3
 proc_tty_line_take_bad:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
         jrst    kret_neg1
 
 /**
@@ -1431,7 +1431,7 @@ proc_tty_canon_kill_loop:
         pushj   17,proc_tty_echo_erase
         jrst    proc_tty_canon_kill_loop
 proc_tty_canon_kill_done:
-        sub     17,[1,,1]
+        sub     17,kconst_1_1
 proc_tty_canon_kill_store:
         and     6,[-0400]              ; length = 0
         movem   6,0(12)
@@ -2342,7 +2342,7 @@ proc_timer_service_none:
 ; AC10 exclude slot, AC11 scan slot, AC12 descriptor, AC13 best slot,
 ; AC14 best score, AC15 sched LH, AC16 candidate score.
 proc_swap_victim:
-        add     17,[7,,7]
+        add     17,kconst_7_7
         movei   0,-6(17)
         hrli    0,010
         blt     0,(17)                  ; save AC10..AC16
@@ -2445,7 +2445,7 @@ proc_swap_victim_return:
         hrl     0,0
         hrri    0,010
         blt     0,016                   ; restore AC10..AC16
-        sub     17,[7,,7]
+        sub     17,kconst_7_7
         popj    17,
 
 proc_idle_loop:

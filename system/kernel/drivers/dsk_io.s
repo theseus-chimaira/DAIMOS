@@ -194,7 +194,7 @@ dsk_sector_request:
         jrst dsk_boot_request
 
 dsk_runtime_request:
-        add 017,[3,,3]
+        add 017,kconst_3_3
         pushj 017,storage_request_init
         movei 1,-2(017)
 dsk_runtime_submit:
@@ -237,13 +237,13 @@ dsk_runtime_slot0_wait:
         jrst dsk_runtime_slot0_wait
 dsk_runtime_finish:
         move 1,(017)
-        sub 017,[3,,3]
+        sub 017,kconst_3_3
         sojn 1,kret_neg5
         popj 017,
 dsk_runtime_busy:
         hrroi 1,0777775
 dsk_runtime_submit_fail:
-        sub 017,[3,,3]
+        sub 017,kconst_3_3
         popj 017,
 
 /**
