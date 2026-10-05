@@ -131,8 +131,8 @@ proc_runq_add:
         andi    0,PROC_STATE_LH_MASK
         caie    0,PROC_STATE_RUN
         popj    17,
-        move    6,proc_runq_head
-        hrrm    6,2(5)
+        move    0,proc_runq_head
+        hrrm    0,2(5)
         movem   1,proc_runq_head
         popj    17,
 
@@ -1585,16 +1585,15 @@ proc_tty_pending_store:
 proc_sleep_ticks:
         hrrz    1,1
         jumpe   1,kret_zero
-        move    4,1                    ; requested ticks survives runq removal
+        move    7,1                    ; requested ticks = new deadline distance
         move    1,proc_current_slot
         jumpe   1,kret_neg1
         pushj   17,proc_runq_remove
-
-        move    1,proc_current_slot
-        pushj   17,proc_slot_ptr
+        pushj   17,proc_slot_ptr       ; AC1 is still current slot
         move    3,1                    ; current descriptor
         hrrz    1,proc_timer_clock
         andi    1,PROC_TIMER_CLOCK_MASK
+        move    4,7
         add     4,1
         andi    4,PROC_TIMER_CLOCK_MASK ; wrapped 17-bit deadline
         move    5,2(3)
@@ -1614,10 +1613,7 @@ proc_sleep_ticks:
         hrrz    6,5                    ; old deadline distance
         sub     6,1
         andi    6,PROC_TIMER_CLOCK_MASK
-        move    7,4                    ; new deadline distance
-        sub     7,1
-        andi    7,PROC_TIMER_CLOCK_MASK
-        camge   7,6                    ; replace only when new is nearer
+        camge   7,6                    ; requested ticks are new distance
         jrst    proc_sleep_set_next
         jrst    proc_sleep_resched
 proc_sleep_set_next:
@@ -2048,10 +2044,8 @@ proc_sched_pi_tick:
         jrst    proc_sched_timer_done
         tlne    2,PROC_TIMER_DUE_LH
         jrst    proc_sched_timer_done
-        hrrz    1,1
-        andi    1,PROC_TIMER_CLOCK_MASK
-        hrrz    2,2
-        came    1,2
+        xor     1,2                    ; compare only the low 17 deadline bits
+        trne    1,PROC_TIMER_CLOCK_MASK
         jrst    proc_sched_timer_done
         movsi   2,PROC_TIMER_DUE_LH
         iorm    2,proc_timer_next
@@ -2152,13 +2146,11 @@ proc_timer_service:
         popj    17,
 proc_timer_service_active:
         hrrz    7,7                    ; frontier deadline
-        andi    7,PROC_TIMER_CLOCK_MASK
-        hrrz    6,proc_timer_clock     ; current monotonic tick
+        hrrz    6,proc_timer_clock
         andi    6,PROC_TIMER_CLOCK_MASK
-        move    5,6
-        sub     5,7
-        andi    5,PROC_TIMER_CLOCK_MASK ; ticks elapsed since frontier
-        setz    4,                     ; best future delta, zero = none
+        sub     6,7
+        andi    6,PROC_TIMER_CLOCK_MASK ; elapsed ticks since frontier
+        setz    4,                     ; best future offset from frontier
         movei   1,1
         move    2,proc_table
         addi    2,PROC_WORDS
@@ -2171,38 +2163,28 @@ proc_timer_service_loop:
         andi    3,PROC_TIMER_CLOCK_MASK ; process deadline
         move    0,3
         sub     0,7
-        andi    0,PROC_TIMER_CLOCK_MASK
-        camle   0,5                    ; deadline passed since frontier?
+        andi    0,PROC_TIMER_CLOCK_MASK ; offset from old frontier
+        camle   0,6                    ; deadline passed since frontier?
         jrst    proc_timer_service_future
 
+        ; A timer-tagged process is either sleeping or job-control stopped.
+        ; SLEEP(3) becomes RUN(2) by clearing state bit 0100000; STOP(6) keeps
+        ; its state and merely loses the expired timer wait.
         move    3,2(2)
-        hlrz    0,3
-        andi    0,PROC_STATE_LH_MASK
         tlz     3,PROC_WAIT_LH_MASK
         hllz    3,3                    ; clear deadline/wait channel
         tlz     3,PROC_CPU_SLEEP_LH_MASK
-        caie    0,PROC_STATE_SLEEP
-        jrst    proc_timer_service_store
-        tlz     3,PROC_STATE_LH_MASK
-        tlo     3,PROC_STATE_RUN
+        tlnn    3,0400000              ; high state bit clear only for SLEEP
+        tlz     3,0100000              ; SLEEP -> RUN
         movem   3,2(2)
-        pushj   17,proc_runq_add
-        hrrz    6,proc_timer_clock     ; runq helper clobbers AC5/AC6
-        andi    6,PROC_TIMER_CLOCK_MASK
-        move    5,6
-        sub     5,7
-        andi    5,PROC_TIMER_CLOCK_MASK
+        tlne    3,0400000              ; STOP remains off the run queue
         jrst    proc_timer_service_next
-proc_timer_service_store:
-        movem   3,2(2)
+        pushj   17,proc_runq_add       ; preserves AC6/AC7 frontier state
         jrst    proc_timer_service_next
 
 proc_timer_service_future:
-        move    0,3
-        sub     0,6
-        andi    0,PROC_TIMER_CLOCK_MASK
         jumpe   4,proc_timer_service_best
-        camge   0,4
+        camge   0,4                    ; choose nearest offset from frontier
         jrst    proc_timer_service_best
         jrst    proc_timer_service_next
 proc_timer_service_best:
@@ -2213,8 +2195,8 @@ proc_timer_service_next:
 
 proc_timer_service_done:
         jumpe   4,proc_timer_service_none
-        move    1,6
-        add     1,4
+        move    1,7
+        add     1,4                    ; next absolute deadline
         andi    1,PROC_TIMER_CLOCK_MASK
         hrli    1,PROC_TIMER_ACTIVE_LH
         movem   1,proc_timer_next
