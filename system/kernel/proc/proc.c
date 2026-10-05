@@ -534,6 +534,7 @@ proc_wait_status(unsigned int selector, kword_t *statusp, unsigned int flags)
 
 
 
+#ifndef PROC_SCHED_SELECT_PDP6_ASM
 /** Score the intrusive run queue and select the next resident runnable process. */
 static unsigned int
 proc_select_runnable(int elapsed_ticks)
@@ -666,6 +667,7 @@ proc_sched_tick_select(void)
                 elapsed_ticks = 1;
         return proc_select_runnable(elapsed_ticks);
 }
+#endif /* PROC_SCHED_SELECT_PDP6_ASM */
 
 #ifndef PROC_SWAP_VICTIM_PDP6_ASM
 /** Choose the best swappable noncurrent process, or -1 when none is suitable. */

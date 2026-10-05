@@ -102,6 +102,215 @@
         .globl  proc_runq_remove
         .globl  proc_trim_high
 
+/**
+ * @brief Select a runnable process after an explicit reschedule.
+ *
+ * The C spelling needs a thirteen-word local frame because KCC spills the
+ * queue-selection state.  PDP-6 has enough callee-saved ACs to keep the whole
+ * selection tuple live in registers.  AC10..AC16 are saved/restored with one
+ * BLT, reducing both resident text and scheduler memory traffic.
+ */
+proc_sched_resched_select:
+        move    1,proc_sched_deferred_ticks
+        setzm   proc_sched_deferred_ticks
+        jrst    proc_select_runnable_pdp6
+
+/** Select after a clock quantum, charging at least one elapsed tick. */
+proc_sched_tick_select:
+        move    1,proc_sched_deferred_ticks
+        setzm   proc_sched_deferred_ticks
+        jumpn   1,proc_select_runnable_pdp6
+        movei   1,1
+
+; AC10 elapsed ticks
+; AC11 best slot, AC12 best priority, AC13 best cyclic rank
+; AC14 previous scheduler cursor, AC15 current slot, AC16 current descriptor
+proc_select_runnable_pdp6:
+        add     17,kconst_7_7
+        movei   0,-6(17)
+        hrli    0,10
+        blt     0,(17)
+        move    10,1
+        skipn   proc_table
+        jrst    proc_select_none
+        move    1,proc_high_slot
+        caig    1,1
+        jrst    proc_select_none
+        setz    11,
+        setz    12,
+        setz    13,
+        hrrz    14,proc_sched_cursor
+        andi    14,0377
+
+        ; Sleep age advances only on the original 64-tick boundary.
+        jumpe   10,proc_select_rt
+        move    1,proc_sched_age_phase
+        add     1,10
+        movem   1,proc_sched_age_phase
+        caige   1,0100
+        jrst    proc_select_rt
+        subi    1,0100
+        movem   1,proc_sched_age_phase
+        movei   15,1
+        move    16,proc_table
+        addi    16,PROC_WORDS
+proc_select_age_loop:
+        caml    15,proc_high_slot
+        jrst    proc_select_rt
+        move    1,2(16)
+        lsh     1,-041
+        caie    1,PROC_STATE_SLEEP
+        jrst    proc_select_age_next
+        move    1,2(16)
+        lsh     1,-034
+        andi    1,PROC_SLEEP_LH_MASK
+        cain    1,PROC_SLEEP_LH_MASK
+        jrst    proc_select_age_next
+proc_select_age_inc:
+        movsi   2,02000
+        addb    2,2(16)
+proc_select_age_next:
+        addi    15,1
+        addi    16,PROC_WORDS
+        jrst    proc_select_age_loop
+
+        ; Real-time ownership wins immediately when its process is resident
+        ; and runnable.  A swapped RT owner requests swap and returns slot 0.
+proc_select_rt:
+        skipn   15,proc_rt_owner
+        jrst    proc_select_runq_start
+        move    16,15
+        lsh     16,1
+        add     16,15
+        add     16,proc_table
+        move    1,2(16)
+        lsh     1,-041
+        caie    1,PROC_STATE_RUN
+        jrst    proc_select_runq_start
+        move    1,(16)
+        trne    1,PROC_TRANSITION_RH
+        jrst    proc_select_runq_start
+        movem   15,proc_sched_cursor
+        move    1,1(16)
+        trne    1,0777777
+        jrst    proc_select_return_slot
+        movei   1,0400
+        iorm    1,proc_sched_cursor
+        jrst    proc_select_none
+
+proc_select_runq_start:
+        hrrz    15,proc_runq_head
+proc_select_runq:
+        jumpe   15,proc_select_done
+        move    16,15
+        lsh     16,1
+        add     16,15
+        add     16,proc_table
+
+        ; Update recent CPU exactly once for each runnable-queue member.
+        jumpe   10,proc_select_candidate
+        move    1,2(16)
+        lsh     1,-030
+        andi    1,PROC_CPU_LH_MASK
+        came    15,proc_current_slot
+        jrst    proc_select_cpu_decay
+        move    2,(16)
+        trne    2,PROC_TRANSITION_RH
+        jrst    proc_select_cpu_decay
+        jumpn   1,proc_select_cpu_add
+        movei   1,1
+proc_select_cpu_add:
+        add     1,10
+        caile   1,PROC_CPU_LH_MASK
+        movei   1,PROC_CPU_LH_MASK
+        jrst    proc_select_cpu_store
+proc_select_cpu_decay:
+        camg    1,10
+        jrst    proc_select_cpu_zero
+        sub     1,10
+        jrst    proc_select_cpu_store
+proc_select_cpu_zero:
+        setz    1,
+proc_select_cpu_store:
+        move    2,2(16)
+        tlz     2,01700
+        move    3,1
+        lsh     3,030
+        ior     2,3
+        movem   2,2(16)
+
+proc_select_candidate:
+        move    1,(16)
+        trne    1,PROC_TRANSITION_RH
+        jrst    proc_select_next
+        move    1,1(16)
+        trne    1,0777777
+        jrst    proc_select_score
+        move    1,proc_swap_records
+        add     1,15
+        move    1,(1)
+        jumpe   1,proc_select_next
+
+proc_select_score:
+        ; priority = biased nice + recent CPU
+        hlrz    1,2(16)
+        andi    1,PROC_NICE_LH_MASK
+        move    2,2(16)
+        lsh     2,-030
+        andi    2,PROC_CPU_LH_MASK
+        add     1,2
+
+        ; Cyclic rank is modulo 256; rank zero sorts after all others.
+        move    2,15
+        sub     2,14
+        andi    2,0377
+        jumpn   2,proc_select_compare
+        movei   2,0400
+proc_select_compare:
+        jumpe   11,proc_select_better
+        camge   1,12
+        jrst    proc_select_better
+        came    1,12
+        jrst    proc_select_next
+        caml    2,13
+        jrst    proc_select_next
+proc_select_better:
+        move    11,15
+        move    12,1
+        move    13,2
+proc_select_next:
+        hrrz    15,2(16)
+        jrst    proc_select_runq
+
+proc_select_done:
+        jumpe   11,proc_select_none
+        movem   11,proc_sched_cursor
+        move    16,11
+        lsh     16,1
+        add     16,11
+        add     16,proc_table
+        move    1,1(16)
+        trne    1,0777777
+        jrst    proc_select_return_best
+        movei   1,0400
+        iorm    1,proc_sched_cursor
+        jrst    proc_select_none
+
+proc_select_return_best:
+        move    1,11
+        jrst    proc_select_restore
+proc_select_return_slot:
+        move    1,15
+        jrst    proc_select_restore
+proc_select_none:
+        setz    1,
+proc_select_restore:
+        movei   0,10
+        hrli    0,-6(17)
+        blt     0,16
+        sub     17,kconst_7_7
+        popj    17,
+
 ; Remove only trailing FREE descriptors; interior holes remain reusable.
 proc_trim_high:
         move    1,proc_high_slot
