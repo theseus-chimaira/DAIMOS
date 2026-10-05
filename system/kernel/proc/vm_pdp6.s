@@ -17,9 +17,15 @@
         .globl  vm_enter_initial_user
         .globl  vm_space_startup
         .globl  vm_space_load_file
+        .globl  vm_space_create
+        .globl  vm_space_destroy
         .globl  vm_extent_move
         .globl  fs_copy_words
         .globl  fs_move_words
+        .globl  fs_zero_words
+        .globl  mm_alloc_aligned
+        .globl  mm_free
+        .globl  proc_swap_detach
         .globl  vfs_read_words
         .globl  proc_runq_add
         .globl  proc_runq_remove
@@ -91,6 +97,83 @@ vm_activate_current:
         sub     2,[02000,,0]            ; APR LH stores words-02000
         movem   2,vm_pdp6_apr
         datao   0000,vm_pdp6_apr
+        popj    17,
+
+/**
+ * @brief Allocate and clear one aligned contiguous PDP-6 user extent.
+ *
+ * @param AC1 Process descriptor.
+ * @param AC2 MM owner/process slot.
+ * @param AC3 Requested words.
+ * @return AC1 zero on success, -1 on allocation failure.
+ */
+vm_space_create:
+        push    17,10
+        push    17,11
+        push    17,12
+        move    10,1                   ; descriptor
+        move    11,2                   ; owner
+        move    12,3
+        addi    12,01777
+        and     12,[-02000]            ; round to 02000-word boundary
+
+        push    17,[0]                 ; local allocation base
+        movei   1,(17)
+        push    17,1                   ; sixth arg: basep
+        push    17,[1]                 ; fifth arg: MM_ALLOC_HIGH
+        move    1,12
+        movei   2,02000
+        movei   3,1                    ; MM_TYPE_PROCESS
+        move    4,11
+        pushj   17,mm_alloc_aligned
+        sub     17,kconst_2_2
+        jumpn   1,vm_space_create_fail
+
+        move    1,(17)
+        move    2,12
+        pushj   17,fs_zero_words
+        hrlz    1,12
+        hrr     1,(17)
+        movem   1,1(10)
+        setz    1,
+        jrst    vm_space_create_done
+vm_space_create_fail:
+        seto    1,
+vm_space_create_done:
+        sub     17,kconst_1_1
+        pop     17,12
+        pop     17,11
+        pop     17,10
+        popj    17,
+
+/**
+ * @brief Release one resident user extent and clear its VM state.
+ *
+ * @param AC1 Process descriptor.
+ * @param AC2 MM owner/process slot.
+ * @return AC1 zero on success, -1 if MM rejected the free.
+ */
+vm_space_destroy:
+        push    17,1                    ; descriptor
+        push    17,2                    ; owner
+        hrrz    3,1(1)
+        jumpe   3,vm_space_destroy_detach
+        move    1,3
+        movei   2,1                    ; MM_TYPE_PROCESS
+        move    3,(17)
+        pushj   17,mm_free
+        jumpn   1,vm_space_destroy_fail
+vm_space_destroy_detach:
+        move    1,(17)
+        pushj   17,proc_swap_detach
+        move    2,-1(17)
+        setom   1(2)                   ; VM_SPACE_NONE
+        setz    1,
+        jrst    vm_space_destroy_done
+vm_space_destroy_fail:
+        seto    1,
+vm_space_destroy_done:
+        sub     17,kconst_2_2
         popj    17,
 
 /**

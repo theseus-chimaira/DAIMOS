@@ -14,6 +14,7 @@
 #include "proc_swap.h"
 #include "exec.h"
 
+#ifndef VM_SPACE_CREATE_PDP6_ASM
 /** Allocate and zero one aligned contiguous PDP-6 user extent. */
 int
 vm_space_create(struct proc *p, unsigned int owner, kword_t words)
@@ -32,6 +33,7 @@ vm_space_create(struct proc *p, unsigned int owner, kword_t words)
         VM_PDP6_SET_SPACE(p, alloc_words, base);
         return 0;
 }
+#endif /* VM_SPACE_CREATE_PDP6_ASM */
 
 #ifndef VM_SPACE_LOAD_FILE_PDP6_ASM
 /** Read executable words directly into a logical offset of the resident extent. */
@@ -94,6 +96,7 @@ vm_space_startup(struct proc *p, const kword_t *records,
 #endif /* VM_SPACE_STARTUP_PDP6_ASM */
 
 
+#ifndef VM_SPACE_DESTROY_PDP6_ASM
 /** Release a resident extent, detach backing metadata, and clear VM state. */
 int
 vm_space_destroy(struct proc *p, unsigned int owner)
@@ -108,6 +111,7 @@ vm_space_destroy(struct proc *p, unsigned int owner)
         VM_SPACE_RESET(p);
         return 0;
 }
+#endif /* VM_SPACE_DESTROY_PDP6_ASM */
 
 #ifndef VM_SPACE_CAN_SWAP_PDP6_ASM
 /** Return whether a resident extent is movable to swap rather than MM-pinned. */
