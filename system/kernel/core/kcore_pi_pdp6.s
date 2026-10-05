@@ -218,6 +218,9 @@ proc_runq_head:
         .globl proc_rt_owner
 proc_rt_owner:
         .block 1
+        .globl proc_current_ptr
+proc_current_ptr:
+        .block 1
 
         .text
 /**

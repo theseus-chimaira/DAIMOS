@@ -181,6 +181,7 @@ extern struct proc *proc_table;
 extern unsigned int proc_slots;
 extern unsigned int proc_high_slot;
 extern kword_t proc_current_slot;
+extern struct proc *proc_current_ptr;
 extern kword_t proc_sched_cursor;
 extern kword_t proc_sched_deferred_ticks;
 extern kword_t proc_runq_head;

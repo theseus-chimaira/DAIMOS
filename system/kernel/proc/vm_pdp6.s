@@ -16,6 +16,7 @@
         .globl  vm_activate_current
         .globl  vm_enter_initial_user
         .globl  proc_current_slot
+        .globl  proc_current_ptr
         .globl  proc_table
         .globl  proc_slot_ptr
         .globl  proc_record_kernel_sp
@@ -46,10 +47,7 @@ vm_user_words:
 vm_user_mapping_hold:
         push    17,0
         push    17,5
-        move    5,proc_current_slot
-        lsh     5,1
-        add     5,proc_current_slot
-        add     5,proc_table
+        move    5,proc_current_ptr
         hlrz    0,(5)
         jumpe   0,vm_user_mapping_hold_done
         move    5,0                     ; AC0 cannot be an index register
@@ -66,10 +64,7 @@ vm_user_mapping_hold_done:
 vm_user_mapping_release:
         push    17,0
         push    17,5
-        move    5,proc_current_slot
-        lsh     5,1
-        add     5,proc_current_slot
-        add     5,proc_table
+        move    5,proc_current_ptr
         hlrz    0,(5)
         jumpe   0,vm_user_mapping_release_done
         move    5,0                     ; AC0 cannot be an index register
@@ -83,8 +78,7 @@ vm_user_mapping_release_done:
 
 /** @brief Program the PDP-6 APR for the current process's resident VM. */
 vm_activate_current:
-        move    1,proc_current_slot
-        pushj   17,proc_slot_ptr
+        move    1,proc_current_ptr
         move    2,1(1)                  ; user words,,physical base
         sub     2,[02000,,0]            ; APR LH stores words-02000
         movem   2,vm_pdp6_apr
@@ -152,8 +146,7 @@ proc_exec_enter:
         move 011,4                  ; argv
         move 012,5                  ; envp
         pushj 17,vm_activate_current
-        move 1,proc_current_slot
-        pushj 17,proc_slot_ptr
+        move 1,proc_current_ptr
         hlrz 5,(1)                  ; stable u-area base
         move 17,5
         addi 17,0111                ; PROC_USTACK_BASE

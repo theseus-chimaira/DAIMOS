@@ -367,6 +367,7 @@ proc_exit_finish(int status)
 
         slot = (unsigned int)proc_current_slot;
         proc_current_slot = 0UL;
+        proc_current_ptr = 0;
         if (proc_finish_slot(slot, (unsigned int)status) != 0)
                 return -1;
         return proc_has_live_user();

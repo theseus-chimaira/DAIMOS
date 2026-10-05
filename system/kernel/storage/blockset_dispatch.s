@@ -55,16 +55,8 @@ blockset_block_io:
         pushj 17,blockset_map_block
         move 3,4
         jumpl 1,kret_neg1
-        jumpe 5,blockset_block_read_account
-        pushj 17,blockset_backend_write
-        jrst blockset_block_done
-blockset_block_read_account:
-blockset_block_read:
-        pushj 17,blockset_backend_read
-blockset_block_done:
-        jumpe 1,blockset_block_return
-blockset_block_return:
-        popj 17,
+        jumpe 5,blockset_backend_read
+        jrst blockset_backend_write
 
 ; Homogeneous root backend.
 blockset_backend_read:

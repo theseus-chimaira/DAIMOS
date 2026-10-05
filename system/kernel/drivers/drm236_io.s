@@ -106,8 +106,8 @@ drm236_runtime_finish:
         move    1,(017)
         move    4,-1(017)               ; preserve operation for accounting
         sub     017,kconst_3_3
-        sojn    1,drm236_account_error
-        jrst    drm236_account_success
+        sojn    1,kret_neg1
+        jrst    kret_ok
 
 /**
  * @brief Start the runtime descriptor named by AC1 on PI2.
@@ -240,15 +240,9 @@ drm236_poll_dr:
 
 drm236_poll_success:
         cono    0400,DRM_DR_DESELECT
-        jrst    drm236_account_success
+        jrst    kret_ok
 
 drm236_poll_error:
         cono    0010,0
         cono    0400,DRM_DR_CLEAR_DESELECT
-        jrst    drm236_account_error
-
-drm236_account_success:
-        jrst    kret_ok
-
-drm236_account_error:
         jrst    kret_neg1

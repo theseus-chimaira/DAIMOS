@@ -145,6 +145,7 @@ kinit_late_start(kword_t idle_stack_base, kword_t reclaim_end)
 
         p = &proc_table[1];
         proc_current_slot = 1UL;
+        proc_current_ptr = p;
         proc_sched_cursor = 1UL;
 
         /* Publish the permanent idle/exit stack only after late KINIT has

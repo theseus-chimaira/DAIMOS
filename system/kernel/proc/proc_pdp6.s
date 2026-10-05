@@ -56,6 +56,7 @@
         .globl  proc_slots
         .globl  proc_high_slot
         .globl  proc_current_slot
+        .globl  proc_current_ptr
         .globl  proc_sched_cursor
         .globl  proc_sched_deferred_ticks
         .globl  proc_runq_head
@@ -429,9 +430,7 @@ proc_nice_current:
         move    1,[-024]
         camle   1,[023]
         movei   1,023
-        move    2,proc_current_slot
-        imuli   2,PROC_WORDS
-        add     2,proc_table
+        move    2,proc_current_ptr
         hlrz    3,2(2)
         andi    3,077
         subi    3,024
@@ -823,8 +822,7 @@ proc_event_send_return:
 ; root or when caller and target effective UIDs match.  Preserve AC4 because
 ; the caller immediately uses it for target session/domain state.
 proc_event_uid_check:
-        move    1,proc_current_slot
-        pushj   17,proc_slot_ptr
+        move    1,proc_current_ptr
         hlrz    3,(1)
         hlrz    2,0107(3)              ; caller UID
         jumpe   2,kret_zero            ; UID 0 may administer all users
@@ -919,10 +917,7 @@ proc_scope_live:
 proc_child_hierarchy:
         move    7,1                    ; child slot
         move    6,3                    ; requested pgrp
-        move    4,proc_current_slot    ; parent slot * 3
-        lsh     4,1
-        add     4,proc_current_slot
-        add     4,proc_table           ; parent descriptor
+        move    4,proc_current_ptr     ; parent descriptor
         hlrz    3,(4)
         move    3,045(3)               ; parent control word
         ldb     5,[POINT 8,3,32]       ; parent session
@@ -1019,10 +1014,7 @@ proc_control:
         ; NEWDOMAIN, and the TTY ownership operations below.  Do not depend
         ; on an arbitrary user AC3 value surviving the syscall trap.
         move    3,proc_current_slot
-        move    4,3
-        lsh     4,1
-        add     4,3
-        add     4,proc_table
+        move    4,proc_current_ptr
         move    5,1
         andi    5,1
         lsh     1,-1
@@ -1250,10 +1242,7 @@ proc_control_tty_setmode:
         push    17,2                   ; requested mode
         pushj   17,proc_control_tty_owned
         jumpl   1,proc_control_tty_setmode_bad
-        move    6,proc_current_slot
-        lsh     6,1
-        add     6,proc_current_slot
-        add     6,proc_table
+        move    6,proc_current_ptr
         hrrz    6,(6)
         andi    6,0377                 ; caller pgrp
         ldb     5,[POINT 8,proc_tty_records(1),27]
@@ -1677,10 +1666,7 @@ proc_tty_canon_return:
 /** @brief Enter or resume a blocking read on the current controlling TTY. */
 proc_tty_read_enter:
 proc_tty_read_enter_retry:
-        move    5,proc_current_slot
-        lsh     5,1
-        add     5,proc_current_slot
-        add     5,proc_table
+        move    5,proc_current_ptr
         hlrz    6,(5)
         hlrz    1,045(6)
         lsh     1,-014                 ; packed TTY state
@@ -1713,10 +1699,7 @@ proc_tty_input:
         move    5,2                    ; character
         cail    4,025
         jrst    kret_neg1
-        move    7,proc_current_slot
-        lsh     7,1
-        add     7,proc_current_slot
-        add     7,proc_table
+        move    7,proc_current_ptr
         hlrz    2,(7)                  ; u-area; keep callee-saved AC10+ intact
         hlrz    3,045(2)
         lsh     3,-014                 ; TTY state
@@ -1776,10 +1759,7 @@ proc_tty_input_char:
 /** @brief Emit one packed TTY output character after ownership validation. */
 proc_tty_output:
         move    4,1                    ; character
-        move    6,proc_current_slot
-        lsh     6,1
-        add     6,proc_current_slot
-        add     6,proc_table
+        move    6,proc_current_ptr
         hlrz    7,(6)
         hlrz    1,045(7)
         lsh     1,-014
@@ -1949,10 +1929,7 @@ proc_wait_event_common:
         move    1,proc_current_slot
         pushj   17,proc_runq_remove
         pop     17,1
-        move    2,proc_current_slot
-        lsh     2,1
-        add     2,proc_current_slot
-        add     2,proc_table
+        move    2,proc_current_ptr
         move    3,2(2)                 ; packed scheduler word
         tlz     3,PROC_WAIT_LH_MASK
         ior     3,4
@@ -2013,8 +1990,7 @@ proc_wait_child:
         jrst    kret_neg1
         move    1,proc_current_slot
         pushj   17,proc_runq_remove
-        move    1,proc_current_slot
-        pushj   17,proc_slot_ptr
+        move    1,proc_current_ptr
         move    2,1
         move    3,2(2)
         tlz     3,PROC_WAIT_LH_MASK
@@ -2259,6 +2235,7 @@ proc_restore_common:
 ; Switch to the slot-0 executive idle loop when no resident user process runs.
 proc_restore_idle:
         setzm   proc_current_slot
+        setzm   proc_current_ptr
         setzm   file_table
         movei   1,proc_idle_loop
         movem   1,pdp10_pi_level6
@@ -2399,7 +2376,9 @@ proc_sched_select:
 proc_sched_restore_selected:
         movem   1,proc_current_slot
         jumpe   1,proc_restore_idle
-        pushj   17,proc_uarea_slot
+        pushj   17,proc_slot_ptr
+        movem   1,proc_current_ptr
+        hlrz    1,(1)
         skipn   CTX_K_PC(1)
         jrst    proc_restore_user
         jrst    proc_restore_kernel
