@@ -303,7 +303,7 @@ ${BUILD}/d6lz_fixed.s: ../stand/pdp6/common/decompressor.inc
 
 ${BUILD}/exec.s: proc/exec.c proc/exec_lowmem_pdp6.s proc/exec_load.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S proc/exec.c -o $@.c
+	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DEXEC_REPLACE_CURRENT_PDP6_ASM=1 ${INCLUDES} -S proc/exec.c -o $@.c
 	cat $@.c proc/exec_lowmem_pdp6.s proc/exec_load.s > $@
 	rm -f $@.c
 

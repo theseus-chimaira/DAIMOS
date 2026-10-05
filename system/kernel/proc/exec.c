@@ -38,6 +38,7 @@ extern int exec_replace_current_lowmem(const kword_t *block,
  * backing and RT ownership are staged/rolled back so validation and load errors
  * leave the caller's old image runnable.
  */
+#ifndef EXEC_REPLACE_CURRENT_PDP6_ASM
 int
 exec_replace_current(const kword_t *block,
     unsigned int available_words, kword_t *entry_startup)
@@ -153,3 +154,4 @@ restore_swap_fail:
 invalid:
         return -1;
 }
+#endif /* EXEC_REPLACE_CURRENT_PDP6_ASM */
