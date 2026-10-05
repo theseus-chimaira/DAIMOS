@@ -2,10 +2,10 @@
  * @file cp_io.s
  * @brief Resident PDP-6 card-punch MRES for device 0110.
  *
- * KINIT probes the punch and installs this package only when CP is usable, so
- * an absent punch consumes neither driver text nor its one-word busy state.
+ * KINIT probes the punch and installs this package only when CP is usable.
  * The resident interface accepts one native 27-word CARD12 image and polls
- * DATA REQUEST/END CARD directly with the PIA disabled.
+ * DATA REQUEST/END CARD directly with the PIA disabled.  The path never
+ * sleeps, so executive non-preemption gives exclusive ownership.
  */
         .globl mfsdev_io_out
         .text
@@ -22,8 +22,6 @@ cp_write_words:
         jumpe 1,kret_arg
         caie 2,033                    ; one complete card only
         jrst kret_arg
-        skipe cp_iowd
-        jrst kret_neg4
         move 3,032(1)
         andi 3,07777                  ; canonical unused final token
         jumpn 3,kret_arg
@@ -36,7 +34,6 @@ cp_write_words:
         movei 011,0120                ; 80 columns
         setz 012,                     ; slot 0..2
         move 013,(010)
-        setom cp_iowd
         cono 0110,01340               ; punch on/status clear, no PIA
 
 cp_words_column:
@@ -84,7 +81,6 @@ cp_words_ok:
         movei 011,033
 cp_words_finish:
         cono 0110,0
-        setzm cp_iowd
         move 1,011
         pop 17,014
         pop 17,013
@@ -92,10 +88,3 @@ cp_words_finish:
         pop 17,011
         pop 17,010
         popj 17,
-
-        .bss
-/**
- * Zero when idle, nonzero while one CARD12 write owns the physical punch.
- */
-cp_iowd:
-        .block 1

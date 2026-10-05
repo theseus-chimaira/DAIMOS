@@ -2,8 +2,9 @@
  * @file ptp_io.s
  * @brief Resident PDP-6 paper-tape punch driver for device 0100.
  *
- * The punch uses one MRES busy word.  KINIT probes PI assignment, then leaves
- * the PIA disabled; native WORDTOKEN8 output polls BUSY/DONE synchronously.
+ * KINIT probes PI assignment, then leaves the PIA disabled; native WORDTOKEN8
+ * output polls BUSY/DONE synchronously and never sleeps, so executive
+ * non-preemption already provides exclusive ownership for the complete call.
  * PTP is installed independently of PTR, so neither optional device forces
  * the other's resident code into memory.
  */
@@ -19,8 +20,6 @@
 ptp_write_words:
         jumpe 1,kret_arg
         jumpe 2,kret_ok
-        skipe ptp_state
-        jrst kret_busy
         push 17,010
         push 17,011
         push 17,012
@@ -30,7 +29,6 @@ ptp_write_words:
         move 010,1                    ; input cursor
         hrrz 011,2                    ; requested words
         setz 012,                     ; completed words
-        setom ptp_state
 ptp_words_next:
         move 013,(010)
         move 014,013
@@ -82,7 +80,6 @@ ptp_words_first_error:
         move 012,1
 ptp_words_return:
         cono 0100,0
-        setzm ptp_state
         move 1,012
         pop 17,015
         pop 17,014
@@ -91,7 +88,3 @@ ptp_words_return:
         pop 17,011
         pop 17,010
         popj 17,
-        .bss
-/** Zero when idle, nonzero while one bulk write owns the physical punch. */
-ptp_state:
-        .block 1

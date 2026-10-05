@@ -4,8 +4,8 @@
  *
  * Runtime input is the native WORDTOKEN8 bulk path.  KINIT probes the reader
  * with PI assignment enabled, then disables the PIA before publishing this
- * MRES.  ptr_state is therefore only a one-word busy flag protecting the
- * synchronous physical transfer from overlap by another process.
+ * MRES.  Runtime transfer is synchronous and never sleeps, so the executive
+ * cannot switch to another process while the physical reader is owned.
  */
         .globl mfsdev_io_in
         .text
@@ -25,8 +25,6 @@
 ptr_read_words:
         jumpe 1,kret_arg
         jumpe 2,kret_ok
-        skipe ptr_state
-        jrst kret_busy
         push 17,010
         push 17,011
         push 17,012
@@ -36,7 +34,6 @@ ptr_read_words:
         move 010,1                    ; output cursor
         hrrz 011,2                    ; requested output words
         setz 012,                     ; completed output words
-        setom ptr_state               ; exclude another bulk reader
         cono 0104,0020                ; continuous reader, PI disabled
 ptr_words_next:
         setz 013,                     ; packed byte accumulator
@@ -79,7 +76,6 @@ ptr_words_no_partial:
         ; with no next byte is therefore the physical end-of-stream condition.
 ptr_words_return:
         cono 0104,0
-        setzm ptr_state
         move 1,012
         pop 17,015
         pop 17,014
@@ -88,8 +84,3 @@ ptr_words_return:
         pop 17,011
         pop 17,010
         popj 17,
-
-        .bss
-/** Zero when idle, nonzero while one bulk read owns the physical reader. */
-ptr_state:
-        .block 1

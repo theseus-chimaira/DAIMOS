@@ -3,10 +3,10 @@
  * @brief Resident PDP-6 card-reader MRES for device 0150.
  *
  * KINIT probes the reader and installs this package only when the device is
- * usable, so both its code and one-word busy state disappear entirely when CR
- * is absent.  The resident interface is the native 27-word CARD12 transfer;
- * it polls DATA READY directly with the PIA disabled and packs columns while
- * the card is moving.
+ * usable.  The resident interface is the native 27-word CARD12 transfer; it
+ * polls DATA READY directly with the PIA disabled and packs columns while the
+ * card is moving.  The path never sleeps, so executive non-preemption is the
+ * ownership lock.
  */
         .globl mfsdev_io_in
         .text
@@ -25,15 +25,12 @@ cr_read_words:
         jumpe 1,kret_arg
         caige 2,033                    ; 27 decimal
         jrst kret_arg
-        skipe cr_iowd
-        jrst kret_neg4
         push 17,010
         push 17,011
         push 17,012
         push 17,013
         push 17,014
         move 010,1                    ; output cursor
-        setom cr_iowd                 ; exclusive bulk ownership
 
         movei 011,0200000
 cr_words_ready_wait:
@@ -98,7 +95,6 @@ cr_words_ok:
         movei 012,033
 cr_words_finish:
         cono 0150,0
-        setzm cr_iowd
         move 1,012
         pop 17,014
         pop 17,013
@@ -106,10 +102,3 @@ cr_words_finish:
         pop 17,011
         pop 17,010
         popj 17,
-
-        .bss
-/**
- * Zero when idle, nonzero while one CARD12 read owns the physical reader.
- */
-cr_iowd:
-        .block 1
