@@ -30,10 +30,6 @@ dtfs_mres_reg_dispatch:
 ; allocation map.  The supported PDP-6 build uses native DTFS only; dormant
 ; TENEX/ITS compatibility remains behind disabled assembly guards.
 dtfs_space:
-        push    17,010
-        push    17,011
-        push    17,012
-        push    17,013
         ldb     4,[POINT 6,1,11]        ; public mount id
         sojl    4,dtfs_space_fail
         caile   4,3
@@ -41,36 +37,36 @@ dtfs_space:
         move    5,dtfs_media(4)
         hrrz    5,5
         andi    5,030                   ; personality
-        setz    010,                    ; map-base offset
-        setz    013,                    ; block-number -> map-index offset
-        cain    5,020                   ; ITS
-        movei   010,056                 ; DTFS_ITS_NAME_WORDS
-        jumpe   5,dtfs_space_scan       ; native uses block number directly
-        movei   013,1                   ; TENEX/ITS use block-1
-dtfs_space_scan:
-        movei   011,1                   ; physical block 1..01101
-        setz    012,                    ; used blocks
+        setz    7,                      ; allocation-map word base
+        movei   4,1                     ; native map starts at index 1
+        movei   0,01101                 ; native/TENEX physical block count
+        jumpe   5,dtfs_space_setup_done
+        setz    4,                      ; TENEX/ITS map starts at index 0
+        caie    5,020                   ; ITS has a shorter physical medium map
+        jrst    dtfs_space_setup_done
+        movei   7,056                   ; DTFS_ITS_NAME_WORDS
+        movei   0,01067                 ; DTFS_ITS_END_BLOCK
+dtfs_space_setup_done:
+        move    5,0                     ; map entries remaining
+        setz    6,                      ; used blocks
 dtfs_space_loop:
-        move    1,010
-        move    2,011
-        sub     2,013
+        move    1,7
+        move    2,4
         pushj   17,dtfs_owner
         jumpe   1,dtfs_space_next
-        aoj     012,
+        aoj     6,
 dtfs_space_next:
-        aoj     011,
-        caile   011,01101
-        jrst    dtfs_space_done
-        jrst    dtfs_space_loop
+        aoj     4,
+        sojg    5,dtfs_space_loop
 dtfs_space_done:
-        movei   1,01101
+        move    1,0
         lsh     1,7                     ; 128 words/block
-        move    2,012
+        move    2,6
         lsh     2,7
-        jrst    dtfs_restore4
+        popj    17,
 dtfs_space_fail:
         seto    1,
-        jrst    dtfs_restore4
+        popj    17,
 
         .data
 dtfs_mres_vector:

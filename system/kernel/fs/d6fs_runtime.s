@@ -1365,9 +1365,8 @@ d6fs_provider_truncate_fail:
 d6fs_provider_lookup:
         jumpe   3,kret_neg1
         add     17,[012,,012]
-        movem   1,-1(17)                 ; directory vnode
         movem   3,(17)                   ; output pointer
-        movei   3,0
+        movei   3,-1(17)                 ; matched slot scratch
         movei   4,-011(17)               ; decoded dirent scratch
         pushj   17,d6fs_provider_scan_slot
         jumpn   1,d6fs_provider_lookup_fail
@@ -1572,5 +1571,3 @@ d6fs_provider_parent_name_fail:
 d6fs_provider_parent_name_done:
         sub     17,[015,,015]
         popj    17,
-
-        .bss

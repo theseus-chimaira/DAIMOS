@@ -203,8 +203,7 @@ memfs_find_child_loop:
         jumpn   1,memfs_find_child_found
 memfs_find_child_next:
         addi    5,7
-        addi    6,1
-        jrst    memfs_find_child_loop
+        aoja    6,memfs_find_child_loop
 memfs_find_child_found:
         move    1,6
         jrst    memfs_find_child_done
@@ -340,8 +339,7 @@ memfs_new_free_loop:
         trnn    5,1
         jrst    memfs_new_free_found
         addi    3,7
-        addi    4,1
-        jrst    memfs_new_free_loop
+        aoja    4,memfs_new_free_loop
 memfs_new_free_found:
         move    7,4                     ; new slot
         move    6,7
@@ -412,8 +410,7 @@ memfs_unlink_child_loop:
         jrst    memfs_restore4_fail
 memfs_unlink_child_next:
         addi    3,7
-        addi    4,1
-        jrst    memfs_unlink_child_loop
+        aoja    4,memfs_unlink_child_loop
 memfs_unlink_no_children:
         move    4,013
         imuli   4,7
@@ -617,8 +614,7 @@ memfs_readdir_loop:
         addi    0,1
 memfs_readdir_next:
         addi    5,7
-        addi    6,1
-        jrst    memfs_readdir_loop
+        aoja    6,memfs_readdir_loop
 memfs_readdir_found:
         move    0,5
         hrl     0,5

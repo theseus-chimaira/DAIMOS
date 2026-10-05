@@ -47,15 +47,12 @@
         .globl  file_rmdir
         .globl  file_check_root
         .globl  backstore_enabled
-/** @brief Decode low-core monitor UUO 040..077 and tail-dispatch its handler. */
+/** @brief Tail-dispatch a monitor UUO 040..077 decoded by mach_syscall. */
 exec_native_syscall:
-        ; Recover the monitor-UUO opcode from the trapped instruction.
-        ; AC0 cannot be an index register on the PDP-6: index field zero
-        ; means no indexing.  Use caller-scratch AC5 for the table selector.
-        hlrz    5,000040
-        lsh     5,-011
-        subi    5,040
-        ; Hardware monitor UUOs reaching mach_syscall are exactly 040..077.
+        ; AC5 arrives as opcode-040.  Hardware monitor UUOs reaching
+        ; mach_syscall are exactly 040..077.  AC0 cannot be an index register
+        ; on the PDP-6: index field zero means no indexing, so AC6 carries the
+        ; packed-table word selector below.
         ; Two 18-bit handler addresses share each permanent dispatch word.
         move    6,5
         andi    5,1

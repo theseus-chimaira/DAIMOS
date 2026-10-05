@@ -39,18 +39,22 @@ U_CRLF:
 
 ; AC1 = COUNTED SIXBIT STRING POINTER.
 U_PUTS6:
-        MOVE    6,0(01)
-        ANDI    6,0777777
-        JUMPE   6,U_PUTS6_DONE
-        MOVE    5,U_S6BP0
+        PUSH    17,010
+        PUSH    17,011
+        MOVE    10,0(01)
+        ANDI    10,0777777
+        JUMPE   10,U_PUTS6_DONE
+        MOVE    11,U_S6BP0
         ADDI    1,01
-        HRR     5,01
+        HRR     11,01
 U_PUTS6_LOOP:
-        ILDB    1,05
+        ILDB    1,011
         ADDI    1,040
         PUSHJ   17,U_PUTC
-        SOJG    6,U_PUTS6_LOOP
+        SOJG    10,U_PUTS6_LOOP
 U_PUTS6_DONE:
+        POP     17,011
+        POP     17,010
         POPJ    17,
 
 ; AC1 = ARGUMENT INDEX. RETURNS POINTER OR ZERO.
@@ -128,13 +132,17 @@ U_PUTOCT12_FILL:
         LSH     6,-03
         SUBI    4,01
         SOJG    5,U_PUTOCT12_FILL
-        MOVEI   6,014
-        MOVEI   5,U_NUMBUF
+        PUSH    17,010
+        PUSH    17,011
+        MOVEI   10,014
+        MOVEI   11,U_NUMBUF
 U_PUTOCT12_OUT:
-        MOVE    1,0(05)
+        MOVE    1,0(011)
         PUSHJ   17,U_PUTC
-        ADDI    5,01
-        SOJG    6,U_PUTOCT12_OUT
+        ADDI    11,01
+        SOJG    10,U_PUTOCT12_OUT
+        POP     17,011
+        POP     17,010
         POPJ    17,
 
 ; AC1 = UNSIGNED 18-BIT VALUE. PRINT 6 OCTAL DIGITS.
@@ -151,28 +159,28 @@ U_PUTOCT6_FILL:
         LSH     6,-03
         SUBI    4,01
         SOJG    5,U_PUTOCT6_FILL
-        MOVEI   6,06
-        MOVEI   5,U_NUMBUF+02
+        PUSH    17,010
+        PUSH    17,011
+        MOVEI   10,06
+        MOVEI   11,U_NUMBUF+02
 U_PUTOCT6_OUT:
-        MOVE    1,0(05)
+        MOVE    1,0(011)
         PUSHJ   17,U_PUTC
-        ADDI    5,01
-        SOJG    6,U_PUTOCT6_OUT
+        ADDI    11,01
+        SOJG    10,U_PUTOCT6_OUT
+        POP     17,011
+        POP     17,010
         POPJ    17,
 
 ; AC1 = UNSIGNED WORD. PRINT DECIMAL WITHOUT LEADING ZEROES.
 U_PUTDEC:
-        PUSH    17,04
-        PUSH    17,05
-        PUSH    17,06
-        PUSH    17,07
         MOVE    6,01
         MOVEI   4,U_NUMBUF+017
         SETZ    5,
         JUMPN   6,U_PUTDEC_FILL
         MOVEI   1,060
         PUSHJ   17,U_PUTC
-        JRST    U_PUTDEC_DONE
+        POPJ    17,
 U_PUTDEC_FILL:
         IDIVI   6,012
         ADDI    7,060
@@ -181,16 +189,17 @@ U_PUTDEC_FILL:
         ADDI    5,01
         JUMPN   6,U_PUTDEC_FILL
         ADDI    4,01
+        PUSH    17,010
+        PUSH    17,011
+        MOVE    10,4
+        MOVE    11,5
 U_PUTDEC_OUT:
-        MOVE    1,0(04)
+        MOVE    1,0(010)
         PUSHJ   17,U_PUTC
-        ADDI    4,01
-        SOJG    5,U_PUTDEC_OUT
-U_PUTDEC_DONE:
-        POP     17,07
-        POP     17,06
-        POP     17,05
-        POP     17,04
+        ADDI    10,01
+        SOJG    11,U_PUTDEC_OUT
+        POP     17,011
+        POP     17,010
         POPJ    17,
 
 ; AC1 = FILE DESCRIPTOR, AC2 = BUFFER, AC3 = WORD COUNT.
@@ -204,64 +213,68 @@ U_WRITE_WORDS:
 
 ; AC1 = FILE DESCRIPTOR, AC2 = BYTE BUFFER, AC3 = BYTE COUNT.
 U_READ_BYTES:
-        PUSH    17,04
-        PUSH    17,05
-        PUSH    17,06
-        MOVE    4,01
-        MOVE    5,02
-        MOVE    6,03
-        SETZ    3,
+        PUSH    17,010
+        PUSH    17,011
+        PUSH    17,012
+        PUSH    17,013
+        MOVE    10,01
+        MOVE    11,02
+        MOVE    12,03
+        SETZ    13,
 U_READ_BYTES_LOOP:
-        CAML    3,06
+        CAML    13,012
         JRST    U_READ_BYTES_DONE
-        MOVE    1,04
+        MOVE    1,010
         UUO     061,0(1)
         JUMPGE  1,U_READ_BYTES_CHAR
         CAME    1,[-1]
         JRST    U_READ_BYTES_DONE
         JRST    U_READ_BYTES_FAIL
 U_READ_BYTES_CHAR:
-        IDPB    1,05
-        ADDI    3,01
+        IDPB    1,011
+        ADDI    13,01
         JRST    U_READ_BYTES_LOOP
 U_READ_BYTES_DONE:
-        MOVE    1,03
+        MOVE    1,013
         JRST    U_READ_BYTES_RET
 U_READ_BYTES_FAIL:
         SETO    1,
 U_READ_BYTES_RET:
-        POP     17,06
-        POP     17,05
-        POP     17,04
+        POP     17,013
+        POP     17,012
+        POP     17,011
+        POP     17,010
         POPJ    17,
 
 U_WRITE_BYTES:
-        PUSH    17,04
-        PUSH    17,05
-        PUSH    17,06
-        MOVE    4,01
-        MOVE    5,02
-        MOVE    6,03
-        SETZ    3,
+        PUSH    17,010
+        PUSH    17,011
+        PUSH    17,012
+        PUSH    17,013
+        MOVE    10,01
+        MOVE    11,02
+        MOVE    12,03
+        SETZ    13,
 U_WRITE_BYTES_LOOP:
-        CAML    3,06
+        CAML    13,012
         JRST    U_WRITE_BYTES_DONE
-        ILDB    2,05
+        ILDB    2,011
         ANDI    2,0777
-        MOVE    1,04
+        MOVE    1,010
         UUO     062,0(1)
         JUMPL   1,U_WRITE_BYTES_FAIL
-        ADDI    3,01
+        ADDI    13,01
         JRST    U_WRITE_BYTES_LOOP
 U_WRITE_BYTES_DONE:
-        MOVE    1,03
+        MOVE    1,013
         JRST    U_WRITE_BYTES_RET
 U_WRITE_BYTES_FAIL:
         SETO    1,
 U_WRITE_BYTES_RET:
-        POP     17,06
-        POP     17,05
-        POP     17,04
+        POP     17,013
+        POP     17,012
+        POP     17,011
+        POP     17,010
         POPJ    17,
 
  ; RETURNS APPROXIMATE 60-HZ TICKS SINCE MIDNIGHT IN AC1 OR -1.

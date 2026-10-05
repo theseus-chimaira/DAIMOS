@@ -288,7 +288,7 @@ ${KINIT_C_ASM} ${KINIT_LATE_C_ASM}: ${KINIT_SRCS} ${KINIT_LATE_SRCS} ${KERNEL_HE
 	@mkdir -p ${BUILD}
 	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DKINIT_STACK_RESERVE_WORDS=${KINIT_STACK_RESERVE_WORDS} -DKINIT_STACK_WATERMARK=${KINIT_STACK_WATERMARK} -DKINIT_BADMAP=${KINIT_BADMAP} -DKINIT_FULL=${KINIT_FULL} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
 
-${BUILD}/bootbanner_generated.s: ${VERSION_FILE}
+${BUILD}/bootbanner_generated.s: ${VERSION_FILE} ${MKBOOTBANNER}
 	@mkdir -p ${BUILD}
 	${MKBOOTBANNER} -v '${DAIMON_VERSION}' -o $@
 

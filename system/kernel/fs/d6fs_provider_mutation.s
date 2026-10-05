@@ -140,7 +140,8 @@ d6fs_provider_free_fcb_done:
 ;   -033..-025 saved AC010..AC016
 ;   -024..-010 saved old FCB (015 words)
 ;   -007 node, -006 fcb, -005 fi, -004 new_words, -003 reserved
-;   -002 old_blocks, -001 new_blocks, 0 new extent_count
+;   -003 old allocated capacity in blocks
+;   -002 old logical blocks, -001 new logical blocks, 0 new extent_count
 ;   -035 returned start, -034 returned blocks (growth scratch)
 d6fs_provider_resize_fcb:
         add     17,[036,,036]
@@ -182,11 +183,35 @@ d6fs_provider_resize_fcb:
         jrst    d6fs_resize_fail
 
 d6fs_resize_blocks_ok:
+        ; Extents describe allocated capacity, which may exceed SIZE_WORDS.
+        ; Sum the existing run lengths so growth can consume reserved capacity
+        ; before allocating another one of the seven inline extent slots.
+        move    1,-6(17)                  ; fcb
+        ldb     2,[POINT 4,(1),31]        ; extent_count
+        move    3,5(1)                    ; packed five-bit length highs
+        movei   4,6(1)                    ; first extent word
+        setz    5,                        ; capacity blocks
+d6fs_resize_capacity_loop:
+        jumpe   2,d6fs_resize_capacity_done
+        move    6,(4)
+        move    7,3
+        andi    7,037
+        lsh     3,-5
+        lsh     7,014
+        andi    6,07777
+        ior     7,6
+        addi    7,1
+        add     5,7
+        addi    4,1
+        sojg    2,d6fs_resize_capacity_loop
+d6fs_resize_capacity_done:
+        movem   5,-3(17)                  ; old allocated capacity
+
         ; The extent engine uses AC010..AC016 as persistent state.
         move    010,-6(17)                ; fcb
         movei   011,-024(17)              ; old_fcb
-        move    012,-2(17)                ; old_blocks
-        move    013,-1(17)                ; new_blocks
+        move    012,-2(17)                ; old logical blocks
+        move    013,-1(17)                ; new logical blocks
         move    014,(17)                  ; extent_count
         move    015,013
         sub     015,012                    ; signed block-count delta
@@ -198,6 +223,11 @@ d6fs_resize_blocks_ok:
 ; newly allocated adjacent block is reflected in the FCB immediately so the
 ; common rollback can discover and release it if a later operation fails.
 d6fs_resize_grow:
+        ; Logical growth may fit entirely inside already allocated capacity.
+        ; Only the excess beyond capacity requires media allocation.
+        move    015,-1(17)
+        sub     015,-3(17)
+        jumple  015,d6fs_resize_publish
         jumpe   014,d6fs_resize_new_run
         move    016,014
         subi    016,1
@@ -266,7 +296,14 @@ d6fs_resize_new_run:
         jumpe   015,d6fs_resize_publish
         cail    014,7
         jrst    d6fs_resize_rollback
+        ; A new extent is scarce (only seven fit in an FCB).  Reserve at
+        ; least eight blocks so several interleaved incremental writers do
+        ; not consume one extent slot per 128-word append.  The validator
+        ; already defines SIZE_WORDS <= extent capacity, so this is purely an
+        ; allocation policy and does not change the D6FS V2 disk format.
         move    1,015
+        caige   1,010
+        movei   1,010
         caile   1,0200000
         movei   1,0200000
         movem   1,-034(17)
@@ -316,7 +353,8 @@ d6fs_resize_run_ready:
         movem   2,(1)
         caml    2,6(1)
         setzm   (1)
-        jrst    d6fs_resize_new_run
+        jumpg   015,d6fs_resize_new_run
+        jrst    d6fs_resize_publish
 
 ; Shrink reconstructs only the retained prefix.  Media is not released until
 ; the smaller FCB has been written successfully in d6fs_resize_publish.
@@ -407,7 +445,7 @@ d6fs_resize_rollback:
         ior     1,2
         movem   1,(6)
         move    1,6
-        move    2,-2(17)
+        move    2,-3(17)                 ; preserve old reserved capacity
         pushj   17,d6fs_provider_free_file_tail
         ; Restore the fixed 015-word on-disk prefix.
         movei   1,-024(17)

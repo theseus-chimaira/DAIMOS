@@ -31,9 +31,15 @@ mach_syscall:
         ; direct register bridge instead of taking a second executive trap.
         ; User LUUO selectors 001..037 never enter this monitor dispatcher.
 
-        ; Materialize arg0 from the UUO's computed effective address.  AC2..AC4
-        ; remain live until exec_native_syscall has arranged the target call.
+        ; Materialize arg0 and the syscall selector immediately.  Low-core 040
+        ; is hardware scratch for the trapped UUO, not process-private state;
+        ; do not leave the dispatcher dependent on it across stack setup or a
+        ; nested interrupt.  AC2..AC4 remain live until exec_native_syscall
+        ; has arranged the target call; AC5 carries opcode-040.
         hrrz 1,000040
+        hlrz 5,000040
+        lsh 5,-011
+        subi 5,040
         movem 17,mach_user_sp
         move 17,mach_kernel_sp
         ; Keep the user return on the process kernel stack so sleeping
@@ -42,7 +48,6 @@ mach_syscall:
         pushj 17,exec_native_syscall
         pop 17,mach_syscall_save
         movem 17,mach_kernel_sp
-
         skipn mach_user_sp
         popj 17,
 
