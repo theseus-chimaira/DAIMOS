@@ -81,12 +81,15 @@ mm_extent_insert(int slot, const struct mm_extent *extent)
  * @param words Requested contiguous words.
  * @param alignment Power-of-two word alignment.
  * @param preference MM_ALLOC_LOW or MM_ALLOC_HIGH.
- * @param basep Receives the selected physical base.
+ * @param basep Receives the selected physical base on success, or the total
+ *        currently free managed words when no fitting gap exists.
  * @return 1 when a fit exists, otherwise 0.
  *
  * Low placement returns the first suitable gap. High placement scans all
- * arenas and retains the highest suitable candidate. The caller validates all
- * values as positive 18-bit quantities before entry.
+ * arenas and retains the highest suitable candidate.  A failed scan has
+ * already visited every free gap, so report total free space from that same
+ * walk instead of forcing the caller through a second extent-table scan.
+ * The caller validates all values as positive 18-bit quantities before entry.
  */
 static int
 mm_find_fit(kword_t words, kword_t alignment, unsigned int preference,
@@ -101,6 +104,7 @@ mm_find_fit(kword_t words, kword_t alignment, unsigned int preference,
         int high_candidate;
         int request;
         int align;
+        int free_words;
         int arena;
         int i;
 
@@ -109,6 +113,7 @@ mm_find_fit(kword_t words, kword_t alignment, unsigned int preference,
         /* Physical bases are nonnegative 18-bit values, so -1 is a compact
          * unambiguous sentinel for "no high-placement candidate yet". */
         high_candidate = -1;
+        free_words = 0;
         i = 0;
         for (arena = 0; arena < mm_arena_count; ++arena) {
                 arena_base = (int)MM_ARENA_BASE(mm_arenas[arena]);
@@ -123,6 +128,7 @@ mm_find_fit(kword_t words, kword_t alignment, unsigned int preference,
                         if (extent_base >= arena_end)
                                 break;
                         if (extent_base > cursor) {
+                                free_words += extent_base - cursor;
                                 if (preference == MM_ALLOC_LOW) {
                                         candidate = (cursor + align - 1) &
                                             ~(align - 1);
@@ -145,6 +151,7 @@ mm_find_fit(kword_t words, kword_t alignment, unsigned int preference,
                         ++i;
                 }
                 if (arena_end > cursor) {
+                        free_words += arena_end - cursor;
                         if (preference == MM_ALLOC_LOW) {
                                 candidate = (cursor + align - 1) &
                                     ~(align - 1);
@@ -165,24 +172,8 @@ mm_find_fit(kword_t words, kword_t alignment, unsigned int preference,
                 *basep = (kword_t)high_candidate;
                 return 1;
         }
+        *basep = (kword_t)free_words;
         return 0;
-}
-
-/**
- * @brief Return total currently free managed-core words.
- */
-kword_t
-mm_total_free(void)
-{
-        kword_t total;
-        int i;
-
-        total = 0UL;
-        for (i = 0; i < mm_arena_count; ++i)
-                total += MM_ARENA_WORDS(mm_arenas[i]);
-        for (i = 0; i < mm_extent_count; ++i)
-                total -= MM_EXTENT_WORDS(&mm_extents[i]);
-        return total;
 }
 
 /**
@@ -213,7 +204,7 @@ mm_alloc_aligned_noreclaim(kword_t words, kword_t alignment, unsigned int type,
             (preference & ~01U) != 0U)
                 return MM_ERR_INVAL;
         if (!mm_find_fit(words, alignment, preference, &base))
-                return (long)mm_total_free() >= (long)words ?
+                return (long)base >= (long)words ?
                     MM_ERR_FRAGMENTED : MM_ERR_NOMEM;
         slot = 0;
         while (slot < mm_extent_count &&
@@ -326,10 +317,10 @@ mm_compact(kword_t words, kword_t alignment)
             alignment == 0UL || (alignment & ~MM_HALF_MASK) != 0UL ||
             (alignment & (alignment - 1UL)) != 0UL)
                 return MM_ERR_INVAL;
-        if ((long)mm_total_free() < (long)words)
-                return MM_ERR_NOMEM;
         if (mm_find_fit(words, alignment, MM_ALLOC_LOW, &fit_base))
                 return MM_OK;
+        if ((long)fit_base < (long)words)
+                return MM_ERR_NOMEM;
 
         i = 0;
         while (i < mm_extent_count) {

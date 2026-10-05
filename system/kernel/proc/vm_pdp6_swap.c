@@ -174,6 +174,7 @@ fail_record:
  * deliberately derived from the existing scheduler fields, so no permanent
  * request queue or per-process swap scheduling state is needed. */
 /** Service the scheduler's single pending slot-0 swap-in request. */
+#ifndef PROC_SWAP_SERVICE_PDP6_ASM
 int
 proc_swap_service_one(void)
 {
@@ -210,6 +211,7 @@ proc_swap_service_one(void)
         (void)proc_event_apply((unsigned int)slot, SYS_EVENT_TERM);
         return -1;
 }
+#endif
 
 /** Allocate, restore, and republish one swapped process image. */
 int
@@ -274,6 +276,7 @@ fail_free:
 }
 
 /** Swap victims until MM compaction can satisfy the requested free extent. */
+#ifndef PROC_SWAP_RECLAIM_PDP6_ASM
 int
 proc_swap_reclaim(kword_t words, kword_t alignment,
     unsigned int exclude_owner)
@@ -291,3 +294,4 @@ proc_swap_reclaim(kword_t words, kword_t alignment,
         }
         return -1;
 }
+#endif
