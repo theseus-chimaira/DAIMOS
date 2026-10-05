@@ -64,6 +64,7 @@
         .globl  proc_wait_event_intr
         .globl  proc_sleep_ticks
         .globl  proc_wait_child
+        .globl  proc_wait_status
         .globl  proc_wakeup_event
         .globl  proc_sched_pi_tick
         .globl  proc_sched_tick_select
@@ -183,6 +184,143 @@ proc_runq_remove_done:
 proc_uarea_slot:
         pushj   17,proc_slot_ptr
         hlrz    1,(1)
+        popj    17,
+
+/**
+ * @brief Reap or report one matching child for WAIT.
+ * @param AC1 Selector: low eight bits are slot/pgrp, bit 0400 selects pgrp.
+ * @param AC2 Optional status-word pointer.
+ * @param AC3 SYS_WAIT_NOHANG or zero.
+ * @return AC1 Child slot, zero for NOHANG, or -1 for error/no children.
+ *
+ * This is the compact PDP-6 spelling of proc_wait_status().  KCC's version
+ * materializes the loop state in a large stack frame even though six stable
+ * values fit naturally in callee-saved accumulators.  No policy changes live
+ * here: selector validation, STOP/CONT reports, zombie status, and retry after
+ * proc_wait_child() exactly mirror the C fallback.
+ */
+proc_wait_status:
+        add     17,kconst_7_7
+        movei   0,-6(17)
+        hrli    0,010
+        blt     0,0(17)                ; save AC10..AC16
+        move    010,1                  ; selector
+        move    011,2                  ; statusp
+        move    012,3                  ; flags
+
+        tdne    012,[-2]               ; only SYS_WAIT_NOHANG is valid
+        jrst    proc_wait_status_error
+        tdne    010,[-01000]           ; selector uses only bits 0..8
+        jrst    proc_wait_status_error
+        move    014,010
+        andi    014,0377               ; requested slot/pgrp id
+        trnn    010,0400
+        jrst    proc_wait_status_valid
+        jumpe   014,proc_wait_status_error
+proc_wait_status_valid:
+        move    013,proc_current_slot  ; parent slot
+
+proc_wait_status_retry:
+        setz    7,                     ; have_child
+        movei   015,1                  ; slot 0 is the executive
+        move    016,proc_table
+        addi    016,PROC_WORDS
+proc_wait_status_scan:
+        caml    015,proc_high_slot
+        jrst    proc_wait_status_scan_done
+
+        move    4,2(016)
+        move    5,4
+        lsh     5,-041                 ; numeric PROC_STATE
+        jumpe   5,proc_wait_status_next
+        move    6,(016)
+        move    1,6
+        lsh     1,-010
+        andi    1,0377                 ; parent slot
+        came    1,013
+        jrst    proc_wait_status_next
+        trnn    010,0400               ; slot selector or pgrp selector?
+        jrst    proc_wait_status_slot
+        hrrz    1,6
+        andi    1,0377
+        came    1,014
+        jrst    proc_wait_status_next
+        jrst    proc_wait_status_match
+proc_wait_status_slot:
+        jumpe   014,proc_wait_status_match
+        came    014,015
+        jrst    proc_wait_status_next
+
+proc_wait_status_match:
+        movei   7,1
+        caie    5,4                    ; PROC_ZOMB
+        jrst    proc_wait_status_report
+
+        ; Zombie: status is EXITED,,exit-status, then free the descriptor.
+        jumpe   011,proc_wait_status_reap
+        movsi   1,1                    ; SYS_WAIT_EXITED
+        hlrz    2,(016)
+        ior     1,2
+        movem   1,(011)
+proc_wait_status_reap:
+        setzm   (016)
+        setzm   1(016)
+        setzm   2(016)
+        pushj   17,proc_trim_high
+        move    1,015
+        jrst    proc_wait_status_return
+
+proc_wait_status_report:
+        ; A non-zombie can carry STOP/CONT reports only while its u-area lives.
+        trnn    6,0400000              ; PROC_F_UAREA << PROC_FLAGS_SHIFT
+        jrst    proc_wait_status_next
+        hlrz    2,6                    ; u-area base
+        move    3,045(2)
+        move    1,3
+        lsh     1,-034
+        andi    1,3                    ; PROC_WAIT_REPORT
+        caie    1,1                    ; STOPPED
+        cain    1,2                    ; CONTINUED
+        jrst    proc_wait_status_have_report
+        jrst    proc_wait_status_next
+proc_wait_status_have_report:
+        tlz     3,06000                ; clear PROC_REPORT_BITS
+        movem   3,045(2)
+        jumpe   011,proc_wait_status_report_done
+        move    3,1
+        addi    3,1                    ; report+1 -> wait status kind
+        lsh     3,022
+        move    4,1
+        addi    4,2                    ; report+2 -> status value
+        ior     3,4
+        movem   3,(011)
+proc_wait_status_report_done:
+        move    1,015
+        jrst    proc_wait_status_return
+
+proc_wait_status_next:
+        addi    015,1
+        addi    016,PROC_WORDS
+        jrst    proc_wait_status_scan
+
+proc_wait_status_scan_done:
+        jumpe   7,proc_wait_status_error
+        trne    012,1                  ; SYS_WAIT_NOHANG
+        jrst    proc_wait_status_nohang
+        pushj   17,proc_wait_child
+        jumpn   1,proc_wait_status_error
+        jrst    proc_wait_status_retry
+
+proc_wait_status_nohang:
+        setz    1,
+        jrst    proc_wait_status_return
+proc_wait_status_error:
+        seto    1,
+proc_wait_status_return:
+        movei   0,010
+        hrli    0,-6(17)
+        blt     0,016                   ; restore AC10..AC16
+        sub     17,kconst_7_7
         popj    17,
 
 /**

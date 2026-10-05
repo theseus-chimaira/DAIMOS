@@ -72,6 +72,7 @@ proc_slot_zero(struct proc *p)
 
 
 
+#if !defined(PROC_EVENT_APPLY_PDP6_ASM) || !defined(PROC_WAIT_STATUS_PDP6_ASM)
 #define PROC_REPORT_BITS \
         ((kword_t)PROC_REPORT_MASK << PROC_REPORT_SHIFT)
 
@@ -86,6 +87,7 @@ proc_report_set(struct proc *p, unsigned int report)
         ctl |= ((kword_t)report & PROC_REPORT_MASK) << PROC_REPORT_SHIFT;
         PROC_CTL_WORD(p) = ctl;
 }
+#endif
 
 #define PROC_TTY_REC_SESSION_MASK 0377U
 #define PROC_TTY_REC_PGRP_MASK    0377U
@@ -459,6 +461,7 @@ proc_event_apply(unsigned int slot, unsigned int event)
 #endif /* PROC_EVENT_APPLY_PDP6_ASM */
 
 
+#ifndef PROC_WAIT_STATUS_PDP6_ASM
 /** Reap or report a matching child according to WAIT selector and NOHANG policy. */
 int
 proc_wait_status(unsigned int selector, kword_t *statusp, unsigned int flags)
@@ -526,6 +529,7 @@ proc_wait_status(unsigned int selector, kword_t *statusp, unsigned int flags)
                         return -1;
         }
 }
+#endif /* PROC_WAIT_STATUS_PDP6_ASM */
 
 
 
