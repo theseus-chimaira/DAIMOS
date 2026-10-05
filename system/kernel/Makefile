@@ -294,7 +294,7 @@ ${BUILD}/bootbanner_generated.s: ${VERSION_FILE} ${MKBOOTBANNER}
 
 ${KCORE_C_ASM}: ${KCORE_C_SRCS} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	@base=`basename "$@" .s`; src=; extra=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; if test "$$base" = proc; then extra="-DPROC_EVENT_APPLY_PDP6_ASM=1 -DPROC_SWAP_VICTIM_PDP6_ASM=1 -DPROC_WAIT_STATUS_PDP6_ASM=1 -DPROC_SCHED_SELECT_PDP6_ASM=1"; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S "$$src" -o "$@"
+	@base=`basename "$@" .s`; src=; extra=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; if test "$$base" = proc; then extra="-DPROC_EVENT_APPLY_PDP6_ASM=1 -DPROC_SWAP_VICTIM_PDP6_ASM=1 -DPROC_WAIT_STATUS_PDP6_ASM=1 -DPROC_SCHED_SELECT_PDP6_ASM=1 -DPROC_FINISH_SLOT_PDP6_ASM=1 -DPROC_UAREA_RELEASE_PDP6_ASM=1"; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S "$$src" -o "$@"
 
 
 ${BUILD}/d6lz_fixed.s: ../stand/pdp6/common/decompressor.inc
