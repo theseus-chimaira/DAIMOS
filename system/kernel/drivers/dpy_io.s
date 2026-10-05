@@ -360,7 +360,7 @@ dpy_list_done:
  * @param AC1 ASCII byte.
  * @return dpy_text_putchar() status.
  *
- * The retained-text assembly allocates the dynamic 1176-word block extent on
+ * The retained-text assembly allocates the dynamic 1288-word block extent on
  * first use and updates the selected fixed-pair cell in place.  Ordinary
  * terminal output performs no Type-340 I/O and never waits for refresh.
  */
@@ -373,7 +373,7 @@ dpy_putchar:
 ; Native text blocks thereafter contain only Type-342 character-mode words.
 dpy_text_setup_words:
         .word 0020134020000
-        .word 0201716060000
+        .word 0201762060000
 ; Non-printing primary-set word used as the finite-frame completion trailer.
 dpy_text_si_word:
         .word 0353535353535

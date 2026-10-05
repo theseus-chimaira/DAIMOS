@@ -2,7 +2,7 @@
  * @file dpy_text_blocks_pdp6.s
  * @brief Direct-BLKO Type-342 retained blocks for the PDP-6 display.
  *
- * Each 84-column row owns fourteen two-word blocks.  An untouched block has a
+ * Each of 46 84-column rows owns fourteen two-word blocks.  An untouched block has a
  * zero first word and marks trailing blank storage.  Once touched, both words
  * become directly executable Type-342 character data: three fixed
  * (SI/SO,glyph) pairs per word.  Every cell therefore carries its own character
@@ -10,7 +10,7 @@
  * compiler, shadow text plane, or inter-block shift state.
  *
  * The representation uses the same 28 words per row as the previous native
- * block store, so lazy text RAM remains exactly 1176 words.  A block may remain
+ * block store, so lazy text RAM is 1288 words.  A block may remain
  * initialized after being overwritten with spaces; row clear/scroll restores
  * zero trailing markers.
  */

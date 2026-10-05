@@ -966,6 +966,16 @@ cmd_halt(int argc, kword_t **argv, struct u_io *io)
 }
 #endif
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CLEAR
+static int
+cmd_clear(int argc, kword_t **argv, struct u_io *io)
+{
+        (void)argc;
+        (void)argv;
+        return u_putc(io->out_fd, 014) != 0;
+}
+#endif
+
 #if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_DPYVIEW
 #define DPYVIEW_MAX_WORDS 1024U
 
@@ -1138,6 +1148,8 @@ CMD_PROGRAM_ENTRY(DAIMOS_CMD_TOKEN)(int argc, kword_t **argv,
         return cmd_ttyout(argc, argv, io);
 #elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_HALT
         return cmd_halt(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CLEAR
+        return cmd_clear(argc, argv, io);
 #elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_DPYVIEW
         return cmd_dpyview(argc, argv, io);
 #else
