@@ -517,59 +517,18 @@ file_close_all_next:
         pop     17,010
         popj    17,
 
+; Shared bulk-word I/O validation.  AC5 carries the requested FILE_META bit
+; in LH; READ uses the sign bit, which also selects the read device dispatch.
+; The common frame/result path removes duplicated descriptor validation without
+; adding a subroutine call to ordinary bulk I/O.
 ; int file_read_words(int fd, kword_t *buf, unsigned int nwords)
         .globl  file_read_words
 file_read_words:
         push    17,010
         push    17,2                    ; buf
         push    17,3                    ; nwords
-        pushj   17,file_find
-        jumpe   1,file_read_words_fail
-        skipn   -1(17)                  ; buf
-        jrst    file_read_words_fail
-        move    4,(1)
-        tlne    4,100000                ; FILE_META_DIR
-        jrst    file_read_words_fail
-        tlnn    4,400000                ; FILE_META_READ
-        jrst    file_read_words_fail
-        move    010,1
-        move    2,1(010)                ; word offset
-        move    1,(010)
-        tlz     1,707070                ; canonical vnode
-        camn    1,[020002000002]        ; PTR0
-        jrst    file_read_words_ptr
-        camn    1,[020002000004]        ; CR0
-        jrst    file_read_words_cr
-        camn    1,[020002000000]        ; CTY0 controlling-TTY proxy
-        jrst    file_read_words_tty
-        move    3,-1(17)
-        move    4,(17)
-        pushj   17,vfs_read_words
-        jrst    file_read_words_result
-file_read_words_tty:
-        move    1,-1(17)                ; mapped S6REC destination
-        move    2,(17)                  ; destination capacity
-        pushj   17,tty_read_s6rec_jump
-        jrst    file_read_words_result
-file_read_words_ptr:
-        move    1,-1(17)                ; mapped PT8 destination
-        move    2,(17)                  ; destination word capacity
-        pushj   17,ptr_read_words_jump
-        jrst    file_read_words_result
-file_read_words_cr:
-        move    1,-1(17)                ; mapped CARD12 destination
-        move    2,(17)                  ; destination word capacity
-        pushj   17,cr_read_words_jump
-file_read_words_result:
-        jumple  1,file_read_words_done
-        addm    1,1(010)
-file_read_words_done:
-        sub     17,[2,,2]
-        pop     17,010
-        popj    17,
-file_read_words_fail:
-        seto    1,
-        jrst    file_read_words_done
+        movsi   5,400000                ; FILE_META_READ; negative selects read
+        jrst    file_words_common
 
 ; int file_write_words(int fd, const kword_t *buf, unsigned int nwords)
         .globl  file_write_words
@@ -577,19 +536,23 @@ file_write_words:
         push    17,010
         push    17,2                    ; buf
         push    17,3                    ; nwords
+        movsi   5,200000                ; FILE_META_WRITE
+file_words_common:
         pushj   17,file_find
-        jumpe   1,file_write_words_fail
+        jumpe   1,file_words_fail
         skipn   -1(17)                  ; buf
-        jrst    file_write_words_fail
+        jrst    file_words_fail
         move    4,(1)
         tlne    4,100000                ; FILE_META_DIR
-        jrst    file_write_words_fail
-        tlnn    4,200000                ; FILE_META_WRITE
-        jrst    file_write_words_fail
+        jrst    file_words_fail
+        tdnn    4,5                     ; requested READ/WRITE permission
+        jrst    file_words_fail
         move    010,1
         move    2,1(010)                ; word offset
         move    1,(010)
         tlz     1,707070                ; canonical vnode
+        jumpl   5,file_read_words_dispatch
+
         camn    1,[020002000003]        ; PTP0
         jrst    file_write_words_ptp
         camn    1,[020002000005]        ; CP0
@@ -603,41 +566,69 @@ file_write_words:
         move    3,-1(17)
         move    4,(17)
         pushj   17,vfs_write_words
-        jrst    file_write_words_result
+        jrst    file_words_result
 file_write_words_tty:
         move    1,-1(17)                ; mapped S6REC words
         move    2,(17)                  ; supplied word count
         pushj   17,tty_write_s6rec_jump
-        jrst    file_write_words_result
+        jrst    file_words_result
 file_write_words_ptp:
         move    1,-1(17)                ; mapped PT8 source
         move    2,(17)                  ; supplied word count
         pushj   17,ptp_write_words_jump
-        jrst    file_write_words_result
+        jrst    file_words_result
 file_write_words_cp:
         move    1,-1(17)                ; mapped CARD12 source
         move    2,(17)                  ; supplied word count
         pushj   17,cp_write_words_jump
-        jrst    file_write_words_result
+        jrst    file_words_result
 file_write_words_lpt:
         move    1,-1(17)                ; mapped S6REC source
         move    2,(17)                  ; supplied word count
         pushj   17,lpt_write_s6rec_jump
-        jrst    file_write_words_result
+        jrst    file_words_result
 file_write_words_dpy:
         move    1,-1(17)                ; mapped packed Type-340 words
         move    2,(17)                  ; zero count stops/releases the list
         pushj   17,dpy_write_words_jump
-file_write_words_result:
-        jumple  1,file_write_words_done
+        jrst    file_words_result
+
+file_read_words_dispatch:
+        camn    1,[020002000002]        ; PTR0
+        jrst    file_read_words_ptr
+        camn    1,[020002000004]        ; CR0
+        jrst    file_read_words_cr
+        camn    1,[020002000000]        ; CTY0 controlling-TTY proxy
+        jrst    file_read_words_tty
+        move    3,-1(17)
+        move    4,(17)
+        pushj   17,vfs_read_words
+        jrst    file_words_result
+file_read_words_tty:
+        move    1,-1(17)                ; mapped S6REC destination
+        move    2,(17)                  ; destination capacity
+        pushj   17,tty_read_s6rec_jump
+        jrst    file_words_result
+file_read_words_ptr:
+        move    1,-1(17)                ; mapped PT8 destination
+        move    2,(17)                  ; destination word capacity
+        pushj   17,ptr_read_words_jump
+        jrst    file_words_result
+file_read_words_cr:
+        move    1,-1(17)                ; mapped CARD12 destination
+        move    2,(17)                  ; destination word capacity
+        pushj   17,cr_read_words_jump
+
+file_words_result:
+        jumple  1,file_words_done
         addm    1,1(010)
-file_write_words_done:
+file_words_done:
         sub     17,[2,,2]
         pop     17,010
         popj    17,
-file_write_words_fail:
+file_words_fail:
         seto    1,
-        jrst    file_write_words_done
+        jrst    file_words_done
 
 ; Patched by TTY MINIT when the logical-terminal MRES is installed.
 tty_write_s6rec_jump:
