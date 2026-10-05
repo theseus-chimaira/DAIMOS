@@ -885,34 +885,28 @@ proc_control:
         lsh     4,1
         add     4,3
         add     4,proc_table
-        jrst    @proc_control_table(1)
+        move    5,1
+        andi    5,1
+        lsh     1,-1
+        xct     proc_control_half_select(5)
+        jrst    (5)
+proc_control_half_select:
+        hlrz    5,proc_control_table(1)
+        hrrz    5,proc_control_table(1)
 proc_control_table:
-        .word   proc_control_getpgrp
-        .word   proc_control_getsession
-        .word   proc_control_getdomain
-        .word   proc_control_newsession
-        .word   proc_control_newdomain
-        .word   proc_control_getevents
-        .word   proc_control_event_pid
-        .word   proc_control_event_pgrp
-        .word   proc_control_gettty
-        .word   proc_control_tty_attach
-        .word   proc_control_tty_detach
-        .word   proc_control_tty_getfg
-        .word   proc_control_tty_setfg
-        .word   proc_control_getuid
-        .word   proc_control_getgid
-        .word   proc_control_setuid
-        .word   kret_neg1         ; 020 reserved by UUO-077 extension bank
-        .word   kret_neg1         ; 021 reserved by UUO-077 extension bank
-        .word   kret_neg1         ; 022 reserved by UUO-077 extension bank
-        .word   kret_neg1         ; 023 reserved by UUO-077 extension bank
-        .word   kret_neg1         ; 024 reserved by UUO-077 extension bank
-        .word   proc_control_setgid    ; 025
-        .word   proc_control_tty_getmode ; 026
-        .word   proc_control_tty_setmode ; 027
-        .word   proc_control_isatty    ; 030
-        .word   proc_control_umask     ; 031
+        .word   proc_control_getpgrp,,proc_control_getsession
+        .word   proc_control_getdomain,,proc_control_newsession
+        .word   proc_control_newdomain,,proc_control_getevents
+        .word   proc_control_event_pid,,proc_control_event_pgrp
+        .word   proc_control_gettty,,proc_control_tty_attach
+        .word   proc_control_tty_detach,,proc_control_tty_getfg
+        .word   proc_control_tty_setfg,,proc_control_getuid
+        .word   proc_control_getgid,,proc_control_setuid
+        .word   kret_neg1,,kret_neg1   ; 020..021 extension bank
+        .word   kret_neg1,,kret_neg1   ; 022..023 extension bank
+        .word   kret_neg1,,proc_control_setgid ; 024 reserved, 025 SETGID
+        .word   proc_control_tty_getmode,,proc_control_tty_setmode
+        .word   proc_control_isatty,,proc_control_umask
 
 proc_control_getpgrp:
         jumpn   2,kret_neg1
@@ -2024,17 +2018,9 @@ proc_save_kernel:
 ; AC1..AC3 and AC17 in low core, so those registers are free as copy scratch.
 proc_save_common:
         movem   0,0(2)
-        movem   4,4(2)
-        movem   5,5(2)
-        movem   6,6(2)
-        movem   7,7(2)
-        movem   010,010(2)
-        movem   011,011(2)
-        movem   012,012(2)
-        movem   013,013(2)
-        movem   014,014(2)
-        movem   015,015(2)
-        movem   016,016(2)
+        movei   0,4(2)
+        hrli    0,4
+        blt     0,016(2)              ; save contiguous AC4..AC16
         move    1,000032
         movem   1,1(2)
         move    1,000033
@@ -2126,18 +2112,10 @@ proc_restore_kernel_tail:
 ; context.  AC1..AC3 are PI-saved scratch and are restored by the PI return
 ; path, so only the live unsaved set is copied here.
 proc_restore_common:
+        movei   1,4
+        hrli    1,4(2)
+        blt     1,016                  ; restore contiguous AC4..AC16
         move    0,0(2)
-        move    4,4(2)
-        move    5,5(2)
-        move    6,6(2)
-        move    7,7(2)
-        move    010,010(2)
-        move    011,011(2)
-        move    012,012(2)
-        move    013,013(2)
-        move    014,014(2)
-        move    015,015(2)
-        move    016,016(2)
         popj    17,
 
 ; Switch to the slot-0 executive idle loop when no resident user process runs.
