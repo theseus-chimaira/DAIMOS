@@ -1585,15 +1585,15 @@ proc_tty_pending_store:
 proc_sleep_ticks:
         hrrz    1,1
         jumpe   1,kret_zero
-        move    7,1                    ; requested ticks = new deadline distance
+        move    4,1                    ; runq_remove preserves AC1..AC4
         move    1,proc_current_slot
         jumpe   1,kret_neg1
         pushj   17,proc_runq_remove
+        move    7,4                    ; requested ticks = new deadline distance
         pushj   17,proc_slot_ptr       ; AC1 is still current slot
         move    3,1                    ; current descriptor
         hrrz    1,proc_timer_clock
         andi    1,PROC_TIMER_CLOCK_MASK
-        move    4,7
         add     4,1
         andi    4,PROC_TIMER_CLOCK_MASK ; wrapped 17-bit deadline
         move    5,2(3)
