@@ -8,14 +8,15 @@
  * and starts one display refresh every second real 60 Hz tick.  DPY DONE
  * interrupts are independently handled on PI7.
  *
- * Exactly one display word may be in flight. dpy_pending is set before DATAO
- * and cleared only by a real DONE interrupt, so a caller cannot observe
- * completion before the Type 340 has executed both 18-bit halves.
+ * PI7 is an ITS-style Type-340 BLKO data channel.  Low core feeds ordinary
+ * words without entering KCORE; BLKO count overflow enters the saved-AC PI7
+ * completion path.  dpy_pending remains set for a whole finite frame.
  *
  * The Type 340 is a refresh display rather than a storage display.  KINIT
  * therefore copies its compact boot banner into this MRES.  Every second real
  * 60 Hz clock tick (30 Hz) starts a replay when the controller is idle, and
- * PI7 DONE interrupts chain the remaining words without polling.
+ * PI7 BLKO requests stream each span without polling; only span overflow
+ * enters KCORE to select the next retained-text span.
  *
  * None of this code executes when no Type 340 is present: MINIT leaves the
  * ordinary CLK PI6 handler installed unless the DPY probe succeeds and this
@@ -31,9 +32,7 @@
         .globl dpy_banner_init
         .globl dpy_clk_tick_load
         .globl pdp10_pi_handler_return
-        .globl pdp10_pi_dispatch
-        .globl pdp10_pi_level_span
-        .globl pdp10_pi_return_level7
+        .globl dpy_refresh_iowd
         .globl kret_ok
         .globl kret_busy
         .globl mm_alloc
@@ -47,182 +46,125 @@
         .equ DPY_TEXT_ROWS,052
         .equ DPY_TEXT_BLOCKS,016
         .equ DPY_TEXT_ROW_WORDS,034
-        .equ DPY_TEXT_ROW_END,017
+        .equ DPY_REFRESH_BANNER,052
+        .equ DPY_REFRESH_ONESHOT,053
+        .equ DPY_REFRESH_TRAILER,054
 
 /**
- * @brief PI7 pre-handler for a possible Type 340 DONE interrupt.
- * @return Does not return normally; continues through the normal PI7 table.
+ * @brief PI7 span-completion handler for the ITS-style Type-340 BLKO channel.
+ * @return Does not return normally; restores the interrupted PI7 context.
  *
- * KINIT patches the existing PI7 span-load instruction to jump here only when
- * DPY is present.  Recreate the displaced span/cursor setup, service DPY DONE
- * if asserted, then enter the normal table dispatcher.  SLV and any future
- * ordinary PI7 handlers therefore retain the standard table semantics and DPY
- * consumes no pdp10_pi_handlers[] slot.  AC2/AC3 are dispatcher-owned state.
+ * MINIT installs `BLKO 0130,dpy_refresh_iowd` directly in low-core word 056.
+ * Ordinary data requests therefore execute only that one hardware instruction.
+ * On the final word BLKO count overflow selects low-core word 057, whose JSR
+ * enters the normal level-7 saved-AC prologue and then this routine.  PI7 is DPY-exclusive while the display is installed.
+ *
+ * BLKO completion occurs when the final word has just been issued, not when it
+ * has finished on the display.  Intermediate spans simply arm the next IOWD;
+ * its first word will be requested after the in-flight final word reaches DONE.
+ * A harmless SI trailer closes finite frames so dpy_pending is cleared only
+ * after all visible content has completed.
  */
 dpy_pi_handler:
-        move 2,pdp10_pi_level_span+6
-        movei 3,pdp10_pi_return_level7
-        conso 0130,000200
-        jrst pdp10_pi_dispatch
-        cono 0130,000007
-        ; Persistent raw-list mode owns the controller continuously.  Keep
-        ; dpy_pending asserted and recycle exactly one packed word per DONE.
+        .word 0                         ; JSR saves interrupted flags/PC here
+        movem 1,dpy_pi_saved_ac1
+        movem 2,dpy_pi_saved_ac2
+        movem 3,dpy_pi_saved_ac3
+        ; A persistent raw list is one continuous BLKO span.  Reload the
+        ; immutable initial IOWD on overflow; the final word remains in flight
+        ; and its DONE request starts the next pass.
         skipn dpy_list_base
         jrst dpy_pi_retained_done
-        move 1,dpy_list_next
-        came 1,dpy_list_end
-        jrst dpy_pi_list_have
-        move 1,dpy_list_base
-dpy_pi_list_have:
-        addi 1,1
-        movem 1,dpy_list_next
-        subi 1,1
-        move 1,(1)
-        datao 0130,1
-        jrst dpy_pi_dispatch_return
+        move  1,dpy_list_iowd
+        movem 1,dpy_refresh_iowd
+        jrst  dpy_pi_return
 
 dpy_pi_retained_done:
-        ; dpy_pending denotes ownership of the Type-344 DATAO stream, not
-        ; merely one outstanding word.  Keep it asserted throughout a
-        ; retained refresh frame so a higher-priority PI6 clock interrupt
-        ; cannot observe a false idle window between DONE and the next DATAO.
-        ; A zero refresh cursor identifies the standalone dpy_putword path.
-        skipn dpy_refresh_iowd
-        jrst dpy_pi_refresh_complete
-        move 1,dpy_refresh_iowd
-        aobjn 1,dpy_pi_refresh_send
-        skipn dpy_text_active
-        jrst dpy_pi_refresh_complete
-
-        ; A banner frame keeps row=DPY_TEXT_ROWS as a non-text sentinel.
-        ; Text setup uses row=-1.  Normal row/block spans use row >= 0 and the
-        ; packed dpy_refresh_block word (LH=end block, RH=next block).
         move  1,dpy_refresh_row
-        cain  1,DPY_TEXT_ROWS
+        cain  1,DPY_REFRESH_TRAILER
         jrst  dpy_pi_refresh_complete
+        cain  1,DPY_REFRESH_BANNER
+        jrst  dpy_pi_refresh_trailer
+        cain  1,DPY_REFRESH_ONESHOT
+        jrst  dpy_pi_refresh_trailer
+        skipn dpy_text_active
+        jrst  dpy_pi_refresh_trailer
+
+        ; Setup uses row=-1.  Thereafter each row is one contiguous BLKO span
+        ; through its final initialized two-word block, followed by one CR/LF
+        ; span.  The completed IOWD RH names its final word, so the global
+        ; row-end word itself is the zero-cost phase marker between those spans.
         jumpl 1,dpy_pi_text_next_row
-        hrrz  2,dpy_refresh_block
-        caie  2,DPY_TEXT_ROW_END
-        jrst  dpy_pi_text_next_block
+        hrrz  2,dpy_refresh_iowd
+        cain  2,dpy_text_row_end_word
+        jrst  dpy_pi_text_next_row
+        jrst  dpy_pi_text_row_end
 
 dpy_pi_text_next_row:
         aos   1,dpy_refresh_row
         caml  1,dpy_text_rows_used
-        jrst  dpy_pi_refresh_complete
-
-        ; Locate the final nonblank six-cell block.  Zero word 0 defines a
-        ; blank block regardless of stale word 1, so clearing a row costs only
-        ; fourteen stores.  Store last+1 in LH and start block zero in RH.
+        jrst  dpy_pi_refresh_trailer
         move  2,1
         add   2,dpy_text_top
         cail  2,DPY_TEXT_ROWS
         subi  2,DPY_TEXT_ROWS
         imuli 2,DPY_TEXT_ROW_WORDS
-        add   2,dpy_text_base
-        addi  2,032                    ; first word of block 13
-        movei 3,DPY_TEXT_BLOCKS
-dpy_pi_text_find_last:
-        jumpe 3,dpy_pi_text_blank_row
-        skipe (2)
-        jrst  dpy_pi_text_found_last
-        subi  2,2
-        soja  3,dpy_pi_text_find_last
-dpy_pi_text_blank_row:
-        setzm dpy_refresh_block        ; completely blank row: CR/LF only
-        jrst  dpy_pi_text_next_block
-dpy_pi_text_found_last:
-        setzm dpy_refresh_block
-        hrlm  3,dpy_refresh_block
+        add   2,dpy_text_base          ; physical row base
 
-dpy_pi_text_next_block:
-        hrrz  2,dpy_refresh_block
-        hlrz  3,dpy_refresh_block
-        caml  2,3
-        jrst  dpy_pi_text_row_end
-
-        ; Recompute the physical ring row at block boundaries.  AC2/AC3 are
-        ; the PI dispatcher's private scratch and are restored before generic
-        ; PI7 dispatch; no interrupted-context AC is borrowed here.
-        move  1,dpy_refresh_row
-        add   1,dpy_text_top
-        cail  1,DPY_TEXT_ROWS
-        subi  1,DPY_TEXT_ROWS
-        imuli 1,DPY_TEXT_ROW_WORDS
-        add   1,dpy_text_base
+        ; Find the last initialized block.  First-word zero is an authoritative
+        ; trailing-blank marker; initialized blocks contain explicit spaces.
         move  3,2
-        lsh   3,1
-        add   1,3                     ; native block address
-        skipn (1)
-        jrst  dpy_pi_text_blank_block
-        skipn 1(1)
-        jrst  dpy_pi_text_simple_block
+        addi  3,032                    ; first word of block 13
+        movei 1,DPY_TEXT_BLOCKS
+dpy_pi_text_find_last:
+        jumpe 1,dpy_pi_text_blank_row
+        skipe (3)
+        jrst  dpy_pi_text_found_last
+        subi  3,2
+        soja  1,dpy_pi_text_find_last
 
-        ; Fixed-pair complex blocks explicitly select SI/SO before every glyph.
-        ; Remember only the final cell's state so a following simple/blank block
-        ; can be prefixed by one non-printing SI word when necessary.
-        move  3,1(1)
-        lsh   3,-6
-        andi  3,077
-        caie  3,036                   ; DPY_T342_SO
-        jrst  dpy_pi_text_complex_primary
-        setom dpy_refresh_shifted
-        jrst  dpy_pi_text_complex_send
-dpy_pi_text_complex_primary:
-        setzm dpy_refresh_shifted
-dpy_pi_text_complex_send:
-        addi  2,1
-        hrrm  2,dpy_refresh_block
-        subi  1,1
-        hrli  1,-3                    ; two words: initial AOBJN count -(2+1)
-        jrst  dpy_pi_refresh_prime
+dpy_pi_text_blank_row:
+        move  1,[-1,,dpy_text_row_end_word-1]
+        jrst  dpy_pi_refresh_arm
 
-dpy_pi_text_simple_block:
-        skipn dpy_refresh_shifted
-        jrst  dpy_pi_text_simple_send
-        setzm dpy_refresh_shifted
-        move  1,[-2,,dpy_text_si_word-1]
-        jrst  dpy_pi_refresh_prime    ; retry same block after shift reset
-dpy_pi_text_simple_send:
-        addi  2,1
-        hrrm  2,dpy_refresh_block
-        subi  1,1
-        hrli  1,-2
-        jrst  dpy_pi_refresh_prime
-
-dpy_pi_text_blank_block:
-        skipn dpy_refresh_shifted
-        jrst  dpy_pi_text_blank_send
-        setzm dpy_refresh_shifted
-        move  1,[-2,,dpy_text_si_word-1]
-        jrst  dpy_pi_refresh_prime    ; retry same block after shift reset
-dpy_pi_text_blank_send:
-        addi  2,1
-        hrrm  2,dpy_refresh_block
-        move  1,[-2,,dpy_text_blank_word-1]
-        jrst  dpy_pi_refresh_prime
+dpy_pi_text_found_last:
+        ; AC1 is the number of used blocks.  Two direct display words per block
+        ; occupy one contiguous row prefix, so one hardware BLKO span suffices.
+        lsh   1,1                     ; used words
+        movn  1,1
+        lsh   1,022
+        subi  2,1
+        hrr   1,2
+        jrst  dpy_pi_refresh_arm
 
 dpy_pi_text_row_end:
-        setzm dpy_refresh_shifted      ; row-end word begins with SI padding
-        movei 2,DPY_TEXT_ROW_END
-        hrrm  2,dpy_refresh_block
-        move  1,[-2,,dpy_text_row_end_word-1]
+        move  1,[-1,,dpy_text_row_end_word-1]
 
-dpy_pi_refresh_prime:
-        aobjn 1,dpy_pi_refresh_send
-        jrst  dpy_pi_refresh_complete
-dpy_pi_refresh_send:
+dpy_pi_refresh_arm:
         movem 1,dpy_refresh_iowd
-        hrrz 1,1
-        move 1,(1)
-        datao 0130,1
-        jrst dpy_pi_dispatch_return
+        jrst  dpy_pi_return
+
+; Delay finite-frame completion by one nonprinting primary-set SI word.  BLKO
+; overflow for this trailer means every visible word in the frame has reached
+; DONE, so clearing ownership cannot race a PI6-triggered next frame.
+dpy_pi_refresh_trailer:
+        movei 1,DPY_REFRESH_TRAILER
+        movem 1,dpy_refresh_row
+        move  1,[-1,,dpy_text_si_word-1]
+        movem 1,dpy_refresh_iowd
+        jrst  dpy_pi_return
+
 dpy_pi_refresh_complete:
         setzm dpy_refresh_iowd
         setzm dpy_pending
-dpy_pi_dispatch_return:
-        move 2,pdp10_pi_level_span+6
-        movei 3,pdp10_pi_return_level7
-        jrst pdp10_pi_dispatch
+        cono  0130,0                   ; trailer may finish with PIA disabled
+        jrst  dpy_pi_return
+
+dpy_pi_return:
+        move 3,dpy_pi_saved_ac3
+        move 2,dpy_pi_saved_ac2
+        move 1,dpy_pi_saved_ac1
+        jrst 012,@dpy_pi_handler
 
 /**
  * @brief Stackless post-CLK hook installed only while a Type 340 is present.
@@ -250,38 +192,22 @@ dpy_clock_handler:
 dpy_refresh_start:
         skipe dpy_pending
         jrst pdp10_pi_handler_return
-        ; The generated banner is a complete frame relative to Type-340 reset
-        ; state.  Restore that state before every replay so character/mode and
-        ; beam position left by the previous frame cannot accumulate.
-        cono 0130,000107              ; INIT + retain low-priority data PIA 7
         skipn dpy_text_active
         jrst dpy_refresh_banner
         seto 1,
         movem 1,dpy_refresh_row
-        setzm dpy_refresh_block
-        setzm dpy_refresh_shifted
-        move 1,[-3,,dpy_text_setup_words-1]
-        aobjn 1,dpy_refresh_start_send
-        jrst pdp10_pi_handler_return
+        move 1,[-2,,dpy_text_setup_words-1]
+        jrst dpy_refresh_start_arm
 dpy_refresh_banner:
-        ; Mark this span as a banner frame, not as the text setup span.
-        ; dpy_text_active may become nonzero while the banner is still in
-        ; flight.  Without this sentinel the final banner DONE would then
-        ; fall into the text-row continuation path and feed character words
-        ; without first executing dpy_text_setup_words.  Depending on the
-        ; banner's ending mode those words can STOP the Type 340 and leave
-        ; dpy_pending set forever.
-        movei 1,DPY_TEXT_ROWS
+        movei 1,DPY_REFRESH_BANNER
         movem 1,dpy_refresh_row
-        move 1,[-6,,dpy_banner_words-1]
-        aobjn 1,dpy_refresh_start_send
-        jrst pdp10_pi_handler_return
-dpy_refresh_start_send:
+        move 1,[-5,,dpy_banner_words-1]
+dpy_refresh_start_arm:
         movem 1,dpy_refresh_iowd
-        hrrz 1,1
-        move 1,(1)
         setom dpy_pending
-        datao 0130,1
+        ; INIT makes the Type 340 request its first word.  PI7 low core feeds it
+        ; through BLKO; no DATAO is issued from the clock interrupt.
+        cono 0130,000107
         jrst pdp10_pi_handler_return
 
 /**
@@ -305,9 +231,10 @@ dpy_banner_copy:
  * @param AC1 One 36-bit word containing two Type 340 instructions.
  * @return AC1 = DPY_E_OK (0) or DPY_E_BUSY (-3).
  *
- * AC17 is only the normal return stack. No scratch AC is needed. Setting the
- * pending flag before DATAO closes the completion race; the spin loop exits
- * only after dpy_pi_handler observes DONE and clears the flag.
+ * AC17 is only the normal return stack.  The word is staged in resident state
+ * and submitted as a one-word BLKO span.  dpy_pending remains set through the
+ * nonprinting completion trailer, so the spin loop exits only after the word
+ * has actually completed on the Type 340.
  */
 dpy_putword:
         skipn dpy_list_base
@@ -316,10 +243,13 @@ dpy_putword:
 dpy_putword_idle:
         skipe dpy_pending
         jrst kret_busy
-dpy_put_start:
-        setzm dpy_refresh_iowd
+        movem 1,dpy_put_word
+        move 1,[-1,,dpy_put_word-1]
+        movem 1,dpy_refresh_iowd
+        movei 1,DPY_REFRESH_ONESHOT
+        movem 1,dpy_refresh_row
         setom dpy_pending
-        datao 0130,1
+        cono 0130,000107
 dpy_put_wait:
         skipe dpy_pending
         jrst dpy_put_wait
@@ -369,22 +299,25 @@ dpy_write_words:
         subi 2,1
         blt 1,(2)
 
-        ; Disable DONE interrupts, reset execution and atomically publish the
-        ; complete replacement.  dpy_pending remains asserted for list life.
+        ; Build the immutable BLKO descriptor before publishing the list.
+        move 1,011
+        movn 1,1
+        lsh 1,022
+        move 5,6
+        subi 5,1
+        hrr 1,5
+        movem 1,dpy_list_iowd
+
+        ; Reset with PIA disabled, publish complete state, then let INIT request
+        ; the first hardware-BLKO word.  dpy_pending remains set for list life.
         move 7,dpy_list_base          ; old extent, if any
         setzm dpy_list_base
-        cono 0130,000100              ; INIT, PIA disabled
-        setzm dpy_refresh_iowd
-        move 1,6
-        add 1,011
-        movem 1,dpy_list_end
-        movei 1,1(6)
-        movem 1,dpy_list_next
+        cono 0130,000100
+        move 1,dpy_list_iowd
+        movem 1,dpy_refresh_iowd
         movem 6,dpy_list_base
         setom dpy_pending
-        move 1,(6)
-        datao 0130,1
-        cono 0130,000007              ; normal low-priority DONE PIA
+        cono 0130,000107
 
         jumpe 7,dpy_list_installed
         move 1,7
@@ -406,8 +339,7 @@ dpy_list_stop:
         move 7,dpy_list_base
         setzm dpy_list_base            ; PI7 must stop recycling first
         cono 0130,000100               ; INIT, PIA disabled
-        setzm dpy_list_next
-        setzm dpy_list_end
+        setzm dpy_list_iowd
         setzm dpy_refresh_iowd
         setzm dpy_pending
         cono 0130,000007
@@ -428,9 +360,9 @@ dpy_list_done:
  * @param AC1 ASCII byte.
  * @return dpy_text_putchar() status.
  *
- * The C helper allocates the dynamic text/cache extent on first use and
- * updates the appropriate cached row.  Ordinary terminal output performs no
- * Type-340 DATAO and never waits for DONE.
+ * The retained-text assembly allocates the dynamic 1176-word block extent on
+ * first use and updates the selected fixed-pair cell in place.  Ordinary
+ * terminal output performs no Type-340 I/O and never waits for refresh.
  */
 dpy_putchar:
         jrst dpy_text_putchar
@@ -442,10 +374,7 @@ dpy_putchar:
 dpy_text_setup_words:
         .word 0020134020000
         .word 0201716060000
-; One blank six-cell block in primary character mode.
-dpy_text_blank_word:
-        .word 0404040404040
-; Non-printing primary-set reset between a shifted complex block and a simple.
+; Non-printing primary-set word used as the finite-frame completion trailer.
 dpy_text_si_word:
         .word 0353535353535
 ; End one logical row while staying in the primary set.
@@ -453,7 +382,14 @@ dpy_text_row_end_word:
         .word 0353535353433
 
         .bss
-/** Nonzero while one DATAO word is awaiting the Type 340 DONE interrupt. */
+/** Interrupted ACs for the dedicated stackless PI7 BLKO completion path. */
+dpy_pi_saved_ac1:
+        .block 1
+dpy_pi_saved_ac2:
+        .block 1
+dpy_pi_saved_ac3:
+        .block 1
+/** Nonzero while DPY owns an active BLKO span/frame. */
 dpy_pending:
         .block 1
 /** Two-to-one line-clock divider: 60 Hz clock -> 30 Hz display refresh. */
@@ -465,23 +401,17 @@ dpy_clk_last_tick:
 /** Base of the active persistent raw display list, or zero. */
 dpy_list_base:
         .block 1
-/** Address of the next packed word to submit on DONE. */
-dpy_list_next:
+/** Immutable initial BLKO descriptor for the active persistent raw list. */
+dpy_list_iowd:
         .block 1
-/** One-past-end address of the active persistent display list. */
-dpy_list_end:
-        .block 1
-/** AOBJN state: negative remaining count in LH, current banner address in RH. */
+/** Current hardware BLKO descriptor; exported to MINIT for low-core PI7. */
 dpy_refresh_iowd:
+        .block 1
+/** One-word staging cell used by synchronous dpy_putword(). */
+dpy_put_word:
         .block 1
 /** Logical text row currently being streamed; -1 denotes setup span. */
 dpy_refresh_row:
-        .block 1
-/** Packed native-block cursor: LH=last block + 1, RH=next block/sentinel. */
-dpy_refresh_block:
-        .block 1
-/** Nonzero when the preceding complex block's final cell selected SO. */
-dpy_refresh_shifted:
         .block 1
 /** Compact KINIT banner; mkbootbanner currently emits exactly five words. */
 dpy_banner_words:

@@ -84,6 +84,7 @@ mfsdev_present_mark(unsigned int id)
 #define DPY_X_PUTCHAR           3U
 #define DPY_X_BANNER_INIT       4U
 #define DPY_X_WRITE_WORDS       5U
+#define DPY_X_REFRESH_IOWD       6U
 #define TTY_X_PUTCHAR           0U
 #define TTY_X_GETCHAR           1U
 #define TTY_X_CTY_PUTCHAR_ADDR  2U
@@ -122,6 +123,7 @@ mfsdev_present_mark(unsigned int id)
 #define DRM_PROBE_PI              7U
 #define DRM_PI_MASK               0000007UL
 #define DRM_NATIVE_PI_LEVEL       2U
+#define SLV_DPY_ALT_PI_LEVEL       6U
 
 static unsigned int diag_putchar_addr;
 static unsigned int clk_pi_handler_addr;
@@ -131,6 +133,7 @@ static unsigned int clk_tick_count_addr;
 static unsigned int tape_mres_base;
 static unsigned int dsk_mres_base;
 static unsigned int storage_router_registered;
+static unsigned int dpy_pi7_reserved;
 static kword_t *dtfs_runtime_dir_ptr;
 unsigned int blockset_read_addr;
 unsigned int blockset_write_addr;
@@ -148,6 +151,7 @@ extern kword_t storage_pi_tape_jump;
 extern kword_t storage_dct_dsk_jump;
 extern kword_t storage_dct_tape_jump;
 extern kword_t storage_clock_dsk_jump;
+extern kword_t minit_dpy_blko_template;
 
 extern kword_t dsk270_read_jump;
 extern kword_t dsk270_write_jump;
@@ -794,17 +798,19 @@ dpy_minit(void)
                 storage_patch_jump((kword_t *)(unsigned long)address,
                     clk_tick_count_addr);
 
-        /* Keep DPY DONE at the lowest priority without consuming a ninth
-         * resident handler-table slot.  The ordinary PI7 prologue already has
-         * a span-load word; patch it to the DPY pre-handler only when the
-         * display is actually present.  No-DPY systems retain the exact
-         * original instruction and therefore pay neither space nor cycles. */
-        /* pdp10_pi_level7_span_load is normally a MOVE, not an existing
-         * patchable JRST.  Replace the complete instruction only in the
-         * DPY-present configuration; merely patching its RH would turn it
-         * into MOVE 2,handler and corrupt PI dispatch. */
-        pdp10_pi_level7_span_load = (kword_t)0254000000000UL |
+        /* ITS-style Type-340 data channel.  PI7's even low-core vector is a
+         * relocated BLKO directly against the DPY IOWD.  PDP-6 BLKO count
+         * overflow selects the odd vector word, which JSRs directly to the
+         * DPY package's private stackless completion entry.  Avoid the generic
+         * PI7 prologue here: BLKO overflow is part of the data-channel vector
+         * protocol, not an ordinary handler-table interrupt.  PI7 is therefore
+         * DPY-exclusive while the display is installed. */
+        address = minit_export(name, base, DPY_X_REFRESH_IOWD);
+        storage_patch_jump(&minit_dpy_blko_template, address);
+        *(kword_t *)(unsigned long)000056 = minit_dpy_blko_template;
+        *(kword_t *)(unsigned long)000057 = (kword_t)0264000000000UL |
             (kword_t)(handler & KINIT_HALF_MASK);
+        dpy_pi7_reserved = 1U;
         minit_pi_enable(DPY_NATIVE_PI_LEVEL);
         if (clk_pi_post_handler_addr != 0U)
                 storage_patch_jump(
@@ -1587,22 +1593,30 @@ slv_minit(void)
 {
         kword_t st;
         kword_t name;
+        unsigned int level;
 
         name = (kword_t)SIXBIT("SLV   ");
         minit_slv_cono(SLV_PROBE_PI);
         st = minit_slv_coni();
-        minit_slv_cono(SLV_CO_CLEAR_IRQ | SLV_NATIVE_PI_LEVEL);
         if ((st & SLV_PI_MASK) != SLV_PROBE_PI) {
+                minit_slv_cono(0);
                 minit_diag_nodev(name);
                 return;
         }
+        /* DPY owns PI7 as a hardware BLKO data channel.  Keep SLV low
+         * priority by sharing ordinary PI6 dispatch with CLK in that case. */
+        level = dpy_pi7_reserved != 0U ? SLV_DPY_ALT_PI_LEVEL :
+            SLV_NATIVE_PI_LEVEL;
         {
                 unsigned int base;
                 unsigned int handler;
 
                 base = minit_install(name);
                 handler = minit_export(name, base, 0U);
-                minit_register(name, SLV_NATIVE_PI_LEVEL, handler);
+                storage_patch_jump((kword_t *)(unsigned long)handler,
+                    SLV_CO_CLEAR_IRQ | level);
+                minit_slv_cono(SLV_CO_CLEAR_IRQ | level);
+                minit_register(name, level, handler);
                 mfsdev_present_mark(MONITORFS_DEV_SLV0);
         }
         minit_diag_ok(name);

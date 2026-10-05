@@ -632,7 +632,7 @@ $(DPY_MRES_OBJ): $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dpy-mres.dxr -M $(BUILD)/dpy-mres.map \
 	    -R $@ -N dpy_mres_package -X dpy_pi_handler -X dpy_clock_handler \
 	    -X dpy_clk_tick_load -X dpy_putchar \
-	    -X dpy_banner_init -X dpy_write_words \
+	    -X dpy_banner_init -X dpy_write_words -X dpy_refresh_iowd \
 	    $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj
 
 $(TTY_MRES_OBJ): $(BUILD)/tty_io.dobj $(KCORE_MAP)

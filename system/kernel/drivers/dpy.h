@@ -8,12 +8,12 @@
  * MRES BSS: it is one MM_TYPE_KERNEL_DYNAMIC extent allocated lazily on the
  * first actual DPY terminal output.
  *
- * DPY DONE interrupts run at PI7, the lowest PDP-6 priority.  When CLK is also
- * present, KINIT substitutes a DPY-owned PI6 wrapper that first performs the
- * ordinary clock service and then starts a retained-banner refresh at 30 Hz.
- * Systems without DPY keep the original clock handler and PI7 dispatch path
- * unchanged. Special-condition interrupts use a separate PIA only during
- * probing and remain disabled during normal DAIMOS operation.
+ * DPY data requests run at PI7, the lowest PDP-6 priority.  The BLKO data
+ * channel owns PI7 while DPY is installed; its odd overflow vector enters a
+ * dedicated stackless completion entry, following the ITS DRECYC model.
+ * CLK and scheduler service remain unchanged on PI6.  Special-condition
+ * interrupts use a separate PIA only during probing and remain disabled during
+ * normal DAIMOS operation.
  */
 #ifndef DAIMON_DPY_H
 #define DAIMON_DPY_H
@@ -56,7 +56,7 @@ int dpy_write_words(const kword_t *words, unsigned int nwords);
 /** Update the retained 84x42 Type-342 terminal for one output byte. */
 int dpy_putchar(unsigned int ch);
 
-/** @brief Resident low-priority PI7 Type 340 DONE pre-handler. */
+/** @brief Private low-priority PI7 BLKO span-completion entry. */
 void dpy_pi_handler(void);
 
 #endif

@@ -64,6 +64,7 @@ dsk_minit:
         .globl minit_gtyo_cono
         .globl minit_dpy_coni
         .globl minit_dpy_cono
+        .globl minit_dpy_blko_template
         .globl minit_wcnsls_cono
         .globl minit_wcnsls_datai
         .globl minit_wcnsls_plot
@@ -222,6 +223,12 @@ minit_dpy_coni:
 minit_dpy_cono:
         cono 0130,0(1)
         popj 017,
+
+; Relocated by MINIT to the installed DPY IOWD and copied to low-core PI7.
+; In a PDP-6 PI cycle, BLKO count overflow selects the odd vector word.  MINIT
+; installs a direct JSR there to the DPY package's private completion entry.
+minit_dpy_blko_template:
+        blko 0130,0
 minit_wcnsls_cono:
         cono 0420,0(1)
         popj 017,
