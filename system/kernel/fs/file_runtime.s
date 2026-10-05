@@ -17,7 +17,7 @@
 file_check_access:
         caile   2,7
         jrst    kret_neg1
-        add     17,[010,,010]
+        add     17,kconst_10_10
         movem   2,-7(17)
         movei   2,-6(17)               ; seven-word struct vfs_stat
         pushj   17,vfs_stat
@@ -33,7 +33,7 @@ file_check_access_stat_bad:
 file_check_access_perm_bad:
         movni   1,3
 file_check_access_done:
-        sub     17,[010,,010]
+        sub     17,kconst_10_10
         popj    17,
 
 ; int file_access_stat(const struct vfs_stat *st, unsigned int need)
@@ -958,7 +958,7 @@ file_symlink_fail:
         .globl  file_rename
 file_rename:
         push    17,2
-        add     17,[014,,014]
+        add     17,kconst_14_14
         movei   2,-013(17)             ; olddir
         movei   3,-012(17)             ; oldname
         pushj   17,file_parent_path
@@ -982,7 +982,7 @@ file_rename:
         movei   4,-4(17)
         pushj   17,vfs_rename
 file_rename_done:
-        sub     17,[014,,014]
+        sub     17,kconst_14_14
         pop     17,2
         popj    17,
 file_rename_fail:
@@ -993,7 +993,7 @@ file_rename_fail:
 ; Eight locals hold one vnode followed by a seven-word vfs_stat.
         .globl  file_chdir
 file_chdir:
-        add     17,[010,,010]
+        add     17,kconst_10_10
         movei   2,-7(17)
         pushj   17,file_lookup_path
         jumpn   1,file_chdir_fail
@@ -1013,7 +1013,7 @@ file_chdir:
         movem   1,-1(2)
         setz    1,
 file_chdir_done:
-        sub     17,[010,,010]
+        sub     17,kconst_10_10
         popj    17,
 file_chdir_fail:
         seto    1,

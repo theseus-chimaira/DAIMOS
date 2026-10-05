@@ -1136,7 +1136,7 @@ d6fs_provider_vtype_ops:
         .globl  d6fs_provider_stat
 d6fs_provider_stat:
         jumpe   2,kret_neg1
-        add     17,[013,,013]            ; info + st pointer
+        add     17,kconst_13_13            ; info + st pointer
         movem   2,-012(17)
         movei   2,0
         movei   3,-011(17)
@@ -1163,7 +1163,7 @@ d6fs_provider_stat:
 d6fs_provider_stat_fail:
         seto    1,
 d6fs_provider_stat_done:
-        sub     17,[013,,013]
+        sub     17,kconst_13_13
         popj    17,
 
 ; int d6fs_provider_read_words(vnode_t node, unsigned int off,
@@ -1387,7 +1387,7 @@ d6fs_provider_lookup_done:
         .globl  d6fs_provider_parent
 d6fs_provider_parent:
         jumpe   2,kret_neg1
-        add     17,[014,,014]
+        add     17,kconst_14_14
         movem   1,-1(17)                 ; node
         movem   2,(17)                   ; parentp
         movei   2,0
@@ -1412,7 +1412,7 @@ d6fs_provider_parent_store:
 d6fs_provider_parent_fail:
         seto    1,
 d6fs_provider_parent_done:
-        sub     17,[014,,014]
+        sub     17,kconst_14_14
         popj    17,
 
 ; int d6fs_provider_write_words(vnode_t node, unsigned int off,
@@ -1487,7 +1487,7 @@ d6fs_provider_write_words_done:
         .globl  d6fs_provider_readdir
 d6fs_provider_readdir:
         jumpe   3,kret_neg1
-        add     17,[015,,015]            ; di[8] + dir/off/ent/slot/seen
+        add     17,kconst_15_15            ; di[8] + dir/off/ent/slot/seen
         movem   1,-4(17)
         movem   2,-3(17)
         movem   3,-2(17)
@@ -1524,7 +1524,7 @@ d6fs_provider_readdir_eof:
 d6fs_provider_readdir_fail:
         seto    1,
 d6fs_provider_readdir_done:
-        sub     17,[015,,015]
+        sub     17,kconst_15_15
         popj    17,
 
 ; int d6fs_provider_parent_name(vnode_t node, vnode_t *parentp,
@@ -1533,7 +1533,7 @@ d6fs_provider_readdir_done:
 d6fs_provider_parent_name:
         jumpe   2,kret_neg1
         jumpe   3,kret_neg1
-        add     17,[015,,015]            ; di[8] + node/parentp/namep/slot/parent
+        add     17,kconst_15_15            ; di[8] + node/parentp/namep/slot/parent
         movem   1,-4(17)
         movem   2,-3(17)
         movem   3,-2(17)
@@ -1569,5 +1569,5 @@ d6fs_provider_parent_name_next:
 d6fs_provider_parent_name_fail:
         seto    1,
 d6fs_provider_parent_name_done:
-        sub     17,[015,,015]
+        sub     17,kconst_15_15
         popj    17,

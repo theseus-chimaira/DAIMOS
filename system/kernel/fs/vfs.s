@@ -842,12 +842,12 @@ vfs_mount_check_target:
         move    2,-011(17)
         move    3,-010(17)
         move    4,-7(17)
-        sub     17,[013,,013]
+        sub     17,kconst_13_13
         caie    6,1                     ; VFS_TYPE_DIR
         jrst    kret_neg1
         jrst    vfs_mount_find
 vfs_mount_stat_fail:
-        sub     17,[013,,013]
+        sub     17,kconst_13_13
         jrst    kret_neg1
 
 vfs_mount_find:

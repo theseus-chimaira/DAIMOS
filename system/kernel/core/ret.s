@@ -30,6 +30,10 @@
         .globl  kconst_5_5
         .globl  kconst_6_6
         .globl  kconst_7_7
+        .globl  kconst_10_10
+        .globl  kconst_13_13
+        .globl  kconst_14_14
+        .globl  kconst_15_15
 
 /** @brief Return 0 in AC1; also the generic success (`ok`) tail. */
 kret_zero:
@@ -83,3 +87,7 @@ kconst_4_4: .word 4,,4
 kconst_5_5: .word 5,,5
 kconst_6_6: .word 6,,6
 kconst_7_7: .word 7,,7
+kconst_10_10: .word 010,,010
+kconst_13_13: .word 013,,013
+kconst_14_14: .word 014,,014
+kconst_15_15: .word 015,,015

@@ -3,7 +3,7 @@
 
 .globl  dtfs_resize
 dtfs_resize:
-	add 017,[015,,015]
+	add 017,kconst_15_15
 	movem 016,-014(017)
 	movei 0,-013(017)
 	hrli 0,010
@@ -259,5 +259,5 @@ dtfs_r_80:
 	movei 0,010
 	hrli 0,-013(017)
 	blt 0,015
-	sub 017,[015,,015]
+	sub 017,kconst_15_15
 	popj 17,

@@ -215,11 +215,11 @@ native_sys_pipe_read_words:
         push    17,2                    ; logical user buffer
         push    17,6                    ; fd
         push    17,7                    ; requested words
-        add     17,[010,,010]           ; eight staging words
+        add     17,kconst_10_10           ; eight staging words
         movei   1,-012(17)              ; metadata frame base
         movei   2,010                   ; maximum staged words
         pushj   17,native_sys_blocking_read_words
-        sub     17,[013,,013]
+        sub     17,kconst_13_13
         popj    17,
 
 ; Shared blocking-read core.
@@ -268,7 +268,7 @@ native_sys_pipe_write_words:
         push    17,2                    ; logical user buffer
         push    17,6                    ; fd
         push    17,7                    ; requested words
-        add     17,[010,,010]           ; eight staging words
+        add     17,kconst_10_10           ; eight staging words
 
         move    1,-012(17)
         pushj   17,native_sys_map_one
@@ -286,7 +286,7 @@ native_sys_pipe_write_words:
         move    3,5
         pushj   17,file_write_words
 native_sys_pipe_write_done:
-        sub     17,[013,,013]
+        sub     17,kconst_13_13
         popj    17,
 native_sys_pipe_write_bad:
         seto    1,
