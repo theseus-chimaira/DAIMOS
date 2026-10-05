@@ -32,6 +32,7 @@ kword_t proc_swap_blocks_used;
  * Use signed working values after unpacking so their comparisons stay compact
  * on the PDP-10; packed on-disk/in-memory fields remain unchanged. */
 
+#ifndef PROC_SWAP_TRANSACTIONS_PDP6_ASM
 /** Transfer a block-aligned process extent to or from BACKSTORE. */
 static int
 proc_swap_transfer_words(int write, kword_t first,
@@ -47,6 +48,7 @@ proc_swap_transfer_words(int write, kword_t first,
                 return backstore_write(first, blocks, buf);
         return backstore_read(first, blocks, buf);
 }
+#endif
 
 /** Pack resident executable backing and PURE-text metadata into one record word. */
 int
@@ -102,6 +104,7 @@ proc_swap_detach(int slot)
 }
 
 /** Pin, write, free, and atomically publish one process as nonresident. */
+#ifndef PROC_SWAP_TRANSACTIONS_PDP6_ASM
 int
 proc_swap_out(int slot)
 {
@@ -169,6 +172,7 @@ fail_record:
         PROC_CLEAR_TRANSITION(p);
         return -1;
 }
+#endif
 
 /* Run one swap-in transaction from slot-0 executive context.  Selection is
  * deliberately derived from the existing scheduler fields, so no permanent
@@ -214,6 +218,7 @@ proc_swap_service_one(void)
 #endif
 
 /** Allocate, restore, and republish one swapped process image. */
+#ifndef PROC_SWAP_TRANSACTIONS_PDP6_ASM
 int
 proc_swap_in(int slot)
 {
@@ -274,6 +279,7 @@ fail_free:
         PROC_CLEAR_TRANSITION(p);
         return -1;
 }
+#endif
 
 /** Swap victims until MM compaction can satisfy the requested free extent. */
 #ifndef PROC_SWAP_RECLAIM_PDP6_ASM
