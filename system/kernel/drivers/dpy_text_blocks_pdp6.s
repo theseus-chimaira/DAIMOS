@@ -2,15 +2,16 @@
  * @file dpy_text_blocks_pdp6.s
  * @brief Direct-BLKO Type-342 retained blocks for the PDP-6 display.
  *
- * Each of 46 84-column rows owns fourteen two-word blocks.  An untouched block has a
- * zero first word and marks trailing blank storage.  Once touched, both words
+ * Each of 92 160-column rows owns 27 two-word blocks.  The final block has two
+ * unused cells.  An untouched block has a zero first word and marks trailing
+ * blank storage.  Once touched, both words
  * become directly executable Type-342 character data: three fixed
  * (SI/SO,glyph) pairs per word.  Every cell therefore carries its own character
  * set selection and rows may be streamed as one contiguous BLKO span without a
  * compiler, shadow text plane, or inter-block shift state.
  *
- * The representation uses the same 28 words per row as the previous native
- * block store, so lazy text RAM is 1288 words.  A block may remain
+ * The representation uses 54 words per row, so lazy text RAM is 4968 words.
+ * A block may remain
  * initialized after being overwritten with spaces; row clear/scroll restores
  * zero trailing markers.
  */
@@ -22,8 +23,8 @@
         .globl dpy_text_base
         .globl dpy_text_top
 
-        .equ DPY_TEXT_BLOCKS,016
-        .equ DPY_TEXT_ROW_WORDS,034
+        .equ DPY_TEXT_BLOCKS,033
+        .equ DPY_TEXT_ROW_WORDS,066
         .equ DPY_T342_SI,035
         .equ DPY_T342_SO,036
         .equ DPY_T342_SPACE,040

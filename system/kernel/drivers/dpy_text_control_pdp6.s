@@ -2,7 +2,8 @@
  * @file dpy_text_control_pdp6.s
  * @brief Compact retained Type-342 terminal control for the PDP-6.
  *
- * The 84x46 retained image is a lazily allocated native Type-342 block store;
+ * The experimental 160x92 retained image is a lazily allocated native
+ * Type-342 block store;
  * dpy_text_blocks_pdp6.s owns physical-row mapping and cell mutation.  This
  * file owns only allocation, cursor, scrolling, and terminal control bytes.
  *
@@ -29,9 +30,9 @@
 
         .equ    DPY_TEXT_MM_OWNER,014
         .equ    MM_TYPE_KERNEL_DYNAMIC,3
-        .equ    DPY_TEXT_ALLOC_WORDS,02410
-        .equ    DPY_TEXT_COLS,0124
-        .equ    DPY_TEXT_ROWS,056
+        .equ    DPY_TEXT_ALLOC_WORDS,011550
+        .equ    DPY_TEXT_COLS,0240
+        .equ    DPY_TEXT_ROWS,0134
 
 /** Clear all retained rows and reset ring/cursor state. */
 dpy_text_clear_all:
@@ -99,7 +100,7 @@ dpy_text_newline:
         popj    17,
         jrst    dpy_text_scroll
 
-/** Wrap a full 84-column row. */
+/** Wrap a full 160-column row. */
 dpy_text_wrap:
         move    1,dpy_text_col
         caige   1,DPY_TEXT_COLS

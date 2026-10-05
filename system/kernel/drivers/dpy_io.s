@@ -43,14 +43,14 @@
         .globl dpy_text_active
         .globl dpy_text_rows_used
 
-        .equ DPY_TEXT_ROWS,056
-        .equ DPY_TEXT_BLOCKS,016
-        .equ DPY_TEXT_ROW_WORDS,034
+        .equ DPY_TEXT_ROWS,0134
+        .equ DPY_TEXT_BLOCKS,033
+        .equ DPY_TEXT_ROW_WORDS,066
         ; Refresh-only states must never overlap a valid logical text row.
-        ; Keep them immediately above the 0..55-octal row-number range.
-        .equ DPY_REFRESH_BANNER,056
-        .equ DPY_REFRESH_ONESHOT,057
-        .equ DPY_REFRESH_TRAILER,060
+        ; Keep them immediately above the 0..133-octal row-number range.
+        .equ DPY_REFRESH_BANNER,0134
+        .equ DPY_REFRESH_ONESHOT,0135
+        .equ DPY_REFRESH_TRAILER,0136
 
 /**
  * @brief PI7 span-completion handler for the ITS-style Type-340 BLKO channel.
@@ -116,7 +116,7 @@ dpy_pi_text_next_row:
         ; Find the last initialized block.  First-word zero is an authoritative
         ; trailing-blank marker; initialized blocks contain explicit spaces.
         move  3,2
-        addi  3,032                    ; first word of block 13
+        addi  3,064                    ; first word of block 26
         movei 1,DPY_TEXT_BLOCKS
 dpy_pi_text_find_last:
         jumpe 1,dpy_pi_text_blank_row
@@ -362,7 +362,7 @@ dpy_list_done:
  * @param AC1 ASCII byte.
  * @return dpy_text_putchar() status.
  *
- * The retained-text assembly allocates the dynamic 1288-word block extent on
+ * The retained-text assembly allocates the dynamic 4968-word block extent on
  * first use and updates the selected fixed-pair cell in place.  Ordinary
  * terminal output performs no Type-340 I/O and never waits for refresh.
  */
@@ -370,12 +370,12 @@ dpy_putchar:
         jrst dpy_text_putchar
 
         .data
-; Complete frame setup.  Word 0 sets scale 2 and intensity 4, enters POINT,
-; and loads X=0.  Word 1 loads Y=974 and returns through PARAM into CHAR.
+; Complete frame setup.  Word 0 sets scale 1 and intensity 4, enters POINT,
+; and loads X=0.  Word 1 loads Y=1016 and returns through PARAM into CHAR.
 ; Native text blocks thereafter contain only Type-342 character-mode words.
 dpy_text_setup_words:
-        .word 0020134020000
-        .word 0201762060000
+        .word 0020114020000
+        .word 0201770060000
 ; Non-printing primary-set word used as the finite-frame completion trailer.
 dpy_text_si_word:
         .word 0353535353535
