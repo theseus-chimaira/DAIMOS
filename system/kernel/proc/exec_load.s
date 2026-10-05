@@ -140,7 +140,7 @@ exec_load_read_header:
         jumpe   13,exec_load_fail
         caile   13,036000
         jrst    exec_load_fail
-        caile   16,020000
+        caile   16,077777
         jrst    exec_load_fail
         caml    14,13                   ; entry must be inside image
         jrst    exec_load_fail

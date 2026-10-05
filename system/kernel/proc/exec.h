@@ -21,7 +21,7 @@
 #define EXEC_DXR_STACK_WORDS        02000U
 #define EXEC_USER_ORIGIN            000020U
 #define EXEC_DXR_MAX_IMAGE_WORDS    036000U
-#define EXEC_DXR_MAX_BSS_WORDS      020000U
+#define EXEC_DXR_MAX_BSS_WORDS      EXEC_DXR_BSS_MASK
 #define EXEC_DXR_TEXT_TAG            0647022U /* SIXBIT /TX2/ */
 
 #define EXEC_LOAD_OK                 0
