@@ -154,6 +154,7 @@ d6fs_hash_loop:
         .globl  bcache_fetch
         .globl  bcache_store
         .globl  bcache_reclaim
+        .globl  bcache_workspace_invalidate
         .globl  d6fs_reader_get_block
 ; const kword_t *d6fs_reader_get_block(reader, logical)
 ;
@@ -931,6 +932,10 @@ d6fs_reader_commit_cache:
         jrst    d6fs_reader_commit_invalidate
         caml    2,3(1)                   ; logical >= total_blocks
         jrst    d6fs_reader_commit_invalidate
+        ; The caller may have edited the shared workspace after a cache hit.
+        ; It must stop being a clean slot before write-through begins; only a
+        ; successful backing write below re-tags the new contents.
+        pushj   17,bcache_workspace_invalidate
         push    17,010
         push    17,011
         push    17,012

@@ -2,6 +2,7 @@
 #include "memfs.h"
 #include "fs_mres.h"
 #include "bstore.h"
+#include "bcache.h"
 #include "storage.h"
 
 #define HALF_MASK 0777777UL
@@ -33,6 +34,7 @@ int memfs_snapshot_mount(struct memfs *fs, unsigned int flags)
                 return 0;
         if (!backstore_enabled || backstore_blocks == 0UL)
                 return -1;
+        bcache_workspace_invalidate();
         blocks = 1UL + (SNAP_META_WORDS / DSK_WORDS_PER_SECTOR) +
             ((fs->pool_words + DSK_WORDS_PER_SECTOR - 1UL) / DSK_WORDS_PER_SECTOR);
         if (blocks >= backstore_blocks)
@@ -93,6 +95,7 @@ int memfs_snapshot_shutdown(void)
         fs = &memfs_mres_fs;
         if (!snapshot_enabled || fs->nodes == 0)
                 return 0;
+        bcache_workspace_invalidate();
         h[0] = 0UL;
         if (backstore_write(backstore_blocks - 1UL, 1UL, h) != 0)
                 return -1;

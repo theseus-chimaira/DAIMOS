@@ -285,9 +285,11 @@ fs_zero_words_done:
         popj    17,
 
         .globl  fs_zero_block_workspace
+        .globl  bcache_workspace_invalidate
 ; Zero the shared 128-word filesystem transfer block without disturbing AC1.
 fs_zero_block_workspace:
         push    17,1
+        pushj   17,bcache_workspace_invalidate
         movei   1,fs_block_workspace
         movei   2,0200
         pushj   17,fs_zero_words

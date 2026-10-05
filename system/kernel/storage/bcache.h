@@ -15,5 +15,6 @@
 int bcache_fetch(kword_t key, kword_t *buf);
 void bcache_store(kword_t key, const kword_t *buf);
 int bcache_reclaim(kword_t words);
+void bcache_workspace_invalidate(void);
 
 #endif
