@@ -197,6 +197,10 @@ unsigned int proc_slots_for_core(kword_t core_words);
 int proc_slot_claim(unsigned int parent_slot);
 /** Complete EXIT after switching away from the dying process kernel stack. */
 int proc_exit_finish(int status);
+/** Release one process slot and publish FREE or ZOMB terminal state. */
+int proc_finish_slot(unsigned int slot, unsigned int status);
+/** Release one process's stable kernel u-area. */
+int proc_uarea_release(unsigned int slot, struct proc *p);
 /** Apply a validated event to one process descriptor. */
 int proc_event_apply(unsigned int slot, unsigned int event);
 void proc_exit_current(int status);

@@ -101,6 +101,12 @@
         .globl  proc_runq_add
         .globl  proc_runq_remove
         .globl  proc_trim_high
+        .globl  proc_uarea_release
+        .globl  proc_tty_release_session
+        .globl  proc_session_teardown
+        .globl  proc_notify_parent
+        .globl  vm_space_destroy
+        .globl  mm_free
 
 /**
  * @brief Select a runnable process after an explicit reschedule.
@@ -310,6 +316,199 @@ proc_select_restore:
         blt     0,16
         sub     17,kconst_7_7
         popj    17,
+
+/**
+ * @brief Reparent children of an exiting process.
+ *
+ * INIT (slot 1) becomes the new parent when live.  Otherwise orphan zombies
+ * are reaped immediately and other children become parentless.  The scan is
+ * deliberately linear over the compact three-word process table.
+ */
+proc_adopt_children_pdp6:
+        push    17,10
+        push    17,11
+        push    17,12
+        push    17,13
+        move    10,1                   ; old parent
+        setz    11,                    ; new parent
+        caie    10,1
+        jrst    proc_adopt_check_init
+        jrst    proc_adopt_scan_start
+proc_adopt_check_init:
+        move    1,proc_table
+        move    1,5(1)                 ; slot 1 scheduler word
+        and     1,[0300000000000]      ; FREE/ZOMB both clear low state bits
+        jumpe   1,proc_adopt_scan_start
+        movei   11,1
+proc_adopt_scan_start:
+        movei   12,1
+        move    13,proc_table
+        addi    13,PROC_WORDS
+proc_adopt_scan:
+        caml    12,proc_high_slot
+        jrst    proc_adopt_done
+        camn    12,10
+        jrst    proc_adopt_next
+        move    1,2(13)
+        lsh     1,-041                 ; state
+        jumpe   1,proc_adopt_next
+        move    2,(13)
+        lsh     2,-010
+        andi    2,0377                 ; parent
+        came    2,10
+        jrst    proc_adopt_next
+        jumpn   11,proc_adopt_reparent
+        caie    1,4                    ; orphan zombie: reap now
+        jrst    proc_adopt_reparent
+        setzm   (13)
+        setom   1(13)
+        setzm   2(13)
+        jrst    proc_adopt_next
+proc_adopt_reparent:
+        move    2,(13)
+        and     2,[-0177401]
+        move    3,11
+        andi    3,0377
+        lsh     3,010
+        ior     2,3
+        movem   2,(13)
+        jumpe   11,proc_adopt_next
+        caie    1,4
+        jrst    proc_adopt_next
+        move    1,11
+        pushj   17,proc_notify_parent
+proc_adopt_next:
+        addi    13,PROC_WORDS
+        aoja    12,proc_adopt_scan
+proc_adopt_done:
+        pop     17,13
+        pop     17,12
+        pop     17,11
+        pop     17,10
+        jrst    proc_trim_high
+
+/**
+ * @brief Release heavy process resources and publish FREE or ZOMB state.
+ *
+ * AC1 is the slot and AC2 the exit status.  Persistent teardown state stays in
+ * AC10..AC16 across helper calls instead of KCC's seven-word local frame.
+ */
+proc_finish_slot:
+        add     17,kconst_7_7
+        movei   0,-6(17)
+        hrli    0,10
+        blt     0,(17)
+        move    10,1                   ; slot
+        move    11,2                   ; status
+        move    12,1
+        lsh     12,1
+        add     12,10
+        add     12,proc_table           ; descriptor
+        move    1,proc_rt_owner
+        came    1,10
+        jrst    proc_finish_ids
+        setzm   proc_rt_owner
+proc_finish_ids:
+        move    1,(12)
+        lsh     1,-010
+        andi    1,0377
+        move    13,1                   ; parent
+        hrrz    14,(12)
+        andi    14,0377                ; pgrp
+        hlrz    1,(12)
+        move    15,PROC_FDCTL_OFFSET(1)
+        move    16,15
+        lsh     16,-3
+        andi    16,0177777             ; zombie scope
+
+        move    1,10
+        move    2,15
+        pushj   17,proc_session_teardown
+        jumpn   1,proc_finish_fail
+
+        movei   1,PROC_TRANSITION_RH
+        iorb    1,(12)
+        move    1,12
+        move    2,10
+        pushj   17,vm_space_destroy
+        jumpe   1,proc_finish_vm_done
+        movni   1,PROC_TRANSITION_RH+1
+        andb    1,(12)                 ; clear transition after VM failure
+        jrst    proc_finish_fail
+proc_finish_vm_done:
+        move    1,16
+        andi    1,0377
+        move    2,10
+        pushj   17,proc_tty_release_session
+        move    1,10
+        move    2,12
+        pushj   17,proc_uarea_release
+        jumpn   1,proc_finish_fail
+        move    1,10
+        pushj   17,proc_runq_remove
+        move    1,10
+        pushj   17,proc_adopt_children_pdp6
+
+        jumpn   13,proc_finish_zombie
+        setzm   (12)
+        setom   1(12)
+        setzm   2(12)
+        pushj   17,proc_trim_high
+        setz    1,
+        jrst    proc_finish_restore
+proc_finish_zombie:
+        move    1,14
+        move    2,13
+        lsh     2,010
+        ior     1,2
+        hrl     1,11
+        movem   1,(12)
+        move    1,16
+        tlo     1,024                  ; PROC_SCHED_DEFAULT
+        tlz     1,0700000
+        tlo     1,0400000              ; PROC_ZOMB
+        movem   1,2(12)
+        move    1,13
+        pushj   17,proc_notify_parent
+        setz    1,
+        jrst    proc_finish_restore
+proc_finish_fail:
+        seto    1,
+proc_finish_restore:
+        movei   0,10
+        hrli    0,-6(17)
+        blt     0,16
+        sub     17,kconst_7_7
+        popj    17,
+
+/**
+ * @brief Release one process's stable executive u-area.
+ * @param AC1 Process slot.
+ * @param AC2 Process descriptor.
+ * @return Zero on success/no u-area, -1 on invalid base or MM failure.
+ */
+proc_uarea_release:
+        hrrz    3,(2)
+        trnn    3,0400000              ; PROC_F_UAREA
+        jrst    kret_zero
+        hlrz    4,(2)
+        jumpe   4,kret_neg1
+        push    17,10
+        move    10,2
+        addi    1,01000                ; PROC_UAREA_MM_OWNER_BASE
+        move    3,1                    ; owner
+        move    1,4                    ; base
+        movei   2,3                    ; MM_TYPE_KERNEL_DYNAMIC
+        pushj   17,mm_free
+        jumpn   1,proc_uarea_release_fail
+        hrrz    1,(10)                 ; clear u-area flag and LH base together
+        andi    1,0377777              ; clear PROC_F_UAREA in RH
+        movem   1,(10)
+        pop     17,10
+        jrst    kret_zero
+proc_uarea_release_fail:
+        pop     17,10
+        jrst    kret_neg1
 
 ; Remove only trailing FREE descriptors; interior holes remain reusable.
 proc_trim_high:

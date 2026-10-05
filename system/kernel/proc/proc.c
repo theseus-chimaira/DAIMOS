@@ -43,7 +43,8 @@ extern int proc_session_teardown(unsigned int leader_slot, kword_t leader_ctl);
         (proc_swap_records[(slot)].state != 0UL)
 
 /** Release one process's stable kernel u-area back to managed core. */
-static int
+#ifndef PROC_UAREA_RELEASE_PDP6_ASM
+int
 proc_uarea_release(unsigned int slot, struct proc *p)
 {
         kword_t base;
@@ -58,6 +59,7 @@ proc_uarea_release(unsigned int slot, struct proc *p)
         PROC_SET_META_LH(p, 0UL);
         return 0;
 }
+#endif
 
 extern void proc_trim_high(void);
 
@@ -273,6 +275,7 @@ extern void proc_notify_parent(unsigned int parent);
 
 
 /** Reparent children to PID 1, or reap orphan zombies when INIT is absent. */
+#ifndef PROC_FINISH_SLOT_PDP6_ASM
 static void
 proc_adopt_children(unsigned int old_parent)
 {
@@ -303,12 +306,14 @@ proc_adopt_children(unsigned int old_parent)
         }
         proc_trim_high();
 }
+#endif
 
 extern int proc_has_live_user(void);
 
 /* Release one process after its file table is closed.  The caller must never
  * run on the target u-area stack while this function executes. */
 /** Release heavy process resources and publish FREE or ZOMB terminal state. */
+#ifndef PROC_FINISH_SLOT_PDP6_ASM
 int
 proc_finish_slot(unsigned int slot, unsigned int status)
 {
@@ -353,6 +358,7 @@ proc_finish_slot(unsigned int slot, unsigned int status)
         proc_notify_parent(parent);
         return 0;
 }
+#endif
 
 /*
  * Finish EXIT after assembly has moved execution to the permanent idle stack.
