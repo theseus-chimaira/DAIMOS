@@ -21,8 +21,6 @@ memfs_read_words:
         ldb     1,[POINT 3,5(5),20]
         caie    1,2             ; regular file
         jrst    kret_neg1
-        move    4,6
-        andi    4,2             ; IMAGE flag for source selection
         hrrz    6,6(5)          ; stored words
         jumpl   3,kret_zero ; unsigned off exceeds 18-bit length
         caml    3,6             ; off < stored words
@@ -34,7 +32,6 @@ memfs_read_words:
         camle   6,7
         move    6,7
 memfs_read_count:
-        jumpn   4,memfs_read_source_ready
         push    17,0            ; destination
         push    17,3            ; off
         push    17,6            ; count
@@ -50,19 +47,15 @@ memfs_read_count:
         move    5,1
         imuli   5,7
         add     5,(7)
-        setz    4,
         jrst    memfs_read_source_ready
 memfs_read_ensure_fail:
         sub     17,kconst_5_5
         jrst    kret_neg1
 memfs_read_source_ready:
         hlrz    2,6(5)
-        jumpe   4,memfs_read_pool
-        add     2,5(1)          ; image_data
-        jrst    memfs_read_source
-memfs_read_pool:
-        ; Mutable data words are direct physical addresses.
-memfs_read_source:
+        ; File data is always demand-backed mutable storage.  The historical
+        ; IMAGE source mode had no producer in the runtime namespace and kept
+        ; one dead MEMFS state word plus branches in every read.
         add     2,3
         move    1,2             ; source
         move    2,0             ; destination
@@ -692,7 +685,7 @@ memfs_parent_ok:
         .bss
         .globl  memfs_mres_fs
 memfs_mres_fs:
-        .block  6
+        .block  5
 memfs_mount_flags:
         .block  1
         .text
@@ -774,7 +767,6 @@ memfs_mres_mount_size_ok:
         subi    6,0700                  ; preserve old data-capacity semantics
         movem   6,memfs_mres_fs+3
         setzm   memfs_mres_fs+4         ; logical file words in use
-        setzm   memfs_mres_fs+5         ; no immutable image backing
         pushj   17,pclk_time36
         move    5,memfs_mres_fs
         movem   1,01100(5)              ; fresh root mtime; restore may replace it
@@ -800,7 +792,7 @@ memfs_mres_mount_size_ok:
         jumpe   1,memfs_mres_mount_done
 
         movei   1,memfs_mres_fs
-        movei   2,6
+        movei   2,5
         pushj   17,fs_zero_words
         move    1,(17)
         movei   2,3
@@ -828,7 +820,7 @@ memfs_mres_prepare_unmount:
         pushj   17,mm_free
         jumpn   1,memfs_mres_unmount_bad
         move    1,(17)
-        movei   2,6
+        movei   2,5
         pushj   17,fs_zero_words
         sub     17,kconst_1_1
         jrst    kret_zero

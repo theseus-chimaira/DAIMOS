@@ -7,7 +7,6 @@
 #define MEMFS_KIND_NODE              1U
 
 #define MEMFS_F_USED                 0001U
-#define MEMFS_F_IMAGE                0002U
 #define MEMFS_F_WRITABLE             0004U
 #define MEMFS_MOUNT_PERSIST          0002U
 
@@ -26,9 +25,10 @@
 
 /*
  * A node is deliberately seven PDP-10 words.  The low 18 bits of meta hold
- * type/mode/flags, while the high half holds the parent slot.  For mutable
- * files data packs the resident physical word address in the high half and
- * logical length in the low; immutable image nodes retain image offsets.
+ * type/mode/flags, while the high half holds the parent slot.  File data packs
+ * the resident physical word address in the high half and logical length in
+ * the low half; nonresident mutable data is recovered through the per-node
+ * backing descriptor table.
  */
 struct memfs_node {
         struct vfs_name name;
@@ -42,7 +42,6 @@ struct memfs {
         kword_t *pool;             /* reserved; mutable data is demand-backed */
         unsigned int pool_words;   /* configured mutable-data word ceiling */
         unsigned int used_words;
-        const kword_t *image_data;
 };
 
 int memfs_snapshot_mount(struct memfs *fs, unsigned int flags);

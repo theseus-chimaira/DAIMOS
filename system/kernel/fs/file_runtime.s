@@ -574,9 +574,7 @@ file_lock_check:
         move    4,(2)
         move    7,4
         xor     7,(1)
-        trne    7,0777777               ; different vnode index
-        jrst    file_lock_check_next
-        tlne    7,070707                ; provider/mount/local-kind differ
+        tdne    7,[070707777777]        ; any canonical vnode field differs
         jrst    file_lock_check_next
         tlnn    7,007040                ; same owner never conflicts
         jrst    file_lock_check_next
@@ -599,9 +597,7 @@ file_lock_update_loop:
         move    4,(2)
         move    7,4
         xor     7,(1)
-        trne    7,0777777
-        jrst    file_lock_update_next
-        tlne    7,070707
+        tdne    7,[070707777777]
         jrst    file_lock_update_next
         tlne    7,007040
         jrst    file_lock_update_next
