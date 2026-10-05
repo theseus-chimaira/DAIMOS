@@ -1992,7 +1992,26 @@ proc_save_user:
 .if PROC_STACK_WATERMARK
         pushj   17,proc_stack_watermark_scan
 .endif
+        move    2,1                    ; common save area = user AC0..AC17
+        movei   3,proc_save_user_tail
+        jrst    proc_save_common
+
+; Save a sleeping executive context.  Kernel AC0..AC17 occupy the same relative
+; shape as the user AC image, beginning at CTX_K_AC0.  Point AC2 at that image
+; and share the register-copy hot path rather than duplicating twenty stores.
+proc_save_kernel:
+        move    1,proc_current_slot
+        pushj   17,proc_uarea_slot
+.if PROC_STACK_WATERMARK
+        pushj   17,proc_stack_watermark_scan
+.endif
         move    2,1
+        addi    2,CTX_K_AC0
+        movei   3,proc_save_kernel_tail
+
+; AC2 = destination AC0 base, AC3 = continuation.  PI entry already preserved
+; AC1..AC3 and AC17 in low core, so those registers are free as copy scratch.
+proc_save_common:
         movem   0,0(2)
         movem   4,4(2)
         movem   5,5(2)
@@ -2013,49 +2032,24 @@ proc_save_user:
         movem   1,3(2)
         move    1,pdp10_pi_sp_save+012
         movem   1,017(2)
+        jrst    0(3)
+
+proc_save_user_tail:
         move    1,pdp10_pi_level6
         movem   1,CTX_U_PC(2)
         move    1,mach_kernel_sp
         movem   1,CTX_U_KSP(2)
         popj    17,
 
-; Save a sleeping executive context.  This includes syscall-boundary globals
-; that another process may overwrite while this process sleeps.
-proc_save_kernel:
-        move    1,proc_current_slot
-        pushj   17,proc_uarea_slot
-.if PROC_STACK_WATERMARK
-        pushj   17,proc_stack_watermark_scan
-.endif
-        move    2,1
-        movem   0,CTX_K_AC0+0(2)
-        movem   4,CTX_K_AC0+4(2)
-        movem   5,CTX_K_AC0+5(2)
-        movem   6,CTX_K_AC0+6(2)
-        movem   7,CTX_K_AC0+7(2)
-        movem   010,CTX_K_AC0+010(2)
-        movem   011,CTX_K_AC0+011(2)
-        movem   012,CTX_K_AC0+012(2)
-        movem   013,CTX_K_AC0+013(2)
-        movem   014,CTX_K_AC0+014(2)
-        movem   015,CTX_K_AC0+015(2)
-        movem   016,CTX_K_AC0+016(2)
-        move    1,000032
-        movem   1,CTX_K_AC0+1(2)
-        move    1,000033
-        movem   1,CTX_K_AC0+2(2)
-        move    1,000055
-        movem   1,CTX_K_AC0+3(2)
-        move    1,pdp10_pi_sp_save+012
-        movem   1,CTX_K_AC0+017(2)
+proc_save_kernel_tail:
         move    1,pdp10_pi_level6
-        movem   1,CTX_K_PC(2)
+        movem   1,-1(2)                ; CTX_K_PC
         move    1,mach_user_sp
-        movem   1,CTX_M_USER_SP(2)
+        movem   1,020(2)               ; CTX_M_USER_SP
         move    1,mach_syscall_save
-        movem   1,CTX_M_SYSCALL_SAVE(2)
+        movem   1,021(2)               ; CTX_M_SYSCALL_SAVE
         move    1,mach_kernel_sp
-        movem   1,CTX_U_KSP(2)
+        movem   1,-2(2)                ; CTX_U_KSP
         popj    17,
 
 ; Restore user ACs and PI return state for proc_current_slot.
@@ -2081,19 +2075,7 @@ proc_restore_user:
         move    2,1
         movei   3,PROC_FILE_TABLE_OFFSET(1)
         movem   3,file_table
-        move    0,0(2)
-        move    4,4(2)
-        move    5,5(2)
-        move    6,6(2)
-        move    7,7(2)
-        move    010,010(2)
-        move    011,011(2)
-        move    012,012(2)
-        move    013,013(2)
-        move    014,014(2)
-        move    015,015(2)
-        move    016,016(2)
-        popj    17,
+        jrst    proc_restore_common
 
 ; Restore a previously sleeping executive context and its syscall globals.
 proc_restore_kernel:
@@ -2123,18 +2105,24 @@ proc_restore_kernel:
         move    2,1
         movei   3,PROC_FILE_TABLE_OFFSET(1)
         movem   3,file_table
-        move    0,CTX_K_AC0+0(2)
-        move    4,CTX_K_AC0+4(2)
-        move    5,CTX_K_AC0+5(2)
-        move    6,CTX_K_AC0+6(2)
-        move    7,CTX_K_AC0+7(2)
-        move    010,CTX_K_AC0+010(2)
-        move    011,CTX_K_AC0+011(2)
-        move    012,CTX_K_AC0+012(2)
-        move    013,CTX_K_AC0+013(2)
-        move    014,CTX_K_AC0+014(2)
-        move    015,CTX_K_AC0+015(2)
-        move    016,CTX_K_AC0+016(2)
+        addi    2,CTX_K_AC0
+
+; AC2 points at the saved AC0 image for either a user or sleeping-kernel
+; context.  AC1..AC3 are PI-saved scratch and are restored by the PI return
+; path, so only the live unsaved set is copied here.
+proc_restore_common:
+        move    0,0(2)
+        move    4,4(2)
+        move    5,5(2)
+        move    6,6(2)
+        move    7,7(2)
+        move    010,010(2)
+        move    011,011(2)
+        move    012,012(2)
+        move    013,013(2)
+        move    014,014(2)
+        move    015,015(2)
+        move    016,016(2)
         popj    17,
 
 ; Switch to the slot-0 executive idle loop when no resident user process runs.
