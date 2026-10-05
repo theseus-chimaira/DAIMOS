@@ -17,6 +17,7 @@
  */
         .text
         .globl clk_pi_handler
+        .globl clk_pi_tail
         .globl clk_pi_post_handler
         .globl clk_pi_service
         .globl clk_ticks
@@ -38,6 +39,8 @@
 clk_pi_handler:
         pushj 017,clk_pi_service
 clk_pi_post_handler:
+        jrst clk_pi_tail
+clk_pi_tail:
         jrst pdp10_pi_handler_return
 
 /**

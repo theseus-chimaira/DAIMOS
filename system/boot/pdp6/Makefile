@@ -607,12 +607,12 @@ $(KCORE_STREAM): $(KCORE_RIM) $(KCORE_MAP)
 $(CTY_MRES_OBJ): $(BUILD)/cty_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/cty-mres.dxr -M $(BUILD)/cty-mres.map \
 	    -R $@ -N cty_mres_package -X cty_pi_handler -X cty_putchar \
-	    -X cty_getchar $(BUILD)/cty_io.dobj
+	    -X cty_getchar -X cty_pi_tail $(BUILD)/cty_io.dobj
 
 $(CLK_MRES_OBJ): $(BUILD)/clk_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/clk-mres.dxr -M $(BUILD)/clk-mres.map \
 	    -R $@ -N clk_mres_package -X clk_pi_handler -X clk_ticks -X clk_pi_service \
-	    -X clk_pi_post_handler -X clk_tick_count \
+	    -X clk_pi_post_handler -X clk_tick_count -X clk_pi_tail \
 	    $(BUILD)/clk_io.dobj
 
 $(PTR_MRES_OBJ): $(BUILD)/ptr_io.dobj $(KCORE_MAP)
@@ -642,7 +642,7 @@ $(CP_MRES_OBJ): $(BUILD)/cp_io.dobj $(KCORE_MAP)
 
 $(DCS_MRES_OBJ): $(BUILD)/dcs_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dcs-mres.dxr -M $(BUILD)/dcs-mres.map \
-	    -R $@ -N dcs_mres_package -X dcs_pi_handler -X dcs_getchar -X dcs_putchar \
+	    -R $@ -N dcs_mres_package -X dcs_pi_handler -X dcs_getchar -X dcs_putchar -X dcs_pi_tail \
 	    $(BUILD)/dcs_io.dobj
 
 $(GE_MRES_OBJ): $(BUILD)/ge_io.dobj $(KCORE_MAP)

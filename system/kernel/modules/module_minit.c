@@ -60,12 +60,14 @@ mfsdev_present_mark(unsigned int id)
 #define CTY_X_HANDLER           0U
 #define CTY_X_PUTCHAR           1U
 #define CTY_X_GETCHAR           2U
+#define CTY_X_PI_TAIL           3U
 
 #define CLK_X_HANDLER           0U
 #define CLK_X_TICKS             1U
 #define CLK_X_PI_SERVICE        2U
 #define CLK_X_POST_HANDLER      3U
 #define CLK_X_TICK_COUNT        4U
+#define CLK_X_PI_TAIL           5U
 #define PTR_X_READ_WORDS         0U
 #define PTP_X_WRITE_WORDS        0U
 #define LPT_X_PUTCHAR            0U
@@ -75,6 +77,7 @@ mfsdev_present_mark(unsigned int id)
 #define DCS_X_HANDLER           0U
 #define DCS_X_GETCHAR           1U
 #define DCS_X_PUTCHAR           2U
+#define DCS_X_PI_TAIL           3U
 #define GE_X_HANDLER            0U
 #define GE_X_GETCHAR            1U
 #define GE_X_PUTCHAR            2U
@@ -177,70 +180,33 @@ extern kword_t ttydpy_getchar_jump;
 extern int d6fs_reader_bootstrap_call(kword_t backing_ops);
 
 
-static unsigned int pi_level_count[PDP10_PI_LEVELS + 1U];
+static unsigned int pi_level_registered[PDP10_PI_LEVELS + 1U];
+static unsigned int pi_level_tail[PDP10_PI_LEVELS + 1U];
 
 static void storage_patch_jump(kword_t *word, unsigned int address);
 static void storage_patch_module_jump(unsigned int base, kword_t *word,
     unsigned int address);
-static unsigned int pi_handler_total;
 static unsigned int pi_enabled_mask;
 
-static volatile kword_t *
-minit_pi_span_slot(unsigned int level)
+static kword_t *
+minit_pi_dispatch_slot(unsigned int level)
 {
-        return &pdp10_pi_level_span[level - 1U];
+        if (level == 1U)
+                return &pdp10_pi_level1_dispatch_jump;
+        if (level == 2U)
+                return &pdp10_pi_level2_dispatch_jump;
+        if (level == 3U)
+                return &pdp10_pi_level3_dispatch_jump;
+        if (level == 4U)
+                return &pdp10_pi_level4_dispatch_jump;
+        if (level == 5U)
+                return &pdp10_pi_level5_dispatch_jump;
+        if (level == 6U)
+                return &pdp10_pi_level6_dispatch_jump;
+        return &pdp10_pi_level7_dispatch_jump;
 }
 
-static kword_t
-minit_pi_span(unsigned int start, unsigned int count)
-{
-        kword_t neg_count;
-
-        if (count == 0U)
-                return 0;
-        neg_count = (kword_t)((01000000U - count) & 0777777U);
-        return (neg_count << 18) | (kword_t)(start & 0777777U);
-}
-
-/** Rebuild compact PI handler spans and direct/single-handler dispatch jumps. */
-static void
-minit_pi_reindex(void)
-{
-        unsigned int level;
-        unsigned int start;
-
-        start = 0U;
-        for (level = PDP10_PI_LEVEL_MIN; level <= PDP10_PI_LEVEL_MAX;
-            ++level) {
-                unsigned int count;
-                kword_t *jump;
-                unsigned int target;
-
-                count = pi_level_count[level];
-                *minit_pi_span_slot(level) = minit_pi_span(start, count);
-                if (level <= 6U) {
-                        if (level == 1U)
-                                jump = &pdp10_pi_level1_dispatch_jump;
-                        else if (level == 2U)
-                                jump = &pdp10_pi_level2_dispatch_jump;
-                        else if (level == 3U)
-                                jump = &pdp10_pi_level3_dispatch_jump;
-                        else if (level == 4U)
-                                jump = &pdp10_pi_level4_dispatch_jump;
-                        else if (level == 5U)
-                                jump = &pdp10_pi_level5_dispatch_jump;
-                        else
-                                jump = &pdp10_pi_level6_dispatch_jump;
-                        target = (unsigned int)(unsigned long)&pdp10_pi_dispatch;
-                        if (count == 1U)
-                                target = (unsigned int)pdp10_pi_handlers[start];
-                        storage_patch_jump(jump, target);
-                }
-                start += count;
-        }
-}
-
-/** Initialize PDP-6 low-core PI vectors and empty transient handler tables. */
+/** Initialize PDP-6 low-core PI vectors and empty transient chain state. */
 void
 module_pi_init(void)
 {
@@ -248,77 +214,41 @@ module_pi_init(void)
 
         minit_pi_low_init();
         minit_pi_hw_clear();
-        pi_handler_total = 0U;
         pi_enabled_mask = 0U;
-        for (i = 0U; i <= PDP10_PI_LEVELS; ++i)
-                pi_level_count[i] = 0U;
-        for (i = 0U; i < PDP10_PI_HANDLER_CAPACITY; ++i)
-                pdp10_pi_handlers[i] = 0;
-        for (i = PDP10_PI_LEVEL_MIN; i <= PDP10_PI_LEVEL_MAX; ++i)
-                *minit_pi_span_slot(i) = 0;
-}
-
-/** Register one handler while preserving handlers grouped by PI level. */
-int
-module_pi_register(unsigned int level, unsigned int handler)
-{
-        unsigned int start;
-        unsigned int count;
-        unsigned int insert;
-        unsigned int i;
-
-        if (level < PDP10_PI_LEVEL_MIN || level > PDP10_PI_LEVEL_MAX ||
-            handler == 0U || pi_handler_total >= PDP10_PI_HANDLER_CAPACITY)
-                return -1;
-        start = 0U;
-        for (i = PDP10_PI_LEVEL_MIN; i < level; ++i)
-                start += pi_level_count[i];
-        count = pi_level_count[level];
-        for (i = start; i < start + count; ++i) {
-                if ((unsigned int)pdp10_pi_handlers[i] == handler)
-                        return -1;
+        for (i = 0U; i <= PDP10_PI_LEVELS; ++i) {
+                pi_level_registered[i] = 0U;
+                pi_level_tail[i] = 0U;
         }
-        insert = start + count;
-        for (i = pi_handler_total; i > insert; --i)
-                pdp10_pi_handlers[i] = pdp10_pi_handlers[i - 1U];
-        pdp10_pi_handlers[insert] = (kword_t)handler;
-        ++pi_level_count[level];
-        ++pi_handler_total;
-        minit_pi_reindex();
-        return 0;
 }
 
-/** Unregister one handler and compact/reindex the PI dispatch table. */
+/**
+ * Link one handler onto a PI level.
+ *
+ * TAIL is zero for a terminal handler.  A handler which may later gain a
+ * same-level successor exports one patchable JRST tail.  Registration order
+ * is the runtime poll order, so appending only requires patching the prior
+ * tail and never leaves a resident handler table behind after KINIT.
+ */
 int
-module_pi_unregister(unsigned int level, unsigned int handler)
+module_pi_register(unsigned int level, unsigned int handler,
+    unsigned int tail)
 {
-        unsigned int start;
-        unsigned int count;
-        unsigned int found;
-        unsigned int i;
-
         if (level < PDP10_PI_LEVEL_MIN || level > PDP10_PI_LEVEL_MAX ||
             handler == 0U)
                 return -1;
-        start = 0U;
-        for (i = PDP10_PI_LEVEL_MIN; i < level; ++i)
-                start += pi_level_count[i];
-        count = pi_level_count[level];
-        found = pi_handler_total;
-        for (i = start; i < start + count; ++i) {
-                if ((unsigned int)pdp10_pi_handlers[i] == handler) {
-                        found = i;
-                        break;
-                }
+        if (pi_level_registered[level] == 0U) {
+                storage_patch_jump(minit_pi_dispatch_slot(level), handler);
+        } else {
+                if (pi_level_tail[level] == 0U)
+                        return -1;
+                storage_patch_jump(
+                    (kword_t *)(unsigned long)pi_level_tail[level], handler);
         }
-        if (found == pi_handler_total)
-                return -1;
-        for (i = found; i + 1U < pi_handler_total; ++i)
-                pdp10_pi_handlers[i] = pdp10_pi_handlers[i + 1U];
-        --pi_handler_total;
-        pdp10_pi_handlers[pi_handler_total] = 0;
-        --pi_level_count[level];
-        minit_pi_reindex();
+        if (tail != 0U)
+                storage_patch_jump((kword_t *)(unsigned long)tail,
+                    (unsigned int)(unsigned long)&pdp10_pi_dispatch_done);
+        pi_level_tail[level] = tail;
+        pi_level_registered[level] = 1U;
         return 0;
 }
 
@@ -473,9 +403,10 @@ minit_export(kword_t name, unsigned int base, unsigned int index)
 
 /** Register a resident PI handler and enable its hardware PI level. */
 static void
-minit_register(kword_t name, unsigned int level, unsigned int handler)
+minit_register(kword_t name, unsigned int level, unsigned int handler,
+    unsigned int tail)
 {
-        if (module_pi_register(level, handler) != 0)
+        if (module_pi_register(level, handler, tail) != 0)
                 minit_fatal(name);
         minit_pi_enable(level);
 }
@@ -498,7 +429,8 @@ cty_minit(void)
         }
         base = minit_install(name);
         minit_register(name, CTY_NATIVE_PI_LEVEL,
-            minit_export(name, base, CTY_X_HANDLER));
+            minit_export(name, base, CTY_X_HANDLER),
+            minit_export(name, base, CTY_X_PI_TAIL));
         minit_cty_cono(CTY_NATIVE_PI_LEVEL);
         diag_putchar_addr = minit_export(name, base, CTY_X_PUTCHAR);
         storage_patch_jump(&native_sys_putchar_call, diag_putchar_addr);
@@ -530,7 +462,8 @@ clk_minit(void)
         base = minit_install(name);
         clk_pi_handler_addr = minit_export(name, base, CLK_X_HANDLER);
         clk_pi_service_addr = minit_export(name, base, CLK_X_PI_SERVICE);
-        minit_register(name, CLK_NATIVE_PI_LEVEL, clk_pi_handler_addr);
+        minit_register(name, CLK_NATIVE_PI_LEVEL, clk_pi_handler_addr,
+            minit_export(name, base, CLK_X_PI_TAIL));
         (void)minit_export(name, base, CLK_X_TICKS);
         clk_pi_post_handler_addr = minit_export(name, base,
             CLK_X_POST_HANDLER);
@@ -695,7 +628,8 @@ dcs_minit(void)
         }
         base = minit_install(name);
         minit_register(name, DCS_NATIVE_PI_LEVEL,
-            minit_export(name, base, DCS_X_HANDLER));
+            minit_export(name, base, DCS_X_HANDLER),
+            minit_export(name, base, DCS_X_PI_TAIL));
         module_service_set(MODULE_SERVICE_DCS_GETCHAR,
             minit_export(name, base, DCS_X_GETCHAR));
         module_service_set(MODULE_SERVICE_DCS_PUTCHAR,
@@ -734,7 +668,7 @@ ge_minit(void)
 
         base = minit_install(name);
         minit_register(name, GE_NATIVE_PI_LEVEL,
-            minit_export(name, base, GE_X_HANDLER));
+            minit_export(name, base, GE_X_HANDLER), 0U);
 
         module_service_set(MODULE_SERVICE_GE_GETCHAR,
             minit_export(name, base, GE_X_GETCHAR));
@@ -998,9 +932,9 @@ storage_register_router(kword_t name)
         if (storage_router_registered != 0U)
                 return;
         minit_register(name, STORAGE_NATIVE_PI_LEVEL,
-            (unsigned int)(unsigned long)&storage_pi_handler);
+            (unsigned int)(unsigned long)&storage_pi_handler, 0U);
         minit_register(name, STORAGE_DCT_PI_LEVEL,
-            (unsigned int)(unsigned long)&storage_dct_handler);
+            (unsigned int)(unsigned long)&storage_dct_handler, 0U);
         storage_router_registered = 1U;
 }
 
@@ -1108,7 +1042,7 @@ drm236_minit(void)
         handler = minit_export(name, base, DRM_X_HANDLER);
         read_service = minit_export(name, base, DRM_X_READ_BLOCK);
         write_service = minit_export(name, base, DRM_X_WRITE_BLOCK);
-        minit_register(name, DRM_NATIVE_PI_LEVEL, handler);
+        minit_register(name, DRM_NATIVE_PI_LEVEL, handler, 0U);
         storage_patch_jump(&drm236_read_jump, read_service);
         storage_patch_jump(&drm236_write_jump, write_service);
         module_service_set(MODULE_SERVICE_DRM_READ_BLOCK, read_service);
@@ -1616,7 +1550,7 @@ slv_minit(void)
                 storage_patch_jump((kword_t *)(unsigned long)handler,
                     SLV_CO_CLEAR_IRQ | level);
                 minit_slv_cono(SLV_CO_CLEAR_IRQ | level);
-                minit_register(name, level, handler);
+                minit_register(name, level, handler, 0U);
                 mfsdev_present_mark(MONITORFS_DEV_SLV0);
         }
         minit_diag_ok(name);

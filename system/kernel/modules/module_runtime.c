@@ -17,7 +17,6 @@
 kword_t module_runtime_descs[MODULE_RUNTIME_MAX + 1U];
 kword_t module_dynamic_bindings[MODULE_DYNAMIC_BIND_MAX];
 
-extern kword_t pdp10_pi_handlers[PDP10_PI_HANDLER_CAPACITY];
 /* Fixed KCORE words whose RH is patched by MINIT to a module entry point. */
 extern kword_t pdp10_pi_level1_dispatch_jump;
 extern kword_t pdp10_pi_level2_dispatch_jump;

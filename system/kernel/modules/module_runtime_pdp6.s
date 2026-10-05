@@ -4,7 +4,7 @@
  *
  * This is the target implementation of the deferred module_runtime_move() ABI.
  * It copies image+retained relocation map, applies two-bit LH/RH relocations,
- * retargets fixed/dynamic bindings and PI handlers, then publishes the new base.
+ * retargets fixed/dynamic bindings, then publishes the new base.
  * The future MM caller must validate the move and keep PI disabled throughout.
  * The code uses only PDP-6-compatible instructions; later PDP-10 models may
  * eventually gain separate optimized implementations. It is not linked into
@@ -16,9 +16,6 @@
         .extern fs_move_words
         .extern module_runtime_descs
         .extern module_dynamic_bindings
-        .extern pdp10_pi_handlers
-
-        .equ PDP10_PI_HANDLER_CAPACITY,010
 
 ; Persistent registers while the move is in progress:
 ; 10 owner, 11 new base, 12 total words, 13 old base,
@@ -112,15 +109,6 @@ module_runtime_dynamic_loop:
         addi    5,1
         sojg    6,module_runtime_dynamic_loop
 module_runtime_dynamic_done:
-
-        movei   5,pdp10_pi_handlers
-        movei   6,PDP10_PI_HANDLER_CAPACITY
-module_runtime_pi_loop:
-        move    1,5
-        pushj   17,module_runtime_retarget_asm
-        addi    5,1
-        sojg    6,module_runtime_pi_loop
-
         hrrm    11,16
         movem   16,module_runtime_descs(10)
         setz    1,

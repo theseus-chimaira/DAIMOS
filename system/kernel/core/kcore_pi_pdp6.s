@@ -21,8 +21,8 @@
  * AC17 is saved in pdp10_pi_sp_save at even offsets 0,2,...,014.  The unused
  * odd words of that table are deliberately overlaid with process globals to
  * avoid permanent BSS waste; the return calculation can only address even
- * offsets.  Handler spans and handler addresses remain resident because PI
- * dispatch must work after KINIT memory has been reclaimed.
+ * offsets.  MINIT directly patches each level entry and same-level handler
+ * continuation, so no resident handler table or span interpreter is needed.
  *
  * If an interrupt arrives while AC17 denotes a user stack, the level entry
  * switches to mach_kernel_sp before calling handlers.  Bit 010000 in the JSR
@@ -32,7 +32,6 @@
 
         .text
         .globl pdp10_pi_handler_return
-        .globl pdp10_pi_dispatch
         .globl pdp10_pi_dispatch_done
         .globl pdp10_pi_level1
         .globl pdp10_pi_level1_dispatch_jump
@@ -47,12 +46,9 @@
         .globl pdp10_pi_level6
         .globl pdp10_pi_level6_dispatch_jump
         .globl pdp10_pi_level7
-        .globl pdp10_pi_handlers
-        .globl pdp10_pi_level_span
+        .globl pdp10_pi_level7_dispatch_jump
         .globl pdp10_pi_sp_save
         .globl mach_kernel_sp
-
-        .equ PDP10_PI_HANDLER_CAPACITY,010
 
 /** @brief PI level 1 entry; saves AC1..AC3/AC17 and dispatches its span. */
 pdp10_pi_level1:
@@ -64,10 +60,9 @@ pdp10_pi_level1:
         move 1,pdp10_pi_level1
         tlne 1,010000
         move 17,mach_kernel_sp
-        move 2,pdp10_pi_level_span+0
         movei 3,pdp10_pi_return_level1
 pdp10_pi_level1_dispatch_jump:
-        jrst pdp10_pi_dispatch
+        jrst pdp10_pi_dispatch_done
 /** @brief PI level 2 entry; saves AC1..AC3/AC17 and dispatches its span. */
 pdp10_pi_level2:
         .word 0
@@ -78,10 +73,9 @@ pdp10_pi_level2:
         move 1,pdp10_pi_level2
         tlne 1,010000
         move 17,mach_kernel_sp
-        move 2,pdp10_pi_level_span+1
         movei 3,pdp10_pi_return_level2
 pdp10_pi_level2_dispatch_jump:
-        jrst pdp10_pi_dispatch
+        jrst pdp10_pi_dispatch_done
 /** @brief PI level 3 entry; shared completion path for the block-data channel. */
 pdp10_pi_level3:
         .word 0
@@ -92,10 +86,9 @@ pdp10_pi_level3:
         move 1,pdp10_pi_level3
         tlne 1,010000
         move 17,mach_kernel_sp
-        move 2,pdp10_pi_level_span+2
         movei 3,pdp10_pi_return_level3
 pdp10_pi_level3_dispatch_jump:
-        jrst pdp10_pi_dispatch
+        jrst pdp10_pi_dispatch_done
 /** @brief PI level 4 entry; saves AC1..AC3/AC17 and dispatches its span. */
 pdp10_pi_level4:
         .word 0
@@ -106,10 +99,9 @@ pdp10_pi_level4:
         move 1,pdp10_pi_level4
         tlne 1,010000
         move 17,mach_kernel_sp
-        move 2,pdp10_pi_level_span+3
         movei 3,pdp10_pi_return_level4
 pdp10_pi_level4_dispatch_jump:
-        jrst pdp10_pi_dispatch
+        jrst pdp10_pi_dispatch_done
 /** @brief PI level 5 entry; saves AC1..AC3/AC17 and dispatches its span. */
 pdp10_pi_level5:
         .word 0
@@ -120,10 +112,9 @@ pdp10_pi_level5:
         move 1,pdp10_pi_level5
         tlne 1,010000
         move 17,mach_kernel_sp
-        move 2,pdp10_pi_level_span+4
         movei 3,pdp10_pi_return_level5
 pdp10_pi_level5_dispatch_jump:
-        jrst pdp10_pi_dispatch
+        jrst pdp10_pi_dispatch_done
 /** @brief PI level 6 entry; saves AC1..AC3/AC17 and dispatches its span. */
 pdp10_pi_level6:
         .word 0
@@ -134,10 +125,9 @@ pdp10_pi_level6:
         move 1,pdp10_pi_level6
         tlne 1,010000
         move 17,mach_kernel_sp
-        move 2,pdp10_pi_level_span+5
         movei 3,pdp10_pi_return_level6
 pdp10_pi_level6_dispatch_jump:
-        jrst pdp10_pi_dispatch
+        jrst pdp10_pi_dispatch_done
 /** @brief PI level 7 entry; saves AC1..AC3/AC17 and dispatches its span. */
 pdp10_pi_level7:
         .word 0
@@ -148,35 +138,13 @@ pdp10_pi_level7:
         move 1,pdp10_pi_level7
         tlne 1,010000
         move 17,mach_kernel_sp
-        .globl pdp10_pi_level7_span_load
-pdp10_pi_level7_span_load:
-        move 2,pdp10_pi_level_span+6
         movei 3,pdp10_pi_return_level7
+pdp10_pi_level7_dispatch_jump:
+        jrst pdp10_pi_dispatch_done
 
-/**
- * @brief Dispatch the compact handler span in AC2.
- *
- * @param AC2 Packed -count,,start cursor, or zero for no handlers.
- * @param AC3 Address of the level-specific return stub; preserved.
- * @return Does not return normally.  Control reaches pdp10_pi_handler_return
- *         from each handler and eventually branches through AC3.
- *
- * A nonzero span is stored as -count,,start.  The first handler is entered
- * without modifying the cursor; AOBJN in the common handler-return path then
- * advances both the negative count and handler-table index.
- */
-pdp10_pi_dispatch:
-        jumpe 2,pdp10_pi_dispatch_done
-        jrst @pdp10_pi_handlers(2)
-
-/**
- * @brief Common continuation for resident PI handlers.
- *
- * Handlers must preserve AC2 and AC3 and jump here when complete.  AC2 is
- * advanced to the next handler; exhaustion falls through to the restore path.
- */
+/* Compatibility name for terminal handlers.  Shared-level handlers instead
+ * branch through their MINIT-patched local continuation tail. */
 pdp10_pi_handler_return:
-        aobjn 2,pdp10_pi_dispatch
 pdp10_pi_dispatch_done:
 pdp10_pi_return_common:
 
@@ -214,12 +182,6 @@ pdp10_pi_return_level7:
         jrst 012,@pdp10_pi_level7
 
         .bss
-/** Resident table of compact PI handler entry addresses. */
-pdp10_pi_handlers:
-        .block PDP10_PI_HANDLER_CAPACITY
-/** Seven packed -count,,start dispatch spans, one per PI level. */
-pdp10_pi_level_span:
-        .block 07
 /** AC17 save slots at even offsets; odd offsets are safely reusable globals. */
 pdp10_pi_sp_save:
         .block 1                       ; PI1 stack slot, offset 0

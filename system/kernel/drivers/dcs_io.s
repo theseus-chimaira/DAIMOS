@@ -17,6 +17,7 @@
 
         .text
         .globl dcs_pi_handler
+        .globl dcs_pi_tail
         .globl dcs_getchar
         .globl dcs_putchar
         .globl proc_tty_pending_take
@@ -38,7 +39,7 @@
  */
 dcs_pi_handler:
         conso 0300,000010
-        jrst pdp10_pi_handler_return
+        jrst dcs_pi_tail
         skipe dcs_rx_word
         jrst dcs_pi_disable
         coni 0304,1
@@ -54,6 +55,8 @@ dcs_pi_handler:
         pushj 17,proc_wakeup_event
 dcs_pi_disable:
         cono 0300,0
+        jrst dcs_pi_tail
+dcs_pi_tail:
         jrst pdp10_pi_handler_return
 
 /**

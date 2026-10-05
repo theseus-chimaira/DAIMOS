@@ -17,6 +17,7 @@
 
         .text
         .globl cty_pi_handler
+        .globl cty_pi_tail
         .globl cty_putchar
         .globl cty_getchar
         .globl cty_tx_pending
@@ -46,7 +47,7 @@ cty_pi_handler:
         cono 0120,000204
 cty_pi_input:
         conso 0120,0040
-        jrst pdp10_pi_handler_return
+        jrst cty_pi_tail
         datai 0120,1
         andi 1,0177
         caie 1,034                    ; CTRL-\: operator RT escape
@@ -54,13 +55,15 @@ cty_pi_input:
         skipn proc_rt_owner
         jrst cty_pi_input_normal
         setzm proc_rt_owner
-        jrst pdp10_pi_handler_return
+        jrst cty_pi_tail
 cty_pi_input_normal:
         addi 1,1
         movem 1,cty_rx_pending
         setom cty_rx_event
         movei 1,cty_rx_event
         pushj 17,proc_wakeup_event
+        jrst cty_pi_tail
+cty_pi_tail:
         jrst pdp10_pi_handler_return
 /**
  * @brief Write one seven-bit character and wait for PI4 completion.
