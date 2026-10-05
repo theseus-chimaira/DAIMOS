@@ -319,7 +319,7 @@ ${BUILD}/module_runtime.s: modules/module_runtime.c modules/module_runtime_pdp6.
 
 ${BUILD}/vm_backend.s: ${VM_BACKEND_C} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	@extra=; if test "${VM_BACKEND}" = pdp6; then extra=-DVM_SPACE_CAN_SWAP_PDP6_ASM=1; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S ${VM_BACKEND_C} -o $@
+	@extra=; if test "${VM_BACKEND}" = pdp6; then extra="-DVM_SPACE_CAN_SWAP_PDP6_ASM=1 -DVM_SPACE_STARTUP_PDP6_ASM=1"; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S ${VM_BACKEND_C} -o $@
 
 ${BUILD}/proc_swap.s: ${VM_SWAP_C} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}

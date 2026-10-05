@@ -47,6 +47,7 @@ vm_space_load_file(struct proc *p, vnode_t node, kword_t file_offset,
 }
 
 /** Pack argc/argv/environment records into the reserved top-of-image stack area. */
+#ifndef VM_SPACE_STARTUP_PDP6_ASM
 int
 vm_space_startup(struct proc *p, const kword_t *records,
     kword_t counts, kword_t *startup)
@@ -88,6 +89,7 @@ vm_space_startup(struct proc *p, const kword_t *records,
         startup[3] = start + (kword_t)string_off - 1UL;
         return 0;
 }
+#endif /* VM_SPACE_STARTUP_PDP6_ASM */
 
 
 /** Release a resident extent, detach backing metadata, and clear VM state. */

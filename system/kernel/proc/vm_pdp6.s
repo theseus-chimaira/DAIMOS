@@ -15,6 +15,8 @@
         .globl  vm_user_mapping_release
         .globl  vm_activate_current
         .globl  vm_enter_initial_user
+        .globl  vm_space_startup
+        .globl  fs_copy_words
         .globl  proc_current_slot
         .globl  proc_current_ptr
         .globl  proc_table
@@ -83,6 +85,101 @@ vm_activate_current:
         sub     2,[02000,,0]            ; APR LH stores words-02000
         movem   2,vm_pdp6_apr
         datao   0000,vm_pdp6_apr
+        popj    17,
+
+/**
+ * @brief Pack argv/environment records into the process startup area.
+ *
+ * @param AC1 Process descriptor.
+ * @param AC2 Packed-record source.
+ * @param AC3 argc,,envc.
+ * @param AC4 Four-word startup result.
+ * @return AC1 zero.
+ *
+ * KCC spills this simple copy loop into a large local frame.  Keep the loop
+ * state in AC10..AC16 and preserve those registers with one BLT pair instead.
+ */
+vm_space_startup:
+        add     17,kconst_7_7
+        movei   0,-6(17)
+        hrli    0,10
+        blt     0,(17)
+
+        move    10,2                   ; current source record
+        move    12,4                   ; startup result
+        hlrz    5,3                    ; argc
+        hrrz    6,3                    ; envc
+        hlrz    13,1(1)                ; logical user words
+        subi    13,02000               ; startup-area logical base
+
+        movem   5,(12)
+        setz    7,
+        jumpe   5,vm_startup_no_argv
+        move    7,13
+        addi    7,1
+vm_startup_no_argv:
+        movem   7,1(12)
+
+        setz    7,
+        jumpe   6,vm_startup_no_env
+        move    7,13
+        addi    7,1
+        add     7,5
+vm_startup_no_env:
+        movem   7,2(12)
+
+        hrrz    11,1(1)                ; physical user-space base
+        add     11,13                  ; physical startup-area base
+        movem   3,(11)                 ; argc,,envc metadata
+
+        move    14,5
+        add     14,6                   ; number of string records
+        move    15,14
+        addi    15,1                   ; skip metadata + pointer table
+        jumpe   6,vm_startup_no_env_slot
+        addi    15,1                   ; terminating environment pointer
+vm_startup_no_env_slot:
+        move    16,11
+        addi    16,1                   ; next argv/env pointer slot
+
+vm_startup_copy_loop:
+        jumpe   14,vm_startup_copy_done
+        move    1,(10)                 ; SIXBIT character count
+        addi    1,5
+        idivi   1,6
+        addi    1,1                    ; count word + payload words
+        push    17,1                   ; preserve nwords across copy
+
+        move    2,13
+        add     2,15
+        movem   2,(16)                 ; logical string address
+        move    2,11
+        add     2,15                   ; physical string destination
+        move    3,1
+        move    1,10
+        pushj   17,fs_copy_words
+
+        pop     17,1
+        add     10,1
+        add     15,1
+        addi    16,1
+        sojg    14,vm_startup_copy_loop
+
+vm_startup_copy_done:
+        skipn   2(12)                  ; no envc -> no NULL terminator
+        jrst    vm_startup_finish
+        setzm   (16)
+vm_startup_finish:
+        move    1,13
+        add     1,15
+        subi    1,1
+        movem   1,3(12)                ; initial user stack
+        setz    1,
+
+        movei   0,10
+        hrli    0,-6(17)
+        blt     0,16
+        sub     17,kconst_7_7
         popj    17,
 
 /**
