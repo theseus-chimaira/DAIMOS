@@ -42,6 +42,7 @@
         .globl dpy_text_top
         .globl dpy_text_active
         .globl dpy_text_rows_used
+        .globl mfsdev_io_out
 
         .equ DPY_TEXT_ROWS,056
         .equ DPY_TEXT_BLOCKS,016
@@ -340,6 +341,9 @@ dpy_write_words:
         movei 3,014
         pushj 17,mm_free
 dpy_list_installed:
+        ; One accepted WRITE_WORDS request installed/replaced one persistent
+        ; native display program.  Count requests, not 30-Hz hardware replays.
+        aos mfsdev_io_out+010
         move 1,011
         sub 17,[1,,1]
         jrst dpy_list_done
