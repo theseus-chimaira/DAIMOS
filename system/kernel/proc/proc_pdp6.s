@@ -1707,14 +1707,17 @@ proc_control_getgid:
         jumpn   2,kret_neg1
         hlrz    5,(4)
         hlrz    6,PROC_CRED_OFFSET(5)
-        caie    1,015                  ; GETUID keeps LH, GETGID selects RH
+        ; Packed dispatch leaves AC1 = opcode >> 1.  GETUID 015 therefore
+        ; arrives as 06; GETGID 016 arrives as 07.
+        caie    1,06                   ; GETUID keeps LH, GETGID selects RH
         hrrz    6,PROC_CRED_OFFSET(5)
         move    1,6
         popj    17,
 
 ; UID 0 may install login credentials.  An ordinary process may only request
 ; its current UID/GID, so it cannot acquire another identity.  SETUID (017)
-; and SETGID (025) share the path; AC1 still contains the dispatch opcode.
+; and SETGID (025) share the path.  Packed dispatch leaves AC1 = opcode >> 1,
+; so SETUID arrives as 07 and SETGID as 012.
 proc_control_setuid:
 proc_control_setgid:
 proc_control_setcred:
@@ -1724,14 +1727,14 @@ proc_control_setcred:
         move    6,PROC_CRED_OFFSET(5)
         hlrz    7,6                    ; current UID controls privilege
         jumpe   7,proc_control_setcred_store
-        caie    1,017                  ; SETUID compares UID, SETGID compares GID
+        caie    1,07                   ; SETUID compares UID, SETGID compares GID
         hrrz    7,6
         came    2,7
         jrst    kret_neg1
 proc_control_setcred_store:
-        cain    1,017                  ; SETUID executes only the LH store
+        cain    1,07                   ; SETUID executes only the LH store
         hrlm    2,PROC_CRED_OFFSET(5)
-        caie    1,017                  ; SETGID executes only the RH store
+        caie    1,07                   ; SETGID executes only the RH store
         hrrm    2,PROC_CRED_OFFSET(5)
         move    1,2
         popj    17,
