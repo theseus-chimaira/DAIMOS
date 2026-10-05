@@ -72,13 +72,19 @@ dpy_pi_handler:
         movem 1,dpy_pi_saved_ac1
         movem 2,dpy_pi_saved_ac2
         movem 3,dpy_pi_saved_ac3
-        ; A persistent raw list is one continuous BLKO span.  Reload the
-        ; immutable initial IOWD on overflow; the final word remains in flight
-        ; and its DONE request starts the next pass.
+        ; A persistent raw list is one continuous BLKO span.  Do not reload it
+        ; here: that would replay at device speed and bypass the 30-Hz clock
+        ; cadence.  Overflow means this frame has been submitted.  Disable DPY
+        ; PI requests, clear ownership, and require two fresh line-clock ticks
+        ; before the clock hook starts the next pass.  This also leaves ample
+        ; time for the just-issued final display word to complete.
         skipn dpy_list_base
         jrst dpy_pi_retained_done
-        move  1,dpy_list_iowd
-        movem 1,dpy_refresh_iowd
+        setzm dpy_refresh_iowd
+        setzm dpy_pending
+        movei 1,2
+        movem 1,dpy_refresh_divider
+        cono  0130,0
         jrst  dpy_pi_return
 
 dpy_pi_retained_done:
@@ -194,6 +200,11 @@ dpy_clock_handler:
 dpy_refresh_start:
         skipe dpy_pending
         jrst pdp10_pi_handler_return
+        skipn dpy_list_base
+        jrst dpy_refresh_retained
+        move 1,dpy_list_iowd
+        jrst dpy_refresh_start_arm
+dpy_refresh_retained:
         skipn dpy_text_active
         jrst dpy_refresh_banner
         seto 1,
@@ -266,10 +277,11 @@ dpy_put_ok:
  *
  * Replacement is transactional with respect to allocation: the old list keeps
  * refreshing while the new list is copied.  Publication runs with the DPY PIA
- * disabled, so PI7 never observes partially initialized list state.  While a
- * list is active dpy_pending remains asserted and ordinary retained-text refresh
- * naturally stays idle.  Stopping the list releases its dynamic extent and the
- * next 30-Hz clock tick resumes native-block TTY refresh.
+ * disabled, so PI7 never observes partially initialized list state.  The list
+ * is then replayed only by the normal 30-Hz clock hook; dpy_pending is asserted
+ * for one finite pass, not for the whole list lifetime.  Stopping the list
+ * releases its dynamic extent and the next 30-Hz clock tick resumes native-
+ * block TTY refresh.
  */
 dpy_write_words:
         push 17,010
@@ -310,16 +322,17 @@ dpy_write_words:
         hrr 1,5
         movem 1,dpy_list_iowd
 
-        ; Reset with PIA disabled, publish complete state, then let INIT request
-        ; the first hardware-BLKO word.  dpy_pending remains set for list life.
+        ; Reset with PIA disabled and publish complete state.  The next real
+        ; line-clock tick starts the first hardware-BLKO pass; userspace does
+        ; not need to resubmit the list for refresh.
         move 7,dpy_list_base          ; old extent, if any
         setzm dpy_list_base
         cono 0130,000100
-        move 1,dpy_list_iowd
-        movem 1,dpy_refresh_iowd
+        setzm dpy_refresh_iowd
         movem 6,dpy_list_base
-        setom dpy_pending
-        cono 0130,000107
+        setzm dpy_pending
+        movei 1,1
+        movem 1,dpy_refresh_divider
 
         jumpe 7,dpy_list_installed
         move 1,7

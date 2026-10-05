@@ -1026,21 +1026,22 @@ cmd_dpyview(int argc, kword_t **argv, struct u_io *io)
         if (dpy < 0)
                 return cmd_err(io, "DPYVIEW: NO DPY", dpy_path);
 
-        /* Type 340 is a refresh display.  Replay the complete native program
-         * every two line-clock ticks (30 Hz).  The kernel raw lease suppresses
-         * retained TTY refresh while these frames continue to arrive and
-         * expires automatically when this process exits. */
-        for (;;) {
-                n = dsys_write_words(dpy, dpyview_words, used);
-                if (n != (int)used) {
-                        (void)dsys_close(dpy);
-                        return cmd_err(io, "DPYVIEW: WRITE", dpy_path);
-                }
-                if (dsys_sleep(2U) != 0) {
-                        (void)dsys_close(dpy);
-                        return 0;
-                }
+        /* The kernel retains this native display program and replays it from
+         * the DPY clock hook at 30 Hz.  Submit exactly once; repeatedly writing
+         * the frame would reset/reallocate the active list and race its own
+         * refresh.  Sleep only to remain the owning process until interrupted.
+         * Closing DPY0 releases the persistent list. */
+        n = dsys_write_words(dpy, dpyview_words, used);
+        if (n != (int)used) {
+                (void)dsys_close(dpy);
+                return cmd_err(io, "DPYVIEW: WRITE", dpy_path);
         }
+        for (;;) {
+                if (dsys_sleep(60U) != 0)
+                        break;
+        }
+        (void)dsys_close(dpy);
+        return 0;
 }
 #endif
 
