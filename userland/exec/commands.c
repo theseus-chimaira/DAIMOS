@@ -313,7 +313,8 @@ cmd_chmod(int argc, kword_t **argv, struct u_io *io)
 #endif
 
 #if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CHOWN || \
-    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_TTYOUT
+    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_TTYOUT || \
+    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_KILL
 static int
 cmd_uint_arg(const kword_t *arg, unsigned int *vp)
 {
@@ -332,6 +333,21 @@ cmd_uint_arg(const kword_t *arg, unsigned int *vp)
                 if (v > 0777U) return -1;
         }
         *vp = v;
+        return 0;
+}
+#endif
+
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_KILL
+static int
+cmd_kill(int argc, kword_t **argv, struct u_io *io)
+{
+        unsigned int pid;
+
+        if (argc != 2 || cmd_uint_arg(argv[1], &pid) != 0 || pid == 0U)
+                return cmd_err(io, "KILL", 0);
+        if (dsys_procctl(SYS_PROCCTL_EVENT_PID,
+            SYS_EVENT_ARG(pid, SYS_EVENT_TERM)) != 0)
+                return cmd_err(io, "KILL", argv[1]);
         return 0;
 }
 #endif
@@ -1029,16 +1045,20 @@ cmd_dpyview(int argc, kword_t **argv, struct u_io *io)
         /* The kernel retains this native display program and replays it from
          * the DPY clock hook at 30 Hz.  Submit exactly once; repeatedly writing
          * the frame would reset/reallocate the active list and race its own
-         * refresh.  Sleep only to remain the owning process until interrupted.
-         * Closing DPY0 releases the persistent list. */
+         * refresh.  Block in the controlling-terminal read path so cooked
+         * Ctrl-C is translated into the normal foreground-group INT event.
+         * Other input is ignored.  Closing DPY0 releases the persistent list. */
         n = dsys_write_words(dpy, dpyview_words, used);
         if (n != (int)used) {
                 (void)dsys_close(dpy);
                 return cmd_err(io, "DPYVIEW: WRITE", dpy_path);
         }
-        for (;;) {
-                if (dsys_sleep(60U) != 0)
-                        break;
+        if (dsys_isatty(io->in_fd) >= 0) {
+                while (dsys_readchar(io->in_fd) >= 0)
+                        ;
+        } else {
+                while (dsys_sleep(60U) == 0)
+                        ;
         }
         (void)dsys_close(dpy);
         return 0;
@@ -1153,6 +1173,8 @@ CMD_PROGRAM_ENTRY(DAIMOS_CMD_TOKEN)(int argc, kword_t **argv,
         return cmd_clear(argc, argv, io);
 #elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_DPYVIEW
         return cmd_dpyview(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_KILL
+        return cmd_kill(argc, argv, io);
 #else
         return cmd_err(io, "EXEC: BAD PROGRAM", argv[0]);
 #endif
