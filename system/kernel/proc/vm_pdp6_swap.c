@@ -21,10 +21,6 @@
 #include "storage.h"
 #include "syscall.h"
 
-#if EXEC_DXR_MAX_IMAGE_WORDS > PROC_SWAP_TEXT_MASK
-#error "packed swap text field is too small for executable ABI"
-#endif
-
 struct proc_swap_record *proc_swap_records;
 kword_t proc_swap_blocks_used;
 

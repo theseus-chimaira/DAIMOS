@@ -43,6 +43,7 @@
 
         .equ    EXEC_DXR_MAGIC,0447062      ; SIXBIT /DXR/
         .equ    EXEC_DXR_TEXT_TAG,0647022   ; SIXBIT /TX2/
+        .equ    EXEC_DXR_MAX_IMAGE_WORDS,0300000
         .equ    EXEC_SCHED_SIDL_LH,0100024  ; SIDL + default nice bias
 
 
@@ -138,7 +139,7 @@ exec_load_read_header:
         andi    15,0700000              ; compressed/pure/RT-required flags
         andi    16,0077777              ; BSS words
         jumpe   13,exec_load_fail
-        caile   13,036000
+        caile   13,EXEC_DXR_MAX_IMAGE_WORDS
         jrst    exec_load_fail
         caile   16,077777
         jrst    exec_load_fail
