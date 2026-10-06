@@ -29,10 +29,9 @@
         .equ    VFS_TYPE_REG,2
 
         .equ    MEMFS_NODES,0
-        .equ    MEMFS_NODE_COUNT,1
-        .equ    MEMFS_POOL,2
-        .equ    MEMFS_POOL_WORDS,3
-        .equ    MEMFS_USED_WORDS,4
+        .equ    MEMFS_POOL,1
+        .equ    MEMFS_POOL_WORDS,2
+        .equ    MEMFS_USED_WORDS,3
         .equ    NODE_META,5
         .equ    NODE_DATA,6
 
@@ -109,7 +108,7 @@ memfs_snapshot_mount:
         setzm   MEMFS_USED_WORDS(010)
         movei   013,1
 memfs_snapshot_restore_loop:
-        caml    013,MEMFS_NODE_COUNT(010)
+        caile   013,077
         jrst    memfs_snapshot_mount_commit
         move    014,013
         imuli   014,7
@@ -212,7 +211,7 @@ memfs_snapshot_shutdown:
         addi    011,SNAP_META_BLOCKS
         movei   012,1
 memfs_snapshot_shutdown_loop:
-        caml    012,MEMFS_NODE_COUNT(010)
+        caile   012,077
         jrst    memfs_snapshot_shutdown_metadata
         move    013,012
         imuli   013,7

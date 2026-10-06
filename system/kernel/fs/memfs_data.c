@@ -223,7 +223,7 @@ memfs_data_ensure(struct memfs *fs, unsigned int slot)
         kword_t span;
         kword_t words;
 
-        if (fs == 0 || fs != memfs_data_fs || slot >= fs->node_count)
+        if (fs == 0 || fs != memfs_data_fs || slot >= MEMFS_NODE_COUNT)
                 return -1;
         np = &fs->nodes[slot];
         words = np->data & MEMFS_HALF_MASK;
@@ -244,7 +244,7 @@ memfs_data_ensure(struct memfs *fs, unsigned int slot)
 void
 memfs_data_dirty(unsigned int slot)
 {
-        if (memfs_data_fs != 0 && slot < memfs_data_fs->node_count)
+        if (memfs_data_fs != 0 && slot < MEMFS_NODE_COUNT)
                 memfs_backing_drop(slot);
 }
 
@@ -258,7 +258,7 @@ memfs_resize(struct memfs *fs, unsigned int slot, unsigned int words)
         unsigned int oldwords;
         unsigned int i;
 
-        if (fs == 0 || slot >= fs->node_count || words > MEMFS_HALF_MASK)
+        if (fs == 0 || slot >= MEMFS_NODE_COUNT || words > MEMFS_HALF_MASK)
                 return -1;
         np = &fs->nodes[slot];
         if ((np->meta & 06UL) != MEMFS_F_WRITABLE)
@@ -303,7 +303,7 @@ memfs_evict_chunk(struct memfs_data_chunk *cp)
         fs = memfs_data_fs;
         if (fs == 0 || cp->base == 0UL)
                 return 0UL;
-        for (slot = 1U; slot < fs->node_count; ++slot) {
+        for (slot = 1U; slot < MEMFS_NODE_COUNT; ++slot) {
                 struct memfs_node *np;
                 kword_t base;
                 kword_t blocks;
@@ -327,7 +327,7 @@ memfs_evict_chunk(struct memfs_data_chunk *cp)
                 fs->pool[slot] = ((first & MEMFS_BACK_FIRST_MASK) << 18U) |
                     blocks;
         }
-        for (slot = 1U; slot < fs->node_count; ++slot) {
+        for (slot = 1U; slot < MEMFS_NODE_COUNT; ++slot) {
                 struct memfs_node *np;
                 kword_t base;
 
@@ -371,7 +371,7 @@ memfs_data_destroy(void)
         unsigned int i;
 
         if (memfs_data_fs != 0)
-                for (i = 0U; i < memfs_data_fs->node_count; ++i)
+                for (i = 0U; i < MEMFS_NODE_COUNT; ++i)
                         memfs_backing_drop(i);
         for (i = 0U; i < MEMFS_DATA_CHUNKS; ++i) {
                 if (memfs_data_chunks[i].base != 0UL)

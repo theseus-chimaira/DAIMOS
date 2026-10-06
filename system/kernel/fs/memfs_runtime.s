@@ -157,7 +157,7 @@ memfs_slot:
         caie    4,040001               ; provider 4, node kind 1
         jrst    kret_neg1
         hrrz    4,2
-        caml    4,1(1)
+        caile   4,077
         jrst    kret_neg1
         move    5,4
         imuli   5,7
@@ -181,7 +181,7 @@ memfs_find_child:
         addi    5,7                     ; slot 1
         movei   6,1
 memfs_find_child_loop:
-        caml    6,1(7)
+        caile   6,077
         jrst    memfs_find_child_fail
         move    4,5(5)
         trnn    4,1
@@ -326,7 +326,7 @@ memfs_new_parent_ok:
         addi    3,7                     ; slot 1
         movei   4,1
 memfs_new_free_loop:
-        caml    4,1(010)
+        caile   4,077
         jrst    memfs_new_fail
         move    5,5(3)
         trnn    5,1
@@ -393,7 +393,7 @@ memfs_unlink:
         addi    3,7                     ; slot 1
         movei   4,1
 memfs_unlink_child_loop:
-        caml    4,1(010)
+        caile   4,077
         jrst    memfs_unlink_no_children
         move    5,5(3)
         trnn    5,1
@@ -476,7 +476,7 @@ memfs_rename_up:
         camn    7,011
         jrst    memfs_rename_fail
         jumpe   7,memfs_rename_apply
-        caml    7,1(010)
+        caile   7,077
         jrst    memfs_rename_fail
         move    5,7
         imuli   5,7
@@ -594,7 +594,7 @@ memfs_readdir:
         movei   6,1
         movei   0,0                     ; matching-entry ordinal
 memfs_readdir_loop:
-        caml    6,1(1)
+        caile   6,077
         jrst    kret_zero
         move    7,5(5)
         trnn    7,1
@@ -660,7 +660,7 @@ memfs_parent:
         move    1,7                     ; restore fs
         move    4,0                     ; restore optional namep
         hlrz    5,6                     ; parent slot
-        caml    5,1(1)
+        caile   5,077
         jrst    kret_neg1
         move    7,5
         imuli   7,7
@@ -685,7 +685,7 @@ memfs_parent_ok:
         .bss
         .globl  memfs_mres_fs
 memfs_mres_fs:
-        .block  5
+        .block  4
         .text
 
         .globl  vfs_name_words_equal
@@ -756,15 +756,13 @@ memfs_mres_mount_size_ok:
         movem   6,5(5)                  ; root-node meta
 
         movem   5,memfs_mres_fs
-        movei   6,0100                  ; 64 node slots
-        movem   6,memfs_mres_fs+1
         move    7,5
         addi    7,0700
-        movem   7,memfs_mres_fs+2       ; per-node swap backing descriptors
-        move    6,-1(17)                ; requested total-word ceiling
+        movem   7,memfs_mres_fs+1       ; per-node swap backing descriptors
+        move    6,-2(17)                ; requested total-word ceiling
         subi    6,0700                  ; preserve old data-capacity semantics
-        movem   6,memfs_mres_fs+3
-        setzm   memfs_mres_fs+4         ; logical file words in use
+        movem   6,memfs_mres_fs+2
+        setzm   memfs_mres_fs+3         ; logical file words in use
         pushj   17,pclk_time36
         move    5,memfs_mres_fs
         movem   1,01100(5)              ; fresh root mtime; restore may replace it
@@ -790,7 +788,7 @@ memfs_mres_mount_size_ok:
         jumpe   1,memfs_mres_mount_done
 
         movei   1,memfs_mres_fs
-        movei   2,5
+        movei   2,4
         pushj   17,fs_zero_words
         move    1,(17)
         movei   2,3
@@ -829,9 +827,9 @@ memfs_mres_unmount_bad:
 ; MEMINFO calls this exported entry directly; overwrite request a/b.
         .globl  memfs_mres_usage
 memfs_mres_usage:
-        move    2,memfs_mres_fs+4       ; used_words
+        move    2,memfs_mres_fs+3       ; used_words
         movem   2,1(1)
-        move    2,memfs_mres_fs+3       ; pool_words
+        move    2,memfs_mres_fs+2       ; pool_words
         movem   2,2(1)
         jrst    kret_zero
 
@@ -866,8 +864,8 @@ memfs_mres_not_mount:
 memfs_mres_space:
         skipn   memfs_mres_fs
         jrst    kret_neg1
-        move    1,memfs_mres_fs+3
-        move    2,memfs_mres_fs+4
+        move    1,memfs_mres_fs+2
+        move    2,memfs_mres_fs+3
         popj    17,
 
         .data

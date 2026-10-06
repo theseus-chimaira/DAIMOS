@@ -162,7 +162,7 @@ memfs_rename(struct memfs *fs, vnode_t olddir,
                                 return -1;
                         if (p == 0U)
                                 break;
-                        if (p >= fs->node_count ||
+                        if (p >= MEMFS_NODE_COUNT ||
                             (NODE_FLAGS(&fs->nodes[p]) & MEMFS_F_USED) == 0U)
                                 return -1;
                         p = NODE_PARENT(&fs->nodes[p]);

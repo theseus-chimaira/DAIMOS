@@ -51,7 +51,7 @@ int memfs_snapshot_mount(struct memfs *fs, unsigned int flags)
                 if (checksum_words((kword_t *)fs->nodes, SNAP_META_WORDS) != h[5])
                         return -1;
                 fs->used_words = 0U;
-                for (slot = 1U; slot < fs->node_count; ++slot) {
+                for (slot = 1U; slot < MEMFS_NODE_COUNT; ++slot) {
                         struct memfs_node *np = &fs->nodes[slot];
                         kword_t words = np->data & HALF_MASK;
                         if ((np->meta & MEMFS_F_USED) != 0UL &&
@@ -100,7 +100,7 @@ int memfs_snapshot_shutdown(void)
         if (backstore_write(backstore_blocks - 1UL, 1UL, h) != 0)
                 return -1;
         next = snapshot_first + SNAP_META_WORDS / DSK_WORDS_PER_SECTOR;
-        for (slot = 1U; slot < fs->node_count; ++slot) {
+        for (slot = 1U; slot < MEMFS_NODE_COUNT; ++slot) {
                 struct memfs_node *np = &fs->nodes[slot];
                 kword_t words = np->data & HALF_MASK;
                 kword_t blocks;

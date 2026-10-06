@@ -42,11 +42,10 @@
         .equ    MEMFS_CHUNK_BITMAP,0377
         .equ    MEMFS_CHUNK_COUNT_SHIFT,010
 
-        ; struct memfs: nodes, node_count, pool, pool_words, used_words, image.
+        ; struct memfs: nodes, pool, pool_words, used_words.
         .equ    MEMFS_NODES,0
-        .equ    MEMFS_NODE_COUNT,1
-        .equ    MEMFS_POOL,2
-        .equ    MEMFS_USED_WORDS,4
+        .equ    MEMFS_POOL,1
+        .equ    MEMFS_USED_WORDS,3
         ; struct memfs_node: five name/meta words followed by packed data.
         .equ    MEMFS_NODE_META,5
         .equ    MEMFS_NODE_DATA,6
@@ -152,7 +151,7 @@ memfs_data_alloc_existing_next:
         addi    013,1
         sojg    012,memfs_data_alloc_existing
 
-        move    1,memfs_mres_fs+3      ; configured mutable-data ceiling
+        move    1,memfs_mres_fs+2      ; configured mutable-data ceiling
         sub     1,010
         move    010,1                  ; remaining configured capacity
         camge   010,011
@@ -318,7 +317,7 @@ memfs_data_ensure:
         move    010,1                  ; fs
         move    011,2                  ; slot
         jumpe   010,memfs_data_ensure_fail
-        caml    011,MEMFS_NODE_COUNT(010)
+        caile   011,077
         jrst    memfs_data_ensure_fail
         move    012,011
         imuli   012,7
@@ -363,7 +362,7 @@ memfs_data_ensure_return:
 ; void memfs_data_dirty(unsigned int slot)
 memfs_data_dirty:
         movei   3,memfs_mres_fs
-        caml    1,MEMFS_NODE_COUNT(3)
+        caile   1,077
         popj    17,
         jrst    memfs_backing_drop
 
@@ -377,7 +376,7 @@ memfs_resize:
         move    011,2
         move    012,3
         jumpe   010,memfs_resize_fail
-        caml    011,MEMFS_NODE_COUNT(010)
+        caile   011,077
         jrst    memfs_resize_fail
         tlne    012,0777777            ; logical size must fit RH18
         jrst    memfs_resize_fail
@@ -477,7 +476,7 @@ memfs_evict_chunk:
         movei   012,1                  ; slot 0 is root metadata
 
 memfs_evict_back_loop:
-        caml    012,MEMFS_NODE_COUNT(011)
+        caile   012,077
         jrst    memfs_evict_clear_start
         move    013,012
         imuli   013,7
@@ -530,7 +529,7 @@ memfs_evict_back_next:
 memfs_evict_clear_start:
         movei   012,1
 memfs_evict_clear_loop:
-        caml    012,MEMFS_NODE_COUNT(011)
+        caile   012,077
         jrst    memfs_evict_release
         move    013,012
         imuli   013,7
@@ -607,7 +606,7 @@ memfs_data_destroy:
         jrst    memfs_data_destroy_chunks
         setz    011,
 memfs_data_destroy_backing:
-        caml    011,MEMFS_NODE_COUNT(010)
+        caile   011,077
         jrst    memfs_data_destroy_chunks
         move    1,011
         pushj   17,memfs_backing_drop

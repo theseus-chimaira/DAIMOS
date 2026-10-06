@@ -38,7 +38,6 @@ struct memfs_node {
 
 struct memfs {
         struct memfs_node *nodes;
-        unsigned int node_count;
         kword_t *pool;             /* reserved; mutable data is demand-backed */
         unsigned int pool_words;   /* configured mutable-data word ceiling */
         unsigned int used_words;
