@@ -20,6 +20,7 @@
         .globl  vfs_create
         .globl  vfs_truncate
         .globl  pipe_fifo_open
+        .globl  proc_swap_backing_busy
         .globl  file_new_fd
         .globl  file_table
 file_check_access:
@@ -1260,6 +1261,9 @@ file_remove_need_nondir:
         jrst    file_remove_stat_fail
 file_remove_type_ok:
         sub     17,kconst_7_7
+        move    1,(17)                  ; target vnode
+        pushj   17,proc_swap_backing_busy
+        jumpn   1,file_remove_busy
         move    1,-6(17)
         movei   2,-5(17)
         pushj   17,vfs_unlink
@@ -1274,6 +1278,9 @@ file_remove_done:
         sub     17,kconst_7_7
         sub     17,kconst_1_1
         popj    17,
+file_remove_busy:
+        seto    1,
+        jrst    file_remove_done
 file_remove_stat_fail:
         sub     17,kconst_7_7
 file_remove_fail:

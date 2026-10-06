@@ -3,10 +3,12 @@
  * @brief Compact process-swap backing format and runtime swap interface.
  *
  * Each process owns one resident swap-record word. While resident it encodes
- * executable backing and the PURE text boundary; while swapped it encodes the
- * D6FS swap-tail block span, with the original backing word retained in the
- * stable u-area. This avoids a separate swap header and keeps per-process
- * permanent RAM cost to one word.
+ * executable backing and the PURE immutable-text boundary; while swapped it
+ * encodes the BACKSTORE block span, with the original backing word retained
+ * in the stable u-area. Complete sectors covered by PURE text may therefore
+ * be reconstructed from the executable instead of consuming swap blocks.
+ * This avoids a separate swap header and keeps per-process permanent RAM cost
+ * to one word.
  */
 #ifndef DAIMON_PROC_SWAP_H
 #define DAIMON_PROC_SWAP_H
@@ -25,8 +27,8 @@
 
 /** One-word resident/swapped process backing descriptor. */
 struct proc_swap_record {
-        /* Resident: packed executable backing + pure-text boundary.
-         * Swapped: LH first SWAP block, RH full-sector block count; the
+        /* Resident: packed executable backing + PURE immutable-text boundary.
+         * Swapped: LH first BACKSTORE block, RH full-sector block count; the
          * resident backing record is retained in the stable u-area. */
         kword_t state;
 };
@@ -44,6 +46,10 @@ void proc_swap_detach(int slot);
 int proc_swap_out(int slot);
 /** Restore one swapped process image into a new aligned resident extent. */
 int proc_swap_in(int slot);
+/** Return nonzero while a swapped PURE process depends on this vnode. */
+int proc_swap_backing_busy(vnode_t node);
+/** Return nonzero while a swapped PURE process depends on this mount. */
+int proc_swap_mount_busy(unsigned int mount);
 int proc_swap_service_one(void);
 /** Reclaim process VM until MM can satisfy a requested extent or no victim remains. */
 int proc_swap_reclaim(kword_t words, kword_t alignment,

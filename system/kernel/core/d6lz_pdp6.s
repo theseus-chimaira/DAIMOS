@@ -50,12 +50,15 @@
  * C ABI input:
  *   AC1 = vnode
  *   AC2 = compressed payload word offset in the vnode
- *   AC3 = exact compressed payload length in words
+ *   AC3 = exact compressed payload length in words, or zero only when the
+ *         caller already owns validated immutable backing and decoding may
+ *         stop as soon as the requested output image is complete
  *   AC4 = output_word_count,,destination_address
  *
  * C ABI output:
  *   AC1 = 0 on success, -1 on malformed input, invalid geometry, premature
- *         EOF, VFS failure, or non-exact compressed-payload consumption.
+ *         EOF, VFS failure, or non-exact compressed-payload consumption in
+ *         bounded mode.
  *
  * AC10..AC15 are callee-saved and restored before return.  AC0..AC7 may be
  * clobbered according to the normal kernel ABI.  AC17 is the pushdown pointer;
@@ -66,9 +69,10 @@
  * number of compressed words not yet fetched from VFS.  vfs_read_words() may
  * clobber caller-saved ACs, so vnode and file offset live in stack locals and
  * the source pointer is reconstructed after every refill.  The decoder's +1
- * NEED_INPUT result resumes the same state with the next window; zero is
- * accepted only when both the current window and the declared payload have
- * been consumed exactly.
+ * NEED_INPUT result resumes the same state with the next window.  Normal
+ * bounded calls accept zero only when the declared payload has been consumed
+ * exactly; trusted immutable-backing calls use AC3=0 and accept completion as
+ * soon as the requested output image is complete.
  */
 d6lz36_decode_vfs:
         ; Reserve the whole frame once and save AC10..AC15 with one BLT.
@@ -82,6 +86,9 @@ d6lz36_decode_vfs:
         hrrz    12,4                    ; current output address
         move    14,12                   ; output base
         move    15,3                    ; compressed words not yet read
+        jumpn   15,d6lz_vfs_bound_ready
+        seto    15,                     ; zero => trusted immutable backing
+d6lz_vfs_bound_ready:
         jumpe   13,d6lz_vfs_error
         jumpe   12,d6lz_vfs_error
         setz    11,                     ; zero => load a control word
@@ -93,11 +100,17 @@ d6lz_vfs_refill:
         move    2,D6LZ_VFS_OFFSET(17)   ; file offset
         movei   3,D6LZ_VFS_INPUT(17)    ; refill window
         movei   4,D6LZ_VFS_WINDOW
+        skipge  15                      ; trusted mode has no source bound
+        jrst    d6lz_vfs_read
         caige   15,D6LZ_VFS_WINDOW
         move    4,15                    ; final short window
+d6lz_vfs_read:
         pushj   17,vfs_read_words
-        jumpe   1,d6lz_vfs_error
+        jumple  1,d6lz_vfs_error        ; EOF or provider error
+        skipge  15
+        jrst    d6lz_vfs_refilled
         sub     15,1                    ; words still unread from file
+d6lz_vfs_refilled:
         addm    1,D6LZ_VFS_OFFSET(17)   ; advance file offset
 
         move    4,1                    ; source-window words returned
@@ -131,8 +144,11 @@ d6lz_buffer_start:
         jrst    d6lz_decode_window
 
 d6lz_vfs_success:
+        skipge  15
+        jrst    d6lz_vfs_success_trusted
         jumpn   4,d6lz_vfs_error        ; exact compressed payload required
         jumpn   15,d6lz_vfs_error
+d6lz_vfs_success_trusted:
         setz    1,
         jrst    d6lz_vfs_return
 

@@ -21,6 +21,7 @@ KINIT_BADMAP ?= 1
 KINIT_FULL ?= 1
 PROC_BOOT_USERS ?= 1
 PROC_STACK_WATERMARK ?= 0
+PROC_SWAP_VERIFY_PURE ?= 0
 VM_BACKEND ?= pdp6
 VM_BACKEND_C = proc/vm_${VM_BACKEND}.c
 VM_BACKEND_H = proc/vm_${VM_BACKEND}.h
@@ -326,10 +327,12 @@ ${BUILD}/vm_backend.s: ${VM_BACKEND_C} ${KERNEL_HEADERS}
 ${BUILD}/proc_swap.s: ${VM_SWAP_C} proc/proc_swap_pdp6.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} \
+	    -DPROC_SWAP_VERIFY_PURE=${PROC_SWAP_VERIFY_PURE} \
 	    -DPROC_SWAP_SERVICE_PDP6_ASM=1 -DPROC_SWAP_RECLAIM_PDP6_ASM=1 \
 	    -DPROC_SWAP_TRANSACTIONS_PDP6_ASM=1 \
 	    ${INCLUDES} -S ${VM_SWAP_C} -o $@.c
-	cat $@.c proc/proc_swap_pdp6.s > $@
+	{ cat $@.c; printf '.equ PROC_SWAP_VERIFY_PURE,%s\n' '${PROC_SWAP_VERIFY_PURE}'; \
+	    cat proc/proc_swap_pdp6.s; } > $@
 	rm -f $@.c
 
 ${BUILD}/vm_backend_pdp6.s: ${VM_BACKEND_FIXED}

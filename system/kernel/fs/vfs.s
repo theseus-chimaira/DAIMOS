@@ -16,6 +16,8 @@
         .globl  mfsdev_lookup
         .globl  mfsproc_lookup
         .globl  pipe_fifo_mount_busy
+        .globl  proc_swap_backing_busy
+        .globl  proc_swap_mount_busy
 
 ; int vfs_lookup(dir, name, nodep)
         .globl  vfs_lookup
@@ -605,6 +607,9 @@ vfs_truncate:
         push    17,2
         pushj   17,vfs_readonly
         jumpn   1,vfs_truncate_ro
+        move    1,-1(17)
+        pushj   17,proc_swap_backing_busy
+        jumpn   1,vfs_truncate_ro
         pop     17,2
         pop     17,1
         ldb     7,[POINT 6,1,5]
@@ -692,6 +697,9 @@ vfs_write_words:
         push    17,3
         push    17,4
         pushj   17,vfs_readonly
+        jumpn   1,vfs_write_words_ro
+        move    1,-3(17)
+        pushj   17,proc_swap_backing_busy
         jumpn   1,vfs_write_words_ro
         pop     17,4
         pop     17,3
@@ -914,6 +922,9 @@ vfs_unmount_slot:
         push    17,2                    ; slot
         movei   1,1(2)                  ; public mount id is slot + 1
         pushj   17,pipe_fifo_mount_busy
+        jumpn   1,vfs_unmount_fail
+        movei   1,1(2)
+        pushj   17,proc_swap_mount_busy
         jumpn   1,vfs_unmount_fail
         move    1,-1(17)
         pushj   17,vfs_sync

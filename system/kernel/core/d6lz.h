@@ -24,7 +24,9 @@
  * @brief Stream a D6LZ36 payload from VFS directly into PDP-6 memory.
  * @param node VFS vnode containing the compressed payload.
  * @param file_offset Word offset of the first compressed D6LZ36 word.
- * @param src_words Exact compressed payload length in 36-bit words.
+ * @param src_words Exact compressed payload length in 36-bit words, or zero
+ *        only for already-validated immutable backing where decode may stop
+ *        as soon as the requested output image is complete.
  * @param dst_words_addr Packed output descriptor: bits 18..35 are the exact
  *        output word count and bits 0..17 are the destination word address.
  * @return 0 when exactly @p src_words are consumed and exactly the requested
