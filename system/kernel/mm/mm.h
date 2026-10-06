@@ -80,8 +80,6 @@ int mm_unpin(kword_t base);
 int mm_is_pinned(kword_t base);
 /** Compact movable process extents until an aligned request can fit. */
 int mm_compact(kword_t words, kword_t alignment);
-/** Return total free words across every managed arena. */
-kword_t mm_total_free(void);
 /** Return the largest currently contiguous free run. */
 kword_t mm_largest_free(void);
 

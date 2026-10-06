@@ -17,6 +17,56 @@
         .extern module_runtime_descs
         .extern module_dynamic_bindings
 
+        /*
+         * Fixed KCORE words whose RH may point into a movable module.
+         *
+         * Keep this table beside the PDP-6 mover so its loop count is derived
+         * from the labels instead of duplicated as a hand-maintained literal.
+         * Adding a binding therefore cannot silently leave the tail unretargeted.
+         */
+        .data
+module_fixed_bindings:
+        .word   pdp10_pi_level1_dispatch_jump
+        .word   pdp10_pi_level2_dispatch_jump
+        .word   pdp10_pi_level3_dispatch_jump
+        .word   pdp10_pi_level4_dispatch_jump
+        .word   pdp10_pi_level5_dispatch_jump
+        .word   pdp10_pi_level6_dispatch_jump
+        .word   native_sys_putchar_call
+        .word   native_sys_getchar_call
+        .word   tty_write_s6rec_jump
+        .word   tty_read_s6rec_jump
+        .word   ptr_read_words_jump
+        .word   ptp_write_words_jump
+        .word   cr_read_words_jump
+        .word   cp_write_words_jump
+        .word   lpt_putchar_jump
+        .word   lpt_write_s6rec_jump
+        .word   dpy_write_words_jump
+        .word   sys_dtc_read_block_jump
+        .word   sys_dtc_write_block_jump
+        .word   storage_pi_dsk_jump
+        .word   storage_dct_dsk_jump
+        .word   storage_pi_tape_jump
+        .word   storage_dct_tape_jump
+        .word   storage_clock_dsk_jump
+        .word   dsk270_read_jump
+        .word   dsk270_write_jump
+        .word   drm236_read_jump
+        .word   drm236_write_jump
+        .word   fs_memfs_service_jump
+        .word   sys_memfs_usage_call
+        .word   fs_dtfs_service_jump
+        .word   sys_dtfs_mount_jump
+        .word   fs_d6fs_service_jump
+        .word   fs_tsfs_service_jump
+        .word   memfs_reclaim_jump
+        .word   memfs_shutdown_jump
+        .word   blockset_runtime_service_jump
+module_fixed_bindings_end:
+
+        .text
+
 ; Persistent registers while the move is in progress:
 ; 10 owner, 11 new base, 12 total words, 13 old base,
 ; 14 image words, 15 initialized words, 16 saved descriptor.
@@ -86,7 +136,7 @@ module_runtime_reloc_next:
 
 module_runtime_reloc_done:
         movei   5,module_fixed_bindings
-        movei   6,033
+        movei   6,module_fixed_bindings_end-module_fixed_bindings
 module_runtime_fixed_loop:
         move    1,0(5)
         pushj   17,module_runtime_retarget_asm
