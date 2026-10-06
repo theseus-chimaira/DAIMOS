@@ -42,10 +42,11 @@
         .equ    MEMFS_CHUNK_BITMAP,0377
         .equ    MEMFS_CHUNK_COUNT_SHIFT,010
 
-        ; struct memfs: nodes, pool, pool_words, used_words.
+        ; struct memfs: nodes, pool_words, used_words.  The per-node backing
+        ; table begins at nodes+0700 and therefore needs no resident pointer.
         .equ    MEMFS_NODES,0
-        .equ    MEMFS_POOL,1
-        .equ    MEMFS_USED_WORDS,3
+        .equ    MEMFS_POOL_WORDS,1
+        .equ    MEMFS_USED_WORDS,2
         ; struct memfs_node: five name/meta words followed by packed data.
         .equ    MEMFS_NODE_META,5
         .equ    MEMFS_NODE_DATA,6
@@ -151,7 +152,7 @@ memfs_data_alloc_existing_next:
         addi    013,1
         sojg    012,memfs_data_alloc_existing
 
-        move    1,memfs_mres_fs+2      ; configured mutable-data ceiling
+        move    1,memfs_mres_fs+1      ; configured mutable-data ceiling
         sub     1,010
         move    010,1                  ; remaining configured capacity
         camge   010,011
@@ -285,15 +286,18 @@ memfs_data_free_release:
         pushj   17,mm_free
         popj    17,
 
-; Drop slot AC1's existing backing allocation, if any.
+; Drop slot AC1's existing backing allocation, if any.  memfs_data_dirty has
+; the same target ABI; all target callers already hold a validated slot.
+        .globl  memfs_data_dirty
+memfs_data_dirty:
 memfs_backing_drop:
         movei   3,memfs_mres_fs
-        skipn   4,MEMFS_POOL(3)
+        skipn   4,MEMFS_NODES(3)
         popj    17,
         add     4,1
-        skipn   2,(4)
+        skipn   2,0700(4)
         popj    17,
-        setzm   (4)
+        setzm   0700(4)
         hlrz    1,2
         hrrz    2,2
         pushj   17,backstore_free
@@ -326,9 +330,9 @@ memfs_data_ensure:
         jumpe   013,memfs_data_ensure_ok
         hlrz    1,MEMFS_NODE_DATA(012)
         jumpn   1,memfs_data_ensure_ok
-        move    014,MEMFS_POOL(010)
+        move    014,MEMFS_NODES(010)
         add     014,011
-        move    014,(014)              ; backing first,,blocks
+        move    014,0700(014)          ; backing first,,blocks
         jumpe   014,memfs_data_ensure_fail
         move    1,013
         pushj   17,memfs_data_alloc
@@ -358,13 +362,6 @@ memfs_data_ensure_return:
         blt     0,014
         sub     17,[5,,5]
         popj    17,
-
-; void memfs_data_dirty(unsigned int slot)
-memfs_data_dirty:
-        movei   3,memfs_mres_fs
-        caile   1,077
-        popj    17,
-        jrst    memfs_backing_drop
 
 ; int memfs_resize(struct memfs *fs, unsigned int slot, unsigned int words)
 memfs_resize:
@@ -490,10 +487,10 @@ memfs_evict_back_loop:
         add     1,015
         caml    5,1
         jrst    memfs_evict_back_next
-        move    1,MEMFS_POOL(011)
+        move    1,MEMFS_NODES(011)
         add     1,012
-        skipe   (1)
-        jrst    memfs_evict_back_next
+        skipe   0700(1)
+        jrst    memfs_evict_back_clear
 
         move    1,6
         pushj   17,memfs_alloc_words
@@ -519,32 +516,16 @@ memfs_evict_back_fail:
 memfs_evict_back_store:
         hrlz    1,(17)
         ior     1,016
-        move    2,MEMFS_POOL(011)
+        move    2,MEMFS_NODES(011)
         add     2,012
-        movem   1,(2)
+        movem   1,0700(2)
         sub     17,[1,,1]
+memfs_evict_back_clear:
+        hrrzs   MEMFS_NODE_DATA(013)
 memfs_evict_back_next:
         aoja    012,memfs_evict_back_loop
 
 memfs_evict_clear_start:
-        movei   012,1
-memfs_evict_clear_loop:
-        caile   012,077
-        jrst    memfs_evict_release
-        move    013,012
-        imuli   013,7
-        add     013,MEMFS_NODES(011)
-        hlrz    5,MEMFS_NODE_DATA(013)
-        camge   5,014
-        jrst    memfs_evict_clear_next
-        move    1,014
-        add     1,015
-        caml    5,1
-        jrst    memfs_evict_clear_next
-        hrrzs   MEMFS_NODE_DATA(013)
-memfs_evict_clear_next:
-        aoja    012,memfs_evict_clear_loop
-
 memfs_evict_release:
         move    1,014
         movei   2,MM_TYPE_KERNEL_DYNAMIC

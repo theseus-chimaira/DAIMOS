@@ -12,140 +12,134 @@
 ;     unsigned int off, kword_t *buf, unsigned int nwords)
         .globl  memfs_read_words
 memfs_read_words:
-        jumpe   4,kret_neg1
-        move    0,4             ; preserve destination; slot clobbers AC4
-        move    7,1             ; preserve fs across slot validation
+        add     17,[5,,5]
+        movei   0,-4(17)
+        hrli    0,010
+        blt     0,(17)
+        jumpe   4,memfs_read_fail
+        move    010,1           ; fs
+        move    012,3           ; offset
+        move    013,4           ; destination
+        move    014,-6(17)      ; fifth C argument: requested words
         pushj   17,memfs_slot   ; AC5=np, AC6=meta
-        jumpl   1,kret_neg1
-        move    2,1             ; preserve slot for possible fault-in
+        jumpl   1,memfs_read_fail
+        move    011,1           ; slot for possible fault-in
         ldb     1,[POINT 3,5(5),20]
         caie    1,2             ; regular file
-        jrst    kret_neg1
+        jrst    memfs_read_fail
         hrrz    6,6(5)          ; stored words
-        jumpl   3,kret_zero ; unsigned off exceeds 18-bit length
-        caml    3,6             ; off < stored words
-        jrst    kret_zero
-        sub     6,3             ; available words
-        move    1,7             ; restore fs before reusing AC7
-        move    7,-1(17)        ; nwords, fifth C argument
-        jumpl   7,memfs_read_count
-        camle   6,7
-        move    6,7
+        jumpl   012,memfs_read_zero ; unsigned offset exceeds RH18 length
+        caml    012,6           ; offset < stored words
+        jrst    memfs_read_zero
+        sub     6,012           ; available words
+        jumpl   014,memfs_read_count
+        camle   6,014
+        move    6,014
 memfs_read_count:
-        push    17,0            ; destination
-        push    17,3            ; off
-        push    17,6            ; count
-        push    17,2            ; slot
-        push    17,1            ; fs
+        move    014,6           ; final count survives fault-in
+        move    1,010
+        move    2,011
         pushj   17,memfs_data_ensure
-        jumpn   1,memfs_read_ensure_fail
-        pop     17,7            ; fs
-        pop     17,1
-        pop     17,6
-        pop     17,3
-        pop     17,0
-        move    5,1
+        jumpn   1,memfs_read_fail
+        move    5,011
         imuli   5,7
-        add     5,(7)
-        jrst    memfs_read_source_ready
-memfs_read_ensure_fail:
-        sub     17,kconst_5_5
-        jrst    kret_neg1
-memfs_read_source_ready:
+        add     5,(010)
         hlrz    2,6(5)
         ; File data is always demand-backed mutable storage.  The historical
         ; IMAGE source mode had no producer in the runtime namespace and kept
         ; one dead MEMFS state word plus branches in every read.
-        add     2,3
+        add     2,012
         move    1,2             ; source
-        move    2,0             ; destination
-        move    3,6             ; count
+        move    2,013           ; destination
+        move    3,014           ; count
         pushj   17,fs_copy_words
-        move    1,6
+        move    1,014
+        jrst    memfs_read_return
+memfs_read_zero:
+        setz    1,
+        jrst    memfs_read_return
+memfs_read_fail:
+        seto    1,
+memfs_read_return:
+        movei   0,010
+        hrli    0,-4(17)
+        blt     0,014
+        sub     17,[5,,5]
         popj    17,
 
 ; int memfs_write_words(struct memfs *fs, vnode_t node,
 ;     unsigned int off, const kword_t *buf, unsigned int nwords)
         .globl  memfs_write_words
 memfs_write_words:
-        jumpe   4,kret_neg1
-        move    0,4             ; preserve source; slot clobbers AC4
-        move    7,1             ; preserve fs
+        add     17,[6,,6]
+        movei   0,-5(17)
+        hrli    0,010
+        blt     0,(17)
+        jumpe   4,memfs_write_fail
+        move    010,1           ; fs
+        move    012,3           ; offset
+        move    013,4           ; source
+        move    014,-7(17)      ; fifth C argument: requested words
         pushj   17,memfs_slot   ; AC5=np, AC6=meta
-        jumpl   1,kret_neg1
-        move    2,1             ; preserve slot
+        jumpl   1,memfs_write_fail
+        move    011,1           ; slot
         ldb     4,[POINT 3,5(5),20]
         caie    4,2             ; regular file
-        jrst    kret_neg1
+        jrst    memfs_write_fail
         trnn    6,4             ; writable
-        jrst    kret_neg1
+        jrst    memfs_write_fail
 
 ; Compute need = off+nwords and reject 36-bit unsigned wrap.
-        move    4,-1(17)        ; nwords
-        move    6,4
-        add     6,3             ; need
-        move    1,6
+        move    015,014
+        add     015,012         ; need
+        move    1,015
         tlc     1,0400000
-        move    4,3
+        move    4,012
         tlc     4,0400000
         camge   1,4             ; need >= off (unsigned) => no overflow
-        jrst    kret_neg1
+        jrst    memfs_write_fail
 memfs_write_need_ok:
         hrrz    4,6(5)          ; current word count
-        jumpl   6,memfs_write_grow
-        camg    6,4
+        jumpl   015,memfs_write_grow
+        camg    015,4
         jrst    memfs_write_ready
 memfs_write_grow:
-; Preserve live arguments across the internal resize call.
-        push    17,7             ; fs
-        push    17,2             ; slot
-        push    17,3             ; off
-        push    17,0             ; source
-        move    3,6             ; new word count
-        move    2,-2(17)        ; slot
-        move    1,-3(17)        ; fs
+        move    1,010
+        move    2,011
+        move    3,015           ; new word count
         pushj   17,memfs_resize
-        move    6,1             ; preserve resize status
-        pop     17,0
-        pop     17,3
-        pop     17,2
-        pop     17,7
-        jumpn   6,kret_neg1
+        jumpn   1,memfs_write_fail
 
 memfs_write_ready:
-; Recompute np after resize and copy nwords into its resident extent.
-        push    17,7
-        push    17,2
-        push    17,3
-        push    17,0
-        move    1,7
+        move    1,010
+        move    2,011
         pushj   17,memfs_data_ensure
-        jumpn   1,memfs_write_ensure_fail
-        move    1,-2(17)
+        jumpn   1,memfs_write_fail
+        move    1,011
         pushj   17,memfs_data_dirty
-        pop     17,0
-        pop     17,3
-        pop     17,2
-        pop     17,7
-        move    5,2
+        move    5,011
         imuli   5,7
-        add     5,(7)           ; np
+        add     5,(010)         ; np
         hlrz    6,6(5)
         ; Mutable data words are direct physical addresses.
-        add     6,3             ; + off
-        push    17,2            ; preserve slot across copy helper
-        move    1,0             ; source
+        add     6,012           ; + off
+        move    1,013           ; source
         move    2,6             ; destination
-        move    3,-2(17)        ; count (one extra saved slot word)
+        move    3,014           ; count
         pushj   17,fs_copy_words
-        pop     17,2
-        move    1,7
+        move    1,010
+        move    2,011
         pushj   17,memfs_touch_slot
-        move    1,-1(17)
+        move    1,014
+        jrst    memfs_write_return
+memfs_write_fail:
+        seto    1,
+memfs_write_return:
+        movei   0,010
+        hrli    0,-5(17)
+        blt     0,015
+        sub     17,[6,,6]
         popj    17,
-memfs_write_ensure_fail:
-        sub     17,kconst_4_4
-        jrst    kret_neg1
 
 ; int memfs_slot(const struct memfs *fs, vnode_t node)
 ; Return the validated slot directly, or -1.  On success AC5=np, AC6=meta.
@@ -685,7 +679,7 @@ memfs_parent_ok:
         .bss
         .globl  memfs_mres_fs
 memfs_mres_fs:
-        .block  4
+        .block  3
         .text
 
         .globl  vfs_name_words_equal
@@ -756,13 +750,10 @@ memfs_mres_mount_size_ok:
         movem   6,5(5)                  ; root-node meta
 
         movem   5,memfs_mres_fs
-        move    7,5
-        addi    7,0700
-        movem   7,memfs_mres_fs+1       ; per-node swap backing descriptors
         move    6,-2(17)                ; requested total-word ceiling
         subi    6,0700                  ; preserve old data-capacity semantics
-        movem   6,memfs_mres_fs+2
-        setzm   memfs_mres_fs+3         ; logical file words in use
+        movem   6,memfs_mres_fs+1
+        setzm   memfs_mres_fs+2         ; logical file words in use
         pushj   17,pclk_time36
         move    5,memfs_mres_fs
         movem   1,01100(5)              ; fresh root mtime; restore may replace it
@@ -788,7 +779,7 @@ memfs_mres_mount_size_ok:
         jumpe   1,memfs_mres_mount_done
 
         movei   1,memfs_mres_fs
-        movei   2,4
+        movei   2,3
         pushj   17,fs_zero_words
         move    1,(17)
         movei   2,3
@@ -827,9 +818,9 @@ memfs_mres_unmount_bad:
 ; MEMINFO calls this exported entry directly; overwrite request a/b.
         .globl  memfs_mres_usage
 memfs_mres_usage:
-        move    2,memfs_mres_fs+3       ; used_words
+        move    2,memfs_mres_fs+2       ; used_words
         movem   2,1(1)
-        move    2,memfs_mres_fs+2       ; pool_words
+        move    2,memfs_mres_fs+1       ; pool_words
         movem   2,2(1)
         jrst    kret_zero
 
@@ -864,8 +855,8 @@ memfs_mres_not_mount:
 memfs_mres_space:
         skipn   memfs_mres_fs
         jrst    kret_neg1
-        move    1,memfs_mres_fs+2
-        move    2,memfs_mres_fs+3
+        move    1,memfs_mres_fs+1
+        move    2,memfs_mres_fs+2
         popj    17,
 
         .data

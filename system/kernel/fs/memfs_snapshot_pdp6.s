@@ -29,9 +29,8 @@
         .equ    VFS_TYPE_REG,2
 
         .equ    MEMFS_NODES,0
-        .equ    MEMFS_POOL,1
-        .equ    MEMFS_POOL_WORDS,2
-        .equ    MEMFS_USED_WORDS,3
+        .equ    MEMFS_POOL_WORDS,1
+        .equ    MEMFS_USED_WORDS,2
         .equ    NODE_META,5
         .equ    NODE_DATA,6
 
@@ -244,9 +243,9 @@ memfs_snapshot_shutdown_loop:
         jumpn   1,memfs_snapshot_shutdown_fail
         hrlz    1,011
         ior     1,015
-        move    2,MEMFS_POOL(010)
+        move    2,MEMFS_NODES(010)
         add     2,012
-        movem   1,(2)
+        movem   1,0700(2)
         add     011,015
 memfs_snapshot_shutdown_next:
         aoja    012,memfs_snapshot_shutdown_loop

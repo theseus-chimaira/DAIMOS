@@ -116,7 +116,8 @@ int memfs_snapshot_shutdown(void)
                     (const kword_t *)(unsigned long)
                     ((np->data >> 18U) & HALF_MASK)) != 0)
                         return -1;
-                fs->pool[slot] = ((next & HALF_MASK) << 18U) | blocks;
+                MEMFS_BACKING_TABLE(fs)[slot] =
+                    ((next & HALF_MASK) << 18U) | blocks;
                 next += blocks;
         }
         if (backstore_write(snapshot_first,

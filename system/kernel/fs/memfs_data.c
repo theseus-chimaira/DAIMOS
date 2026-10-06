@@ -205,13 +205,13 @@ static void
 memfs_backing_drop(unsigned int slot)
 {
         kword_t span;
-        if (memfs_data_fs == 0 || memfs_data_fs->pool == 0)
+        if (memfs_data_fs == 0 || memfs_data_fs->nodes == 0)
                 return;
-        span = memfs_data_fs->pool[slot];
+        span = MEMFS_BACKING_TABLE(memfs_data_fs)[slot];
         if (span != 0UL) {
                 backstore_free((span >> 18U) & MEMFS_BACK_FIRST_MASK,
                     span & MEMFS_HALF_MASK);
-                memfs_data_fs->pool[slot] = 0UL;
+                MEMFS_BACKING_TABLE(memfs_data_fs)[slot] = 0UL;
         }
 }
 
@@ -229,7 +229,7 @@ memfs_data_ensure(struct memfs *fs, unsigned int slot)
         words = np->data & MEMFS_HALF_MASK;
         if (words == 0UL || ((np->data >> 18U) & MEMFS_HALF_MASK) != 0UL)
                 return 0;
-        span = fs->pool[slot];
+        span = MEMFS_BACKING_TABLE(fs)[slot];
         if (span == 0UL || memfs_data_alloc(words, &base) != 0)
                 return -1;
         if (backstore_read((span >> 18U) & MEMFS_BACK_FIRST_MASK,
@@ -314,7 +314,8 @@ memfs_evict_chunk(struct memfs_data_chunk *cp)
                 base = (np->data >> 18U) & MEMFS_HALF_MASK;
                 words = np->data & MEMFS_HALF_MASK;
                 if (words == 0UL || base < cp->base ||
-                    base >= cp->base + cp->words || fs->pool[slot] != 0UL)
+                    base >= cp->base + cp->words ||
+                    MEMFS_BACKING_TABLE(fs)[slot] != 0UL)
                         continue;
                 blocks = memfs_alloc_words(words) / DSK_WORDS_PER_SECTOR;
                 if (backstore_alloc(blocks, MEMFS_PROCESS_RESERVE, &first) != 0)
@@ -324,8 +325,8 @@ memfs_evict_chunk(struct memfs_data_chunk *cp)
                         backstore_free(first, blocks);
                         return 0UL;
                 }
-                fs->pool[slot] = ((first & MEMFS_BACK_FIRST_MASK) << 18U) |
-                    blocks;
+                MEMFS_BACKING_TABLE(fs)[slot] =
+                    ((first & MEMFS_BACK_FIRST_MASK) << 18U) | blocks;
         }
         for (slot = 1U; slot < MEMFS_NODE_COUNT; ++slot) {
                 struct memfs_node *np;

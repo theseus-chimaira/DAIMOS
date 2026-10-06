@@ -21,6 +21,8 @@
 #define MEMFS_OWNER_WORDS            0100U
 #define MEMFS_MTIME_OFFSET           01100U
 #define MEMFS_METADATA_WORDS         01200U
+#define MEMFS_BACKING_TABLE(fs) \
+        ((kword_t *)(fs)->nodes + MEMFS_BACKING_OFFSET)
 
 
 /*
@@ -38,7 +40,6 @@ struct memfs_node {
 
 struct memfs {
         struct memfs_node *nodes;
-        kword_t *pool;             /* reserved; mutable data is demand-backed */
         unsigned int pool_words;   /* configured mutable-data word ceiling */
         unsigned int used_words;
 };
