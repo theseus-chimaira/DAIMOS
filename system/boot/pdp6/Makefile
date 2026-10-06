@@ -668,7 +668,7 @@ $(TTY_MRES_OBJ): $(BUILD)/tty_io.dobj $(KCORE_MAP)
 
 $(WCNSLS_MRES_OBJ): $(BUILD)/wcnsls_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/wcnsls-mres.dxr -M $(BUILD)/wcnsls-mres.map \
-	    -R $@ -N wcnsls_mres_package -X wcnsls_read -X wcnsls_cono -X wcnsls_plot \
+	    -R $@ -N wcnsls_mres_package -X wcnsls_read_words -X wcnsls_write_words \
 	    $(BUILD)/wcnsls_io.dobj
 
 $(OCNSLS_MRES_OBJ): $(BUILD)/ocnsls_io.dobj $(KCORE_MAP)

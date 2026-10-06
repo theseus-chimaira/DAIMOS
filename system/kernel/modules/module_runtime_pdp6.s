@@ -43,6 +43,8 @@ module_fixed_bindings:
         .word   lpt_putchar_jump
         .word   lpt_write_s6rec_jump
         .word   dpy_write_words_jump
+        .word   wcnsls_read_words_jump
+        .word   wcnsls_write_words_jump
         .word   sys_dtc_read_block_jump
         .word   sys_dtc_write_block_jump
         .word   storage_pi_dsk_jump

@@ -101,7 +101,8 @@ mfsdev_present_mark(unsigned int id)
 #define TTY_X_DPY_PUTCHAR_ADDR 10U
 #define TTY_X_TTYDPY_PUTCHAR   11U
 #define TTY_X_TTYDPY_GETCHAR   12U
-#define WCNSLS_X_READ           0U
+#define WCNSLS_X_READ_WORDS     0U
+#define WCNSLS_X_WRITE_WORDS    1U
 #define OCNSLS_X_READ           0U
 #define TAPE_X_HANDLER           0U
 #define TAPE_X_DTC_READ_BLOCK    1U
@@ -175,6 +176,8 @@ extern kword_t cp_write_words_jump;
 extern kword_t lpt_putchar_jump;
 extern kword_t lpt_write_s6rec_jump;
 extern kword_t dpy_write_words_jump;
+extern kword_t wcnsls_read_words_jump;
+extern kword_t wcnsls_write_words_jump;
 extern kword_t ttydpy_putchar_jump;
 extern kword_t ttydpy_getchar_jump;
 extern int d6fs_reader_bootstrap_call(kword_t backing_ops);
@@ -889,7 +892,10 @@ wcnsls_minit(void)
                 return;
         }
         base = minit_install(name);
-        (void)minit_export(name, base, WCNSLS_X_READ);
+        storage_patch_jump(&wcnsls_read_words_jump,
+            minit_export(name, base, WCNSLS_X_READ_WORDS));
+        storage_patch_jump(&wcnsls_write_words_jump,
+            minit_export(name, base, WCNSLS_X_WRITE_WORDS));
         mfsdev_present_mark(MONITORFS_DEV_WCNSLS);
         minit_wcnsls_banner();
         minit_diag_loaded(name);

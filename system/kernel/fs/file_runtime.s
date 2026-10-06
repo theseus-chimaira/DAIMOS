@@ -319,6 +319,8 @@ file_path_setchar:
         .globl  ttydpy_putchar_jump
         .globl  ttydpy_getchar_jump
         .globl  dpy_write_words_jump
+        .globl  wcnsls_read_words_jump
+        .globl  wcnsls_write_words_jump
         .globl  ptr_read_words_jump
         .globl  ptp_write_words_jump
         .globl  cr_read_words_jump
@@ -706,6 +708,8 @@ file_words_common:
         jrst    file_write_words_lpt
         camn    1,[020002000010]        ; DPY0 native display program
         jrst    file_write_words_dpy
+        camn    1,[020002000012]        ; WCNSLS raw device-0420 operations
+        jrst    file_write_words_wcnsls
         camn    1,[020002000000]        ; CTY0 controlling-TTY proxy
         jrst    file_write_words_tty
         move    3,-1(17)
@@ -737,6 +741,11 @@ file_write_words_dpy:
         move    2,(17)                  ; zero count stops/releases the list
         pushj   17,dpy_write_words_jump
         jrst    file_words_result
+file_write_words_wcnsls:
+        move    1,-1(17)                ; tagged raw CONO/DATAO source
+        move    2,(17)
+        pushj   17,wcnsls_write_words_jump
+        jrst    file_words_result
 
 file_read_words_dispatch:
         camn    1,[020002000002]        ; PTR0
@@ -745,6 +754,8 @@ file_read_words_dispatch:
         jrst    file_read_words_cr
         camn    1,[020002000000]        ; CTY0 controlling-TTY proxy
         jrst    file_read_words_tty
+        camn    1,[020002000012]        ; WCNSLS raw DATAI samples
+        jrst    file_read_words_wcnsls
         move    3,-1(17)
         move    4,(17)
         pushj   17,vfs_read_words
@@ -763,6 +774,11 @@ file_read_words_cr:
         move    1,-1(17)                ; mapped CARD12 destination
         move    2,(17)                  ; destination word capacity
         pushj   17,cr_read_words_jump
+        jrst    file_words_result
+file_read_words_wcnsls:
+        move    1,-1(17)
+        move    2,(17)
+        pushj   17,wcnsls_read_words_jump
 
 file_words_result:
         jumple  1,file_words_done
@@ -797,6 +813,10 @@ ttydpy_putchar_jump:
 ttydpy_getchar_jump:
         jrst    kret_neg1
 dpy_write_words_jump:
+        jrst    kret_neg1
+wcnsls_read_words_jump:
+        jrst    kret_neg1
+wcnsls_write_words_jump:
         jrst    kret_neg1
 
 ; int file_readdir(int fd, struct vfs_dirent *ent)
