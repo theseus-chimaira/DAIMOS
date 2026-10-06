@@ -13,6 +13,11 @@
 #define AUXSTORE_DESC_BACKSTORE 2U
 #define AUXSTORE_DESC_LOGSTORE  3U
 #define AUXSTORE_DESC_CACHE     4U
+/* Optional co-resident, non-root D6FS partition metadata.  The range is
+ * physical BASE,,BLOCKS.  SUPER stores the two logical superblock numbers
+ * within that D6FS partition.  AUXSTORE itself does not mount the filesystem. */
+#define AUXSTORE_DESC_D6FS      5U
+#define AUXSTORE_DESC_D6SUPER   6U
 
 #define AUXSTORE_KIND_NONE      0U
 #define AUXSTORE_KIND_DSK       1U

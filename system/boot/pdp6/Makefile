@@ -18,6 +18,7 @@ D6LZ_HOST ?= $(PDP10_PREFIX)/bin/d6lz
 DXRCHECK ?= $(PDP10_PREFIX)/bin/dxrcheck
 MKDSK ?= $(PDP10_PREFIX)/bin/mkdsk
 MKD6FS ?= $(PDP10_PREFIX)/bin/mkd6fs
+MKAUXSTORE ?= $(PDP10_PREFIX)/bin/mkauxstore
 MKDT ?= $(PDP10_PREFIX)/bin/mkdt
 MKTSFS ?= $(PDP10_PREFIX)/bin/mktsfs
 MKTAP ?= $(PDP10_PREFIX)/bin/mktap
@@ -53,6 +54,13 @@ PDP10_KCC ?= $(PDP10_PREFIX)/bin/kcc
 D6FS_LOGSTORE_BLOCKS ?= 0400
 D6FS_SWAP_TAIL_BLOCKS ?= 0400
 D6FS_SPARE_BLOCKS ?= 0
+DRUM_LOGSTORE_BLOCKS ?= 0400
+DRUM_BACKSTORE_BLOCKS ?= 04000
+# 1024 direct-mapped data slots plus eight 0200-word tag blocks.
+DRUM_CACHESTORE_BLOCKS ?= 02010
+DRUM_AUX_TAIL_BLOCKS != printf '%u' $$(( $(DRUM_LOGSTORE_BLOCKS) + \
+	$(DRUM_BACKSTORE_BLOCKS) + $(DRUM_CACHESTORE_BLOCKS) ))
+DRUM_D6FS_BLOCKS != printf '%u' $$(( 020000 - 1 - $(DRUM_AUX_TAIL_BLOCKS) ))
 PROC_BOOT_USERS ?= 1
 PROC_STACK_WATERMARK ?= 0
 PROC_SWAP_VERIFY_PURE ?= 0
@@ -520,6 +528,7 @@ DR1_IMAGE = $(DRUM_DIR)/dsk1.dsk
 DR2_IMAGE = $(DRUM_DIR)/dsk2.dsk
 DR3_IMAGE = $(DRUM_DIR)/dsk3.dsk
 DRUM_IMAGES = $(DR0_IMAGE) $(DR1_IMAGE) $(DR2_IMAGE) $(DR3_IMAGE)
+DRUM_EMPTY_WORDS = $(BUILD)/drum-empty.words
 
 ifeq ($(ROOT),tape)
 ROOT_MEDIA_DEPS = $(TSFS_ROOT_IMAGE)
@@ -1013,14 +1022,36 @@ $(DISK_IMAGES) &: $(D6FS_ROOT_DEPS)
 	$(MKD6FS) -n 4 -d $(DISK_DIR) $(D6FS_ROOT_ARGS)
 	$(LOGSTORE) -n 4 -d $(DISK_DIR) --init
 
+ifeq ($(STAGE1_DEVICE),drm)
 $(DRUM_IMAGES) &: $(D6FS_ROOT_DEPS)
 	rm -rf $(DRUM_DIR)
 	$(MKDSK) -n 4 -m clean -p $(IMAGE_BOOT_WORDS) -o $(DRUM_DIR) \
 	    --d6fs-layout --logstore-blocks $(D6FS_LOGSTORE_BLOCKS) \
 	    --swap-tail-blocks $(D6FS_SWAP_TAIL_BLOCKS) \
-	    --spare-blocks $(D6FS_SPARE_BLOCKS)
+	    --spare-blocks $(D6FS_SPARE_BLOCKS) \
+	    --member-sectors 020000,020000,020000,020000
 	$(MKD6FS) -n 4 -d $(DRUM_DIR) $(D6FS_ROOT_ARGS)
 	$(LOGSTORE) -n 4 -d $(DRUM_DIR) --init
+else
+$(DRUM_IMAGES) &:
+	rm -rf $(DRUM_DIR)
+	mkdir -p $(BUILD)
+	: > $(DRUM_EMPTY_WORDS)
+	$(MKDSK) -n 1 -m clean -p $(DRUM_EMPTY_WORDS) -o $(DRUM_DIR) \
+	    --d6fs-layout --logstore-blocks 0 --badmap-blocks 0 \
+	    --swap-tail-blocks $(DRUM_AUX_TAIL_BLOCKS) --spare-blocks 0 \
+	    --member-sectors 020000
+	$(MKD6FS) -n 1 -d $(DRUM_DIR)
+	$(MKAUXSTORE) -i $(DR0_IMAGE) \
+	    --logstore-blocks $(DRUM_LOGSTORE_BLOCKS) \
+	    --backstore-blocks $(DRUM_BACKSTORE_BLOCKS) \
+	    --cache-blocks $(DRUM_CACHESTORE_BLOCKS) \
+	    --d6fs-base 1 --d6fs-blocks $(DRUM_D6FS_BLOCKS) \
+	    --d6fs-super-a 0 --d6fs-super-b 1
+	$(MKAUXSTORE) --blank $(DR1_IMAGE) --blocks 020000
+	$(MKAUXSTORE) --blank $(DR2_IMAGE) --blocks 020000
+	$(MKAUXSTORE) --blank $(DR3_IMAGE) --blocks 020000
+endif
 
 TSFS_ROOT_COMMAND_NAMES = ECHO CAT LS MKDIR RM PWD STAT TOUCH CP MV HEXDUMP PS \
 	DEVS FREE MEMSTAT DATE RMDIR CHOWN CHMOD MKFS.DTFS FSCK.DTFS MOUNT \
