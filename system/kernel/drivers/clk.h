@@ -44,6 +44,30 @@
 /** APR CONO command to disable the line clock: bit 24 (octal 004000). */
 #define CLK_APR_CO_DISABLE      0004000UL
 
+/** APR CONI non-existent-memory condition: bit 23. */
+#define CLK_APR_ST_NXM          0010000UL
+
+/** APR CONI illegal/protected-address condition: bit 22. */
+#define CLK_APR_ST_PROTECT      0020000UL
+
+/** APR CONI pushdown-list-overflow condition: bit 19. */
+#define CLK_APR_ST_PDL_OV       0200000UL
+
+/** APR CONO command to clear non-existent-memory: bit 23. */
+#define CLK_APR_CO_CLEAR_NXM    0010000UL
+
+/** APR CONO command to clear illegal/protected-address: bit 22. */
+#define CLK_APR_CO_CLEAR_PROTECT 0020000UL
+
+/** APR CONO command to clear pushdown-list overflow: bit 18. */
+#define CLK_APR_CO_CLEAR_PDL_OV 0400000UL
+
+#define CLK_APR_ST_FAULTS \
+        (CLK_APR_ST_NXM | CLK_APR_ST_PROTECT | CLK_APR_ST_PDL_OV)
+#define CLK_APR_CO_CLEAR_FAULTS \
+        (CLK_APR_CO_CLEAR_NXM | CLK_APR_CO_CLEAR_PROTECT | \
+        CLK_APR_CO_CLEAR_PDL_OV)
+
 /**
  * @brief Return the resident monotonic line-clock tick count.
  *
