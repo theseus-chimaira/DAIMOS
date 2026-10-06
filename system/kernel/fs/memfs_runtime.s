@@ -686,8 +686,6 @@ memfs_parent_ok:
         .globl  memfs_mres_fs
 memfs_mres_fs:
         .block  5
-memfs_mount_flags:
-        .block  1
         .text
 
         .globl  vfs_name_words_equal
@@ -732,13 +730,13 @@ memfs_mres_mount:
         jrst    kret_neg1          ; singleton already instantiated
         trne    3,07775
         jrst    kret_neg1          ; reject unknown policy bits
-        movem   3,memfs_mount_flags
         cail    2,02000
         jrst    memfs_mres_mount_size_ok
         jrst    kret_neg1
 memfs_mres_mount_size_ok:
         push    17,1                    ; target vnode
         push    17,2                    ; total words
+        push    17,3                    ; mount policy flags
         push    17,[0]                  ; allocation base
         movei   5,(17)
         push    17,5                    ; fifth mm_alloc arg: basep
@@ -775,7 +773,7 @@ memfs_mres_mount_size_ok:
         pushj   17,memfs_data_init
 
         movei   1,memfs_mres_fs
-        move    2,memfs_mount_flags
+        move    2,-1(17)
         pushj   17,memfs_snapshot_mount
         jumpn   1,memfs_mres_mount_bad
 
@@ -783,7 +781,7 @@ memfs_mres_mount_size_ok:
         movei   6,(17)
         push    17,6                    ; sixth arg: rootp
         push    17,[0]                  ; fifth arg: VFS_MOUNT_RW
-        move    1,-5(17)                ; target vnode
+        move    1,-6(17)                ; target vnode
         movei   2,4                     ; MEMFS_PROVIDER
         movei   3,1                     ; MEMFS_KIND_NODE
         setz    4,                      ; root node slot
@@ -803,7 +801,7 @@ memfs_mres_mount_size_ok:
 memfs_mres_mount_bad:
         seto    1,
 memfs_mres_mount_done:
-        sub     17,kconst_3_3
+        sub     17,kconst_4_4
         popj    17,
 
 ; Release all demand data and the namespace allocation when VFS unmounts MEMFS.  VFS has already

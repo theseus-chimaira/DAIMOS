@@ -55,7 +55,7 @@ memfs_snapshot_mount:
         hrli    0,010
         blt     0,(17)
         move    010,1                  ; fs
-        setzm   snapshot_enabled
+        setzm   snapshot_span
         trnn    2,MEMFS_MOUNT_PERSIST
         jrst    memfs_snapshot_mount_ok
         skipn   backstore_enabled
@@ -173,9 +173,9 @@ memfs_snapshot_bitmap_done:
         addm    011,backstore_blocks_used
 
 memfs_snapshot_mount_commit:
-        movem   012,snapshot_first
-        movem   011,snapshot_blocks
-        setom   snapshot_enabled
+        hrlz    1,012                  ; first,,blocks also marks enabled
+        ior     1,011
+        movem   1,snapshot_span
 memfs_snapshot_mount_ok:
         setz    1,
         jrst    memfs_snapshot_mount_return
@@ -195,7 +195,7 @@ memfs_snapshot_shutdown:
         hrli    0,010
         blt     0,(17)
         movei   010,memfs_mres_fs
-        skipn   snapshot_enabled
+        skipn   snapshot_span
         jrst    memfs_snapshot_shutdown_ok
         skipn   MEMFS_NODES(010)
         jrst    memfs_snapshot_shutdown_ok
@@ -208,7 +208,7 @@ memfs_snapshot_shutdown:
         pushj   17,backstore_write
         jumpn   1,memfs_snapshot_shutdown_fail
 
-        move    011,snapshot_first
+        hlrz    011,snapshot_span
         addi    011,SNAP_META_BLOCKS
         movei   012,1
 memfs_snapshot_shutdown_loop:
@@ -253,7 +253,7 @@ memfs_snapshot_shutdown_next:
         aoja    012,memfs_snapshot_shutdown_loop
 
 memfs_snapshot_shutdown_metadata:
-        move    1,snapshot_first
+        hlrz    1,snapshot_span
         movei   2,SNAP_META_BLOCKS
         move    3,MEMFS_NODES(010)
         pushj   17,backstore_write
@@ -262,9 +262,9 @@ memfs_snapshot_shutdown_metadata:
         movem   1,fs_block_workspace
         movei   1,SNAP_VERSION
         movem   1,fs_block_workspace+1
-        move    1,snapshot_first
+        hlrz    1,snapshot_span
         movem   1,fs_block_workspace+2
-        move    1,snapshot_blocks
+        hrrz    1,snapshot_span
         movem   1,fs_block_workspace+3
         move    1,MEMFS_POOL_WORDS(010)
         movem   1,fs_block_workspace+4
@@ -291,10 +291,7 @@ memfs_snapshot_shutdown_return:
         popj    17,
 
         .bss
-snapshot_enabled:
-        .block  1
-snapshot_first:
-        .block  1
-snapshot_blocks:
+; Zero means volatile/disabled; otherwise first-block,,reserved-block-count.
+snapshot_span:
         .block  1
 
