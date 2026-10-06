@@ -27,6 +27,17 @@
         .globl proc_sched_pi_resched
         .globl proc_sched_kick
         .globl storage_clock_tick
+        .globl pdp10_pi_level6
+        .globl pdp10_pi_sp_save
+        .globl mach_kernel_sp
+        .globl file_close_all
+        .globl proc_exit_current
+
+        .equ APR_ST_CLOCK,0001000
+        .equ APR_ST_FAULTS,0230000
+        .equ APR_CO_RUNTIME,002006
+        .equ APR_CO_CLEAR_FAULTS,0430000
+        .equ SYS_WAIT_EVENT_TERM,0400001
 
 /**
  * @brief PI6 handler entry registered by CLK MINIT.
@@ -68,8 +79,12 @@ clk_pi_service:
         ; across any such scheduling decision.
         movem 2,clk_pi_saved_ac2
         movem 3,clk_pi_saved_ac3
-        conso 0000,01000
+        coni 0000,1
+        trne 1,APR_ST_FAULTS
+        jrst clk_pi_fault
+        trnn 1,APR_ST_CLOCK
         jrst clk_pi_kick
+clk_pi_tick:
         aos clk_tick_count
         cono 0000,003006
         pushj 017,storage_clock_tick
@@ -88,6 +103,46 @@ clk_pi_service_done:
         move 3,clk_pi_saved_ac3
         move 2,clk_pi_saved_ac2
         popj 017,
+
+/*
+ * APR faults share the line-clock PIA on PDP-6.  Clear NXM, protected/illegal
+ * address, and pushdown overflow while preserving PI6 and clock enable.  The
+ * interrupted-mode bit in the PI save word decides whether the condition is
+ * a userspace fault or an executive/kernel fault.
+ */
+clk_pi_fault:
+        cono 0000,APR_CO_CLEAR_FAULTS+APR_CO_RUNTIME
+        move 1,pdp10_pi_level6
+        tlnn 1,010000
+        jrst clk_pi_kernel_fault
+
+        /*
+         * Dismiss PI6 normally before tearing down the process.  The PI return
+         * is redirected to an executive trampoline and restores the process's
+         * private kernel stack rather than its user stack.  The trampoline can
+         * then perform ordinary fatal-process cleanup outside PI context.
+         */
+        movei 1,clk_pi_user_fault_exit
+        movem 1,pdp10_pi_level6
+        move 1,mach_kernel_sp
+        movem 1,pdp10_pi_sp_save+012
+
+        /* Preserve elapsed time if the APR clock flag arrived simultaneously. */
+        coni 0000,1
+        trnn 1,APR_ST_CLOCK
+        jrst clk_pi_service_done
+        jrst clk_pi_tick
+
+/* PI6 has been dismissed and AC17 is the process-private executive stack. */
+clk_pi_user_fault_exit:
+        pushj 017,file_close_all
+        movei 1,SYS_WAIT_EVENT_TERM
+        jrst proc_exit_current
+
+/* Executive APR faults indicate a kernel defect or failed hardware state. */
+clk_pi_kernel_fault:
+        halt
+        jrst clk_pi_kernel_fault
 
 /**
  * @brief Read the resident 60 Hz monotonic tick counter.
