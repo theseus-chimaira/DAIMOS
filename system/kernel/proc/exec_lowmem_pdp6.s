@@ -285,8 +285,9 @@ exec_replace_return:
         ; Frame offsets relative to the fully advanced AC17.
         .equ    EXEC_LM_SAVE_FIRST,-010
         .equ    EXEC_LM_SAVE_LAST,-002
+        .equ    EXEC_LM_META,-002
         .equ    EXEC_LM_LAUNCH,-001
-        .equ    EXEC_LM_FRAME,011
+        .equ    EXEC_LM_FRAME,012
 
 exec_replace_current_lowmem:
         add     17,[EXEC_LM_FRAME,,EXEC_LM_FRAME]
@@ -304,6 +305,8 @@ exec_replace_current_lowmem:
         move    1,14
         pushj   17,proc_slot_ptr
         move    15,1
+        move    1,(15)
+        movem   1,EXEC_LM_META(17)      ; stable u-area/pgrp metadata
 
         ; Allocate a transient copy before invalidating the mapped user source.
         setzm   EXEC_LM_LAUNCH(17)
@@ -354,6 +357,16 @@ exec_lowmem_old_gone:
         move    16,1
         jumpl   1,exec_lowmem_fatal
 
+        ; exec_load_process normally populates a detached staged descriptor
+        ; and therefore keeps only parent+entry in META.  Low-memory EXEC must
+        ; load directly into the live descriptor after freeing the old VM, so
+        ; capture the new entry and restore the stable process metadata before
+        ; any u-area-dependent startup/credential path observes the descriptor.
+        hlrz    1,(15)
+        movem   1,(13)
+        move    1,EXEC_LM_META(17)
+        movem   1,(15)
+
         move    1,15
         move    2,11
         move    3,12
@@ -378,8 +391,6 @@ exec_lowmem_commit:
 
         ; Return entry PC and move the temporary stack word from result[5]
         ; into its public slot.  argc/argv/envp are already in result[2..4].
-        hlrz    1,(15)
-        movem   1,(13)
         move    1,5(13)
         movem   1,1(13)
 

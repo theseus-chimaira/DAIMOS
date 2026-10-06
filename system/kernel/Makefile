@@ -137,8 +137,7 @@ KCORE_C_SRCS = proc/exec.c \
 	proc/proc.c \
 	fs/file.c
 
-KCORE_C_ASM = $(BUILD)/mm.s \
-	$(BUILD)/proc.s \
+KCORE_C_ASM = $(BUILD)/proc.s \
 	$(BUILD)/file.s
 
 KCORE_VM_ASM = $(BUILD)/vm_backend.s \
@@ -146,8 +145,7 @@ KCORE_VM_ASM = $(BUILD)/vm_backend.s \
 
 PDP10_CC_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${KCORE_C_ASM} \
 	${BUILD}/exec.s ${BUILD}/module_runtime.s ${KCORE_VM_ASM} \
-	${BUILD}/memfs_data.s ${BUILD}/memfs_snapshot.s \
-	${BUILD}/d6fs_provider.s ${BUILD}/dtfs.s ${BUILD}/tsfs.s
+	${BUILD}/dtfs.s ${BUILD}/tsfs.s
 
 ${PDP10_CC_ASM}: ${PDP10_CC_DEP}
 
@@ -214,13 +212,13 @@ MRES_C_SRCS = fs/d6fs_provider.c \
 	fs/memfs_snapshot.c \
 	fs/tsfs.c
 
-MRES_C_ASM = $(BUILD)/d6fs_provider.s \
-	$(BUILD)/dpy_text.s \
-	$(BUILD)/memfs_data.s \
-	$(BUILD)/memfs_snapshot.s \
+MRES_C_ASM = $(BUILD)/dpy_text.s \
 	$(BUILD)/tsfs.s
 
 MRES_FIXED_SRCS = fs/d6fs_validate.s \
+	fs/d6fs_provider_namespace_pdp6.s \
+	fs/memfs_data_pdp6.s \
+	fs/memfs_snapshot_pdp6.s \
 	drivers/cty_io.s \
 	drivers/clk_io.s \
 	drivers/ptr_io.s \
@@ -296,6 +294,10 @@ ${KCORE_C_ASM}: ${KCORE_C_SRCS} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	@base=`basename "$@" .s`; src=; extra=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; if test "$$base" = proc; then extra="-DPROC_EVENT_APPLY_PDP6_ASM=1 -DPROC_SWAP_VICTIM_PDP6_ASM=1 -DPROC_WAIT_STATUS_PDP6_ASM=1 -DPROC_SCHED_SELECT_PDP6_ASM=1 -DPROC_FINISH_SLOT_PDP6_ASM=1 -DPROC_UAREA_RELEASE_PDP6_ASM=1 -DPROC_TTY_RELEASE_PDP6_ASM=1"; elif test "$$base" = file; then extra="-DFILE_OPEN_PDP6_ASM=1"; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S "$$src" -o "$@"
 
+${BUILD}/mm.s: mm/mm_pdp6.s ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	cp mm/mm_pdp6.s $@
+
 
 ${BUILD}/d6lz_fixed.s: ../stand/pdp6/common/decompressor.inc
 	@mkdir -p ${BUILD}
@@ -337,19 +339,17 @@ ${BUILD}/vm_backend_pdp6.s: ${VM_BACKEND_FIXED}
 ${BUILD}/dpy_text.s: drivers/dpy_text_control_pdp6.s drivers/dpy_text_blocks_pdp6.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	cat drivers/dpy_text_control_pdp6.s drivers/dpy_text_blocks_pdp6.s > $@
-${BUILD}/memfs_data.s: fs/memfs_data.c ${KERNEL_HEADERS}
+${BUILD}/memfs_data.s: fs/memfs_data_pdp6.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S fs/memfs_data.c -o $@
+	cp fs/memfs_data_pdp6.s $@
 
-${BUILD}/memfs_snapshot.s: fs/memfs_snapshot.c ${KERNEL_HEADERS}
+${BUILD}/memfs_snapshot.s: fs/memfs_snapshot_pdp6.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S fs/memfs_snapshot.c -o $@
+	cp fs/memfs_snapshot_pdp6.s $@
 
-${BUILD}/d6fs_provider.s: fs/d6fs_provider.c fs/d6fs_provider_mutation.s ${KERNEL_HEADERS}
+${BUILD}/d6fs_provider.s: fs/d6fs_provider_namespace_pdp6.s fs/d6fs_provider_mutation.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S fs/d6fs_provider.c -o $@.c
-	cat $@.c fs/d6fs_provider_mutation.s > $@
-	rm -f $@.c
+	cat fs/d6fs_provider_namespace_pdp6.s fs/d6fs_provider_mutation.s > $@
 
 # PDP-6 production builds use native DTFS only.  TENEX/ITS compatibility is
 # disabled to keep the resident DECtape filesystem compact.  The target keeps
