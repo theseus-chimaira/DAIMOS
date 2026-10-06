@@ -53,14 +53,57 @@ sys_procinfo:
         movem   6,2(2)                 ; logical scheduler state
         hlrz    6,1(5)
         movem   6,3(2)                 ; logical user words
-        move    3,proc_comm_words+2    ; default USER
+        move    3,proc_comm_words+2    ; fallback USER
         jumpe   4,sys_procinfo_swapper
         caie    4,1
-        jrst    sys_procinfo_comm
+        jrst    sys_procinfo_user_comm
         move    3,proc_comm_words+1
         jrst    sys_procinfo_comm
 sys_procinfo_swapper:
         move    3,proc_comm_words
+        jrst    sys_procinfo_comm
+
+; Ordinary process names are already present as basename(argv[0]) in the
+; live startup image.  Reconstruct the first SIXBIT word directly instead of
+; spending one permanent word per process on a duplicate COMM field.
+sys_procinfo_user_comm:
+        move    6,1(5)                 ; logical user words,,image base
+        hrrz    7,6
+        jumpe   7,sys_procinfo_comm    ; swapped/unavailable image: USER
+        hlrz    1,6
+        subi    1,02000                ; startup metadata offset in image
+        add     1,7
+        hlrz    6,(1)                  ; argc
+        jumpe   6,sys_procinfo_comm
+        move    1,1(1)                 ; argv[0] counted-record offset
+        add     7,1                    ; AC7 -> counted SIXBIT path record
+        hrrz    6,(7)                  ; source character count
+        jumpe   6,sys_procinfo_comm
+        move    0,[POINT 6,1(7)]       ; ILDB pointer before first SIXBIT char
+        setz    3,                     ; COMM accumulator
+        setz    4,                     ; basename chars retained, max six
+sys_procinfo_comm_scan:
+        ildb    1,0
+        caie    1,017                  ; SIXBIT '/'
+        jrst    sys_procinfo_comm_char
+        setz    3,                     ; a later component is the basename
+        setz    4,
+        jrst    sys_procinfo_comm_next
+sys_procinfo_comm_char:
+        caige   4,6
+        jrst    sys_procinfo_comm_append
+        jrst    sys_procinfo_comm_next
+sys_procinfo_comm_append:
+        lsh     3,6
+        ior     3,1
+        aoj     4,
+sys_procinfo_comm_next:
+        sojg    6,sys_procinfo_comm_scan
+        jumpe   4,sys_procinfo_comm    ; malformed trailing slash: USER
+        movei   1,6
+        sub     1,4
+        imuli   1,6
+        lsh     3,0(1)                 ; pad short names with SIXBIT spaces
 sys_procinfo_comm:
         movem   3,4(2)
         jrst    kret_zero
