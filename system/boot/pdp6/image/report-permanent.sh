@@ -43,55 +43,22 @@ done < "$kmap"
 kcore=$((0$end - 060))
 printf 'KCORE           %06o %6d\n' "$kcore" "$kcore"
 
-# Boot MRES keeps only the linked text+data+BSS image.  The MRES package
-# header, export table, and relocation bitmap live in disposable KINIT and are
-# not part of permanent memory.  dlink lays input sections back-to-back with
-# no alignment holes, so summing the source DOBJ sections is the installed
-# extent size exactly.
-mres_objects()
-{
-        case "$1" in
-        cty)     echo 'cty_io' ;;
-        clk)     echo 'clk_io' ;;
-        ptr)     echo 'ptr_io' ;;
-        ptp)     echo 'ptp_io' ;;
-        lpt)     echo 'lpt_io' ;;
-        cr)      echo 'cr_io' ;;
-        cp)      echo 'cp_io' ;;
-        dcs)     echo 'dcs_io' ;;
-        ge)      echo 'ge_io' ;;
-        dpy)     echo 'dpy_io dpy_text' ;;
-        tty)     echo 'tty_io' ;;
-        wcnsls)  echo 'wcnsls_io' ;;
-        ocnsls)  echo 'ocnsls_io' ;;
-        dsk)     echo 'dsk_io' ;;
-        drm)     echo 'drm236_io' ;;
-        tape)    echo 'tape_io' ;;
-        slv)     echo 'slv_io' ;;
-        memfs)   echo 'memfs_data memfs_snapshot memfs_runtime' ;;
-        dtfs)    echo 'dtfs dtfs_runtime tsfs tsfs_runtime' ;;
-        blockset) echo 'blockset_dispatch' ;;
-        logstore) echo 'logstore_runtime' ;;
-        badmap)  echo 'badmap_dispatch' ;;
-        d6fs)    echo 'fs_backing d6fs_provider d6fs_validate d6fs_runtime' ;;
-        *) return 1 ;;
-        esac
-}
-
-object_words()
+# Boot MRES keeps only the linked initialized+BSS image.  The package header,
+# export table, and relocation bitmap live in disposable KINIT.  Measure the
+# MRES1 package itself rather than summing its input DOBJs: dlink fold plans
+# may remove duplicate input text before packaging.
+mres_words()
 {
         set -- $("$objdump" -h "$1")
-        text=0
-        data=0
-        bss=0
         for field in "$@"; do
                 case "$field" in
-                text=*) text=${field#text=} ;;
-                data=*) data=${field#data=} ;;
-                bss=*)  bss=${field#bss=} ;;
+                resident=*)
+                        printf '%s\n' "${field#resident=}"
+                        return 0
+                        ;;
                 esac
         done
-        printf '%d\n' $((text + data + bss))
+        return 1
 }
 
 total=$kcore
@@ -100,16 +67,13 @@ for name in cty clk ptr ptp lpt cr cp dcs ge dpy tty wcnsls ocnsls dsk tape slv 
     drm memfs dtfs blockset logstore badmap d6fs; do
         package="$build/$name-mres.dobj"
         [ -f "$package" ] || { echo "missing MRES package: $package" >&2; exit 1; }
-        words=0
-        for obj in $(mres_objects "$name"); do
-                file="$build/$obj.dobj"
-                [ -f "$file" ] || { echo "missing MRES input: $file" >&2; exit 1; }
-                n=$(object_words "$file")
-                case "$n" in
-                ''|*[!0-9]*) echo "cannot size $file" >&2; exit 1 ;;
-                esac
-                words=$((words + n))
-        done
+        words=$(mres_words "$package") || {
+                echo "cannot read MRES resident size: $package" >&2
+                exit 1
+        }
+        case "$words" in
+        ''|*[!0-9]*) echo "invalid MRES resident size: $package" >&2; exit 1 ;;
+        esac
         resident=$words
         if [ "$name" = blockset ]; then
                 blockset_words=$words

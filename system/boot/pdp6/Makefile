@@ -238,6 +238,8 @@ MRES_ASM = $(KCORE_BUILD)/cty_io.s $(KCORE_BUILD)/clk_io.s $(KCORE_BUILD)/ptr_io
 KCORE_DXR = $(BUILD)/kcore.dxr
 KCORE_MAP = $(BUILD)/kcore.map
 KCORE_FOLD_PLAN = $(BUILD)/kcore.fold
+GE_MRES_FOLD_PLAN = $(BUILD)/ge-mres.fold
+TTY_MRES_FOLD_PLAN = $(BUILD)/tty-mres.fold
 # Pre-self-hosting fold scope: all handwritten KCORE assembler.  Generated
 # KCC output remains deliberately excluded until self-hosting/code-generator
 # canonicalization work.  P10FOLD selects only relocation-safe zero-cost donors.
@@ -276,6 +278,7 @@ SLV_MRES_OBJ = $(BUILD)/slv-mres.dobj
 MEMFS_MRES_OBJ = $(BUILD)/memfs-mres.dobj
 DTFS_MRES_OBJ = $(BUILD)/dtfs-mres.dobj
 DTFS_MRES_FOLD_PLAN = $(BUILD)/dtfs-mres.fold
+D6FS_MRES_FOLD_PLAN = $(BUILD)/d6fs-mres.fold
 BLOCKSET_MRES_OBJ = $(BUILD)/blockset-mres.dobj
 BADMAP_MRES_OBJ = $(BUILD)/badmap-mres.dobj
 LOGSTORE_MRES_OBJ = $(BUILD)/logstore-mres.dobj
@@ -591,7 +594,7 @@ $(END_OBJ): image/image-end.s $(BUILD)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(KCORE_FOLD_PLAN): $(KCORE_FOLD_OBJS) $(P10FOLD)
-	$(P10FOLD) -m 4 -P $@ $(KCORE_FOLD_OBJS) >/dev/null
+	$(P10FOLD) -m 2 -P $@ $(KCORE_FOLD_OBJS) >/dev/null
 
 $(KCORE_DXR): $(KCORE_FIXED_OBJS) $(KCORE_FOLD_PLAN)
 	libgcc=`$(PDP10_GCC) -print-libgcc-file-name`; \
@@ -656,8 +659,12 @@ $(DCS_MRES_OBJ): $(BUILD)/dcs_io.dobj $(KCORE_MAP)
 	    -R $@ -N dcs_mres_package -X dcs_pi_handler -X dcs_getchar -X dcs_putchar -X dcs_pi_tail \
 	    $(BUILD)/dcs_io.dobj
 
-$(GE_MRES_OBJ): $(BUILD)/ge_io.dobj $(KCORE_MAP)
+$(GE_MRES_FOLD_PLAN): $(BUILD)/ge_io.dobj $(P10FOLD)
+	$(P10FOLD) -m 2 -P $@ $(BUILD)/ge_io.dobj >/dev/null
+
+$(GE_MRES_OBJ): $(BUILD)/ge_io.dobj $(KCORE_MAP) $(GE_MRES_FOLD_PLAN)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ge-mres.dxr -M $(BUILD)/ge-mres.map \
+	    --fold-plan $(GE_MRES_FOLD_PLAN) \
 	    -R $@ -N ge_mres_package -X ge_pi_handler -X ge_getchar -X ge_putchar \
 	    $(BUILD)/ge_io.dobj
 
@@ -668,8 +675,12 @@ $(DPY_MRES_OBJ): $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj $(KCORE_MAP)
 	    -X dpy_banner_init -X dpy_write_words -X dpy_refresh_iowd \
 	    $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj
 
-$(TTY_MRES_OBJ): $(BUILD)/tty_io.dobj $(KCORE_MAP)
+$(TTY_MRES_FOLD_PLAN): $(BUILD)/tty_io.dobj $(P10FOLD)
+	$(P10FOLD) -m 2 -P $@ $(BUILD)/tty_io.dobj >/dev/null
+
+$(TTY_MRES_OBJ): $(BUILD)/tty_io.dobj $(KCORE_MAP) $(TTY_MRES_FOLD_PLAN)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/tty-mres.dxr -M $(BUILD)/tty-mres.map \
+	    --fold-plan $(TTY_MRES_FOLD_PLAN) \
 	    -R $@ -N tty_mres_package -X tty_putchar -X tty_getchar -X tty_cty_putchar_address \
 	    -X tty_dcs_putchar_address -X tty_ge_putchar_address \
 	    -X tty_cty_getchar_address -X tty_dcs_getchar_address \
@@ -712,8 +723,10 @@ $(MEMFS_MRES_OBJ): $(BUILD)/memfs_data.dobj $(BUILD)/memfs_snapshot.dobj $(BUILD
 	    -R $@ -N memfs_mres_package -X memfs_mres_dispatch -X memfs_mres_usage -X memfs_data_reclaim -X memfs_mres_shutdown \
 	    $(BUILD)/memfs_data.dobj $(BUILD)/memfs_snapshot.dobj $(BUILD)/memfs_runtime.dobj
 
-$(DTFS_MRES_FOLD_PLAN): $(BUILD)/dtfs_runtime.dobj $(BUILD)/tsfs_runtime.dobj $(P10FOLD)
-	$(P10FOLD) -m 4 -P $@ $(BUILD)/dtfs_runtime.dobj $(BUILD)/tsfs_runtime.dobj >/dev/null
+$(DTFS_MRES_FOLD_PLAN): $(BUILD)/dtfs.dobj $(BUILD)/dtfs_runtime.dobj \
+	    $(BUILD)/tsfs.dobj $(BUILD)/tsfs_runtime.dobj $(P10FOLD)
+	$(P10FOLD) -m 2 -P $@ $(BUILD)/dtfs.dobj $(BUILD)/dtfs_runtime.dobj \
+	    $(BUILD)/tsfs.dobj $(BUILD)/tsfs_runtime.dobj >/dev/null
 
 $(DTFS_MRES_OBJ): $(BUILD)/dtfs.dobj $(BUILD)/dtfs_runtime.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_runtime.dobj $(KCORE_MAP) $(DTFS_MRES_FOLD_PLAN)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dtfs-mres.dxr -M $(BUILD)/dtfs-mres.map \
@@ -744,8 +757,14 @@ $(LOGSTORE_MRES_OBJ): $(BUILD)/logstore_runtime.dobj $(KCORE_MAP)
 	    -X logstore_mres_state -X logstore_backend_read_jump \
 	    -X logstore_backend_write_jump $(BUILD)/logstore_runtime.dobj
 
-$(D6FS_MRES_OBJ): $(BUILD)/fs_backing.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj $(KCORE_MAP)
+$(D6FS_MRES_FOLD_PLAN): $(BUILD)/fs_backing.dobj $(BUILD)/d6fs_provider.dobj \
+	    $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj $(P10FOLD)
+	$(P10FOLD) -m 2 -P $@ $(BUILD)/fs_backing.dobj $(BUILD)/d6fs_provider.dobj \
+	    $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj >/dev/null
+
+$(D6FS_MRES_OBJ): $(BUILD)/fs_backing.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj $(KCORE_MAP) $(D6FS_MRES_FOLD_PLAN)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/d6fs-mres.dxr -M $(BUILD)/d6fs-mres.map \
+	    --fold-plan $(D6FS_MRES_FOLD_PLAN) \
 	    -R $@ -N d6fs_mres_package -X d6fs_mres_dispatch \
 	    -X fs_backing_root_read -X fs_backing_root_write \
 	    -X fs_backing_root_read_jump -X fs_backing_root_write_jump \
