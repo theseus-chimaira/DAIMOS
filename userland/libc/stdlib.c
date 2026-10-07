@@ -173,6 +173,8 @@ free(void *ptr)
         if (prev != 0 && (kword_t *)prev + prev->words == (kword_t *)block) {
                 prev->words += block->words;
                 prev->next = block->next;
+        } else if (prev != 0) {
+                prev->next = block;
         } else {
                 heap_free = block;
         }
