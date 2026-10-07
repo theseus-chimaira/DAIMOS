@@ -32,7 +32,7 @@ boot:
 	$(MAKE) -C system/boot/pdp6 boot BUILD_ROOT='$(BUILD_ROOT)' \
 	    PDP10_PREFIX='$(PDP10_PREFIX)' SIMH_DCS0_PORT='$(SIMH_DCS0_PORT)' \
 	    SIMH_GE0_PORT='$(SIMH_GE0_PORT)' SIMH_PCLK_MODE='$(SIMH_PCLK_MODE)' \
-	    ROOT='$(ROOT)' ROOTSET='$(ROOTSET)'
+	    BOOT=dsk ROOT=disk ROOTSET='$(ROOTSET)'
 
 aapboot:
 	$(MAKE) -C system/boot/pdp6 image BOOT=dtc ROOT=tape ROOTSET='$(AAP_ROOTSET)' \
@@ -43,7 +43,7 @@ aapboot:
 	    '$(PDP10_PREFIX)/bin/dta2dtr' '$(AAP_ROOTSET)'
 
 disk-boot:
-	$(MAKE) boot ROOT='$(ROOT)' ROOTSET='$(ROOTSET)'
+	$(MAKE) boot ROOTSET='$(ROOTSET)'
 
 permanent-size:
 	$(MAKE) -C system/boot/pdp6 permanent-size BUILD_ROOT='$(BUILD_ROOT)' PDP10_PREFIX='$(PDP10_PREFIX)'
