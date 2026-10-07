@@ -240,6 +240,7 @@ d6fs_resize_grow:
         andi    1,037
         move    3,010
         pushj   17,d6fs_resize_decode_extent
+        jrst    d6fs_resize_extend_loop
 
 ; Decode one packed FCB extent during resize.  This path is used only by
 ; truncate/grow metadata work, so one PUSHJ saves the duplicated nine-word
