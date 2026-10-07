@@ -1,7 +1,7 @@
 PROJECT_ROOT := $(abspath ../..)
 BUILD_ROOT ?= $(PROJECT_ROOT)/build
 BUILD := $(BUILD_ROOT)/tools/host
-PDP10_PREFIX ?= $(HOME)/cross
+PDP10_PREFIX ?= /usr/local
 DESTDIR ?=
 CC ?= cc
 CFLAGS ?= -O2
