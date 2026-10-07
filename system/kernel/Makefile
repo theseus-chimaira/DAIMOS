@@ -103,28 +103,28 @@ KINIT_SRCS = boot/kinit.c \
 	proc/proc_boot.c \
 	proc/proc_swap_boot.c
 
-KINIT_C_ASM = $(BUILD)/kinit.s \
-	$(BUILD)/kinit_diag.s \
-	$(BUILD)/module_minit.s \
-	$(BUILD)/kinit_boot.s \
-	$(BUILD)/root_select.s \
-	$(BUILD)/tsfs_boot.s \
-	$(BUILD)/d6fs_boot.s \
-	$(BUILD)/d6fs_super_boot.s \
-	$(BUILD)/blockset_boot.s \
-	$(BUILD)/auxstore_boot.s \
-	$(BUILD)/logstore_boot.s \
-	$(BUILD)/logstore.s \
-	$(BUILD)/proc_boot.s \
-	$(BUILD)/proc_swap_boot.s
+KINIT_C_ASM = ${BUILD}/kinit.s \
+	${BUILD}/kinit_diag.s \
+	${BUILD}/module_minit.s \
+	${BUILD}/kinit_boot.s \
+	${BUILD}/root_select.s \
+	${BUILD}/tsfs_boot.s \
+	${BUILD}/d6fs_boot.s \
+	${BUILD}/d6fs_super_boot.s \
+	${BUILD}/blockset_boot.s \
+	${BUILD}/auxstore_boot.s \
+	${BUILD}/logstore_boot.s \
+	${BUILD}/logstore.s \
+	${BUILD}/proc_boot.s \
+	${BUILD}/proc_swap_boot.s
 
 KINIT_LATE_SRCS = proc/proc_late.c \
 	mm/mm_boot.c \
 	boot/kinit_late.c
 
-KINIT_LATE_C_ASM = $(BUILD)/proc_late.s \
-	$(BUILD)/mm_boot.s \
-	$(BUILD)/kinit_late.s
+KINIT_LATE_C_ASM = ${BUILD}/proc_late.s \
+	${BUILD}/mm_boot.s \
+	${BUILD}/kinit_late.s
 
 KINIT_FIXED_SRCS = boot/kinit_io_pdp6.s \
 	modules/module_io.s \
@@ -138,11 +138,11 @@ KCORE_C_SRCS = proc/exec.c \
 	proc/proc.c \
 	fs/file.c
 
-KCORE_C_ASM = $(BUILD)/proc.s \
-	$(BUILD)/file.s
+KCORE_C_ASM = ${BUILD}/proc.s \
+	${BUILD}/file.s
 
-KCORE_VM_ASM = $(BUILD)/vm_backend.s \
-	$(BUILD)/proc_swap.s
+KCORE_VM_ASM = ${BUILD}/vm_backend.s \
+	${BUILD}/proc_swap.s
 
 PDP10_CC_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${KCORE_C_ASM} \
 	${BUILD}/exec.s ${BUILD}/module_runtime.s ${KCORE_VM_ASM} \
@@ -174,47 +174,47 @@ KCORE_FIXED_SRCS = core/ret.s \
 	storage/storage_router.s \
 	core/kcore_end.s
 
-KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
-	$(BUILD)/exec.s \
-	$(BUILD)/d6lz.s \
-	$(BUILD)/mm.s \
-	$(BUILD)/proc.s \
-	$(BUILD)/backstore.s \
-	$(BUILD)/file.s \
-	$(BUILD)/vm_backend.s \
-	$(BUILD)/proc_swap.s \
-	$(BUILD)/ret.s \
-	$(BUILD)/dsk270.s \
-	$(BUILD)/drm236.s \
-	$(BUILD)/kfmt_pdp6.s \
-	$(BUILD)/s6rec.s \
-	$(BUILD)/vfs.s \
-	$(BUILD)/fs_mres.s \
-	$(BUILD)/tsfs_runtime.s \
-	$(BUILD)/file_runtime.s \
-	$(BUILD)/pipe.s \
-	$(BUILD)/monitorfs_runtime.s \
-	$(BUILD)/proc_pdp6.s \
-	$(BUILD)/proc_run.s \
-	$(BUILD)/device_state.s \
-	$(BUILD)/syscall_info.s \
-	$(BUILD)/pclk.s \
-	$(BUILD)/lpt_io.s \
-	$(BUILD)/syscall_dispatch_pdp6.s \
-	$(BUILD)/mach_user_pdp6.s \
-	$(BUILD)/vm_backend_pdp6.s \
-	$(BUILD)/kcore_pi_pdp6.s \
-	$(BUILD)/bcache_pdp6.s \
-	$(BUILD)/storage_router.s \
-	$(BUILD)/kcore_end.s
+KCORE_FIXED_ASM = ${BUILD}/d6lz_fixed.s \
+	${BUILD}/exec.s \
+	${BUILD}/d6lz.s \
+	${BUILD}/mm.s \
+	${BUILD}/proc.s \
+	${BUILD}/backstore.s \
+	${BUILD}/file.s \
+	${BUILD}/vm_backend.s \
+	${BUILD}/proc_swap.s \
+	${BUILD}/ret.s \
+	${BUILD}/dsk270.s \
+	${BUILD}/drm236.s \
+	${BUILD}/kfmt_pdp6.s \
+	${BUILD}/s6rec.s \
+	${BUILD}/vfs.s \
+	${BUILD}/fs_mres.s \
+	${BUILD}/tsfs_runtime.s \
+	${BUILD}/file_runtime.s \
+	${BUILD}/pipe.s \
+	${BUILD}/monitorfs_runtime.s \
+	${BUILD}/proc_pdp6.s \
+	${BUILD}/proc_run.s \
+	${BUILD}/device_state.s \
+	${BUILD}/syscall_info.s \
+	${BUILD}/pclk.s \
+	${BUILD}/lpt_io.s \
+	${BUILD}/syscall_dispatch_pdp6.s \
+	${BUILD}/mach_user_pdp6.s \
+	${BUILD}/vm_backend_pdp6.s \
+	${BUILD}/kcore_pi_pdp6.s \
+	${BUILD}/bcache_pdp6.s \
+	${BUILD}/storage_router.s \
+	${BUILD}/kcore_end.s
 
 MRES_C_SRCS = fs/d6fs_provider.c \
 	fs/memfs_data.c \
 	fs/memfs_snapshot.c \
 	fs/tsfs.c
 
-MRES_C_ASM = $(BUILD)/dpy_text.s \
-	$(BUILD)/tsfs.s
+MRES_C_ASM = ${BUILD}/dpy_text.s \
+	${BUILD}/tsfs.s
 
 MRES_FIXED_SRCS = fs/d6fs_validate.s \
 	fs/d6fs_provider_namespace_pdp6.s \
@@ -245,37 +245,37 @@ MRES_FIXED_SRCS = fs/d6fs_validate.s \
 	drivers/tape_io.s \
 	drivers/slv_io.s
 
-MRES_ASM = $(BUILD)/dtfs.s \
-	$(BUILD)/tsfs.s \
-	$(BUILD)/d6fs_provider.s \
-	$(BUILD)/dpy_text.s \
-	$(BUILD)/memfs_data.s \
-	$(BUILD)/memfs_snapshot.s \
-	$(BUILD)/d6fs_validate.s \
-	$(BUILD)/cty_io.s \
-	$(BUILD)/clk_io.s \
-	$(BUILD)/ptr_io.s \
-	$(BUILD)/ptp_io.s \
-	$(BUILD)/cr_io.s \
-	$(BUILD)/cp_io.s \
-	$(BUILD)/blockset_dispatch.s \
-	$(BUILD)/badmap_dispatch.s \
-	$(BUILD)/fs_backing.s \
-	$(BUILD)/logstore_runtime.s \
-	$(BUILD)/dcs_io.s \
-	$(BUILD)/ge_io.s \
-	$(BUILD)/dpy_io.s \
-	$(BUILD)/tty_io.s \
-	$(BUILD)/dtfs_runtime.s \
-	$(BUILD)/tsfs_runtime.s \
-	$(BUILD)/memfs_runtime.s \
-	$(BUILD)/d6fs_runtime.s \
-	$(BUILD)/wcnsls_io.s \
-	$(BUILD)/ocnsls_io.s \
-	$(BUILD)/dsk_io.s \
-	$(BUILD)/drm236_io.s \
-	$(BUILD)/tape_io.s \
-	$(BUILD)/slv_io.s
+MRES_ASM = ${BUILD}/dtfs.s \
+	${BUILD}/tsfs.s \
+	${BUILD}/d6fs_provider.s \
+	${BUILD}/dpy_text.s \
+	${BUILD}/memfs_data.s \
+	${BUILD}/memfs_snapshot.s \
+	${BUILD}/d6fs_validate.s \
+	${BUILD}/cty_io.s \
+	${BUILD}/clk_io.s \
+	${BUILD}/ptr_io.s \
+	${BUILD}/ptp_io.s \
+	${BUILD}/cr_io.s \
+	${BUILD}/cp_io.s \
+	${BUILD}/blockset_dispatch.s \
+	${BUILD}/badmap_dispatch.s \
+	${BUILD}/fs_backing.s \
+	${BUILD}/logstore_runtime.s \
+	${BUILD}/dcs_io.s \
+	${BUILD}/ge_io.s \
+	${BUILD}/dpy_io.s \
+	${BUILD}/tty_io.s \
+	${BUILD}/dtfs_runtime.s \
+	${BUILD}/tsfs_runtime.s \
+	${BUILD}/memfs_runtime.s \
+	${BUILD}/d6fs_runtime.s \
+	${BUILD}/wcnsls_io.s \
+	${BUILD}/ocnsls_io.s \
+	${BUILD}/dsk_io.s \
+	${BUILD}/drm236_io.s \
+	${BUILD}/tape_io.s \
+	${BUILD}/slv_io.s
 
 .PHONY: kinit kcore clean
 
@@ -429,54 +429,54 @@ COPY_ASM_SRCS = core/ret.s \
 	boot/kinit_late_begin_pdp6.s \
 	boot/kinit_late_end.s
 
-COPY_ASM_TARGETS = $(BUILD)/ret.s \
-	$(BUILD)/dsk270.s \
-	$(BUILD)/drm236.s \
-	$(BUILD)/kfmt_pdp6.s \
-	$(BUILD)/s6rec.s \
-	$(BUILD)/vfs.s \
-	$(BUILD)/fs_mres.s \
-	$(BUILD)/tsfs_runtime.s \
-	$(BUILD)/file_runtime.s \
-	$(BUILD)/pipe.s \
-	$(BUILD)/monitorfs_runtime.s \
-	$(BUILD)/device_state.s \
-	$(BUILD)/syscall_info.s \
-	$(BUILD)/pclk.s \
-	$(BUILD)/lpt_io.s \
-	$(BUILD)/syscall_dispatch_pdp6.s \
-	$(BUILD)/mach_user_pdp6.s \
-	$(BUILD)/kcore_pi_pdp6.s \
-	$(BUILD)/backstore.s \
-	$(BUILD)/bcache_pdp6.s \
-	$(BUILD)/storage_router.s \
-	$(BUILD)/kcore_end.s \
-	$(BUILD)/d6fs_validate.s \
-	$(BUILD)/cty_io.s \
-	$(BUILD)/clk_io.s \
-	$(BUILD)/ptr_io.s \
-	$(BUILD)/ptp_io.s \
-	$(BUILD)/cr_io.s \
-	$(BUILD)/cp_io.s \
-	$(BUILD)/blockset_dispatch.s \
-	$(BUILD)/badmap_dispatch.s \
-	$(BUILD)/fs_backing.s \
-	$(BUILD)/logstore_runtime.s \
-	$(BUILD)/dcs_io.s \
-	$(BUILD)/ge_io.s \
-	$(BUILD)/dpy_io.s \
-	$(BUILD)/tty_io.s \
-	$(BUILD)/memfs_runtime.s \
-	$(BUILD)/d6fs_runtime.s \
-	$(BUILD)/wcnsls_io.s \
-	$(BUILD)/ocnsls_io.s \
-	$(BUILD)/dsk_io.s \
-	$(BUILD)/drm236_io.s \
-	$(BUILD)/tape_io.s \
-	$(BUILD)/slv_io.s \
-	$(BUILD)/module_io.s \
-	$(BUILD)/kinit_late_begin_pdp6.s \
-	$(BUILD)/kinit_late_end.s
+COPY_ASM_TARGETS = ${BUILD}/ret.s \
+	${BUILD}/dsk270.s \
+	${BUILD}/drm236.s \
+	${BUILD}/kfmt_pdp6.s \
+	${BUILD}/s6rec.s \
+	${BUILD}/vfs.s \
+	${BUILD}/fs_mres.s \
+	${BUILD}/tsfs_runtime.s \
+	${BUILD}/file_runtime.s \
+	${BUILD}/pipe.s \
+	${BUILD}/monitorfs_runtime.s \
+	${BUILD}/device_state.s \
+	${BUILD}/syscall_info.s \
+	${BUILD}/pclk.s \
+	${BUILD}/lpt_io.s \
+	${BUILD}/syscall_dispatch_pdp6.s \
+	${BUILD}/mach_user_pdp6.s \
+	${BUILD}/kcore_pi_pdp6.s \
+	${BUILD}/backstore.s \
+	${BUILD}/bcache_pdp6.s \
+	${BUILD}/storage_router.s \
+	${BUILD}/kcore_end.s \
+	${BUILD}/d6fs_validate.s \
+	${BUILD}/cty_io.s \
+	${BUILD}/clk_io.s \
+	${BUILD}/ptr_io.s \
+	${BUILD}/ptp_io.s \
+	${BUILD}/cr_io.s \
+	${BUILD}/cp_io.s \
+	${BUILD}/blockset_dispatch.s \
+	${BUILD}/badmap_dispatch.s \
+	${BUILD}/fs_backing.s \
+	${BUILD}/logstore_runtime.s \
+	${BUILD}/dcs_io.s \
+	${BUILD}/ge_io.s \
+	${BUILD}/dpy_io.s \
+	${BUILD}/tty_io.s \
+	${BUILD}/memfs_runtime.s \
+	${BUILD}/d6fs_runtime.s \
+	${BUILD}/wcnsls_io.s \
+	${BUILD}/ocnsls_io.s \
+	${BUILD}/dsk_io.s \
+	${BUILD}/drm236_io.s \
+	${BUILD}/tape_io.s \
+	${BUILD}/slv_io.s \
+	${BUILD}/module_io.s \
+	${BUILD}/kinit_late_begin_pdp6.s \
+	${BUILD}/kinit_late_end.s
 
 ${COPY_ASM_TARGETS}: ${COPY_ASM_SRCS}
 	@mkdir -p ${BUILD}
