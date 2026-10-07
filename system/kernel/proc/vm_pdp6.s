@@ -31,6 +31,7 @@
         .globl  mm_extent_count
         .globl  mm_arena_count
         .globl  proc_swap_detach
+        .globl  proc_swap_reclaim
         .globl  vfs_read_words
         .globl  proc_runq_add
         .globl  proc_runq_remove
@@ -126,6 +127,7 @@ vm_space_brk_current:
         hrli    0,10
         blt     0,-006(17)
         move    10,1                    ; requested break
+        setzm   (17)                    ; growth retry/new-base scratch
         move    11,proc_current_ptr
         jumpe   11,vm_brk_fail
         move    4,(11)
@@ -300,8 +302,31 @@ vm_brk_rebase_extent:
         jrst    vm_brk_commit
 
 vm_brk_fallback:
-        ; No adjacent room.  Restore PI while the general allocator may reclaim,
-        ; compact or swap other processes, then allocate a complete replacement.
+        ; No adjacent room.  The current process cannot itself be compacted or
+        ; swapped, but a sleeping neighbor may be the only thing preventing a
+        ; one-quantum in-place growth.  Reclaim other processes for the delta
+        ; once, then re-evaluate the adjacent gaps before considering a second
+        ; complete process image.  The new-base scratch word is zero initially
+        ; and -1 only while this one reclaim retry has already been attempted.
+        move    1,(17)
+        jumpl   1,vm_brk_full_alloc
+        move    1,-003(17)
+        trne    1,000200
+        cono    0004,000200
+        move    1,15
+        sub     1,13                    ; growth delta only
+        movei   2,02000
+        move    3,proc_current_slot
+        pushj   17,proc_swap_reclaim
+        setom   (17)                    ; do not repeat reclaim indefinitely
+        coni    0004,1
+        movem   1,-003(17)
+        cono    0004,000400
+        jrst    vm_brk_find_extent
+
+vm_brk_full_alloc:
+        ; Second try still has no adjacent room.  Restore PI while the general
+        ; allocator attempts the fragmentation fallback using a full new image.
         move    1,-003(17)
         trne    1,000200
         cono    0004,000200
