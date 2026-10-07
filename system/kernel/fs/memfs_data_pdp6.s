@@ -134,16 +134,11 @@ memfs_data_alloc:
         move    011,1                  ; rounded need words
         move    014,1
         lsh     014,-7                 ; requested sectors
-        setz    010,                   ; current allocated chunk capacity
-
         movei   012,MEMFS_CHUNKS
         movei   013,memfs_data_chunks
 memfs_data_alloc_existing:
         skipn   (013)
         jrst    memfs_data_alloc_existing_next
-        move    1,013
-        pushj   17,memfs_chunk_bounds
-        add     010,2
         move    1,013
         move    2,014
         pushj   17,memfs_chunk_alloc
@@ -152,9 +147,7 @@ memfs_data_alloc_existing_next:
         addi    013,1
         sojg    012,memfs_data_alloc_existing
 
-        move    1,memfs_mres_fs+1      ; configured mutable-data ceiling
-        sub     1,010
-        move    010,1                  ; remaining configured capacity
+        move    010,memfs_mres_fs+1    ; logical mutable-data ceiling
         camge   010,011
         jrst    memfs_data_alloc_fail
 
@@ -412,9 +405,104 @@ memfs_resize_zero_drop:
         jrst    memfs_resize_return
 
 memfs_resize_grow:
+        ; pool_words is a logical data ceiling.  Internal chunk rounding and
+        ; fragmentation are physical allocator details and must not consume
+        ; user-visible quota.
+        move    1,MEMFS_POOL_WORDS(010)
+        sub     1,MEMFS_USED_WORDS(010)
+        jumpl   1,memfs_resize_fail
+        move    2,012
+        sub     2,014
+        camle   2,1
+        jrst    memfs_resize_fail
+
+        ; Keep same-sector growth in place.  Reallocating for every logical
+        ; word append transiently needs two full extents and exhausts tight
+        ; PDP-6 core long before the configured MEMFS limit is reached.
+        jumpe   015,memfs_resize_relocate
+        move    1,014
+        pushj   17,memfs_alloc_words
+        move    016,1                  ; old rounded allocation
+        move    1,012
+        pushj   17,memfs_alloc_words
+        came    1,016
+        jrst    memfs_resize_relocate
+        move    2,012
+        sub     2,014                  ; newly exposed logical words
+        move    1,015
+        add     1,014
+        pushj   17,fs_zero_words
+        move    1,011
+        pushj   17,memfs_backing_drop
+        hrlz    1,015
+        ior     1,012
+        movem   1,MEMFS_NODE_DATA(013)
+        move    1,012
+        sub     1,014
+        addm    1,MEMFS_USED_WORDS(010)
+        setz    1,
+        jrst    memfs_resize_return
+
+memfs_resize_relocate:
         move    1,012
         pushj   17,memfs_data_alloc
-        jumpn   1,memfs_resize_fail
+        jumpe   1,memfs_resize_have_new
+
+        ; Tight-core fallback: preserve the old containing chunk through the
+        ; normal MEMFS backing path, release it, then retry the larger extent.
+        ; This avoids requiring old+new file extents to coexist physically.
+        jumpe   015,memfs_resize_fail
+        movei   4,memfs_data_chunks
+        movei   5,MEMFS_CHUNKS
+memfs_resize_spill_find:
+        skipn   (4)
+        jrst    memfs_resize_spill_next
+        move    1,4
+        pushj   17,memfs_chunk_bounds
+        camge   015,1
+        jrst    memfs_resize_spill_next
+        move    6,1
+        add     6,2
+        caml    015,6
+        jrst    memfs_resize_spill_next
+        move    1,4
+        pushj   17,memfs_evict_chunk
+        jumpe   1,memfs_resize_fail
+        move    1,012
+        pushj   17,memfs_data_alloc
+        jumpn   1,memfs_resize_fail    ; old file remains safely backed
+        move    016,2                  ; new base
+
+        ; Restore the old logical contents directly into the larger extent.
+        move    6,MEMFS_NODES(010)
+        add     6,011
+        skipn   7,0700(6)              ; first-block,,block-count
+        jrst    memfs_resize_spill_bad_new
+        hlrz    1,7
+        hrrz    2,7
+        move    3,016
+        pushj   17,backstore_read
+        jumpn   1,memfs_resize_spill_bad_new
+        move    1,012
+        pushj   17,memfs_alloc_words
+        sub     1,014                  ; zero from old logical EOF onward
+        move    2,1
+        move    1,016
+        add     1,014
+        pushj   17,fs_zero_words
+        jrst    memfs_resize_drop_backing
+
+memfs_resize_spill_bad_new:
+        move    1,016
+        move    2,012
+        pushj   17,memfs_data_free
+        jrst    memfs_resize_fail
+memfs_resize_spill_next:
+        addi    4,1
+        sojg    5,memfs_resize_spill_find
+        jrst    memfs_resize_fail
+
+memfs_resize_have_new:
         move    016,2                  ; new base
         move    3,014
         camle   3,012

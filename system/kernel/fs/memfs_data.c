@@ -31,8 +31,9 @@ struct memfs_data_chunk {
 static struct memfs_data_chunk memfs_data_chunks[MEMFS_DATA_CHUNKS];
 static struct memfs *memfs_data_fs;
 static kword_t memfs_data_limit;
-static kword_t memfs_data_capacity;
 static int memfs_data_allocating;
+
+static kword_t memfs_evict_chunk(struct memfs_data_chunk *cp);
 
 static kword_t
 memfs_alloc_words(kword_t words)
@@ -55,7 +56,6 @@ memfs_data_init(struct memfs *fs, kword_t limit)
         }
         memfs_data_fs = fs;
         memfs_data_limit = limit;
-        memfs_data_capacity = 0UL;
 }
 
 static int
@@ -106,7 +106,7 @@ memfs_data_alloc(kword_t words, kword_t *basep)
                 if (cp->base != 0UL && memfs_chunk_alloc(cp, need, basep) == 0)
                         return 0;
         }
-        if (need > memfs_data_limit - memfs_data_capacity)
+        if (need > memfs_data_limit)
                 return -1;
         for (i = 0U; i < MEMFS_DATA_CHUNKS; ++i) {
                 if (memfs_data_chunks[i].base == 0UL)
@@ -114,7 +114,7 @@ memfs_data_alloc(kword_t words, kword_t *basep)
         }
         if (i == MEMFS_DATA_CHUNKS)
                 return -1;
-        remaining = memfs_data_limit - memfs_data_capacity;
+        remaining = memfs_data_limit;
         chunk_words = need > MEMFS_DATA_CHUNK_WORDS ? need : MEMFS_DATA_CHUNK_WORDS;
         if (chunk_words > remaining)
                 chunk_words = (remaining / DSK_WORDS_PER_SECTOR) * DSK_WORDS_PER_SECTOR;
@@ -132,7 +132,6 @@ memfs_data_alloc(kword_t words, kword_t *basep)
         cp->free = base;
         ((kword_t *)(unsigned long)base)[0] = chunk_words;
         ((kword_t *)(unsigned long)base)[1] = 0UL;
-        memfs_data_capacity += chunk_words;
         return memfs_chunk_alloc(cp, need, basep);
 }
 
@@ -195,7 +194,6 @@ memfs_data_free(kword_t base, kword_t words)
                 cp->base = 0UL;
                 cp->words = 0UL;
                 cp->free = 0UL;
-                memfs_data_capacity -= chunk_words;
                 (void)mm_free(chunk_base, MM_TYPE_KERNEL_DYNAMIC,
                     MEMFS_DATA_MM_OWNER);
         }
@@ -269,6 +267,10 @@ memfs_resize(struct memfs *fs, unsigned int slot, unsigned int words)
         oldbase = (np->data >> 18U) & MEMFS_HALF_MASK;
         if (words == oldwords)
                 return 0;
+        if (words > oldwords &&
+            (fs->used_words > fs->pool_words ||
+            words - oldwords > fs->pool_words - fs->used_words))
+                return -1;
         if (words == 0U) {
                 if (oldbase != 0UL)
                         memfs_data_free(oldbase, oldwords);
@@ -277,8 +279,59 @@ memfs_resize(struct memfs *fs, unsigned int slot, unsigned int words)
                 fs->used_words -= oldwords;
                 return 0;
         }
-        if (memfs_data_alloc((kword_t)words, &base) != 0)
-                return -1;
+        /* Logical growth within the already allocated sector span needs no
+         * relocation.  Besides avoiding needless copies, this is essential
+         * under tight PDP-6 core: allocate-copy-free would transiently require
+         * two complete extents for every single-word append. */
+        if (words > oldwords && oldbase != 0UL &&
+            memfs_alloc_words((kword_t)words) ==
+            memfs_alloc_words((kword_t)oldwords)) {
+                for (i = oldwords; i < words; ++i)
+                        ((kword_t *)(unsigned long)oldbase)[i] = 0UL;
+                memfs_backing_drop(slot);
+                np->data = ((oldbase & MEMFS_HALF_MASK) << 18U) |
+                    ((kword_t)words & MEMFS_HALF_MASK);
+                fs->used_words += words - oldwords;
+                return 0;
+        }
+        if (memfs_data_alloc((kword_t)words, &base) != 0) {
+                /* On a tight machine allocate-copy-free can require more
+                 * core than exists even though the final larger extent fits.
+                 * Spill the containing chunk through the normal backing path,
+                 * free it, and retry with the old contents safely off-core. */
+                struct memfs_data_chunk *cp;
+                kword_t span;
+
+                if (oldbase == 0UL)
+                        return -1;
+                for (i = 0U; i < MEMFS_DATA_CHUNKS; ++i) {
+                        cp = &memfs_data_chunks[i];
+                        if (cp->base != 0UL && oldbase >= cp->base &&
+                            oldbase < cp->base + cp->words)
+                                break;
+                }
+                if (i == MEMFS_DATA_CHUNKS ||
+                    memfs_evict_chunk(&memfs_data_chunks[i]) == 0UL ||
+                    memfs_data_alloc((kword_t)words, &base) != 0)
+                        return -1;
+                span = MEMFS_BACKING_TABLE(fs)[slot];
+                if (span == 0UL || backstore_read(
+                    (span >> 18U) & MEMFS_BACK_FIRST_MASK,
+                    span & MEMFS_HALF_MASK,
+                    (kword_t *)(unsigned long)base) != 0) {
+                        memfs_data_free(base, (kword_t)words);
+                        return -1;
+                }
+                copy = oldwords;
+                for (i = copy;
+                    (kword_t)i < memfs_alloc_words((kword_t)words); ++i)
+                        ((kword_t *)(unsigned long)base)[i] = 0UL;
+                memfs_backing_drop(slot);
+                np->data = ((base & MEMFS_HALF_MASK) << 18U) |
+                    ((kword_t)words & MEMFS_HALF_MASK);
+                fs->used_words = fs->used_words - oldwords + words;
+                return 0;
+        }
         copy = oldwords < words ? oldwords : words;
         for (i = 0U; i < copy; ++i)
                 ((kword_t *)(unsigned long)base)[i] =
@@ -347,7 +400,6 @@ memfs_evict_chunk(struct memfs_data_chunk *cp)
                     MEMFS_DATA_MM_OWNER) != MM_OK)
                         return 0UL;
                 cp->base = cp->words = cp->free = 0UL;
-                memfs_data_capacity -= words;
                 return words;
         }
 }
