@@ -750,8 +750,7 @@ memfs_mres_mount_size_ok:
         movem   6,5(5)                  ; root-node meta
 
         movem   5,memfs_mres_fs
-        move    6,-2(17)                ; requested total-word ceiling
-        subi    6,0700                  ; preserve old data-capacity semantics
+        move    6,-2(17)                ; configured logical data-word ceiling
         movem   6,memfs_mres_fs+1
         setzm   memfs_mres_fs+2         ; logical file words in use
         pushj   17,pclk_time36
