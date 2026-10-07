@@ -16,6 +16,7 @@
 
 #define MODE_PARAM 0U
 #define MODE_VECTOR 4U
+#define MODE_INCR 6U
 
 struct word_writer {
     FILE *fp;
@@ -31,6 +32,8 @@ struct convert_stats {
     size_t runs;
     size_t move_segments;
     size_t draw_segments;
+    size_t incremental_paths;
+    size_t incremental_steps;
 };
 
 enum scan_axis {
@@ -42,6 +45,13 @@ struct scan_plan {
     enum scan_axis axis;
     int reverse_first;
     size_t runs;
+    size_t halfwords;
+    size_t words;
+};
+
+struct incremental_plan {
+    size_t paths;
+    size_t steps;
     size_t halfwords;
     size_t words;
 };
@@ -136,6 +146,25 @@ ty340_vector(int escape, int intensify, int sy, unsigned int dy,
         inst |= bit18(2U);
     if (sx)
         inst |= bit18(10U);
+    return inst;
+}
+
+static uint32_t
+ty340_incremental(int escape, int intensify,
+    unsigned int p0, unsigned int p1, unsigned int p2, unsigned int p3)
+{
+    uint32_t inst;
+
+    if (p0 > 017U || p1 > 017U || p2 > 017U || p3 > 017U)
+        die("internal incremental step out of range");
+    inst = field18(2U, 5U, p0) |
+        field18(6U, 9U, p1) |
+        field18(10U, 13U, p2) |
+        field18(14U, 17U, p3);
+    if (escape)
+        inst |= bit18(0U);
+    if (intensify)
+        inst |= bit18(1U);
     return inst;
 }
 
@@ -520,6 +549,255 @@ plan_is_better(const struct scan_plan *a, const struct scan_plan *b)
     return a->runs < b->runs;
 }
 
+static unsigned int
+incremental_step_code(int dx, int dy)
+{
+    unsigned int code;
+
+    code = 0U;
+    if (dx < 0)
+        code |= 014U;
+    else if (dx > 0)
+        code |= 010U;
+    if (dy < 0)
+        code |= 003U;
+    else if (dy > 0)
+        code |= 002U;
+    if (code == 0U)
+        die("internal zero incremental step");
+    return code;
+}
+
+static void
+incremental_step_delta(unsigned int code, int *dx, int *dy)
+{
+    *dx = 0;
+    *dy = 0;
+    if ((code & 010U) != 0U)
+        *dx = (code & 004U) != 0U ? -1 : 1;
+    if ((code & 002U) != 0U)
+        *dy = (code & 001U) != 0U ? -1 : 1;
+}
+
+static int
+incremental_degree(const unsigned char *remaining, int x, int y)
+{
+    static const int dx[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
+    static const int dy[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
+    int degree;
+    int i;
+    int nx;
+    int ny;
+
+    degree = 0;
+    for (i = 0; i < 8; ++i) {
+        nx = x + dx[i];
+        ny = y + dy[i];
+        if (nx >= 0 && nx < (int)TARGET_SIZE &&
+                ny >= 0 && ny < (int)TARGET_SIZE &&
+                remaining[(size_t)ny * TARGET_SIZE + (size_t)nx] != 0U)
+            ++degree;
+    }
+    return degree;
+}
+
+static int
+incremental_next(const unsigned char *remaining, int x, int y,
+    int prev_dx, int prev_dy, int *next_x, int *next_y,
+    unsigned int *step_code)
+{
+    static const int dx[8] = {-1, 0, 1, -1, 1, -1, 0, 1};
+    static const int dy[8] = {-1, -1, -1, 0, 0, 1, 1, 1};
+    int best_degree;
+    int best_turn;
+    int degree;
+    int have_best;
+    int i;
+    int nx;
+    int ny;
+    int turn;
+
+    have_best = 0;
+    best_degree = 0;
+    best_turn = 0;
+    for (i = 0; i < 8; ++i) {
+        nx = x + dx[i];
+        ny = y + dy[i];
+        if (nx < 0 || nx >= (int)TARGET_SIZE ||
+                ny < 0 || ny >= (int)TARGET_SIZE ||
+                remaining[(size_t)ny * TARGET_SIZE + (size_t)nx] == 0U)
+            continue;
+        degree = incremental_degree(remaining, nx, ny);
+        if (prev_dx < -1) {
+            turn = 0;
+        } else {
+            int tx;
+            int ty;
+
+            tx = dx[i] - prev_dx;
+            ty = dy[i] - prev_dy;
+            turn = tx * tx + ty * ty;
+        }
+        if (!have_best || degree < best_degree ||
+                (degree == best_degree && turn < best_turn)) {
+            have_best = 1;
+            best_degree = degree;
+            best_turn = turn;
+            *next_x = nx;
+            *next_y = ny;
+            *step_code = incremental_step_code(dx[i], dy[i]);
+        }
+    }
+    return have_best;
+}
+
+static void
+emit_incremental(struct word_writer *writer, const unsigned char *bitmap,
+    struct convert_stats *stats)
+{
+    unsigned char *path;
+    unsigned char *remaining;
+    size_t bitmap_bytes;
+    size_t i;
+    size_t path_length;
+    size_t scan;
+    int cur_x;
+    int cur_y;
+
+    bitmap_bytes = TARGET_SIZE * TARGET_SIZE;
+    remaining = malloc(bitmap_bytes);
+    path = malloc(bitmap_bytes);
+    if (remaining == NULL || path == NULL) {
+        free(path);
+        free(remaining);
+        die("cannot allocate incremental-path workspace");
+    }
+    memcpy(remaining, bitmap, bitmap_bytes);
+
+    writer_put_half(writer, ty340_param(MODE_VECTOR, 1, INTENSITY_MAX));
+    cur_x = 0;
+    cur_y = 0;
+    scan = 0U;
+    while (scan < bitmap_bytes) {
+        size_t start;
+        int prev_dx;
+        int prev_dy;
+        int x;
+        int y;
+
+        while (scan < bitmap_bytes && remaining[scan] == 0U)
+            ++scan;
+        if (scan == bitmap_bytes)
+            break;
+
+        start = scan;
+        x = (int)(start % TARGET_SIZE);
+        y = (int)(start / TARGET_SIZE);
+        emit_vector_move(writer, x - cur_x, y - cur_y, stats);
+
+        /*
+         * Light the first pixel with a zero-length vector and escape to
+         * parameter mode.  Increment mode lights only after each one-pixel
+         * step, so this preserves isolated pixels and path starting points.
+         */
+        writer_put_half(writer, ty340_vector(1, 1, 0, 0U, 0, 0U));
+        ++stats->draw_segments;
+        ++stats->incremental_paths;
+        remaining[start] = 0U;
+
+        path_length = 0U;
+        prev_dx = -2;
+        prev_dy = -2;
+        for (;;) {
+            unsigned int code;
+            int next_x;
+            int next_y;
+
+            if (!incremental_next(remaining, x, y, prev_dx, prev_dy,
+                    &next_x, &next_y, &code))
+                break;
+            if (path_length >= bitmap_bytes)
+                die("internal incremental path overflow");
+            path[path_length++] = (unsigned char)code;
+            ++stats->incremental_steps;
+            prev_dx = next_x - x;
+            prev_dy = next_y - y;
+            x = next_x;
+            y = next_y;
+            remaining[(size_t)y * TARGET_SIZE + (size_t)x] = 0U;
+        }
+
+        if (path_length >= 4U) {
+            size_t packed_length;
+
+            packed_length = path_length & ~(size_t)3U;
+            writer_put_half(writer, ty340_param(MODE_INCR, 0, 0U));
+            for (i = 0U; i < packed_length; i += 4U) {
+                int final;
+
+                final = i + 4U == packed_length;
+                writer_put_half(writer, ty340_incremental(final, 1,
+                    path[i], path[i + 1U], path[i + 2U], path[i + 3U]));
+            }
+        }
+
+        /*
+         * Increment mode has one intensity bit for all four substeps.  Do not
+         * pad a short final group with zero-motion substeps: those would
+         * re-intensify the endpoint and can create a brighter dot on a real
+         * refresh CRT.  Emit the one-to-three residual steps as exact
+         * one-pixel vectors instead.
+         */
+        if ((path_length & 3U) != 0U) {
+            size_t tail;
+
+            tail = path_length & ~(size_t)3U;
+            writer_put_half(writer, ty340_param(MODE_VECTOR, 0, 0U));
+            for (i = tail; i < path_length; ++i) {
+                int dx;
+                int dy;
+                int final;
+
+                incremental_step_delta(path[i], &dx, &dy);
+                final = i + 1U == path_length;
+                writer_put_half(writer, ty340_vector(final, 1,
+                    dy < 0, (unsigned int)(dy < 0 ? -dy : dy),
+                    dx < 0, (unsigned int)(dx < 0 ? -dx : dx)));
+                ++stats->draw_segments;
+            }
+        }
+
+        cur_x = x;
+        cur_y = y;
+        scan = start + 1U;
+        while (scan < bitmap_bytes && remaining[scan] == 0U)
+            ++scan;
+        if (scan < bitmap_bytes)
+            writer_put_half(writer, ty340_param(MODE_VECTOR, 0, 0U));
+    }
+
+    free(path);
+    free(remaining);
+}
+
+static struct incremental_plan
+measure_incremental(const unsigned char *bitmap)
+{
+    struct convert_stats stats;
+    struct incremental_plan plan;
+    struct word_writer writer;
+
+    memset(&stats, 0, sizeof(stats));
+    memset(&writer, 0, sizeof(writer));
+    emit_incremental(&writer, bitmap, &stats);
+    writer_finish(&writer);
+    plan.paths = stats.incremental_paths;
+    plan.steps = stats.incremental_steps;
+    plan.halfwords = writer.halfwords;
+    plan.words = writer.words;
+    return plan;
+}
+
 static void
 convert_type340(const char *inpath, const char *outpath)
 {
@@ -528,7 +806,9 @@ convert_type340(const char *inpath, const char *outpath)
     struct convert_stats stats;
     struct scan_plan best;
     struct scan_plan candidate;
+    struct incremental_plan incremental;
     unsigned char *bitmap;
+    int use_incremental;
     size_t horizontal_runs;
     size_t vertical_runs;
     size_t lit_pixels;
@@ -540,7 +820,6 @@ convert_type340(const char *inpath, const char *outpath)
     horizontal_runs = count_runs(bitmap, SCAN_HORIZONTAL);
     vertical_runs = count_runs(bitmap, SCAN_VERTICAL);
 
-    writer_open(&writer, outpath);
     if (lit_pixels != 0U) {
         best = measure_scan(bitmap, SCAN_HORIZONTAL, 0, horizontal_runs);
         candidate = measure_scan(bitmap, SCAN_HORIZONTAL, 1,
@@ -553,14 +832,27 @@ convert_type340(const char *inpath, const char *outpath)
         candidate = measure_scan(bitmap, SCAN_VERTICAL, 1, vertical_runs);
         if (plan_is_better(&candidate, &best))
             best = candidate;
+        incremental = measure_incremental(bitmap);
+        use_incremental = incremental.words < best.words ||
+            (incremental.words == best.words &&
+             incremental.halfwords < best.halfwords);
+
+        writer_open(&writer, outpath);
         stats.lit_pixels = lit_pixels;
-        stats.runs = best.runs;
-        emit_scan(&writer, bitmap, best.axis, best.reverse_first,
-            best.runs, &stats);
+        if (use_incremental) {
+            emit_incremental(&writer, bitmap, &stats);
+        } else {
+            stats.runs = best.runs;
+            emit_scan(&writer, bitmap, best.axis, best.reverse_first,
+                best.runs, &stats);
+        }
     } else {
+        use_incremental = 0;
         best.axis = SCAN_HORIZONTAL;
         best.reverse_first = 0;
         best.runs = 0U;
+        memset(&incremental, 0, sizeof(incremental));
+        writer_open(&writer, outpath);
         writer_put_half(&writer,
             ty340_param(MODE_PARAM, 1, INTENSITY_MAX));
     }
@@ -577,13 +869,16 @@ convert_type340(const char *inpath, const char *outpath)
     fprintf(stderr,
         "img2dpic: TYPE340 %s -> %s\n"
         "img2dpic: converted to 1-bit and scaled image %ux%u, "
-        "scan=%s%s, lit pixels=%zu, runs=%zu, move segments=%zu, "
-        "draw segments=%zu, halfwords=%zu, words=%zu\n",
+        "encoding=%s, scan=%s%s, lit pixels=%zu, runs=%zu, "
+        "move segments=%zu, draw segments=%zu, incremental paths=%zu, "
+        "incremental steps=%zu, halfwords=%zu, words=%zu\n",
         inpath, outpath, TARGET_SIZE, TARGET_SIZE,
+        use_incremental ? "incremental" : "vector-runs",
         best.axis == SCAN_HORIZONTAL ? "horizontal" : "vertical",
         best.reverse_first ? "-reverse" : "",
         stats.lit_pixels, stats.runs, stats.move_segments,
-        stats.draw_segments, writer.halfwords, writer.words);
+        stats.draw_segments, stats.incremental_paths,
+        stats.incremental_steps, writer.halfwords, writer.words);
 }
 
 int
