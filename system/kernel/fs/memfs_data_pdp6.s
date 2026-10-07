@@ -257,16 +257,15 @@ memfs_data_free_find_next:
 memfs_data_free_found:
         trne    3,MEMFS_CHUNK_LARGE
         jrst    memfs_data_free_release
-        move    0,6
-        lsh     0,-7                   ; sectors to clear
+        lsh     6,-7                   ; sectors to clear
         sub     7,1                    ; sector position within chunk
         lsh     7,-7
         movei   5,1
-        lsh     5,0(0)
+        lsh     5,0(6)                 ; AC0 cannot be an index register
         subi    5,1                    ; low NEED-sector mask
         lsh     5,0(7)
         andi    3,MEMFS_CHUNK_BITMAP
-        andca   3,5                    ; bitmap &= ~released mask
+        andcm   3,5                    ; bitmap &= ~released mask
         jumpe   3,memfs_data_free_release
         hlrz    5,(4)
         andi    5,0777400              ; retain sector-count field
