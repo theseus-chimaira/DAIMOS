@@ -43,6 +43,7 @@
         .equ    PROC_USER_MAP_BIT,2
         .equ    PROC_FDCTL_OFFSET,024
         .equ    PROC_SWAP_BACKING_OFFSET,0406
+        .equ    PROC_BRK_OFFSET,0407
         .equ    EXEC_LOAD_RT_REQUIRED,1
         .equ    EXEC_LOAD_NOMEM,-2
 
@@ -225,12 +226,18 @@ exec_replace_startup_ok:
 exec_replace_commit:
         move    1,EXEC_R_STAGED+1(17)
         movem   1,1(16)
+        ; Match the portable EXEC commit: the stable u-area survives image
+        ; replacement, so reset its heap floor/current break to the complete
+        ; newly committed VM rather than inheriting the old program's break.
+        hlrz    1,(16)
+        hlrz    2,1(16)
+        hrl     2,2
+        movem   2,PROC_BRK_OFFSET(1)
+        setzm   PROC_SWAP_BACKING_OFFSET(1)
         move    1,proc_swap_records
         add     1,13
         move    2,EXEC_R_NEW_SWAP(17)
         movem   2,(1)
-        hlrz    1,(16)
-        setzm   PROC_SWAP_BACKING_OFFSET(1)
 
         hlrz    1,EXEC_R_STAGED(17)
         movem   1,(12)
@@ -392,7 +399,7 @@ exec_lowmem_commit:
         ; heap therefore begins above the fixed startup/stack reservation.
         hlrz    2,1(15)
         hrl     2,2
-        movem   2,0407(1)               ; PROC_BRK_OFFSET
+        movem   2,PROC_BRK_OFFSET(1)
 
         ; Return entry PC and move the temporary stack word from result[5]
         ; into its public slot.  argc/argv/envp are already in result[2..4].
