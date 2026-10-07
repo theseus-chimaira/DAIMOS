@@ -32,64 +32,64 @@ $(BUILD)/d6lz: d6lz.c | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ d6lz.c
 
 $(BUILD)/mkdsk: mkdsk.c | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ mkdsk.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mkdsk.c
 
 $(BUILD)/mkd6fs: mkd6fs.c d6maint.c d6maint.h | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ mkd6fs.c d6maint.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mkd6fs.c d6maint.c
 
 $(BUILD)/mkauxstore: mkauxstore.c | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mkauxstore.c
 
 $(BUILD)/d6fsck: d6fsck.c | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ d6fsck.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ d6fsck.c
 
 $(BUILD)/packfs: packfs.c d6maint.c d6maint.h | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ packfs.c d6maint.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ packfs.c d6maint.c
 
 $(BUILD)/d6bad: d6bad.c d6maint.c d6maint.h | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ d6bad.c d6maint.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ d6bad.c d6maint.c
 
 $(BUILD)/logstore: logstore.c d6maint.c d6maint.h | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ logstore.c d6maint.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ logstore.c d6maint.c
 
 $(BUILD)/d6swap: d6swap.c d6maint.c d6maint.h | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ d6swap.c d6maint.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ d6swap.c d6maint.c
 
 $(BUILD)/mkdt: mkdt.c | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ mkdt.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mkdt.c
 
 $(BUILD)/dta2dtr: dta2dtr.c | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ dta2dtr.c
 
 $(BUILD)/mktsfs: mktsfs.c tsfs-format.c tsfs-format.h d6lz-codec.c d6lz-codec.h | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ mktsfs.c tsfs-format.c d6lz-codec.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mktsfs.c tsfs-format.c d6lz-codec.c
 
 $(BUILD)/tsfscheck: tsfscheck.c tsfs-format.c tsfs-format.h d6lz-codec.c d6lz-codec.h | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ tsfscheck.c tsfs-format.c d6lz-codec.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ tsfscheck.c tsfs-format.c d6lz-codec.c
 
 $(BUILD)/mkstream: mkstream.c | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ mkstream.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mkstream.c
 
 $(BUILD)/mktap: mktap.c | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ mktap.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mktap.c
 
 $(BUILD)/words2pt: words2pt.c | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ words2pt.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ words2pt.c
 
 $(BUILD)/dlink: dlink.c dobj.c dobj.h | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ dlink.c dobj.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ dlink.c dobj.c
 
 $(BUILD)/darc: darc.c dobj.c dobj.h | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ darc.c dobj.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ darc.c dobj.c
 
 $(BUILD)/p10run: p10run.c | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ p10run.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ p10run.c
 
 $(BUILD)/p10job: p10job.c | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ p10job.c
 
 $(BUILD)/pdp10-objdump: pdp10-objdump.c dobj.c dobj.h | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ pdp10-objdump.c dobj.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ pdp10-objdump.c dobj.c
 
 $(BUILD)/p10fold: p10fold.c dobj.c dobj.h | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ p10fold.c dobj.c
@@ -98,10 +98,10 @@ $(BUILD)/p10super: p10super.c dobj.c dobj.h | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ p10super.c dobj.c
 
 $(BUILD)/mkinitfs0: mkinitfs0.c | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ mkinitfs0.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mkinitfs0.c
 
 $(BUILD)/mkbootbanner: mkbootbanner.c | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -o $@ mkbootbanner.c
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mkbootbanner.c
 
 $(BUILD)/sixmd-check: sixmd-check.c | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ sixmd-check.c
