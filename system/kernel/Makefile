@@ -3,6 +3,7 @@ PROJECT_ROOT != cd ../.. && pwd
 BUILD_ROOT ?= ${PROJECT_ROOT}/build
 BUILD ?= ${BUILD_ROOT}/system/kernel
 PDP10_PREFIX ?= ${HOME}/cross
+HOST_TOOLS ?= ${PDP10_PREFIX}/bin
 PDP10_GCC ?= ${PDP10_PREFIX}/bin/pdp10-dec-none-gcc
 # KCC is the normal compiler.  A command-line CC=gcc selects the existing
 # PDP-10 GCC driver; any other explicit CC value is used verbatim.
@@ -13,7 +14,7 @@ CFLAGS ?=
 PDP10_CC != cc="${CC}"; case "$$cc" in kcc) echo "${PDP10_PREFIX}/bin/kcc" ;; gcc) echo "${PDP10_GCC}" ;; *) echo "$$cc" ;; esac
 PDP10_CFLAGS != cc="${CC}"; case "$$cc" in kcc) echo "${KCCFLAGS}" ;; gcc) echo "${GCCFLAGS}" ;; *) echo "${CFLAGS}" ;; esac
 PDP10_CC_DEP != set -- ${PDP10_CC}; command -v "$$1" 2>/dev/null || echo "$$1"
-MKBOOTBANNER ?= ${PDP10_PREFIX}/bin/mkbootbanner
+MKBOOTBANNER ?= ${HOST_TOOLS}/mkbootbanner
 KINIT_DEBUG ?= 0
 KINIT_STACK_RESERVE_WORDS ?= 02000
 KINIT_STACK_WATERMARK ?= 0
