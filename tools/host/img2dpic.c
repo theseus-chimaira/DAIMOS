@@ -33,6 +33,19 @@ struct convert_stats {
     size_t draw_segments;
 };
 
+enum scan_axis {
+    SCAN_HORIZONTAL = 0,
+    SCAN_VERTICAL = 1
+};
+
+struct scan_plan {
+    enum scan_axis axis;
+    int reverse_first;
+    size_t runs;
+    size_t halfwords;
+    size_t words;
+};
+
 static void
 usage(FILE *fp)
 {
@@ -161,7 +174,8 @@ writer_put_word(struct word_writer *writer, uint64_t word)
         die("internal output word exceeds 36 bits");
     for (i = 0U; i < 8U; ++i)
         data[i] = (unsigned char)(word >> (8U * i));
-    if (fwrite(data, 1U, sizeof(data), writer->fp) != sizeof(data))
+    if (writer->fp != NULL &&
+            fwrite(data, 1U, sizeof(data), writer->fp) != sizeof(data))
         die("%s: write failed: %s", writer->path, strerror(errno));
     ++writer->words;
 }
@@ -193,9 +207,11 @@ writer_finish(struct word_writer *writer)
     }
     if (writer->words == 0U)
         writer_put_word(writer, 0U);
-    if (fclose(writer->fp) != 0)
-        die("%s: close failed: %s", writer->path, strerror(errno));
-    writer->fp = NULL;
+    if (writer->fp != NULL) {
+        if (fclose(writer->fp) != 0)
+            die("%s: close failed: %s", writer->path, strerror(errno));
+        writer->fp = NULL;
+    }
 }
 
 static void
@@ -270,32 +286,34 @@ prepare_bilevel(MagickWand *wand, const char *path)
         wand_die(wand, path);
 }
 
-static void
-read_row(MagickWand *wand, const char *path, size_t source_y,
-    unsigned char row[TARGET_SIZE])
+static unsigned char *
+read_bitmap(MagickWand *wand, const char *path, size_t *lit_pixelsp)
 {
-    if (MagickExportImagePixels(wand, 0, (ssize_t)source_y,
-            TARGET_SIZE, 1U, "I", CharPixel, row) == MagickFalse)
-        wand_die(wand, path);
-}
-
-static void
-count_row_runs(const unsigned char row[TARGET_SIZE], struct convert_stats *stats)
-{
+    unsigned char *bitmap;
+    size_t lit_pixels;
     size_t x;
+    size_t y;
 
-    x = 0U;
-    while (x < TARGET_SIZE) {
-        if (row[x] == 0U) {
-            ++x;
-            continue;
+    bitmap = malloc(TARGET_SIZE * TARGET_SIZE);
+    if (bitmap == NULL)
+        die("%s: cannot allocate 1024x1024 bilevel raster", path);
+    lit_pixels = 0U;
+    for (y = 0U; y < TARGET_SIZE; ++y) {
+        unsigned char *row;
+
+        row = bitmap + y * TARGET_SIZE;
+        if (MagickExportImagePixels(wand, 0,
+                (ssize_t)(TARGET_SIZE - 1U - y),
+                TARGET_SIZE, 1U, "I", CharPixel, row) == MagickFalse) {
+            free(bitmap);
+            wand_die(wand, path);
         }
-        ++stats->runs;
-        while (x < TARGET_SIZE && row[x] != 0U) {
-            ++stats->lit_pixels;
-            ++x;
-        }
+        for (x = 0U; x < TARGET_SIZE; ++x)
+            if (row[x] != 0U)
+                ++lit_pixels;
     }
+    *lit_pixelsp = lit_pixels;
+    return bitmap;
 }
 
 static void
@@ -322,15 +340,16 @@ emit_vector_move(struct word_writer *writer, int dx, int dy,
 
 static void
 emit_vector_run(struct word_writer *writer, size_t length, int direction,
-    int final, struct convert_stats *stats)
+    enum scan_axis axis, int final, struct convert_stats *stats)
 {
     size_t remaining;
     unsigned int delta;
 
     remaining = length - 1U;
     if (remaining == 0U) {
-        writer_put_half(writer, ty340_vector(final, 1, 0, 0U,
-            direction < 0, 0U));
+        writer_put_half(writer, ty340_vector(final, 1,
+            axis == SCAN_VERTICAL && direction < 0, 0U,
+            axis == SCAN_HORIZONTAL && direction < 0, 0U));
         ++stats->draw_segments;
         return;
     }
@@ -338,62 +357,167 @@ emit_vector_run(struct word_writer *writer, size_t length, int direction,
         delta = remaining > VECTOR_MAX_DELTA ?
             VECTOR_MAX_DELTA : (unsigned int)remaining;
         remaining -= delta;
-        writer_put_half(writer, ty340_vector(final && remaining == 0U,
-            1, 0, 0U, direction < 0, delta));
+        if (axis == SCAN_HORIZONTAL)
+            writer_put_half(writer, ty340_vector(final && remaining == 0U,
+                1, 0, 0U, direction < 0, delta));
+        else
+            writer_put_half(writer, ty340_vector(final && remaining == 0U,
+                1, direction < 0, delta, 0, 0U));
         ++stats->draw_segments;
     }
 }
 
 static void
-emit_run(struct word_writer *writer, size_t start_x, size_t y, size_t length,
-    int direction, size_t run_number, size_t run_count, int *cur_x,
-    int *cur_y, struct convert_stats *stats)
+emit_run(struct word_writer *writer, size_t major, size_t start_minor,
+    size_t length, int direction, enum scan_axis axis, size_t run_number,
+    size_t run_count, int *cur_x, int *cur_y, struct convert_stats *stats)
 {
-    emit_vector_move(writer, (int)start_x - *cur_x, (int)y - *cur_y, stats);
-    emit_vector_run(writer, length, direction, run_number == run_count, stats);
-    *cur_x = (int)start_x + direction * (int)(length - 1U);
-    *cur_y = (int)y;
+    int start_x;
+    int start_y;
+
+    if (axis == SCAN_HORIZONTAL) {
+        start_x = (int)start_minor;
+        start_y = (int)major;
+    } else {
+        start_x = (int)major;
+        start_y = (int)start_minor;
+    }
+    emit_vector_move(writer, start_x - *cur_x, start_y - *cur_y, stats);
+    emit_vector_run(writer, length, direction, axis,
+        run_number == run_count, stats);
+    if (axis == SCAN_HORIZONTAL) {
+        *cur_x = start_x + direction * (int)(length - 1U);
+        *cur_y = start_y;
+    } else {
+        *cur_x = start_x;
+        *cur_y = start_y + direction * (int)(length - 1U);
+    }
+}
+
+static int
+bitmap_pixel(const unsigned char *bitmap, enum scan_axis axis,
+    size_t major, size_t minor)
+{
+    size_t x;
+    size_t y;
+
+    if (axis == SCAN_HORIZONTAL) {
+        x = minor;
+        y = major;
+    } else {
+        x = major;
+        y = minor;
+    }
+    return bitmap[y * TARGET_SIZE + x] != 0U;
+}
+
+static size_t
+count_runs(const unsigned char *bitmap, enum scan_axis axis)
+{
+    size_t major;
+    size_t minor;
+    size_t runs;
+    int in_run;
+
+    runs = 0U;
+    for (major = 0U; major < TARGET_SIZE; ++major) {
+        in_run = 0;
+        for (minor = 0U; minor < TARGET_SIZE; ++minor) {
+            if (bitmap_pixel(bitmap, axis, major, minor)) {
+                if (!in_run) {
+                    ++runs;
+                    in_run = 1;
+                }
+            } else {
+                in_run = 0;
+            }
+        }
+    }
+    return runs;
 }
 
 static void
-emit_row_runs(struct word_writer *writer, const unsigned char row[TARGET_SIZE],
-    size_t y, size_t *run_number, size_t run_count, int *cur_x, int *cur_y,
+emit_scan(struct word_writer *writer, const unsigned char *bitmap,
+    enum scan_axis axis, int reverse_first, size_t run_count,
     struct convert_stats *stats)
 {
     size_t begin;
     size_t end;
-    size_t x;
+    size_t major;
+    size_t minor;
+    size_t run_number;
+    int cur_x;
+    int cur_y;
+    int reverse;
 
-    if ((y & 1U) == 0U) {
-        x = 0U;
-        while (x < TARGET_SIZE) {
-            if (row[x] == 0U) {
-                ++x;
-                continue;
+    writer_put_half(writer, ty340_param(MODE_VECTOR, 1, INTENSITY_MAX));
+    run_number = 0U;
+    cur_x = 0;
+    cur_y = 0;
+    for (major = 0U; major < TARGET_SIZE; ++major) {
+        reverse = ((major & 1U) != 0U) ^ reverse_first;
+        if (!reverse) {
+            minor = 0U;
+            while (minor < TARGET_SIZE) {
+                if (!bitmap_pixel(bitmap, axis, major, minor)) {
+                    ++minor;
+                    continue;
+                }
+                begin = minor;
+                while (minor < TARGET_SIZE &&
+                        bitmap_pixel(bitmap, axis, major, minor))
+                    ++minor;
+                ++run_number;
+                emit_run(writer, major, begin, minor - begin, 1, axis,
+                    run_number, run_count, &cur_x, &cur_y, stats);
             }
-            begin = x;
-            while (x < TARGET_SIZE && row[x] != 0U)
-                ++x;
-            ++*run_number;
-            emit_run(writer, begin, y, x - begin, 1, *run_number,
-                run_count, cur_x, cur_y, stats);
+        } else {
+            minor = TARGET_SIZE;
+            while (minor != 0U) {
+                if (!bitmap_pixel(bitmap, axis, major, minor - 1U)) {
+                    --minor;
+                    continue;
+                }
+                end = minor;
+                while (minor != 0U &&
+                        bitmap_pixel(bitmap, axis, major, minor - 1U))
+                    --minor;
+                ++run_number;
+                emit_run(writer, major, end - 1U, end - minor, -1, axis,
+                    run_number, run_count, &cur_x, &cur_y, stats);
+            }
         }
-        return;
     }
+}
 
-    x = TARGET_SIZE;
-    while (x != 0U) {
-        if (row[x - 1U] == 0U) {
-            --x;
-            continue;
-        }
-        end = x;
-        while (x != 0U && row[x - 1U] != 0U)
-            --x;
-        ++*run_number;
-        emit_run(writer, end - 1U, y, end - x, -1, *run_number,
-            run_count, cur_x, cur_y, stats);
-    }
+static struct scan_plan
+measure_scan(const unsigned char *bitmap, enum scan_axis axis,
+    int reverse_first, size_t runs)
+{
+    struct word_writer writer;
+    struct convert_stats stats;
+    struct scan_plan plan;
+
+    memset(&writer, 0, sizeof(writer));
+    memset(&stats, 0, sizeof(stats));
+    emit_scan(&writer, bitmap, axis, reverse_first, runs, &stats);
+    writer_finish(&writer);
+    plan.axis = axis;
+    plan.reverse_first = reverse_first;
+    plan.runs = runs;
+    plan.halfwords = writer.halfwords;
+    plan.words = writer.words;
+    return plan;
+}
+
+static int
+plan_is_better(const struct scan_plan *a, const struct scan_plan *b)
+{
+    if (a->words != b->words)
+        return a->words < b->words;
+    if (a->halfwords != b->halfwords)
+        return a->halfwords < b->halfwords;
+    return a->runs < b->runs;
 }
 
 static void
@@ -402,38 +526,46 @@ convert_type340(const char *inpath, const char *outpath)
     MagickWand *wand;
     struct word_writer writer;
     struct convert_stats stats;
-    unsigned char row[TARGET_SIZE];
-    size_t y;
-    size_t run_number;
-    int cur_x;
-    int cur_y;
+    struct scan_plan best;
+    struct scan_plan candidate;
+    unsigned char *bitmap;
+    size_t horizontal_runs;
+    size_t vertical_runs;
+    size_t lit_pixels;
 
     memset(&stats, 0, sizeof(stats));
     wand = load_image(inpath);
     prepare_bilevel(wand, inpath);
-
-    for (y = 0U; y < TARGET_SIZE; ++y) {
-        read_row(wand, inpath, TARGET_SIZE - 1U - y, row);
-        count_row_runs(row, &stats);
-    }
+    bitmap = read_bitmap(wand, inpath, &lit_pixels);
+    horizontal_runs = count_runs(bitmap, SCAN_HORIZONTAL);
+    vertical_runs = count_runs(bitmap, SCAN_VERTICAL);
 
     writer_open(&writer, outpath);
-    if (stats.runs != 0U) {
-        writer_put_half(&writer,
-            ty340_param(MODE_VECTOR, 1, INTENSITY_MAX));
-        run_number = 0U;
-        cur_x = 0;
-        cur_y = 0;
-        for (y = 0U; y < TARGET_SIZE; ++y) {
-            read_row(wand, inpath, TARGET_SIZE - 1U - y, row);
-            emit_row_runs(&writer, row, y, &run_number, stats.runs,
-                &cur_x, &cur_y, &stats);
-        }
+    if (lit_pixels != 0U) {
+        best = measure_scan(bitmap, SCAN_HORIZONTAL, 0, horizontal_runs);
+        candidate = measure_scan(bitmap, SCAN_HORIZONTAL, 1,
+            horizontal_runs);
+        if (plan_is_better(&candidate, &best))
+            best = candidate;
+        candidate = measure_scan(bitmap, SCAN_VERTICAL, 0, vertical_runs);
+        if (plan_is_better(&candidate, &best))
+            best = candidate;
+        candidate = measure_scan(bitmap, SCAN_VERTICAL, 1, vertical_runs);
+        if (plan_is_better(&candidate, &best))
+            best = candidate;
+        stats.lit_pixels = lit_pixels;
+        stats.runs = best.runs;
+        emit_scan(&writer, bitmap, best.axis, best.reverse_first,
+            best.runs, &stats);
     } else {
+        best.axis = SCAN_HORIZONTAL;
+        best.reverse_first = 0;
+        best.runs = 0U;
         writer_put_half(&writer,
             ty340_param(MODE_PARAM, 1, INTENSITY_MAX));
     }
     writer_finish(&writer);
+    free(bitmap);
     DestroyMagickWand(wand);
 
     if (writer.words > TYPE340_MAX_WORDS) {
@@ -445,9 +577,11 @@ convert_type340(const char *inpath, const char *outpath)
     fprintf(stderr,
         "img2dpic: TYPE340 %s -> %s\n"
         "img2dpic: converted to 1-bit and scaled image %ux%u, "
-        "lit pixels=%zu, runs=%zu, move segments=%zu, "
+        "scan=%s%s, lit pixels=%zu, runs=%zu, move segments=%zu, "
         "draw segments=%zu, halfwords=%zu, words=%zu\n",
         inpath, outpath, TARGET_SIZE, TARGET_SIZE,
+        best.axis == SCAN_HORIZONTAL ? "horizontal" : "vertical",
+        best.reverse_first ? "-reverse" : "",
         stats.lit_pixels, stats.runs, stats.move_segments,
         stats.draw_segments, writer.halfwords, writer.words);
 }
