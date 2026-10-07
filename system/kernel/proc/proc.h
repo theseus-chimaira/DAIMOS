@@ -102,7 +102,7 @@
  * consumes that value and repurposes the same half-word as the stable u-area
  * physical base; the three-word process descriptor therefore does not grow.
  */
-#define PROC_UAREA_WORDS        0407UL
+#define PROC_UAREA_WORDS        0410UL
 /*
  * One compact control word precedes cwd/file state.  Descriptors 0..15 are
  * ordinary two-word FILE records.  Credentials and the 9-bit process umask
@@ -170,7 +170,8 @@
         (PROC_ZOMB_SESSION_MASK | \
         (PROC_ZOMB_DOMAIN_MASK << PROC_ZOMB_DOMAIN_SHIFT))
 #define PROC_SWAP_BACKING_OFFSET \
-        (PROC_UAREA_WORDS - 1UL)
+        0406UL
+#define PROC_BRK_OFFSET          0407UL
 #define PROC_KSTACK_WORDS \
         (PROC_SWAP_BACKING_OFFSET - PROC_USTACK_BASE)
 
@@ -288,6 +289,7 @@ void proc_sched_pi_tick(void);
         ((unsigned int)(PROC_CRED_WORD(p) & 0777UL))
 #define PROC_SWAP_BACKING_WORD(p) \
         PROC_UAREA_WORD((p), PROC_SWAP_BACKING_OFFSET)
+#define PROC_BRK_WORD(p) PROC_UAREA_WORD((p), PROC_BRK_OFFSET)
 #define PROC_USER_MAPPING_HELD(p) \
         ((PROC_CTL_WORD(p) & PROC_USER_MAP_BIT) != 0UL)
 #define PROC_SESSION(p) \
