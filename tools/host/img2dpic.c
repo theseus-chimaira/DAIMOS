@@ -326,8 +326,8 @@ load_image(const char *path)
         die("%s: only single-image inputs are supported", path);
     width = MagickGetImageWidth(wand);
     height = MagickGetImageHeight(wand);
-    if (width <= TARGET_SIZE || height <= TARGET_SIZE)
-        die("%s: both dimensions must be greater than %u pixels (got %zux%zu)",
+    if (width < TARGET_SIZE || height < TARGET_SIZE)
+        die("%s: both dimensions must be at least %u pixels (got %zux%zu)",
             path, TARGET_SIZE, width, height);
     if (!near_square(width, height))
         die("%s: image must be square or near-square (got %zux%zu; "
@@ -1255,35 +1255,22 @@ simplify_one_stroke(const struct stroke_set *source, size_t stroke_index,
     stack[stack_count++] = stroke->length - 1U;
     while (stack_count != 0U) {
         double max_distance;
-        int dx;
-        int dy;
-
         b = stack[--stack_count];
         a = stack[--stack_count];
-        dx = (int)points[b].x - (int)points[a].x;
-        dy = (int)points[b].y - (int)points[a].y;
-        if (dx < 0)
-            dx = -dx;
-        if (dy < 0)
-            dy = -dy;
         split = 0U;
         max_distance = -1.0;
-        if (dx > (int)VECTOR_MAX_DELTA || dy > (int)VECTOR_MAX_DELTA) {
-            split = a + (b - a) / 2U;
-        } else {
-            for (i = a + 1U; i < b; ++i) {
-                double distance;
+        for (i = a + 1U; i < b; ++i) {
+            double distance;
 
-                distance = stroke_point_segment_distance_squared(&points[i],
-                    &points[a], &points[b]);
-                if (distance > max_distance) {
-                    max_distance = distance;
-                    split = i;
-                }
+            distance = stroke_point_segment_distance_squared(&points[i],
+                &points[a], &points[b]);
+            if (distance > max_distance) {
+                max_distance = distance;
+                split = i;
             }
-            if (max_distance <= STROKE_RDP_TOLERANCE_SQUARED)
-                split = 0U;
         }
+        if (max_distance <= STROKE_RDP_TOLERANCE_SQUARED)
+            split = 0U;
         if (split != 0U) {
             keep[split] = 1U;
             stack[stack_count++] = a;
@@ -1619,13 +1606,46 @@ emit_stroke_candidate(struct word_writer *writer, const unsigned char *bitmap,
             dy = (int)b->y - (int)a->y;
             ax = (unsigned int)(dx < 0 ? -dx : dx);
             ay = (unsigned int)(dy < 0 ? -dy : dy);
-            final = i + 1U == simplified.stroke_count &&
-                j + 1U == stroke->length;
-            writer_put_half(writer, ty340_vector(final, 1, dy < 0, ay,
-                dx < 0, ax));
-            ++stats->draw_segments;
-            plan->usec += 3.0 +
-                1.5 * (double)(ax > ay ? ax : ay);
+            {
+                unsigned int parts;
+                unsigned int k;
+                int x0;
+                int y0;
+
+                parts = ax > ay ? ax : ay;
+                parts = (parts + VECTOR_MAX_DELTA - 1U) /
+                    VECTOR_MAX_DELTA;
+                if (parts == 0U)
+                    parts = 1U;
+                x0 = (int)a->x;
+                y0 = (int)a->y;
+                for (k = 1U; k <= parts; ++k) {
+                    int x1;
+                    int y1;
+                    int sx;
+                    int sy;
+                    unsigned int ux;
+                    unsigned int uy;
+
+                    x1 = (int)a->x + (int)((long)dx * (long)k /
+                        (long)parts);
+                    y1 = (int)a->y + (int)((long)dy * (long)k /
+                        (long)parts);
+                    sx = x1 - x0;
+                    sy = y1 - y0;
+                    ux = (unsigned int)(sx < 0 ? -sx : sx);
+                    uy = (unsigned int)(sy < 0 ? -sy : sy);
+                    final = i + 1U == simplified.stroke_count &&
+                        j + 1U == stroke->length && k == parts;
+                    writer_put_half(writer, ty340_vector(final, 1,
+                        sy < 0, uy, sx < 0, ux));
+                    ++stats->draw_segments;
+                    plan->usec += 3.0 +
+                        1.5 * (double)(ux > uy ? ux : uy);
+                    x0 = x1;
+                    y0 = y1;
+                }
+            }
         }
         if (reverse[i] != 0U) {
             cur_x = points[0].x;
