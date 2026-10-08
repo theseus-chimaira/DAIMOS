@@ -19,6 +19,7 @@ D6LZ_HOST ?= ${PDP10_PREFIX}/bin/d6lz
 DXRCHECK ?= ${PDP10_PREFIX}/bin/dxrcheck
 MKDSK ?= ${PDP10_PREFIX}/bin/mkdsk
 MKD6FS ?= ${PDP10_PREFIX}/bin/mkd6fs
+MKAUXSTORE ?= ${PDP10_PREFIX}/bin/mkauxstore
 MKDT ?= ${PDP10_PREFIX}/bin/mkdt
 MKTSFS ?= ${PDP10_PREFIX}/bin/mktsfs
 MKTAP ?= ${PDP10_PREFIX}/bin/mktap
@@ -48,6 +49,8 @@ PDP10_KCC ?= ${PDP10_PREFIX}/bin/kcc
 D6FS_LOGSTORE_BLOCKS ?= 0400
 D6FS_SWAP_TAIL_BLOCKS ?= 0400
 D6FS_SPARE_BLOCKS ?= 0
+DRUM_LOGSTORE_BLOCKS ?= 0100
+DRUM_BACKSTORE_BLOCKS ?= 0300
 PROC_BOOT_USERS ?= 1
 PROC_STACK_WATERMARK ?= 0
 PROC_SWAP_VERIFY_PURE ?= 0
@@ -1028,13 +1031,12 @@ D6FS_ROOT_ARGS = -D /TEMP:0777 -D /SCRATCH:0777 \
 ${DISK_STAMP}: ${D6FS_ROOT_DEPS} ${KCC_D6FS_DISK_DEPS}
 	rm -rf ${DISK_DIR}
 	${MKDSK} -n 4 -m clean -p ${IMAGE_BOOT_WORDS} -o ${DISK_DIR} \
-	    --d6fs-layout --logstore-blocks ${D6FS_LOGSTORE_BLOCKS} \
-	    --swap-tail-blocks ${D6FS_SWAP_TAIL_BLOCKS} \
+	    --d6fs-layout --logstore-blocks 0 \
+	    --swap-tail-blocks 0 \
 	    --spare-blocks ${D6FS_SPARE_BLOCKS} \
 	    --member-sectors 0130000,0130000,0130000,0130000
 	${MKD6FS} -n 4 -d ${DISK_DIR} ${D6FS_ROOT_ARGS} \
 	    ${KCC_D6FS_DISK_ARGS} ${D6FS_DISK_EXTRA_ARGS}
-	${LOGSTORE} -n 4 -d ${DISK_DIR} --init
 	touch $@
 
 ${DISK_IMAGES}: ${DISK_STAMP}
@@ -1043,11 +1045,16 @@ ${DISK_IMAGES}: ${DISK_STAMP}
 ${DRUM_STAMP}: ${D6FS_ROOT_DEPS}
 	rm -rf ${DRUM_DIR}
 	${MKDSK} -n 4 -m clean -p ${IMAGE_BOOT_WORDS} -o ${DRUM_DIR} \
-	    --d6fs-layout --logstore-blocks ${D6FS_LOGSTORE_BLOCKS} \
+	    --d6fs-layout --logstore-blocks 0 \
 	    --swap-tail-blocks ${D6FS_SWAP_TAIL_BLOCKS} \
 	    --spare-blocks ${D6FS_SPARE_BLOCKS}
 	${MKD6FS} -n 4 -d ${DRUM_DIR} ${D6FS_ROOT_ARGS}
-	${LOGSTORE} -n 4 -d ${DRUM_DIR} --init
+	# D6SET1 has an ordinary D6FS data area, while the physical DRM0
+	# tail contains independent raw AUXSTORE LOGSTORE/BACKSTORE regions.
+	# MKAUXSTORE preserves the existing D6FS/blockset media descriptor.
+	${MKAUXSTORE} -i ${DR0_IMAGE} --from-d6fs-layout \
+	    --logstore-blocks ${DRUM_LOGSTORE_BLOCKS} \
+	    --backstore-blocks ${DRUM_BACKSTORE_BLOCKS} --cache-blocks 0
 	touch $@
 
 ${DRUM_IMAGES}: ${DRUM_STAMP}

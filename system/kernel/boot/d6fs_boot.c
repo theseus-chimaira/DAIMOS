@@ -2,6 +2,7 @@
 #include "d6fs_provider.h"
 #include "kinit.h"
 #include "blockset_boot.h"
+#include "auxstore.h"
 #include "blockset_layout.h"
 #include "dsk270.h"
 #include "fs_mres.h"
@@ -317,11 +318,29 @@ d6fs_boot_mount_root(unsigned int flags)
             (selected[D6FS_SB_SWAP_RESERVATION] &
             D6FS_RESERVATION_LEN_LOW_MASK);
         tail_blocks = blockset_direct_tail;
+        if (auxstore_backstore_blocks != 0UL) {
+                unsigned int unit;
+                unsigned int member;
+                kword_t base;
+                kword_t blocks;
+                kword_t tail;
+
+                tail_blocks = 0UL;
+                for (member = 0U; member < BLOCKSET_BOOT_MEMBERS;
+                    ++member) {
+                        if (!blockset_boot_member(member, &unit, &base,
+                            &blocks, &tail))
+                                break;
+                        tail_blocks += tail;
+                }
+        }
         if ((swap_blocks == 0UL && tail_blocks != 0UL) ||
             swap_blocks > tail_blocks)
                 return -1;
-        blockset_direct_blocks = total;
-        blockset_direct_tail = swap_blocks;
+        if (auxstore_backstore_blocks == 0UL) {
+                blockset_direct_blocks = total;
+                blockset_direct_tail = swap_blocks;
+        }
         log_start = selected[D6FS_SB_LOG_RESERVATION] >>
             D6FS_RESERVATION_START_SHIFT;
         log_blocks = (((high >> D6FS_RES_LOG_HI_SHIFT) &
@@ -332,17 +351,21 @@ d6fs_boot_mount_root(unsigned int flags)
             ((super_a >= log_start && super_a - log_start < log_blocks) ||
             (super_b >= log_start && super_b - log_start < log_blocks)))
                 return -1;
-        blockset_direct_tail = swap_blocks;
-        logstore_boot_configure(log_start, log_blocks);
-        if (swap_blocks != 0UL)
+        if (auxstore_backstore_blocks == 0UL)
+                blockset_direct_tail = swap_blocks;
+        if (auxstore_logstore_blocks == 0UL)
+                logstore_boot_configure(log_start, log_blocks);
+        if (swap_blocks != 0UL && auxstore_backstore_blocks == 0UL)
                 flags |= VFS_MOUNT_STORAGE_SWAP;
-        if (log_blocks != 0UL)
+        if (log_blocks != 0UL && auxstore_logstore_blocks == 0UL)
                 flags |= VFS_MOUNT_STORAGE_LOGSTORE;
         rc = d6fs_boot_runtime_init(&super, alloc_cursor, summary_start,
             flags, super_a, super_b, copy);
         if (rc != 0) {
-                blockset_direct_tail = 0UL;
-                logstore_boot_configure(0UL, 0UL);
+                if (auxstore_backstore_blocks == 0UL)
+                        blockset_direct_tail = 0UL;
+                if (auxstore_logstore_blocks == 0UL)
+                        logstore_boot_configure(0UL, 0UL);
                 return rc;
         }
         if (vfs_namespace_root == VFS_NODE_NONE ||
@@ -352,8 +375,10 @@ d6fs_boot_mount_root(unsigned int flags)
                         i = VFS_MOUNT_ID(vfs_namespace_root);
                         (void)vfs_storage_release(i,
                             flags & VFS_MOUNT_STORAGE_MASK);
-                        blockset_direct_tail = 0UL;
-                        logstore_boot_configure(0UL, 0UL);
+                        if (auxstore_backstore_blocks == 0UL)
+                                blockset_direct_tail = 0UL;
+                        if (auxstore_logstore_blocks == 0UL)
+                                logstore_boot_configure(0UL, 0UL);
                         (void)vfs_unmount(vfs_namespace_root);
                 }
                 return -1;
