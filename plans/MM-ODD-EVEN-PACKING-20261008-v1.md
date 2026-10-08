@@ -50,3 +50,41 @@ The prior host encoding experiment is in daimos-testkit branch `experiment/mm-pa
 - `mres_owner_next` currently checks against `MM_OWNER_MASK` (18 bits), not 12. Before narrowing that mask, calculate the maximum number of staged MRES and test the overflow boundary. Process u-area owners use octal `01000+slot`; TTY buffers use octal `02000+tty`; owner encodings require a complete census.
 - Host-side behavioral test `daimos-testkit/tests/host/daimos-mm-odd-even-20261008-v1.c` is committed on branch `experiment/mm-odd-even-model-20261008-v1` at `a9d9cdb`. It verifies 32-slot odd/even insertion/deletion for 2,000 cycles against independent reference entries at every operation. This proves packing mechanics only, not production boot correctness.
 - **No production MM source edited.** The exact owner/pin capacity and full kernel compatibility remain blocking; no permanent-word saving has yet been measured in a linked kernel.
+
+## Measured prototype outcome — 2026-10-08
+
+An **isolated experimental PDP-6 allocator implementation** now uses one exact
+36-bit span per slot and odd/even paired 18-bit metadata, including converted
+C boot removal and `vm_pdp6.s` growth/validation paths. Owner, type, and pin
+capacity are explicitly checked so the 12/2/4-bit format does not silently
+truncate unsupported requests. The capacity was increased to 32 for a matched
+comparison against an existing independently built 32-descriptor kernel.
+
+Actual linker map measurements with the same 32-slot capacity:
+
+| Octal-linked symbol | Two-word baseline | Packed experiment |
+| --- | ---: | ---: |
+| `__kcore_low_init_end` / `mm_extents` | `022645` | `022725` |
+| `mm_arenas` (after extent tables) | `022745` | `023005` |
+| `__kcore_low_end` | `023371` | `023431` |
+
+Decimal difference: **+48 permanent code words**, **-16 permanent data
+words**, **+32 total resident words**. This is a measured *regression*, not a
+saving. Earlier partial builds without overflow validation showed +18 words,
+but are not comparable as safety-equivalent implementations.
+
+The packed full image successfully linked; `d6fsck -n 4 -d disk` passed. The
+DAIMOS testkit `daimos-process-lifecycle-v1.sh` target simulator regression
+passed (RUN, GETPID, WAIT/nohang, zombie reap, orphan adoption, process maps).
+These results do not exhaustively cover all compaction and swapping branches.
+The pre-existing `userland/manual/MAKE.SIXMD` invalid-SIXBIT documentation
+issue was corrected in the isolated build to permit the image build.
+
+**Decision at 32 slots: reject the packing optimization for production**.
+It increases resident footprint by 32 words while adding owner/pin limits and
+more code in the allocator hot path. Keep the normal two-word MM implementation
+in `main`. Preserve the prototype in an isolated experimental Git branch; only
+reconsider if an independently necessary much larger descriptor capacity (roughly
+100 or more) makes the fixed code overhead worthwhile. At 128 entries the
+same constant code overhead would imply a *projected*, not measured, 16-word
+net saving, before performance and additional regressions are considered.
