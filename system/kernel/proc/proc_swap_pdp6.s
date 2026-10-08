@@ -640,7 +640,7 @@ proc_swap_in_read_offset:
         jumpn   1,proc_swap_in_read_fail
         move    1,(17)
         pushj   17,mm_unpin
-        jumpn   1,proc_swap_in_free_fail
+        jumpn   1,proc_swap_in_unpin_fail
 
         move    1,(17)
         hrrm    1,1(11)
@@ -665,9 +665,10 @@ proc_swap_in_read_fail:
         movem   1,proc_swap_diag_reason
         move    1,(17)
         pushj   17,mm_unpin
-proc_swap_in_free_fail:
+proc_swap_in_unpin_fail:
         movei   1,5                     ; 5: unpin failed
         movem   1,proc_swap_diag_reason
+proc_swap_in_free_fail:
         move    1,(17)
         movei   2,MM_TYPE_PROCESS
         move    3,10

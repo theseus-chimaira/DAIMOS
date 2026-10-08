@@ -27,3 +27,18 @@ and daimos-testkit process lifecycle (RUN/WAIT/zombie/orphan). Real native
 KCC source reproduction with diagnostics is still open. If no swap-in
 failure appears, inspect DSH's process-group TERM delivery separately.
 Do not merge into main until the culprit is verified and fixed.
+
+## Target-source replay (2026-10-08)
+
+The diagnostic image was used for a 120-second simulator-backed run of
+`MAKE -C /OPTION/SOURCE/KCC B/CC-CPP-V1.S; ECHO STATUS:$?`.
+The simulator reached the KCC recipe but produced no final status; the
+harness failed with **timeout**. This does not reproduce the separately
+reported `131073` TERM event, and the diagnostic words were therefore not
+interpreted as evidence of a swap-in fault. Logs are retained at
+`$HOME/tmp/daimos-kcc-swap-diag-probe-20261008-v1/`.
+
+The diagnostic cleanup was corrected so a backing-store read failure retains
+reason 4, while an actual unpin failure records reason 5. Earlier, the shared
+cleanup label could overwrite reason 4 with 5. The amended source assembles
+successfully with DAS. The amended build has not yet been simulator-tested.
