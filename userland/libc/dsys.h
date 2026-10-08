@@ -53,6 +53,7 @@ int dsys_memfs_mount(kword_t *path, unsigned int words, unsigned int flags);
 int dsys_storagectl(unsigned int mask);
 int dsys_ttyctl(unsigned int op, unsigned int tty, unsigned int sink);
 int dsys_fsinfo(unsigned int slot, struct sys_fsinfo *info);
+kword_t dsys_brk(kword_t address);
 int dsys_chdir(kword_t *p);
 int dsys_getcwd(kword_t *p, unsigned int n);
 int dsys_procinfo(unsigned int s, struct sys_procinfo *p);

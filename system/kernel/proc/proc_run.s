@@ -14,7 +14,7 @@
         .equ    PROC_SCHED_SIDL_LH,0100024
         .equ    PROC_SCHED_SRUN_LH,0200024
         .equ    PROC_F_UAREA_RH,0400000
-        .equ    PROC_UAREA_WORDS,0407
+        .equ    PROC_UAREA_WORDS,0410
         .equ    PROC_FDCTL_OFFSET,024
         .equ    PROC_FILE_CWD_OFFSET,025
         .equ    PROC_FILE_TABLE_OFFSET,026
@@ -275,6 +275,15 @@ proc_run_watermark_loop:
         move    4,(17)
         movem   4,017(014)
         sub     17,kconst_4_4
+
+        ; RUN constructs the stable u-area directly rather than calling the
+        ; boot-time C context initializer.  Seed the same floor,,current break
+        ; pair here: the initial heap begins immediately above the complete
+        ; allocated user VM, including its fixed startup/stack reservation.
+        hlrz    4,1(013)
+        hrl     4,4
+        movem   4,0407(014)             ; PROC_BRK_OFFSET
+
         hrrz    4,011
         tlo     4,010000
         movem   4,020(014)

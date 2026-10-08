@@ -14,6 +14,7 @@
         .globl  vm_user_mapping_hold
         .globl  vm_user_mapping_release
         .globl  vm_activate_current
+        .globl  vm_space_brk_current
         .globl  vm_enter_initial_user
         .globl  vm_space_startup
         .globl  vm_space_load_file
@@ -25,6 +26,10 @@
         .globl  fs_zero_words
         .globl  mm_alloc_aligned
         .globl  mm_free
+        .globl  mm_extents
+        .globl  mm_arenas
+        .globl  mm_extent_count
+        .globl  mm_arena_count
         .globl  proc_swap_detach
         .globl  vfs_read_words
         .globl  proc_runq_add
@@ -97,6 +102,292 @@ vm_activate_current:
         sub     2,[02000,,0]            ; APR LH stores words-02000
         movem   2,vm_pdp6_apr
         datao   0000,vm_pdp6_apr
+        popj    17,
+
+/*
+ * @brief Query or set the current process break and resize its PDP-6 extent.
+ * @param AC1 Zero to query, otherwise the requested logical break.
+ * @return AC1 Current/new break, or -1 on validation/allocation failure.
+ *
+ * The active process must never expose a new MM descriptor/base while the APR
+ * still describes the old extent.  Keep PI disabled across every in-place
+ * descriptor change or image move, publish vm_state and the break word, load
+ * APR, and only then restore PI.  High-placed processes normally grow into the
+ * free gap below themselves; fs_move_words() makes that overlap-safe and avoids
+ * requiring two complete compiler images in core.  A separate larger extent
+ * is only the fragmentation fallback.
+ */
+vm_space_brk_current:
+        ; Thirteen-word frame: saved AC10..AC16 at -014..-006 and six locals.
+        ; Locals: floor -005, extent -004, PI -003, arena-low -002,
+        ; arena-high -001, new-base 0.
+        add     17,[015,,015]
+        movei   0,-014(17)
+        hrli    0,10
+        blt     0,-006(17)
+        move    10,1                    ; requested break
+        move    11,proc_current_ptr
+        jumpe   11,vm_brk_fail
+        move    4,(11)
+        trnn    4,0400000               ; PROC_F_UAREA
+        jrst    vm_brk_fail
+        hrrz    14,1(11)                ; old physical base
+        jumpe   14,vm_brk_fail
+        hlrz    13,1(11)                ; old allocated words
+        jumpe   13,vm_brk_fail
+        hlrz    12,(11)                 ; stable u-area base
+        move    4,0407(12)              ; PROC_BRK_OFFSET: floor,,current
+        hlrz    5,4
+        movem   5,-005(17)
+        jumpn   10,vm_brk_set
+        hrrz    1,4
+        jrst    vm_brk_return
+
+vm_brk_set:
+        tlne    10,0777777              ; break must be an 18-bit address
+        jrst    vm_brk_fail
+        move    5,10
+        move    6,-005(17)
+        camge   5,6                     ; never below initial image/stack floor
+        jrst    vm_brk_fail
+        move    15,10
+        addi    15,01777
+        tlne    15,0777777              ; rounding overflowed 18-bit space
+        jrst    vm_brk_fail
+        andi    15,0776000              ; APR allocation quantum = 02000 words
+        jumpe   15,vm_brk_fail
+        came    15,13
+        jrst    vm_brk_resize
+
+        ; No APR/MM change: publish only the exact byte/character break.
+vm_brk_publish_only:
+        hrlz    4,-005(17)
+        hrr     4,10
+        movem   4,0407(12)
+        move    1,10
+        jrst    vm_brk_return
+
+vm_brk_resize:
+        ; Freeze scheduler/MM observers while the current mapping transaction
+        ; is represented inconsistently by the descriptor table and APR.
+        coni    0004,1
+        movem   1,-003(17)
+        cono    0004,000400
+
+        ; Find and validate the current MM_TYPE_PROCESS descriptor.
+        setz    16,
+vm_brk_find_extent:
+        caml    16,mm_extent_count
+        jrst    vm_brk_fail_pi
+        move    4,16
+        lsh     4,1
+        hrrz    5,mm_extents(4)
+        camn    5,14
+        jrst    vm_brk_extent_found
+        aoja    16,vm_brk_find_extent
+vm_brk_extent_found:
+        movei   6,mm_extents(4)
+        movem   6,-004(17)
+        hlrz    5,1(6)
+        andi    5,7
+        caie    5,1                     ; MM_TYPE_PROCESS
+        jrst    vm_brk_fail_pi
+        hrrz    5,1(6)
+        came    5,proc_current_slot
+        jrst    vm_brk_fail_pi
+        move    5,1(6)
+        tlne    5,03770                 ; physical pin count
+        jrst    vm_brk_fail_pi
+        hlrz    5,(6)
+        came    5,13
+        jrst    vm_brk_fail_pi
+
+        ; Shrink keeps the physical base and immediately releases the tail gap.
+        camg    15,13
+        jrst    vm_brk_shrink
+
+        ; Locate the managed arena containing the complete old extent.
+        setz    1,
+vm_brk_find_arena:
+        caml    1,mm_arena_count
+        jrst    vm_brk_fail_pi
+        move    2,mm_arenas(1)
+        hrrz    3,2                     ; arena low
+        hlrz    4,2
+        add     4,3                     ; arena high (exclusive)
+        caml    14,3
+        jrst    vm_brk_arena_low_ok
+        aoja    1,vm_brk_find_arena
+vm_brk_arena_low_ok:
+        move    5,14
+        add     5,13
+        camle   5,4
+        aoja    1,vm_brk_find_arena
+        movem   3,-002(17)
+        movem   4,-001(17)
+
+        ; Try the following free gap first so no relocation/copy is required.
+        move    7,4                     ; next-base defaults to arena high
+        move    1,16
+        aoj     1,
+        caml    1,mm_extent_count
+        jrst    vm_brk_have_next
+        lsh     1,1
+        hrrz    2,mm_extents(1)
+        camge   2,4
+        move    7,2
+vm_brk_have_next:
+        move    5,14
+        add     5,15                    ; desired same-base end
+        camle   5,7
+        jrst    vm_brk_try_down
+        move    1,14
+        add     1,13                    ; newly exposed physical tail
+        move    2,15
+        sub     2,13
+        pushj   17,fs_zero_words
+        move    5,14
+        movem   5,(17)                  ; new-base local
+        jrst    vm_brk_rebase_extent
+
+vm_brk_try_down:
+        ; Previous extent end, or arena low if this is its first extent.
+        move    7,-002(17)
+        skipg   16
+        jrst    vm_brk_have_prev
+        move    1,16
+        subi    1,1
+        lsh     1,1
+        hrrz    2,mm_extents(1)
+        caml    2,-002(17)
+        jrst    vm_brk_prev_same_arena
+        jrst    vm_brk_have_prev
+vm_brk_prev_same_arena:
+        hlrz    3,mm_extents(1)
+        add     2,3
+        move    7,2
+vm_brk_have_prev:
+        move    6,15
+        sub     6,13                    ; delta
+        move    5,14
+        sub     5,6                     ; candidate new base
+        jumpl   5,vm_brk_fallback
+        camge   5,7
+        jrst    vm_brk_fallback
+        movem   5,(17)
+        move    1,14
+        move    2,5
+        move    3,13
+        pushj   17,fs_move_words
+        move    1,(17)
+        add     1,13
+        move    2,15
+        sub     2,13
+        pushj   17,fs_zero_words
+        jrst    vm_brk_rebase_extent
+
+vm_brk_shrink:
+        move    5,14
+        movem   5,(17)
+
+vm_brk_rebase_extent:
+        ; The extent remains between the same neighbors for same-base,
+        ; shrink, and downward-in-gap growth, so its sorted slot is unchanged.
+        hrlz    4,15
+        hrr     4,(17)
+        move    6,-004(17)
+        movem   4,(6)
+        jrst    vm_brk_commit
+
+vm_brk_fallback:
+        ; No adjacent room.  Restore PI while the general allocator may reclaim,
+        ; compact or swap other processes, then allocate a complete replacement.
+        move    1,-003(17)
+        trne    1,000200
+        cono    0004,000200
+        movei   1,(17)                  ; sixth arg: &new_base
+        push    17,1
+        push    17,[1]                  ; fifth arg: MM_ALLOC_HIGH
+        move    1,15
+        movei   2,02000
+        movei   3,1                     ; MM_TYPE_PROCESS
+        move    4,proc_current_slot
+        pushj   17,mm_alloc_aligned
+        sub     17,kconst_2_2
+        jumpn   1,vm_brk_fail
+
+        ; Re-enter a critical section for copy, old-descriptor removal and APR
+        ; publication.  The current process itself is excluded from swap/move.
+        coni    0004,1
+        movem   1,-003(17)
+        cono    0004,000400
+        move    1,14
+        move    2,(17)
+        move    3,13
+        pushj   17,fs_copy_words
+        move    1,(17)
+        add     1,13
+        move    2,15
+        sub     2,13
+        pushj   17,fs_zero_words
+        move    1,14
+        movei   2,1
+        move    3,proc_current_slot
+        pushj   17,mm_free
+        jumpe   1,vm_brk_commit
+
+        ; Old mapping still owns the running process.  Release the unused new
+        ; extent and return failure without changing vm_state/APR.
+        move    1,(17)
+        movei   2,1
+        move    3,proc_current_slot
+        pushj   17,mm_free
+        jrst    vm_brk_fail_pi
+
+vm_brk_commit:
+        ; Publish logical allocation and exact break before loading APR.  PI is
+        ; still disabled, so no observer can see a half-committed mapping.
+        hrlz    4,15
+        hrr     4,(17)
+        movem   4,1(11)
+        hrlz    5,-005(17)
+        hrr     5,10
+        movem   5,0407(12)
+
+        ; Prepare caller-visible result, APR word, and prior PI state in AC1-3.
+        move    1,10
+        move    2,15
+        subi    2,02000
+        hrl     2,2
+        hrr     2,(17)
+        move    3,-003(17)
+        jrst    vm_brk_return_commit
+
+vm_brk_fail_pi:
+        move    1,-003(17)
+        trne    1,000200
+        cono    0004,000200
+vm_brk_fail:
+        seto    1,
+vm_brk_return:
+        movei   0,10
+        hrli    0,-014(17)
+        blt     0,16
+        sub     17,[015,,015]
+        popj    17,
+
+vm_brk_return_commit:
+        ; Restore the C ABI before changing APR.  After DATAO there are no
+        ; nested subroutine returns: restore PI and return directly to the
+        ; monitor-UUO boundary, matching the proven PDP-6 path.
+        movei   0,10
+        hrli    0,-014(17)
+        blt     0,16
+        sub     17,[015,,015]
+        movem   2,vm_pdp6_apr
+        datao   0000,vm_pdp6_apr
+        trne    3,000200
+        cono    0004,000200
         popj    17,
 
 /**

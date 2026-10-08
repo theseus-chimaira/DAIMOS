@@ -35,6 +35,7 @@
         .globl  proc_tty_output_route_get
         .globl  proc_tty_output_route_set
         .globl  proc_current_slot
+        .globl  vm_space_brk_current
         .globl  pipe_create
         .globl  file_mkfifo
         .globl  file_table
@@ -557,7 +558,7 @@ native_sys_extctl:
         hrrz    5,1
         subi    5,020
         jumpl   5,native_sys_procctl
-        caile   5,031
+        caile   5,032
         jrst    native_sys_procctl
         move    6,5
         andi    5,1
@@ -581,6 +582,13 @@ native_sys_ext_table:
         .word   native_sys_logctl,,native_sys_dtc_write_block
         .word   native_sys_memfs_mount,,native_sys_storagectl
         .word   native_sys_ttyctl,,native_sys_fsinfo
+        .word   native_sys_brk,,native_sys_procctl
+
+; AC2 is zero to query, otherwise the requested logical break.  The VM helper
+; owns APR-granularity resize and returns the current/new break or -1.
+native_sys_brk:
+        move    1,2
+        jrst    vm_space_brk_current
 
 ; Root may rebind any logical terminal's output sink.  GETOUT is readable by
 ; all callers; SETOUT is privileged because the route is terminal-global and

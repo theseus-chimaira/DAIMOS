@@ -388,6 +388,11 @@ exec_lowmem_commit:
         ; may remain there after the replacement becomes resident.
         hlrz    1,(15)
         setzm   PROC_SWAP_BACKING_OFFSET(1)
+        ; Reset floor,,current break to the complete newly allocated VM.  The
+        ; heap therefore begins above the fixed startup/stack reservation.
+        hlrz    2,1(15)
+        hrl     2,2
+        movem   2,0407(1)               ; PROC_BRK_OFFSET
 
         ; Return entry PC and move the temporary stack word from result[5]
         ; into its public slot.  argc/argv/envp are already in result[2..4].
