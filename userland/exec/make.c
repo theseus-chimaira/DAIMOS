@@ -11,7 +11,7 @@
 
 #define MAKE_LINE_MAX       256U
 #define MAKE_NAME_MAX       103U
-#define MAKE_RECIPE_MAX     SYS_RUN_ARG_MAX_CHARS
+#define MAKE_RECIPE_MAX     MAKE_LINE_MAX
 #define MAKE_MAX_RULES       96U
 #define MAKE_MAX_DEPS       384U
 #define MAKE_MAX_RECIPES    192U
@@ -921,6 +921,86 @@ make_run_recipe(const char *command)
         return (int)SYS_WAIT_STATUS_VALUE(status);
 }
 
+/* A recipe prefixed by '!' is an unquoted argv vector, executed directly
+ * through RUN V2 rather than limited to one DSH -C argument (102 chars).
+ * This is particularly useful for assembler/linker object lists.  It has
+ * no shell expansion, pipelines, redirections, or quoting: use an ordinary
+ * recipe for shell syntax.  An explicit absolute executable is required. */
+static int
+make_run_direct(char *command)
+{
+        kword_t path[U_PATH_WORDS];
+        kword_t item[U_ARG_WORDS];
+        struct sys_run_v2 *run;
+        kword_t status;
+        char *p;
+        char *token;
+        unsigned int used;
+        unsigned int argc;
+        unsigned int envc;
+        int pid;
+
+        p = command;
+        argc = 0U;
+        used = SYS_RUN_V2_FIXED_WORDS;
+        while (*p != 0) {
+                while (*p == ' ')
+                        ++p;
+                if (*p == 0)
+                        break;
+                token = p;
+                while (*p != 0 && *p != ' ') {
+                        if (*p == '|' || *p == '&' || *p == ';' ||
+                            *p == '<' || *p == '>' || *p == '\'' ||
+                            *p == '"' || *p == '\\')
+                                return 126;
+                        ++p;
+                }
+                if (*p != 0)
+                        *p++ = 0;
+                if (argc == 0U) {
+                        if (token[0] != '/' ||
+                            u_s6_pack(path, U_PATH_WORDS, token) != 0 ||
+                            make_run_append(&used, path) != 0)
+                                return 126;
+                }
+                if (argc >= SYS_RUN_ARG_MAX ||
+                    u_s6_pack(item, U_ARG_WORDS, token) != 0 ||
+                    make_run_append(&used, item) != 0)
+                        return 126;
+                ++argc;
+        }
+        if (argc == 0U)
+                return 126;
+        envc = 0U;
+        if (make_envp != 0) {
+                while (make_envp[envc] != 0 && envc < SYS_RUN_ENV_MAX) {
+                        if (make_run_append(&used, make_envp[envc]) != 0)
+                                return 126;
+                        ++envc;
+                }
+        }
+        if (used + 3U > MAKE_RUN_WORDS)
+                return 126;
+        make_run[used++] = SYS_RUN_FD_MAP(0U, 0U);
+        make_run[used++] = SYS_RUN_FD_MAP(1U, 1U);
+        make_run[used++] = SYS_RUN_FD_MAP(2U, 2U);
+        run = (struct sys_run_v2 *)make_run;
+        run->version_words = SYS_RUN_HEADER(SYS_RUN_VERSION_2, used);
+        run->flags = SYS_RUN_PGRP_INHERIT;
+        run->pgrp = 0UL;
+        run->fdmap_count = 3UL;
+        run->argc = argc;
+        run->envc = envc;
+        pid = dsys_run(run);
+        if (pid < 0)
+                return 126;
+        if (dsys_wait((unsigned int)pid, &status, 0U) != pid ||
+            SYS_WAIT_STATUS_KIND(status) != SYS_WAIT_EXITED)
+                return 126;
+        return (int)SYS_WAIT_STATUS_VALUE(status);
+}
+
 static int
 make_run_commands(unsigned int head, const struct make_auto *automatic)
 {
@@ -950,7 +1030,12 @@ make_run_commands(unsigned int head, const struct make_auto *automatic)
                 }
                 if (make_dry_run || *p == 0)
                         continue;
-                rc = make_run_recipe(p);
+                if (*p == '!')
+                        rc = make_run_direct(make_trim(p + 1));
+                else if (make_strlen(p) <= SYS_RUN_ARG_MAX_CHARS)
+                        rc = make_run_recipe(p);
+                else
+                        rc = 126;
                 if (rc != 0 && !ignore)
                         return rc;
         }
