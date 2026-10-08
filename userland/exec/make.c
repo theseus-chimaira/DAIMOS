@@ -1184,6 +1184,14 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
             rule->recipe_head : (ir >= 0 ? make_rules[ir].recipe_head :
             MAKE_NONE);
         if (need && recipe != MAKE_NONE) {
+                /* Announce each target before launching a potentially slow
+                 * compiler, assembler or linker child.  A silent target
+                 * transition otherwise looks like a stalled MAKE on CTY. */
+                if (!make_silent && !make_question) {
+                        (void)u_puts(1, "MAKE: BUILD ");
+                        (void)u_puts(1, name);
+                        (void)u_crlf(1);
+                }
                 automatic.target = name;
                 automatic.first = first == 0 ? "" : first;
                 automatic.newer = make_newer_buf;
