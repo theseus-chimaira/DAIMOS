@@ -40,3 +40,13 @@ A *candidate* metadata layout is 12-bit owner, 2-bit type and 4-bit pin count (1
 ## Current artifacts / handoff
 
 The prior host encoding experiment is in daimos-testkit branch `experiment/mm-packed-20261008-v1`, commit `94cb80c`, with a shar in `$HOME/tmp/daimos-testkit-mm-packed-20261008-v1.shar`. A second uncommitted testkit host model currently exercises paired metadata insertion/deletion. **Neither validates real allocator semantics or native boot.** The current source worktree contains no production allocator edits from this design. This plan is the authoritative next-step checklist for the experiment; it is not a completion claim.
+
+## Investigation update — 2026-10-08
+
+- Verified the direct process-VM dependency: `system/kernel/proc/vm_pdp6.s` `vm_brk_find_extent` explicitly computes a two-word record address then validates metadata type, owner (against `proc_current_slot`), and physical pin count. It also retains a direct descriptor pointer for resizing. This routine must be converted in the same kernel change; touching only `mm_pdp6.s` is unsafe.
+- Boot-time `mm_boot_reserve()` directly validates owner/type/pins, compacts `mm_extents[]` as C structs, and calls code that scans exact spans. Both `mm_boot.c` and the portable `mm.c` model currently assume interleaved two-word structs. Those consumers cannot interpret packed metadata without new accessors.
+- The PDP-6 assembly allocator also manipulates paired descriptors in insertion, deletion, compaction rollback, `mm_free`, `mm_is_pinned`, and `mm_pin_adjust`; simply changing `.block` would corrupt memory.
+- `mm_pin` and `mm_unpin` are used by kernel-stack initialization and process swap/VM mapping. A four-bit pin field needs a checked workload bound or explicit policy; silently truncating pins is unacceptable.
+- `mres_owner_next` currently checks against `MM_OWNER_MASK` (18 bits), not 12. Before narrowing that mask, calculate the maximum number of staged MRES and test the overflow boundary. Process u-area owners use octal `01000+slot`; TTY buffers use octal `02000+tty`; owner encodings require a complete census.
+- Host-side behavioral test `daimos-testkit/tests/host/daimos-mm-odd-even-20261008-v1.c` is committed on branch `experiment/mm-odd-even-model-20261008-v1` at `a9d9cdb`. It verifies 32-slot odd/even insertion/deletion for 2,000 cycles against independent reference entries at every operation. This proves packing mechanics only, not production boot correctness.
+- **No production MM source edited.** The exact owner/pin capacity and full kernel compatibility remain blocking; no permanent-word saving has yet been measured in a linked kernel.
