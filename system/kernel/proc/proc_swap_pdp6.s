@@ -11,6 +11,8 @@
         .text
         .globl  proc_swap_service_one
         .globl  proc_swap_reclaim
+        .globl  proc_swap_diag_slot
+        .globl  proc_swap_diag_reason
         .globl  proc_swap_out
         .globl  proc_swap_in
         .globl  proc_sched_cursor
@@ -411,7 +413,7 @@ proc_swap_out:
         hrli    0,10
         blt     0,(17)
         move    10,1
-        move    11,1
+        move    11,10
         lsh     11,1
         add     11,10
         add     11,proc_table
@@ -554,7 +556,10 @@ proc_swap_in:
         hrli    0,10
         blt     0,(17)
         move    10,1
-        move    11,1
+        movem   10,proc_swap_diag_slot
+        movei   1,1                     ; invalid state/record
+        movem   1,proc_swap_diag_reason
+        move    11,10
         lsh     11,1
         add     11,10
         add     11,proc_table
@@ -651,19 +656,26 @@ proc_swap_in_read_offset:
         andcmi  1,PROC_TRANSITION_RH
         movem   1,(11)
         sub     17,kconst_1_1
+        setzm   proc_swap_diag_reason    ; successful restore
         setz    1,
         jrst    proc_swap_in_restore
 
 proc_swap_in_read_fail:
+        movei   1,4                     ; 4: restore transfer failed
+        movem   1,proc_swap_diag_reason
         move    1,(17)
         pushj   17,mm_unpin
 proc_swap_in_free_fail:
+        movei   1,5                     ; 5: unpin failed
+        movem   1,proc_swap_diag_reason
         move    1,(17)
         movei   2,MM_TYPE_PROCESS
         move    3,10
         pushj   17,mm_free
         jrst    proc_swap_in_drop_local
 proc_swap_in_pin_fail:
+        movei   1,3                     ; 3: pin failed
+        movem   1,proc_swap_diag_reason
         move    1,(17)
         movei   2,MM_TYPE_PROCESS
         move    3,10
@@ -671,6 +683,8 @@ proc_swap_in_pin_fail:
 proc_swap_in_drop_local:
         sub     17,kconst_1_1
 proc_swap_in_alloc_fail:
+        movei   1,2                     ; 2: MM allocation failed
+        movem   1,proc_swap_diag_reason
         move    1,(11)
         andcmi  1,PROC_TRANSITION_RH
         movem   1,(11)
@@ -771,3 +785,12 @@ proc_swap_reclaim_done:
         pop     17,11
         pop     17,10
         popj    17,
+
+        .bss
+; Diagnostics only. Reason 0=success, 1=bad state, 2=MM alloc,
+; 3=pin, 4=reload/backstore transfer, 5=unpin.
+; Slot is recorded at the start of each swap-in attempt. Never alter recovery.
+proc_swap_diag_slot:
+        .block 1
+proc_swap_diag_reason:
+        .block 1
