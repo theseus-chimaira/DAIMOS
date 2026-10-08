@@ -76,13 +76,13 @@ struct make_implicit {
         char stem[MAKE_NAME_MAX + 1U];
 };
 
-/* Recursive make_build frames formerly contained two 104-character arrays.
- * KCC allocates an 81-word frame for that form, exhausting the native
- * user stack during deep dependency traversal. Keep per-depth scratch in
- * userland BSS so recursive implicit-rule lookup remains independent.
- * Each depth owns its record until returning to the previous depth.
+/* Keep the two long implicit-rule path buffers off the recursive stack.
+ * Allocate lazily for each depth actually visited; a 33-record fixed array
+ * would waste ~1700 user words on typical shallow builds. The buffers are
+ * reused until MAKE exits, avoiding allocation on subsequent targets.
  */
-static struct make_implicit make_implicit_frames[MAKE_MAX_DEPTH + 1U];
+extern void *malloc(unsigned int chars);
+static struct make_implicit *make_implicit_frames[MAKE_MAX_DEPTH + 1U];
 static struct make_rule make_rules[MAKE_MAX_RULES];
 static struct make_link make_deps[MAKE_MAX_DEPS];
 static struct make_link make_recipes[MAKE_MAX_RECIPES];
@@ -1085,7 +1085,15 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
 
         if (depth > MAKE_MAX_DEPTH)
                 return 1;
-        imp = &make_implicit_frames[depth];
+        imp = make_implicit_frames[depth];
+        if (imp == 0) {
+                imp = (struct make_implicit *)malloc(sizeof(*imp));
+                if (imp == 0) {
+                        make_diag("IMPLICIT SCRATCH EXHAUSTED", name);
+                        return 1;
+                }
+                make_implicit_frames[depth] = imp;
+        }
         ri = make_find_rule(name);
         if (ri >= 0) {
                 rule = &make_rules[ri];

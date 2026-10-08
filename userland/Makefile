@@ -93,7 +93,7 @@ CONFIGCTL_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/configctl/%.dobj)
 CONFIGCTL_DXR = $(USERLAND_BUILD)/configctl.dxr
 CONFIGCTL_MAP = $(USERLAND_BUILD)/configctl.map
 
-MAKE_C_SRCS = $(COMMON_C_SRCS) exec/make.c
+MAKE_C_SRCS = $(COMMON_C_SRCS) libc/string.c libc/stdlib.c exec/make.c
 MAKE_C_OBJS = $(MAKE_C_SRCS:%.c=$(USERLAND_BUILD)/make/%.dobj)
 MAKE_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/make/%.dobj)
 MAKE_DXR = $(USERLAND_BUILD)/make.dxr

@@ -164,3 +164,18 @@ strtok(char *s, char *delim)
                 next = 0;
         return start;
 }
+
+/* Copy exactly count C characters. Source and destination must not overlap.
+ * C characters are 9-bit on the native PDP-6 ABI, not host octets. */
+void *
+memcpy(void *dst, const void *src, unsigned int count)
+{
+        unsigned char *d;
+        const unsigned char *s;
+
+        d = (unsigned char *)dst;
+        s = (const unsigned char *)src;
+        while (count-- != 0U)
+                *d++ = *s++;
+        return dst;
+}
