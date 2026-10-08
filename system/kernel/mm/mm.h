@@ -16,11 +16,12 @@
 /**
  * Maximum simultaneously allocated physical extents tracked by MM.
  *
- * Twenty descriptors are one short of the measured full-system peak while
- * launching DSH's bounded eight-stage pipeline.  Incremental pipe creation
- * keeps that peak at 21, so do not grow this table merely for pipeline depth.
+ * The earlier 21-descriptor limit covered the measured eight-stage DSH
+ * pipeline, but native compilation adds nested MAKE, KCC and KCPP processes.
+ * Each needs both a user VM extent and a kernel u-area extent, so retain
+ * bounded headroom for this ordinary build workload.
  */
-#define MM_MAX_EXTENTS          21
+#define MM_MAX_EXTENTS          32
 /** Maximum disjoint managed physical arenas needed during/after KINIT. */
 #define MM_MAX_ARENAS           3
 

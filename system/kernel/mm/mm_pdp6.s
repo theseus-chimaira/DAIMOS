@@ -31,7 +31,7 @@
         .globl  mach_pi_disable
         .globl  mach_pi_restore
 
-        .equ    MM_MAX_EXTENTS,025
+        .equ    MM_MAX_EXTENTS,040
         .equ    MM_MAX_ARENAS,3
         .equ    MM_TYPE_PROCESS,1
         .equ    MM_ALLOC_LOW,0
@@ -672,7 +672,7 @@ mm_unpin:
 
         .bss
 mm_extents:
-        .block  052
+        .block  0100
 mm_arenas:
         .block  MM_MAX_ARENAS
 mm_core_words:
