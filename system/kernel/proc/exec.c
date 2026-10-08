@@ -134,6 +134,9 @@ exec_replace_current(const kword_t *block,
         }
 
         current->vm_state = staged.vm_state;
+        PROC_BRK_WORD(current) =
+            (VM_SPACE_WORDS(current) << PROC_HALF_SHIFT) |
+            VM_SPACE_WORDS(current);
         proc_swap_records[slot].state = new_swap;
         PROC_SWAP_BACKING_WORD(current) = 0UL;
         entry_startup[0] = PROC_ENTRY(&staged);

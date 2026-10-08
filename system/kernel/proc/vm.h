@@ -47,6 +47,8 @@ int vm_space_startup(struct proc *p, const kword_t *records,
     kword_t counts, kword_t *startup);
 int vm_space_inspect_word(const struct proc *p, kword_t offset,
     kword_t *wordp);
+/** Query/set the current process break; zero queries without changing it. */
+kword_t vm_space_brk_current(kword_t requested);
 
 /* Called by physical MM for an unpinned MM_TYPE_PROCESS extent. */
 #define VM_EXTENT_ALIGN_WORDS 02000UL

@@ -75,6 +75,12 @@ proc_user_context_init(unsigned int slot, kword_t entry, kword_t stack,
         ctx[2] = ac2;
         ctx[3] = ac3;
         ctx[017] = stack;
+        /* Keep the heap floor/current break outside the three-word resident
+         * process descriptor.  Both halves are logical user addresses; the
+         * initial break is the first word above the complete initial VM,
+         * including its fixed startup/stack reservation. */
+        ctx[PROC_BRK_OFFSET] = (VM_SPACE_WORDS(p) << PROC_HALF_SHIFT) |
+            VM_SPACE_WORDS(p);
         ctx[PROC_CTX_U_PC] = PROC_USER_FLAG_BITS | (entry & PROC_HALF_MASK);
         ctx[PROC_CTX_U_KSP] = base + PROC_CTX_STACK;
         PROC_SET_META_LH(p, base);
