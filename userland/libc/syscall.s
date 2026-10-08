@@ -55,6 +55,7 @@
         .globl dsys_dtc_write_block
         .globl dsys_tsfs_mount
         .globl dsys_d6fs_mount
+        .globl dsys_drm_read_block
 
 dsys_exit:             uuo 040,0(1)
                        popj 17,
@@ -222,5 +223,14 @@ dsys_d6fs_mount:        move 4,3
                         move 3,2
                         move 2,1
                         movei 1,042
+                        uuo 077,0(1)
+                        popj 17,
+
+; Read one raw DRM236 block for transient root-owned media discovery.
+; C: AC1=unit, AC2=block, AC3=buffer.
+dsys_drm_read_block:    move 4,3
+                        move 3,2
+                        move 2,1
+                        movei 1,053
                         uuo 077,0(1)
                         popj 17,

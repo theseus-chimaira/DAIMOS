@@ -47,6 +47,7 @@ int dsys_exec(struct sys_exec_v1 *args);
 kword_t dsys_gettime(void);
 int dsys_dtc_read_block(unsigned int unit, unsigned int block, kword_t *buf);
 int dsys_dtc_write_block(unsigned int unit, unsigned int block, kword_t *buf);
+int dsys_drm_read_block(unsigned int unit, unsigned int block, kword_t *buf);
 int dsys_tsfs_mount(kword_t *handoff, kword_t *path, unsigned int flags);
 int dsys_d6fs_mount(kword_t *handoff, kword_t *path, unsigned int flags);
 int dsys_memfs_mount(kword_t *path, unsigned int words, unsigned int flags);

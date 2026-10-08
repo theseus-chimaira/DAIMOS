@@ -2,6 +2,8 @@
 
 #define MOUNTALL_LINE_MAX 127U
 
+extern int d6set1_mount(kword_t *path, unsigned int flags);
+
 static int
 text_eq(const char *a, const char *b)
 {
@@ -40,9 +42,11 @@ parse_uint(const char *s, unsigned int *vp)
  * FSTAB V1 contains policy, not device discovery:
  *
  *     MEMFS:/existing/mount/point:words[:PERSIST]
+ *     D6FS:D6SET1:/existing/mount/point[:OPTIONAL]
  *
  * Blank lines and comments beginning with '#' are ignored.  MEMFS is a
- * singleton provider, so at most one MEMFS entry can succeed.
+ * singleton provider, so at most one MEMFS entry can succeed.  D6SET1 is the
+ * transiently discovered four-member DRM scratch set.
  */
 static int
 mount_line(char *line, int *temp_memfs)
@@ -51,26 +55,39 @@ mount_line(char *line, int *temp_memfs)
         kword_t path[U_PATH_WORDS];
         unsigned int words;
         unsigned int flags;
+        int optional;
         int n;
 
         n = u_text_fields(line, field, 4U);
         if (n == 0)
                 return 1;
-        flags = 0U;
-        if ((n != 3 && n != 4) || !text_eq(field[0], "MEMFS") ||
-            parse_uint(field[2], &words) != 0 ||
-            u_s6_pack(path, U_PATH_WORDS, field[1]) != 0)
-                return -1;
-        if (n == 4) {
-                if (!text_eq(field[3], "PERSIST"))
+        if (text_eq(field[0], "MEMFS")) {
+                flags = 0U;
+                if ((n != 3 && n != 4) ||
+                    parse_uint(field[2], &words) != 0 ||
+                    u_s6_pack(path, U_PATH_WORDS, field[1]) != 0)
                         return -1;
-                flags = 0002U;
+                if (n == 4) {
+                        if (!text_eq(field[3], "PERSIST"))
+                                return -1;
+                        flags = 0002U;
+                }
+                if (dsys_memfs_mount(path, words, flags) != 0)
+                        return -1;
+                if (text_eq(field[1], "/TEMP"))
+                        *temp_memfs = 1;
+                return 0;
         }
-        if (dsys_memfs_mount(path, words, flags) != 0)
-                return -1;
-        if (text_eq(field[1], "/TEMP"))
-                *temp_memfs = 1;
-        return 0;
+        if (text_eq(field[0], "D6FS")) {
+                optional = n == 4 && text_eq(field[3], "OPTIONAL");
+                if ((n != 3 && !optional) || !text_eq(field[1], "D6SET1") ||
+                    u_s6_pack(path, U_PATH_WORDS, field[2]) != 0)
+                        return -1;
+                if (d6set1_mount(path, SYS_MOUNT_RW) != 0)
+                        return optional ? 0 : -1;
+                return 0;
+        }
+        return -1;
 }
 
 int

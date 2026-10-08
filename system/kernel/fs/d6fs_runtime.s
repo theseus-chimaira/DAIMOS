@@ -695,11 +695,11 @@ d6fs_provider_space_fail:
         .globl  mm_free
 ; Provider-private runtime mount entry.
 ; AC1=validated 14-word handoff, AC2=target vnode, AC3=flags.
-; Secondary mounts are read-only until the later remount/recovery phase defines
-; the complete writable transition protocol.
+; Mount insertion is always read-only first.  A requested RW mount then uses
+; the existing superblock state transition before VFS exposes writes.
 d6fs_mount_validated:
         jumpe   1,kret_neg1
-        caie    3,1                      ; VFS_MOUNT_RDONLY
+        caile   3,1                      ; only VFS_MOUNT_RW/RDONLY
         jrst    kret_neg1
         move    5,013(1)                 ; versioned handoff marker
         came    5,[044066263602]
@@ -711,6 +711,7 @@ d6fs_mount_validated:
         jumpe   5,kret_neg1
         came    5,3(1)                   ; total_blocks must agree
         jrst    kret_neg1
+        push    17,3                     ; requested VFS_MOUNT_* flags
         push    17,1                     ; handoff
         push    17,2                     ; target vnode
         push    17,[0]                   ; allocated reader base
@@ -748,9 +749,36 @@ d6fs_mount_validated:
         addi    4,1                      ; public mount id
         ior     6,4
         movem   6,1(5)
+        move    6,013(5)                 ; mounted root before replacing scratch
+        movem   6,-1(17)                 ; target local no longer needed
         move    4,[fs_backing_direct_read,,fs_backing_direct_write]
         movem   4,013(5)                 ; replace root scratch with trusted ops
+        move    4,-3(17)                 ; requested mount flags
+        jumpn   4,d6fs_mount_success     ; RDONLY needs no media transition
+        pushj   17,d6fs_provider_toggle_state
+        jumpn   1,d6fs_mount_rw_fail
+d6fs_mount_success:
         setz    1,
+        jrst    d6fs_mount_done
+
+d6fs_mount_rw_fail:
+        ; MOUNT_UNIT already owns the serialized D6FS provider lock.  Calling
+        ; vfs_unmount() here would recurse through PREPARE_UNMOUNT and deadlock.
+        ; No caller can observe this just-created RO slot yet, so tear down the
+        ; provider directly and then clear the VFS slot in place.
+        move    5,d6fs_active_reader
+        ldb     4,[POINT 6,1(5),35]      ; public mount id
+        subi    4,1                      ; zero-based slot
+        push    17,4
+        move    1,-2(17)                 ; mounted root saved in target local
+        pushj   17,d6fs_provider_prepare_unmount
+        pop     17,4
+        setzm   vfs_mount_target(4)
+        setzm   vfs_mount_root(4)
+        movei   5,1
+        lsh     5,0(4)                   ; clear initial RDONLY bit
+        andcam  5,vfs_mount_ro
+        seto    1,
         jrst    d6fs_mount_done
 
 d6fs_mount_free:
@@ -764,7 +792,7 @@ d6fs_mount_free:
 d6fs_mount_bad:
         seto    1,
 d6fs_mount_done:
-        sub     17,kconst_3_3
+        sub     17,kconst_4_4
         popj    17,
 
 d6fs_mres_create:
@@ -1225,21 +1253,45 @@ d6fs_provider_toggle_state:
         addi    4,1
         movem   4,fs_block_workspace+1   ; sequence
         ldb     4,[POINT 1,1(5),29]      ; current writable bit
+        push    17,4                     ; survive backing I/O
         xori    4,1                      ; media state: RW->CLEAN, RO->DIRTY
         movem   4,fs_block_workspace+2
+        ; d6fs_reader_commit_cache() rejects writes from an RO reader.  For
+        ; the RO->RW transition only, open that internal gate while VFS still
+        ; advertises the mount RO.  No filesystem request can observe RW until
+        ; the superblock publication below succeeds.
+        skipe   (17)
+        jrst    d6fs_toggle_write
+        move    4,1(5)
+        iori    4,0100                   ; temporary reader WRITABLE
+        movem   4,1(5)
+d6fs_toggle_write:
         move    1,5
         movei   3,fs_block_workspace
         pushj   17,d6fs_reader_write_block
-        jumpn   1,kret_neg1
+        jumpn   1,d6fs_toggle_write_fail
+        pop     17,6                     ; prior writable state
         move    5,d6fs_active_reader
         aos     2(5)
-        movei   4,0300                   ; WRITABLE | COPY
+        movei   4,0200                   ; always toggle selected A/B copy
         xorm    4,1(5)
+        jumpe   6,d6fs_toggle_state_done ; temporary WRITABLE becomes real
+        movei   4,0100                   ; RW->RO: close reader write gate
+        xorm    4,1(5)
+d6fs_toggle_state_done:
         ldb     4,[POINT 6,1(5),35]      ; mount id
         movei   6,1
         lsh     6,-1(4)
         xorm    6,vfs_mount_ro           ; VFS policy changes after publication
         jrst    kret_zero
+
+d6fs_toggle_write_fail:
+        pop     17,6                     ; prior writable state
+        jumpn   6,kret_neg1              ; existing RW reader unchanged
+        move    5,d6fs_active_reader
+        movei   4,0100                   ; roll back temporary write gate
+        xorm    4,1(5)
+        jrst    kret_neg1
 
 ; int d6fs_provider_prepare_unmount(vnode_t root)
         .globl  d6fs_provider_prepare_unmount

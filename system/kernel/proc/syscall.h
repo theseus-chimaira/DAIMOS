@@ -69,6 +69,7 @@
 #define SYS_EXT_TTYCTL             050U
 #define SYS_EXT_FSINFO             051U
 #define SYS_EXT_BRK                052U
+#define SYS_EXT_DRM_READ_BLOCK     053U
 
 #define SYS_FSINFO_PATH_WORDS      18U
 

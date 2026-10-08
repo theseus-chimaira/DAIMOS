@@ -34,7 +34,8 @@ COMMON_S_SRCS = libc/crt0.s libc/syscall.s libc/syscall_helpers.s
 
 INIT_C_SRCS = libc/u.c libc/text.c libc/logevent.c init/init.c
 INIT_S_SRCS = ${COMMON_S_SRCS}
-MOUNTALL_C_SRCS = libc/u.c libc/text.c init/mountall.c
+MOUNTALL_C_SRCS = libc/u.c libc/text.c init/d6set_mount.c init/d6fs_super_user.c init/mountall.c
+MOUNTALL_SOURCE_DEPS = ${PROJECT_ROOT}/system/kernel/boot/d6fs_super_boot.c
 MOUNTALL_S_SRCS = ${COMMON_S_SRCS} init/memfs_mount.s
 LOGIN_C_SRCS = libc/u.c libc/text.c libc/logevent.c login/login.c
 LOGIN_S_SRCS = ${COMMON_S_SRCS}
@@ -66,7 +67,7 @@ LOGDUMP_C_SRCS = libc/u.c libc/text.c logstore/logcompat.c
 CHECK_SRCS = libc/u.c libc/text.c exec/commands.c exec/standalone.c \
 	exec/utility.c exec/utility_standalone.c exec/xargs.c exec/sed.c \
 	exec/configctl.c exec/make.c dsh/dsh.c dsh/dsh_s6.c dsh/dsh_lex.c \
-	dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c init/init.c login/login.c \
+	dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c init/init.c init/d6set_mount.c login/login.c \
 	tsfs/tsfs_scan.c tsfs/tsfsprobe.c tsfs/mount_tsfs.c dtfs/dtfs_probe.c \
 	dtfs/dtfsprobe.c d6lz/d6lz.c logstore/logdrain.c logstore/logcompat.c
 
@@ -128,7 +129,7 @@ check: build
 # dependencies explicit and portable while avoiding dozens of near-identical
 # generated rules.
 ${USERLAND_BUILD}/.core.stamp: Makefile ${INIT_C_SRCS} ${INIT_S_SRCS} \
-	${MOUNTALL_C_SRCS} ${MOUNTALL_S_SRCS} ${LOGIN_C_SRCS} ${LOGIN_S_SRCS} \
+	${MOUNTALL_C_SRCS} ${MOUNTALL_S_SRCS} ${MOUNTALL_SOURCE_DEPS} ${LOGIN_C_SRCS} ${LOGIN_S_SRCS} \
 	${DSH_C_SRCS} ${DSH_S_SRCS} ${DSHCOMP_C_SRCS} ${DSHCOMP_S_SRCS} \
 	${XARGS_C_SRCS} ${XARGS_S_SRCS} ${SED_C_SRCS} ${SED_S_SRCS} \
 	${CONFIGCTL_C_SRCS} ${CONFIGCTL_S_SRCS} ${MAKE_C_SRCS} ${MAKE_S_SRCS} \
