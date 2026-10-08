@@ -27,6 +27,7 @@ WORDS2PT ?= ${PDP10_PREFIX}/bin/words2pt
 S6FILTER ?= ${PDP10_PREFIX}/bin/s6filter
 SIXMD_CHECK ?= ${PDP10_PREFIX}/bin/sixmd-check
 S6TEXT ?= ${PDP10_PREFIX}/bin/s6text
+CSIX ?= ${PDP10_PREFIX}/bin/csix
 LOGSTORE ?= ${PDP10_PREFIX}/bin/logstore
 SIMH_PDP6 ?= ${PDP10_PREFIX}/bin/pdp6
 ROOT ?= auto
@@ -417,6 +418,11 @@ ASMUTILS_ASM_S6REC != for n in ${ASMUTILS_ASM_NAMES}; do printf '%s ' "${ASMUTIL
 ASMUTILS_MAKEFILE_S6REC = ${ASMUTILS_SOURCE_BUILD}/MAKEFILE.s6rec
 ASMUTILS_SOURCE_S6REC = ${ASMUTILS_ASM_S6REC} ${ASMUTILS_MAKEFILE_S6REC}
 ASMUTILS_SOURCE_ARGS != for n in ${ASMUTILS_ASM_NAMES}; do printf '%s ' "-f /OPTION/BASE/SOURCE/ASMUTILS/$$n:${ASMUTILS_SOURCE_BUILD}/$$n.s6rec:444:binwords"; done; printf '%s' "-f /OPTION/BASE/SOURCE/ASMUTILS/MAKEFILE:${ASMUTILS_MAKEFILE_S6REC}:444:binwords"
+KCC_SOURCE_DIR = ${BUILD}/kcc-source-v1
+KCC_SOURCE_MAKEFILE = ${PROJECT_ROOT}/userland/optional/kcc/Makefile
+KCC_SOURCE_INPUTS != find ${KCC_REPO} -maxdepth 1 -type f \( -name '*.c' -o -name '*.h' -o -name '*.s' \) -print; find ${KCC_REPO}/runtime -maxdepth 1 -type f \( -name '*.c' -o -name '*.s' \) -print; find ${KCC_REPO}/self/include -type f -name '*.h' -print
+KCC_SOURCE_STAMP = ${KCC_SOURCE_DIR}/.staged
+KCC_SOURCE_ARGS != cd ${KCC_REPO} && { find . -maxdepth 1 -type f \( -name '*.c' -o -name '*.h' -o -name '*.s' \) -print; find runtime -maxdepth 1 -type f \( -name '*.c' -o -name '*.s' \) -print; find self/include -type f -name '*.h' -print; } | sed 's|^./||' | while IFS= read -r n; do upper=`printf '%s' "$$n" | tr '[:lower:]' '[:upper:]'`; printf '%s ' "-f /OPTION/SOURCE/KCC/$$upper:${KCC_SOURCE_DIR}/$$n:644:binwords"; done; printf '%s' "-f /OPTION/SOURCE/KCC/MAKEFILE:${KCC_SOURCE_DIR}/MAKEFILE:644:binwords"
 USERLAND_INPUTS = ${PROJECT_ROOT}/userland/libc/Makefile \
 	${PROJECT_ROOT}/userland/libc/crt0.s \
 	${PROJECT_ROOT}/userland/libc/dsys.h \
@@ -797,6 +803,11 @@ ${ASMUTILS_SOURCE_STAMP}: ${ASMUTILS_ASM_SRCS} ${ASMUTILS_SOURCE_DIR}/Makefile
 ${ASMUTILS_SOURCE_S6REC}: ${ASMUTILS_SOURCE_STAMP}
 	@test -f '$@'
 
+${KCC_SOURCE_STAMP}: ${KCC_SOURCE_INPUTS} ${KCC_SOURCE_MAKEFILE} ${PROJECT_ROOT}/scripts/stage-kcc-sources-v1.sh
+	sh ${PROJECT_ROOT}/scripts/stage-kcc-sources-v1.sh \
+	    ${KCC_REPO} ${KCC_SOURCE_DIR} ${CSIX} ${S6TEXT} ${KCC_SOURCE_MAKEFILE}
+	touch '$@'
+
 ${MANUAL_BUILD}:
 	mkdir -p $@
 
@@ -992,6 +1003,7 @@ D6FS_ROOT_ARGS = -D /TEMP:0777 -D /SCRATCH:0777 \
 	-D /SYSTEM:0555 -D /SYSTEM/EXEC:0555 -D /SYSTEM/LIBEXEC:0555 -D /SYSTEM/LIB:0555 \
 	-D /SYSTEM/INCLUDE:0555 -D /SYSTEM/MANUAL:0555 -D /SYSTEM/SOURCE:0555 \
 	-D /OPTION:0555 -D /OPTION/BASE:0555 -D /OPTION/BASE/EXEC:0555 \
+	-D /OPTION/SOURCE:0755 -D /OPTION/SOURCE/KCC:0755 \
 	-D /OPTION/BASE/LIBEXEC:0555 -D /OPTION/BASE/LIBEXEC/DAS:0555 \
 	-D /OPTION/BASE/LIB:0555 -D /OPTION/BASE/INCLUDE:0555 \
 	-D /OPTION/BASE/MANUAL:0555 -D /OPTION/BASE/SOURCE:0555 \
@@ -1028,7 +1040,7 @@ D6FS_ROOT_ARGS = -D /TEMP:0777 -D /SCRATCH:0777 \
 	${PICTURE_D6FS_ARGS} \
 	${D6FS_EXTRA_ARGS}
 
-${DISK_STAMP}: ${D6FS_ROOT_DEPS} ${KCC_D6FS_DISK_DEPS}
+${DISK_STAMP}: ${D6FS_ROOT_DEPS} ${KCC_D6FS_DISK_DEPS} ${KCC_SOURCE_STAMP}
 	rm -rf ${DISK_DIR}
 	${MKDSK} -n 4 -m clean -p ${IMAGE_BOOT_WORDS} -o ${DISK_DIR} \
 	    --d6fs-layout --logstore-blocks 0 \
@@ -1036,7 +1048,7 @@ ${DISK_STAMP}: ${D6FS_ROOT_DEPS} ${KCC_D6FS_DISK_DEPS}
 	    --spare-blocks ${D6FS_SPARE_BLOCKS} \
 	    --member-sectors 0130000,0130000,0130000,0130000
 	${MKD6FS} -n 4 -d ${DISK_DIR} ${D6FS_ROOT_ARGS} \
-	    ${KCC_D6FS_DISK_ARGS} ${D6FS_DISK_EXTRA_ARGS}
+	    ${KCC_D6FS_DISK_ARGS} ${KCC_SOURCE_ARGS} ${D6FS_DISK_EXTRA_ARGS}
 	touch $@
 
 ${DISK_IMAGES}: ${DISK_STAMP}
