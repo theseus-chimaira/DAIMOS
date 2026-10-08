@@ -172,7 +172,7 @@ exec_replace_old_rt_done:
         movei   3,3(10)                 ; validated path
         pushj   17,exec_load_process
         movem   1,EXEC_R_STAGED+2(17)   ; staged.sched is dead; keep result here
-        caie    1,EXEC_LOAD_NOMEM
+        came    1,[EXEC_LOAD_NOMEM]    ; negative status needs full-word compare
         jrst    exec_replace_loaded
         move    1,10
         move    2,11
