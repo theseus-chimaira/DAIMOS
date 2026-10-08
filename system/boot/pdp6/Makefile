@@ -445,7 +445,14 @@ KCC_SOURCE_INPUTS = $(wildcard $(KCC_REPO)/*.[chs]) \
 KCC_SOURCE_REL = $(patsubst $(KCC_REPO)/%,%,$(KCC_SOURCE_INPUTS))
 KCC_SOURCE_STAMP = $(KCC_SOURCE_BUILD)/.staged
 KCC_SOURCE_ARGS = $(foreach n,$(KCC_SOURCE_REL),-f "/OPTION/SOURCE/KCC/$(shell printf '%s' '$(n)' | tr '[:lower:]' '[:upper:]'):$(KCC_SOURCE_BUILD)/$(n):644:binwords") \
-	-f "/OPTION/SOURCE/KCC/MAKEFILE:$(KCC_SOURCE_BUILD)/MAKEFILE:644:binwords"
+	$(foreach n,$(notdir $(wildcard $(KCC_SOURCE_BUILD)/native-make/*)),-f "/OPTION/SOURCE/KCC/$(n):$(KCC_SOURCE_BUILD)/$(n):644:binwords") \
+	$(foreach n,u.h dsys.h syscall.h file.h vfs.h kcore.h storage.h pdp10-sixbit.h,-f "/OPTION/SOURCE/KCC/ABI/$(shell echo $(n) | tr '[:lower:]' '[:upper:]'):$(KCC_SOURCE_BUILD)/ABI/$(n):644:binwords") \
+	$(foreach n,CRT0.DOBJ BOOT.DOBJ SYS.DOBJ HELP.DOBJ LIBC.DARC,-f "/OPTION/SOURCE/KCC/BOOT/$(n):$(KCC_SOURCE_BUILD)/BOOT/$(n):644:binwords")
+KCC_BOOT_BUILD ?= $(KCC_REPO)/build-native-v1
+KCC_BOOT_DXRS = $(addprefix $(KCC_BOOT_BUILD)/,KCC.dxr KCPP.dxr KPARSE.dxr KGEN.dxr KOPT.dxr)
+KCC_BOOT_ARGS = -D /OPTION/BASE/LIBEXEC/KCC:0755 \
+	-f "/OPTION/BASE/EXEC/KCC:$(KCC_BOOT_BUILD)/KCC.dxr:555:dxr" \
+	$(foreach n,KCPP KPARSE KGEN KOPT,-f "/OPTION/BASE/LIBEXEC/KCC/$(n):$(KCC_BOOT_BUILD)/$(n).dxr:555:dxr")
 USERLAND_INPUTS = $(PROJECT_ROOT)/userland/libc/Makefile \
 	$(PROJECT_ROOT)/userland/Makefile \
 	$(wildcard $(PROJECT_ROOT)/userland/toolchain/*.[ch]) \
@@ -840,9 +847,19 @@ $(ASMUTILS_MAKEFILE_S6REC): $(ASMUTILS_SOURCE_DIR)/Makefile | $(ASMUTILS_SOURCE_
 	       print line; }' $< > "$$tmp"; \
 	$(S6TEXT) --encode "$$tmp" $@
 
-$(KCC_SOURCE_STAMP): $(KCC_SOURCE_INPUTS) $(KCC_SOURCE_MAKEFILE) $(PROJECT_ROOT)/scripts/stage-kcc-sources-v1.sh
+$(KCC_BOOT_DXRS) &: $(KCC_REPO)/Makefile
+	@for n in KCC KCPP KPARSE KGEN KOPT; do \
+		test -s "$(KCC_BOOT_BUILD)/$$n.dxr" || { \
+			echo "missing KCC native bootstrap: $(KCC_BOOT_BUILD)/$$n.dxr" >&2; \
+			exit 1; \
+		}; \
+	done
+
+$(KCC_SOURCE_STAMP): $(KCC_SOURCE_INPUTS) $(KCC_BOOT_DXRS) $(PROJECT_ROOT)/scripts/gen-kcc-native-make-v1.py $(PROJECT_ROOT)/scripts/stage-kcc-sources-v1.sh
 	sh $(PROJECT_ROOT)/scripts/stage-kcc-sources-v1.sh \
-	    $(KCC_REPO) $(KCC_SOURCE_BUILD) $(CSIX) $(S6TEXT) $(KCC_SOURCE_MAKEFILE)
+	    $(KCC_REPO) $(KCC_SOURCE_BUILD) $(CSIX) $(S6TEXT) \
+	    $(PROJECT_ROOT)/scripts/gen-kcc-native-make-v1.py $(PROJECT_ROOT) \
+	    $(abspath $(KCC_BOOT_BUILD))
 	touch $@
 
 $(MANUAL_BUILD):
@@ -997,7 +1014,7 @@ D6FS_ROOT_DEPS = $(IMAGE_BOOT_WORDS) $(SYSTEM_INIT_DXR) $(SYSTEM_MOUNTALL_DXR) \
 	$(SYSTEM_LOGDRAIN_DXR) $(DAS_NATIVE_DRIVER) $(DAS_NATIVE_PHASE1) \
 	$(DAS_NATIVE_PHASE2) $(DAIMOS_NATIVE_DARC) $(DAIMOS_NATIVE_DLINK) \
 	$(DAIMOS_NATIVE_OBJDUMP) $(SYSTEM_CONFIG_S6REC) \
-	$(SYSTEM_MANUALS) $(ASMUTILS_SOURCE_S6REC) $(KCC_SOURCE_STAMP) $(PICTURE_FILES)
+	$(SYSTEM_MANUALS) $(ASMUTILS_SOURCE_S6REC) $(KCC_SOURCE_STAMP) $(KCC_BOOT_DXRS) $(PICTURE_FILES)
 
 define D6FS_ROOT_ARGS
 	-D /TEMP:0777 \
@@ -1006,6 +1023,7 @@ define D6FS_ROOT_ARGS
 	-D /SYSTEM/INCLUDE:0555 -D /SYSTEM/MANUAL:0555 -D /SYSTEM/SOURCE:0555 \
 	-D /OPTION:0555 -D /OPTION/BASE:0555 -D /OPTION/BASE/EXEC:0555 \
 	-D /OPTION/SOURCE:0755 -D /OPTION/SOURCE/KCC:0755 \
+	-D /OPTION/SOURCE/KCC/ABI:0755 -D /OPTION/SOURCE/KCC/BOOT:0755 \
 	-D /OPTION/BASE/LIBEXEC:0555 -D /OPTION/BASE/LIBEXEC/DAS:0555 \
 	-D /OPTION/BASE/LIB:0555 -D /OPTION/BASE/INCLUDE:0555 \
 	-D /OPTION/BASE/MANUAL:0555 -D /OPTION/BASE/SOURCE:0555 \
@@ -1035,7 +1053,7 @@ define D6FS_ROOT_ARGS
 	-f "/OPTION/BASE/EXEC/OBJDUMP:$(DAIMOS_NATIVE_OBJDUMP):555:dxr" \
 	$(SYSTEM_MANUAL_ARGS) \
 	$(ASMUTILS_SOURCE_ARGS) \
-	$(KCC_SOURCE_ARGS) \
+	$(KCC_SOURCE_ARGS) $(KCC_BOOT_ARGS) \
 	-f "/CONFIG/INITTAB:$(SYSTEM_INITTAB_S6REC):644:binwords" \
 	-f "/CONFIG/FSTAB:$(SYSTEM_FSTAB_S6REC):644:binwords" \
 	-f "/CONFIG/PASSWD:$(SYSTEM_PASSWD_S6REC):600:binwords" \
