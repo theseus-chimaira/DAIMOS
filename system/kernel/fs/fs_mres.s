@@ -85,10 +85,21 @@ blockset_direct_tail_loop:
         jrst    blockset_direct_tail_mapped
 
 blockset_direct_tail_single:
+        hlrz    0,blockset_direct_map
+        trne    0,0200000                ; raw four-member DRMSET tail
+        jrst    blockset_direct_tail_set
         hlrz    1,blockset_direct_map
         andi    1,07                     ; strip direct-device tag bits
         hrrz    2,blockset_direct_map
         add     2,011
+
+blockset_direct_tail_set:
+        hrrz    2,blockset_direct_map
+        add     2,011                   ; aggregate logical block index
+        move    1,2
+        andi    1,3                     ; interleaved member 0..3
+        lsh     2,-2                    ; physical member block
+        jrst    blockset_direct_tail_mapped
 
 blockset_direct_tail_mapped:
         move    3,010
@@ -121,6 +132,19 @@ blockset_direct_tail_done:
         blt     0,013
         sub     17,kconst_6_6
         popj    17,
+        .globl auxstore_drmset_log_read
+auxstore_drmset_log_read:
+        move    1,2
+        andi    1,3
+        lsh     2,-2
+        jrst    drm236_read_block
+        .globl auxstore_drmset_log_write
+auxstore_drmset_log_write:
+        move    1,2
+        andi    1,3
+        lsh     2,-2
+        jrst    drm236_write_block
+
 blockset_tail_blocks:
         move    1,blockset_direct_tail
         popj    17,

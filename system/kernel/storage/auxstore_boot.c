@@ -1,6 +1,7 @@
 /** Reclaimable AUXSTORE discovery and descriptor validation. */
 #include "auxstore.h"
 #include "bstore.h"
+#include "blockset_layout.h"
 #include "dsk270.h"
 #include "drm236.h"
 #include "fs_backing.h"
@@ -22,6 +23,9 @@ static int
 auxstore_phys_read(unsigned int kind, unsigned int unit, kword_t block,
     kword_t *buf)
 {
+        if (kind == AUXSTORE_KIND_DRMSET)
+                return drm236_read_block((unsigned int)(block & 3UL),
+                    block >> 2U, buf);
         if (kind == AUXSTORE_KIND_DRM)
                 return drm236_read_block(unit, block, buf);
         return dsk270_read_sector(unit, block, buf);
@@ -31,6 +35,9 @@ static int
 auxstore_phys_write(unsigned int kind, unsigned int unit, kword_t block,
     const kword_t *buf)
 {
+        if (kind == AUXSTORE_KIND_DRMSET)
+                return drm236_write_block((unsigned int)(block & 3UL),
+                    block >> 2U, buf);
         if (kind == AUXSTORE_KIND_DRM)
                 return drm236_write_block(unit, block, buf);
         return dsk270_write_sector(unit, block, buf);
@@ -55,21 +62,63 @@ auxstore_try(unsigned int kind, unsigned int unit)
         kword_t ln;
         kword_t c;
         kword_t cn;
+        kword_t tail_begin = 0UL;
+        kword_t tail_limit = 0UL;
 
         block = fs_block_workspace;
         if (auxstore_phys_read(kind, unit, 0UL, block) != 0 ||
             block[AUXSTORE_DESC_MAGIC] != AUXSTORE_MAGIC ||
-            block[AUXSTORE_DESC_VERSION] != AUXSTORE_VERSION)
+            block[AUXSTORE_DESC_VERSION] !=
+                (kind == AUXSTORE_KIND_DRMSET ? AUXSTORE_SET_VERSION :
+                AUXSTORE_VERSION))
                 return -1;
-        limit = kind == AUXSTORE_KIND_DRM ? DRM236_BLOCKS_PER_UNIT :
-            DSK270_SECTORS_PER_UNIT;
+        if (kind == AUXSTORE_KIND_DRMSET) {
+                kword_t raw[5];
+                unsigned int member, i;
+                for (i = 0U; i < 5U; ++i)
+                        raw[i] = block[i];
+                if (block[BLOCKSET_LAYOUT_MAGIC_WORD] !=
+                    BLOCKSET_LAYOUT_MAGIC_D6FSR2)
+                        return -1;
+                tail_begin = (((block[BLOCKSET_LAYOUT_RANGE_WORD] >> 18U) &
+                    AUXSTORE_HALF_MASK) +
+                    (block[BLOCKSET_LAYOUT_RANGE_WORD] & AUXSTORE_HALF_MASK))
+                    * 4UL;
+                tail_limit = tail_begin + block[BLOCKSET_LAYOUT_SWAP_TAIL]
+                    * 4UL;
+                /* Reject incomplete or inconsistent four-member sets. */
+                for (member = 1U; member < 4U; ++member) {
+                        if (drm236_read_block(member, 0UL, block) != 0)
+                                return -1;
+                        for (i = 0U; i < 5U; ++i)
+                                if (block[i] != raw[i])
+                                        return -1;
+                        if (block[BLOCKSET_LAYOUT_MAGIC_WORD] !=
+                            BLOCKSET_LAYOUT_MAGIC_D6FSR2 ||
+                            (((block[BLOCKSET_LAYOUT_RANGE_WORD] >> 18U) &
+                            AUXSTORE_HALF_MASK) +
+                            (block[BLOCKSET_LAYOUT_RANGE_WORD] &
+                            AUXSTORE_HALF_MASK)) * 4UL != tail_begin ||
+                            tail_limit != tail_begin +
+                            block[BLOCKSET_LAYOUT_SWAP_TAIL] * 4UL)
+                                return -1;
+                }
+        }
+        limit = kind == AUXSTORE_KIND_DRMSET ?
+            (kword_t)(4U * DRM236_BLOCKS_PER_UNIT) :
+            (kind == AUXSTORE_KIND_DRM ? DRM236_BLOCKS_PER_UNIT :
+            DSK270_SECTORS_PER_UNIT);
         s = (block[AUXSTORE_DESC_BACKSTORE] >> 18U) & AUXSTORE_HALF_MASK;
         sn = block[AUXSTORE_DESC_BACKSTORE] & AUXSTORE_HALF_MASK;
         l = (block[AUXSTORE_DESC_LOGSTORE] >> 18U) & AUXSTORE_HALF_MASK;
         ln = block[AUXSTORE_DESC_LOGSTORE] & AUXSTORE_HALF_MASK;
         c = (block[AUXSTORE_DESC_CACHE] >> 18U) & AUXSTORE_HALF_MASK;
         cn = block[AUXSTORE_DESC_CACHE] & AUXSTORE_HALF_MASK;
-        if ((sn != 0UL && (s == 0UL || s >= limit || sn > limit - s)) ||
+        if ((kind == AUXSTORE_KIND_DRMSET &&
+            ((sn != 0UL && (s < tail_begin || s + sn > tail_limit)) ||
+             (ln != 0UL && (l < tail_begin || l + ln > tail_limit)) ||
+             (cn != 0UL && (c < tail_begin || c + cn > tail_limit)))) ||
+            (sn != 0UL && (s == 0UL || s >= limit || sn > limit - s)) ||
             (ln != 0UL && (l == 0UL || l >= limit || ln > limit - l)) ||
             (cn != 0UL && (c == 0UL || c >= limit || cn > limit - c)) ||
             auxstore_overlap(s, sn, l, ln) ||
@@ -95,6 +144,10 @@ auxstore_boot_discover(void)
         auxstore_logstore_blocks = 0UL;
         auxstore_cache_blocks = 0UL;
 
+        if (module_service_get(MODULE_SERVICE_DRM_READ_BLOCK) != 0U &&
+            module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK) != 0U &&
+            auxstore_try(AUXSTORE_KIND_DRMSET, 0U) == 0)
+                return 0;
         /* V0.9 auto-discovery is deliberately limited to unit zero of each
          * controller class.  Type-270 has no harmless media-presence probe:
          * issuing a transfer to an unattached trailing unit can leave the
@@ -124,8 +177,11 @@ auxstore_post_minits(void)
             auxstore_backstore_blocks == 0UL)
                 return;
         selector = auxstore_unit;
-        if (auxstore_kind == AUXSTORE_KIND_DRM)
+        if (auxstore_kind == AUXSTORE_KIND_DRM ||
+            auxstore_kind == AUXSTORE_KIND_DRMSET)
                 selector |= (unsigned int)FS_BACKING_DIRECT_DRM_TAG;
+        if (auxstore_kind == AUXSTORE_KIND_DRMSET)
+                selector |= (unsigned int)FS_BACKING_DIRECT_SET_TAG;
         blockset_direct_configure(selector, auxstore_backstore_start, 0UL,
             auxstore_backstore_blocks);
         backstore_blocks = auxstore_backstore_blocks;

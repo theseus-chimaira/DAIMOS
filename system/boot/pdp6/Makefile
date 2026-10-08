@@ -50,7 +50,7 @@ D6FS_LOGSTORE_BLOCKS ?= 0400
 D6FS_SWAP_TAIL_BLOCKS ?= 0400
 D6FS_SPARE_BLOCKS ?= 0
 DRUM_LOGSTORE_BLOCKS ?= 0100
-DRUM_BACKSTORE_BLOCKS ?= 0300
+DRUM_BACKSTORE_BLOCKS ?= 0600
 PROC_BOOT_USERS ?= 1
 PROC_STACK_WATERMARK ?= 0
 PROC_SWAP_VERIFY_PURE ?= 0
@@ -1049,12 +1049,14 @@ ${DRUM_STAMP}: ${D6FS_ROOT_DEPS}
 	    --swap-tail-blocks ${D6FS_SWAP_TAIL_BLOCKS} \
 	    --spare-blocks ${D6FS_SPARE_BLOCKS}
 	${MKD6FS} -n 4 -d ${DRUM_DIR} ${D6FS_ROOT_ARGS}
-	# D6SET1 has an ordinary D6FS data area, while the physical DRM0
-	# tail contains independent raw AUXSTORE LOGSTORE/BACKSTORE regions.
-	# MKAUXSTORE preserves the existing D6FS/blockset media descriptor.
-	${MKAUXSTORE} -i ${DR0_IMAGE} --from-d6fs-layout \
+	# AUXSTORE logical blocks interleave over the four D6SET1 drum tails.
+	# Keep D6FS member headers intact and replicate the validated raw map.
+	@for i in 0 1 2 3; do \
+	    ${MKAUXSTORE} -i ${DRUM_DIR}/dsk$$i.dsk --from-d6fs-layout \
+	    --set-members 4 --set-member-index $$i \
 	    --logstore-blocks ${DRUM_LOGSTORE_BLOCKS} \
-	    --backstore-blocks ${DRUM_BACKSTORE_BLOCKS} --cache-blocks 0
+	    --backstore-blocks ${DRUM_BACKSTORE_BLOCKS} --cache-blocks 0 || exit 1; \
+	done
 	touch $@
 
 ${DRUM_IMAGES}: ${DRUM_STAMP}

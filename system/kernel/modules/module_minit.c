@@ -148,6 +148,9 @@ unsigned int d6fs_backing_write_addr;
 static kword_t *badmap_runtime_state;
 #endif
 
+extern int auxstore_drmset_log_read(unsigned int, kword_t, kword_t *);
+extern int auxstore_drmset_log_write(unsigned int, kword_t, kword_t *);
+
 extern kword_t storage_pi_handler;
 extern kword_t storage_dct_handler;
 extern kword_t storage_pi_dsk_jump;
@@ -1245,7 +1248,12 @@ logstore_minit(void)
         state = (kword_t *)(unsigned long)minit_export(name, base,
             LOGSTORE_X_STATE);
         if (auxstore_logstore_blocks != 0UL) {
-                if (auxstore_kind == AUXSTORE_KIND_DRM) {
+                if (auxstore_kind == AUXSTORE_KIND_DRMSET) {
+                        read_addr = (unsigned int)(unsigned long)
+                            &auxstore_drmset_log_read;
+                        write_addr = (unsigned int)(unsigned long)
+                            &auxstore_drmset_log_write;
+                } else if (auxstore_kind == AUXSTORE_KIND_DRM) {
                         read_addr = module_service_get(MODULE_SERVICE_DRM_READ_BLOCK);
                         write_addr = module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK);
                 } else {
