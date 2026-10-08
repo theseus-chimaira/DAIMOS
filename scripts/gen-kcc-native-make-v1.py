@@ -49,6 +49,7 @@ das = "/OPTION/BASE/EXEC/DAS"
 darc = "/OPTION/BASE/EXEC/DARC"
 dlink = "/OPTION/BASE/EXEC/DLINK"
 install = "/SYSTEM/EXEC/INSTALL"
+rm = "/SYSTEM/EXEC/RM"
 runtime = ["CRT0.DOBJ", "BOOT.DOBJ", "SYS.DOBJ", "HELP.DOBJ"]
 
 def add_rule(lines, target, deps, commands):
@@ -102,11 +103,11 @@ for phase, var in phases:
         if not name.endswith(".DOBJ"):
             raise ValueError((phase, raw))
         objs.append(name)
-    lines = ["# PHASE LINK WITH INCREMENTAL OBJECT SUBBUILDS.", ".PHONY: ALL", "ALL:"]
+    lines = ["# PHASE LINK WITH INCREMENTAL OBJECT SUBBUILDS.", ".PHONY: ALL CLEAN", "ALL:"]
     groups = [objs[i:i + 4] for i in range(0, len(objs), 4)]
     archives = []
     for i, group in enumerate(groups):
-        sub = ["# SMALL PHASE OBJECT SUBGRAPH.", ".PHONY: ALL", "ALL: " + build + "/" + phase + str(i + 1) + ".DARC"]
+        sub = ["# SMALL PHASE OBJECT SUBGRAPH.", ".PHONY: ALL CLEAN", "ALL: " + build + "/" + phase + str(i + 1) + ".DARC"]
         for name in dict.fromkeys(group):
             target, source, asm, flags = object_rule(name, phase.replace("K", "", 1))
             add_rule(sub, asm, [source], [f"{kcc} -S -O {asm} {flags} {source}"])
@@ -115,16 +116,26 @@ for phase, var in phases:
         archives.append(target)
         add_rule(sub, target, [f"{build}/{n}" for n in group],
                  [f"{darc} -O {target} " + " ".join(f"{build}/{n}" for n in group)])
+        sub.append("CLEAN:")
+        for name in dict.fromkeys(group):
+            target, _, asm, _ = object_rule(name, phase.replace("K", "", 1))
+            sub.extend([f"> -!{rm} {asm}", f"> -!{rm} {target}"])
+        sub.append(f"> -!{rm} B/{phase}{i + 1}.DARC")
         filename = "M" + phase[1:] + str(i + 1)
         (out / filename).write_text("\n".join(sub) + "\n")
         lines.append(f"> !/SYSTEM/EXEC/MAKE -F {filename} ALL")
     lines.append("> !/SYSTEM/EXEC/MAKE -F L" + phase[1:] + " ALL")
+    lines.append("CLEAN:")
+    lines.append("> !/SYSTEM/EXEC/MAKE -F L" + phase[1:] + " CLEAN")
+    for i in range(len(groups)):
+        lines.append(f"> !/SYSTEM/EXEC/MAKE -F M{phase[1:]}{i + 1} CLEAN")
     link = ["# PHASE LINK GRAPH.", ".PHONY: ALL", "ALL: " + build + "/" + phase + ".DXR"]
     target = f"{build}/{phase}.DXR"
     dep = archives + ["BOOT/" + r for r in runtime] + ["BOOT/LIBC.DARC"]
     args = " ".join("BOOT/" + r for r in runtime)
     args += " " + " ".join(archives) + " BOOT/LIBC.DARC"
     add_rule(link, target, dep, [f"{dlink} --DAIMOS-UUO-RELAX -B 020 -O {target} {args}"])
+    link.extend(["CLEAN:", f"> -!{rm} {target}"])
     (out / ("L" + phase[1:])).write_text("\n".join(link) + "\n")
     (out / ("MK" + phase[1:])).write_text("\n".join(lines) + "\n")
 
@@ -143,10 +154,12 @@ add_rule(drv, "B/KCC.DXR", [drv_obj, "BOOT/CRT0.DOBJ", "BOOT/BOOT.DOBJ",
          [f"{dlink} --DAIMOS-UUO-RELAX -B 020 -O B/KCC.DXR "
           "BOOT/CRT0.DOBJ BOOT/BOOT.DOBJ BOOT/SYS.DOBJ BOOT/HELP.DOBJ "
           "B/DAIMOS-DRIVER.DOBJ BOOT/LIBC.DARC"])
+drv.extend(["CLEAN:", f"> -!{rm} B/KCC.DXR",
+            f"> -!{rm} {drv_obj}", f"> -!{rm} {drv_asm}"])
 (out / "MKDRV").write_text("\n".join(drv) + "\n")
 
 top = ["# NATIVE KCC REBUILD: EACH PHASE IS A SEPARATE SMALL MAKE GRAPH.",
-       ".PHONY: ALL INSTALL HELP", "ALL:",
+       ".PHONY: ALL INSTALL HELP CLEAN", "ALL:",
        f"> !{install} -D -M 0777 {build}"]
 for phase, _ in phases:
     top.append(f"> !/SYSTEM/EXEC/MAKE -F MK{phase[1:]} ALL")
@@ -157,5 +170,12 @@ top += ["HELP:", "> !/SYSTEM/EXEC/ECHO MAKE ALL BUILDS KCPP KPARSE KGEN KOPT",
 for phase, _ in phases:
     top.append(f"> !{install} -M 0555 {build}/{phase}.DXR /OPTION/BASE/LIBEXEC/KCC/{phase}")
 top.append(f"> !{install} -M 0555 B/KCC.DXR /OPTION/BASE/EXEC/KCC")
+top.append("CLEAN:")
+for phase, _ in phases:
+    top.append(f"> -!{rm} B/{phase}.DXR")
+    count = len(expand(variables[dict(phases)[phase]]).split())
+    for i in range((count + 3) // 4):
+        top.append(f"> !/SYSTEM/EXEC/MAKE -F M{phase[1:]}{i + 1} CLEAN")
+top.append("> !/SYSTEM/EXEC/MAKE -F MKDRV CLEAN")
 (out / "MAKEFILE").write_text("\n".join(top) + "\n")
 print("generated KCC native Makefiles:", ", ".join(p.name for p in out.iterdir()))
