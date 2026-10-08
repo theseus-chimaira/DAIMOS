@@ -76,6 +76,13 @@ struct make_implicit {
         char stem[MAKE_NAME_MAX + 1U];
 };
 
+/* Recursive make_build frames formerly contained two 104-character arrays.
+ * KCC allocates an 81-word frame for that form, exhausting the native
+ * user stack during deep dependency traversal. Keep per-depth scratch in
+ * userland BSS so recursive implicit-rule lookup remains independent.
+ * Each depth owns its record until returning to the previous depth.
+ */
+static struct make_implicit make_implicit_frames[MAKE_MAX_DEPTH + 1U];
 static struct make_rule make_rules[MAKE_MAX_RULES];
 static struct make_link make_deps[MAKE_MAX_DEPS];
 static struct make_link make_recipes[MAKE_MAX_RECIPES];
@@ -1063,7 +1070,7 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
 {
         struct make_result target;
         struct make_result dep;
-        struct make_implicit imp;
+        struct make_implicit *imp;
         struct make_auto automatic;
         struct make_rule *rule;
         const char *depname;
@@ -1078,6 +1085,7 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
 
         if (depth > MAKE_MAX_DEPTH)
                 return 1;
+        imp = &make_implicit_frames[depth];
         ri = make_find_rule(name);
         if (ri >= 0) {
                 rule = &make_rules[ri];
@@ -1099,12 +1107,12 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                 rule = 0;
         if (make_stat(name, &target) != 0)
                 goto fail;
-        imp.rule = -1;
-        imp.source[0] = 0;
-        imp.stem[0] = 0;
+        imp->rule = -1;
+        imp->source[0] = 0;
+        imp->stem[0] = 0;
         if ((rule == 0 || rule->recipe_head == MAKE_NONE) &&
-            make_source_rule(name, &imp) == 0)
-                ir = imp.rule;
+            make_source_rule(name, imp) == 0)
+                ir = imp->rule;
         else
                 ir = -1;
         if (rule == 0 && !target.exists && ir < 0) {
@@ -1140,8 +1148,8 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
         }
         if (ir >= 0) {
                 if (first == 0)
-                        first = imp.source;
-                rc = make_build(imp.source, &dep, depth + 1U);
+                        first = imp->source;
+                rc = make_build(imp->source, &dep, depth + 1U);
                 if (rc != 0)
                         goto fail;
                 if (dep.changed ||
@@ -1171,13 +1179,13 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
         }
         if (ir >= 0) {
                 int sri;
-                if (make_stat(imp.source, &dep) != 0)
+                if (make_stat(imp->source, &dep) != 0)
                         goto fail;
-                sri = make_find_rule(imp.source);
+                sri = make_find_rule(imp->source);
                 if ((sri >= 0 && (make_rules[sri].flags &
                     (MAKE_RULE_CHANGED | MAKE_RULE_PHONY)) != 0U) ||
                     make_dep_requires_update(&dep, &target))
-                        if (make_newer_add(imp.source) != 0)
+                        if (make_newer_add(imp->source) != 0)
                                 goto fail;
         }
         recipe = rule != 0 && rule->recipe_head != MAKE_NONE ?
@@ -1195,7 +1203,7 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                 automatic.target = name;
                 automatic.first = first == 0 ? "" : first;
                 automatic.newer = make_newer_buf;
-                automatic.stem = ir >= 0 ? imp.stem : "";
+                automatic.stem = ir >= 0 ? imp->stem : "";
                 rc = make_run_commands(recipe, &automatic);
                 if (rc != 0) {
                         make_diag("RECIPE FAILED", name);
