@@ -42,3 +42,41 @@ The diagnostic cleanup was corrected so a backing-store read failure retains
 reason 4, while an actual unpin failure records reason 5. Earlier, the shared
 cleanup label could overwrite reason 4 with 5. The amended source assembles
 successfully with DAS. The amended build has not yet been simulator-tested.
+
+## Fresh-image MAKE ALL regression and diagnostic narrowing
+
+The failure is reproducible on a **new** 256K PDP-6 boot image:
+`CD /OPTION/SOURCE/KCC; MAKE ALL; ECHO STATUS:$?` emits
+`MAKE: BUILD B`, `!/SYSTEM/EXEC/INSTALL -D -M 0777 B`, then
+`STATUS:131073` (octal `0400001`). Direct `INSTALL -D -M 0777 B` and
+`MAKE B` both return zero when tested separately from fresh images.
+
+All of the following were **test-only experiments** and were restored:
+
+* Replaced the `proc_swap_service_failed` TERM event with HUP: no change.
+* Replaced DSH cleanup TERM events with HUP: no change.
+* Remapped TERM to HUP inside PDP-6 `proc_event_apply`: no change.
+* Tagged a matching `0400001` ordinary EXIT syscall: no change.
+* Increased `EXEC_DXR_STACK_WORDS` from octal `02000` to `04000`: no change.
+
+Temporary MAKE markers established that the INSTALL child returns via
+`dsys_wait` and the recipe status is **zero**. `make_build("B")` returns
+zero, and its parent resumes at depth zero. MAKE subsequently traverses:
+
+`ALL -> B/KCPP.DXR -> B/KCPP1.DARC -> B/CC-CPP-V1.DOBJ ->
+B/CC-CPP-V1.S -> CC.C`.
+
+It fails before KCC launches. Changes to the instrumentation shift the last
+observed point in that dependency traversal. KCC-generated `make_build` uses
+an octal `0121`-word frame (81 decimal words) plus saved registers, so
+recursion/stack **or KCC-generated code** should be inspected next, without
+assuming a particular root cause. No production source fix has been shown.
+
+Testkit regression `test-daimos-kcc-make-all-fresh-20261008-v1` explicitly
+requires `STATUS:0` and rejects `STATUS:131073`. It **correctly fails** on
+current production DAIMOS. Source and simulator logs are retained under
+`$HOME/tmp/daimos-kcc-make-all-fresh-20261008-v1.*`.
+
+This investigation currently rules out the specific instrumented swap-service
+TERM branch, not all other possible MM/process problems. Do not merge these
+temporary instrumentation changes into main.
