@@ -445,7 +445,7 @@ KCC_SOURCE_INPUTS = $(wildcard $(KCC_REPO)/*.[chs]) \
 KCC_SOURCE_REL = $(patsubst $(KCC_REPO)/%,%,$(KCC_SOURCE_INPUTS))
 KCC_SOURCE_STAMP = $(KCC_SOURCE_BUILD)/.staged
 KCC_SOURCE_ARGS = $(foreach n,$(KCC_SOURCE_REL),-f "/OPTION/SOURCE/KCC/$(shell printf '%s' '$(n)' | tr '[:lower:]' '[:upper:]'):$(KCC_SOURCE_BUILD)/$(n):644:binwords") \
-	$(foreach n,$(notdir $(wildcard $(KCC_SOURCE_BUILD)/native-make/*)),-f "/OPTION/SOURCE/KCC/$(n):$(KCC_SOURCE_BUILD)/$(n):644:binwords") \
+	-f "/OPTION/SOURCE/KCC/MAKEFILE:$(KCC_SOURCE_BUILD)/MAKEFILE:644:binwords" \
 	$(foreach n,u.h dsys.h syscall.h file.h vfs.h kcore.h storage.h pdp10-sixbit.h,-f "/OPTION/SOURCE/KCC/ABI/$(shell echo $(n) | tr '[:lower:]' '[:upper:]'):$(KCC_SOURCE_BUILD)/ABI/$(n):644:binwords") \
 	$(foreach n,CRT0.DOBJ BOOT.DOBJ SYS.DOBJ HELP.DOBJ LIBC.DARC,-f "/OPTION/SOURCE/KCC/BOOT/$(n):$(KCC_SOURCE_BUILD)/BOOT/$(n):644:binwords")
 KCC_BOOT_BUILD ?= $(KCC_REPO)/build-native-v1

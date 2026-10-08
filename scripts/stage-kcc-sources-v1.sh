@@ -39,7 +39,7 @@ for src in "$repo"/*.[chs] "$repo"/runtime/*.[cs] \
         rm -f "$out/$rel.ascii"
 done
 python3 "$generator" "$repo" "$out/native-make"
-for src in "$out"/native-make/*; do
+for src in "$out"/native-make/MAKEFILE; do
         name=${src##*/}
         tr '[:lower:]' '[:upper:]' < "$src" > "$out/$name.ascii"
         "$s6text" --encode "$out/$name.ascii" "$out/$name"

@@ -178,4 +178,78 @@ for phase, _ in phases:
         top.append(f"> !/SYSTEM/EXEC/MAKE -F M{phase[1:]}{i + 1} CLEAN")
 top.append("> !/SYSTEM/EXEC/MAKE -F MKDRV CLEAN")
 (out / "MAKEFILE").write_text("\n".join(top) + "\n")
+
+# Convert the authoritative KCC object closure into ONE normal dependency
+# graph.  Split files above remain implementation intermediates only; they
+# are NOT staged and the native build does not recurse through subprocesses.
+single = ["# GENERATED FROM KCC/MAKEFILE NATIVE OBJECT SETS.",
+          "KCC = /OPTION/BASE/EXEC/KCC",
+          "DAS = /OPTION/BASE/EXEC/DAS",
+          "DARC = /OPTION/BASE/EXEC/DARC",
+          "DLINK = /OPTION/BASE/EXEC/DLINK",
+          "INSTALL = /SYSTEM/EXEC/INSTALL",
+          "RM = /SYSTEM/EXEC/RM",
+          "KFLAGS = " + common_flags,
+          ".PHONY: ALL INSTALL CLEAN HELP",
+          "ALL: B B/KCPP.DXR B/KPARSE.DXR B/KGEN.DXR B/KOPT.DXR B/KCC.DXR"]
+add_rule(single, "B", [], [f"{install} -D -M 0777 B"])
+seen_rules = set()
+all_generated = set()
+for phase, var in phases:
+    for name in dict.fromkeys(pathlib.PurePosixPath(raw).name.upper()
+                              for raw in expand(variables[var]).split()):
+        if name in seen_rules:
+            continue
+        seen_rules.add(name)
+        target, source, asm, flags = object_rule(name, phase.replace("K", "", 1))
+        add_rule(single, asm, [source], [f"{kcc} -S -O {asm} {flags} {source}"])
+        add_rule(single, target, [asm], [f"{das} -F -C -O {target} {asm}"])
+        all_generated.update((asm, target))
+    objs = [pathlib.PurePosixPath(raw).name.upper()
+            for raw in expand(variables[var]).split()]
+    archives = []
+    for i in range(0, len(objs), 4):
+        group = objs[i:i + 4]
+        archive = f"B/{phase}{i // 4 + 1}.DARC"
+        archives.append(archive)
+        add_rule(single, archive, ["B/" + name for name in group],
+                 [f"{darc} -O {archive} " + " ".join("B/" + n for n in group)])
+        all_generated.add(archive)
+    target = f"B/{phase}.DXR"
+    dep = archives + ["BOOT/" + r for r in runtime] + ["BOOT/LIBC.DARC"]
+    args = " ".join("BOOT/" + r for r in runtime)
+    args += " " + " ".join(archives) + " BOOT/LIBC.DARC"
+    add_rule(single, target, dep, [f"{dlink} --DAIMOS-UUO-RELAX -B 020 -O {target} {args}"])
+    all_generated.add(target)
+
+add_rule(single, drv_asm, [drv_source],
+         [f"{kcc} -S -O {drv_asm} {common_flags} {drv_source}"])
+add_rule(single, drv_obj, [drv_asm], [f"{das} -F -C -O {drv_obj} {drv_asm}"])
+add_rule(single, "B/KCC.DXR", [drv_obj] + ["BOOT/" + r for r in runtime]
+         + ["BOOT/LIBC.DARC"],
+         [f"{dlink} --DAIMOS-UUO-RELAX -B 020 -O B/KCC.DXR "
+          "BOOT/CRT0.DOBJ BOOT/BOOT.DOBJ BOOT/SYS.DOBJ BOOT/HELP.DOBJ "
+          "B/DAIMOS-DRIVER.DOBJ BOOT/LIBC.DARC"])
+all_generated.update((drv_asm, drv_obj, "B/KCC.DXR"))
+single.extend(["INSTALL: ALL",
+               f"> !{install} -D -M 0755 /OPTION/BASE/LIBEXEC/KCC"])
+for phase, _ in phases:
+    single.append(f"> !{install} -M 0555 B/{phase}.DXR /OPTION/BASE/LIBEXEC/KCC/{phase}")
+single.append(f"> !{install} -M 0555 B/KCC.DXR /OPTION/BASE/EXEC/KCC")
+single.append("CLEAN:")
+# RM accepts multiple paths. Batch to avoid launching one PDP-6 process per
+# file; seven entries keep argv, recipe length and RUN V2 within bounds.
+clean_files = sorted(all_generated)
+for i in range(0, len(clean_files), 7):
+    single.append("> -!" + rm + " " + " ".join(clean_files[i:i + 7]))
+single.extend(["HELP:", "> !/SYSTEM/EXEC/ECHO MAKE ALL INSTALL CLEAN"])
+for i, line in enumerate(single):
+    if line.startswith("> "):
+        for original, variable in ((kcc, "KCC"), (das, "DAS"),
+                                   (darc, "DARC"), (dlink, "DLINK"),
+                                   (install, "INSTALL"), (rm, "RM")):
+            line = line.replace(original, "$(" + variable + ")")
+        line = line.replace(common_flags, "$(KFLAGS)")
+        single[i] = line
+(out / "MAKEFILE").write_text("\n".join(single) + "\n")
 print("generated KCC native Makefiles:", ", ".join(p.name for p in out.iterdir()))

@@ -12,13 +12,13 @@
 #define MAKE_LINE_MAX       256U
 #define MAKE_NAME_MAX       103U
 #define MAKE_RECIPE_MAX     MAKE_LINE_MAX
-#define MAKE_MAX_RULES       96U
-#define MAKE_MAX_DEPS       384U
-#define MAKE_MAX_RECIPES    192U
+#define MAKE_MAX_RULES       256U
+#define MAKE_MAX_DEPS       768U
+#define MAKE_MAX_RECIPES    384U
 #define MAKE_MAX_VARS        64U
 #define MAKE_MAX_LHS          8U
 #define MAKE_MAX_GOALS       16U
-#define MAKE_ARENA_CHARS    6144U
+#define MAKE_ARENA_CHARS    24576U
 #define MAKE_RUN_WORDS       400U
 #define MAKE_MAX_DEPTH        32U
 #define MAKE_NONE        0777777U
