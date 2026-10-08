@@ -50,7 +50,7 @@ mm_boot_init(kword_t core_words)
 int
 mm_boot_reserve(kword_t base, unsigned int type, unsigned int owner)
 {
-        struct mm_extent *extent;
+        kword_t metadata;
         kword_t words;
         kword_t arena_base;
         kword_t arena_end;
@@ -59,15 +59,16 @@ mm_boot_reserve(kword_t base, unsigned int type, unsigned int owner)
         int found;
 
         for (i = 0; i < mm_extent_count; ++i)
-                if (MM_EXTENT_BASE(&mm_extents[i]) == base)
+                if ((mm_extents[i] & MM_HALF_MASK) == base)
                         break;
         if (i >= mm_extent_count)
                 return MM_ERR_INVAL;
-        extent = &mm_extents[i];
-        if (MM_EXTENT_TYPE(extent) != type || MM_EXTENT_OWNER(extent) != owner ||
-            MM_EXTENT_PINS(extent) != 0U)
+        metadata = mm_metadata_get(i);
+        if (((metadata >> 12U) & 3U) != type ||
+            (metadata & 07777UL) != owner ||
+            ((metadata >> 14U) & 15U) != 0U)
                 return MM_ERR_INVAL;
-        words = MM_EXTENT_WORDS(extent);
+        words = (mm_extents[i] >> 18U) & MM_HALF_MASK;
         found = 0;
         for (arena = 0; arena < mm_arena_count; ++arena) {
                 arena_base = MM_ARENA_BASE(mm_arenas[arena]);
@@ -90,9 +91,7 @@ mm_boot_reserve(kword_t base, unsigned int type, unsigned int owner)
         }
         if (!found)
                 return MM_ERR_INVAL;
-        while (++i < mm_extent_count)
-                mm_extents[i - 1] = mm_extents[i];
-        --mm_extent_count;
+        mm_extent_remove(i);
         return MM_OK;
 }
 
@@ -116,15 +115,15 @@ mm_largest_free(void)
                 arena_end = arena_base + MM_ARENA_WORDS(mm_arenas[arena]);
                 cursor = arena_base;
                 while (i < mm_extent_count &&
-                    MM_EXTENT_BASE(&mm_extents[i]) < arena_base)
+                    (mm_extents[i] & MM_HALF_MASK) < arena_base)
                         ++i;
                 while (i < mm_extent_count) {
-                        extent_base = MM_EXTENT_BASE(&mm_extents[i]);
+                        extent_base = (mm_extents[i] & MM_HALF_MASK);
                         if (extent_base >= arena_end)
                                 break;
                         if (extent_base > cursor && extent_base - cursor > largest)
                                 largest = extent_base - cursor;
-                        extent_end = extent_base + MM_EXTENT_WORDS(&mm_extents[i]);
+                        extent_end = extent_base + ((mm_extents[i] >> 18U) & MM_HALF_MASK);
                         if (extent_end > cursor)
                                 cursor = extent_end;
                         ++i;
@@ -164,8 +163,8 @@ mm_add_free(kword_t base, kword_t words)
                 kword_t extent_base;
                 kword_t extent_end;
 
-                extent_base = MM_EXTENT_BASE(&mm_extents[i]);
-                extent_end = extent_base + MM_EXTENT_WORDS(&mm_extents[i]);
+                extent_base = (mm_extents[i] & MM_HALF_MASK);
+                extent_end = extent_base + ((mm_extents[i] >> 18U) & MM_HALF_MASK);
                 if (extent_base < end && base < extent_end)
                         return MM_ERR_INVAL;
         }

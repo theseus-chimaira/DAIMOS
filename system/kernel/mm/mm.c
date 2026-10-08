@@ -1,3 +1,4 @@
+#define MM_PORTABLE_REFERENCE_LAYOUT 1
 #include "mm.h"
 #include "vm.h"
 #include "proc_swap.h"

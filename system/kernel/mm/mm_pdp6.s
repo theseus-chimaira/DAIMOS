@@ -4,13 +4,15 @@
  *
  * This is the PDP-6 implementation of the policy documented by mm.c.  The
  * portable C source remains the reference implementation.  PDP-6 uses a
- * sorted table of two-word allocated extents and up to three managed arenas;
+ * sorted span array with paired 18-bit odd/even metadata and up to three managed arenas;
  * free memory is represented implicitly by gaps.  The assembly path removes
  * KCC save frames and structure-copy scaffolding without changing policy.
  */
 
         .text
         .globl  mm_extents
+        .globl  mm_metadata_get
+        .globl  mm_extent_remove
         .globl  mm_arenas
         .globl  mm_core_words
         .globl  mm_extent_count
@@ -31,7 +33,7 @@
         .globl  mach_pi_disable
         .globl  mach_pi_restore
 
-        .equ    MM_MAX_EXTENTS,025
+        .equ    MM_MAX_EXTENTS,040
         .equ    MM_MAX_ARENAS,3
         .equ    MM_TYPE_PROCESS,1
         .equ    MM_ALLOC_LOW,0
@@ -41,36 +43,64 @@
         .equ    MM_ERR_DESCRIPTORS,-3
         .equ    MM_ERR_INVAL,-4
         .equ    MM_ERR_BUSY,-5
-        .equ    MM_PIN_ONE,010000000
-        .equ    MM_PIN_FIELD,03770000000
+        .equ    MM_PIN_ONE,040000
+        .equ    MM_PIN_FIELD,0740000
         .equ    VM_EXTENT_ALIGN_WORDS,02000
         .equ    PROC_NO_SLOT,0400
 
-; Delete extent slot AC1.  Private leaf, AC2..AC7 scratch.
-mm_delete:
-        move    2,mm_extent_count
-        subi    2,1
-        caml    1,2
-        jrst    mm_delete_done
-        move    3,1
-mm_delete_loop:
-        move    4,3
-        addi    4,1
-        lsh     4,1
-        move    5,mm_extents(4)
-        move    6,mm_extents+1(4)
-        move    4,3
-        lsh     4,1
-        movem   5,mm_extents(4)
-        movem   6,mm_extents+1(4)
-        aoj     3,
-        camge   3,2
-        jrst    mm_delete_loop
-mm_delete_done:
-        sos     mm_extent_count
+ ; Compact metadata: bits 0..11 owner, 12..13 type, 14..17 pins.
+; AC1=descriptor index, AC1=metadata result; AC0 scratch, AC2 preserved.
+mm_metadata_get:
+        move    0,1
+        lsh     1,-1
+        trne    0,1
+        jrst    mm_metadata_get_odd
+        hlrz    1,mm_metadata(1)
+        popj    17,
+mm_metadata_get_odd:
+        hrrz    1,mm_metadata(1)
         popj    17,
 
-; int mm_extent_insert(int slot, const struct mm_extent *extent)
+; AC1=index, AC2=18-bit metadata; AC0 scratch; AC2 preserved.
+mm_metadata_put:
+        move    0,1
+        lsh     1,-1
+        trne    0,1
+        jrst    mm_metadata_put_odd
+        hrlm    2,mm_metadata(1)
+        popj    17,
+mm_metadata_put_odd:
+        hrrm    2,mm_metadata(1)
+        popj    17,
+
+; Delete extent slot AC1 and shift both arrays consistently.
+mm_extent_remove:
+mm_delete:
+        move    7,1
+        move    6,mm_extent_count
+        subi    6,1
+mm_delete_loop:
+        camge   7,6
+        jrst    mm_delete_shift
+        move    1,6
+        setz    2,
+        pushj   17,mm_metadata_put
+        sos     mm_extent_count
+        popj    17,
+mm_delete_shift:
+        move    4,7
+        addi    4,1
+        move    5,mm_extents(4)
+        movem   5,mm_extents(7)
+        move    1,4
+        pushj   17,mm_metadata_get
+        move    2,1
+        move    1,7
+        pushj   17,mm_metadata_put
+        aoja    7,mm_delete_loop
+
+; int mm_extent_insert(int slot, const struct mm_extent *extent).
+; External temporary extent remains two words with OLD metadata bit layout.
 mm_extent_insert:
         move    7,mm_extent_count
         caige   7,MM_MAX_EXTENTS
@@ -79,31 +109,53 @@ mm_extent_insert:
         popj    17,
 mm_extent_insert_space:
         move    6,2
-        caml    1,7
-        jrst    mm_extent_insert_copy
-        move    5,7
+        move    5,1
+        ; Convert old 18-bit owner / type / pin layout to 18-bit metadata.
+        move    4,1(6)
+        hrrz    3,4
+        move    2,3
+        andi    2,07777
+        came    2,3
+        jrst    mm_extent_insert_inval
+        hlrz    2,4
+        andi    2,7
+        caile   2,3
+        jrst    mm_extent_insert_inval
+        lsh     2,14
+        ior     3,2
+        move    2,4
+        lsh     2,-025
+        andi    2,0377
+        caile   2,017
+        jrst    mm_extent_insert_inval
+        lsh     2,016
+        ior     3,2
+        push    17,3
 mm_extent_insert_shift:
-        move    4,5
+        camg    7,5
+        jrst    mm_extent_insert_copy
+        move    4,7
         subi    4,1
-        lsh     4,1
         move    2,mm_extents(4)
-        move    3,mm_extents+1(4)
-        move    4,5
-        lsh     4,1
-        movem   2,mm_extents(4)
-        movem   3,mm_extents+1(4)
-        soj     5,
-        camle   5,1
+        movem   2,mm_extents(7)
+        move    1,4
+        pushj   17,mm_metadata_get
+        move    2,1
+        move    1,7
+        pushj   17,mm_metadata_put
+        soj     7,
         jrst    mm_extent_insert_shift
 mm_extent_insert_copy:
-        move    4,1
-        lsh     4,1
         move    2,(6)
-        move    3,1(6)
-        movem   2,mm_extents(4)
-        movem   3,mm_extents+1(4)
+        movem   2,mm_extents(5)
+        move    1,5
+        pop     17,2
+        pushj   17,mm_metadata_put
         aos     mm_extent_count
         setz    1,
+        popj    17,
+mm_extent_insert_inval:
+        movni   1,4
         popj    17,
 
 ; AC1=base. Return AC1=matching slot or extent_count.
@@ -114,7 +166,6 @@ mm_find_base_loop:
         caml    1,mm_extent_count
         popj    17,
         move    3,1
-        lsh     3,1
         hrrz    4,mm_extents(3)
         camn    4,2
         popj    17,
@@ -125,9 +176,8 @@ mm_is_pinned:
         pushj   17,mm_find_base
         caml    1,mm_extent_count
         jrst    mm_is_pinned_no
-        lsh     1,1
-        move    2,mm_extents+1(1)
-        tlne    2,03770
+        pushj   17,mm_metadata_get
+        trne    1,MM_PIN_FIELD
         jrst    mm_is_pinned_yes
 mm_is_pinned_no:
         setz    1,
@@ -165,7 +215,6 @@ mm_find_fit_skip:
         caml    015,mm_extent_count
         jrst    mm_find_fit_tail
         move    1,015
-        lsh     1,1
         hrrz    2,mm_extents(1)
         caml    2,4
         jrst    mm_find_fit_extent
@@ -175,7 +224,6 @@ mm_find_fit_extent:
         caml    015,mm_extent_count
         jrst    mm_find_fit_tail
         move    1,015
-        lsh     1,1
         hrrz    2,mm_extents(1)
         caml    2,5
         jrst    mm_find_fit_tail
@@ -211,7 +259,6 @@ mm_find_fit_low_gap:
 
 mm_find_fit_after_gap:
         move    1,015
-        lsh     1,1
         hrrz    2,mm_extents(1)
         hlrz    3,mm_extents(1)
         add     3,2
@@ -305,6 +352,9 @@ mm_alloc_aligned_noreclaim:
         move    1,014
         and     1,[-2]
         jumpn   1,mm_alloc_nr_inval
+        move    1,013
+        and     1,[-010000]
+        jumpn   1,mm_alloc_nr_inval
 
         movei   4,-1(17)
         move    1,010
@@ -328,7 +378,6 @@ mm_alloc_nr_slot:
         caml    1,mm_extent_count
         jrst    mm_alloc_nr_build
         move    2,1
-        lsh     2,1
         hrrz    3,mm_extents(2)
         caml    3,016
         jrst    mm_alloc_nr_build
@@ -368,10 +417,22 @@ mm_move_extent:
         move    010,1
         move    011,2
         move    1,010
-        lsh     1,1
         move    2,mm_extents(1)
-        move    3,mm_extents+1(1)
         movem   2,-5(17)
+        pushj   17,mm_metadata_get
+        ; Reconstruct traditional metadata for the temporary two-word record.
+        move    3,1
+        andi    3,07777
+        move    4,1
+        lsh     4,-16
+        andi    4,017
+        lsh     4,025
+        ior     3,4
+        move    4,1
+        lsh     4,-14
+        andi    4,3
+        lsh     4,022
+        ior     3,4
         movem   3,-4(17)
         hrrz    012,2
         hlrz    013,2
@@ -412,7 +473,6 @@ mm_move_new_slot:
         caml    014,mm_extent_count
         jrst    mm_move_publish
         move    1,014
-        lsh     1,1
         hrrz    2,mm_extents(1)
         caml    2,015
         jrst    mm_move_publish
@@ -469,13 +529,14 @@ mm_compact_scan:
         caml    012,mm_extent_count
         jrst    mm_compact_fragmented
         move    1,012
-        lsh     1,1
-        move    2,mm_extents+1(1)
-        hlrz    3,2
-        andi    3,7
+        pushj   17,mm_metadata_get
+        move    2,1
+        lsh     2,-14
+        move    3,2
+        andi    3,3
         caie    3,MM_TYPE_PROCESS
         jrst    mm_compact_next
-        tlne    2,03770
+        trne    1,0740000
         jrst    mm_compact_next
         move    1,012
         movei   2,VM_EXTENT_ALIGN_WORDS
@@ -608,18 +669,22 @@ mm_free:
         pushj   17,mm_find_base
         caml    1,mm_extent_count
         jrst    mm_free_inval
-        move    4,1
-        lsh     4,1
-        move    2,mm_extents+1(4)
-        hlrz    3,2
-        andi    3,7
+        pushj   17,mm_metadata_get
+        move    2,1
+        lsh     2,-14
+        move    3,2
+        andi    3,3
         came    3,6
         jrst    mm_free_inval
-        hrrz    3,2
+        move    3,1
+        andi    3,07777
         came    3,7
         jrst    mm_free_inval
-        tlne    2,03770
+        trne    1,0740000
         jrst    mm_free_busy
+        ; Find the same slot again: metadata lookup returns metadata in AC1.
+        move    1,5
+        pushj   17,mm_find_base
         pushj   17,mm_delete
         setz    1,
         popj    17,
@@ -636,29 +701,31 @@ mm_pin_adjust:
         pushj   17,mm_find_base
         caml    1,mm_extent_count
         jrst    mm_pin_inval
-        lsh     1,1
-        move    4,mm_extents+1(1)
+        move    7,1
+        pushj   17,mm_metadata_get
+        move    4,1
         jumpg   6,mm_pin_add
-        tlne    4,03770
+        trne    4,MM_PIN_FIELD
         jrst    mm_pin_sub
 mm_pin_inval:
         movni   1,4
         popj    17,
 mm_pin_add:
         move    5,4
-        and     5,[MM_PIN_FIELD]
-        came    5,[MM_PIN_FIELD]
+        andi    5,MM_PIN_FIELD
+        caie    5,MM_PIN_FIELD
         jrst    mm_pin_add_ok
         movni   1,5
         popj    17,
 mm_pin_add_ok:
-        add     4,[MM_PIN_ONE]
-        movem   4,mm_extents+1(1)
-        setz    1,
-        popj    17,
+        addi    4,MM_PIN_ONE
+        jrst    mm_pin_store
 mm_pin_sub:
-        sub     4,[MM_PIN_ONE]
-        movem   4,mm_extents+1(1)
+        subi    4,MM_PIN_ONE
+mm_pin_store:
+        move    1,7
+        move    2,4
+        pushj   17,mm_metadata_put
         setz    1,
         popj    17,
 
@@ -672,7 +739,9 @@ mm_unpin:
 
         .bss
 mm_extents:
-        .block  052
+        .block  MM_MAX_EXTENTS
+mm_metadata:
+        .block  020                     ; ceil(MM_MAX_EXTENTS / 2)
 mm_arenas:
         .block  MM_MAX_ARENAS
 mm_core_words:

@@ -14,13 +14,12 @@
 #include "kcore.h"
 
 /**
- * Maximum simultaneously allocated physical extents tracked by MM.
- *
- * Twenty descriptors are one short of the measured full-system peak while
- * launching DSH's bounded eight-stage pipeline.  Incremental pipe creation
- * keeps that peak at 21, so do not grow this table merely for pipeline depth.
+ * Maximum simultaneous physical extents.
+ * Thirty-two accommodates nested native KCC/MAKE process launches that
+ * exceeded the prior 21-slot pipeline-based bound. The experimental packed
+ * PDP-6 MM uses 32 exact spans and 16 paired metadata words.
  */
-#define MM_MAX_EXTENTS          21
+#define MM_MAX_EXTENTS          32
 /** Maximum disjoint managed physical arenas needed during/after KINIT. */
 #define MM_MAX_ARENAS           3
 
@@ -46,7 +45,11 @@
 #define MM_PIN_SHIFT            21U
 #define MM_PIN_MASK             0377UL
 #define MM_PIN_FIELD_MASK       ((kword_t)MM_PIN_MASK << MM_PIN_SHIFT)
+#ifdef MM_PORTABLE_REFERENCE_LAYOUT
 #define MM_OWNER_MASK           MM_HALF_MASK
+#else
+#define MM_OWNER_MASK           07777UL
+#endif
 
 struct mm_extent {
         kword_t span;           /**< LH size, RH physical base. */
@@ -54,7 +57,19 @@ struct mm_extent {
 };
 
 
+/* Production PDP-6 stores one exact size,,base span per slot, with packed
+ * owner/type/pin metadata in an independent odd/even halfword array.
+ * The portable C policy reference still uses the original two-word records.
+ */
+#ifdef MM_PORTABLE_REFERENCE_LAYOUT
 extern struct mm_extent mm_extents[MM_MAX_EXTENTS];
+#else
+extern kword_t mm_extents[MM_MAX_EXTENTS];
+/** Read the 18-bit packed owner/type/pin metadata for one descriptor index. */
+kword_t mm_metadata_get(int slot);
+/** Remove an extent at an index, preserving span/metadata correspondence. */
+void mm_extent_remove(int slot);
+#endif
 extern kword_t mm_arenas[MM_MAX_ARENAS];
 extern kword_t mm_core_words;
 extern int mm_extent_count;

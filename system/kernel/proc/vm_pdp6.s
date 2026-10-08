@@ -27,6 +27,7 @@
         .globl  mm_alloc_aligned
         .globl  mm_free
         .globl  mm_extents
+        .globl  mm_metadata_get
         .globl  mm_arenas
         .globl  mm_extent_count
         .globl  mm_arena_count
@@ -182,7 +183,6 @@ vm_brk_find_extent:
         caml    16,mm_extent_count
         jrst    vm_brk_fail_pi
         move    4,16
-        lsh     4,1
         hrrz    5,mm_extents(4)
         camn    5,14
         jrst    vm_brk_extent_found
@@ -190,15 +190,18 @@ vm_brk_find_extent:
 vm_brk_extent_found:
         movei   6,mm_extents(4)
         movem   6,-004(17)
-        hlrz    5,1(6)
-        andi    5,7
+        move    1,16
+        pushj   17,mm_metadata_get
+        move    5,1
+        lsh     5,-14                  ; compact type bits 12..13
+        andi    5,3
         caie    5,1                     ; MM_TYPE_PROCESS
         jrst    vm_brk_fail_pi
-        hrrz    5,1(6)
+        move    5,1
+        andi    5,07777                ; compact owner bits 0..11
         came    5,proc_current_slot
         jrst    vm_brk_fail_pi
-        move    5,1(6)
-        tlne    5,03770                 ; physical pin count
+        trne    1,0740000              ; compact physical pin count
         jrst    vm_brk_fail_pi
         hlrz    5,(6)
         came    5,13
@@ -234,7 +237,7 @@ vm_brk_arena_low_ok:
         aoj     1,
         caml    1,mm_extent_count
         jrst    vm_brk_have_next
-        lsh     1,1
+
         hrrz    2,mm_extents(1)
         camge   2,4
         move    7,2
@@ -259,7 +262,7 @@ vm_brk_try_down:
         jrst    vm_brk_have_prev
         move    1,16
         subi    1,1
-        lsh     1,1
+
         hrrz    2,mm_extents(1)
         caml    2,-002(17)
         jrst    vm_brk_prev_same_arena
