@@ -95,6 +95,7 @@ static int make_dry_run;
 static int make_silent;
 static int make_keep_going;
 static int make_always;
+static int make_question;
 
 static char make_line[MAKE_LINE_MAX + 1U];
 static char make_work[MAKE_LINE_MAX + 1U];
@@ -943,7 +944,7 @@ make_run_commands(unsigned int head, const struct make_auto *automatic)
                         ++p;
                 }
                 p = make_trim(p);
-                if (!make_silent && !quiet) {
+                if (!make_silent && !quiet && !make_question) {
                         (void)u_puts(1, p);
                         (void)u_crlf(1);
                 }
@@ -1209,7 +1210,10 @@ main(int argc, kword_t **argv, kword_t **envp)
                                         make_silent = 1;
                                 else if (arg[j] == 'K' || arg[j] == 'k')
                                         make_keep_going = 1;
-                                else if (arg[j] == 'B' || arg[j] == 'b')
+                                else if (arg[j] == 'Q' || arg[j] == 'q') {
+                                        make_question = 1;
+                                        make_dry_run = 1;
+                                } else if (arg[j] == 'B' || arg[j] == 'b')
                                         make_always = 1;
                                 else {
                                         make_diag("UNKNOWN OPTION", arg);
@@ -1265,7 +1269,8 @@ main(int argc, kword_t **argv, kword_t **envp)
                         failed = 1;
                         if (!make_keep_going)
                                 break;
-                }
+                } else if (make_question && result.changed)
+                        failed = 1;
         }
         return failed ? 1 : 0;
 }

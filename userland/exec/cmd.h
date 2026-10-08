@@ -36,6 +36,7 @@
 #define CMD_PROGRAM_DPYVIEW   31
 #define CMD_PROGRAM_CLEAR     32
 #define CMD_PROGRAM_KILL      33
+#define CMD_PROGRAM_INSTALL   34
 
 #define CMD_ENTRY_JOIN1(a, b) a##b
 #define CMD_ENTRY_JOIN(a, b) CMD_ENTRY_JOIN1(a, b)

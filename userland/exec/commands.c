@@ -280,7 +280,8 @@ cmd_cp(int argc, kword_t **argv, struct u_io *io)
 }
 #endif
 
-#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CHMOD
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CHMOD || \
+    DAIMOS_CMD_PROGRAM == CMD_PROGRAM_INSTALL
 static int
 cmd_octal_mode(const kword_t *arg, unsigned int *modep)
 {
@@ -301,6 +302,7 @@ cmd_octal_mode(const kword_t *arg, unsigned int *modep)
         return 0;
 }
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CHMOD
 static int
 cmd_chmod(int argc, kword_t **argv, struct u_io *io)
 {
@@ -309,6 +311,83 @@ cmd_chmod(int argc, kword_t **argv, struct u_io *io)
                 return cmd_err(io, "CHMOD", 0);
         return dsys_chmod(argv[2], mode) == 0 ? 0 :
             cmd_err(io, "CHMOD", argv[2]);
+}
+#endif
+#endif
+
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_INSTALL
+/* Native INSTALL deliberately copies 36-bit words, not S6REC characters.
+ * -D creates a directory; -M MODE selects file/directory permissions.
+ * Paths are complete SIXBIT records, so no lossy pathname roundtrips occur. */
+static int
+cmd_install(int argc, kword_t **argv, struct u_io *io)
+{
+        unsigned int mode;
+        unsigned int i;
+        unsigned int first;
+        int directory;
+        int in;
+        int out;
+        int n;
+        int rc;
+        kword_t buf[127];
+        struct vfs_stat st;
+
+        mode = 0555U;
+        directory = 0;
+        i = 1U;
+        while (i < (unsigned int)argc) {
+                if (u_s6_eq(argv[i], "-D")) {
+                        directory = 1;
+                        ++i;
+                } else if (u_s6_eq(argv[i], "-M") && i + 1U < (unsigned int)argc) {
+                        if (cmd_octal_mode(argv[i + 1U], &mode) != 0)
+                                return cmd_err(io, "INSTALL MODE", argv[i + 1U]);
+                        i += 2U;
+                } else
+                        break;
+        }
+        first = i;
+        if (directory) {
+                if (first + 1U != (unsigned int)argc)
+                        return cmd_err(io, "INSTALL USAGE", 0);
+                if (dsys_mkdir(argv[first]) != 0 &&
+                    (dsys_stat(argv[first], &st) != 0 || st.type != VFS_TYPE_DIR))
+                        return cmd_err(io, "INSTALL MKDIR", argv[first]);
+                return dsys_chmod(argv[first], mode) == 0 ? 0 :
+                    cmd_err(io, "INSTALL CHMOD", argv[first]);
+        }
+        if (first + 2U != (unsigned int)argc)
+                return cmd_err(io, "INSTALL USAGE", 0);
+        if (u_s6_eq(argv[first], "") ||
+            u_s6_eq(argv[first + 1U], "") ||
+            u_s6_eq(argv[first], "-"))
+                return cmd_err(io, "INSTALL PATH", 0);
+        if (dsys_stat(argv[first], &st) != 0 || st.type != VFS_TYPE_REG)
+                return cmd_err(io, "INSTALL SOURCE", argv[first]);
+        in = dsys_open(argv[first], SYS_O_RDONLY);
+        if (in < 0)
+                return cmd_err(io, "INSTALL OPEN", argv[first]);
+        out = dsys_open(argv[first + 1U], SYS_O_WRONLY | SYS_O_CREAT | SYS_O_TRUNC);
+        if (out < 0) {
+                (void)dsys_close(in);
+                return cmd_err(io, "INSTALL CREATE", argv[first + 1U]);
+        }
+        rc = 0;
+        for (;;) {
+                n = dsys_read_words(in, buf, 127U);
+                if (n == 0)
+                        break;
+                if (n < 0 || u_write_words_all(out, buf, (unsigned int)n) != 0) {
+                        rc = 1;
+                        break;
+                }
+        }
+        if (dsys_close(in) != 0 || dsys_close(out) != 0)
+                rc = 1;
+        if (rc == 0 && dsys_chmod(argv[first + 1U], mode) != 0)
+                rc = 1;
+        return rc == 0 ? 0 : cmd_err(io, "INSTALL COPY", argv[first + 1U]);
 }
 #endif
 
@@ -1134,6 +1213,8 @@ CMD_PROGRAM_ENTRY(DAIMOS_CMD_TOKEN)(int argc, kword_t **argv,
         return cmd_cp(argc, argv, io);
 #elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CHMOD
         return cmd_chmod(argc, argv, io);
+#elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_INSTALL
+        return cmd_install(argc, argv, io);
 #elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_CHOWN
         return cmd_chown(argc, argv, io);
 #elif DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MKFS_DTFS
