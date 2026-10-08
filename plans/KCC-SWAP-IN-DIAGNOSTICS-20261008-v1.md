@@ -80,3 +80,24 @@ current production DAIMOS. Source and simulator logs are retained under
 This investigation currently rules out the specific instrumented swap-service
 TERM branch, not all other possible MM/process problems. Do not merge these
 temporary instrumentation changes into main.
+
+## Dry-run and recursion-depth isolation
+
+Additional clean-image reproductions with the unmodified MAKE:
+
+| Command | Observed exit |
+| --- | --- |
+| `MAKE -N B/CC-CPP-V1.S` | `STATUS:0` |
+| `MAKE -N B/KCPP1.DARC` | `STATUS:0` |
+| `MAKE -N B/KCPP.DXR` | `STATUS:0` |
+| `MAKE -N ALL` | `STATUS:131073` |
+
+The `-N` result is crucial: INSTALL, KCC, DAS, DARC, and DLINK do **not**
+execute. The failing work is MAKE's own graph traversal. The extra `ALL`
+frame compared with building `B/KCPP.DXR` is a concrete discriminant, but
+does not distinguish stack exhaustion, invalid memory access, or incorrect
+compiled recursion on its own. An earlier 1024->2048-word startup-stack
+experiment did not change the fatal status. The generated `make_build` assembly
+uses an octal `0121`-word local frame plus saved registers. Next: build a
+synthetic depth-graded dependency graph to locate the exact boundary, then
+check the corresponding generated assembly before modifying production code.
