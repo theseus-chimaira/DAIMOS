@@ -198,13 +198,24 @@ calloc(unsigned int count, unsigned int size)
         return ptr;
 }
 
+/* Resize in place before copying: consume the immediately following free
+ * block, or grow the process break when the allocation is at the top.
+ * The free list is address ordered; no additional bookkeeping is needed.
+ * On failure the original allocation and its contents remain intact. */
 void *
 realloc(void *ptr, unsigned int chars)
 {
         struct heap_block *block;
+        struct heap_block **link;
+        struct heap_block *nextfree;
+        struct heap_block *tail;
         void *newptr;
         unsigned int header;
+        unsigned int need;
+        unsigned int extra;
+        unsigned int remain;
         unsigned int oldchars;
+        kword_t current;
 
         if (ptr == 0)
                 return malloc(chars);
@@ -214,9 +225,62 @@ realloc(void *ptr, unsigned int chars)
         }
         header = heap_header_words();
         block = (struct heap_block *)((kword_t *)ptr - header);
+        if (chars > (~0U) - (sizeof(kword_t) - 1U))
+                return 0;
+        need = header + heap_data_words(chars);
+        if (need < header)
+                return 0;
         oldchars = (block->words - header) * sizeof(kword_t);
-        if (chars <= oldchars)
+        if (need <= block->words) {
+                /* Return a sufficiently large tail to the allocator. */
+                remain = block->words - need;
+                if (remain > header) {
+                        block->words = need;
+                        tail = (struct heap_block *)((kword_t *)block + need);
+                        tail->words = remain;
+                        tail->next = 0;
+                        free((kword_t *)tail + header);
+                }
                 return ptr;
+        }
+        extra = need - block->words;
+        link = &heap_free;
+        while ((nextfree = *link) != 0 && nextfree < block)
+                link = &nextfree->next;
+        if (nextfree == (struct heap_block *)((kword_t *)block + block->words)) {
+                if (nextfree->words >= extra) {
+                        remain = nextfree->words - extra;
+                        if (remain > header) {
+                                tail = (struct heap_block *)((kword_t *)nextfree + extra);
+                                tail->words = remain;
+                                tail->next = nextfree->next;
+                                *link = tail;
+                                block->words = need;
+                        } else {
+                                *link = nextfree->next;
+                                block->words += nextfree->words;
+                        }
+                        return ptr;
+                }
+                /* A free neighbor reaches the break: grow it as one block. */
+                current = dsys_brk(0UL);
+                if ((kword_t *)nextfree + nextfree->words == (kword_t *)(unsigned long)current &&
+                    (kword_t)(extra - nextfree->words) <= LIBC_USER_ADDR_MASK - current &&
+                    dsys_brk(current + (kword_t)(extra - nextfree->words)) ==
+                        current + (kword_t)(extra - nextfree->words)) {
+                        *link = nextfree->next;
+                        block->words = need;
+                        return ptr;
+                }
+        } else {
+                current = dsys_brk(0UL);
+                if ((kword_t *)block + block->words == (kword_t *)(unsigned long)current &&
+                    (kword_t)extra <= LIBC_USER_ADDR_MASK - current &&
+                    dsys_brk(current + (kword_t)extra) == current + (kword_t)extra) {
+                        block->words = need;
+                        return ptr;
+                }
+        }
         newptr = malloc(chars);
         if (newptr == 0)
                 return 0;
