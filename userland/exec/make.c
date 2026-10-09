@@ -80,6 +80,9 @@ struct make_implicit {
  * in every MAKE process.  All links are indices, so realloc cannot invalidate
  * dependency references.  Growth happens during parsing, before traversal. */
 static struct make_rule *make_rules;
+/* One word per rule: sorted index, independent of stable rule IDs. */
+static unsigned int *make_rule_order;
+static unsigned int make_rule_order_capacity;
 static struct make_link *make_deps;
 static struct make_link *make_recipes;
 static struct make_var *make_vars;
@@ -538,20 +541,45 @@ make_import_environment(kword_t **envp)
 }
 
 static int
-make_find_rule(const char *name)
+make_rule_compare(const char *a, const char *b)
 {
         unsigned int i;
+        for (i = 0U; a[i] != 0 && b[i] != 0; ++i)
+                if (a[i] != b[i])
+                        return (unsigned char)a[i] < (unsigned char)b[i] ? -1 : 1;
+        if (a[i] == b[i]) return 0;
+        return a[i] == 0 ? -1 : 1;
+}
 
-        for (i = 0U; i < make_rule_count; ++i)
-                if (make_streq(make_text(make_rules[i].name), name))
-                        return (int)i;
+static unsigned int
+make_rule_lower_bound(const char *name)
+{
+        unsigned int lo = 0U, hi = make_rule_count, mid;
+        while (lo < hi) {
+                mid = lo + (hi - lo) / 2U;
+                if (make_rule_compare(make_text(make_rules[
+                    make_rule_order[mid]].name), name) < 0)
+                        lo = mid + 1U;
+                else
+                        hi = mid;
+        }
+        return lo;
+}
+
+static int
+make_find_rule(const char *name)
+{
+        unsigned int pos = make_rule_lower_bound(name);
+        if (pos < make_rule_count &&
+            make_streq(make_text(make_rules[make_rule_order[pos]].name), name))
+                return (int)make_rule_order[pos];
         return -1;
 }
 
 static int
 make_get_rule(const char *name)
 {
-        unsigned int off;
+        unsigned int off, pos, i;
         int ri;
 
         ri = make_find_rule(name);
@@ -560,10 +588,17 @@ make_get_rule(const char *name)
         if (make_grow((void **)&make_rules, &make_rule_capacity,
             make_rule_count + 1U, sizeof(*make_rules), 32U) != 0)
                 return -1;
+        if (make_grow((void **)&make_rule_order, &make_rule_order_capacity,
+            make_rule_count + 1U, sizeof(*make_rule_order), 32U) != 0)
+                return -1;
         off = make_store(name);
         if (off == MAKE_NONE)
                 return -1;
+        pos = make_rule_lower_bound(name);
         ri = (int)make_rule_count++;
+        for (i = make_rule_count - 1U; i > pos; --i)
+                make_rule_order[i] = make_rule_order[i - 1U];
+        make_rule_order[pos] = (unsigned int)ri;
         make_rules[ri].name = off;
         make_rules[ri].dep_head = MAKE_NONE;
         make_rules[ri].dep_tail = MAKE_NONE;
