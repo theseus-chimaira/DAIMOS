@@ -615,6 +615,8 @@ make_parse_file_depth(const char *path, unsigned int include_depth)
         char part[MAKE_LINE_MAX + 1U];
         char *line;
         char *hash;
+        char *keyword;
+        char *rest;
         unsigned int used;
         unsigned int n;
         unsigned int i;
@@ -697,12 +699,13 @@ make_parse_file_depth(const char *path, unsigned int include_depth)
                  * The recursion bound protects the small native stack from
                  * accidentally cyclic inclusions.  The operand is expanded
                  * using variables already defined by the enclosing file. */
-                if (line[0] == 'I' && line[1] == 'N' &&
-                    line[2] == 'C' && line[3] == 'L' &&
-                    line[4] == 'U' && line[5] == 'D' &&
-                    line[6] == 'E' &&
-                    (line[7] == ' ' || line[7] == '\t')) {
-                        char *inc = make_trim(line + 8);
+                for (i = 0U; line[i] != 0; ++i)
+                        make_work[i] = line[i];
+                make_work[i] = 0;
+                rest = make_work;
+                keyword = make_word(&rest);
+                if (keyword != 0 && make_streq(keyword, "INCLUDE")) {
+                        char *inc = make_trim(rest);
                         if (make_expand(inc, make_expand_buf,
                             sizeof(make_expand_buf), 0, 0U) != 0 ||
                             make_expand_buf[0] == 0 ||
