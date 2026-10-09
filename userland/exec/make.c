@@ -1399,7 +1399,15 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                 rule->state = MAKE_STATE_ACTIVE;
         } else
                 rule = 0;
-        if (make_stat(name, &target) != 0)
+        /* A PHONY target is always out of date, even if a file with the
+         * same name exists.  Its timestamp is irrelevant, so avoid an
+         * expensive filesystem query for every PHONY prerequisite. */
+        if (rule != 0 && (rule->flags & MAKE_RULE_PHONY) != 0U) {
+                target.mtime = 0UL;
+                target.exists = 0U;
+                target.valid = 0U;
+                target.changed = 0U;
+        } else if (make_stat(name, &target) != 0)
                 goto fail;
         imp->rule = -1;
         imp->source[0] = 0;
@@ -1500,7 +1508,8 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                 target.changed = 1U;
                 if (rule != 0)
                         rule->flags |= MAKE_RULE_CHANGED;
-                if (!make_dry_run) {
+                if (!make_dry_run && (rule == 0 ||
+                    (rule->flags & MAKE_RULE_PHONY) == 0U)) {
                         struct make_result after;
                         if (make_stat(name, &after) == 0 && after.exists) {
                                 after.changed = 1U;
