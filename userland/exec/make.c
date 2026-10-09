@@ -83,6 +83,10 @@ static struct make_rule *make_rules;
 /* One word per rule: sorted index, independent of stable rule IDs. */
 static unsigned int *make_rule_order;
 static unsigned int make_rule_order_capacity;
+/* Compact list of applicable suffix rules; built after parsing, in source
+ * order so traditional first-match resolution remains unchanged. */
+static unsigned int *make_suffix_order;
+static unsigned int make_suffix_count;
 static struct make_link *make_deps;
 static struct make_link *make_recipes;
 static struct make_var *make_vars;
@@ -1003,6 +1007,7 @@ make_source_rule(const char *target, struct make_implicit *imp)
         unsigned int src_len;
         unsigned int target_len;
         unsigned int i;
+        unsigned int ri;
         struct make_result sr;
 
         dot = 0;
@@ -1012,11 +1017,9 @@ make_source_rule(const char *target, struct make_implicit *imp)
                 else if (target[i] == '.')
                         dot = &target[i];
         }
-        for (i = 0U; i < make_rule_count; ++i) {
-                if ((make_rules[i].flags & MAKE_RULE_SUFFIX) == 0U ||
-                    make_rules[i].recipe_head == MAKE_NONE)
-                        continue;
-                rn = make_text(make_rules[i].name);
+        for (i = 0U; i < make_suffix_count; ++i) {
+                ri = make_suffix_order[i];
+                rn = make_text(make_rules[ri].name);
                 second = rn + 1;
                 while (*second != 0 && *second != '.')
                         ++second;
@@ -1049,7 +1052,7 @@ make_source_rule(const char *target, struct make_implicit *imp)
                 imp->source[stem_len + src_len] = 0;
                 if (make_find_rule(imp->source) >= 0 ||
                     (make_stat(imp->source, &sr) == 0 && sr.exists)) {
-                        imp->rule = (int)i;
+                        imp->rule = (int)ri;
                         return 0;
                 }
         }
@@ -1630,6 +1633,25 @@ main(int argc, kword_t **argv, kword_t **envp)
         if (make_parse_file(makefile) != 0) {
                 make_diag("CANNOT PARSE", makefile);
                 return 1;
+        }
+        /* A separate suffix index avoids scanning every ordinary rule for
+         * every implicit target.  Never allocate if none are present. */
+        for (i = 0U; i < make_rule_count; ++i)
+                if ((make_rules[i].flags & MAKE_RULE_SUFFIX) != 0U &&
+                    make_rules[i].recipe_head != MAKE_NONE)
+                        ++make_suffix_count;
+        if (make_suffix_count != 0U) {
+                unsigned int si = 0U;
+                make_suffix_order = realloc(0,
+                    make_suffix_count * sizeof(*make_suffix_order));
+                if (make_suffix_order == 0) {
+                        make_diag("SUFFIX INDEX EXHAUSTED", 0);
+                        return 2;
+                }
+                for (i = 0U; i < make_rule_count; ++i)
+                        if ((make_rules[i].flags & MAKE_RULE_SUFFIX) != 0U &&
+                            make_rules[i].recipe_head != MAKE_NONE)
+                                make_suffix_order[si++] = i;
         }
         /* Allocate only one packed bit per dependency, once after parsing. */
         if (make_dep_count != 0U) {
