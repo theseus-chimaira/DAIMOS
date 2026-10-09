@@ -441,13 +441,14 @@ KCC_SOURCE_MAKEFILE = $(PROJECT_ROOT)/userland/optional/kcc/Makefile
 KCC_SOURCE_INPUTS = $(wildcard $(KCC_REPO)/*.[chs]) \
 	$(wildcard $(KCC_REPO)/runtime/*.[cs]) \
 	$(wildcard $(KCC_REPO)/self/include/*.h) \
-	$(wildcard $(KCC_REPO)/self/include/sys/*.h)
+	$(wildcard $(KCC_REPO)/self/include/sys/*.h) \
+	$(KCC_REPO)/Makefile $(KCC_REPO)/daimos.mk
 KCC_SOURCE_REL = $(patsubst $(KCC_REPO)/%,%,$(KCC_SOURCE_INPUTS))
-KCC_NATIVE_MAKE_FILES = $(filter-out MONOLITH,$(notdir $(wildcard $(KCC_SOURCE_BUILD)/native-make/*)))
+
 KCC_SOURCE_STAMP = $(KCC_SOURCE_BUILD)/.staged
-KCC_SOURCE_ARGS = $(foreach n,$(KCC_SOURCE_REL),-f "/OPTION/SOURCE/KCC/$(shell printf '%s' '$(n)' | tr '[:lower:]' '[:upper:]'):$(KCC_SOURCE_BUILD)/$(n):644:binwords") \
+KCC_SOURCE_ARGS = $(foreach n,$(filter-out Makefile daimos.mk,$(KCC_SOURCE_REL)),-f "/OPTION/SOURCE/KCC/$(shell printf '%s' '$(n)' | tr '[:lower:]' '[:upper:]'):$(KCC_SOURCE_BUILD)/$(n):644:binwords") \
 	-f "/OPTION/SOURCE/KCC/MAKEFILE:$(KCC_SOURCE_BUILD)/MAKEFILE:644:binwords" \
-	$(foreach n,$(filter-out MAKEFILE,$(KCC_NATIVE_MAKE_FILES)),-f "/OPTION/SOURCE/KCC/$(n):$(KCC_SOURCE_BUILD)/$(n):644:binwords") \
+	-f "/OPTION/SOURCE/KCC/DAIMOS.MK:$(KCC_SOURCE_BUILD)/DAIMOS.MK:644:binwords" \
 	$(foreach n,u.h dsys.h syscall.h file.h vfs.h kcore.h storage.h pdp10-sixbit.h,-f "/OPTION/SOURCE/KCC/ABI/$(shell echo $(n) | tr '[:lower:]' '[:upper:]'):$(KCC_SOURCE_BUILD)/ABI/$(n):644:binwords") \
 	$(foreach n,CRT0.DOBJ BOOT.DOBJ SYS.DOBJ HELP.DOBJ LIBC.DARC,-f "/OPTION/SOURCE/KCC/BOOT/$(n):$(KCC_SOURCE_BUILD)/BOOT/$(n):644:binwords")
 KCC_BOOT_BUILD ?= $(PDP10_PREFIX)/lib/kcc/bootstrap
@@ -857,10 +858,10 @@ $(KCC_BOOT_DXRS) &:
 		}; \
 	done
 
-$(KCC_SOURCE_STAMP): $(KCC_SOURCE_INPUTS) $(KCC_BOOT_DXRS) $(PROJECT_ROOT)/scripts/gen-kcc-native-make-v1.py $(PROJECT_ROOT)/scripts/stage-kcc-sources-v1.sh
+$(KCC_SOURCE_STAMP): $(KCC_SOURCE_INPUTS) $(KCC_BOOT_DXRS) $(PROJECT_ROOT)/scripts/stage-kcc-sources-v1.sh
 	sh $(PROJECT_ROOT)/scripts/stage-kcc-sources-v1.sh \
 	    $(KCC_REPO) $(KCC_SOURCE_BUILD) $(CSIX) $(S6TEXT) \
-	    $(PROJECT_ROOT)/scripts/gen-kcc-native-make-v1.py $(PROJECT_ROOT) \
+	    $(PROJECT_ROOT) \
 	    $(abspath $(KCC_BOOT_BUILD))
 	touch $@
 
