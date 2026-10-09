@@ -8,7 +8,7 @@
 #define DSH_S6_MAX_WORDS       6U
 #define DSH_LINE_MAX_CHARS    180U
 #define DSH_LINE_MAX_WORDS     30U
-#define DSH_MAX_ARGS            8U
+#define DSH_MAX_ARGS           20U
 #define DSH_MAX_VARS           64U
 #define DSH_MAX_ALIASES         8U
 #define DSH_MAX_JOBS            4U

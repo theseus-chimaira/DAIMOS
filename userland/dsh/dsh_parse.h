@@ -4,7 +4,7 @@
 #include "dsh.h"
 
 #define DSH_PARSE_MAX_NODES     16U
-#define DSH_PARSE_MAX_WORDS      8U
+#define DSH_PARSE_MAX_WORDS     20U
 
 #define DSH_N_EMPTY              0
 #define DSH_N_SIMPLE             1
