@@ -1,22 +1,28 @@
+# DAIMOS PDP-10 C runtime library. Compatible with GNU make and BSD make.
 PDP10_PREFIX ?=
-BUILD_ROOT ?= $(CURDIR)/../build
-BUILD := $(BUILD_ROOT)/libc
-CC := $(PDP10_PREFIX)/bin/kcc
-DAS := $(PDP10_PREFIX)/bin/das
+LIBC_ROOT != pwd
+BUILD_ROOT ?= $(LIBC_ROOT)/../build
+BUILD = $(BUILD_ROOT)/libc
+CC ?= $(PDP10_PREFIX)/bin/kcc
+DAS = $(PDP10_PREFIX)/bin/das
 DASFLAGS ?= -F
-DARC := $(PDP10_PREFIX)/bin/darc
-CFLAGS := -Pgnu99 -O -x=pdp6 -m=gas
-CPPFLAGS := -I$(CURDIR) -I$(CURDIR)/../../system/kernel/core \
-	-I$(CURDIR)/../../system/kernel/fs -I$(CURDIR)/../../system/kernel/proc \
-	-I$(CURDIR)/../../system/kernel/storage \
+DARC = $(PDP10_PREFIX)/bin/darc
+CFLAGS = -Pgnu99 -O -x=pdp6 -m=gas
+CPPFLAGS = -I$(LIBC_ROOT) -I$(LIBC_ROOT)/../../system/kernel/core \
+	-I$(LIBC_ROOT)/../../system/kernel/fs \
+	-I$(LIBC_ROOT)/../../system/kernel/proc \
+	-I$(LIBC_ROOT)/../../system/kernel/storage \
 	-I$(PDP10_PREFIX)/include
-OBJS := $(BUILD)/memcpy.dobj $(BUILD)/memmove.dobj \
-	$(BUILD)/stdlib.dobj $(BUILD)/string.dobj $(BUILD)/stat_time.dobj \
-	$(BUILD)/process_ctype.dobj $(BUILD)/u.dobj $(BUILD)/syscall.dobj
-LIBC := $(BUILD)/libc.a
+
+ASM_SRCS = memcpy.s memmove.s syscall.s
+C_SRCS = stdlib.c string.c stat_time.c process_ctype.c u.c
+ASM_OBJS = $(BUILD)/memcpy.dobj $(BUILD)/memmove.dobj $(BUILD)/syscall.dobj
+C_OBJS = $(BUILD)/stdlib.dobj $(BUILD)/string.dobj \
+	$(BUILD)/stat_time.dobj $(BUILD)/process_ctype.dobj $(BUILD)/u.dobj
+OBJS = $(ASM_OBJS) $(C_OBJS)
+LIBC = $(BUILD)/libc.a
 
 .PHONY: build install clean check-prefix
-
 build: check-prefix $(LIBC)
 
 check-prefix:
@@ -25,17 +31,28 @@ check-prefix:
 	@test -x "$(DAS)" || { echo "missing assembler: $(DAS)" >&2; exit 1; }
 	@test -x "$(DARC)" || { echo "missing archiver: $(DARC)" >&2; exit 1; }
 
-$(BUILD):
-	mkdir -p "$@"
+# Explicit dependencies avoid dialect-specific pattern rules. Shell filename
+# expansion lets the shared recipes select their individual source files.
+$(ASM_OBJS):
+	@mkdir -p "$(BUILD)"
+	@src="$@"; src=$${src##*/}; src=$${src%.dobj}.s; \
+		"$(DAS)" $(DASFLAGS) -C -O "$@" "$$src"
 
-$(BUILD)/%.dobj: %.s | $(BUILD)
-	"$(DAS)" $(DASFLAGS) -C -O "$@" "$<"
+$(C_OBJS):
+	@mkdir -p "$(BUILD)"
+	@src="$@"; src=$${src##*/}; src=$${src%.dobj}; \
+		"$(CC)" $(CFLAGS) $(CPPFLAGS) -S "$$src.c" -o "$(BUILD)/$$src.s"
+	@src="$@"; src=$${src%.dobj}.s; \
+		"$(DAS)" $(DASFLAGS) -C -O "$@" "$$src"
 
-$(BUILD)/%.s: %.c $(CC) | $(BUILD)
-	"$(CC)" $(CFLAGS) $(CPPFLAGS) -S "$<" -o "$@"
-
-$(BUILD)/%.dobj: $(BUILD)/%.s
-	"$(DAS)" $(DASFLAGS) -C -O "$@" "$<"
+$(BUILD)/memcpy.dobj: memcpy.s
+$(BUILD)/memmove.dobj: memmove.s
+$(BUILD)/syscall.dobj: syscall.s
+$(BUILD)/stdlib.dobj: stdlib.c
+$(BUILD)/string.dobj: string.c
+$(BUILD)/stat_time.dobj: stat_time.c
+$(BUILD)/process_ctype.dobj: process_ctype.c
+$(BUILD)/u.dobj: u.c
 
 $(LIBC): $(OBJS)
 	"$(DARC)" -o "$@" $(OBJS)
