@@ -3,6 +3,7 @@
 /* Native libc exports character-counted realloc; KCC's host-only stdlib.h
  * is deliberately not part of the native DAIMOS userland include path. */
 extern void *realloc(void *, unsigned int);
+extern void free(void *);
 
 /*
  * Native MAKE deliberately implements the compact, traditional part of BSD
@@ -88,6 +89,12 @@ static unsigned int make_rule_order_capacity;
 static unsigned int *make_suffix_order;
 static unsigned int make_suffix_count;
 static struct make_link *make_deps;
+/* Open-addressed dependency name index.  Slot values are arena offsets
+ * plus one, so zero denotes an empty slot.  Rehashing moves only indices. */
+static unsigned int *make_dep_names;
+static unsigned int make_dep_names_slots;
+static unsigned int make_dep_names_count;
+
 static struct make_link *make_recipes;
 static struct make_var *make_vars;
 static unsigned int make_rule_capacity;
@@ -223,6 +230,57 @@ make_text(unsigned int off)
 {
         return off == MAKE_NONE || off >= make_arena_used ? 0 :
             &make_arena[off];
+}
+
+static unsigned int
+make_dep_hash(const char *s)
+{
+        unsigned int hash = 0U;
+        while (*s != 0)
+                hash = (hash * 33U + (unsigned char)*s++) & MAKE_NONE;
+        return hash;
+}
+
+static unsigned int
+make_dep_intern(const char *name)
+{
+        unsigned int slot, off, i, size;
+        unsigned int *table;
+        const char *old;
+
+        if (make_dep_names_slots == 0U ||
+            (make_dep_names_count + 1U) * 2U > make_dep_names_slots) {
+                size = make_dep_names_slots ? make_dep_names_slots * 2U : 64U;
+                if (size > MAKE_NONE / sizeof(*table))
+                        return MAKE_NONE;
+                table = realloc(0, size * sizeof(*table));
+                if (table == 0)
+                        return MAKE_NONE;
+                for (i = 0U; i < size; ++i) table[i] = 0U;
+                for (i = 0U; i < make_dep_names_slots; ++i) {
+                        if (make_dep_names[i] == 0U) continue;
+                        off = make_dep_names[i] - 1U;
+                        old = make_text(off);
+                        slot = make_dep_hash(old) & (size - 1U);
+                        while (table[slot] != 0U)
+                                slot = (slot + 1U) & (size - 1U);
+                        table[slot] = off + 1U;
+                }
+                free(make_dep_names);
+                make_dep_names = table;
+                make_dep_names_slots = size;
+        }
+        slot = make_dep_hash(name) & (make_dep_names_slots - 1U);
+        while (make_dep_names[slot] != 0U) {
+                off = make_dep_names[slot] - 1U;
+                if (make_streq(make_text(off), name)) return off;
+                slot = (slot + 1U) & (make_dep_names_slots - 1U);
+        }
+        off = make_store(name);
+        if (off == MAKE_NONE) return MAKE_NONE;
+        make_dep_names[slot] = off + 1U;
+        ++make_dep_names_count;
+        return off;
 }
 
 static char *
@@ -641,7 +699,7 @@ make_add_dep(unsigned int ri, const char *name)
             make_grow((void **)&make_deps, &make_dep_capacity,
                 make_dep_count + 1U, sizeof(*make_deps), 64U) != 0)
                 return -1;
-        off = make_store(name);
+        off = make_dep_intern(name);
         if (off == MAKE_NONE)
                 return -1;
         di = make_dep_count++;
