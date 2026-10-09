@@ -21,6 +21,7 @@
 #define MAKE_ARENA_CHARS    24576U
 #define MAKE_RUN_WORDS       400U
 #define MAKE_MAX_DEPTH        32U
+#define MAKE_MAX_INCLUDE_DEPTH 8U
 #define MAKE_NONE        0777777U
 
 #define MAKE_RULE_PHONY       0001U
@@ -608,7 +609,7 @@ make_parse_rule(char *line)
 }
 
 static int
-make_parse_file(const char *path)
+make_parse_file_depth(const char *path, unsigned int include_depth)
 {
         struct u_text_reader reader;
         char part[MAKE_LINE_MAX + 1U];
@@ -621,7 +622,8 @@ make_parse_file(const char *path)
         int rc;
         int ar;
 
-        if (u_text_open(&reader, path) != 0)
+        if (include_depth >= MAKE_MAX_INCLUDE_DEPTH ||
+            u_text_open(&reader, path) != 0)
                 return -1;
         for (;;) {
                 rc = u_text_getline(&reader, part, sizeof(part));
@@ -691,6 +693,26 @@ make_parse_file(const char *path)
                 line = make_trim(line);
                 if (*line == 0)
                         continue;
+                /* Include a separate dependency fragment at this point.
+                 * The recursion bound protects the small native stack from
+                 * accidentally cyclic inclusions.  The operand is expanded
+                 * using variables already defined by the enclosing file. */
+                if (line[0] == 'I' && line[1] == 'N' &&
+                    line[2] == 'C' && line[3] == 'L' &&
+                    line[4] == 'U' && line[5] == 'D' &&
+                    line[6] == 'E' &&
+                    (line[7] == ' ' || line[7] == '\t')) {
+                        char *inc = make_trim(line + 8);
+                        if (make_expand(inc, make_expand_buf,
+                            sizeof(make_expand_buf), 0, 0U) != 0 ||
+                            make_expand_buf[0] == 0 ||
+                            make_parse_file_depth(make_expand_buf,
+                                include_depth + 1U) != 0) {
+                                u_text_close(&reader);
+                                return -1;
+                        }
+                        continue;
+                }
                 for (i = 0U; line[i] != 0; ++i)
                         make_work[i] = line[i];
                 make_work[i] = 0;
@@ -702,6 +724,12 @@ make_parse_file(const char *path)
         }
         u_text_close(&reader);
         return 0;
+}
+
+static int
+make_parse_file(const char *path)
+{
+        return make_parse_file_depth(path, 0U);
 }
 
 static unsigned int
