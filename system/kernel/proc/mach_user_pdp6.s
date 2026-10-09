@@ -65,10 +65,76 @@ mach_syscall:
         jrst 2,@mach_syscall_save
 
 
+        .globl mach_invalid_uuo_word
+        .globl mach_invalid_uuo_pc
 mach_syscall_invalid:
-        movei 1,0176                ; exit status 126 (invalid instruction)
+        ; Record the actual low-core trap and the hardware JSR return word
+        ; before output can invoke a PI handler or clobber AC1..AC3.
+        move 1,000040
+        movem 1,mach_invalid_uuo_word
+        move 1,mach_syscall_save
+        movem 1,mach_invalid_uuo_pc
+        ; TEMPORARY diagnostic: direct CTY output avoids user buffers and
+        ; syscalls.  CTY is permanent/resident; AC17 is the kernel stack.
+        movei 1,012                 ; newline begins error line
+        pushj 17,mach_invalid_putchar
+        movei 1,0125                ; U
+        pushj 17,mach_invalid_putchar
+        movei 1,0125                ; U
+        pushj 17,mach_invalid_putchar
+        movei 1,0117                ; O
+        pushj 17,mach_invalid_putchar
+        movei 1,040                 ; space
+        pushj 17,mach_invalid_putchar
+        move 4,mach_invalid_uuo_word
+        pushj 17,mach_invalid_oct36
+        movei 1,040                 ; separator
+        pushj 17,mach_invalid_putchar
+        move 4,mach_invalid_uuo_pc
+        pushj 17,mach_invalid_oct36
+        movei 1,015
+        pushj 17,mach_invalid_putchar
+        movei 1,012
+        pushj 17,mach_invalid_putchar
+        movei 1,0176                ; exit status 126
         setz 5,                     ; selector zero is native EXIT
         jrst exec_native_syscall
+
+ ; Temporary diagnostic output: poll the PDP-6 console directly so no
+; link dependency on the separately loaded CTY MRES is introduced.
+; AC2 is scratch; preserves AC4 (the octal shift register).
+mach_invalid_putchar:
+        movei 2,0200000
+mach_invalid_put_wait:
+        conso 0120,0020
+        jrst mach_invalid_put_ready
+        sojg 2,mach_invalid_put_wait
+        popj 17,
+mach_invalid_put_ready:
+        andi 1,0177
+        datao 0120,1
+        popj 17,
+
+; Display one saved 36-bit word in twelve octal digits.  AC4 holds the
+; shifting value, AC7 counts digits; cty_putchar clobbers AC1..AC3.
+mach_invalid_oct36:
+        movei 7,014
+mach_invalid_oct36_next:
+        move 1,4
+        lsh 1,-041                   ; right shift 33 decimal bits
+        andi 1,07
+        addi 1,060
+        pushj 17,mach_invalid_putchar
+        lsh 4,03
+        sojg 7,mach_invalid_oct36_next
+        popj 17,
+
+        .data
+mach_invalid_uuo_word:
+        .word 0
+mach_invalid_uuo_pc:
+        .word 0
+        .text
 
 /** @brief Suppress user-mode return by clearing the saved user stack pointer. */
 mach_return_to_kernel_request:
