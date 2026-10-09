@@ -134,6 +134,7 @@ static int make_silent;
 static int make_keep_going;
 static int make_always;
 static int make_question;
+static int make_any_var_newer;
 
 static char make_line[MAKE_LINE_MAX + 1U];
 static char make_work[MAKE_LINE_MAX + 1U];
@@ -315,6 +316,17 @@ make_find_var(const char *name)
 }
 
 static int
+make_has_newer(const char *p)
+{
+        unsigned int j;
+
+        for (j = 0U; p[j] != 0; ++j)
+                if (p[j] == '$' && p[j + 1U] == '?')
+                        return 1;
+        return 0;
+}
+
+static int
 make_set_var(const char *name, const char *value, int op, unsigned int flags)
 {
         char joined[MAKE_LINE_MAX + 1U];
@@ -346,6 +358,8 @@ make_set_var(const char *name, const char *value, int op, unsigned int flags)
                         return -1;
                 value = joined;
         }
+        if (make_has_newer(value))
+                make_any_var_newer = 1;
         voff = make_store(value);
         if (voff == MAKE_NONE)
                 return -1;
@@ -1294,6 +1308,22 @@ make_newer_add(const char *name)
             name);
 }
 
+/* Most invocations never use the automatic newer-prerequisite list.
+ * Avoid a second metadata traversal in that common case.  Variables are
+ * also inspected because recursive expansion can introduce $? indirectly. */
+static int
+make_uses_newer(unsigned int recipe)
+{
+        unsigned int ci;
+
+        if (make_any_var_newer)
+                return 1;
+        for (ci = recipe; ci != MAKE_NONE; ci = make_recipes[ci].next)
+                if (make_has_newer(make_text(make_recipes[ci].text)))
+                        return 1;
+        return 0;
+}
+
 static int
 make_build(const char *name, struct make_result *out, unsigned int depth)
 {
@@ -1401,39 +1431,41 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
         }
         if (failed)
                 goto fail;
+        recipe = rule != 0 && rule->recipe_head != MAKE_NONE ?
+            rule->recipe_head : (ir >= 0 ? make_rules[ir].recipe_head :
+            MAKE_NONE);
         /* Build recursion above uses the same small scratch buffer.  Form $?
          * only after all children are complete, when no deeper call can
          * overwrite it. */
         make_newer_buf[0] = 0;
-        if (rule != 0) {
-                for (di = rule->dep_head; di != MAKE_NONE;
-                    di = make_deps[di].next) {
-                        int dri;
-                        depname = make_text(make_deps[di].text);
-                        if (make_stat(depname, &dep) != 0)
-                                goto fail;
-                        dri = make_find_rule(depname);
-                        if ((dri >= 0 && (make_rules[dri].flags &
-                            (MAKE_RULE_CHANGED | MAKE_RULE_PHONY)) != 0U) ||
-                            make_dep_requires_update(&dep, &target))
-                                if (make_newer_add(depname) != 0)
-                                        goto fail;
-                }
+        if (need && recipe != MAKE_NONE && make_uses_newer(recipe)) {
+            if (rule != 0) {
+                    for (di = rule->dep_head; di != MAKE_NONE;
+                        di = make_deps[di].next) {
+                            int dri;
+                            depname = make_text(make_deps[di].text);
+                            if (make_stat(depname, &dep) != 0)
+                                    goto fail;
+                            dri = make_find_rule(depname);
+                            if ((dri >= 0 && (make_rules[dri].flags &
+                                (MAKE_RULE_CHANGED | MAKE_RULE_PHONY)) != 0U) ||
+                                make_dep_requires_update(&dep, &target))
+                                    if (make_newer_add(depname) != 0)
+                                            goto fail;
+                    }
+            }
+            if (ir >= 0) {
+                    int sri;
+                    if (make_stat(imp->source, &dep) != 0)
+                            goto fail;
+                    sri = make_find_rule(imp->source);
+                    if ((sri >= 0 && (make_rules[sri].flags &
+                        (MAKE_RULE_CHANGED | MAKE_RULE_PHONY)) != 0U) ||
+                        make_dep_requires_update(&dep, &target))
+                            if (make_newer_add(imp->source) != 0)
+                                    goto fail;
+            }
         }
-        if (ir >= 0) {
-                int sri;
-                if (make_stat(imp->source, &dep) != 0)
-                        goto fail;
-                sri = make_find_rule(imp->source);
-                if ((sri >= 0 && (make_rules[sri].flags &
-                    (MAKE_RULE_CHANGED | MAKE_RULE_PHONY)) != 0U) ||
-                    make_dep_requires_update(&dep, &target))
-                        if (make_newer_add(imp->source) != 0)
-                                goto fail;
-        }
-        recipe = rule != 0 && rule->recipe_head != MAKE_NONE ?
-            rule->recipe_head : (ir >= 0 ? make_rules[ir].recipe_head :
-            MAKE_NONE);
         if (need && recipe != MAKE_NONE) {
                 /* Announce each target before launching a potentially slow
                  * compiler, assembler or linker child.  A silent target
