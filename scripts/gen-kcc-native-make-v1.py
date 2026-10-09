@@ -251,5 +251,7 @@ for i, line in enumerate(single):
             line = line.replace(original, "$(" + variable + ")")
         line = line.replace(common_flags, "$(KFLAGS)")
         single[i] = line
-(out / "MAKEFILE").write_text("\n".join(single) + "\n")
+# Retain the large graph for host-side diagnostics only.  Native MAKE has
+# bounded tables and must consume the small phase-specific graphs above.
+(out / "MONOLITH").write_text("\n".join(single) + "\n")
 print("generated KCC native Makefiles:", ", ".join(p.name for p in out.iterdir()))

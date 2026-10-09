@@ -80,7 +80,18 @@ static struct make_rule make_rules[MAKE_MAX_RULES];
 static struct make_link make_deps[MAKE_MAX_DEPS];
 static struct make_link make_recipes[MAKE_MAX_RECIPES];
 static struct make_var make_vars[MAKE_MAX_VARS];
-static char make_arena[MAKE_ARENA_CHARS];
+/* Reuse unused upper arena for depth-scoped temporary implicit-rule names.
+ * This leaves the resident userland BSS unchanged and keeps large name
+ * arrays off the native recursive call stack. The union guarantees alignment
+ * for struct make_implicit on word-addressed and byte-pointer hosts. */
+static union {
+        kword_t alignment;
+        char text[MAKE_ARENA_CHARS];
+} make_arena_space;
+#define make_arena make_arena_space.text
+#define MAKE_IMPLICIT_SLOT_CHARS \
+        (((sizeof(struct make_implicit) + sizeof(kword_t) - 1U) / \
+        sizeof(kword_t)) * sizeof(kword_t))
 static unsigned int make_rule_count;
 static unsigned int make_dep_count;
 static unsigned int make_recipe_count;
@@ -1063,7 +1074,7 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
 {
         struct make_result target;
         struct make_result dep;
-        struct make_implicit imp;
+        struct make_implicit *imp;
         struct make_auto automatic;
         struct make_rule *rule;
         const char *depname;
@@ -1078,6 +1089,17 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
 
         if (depth > MAKE_MAX_DEPTH)
                 return 1;
+        /* The top of the arena is a nonallocating recursion scratch stack.
+         * Parser strings grow from the bottom and never overlap it. */
+        if ((depth + 1U) > MAKE_ARENA_CHARS / MAKE_IMPLICIT_SLOT_CHARS ||
+            MAKE_ARENA_CHARS - (depth + 1U) * MAKE_IMPLICIT_SLOT_CHARS <
+            make_arena_used) {
+                make_diag("IMPLICIT SCRATCH EXHAUSTED", name);
+                return 1;
+        }
+        imp = (struct make_implicit *)(void *)
+            &make_arena[MAKE_ARENA_CHARS -
+            (depth + 1U) * MAKE_IMPLICIT_SLOT_CHARS];
         ri = make_find_rule(name);
         if (ri >= 0) {
                 rule = &make_rules[ri];
@@ -1099,12 +1121,12 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                 rule = 0;
         if (make_stat(name, &target) != 0)
                 goto fail;
-        imp.rule = -1;
-        imp.source[0] = 0;
-        imp.stem[0] = 0;
+        imp->rule = -1;
+        imp->source[0] = 0;
+        imp->stem[0] = 0;
         if ((rule == 0 || rule->recipe_head == MAKE_NONE) &&
-            make_source_rule(name, &imp) == 0)
-                ir = imp.rule;
+            make_source_rule(name, imp) == 0)
+                ir = imp->rule;
         else
                 ir = -1;
         if (rule == 0 && !target.exists && ir < 0) {
@@ -1140,8 +1162,8 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
         }
         if (ir >= 0) {
                 if (first == 0)
-                        first = imp.source;
-                rc = make_build(imp.source, &dep, depth + 1U);
+                        first = imp->source;
+                rc = make_build(imp->source, &dep, depth + 1U);
                 if (rc != 0)
                         goto fail;
                 if (dep.changed ||
@@ -1171,13 +1193,13 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
         }
         if (ir >= 0) {
                 int sri;
-                if (make_stat(imp.source, &dep) != 0)
+                if (make_stat(imp->source, &dep) != 0)
                         goto fail;
-                sri = make_find_rule(imp.source);
+                sri = make_find_rule(imp->source);
                 if ((sri >= 0 && (make_rules[sri].flags &
                     (MAKE_RULE_CHANGED | MAKE_RULE_PHONY)) != 0U) ||
                     make_dep_requires_update(&dep, &target))
-                        if (make_newer_add(imp.source) != 0)
+                        if (make_newer_add(imp->source) != 0)
                                 goto fail;
         }
         recipe = rule != 0 && rule->recipe_head != MAKE_NONE ?
@@ -1195,7 +1217,7 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                 automatic.target = name;
                 automatic.first = first == 0 ? "" : first;
                 automatic.newer = make_newer_buf;
-                automatic.stem = ir >= 0 ? imp.stem : "";
+                automatic.stem = ir >= 0 ? imp->stem : "";
                 rc = make_run_commands(recipe, &automatic);
                 if (rc != 0) {
                         make_diag("RECIPE FAILED", name);

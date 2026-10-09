@@ -178,7 +178,7 @@ d6fs_provider_resize_fcb:
         lsh     3,-7
         movem   3,-1(17)                  ; new_blocks
         move    1,d6fs_active_reader
-        camg    3,6(1)                    ; reject new_blocks > total_blocks
+        camg    3,3(1)                    ; reject new_blocks > total_blocks
         jrst    d6fs_resize_blocks_ok
         jrst    d6fs_resize_fail
 
@@ -240,24 +240,8 @@ d6fs_resize_grow:
         andi    1,037
         move    3,010
         pushj   17,d6fs_resize_decode_extent
-
-; Decode one packed FCB extent during resize.  This path is used only by
-; truncate/grow metadata work, so one PUSHJ saves the duplicated nine-word
-; unpack sequence without adding overhead to normal file I/O.
-; AC1 = packed high-start bits, AC3 = FCB base, AC16 = extent index.
-; Returns AC12 = start block, AC13 = block count.
-d6fs_resize_decode_extent:
-        addi    3,6
-        add     3,016
-        move    2,(3)
-        ldb     012,[POINT 24,2,23]
-        andi    2,07777
-        lsh     1,014
-        ior     2,1
-        addi    2,1
-        move    013,2
-        popj    17,
-
+        ; The next word MUST be the continuation, not the helper entry.
+        ; PUSHJ returns to the instruction immediately following itself.
 d6fs_resize_extend_loop:
         jumpe   015,d6fs_resize_publish
         caml    013,[0200000]
@@ -265,7 +249,7 @@ d6fs_resize_extend_loop:
         move    2,012
         add     2,013                    ; adjacent candidate
         move    1,d6fs_active_reader
-        caml    2,6(1)
+        caml    2,3(1)                    ; reader.total_blocks, not fcb_count
         jrst    d6fs_resize_new_run
         pushj   17,d6fs_freemap_state
         jumpn   1,d6fs_resize_new_run
@@ -351,7 +335,7 @@ d6fs_resize_run_ready:
         add     2,1
         move    1,d6fs_active_reader
         movem   2,(1)
-        caml    2,6(1)
+        caml    2,3(1)                    ; wrap at total_blocks, not fcb_count
         setzm   (1)
         jumpg   015,d6fs_resize_new_run
         jrst    d6fs_resize_publish
@@ -465,4 +449,23 @@ d6fs_resize_done:
         move    015,-026(17)
         move    016,-025(17)
         sub     17,[036,,036]
+        popj    17,
+
+
+; Decode one packed FCB extent during resize.  Both growth and shrink use
+; this helper.  Keep it AFTER the final return of the enclosing routine:
+; placing it immediately after its own PUSHJ makes that call return into the
+; helper again, corrupting the pushdown stack and ultimately jumping to 1.
+; AC1 = packed high-start bits, AC3 = FCB base, AC16 = extent index.
+; Returns AC12 = start block, AC13 = block count.
+d6fs_resize_decode_extent:
+        addi    3,6
+        add     3,016
+        move    2,(3)
+        ldb     012,[POINT 24,2,23]
+        andi    2,07777
+        lsh     1,014
+        ior     2,1
+        addi    2,1
+        move    013,2
         popj    17,

@@ -42,6 +42,15 @@ mach_syscall:
         subi 5,040
         movem 17,mach_user_sp
         move 17,mach_kernel_sp
+        ; A malformed monitor trap must never index the packed native
+        ; dispatcher outside its 040..077 opcode range.  In particular,
+        ; opcode zero would otherwise use a negative table index and XCT
+        ; arbitrary resident words.  Terminate the offending user process
+        ; through the normal EXIT service instead.
+        caige 5,0
+        jrst mach_syscall_invalid
+        caile 5,037
+        jrst mach_syscall_invalid
         ; Keep the user return on the process kernel stack so sleeping
         ; syscalls are safe across scheduler save/restore.
         push 17,mach_syscall_save
@@ -51,8 +60,15 @@ mach_syscall:
         skipn mach_user_sp
         popj 17,
 
+
         move 17,mach_user_sp
         jrst 2,@mach_syscall_save
+
+
+mach_syscall_invalid:
+        movei 1,0176                ; exit status 126 (invalid instruction)
+        setz 5,                     ; selector zero is native EXIT
+        jrst exec_native_syscall
 
 /** @brief Suppress user-mode return by clearing the saved user stack pointer. */
 mach_return_to_kernel_request:
