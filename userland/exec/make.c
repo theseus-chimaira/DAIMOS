@@ -90,6 +90,10 @@ static unsigned int make_rule_capacity;
 static unsigned int make_dep_capacity;
 static unsigned int make_recipe_capacity;
 static unsigned int make_var_capacity;
+/* One 36-bit word records newer status for 36 dependency links.  The
+ * indices are stable after parsing and do not extend each link record. */
+static kword_t *make_dep_newer;
+
 
 static int
 make_grow(void **array, unsigned int *capacity, unsigned int need,
@@ -1324,6 +1328,23 @@ make_uses_newer(unsigned int recipe)
         return 0;
 }
 
+static void
+make_mark_newer(unsigned int di, int newer)
+{
+        kword_t mask = (kword_t)1UL << (di % 36U);
+        if (newer)
+                make_dep_newer[di / 36U] |= mask;
+        else
+                make_dep_newer[di / 36U] &= ~mask;
+}
+
+static int
+make_is_newer(unsigned int di)
+{
+        return (make_dep_newer[di / 36U] &
+            ((kword_t)1UL << (di % 36U))) != 0;
+}
+
 static int
 make_build(const char *name, struct make_result *out, unsigned int depth)
 {
@@ -1337,6 +1358,7 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
         unsigned int di;
         unsigned int recipe;
         unsigned int need;
+        int implicit_newer;
         int ri;
         int ir;
         int failed;
@@ -1400,6 +1422,7 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
         if (rule != 0 && (rule->flags & MAKE_RULE_PHONY) != 0U)
                 need = 1U;
         failed = 0;
+        implicit_newer = 0;
         first = 0;
         if (rule != 0) {
                 for (di = rule->dep_head; di != MAKE_NONE;
@@ -1414,8 +1437,9 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                                         goto fail;
                                 continue;
                         }
-                        if (dep.changed ||
-                            make_dep_requires_update(&dep, &target))
+                        make_mark_newer(di, dep.changed ||
+                            make_dep_requires_update(&dep, &target));
+                        if (make_is_newer(di))
                                 need = 1U;
                 }
         }
@@ -1425,8 +1449,9 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                 rc = make_build(imp->source, &dep, depth + 1U);
                 if (rc != 0)
                         goto fail;
-                if (dep.changed ||
-                    make_dep_requires_update(&dep, &target))
+                implicit_newer = dep.changed ||
+                    make_dep_requires_update(&dep, &target);
+                if (implicit_newer)
                         need = 1U;
         }
         if (failed)
@@ -1439,32 +1464,17 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
          * overwrite it. */
         make_newer_buf[0] = 0;
         if (need && recipe != MAKE_NONE && make_uses_newer(recipe)) {
-            if (rule != 0) {
-                    for (di = rule->dep_head; di != MAKE_NONE;
-                        di = make_deps[di].next) {
-                            int dri;
-                            depname = make_text(make_deps[di].text);
-                            if (make_stat(depname, &dep) != 0)
-                                    goto fail;
-                            dri = make_find_rule(depname);
-                            if ((dri >= 0 && (make_rules[dri].flags &
-                                (MAKE_RULE_CHANGED | MAKE_RULE_PHONY)) != 0U) ||
-                                make_dep_requires_update(&dep, &target))
-                                    if (make_newer_add(depname) != 0)
-                                            goto fail;
-                    }
-            }
-            if (ir >= 0) {
-                    int sri;
-                    if (make_stat(imp->source, &dep) != 0)
-                            goto fail;
-                    sri = make_find_rule(imp->source);
-                    if ((sri >= 0 && (make_rules[sri].flags &
-                        (MAKE_RULE_CHANGED | MAKE_RULE_PHONY)) != 0U) ||
-                        make_dep_requires_update(&dep, &target))
-                            if (make_newer_add(imp->source) != 0)
-                                    goto fail;
-            }
+                if (rule != 0) {
+                        for (di = rule->dep_head; di != MAKE_NONE;
+                            di = make_deps[di].next)
+                                if (make_is_newer(di) &&
+                                    make_newer_add(make_text(
+                                    make_deps[di].text)) != 0)
+                                        goto fail;
+                }
+                if (ir >= 0 && implicit_newer &&
+                    make_newer_add(imp->source) != 0)
+                        goto fail;
         }
         if (need && recipe != MAKE_NONE) {
                 /* Announce each target before launching a potentially slow
@@ -1620,6 +1630,17 @@ main(int argc, kword_t **argv, kword_t **envp)
         if (make_parse_file(makefile) != 0) {
                 make_diag("CANNOT PARSE", makefile);
                 return 1;
+        }
+        /* Allocate only one packed bit per dependency, once after parsing. */
+        if (make_dep_count != 0U) {
+                unsigned int words = (make_dep_count + 35U) / 36U;
+                make_dep_newer = realloc(0, words * sizeof(*make_dep_newer));
+                if (make_dep_newer == 0) {
+                        make_diag("DEPENDENCY STORAGE EXHAUSTED", 0);
+                        return 2;
+                }
+                for (i = 0U; i < words; ++i)
+                        make_dep_newer[i] = 0UL;
         }
         if (goal_count == 0U) {
                 if (make_default_rule == MAKE_NONE) {
