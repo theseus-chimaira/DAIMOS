@@ -790,10 +790,19 @@ make_parse_rule(char *line)
         unsigned int i;
         int ri;
 
-        if (make_expand(line, make_expand_buf, sizeof(make_expand_buf), 0,
-            0U) != 0)
-                return -1;
-        colon = make_expand_buf;
+        /* Most dependency lines contain no variable references.  Parsing
+         * them directly avoids a second scan and copy into the expansion
+         * buffer.  make_word() modifies the input in place, which is safe
+         * for the already assembled parser line. */
+        for (i = 0U; line[i] != 0 && line[i] != '$'; ++i)
+                ;
+        if (line[i] == '$') {
+                if (make_expand(line, make_expand_buf,
+                    sizeof(make_expand_buf), 0, 0U) != 0)
+                        return -1;
+                colon = make_expand_buf;
+        } else
+                colon = line;
         while (*colon != 0 && *colon != ':')
                 ++colon;
         if (*colon != ':')
@@ -801,7 +810,7 @@ make_parse_rule(char *line)
         if (colon[1] == ':')
                 return -1;
         *colon++ = 0;
-        lhs = make_trim(make_expand_buf);
+        lhs = make_trim(line[i] == '$' ? make_expand_buf : line);
         rhs = make_trim(colon);
         lhs_count = 0U;
         p = lhs;
