@@ -861,7 +861,8 @@ make_parse_file_depth(const char *path, unsigned int include_depth)
                 if (keyword != 0 &&
                     (make_streq(keyword, "INCLUDE") ||
                      make_streq(keyword, "include") ||
-                     make_streq(keyword, "-include"))) {
+                     make_streq(keyword, "-include") ||
+                     make_streq(keyword, "-INCLUDE"))) {
                         char *inc = make_trim(rest);
                         struct make_result optional_file;
                         if (make_expand(inc, make_expand_buf,
@@ -872,7 +873,8 @@ make_parse_file_depth(const char *path, unsigned int include_depth)
                         }
                         /* A missing optional include is allowed, but an
                          * existing malformed include remains a hard error. */
-                        if (make_streq(keyword, "-include") &&
+                        if ((make_streq(keyword, "-include") ||
+                             make_streq(keyword, "-INCLUDE")) &&
                             make_stat(make_expand_buf, &optional_file) == 0 &&
                             !optional_file.exists)
                                 continue;
