@@ -760,6 +760,8 @@ make_parse_rule(char *line)
         return 0;
 }
 
+static int make_stat(const char *name, struct make_result *result);
+
 static int
 make_parse_file_depth(const char *path, unsigned int include_depth)
 {
@@ -856,11 +858,25 @@ make_parse_file_depth(const char *path, unsigned int include_depth)
                 make_work[i] = 0;
                 rest = make_work;
                 keyword = make_word(&rest);
-                if (keyword != 0 && make_streq(keyword, "INCLUDE")) {
+                if (keyword != 0 &&
+                    (make_streq(keyword, "INCLUDE") ||
+                     make_streq(keyword, "include") ||
+                     make_streq(keyword, "-include"))) {
                         char *inc = make_trim(rest);
+                        struct make_result optional_file;
                         if (make_expand(inc, make_expand_buf,
                             sizeof(make_expand_buf), 0, 0U) != 0 ||
-                            make_expand_buf[0] == 0 ||
+                            make_expand_buf[0] == 0) {
+                                u_text_close(&reader);
+                                return -1;
+                        }
+                        /* A missing optional include is allowed, but an
+                         * existing malformed include remains a hard error. */
+                        if (make_streq(keyword, "-include") &&
+                            make_stat(make_expand_buf, &optional_file) == 0 &&
+                            !optional_file.exists)
+                                continue;
+                        if (
                             make_parse_file_depth(make_expand_buf,
                                 include_depth + 1U) != 0) {
                                 make_diag("CANNOT INCLUDE", inc);
