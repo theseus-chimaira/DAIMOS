@@ -248,6 +248,17 @@ make_dep_intern(const char *name)
         unsigned int *table;
         const char *old;
 
+        /* Probe before considering growth: repeated dependency names must
+         * not trigger rehashing when the table is already half full. */
+        if (make_dep_names_slots != 0U) {
+                slot = make_dep_hash(name) & (make_dep_names_slots - 1U);
+                while (make_dep_names[slot] != 0U) {
+                        off = make_dep_names[slot] - 1U;
+                        if (make_streq(make_text(off), name))
+                                return off;
+                        slot = (slot + 1U) & (make_dep_names_slots - 1U);
+                }
+        }
         if (make_dep_names_slots == 0U ||
             (make_dep_names_count + 1U) * 2U > make_dep_names_slots) {
                 size = make_dep_names_slots ? make_dep_names_slots * 2U : 64U;
@@ -271,11 +282,10 @@ make_dep_intern(const char *name)
                 make_dep_names_slots = size;
         }
         slot = make_dep_hash(name) & (make_dep_names_slots - 1U);
-        while (make_dep_names[slot] != 0U) {
-                off = make_dep_names[slot] - 1U;
-                if (make_streq(make_text(off), name)) return off;
+        /* The first probe established that the name is absent.  After
+         * growth, find its empty slot in the rehashed table. */
+        while (make_dep_names[slot] != 0U)
                 slot = (slot + 1U) & (make_dep_names_slots - 1U);
-        }
         off = make_store(name);
         if (off == MAKE_NONE) return MAKE_NONE;
         make_dep_names[slot] = off + 1U;
