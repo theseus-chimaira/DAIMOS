@@ -633,18 +633,12 @@ make_import_environment(kword_t **envp)
 static int
 make_rule_compare(const char *a, const char *b)
 {
-        unsigned char ac, bc;
-
-        /* Advancing byte pointers compile to IBP/LDB on the PDP-6;
-         * indexed chars require an expensive %ADJBPH helper call. */
-        for (;;) {
-                ac = (unsigned char)*a++;
-                bc = (unsigned char)*b++;
-                if (ac != bc)
-                        return ac < bc ? -1 : 1;
-                if (ac == 0U)
-                        return 0;
-        }
+        unsigned int i;
+        for (i = 0U; a[i] != 0 && b[i] != 0; ++i)
+                if (a[i] != b[i])
+                        return (unsigned char)a[i] < (unsigned char)b[i] ? -1 : 1;
+        if (a[i] == b[i]) return 0;
+        return a[i] == 0 ? -1 : 1;
 }
 
 static unsigned int
