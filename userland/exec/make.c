@@ -708,6 +708,7 @@ make_parse_file_depth(const char *path, unsigned int include_depth)
                             make_expand_buf[0] == 0 ||
                             make_parse_file_depth(make_expand_buf,
                                 include_depth + 1U) != 0) {
+                                make_diag("CANNOT INCLUDE", inc);
                                 u_text_close(&reader);
                                 return -1;
                         }

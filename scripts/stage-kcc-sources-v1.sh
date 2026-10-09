@@ -56,10 +56,10 @@ for spec in userland/libc/u.h userland/libc/dsys.h \
         "$csix" -e "$out/ABI/$name.ascii" "$out/ABI/$name"
         rm -f "$out/ABI/$name.ascii"
 done
-for spec in runtime/crt0-v1.dobj:CRT0.DOBJ \
-        runtime/daimos-bootstrap-v1.dobj:BOOT.DOBJ \
+for spec in runtime/crt0.dobj:CRT0.DOBJ \
+        runtime/daimos-bootstrap.dobj:BOOT.DOBJ \
         daimos-libc/libc/syscall.dobj:SYS.DOBJ \
-        runtime/syscall-helpers-v1.dobj:HELP.DOBJ \
+        runtime/syscall-helpers.dobj:HELP.DOBJ \
         daimos-libc/libc/libc.a:LIBC.DARC; do
         source=${spec%%:*}
         target=${spec#*:}

@@ -21,6 +21,14 @@ variables = dict(re.findall(r"(?m)^([A-Z][A-Z0-9_]*)\s*=\s*(.*)$", text))
 
 def expand(s):
     for _ in range(12):
+        # GNU/BSD make suffix replacement in the authoritative object lists:
+        # $(MODULES:.c=.dobj).  Resolve before ordinary $(NAME) expansion.
+        s = re.sub(
+            r"\$\(([A-Z][A-Z0-9_]*):([^=():]+)=([^():]+)\)",
+            lambda m: " ".join(
+                word[:-len(m.group(2))] + m.group(3)
+                if word.endswith(m.group(2)) else word
+                for word in variables.get(m.group(1), "").split()), s)
         replaced = re.sub(r"\$\(([A-Z][A-Z0-9_]*)\)",
                           lambda m: variables.get(m.group(1), ""), s)
         if replaced == s:
