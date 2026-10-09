@@ -47,6 +47,9 @@ struct make_rule {
 };
 
 struct make_link {
+        /* Dependency links only: low 18 bits = arena text offset;
+         * high 18 bits = cached rule ID + 1 (zero means unresolved).
+         * Recipe links leave the upper bits clear. */
         unsigned int text;
         unsigned int next;
 };
@@ -1356,7 +1359,7 @@ make_run_commands(unsigned int head, const struct make_auto *automatic)
 }
 
 static int make_build(const char *name, struct make_result *out,
-    unsigned int depth);
+    unsigned int depth, unsigned int *dep_ref);
 
 static int
 make_newer_add(const char *name)
@@ -1428,7 +1431,8 @@ make_is_newer(unsigned int di)
 }
 
 static int
-make_build(const char *name, struct make_result *out, unsigned int depth)
+make_build(const char *name, struct make_result *out, unsigned int depth,
+    unsigned int *dep_ref)
 {
         struct make_result target;
         struct make_result dep;
@@ -1459,7 +1463,15 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
         imp = (struct make_implicit *)(void *)
             &make_arena[make_arena_capacity -
             (depth + 1U) * MAKE_IMPLICIT_SLOT_CHARS];
-        ri = make_find_rule(name);
+        /* Cache the resolved target rule in the unused upper half of the
+         * dependency's name word.  No side array or extra link word. */
+        if (dep_ref != 0 && (*dep_ref >> 18) != 0U)
+                ri = (int)((*dep_ref >> 18) - 1U);
+        else {
+                ri = make_find_rule(name);
+                if (ri >= 0 && dep_ref != 0)
+                        *dep_ref |= ((unsigned int)ri + 1U) << 18;
+        }
         if (ri >= 0) {
                 rule = &make_rules[ri];
                 if (rule->state == MAKE_STATE_ACTIVE) {
@@ -1517,10 +1529,11 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
         if (rule != 0) {
                 for (di = rule->dep_head; di != MAKE_NONE;
                     di = make_deps[di].next) {
-                        depname = make_text(make_deps[di].text);
+                        depname = make_text(make_deps[di].text & MAKE_NONE);
                         if (first == 0)
                                 first = depname;
-                        rc = make_build(depname, &dep, depth + 1U);
+                        rc = make_build(depname, &dep, depth + 1U,
+                            &make_deps[di].text);
                         if (rc != 0) {
                                 failed = 1;
                                 if (!make_keep_going)
@@ -1536,7 +1549,7 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
         if (ir >= 0) {
                 if (first == 0)
                         first = imp->source;
-                rc = make_build(imp->source, &dep, depth + 1U);
+                rc = make_build(imp->source, &dep, depth + 1U, 0);
                 if (rc != 0)
                         goto fail;
                 implicit_newer = dep.changed ||
@@ -1559,7 +1572,7 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                             di = make_deps[di].next)
                                 if (make_is_newer(di) &&
                                     make_newer_add(make_text(
-                                    make_deps[di].text)) != 0)
+                                    make_deps[di].text & MAKE_NONE)) != 0)
                                         goto fail;
                 }
                 if (ir >= 0 && implicit_newer &&
@@ -1771,7 +1784,7 @@ main(int argc, kword_t **argv, kword_t **envp)
         }
         failed = 0;
         for (i = 0U; i < goal_count; ++i) {
-                rc = make_build(goals[i], &result, 0U);
+                rc = make_build(goals[i], &result, 0U, 0);
                 if (rc != 0) {
                         failed = 1;
                         if (!make_keep_going)
