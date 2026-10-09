@@ -662,9 +662,12 @@ make_get_rule(const char *name)
         unsigned int off, pos, i;
         int ri;
 
-        ri = make_find_rule(name);
-        if (ri >= 0)
-                return ri;
+        /* The insertion position is already determined by the lookup.
+         * Reuse it instead of doing a second binary search for new rules. */
+        pos = make_rule_lower_bound(name);
+        if (pos < make_rule_count &&
+            make_streq(make_text(make_rules[make_rule_order[pos]].name), name))
+                return (int)make_rule_order[pos];
         if (make_grow((void **)&make_rules, &make_rule_capacity,
             make_rule_count + 1U, sizeof(*make_rules), 32U) != 0)
                 return -1;
@@ -674,7 +677,6 @@ make_get_rule(const char *name)
         off = make_store(name);
         if (off == MAKE_NONE)
                 return -1;
-        pos = make_rule_lower_bound(name);
         ri = (int)make_rule_count++;
         for (i = make_rule_count - 1U; i > pos; --i)
                 make_rule_order[i] = make_rule_order[i - 1U];
