@@ -72,5 +72,8 @@ for spec in runtime/crt0-v1.dobj:CRT0.DOBJ \
                 echo "missing native KCC library: $native/$source" >&2
                 exit 1
         }
-        cp "$native/$source" "$out/BOOT/$target"
+        # Installed bootstrap inputs are read-only (0444).  Do not use cp:
+        # overwriting a previously staged read-only output would fail.
+        # install creates a writable, independently owned staging copy.
+        install -m 0644 "$native/$source" "$out/BOOT/$target"
 done
