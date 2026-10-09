@@ -318,10 +318,34 @@ static int
 make_expand_value(const char *name, char *dst, unsigned int cap,
     unsigned int *used, const struct make_auto *automatic, unsigned int depth)
 {
+        char base[64];
+        const char *old_suffix;
+        const char *new_suffix;
+        unsigned int old_len, new_len, k, end, start, len, tail;
         int vi;
         unsigned int before;
 
-        vi = make_find_var(name);
+        /* BSD/GNU suffix substitution: $(OBJECTS:.c=.dobj).  Parse the
+         * modifier without allocating a second expanded string. */
+        old_suffix = 0;
+        new_suffix = 0;
+        for (k = 0U; name[k] != 0; ++k)
+                if (name[k] == ':') {
+                        unsigned int j;
+                        if (k >= sizeof(base)) return -1;
+                        for (j = 0U; j < k; ++j) base[j] = name[j];
+                        base[k] = 0;
+                        old_suffix = name + k + 1U;
+                        for (j = 0U; old_suffix[j] != 0; ++j)
+                                if (old_suffix[j] == '=') {
+                                        new_suffix = old_suffix + j + 1U;
+                                        old_len = j;
+                                        break;
+                                }
+                        if (new_suffix == 0 || old_len == 0U) return -1;
+                        break;
+                }
+        vi = make_find_var(old_suffix != 0 ? base : name);
         if (vi < 0)
                 return 0;
         before = *used;
@@ -329,6 +353,41 @@ make_expand_value(const char *name, char *dst, unsigned int cap,
             cap - *used, automatic, depth + 1U) != 0)
                 return -1;
         *used += make_strlen(&dst[before]);
+        if (old_suffix == 0) return 0;
+        new_len = make_strlen(new_suffix);
+        start = before;
+        while (start < *used) {
+                while (start < *used && dst[start] == ' ') ++start;
+                end = start;
+                while (end < *used && dst[end] != ' ') ++end;
+                len = end - start;
+                if (len >= old_len) {
+                        for (k = 0U; k < old_len; ++k)
+                                if (dst[end - old_len + k] != old_suffix[k])
+                                        break;
+                        if (k == old_len) {
+                                if (new_len > old_len) {
+                                        unsigned int delta = new_len - old_len;
+                                        if (*used + delta >= cap) return -1;
+                                        for (tail = *used + 1U; tail > end;
+                                            --tail)
+                                                dst[tail + delta - 1U] =
+                                                    dst[tail - 1U];
+                                        *used += delta;
+                                } else if (new_len < old_len) {
+                                        unsigned int delta = old_len - new_len;
+                                        for (tail = end; tail <= *used;
+                                            ++tail)
+                                                dst[tail - delta] = dst[tail];
+                                        *used -= delta;
+                                }
+                                for (k = 0U; k < new_len; ++k)
+                                        dst[end - old_len + k] = new_suffix[k];
+                                end = end - old_len + new_len;
+                        }
+                }
+                start = end;
+        }
         return 0;
 }
 
