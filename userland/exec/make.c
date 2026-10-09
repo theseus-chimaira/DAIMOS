@@ -1,5 +1,8 @@
 #include "u.h"
 #include "text.h"
+/* Native libc exports character-counted realloc; KCC's host-only stdlib.h
+ * is deliberately not part of the native DAIMOS userland include path. */
+extern void *realloc(void *, unsigned int);
 
 /*
  * Native MAKE deliberately implements the compact, traditional part of BSD
@@ -12,13 +15,9 @@
 #define MAKE_LINE_MAX       256U
 #define MAKE_NAME_MAX       103U
 #define MAKE_RECIPE_MAX     MAKE_LINE_MAX
-#define MAKE_MAX_RULES       256U
-#define MAKE_MAX_DEPS       768U
-#define MAKE_MAX_RECIPES    384U
-#define MAKE_MAX_VARS        64U
 #define MAKE_MAX_LHS          8U
 #define MAKE_MAX_GOALS       16U
-#define MAKE_ARENA_CHARS    24576U
+#define MAKE_ARENA_INITIAL   8192U
 #define MAKE_RUN_WORDS       400U
 #define MAKE_MAX_DEPTH        32U
 #define MAKE_MAX_INCLUDE_DEPTH 8U
@@ -77,19 +76,43 @@ struct make_implicit {
         char stem[MAKE_NAME_MAX + 1U];
 };
 
-static struct make_rule make_rules[MAKE_MAX_RULES];
-static struct make_link make_deps[MAKE_MAX_DEPS];
-static struct make_link make_recipes[MAKE_MAX_RECIPES];
-static struct make_var make_vars[MAKE_MAX_VARS];
-/* Reuse unused upper arena for depth-scoped temporary implicit-rule names.
- * This leaves the resident userland BSS unchanged and keeps large name
- * arrays off the native recursive call stack. The union guarantees alignment
- * for struct make_implicit on word-addressed and byte-pointer hosts. */
-static union {
-        kword_t alignment;
-        char text[MAKE_ARENA_CHARS];
-} make_arena_space;
-#define make_arena make_arena_space.text
+/* Allocate graph tables on demand instead of reserving thousands of words
+ * in every MAKE process.  All links are indices, so realloc cannot invalidate
+ * dependency references.  Growth happens during parsing, before traversal. */
+static struct make_rule *make_rules;
+static struct make_link *make_deps;
+static struct make_link *make_recipes;
+static struct make_var *make_vars;
+static unsigned int make_rule_capacity;
+static unsigned int make_dep_capacity;
+static unsigned int make_recipe_capacity;
+static unsigned int make_var_capacity;
+
+static int
+make_grow(void **array, unsigned int *capacity, unsigned int need,
+    unsigned int item_size, unsigned int initial)
+{
+        unsigned int count;
+        void *p;
+
+        if (need <= *capacity) return 0;
+        count = *capacity ? *capacity : initial;
+        while (count < need) {
+                if (count > MAKE_NONE / 2U) return -1;
+                count *= 2U;
+        }
+        if (count > MAKE_NONE / item_size) return -1;
+        p = realloc(*array, count * item_size);
+        if (p == 0) return -1;
+        *array = p;
+        *capacity = count;
+        return 0;
+}
+/* Strings grow during parsing, before any dependency traversal starts.
+ * Reserve the entire fixed-depth implicit scratch stack at the upper end.
+ * Thus realloc never moves an active implicit-rule pointer. */
+static char *make_arena;
+static unsigned int make_arena_capacity;
 #define MAKE_IMPLICIT_SLOT_CHARS \
         (((sizeof(struct make_implicit) + sizeof(kword_t) - 1U) / \
         sizeof(kword_t)) * sizeof(kword_t))
@@ -112,7 +135,9 @@ static int make_question;
 static char make_line[MAKE_LINE_MAX + 1U];
 static char make_work[MAKE_LINE_MAX + 1U];
 static char make_expand_buf[MAKE_LINE_MAX + 1U];
-static char make_newer_buf[MAKE_LINE_MAX + 1U];
+static char make_newer_small[MAKE_LINE_MAX + 1U];
+static char *make_newer_buf = make_newer_small;
+static unsigned int make_newer_capacity = sizeof(make_newer_small);
 static kword_t make_path[U_PATH_WORDS];
 static kword_t make_run[MAKE_RUN_WORDS];
 
@@ -165,9 +190,15 @@ make_store(const char *s)
         unsigned int n;
         unsigned int off;
         unsigned int i;
+        unsigned int reserve;
 
         n = make_strlen(s) + 1U;
-        if (n > MAKE_ARENA_CHARS - make_arena_used)
+        reserve = (MAKE_MAX_DEPTH + 1U) * MAKE_IMPLICIT_SLOT_CHARS;
+        if (reserve >= MAKE_NONE || make_arena_used >= MAKE_NONE - reserve ||
+            n > MAKE_NONE - reserve - make_arena_used ||
+            make_grow((void **)&make_arena, &make_arena_capacity,
+                make_arena_used + n + reserve, sizeof(*make_arena),
+                MAKE_ARENA_INITIAL) != 0)
                 return MAKE_NONE;
         off = make_arena_used;
         for (i = 0U; i < n; ++i)
@@ -255,12 +286,29 @@ make_counted_text(const kword_t *s, char *dst, unsigned int cap)
 static int
 make_find_var(const char *name)
 {
-        unsigned int i;
+        unsigned int lo, hi, mid, i;
+        const char *stored;
+        int cmp;
 
-        for (i = 0U; i < make_var_count; ++i)
-                if (make_streq(make_text(make_vars[i].name), name))
-                        return (int)i;
-        return -1;
+        /* Keep variables ordered by name. Binary search needs no hash
+         * table, spare slots, or additional per-variable memory. Negative
+         * results encode the exact insertion point as -(index+1). */
+        lo = 0U;
+        hi = make_var_count;
+        while (lo < hi) {
+                mid = lo + (hi - lo) / 2U;
+                stored = make_text(make_vars[mid].name);
+                i = 0U;
+                while (stored[i] != 0 && stored[i] == name[i]) ++i;
+                cmp = (int)(unsigned char)stored[i] -
+                    (int)(unsigned char)name[i];
+                if (cmp < 0) lo = mid + 1U;
+                else hi = mid;
+        }
+        if (lo < make_var_count &&
+            make_streq(make_text(make_vars[lo].name), name))
+                return (int)lo;
+        return -((int)lo + 1);
 }
 
 static int
@@ -270,6 +318,7 @@ make_set_var(const char *name, const char *value, int op, unsigned int flags)
         unsigned int noff;
         unsigned int voff;
         unsigned int used;
+        unsigned int place;
         int vi;
 
         vi = make_find_var(name);
@@ -302,14 +351,18 @@ make_set_var(const char *name, const char *value, int op, unsigned int flags)
                 make_vars[vi].flags = flags;
                 return 0;
         }
-        if (make_var_count >= MAKE_MAX_VARS)
+        if (make_grow((void **)&make_vars, &make_var_capacity,
+            make_var_count + 1U, sizeof(*make_vars), 16U) != 0)
                 return -1;
         noff = make_store(name);
         if (noff == MAKE_NONE)
                 return -1;
-        make_vars[make_var_count].name = noff;
-        make_vars[make_var_count].value = voff;
-        make_vars[make_var_count].flags = flags;
+        place = (unsigned int)(-vi - 1);
+        for (used = make_var_count; used > place; --used)
+                make_vars[used] = make_vars[used - 1U];
+        make_vars[place].name = noff;
+        make_vars[place].value = voff;
+        make_vars[place].flags = flags;
         ++make_var_count;
         return 0;
 }
@@ -504,7 +557,8 @@ make_get_rule(const char *name)
         ri = make_find_rule(name);
         if (ri >= 0)
                 return ri;
-        if (make_rule_count >= MAKE_MAX_RULES)
+        if (make_grow((void **)&make_rules, &make_rule_capacity,
+            make_rule_count + 1U, sizeof(*make_rules), 32U) != 0)
                 return -1;
         off = make_store(name);
         if (off == MAKE_NONE)
@@ -526,7 +580,9 @@ make_add_dep(unsigned int ri, const char *name)
         unsigned int di;
         unsigned int off;
 
-        if (ri >= make_rule_count || make_dep_count >= MAKE_MAX_DEPS)
+        if (ri >= make_rule_count ||
+            make_grow((void **)&make_deps, &make_dep_capacity,
+                make_dep_count + 1U, sizeof(*make_deps), 64U) != 0)
                 return -1;
         off = make_store(name);
         if (off == MAKE_NONE)
@@ -547,7 +603,9 @@ make_add_recipe(unsigned int ri, unsigned int text)
 {
         unsigned int ci;
 
-        if (ri >= make_rule_count || make_recipe_count >= MAKE_MAX_RECIPES)
+        if (ri >= make_rule_count ||
+            make_grow((void **)&make_recipes, &make_recipe_capacity,
+                make_recipe_count + 1U, sizeof(*make_recipes), 32U) != 0)
                 return -1;
         ci = make_recipe_count++;
         make_recipes[ci].text = text;
@@ -1151,12 +1209,35 @@ static int
 make_newer_add(const char *name)
 {
         unsigned int used;
+        unsigned int need;
+        unsigned int next;
+        unsigned int i;
+        char *p;
 
         used = make_strlen(make_newer_buf);
-        if (used != 0U && make_append(make_newer_buf, sizeof(make_newer_buf),
+        need = used + make_strlen(name) + (used != 0U ? 1U : 0U) + 1U;
+        if (need < used) return -1;
+        if (need > make_newer_capacity) {
+                next = make_newer_capacity;
+                while (next < need) {
+                        if (next > MAKE_NONE / 2U) return -1;
+                        next *= 2U;
+                }
+                if (make_newer_buf == make_newer_small) {
+                        p = realloc(0, next);
+                        if (p == 0) return -1;
+                        for (i = 0U; i <= used; ++i) p[i] = make_newer_buf[i];
+                } else {
+                        p = realloc(make_newer_buf, next);
+                        if (p == 0) return -1;
+                }
+                make_newer_buf = p;
+                make_newer_capacity = next;
+        }
+        if (used != 0U && make_append(make_newer_buf, make_newer_capacity,
             &used, " ") != 0)
                 return -1;
-        return make_append(make_newer_buf, sizeof(make_newer_buf), &used,
+        return make_append(make_newer_buf, make_newer_capacity, &used,
             name);
 }
 
@@ -1182,14 +1263,14 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                 return 1;
         /* The top of the arena is a nonallocating recursion scratch stack.
          * Parser strings grow from the bottom and never overlap it. */
-        if ((depth + 1U) > MAKE_ARENA_CHARS / MAKE_IMPLICIT_SLOT_CHARS ||
-            MAKE_ARENA_CHARS - (depth + 1U) * MAKE_IMPLICIT_SLOT_CHARS <
+        if ((depth + 1U) > make_arena_capacity / MAKE_IMPLICIT_SLOT_CHARS ||
+            make_arena_capacity - (depth + 1U) * MAKE_IMPLICIT_SLOT_CHARS <
             make_arena_used) {
                 make_diag("IMPLICIT SCRATCH EXHAUSTED", name);
                 return 1;
         }
         imp = (struct make_implicit *)(void *)
-            &make_arena[MAKE_ARENA_CHARS -
+            &make_arena[make_arena_capacity -
             (depth + 1U) * MAKE_IMPLICIT_SLOT_CHARS];
         ri = make_find_rule(name);
         if (ri >= 0) {
@@ -1215,7 +1296,11 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
         imp->rule = -1;
         imp->source[0] = 0;
         imp->stem[0] = 0;
-        if ((rule == 0 || rule->recipe_head == MAKE_NONE) &&
+        /* PHONY rules cannot be satisfied by implicit suffix recipes.
+         * Skipping that search also prevents quadratic scans when a large
+         * graph lists many explicitly PHONY prerequisites. */
+        if ((rule == 0 || (rule->recipe_head == MAKE_NONE &&
+            (rule->flags & MAKE_RULE_PHONY) == 0U)) &&
             make_source_rule(name, imp) == 0)
                 ir = imp->rule;
         else
