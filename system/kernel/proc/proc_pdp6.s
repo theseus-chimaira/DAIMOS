@@ -786,10 +786,11 @@ proc_exit_current:
         setzm   file_table
         push    17,2
         pushj   17,proc_exit_finish
+        jumpl   1,proc_exit_release_failed
 .if PROC_STACK_WATERMARK
-        jumple  1,proc_exit_watermark_halt
+        jumpe   1,proc_exit_watermark_halt
 .else
-        jumple  1,proc_exit_halt       ; final process or fatal release error
+        jumpe   1,proc_exit_halt       ; no live processes remain
 .endif
         pop     17,1                   ; another process remains: restore PI
         pushj   17,mach_pi_restore
@@ -802,6 +803,11 @@ proc_exit_halt:
         ; Keep PI disabled.  Re-enabling it here lets a final clock interrupt
         ; redirect the no-process case into proc_idle_loop before HALT.
         halt
+        jrst    .-1
+proc_exit_release_failed:
+        ; A failed release is not the normal last-process shutdown.
+        ; Preserve that distinction in the HALT operand for SIMH diagnostics.
+        halt    1
         jrst    .-1
 
 /**
