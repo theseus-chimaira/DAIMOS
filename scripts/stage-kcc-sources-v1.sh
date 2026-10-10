@@ -39,7 +39,7 @@ for src in "$repo"/*.[chs] "$repo"/runtime/*.[cs] \
 done
 # Stage the authoritative shared inventory and native platform rules.
 # Unix's platform include remains host-only. Native sees DAIMOS.MK.
-sed 's/^PLATFORM ?= unix$/PLATFORM ?= daimos/' "$repo/Makefile" |         tr '[:lower:]' '[:upper:]' > "$out/MAKEFILE.ascii"
+sed 's/^PLATFORM ?= cross$/PLATFORM ?= daimos/' "$repo/Makefile" |         tr '[:lower:]' '[:upper:]' > "$out/MAKEFILE.ascii"
 "$s6text" --encode "$out/MAKEFILE.ascii" "$out/MAKEFILE"
 rm -f "$out/MAKEFILE.ascii"
 # Translate portable Make recipe prefixes into native direct RUN syntax.
