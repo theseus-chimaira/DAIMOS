@@ -164,3 +164,19 @@ strtok(char *s, char *delim)
                 next = 0;
         return start;
 }
+
+/* Number of initial characters not occurring in the rejection set. */
+unsigned int
+strcspn(const char *s, const char *reject)
+{
+        const char *p;
+        const char *q;
+
+        for (p = s; *p != 0; ++p) {
+                for (q = reject; *q != 0; ++q) {
+                        if (*p == *q)
+                                return (unsigned int)(p - s);
+                }
+        }
+        return (unsigned int)(p - s);
+}
