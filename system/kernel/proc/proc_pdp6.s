@@ -580,8 +580,9 @@ proc_slot_ptr:
 /**
  * @brief Maintain the intrusive runnable queue stored in sched RH.
  *
- * Add is O(1); removal is O(number of runnable jobs) but occurs only on state
- * transitions. AC1 is the slot. AC1..AC4 are preserved for event/wait callers.
+ * Add and removal inspect at most the runnable queue length.  The membership
+ * check makes a repeated enqueue idempotent, preventing a self-link or cycle.
+ * AC1 is the slot. AC1..AC4 are preserved for event/wait callers.
  */
 proc_runq_add:
         move    5,1
@@ -591,6 +592,20 @@ proc_runq_add:
         andi    0,PROC_STATE_LH_MASK
         caie    0,PROC_STATE_RUN
         popj    17,
+        ; A duplicate enqueue would link the slot to itself when already
+        ; head, or form a cycle farther down the list.  Search membership
+        ; before mutating the intrusive queue; this costs no extra memory.
+        move    6,proc_runq_head
+proc_runq_add_check:
+        jumpe   6,proc_runq_add_new
+        camn    6,1
+        popj    17,
+        move    7,6
+        imuli   7,3
+        add     7,proc_table
+        hrrz    6,2(7)
+        jrst    proc_runq_add_check
+proc_runq_add_new:
         move    0,proc_runq_head
         hrrm    0,2(5)
         movem   1,proc_runq_head
