@@ -166,10 +166,11 @@ make_grow_graph(void **array, unsigned int *capacity, unsigned int need,
         *capacity = count;
         return 0;
 }
-/* Strings grow during parsing, before any dependency traversal starts.
- * Reserve the entire fixed-depth implicit scratch stack at the upper end.
- * Thus realloc never moves an active implicit-rule pointer. */
+/* Parser strings are kept in a compact growable arena.  The fixed-depth
+ * implicit recursion scratch stack is allocated separately after parsing,
+ * avoiding unused scratch reservation in every arena growth step. */
 static char *make_arena;
+static struct make_implicit *make_implicit_stack;
 static unsigned int make_arena_capacity;
 #define MAKE_IMPLICIT_SLOT_CHARS \
         (((sizeof(struct make_implicit) + sizeof(kword_t) - 1U) / \
@@ -249,14 +250,11 @@ make_store(const char *s)
         unsigned int n;
         unsigned int off;
         unsigned int i;
-        unsigned int reserve;
 
         n = make_strlen(s) + 1U;
-        reserve = (MAKE_MAX_DEPTH + 1U) * MAKE_IMPLICIT_SLOT_CHARS;
-        if (reserve >= MAKE_NONE || make_arena_used >= MAKE_NONE - reserve ||
-            n > MAKE_NONE - reserve - make_arena_used ||
+        if (make_arena_used >= MAKE_NONE || n > MAKE_NONE - make_arena_used ||
             make_grow((void **)&make_arena, &make_arena_capacity,
-                make_arena_used + n + reserve, sizeof(*make_arena),
+                make_arena_used + n, sizeof(*make_arena),
                 MAKE_ARENA_INITIAL) != 0)
                 return MAKE_NONE;
         off = make_arena_used;
@@ -1487,17 +1485,13 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
 
         if (depth > MAKE_MAX_DEPTH)
                 return 1;
-        /* The top of the arena is a nonallocating recursion scratch stack.
-         * Parser strings grow from the bottom and never overlap it. */
-        if ((depth + 1U) > make_arena_capacity / MAKE_IMPLICIT_SLOT_CHARS ||
-            make_arena_capacity - (depth + 1U) * MAKE_IMPLICIT_SLOT_CHARS <
-            make_arena_used) {
+        /* Dedicated scratch storage avoids pinning spare arena capacity
+         * during parsing.  Allocated once after parsing completes. */
+        if (make_implicit_stack == 0) {
                 make_diag("IMPLICIT SCRATCH EXHAUSTED", name);
                 return 1;
         }
-        imp = (struct make_implicit *)(void *)
-            &make_arena[make_arena_capacity -
-            (depth + 1U) * MAKE_IMPLICIT_SLOT_CHARS];
+        imp = &make_implicit_stack[depth];
         ri = make_find_rule(name);
         if (ri >= 0) {
                 rule = &make_rules[ri];
@@ -1761,15 +1755,11 @@ main(int argc, kword_t **argv, kword_t **envp)
                 make_diag("CANNOT PARSE", makefile);
                 return 1;
         }
-        /* Parsing has finished: discard geometric arena overcapacity while
-         * preserving all strings and the complete implicit recursion stack.
-         * realloc() shrinks in place in DAIMOS libc, returning the tail to
-         * the free list.  A failed shrink leaves the original arena usable. */
+        /* Parsing has finished.  Return excess string capacity while
+         * preserving word alignment and all stored arena offsets. */
         {
-                unsigned int needed = make_arena_used +
-                    (MAKE_MAX_DEPTH + 1U) * MAKE_IMPLICIT_SLOT_CHARS;
-                /* The stack is addressed as struct make_implicit, so its
-                 * top must remain aligned to a native 36-bit word. */
+                unsigned int needed = make_arena_used;
+                /* Retain native-word alignment after shrinking. */
                 needed = (needed + sizeof(kword_t) - 1U) /
                     sizeof(kword_t) * sizeof(kword_t);
                 if (needed < make_arena_capacity) {
@@ -1779,6 +1769,12 @@ main(int argc, kword_t **argv, kword_t **envp)
                                 make_arena_capacity = needed;
                         }
                 }
+        }
+        make_implicit_stack = realloc(0, (MAKE_MAX_DEPTH + 1U) *
+            sizeof(*make_implicit_stack));
+        if (make_implicit_stack == 0) {
+                make_diag("IMPLICIT SCRATCH EXHAUSTED", 0);
+                return 2;
         }
         /* A separate suffix index avoids scanning every ordinary rule for
          * every implicit target.  Never allocate if none are present. */
