@@ -118,6 +118,8 @@ static unsigned int make_var_capacity;
 static kword_t *make_dep_newer;
 
 
+/* Smaller arena increments reduce peak RAM; the parser owns offsets,
+ * not raw pointers, and DAIMOS realloc grows in place when possible. */
 static int
 make_grow(void **array, unsigned int *capacity, unsigned int need,
     unsigned int item_size, unsigned int initial)
@@ -128,8 +130,10 @@ make_grow(void **array, unsigned int *capacity, unsigned int need,
         if (need <= *capacity) return 0;
         count = *capacity ? *capacity : initial;
         while (count < need) {
-                if (count > MAKE_NONE / 2U) return -1;
-                count *= 2U;
+                unsigned int extra = count / 4U;
+                if (extra == 0U || count > MAKE_NONE - extra)
+                        return -1;
+                count += extra;
         }
         if (count > MAKE_NONE / item_size) return -1;
         p = realloc(*array, count * item_size);
@@ -138,9 +142,8 @@ make_grow(void **array, unsigned int *capacity, unsigned int need,
         *capacity = count;
         return 0;
 }
-/* Graph records are long-lived.  A 3/2 capacity factor limits unused
- * resident table space; keep the existing doubling strategy for byte
- * arenas, where repeated copies are more expensive than spare capacity. */
+/* Graph records use three-halves growth to limit unused table space.
+ * The string arena uses five-quarters growth to limit peak allocation. */
 static int
 make_grow_graph(void **array, unsigned int *capacity, unsigned int need,
     unsigned int item_size, unsigned int initial)
