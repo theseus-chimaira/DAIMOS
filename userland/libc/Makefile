@@ -3,10 +3,10 @@ PDP10_PREFIX ?=
 LIBC_ROOT != pwd
 BUILD_ROOT ?= $(LIBC_ROOT)/../build
 BUILD = $(BUILD_ROOT)/libc
-CC ?= $(PDP10_PREFIX)/bin/kcc
-DAS = $(PDP10_PREFIX)/bin/das
+CC ?= kcc
+DAS = das
 DASFLAGS ?= -F
-DARC = $(PDP10_PREFIX)/bin/darc
+DARC = darc
 CFLAGS = -Pgnu99 -O -x=pdp6 -m=gas
 CPPFLAGS = -I$(LIBC_ROOT) -I$(LIBC_ROOT)/../../system/kernel/core \
 	-I$(LIBC_ROOT)/../../system/kernel/fs \
@@ -27,9 +27,9 @@ build: check-prefix $(LIBC)
 
 check-prefix:
 	@test -n "$(PDP10_PREFIX)" || { echo "PDP10_PREFIX must be set" >&2; exit 1; }
-	@test -x "$(CC)" || { echo "missing compiler: $(CC)" >&2; exit 1; }
-	@test -x "$(DAS)" || { echo "missing assembler: $(DAS)" >&2; exit 1; }
-	@test -x "$(DARC)" || { echo "missing archiver: $(DARC)" >&2; exit 1; }
+	@command -v "$(CC)" >/dev/null 2>&1 || { echo "missing compiler: $(CC)" >&2; exit 1; }
+	@command -v "$(DAS)" >/dev/null 2>&1 || { echo "missing assembler: $(DAS)" >&2; exit 1; }
+	@command -v "$(DARC)" >/dev/null 2>&1 || { echo "missing archiver: $(DARC)" >&2; exit 1; }
 
 # Explicit dependencies avoid dialect-specific pattern rules. Shell filename
 # expansion lets the shared recipes select their individual source files.

@@ -1,13 +1,15 @@
 PROJECT_ROOT := $(abspath ..)
 BUILD_ROOT ?= $(PROJECT_ROOT)/build
 USERLAND_BUILD := $(BUILD_ROOT)/userland
-KCC ?= $(PDP10_PREFIX)/bin/kcc
-DAS ?= $(PDP10_PREFIX)/bin/das
+KCC ?= kcc
+DAS ?= das
 DASFLAGS ?= -F
-DLINK ?= $(PDP10_PREFIX)/bin/dlink
-DARC ?= $(PDP10_PREFIX)/bin/darc
-P10FOLD ?= $(PDP10_PREFIX)/bin/p10fold
-SIXMD_CHECK ?= $(PDP10_PREFIX)/bin/sixmd-check
+DLINK ?= dlink
+DARC ?= darc
+P10FOLD ?= p10fold
+SIXMD_CHECK ?= sixmd-check
+KCC_TOOL_DEP != command -v "$(KCC)" 2>/dev/null || echo "$(KCC)"
+P10FOLD_TOOL_DEP != command -v "$(P10FOLD)" 2>/dev/null || echo "$(P10FOLD)"
 CPPFLAGS = -I$(PROJECT_ROOT)/system/kernel/boot -I$(PROJECT_ROOT)/system/kernel/core -I$(PROJECT_ROOT)/system/kernel/drivers -I$(PROJECT_ROOT)/system/kernel/fs -I$(PROJECT_ROOT)/system/kernel/mm -I$(PROJECT_ROOT)/system/kernel/modules -I$(PROJECT_ROOT)/system/kernel/proc -I$(PROJECT_ROOT)/system/kernel/storage -I$(PROJECT_ROOT)/userland/libc -I$(PROJECT_ROOT)/userland/exec -I$(PDP10_PREFIX)/include
 KCCFLAGS ?= -Pgnu99 -O -x=pdp6 -m=gas
 KCC_HEADERS = $(wildcard $(PROJECT_ROOT)/userland/libc/*.h) \
@@ -200,7 +202,7 @@ KCC_GENERATED = $(CHECK_ASMS) $(INIT_C_OBJS) $(MOUNTALL_C_OBJS) \
 	$(DTFSPROBE_C_OBJS) $(D6LZ_C_OBJS) $(LOGDRAIN_C_OBJS) \
 	$(DARC_C_OBJS) $(DLINK_C_OBJS) $(OBJDUMP_C_OBJS)
 
-$(KCC_GENERATED): $(KCC) $(KCC_HEADERS)
+$(KCC_GENERATED): $(KCC_TOOL_DEP) $(KCC_HEADERS)
 
 .DEFAULT_GOAL := build
 .PHONY: build check manual-check clean
@@ -279,7 +281,7 @@ $(MOUNTALL_DXR): $(MOUNTALL_C_OBJS) $(MOUNTALL_S_OBJS)
 $(LOGIN_DXR): $(LOGIN_C_OBJS) $(LOGIN_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(LOGIN_MAP) $(LOGIN_S_OBJS) $(LOGIN_C_OBJS)
 
-$(DSH_FOLD_PLAN): $(DSH_S_OBJS) $(P10FOLD) Makefile
+$(DSH_FOLD_PLAN): $(DSH_S_OBJS) $(P10FOLD_TOOL_DEP) Makefile
 	$(P10FOLD) -m 4 -P $@ $(DSH_S_OBJS) >/dev/null
 
 $(DSH_DXR): $(DSH_C_OBJS) $(DSH_S_OBJS) $(DSH_FOLD_PLAN)

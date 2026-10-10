@@ -2,9 +2,9 @@
 PROJECT_ROOT != cd ../../../.. && pwd
 BUILD ?= ${PROJECT_ROOT}/build/system/stand/pdp6/drm
 PDP10_PREFIX ?= ${HOME}/cross
-DAS ?= ${PDP10_PREFIX}/bin/das
+DAS ?= das
 DASFLAGS ?= -F
-DXRCONVERT ?= ${PDP10_PREFIX}/bin/dxrconvert
+DXRCONVERT ?= dxrconvert
 STAGE1 = ${PROJECT_ROOT}/system/stand/pdp6/drm/stage1.s
 STAGE1_COMMON = ${PROJECT_ROOT}/system/stand/pdp6/common/decompressor.inc \
 	${PROJECT_ROOT}/system/stand/pdp6/common/stage1-error.inc
