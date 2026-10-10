@@ -1353,9 +1353,7 @@ util_render_manual(const kword_t *topic, struct u_io *io)
                 (void)util_not_available(io, "MANUAL");
                 return 1;
         }
-        (void)u_puts(io->err_fd, "MAN: NO ENTRY: ");
-        (void)u_put_s6(io->err_fd, topic);
-        (void)u_crlf(io->err_fd);
+        (void)util_not_available(io, "MANUAL");
         return 1;
 }
 #endif
