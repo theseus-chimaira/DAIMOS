@@ -1289,11 +1289,55 @@ make_run_recipe(const char *command)
         return (int)SYS_WAIT_STATUS_VALUE(status);
 }
 
+/* Resolve the first word of a direct recipe through PATH when it has no
+ * directory component. Keep the resolved path in the existing local buffer. */
+static int
+make_direct_path(kword_t *path, const char *command)
+{
+        char candidate[U_PATH_WORDS * 6U];
+        const char *search;
+        struct vfs_stat st;
+        unsigned int i, j, k, n;
+        int vi;
+
+        for (i = 0U; command[i] != 0; ++i)
+                if (command[i] == '/')
+                        return u_s6_pack(path, U_PATH_WORDS, command);
+        vi = make_find_var("PATH");
+        if (vi < 0)
+                return -1;
+        search = make_text(make_vars[vi].value);
+        if (search == 0)
+                return -1;
+        n = make_strlen(command);
+        for (i = 0U; search[i] != 0;) {
+                j = 0U;
+                while (search[i] != 0 && search[i] != ':') {
+                        if (j + n + 2U >= sizeof(candidate))
+                                return -1;
+                        candidate[j++] = search[i++];
+                }
+                if (search[i] == ':')
+                        ++i;
+                if (j == 0U)
+                        continue;
+                if (candidate[j - 1U] != '/')
+                        candidate[j++] = '/';
+                for (k = 0U; k < n; ++k)
+                        candidate[j++] = command[k];
+                candidate[j] = 0;
+                if (u_s6_pack(path, U_PATH_WORDS, candidate) == 0 &&
+                    dsys_stat(path, &st) == 0 && st.type == VFS_TYPE_REG)
+                        return 0;
+        }
+        return -1;
+}
+
 /* A recipe prefixed by '!' is an unquoted argv vector, executed directly
  * through RUN V2 rather than limited to one DSH -C argument (102 chars).
  * This is particularly useful for assembler/linker object lists.  It has
  * no shell expansion, pipelines, redirections, or quoting: use an ordinary
- * recipe for shell syntax.  An explicit absolute executable is required. */
+ * recipe for shell syntax. Bare executable names are resolved via PATH. */
 static int
 make_run_direct(char *command)
 {
@@ -1327,8 +1371,7 @@ make_run_direct(char *command)
                 if (*p != 0)
                         *p++ = 0;
                 if (argc == 0U) {
-                        if (token[0] != '/' ||
-                            u_s6_pack(path, U_PATH_WORDS, token) != 0 ||
+                        if (make_direct_path(path, token) != 0 ||
                             make_run_append(&used, path) != 0)
                                 return 126;
                 }
