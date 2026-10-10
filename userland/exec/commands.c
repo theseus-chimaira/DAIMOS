@@ -187,12 +187,235 @@ cmd_mkdir(int argc, kword_t **argv, struct u_io *io)
 #endif
 
 #if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_RM
+#define RM_MAX_DEPTH 16U
+
+/* Refuse directory aliases that could escape the requested subtree. */
+static int
+rm_safe_path(const kword_t *path)
+{
+        unsigned int count, i, shift, ch, part, dots;
+
+        count = (unsigned int)path[0];
+        if (count == 0U || count > (U_PATH_WORDS - 1U) * 6U)
+                return 0;
+        part = 0U;
+        dots = 0U;
+        for (i = 0U; i <= count; ++i) {
+                if (i == count)
+                        ch = '/';
+                else {
+                        shift = 30U - (i % 6U) * 6U;
+                        ch = (unsigned int)((path[1U + i / 6U] >> shift)
+                            & 077U) + 040U;
+                }
+                if (ch == '/') {
+                        if (part == 1U && dots == 1U)
+                                return 0;
+                        if (part == 2U && dots == 2U)
+                                return 0;
+                        part = 0U;
+                        dots = 0U;
+                } else {
+                        ++part;
+                        if (ch == '.' && dots + 1U == part)
+                                ++dots;
+                }
+        }
+        /* Slash alone, or repeated slashes alone, refers to root. */
+        for (i = 0U; i < count; ++i) {
+                shift = 30U - (i % 6U) * 6U;
+                if (((path[1U + i / 6U] >> shift) & 077U) != 017U)
+                        return 1;
+        }
+        return 0;
+}
+
+/* STAT follows symbolic links. Inspect the last entry in its parent
+ * directory instead, so RM -R LINK removes the link, not its target. */
+static int
+rm_entry_type(const kword_t *path, unsigned int *type)
+{
+        char full[U_PATH_WORDS * 6U];
+        char leaf[U_PATH_WORDS * 6U];
+        kword_t parent[U_PATH_WORDS];
+        kword_t entry[U_ARG_WORDS];
+        struct vfs_dirent ent;
+        unsigned int i, count, slash, end, n;
+        int fd, r;
+
+        count = (unsigned int)path[0];
+        if (count == 0U || count + 1U >= sizeof(full))
+                return -1;
+        for (i = 0U; i < count; ++i)
+                full[i] = (char)(((path[1U + i / 6U] >>
+                    (30U - (i % 6U) * 6U)) & 077U) + 040U);
+        full[count] = 0;
+        end = count;
+        while (end > 1U && full[end - 1U] == '/')
+                --end;
+        slash = end;
+        while (slash > 0U && full[slash - 1U] != '/')
+                --slash;
+        n = end - slash;
+        if (n == 0U || n >= sizeof(leaf))
+                return -1;
+        for (i = 0U; i < n; ++i)
+                leaf[i] = full[slash + i];
+        leaf[n] = 0;
+        if (slash == 0U) {
+                if (u_s6_pack(parent, U_PATH_WORDS, ".") != 0)
+                        return -1;
+        } else {
+                /* Retain '/' as the parent when the operand is at root. */
+                full[slash == 1U ? 1U : slash - 1U] = 0;
+                if (u_s6_pack(parent, U_PATH_WORDS, full) != 0)
+                        return -1;
+        }
+        fd = dsys_open(parent, SYS_O_RDONLY);
+        if (fd < 0)
+                return -1;
+        while ((r = dsys_dirread(fd, &ent)) > 0) {
+                if (u_s6_from_dirent(entry, U_ARG_WORDS, &ent) != 0) {
+                        r = -1;
+                        break;
+                }
+                if (u_s6_eq(entry, leaf)) {
+                        *type = ent.type;
+                        break;
+                }
+        }
+        if (dsys_close(fd) != 0 || r <= 0)
+                return -1;
+        return 0;
+}
+
+/* Convert a counted SIXBIT path, adding a single directory entry. */
+static int
+rm_join(kword_t *dst, const kword_t *parent, const struct vfs_dirent *ent)
+{
+        char name[U_PATH_WORDS * 6U];
+        unsigned int i, n, count, word, shift;
+
+        count = (unsigned int)parent[0];
+        n = ent->name.chars;
+        if (count == 0U || n == 0U || n > VFS_NAME_MAX_CHARS ||
+            count + n + 2U >= sizeof(name))
+                return -1;
+        for (i = 0U; i < count; ++i) {
+                word = 1U + i / 6U;
+                shift = 30U - (i % 6U) * 6U;
+                name[i] = (char)(((parent[word] >> shift) & 077U) + 040U);
+        }
+        if (name[count - 1U] != '/')
+                name[count++] = '/';
+        for (i = 0U; i < n; ++i) {
+                shift = 30U - (i % 6U) * 6U;
+                name[count++] = (char)(((ent->name.words[i / 6U] >> shift)
+                    & 077U) + 040U);
+        }
+        name[count] = 0;
+        return u_s6_pack(dst, U_PATH_WORDS, name);
+}
+
+/* Reopen the directory after deleting an entry: directory indexes can shift
+ * on unlink. Never descend through links or mount-source nodes. */
+static int
+rm_tree(kword_t *path, unsigned int depth)
+{
+        struct vfs_stat st;
+        struct vfs_dirent ent;
+        kword_t child[U_PATH_WORDS];
+        kword_t entry[U_ARG_WORDS];
+        int fd, r;
+
+        if (depth >= RM_MAX_DEPTH || dsys_stat(path, &st) != 0)
+                return -1;
+        if (st.type != VFS_TYPE_DIR)
+                return dsys_unlink(path);
+        for (;;) {
+                fd = dsys_open(path, SYS_O_RDONLY);
+                if (fd < 0)
+                        return -1;
+                for (;;) {
+                        r = dsys_dirread(fd, &ent);
+                        if (r <= 0)
+                                break;
+                        if (u_s6_from_dirent(entry, U_ARG_WORDS, &ent) != 0) {
+                                r = -1;
+                                break;
+                        }
+                        if (!u_s6_eq(entry, ".") && !u_s6_eq(entry, ".."))
+                                break;
+                }
+                if (dsys_close(fd) != 0 || r < 0)
+                        return -1;
+                if (r == 0)
+                        return dsys_rmdir(path);
+                if (ent.type == VFS_TYPE_MOUNTSRC ||
+                    rm_join(child, path, &ent) != 0)
+                        return -1;
+                if (ent.type == VFS_TYPE_DIR)
+                        r = rm_tree(child, depth + 1U);
+                else
+                        r = dsys_unlink(child);
+                if (r != 0)
+                        return -1;
+        }
+}
+
 static int
 cmd_rm(int argc, kword_t **argv, struct u_io *io)
 {
-        int i, rc = 0;
-        if (argc < 2) return cmd_err(io, "RM", 0);
-        for (i = 1; i < argc; ++i) if (dsys_unlink(argv[i]) != 0) rc = cmd_err(io, "RM", argv[i]);
+        unsigned int recursive, force;
+        int i, rc, first;
+
+        recursive = 0U;
+        force = 0U;
+        first = 1;
+        while (first < argc) {
+                if (u_s6_eq(argv[first], "-R") ||
+                    u_s6_eq(argv[first], "-r"))
+                        recursive = 1U;
+                else if (u_s6_eq(argv[first], "-F") ||
+                    u_s6_eq(argv[first], "-f"))
+                        force = 1U;
+                else if (u_s6_eq(argv[first], "--")) {
+                        ++first;
+                        break;
+                } else
+                        break;
+                ++first;
+        }
+        if (first == argc)
+                return force ? 0 : cmd_err(io, "RM", 0);
+        rc = 0;
+        for (i = first; i < argc; ++i) {
+                unsigned int type;
+                int result;
+
+                /* Never permit recursive deletion of the directory anchors. */
+                if (recursive && !rm_safe_path(argv[i])) {
+                        rc = cmd_err(io, "RM", argv[i]);
+                        continue;
+                }
+                if (!recursive) {
+                        result = dsys_unlink(argv[i]);
+                        if (result != 0 && !force)
+                                rc = cmd_err(io, "RM", argv[i]);
+                        continue;
+                }
+                result = rm_entry_type(argv[i], &type);
+                if (result != 0 && force)
+                        continue;
+                if (result == 0 && type == VFS_TYPE_DIR)
+                        result = rm_tree(argv[i], 0U);
+                else if (result == 0)
+                        result = dsys_unlink(argv[i]);
+                else
+                        result = -1;
+                if (result != 0)
+                        rc = cmd_err(io, "RM", argv[i]);
+        }
         return rc;
 }
 #endif
