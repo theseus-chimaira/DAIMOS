@@ -505,16 +505,41 @@ load_removed_plan(struct removed_list *l, const char *name)
                 }
                 if (line[0] == '\0')
                         continue;
-                kind = strtok(line, "\t");
-                object = strtok(NULL, "\t");
-                off = strtok(NULL, "\t");
-                anchor = strtok(NULL, "\t");
-                aoff = strtok(NULL, "\t");
-                words = strtok(NULL, "\t");
-                extra = strtok(NULL, "\t");
+                /* Preserve empty fields and reject trailing tab fields. */
+                {
+                        char *fields[6];
+                        char *cursor = line;
+                        unsigned i;
+
+                        for (i = 0; i < 6; ++i) {
+                                char *tab;
+
+                                fields[i] = cursor;
+                                tab = strchr(cursor, '\t');
+                                if (i == 5) {
+                                        if (tab != NULL)
+                                                break;
+                                } else {
+                                        if (tab == NULL)
+                                                break;
+                                        *tab = '\0';
+                                        cursor = tab + 1;
+                                }
+                        }
+                        kind = i == 6 ? fields[0] : NULL;
+                        object = i == 6 ? fields[1] : NULL;
+                        off = i == 6 ? fields[2] : NULL;
+                        anchor = i == 6 ? fields[3] : NULL;
+                        aoff = i == 6 ? fields[4] : NULL;
+                        words = i == 6 ? fields[5] : NULL;
+                        extra = NULL;
+                }
                 if (kind == NULL || strcmp(kind, "FOLD") != 0 ||
                     object == NULL || off == NULL || anchor == NULL ||
-                    aoff == NULL || words == NULL || extra != NULL) {
+                    aoff == NULL || words == NULL || extra != NULL ||
+                    *object == '\0' || *off == '\0' ||
+                    *anchor == '\0' || *aoff == '\0' ||
+                    *words == '\0') {
                         fprintf(stderr,
                             "p10fold: malformed anchor fold-plan line\n");
                         fclose(f);
