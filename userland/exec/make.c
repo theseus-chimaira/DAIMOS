@@ -42,9 +42,14 @@ struct make_rule {
         unsigned int dep_tail;
         unsigned int recipe_head;
         unsigned int recipe_tail;
-        unsigned int flags;
-        unsigned int state;
+        /* Low three bits: flags. Bits 3-4: traversal state. */
+        unsigned int flags_state;
 };
+
+#define MAKE_STATE_SHIFT 3U
+#define MAKE_STATE_MASK (3U << MAKE_STATE_SHIFT)
+#define MAKE_GET_STATE(r) (((r)->flags_state & MAKE_STATE_MASK) >> MAKE_STATE_SHIFT)
+#define MAKE_SET_STATE(r, s) ((r)->flags_state = ((r)->flags_state & ~MAKE_STATE_MASK) | ((s) << MAKE_STATE_SHIFT))
 
 struct make_link {
         unsigned int text;
@@ -696,8 +701,7 @@ make_get_rule(const char *name)
         make_rules[ri].dep_tail = MAKE_NONE;
         make_rules[ri].recipe_head = MAKE_NONE;
         make_rules[ri].recipe_tail = MAKE_NONE;
-        make_rules[ri].flags = 0U;
-        make_rules[ri].state = MAKE_STATE_IDLE;
+        make_rules[ri].flags_state = 0U;
         return ri;
 }
 
@@ -834,7 +838,7 @@ make_parse_rule(char *line)
                         return -1;
                 make_current[lhs_count++] = (unsigned int)ri;
                 if (make_suffix_rule_name(word))
-                        make_rules[ri].flags |= MAKE_RULE_SUFFIX;
+                        make_rules[ri].flags_state |= MAKE_RULE_SUFFIX;
                 if (make_default_rule == MAKE_NONE && word[0] != '.')
                         make_default_rule = (unsigned int)ri;
         }
@@ -847,7 +851,7 @@ make_parse_rule(char *line)
                         ri = make_get_rule(word);
                         if (ri < 0)
                                 return -1;
-                        make_rules[ri].flags |= MAKE_RULE_PHONY;
+                        make_rules[ri].flags_state |= MAKE_RULE_PHONY;
                         continue;
                 }
                 if (make_streq(lhs, ".SUFFIXES"))
@@ -1462,26 +1466,26 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
         ri = make_find_rule(name);
         if (ri >= 0) {
                 rule = &make_rules[ri];
-                if (rule->state == MAKE_STATE_ACTIVE) {
+                if (MAKE_GET_STATE(rule) == MAKE_STATE_ACTIVE) {
                         make_diag("DEPENDENCY CYCLE", name);
                         return 1;
                 }
-                if (rule->state == MAKE_STATE_DONE) {
+                if (MAKE_GET_STATE(rule) == MAKE_STATE_DONE) {
                         rc = make_stat(name, out);
-                        if (rc == 0 && (rule->flags & (MAKE_RULE_CHANGED |
+                        if (rc == 0 && (rule->flags_state & (MAKE_RULE_CHANGED |
                             MAKE_RULE_PHONY)) != 0U)
                                 out->changed = 1U;
                         return rc;
                 }
-                if (rule->state == MAKE_STATE_FAILED)
+                if (MAKE_GET_STATE(rule) == MAKE_STATE_FAILED)
                         return 1;
-                rule->state = MAKE_STATE_ACTIVE;
+                MAKE_SET_STATE(rule, MAKE_STATE_ACTIVE);
         } else
                 rule = 0;
         /* A PHONY target is always out of date, even if a file with the
          * same name exists.  Its timestamp is irrelevant, so avoid an
          * expensive filesystem query for every PHONY prerequisite. */
-        if (rule != 0 && (rule->flags & MAKE_RULE_PHONY) != 0U) {
+        if (rule != 0 && (rule->flags_state & MAKE_RULE_PHONY) != 0U) {
                 target.mtime = 0UL;
                 target.exists = 0U;
                 target.valid = 0U;
@@ -1495,7 +1499,7 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
          * Skipping that search also prevents quadratic scans when a large
          * graph lists many explicitly PHONY prerequisites. */
         if ((rule == 0 || (rule->recipe_head == MAKE_NONE &&
-            (rule->flags & MAKE_RULE_PHONY) == 0U)) &&
+            (rule->flags_state & MAKE_RULE_PHONY) == 0U)) &&
             make_source_rule(name, imp) == 0)
                 ir = imp->rule;
         else
@@ -1509,7 +1513,7 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                 return 0;
         }
         need = make_always || !target.exists || !target.valid;
-        if (rule != 0 && (rule->flags & MAKE_RULE_PHONY) != 0U)
+        if (rule != 0 && (rule->flags_state & MAKE_RULE_PHONY) != 0U)
                 need = 1U;
         failed = 0;
         implicit_newer = 0;
@@ -1586,9 +1590,9 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                 }
                 target.changed = 1U;
                 if (rule != 0)
-                        rule->flags |= MAKE_RULE_CHANGED;
+                        rule->flags_state |= MAKE_RULE_CHANGED;
                 if (!make_dry_run && (rule == 0 ||
-                    (rule->flags & MAKE_RULE_PHONY) == 0U)) {
+                    (rule->flags_state & MAKE_RULE_PHONY) == 0U)) {
                         struct make_result after;
                         if (make_stat(name, &after) == 0 && after.exists) {
                                 after.changed = 1U;
@@ -1598,22 +1602,22 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
         } else if (need) {
                 target.changed = 1U;
                 if (rule != 0)
-                        rule->flags |= MAKE_RULE_CHANGED;
+                        rule->flags_state |= MAKE_RULE_CHANGED;
                 if (!target.exists && rule != 0 &&
                     rule->dep_head == MAKE_NONE &&
-                    (rule->flags & MAKE_RULE_PHONY) == 0U) {
+                    (rule->flags_state & MAKE_RULE_PHONY) == 0U) {
                         make_diag("NO RECIPE FOR", name);
                         goto fail;
                 }
         }
         if (rule != 0)
-                rule->state = MAKE_STATE_DONE;
+                MAKE_SET_STATE(rule, MAKE_STATE_DONE);
         *out = target;
         return 0;
 
 fail:
         if (rule != 0)
-                rule->state = MAKE_STATE_FAILED;
+                MAKE_SET_STATE(rule, MAKE_STATE_FAILED);
         return 1;
 }
 
@@ -1725,7 +1729,7 @@ main(int argc, kword_t **argv, kword_t **envp)
         /* A separate suffix index avoids scanning every ordinary rule for
          * every implicit target.  Never allocate if none are present. */
         for (i = 0U; i < make_rule_count; ++i)
-                if ((make_rules[i].flags & MAKE_RULE_SUFFIX) != 0U &&
+                if ((make_rules[i].flags_state & MAKE_RULE_SUFFIX) != 0U &&
                     make_rules[i].recipe_head != MAKE_NONE)
                         ++make_suffix_count;
         if (make_suffix_count != 0U) {
@@ -1737,7 +1741,7 @@ main(int argc, kword_t **argv, kword_t **envp)
                         return 2;
                 }
                 for (i = 0U; i < make_rule_count; ++i)
-                        if ((make_rules[i].flags & MAKE_RULE_SUFFIX) != 0U &&
+                        if ((make_rules[i].flags_state & MAKE_RULE_SUFFIX) != 0U &&
                             make_rules[i].recipe_head != MAKE_NONE)
                                 make_suffix_order[si++] = i;
         }
