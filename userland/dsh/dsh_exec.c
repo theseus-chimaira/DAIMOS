@@ -3,6 +3,7 @@
 #include "dsh_parse.h"
 #include "text.h"
 
+
 #define DSH_REC_WORDS (DSH_S6_MAX_WORDS + 1U)
 #define DSH_RUN_WORDS 192U
 
@@ -1438,12 +1439,11 @@ dsh_exec_assignment(struct dsh_state *st, const struct dsh_s6 *word,
 }
 
 static int
-dsh_exec_simple_node(struct dsh_state *st, const struct dsh_node *n,
+dsh_exec_simple_expanded(struct dsh_state *st, const struct dsh_node *n,
+    unsigned int argc, struct dsh_s6 *argv,
     int basein, int baseout, int launch_only, unsigned int pgrp_mode,
     unsigned int pgrp, int *pidp)
 {
-        struct dsh_s6 argv[DSH_MAX_ARGS];
-        unsigned int argc;
         int infd;
         int outfd;
         int savein;
@@ -1452,8 +1452,6 @@ dsh_exec_simple_node(struct dsh_state *st, const struct dsh_node *n,
         int rc;
         const struct dsh_function_store *fn;
 
-        if (dsh_expand_node_argv(st, n, argv, &argc) != 0)
-                return DSH_ERROR;
         if (argc == 0U)
                 return 0;
         fn = dsh_find_function(&argv[0]);
@@ -1490,6 +1488,86 @@ dsh_exec_simple_node(struct dsh_state *st, const struct dsh_node *n,
                 (void)dsh_s6_put(2, &argv[0]);
                 (void)u_crlf(2);
         }
+        return rc;
+}
+
+/* The common case needs no more than four argument records.  Keeping the
+ * large expansion arena out of the nested evaluator's frame prevents a
+ * deeply nested SOURCE/function command from exhausting the PDP-6 stack.
+ * Alias and wildcard expansion retain the full 20-argument fallback. */
+static int
+dsh_exec_simple_large(struct dsh_state *st, const struct dsh_node *n,
+    int basein, int baseout, int launch_only, unsigned int pgrp_mode,
+    unsigned int pgrp, int *pidp)
+{
+        struct dsh_s6 *argv;
+        kword_t start;
+        kword_t end;
+        kword_t words;
+        unsigned int argc;
+        int rc;
+
+        /* A rare full-width expansion cannot occupy the fixed PDP-6 user
+         * stack, particularly inside SOURCE.  DSH does not otherwise grow
+         * its process break: reserve and release a LIFO scratch extent. */
+        words = (sizeof(*argv) * DSH_MAX_ARGS + sizeof(kword_t) - 1U) /
+            sizeof(kword_t);
+        start = dsys_brk(0UL);
+        if (start == (kword_t)-1 || words > 0777777UL - start)
+                return DSH_ERROR;
+        end = start + words;
+        if (dsys_brk(end) != end)
+                return DSH_ERROR;
+        argv = (struct dsh_s6 *)(unsigned long)start;
+        if (dsh_expand_node_argv(st, n, argv, &argc) != 0)
+                rc = DSH_ERROR;
+        else
+                rc = dsh_exec_simple_expanded(st, n, argc, argv,
+                    basein, baseout, launch_only, pgrp_mode, pgrp, pidp);
+        (void)dsys_brk(start);
+        return rc;
+}
+
+/* Internal retry: the caller must release the four-record stack frame before
+ * entering the full-size expansion path. */
+#define DSH_SIMPLE_LARGE_NEEDED (-201)
+
+static int
+dsh_exec_simple_small(struct dsh_state *st, const struct dsh_node *n,
+    int basein, int baseout, int launch_only, unsigned int pgrp_mode,
+    unsigned int pgrp, int *pidp)
+{
+        struct dsh_s6 argv[4];
+        kword_t quote;
+        unsigned int i;
+
+        if (n->argc > 4U)
+                return DSH_SIMPLE_LARGE_NEEDED;
+        for (i = 0U; i < n->argc; ++i) {
+                if (dsh_expand_quoted(st, &n->words[i], n->literal_mask[i],
+                    n->quote_mask[i], &argv[i], &quote) != 0)
+                        return DSH_ERROR;
+                if (dsh_has_wild(&argv[i], quote))
+                        return DSH_SIMPLE_LARGE_NEEDED;
+        }
+        if (n->argc != 0U && dsh_alias_needed(st, &argv[0]))
+                return DSH_SIMPLE_LARGE_NEEDED;
+        return dsh_exec_simple_expanded(st, n, n->argc, argv,
+            basein, baseout, launch_only, pgrp_mode, pgrp, pidp);
+}
+
+static int
+dsh_exec_simple_node(struct dsh_state *st, const struct dsh_node *n,
+    int basein, int baseout, int launch_only, unsigned int pgrp_mode,
+    unsigned int pgrp, int *pidp)
+{
+        int rc;
+
+        rc = dsh_exec_simple_small(st, n, basein, baseout, launch_only,
+            pgrp_mode, pgrp, pidp);
+        if (rc == DSH_SIMPLE_LARGE_NEEDED)
+                return dsh_exec_simple_large(st, n, basein, baseout,
+                    launch_only, pgrp_mode, pgrp, pidp);
         return rc;
 }
 
@@ -2312,17 +2390,6 @@ dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
                 outfd = next_write >= 0 ? next_write : 1;
                 rc = dsh_exec_simple_node(st, &nodes[stages[i]], infd,
                     outfd, 1, mode, pgrp, &pid);
-                (void)u_puts(2, "PIPEDBG I=");
-                (void)u_put_uint(2, i);
-                (void)u_puts(2, " MODE=");
-                (void)u_put_uint(2, mode);
-                (void)u_puts(2, " PGRP=");
-                (void)u_put_uint(2, pgrp);
-                (void)u_puts(2, " PID=");
-                (void)u_put_uint(2, (kword_t)(pid < 0 ? 0777777 : pid));
-                (void)u_puts(2, " RC=");
-                (void)u_put_uint(2, (kword_t)(rc < 0 ? 0777777 : rc));
-                (void)u_crlf(2);
                 if (rc != 0) {
                         goto pipeline_launch_fail;
                 }
