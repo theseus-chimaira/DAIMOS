@@ -138,6 +138,31 @@ make_grow(void **array, unsigned int *capacity, unsigned int need,
         *capacity = count;
         return 0;
 }
+/* Graph records are long-lived.  A 3/2 capacity factor limits unused
+ * resident table space; keep the existing doubling strategy for byte
+ * arenas, where repeated copies are more expensive than spare capacity. */
+static int
+make_grow_graph(void **array, unsigned int *capacity, unsigned int need,
+    unsigned int item_size, unsigned int initial)
+{
+        unsigned int count;
+        void *p;
+
+        if (need <= *capacity) return 0;
+        count = *capacity ? *capacity : initial;
+        while (count < need) {
+                unsigned int extra = count / 2U;
+                if (extra == 0U || count > MAKE_NONE - extra)
+                        return -1;
+                count += extra;
+        }
+        if (count > MAKE_NONE / item_size) return -1;
+        p = realloc(*array, count * item_size);
+        if (p == 0) return -1;
+        *array = p;
+        *capacity = count;
+        return 0;
+}
 /* Strings grow during parsing, before any dependency traversal starts.
  * Reserve the entire fixed-depth implicit scratch stack at the upper end.
  * Thus realloc never moves an active implicit-rule pointer. */
@@ -456,7 +481,7 @@ make_set_var(const char *name, const char *value, int op, unsigned int flags)
                 make_vars[vi].flags = flags;
                 return 0;
         }
-        if (make_grow((void **)&make_vars, &make_var_capacity,
+        if (make_grow_graph((void **)&make_vars, &make_var_capacity,
             make_var_count + 1U, sizeof(*make_vars), 16U) != 0)
                 return -1;
         noff = make_store(name);
@@ -690,10 +715,10 @@ make_get_rule(const char *name)
         if (pos < make_rule_count &&
             make_streq(make_text(make_rules[make_rule_order[pos]].name), name))
                 return (int)make_rule_order[pos];
-        if (make_grow((void **)&make_rules, &make_rule_capacity,
+        if (make_grow_graph((void **)&make_rules, &make_rule_capacity,
             make_rule_count + 1U, sizeof(*make_rules), 32U) != 0)
                 return -1;
-        if (make_grow((void **)&make_rule_order, &make_rule_order_capacity,
+        if (make_grow_graph((void **)&make_rule_order, &make_rule_order_capacity,
             make_rule_count + 1U, sizeof(*make_rule_order), 32U) != 0)
                 return -1;
         off = make_store(name);
@@ -719,7 +744,7 @@ make_add_dep(unsigned int ri, const char *name)
         unsigned int off;
 
         if (ri >= make_rule_count ||
-            make_grow((void **)&make_deps, &make_dep_capacity,
+            make_grow_graph((void **)&make_deps, &make_dep_capacity,
                 make_dep_count + 1U, sizeof(*make_deps), 64U) != 0)
                 return -1;
         off = make_dep_intern(name);
@@ -742,7 +767,7 @@ make_add_recipe(unsigned int ri, unsigned int text)
         unsigned int ci;
 
         if (ri >= make_rule_count ||
-            make_grow((void **)&make_recipes, &make_recipe_capacity,
+            make_grow_graph((void **)&make_recipes, &make_recipe_capacity,
                 make_recipe_count + 1U, sizeof(*make_recipes), 32U) != 0)
                 return -1;
         ci = make_recipe_count++;
