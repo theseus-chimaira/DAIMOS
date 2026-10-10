@@ -73,6 +73,7 @@ struct make_auto {
         const char *target;
         const char *first;
         const char *newer;
+        const char *all;
         const char *stem;
 };
 
@@ -191,10 +192,13 @@ static int make_keep_going;
 static int make_always;
 static int make_question;
 static int make_any_var_newer;
+static int make_any_var_all;
 
 static char make_line[MAKE_LINE_MAX + 1U];
 static char make_work[MAKE_LINE_MAX + 1U];
 static char make_expand_buf[MAKE_LINE_MAX + 1U];
+/* Only materialize $^ when requested by a recipe or variable. */
+static char make_all_buf[MAKE_LINE_MAX + 1U];
 static char make_newer_small[MAKE_LINE_MAX + 1U];
 static char *make_newer_buf = make_newer_small;
 static unsigned int make_newer_capacity = sizeof(make_newer_small);
@@ -441,6 +445,17 @@ make_has_newer(const char *p)
 }
 
 static int
+make_has_all(const char *p)
+{
+        unsigned int j;
+
+        for (j = 0U; p[j] != 0; ++j)
+                if (p[j] == '$' && p[j + 1U] == '^')
+                        return 1;
+        return 0;
+}
+
+static int
 make_set_var(const char *name, const char *value, int op, unsigned int flags)
 {
         char joined[MAKE_LINE_MAX + 1U];
@@ -474,6 +489,8 @@ make_set_var(const char *name, const char *value, int op, unsigned int flags)
         }
         if (make_has_newer(value))
                 make_any_var_newer = 1;
+        if (make_has_all(value))
+                make_any_var_all = 1;
         voff = make_store(value);
         if (voff == MAKE_NONE)
                 return -1;
@@ -613,6 +630,7 @@ make_expand(const char *src, char *dst, unsigned int cap,
                         if (src[i] == '@') auto_text = automatic->target;
                         else if (src[i] == '<') auto_text = automatic->first;
                         else if (src[i] == '?') auto_text = automatic->newer;
+                        else if (src[i] == '^') auto_text = automatic->all;
                         else if (src[i] == '*') auto_text = automatic->stem;
                 }
                 if (auto_text != 0) {
@@ -1447,6 +1465,19 @@ make_uses_newer(unsigned int recipe)
         return 0;
 }
 
+static int
+make_uses_all(unsigned int recipe)
+{
+        unsigned int ci;
+
+        if (make_any_var_all)
+                return 1;
+        for (ci = recipe; ci != MAKE_NONE; ci = MAKE_LINK_NEXT(make_recipes[ci]))
+                if (make_has_all(make_text(MAKE_LINK_TEXT(make_recipes[ci]))))
+                        return 1;
+        return 0;
+}
+
 static void
 make_mark_newer(unsigned int di, int newer)
 {
@@ -1599,6 +1630,33 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                     make_newer_add(imp->source) != 0)
                         goto fail;
         }
+        make_all_buf[0] = 0;
+        if (need && recipe != MAKE_NONE && make_uses_all(recipe)) {
+                unsigned int used = 0U;
+
+                /* Preserve prerequisite order, as required by archives.
+                 * The list is bounded by the existing recipe buffer. */
+                if (rule != 0) {
+                        for (di = rule->dep_head; di != MAKE_NONE;
+                            di = MAKE_LINK_NEXT(make_deps[di])) {
+                                if (used != 0U && make_append(make_all_buf,
+                                    sizeof(make_all_buf), &used, " ") != 0)
+                                        goto fail;
+                                if (make_append(make_all_buf,
+                                    sizeof(make_all_buf), &used,
+                                    make_text(MAKE_LINK_TEXT(make_deps[di]))) != 0)
+                                        goto fail;
+                        }
+                }
+                if (ir >= 0) {
+                        if (used != 0U && make_append(make_all_buf,
+                            sizeof(make_all_buf), &used, " ") != 0)
+                                goto fail;
+                        if (make_append(make_all_buf, sizeof(make_all_buf),
+                            &used, imp->source) != 0)
+                                goto fail;
+                }
+        }
         if (need && recipe != MAKE_NONE) {
                 /* Announce each target before launching a potentially slow
                  * compiler, assembler or linker child.  A silent target
@@ -1611,6 +1669,7 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                 automatic.target = name;
                 automatic.first = first == 0 ? "" : first;
                 automatic.newer = make_newer_buf;
+                automatic.all = make_all_buf;
                 automatic.stem = ir >= 0 ? imp->stem : "";
                 rc = make_run_commands(recipe, &automatic);
                 if (rc != 0) {
