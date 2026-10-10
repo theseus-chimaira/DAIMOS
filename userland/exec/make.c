@@ -51,10 +51,17 @@ struct make_rule {
 #define MAKE_GET_STATE(r) (((r)->flags_state & MAKE_STATE_MASK) >> MAKE_STATE_SHIFT)
 #define MAKE_SET_STATE(r, s) ((r)->flags_state = ((r)->flags_state & ~MAKE_STATE_MASK) | ((s) << MAKE_STATE_SHIFT))
 
+/* Both arena offsets and link indices fit in 18 bits.  Pack the
+ * successor in the high half of the same 36-bit PDP-6 word. */
 struct make_link {
-        unsigned int text;
-        unsigned int next;
+        unsigned int pair;
 };
+
+#define MAKE_LINK_TEXT(link) ((link).pair & MAKE_NONE)
+#define MAKE_LINK_NEXT(link) ((link).pair >> 18)
+#define MAKE_LINK_INIT(link, txt) ((link).pair = ((MAKE_NONE << 18) | (txt)))
+#define MAKE_LINK_SET_NEXT(link, next_id) \
+        ((link).pair = ((link).pair & MAKE_NONE) | ((next_id) << 18))
 
 struct make_var {
         unsigned int name;
@@ -719,12 +726,12 @@ make_add_dep(unsigned int ri, const char *name)
         if (off == MAKE_NONE)
                 return -1;
         di = make_dep_count++;
-        make_deps[di].text = off;
-        make_deps[di].next = MAKE_NONE;
+        MAKE_LINK_INIT(make_deps[di], off);
+        
         if (make_rules[ri].dep_tail == MAKE_NONE)
                 make_rules[ri].dep_head = di;
         else
-                make_deps[make_rules[ri].dep_tail].next = di;
+                MAKE_LINK_SET_NEXT(make_deps[make_rules[ri].dep_tail], di);
         make_rules[ri].dep_tail = di;
         return 0;
 }
@@ -739,12 +746,12 @@ make_add_recipe(unsigned int ri, unsigned int text)
                 make_recipe_count + 1U, sizeof(*make_recipes), 32U) != 0)
                 return -1;
         ci = make_recipe_count++;
-        make_recipes[ci].text = text;
-        make_recipes[ci].next = MAKE_NONE;
+        MAKE_LINK_INIT(make_recipes[ci], text);
+        
         if (make_rules[ri].recipe_tail == MAKE_NONE)
                 make_rules[ri].recipe_head = ci;
         else
-                make_recipes[make_rules[ri].recipe_tail].next = ci;
+                MAKE_LINK_SET_NEXT(make_recipes[make_rules[ri].recipe_tail], ci);
         make_rules[ri].recipe_tail = ci;
         return 0;
 }
@@ -1327,8 +1334,8 @@ make_run_commands(unsigned int head, const struct make_auto *automatic)
         int quiet;
         int rc;
 
-        for (ci = head; ci != MAKE_NONE; ci = make_recipes[ci].next) {
-                if (make_expand(make_text(make_recipes[ci].text),
+        for (ci = head; ci != MAKE_NONE; ci = MAKE_LINK_NEXT(make_recipes[ci])) {
+                if (make_expand(make_text(MAKE_LINK_TEXT(make_recipes[ci])),
                     make_expand_buf, sizeof(make_expand_buf), automatic,
                     0U) != 0 || make_strlen(make_expand_buf) > MAKE_RECIPE_MAX)
                         return 1;
@@ -1408,8 +1415,8 @@ make_uses_newer(unsigned int recipe)
 
         if (make_any_var_newer)
                 return 1;
-        for (ci = recipe; ci != MAKE_NONE; ci = make_recipes[ci].next)
-                if (make_has_newer(make_text(make_recipes[ci].text)))
+        for (ci = recipe; ci != MAKE_NONE; ci = MAKE_LINK_NEXT(make_recipes[ci]))
+                if (make_has_newer(make_text(MAKE_LINK_TEXT(make_recipes[ci]))))
                         return 1;
         return 0;
 }
@@ -1520,8 +1527,8 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
         first = 0;
         if (rule != 0) {
                 for (di = rule->dep_head; di != MAKE_NONE;
-                    di = make_deps[di].next) {
-                        depname = make_text(make_deps[di].text);
+                    di = MAKE_LINK_NEXT(make_deps[di])) {
+                        depname = make_text(MAKE_LINK_TEXT(make_deps[di]));
                         if (first == 0)
                                 first = depname;
                         rc = make_build(depname, &dep, depth + 1U);
@@ -1560,10 +1567,10 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
         if (need && recipe != MAKE_NONE && make_uses_newer(recipe)) {
                 if (rule != 0) {
                         for (di = rule->dep_head; di != MAKE_NONE;
-                            di = make_deps[di].next)
+                            di = MAKE_LINK_NEXT(make_deps[di]))
                                 if (make_is_newer(di) &&
                                     make_newer_add(make_text(
-                                    make_deps[di].text)) != 0)
+                                    MAKE_LINK_TEXT(make_deps[di]))) != 0)
                                         goto fail;
                 }
                 if (ir >= 0 && implicit_newer &&
