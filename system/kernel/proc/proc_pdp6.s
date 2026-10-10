@@ -788,8 +788,11 @@ proc_wait_status_return:
 /**
  * @brief Terminate the current process after escaping its private kernel stack.
  *
- * EXIT enters by JRST from syscall dispatch. PI is disabled, execution moves to
- * the permanent slot-0 stack, and proc_exit_finish() may then free the u-area.
+ * EXIT enters by JRST from syscall dispatch. PI is disabled only for the
+ * transition to the permanent slot-0 stack. During resource cleanup, mask
+ * scheduler PI6 while allowing disk transfer PI3/PI5 to complete: holding
+ * global PI disabled over VM destruction starves the Type 136 DCT and causes
+ * Type 270 DRL when another process is reading a disk sector.
  * The machine idles for another runnable process or halts after the final user.
  */
 proc_exit_current:
@@ -800,6 +803,10 @@ proc_exit_current:
         move    17,mach_kernel_stack_base
         setzm   file_table
         push    17,2
+        cono    0004,01002             ; inhibit clock/scheduler PI6
+        move    2,(17)                 ; saved CONI PI before stack switch
+        trne    2,000200              ; enable global gate if formerly on
+        cono    0004,000200
         pushj   17,proc_exit_finish
         jumpl   1,proc_exit_release_failed
 .if PROC_STACK_WATERMARK
@@ -807,16 +814,18 @@ proc_exit_current:
 .else
         jumpe   1,proc_exit_halt       ; no live processes remain
 .endif
-        pop     17,1                   ; another process remains: restore PI
-        pushj   17,mach_pi_restore
+        pop     17,1                   ; restore only originally enabled PI6
+        trne    1,000002
+        cono    0004,02002
         jrst    proc_idle_loop
 .if PROC_STACK_WATERMARK
 proc_exit_watermark_halt:
         pushj   17,kernel_idle_stack_watermark_scan
 .endif
 proc_exit_halt:
-        ; Keep PI disabled.  Re-enabling it here lets a final clock interrupt
-        ; redirect the no-process case into proc_idle_loop before HALT.
+        ; No runnable process remains: do not permit an interrupt to divert
+        ; the final-process halt into proc_idle_loop.
+        cono    0004,000400
         halt
         jrst    .-1
 proc_exit_release_failed:
@@ -2487,6 +2496,7 @@ proc_wakeup_event:
         push    17,4
         push    17,5
         push    17,6
+        push    17,7                  ; proc_runq_add uses AC7; PI must preserve it
         movei   3,1
         move    2,proc_table
         addi    2,PROC_WORDS
@@ -2521,6 +2531,7 @@ proc_wakeup_next:
         addi    2,PROC_WORDS
         aoja    3,proc_wakeup_scan
 proc_wakeup_done:
+        pop     17,7
         pop     17,6
         pop     17,5
         pop     17,4
