@@ -385,6 +385,26 @@ main(int argc, char *argv[])
         free(undeflist);
 
     if (!defincdir) {
+        /* Termux installs libc headers in $PREFIX/include, not /usr/include.
+         * Honor an existing prefix include directory before compiled defaults.
+         */
+        const char *prefix = getenv("PREFIX");
+        if (prefix != NULL && *prefix != '\0') {
+            struct stat st;
+            size_t len = strlen(prefix);
+            char *dir = malloc(len + sizeof("/include"));
+            if (dir == NULL)
+                fatalerr("out of memory allocating include directory\n");
+            memcpy(dir, prefix, len);
+            memcpy(dir + len, "/include", sizeof("/include"));
+            if (stat(dir, &st) == 0 && S_ISDIR(st.st_mode)) {
+                if (incp >= includedirs + MAXDIRS)
+                    fatalerr("Too many -I flags.\n");
+                *incp++ = dir;
+            } else {
+                free(dir);
+            }
+        }
 #ifdef PREINCDIR
         if (incp >= includedirs + MAXDIRS)
             fatalerr("Too many -I flags.\n");
