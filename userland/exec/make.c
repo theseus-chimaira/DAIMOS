@@ -1758,6 +1758,25 @@ main(int argc, kword_t **argv, kword_t **envp)
                 make_diag("CANNOT PARSE", makefile);
                 return 1;
         }
+        /* Parsing has finished: discard geometric arena overcapacity while
+         * preserving all strings and the complete implicit recursion stack.
+         * realloc() shrinks in place in DAIMOS libc, returning the tail to
+         * the free list.  A failed shrink leaves the original arena usable. */
+        {
+                unsigned int needed = make_arena_used +
+                    (MAKE_MAX_DEPTH + 1U) * MAKE_IMPLICIT_SLOT_CHARS;
+                /* The stack is addressed as struct make_implicit, so its
+                 * top must remain aligned to a native 36-bit word. */
+                needed = (needed + sizeof(kword_t) - 1U) /
+                    sizeof(kword_t) * sizeof(kword_t);
+                if (needed < make_arena_capacity) {
+                        char *smaller = realloc(make_arena, needed);
+                        if (smaller != 0) {
+                                make_arena = smaller;
+                                make_arena_capacity = needed;
+                        }
+                }
+        }
         /* A separate suffix index avoids scanning every ordinary rule for
          * every implicit target.  Never allocate if none are present. */
         for (i = 0U; i < make_rule_count; ++i)
