@@ -27,6 +27,9 @@ extern void free(void *);
 #define MAKE_RULE_PHONY       0001U
 #define MAKE_RULE_SUFFIX      0002U
 #define MAKE_RULE_CHANGED     0004U
+#define MAKE_RULE_SILENT      0010U
+#define MAKE_RULE_IGNORE      0020U
+#define MAKE_RULE_PRECIOUS    0040U
 
 #define MAKE_STATE_IDLE       0U
 #define MAKE_STATE_ACTIVE     1U
@@ -42,11 +45,11 @@ struct make_rule {
         unsigned int dep_tail;
         unsigned int recipe_head;
         unsigned int recipe_tail;
-        /* Low three bits: flags. Bits 3-4: traversal state. */
+        /* Low six bits: flags. Bits 6-7: traversal state. */
         unsigned int flags_state;
 };
 
-#define MAKE_STATE_SHIFT 3U
+#define MAKE_STATE_SHIFT 6U
 #define MAKE_STATE_MASK (3U << MAKE_STATE_SHIFT)
 #define MAKE_GET_STATE(r) (((r)->flags_state & MAKE_STATE_MASK) >> MAKE_STATE_SHIFT)
 #define MAKE_SET_STATE(r, s) ((r)->flags_state = ((r)->flags_state & ~MAKE_STATE_MASK) | ((s) << MAKE_STATE_SHIFT))
@@ -101,6 +104,7 @@ static unsigned int make_rule_order_capacity;
  * order so traditional first-match resolution remains unchanged. */
 static unsigned int *make_suffix_order;
 static unsigned int make_suffix_count;
+static int make_suffix_configured;
 static struct make_link *make_deps;
 /* Open-addressed dependency name index.  Slot values are arena offsets
  * plus one, so zero denotes an empty slot.  Rehashing moves only indices. */
@@ -191,6 +195,9 @@ static int make_silent;
 static int make_keep_going;
 static int make_always;
 static int make_question;
+static int make_ignore;
+static int make_no_implicit;
+static int make_touch;
 static int make_any_var_newer;
 static int make_any_var_all;
 
@@ -840,7 +847,9 @@ make_suffix_rule_name(const char *name)
 {
         if (name == 0 || name[0] != '.' || name[1] == 0)
                 return 0;
-        if (make_streq(name, ".PHONY") || make_streq(name, ".SUFFIXES"))
+        if (make_streq(name, ".PHONY") || make_streq(name, ".SUFFIXES") ||
+            make_streq(name, ".PRECIOUS") || make_streq(name, ".SILENT") ||
+            make_streq(name, ".IGNORE"))
                 return 0;
         return 1;
 }
@@ -905,18 +914,78 @@ make_parse_rule(char *line)
                         make_rules[ri].flags_state |= MAKE_RULE_PHONY;
                         continue;
                 }
-                if (make_streq(lhs, ".SUFFIXES"))
+                if (make_streq(lhs, ".SUFFIXES")) {
+                        ri = make_get_rule(".SUFFIXES");
+                        if (ri < 0 || make_add_dep((unsigned int)ri, word) != 0)
+                                return -1;
                         continue;
+                }
+                if (make_streq(lhs, ".PRECIOUS") ||
+                    make_streq(lhs, ".SILENT") ||
+                    make_streq(lhs, ".IGNORE")) {
+                        ri = make_get_rule(word);
+                        if (ri < 0)
+                                return -1;
+                        make_rules[ri].flags_state |=
+                            make_streq(lhs, ".PRECIOUS") ? MAKE_RULE_PRECIOUS :
+                            (make_streq(lhs, ".SILENT") ? MAKE_RULE_SILENT :
+                            MAKE_RULE_IGNORE);
+                        continue;
+                }
                 for (i = 0U; i < lhs_count; ++i)
                         if (make_add_dep(make_current[i], word) != 0)
                                 return -1;
         }
-        if (make_streq(lhs, ".PHONY") || make_streq(lhs, ".SUFFIXES"))
+        if (*rhs == 0 && make_streq(lhs, ".SILENT"))
+                make_silent = 1;
+        if (*rhs == 0 && make_streq(lhs, ".IGNORE"))
+                make_ignore = 1;
+        if (make_streq(lhs, ".SUFFIXES")) {
+                /* An empty declaration resets the active suffix list. */
+                if (*rhs == 0) {
+                        ri = make_find_rule(".SUFFIXES");
+                        if (ri >= 0) {
+                                make_rules[ri].dep_head = MAKE_NONE;
+                                make_rules[ri].dep_tail = MAKE_NONE;
+                        }
+                }
+                make_suffix_configured = 1;
+        }
+        if (make_streq(lhs, ".PHONY") || make_streq(lhs, ".SUFFIXES") ||
+            make_streq(lhs, ".PRECIOUS") ||
+            make_streq(lhs, ".SILENT") || make_streq(lhs, ".IGNORE"))
                 make_current_count = 0U;
         return 0;
 }
 
 static int make_stat(const char *name, struct make_result *result);
+
+/* No suffix table is allocated unless a makefile explicitly configures it. */
+static int
+make_suffix_enabled(const char *suffix, unsigned int len)
+{
+        int ri;
+        unsigned int di;
+        const char *entry;
+
+        if (!make_suffix_configured)
+                return 1;
+        ri = make_find_rule(".SUFFIXES");
+        if (ri < 0)
+                return 0;
+        for (di = make_rules[ri].dep_head; di != MAKE_NONE;
+            di = MAKE_LINK_NEXT(make_deps[di])) {
+                entry = make_text(MAKE_LINK_TEXT(make_deps[di]));
+                if (make_strlen(entry) == len) {
+                        unsigned int i;
+                        for (i = 0U; i < len && entry[i] == suffix[i]; ++i)
+                                ;
+                        if (i == len)
+                                return 1;
+                }
+        }
+        return 0;
+}
 
 static int
 make_parse_file_depth(const char *path, unsigned int include_depth)
@@ -1158,11 +1227,16 @@ make_source_rule(const char *target, struct make_implicit *imp)
                 while (*second != 0 && *second != '.')
                         ++second;
                 if (*second == '.') {
+                        if (!make_suffix_enabled(rn, (unsigned int)(second-rn)) ||
+                            !make_suffix_enabled(second, make_strlen(second)))
+                                continue;
                         if (dot == 0 || !make_streq(second, dot))
                                 continue;
                         stem_len = (unsigned int)(dot - target);
                         source_end = second;
                 } else {
+                        if (!make_suffix_enabled(rn, make_strlen(rn)))
+                                continue;
                         /* Classic single-suffix rule: .S: builds FOO from
                          * FOO.S.  It applies only to a target with no suffix
                          * in its final path component. */
@@ -1413,7 +1487,8 @@ make_run_direct(char *command)
 }
 
 static int
-make_run_commands(unsigned int head, const struct make_auto *automatic)
+make_run_commands(unsigned int head, const struct make_auto *automatic,
+    unsigned int rule_flags)
 {
         char *p;
         unsigned int ci;
@@ -1435,7 +1510,8 @@ make_run_commands(unsigned int head, const struct make_auto *automatic)
                         ++p;
                 }
                 p = make_trim(p);
-                if (!make_silent && !quiet && !make_question) {
+                if (!make_silent && !(rule_flags & MAKE_RULE_SILENT) &&
+                    !quiet && !make_question) {
                         (void)u_puts(1, p);
                         (void)u_crlf(1);
                 }
@@ -1447,7 +1523,8 @@ make_run_commands(unsigned int head, const struct make_auto *automatic)
                         rc = make_run_recipe(p);
                 else
                         rc = 126;
-                if (rc != 0 && !ignore)
+                if (rc != 0 && !ignore && !make_ignore &&
+                    !(rule_flags & MAKE_RULE_IGNORE))
                         return rc;
         }
         return 0;
@@ -1603,7 +1680,7 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
          * graph lists many explicitly PHONY prerequisites. */
         if ((rule == 0 || (rule->recipe_head == MAKE_NONE &&
             (rule->flags_state & MAKE_RULE_PHONY) == 0U)) &&
-            make_source_rule(name, imp) == 0)
+            !make_no_implicit && make_source_rule(name, imp) == 0)
                 ir = imp->rule;
         else
                 ir = -1;
@@ -1704,7 +1781,8 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                 /* Announce each target before launching a potentially slow
                  * compiler, assembler or linker child.  A silent target
                  * transition otherwise looks like a stalled MAKE on CTY. */
-                if (!make_silent && !make_question) {
+                if (!make_silent && !make_question &&
+                    !(rule != 0 && (rule->flags_state & MAKE_RULE_SILENT))) {
                         (void)u_puts(1, "MAKE: BUILD ");
                         (void)u_puts(1, name);
                         (void)u_crlf(1);
@@ -1714,7 +1792,26 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
                 automatic.newer = make_newer_buf;
                 automatic.all = make_all_buf;
                 automatic.stem = ir >= 0 ? imp->stem : "";
-                rc = make_run_commands(recipe, &automatic);
+                if (make_touch && !make_dry_run &&
+                    !(rule != 0 && (rule->flags_state & MAKE_RULE_PHONY))) {
+                        kword_t path[U_PATH_WORDS];
+                        kword_t now = dsys_gettime();
+                        int fd;
+                        if (now == 0UL ||
+                            u_s6_pack(path, U_PATH_WORDS, name) != 0)
+                                goto fail;
+                        fd = dsys_open(path, SYS_O_WRONLY | SYS_O_CREAT |
+                            SYS_O_APPEND);
+                        if (fd < 0)
+                                goto fail;
+                        if (dsys_close(fd) != 0 || dsys_utime(path, now) != 0)
+                                goto fail;
+                        rc = 0;
+                } else if (make_touch && !make_dry_run)
+                        rc = 0;
+                else
+                        rc = make_run_commands(recipe, &automatic,
+                            rule != 0 ? rule->flags_state : 0U);
                 if (rc != 0) {
                         make_diag("RECIPE FAILED", name);
                         goto fail;
@@ -1827,6 +1924,29 @@ main(int argc, kword_t **argv, kword_t **envp)
                                         make_dry_run = 1;
                                 } else if (arg[j] == 'B' || arg[j] == 'b')
                                         make_always = 1;
+                                else if (arg[j] == 'i')
+                                        make_ignore = 1;
+                                else if (arg[j] == 'r')
+                                        make_no_implicit = 1;
+                                else if (arg[j] == 't')
+                                        make_touch = 1;
+                                else if (arg[j] == 'j' || arg[j] == 'J') {
+                                        /* Compatibility-only: serial execution.
+                                         * Accept optional numeric job count. */
+                                        if (arg[j + 1U] >= '0' &&
+                                            arg[j + 1U] <= '9') {
+                                                while (arg[j + 1U] >= '0' &&
+                                                    arg[j + 1U] <= '9')
+                                                        ++j;
+                                        } else if (j == 1U && arg[j + 1U] == 0 &&
+                                            i + 1U < (unsigned int)argc) {
+                                                char next[MAKE_LINE_MAX + 1U];
+                                                if (make_counted_text(argv[i + 1U],
+                                                    next, sizeof(next)) == 0 &&
+                                                    next[0] >= '0' && next[0] <= '9')
+                                                        ++i;
+                                        }
+                                }
                                 else {
                                         make_diag("UNKNOWN OPTION", arg);
                                         return 2;
