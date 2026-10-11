@@ -4,12 +4,18 @@
 static struct dsh_line dsh_input_line;
 static struct dsh_state dsh_main_state;
 
-#define DSH_HISTORY_MAX 4U
+/* Sixteen 31-word lines: 496 words, within the 512-word history budget. */
+#define DSH_HISTORY_MAX 16U
+#define DSH_HISTORY_WORDS (DSH_HISTORY_MAX * (DSH_LINE_MAX_WORDS + 1U))
+#define DSH_HISTORY_S6REC_TEXT (1UL << 30)
 
 static struct dsh_line dsh_history[DSH_HISTORY_MAX];
 static unsigned int dsh_history_count;
+static struct dsh_s6 dsh_history_path;
+static unsigned int dsh_history_persistent;
 
 static void dsh_put_prompt(struct dsh_state *st, unsigned int more);
+static int dsh_s6_literal(struct dsh_s6 *dst, const char *text);
 
 static void
 dsh_line_set(struct dsh_line *line, unsigned int pos, int ch)
@@ -103,17 +109,106 @@ dsh_echo_replace_line(const struct dsh_line *line, unsigned int *cursor)
 }
 
 static void
-dsh_history_add(void)
+dsh_history_remember(const struct dsh_line *line)
 {
         unsigned int i;
 
-        if (dsh_input_line.len == 0U)
+        if (line->len == 0U)
                 return;
         for (i = DSH_HISTORY_MAX - 1U; i != 0U; --i)
                 dsh_line_copy(&dsh_history[i], &dsh_history[i - 1U]);
-        dsh_line_copy(&dsh_history[0], &dsh_input_line);
+        dsh_line_copy(&dsh_history[0], line);
         if (dsh_history_count < DSH_HISTORY_MAX)
                 ++dsh_history_count;
+}
+
+static void
+dsh_history_path_init(struct dsh_state *st)
+{
+        struct dsh_s6 name;
+        const struct dsh_s6 *value;
+        const char *suffix;
+        unsigned int i;
+
+        dsh_history_persistent = 0U;
+        dsh_s6_clear(&dsh_history_path);
+        if (dsh_s6_literal(&name, "HISTFILE") != 0)
+                return;
+        value = dsh_var_get(st, &name);
+        if (value != 0) {
+                if (value->len != 0U &&
+                    dsh_s6_copy(&dsh_history_path, value) == 0)
+                        dsh_history_persistent = 1U;
+                return;
+        }
+        if (dsh_s6_literal(&name, "HOME") != 0)
+                return;
+        value = dsh_var_get(st, &name);
+        if (value == 0 || value->len == 0U ||
+            dsh_s6_copy(&dsh_history_path, value) != 0)
+                return;
+        suffix = "/.DSH_HISTORY";
+        for (i = 0U; suffix[i] != 0; ++i)
+                if (dsh_s6_append(&dsh_history_path, suffix[i]) != 0)
+                        return;
+        dsh_history_persistent = 1U;
+}
+
+static void
+dsh_history_load(void)
+{
+        struct u_text_reader reader;
+        struct dsh_line line;
+        kword_t path[U_PATH_WORDS];
+        kword_t rec[DSH_LINE_MAX_WORDS + 1U];
+        unsigned int i;
+        int fd;
+        int n;
+
+        if (!dsh_history_persistent ||
+            dsh_s6_pack(&dsh_history_path, path, U_PATH_WORDS) != 0)
+                return;
+        fd = dsys_open(path, SYS_O_RDONLY);
+        if (fd < 0)
+                return;
+        (void)u_text_open_fd(&reader, fd);
+        while ((n = u_text_gets6(&reader, rec,
+            DSH_LINE_MAX_WORDS + 1U)) >= 0) {
+                if ((unsigned int)n > DSH_LINE_MAX_CHARS)
+                        break;
+                dsh_line_clear(&line);
+                line.len = (unsigned int)n;
+                for (i = 0U; i < DSH_LINE_MAX_WORDS; ++i)
+                        line.words[i] = rec[i + 1U];
+                dsh_history_remember(&line);
+        }
+        u_text_close(&reader);
+}
+
+static void
+dsh_history_add(void)
+{
+        kword_t path[U_PATH_WORDS];
+        kword_t rec[DSH_LINE_MAX_WORDS + 1U];
+        unsigned int i;
+        unsigned int count;
+        int fd;
+
+        if (dsh_input_line.len == 0U)
+                return;
+        dsh_history_remember(&dsh_input_line);
+        if (!dsh_history_persistent ||
+            dsh_s6_pack(&dsh_history_path, path, U_PATH_WORDS) != 0)
+                return;
+        fd = dsys_open(path, SYS_O_WRONLY | SYS_O_CREAT | SYS_O_APPEND);
+        if (fd < 0)
+                return;
+        count = 1U + (dsh_input_line.len + 5U) / 6U;
+        rec[0] = DSH_HISTORY_S6REC_TEXT | (kword_t)dsh_input_line.len;
+        for (i = 1U; i < count; ++i)
+                rec[i] = dsh_input_line.words[i - 1U];
+        (void)dsys_write_words(fd, rec, count);
+        (void)dsys_close(fd);
 }
 
 static int
@@ -540,6 +635,10 @@ main(int argc, kword_t **argv, kword_t **envp)
                 return 1;
         if (login)
                 dsh_login_profiles(&dsh_main_state);
+        if (interactive) {
+                dsh_history_path_init(&dsh_main_state);
+                dsh_history_load();
+        }
         if (interactive) {
                 (void)u_puts(1, "DSH V1");
                 (void)u_crlf(1);
