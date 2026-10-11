@@ -1392,6 +1392,84 @@ dsh_is_builtin_name(const struct dsh_s6 *name)
             dsh_s6_eq_text(name, "UNALIAS");
 }
 
+/* Read while the worker runs: waiting before draining can deadlock a full
+ * pipe.  Do not retain excess output, but always consume through EOF. */
+static int
+dsh_capture_subst(struct dsh_state *st, const struct dsh_s6 *command,
+    struct dsh_s6 *result)
+{
+        struct u_text_reader reader;
+        struct dsh_s6 path;
+        struct dsh_s6 argv[3];
+        kword_t rec[DSH_S6_MAX_CHARS / 6U + 1U];
+        kword_t pair;
+        kword_t status;
+        unsigned int used;
+        unsigned int trim;
+        int readfd;
+        int writefd;
+        int pid;
+        int n;
+        int rc;
+        int overflow;
+
+        if (dsh_s6_from_text(&path, "/SYSTEM/EXEC/DSH") != 0 ||
+            dsh_s6_from_text(&argv[0], "DSH") != 0 ||
+            dsh_s6_from_text(&argv[1], "-S") != 0 ||
+            dsh_s6_copy(&argv[2], command) != 0)
+                return DSH_ERROR;
+        pair = dsys_pipe();
+        if (pair == (kword_t)-1)
+                return DSH_ERROR;
+        readfd = (int)((pair >> 18U) & 0777777UL);
+        writefd = (int)(pair & 0777777UL);
+        rc = dsh_launch_path(st, &path, 3U, argv, 0, writefd,
+            SYS_RUN_PGRP_NEW, 0U, &pid);
+        (void)dsys_close(writefd);
+        if (rc != 0) {
+                (void)dsys_close(readfd);
+                return rc;
+        }
+        dsh_s6_clear(result);
+        overflow = 0;
+        used = 0U;
+        trim = 0U;
+        (void)u_text_open_fd(&reader, readfd);
+        while ((n = u_text_gets6(&reader, rec,
+            DSH_S6_MAX_CHARS / 6U + 1U)) >= 0) {
+                unsigned int i;
+
+                while (trim != 0U) {
+                        if (used >= DSH_S6_MAX_CHARS ||
+                            (!overflow && dsh_s6_append(result, ' ') != 0))
+                                overflow = 1;
+                        ++used;
+                        --trim;
+                }
+                for (i = 0U; i < (unsigned int)n; ++i) {
+                        unsigned int shift;
+                        int ch;
+
+                        shift = 30U - (i % 6U) * 6U;
+                        ch = (int)((rec[1U + i / 6U] >> shift) & 077UL) + 040;
+                        if (used >= DSH_S6_MAX_CHARS ||
+                            (!overflow && dsh_s6_append(result, ch) != 0))
+                                overflow = 1;
+                        ++used;
+                }
+                ++trim;
+        }
+        if (n != U_TEXT_EOF)
+                overflow = 1;
+        u_text_close(&reader);
+        rc = dsys_wait((unsigned int)pid, &status, 0U);
+        if (rc != pid || overflow ||
+            SYS_WAIT_STATUS_KIND(status) != SYS_WAIT_EXITED ||
+            SYS_WAIT_STATUS_VALUE(status) != 0U)
+                return DSH_ERROR;
+        return 0;
+}
+
 static int
 dsh_expand_node_argv(struct dsh_state *st, const struct dsh_node *n,
     struct dsh_s6 *argv, unsigned int *argcp)
@@ -1403,7 +1481,13 @@ dsh_expand_node_argv(struct dsh_state *st, const struct dsh_node *n,
         if (n->argc > DSH_MAX_ARGS)
                 return -1;
         for (i = 0U; i < n->argc; ++i) {
-                if (dsh_expand_quoted(st, &n->words[i],
+                if ((n->flags & DSH_SUBST_ARG) != 0U &&
+                    i == DSH_SUBST_INDEX(n->flags)) {
+                        if (dsh_capture_subst(st, &n->words[i],
+                            &argv[i]) != 0)
+                                return -1;
+                        quote_masks[i] = 0;
+                } else if (dsh_expand_quoted(st, &n->words[i],
                     n->literal_mask[i], n->quote_mask[i], &argv[i],
                     &quote_masks[i]) != 0)
                         return -1;
@@ -1541,7 +1625,7 @@ dsh_exec_simple_small(struct dsh_state *st, const struct dsh_node *n,
         kword_t quote;
         unsigned int i;
 
-        if (n->argc > 4U)
+        if (n->argc > 4U || (n->flags & DSH_SUBST_ARG) != 0U)
                 return DSH_SIMPLE_LARGE_NEEDED;
         for (i = 0U; i < n->argc; ++i) {
                 if (dsh_expand_quoted(st, &n->words[i], n->literal_mask[i],

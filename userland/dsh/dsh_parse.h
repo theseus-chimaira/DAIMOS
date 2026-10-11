@@ -27,6 +27,10 @@
 #define DSH_REDIR_IN          0001U
 #define DSH_REDIR_OUT         0002U
 #define DSH_REDIR_APPEND      0004U
+#define DSH_SUBST_ARG         0010U
+/* Argument index belongs in flags, never in extra (an AST child link). */
+#define DSH_SUBST_SHIFT       8U
+#define DSH_SUBST_INDEX(f)    (((f) >> DSH_SUBST_SHIFT) & 037U)
 
 #define DSH_NONE              0177777U
 

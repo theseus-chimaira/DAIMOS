@@ -321,6 +321,9 @@ INIT_DXR = $(USERLAND_BUILD_ROOT)/userland/init.dxr
 MOUNTALL_DXR = $(USERLAND_BUILD_ROOT)/userland/mountall.dxr
 LOGIN_DXR = $(USERLAND_BUILD_ROOT)/userland/login.dxr
 DSH_DXR = $(USERLAND_BUILD_ROOT)/userland/dsh.dxr
+# Temporary development override: DSH_IMAGE_LIMIT=037000 for phase one.
+# The normal production gate remains 036000 octal words.
+DSH_IMAGE_LIMIT ?= 036000
 DSHCOMP_DXR = $(USERLAND_BUILD_ROOT)/userland/dshcomp.dxr
 XARGS_DXR = $(USERLAND_BUILD_ROOT)/userland/xargs.dxr
 SED_DXR = $(USERLAND_BUILD_ROOT)/userland/sed.dxr
@@ -920,8 +923,8 @@ $(INIT_DXR) $(MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(DSHCOMP_DXR) $(SYSTEM_LIBR
 	    sed -n 's/^DXR image=\([0-7][0-7]*\).*/\1/p'`; \
 	    test -n "$$dsh_image" || { \
 	        echo "cannot determine DSH image size" >&2; exit 1; }; \
-	    test "$$dsh_image" -le 036000 || { \
-	        echo "DSH image $$dsh_image exceeds EXEC limit 036000" >&2; \
+	    test "$$dsh_image" -le $(DSH_IMAGE_LIMIT) || { \
+	        echo "DSH image $$dsh_image exceeds EXEC limit $(DSH_IMAGE_LIMIT)" >&2; \
 	        exit 1; \
 	    }
 

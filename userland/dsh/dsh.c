@@ -622,15 +622,25 @@ main(int argc, kword_t **argv, kword_t **envp)
                         if (argc != 2)
                                 return DSH_ERROR;
                         login = 1;
-                } else if (dsh_s6_eq_text(&mode, "-C")) {
+                } else if (dsh_s6_eq_text(&mode, "-C") ||
+                    dsh_s6_eq_text(&mode, "-S")) {
+                        int capture;
+
+                        /* -S is the internal S6REC-producing substitution
+                         * worker. Never interpret a pipe as a char stream. */
+                        capture = dsh_s6_eq_text(&mode, "-S");
                         if (argc < 3 ||
                             dsh_line_from_counted(&dsh_input_line,
                             argv[2]) != 0 ||
                             dsh_set_counted_args(&dsh_main_state, argv, 3U,
                             (unsigned int)(argc - 3)) != 0)
                                 return DSH_ERROR;
+                        if (capture && u_text_sink_attach(1) != 0)
+                                return DSH_ERROR;
                         rc = dsh_execute_line(&dsh_main_state,
                             &dsh_input_line);
+                        if (capture && u_text_sink_detach() != 0)
+                                return DSH_ERROR;
                         return dsh_main_state.exit_requested ?
                             (int)dsh_main_state.exit_status : rc;
                 } else {

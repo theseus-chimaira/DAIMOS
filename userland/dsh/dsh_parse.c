@@ -306,13 +306,46 @@ dsh_parse_simple(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                 }
                 if (DSH_TOKEN_TYPE(&p->tokens[p->pos]) ==
                     DSH_T_DOLLAR_LPAREN) {
-                        /* A substitution requires an output-capturing
-                         * worker and cannot be represented by an executable
-                         * simple-command node.  Reject it explicitly until
-                         * that protocol is implemented.  In particular, do
-                         * not return success without consuming this token. */
-                        return dsh_mark_error(p, DSH_E_SYNTAX,
-                            DSH_PE_WORD);
+                        unsigned int a;
+                        unsigned int parts;
+                        unsigned int j;
+
+                        /* One standalone unquoted substitution argument,
+                         * containing a bounded simple worker command. */
+                        if ((n->flags & DSH_SUBST_ARG) != 0U ||
+                            n->argc >= DSH_PARSE_MAX_WORDS)
+                                return dsh_mark_error(p, DSH_E_SYNTAX,
+                                    DSH_PE_WORD);
+                        a = n->argc;
+                        n->flags |= DSH_SUBST_ARG |
+                            (a << DSH_SUBST_SHIFT);
+                        ++p->pos;
+                        parts = 0U;
+                        while (p->pos < p->ntokens &&
+                            DSH_TOKEN_TYPE(&p->tokens[p->pos]) !=
+                            DSH_T_RPAREN) {
+                                const struct dsh_token *t;
+
+                                t = &p->tokens[p->pos];
+                                if (DSH_TOKEN_TYPE(t) != DSH_T_WORD ||
+                                    DSH_TOKEN_QUOTED(t))
+                                        return dsh_mark_error(p,
+                                            DSH_E_SYNTAX, DSH_PE_WORD);
+                                if (parts++ != 0U &&
+                                    dsh_s6_append(&n->words[a], ' ') != 0)
+                                        return DSH_E_OVERFLOW;
+                                for (j = 0U; j < t->text.len; ++j)
+                                        if (dsh_s6_append(&n->words[a],
+                                            dsh_s6_get(&t->text, j)) != 0)
+                                                return DSH_E_OVERFLOW;
+                                ++p->pos;
+                        }
+                        if (parts == 0U || p->pos >= p->ntokens)
+                                return dsh_mark_error(p, DSH_E_SYNTAX,
+                                    DSH_PE_RPAREN);
+                        ++p->pos;
+                        ++n->argc;
+                        continue;
                 }
                 if (DSH_TOKEN_TYPE(&p->tokens[p->pos]) != DSH_T_WORD)
                         break;
