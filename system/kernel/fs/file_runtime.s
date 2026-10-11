@@ -204,6 +204,14 @@ file_open_regular:
 file_open_append:
         trnn    11,4                   ; FILE_O_APPEND
         jrst    file_open_success
+        ; A regular file already has a nonzero state in LH 000030.
+        ; Reuse the otherwise exclusive DIR bit for descriptor append.
+        move    1,(13)
+        tlnn    1,000030               ; only regular files
+        jrst    file_open_append_offset
+        tlo     1,100000               ; FILE_META_APPEND
+        movem   1,(13)
+file_open_append_offset:
         move    1,-3(17)               ; st.size_words
         movem   1,1(13)
 file_open_success:
@@ -337,8 +345,11 @@ file_readchar:
         pushj   17,file_find
         jumpe   1,file_readchar_fail
         move    3,(1)
-        tlne    3,100000               ; directories are not byte streams
+        tlnn    3,100000               ; directory or regular O_APPEND
+        jrst    file_readchar_notdir
+        tlnn    3,000030               ; only state=0 means directory
         jrst    file_readchar_fail
+file_readchar_notdir:
         tlnn    3,400000               ; FILE_META_READ
         jrst    file_readchar_fail
         move    010,1
@@ -390,8 +401,11 @@ file_writechar:
         pushj   17,file_find
         jumpe   1,file_writechar_fail
         move    4,(1)
-        tlne    4,100000               ; directories are not byte streams
+        tlnn    4,100000
+        jrst    file_writechar_notdir
+        tlnn    4,000030               ; regular O_APPEND is not directory
         jrst    file_writechar_fail
+file_writechar_notdir:
         tlnn    4,200000               ; FILE_META_WRITE
         jrst    file_writechar_fail
         move    010,1
@@ -691,8 +705,11 @@ file_words_common:
         skipn   -1(17)                  ; buf
         jrst    file_words_fail
         move    4,(1)
-        tlne    4,100000                ; FILE_META_DIR
+        tlnn    4,100000
+        jrst    file_words_notdir
+        tlnn    4,000030               ; only state=0 is a directory
         jrst    file_words_fail
+file_words_notdir:
         tdnn    4,5                     ; requested READ/WRITE permission
         jrst    file_words_fail
         move    010,1
@@ -715,8 +732,20 @@ file_words_common:
         jrst    file_write_words_tty
         move    3,-1(17)
         move    4,(17)
+        ; D6FS provider serializes the entire write.  Offset -1 asks that
+        ; provider to resolve EOF under its lock, not at OPEN time.
+        move    5,(010)
+        tlnn    5,100000               ; DIR bit reused for regular APPEND
+        jrst    file_write_regular_pos
+        tlnn    5,000030               ; directories cannot append
+        jrst    file_write_regular_pos
+        ldb     5,[POINT 6,1,5]
+        caie    5,6                     ; D6FS provider
+        jrst    file_write_regular_pos
+        seto    2,
+file_write_regular_pos:
         pushj   17,vfs_write_words
-        jrst    file_words_result
+        jrst    file_words_append_result
 file_write_words_tty:
         move    1,-1(17)                ; mapped S6REC words
         move    2,(17)                  ; supplied word count
@@ -781,6 +810,33 @@ file_read_words_wcnsls:
         move    2,(17)
         pushj   17,wcnsls_read_words_jump
 
+file_words_append_result:
+        jumple  1,file_words_done
+        ; Append descriptors need an updated seek position after a D6FS
+        ; provider-side EOF reservation.  Do not advance the stale offset
+        ; captured at OPEN.  The provider has already completed its write.
+        move    4,(010)
+        tlnn    4,100000               ; FILE_META_APPEND or directory
+        jrst    file_words_advance
+        tlnn    4,000030               ; only regular append qualifies
+        jrst    file_words_advance
+        ldb     5,[POINT 6,4,5]
+        caie    5,6                     ; D6FS only
+        jrst    file_words_advance
+        push    17,1                    ; preserve transferred word count
+        add     17,kconst_7_7
+        move    1,(010)
+        tlz     1,707070
+        movei   2,-6(17)
+        pushj   17,vfs_stat
+        jumpn   1,file_words_append_stat_done
+        move    2,-3(17)               ; current st.size_words
+        movem   2,1(010)
+file_words_append_stat_done:
+        sub     17,kconst_7_7
+        pop     17,1
+        jrst    file_words_done
+file_words_advance:
 file_words_result:
         jumple  1,file_words_done
         addm    1,1(010)
@@ -831,6 +887,8 @@ file_readdir:
         jrst    file_readdir_fail
         move    4,(1)
         tlnn    4,100000                ; FILE_META_DIR
+        jrst    file_readdir_fail
+        tlne    4,000030                ; regular O_APPEND is not directory
         jrst    file_readdir_fail
         move    010,1
         move    1,(010)
@@ -1347,7 +1405,8 @@ file_find:
 ; int file_new_fd(vnode_t node, unsigned int flags, int isdir)
 ; Pack the persistent READ/WRITE/DIR bits and lock-family token into the nine
 ; vnode bits which are zero for every current DAIMOS provider/mount/kind.
-; OPEN-only APPEND/CREATE/TRUNC bits are deliberately not retained.
+; CREATE/TRUNC are OPEN-only.  APPEND is retained later in file_open_append
+; using the DIR bit when the descriptor has nonzero regular-file state.
         .globl  file_new_fd
 file_new_fd:
         tlne    1,707070               ; packed metadata bits must be free

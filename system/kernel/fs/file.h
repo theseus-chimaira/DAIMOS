@@ -28,6 +28,8 @@
  *   LH 100000  directory
  *   LH 007040  four-bit lock-family token (the originating fd)
  *   LH 000030  regular/lock state: 0 other, 1 regular, 2 shared, 3 exclusive
+ *   LH 100000  directory when state=0; O_APPEND when regular state!=0.
+ *              Directory/regular state is disjoint, saving a tenth bit.
  */
 struct file {
         kword_t node_meta;
@@ -41,6 +43,7 @@ struct file {
 #define FILE_META_OWNER_MASK       0007040000000UL
 #define FILE_META_STATE_MASK       0000030000000UL
 #define FILE_META_REGULAR          0000010000000UL
+#define FILE_META_APPEND           FILE_META_DIR
 #define FILE_META_LOCK_SHARED      0000020000000UL
 #define FILE_META_LOCK_EXCL        0000030000000UL
 #define FILE_NODE(nm)              ((vnode_t)((nm) & FILE_NODE_VNODE_MASK))

@@ -1438,6 +1438,17 @@ d6fs_provider_write_words:
         move    4,-015(17)
         trne    4,020                    ; D6FS_FLAG_IMMUTABLE
         jrst    d6fs_provider_write_words_fail
+        ; Atomic descriptor O_APPEND: the VFS passes offset -1.  This
+        ; provider executes under fs_provider_serialized, so the freshly
+        ; loaded FCB size is authoritative until the write completes.
+        move    5,-3(17)
+        camn    5,[-1]
+        jrst    d6fs_provider_write_words_at_eof
+        jrst    d6fs_provider_write_words_append_flag
+d6fs_provider_write_words_at_eof:
+        move    5,-7(17)                ; current FCB size_words
+        movem   5,-3(17)
+d6fs_provider_write_words_append_flag:
         trnn    4,1                      ; D6FS_FLAG_APPEND
         jrst    d6fs_provider_write_words_append_ok
         move    5,-3(17)
