@@ -836,11 +836,18 @@ int d6m_run_fsck(const char *argv0, const char *dir, unsigned members,
         if (pid < 0)
                 return -1;
         if (pid == 0) {
+                char *args[8];
+                unsigned argc = 0;
+                args[argc++] = tool;
                 if (repair)
-                        execl(tool, tool, "-r", "-n", nbuf, "-d", dir,
-                            (char *)NULL);
-                else
-                        execl(tool, tool, "-n", nbuf, "-d", dir, (char *)NULL);
+                        args[argc++] = "-r";
+                args[argc++] = "-n";
+                args[argc++] = nbuf;
+                args[argc++] = "-d";
+                args[argc++] = (char *)dir;
+                args[argc] = NULL;
+                /* A bare tool name must be resolved through PATH. */
+                execvp(tool, args);
                 _exit(127);
         }
         if (waitpid(pid, &status, 0) != pid)
