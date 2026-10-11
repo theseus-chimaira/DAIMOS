@@ -1,5 +1,8 @@
 ## Native MAKE compatibility follow-up (2026-10-11)
 
+- Recursive -N and inherited -I MAKEFLAGS pass on PDP-6 SIMH (15/15).
+- Command-line variable override propagation is deliberately deferred.
+
 - Maintain strict uppercase SIXBIT-native syntax; never add lowercase ASCII
   aliases to native MAKE.
 

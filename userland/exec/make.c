@@ -189,6 +189,9 @@ static unsigned int make_default_rule = MAKE_NONE;
 static unsigned int make_current[MAKE_MAX_LHS];
 static unsigned int make_current_count;
 static kword_t **make_envp;
+/* One SIXBIT record, reused by either RUN V2 recipe path. */
+static kword_t make_flags_record[U_ARG_WORDS];
+static int make_flags_ready;
 
 static int make_dry_run;
 static int make_silent;
@@ -690,6 +693,71 @@ make_import_environment(kword_t **envp)
                     make_set_var(entry, eq, '=', MAKE_VAR_ENV) != 0)
                         return -1;
         }
+        return 0;
+}
+
+/* MAKEFLAGS contains only the serial, uppercase SIXBIT switch set.  Do not
+ * propagate -J: it is accepted for compatibility but has no effect. */
+static int
+make_flag_apply(char flag)
+{
+        switch (flag) {
+        case 'N': make_dry_run = 1; break;
+        case 'S': make_silent = 1; break;
+        case 'K': make_keep_going = 1; break;
+        case 'Q': make_question = 1; make_dry_run = 1; break;
+        case 'B': make_always = 1; break;
+        case 'I': make_ignore = 1; break;
+        case 'R': make_no_implicit = 1; break;
+        case 'T': make_touch = 1; break;
+        default: return -1;
+        }
+        return 0;
+}
+
+static int
+make_flags_inherit(void)
+{
+        int vi;
+        const char *p;
+
+        vi = make_find_var("MAKEFLAGS");
+        if (vi < 0)
+                return 0;
+        p = make_text(make_vars[vi].value);
+        if (*p == '-')
+                ++p;
+        while (*p != 0) {
+                if (*p == ' ') { ++p; continue; }
+                if (make_flag_apply(*p++) != 0)
+                        return -1;
+        }
+        return 0;
+}
+
+static int
+make_flags_export(void)
+{
+        char flags[32];
+        unsigned int n = 0U;
+
+        flags[n++] = 'M'; flags[n++] = 'A'; flags[n++] = 'K';
+        flags[n++] = 'E'; flags[n++] = 'F'; flags[n++] = 'L';
+        flags[n++] = 'A'; flags[n++] = 'G'; flags[n++] = 'S';
+        flags[n++] = '='; flags[n++] = '-';
+        if (make_dry_run && !make_question) flags[n++] = 'N';
+        if (make_silent) flags[n++] = 'S';
+        if (make_keep_going) flags[n++] = 'K';
+        if (make_question) flags[n++] = 'Q';
+        if (make_always) flags[n++] = 'B';
+        if (make_ignore) flags[n++] = 'I';
+        if (make_no_implicit) flags[n++] = 'R';
+        if (make_touch) flags[n++] = 'T';
+        flags[n] = 0;
+        if (u_s6_pack(make_flags_record, U_ARG_WORDS, flags) != 0 ||
+            make_set_var("MAKEFLAGS", flags + 10U, '=', MAKE_VAR_COMMAND) != 0)
+                return -1;
+        make_flags_ready = 1;
         return 0;
 }
 
@@ -1307,6 +1375,39 @@ make_run_append(unsigned int *used, const kword_t *record)
         return 0;
 }
 
+/* Forward the inherited environment, replacing (not duplicating) MAKEFLAGS.
+ * Pack directly into the already allocated RUN V2 buffer. */
+static int
+make_run_environment(unsigned int *used, unsigned int *envc)
+{
+        char entry[MAKE_LINE_MAX + 1U];
+        unsigned int i;
+
+        *envc = 0U;
+        if (make_envp != 0) {
+                for (i = 0U; make_envp[i] != 0 && i < SYS_RUN_ENV_MAX; ++i) {
+                        if (make_counted_text(make_envp[i], entry,
+                            sizeof(entry)) == 0 &&
+                            entry[0] == 'M' && entry[1] == 'A' &&
+                            entry[2] == 'K' && entry[3] == 'E' &&
+                            entry[4] == 'F' && entry[5] == 'L' &&
+                            entry[6] == 'A' && entry[7] == 'G' &&
+                            entry[8] == 'S' && entry[9] == '=')
+                                continue;
+                        if (make_run_append(used, make_envp[i]) != 0)
+                                return -1;
+                        ++*envc;
+                }
+        }
+        if (make_flags_ready) {
+                if (*envc >= SYS_RUN_ENV_MAX ||
+                    make_run_append(used, make_flags_record) != 0)
+                        return -1;
+                ++*envc;
+        }
+        return 0;
+}
+
 static int
 make_run_recipe(const char *command)
 {
@@ -1331,14 +1432,8 @@ make_run_recipe(const char *command)
             make_run_append(&used, arg1) != 0 ||
             make_run_append(&used, arg2) != 0)
                 return 126;
-        envc = 0U;
-        if (make_envp != 0) {
-                while (make_envp[envc] != 0 && envc < SYS_RUN_ENV_MAX) {
-                        if (make_run_append(&used, make_envp[envc]) != 0)
-                                return 126;
-                        ++envc;
-                }
-        }
+        if (make_run_environment(&used, &envc) != 0)
+                return 126;
         if (used + 3U > MAKE_RUN_WORDS)
                 return 126;
         make_run[used++] = SYS_RUN_FD_MAP(0U, 0U);
@@ -1454,14 +1549,8 @@ make_run_direct(char *command)
         }
         if (argc == 0U)
                 return 126;
-        envc = 0U;
-        if (make_envp != 0) {
-                while (make_envp[envc] != 0 && envc < SYS_RUN_ENV_MAX) {
-                        if (make_run_append(&used, make_envp[envc]) != 0)
-                                return 126;
-                        ++envc;
-                }
-        }
+        if (make_run_environment(&used, &envc) != 0)
+                return 126;
         if (used + 3U > MAKE_RUN_WORDS)
                 return 126;
         make_run[used++] = SYS_RUN_FD_MAP(0U, 0U);
@@ -1512,7 +1601,16 @@ make_run_commands(unsigned int head, const struct make_auto *automatic,
                         (void)u_puts(1, p);
                         (void)u_crlf(1);
                 }
-                if (make_dry_run || *p == 0)
+                /* Dry-run must still descend into a literal recursive MAKE,
+                 * which receives -N through the inherited MAKEFLAGS record.
+                 * Never execute arbitrary shell commands in this mode. */
+                if (*p == 0 || (make_dry_run &&
+                    (make_question ||
+                    !((p[0] == 'M' && p[1] == 'A' && p[2] == 'K' &&
+                    p[3] == 'E' && (p[4] == ' ' || p[4] == 0)) ||
+                    (p[0] == '!' && p[1] == 'M' && p[2] == 'A' &&
+                    p[3] == 'K' && p[4] == 'E' &&
+                    (p[5] == ' ' || p[5] == 0))))))
                         continue;
                 if (*p == '!')
                         rc = make_run_direct(make_trim(p + 1));
@@ -1877,6 +1975,10 @@ main(int argc, kword_t **argv, kword_t **envp)
                 make_diag("VARIABLE STORAGE EXHAUSTED", 0);
                 return 2;
         }
+        if (make_flags_inherit() != 0) {
+                make_diag("INVALID MAKEFLAGS", 0);
+                return 2;
+        }
         makefile[0] = 'M'; makefile[1] = 'A'; makefile[2] = 'K';
         makefile[3] = 'E'; makefile[4] = 'F'; makefile[5] = 'I';
         makefile[6] = 'L'; makefile[7] = 'E'; makefile[8] = 0;
@@ -1910,24 +2012,7 @@ main(int argc, kword_t **argv, kword_t **envp)
                 }
                 if (arg[0] == '-' && arg[1] != 0) {
                         for (j = 1U; arg[j] != 0; ++j) {
-                                if (arg[j] == 'N')
-                                        make_dry_run = 1;
-                                else if (arg[j] == 'S')
-                                        make_silent = 1;
-                                else if (arg[j] == 'K')
-                                        make_keep_going = 1;
-                                else if (arg[j] == 'Q') {
-                                        make_question = 1;
-                                        make_dry_run = 1;
-                                } else if (arg[j] == 'B')
-                                        make_always = 1;
-                                else if (arg[j] == 'I')
-                                        make_ignore = 1;
-                                else if (arg[j] == 'R')
-                                        make_no_implicit = 1;
-                                else if (arg[j] == 'T')
-                                        make_touch = 1;
-                                else if (arg[j] == 'J') {
+                                if (arg[j] == 'J') {
                                         /* Compatibility-only: serial execution.
                                          * Accept optional numeric job count. */
                                         if (arg[j + 1U] >= '0' &&
@@ -1943,8 +2028,7 @@ main(int argc, kword_t **argv, kword_t **envp)
                                                     next[0] >= '0' && next[0] <= '9')
                                                         ++i;
                                         }
-                                }
-                                else {
+                                } else if (make_flag_apply(arg[j]) != 0) {
                                         make_diag("UNKNOWN OPTION", arg);
                                         return 2;
                                 }
@@ -1969,6 +2053,10 @@ main(int argc, kword_t **argv, kword_t **envp)
                         goals[goal_count][j] = arg[j];
                 goals[goal_count][j] = 0;
                 ++goal_count;
+        }
+        if (make_flags_export() != 0) {
+                make_diag("MAKEFLAGS STORAGE EXHAUSTED", 0);
+                return 2;
         }
         if (make_parse_file(makefile) != 0) {
                 make_diag("CANNOT PARSE", makefile);
