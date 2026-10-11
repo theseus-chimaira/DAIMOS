@@ -1163,6 +1163,8 @@ native_sys_putchar_call:
         jumpn   1,kret_neg1
         pushj   17,fs_memfs_shutdown
         jumpn   1,kret_neg1
+        pushj   17,vfs_shutdown_root
+        jumpn   1,kret_neg1
         halt    .
 %L137:
         seto    1,

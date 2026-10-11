@@ -903,6 +903,29 @@ vfs_remount:
         movei   7,6                      ; D6FS_PROVIDER
         jrst    fs_provider_reg_call
 
+; Publish CLEAN for a writable D6FS namespace root during orderly HALT.
+; Never toggle an already read-only root: REMOUNT would mark it DIRTY.
+; Any publication failure must abort HALT so the disk is not misreported.
+        .globl  vfs_shutdown_root
+vfs_shutdown_root:
+        move    1,vfs_namespace_root
+        jumpe   1,kret_zero
+        ldb     7,[POINT 6,1,5]         ; provider number
+        caie    7,6                     ; only D6FS has dirty media state
+        jrst    kret_zero
+        ldb     2,[POINT 6,1,11]        ; mount id
+        sojl    2,kret_neg1
+        cail    2,4
+        jrst    kret_neg1
+        movei   4,1
+        lsh     4,0(2)
+        tdne    4,vfs_mount_ro          ; already read-only/CLEAN
+        jrst    kret_zero
+        pushj   17,vfs_sync             ; synchronous write barrier
+        jumpn   1,kret_neg1
+        move    1,vfs_namespace_root
+        jrst    vfs_remount             ; flip DIRTY -> CLEAN atomically
+
 ; int vfs_unmount(root)
         .globl  vfs_unmount
 vfs_unmount:
