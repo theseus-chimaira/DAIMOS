@@ -188,6 +188,12 @@ dsh_history_load(void)
                         line.words[i] = rec[i + 1U];
                 dsh_history_remember(&line);
         }
+        if (n != U_TEXT_EOF) {
+                /* Preserve the valid prefix; never attempt an unlocked
+                 * truncate while another session may be appending. */
+                (void)u_puts(2, "DSH: HISTFILE DAMAGED; VALID PREFIX LOADED");
+                (void)u_crlf(2);
+        }
         u_text_close(&reader);
 }
 
