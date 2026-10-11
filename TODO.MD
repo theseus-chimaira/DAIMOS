@@ -6,8 +6,9 @@
 - Target-side PDP-6 SIMH verification passed for .SUFFIXES reset/filtering,
   -r, -t, and accepted-but-serial -j/-J (7/7 probes).
 - Target-side .SILENT, .IGNORE, AND -I PASS (10/10 TOTAL SIMH PROBES).
-- Add a behavioral target-side .PRECIOUS regression and complete the
-  portable double-colon / recursive MAKEFLAGS assessment.
+- Target-side .PRECIOUS preservation passed (13/13 TOTAL SIMH PROBES).
+- Decide whether actual native makefiles require double-colon rules or
+  recursive MAKEFLAGS propagation before accepting additional complexity.
 - Verify suffix precedence/order with BSD Make and GNU Make test cases.
 - Evaluate portable double-colon rule semantics and automatic MAKEFLAGS
   propagation for recursive native builds.
