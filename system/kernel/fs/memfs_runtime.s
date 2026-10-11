@@ -89,6 +89,16 @@ memfs_write_words:
         trnn    6,4             ; writable
         jrst    memfs_write_fail
 
+        ; O_APPEND sentinel is resolved from the current MEMFS file size
+        ; after slot validation, never from an OPEN-time snapshot.  MEMFS
+        ; operations execute in the non-preemptible resident provider path.
+        camn    012,[-1]
+        jrst    memfs_write_at_eof
+        jrst    memfs_write_offset_ready
+memfs_write_at_eof:
+        hrrz    012,6(5)
+memfs_write_offset_ready:
+
 ; Compute need = off+nwords and reject 36-bit unsigned wrap.
         move    015,014
         add     015,012         ; need

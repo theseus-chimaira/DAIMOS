@@ -740,8 +740,11 @@ file_words_notdir:
         tlnn    5,000030               ; directories cannot append
         jrst    file_write_regular_pos
         ldb     5,[POINT 6,1,5]
-        caie    5,6                     ; D6FS provider
+        cain    5,6                     ; D6FS provider
+        jrst    file_write_append_provider
+        caie    5,4                     ; MEMFS provider
         jrst    file_write_regular_pos
+file_write_append_provider:
         seto    2,
 file_write_regular_pos:
         pushj   17,vfs_write_words
@@ -825,8 +828,11 @@ file_words_append_result:
         move    5,4
         tlz     5,707070
         ldb     5,[POINT 6,5,5]
-        caie    5,6                     ; D6FS only
+        cain    5,6                     ; D6FS
+        jrst    file_words_append_provider
+        caie    5,4                     ; MEMFS
         jrst    file_words_advance
+file_words_append_provider:
         push    17,1                    ; preserve transferred word count
         add     17,kconst_7_7
         move    1,(010)
