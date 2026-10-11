@@ -1465,17 +1465,24 @@ d6fs_provider_write_words_resize:
         movei   2,-036(17)
         movei   3,-016(17)
         move    4,5
+        tlo     4,400000                ; stage extents; do not publish EOF
         pushj   17,d6fs_provider_resize_fcb
         jumpn   1,d6fs_provider_write_words_fail
+        move    5,-3(17)
+        tlo     5,400000                ; private marker: growth staged
+        movem   5,-3(17)
 d6fs_provider_write_words_store:
         move    5,-1(17)
         movem   5,(17)                   ; fifth arg: nwords
         move    1,d6fs_active_reader
         movei   2,-036(17)
         move    3,-3(17)
+        tlz     3,400000                ; remove private staged marker
         move    4,-2(17)
         pushj   17,d6fs_reader_write_words
-        jumpl   1,d6fs_provider_write_words_fail
+        jumpl   1,d6fs_provider_write_words_store_fail
+        came    1,-1(17)                ; never publish short payload
+        jrst    d6fs_provider_write_words_store_fail
         movem   1,(17)
         pushj   17,pclk_time36
         movem   1,-033(17)
@@ -1486,6 +1493,18 @@ d6fs_provider_write_words_store:
         jumpn   1,d6fs_provider_write_words_fail
         move    1,(17)
         jrst    d6fs_provider_write_words_done
+d6fs_provider_write_words_store_fail:
+        skipge  -3(17)                  ; only staged growth needs rollback
+        jrst    d6fs_provider_write_words_abort_stage
+        jrst    d6fs_provider_write_words_fail
+d6fs_provider_write_words_abort_stage:
+        move    1,-4(17)
+        movei   2,-036(17)
+        movei   3,-016(17)
+        pushj   17,d6fs_provider_abort_staged_growth
+        ; If rollback itself fails, d6fsck must recover leaked blocks.
+        ; Do not claim a successful write or publish the extended FCB.
+        jrst    d6fs_provider_write_words_fail
 d6fs_provider_write_words_fail:
         seto    1,
 d6fs_provider_write_words_done:

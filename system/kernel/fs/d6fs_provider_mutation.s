@@ -174,6 +174,7 @@ d6fs_provider_resize_fcb:
         lsh     2,-7
         movem   2,-2(17)                  ; old_blocks
         move    3,-4(17)
+        tlz     3,400000                ; negative-size flag: stage FCB
         addi    3,0177
         lsh     3,-7
         movem   3,-1(17)                  ; new_blocks
@@ -388,7 +389,10 @@ d6fs_resize_publish:
         ior     1,5
         movem   1,(6)
         move    3,-4(17)
+        tlz     3,400000                ; unsigned target size
         movem   3,2(6)
+        skipge  -4(17)                  ; staged growth: data first
+        jrst    d6fs_resize_update_info
         move    1,d6fs_active_reader
         hrrz    2,-7(17)
         move    3,6
@@ -413,6 +417,7 @@ d6fs_resize_update_info:
         move    2,(17)
         movem   2,4(1)                   ; fi.extent_count
         move    2,-4(17)
+        tlz     2,400000
         movem   2,7(1)                   ; fi.size_words
         setzm   3(1)                   ; former tail field is reserved
         setz    1,
@@ -468,4 +473,70 @@ d6fs_resize_decode_extent:
         ior     2,1
         addi    2,1
         move    013,2
+        popj    17,
+
+; Undo a staged regular-file growth when writing the new payload fails.
+; The old FCB is still on disk.  Preserve its *allocated extent capacity*,
+; not merely size_words: D6FS reserves whole runs beyond the readable EOF.
+; AC1=node, AC2=staged FCB, AC3=decoded info.  Called while serialized.
+        .globl  d6fs_provider_abort_staged_growth
+d6fs_provider_abort_staged_growth:
+        add     17,[047,,047]           ; saved ACs, args, old FCB/info
+        movem   010,-046(17)
+        movem   011,-045(17)
+        movem   012,-044(17)
+        movem   013,-043(17)
+        movem   014,-042(17)
+        movem   1,-041(17)
+        movem   2,-040(17)
+        movem   3,-037(17)
+        move    1,d6fs_active_reader
+        hrrz    2,-041(17)
+        movei   3,-036(17)              ; 020-word original FCB
+        movei   4,-016(17)              ; 012-word decoded info
+        pushj   17,d6fs_reader_fcb
+        jumpn   1,d6fs_abort_stage_fail
+        movei   012,-036(17)
+        movei   013,-016(17)
+        move    014,4(013)              ; original extent_count
+        move    5,5(012)                ; packed extent length highs
+        movei   6,6(012)
+        setz    7,                      ; existing allocated capacity
+d6fs_abort_stage_capacity_loop:
+        jumpe   014,d6fs_abort_stage_free
+        move    2,(6)
+        andi    2,07777
+        move    3,5
+        andi    3,037
+        lsh     3,014
+        ior     2,3
+        addi    2,1
+        add     7,2
+        lsh     5,-5
+        addi    6,1
+        sojg    014,d6fs_abort_stage_capacity_loop
+d6fs_abort_stage_free:
+        move    1,-040(17)
+        move    2,7
+        pushj   17,d6fs_provider_free_file_tail
+        jumpn   1,d6fs_abort_stage_fail
+        move    1,012
+        move    2,-040(17)
+        movei   3,020
+        pushj   17,fs_copy_words
+        move    1,013
+        move    2,-037(17)
+        movei   3,012
+        pushj   17,fs_copy_words
+        setz    1,
+        jrst    d6fs_abort_stage_done
+d6fs_abort_stage_fail:
+        seto    1,
+d6fs_abort_stage_done:
+        move    010,-046(17)
+        move    011,-045(17)
+        move    012,-044(17)
+        move    013,-043(17)
+        move    014,-042(17)
+        sub     17,[047,,047]
         popj    17,
