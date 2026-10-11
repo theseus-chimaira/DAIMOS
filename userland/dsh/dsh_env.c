@@ -225,11 +225,18 @@ dsh_expand_quoted(const struct dsh_state *st, const struct dsh_s6 *in,
                 if (ch == '[') {
                         ++i;
                         first = i;
-                        while (i < in->len && dsh_s6_get(in, i) != ']')
+                        while (i < in->len && dsh_s6_get(in, i) != ']') {
+                                if (!dsh_name_char(dsh_s6_get(in, i),
+                                    i == first))
+                                        return -1;
                                 ++i;
+                        }
+                        /* An empty or unterminated bracketed variable is
+                         * invalid.  Never silently use the truncated name. */
+                        if (i == first || i >= in->len)
+                                return -1;
                         last = i;
-                        if (i < in->len)
-                                ++i;
+                        ++i;
                 } else {
                         first = i;
                         while (i < in->len) {
