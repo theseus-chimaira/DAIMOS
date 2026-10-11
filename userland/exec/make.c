@@ -1924,11 +1924,11 @@ main(int argc, kword_t **argv, kword_t **envp)
                                         make_dry_run = 1;
                                 } else if (arg[j] == 'B' || arg[j] == 'b')
                                         make_always = 1;
-                                else if (arg[j] == 'i')
+                                else if (arg[j] == 'i' || arg[j] == 'I')
                                         make_ignore = 1;
-                                else if (arg[j] == 'r')
+                                else if (arg[j] == 'r' || arg[j] == 'R')
                                         make_no_implicit = 1;
-                                else if (arg[j] == 't')
+                                else if (arg[j] == 't' || arg[j] == 'T')
                                         make_touch = 1;
                                 else if (arg[j] == 'j' || arg[j] == 'J') {
                                         /* Compatibility-only: serial execution.

@@ -1,7 +1,8 @@
 ## Native MAKE compatibility follow-up (2026-10-11)
 
-- Run target-side PDP-6 SIMH regressions for .SUFFIXES reset/filtering,
-  .SILENT, .IGNORE, -i, -r, -t, and accepted-but-serial -j/-J.
+- Target-side PDP-6 SIMH verification passed for .SUFFIXES reset/filtering,
+  -r, -t, and accepted-but-serial -j/-J (7/7 probes).
+- Add target-side probes for .SILENT, .IGNORE, .PRECIOUS and -i.
 - Verify suffix precedence/order with BSD Make and GNU Make test cases.
 - Evaluate portable double-colon rule semantics and automatic MAKEFLAGS
   propagation for recursive native builds.
