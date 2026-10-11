@@ -294,6 +294,31 @@ parse_value(IfParser *g, const char *cp, long *valp)
         if (*cp != '(') {
             *valp = (*(g->funcs.eval_variable)) (g, var, varend - var);
         }
+        else if ((varend - var == 13 &&
+                  strncmp(var, "__has_include", 13) == 0) ||
+                 (varend - var == 18 &&
+                  strncmp(var, "__has_include_next", 18) == 0)) {
+            int next = (varend - var == 18);
+            const char *start;
+            char close;
+            cp++;
+            SKIPSPACE(cp);
+            if (*cp != '"' && *cp != '<')
+                return CALLFUNC(g, handle_error)(g, cp, "header name");
+            close = *cp == '<' ? '>' : '"';
+            start = ++cp;
+            while (*cp && *cp != close)
+                cp++;
+            if (*cp != close)
+                return CALLFUNC(g, handle_error)(g, cp, "header terminator");
+            *valp = (*(g->funcs.eval_include))(
+                g, start, cp - start, next, close == '"');
+            cp++;
+            SKIPSPACE(cp);
+            if (*cp != ')')
+                return CALLFUNC(g, handle_error)(g, cp, ")");
+            cp++;
+        }
         else {
             do {
                 long dummy;

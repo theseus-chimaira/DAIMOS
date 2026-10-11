@@ -35,6 +35,44 @@ struct _parse_data {
     const char *line;
 };
 
+/* Resolve feature-test header names using the same ordered include list. */
+static int
+my_eval_include(IfParser *ip, const char *name, int len, int next,
+                int quoted)
+{
+    struct _parse_data *pd = ip->data;
+    const char **dir;
+    char path[PATHMAX + 1];
+    struct stat st;
+
+    if (len <= 0 || len >= PATHMAX)
+        return 0;
+    if (!next && (quoted || name[0] == '/')) {
+        int n = snprintf(path, sizeof(path), "%.*s", len, name);
+        if (n >= 0 && n < (int)sizeof(path) &&
+            stat(path, &st) == 0 && !S_ISDIR(st.st_mode))
+            return 1;
+    }
+    if (!next && quoted && pd->filename != NULL) {
+        const char *slash = strrchr(pd->filename, '/');
+        if (slash != NULL) {
+            int n = snprintf(path, sizeof(path), "%.*s/%.*s",
+                     (int)(slash - pd->filename), pd->filename,
+                     len, name);
+            if (n >= 0 && n < (int)sizeof(path) &&
+                stat(path, &st) == 0 && !S_ISDIR(st.st_mode))
+                return 1;
+        }
+    }
+    for (dir = next ? includedirsnext : includedirs; *dir; ++dir) {
+        int n = snprintf(path, sizeof(path), "%s/%.*s", *dir, len, name);
+        if (n >= 0 && n < (int)sizeof(path) &&
+            stat(path, &st) == 0 && !S_ISDIR(st.st_mode))
+            return 1;
+    }
+    return 0;
+}
+
 static const char *
 my_if_errors(IfParser *ip, const char *cp, const char *expecting)
 {
@@ -123,6 +161,7 @@ cppsetup(const char *filename, const char *line,
     IfParser ip = {
         .funcs.handle_error = my_if_errors,
         .funcs.eval_defined = my_eval_defined,
+        .funcs.eval_include = my_eval_include,
         .funcs.eval_variable = my_eval_variable,
         .data = &pd
     };

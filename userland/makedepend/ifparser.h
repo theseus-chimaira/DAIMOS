@@ -69,6 +69,8 @@ typedef struct _if_parser {
                                     const char *);
         long (*eval_variable)(struct _if_parser *, const char *, int);
         int (*eval_defined)(struct _if_parser *, const char *, int);
+        int (*eval_include)(struct _if_parser *, const char *, int, int,
+                            int);
     } funcs;
     struct _parse_data *data;
 } IfParser;
