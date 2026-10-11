@@ -820,7 +820,11 @@ file_words_append_result:
         jrst    file_words_advance
         tlnn    4,000030               ; only regular append qualifies
         jrst    file_words_advance
-        ldb     5,[POINT 6,4,5]
+        ; The packed DIR/APPEND bit overlaps the on-vnode provider field;
+        ; decode only after removing all descriptor metadata bits.
+        move    5,4
+        tlz     5,707070
+        ldb     5,[POINT 6,5,5]
         caie    5,6                     ; D6FS only
         jrst    file_words_advance
         push    17,1                    ; preserve transferred word count
