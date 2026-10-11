@@ -894,7 +894,9 @@ dsh_run_external(struct dsh_state *st, unsigned int argc,
         if (st->interactive)
                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETMODE,
                     SYS_TTY_MODE_COOKED);
-        if (st->tty_attached)
+        /* Pipe-fed/background DSH workers inherit a controlling TTY but
+         * must never claim its foreground process group. */
+        if (st->interactive && st->tty_attached)
                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETFG,
                     (unsigned int)pid);
         rc = dsys_wait((unsigned int)pid, &status, 0U);
@@ -904,7 +906,7 @@ dsh_run_external(struct dsh_state *st, unsigned int argc,
                 if (mode >= 0)
                         tty_mode = (unsigned int)mode & 07U;
         }
-        if (st->tty_attached)
+        if (st->interactive && st->tty_attached)
                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETFG,
                     st->shell_pgrp);
         if (st->interactive)
@@ -2484,7 +2486,10 @@ dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
                 prev_read = next_read;
                 if (i == 0U) {
                         pgrp = (unsigned int)pid;
-                        if (!background && st->tty_attached) {
+                        /* Noninteractive group workers cannot steal the
+                         * original shell's foreground TTY ownership. */
+                        if (!background && st->interactive &&
+                            st->tty_attached) {
                                 /* As with FG, mode must be changed while DSH
                                  * is still the foreground owner. */
                                 if (st->interactive)
@@ -2520,7 +2525,7 @@ dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
                         if (st->jobs[i].used && st->jobs[i].pgrp == pgrp) {
                                 (void)dsh_s6_copy(&st->jobs[i].command,
                                     &label);
-                                if (st->tty_attached) {
+                                if (st->interactive && st->tty_attached) {
                                         int mode;
 
                                         mode = dsys_procctl(
@@ -2532,7 +2537,7 @@ dsh_exec_pipeline(struct dsh_state *st, const struct dsh_node *nodes,
                                 break;
                         }
         }
-        if (st->tty_attached)
+        if (st->interactive && st->tty_attached)
                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETFG, st->shell_pgrp);
         if (st->interactive)
                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETMODE,
@@ -2549,7 +2554,7 @@ pipeline_launch_fail:
         if (pgrp != 0U)
                 (void)dsys_procctl(SYS_PROCCTL_EVENT_PGRP,
                     SYS_EVENT_ARG(pgrp, SYS_EVENT_TERM));
-        if (!background && st->tty_attached)
+        if (!background && st->interactive && st->tty_attached)
                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETFG,
                     st->shell_pgrp);
         return rc;
