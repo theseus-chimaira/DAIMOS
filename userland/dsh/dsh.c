@@ -148,9 +148,15 @@ dsh_history_path_init(struct dsh_state *st)
             dsh_s6_copy(&dsh_history_path, value) != 0)
                 return;
         suffix = "/.DSH_HISTORY";
+        /* HOME=/ is the normal ROOT login; avoid constructing //... . */
+        if (dsh_s6_get(&dsh_history_path,
+            dsh_history_path.len - 1U) == '/')
+                ++suffix;
         for (i = 0U; suffix[i] != 0; ++i)
-                if (dsh_s6_append(&dsh_history_path, suffix[i]) != 0)
+                if (dsh_s6_append(&dsh_history_path, suffix[i]) != 0) {
+                        dsh_s6_clear(&dsh_history_path);
                         return;
+                }
         dsh_history_persistent = 1U;
 }
 
