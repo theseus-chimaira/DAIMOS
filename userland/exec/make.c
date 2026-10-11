@@ -1085,8 +1085,6 @@ make_parse_file_depth(const char *path, unsigned int include_depth)
                 keyword = make_word(&rest);
                 if (keyword != 0 &&
                     (make_streq(keyword, "INCLUDE") ||
-                     make_streq(keyword, "include") ||
-                     make_streq(keyword, "-include") ||
                      make_streq(keyword, "-INCLUDE"))) {
                         char *inc = make_trim(rest);
                         struct make_result optional_file;
@@ -1098,8 +1096,7 @@ make_parse_file_depth(const char *path, unsigned int include_depth)
                         }
                         /* A missing optional include is allowed, but an
                          * existing malformed include remains a hard error. */
-                        if ((make_streq(keyword, "-include") ||
-                             make_streq(keyword, "-INCLUDE")) &&
+                        if (make_streq(keyword, "-INCLUDE") &&
                             make_stat(make_expand_buf, &optional_file) == 0 &&
                             !optional_file.exists)
                                 continue;
@@ -1889,8 +1886,8 @@ main(int argc, kword_t **argv, kword_t **envp)
                         make_diag("INVALID ARGUMENT", 0);
                         return 2;
                 }
-                if ((make_streq(arg, "-F") || make_streq(arg, "-f") ||
-                    make_streq(arg, "-C")) && i + 1U < (unsigned int)argc) {
+                if ((make_streq(arg, "-F") || make_streq(arg, "-C")) &&
+                    i + 1U < (unsigned int)argc) {
                         int chdir_opt;
                         chdir_opt = make_streq(arg, "-C");
                         if (make_counted_text(argv[++i], arg,
@@ -1913,24 +1910,24 @@ main(int argc, kword_t **argv, kword_t **envp)
                 }
                 if (arg[0] == '-' && arg[1] != 0) {
                         for (j = 1U; arg[j] != 0; ++j) {
-                                if (arg[j] == 'N' || arg[j] == 'n')
+                                if (arg[j] == 'N')
                                         make_dry_run = 1;
-                                else if (arg[j] == 'S' || arg[j] == 's')
+                                else if (arg[j] == 'S')
                                         make_silent = 1;
-                                else if (arg[j] == 'K' || arg[j] == 'k')
+                                else if (arg[j] == 'K')
                                         make_keep_going = 1;
-                                else if (arg[j] == 'Q' || arg[j] == 'q') {
+                                else if (arg[j] == 'Q') {
                                         make_question = 1;
                                         make_dry_run = 1;
-                                } else if (arg[j] == 'B' || arg[j] == 'b')
+                                } else if (arg[j] == 'B')
                                         make_always = 1;
-                                else if (arg[j] == 'i' || arg[j] == 'I')
+                                else if (arg[j] == 'I')
                                         make_ignore = 1;
-                                else if (arg[j] == 'r' || arg[j] == 'R')
+                                else if (arg[j] == 'R')
                                         make_no_implicit = 1;
-                                else if (arg[j] == 't' || arg[j] == 'T')
+                                else if (arg[j] == 'T')
                                         make_touch = 1;
-                                else if (arg[j] == 'j' || arg[j] == 'J') {
+                                else if (arg[j] == 'J') {
                                         /* Compatibility-only: serial execution.
                                          * Accept optional numeric job count. */
                                         if (arg[j + 1U] >= '0' &&

@@ -1,5 +1,8 @@
 ## Native MAKE compatibility follow-up (2026-10-11)
 
+- Maintain strict uppercase SIXBIT-native syntax; never add lowercase ASCII
+  aliases to native MAKE.
+
 - Target-side PDP-6 SIMH verification passed for .SUFFIXES reset/filtering,
   -r, -t, and accepted-but-serial -j/-J (7/7 probes).
 - Add target-side probes for .SILENT, .IGNORE, .PRECIOUS and -i.
