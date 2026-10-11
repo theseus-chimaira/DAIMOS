@@ -199,6 +199,8 @@ dsh_history_add(void)
         unsigned int i;
         unsigned int count;
         int fd;
+        int write_rc;
+        int close_rc;
 
         if (dsh_input_line.len == 0U)
                 return;
@@ -213,8 +215,16 @@ dsh_history_add(void)
         rec[0] = DSH_HISTORY_S6REC_TEXT | (kword_t)dsh_input_line.len;
         for (i = 1U; i < count; ++i)
                 rec[i] = dsh_input_line.words[i - 1U];
-        (void)dsys_write_words(fd, rec, count);
-        (void)dsys_close(fd);
+        /* A single WRITE_WORDS need not transfer the entire S6REC record.
+         * Retry the remaining words while the append descriptor is open.
+         * If writing or closing fails, do not silently claim persistence:
+         * startup will reject an incomplete trailing S6REC record. */
+        write_rc = u_write_words_all(fd, rec, count);
+        close_rc = dsys_close(fd);
+        if (write_rc != 0 || close_rc != 0) {
+                (void)u_puts(2, "DSH: HISTFILE WRITE FAILED");
+                (void)u_crlf(2);
+        }
 }
 
 static int
