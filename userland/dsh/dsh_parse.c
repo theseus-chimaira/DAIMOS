@@ -306,11 +306,13 @@ dsh_parse_simple(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                 }
                 if (DSH_TOKEN_TYPE(&p->tokens[p->pos]) ==
                     DSH_T_DOLLAR_LPAREN) {
-                        rc = dsh_alloc_node(p, DSH_N_SUBST, &node);
-                        if (rc != DSH_OK)
-                                return rc;
-                        *out = node;
-                        return DSH_OK;
+                        /* A substitution requires an output-capturing
+                         * worker and cannot be represented by an executable
+                         * simple-command node.  Reject it explicitly until
+                         * that protocol is implemented.  In particular, do
+                         * not return success without consuming this token. */
+                        return dsh_mark_error(p, DSH_E_SYNTAX,
+                            DSH_PE_WORD);
                 }
                 if (DSH_TOKEN_TYPE(&p->tokens[p->pos]) != DSH_T_WORD)
                         break;
