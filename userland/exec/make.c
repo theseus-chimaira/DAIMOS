@@ -1375,24 +1375,35 @@ make_run_append(unsigned int *used, const kword_t *record)
         return 0;
 }
 
+/* Match MAKEFLAGS= directly in SIXBIT without allocating an ASCII scratch
+ * line. Each SIXBIT word contains six character slots. */
+static int
+make_is_flags_record(const kword_t *record)
+{
+        static const char name[] = "MAKEFLAGS=";
+        unsigned int i;
+
+        if ((record[0] & 0777777UL) < 10UL)
+                return 0;
+        for (i = 0U; i < 10U; ++i)
+                if (((record[1U + i / 6U] >>
+                    (30U - (i % 6U) * 6U)) & 077UL) !=
+                    (kword_t)(name[i] - 040))
+                        return 0;
+        return 1;
+}
+
 /* Forward the inherited environment, replacing (not duplicating) MAKEFLAGS.
  * Pack directly into the already allocated RUN V2 buffer. */
 static int
 make_run_environment(unsigned int *used, unsigned int *envc)
 {
-        char entry[MAKE_LINE_MAX + 1U];
         unsigned int i;
 
         *envc = 0U;
         if (make_envp != 0) {
                 for (i = 0U; make_envp[i] != 0 && i < SYS_RUN_ENV_MAX; ++i) {
-                        if (make_counted_text(make_envp[i], entry,
-                            sizeof(entry)) == 0 &&
-                            entry[0] == 'M' && entry[1] == 'A' &&
-                            entry[2] == 'K' && entry[3] == 'E' &&
-                            entry[4] == 'F' && entry[5] == 'L' &&
-                            entry[6] == 'A' && entry[7] == 'G' &&
-                            entry[8] == 'S' && entry[9] == '=')
+                        if (make_is_flags_record(make_envp[i]))
                                 continue;
                         if (make_run_append(used, make_envp[i]) != 0)
                                 return -1;

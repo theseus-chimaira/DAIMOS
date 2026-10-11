@@ -1,3 +1,12 @@
+## Native MAKE V0.9 feature freeze (2026-10-11)
+
+- Native MAKE is feature-complete for V0.9. No new features unless required
+  for correctness or demonstrated native self-hosting compatibility.
+- Retain SIXBIT-only uppercase parsing and serial execution; -J remains
+  an accepted no-op.
+- The final RAM sweep removes redundant MAKEFLAGS environment decoding;
+  native SIMH verification is tracked in daimos-testkit.
+
 ## Native MAKE compatibility follow-up (2026-10-11)
 
 - Recursive -N and inherited -I MAKEFLAGS pass on PDP-6 SIMH (15/15).
