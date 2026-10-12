@@ -9,7 +9,11 @@ static struct dsh_state dsh_main_state;
 #define DSH_HISTORY_WORDS (DSH_HISTORY_MAX * (DSH_LINE_MAX_WORDS + 1U))
 #define DSH_HISTORY_S6REC_TEXT (1UL << 30)
 
-static struct dsh_line dsh_history[DSH_HISTORY_MAX];
+/* Interactive history is allocated on first use, rather than reserving
+ * 496 words in every DSH process (including noninteractive -C/-S shells).
+ * The sixteen-entry limit and physical record size remain unchanged.
+ * History loading/insertion occurs outside temporary parse BRK scopes. */
+static struct dsh_line *dsh_history;
 static unsigned int dsh_history_count;
 static struct dsh_s6 dsh_history_path;
 static unsigned int dsh_history_persistent;
@@ -129,10 +133,22 @@ static void
 dsh_history_remember(const struct dsh_line *line)
 {
         unsigned int i;
+        kword_t start;
 
         if (line->len == 0U)
                 return;
-        for (i = DSH_HISTORY_MAX - 1U; i != 0U; --i)
+        if (dsh_history == 0) {
+                start = dsh_brk_reserve_words(DSH_HISTORY_WORDS);
+                if (start == (kword_t)-1)
+                        return;
+                dsh_history = (struct dsh_line *)(unsigned long)start;
+        }
+        i = dsh_history_count;
+        if (i >= DSH_HISTORY_MAX)
+                i = DSH_HISTORY_MAX - 1U;
+        /* Shift only live entries: on first use the 16-slot heap buffer
+         * contains no initialized records to copy. */
+        for (; i != 0U; --i)
                 dsh_line_copy(&dsh_history[i], &dsh_history[i - 1U]);
         dsh_line_copy(&dsh_history[0], line);
         if (dsh_history_count < DSH_HISTORY_MAX)

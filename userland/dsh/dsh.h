@@ -44,6 +44,10 @@ struct dsh_line {
         kword_t words[DSH_LINE_MAX_WORDS];
 };
 
+/* Reserve a bounded number of PDP-6 words at the process BRK, returning
+ * the previous break or -1. Callers own the reservation's lifetime. */
+kword_t dsh_brk_reserve_words(kword_t words);
+
 struct dsh_var {
         kword_t meta;
         kword_t name_words[DSH_S6_MAX_WORDS];

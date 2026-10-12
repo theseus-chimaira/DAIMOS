@@ -101,9 +101,8 @@ dsh_node_alloc_payload(struct dsh_node *n, unsigned int tokens)
          * Do not reserve nineteen unused slots for a one-word command. */
         words = (kword_t)slots *
             ((sizeof(struct dsh_s6) / sizeof(kword_t)) + 2U);
-        start = dsys_brk(0UL);
-        if (start == (kword_t)-1 || words > 0777777UL - start ||
-            dsys_brk(start + words) != start + words)
+        start = dsh_brk_reserve_words(words);
+        if (start == (kword_t)-1)
                 return DSH_E_OVERFLOW;
         payload = (kword_t *)(unsigned long)start;
         n->words = (struct dsh_s6 *)payload;

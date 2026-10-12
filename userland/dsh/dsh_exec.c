@@ -172,12 +172,10 @@ dsh_function_payload_reserve(void)
         words = (sizeof(struct dsh_node_payload) *
             DSH_FUNC_MAX_NODES + sizeof(kword_t) - 1U) /
             sizeof(kword_t);
-        start = dsys_brk(0UL);
-        if (start == (kword_t)-1 || words > 0777777UL - start)
+        start = dsh_brk_reserve_words(words);
+        if (start == (kword_t)-1)
                 return DSH_E_OVERFLOW;
         end = start + words;
-        if (dsys_brk(end) != end)
-                return DSH_E_OVERFLOW;
         dsh_function_payload = (struct dsh_node_payload *)(unsigned long)start;
         dsh_function_payload_end = end;
         return DSH_OK;
@@ -1698,12 +1696,10 @@ dsh_exec_simple_large(struct dsh_state *st, const struct dsh_node *n,
          * its process break: reserve and release a LIFO scratch extent. */
         words = (sizeof(*argv) * DSH_MAX_ARGS + sizeof(kword_t) - 1U) /
             sizeof(kword_t);
-        start = dsys_brk(0UL);
-        if (start == (kword_t)-1 || words > 0777777UL - start)
+        start = dsh_brk_reserve_words(words);
+        if (start == (kword_t)-1)
                 return DSH_ERROR;
         end = start + words;
-        if (dsys_brk(end) != end)
-                return DSH_ERROR;
         argv = (struct dsh_s6 *)(unsigned long)start;
         if (dsh_expand_node_argv(st, n, argv, &argc) != 0)
                 rc = DSH_ERROR;

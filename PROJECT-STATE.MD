@@ -1,3 +1,26 @@
+## DSH LAZY HISTORY AND SHARED BRK V10 (2026-10-12)
+
+DSH keeps the same 16x31-word (496-word) history cache but reserves it
+on the first nonempty history entry instead of statically in every shell.
+History insertion shifts only initialized/live records. A shared
+bounded `dsh_brk_reserve_words` helper replaces duplicate allocator
+implementations in the history, parser, saved-function and large-argv
+paths. No DSH capacity or language feature was reduced.
+
+Measured PDP-6 image **035673 octal**, static BSS **004034**, initial
+image+BSS+stack/origin **043747**, and 02000-aligned VM **044000** octal
+words. Compared with v9, this saves 495 permanent words and 02000
+octal (1024 decimal) initial VM words. Note that interactive use may
+subsequently allocate the same full history cache on the heap.
+
+Test results: full image under production 036000 limit PASS;
+**115/115** DSH conformance PASS; **16/16** focused AST/function
+tests PASS; **5/5** two-boot HISTFILE repair PASS with clean D6FSCK;
+v10 size guard PASS. Dedicated 32K LOWMEM boot still reaches LOGIN
+but ROOT reports **LOGIN: EXEC FAILED**. The actual allocator failure
+and resident core occupancy must be investigated separately.
+See `design/DSH-LAZY-HISTORY-20261012-v10.MD`.
+
 ## DSH LAZY FUNCTION STORAGE V9 (2026-10-12)
 
 The eight-slot (1,440-word) saved-function payload pool now lives in a

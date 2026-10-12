@@ -1,5 +1,21 @@
 #include "dsh.h"
 
+/* The parser, history cache, stored functions and large-argv fallback all
+ * need the same bounded BRK reservation. Keep address validation and the
+ * two required syscalls in one well-audited implementation. */
+kword_t
+dsh_brk_reserve_words(kword_t words)
+{
+        kword_t start;
+
+        start = dsys_brk(0UL);
+        if (start == (kword_t)-1 || words == 0UL ||
+            words > 0777777UL - start ||
+            dsys_brk(start + words) != start + words)
+                return (kword_t)-1;
+        return start;
+}
+
 void
 dsh_s6_clear(struct dsh_s6 *s)
 {

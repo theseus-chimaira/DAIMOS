@@ -50,6 +50,16 @@ I/O frequency, latency on slow devices, nesting, and failure recovery.
 Prefer existing separate programs such as DSHCOMP for cold facilities.
 Do not treat overlays as a substitute for diagnosing 32K EXEC allocation.
 
+Fourth RAM reduction stage v10 verified: history cache is allocated only
+on first use; BRK reservation logic is shared. Image **035673**, BSS
+**004034**, initial user VM **044000** octal (previously 046000).
+Full 115/115 DSH conformance, 16/16 AST lifetime and 5/5 two-boot
+HISTFILE recovery tests pass. No functionality or capacity lost.
+**32K ROOT DSH EXEC still fails** despite the static footprint savings.
+Next priority: inspect actual kernel physical allocations/fragmentation
+at failed LOGIN EXEC; then choose another safe memory reduction.
+See `design/DSH-LAZY-HISTORY-20261012-v10.MD`.
+
 Lazy persistent-function and variable-width active AST payload stage v9
 verified: BSS falls 007651 -> 005013 octal and initial user VM 050000 ->
 046000 octal, with all function and argument limits unchanged.
