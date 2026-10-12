@@ -1,3 +1,15 @@
+## 2026-10-12 TESTKIT COMPILER SELECTION
+
+- `daimos-testkit` now accepts `COMPILER=gcc` and `COMPILER=kcc` (default)
+  and forwards the selected compiler through its regression runner.
+- `system/kernel/Makefile` honors the exported `COMPILER` while preserving
+  explicit command-line `CC` overrides.  The GCC and KCC kernel compile
+  commands were verified independently.
+- Testkit build roots and regression checkpoints are compiler-specific.
+  Both host `check` variants passed, as did representative GCC and KCC
+  PDP-6 target probes.  The complete dual-compiler regression suite has
+  not yet passed; DSH size acceptance remains excluded from that objective.
+
 ## D6FS LIVE PDP-6 APPEND INTERRUPTION AND REBOOT ACCEPTANCE (2026-10-12)
 
 DAIMOS-TESTKIT `9CAF59F` + `91B19FD` IMPLEMENT A TEST-ONLY GENERATED

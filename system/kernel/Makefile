@@ -5,9 +5,10 @@ BUILD ?= ${BUILD_ROOT}/system/kernel
 PDP10_PREFIX ?= ${HOME}/cross
 HOST_TOOLS ?= ${PDP10_PREFIX}/bin
 PDP10_GCC ?= pdp10-dec-none-gcc
-# KCC is the normal compiler.  A command-line CC=gcc selects the existing
-# PDP-10 GCC driver; any other explicit CC value is used verbatim.
-CC = kcc
+# KCC is the default; the testkit exports COMPILER for either toolchain.
+# An explicit command-line CC still overrides this default.
+COMPILER ?= kcc
+CC = ${COMPILER}
 KCCFLAGS ?= -Pgnu99 -O -x=pdp6 -m=gas
 GCCFLAGS ?= -std=gnu99 -Os -march=pdp6 -mcpu=pdp6
 CFLAGS ?=
