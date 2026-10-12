@@ -5,6 +5,8 @@ when a variable slot was UNSET and reused.  A dedicated seven-case
 daimos-testkit SIMH regression reproduced the timeout before the fix
 and passes 7/7 after the fix.  Image 037000, BSS 013742 octal.
 The corrected implementation passes 115/115 full SIMH conformance cases.
+Separate argument-frame acceptance passes 9/9, and the corrected testkit
+resource-contract check passes all eleven fixed limits (16 history entries).
 Continue with actual resident
 heap/BRK high-water measurement; the production 036000 image gate
 remains open.  Work stays on the versioned experimental branch.

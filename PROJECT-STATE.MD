@@ -10,7 +10,10 @@ after the fix all 7/7 pass under SIMH.  Final measured DXR image 037000,
 BSS 013742 octal, compared to clean-main 036523/015241.  Image exactly
 meets the temporary 037000 gate but still fails production 036000.
 The corrected implementation also passed the full 115/115 SIMH conformance
-suite.  It remains on the experimental branch pending heap high-water
+suite.  The separate argument-frame suite passed 9/9.  The testkit's
+resource-contract fixture was corrected from the obsolete four-entry
+history assumption to the implemented sixteen-entry history limit and
+passes all eleven fixed-limit checks.  It remains on the experimental branch pending heap high-water
 accounting and production image shrink.  No overlays.
 
 ## 2026-10-12 DSH VARIABLE EXPERIMENT V17 (NOT ACCEPTED)
