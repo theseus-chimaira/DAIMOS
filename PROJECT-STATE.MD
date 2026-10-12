@@ -1,3 +1,16 @@
+## 2026-10-12 DSH V20 GCC-REQUIRED 32K BUILD POLICY
+
+The corrected experimental shared-heap DSH links to image 032177 and
+BSS 013742 octal words under GCC, versus image 037000/BSS 013742 under
+KCC.  GCC therefore saves 04601 octal executable words and satisfies
+the production 036000 DXR gate.  The full 115/115 DSH conformance and
+7/7 dedicated shared-heap SIMH regressions pass with COMPILER=gcc.
+The agreed configuration policy is that 32K DAIMOS must use GCC; KCC
+remains supported for larger memory configurations.  This is not yet
+proof of successful 32K DSH launch: INIT residency, process allocation
+rounding, fragmentation and actual heap high-water remain open.
+See design/dsh-compiler-size-comparison-20261012-v20.md.
+
 ## 2026-10-12 DSH V17 SHARED-HEAP DOUBLE-FREE FIX AND ACCEPTANCE
 
 The experimental two-word DSH variable descriptor plus shared heap now

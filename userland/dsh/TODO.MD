@@ -1,5 +1,16 @@
 # DSH TODO
 
+V20 COMPILER SIZE OPPORTUNITY (2026-10-12): the corrected shared-heap
+experimental shell links under GCC with DXR image 032177 and BSS 013742
+octal, versus KCC 037000/013742.  This eliminates 04601 octal image
+words and passes the production 036000 image gate without overlays.
+The GCC seven-case shared-heap SIMH regression passes.  Still measure
+peak BRK and physical allocation before claiming resident RAM savings.
+32K build policy is COMPILER=gcc; KCC remains supported for larger
+machines.  GCC full DSH conformance also passes 115/115; 32K boot/EXEC
+occupancy is not yet accepted by image-size success alone.
+See `design/dsh-compiler-size-comparison-20261012-v20.md`.
+
 V17 SHARED-HEAP CORRECTION (2026-10-12): fixed an actual double-free
 when a variable slot was UNSET and reused.  A dedicated seven-case
 daimos-testkit SIMH regression reproduced the timeout before the fix
