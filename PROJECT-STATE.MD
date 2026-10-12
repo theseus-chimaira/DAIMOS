@@ -1,3 +1,23 @@
+## SUPERVISOR V7 EXEC ARGV STORAGE REUSE (2026-10-12)
+
+SUPERVISOR's eight service pathnames already exist as counted SIXBIT
+records in its own EXEC startup argument area. Keeping validated pointers
+to those records avoids a redundant per-service eighteen-word BSS copy.
+The initial argument area lives below the initial user SP; normal stack
+calls grow above it, while pointers remain logical addresses across VM
+relocation and swapping. The service record is retained for future
+respawns. No heap allocator or kernel ABI change is necessary.
+
+Measured PDP-6 image **001236 -> 001210** and BSS **000261 -> 000051**
+octal words. With the unchanged 02000-octal stack reservation, the
+initial PID 1 allocation still rounds to 004000. Text+BSS+origin now
+sum to 001301, leaving **000677 octal words** for a possible smaller
+stack reservation within one 02000-word hardware allocation. Startup
+argument records themselves use some of that reservation, particularly
+when eight full-length pathnames are configured. Per-executable stack
+metadata and measured stack high-water remain necessary before claiming
+the single-block target.
+
 ## SUPERVISOR V6 LINE/APR AUDIT (2026-10-12)
 
 Selective UUO veneer linking implemented in v6: only the eight

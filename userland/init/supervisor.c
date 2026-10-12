@@ -6,7 +6,10 @@
 #define INIT_ONCE 2U
 struct init_entry {
         unsigned int tty, output_sink, action, pid;
-        kword_t path[U_PATH_WORDS];
+        /* EXEC argv records reside below the initial user stack pointer
+         * and remain live for the lifetime of PID 1. Avoid copying all
+         * eight full-length paths into separate permanent BSS slots. */
+        const kword_t *path;
 };
 static struct init_entry init_entries[INIT_MAX_ENTRIES];
 static unsigned int init_count;
@@ -92,9 +95,7 @@ read_entry(struct init_entry *e, const kword_t *meta, const kword_t *path)
         e->action = action == 'R' ? INIT_RESPAWN : INIT_ONCE;
         e->output_sink = sink == 'D' ? SYS_TTY_SINK_DPY : SYS_TTY_SINK_NATIVE;
         e->pid = 0U;
-        for (i = 0U; i < U_PATH_WORDS; ++i)
-                e->path[i] = i < 1U + ((unsigned int)path[0] + 5U) / 6U ?
-                    path[i] : 0UL;
+        e->path = path;
         return 0;
 }
 

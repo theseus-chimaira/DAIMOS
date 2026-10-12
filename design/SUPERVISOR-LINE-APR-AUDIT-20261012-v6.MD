@@ -1,5 +1,27 @@
 # SUPERVISOR source-by-source and PDP-6 APR allocation review — v6
 
+## V7: reuse validated EXEC argument storage
+
+The v6 review identified a duplicated full-length pathname table in
+SUPERVISOR's static data. INIT sends each pathname in its EXEC argument
+records, and `vm_space_startup` leaves those records below the initial
+user SP. The v7 implementation keeps pointers to the already-validated
+SIXBIT pathname records instead of copying them into fixed-size slots.
+The eight-entry capacity and maximum path length are unchanged; records
+remain available for later RESPAWN operations.
+
+| Property (octal words) | v6 | v7 |
+| --- | ---: | ---: |
+| Executable image | 001236 | **001210** |
+| Static BSS | 000261 | **000051** |
+| Text+BSS+origin | 001537 | **001301** |
+| Rounded VM (unchanged stack) | 004000 | **004000** |
+
+Startup argument records must remain immutable for the process lifetime;
+do not reuse the argument area as transient stack space or release it via
+BRK. Test repeated respawning and maximum-length service configurations
+before introducing a per-executable reduced stack reservation.
+
 Date: 2026-10-12. Base: v5, production `supervisor.c` 152 lines;
 measured executable **001442**, BSS **000261**, resident VM **004000**
 (all octal 36-bit words). The measured selective-veneer change below
