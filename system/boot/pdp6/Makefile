@@ -13,6 +13,7 @@ DAS ?= das
 DASFLAGS ?= -F
 DLINK ?= dlink
 P10FOLD ?= p10fold
+P10FOLD_DEP != command -v "$(P10FOLD)" 2>/dev/null || echo "$(P10FOLD)"
 DXRCONVERT ?= dxrconvert
 MKSTREAM ?= mkstream
 D6LZ_HOST ?= d6lz
@@ -624,7 +625,7 @@ $(MINIT_TABLE_OBJ): $(MINIT_TABLE_ASM) $(BUILD)
 $(END_OBJ): image/image-end.s $(BUILD)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
-$(KCORE_FOLD_PLAN): $(KCORE_FOLD_OBJS) $(P10FOLD)
+$(KCORE_FOLD_PLAN): $(KCORE_FOLD_OBJS) $(P10FOLD_DEP)
 	$(P10FOLD) -m 2 -P $@ $(KCORE_FOLD_OBJS) >/dev/null
 
 $(KCORE_DXR): $(KCORE_FIXED_OBJS) $(KCORE_FOLD_PLAN)
@@ -690,7 +691,7 @@ $(DCS_MRES_OBJ): $(BUILD)/dcs_io.dobj $(KCORE_MAP)
 	    -R $@ -N dcs_mres_package -X dcs_pi_handler -X dcs_getchar -X dcs_putchar -X dcs_pi_tail \
 	    $(BUILD)/dcs_io.dobj
 
-$(GE_MRES_FOLD_PLAN): $(BUILD)/ge_io.dobj $(P10FOLD)
+$(GE_MRES_FOLD_PLAN): $(BUILD)/ge_io.dobj $(P10FOLD_DEP)
 	$(P10FOLD) -m 2 -P $@ $(BUILD)/ge_io.dobj >/dev/null
 
 $(GE_MRES_OBJ): $(BUILD)/ge_io.dobj $(KCORE_MAP) $(GE_MRES_FOLD_PLAN)
@@ -706,7 +707,7 @@ $(DPY_MRES_OBJ): $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj $(KCORE_MAP)
 	    -X dpy_banner_init -X dpy_write_words -X dpy_refresh_iowd \
 	    $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj
 
-$(TTY_MRES_FOLD_PLAN): $(BUILD)/tty_io.dobj $(P10FOLD)
+$(TTY_MRES_FOLD_PLAN): $(BUILD)/tty_io.dobj $(P10FOLD_DEP)
 	$(P10FOLD) -m 2 -P $@ $(BUILD)/tty_io.dobj >/dev/null
 
 $(TTY_MRES_OBJ): $(BUILD)/tty_io.dobj $(KCORE_MAP) $(TTY_MRES_FOLD_PLAN)
@@ -755,7 +756,7 @@ $(MEMFS_MRES_OBJ): $(BUILD)/memfs_data.dobj $(BUILD)/memfs_snapshot.dobj $(BUILD
 	    $(BUILD)/memfs_data.dobj $(BUILD)/memfs_snapshot.dobj $(BUILD)/memfs_runtime.dobj
 
 $(DTFS_MRES_FOLD_PLAN): $(BUILD)/dtfs.dobj $(BUILD)/dtfs_runtime.dobj \
-	    $(BUILD)/tsfs.dobj $(BUILD)/tsfs_runtime.dobj $(P10FOLD)
+	    $(BUILD)/tsfs.dobj $(BUILD)/tsfs_runtime.dobj $(P10FOLD_DEP)
 	$(P10FOLD) -m 2 -P $@ $(BUILD)/dtfs.dobj $(BUILD)/dtfs_runtime.dobj \
 	    $(BUILD)/tsfs.dobj $(BUILD)/tsfs_runtime.dobj >/dev/null
 
@@ -789,7 +790,7 @@ $(LOGSTORE_MRES_OBJ): $(BUILD)/logstore_runtime.dobj $(KCORE_MAP)
 	    -X logstore_backend_write_jump $(BUILD)/logstore_runtime.dobj
 
 $(D6FS_MRES_FOLD_PLAN): $(BUILD)/fs_backing.dobj $(BUILD)/d6fs_provider.dobj \
-	    $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj $(P10FOLD)
+	    $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj $(P10FOLD_DEP)
 	$(P10FOLD) -m 2 -P $@ $(BUILD)/fs_backing.dobj $(BUILD)/d6fs_provider.dobj \
 	    $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj >/dev/null
 
@@ -916,7 +917,7 @@ $(SYSTEM_COMMAND_INDEX): $(SYSTEM_MANUAL_SRCS) | $(MANUAL_BUILD)
 $(DAS_NATIVE_DRIVER) $(DAS_NATIVE_PHASE1) $(DAS_NATIVE_PHASE2) &: \
 	$(DAS_REPO)/Makefile $(DAS_REPO)/das.c $(DAS_REPO)/das_native1.c \
 	$(DAS_REPO)/das_native2.c $(DAS_REPO)/das_native_driver.c \
-	$(DAS_REPO)/das_native_runtime.h $(DAS_MANUAL) $(PDP10_KCC)
+	$(DAS_REPO)/das_native_runtime.h $(DAS_MANUAL) $(PDP10_KCC_DEP)
 	$(MAKE) -C $(DAS_REPO) native \
 	    PDP10_PREFIX='$(PDP10_PREFIX)' DAIMOS_REPO='$(PROJECT_ROOT)' \
 	    NATIVE_BUILD_DIR='$(DAS_NATIVE_BUILD)'
