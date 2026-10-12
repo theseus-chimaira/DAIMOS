@@ -168,16 +168,24 @@ dsh_history_load(void)
         kword_t path[U_PATH_WORDS];
         kword_t rec[DSH_LINE_MAX_WORDS + 1U];
         unsigned int i;
+        kword_t valid_words;
         int fd;
         int n;
 
         if (!dsh_history_persistent ||
             dsh_s6_pack(&dsh_history_path, path, U_PATH_WORDS) != 0)
                 return;
-        fd = dsys_open(path, SYS_O_RDONLY);
+        fd = dsys_open(path, SYS_O_RDWR);
         if (fd < 0)
                 return;
+        /* Every DSH append takes this same advisory lock.  A competing
+         * startup/append must finish before repair determines the new EOF. */
+        if (dsys_flock(fd, SYS_LOCK_EXCLUSIVE) != 0) {
+                (void)dsys_close(fd);
+                return;
+        }
         (void)u_text_open_fd(&reader, fd);
+        valid_words = 0UL;
         while ((n = u_text_gets6(&reader, rec,
             DSH_LINE_MAX_WORDS + 1U)) >= 0) {
                 if ((unsigned int)n > DSH_LINE_MAX_CHARS)
@@ -187,16 +195,16 @@ dsh_history_load(void)
                 for (i = 0U; i < DSH_LINE_MAX_WORDS; ++i)
                         line.words[i] = rec[i + 1U];
                 dsh_history_remember(&line);
+                valid_words += 1UL + ((kword_t)n + 5UL) / 6UL;
         }
         if (n != U_TEXT_EOF) {
-                /* The remaining tail is not a safe append destination.
-                 * Without an exclusive repair primitive, truncating here
-                 * could erase commands written by another live session.
-                 * Keep the bounded in-memory prefix and disable persistence
-                 * for this shell until the file is repaired separately. */
-                dsh_history_persistent = 0U;
-                (void)u_puts(2,
-                    "DSH: HISTFILE DAMAGED; PERSISTENCE DISABLED");
+                if (dsys_truncate(path, valid_words) != 0) {
+                        dsh_history_persistent = 0U;
+                        (void)u_puts(2,
+                            "DSH: HISTFILE REPAIR FAILED; PERSISTENCE DISABLED");
+                } else {
+                        (void)u_puts(2, "DSH: HISTFILE TAIL REPAIRED");
+                }
                 (void)u_crlf(2);
         }
         u_text_close(&reader);
@@ -222,6 +230,12 @@ dsh_history_add(void)
         fd = dsys_open(path, SYS_O_WRONLY | SYS_O_CREAT | SYS_O_APPEND);
         if (fd < 0)
                 return;
+        if (dsys_flock(fd, SYS_LOCK_EXCLUSIVE) != 0) {
+                (void)dsys_close(fd);
+                (void)u_puts(2, "DSH: HISTFILE LOCK FAILED");
+                (void)u_crlf(2);
+                return;
+        }
         count = 1U + (dsh_input_line.len + 5U) / 6U;
         rec[0] = DSH_HISTORY_S6REC_TEXT | (kword_t)dsh_input_line.len;
         for (i = 1U; i < count; ++i)
@@ -233,6 +247,9 @@ dsh_history_add(void)
         write_rc = u_write_words_all(fd, rec, count);
         close_rc = dsys_close(fd);
         if (write_rc != 0 || close_rc != 0) {
+                /* A failed write may have left a partial S6REC at EOF.
+                 * Do not append again until a subsequent startup repairs it. */
+                dsh_history_persistent = 0U;
                 (void)u_puts(2, "DSH: HISTFILE WRITE FAILED");
                 (void)u_crlf(2);
         }

@@ -50,9 +50,12 @@ as one transaction, not treat successful retries as a single atomic record.
 On ambiguous failure DSH must not silently retry at a fresh EOF. Record-level
 recovery needs a verified on-disk commit point and fault cuts before acceptance
 IF transactional persistence is revisited as a separate D6FS project.
-DSH itself loads the last 16 readable records into a fixed cache. On a
-damaged tail it must not append further to the damaged file. Automatic
-truncate awaits coordination against concurrent live writers.
+DSH loads only the latest 16 readable records into its fixed cache.
+Repair and append now use exclusive advisory FLOCK across DSH instances.
+Startup truncates a malformed trailing S6REC at the final valid word offset,
+or disables persistence if repair fails. A failed append likewise disables
+persistence to prevent additional writes behind an incomplete record.
+Non-DSH writers that ignore FLOCK remain outside this coordination contract.
 
 REVIEWED: 2026-10-10 (115/115 TARGET CONFORMANCE VERIFIED)
 

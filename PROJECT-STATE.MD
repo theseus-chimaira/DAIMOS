@@ -1,3 +1,15 @@
+## DSH PHASE ZERO: COORDINATED HISTFILE TAIL REPAIR (2026-10-12)
+
+DSH startup opens existing HISTFILE read/write and acquires the existing
+exclusive advisory FLOCK before scanning. The forward S6REC reader keeps
+only the most recent 16 valid records in its pre-existing fixed cache,
+while tracking the last verified record-end word offset. A malformed tail
+is truncated under the lock. If truncation fails, persistent appends are
+disabled in that shell. All DSH history appends now acquire the same lock,
+and a failed write/close disables subsequent persistence for that instance.
+This coordinates participating DSH sessions, not external processes that
+ignore advisory locks. This is not a crash-atomic D6FS journal.
+
 ## DSH PHASE ZERO: KEEP GENERAL FILESYSTEM FIXES (2026-10-12)
 
 Decision: retain the implemented D6FS write-time O_APPEND serialization
