@@ -189,9 +189,14 @@ dsh_history_load(void)
                 dsh_history_remember(&line);
         }
         if (n != U_TEXT_EOF) {
-                /* Preserve the valid prefix; never attempt an unlocked
-                 * truncate while another session may be appending. */
-                (void)u_puts(2, "DSH: HISTFILE DAMAGED; VALID PREFIX LOADED");
+                /* The remaining tail is not a safe append destination.
+                 * Without an exclusive repair primitive, truncating here
+                 * could erase commands written by another live session.
+                 * Keep the bounded in-memory prefix and disable persistence
+                 * for this shell until the file is repaired separately. */
+                dsh_history_persistent = 0U;
+                (void)u_puts(2,
+                    "DSH: HISTFILE DAMAGED; PERSISTENCE DISABLED");
                 (void)u_crlf(2);
         }
         u_text_close(&reader);

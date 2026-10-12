@@ -7,11 +7,13 @@ Detailed source-level D6FS write-order audit and acceptance gates:
 Testkit e971aeb passes 5,805 bounded-undo model interruption checks but also
 demonstrates a COMMIT-before-FCB ordering failure. Verified durable write
 ordering, independent versioned journal space, boot replay and complete
-allocation overwrite-set bounds remain open Phase 0 blockers.
+allocation overwrite-set bounds remain open D6FS research gates, NOT DSH
+Phase 0 blockers.
 
-This workstream is restricted to HISTFILE durability/recovery, the necessary
-D6FS record-commit primitives, fault-injection acceptance, and reducing the
-DSH image below the normal 036000-octal-word limit. Do not implement unrelated
+This workstream is restricted to bounded HISTFILE recovery, fault-injection
+acceptance, and reducing the DSH image below the normal 036000-octal-word
+limit. Full filesystem journaling is deferred: history loss is acceptable,
+while metadata integrity remains the responsibility of D6FSCK. Do not implement unrelated
 language/editor features as part of this phase. DSH-18 (safe recovery of
 damaged persistent history under concurrent writers) is a phase-zero blocker.
 
@@ -37,7 +39,11 @@ writes, and FCB metadata under power loss. `dsh_history_add` currently uses
 operations. A future record-atomic API must commit the *entire* bounded S6REC
 as one transaction, not treat successful retries as a single atomic record.
 On ambiguous failure DSH must not silently retry at a fresh EOF. Record-level
-recovery needs a verified on-disk commit point and fault cuts before acceptance.
+recovery needs a verified on-disk commit point and fault cuts before acceptance
+IF transactional persistence is revisited as a separate D6FS project.
+DSH itself loads the last 16 readable records into a fixed cache. On a
+damaged tail it must not append further to the damaged file. Automatic
+truncate awaits coordination against concurrent live writers.
 
 REVIEWED: 2026-10-10 (115/115 TARGET CONFORMANCE VERIFIED)
 

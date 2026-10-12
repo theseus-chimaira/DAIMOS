@@ -1,3 +1,14 @@
+## DSH PHASE ZERO: BOUNDED HISTORY RECOVERY POLICY (2026-10-12)
+
+Persistent shell history is disposable convenience data. DSH Phase 0 no
+longer requires a D6FS transaction journal. The fixed 16-entry DSH cache
+retains only the latest successfully read S6REC records, not the entire
+history file. When startup encounters a damaged tail, the shell retains
+those entries and disables subsequent persistence in that instance.
+Truncating a file while another live shell appends remains unsafe without
+coordination. Full crash-atomic D6FS journaling is deferred separately,
+while D6FSCK remains necessary for filesystem metadata crash recovery.
+
 ## DSH PHASE ZERO: BOUNDED UNDO EXPERIMENT AND DURABILITY GATE (2026-10-12)
 
 DAIMOS-TESTKIT e971aeb adds a strict-C99 host model of full-block undo
