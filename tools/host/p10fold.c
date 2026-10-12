@@ -312,6 +312,23 @@ may_skip_next(const struct input *in, unsigned long off)
 {
         unsigned long op = opcode_at(in, off);
         unsigned long condition;
+        unsigned long io_function;
+
+        /* XCT can execute a skip and propagate it to the next word. */
+        if (op == 0256UL)
+                return 1;
+        /*
+         * PDP-10 I/O instructions encode their eight functions in the AC
+         * field, not in the nine-bit opcode.  BLKI/BLKO can skip on block
+         * completion; CONSZ/CONSO skip on device status.  Omitting these
+         * silently redirects the skip fall-through when two polling loops
+         * have identical CONSO/JRST prefixes but different continuations.
+         */
+        if (op >= 0700UL && op <= 0777UL) {
+                io_function = (in->obj.text[off].lh >> 5) & 07UL;
+                return io_function == 0UL || io_function == 2UL ||
+                    io_function == 6UL || io_function == 7UL;
+        }
 
         if ((op >= 0300UL && op <= 0317UL) || /* CAI, CAM */
             (op >= 0330UL && op <= 0337UL) || /* SKIP */

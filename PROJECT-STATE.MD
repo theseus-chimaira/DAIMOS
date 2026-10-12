@@ -1,3 +1,20 @@
+## 2026-10-12 P10FOLD PDP-6 I/O SKIP SAFETY AND MULTI-TTY
+
+- Fixed an unsafe zero-cost fold of GE driver CONSO/JRST polling prefixes.
+  The CONSO skips the JRST, so identical two-word prefixes with different
+  fall-through continuations are not equivalent. P10FOLD now recognizes
+  BLKI, BLKO, CONSZ and CONSO I/O skips (encoded in the function field),
+  and conservatively treats XCT as capable of propagating a skip.
+- The GE-MRES fold plan no longer merges the two unsafe polling loops.
+  The full CTY/DCS0/GE0 multi-TTY functional regression passes under both
+  GCC and KCC, including terminal routing, LOGIN respawn, memory accounting,
+  and STOP isolation. The testkit now discounts the temporary PS process
+  from its persistent-process count, while requiring exactly one PS entry.
+- The separate GCC/KCC kernel-and-userland compiler-selection regression
+  also passes under both selections. The corrected P10FOLD is installed
+  under PDP10_PREFIX using a versioned local.tar.gz distribution.
+- DSH image-size acceptance is unchanged and remains deferred.
+
 ## 2026-10-12 FULL GCC/KCC BUILD SELECTION FOLLOW-UP
 
 - `COMPILER=gcc|kcc` now selects the compiler through boot KINIT, KCORE,
