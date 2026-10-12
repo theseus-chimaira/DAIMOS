@@ -1,3 +1,15 @@
+## 2026-10-12 DSH VARIABLE EXPERIMENT V17 (NOT ACCEPTED)
+
+An isolated assembly variable-table rewrite plus shared C word heap
+compiled and linked with image 036773, BSS 013742 octal against clean
+current-main 036523/015241.  Combined image+BSS improves by 01027 octal
+words; this is not a demonstrated reduction in physical APR allocations.
+The temporary 037000 executable gate passes, while the production 036000
+gate does not.  Full target regression is blocked before execution by a
+missing native KCC bootstrap at `$HOME/cross/lib/kcc/bootstrap/KCC.dxr`.
+V17 must remain experimental until bootstrap, target regression, and peak
+memory acceptance are completed.  No overlay code introduced.
+
 ## 2026-10-12 DSH VARIABLE ALLOCATOR SIZE EXPERIMENT V16
 
 Clean current-main PDP-6 KCC DSH baseline: DXR image 036523 and BSS 015241

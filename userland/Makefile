@@ -70,7 +70,7 @@ LOGIN_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/login/%.dobj)
 LOGIN_DXR = $(USERLAND_BUILD)/login.dxr
 LOGIN_MAP = $(USERLAND_BUILD)/login.map
 
-DSH_C_SRCS = libc/u.c libc/text.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c dsh/dsh.c
+DSH_C_SRCS = libc/u.c libc/text.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_heap.c dsh/dsh_exec.c dsh/dsh.c
 DSH_C_OBJS = $(DSH_C_SRCS:%.c=$(USERLAND_BUILD)/dsh/%.dobj)
 DSH_S_SRCS = $(COMMON_S_SRCS) dsh/dsh_var_pdp6.s
 DSH_S_OBJS = $(DSH_S_SRCS:%.s=$(USERLAND_BUILD)/dsh/%.dobj)

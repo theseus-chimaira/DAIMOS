@@ -46,8 +46,7 @@ struct dsh_line {
 
 struct dsh_var {
         kword_t meta;
-        kword_t name_words[DSH_S6_MAX_WORDS];
-        kword_t value_words[DSH_S6_MAX_WORDS];
+        kword_t *payload;
 };
 
 struct dsh_alias {

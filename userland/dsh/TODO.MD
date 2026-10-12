@@ -1,5 +1,14 @@
 # DSH TODO
 
+EXPERIMENTAL V17 (2026-10-12): an assembly-variable/shared-heap candidate
+links with DXR image 036773, BSS 013742 (octal), compared to current-main
+036523/015241.  The temporary image gate passes; production gate and full
+SIMH acceptance do not.  Testkit's boot-image preparation is blocked by
+missing `$HOME/cross/lib/kcc/bootstrap/KCC.dxr`.  Do not merge the
+experimental allocator before real target execution, memory high-water
+measurement, and regression of reassignment during wide argument expansion.
+See `design/dsh-variable-allocator-shrink-20261012-v16.md`.
+
 PHASE-ZERO VARIABLE SHRINK FOLLOW-UP (2026-10-12, V16): a shared allocator
 prototype compiled and linked, reduced BSS from 015241 to 013742 octal, but
 grew DXR image from the clean current-main 036523 to 037213 octal.  The

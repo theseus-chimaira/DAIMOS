@@ -2,6 +2,7 @@
 #include "dsh_lex.h"
 #include "dsh_parse.h"
 #include "text.h"
+#include "dsh_heap.h"
 
 
 #define DSH_REC_WORDS (DSH_S6_MAX_WORDS + 1U)
@@ -1587,30 +1588,22 @@ dsh_exec_simple_large(struct dsh_state *st, const struct dsh_node *n,
     unsigned int pgrp, int *pidp)
 {
         struct dsh_s6 *argv;
-        kword_t start;
-        kword_t end;
         kword_t words;
         unsigned int argc;
         int rc;
 
-        /* A rare full-width expansion cannot occupy the fixed PDP-6 user
-         * stack, particularly inside SOURCE.  DSH does not otherwise grow
-         * its process break: reserve and release a LIFO scratch extent. */
+        /* The shared owner protects variables installed during expansion. */
         words = (sizeof(*argv) * DSH_MAX_ARGS + sizeof(kword_t) - 1U) /
             sizeof(kword_t);
-        start = dsys_brk(0UL);
-        if (start == (kword_t)-1 || words > 0777777UL - start)
+        argv = (struct dsh_s6 *)dsh_heap_alloc((unsigned int)words);
+        if (argv == 0)
                 return DSH_ERROR;
-        end = start + words;
-        if (dsys_brk(end) != end)
-                return DSH_ERROR;
-        argv = (struct dsh_s6 *)(unsigned long)start;
         if (dsh_expand_node_argv(st, n, argv, &argc) != 0)
                 rc = DSH_ERROR;
         else
                 rc = dsh_exec_simple_expanded(st, n, argc, argv,
                     basein, baseout, launch_only, pgrp_mode, pgrp, pidp);
-        (void)dsys_brk(start);
+        dsh_heap_free((kword_t *)argv);
         return rc;
 }
 

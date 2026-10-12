@@ -55,3 +55,34 @@ The untested experiment was reverted in full.
 
 Do not update `pdp10-doc` with experimental behavior.  The user-visible
 variable contract is unchanged until a tested implementation is accepted.
+
+## V17 continuation: assembly variable routines with shared C heap
+
+An experimental variant retains the four PDP-6 assembly variable entry
+points with a two-word descriptor and packed SIXBIT payloads.  A compact
+C allocator owns both persistent payloads and temporary 20-argument
+expansion blocks; unlike the unsafe prototype, expansion cleanup cannot
+restore BRK over a live variable.  Replacements allocate before releasing
+the old payload, and the allocator sorts/coalesces its free blocks.
+
+Standalone KCC/DAS/DLINK output (same local build root and toolchain):
+
+| | DXR image | BSS | Combined |
+| --- | ---: | ---: | ---: |
+| Clean baseline | 036523 | 015241 | 053764 |
+| V17 experiment | 036773 | 013742 | 052735 |
+| Delta | +000250 | -001277 | -001027 |
+
+These are octal word counts.  The V17 image passes the temporary 037000
+image gate but fails the production 036000 gate.  The combined reduction
+does not prove fewer physical APR allocation units or improved peak heap
+residency; allocator headers, fragmentation, and runtime peaks remain to
+be measured.  A separate testkit image build also linked image 036773.
+
+The full `test-daimos-dsh-conformance` target could not run.  Initially
+the configured `/usr/local/cross` prefix lacked required headers; using
+`$HOME/cross` fixed that prerequisite but the image build then stopped
+because `$HOME/cross/lib/kcc/bootstrap/KCC.dxr` was missing.  There is
+**no target behavior acceptance** for V17.  Keep the experiment isolated
+until the bootstrap is installed, all 115 tests pass, and additional
+reassignment-during-wide-expansion tests are added to daimos-testkit.
