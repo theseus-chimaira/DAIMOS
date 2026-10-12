@@ -6,7 +6,7 @@ set -eu
 
 usage()
 {
-        echo "usage: $0 --kcore-map MAP --build DIR --objdump TOOL [--omit-blockset] [--limit OCTAL]" >&2
+        echo "usage: $0 --kcore-map MAP --build DIR --objdump TOOL [--omit-blockset] [--omit-dtfs] [--limit OCTAL]" >&2
         exit 2
 }
 
@@ -14,6 +14,7 @@ kmap=
 build=
 objdump=
 omit_blockset=0
+omit_dtfs=0
 limit_arg=040000
 while [ $# -gt 0 ]; do
         case "$1" in
@@ -21,6 +22,7 @@ while [ $# -gt 0 ]; do
         --build) [ $# -ge 2 ] || usage; build=$2; shift 2 ;;
         --objdump) [ $# -ge 2 ] || usage; objdump=$2; shift 2 ;;
         --omit-blockset) omit_blockset=1; shift ;;
+        --omit-dtfs) omit_dtfs=1; shift ;;
         --limit) [ $# -ge 2 ] || usage; limit_arg=$2; shift 2 ;;
         *) usage ;;
         esac
@@ -65,6 +67,9 @@ total=$kcore
 blockset_words=0
 for name in cty clk ptr ptp lpt cr cp dcs ge dpy tty wcnsls ocnsls dsk tape slv \
     drm memfs dtfs blockset logstore badmap d6fs; do
+        if [ "$name" = dtfs ] && [ "$omit_dtfs" -eq 1 ]; then
+                continue
+        fi
         package="$build/$name-mres.dobj"
         [ -f "$package" ] || { echo "missing MRES package: $package" >&2; exit 1; }
         words=$(mres_words "$package") || {

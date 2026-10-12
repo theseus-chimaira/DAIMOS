@@ -79,7 +79,9 @@
         .globl logstore_mres_package
         .globl slv_mres_package
         .globl memfs_mres_package
+.if TAPE_FS_ENABLED
         .globl dtfs_mres_package
+.endif
 .endif
         .globl blockset_mres_package
 .if KINIT_BADMAP
@@ -134,7 +136,9 @@ __minit_table_begin:
 .endif
 .if KINIT_FULL
         .word memfs_minit,,memfs_mres_package
+.if TAPE_FS_ENABLED
         .word dtfs_minit,,dtfs_mres_package
+.endif
 .endif
 .if KINIT_FULL
         .word slv_minit,,slv_mres_package

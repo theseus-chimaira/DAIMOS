@@ -1092,6 +1092,12 @@ dtfs_minit(void)
         unsigned int write_addr;
         unsigned int state_addr;
 
+        /* DTFS and TSFS currently share one package.  Only DECtape-root
+         * configurations install it; D6FS-rooted systems will use future
+         * userspace DECtape tools instead of keeping either provider resident. */
+        if (root_select_class() != KINIT_ROOT_DTC)
+                return;
+
         name = (kword_t)SIXBIT("DTFS  ");
         read_addr = module_service_get(MODULE_SERVICE_DTC_READ_BLOCK);
         write_addr = module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK);

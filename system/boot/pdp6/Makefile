@@ -32,6 +32,13 @@ LOGSTORE ?= logstore
 SIMH_PDP6 ?= pdp6
 ROOT ?= auto
 ROOTSET ?= 1
+# Disk/drum roots do not load DECtape filesystems.  An auto-root image
+# must retain the package because its selected root may be TSFS on DECtape.
+ifeq ($(filter $(ROOT),disk drum),)
+TAPE_FS_ENABLED = 1
+else
+TAPE_FS_ENABLED = 0
+endif
 BOOT ?= auto
 BOOT_PROFILE ?= full
 DPY_LOGIN ?= 0
@@ -295,7 +302,7 @@ MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PTR_MRES_OBJ) \
 	$(PTP_MRES_OBJ) $(LPT_MRES_OBJ) $(CR_MRES_OBJ) $(CP_MRES_OBJ) \
 	$(DCS_MRES_OBJ) $(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) \
 	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(TAPE_MRES_OBJ) $(DSK_MRES_OBJ) $(DRM_MRES_OBJ) \
-	$(BLOCKSET_MRES_OBJ) $(LOGSTORE_MRES_OBJ) $(BADMAP_MRES_OBJ) $(MEMFS_MRES_OBJ) $(DTFS_MRES_OBJ) $(SLV_MRES_OBJ) \
+	$(BLOCKSET_MRES_OBJ) $(LOGSTORE_MRES_OBJ) $(BADMAP_MRES_OBJ) $(MEMFS_MRES_OBJ) $(if $(filter 1,$(TAPE_FS_ENABLED)),$(DTFS_MRES_OBJ)) $(SLV_MRES_OBJ) \
 	$(D6FS_MRES_OBJ)
 KINIT_FULL = 1
 endif
@@ -609,7 +616,7 @@ $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM
 force-minit-config:
 
 $(MINIT_TABLE_ASM): $(KERNEL_DIR)/modules/module_table.s force-minit-config | $(BUILD)
-	{ echo ".set KINIT_FULL,$(KINIT_FULL)"; echo ".set KINIT_BADMAP,$(KINIT_BADMAP)"; cat $<; } > $@
+	{ echo ".set KINIT_FULL,$(KINIT_FULL)"; echo ".set KINIT_BADMAP,$(KINIT_BADMAP)"; echo ".set TAPE_FS_ENABLED,$(TAPE_FS_ENABLED)"; cat $<; } > $@
 
 $(MINIT_TABLE_OBJ): $(MINIT_TABLE_ASM) $(BUILD)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
@@ -1255,7 +1262,7 @@ image: $(SIMH_INI)
 
 permanent-size: $(KCORE_MAP) $(MRES_PACKAGE_OBJS)
 	@./image/report-permanent.sh --kcore-map $(KCORE_MAP) --build $(BUILD) \
-	    --objdump $(PDP10_OBJDUMP) --omit-blockset
+	    --objdump $(PDP10_OBJDUMP) --omit-blockset $(if $(filter 0,$(TAPE_FS_ENABLED)),--omit-dtfs)
 
 boot:
 	rm -rf $(DISK_DIR) $(DRUM_DIR) $(SIMH_INI)
