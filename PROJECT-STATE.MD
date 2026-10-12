@@ -1,3 +1,21 @@
+## DSH PHASE ZERO: BOUNDED UNDO EXPERIMENT AND DURABILITY GATE (2026-10-12)
+
+DAIMOS-TESTKIT e971aeb adds a strict-C99 host model of full-block undo
+for D6FS record append. It passes 5,805 append/recovery interruption cuts
+(growth, existing capacity, aligned EOF) and rejects corrupted backups
+and conflicting/missing markers. It also demonstrates COMMIT-before-FCB
+reordering breaks the journal invariant. This is not a kernel transaction,
+disk format, boot replay, or real power-loss durability proof.
+
+Source review: d6fs_reader_commit_cache invalidates BCACHE, calls one
+synchronous fs_backing_write, and refreshes BCACHE only on success.
+d6fs_provider_sync issues no explicit storage flush. Actual backing
+durability ordering is not proven. D6FS V2 LOG reservation belongs to
+LOGSTORE; boot refuses DIRTY generations. A separate version-gated journal,
+replay before writable mount, preflight overwrite-set bounds and resident
+size analysis are necessary. See
+design/DSH-HISTFILE-ATOMIC-APPEND-20261012-v1.MD.
+
 ## DSH PHASE ZERO SCOPE AND SOURCE AUDIT (2026-10-12)
 
 DSH work is focused on crash-safe HISTFILE append/recovery and image shrinkage.

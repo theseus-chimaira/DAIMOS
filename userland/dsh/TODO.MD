@@ -4,6 +4,10 @@
 
 Detailed source-level D6FS write-order audit and acceptance gates:
 `design/DSH-HISTFILE-ATOMIC-APPEND-20261012-v1.MD`.
+Testkit e971aeb passes 5,805 bounded-undo model interruption checks but also
+demonstrates a COMMIT-before-FCB ordering failure. Verified durable write
+ordering, independent versioned journal space, boot replay and complete
+allocation overwrite-set bounds remain open Phase 0 blockers.
 
 This workstream is restricted to HISTFILE durability/recovery, the necessary
 D6FS record-commit primitives, fault-injection acceptance, and reducing the
