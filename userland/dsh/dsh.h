@@ -112,8 +112,6 @@ const struct dsh_s6 *dsh_var_get(const struct dsh_state *st,
     const struct dsh_s6 *name);
 int dsh_var_at(const struct dsh_state *st, unsigned int slot,
     struct dsh_s6 *name, struct dsh_s6 *value);
-int dsh_expand(const struct dsh_state *st, const struct dsh_s6 *in,
-    struct dsh_s6 *out);
 int dsh_expand_mask(const struct dsh_state *st, const struct dsh_s6 *in,
     kword_t literal_mask, struct dsh_s6 *out);
 int dsh_expand_quoted(const struct dsh_state *st, const struct dsh_s6 *in,

@@ -1,3 +1,28 @@
+## DSH SECOND SHRINK AND 32K CORE AUDIT (2026-10-12)
+
+Source-level duplicate-work removal, shared builtin and keyword classifiers,
+and elimination of an uncalled convenience wrapper reduce DSH from 036054
+to **035545 octal image words** (0307 octal / 199 decimal saved), without
+changing BSS (015241). The **normal 036000 image gate now passes**.
+A complete PDP-6 image build and 115/115 DSH conformance probes pass.
+
+32K lowmem still fails at ROOT login with `LOGIN: EXEC FAILED`.
+The loaded DSH image + BSS + 02020 stack/origin is 055026 octal words,
+rounded by the PDP-6 VM allocator to **056000**. Linked KCORE ends at
+023610, so the static lower bound of KCORE + DSH is **0101610 octal
+words**, 01610 beyond 32K before dynamic allocations. The immediate
+first page boundary needs 01026 additional octal words of image/BSS
+reduction; meaningful boot headroom needs more.
+
+Source/BSS audit identifies 3200 words for 16 parser AST nodes and 1600
+for 8 saved function AST nodes, ~70% of DSH BSS. The next engineering
+task is to store node payloads compactly/on demand while preserving
+all argument, node, function and scripting capacities, including nested
+SOURCE and heap scratch lifetimes. No AST layout refactor has yet been
+implemented. DAIMOS-TESTKIT commit 194084f adds an image-size and
+physical-core lower-bound guard. See
+`design/DSH-32K-SOURCE-AUDIT-20261012-v2.MD`.
+
 ## DSH EASY SOURCE SHRINK STAGE VERIFIED (2026-10-12)
 
 The first measured DSH Phase-0 image optimization separated unused libc

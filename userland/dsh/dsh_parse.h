@@ -68,6 +68,7 @@ struct dsh_node {
 };
 
 void    dsh_node_clear(struct dsh_node *n);
+int     dsh_parse_depth_delta(const struct dsh_s6 *word);
 void    dsh_parse_diag_clear(struct dsh_parse_diag *diag);
 int     dsh_parse_tokens_diag(const struct dsh_token *tokens,
             unsigned int ntokens, struct dsh_node *nodes,

@@ -2,6 +2,7 @@
 #include "dsh_lex.h"
 #include "dsh_parse.h"
 #include "text.h"
+#include "pdp10-sixbit.h"
 
 
 #define DSH_REC_WORDS (DSH_S6_MAX_WORDS + 1U)
@@ -58,6 +59,86 @@ static int dsh_builtin_bg(struct dsh_state *st, unsigned int argc,
     struct dsh_s6 *argv);
 static int dsh_exec_node(struct dsh_state *st,
     const struct dsh_node *nodes, unsigned int node);
+
+/* One canonical builtin classifier serves both ordinary execution and
+ * launch-only checks.  Avoid two independent strcmp chains. */
+enum dsh_builtin_id {
+        DSH_B_NONE,
+        DSH_B_EXIT,
+        DSH_B_CD,
+        DSH_B_SET,
+        DSH_B_UNSET,
+        DSH_B_EXPORT,
+        DSH_B_UMASK,
+        DSH_B_SHIFT,
+        DSH_B_READ,
+        DSH_B_SOURCE,
+        DSH_B_RETURN,
+        DSH_B_JOBS,
+        DSH_B_WAIT,
+        DSH_B_FG,
+        DSH_B_BG,
+        DSH_B_ALIAS,
+        DSH_B_UNALIAS,
+        DSH_B_DOT
+};
+
+static int
+dsh_builtin_kind(const struct dsh_s6 *name)
+{
+        if (dsh_s6_eq_packed(name, 4U,
+            PDP10_SIX6('E','X','I','T',' ',' '), PDP10_SIX6(' ',' ',' ',' ',' ',' ')))
+                return DSH_B_EXIT;
+        if (dsh_s6_eq_packed(name, 2U,
+            PDP10_SIX6('C','D',' ',' ',' ',' '), PDP10_SIX6(' ',' ',' ',' ',' ',' ')))
+                return DSH_B_CD;
+        if (dsh_s6_eq_packed(name, 3U,
+            PDP10_SIX6('S','E','T',' ',' ',' '), PDP10_SIX6(' ',' ',' ',' ',' ',' ')))
+                return DSH_B_SET;
+        if (dsh_s6_eq_packed(name, 5U,
+            PDP10_SIX6('U','N','S','E','T',' '), PDP10_SIX6(' ',' ',' ',' ',' ',' ')))
+                return DSH_B_UNSET;
+        if (dsh_s6_eq_packed(name, 6U,
+            PDP10_SIX6('E','X','P','O','R','T'), PDP10_SIX6(' ',' ',' ',' ',' ',' ')))
+                return DSH_B_EXPORT;
+        if (dsh_s6_eq_packed(name, 5U,
+            PDP10_SIX6('U','M','A','S','K',' '), PDP10_SIX6(' ',' ',' ',' ',' ',' ')))
+                return DSH_B_UMASK;
+        if (dsh_s6_eq_packed(name, 5U,
+            PDP10_SIX6('S','H','I','F','T',' '), PDP10_SIX6(' ',' ',' ',' ',' ',' ')))
+                return DSH_B_SHIFT;
+        if (dsh_s6_eq_packed(name, 4U,
+            PDP10_SIX6('R','E','A','D',' ',' '), PDP10_SIX6(' ',' ',' ',' ',' ',' ')))
+                return DSH_B_READ;
+        if (dsh_s6_eq_packed(name, 6U,
+            PDP10_SIX6('S','O','U','R','C','E'), PDP10_SIX6(' ',' ',' ',' ',' ',' ')))
+                return DSH_B_SOURCE;
+        if (dsh_s6_eq_packed(name, 6U,
+            PDP10_SIX6('R','E','T','U','R','N'), PDP10_SIX6(' ',' ',' ',' ',' ',' ')))
+                return DSH_B_RETURN;
+        if (dsh_s6_eq_packed(name, 4U,
+            PDP10_SIX6('J','O','B','S',' ',' '), PDP10_SIX6(' ',' ',' ',' ',' ',' ')))
+                return DSH_B_JOBS;
+        if (dsh_s6_eq_packed(name, 4U,
+            PDP10_SIX6('W','A','I','T',' ',' '), PDP10_SIX6(' ',' ',' ',' ',' ',' ')))
+                return DSH_B_WAIT;
+        if (dsh_s6_eq_packed(name, 2U,
+            PDP10_SIX6('F','G',' ',' ',' ',' '), PDP10_SIX6(' ',' ',' ',' ',' ',' ')))
+                return DSH_B_FG;
+        if (dsh_s6_eq_packed(name, 2U,
+            PDP10_SIX6('B','G',' ',' ',' ',' '), PDP10_SIX6(' ',' ',' ',' ',' ',' ')))
+                return DSH_B_BG;
+        if (dsh_s6_eq_packed(name, 5U,
+            PDP10_SIX6('A','L','I','A','S',' '), PDP10_SIX6(' ',' ',' ',' ',' ',' ')))
+                return DSH_B_ALIAS;
+        if (dsh_s6_eq_packed(name, 7U,
+            PDP10_SIX6('U','N','A','L','I','A'), PDP10_SIX6('S',' ',' ',' ',' ',' ')))
+                return DSH_B_UNALIAS;
+        if (dsh_s6_eq_packed(name, 1U,
+            PDP10_SIX6('.',' ',' ',' ',' ',' '), PDP10_SIX6(' ',' ',' ',' ',' ',' ')))
+                return DSH_B_DOT;
+        return DSH_B_NONE;
+}
 
 static const struct dsh_function_store *
 dsh_find_function(const struct dsh_s6 *name)
@@ -371,8 +452,11 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
         unsigned int mask;
         unsigned int code;
         int eq;
+        int kind;
 
-        if (dsh_s6_eq_text(&argv[0], "EXIT")) {
+        kind = dsh_builtin_kind(&argv[0]);
+
+        if (kind == DSH_B_EXIT) {
                 if (argc > 2U)
                         return 2;
                 code = st->status;
@@ -382,13 +466,13 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 st->exit_status = code & 0377U;
                 return 0;
         }
-        if (dsh_s6_eq_text(&argv[0], "CD")) {
+        if (kind == DSH_B_CD) {
                 if (argc != 2U || dsh_s6_pack(&argv[1], dsh_path_record,
                     U_PATH_WORDS) != 0 || dsys_chdir(dsh_path_record) != 0)
                         return 1;
                 return 0;
         }
-        if (dsh_s6_eq_text(&argv[0], "SET")) {
+        if (kind == DSH_B_SET) {
                 int listed;
 
                 if (argc == 2U) {
@@ -420,9 +504,9 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 }
                 return 0;
         }
-        if (dsh_s6_eq_text(&argv[0], "UNSET"))
+        if (kind == DSH_B_UNSET)
                 return argc == 2U ? dsh_var_unset(st, &argv[1]) != 0 : 2;
-        if (dsh_s6_eq_text(&argv[0], "EXPORT")) {
+        if (kind == DSH_B_EXPORT) {
                 if (argc != 2U)
                         return 2;
                 eq = dsh_find_equal(&argv[1]);
@@ -440,7 +524,7 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                         (void)dsh_s6_copy(&value, v);
                 return dsh_var_set(st, &argv[1], &value, 1) != 0;
         }
-        if (dsh_s6_eq_text(&argv[0], "UMASK")) {
+        if (kind == DSH_B_UMASK) {
                 if (argc == 1U) {
                         int old = dsys_umask(0U);
                         if (old < 0)
@@ -453,7 +537,7 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                         return 2;
                 return dsys_umask(mask & 0777U) < 0;
         }
-        if (dsh_s6_eq_text(&argv[0], "SHIFT")) {
+        if (kind == DSH_B_SHIFT) {
                 unsigned int count;
 
                 if (argc > 2U)
@@ -471,7 +555,7 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                         dsh_s6_clear(&st->args[i]);
                 return 0;
         }
-        if (dsh_s6_eq_text(&argv[0], "READ")) {
+        if (kind == DSH_B_READ) {
                 int ch;
 
                 if (argc != 2U)
@@ -493,10 +577,10 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 }
                 return dsh_var_set(st, &argv[1], &value, 0) != 0;
         }
-        if (dsh_s6_eq_text(&argv[0], "SOURCE") ||
-            dsh_s6_eq_text(&argv[0], "."))
+        if (kind == DSH_B_SOURCE ||
+            kind == DSH_B_DOT)
                 return dsh_builtin_source(st, argc, argv);
-        if (dsh_s6_eq_text(&argv[0], "RETURN")) {
+        if (kind == DSH_B_RETURN) {
                 if (st->call_depth == 0U || argc > 2U)
                         return 2;
                 code = st->status;
@@ -506,15 +590,15 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 st->return_status = code & 0377U;
                 return (int)st->return_status;
         }
-        if (dsh_s6_eq_text(&argv[0], "JOBS"))
+        if (kind == DSH_B_JOBS)
                 return dsh_builtin_jobs(st, argc, argv);
-        if (dsh_s6_eq_text(&argv[0], "WAIT"))
+        if (kind == DSH_B_WAIT)
                 return dsh_builtin_wait(st, argc, argv);
-        if (dsh_s6_eq_text(&argv[0], "FG"))
+        if (kind == DSH_B_FG)
                 return dsh_builtin_fg(st, argc, argv);
-        if (dsh_s6_eq_text(&argv[0], "BG"))
+        if (kind == DSH_B_BG)
                 return dsh_builtin_bg(st, argc, argv);
-        if (dsh_s6_eq_text(&argv[0], "ALIAS")) {
+        if (kind == DSH_B_ALIAS) {
                 if (argc == 1U) {
                         for (i = 0U; i < DSH_MAX_ALIASES; ++i)
                                 if (st->aliases[i].used) {
@@ -550,7 +634,7 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 }
                 return 1;
         }
-        if (dsh_s6_eq_text(&argv[0], "UNALIAS")) {
+        if (kind == DSH_B_UNALIAS) {
                 if (argc != 2U)
                         return 2;
                 for (i = 0U; i < DSH_MAX_ALIASES; ++i)
@@ -1375,23 +1459,7 @@ dsh_close_node_fds(const struct dsh_node *n, int basein, int baseout,
 static int
 dsh_is_builtin_name(const struct dsh_s6 *name)
 {
-        return dsh_s6_eq_text(name, "EXIT") ||
-            dsh_s6_eq_text(name, "CD") ||
-            dsh_s6_eq_text(name, "SET") ||
-            dsh_s6_eq_text(name, "UNSET") ||
-            dsh_s6_eq_text(name, "EXPORT") ||
-            dsh_s6_eq_text(name, "UMASK") ||
-            dsh_s6_eq_text(name, "READ") ||
-            dsh_s6_eq_text(name, "SHIFT") ||
-            dsh_s6_eq_text(name, "RETURN") ||
-            dsh_s6_eq_text(name, "SOURCE") ||
-            dsh_s6_eq_text(name, ".") ||
-            dsh_s6_eq_text(name, "WAIT") ||
-            dsh_s6_eq_text(name, "JOBS") ||
-            dsh_s6_eq_text(name, "FG") ||
-            dsh_s6_eq_text(name, "BG") ||
-            dsh_s6_eq_text(name, "ALIAS") ||
-            dsh_s6_eq_text(name, "UNALIAS");
+        return dsh_builtin_kind(name) != DSH_B_NONE;
 }
 
 /* Read while the worker runs: waiting before draining can deadlock a full
@@ -2714,22 +2782,9 @@ dsh_script_depth(struct dsh_script *script, const struct dsh_token *tokens,
                 if (DSH_TOKEN_TYPE(&tokens[i]) != DSH_T_WORD ||
                     DSH_TOKEN_QUOTED(&tokens[i]))
                         continue;
-                if (dsh_s6_eq_text(&tokens[i].text, "IF") ||
-                    dsh_s6_eq_text(&tokens[i].text, "FOR") ||
-                    dsh_s6_eq_text(&tokens[i].text, "WHILE") ||
-                    dsh_s6_eq_text(&tokens[i].text, "UNTIL") ||
-                    dsh_s6_eq_text(&tokens[i].text, "DEF") ||
-                    dsh_s6_eq_text(&tokens[i].text, "CASE") ||
-                    dsh_s6_eq_text(&tokens[i].text, "BEGIN"))
-                        ++depth;
-                else if (dsh_s6_eq_text(&tokens[i].text, "FI") ||
-                    dsh_s6_eq_text(&tokens[i].text, "DONE") ||
-                    dsh_s6_eq_text(&tokens[i].text, "ESAC") ||
-                    dsh_s6_eq_text(&tokens[i].text, "END")) {
-                        --depth;
-                        if (depth < 0)
-                                return DSH_E_SYNTAX;
-                }
+                depth += dsh_parse_depth_delta(&tokens[i].text);
+                if (depth < 0)
+                        return DSH_E_SYNTAX;
         }
         script->depth = (unsigned int)depth;
         return DSH_OK;
@@ -2738,12 +2793,11 @@ dsh_script_depth(struct dsh_script *script, const struct dsh_token *tokens,
 void
 dsh_script_init(struct dsh_script *script)
 {
-        unsigned int i;
-
         if (script == 0)
                 return;
-        for (i = 0U; i < DSH_SCRIPT_MAX_TOKENS; ++i)
-                dsh_token_clear(&script->tokens[i]);
+        /* The lexer clears each token before producing it, and the feed
+         * path clears its separator token.  Resetting the live count is
+         * sufficient; unused token slots are never examined. */
         script->ntokens = 0U;
         script->depth = 0U;
 }

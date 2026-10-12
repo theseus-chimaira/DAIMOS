@@ -2,6 +2,16 @@
 
 ## CURRENT FOCUS (2026-10-12): PHASE ZERO AND IMAGE SHRINKAGE
 
+Second source audit: DSH image now 035545, BSS unchanged 015241; normal
+036000 gate passes, 115/115 PDP-6 conformance probes pass. This does NOT
+fix 32K boot: 056000-word rounded DSH VM plus linked KCORE 023610 exceeds
+32K core even before other allocations. 32K lowmem test still reports
+`LOGIN: EXEC FAILED`. Dominant memory problem is the 3200-word active
+AST and 1600-word stored function AST. Next: separate compact node headers
+from optional per-node word/mask payload, preserving the current limits
+and nested function/SOURCE semantics. See
+`design/DSH-32K-SOURCE-AUDIT-20261012-v2.MD`.
+
 First source-driven shrink stage (2026-10-12): source/object cleanup and
 quote-mask/lexer path sharing reduced the KCC/DAS DSH DXR from **036722**
 to **036054 octal words**, saving 0646; BSS stays 015241. The full disk

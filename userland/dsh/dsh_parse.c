@@ -151,6 +151,30 @@ dsh_s6_kw(const struct dsh_s6 *s)
 }
 
 
+/* Reuse the parser's packed keyword matching for interactive multiline
+ * depth tracking instead of maintaining a second string-compare chain. */
+int
+dsh_parse_depth_delta(const struct dsh_s6 *word)
+{
+        switch (dsh_s6_kw(word)) {
+        case DSH_K_IF:
+        case DSH_K_FOR:
+        case DSH_K_WHILE:
+        case DSH_K_UNTIL:
+        case DSH_K_DEF:
+        case DSH_K_CASE:
+        case DSH_K_BEGIN:
+                return 1;
+        case DSH_K_FI:
+        case DSH_K_DONE:
+        case DSH_K_ESAC:
+        case DSH_K_END:
+                return -1;
+        default:
+                return 0;
+        }
+}
+
 static unsigned int
 dsh_tok_kw(const struct dsh_token *t)
 {
@@ -227,7 +251,9 @@ dsh_alloc_node(struct dsh_parser *p, int type, unsigned int *out)
         if (p->used >= p->max_nodes)
                 return dsh_mark_error(p, DSH_E_OVERFLOW, DSH_PE_NONE);
         *out = p->used;
-        dsh_node_clear(&p->nodes[p->used]);
+        /* parse_tokens_diag already cleared the entire node arena once.
+         * Slots are allocated monotonically during this parse, so a
+         * second full 200-word clear here only repeats the same work. */
         p->nodes[p->used].type = type;
         p->used++;
         return DSH_OK;

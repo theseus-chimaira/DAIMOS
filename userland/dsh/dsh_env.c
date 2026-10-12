@@ -249,10 +249,3 @@ dsh_expand_mask(const struct dsh_state *st, const struct dsh_s6 *in,
 {
         return dsh_expand_quoted(st, in, literal_mask, 0, out, 0);
 }
-
-int
-dsh_expand(const struct dsh_state *st, const struct dsh_s6 *in,
-    struct dsh_s6 *out)
-{
-        return dsh_expand_mask(st, in, 0, out);
-}
