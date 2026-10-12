@@ -91,3 +91,15 @@ undo an already durable unreferenced FCB. The model deliberately excludes
 sector tearing and device write reordering, so it is **not** a proof of
 transaction correctness. The on-disk format and recovery choices remain
 unimplemented. No extra resident workspace is approved.
+
+## Two-copy record selector experiment (2026-10-12)
+
+Testkit commit `ac9495d` prototypes a host-only fixed-size intent selector
+with two independent 128-word slots. All 129 word-prefix interruptions of
+one slot, with the other intact, and a same-sequence conflict case passed.
+The 12-word record schema is experimental; its rotation/XOR digest is too
+weak to deploy, and this test does not model word tearing, storage ordering,
+flush durability, simultaneous failure of both copies, or replay. It proves
+no safety of the existing D6FS create protocol and reserves no disk blocks.
+Before integration, evaluate a suitable 36-bit integrity scheme and define
+how to persist/advance the intent without losing the only recoverable copy.
