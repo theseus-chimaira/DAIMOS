@@ -2,6 +2,14 @@
 
 ## ACTIVE NO-OVERLAY SHRINK GATE (2026-10-12, V21)
 
+V22 parser-node-clear experiment: one linear word-wise initialization
+replaces the 22 repeated SIXBIT clears in `dsh_node_clear`.  GCC image
+changes from 032177 to 032147 octal (030 words saved); BSS stays 013742.
+Host direct parser test, 7/7 live variable-heap regression and full
+115/115 GCC SIMH conformance pass.  The 030-word saving is retained.
+Next prioritize genuine code simplifications: this alone is far short
+of the strict 030000 image goal.  No overlays.
+
 The target is STRICTLY BELOW 030000 octal DXR image words (not merely
 meeting the production 036000 gate).  The current GCC `-Os` shared-heap
 branch measures image 032177, BSS 013742.  Therefore at least 02200

@@ -54,23 +54,20 @@ dsh_mark_error(struct dsh_parser *p, int code, unsigned int expect)
 void
 dsh_node_clear(struct dsh_node *n)
 {
+        kword_t *words;
         unsigned int i;
 
         if (n == 0)
                 return;
-        n->type = DSH_N_EMPTY;
+        /* The PDP-6 node contains only word-sized scalar fields and
+         * SIXBIT records.  Clear it in one linear pass, rather than
+         * invoking the seven-word SIXBIT clearer twenty-two times. */
+        words = (kword_t *)n;
+        for (i = 0U; i < sizeof(*n) / sizeof(*words); ++i)
+                words[i] = 0;
         n->left = DSH_NONE;
         n->right = DSH_NONE;
         n->extra = DSH_NONE;
-        n->argc = 0;
-        n->flags = 0;
-        dsh_s6_clear(&n->redir_in);
-        dsh_s6_clear(&n->redir_out);
-        for (i = 0; i < DSH_PARSE_MAX_WORDS; i++) {
-                dsh_s6_clear(&n->words[i]);
-                n->literal_mask[i] = 0;
-                n->quote_mask[i] = 0;
-        }
 }
 
 #define DSH_K_AND      1U

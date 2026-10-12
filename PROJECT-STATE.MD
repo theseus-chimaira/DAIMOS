@@ -1,3 +1,14 @@
+## 2026-10-12 DSH V22 PARSER NODE INITIALIZATION SHRINK
+
+An experimental simplification of `dsh_node_clear` replaces repeated
+`dsh_s6_clear` calls with one word-wise zeroing pass, then restores the
+three DSH_NONE links.  GCC DXR image changes from 032177 to 032147
+octal, a reduction of 030 octal words.  BSS remains 013742.  Direct
+host parser test and the seven-case live shared-heap SIMH suite pass.
+Full GCC SIMH conformance passed 115/115 after the change.  This
+source-level reduction is accepted on the experimental branch, but the
+strict 030000 text target and physical 32K resident limit remain open.
+
 ## 2026-10-12 DSH V21 STRICT IMAGE/BSS/STACK SHRINK PLAN
 
 The accepted optimization target is now strictly below 030000 octal GCC
