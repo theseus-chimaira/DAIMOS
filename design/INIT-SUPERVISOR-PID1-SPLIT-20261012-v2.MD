@@ -1,5 +1,27 @@
 # Two-stage PID 1: INIT then resident SUPERVISOR (2026-10-12 v2)
 
+## Resident text optimization continuation (2026-10-12 v3)
+
+The separate PID 1 SUPERVISOR was audited at the generated PDP-6 code
+level. Three source-only improvements preserve the RUN V2 contract and
+service configuration: encode the numeric TTY argument directly rather
+than constructing a temporary C string; omit redundant clearing of a
+RUN block for which every word is assigned; decode the four fixed SIXBIT
+configuration characters directly rather than using a temporary array;
+and write the fixed two-word TTY record directly rather than looping.
+
+| Size (octal words) | v2 | v3 |
+| --- | ---: | ---: |
+| Supervisor text | 001530 | **001447** |
+| Supervisor BSS | 000461 | **000461** |
+| Rounded VM, default 02000 stack | 006000 | **006000** |
+
+This saves **0061 octal (49 decimal) executable words**. It does not
+change the current rounded VM allocation. The next large improvement
+requires either a measured smaller per-image stack reservation or another
+significant reduction in code and BSS; the user-stack ABI is unchanged
+by this text-only work.
+
 ## Design
 
 DAIMOS keeps **PID 1** throughout startup. The kernel initially launches

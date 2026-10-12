@@ -1,5 +1,12 @@
 ## INIT -> SUPERVISOR PID 1 SPLIT (2026-10-12, V2)
 
+SUPERVISOR v3 source-size follow-up: remove redundant RUN block
+initialization and temporary TTY data, specialize fixed SIXBIT metadata
+decoding and TTY record writes. PDP-6 DXR image **001530 -> 001447**
+octal (0061 octal / 49 decimal words saved), BSS unchanged 000461.
+The normal 02000-word user stack keeps its initial VM allocation
+at 006000 octal. See `design/INIT-SUPERVISOR-PID1-SPLIT-20261012-v2.MD`.
+
 Startup INIT now loads storage policy, waits for MOUNTALL, parses the
 eight-entry INITTAB and performs an EXEC handoff to
 `/SYSTEM/EXEC/SUPERVISOR`. The resident SUPERVISOR is still **PID 1**;

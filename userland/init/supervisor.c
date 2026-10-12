@@ -18,9 +18,7 @@ spawn_entry(struct init_entry *e)
             3U + 3U];
         struct sys_run_v2 *run;
         kword_t tty_arg[2];
-        char tty_text[3];
         unsigned int path_words;
-        unsigned int tty_words;
         unsigned int arg0_off;
         unsigned int arg1_off;
         unsigned int map_off;
@@ -35,29 +33,20 @@ spawn_entry(struct init_entry *e)
         path_words = 1U + ((unsigned int)e->path[0] + 5U) / 6U;
         if (path_words > U_PATH_WORDS)
                 return -1;
-        if (e->tty >= 10U) {
-                tty_text[0] = (char)('0' + e->tty / 10U);
-                tty_text[1] = (char)('0' + e->tty % 10U);
-                tty_text[2] = 0;
-        } else {
-                tty_text[0] = (char)('0' + e->tty);
-                tty_text[1] = 0;
-        }
         /* TTY IDs are 0..20: encode at most two SIXBIT digits directly.
          * Keeping this bounded avoids linking the general path packer. */
         tty_arg[0] = e->tty >= 10U ? 2UL : 1UL;
-        tty_arg[1] = ((kword_t)(tty_text[0] - 040)) << 30U;
+        tty_arg[1] = ((kword_t)('0' - 040 +
+            (e->tty >= 10U ? e->tty / 10U : e->tty))) << 30U;
         if (e->tty >= 10U)
-                tty_arg[1] |= ((kword_t)(tty_text[1] - 040)) << 24U;
-        tty_words = 2U;
-
+                tty_arg[1] |= ((kword_t)('0' - 040 +
+                    e->tty % 10U)) << 24U;
         arg0_off = SYS_RUN_V2_FIXED_WORDS + path_words;
         arg1_off = arg0_off + path_words;
-        map_off = arg1_off + tty_words;
+        map_off = arg1_off + 2U;
         total = map_off + 3U;
-        for (i = 0U; i < total; ++i)
-                block[i] = 0UL;
-
+        /* Every word through total is assigned below. Zeroing the entire
+         * variable-length RUN record first merely repeats those stores. */
         run = (struct sys_run_v2 *)block;
         run->version_words = SYS_RUN_HEADER(SYS_RUN_VERSION_2, total);
         run->flags = SYS_RUN_PGRP_INHERIT;
@@ -69,8 +58,8 @@ spawn_entry(struct init_entry *e)
                 block[SYS_RUN_V2_FIXED_WORDS + i] = e->path[i];
                 block[arg0_off + i] = e->path[i];
         }
-        for (i = 0U; i < tty_words; ++i)
-                block[arg1_off + i] = tty_arg[i];
+        block[arg1_off] = tty_arg[0];
+        block[arg1_off + 1U] = tty_arg[1];
         block[map_off] = SYS_RUN_FD_MAP(0U, 0U);
         block[map_off + 1U] = SYS_RUN_FD_MAP(1U, 1U);
         block[map_off + 2U] = SYS_RUN_FD_MAP(2U, 2U);
@@ -86,20 +75,22 @@ spawn_entry(struct init_entry *e)
 static int
 read_entry(struct init_entry *e, const kword_t *meta, const kword_t *path)
 {
-        unsigned int i, c[4];
+        unsigned int i, c0, c1, action, sink;
         if (meta[0] != 4U || path[0] == 0U || path[0] >
             (U_PATH_WORDS - 1U) * 6U)
                 return -1;
-        for (i = 0U; i < 4U; ++i)
-                c[i] = (unsigned int)((meta[1] >> (30U - 6U*i)) & 077U) + 040U;
-        if (c[0] < '0' || c[0] > '9' || c[1] < '0' || c[1] > '9')
+        c0 = (unsigned int)((meta[1] >> 30U) & 077U) + 040U;
+        c1 = (unsigned int)((meta[1] >> 24U) & 077U) + 040U;
+        action = (unsigned int)((meta[1] >> 18U) & 077U) + 040U;
+        sink = (unsigned int)((meta[1] >> 12U) & 077U) + 040U;
+        if (c0 < '0' || c0 > '9' || c1 < '0' || c1 > '9')
                 return -1;
-        e->tty = (c[0] - '0') * 10U + c[1] - '0';
-        if (e->tty > SYS_TTY_ID_MAX || (c[2] != 'R' && c[2] != 'O') ||
-            (c[3] != 'D' && c[3] != 'N'))
+        e->tty = (c0 - '0') * 10U + c1 - '0';
+        if (e->tty > SYS_TTY_ID_MAX || (action != 'R' && action != 'O') ||
+            (sink != 'D' && sink != 'N'))
                 return -1;
-        e->action = c[2] == 'R' ? INIT_RESPAWN : INIT_ONCE;
-        e->output_sink = c[3] == 'D' ? SYS_TTY_SINK_DPY : SYS_TTY_SINK_NATIVE;
+        e->action = action == 'R' ? INIT_RESPAWN : INIT_ONCE;
+        e->output_sink = sink == 'D' ? SYS_TTY_SINK_DPY : SYS_TTY_SINK_NATIVE;
         e->pid = 0U;
         for (i = 0U; i < U_PATH_WORDS; ++i)
                 e->path[i] = i < 1U + ((unsigned int)path[0] + 5U) / 6U ?
