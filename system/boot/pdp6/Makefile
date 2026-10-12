@@ -38,8 +38,10 @@ ROOTSET ?= 1
 # both filesystem families because the root is selected at boot time.
 ifeq ($(ROOT),tape)
 D6FS_FS_ENABLED = 0
+BLOCKSET_FS_ENABLED = 0
 else
 D6FS_FS_ENABLED = 1
+BLOCKSET_FS_ENABLED = 1
 endif
 # Disk/drum roots do not load DECtape filesystems.  An auto-root image
 # must retain the package because its selected root may be TSFS on DECtape.
@@ -63,6 +65,11 @@ else
 BOOT_CORE_WORDS ?= 01000000
 SIMH_CPU_KWORDS ?= 256
 KINIT_BADMAP ?= 1
+endif
+# BADMAP remaps D6FS/BLOCKSET sectors, not raw AUXSTORE sectors.  TSFS roots
+# use at most one raw DSK/DRM for swap, LOGSTORE and MEMFS backing.
+ifeq ($(ROOT),tape)
+override KINIT_BADMAP = 0
 endif
 KINIT_STACK_WATERMARK ?= 0
 PDP10_GCC ?= pdp10-dec-none-gcc
@@ -303,7 +310,7 @@ LOGSTORE_MRES_OBJ = $(BUILD)/logstore-mres.dobj
 D6FS_MRES_OBJ = $(BUILD)/d6fs-mres.dobj
 ifeq ($(BOOT_PROFILE),lowmem)
 MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(DCS_MRES_OBJ) \
-	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(DSK_MRES_OBJ) $(BLOCKSET_MRES_OBJ) \
+	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(DSK_MRES_OBJ) $(if $(filter 1,$(BLOCKSET_FS_ENABLED)),$(BLOCKSET_MRES_OBJ)) \
 	$(if $(filter 1,$(D6FS_FS_ENABLED)),$(D6FS_MRES_OBJ))
 KINIT_FULL = 0
 else
@@ -311,7 +318,8 @@ MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PTR_MRES_OBJ) \
 	$(PTP_MRES_OBJ) $(LPT_MRES_OBJ) $(CR_MRES_OBJ) $(CP_MRES_OBJ) \
 	$(DCS_MRES_OBJ) $(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) \
 	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(TAPE_MRES_OBJ) $(DSK_MRES_OBJ) $(DRM_MRES_OBJ) \
-	$(BLOCKSET_MRES_OBJ) $(LOGSTORE_MRES_OBJ) $(BADMAP_MRES_OBJ) $(MEMFS_MRES_OBJ) $(if $(filter 1,$(TAPE_FS_ENABLED)),$(DTFS_MRES_OBJ)) $(SLV_MRES_OBJ) \
+	$(if $(filter 1,$(BLOCKSET_FS_ENABLED)),$(BLOCKSET_MRES_OBJ)) $(LOGSTORE_MRES_OBJ) \
+	$(if $(filter 1,$(KINIT_BADMAP)),$(BADMAP_MRES_OBJ)) $(MEMFS_MRES_OBJ) $(if $(filter 1,$(TAPE_FS_ENABLED)),$(DTFS_MRES_OBJ)) $(SLV_MRES_OBJ) \
 	$(if $(filter 1,$(D6FS_FS_ENABLED)),$(D6FS_MRES_OBJ))
 KINIT_FULL = 1
 endif
@@ -603,7 +611,7 @@ $(MEDIA_DIR): | $(BUILD)
 	mkdir -p $@
 
 $(KINIT_STAMP): $(KERNEL_INPUTS) Makefile $(PDP10_KCC_DEP) $(BUILD)
-	$(MAKE) -C $(KERNEL_DIR) kinit BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_STACK_RESERVE_WORDS='$(KINIT_STACK_RESERVE_WORDS)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' KINIT_BADMAP='$(KINIT_BADMAP)' KINIT_FULL='$(KINIT_FULL)' D6FS_FS_ENABLED='$(D6FS_FS_ENABLED)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' VM_BACKEND='$(VM_BACKEND)'
+	$(MAKE) -C $(KERNEL_DIR) kinit BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_STACK_RESERVE_WORDS='$(KINIT_STACK_RESERVE_WORDS)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' KINIT_BADMAP='$(KINIT_BADMAP)' KINIT_FULL='$(KINIT_FULL)' D6FS_FS_ENABLED='$(D6FS_FS_ENABLED)' BLOCKSET_FS_ENABLED='$(BLOCKSET_FS_ENABLED)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' VM_BACKEND='$(VM_BACKEND)'
 	touch $@
 
 $(KCORE_STAMP): $(KERNEL_INPUTS) $(PDP10_KCC_DEP) $(BUILD)
@@ -625,7 +633,7 @@ $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM
 force-minit-config:
 
 $(MINIT_TABLE_ASM): $(KERNEL_DIR)/modules/module_table.s force-minit-config | $(BUILD)
-	{ echo ".set KINIT_FULL,$(KINIT_FULL)"; echo ".set KINIT_BADMAP,$(KINIT_BADMAP)"; echo ".set TAPE_FS_ENABLED,$(TAPE_FS_ENABLED)"; echo ".set D6FS_FS_ENABLED,$(D6FS_FS_ENABLED)"; cat $<; } > $@
+	{ echo ".set KINIT_FULL,$(KINIT_FULL)"; echo ".set KINIT_BADMAP,$(KINIT_BADMAP)"; echo ".set TAPE_FS_ENABLED,$(TAPE_FS_ENABLED)"; echo ".set D6FS_FS_ENABLED,$(D6FS_FS_ENABLED)"; echo ".set BLOCKSET_FS_ENABLED,$(BLOCKSET_FS_ENABLED)"; cat $<; } > $@
 
 $(MINIT_TABLE_OBJ): $(MINIT_TABLE_ASM) $(BUILD)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
@@ -1134,7 +1142,7 @@ TSFS_ROOT_COMMAND_NAMES = ECHO CAT LS MKDIR RM PWD STAT TOUCH CP MV HEXDUMP PS \
 TSFS_ROOT_COMMAND_DXRS = $(addprefix $(USERLAND_BUILD_ROOT)/userland/program/,$(addsuffix .d6lz.dxr,$(TSFS_ROOT_COMMAND_NAMES)))
 
 $(TSFS_ROOT_IMAGE): $(INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFS_ROOT_COMMAND_DXRS) $(DTFSPROBE_DXR) \
-	$(SYSTEM_CONFIG_S6REC) $(PICTURE_FILES) | $(MEDIA_DIR)
+	$(SYSTEM_CONFIG_S6REC) | $(MEDIA_DIR)
 	@set -eu; \
 	tmp='$(TSFS_ROOT_MANIFEST).tmp.$$$$'; \
 	trap 'rm -f "$$tmp"' 0 1 2 3 15; \
@@ -1143,7 +1151,6 @@ $(TSFS_ROOT_IMAGE): $(INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $
 	  echo 'D /TEMP 0777 0 0'; \
 	  echo 'D /SYSTEM 0555 0 0'; \
 	  echo 'D /SYSTEM/EXEC 0555 0 0'; \
-	  echo 'D /PICTURES 0555 0 0'; \
 	  echo 'D /CONFIG 0755 0 0'; \
 	  printf 'F /SYSTEM/INIT %s 0555 0 0\n' '$(INIT_DXR)'; \
 	  printf 'F /SYSTEM/EXEC/MOUNTALL %s 0555 0 0\n' '$(SYSTEM_MOUNTALL_DXR)'; \
@@ -1155,10 +1162,6 @@ $(TSFS_ROOT_IMAGE): $(INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $
 	  printf 'F /SYSTEM/EXEC/DSH %s 0555 0 0\n' '$(DSH_DXR)'; \
 	  for cmd in $(TSFS_ROOT_COMMAND_NAMES); do \
 	    printf 'F /SYSTEM/EXEC/%s %s 0555 0 0\n' "$$cmd" "$(USERLAND_BUILD_ROOT)/userland/program/$$cmd.d6lz.dxr"; \
-	  done; \
-	  for src in $(PICTURE_FILES); do \
-	    leaf=$$(basename "$$src" | tr '[:lower:]' '[:upper:]'); \
-	    printf 'F /PICTURES/%s %s 0444 0 0\n' "$$leaf" "$$src"; \
 	  done; \
 	  printf 'F /SYSTEM/EXEC/DTFSPROBE %s 0555 0 0\n' '$(DTFSPROBE_DXR)'; \
 	} > "$$tmp"; \
@@ -1275,7 +1278,9 @@ permanent-size: $(KCORE_MAP) $(MRES_PACKAGE_OBJS)
 	@./image/report-permanent.sh --kcore-map $(KCORE_MAP) --build $(BUILD) \
 	    --objdump $(PDP10_OBJDUMP) --omit-blockset \
 	    $(if $(filter 0,$(TAPE_FS_ENABLED)),--omit-dtfs) \
-	    $(if $(filter 0,$(D6FS_FS_ENABLED)),--omit-d6fs)
+	    $(if $(filter 0,$(D6FS_FS_ENABLED)),--omit-d6fs) \
+	    $(if $(filter 0,$(BLOCKSET_FS_ENABLED)),--no-blockset) \
+	    $(if $(filter 0,$(KINIT_BADMAP)),--omit-badmap)
 
 boot:
 	rm -rf $(DISK_DIR) $(DRUM_DIR) $(SIMH_INI)

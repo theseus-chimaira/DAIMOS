@@ -6,7 +6,7 @@ set -eu
 
 usage()
 {
-        echo "usage: $0 --kcore-map MAP --build DIR --objdump TOOL [--omit-blockset] [--omit-dtfs] [--omit-d6fs] [--limit OCTAL]" >&2
+        echo "usage: $0 --kcore-map MAP --build DIR --objdump TOOL [--omit-blockset] [--no-blockset] [--omit-badmap] [--omit-dtfs] [--omit-d6fs] [--limit OCTAL]" >&2
         exit 2
 }
 
@@ -14,6 +14,8 @@ kmap=
 build=
 objdump=
 omit_blockset=0
+no_blockset=0
+omit_badmap=0
 omit_dtfs=0
 omit_d6fs=0
 limit_arg=040000
@@ -23,6 +25,8 @@ while [ $# -gt 0 ]; do
         --build) [ $# -ge 2 ] || usage; build=$2; shift 2 ;;
         --objdump) [ $# -ge 2 ] || usage; objdump=$2; shift 2 ;;
         --omit-blockset) omit_blockset=1; shift ;;
+        --no-blockset) no_blockset=1; shift ;;
+        --omit-badmap) omit_badmap=1; shift ;;
         --omit-dtfs) omit_dtfs=1; shift ;;
         --omit-d6fs) omit_d6fs=1; shift ;;
         --limit) [ $# -ge 2 ] || usage; limit_arg=$2; shift 2 ;;
@@ -69,6 +73,12 @@ total=$kcore
 blockset_words=0
 for name in cty clk ptr ptp lpt cr cp dcs ge dpy tty wcnsls ocnsls dsk tape slv \
     drm memfs dtfs blockset logstore badmap d6fs; do
+        if [ "$name" = blockset ] && [ "$no_blockset" -eq 1 ]; then
+                continue
+        fi
+        if [ "$name" = badmap ] && [ "$omit_badmap" -eq 1 ]; then
+                continue
+        fi
         if [ "$name" = dtfs ] && [ "$omit_dtfs" -eq 1 ]; then
                 continue
         fi
@@ -118,7 +128,7 @@ check_limit()
 
 status=0
 check_limit 'SINGLE_ROOT' "$last" || status=1
-if [ "$omit_blockset" -eq 1 ]; then
+if [ "$omit_blockset" -eq 1 ] && [ "$no_blockset" -eq 0 ]; then
         multi_total=$((total + blockset_words))
         multi_last=$((060 + multi_total - 1))
         printf 'MULTI_ROOT       %06o %6d\n' "$multi_total" "$multi_total"

@@ -48,7 +48,9 @@
         .globl memfs_minit
         .globl dtfs_minit
 .endif
+.if BLOCKSET_FS_ENABLED
         .globl blockset_minit
+.endif
 .if KINIT_BADMAP
         .globl badmap_minit
 .endif
@@ -85,7 +87,9 @@
         .globl dtfs_mres_package
 .endif
 .endif
+.if BLOCKSET_FS_ENABLED
         .globl blockset_mres_package
+.endif
 .if KINIT_BADMAP
         .globl badmap_mres_package
 .endif
@@ -131,7 +135,9 @@ __minit_table_begin:
 .if KINIT_FULL
         .word auxstore_minit,,0
 .endif
+.if BLOCKSET_FS_ENABLED
         .word blockset_minit,,blockset_mres_package
+.endif
 .if KINIT_FULL
         .word logstore_minit,,logstore_mres_package
 .endif

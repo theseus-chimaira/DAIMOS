@@ -1166,6 +1166,7 @@ root_block_services(unsigned int *readp, unsigned int *writep)
 }
 
 /** @brief Select root block services and install the blockset abstraction. */
+#if BLOCKSET_FS_ENABLED
 void
 blockset_minit(void)
 {
@@ -1204,6 +1205,7 @@ blockset_minit(void)
          * the validated physical layout before D6FS is installed. */
         (void)blockset_boot_discover(&super_a, &super_b);
 }
+#endif
 
 #if KINIT_FULL
 /** Discover raw auxiliary backing after all block drivers are resident. */
