@@ -1,3 +1,14 @@
+## DSH PHASE ZERO: KEEP GENERAL FILESYSTEM FIXES (2026-10-12)
+
+Decision: retain the implemented D6FS write-time O_APPEND serialization
+(eb53b18), MEMFS O_APPEND semantics (6ce074e), D6FS post-append cursor
+correction (38b1837), and D6FS staged growth/rollback (3ccf405).
+These correct general file and append behavior and are not special-case
+HISTFILE journaling. Keep their regression coverage and measure their
+compiled kernel size rather than reverting them for the abandoned DSH
+transaction requirement. The V3 journal and host undo-journal experiments
+remain deferred D6FS research, with no production kernel transaction added.
+
 ## DSH PHASE ZERO: BOUNDED HISTORY RECOVERY POLICY (2026-10-12)
 
 Persistent shell history is disposable convenience data. DSH Phase 0 no
