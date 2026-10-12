@@ -248,11 +248,11 @@ $(USERLAND_BUILD)/supervisor/%.dobj: %.c
 	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
 	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
 
-# Keep the LOGSTORE one-block scratch in the existing user stack of PID 1.
-# Other programs retain their static record and current stack demands.
+# PID 1 emits four-word events; LOGSTORE owns a temporary full-size record.
+# Other programs retain the ordinary APPEND transport and record layout.
 $(USERLAND_BUILD)/supervisor/libc/logevent.dobj: libc/logevent.c
 	mkdir -p $(dir $@)
-	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -DDAIMOS_ULOG_STACK_RECORD -S $< -o $(@:.dobj=.s)
+	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -DDAIMOS_ULOG_COMPACT_EVENT -S $< -o $(@:.dobj=.s)
 	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
 
 $(USERLAND_BUILD)/supervisor/%.dobj: %.s
@@ -287,7 +287,7 @@ $(USERLAND_BUILD)/dshcomp/%.dobj: %.s
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(SUPERVISOR_DXR): $(SUPERVISOR_C_OBJS) $(SUPERVISOR_S_OBJS)
-	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(SUPERVISOR_MAP) $(SUPERVISOR_S_OBJS) $(SUPERVISOR_C_OBJS)
+	$(DLINK) --daimos-uuo-relax --stack-words 0400 -b 020 -o $@ -M $(SUPERVISOR_MAP) $(SUPERVISOR_S_OBJS) $(SUPERVISOR_C_OBJS)
 
 $(INIT_DXR): $(INIT_C_OBJS) $(INIT_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(INIT_MAP) $(INIT_S_OBJS) $(INIT_C_OBJS)

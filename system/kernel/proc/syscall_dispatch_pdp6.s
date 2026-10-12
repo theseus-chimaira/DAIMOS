@@ -735,7 +735,7 @@ native_sys_logctl:
         pushj   17,file_check_root
         jumpn   1,native_sys_logctl_bad3
         move    5,-2(17)               ; operation
-        caile   5,010
+        caile   5,011
         jrst    native_sys_logctl_bad3
         jumpe   5,native_sys_logctl_status ; STATUS
         cain    5,1                    ; READ BLOCK
@@ -752,6 +752,8 @@ native_sys_logctl:
         jrst    native_sys_logctl_wait
         cain    5,010                  ; LOGSTORE APPEND
         jrst    native_sys_logctl_append
+        cain    5,011                  ; compact LOGSTORE event
+        jrst    native_sys_logctl_event
         ; MTC REWIND
         move    1,-1(17)               ; unit
         movei   4,0000400
@@ -830,6 +832,21 @@ native_sys_logctl_append:
         pushj   17,native_sys_logctl_map
         move    1,6
         movei   5,4                    ; LOGSTORE_MRES_OP_APPEND
+        pushj   17,sys_logstore_service_jump
+        push    17,1
+        pushj   17,vm_user_mapping_release
+        pop     17,1
+        jrst    native_sys_logctl_done3
+
+; Compact event: AC4 addresses four user words (timestamp, sev/source/2,
+; code, value). LOGSTORE allocates its own transient full-record scratch;
+; never expose or write a 0200-word block in the user address space.
+native_sys_logctl_event:
+        move    1,(17)
+        movei   5,4
+        pushj   17,native_sys_logctl_map
+        move    1,6
+        movei   5,7                    ; LOGSTORE_MRES_OP_EVENT
         pushj   17,sys_logstore_service_jump
         push    17,1
         pushj   17,vm_user_mapping_release

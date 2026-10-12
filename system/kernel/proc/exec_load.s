@@ -43,6 +43,7 @@
 
         .equ    EXEC_DXR_MAGIC,0447062      ; SIXBIT /DXR/
         .equ    EXEC_DXR_TEXT_TAG,0647022   ; SIXBIT /TX2/
+        .equ    EXEC_DXR_STACK_TAG,0636422  ; SIXBIT /ST2/
         .equ    EXEC_DXR_MAX_IMAGE_WORDS,0300000
         .equ    EXEC_SCHED_SIDL_LH,0100024  ; SIDL + default nice bias
 
@@ -121,6 +122,10 @@ exec_load_process:
         jrst    exec_load_fail
 
 exec_load_read_header:
+        ; The stat type is dead after access validation; reuse its local
+        ; slot for the selected stack reservation (default 02000).
+        movei   0,02000
+        movem   0,-011(17)
         move    1,12
         setz    2,
         movei   3,-002(17)
@@ -198,10 +203,26 @@ exec_load_dxr2_header:
         jrst    exec_load_fail
         hrrz    0,(17)
         caie    0,EXEC_DXR_TEXT_TAG
-        jrst    exec_load_fail
+        jrst    exec_load_stack_header
         hlrz    0,(17)
         camle   0,13                    ; text_words <= image_words
         jrst    exec_load_fail
+        jrst    exec_load_dxr2_header_ok
+
+exec_load_stack_header:
+        ; ST2 is only valid for plain, non-PURE images. The third DXR2
+        ; word holds stack size in its LH rather than the text prefix.
+        caie    0,EXEC_DXR_STACK_TAG
+        jrst    exec_load_fail
+        trne    15,0300000             ; compressed or PURE need TX2
+        jrst    exec_load_fail
+        hlrz    0,(17)
+        caige   0,00400                ; reserve at least 256 words
+        jrst    exec_load_fail
+        caile   0,02000
+        jrst    exec_load_fail
+        movem   0,-011(17)
+        setz    0,                     ; no swap text prefix for ST2
 exec_load_dxr2_header_ok:
         movem   0,-005(17)
         aos     -007(17)                ; header_words: DXR1 2 -> DXR2 3
@@ -209,11 +230,20 @@ exec_load_dxr2_header_ok:
 exec_load_create_vm:
         move    3,13
         add     3,16
-        addi    3,02020                 ; user origin + user stack
+        addi    3,020                   ; user origin
+        add     3,-011(17)             ; per-image stack, default 02000
         move    1,10
         move    2,11
         pushj   17,vm_space_create
         jumpn   1,exec_load_nomem
+
+        ; Logical addresses below 020 are kernel-inaccessible from user
+        ; mode. Keep the stack reservation in word 017 of this VM, so RUN,
+        ; transactional EXEC, and destructive low-core EXEC use identical
+        ; startup logic without adding a resident process-table word.
+        hrrz    4,1(10)                 ; AC0 is not an index register
+        move    0,-011(17)
+        movem   0,017(4)
 
         trnn    15,0100000
         jrst    exec_load_plain_image

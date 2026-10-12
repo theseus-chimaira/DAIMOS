@@ -40,6 +40,8 @@ logstore_mres_dispatch:
         jrst    logstore_write
         cain    5,4
         jrst    logstore_append
+        cain    5,7
+        jrst    logstore_event
         cain    5,6
         jrst    logstore_enable
         caie    5,5
@@ -108,6 +110,52 @@ logstore_append:
         pushj   17,proc_wakeup_event
         setz    1,
 logstore_append_done:
+        popj    17,
+
+; Compact event transport. AC1 points to four mapped user words:
+; time, severity/source/2, code, value. Allocate a 0200-word temporary
+; from dynamic MM, not permanent KCORE or the caller's user stack.
+; The MM owner is private to this synchronous request and is freed on
+; every success/error path. The mapping hold pins the calling process.
+        .globl  mm_alloc
+        .globl  mm_free
+        .globl  fs_zero_words
+        .equ    LOG_EVENT_OWNER,015     ; 014 belongs to DPY text/list MM
+logstore_event:
+        push    17,010
+        move    010,1                   ; mapped four-word source
+        push    17,[0]                  ; local scratch base
+        movei   1,(17)
+        push    17,1                    ; fifth argument: basep
+        movei   1,0200                  ; temporary block words
+        movei   2,3                     ; MM_TYPE_KERNEL_DYNAMIC
+        movei   3,LOG_EVENT_OWNER
+        setz    4,                      ; MM_ALLOC_LOW
+        pushj   17,mm_alloc
+        sub     17,kconst_1_1
+        jumpn   1,logstore_event_alloc_failed
+        move    1,(17)
+        movei   2,0200
+        pushj   17,fs_zero_words
+        move    1,010                   ; source word 0 -> record word 2
+        move    2,(17)
+        addi    2,2
+        movei   3,4
+        pushj   17,fs_copy_words
+        move    1,(17)
+        pushj   17,logstore_append
+        push    17,1                    ; preserve return across free
+        move    1,-1(17)
+        movei   2,3
+        movei   3,LOG_EVENT_OWNER
+        pushj   17,mm_free
+        pop     17,1
+        jrst    logstore_event_done
+logstore_event_alloc_failed:
+        seto    1,
+logstore_event_done:
+        sub     17,kconst_1_1
+        pop     17,010
         popj    17,
 
 logstore_enable:

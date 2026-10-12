@@ -536,10 +536,15 @@ vm_space_startup:
 
         move    10,2                   ; current source record
         move    12,4                   ; startup result
+        move    4,3                    ; preserve packed argc,,envc
         hlrz    5,3                    ; argc
         hrrz    6,3                    ; envc
+        hrrz    11,1(1)                ; physical VM base
+        move    3,017(11)              ; protected stack reservation
+        caige   3,00400
+        jrst    vm_startup_invalid
         hlrz    13,1(1)                ; logical user words
-        subi    13,02000               ; startup-area logical base
+        sub     13,3                   ; startup-area logical base
 
         movem   5,(12)
         setz    7,
@@ -557,9 +562,8 @@ vm_startup_no_argv:
 vm_startup_no_env:
         movem   7,2(12)
 
-        hrrz    11,1(1)                ; physical user-space base
         add     11,13                  ; physical startup-area base
-        movem   3,(11)                 ; argc,,envc metadata
+        movem   4,(11)                 ; argc,,envc metadata
 
         move    14,5
         add     14,6                   ; number of string records
@@ -568,6 +572,28 @@ vm_startup_no_env:
         jumpe   6,vm_startup_no_env_slot
         addi    15,1                   ; terminating environment pointer
 vm_startup_no_env_slot:
+        ; Preflight counted SIXBIT records and leave at least 0100 words
+        ; free after the copied argument records, before any payload copy.
+        move    4,14                   ; remaining record count
+        move    2,10                   ; source stream
+        move    7,15                   ; metadata + pointer count
+vm_startup_check_loop:
+        jumpe   4,vm_startup_check_done
+        move    0,(2)
+        tlne    0,0777777
+        jrst    vm_startup_invalid
+        caile   0,0146                 ; maximum 102 SIXBIT characters
+        jrst    vm_startup_invalid
+        addi    0,5
+        idivi   0,6
+        addi    0,1
+        add     2,0
+        add     7,0
+        sojg    4,vm_startup_check_loop
+vm_startup_check_done:
+        addi    7,0100                 ; minimum runtime stack headroom
+        camle   7,3
+        jrst    vm_startup_invalid
         move    16,11
         addi    16,1                   ; next argv/env pointer slot
 
@@ -605,6 +631,14 @@ vm_startup_finish:
         movem   1,3(12)                ; initial user stack
         setz    1,
 
+        movei   0,10
+        hrli    0,-6(17)
+        blt     0,16
+        sub     17,kconst_7_7
+        popj    17,
+
+vm_startup_invalid:
+        seto    1,
         movei   0,10
         hrli    0,-6(17)
         blt     0,16

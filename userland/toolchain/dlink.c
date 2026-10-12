@@ -688,7 +688,8 @@ entry_offset(kword_t *entryp)
 }
 
 static int
-write_dxr(const kword_t *path, int pure_request, int rt_required)
+write_dxr(const kword_t *path, int pure_request, int rt_required,
+    kword_t stack_words)
 {
         kword_t h[3];
         kword_t entry;
@@ -703,6 +704,9 @@ write_dxr(const kword_t *path, int pure_request, int rt_required)
         rw = (iw + 35UL) / 36UL;
         if (rw > NL_MAX_RELMAP_WORDS || entry_offset(&entry) != 0)
                 return -1;
+        if (stack_words != 0UL && (pure_request ||
+            stack_words < 0400UL || stack_words > 02000UL))
+                return -1;
         for (i = 0U; i < NL_MAX_RELMAP_WORDS; ++i)
                 nl_relmap[i] = 0UL;
         fd = dsys_open((kword_t *)path,
@@ -713,7 +717,9 @@ write_dxr(const kword_t *path, int pure_request, int rt_required)
         h[0] = nd_magic("DXR2  ");
         h[0] = nd_halves(nd_lh(h[0]), entry);
         h[1] = nd_halves(iw, (nl_bss_words & NL_DXR_BSS_MASK) | flags);
-        h[2] = nd_halves(nl_text_words, nd_lh(nd_magic("TX2   ")));
+        h[2] = stack_words != 0UL ?
+            nd_halves(stack_words, nd_lh(nd_magic("ST2   "))) :
+            nd_halves(nl_text_words, nd_lh(nd_magic("TX2   ")));
         if (nd_write_exact(fd, h, 3U) != 0)
                 goto bad;
         text_write = 0;
@@ -778,7 +784,7 @@ write_map(const kword_t *path)
 static int
 usage(void)
 {
-        (void)u_puts(2, "USAGE: DLINK -O OUT.DXR [-M MAP] [-B OCTAL] [--PURE] [--RT-REQUIRED] [--DAIMOS-UUO-RELAX] INPUT.DOBJ|LIBRARY.DARC ...");
+        (void)u_puts(2, "USAGE: DLINK -O OUT.DXR [-M MAP] [-B OCTAL] [--PURE] [--STACK-WORDS OCTAL] [--RT-REQUIRED] [--DAIMOS-UUO-RELAX] INPUT.DOBJ|LIBRARY.DARC ...");
         (void)u_crlf(2);
         return 1;
 }
@@ -794,6 +800,7 @@ main(int argc, kword_t **argv)
         unsigned int i;
         int pure_request;
         int rt_required;
+        kword_t stack_words;
         int fd;
         int rc;
 
@@ -803,6 +810,7 @@ main(int argc, kword_t **argv)
         nl_relax = 0;
         pure_request = 0;
         rt_required = 0;
+        stack_words = 0UL;
         first = 1U;
         while (first < (unsigned int)argc) {
                 if (u_s6_eq(argv[first], "-O") && first + 1U < (unsigned int)argc) {
@@ -817,6 +825,12 @@ main(int argc, kword_t **argv)
                         pure_request = 1; first++;
                 } else if (u_s6_eq(argv[first], "--RT-REQUIRED")) {
                         rt_required = 1; first++;
+                } else if (u_s6_eq(argv[first], "--STACK-WORDS") &&
+                    first + 1U < (unsigned int)argc) {
+                        if (parse_octal(argv[first + 1U], &stack_words) != 0 ||
+                            stack_words < 0400UL || stack_words > 02000UL)
+                                return usage();
+                        first += 2U;
                 } else if (u_s6_eq(argv[first], "--DAIMOS-UUO-RELAX")) {
                         nl_relax = 1; first++;
                 } else {
@@ -847,7 +861,7 @@ main(int argc, kword_t **argv)
                 }
         }
         if (resolve_archives() != 0 || layout() != 0 ||
-            write_dxr(out, pure_request, rt_required) != 0) {
+            write_dxr(out, pure_request, rt_required, stack_words) != 0) {
                 (void)diag_path("LINK FAILED", 0);
                 return 1;
         }

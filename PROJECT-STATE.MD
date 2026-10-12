@@ -1,3 +1,45 @@
+## SUPERVISOR V11 SINGLE-APR-BLOCK (2026-10-12)
+
+The PDP-6 SUPERVISOR now uses a per-executable DXR2 `ST2` stack
+reservation of 0400 instead of the universal 02000. Non-ST2 programs
+retain their normal 02000 stack. The EXEC loader keeps the validated
+stack reservation in protected origin word 017 and validates the full
+SIXBIT startup payload against available stack space before writing.
+The PID 1 LOGSTORE path uses a four-word `SYS_LOGCTL_EVENT` request;
+the LOGSTORE MRES allocates its ordinary 0200-word record only during
+the synchronous append and releases it afterward. Its on-disk record
+and the existing 0200-word general APPEND syscall are unchanged.
+
+Measured SUPERVISOR DXR: **image 001177, BSS 000051, origin 000020,
+stack 000400**, total **001670** octal, rounded **002000** (one PDP-6
+APR block). The v7 PID 1 process used 004000, so its process extent
+saves 1024 decimal physical words. Added KCORE is 0072 octal words and
+the LOGSTORE MRES increases by 37 decimal words; the approximate net
+standing resident saving is **929 decimal words**, excluding transient
+event scratch and MM descriptor effects.
+
+See `design/SUPERVISOR-ONE-APR-BLOCK-20261012-v11.MD` for ABI, invariants,
+and the matching versioned daimos-testkit acceptance/negative tests.
+
+**Validated on fresh media:** the original APPEND and compact EVENT
+both failed to persist because AUXSTORE LOGSTORE installed raw relocated
+DRM/DSK service exports where the three-register KCORE bridge ABI was
+required. The incorrect call silently wrote at drum physical block 0,
+damaging the AUXSTORE descriptor. LOGSTORE MINIT now patches the validated
+unit/block/buffer bridges instead of the raw hardware-address/buffer
+service entries. Two independent cold-boot direct LOGD/LOGDUMP probes,
+host verification of persisted 128-word records and the intact AUXSTORE
+descriptor, 115/115 DSH conformance, and strict eight accepted INITTAB
+entries with seven 102-character failure paths all **PASS**. DXR size
+and six positive/negative ST2 format checks **PASS**.
+
+The unmerged v9 static-user-buffer/handwritten-assembler RUN experiment
+is not required to reach one APR block and has not completed its calling
+convention/respawn regression. Do not merge it as part of this result.
+Independent user-stack high-water measurements, forced repeated LOGIN
+respawn under pressure, and full 32K LOGIN-to-DSH acceptance remain
+separate open work; none is implied by the APR size proof.
+
 ## SUPERVISOR V7 EXEC ARGV STORAGE REUSE (2026-10-12)
 
 SUPERVISOR's eight service pathnames already exist as counted SIXBIT

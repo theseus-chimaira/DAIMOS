@@ -101,6 +101,7 @@ struct sys_fsinfo {
 #define SYS_LOGCTL_MTC_REWIND         6U
 #define SYS_LOGCTL_WAIT               7U
 #define SYS_LOGCTL_APPEND            010U
+#define SYS_LOGCTL_EVENT             011U /* four-word bounded event */
 
 #define SYS_RTCTL_DISABLE            0U
 #define SYS_RTCTL_ENABLE             1U

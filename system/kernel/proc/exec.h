@@ -23,6 +23,12 @@
 #define EXEC_DXR_MAX_IMAGE_WORDS    0300000U
 #define EXEC_DXR_MAX_BSS_WORDS      EXEC_DXR_BSS_MASK
 #define EXEC_DXR_TEXT_TAG            0647022U /* SIXBIT /TX2/ */
+/* Plain, non-PURE DXR2 may use ST2 instead of TX2. The third header
+ * word's LH then specifies an explicit user stack allocation. The PDP-6
+ * backend saves it in inaccessible logical origin word 017. */
+#define EXEC_DXR_STACK_TAG           0636422U /* SIXBIT /ST2/ */
+#define EXEC_DXR_STACK_MIN_WORDS     00400U
+#define EXEC_DXR_STACK_META_OFFSET  000017U
 
 #define EXEC_LOAD_OK                 0
 #define EXEC_LOAD_RT_REQUIRED        1

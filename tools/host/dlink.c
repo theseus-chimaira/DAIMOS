@@ -998,7 +998,8 @@ static int write_map(const char *name, struct linker *l)
     return 0;
 }
 
-static int write_dxr(const char *name, struct linker *l, int purity_request, int rt_required)
+static int write_dxr(const char *name, struct linker *l, int purity_request,
+                     int rt_required, unsigned long stack_words)
 {
     unsigned long tw, dw, bw, iw, rw;
     struct dobj_word *image;
@@ -1011,6 +1012,14 @@ static int write_dxr(const char *name, struct linker *l, int purity_request, int
     int i;
     FILE *f;
 
+    /* ST2 is a DXR2 alternative to TX2 for ordinary, non-PURE images.
+     * Its LH is the requested stack reservation in 36-bit words.
+     * Compressed/PURE images require the TX2 text-prefix metadata. */
+    if (stack_words && (stack_words < 0400UL || stack_words > 02000UL ||
+                        purity_request == PURITY_PURE)) {
+        fprintf(stderr, "dlink: invalid --stack-words or incompatible --pure\n");
+        return -1;
+    }
     if (layout(l, &tw, &dw, &bw) != 0)
         return -1;
     iw = tw + dw;
@@ -1073,7 +1082,9 @@ static int write_dxr(const char *name, struct linker *l, int purity_request, int
     h.rh = entry;
     if (dobj_write_word(f, h) != 0 ||
         dobj_write_word(f, dobj_word_halves(iw, (bw & DXR_BSS_MASK) | flags)) != 0 ||
-        dobj_write_word(f, dobj_word_halves(tw, sixbit_word("TX2   ").lh)) != 0) goto bad;
+        dobj_write_word(f, stack_words ?
+            dobj_word_halves(stack_words, sixbit_word("ST2   ").lh) :
+            dobj_word_halves(tw, sixbit_word("TX2   ").lh)) != 0) goto bad;
     for (pos = 0UL; pos < iw; pos++) if (dobj_write_word(f, image[pos]) != 0) goto bad;
     for (pos = 0UL; pos < rw; pos++) if (dobj_write_word(f, relmap[pos]) != 0) goto bad;
     if (fclose(f) != 0) { remove(name); free(image); free(relmap); return -1; }
@@ -1273,7 +1284,7 @@ static void cleanup(struct linker *l)
 
 static void usage(void)
 {
-    fprintf(stderr, "usage: dlink -o out.dxr [--pure] [--rt-required] [--daimos-uuo-relax] [--fold-plan file] [-M out.map] [-b octal] [-A map] [-R out.dobj -N symbol [-X export] ...] input.dobj|library.darc ...\n");
+    fprintf(stderr, "usage: dlink -o out.dxr [--pure] [--stack-words octal] [--rt-required] [--daimos-uuo-relax] [--fold-plan file] [-M out.map] [-b octal] [-A map] [-R out.dobj -N symbol [-X export] ...] input.dobj|library.darc ...\n");
 }
 
 int main(int argc, char **argv)
@@ -1293,6 +1304,7 @@ int main(int argc, char **argv)
     int rc;
     int purity_request;
     int rt_required;
+    unsigned long stack_words;
 
     memset(&l, 0, sizeof(l));
     out = NULL;
@@ -1306,6 +1318,7 @@ int main(int argc, char **argv)
     l.daimos_uuo_relax = 0;
     purity_request = PURITY_UNKNOWN;
     rt_required = 0;
+    stack_words = 0UL;
     first = 1;
     while (first < argc && argv[first][0] == '-') {
         if (strcmp(argv[first], "-o") == 0 && first + 1 < argc) {
@@ -1317,6 +1330,13 @@ int main(int argc, char **argv)
         } else if (strcmp(argv[first], "--rt-required") == 0) {
             rt_required = 1;
             first++;
+        } else if (strcmp(argv[first], "--stack-words") == 0 &&
+                   first + 1 < argc) {
+            char *endp;
+            stack_words = strtoul(argv[first + 1], &endp, 8);
+            if (*endp != '\0' || stack_words < 0400UL ||
+                stack_words > 02000UL) { usage(); return 1; }
+            first += 2;
         } else if (strcmp(argv[first], "--daimos-uuo-relax") == 0) {
             l.daimos_uuo_relax = 1;
             first++;
@@ -1392,7 +1412,8 @@ int main(int argc, char **argv)
         (load_fold_plan(&l, fold_plan) != 0 ||
          prepare_text_maps(&l) != 0))
         goto done;
-    if (write_dxr(out, &l, purity_request, rt_required) != 0) {
+    if (write_dxr(out, &l, purity_request, rt_required,
+                  stack_words) != 0) {
         fprintf(stderr, "dlink: link failed\n");
         goto done;
     }

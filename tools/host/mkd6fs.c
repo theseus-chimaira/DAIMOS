@@ -393,8 +393,17 @@ static uint64_t *load_dxr(const char *path, unsigned *wordsp)
                 tx2 = ((uint64_t)('T' - 040) << 12) |
                     ((uint64_t)('X' - 040) << 6) | (uint64_t)('2' - 040);
                 text = (unsigned)((words[2] >> 18) & HALF_MASK);
-                if ((words[2] & HALF_MASK) != tx2 || text > image)
-                        die("DXR2 executable has invalid text metadata");
+                if ((words[2] & HALF_MASK) != tx2 || text > image) {
+                        uint64_t st2;
+
+                        st2 = ((uint64_t)('S' - 040) << 12) |
+                            ((uint64_t)('T' - 040) << 6) |
+                            (uint64_t)('2' - 040);
+                        if ((words[2] & HALF_MASK) != st2 ||
+                            text < 0400U || text > 02000U ||
+                            (flags & 0200000U) != 0U)
+                                die("DXR2 executable has invalid ST2/TX2 metadata");
+                }
         } else if (n != 2U + image + reloc) {
                 die("DXR executable has inconsistent length");
         }

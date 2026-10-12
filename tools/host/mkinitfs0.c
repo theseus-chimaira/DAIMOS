@@ -478,9 +478,16 @@ static unsigned int *load_dxr_nonets(const char *path, int *nout)
 		           | ((word_t)('X' - 040) << 6)
 		           |  (word_t)('2' - 040);
 		word_t text_words = (words[2] >> 18) & 0777777ULL;
-		if ((words[2] & 0777777ULL) != tx2 ||
-		    text_words > (word_t)image_words)
-			die("%s: invalid DXR2 text metadata", path);
+        if ((words[2] & 0777777ULL) != tx2 ||
+            text_words > (word_t)image_words) {
+            word_t st2 = ((word_t)('S' - 040) << 12)
+                       | ((word_t)('T' - 040) << 6)
+                       |  (word_t)('2' - 040);
+            if ((words[2] & 0777777ULL) != st2 ||
+                text_words < 0400 || text_words > 02000 ||
+                (dxr_flags & 0200000) != 0)
+                die("%s: invalid DXR2 ST2/TX2 metadata", path);
+        }
 		;
 	} else
 		die("%s: DXR length is %d words, expected %d or %d",

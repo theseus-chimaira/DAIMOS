@@ -1252,14 +1252,23 @@ logstore_minit(void)
             LOGSTORE_X_STATE);
         if (auxstore_logstore_blocks != 0UL) {
                 if (auxstore_kind == AUXSTORE_KIND_DRM) {
-                        read_addr = module_service_get(MODULE_SERVICE_DRM_READ_BLOCK);
-                        write_addr = module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK);
+                        if (module_service_get(MODULE_SERVICE_DRM_READ_BLOCK) == 0U ||
+                            module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK) == 0U)
+                                minit_fatal(name);
+                        read_addr = (unsigned int)(unsigned long)&drm236_read_block;
+                        write_addr = (unsigned int)(unsigned long)&drm236_write_block;
                 } else {
-                        read_addr = module_service_get(MODULE_SERVICE_DSK_READ_SECTOR);
-                        write_addr = module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR);
+                        if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) == 0U ||
+                            module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) == 0U)
+                                minit_fatal(name);
+                        read_addr = (unsigned int)(unsigned long)&dsk270_read_sector;
+                        write_addr = (unsigned int)(unsigned long)&dsk270_write_sector;
                 }
-                if (read_addr == 0U || write_addr == 0U)
-                        minit_fatal(name);
+                /* The LOGSTORE direct path supplies unit, block, buffer.
+                 * Raw MRES exports instead consume a hardware address and
+                 * a buffer.  Always patch the validated KCORE ABI bridges;
+                 * otherwise a requested write can overwrite drum block 0
+                 * using the block number as a core-buffer pointer. */
                 state[0] = 0UL;
                 packed = ((kword_t)(auxstore_unit + 1U) << 18U) |
                     auxstore_logstore_start;
