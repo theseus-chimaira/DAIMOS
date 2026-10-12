@@ -1,5 +1,14 @@
 # DSH TODO
 
+PHASE-ZERO VARIABLE SHRINK FOLLOW-UP (2026-10-12, V16): a shared allocator
+prototype compiled and linked, reduced BSS from 015241 to 013742 octal, but
+grew DXR image from the clean current-main 036523 to 037213 octal.  The
+combined image+BSS improved by 0607 octal words; the image acceptance gate
+failed.  Runtime behavior was not tested and the code was fully reverted.
+The allocation idea remains valid: implement a lower-code-cost assembly
+variant and run the target regressions.  See
+`design/dsh-variable-allocator-shrink-20261012-v16.md`.  No overlays.
+
 REVIEWED: 2026-10-10 (115/115 TARGET CONFORMANCE VERIFIED)
 
 THIS FILE IS THE AUTHORITATIVE OPEN-WORK LIST FOR DSH.  THE FROZEN LANGUAGE

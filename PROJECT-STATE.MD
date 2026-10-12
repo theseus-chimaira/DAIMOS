@@ -1,3 +1,16 @@
+## 2026-10-12 DSH VARIABLE ALLOCATOR SIZE EXPERIMENT V16
+
+Clean current-main PDP-6 KCC DSH baseline: DXR image 036523 and BSS 015241
+octal.  A shared dynamic allocator for packed variable payloads and the
+temporary 20-argument expansion compiled and linked with image 037213 and
+BSS 013742.  Combined image+BSS fell by 0607 octal words, but the image
+exceeded both the temporary 037000 and production 036000 limits.  No runtime
+acceptance was run.  All prototype code was reverted; current production
+DSH is unchanged.  The valid shared-lifetime concept requires smaller
+assembly implementation and full regression, not the earlier unsafe direct
+BRK-restore approach.  Detailed analysis is in
+`design/dsh-variable-allocator-shrink-20261012-v16.md`.
+
 ## 2026-10-12 P10FOLD PDP-6 I/O SKIP SAFETY AND MULTI-TTY
 
 - Fixed an unsafe zero-cost fold of GE driver CONSO/JRST polling prefixes.
