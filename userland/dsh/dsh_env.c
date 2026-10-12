@@ -170,28 +170,19 @@ dsh_expand_quoted(const struct dsh_state *st, const struct dsh_s6 *in,
                                 value = 0;
                         if (value != 0 && dsh_append_s6(out, value) != 0)
                                 return -1;
-                        if (quoted && out_quote_mask != 0)
-                                for (n = begin; n < out->len; ++n)
-                                        *out_quote_mask |= (kword_t)1 << n;
-                        continue;
+                        goto expansion_done;
                 }
                 if (ch == '?') {
                         ++i;
                         if (dsh_append_uint(out, st->status) != 0)
                                 return -1;
-                        if (quoted && out_quote_mask != 0)
-                                for (n = begin; n < out->len; ++n)
-                                        *out_quote_mask |= (kword_t)1 << n;
-                        continue;
+                        goto expansion_done;
                 }
                 if (ch == '#') {
                         ++i;
                         if (dsh_append_uint(out, st->argc) != 0)
                                 return -1;
-                        if (quoted && out_quote_mask != 0)
-                                for (n = begin; n < out->len; ++n)
-                                        *out_quote_mask |= (kword_t)1 << n;
-                        continue;
+                        goto expansion_done;
                 }
                 if (ch == '$') {
                         int pid;
@@ -201,10 +192,7 @@ dsh_expand_quoted(const struct dsh_state *st, const struct dsh_s6 *in,
                         if (pid < 0 ||
                             dsh_append_uint(out, (unsigned int)pid) != 0)
                                 return -1;
-                        if (quoted && out_quote_mask != 0)
-                                for (n = begin; n < out->len; ++n)
-                                        *out_quote_mask |= (kword_t)1 << n;
-                        continue;
+                        goto expansion_done;
                 }
                 if (ch == '@') {
                         unsigned int a;
@@ -217,10 +205,7 @@ dsh_expand_quoted(const struct dsh_state *st, const struct dsh_s6 *in,
                                 if (dsh_append_s6(out, &st->args[a]) != 0)
                                         return -1;
                         }
-                        if (quoted && out_quote_mask != 0)
-                                for (n = begin; n < out->len; ++n)
-                                        *out_quote_mask |= (kword_t)1 << n;
-                        continue;
+                        goto expansion_done;
                 }
                 if (ch == '[') {
                         ++i;
@@ -250,6 +235,7 @@ dsh_expand_quoted(const struct dsh_state *st, const struct dsh_s6 *in,
                 value = dsh_var_get_range(st, in, first, last);
                 if (value != 0 && dsh_append_s6(out, value) != 0)
                         return -1;
+expansion_done:
                 if (quoted && out_quote_mask != 0)
                         for (n = begin; n < out->len; ++n)
                                 *out_quote_mask |= (kword_t)1 << n;

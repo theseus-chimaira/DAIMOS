@@ -1,23 +1,9 @@
 #include "dsh_lex.h"
 
 static int
-dsh_space(int ch)
-{
-        return ch == ' ';
-}
-
-static int
-dsh_line_ch(const struct dsh_line *line, unsigned int pos)
-{
-        if (line == 0 || pos >= line->len)
-                return 0;
-        return dsh_line_get(line, pos);
-}
-
-static int
 dsh_word_stop(int ch)
 {
-        return ch == 0 || dsh_space(ch) || ch == ';' || ch == '&' ||
+        return ch == 0 || ch == ' ' || ch == ';' || ch == '&' ||
             ch == '!' || ch == '<' || ch == '>' || ch == '(' ||
             ch == ')';
 }
@@ -62,18 +48,18 @@ dsh_add_word(const struct dsh_line *line, unsigned int *posp, struct dsh_token *
         pos = *posp;
         had_fragment = 0U;
 
-        while ((ch = dsh_line_ch(line, pos)) != 0) {
+        while ((ch = dsh_line_get(line, pos)) != 0) {
                 if (ch == '\'' || ch == '"') {
                         quote = ch;
                         t->type |= DSH_T_QUOTED;
                         had_fragment = 1U;
                         pos++;
-                        while ((ch = dsh_line_ch(line, pos)) != 0 &&
+                        while ((ch = dsh_line_get(line, pos)) != 0 &&
                             ch != quote) {
                                 if (quote == '"' && ch == '\\') {
                                         int next;
 
-                                        next = dsh_line_ch(line, pos + 1U);
+                                        next = dsh_line_get(line, pos + 1U);
                                         if (next == '"' || next == '\\' ||
                                             next == '$') {
                                                 ch = next;
@@ -106,7 +92,7 @@ dsh_add_word(const struct dsh_line *line, unsigned int *posp, struct dsh_token *
                                 if (rc != DSH_OK)
                                         return rc;
                         }
-                        if (dsh_line_ch(line, pos) != quote)
+                        if (dsh_line_get(line, pos) != quote)
                                 return DSH_E_CHAR;
                         pos++;
                         continue;
@@ -114,7 +100,7 @@ dsh_add_word(const struct dsh_line *line, unsigned int *posp, struct dsh_token *
                 if (ch == '\\') {
                         had_fragment = 1U;
                         pos++;
-                        ch = dsh_line_ch(line, pos);
+                        ch = dsh_line_get(line, pos);
                         if (ch == 0)
                                 return DSH_E_CHAR;
                         pos++;
@@ -155,14 +141,14 @@ dsh_lex_s6_line(const struct dsh_line *line, struct dsh_token *tokens, unsigned 
                 *errpos = -1;
         pos = 0;
 
-        while ((ch = dsh_line_ch(line, pos)) != 0) {
-                if (dsh_space(ch)) {
+        while ((ch = dsh_line_get(line, pos)) != 0) {
+                if (ch == ' ') {
                         pos++;
                         continue;
                 }
                 if (ch == '#')
                         break;
-                if (ch == '$' && dsh_line_ch(line, pos + 1U) == '(') {
+                if (ch == '$' && dsh_line_get(line, pos + 1U) == '(') {
                         rc = dsh_add_op(tokens, max_tokens, ntokens,
                             DSH_T_DOLLAR_LPAREN);
                         if (rc != DSH_OK)
@@ -185,7 +171,7 @@ dsh_lex_s6_line(const struct dsh_line *line, struct dsh_token *tokens, unsigned 
                                 rc = dsh_add_op(tokens, max_tokens, ntokens,
                                     DSH_T_REDIR_IN);
                         else if (ch == '>') {
-                                if (dsh_line_ch(line, pos + 1U) == '>') {
+                                if (dsh_line_get(line, pos + 1U) == '>') {
                                         rc = dsh_add_op(tokens, max_tokens,
                                             ntokens, DSH_T_APPEND);
                                         if (rc == DSH_OK)

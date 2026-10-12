@@ -1,3 +1,20 @@
+## DSH EASY SOURCE SHRINK STAGE VERIFIED (2026-10-12)
+
+The first measured DSH Phase-0 image optimization separated unused libc
+configuration-field parsers and counted-SIXBIT equality into other objects,
+shared five repeated expansion quote-mask loops, and removed two redundant
+per-character lexer wrappers. Fresh PDP-6 KCC/DAS/DLINK image decreased
+from **036722 to 036054 octal words**, saving **0646 octal (422 decimal)**
+words, with BSS **unchanged at 015241 octal**. Full PDP-6 disk build passed.
+All **115/115** DSH SIMH conformance probes passed on the new image.
+
+The normal hard limit is 036000, so 0054 octal words (44 decimal) remain
+to remove. Keep the temporary 037000 build override until the hard gate
+actually passes. The implementation does not change the kernel or any D6FS
+format. See `design/DSH-EASY-SIZE-SPEED-AUDIT-20261012-v1.MD` and the
+DAIMOS-TESTKIT versioned DSH size guard. Proposed history-ring and builtin
+dispatch CPU changes remain unimplemented pending size/performance evidence.
+
 ## DSH HISTFILE BOUNDED RECOVERY IMPLEMENTED (2026-10-12)
 
 DSH now uses the existing advisory FLOCK syscall around complete HISTFILE

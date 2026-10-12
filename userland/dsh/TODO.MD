@@ -2,6 +2,15 @@
 
 ## CURRENT FOCUS (2026-10-12): PHASE ZERO AND IMAGE SHRINKAGE
 
+First source-driven shrink stage (2026-10-12): source/object cleanup and
+quote-mask/lexer path sharing reduced the KCC/DAS DSH DXR from **036722**
+to **036054 octal words**, saving 0646; BSS stays 015241. The full disk
+build and 115/115 PDP-6 DSH conformance probes pass. Only 0054 octal
+words remain above the normal 036000 image limit; the temporary 037000
+override is still required. Source findings and next low-risk candidates:
+`design/DSH-EASY-SIZE-SPEED-AUDIT-20261012-v1.MD`. Testkit now guards
+the intermediate image/BSS baseline and unused-symbol removal.
+
 Earlier D6FS journal research is preserved in
 `design/DSH-HISTFILE-ATOMIC-APPEND-20261012-v1.MD`, but is **not** a
 DSH phase-zero dependency. History is disposable user data; structural S6REC
