@@ -1,3 +1,36 @@
+## DSH HISTFILE BOUNDED RECOVERY IMPLEMENTED (2026-10-12)
+
+DSH now uses the existing advisory FLOCK syscall around complete HISTFILE
+loads, repairs and appends. It scans S6REC forward in constant RAM, retaining
+only the newest 16 valid records (the existing 496-word cache), then truncates
+an incomplete/malformed suffix to the last valid word offset while holding
+the file lock. A failed append attempts to restore the preappend EOF under
+the same lock. If a lock cannot be acquired, a read I/O error occurs, or
+repair fails, the session conservatively disables persistent history
+instead of truncating unverified data. The libc S6REC reader now distinguishes
+read I/O failure from structurally malformed/truncated records.
+
+Target acceptance in DAIMOS-TESTKIT commit dd55c32,
+`tests/validation/daimos-dsh-histfile-repair-20261012-v2.sh` passes 5/5
+across two live PDP-6 SIMH boots. The checker verifies recovery to the exact
+11-word stream after a valid-prefix recall and a new command; D6FSCK reports
+CLEAN (179196 blocks, 344 FCBs, selected superblock 0670 sequence 5).
+The same DSH image passes all 115/115 existing target conformance probes.
+Pending acceptance: faulted write/rollback and deliberate lock contention.
+
+Fresh isolated KCC/DAS builds: before repair, DSH DXR image 036523 octal;
+with repair, 036722 octal, a growth of 0177 octal (127 decimal) words.
+BSS stays 015241 octal. The accepted temporary 037000 image gate is met,
+but the normal 036000 gate is still exceeded by 0722 octal words.
+
+**No production kernel code was changed for this recovery.** Existing
+kernel FLOCK and truncate APIs suffice for cooperating DSH sessions.
+Earlier D6FS fixes for serialized O_APPEND EOF selection and staged
+payload-before-size growth remain in place. D6FS V3 journaling experiments
+are deferred from DSH Phase 0; they neither ran as kernel code nor
+established general crash-atomic metadata transactions. Filesystem
+metadata recovery remains the separate D6FS/D6FSCK responsibility.
+
 ## DSH PHASE ZERO: BOUNDED UNDO EXPERIMENT AND DURABILITY GATE (2026-10-12)
 
 DAIMOS-TESTKIT e971aeb adds a strict-C99 host model of full-block undo

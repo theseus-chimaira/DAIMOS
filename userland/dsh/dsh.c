@@ -14,6 +14,23 @@ static unsigned int dsh_history_count;
 static struct dsh_s6 dsh_history_path;
 static unsigned int dsh_history_persistent;
 
+/* FLOCK is advisory and nonblocking. All DSH history accesses cooperate;
+ * briefly retry if another session is reading, repairing, or appending. */
+#define DSH_HISTORY_LOCK_TRIES 64U
+
+static int
+dsh_history_lock(int fd)
+{
+        unsigned int tries;
+
+        for (tries = 0U; tries < DSH_HISTORY_LOCK_TRIES; ++tries) {
+                if (dsys_flock(fd, SYS_LOCK_EXCLUSIVE) == 0)
+                        return 0;
+                (void)dsys_sleep(1U);
+        }
+        return -1;
+}
+
 static void dsh_put_prompt(struct dsh_state *st, unsigned int more);
 static int dsh_s6_literal(struct dsh_s6 *dst, const char *text);
 
@@ -168,20 +185,36 @@ dsh_history_load(void)
         kword_t path[U_PATH_WORDS];
         kword_t rec[DSH_LINE_MAX_WORDS + 1U];
         unsigned int i;
+        kword_t valid_words;
         int fd;
         int n;
+        int writable;
 
         if (!dsh_history_persistent ||
             dsh_s6_pack(&dsh_history_path, path, U_PATH_WORDS) != 0)
                 return;
-        fd = dsys_open(path, SYS_O_RDONLY);
+        fd = dsys_open(path, SYS_O_RDWR);
+        writable = fd >= 0;
+        if (!writable)
+                fd = dsys_open(path, SYS_O_RDONLY);
         if (fd < 0)
                 return;
+        if (dsh_history_lock(fd) != 0) {
+                /* Never read or repair a concurrently modified stream.
+                 * In-memory editing remains usable without persistence. */
+                dsh_history_persistent = 0U;
+                (void)u_puts(2, "DSH: HISTFILE BUSY; PERSISTENCE DISABLED");
+                (void)u_crlf(2);
+                (void)dsys_close(fd);
+                return;
+        }
         (void)u_text_open_fd(&reader, fd);
+        valid_words = 0UL;
         while ((n = u_text_gets6(&reader, rec,
             DSH_LINE_MAX_WORDS + 1U)) >= 0) {
                 if ((unsigned int)n > DSH_LINE_MAX_CHARS)
                         break;
+                valid_words += 1UL + ((kword_t)n + 5UL) / 6UL;
                 dsh_line_clear(&line);
                 line.len = (unsigned int)n;
                 for (i = 0U; i < DSH_LINE_MAX_WORDS; ++i)
@@ -189,9 +222,17 @@ dsh_history_load(void)
                 dsh_history_remember(&line);
         }
         if (n != U_TEXT_EOF) {
-                /* Preserve the valid prefix; never attempt an unlocked
-                 * truncate while another session may be appending. */
-                (void)u_puts(2, "DSH: HISTFILE DAMAGED; VALID PREFIX LOADED");
+                /* Do not erase valid history on a transient I/O error.
+                 * The descriptor lock protects against cooperating DSH
+                 * writers until repair has completed. */
+                if (n == U_TEXT_ERROR && writable &&
+                    dsys_truncate(path, valid_words) == 0) {
+                        (void)u_puts(2, "DSH: HISTFILE TAIL REPAIRED");
+                } else {
+                        dsh_history_persistent = 0U;
+                        (void)u_puts(2,
+                            "DSH: HISTFILE DAMAGED; PERSISTENCE DISABLED");
+                }
                 (void)u_crlf(2);
         }
         u_text_close(&reader);
@@ -207,6 +248,7 @@ dsh_history_add(void)
         int fd;
         int write_rc;
         int close_rc;
+        struct vfs_stat st;
 
         if (dsh_input_line.len == 0U)
                 return;
@@ -217,15 +259,26 @@ dsh_history_add(void)
         fd = dsys_open(path, SYS_O_WRONLY | SYS_O_CREAT | SYS_O_APPEND);
         if (fd < 0)
                 return;
+        if (dsh_history_lock(fd) != 0) {
+                (void)dsys_close(fd);
+                (void)u_puts(2, "DSH: HISTFILE BUSY; WRITE SKIPPED");
+                (void)u_crlf(2);
+                return;
+        }
+        if (dsys_stat(path, &st) != 0 || st.type != VFS_TYPE_REG) {
+                (void)dsys_close(fd);
+                return;
+        }
         count = 1U + (dsh_input_line.len + 5U) / 6U;
         rec[0] = DSH_HISTORY_S6REC_TEXT | (kword_t)dsh_input_line.len;
         for (i = 1U; i < count; ++i)
                 rec[i] = dsh_input_line.words[i - 1U];
-        /* A single WRITE_WORDS need not transfer the entire S6REC record.
-         * Retry the remaining words while the append descriptor is open.
-         * If writing or closing fails, do not silently claim persistence:
-         * startup will reject an incomplete trailing S6REC record. */
+        /* Multiple WRITE_WORDS may be needed. The advisory lock covers the
+         * entire logical record. On failure, restore old EOF before another
+         * cooperating DSH can append. */
         write_rc = u_write_words_all(fd, rec, count);
+        if (write_rc != 0 && dsys_truncate(path, st.size_words) != 0)
+                dsh_history_persistent = 0U;
         close_rc = dsys_close(fd);
         if (write_rc != 0 || close_rc != 0) {
                 (void)u_puts(2, "DSH: HISTFILE WRITE FAILED");

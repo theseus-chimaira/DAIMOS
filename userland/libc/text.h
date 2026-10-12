@@ -5,6 +5,7 @@
 
 #define U_TEXT_EOF (-1)
 #define U_TEXT_ERROR (-2)
+#define U_TEXT_IOERROR (-3)
 
 #define U_TEXT_READ_WORDS 16U
 

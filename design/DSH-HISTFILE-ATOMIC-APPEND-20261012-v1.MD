@@ -4,6 +4,13 @@ Status: audited source paths, **not** an implemented transaction protocol.
 Scope: DSH Phase 0.  Never infer crash durability from a successful return
 or a serialized provider call without testing storage interruption boundaries.
 
+**Scope revision (2026-10-12):** DSH history is disposable; an interruption
+may lose the damaged history suffix. Live PDP-6 SIMH has now verified
+locked S6REC tail repair, bounded 16-entry history reload, and subsequent
+valid appends. DSH no longer requires a crash-atomic D6FS record journal.
+The remaining material below is historical D6FS V3 transaction research,
+not an active DSH implementation gate. No production journal was installed.
+
 ## Current write path and its boundaries
 
 1. `dsh_history_add` builds one S6REC of at most 31 words, opens the file

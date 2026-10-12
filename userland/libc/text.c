@@ -117,22 +117,24 @@ u_text_gets6(struct u_text_reader *r, kword_t *buf, unsigned int words)
         rc = u_text_next_word(r, &header);
         if (rc == 0)
                 return U_TEXT_EOF;
-        if (rc != 1 ||
-            (unsigned int)((header >> U_S6REC_TYPE_SHIFT) &
+        if (rc < 0)
+                return U_TEXT_IOERROR;
+        if ((unsigned int)((header >> U_S6REC_TYPE_SHIFT) &
             U_S6REC_TYPE_MASK) != U_S6REC_TEXT)
                 return U_TEXT_ERROR;
         len = header & U_S6REC_LEN_MASK;
         payload = (unsigned int)((len + 5UL) / 6UL);
-        if (payload + 1U > words) {
-                while (payload-- != 0U)
-                        if (u_text_next_word(r, &word) != 1)
-                                return U_TEXT_ERROR;
+        if (payload + 1U > words)
                 return U_TEXT_ERROR;
-        }
         buf[0] = len;
-        for (i = 0U; i < payload; ++i)
-                if (u_text_next_word(r, &buf[i + 1U]) != 1)
+        for (i = 0U; i < payload; ++i) {
+                rc = u_text_next_word(r, &word);
+                if (rc < 0)
+                        return U_TEXT_IOERROR;
+                if (rc == 0)
                         return U_TEXT_ERROR;
+                buf[i + 1U] = word;
+        }
         for (i = payload + 1U; i < words; ++i)
                 buf[i] = 0;
         return (int)len;
