@@ -2,6 +2,20 @@ PROJECT_ROOT := $(abspath ..)
 BUILD_ROOT ?= $(PROJECT_ROOT)/build
 USERLAND_BUILD := $(BUILD_ROOT)/userland
 KCC ?= kcc
+# The historical KCC variable names remain recipe aliases; COMPILER selects
+# the actual target compiler for every userspace translation unit.
+COMPILER ?= kcc
+PDP10_GCC ?= pdp10-dec-none-gcc
+GCCFLAGS ?= -std=gnu99 -Os -march=pdp6 -mcpu=pdp6
+ifeq ($(COMPILER),gcc)
+override KCC = $(PDP10_GCC)
+override KCCFLAGS = $(GCCFLAGS)
+GCC_LINK_LIB != $(PDP10_GCC) -print-libgcc-file-name
+TARGET_LINK_LIBS = $(GCC_LINK_LIB)
+GCC_STARTUP_SRC = libc/gcc_startup.s
+else ifneq ($(COMPILER),kcc)
+$(error COMPILER must be gcc or kcc)
+endif
 DAS ?= das
 DASFLAGS ?= -F
 DLINK ?= dlink
@@ -35,7 +49,7 @@ KCC_HEADERS = $(wildcard $(PROJECT_ROOT)/userland/libc/*.h) \
 CHECK_SRCS = libc/u.c libc/text.c exec/commands.c exec/standalone.c exec/utility.c exec/utility_standalone.c exec/xargs.c exec/sed.c exec/configctl.c exec/make.c dsh/dsh.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c init/init.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c tsfs/mount_tsfs.c dtfs/dtfs_probe.c dtfs/dtfsprobe.c d6lz/d6lz.c logstore/logdrain.c logstore/logcompat.c toolchain/dobj.c toolchain/darc.c toolchain/dlink.c toolchain/objdump.c
 CHECK_ASMS = $(CHECK_SRCS:%.c=$(USERLAND_BUILD)/check/%.s)
 COMMON_C_SRCS = libc/u.c libc/text.c
-COMMON_S_SRCS = libc/crt0.s libc/syscall.s libc/syscall_helpers.s
+COMMON_S_SRCS = libc/crt0.s libc/syscall.s libc/syscall_helpers.s $(GCC_STARTUP_SRC)
 
 INIT_C_SRCS = $(COMMON_C_SRCS) libc/logevent.c init/init.c
 INIT_C_OBJS = $(INIT_C_SRCS:%.c=$(USERLAND_BUILD)/init/%.dobj)
@@ -264,7 +278,7 @@ $(USERLAND_BUILD)/dshcomp/%.dobj: %.s
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(INIT_DXR): $(INIT_C_OBJS) $(INIT_S_OBJS)
-	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(INIT_MAP) $(INIT_S_OBJS) $(INIT_C_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(INIT_MAP) $(INIT_S_OBJS) $(INIT_C_OBJS) $(TARGET_LINK_LIBS)
 
 $(USERLAND_BUILD)/mountall/%.dobj: %.c
 	mkdir -p $(dir $@)
@@ -276,19 +290,19 @@ $(USERLAND_BUILD)/mountall/%.dobj: %.s
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(MOUNTALL_DXR): $(MOUNTALL_C_OBJS) $(MOUNTALL_S_OBJS)
-	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(MOUNTALL_MAP) $(MOUNTALL_S_OBJS) $(MOUNTALL_C_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(MOUNTALL_MAP) $(MOUNTALL_S_OBJS) $(MOUNTALL_C_OBJS) $(TARGET_LINK_LIBS)
 
 $(LOGIN_DXR): $(LOGIN_C_OBJS) $(LOGIN_S_OBJS)
-	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(LOGIN_MAP) $(LOGIN_S_OBJS) $(LOGIN_C_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(LOGIN_MAP) $(LOGIN_S_OBJS) $(LOGIN_C_OBJS) $(TARGET_LINK_LIBS)
 
 $(DSH_FOLD_PLAN): $(DSH_S_OBJS) $(P10FOLD_TOOL_DEP) Makefile
 	$(P10FOLD) -m 4 -P $@ $(DSH_S_OBJS) >/dev/null
 
 $(DSH_DXR): $(DSH_C_OBJS) $(DSH_S_OBJS) $(DSH_FOLD_PLAN)
-	$(DLINK) --daimos-uuo-relax -b 020 --fold-plan $(DSH_FOLD_PLAN) -o $@ -M $(DSH_MAP) $(DSH_S_OBJS) $(DSH_C_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 --fold-plan $(DSH_FOLD_PLAN) -o $@ -M $(DSH_MAP) $(DSH_S_OBJS) $(DSH_C_OBJS) $(TARGET_LINK_LIBS)
 
 $(DSHCOMP_DXR): $(DSHCOMP_C_OBJS) $(DSHCOMP_S_OBJS)
-	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(DSHCOMP_MAP) $(DSHCOMP_S_OBJS) $(DSHCOMP_C_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(DSHCOMP_MAP) $(DSHCOMP_S_OBJS) $(DSHCOMP_C_OBJS) $(TARGET_LINK_LIBS)
 
 $(USERLAND_BUILD)/command/%.dobj: %.c
 	mkdir -p $(dir $@)
@@ -328,7 +342,7 @@ $(USERLAND_BUILD)/program/$(1).dobj: exec/standalone.c exec/cmd.h
 	$$(DAS) $$(DASFLAGS) -C -O $$@ $$(@:.dobj=.s)
 
 $(USERLAND_BUILD)/program/$(1).dxr: $(USERLAND_BUILD)/program/$(1).dobj $(COMMAND_S_OBJS) $(COMMAND_LIB)
-	$$(DLINK) --daimos-uuo-relax -b 020 -o $$@ -M $$(@:.dxr=.map) $$(COMMAND_S_OBJS) $$< $$(COMMAND_LIB)
+	$$(DLINK) --daimos-uuo-relax -b 020 -o $$@ -M $$(@:.dxr=.map) $$(COMMAND_S_OBJS) $$< $$(COMMAND_LIB) $$(TARGET_LINK_LIBS)
 endef
 $(foreach p,$(COMMAND_PROGRAMS),$(eval $(call COMMAND_PROGRAM_template,$(p))))
 
@@ -350,7 +364,7 @@ $(USERLAND_BUILD)/program/$(1).dobj: exec/utility_standalone.c exec/utility.h
 	$$(DAS) $$(DASFLAGS) -C -O $$@ $$(@:.dobj=.s)
 
 $(USERLAND_BUILD)/program/$(1).dxr: $(USERLAND_BUILD)/program/$(1).dobj $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/utility-$(2)/%.dobj) $(UTILITY_$(3)_LIB)
-	$$(DLINK) --daimos-uuo-relax -b 020 -o $$@ -M $$(@:.dxr=.map) $$(COMMON_S_SRCS:%.s=$$(USERLAND_BUILD)/utility-$(2)/%.dobj) $$< $$(UTILITY_$(3)_LIB)
+	$$(DLINK) --daimos-uuo-relax -b 020 -o $$@ -M $$(@:.dxr=.map) $$(COMMON_S_SRCS:%.s=$$(USERLAND_BUILD)/utility-$(2)/%.dobj) $$< $$(UTILITY_$(3)_LIB) $$(TARGET_LINK_LIBS)
 endef
 $(foreach p,$(UTILITY_MISC_PROGRAMS),$(eval $(call UTILITY_PROGRAM_template,$(p),misc,MISC,1)))
 $(foreach p,$(UTILITY_TEXT_PROGRAMS),$(eval $(call UTILITY_PROGRAM_template,$(p),text,TEXT,2)))
@@ -393,7 +407,7 @@ $(USERLAND_BUILD)/xargs/%.dobj: %.s
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(XARGS_DXR): $(XARGS_C_OBJS) $(XARGS_S_OBJS)
-	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(XARGS_MAP) $(XARGS_S_OBJS) $(XARGS_C_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(XARGS_MAP) $(XARGS_S_OBJS) $(XARGS_C_OBJS) $(TARGET_LINK_LIBS)
 
 $(USERLAND_BUILD)/sed/%.dobj: %.c
 	mkdir -p $(dir $@)
@@ -405,7 +419,7 @@ $(USERLAND_BUILD)/sed/%.dobj: %.s
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(SED_DXR): $(SED_C_OBJS) $(SED_S_OBJS)
-	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(SED_MAP) $(SED_S_OBJS) $(SED_C_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(SED_MAP) $(SED_S_OBJS) $(SED_C_OBJS) $(TARGET_LINK_LIBS)
 
 $(USERLAND_BUILD)/configctl/%.dobj: %.c
 	mkdir -p $(dir $@)
@@ -417,7 +431,7 @@ $(USERLAND_BUILD)/configctl/%.dobj: %.s
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(CONFIGCTL_DXR): $(CONFIGCTL_C_OBJS) $(CONFIGCTL_S_OBJS)
-	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(CONFIGCTL_MAP) $(CONFIGCTL_S_OBJS) $(CONFIGCTL_C_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(CONFIGCTL_MAP) $(CONFIGCTL_S_OBJS) $(CONFIGCTL_C_OBJS) $(TARGET_LINK_LIBS)
 
 $(USERLAND_BUILD)/make/%.dobj: %.c
 	mkdir -p $(dir $@)
@@ -429,7 +443,7 @@ $(USERLAND_BUILD)/make/%.dobj: %.s
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(MAKE_DXR): $(MAKE_C_OBJS) $(MAKE_S_OBJS)
-	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(MAKE_MAP) $(MAKE_S_OBJS) $(MAKE_C_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(MAKE_MAP) $(MAKE_S_OBJS) $(MAKE_C_OBJS) $(TARGET_LINK_LIBS)
 
 $(USERLAND_BUILD)/logcompat/%.dobj: %.c
 	mkdir -p $(dir $@)
@@ -452,7 +466,7 @@ $(USERLAND_BUILD)/logcompat-$(1)/%.dobj: %.s
 
 $(USERLAND_BUILD)/program/$(1).dxr: $$($(3)_C_SRCS:%.c=$(USERLAND_BUILD)/logcompat-$(1)/%.dobj) $$(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/logcompat-$(1)/%.dobj)
 	mkdir -p $$(dir $$@)
-	$$(DLINK) --daimos-uuo-relax -b 020 -o $$@ -M $$(@:.dxr=.map) $$(COMMON_S_SRCS:%.s=$$(USERLAND_BUILD)/logcompat-$(1)/%.dobj) $$($(3)_C_SRCS:%.c=$$(USERLAND_BUILD)/logcompat-$(1)/%.dobj)
+	$$(DLINK) --daimos-uuo-relax -b 020 -o $$@ -M $$(@:.dxr=.map) $$(COMMON_S_SRCS:%.s=$$(USERLAND_BUILD)/logcompat-$(1)/%.dobj) $$($(3)_C_SRCS:%.c=$$(USERLAND_BUILD)/logcompat-$(1)/%.dobj) $$(TARGET_LINK_LIBS)
 endef
 $(eval $(call LOGCOMPAT_PROGRAM_template,LOGD,1,LOGD))
 $(eval $(call LOGCOMPAT_PROGRAM_template,LOGDUMP,2,LOGDUMP))
@@ -467,7 +481,7 @@ $(USERLAND_BUILD)/tsfsprobe/%.dobj: %.s
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(TSFSPROBE_DXR): $(TSFSPROBE_C_OBJS) $(TSFSPROBE_S_OBJS)
-	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(TSFSPROBE_MAP) $(TSFSPROBE_S_OBJS) $(TSFSPROBE_C_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(TSFSPROBE_MAP) $(TSFSPROBE_S_OBJS) $(TSFSPROBE_C_OBJS) $(TARGET_LINK_LIBS)
 
 $(USERLAND_BUILD)/mounttsfs/%.dobj: %.c
 	mkdir -p $(dir $@)
@@ -479,7 +493,7 @@ $(USERLAND_BUILD)/mounttsfs/%.dobj: %.s
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(MOUNTTSFS_DXR): $(MOUNTTSFS_C_OBJS) $(MOUNTTSFS_S_OBJS)
-	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(MOUNTTSFS_MAP) $(MOUNTTSFS_S_OBJS) $(MOUNTTSFS_C_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(MOUNTTSFS_MAP) $(MOUNTTSFS_S_OBJS) $(MOUNTTSFS_C_OBJS) $(TARGET_LINK_LIBS)
 
 $(USERLAND_BUILD)/dtfsprobe/%.dobj: %.c
 	mkdir -p $(dir $@)
@@ -491,7 +505,7 @@ $(USERLAND_BUILD)/dtfsprobe/%.dobj: %.s
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(DTFSPROBE_DXR): $(DTFSPROBE_C_OBJS) $(DTFSPROBE_S_OBJS)
-	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(DTFSPROBE_MAP) $(DTFSPROBE_S_OBJS) $(DTFSPROBE_C_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(DTFSPROBE_MAP) $(DTFSPROBE_S_OBJS) $(DTFSPROBE_C_OBJS) $(TARGET_LINK_LIBS)
 
 $(USERLAND_BUILD)/d6lz/%.dobj: %.c
 	mkdir -p $(dir $@)
@@ -503,7 +517,7 @@ $(USERLAND_BUILD)/d6lz/%.dobj: %.s
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(D6LZ_DXR): $(D6LZ_C_OBJS) $(D6LZ_S_OBJS)
-	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(D6LZ_MAP) $(D6LZ_S_OBJS) $(D6LZ_C_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(D6LZ_MAP) $(D6LZ_S_OBJS) $(D6LZ_C_OBJS) $(TARGET_LINK_LIBS)
 
 $(USERLAND_BUILD)/logdrain/%.dobj: %.c
 	mkdir -p $(dir $@)
@@ -515,7 +529,7 @@ $(USERLAND_BUILD)/logdrain/%.dobj: %.s
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(LOGDRAIN_DXR): $(LOGDRAIN_C_OBJS) $(LOGDRAIN_S_OBJS)
-	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(LOGDRAIN_MAP) $(LOGDRAIN_S_OBJS) $(LOGDRAIN_C_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(LOGDRAIN_MAP) $(LOGDRAIN_S_OBJS) $(LOGDRAIN_C_OBJS) $(TARGET_LINK_LIBS)
 
 define TOOLCHAIN_PROGRAM_template
 $(USERLAND_BUILD)/$(1)/%.dobj: %.c
@@ -528,7 +542,7 @@ $(USERLAND_BUILD)/$(1)/%.dobj: %.s
 	$$(DAS) $$(DASFLAGS) -C -O $$@ $$<
 
 $$($(2)_DXR): $$($(2)_C_OBJS) $$($(2)_S_OBJS)
-	$$(DLINK) --daimos-uuo-relax -b 020 -o $$@ -M $$($(2)_MAP) $$($(2)_S_OBJS) $$($(2)_C_OBJS)
+	$$(DLINK) --daimos-uuo-relax -b 020 -o $$@ -M $$($(2)_MAP) $$($(2)_S_OBJS) $$($(2)_C_OBJS) $$(TARGET_LINK_LIBS)
 endef
 
 $(eval $(call TOOLCHAIN_PROGRAM_template,darc,DARC))

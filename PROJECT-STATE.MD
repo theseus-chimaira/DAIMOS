@@ -1,3 +1,20 @@
+## 2026-10-12 FULL GCC/KCC BUILD SELECTION FOLLOW-UP
+
+- `COMPILER=gcc|kcc` now selects the compiler through boot KINIT, KCORE,
+  and native userland translation units, including compiler-specific build
+  prerequisites. The previous userland KCC-only recipe path is eliminated.
+- GCC native executables link the target libgcc archive. GCC's C-entry
+  `__main` ABI has a dedicated one-word startup stub only in GCC builds;
+  KCC builds do not include it.
+- The versioned testkit compiler-selection probe checks actual compiler
+  invocations for kernel and full userland, detects mixed-compiler builds,
+  and verifies representative linked DXRs. GCC and KCC both PASS.
+- A complete GCC image build passed with diagnostic
+  `DSH_IMAGE_LIMIT=037000`; the production `036000` gate is unchanged and
+  remains a known independent failure. No DSH-size acceptance was claimed.
+- GE0 multi-TTY login is still under investigation; its standalone carrier
+  test is not green. This compiler-selection change does not claim to fix it.
+
 ## 2026-10-12 TESTKIT COMPILER SELECTION
 
 - `daimos-testkit` now accepts `COMPILER=gcc` and `COMPILER=kcc` (default)
