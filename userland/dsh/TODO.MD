@@ -1,5 +1,42 @@
 # DSH TODO
 
+## ACTIVE NO-OVERLAY SHRINK GATE (2026-10-12, V21)
+
+The target is STRICTLY BELOW 030000 octal DXR image words (not merely
+meeting the production 036000 gate).  The current GCC `-Os` shared-heap
+branch measures image 032177, BSS 013742.  Therefore at least 02200
+octal image words must be removed.  Image, BSS, stack and heap/high-water
+are separate budgets: BSS reductions alone cannot satisfy the text gate.
+
+Prioritized open work, without overlays:
+
+1. Profile GCC linked/map output by translation unit and function; remove
+   duplicate parser/executor paths and cold code with *measured* image
+   differences.  Preserve all 115 shell cases and the seven heap probes.
+2. Revisit AST representation and function-node copying for unnecessary
+   generic fields and duplicated traversal code.  Measure image delta
+   independently of the potentially large BSS reduction; protect the
+   16-node parser and 8 stored-function-node limits.
+3. Audit lexer, expansion and executor scratch lifetime for safe BSS
+   sharing.  Do not reuse buffers across nested SOURCE/function frames.
+4. Measure maximum stack words under nested SOURCE, function recursion,
+   glob fallback and 20-argument expansion; reduce proven dead stack
+   reservations and generated GCC frame sizes, not safety margins blindly.
+5. Measure shared-heap BRK high-water/free-list fragmentation with 64
+   populated variables, repeated grow/unset/reuse and temporary argv.
+   Tune allocator metadata only if peak physical APR pages improve.
+6. Compact bounded history, job/alias/function and RUN request storage
+   where real live-range evidence permits; retain 16 history records and
+   the frozen user-visible limits.
+7. Run GCC 32K root DSH EXEC and long-lived variable/command stress to
+   verify INIT occupancy and physical allocation.  This remains distinct
+   from the passing image-size and functional tests.
+
+An exploratory GCC `-Oz` build was rejected by cc1 (`invalid option
+'-Oz'`); it is not a viable size optimization on this compiler.
+No overlays and no functional-language feature growth in this phase.
+
+
 V20 COMPILER SIZE OPPORTUNITY (2026-10-12): the corrected shared-heap
 experimental shell links under GCC with DXR image 032177 and BSS 013742
 octal, versus KCC 037000/013742.  This eliminates 04601 octal image

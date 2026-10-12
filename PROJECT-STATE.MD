@@ -1,3 +1,14 @@
+## 2026-10-12 DSH V21 STRICT IMAGE/BSS/STACK SHRINK PLAN
+
+The accepted optimization target is now strictly below 030000 octal GCC
+DXR image words, with further reductions of BSS and verified peak stack
+and heap use.  Current shared-heap GCC image 032177, BSS 013742; at
+least 02200 octal image words must be eliminated.  The existing 036000
+image gate is no longer sufficient as the optimization goal.  GCC `-Oz`
+is unsupported (cc1 rejects it); baseline remains GCC `-Os`.  The
+prioritized, no-overlay measurement and shrink plan is in
+`userland/dsh/TODO.MD`.  No new code optimization is accepted in V21.
+
 ## 2026-10-12 DSH V20 GCC-REQUIRED 32K BUILD POLICY
 
 The corrected experimental shared-heap DSH links to image 032177 and
