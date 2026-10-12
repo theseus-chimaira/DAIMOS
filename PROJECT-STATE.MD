@@ -1,3 +1,16 @@
+## DSH REDIRECTION SIDECAR V13 (2026-10-12)
+
+Typed-node source cleanup moves the two seven-word SIXBIT redirection
+records from every fixed AST node into the existing optional payload.
+Simple-command/function redirection behavior and all limits are preserved.
+Fresh PDP-6 image **035726 octal**, BSS **003374 octal**, versus v10
+035673/004034. Net 261 decimal words saved in unaligned image+BSS,
+with no increase in the initial **044000-octal** rounded VM extent.
+Production 036000 image gate: PASS. Full DSH CTY conformance
+**115/115 PASS**; targeted redirection/function tests **7/7 PASS**.
+32K DSH LOGIN boot remains unproven. Details in
+`design/DSH-REDIRECTION-SIDECAR-20261012-v13.MD`.
+
 ## DSH LAZY HISTORY AND SHARED BRK V10 (2026-10-12)
 
 DSH keeps the same 16x31-word (496-word) history cache but reserves it

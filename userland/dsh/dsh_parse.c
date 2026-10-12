@@ -62,8 +62,8 @@ dsh_node_clear(struct dsh_node *n)
         n->extra = DSH_NONE;
         n->argc = 0;
         n->flags = 0;
-        dsh_s6_clear(&n->redir_in);
-        dsh_s6_clear(&n->redir_out);
+        n->redir_in = 0;
+        n->redir_out = 0;
         n->words = 0;
         n->literal_mask = 0;
         n->quote_mask = 0;
@@ -75,6 +75,8 @@ dsh_node_bind_payload(struct dsh_node *n, struct dsh_node_payload *payload)
         n->words = payload->words;
         n->literal_mask = payload->literal_mask;
         n->quote_mask = payload->quote_mask;
+        n->redir_in = &payload->redir_in;
+        n->redir_out = &payload->redir_out;
 }
 
 /* AST payloads have parse/evaluation lifetime, not function lifetime.
@@ -100,7 +102,8 @@ dsh_node_alloc_payload(struct dsh_node *n, unsigned int tokens)
          * quote masks need one more word each, for nine words per slot.
          * Do not reserve nineteen unused slots for a one-word command. */
         words = (kword_t)slots *
-            ((sizeof(struct dsh_s6) / sizeof(kword_t)) + 2U);
+            ((sizeof(struct dsh_s6) / sizeof(kword_t)) + 2U) +
+            2U * (sizeof(struct dsh_s6) / sizeof(kword_t));
         start = dsh_brk_reserve_words(words);
         if (start == (kword_t)-1)
                 return DSH_E_OVERFLOW;
@@ -109,6 +112,8 @@ dsh_node_alloc_payload(struct dsh_node *n, unsigned int tokens)
         payload += slots * (sizeof(struct dsh_s6) / sizeof(kword_t));
         n->literal_mask = payload;
         n->quote_mask = payload + slots;
+        n->redir_in = (struct dsh_s6 *)(payload + slots * 2U);
+        n->redir_out = n->redir_in + 1;
         /* Every ordinary argument is copied with both masks initialized.
          * Standalone substitution is the only builder of an empty word;
          * that slot is explicitly cleared at its creation below.  Never
@@ -365,13 +370,13 @@ dsh_parse_simple(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                                 return dsh_mark_error(p, DSH_E_SYNTAX,
                                     DSH_PE_WORD);
                         if (rtype == DSH_T_REDIR_IN) {
-                                rc = dsh_s6_copy(&n->redir_in,
+                                rc = dsh_s6_copy(n->redir_in,
                                     &p->tokens[p->pos].text);
                                 if (rc != DSH_OK)
                                         return rc;
                                 n->flags |= DSH_REDIR_IN;
                         } else {
-                                rc = dsh_s6_copy(&n->redir_out,
+                                rc = dsh_s6_copy(n->redir_out,
                                     &p->tokens[p->pos].text);
                                 if (rc != DSH_OK)
                                         return rc;

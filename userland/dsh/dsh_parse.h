@@ -59,6 +59,8 @@ struct dsh_node_payload {
         struct dsh_s6 words[DSH_PARSE_MAX_WORDS];
         kword_t literal_mask[DSH_PARSE_MAX_WORDS];
         kword_t quote_mask[DSH_PARSE_MAX_WORDS];
+        struct dsh_s6 redir_in;
+        struct dsh_s6 redir_out;
 };
 
 struct dsh_node {
@@ -68,8 +70,8 @@ struct dsh_node {
         unsigned int extra;
         unsigned int argc;
         unsigned int flags;
-        struct dsh_s6 redir_in;
-        struct dsh_s6 redir_out;
+        struct dsh_s6 *redir_in;
+        struct dsh_s6 *redir_out;
         struct dsh_s6 *words;
         kword_t *literal_mask;
         kword_t *quote_mask;

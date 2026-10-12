@@ -214,6 +214,10 @@ dsh_copy_function_node(struct dsh_node *dst, unsigned int *usedp,
                 dst[here].literal_mask[j] = src[index].literal_mask[j];
                 dst[here].quote_mask[j] = src[index].quote_mask[j];
         }
+        if ((src[index].flags & DSH_REDIR_IN) != 0U)
+                *dst[here].redir_in = *src[index].redir_in;
+        if ((src[index].flags & DSH_REDIR_OUT) != 0U)
+                *dst[here].redir_out = *src[index].redir_out;
         if (src[index].left != DSH_NONE) {
                 rc = dsh_copy_function_node(dst, usedp, src,
                     src[index].left, &dst[here].left);
@@ -1453,7 +1457,7 @@ dsh_open_node_fds(const struct dsh_node *n, int basein, int baseout,
         infd = basein;
         outfd = baseout;
         if ((n->flags & DSH_REDIR_IN) != 0U) {
-                if (dsh_s6_pack(&n->redir_in, dsh_path_record,
+                if (dsh_s6_pack(n->redir_in, dsh_path_record,
                     U_PATH_WORDS) != 0)
                         return -1;
                 infd = dsys_open(dsh_path_record, SYS_O_RDONLY);
@@ -1461,7 +1465,7 @@ dsh_open_node_fds(const struct dsh_node *n, int basein, int baseout,
                         return -1;
         }
         if ((n->flags & DSH_REDIR_OUT) != 0U) {
-                if (dsh_s6_pack(&n->redir_out, dsh_path_record,
+                if (dsh_s6_pack(n->redir_out, dsh_path_record,
                     U_PATH_WORDS) != 0) {
                         if (infd != basein)
                                 (void)dsys_close(infd);
@@ -2310,13 +2314,13 @@ dsh_emit_simple(struct dsh_emit *out, const struct dsh_node *n)
         }
         if ((n->flags & DSH_REDIR_IN) != 0U) {
                 if (dsh_emit_text(out, " < ") != 0 ||
-                    dsh_emit_literal_word(out, &n->redir_in) != 0)
+                    dsh_emit_literal_word(out, n->redir_in) != 0)
                         return -1;
         }
         if ((n->flags & DSH_REDIR_OUT) != 0U) {
                 if (dsh_emit_text(out,
                     (n->flags & DSH_REDIR_APPEND) != 0U ? " >> " : " > ") !=
-                    0 || dsh_emit_literal_word(out, &n->redir_out) != 0)
+                    0 || dsh_emit_literal_word(out, n->redir_out) != 0)
                         return -1;
         }
         return 0;

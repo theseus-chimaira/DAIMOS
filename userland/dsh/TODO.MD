@@ -2,6 +2,13 @@
 
 ## CURRENT FOCUS (2026-10-12): PHASE ZERO AND IMAGE SHRINKAGE
 
+V13 tested static AST shrink: optional redirection records now live
+in argument-bearing node payloads instead of every AST descriptor.
+PDP-6 DSH image **035726**, BSS **003374** octal; initial VM still
+**044000**. Full 115/115 CTY conformance and 7/7 focused redirection
+tests pass. No shell features/limits removed. See
+`design/DSH-REDIRECTION-SIDECAR-20261012-v13.MD`.
+
 ### FUZIX-inspired source and RAM optimization candidates (2026-10-12)
 
 Research candidates only; **no DSH functionality, grammar, argument limit,
