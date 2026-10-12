@@ -1,3 +1,18 @@
+## 2026-10-12 DSH V17 SHARED-HEAP DOUBLE-FREE FIX AND ACCEPTANCE
+
+The experimental two-word DSH variable descriptor plus shared heap now
+correctly distinguishes occupied variable slots from freed slots.  A new
+SET into a slot previously UNSET must not release that slot's stale
+payload pointer a second time.  UNSET now clears the pointer, and SET
+checks occupancy before releasing an old payload.  Without this fix,
+a seven-case target heap stress regression timed out in its final case;
+after the fix all 7/7 pass under SIMH.  Final measured DXR image 037000,
+BSS 013742 octal, compared to clean-main 036523/015241.  Image exactly
+meets the temporary 037000 gate but still fails production 036000.
+The corrected implementation also passed the full 115/115 SIMH conformance
+suite.  It remains on the experimental branch pending heap high-water
+accounting and production image shrink.  No overlays.
+
 ## 2026-10-12 DSH VARIABLE EXPERIMENT V17 (NOT ACCEPTED)
 
 An isolated assembly variable-table rewrite plus shared C word heap

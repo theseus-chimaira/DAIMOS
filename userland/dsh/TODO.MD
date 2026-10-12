@@ -1,5 +1,14 @@
 # DSH TODO
 
+V17 SHARED-HEAP CORRECTION (2026-10-12): fixed an actual double-free
+when a variable slot was UNSET and reused.  A dedicated seven-case
+daimos-testkit SIMH regression reproduced the timeout before the fix
+and passes 7/7 after the fix.  Image 037000, BSS 013742 octal.
+The corrected implementation passes 115/115 full SIMH conformance cases.
+Continue with actual resident
+heap/BRK high-water measurement; the production 036000 image gate
+remains open.  Work stays on the versioned experimental branch.
+
 EXPERIMENTAL V17 (2026-10-12): an assembly-variable/shared-heap candidate
 links with DXR image 036773, BSS 013742 (octal), compared to current-main
 036523/015241.  The temporary image gate passes; production gate and full

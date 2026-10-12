@@ -149,7 +149,14 @@ dsh_var_set:
          jrst   dvs_fail
         move    15,1
         pushj   17,dv_slot
-        push    17,1(5)                 ; old payload, if any
+        ; Only an occupied slot owns its pointer.  An unset slot can
+        ; contain stale payload bits and must not free them again.
+        setz    2,
+        skipn   0(5)
+         jrst   dvs_old_ready
+        move    2,1(5)
+ dvs_old_ready:
+        push    17,2
         move    1,0(5)
         tlz     1,0577777               ; retain previous export flag
         hrri    1,0
@@ -251,7 +258,7 @@ dsh_var_unset:
  dvu_found:
         move    1,1(5)
         setzm   0(5)
-        ; Metadata alone controls occupancy; stale payload is never read.
+        setzm   1(5)                    ; prevent stale ownership on reuse
         pushj   17,dsh_heap_free
  dvu_done:
         setz    1,

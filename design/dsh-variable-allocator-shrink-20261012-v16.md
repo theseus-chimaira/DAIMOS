@@ -58,6 +58,17 @@ variable contract is unchanged until a tested implementation is accepted.
 
 ## V17 continuation: assembly variable routines with shared C heap
 
+V17 follow-up: a dedicated seven-case live regression found a
+double-free after UNSET/reuse: the freed slot's stale payload pointer
+could be released a second time during SET.  The assembly now checks
+whether the slot is occupied before releasing an old payload, and UNSET
+clears both metadata and pointer.  The formerly timing-out final test
+passes after the correction (7/7).  The corrective code raises the final
+DXR image to 037000 with BSS 013742 octal.  Combined image+BSS is
+052742, a reduction of 01022 octal words from the clean-main baseline.
+No peak resident APR memory measurement or production gate acceptance.
+The full corrected-image SIMH conformance rerun passed 115/115 cases.
+
 An experimental variant retains the four PDP-6 assembly variable entry
 points with a two-word descriptor and packed SIXBIT payloads.  A compact
 C allocator owns both persistent payloads and temporary 20-argument
