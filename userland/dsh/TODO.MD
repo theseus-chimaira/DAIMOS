@@ -2,6 +2,54 @@
 
 ## CURRENT FOCUS (2026-10-12): PHASE ZERO AND IMAGE SHRINKAGE
 
+### FUZIX-inspired source and RAM optimization candidates (2026-10-12)
+
+Research candidates only; **no DSH functionality, grammar, argument limit,
+function limit, or other capacity may be reduced**. Compare each change
+against current v10 using KCC/DAS image/BSS figures, peak BRK, CPU cost,
+full DSH conformance, nested SOURCE/function tests, and 32K boot:
+
+1. **Typed AST metadata** (FUZIX V7 shell `cmd.c`): distinguish simple,
+   list, conditional, and loop node fields rather than carrying two complete
+   redirection path records in every node. A tagged union or compact
+   per-kind sidecar may shrink permanent node descriptors. Measure added
+   code and pointers before adopting it.
+2. **Compact variable and alias storage** (FUZIX `name.c`): DSH's
+   `dsh_state.vars[64]` reserves 13 words per entry, or 832 words before
+   variable contents are known. Consider compact SIXBIT names/values and
+   bounded arenas while preserving variable, alias and environment
+   semantics. Favor indexed lookup over unmeasured pointer-heavy lists.
+3. **Unified evaluation scratch** (FUZIX `stak.c`): use well-defined
+   nested save/restore checkpoints for parser, substitution, expansion and
+   temporary argv storage. DSH already has BRK checkpoints; unify only
+   where doing so actually saves text, heap or calls. Persistent function
+   payloads must never be reclaimed with temporary frames.
+4. **Persistent function payload compaction** (FUZIX `blok.c` as an
+   architectural reference): maintain a bounded independently owned arena
+   and reclaim/reuse storage safely on redefinition. Do not import a
+   general-purpose allocator without measured benefit.
+5. **Avoid lexer-to-AST duplicate words** (FUZIX `word.c`/`cmd.c`):
+   investigate token ownership/offsets and direct parse representation.
+   Preserve literal/quote masks, nested SOURCE, and retained function
+   bodies; never alias buffers that will be reused or overwritten.
+6. **Faster SIXBIT name lookup** (FUZIX `name.c`): packed prefix/length
+   rejection before full comparisons for variables, aliases, functions,
+   and builtins. Benchmark image, BSS, and target execution speed.
+
+### Overlay feasibility research (not an implementation decision)
+
+Evaluate **user-space text overlays** separately from kernel process
+swapping and pure-text swap backing. The PDP-6 uses contiguous process
+extents without per-process shared text mapping. Current DXR/DLINK builds
+one resident image; no overlay loading/relocation ABI is established.
+Before proposing an overlay manager, measure the net saved resident words
+after accounting for the overlay window, loader code, I/O buffers and
+relocation metadata. Candidates must be cold, reentrant-or-serialized
+paths with no live returns into unloaded code. Check filesystem and swap
+I/O frequency, latency on slow devices, nesting, and failure recovery.
+Prefer existing separate programs such as DSHCOMP for cold facilities.
+Do not treat overlays as a substitute for diagnosing 32K EXEC allocation.
+
 Lazy persistent-function and variable-width active AST payload stage v9
 verified: BSS falls 007651 -> 005013 octal and initial user VM 050000 ->
 046000 octal, with all function and argument limits unchanged.
