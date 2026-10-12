@@ -693,6 +693,23 @@ static uint64_t dir_hash(const uint64_t name[4])
         return h;
 }
 
+/* Avoid rewriting unmodified metadata blocks during deterministic repair.
+ * Each extra write expands the power-loss window; compare against disk
+ * using one temporary transfer block, with no per-FCB dirty bitmap.
+ * A failed read or write leaves the selected superblock DIRTY so a later
+ * offline repair can restart from the actual persistent contents.
+ */
+static int write_changed_logical(unsigned logical, const uint64_t *wanted)
+{
+        uint64_t current[BLOCK_WORDS];
+
+        if (read_logical(logical, current) != 0)
+                return -1;
+        if (memcmp(current, wanted, sizeof(current)) == 0)
+                return 0;
+        return write_logical(logical, wanted);
+}
+
 static int write_fcb_table(const struct super_info *s, const uint64_t *fcbs)
 {
         unsigned fcb_blocks, b;
@@ -708,7 +725,7 @@ static int write_fcb_table(const struct super_info *s, const uint64_t *fcbs)
                         words = s->fcb_count * FCB_WORDS - b * BLOCK_WORDS;
                 for (i = 0; i < words; ++i)
                         block[i] = fcbs[(size_t)b * BLOCK_WORDS + i];
-                if (write_logical(s->fcb_start + b, block) != 0)
+                if (write_changed_logical(s->fcb_start + b, block) != 0)
                         return -1;
         }
         return 0;
@@ -719,7 +736,8 @@ static int write_map_blocks(unsigned start, unsigned blocks, const uint64_t *map
         unsigned b;
 
         for (b = 0; b < blocks; ++b)
-                if (write_logical(start + b, map + (size_t)b * BLOCK_WORDS) != 0)
+                if (write_changed_logical(start + b,
+                    map + (size_t)b * BLOCK_WORDS) != 0)
                         return -1;
         return 0;
 }
