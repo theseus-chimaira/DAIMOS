@@ -1,3 +1,18 @@
+## SUPERVISOR V5 USER STACK LIMIT INVESTIGATION (2026-10-12)
+
+Source-level and KCC PDP-6 assembler audit finds the v4 resident
+SUPERVISOR at image 001442, BSS 000261, origin 000020 and stack
+reservation 002000 octal: total 003743, rounded 004000. Its text,
+BSS and origin already occupy 001743 words, leaving only 000035 for
+stack at the desired 002000 allocation boundary. Logging's compiled
+frame alone is at least 0205 octal words, so **reducing the stack
+reservation alone cannot reach 002000**. The LOGCTL APPEND ABI maps a
+mandatory 0200-word record. Generated child-launch frame and logging
+frames are documented in
+`design/SUPERVISOR-STACK-LOWCORE-20261012-v5.MD`. These are static
+lower bounds; actual target high-water measurement is still required.
+No production code, kernel ABI, or executable stack default changed.
+
 ## SUPERVISOR V4 STACK-RECORD BSS REDUCTION (2026-10-12)
 
 The PID 1 supervisor compiles `libc/logevent.c` with a local temporary
