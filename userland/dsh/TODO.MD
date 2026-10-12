@@ -1,5 +1,37 @@
 # DSH TODO
 
+## CURRENT FOCUS (2026-10-12): PHASE ZERO AND IMAGE SHRINKAGE
+
+This workstream is restricted to HISTFILE durability/recovery, the necessary
+D6FS record-commit primitives, fault-injection acceptance, and reducing the
+DSH image below the normal 036000-octal-word limit. Do not implement unrelated
+language/editor features as part of this phase. DSH-18 (safe recovery of
+damaged persistent history under concurrent writers) is a phase-zero blocker.
+
+The future delimited parameter-expansion syntax is `$<...>` instead of the
+non-SIXBIT `${...}`. Reserve `$<VAR>`, `$<VAR:-DEFAULT>`, `$<VAR:=DEFAULT>`,
+`$<VAR:+ALT>`, and `$<VAR:?MESSAGE>`; preserve `$NAME` and the established
+standalone `$()` command substitution. Delimiter lexing must precede input/output
+redirection interpretation, including in double quotes. Nesting, escaping,
+error handling and precise grammar need separate design/testing before code.
+No implementation is claimed here.
+
+Defer GETOPTS (DSH-12) pending concrete native-script demand and comparison
+with a shared external option parser. Defer vi-style input editing (DSH-16),
+HISTORY management (DSH-17), and editor history search (DSH-22) until the vi
+port can be examined for reusable, small source components. Avoid linking the
+full vi editor into resident DSH.
+
+Phase-zero source audit: `d6fs_provider_write_words` stages allocation and
+payload before `d6fs_reader_put_fcb` publishes size. This reduces exposure of
+incomplete growth but does not prove crash atomicity of allocation, block
+writes, and FCB metadata under power loss. `dsh_history_add` currently uses
+`u_write_words_all`; a short write can produce several separate O_APPEND
+operations. A future record-atomic API must commit the *entire* bounded S6REC
+as one transaction, not treat successful retries as a single atomic record.
+On ambiguous failure DSH must not silently retry at a fresh EOF. Record-level
+recovery needs a verified on-disk commit point and fault cuts before acceptance.
+
 REVIEWED: 2026-10-10 (115/115 TARGET CONFORMANCE VERIFIED)
 
 THIS FILE IS THE AUTHORITATIVE OPEN-WORK LIST FOR DSH.  THE FROZEN LANGUAGE

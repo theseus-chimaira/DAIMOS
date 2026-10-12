@@ -1,3 +1,18 @@
+## DSH PHASE ZERO SCOPE AND SOURCE AUDIT (2026-10-12)
+
+DSH work is focused on crash-safe HISTFILE append/recovery and image shrinkage.
+History corruption repair with concurrent writers is explicitly phase-zero
+work. DSH-16/17/22 await possible sharing with the vi port; GETOPTS is
+deferred pending evidence of need. Future native parameter expansion reserves
+`$<...>` in place of `${...}`, but parsing and expansion are not implemented.
+
+Source inspection confirms D6FS provider growth stages payload before FCB
+size publication, while DSH history uses retrying WRITE_WORDS for S6REC.
+Neither establishes all-or-nothing crash-atomic records: staged allocation,
+data blocks, FCB writes, and ambiguous failures require an audited durable
+commit protocol and interruption tests. No filesystem or DSH runtime change
+is claimed by this scope update.
+
 ## D6FS LIVE PDP-6 APPEND INTERRUPTION AND REBOOT ACCEPTANCE (2026-10-12)
 
 DAIMOS-TESTKIT `9CAF59F` + `91B19FD` IMPLEMENT A TEST-ONLY GENERATED
