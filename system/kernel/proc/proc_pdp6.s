@@ -266,6 +266,7 @@ proc_select_score:
         andi    2,PROC_CPU_LH_MASK
         add     1,2
 
+
         ; Cyclic rank is modulo 256; rank zero sorts after all others.
         move    2,15
         sub     2,14
@@ -2905,7 +2906,13 @@ proc_timer_service_loop:
         movem   3,2(2)
         tlne    3,0400000              ; STOP remains off the run queue
         jrst    proc_timer_service_next
-        pushj   17,proc_runq_add       ; preserves AC6/AC7 frontier state
+        ; The run-queue helper uses AC6/AC7 while checking membership.
+        ; Preserve the active timer frontier across the wakeup insertion.
+        push    17,6
+        push    17,7
+        pushj   17,proc_runq_add
+        pop     17,7
+        pop     17,6
         jrst    proc_timer_service_next
 
 proc_timer_service_future:
