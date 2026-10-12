@@ -1,3 +1,11 @@
+## 2026-10-12 DSH V23 STORED-FUNCTION WALKER SHRINK
+
+The AST function-node preflight count and copy use one bounded walker,
+with an optional destination.  Preflight remains read-only and occurs
+before any existing definition is removed.  GCC executable image drops
+from 032147 to 032117 octal words, saving 030; BSS stays 013742.
+The full GCC target SIMH conformance passed 115/115; no overlay changes.
+
 ## 2026-10-12 DSH V22 PARSER NODE INITIALIZATION SHRINK
 
 An experimental simplification of `dsh_node_clear` replaces repeated

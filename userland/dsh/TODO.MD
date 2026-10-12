@@ -1,5 +1,14 @@
 # DSH TODO
 
+V23 stored-function traversal experiment (2026-10-12): the separate
+preflight-count and recursive-copy walkers have been combined into one
+bounded traversal with an optional output buffer.  This retains the
+preflight-before-mutation rule on function redefinition.  GCC image
+changes from 032147 to 032117 octal (030 words saved); BSS 013742.
+The direct host parser test and full GCC SIMH conformance (115/115) pass.
+Strict image target remains below 030000.
+
+
 ## ACTIVE NO-OVERLAY SHRINK GATE (2026-10-12, V21)
 
 V22 parser-node-clear experiment: one linear word-wise initialization

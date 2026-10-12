@@ -72,8 +72,10 @@ dsh_find_function(const struct dsh_s6 *name)
         return 0;
 }
 
+/* One bounded traversal serves the preflight count and the committed
+ * copy.  The preflight never modifies a stored function on exhaustion. */
 static int
-dsh_copy_function_node(struct dsh_node *dst, unsigned int *usedp,
+dsh_walk_function_node(struct dsh_node *dst, unsigned int *usedp,
     const struct dsh_node *src, unsigned int index, unsigned int *out)
 {
         unsigned int here;
@@ -83,54 +85,28 @@ dsh_copy_function_node(struct dsh_node *dst, unsigned int *usedp,
             *usedp >= DSH_FUNC_MAX_NODES)
                 return DSH_E_OVERFLOW;
         here = (*usedp)++;
-        dst[here] = src[index];
+        if (dst != 0)
+                dst[here] = src[index];
         if (src[index].left != DSH_NONE) {
-                rc = dsh_copy_function_node(dst, usedp, src,
-                    src[index].left, &dst[here].left);
+                rc = dsh_walk_function_node(dst, usedp, src,
+                    src[index].left, dst != 0 ? &dst[here].left : 0);
                 if (rc != DSH_OK)
                         return rc;
         }
         if (src[index].right != DSH_NONE) {
-                rc = dsh_copy_function_node(dst, usedp, src,
-                    src[index].right, &dst[here].right);
+                rc = dsh_walk_function_node(dst, usedp, src,
+                    src[index].right, dst != 0 ? &dst[here].right : 0);
                 if (rc != DSH_OK)
                         return rc;
         }
         if (src[index].extra != DSH_NONE) {
-                rc = dsh_copy_function_node(dst, usedp, src,
-                    src[index].extra, &dst[here].extra);
+                rc = dsh_walk_function_node(dst, usedp, src,
+                    src[index].extra, dst != 0 ? &dst[here].extra : 0);
                 if (rc != DSH_OK)
                         return rc;
         }
-        *out = here;
-        return DSH_OK;
-}
-
-static int
-dsh_count_function_nodes(const struct dsh_node *src, unsigned int index,
-    unsigned int *countp)
-{
-        int rc;
-
-        if (index == DSH_NONE || index >= DSH_PARSE_MAX_NODES ||
-            *countp >= DSH_FUNC_MAX_NODES)
-                return DSH_E_OVERFLOW;
-        ++*countp;
-        if (src[index].left != DSH_NONE) {
-                rc = dsh_count_function_nodes(src, src[index].left, countp);
-                if (rc != DSH_OK)
-                        return rc;
-        }
-        if (src[index].right != DSH_NONE) {
-                rc = dsh_count_function_nodes(src, src[index].right, countp);
-                if (rc != DSH_OK)
-                        return rc;
-        }
-        if (src[index].extra != DSH_NONE) {
-                rc = dsh_count_function_nodes(src, src[index].extra, countp);
-                if (rc != DSH_OK)
-                        return rc;
-        }
+        if (out != 0)
+                *out = here;
         return DSH_OK;
 }
 
@@ -178,7 +154,7 @@ dsh_define_function(struct dsh_state *st, const struct dsh_node *nodes,
                         break;
                 }
         needed = 0U;
-        if (dsh_count_function_nodes(nodes, n->left, &needed) != DSH_OK ||
+        if (dsh_walk_function_node(0, &needed, nodes, n->left, 0) != DSH_OK ||
             dsh_function_nodes_used - old_count + needed >
             DSH_FUNC_MAX_NODES)
                 return DSH_ERROR;
@@ -201,7 +177,7 @@ dsh_define_function(struct dsh_state *st, const struct dsh_node *nodes,
         dsh_functions[slot].base = dsh_function_nodes_used;
         dsh_functions[slot].used_nodes = 0U;
         dsh_functions[slot].root = DSH_NONE;
-        rc = dsh_copy_function_node(
+        rc = dsh_walk_function_node(
             &dsh_function_nodes[dsh_functions[slot].base],
             &dsh_functions[slot].used_nodes, nodes, n->left,
             &dsh_functions[slot].root);
