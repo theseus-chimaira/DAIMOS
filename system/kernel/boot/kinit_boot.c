@@ -87,18 +87,23 @@ kinit_boot(void)
         int rc;
 
         root_class = root_select_class();
-#if KINIT_FULL
+        rc = -1;
+#if D6FS_FS_ENABLED && KINIT_FULL
         if (root_class == KINIT_ROOT_DSK || root_class == KINIT_ROOT_DRM)
-#else
+#elif D6FS_FS_ENABLED
         if (root_class == KINIT_ROOT_DSK)
 #endif
+#if D6FS_FS_ENABLED
                 rc = d6fs_boot_mount_root(0U);
+#endif
 #if KINIT_FULL
+#if D6FS_FS_ENABLED
         else if (root_class == KINIT_ROOT_DTC)
+#else
+        if (root_class == KINIT_ROOT_DTC)
+#endif
                 rc = tsfs_boot_mount_root();
 #endif
-        else
-                rc = -1;
         if (rc != 0 || !root_has_init())
                 kinit_error18(KINIT_ERR_RT);
 }

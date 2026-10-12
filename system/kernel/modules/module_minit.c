@@ -1412,6 +1412,7 @@ badmap_post_minits(void)
 #endif
 
 /** @brief Install D6FS over blockset and create the boot-root reader state. */
+#if D6FS_FS_ENABLED
 void
 d6fs_minit(void)
 {
@@ -1422,9 +1423,18 @@ d6fs_minit(void)
         unsigned int read_addr;
         unsigned int write_addr;
         unsigned int callback_read;
-        unsigned int callback_write;
+    unsigned int callback_write;
 
-        name = (kword_t)SIXBIT("D6FS  ");
+    /* In a mixed auto-root image, TSFS may be selected despite a present
+     * disk/drum.  Those controllers provide auxiliary backing only: never
+     * load the D6FS filesystem into a TSFS-root kernel.  Dedicated ROOT=tape
+     * builds omit this MINIT and its MRES package entirely. */
+#if KINIT_FULL
+        if (root_select_class() == KINIT_ROOT_DTC)
+                return;
+#endif
+
+    name = (kword_t)SIXBIT("D6FS  ");
         members = blockset_boot_member_count_hint();
         if (members == 0U)
                 return;
@@ -1499,6 +1509,7 @@ d6fs_minit(void)
         }
         minit_diag_loaded(name);
 }
+#endif
 
 /** @brief Register MonitorFS device namespace after module services are known. */
 void

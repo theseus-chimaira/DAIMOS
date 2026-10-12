@@ -44,6 +44,7 @@ root_select_minit(void)
         ordinal = (unsigned int)((selector & KINIT_ROOT_ORD_MASK) >>
             KINIT_ROOT_ORD_SHIFT);
         root_class_selected = KINIT_ROOT_AUTO;
+#if D6FS_FS_ENABLED
         if (root_class == KINIT_ROOT_AUTO || root_class == KINIT_ROOT_DSK) {
                 if (d6fs_boot_select(KINIT_ROOT_DSK, ordinal) == 0) {
                         root_class_selected = KINIT_ROOT_DSK;
@@ -52,6 +53,7 @@ root_select_minit(void)
                 if (root_class == KINIT_ROOT_DSK)
                         return;
         }
+#endif
 #if KINIT_FULL
         if (root_class == KINIT_ROOT_AUTO || root_class == KINIT_ROOT_DTC) {
                 if (tsfs_boot_select(ordinal) == 0) {
@@ -61,12 +63,14 @@ root_select_minit(void)
                 if (root_class == KINIT_ROOT_DTC)
                         return;
         }
+#if D6FS_FS_ENABLED
         if (root_class == KINIT_ROOT_AUTO || root_class == KINIT_ROOT_DRM) {
                 if (d6fs_boot_select(KINIT_ROOT_DRM, ordinal) == 0) {
                         root_class_selected = KINIT_ROOT_DRM;
                         return;
                 }
         }
+#endif
 #endif
 }
 

@@ -52,7 +52,9 @@
 .if KINIT_BADMAP
         .globl badmap_minit
 .endif
+.if D6FS_FS_ENABLED
         .globl d6fs_minit
+.endif
         .globl mfsdev_minit
         .globl cty_mres_package
         .globl clk_mres_package
@@ -87,7 +89,9 @@
 .if KINIT_BADMAP
         .globl badmap_mres_package
 .endif
+.if D6FS_FS_ENABLED
         .globl d6fs_mres_package
+.endif
         .globl __kinit_image_start
         .globl __minit_table_begin
         .globl __minit_table_end
@@ -143,6 +147,8 @@ __minit_table_begin:
 .if KINIT_FULL
         .word slv_minit,,slv_mres_package
 .endif
+.if D6FS_FS_ENABLED
         .word d6fs_minit,,d6fs_mres_package
+.endif
         .word mfsdev_minit,,0
 __minit_table_end:

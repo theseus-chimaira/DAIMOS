@@ -33,6 +33,14 @@ LOGSTORE ?= logstore
 SIMH_PDP6 ?= pdp6
 ROOT ?= auto
 ROOTSET ?= 1
+# A dedicated TSFS root never mounts D6FS, even if DSK/DRM hardware is
+# available for auxiliary swap, LOGSTORE, or MEMFS backing.  Auto-root retains
+# both filesystem families because the root is selected at boot time.
+ifeq ($(ROOT),tape)
+D6FS_FS_ENABLED = 0
+else
+D6FS_FS_ENABLED = 1
+endif
 # Disk/drum roots do not load DECtape filesystems.  An auto-root image
 # must retain the package because its selected root may be TSFS on DECtape.
 ifeq ($(filter $(ROOT),disk drum),)
@@ -296,7 +304,7 @@ D6FS_MRES_OBJ = $(BUILD)/d6fs-mres.dobj
 ifeq ($(BOOT_PROFILE),lowmem)
 MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(DCS_MRES_OBJ) \
 	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(DSK_MRES_OBJ) $(BLOCKSET_MRES_OBJ) \
-	$(D6FS_MRES_OBJ)
+	$(if $(filter 1,$(D6FS_FS_ENABLED)),$(D6FS_MRES_OBJ))
 KINIT_FULL = 0
 else
 MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PTR_MRES_OBJ) \
@@ -304,7 +312,7 @@ MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PTR_MRES_OBJ) \
 	$(DCS_MRES_OBJ) $(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) \
 	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(TAPE_MRES_OBJ) $(DSK_MRES_OBJ) $(DRM_MRES_OBJ) \
 	$(BLOCKSET_MRES_OBJ) $(LOGSTORE_MRES_OBJ) $(BADMAP_MRES_OBJ) $(MEMFS_MRES_OBJ) $(if $(filter 1,$(TAPE_FS_ENABLED)),$(DTFS_MRES_OBJ)) $(SLV_MRES_OBJ) \
-	$(D6FS_MRES_OBJ)
+	$(if $(filter 1,$(D6FS_FS_ENABLED)),$(D6FS_MRES_OBJ))
 KINIT_FULL = 1
 endif
 
@@ -594,8 +602,8 @@ $(BUILD):
 $(MEDIA_DIR): | $(BUILD)
 	mkdir -p $@
 
-$(KINIT_STAMP): $(KERNEL_INPUTS) $(PDP10_KCC_DEP) $(BUILD)
-	$(MAKE) -C $(KERNEL_DIR) kinit BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_STACK_RESERVE_WORDS='$(KINIT_STACK_RESERVE_WORDS)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' KINIT_BADMAP='$(KINIT_BADMAP)' KINIT_FULL='$(KINIT_FULL)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' VM_BACKEND='$(VM_BACKEND)'
+$(KINIT_STAMP): $(KERNEL_INPUTS) Makefile $(PDP10_KCC_DEP) $(BUILD)
+	$(MAKE) -C $(KERNEL_DIR) kinit BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_STACK_RESERVE_WORDS='$(KINIT_STACK_RESERVE_WORDS)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' KINIT_BADMAP='$(KINIT_BADMAP)' KINIT_FULL='$(KINIT_FULL)' D6FS_FS_ENABLED='$(D6FS_FS_ENABLED)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' VM_BACKEND='$(VM_BACKEND)'
 	touch $@
 
 $(KCORE_STAMP): $(KERNEL_INPUTS) $(PDP10_KCC_DEP) $(BUILD)
@@ -617,7 +625,7 @@ $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM
 force-minit-config:
 
 $(MINIT_TABLE_ASM): $(KERNEL_DIR)/modules/module_table.s force-minit-config | $(BUILD)
-	{ echo ".set KINIT_FULL,$(KINIT_FULL)"; echo ".set KINIT_BADMAP,$(KINIT_BADMAP)"; echo ".set TAPE_FS_ENABLED,$(TAPE_FS_ENABLED)"; cat $<; } > $@
+	{ echo ".set KINIT_FULL,$(KINIT_FULL)"; echo ".set KINIT_BADMAP,$(KINIT_BADMAP)"; echo ".set TAPE_FS_ENABLED,$(TAPE_FS_ENABLED)"; echo ".set D6FS_FS_ENABLED,$(D6FS_FS_ENABLED)"; cat $<; } > $@
 
 $(MINIT_TABLE_OBJ): $(MINIT_TABLE_ASM) $(BUILD)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
@@ -1265,7 +1273,9 @@ image: $(SIMH_INI)
 
 permanent-size: $(KCORE_MAP) $(MRES_PACKAGE_OBJS)
 	@./image/report-permanent.sh --kcore-map $(KCORE_MAP) --build $(BUILD) \
-	    --objdump $(PDP10_OBJDUMP) --omit-blockset $(if $(filter 0,$(TAPE_FS_ENABLED)),--omit-dtfs)
+	    --objdump $(PDP10_OBJDUMP) --omit-blockset \
+	    $(if $(filter 0,$(TAPE_FS_ENABLED)),--omit-dtfs) \
+	    $(if $(filter 0,$(D6FS_FS_ENABLED)),--omit-d6fs)
 
 boot:
 	rm -rf $(DISK_DIR) $(DRUM_DIR) $(SIMH_INI)
