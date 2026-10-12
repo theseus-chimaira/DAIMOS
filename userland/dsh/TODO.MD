@@ -2,10 +2,20 @@
 
 ## CURRENT FOCUS (2026-10-12): PHASE ZERO AND IMAGE SHRINKAGE
 
+Compact AST stage completed (v3): no feature/limit reductions; DSH image
+035552, BSS 007651 octal, rounded initial VM 050000 (was 056000).
+Full 115/115 conformance plus 10/10 focused function/AST lifetime tests
+pass. The 32K low-memory ROOT login still fails EXEC; investigate actual
+available physical extents and resident allocations. Next source targets:
+allocate only as many temporary argument records as required, and design
+on-demand permanent function-payload storage with strictly correct
+recursive/SOURCE lifetimes. Details:
+`design/DSH-COMPACT-AST-20261012-v3.MD`.
+
 Third AST RAM refactor: compact node descriptors; one 180-word static
 payload cache plus scoped BRK spill for active parse trees; independent
-permanent saved-function payloads. Measured image **035603**, BSS
-**010136**, rounded user VM **050000** octal words. The normal 036000
+permanent saved-function payloads. Measured image **035552**, BSS
+**007651**, rounded user VM **050000** octal words. The normal 036000
 image gate and 115/115 DSH target conformance pass, but 32K LOWMEM
 BOOT STILL FAILS at LOGIN: EXEC FAILED. Next priority: reduce runtime
 payload and persistent storage further and obtain measured MM headroom

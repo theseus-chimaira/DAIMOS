@@ -1,27 +1,52 @@
+## DSH COMPACT AST V3 — VERIFIED, 32K BOOT STILL OPEN (2026-10-12)
+
+The sixteen active and eight stored-function AST nodes no longer embed
+twenty 7-word arguments and both mask arrays per node. Argument-bearing
+temporary nodes allocate payloads through BRK, released only after
+evaluation, including nested SOURCE; permanent stored functions keep
+independent deep-copied payloads and rebind pointers on compaction.
+No grammar feature or fixed capacity was removed.
+
+The target DXR measures image **035552** and BSS **007651** octal words;
+the previous v6 image was 035545 with BSS 015241. This removes **2808
+decimal static words**, and lowers the initial rounded VM extent from
+056000 to **050000** octal words. Normal 036000 image gate: PASS.
+KCORE + initial DSH VM now has a lower bound of 073610 octal words.
+
+The full PDP-6 boot image builds. The exact DXR bytes passed all 115/115
+existing DSH conformance probes and the new testkit AST-lifetime probes
+pass 10/10 (SOURCE/function copying/replacement/compaction, CASE).
+The 32K LOWMEM boot still reaches LOGIN but fails DSH EXEC, so this
+stage does **not** close the low-memory boot requirement.
+See `design/DSH-COMPACT-AST-20261012-v3.MD` for measurements,
+lifetime assumptions, and remaining on-demand allocation opportunities.
+
 ## DSH COMPACT AST: STATIC RAM SHRINK AND REMAINING 32K BLOCKER (2026-10-12)
 
 The third DSH optimization stage splits AST metadata from argument/mask
 payloads. Eight persistent function nodes retain independent BSS payload
-storage; active parsers share one 180-word static common-case payload,
-spilling additional live nodes to scoped LIFO BRK storage. Nested SOURCE
-and function definitions use separate payload lifetimes. No command,
-function, node, or argument capacity was reduced.
+storage; argument-bearing active nodes allocate temporary payloads using
+scoped LIFO BRK storage. Nested SOURCE and persistent function definitions
+use separate payload lifetimes. No command, function, node, or argument
+capacity was reduced. An optional 180-word static common-case cache was
+experimented with and rejected because it increased BSS without lowering
+the rounded VM extent.
 
-Current KCC image **035603 octal**, BSS **010136 octal**; compared with
-035545/015241 before the AST change, BSS fell by 2627 decimal words.
+The verified KCC image is **035552 octal**, BSS **007651 octal**; compared
+with 035545/015241 before the AST change, BSS fell by 2808 decimal words.
 The rounded DSH VM allocation drops from 056000 to **050000 octal**
 words. Normal 036000 image limit passes, and the full 115/115 DSH
 target conformance suite passes. See
 `design/DSH-COMPACT-AST-20261012-v3.MD`.
 
-**The separate 32K lowmem boot is not yet green.** The final cached-payload
-revision also reaches LOGIN and fails at ROOT with LOGIN: EXEC FAILED.
+**The separate 32K lowmem boot is not yet green.** The compact-payload
+revision still reaches LOGIN and fails at ROOT with LOGIN: EXEC FAILED.
 The updated static lower bound KCORE+DSH is 073610 octal, but resident
 kernel packages and tables still need physical memory. Do not treat
 the image gate or full-core functional tests as 32K acceptance.
 The final 115/115 general and 10/10 focused AST PDP-6 SIMH probes pass.
 DAIMOS-TESTKIT commit 0eb6672 records the focused probes and the
-035603-image/010136-BSS/050000-VM regression guard.
+035552-image/007651-BSS/050000-VM regression guard.
 
 ## DSH SECOND SHRINK AND 32K CORE AUDIT (2026-10-12)
 

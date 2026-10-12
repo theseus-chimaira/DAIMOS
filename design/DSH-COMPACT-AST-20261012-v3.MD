@@ -1,75 +1,84 @@
-# DSH compact AST storage: third low-memory stage (2026-10-12)
+# DSH compact AST payloads — measured implementation (2026-10-12, v3)
 
-Status: code built at the normal 036000 image limit; 115/115 general and
-10/10 dedicated AST lifetime target probes passed. **32K low-memory boot
-still fails at LOGIN: EXEC FAILED.**
+The frozen DSH feature set is unchanged. This follows
+`design/DSH-32K-SOURCE-AUDIT-20261012-v2.MD` and the versioned
+`dsh-32k-source-audit-20261012-v6` branch.
 
-## Allocation layout
+## Implementation
 
-Previously every one of the 16 active AST nodes and 8 saved function nodes
-contained an entire 20-word-argument, quote-mask and literal-mask payload,
-whether the node needed arguments or not. The combined static node arrays
-occupied 4800 decimal PDP-6 words.
+The former 200-word AST node embedded 20 full seven-word SIXBIT argument
+records and two 20-word quotation-mask arrays. Sixteen active AST nodes
+plus eight stored-function nodes therefore reserved 4,800 static words,
+even for operator and control-flow nodes with no arguments.
 
-Now the node descriptor retains type, links, flags and redirection records,
-with three pointers into a separately allocated `dsh_node_payload`.
-The full 20-argument capacity and both 36-bit quotation masks are intact.
-The eight saved function nodes own independent fixed payload records in
-BSS; definition copies every active argument/mask by value and compaction
-rebinds all payload pointers. No function depends on ephemeral parse data.
+Each `struct dsh_node` now holds its fixed metadata and pointers to its
+argument records and masks. Only argument-bearing node kinds allocate a
+temporary 180-word payload, through the existing user BRK facility.
+Temporary parse payloads are released at the evaluator boundary, *after*
+recursive evaluation. Nested SOURCE allocations remain LIFO. Standalone
+command substitution explicitly initializes its destination word; ordinary
+arguments are copied completely from initialized lexer tokens. No unfilled
+argument slot may be read.
 
-Parsing/evaluation uses one 180-word static fast-path payload for the common
-single argument-bearing node. Its ownership is checkpointed and restored
-across nested SOURCE and script execution. Further argument-bearing nodes
-obtain 180-word transient buffers from BRK, exclusively for the current
-parse/evaluation lifetime. Nested execution retains its parent buffers until
-return and restores the BRK in reverse order. The full-size argument
-expansion already uses LIFO BRK scratch above those allocations.
-Persisted function payloads **never** reside inside a transient BRK extent.
+Stored function AST nodes instead copy argument payloads into their own
+permanent eight-slot BSS pool. Replacing or removing a function compacts
+both node metadata and payloads, rebinding their pointers. This separation
+avoids dangling references to the reused script token buffer and avoids
+freeing stored functions when temporary evaluation unwinds.
 
-Each ordinary word uses a full seven-word SIXBIT copy and initializes both
-masks. A standalone substitution clears its initially empty record before
-appending characters. No uninitialized word/mask is read within argc;
-avoiding unconditional clearing of 180 words improves common-case speed.
+No node, function, argument, SIXBIT-length, quotation, SOURCE, or history
+limit was reduced. Whole-record SIXBIT copy/swap and common radix-number
+parsing replace duplicate loops. Unused libc path packing and path-based
+S6REC open routines were split into standalone objects so the shell no
+longer links them; other consumers retain the original interfaces.
 
-## Measured final-size candidate
+## Measurements (octal 36-bit words)
 
-KCC/DAS/DLINK PDP-6 result, all measurements octal:
-
-| | Prior v6 | Compact v7 |
+| Metric | Previous v6 | Compact v7 |
 | --- | ---: | ---: |
-| DXR image | 035545 | **035603** |
-| BSS | 015241 | **010136** |
-| Image + BSS + 02020 stack/origin | 055026 | **047761** |
-| 02000-aligned user VM | 056000 | **050000** |
+| Executable image | 035545 | **035552** |
+| Static BSS | 015241 | **007651** |
+| Image + BSS + 02020 origin/stack | 055026 | **047443** |
+| Rounded user-VM extent | 056000 | **050000** |
+| Linked KCORE end | 023610 | 023610 |
+| KCORE + user-VM minimum | 0101610 | **073610** |
 
-BSS falls by **2627 decimal words** while image rises 30 decimal words.
-The user VM's allocation quantum falls from 056000 to 050000:
-**3072 decimal (06000 octal) words less physically reserved**.
-The 036000 normal image gate passes; no feature/capacity limits changed.
-This is *per process* because current PDP-6 executable text is not
-physically shared across processes.
+BSS saves **2,808 decimal words**; the initial aligned user extent saves
+**03072 decimal words** (06000 octal). The image remains below the ordinary
+036000 octal acceptance gate. The static lower bound now fits inside 32K,
+but does **not** include resident kernel packages, process metadata,
+other live user extents, or allocator fragmentation.
 
-One additional libc object split moves u_text_open and u_s6_pack into
-text_open.c/u_pack.c, retaining both for programs that call them but
-excluding them from DSH's image. The SIXBIT record copy/swap uses native
-structure assignment; EXIT/RETURN decimal number and UMASK octal number
-parsing share a single number conversion algorithm.
+## Acceptance and limits
 
-## 32K correctness and unresolved work
+- Full PDP-6 disk-image build under the normal image gate: PASS.
+- DSH conformance 115/115: PASS on the exact DXR binary; the final
+  standalone rebuild's SHA-256 digest matched the previously fully tested
+  DXR byte for byte.
+- Focused AST lifetime test, 10/10: PASS (function copy, replacement,
+  compaction, CASE arms, and function persistence through SOURCE).
+- 32K low-memory PDP-6 boot: **NOT PASSED**. It reaches LOGIN but ROOT
+  reports `LOGIN: EXEC FAILED`. The kernel needs further free physical
+  core beyond the static KCORE + DSH lower bound.
+- A reused disk image after a test boot can fail earlier with `?RT`
+  because the D6FS root requires recovery. Never classify this as a DSH
+  regression; use a freshly built disk image for each boot test.
 
-With the current fixed KCORE end 023610, the static lower bound for
-KCORE + a 050000-word DSH extent is 073610 octal, leaving only 04370
-octal words for resident packages, process tables and kernel allocations.
-The final cached-payload version's live 32K lowmem test still reaches
-LOGIN but reports LOGIN: EXEC FAILED. A successful ordinary
-image/conformance test cannot substitute for low-memory acceptance.
+## Next optimizations without feature changes
 
-Potential next improvements include variable-sized payload allocation
-instead of always reserving 180 words per additional argument-bearing
-node, and compact persistent function payload storage. The latter must not
-introduce permanent allocations inside temporary BRK arenas: SOURCE and
-functions can nest while transient scratch is live.
-
-Do not claim 32K support until INIT -> LOGIN -> DSH and meaningful commands
-pass the dedicated low-memory SIMH test with measured kernel headroom.
+1. **Short temporary argument payloads.** The present heap allocation
+   reserves all 20 argument records even for a one-word command. Safely
+   pre-count the maximum number of arguments from token boundaries and
+   allocate only the necessary records and masks. Preserve full 20-word
+   capacity when needed. Benchmark allocation overhead and peak BRK.
+2. **Persistent function payload storage.** Eight 180-word static
+   records are still reserved. A compact persistent arena would save
+   BSS, but must handle on-demand growth, redefinition compaction,
+   recursive calls, and nested SOURCE without ever freeing a live
+   function from temporary LIFO BRK storage. Do not replace this with
+   an unsafe shared scratch buffer.
+3. **Measure actual 32K available extents.** Determine why DSH EXEC
+   cannot obtain the 050000-word extent after INIT/LOGIN. Account for
+   resident packages and other processes; a simple numeric KCORE
+   lower bound is not enough. Do not claim a 32K boot until the live
+   test enters DSH and runs representative commands.
