@@ -2,6 +2,9 @@
 
 ## CURRENT FOCUS (2026-10-12): PHASE ZERO AND IMAGE SHRINKAGE
 
+Detailed source-level D6FS write-order audit and acceptance gates:
+`design/DSH-HISTFILE-ATOMIC-APPEND-20261012-v1.MD`.
+
 This workstream is restricted to HISTFILE durability/recovery, the necessary
 D6FS record-commit primitives, fault-injection acceptance, and reducing the
 DSH image below the normal 036000-octal-word limit. Do not implement unrelated
