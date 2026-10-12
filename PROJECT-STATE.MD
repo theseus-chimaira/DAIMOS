@@ -1,3 +1,23 @@
+## DSH LAZY FUNCTION STORAGE V9 (2026-10-12)
+
+The eight-slot (1,440-word) saved-function payload pool now lives in a
+one-time BRK reservation made upon the first function definition, not BSS.
+Function-node/argument limits, persistent function copies, and SOURCE
+semantics are unchanged; parse BRK restoration preserves the pool's floor.
+Variable-sized active AST slots additionally reserve only nine words
+per possible lexer argument, rather than 180 words per node regardless
+of command size. Measured DSH DXR image **035671**, BSS **005013**,
+unrounded VM **044724**,
+rounded VM **046000** octal words. Compared with v7, BSS saves 1,438
+decimal words and initial user VM saves 1,024 decimal words.
+
+The normal image gate and full PDP-6 build pass. The combined v9 image
+passed **115/115** DSH conformance using SIMH CTY and **16/16**
+additional AST tests on independent clean images. Long HELP/MAN output
+lost characters over the DCS transport; CTY did not show that failure.
+32K LOWMEM boot is still not accepted. See
+`design/DSH-LAZY-FUNCTION-PAYLOAD-20261012-v9.MD`.
+
 ## DSH COMPACT AST V3 — VERIFIED, 32K BOOT STILL OPEN (2026-10-12)
 
 The sixteen active and eight stored-function AST nodes no longer embed

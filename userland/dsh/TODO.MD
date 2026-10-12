@@ -2,6 +2,14 @@
 
 ## CURRENT FOCUS (2026-10-12): PHASE ZERO AND IMAGE SHRINKAGE
 
+Lazy persistent-function and variable-width active AST payload stage v9
+verified: BSS falls 007651 -> 005013 octal and initial user VM 050000 ->
+046000 octal, with all function and argument limits unchanged.
+DXR image 035671 remains under 036000. The full 115-case PDP-6 CTY
+test and 16/16 additional lifetime/limit probes pass. 32K boot remains open; investigate
+available physical extents and continue shrinking without feature removal.
+See `design/DSH-LAZY-FUNCTION-PAYLOAD-20261012-v9.MD`.
+
 Compact AST stage completed (v3): no feature/limit reductions; DSH image
 035552, BSS 007651 octal, rounded initial VM 050000 (was 056000).
 Full 115/115 conformance plus 10/10 focused function/AST lifetime tests

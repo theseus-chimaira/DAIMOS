@@ -41,7 +41,12 @@ static struct dsh_function_store dsh_functions[DSH_MAX_FUNCS];
 static struct dsh_node dsh_function_nodes[DSH_FUNC_MAX_NODES];
 /* Permanent function argument storage is independent of parse-time BRK
  * allocations. This preserves definitions across nested SOURCE and eval. */
-static struct dsh_node_payload dsh_function_payload[DSH_FUNC_MAX_NODES];
+/* The bounded eight-slot function payload pool is needed only after the
+ * first DEF. Keep function capacity unchanged, but do not charge 1440
+ * permanent words to shells that never define a function. This allocation
+ * is made once and survives temporary parse/command BRK restoration. */
+static struct dsh_node_payload *dsh_function_payload;
+static kword_t dsh_function_payload_end;
 static unsigned int dsh_function_nodes_used;
 
 static int dsh_s6_same(const struct dsh_s6 *a, const struct dsh_s6 *b);
@@ -153,6 +158,41 @@ dsh_find_function(const struct dsh_s6 *name)
                     dsh_s6_same(&dsh_functions[i].name, name))
                         return &dsh_functions[i];
         return 0;
+}
+
+static int
+dsh_function_payload_reserve(void)
+{
+        kword_t start;
+        kword_t words;
+        kword_t end;
+
+        if (dsh_function_payload != 0)
+                return DSH_OK;
+        words = (sizeof(struct dsh_node_payload) *
+            DSH_FUNC_MAX_NODES + sizeof(kword_t) - 1U) /
+            sizeof(kword_t);
+        start = dsys_brk(0UL);
+        if (start == (kword_t)-1 || words > 0777777UL - start)
+                return DSH_E_OVERFLOW;
+        end = start + words;
+        if (dsys_brk(end) != end)
+                return DSH_E_OVERFLOW;
+        dsh_function_payload = (struct dsh_node_payload *)(unsigned long)start;
+        dsh_function_payload_end = end;
+        return DSH_OK;
+}
+
+/* A function may be defined inside SOURCE, while the defining AST still
+ * occupies the transient arena. Reclaim temporary storage only down to
+ * the newer permanent function-pool floor. The one-time first-DEF arena
+ * gap is bounded; later definitions reuse the same eight payload slots. */
+static void
+dsh_restore_parse_break(kword_t saved)
+{
+        if (saved < dsh_function_payload_end)
+                saved = dsh_function_payload_end;
+        (void)dsys_brk(saved);
 }
 
 static int
@@ -288,6 +328,8 @@ dsh_define_function(struct dsh_state *st, const struct dsh_node *nodes,
                                 break;
                         }
         if (!found)
+                return DSH_ERROR;
+        if (dsh_function_payload_reserve() != DSH_OK)
                 return DSH_ERROR;
         if (old_count != 0U)
                 dsh_remove_function_nodes(slot);
@@ -2818,7 +2860,7 @@ dsh_script_execute(struct dsh_state *st, struct dsh_script *script,
         rc = dsh_parse_tokens(script->tokens, script->ntokens, arena,
             DSH_PARSE_MAX_NODES - base, &root, &used);
         if (rc != DSH_OK) {
-                (void)dsys_brk(saved_break);
+                dsh_restore_parse_break(saved_break);
                 return rc;
         }
         dsh_script_init(script);
@@ -2828,7 +2870,7 @@ dsh_script_execute(struct dsh_state *st, struct dsh_script *script,
         *status = dsh_exec_node(st, arena, root);
         dsh_script_workspace = saved_workspace;
         dsh_nodes_active = base;
-        (void)dsys_brk(saved_break);
+        dsh_restore_parse_break(saved_break);
         st->status = (unsigned int)*status;
         return DSH_OK;
 }
@@ -2906,7 +2948,7 @@ dsh_execute_line(struct dsh_state *st, const struct dsh_line *line)
         rc = dsh_parse_s6_line(line, arena, DSH_PARSE_MAX_NODES - base,
             &root, &used, &errpos);
         if (rc != DSH_OK) {
-                (void)dsys_brk(saved_break);
+                dsh_restore_parse_break(saved_break);
                 (void)u_puts(2, "DSH: SYNTAX");
                 (void)u_crlf(2);
                 return DSH_ERROR;
@@ -2914,6 +2956,6 @@ dsh_execute_line(struct dsh_state *st, const struct dsh_line *line)
         dsh_nodes_active = base + used;
         status = dsh_exec_node(st, arena, root);
         dsh_nodes_active = base;
-        (void)dsys_brk(saved_break);
+        dsh_restore_parse_break(saved_break);
         return status;
 }

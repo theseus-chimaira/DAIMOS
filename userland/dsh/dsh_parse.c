@@ -78,24 +78,38 @@ dsh_node_bind_payload(struct dsh_node *n, struct dsh_node_payload *payload)
 }
 
 /* AST payloads have parse/evaluation lifetime, not function lifetime.
- * The caller restores the entry BRK only after evaluating the complete
- * tree. A nested SOURCE allocates above its caller and unwinds in LIFO
- * order. Stored functions deep-copy payloads into independent BSS. */
+ * At most one argument can be introduced per lexer token, including
+ * substitution and CASE/FOR words. Thus the full token count bounds the
+ * number of argument slots every node in this parse can ever consume.
+ * The caller restores BRK after evaluation; nested SOURCE is LIFO.
+ * Stored functions deep-copy into independent permanent storage. */
 static int
-dsh_node_alloc_payload(struct dsh_node *n)
+dsh_node_alloc_payload(struct dsh_node *n, unsigned int tokens)
 {
-        struct dsh_node_payload *payload;
+        kword_t *payload;
         kword_t start;
         kword_t words;
+        unsigned int slots;
 
-        words = (sizeof(*payload) + sizeof(kword_t) - 1U) /
-            sizeof(kword_t);
+        slots = tokens;
+        if (slots > DSH_PARSE_MAX_WORDS)
+                slots = DSH_PARSE_MAX_WORDS;
+        if (slots == 0U)
+                slots = 1U;
+        /* A counted SIXBIT record occupies seven PDP-6 words. The two
+         * quote masks need one more word each, for nine words per slot.
+         * Do not reserve nineteen unused slots for a one-word command. */
+        words = (kword_t)slots *
+            ((sizeof(struct dsh_s6) / sizeof(kword_t)) + 2U);
         start = dsys_brk(0UL);
         if (start == (kword_t)-1 || words > 0777777UL - start ||
             dsys_brk(start + words) != start + words)
                 return DSH_E_OVERFLOW;
-        payload = (struct dsh_node_payload *)(unsigned long)start;
-        dsh_node_bind_payload(n, payload);
+        payload = (kword_t *)(unsigned long)start;
+        n->words = (struct dsh_s6 *)payload;
+        payload += slots * (sizeof(struct dsh_s6) / sizeof(kword_t));
+        n->literal_mask = payload;
+        n->quote_mask = payload + slots;
         /* Every ordinary argument is copied with both masks initialized.
          * Standalone substitution is the only builder of an empty word;
          * that slot is explicitly cleared at its creation below.  Never
@@ -288,7 +302,8 @@ dsh_alloc_node(struct dsh_parser *p, int type, unsigned int *out)
         if (type == DSH_N_SIMPLE || type == DSH_N_FOR ||
             type == DSH_N_DEF || type == DSH_N_CASE ||
             type == DSH_N_CASE_ARM) {
-                rc = dsh_node_alloc_payload(&p->nodes[p->used]);
+                rc = dsh_node_alloc_payload(&p->nodes[p->used],
+                    p->ntokens);
                 if (rc != DSH_OK)
                         return dsh_mark_error(p, rc, DSH_PE_NONE);
         }
