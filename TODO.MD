@@ -28,6 +28,14 @@
 
 # DAIMOS TODO
 
+## Experimental user overlays and shared text (planned, not implemented)
+
+Implementation plan: `design/user-overlay-shared-text-experiments-20261012-v1.md`.
+Start with measured/optional user-space overlays; subsequently benchmark
+PDP-6 shared execution areas and optimized private-state copying. Keep
+the architecture replaceable by the selected VM backend. No acceptance
+or production enablement is claimed.
+
 DATE: 2026-10-07
 
 PROJECT-STATE.MD DEFINES THE CURRENT ARCHITECTURE.  THIS FILE CONTAINS OPEN
