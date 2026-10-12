@@ -17,6 +17,9 @@ while metadata integrity remains the responsibility of D6FSCK. Do not
 implement unrelated language/editor features as part of this phase.
 DSH-18 (safe recovery of damaged persistent history under concurrent writers)
 is a phase-zero blocker.
+The three-boot corrupted-tail repair/recall SIMH acceptance now passes
+(six probes, CLEAN d6fsck). Two simultaneous DSH startup repairs and
+multiwriter contention during repair still need explicit tests.
 
 KEEP THE GENERAL FILESYSTEM CORRECTNESS FIXES: D6FS O_APPEND EOF RESOLUTION
 UNDER PROVIDER SERIALIZATION (EB53B18), MEMFS WRITE-TIME O_APPEND

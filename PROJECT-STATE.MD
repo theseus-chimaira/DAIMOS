@@ -1,3 +1,15 @@
+## DSH PHASE ZERO: THREE-BOOT HISTFILE REPAIR ACCEPTANCE (2026-10-12)
+
+DAIMOS-TESTKIT's updated corrupt-tail validation completed six PDP-6 SIMH
+probes over three consecutive boots using the current coordinated HISTFILE
+repair implementation. The first boot seeded a valid S6REC followed by an
+incomplete tail; the second boot repaired and recalled ECHO SAFE; the third
+boot recalled it again without a second repair notice. The final D6FSCK
+check reported CLEAN, superblock 670, sequence 7, 179196 blocks, 344 FCBs.
+The original test used only one Ctrl-P on the third boot, but HALT had
+become the newest saved command, so the corrected test uses two Ctrl-P.
+Concurrent simultaneous repair is not yet independently tested.
+
 ## DSH PHASE ZERO: COORDINATED HISTFILE TAIL REPAIR (2026-10-12)
 
 DSH startup opens existing HISTFILE read/write and acquires the existing
