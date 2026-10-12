@@ -21,6 +21,9 @@
         .globl  drm236_write_block_service
         .globl  drm236_active_request
         .globl  drm236_pending_request
+        .globl  mfsdev_drm_reads
+        .globl  mfsdev_drm_writes
+        .globl  mfsdev_storage_errors
         .globl  pdp10_pi_dispatch_done
         .globl  kret_ok
         .globl  kret_neg1
@@ -185,6 +188,20 @@ drm236_pi_finish:
         skipn   1,drm236_active_request
         jrst    pdp10_pi_dispatch_done
         movem   2,2(1)
+        ; Account once at drum completion, not at the earlier DP interrupt
+        ; and not when promoting a pending request.  Only AC1/AC2 are scratch.
+        jumpg   2,drm236_pi_count_success
+        aos     mfsdev_storage_errors+5
+        jrst    drm236_pi_count_done
+drm236_pi_count_success:
+        move    2,1(1)                  ; descriptor's READ/WRITE command
+        trne    2,010                  ; READ=0230, WRITE=0220
+        jrst    drm236_pi_count_read
+        aos     mfsdev_drm_writes
+        jrst    drm236_pi_count_done
+drm236_pi_count_read:
+        aos     mfsdev_drm_reads
+drm236_pi_count_done:
         setzm   drm236_active_request
         addi    1,2
         pushj   017,proc_wakeup_event
@@ -240,9 +257,16 @@ drm236_poll_dr:
 
 drm236_poll_success:
         cono    0400,DRM_DR_DESELECT
+        trne    4,010                  ; READ command
+        jrst    drm236_poll_count_read
+        aos     mfsdev_drm_writes
+        jrst    kret_ok
+drm236_poll_count_read:
+        aos     mfsdev_drm_reads
         jrst    kret_ok
 
 drm236_poll_error:
         cono    0010,0
         cono    0400,DRM_DR_CLEAR_DESELECT
+        aos     mfsdev_storage_errors+5
         jrst    kret_neg1
