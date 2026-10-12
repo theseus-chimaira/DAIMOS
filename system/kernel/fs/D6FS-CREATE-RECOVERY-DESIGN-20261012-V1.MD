@@ -71,3 +71,23 @@ No new format, implementation, or RAM cost is approved by this note.
 - Run concurrent creators and HISTFILE writers; verify exactly-once outcome
   or explicitly reported *unknown* status without unsafe automatic retry.
 - Run full PDP-6 SIMH and testkit regressions and measure resident words.
+
+## Write-order audit addendum (2026-10-12)
+
+The current `d6fs_provider_write_dirent` path has **multiple** publication
+boundaries, not just child-FCB and dirent. If a slot extends beyond the old
+directory EOF, `d6fs_provider_resize_fcb` stages growth and can update
+extent/allocation metadata. It then writes six directory-entry words using
+`d6fs_reader_write_words`, followed by an mtime update through
+`d6fs_reader_put_fcb`. An existing reusable directory slot can take a
+shorter path. A symlink additionally has data and extent writes before
+entry publication. Therefore every test scenario needs both an existing-slot
+and an extend-directory case, as well as normal-file versus symlink creation.
+
+Testkit `daimos-d6fs-create-write-order-model-20261012-v1.py` (`adf1e65`)
+enumerates conservative crash prefixes. It demonstrates that an intent
+record without replay is insufficient, and an additional commit bit cannot
+undo an already durable unreferenced FCB. The model deliberately excludes
+sector tearing and device write reordering, so it is **not** a proof of
+transaction correctness. The on-disk format and recovery choices remain
+unimplemented. No extra resident workspace is approved.
