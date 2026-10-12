@@ -19,6 +19,18 @@ allocator without a separately owned persistent arena is unsafe.
 No source changes from that experiment were kept. Do not reintroduce
 this failure with a simple BRK high-water workaround.
 
+Further PDP-6 source review (2026-10-12): `proc_swap_victim` in
+`system/kernel/proc/proc_pdp6.s` and `proc.c` already considers
+non-current sleeping, stopped and runnable processes, but requires an
+attached swap record, unmapped and unpinned resident VM, and no active
+transition. `proc_swap_reclaim` then writes the chosen process to
+BACKSTORE and retries memory compaction. Before changing INIT's
+eligibility, determine which specific guard rejects it and whether its
+image has durable executable backing; never force-swap INIT blindly.
+In particular, a 032000-word maximum free extent with INIT resident
+cannot run even a 044000-word DSH. Overlay work is secondary until
+this residency/swap diagnosis is complete.
+
 V13 tested static AST shrink: optional redirection records now live
 in argument-bearing node payloads instead of every AST descriptor.
 PDP-6 DSH image **035726**, BSS **003374** octal; initial VM still
