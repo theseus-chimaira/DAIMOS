@@ -54,13 +54,11 @@ dsh_s6_get(const struct dsh_s6 *s, unsigned int pos)
 int
 dsh_s6_copy(struct dsh_s6 *dst, const struct dsh_s6 *src)
 {
-        unsigned int i;
-
         if (dst == 0 || src == 0)
                 return -1;
-        dst->len = src->len;
-        for (i = 0U; i < DSH_S6_MAX_WORDS; ++i)
-                dst->words[i] = src->words[i];
+        /* The complete record is seven contiguous PDP-6 words.
+         * Let KCC lower one structure copy instead of a six-step loop. */
+        *dst = *src;
         return 0;
 }
 

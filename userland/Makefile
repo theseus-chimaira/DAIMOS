@@ -32,9 +32,9 @@ KCC_HEADERS = $(wildcard $(PROJECT_ROOT)/userland/libc/*.h) \
 	$(wildcard $(PROJECT_ROOT)/system/kernel/storage/*.h) \
 	$(wildcard $(PDP10_PREFIX)/include/*.h)
 
-CHECK_SRCS = libc/u.c libc/u_compare.c libc/text.c libc/text_config.c exec/commands.c exec/standalone.c exec/utility.c exec/utility_standalone.c exec/xargs.c exec/sed.c exec/configctl.c exec/make.c dsh/dsh.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c init/init.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c tsfs/mount_tsfs.c dtfs/dtfs_probe.c dtfs/dtfsprobe.c d6lz/d6lz.c logstore/logdrain.c logstore/logcompat.c toolchain/dobj.c toolchain/darc.c toolchain/dlink.c toolchain/objdump.c
+CHECK_SRCS = libc/u.c libc/u_compare.c libc/u_pack.c libc/text.c libc/text_open.c libc/text_config.c exec/commands.c exec/standalone.c exec/utility.c exec/utility_standalone.c exec/xargs.c exec/sed.c exec/configctl.c exec/make.c dsh/dsh.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c init/init.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c tsfs/mount_tsfs.c dtfs/dtfs_probe.c dtfs/dtfsprobe.c d6lz/d6lz.c logstore/logdrain.c logstore/logcompat.c toolchain/dobj.c toolchain/darc.c toolchain/dlink.c toolchain/objdump.c
 CHECK_ASMS = $(CHECK_SRCS:%.c=$(USERLAND_BUILD)/check/%.s)
-COMMON_C_SRCS = libc/u.c libc/u_compare.c libc/text.c libc/text_config.c
+COMMON_C_SRCS = libc/u.c libc/u_compare.c libc/u_pack.c libc/text.c libc/text_open.c libc/text_config.c
 COMMON_S_SRCS = libc/crt0.s libc/syscall.s libc/syscall_helpers.s
 
 INIT_C_SRCS = $(COMMON_C_SRCS) libc/logevent.c init/init.c
@@ -161,7 +161,7 @@ DTFSPROBE_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/dtfsprobe/%.dobj)
 DTFSPROBE_DXR = $(USERLAND_BUILD)/dtfsprobe.dxr
 DTFSPROBE_MAP = $(USERLAND_BUILD)/dtfsprobe.map
 
-D6LZ_C_SRCS = libc/u.c libc/u_compare.c d6lz/d6lz.c
+D6LZ_C_SRCS = libc/u.c libc/u_compare.c libc/u_pack.c d6lz/d6lz.c
 D6LZ_C_OBJS = $(D6LZ_C_SRCS:%.c=$(USERLAND_BUILD)/d6lz/%.dobj)
 D6LZ_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/d6lz/%.dobj)
 D6LZ_DXR = $(USERLAND_BUILD)/d6lz.dxr
@@ -173,7 +173,7 @@ LOGDRAIN_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/logdrain/%.dobj)
 LOGDRAIN_DXR = $(USERLAND_BUILD)/logdrain.dxr
 LOGDRAIN_MAP = $(USERLAND_BUILD)/logdrain.map
 
-TOOLCHAIN_COMMON_C_SRCS = libc/u.c libc/u_compare.c toolchain/dobj.c
+TOOLCHAIN_COMMON_C_SRCS = libc/u.c libc/u_compare.c libc/u_pack.c toolchain/dobj.c
 TOOLCHAIN_S_SRCS = $(COMMON_S_SRCS)
 
 DARC_C_SRCS = $(TOOLCHAIN_COMMON_C_SRCS) toolchain/darc.c

@@ -54,8 +54,6 @@ dsh_mark_error(struct dsh_parser *p, int code, unsigned int expect)
 void
 dsh_node_clear(struct dsh_node *n)
 {
-        unsigned int i;
-
         if (n == 0)
                 return;
         n->type = DSH_N_EMPTY;
@@ -66,11 +64,43 @@ dsh_node_clear(struct dsh_node *n)
         n->flags = 0;
         dsh_s6_clear(&n->redir_in);
         dsh_s6_clear(&n->redir_out);
-        for (i = 0; i < DSH_PARSE_MAX_WORDS; i++) {
-                dsh_s6_clear(&n->words[i]);
-                n->literal_mask[i] = 0;
-                n->quote_mask[i] = 0;
-        }
+        n->words = 0;
+        n->literal_mask = 0;
+        n->quote_mask = 0;
+}
+
+void
+dsh_node_bind_payload(struct dsh_node *n, struct dsh_node_payload *payload)
+{
+        n->words = payload->words;
+        n->literal_mask = payload->literal_mask;
+        n->quote_mask = payload->quote_mask;
+}
+
+/* AST payloads have parse/evaluation lifetime, not function lifetime.
+ * The caller restores the entry BRK only after evaluating the complete
+ * tree. A nested SOURCE allocates above its caller and unwinds in LIFO
+ * order. Stored functions deep-copy payloads into independent BSS. */
+static int
+dsh_node_alloc_payload(struct dsh_node *n)
+{
+        struct dsh_node_payload *payload;
+        kword_t start;
+        kword_t words;
+
+        words = (sizeof(*payload) + sizeof(kword_t) - 1U) /
+            sizeof(kword_t);
+        start = dsys_brk(0UL);
+        if (start == (kword_t)-1 || words > 0777777UL - start ||
+            dsys_brk(start + words) != start + words)
+                return DSH_E_OVERFLOW;
+        payload = (struct dsh_node_payload *)(unsigned long)start;
+        dsh_node_bind_payload(n, payload);
+        /* Every ordinary argument is copied with both masks initialized.
+         * Standalone substitution is the only builder of an empty word;
+         * that slot is explicitly cleared at its creation below.  Never
+         * read slots beyond argc. Avoid clearing 180 unused words here. */
+        return DSH_OK;
 }
 
 #define DSH_K_AND      1U
@@ -246,14 +276,22 @@ dsh_at_stop(const struct dsh_parser *p, unsigned int stops)
 static int
 dsh_alloc_node(struct dsh_parser *p, int type, unsigned int *out)
 {
+        int rc;
         if (p == 0 || out == 0)
                 return DSH_E_ARG;
         if (p->used >= p->max_nodes)
                 return dsh_mark_error(p, DSH_E_OVERFLOW, DSH_PE_NONE);
         *out = p->used;
-        /* parse_tokens_diag already cleared the entire node arena once.
-         * Slots are allocated monotonically during this parse, so a
-         * second full 200-word clear here only repeats the same work. */
+        /* Allocate nodes monotonically; clear only the slots actually used.
+         * Most simple commands need one node, not the whole 16-node arena. */
+        dsh_node_clear(&p->nodes[p->used]);
+        if (type == DSH_N_SIMPLE || type == DSH_N_FOR ||
+            type == DSH_N_DEF || type == DSH_N_CASE ||
+            type == DSH_N_CASE_ARM) {
+                rc = dsh_node_alloc_payload(&p->nodes[p->used]);
+                if (rc != DSH_OK)
+                        return dsh_mark_error(p, rc, DSH_PE_NONE);
+        }
         p->nodes[p->used].type = type;
         p->used++;
         return DSH_OK;
@@ -343,6 +381,9 @@ dsh_parse_simple(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                                 return dsh_mark_error(p, DSH_E_SYNTAX,
                                     DSH_PE_WORD);
                         a = n->argc;
+                        dsh_s6_clear(&n->words[a]);
+                        n->literal_mask[a] = 0UL;
+                        n->quote_mask[a] = 0UL;
                         n->flags |= DSH_SUBST_ARG |
                             (a << DSH_SUBST_SHIFT);
                         ++p->pos;
@@ -865,14 +906,11 @@ int
 dsh_parse_tokens_diag(const struct dsh_token *tokens, unsigned int ntokens, struct dsh_node *nodes, unsigned int max_nodes, unsigned int *root, unsigned int *used, struct dsh_parse_diag *diag)
 {
         struct dsh_parser p;
-        unsigned int i;
         int rc;
 
         if (tokens == 0 || nodes == 0 || root == 0)
                 return DSH_E_ARG;
         dsh_parse_diag_clear(diag);
-        for (i = 0; i < max_nodes; i++)
-                dsh_node_clear(&nodes[i]);
         p.tokens = tokens;
         p.ntokens = ntokens;
         p.pos = 0;

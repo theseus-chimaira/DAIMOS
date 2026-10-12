@@ -53,6 +53,14 @@ struct dsh_parse_diag {
         unsigned int expect;
 };
 
+/* Argument words are separate from node metadata.  Most AST operators have
+ * no arguments; reserving twenty records per such node wasted core. */
+struct dsh_node_payload {
+        struct dsh_s6 words[DSH_PARSE_MAX_WORDS];
+        kword_t literal_mask[DSH_PARSE_MAX_WORDS];
+        kword_t quote_mask[DSH_PARSE_MAX_WORDS];
+};
+
 struct dsh_node {
         int type;
         unsigned int left;
@@ -62,11 +70,13 @@ struct dsh_node {
         unsigned int flags;
         struct dsh_s6 redir_in;
         struct dsh_s6 redir_out;
-        struct dsh_s6 words[DSH_PARSE_MAX_WORDS];
-        kword_t literal_mask[DSH_PARSE_MAX_WORDS];
-        kword_t quote_mask[DSH_PARSE_MAX_WORDS];
+        struct dsh_s6 *words;
+        kword_t *literal_mask;
+        kword_t *quote_mask;
 };
 
+void    dsh_node_bind_payload(struct dsh_node *n,
+            struct dsh_node_payload *payload);
 void    dsh_node_clear(struct dsh_node *n);
 int     dsh_parse_depth_delta(const struct dsh_s6 *word);
 void    dsh_parse_diag_clear(struct dsh_parse_diag *diag);

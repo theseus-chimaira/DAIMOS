@@ -1,3 +1,28 @@
+## DSH COMPACT AST: STATIC RAM SHRINK AND REMAINING 32K BLOCKER (2026-10-12)
+
+The third DSH optimization stage splits AST metadata from argument/mask
+payloads. Eight persistent function nodes retain independent BSS payload
+storage; active parsers share one 180-word static common-case payload,
+spilling additional live nodes to scoped LIFO BRK storage. Nested SOURCE
+and function definitions use separate payload lifetimes. No command,
+function, node, or argument capacity was reduced.
+
+Current KCC image **035603 octal**, BSS **010136 octal**; compared with
+035545/015241 before the AST change, BSS fell by 2627 decimal words.
+The rounded DSH VM allocation drops from 056000 to **050000 octal**
+words. Normal 036000 image limit passes, and the full 115/115 DSH
+target conformance suite passes. See
+`design/DSH-COMPACT-AST-20261012-v3.MD`.
+
+**The separate 32K lowmem boot is not yet green.** The final cached-payload
+revision also reaches LOGIN and fails at ROOT with LOGIN: EXEC FAILED.
+The updated static lower bound KCORE+DSH is 073610 octal, but resident
+kernel packages and tables still need physical memory. Do not treat
+the image gate or full-core functional tests as 32K acceptance.
+The final 115/115 general and 10/10 focused AST PDP-6 SIMH probes pass.
+DAIMOS-TESTKIT commit 0eb6672 records the focused probes and the
+035603-image/010136-BSS/050000-VM regression guard.
+
 ## DSH SECOND SHRINK AND 32K CORE AUDIT (2026-10-12)
 
 Source-level duplicate-work removal, shared builtin and keyword classifiers,

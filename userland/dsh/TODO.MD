@@ -2,6 +2,17 @@
 
 ## CURRENT FOCUS (2026-10-12): PHASE ZERO AND IMAGE SHRINKAGE
 
+Third AST RAM refactor: compact node descriptors; one 180-word static
+payload cache plus scoped BRK spill for active parse trees; independent
+permanent saved-function payloads. Measured image **035603**, BSS
+**010136**, rounded user VM **050000** octal words. The normal 036000
+image gate and 115/115 DSH target conformance pass, but 32K LOWMEM
+BOOT STILL FAILS at LOGIN: EXEC FAILED. Next priority: reduce runtime
+payload and persistent storage further and obtain measured MM headroom
+on the 32K target. See `design/DSH-COMPACT-AST-20261012-v3.MD`.
+Ten additional PDP-6 compact-AST SOURCE/function/pattern lifetime
+regressions also pass in DAIMOS-TESTKIT.
+
 Second source audit: DSH image now 035545, BSS unchanged 015241; normal
 036000 gate passes, 115/115 PDP-6 conformance probes pass. This does NOT
 fix 32K boot: 056000-word rounded DSH VM plus linked KCORE 023610 exceeds

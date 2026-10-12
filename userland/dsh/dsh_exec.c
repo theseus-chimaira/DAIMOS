@@ -39,6 +39,9 @@ struct dsh_function_store {
 
 static struct dsh_function_store dsh_functions[DSH_MAX_FUNCS];
 static struct dsh_node dsh_function_nodes[DSH_FUNC_MAX_NODES];
+/* Permanent function argument storage is independent of parse-time BRK
+ * allocations. This preserves definitions across nested SOURCE and eval. */
+static struct dsh_node_payload dsh_function_payload[DSH_FUNC_MAX_NODES];
 static unsigned int dsh_function_nodes_used;
 
 static int dsh_s6_same(const struct dsh_s6 *a, const struct dsh_s6 *b);
@@ -157,6 +160,8 @@ dsh_copy_function_node(struct dsh_node *dst, unsigned int *usedp,
     const struct dsh_node *src, unsigned int index, unsigned int *out)
 {
         unsigned int here;
+        unsigned int offset;
+        unsigned int j;
         int rc;
 
         if (index == DSH_NONE || index >= DSH_PARSE_MAX_NODES ||
@@ -164,6 +169,13 @@ dsh_copy_function_node(struct dsh_node *dst, unsigned int *usedp,
                 return DSH_E_OVERFLOW;
         here = (*usedp)++;
         dst[here] = src[index];
+        offset = (unsigned int)(dst - dsh_function_nodes) + here;
+        dsh_node_bind_payload(&dst[here], &dsh_function_payload[offset]);
+        for (j = 0U; j < src[index].argc; ++j) {
+                dst[here].words[j] = src[index].words[j];
+                dst[here].literal_mask[j] = src[index].literal_mask[j];
+                dst[here].quote_mask[j] = src[index].quote_mask[j];
+        }
         if (src[index].left != DSH_NONE) {
                 rc = dsh_copy_function_node(dst, usedp, src,
                     src[index].left, &dst[here].left);
@@ -224,8 +236,12 @@ dsh_remove_function_nodes(unsigned int slot)
 
         base = dsh_functions[slot].base;
         count = dsh_functions[slot].used_nodes;
-        for (i = base + count; i < dsh_function_nodes_used; ++i)
+        for (i = base + count; i < dsh_function_nodes_used; ++i) {
                 dsh_function_nodes[i - count] = dsh_function_nodes[i];
+                dsh_function_payload[i - count] = dsh_function_payload[i];
+                dsh_node_bind_payload(&dsh_function_nodes[i - count],
+                    &dsh_function_payload[i - count]);
+        }
         dsh_function_nodes_used -= count;
         for (j = 0U; j < DSH_MAX_FUNCS; ++j)
                 if (j != slot && dsh_functions[j].used &&
@@ -352,42 +368,27 @@ dsh_find_equal(const struct dsh_s6 *s)
 }
 
 static int
-dsh_parse_octal(const struct dsh_s6 *s, unsigned int *vp)
+dsh_parse_number(const struct dsh_s6 *s, unsigned int *vp,
+    unsigned int radix)
 {
         unsigned int i;
         unsigned int v;
         int ch;
 
-        if (s->len == 0U || s->len > 3U)
+        if (s->len == 0U || (radix == 8U && s->len > 3U))
                 return -1;
         v = 0U;
         for (i = 0U; i < s->len; ++i) {
                 ch = dsh_s6_get(s, i);
-                if (ch < '0' || ch > '7')
+                if (ch < '0' || (unsigned int)(ch - '0') >= radix)
                         return -1;
-                v = (v << 3) | (unsigned int)(ch - '0');
-        }
-        *vp = v;
-        return 0;
-}
-
-static int
-dsh_parse_uint(const struct dsh_s6 *s, unsigned int *vp)
-{
-        unsigned int i;
-        unsigned int v;
-        int ch;
-
-        if (s->len == 0U)
-                return -1;
-        v = 0U;
-        for (i = 0U; i < s->len; ++i) {
-                ch = dsh_s6_get(s, i);
-                if (ch < '0' || ch > '9')
-                        return -1;
-                if (v > 077777U)
-                        return -1;
-                v = v * 10U + (unsigned int)(ch - '0');
+                if (radix == 8U)
+                        v = (v << 3) | (unsigned int)(ch - '0');
+                else {
+                        if (v > 077777U)
+                                return -1;
+                        v = v * 10U + (unsigned int)(ch - '0');
+                }
         }
         *vp = v;
         return 0;
@@ -396,18 +397,11 @@ dsh_parse_uint(const struct dsh_s6 *s, unsigned int *vp)
 static void
 dsh_s6_swap(struct dsh_s6 *a, struct dsh_s6 *b)
 {
-        kword_t word;
-        unsigned int len;
-        unsigned int i;
+        struct dsh_s6 saved;
 
-        len = a->len;
-        a->len = b->len;
-        b->len = len;
-        for (i = 0U; i < DSH_S6_MAX_WORDS; ++i) {
-                word = a->words[i];
-                a->words[i] = b->words[i];
-                b->words[i] = word;
-        }
+        saved = *a;
+        *a = *b;
+        *b = saved;
 }
 
 static int
@@ -460,7 +454,8 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 if (argc > 2U)
                         return 2;
                 code = st->status;
-                if (argc == 2U && dsh_parse_uint(&argv[1], &code) != 0)
+                if (argc == 2U &&
+                    dsh_parse_number(&argv[1], &code, 10U) != 0)
                         return 2;
                 st->exit_requested = 1U;
                 st->exit_status = code & 0377U;
@@ -533,7 +528,7 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                         return u_put_octal(1, (kword_t)old, 3U) != 0 ||
                             u_crlf(1) != 0;
                 }
-                if (argc != 2U || dsh_parse_octal(&argv[1], &mask) != 0)
+                if (argc != 2U || dsh_parse_number(&argv[1], &mask, 8U) != 0)
                         return 2;
                 return dsys_umask(mask & 0777U) < 0;
         }
@@ -543,7 +538,7 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 if (argc > 2U)
                         return 2;
                 count = 1U;
-                if (argc == 2U && dsh_parse_uint(&argv[1], &count) != 0)
+                if (argc == 2U && dsh_parse_number(&argv[1], &count, 10U) != 0)
                         return 2;
                 if (count > st->argc)
                         return 1;
@@ -584,7 +579,8 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 if (st->call_depth == 0U || argc > 2U)
                         return 2;
                 code = st->status;
-                if (argc == 2U && dsh_parse_uint(&argv[1], &code) != 0)
+                if (argc == 2U &&
+                    dsh_parse_number(&argv[1], &code, 10U) != 0)
                         return 2;
                 st->return_requested = 1U;
                 st->return_status = code & 0377U;
@@ -1456,12 +1452,6 @@ dsh_close_node_fds(const struct dsh_node *n, int basein, int baseout,
                 (void)dsys_close(outfd);
 }
 
-static int
-dsh_is_builtin_name(const struct dsh_s6 *name)
-{
-        return dsh_builtin_kind(name) != DSH_B_NONE;
-}
-
 /* Read while the worker runs: waiting before draining can deadlock a full
  * pipe.  Do not retain excess output, but always consume through EOF. */
 static int
@@ -1621,7 +1611,7 @@ dsh_exec_simple_expanded(struct dsh_state *st, const struct dsh_node *n,
         if (dsh_open_node_fds(n, basein, baseout, &infd, &outfd) != 0)
                 return 1;
         if (launch_only) {
-                if (dsh_is_builtin_name(&argv[0]))
+                if (dsh_builtin_kind(&argv[0]) != DSH_B_NONE)
                         rc = 126;
                 else
                         rc = dsh_launch_external(st, argc, argv, infd, outfd,
@@ -1865,7 +1855,7 @@ dsh_job_number_arg(const struct dsh_s6 *arg, unsigned int first,
         for (i = first; i < arg->len; ++i)
                 if (dsh_s6_append(&number, dsh_s6_get(arg, i)) != 0)
                         return -1;
-        return dsh_parse_uint(&number, valuep);
+        return dsh_parse_number(&number, valuep, 10U);
 }
 
 static int
@@ -2808,6 +2798,7 @@ dsh_script_execute(struct dsh_state *st, struct dsh_script *script,
 {
         struct dsh_script *saved_workspace;
         struct dsh_node *arena;
+        kword_t saved_break;
         unsigned int base;
         unsigned int root;
         unsigned int used;
@@ -2820,11 +2811,16 @@ dsh_script_execute(struct dsh_state *st, struct dsh_script *script,
         base = dsh_nodes_active;
         if (base >= DSH_PARSE_MAX_NODES)
                 return DSH_E_OVERFLOW;
+        saved_break = dsys_brk(0UL);
+        if (saved_break == (kword_t)-1)
+                return DSH_E_OVERFLOW;
         arena = &dsh_nodes[base];
         rc = dsh_parse_tokens(script->tokens, script->ntokens, arena,
             DSH_PARSE_MAX_NODES - base, &root, &used);
-        if (rc != DSH_OK)
+        if (rc != DSH_OK) {
+                (void)dsys_brk(saved_break);
                 return rc;
+        }
         dsh_script_init(script);
         dsh_nodes_active = base + used;
         saved_workspace = dsh_script_workspace;
@@ -2832,6 +2828,7 @@ dsh_script_execute(struct dsh_state *st, struct dsh_script *script,
         *status = dsh_exec_node(st, arena, root);
         dsh_script_workspace = saved_workspace;
         dsh_nodes_active = base;
+        (void)dsys_brk(saved_break);
         st->status = (unsigned int)*status;
         return DSH_OK;
 }
@@ -2891,6 +2888,7 @@ int
 dsh_execute_line(struct dsh_state *st, const struct dsh_line *line)
 {
         struct dsh_node *arena;
+        kword_t saved_break;
         unsigned int base;
         unsigned int root;
         unsigned int used;
@@ -2901,10 +2899,14 @@ dsh_execute_line(struct dsh_state *st, const struct dsh_line *line)
         base = dsh_nodes_active;
         if (base >= DSH_PARSE_MAX_NODES)
                 return DSH_ERROR;
+        saved_break = dsys_brk(0UL);
+        if (saved_break == (kword_t)-1)
+                return DSH_ERROR;
         arena = &dsh_nodes[base];
         rc = dsh_parse_s6_line(line, arena, DSH_PARSE_MAX_NODES - base,
             &root, &used, &errpos);
         if (rc != DSH_OK) {
+                (void)dsys_brk(saved_break);
                 (void)u_puts(2, "DSH: SYNTAX");
                 (void)u_crlf(2);
                 return DSH_ERROR;
@@ -2912,5 +2914,6 @@ dsh_execute_line(struct dsh_state *st, const struct dsh_line *line)
         dsh_nodes_active = base + used;
         status = dsh_exec_node(st, arena, root);
         dsh_nodes_active = base;
+        (void)dsys_brk(saved_break);
         return status;
 }
