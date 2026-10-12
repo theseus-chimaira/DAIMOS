@@ -1,3 +1,27 @@
+## DSH 32K ROOT EXEC OCCUPANCY DIAGNOSIS (2026-10-12, V14)
+
+A temporary LOGIN-side SYS_MEMINFO/PROCINFO diagnostic confirmed 32K
+core 0100000, resident kernel/module words 031152, process words
+025020, with INIT slot 1 and LOGIN slot 2 each carrying 012000-word
+resident images (plus 01020 process-overhead words). Even after LOGIN
+releases its VM for destructive low-memory EXEC, only **033606 octal**
+words are theoretically available. Because PDP-6 user extents round to
+02000, at most a **032000-octal** DSH extent can fit while INIT stays
+resident, disregarding fragmentation. Current v13 DSH needs 044000.
+Thus 32K EXEC failure is explained by combined resident occupancy,
+not just the 036000 executable-image build gate.
+
+The temporary LOGIN diagnostic was removed; no production kernel or
+login changes remain. A host-only daimos-testkit fixture and verifier
+capture the exact measurement. Audit INIT swap backing and victim
+eligibility separately; do not make INIT unconditionally swappable.
+An attempted per-variable 12-word lazy payload allocator reduced BSS,
+but target tests exposed an unsafe persistent/temporary BRK lifetime
+collision on multi-statement execution. That prototype was discarded,
+not patched with a leaking permanent BRK floor. Typed variable/alias
+storage requires a correct separately owned persistent arena before
+reconsideration.
+
 ## DSH REDIRECTION SIDECAR V13 (2026-10-12)
 
 Typed-node source cleanup moves the two seven-word SIXBIT redirection

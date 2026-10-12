@@ -2,6 +2,23 @@
 
 ## CURRENT FOCUS (2026-10-12): PHASE ZERO AND IMAGE SHRINKAGE
 
+32K root-EXEC occupancy confirmed (v14): total core 0100000; kernel/modules
+031152; process allocations 025020 (INIT 012000, LOGIN 012000,
+overhead 01020). After releasing LOGIN, only 033606 words can
+theoretically be free. At most a 032000-octal aligned DSH extent fits
+with INIT resident; v13 still requests 044000. Investigate INIT swap
+record/backing/victim eligibility and memory-layout fragmentation rather
+than assuming the shell alone can shrink enough. Host-only occupancy
+fixture/test lives in daimos-testkit.
+
+Abandoned v14 variable/alias heap experiment: reducing each static
+13-word variable to two words initially saved 704 decimal BSS words.
+But a new variable allocated during an active AST evaluation becomes
+invalid when the temporary BRK frame unwinds. Reusing a shared BRK
+allocator without a separately owned persistent arena is unsafe.
+No source changes from that experiment were kept. Do not reintroduce
+this failure with a simple BRK high-water workaround.
+
 V13 tested static AST shrink: optional redirection records now live
 in argument-bearing node payloads instead of every AST descriptor.
 PDP-6 DSH image **035726**, BSS **003374** octal; initial VM still
