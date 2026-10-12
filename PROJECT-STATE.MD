@@ -1,3 +1,16 @@
+## SUPERVISOR V4 STACK-RECORD BSS REDUCTION (2026-10-12)
+
+The PID 1 supervisor compiles `libc/logevent.c` with a local temporary
+LOGSTORE record, rather than the static per-process record. This moves
+0200 octal words from permanent BSS into the already-reserved user stack
+only during a log event. Other programs retain the existing static
+log-event record, avoiding any change to their maximum stack demand.
+Fresh PDP-6 DXR: **001442 octal image, 000261 BSS** versus v3
+001447/000461. With the unmodified default 02000 stack and 020 origin,
+the resident PID 1 VM extent now rounds to **004000 octal**, down from
+006000 (1024 decimal physical words saved). No generic stack-size ABI
+change or in-process overlays are needed for this stage.
+
 ## INIT -> SUPERVISOR PID 1 SPLIT (2026-10-12, V2)
 
 SUPERVISOR v3 source-size follow-up: remove redundant RUN block

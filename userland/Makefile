@@ -247,6 +247,13 @@ $(USERLAND_BUILD)/supervisor/%.dobj: %.c
 	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
 	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
 
+# Keep the LOGSTORE one-block scratch in the existing user stack of PID 1.
+# Other programs retain their static record and current stack demands.
+$(USERLAND_BUILD)/supervisor/libc/logevent.dobj: libc/logevent.c
+	mkdir -p $(dir $@)
+	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -DDAIMOS_ULOG_STACK_RECORD -S $< -o $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
+
 $(USERLAND_BUILD)/supervisor/%.dobj: %.s
 	mkdir -p $(dir $@)
 	$(DAS) $(DASFLAGS) -C -O $@ $<

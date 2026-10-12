@@ -1,12 +1,19 @@
 #include "logevent.h"
 #include "logstore.h"
 
+#ifndef DAIMOS_ULOG_STACK_RECORD
 static kword_t ulog_record[BLOCKSET_BLOCK_WORDS];
+#endif
 
 int
 ulog_event(unsigned int severity, unsigned int source,
     kword_t code, kword_t value)
 {
+#ifdef DAIMOS_ULOG_STACK_RECORD
+        /* PID 1 serializes log calls. Borrow the already reserved user
+         * stack rather than pinning a block-sized record in static BSS. */
+        kword_t ulog_record[BLOCKSET_BLOCK_WORDS];
+#endif
         unsigned int i;
 
         if (severity > 077U || source > 07777U)

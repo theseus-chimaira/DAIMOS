@@ -1,5 +1,27 @@
 # Two-stage PID 1: INIT then resident SUPERVISOR (2026-10-12 v2)
 
+## V4: log-record allocation lifetime as a memory optimization
+
+The LOGSTORE event helper formerly retained a static 0200-octal-word
+record in the SUPERVISOR BSS for its entire life. A build-specific
+`DAIMOS_ULOG_STACK_RECORD` option moves that buffer into the automatic
+call frame. Calls are synchronous, PID 1's log calls are serialized, and
+the already-reserved 02000-word user stack remains unchanged. Other
+programs continue to compile the ordinary static-record variant.
+
+| Size (octal words) | v3 | v4 |
+| --- | ---: | ---: |
+| Resident SUPERVISOR image | 001447 | **001442** |
+| Resident SUPERVISOR BSS | 000461 | **000261** |
+| Required including stack and origin | 004150 | **003743** |
+| Rounded resident VM | 006000 | **004000** |
+
+This saves 02000 octal words (1024 decimal) of physical core for PID 1
+without removing features or changing the EXEC stack reservation.
+The tradeoff is 0200 octal words of additional **temporary** stack usage
+during each log event. Target boot, repeated log events and stack-depth
+assessment are required before claiming complete acceptance.
+
 ## Resident text optimization continuation (2026-10-12 v3)
 
 The separate PID 1 SUPERVISOR was audited at the generated PDP-6 code
