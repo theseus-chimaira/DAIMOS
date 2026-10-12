@@ -1,3 +1,24 @@
+## SUPERVISOR V6 LINE/APR AUDIT (2026-10-12)
+
+Selective UUO veneer linking implemented in v6: only the eight
+required veneers are retained through
+`userland/init/supervisor_syscalls.s`. Fresh SUPERVISOR DXR image
+**001236** octal versus v5 001442; BSS remains 000261 and VM remains
+004000. Saving **0204 octal / 132 decimal executable words** without
+altering any UUO encoding or kernel ABI.
+
+Reviewed `userland/init/supervisor.c` source by routine and line range,
+generated PDP-6 KCC assembler frames, linked syscall veneers, and every
+critical `02000`-word VM quantum dependency. `02000` is the **PDP-6 APR
+relocation/protection granularity**, confirmed against `pdp6/emu/apr.c`
+(`2^10` lower address bits); generic MM itself supports smaller
+alignment for other allocation types. Arbitrarily reducing process
+quantum would break APR, BRK, swap and compaction assumptions.
+Prioritize selective syscall veneer linking and compact pathname storage
+before wholesale SUPERVISOR assembly. See
+`design/SUPERVISOR-LINE-APR-AUDIT-20261012-v6.MD`. No production code
+or ABI change has been made in this review.
+
 ## SUPERVISOR V5 USER STACK LIMIT INVESTIGATION (2026-10-12)
 
 Source-level and KCC PDP-6 assembler audit finds the v4 resident

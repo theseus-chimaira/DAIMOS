@@ -45,7 +45,8 @@ INIT_MAP = $(USERLAND_BUILD)/init.map
 
 SUPERVISOR_C_SRCS = libc/u_console.c libc/logevent.c init/supervisor.c
 SUPERVISOR_C_OBJS = $(SUPERVISOR_C_SRCS:%.c=$(USERLAND_BUILD)/supervisor/%.dobj)
-SUPERVISOR_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/supervisor/%.dobj)
+SUPERVISOR_S_SRCS = libc/crt0.s init/supervisor_syscalls.s
+SUPERVISOR_S_OBJS = $(SUPERVISOR_S_SRCS:%.s=$(USERLAND_BUILD)/supervisor/%.dobj)
 SUPERVISOR_DXR = $(USERLAND_BUILD)/supervisor.dxr
 SUPERVISOR_MAP = $(USERLAND_BUILD)/supervisor.map
 
