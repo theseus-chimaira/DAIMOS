@@ -1087,7 +1087,9 @@ $(DISK_IMAGES) &: $(D6FS_ROOT_DEPS) Makefile
 	$(MKD6FS) -n 4 -d $(DISK_DIR) $(D6FS_ROOT_ARGS)
 	$(LOGSTORE) -n 4 -d $(DISK_DIR) --init
 
-ifeq ($(STAGE1_DEVICE),drm)
+# A drum root needs a populated D6FS image even when Stage 1 comes from disk.
+# Only the auxiliary, non-root drum uses the empty AUXSTORE backing layout.
+ifneq ($(filter drm,$(STAGE1_DEVICE))$(filter drum,$(ROOT)),)
 $(DRUM_IMAGES) &: $(D6FS_ROOT_DEPS) Makefile
 	rm -rf $(DRUM_DIR)
 	$(MKDSK) -n 4 -m clean -p $(IMAGE_BOOT_WORDS) -o $(DRUM_DIR) \
