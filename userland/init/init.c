@@ -267,14 +267,52 @@ run_mountall(void)
         return (int)SYS_WAIT_STATUS_VALUE(status);
 }
 
+/* Transactional EXEC preserves PID 1. Two records per service:
+ * a four-character metadata record (two-digit TTY, action, sink) followed
+ * by the full original counted SIXBIT executable pathname. */
+static int
+exec_supervisor(void)
+{
+        kword_t block[SYS_EXEC_V1_FIXED_WORDS + U_PATH_WORDS +
+            INIT_MAX_ENTRIES * (2U + U_PATH_WORDS)];
+        kword_t path[U_PATH_WORDS];
+        kword_t meta[2];
+        char info[5];
+        unsigned int i, j, n, end, pw;
+        struct sys_exec_v1 *exec;
+
+        if (u_s6_pack(path, U_PATH_WORDS, "/SYSTEM/EXEC/SUPERVISOR") != 0)
+                return -1;
+        pw = 1U + ((unsigned int)path[0] + 5U) / 6U;
+        end = SYS_EXEC_V1_FIXED_WORDS;
+        for (j = 0U; j < pw; ++j)
+                block[end++] = path[j];
+        for (i = 0U; i < init_count; ++i) {
+                const struct init_entry *e = &init_entries[i];
+                info[0] = (char)('0' + e->tty / 10U);
+                info[1] = (char)('0' + e->tty % 10U);
+                info[2] = e->action == INIT_RESPAWN ? 'R' : 'O';
+                info[3] = e->output_sink == SYS_TTY_SINK_DPY ? 'D' : 'N';
+                info[4] = 0;
+                if (u_s6_pack(meta, 2U, info) != 0)
+                        return -1;
+                block[end++] = meta[0];
+                block[end++] = meta[1];
+                n = 1U + ((unsigned int)e->path[0] + 5U) / 6U;
+                for (j = 0U; j < n; ++j)
+                        block[end++] = e->path[j];
+        }
+        exec = (struct sys_exec_v1 *)block;
+        exec->version_words = SYS_RUN_HEADER(SYS_EXEC_VERSION_1, end);
+        exec->argc = 2U * init_count;
+        exec->envc = 0U;
+        return dsys_exec(exec);
+}
+
 int
 main(void)
 {
-        kword_t status;
-        unsigned int i;
         int mount_status;
-        int pid;
-
         if (dsys_getpid() != 1) {
                 (void)u_puts(2, "INIT: NOT PID 1");
                 (void)u_crlf(2);
@@ -301,34 +339,13 @@ main(void)
                 (void)dsys_exit(1);
                 return 1;
         }
-        (void)ulog_event(ULOG_SEV_INFO, ULOG_SRC_INIT, ULOG_INIT_READY,
-            (kword_t)init_count);
-        for (i = 0U; i < init_count; ++i) {
-                if (spawn_entry(&init_entries[i]) != 0) {
-                        (void)ulog_event(ULOG_SEV_ERROR, ULOG_SRC_INIT,
-                            ULOG_INIT_RUN_FAIL, (kword_t)i);
-                        (void)u_puts(2, "INIT: RUN FAILED");
-                        (void)u_crlf(2);
-                }
+        /* Carry each already-validated INITTAB entry in two SIXBIT
+         * argument records. Eight entries exactly fit EXEC's 16 args. */
+        if (exec_supervisor() != 0) {
+                (void)u_puts(2, "INIT: SUPERVISOR EXEC FAILED");
+                (void)u_crlf(2);
+                (void)dsys_exit(1);
+                return 1;
         }
-        for (;;) {
-                pid = dsys_wait(0U, &status, 0U);
-                if (pid < 0)
-                        continue;
-                if (SYS_WAIT_STATUS_KIND(status) != SYS_WAIT_EXITED)
-                        continue;
-                for (i = 0U; i < init_count; ++i) {
-                        if (init_entries[i].pid != (unsigned int)pid)
-                                continue;
-                        init_entries[i].pid = 0U;
-                        if (init_entries[i].action == INIT_RESPAWN &&
-                            spawn_entry(&init_entries[i]) != 0) {
-                                (void)ulog_event(ULOG_SEV_ERROR, ULOG_SRC_INIT,
-                                    ULOG_INIT_RESPAWN_FAIL, (kword_t)i);
-                                (void)u_puts(2, "INIT: RESPAWN FAILED");
-                                (void)u_crlf(2);
-                        }
-                        break;
-                }
-        }
+        return 0;
 }

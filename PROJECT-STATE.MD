@@ -1,3 +1,38 @@
+## INIT -> SUPERVISOR PID 1 SPLIT (2026-10-12, V2)
+
+Startup INIT now loads storage policy, waits for MOUNTALL, parses the
+eight-entry INITTAB and performs an EXEC handoff to
+`/SYSTEM/EXEC/SUPERVISOR`. The resident SUPERVISOR is still **PID 1**;
+it receives two validated SIXBIT argument records per configured service,
+starts its children, reaps exits, and performs ONCE/RESPAWN policy. The
+kernel EXEC and ABI were not changed; no second PID or configuration file
+handoff was introduced. Both D6FS and TSFS root-image builders install
+the new executable.
+
+Measured final KCC/DAS images (octal): startup INIT **004210** image /
+000461 BSS, resident SUPERVISOR **001530** image / 000461 BSS,
+DSH **035727** image / 003374 BSS. The resident PID 1 process rounds
+to a **006000-octal** VM extent, compared with startup INIT's 010000,
+releasing **02000 octal / 1024 decimal words** of resident process memory.
+SUPERVISOR is below the requested 02000 octal text limit. Fresh complete
+PDP-6 build and **115/115 DSH target conformance probes** passed. The
+32K low-memory boot remains a separate acceptance test and must not be
+inferred solely from the size numbers. See
+`design/INIT-SUPERVISOR-PID1-SPLIT-20261012-v2.MD`.
+
+## INIT 32K RESIDENT SIZE OPTIMIZATION (2026-10-12)
+
+Split `u_text_gets6()` into its own libc compilation unit because INIT
+only uses `u_text_getline()`. Measured fresh PDP-6 INIT DXR image
+005374 -> 005222 octal, BSS unchanged 000536. With the 002020
+origin/stack allowance, the initial rounded INIT VM extent drops from
+012000 to **010000 octal words** (1024 decimal words saved). DSH still
+links the S6REC reader. See
+`design/INIT-32K-RESIDENCY-OPTIMIZATION-20261012-v1.MD` for startup/
+resident responsibilities, further shrink targets and a prospective
+overlay design. Runtime boot verification status is recorded separately;
+overlay loading has not been implemented.
+
 ## DSH 32K ROOT EXEC OCCUPANCY DIAGNOSIS (2026-10-12, V14)
 
 A temporary LOGIN-side SYS_MEMINFO/PROCINFO diagnostic confirmed 32K

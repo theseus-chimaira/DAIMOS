@@ -109,7 +109,6 @@ u_putc(int fd, int ch)
             ((kword_t)((unsigned int)ch - 040U)) << shift;
         return 0;
 }
-
 int
 u_puts(int fd, const char *s)
 {

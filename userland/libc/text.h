@@ -20,6 +20,8 @@ int u_text_open(struct u_text_reader *r, const char *path);
 int u_text_open_fd(struct u_text_reader *r, int fd);
 int u_text_getline(struct u_text_reader *r, char *buf, unsigned int size);
 int u_text_gets6(struct u_text_reader *r, kword_t *buf, unsigned int words);
+/* Internal S6REC cursor shared by the line and word readers. */
+int u_text_next_word(struct u_text_reader *r, kword_t *wordp);
 void u_text_close(struct u_text_reader *r);
 
 /*

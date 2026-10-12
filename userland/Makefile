@@ -32,16 +32,22 @@ KCC_HEADERS = $(wildcard $(PROJECT_ROOT)/userland/libc/*.h) \
 	$(wildcard $(PROJECT_ROOT)/system/kernel/storage/*.h) \
 	$(wildcard $(PDP10_PREFIX)/include/*.h)
 
-CHECK_SRCS = libc/u.c libc/u_compare.c libc/u_pack.c libc/text.c libc/text_open.c libc/text_config.c exec/commands.c exec/standalone.c exec/utility.c exec/utility_standalone.c exec/xargs.c exec/sed.c exec/configctl.c exec/make.c dsh/dsh.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c init/init.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c tsfs/mount_tsfs.c dtfs/dtfs_probe.c dtfs/dtfsprobe.c d6lz/d6lz.c logstore/logdrain.c logstore/logcompat.c toolchain/dobj.c toolchain/darc.c toolchain/dlink.c toolchain/objdump.c
+CHECK_SRCS = libc/u.c libc/u_compare.c libc/u_pack.c libc/u_console.c libc/text.c libc/text_s6.c libc/text_open.c libc/text_config.c exec/commands.c exec/standalone.c exec/utility.c exec/utility_standalone.c exec/xargs.c exec/sed.c exec/configctl.c exec/make.c dsh/dsh.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c init/init.c init/supervisor.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c d6lz/d6lz.c logstore/logdrain.c logstore/logcompat.c toolchain/dobj.c toolchain/darc.c toolchain/dlink.c toolchain/objdump.c
 CHECK_ASMS = $(CHECK_SRCS:%.c=$(USERLAND_BUILD)/check/%.s)
-COMMON_C_SRCS = libc/u.c libc/u_compare.c libc/u_pack.c libc/text.c libc/text_open.c libc/text_config.c
+COMMON_C_SRCS = libc/u.c libc/u_compare.c libc/u_pack.c libc/text.c libc/text_s6.c libc/text_open.c libc/text_config.c
 COMMON_S_SRCS = libc/crt0.s libc/syscall.s libc/syscall_helpers.s
 
-INIT_C_SRCS = $(COMMON_C_SRCS) libc/logevent.c init/init.c
+INIT_C_SRCS = $(filter-out libc/u.c libc/text_s6.c libc/u_compare.c,$(COMMON_C_SRCS)) libc/u_console.c libc/logevent.c init/init.c
 INIT_C_OBJS = $(INIT_C_SRCS:%.c=$(USERLAND_BUILD)/init/%.dobj)
 INIT_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/init/%.dobj)
 INIT_DXR = $(USERLAND_BUILD)/init.dxr
 INIT_MAP = $(USERLAND_BUILD)/init.map
+
+SUPERVISOR_C_SRCS = libc/u_console.c libc/logevent.c init/supervisor.c
+SUPERVISOR_C_OBJS = $(SUPERVISOR_C_SRCS:%.c=$(USERLAND_BUILD)/supervisor/%.dobj)
+SUPERVISOR_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/supervisor/%.dobj)
+SUPERVISOR_DXR = $(USERLAND_BUILD)/supervisor.dxr
+SUPERVISOR_MAP = $(USERLAND_BUILD)/supervisor.map
 
 MOUNTALL_C_SRCS = $(COMMON_C_SRCS) init/mountall.c
 MOUNTALL_C_OBJS = $(MOUNTALL_C_SRCS:%.c=$(USERLAND_BUILD)/mountall/%.dobj)
@@ -56,7 +62,7 @@ LOGIN_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/login/%.dobj)
 LOGIN_DXR = $(USERLAND_BUILD)/login.dxr
 LOGIN_MAP = $(USERLAND_BUILD)/login.map
 
-DSH_C_SRCS = libc/u.c libc/text.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c dsh/dsh.c
+DSH_C_SRCS = libc/u.c libc/text.c libc/text_s6.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c dsh/dsh.c
 DSH_C_OBJS = $(DSH_C_SRCS:%.c=$(USERLAND_BUILD)/dsh/%.dobj)
 DSH_S_SRCS = $(COMMON_S_SRCS) dsh/dsh_var_pdp6.s
 DSH_S_OBJS = $(DSH_S_SRCS:%.s=$(USERLAND_BUILD)/dsh/%.dobj)
@@ -194,7 +200,7 @@ OBJDUMP_S_OBJS = $(TOOLCHAIN_S_SRCS:%.s=$(USERLAND_BUILD)/objdump/%.dobj)
 OBJDUMP_DXR = $(USERLAND_BUILD)/objdump.dxr
 OBJDUMP_MAP = $(USERLAND_BUILD)/objdump.map
 
-KCC_GENERATED = $(CHECK_ASMS) $(INIT_C_OBJS) $(MOUNTALL_C_OBJS) \
+KCC_GENERATED = $(CHECK_ASMS) $(INIT_C_OBJS) $(SUPERVISOR_C_OBJS) $(MOUNTALL_C_OBJS) \
 	$(LOGIN_C_OBJS) $(DSH_C_OBJS) \
 	$(DSHCOMP_C_OBJS) \
 	$(XARGS_C_OBJS) $(SED_C_OBJS) $(CONFIGCTL_C_OBJS) $(MAKE_C_OBJS) \
@@ -207,7 +213,7 @@ $(KCC_GENERATED): $(KCC_TOOL_DEP) $(KCC_HEADERS)
 .DEFAULT_GOAL := build
 .PHONY: build check manual-check clean
 
-build: manual-check $(INIT_DXR) $(MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(DSHCOMP_DXR) $(PUBLIC_PROGRAM_DXRS) $(XARGS_DXR) $(SED_DXR) $(CONFIGCTL_DXR) $(MAKE_DXR) $(LOGD_DXR) $(LOGDUMP_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR) $(DTFSPROBE_DXR) $(D6LZ_DXR) $(LOGDRAIN_DXR) $(DARC_DXR) $(DLINK_DXR) $(OBJDUMP_DXR)
+build: manual-check $(INIT_DXR) $(SUPERVISOR_DXR) $(MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(DSHCOMP_DXR) $(PUBLIC_PROGRAM_DXRS) $(XARGS_DXR) $(SED_DXR) $(CONFIGCTL_DXR) $(MAKE_DXR) $(LOGD_DXR) $(LOGDUMP_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR) $(DTFSPROBE_DXR) $(D6LZ_DXR) $(LOGDRAIN_DXR) $(DARC_DXR) $(DLINK_DXR) $(OBJDUMP_DXR)
 
 PUBLIC_MANUAL_NAMES = $(COMMAND_PROGRAMS) $(UTILITY_MISC_PROGRAMS) \
 	$(UTILITY_TEXT_PROGRAMS) $(UTILITY_DOC_PROGRAMS) LOGD LOGDUMP \
@@ -233,6 +239,15 @@ $(USERLAND_BUILD)/init/%.dobj: %.c
 	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
 
 $(USERLAND_BUILD)/init/%.dobj: %.s
+	mkdir -p $(dir $@)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+$(USERLAND_BUILD)/supervisor/%.dobj: %.c
+	mkdir -p $(dir $@)
+	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
+	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
+
+$(USERLAND_BUILD)/supervisor/%.dobj: %.s
 	mkdir -p $(dir $@)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
@@ -262,6 +277,9 @@ $(USERLAND_BUILD)/dshcomp/%.dobj: %.c
 $(USERLAND_BUILD)/dshcomp/%.dobj: %.s
 	mkdir -p $(dir $@)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+$(SUPERVISOR_DXR): $(SUPERVISOR_C_OBJS) $(SUPERVISOR_S_OBJS)
+	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(SUPERVISOR_MAP) $(SUPERVISOR_S_OBJS) $(SUPERVISOR_C_OBJS)
 
 $(INIT_DXR): $(INIT_C_OBJS) $(INIT_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(INIT_MAP) $(INIT_S_OBJS) $(INIT_C_OBJS)
