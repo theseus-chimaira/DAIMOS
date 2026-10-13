@@ -32,6 +32,12 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 - [ ] Complete packed restore against the selected registry, rather than its
   private descriptor, then integrate packed eviction/restoration with the
   scheduler; do not remove disk swap before full native acceptance.
+- [ ] Evaluate inline-token codec v065 as the lower-RAM alternative:
+  native fixed decoder 74 words plus unchanged 56-word VFS adapter = 130,
+  only +34 over the original 96 (paired grouped v058/v064 is +102).
+  Across 81 DXRs the inline layout increases compressed payload by 3.10%.
+  This is an inactive proof of concept, not yet malformed-input hardened or
+  accepted for Stage-1/KCORE. See D6CODEC-INLINE-LAYOUT-V065.md.
 - [ ] Recover the extra resident code cost of the grouped decoder: original
   fixed core spans 000060..000127 (40 decimal words) while the staged v058
   core occupied 129 words (+89) in v058. The guarded v062 standalone core
