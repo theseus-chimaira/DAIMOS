@@ -1,3 +1,23 @@
+## LOGIN MINIMAL LIBC AND EVENT V2 (2026-10-13)
+
+On top of LOGIN v1, the LOGIN-only link now uses minimal console I/O,
+explicitly selected SIXBIT/text reader objects, a 13-call handwritten
+UUO veneer, and the existing compact SYS_LOGCTL_EVENT (four words).
+No LOGIN authentication or EXEC semantics were changed. Measured DXR:
+**image 004375, BSS 000000**, origin 000020, reserved stack 001000;
+total 005415 octal, rounded **006000** (three APR blocks, down from
+four in v1 and five on the old default stack). An additional **002000**
+octal words of physical LOGIN process allocation are saved. Unlike
+offloading new logic into KCORE, compact EVENT reuses the already
+resident LOGSTORE helper, so there is no new KCORE code allocation.
+The independent ROOT LOGIN -> DSH, LOGD/LOGDUMP persistent boot and
+physical AUXSTORE record integrity check passed. The one-APR goal
+(002000 total, including stack) remains **unmet**: fitting with an
+00400 stack requires image+BSS at most 01360 octal words. Replacing
+the general S6REC account reader and EXEC environment-building path
+is the next major candidate; do not treat moving this bulk to always-
+resident KCORE as a RAM saving unless a net-residency audit proves it.
+
 ## LOGIN ONE-APR-BLOCK SAVING (2026-10-13, V1)
 
 LOGIN now declares a DXR2 ST2 stack reservation of 01000 octal words,
