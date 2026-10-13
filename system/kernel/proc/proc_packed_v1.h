@@ -63,6 +63,15 @@ int proc_packed_abort_restore_v26(unsigned int slot, kword_t restored_base);
  * cannot overwrite saved writable state.
  */
 typedef int (*proc_packed_pure_reload_v31)(kword_t backing, kword_t base);
+/* Caller must supply a LOSSLESS encoder and its true upper bound. A result
+ * no smaller than the retained suffix is rejected: identity is not packing.
+ * The destination descriptor must remain private throughout the transaction.
+ */
+typedef int (*proc_packed_encoder_v32)(const kword_t *source,
+    unsigned int words, kword_t *destination, unsigned int capacity);
+int proc_packed_evict_transaction_v32(unsigned int slot,
+    struct proc_packed_v1 *descriptor, kword_t retained_offset,
+    unsigned int encoded_capacity, proc_packed_encoder_v32 encoder);
 int proc_packed_restore_transaction_v31(unsigned int slot,
     struct proc_packed_v1 *descriptor, kword_t backing,
     proc_packed_decoder_v26 decoder,

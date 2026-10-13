@@ -1,5 +1,13 @@
 # KCORE compressed-process split: staged implementation v1
 
+As of v32 an isolated packed eviction path complements restore v31.
+Eviction insists on true shrinkage of the retained writable suffix and
+an encoder that fills its exact allocated capacity. The rollback boundary
+is before freeing the source MM allocation. A synthetic pair encoder in
+daimos-testkit demonstrates byte-for-byte round-trip integrity, but it is
+not a suitable production codec. This stage does not enable scheduler
+eviction or remove any legacy swap infrastructure.
+
 Status: provisional codec interface only; process eviction is NOT enabled.
 
 Target: PDP-6, CTY and four DECtapes, three TSFS system tapes and one

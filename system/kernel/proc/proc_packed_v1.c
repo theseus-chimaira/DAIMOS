@@ -169,6 +169,108 @@ proc_packed_abort_restore_v26(unsigned int slot, kword_t restored_base)
 }
 
 /*
+ * Stage the complementary in-core eviction transaction.  The caller must
+ * serialize lifecycle activity; the transition bit protects publication.
+ * Rejected/non-shrinking codecs leave every ownership record unchanged.
+ * Encoded storage is allocated without reclaim to prevent recursion.
+ *
+ * Contract: valid PURE backing must exist for a nonzero omitted prefix.
+ * The source remains pinned throughout encoding; both extents remain live
+ * until the destination is complete and the original MM extent is freed.
+ */
+int
+proc_packed_evict_transaction_v32(unsigned int slot,
+    struct proc_packed_v1 *descriptor, kword_t retained_offset,
+    unsigned int encoded_capacity, proc_packed_encoder_v32 encoder)
+{
+        struct proc *p;
+        kword_t base;
+        kword_t encoded_base;
+        kword_t words;
+        kword_t retained;
+        kword_t *mode_word;
+        kword_t mode_mask;
+        unsigned int shift;
+        int encoded;
+        int rc;
+
+        if (!descriptor || descriptor->span || descriptor->layout ||
+            !encoder || !proc_table || !proc_swap_records ||
+            !proc_storage_runtime_v29.words || slot == 0U ||
+            slot >= proc_storage_runtime_v29.slots)
+                return MM_ERR_INVAL;
+        p = &proc_table[slot];
+        words = VM_SPACE_WORDS(p);
+        base = VM_PDP6_BASE(p);
+        if (!PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) || !base ||
+            !words || retained_offset >= words ||
+            (retained_offset != 0UL &&
+             proc_swap_records[slot].state == 0UL) ||
+            !proc_packed_owned_v27(slot, base, words, MM_TYPE_PROCESS) ||
+            proc_storage_get_v28(&proc_storage_runtime_v29, slot) !=
+                PROC_STORAGE_RESIDENT)
+                return MM_ERR_INVAL;
+        retained = words - retained_offset;
+        if (retained > MM_HALF_MASK || encoded_capacity == 0U ||
+            (kword_t)encoded_capacity >= retained)
+                return MM_ERR_INVAL;
+
+        rc = mm_pin(base);
+        if (rc != MM_OK)
+                return rc;
+        rc = mm_alloc_aligned_noreclaim((kword_t)encoded_capacity, 1UL,
+            MM_TYPE_PACKED_PROCESS, slot, MM_ALLOC_HIGH, &encoded_base);
+        if (rc != MM_OK)
+                goto unpin_source_v32;
+        rc = mm_pin(encoded_base);
+        if (rc != MM_OK)
+                goto free_encoded_v32;
+        encoded = encoder(PROC_PACKED_WORDPTR_V31(base + retained_offset),
+            (unsigned int)retained, PROC_PACKED_WORDPTR_V31(encoded_base),
+            encoded_capacity);
+        /* The exact-size descriptor is needed by restoration. A fixed-size
+         * allocation cannot be published with a shorter encoded length. */
+        if (encoded != (int)encoded_capacity) {
+                rc = MM_ERR_INVAL;
+                goto unpin_encoded_v32;
+        }
+        rc = mm_unpin(base);
+        if (rc != MM_OK)
+                goto unpin_encoded_v32;
+        rc = mm_free(base, MM_TYPE_PROCESS, slot);
+        if (rc != MM_OK)
+                goto unpin_encoded_source_free_v32;
+
+        /* Under lifecycle exclusion this is the only valid transition.
+         * Publish descriptor first, then mode while TRANSITION remains set. */
+        descriptor->span = PROC_PACKED_SPAN(encoded_base, encoded_capacity);
+        descriptor->layout = (retained_offset << 18U) | retained;
+        VM_PDP6_SET_BASE(p, 0UL);
+        shift = (slot % PROC_STORAGE_MAP_SLOTS_PER_WORD_V28) * 2U;
+        mode_word = &proc_storage_runtime_v29.words[
+            slot / PROC_STORAGE_MAP_SLOTS_PER_WORD_V28];
+        mode_mask = (kword_t)3UL << shift;
+        *mode_word = (*mode_word & ~mode_mask) |
+            ((kword_t)PROC_STORAGE_PACKED << shift);
+        rc = mm_unpin(encoded_base);
+        if (rc != MM_OK)
+                return MM_ERR_BUSY; /* fatal: keep transition set */
+        PROC_CLEAR_TRANSITION(p);
+        return MM_OK;
+
+unpin_encoded_v32:
+        (void)mm_unpin(encoded_base);
+        (void)mm_unpin(base);
+        goto free_encoded_v32;
+unpin_encoded_source_free_v32:
+        (void)mm_unpin(encoded_base);
+free_encoded_v32:
+        (void)mm_free(encoded_base, MM_TYPE_PACKED_PROCESS, slot);
+unpin_source_v32:
+        return rc;
+}
+
+/*
  * Inactive complete restore transaction. Called only with process lifecycle
  * exclusion and PROC_F_TRANSITION held. No scheduler call may run meanwhile.
  * The stored packed descriptor is not exposed via the legacy swap record.

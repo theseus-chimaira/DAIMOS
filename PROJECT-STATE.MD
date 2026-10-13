@@ -1,3 +1,28 @@
+## 2026-10-13 PACKED PROCESS EVICTION TRANSACTION V32
+
+Staged the complement to v31 restore: `proc_packed_evict_transaction_v32`
+requires lifecycle exclusion plus PROC_F_TRANSITION, an exactly owned
+MM_TYPE_PROCESS extent, RESIDENT mode, and an unpublished descriptor. It
+allocates packed MM storage without recursive reclaim, pins the live source
+and encoded destination while encoding, and refuses encoded capacities that
+do not actually reduce the retained writable suffix. For a successful
+fixed-capacity lossless encoder the reported encoded length must exactly
+match the allocated span; failure leaves the live VM base, storage mode,
+and packed descriptor unchanged. After the source extent is freed, the
+descriptor and PACKED mode are published under the transition flag.
+
+The testkit `packed-evict-v32` exercises encoder failure rollback,
+non-shrinking rejection, and a synthetic lossless pair-encoding
+eviction/restoration round trip with PURE reload. The v31 restore test
+continues to pass. The v32 PDP-6 compiler/assembler build succeeded;
+the complete inactive packed-process object has 608 pre-fold text words.
+Neither eviction nor restoration is linked into active KCORE. The test
+codec is only a controlled fixture, NOT a production compressor or a
+general-purpose way to pack arbitrary process state. Scheduler integration,
+full PURE ownership/pinning, descriptor lifetime across process exit,
+real codec benchmarks and SIMH runtime tests remain prerequisites to
+removing disk swap. No resident KCORE saving is claimed.
+
 ## 2026-10-13 PACKED RESTORE PURE TRANSACTION V31
 
 An inactive `proc_packed_restore_transaction_v31` now performs a complete
