@@ -1,3 +1,22 @@
+## 2026-10-13 GCC 32K THREE-MEMBER TSFS MEDIA V21
+
+The PDP-6 boot image builder now accepts TSFS_ROOT_MEMBERS=1,2,3. A
+versioned media-layout stamp regenerates TSFS metadata when the member
+count changes. In the BOOT=dtc configuration, Stage1 boots from DTC0 and
+the system TSFS members occupy DTC1..DTC3. The SIMH boot template exposes
+all four DECtape drives. A fresh GCC lowmem ROOT=tape BOOT=dtc
+TSFS_ROOT_MEMBERS=3 MONITORFS_MRES_ENABLED=1 image loads under 32K SIMH,
+installs DTFS/TSFS, and reaches INIT V1. KCORE endpoint is still 021375.
+
+Important: this is a **three-member TSFS system boot smoke**, not the
+complete requested physical four-drive steady-state arrangement. DTC0
+currently holds the separate bootstrap image, so a fourth writable DTFS
+`/home` volume cannot occupy a drive simultaneously. A correct solution
+needs an in-place bootstrap format coexisting with a filesystem tape (or
+another explicitly approved bootstrap medium). Avoid automatic media swaps
+or overwriting the user's writable DTFS tape. LOGIN and /home mount tests
+remain outstanding. Do not claim the 3+1 acceptance complete.
+
 ## 2026-10-13 GCC 32K TSFS ROOT BOOT RESTORATION V20
 
 Decoupled TSFS boot and DTFS/TSFS MRES installation from KINIT_FULL using
