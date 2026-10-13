@@ -62,6 +62,11 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
   additional permanent or per-call RAM; staged v058 native tests pass, but
   production linkage and end-to-end acceptance remain open; see
   system/kernel/core/D6CODEC-RESUMABLE-ABI-DESIGN-v057.md.
+- [x] Stage C99 host inline-token producer/decoder and DXR CLI v068.
+  81-DXR exact parity (159973 raw / 135534 packed), 10000-word roundtrip,
+  malformed/truncated input tests PASS in daimos-testkit. This is inactive.
+  The 8K KCORE hard limit remains mandatory; defer optimization until the
+  implementation and system-wide format migration are otherwise complete.
 - [ ] Integrate the production D6 codec with the resident KCORE encoder and
   streaming decoder, exact `000060` resumable ABI, bounded VFS refill,
   KPACK and EXEC/VFS/PURE consumers. Keep the detailed cross-subsystem plan
