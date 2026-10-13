@@ -329,7 +329,7 @@ ${BUILD}/vm_backend.s: ${VM_BACKEND_C} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	@extra=; if test "${VM_BACKEND}" = pdp6; then extra="-DVM_SPACE_CAN_SWAP_PDP6_ASM=1 -DVM_SPACE_STARTUP_PDP6_ASM=1 -DVM_EXTENT_MOVE_PDP6_ASM=1 -DVM_SPACE_LOAD_FILE_PDP6_ASM=1 -DVM_SPACE_CREATE_PDP6_ASM=1 -DVM_SPACE_DESTROY_PDP6_ASM=1"; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S ${VM_BACKEND_C} -o $@
 
-${BUILD}/proc_swap.s: ${VM_SWAP_C} proc/proc_swap_pdp6.s ${KERNEL_HEADERS}
+${BUILD}/proc_swap.s: ${VM_SWAP_C} proc/proc_swap_pdp6.s proc/proc_pure_backing_pdp6.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} \
 	    -DPROC_SWAP_VERIFY_PURE=${PROC_SWAP_VERIFY_PURE} \
@@ -337,7 +337,7 @@ ${BUILD}/proc_swap.s: ${VM_SWAP_C} proc/proc_swap_pdp6.s ${KERNEL_HEADERS}
 	    -DPROC_SWAP_TRANSACTIONS_PDP6_ASM=1 \
 	    ${INCLUDES} -S ${VM_SWAP_C} -o $@.c
 	{ cat $@.c; printf '.equ PROC_SWAP_VERIFY_PURE,%s\n' '${PROC_SWAP_VERIFY_PURE}'; \
-	    cat proc/proc_swap_pdp6.s; } > $@
+	    cat proc/proc_swap_pdp6.s proc/proc_pure_backing_pdp6.s; } > $@
 	rm -f $@.c
 
 ${BUILD}/vm_backend_pdp6.s: ${VM_BACKEND_FIXED}

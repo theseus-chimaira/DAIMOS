@@ -1,3 +1,14 @@
+## 2026-10-13 PURE BACKING SOURCE SEPARATION V2
+
+PURE executable vnode unpacking and raw/compressed DXR2 text reconstruction
+have moved from proc_swap_pdp6.s into proc_pure_backing_pdp6.s.  The build
+still concatenates these leaves into the existing resident proc_swap object,
+preserving its entry symbols and swap contract.  The dedicated DAS object
+build passes.  This is a source boundary, not yet an MRES extraction or a
+measured KCORE reduction.  Next separate the process-state lifecycle from
+backstore transactions and ensure compressed resident packing can use the
+PURE reload path without disk swap.
+
 ## 2026-10-13 DSH V25 OPTIONAL HISTORY FOR 32K
 
 User approved disabling shell history during the current shrink phase,
