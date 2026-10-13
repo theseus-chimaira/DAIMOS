@@ -343,7 +343,7 @@ ${BUILD}/vm_backend.s: ${VM_BACKEND_C} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	@extra=; if test "${VM_BACKEND}" = pdp6; then extra="-DVM_SPACE_CAN_SWAP_PDP6_ASM=1 -DVM_SPACE_STARTUP_PDP6_ASM=1 -DVM_EXTENT_MOVE_PDP6_ASM=1 -DVM_SPACE_LOAD_FILE_PDP6_ASM=1 -DVM_SPACE_CREATE_PDP6_ASM=1 -DVM_SPACE_DESTROY_PDP6_ASM=1"; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S ${VM_BACKEND_C} -o $@
 
-${BUILD}/proc_swap.s: ${VM_SWAP_C} proc/proc_swap_pdp6.s proc/proc_pure_backing_pdp6.s proc/proc_pure_attach.c ${KERNEL_HEADERS}
+${BUILD}/proc_swap.s: ${VM_SWAP_C} proc/proc_swap_pdp6.s proc/proc_pure_backing_pdp6.s proc/proc_pure_attach.c proc/proc_storage_map_v28.h ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} \
 	    -DPROC_SWAP_VERIFY_PURE=${PROC_SWAP_VERIFY_PURE} \

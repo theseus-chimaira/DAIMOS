@@ -31,7 +31,9 @@ backing pinning, exact restoration, and safe operation under fragmentation.
 An isolated storage-mode map (v28) now uses two bits per configured process
 slot instead of repurposing the overloaded swap record. Its zero encoding
 denotes RESIDENT; DISK and PACKED are distinct and encoding three is invalid.
-The map is caller-allocated and is not installed in KCORE yet. State updates
+As of v29 its storage is boot-allocated with swap records, with a resident
+pointer/slot-count descriptor; it is not yet wired to scheduler decisions.
+State updates
 must be serialized with scheduler/lifecycle transitions, and must publish
 only after executable PURE restoration and MM ownership transfer succeed.
 

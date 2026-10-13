@@ -20,6 +20,10 @@
 #include "mm.h"
 #include "storage.h"
 #include "syscall.h"
+#include "proc_storage_map_v28.h"
+
+/* Boot-time map allocation lives next to the existing per-slot swap records. */
+struct proc_storage_map_v28 proc_storage_runtime_v29;
 
 struct proc_swap_record *proc_swap_records;
 kword_t proc_swap_blocks_used;

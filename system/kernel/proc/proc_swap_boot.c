@@ -11,6 +11,7 @@
 #include "mm.h"
 #include "blockset_mres.h"
 #include "bstore.h"
+#include "proc_storage_map_v28.h"
 
 #define PROC_SWAP_MM_OWNER 4U
 #define SWAP_PERSIST_MAGIC   055464663UL
@@ -57,14 +58,16 @@ proc_swap_boot_init(unsigned int slots)
         kword_t *wp;
         unsigned int bitmap_words;
 
-        if (proc_swap_records != 0 || slots == 0U || slots > PROC_MAX_SLOTS)
+        if (proc_swap_records != 0 || proc_storage_runtime_v29.words != 0 ||
+            slots == 0U || slots > PROC_MAX_SLOTS)
                 return -1;
         blocks = backstore_blocks;
         if (blocks == 0UL)
                 blocks = blockset_tail_blocks();
         bitmap_words = backstore_bitmap_words(blocks);
         words = (kword_t)slots * (kword_t)PROC_SWAP_RECORD_WORDS +
-            (kword_t)bitmap_words;
+            (kword_t)bitmap_words +
+            (kword_t)PROC_STORAGE_MAP_WORDS_V28(slots);
         if (mm_alloc(words, MM_TYPE_KERNEL_DYNAMIC, PROC_SWAP_MM_OWNER,
             MM_ALLOC_LOW, &base) != MM_OK)
                 return -1;
@@ -72,6 +75,10 @@ proc_swap_boot_init(unsigned int slots)
         fs_zero_words(wp, (unsigned int)words);
         proc_swap_records = (struct proc_swap_record *)(unsigned long)base;
         backstore_init(wp + slots * PROC_SWAP_RECORD_WORDS, blocks);
+        /* KINIT zeroed the entire extent; initial mode is RESIDENT. */
+        proc_storage_runtime_v29.words =
+            wp + slots * PROC_SWAP_RECORD_WORDS + bitmap_words;
+        proc_storage_runtime_v29.slots = slots;
         if (proc_swap_reserve_persistent(blocks) != 0)
                 return -1;
         proc_swap_blocks_used = 0UL;

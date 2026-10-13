@@ -14,6 +14,9 @@ struct proc_storage_map_v28 {
         unsigned int slots;
 };
 
+/* Initialized in the boot allocator; consumed by future lifecycle code. */
+extern struct proc_storage_map_v28 proc_storage_runtime_v29;
+
 /* Caller owns an initially zero-filled WORDS array of the required size.
  * A zero word represents 18 RESIDENT states. No physical allocation here.
  */

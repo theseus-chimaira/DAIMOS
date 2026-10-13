@@ -1,3 +1,18 @@
+## 2026-10-13 LIVE STORAGE MAP BOOT ALLOCATION V29
+
+The existing proc_swap_boot_init() dynamic swap-record MM extent now also
+contains a compact 2-bit-per-slot storage-state map after the backstore
+bitmap. It is zero-initialized with the allocation, published via the
+resident two-word proc_storage_runtime_v29 descriptor, and requires no
+additional MM extent or fixed 256-slot table. At 24 slots, this consumes
+two extra dynamic words and two KCORE words for the pointer and slot count.
+The GCC lowmem ROOT=tape BOOT=dtc three-member TSFS image built and booted
+to `DTFS LOADED` and `INIT V1`. Linked KCORE endpoint is 021412 octal,
+versus 021410 in the prior same-tree measurement. The map remains
+read-only RESIDENT state in production until transitions can be integrated
+with the scheduler and disk swap consistently. No packed eviction is enabled;
+do not describe this as an optimization saving or passed login test.
+
 ## 2026-10-13 PACKED PROCESS STORAGE DISCRIMINATOR V28
 
 Added an inactive 2-bit-per-process storage-state map with exact slot-count
