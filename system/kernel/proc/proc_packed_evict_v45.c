@@ -132,8 +132,14 @@ unpin_both:
         (void)mm_unpin(base);
 unpin_packed:
         (void)mm_unpin(packed_base);
+        (void)mm_free(packed_base, MM_TYPE_PACKED_PROCESS, slot);
+        return rc;
 free_packed:
         (void)mm_free(packed_base, MM_TYPE_PACKED_PROCESS, slot);
 unpin_source:
+        /* Failure to allocate or pin the destination must not leak the
+         * already-acquired source pin. The paths above which already
+         * released the source return before reaching this label. */
+        (void)mm_unpin(base);
         return rc;
 }

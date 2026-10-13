@@ -32,6 +32,11 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 - [x] Stage inline KPACK v073 ABI adapters to the v071 encoder and v070
   direct-buffer decoder; native PDP-6 roundtrip and AC10..AC16 checks pass.
   Registry-aware eviction/restore and scheduler connections remain pending.
+- [x] v076 host-MM transaction test uses the real inline v068 codec for
+  dense/sparse v45 eviction followed by v46 restore; verifies PURE prefix,
+  restored content, ownership and registry retirement. Fixed a v45 leaked
+  source pin on precommit allocation failure. Native scheduler and boot
+  acceptance still pending; see proc/D6CODEC-PACKED-TRANSACTION-V076.md.
 - [ ] Complete packed restore against the selected registry, rather than its
   private descriptor, then integrate packed eviction/restoration with the
   scheduler; do not remove disk swap before full native acceptance.
