@@ -28,6 +28,61 @@
 
 # DAIMOS TODO
 
+## D6 CODEC PRODUCTION CUTOVER — STREAMING LOW-CORE DECODER (V057 PLAN)
+
+The production-format v053 encoder/complete-buffer decoder are staged; the
+v055 kernel ABI wrapper is a *test milestone*, not the production design.
+The active fixed-address D6LZ36 decoder and its callers remain unchanged.
+Before any production cutover, replace the decoder **implementation**, not
+its external use. The old `system/stand/pdp6/common/decompressor.inc` at
+executive address `000060` is the definitive calling-contract reference.
+
+- Implement a directly callable new-format decoder at `000060` with the
+  existing resumable register state/entry behavior: AC12 destination cursor,
+  AC13 output words remaining, AC3 input cursor, AC4 input words remaining,
+  AC14 output origin, and AC0 result (0 complete, +1 NEED_INPUT, -1 invalid).
+  Preserve caller-visible state across NEED_INPUT. Keep existing Stage-1
+  installation and runtime `d6lz36_decode_vfs` / `d6lz36_decode_buffer`
+  interfaces intact; names may change only together with all callers.
+- Decode the **new** grouped-control / paired-18-bit-descriptor stream,
+  including word copies, zero runs and supported halfword matches, without
+  materializing a complete compressed image. The current v053 whole-buffer
+  decoder is NOT suitable as a runtime EXEC/VFS replacement.
+- A group contains at most 30 tokens. With `m` descriptor-bearing tokens,
+  its complete encoded size is `1 + (30 - m) + ceil(m/2) <= 31` 36-bit
+  words, including control. Reuse the existing **64-word VFS refill
+  window**: retain/compact a truncated group at a window boundary and
+  refill the available space. Do not allocate a second group buffer,
+  image-sized workspace, or permanent decoder BSS. Validate the 31-word
+  bound and the final partial group against actual encoder output.
+- Preserve the low-core decoder ABI **directly**. Do not link a generic
+  wrapper or permanently retain the v055 AC-save adapter: it exists solely
+  for native ABI tests. Implement the encoder's required ABI and callee-save
+  behavior directly as well. Measure combined code words, stack high-water
+  and persistent RAM; prioritize RAM, then execution speed. Decoder RAM
+  should stay close to the old implementation, not grow with image size.
+- Validate resumptions at every possible control/descriptor/literal boundary,
+  exact compressed-stream consumption, truncated/malformed input, output
+  bounds, grouped descriptor padding, odd/even halfword-distance behavior,
+  overlap, and direct-buffer decoding. Test against host-produced golden
+  streams on native PDP-6 in **daimos-testkit**; do not assume the existing
+  v053 decoder's even-distance-only restriction is acceptable.
+- Compare the old and replacement `000060` footprints, Stage-1 relocation
+  and overlap, VFS stack frames, full linked KCORE text/data/BSS and peak
+  process RAM. Avoid extra hot-path dispatch or an unnecessary buffer copy.
+- Perform the **single-format atomic cutover** only after tests pass:
+  update all five Stage-1 loaders, KINIT compression, host/userland DXR and
+  TSFS producers, VFS/EXEC/PURE/TSFS consumers, and replace the dummy kpack
+  codec with the real resident encoder/decoder. Rebuild every compressed
+  artifact; do not ship mixed D6LZ36/new-format images or runtime fallback.
+  Retain disk-swap fallback until packed eviction/restoration and scheduler
+  integration pass their own end-to-end tests.
+
+Detailed producer/consumer checklist:
+`system/kernel/core/D6CODEC-INTEGRATION-TODO-v054.md`.
+Acceptance is **not** claimed by this plan; no production codec or decoder
+was activated as part of the TODO update.
+
 ## Experimental user overlays and shared text (planned, not implemented)
 
 Implementation plan: `design/user-overlay-shared-text-experiments-20261012-v1.md`.
