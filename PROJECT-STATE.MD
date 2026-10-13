@@ -1,3 +1,23 @@
+## 2026-10-13 DISK SWAP STORAGE-MODE TRANSITIONS V30
+
+The existing PDP-6 assembler `proc_swap_out` and `proc_swap_in` now check
+the live two-bit storage map before beginning disk swap transactions, then
+publish RESIDENT->DISK or DISK->RESIDENT after successful MM/storage metadata
+updates and before clearing PROC_TRANSITION. A late impossible mismatch halts
+with the transition still held rather than releasing an incoherent process.
+`proc_swap_detach` also clears DISK mode on nonresident-process destruction.
+The transition helpers use short PDP-6 assembly with no added process frames
+or allocations. No PACKED state is published; no packed eviction is enabled.
+
+The GCC lowmem ROOT=tape BOOT=dtc three-member image builds and reaches
+`DTFS LOADED` / `INIT V1` in SIMH with no observed ?RT or HALT. KCORE endpoint
+is 021520 octal versus 021412 in the preceding v29 build; these correctness
+guards add 70 words after folding. The 100-word planning reserve is a budget,
+not permission to treat growth as optimization. Dedicated disk-backed
+swap-out/in/detach runtime transitions and failure injection remain untested;
+TSFS boot smoke does not exercise them. Leave the packed-process transition
+disabled until PURE reload, mode publication and MM release are atomic.
+
 ## 2026-10-13 LIVE STORAGE MAP BOOT ALLOCATION V29
 
 The existing proc_swap_boot_init() dynamic swap-record MM extent now also

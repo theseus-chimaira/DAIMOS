@@ -28,6 +28,13 @@ backing pinning, exact restoration, and safe operation under fragmentation.
 
 ## Packed descriptor contract (v7, inactive)
 
+Disk-backed swap transactions now maintain the separately allocated mode
+map (v30): out/in publish their transitions only after committing MM and
+backstore records, while detach returns discarded disk-swapped slots to
+RESIDENT mode. No PACKED state or scheduler selection is enabled yet.
+The live disk transition helpers add 70 folded KCORE words; their behavioral
+swap/failure tests still need to run in daimos-testkit.
+
 An isolated storage-mode map (v28) now uses two bits per configured process
 slot instead of repurposing the overloaded swap record. Its zero encoding
 denotes RESIDENT; DISK and PACKED are distinct and encoding three is invalid.

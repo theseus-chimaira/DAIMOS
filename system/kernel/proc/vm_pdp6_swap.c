@@ -25,8 +25,14 @@
 /* Boot-time map allocation lives next to the existing per-slot swap records. */
 struct proc_storage_map_v28 proc_storage_runtime_v29;
 
+
 struct proc_swap_record *proc_swap_records;
 kword_t proc_swap_blocks_used;
+
+/* The assembly swap transactions own mode publication under TRANSITION. */
+extern int proc_storage_publish_v30(unsigned int slot,
+    unsigned int old_state, unsigned int new_state);
+extern void proc_swap_storage_invariant_v30(void);
 
 /* Swap slot numbers and packed block spans are bounded positive quantities.
  * Use signed working values after unpacking so their comparisons stay compact
@@ -56,13 +62,19 @@ proc_swap_detach(int slot)
 {
         struct proc *p;
         kword_t state;
+        int was_disk;
 
         p = &proc_table[slot];
         state = proc_swap_records[slot].state;
-        if (VM_PDP6_BASE(p) == 0UL && state != 0UL) {
+        was_disk = VM_PDP6_BASE(p) == 0UL && state != 0UL;
+        if (was_disk) {
                 backstore_free((state >> 18U) & MM_HALF_MASK,
                     state & MM_HALF_MASK);
                 proc_swap_blocks_used -= state & MM_HALF_MASK;
+                /* The discarded slot must not retain the DISK mode. */
+                if (proc_storage_publish_v30((unsigned int)slot,
+                    PROC_STORAGE_DISK, PROC_STORAGE_RESIDENT) != 0)
+                        proc_swap_storage_invariant_v30();
         }
         proc_swap_records[slot].state = 0UL;
         if (PROC_HAS_UAREA(p))

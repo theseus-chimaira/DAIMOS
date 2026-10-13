@@ -38,6 +38,8 @@
         .globl  fs_zero_words
         .globl  fs_block_workspace
         .globl  bcache_workspace_invalidate
+        .globl  proc_storage_expect_v30
+        .globl  proc_storage_publish_v30
 
         .equ    PROC_WORDS,3
         .equ    PROC_STATE_RUN,2
@@ -246,6 +248,11 @@ proc_swap_out_state_ok:
         trne    14,DSK_WORDS_PER_SECTOR-1
         jrst    proc_swap_out_fail
 
+        move    1,10
+        movei   2,0                    ; must still be RESIDENT
+        pushj   17,proc_storage_expect_v30
+        jumpn   1,proc_swap_out_fail
+
         movei   1,PROC_TRANSITION_RH
         iorm    1,(11)
         move    1,13
@@ -301,6 +308,11 @@ proc_swap_out_verified:
         hrr     1,15
         movem   1,(12)
         addm    15,proc_swap_blocks_used
+        move    1,10
+        movei   2,0                    ; RESIDENT -> DISK
+        movei   3,1
+        pushj   17,proc_storage_publish_v30
+        jumpn   1,proc_swap_storage_invariant_v30
         move    1,(11)
         andcmi  1,PROC_TRANSITION_RH
         movem   1,(11)
@@ -389,6 +401,11 @@ proc_swap_in:
         came    16,2
         jrst    proc_swap_in_fail
 
+        move    1,10
+        movei   2,1                    ; must still be DISK
+        pushj   17,proc_storage_expect_v30
+        jumpn   1,proc_swap_in_fail
+
         movei   1,PROC_TRANSITION_RH
         iorm    1,(11)
         push    17,[0]
@@ -445,6 +462,11 @@ proc_swap_in_read_offset:
         movem   14,(12)
         hlrz    1,(11)
         setzm   PROC_SWAP_BACKING_OFFSET(1)
+        move    1,10
+        movei   2,1                    ; DISK -> RESIDENT
+        movei   3,0
+        pushj   17,proc_storage_publish_v30
+        jumpn   1,proc_swap_storage_invariant_v30
         move    1,(11)
         andcmi  1,PROC_TRANSITION_RH
         movem   1,(11)
@@ -480,6 +502,12 @@ proc_swap_in_restore:
         blt     0,16
         sub     17,kconst_7_7
         popj    17,
+
+/* An impossible late mode mismatch must not release a partially committed
+ * process to the scheduler: retain TRANSITION and halt, never fake success. */
+proc_swap_storage_invariant_v30:
+        .globl  proc_swap_storage_invariant_v30
+        halt    .
 
 /**
  * @brief Service one scheduler-requested swap-in from slot-0 context.
