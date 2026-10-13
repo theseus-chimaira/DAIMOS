@@ -11,6 +11,8 @@
         .globl proc_swap_reload_pure
         .globl vfs_read_words
         .globl d6lz36_decode_vfs
+        .globl proc_table
+        .globl proc_high_slot
         /* Constants are supplied by the parent proc_swap assembly unit.
          * When this leaf becomes an independently linked package, move the
          * constants into a common assembler include. */
@@ -115,5 +117,107 @@ proc_swap_reload_return:
         hrli    0,-7(17)
         blt     0,016
         sub     17,[010,,010]
+        popj    17,
+
+
+/* Provider-independent backing immutability guards. */
+/*
+ * Return nonzero while a nonresident PURE process depends on NODE as its
+ * executable backing.  Resident processes keep their text in core and do not
+ * constrain later vnode mutation.
+ */
+        .globl  proc_swap_backing_busy
+proc_swap_backing_busy:
+        push    17,10
+        push    17,11
+        push    17,12
+        push    17,13
+        hrrz    10,1                    ; packed key: index + mount/provider
+        move    11,1
+        lsh     11,-036                 ; provider
+        subi    11,4
+        andi    11,03
+        lsh     11,PROC_SWAP_PROVIDER_SHIFT
+        ior     10,11
+        move    11,1
+        lsh     11,-030                 ; public mount id
+        andi    11,077
+        subi    11,1
+        andi    11,03
+        lsh     11,PROC_SWAP_MOUNT_SHIFT
+        ior     10,11
+
+        movei   11,1
+        move    12,proc_high_slot
+proc_swap_backing_busy_loop:
+        caml    11,12
+        jrst    proc_swap_backing_not_busy
+        move    13,11
+        lsh     13,1
+        add     13,11
+        add     13,proc_table
+        hlrz    1,(13)
+        jumpe   1,proc_swap_backing_busy_next
+        move    1,PROC_SWAP_BACKING_OFFSET(1)
+        move    2,1
+        lsh     2,-PROC_SWAP_TEXT_SHIFT
+        andi    2,PROC_SWAP_TEXT_MASK
+        jumpe   2,proc_swap_backing_busy_next
+        and     1,[017,,0777777]
+        camn    1,10
+        jrst    proc_swap_backing_is_busy
+proc_swap_backing_busy_next:
+        aoja    11,proc_swap_backing_busy_loop
+proc_swap_backing_is_busy:
+        movei   1,1
+        jrst    proc_swap_backing_busy_return
+proc_swap_backing_not_busy:
+        setz    1,
+proc_swap_backing_busy_return:
+        pop     17,13
+        pop     17,12
+        pop     17,11
+        pop     17,10
+        popj    17,
+
+/* Return nonzero while any swapped PURE process depends on public MOUNT id. */
+        .globl  proc_swap_mount_busy
+proc_swap_mount_busy:
+        push    17,10
+        push    17,11
+        push    17,12
+        move    10,1
+        movei   11,1
+        move    12,proc_high_slot
+proc_swap_mount_busy_loop:
+        caml    11,12
+        jrst    proc_swap_mount_not_busy
+        move    2,11
+        lsh     2,1
+        add     2,11
+        add     2,proc_table
+        hlrz    1,(2)
+        jumpe   1,proc_swap_mount_busy_next
+        move    1,PROC_SWAP_BACKING_OFFSET(1)
+        move    3,1
+        lsh     3,-PROC_SWAP_TEXT_SHIFT
+        andi    3,PROC_SWAP_TEXT_MASK
+        jumpe   3,proc_swap_mount_busy_next
+        lsh     1,-PROC_SWAP_MOUNT_SHIFT
+        andi    1,03
+        addi    1,1
+        camn    1,10
+        jrst    proc_swap_mount_is_busy
+proc_swap_mount_busy_next:
+        aoja    11,proc_swap_mount_busy_loop
+proc_swap_mount_is_busy:
+        movei   1,1
+        jrst    proc_swap_mount_busy_return
+proc_swap_mount_not_busy:
+        setz    1,
+proc_swap_mount_busy_return:
+        pop     17,12
+        pop     17,11
+        pop     17,10
         popj    17,
 

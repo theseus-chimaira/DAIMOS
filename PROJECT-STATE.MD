@@ -1,3 +1,13 @@
+## 2026-10-13 PURE BACKING GUARDS SOURCE SEPARATION V4
+
+Executable vnode mutation and filesystem-unmount busy checks now reside in
+proc_pure_backing_pdp6.s with executable unpack/reconstruction.  Existing
+entry names and packed backing metadata remain unchanged.  KCC generation and
+the PDP-6 DAS proc_swap object pass.  proc_swap_detach still releases disk
+backstore for nonresident processes: it must not be reused for compressed
+resident pack allocations until a distinct state tag and transaction-safe
+cleanup are introduced.  No packed eviction is activated by this patch.
+
 ## 2026-10-13 PURE BACKING ATTACH SOURCE SEPARATION V3
 
 The provider-neutral executable backing record encoder proc_swap_attach()
