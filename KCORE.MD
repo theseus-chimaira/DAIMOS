@@ -34,7 +34,10 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
   scheduler; do not remove disk swap before full native acceptance.
 - [ ] Recover the extra resident code cost of the grouped decoder: original
   fixed core spans 000060..000127 (40 decimal words) while the staged v058
-  core occupies 129 words (+89); zero BSS/stack growth alone does NOT satisfy
+  core occupied 129 words (+89) in v058. The guarded v062 standalone core
+  measures 139 words (+99), with zero extra static data or decoder stack;
+  neither satisfies a zero-net-growth resident KCORE requirement. Measure
+  the combined core and VFS adapter after linking. Zero BSS/stack alone does NOT satisfy
   the no-extra-resident-RAM requirement. Measure the combined fixed core and
   VFS adapter before an atomic Stage-1 cutover.
 - [ ] Implement the single fixed-000060 grouped-control decoder with the
