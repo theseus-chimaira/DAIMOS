@@ -1,3 +1,14 @@
+## 2026-10-13 STRICT GCC 32K KCORE ACCEPTANCE GATE V10
+
+Run make kcore-32k-gate BOOT_PROFILE=lowmem COMPILER=gcc with a clean
+GCC-specific build directory. The dedicated check rejects missing/invalid
+link-end symbols and requires __kcore_low_end strictly below 020000 octal.
+Ordinary development builds intentionally remain possible above the limit.
+The gate tests KCORE only; MRES, process availability and actual boot require
+separate acceptance tests. The active GCC baseline remains 023361 octal.
+The GCC object-level triage is in design/kcore-gcc-size-audit-v10.md;
+proc_pdp6, file_runtime and monitorfs_runtime are the largest candidates.
+
 ## 2026-10-13 32K GCC KERNEL BUILD POLICY V9
 
 The 32K lowmem boot profile now defaults to GCC. KCC remains selectable

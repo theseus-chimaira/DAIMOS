@@ -615,7 +615,14 @@ SIMH_GE0_PORT ?= 1201
 SIMH_PCLK_MODE ?= REALTIME
 SIMH_DPY_MODE ?= HEADLESS
 
-.PHONY: image boot permanent-size clean force-simh-config
+.PHONY: image boot permanent-size kcore-32k-gate clean force-simh-config
+
+# Acceptance gate, deliberately separate from the normal optimization link.
+# Run with BOOT_PROFILE=lowmem COMPILER=gcc; KCORE map must match that build.
+kcore-32k-gate: $(KCORE_MAP)
+	@test '$(BOOT_PROFILE)' = lowmem && test '$(COMPILER)' = gcc || \
+	    { echo 'kcore-32k-gate requires BOOT_PROFILE=lowmem COMPILER=gcc' >&2; exit 2; }
+	@sh ./image/check-kcore-32k-v1.sh $(KCORE_MAP)
 
 force-simh-config:
 
