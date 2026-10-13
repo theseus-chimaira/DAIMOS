@@ -28,6 +28,13 @@ backing pinning, exact restoration, and safe operation under fragmentation.
 
 ## Packed descriptor contract (v7, inactive)
 
+An isolated storage-mode map (v28) now uses two bits per configured process
+slot instead of repurposing the overloaded swap record. Its zero encoding
+denotes RESIDENT; DISK and PACKED are distinct and encoding three is invalid.
+The map is caller-allocated and is not installed in KCORE yet. State updates
+must be serialized with scheduler/lifecycle transitions, and must publish
+only after executable PURE restoration and MM ownership transfer succeed.
+
 The initial two-word proc_packed_v1 descriptor carries physical base and
 encoded length together with the decoded writable suffix offset and length.
 It is not a per-process permanent allocation yet; the lifecycle must first

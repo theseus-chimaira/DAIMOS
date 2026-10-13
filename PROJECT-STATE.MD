@@ -1,3 +1,17 @@
+## 2026-10-13 PACKED PROCESS STORAGE DISCRIMINATOR V28
+
+Added an inactive 2-bit-per-process storage-state map with exact slot-count
+capacity: 24 lowmem slots need two 36-bit words; 256 slots need 15 words.
+States are RESIDENT, DISK, PACKED, and one invalid encoding. This avoids
+overloading the legacy swap backing record or the two fully occupied process
+metadata flag bits. The API supports caller-owned zero-initialized storage,
+bounded lookup, and compare-and-change with validation. Callers must hold the
+process lifecycle lock/exclusion: the map itself is not an atomic primitive.
+PDP-6 GCC/DAS standalone compilation passed (93 text words). It is not yet
+allocated at boot or wired into the scheduler; therefore no KCORE or process
+RAM saving is claimed. The descriptor and complete PURE reload/commit
+transaction, as well as tests in sibling daimos-testkit, remain outstanding.
+
 ## 2026-10-13 PACKED RESTORE MM OWNERSHIP CHECK V27
 
 The inactive packed-process restore preparation now validates that the
