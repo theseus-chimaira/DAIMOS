@@ -1,3 +1,15 @@
+## 2026-10-13 GCC KCORE SWAP DETACH CONSOLIDATION V24
+
+Consolidated the resident executable-backing clear and legacy nonresident
+disk-swap release into the existing `proc_swap_detach()` implementation.
+The conditions and release order are preserved; no packed-process eviction
+is enabled, and the lifecycle and scheduler remain resident. A paired GCC
+lowmem ROOT=tape comparison with identical other working-tree inputs
+measured 021416 -> 021410 octal KCORE, six words saved after P10fold.
+The complete three-member TSFS image build also succeeds. Runtime swap
+detach/restore regression tests and interactive DTFS/TSFS boot acceptance
+remain outstanding; do not treat a successful link as runtime acceptance.
+
 ## 2026-10-13 GCC 32K THREE-MEMBER TSFS MEDIA V21
 
 The PDP-6 boot image builder now accepts TSFS_ROOT_MEMBERS=1,2,3. A
