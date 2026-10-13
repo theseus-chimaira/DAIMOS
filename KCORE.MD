@@ -67,6 +67,9 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
   malformed/truncated input tests PASS in daimos-testkit. This is inactive.
   The 8K KCORE hard limit remains mandatory; defer optimization until the
   implementation and system-wide format migration are otherwise complete.
+- [x] Stage TSFS 1.3 inline v069 producer/checker, preserving production
+  TSFS 1.1 and rejecting legacy compressed images in both directions.
+  Host tests PASS; runtime TSFS decode and native boot remain pending.
 - [ ] Integrate the production D6 codec with the resident KCORE encoder and
   streaming decoder, exact `000060` resumable ABI, bounded VFS refill,
   KPACK and EXEC/VFS/PURE consumers. Keep the detailed cross-subsystem plan

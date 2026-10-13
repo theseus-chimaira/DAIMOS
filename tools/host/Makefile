@@ -138,3 +138,10 @@ $(BUILD)/mktsfs-v061: mktsfs-v061.c tsfs-format.c tsfs-format-v061.h d6codec-cod
 
 $(BUILD)/tsfscheck-v061: tsfscheck-v061.c tsfs-format.c tsfs-format-v061.h d6codec-codec-v060.c d6codec-codec-v060.h | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ tsfscheck-v061.c tsfs-format.c d6codec-codec-v060.c
+
+# Staged inline-token TSFS v069 image tools. Not installed.
+$(BUILD)/mktsfs-v069: mktsfs-v069.c tsfs-format.c tsfs-format-v069.h d6codec-codec-v068.c d6codec-codec-v068.h | $(BUILD)
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mktsfs-v069.c tsfs-format.c d6codec-codec-v068.c
+
+$(BUILD)/tsfscheck-v069: tsfscheck-v069.c tsfs-format.c tsfs-format-v069.h d6codec-codec-v068.c d6codec-codec-v068.h | $(BUILD)
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ tsfscheck-v069.c tsfs-format.c d6codec-codec-v068.c
