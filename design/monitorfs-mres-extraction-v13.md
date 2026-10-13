@@ -46,3 +46,13 @@ no hot-path process lifecycle indirection, and no silent feature removal.
 The next patch should establish the dispatch/lifetime contract before any
 MonitorFS functions are moved. Keeping the implementation unchanged until
 that contract is tested avoids unsafe VFS calls into unloaded code.
+
+## Isolated package link probe (v15)
+
+The existing MonitorFS assembler has now been linked experimentally as a
+relocatable MRES package against the GCC KCORE map. Its nine VFS-facing
+exports were renamed to avoid collision with the current resident exports.
+Use tools/host/monitorfs-mres-probe-v15.py to generate this variant from the
+single source of truth; do not maintain a divergent copy. DLINK reports
+1030 initialized words and no BSS. Installation, KCORE removal and functional
+tests are still required; this result alone saves no RAM.

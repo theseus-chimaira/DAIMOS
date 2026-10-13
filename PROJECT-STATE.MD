@@ -1,3 +1,13 @@
+## 2026-10-13 MONITORFS MRES LINK PROBE V15
+
+The standalone MonitorFS MRES link probe succeeds under DAS/DLINK against
+the current GCC KCORE map. tools/host/monitorfs-mres-probe-v15.py derives
+the probe from the sole authoritative assembler source and renames public
+entries for collision-free linking with resident MonitorFS. The resulting
+MRES contains 1030 initialized words and zero BSS. This does NOT install
+the module or change KCORE residency; MINIT and VFS dispatch integration,
+real boot validation, and total permanent-memory accounting remain open.
+
 ## 2026-10-13 MONITORFS MRES DISPATCH STAGING V14
 
 Added an inactive nine-entry VFS-to-MonitorFS jump interface in
