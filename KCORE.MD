@@ -70,6 +70,9 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 - [x] Stage TSFS 1.3 inline v069 producer/checker, preserving production
   TSFS 1.1 and rejecting legacy compressed images in both directions.
   Host tests PASS; runtime TSFS decode and native boot remain pending.
+- [x] Stage v070 inline VFS adapter and named TSFS/EXEC/PURE call-site
+  variants, without activating legacy symbols. Standalone PDP-6 link PASS;
+  TSFS 1.3 runtime validation and full consumer behavior still pending.
 - [ ] Integrate the production D6 codec with the resident KCORE encoder and
   streaming decoder, exact `000060` resumable ABI, bounded VFS refill,
   KPACK and EXEC/VFS/PURE consumers. Keep the detailed cross-subsystem plan
