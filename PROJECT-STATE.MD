@@ -1,3 +1,14 @@
+## 2026-10-13 LOWMEM LOGIN DIAGNOSTIC V19
+
+The MonitorFS v17 testkit runner omitted DCS transport arguments although
+the lowmem inittab starts LOGIN on DCS line 0, not CTY. The runner is being
+corrected to request TCP relay and DCS port 1101. A manual baseline rerun
+with DCS attached established a DCS connection but halted with `?RT` at
+PC 062054 before LOGIN. Therefore the prior CTY-only timeout was a harness
+error; the new early-boot fatal is a separate unresolved blocker. Do not
+claim runtime MonitorFS acceptance. Both root/media state and KINIT boot
+failure handling must be checked before attributing this to the MRES change.
+
 ## 2026-10-13 MONITORFS GCC BASELINE BOOT COMPARISON V18
 
 A fresh GCC lowmem image was rebuilt with MONITORFS_MRES_ENABLED=0
