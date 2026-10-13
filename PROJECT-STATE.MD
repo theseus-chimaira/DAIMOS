@@ -1,3 +1,12 @@
+## 2026-10-13 GCC KCORE REPEATABLE SIZE AUDIT V12
+
+Added tools/host/kcore-size-audit-v1.sh to report a selected fixed-KCORE
+object size breakdown from a GCC build independently of the folded link
+endpoint. Current endpoint remains 023360 octal. Large savings require
+structural work in process control, file/MonitorFS runtime, and disk-backed
+swap; the DSK/DRM interface leaf objects are only 37 decimal words combined
+before folding. This stage does not change kernel code or claim any savings.
+
 ## 2026-10-13 GCC MONITORFS FALLTHROUGH CLEANUP V11
 
 Removed four unconditional jumps to immediately following local labels in

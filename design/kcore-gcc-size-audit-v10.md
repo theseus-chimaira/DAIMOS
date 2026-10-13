@@ -24,3 +24,13 @@ Priorities: (1) trim process scheduler/control and syscall hot/cold paths;
 tests; (4) examine resident metadata before optimizing small PCLK (24 words).
 Object totals are diagnostic only. Verify every proposed change using the
 full folded GCC link map and runtime tests, not object totals alone.
+
+## Repeatable measurement (v12)
+
+Run `sh tools/host/kcore-size-audit-v1.sh BUILD_DIRECTORY` against a clean
+GCC lowmem link. The diagnostic lists selected KCORE fixed objects, not the
+entire image, and reports the actual map endpoint separately. In the current
+link the endpoint is 023360 octal. MonitorFS remains 1030 decimal pre-fold
+words, process control 2162. The disk and drum call-through objects together
+account for just 37 pre-fold words; their dependency removal must also address
+filesystem dispatch and legacy swap before a minimal build can omit them.
