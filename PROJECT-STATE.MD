@@ -1,3 +1,13 @@
+## 2026-10-13 PURE BACKING ATTACH SOURCE SEPARATION V3
+
+The provider-neutral executable backing record encoder proc_swap_attach()
+now resides in proc_pure_attach.c. KCC includes it through the existing
+vm_pdp6_swap.c translation unit; emitting two independent KCC .s files into
+one object caused colliding local labels (%L3), so no fragile label renaming
+was accepted. Existing process-swap detach and disk transactions stay put.
+The PDP-6 DAS proc_swap object assembles after the change. This does not yet
+remove swap from KCORE or enable compressed process packing.
+
 ## 2026-10-13 PURE BACKING SOURCE SEPARATION V2
 
 PURE executable vnode unpacking and raw/compressed DXR2 text reconstruction
