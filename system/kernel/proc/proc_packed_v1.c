@@ -11,6 +11,23 @@
 #include "proc.h"
 #include "vm_pdp6.h"
 
+/* Check type, owner and exact length before trusting an MM physical address.
+ * This is used only by the inactive packed-process transaction interface. */
+static int
+proc_packed_owned_v27(unsigned int slot, kword_t base, kword_t words,
+    unsigned int type)
+{
+        int i;
+
+        for (i = 0; i < mm_extent_count; ++i) {
+                if (MM_EXTENT_BASE(&mm_extents[i]) == base)
+                        return MM_EXTENT_TYPE(&mm_extents[i]) == type &&
+                            MM_EXTENT_OWNER(&mm_extents[i]) == slot &&
+                            MM_EXTENT_WORDS(&mm_extents[i]) == words;
+        }
+        return 0;
+}
+
 int
 proc_packed_reserve_v1(unsigned int slot, kword_t encoded_words,
     kword_t logical_offset, kword_t decoded_words,
@@ -87,6 +104,8 @@ proc_packed_prepare_restore_v26(unsigned int slot,
         offset = (unsigned int)PROC_PACKED_OFFSET(descriptor);
         packed_base = PROC_PACKED_BASE(descriptor);
         if (!encoded || !decoded || !packed_base ||
+            !proc_packed_owned_v27(slot, packed_base, (kword_t)encoded,
+                MM_TYPE_PACKED_PROCESS) ||
             offset > process_words || decoded > process_words - offset)
                 return MM_ERR_INVAL;
 

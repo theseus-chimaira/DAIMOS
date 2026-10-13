@@ -1,3 +1,16 @@
+## 2026-10-13 PACKED RESTORE MM OWNERSHIP CHECK V27
+
+The inactive packed-process restore preparation now validates that the
+compressed source extent has the descriptor's exact physical base and word
+length, MM_TYPE_PACKED_PROCESS, and the requested slot as MM owner before
+pinning/decoding it. `mm_pin` alone checks existence, not type or ownership;
+without this validation a stale or foreign descriptor could read another
+MM allocation. The source remains protected by its pin while preparing the
+aligned destination. PDP-6 GCC and DAS compile the isolated object (245
+text words), but it remains unlinked from KCORE. This is a correctness
+prerequisite, not a KCORE saving; full failure-injection tests in testkit
+and an explicit lifecycle storage discriminator are still required.
+
 ## 2026-10-13 PACKED PROCESS RESTORE PREPARATION V26
 
 An inactive `proc_packed_prepare_restore_v26()` API now allocates a fresh
