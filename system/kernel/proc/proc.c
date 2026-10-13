@@ -261,8 +261,14 @@ proc_slot_discard(unsigned int slot)
                 proc_rt_owner = 0UL;
         if (PROC_IS_FREE(p))
                 return 0;
-        if (vm_space_destroy(p, slot) != 0)
+        /* The exit path already holds TRANSITION while destroying VM.
+         * Failed-creation abort must obey the same exclusion contract,
+         * including when its storage is eventually PACKED. */
+        PROC_SET_TRANSITION(p);
+        if (vm_space_destroy(p, slot) != 0) {
+                PROC_CLEAR_TRANSITION(p);
                 return -1;
+        }
         proc_tty_release_session((unsigned int)(proc_scope_id(p) &
             PROC_ZOMB_SESSION_MASK), slot);
         if (proc_uarea_release(slot, p) != 0)

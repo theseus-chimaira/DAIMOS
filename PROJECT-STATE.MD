@@ -1,3 +1,26 @@
+## 2026-10-13 PROCESS ABORT LIFECYCLE TRANSITION V40
+
+The live C `proc_slot_discard()` used to enter `vm_space_destroy()` without
+holding `PROC_F_TRANSITION`, unlike the live assembler `proc_finish_slot`
+exit path. Since packed teardown requires lifecycle exclusion, that would
+make aborted process creation incorrectly reject PACKED cleanup. The abort
+path now holds TRANSITION across VM destruction and clears it if VM release
+fails; on success the slot is still cleared through its existing teardown.
+The live packed registry and teardown hook are NOT activated by this patch.
+
+Testkit `proc-abort-transition-v40` compiles the real `proc.c` against an
+instrumented VM destructor and verifies transition-held destruction,
+failure rollback, successful cleanup, and no duplicate destruction of a
+FREE slot. PDP-6 GCC/DAS compile passed; lowmem GCC three-member TSFS
+image built and booted in SIMH to DTFS LOADED / INIT V1 without a reported
+HALT or ?RT. The measured KCORE endpoint for this working tree is 021525
+octal, versus the previous 021520 snapshot; the tree also contains other
+agents' uncommitted boot changes, so do not attribute all five words to
+this change without an identical-tree A/B comparison. The 32K target is
+still unmet. Codec, packed eviction and KINIT packed registry activation
+remain deferred. The next step is paired boot registration and VM destructor
+wiring, with a size gate that avoids excessive permanent KCORE growth.
+
 ## 2026-10-13 GUARDED PACKED PROCESS TEARDOWN V39
 
 Added an inactive `proc_packed_teardown_guard_v39` interface for the common

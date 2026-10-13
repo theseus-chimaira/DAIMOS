@@ -1,5 +1,10 @@
 # KCORE compressed-process split: staged implementation v1
 
+V40 aligns the live aborted-creation teardown with the exit-path lifecycle
+contract: `proc_slot_discard` holds TRANSITION during `vm_space_destroy`
+and clears it on failure. The packed registry/teardown remain inactive;
+no codec dependency or PACKED state publication is introduced.
+
 V39 stages a single guarded teardown boundary for exit, abort and slot
 reuse. Under lifecycle exclusion and TRANSITION, RESIDENT/DISK are left to
 the existing VM destructor; PACKED requires a configured layout and exact
