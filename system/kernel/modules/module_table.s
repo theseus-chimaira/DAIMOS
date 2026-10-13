@@ -60,6 +60,7 @@
         .globl mfsdev_minit
 .if MONITORFS_MRES_ENABLED
         .globl monitorfs_mres_package
+        .globl mfsdev_install_minit
 .endif
         .globl cty_mres_package
         .globl clk_mres_package
@@ -111,6 +112,9 @@ __kinit_image_start:
 __minit_table_begin:
         .word cty_minit,,cty_mres_package
         .word clk_minit,,clk_mres_package
+.if MONITORFS_MRES_ENABLED
+        .word mfsdev_install_minit,,monitorfs_mres_package
+.endif
 .if KINIT_FULL
         .word ptr_minit,,ptr_mres_package
         .word ptp_minit,,ptp_mres_package
@@ -159,9 +163,5 @@ __minit_table_begin:
 .if D6FS_FS_ENABLED
         .word d6fs_minit,,d6fs_mres_package
 .endif
-.if MONITORFS_MRES_ENABLED
-        .word mfsdev_minit,,monitorfs_mres_package
-.else
         .word mfsdev_minit,,0
-.endif
 __minit_table_end:

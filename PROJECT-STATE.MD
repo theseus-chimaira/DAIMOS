@@ -1,3 +1,37 @@
+## 2026-10-13 MONITORFS MRES BOOT-INSTALL FIX V17
+
+The experimental GCC lowmem MonitorFS MRES configuration now builds a
+complete boot image and reaches `INIT V1` on a fresh 32K PDP-6 simulator.
+It remains opt-in (`MONITORFS_MRES_ENABLED=1`) until the MonitorFS namespace
+probes pass after user login. The 32K and diagnostic 64K lowmem harnesses
+both reached INIT but did not obtain a LOGIN prompt within their timeout;
+therefore live MonitorFS VFS semantics are NOT yet accepted.
+
+The runtime failure in v16 was diagnosed in two stages: the MRES package
+source must appear in ascending MINIT traversal order, and a D6FS MINIT
+dynamic 14-word MM allocation prevents a later MRES package from occupying
+the required next contiguous address. The correct solution separates early
+`mfsdev_install_minit` (after CLK, before dynamic allocations) from the
+original late `mfsdev_minit` name publication (after driver discovery).
+The MRES package itself appears immediately after CLK in the boot image.
+
+The initial C symbol aliases for writable jump words generated invalid
+GCC assembly operands; dedicated ordinary external assembly labels now
+provide exact patch addresses. An unnecessary static pointer table that
+emitted an unsupported `.long` directive was also eliminated. Build-mode
+stamps ensure switching MONITORFS_MRES_ENABLED between 0 and 1 rebuilds
+the correct KINIT and KCORE outputs in the same build directory.
+
+GCC lowmem KCORE link is still 021375 octal (versus 023360 resident),
+saving 01763 octal (1011 decimal) low-core words. MonitorFS MRES occupies
+1030 words, so *net permanent RAM increases by about 19 words*; the
+020000 octal KCORE hard target still requires 01376 octal more saving.
+The revised size report handles the selected lowmem MRES set. The full
+image was built after installing authoritative KCC/DAIMOS toolchain
+components under PDP10_PREFIX. Five versioned MonitorFS acceptance probes
+and a fresh-build test target are in sibling daimos-testkit; probe syntax
+checks pass, but behavioral tests remain blocked before LOGIN.
+
 ## 2026-10-13 MONITORFS GCC MRES INTEGRATION V16 (BOOT PENDING)
 
 The opt-in MONITORFS_MRES_ENABLED=1 configuration substitutes nine KCORE

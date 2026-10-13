@@ -69,3 +69,25 @@ of low-core address space but increases total permanent RAM by about 19
 words. GCC KINIT linking and the profile-aware permanent-size report pass.
 Runtime/boot testing is blocked by the missing external sixmd-check tool
 during native DAS image production. Do not claim functional acceptance yet.
+
+## GCC 32K boot and lifetime verification (v17)
+
+The missing prefix utilities were installed from the maintained toolchain
+sources, allowing complete image generation. A simulator boot with fresh
+media now reaches INIT V1 with MONITORFS_MRES_ENABLED=1. KINIT must install
+the MonitorFS MRES early, immediately after CLK: a later D6FS MINIT dynamic
+allocation breaks the mandatory contiguous placement invariant. Device-name
+publication still happens after all driver MINIT routines, independently of
+the early package installation. Both MINIT/package ordering and dispatch
+symbol address generation are now corrected.
+
+The GCC KCORE endpoint remains 021375 octal. The package accounts for 1030
+permanent MRES words and therefore does not represent a net RAM saving.
+Repeated make mode-switch checks (0 -> 1) produce the correct KCORE endpoint
+on each build: 023360 for resident MonitorFS and 021375 for MRES.
+
+The DAIMOS testkit supplies a dedicated GCC lowmem fresh-image acceptance
+target and five VFS probes. Both 32K and 64K lowmem simulator runs reached
+INIT but did not reach LOGIN within the harness timeout, so the VFS probes
+were not yet executed. Until that blocker is resolved, keep MRES opt-in and
+do not declare full MonitorFS regression acceptance.
