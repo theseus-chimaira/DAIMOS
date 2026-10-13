@@ -78,9 +78,11 @@ mfsdev_present_mark(unsigned int id)
 #define DCS_X_GETCHAR           1U
 #define DCS_X_PUTCHAR           2U
 #define DCS_X_PI_TAIL           3U
+#define DCS_X_IDLE_ARM          4U
 #define GE_X_HANDLER            0U
 #define GE_X_GETCHAR            1U
 #define GE_X_PUTCHAR            2U
+#define GE_X_IDLE_ARM           3U
 #define DPY_X_HANDLER           0U
 #define DPY_X_CLOCK_HANDLER     1U
 #define DPY_X_CLK_TICK_LOAD     2U
@@ -167,6 +169,8 @@ extern kword_t sys_dtc_write_block_jump;
 extern kword_t sys_logstore_service_jump;
 extern kword_t sys_mtc_service_jump;
 extern kword_t native_sys_putchar_call;
+extern kword_t proc_idle_dcs_arm_jump;
+extern kword_t proc_idle_ge_arm_jump;
 extern kword_t tty_write_s6rec_jump;
 extern kword_t tty_read_s6rec_jump;
 extern kword_t ptr_read_words_jump;
@@ -637,6 +641,8 @@ dcs_minit(void)
             minit_export(name, base, DCS_X_GETCHAR));
         module_service_set(MODULE_SERVICE_DCS_PUTCHAR,
             minit_export(name, base, DCS_X_PUTCHAR));
+        storage_patch_jump(&proc_idle_dcs_arm_jump,
+            minit_export(name, base, DCS_X_IDLE_ARM));
         mfsdev_present_mark(MONITORFS_DEV_DCS0);
         minit_dcs_cono(0);
         minit_diag_ok(name);
@@ -677,6 +683,8 @@ ge_minit(void)
             minit_export(name, base, GE_X_GETCHAR));
         module_service_set(MODULE_SERVICE_GE_PUTCHAR,
             minit_export(name, base, GE_X_PUTCHAR));
+        storage_patch_jump(&proc_idle_ge_arm_jump,
+            minit_export(name, base, GE_X_IDLE_ARM));
         mfsdev_present_mark(MONITORFS_DEV_GE0);
         minit_gtyi_cono(0);
         minit_gtyo_cono((kword_t)GTYO_CO_FROB);

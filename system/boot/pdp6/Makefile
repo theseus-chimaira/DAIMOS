@@ -699,7 +699,7 @@ $(CP_MRES_OBJ): $(BUILD)/cp_io.dobj $(KCORE_MAP)
 
 $(DCS_MRES_OBJ): $(BUILD)/dcs_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dcs-mres.dxr -M $(BUILD)/dcs-mres.map \
-	    -R $@ -N dcs_mres_package -X dcs_pi_handler -X dcs_getchar -X dcs_putchar -X dcs_pi_tail \
+	    -R $@ -N dcs_mres_package -X dcs_pi_handler -X dcs_getchar -X dcs_putchar -X dcs_pi_tail -X dcs_idle_arm \
 	    $(BUILD)/dcs_io.dobj
 
 $(GE_MRES_FOLD_PLAN): $(BUILD)/ge_io.dobj $(P10FOLD_DEP)
@@ -708,7 +708,7 @@ $(GE_MRES_FOLD_PLAN): $(BUILD)/ge_io.dobj $(P10FOLD_DEP)
 $(GE_MRES_OBJ): $(BUILD)/ge_io.dobj $(KCORE_MAP) $(GE_MRES_FOLD_PLAN)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ge-mres.dxr -M $(BUILD)/ge-mres.map \
 	    --fold-plan $(GE_MRES_FOLD_PLAN) \
-	    -R $@ -N ge_mres_package -X ge_pi_handler -X ge_getchar -X ge_putchar \
+	    -R $@ -N ge_mres_package -X ge_pi_handler -X ge_getchar -X ge_putchar -X ge_idle_arm \
 	    $(BUILD)/ge_io.dobj
 
 $(DPY_MRES_OBJ): $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj $(KCORE_MAP)

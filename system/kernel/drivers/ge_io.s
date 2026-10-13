@@ -16,6 +16,7 @@
         .text
         .globl ge_pi_handler
         .globl ge_getchar
+        .globl ge_idle_arm
         .globl ge_putchar
         .globl proc_tty_pending_take
         .globl proc_tty_pending_store
@@ -111,6 +112,14 @@ ge_getchar_ready_ours:
         andi 1,0177
 ge_getchar_done:
         sub 17,kconst_1_1
+        popj 17,
+
+; Shared four-console GTYI scanner, armed on idle registration even when
+; no process is waiting in ge_getchar. Preserve an existing mailbox byte.
+ge_idle_arm:
+        skipe ge_rx_word
+        popj 17,
+        cono 0070,000004
         popj 17,
 
 /**

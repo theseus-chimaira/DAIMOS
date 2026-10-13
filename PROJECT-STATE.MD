@@ -1,3 +1,14 @@
+## PID 1 IDLE TTY SCANNER ACTIVATION (2026-10-13, V4)
+
+DCS/GE MRES now export an opt-in idle scanner-arm service, patched by
+their transient MINIT installation into compact KCORE jump slots.
+`SYS_TTYCTL_IDLESET` arms only installed, eligible receiver classes and
+does not consume existing mailboxes. CTY remains naturally interrupt-
+driven. The ordinary SUPERVISOR still registers zero idle terminals;
+production behavior is unchanged without opt-in supervisor dispatch.
+See design/SUPERVISOR-IDLE-TTY-SCANNER-20261013-v4.MD. Multi-line
+scanner contention must be tested before general activation.
+
 ## PID 1 IDLE TTY KERNEL EVENT HUB (2026-10-13, V3)
 
 KCORE/CTY/DCS/GE now contain dormant combined child/terminal notification

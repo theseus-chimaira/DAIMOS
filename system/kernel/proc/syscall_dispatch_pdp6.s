@@ -39,6 +39,7 @@
         .globl  proc_idle_tty_ready
         .globl  proc_idle_tty_epoch
         .globl  proc_idle_tty_event
+        .globl  proc_idle_tty_arm
         .globl  proc_wait_event_intr
         .globl  vm_space_brk_current
         .globl  pipe_create
@@ -634,6 +635,7 @@ native_sys_ttyctl_idle:
         jrst    kret_neg1
         movem   3,proc_idle_tty_mask
         andm    3,proc_idle_tty_ready
+        pushj   17,proc_idle_tty_arm
         setz    1,
         popj    17,
 native_sys_ttyctl_idle_get:

@@ -1378,6 +1378,9 @@ proc_notify_parent_done:
         .globl  proc_idle_tty_mask
         .globl  proc_idle_tty_ready
         .globl  proc_idle_tty_epoch
+        .globl  proc_idle_tty_arm
+        .globl  proc_idle_dcs_arm_jump
+        .globl  proc_idle_ge_arm_jump
 proc_idle_tty_signal:
         skipn   proc_idle_tty_mask
         popj    17,
@@ -1409,6 +1412,26 @@ proc_idle_tty_mark_done:
         pop     17,3
         pop     17,2
         popj    17,
+
+; Arm only the physical receive scanners needed by registered idle TTYs.
+; Targets are patched by their hardware MINIT once the MRES is installed.
+; Missing devices retain the harmless zero-result stubs; CTY reception is
+; permanently armed by its own PI4 driver.
+proc_idle_tty_arm:
+        move    2,proc_idle_tty_mask
+        tdnn    2,[0377776]           ; DCS logical TTYs 1..16
+        jrst    proc_idle_tty_arm_ge
+        pushj   17,proc_idle_dcs_arm_jump
+proc_idle_tty_arm_ge:
+        move    2,proc_idle_tty_mask
+        tdnn    2,[07400000]          ; GE logical TTYs 17..20
+        popj    17,
+        pushj   17,proc_idle_ge_arm_jump
+        popj    17,
+proc_idle_dcs_arm_jump:
+        jrst    kret_zero
+proc_idle_ge_arm_jump:
+        jrst    kret_zero
 
 ; kword_t proc_scope_id(const struct proc *p)
 ; Return packed session/domain.  Zombie scope already occupies sched RH;

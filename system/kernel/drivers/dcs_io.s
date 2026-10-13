@@ -19,6 +19,7 @@
         .globl dcs_pi_handler
         .globl dcs_pi_tail
         .globl dcs_getchar
+        .globl dcs_idle_arm
         .globl dcs_putchar
         .globl proc_tty_pending_take
         .globl proc_tty_pending_store
@@ -121,6 +122,14 @@ dcs_getchar_ready_ours:
         andi 1,0377
 dcs_getchar_done:
         sub 17,kconst_1_1
+        popj 17,
+
+; Arm the shared scanner without a blocked reader. Called by PID 1's
+; registered-idle-TTY setup. Never overwrite an unconsumed RX mailbox.
+dcs_idle_arm:
+        skipe dcs_rx_word
+        popj 17,
+        cono 0300,000012
         popj 17,
 
 /**
