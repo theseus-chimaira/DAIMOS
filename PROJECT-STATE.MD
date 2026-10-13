@@ -1,3 +1,25 @@
+## 2026-10-13 SPARSE PACKED DESCRIPTOR REGISTRY V34
+
+An inactive alternative to the dense v33 registry is now available as
+`proc_packed_sparse_v34.c/.h`. Its caller-supplied bounded table holds only
+three words per reserved packed-process entry (slot ID and the existing
+two-word descriptor), not two words for every configured process slot.
+Each entry is stable until explicit teardown. Publication validates MM
+ownership and rejects duplicate slot claims; disposal checks ownership and
+pin state before freeing the extent, clearing PACKED mode and making the
+entry reusable. A full table returns MM_ERR_DESCRIPTORS. Calls are permitted
+only under process-lifecycle exclusion; no allocations occur in the path.
+
+GCC/DAS PDP-6 standalone assembly passed: 277 text words versus the v33
+dense-registry object's 192, prior to folding. For a 24-slot machine the
+dense table requires 48 descriptor words, while an eight-entry sparse table
+would require 24 words. The sparse table is not necessarily superior: it
+adds code, linear lookup, and a configured maximum simultaneous packed count.
+Neither implementation is linked into KCORE or allocated by boot yet.
+daimos-testkit `packed-sparse-v34` exercises publication, duplicates, MM
+ownership mismatch, pinned release refusal, successful cleanup and reuse.
+Do not activate packed eviction or integrate the under-development codec.
+
 ## 2026-10-13 PACKED DESCRIPTOR LIFETIME REGISTRY V33
 
 Added a separate, inactive slot-indexed packed descriptor registry. Each

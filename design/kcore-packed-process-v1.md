@@ -1,5 +1,15 @@
 # KCORE compressed-process split: staged implementation v1
 
+V34 adds a sparse, bounded three-word-per-entry descriptor registry as an
+alternative to the v33 dense two-word-per-slot table. Its capacity is a
+caller-provided limit on simultaneously packed processes; full tables must
+reject another eviction, not silently discard ownership information.
+For 24 slots an eight-entry sparse table uses 24 dynamic words rather than
+48, at the cost of 85 more standalone pre-fold text words and linear scans.
+Choose a strategy only after total permanent RAM and actual packed-process
+concurrency have been measured. Both registries remain inactive, and the
+production compressor/decompressor is deliberately deferred.
+
 V33 introduces an isolated, checked per-slot descriptor registry for the
 future packed lifecycle. Registration/teardown validate exact MM ownership;
 release of a pinned packed extent fails without clearing the descriptor or
