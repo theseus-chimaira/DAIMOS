@@ -1,3 +1,12 @@
+## 2026-10-13 GCC MONITORFS FALLTHROUGH CLEANUP V11
+
+Removed four unconditional jumps to immediately following local labels in
+monitorfs_runtime.s. The folded GCC lowmem KCORE link moves from 023361
+to 023360 octal: a verified saving of one permanent word after folding.
+This is intentionally a small semantics-preserving assembly cleanup; no
+filesystem functionality was disabled. Full link passes. Runtime tests
+remain outstanding. Next savings must come from larger structural splits.
+
 ## 2026-10-13 STRICT GCC 32K KCORE ACCEPTANCE GATE V10
 
 Run make kcore-32k-gate BOOT_PROFILE=lowmem COMPILER=gcc with a clean

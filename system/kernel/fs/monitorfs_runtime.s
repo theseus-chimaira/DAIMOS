@@ -640,7 +640,6 @@ mfsproc_lookup:
         jrst    kret_neg1
         move    6,1
         jumpn   0,mfsproc_lookup_domain_root
-        jrst    mfsproc_lookup_slot
 mfsproc_lookup_slot:
         move    1,6
         pushj   17,mfsproc_proc_ptr
@@ -697,7 +696,6 @@ mfsdom_lookup_found:
         ior     1,0
         tlo     1,030003               ; one uniform domain-file kind
         tro     1,0400000
-        jrst    mfsproc_lookup_store
 mfsproc_lookup_store:
         movem   1,(7)
         jrst    kret_zero
@@ -716,7 +714,6 @@ mfsproc_readdir:
         jrst    kret_zero
         movei   6,0
         movei   7,0
-        jrst    mfsproc_readdir_root_loop
 mfsproc_readdir_root_loop:
         caml    6,proc_high_slot
         jrst    kret_zero
@@ -827,7 +824,6 @@ mfsproc_stat_domain_status:
         jrst    kret_neg1
         movei   3,2
         movei   4,0444
-        jrst    mfsproc_stat_store_zero
 mfsproc_stat_store_zero:
         setz    5,
 mfsproc_stat_store_words:
