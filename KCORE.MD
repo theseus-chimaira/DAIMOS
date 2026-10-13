@@ -32,6 +32,11 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 - [ ] Complete packed restore against the selected registry, rather than its
   private descriptor, then integrate packed eviction/restoration with the
   scheduler; do not remove disk swap before full native acceptance.
+- [ ] Recover the extra resident code cost of the grouped decoder: original
+  fixed core spans 000060..000127 (40 decimal words) while the staged v058
+  core occupies 129 words (+89); zero BSS/stack growth alone does NOT satisfy
+  the no-extra-resident-RAM requirement. Measure the combined fixed core and
+  VFS adapter before an atomic Stage-1 cutover.
 - [ ] Implement the single fixed-000060 grouped-control decoder with the
   unchanged AC3/AC4/AC10..AC14/AC0 resumable ABI, atomic <=31-word group
   validation and compaction in the existing 64-word VFS refill window. No
