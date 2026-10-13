@@ -1,3 +1,16 @@
+## 2026-10-13 DSH V25 OPTIONAL HISTORY FOR 32K
+
+User approved disabling shell history during the current shrink phase,
+provided the implementation remains available behind a compile-time
+ifdef.  `DSH_ENABLE_HISTORY` defaults to 0; define it as 1 to enable
+the existing Ctrl-P and HISTFILE behavior.  The opt-in history cache
+is lazily allocated via the shared DSH heap, not static BSS or bare BRK.
+GCC image/BSS octal baseline v24: 032104/013742; history-off v25:
+031321/012751; history-on v25: 032120/012763.  The history-disabled
+default passes full SIMH conformance 115/115; history-on behavior still
+requires dedicated regression acceptance.
+Strict below-030000 image gap is now 01322 octal in the default mode.
+
 ## 2026-10-13 KCORE PACKED PROCESS PREPARATION V1
 
 The first staged interface for future compressed-process eviction is in

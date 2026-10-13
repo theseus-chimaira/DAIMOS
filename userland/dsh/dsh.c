@@ -1,18 +1,30 @@
 #include "dsh.h"
 #include "text.h"
+#include "dsh_heap.h"
+
+/* Keep the history implementation available but omit it from small-memory
+ * builds until the interactive line editor is an explicit target. */
+#ifndef DSH_ENABLE_HISTORY
+#define DSH_ENABLE_HISTORY 0
+#endif
 
 static struct dsh_line dsh_input_line;
 static struct dsh_state dsh_main_state;
 
 /* Sixteen 31-word lines: 496 words, within the 512-word history budget. */
 #define DSH_HISTORY_MAX 16U
+#if DSH_ENABLE_HISTORY
 #define DSH_HISTORY_WORDS (DSH_HISTORY_MAX * (DSH_LINE_MAX_WORDS + 1U))
 #define DSH_HISTORY_S6REC_TEXT (1UL << 30)
 
-static struct dsh_line dsh_history[DSH_HISTORY_MAX];
+/* Interactive history is unnecessary in noninteractive command shells.
+ * Persistent heap ownership prevents nested SOURCE argv cleanup from
+ * invalidating the records; the 16-entry contract is unchanged. */
+static struct dsh_line *dsh_history;
 static unsigned int dsh_history_count;
 static struct dsh_s6 dsh_history_path;
 static unsigned int dsh_history_persistent;
+#endif
 
 static void dsh_put_prompt(struct dsh_state *st, unsigned int more);
 static int dsh_s6_literal(struct dsh_s6 *dst, const char *text);
@@ -34,6 +46,7 @@ dsh_line_set(struct dsh_line *line, unsigned int pos, int ch)
                 line->words[wi] |= ((kword_t)(ch - 040) & 077UL) << sh;
 }
 
+#if DSH_ENABLE_HISTORY
 static void
 dsh_line_copy(struct dsh_line *dst, const struct dsh_line *src)
 {
@@ -43,6 +56,7 @@ dsh_line_copy(struct dsh_line *dst, const struct dsh_line *src)
         for (i = 0U; i < DSH_LINE_MAX_WORDS; ++i)
                 dst->words[i] = src->words[i];
 }
+#endif
 
 static int
 dsh_input_insert(unsigned int pos, int ch)
@@ -81,6 +95,7 @@ dsh_echo_back(unsigned int n)
                 (void)u_putc(1, '\b');
 }
 
+#if DSH_ENABLE_HISTORY
 static void
 dsh_echo_to_end(unsigned int *cursor)
 {
@@ -115,7 +130,16 @@ dsh_history_remember(const struct dsh_line *line)
 
         if (line->len == 0U)
                 return;
-        for (i = DSH_HISTORY_MAX - 1U; i != 0U; --i)
+        if (dsh_history == 0) {
+                dsh_history = (struct dsh_line *)dsh_heap_alloc(
+                    DSH_HISTORY_WORDS);
+                if (dsh_history == 0)
+                        return;
+        }
+        i = dsh_history_count;
+        if (i >= DSH_HISTORY_MAX)
+                i = DSH_HISTORY_MAX - 1U;
+        for (; i != 0U; --i)
                 dsh_line_copy(&dsh_history[i], &dsh_history[i - 1U]);
         dsh_line_copy(&dsh_history[0], line);
         if (dsh_history_count < DSH_HISTORY_MAX)
@@ -232,6 +256,7 @@ dsh_history_add(void)
                 (void)u_crlf(2);
         }
 }
+#endif
 
 static int
 dsh_complete_tab(struct dsh_state *st, unsigned int *cursorp, int list_ambiguous)
@@ -303,13 +328,17 @@ dsh_getline_tty(struct dsh_state *st)
         unsigned int old_len;
         unsigned int tail;
         unsigned int i;
+#if DSH_ENABLE_HISTORY
         int history_pos;
+#endif
         int tab_pending;
         int ch;
 
         dsh_line_clear(&dsh_input_line);
         cursor = 0U;
+#if DSH_ENABLE_HISTORY
         history_pos = -1;
+#endif
         tab_pending = 0;
         for (;;) {
                 ch = dsys_readchar(0);
@@ -321,7 +350,9 @@ dsh_getline_tty(struct dsh_state *st)
                         tab_pending = 0;
                 if (ch == '\r' || ch == '\n') {
                         (void)u_crlf(1);
+#if DSH_ENABLE_HISTORY
                         dsh_history_add();
+#endif
                         return 0;
                 }
                 if (ch == 003) {
@@ -351,6 +382,7 @@ dsh_getline_tty(struct dsh_state *st)
                         }
                         continue;
                 }
+#if DSH_ENABLE_HISTORY
                 if (ch == 020) {        /* Ctrl-P: older history */
                         if ((unsigned int)(history_pos + 1) <
                             dsh_history_count) {
@@ -360,6 +392,7 @@ dsh_getline_tty(struct dsh_state *st)
                         }
                         continue;
                 }
+#endif
                 if (ch == 004) {        /* Ctrl-D: EOF on an empty line */
                         if (dsh_input_line.len == 0U)
                                 return -1;
@@ -668,8 +701,10 @@ main(int argc, kword_t **argv, kword_t **envp)
         if (login)
                 dsh_login_profiles(&dsh_main_state);
         if (interactive) {
+#if DSH_ENABLE_HISTORY
                 dsh_history_path_init(&dsh_main_state);
                 dsh_history_load();
+#endif
         }
         if (interactive) {
                 (void)u_puts(1, "DSH V1");

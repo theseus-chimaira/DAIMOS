@@ -1,5 +1,31 @@
 # DSH TODO
 
+## V25 OPTIONAL HISTORY BUILD (2026-10-13)
+
+DSH history is now compile-time optional and **off by default** for the
+32K memory objective.  Define `DSH_ENABLE_HISTORY=1` in GCCFLAGS to
+restore interactive Ctrl-P history and HISTFILE loading/appending.
+No history source was removed.  History-on now uses the shared heap for
+the sixteen-record cache, rather than 496 fixed BSS words; this is
+compatible with nested temporary argv lifetimes.  The enabled mode must
+still receive dedicated history/HISTFILE regressions before acceptance.
+
+GCC PDP-6 linker measurements (octal words):
+
+| | v24 | v25 off | v25 on |
+| --- | ---: | ---: | ---: |
+| Image | 032104 | 031321 | 032120 |
+| BSS | 013742 | 012751 | 012763 |
+
+The default build saves 0563 octal image and 0771 octal BSS words.
+The history-disabled GCC build passes full SIMH conformance 115/115.
+The history-enabled build links but its dedicated HISTFILE tests remain
+to be run with `DSH_ENABLE_HISTORY=1`.
+Remaining image reduction to strictly below 030000 is 01322 octal.
+Continue examining AST/function payload BSS, stack and physical BRK
+high-water; do not reduce language limits or introduce overlays.
+
+
 V24 SCRIPT WORKSPACE INITIALIZATION (2026-10-13): `dsh_script_init`
 now clears its word-sized token/workspace record with one linear pass,
 instead of calling the SIXBIT token clearer 32 times.  GCC DXR image
