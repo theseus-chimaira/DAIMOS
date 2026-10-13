@@ -41,6 +41,21 @@ int proc_packed_reserve_v1(unsigned int slot, kword_t encoded_words,
 int proc_packed_release_v1(unsigned int slot,
     struct proc_packed_v1 *descriptor);
 
+/*
+ * Prepare an aligned, PRIVATE restored process image. The caller must reload
+ * the omitted PURE prefix before publishing the result or freeing the packed
+ * source. The prepared destination remains PINNED until the caller has
+ * reloaded PURE and committed its VM base, or invokes abort_restore.
+ * The eventual commit path must release that pin after publishing the base.
+ * No residency or scheduler state is modified by this API.
+ */
+typedef int (*proc_packed_decoder_v26)(const kword_t *src,
+    unsigned int encoded_words, kword_t *dst, unsigned int decoded_words);
+int proc_packed_prepare_restore_v26(unsigned int slot,
+    const struct proc_packed_v1 *descriptor, kword_t process_words,
+    proc_packed_decoder_v26 decoder, kword_t *restored_base);
+int proc_packed_abort_restore_v26(unsigned int slot, kword_t restored_base);
+
 #define PROC_PACKED_SPAN(base, words) \
         ((((kword_t)(words) & MM_HALF_MASK) << 18U) | \
          ((kword_t)(base) & MM_HALF_MASK))

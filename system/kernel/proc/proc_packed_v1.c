@@ -9,6 +9,7 @@
 #include "proc_packed_v1.h"
 #include "mm_internal.h"
 #include "proc.h"
+#include "vm_pdp6.h"
 
 int
 proc_packed_reserve_v1(unsigned int slot, kword_t encoded_words,
@@ -53,4 +54,84 @@ proc_packed_release_v1(unsigned int slot,
                 descriptor->layout = 0UL;
         }
         return rc;
+}
+
+/*
+ * Prepare the writable suffix in a fresh APR-aligned process allocation.
+ * The packed input remains owned by SLOT; no process state is changed.
+ * Calling code must finish PURE reload and validate the complete image
+ * before releasing the packed source and publishing the new VM base.
+ *
+ * Avoid MM reclaim recursion: reclaim can choose the very process being
+ * restored. A shortage is a retryable failure, not an excuse to evict it.
+ */
+int
+proc_packed_prepare_restore_v26(unsigned int slot,
+    const struct proc_packed_v1 *descriptor, kword_t process_words,
+    proc_packed_decoder_v26 decoder, kword_t *restored_base)
+{
+        kword_t base;
+        kword_t packed_base;
+        unsigned int encoded;
+        unsigned int decoded;
+        unsigned int offset;
+        int rc;
+
+        if (!descriptor || !decoder || !restored_base ||
+            slot == 0U || slot >= PROC_MAX_SLOTS ||
+            process_words == 0UL || process_words > MM_HALF_MASK ||
+            *restored_base != 0UL)
+                return MM_ERR_INVAL;
+        encoded = (unsigned int)PROC_PACKED_WORDS(descriptor);
+        decoded = (unsigned int)PROC_PACKED_DECODED(descriptor);
+        offset = (unsigned int)PROC_PACKED_OFFSET(descriptor);
+        packed_base = PROC_PACKED_BASE(descriptor);
+        if (!encoded || !decoded || !packed_base ||
+            offset > process_words || decoded > process_words - offset)
+                return MM_ERR_INVAL;
+
+        /* Pin source before allocating: no MM movement during decoding. */
+        rc = mm_pin(packed_base);
+        if (rc != MM_OK)
+                return rc;
+        rc = mm_alloc_aligned_noreclaim(process_words,
+            VM_PDP6_ALIGN_WORDS, MM_TYPE_PROCESS, slot, MM_ALLOC_HIGH,
+            &base);
+        if (rc != MM_OK)
+                goto fail_source;
+        rc = mm_pin(base);
+        if (rc != MM_OK)
+                goto fail_destination;
+        if (decoder((const kword_t *)(unsigned long)packed_base, encoded,
+            (kword_t *)(unsigned long)(base + offset), decoded) !=
+            (int)decoded) {
+                rc = MM_ERR_INVAL;
+                goto fail_decode;
+        }
+        /* Remain pinned while unpublished: compaction has no VM base yet. */
+        (void)mm_unpin(packed_base);
+        *restored_base = base;
+        return MM_OK;
+
+fail_decode:
+        (void)mm_unpin(base);
+fail_destination:
+        (void)mm_free(base, MM_TYPE_PROCESS, slot);
+fail_source:
+        (void)mm_unpin(packed_base);
+        return rc;
+}
+
+/** Release the pin and allocation of an unpublished prepared image. */
+int
+proc_packed_abort_restore_v26(unsigned int slot, kword_t restored_base)
+{
+        int rc;
+
+        if (!restored_base || slot == 0U || slot >= PROC_MAX_SLOTS)
+                return MM_ERR_INVAL;
+        rc = mm_unpin(restored_base);
+        if (rc != MM_OK)
+                return rc;
+        return mm_free(restored_base, MM_TYPE_PROCESS, slot);
 }

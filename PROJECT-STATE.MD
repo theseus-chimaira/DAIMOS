@@ -1,3 +1,23 @@
+## 2026-10-13 PACKED PROCESS RESTORE PREPARATION V26
+
+An inactive `proc_packed_prepare_restore_v26()` API now allocates a fresh
+APR-aligned process extent without invoking recursive reclaim, pins the
+packed source across allocation/decoding, and decodes its retained writable
+suffix through a caller-provided codec. Decode failures release the new
+extent and leave the packed descriptor unchanged. The prepared destination
+stays MM-pinned because the unpublished VM base cannot safely be discovered
+by compaction. `proc_packed_abort_restore_v26()` unpins and frees it.
+
+This is *not* a complete process restoration transaction: the PURE prefix
+still requires executable backing reload, and commit must atomically install
+the VM base/storage discriminator and release the packed source and destination
+pin. The identity codec is not used for eviction. PDP-6 GCC/DAS standalone
+assembly succeeds (206 text words for the whole inactive proc_packed object).
+No new KCORE code is linked and no runtime RAM or size savings are claimed.
+The planning target continues to reserve 100 extra KCORE words above the
+current measured state. Follow-on behavioral and failure tests belong in
+daimos-testkit before integration into the live lifecycle.
+
 ## 2026-10-13 GCC KCORE SWAP DETACH CONSOLIDATION V24
 
 Consolidated the resident executable-backing clear and legacy nonresident
