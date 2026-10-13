@@ -58,6 +58,9 @@
         .globl d6fs_minit
 .endif
         .globl mfsdev_minit
+.if MONITORFS_MRES_ENABLED
+        .globl monitorfs_mres_package
+.endif
         .globl cty_mres_package
         .globl clk_mres_package
 .if KINIT_FULL
@@ -156,5 +159,9 @@ __minit_table_begin:
 .if D6FS_FS_ENABLED
         .word d6fs_minit,,d6fs_mres_package
 .endif
+.if MONITORFS_MRES_ENABLED
+        .word mfsdev_minit,,monitorfs_mres_package
+.else
         .word mfsdev_minit,,0
+.endif
 __minit_table_end:

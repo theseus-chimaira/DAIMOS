@@ -56,3 +56,16 @@ Use tools/host/monitorfs-mres-probe-v15.py to generate this variant from the
 single source of truth; do not maintain a divergent copy. DLINK reports
 1030 initialized words and no BSS. Installation, KCORE removal and functional
 tests are still required; this result alone saves no RAM.
+
+## Experimental integrated GCC build (v16)
+
+MONITORFS_MRES_ENABLED=1 installs the MonitorFS MRES at the final MINIT
+table entry and patches nine KCORE-resident VFS entry jumps to its exports.
+The default resident implementation is unchanged until boot validation.
+
+The GCC fixed KCORE endpoint drops from 023360 to 021375 octal, while the
+MRES adds 1030 resident words. Consequently the change saves 1011 words
+of low-core address space but increases total permanent RAM by about 19
+words. GCC KINIT linking and the profile-aware permanent-size report pass.
+Runtime/boot testing is blocked by the missing external sixmd-check tool
+during native DAS image production. Do not claim functional acceptance yet.

@@ -6,7 +6,7 @@ set -eu
 
 usage()
 {
-        echo "usage: $0 --kcore-map MAP --build DIR --objdump TOOL [--omit-blockset] [--no-blockset] [--omit-badmap] [--omit-dtfs] [--omit-d6fs] [--limit OCTAL]" >&2
+        echo "usage: $0 --kcore-map MAP --build DIR --objdump TOOL [--packages 'NAMES'] [--omit-blockset] [--no-blockset] [--omit-badmap] [--omit-dtfs] [--omit-d6fs] [--limit OCTAL]" >&2
         exit 2
 }
 
@@ -19,11 +19,13 @@ omit_badmap=0
 omit_dtfs=0
 omit_d6fs=0
 limit_arg=040000
+packages=
 while [ $# -gt 0 ]; do
         case "$1" in
         --kcore-map) [ $# -ge 2 ] || usage; kmap=$2; shift 2 ;;
         --build) [ $# -ge 2 ] || usage; build=$2; shift 2 ;;
         --objdump) [ $# -ge 2 ] || usage; objdump=$2; shift 2 ;;
+        --packages) [ $# -ge 2 ] || usage; packages=$2; shift 2 ;;
         --omit-blockset) omit_blockset=1; shift ;;
         --no-blockset) no_blockset=1; shift ;;
         --omit-badmap) omit_badmap=1; shift ;;
@@ -71,8 +73,13 @@ mres_words()
 
 total=$kcore
 blockset_words=0
-for name in cty clk ptr ptp lpt cr cp dcs ge dpy tty wcnsls ocnsls dsk tape slv \
-    drm memfs dtfs blockset logstore badmap d6fs; do
+if [ -z "$packages" ]; then
+        packages='cty clk ptr ptp lpt cr cp dcs ge dpy tty wcnsls ocnsls dsk tape slv drm memfs dtfs blockset logstore badmap d6fs'
+fi
+for name in $packages; do
+        case "$name" in
+        *[!a-z0-9]*|'') echo "invalid MRES package name: $name" >&2; exit 2 ;;
+        esac
         if [ "$name" = blockset ] && [ "$no_blockset" -eq 1 ]; then
                 continue
         fi

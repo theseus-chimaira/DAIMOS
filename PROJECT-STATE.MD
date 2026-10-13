@@ -1,3 +1,22 @@
+## 2026-10-13 MONITORFS GCC MRES INTEGRATION V16 (BOOT PENDING)
+
+The opt-in MONITORFS_MRES_ENABLED=1 configuration substitutes nine KCORE
+dispatch words for the original MonitorFS implementation. An MRES package
+is installed at the final MINIT entry and each VFS-facing jump is patched
+to its relocated export. The package comes from the original assembly source.
+
+GCC KCORE low end: 023360 -> 021375 octal, a reduction of 01763 octal
+(1011 decimal) words. The installed MonitorFS MRES requires 1030 words,
+so total permanent RAM increases by roughly 19 words; this is not net
+memory recovery. KINIT image linking succeeds. The profile-aware
+permanent-size report gives KCORE+MRES 030704 octal, PERMANENT_LAST
+030763 octal. The KCORE 020000 limit still needs 01376 octal more savings.
+
+Full image generation and SIMH testing remain BLOCKED: the external DAS
+native self-build manual-check requires sixmd-check, which is absent from
+the configured tool prefix. The MRES configuration is opt-in until those
+tests validate boot and MonitorFS semantics.
+
 ## 2026-10-13 MONITORFS MRES LINK PROBE V15
 
 The standalone MonitorFS MRES link probe succeeds under DAS/DLINK against

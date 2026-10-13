@@ -1517,6 +1517,38 @@ d6fs_minit(void)
 void
 mfsdev_minit(void)
 {
+#if defined(MONITORFS_MRES_ENABLED) && MONITORFS_MRES_ENABLED
+        extern kword_t mfsdev_lookup_entry __asm__("mfsdev_lookup");
+        extern kword_t mfsdev_readdir_entry __asm__("mfsdev_readdir");
+        extern kword_t mfsdev_stat_entry __asm__("mfsdev_stat");
+        extern kword_t mfsdev_readchar_entry __asm__("mfsdev_readchar");
+        extern kword_t mfsproc_lookup_entry __asm__("mfsproc_lookup");
+        extern kword_t mfsproc_readdir_entry __asm__("mfsproc_readdir");
+        extern kword_t mfsproc_stat_entry __asm__("mfsproc_stat");
+        extern kword_t mfsproc_read_words_entry __asm__("mfsproc_read_words");
+        extern kword_t mfsproc_format_slot_entry __asm__("mfsproc_format_slot");
+        unsigned int base;
+
+        base = minit_install((kword_t)SIXBIT("MFS   "));
+        storage_patch_jump(&mfsdev_lookup_entry,
+            minit_export((kword_t)SIXBIT("MFS   "), base, 0U));
+        storage_patch_jump(&mfsdev_readdir_entry,
+            minit_export((kword_t)SIXBIT("MFS   "), base, 1U));
+        storage_patch_jump(&mfsdev_stat_entry,
+            minit_export((kword_t)SIXBIT("MFS   "), base, 2U));
+        storage_patch_jump(&mfsdev_readchar_entry,
+            minit_export((kword_t)SIXBIT("MFS   "), base, 3U));
+        storage_patch_jump(&mfsproc_lookup_entry,
+            minit_export((kword_t)SIXBIT("MFS   "), base, 4U));
+        storage_patch_jump(&mfsproc_readdir_entry,
+            minit_export((kword_t)SIXBIT("MFS   "), base, 5U));
+        storage_patch_jump(&mfsproc_stat_entry,
+            minit_export((kword_t)SIXBIT("MFS   "), base, 6U));
+        storage_patch_jump(&mfsproc_read_words_entry,
+            minit_export((kword_t)SIXBIT("MFS   "), base, 7U));
+        storage_patch_jump(&mfsproc_format_slot_entry,
+            minit_export((kword_t)SIXBIT("MFS   "), base, 8U));
+#endif
 #define MFSDEV_PUBLISH(id, text) \
         do { \
                 if ((mfsdev_present & (kword_t)MONITORFS_PRESENT(id)) != 0UL) \

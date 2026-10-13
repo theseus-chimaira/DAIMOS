@@ -8,6 +8,7 @@ PDP10_GCC ?= pdp10-dec-none-gcc
 # KCC is the default; the testkit exports COMPILER for either toolchain.
 # An explicit command-line CC still overrides this default.
 COMPILER ?= kcc
+MONITORFS_MRES_ENABLED ?= 0
 CC = ${COMPILER}
 KCCFLAGS ?= -Pgnu99 -O -x=pdp6 -m=gas
 GCCFLAGS ?= -std=gnu99 -Os -march=pdp6 -mcpu=pdp6
@@ -290,7 +291,7 @@ kcore: ${KCORE_FIXED_ASM} ${MRES_ASM}
 
 ${KINIT_C_ASM} ${KINIT_LATE_C_ASM}: ${KINIT_SRCS} ${KINIT_LATE_SRCS} ${KERNEL_HEADERS} ${VERSION_FILE}
 	@mkdir -p ${BUILD}
-	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DKINIT_STACK_RESERVE_WORDS=${KINIT_STACK_RESERVE_WORDS} -DKINIT_STACK_WATERMARK=${KINIT_STACK_WATERMARK} -DKINIT_BADMAP=${KINIT_BADMAP} -DKINIT_FULL=${KINIT_FULL} -DD6FS_FS_ENABLED=${D6FS_FS_ENABLED} -DBLOCKSET_FS_ENABLED=${BLOCKSET_FS_ENABLED} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
+	@base=`basename "$@" .s`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; debug=; if test "${KINIT_DEBUG}" = 1; then debug=-DKINIT_DEBUG; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DDAIMON_VERSION_TEXT='"V${DAIMON_VERSION}  "' -DKINIT_STACK_RESERVE_WORDS=${KINIT_STACK_RESERVE_WORDS} -DKINIT_STACK_WATERMARK=${KINIT_STACK_WATERMARK} -DKINIT_BADMAP=${KINIT_BADMAP} -DKINIT_FULL=${KINIT_FULL} -DMONITORFS_MRES_ENABLED=${MONITORFS_MRES_ENABLED} -DD6FS_FS_ENABLED=${D6FS_FS_ENABLED} -DBLOCKSET_FS_ENABLED=${BLOCKSET_FS_ENABLED} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DPROC_STACK_WATERMARK=${PROC_STACK_WATERMARK} $$debug ${INCLUDES} -S "$$src" -o "$@"
 
 ${BUILD}/bootbanner_generated.s: ${VERSION_FILE} ${MKBOOTBANNER_DEP}
 	@mkdir -p ${BUILD}
@@ -485,7 +486,7 @@ COPY_ASM_TARGETS = $(BUILD)/ret.s \
 
 ${COPY_ASM_TARGETS}: ${COPY_ASM_SRCS}
 	@mkdir -p ${BUILD}
-	@base=`basename "$@"`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base"; then src="$$d/$$base"; break; fi; done; test -n "$$src"; cp "$$src" "$@"
+	@base=`basename "$@"`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base"; then src="$$d/$$base"; break; fi; done; test -n "$$src"; if test "$$base" = monitorfs_runtime.s && test "${MONITORFS_MRES_ENABLED}" = 1; then src=fs/monitorfs_dispatch_v14.s; fi; cp "$$src" "$@"
 
 clean:
 	rm -rf ${BUILD}

@@ -72,6 +72,8 @@ ifeq ($(ROOT),tape)
 override KINIT_BADMAP = 0
 endif
 KINIT_STACK_WATERMARK ?= 0
+# Experimental complete MonitorFS relocation in low-memory configuration.
+MONITORFS_MRES_ENABLED ?= 0
 PDP10_GCC ?= pdp10-dec-none-gcc
 PDP10_OBJDUMP ?= pdp10-objdump
 PDP10_KCC ?= kcc
@@ -323,13 +325,14 @@ BLOCKSET_MRES_OBJ = $(BUILD)/blockset-mres.dobj
 BADMAP_MRES_OBJ = $(BUILD)/badmap-mres.dobj
 LOGSTORE_MRES_OBJ = $(BUILD)/logstore-mres.dobj
 D6FS_MRES_OBJ = $(BUILD)/d6fs-mres.dobj
+MONITORFS_MRES_OBJ = $(BUILD)/monitorfs-mres.dobj
 ifeq ($(BOOT_PROFILE),lowmem)
-MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(DCS_MRES_OBJ) \
+MRES_PACKAGE_OBJS = $(if $(filter 1,$(MONITORFS_MRES_ENABLED)),$(MONITORFS_MRES_OBJ)) $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(DCS_MRES_OBJ) \
 	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(DSK_MRES_OBJ) $(if $(filter 1,$(BLOCKSET_FS_ENABLED)),$(BLOCKSET_MRES_OBJ)) \
 	$(if $(filter 1,$(D6FS_FS_ENABLED)),$(D6FS_MRES_OBJ))
 KINIT_FULL = 0
 else
-MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PTR_MRES_OBJ) \
+MRES_PACKAGE_OBJS = $(if $(filter 1,$(MONITORFS_MRES_ENABLED)),$(MONITORFS_MRES_OBJ)) $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PTR_MRES_OBJ) \
 	$(PTP_MRES_OBJ) $(LPT_MRES_OBJ) $(CR_MRES_OBJ) $(CP_MRES_OBJ) \
 	$(DCS_MRES_OBJ) $(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) \
 	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(TAPE_MRES_OBJ) $(DSK_MRES_OBJ) $(DRM_MRES_OBJ) \
@@ -633,7 +636,7 @@ $(MEDIA_DIR): | $(BUILD)
 	mkdir -p $@
 
 $(KINIT_STAMP): $(KERNEL_INPUTS) Makefile $(PDP10_TARGET_CC_DEP) $(BUILD)
-	$(MAKE) -C $(KERNEL_DIR) kinit COMPILER='$(COMPILER)' BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_STACK_RESERVE_WORDS='$(KINIT_STACK_RESERVE_WORDS)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' KINIT_BADMAP='$(KINIT_BADMAP)' KINIT_FULL='$(KINIT_FULL)' D6FS_FS_ENABLED='$(D6FS_FS_ENABLED)' BLOCKSET_FS_ENABLED='$(BLOCKSET_FS_ENABLED)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' VM_BACKEND='$(VM_BACKEND)'
+	$(MAKE) -C $(KERNEL_DIR) kinit COMPILER='$(COMPILER)' BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_STACK_RESERVE_WORDS='$(KINIT_STACK_RESERVE_WORDS)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' KINIT_BADMAP='$(KINIT_BADMAP)' KINIT_FULL='$(KINIT_FULL)' D6FS_FS_ENABLED='$(D6FS_FS_ENABLED)' BLOCKSET_FS_ENABLED='$(BLOCKSET_FS_ENABLED)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' MONITORFS_MRES_ENABLED='$(MONITORFS_MRES_ENABLED)' VM_BACKEND='$(VM_BACKEND)'
 	touch $@
 
 $(KCORE_STAMP): $(KERNEL_INPUTS) $(PDP10_TARGET_CC_DEP) $(BUILD)
@@ -655,7 +658,7 @@ $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM
 force-minit-config:
 
 $(MINIT_TABLE_ASM): $(KERNEL_DIR)/modules/module_table.s force-minit-config | $(BUILD)
-	{ echo ".set KINIT_FULL,$(KINIT_FULL)"; echo ".set KINIT_BADMAP,$(KINIT_BADMAP)"; echo ".set TAPE_FS_ENABLED,$(TAPE_FS_ENABLED)"; echo ".set D6FS_FS_ENABLED,$(D6FS_FS_ENABLED)"; echo ".set BLOCKSET_FS_ENABLED,$(BLOCKSET_FS_ENABLED)"; cat $<; } > $@
+	{ echo ".set KINIT_FULL,$(KINIT_FULL)"; echo ".set MONITORFS_MRES_ENABLED,$(MONITORFS_MRES_ENABLED)"; echo ".set KINIT_BADMAP,$(KINIT_BADMAP)"; echo ".set TAPE_FS_ENABLED,$(TAPE_FS_ENABLED)"; echo ".set D6FS_FS_ENABLED,$(D6FS_FS_ENABLED)"; echo ".set BLOCKSET_FS_ENABLED,$(BLOCKSET_FS_ENABLED)"; cat $<; } > $@
 
 $(MINIT_TABLE_OBJ): $(MINIT_TABLE_ASM) $(BUILD)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
@@ -792,6 +795,19 @@ $(MEMFS_MRES_OBJ): $(BUILD)/memfs_data.dobj $(BUILD)/memfs_snapshot.dobj $(BUILD
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/memfs-mres.dxr -M $(BUILD)/memfs-mres.map \
 	    -R $@ -N memfs_mres_package -X memfs_mres_dispatch -X memfs_mres_usage -X memfs_data_reclaim -X memfs_mres_shutdown \
 	    $(BUILD)/memfs_data.dobj $(BUILD)/memfs_snapshot.dobj $(BUILD)/memfs_runtime.dobj
+
+$(MONITORFS_MRES_OBJ): $(BUILD)/monitorfs_mres_v16.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/monitorfs-mres.dxr -M $(BUILD)/monitorfs-mres.map \
+	    -R $@ -N monitorfs_mres_package \
+	    -X mfsdev_lookup_mres_v15 -X mfsdev_readdir_mres_v15 \
+	    -X mfsdev_stat_mres_v15 -X mfsdev_readchar_mres_v15 \
+	    -X mfsproc_lookup_mres_v15 -X mfsproc_readdir_mres_v15 \
+	    -X mfsproc_stat_mres_v15 -X mfsproc_read_words_mres_v15 \
+	    -X mfsproc_format_slot_mres_v15 $(BUILD)/monitorfs_mres_v16.dobj
+
+$(BUILD)/monitorfs_mres_v16.dobj: $(KERNEL_DIR)/fs/monitorfs_runtime.s $(PROJECT_ROOT)/tools/host/monitorfs-mres-probe-v15.py | $(BUILD)
+	python3 $(PROJECT_ROOT)/tools/host/monitorfs-mres-probe-v15.py $(KERNEL_DIR)/fs/monitorfs_runtime.s $(BUILD)/monitorfs_mres_v16.s
+	$(DAS) $(DASFLAGS) -C -O $@ $(BUILD)/monitorfs_mres_v16.s
 
 $(DTFS_MRES_FOLD_PLAN): $(BUILD)/dtfs.dobj $(BUILD)/dtfs_runtime.dobj \
 	    $(BUILD)/tsfs.dobj $(BUILD)/tsfs_runtime.dobj $(P10FOLD_DEP)
@@ -1298,7 +1314,7 @@ image: $(SIMH_INI)
 
 permanent-size: $(KCORE_MAP) $(MRES_PACKAGE_OBJS)
 	@./image/report-permanent.sh --kcore-map $(KCORE_MAP) --build $(BUILD) \
-	    --objdump $(PDP10_OBJDUMP) --omit-blockset \
+	    --objdump $(PDP10_OBJDUMP) --packages '$(patsubst %-mres.dobj,%,$(notdir $(MRES_PACKAGE_OBJS)))' --omit-blockset \
 	    $(if $(filter 0,$(TAPE_FS_ENABLED)),--omit-dtfs) \
 	    $(if $(filter 0,$(D6FS_FS_ENABLED)),--omit-d6fs) \
 	    $(if $(filter 0,$(BLOCKSET_FS_ENABLED)),--no-blockset) \
