@@ -1,5 +1,12 @@
 # KCORE compressed-process split: staged implementation v1
 
+V39 stages a single guarded teardown boundary for exit, abort and slot
+reuse. Under lifecycle exclusion and TRANSITION, RESIDENT/DISK are left to
+the existing VM destructor; PACKED requires a configured layout and exact
+MM release through v37 before the VM destructor may proceed. The hook is
+inactive pending paired KINIT registry activation and process teardown
+integration; codec/eviction remain deferred.
+
 V38 stages boot-time allocation for either descriptor representation with
 one dynamically owned kernel extent. The caller supplies actual descriptor
 word budget and required packed concurrency; KINIT is not yet wired to it.

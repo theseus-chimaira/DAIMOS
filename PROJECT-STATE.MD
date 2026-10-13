@@ -1,3 +1,24 @@
+## 2026-10-13 GUARDED PACKED PROCESS TEARDOWN V39
+
+Added an inactive `proc_packed_teardown_guard_v39` interface for the common
+VM destruction boundary used by normal process exit and failed-creation
+cleanup. It requires process lifecycle TRANSITION, examines the explicit
+two-bit per-slot storage mode, and leaves RESIDENT or DISK teardown to the
+existing VM code. PACKED requires an installed, matching descriptor layout;
+the guard invokes the common v37 MM-authoritative release and returns an
+error if ownership, MM pins, or metadata are inconsistent. In that case
+the caller MUST NOT clear the VM or reuse the process slot. An invalid
+storage mode also fails closed. There is no compressor dependency.
+
+PDP-6 GCC/DAS standalone build passed (49 text words before folding).
+Testkit `packed-teardown-v39` passed for dense and sparse layouts, checking
+PACKED cleanup and reuse, failed pinned release, absent registration, and
+RESIDENT/DISK/invalid discriminators. The guard is NOT currently called
+from `vm_space_destroy` or linked into production KCORE: KINIT has not yet
+installed a persistent packed registry, and installing the hook alone would
+leave an unusable PACKED path. No active KCORE or resident RAM savings
+are claimed. Codec integration remains deferred.
+
 ## 2026-10-13 PACKED LAYOUT BOOT PREPARATION V38
 
 Added an inactive transient-boot allocator for v36 dense/sparse descriptor
