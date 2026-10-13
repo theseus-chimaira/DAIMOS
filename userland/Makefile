@@ -246,7 +246,7 @@ $(USERLAND_BUILD)/init/%.dobj: %.s
 
 $(USERLAND_BUILD)/supervisor/%.dobj: %.c
 	mkdir -p $(dir $@)
-	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
+	$(KCC) $(KCCFLAGS) $(CPPFLAGS) $(if $(filter 1,$(SUPERVISOR_IDLE_TTY_DISPATCH)),-DSUPERVISOR_IDLE_TTY_DISPATCH,) -S $< -o $(@:.dobj=.s)
 	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
 
 # PID 1 emits four-word events; LOGSTORE owns a temporary full-size record.

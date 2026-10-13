@@ -1,3 +1,16 @@
+## ON-DEMAND PID 1 LOGIN DISPATCH (2026-10-13, V5)
+
+An opt-in `SUPERVISOR_IDLE_TTY_DISPATCH=1` build now works on the PDP-6
+simulator. For the three default INITTAB LOGIN terminals it creates
+no idle LOGIN processes. CTY0 and DCS0 activation, ROOT -> DSH,
+LOGSTORE persistence and logout -> idle -> input -> LOGIN are verified.
+PS reports PID 1 at 2048 decimal words; v5 image 001420, BSS 000053,
+stack 000400, origin 000020 require 002113 octal words, rounded to
+004000 (two APR blocks). One-APR shrink is the next task. See
+`design/SUPERVISOR-IDLE-TTY-ACTIVATE-20261013-v5.MD` for the limits:
+no completed 32K or GE/concurrent DCS acceptance and full DSH regression
+deferred until the dispatcher is ready for default activation.
+
 ## PID 1 IDLE TTY SCANNER ACTIVATION (2026-10-13, V4)
 
 DCS/GE MRES now export an opt-in idle scanner-arm service, patched by

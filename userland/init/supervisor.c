@@ -4,6 +4,21 @@
 #define INIT_MAX_ENTRIES 8U
 #define INIT_RESPAWN 1U
 #define INIT_ONCE 2U
+#ifdef SUPERVISOR_IDLE_TTY_DISPATCH
+#define INIT_IDLE 4U
+static kword_t idle_mask;
+static unsigned int idle_enabled;
+
+/* Exact existing INITTAB LOGIN executable: /SYSTEM/EXEC/LOGIN.  Matching
+ * on the packed path avoids linking any additional SIXBIT string library. */
+static int
+is_login_path(const kword_t *path)
+{
+        return path[0] == 18UL && path[1] == 0176371636445UL &&
+            path[2] == 0551745704543UL &&
+            path[3] == 0175457475156UL;
+}
+#endif
 struct init_entry {
         unsigned int tty, output_sink, action, pid;
         /* EXEC argv records reside below the initial user stack pointer
@@ -13,6 +28,43 @@ struct init_entry {
 };
 static struct init_entry init_entries[INIT_MAX_ENTRIES];
 static unsigned int init_count;
+static int spawn_entry(struct init_entry *e);
+
+#ifdef SUPERVISOR_IDLE_TTY_DISPATCH
+/* Called only by PID 1. The idle mask never includes a running child's TTY.
+ * Hardware receive state is retained until LOGIN consumes its first byte. */
+static void
+dispatch_ready(void)
+{
+        kword_t ready;
+        kword_t bit;
+        unsigned int i;
+        struct init_entry *e;
+        int result;
+
+        result = dsys_ttyctl(SYS_TTYCTL_IDLEGET, 0U, 0U);
+        if (result < 0)
+                return;
+        ready = (kword_t)(unsigned int)result;
+        for (i = 0U; i < init_count; ++i) {
+                e = &init_entries[i];
+                bit = 1UL << e->tty;
+                if (!(e->action & INIT_IDLE) || e->pid != 0U ||
+                    !(ready & bit))
+                        continue;
+                idle_mask &= ~bit;
+                (void)dsys_ttyctl(SYS_TTYCTL_IDLESET,
+                    (unsigned int)idle_mask, 0U);
+                if (spawn_entry(e) < 0) {
+                        (void)ulog_event(ULOG_SEV_ERROR, ULOG_SRC_INIT,
+                            ULOG_INIT_RUN_FAIL, (kword_t)i);
+                        idle_mask |= bit;
+                        (void)dsys_ttyctl(SYS_TTYCTL_IDLESET,
+                            (unsigned int)idle_mask, 0U);
+                }
+        }
+}
+#endif
 
 static int
 spawn_entry(struct init_entry *e)
@@ -105,6 +157,10 @@ main(int argc, kword_t **argv)
         kword_t status;
         unsigned int i;
         int pid;
+#ifdef SUPERVISOR_IDLE_TTY_DISPATCH
+        kword_t bit;
+        int generation;
+#endif
 
         if (dsys_getpid() != 1 || argc < 2 || argc > 16 || (argc & 1)) {
                 (void)u_puts(2, "SUPERVISOR: INVALID PID/CONFIG");
@@ -113,17 +169,37 @@ main(int argc, kword_t **argv)
         }
         init_count = (unsigned int)argc / 2U;
         for (i = 0U; i < init_count; ++i) {
-                if (read_entry(&init_entries[i], argv[i * 2U],
-                    argv[i * 2U + 1U]) != 0) {
+            if (read_entry(&init_entries[i], argv[i * 2U],
+                argv[i * 2U + 1U]) != 0) {
                         (void)u_puts(2, "SUPERVISOR: INVALID INITTAB ENTRY");
                         (void)u_crlf(2);
-                        return 1;
+                return 1;
+            }
+#ifdef SUPERVISOR_IDLE_TTY_DISPATCH
+            if (init_entries[i].action == INIT_RESPAWN &&
+                is_login_path(init_entries[i].path)) {
+                bit = 1UL << init_entries[i].tty;
+                if (!(idle_mask & bit)) {
+                    init_entries[i].action |= INIT_IDLE;
+                    idle_mask |= bit;
                 }
+            }
+#endif
         }
+#ifdef SUPERVISOR_IDLE_TTY_DISPATCH
+        if (idle_mask != 0UL &&
+            dsys_ttyctl(SYS_TTYCTL_IDLESET,
+                (unsigned int)idle_mask, 0U) == 0)
+                idle_enabled = 1U;
+#endif
         (void)ulog_event(ULOG_SEV_INFO, ULOG_SRC_INIT, ULOG_INIT_READY,
             (kword_t)init_count);
         for (i = 0U; i < init_count; ++i) {
-                if (spawn_entry(&init_entries[i]) != 0) {
+#ifdef SUPERVISOR_IDLE_TTY_DISPATCH
+            if (idle_enabled && (init_entries[i].action & INIT_IDLE))
+                continue;
+#endif
+            if (spawn_entry(&init_entries[i]) != 0) {
                         (void)ulog_event(ULOG_SEV_ERROR, ULOG_SRC_INIT,
                             ULOG_INIT_RUN_FAIL, (kword_t)i);
                         (void)u_puts(2, "INIT: RUN FAILED");
@@ -131,7 +207,22 @@ main(int argc, kword_t **argv)
                 }
         }
         for (;;) {
-                pid = dsys_wait(0U, &status, 0U);
+#ifdef SUPERVISOR_IDLE_TTY_DISPATCH
+            if (idle_enabled && idle_mask != 0UL) {
+                /* Epoch BEFORE both condition checks closes the window
+                 * between child reaping and sleeping on idle input. */
+                generation = dsys_ttyctl(SYS_TTYCTL_IDLEGEN, 0U, 0U);
+                dispatch_ready();
+                pid = dsys_wait(0U, &status, SYS_WAIT_NOHANG);
+                if (pid <= 0) {
+                    if (idle_mask != 0UL && generation >= 0)
+                        (void)dsys_ttyctl(SYS_TTYCTL_IDLEWAIT,
+                            (unsigned int)generation, 0U);
+                    continue;
+                }
+            } else
+#endif
+            pid = dsys_wait(0U, &status, 0U);
                 if (pid < 0)
                         continue;
                 if (SYS_WAIT_STATUS_KIND(status) != SYS_WAIT_EXITED)
@@ -140,7 +231,15 @@ main(int argc, kword_t **argv)
                         if (init_entries[i].pid != (unsigned int)pid)
                                 continue;
                         init_entries[i].pid = 0U;
-                        if (init_entries[i].action == INIT_RESPAWN &&
+#ifdef SUPERVISOR_IDLE_TTY_DISPATCH
+                        if (idle_enabled &&
+                            (init_entries[i].action & INIT_IDLE)) {
+                            idle_mask |= 1UL << init_entries[i].tty;
+                            (void)dsys_ttyctl(SYS_TTYCTL_IDLESET,
+                                (unsigned int)idle_mask, 0U);
+                        } else
+#endif
+                        if (init_entries[i].action & INIT_RESPAWN &&
                             spawn_entry(&init_entries[i]) != 0) {
                                 (void)ulog_event(ULOG_SEV_ERROR, ULOG_SRC_INIT,
                                     ULOG_INIT_RESPAWN_FAIL, (kword_t)i);
