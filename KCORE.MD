@@ -32,6 +32,10 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 - [x] Stage inline KPACK v073 ABI adapters to the v071 encoder and v070
   direct-buffer decoder; native PDP-6 roundtrip and AC10..AC16 checks pass.
   Registry-aware eviction/restore and scheduler connections remain pending.
+- [x] v077 size-negotiated packed eviction measures compressed words while
+  pinned, allocates an exact-sized MM extent, then verifies encode parity.
+  Host MM tests cover two stream sizes and dense/sparse restore. Native
+  no-allocation sizer and scheduler integration remain open.
 - [x] v076 host-MM transaction test uses the real inline v068 codec for
   dense/sparse v45 eviction followed by v46 restore; verifies PURE prefix,
   restored content, ownership and registry retirement. Fixed a v45 leaked
