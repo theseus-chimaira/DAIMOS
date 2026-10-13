@@ -1,3 +1,11 @@
+## 2026-10-13 MONITORFS MRES DEPENDENCY ANALYSIS V13
+
+See design/monitorfs-mres-extraction-v13.md. The 1030-word GCC MonitorFS
+object is referenced directly from VFS; its MINIT table entry currently has
+no MRES package. Moving it needs resident dispatch and pinned service
+lifetime. No resident code is removed in this stage, no boot regression is
+claimed, and the GCC KCORE endpoint remains 023360 octal.
+
 ## 2026-10-13 GCC KCORE REPEATABLE SIZE AUDIT V12
 
 Added tools/host/kcore-size-audit-v1.sh to report a selected fixed-KCORE
