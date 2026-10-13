@@ -1,3 +1,25 @@
+## 2026-10-13 PACKED DESCRIPTOR LIFETIME REGISTRY V33
+
+Added a separate, inactive slot-indexed packed descriptor registry. Each
+descriptor holds two 36-bit words. The owner checked at registration and
+teardown is the MM extent type, owner slot, exact physical base and length;
+registration rejects already-filled slots and requires PACKED mode plus the
+existing process transition exclusion. Teardown checks the same ownership,
+refuses pinned extents and preserves the descriptor and PACKED mode on MM
+release failure; successful release clears both descriptor words and resets
+the mode to RESIDENT for safe reuse of the slot. The registry consumes no
+permanent RAM until enabled and allocated for the runtime slot count.
+
+PDP-6 GCC/DAS standalone compilation passed. daimos-testkit
+`packed-lifetime-v33` tests duplicate publication, pinned-release refusal,
+successful cleanup, and rejection of MM ownership mismatches; the test
+passes. These APIs are not yet linked into active KCORE or attached to
+vm_space_destroy / process exit, because scheduler PACKED processes and the
+production codec are not enabled. Before enabling packed eviction, allocate
+the registry at boot, bind the existing v32/v31 descriptor argument to its
+slot entry, and ensure all process destroy/abort/slot reuse paths invoke
+checked descriptor teardown. No KCORE saving is claimed.
+
 ## 2026-10-13 PACKED PROCESS EVICTION TRANSACTION V32
 
 Staged the complement to v31 restore: `proc_packed_evict_transaction_v32`

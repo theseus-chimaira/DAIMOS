@@ -1,5 +1,16 @@
 # KCORE compressed-process split: staged implementation v1
 
+V33 introduces an isolated, checked per-slot descriptor registry for the
+future packed lifecycle. Registration/teardown validate exact MM ownership;
+release of a pinned packed extent fails without clearing the descriptor or
+storage mode. A successful teardown frees the extent and resets the slot to
+RESIDENT mode before reuse. It is deliberately not boot-allocated or wired
+into live process destruction until packed eviction and a production codec
+are enabled. The eventual runtime table would use 2 words per configured
+slot (48 words at the current 24-slot 32K policy), not 512 words for the
+maximum architectural process count. Before activation, consider whether
+the same ownership contract can be satisfied more compactly to limit RAM.
+
 As of v32 an isolated packed eviction path complements restore v31.
 Eviction insists on true shrinkage of the retained writable suffix and
 an encoder that fills its exact allocated capacity. The rollback boundary
