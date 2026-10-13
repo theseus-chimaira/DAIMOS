@@ -10,6 +10,19 @@
 #include "mm_internal.h"
 #include "proc.h"
 #include "vm_pdp6.h"
+#include "proc_storage_map_v28.h"
+#include "proc_swap.h"
+
+/* Target physical addresses are WORD-addressed. The host testkit builds
+ * the same transaction against byte-addressed native memory and supplies
+ * an explicit scale; the PDP-6 build retains direct physical word pointers.
+ */
+#ifdef DAIMOS_TEST_HOST_WORD_ADDR
+#define PROC_PACKED_WORDPTR_V31(addr) \
+        ((kword_t *)(unsigned long)((addr) * sizeof(kword_t)))
+#else
+#define PROC_PACKED_WORDPTR_V31(addr) ((kword_t *)(unsigned long)(addr))
+#endif
 
 /* Check type, owner and exact length before trusting an MM physical address.
  * This is used only by the inactive packed-process transaction interface. */
@@ -153,4 +166,123 @@ proc_packed_abort_restore_v26(unsigned int slot, kword_t restored_base)
         if (rc != MM_OK)
                 return rc;
         return mm_free(restored_base, MM_TYPE_PROCESS, slot);
+}
+
+/*
+ * Inactive complete restore transaction. Called only with process lifecycle
+ * exclusion and PROC_F_TRANSITION held. No scheduler call may run meanwhile.
+ * The stored packed descriptor is not exposed via the legacy swap record.
+ *
+ * PURE reload happens first: for compressed executables the loader rebuilds
+ * the entire initialized image, and writable decoding must overwrite that.
+ * Keep BOTH source and destination pinned until all fallible I/O finishes.
+ */
+int
+proc_packed_restore_transaction_v31(unsigned int slot,
+    struct proc_packed_v1 *descriptor, kword_t backing,
+    proc_packed_decoder_v26 decoder,
+    proc_packed_pure_reload_v31 reload_pure)
+{
+        struct proc *p;
+        kword_t base;
+        kword_t source;
+        kword_t size;
+        unsigned int encoded;
+        unsigned int decoded;
+        unsigned int offset;
+        unsigned int shift;
+        kword_t *mode_word;
+        kword_t mode_mask;
+        int rc;
+
+        if (!descriptor || !decoder || !reload_pure || !backing ||
+            slot == 0U || slot >= proc_storage_runtime_v29.slots ||
+            !proc_storage_runtime_v29.words)
+                return MM_ERR_INVAL;
+        p = &proc_table[slot];
+        size = VM_SPACE_WORDS(p);
+        source = PROC_PACKED_BASE(descriptor);
+        encoded = (unsigned int)PROC_PACKED_WORDS(descriptor);
+        decoded = (unsigned int)PROC_PACKED_DECODED(descriptor);
+        offset = (unsigned int)PROC_PACKED_OFFSET(descriptor);
+        if (!PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) ||
+            VM_PDP6_BASE(p) != 0UL || size == 0UL ||
+            proc_swap_records == 0 ||
+            proc_swap_records[slot].state != backing ||
+            proc_storage_get_v28(&proc_storage_runtime_v29, slot) !=
+                PROC_STORAGE_PACKED ||
+            source == 0UL || encoded == 0U || decoded == 0U ||
+            offset > size || decoded > size - offset ||
+            offset + decoded != size ||
+            !proc_packed_owned_v27(slot, source, (kword_t)encoded,
+                MM_TYPE_PACKED_PROCESS))
+                return MM_ERR_INVAL;
+
+        rc = mm_pin(source);
+        if (rc != MM_OK)
+                return rc;
+        rc = mm_alloc_aligned_noreclaim(size, VM_PDP6_ALIGN_WORDS,
+            MM_TYPE_PROCESS, slot, MM_ALLOC_HIGH, &base);
+        if (rc != MM_OK)
+                goto unpin_source;
+        rc = mm_pin(base);
+        if (rc != MM_OK)
+                goto free_destination;
+
+        /* Always initialize omitted words before reading executable backing. */
+        {
+                kword_t *mem = PROC_PACKED_WORDPTR_V31(base);
+                kword_t i;
+                for (i = 0UL; i < (kword_t)offset; ++i)
+                        mem[i] = 0UL;
+        }
+        if (offset != 0U && reload_pure(backing, base) != 0) {
+                rc = MM_ERR_INVAL;
+                goto unpin_destination;
+        }
+        if (decoder(PROC_PACKED_WORDPTR_V31(source), encoded,
+            PROC_PACKED_WORDPTR_V31(base + offset), decoded) !=
+            (int)decoded) {
+                rc = MM_ERR_INVAL;
+                goto unpin_destination;
+        }
+
+        /* All I/O and decoding succeeded. The map changes under the same
+         * lifecycle exclusion as the VM base. Freeing still may fail, so do
+         * it before publication while the process remains inaccessible. */
+        rc = mm_unpin(source);
+        if (rc != MM_OK)
+                goto unpin_destination_no_source;
+        rc = mm_free(source, MM_TYPE_PACKED_PROCESS, slot);
+        if (rc != MM_OK)
+                goto unpin_destination_source_free;
+        VM_PDP6_SET_BASE(p, base);
+        /* This slot's map word was validated before the transaction and
+         * cannot change while lifecycle exclusion and TRANSITION are held. */
+        shift = (slot % PROC_STORAGE_MAP_SLOTS_PER_WORD_V28) * 2U;
+        mode_word = &proc_storage_runtime_v29.words[
+            slot / PROC_STORAGE_MAP_SLOTS_PER_WORD_V28];
+        mode_mask = (kword_t)3UL << shift;
+        *mode_word &= ~mode_mask;       /* PACKED -> RESIDENT (zero) */
+        descriptor->span = 0UL;
+        descriptor->layout = 0UL;
+        rc = mm_unpin(base);
+        if (rc != MM_OK)
+                return MM_ERR_BUSY;    /* keep TRANSITION: fatal to caller */
+        PROC_CLEAR_TRANSITION(p);
+        return MM_OK;
+
+unpin_destination_source_free:
+        /* The source still exists; its unpin succeeded. */
+        goto unpin_destination_no_source;
+unpin_destination:
+        (void)mm_unpin(source);
+unpin_destination_no_source:
+        (void)mm_unpin(base);
+free_destination:
+        (void)mm_free(base, MM_TYPE_PROCESS, slot);
+unpin_source:
+        if (rc != MM_OK)
+                return rc;
+        return MM_ERR_BUSY;
 }

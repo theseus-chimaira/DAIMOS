@@ -56,6 +56,18 @@ int proc_packed_prepare_restore_v26(unsigned int slot,
     proc_packed_decoder_v26 decoder, kword_t *restored_base);
 int proc_packed_abort_restore_v26(unsigned int slot, kword_t restored_base);
 
+/* Complete restore is staged outside the live scheduler until tested.
+ * PURE reloader receives executable backing and a pinned new process base.
+ * It must reconstruct all omitted words, including the compressed DXR case.
+ * The writable decoder is invoked AFTER this reload, so PURE reconstruction
+ * cannot overwrite saved writable state.
+ */
+typedef int (*proc_packed_pure_reload_v31)(kword_t backing, kword_t base);
+int proc_packed_restore_transaction_v31(unsigned int slot,
+    struct proc_packed_v1 *descriptor, kword_t backing,
+    proc_packed_decoder_v26 decoder,
+    proc_packed_pure_reload_v31 reload_pure);
+
 #define PROC_PACKED_SPAN(base, words) \
         ((((kword_t)(words) & MM_HALF_MASK) << 18U) | \
          ((kword_t)(base) & MM_HALF_MASK))

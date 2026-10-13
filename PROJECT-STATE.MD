@@ -1,3 +1,27 @@
+## 2026-10-13 PACKED RESTORE PURE TRANSACTION V31
+
+An inactive `proc_packed_restore_transaction_v31` now performs a complete
+prepare/reload/decode/commit sequence under caller-held process lifecycle
+exclusion and PROC_F_TRANSITION. It validates the PACKED storage discriminator,
+exact source MM ownership, and executable backing, then pins the packed source
+and the new APR-aligned destination. It zeroes the omitted prefix, reloads
+PURE backing (including compressed DXR that may overwrite the entire image),
+then decodes the saved writable suffix. It does not publish process residency
+or free packed storage on ordinary decode/reload failure. After successfully
+freeing packed storage it publishes VM base and RESIDENT mode before dropping
+the destination pin and transition flag. Fatal late MM failures retain the
+transition flag, rather than treating a partial commit as runnable.
+
+PDP-6 GCC/DAS standalone build succeeded (438 total text words for the entire
+unlinked packed-process object). Host testkit `packed-restore-v31` checks
+decode rollback, incorrect executable backing rejection, and PURE-reload-first
+ordering when the reloader overwrites the entire destination image. The host
+test uses explicit PDP-6 word-address to native byte-address translation.
+No KCORE size change or active RAM saving is claimed: the v31 object remains
+unlinked. Packed eviction, descriptor lifetime/discriminator integration,
+scheduler transactions and PDP-6 SIMH runtime failure tests are not complete.
+Do not remove disk swap or enable PACKED process scheduling yet.
+
 ## 2026-10-13 DISK SWAP STORAGE-MODE TRANSITIONS V30
 
 The existing PDP-6 assembler `proc_swap_out` and `proc_swap_in` now check

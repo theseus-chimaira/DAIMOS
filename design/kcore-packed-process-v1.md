@@ -28,6 +28,16 @@ backing pinning, exact restoration, and safe operation under fragmentation.
 
 ## Packed descriptor contract (v7, inactive)
 
+V31 adds an unlinked whole-restore transaction, requiring caller-held process
+lifecycle exclusion and PROC_F_TRANSITION. The strict ordering is: validate
+PACKED mode/source MM ownership and the saved executable backing; pin source;
+allocate and pin aligned destination without recursive reclaim; zero omitted
+prefix and reload PURE; decode retained writable suffix **after** executable
+reload (compressed DXR may fill the entire image); free source; publish VM
+base and RESIDENT map mode; release pin and transition. Reload/decode failure
+must free destination without modifying source or the stored descriptor.
+Testkit host mock tests cover those paths, not live scheduler integration.
+
 Disk-backed swap transactions now maintain the separately allocated mode
 map (v30): out/in publish their transitions only after committing MM and
 backstore records, while detach returns discarded disk-swapped slots to
