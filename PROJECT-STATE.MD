@@ -1,3 +1,12 @@
+## 2026-10-13 MONITORFS MRES DISPATCH STAGING V14
+
+Added an inactive nine-entry VFS-to-MonitorFS jump interface in
+fs/monitorfs_dispatch_v14.s. Each one-word entry fails safely until MINIT
+installs its relocated destination. This is staging source only: it is NOT
+linked into KCORE and does not replace the working resident MonitorFS.
+Next wire the pinned MRES package, exports and MINIT patching as one atomic
+change, then boot-test VFS before removing the resident implementation.
+
 ## 2026-10-13 MONITORFS MRES DEPENDENCY ANALYSIS V13
 
 See design/monitorfs-mres-extraction-v13.md. The 1030-word GCC MonitorFS
