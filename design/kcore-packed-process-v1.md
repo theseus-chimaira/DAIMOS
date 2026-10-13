@@ -1,5 +1,13 @@
 # KCORE compressed-process split: staged implementation v1
 
+V43 experiments with compact teardown that scans MM's own extent table for
+the unique packed owner and only needs one retained layout word (plus the
+slot ID when sparse). This avoids reconstructing a temporary packed span
+descriptor or depending on a second teardown registry. The C object
+assembles to 166 pre-fold words, but no net KCORE saving is established:
+full boot/runtime code and publication remain separately staged. Do not
+activate packed eviction or integrate the compressor yet.
+
 V42 tests the composed boot-allocated registry and common packed teardown
 for both representation formats in daimos-testkit without new kernel code.
 Its deterministic MM mock verifies allocation, owner checks, busy teardown,

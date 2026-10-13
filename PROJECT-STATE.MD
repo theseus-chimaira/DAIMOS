@@ -1,3 +1,29 @@
+## 2026-10-13 COMPACT MM-AUTHORITATIVE PACKED RELEASE V43
+
+The inactive `proc_packed_release_v43.c/.h` prototype performs the packed
+teardown commit directly against one MM_TYPE_PACKED_PROCESS extent for the
+slot, plus the KINIT-selected v38 dense/sparse layout. It does not construct
+or retain an independent packed span descriptor. The routine validates the
+explicit PACKED mode, TRANSITION, absent resident VM base, nonempty and
+valid writable layout, exact single MM owner, and unique sparse slot entry.
+Only after a successful MM free does it clear the selected layout and the
+two-bit storage mode. Any MM pin/ownership failure preserves both.
+
+PDP-6 GCC/DAS standalone build: 166 text words before folding, no BSS.
+The prior v37 shared owner object was 197 words and v39 guard was 49 words;
+these figures are NOT a whole-image saving, since v43 still requires the
+boot registry, mode-map, layout and publication machinery. The new testkit
+`packed-release-v43` passes both dense and sparse boot-to-teardown lifecycles,
+including duplicate sparse entry, ambiguous MM owner, missing TRANSITION,
+nonzero VM base, pinned free refusal, MM free failure, and slot reuse.
+
+No live KINIT registry allocation or new KCORE linkage is enabled. The
+Stage 41 fail-closed destructor remains active; its last measured endpoint
+is 021541 octal. The next implementation decision must compare complete
+linked KCORE and total dynamic RAM for an integrated release/publication
+path, not merely the isolated object sizes. Production codec and packed
+eviction remain deferred.
+
 ## 2026-10-13 PACKED BOOT/TEARDOWN INTEGRATION TEST V42
 
 Added a combined host regression in daimos-testkit
