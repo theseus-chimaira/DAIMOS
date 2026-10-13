@@ -20,6 +20,11 @@ NOT be activated until packed-process MM transactions and an actual compressor
 are implemented and verified.  Design and next stages are recorded in
 design/kcore-packed-process-v1.md.  Existing swap remains unchanged.
 
+Minimum hardware profile revised to three TSFS tapes plus one native DTFS
+writable /home tape. CLK is mandatory; the PCLK wall-clock reader should be
+split out later. Operator civil-date entry before login is deferred, and
+no uninitialized clock substitute may replace the current PCLK call path.
+
 ## 2026-10-13 DSH V24 SCRIPT WORKSPACE CLEARING
 
 The 32-token DSH script workspace is now cleared in one word-wise pass
