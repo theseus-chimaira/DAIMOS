@@ -39,7 +39,9 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
   neither satisfies a zero-net-growth resident KCORE requirement. Measured
   old combined fixed decoder + VFS is 96 words, v058 combined is 200
   (+104), and v062 + unchanged VFS would be 210 (+114). See
-  system/kernel/core/D6CODEC-RESIDENT-DELTA-V063.md. Zero BSS/stack alone does NOT satisfy
+  system/kernel/core/D6CODEC-RESIDENT-DELTA-V063.md. The v064 BLT refill
+  adapter saves two words (69 vs 71), but still leaves +102 combined with
+  v058 or +112 combined with the guarded v062 decoder. Zero BSS/stack alone does NOT satisfy
   the no-extra-resident-RAM requirement. Measure the combined fixed core and
   VFS adapter before an atomic Stage-1 cutover.
 - [ ] Implement the single fixed-000060 grouped-control decoder with the
