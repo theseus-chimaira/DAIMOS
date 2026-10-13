@@ -57,7 +57,7 @@ MOUNTALL_S_OBJS = $(MOUNTALL_S_SRCS:%.s=$(USERLAND_BUILD)/mountall/%.dobj)
 MOUNTALL_DXR = $(USERLAND_BUILD)/mountall.dxr
 MOUNTALL_MAP = $(USERLAND_BUILD)/mountall.map
 
-LOGIN_C_SRCS = libc/u_console.c libc/u_pack.c libc/text.c libc/text_open.c libc/text_config.c libc/logevent.c login/login.c
+LOGIN_C_SRCS = libc/u_console.c libc/u_pack.c libc/text.c libc/text_open.c libc/text_config.c libc/logevent.c login/login.c login/passwd_reader.c
 LOGIN_C_OBJS = $(LOGIN_C_SRCS:%.c=$(USERLAND_BUILD)/login/%.dobj)
 LOGIN_S_SRCS = libc/crt0.s login/login_syscalls.s
 LOGIN_S_OBJS = $(LOGIN_S_SRCS:%.s=$(USERLAND_BUILD)/login/%.dobj)

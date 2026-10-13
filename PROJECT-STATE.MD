@@ -1,3 +1,25 @@
+## LOGIN PASSWD READER MODULE V3 (2026-10-13)
+
+LOGIN still owns the password prompt, comparison, terminal session,
+credential transition, compact LOGSTORE events and destructive shell
+EXEC. The account-file lookup, uid/gid parsing and S6REC PASSWD
+decoding now live in `userland/login/passwd_reader.c` with the account
+record contract in `passwd_reader.h`. This is an in-process source
+module, **not** an additional process or KCORE service. Successful
+EXEC replaces LOGIN with DSH; PID 1 restarts LOGIN when DSH exits.
+The reader does not verify supplied passwords, leaving room for a
+future hashing verifier within LOGIN without coupling it to the
+PASSWD storage format.
+
+Fresh build DXR **image 004630, BSS 000000**, origin 000020 and stack
+001000: 005650 required, **006000** APR words. This refactoring grows
+the image by 0233 octal words versus v2's 004375, but does not grow
+the rounded resident allocation. A separate reader process would
+increase peak occupancy and is not part of this revision. The single
+002000-word APR target remains open.
+Fresh PDP-6 disk boot, ROOT LOGIN-to-DSH and 115/115 DSH conformance
+tests PASS, along with the dedicated DXR ST2/APR guard.
+
 ## LOGIN MINIMAL LIBC AND EVENT V2 (2026-10-13)
 
 On top of LOGIN v1, the LOGIN-only link now uses minimal console I/O,

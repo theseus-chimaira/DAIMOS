@@ -1,17 +1,7 @@
-#include "text.h"
+#include "passwd_reader.h"
 #include "logevent.h"
 
-#define LOGIN_LINE_MAX 127U
 #define LOGIN_NAME_MAX 31U
-#define LOGIN_PASS_MAX 63U
-
-struct login_account {
-        unsigned int uid;
-        unsigned int gid;
-        char password[LOGIN_PASS_MAX + 1U];
-        kword_t home[U_PATH_WORDS];
-        kword_t shell[U_PATH_WORDS];
-};
 
 static int
 text_eq(const char *a, const char *b)
@@ -25,44 +15,6 @@ text_eq(const char *a, const char *b)
                 ++i;
         }
         return a[i] == b[i];
-}
-
-static int
-text_copy(char *dst, unsigned int size, const char *src)
-{
-        unsigned int i;
-
-        if (size == 0U)
-                return -1;
-        for (i = 0U; src[i] != 0; ++i) {
-                if (i + 1U >= size)
-                        return -1;
-                dst[i] = src[i];
-        }
-        dst[i] = 0;
-        return 0;
-}
-
-static int
-parse_uint(const char *s, unsigned int *vp)
-{
-        unsigned int v;
-        unsigned int i;
-
-        if (s == 0 || s[0] == 0)
-                return -1;
-        v = 0U;
-        for (i = 0U; s[i] != 0; ++i) {
-                if (s[i] < '0' || s[i] > '9')
-                        return -1;
-                if (v > 077777U)
-                        return -1;
-                v = v * 10U + (unsigned int)(s[i] - '0');
-        }
-        if (v > 0777U)
-                return -1;
-        *vp = v;
-        return 0;
 }
 
 static int
@@ -116,49 +68,6 @@ login_getline(char *buf, unsigned int size)
                         continue;
                 buf[n++] = (char)ch;
         }
-}
-
-/* Return 0 for a valid matching account and -1 otherwise. */
-static int
-find_account(const char *name, struct login_account *account)
-{
-        struct u_text_reader r;
-        char line[LOGIN_LINE_MAX + 1U];
-        char *f[6];
-        int n;
-        int result;
-
-        r.fd = -1;
-        if (u_text_open(&r, "/CONFIG/PASSWD") != 0)
-                return -1;
-        result = -1;
-        for (;;) {
-                n = u_text_getline(&r, line, sizeof(line));
-                if (n == U_TEXT_EOF)
-                        break;
-                if (n < 0) {
-                        result = -1;
-                        break;
-                }
-                n = u_text_fields(line, f, 6U);
-                if (n == 0)
-                        continue;
-                if (n != 6 || !text_eq(f[0], name))
-                        continue;
-                if (parse_uint(f[2], &account->uid) != 0 ||
-                    parse_uint(f[3], &account->gid) != 0 ||
-                    text_copy(account->password, sizeof(account->password),
-                    f[1]) != 0 ||
-                    u_s6_pack(account->home, U_PATH_WORDS, f[4]) != 0 ||
-                    u_s6_pack(account->shell, U_PATH_WORDS, f[5]) != 0) {
-                        result = -1;
-                        break;
-                }
-                result = 0;
-                break;
-        }
-        u_text_close(&r);
-        return result;
 }
 
 static int
@@ -312,7 +221,7 @@ main(int argc, kword_t **argv, kword_t **envp)
                 (void)u_puts(1, "LOGIN: ");
                 if (login_getline(name, sizeof(name)) < 0)
                         break;
-                auth = find_account(name, &account);
+                auth = login_find_account(name, &account);
                 if (auth != 0) {
                         (void)ulog_event(ULOG_SEV_WARNING, ULOG_SRC_LOGIN,
                             ULOG_LOGIN_FAIL, (kword_t)tty);
