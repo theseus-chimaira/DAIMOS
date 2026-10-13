@@ -7,7 +7,9 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P0: 32K resident limit and correctness
 
-- [ ] Shrink the GCC lowmem KCORE link endpoint below 020000 octal; the
+- [ ] Keep the last resident KCORE word at or below 017777 octal (strict
+  exclusive link endpoint below or equal to 020000); shrink the GCC lowmem
+  KCORE link endpoint; the
   2026-10-13 PROJECT-STATE.MD v41/v42 checkpoint reports 021541 octal.
   Run a fresh full build, not just an object-level estimate.
 - [ ] Measure full permanent KCORE plus committed MRES, irreducible scratch,
@@ -30,6 +32,12 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 - [ ] Complete packed restore against the selected registry, rather than its
   private descriptor, then integrate packed eviction/restoration with the
   scheduler; do not remove disk swap before full native acceptance.
+- [ ] Implement the single fixed-000060 grouped-control decoder with the
+  unchanged AC3/AC4/AC10..AC14/AC0 resumable ABI, atomic <=31-word group
+  validation and compaction in the existing 64-word VFS refill window. No
+  additional permanent or per-call RAM; staged v058 native tests pass, but
+  production linkage and end-to-end acceptance remain open; see
+  system/kernel/core/D6CODEC-RESUMABLE-ABI-DESIGN-v057.md.
 - [ ] Integrate the production D6 codec with the resident KCORE encoder and
   streaming decoder, exact `000060` resumable ABI, bounded VFS refill,
   KPACK and EXEC/VFS/PURE consumers. Keep the detailed cross-subsystem plan
