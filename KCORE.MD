@@ -7,11 +7,11 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P0: 32K resident limit and correctness
 
-- [ ] Keep the last resident KCORE word at or below 017777 octal (strict
-  exclusive link endpoint below or equal to 020000); shrink the GCC lowmem
-  KCORE link endpoint; the
-  2026-10-13 PROJECT-STATE.MD v41/v42 checkpoint reports 021541 octal.
-  Run a fresh full build, not just an object-level estimate.
+- [ ] Bring the GCC lowmem KCORE exclusive link endpoint to at most 020000
+  octal (last resident word at most 017777). A fresh isolated GCC/disk-root
+  baseline built on 2026-10-13 gives __kcore_low_end=023503 octal; the older
+  PROJECT-STATE.MD v41/v42 021541 result used a different configuration.
+  Do not compare these as a same-configuration optimization delta.
 - [ ] Measure full permanent KCORE plus committed MRES, irreducible scratch,
   KINIT allocations and process startup headroom; retain the separate general
   below-040000 permanent-address limit where applicable.
@@ -42,6 +42,10 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
   streaming decoder, exact `000060` resumable ABI, bounded VFS refill,
   KPACK and EXEC/VFS/PURE consumers. Keep the detailed cross-subsystem plan
   in system/kernel/core/D6CODEC-INTEGRATION-TODO-v054.md.
+- [ ] Switch host producers and checkers together to one grouped-format
+  library (the unlinked C99 v060 candidate passed 81-DXR native-policy parity,
+  exact decoding, corruption guards and sanitizer checks). Do not link it
+  into production until the atomic boot and executable format cutover.
 - [ ] Measure combined resident codec text, stack, workspace and peak MM
   descriptors; test direct ABI, malformed input, resumptions, packed
   transaction failures and real PDP-6 execution before activating it.
