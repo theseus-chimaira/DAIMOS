@@ -32,6 +32,9 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 - [x] Stage inline KPACK v073 ABI adapters to the v071 encoder and v070
   direct-buffer decoder; native PDP-6 roundtrip and AC10..AC16 checks pass.
   Registry-aware eviction/restore and scheduler connections remain pending.
+- [x] v081 native PDP-6 allocation-failure rollback and subsequent
+  eviction/restore: source pin/ownership and storage state verified in
+  dense/sparse, zero/mixed cases. See proc/D6CODEC-NATIVE-ROLLBACK-V081.md.
 - [x] v080 native PDP-6 transaction regression links real v077/v46/v079
   code and v078 codec with mock MM/process records: dense/sparse and
   mixed/zero payloads PASS. Full booted scheduler and physical MM remain
