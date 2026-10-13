@@ -1,3 +1,32 @@
+## 2026-10-13 MM-AUTHORITATIVE PACKED PUBLICATION V44
+
+The inactive `proc_packed_publish_v44.c/.h` prototype complements compact
+v43 teardown using the v38 boot-selected dense/sparse layout. It requires
+PACKED mode, a zero resident VM base, lifecycle TRANSITION, a valid prepared
+layout, and exactly one MM_TYPE_PACKED_PROCESS extent with matching owner,
+base and length. It refuses duplicates and sparse capacity exhaustion
+without mutating the registry. Once validation succeeds, it commits the
+layout word and (for sparse) its slot index; these are serialized operations
+with no remaining fallible steps. The descriptor span stays MM-authoritative.
+
+PDP-6 GCC/DAS standalone compilation passed at 137 text words before
+folding (0 BSS). daimos-testkit `packed-publish-v44` passes composed boot,
+publish, lookup, release, failure rollback, and slot reuse against both
+layout formats. Its companion v43 release is 166 text words standalone;
+these are NOT full-image savings and do not include codec, restore, or
+KINIT linkage. Active KCORE and boot behavior are unchanged.
+
+IMPORTANT integration mismatch: staged v32 eviction clears TRANSITION on
+success before the v44 publication API could run; staged v31 restoration
+consumes/clears a private two-word descriptor rather than the selected
+registry layout. Before scheduler integration, refactor the transaction
+commit boundaries so the packed registry is published while TRANSITION is
+held and the restore cleanup retires the same registry entry atomically.
+Do not weaken the ownership checks or publish PACKED mode without an
+installed descriptor. Disk swap remains operational; production codec
+integration remains deferred. The previous live KCORE endpoint was 021541
+octal and has not been remeasured by this inactive stage.
+
 ## 2026-10-13 COMPACT MM-AUTHORITATIVE PACKED RELEASE V43
 
 The inactive `proc_packed_release_v43.c/.h` prototype performs the packed

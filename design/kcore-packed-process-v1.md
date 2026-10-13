@@ -1,5 +1,12 @@
 # KCORE compressed-process split: staged implementation v1
 
+V44 adds compact MM-authoritative registry publication matching v43
+release, with dense/sparse validation and no extra retained span. It is
+inactive and host-tested. Next refactor staged v32 and v31 transaction
+commit ownership: current v32 drops TRANSITION too early, and v31 clears
+its separate descriptor instead of the selected registry. No scheduler
+activation or production codec integration is authorized yet.
+
 V43 experiments with compact teardown that scans MM's own extent table for
 the unique packed owner and only needs one retained layout word (plus the
 slot ID when sparse). This avoids reconstructing a temporary packed span
