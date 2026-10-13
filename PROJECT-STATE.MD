@@ -1,3 +1,12 @@
+## 2026-10-13 PROCESS BACKING CLEANUP BOUNDARY V5
+
+proc_swap_detach() now separates the legacy backstore-span release from
+the executable backing cleanup in named helpers. The existing three-way
+ownership decision still depends on VM residency: there is NO new packed
+state tag, and compressed eviction remains disabled. KCC and full KCORE
+link pass. Next implementation must introduce explicit, validated packed
+state ownership before sharing cleanup with compressed in-core processes.
+
 ## 2026-10-13 PURE BACKING GUARDS SOURCE SEPARATION V4
 
 Executable vnode mutation and filesystem-unmount busy checks now reside in

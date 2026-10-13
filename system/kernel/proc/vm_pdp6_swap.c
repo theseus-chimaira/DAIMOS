@@ -46,7 +46,28 @@ proc_swap_transfer_words(int write, kword_t first,
 }
 #endif
 
-/** Drop resident/swapped backing state and account released swap blocks. */
+/** Release only the legacy disk span of a nonresident swapped process. */
+static void
+proc_swap_release_disk(int slot)
+{
+        kword_t state;
+
+        state = proc_swap_records[slot].state;
+        backstore_free((state >> 18U) & MM_HALF_MASK,
+            state & MM_HALF_MASK);
+        proc_swap_blocks_used -= state & MM_HALF_MASK;
+}
+
+/** Clear executable backing metadata after storage ownership is released. */
+static void
+proc_pure_backing_clear(int slot, struct proc *p)
+{
+        proc_swap_records[slot].state = 0UL;
+        if (PROC_HAS_UAREA(p))
+                PROC_SWAP_BACKING_WORD(p) = 0UL;
+}
+
+/** Drop resident backing or release legacy nonresident disk swap. */
 void
 proc_swap_detach(int slot)
 {
@@ -54,15 +75,9 @@ proc_swap_detach(int slot)
 
         p = &proc_table[slot];
         if (VM_PDP6_BASE(p) == 0UL &&
-            proc_swap_records[slot].state != 0UL) {
-                backstore_free((proc_swap_records[slot].state >> 18U) &
-                    MM_HALF_MASK, proc_swap_records[slot].state & MM_HALF_MASK);
-                proc_swap_blocks_used -=
-                    proc_swap_records[slot].state & MM_HALF_MASK;
-        }
-        proc_swap_records[slot].state = 0UL;
-        if (PROC_HAS_UAREA(p))
-                PROC_SWAP_BACKING_WORD(p) = 0UL;
+            proc_swap_records[slot].state != 0UL)
+                proc_swap_release_disk(slot);
+        proc_pure_backing_clear(slot, p);
 }
 
 /** Pin, write, free, and atomically publish one process as nonresident. */
