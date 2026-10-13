@@ -5,13 +5,15 @@
 .text
 .globl d6codec_inline_encode_v078
 d6codec_inline_encode_v078:
-        ; AC3=0 requests a no-allocation sizing pass. AC9 tracks this mode.
-        ; The virtual output cursor increments exactly as a real encoder.
-        setz    9,
+        ; AC3=0 requests a count-only pass. All 18 PDP-10 ACs are live
+        ; in this encoder or the pushdown ABI: keep the flag on the stack.
+        ; A token loop sees it at -1(17), below the saved source cursor.
+        setz    0,
         jumpn   3,d6codec_v078_output_ready
-        movei   9,1
+        movei   0,1
         movei   4,0777777
  d6codec_v078_output_ready:
+        push    17,0
         move    5,3
         push    17,5
         move    16,1
@@ -41,7 +43,7 @@ d6codec_inline_encode_v078:
  d6codec_v078_literal:
         jumpe   4,d6codec_v078_fail
         move    0,0(1)
-        skipn   9,
+        skipn   -1(17)
         movem   0,0(3)
         aoj     3,
         aoj     1,
@@ -70,7 +72,7 @@ d6codec_inline_encode_v078:
         move    0,6
         lsh     0,11
         ior     0,13
-        skipn   9,
+        skipn   -1(17)
         movem   0,0(3)
         aoj     3,
         soj     4,
@@ -83,16 +85,18 @@ d6codec_inline_encode_v078:
         sub     2,6
         aoja    10,d6codec_v078_token
  d6codec_v078_group_end:
-        skipn   9,
+        skipn   -1(17)
         movem   11,0(5)
         jumpn   2,d6codec_v078_group_start
  d6codec_v078_finish:
         pop     17,5
+        pop     17,0
         move    1,3
         sub     1,5
         popj    17,
  d6codec_v078_fail:
         pop     17,5
+        pop     17,0
         seto    1,
         popj    17,
 

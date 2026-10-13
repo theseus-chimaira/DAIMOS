@@ -4,7 +4,9 @@ The staged v078 PDP-6 encoder extends the native v071 inline stream writer
 with count-only mode (AC3=0). It retains a virtual output cursor, performs
 the same token-selection passes and capacity accounting, but suppresses
 all compressed output writes. It uses no temporary compressed buffer and
-no permanent codec workspace. The regular AC3!=0 encoding path emits
+no permanent codec workspace. A follow-up correctness fix keeps the
+count-only mode flag in a balanced stack word rather than AC11 (which is
+already the match bitmap). The regular AC3!=0 encoding path emits
 identical inline tokens. The v078 KPACK adapter exports three C-callable
 assembly operations: measure input words, encode with exact caller capacity,
 and decode an exact compressed payload into expected output words.

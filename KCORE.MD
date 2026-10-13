@@ -32,6 +32,10 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 - [x] Stage inline KPACK v073 ABI adapters to the v071 encoder and v070
   direct-buffer decoder; native PDP-6 roundtrip and AC10..AC16 checks pass.
   Registry-aware eviction/restore and scheduler connections remain pending.
+- [x] v079 binds v077 exact-size eviction and v46 restoration to the
+  native inline codec callbacks. Host-MM cycle PASS; native PDP-6 public
+  entry-point/codec callback test PASS with test-only transaction stubs.
+  Native MM scheduler and boot remain open.
 - [x] v078 native PDP-6 count-only inline encoder and KPACK measure/
   encode/decode adapters added. Fixed-address roundtrips for mixed data
   and 128 zero words PASS; no decoder-size optimization attempted.
