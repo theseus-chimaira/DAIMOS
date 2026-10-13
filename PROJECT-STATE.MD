@@ -1,3 +1,28 @@
+## 2026-10-13 SHARED DENSE/SPARSE PACKED OWNERSHIP V37
+
+Added an inactive single MM-authoritative ownership engine for either v36
+descriptor layout (`proc_packed_owner_v37.c/.h`). It reconstructs packed
+physical base/length from exactly one MM_TYPE_PACKED_PROCESS extent owned
+by the process slot, validates process transition and PACKED discriminator,
+and publishes only the writable layout. Teardown rejects pinned extents,
+invalid ownership and an inconsistent mode without freeing the descriptor;
+successful MM release clears the selected layout and resets the slot's
+storage mode to RESIDENT. Neither operation allocates memory or calls a
+compressor. This removes the need for separate duplicate MM validation
+engines when selecting dense versus sparse in a future boot policy.
+
+PDP-6 GCC/DAS standalone compilation passed (197 text words before folding
+for the ownership engine, excluding v36 layout and other dependencies).
+The new testkit `packed-owner-v37` passes for both layout formats, covering
+transition/ownership checks, duplicate publication, pinned extent rollback,
+ambiguous MM extent rejection and slot reuse. This is still inactive:
+KINIT does not allocate a descriptor layout, and process exit/abort paths
+do not call these functions. Activating a teardown hook before a supported
+registry exists would be unsafe. No compressor integration, active KCORE
+growth or saving is claimed. Next: define an explicit inactive-to-active
+boot registration contract, then wire all teardown paths at the same time
+as activating storage publication and checked restore descriptor consumption.
+
 ## 2026-10-13 BOOT-SELECTABLE PACKED LAYOUT PRIMITIVE V36
 
 Added an inactive common descriptor-layout primitive for the dense/sparse

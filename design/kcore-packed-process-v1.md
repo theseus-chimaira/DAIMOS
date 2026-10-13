@@ -1,5 +1,13 @@
 # KCORE compressed-process split: staged implementation v1
 
+V37 provides one inactive MM-ownership and teardown engine for both dense
+and sparse v36 layouts, so physical extent checks and lifecycle state
+transitions need not be duplicated in the 32K kernel. The testkit exercises
+both representations including pinned-release rollback. The engine must be
+installed with KINIT-selected registry storage and atomically connected to
+process exit/abort/slot reuse before the PACKED mode is ever published by
+the scheduler. Codec integration remains deferred.
+
 V36 stages an inactive capacity-policy and dense/sparse word-layout backend
 with one common lookup/reservation/clear API. It selects sparse only when
 2 * maximum packed concurrency is strictly less than the slot count and
