@@ -82,6 +82,11 @@ int proc_packed_restore_transaction_v31(unsigned int slot,
     struct proc_packed_v1 *descriptor, kword_t backing,
     proc_packed_decoder_v26 decoder,
     proc_packed_pure_reload_v31 reload_pure);
+/* Registry-backed restore; retires the selected layout only after MM free.
+ * Staged, not connected to the production scheduler. */
+int proc_packed_restore_transaction_v46(unsigned int slot, kword_t backing,
+    proc_packed_decoder_v26 decoder,
+    proc_packed_pure_reload_v31 reload_pure);
 
 #define PROC_PACKED_SPAN(base, words) \
         ((((kword_t)(words) & MM_HALF_MASK) << 18U) | \

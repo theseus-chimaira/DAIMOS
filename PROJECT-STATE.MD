@@ -1,3 +1,25 @@
+## 2026-10-13 REGISTRY-AWARE PACKED RESTORE V46
+
+Staged `proc_packed_restore_transaction_v46` consumes the installed v38
+dense/sparse descriptor layout by reconstructing the two-word source from
+the MM-authoritative v37 lookup. While lifecycle TRANSITION is held it
+pins the packed source, allocates/pins a new aligned resident extent,
+zeroes omitted PURE words, reloads executable backing before decoding the
+writable suffix, and releases packed MM only after all fallible I/O succeeds.
+MM release is the commit point; the matching registry entry and PACKED mode
+are retired before VM base publication and TRANSITION release. On a failed
+decoder, backing mismatch or MM source-free refusal, the registry, packed
+ownership and storage mode remain intact and the destination is freed.
+
+PDP-6 GCC/DAS standalone object assembles at 209 pre-fold text words and
+zero BSS. `daimos-testkit/tests/system/packed-restore-v46` passes dense
+and sparse success and failure coverage, including PURE-before-writable
+ordering. Existing v31 restoration and v45 eviction regressions pass.
+The production VM/scheduler and KINIT link remain unchanged. Next test a
+complete v45->v46 cycle against one registry with allocation/pin/free fault
+injection, then evaluate scheduler entry points and complete linked size.
+Do not remove disk swapping or integrate the production codec prematurely.
+
 ## 2026-10-13 REGISTRY-AWARE EVICTION TRANSACTION V45
 
 Added inactive `proc_packed_evict_transaction_v45` (separate from the

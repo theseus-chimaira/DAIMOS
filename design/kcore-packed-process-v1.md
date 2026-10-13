@@ -1,5 +1,12 @@
 # KCORE compressed-process split: staged implementation v1
 
+V46 stages registry-backed restore matching v45 publication. It reconstructs
+the packed span using MM ownership, performs PURE reload then writable
+decoding, and clears the actual dense/sparse slot record only after a
+successful packed MM free. Failure preserves the packed descriptor; no
+production scheduler, codec, or disk-swap change is made. Before activation
+test complete v45->v46 cycles and post-commit pin failure handling.
+
 V45 stages a separate registry-aware eviction transaction. It validates
 registry capacity and MM ownership before encoder work, publishes through
 v44 before dropping TRANSITION, and leaves a process blocked on fatal
