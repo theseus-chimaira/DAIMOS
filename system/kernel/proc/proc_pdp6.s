@@ -1362,6 +1362,52 @@ proc_notify_parent_wake:
         movem   4,2(2)
         pushj   17,proc_runq_add
 proc_notify_parent_done:
+        pushj   17,proc_idle_tty_signal ; dormant combined child/TTY hub
+        popj    17,
+
+; Future combined idle-TTY/child wait notification hub.  The registration
+; mask starts at zero; no legacy scheduler or terminal behavior changes
+; until an authenticated PID-1 registration interface is installed.
+; Preserve AC1 across parent notifications and interrupt callbacks. The
+; existing CTY/DCS/GE PI handlers require AC2/AC3 preservation as well.
+; Do not clear the event in a producer:
+; the eventual combined wait must snapshot/recheck atomically.
+        .globl  proc_idle_tty_signal
+        .globl  proc_idle_tty_mark
+        .globl  proc_idle_tty_event
+        .globl  proc_idle_tty_mask
+        .globl  proc_idle_tty_ready
+        .globl  proc_idle_tty_epoch
+proc_idle_tty_signal:
+        skipn   proc_idle_tty_mask
+        popj    17,
+        push    17,1
+        aos     proc_idle_tty_epoch
+        setom   proc_idle_tty_event
+        movei   1,proc_idle_tty_event
+        pushj   17,proc_wakeup_event
+        pop     17,1
+        popj    17,
+
+; Input notification: AC1=logical TTY 0..024 (octal). Only registered idle
+; terminals set readiness. Preserve AC2/AC3 for the CTY/DCS/GE PI ABI.
+; The byte remains in its original physical mailbox, for the eventual
+; authentication process to consume. No permanent per-TTY buffer.
+proc_idle_tty_mark:
+        caile   1,024
+        popj    17,
+        push    17,2
+        push    17,3
+        move    3,1
+        movei   2,1
+        lsh     2,0(3)
+        tdnn    2,proc_idle_tty_mask
+        jrst    proc_idle_tty_mark_done
+        iorm    2,proc_idle_tty_ready
+        pushj   17,proc_idle_tty_signal
+proc_idle_tty_mark_done:
+        pop     17,3
+        pop     17,2
         popj    17,
 
 ; kword_t proc_scope_id(const struct proc *p)
@@ -3065,6 +3111,16 @@ proc_idle_wait:
 proc_idle_loop_end:
 
         .bss
+; One kernel-owned registration mask and one shared event latch for all
+; idle TTYs. No per-terminal core or user process is allocated here.
+proc_idle_tty_mask:
+        .block 1
+proc_idle_tty_ready:
+        .block 1
+proc_idle_tty_epoch:
+        .block 1
+proc_idle_tty_event:
+        .block 1
 proc_timer_clock:
         .block 1
 proc_timer_next:

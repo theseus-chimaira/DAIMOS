@@ -86,6 +86,16 @@ struct sys_fsinfo {
 
 #define SYS_TTYCTL_GETOUT          0U
 #define SYS_TTYCTL_SETOUT          1U
+/* PID 1 only: register idle terminals, inspect readiness, and wait for
+ * either a TTY or child event. Epoch handoff prevents lost wakeups.
+ * IDLESET argument is a 21-bit bitmask for logical TTYs 0..20.
+ * IDLEWAIT argument is the generation returned by IDLEGEN/IDLEWAIT.
+ * The waiter must recheck ready TTYs and WAIT/NOHANG on every wake. */
+#define SYS_TTYCTL_IDLESET         2U
+#define SYS_TTYCTL_IDLEGET         3U
+#define SYS_TTYCTL_IDLEGEN         4U
+#define SYS_TTYCTL_IDLEWAIT        5U
+#define SYS_TTYCTL_IDLE_TTY_MASK   07777777U
 #define SYS_TTY_SINK_CTY           0U
 #define SYS_TTY_SINK_DCS_BASE      1U
 #define SYS_TTY_SINK_GE_BASE      17U

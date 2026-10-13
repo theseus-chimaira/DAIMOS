@@ -21,6 +21,8 @@
         .globl proc_tty_pending_store
         .globl proc_wait_event_intr
         .globl proc_wakeup_event
+        .globl proc_idle_tty_signal
+        .globl proc_idle_tty_mark
         .globl pdp10_pi_handler_return
         .globl kret_ok
         .globl kret_arg
@@ -44,6 +46,9 @@ ge_pi_handler:
         tlo 1,4
         movem 1,ge_rx_word
         setom ge_rx_event
+        ldb 1,[POINT 2,ge_rx_word,17]
+        addi 1,021                     ; GE TTYs 021..024 octal
+        pushj 17,proc_idle_tty_mark
         movei 1,ge_rx_event
         pushj 17,proc_wakeup_event
 ge_pi_gtyi_disable:

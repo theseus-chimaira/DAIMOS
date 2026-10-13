@@ -24,6 +24,8 @@
         .globl proc_tty_pending_store
         .globl proc_wait_event_intr
         .globl proc_wakeup_event
+        .globl proc_idle_tty_signal
+        .globl proc_idle_tty_mark
         .globl pdp10_pi_handler_return
         .globl kret_ok
         .globl kret_arg
@@ -51,6 +53,11 @@ dcs_pi_handler:
         iorm 1,dcs_rx_word
         aos dcs_rx_word
         setom dcs_rx_event
+        move 1,dcs_rx_word
+        subi 1,1                       ; undo nonempty mailbox marker
+        lsh 1,-010                     ; physical DCS scanner line
+        addi 1,1                       ; logical TTY 1..020
+        pushj 17,proc_idle_tty_mark
         movei 1,dcs_rx_event
         pushj 17,proc_wakeup_event
 dcs_pi_disable:

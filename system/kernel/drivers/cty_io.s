@@ -25,6 +25,8 @@
         .globl cty_rx_event
         .globl proc_wait_event_intr
         .globl proc_wakeup_event
+        .globl proc_idle_tty_signal
+        .globl proc_idle_tty_mark
         .globl proc_rt_owner
         .globl pdp10_pi_handler_return
         .globl kret_ok
@@ -60,6 +62,8 @@ cty_pi_input_normal:
         addi 1,1
         movem 1,cty_rx_pending
         setom cty_rx_event
+        movei 1,0                     ; CTY0 input arrived
+        pushj 17,proc_idle_tty_mark
         movei 1,cty_rx_event
         pushj 17,proc_wakeup_event
         jrst cty_pi_tail

@@ -1,3 +1,15 @@
+## PID 1 IDLE TTY KERNEL EVENT HUB (2026-10-13, V3)
+
+KCORE/CTY/DCS/GE now contain dormant combined child/terminal notification
+hooks. A PID-1-only TTYCTL ABI permits a ready mask, generation snapshot,
+and race-resistant event wait. No idle TTYs are registered by the existing
+SUPERVISOR, so current terminal/login behavior is unchanged. Source
+and measured caveats: `design/SUPERVISOR-IDLE-TTY-KERNEL-HUB-20261013-v3.MD`.
+Existing CTY/DCS/GE receive-scanner arming is still reader-driven. The
+dispatcher is **not live** and no idle LOGIN memory saving is claimed.
+Fresh-image build, ROOT LOGIN/LOGD/LOGDUMP and physical AUXSTORE PASS;
+full DSH regression intentionally deferred until functional milestone.
+
 ## PID 1 IDLE TTY DISPATCH EVENT MODEL (2026-10-13, V2)
 
 A deterministic daimos-testkit model now covers 60 possible orderings of

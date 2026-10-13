@@ -35,6 +35,11 @@
         .globl  proc_tty_output_route_get
         .globl  proc_tty_output_route_set
         .globl  proc_current_slot
+        .globl  proc_idle_tty_mask
+        .globl  proc_idle_tty_ready
+        .globl  proc_idle_tty_epoch
+        .globl  proc_idle_tty_event
+        .globl  proc_wait_event_intr
         .globl  vm_space_brk_current
         .globl  pipe_create
         .globl  file_mkfifo
@@ -596,7 +601,7 @@ native_sys_brk:
 native_sys_ttyctl:
         jumpe   2,native_sys_ttyctl_get
         caie    2,1
-        jrst    kret_neg1
+        jrst    native_sys_ttyctl_idle
         pushj   17,file_check_root
         jumpn   1,kret_neg1
         move    1,3                    ; logical tty
@@ -605,6 +610,62 @@ native_sys_ttyctl:
 native_sys_ttyctl_get:
         move    1,3
         jrst    proc_tty_output_route_get
+
+; PID 1's idle-TTY dispatcher shares a kernel event with child exit
+; notifications and all physical receive paths. There are no user pointers.
+; Suboperation 2: install the eligible 21-bit logical-TTY mask.
+; Suboperation 3: obtain non-destructive ready mask; the eventual dispatcher
+;                    clears it by unregistering claimed terminals.
+; Suboperation 4: read the event generation before scanning child status.
+; Suboperation 5: wait if generation has not changed and no TTY is ready.
+; The event clear and subsequent generation recheck close the lost-wakeup
+; interval; proc_wait_event_intr does a further atomic sleep/recheck.
+native_sys_ttyctl_idle:
+        move    6,2                    ; preserve operation
+        move    7,3                    ; preserve argument/expected generation
+        move    1,proc_current_slot
+        caie    1,1                    ; exclusively the PID 1 supervisor
+        jrst    kret_neg1
+        caie    6,2
+        jrst    native_sys_ttyctl_idle_get
+        move    3,7
+        and     3,[07777777]          ; logical TTYs 0..20 only
+        came    3,7
+        jrst    kret_neg1
+        movem   3,proc_idle_tty_mask
+        andm    3,proc_idle_tty_ready
+        setz    1,
+        popj    17,
+native_sys_ttyctl_idle_get:
+        caie    6,3
+        jrst    native_sys_ttyctl_idle_gen
+        move    1,proc_idle_tty_ready
+        popj    17,
+native_sys_ttyctl_idle_gen:
+        caie    6,4
+        jrst    native_sys_ttyctl_idle_wait
+        move    1,proc_idle_tty_epoch
+        popj    17,
+native_sys_ttyctl_idle_wait:
+        caie    6,5
+        jrst    kret_neg1
+        move    1,proc_idle_tty_epoch
+        came    1,7
+        popj    17,
+        skipn   proc_idle_tty_ready
+        jrst    native_sys_ttyctl_idle_arm
+        popj    17,
+native_sys_ttyctl_idle_arm:
+        setzm   proc_idle_tty_event
+        move    1,proc_idle_tty_epoch
+        came    1,7
+        popj    17,
+        skipe   proc_idle_tty_ready
+        popj    17,
+        movei   1,proc_idle_tty_event
+        pushj   17,proc_wait_event_intr
+        move    1,proc_idle_tty_epoch
+        popj    17,
 
 ; FSINFO AC2=zero-based mount slot, AC3=user struct sys_fsinfo pointer.
 ; Return 1 for an occupied slot, 0 for an empty slot, -1 on error.  Provider
