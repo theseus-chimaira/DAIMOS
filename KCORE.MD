@@ -36,6 +36,8 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
   native decoder is 88 words with unchanged VFS 56, total 144 (+48 over
   baseline). Address bounds and malformed descriptors pass native tests;
   producer parity, overlap/aliasing and whole-KCORE tests remain open.
+  V067 eliminates one redundant guard and passes native tests: 87+56=143
+  words, still +47; see D6CODEC-INLINE-SIMPLIFICATION-V067.md.
 - [ ] Evaluate inline-token codec v065 as the lower-RAM alternative:
   native fixed decoder 74 words plus unchanged 56-word VFS adapter = 130,
   only +34 over the original 96 (paired grouped v058/v064 is +102).
