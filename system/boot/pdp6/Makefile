@@ -75,7 +75,12 @@ KINIT_STACK_WATERMARK ?= 0
 PDP10_GCC ?= pdp10-dec-none-gcc
 PDP10_OBJDUMP ?= pdp10-objdump
 PDP10_KCC ?= kcc
+# The 32K profile is GCC-only for measured image and memory optimization.
+ifeq ($(BOOT_PROFILE),lowmem)
+COMPILER ?= gcc
+else
 COMPILER ?= kcc
+endif
 ifeq ($(filter $(COMPILER),gcc kcc),)
 $(error COMPILER must be gcc or kcc)
 endif

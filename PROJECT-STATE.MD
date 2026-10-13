@@ -1,3 +1,15 @@
+## 2026-10-13 32K GCC KERNEL BUILD POLICY V9
+
+The 32K lowmem boot profile now defaults to GCC. KCC remains selectable
+for larger configurations and explicit legacy comparisons. All future 32K
+KCORE/KINIT measurements use COMPILER=gcc and a clean compiler-specific
+build tree; the previous KCC link endpoint 023617 is historical only.
+The strict 32K KCORE goal is a low-core end address below 020000 octal.
+The clean GCC lowmem link succeeded with __kcore_low_end=023361 octal,
+compared with historical KCC 023617. GCC saves 0236 octal words at this
+checkpoint; a further 03362 octal words must be removed to get below 020000.
+This is a link result, not a boot/runtime validation.
+
 ## 2026-10-13 PACKED MM ALLOCATION HELPERS V8
 
 Staged proc_packed_reserve_v1/proc_packed_release_v1 helpers allocate
