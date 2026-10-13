@@ -1,4 +1,4 @@
-#if KINIT_FULL
+#if KINIT_TAPE_BOOT
 #include "tsfs_boot.h"
 #include "kinit.h"
 #include "module.h"

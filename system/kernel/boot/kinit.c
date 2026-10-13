@@ -511,8 +511,10 @@ kinit_enter(void)
         kinit_diag_system(memory_kwords);
         mres_init();
         module_run_minits();
-#if KINIT_FULL
+#if KINIT_TAPE_BOOT
         dtfs_post_minits();
+#endif
+#if KINIT_FULL
         auxstore_post_minits();
 #endif
 #if KINIT_BADMAP

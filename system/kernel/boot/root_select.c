@@ -54,7 +54,7 @@ root_select_minit(void)
                         return;
         }
 #endif
-#if KINIT_FULL
+#if KINIT_TAPE_BOOT
         if (root_class == KINIT_ROOT_AUTO || root_class == KINIT_ROOT_DTC) {
                 if (tsfs_boot_select(ordinal) == 0) {
                         root_class_selected = KINIT_ROOT_DTC;
@@ -63,14 +63,14 @@ root_select_minit(void)
                 if (root_class == KINIT_ROOT_DTC)
                         return;
         }
-#if D6FS_FS_ENABLED
+#endif
+#if D6FS_FS_ENABLED && KINIT_FULL
         if (root_class == KINIT_ROOT_AUTO || root_class == KINIT_ROOT_DRM) {
                 if (d6fs_boot_select(KINIT_ROOT_DRM, ordinal) == 0) {
                         root_class_selected = KINIT_ROOT_DRM;
                         return;
                 }
         }
-#endif
 #endif
 }
 

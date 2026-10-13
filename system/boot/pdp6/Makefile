@@ -50,6 +50,8 @@ TAPE_FS_ENABLED = 1
 else
 TAPE_FS_ENABLED = 0
 endif
+# Tape boot is a filesystem capability, not a full-profile feature.
+KINIT_TAPE_BOOT = $(TAPE_FS_ENABLED)
 BOOT ?= auto
 BOOT_PROFILE ?= full
 DPY_LOGIN ?= 0
@@ -75,6 +77,7 @@ KINIT_STACK_WATERMARK ?= 0
 # Experimental complete MonitorFS relocation in low-memory configuration.
 MONITORFS_MRES_ENABLED ?= 0
 MONITORFS_MODE_STAMP = $(BUILD)/.monitorfs-v17-mode-$(MONITORFS_MRES_ENABLED)
+KINIT_TAPE_MODE_STAMP = $(BUILD)/.kinit-tape-v20-mode-$(KINIT_TAPE_BOOT)
 PDP10_GCC ?= pdp10-dec-none-gcc
 PDP10_OBJDUMP ?= pdp10-objdump
 PDP10_KCC ?= kcc
@@ -330,7 +333,7 @@ D6FS_MRES_OBJ = $(BUILD)/d6fs-mres.dobj
 MONITORFS_MRES_OBJ = $(BUILD)/monitorfs-mres.dobj
 ifeq ($(BOOT_PROFILE),lowmem)
 MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(if $(filter 1,$(MONITORFS_MRES_ENABLED)),$(MONITORFS_MRES_OBJ)) $(DCS_MRES_OBJ) \
-	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(DSK_MRES_OBJ) $(if $(filter 1,$(BLOCKSET_FS_ENABLED)),$(BLOCKSET_MRES_OBJ)) \
+	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(TAPE_MRES_OBJ)) $(DSK_MRES_OBJ) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(DTFS_MRES_OBJ)) $(if $(filter 1,$(BLOCKSET_FS_ENABLED)),$(BLOCKSET_MRES_OBJ)) \
 	$(if $(filter 1,$(D6FS_FS_ENABLED)),$(D6FS_MRES_OBJ))
 KINIT_FULL = 0
 else
@@ -560,6 +563,8 @@ USERLAND_INPUTS = $(PROJECT_ROOT)/userland/libc/Makefile \
 ifeq ($(BOOT),auto)
 ifeq ($(ROOT),drum)
 STAGE1_DEVICE = drm
+else ifeq ($(ROOT),tape)
+STAGE1_DEVICE = dtc
 else
 STAGE1_DEVICE = dsk
 endif
@@ -638,11 +643,15 @@ $(MONITORFS_MODE_STAMP): | $(BUILD)
 	@rm -f $(BUILD)/.monitorfs-v17-mode-0 $(BUILD)/.monitorfs-v17-mode-1
 	@touch $@
 
+$(KINIT_TAPE_MODE_STAMP): | $(BUILD)
+	@rm -f $(BUILD)/.kinit-tape-v20-mode-0 $(BUILD)/.kinit-tape-v20-mode-1
+	@touch $@
+
 $(MEDIA_DIR): | $(BUILD)
 	mkdir -p $@
 
-$(KINIT_STAMP): $(KERNEL_INPUTS) Makefile $(PDP10_TARGET_CC_DEP) $(MONITORFS_MODE_STAMP) $(BUILD)
-	$(MAKE) -C $(KERNEL_DIR) kinit COMPILER='$(COMPILER)' BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_STACK_RESERVE_WORDS='$(KINIT_STACK_RESERVE_WORDS)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' KINIT_BADMAP='$(KINIT_BADMAP)' KINIT_FULL='$(KINIT_FULL)' D6FS_FS_ENABLED='$(D6FS_FS_ENABLED)' BLOCKSET_FS_ENABLED='$(BLOCKSET_FS_ENABLED)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' MONITORFS_MRES_ENABLED='$(MONITORFS_MRES_ENABLED)' VM_BACKEND='$(VM_BACKEND)'
+$(KINIT_STAMP): $(KERNEL_INPUTS) Makefile $(PDP10_TARGET_CC_DEP) $(MONITORFS_MODE_STAMP) $(KINIT_TAPE_MODE_STAMP) $(BUILD)
+	$(MAKE) -C $(KERNEL_DIR) kinit COMPILER='$(COMPILER)' BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_STACK_RESERVE_WORDS='$(KINIT_STACK_RESERVE_WORDS)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' KINIT_BADMAP='$(KINIT_BADMAP)' KINIT_FULL='$(KINIT_FULL)' KINIT_TAPE_BOOT='$(KINIT_TAPE_BOOT)' D6FS_FS_ENABLED='$(D6FS_FS_ENABLED)' BLOCKSET_FS_ENABLED='$(BLOCKSET_FS_ENABLED)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' MONITORFS_MRES_ENABLED='$(MONITORFS_MRES_ENABLED)' VM_BACKEND='$(VM_BACKEND)'
 	touch $@
 
 $(KCORE_STAMP): $(KERNEL_INPUTS) $(PDP10_TARGET_CC_DEP) $(MONITORFS_MODE_STAMP) $(BUILD)
@@ -664,7 +673,7 @@ $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM
 force-minit-config:
 
 $(MINIT_TABLE_ASM): $(KERNEL_DIR)/modules/module_table.s force-minit-config | $(BUILD)
-	{ echo ".set KINIT_FULL,$(KINIT_FULL)"; echo ".set MONITORFS_MRES_ENABLED,$(MONITORFS_MRES_ENABLED)"; echo ".set KINIT_BADMAP,$(KINIT_BADMAP)"; echo ".set TAPE_FS_ENABLED,$(TAPE_FS_ENABLED)"; echo ".set D6FS_FS_ENABLED,$(D6FS_FS_ENABLED)"; echo ".set BLOCKSET_FS_ENABLED,$(BLOCKSET_FS_ENABLED)"; cat $<; } > $@
+	{ echo ".set KINIT_FULL,$(KINIT_FULL)"; echo ".set KINIT_TAPE_BOOT,$(KINIT_TAPE_BOOT)"; echo ".set MONITORFS_MRES_ENABLED,$(MONITORFS_MRES_ENABLED)"; echo ".set KINIT_BADMAP,$(KINIT_BADMAP)"; echo ".set TAPE_FS_ENABLED,$(TAPE_FS_ENABLED)"; echo ".set D6FS_FS_ENABLED,$(D6FS_FS_ENABLED)"; echo ".set BLOCKSET_FS_ENABLED,$(BLOCKSET_FS_ENABLED)"; cat $<; } > $@
 
 $(MINIT_TABLE_OBJ): $(MINIT_TABLE_ASM) $(BUILD)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
@@ -1217,14 +1226,14 @@ $(TSFS_ROOT_IMAGE): $(INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $
 $(BOOT_MEDIA_STAMP): $(IMAGE_BOOT_WORDS) $(DISK_IMAGES) $(DRUM_IMAGES) \
 	$(STAGE1_TAPE) $(ROOT_MEDIA_DEPS) | $(BUILD)
 	@set -eu; \
-	if [ '$(BOOT_PROFILE)' = lowmem ] && [ '$(STAGE1_DEVICE)' != dsk ]; then \
-		echo 'BOOT_PROFILE=lowmem currently requires BOOT=dsk' >&2; exit 2; \
+	if [ '$(BOOT_PROFILE)' = lowmem ] && [ '$(STAGE1_DEVICE)' != dsk ] && [ '$(STAGE1_DEVICE)' != dtc ]; then \
+		echo 'BOOT_PROFILE=lowmem requires BOOT=dsk or BOOT=dtc' >&2; exit 2; \
 	fi; \
 	mkdir -p '$(MEDIA_DIR)'; \
 	touch '$(DTC0_IMAGE)' '$(DTC1_IMAGE)' '$(DTC2_IMAGE)' '$(MTC0_IMAGE)' '$(MTC1_IMAGE)'; \
 	case '$(STAGE1_DEVICE)' in \
 	  dsk|drm) : ;; \
-	  dtc) '$(MKDT)' -t dtc -p '$(IMAGE_COMPRESSED_WORDS)' -o '$(DTC0_IMAGE)' ;; \
+	  dtc) '$(MKDT)' -t dtc -p '$(IMAGE_BOOT_WORDS)' -o '$(DTC0_IMAGE)' ;; \
 	  mtc) '$(MKTAP)' -t mtc -p '$(IMAGE_COMPRESSED_WORDS)' -o '$(MTC0_IMAGE)' ;; \
 	  ptr) \
 	    cwords=$$(tail -n +4 '$(IMAGE_COMPRESSED_WORDS)' | wc -l | tr -d ' '); \

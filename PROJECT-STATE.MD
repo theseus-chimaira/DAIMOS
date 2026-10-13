@@ -1,3 +1,30 @@
+## 2026-10-13 GCC 32K TSFS ROOT BOOT RESTORATION V20
+
+Decoupled TSFS boot and DTFS/TSFS MRES installation from KINIT_FULL using
+KINIT_TAPE_BOOT (derived from TAPE_FS_ENABLED). GCC lowmem ROOT=tape now
+assembles the TSFS discovery/mount path, DTC/MTC MINIT entries and the
+filesystem MRES package without enabling unrelated full-profile modules.
+The DTC Stage1 loader accepts a zero compressed-word count and loads the
+raw lowmem KINIT stream directly at 030000, avoiding an image-plus-staging
+copy exceeding 32K. BOOT=auto selects DTC for ROOT=tape; lowmem permits
+BOOT=dtc. The lowmem MRES source link order matches the MINIT traversal
+(TAPE then DSK then DTFS); an earlier reversed order halted at the
+module_run_minits package monotonicity check.
+
+Fresh GCC lowmem ROOT=tape BOOT=dtc builds with resident MonitorFS and with
+MONITORFS_MRES_ENABLED=1 both boot a single-member TSFS root successfully
+through the `DTFS LOADED` message to `INIT V1` under PDP-6 SIMH 32K.
+Both variants pass the new daimos-testkit TSFS v20 INIT boot smoke test.
+The GCC MRES configuration reports 12612 decimal words of permanent
+KCORE+MRES (end 030504 octal) and `__kcore_low_end=021375` octal.
+The MonitorFS-MRES KCORE endpoint remains 021375 octal (resident MonitorFS:
+023360). LOGIN/MonitorFS VFS acceptance is not yet established. The image
+builder currently creates a one-member TSFS root on DTC1, with a separate
+DTC0 bootstrap tape. It does NOT yet satisfy the desired four-drive layout
+(three TSFS system tapes plus a separate DTFS /home tape). That media/boot
+layout and interactive login tests remain required before declaring the
+32K DECtape configuration complete.
+
 ## 2026-10-13 LOWMEM LOGIN DIAGNOSTIC V19
 
 The MonitorFS v17 testkit runner omitted DCS transport arguments although

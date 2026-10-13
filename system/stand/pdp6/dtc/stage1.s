@@ -1,12 +1,12 @@
 /**
  * @file stage1.s
- * @brief PDP-6 DECtape Stage-1 loader for a sequential compressed KINIT stream.
+ * @brief PDP-6 DECtape Stage-1 loader for compressed or raw KINIT streams.
  *
  * Stage0 loads this loader from read-in paper tape at 000060. Stage-1 starts
  * DECtape unit 0 forward through Type-136 DCT0 and consumes one logical word
- * stream independent of physical DECtape block boundaries. Compressed input is
- * staged immediately above the declared final image, the common decoder is
- * installed at 000060, and KINIT is expanded at 030000.
+ * stream independent of physical DECtape block boundaries. Compressed input
+ * is staged above the final image and decoded at 030000. The 32K profile uses
+ * a raw image written directly at 030000 without any staging copy.
  *
  * Header validation requires nonzero image/compressed lengths and an entry
  * offset strictly inside the final image. At handoff AC17 points above the
@@ -18,8 +18,8 @@
 ;
 ;       word 0      SIXBIT DAIMON
 ;       word 1      uncompressed_words,,entry_offset
-;       word 2      compressed_words,,0
-;       remainder   D6LZ36 payload
+;       word 2      compressed_words,,0 (zero for raw 32K image)
+;       remainder   D6LZ36 payload or raw image words
 ;
 ; The compressed stream is staged immediately after its final image range,
 ; expanded at 030000 by the shared fixed low-core decoder, then entered at the
@@ -61,10 +61,12 @@ start:
         addi 05,030000
         pushj 017,read_word
         hlrz 04,03
-        jumpe 04,bad_tape
-
-        ; Stage compressed input above the final uncompressed image.
+        ; Zero compressed length selects the direct 32K image stream.
+        ; Like the DSK lowmem loader, this needs no second staging copy.
         movei 01,030000
+        move 02,013
+        jumpe 04,load_loop
+        ; Normal compressed images stage the payload above their output.
         add 01,013
         move 02,04
 load_loop:
@@ -72,6 +74,7 @@ load_loop:
         movem 03,0(01)
         aoj 01,
         sojg 02,load_loop
+        jumpe 04,stage1_raw_handoff
         jrst stage1_handoff
 
 ; Return the next 36-bit DCT word in AC3.  DTC status B distinguishes genuine
@@ -117,6 +120,15 @@ stage1_handoff:
         ; begins immediately after the expanded image.  Leaving AC17 on the
         ; low Stage1 stack would let kcore_load overwrite live return words.
         move 017,012
+        setz 01,
+        setz 02,
+        jrst 0(05)
+
+; The raw stream is already resident at 030000.  Enter without installing
+; the decompressor or maintaining a compressed image beyond 32K.
+stage1_raw_handoff:
+        movei 017,030000
+        add 017,013
         setz 01,
         setz 02,
         jrst 0(05)

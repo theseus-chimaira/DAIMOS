@@ -38,9 +38,7 @@
 #include "blockset_boot.h"
 #include "auxstore.h"
 #include "logstore.h"
-#if KINIT_FULL
 #include "root_select.h"
-#endif
 #include "badmap.h"
 #include "mm.h"
 #include "monitorfs.h"
@@ -1082,6 +1080,9 @@ memfs_minit(void)
         minit_diag_loaded(name);
 }
 
+#endif /* KINIT_FULL: drum and MEMFS */
+
+#if KINIT_TAPE_BOOT
 /** @brief Install DTFS after DECtape block services are available. */
 void
 dtfs_minit(void)
@@ -1140,7 +1141,7 @@ dtfs_post_minits(void)
         *dtfs_runtime_dir_ptr = cache_base;
 }
 
-#endif
+#endif /* KINIT_TAPE_BOOT */
 
 static int
 root_block_services(unsigned int *readp, unsigned int *writep)

@@ -30,6 +30,8 @@
 .if KINIT_FULL
         .globl wcnsls_minit
         .globl ocnsls_minit
+.endif
+.if KINIT_TAPE_BOOT
         .globl dtc_minit
         .globl mtc_minit
 .endif
@@ -79,6 +81,8 @@
 .if KINIT_FULL
         .globl wcnsls_mres_package
         .globl ocnsls_mres_package
+.endif
+.if KINIT_TAPE_BOOT
         .globl tape_mres_package
 .endif
         .globl dsk_mres_package
@@ -87,9 +91,9 @@
         .globl logstore_mres_package
         .globl slv_mres_package
         .globl memfs_mres_package
-.if TAPE_FS_ENABLED
-        .globl dtfs_mres_package
 .endif
+.if KINIT_TAPE_BOOT
+        .globl dtfs_mres_package
 .endif
 .if BLOCKSET_FS_ENABLED
         .globl blockset_mres_package
@@ -131,6 +135,8 @@ __minit_table_begin:
 .if KINIT_FULL
         .word wcnsls_minit,,wcnsls_mres_package
         .word ocnsls_minit,,ocnsls_mres_package
+.endif
+.if KINIT_TAPE_BOOT
         .word dtc_minit,,tape_mres_package
         .word mtc_minit,,tape_mres_package
 .endif
@@ -153,9 +159,9 @@ __minit_table_begin:
 .endif
 .if KINIT_FULL
         .word memfs_minit,,memfs_mres_package
-.if TAPE_FS_ENABLED
-        .word dtfs_minit,,dtfs_mres_package
 .endif
+.if KINIT_TAPE_BOOT
+        .word dtfs_minit,,dtfs_mres_package
 .endif
 .if KINIT_FULL
         .word slv_minit,,slv_mres_package

@@ -96,7 +96,7 @@ kinit_boot(void)
 #if D6FS_FS_ENABLED
                 rc = d6fs_boot_mount_root(0U);
 #endif
-#if KINIT_FULL
+#if KINIT_TAPE_BOOT
 #if D6FS_FS_ENABLED
         else if (root_class == KINIT_ROOT_DTC)
 #else
