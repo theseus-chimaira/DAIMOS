@@ -1,5 +1,12 @@
 # KCORE compressed-process split: staged implementation v1
 
+V45 stages a separate registry-aware eviction transaction. It validates
+registry capacity and MM ownership before encoder work, publishes through
+v44 before dropping TRANSITION, and leaves a process blocked on fatal
+post-commit errors. The v32 API and production scheduler remain unchanged;
+next reconcile v31 restoration with registry retirement, then measure the
+complete linked implementation before production enablement.
+
 V44 adds compact MM-authoritative registry publication matching v43
 release, with dense/sparse validation and no extra retained span. It is
 inactive and host-tested. Next refactor staged v32 and v31 transaction

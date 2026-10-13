@@ -72,6 +72,12 @@ typedef int (*proc_packed_encoder_v32)(const kword_t *source,
 int proc_packed_evict_transaction_v32(unsigned int slot,
     struct proc_packed_v1 *descriptor, kword_t retained_offset,
     unsigned int encoded_capacity, proc_packed_encoder_v32 encoder);
+/* Inactive registry-aware eviction. Unlike v32 it must publish to the
+ * boot-selected MM-authoritative registry before clearing TRANSITION.
+ * On an unrecoverable post-commit error it leaves TRANSITION held. */
+int proc_packed_evict_transaction_v45(unsigned int slot,
+    kword_t retained_offset, unsigned int encoded_capacity,
+    proc_packed_encoder_v32 encoder);
 int proc_packed_restore_transaction_v31(unsigned int slot,
     struct proc_packed_v1 *descriptor, kword_t backing,
     proc_packed_decoder_v26 decoder,

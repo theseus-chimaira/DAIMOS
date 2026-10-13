@@ -1,3 +1,28 @@
+## 2026-10-13 REGISTRY-AWARE EVICTION TRANSACTION V45
+
+Added inactive `proc_packed_evict_transaction_v45` (separate from the
+existing v32 API to preserve previous test coverage). Under TRANSITION
+it preflights the configured dense/sparse registry, process state, owned
+resident MM extent, and absence of a pre-existing packed extent. It then
+pins the resident allocation, allocates and pins packed storage without
+reclaim recursion, invokes a caller-provided encoder, and rejects a
+nonshrinking or incorrect encoded length. After source MM free, it sets
+PACKED mode and zero VM base, publishes the MM-authoritative registry
+entry via v44 while TRANSITION is still held, and only then unpins packed
+storage and clears TRANSITION. An error after source release is fatal and
+leaves TRANSITION set; no scheduler may run such a process. Precommit
+failures leave resident ownership and mode intact.
+
+PDP-6 GCC/DAS standalone object: 251 pre-fold text words, no BSS.
+daimos-testkit `packed-evict-v45` passes dense/sparse transaction and
+Stage 43 release, synthetic lossless pair compression, encoder failure,
+nonshrinking output refusal, sparse registry exhaustion, and repeated
+slot cleanup. This is a host test, NOT a SIMH scheduler acceptance test.
+The original v31 restore still consumes a private descriptor rather than
+the selected registry, so scheduler integration and active KCORE linkage
+remain disabled. Codec integration and removal of disk swapping remain
+deferred. The last measured active KCORE endpoint remains 021541 octal.
+
 ## 2026-10-13 MM-AUTHORITATIVE PACKED PUBLICATION V44
 
 The inactive `proc_packed_publish_v44.c/.h` prototype complements compact
