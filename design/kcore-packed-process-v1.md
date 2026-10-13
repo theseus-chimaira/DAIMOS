@@ -1,5 +1,12 @@
 # KCORE compressed-process split: staged implementation v1
 
+V42 tests the composed boot-allocated registry and common packed teardown
+for both representation formats in daimos-testkit without new kernel code.
+Its deterministic MM mock verifies allocation, owner checks, busy teardown,
+abort refusal while occupied, and clean slot reuse. Integration into the
+production VM destroy path remains explicitly disabled pending the 32K
+resident-code budget and target runtime failure tests.
+
 V41 installs a small live VM teardown guard using the existing two-bit
 storage map. Until KINIT provides registry storage and the packed owner
 teardown engine is linked, `vm_space_destroy` deliberately rejects PACKED

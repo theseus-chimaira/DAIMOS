@@ -1,3 +1,27 @@
+## 2026-10-13 PACKED BOOT/TEARDOWN INTEGRATION TEST V42
+
+Added a combined host regression in daimos-testkit
+`tests/system/packed-boot-teardown-v42`. It runs the existing real
+v36/v37/v38/v39 C code in one process, with a controlled MM mock: allocation
+and boot-publication of a dense or sparse registry, failed boot allocation,
+boot abort and reinitialization, publication and lookup of an MM-owned
+packed extent, rejection of wrong ownership or missing lifecycle exclusion,
+refusal to release pinned or ambiguous extents, successful packed teardown,
+slot reuse, and rejection of registry abort while an entry is live. A failed
+registry MM free retains the runtime pointer; a successful abort clears it.
+Both 24-slot configurations pass: dense at 24 descriptor words and sparse
+with four entries at eight descriptor words. This test establishes the
+staged interfaces can be composed without integrating a production codec.
+
+The live GCC 32K image is NOT modified by v42: the Stage 41 VM destructor
+continues to fail closed on PACKED rather than treating it as disk-backed.
+No additional KCORE or runtime allocation is linked. Connecting the
+registered descriptor path to production VM teardown, process restoration,
+and KINIT remains blocked on measurable permanent-memory cost and complete
+runtime failure-injection coverage. Production codec and scheduler eviction
+remain deferred. The most recent measured active KCORE endpoint is 021541
+octal (v41), above the required 020000 boundary.
+
 ## 2026-10-13 FAIL-CLOSED LIVE VM DESTROY V41
 
 The live PDP-6 `vm_space_destroy` now calls the existing resident
