@@ -1,3 +1,12 @@
+## 2026-10-13 KCORE PACKED PROCESS PREPARATION V1
+
+The first staged interface for future compressed-process eviction is in
+system/kernel/core/kpack_codec_v1.[ch].  V1 is an identity codec, is not linked
+into the running kernel, and does not reclaim RAM.  No-swap PURE eviction must
+NOT be activated until packed-process MM transactions and an actual compressor
+are implemented and verified.  Design and next stages are recorded in
+design/kcore-packed-process-v1.md.  Existing swap remains unchanged.
+
 ## 2026-10-13 DSH V24 SCRIPT WORKSPACE CLEARING
 
 The 32-token DSH script workspace is now cleared in one word-wise pass
