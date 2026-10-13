@@ -1,5 +1,16 @@
 # KCORE compressed-process split: staged implementation v1
 
+V35 (inactive) makes MM authoritative for packed physical base and encoded
+extent words. Its two-word sparse entries contain only slot ID and layout;
+lookup reconstructs a temporary two-word descriptor from MM plus layout,
+rejecting duplicate owners or duplicate entries. Sparse v35 saves one data
+word per reserved entry against v34 but adds compiled code. At 24 slots,
+a future dense MM-authoritative layout table would need 24 data words, versus
+16 for an eight-entry sparse v35 table. A KINIT-selected dense/sparse backend
+remains an open design choice; do not link two full separate implementations
+into the 32K KCORE. Existing codec, scheduler, process teardown and slot
+allocation remain unchanged.
+
 V34 adds a sparse, bounded three-word-per-entry descriptor registry as an
 alternative to the v33 dense two-word-per-slot table. Its capacity is a
 caller-provided limit on simultaneously packed processes; full tables must

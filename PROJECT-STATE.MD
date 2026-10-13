@@ -1,3 +1,26 @@
+## 2026-10-13 MM-AUTHORITATIVE PACKED DESCRIPTORS V35
+
+The inactive `proc_packed_mm_registry_v35` prototype stores only the two
+pieces absent from MM: a slot ID and the retained writable layout. Physical
+base and encoded extent length are recovered from exactly one
+MM_TYPE_PACKED_PROCESS extent belonging to that slot. Lookup rejects a
+duplicate MM owner or duplicate registry slot rather than guessing which
+descriptor is authoritative. Publication and discard require lifecycle
+exclusion, PACKED mode, matching physical extent ownership, and the
+process transition bit. MM release failure leaves the descriptor and mode
+unchanged; successful release clears the two-word entry and storage mode.
+
+The PDP-6 GCC/DAS standalone object assembles to 301 text words before
+folding; the prior v34 sparse design used 277. Each v35 sparse entry uses
+two runtime data words rather than v34's three, but the extra code means
+there is no proven overall permanent RAM win. A dense layout-only table
+would require one word per process slot but has not been implemented.
+The daimos-testkit v35 host tests cover publication, duplicate entries,
+ambiguous MM owner, wrong owner, pinned free rejection, teardown, and slot
+reuse. No packed codec integration, KINIT allocation, process exit hook,
+or KCORE link is enabled. The last measured live KCORE endpoint remains
+021520 octal, pending a fresh whole-image build after other agents' work.
+
 ## 2026-10-13 SPARSE PACKED DESCRIPTOR REGISTRY V34
 
 An inactive alternative to the dense v33 registry is now available as
