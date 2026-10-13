@@ -1,3 +1,13 @@
+## PID 1 IDLE TTY DISPATCH EVENT MODEL (2026-10-13, V2)
+
+A deterministic daimos-testkit model now covers 60 possible orderings of
+two TTY arrivals, one child exit, a readiness snapshot and wait
+registration. See design/SUPERVISOR-IDLE-TTY-EVENT-CONTRACT-20261013-v2.MD.
+The proposed shared event must atomically recheck both sources and retain
+original input bytes. Existing child/event waits cannot be alternated
+without a lost-wakeup race. Hardware scanner arming and kernel ABI are
+**not yet implemented**; no idle LOGIN RAM saving is claimed.
+
 ## PID 1 IDLE TTY DISPATCH FEASIBILITY (2026-10-13, V1)
 
 See `design/SUPERVISOR-IDLE-TTY-DISPATCH-20261013-v1.MD` for the
