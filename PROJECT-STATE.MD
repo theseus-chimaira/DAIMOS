@@ -1,3 +1,28 @@
+## 2026-10-13 FAIL-CLOSED LIVE VM DESTROY V41
+
+The live PDP-6 `vm_space_destroy` now calls the existing resident
+`proc_storage_expect_v30` before any MM free or disk-swap detach. It accepts
+RESIDENT and DISK storage only; DISK additionally requires a zero VM base.
+PACKED, invalid, or missing map modes fail before changing MM ownership,
+the swap record, or the process VM descriptor. This is a minimal safety
+boundary while packed-registry activation remains postponed. The corrected
+v40 failed-creation path and the exit path both hold TRANSITION during VM
+destroy. The future packed teardown handler must be installed together
+with boot registration before enabling any PACKED state publication.
+
+The low-memory GCC three-member TSFS image built successfully and booted
+in SIMH to DTFS LOADED / INIT V1 without observed HALT or ?RT. On the
+current working tree the linked KCORE endpoint moved from v40's 021525
+to 021541 octal: **12 decimal resident words** of growth. This does not
+solve the hard KCORE shrink target; it is a fail-closed correctness guard.
+Existing daimos-testkit packed-teardown-v39, packed-owner-v37 and
+proc-abort-transition-v40 host tests still pass. Runtime failure injection
+for a deliberately PACKED process is not yet tested; boot smoke covers only
+the normal RESIDENT/DISK paths. Full dense/sparse registry code is not
+linked into KCORE because that would add substantial permanent code before
+packed eviction exists. Production compressor/decompressor integration
+remains deferred.
+
 ## 2026-10-13 PROCESS ABORT LIFECYCLE TRANSITION V40
 
 The live C `proc_slot_discard()` used to enter `vm_space_destroy()` without

@@ -1,5 +1,13 @@
 # KCORE compressed-process split: staged implementation v1
 
+V41 installs a small live VM teardown guard using the existing two-bit
+storage map. Until KINIT provides registry storage and the packed owner
+teardown engine is linked, `vm_space_destroy` deliberately rejects PACKED
+mode rather than accidentally detaching it as disk-backed state. Verified
+boot behavior costs 12 additional linked KCORE words on the current tree;
+the eventual paired activation should replace this reject branch with
+checked packed MM teardown, not add a second parallel guard.
+
 V40 aligns the live aborted-creation teardown with the exit-path lifecycle
 contract: `proc_slot_discard` holds TRANSITION during `vm_space_destroy`
 and clears it on failure. The packed registry/teardown remain inactive;

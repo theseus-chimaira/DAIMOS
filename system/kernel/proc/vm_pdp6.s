@@ -31,6 +31,7 @@
         .globl  mm_extent_count
         .globl  mm_arena_count
         .globl  proc_swap_detach
+        .globl  proc_storage_expect_v30
         .globl  proc_swap_reclaim
         .globl  vfs_read_words
         .globl  proc_runq_add
@@ -472,6 +473,23 @@ vm_space_create_done:
 vm_space_destroy:
         push    17,1                    ; descriptor
         push    17,2                    ; owner
+        ; Do not destroy a PACKED/invalid process through the old disk-swap
+        ; cleanup path.  A packed image needs its registered MM extent
+        ; released first; no such image may be published until that path is
+        ; installed.  Reject before freeing any resident MM allocation.
+        move    1,(17)                 ; slot
+        movei   2,0                    ; RESIDENT
+        pushj   17,proc_storage_expect_v30
+        jumpe   1,vm_space_destroy_mode_ok
+        move    1,(17)
+        movei   2,1                    ; DISK
+        pushj   17,proc_storage_expect_v30
+        jumpn   1,vm_space_destroy_fail
+        move    2,-1(17)              ; DISK cannot have a resident VM base
+        hrrz    3,1(2)
+        jumpn   3,vm_space_destroy_fail
+vm_space_destroy_mode_ok:
+        move    1,-1(17)              ; restore descriptor for MM teardown
         hrrz    3,1(1)
         jumpe   3,vm_space_destroy_detach
         move    1,3
