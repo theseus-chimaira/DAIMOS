@@ -1,3 +1,13 @@
+## 2026-10-13 PACKED MM ALLOCATION HELPERS V8
+
+Staged proc_packed_reserve_v1/proc_packed_release_v1 helpers allocate
+unaligned high-core MM type-4 extents with slot ownership, validation,
+no reclaim recursion, and release-only descriptor clearing. They do not
+publish packed process state or modify legacy swap records. In a trial link
+they increased KCORE by 0145 octal words, so they are deliberately NOT linked
+in the production resident kernel until the feature is activated. Eviction
+and restoration remain disabled pending atomic transitions and rollback.
+
 ## 2026-10-13 PACKED PROCESS DESCRIPTOR V7
 
 The inactive proc_packed_v1 two-word descriptor now defines the physical

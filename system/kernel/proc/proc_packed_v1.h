@@ -30,6 +30,17 @@ struct proc_packed_v1 {
         kword_t layout;
 };
 
+/*
+ * Staging-only allocation API. The caller owns DESCRIPTOR and must keep it
+ * unpublished until the entire eviction transaction succeeds. These calls
+ * do not alter process residency or legacy swap records.
+ */
+int proc_packed_reserve_v1(unsigned int slot, kword_t encoded_words,
+    kword_t logical_offset, kword_t decoded_words,
+    struct proc_packed_v1 *descriptor);
+int proc_packed_release_v1(unsigned int slot,
+    struct proc_packed_v1 *descriptor);
+
 #define PROC_PACKED_SPAN(base, words) \
         ((((kword_t)(words) & MM_HALF_MASK) << 18U) | \
          ((kword_t)(base) & MM_HALF_MASK))
