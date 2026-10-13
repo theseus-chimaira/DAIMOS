@@ -1,3 +1,18 @@
+## 2026-10-13 NEW D6 CODEC NATIVE ABI STAGING V055
+
+Imported the native v053 D6 compressor/decompressor implementation and
+the v054 all-producer cutover checklist from the completed codec branch.
+Added an inactive AC10..AC16-preserving kernel calling adapter. Its
+native PDP-6 test uses the independently recorded v051 darc golden stream
+and verifies exact bitstream parity, decode and register preservation:
+PASS. The old `000060` resumable decoder, stage-1 installation, image
+builders, VFS/EXEC/TSFS consumers and kpack identity API are unchanged.
+The v053 complete-buffer decoder cannot simply replace the resumable
+fixed core without breaking the old API; a coordinated single-format
+image cutover is still required before the user-requested production
+activation. See `system/kernel/core/D6CODEC-KCORE-ABI-v055.md` and
+`D6CODEC-INTEGRATION-TODO-v054.md`. This step adds no active KCORE words.
+
 ## 2026-10-13 REGISTRY-AWARE PACKED RESTORE V46
 
 Staged `proc_packed_restore_transaction_v46` consumes the installed v38
