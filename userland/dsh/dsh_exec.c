@@ -2707,14 +2707,17 @@ dsh_script_depth(struct dsh_script *script, const struct dsh_token *tokens,
 void
 dsh_script_init(struct dsh_script *script)
 {
+        kword_t *words;
         unsigned int i;
 
         if (script == 0)
                 return;
-        for (i = 0U; i < DSH_SCRIPT_MAX_TOKENS; ++i)
-                dsh_token_clear(&script->tokens[i]);
-        script->ntokens = 0U;
-        script->depth = 0U;
+        /* Every token field is word-sized on PDP-6, including the SIXBIT
+         * record.  Zero the complete workspace instead of clearing each
+         * token by a separate nested call. */
+        words = (kword_t *)script;
+        for (i = 0U; i < sizeof(*script) / sizeof(*words); ++i)
+                words[i] = 0;
 }
 
 static int

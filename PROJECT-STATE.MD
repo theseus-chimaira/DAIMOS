@@ -1,3 +1,14 @@
+## 2026-10-13 DSH V24 SCRIPT WORKSPACE CLEARING
+
+The 32-token DSH script workspace is now cleared in one word-wise pass
+instead of calling `dsh_token_clear` for every element.  All fields are
+PDP-6 word-sized, DSH_T_EOF is zero, and required zero-initialization
+semantics are preserved.  GCC DXR image shrinks from 032117 to 032104
+octal words, BSS remains 013742.  The dedicated nested SOURCE suite
+passes 4/4 and full GCC SIMH DSH conformance passes 115/115.  The
+strict below-030000 text gate still needs 02105 octal words removed;
+physical RAM/BSS/stack/heap work remains open.  No overlays.
+
 ## 2026-10-12 DSH V23 STORED-FUNCTION WALKER SHRINK
 
 The AST function-node preflight count and copy use one bounded walker,

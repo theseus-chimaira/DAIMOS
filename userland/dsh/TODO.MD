@@ -1,5 +1,15 @@
 # DSH TODO
 
+V24 SCRIPT WORKSPACE INITIALIZATION (2026-10-13): `dsh_script_init`
+now clears its word-sized token/workspace record with one linear pass,
+instead of calling the SIXBIT token clearer 32 times.  GCC DXR image
+decreases from 032117 to 032104 octal (013 words); BSS stays 013742.
+Nested SOURCE SIMH tests pass 4/4 and full GCC DSH conformance 115/115.
+The strict below-030000 text target still requires 02105 octal words
+of reduction.  Next measure AST/function storage and history
+lifetimes, plus peak stack and BRK; no capacity reductions by assumption.
+
+
 V23 stored-function traversal experiment (2026-10-12): the separate
 preflight-count and recursive-copy walkers have been combined into one
 bounded traversal with an optional output buffer.  This retains the
