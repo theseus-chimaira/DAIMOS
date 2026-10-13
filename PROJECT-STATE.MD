@@ -1,3 +1,12 @@
+## 2026-10-13 PACKED PROCESS MM OWNERSHIP RESERVATION V6
+
+MM type 4 is reserved for packed writable process state, distinct from
+ordinary aligned process images (type 1), modules (type 2) and dynamic kernel
+allocations (type 3). The packed contract is in proc_packed_v1.h. No packed
+state is allocated, no ambiguous disk-swap record is reinterpreted, and MM
+compaction deliberately does not move the new type without an owner-update
+transaction. Runtime behavior is unchanged; no eviction is enabled.
+
 ## 2026-10-13 PROCESS BACKING CLEANUP BOUNDARY V5
 
 proc_swap_detach() now separates the legacy backstore-span release from

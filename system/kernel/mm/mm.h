@@ -29,6 +29,13 @@
 #define MM_TYPE_PROCESS         1U
 #define MM_TYPE_MODULE          2U
 #define MM_TYPE_KERNEL_DYNAMIC  3U
+/**
+ * Evicted writable state stored in core, not a runnable APR process image.
+ * This type is reserved until the packed-process transaction is implemented.
+ * In particular, mm_compact() must not treat it as a movable VM extent:
+ * relocation of packed data requires updating the owner's packed descriptor.
+ */
+#define MM_TYPE_PACKED_PROCESS  4U
 
 #define MM_ALLOC_LOW            0U
 #define MM_ALLOC_HIGH           1U
