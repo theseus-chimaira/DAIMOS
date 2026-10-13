@@ -29,6 +29,9 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
   prototype sizes; preserve MM-authoritative extent ownership.
 - [ ] Connect KINIT registry allocation, boot abort, process exit, VM destroy,
   packed publication and teardown; validate exclusion and failure rollback.
+- [x] Stage inline KPACK v073 ABI adapters to the v071 encoder and v070
+  direct-buffer decoder; native PDP-6 roundtrip and AC10..AC16 checks pass.
+  Registry-aware eviction/restore and scheduler connections remain pending.
 - [ ] Complete packed restore against the selected registry, rather than its
   private descriptor, then integrate packed eviction/restoration with the
   scheduler; do not remove disk swap before full native acceptance.
