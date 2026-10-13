@@ -76,6 +76,8 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 - [x] Stage native inline encoder v071 (PDP-6 standalone literal/zero-run
   roundtrip PASS). Full native 81-DXR parity, KPACK C ABI and VM/MM
   integration remain open; do not activate incomplete codec pairs.
+- [x] Stage alternate Stage-1 inline v072 sources for all five devices;
+  all five DAS assemblies pass. Actual simulator boot is still pending.
 - [ ] Integrate the production D6 codec with the resident KCORE encoder and
   streaming decoder, exact `000060` resumable ABI, bounded VFS refill,
   KPACK and EXEC/VFS/PURE consumers. Keep the detailed cross-subsystem plan
