@@ -1,3 +1,16 @@
+## PID 1 IDLE TTY DISPATCH FEASIBILITY (2026-10-13, V1)
+
+See `design/SUPERVISOR-IDLE-TTY-DISPATCH-20261013-v1.MD` for the
+source-audited experiment. Four idle terminal processes currently cost
+four times the per-LOGIN rounded extent. Removing those processes is
+potentially better than fitting each idle frontend in one APR block,
+but requires a coherent receive-scanner and combined child/TTY event
+mechanism: existing SYS_WAIT sleeps on child termination exclusively,
+while CTY/DCS/GE input uses reader-armed hardware/event paths. The
+one-block PID 1 image has only 000110 octal words headroom. This is
+**design/prototype planning only**: no production dispatcher or kernel
+behavior is implemented or validated; do not count RAM savings yet.
+
 ## LOGIN PASSWD READER MODULE V3 (2026-10-13)
 
 LOGIN still owns the password prompt, comparison, terminal session,
