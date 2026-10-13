@@ -70,6 +70,9 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
   malformed/truncated input tests PASS in daimos-testkit. This is inactive.
   The 8K KCORE hard limit remains mandatory; defer optimization until the
   implementation and system-wide format migration are otherwise complete.
+- [x] Stage transient TSFS v075 validators for MOUNT.TSFS and KINIT tape
+  root: exact version 1.3, inline flag 2 in mount scanner. Both cross-compile
+  for PDP-6; native mount/read and boot remain unverified.
 - [x] Fix inactive TSFS inline runtime extent dispatch in v074: flag 2
   explicitly selects inline decode, flag 1 is rejected. Native host media
   inspection confirms v069 actually emits a compressed flag-2 extent.
