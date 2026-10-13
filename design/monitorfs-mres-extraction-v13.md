@@ -47,6 +47,15 @@ The next patch should establish the dispatch/lifetime contract before any
 MonitorFS functions are moved. Keeping the implementation unchanged until
 that contract is tested avoids unsafe VFS calls into unloaded code.
 
+## Baseline comparison (v18)
+
+A new GCC lowmem build with resident MonitorFS (`MONITORFS_MRES_ENABLED=0`)
+also reaches INIT V1 but not LOGIN in the same testkit simulator harness.
+This matches the v17 MRES-enabled failure and therefore does not establish
+a MonitorFS-specific regression. The fixed resident baseline still links at
+023360 octal. MRES activation remains opt-in pending independent LOGIN
+diagnosis and MonitorFS VFS acceptance tests.
+
 ## Isolated package link probe (v15)
 
 The existing MonitorFS assembler has now been linked experimentally as a

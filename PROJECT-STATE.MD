@@ -1,3 +1,17 @@
+## 2026-10-13 MONITORFS GCC BASELINE BOOT COMPARISON V18
+
+A fresh GCC lowmem image was rebuilt with MONITORFS_MRES_ENABLED=0
+(original fixed resident MonitorFS); KCORE endpoint is 023360 octal.
+The existing daimos-testkit MonitorFS v17 SIMH harness reports the SAME
+pre-LOGIN stall as the experimental MONITORFS_MRES_ENABLED=1 image: both
+reach INIT V1 and print `INIT: WARNING: MEMFS NOT MOUNTED ON /TEMP`, but
+neither reaches LOGIN within the harness timeout. This isolates the LOGIN
+blocker from the optional MonitorFS relocation: the observed failure is
+not unique to the MRES configuration. It does NOT prove that MonitorFS
+MRES runtime VFS behavior works; those post-login tests remain blocked.
+Do not enable MonitorFS MRES by default until the baseline LOGIN issue
+is diagnosed and the full acceptance probes pass.
+
 ## 2026-10-13 MONITORFS MRES BOOT-INSTALL FIX V17
 
 The experimental GCC lowmem MonitorFS MRES configuration now builds a
