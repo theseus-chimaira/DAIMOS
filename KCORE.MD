@@ -73,6 +73,9 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 - [x] Stage v070 inline VFS adapter and named TSFS/EXEC/PURE call-site
   variants, without activating legacy symbols. Standalone PDP-6 link PASS;
   TSFS 1.3 runtime validation and full consumer behavior still pending.
+- [x] Stage native inline encoder v071 (PDP-6 standalone literal/zero-run
+  roundtrip PASS). Full native 81-DXR parity, KPACK C ABI and VM/MM
+  integration remain open; do not activate incomplete codec pairs.
 - [ ] Integrate the production D6 codec with the resident KCORE encoder and
   streaming decoder, exact `000060` resumable ABI, bounded VFS refill,
   KPACK and EXEC/VFS/PURE consumers. Keep the detailed cross-subsystem plan
