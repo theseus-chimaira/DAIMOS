@@ -1,3 +1,27 @@
+## 2026-10-13 PACKED LAYOUT BOOT PREPARATION V38
+
+Added an inactive transient-boot allocator for v36 dense/sparse descriptor
+layouts (`proc_packed_boot_v38.c/.h`). It accepts configured slots, maximum
+simultaneously packed processes and a descriptor-word budget supplied after
+essential allocations, chooses the smaller feasible representation using
+the existing v36 planner, then allocates exactly one zero-initialized
+MM_TYPE_KERNEL_DYNAMIC extent. The four-word runtime descriptor is only
+published once initialization succeeds. The boot preparation is explicitly
+opt-in: production KINIT and process exit remain unchanged until complete
+packed ownership, rollback and teardown paths are installed. Abort rejects
+occupied slots and preserves ownership if MM refuses the free.
+
+PDP-6 GCC/DAS standalone object compiles and assembles (100 text words,
+4 BSS words before folding); the host `packed-boot-v38` test covers budget
+and allocation failures, sparse and dense selection, duplicate setup,
+occupied-table abort refusal, MM free refusal and successful reinitialization.
+The v36 layout and v37 ownership tests also pass. These are isolated host
+tests; no boot/runtime KCORE size or packed process acceptance is claimed.
+Next: connect teardown, aborted creation and slot reuse consistently with
+the enabled registry, then add production boot activation without making
+the 32K permanent KCORE larger merely to support larger systems. Production
+compression and decompression integration remain explicitly deferred.
+
 ## 2026-10-13 SHARED DENSE/SPARSE PACKED OWNERSHIP V37
 
 Added an inactive single MM-authoritative ownership engine for either v36

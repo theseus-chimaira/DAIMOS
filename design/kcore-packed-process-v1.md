@@ -1,5 +1,11 @@
 # KCORE compressed-process split: staged implementation v1
 
+V38 stages boot-time allocation for either descriptor representation with
+one dynamically owned kernel extent. The caller supplies actual descriptor
+word budget and required packed concurrency; KINIT is not yet wired to it.
+Abort refuses a live/occupied table and preserves the allocation if MM
+rejects release. No codec/scheduler linkage or live KCORE size change.
+
 V37 provides one inactive MM-ownership and teardown engine for both dense
 and sparse v36 layouts, so physical extent checks and lifecycle state
 transitions need not be duplicated in the 32K kernel. The testkit exercises
