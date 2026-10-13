@@ -131,3 +131,10 @@ uninstall:
 
 clean:
 	rm -rf $(BUILD)
+
+# Isolated D6 grouped-codec image tools; not installed and not in TOOLS.
+$(BUILD)/mktsfs-v061: mktsfs-v061.c tsfs-format.c tsfs-format-v061.h d6codec-codec-v060.c d6codec-codec-v060.h | $(BUILD)
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mktsfs-v061.c tsfs-format.c d6codec-codec-v060.c
+
+$(BUILD)/tsfscheck-v061: tsfscheck-v061.c tsfs-format.c tsfs-format-v061.h d6codec-codec-v060.c d6codec-codec-v060.h | $(BUILD)
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ tsfscheck-v061.c tsfs-format.c d6codec-codec-v060.c
