@@ -1,3 +1,23 @@
+## 2026-10-13 BOOT-SELECTABLE PACKED LAYOUT PRIMITIVE V36
+
+Added an inactive common descriptor-layout primitive for the dense/sparse
+choice. `proc_packed_layout_plan_v36` chooses the smaller feasible data
+representation given the configured process-slot count, expected maximum
+packed concurrency, and caller-provided descriptor-word RAM budget. Dense
+uses one layout word per slot; sparse uses two words per reserved entry
+(slot + layout). Tie goes to constant-time dense lookup. The layout routines
+implement bounded reservation, lookup, clearing, and slot reuse with no
+dynamic allocation, MM mutation, or compiler/compression dependency.
+
+PDP-6 GCC/DAS standalone object: 232 text words before folding. Testkit
+`packed-layout-v36` passes layout selection, invalid/budget cases, sparse
+exhaustion, duplicate reservation, clearing and slot reuse in both modes.
+This is not yet the single shared ownership/teardown engine, and KINIT does
+not allocate or select it in the production image. v35 remains a separate
+MM-authoritative ownership prototype. Do not claim a 32K resident saving or
+turn on packed eviction before lifecycle publication/teardown is unified
+and the codec passes target execution tests.
+
 ## 2026-10-13 MM-AUTHORITATIVE PACKED DESCRIPTORS V35
 
 The inactive `proc_packed_mm_registry_v35` prototype stores only the two

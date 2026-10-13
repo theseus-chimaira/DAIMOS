@@ -1,5 +1,13 @@
 # KCORE compressed-process split: staged implementation v1
 
+V36 stages an inactive capacity-policy and dense/sparse word-layout backend
+with one common lookup/reservation/clear API. It selects sparse only when
+2 * maximum packed concurrency is strictly less than the slot count and
+within KINIT's measured descriptor RAM budget; otherwise selects dense if
+the full slot-sized table fits, or rejects the configuration. Ownership/MM
+validation continues to belong to the lifecycle engine; KINIT selection,
+exit/abort/slot-reuse integration, and production codec remain deferred.
+
 V35 (inactive) makes MM authoritative for packed physical base and encoded
 extent words. Its two-word sparse entries contain only slot ID and layout;
 lookup reconstructs a temporary two-word descriptor from MM plus layout,
