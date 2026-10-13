@@ -14,6 +14,36 @@
 #define PROC_PACKED_MM_TYPE MM_TYPE_PACKED_PROCESS
 
 /*
+ * Two-word inactive-process payload descriptor.  The separate lifecycle
+ * discriminator is mandatory: neither a zero VM base nor a swap-record value
+ * identifies the storage type safely.
+ *
+ * span: LH encoded word count, RH physical MM base.
+ * layout: LH first retained writable word, RH decoded writable word count.
+ *
+ * A future sparse format may need more than one region; this initial format
+ * describes only one contiguous writable suffix.  Its offsets are logical
+ * process offsets, not physical addresses.
+ */
+struct proc_packed_v1 {
+        kword_t span;
+        kword_t layout;
+};
+
+#define PROC_PACKED_SPAN(base, words) \
+        ((((kword_t)(words) & MM_HALF_MASK) << 18U) | \
+         ((kword_t)(base) & MM_HALF_MASK))
+#define PROC_PACKED_BASE(p) ((p)->span & MM_HALF_MASK)
+#define PROC_PACKED_WORDS(p) (((p)->span >> 18U) & MM_HALF_MASK)
+#define PROC_PACKED_OFFSET(p) (((p)->layout >> 18U) & MM_HALF_MASK)
+#define PROC_PACKED_DECODED(p) ((p)->layout & MM_HALF_MASK)
+
+/* Future lifecycle tag, stored OUTSIDE the overloaded swap record. */
+#define PROC_STORAGE_RESIDENT 0U
+#define PROC_STORAGE_DISK     1U
+#define PROC_STORAGE_PACKED   2U
+
+/*
  * A future nonresident packed process must retain:
  * - stable u-area containing saved registers and PURE executable backing;
  * - an MM_TYPE_PACKED_PROCESS extent owned by its process slot;

@@ -26,6 +26,17 @@ Implementation phases:
 Acceptance requires no swap I/O, no hot-path context-switch overhead, correct
 backing pinning, exact restoration, and safe operation under fragmentation.
 
+## Packed descriptor contract (v7, inactive)
+
+The initial two-word proc_packed_v1 descriptor carries physical base and
+encoded length together with the decoded writable suffix offset and length.
+It is not a per-process permanent allocation yet; the lifecycle must first
+provide an explicit RESIDENT/DISK/PACKED discriminator outside the overloaded
+legacy swap record. Packed MM extents belong to their slot and are excluded
+from the existing aligned runnable-process compactor. A later sparse codec
+may need a different layout record; the first descriptor deliberately handles
+only a contiguous retained writable suffix.
+
 ## PCLK and civil time (deferred)
 
 The mandatory CLK MRES owns 50/60 Hz scheduler ticks. It must be the

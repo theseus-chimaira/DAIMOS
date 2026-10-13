@@ -1,3 +1,12 @@
+## 2026-10-13 PACKED PROCESS DESCRIPTOR V7
+
+The inactive proc_packed_v1 two-word descriptor now defines the physical
+encoded span and contiguous logical writable suffix, together with distinct
+RESIDENT/DISK/PACKED lifecycle tag values. No per-process storage has been
+added, no runtime path uses the descriptor, and packed eviction remains off.
+Before integration, state tags need a concrete home, atomic transition rules
+and MM owner validation; skip the unused middle of memory only with ABI proof.
+
 ## 2026-10-13 PACKED PROCESS MM OWNERSHIP RESERVATION V6
 
 MM type 4 is reserved for packed writable process state, distinct from
