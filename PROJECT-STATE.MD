@@ -1,3 +1,21 @@
+## LOGIN ONE-APR-BLOCK SAVING (2026-10-13, V1)
+
+LOGIN now declares a DXR2 ST2 stack reservation of 01000 octal words,
+instead of the legacy 02000 default. Its unchanged 006133-word text and
+000255-word BSS, with 000020 origin, require 007430 words; the PDP-6 APR
+rounds this to 010000 instead of 012000. One 02000-word (1024 decimal)
+user extent is saved while LOGIN is resident. Unlike SUPERVISOR, LOGIN
+retains a full 01000-word stack margin for its temporary EXEC argument
+block and nested filesystem/authentication calls. Other programs keep the
+existing 02000 default. D6LZ cannot represent ST2 metadata on compressed
+DXR2 executables, so the PDP-6 disk image installs raw LOGIN DXR until
+that format supports explicit stack reservations. No unsafe decompression
+or metadata-stripping fallback is used.
+
+See design/LOGIN-ONE-APR-BLOCK-20261013-v1.MD and corresponding testkit
+checks. The smaller LOGIN allocation alone does not demonstrate a 32K
+LOGIN-to-DSH boot, nor certify measured maximum LOGIN stack depth.
+
 ## SUPERVISOR V11 SINGLE-APR-BLOCK (2026-10-12)
 
 The PDP-6 SUPERVISOR now uses a per-executable DXR2 `ST2` stack

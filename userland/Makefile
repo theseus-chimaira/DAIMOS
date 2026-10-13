@@ -305,7 +305,7 @@ $(MOUNTALL_DXR): $(MOUNTALL_C_OBJS) $(MOUNTALL_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(MOUNTALL_MAP) $(MOUNTALL_S_OBJS) $(MOUNTALL_C_OBJS)
 
 $(LOGIN_DXR): $(LOGIN_C_OBJS) $(LOGIN_S_OBJS)
-	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(LOGIN_MAP) $(LOGIN_S_OBJS) $(LOGIN_C_OBJS)
+	$(DLINK) --daimos-uuo-relax --stack-words 01000 -b 020 -o $@ -M $(LOGIN_MAP) $(LOGIN_S_OBJS) $(LOGIN_C_OBJS)
 
 $(DSH_FOLD_PLAN): $(DSH_S_OBJS) $(P10FOLD_TOOL_DEP) Makefile
 	$(P10FOLD) -m 4 -P $@ $(DSH_S_OBJS) >/dev/null

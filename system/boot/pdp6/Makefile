@@ -372,7 +372,9 @@ LOGDRAIN_DXR = $(USERLAND_BUILD_ROOT)/userland/logdrain.dxr
 SYSTEM_INIT_DXR ?= $(INIT_DXR)
 SYSTEM_SUPERVISOR_DXR ?= $(USERLAND_BUILD_ROOT)/userland/supervisor.dxr
 SYSTEM_MOUNTALL_DXR ?= $(MOUNTALL_DXR)
-SYSTEM_LOGIN_DXR ?= $(LOGIN_D6LZ_DXR)
+# LOGIN carries a per-executable DXR2 ST2 stack reservation.  D6LZ's
+# compressed DXR2 format cannot represent ST2; preserve the metadata.
+SYSTEM_LOGIN_DXR ?= $(LOGIN_DXR)
 SYSTEM_DSH_DXR ?= $(DSH_D6LZ_DXR)
 SYSTEM_XARGS_DXR ?= $(XARGS_D6LZ_DXR)
 SYSTEM_SED_DXR ?= $(SED_D6LZ_DXR)
