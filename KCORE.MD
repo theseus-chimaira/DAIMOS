@@ -169,6 +169,10 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [ ] v138: Diagnose first LOGIN `SYS_RUN` image load with isolated fresh
+  disk media for each run; compare compressed and plain LOGIN without
+  changing kernel code. A reused 64K image can instead fail early at `?RT`.
+
 - [ ] v136: Diagnose common high-memory pre-INIT HALT (baseline and external
   MM) and the 64K/128K post-INIT halt. The simulator rounds a requested
   254K configuration to 256K; do not claim 254K acceptance. Defer 32K

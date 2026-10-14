@@ -1,3 +1,24 @@
+# 2026-10-14 v138: LOGIN loading investigation and boot-media isolation
+
+- Temporary INIT tracing established that `load_inittab()` succeeds and
+  MOUNTALL's `dsys_run()` returns. The first LOGIN `dsys_run()` enters the
+  native `proc_run_block` and `exec_load_process`, but does not return.
+- Temporary kernel breadcrumbs established that LOGIN file lookup/header
+  validation and `vm_space_create` are reached; the allocator and VM-zeroing
+  routine returned during instrumented runs. These probes perturb timing,
+  producing stalls rather than always reproducing the original PC-zero HALT.
+  All intrusive source instrumentation was reverted, not shipped.
+- Disk-root packages compressed `LOGIN` as `login.d6lz.dxr` by default.
+  A first boot with plain `login.dxr` reached INIT without an immediate
+  halt, but did not reach LOGIN within 14 seconds. A repeat on the same
+  writable image instead failed root validation with `?RT` before INIT.
+  These outcomes DO NOT yet prove a compressed decoder bug: repeat trials
+  reuse mutable disk images. Acceptance needs fresh independent media for
+  each run and a full LOGIN milestone, with the compressed/plain comparison
+  controlled by identical build settings.
+- No executable fix or successful boot has been established yet. Keep the
+  32K boot postponed until deferred DSH minimization.
+
 # 2026-10-14 v137: Boot failure narrowed to LOGIN SYS_RUN
 
 - Two deliberately temporary INIT console-instrumentation builds were
