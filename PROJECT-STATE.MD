@@ -1,3 +1,22 @@
+# 2026-10-14 v137: reproducible fresh-media 64K post-INIT failure
+
+- Clean disk-root builds, each with a new BUILD_ROOT and fresh D6FS media,
+  reproduce `INIT V1`, nonfatal MOUNTALL status 2 (no /TEMP MEMFS), then
+  simulator halt at PC 000000. Reusing boot-mutated disk images can instead
+  produce early ?RT, so never compare boots against already-written media.
+- SIMH breakpoint at `proc_exit_current` 014050 showed slot 2 exiting
+  with AC1=2 (MOUNTALL status), while `proc_high_slot=3`. Resuming gives
+  slot 1 still current, slot 2 ZOMB, and a halt at PC 000000. It does not
+  take the intentional kernel final-process HALT path.
+- Slot 1 descriptor is non-FREE and remains the current process. The halt
+  snapshot shows low-core word 0 = 260740004047 (PUSHJ 17,4047).
+  This implicates an invalid continuation/control transfer but does NOT
+  yet prove the mechanism. Do not modify scheduler state without a trace.
+- Testkit `trace-mm-boot-v137.sh` now builds fresh media, captures simulator
+  machine state and preserves its logs. Test reproduces the halt (expected
+  FAIL); complete LOGIN acceptance is still blocked. 32K testing remains
+  deferred until DSH minimization.
+
 # 2026-10-14 v136: Boot-size comparison; 32K deferred
 
 - Defer 32K boot acceptance until the planned DSH minimization work.

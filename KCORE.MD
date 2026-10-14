@@ -169,6 +169,12 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [ ] v137: Diagnose the reproducible PC 000000 halt after MOUNTALL status 2
+  while INIT (slot 1) remains current. Fresh-media trace fixture is available
+  in daimos-testkit. Investigate saved PI return PC and INIT's wait context;
+  do not conflate with expected final-process HALT or transient ?RT on reused
+  disk images.
+
 - [ ] v136: Diagnose common high-memory pre-INIT HALT (baseline and external
   MM) and the 64K/128K post-INIT halt. The simulator rounds a requested
   254K configuration to 256K; do not claim 254K acceptance. Defer 32K
