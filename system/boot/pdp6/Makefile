@@ -110,6 +110,8 @@ DRUM_D6FS_BLOCKS != printf '%u' $$(( 020000 - 1 - $(DRUM_AUX_TAIL_BLOCKS) ))
 PROC_BOOT_USERS ?= 1
 PROC_STACK_WATERMARK ?= 0
 PROC_SWAP_VERIFY_PURE ?= 0
+PACKED_RUNTIME_V088 ?= 0
+PACKED_RUNTIME_V088_STAMP = $(BUILD)/.packed-runtime-v088-$(PACKED_RUNTIME_V088)
 VM_BACKEND ?= pdp6
 
 KINIT_BUILD = $(BUILD)/kinit-asm
@@ -277,6 +279,25 @@ KCORE_FIXED_NAMES = $(KCORE_C_NAMES) backstore ret \
 	syscall_dispatch_pdp6 mach_user_pdp6 vm_backend_pdp6 kcore_pi_pdp6 bcache_pdp6 storage_router kcore_end
 KCORE_FIXED_ASM = $(KCORE_BUILD)/proc_packed_runtime_v086.s $(KCORE_BUILD)/proc_packed_layout_v36.s $(KCORE_BUILD)/d6lz_fixed.s $(KCORE_BUILD)/exec.s $(KCORE_BUILD)/d6lz.s $(KCORE_BUILD)/mm.s $(KCORE_BUILD)/proc.s $(KCORE_BUILD)/backstore.s $(KCORE_BUILD)/vm_backend.s $(KCORE_BUILD)/proc_swap.s $(KCORE_BUILD)/file.s $(KCORE_BUILD)/ret.s $(KCORE_BUILD)/dsk270.s $(KCORE_BUILD)/drm236.s $(KCORE_BUILD)/kfmt_pdp6.s $(KCORE_BUILD)/s6rec.s $(KCORE_BUILD)/vfs.s $(KCORE_BUILD)/fs_mres.s $(KCORE_BUILD)/file_runtime.s $(KCORE_BUILD)/pipe.s $(KCORE_BUILD)/monitorfs_runtime.s $(KCORE_BUILD)/proc_pdp6.s $(KCORE_BUILD)/proc_run.s $(KCORE_BUILD)/device_state.s $(KCORE_BUILD)/syscall_info.s $(KCORE_BUILD)/pclk.s $(KCORE_BUILD)/syscall_dispatch_pdp6.s $(KCORE_BUILD)/mach_user_pdp6.s $(KCORE_BUILD)/vm_backend_pdp6.s $(KCORE_BUILD)/kcore_pi_pdp6.s $(KCORE_BUILD)/bcache_pdp6.s $(KCORE_BUILD)/storage_router.s $(KCORE_BUILD)/kcore_end.s
 KCORE_FIXED_OBJS = $(BUILD)/proc_packed_runtime_v086.dobj $(BUILD)/proc_packed_layout_v36.dobj $(BUILD)/d6lz_fixed.dobj $(BUILD)/exec.dobj $(BUILD)/d6lz.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/backstore.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/ret.dobj $(BUILD)/dsk270.dobj $(BUILD)/drm236.dobj $(BUILD)/kfmt_pdp6.dobj $(BUILD)/s6rec.dobj $(BUILD)/vfs.dobj $(BUILD)/fs_mres.dobj $(BUILD)/file_runtime.dobj $(BUILD)/pipe.dobj $(BUILD)/monitorfs_runtime.dobj $(BUILD)/proc_pdp6.dobj $(BUILD)/proc_run.dobj $(BUILD)/device_state.dobj $(BUILD)/syscall_info.dobj $(BUILD)/pclk.dobj $(BUILD)/syscall_dispatch_pdp6.dobj $(BUILD)/mach_user_pdp6.dobj $(BUILD)/vm_backend_pdp6.dobj $(BUILD)/kcore_pi_pdp6.dobj $(BUILD)/bcache_pdp6.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj
+ifeq ($(PACKED_RUNTIME_V088),1)
+PACKED_V088_C_NAMES = proc_storage_map_v28 proc_packed_owner_v37 \
+ proc_packed_publish_v44 proc_packed_teardown_v39 proc_packed_evict_v077 \
+ proc_packed_restore_v46 proc_packed_inline_v088 \
+ proc_packed_lifecycle_v088 proc_swap_dispatch_v088 proc_packed_destroy_v084
+KERNEL_INPUTS += $(addprefix $(KERNEL_DIR)/proc/,$(addsuffix .c,$(PACKED_V088_C_NAMES))) \
+ $(KERNEL_DIR)/proc/proc_swap_pdp6_inline_v088.s \
+ $(KERNEL_DIR)/proc/vm_pdp6_packed_v088.s \
+ $(addprefix $(KERNEL_DIR)/core/,$(addsuffix .s,d6codec_inline_reloc_v088 d6codec_inline_buffer_v088 d6codec_kpack_reloc_v088 d6codec_inline_encode_v078))
+PACKED_V088_NAMES = proc_storage_map_v28 proc_packed_owner_v37 proc_packed_publish_v44 \
+ proc_packed_teardown_v39 proc_packed_evict_v077 proc_packed_restore_v46 \
+ proc_packed_inline_v088 proc_packed_lifecycle_v088 proc_swap_dispatch_v088 \
+ proc_packed_destroy_v084 d6codec_inline_reloc_v088 \
+ d6codec_inline_buffer_v088 d6codec_kpack_reloc_v088 \
+ d6codec_inline_encode_v078
+KCORE_FIXED_OBJS += $(addprefix $(BUILD)/,$(addsuffix .dobj,$(PACKED_V088_NAMES)))
+KCORE_FIXED_ASM += $(addprefix $(KCORE_BUILD)/,$(addsuffix .s,$(PACKED_V088_NAMES)))
+endif
+
 MRES_NAMES = cty_io clk_io ptr_io ptp_io lpt_io cr_io cp_io dcs_io ge_io dpy_io \
 	dpy_text tty_io wcnsls_io ocnsls_io dsk_io drm236_io tape_io slv_io memfs_runtime \
 	dtfs dtfs_runtime tsfs tsfs_runtime blockset_dispatch badmap_dispatch fs_backing d6fs_provider d6fs_validate d6fs_runtime
@@ -653,6 +674,10 @@ $(KINIT_TAPE_MODE_STAMP): | $(BUILD)
 	@rm -f $(BUILD)/.kinit-tape-v20-mode-0 $(BUILD)/.kinit-tape-v20-mode-1
 	@touch $@
 
+$(PACKED_RUNTIME_V088_STAMP): | $(BUILD)
+	@rm -f $(BUILD)/.packed-runtime-v088-0 $(BUILD)/.packed-runtime-v088-1
+	@touch $@
+
 $(MEDIA_DIR): | $(BUILD)
 	mkdir -p $@
 
@@ -660,8 +685,8 @@ $(KINIT_STAMP): $(KERNEL_INPUTS) Makefile $(PDP10_TARGET_CC_DEP) $(MONITORFS_MOD
 	$(MAKE) -C $(KERNEL_DIR) kinit COMPILER='$(COMPILER)' BUILD='$(KINIT_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_STACK_RESERVE_WORDS='$(KINIT_STACK_RESERVE_WORDS)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' KINIT_BADMAP='$(KINIT_BADMAP)' KINIT_FULL='$(KINIT_FULL)' KINIT_TAPE_BOOT='$(KINIT_TAPE_BOOT)' D6FS_FS_ENABLED='$(D6FS_FS_ENABLED)' BLOCKSET_FS_ENABLED='$(BLOCKSET_FS_ENABLED)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' MONITORFS_MRES_ENABLED='$(MONITORFS_MRES_ENABLED)' VM_BACKEND='$(VM_BACKEND)'
 	touch $@
 
-$(KCORE_STAMP): $(KERNEL_INPUTS) $(PDP10_TARGET_CC_DEP) $(MONITORFS_MODE_STAMP) $(BUILD)
-	$(MAKE) -C $(KERNEL_DIR) kcore COMPILER='$(COMPILER)' BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' PROC_BOOT_USERS='$(PROC_BOOT_USERS)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' PROC_SWAP_VERIFY_PURE='$(PROC_SWAP_VERIFY_PURE)' VM_BACKEND='$(VM_BACKEND)'
+$(KCORE_STAMP): $(KERNEL_INPUTS) $(PDP10_TARGET_CC_DEP) $(MONITORFS_MODE_STAMP) $(PACKED_RUNTIME_V088_STAMP) $(BUILD)
+	$(MAKE) -C $(KERNEL_DIR) kcore COMPILER='$(COMPILER)' BUILD='$(KCORE_BUILD)' PDP10_PREFIX='$(PDP10_PREFIX)' KINIT_STACK_WATERMARK='$(KINIT_STACK_WATERMARK)' PROC_BOOT_USERS='$(PROC_BOOT_USERS)' PROC_STACK_WATERMARK='$(PROC_STACK_WATERMARK)' PROC_SWAP_VERIFY_PURE='$(PROC_SWAP_VERIFY_PURE)' PACKED_RUNTIME_V088='$(PACKED_RUNTIME_V088)' VM_BACKEND='$(VM_BACKEND)'
 	touch $@
 
 $(KINIT_ASM) $(KINIT_LATE_ASM): $(KINIT_STAMP)
@@ -671,6 +696,10 @@ $(KCORE_FIXED_ASM) $(MRES_ASM): $(KCORE_STAMP)
 	@test -f $@
 
 KERNEL_ASM_OBJS = $(BUILD)/proc_packed_boot_v38.dobj $(BUILD)/proc_packed_runtime_v086.dobj $(BUILD)/proc_packed_layout_v36.dobj $(BUILD)/kinit.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/root_select.dobj $(BUILD)/tsfs_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/auxstore_boot.dobj $(BUILD)/logstore_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io_pdp6.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj $(BUILD)/kinit_late_begin_pdp6.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj $(BUILD)/d6lz_fixed.dobj $(BUILD)/exec.dobj $(BUILD)/d6lz.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/backstore.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/ret.dobj $(BUILD)/dsk270.dobj $(BUILD)/drm236.dobj $(BUILD)/kfmt_pdp6.dobj $(BUILD)/s6rec.dobj $(BUILD)/vfs.dobj $(BUILD)/fs_mres.dobj $(BUILD)/file_runtime.dobj $(BUILD)/pipe.dobj $(BUILD)/monitorfs_runtime.dobj $(BUILD)/proc_pdp6.dobj $(BUILD)/proc_run.dobj $(BUILD)/device_state.dobj $(BUILD)/syscall_info.dobj $(BUILD)/pclk.dobj $(BUILD)/syscall_dispatch_pdp6.dobj $(BUILD)/mach_user_pdp6.dobj $(BUILD)/vm_backend_pdp6.dobj $(BUILD)/kcore_pi_pdp6.dobj $(BUILD)/bcache_pdp6.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj $(BUILD)/cty_io.dobj $(BUILD)/clk_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj $(BUILD)/lpt_io.dobj $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj $(BUILD)/dcs_io.dobj $(BUILD)/ge_io.dobj $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj $(BUILD)/tty_io.dobj $(BUILD)/wcnsls_io.dobj $(BUILD)/ocnsls_io.dobj $(BUILD)/dsk_io.dobj $(BUILD)/drm236_io.dobj $(BUILD)/tape_io.dobj $(BUILD)/slv_io.dobj $(BUILD)/memfs_data.dobj $(BUILD)/memfs_snapshot.dobj $(BUILD)/memfs_runtime.dobj $(BUILD)/dtfs.dobj $(BUILD)/dtfs_runtime.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_runtime.dobj $(BUILD)/blockset_dispatch.dobj $(BUILD)/badmap_dispatch.dobj $(BUILD)/fs_backing.dobj $(BUILD)/logstore_runtime.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj
+
+ifeq ($(PACKED_RUNTIME_V088),1)
+KERNEL_ASM_OBJS += $(addprefix $(BUILD)/,$(addsuffix .dobj,$(PACKED_V088_NAMES)))
+endif
 
 $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM)
 	@mkdir -p $(BUILD)

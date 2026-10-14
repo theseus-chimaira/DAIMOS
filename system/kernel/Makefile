@@ -41,6 +41,13 @@ BLOCKSET_FS_ENABLED ?= 1
 PROC_BOOT_USERS ?= 1
 PROC_STACK_WATERMARK ?= 0
 PROC_SWAP_VERIFY_PURE ?= 0
+PACKED_RUNTIME_V088 ?= 0
+PACKED_RUNTIME_V088_STAMP = ${BUILD}/.packed-runtime-v088-${PACKED_RUNTIME_V088}
+${PACKED_RUNTIME_V088_STAMP}:
+	@mkdir -p ${BUILD}
+	@rm -f ${BUILD}/.packed-runtime-v088-0 ${BUILD}/.packed-runtime-v088-1
+	@touch $@
+
 VM_BACKEND ?= pdp6
 VM_BACKEND_C = proc/vm_${VM_BACKEND}.c
 VM_BACKEND_H = proc/vm_${VM_BACKEND}.h
@@ -162,6 +169,21 @@ KCORE_C_SRCS = proc/exec.c \
 KCORE_C_ASM = $(BUILD)/proc.s \
 	$(BUILD)/file.s
 
+ifeq (${PACKED_RUNTIME_V088},1)
+# Optional packed-MM production-callable implementation, keeping legacy
+# low-core boot D6LZ36 in place. The RAM codec is independently relocatable.
+KCORE_C_SRCS += proc/proc_storage_map_v28.c proc/proc_packed_owner_v37.c \
+ proc/proc_packed_publish_v44.c proc/proc_packed_teardown_v39.c \
+ proc/proc_packed_evict_v077.c proc/proc_packed_restore_v46.c \
+ proc/proc_packed_inline_v088.c proc/proc_packed_lifecycle_v088.c \
+ proc/proc_swap_dispatch_v088.c proc/proc_packed_destroy_v084.c
+KCORE_C_ASM += $(BUILD)/proc_storage_map_v28.s $(BUILD)/proc_packed_owner_v37.s \
+ $(BUILD)/proc_packed_publish_v44.s $(BUILD)/proc_packed_teardown_v39.s \
+ $(BUILD)/proc_packed_evict_v077.s $(BUILD)/proc_packed_restore_v46.s \
+ $(BUILD)/proc_packed_inline_v088.s $(BUILD)/proc_packed_lifecycle_v088.s \
+ $(BUILD)/proc_swap_dispatch_v088.s $(BUILD)/proc_packed_destroy_v084.s
+endif
+
 KCORE_VM_ASM = $(BUILD)/vm_backend.s \
 	$(BUILD)/proc_swap.s
 
@@ -231,6 +253,16 @@ KCORE_FIXED_ASM = $(BUILD)/proc_packed_runtime_v086.s \
 	$(BUILD)/storage_router.s \
 	$(BUILD)/kcore_end.s
 
+
+ifeq (${PACKED_RUNTIME_V088},1)
+KCORE_FIXED_ASM += $(BUILD)/proc_storage_map_v28.s $(BUILD)/proc_packed_owner_v37.s \
+ $(BUILD)/proc_packed_publish_v44.s $(BUILD)/proc_packed_teardown_v39.s \
+ $(BUILD)/proc_packed_evict_v077.s $(BUILD)/proc_packed_restore_v46.s \
+ $(BUILD)/proc_packed_inline_v088.s $(BUILD)/proc_packed_lifecycle_v088.s \
+ $(BUILD)/proc_swap_dispatch_v088.s $(BUILD)/proc_packed_destroy_v084.s \
+ $(BUILD)/d6codec_inline_reloc_v088.s $(BUILD)/d6codec_inline_buffer_v088.s \
+ $(BUILD)/d6codec_kpack_reloc_v088.s $(BUILD)/d6codec_inline_encode_v078.s
+endif
 
 MRES_C_SRCS = fs/d6fs_provider.c \
 	fs/memfs_data.c \
@@ -332,6 +364,10 @@ ${BUILD}/mm.s: mm/mm_pdp6.s ${KERNEL_HEADERS}
 	cp mm/mm_pdp6.s $@
 
 
+${BUILD}/d6codec_%.s: core/d6codec_%.s
+	@mkdir -p ${BUILD}
+	cp $< $@
+
 ${BUILD}/d6lz_fixed.s: ../stand/pdp6/common/decompressor.inc
 	@mkdir -p ${BUILD}
 	cp $< $@
@@ -356,7 +392,7 @@ ${BUILD}/vm_backend.s: ${VM_BACKEND_C} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	@extra=; if test "${VM_BACKEND}" = pdp6; then extra="-DVM_SPACE_CAN_SWAP_PDP6_ASM=1 -DVM_SPACE_STARTUP_PDP6_ASM=1 -DVM_EXTENT_MOVE_PDP6_ASM=1 -DVM_SPACE_LOAD_FILE_PDP6_ASM=1 -DVM_SPACE_CREATE_PDP6_ASM=1 -DVM_SPACE_DESTROY_PDP6_ASM=1"; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S ${VM_BACKEND_C} -o $@
 
-${BUILD}/proc_swap.s: ${VM_SWAP_C} proc/proc_swap_pdp6.s proc/proc_pure_backing_pdp6.s proc/proc_storage_runtime_v30.s proc/proc_pure_attach.c proc/proc_storage_map_v28.h ${KERNEL_HEADERS}
+${BUILD}/proc_swap.s: ${PACKED_RUNTIME_V088_STAMP} ${VM_SWAP_C} proc/proc_swap_pdp6_inline_v088.s proc/proc_swap_pdp6.s proc/proc_pure_backing_pdp6.s proc/proc_storage_runtime_v30.s proc/proc_pure_attach.c proc/proc_storage_map_v28.h ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} \
 	    -DPROC_SWAP_VERIFY_PURE=${PROC_SWAP_VERIFY_PURE} \
@@ -364,12 +400,15 @@ ${BUILD}/proc_swap.s: ${VM_SWAP_C} proc/proc_swap_pdp6.s proc/proc_pure_backing_
 	    -DPROC_SWAP_TRANSACTIONS_PDP6_ASM=1 \
 	    ${INCLUDES} -S ${VM_SWAP_C} -o $@.c
 	{ cat $@.c; printf '.equ PROC_SWAP_VERIFY_PURE,%s\n' '${PROC_SWAP_VERIFY_PURE}'; \
-	    cat proc/proc_swap_pdp6.s proc/proc_pure_backing_pdp6.s proc/proc_storage_runtime_v30.s; } > $@
+	    if test "${PACKED_RUNTIME_V088}" = 1; then \
+	      cat proc/proc_swap_pdp6_inline_v088.s; else cat proc/proc_swap_pdp6.s; fi; \
+	    cat proc/proc_pure_backing_pdp6.s proc/proc_storage_runtime_v30.s; } > $@
 	rm -f $@.c
 
-${BUILD}/vm_backend_pdp6.s: ${VM_BACKEND_FIXED}
+${BUILD}/vm_backend_pdp6.s: ${PACKED_RUNTIME_V088_STAMP} ${VM_BACKEND_FIXED} proc/vm_pdp6_packed_v088.s
 	@mkdir -p ${BUILD}
-	cp ${VM_BACKEND_FIXED} $@
+	@if test "${PACKED_RUNTIME_V088}" = 1 && test "${VM_BACKEND}" = pdp6; then \
+	  cp proc/vm_pdp6_packed_v088.s $@; else cp ${VM_BACKEND_FIXED} $@; fi
 
 ${BUILD}/dpy_text.s: drivers/dpy_text_control_pdp6.s drivers/dpy_text_blocks_pdp6.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}

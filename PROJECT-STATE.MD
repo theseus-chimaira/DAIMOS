@@ -1,3 +1,16 @@
+## 2026-10-14 V088 DEVELOPMENT PACKED-RAM RUNTIME
+
+Relocatable PDP-6 inline decoder v088 now coexists with the legacy 000060
+D6LZ36 bootstrap decoder. PACKED_RUNTIME_V088=1 links native KPACK size,
+encode and decode, v077/v046 MM transactions, lifecycle gate, v084 teardown,
+and storage-state-aware slot-0 restoration into KCORE. Its reclaim loop
+attempts PACKED before DISK, with postcommit failures retaining TRANSITION.
+Native codec public API regression, full KCORE DXR link and one fully
+configured 256K boot to INIT V1 pass. An actual memory-pressure eviction and
+restoration has not yet been exercised in a booted kernel. The user requires
+a later acceptance matrix: 32K minimal TSFS, 32K minimal D6FS, and 256K fully
+attached PDP-6 (daimos-testkit v089). The 8K size gate remains deferred.
+
 ## 2026-10-14 PACKED REGISTRY DEFAULT LINK v087
 
 Removed the old v086 development build toggle. The KINIT registry allocator

@@ -1,3 +1,9 @@
+- [x] v088 development KCORE: independent relocatable inline decoder,
+  native exact-size packing, reclaim-first compression with disk fallback,
+  PACKED-aware slot-0 restore and VM teardown. PDP-6 native callbacks,
+  complete KCORE link and 256K boot to INIT pass. Live memory pressure and
+  32K/full-hardware v089 acceptance matrix still pending. 8K gate deferred.
+
 - [x] v087 removes the packed-registry build toggle, links a permanent
   registry descriptor in KCORE and unconditionally allocates its MM map
   from KINIT. Fresh GCC KCORE and KINIT DXR links PASS. Packed scheduler,
