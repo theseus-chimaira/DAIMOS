@@ -1,3 +1,7 @@
+## 2026-10-14 V103 CROSS-ARENA PDP-6 RELOCATION
+
+`vm-live-v103` runs production MM/VM and copy assembler on PDP-6 emulator; cross-arena relocation PASS with 512-word complete-data check, sorted descriptors, process VM-base publication and PI balance. No production change; MM 493 text / 70 BSS. Candidate search/descriptor fusion remains unproven for net whole-KCORE size. See `system/kernel/mm/MM-CROSS-ARENA-RELOCATION-V103.md`.
+
 ## 2026-10-14 V102 REAL VM PIN AND RUNQUEUE CONTRACT
 
 Native PDP-6 `vm-live-v102` PASS: production MM+VM+copy assembler, full payload, stable-uarea runqueue remove/add and MM stop-bit release, pinned extent exclusion without PI side effects; v101 negative cases retained. Queue and PI hooks are instrumented, not actual scheduler/interrupt integration. No production code change; MM remains 493 text / 70 BSS words. See `system/kernel/mm/MM-VM-PIN-RUNQUEUE-V102.md`.

@@ -1,3 +1,4 @@
+- [x] v103 cross-arena native PDP-6 MM/VM relocation with full payload and metadata verification PASS; no production changes. See mm/MM-CROSS-ARENA-RELOCATION-V103.md.
 - [x] v102 PDP-6 native relocation regression covers stable u-area stop/runqueue restoration and pinned exclusion; PASS, no production code change. See mm/MM-VM-PIN-RUNQUEUE-V102.md.
 - [x] v101 production PDP-6 MM+VM relocation checks all 512 payload words and mapped/unaligned rejection, PASS; no code-size change. See mm/MM-VM-FULL-PAYLOAD-V101.md.
 - [x] v100 native PDP-6 MM relocation with actual `vm_extent_move` and `fs_move_words` bodies PASS; safe/current/TRANSITION cases, partial data checks. No code-size change; see mm/MM-REAL-VM-REGRESSION-V100.md.
