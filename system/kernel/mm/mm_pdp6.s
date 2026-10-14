@@ -55,12 +55,9 @@ mm_delete:
         move    3,1
 mm_delete_loop:
         move    4,3
-        addi    4,1
         lsh     4,1
-        move    5,mm_extents(4)
-        move    6,mm_extents+1(4)
-        move    4,3
-        lsh     4,1
+        move    5,mm_extents+2(4)
+        move    6,mm_extents+3(4)
         movem   5,mm_extents(4)
         movem   6,mm_extents+1(4)
         aoj     3,

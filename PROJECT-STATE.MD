@@ -1,3 +1,7 @@
+## 2026-10-14 V109 MM DELETE DESCRIPTOR SHIFT OPTIMIZATION
+
+Optimized PDP-6 `mm_delete` by reusing one doubled destination index and source at constant offsets +2/+3: **-3 text words**, whole MM 491 -> 488 text, BSS 70 unchanged. Eight native PDP-6 suites PASS including two-process compaction, and GCC KCORE/KINIT link PASS. `mm_extent_insert` is next separate experiment. See `system/kernel/mm/MM-DELETE-OPTIMIZATION-V109.md`.
+
 ## 2026-10-14 V108 DIRECT DESCRIPTOR SHIFT EXPERIMENT
 
 `mm_move_extent` alternate direct post-success descriptor shift assembled 71 vs current 64 words, whole MM 498 vs current 491 text (+7), 70 BSS unchanged. v106/v105/v099/v094/v095 native PDP-6 suites PASS for candidate. **Rejected and reverted** due to larger code and no measured runtime advantage. Production remains 491 text + 70 BSS. See `system/kernel/mm/MM-DIRECT-SHIFT-REVIEW-V108.md`.
