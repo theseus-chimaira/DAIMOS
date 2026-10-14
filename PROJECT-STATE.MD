@@ -1,3 +1,7 @@
+## 2026-10-14 V118 RESTORED HOST MM PRESSURE TEST
+
+The legacy `daimos-testkit make mm-core` host regression now PASSes against the portable MM. Root cause: C fallback swap transactions omitted storage-mode publication present in production PDP-6 assembler. Corrected portable C path to publish RESIDENT->DISK after swap-out and DISK->RESIDENT after swap-in, with existing fatal mismatch behavior. Testkit uses real two-bit map API, strict host ABI fixture, and explicit success/failed-read state assertions. KCORE/KINIT DXR link PASS. Native full-system pressure, swap and scheduler-concurrency still open; no MM assembler change (482 text/70 BSS). See `system/kernel/mm/MM-HOST-PRESSURE-REPAIRED-V118.md`.
+
 ## 2026-10-14 V117 MM STORAGE MODE HOST CONTRACT BASELINE
 
 A new C99 host regression in daimos-testkit executes production `proc_storage_map_v28.c` and verifies 40-slot storage modes, valid RESIDENT->DISK->RESIDENT transitions, stale-state rejection and slot bounds: PASS. The legacy `mm-core` host target is still blocked on missing target-assembly symbols and incomplete host swap mode publication; no success is claimed for it. No production MM change; 482 text/70 BSS. See `system/kernel/mm/MM-STORAGE-MODE-HOST-BASELINE-V117.md`.
