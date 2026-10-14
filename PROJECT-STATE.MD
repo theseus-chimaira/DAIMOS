@@ -1,3 +1,7 @@
+## 2026-10-14 V089 REAL-MM PACKING AUDIT
+
+Audited native mm_pdp6.s allocator, pinning, free gaps and compaction for packed-process safety. Existing mechanisms are present, but real MM pressure/fragmentation and scheduler-driven packing remain unverified. Existing host mm-core test cannot currently run with storage-mode migration; restore test setup before allocator modifications. See system/kernel/mm/MM-PACKED-READINESS-V089.md.
+
 ## 2026-10-14 V088 PACKED RUNTIME LINK
 
 KCORE/KINIT DXR link with native codec-backed packed restore and teardown passes. Relocatable inline decoder avoids low-core 000060 conflict with legacy bootstrap. Pending actual boot and scheduler eviction eligibility/trigger, followed by 32K DECtape TSFS, 32K single-disk D6FS and max-memory all-device SIMH tests. Size gate deferred.

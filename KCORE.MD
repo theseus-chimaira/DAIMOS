@@ -1,3 +1,4 @@
+- [ ] v089 real-MM readiness audit identifies missing native allocator pressure/retry acceptance and outdated host mm-core storage-state fixture; see mm/MM-PACKED-READINESS-V089.md. No MM algorithm changed.
 - [x] v088 links packed codec/transactions, slot-0 restore dispatch and VM destroy into KCORE; native relocatable decode PASS; KCORE/KINIT DXR links PASS. Boot and scheduler eviction policy remain unverified.
 - [x] v087 removes the packed-registry build toggle, links a permanent
   registry descriptor in KCORE and unconditionally allocates its MM map
