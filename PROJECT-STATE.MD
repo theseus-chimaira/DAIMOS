@@ -1,3 +1,7 @@
+## 2026-10-14 V100 REAL PDP-6 VM RELOCATION REGRESSION
+
+Standalone PDP-6 simulator test now links production `mm_pdp6.s` with build-time-extracted actual `vm_extent_move` and `fs_move_words` assembler. Verifies upward physical copy, MM/process-base publication, PI balanced restore, and BUSY for current/TRANSITION process without data mutation. PASS. No production MM modification: `mm_move_extent` 66 words; total MM 493 text / 70 BSS. Outstanding u-area/mapping/runqueue, full payload, concurrent PI and stress testing before optimizations. See `system/kernel/mm/MM-REAL-VM-REGRESSION-V100.md` and daimos-testkit `tests/native-kernel/mm/vm-live-v100`.
+
 ## 2026-10-14 V099 NATIVE MM EXTENT RELOCATION AUDIT
 
 `mm_move_extent` is 66 PDP-6 words; `mm_compact` 62, total MM remains 493 text + 70 BSS. A new standalone PDP-6 regression executes real `mm_pdp6.s` and verifies successful upward relocation and rejected VM relocation with original descriptor restoration and matching PI disable/restore. The VM callback is deterministic, **not the production VM data mover**. No production optimization yet: descriptor visibility and PI-atomic relocation are essential, and the ITS-138/JOSS algorithms are not drop-in equivalents. Candidate changes and outstanding production-VM tests are recorded in `system/kernel/mm/MM-RELOCATION-AUDIT-V099.md`.

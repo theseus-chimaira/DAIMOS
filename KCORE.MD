@@ -1,3 +1,4 @@
+- [x] v100 native PDP-6 MM relocation with actual `vm_extent_move` and `fs_move_words` bodies PASS; safe/current/TRANSITION cases, partial data checks. No code-size change; see mm/MM-REAL-VM-REGRESSION-V100.md.
 - [x] v099 reviewed real `mm_move_extent` 66 words; native simulator relocation success/rollback + PI fixture PASS. Full VM integration and measured shrinking remain open; see mm/MM-RELOCATION-AUDIT-V099.md.
 - [x] v096 evaluated gap/no-reclaim semantics and hoisted one invariant alignment mask: `mm_find_fit` 90 -> 85 words; full MM text 496 -> 493; native regression and DXR links PASS. Second extent scan in no-reclaim allocator remains a measured-candidate only.
 - [x] v095 no-reclaim allocator required for packed and block-cache critical paths; 73 -> 71 words (-2), all four native MM tests and full KCORE/KINIT links PASS. See mm/MM-NORECLAIM-OPTIMIZATION-V095.md.
