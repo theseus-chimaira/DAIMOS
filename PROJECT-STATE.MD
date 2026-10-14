@@ -1,3 +1,7 @@
+## 2026-10-14 V088 PACKED RUNTIME LINK
+
+KCORE/KINIT DXR link with native codec-backed packed restore and teardown passes. Relocatable inline decoder avoids low-core 000060 conflict with legacy bootstrap. Pending actual boot and scheduler eviction eligibility/trigger, followed by 32K DECtape TSFS, 32K single-disk D6FS and max-memory all-device SIMH tests. Size gate deferred.
+
 ## 2026-10-14 PACKED REGISTRY DEFAULT LINK v087
 
 Removed the old v086 development build toggle. The KINIT registry allocator

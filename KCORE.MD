@@ -1,3 +1,4 @@
+- [x] v088 links packed codec/transactions, slot-0 restore dispatch and VM destroy into KCORE; native relocatable decode PASS; KCORE/KINIT DXR links PASS. Boot and scheduler eviction policy remain unverified.
 - [x] v087 removes the packed-registry build toggle, links a permanent
   registry descriptor in KCORE and unconditionally allocates its MM map
   from KINIT. Fresh GCC KCORE and KINIT DXR links PASS. Packed scheduler,

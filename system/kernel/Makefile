@@ -232,6 +232,11 @@ KCORE_FIXED_ASM = $(BUILD)/proc_packed_runtime_v086.s \
 	$(BUILD)/kcore_end.s
 
 
+# Permanent codec-backed packing runtime v088.
+PACKED_RUNTIME_V088 = proc_packed_owner_v37 proc_packed_publish_v44 proc_packed_evict_v077 proc_packed_restore_v46 proc_packed_inline_v079 proc_packed_lifecycle_v082 proc_swap_dispatch_v083 proc_packed_teardown_v39 proc_packed_destroy_v084 proc_packed_release_v43 proc_storage_map_v28
+KCORE_FIXED_ASM += $(addprefix $(BUILD)/,$(addsuffix .s,$(PACKED_RUNTIME_V088)))
+KCORE_FIXED_ASM += $(BUILD)/d6codec_inline_encode_v078.s $(BUILD)/d6codec_kpack_inline_v078.s $(BUILD)/d6codec_inline_fixed_v088.s $(BUILD)/d6codec_inline_vfs_v070.s
+
 MRES_C_SRCS = fs/d6fs_provider.c \
 	fs/memfs_data.c \
 	fs/memfs_snapshot.c \
@@ -319,6 +324,66 @@ ${KCORE_C_ASM}: ${KCORE_C_SRCS} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	@base=`basename "$@" .s`; src=; extra=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; if test "$$base" = proc; then extra="-DPROC_EVENT_APPLY_PDP6_ASM=1 -DPROC_SWAP_VICTIM_PDP6_ASM=1 -DPROC_WAIT_STATUS_PDP6_ASM=1 -DPROC_SCHED_SELECT_PDP6_ASM=1 -DPROC_FINISH_SLOT_PDP6_ASM=1 -DPROC_UAREA_RELEASE_PDP6_ASM=1 -DPROC_TTY_RELEASE_PDP6_ASM=1"; elif test "$$base" = file; then extra="-DFILE_OPEN_PDP6_ASM=1"; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S "$$src" -o "$@"
 
+${BUILD}/proc_packed_owner_v37.s: proc/proc_packed_owner_v37.c ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S $< -o $@
+
+${BUILD}/proc_packed_publish_v44.s: proc/proc_packed_publish_v44.c ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S $< -o $@
+
+${BUILD}/proc_packed_evict_v077.s: proc/proc_packed_evict_v077.c ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S $< -o $@
+
+${BUILD}/proc_packed_restore_v46.s: proc/proc_packed_restore_v46.c ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S $< -o $@
+
+${BUILD}/proc_packed_inline_v079.s: proc/proc_packed_inline_v079.c ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S $< -o $@
+
+${BUILD}/proc_packed_lifecycle_v082.s: proc/proc_packed_lifecycle_v082.c ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S $< -o $@
+
+${BUILD}/proc_swap_dispatch_v083.s: proc/proc_swap_dispatch_v083.c ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S $< -o $@
+
+${BUILD}/proc_packed_teardown_v39.s: proc/proc_packed_teardown_v39.c ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S $< -o $@
+
+${BUILD}/proc_packed_destroy_v084.s: proc/proc_packed_destroy_v084.c ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S $< -o $@
+
+${BUILD}/proc_packed_release_v43.s: proc/proc_packed_release_v43.c ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S $< -o $@
+
+${BUILD}/proc_storage_map_v28.s: proc/proc_storage_map_v28.c ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S $< -o $@
+
+${BUILD}/d6codec_inline_encode_v078.s: core/d6codec_inline_encode_v078.s
+	@mkdir -p ${BUILD}
+	cp $< $@
+
+${BUILD}/d6codec_kpack_inline_v078.s: core/d6codec_kpack_inline_v078.s
+	@mkdir -p ${BUILD}
+	cp $< $@
+
+${BUILD}/d6codec_inline_fixed_v088.s: core/d6codec_inline_fixed_v088.s
+	@mkdir -p ${BUILD}
+	cp $< $@
+
+${BUILD}/d6codec_inline_vfs_v070.s: core/d6codec_inline_vfs_v070.s
+	@mkdir -p ${BUILD}
+	cp $< $@
+
 ${BUILD}/proc_packed_layout_v36.s: proc/proc_packed_layout_v36.c proc/proc_packed_layout_v36.h ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S $< -o $@
@@ -364,12 +429,12 @@ ${BUILD}/proc_swap.s: ${VM_SWAP_C} proc/proc_swap_pdp6.s proc/proc_pure_backing_
 	    -DPROC_SWAP_TRANSACTIONS_PDP6_ASM=1 \
 	    ${INCLUDES} -S ${VM_SWAP_C} -o $@.c
 	{ cat $@.c; printf '.equ PROC_SWAP_VERIFY_PURE,%s\n' '${PROC_SWAP_VERIFY_PURE}'; \
-	    cat proc/proc_swap_pdp6.s proc/proc_pure_backing_pdp6.s proc/proc_storage_runtime_v30.s; } > $@
+	    cat proc/proc_swap_pdp6_inline_v083.s proc/proc_pure_backing_pdp6.s proc/proc_storage_runtime_v30.s; } > $@
 	rm -f $@.c
 
 ${BUILD}/vm_backend_pdp6.s: ${VM_BACKEND_FIXED}
 	@mkdir -p ${BUILD}
-	cp ${VM_BACKEND_FIXED} $@
+	cp proc/vm_pdp6_packed_v088.s $@
 
 ${BUILD}/dpy_text.s: drivers/dpy_text_control_pdp6.s drivers/dpy_text_blocks_pdp6.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}

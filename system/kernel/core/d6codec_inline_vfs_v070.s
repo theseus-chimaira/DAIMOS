@@ -2,9 +2,8 @@
  * @file d6i70_pdp6.s
  * @brief PDP-6 runtime frontends for the experimental inline D6 codec v070 decoder.
  *
- * D6LZ36 token decoding lives in the fixed low-core decoder from
- * system/stand/pdp6/common/decompressor.inc.  Stage1 installs that decoder at
- * 000060 and KCORE links the same image at the same address.  This file is the
+ * Inline token decoding lives in a relocatable KCORE decoder.
+ * Stage-1 retains its separate fixed-address decoder at 000060.  This file is the
  * resident runtime adapter.  Filesystem EXEC loads use the refill entry, which
  * reads compressed words through VFS in bounded windows.  Callers which already
  * hold one complete compressed stream, such as TSFS restart extents, use the
@@ -12,8 +11,7 @@
  * checks, and AC save/restore without paying VFS/provider overhead.
  *
  * The implementation is specifically PDP-6 code.  It assumes 18-bit address
- * halves, an AC17 pushdown stack, PDP-6 BLT semantics, and the fixed decoder
- * entry at 000060.  A future later-PDP-10 implementation may therefore use a
+ * halves, an AC17 pushdown stack, PDP-6 BLT semantics, and the relocatable decoder entry.  A future later-PDP-10 implementation may therefore use a
  * different source file and machine-specific instructions without weakening
  * the PDP-6 baseline.
  *
@@ -31,7 +29,7 @@
         .text
         .globl d6inline_decode_vfs_v070
         .globl d6inline_decode_buffer_v070
-        .globl d6codec_inline_decode_v067
+        .globl d6codec_inline_decode_v088
         .globl vfs_read_words
 
 /** Number of compressed words fetched per VFS refill. */
@@ -116,7 +114,7 @@ d6i70_vfs_refilled:
         move    4,1                    ; source-window words returned
         movei   3,D6I70_VFS_INPUT(17)
 d6i70_decode_window:
-        pushj   17,d6codec_inline_decode_v067
+        pushj   17,d6codec_inline_decode_v088
         jumpe   0,d6i70_vfs_success
         jumpl   0,d6i70_vfs_error
         jrst    d6i70_vfs_refill         ; +1 = NEED_INPUT
