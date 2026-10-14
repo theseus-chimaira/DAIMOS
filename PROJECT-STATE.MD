@@ -1,3 +1,7 @@
+## 2026-10-14 V117 MM STORAGE MODE HOST CONTRACT BASELINE
+
+A new C99 host regression in daimos-testkit executes production `proc_storage_map_v28.c` and verifies 40-slot storage modes, valid RESIDENT->DISK->RESIDENT transitions, stale-state rejection and slot bounds: PASS. The legacy `mm-core` host target is still blocked on missing target-assembly symbols and incomplete host swap mode publication; no success is claimed for it. No production MM change; 482 text/70 BSS. See `system/kernel/mm/MM-STORAGE-MODE-HOST-BASELINE-V117.md`.
+
 ## 2026-10-14 V116 MM HOST FIXTURE BLOCKER AND BLT FEASIBILITY
 
 Reproduced `daimos-testkit make mm-core` linker failure: missing target-assembly storage transition and invariant functions. Host C fallback swap-out does not publish its DISK state while detach expects DISK->RESIDENT; unconditional stubs would conceal contract violations. BLT is semantically suitable for downward overlapping `mm_delete` shifts and is already used by `fs_move_words` for safe forward copies, but **not** for upward overlapping insertion. No production MM code change. See `system/kernel/mm/MM-HOST-PRESSURE-BLT-AUDIT-V116.md`.
