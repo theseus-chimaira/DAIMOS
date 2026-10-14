@@ -32,6 +32,10 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 - [x] Stage inline KPACK v073 ABI adapters to the v071 encoder and v070
   direct-buffer decoder; native PDP-6 roundtrip and AC10..AC16 checks pass.
   Registry-aware eviction/restore and scheduler connections remain pending.
+- [x] v082 staged lifecycle gate checks process eligibility and storage
+  mode, then calls native packed eviction/restore. PDP-6 dense/sparse,
+  rollback, current-process and transition rejection PASS. Real assembly
+  slot-0 scheduler routing and boot integration remain open.
 - [x] v081 native PDP-6 allocation-failure rollback and subsequent
   eviction/restore: source pin/ownership and storage state verified in
   dense/sparse, zero/mixed cases. See proc/D6CODEC-NATIVE-ROLLBACK-V081.md.
