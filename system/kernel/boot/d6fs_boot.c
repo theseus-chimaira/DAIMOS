@@ -247,6 +247,9 @@ fail:
 int
 d6fs_boot_mount_root(unsigned int flags)
 {
+        /* Error-only SIXBIT tags identify the failed boot stage: BSD is
+         * blockset discovery; SB1/SB2 are superblock reads; SBV is metadata
+         * validation; MNT is runtime mounting; VFS is root validation. */
         kword_t a[D6FS_SUPER_WORDS];
         kword_t b[D6FS_SUPER_WORDS];
         struct d6fs_super_info super;
@@ -269,8 +272,10 @@ d6fs_boot_mount_root(unsigned int flags)
 
         scratch = d6fs_boot_block_buffer();
         rc = blockset_boot_discover(&super_a, &super_b);
-        if (rc != 0)
+        if (rc != 0) {
+                kinit_put6(PDP10_SIX6('R','T',':','B','S','D'));
                 return rc;
+        }
         if (d6fs_active_reader != 0) {
                 unsigned int direct_unit;
                 kword_t direct_base;
@@ -296,16 +301,22 @@ d6fs_boot_mount_root(unsigned int flags)
         }
         total = blockset_boot_blocks();
         if (total == 0UL || super_a >= total || super_b >= total ||
-            super_a == super_b || blockset_boot_read(super_a, scratch) != 0)
+            super_a == super_b || blockset_boot_read(super_a, scratch) != 0) {
+                kinit_put6(PDP10_SIX6('R','T',':','S','B','1'));
                 return -1;
+        }
         for (i = 0U; i < D6FS_SUPER_WORDS; ++i)
                 a[i] = scratch[i];
-        if (blockset_boot_read(super_b, scratch) != 0)
+        if (blockset_boot_read(super_b, scratch) != 0) {
+                kinit_put6(PDP10_SIX6('R','T',':','S','B','2'));
                 return -1;
+        }
         for (i = 0U; i < D6FS_SUPER_WORDS; ++i)
                 b[i] = scratch[i];
-        if (d6fs_super_select(a, b, total, &super, &copy) != 0)
+        if (d6fs_super_select(a, b, total, &super, &copy) != 0) {
+                kinit_put6(PDP10_SIX6('R','T',':','S','B','V'));
                 return -1;
+        }
         selected = copy == 0U ? a : b;
         summary_start = selected[D6FS_SB_SUMMARY_START];
         alloc_cursor = summary_start + selected[D6FS_SB_SUMMARY_BLOCKS];
@@ -341,6 +352,7 @@ d6fs_boot_mount_root(unsigned int flags)
         rc = d6fs_boot_runtime_init(&super, alloc_cursor, summary_start,
             flags, super_a, super_b, copy);
         if (rc != 0) {
+                kinit_put6(PDP10_SIX6('R','T',':','M','N','T'));
                 blockset_direct_tail = 0UL;
                 logstore_boot_configure(0UL, 0UL);
                 return rc;
@@ -348,6 +360,7 @@ d6fs_boot_mount_root(unsigned int flags)
         if (vfs_namespace_root == VFS_NODE_NONE ||
             vfs_stat(vfs_namespace_root, &st) != 0 ||
             st.type != VFS_TYPE_DIR) {
+                kinit_put6(PDP10_SIX6('R','T',':','V','F','S'));
                 if (vfs_namespace_root != VFS_NODE_NONE) {
                         i = VFS_MOUNT_ID(vfs_namespace_root);
                         (void)vfs_storage_release(i,

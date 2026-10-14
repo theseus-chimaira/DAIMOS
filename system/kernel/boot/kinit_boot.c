@@ -77,8 +77,8 @@ root_has_init(void)
  * no discovery: it dispatches the selected controller class to the matching
  * filesystem boot path.  DSK and DRM use D6FS; DTC uses TSFS in full builds.
  *
- * Failure to mount, an unsupported/unresolved root class, or a root lacking a
- * regular /SYSTEM/INIT is fatal and emits the compact ?RT early-boot code.
+ * Mount failure reports ?RM; missing or invalid /SYSTEM/INIT reports ?IN.
+ * Keep these failure paths separate to diagnose failed root boots.
  */
 void
 kinit_boot(void)
@@ -104,6 +104,10 @@ kinit_boot(void)
 #endif
                 rc = tsfs_boot_mount_root();
 #endif
-        if (rc != 0 || !root_has_init())
-                kinit_error18(KINIT_ERR_RT);
+        /* Distinguish an unsuccessful mount from an absent/unusable INIT.
+         * Both remain fatal; diagnostics run only in disposable KINIT. */
+        if (rc != 0)
+                kinit_error18(PDP10_SIX3('?', 'R', 'M'));
+        if (!root_has_init())
+                kinit_error18(PDP10_SIX3('?', 'I', 'N'));
 }

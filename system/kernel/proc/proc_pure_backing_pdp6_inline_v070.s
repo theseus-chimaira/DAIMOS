@@ -157,6 +157,9 @@ proc_swap_backing_busy_loop:
         lsh     13,1
         add     13,11
         add     13,proc_table
+        move    1,(13)
+        trnn    1,0400000              ; PROC_F_UAREA, not an entry PC
+        jrst    proc_swap_backing_busy_next
         hlrz    1,(13)
         jumpe   1,proc_swap_backing_busy_next
         move    1,PROC_SWAP_BACKING_OFFSET(1)
@@ -197,6 +200,9 @@ proc_swap_mount_busy_loop:
         lsh     2,1
         add     2,11
         add     2,proc_table
+        move    1,(2)
+        trnn    1,0400000              ; only resident u-areas are pointers
+        jrst    proc_swap_mount_busy_next
         hlrz    1,(2)
         jumpe   1,proc_swap_mount_busy_next
         move    1,PROC_SWAP_BACKING_OFFSET(1)

@@ -1,3 +1,48 @@
+# 2026-10-14 v138: Fix kernel APR NXM in swapped-process mount scans
+
+- Instruction-history tracing of a fresh 128K boot found a real NXM:
+  `proc_swap_mount_busy` interpreted the LH value 0400000 as a physical
+  u-area address even though the process had no PROC_F_UAREA flag. Its
+  read at 0400406 crossed the 128K physical limit, raising an executive
+  APR fault and halting in `clk_pi_kernel_fault`.
+- Both `proc_swap_mount_busy` and `proc_swap_backing_busy` in production
+  `proc_pure_backing_pdp6.s` now test PROC_F_UAREA before dereference;
+  the staged inline variant is kept consistent. The change costs exactly
+  six resident instructions: KCORE end 027131 -> 027137 octal in matching
+  GCC lowmem builds. External MM backing still saves 58 linked KCORE words
+  net versus the earlier 64-word in-KCORE descriptor array.
+- `daimos-testkit` native proc-uarea-v138 regression fails against v136
+  with an APR NXM flag (case 6), and passes with the v138 fix. All sixteen
+  existing PDP-6 MM/VM scripts also PASS.
+- Cold 64K and 256K boot images build, reach INIT V1, and stay active
+  without APR HALT through 15-second emulator runs. Fresh 128K likewise
+  continues without that halt. Full LOGIN acceptance remains unresolved:
+  DCS0 receives a simulator connection banner but no LOGIN prompt, and the
+  console prints a UUO diagnostic. This separate userland/process issue is
+  the next boot-debugging priority.
+- `?RM`/`?IN` and D6FS stage tags distinguish failed root mounts; SBV
+  reports superblock validation failures observed after prior aborted boots.
+  The simulator rejects 254K; Make now rejects unsupported sizes instead
+  of silently running a 256K default.
+
+# 2026-10-14 v137: Boot investigation, high-memory root diagnostics
+
+- The PDP-6 simulator rejects `set cpu 254k` as a non-existent parameter;
+  the previous apparent 254K runs were actually 256K. Build now rejects
+  SIMH_CPU_KWORDS values other than 32/64/128/256 instead of silently
+  running with an unintended memory configuration.
+- Disposable KINIT now distinguishes root mount failure (`?RM`) from a
+  missing or invalid `/SYSTEM/INIT` (`?IN`) instead of using `?RT` for both.
+- Rebuilt the disk-root lowmem-profile image with explicitly supported
+  256K memory and ran it in the PDP-6 simulator. It reached `INIT V1` and
+  remained active until the 17-second timeout (PC 004054 at termination).
+  No root diagnostic or completed LOGIN was observed. The prior pre-INIT
+  halt did not reproduce; the new run is not a complete boot acceptance.
+- Existing 64K and 128K baseline comparisons remain: both original and
+  external-descriptor revisions reach INIT but previously halted after the
+  same MEMFS warning. Diagnose the reproducible failure, with simulator
+  registers/memory evidence, before editing the runtime swap or VFS logic.
+
 # 2026-10-14 v136: Boot-size comparison; 32K deferred
 
 - Defer 32K boot acceptance until the planned DSH minimization work.

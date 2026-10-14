@@ -68,6 +68,9 @@ BOOT_CORE_WORDS ?= 01000000
 SIMH_CPU_KWORDS ?= 256
 KINIT_BADMAP ?= 1
 endif
+ifneq ($(filter $(SIMH_CPU_KWORDS),32 64 128 256),$(SIMH_CPU_KWORDS))
+$(error unsupported SIMH_CPU_KWORDS=$(SIMH_CPU_KWORDS); use 32, 64, 128, or 256)
+endif
 # BADMAP remaps D6FS/BLOCKSET sectors, not raw AUXSTORE sectors.  TSFS roots
 # use at most one raw DSK/DRM for swap, LOGSTORE and MEMFS backing.
 ifeq ($(ROOT),tape)

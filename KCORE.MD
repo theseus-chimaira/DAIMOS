@@ -169,6 +169,19 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [x] v138: Fix invalid u-area dereferences in both swap backing/mount
+  scans. Native fail-before/pass-after NXM regression and 16/16 MM/VM
+  emulation PASS; 64K/128K/256K cold boots no longer show the corresponding
+  executive APR HALT. Linked KCORE growth is six words, below eight-word
+  allowance, with 58-word net KCORE saving after external MM relocation.
+- [ ] v138: Finish full boot to DCS0 LOGIN; investigate remaining UUO and
+  process startup behavior separately from the corrected APR NXM fault.
+
+- [ ] v137: Investigate the 64K/128K post-INIT failure and the unreliable
+  high-memory root failure using deterministic emulator state capture.
+  Distinct early root errors `?RM`/`?IN` and supported CPU size validation
+  have been added; full boot-to-LOGIN acceptance remains open.
+
 - [ ] v136: Diagnose common high-memory pre-INIT HALT (baseline and external
   MM) and the 64K/128K post-INIT halt. The simulator rounds a requested
   254K configuration to 256K; do not claim 254K acceptance. Defer 32K

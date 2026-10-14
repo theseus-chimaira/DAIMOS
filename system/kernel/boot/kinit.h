@@ -83,11 +83,9 @@ typedef unsigned long kword_t;
  * Fatal early-boot diagnostics are one 18-bit SIXBIT halfword, printed
  * without CR/LF so they remain usable before the normal console path exists.
  *
- * 0376264 = SIXBIT "?RT" : selected root failed validation/mounting, or the
- *                          mounted root does not contain /SYSTEM/INIT.
+ * Root mounting emits ?RM and missing /SYSTEM/INIT emits ?IN from KINIT.
  */
 
-#define KINIT_ERR_RT              PDP10_SIX3('?', 'R', 'T')
 
 /** @brief Saved private copy of the two fixed Stage1 handoff words. */
 extern kword_t kinit_boot_handoff[2];
