@@ -11,6 +11,7 @@
 
         .text
         .globl  mm_extents
+        .globl  mm_extent_capacity
         .globl  mm_arenas
         .globl  mm_core_words
         .globl  mm_extent_count
@@ -70,7 +71,7 @@ mm_delete_done:
 ; int mm_extent_insert(int slot, const struct mm_extent *extent)
 mm_extent_insert:
         move    7,mm_extent_count
-        caige   7,MM_MAX_EXTENTS
+        camge   7,mm_extent_capacity
         jrst    mm_extent_insert_space
         movni   1,3
         popj    17,
@@ -653,3 +654,7 @@ mm_extent_count:
         .block  1
 mm_arena_count:
         .block  1
+        .data
+; Default matches existing native fixtures; KINIT will own boot selection.
+mm_extent_capacity:
+        .word   MM_MAX_EXTENTS

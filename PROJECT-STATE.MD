@@ -1,3 +1,19 @@
+## 2026-10-14 MM CAPACITY-CONTROL INCREMENT V125
+
+- From v124, the PDP-6 allocator's one-instruction descriptor-capacity
+  comparison uses a capacity word initialized to the existing 32-entry
+  maximum. The portable C reference uses the same limit. The physical
+  descriptor array has NOT moved out of KCORE and MUST NOT be configured
+  above 32 before complete pointer/ABI migration.
+- All 15 previously existing native PDP-6 MM regression scripts pass, and
+  the new v125 emulator regression verifies 31-entry ceiling failure without
+  changing allocation output or descriptor count. Host mm-v1 reports PASS.
+- The extra initialized capacity word has not yet been accepted under a
+  measured full KCORE/KINIT link; no KCORE size reduction is claimed.
+- The KCORE backlog now tracks memory/hardware configuration candidates,
+  especially VFS buffer lifetime, filesystem cache budgets, hardware-state
+  omission and MEMFS metadata. See KCORE.MD and
+  system/kernel/mm/MM-CAPACITY-CONTROL-V125.md.
 ## 2026-10-14 V124 MM REPLACEABLE IMPLEMENTATION BOUNDARY
 
 User requirement: replaceable MM implementation must move outside permanent KCORE. Existing KINIT `mres_install` itself calls `mm_alloc`, so installing MM as MRES first requires a minimal independent bootstrap reservation path and stable MM service/descriptor-state ABI. Preserve descriptor table across implementations. Hot replacement remains separate from current boot relocation and the KA10/v1.1 dynamic module deferral. **Design only; not implemented**. See system/kernel/mm/MM-REPLACEABLE-BOUNDARY-V124.md.

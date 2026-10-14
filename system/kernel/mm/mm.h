@@ -63,6 +63,8 @@ struct mm_extent {
 
 
 extern struct mm_extent mm_extents[MM_MAX_EXTENTS];
+/* Active descriptor ceiling. Kept at 32 until boot backing is migratable. */
+extern unsigned int mm_extent_capacity;
 extern kword_t mm_arenas[MM_MAX_ARENAS];
 extern kword_t mm_core_words;
 extern int mm_extent_count;

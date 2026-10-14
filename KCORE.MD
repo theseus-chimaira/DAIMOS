@@ -169,9 +169,33 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [ ] Audit KCORE BSS by size, lifetime, hardware dependency and concurrent
+  use before adding boot-time indirection. Prioritize deleting redundant
+  buffers and sharing genuinely nonconcurrent storage; measure net KCORE
+  text+BSS, total permanent RAM and emulator-backed behavior.
+- [ ] Examine the 0200-octal-word shared VFS `fs_block_workspace` for safe
+  boot-time placement or further lifetime-based reuse. Preserve D6FS/DTFS
+  serialization and verify interrupt and overlapping-request safety.
+- [ ] Evaluate KINIT-selected filesystem cache budgets using installed core,
+  free RAM after essential allocations, root medium and real DECtape seek
+  behavior. Prefer performance and RAM measurements over static policy tiers.
+- [ ] Audit disk/controller state and terminal/peripheral support against
+  probed hardware; prefer omitting complete unused resident paths rather
+  than moving tiny fixed tables behind pointers. In particular, four-unit
+  disk queue/cylinder state is only nine words including active request.
+- [ ] Revisit MEMFS fixed 01200-octal-word metadata layout separately from
+  its already demand-allocated file-data chunks; do not change snapshot or
+  backing layout without native format and persistence regressions.
+- [ ] Retain the existing boot-selected process table (24 through 256 slots)
+  and word-only eight-word pipe objects unless measured workloads justify
+  changing their sizing. Avoid a generic KINIT configuration framework.
+
 - [ ] **KA10 / DAIMOS v1.1 deferred:** loadable/unloadable/relocatable runtime modules and module-specific MM allocation, unloading and relocation acceptance. Do not optimize MM for hypothetical module workloads before v1.1.
 - [ ] Separate MM implementation from permanent KCORE before making it replaceable; retain only minimal bootstrap reservation and a stable service/state interface. KINIT MRES installation currently calls MM and cannot bootstrap itself. See mm/MM-REPLACEABLE-BOUNDARY-V124.md.
 - [ ] Implement KINIT-selected, boot-sized, fixed-for-boot MM descriptor backing.
+  The v125 capacity comparison is now configurable and passes native and host
+  regression, but physical backing remains the fixed 32-entry KCORE table.
+  See mm/MM-CAPACITY-CONTROL-V125.md; no memory savings claimed yet.
   Capacity must be selected from discovered physical memory and reserved
   before publishing managed free arenas, with all C/PDP-6 VM symbol users
   migrated atomically. Keep >=32 descriptors initially; no runtime resize.

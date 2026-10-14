@@ -24,6 +24,7 @@
  */
 
 struct mm_extent mm_extents[MM_MAX_EXTENTS];
+unsigned int mm_extent_capacity = MM_MAX_EXTENTS;
 kword_t mm_arenas[MM_MAX_ARENAS];
 kword_t mm_core_words;
 int mm_extent_count;
@@ -65,7 +66,7 @@ mm_delete(int slot)
 int
 mm_extent_insert(int slot, const struct mm_extent *extent)
 {
-        if (mm_extent_count >= MM_MAX_EXTENTS)
+        if (mm_extent_count >= (int)mm_extent_capacity)
                 return MM_ERR_DESCRIPTORS;
         if (slot < mm_extent_count)
                 fs_move_words((const kword_t *)&mm_extents[slot],
