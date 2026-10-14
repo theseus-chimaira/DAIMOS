@@ -8,7 +8,7 @@
 
 #define PROC_PACKED_BOOT_OWNER_V38 5U
 
-struct proc_packed_layout_v36 proc_packed_runtime_v38;
+/* Persistent descriptor is owned by KCORE, not transient KINIT. */
 
 int
 proc_packed_boot_prepare_v38(unsigned int slots,

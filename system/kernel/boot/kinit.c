@@ -10,6 +10,7 @@
 #include "mm.h"
 #include "mm_internal.h"
 #include "proc.h"
+#include "proc_packed_boot_v38.h"
 
 
 extern kword_t sys_resident_words_immediate;
@@ -570,6 +571,10 @@ kinit_enter(void)
         kinit_stack_watermark_record();
 #endif
         if (proc_boot_init() != 0)
+                kinit_halt();
+        /* Registry metadata persists in KCORE after KINIT is reclaimed. */
+        if (proc_packed_boot_prepare_v38(proc_slots, 2U,
+            proc_slots) != MM_OK)
                 kinit_halt();
 #if KINIT_STACK_WATERMARK
         kinit_stack_watermark_record();

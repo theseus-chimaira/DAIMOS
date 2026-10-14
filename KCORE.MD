@@ -1,3 +1,7 @@
+- [x] v087 removes the packed-registry build toggle, links a permanent
+  registry descriptor in KCORE and unconditionally allocates its MM map
+  from KINIT. Fresh GCC KCORE and KINIT DXR links PASS. Packed scheduler,
+  teardown, and codec activation still pending; disk BACKSTORE remains.
 # KCORE - Verified Open Work and Optimization Backlog
 
 Date: 2026-10-13

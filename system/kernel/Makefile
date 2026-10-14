@@ -122,7 +122,8 @@ KINIT_SRCS = boot/kinit.c \
 	proc/proc_boot.c \
 	proc/proc_swap_boot.c
 
-KINIT_C_ASM = $(BUILD)/kinit.s \
+KINIT_C_ASM = $(BUILD)/proc_packed_boot_v38.s \
+	$(BUILD)/kinit.s \
 	$(BUILD)/kinit_diag.s \
 	$(BUILD)/module_minit.s \
 	$(BUILD)/kinit_boot.s \
@@ -136,6 +137,7 @@ KINIT_C_ASM = $(BUILD)/kinit.s \
 	$(BUILD)/logstore.s \
 	$(BUILD)/proc_boot.s \
 	$(BUILD)/proc_swap_boot.s
+
 
 KINIT_LATE_SRCS = proc/proc_late.c \
 	mm/mm_boot.c \
@@ -193,7 +195,9 @@ KCORE_FIXED_SRCS = core/ret.s \
 	storage/storage_router.s \
 	core/kcore_end.s
 
-KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
+KCORE_FIXED_ASM = $(BUILD)/proc_packed_runtime_v086.s \
+	$(BUILD)/proc_packed_layout_v36.s \
+	$(BUILD)/d6lz_fixed.s \
 	$(BUILD)/exec.s \
 	$(BUILD)/d6lz.s \
 	$(BUILD)/mm.s \
@@ -226,6 +230,7 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/bcache_pdp6.s \
 	$(BUILD)/storage_router.s \
 	$(BUILD)/kcore_end.s
+
 
 MRES_C_SRCS = fs/d6fs_provider.c \
 	fs/memfs_data.c \
@@ -313,6 +318,14 @@ ${BUILD}/bootbanner_generated.s: ${VERSION_FILE} ${MKBOOTBANNER_DEP}
 ${KCORE_C_ASM}: ${KCORE_C_SRCS} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
 	@base=`basename "$@" .s`; src=; extra=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; if test "$$base" = proc; then extra="-DPROC_EVENT_APPLY_PDP6_ASM=1 -DPROC_SWAP_VICTIM_PDP6_ASM=1 -DPROC_WAIT_STATUS_PDP6_ASM=1 -DPROC_SCHED_SELECT_PDP6_ASM=1 -DPROC_FINISH_SLOT_PDP6_ASM=1 -DPROC_UAREA_RELEASE_PDP6_ASM=1 -DPROC_TTY_RELEASE_PDP6_ASM=1"; elif test "$$base" = file; then extra="-DFILE_OPEN_PDP6_ASM=1"; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S "$$src" -o "$@"
+
+${BUILD}/proc_packed_layout_v36.s: proc/proc_packed_layout_v36.c proc/proc_packed_layout_v36.h ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S $< -o $@
+
+${BUILD}/proc_packed_runtime_v086.s: proc/proc_packed_runtime_v086.c proc/proc_packed_boot_v38.h ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S $< -o $@
 
 ${BUILD}/mm.s: mm/mm_pdp6.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}

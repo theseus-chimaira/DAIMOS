@@ -1,3 +1,12 @@
+## 2026-10-14 PACKED REGISTRY DEFAULT LINK v087
+
+Removed the old v086 development build toggle. The KINIT registry allocator
+is now always linked and run after process initialization. The persistent
+registry descriptor belongs to KCORE, not reclaimable KINIT. A fresh GCC
+PDP-6 KCORE/KINIT DXR link passes; full scheduler-managed packing/restore
+and VM teardown are not yet enabled or boot-validated. Disk BACKSTORE
+remains necessary for DISK-mode processes. The 8K size gate is deferred.
+
 ## 2026-10-13 NEW D6 CODEC NATIVE ABI STAGING V055
 
 Imported the native v053 D6 compressor/decompressor implementation and
