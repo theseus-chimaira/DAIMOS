@@ -1,3 +1,7 @@
+## 2026-10-14 V116 MM HOST FIXTURE BLOCKER AND BLT FEASIBILITY
+
+Reproduced `daimos-testkit make mm-core` linker failure: missing target-assembly storage transition and invariant functions. Host C fallback swap-out does not publish its DISK state while detach expects DISK->RESIDENT; unconditional stubs would conceal contract violations. BLT is semantically suitable for downward overlapping `mm_delete` shifts and is already used by `fs_move_words` for safe forward copies, but **not** for upward overlapping insertion. No production MM code change. See `system/kernel/mm/MM-HOST-PRESSURE-BLT-AUDIT-V116.md`.
+
 ## 2026-10-14 V115 OPEN MM WORK PRIORITIZATION
 
 Audit of KCORE.MD confirms unresolved v089 host-mm storage-state fixture and native pressure/retry acceptance, P2 runtime-sized versus fixed 32-descriptor MM table, and conditional large-core indexing. Complete these MM tasks before further instruction tuning; no non-MM optimization. Current `mm_extents` is 64 words and total MM BSS 70; no evidence yet to select a new capacity. See `system/kernel/mm/MM-OPEN-WORK-ORDER-V115.md`. Production stays 482 text/70 BSS.
