@@ -1,3 +1,7 @@
+## 2026-10-14 V113 MM GAP CURSOR GUARD REVIEW
+
+Verified `mm_find_fit_extent` guard is needed after the last extent: `mm_find_fit_after_gap` increments the cursor into the same entry, possibly reaching `mm_extent_count`. A base-reuse path candidate preserved the guard and passed native PDP-6 alloc/gap/noreclaim/VM tests but assembled unchanged at 482 text / 70 BSS, so it was reverted without measured speed claims. See `system/kernel/mm/MM-GAP-CURSOR-REVIEW-V113.md`.
+
 ## 2026-10-14 V112 MM VALIDATION/GAP CANDIDATES REJECTED
 
 `mm_compact` argument-check register substitution assembled unchanged at 482 words. Removing a presumed redundant `mm_find_fit_extent` cursor bounds check saved two instructions (480 text / 70 BSS) but **FAILED native `alloc-v090` HIGH allocation** (exit 3); the change was reverted. Full KCORE/KINIT link of the candidate had succeeded but does not override native behavior. Production remains 482 text / 70 BSS. See `system/kernel/mm/MM-VALIDATION-GAP-EXPERIMENT-V112.md`.
