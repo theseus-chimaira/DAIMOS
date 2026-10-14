@@ -1,3 +1,7 @@
+## 2026-10-14 V107 REJECTED MM MOVE CONTROL-FLOW CANDIDATE
+
+Experimented with branching before restoration of relocated descriptor: assembled whole-MM text rose 491 -> 494 words (+3), BSS held 70. Reverted candidate; production remains v106 64-word `mm_move_extent`. The attempted change provides no improvement. See `system/kernel/mm/MM-MOVE-CANDIDATE-REVIEW-V107.md` for alternatives and invariants.
+
 ## 2026-10-14 V106 MM RELOCATION OPTIMIZATION
 
 Native `mm_move_extent` shrunk 66 -> 64 PDP-6 words with one-word `HRRM` replacing length/base reconstruction; full MM text 493 -> 491, BSS 70 unchanged. Upward relocation insertion scan starts at original slot without code-size change. Native PDP-6 full VM/word-copy and alloc/free/gap/noreclaim regressions PASS, including v106 saved-length check; full KCORE/KINIT DXR link PASS. See `system/kernel/mm/MM-RELOCATION-OPTIMIZATION-V106.md`. Remaining large algorithmic rewrites still need risk/size measurement.
