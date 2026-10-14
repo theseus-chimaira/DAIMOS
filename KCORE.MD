@@ -30,6 +30,12 @@
   teardown, and codec activation still pending; disk BACKSTORE remains.
 # KCORE - Verified Open Work and Optimization Backlog
 
+MM v125 gate: `mm/MM-KCORE-SKELETON-BASELINE-V125.md` records the
+15/15 native PDP-6 MM regression baseline and the strict size requirements
+for a KINIT-reserved descriptor table. The MM remains in KCORE for this
+boot-time adaptability work; dynamic MM code replacement is independent.
+No production table conversion is claimed at v125.
+
 Date: 2026-10-13
 Basis: current DAIMOS checkout, source code, PROJECT-STATE.MD and
 active build notes. A staged, host-tested implementation is not considered

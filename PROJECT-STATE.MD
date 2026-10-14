@@ -1,3 +1,16 @@
+## 2026-10-14 MM V125 KCORE SKELETON BASELINE
+
+- Starting from MM v124, the existing 15 native PDP-6 MM regression scripts
+  passed on the unchanged production assembler via `p10run`.
+- The new daimos-testkit `tests/native-kernel/mm/run-all-v125.sh` runner
+  repeated all 15 successfully; host `make mm-core` also passed.
+- The boot-adaptive descriptor table need not imply replaceable MM code.
+  Keep normal MM in KCORE pending whole-image size comparisons. See
+  `system/kernel/mm/MM-KCORE-SKELETON-BASELINE-V125.md`.
+- The production array, 32-entry limit, executable code, and linked KCORE
+  have not changed. Native MM size baseline remains 482 text + 70 BSS words.
+- Pointer ABI conversion, KINIT descriptor reservation, KCORE link-size gate
+  and full-system boot are still open. No RAM or speed improvement is claimed.
 ## 2026-10-14 V124 MM REPLACEABLE IMPLEMENTATION BOUNDARY
 
 User requirement: replaceable MM implementation must move outside permanent KCORE. Existing KINIT `mres_install` itself calls `mm_alloc`, so installing MM as MRES first requires a minimal independent bootstrap reservation path and stable MM service/descriptor-state ABI. Preserve descriptor table across implementations. Hot replacement remains separate from current boot relocation and the KA10/v1.1 dynamic module deferral. **Design only; not implemented**. See system/kernel/mm/MM-REPLACEABLE-BOUNDARY-V124.md.
