@@ -1,3 +1,7 @@
+## 2026-10-14 V124 MM REPLACEABLE IMPLEMENTATION BOUNDARY
+
+User requirement: replaceable MM implementation must move outside permanent KCORE. Existing KINIT `mres_install` itself calls `mm_alloc`, so installing MM as MRES first requires a minimal independent bootstrap reservation path and stable MM service/descriptor-state ABI. Preserve descriptor table across implementations. Hot replacement remains separate from current boot relocation and the KA10/v1.1 dynamic module deferral. **Design only; not implemented**. See system/kernel/mm/MM-REPLACEABLE-BOUNDARY-V124.md.
+
 ## 2026-10-14 V123 BOOT-SIZED MM DESCRIPTOR DESIGN CONTRACT
 
 User selected KINIT boot-sized, fixed-for-boot descriptor backing, allocated before MM arenas are made free. Verified that `mm_extents` is a fixed exported array referenced by MM/VM PDP-6 assembly, MM C and packed code: pointer conversion must update all consumers simultaneously. 32 descriptors is the safe minimum pending workloads. Detailed implementation and acceptance contract in system/kernel/mm/MM-BOOT-SIZED-IMPLEMENTATION-V123.md. **Not implemented yet**; no production code or size change.

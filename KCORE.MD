@@ -170,6 +170,7 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 ## P2: kernel data structures and workload-specific sizing
 
 - [ ] **KA10 / DAIMOS v1.1 deferred:** loadable/unloadable/relocatable runtime modules and module-specific MM allocation, unloading and relocation acceptance. Do not optimize MM for hypothetical module workloads before v1.1.
+- [ ] Separate MM implementation from permanent KCORE before making it replaceable; retain only minimal bootstrap reservation and a stable service/state interface. KINIT MRES installation currently calls MM and cannot bootstrap itself. See mm/MM-REPLACEABLE-BOUNDARY-V124.md.
 - [ ] Implement KINIT-selected, boot-sized, fixed-for-boot MM descriptor backing.
   Capacity must be selected from discovered physical memory and reserved
   before publishing managed free arenas, with all C/PDP-6 VM symbol users
