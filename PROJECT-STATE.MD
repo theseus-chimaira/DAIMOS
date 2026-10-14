@@ -1,3 +1,22 @@
+# 2026-10-14 v135: External MM/MRES layout real boot acceptance
+
+- GCC disk-root `BOOT_PROFILE=lowmem` with 32K core links, but `mkimage`
+  rejects its bootstrap stack allocation: KINIT end 076311 octal plus
+  stack reserve 02000 octal exceeds core end 0100000 by 0311 octal
+  (201 decimal) words. Do not silently reduce the verified stack reserve.
+- Building the same disk-root image for 64K memory with explicit DAS_REPO
+  and KCC_REPO paths succeeds. Native PDP-6 simulator executes KINIT/MINIT,
+  emits DAIMON / MEM 64 K / DSK270 OK / BSET LOADED / D6FS LOADED / INIT V1.
+  It then reports that MEMFS is not mounted on /TEMP and halts at PC 000000.
+  It does not reach LOGIN. This is NOT a complete boot acceptance.
+- daimos-testkit `check-mm-boot-v135.sh` requires the DAIMON, D6FS, INIT V1,
+  and LOGIN milestones and rejects HALT, ?RT and INIT inittab failures.
+  The current simulator transcript correctly FAILS the gate.
+- The next priority is to diagnose the post-INIT halt and compare the same
+  64K configuration with a pre-external-MM boot before attributing the
+  failure to the descriptor relocation. Keep the 32K stack and 020000 KCORE
+  optimization constraints separately tracked.
+
 # 2026-10-14 v134: pre-copy KCORE/MM/KINIT overlap protection
 
 - `kcore_load()` now refuses to copy KCORE if its linked end plus the

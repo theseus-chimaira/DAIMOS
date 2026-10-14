@@ -169,6 +169,11 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [ ] v135: Complete external-MM boot acceptance: 64K disk-root reaches
+  INIT but halts before LOGIN; diagnose against pre-relocation baseline.
+  The 32K image independently exceeds its KINIT stack budget by 0311
+  octal words and remains above the stricter KCORE optimization target.
+
 - [x] v134: Verify the minimum descriptor backing fits between linked
   KCORE and live KINIT before the initial KCORE copy; regression-test the
   exact boundary and reject overlapping images. Full system boot remains
