@@ -148,6 +148,9 @@ mm_find_fit:
         move    011,2
         move    012,3
         move    013,4
+        move    0,011                     ; alignment mask computed once
+        subi    0,1
+        setcm   0,0
         setz    014,
         setz    015,
         seto    016,
@@ -193,10 +196,7 @@ mm_find_fit_gap:
         jrst    mm_find_fit_after_gap
         move    7,2
         sub     7,010
-        move    3,011
-        subi    3,1
-        setcm   3,3
-        and     7,3
+        and     7,0
         caml    7,4
         move    016,7
         jrst    mm_find_fit_after_gap
@@ -204,10 +204,7 @@ mm_find_fit_low_gap:
         move    7,4
         add     7,011
         subi    7,1
-        move    3,011
-        subi    3,1
-        setcm   3,3
-        and     7,3
+        and     7,0
         move    6,2
         sub     6,7
         camg    010,6

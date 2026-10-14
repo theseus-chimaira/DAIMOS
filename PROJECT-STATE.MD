@@ -1,3 +1,7 @@
+## 2026-10-14 V096 MM GAP SEMANTICS AND MASK HOIST
+
+Studied the actual `mm_find_fit` and `mm_alloc_aligned_noreclaim` semantics: search scans sorted occupied extents across arenas, returns first LOW/highest HIGH aligned fit, or aggregate free words on failure. No-reclaim allocator validates arguments and scans extents a second time for insertion position. Hoisting the fixed alignment mask into scratch AC0 reduces `mm_find_fit` **90 -> 85 words**, full MM assembler text **496 -> 493 words** (BSS stays 70); native alloc/free/gap/noreclaim tests and GCC KCORE/KINIT link PASS. The redundant insertion scan is an algorithmic optimization candidate, not yet changed; no scheduler/boot acceptance is inferred. See system/kernel/mm/MM-GAP-SEMANTICS-V096.md.
+
 ## 2026-10-14 V095 NO-RECLAIM ALLOCATION AUDIT
 
 `mm_alloc_aligned_noreclaim` remains necessary for packed eviction/restore and block-cache allocation to avoid recursive reclaim and compaction. Two equivalent full-word `TDNE` validity tests replace three-instruction checks, shrinking this routine 73 -> 71 words and total MM text 498 -> 496, BSS unchanged (70). Native PDP-6 noreclaim, gap, alloc, free suites PASS; full GCC KCORE/KINIT DXR links PASS. See system/kernel/mm/MM-NORECLAIM-OPTIMIZATION-V095.md. Next: relocation/compaction, descriptor insertion and other algorithm alternatives; no automatic packed-process boot acceptance yet.
