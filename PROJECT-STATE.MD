@@ -1,3 +1,7 @@
+## 2026-10-14 V104 REPEATED COMPACTION REGRESSION
+
+Native PDP-6 `vm-live-v104` PASS: repeated compaction after cross-arena move is idempotent, leaves descriptor/PI state unchanged, with previous payload/pin/runqueue checks retained. Hard-coded test address overlap exposed and fixed in test fixture. No production code changed; 493 MM text + 70 BSS. See `system/kernel/mm/MM-REPEATED-COMPACTION-V104.md`. Multi-process repeated relocations still need a separate test.
+
 ## 2026-10-14 V103 CROSS-ARENA PDP-6 RELOCATION
 
 `vm-live-v103` runs production MM/VM and copy assembler on PDP-6 emulator; cross-arena relocation PASS with 512-word complete-data check, sorted descriptors, process VM-base publication and PI balance. No production change; MM 493 text / 70 BSS. Candidate search/descriptor fusion remains unproven for net whole-KCORE size. See `system/kernel/mm/MM-CROSS-ARENA-RELOCATION-V103.md`.
