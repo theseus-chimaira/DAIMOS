@@ -1,3 +1,7 @@
+## 2026-10-14 V115 OPEN MM WORK PRIORITIZATION
+
+Audit of KCORE.MD confirms unresolved v089 host-mm storage-state fixture and native pressure/retry acceptance, P2 runtime-sized versus fixed 32-descriptor MM table, and conditional large-core indexing. Complete these MM tasks before further instruction tuning; no non-MM optimization. Current `mm_extents` is 64 words and total MM BSS 70; no evidence yet to select a new capacity. See `system/kernel/mm/MM-OPEN-WORK-ORDER-V115.md`. Production stays 482 text/70 BSS.
+
 ## 2026-10-14 V114 MM OPTIMIZATION PAUSE FOR DESCRIPTOR ARCHITECTURE
 
 Before further single-word assembly changes, resolve open `KCORE.MD` P2 work on runtime-sized extent descriptor capacity versus static 32 entries and the v089 native pressure/reclaim acceptance gap. These can change MM descriptor insertion, deletion, table bounds, allocation and compaction. v114 candidate for a forward-running insertion-slot cursor assembled unchanged at 482 text/70 BSS and was discarded. No production MM code changed; baseline remains v113. Fine-grained MM optimization paused pending architectural sizing decision.
