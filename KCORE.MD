@@ -169,6 +169,11 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [x] v128: Stage and host-test the disposable KINIT/MM external-table
+  placement calculation. Native MM/VM emulator regression remains 15/15
+  PASS. No runtime table relocation or resident-memory savings claimed;
+  see mm/MM-BOOT-TABLE-REGION-V128.md.
+
 - [ ] Audit KCORE BSS by size, lifetime, hardware dependency and concurrent
   use before adding boot-time indirection. Prioritize deleting redundant
   buffers and sharing genuinely nonconcurrent storage; measure net KCORE

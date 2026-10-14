@@ -15,6 +15,30 @@
 #include "mm.h"
 #include "mm_internal.h"
 
+/* This is only a placement calculation. KINIT must exclude the selected
+ * region from MM arenas before it installs any resident packages. */
+int
+mm_boot_table_region(kword_t core_words, kword_t image_end,
+    kword_t stack_words, unsigned int capacity, kword_t *basep,
+    kword_t *high_basep)
+{
+        kword_t base;
+        kword_t words;
+
+        if (basep == 0 || high_basep == 0 ||
+            core_words > MM_HALF_MASK + 1UL || image_end > core_words ||
+            stack_words > core_words - image_end ||
+            capacity < MM_MAX_EXTENTS || capacity > MM_HALF_MASK / 2UL)
+                return MM_ERR_INVAL;
+        base = image_end + stack_words;
+        words = (kword_t)capacity * 2UL;
+        if (words > core_words - base)
+                return MM_ERR_NOMEM;
+        *basep = base;
+        *high_basep = base + words;
+        return MM_OK;
+}
+
 /** Pack a managed boot arena as size,,base. */
 static kword_t
 mm_arena_span(kword_t base, kword_t words)
