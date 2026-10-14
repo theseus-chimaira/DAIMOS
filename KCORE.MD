@@ -18,7 +18,10 @@
   Host `make mm-core` pressure/rollback fixture repaired and PASS in v118;
   native PDP-6 integrated pressure/retry and boot acceptance remain open.
   v119 native MM retry-failure and no-reclaim-callback tests PASS; native
-  reclaim success and integrated swap pressure remain open.
+  integrated production swap pressure and boot acceptance remain open.
+  v120 native MM retry-after-real-extent-free and full 32-descriptor
+  saturation with bounded pressure callbacks PASS; external reclaim services
+  remain instrumented test fixtures.
   See mm/MM-HOST-PRESSURE-REPAIRED-V118.md.
 - [x] v088 links packed codec/transactions, slot-0 restore dispatch and VM destroy into KCORE; native relocatable decode PASS; KCORE/KINIT DXR links PASS. Boot and scheduler eviction policy remain unverified.
 - [x] v087 removes the packed-registry build toggle, links a permanent

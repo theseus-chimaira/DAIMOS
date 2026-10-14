@@ -1,3 +1,7 @@
+## 2026-10-14 V120 NATIVE MM RECLAIM SUCCESS AND DESCRIPTOR PRESSURE
+
+PDP-6 native `pressure-v120` PASS: an instrumented reclaim callback frees a real MM extent via `mm_free` and ordinary allocation retries successfully without swap callback. A valid sorted 32-descriptor fixture confirms descriptor exhaustion returns -3 unchanged and uses the bounded two-FS/one-swap retry sequence. Production FS/swap reclaimer, concurrency and boot still open. No MM source change; 482 text/70 BSS. See system/kernel/mm/MM-NATIVE-RECLAIM-SATURATION-V120.md.
+
 ## 2026-10-14 V119 NATIVE MM PRESSURE RETRY BASELINE
 
 PDP-6 native `pressure-v119` executes real MM assembler and tests bounded unsatisfied allocation retries (two FS reclaim callbacks, one swap callback), unchanged descriptor count/output on NOMEM, and no external reclaim calls on no-reclaim allocator. PASS. Callback implementations are deterministic fixtures; real native reclaim success, rollback and packed-process integration remain open. No production code change, MM 482 text/70 BSS. See system/kernel/mm/MM-NATIVE-PRESSURE-V119.md.
