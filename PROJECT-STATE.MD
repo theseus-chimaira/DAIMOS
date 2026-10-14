@@ -1,3 +1,57 @@
+## 2026-10-14 PERMANENT KERNEL ALGORITHM EVALUATION POLICY V091
+
+**Applies to all kernel subsystems, beginning with MM.** Native PDP-6
+algorithm tests are the primary correctness gate. Do not restrict optimization
+to shortening existing assembler: investigate fundamentally different
+algorithms and data representations before settling on implementation-level
+changes. Review this policy for *each* algorithm during future test sweeps.
+
+Evaluation has three complementary levels:
+
+1. **Instructions and folding:** BLT opportunities, registers, repeated
+   sequences, saved-AC frames, branch/fall-through layout, constants,
+   instruction ordering, and `p10fold` reuse. Canonicalize equal-cost,
+   semantically identical sequences so code folding can find them; never
+   change dependencies or add hot-path work merely for uniform appearance.
+2. **Algorithms:** compare plausible alternatives under identical workloads
+   and correctness assertions, including failure and worst-case behavior.
+3. **Data structures:** examine whether changing the representation removes
+   bookkeeping, improves fragmentation, or lowers permanently allocated RAM.
+
+MM-specific candidates to investigate include first/next/best fit versus
+segregated free lists; implicit free gaps versus explicit extents or bitmaps;
+linear versus indexed extent search; locality-aware placement and size
+classes; sliding versus selective/cost-aware compaction; age-based versus
+benefit-based reclaim; packed-extent allocation strategies; and fixed,
+dynamic, or compact descriptor representations. These are *candidates*,
+not approved replacements. With 32 extent descriptors, simple scans may
+outperform larger indexing schemes; measure rather than assume.
+
+**Measurements and decision priorities:** permanent RAM first, temporary
+and stack RAM equally critical, execution speed and worst-case latency
+nearly as important, allocation success and fragmentation, raw and
+post-`p10fold` KCORE words, and implementation complexity. Disk footprint
+is secondary. Preserve numerical before/after results (including hot-path
+branches/calls and stack high-water) and explicit reasons for acceptance or
+rejection. Account for instruction placement and actual folding results.
+
+**Mandatory workflow for every algorithm:** native baseline executing the
+real production PDP-6 code without a full OS; independent correctness
+oracle and deterministic edge/failure/stress sequences; alternative
+algorithm/data-structure experiments kept in `daimos-testkit`; memory,
+speed, fragmentation and size comparisons; instruction/folding review;
+then a *single* selected production replacement, with native and integration
+regressions before commit/push. Do not retain competing production
+implementations without measured justification. If an experiment fails,
+investigate its implementation before discarding the underlying idea.
+
+Start with the MM algorithm list in
+`system/kernel/mm/MM-NATIVE-TEST-AND-SIZE-AUDIT-V090.md`. Extend this policy
+to the remaining kernel algorithms as their tests are converted. Tests
+belong in `daimos-testkit`; completed long-lived documentation belongs in
+`pdp10-doc`, while this PROJECT-STATE entry preserves the project policy.
+The deferred 8K KCORE limit does not waive memory/speed measurements.
+
 ## 2026-10-14 V090 NATIVE MM TEST AND SIZE AUDIT
 
 A standalone PDP-6 allocator smoke test executes production mm_pdp6.s (low/high placement, pin-protected free, owner checks and reuse). Every MM algorithm now has a test/size audit entry with BLT, folding and equal-cost instruction-order rules. Algorithm optimization awaits full boundary tests and before/after KCORE measurements. See system/kernel/mm/MM-NATIVE-TEST-AND-SIZE-AUDIT-V090.md.
