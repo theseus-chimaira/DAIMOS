@@ -379,12 +379,13 @@ mm_move_extent:
         movem   1,-1(17)
         jumpn   1,mm_move_restore_pi
 
-        hrlz    1,013
-        hrr     1,015
-        movem   1,-5(17)
+        ; Preserve saved extent length: only its physical base changes.
+        hrrm    015,-5(17)
         move    1,010
         pushj   17,mm_delete
-        setz    014,
+        ; Moving upward: the destination insertion index is never below
+        ; the source index. Start there instead of rescanning from zero.
+        move    014,010
 mm_move_new_slot:
         caml    014,mm_extent_count
         jrst    mm_move_publish

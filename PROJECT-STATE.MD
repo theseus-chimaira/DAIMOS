@@ -1,3 +1,7 @@
+## 2026-10-14 V106 MM RELOCATION OPTIMIZATION
+
+Native `mm_move_extent` shrunk 66 -> 64 PDP-6 words with one-word `HRRM` replacing length/base reconstruction; full MM text 493 -> 491, BSS 70 unchanged. Upward relocation insertion scan starts at original slot without code-size change. Native PDP-6 full VM/word-copy and alloc/free/gap/noreclaim regressions PASS, including v106 saved-length check; full KCORE/KINIT DXR link PASS. See `system/kernel/mm/MM-RELOCATION-OPTIMIZATION-V106.md`. Remaining large algorithmic rewrites still need risk/size measurement.
+
 ## 2026-10-14 V105 MULTIPLE PROCESS RELOCATIONS
 
 Native PDP-6 `vm-live-v105` PASS: production MM + VM + copy assembler relocates two different process extents during one compaction call, around three pinned obstacles and across two arenas. Checks both VM bases, balanced PI hooks and both full 512-word payloads. No production code changed, MM remains 493 text / 70 BSS. See `system/kernel/mm/MM-MULTI-MOVE-V105.md`. Real PI/runqueue concurrency and failed descriptor publication remain open.

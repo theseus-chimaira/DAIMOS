@@ -1,3 +1,4 @@
+- [x] v106 mm_move_extent 66 -> 64 instructions, full MM text 491 words, native relocation/allocation tests PASS; see mm/MM-RELOCATION-OPTIMIZATION-V106.md.
 - [x] v105 PDP-6 native MM two-process, two-arena compaction with pinned obstacles/full payloads PASS. No production changes.
 - [x] v104 native PDP-6 repeated compaction/idempotence and fixture address isolation PASS; no MM production changes.
 - [x] v103 cross-arena native PDP-6 MM/VM relocation with full payload and metadata verification PASS; no production changes. See mm/MM-CROSS-ARENA-RELOCATION-V103.md.
