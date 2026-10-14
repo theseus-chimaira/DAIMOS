@@ -32,6 +32,9 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 - [x] Stage inline KPACK v073 ABI adapters to the v071 encoder and v070
   direct-buffer decoder; native PDP-6 roundtrip and AC10..AC16 checks pass.
   Registry-aware eviction/restore and scheduler connections remain pending.
+- [x] v085 expands v084 destruction rollback tests: invalid slots,
+  absent TRANSITION, preserved backing on pinned extent, dense/sparse
+  reuse and DISK path; host-MM PASS, PDP-6 cross-compile PASS.
 - [x] v084 staged VM destroy dispatch retires PACKED MM ownership and
   preserves the original backing record until success, avoiding legacy
   disk-span detach. PDP-6 dispatch regression PASS; production VM linkage
