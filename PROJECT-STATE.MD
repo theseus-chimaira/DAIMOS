@@ -1,3 +1,15 @@
+## 2026-10-14 LIBC STRING ASM/C SPLIT V1
+
+DAIMOS libc now uses PDP-6 assembler for `memset`, `memcmp`, `strlen`,
+`strcmp`, and `strncmp`, matching the existing KCC freestanding runtime
+implementations.  Existing `memcpy` and `memmove` remain assembly.  Only
+`strcpy`, `strncpy`, `strcat`, `strncat`, `strchr`, `strrchr`, `strtok`, and
+`strcspn` remain in `userland/libc/string.c`.  The libc archive and the
+standalone userland MAKE executable both build and link successfully with
+this split.  This is a build/link validation, not a new SIMH functional
+regression result.  The standalone semantic test for `strchr` still uses
+C intentionally; no assembly `strchr` implementation exists.
+
 ## 2026-10-13 NEW D6 CODEC NATIVE ABI STAGING V055
 
 Imported the native v053 D6 compressor/decompressor implementation and

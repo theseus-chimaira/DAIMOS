@@ -14,9 +14,12 @@ CPPFLAGS = -I$(LIBC_ROOT) -I$(LIBC_ROOT)/../../system/kernel/core \
 	-I$(LIBC_ROOT)/../../system/kernel/storage \
 	-I$(PDP10_PREFIX)/include
 
-ASM_SRCS = memcpy.s memmove.s syscall.s
+ASM_SRCS = memcpy.s memmove.s memset-v1.s memcmp-v2.s strlen-v1.s strcmp-v1.s strncmp-v1.s syscall.s
 C_SRCS = stdlib.c string.c stat_time.c process_ctype.c u.c
-ASM_OBJS = $(BUILD)/memcpy.dobj $(BUILD)/memmove.dobj $(BUILD)/syscall.dobj
+ASM_OBJS = $(BUILD)/memcpy.dobj $(BUILD)/memmove.dobj \
+	$(BUILD)/memset-v1.dobj $(BUILD)/memcmp-v2.dobj \
+	$(BUILD)/strlen-v1.dobj $(BUILD)/strcmp-v1.dobj \
+	$(BUILD)/strncmp-v1.dobj $(BUILD)/syscall.dobj
 C_OBJS = $(BUILD)/stdlib.dobj $(BUILD)/string.dobj \
 	$(BUILD)/stat_time.dobj $(BUILD)/process_ctype.dobj $(BUILD)/u.dobj
 OBJS = $(ASM_OBJS) $(C_OBJS)
@@ -47,6 +50,11 @@ $(C_OBJS):
 
 $(BUILD)/memcpy.dobj: memcpy.s
 $(BUILD)/memmove.dobj: memmove.s
+$(BUILD)/memset-v1.dobj: memset-v1.s
+$(BUILD)/memcmp-v2.dobj: memcmp-v2.s
+$(BUILD)/strlen-v1.dobj: strlen-v1.s
+$(BUILD)/strcmp-v1.dobj: strcmp-v1.s
+$(BUILD)/strncmp-v1.dobj: strncmp-v1.s
 $(BUILD)/syscall.dobj: syscall.s
 $(BUILD)/stdlib.dobj: stdlib.c
 $(BUILD)/string.dobj: string.c

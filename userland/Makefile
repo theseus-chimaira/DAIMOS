@@ -111,7 +111,9 @@ CONFIGCTL_MAP = $(USERLAND_BUILD)/configctl.map
 
 MAKE_C_SRCS = $(COMMON_C_SRCS) libc/stdlib.c libc/string.c exec/make.c
 MAKE_C_OBJS = $(MAKE_C_SRCS:%.c=$(USERLAND_BUILD)/make/%.dobj)
-MAKE_S_SRCS = $(COMMON_S_SRCS) libc/memcpy.s
+MAKE_S_SRCS = $(COMMON_S_SRCS) libc/memcpy.s \
+	libc/memset-v1.s libc/memcmp-v2.s libc/strlen-v1.s \
+	libc/strcmp-v1.s libc/strncmp-v1.s
 MAKE_S_OBJS = $(MAKE_S_SRCS:%.s=$(USERLAND_BUILD)/make/%.dobj)
 MAKE_DXR = $(USERLAND_BUILD)/make.dxr
 MAKE_MAP = $(USERLAND_BUILD)/make.map
