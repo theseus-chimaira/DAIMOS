@@ -32,6 +32,10 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 - [x] Stage inline KPACK v073 ABI adapters to the v071 encoder and v070
   direct-buffer decoder; native PDP-6 roundtrip and AC10..AC16 checks pass.
   Registry-aware eviction/restore and scheduler connections remain pending.
+- [x] v084 staged VM destroy dispatch retires PACKED MM ownership and
+  preserves the original backing record until success, avoiding legacy
+  disk-span detach. PDP-6 dispatch regression PASS; production VM linkage
+  and KINIT boot registry activation remain open.
 - [x] v083 staged slot-0 restore dispatcher routes DISK to legacy swap-in
   and PACKED to inline v082 restore. Native PDP-6 dispatch checks PASS;
   alternate assembly/full-kernel link and boot remain unverified.
