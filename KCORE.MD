@@ -1,3 +1,4 @@
+- [x] v090 begins per-algorithm native PDP-6 MM tests and an optimization/folding register. BLT, canonical instruction ordering and per-algorithm measurements documented in mm/MM-NATIVE-TEST-AND-SIZE-AUDIT-V090.md. No allocator optimization yet.
 - [ ] v089 real-MM readiness audit identifies missing native allocator pressure/retry acceptance and outdated host mm-core storage-state fixture; see mm/MM-PACKED-READINESS-V089.md. No MM algorithm changed.
 - [x] v088 links packed codec/transactions, slot-0 restore dispatch and VM destroy into KCORE; native relocatable decode PASS; KCORE/KINIT DXR links PASS. Boot and scheduler eviction policy remain unverified.
 - [x] v087 removes the packed-registry build toggle, links a permanent

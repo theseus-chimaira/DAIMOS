@@ -1,3 +1,7 @@
+## 2026-10-14 V090 NATIVE MM TEST AND SIZE AUDIT
+
+A standalone PDP-6 allocator smoke test executes production mm_pdp6.s (low/high placement, pin-protected free, owner checks and reuse). Every MM algorithm now has a test/size audit entry with BLT, folding and equal-cost instruction-order rules. Algorithm optimization awaits full boundary tests and before/after KCORE measurements. See system/kernel/mm/MM-NATIVE-TEST-AND-SIZE-AUDIT-V090.md.
+
 ## 2026-10-14 V089 REAL-MM PACKING AUDIT
 
 Audited native mm_pdp6.s allocator, pinning, free gaps and compaction for packed-process safety. Existing mechanisms are present, but real MM pressure/fragmentation and scheduler-driven packing remain unverified. Existing host mm-core test cannot currently run with storage-mode migration; restore test setup before allocator modifications. See system/kernel/mm/MM-PACKED-READINESS-V089.md.
