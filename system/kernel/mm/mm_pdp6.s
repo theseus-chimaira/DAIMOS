@@ -81,12 +81,9 @@ mm_extent_insert_space:
         move    5,7
 mm_extent_insert_shift:
         move    4,5
-        subi    4,1
         lsh     4,1
-        move    2,mm_extents(4)
-        move    3,mm_extents+1(4)
-        move    4,5
-        lsh     4,1
+        move    2,mm_extents-2(4)
+        move    3,mm_extents-1(4)
         movem   2,mm_extents(4)
         movem   3,mm_extents+1(4)
         soj     5,

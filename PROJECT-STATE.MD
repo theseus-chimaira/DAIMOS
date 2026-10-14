@@ -1,3 +1,7 @@
+## 2026-10-14 V110 MM INSERT SHIFT OPTIMIZATION
+
+Optimized PDP-6 `mm_extent_insert` using one doubled destination index and fixed source offsets -2/-1, removing **3 text words** without changing RAM use or reverse overlap-safe copy order. Whole MM 488 -> **485 text words**, BSS 70 unchanged. Eight native PDP-6 MM/VM suites and GCC KCORE/KINIT link PASS. See `system/kernel/mm/MM-INSERT-OPTIMIZATION-V110.md`.
+
 ## 2026-10-14 V109 MM DELETE DESCRIPTOR SHIFT OPTIMIZATION
 
 Optimized PDP-6 `mm_delete` by reusing one doubled destination index and source at constant offsets +2/+3: **-3 text words**, whole MM 491 -> 488 text, BSS 70 unchanged. Eight native PDP-6 suites PASS including two-process compaction, and GCC KCORE/KINIT link PASS. `mm_extent_insert` is next separate experiment. See `system/kernel/mm/MM-DELETE-OPTIMIZATION-V109.md`.
