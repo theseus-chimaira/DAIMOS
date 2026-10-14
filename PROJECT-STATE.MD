@@ -1,3 +1,18 @@
+# 2026-10-14 v133: External MM descriptor backing linked without indirection
+
+- The zero-sized native `mm_extents` symbol aliases `__kcore_low_end` in
+  `kcore_end.s`; KINIT reserves and zeroes 64 words there, publishes only
+  the following low free arena, and starts MRES at the next word.
+- KCC disk-root linked KCORE: 12463 -> 12399 words (64-word reduction).
+  Both map symbols resolve to 030237 octal. Resident total RAM is unchanged:
+  the 64 words now reside outside the KCORE image.
+- `daimos-testkit` host MM PASS and 16/16 native PDP-6 MM/VM PASS with a
+  separate native fixture table; table-end linker assertion PASS.
+- NOT BOOT ACCEPTED: the full KCORE end 030237 exceeds KINIT base 030000;
+  lowmem KCORE end 027131 exceeds its 020000 acceptance limit. The new
+  boot layout rejects physical overlap rather than silently corrupting
+  the KINIT image. Tiered descriptor capacities remain disabled.
+
 # 2026-10-14 v130: Exported assembler symbol-length gate
 
 - Added testkit `check-kcc-symbols-v130.py` for exported PDP-6 assembly

@@ -169,6 +169,13 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [x] v133: Define native `mm_extents` at the end-of-KCORE linker boundary
+  and reserve its 64-word backing before the MRES block, preserving direct
+  MM/VM addressing. 16 native emulator tests and host MM pass; link map
+  confirms 64-word KCORE shrink. Full boot and size acceptance remain
+  blocked by pre-existing KCORE/KINIT space limits. See
+  mm/MM-END-SYMBOL-V133.md.
+
 - [x] v132: Test low-memory descriptor placement immediately above KCORE,
   with MRES following that table; host layout and 16 native PDP-6 MM/VM
   tests pass. The layout remains inactive until descriptor ABI conversion;

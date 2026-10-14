@@ -35,4 +35,9 @@ __kcore_low_init_end:
  * and the first address available for MRES package installation.
  */
         .globl __kcore_low_end
+        .globl mm_extents
+; MM metadata is allocated immediately AFTER KCORE. Zero-sized linker
+; symbols share this address, retaining direct PDP-6 addressing without
+; runtime pointer loads or instruction patching.
+mm_extents:
 __kcore_low_end:

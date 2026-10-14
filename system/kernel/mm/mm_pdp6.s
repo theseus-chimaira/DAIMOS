@@ -644,8 +644,9 @@ mm_unpin:
         jrst    mm_pin_adjust
 
         .bss
-mm_extents:
-        .block  0100
+; mm_extents is defined without storage at the final KCORE BSS boundary
+; in core/kcore_end.s. KINIT permanently reserves its backing beyond that
+; boundary before publishing free arenas. All direct address forms remain.
 mm_arenas:
         .block  MM_MAX_ARENAS
 mm_core_words:

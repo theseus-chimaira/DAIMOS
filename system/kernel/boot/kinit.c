@@ -103,8 +103,10 @@ mres_init(void)
 #ifdef KINIT_DEBUG
         KINIT_TRACE(MRES_INIT);
 #endif
-        /* MRES packages are packed immediately above fixed KCORE. */
-        mres_next_addr = (unsigned int)(unsigned long)&__kcore_low_end;
+        /* MM's descriptor backing is reserved between KCORE and MRES.
+         * Its base is the zero-sized end-of-KCORE linker symbol. */
+        mres_next_addr = (unsigned int)(unsigned long)&__kcore_low_end +
+            2U * mm_extent_capacity;
         mres_owner_next = 1U;
         mres_last_owner = 0U;
         mres_last_image_words = 0U;
@@ -474,6 +476,7 @@ kinit_enter(void)
         {
                 kword_t core_words;
                 kword_t low_base;
+                kword_t table_base;
                 kword_t image_end;
 
                 /*
@@ -484,6 +487,21 @@ kinit_enter(void)
                 low_base = (kword_t)(unsigned long)&__kcore_low_end;
                 image_end = (kword_t)(unsigned long)&__kinit_image_end;
                 mm_boot_init(core_words);
+                /* Reserve metadata before publishing ANY low free arena.
+                 * Direct MM/VM memory operands resolve to table_base.
+                 * A failing layout cannot safely start the allocator. */
+                if (mm_boot_low_table(core_words, low_base,
+                    KINIT_IMAGE_BASE, mm_extent_capacity, &table_base,
+                    &low_base) != MM_OK ||
+                    table_base != (kword_t)(unsigned long)&mm_extents[0])
+                        kinit_halt();
+                {
+                        kword_t *wp = (kword_t *)(unsigned long)table_base;
+                        unsigned int i;
+
+                        for (i = 0U; i < 2U * mm_extent_capacity; ++i)
+                                wp[i] = 0UL;
+                }
                 if (low_base < KINIT_IMAGE_BASE && low_base < core_words) {
                         kword_t low_end = KINIT_IMAGE_BASE;
                         if (low_end > core_words)
