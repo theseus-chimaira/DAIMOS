@@ -21,21 +21,27 @@
         .globl cr_minit
         .globl cp_minit
 .endif
+ .if KINIT_OPTIONAL_TERMINALS_V089
         .globl dcs_minit
         .globl ge_minit
 .if KINIT_FULL
         .globl dpy_minit
 .endif
         .globl tty_minit
+ .endif
 .if KINIT_FULL
         .globl wcnsls_minit
         .globl ocnsls_minit
 .endif
 .if KINIT_TAPE_BOOT
         .globl dtc_minit
+ .if KINIT_MTC_ENABLED_V089
         .globl mtc_minit
+ .endif
 .endif
+.if KINIT_DSK_ENABLED_V089
         .globl dsk_minit
+.endif
 .if KINIT_FULL
         .globl drm236_minit
         .globl logstore_minit
@@ -72,12 +78,14 @@
         .globl cr_mres_package
         .globl cp_mres_package
 .endif
+ .if KINIT_OPTIONAL_TERMINALS_V089
         .globl dcs_mres_package
         .globl ge_mres_package
 .if KINIT_FULL
         .globl dpy_mres_package
 .endif
         .globl tty_mres_package
+ .endif
 .if KINIT_FULL
         .globl wcnsls_mres_package
         .globl ocnsls_mres_package
@@ -85,7 +93,9 @@
 .if KINIT_TAPE_BOOT
         .globl tape_mres_package
 .endif
+ .if KINIT_DSK_ENABLED_V089
         .globl dsk_mres_package
+ .endif
 .if KINIT_FULL
         .globl drm236_mres_package
         .globl logstore_mres_package
@@ -126,21 +136,27 @@ __minit_table_begin:
         .word cr_minit,,cr_mres_package
         .word cp_minit,,cp_mres_package
 .endif
+ .if KINIT_OPTIONAL_TERMINALS_V089
         .word dcs_minit,,dcs_mres_package
         .word ge_minit,,ge_mres_package
 .if KINIT_FULL
         .word dpy_minit,,dpy_mres_package
 .endif
         .word tty_minit,,tty_mres_package
+ .endif
 .if KINIT_FULL
         .word wcnsls_minit,,wcnsls_mres_package
         .word ocnsls_minit,,ocnsls_mres_package
 .endif
 .if KINIT_TAPE_BOOT
         .word dtc_minit,,tape_mres_package
+ .if KINIT_MTC_ENABLED_V089
         .word mtc_minit,,tape_mres_package
+ .endif
 .endif
+.if KINIT_DSK_ENABLED_V089
         .word dsk_minit,,dsk_mres_package
+.endif
 .if KINIT_FULL
         .word drm236_minit,,drm236_mres_package
 .endif

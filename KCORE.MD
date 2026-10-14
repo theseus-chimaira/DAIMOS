@@ -1,3 +1,9 @@
+- [x] v089 complete PDP-6 hardware boot matrix: 32K D6FS single disk,
+  32K TSFS two DECtapes, and 256K fully attached system all reach INIT V1
+  with packed v088 runtime linked. Minimal MINIT/MRES selection and full
+  02000-word bootstrap stack preserve 32K image bounds. Live pack/restore
+  under scheduler memory pressure is not yet accepted.
+
 - [x] v089 minimal single-member DBOOT/D6FS boot image: `D6FS_ROOT_MEMBERS=1`
   with only DSK0 + DCT, bootstrap PTR, PCLK, 32K memory and CTY reaches
   INIT V1 in PDP-6 SIMH. Four-member full D6FS remains the default.
