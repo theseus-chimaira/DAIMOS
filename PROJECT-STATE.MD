@@ -1,3 +1,18 @@
+# 2026-10-14 v140: isolated WAIT-to-PC-zero debugger reproducer
+
+- Fresh 64K GCC lowmem disk-root with v138 MEMFS loads MEMFS/D6FS and
+  reaches INIT. SIMH breakpoint at `proc_wait_status` 013707 proves INIT
+  entered WAIT with a nonzero PI6 save word; resuming reaches a breakpoint
+  at PC 000000. `proc_wait_event` continuation 016337 was also reached
+  with valid AC17 and return stack on a fresh image. Its saved CTX_PC is
+  deliberately zero after restoration and cannot alone explain the fault.
+- `daimos-testkit/tests/validation/trace-wait-pc0-v140.sh` builds and
+  preserves fresh media and a two-breakpoint transcript. It PASSes when the
+  failure is reproduced; this is a *diagnostic test*, NOT boot acceptance.
+- Root cause still unproven: trace WAIT result processing and syscall return
+  through PI6 to the first invalid transfer. No kernel-source fixes made.
+  32K boot remains deferred until DSH minimization.
+
 # 2026-10-14 v138: MEMFS mount enabled on 64K+ low-memory boots
 
 - `BOOT_MEMFS` defaults to 0 for the 32K low-memory image, 1 for

@@ -169,6 +169,10 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [ ] v140: Fix the reproducible INIT WAIT-to-PC-zero failure. New testkit
+  isolated dual-breakpoint trace proves WAIT entry and later PC-zero;
+  investigate syscall return, stack lifetime and PI6 subsequent transitions.
+
 - [x] v138: Load and mount a real MEMFS on `/TEMP` at 64K+ lowmem;
   retain 32K's deliberately absent provider. Keep MEMFS MRES before D6FS
   in the KINIT source/installation order; boot milestone tests pass.
