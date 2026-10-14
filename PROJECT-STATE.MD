@@ -1,3 +1,7 @@
+## 2026-10-14 V122 NATIVE MM DESCRIPTOR CAPACITY BOUNDARY
+
+Native PDP-6 `capacity-v122` PASS on actual MM assembler: 32 valid descriptors reject new allocation without mutation; a 31-descriptor valid table accepts one-word allocation into a sorted interior gap, reaching 32; freeing returns count to 31 without reclaim callbacks. This does not measure real peak descriptor demand, so fixed-vs-boot-sized table design remains open. Loadable modules deferred to KA10 v1.1. No production changes (482 text + 70 BSS). See system/kernel/mm/MM-DESCRIPTOR-CAPACITY-V122.md.
+
 ## 2026-10-14 V121 MODULE DEFERRAL TO KA10 / DAIMOS 1.1
 
 Loadable, unloadable and relocatable runtime modules are expressly deferred until the KA10 phase (DAIMOS v1.1). Do not include prospective module allocation counts or unload/relocation semantics as gates for the current PDP-6 MM design or optimization. Continue pre-v1.1 MM pressure, descriptor-capacity and rollback work for implemented consumers only. Existing static/module-linked functionality is unaffected; this is scheduling, not an implementation change.

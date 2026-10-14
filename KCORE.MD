@@ -176,6 +176,8 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
   **Dependency:** defer further per-instruction MM optimization until the
   extent table sizing/representation and pressure-path contracts are decided.
   Preserve the tested v113 baseline (482 text + 70 BSS).
+  v122 native 31->32->31 descriptor capacity boundary PASS; actual peak
+  descriptor measurements under boot and native workloads still required.
 - [ ] Compare sorted linear MM scans with optional lookup indexes only for
   measured large-core workloads; avoid permanent small-core dispatch cost.
 - [ ] Profile D6FS/DTFS/TSFS cache footprint, replacement and DECtape seek
