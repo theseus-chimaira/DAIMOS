@@ -170,6 +170,11 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 ## P2: kernel data structures and workload-specific sizing
 
 - [ ] **KA10 / DAIMOS v1.1 deferred:** loadable/unloadable/relocatable runtime modules and module-specific MM allocation, unloading and relocation acceptance. Do not optimize MM for hypothetical module workloads before v1.1.
+- [ ] Implement KINIT-selected, boot-sized, fixed-for-boot MM descriptor backing.
+  Capacity must be selected from discovered physical memory and reserved
+  before publishing managed free arenas, with all C/PDP-6 VM symbol users
+  migrated atomically. Keep >=32 descriptors initially; no runtime resize.
+  Source/ABI audit: mm/MM-BOOT-SIZED-IMPLEMENTATION-V123.md.
 - [ ] Evaluate runtime-sized MM extent descriptors versus the current static
   `MM_MAX_EXTENTS=32` two-word table (mm/mm.h, mm/mm.c, mm/mm_pdp6.s);
   measure nested MAKE/KCC/KCPP load and relocation-sensitive assembly cost.

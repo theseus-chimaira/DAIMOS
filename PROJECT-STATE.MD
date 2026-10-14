@@ -1,3 +1,7 @@
+## 2026-10-14 V123 BOOT-SIZED MM DESCRIPTOR DESIGN CONTRACT
+
+User selected KINIT boot-sized, fixed-for-boot descriptor backing, allocated before MM arenas are made free. Verified that `mm_extents` is a fixed exported array referenced by MM/VM PDP-6 assembly, MM C and packed code: pointer conversion must update all consumers simultaneously. 32 descriptors is the safe minimum pending workloads. Detailed implementation and acceptance contract in system/kernel/mm/MM-BOOT-SIZED-IMPLEMENTATION-V123.md. **Not implemented yet**; no production code or size change.
+
 ## 2026-10-14 V122 NATIVE MM DESCRIPTOR CAPACITY BOUNDARY
 
 Native PDP-6 `capacity-v122` PASS on actual MM assembler: 32 valid descriptors reject new allocation without mutation; a 31-descriptor valid table accepts one-word allocation into a sorted interior gap, reaching 32; freeing returns count to 31 without reclaim callbacks. This does not measure real peak descriptor demand, so fixed-vs-boot-sized table design remains open. Loadable modules deferred to KA10 v1.1. No production changes (482 text + 70 BSS). See system/kernel/mm/MM-DESCRIPTOR-CAPACITY-V122.md.
