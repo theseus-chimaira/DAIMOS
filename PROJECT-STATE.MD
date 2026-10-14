@@ -1,3 +1,23 @@
+# 2026-10-14 v141: syscall returns survive INIT WAIT; PC-zero persists
+
+- Fresh 64K disk-root boot with v138 MEMFS reaches `INIT V1`, and SIMH
+  hits `proc_wait_status` 013707. On continuing, `mach_syscall`'s final
+  `JRSTF @mach_syscall_save` at 021513 executes repeatedly, initially for
+  MOUNTALL slot 2 and subsequently for INIT slot 1. INIT returned from
+  multiple subsequent user syscalls before the PC-zero stop.
+- At the final PC-zero breakpoint, slot 1 remains current, the last saved
+  syscall return word is 350000003332, and AC17 is 000144040331; all
+  nonzero. These snapshots do not establish stack overflow or simple
+  missing return-word corruption. Do not modify WAIT/PI6 without tracing
+  the *last* userspace/UUO transition and its interrupt context.
+- The simulator's DPY backend on this host can crash with pageflip errors.
+  Setting SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy allows deterministic
+  headless diagnostics without changing DAIMOS or its disk media.
+- Testkit `trace-syscall-return-v141.sh` builds isolated media, records
+  WAIT and repeated syscall return boundaries, and stops at PC zero;
+  diagnostic PASS reproduced the failure. Boot acceptance still FAILS,
+  LOGIN is not reached. 32K boot remains deferred.
+
 # 2026-10-14 v140: isolated WAIT-to-PC-zero debugger reproducer
 
 - Fresh 64K GCC lowmem disk-root with v138 MEMFS loads MEMFS/D6FS and

@@ -169,6 +169,11 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [ ] v141: Trace the *final* INIT user-mode instruction and monitor-UUO/
+  PI6 transition before PC zero. The new fresh-media testkit syscall-return
+  reproducer proves multiple INIT syscall returns after WAIT; earlier
+  hypotheses of immediate WAIT/PI6 resume failure are no longer supported.
+
 - [ ] v140: Fix the reproducible INIT WAIT-to-PC-zero failure. New testkit
   isolated dual-breakpoint trace proves WAIT entry and later PC-zero;
   investigate syscall return, stack lifetime and PI6 subsequent transitions.
