@@ -1,3 +1,7 @@
+## 2026-10-14 V105 MULTIPLE PROCESS RELOCATIONS
+
+Native PDP-6 `vm-live-v105` PASS: production MM + VM + copy assembler relocates two different process extents during one compaction call, around three pinned obstacles and across two arenas. Checks both VM bases, balanced PI hooks and both full 512-word payloads. No production code changed, MM remains 493 text / 70 BSS. See `system/kernel/mm/MM-MULTI-MOVE-V105.md`. Real PI/runqueue concurrency and failed descriptor publication remain open.
+
 ## 2026-10-14 V104 REPEATED COMPACTION REGRESSION
 
 Native PDP-6 `vm-live-v104` PASS: repeated compaction after cross-arena move is idempotent, leaves descriptor/PI state unchanged, with previous payload/pin/runqueue checks retained. Hard-coded test address overlap exposed and fixed in test fixture. No production code changed; 493 MM text + 70 BSS. See `system/kernel/mm/MM-REPEATED-COMPACTION-V104.md`. Multi-process repeated relocations still need a separate test.

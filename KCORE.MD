@@ -1,3 +1,4 @@
+- [x] v105 PDP-6 native MM two-process, two-arena compaction with pinned obstacles/full payloads PASS. No production changes.
 - [x] v104 native PDP-6 repeated compaction/idempotence and fixture address isolation PASS; no MM production changes.
 - [x] v103 cross-arena native PDP-6 MM/VM relocation with full payload and metadata verification PASS; no production changes. See mm/MM-CROSS-ARENA-RELOCATION-V103.md.
 - [x] v102 PDP-6 native relocation regression covers stable u-area stop/runqueue restoration and pinned exclusion; PASS, no production code change. See mm/MM-VM-PIN-RUNQUEUE-V102.md.
