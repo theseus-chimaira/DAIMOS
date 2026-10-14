@@ -169,6 +169,12 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [x] v142: Restore fixed D6LZ36 decoder to absolute 000060 by correcting
+  KCORE link order; native MM/VM 16/16 PASS and link-address guard PASS.
+  Compressed LOGIN `SYS_RUN` now returns in the 64K boot trace.
+- [ ] Verify LOGIN prompt/complete boot after compressed loader fix;
+  separately investigate terminal and scheduler startup.
+
 - [ ] v138: Diagnose first LOGIN `SYS_RUN` image load with isolated fresh
   disk media for each run; compare compressed and plain LOGIN without
   changing kernel code. A reused 64K image can instead fail early at `?RT`.

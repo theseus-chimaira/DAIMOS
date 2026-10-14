@@ -1,3 +1,23 @@
+# 2026-10-14 v142: Fix fixed-address PDP-6 D6LZ36 decoder link order
+
+- `d6lz36_decode_core` MUST link at physical 000060: its internal branch
+  addresses are hard-coded for the Stage1-installed image at that address.
+  The previous KCORE object order linked it at 000430, overwriting 000060
+  with unrelated resident code and breaking compressed EXEC control flow.
+- Put `d6lz_fixed.dobj` first in both native KCORE source/object link lists.
+  Clean link proves `d6lz36_decode_core=000060`; KCORE end remains 027131
+  in the GCC lowmem disk configuration. This is a correctness fix, not a
+  workaround and not a KCORE-size increase.
+- DAIMOS testkit adds a linker-map invariant that accepts the corrected
+  000060 address and rejects the previously broken 000430 address. Native
+  PDP-6 MM/VM regression: 16/16 PASS.
+- 64K disk boot no longer immediately halts inside compressed LOGIN EXEC.
+  A diagnostic-only INIT build confirms both MOUNTALL and compressed LOGIN
+  `dsys_run()` calls return. The temporary console probes were reverted.
+- **Full boot to LOGIN remains unresolved.** The simulator has not displayed
+  a login prompt; investigate terminal selection, scheduling and subsequent
+  LOGIN launch paths independently. 32K boot remains deferred.
+
 # 2026-10-14 v138: LOGIN loading investigation and boot-media isolation
 
 - Temporary INIT tracing established that `load_inittab()` succeeds and
