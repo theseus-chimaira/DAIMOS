@@ -1,3 +1,7 @@
+## 2026-10-14 V114 MM OPTIMIZATION PAUSE FOR DESCRIPTOR ARCHITECTURE
+
+Before further single-word assembly changes, resolve open `KCORE.MD` P2 work on runtime-sized extent descriptor capacity versus static 32 entries and the v089 native pressure/reclaim acceptance gap. These can change MM descriptor insertion, deletion, table bounds, allocation and compaction. v114 candidate for a forward-running insertion-slot cursor assembled unchanged at 482 text/70 BSS and was discarded. No production MM code changed; baseline remains v113. Fine-grained MM optimization paused pending architectural sizing decision.
+
 ## 2026-10-14 V113 MM GAP CURSOR GUARD REVIEW
 
 Verified `mm_find_fit_extent` guard is needed after the last extent: `mm_find_fit_after_gap` increments the cursor into the same entry, possibly reaching `mm_extent_count`. A base-reuse path candidate preserved the guard and passed native PDP-6 alloc/gap/noreclaim/VM tests but assembled unchanged at 482 text / 70 BSS, so it was reverted without measured speed claims. See `system/kernel/mm/MM-GAP-CURSOR-REVIEW-V113.md`.

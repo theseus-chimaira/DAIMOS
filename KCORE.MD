@@ -164,6 +164,9 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 - [ ] Evaluate runtime-sized MM extent descriptors versus the current static
   `MM_MAX_EXTENTS=32` two-word table (mm/mm.h, mm/mm.c, mm/mm_pdp6.s);
   measure nested MAKE/KCC/KCPP load and relocation-sensitive assembly cost.
+  **Dependency:** defer further per-instruction MM optimization until the
+  extent table sizing/representation and pressure-path contracts are decided.
+  Preserve the tested v113 baseline (482 text + 70 BSS).
 - [ ] Compare sorted linear MM scans with optional lookup indexes only for
   measured large-core workloads; avoid permanent small-core dispatch cost.
 - [ ] Profile D6FS/DTFS/TSFS cache footprint, replacement and DECtape seek
