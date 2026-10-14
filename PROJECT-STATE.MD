@@ -1,3 +1,22 @@
+# 2026-10-14 v136: Boot-size comparison; 32K deferred
+
+- Defer 32K boot acceptance until the planned DSH minimization work.
+- Built matching disk-root GCC lowmem images for pre-relocation v132 and
+  external-descriptor v135 at requested 64K, 128K, and 254K configurations.
+  Both 64K and 128K versions reach INIT V1 and reproduce the same MEMFS
+  warning and post-INIT PC 000000 halt. No new MM-layout-specific failure
+  was identified at those two memory sizes.
+- `SIMH_CPU_KWORDS=254` produces a simulator banner of **MEM 256 K**;
+  therefore a real 254K configuration was NOT verified. Parallel simulator
+  sessions contend for sockets and are unsuitable for acceptance evidence.
+  In independent 256K-equivalent runs, both images halt before INIT V1:
+  baseline PC 066110, external MM PC 066176. This is a common boot-stage
+  failure, not proof of the same root cause. Do not accept 256K boots yet.
+- Full LOGIN boot remains unverified at all three configurations. Before
+  dynamic MM capacity selection, diagnose early high-memory halt, validate
+  the precise simulator-supported memory sizes, then fix the outstanding
+  common post-INIT failure at 64K/128K.
+
 # 2026-10-14 v135: External MM/MRES layout real boot acceptance
 
 - GCC disk-root `BOOT_PROFILE=lowmem` with 32K core links, but `mkimage`

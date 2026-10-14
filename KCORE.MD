@@ -169,6 +169,11 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [ ] v136: Diagnose common high-memory pre-INIT HALT (baseline and external
+  MM) and the 64K/128K post-INIT halt. The simulator rounds a requested
+  254K configuration to 256K; do not claim 254K acceptance. Defer 32K
+  boot testing until DSH minimization.
+
 - [ ] v135: Complete external-MM boot acceptance: 64K disk-root reaches
   INIT but halts before LOGIN; diagnose against pre-relocation baseline.
   The 32K image independently exceeds its KINIT stack budget by 0311
