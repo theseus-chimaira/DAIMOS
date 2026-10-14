@@ -1,3 +1,20 @@
+# 2026-10-14 v137: Boot failure narrowed to LOGIN SYS_RUN
+
+- Two deliberately temporary INIT console-instrumentation builds were
+  executed and the instrumentation was reverted after testing.
+- On the 64K external-MM disk image, INIT completes `load_inittab()` and
+  MOUNTALL's `dsys_run()` returns successfully. The first LOGIN spawn reaches
+  `dsys_run()` but does not return; the simulator then halts at PC 000000.
+  Investigate the kernel `native_sys_run` / `proc_run_block` / process slot
+  reuse and scheduler transition rather than assuming MEMFS is responsible.
+- The high-memory PC 066176 (external MM) and PC 066110 (pre-relocation)
+  are the `kinit_error18_halt` site; source `kinit_boot()` emits `?RT` when
+  root mounting or `/SYSTEM/INIT` validation fails. `set cpu 254k` is
+  rejected by this simulator; a separate valid `set cpu 256k` run still
+  reproduces `?RT`. Root selection/mount is a distinct unresolved issue.
+- No kernel fix has yet been validated; 32K boot remains deferred pending
+  DSH minimization, and no boot configuration is accepted to LOGIN.
+
 # 2026-10-14 v136: Boot-size comparison; 32K deferred
 
 - Defer 32K boot acceptance until the planned DSH minimization work.
