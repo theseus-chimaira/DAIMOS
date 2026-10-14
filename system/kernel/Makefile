@@ -201,9 +201,11 @@ KCORE_FIXED_SRCS = core/ret.s \
 	storage/storage_router.s \
 	core/kcore_end.s
 
-KCORE_FIXED_ASM = $(BUILD)/proc_packed_runtime_v086.s \
+# The D6LZ Stage1-shared core uses absolute branches based at 000060.
+# Link it FIRST: later placement silently jumps into unrelated low core.
+KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
+	$(BUILD)/proc_packed_runtime_v086.s \
 	$(BUILD)/proc_packed_layout_v36.s \
-	$(BUILD)/d6lz_fixed.s \
 	$(BUILD)/exec.s \
 	$(BUILD)/d6lz.s \
 	$(BUILD)/mm.s \

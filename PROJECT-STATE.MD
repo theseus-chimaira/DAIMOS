@@ -1,3 +1,26 @@
+# 2026-10-14 v142: fixed KCORE D6LZ absolute-branch decoder boot defect
+
+- Root cause of post-INIT PC 000000 halt: the Stage1-shared D6LZ36 core
+  uses absolute internal branches based at 000060, but the KCORE link placed
+  `d6lz36_decode_core` at 000430 after packed-runtime objects. Decoding the
+  default compressed LOGIN executable therefore branched into unrelated
+  low-core instructions. The earlier WAIT/PI6 suspicion was not the cause.
+- Reordered `d6lz_fixed` before packed-runtime objects in BOTH kernel and
+  boot Makefiles, including the boot Makefile's authoritative linker object
+  list. The corrected KCORE map places `d6lz36_decode_core` at 000060;
+  `__kcore_low_end` remains 027131. No KCORE growth or RAM overhead.
+- Testkit `check-d6lz-fixed-placement-v142.sh` passes corrected map and
+  rejects the old 000430 map. Fresh GCC lowmem default compressed LOGIN
+  disk-root builds at 64K and 128K reach INIT V1 with MEMFS and D6FS
+  loaded, then survive at least 18 seconds without HALT, ?RT or MEMFS
+  warning (`daimos-d6lz-core-boot-v142.sh` PASS for both sizes).
+  Native PDP-6 MM/VM regression suite PASS 16/16.
+- Full interactive LOGIN acceptance is NOT yet achieved: DCS0 transport
+  connected, but no `LOGIN:` prompt was observed, even after carriage returns.
+  Diagnose LOGIN process startup/TTY separately. The PC-zero decoder crash
+  is fixed. 32K remains deferred pending DSH minimization; high-memory root
+  acceptance likewise remains pending.
+
 # 2026-10-14 v140: isolated WAIT-to-PC-zero debugger reproducer
 
 - Fresh 64K GCC lowmem disk-root with v138 MEMFS loads MEMFS/D6FS and

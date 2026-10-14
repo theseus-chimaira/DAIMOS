@@ -169,6 +169,13 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [x] v142: Fix post-INIT PC-zero crash by linking fixed-address D6LZ core
+  at 000060, matching Stage1's absolute branch targets. Both Makefiles'
+  linker input orders now agree; 64K/128K compressed boot milestone tests
+  PASS with unchanged KCORE size. All 16 native MM/VM tests PASS.
+- [ ] v142 follow-up: Diagnose why DCS0 does not emit LOGIN despite INIT
+  reaching its milestone and staying alive; interactive boot not yet accepted.
+
 - [ ] v140: Fix the reproducible INIT WAIT-to-PC-zero failure. New testkit
   isolated dual-breakpoint trace proves WAIT entry and later PC-zero;
   investigate syscall return, stack lifetime and PI6 subsequent transitions.
