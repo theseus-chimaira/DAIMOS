@@ -47,8 +47,10 @@
         .globl storage_minit
 .if KINIT_FULL
         .globl slv_minit
-        .globl memfs_minit
         .globl dtfs_minit
+.endif
+.if KINIT_FULL | BOOT_MEMFS
+        .globl memfs_minit
 .endif
 .if BLOCKSET_FS_ENABLED
         .globl blockset_minit
@@ -90,6 +92,8 @@
         .globl drm236_mres_package
         .globl logstore_mres_package
         .globl slv_mres_package
+.endif
+.if KINIT_FULL | BOOT_MEMFS
         .globl memfs_mres_package
 .endif
 .if KINIT_TAPE_BOOT
@@ -157,7 +161,7 @@ __minit_table_begin:
 .if KINIT_BADMAP
         .word badmap_minit,,badmap_mres_package
 .endif
-.if KINIT_FULL
+.if KINIT_FULL | BOOT_MEMFS
         .word memfs_minit,,memfs_mres_package
 .endif
 .if KINIT_TAPE_BOOT

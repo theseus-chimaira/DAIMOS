@@ -1056,6 +1056,9 @@ drm236_minit(void)
 }
 
 
+#endif /* KINIT_FULL: drum */
+
+#if KINIT_FULL || BOOT_MEMFS
 /** @brief Install the MEMFS resident service when the package is available. */
 void
 memfs_minit(void)
@@ -1080,7 +1083,7 @@ memfs_minit(void)
         minit_diag_loaded(name);
 }
 
-#endif /* KINIT_FULL: drum and MEMFS */
+#endif /* KINIT_FULL || BOOT_MEMFS */
 
 #if KINIT_TAPE_BOOT
 /** @brief Install DTFS after DECtape block services are available. */

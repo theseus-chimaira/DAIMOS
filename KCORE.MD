@@ -169,6 +169,11 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [x] v138: Load and mount a real MEMFS on `/TEMP` at 64K+ lowmem;
+  retain 32K's deliberately absent provider. Keep MEMFS MRES before D6FS
+  in the KINIT source/installation order; boot milestone tests pass.
+  The independent PC 000000 halt still blocks full LOGIN acceptance.
+
 - [ ] v137: Diagnose the reproducible PC 000000 halt after MOUNTALL status 2
   while INIT (slot 1) remains current. Fresh-media trace fixture is available
   in daimos-testkit. Investigate saved PI return PC and INIT's wait context;

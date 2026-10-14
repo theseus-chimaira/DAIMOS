@@ -1,3 +1,21 @@
+# 2026-10-14 v138: MEMFS mount enabled on 64K+ low-memory boots
+
+- `BOOT_MEMFS` defaults to 0 for the 32K low-memory image, 1 for
+  `BOOT_CORE_WORDS >= 0200000` (64K+), and 1 in the full profile.
+  It remains explicitly overridable. For enabled lowmem profiles both the
+  MEMFS MINIT/MRES provider and `/CONFIG/FSTAB` `/TEMP` mount entry are
+  included, rather than suppressing INIT's legitimate warning.
+- A native boot initially halted after `MEMFS LOADED`: the lowmem MRES link
+  source order was D6FS then MEMFS, the reverse of MINIT installation order.
+  Corrected to MEMFS then D6FS. This respects KINIT's strict monotonic
+  source-address reclaim invariant; no allocator workaround was needed.
+- Fresh 64K and 128K GCC lowmem DSK boots reach `MEMFS LOADED`,
+  `D6FS LOADED`, and `INIT V1`, without the `/TEMP` warning. Testkit
+  `check-memfs-boot-v138.sh` PASS at both sizes and rejects the misordered
+  case. The independent PC 000000 post-INIT halt remains reproducible:
+  do not claim complete boot/LOGIN acceptance.
+- KINIT object cache now tracks BOOT_MEMFS mode for consistent rebuilds.
+
 # 2026-10-14 v137: reproducible fresh-media 64K post-INIT failure
 
 - Clean disk-root builds, each with a new BUILD_ROOT and fresh D6FS media,
