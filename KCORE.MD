@@ -169,26 +169,30 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
-- [ ] v143: Determine whether compressed LOGIN's third `exec_load_process`
-  invocation completes successfully, and whether slot 2 becomes runnable.
-  Host D6LZ36 format/image parity verified; do not confuse the Stage1 decoder
-  at 000060 or INIT slot-1 queue operations with LOGIN publication.
+- [x] v143/v145: Determine whether compressed LOGIN's third `exec_load_process`
+  invocation completes successfully and slot 2 becomes runnable. The host
+  stream matches, runtime decoding returns zero, LOGIN runs and produces
+  `LOGIN:` on DCS0. ROOT replacement with DSH is accepted at 64K/128K.
 
 - [x] v142: Fix post-INIT PC-zero crash by linking fixed-address D6LZ core
   at 000060, matching Stage1's absolute branch targets. Both Makefiles'
   linker input orders now agree; 64K/128K compressed boot milestone tests
   PASS with unchanged KCORE size. All 16 native MM/VM tests PASS.
-- [ ] v142 follow-up: Diagnose why DCS0 does not emit LOGIN despite INIT
-  reaching its milestone and staying alive; interactive boot not yet accepted.
+- [x] v142/v145 follow-up: Diagnose why DCS0 does not emit LOGIN despite INIT
+  reaching its milestone: the simulator dropped its early prompt before DCS0
+  carrier connection. The carrier-first v145 test verifies LOGIN and DSH.
 
-- [ ] v140: Fix the reproducible INIT WAIT-to-PC-zero failure. New testkit
-  isolated dual-breakpoint trace proves WAIT entry and later PC-zero;
-  investigate syscall return, stack lifetime and PI6 subsequent transitions.
+- [x] v140/v142: Fix the reproducible INIT WAIT-to-PC-zero failure. New testkit
+  isolated dual-breakpoint trace localized it; incorrect fixed-address D6LZ
+  linker placement was the actual cause (v142), not the WAIT/PI6 path.
 
 - [x] v138: Load and mount a real MEMFS on `/TEMP` at 64K+ lowmem;
   retain 32K's deliberately absent provider. Keep MEMFS MRES before D6FS
-  in the KINIT source/installation order; boot milestone tests pass.
-  The independent PC 000000 halt still blocks full LOGIN acceptance.
+  in the KINIT source/installation order. The independent PC-zero halt was
+  fixed in v142, and interactive LOGIN/DSH acceptance passes in v145.
+
+- [ ] Verify 254K disk-root interactive boot after v145; SIMH's 254K setting
+  previously reported 256K, so report the actual configured memory honestly.
 
 - [ ] v137: Diagnose the reproducible PC 000000 halt after MOUNTALL status 2
   while INIT (slot 1) remains current. Fresh-media trace fixture is available

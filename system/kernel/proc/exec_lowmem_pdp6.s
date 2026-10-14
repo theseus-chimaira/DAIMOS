@@ -41,6 +41,7 @@
         .equ    EXEC_LAUNCH_MM_OWNER,013
         .equ    MM_TYPE_KERNEL_DYNAMIC,3
         .equ    PROC_USER_MAP_BIT,2
+        .equ    PROC_TRANSITION_RH,0200000
         .equ    PROC_FDCTL_OFFSET,024
         .equ    PROC_SWAP_BACKING_OFFSET,0406
         .equ    PROC_BRK_OFFSET,0407
@@ -203,6 +204,13 @@ exec_replace_startup_ok:
         move    2,EXEC_R_OLD_SWAP(17)
         movem   2,(1)
 
+        ; The old image is still current. Once its user-map hold is released,
+        ; background reclaim must not swap or destroy it before the new VM
+        ; is committed. Publish the existing transition bit for this short,
+        ; nonblocking teardown window; preserve the packed parent/pgrp bits.
+        movei   1,PROC_TRANSITION_RH
+        iorm    1,(16)
+
         ; The launch block is in the old VM.  Clear its mapping hold before
         ; destroying that VM; restore the hold if destruction fails.
         hlrz    1,(16)
@@ -260,10 +268,14 @@ exec_replace_release_rt:
         jrst    exec_replace_success
         setzm   proc_rt_owner
 exec_replace_success:
+        movei   1,PROC_TRANSITION_RH
+        andcam  1,(16)
         setz    1,
         jrst    exec_replace_return
 
 exec_replace_restore_fail:
+        movei   1,PROC_TRANSITION_RH
+        andcam  1,(16)
         ; exec_load_process normally rolls back a newly acquired RT owner on
         ; its own failure.  Startup/commit failures occur after a successful
         ; load and therefore need the C transaction's explicit rollback.

@@ -1,3 +1,23 @@
+# 2026-10-14 v145: 64K/128K DCS0 interactive boot accepted
+
+- Fixed missing ROOT shell startup after LOGIN: compressed DSH EXEC loaded
+  (`exec_load_process` AC1=0) and built startup records (`vm_space_startup`
+  AC1=0), but the old LOGIN image teardown could fail while concurrent
+  reclaim inspected the process. The PDP-6 staged EXEC path now publishes
+  `PROC_TRANSITION_RH` for the short old-VM-release/commit window and clears
+  it on both success and rollback. This uses the existing process flag and
+  introduces no new permanent data; the KCORE linked end increases by six
+  words from 027131 to 027137. The 32K destructive fallback is deferred.
+- The earlier absence of `LOGIN:` on DCS0 was a SIMH client-connection race:
+  DCS transmits only to a connected line. A carrier-first regression pauses
+  INIT at its WAIT breakpoint, connects DCS0, and then resumes. It requires
+  actual `LOGIN:`, ROOT authentication, `DSH V1`, and `MEMSTAT` returning
+  `RESIDENT` on freshly constructed 64K and 128K disk-root images.
+- `daimos-testkit/tests/validation/daimos-dcs-login-v145.py` passes at 64K
+  and 128K, and all sixteen native PDP-6 MM/VM tests pass. Neither boot
+  prints the MEMFS mount warning. This establishes interactive 64K/128K
+  boot, not verified 254K boot or deferred 32K acceptance.
+
 # 2026-10-14 v143: LOGIN compressed image parity and load-path trace
 
 - A freshly compiled `tools/host/d6lz.c` and the installed `d6lz -x`
