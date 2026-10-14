@@ -1,3 +1,15 @@
+## 2026-10-14 V092 NATIVE PDP-6 MM FREE REGRESSION
+
+`daimos-testkit/tests/native-kernel/mm/free-v092` runs the actual production
+`mm_pdp6.s` without KINIT or the full OS. The native PDP-6 test passes
+allocation of three contiguous extents, owner-mismatch rejection without
+metadata mutation, middle deletion/descriptor shift, double-free rejection,
+hole reuse with sorted insertion, and first/last deletion. No production MM
+algorithm changes were needed. This is a focused correctness gate, not yet
+the full failure/fragmentation/compaction/reclaim stress suite. Preserve the
+v091 instruction/algorithm/data-structure comparison policy for each next
+algorithm; record measured size/performance before accepting optimizations.
+
 ## 2026-10-14 PERMANENT KERNEL ALGORITHM EVALUATION POLICY V091
 
 **Applies to all kernel subsystems, beginning with MM.** Native PDP-6
