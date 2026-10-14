@@ -15,6 +15,10 @@ int mm_boot_reserve(kword_t base, unsigned int type, unsigned int owner);
 int mm_boot_table_region(kword_t core_words, kword_t image_end,
     kword_t stack_words, unsigned int capacity, kword_t *basep,
     kword_t *high_basep);
+/* Calculate a low-memory table and the contiguous MRES starting address. */
+int mm_boot_low_table(kword_t core_words, kword_t kcore_end,
+    kword_t kinit_base, unsigned int capacity, kword_t *table_basep,
+    kword_t *mres_basep);
 /** Allocate without cache reclaim, compaction, or process swapping recursion. */
 int mm_alloc_aligned_noreclaim(kword_t words, kword_t alignment,
     unsigned int type, unsigned int owner, unsigned int preference,

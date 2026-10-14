@@ -169,6 +169,11 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [x] v132: Test low-memory descriptor placement immediately above KCORE,
+  with MRES following that table; host layout and 16 native PDP-6 MM/VM
+  tests pass. The layout remains inactive until descriptor ABI conversion;
+  see mm/MM-LOW-MRES-LAYOUT-V132.md.
+
 - [x] v128: Stage and host-test the disposable KINIT/MM external-table
   placement calculation. Native MM/VM emulator regression remains 15/15
   PASS. No runtime table relocation or resident-memory savings claimed;

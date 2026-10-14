@@ -15,6 +15,31 @@
 #include "mm.h"
 #include "mm_internal.h"
 
+/* Low-memory MM backing must precede all boot-installed MRES packages.
+ * This pure layout check neither allocates storage nor publishes an arena. */
+int
+mm_boot_low_table(kword_t core_words, kword_t kcore_end,
+    kword_t kinit_base, unsigned int capacity, kword_t *table_basep,
+    kword_t *mres_basep)
+{
+        kword_t words;
+        kword_t end;
+
+        if (table_basep == 0 || mres_basep == 0 ||
+            core_words > MM_HALF_MASK + 1UL ||
+            kcore_end < 060UL || kcore_end > kinit_base ||
+            kinit_base > core_words ||
+            capacity < MM_MAX_EXTENTS || capacity > MM_HALF_MASK / 2UL)
+                return MM_ERR_INVAL;
+        words = (kword_t)capacity * 2UL;
+        if (words > kinit_base - kcore_end)
+                return MM_ERR_NOMEM;
+        end = kcore_end + words;
+        *table_basep = kcore_end;
+        *mres_basep = end;
+        return MM_OK;
+}
+
 /* This is only a placement calculation. KINIT must exclude the selected
  * region from MM arenas before it installs any resident packages. */
 int
