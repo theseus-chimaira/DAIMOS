@@ -1,3 +1,7 @@
+## 2026-10-14 V119 NATIVE MM PRESSURE RETRY BASELINE
+
+PDP-6 native `pressure-v119` executes real MM assembler and tests bounded unsatisfied allocation retries (two FS reclaim callbacks, one swap callback), unchanged descriptor count/output on NOMEM, and no external reclaim calls on no-reclaim allocator. PASS. Callback implementations are deterministic fixtures; real native reclaim success, rollback and packed-process integration remain open. No production code change, MM 482 text/70 BSS. See system/kernel/mm/MM-NATIVE-PRESSURE-V119.md.
+
 ## 2026-10-14 V118 RESTORED HOST MM PRESSURE TEST
 
 The legacy `daimos-testkit make mm-core` host regression now PASSes against the portable MM. Root cause: C fallback swap transactions omitted storage-mode publication present in production PDP-6 assembler. Corrected portable C path to publish RESIDENT->DISK after swap-out and DISK->RESIDENT after swap-in, with existing fatal mismatch behavior. Testkit uses real two-bit map API, strict host ABI fixture, and explicit success/failed-read state assertions. KCORE/KINIT DXR link PASS. Native full-system pressure, swap and scheduler-concurrency still open; no MM assembler change (482 text/70 BSS). See `system/kernel/mm/MM-HOST-PRESSURE-REPAIRED-V118.md`.
