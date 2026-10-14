@@ -606,7 +606,20 @@ DISK0_IMAGE = $(DISK_DIR)/dsk0.dsk
 DISK1_IMAGE = $(DISK_DIR)/dsk1.dsk
 DISK2_IMAGE = $(DISK_DIR)/dsk2.dsk
 DISK3_IMAGE = $(DISK_DIR)/dsk3.dsk
+# DBOOT root images may use a single disk on minimal PDP-6 hardware.
+# The historical full four-member disk set remains the default.
+D6FS_ROOT_MEMBERS ?= 4
+ifeq ($(D6FS_ROOT_MEMBERS),1)
+DISK_IMAGES = $(DISK0_IMAGE)
+D6FS_ROOT_MEMBER_SECTORS = 0130000
+else ifeq ($(D6FS_ROOT_MEMBERS),4)
 DISK_IMAGES = $(DISK0_IMAGE) $(DISK1_IMAGE) $(DISK2_IMAGE) $(DISK3_IMAGE)
+D6FS_ROOT_MEMBER_SECTORS = 0130000,0130000,0130000,0130000
+else
+$(error D6FS_ROOT_MEMBERS must be 1 or 4)
+endif
+D6FS_ROOT_MEMBER_STAMP = $(BUILD)/.d6fs-root-members-v089-$(D6FS_ROOT_MEMBERS)
+
 DISK_IMAGE = $(DISK0_IMAGE)
 SIMH_INI = $(BUILD)/boot.ini
 SIMH_LOG = $(BUILD)/boot.simh.log
@@ -1181,15 +1194,15 @@ define D6FS_ROOT_ARGS
 	$(D6FS_EXTRA_ARGS)
 endef
 
-$(DISK_IMAGES) &: $(D6FS_ROOT_DEPS) Makefile
+$(DISK_IMAGES) &: $(D6FS_ROOT_DEPS) $(D6FS_ROOT_MEMBER_STAMP) Makefile
 	rm -rf $(DISK_DIR)
-	$(MKDSK) -n 4 -m clean -p $(IMAGE_BOOT_WORDS) -o $(DISK_DIR) \
+	$(MKDSK) -n $(D6FS_ROOT_MEMBERS) -m clean -p $(IMAGE_BOOT_WORDS) -o $(DISK_DIR) \
 	    --d6fs-layout --logstore-blocks $(D6FS_LOGSTORE_BLOCKS) \
 	    --swap-tail-blocks $(D6FS_SWAP_TAIL_BLOCKS) \
 	    --spare-blocks $(D6FS_SPARE_BLOCKS) \
-	    --member-sectors 0130000,0130000,0130000,0130000
-	$(MKD6FS) -n 4 -d $(DISK_DIR) $(D6FS_ROOT_ARGS)
-	$(LOGSTORE) -n 4 -d $(DISK_DIR) --init
+	    --member-sectors $(D6FS_ROOT_MEMBER_SECTORS)
+	$(MKD6FS) -n $(D6FS_ROOT_MEMBERS) -d $(DISK_DIR) $(D6FS_ROOT_ARGS)
+	$(LOGSTORE) -n $(D6FS_ROOT_MEMBERS) -d $(DISK_DIR) --init
 
 # A drum root needs a populated D6FS image even when Stage 1 comes from disk.
 # Only the auxiliary, non-root drum uses the empty AUXSTORE backing layout.
@@ -1228,6 +1241,10 @@ TSFS_ROOT_COMMAND_NAMES = ECHO CAT LS MKDIR RM PWD STAT TOUCH CP MV HEXDUMP PS \
 	DEVS FREE MEMSTAT DATE RMDIR CHOWN CHMOD MKFS.DTFS FSCK.DTFS MOUNT \
 	MOUNT.DTFS UNMOUNT DF TTYOUT HALT
 TSFS_ROOT_COMMAND_DXRS = $(addprefix $(USERLAND_BUILD_ROOT)/userland/program/,$(addsuffix .d6lz.dxr,$(TSFS_ROOT_COMMAND_NAMES)))
+
+$(D6FS_ROOT_MEMBER_STAMP): | $(BUILD)
+	@rm -f $(BUILD)/.d6fs-root-members-v089-1 $(BUILD)/.d6fs-root-members-v089-4
+	@touch $@
 
 $(TSFS_ROOT_MODE_STAMP): | $(BUILD)
 	@rm -f $(BUILD)/.tsfs-root-members-v21-1 $(BUILD)/.tsfs-root-members-v21-2 $(BUILD)/.tsfs-root-members-v21-3

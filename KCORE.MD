@@ -1,3 +1,8 @@
+- [x] v089 minimal single-member DBOOT/D6FS boot image: `D6FS_ROOT_MEMBERS=1`
+  with only DSK0 + DCT, bootstrap PTR, PCLK, 32K memory and CTY reaches
+  INIT V1 in PDP-6 SIMH. Four-member full D6FS remains the default.
+  DECtape TSFS and full-device matrix tests are tracked separately.
+
 - [x] v088 development KCORE: independent relocatable inline decoder,
   native exact-size packing, reclaim-first compression with disk fallback,
   PACKED-aware slot-0 restore and VM teardown. PDP-6 native callbacks,

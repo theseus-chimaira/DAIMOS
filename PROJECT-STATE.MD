@@ -1,3 +1,13 @@
+## 2026-10-14 V089 ONE-MEMBER 32K D6FS BOOT
+
+The D6FS DBOOT image builder now accepts `D6FS_ROOT_MEMBERS=1` or `4`
+(default), builds the corresponding exact-number-of-members boot stream,
+D6FS volume and LOGSTORE metadata, and invalidates stale media when the
+member count changes. A 32K PDP-6 with only DSK0/DCT, CTY, bootstrap PTR
+and PCLK reaches INIT V1 with the packed v088 kernel linked. The original
+four-disk full-system configuration remains unchanged. Further v089 TSFS
+and all-devices matrix tests are pending.
+
 ## 2026-10-14 V088 DEVELOPMENT PACKED-RAM RUNTIME
 
 Relocatable PDP-6 inline decoder v088 now coexists with the legacy 000060
