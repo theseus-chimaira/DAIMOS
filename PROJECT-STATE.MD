@@ -1,3 +1,7 @@
+## 2026-10-14 V101 NATIVE MM FULL-PAYLOAD RELOCATION
+
+Native PDP-6 production MM/VM/copy assembly regression `daimos-testkit/tests/native-kernel/mm/vm-live-v101` PASS. Full 01000-octal-word relocated extent verified word-by-word; unaligned destination and mapped-uarea rejection added alongside current/transition cases. No production allocator change; 493 text / 70 BSS words. Real runqueue/PI concurrency and stress remain outstanding. See `system/kernel/mm/MM-VM-FULL-PAYLOAD-V101.md`.
+
 ## 2026-10-14 V100 REAL PDP-6 VM RELOCATION REGRESSION
 
 Standalone PDP-6 simulator test now links production `mm_pdp6.s` with build-time-extracted actual `vm_extent_move` and `fs_move_words` assembler. Verifies upward physical copy, MM/process-base publication, PI balanced restore, and BUSY for current/TRANSITION process without data mutation. PASS. No production MM modification: `mm_move_extent` 66 words; total MM 493 text / 70 BSS. Outstanding u-area/mapping/runqueue, full payload, concurrent PI and stress testing before optimizations. See `system/kernel/mm/MM-REAL-VM-REGRESSION-V100.md` and daimos-testkit `tests/native-kernel/mm/vm-live-v100`.
