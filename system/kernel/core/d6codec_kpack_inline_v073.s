@@ -5,12 +5,12 @@
  * Preserve AC10..AC16 across calls. No global scratch or allocations.
  */
 .text
-.globl d6codec_kpack_inline_encode_v073
-.globl d6codec_kpack_inline_decode_v073
+.globl d6codec_kpack_enc_v073
+.globl d6codec_kpack_dec_v073
 .globl d6codec_inline_encode_v071
 .globl d6inline_decode_buffer_v070
 
-d6codec_kpack_inline_encode_v073:
+d6codec_kpack_enc_v073:
         push    17,10
         push    17,11
         push    17,12
@@ -21,7 +21,7 @@ d6codec_kpack_inline_encode_v073:
         pushj   17,d6codec_inline_encode_v071
         jrst    d6ki73_restore
 
-d6codec_kpack_inline_decode_v073:
+d6codec_kpack_dec_v073:
         push    17,10
         push    17,11
         push    17,12

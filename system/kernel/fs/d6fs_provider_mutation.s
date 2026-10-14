@@ -479,8 +479,8 @@ d6fs_resize_decode_extent:
 ; The old FCB is still on disk.  Preserve its *allocated extent capacity*,
 ; not merely size_words: D6FS reserves whole runs beyond the readable EOF.
 ; AC1=node, AC2=staged FCB, AC3=decoded info.  Called while serialized.
-        .globl  d6fs_provider_abort_staged_growth
-d6fs_provider_abort_staged_growth:
+        .globl  d6fs_abort_growth
+d6fs_abort_growth:
         add     17,[047,,047]           ; saved ACs, args, old FCB/info
         movem   010,-046(17)
         movem   011,-045(17)

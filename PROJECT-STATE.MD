@@ -1,3 +1,17 @@
+# 2026-10-14 v130: Exported assembler symbol-length gate
+
+- Added testkit `check-kcc-symbols-v130.py` for exported PDP-6 assembly
+  names exceeding 31 characters or colliding after that boundary. The
+  initial audit found four overlong exports; all four have been shortened
+  consistently at definitions, assembly callers and the MRES export list.
+- The checker now reports zero violations. Native MM/VM tests: 15/15 PASS.
+  Fresh KCC disk-root build compiles, links KCORE, and packages MRES; the
+  permanent-size gate still fails at KCORE+MRES=18056 decimal words,
+  permanent last=043267 octal. No new MM space saving is claimed.
+- This is a guard for assembler-exported symbols, not a complete C
+  identifier audit. KCC compilation remains the authoritative test for C
+  identifiers and mixed-language link correctness.
+
 # 2026-10-14 v129: KCC symbol-length build correction
 
 - Fresh isolated KCC disk-root build exposed packed-process prototype

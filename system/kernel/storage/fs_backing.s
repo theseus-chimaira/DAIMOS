@@ -84,7 +84,7 @@ fs_backing_root_error:
         .globl  fs_backing_direct_read_jump
         .globl  fs_backing_direct_write_jump
         .globl  fs_backing_direct_drm_read_jump
-        .globl  fs_backing_direct_drm_write_jump
+        .globl  fs_drm_write_jump
 fs_backing_direct_read:
         setz    7,
         jrst    fs_backing_direct_io
@@ -154,7 +154,7 @@ fs_backing_direct_read_jump:
 
 fs_backing_direct_drm:
         jumpe   7,fs_backing_direct_drm_read_jump
-fs_backing_direct_drm_write_jump:
+fs_drm_write_jump:
         jrst    kret_neg1
 fs_backing_direct_drm_read_jump:
         jrst    kret_neg1
@@ -176,7 +176,7 @@ fs_backing_direct_root_drm:
         pushj   17,fs_backing_direct_drm_read_jump
         jrst    fs_backing_direct_root_done
 fs_backing_direct_root_drm_write:
-        pushj   17,fs_backing_direct_drm_write_jump
+        pushj   17,fs_drm_write_jump
 fs_backing_direct_root_done:
         jumpn   1,fs_backing_root_error
         jumpe   7,fs_backing_direct_root_read_done

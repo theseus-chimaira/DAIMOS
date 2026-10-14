@@ -1501,7 +1501,7 @@ d6fs_provider_write_words_abort_stage:
         move    1,-4(17)
         movei   2,-036(17)
         movei   3,-016(17)
-        pushj   17,d6fs_provider_abort_staged_growth
+        pushj   17,d6fs_abort_growth
         ; If rollback itself fails, d6fsck must recover leaked blocks.
         ; Do not claim a successful write or publish the extended FCB.
         jrst    d6fs_provider_write_words_fail
