@@ -169,6 +169,11 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [ ] v143: Determine whether compressed LOGIN's third `exec_load_process`
+  invocation completes successfully, and whether slot 2 becomes runnable.
+  Host D6LZ36 format/image parity verified; do not confuse the Stage1 decoder
+  at 000060 or INIT slot-1 queue operations with LOGIN publication.
+
 - [x] v142: Fix post-INIT PC-zero crash by linking fixed-address D6LZ core
   at 000060, matching Stage1's absolute branch targets. Both Makefiles'
   linker input orders now agree; 64K/128K compressed boot milestone tests
