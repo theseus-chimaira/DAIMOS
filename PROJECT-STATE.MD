@@ -1,3 +1,7 @@
+## 2026-10-14 V099 NATIVE MM EXTENT RELOCATION AUDIT
+
+`mm_move_extent` is 66 PDP-6 words; `mm_compact` 62, total MM remains 493 text + 70 BSS. A new standalone PDP-6 regression executes real `mm_pdp6.s` and verifies successful upward relocation and rejected VM relocation with original descriptor restoration and matching PI disable/restore. The VM callback is deterministic, **not the production VM data mover**. No production optimization yet: descriptor visibility and PI-atomic relocation are essential, and the ITS-138/JOSS algorithms are not drop-in equivalents. Candidate changes and outstanding production-VM tests are recorded in `system/kernel/mm/MM-RELOCATION-AUDIT-V099.md`.
+
 ## 2026-10-14 V098 ITS-138/JOSS HISTORICAL SOURCE CORRECTION
 
 **Mandatory source priority for every kernel routine:** `ITS-138.tar.gz` is the relevant historical ITS source, not the later `its.tar.gz`; use JOSS resource-allocation documentation and supervisor listings; TENEX is pager-based and comparisons must account for that mismatch. ITS-138 includes transcribed assembler: `transcribed/ITS_138/page0340.txt` starts `SUBTTL CORE ALLOCATOR`; `MXCCA`, `MEMBLT`, `MEMFR`, `ACMS2` and relocation are discussed through pages 35–38. JOSS `RM-5216-PR` section III.6 describes `CORE` and `S.S` tables, 1024-word core blocks and main-loop compaction. Neither has been shown smaller than DAIMOS. v097 source-priority and ITS-138 transcription claims are superseded. See `system/kernel/mm/PDP10-HISTORICAL-ALLOCATOR-CORRECTION-V098.md`.
