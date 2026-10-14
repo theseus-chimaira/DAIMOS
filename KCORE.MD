@@ -169,6 +169,12 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [x] v142: Correct zombie meta-LH dereference in PURE swap mount/backing
+  dependency scans by checking PROC_F_UAREA before accessing u-area data.
+  Original non-existent-memory APR halt removed from initial 64K retest.
+- [ ] v142: Diagnose the subsequent invalid user UUO (zero instruction,
+  logical PC 000023). Full LOGIN boot still blocked.
+
 - [ ] v141: Trace the *final* INIT user-mode instruction and monitor-UUO/
   PI6 transition before PC zero. The new fresh-media testkit syscall-return
   reproducer proves multiple INIT syscall returns after WAIT; earlier

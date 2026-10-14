@@ -156,8 +156,12 @@ proc_swap_backing_busy_loop:
         lsh     13,1
         add     13,11
         add     13,proc_table
+        ; Meta LH is a u-area base ONLY while PROC_F_UAREA (RH bit
+        ; 0400000) is set. Zombie descriptors reuse LH for exit status.
+        move    1,(13)
+        trnn    1,0400000
+        jrst    proc_swap_backing_busy_next
         hlrz    1,(13)
-        jumpe   1,proc_swap_backing_busy_next
         move    1,PROC_SWAP_BACKING_OFFSET(1)
         move    2,1
         lsh     2,-PROC_SWAP_TEXT_SHIFT
@@ -196,8 +200,11 @@ proc_swap_mount_busy_loop:
         lsh     2,1
         add     2,11
         add     2,proc_table
+        ; A zombie's nonzero meta LH is an exit status, not a pointer.
+        move    1,(2)
+        trnn    1,0400000              ; PROC_F_UAREA
+        jrst    proc_swap_mount_busy_next
         hlrz    1,(2)
-        jumpe   1,proc_swap_mount_busy_next
         move    1,PROC_SWAP_BACKING_OFFSET(1)
         move    3,1
         lsh     3,-PROC_SWAP_TEXT_SHIFT

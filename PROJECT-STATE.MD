@@ -1,3 +1,20 @@
+# 2026-10-14 v142: Fixed genuine zombie-descriptor APR fault
+
+- SIMH CPU instruction history identifies the former PC-zero `HALT` as
+  `clk_pi_kernel_fault` following a memory access at 0220410 octal on a
+  64K (0200000-word) machine. The faulting instruction is inside
+  `proc_swap_mount_busy` (004041): it interprets zombie meta LH
+  0220002 (exit status) as a physical u-area address and dereferences
+  `PROC_SWAP_BACKING_OFFSET(1)` without checking the flag.
+- `proc_swap_mount_busy` and `proc_swap_backing_busy` now require the
+  `PROC_F_UAREA` bit in the descriptor RH before treating LH as a pointer.
+  Fixed both regular and inline-v070 source variants, not the allocator.
+- Fresh 64K GCC disk-root boot with the fix loads MEMFS/D6FS and INIT;
+  the original APR HALT is gone. A *different* invalid UUO now prints
+  `UUO 000000000000 340000000023` and LOGIN is still unverified.
+  The next priority is tracing that zero-instruction user trap and its PID;
+  no claim of complete boot acceptance. 32K remains deferred.
+
 # 2026-10-14 v141: syscall returns survive INIT WAIT; PC-zero persists
 
 - Fresh 64K disk-root boot with v138 MEMFS reaches `INIT V1`, and SIMH
