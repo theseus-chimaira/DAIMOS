@@ -281,12 +281,10 @@ mm_alloc_aligned_noreclaim:
         and     1,011
         jumpn   1,mm_alloc_nr_inval
         jumpe   012,mm_alloc_nr_inval
-        move    1,012
-        and     1,[-4]
-        jumpn   1,mm_alloc_nr_inval
-        move    1,014
-        and     1,[-2]
-        jumpn   1,mm_alloc_nr_inval
+        tdne    012,[-4]
+        jrst    mm_alloc_nr_inval
+        tdne    014,[-2]
+        jrst    mm_alloc_nr_inval
 
         movei   4,-1(17)
         move    1,010

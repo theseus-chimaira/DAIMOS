@@ -1,3 +1,7 @@
+## 2026-10-14 V095 NO-RECLAIM ALLOCATION AUDIT
+
+`mm_alloc_aligned_noreclaim` remains necessary for packed eviction/restore and block-cache allocation to avoid recursive reclaim and compaction. Two equivalent full-word `TDNE` validity tests replace three-instruction checks, shrinking this routine 73 -> 71 words and total MM text 498 -> 496, BSS unchanged (70). Native PDP-6 noreclaim, gap, alloc, free suites PASS; full GCC KCORE/KINIT DXR links PASS. See system/kernel/mm/MM-NORECLAIM-OPTIMIZATION-V095.md. Next: relocation/compaction, descriptor insertion and other algorithm alternatives; no automatic packed-process boot acceptance yet.
+
 ## 2026-10-14 V094 FIRST MM GAP SEARCH OPTIMIZATION
 
 Native `mm_find_fit` now shares the same low/high alignment and free-gap calculation across extent-interior and arena-tail gaps. Routine shrinks **112 to 90 words** (-22, -19.6%); total MM text shrinks **520 to 498 words**, BSS unchanged at 70. Native PDP-6 allocation, free and new gap/multi-arena regressions PASS; full GCC KCORE/KINIT DXR links PASS. No scheduler or boot acceptance implied. See `system/kernel/mm/MM-FIND-FIT-OPTIMIZATION-V094.md`; continue next algorithm only after measuring and testing each change.

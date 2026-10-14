@@ -1,3 +1,4 @@
+- [x] v095 no-reclaim allocator required for packed and block-cache critical paths; 73 -> 71 words (-2), all four native MM tests and full KCORE/KINIT links PASS. See mm/MM-NORECLAIM-OPTIMIZATION-V095.md.
 - [x] v094 `mm_find_fit` shares interior/tail gap evaluation, saving 22 PDP-6 words (112 -> 90); native tests and KCORE/KINIT link PASS. See mm/MM-FIND-FIT-OPTIMIZATION-V094.md.
 - [x] v092 native PDP-6 `mm_free` and extent-descriptor shift/reuse test passes without full OS; see daimos-testkit/tests/native-kernel/mm/free-v092. Pin-boundary, fragmentation, compaction and reclaim suites remain open.
 - [x] v090 begins per-algorithm native PDP-6 MM tests and an optimization/folding register. BLT, canonical instruction ordering and per-algorithm measurements documented in mm/MM-NATIVE-TEST-AND-SIZE-AUDIT-V090.md. No allocator optimization yet.
