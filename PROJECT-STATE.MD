@@ -1,3 +1,7 @@
+## 2026-10-14 V112 MM VALIDATION/GAP CANDIDATES REJECTED
+
+`mm_compact` argument-check register substitution assembled unchanged at 482 words. Removing a presumed redundant `mm_find_fit_extent` cursor bounds check saved two instructions (480 text / 70 BSS) but **FAILED native `alloc-v090` HIGH allocation** (exit 3); the change was reverted. Full KCORE/KINIT link of the candidate had succeeded but does not override native behavior. Production remains 482 text / 70 BSS. See `system/kernel/mm/MM-VALIDATION-GAP-EXPERIMENT-V112.md`.
+
 ## 2026-10-14 V111 MM COMPACT GAP SEARCH SETUP
 
 Unified repeated `mm_find_fit` argument setup in `mm_compact` through a private tail-call helper. Whole MM assembled text **485 -> 482 words (-3)**, BSS remains 70; return-address-aware output slot is `-1(17)`. An initial wrong `(17)` offset caused a native relocation timeout and was corrected before acceptance. Native PDP-6 alloc/free/gap/noreclaim/relocation + vm-live v102–v106 PASS, KCORE/KINIT DXR link PASS. One transient stack return word is introduced during search; post-fold/cycles not measured. See `system/kernel/mm/MM-COMPACT-SETUP-OPTIMIZATION-V111.md`.
