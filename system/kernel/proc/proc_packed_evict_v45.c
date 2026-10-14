@@ -58,7 +58,7 @@ packed_registry_room_v45(unsigned int slot)
 }
 
 int
-proc_packed_evict_transaction_v45(unsigned int slot,
+proc_packed_evict_reg_v45(unsigned int slot,
     kword_t retained_offset, unsigned int encoded_capacity,
     proc_packed_encoder_v32 encoder)
 {

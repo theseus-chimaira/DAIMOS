@@ -9,7 +9,7 @@
 #include "vm_pdp6.h"
 
 int
-proc_packed_destroy_dispatch_v084(unsigned int slot)
+proc_packed_destroy_v084(unsigned int slot)
 {
     struct proc *p;
     int mode;

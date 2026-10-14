@@ -18,7 +18,7 @@
 #endif
 
 int
-proc_packed_restore_transaction_v46(unsigned int slot, kword_t backing,
+proc_packed_restore_reg_v46(unsigned int slot, kword_t backing,
     proc_packed_decoder_v26 decoder,
     proc_packed_pure_reload_v31 reload_pure)
 {

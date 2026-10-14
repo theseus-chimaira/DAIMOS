@@ -1,3 +1,19 @@
+# 2026-10-14 v129: KCC symbol-length build correction
+
+- Fresh isolated KCC disk-root build exposed packed-process prototype
+  collisions caused by long external names sharing the same truncated
+  identifier prefix, plus linker mismatches between truncated C references
+  and full assembly exports. Shortened the affected v45/v46/v077 transaction
+  names, the v084 destroy entry and v078 KPACK encoder/decoder symbols,
+  updating matching declarations, definitions and assembly users together.
+- A fresh KCC build now completes KCORE linking. The permanent-size gate
+  still FAILS: KCORE=12463 words, KCORE+MRES=18056 words, permanent last
+  address=043267 octal; the MULTI_ROOT variant is also over 040000.
+  These are not acceptable resident-size results, and no MM relocation or
+  memory savings are claimed.
+- Native PDP-6 production MM/VM regression: 15/15 PASS. The v128 fixed
+  descriptor array and external-table placement calculation are unchanged.
+
 ## 2026-10-14 MM CAPACITY-CONTROL INCREMENT V125
 
 - From v124, the PDP-6 allocator's one-instruction descriptor-capacity

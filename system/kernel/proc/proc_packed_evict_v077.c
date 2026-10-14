@@ -59,7 +59,7 @@ packed_registry_room_v077(unsigned int slot)
 }
 
 int
-proc_packed_evict_transaction_v077(unsigned int slot,
+proc_packed_evict_codec_v077(unsigned int slot,
     kword_t retained_offset, proc_packed_sizer_v077 sizer,
     proc_packed_encoder_v32 encoder)
 {

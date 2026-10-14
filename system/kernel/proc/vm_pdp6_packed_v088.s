@@ -32,7 +32,7 @@
         .globl  mm_extent_count
         .globl  mm_arena_count
         .globl  proc_swap_detach
-        .globl  proc_packed_destroy_dispatch_v084
+        .globl  proc_packed_destroy_v084
         .globl  proc_storage_expect_v30
         .globl  proc_swap_reclaim
         .globl  vfs_read_words
@@ -481,7 +481,7 @@ vm_space_destroy:
         ; released first; no such image may be published until that path is
         ; installed.  Reject before freeing any resident MM allocation.
         move    1,(17)
-        pushj   17,proc_packed_destroy_dispatch_v084
+        pushj   17,proc_packed_destroy_v084
         jumpl   1,vm_space_destroy_fail
         jumpn   1,vm_space_destroy_packed_done
         move    1,(17)                 ; slot

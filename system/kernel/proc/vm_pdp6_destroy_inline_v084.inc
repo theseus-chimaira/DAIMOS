@@ -1,6 +1,6 @@
 /* Staged replacement for the vm_space_destroy leaf only. */
         .text
-        .globl proc_packed_destroy_dispatch_v084
+        .globl proc_packed_destroy_v084
 vm_space_destroy_inline_v084:
         push    17,1                    ; descriptor
         push    17,2                    ; owner
@@ -10,7 +10,7 @@ vm_space_destroy_inline_v084:
         ; released first; no such image may be published until that path is
         ; installed.  Reject before freeing any resident MM allocation.
         move    1,(17)
-        pushj   17,proc_packed_destroy_dispatch_v084
+        pushj   17,proc_packed_destroy_v084
         jumpl   1,vm_space_destroy_fail
         jumpn   1,vm_space_destroy_packed_done
         move    1,(17)                 ; slot
