@@ -1,3 +1,7 @@
+## 2026-10-14 V102 REAL VM PIN AND RUNQUEUE CONTRACT
+
+Native PDP-6 `vm-live-v102` PASS: production MM+VM+copy assembler, full payload, stable-uarea runqueue remove/add and MM stop-bit release, pinned extent exclusion without PI side effects; v101 negative cases retained. Queue and PI hooks are instrumented, not actual scheduler/interrupt integration. No production code change; MM remains 493 text / 70 BSS words. See `system/kernel/mm/MM-VM-PIN-RUNQUEUE-V102.md`.
+
 ## 2026-10-14 V101 NATIVE MM FULL-PAYLOAD RELOCATION
 
 Native PDP-6 production MM/VM/copy assembly regression `daimos-testkit/tests/native-kernel/mm/vm-live-v101` PASS. Full 01000-octal-word relocated extent verified word-by-word; unaligned destination and mapped-uarea rejection added alongside current/transition cases. No production allocator change; 493 text / 70 BSS words. Real runqueue/PI concurrency and stress remain outstanding. See `system/kernel/mm/MM-VM-FULL-PAYLOAD-V101.md`.

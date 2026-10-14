@@ -1,3 +1,4 @@
+- [x] v102 PDP-6 native relocation regression covers stable u-area stop/runqueue restoration and pinned exclusion; PASS, no production code change. See mm/MM-VM-PIN-RUNQUEUE-V102.md.
 - [x] v101 production PDP-6 MM+VM relocation checks all 512 payload words and mapped/unaligned rejection, PASS; no code-size change. See mm/MM-VM-FULL-PAYLOAD-V101.md.
 - [x] v100 native PDP-6 MM relocation with actual `vm_extent_move` and `fs_move_words` bodies PASS; safe/current/TRANSITION cases, partial data checks. No code-size change; see mm/MM-REAL-VM-REGRESSION-V100.md.
 - [x] v099 reviewed real `mm_move_extent` 66 words; native simulator relocation success/rollback + PI fixture PASS. Full VM integration and measured shrinking remain open; see mm/MM-RELOCATION-AUDIT-V099.md.
