@@ -1,3 +1,7 @@
+## 2026-10-14 V093 NATIVE PDP-6 MM SIZE BASELINE
+
+Measured production mm_pdp6.s per algorithm: 520 decimal text words (including 9-word literal pool), 70 decimal BSS words (64 descriptor, 3 arena, 3 scalar), 590 words total before folding. Largest sections are gap-fit 112, no-reclaim allocation 73, extent relocation 66, reclaim-capable allocation 65, and compaction 62. See system/kernel/mm/MM-NATIVE-SIZE-BASELINE-V093.md for all routine sizes and folding-accounting limits. Measure both correctness and net KCORE size after each optimization.
+
 ## 2026-10-14 V092 NATIVE PDP-6 MM FREE REGRESSION
 
 `daimos-testkit/tests/native-kernel/mm/free-v092` runs the actual production
