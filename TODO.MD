@@ -28,6 +28,22 @@
 
 # DAIMOS TODO
 
+## LIBC ASSEMBLY OPTIMIZATION CANDIDATES — DEFERRED (2026-10-14)
+
+- Investigate `qsort` first: profile the existing generic comparator-based
+  implementation, generated PDP-6 code, swap cost, code size, and worst-case
+  auxiliary RAM/stack use. Prefer bounded-memory sorting over a literal
+  translation of the C algorithm; compare native SIMH timing and words.
+- Then evaluate `strcpy`, `strncpy`, `strcat`, `strncat`, `strchr`, and
+  `strrchr` for compact byte-pointer assembly. Measure actual savings before
+  replacing C implementations.
+- Leave `strcspn`, `strtok`, `atoi`, `abs`, `calloc`, `brk`, `sbrk`,
+  `stat`, `time`, `exit`, and general heap management in C unless testing
+  demonstrates worthwhile memory or performance gains. `calloc` should
+  continue to benefit from assembly `memset`.
+- Keep regression tests in `pdp10-testkit`. Do not interrupt the ongoing
+  upstream semantic-test import for these optimizations.
+
 ## D6 CODEC PRODUCTION CUTOVER — STREAMING LOW-CORE DECODER (V057 PLAN)
 
 The production-format v053 encoder/complete-buffer decoder are staged; the
