@@ -1,3 +1,7 @@
+## 2026-10-14 V108 DIRECT DESCRIPTOR SHIFT EXPERIMENT
+
+`mm_move_extent` alternate direct post-success descriptor shift assembled 71 vs current 64 words, whole MM 498 vs current 491 text (+7), 70 BSS unchanged. v106/v105/v099/v094/v095 native PDP-6 suites PASS for candidate. **Rejected and reverted** due to larger code and no measured runtime advantage. Production remains 491 text + 70 BSS. See `system/kernel/mm/MM-DIRECT-SHIFT-REVIEW-V108.md`.
+
 ## 2026-10-14 V107 REJECTED MM MOVE CONTROL-FLOW CANDIDATE
 
 Experimented with branching before restoration of relocated descriptor: assembled whole-MM text rose 491 -> 494 words (+3), BSS held 70. Reverted candidate; production remains v106 64-word `mm_move_extent`. The attempted change provides no improvement. See `system/kernel/mm/MM-MOVE-CANDIDATE-REVIEW-V107.md` for alternatives and invariants.
