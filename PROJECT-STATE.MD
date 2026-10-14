@@ -1,3 +1,7 @@
+## 2026-10-14 V121 MODULE DEFERRAL TO KA10 / DAIMOS 1.1
+
+Loadable, unloadable and relocatable runtime modules are expressly deferred until the KA10 phase (DAIMOS v1.1). Do not include prospective module allocation counts or unload/relocation semantics as gates for the current PDP-6 MM design or optimization. Continue pre-v1.1 MM pressure, descriptor-capacity and rollback work for implemented consumers only. Existing static/module-linked functionality is unaffected; this is scheduling, not an implementation change.
+
 ## 2026-10-14 V120 NATIVE MM RECLAIM SUCCESS AND DESCRIPTOR PRESSURE
 
 PDP-6 native `pressure-v120` PASS: an instrumented reclaim callback frees a real MM extent via `mm_free` and ordinary allocation retries successfully without swap callback. A valid sorted 32-descriptor fixture confirms descriptor exhaustion returns -3 unchanged and uses the bounded two-FS/one-swap retry sequence. Production FS/swap reclaimer, concurrency and boot still open. No MM source change; 482 text/70 BSS. See system/kernel/mm/MM-NATIVE-RECLAIM-SATURATION-V120.md.
