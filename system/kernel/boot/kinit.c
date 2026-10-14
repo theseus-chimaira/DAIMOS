@@ -84,6 +84,13 @@ kcore_load(void)
         dst = (kword_t *)(unsigned long)KINIT_KCORE_BASE;
         init_end = &__kcore_low_init_end;
         end = &__kcore_low_end;
+        /* Before the first copy, ensure KCORE plus the minimum permanent
+         * descriptor backing fits below the still-live KINIT at 030000.
+         * MRES may later consume reclaimed KINIT source words, but not yet. */
+        if ((kword_t)(unsigned long)end >= KINIT_IMAGE_BASE ||
+            KINIT_IMAGE_BASE - (kword_t)(unsigned long)end <
+                2UL * MM_MAX_EXTENTS)
+                kinit_halt();
         while (dst < init_end)
                 *dst++ = *src++;
         while (dst < end)

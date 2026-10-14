@@ -169,6 +169,11 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [x] v134: Verify the minimum descriptor backing fits between linked
+  KCORE and live KINIT before the initial KCORE copy; regression-test the
+  exact boundary and reject overlapping images. Full system boot remains
+  to be accepted separately.
+
 - [x] v133: Define native `mm_extents` at the end-of-KCORE linker boundary
   and reserve its 64-word backing before the MRES block, preserving direct
   MM/VM addressing. 16 native emulator tests and host MM pass; link map

@@ -1,3 +1,16 @@
+# 2026-10-14 v134: pre-copy KCORE/MM/KINIT overlap protection
+
+- `kcore_load()` now refuses to copy KCORE if its linked end plus the
+  minimum 0100-octal-word external descriptor backing reaches beyond
+  KINIT's still-live 030000 base. This check runs before any low-core write.
+- Testkit `check-mm-boot-gap-v134.sh` checks real KCORE map boundaries
+  and exact-fit/one-word-overflow cases. The previously measured GCC
+  low-memory end 027131 fits the initial 32-descriptor reservation, but
+  does NOT satisfy the independent 020000 KCORE optimization limit.
+- GCC lowmem KINIT build PASS; native MM/VM regression 16/16 PASS.
+  A full emulator system boot is still unverified; dynamic capacities
+  above 32 remain disabled. No RAM savings are claimed for v134.
+
 # 2026-10-14 v133: External MM descriptor backing linked without indirection
 
 - The zero-sized native `mm_extents` symbol aliases `__kcore_low_end` in
