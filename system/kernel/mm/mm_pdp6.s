@@ -179,6 +179,10 @@ mm_find_fit_extent:
         hrrz    2,mm_extents(1)
         caml    2,5
         jrst    mm_find_fit_tail
+
+; Inspect an interior or arena-tail gap using the same low/high policy.
+; AC2 is the exclusive gap end; AC4 is the first free word.
+mm_find_fit_gap:
         camg    2,4
         jrst    mm_find_fit_after_gap
         move    6,2
@@ -210,6 +214,11 @@ mm_find_fit_low_gap:
         jrst    mm_find_fit_low_found
 
 mm_find_fit_after_gap:
+        ; A tail gap has no in-arena extent to advance past.
+        caml    015,mm_extent_count
+        jrst    mm_find_fit_next_arena
+        caml    2,5
+        jrst    mm_find_fit_next_arena
         move    1,015
         lsh     1,1
         hrrz    2,mm_extents(1)
@@ -220,35 +229,8 @@ mm_find_fit_after_gap:
         aoja    015,mm_find_fit_extent
 
 mm_find_fit_tail:
-        camg    5,4
-        jrst    mm_find_fit_next_arena
-        move    6,5
-        sub     6,4
-        addm    6,(17)
-        jumpe   012,mm_find_fit_low_tail
-        camge   6,010
-        jrst    mm_find_fit_next_arena
-        move    7,5
-        sub     7,010
-        move    3,011
-        subi    3,1
-        setcm   3,3
-        and     7,3
-        caml    7,4
-        move    016,7
-        jrst    mm_find_fit_next_arena
-mm_find_fit_low_tail:
-        move    7,4
-        add     7,011
-        subi    7,1
-        move    3,011
-        subi    3,1
-        setcm   3,3
-        and     7,3
-        move    6,5
-        sub     6,7
-        camg    010,6
-        jrst    mm_find_fit_low_found
+        move    2,5                      ; arena end is final gap boundary
+        jrst    mm_find_fit_gap
 
 mm_find_fit_next_arena:
         aoja    014,mm_find_fit_arena

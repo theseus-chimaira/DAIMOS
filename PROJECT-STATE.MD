@@ -1,3 +1,7 @@
+## 2026-10-14 V094 FIRST MM GAP SEARCH OPTIMIZATION
+
+Native `mm_find_fit` now shares the same low/high alignment and free-gap calculation across extent-interior and arena-tail gaps. Routine shrinks **112 to 90 words** (-22, -19.6%); total MM text shrinks **520 to 498 words**, BSS unchanged at 70. Native PDP-6 allocation, free and new gap/multi-arena regressions PASS; full GCC KCORE/KINIT DXR links PASS. No scheduler or boot acceptance implied. See `system/kernel/mm/MM-FIND-FIT-OPTIMIZATION-V094.md`; continue next algorithm only after measuring and testing each change.
+
 ## 2026-10-14 V093 NATIVE PDP-6 MM SIZE BASELINE
 
 Measured production mm_pdp6.s per algorithm: 520 decimal text words (including 9-word literal pool), 70 decimal BSS words (64 descriptor, 3 arena, 3 scalar), 590 words total before folding. Largest sections are gap-fit 112, no-reclaim allocation 73, extent relocation 66, reclaim-capable allocation 65, and compaction 62. See system/kernel/mm/MM-NATIVE-SIZE-BASELINE-V093.md for all routine sizes and folding-accounting limits. Measure both correctness and net KCORE size after each optimization.
