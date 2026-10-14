@@ -1,3 +1,4 @@
+- [x] v111: `mm_compact` shared fit-call setup reduces MM code to 482 words; native PDP-6 tests and KCORE/KINIT link PASS; see mm/MM-COMPACT-SETUP-OPTIMIZATION-V111.md.
 - [x] v110: `mm_extent_insert` backward shift index optimization saves 3 words; complete MM 485 text + 70 BSS; native tests and KCORE/KINIT link PASS.
 - [x] v109: `mm_delete` index simplification reduces complete MM text to 488 words, native tests and KCORE/KINIT link PASS.
 - [x] v106 mm_move_extent 66 -> 64 instructions, full MM text 491 words, native relocation/allocation tests PASS; see mm/MM-RELOCATION-OPTIMIZATION-V106.md.

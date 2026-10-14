@@ -1,3 +1,7 @@
+## 2026-10-14 V111 MM COMPACT GAP SEARCH SETUP
+
+Unified repeated `mm_find_fit` argument setup in `mm_compact` through a private tail-call helper. Whole MM assembled text **485 -> 482 words (-3)**, BSS remains 70; return-address-aware output slot is `-1(17)`. An initial wrong `(17)` offset caused a native relocation timeout and was corrected before acceptance. Native PDP-6 alloc/free/gap/noreclaim/relocation + vm-live v102–v106 PASS, KCORE/KINIT DXR link PASS. One transient stack return word is introduced during search; post-fold/cycles not measured. See `system/kernel/mm/MM-COMPACT-SETUP-OPTIMIZATION-V111.md`.
+
 ## 2026-10-14 V110 MM INSERT SHIFT OPTIMIZATION
 
 Optimized PDP-6 `mm_extent_insert` using one doubled destination index and fixed source offsets -2/-1, removing **3 text words** without changing RAM use or reverse overlap-safe copy order. Whole MM 488 -> **485 text words**, BSS 70 unchanged. Eight native PDP-6 MM/VM suites and GCC KCORE/KINIT link PASS. See `system/kernel/mm/MM-INSERT-OPTIMIZATION-V110.md`.

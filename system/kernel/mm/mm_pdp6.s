@@ -426,11 +426,7 @@ mm_compact:
         subi    1,1
         and     1,011
         jumpn   1,mm_compact_inval
-        move    1,010
-        move    2,011
-        movei   3,MM_ALLOC_LOW
-        movei   4,(17)
-        pushj   17,mm_find_fit
+        pushj   17,mm_compact_find
         jumpn   1,mm_compact_ok
         move    1,(17)
         camge   1,010
@@ -453,14 +449,18 @@ mm_compact_scan:
         movei   2,VM_EXTENT_ALIGN_WORDS
         pushj   17,mm_move_extent
         jumpn   1,mm_compact_next
-        move    1,010
-        move    2,011
-        movei   3,MM_ALLOC_LOW
-        movei   4,(17)
-        pushj   17,mm_find_fit
+        pushj   17,mm_compact_find
         jumpn   1,mm_compact_ok
         setz    012,
         jrst    mm_compact_scan
+; Private common setup for repeated LOW gap checks.
+mm_compact_find:
+        move    1,010
+        move    2,011
+        movei   3,MM_ALLOC_LOW
+        movei   4,-1(17)
+        jrst    mm_find_fit
+
 mm_compact_next:
         aoja    012,mm_compact_scan
 mm_compact_ok:
