@@ -87,14 +87,10 @@ read_word:
         popj 017,
 
 read_wait:
-        consz 0214,0000034
-        jrst read_error
-        consz 0214,0000002
+        ; Both status groups are fatal: test their union with one CONSz.
+        consz 0214,0000036
         jrst bad_tape
         jrst read_word
-
-read_error:
-        jrst bad_tape
 
 daimon_magic: .word 0444151555756
         .include "../common/decompressor.inc"
@@ -120,22 +116,20 @@ stage1_handoff:
         ; begins immediately after the expanded image.  Leaving AC17 on the
         ; low Stage1 stack would let kcore_load overwrite live return words.
         move 017,012
-        setz 01,
-        setz 02,
-        jrst 0(05)
+        jrst stage1_common_handoff
 
 ; The raw stream is already resident at 030000.  Enter without installing
 ; the decompressor or maintaining a compressed image beyond 32K.
 stage1_raw_handoff:
-        movei 017,030000
-        add 017,013
-        setz 01,
-        setz 02,
+        ; AC1 already points one word beyond the raw image after load_loop.
+        move 017,01
+stage1_common_handoff:
+        setzb 01,02                    ; clear both handoff scratch ACs
         jrst 0(05)
 
 ; This diagnostic must remain above the decoder destination.  Decoder failure
 ; is detected only after 000060..000127 has been overwritten by the installed
 ; low-core image.
 bad_tape:
-        jrst stage1_fail_b1
+        ; Alias the included diagnostic directly, avoiding a one-word stub.
         .include "../common/stage1-error.inc"

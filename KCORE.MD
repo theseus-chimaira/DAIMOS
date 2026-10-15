@@ -169,6 +169,9 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [x] v155: Optimize DTC Stage1 from 112 to 106 words and pass real DTC
+  standalone boot plus complete Stage1 size gate. No KCORE change.
+
 - [x] v153: Correct compact HELP SIXMD section matching and output size;
   target-side `HELP ECHO` and `HELP DAS` probes PASS on a fresh 256K image.
 - [ ] v153: Diagnose long `MAN DAS` output stalling after 1.5-1.8 KB;

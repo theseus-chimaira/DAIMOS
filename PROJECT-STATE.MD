@@ -1,3 +1,17 @@
+# 2026-10-15 v155: DTC Stage1 back under hard size cap
+
+- Reduced the real DTC Stage1 loader from 112 to 106 words (6 fewer words),
+  meeting the existing 106-word acceptance cap without dropping the D6LZ36
+  decoder, raw 32K boot, error checks, or post-load stack handoff. Combined
+  fatal DTC status masks, shared raw/compressed handoff epilogue, reused the
+  raw loader's final AC1 cursor for AC17, used the PDP-6 SETZB dual-register
+  idiom, and removed redundant error jumps. No KCORE or process RAM change.
+- daimos-testkit `test-daimos-stage1-size` PASS: DSK 350/352, DRM 342/342,
+  DTC 106/106, MTC 106/106, PTR 139/139; decoder 40/62. Native PDP-6 DTC
+  standalone boot target (`tests/system/stand/pdp6/dtc`) PASS.
+- Full multi-subsystem regression acceptance remains open; this resolves the
+  specific DTC Stage1 size failure, not all other size or runtime checks.
+
 # 2026-10-15 v153: compact HELP output and regression toolchain dispatch
 
 - Corrected compact HELP selection in `userland/exec/utility.c`: match the
