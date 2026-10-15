@@ -38,6 +38,22 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v065 output geometry and real-provider dispatch audit
+
+The actual VFS entry is `system/kernel/fs/vfs.s:vfs_read_words`, which
+dispatches to pipe/MFS or through `fs_provider_reg_call`. Therefore a
+one-word test stub cannot establish the maximum call depth of the real
+D6FS/DTFS/TSFS provider or its cache-miss path. The process kernel stack
+allowance is `0316` octal (206 decimal) words in
+`system/kernel/proc/proc_pdp6.s`. The v064 simulated nested 113-word peak
+leaves 93 words, **not** a measured guarantee of sufficient headroom.
+
+New `daimos-testkit/tests/validation/d6codec-vfs-v065` passes on native
+PDP-6: a null destination and an output extent crossing the 18-bit address
+limit are rejected **before any provider call**. The real-provider
+cache-miss, failure-path, and total nested stack measurements remain
+mandatory before production activation. No KCORE path was changed.
+
 ### v064 native stack canary checkpoint
 
 `daimos-testkit/tests/validation/d6codec-vfs-v064` uses a 512-word
