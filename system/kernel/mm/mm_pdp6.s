@@ -509,14 +509,7 @@ mm_alloc_aligned:
         move    015,6
         setz    016,
 mm_alloc_aligned_retry:
-        push    17,015
-        push    17,014
-        move    1,010
-        move    2,011
-        move    3,012
-        move    4,013
-        pushj   17,mm_alloc_aligned_noreclaim
-        sub     17,[2,,2]
+        pushj   17,mm_alloc_aligned_try
         movem   1,(17)
         jumpe   016,mm_alloc_aligned_after_compact
         caie    1,MM_ERR_FRAGMENTED
@@ -525,6 +518,12 @@ mm_alloc_aligned_retry:
         move    2,011
         pushj   17,mm_compact
         jumpn   1,mm_alloc_aligned_store_compact
+        pushj   17,mm_alloc_aligned_try
+        jrst    mm_alloc_aligned_store_compact
+; Common argument setup. The helper's return address is retained below the
+; two stack arguments; the allocator returns directly to the caller, which
+; removes those arguments before the enclosing retry logic resumes.
+mm_alloc_aligned_try:
         push    17,015
         push    17,014
         move    1,010
@@ -533,6 +532,7 @@ mm_alloc_aligned_retry:
         move    4,013
         pushj   17,mm_alloc_aligned_noreclaim
         sub     17,[2,,2]
+        popj    17,
 mm_alloc_aligned_store_compact:
         movem   1,(17)
 

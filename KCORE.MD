@@ -1,5 +1,21 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-15 allocator retry setup consolidation v140
+
+The native PDP-6 `mm_alloc_aligned` contains two copies of the
+`mm_alloc_aligned_noreclaim` argument/stack setup. A single private helper
+now owns both sequences while preserving the pressure stages and the
+compaction retry ordering. With the GCC lowmem disk-root 32K image and
+the same KINIT configuration, the complete image packages successfully:
+MM assembly text 482 -> 478 words; KCORE exclusive endpoint 023456 ->
+023452 octal (4 resident words saved), BSS unchanged at 70 words.
+
+The helper adds one transient stack word. Native PDP-6 allocation/reclaim
+and compaction regression acceptance remains pending; this measurement is
+build/link/package evidence only. The standalone `daimos-testkit` host
+`mm-core` test has an existing missing-symbol link blocker documented
+below. Do not count the code change as fully runtime accepted yet.
+
 ## 2026-10-15 GCC 32K disk-root measurement and MM recovery v138
 
 Isolated baseline at commit `37fba7e`, with `BOOT_PROFILE=lowmem`,
