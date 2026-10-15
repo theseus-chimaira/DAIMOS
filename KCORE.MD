@@ -169,6 +169,14 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [x] v151: Force 64K EXEC staging allocation failure using user BRK +
+  a large BSS target. Fix full-width `EXEC_LOAD_NOMEM` compare and clear
+  `PROC_TRANSITION` after old-VM retirement so blocking VFS can resume.
+  Low-memory successor preservation test, normal 64K/128K LOGIN -> DSH,
+  and 16 native MM/VM checks PASS. Permanent KCORE +3 words (027155).
+- [ ] v151 follow-up: inject a failure after destructive VM retirement and
+  verify fatal/partial-image cleanup without memory leaks or stuck processes.
+
 - [x] v150: Packed-VM EXEC lifecycle fixed in both C and PDP-6 assembly.
   `PROC_TRANSITION` now brackets live/staged VM retirement, including the
   low-memory direct-EXEC path. Fresh D6FS boots at 64K and 128K PASS DCS0

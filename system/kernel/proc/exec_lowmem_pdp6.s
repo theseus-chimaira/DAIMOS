@@ -172,7 +172,9 @@ exec_replace_old_rt_done:
         movei   3,3(10)                 ; validated path
         pushj   17,exec_load_process
         movem   1,EXEC_R_STAGED+2(17)   ; staged.sched is dead; keep result here
-        caie    1,EXEC_LOAD_NOMEM
+        ; EXEC_LOAD_NOMEM is the full 36-bit value -2. CAIE's 18-bit
+        ; immediate does not compare equal to that negative return word.
+        came    1,[EXEC_LOAD_NOMEM]
         jrst    exec_replace_loaded
         move    1,10
         move    2,11
@@ -369,6 +371,10 @@ exec_replace_current_lowmem:
         jrst    exec_lowmem_free
 
 exec_lowmem_old_gone:
+        ; No resident VM remains to retire. Drop lifecycle exclusion before
+        ; VFS reads: this EXEC can sleep and must remain schedulable.
+        movei   1,0200000
+        andcam  1,(15)
         move    10,EXEC_LM_LAUNCH(17)
         addi    10,3                    ; copied SYS_EXEC_V1 path record
         move    1,10

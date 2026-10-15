@@ -1,3 +1,26 @@
+# 2026-10-15 v151: forced low-memory EXEC succeeds under real BRK pressure
+
+- An instrumented 64K native userspace test expanded PID 1's user break to
+  47104 decimal words in 44 successful 02000-word steps. A replacement image
+  with 010000 words of BSS could not be staged alongside the old VM. The
+  target-side low-memory EXEC routine was confirmed by an emulator breakpoint,
+  not inferred from a successful EXEC alone.
+- Fixed a PDP-6 36-bit result comparison: `CAIE 1,EXEC_LOAD_NOMEM` compares
+  an 18-bit immediate against the loader's full 36-bit -2. Changed to
+  `CAME 1,[EXEC_LOAD_NOMEM]`; the destructive fallback is now dispatched.
+- Fixed a subsequent sleep/resume deadlock in that fallback: after the old
+  VM is retired, `PROC_TRANSITION` must be cleared BEFORE potentially blocking
+  VFS reads of the new executable. Otherwise the scheduler excludes its
+  owner forever, leaving only the idle slot running. The flag is reasserted
+  for final metadata/startup work as required by the packed-VM lifecycle.
+- Testkit `daimos-exec-lowmem-v151.sh` now PASSes the real 64K fallback,
+  including PID, credentials, CWD, session, process group, TTY and descriptors.
+  Fresh standard 64K and 128K DCS0 LOGIN -> ROOT -> DSH V1 PASS; all 16 native
+  MM/VM regression scripts PASS. `__kcore_low_end` 027152 -> 027155, +3
+  words, no additional permanent process data or u-area words.
+- Forced error injection AFTER destructive old-image retirement is still an
+  **open** rollback/fatal-cleanup test. 32K DSH minimization remains deferred.
+
 # 2026-10-15 v150: complete 64K/128K DCS0 LOGIN -> ROOT -> DSH boot
 
 - Resolved the remaining ROOT `LOGIN: EXEC FAILED` defect. The active packed
