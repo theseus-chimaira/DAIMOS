@@ -29,6 +29,19 @@ passes. This does NOT replace the active `vfs_mount_ro` assembly alias or
 establish native boot acceptance. Full assembler consumer migration remains
 necessary before v2 can be linked and activated.
 
+## Staged MM slab layout (v3)
+
+`system/kernel/fs/vfs_mount_layout_v3.c/.h` now plans a single contiguous
+MM-owned region sized to the boot-selected mount capacity. Six one-word-per-
+mount arrays are planned: VFS target, VFS root, D6FS reader, shared DTFS/TSFS
+media, TSFS file shape and TSFS extent locator. The exact offsets are derived
+once from capacity; 4 mounts require 24 words, 17 mounts require 102 words.
+No resident array has been converted to use the slab yet. This is a staged
+planner, not an active allocation. It deliberately does not force separate
+arrays for all providers and does not include the three-word policy bitmap.
+The layout passes standalone host tests for capacities 1..17, and its C source
+generates PDP-6 GCC assembly. Native KCORE sizes are not yet measured.
+
 ## Capacity policy
 
 MONITORFS built-in entries consume no VFS mount slot. The root D6FS or TSFS
