@@ -38,6 +38,22 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v064 native stack canary checkpoint
+
+`daimos-testkit/tests/validation/d6codec-vfs-v064` uses a 512-word
+canary-filled PDP-6 stack and the existing short-read, premature EOF and
+truncation fixture. The result is 0127 octal (87 decimal) stack words
+from the test stack origin. A VFS stub that explicitly reserves 030
+octal (24 decimal) additional words and makes a nested call reaches 0161
+octal (113 decimal) words. Both native tests pass. The difference also
+includes the nested test call overhead; these measurements are not
+real-provider worst-case stack bounds.
+
+Before activation, instrument actual VFS/TSFS/D6FS nested call stacks,
+including cache-miss and failure paths, and compare the peak against the
+configured per-process kernel stack and its safety reserve. No active
+KCORE code or decoder ABI changed in this checkpoint.
+
 ### v063 provider-count and address-bound audit
 
 The inactive VFS adapter now rejects output spans extending beyond the
