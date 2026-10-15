@@ -1,3 +1,13 @@
+## GROUPED CODEC V086 REMAINING ACCEPTANCE
+
+- Compressed external EXEC through D6FS: validated on PDP-6 256K
+  (`daimos-testkit/tests/system/d6codec-exec-v086`); do not confuse
+  ordinary loading with PURE text eviction/reload.
+- Next: construct a genuine PURE DXR using the toolchain, force backing
+  eviction and verify a subsequent grouped-codec reload with exact words.
+- Continue other Stage-1 devices, TSFS, swap, failure paths, kernel-stack
+  peaks and complete non-32K regressions before final removal audit.
+
 ## SINGLE GROUPED CODEC V085 — FOLLOW-UP ACCEPTANCE (2026-10-15)
 
 - DONE: 256K DSK/DSK270 GCC full-profile boot and live D6FS userspace

@@ -1,3 +1,14 @@
+## 2026-10-15 GROUPED CODEC COMPRESSED EXEC V086
+
+The fresh 256K GCC PDP-6 D6FS system regression
+`daimos-testkit/tests/system/d6codec-exec-v086` PASSed: it validates that
+installed external utility DXRs have `COMPRESSED` set and the normal
+`TX2` metadata, executes `LS` and `STAT` through the real EXEC path,
+and retains the host/native grouped decoding parity checks for six-word
+and 2052-word input. The old codec is not selected or dispatched.
+PURE backing eviction and subsequent reload have **not** been proven by
+this EXEC test. All full-cutover acceptance excludes 32K configurations.
+
 ## 2026-10-15 SINGLE GROUPED FORMAT KCORE/STAGE-1 V085 — 256K PASS
 
 All five Stage-1 implementations now install the grouped-control decoder at
