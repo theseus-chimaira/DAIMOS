@@ -38,6 +38,19 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v069 linked-codec boot smoke
+
+Built a fresh GCC 32K disk-root image with `D6CODEC_LINK_PROBE_V068=1`,
+then ran PDP-6 SIMH through the D6FS load and `INIT V1` milestones.
+The command was stopped by its 25-second timeout after those milestones;
+its exit status 124 does not mean the boot failed. Boot log includes
+`D6FS LOADED` and `INIT V1`, without an observed simulator HALT.
+This confirms the *inactive* linked codec objects do not prevent this
+legacy-format disk-root boot. It does not exercise grouped decompression
+through actual VFS providers, nor prove their deepest kernel-stack use.
+The runtime cutover remains blocked pending a test-only invocation with
+new-format producer data and a full provider-stack measurement.
+
 ### v068 opt-in full KCORE link probe
 
 The boot Makefile now accepts `D6CODEC_LINK_PROBE_V068=1` to place the
