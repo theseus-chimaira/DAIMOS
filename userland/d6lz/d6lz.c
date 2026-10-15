@@ -5,6 +5,8 @@
 #define D6LZ_LOOK 130U
 #define D6LZ_RING (D6LZ_WINDOW + D6LZ_LOOK)
 #define D6LZ_GROUP_TOKENS 36U
+#define D6CODEC_GROUP_TOKENS 30U
+#define D6CODEC_DESCRIPTOR_RESERVE 15U
 #define D6LZ_MIN_MATCH 3U
 #define D6LZ_CONTROL_FIRST 0400000000000UL
 #define D6LZ_DESC_LEN_SHIFT 7U
@@ -14,7 +16,9 @@
     ((PDP10_SIX6('D','X','R',' ',' ',' ') >> 18U) & D6LZ_HALF_MASK)
 
 static kword_t d6lz_ring[D6LZ_RING];
-static kword_t d6lz_group[D6LZ_GROUP_TOKENS + 1U];
+/* Shared output workspace: +9 words relative to the old 37-word group. */
+static kword_t d6lz_group[46U];
+#define d6codec_group_v075 d6lz_group
 static unsigned int d6lz_head;
 static unsigned int d6lz_hist;
 static unsigned int d6lz_avail;
@@ -162,6 +166,72 @@ compress_words(kword_t words)
         return d6lz_left == 0 && d6lz_avail == 0U ? 0 : -1;
 }
 
+/* Opt-in raw grouped 36-bit stream. Never use for EXEC until runtime
+ * consumers and the fixed-address boot decoder are migrated together.
+ * A 46-word scratch group is a conservative upper bound. */
+static int
+compress_grouped_v075(kword_t words)
+{
+        d6lz_head = 0U;
+        d6lz_hist = 0U;
+        d6lz_avail = 0U;
+        d6lz_left = words;
+        for (;;) {
+                unsigned int tok = 0U;
+                unsigned int match = 0U;
+                unsigned int literal = 0U;
+                kword_t flags = 0;
+                while (tok < D6CODEC_GROUP_TOKENS) {
+                        unsigned int length;
+                        unsigned int distance;
+                        kword_t descriptor = 0;
+                        if (fill_lookahead() != 0) return -1;
+                        if (d6lz_avail == 0U) break;
+                        if (d6lz_ring[d6lz_head] == 0) {
+                                length = 1U;
+                                while (length < 127U && length < d6lz_avail &&
+                                    d6lz_ring[ring_index((int)length)] == 0)
+                                        ++length;
+                                descriptor = ((kword_t)1U << 16U) |
+                                    ((kword_t)length << 9U);
+                        } else {
+                                length = best_match(&distance);
+                                if (length > 127U) length = 127U;
+                                if (length >= 2U)
+                                        descriptor = ((kword_t)length << 9U) |
+                                            (kword_t)distance;
+                        }
+                        if (descriptor != 0) {
+                                unsigned int slot = 1U + match / 2U;
+                                if ((match & 1U) == 0U)
+                                        d6codec_group_v075[slot] = descriptor << 18U;
+                                else
+                                        d6codec_group_v075[slot] |= descriptor;
+                                flags |= (kword_t)04000000000UL >> tok;
+                                ++match;
+                                consume_words(length);
+                        } else {
+                                d6codec_group_v075[16U + literal++] =
+                                    d6lz_ring[d6lz_head] & D6LZ_WORD_MASK;
+                                consume_words(1U);
+                        }
+                        ++tok;
+                }
+                if (tok == 0U) break;
+                {
+                        unsigned int i;
+                        unsigned int descriptors = (match + 1U) / 2U;
+                        for (i = 0U; i < literal; ++i)
+                                d6codec_group_v075[1U + descriptors + i] =
+                                    d6codec_group_v075[16U + i];
+                        d6codec_group_v075[0] = ((kword_t)tok << 30U) | flags;
+                        if (write_words(d6codec_group_v075,
+                            1U + descriptors + literal) != 0) return -1;
+                }
+        }
+        return d6lz_left == 0 && d6lz_avail == 0U ? 0 : -1;
+}
+
 static int
 copy_words(kword_t words)
 {
@@ -258,12 +328,18 @@ main(int argc, kword_t **argv)
         const kword_t *inpath;
         const kword_t *outpath;
         int exec_mode;
+        int grouped_mode;
         int rc;
 
         exec_mode = 0;
+        grouped_mode = 0;
         if (argc == 3) {
                 inpath = argv[1];
                 outpath = argv[2];
+        } else if (argc == 4 && u_s6_eq(argv[1], "-G")) {
+                grouped_mode = 1;
+                inpath = argv[2];
+                outpath = argv[3];
         } else if (argc == 4 && u_s6_eq(argv[1], "-X")) {
                 exec_mode = 1;
                 inpath = argv[2];
@@ -283,7 +359,9 @@ main(int argc, kword_t **argv)
                 return fail("OUTPUT", outpath);
         }
         d6lz_out_words = 0;
-        rc = exec_mode ? compress_exec(&st) : compress_raw(&st);
+        rc = exec_mode ? compress_exec(&st) :
+            grouped_mode ? compress_grouped_v075(st.size_words) :
+            compress_raw(&st);
         if (dsys_close(d6lz_infd) != 0) rc = -1;
         if (dsys_close(d6lz_outfd) != 0) rc = -1;
         if (rc == 0 && dsys_chmod((kword_t *)outpath, st.mode & 0777U) != 0)

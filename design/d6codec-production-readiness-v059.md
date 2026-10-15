@@ -38,6 +38,22 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v075 staged userspace raw grouped writer
+
+The existing `userland/d6lz/d6lz.c` now offers an experimental `-G`
+raw-file encoding mode. It reuses the original 258-word streaming ring
+and expands the shared output group buffer from 37 to 46 words (+9 static
+userland words). It writes up to 30 grouped tokens, packed pairs of
+18-bit match descriptors, literal words, zero runs and overlapping word
+references. Default operation and the `-X` DXR executable output still
+produce the legacy D6LZ36 format. No kernel or boot consumer was changed.
+
+`daimos-testkit/tests/validation/d6codec-userspace-v075` successfully
+compiles, assembles and links the userspace DXR. This is **build-only**;
+an in-system `-G` run, stream comparison and decode remain necessary
+before enabling this mode for production workflows. Post-integration
+testing must exclude 32K configurations.
+
 ### v074 host halfword-match emission
 
 The staged v072 host encoder now searches odd 18-bit halfword distances
