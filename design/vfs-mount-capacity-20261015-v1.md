@@ -14,6 +14,21 @@ This is not yet connected to live KINIT, and is not a claim of native boot
 acceptance. Its standalone tests live in daimos-testkit at
 `tests/system/vfs-mount-capacity-v1`.
 
+## Staged per-mount policy (v2)
+
+`system/kernel/fs/vfs_mount_policy_v2.c/.h` implements a separate, unlinked
+policy object with one 36-bit bitmap each for readonly, SWAP reservation and
+LOGSTORE reservation. The selected capacity is validated in 1..17; all
+accesses validate slot bounds. Reservations are exclusive across mounts;
+release checks ownership before mutation, remount can toggle readonly and
+unmount can clear all three bits for slot reuse. The policy uses three maps
+rather than two densely packed words to avoid expensive cross-word bitfield
+operations in the PDP-6 runtime. Host functional tests in daimos-testkit
+`tests/system/vfs-mount-policy-v2` pass; PDP-6 GCC standalone source generation
+passes. This does NOT replace the active `vfs_mount_ro` assembly alias or
+establish native boot acceptance. Full assembler consumer migration remains
+necessary before v2 can be linked and activated.
+
 ## Capacity policy
 
 MONITORFS built-in entries consume no VFS mount slot. The root D6FS or TSFS
