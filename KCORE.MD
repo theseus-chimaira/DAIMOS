@@ -169,6 +169,12 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [x] v153: Correct compact HELP SIXMD section matching and output size;
+  target-side `HELP ECHO` and `HELP DAS` probes PASS on a fresh 256K image.
+- [ ] v153: Diagnose long `MAN DAS` output stalling after 1.5-1.8 KB;
+  extending probe timeout did not fix the issue, and the 115-probe suite
+  cannot yet be reported as fully passing.
+
 - [x] v152: Accept 256K (not 254K) lowmem/full boot; full KINIT DTFS
   declaration now matches KINIT_TAPE_BOOT. DCS0 LOGIN -> ROOT -> DSH PASS.
 - [ ] v152: Compact HELP ECHO/DAS missing operand/option details (two

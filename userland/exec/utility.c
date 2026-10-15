@@ -1235,6 +1235,43 @@ util_render_manual_path(const char *path, const kword_t *topic, struct u_io *io)
 #endif
 
 #if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_HELP
+/* Match the SIXMD section heading as a whole.  Unlike offset-by-offset
+ * character tests, this also refuses trailing text after the section name.
+ */
+static int
+util_help_section(const char *line)
+{
+        const char *name;
+        const char *expected;
+        unsigned int i;
+
+        if (line[0] != '#' || line[1] != '#' || line[2] != ' ' ||
+            line[3] != '@' || line[4] != '?')
+                return 0;
+        name = line + 5;
+        expected = "OPERANDS";
+        for (i = 0U; expected[i] != 0 && name[i] == expected[i]; ++i)
+                ;
+        if (expected[i] == 0 && name[i] == 0)
+                return 1;
+        expected = "OPTIONS";
+        for (i = 0U; expected[i] != 0 && name[i] == expected[i]; ++i)
+                ;
+        return expected[i] == 0 && name[i] == 0;
+}
+
+static int
+util_help_usage_line(const char *line)
+{
+        const char *prefix = "USAGE IS ";
+        unsigned int i;
+
+        for (i = 0U; prefix[i] != 0; ++i)
+                if (line[i] != prefix[i])
+                        return 0;
+        return 1;
+}
+
 static int
 util_render_help_path(const char *path, const kword_t *topic, struct u_io *io)
 {
@@ -1283,27 +1320,24 @@ util_render_help_path(const char *path, const kword_t *topic, struct u_io *io)
                         continue;
                 }
                 if (line[0] == '#' && line[1] == '#' && line[2] == ' ') {
-                        selected = line[3] == '@' && line[4] == '?' &&
-                            ((line[5] == 'O' && line[6] == 'P' &&
-                            line[7] == 'T' && line[8] == 'I' &&
-                            line[9] == 'O' && line[10] == 'N' &&
-                            line[11] == 'S' && line[12] == 0) ||
-                            (line[5] == 'O' && line[6] == 'P' &&
-                            line[7] == 'E' && line[8] == 'R' &&
-                            line[9] == 'A' && line[10] == 'N' &&
-                            line[11] == 'D' && line[12] == 'S' &&
-                            line[13] == 0));
+                        selected = util_help_section(line);
                 }
-                if (line[0] == 'U' && line[1] == 'S' && line[2] == 'A' &&
-                    line[3] == 'G' && line[4] == 'E' && line[5] == ' ' &&
-                    line[6] == 'I' && line[7] == 'S' && line[8] == ' ') {
+                if (util_help_usage_line(line)) {
                         if (util_render_sixmd_line(io->out_fd, line) != 0) {
                                 u_text_close(&r);
                                 return 1;
                         }
                         continue;
                 }
-                if (selected && util_render_sixmd_line(io->out_fd, line) != 0) {
+                /* Compact HELP lists operand/option headings, not their
+                 * full paragraphs. On a 0.25 MIPS machine rendering large
+                 * manuals one character per UUO can exceed the command
+                 * timeout; MAN provides the complete descriptions.
+                 */
+                if (selected && line[0] == '#' && line[1] == '#' &&
+                    line[2] == '#' && line[3] == ' ' && line[4] == '@' &&
+                    line[5] == '?' &&
+                    util_render_sixmd_line(io->out_fd, line) != 0) {
                         u_text_close(&r);
                         return 1;
                 }

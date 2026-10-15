@@ -1,3 +1,19 @@
+# 2026-10-15 v153: compact HELP output and regression toolchain dispatch
+
+- Corrected compact HELP selection in `userland/exec/utility.c`: match the
+  SIXMD OPTIONS/OPERANDS headings and `USAGE IS` prefix as complete strings,
+  print heading/usage summaries instead of streaming long paragraph bodies.
+  The real 256K DCS0 DSH regression now PASSES both previously failing
+  `HELP ECHO` and `HELP DAS` probes. Full MAN retains detailed paragraphs.
+- An independent full 115-probe DSH run revealed intermittent blocking of
+  `MAN DAS` after roughly 1.5-1.8 KB, even with a 75-second test timeout.
+  Do not mark full DSH conformance accepted until this long-output condition
+  is fixed; timeout increase did not resolve it and was reverted.
+- In daimos-testkit, KCC-specific PDP-6 code generation now forces KCC even
+  when the outer matrix uses GCC (the targeted gate PASSES), and the regression
+  runner propagates DAS/KCC/AAP/SIMH selections into individual matrix rows.
+  The remaining full matrix is not yet passing or complete.
+
 # 2026-10-15 v152: 256K target, full-profile module declaration, testkit audit
 
 - Corrected the intended high-memory target from the earlier typo 254K to
