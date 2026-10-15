@@ -12,10 +12,28 @@ regardless of member count. Until non-root disk/drum discovery is corrected,
 count every unit outside known root BLOCKSET membership as potentially
 mountable: do not infer a drum belongs to a set or is dedicated to swap.
 
-Allow 17 slots if the complete post-fold resident plus dynamic cost of slot 17
-is modest relative to 16. Preserve headroom for removable media, rather than
-limiting capacity to currently mounted volumes. Do not equate installed
-device services with harmless probing of unattached physical units.
+Support up to 17 slots (the six-bit vnode mount-ID format has sufficient
+headroom), but allocate only the boot-selected hardware-derived capacity.
+Do not round capacity to a power of two. Three densely packed policy bits
+per mount require two 36-bit words for either 16 or 17 mounts; measure the
+additional provider table entries and code separately. Preserve mount slots
+for removable media, not just currently mounted volumes. Do not equate
+installed controller services with safely detected individual drives.
+
+At boot, count each known root BLOCKSET once, each other disk/drum unit
+that might be independently mountable once, available DECtape drive capacity
+as potential DTFS mounts (except the units of the selected TSFS root), and
+one optional MEMFS slot if enabled. Reduce this only for validated complete
+set membership or verified reservations. Use conservative controller maximum
+unit counts where individual physical drive presence cannot safely be probed.
+The selected count must remain a bound on *future* mounts, not only current
+media occupancy. Keep all discovery scratch transient in KINIT.
+
+Current probe limitations: `storage/auxstore_boot.c` explicitly warns that
+probing an unattached Type-270 trailing unit can render its controller
+unusable; `modules/module_minit.c` identifies the disk/drum controllers, not
+each individual unit. DRM AUXSTORE checks DRM0; TSFS boot scans DECtape
+media membership but current tape presence is not lifetime mount capacity.
 
 ## Source constraints verified
 
@@ -49,9 +67,11 @@ device services with harmless probing of unattached physical units.
    Reject out-of-range mount IDs before indexing them. Ensure root handling,
    parent, lookup, readonly policy and mount teardown retain semantics.
 4. Add boot selection: KINIT knows core size, root class and selected root
-   membership; provision capacity for potentially mountable physical units,
-   reducing the count for validated known blocksets only. Separate this work
-   from fixing non-root DRM BLOCKSET discovery; do not perform unsafe I/O.
+   membership; compute an actual mount-slot capacity from the installed
+   hardware's safe-to-establish limits, conservatively counting unconfirmed
+   disk/drum units and preserving future DTFS mountability. Reduce the count
+   for validated known blocksets only. Separate this from correcting non-root
+   DRM BLOCKSET discovery; do not perform unsafe I/O.
 5. Test four-slot baseline, 16 and 17 slots, root-only and mixed filesystems,
    exhaustion, mount-ID reuse, RO/remount and SWAP/LOGSTORE pinning; place
    tests in daimos-testkit. Compare full post-p10fold KCORE and permanent plus
