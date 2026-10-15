@@ -75,7 +75,7 @@ int proc_packed_evict_transaction_v32(unsigned int slot,
 /* Inactive registry-aware eviction. Unlike v32 it must publish to the
  * boot-selected MM-authoritative registry before clearing TRANSITION.
  * On an unrecoverable post-commit error it leaves TRANSITION held. */
-int proc_packed_evict_transaction_v45(unsigned int slot,
+int proc_packed_evict_reg_v45(unsigned int slot,
     kword_t retained_offset, unsigned int encoded_capacity,
     proc_packed_encoder_v32 encoder);
 int proc_packed_restore_transaction_v31(unsigned int slot,
@@ -84,7 +84,7 @@ int proc_packed_restore_transaction_v31(unsigned int slot,
     proc_packed_pure_reload_v31 reload_pure);
 /* Registry-backed restore; retires the selected layout only after MM free.
  * Staged, not connected to the production scheduler. */
-int proc_packed_restore_transaction_v46(unsigned int slot, kword_t backing,
+int proc_packed_restore_reg_v46(unsigned int slot, kword_t backing,
     proc_packed_decoder_v26 decoder,
     proc_packed_pure_reload_v31 reload_pure);
 
