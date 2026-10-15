@@ -643,7 +643,7 @@ native_sys_fsinfo:
         add     17,kconst_7_7
         movem   3,-6(17)                ; logical user result pointer
         hrrz    4,2                     ; zero-based mount slot
-        caile   4,3
+        caml    4,vfs_mount_limit
         jrst    native_sys_fsinfo_bad
         move    5,vfs_mount_root(4)
         jumpe   5,native_sys_fsinfo_empty

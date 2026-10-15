@@ -1,3 +1,15 @@
+## 2026-10-15 VFS SHARED RUNTIME SLOT LIMIT V11
+
+The live four-slot VFS now reads one resident `vfs_mount_limit` word instead
+of duplicating immediate four-slot bounds in native VFS and FSINFO assembly.
+PURE swap attachment also validates against that limit. It starts at four
+and cannot be raised until KINIT publishes MM-backed tables for all providers.
+PDP-6 execution tests pass with a test-only reduced bound of two and confirm
+overflow rejection, storage-reservation bounds, and mount-slot reuse.
+Dedicated disk/tape permanent-size gates pass (disk single last 036656,
+multi 036717, tape 036030, octal). The change adds three permanent words
+over the v10 mount-width fix. Dynamic 16-slot KINIT activation is pending.
+
 ## 2026-10-15 SWAP BACKING MOUNT-WIDTH CORRECTION V10
 
 Preparatory VFS work targets boot-configured mount capacity <=16. The active

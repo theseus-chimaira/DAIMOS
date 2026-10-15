@@ -60,7 +60,11 @@ typedef kword_t vnode_t;
 #define VFS_NAME_WORDS       4U
 #define VFS_NAME_MAX_CHARS   (VFS_NAME_WORDS * 6U)
 
+/* Legacy fixed provider-array extent until coordinated MM-slab migration.
+ * Runtime VFS bounds are checked against vfs_mount_limit (currently four).
+ * The upper supported capacity after cutover is sixteen. */
 #define VFS_NMOUNT           4U
+extern kword_t vfs_mount_limit;
 #define VFS_ID_MASK          0777U
 #define VFS_OWNER_SHIFT      9U
 #define VFS_OWNER_PACK(uid, gid) \

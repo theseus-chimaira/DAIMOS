@@ -1,5 +1,26 @@
 # VFS mount capacity: boot sizing and 16-slot upper bound (2026-10-15)
 
+## Production runtime mount-count bound (v11)
+
+Production `fs/vfs.s` exports `vfs_mount_limit`, initialized to four in its
+resident DATA section. All active VFS slot bounds (lookup, parent, readonly,
+storage release, mount insertion, shutdown and unmount) compare against that
+word rather than hard-coding 4. `native_sys_fsinfo` uses the same bound;
+`proc_swap_attach` uses it when validating an executable backing mount.
+The fixed target/root/provider arrays remain four entries, so no code sets
+`vfs_mount_limit` above four yet. It must be updated only after KINIT has
+allocated and published all boot-sized tables and provider state.
+
+Dedicated-root linked gates pass: disk single last 036656 (593 decimal free),
+disk multi last 036717 (560 free), tape last 036030 (999 free). The extra
+shared limit and its consumers cost three linked permanent words relative
+to v10. Native PDP-6 VFS reservation/mutation and PURE swap tests pass.
+`daimos-testkit/tests/validation/daimos-vfs-runtime-limit-v11.sh` also sets
+the bound to two while the four-slot arrays remain allocated, verifies that
+a third mount and slot-three storage reservation are rejected, and checks
+that unmount/reuse still succeeds. Full native OS boot and >4 live mounts
+remain pending.
+
 ## Native one-word PURE backing for 16 mounts (v10)
 
 The production swap backing format contained a previously missed two-bit

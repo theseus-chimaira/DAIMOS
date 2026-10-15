@@ -28,7 +28,7 @@ proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
          * (DTFS/TSFS) use local file/node kind 2.  Keep the one-word swap
          * record validation compact while covering all four providers. */
         if (provider < MEMFS_PROVIDER || provider > TSFS_PROVIDER ||
-            mount == 0U || mount > VFS_NMOUNT ||
+            mount == 0U || mount > (unsigned int)vfs_mount_limit ||
             kind != 1U + (provider & 1U))
                 return -1;
         if (pure == 0U)

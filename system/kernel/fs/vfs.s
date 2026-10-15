@@ -12,6 +12,7 @@
 ; PDP-6 stack.
         .globl  vfs_mount_target
         .globl  vfs_mount_root
+        .globl  vfs_mount_limit
         .globl  vfs_namespace_root
         .globl  mfsdev_lookup
         .globl  mfsproc_lookup
@@ -94,7 +95,7 @@ vfs_lookup_mount_loop:
         camn    7,4
         move    4,vfs_mount_root(6)
         addi    6,1
-        caige   6,4
+        camge   6,vfs_mount_limit
         jrst    vfs_lookup_mount_loop
         popj    17,
 
@@ -230,7 +231,7 @@ vfs_parent:
 vfs_parent_mount:
         ldb     3,[POINT 6,1,11]
         sojl    3,vfs_parent_raw_asm
-        cail   3,4
+        caml    3,vfs_mount_limit
         jrst    vfs_parent_raw_asm
 vfs_parent_mount_check:
         move    4,3
@@ -260,7 +261,7 @@ vfs_parent_name:
         jrst    kret_neg1
         ldb     4,[POINT 6,1,11]
         sojl    4,vfs_parent_name_dispatch
-        cail    4,4
+        caml    4,vfs_mount_limit
         jrst    vfs_parent_name_dispatch
         pushj   17,vfs_parent_resolve_slot
 vfs_parent_name_dispatch:
@@ -776,7 +777,7 @@ vfs_writechar:
 vfs_readonly:
         ldb     1,[POINT 6,1,11]        ; mount id
         sojl    1,kret_zero
-        cail   1,4
+        caml    1,vfs_mount_limit
         jrst    kret_zero
 vfs_readonly_slot:
         skipn   vfs_mount_root(1)
@@ -793,7 +794,7 @@ vfs_readonly_slot:
         .globl  vfs_storage_release
 vfs_storage_release:
         sojl    1,kret_neg1       ; public mount id -> zero-based slot
-        cail    1,4
+        caml    1,vfs_mount_limit
         jrst    kret_neg1
         trne    2,0777357              ; only SWAP(020) | LOGSTORE(0400)
         jrst    kret_neg1
@@ -891,7 +892,7 @@ vfs_mount_find_loop:
         camn    6,1
         jrst    vfs_mount_find_full
         addi    7,1
-        caige   7,4
+        camge   7,vfs_mount_limit
         jrst    vfs_mount_find_loop
 vfs_mount_find_full:
         seto    0,
@@ -951,7 +952,7 @@ vfs_shutdown_root:
         jrst    kret_zero
         ldb     2,[POINT 6,1,11]        ; mount id
         sojl    2,kret_neg1
-        cail    2,4
+        caml    2,vfs_mount_limit
         jrst    kret_neg1
         movei   4,1
         lsh     4,0(2)
@@ -967,7 +968,7 @@ vfs_shutdown_root:
 vfs_unmount:
         ldb     2,[POINT 6,1,11]
         sojl    2,kret_neg1
-        cail   2,4
+        caml    2,vfs_mount_limit
         jrst    kret_neg1
 vfs_unmount_slot:
         move    3,vfs_mount_root(2)
@@ -1033,6 +1034,10 @@ vfs_unmount_fail:
         jrst    kret_neg1
 
         .data
+; Remains four until KINIT can atomically publish all six MM-backed arrays.
+; The live upper bound is never allowed to exceed sixteen mounts.
+vfs_mount_limit:
+        .word   4
         .globl  monitorfs_names
 ; Four words per static MonitorFS namespace component: length, two SIXBIT
 ; words, and canonical vnode.  Lookup, readdir, and getcwd share this table.
