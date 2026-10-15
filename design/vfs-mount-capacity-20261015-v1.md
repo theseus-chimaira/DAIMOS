@@ -54,6 +54,19 @@ canary checking) live in `daimos-testkit/tests/system/vfs-mount-slab-v4`;
 PDP-6 GCC source assembly generation passes, but no linked size or boot test
 has been performed. The owner tag 020 octal is reserved for this staged slab.
 
+## Staged native mount lookup (v5)
+
+`system/kernel/fs/vfs_mount_access_v5.s` is the first standalone native
+consumer of the proposed slab. It takes explicit absolute target/root bases,
+the KINIT-selected capacity and a target vnode, searches only in-bounds slots,
+and returns an occupied matching root (or zero). It skips unpublished entries
+even if the target matches, preserving the empty-slot distinction. Its DAS
+standalone assembly succeeds. It is intentionally not linked into active
+KCORE, and no native execution test is claimed. Before cutover, add a native
+testkit execution fixture and migrate remaining parent, lookup, mount,
+unmount and FSINFO paths as a coordinated change. Direct fixed-symbol access
+cannot safely coexist with slab-based publication.
+
 ## Capacity policy
 
 MONITORFS built-in entries consume no VFS mount slot. The root D6FS or TSFS
