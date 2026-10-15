@@ -1,3 +1,13 @@
+## V092 GROUPED CODEC SOURCE CLEANUP
+
+- Completed: remove four obsolete, unlinked experimental kernel
+  codec sources; linked KCORE byte-identical, low-core endpoint
+  remains 024130 octal (0-word resident saving).
+- Retain active grouped encoder and decoder sources still used by
+  KCORE or native tests; further reduction must target *linked* code.
+- Complete other Stage-1 device, TSFS, full 256K pressure/eviction,
+  failure injection and stack watermark acceptance; exclude 32K.
+
 ## GROUPED CODEC V091 PURE SWAP ACCEPTANCE
 
 - Native PDP-6 assembly `proc_swap_out`/`proc_swap_in` grouped-PURE

@@ -1,3 +1,19 @@
+## 2026-10-15 V092 OBSOLETE CODEC SOURCE CLEANUP
+
+Deleted four unlinked experimental kernel codec sources:
+`d6codec_decode_v053.s`, `d6codec_decode_v059.s`,
+`d6codec_kcore_abi_v055.s`, and `d6codec_vfs_v062.s`.
+The active grouped encoder `d6codec_encode_v053.s`, kernel frontend
+`d6lz_pdp6.s`, and separately exercised grouped native decoder
+`d6codec_decode_group_v061.s` remain in place. Full 256K GCC
+KCORE before/after builds succeeded and produced byte-identical
+`kcore.dxr`: 10218 container words in both cases; linked
+`__kcore_low_end=024130`, `__kcore_low_init_end=023402` and
+`d6lz_image_end=000252` (octal), unchanged. Net resident
+RAM savings: **zero words**; this is repository source cleanup.
+The post-cleanup 256K PDP-6 DSK boot reached D6FS LOADED,
+INIT V1 and LOGIN. 32K configurations remain excluded.
+
 ## 2026-10-15 NATIVE GROUPED PURE SWAP RELOAD V091
 
 `daimos-testkit/tests/target/daimos-swap-pure-grouped-v091` PASSes
