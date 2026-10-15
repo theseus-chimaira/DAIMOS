@@ -1,3 +1,19 @@
+# 2026-10-15 v153: DTC Stage1 size-cap repair (D6FS-online gate pending)
+
+- DTC Stage1 had grown to 112 words versus the existing 106-word boot cap.
+  Simplified the raw handoff using the already-incremented AC1 destination,
+  shared its final KINIT jump/AC cleanup with the compressed handoff, removed
+  redundant jumps before the common fatal diagnostic, and combined the two
+  disjoint fatal DTC status masks (034 and 002) into an equivalent 036 test.
+- Assembled DTC Stage1 is now `000152` octal = 106 decimal words, no change
+  to compressed stream layout, decoder, header checks, or controller operation.
+  Full Stage1 size sweep passes: DSK 350/352, DRM 342/342, DTC 106/106,
+  MTC 106/106, PTR 139/139, shared decoder 40/62 words.
+- Production Type-551 two-block streaming test PASS. Complete DTC online
+  boot acceptance is still pending because D6FS image construction fails its
+  post-format `d6fsck` with allocated leaked blocks; this is a separate
+  filesystem-imaging issue and not evidence about the revised Stage1.
+
 # 2026-10-15 v152: corrected 256K target and full-profile boot acceptance
 
 - Earlier `254K` mentions were a typo: the intended high-memory PDP-6 target
