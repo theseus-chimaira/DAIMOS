@@ -38,6 +38,22 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v075 isolated userspace grouped compressor
+
+Added an inactive userspace entry `d6codec_group_v075_compress_fd`
+in `userland/d6lz/d6codec_group_v075.c`. It streams fixed chunks of up
+to 30 source words into grouped-format output with zero-run, overlapping
+word-reference and literal tokens. It keeps 76 words of static workspace
+and requires no allocation. The native PDP-6 GCC compile, DAS assembly,
+and exported-symbol validation pass in
+`daimos-testkit/tests/validation/d6codec-userland-v075`.
+
+This is a **build-only checkpoint**: real userspace file I/O, generated
+bitstream parity, failed-write handling, halfword-match generation and
+the existing `d6lz -X` integration have **not** been validated. The
+production D6LZ36 utility and image format remain unchanged. At complete
+integration, run all applicable regressions except 32K configurations.
+
 ### v074 host halfword-match emission
 
 The staged v072 host encoder now searches odd 18-bit halfword distances
