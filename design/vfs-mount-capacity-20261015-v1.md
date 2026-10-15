@@ -56,6 +56,18 @@ has been performed. The owner tag 020 octal is reserved for this staged slab.
 
 ## Staged native mount lookup (v5)
 
+## Staged parent-boundary conversion (v6)
+
+`system/kernel/fs/vfs_parent_mount_v6.s` extracts the mount-root-to-target
+resolution shared by the existing `vfs_parent` and `vfs_parent_name` paths.
+It decodes the existing six-bit vnode mount ID, enforces the selected 1..16
+capacity, verifies that the vnode equals the currently published root in
+that slot, and then substitutes the corresponding target vnode. It leaves
+all other vnodes unchanged. Both table addresses are explicit arguments;
+there are no four-slot fixed-symbol references. Standalone DAS assembly
+passes; native execution and integration into live parent paths are pending.
+This is intentionally separate from the unrelated filesystem parent dispatch.
+
 `system/kernel/fs/vfs_mount_access_v5.s` is the first standalone native
 consumer of the proposed slab. It takes explicit absolute target/root bases,
 the KINIT-selected capacity and a target vnode, searches only in-bounds slots,
