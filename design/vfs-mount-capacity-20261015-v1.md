@@ -2,6 +2,18 @@
 
 Status: design/audit only; implementation and native acceptance pending.
 
+## Staged KINIT capacity calculator (v1)
+
+`system/kernel/boot/vfs_mount_capacity_v1.c` now contains an unlinked,
+side-effect-free calculator. The inputs are the controller-supported physical
+unit counts (disk 0..4, drum 0..4, DECtape 0..8), the validated member mask
+of exactly one selected root set, and the MEMFS availability flag. The result
+counts that root once and all remaining supported physical units individually,
+plus optional MEMFS. It rejects invalid masks and inconsistent root selection.
+This is not yet connected to live KINIT, and is not a claim of native boot
+acceptance. Its standalone tests live in daimos-testkit at
+`tests/system/vfs-mount-capacity-v1`.
+
 ## Capacity policy
 
 MONITORFS built-in entries consume no VFS mount slot. The root D6FS or TSFS
