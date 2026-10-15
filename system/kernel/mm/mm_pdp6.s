@@ -541,8 +541,7 @@ mm_alloc_aligned_after_compact:
         jumpe   1,mm_alloc_aligned_return
         camge   1,[-3]
         jrst    mm_alloc_aligned_return
-        caige   016,3
-        jrst    mm_alloc_aligned_pressure
+        cail    016,3
         jrst    mm_alloc_aligned_return
 
 mm_alloc_aligned_pressure:

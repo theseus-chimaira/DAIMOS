@@ -1,5 +1,29 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-15 historical allocator comparison and branch reduction v141
+
+Reviewed `TS-1.4/exec/core.mac`: `CORE1` and `CORHOL` scan a bitmap of
+1K-word physical blocks (`CORTAB`, `CORTAL`), with `CORSTG` marking used
+blocks. This is not an equivalent word-granular allocator: converting
+DAIMOS's aligned variable-size extents to 1K allocation granularity would
+cost RAM through internal fragmentation. Reject as a direct replacement.
+
+The existing source comparison in the v097 historical audit (available in
+git history) found no interchangeable smaller allocator in ITS-138 or JOSS:
+ITS uses distinct process/block and buffer-management mechanisms; the JOSS
+supervisor is primarily supplied as scanned archival listings without a
+verified matching gap-search entry. Their scheduling, core movement and
+pinning strategies remain useful design references, not size evidence.
+
+For a conservative instruction-level reduction, replaced the two-jump
+stage-limit dispatch in native `mm_alloc_aligned` with inverted compare and
+fallthrough. On top of v140, a fresh GCC 32K disk-root image packages and
+the KCORE exclusive endpoint changes `023452` -> `023451` octal (one
+resident word saved). The path with stages less than three executes one
+fewer jump; exhaustion retains the return branch. No BSS change and no
+new data structure. Native regression/timing validation is still pending;
+this is not yet runtime acceptance.
+
 ## 2026-10-15 allocator retry setup consolidation v140
 
 The native PDP-6 `mm_alloc_aligned` contains two copies of the
