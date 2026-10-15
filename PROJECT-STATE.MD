@@ -1,3 +1,17 @@
+## 2026-10-15 GENUINE PURE GROUPED DXR V090
+
+`daimos-testkit/tests/validation/d6codec-pure-v090` proves that host
+`dlink --pure` creates an actual PURE DXR and rejects a definite TEXT
+store, then host `d6lz -x` compresses its initialized image with the
+sole grouped codec. Independent host decoding reproduces the complete
+image and relocation map; the native PDP-6 grouped decoder reconstructs
+the linked image (PASS). This is *not* a true swap-in test: no call to
+`proc_swap_reload_pure` was exercised. The existing `mm-v1` swap fixture
+uses uncompressed backing and full-image swap, so it cannot be counted
+as grouped PURE reload acceptance. A deterministic swap-in fixture with
+observed grouped reload and exact writable-state checks remains open.
+Final regression excludes 32K configurations.
+
 ## 2026-10-15 PURE HOST LINKER ABSOLUTE TEXT RANGE V089
 
 Host `dlink --pure` incorrectly compared absolute instruction effective

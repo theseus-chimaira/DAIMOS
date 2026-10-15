@@ -1,3 +1,15 @@
+## GROUPED CODEC V090 REMAINING PURE SWAP GATE
+
+- Completed: genuine linked `--pure` grouped-compressed DXR, identical
+  decoded image/relocation map, native PDP-6 reconstruction, and negative
+  direct TEXT-write linker test (`daimos-testkit` v090).
+- Extend the `mm-v1` whole-image/uncompressed swap fixture to provide
+  grouped compressed backing, omit the proper PURE prefix, force actual
+  `proc_swap_out` and `proc_swap_in`, and verify the new loader executed,
+  restored text exactly and preserved the writable swap suffix.
+- Distinguish real provider/swap invocation from independent decoder runs;
+  exclude 32K configurations from complete acceptance testing.
+
 ## GROUPED CODEC V089 PURE LINKER FOLLOW-UP
 
 - Host dlink now checks direct TEXT stores against the absolute image base;
