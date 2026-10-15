@@ -38,6 +38,18 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v072 bounded staged host encoder
+
+`tools/host/d6codec-group-v072.c` adds a caller-buffered C99 encoder for
+the grouped 36-bit stream format, with zero-run and overlapping word-match
+descriptors and literal fallback. It uses no heap or temporary arrays and
+does not alter the active D6LZ36 producer. The testkit v072 suite passes
+a 350-word mixed-input round trip and a sequence of short-input cases
+against the independent v071 decoder. The six v071 decoder cases also pass.
+Halfword-match emission, complete native compressed-stream parity, and
+production host/userspace producer cutover remain open. On eventual
+integration run all applicable tests except 32K configurations.
+
 ### v071 staged C99 host reference decoder
 
 Added `tools/host/d6codec-group-v071.c` and `.h` as an independent
