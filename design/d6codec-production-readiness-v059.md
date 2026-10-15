@@ -38,6 +38,20 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v067 staged VFS adapter register preservation
+
+The native PDP-6 regression at
+`daimos-testkit/tests/validation/d6codec-vfs-v067` checks AC10..AC16
+after each of three adapter calls: successful short-read decoding,
+premature EOF, and truncated compressed input. All paths preserve the
+callee-saved registers (PASS). This uses a test-only VFS stub, not the
+real D6FS, DTFS, or TSFS provider. No codec source changes were needed.
+
+Real-provider integration remains blocked on a dedicated test-only
+kernel link/call path and nested stack measurements under provider
+serialization and cache-miss conditions. Legacy Stage-1 and production
+D6LZ36 remain unchanged.
+
 ### v066 full-window group carry and provider-dispatch inspection
 
 The native PDP-6 test in `daimos-testkit/tests/validation/d6codec-vfs-v066`
