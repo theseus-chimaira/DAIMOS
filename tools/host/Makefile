@@ -28,8 +28,8 @@ build: $(PROGRAMS)
 $(BUILD):
 	mkdir -p $@
 
-$(BUILD)/d6lz: d6lz.c | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ d6lz.c
+$(BUILD)/d6lz: d6lz.c d6codec-group-v072.c d6codec-group-v071.h | $(BUILD)
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ d6lz.c d6codec-group-v072.c
 
 $(BUILD)/mkdsk: mkdsk.c | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mkdsk.c
@@ -61,14 +61,14 @@ $(BUILD)/mkdt: mkdt.c | $(BUILD)
 $(BUILD)/dta2dtr: dta2dtr.c | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ dta2dtr.c
 
-$(BUILD)/mktsfs: mktsfs.c tsfs-format.c tsfs-format.h d6lz-codec.c d6lz-codec.h | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mktsfs.c tsfs-format.c d6lz-codec.c
+$(BUILD)/mktsfs: mktsfs.c tsfs-format.c tsfs-format.h d6lz-codec.c d6lz-codec.h d6codec-group-v071.c d6codec-group-v072.c d6codec-group-v071.h | $(BUILD)
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mktsfs.c tsfs-format.c d6lz-codec.c d6codec-group-v071.c d6codec-group-v072.c
 
 $(BUILD)/mkdtfs: mkdtfs.c tsfs-format.h | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mkdtfs.c
 
-$(BUILD)/tsfscheck: tsfscheck.c tsfs-format.c tsfs-format.h d6lz-codec.c d6lz-codec.h | $(BUILD)
-	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ tsfscheck.c tsfs-format.c d6lz-codec.c
+$(BUILD)/tsfscheck: tsfscheck.c tsfs-format.c tsfs-format.h d6lz-codec.c d6lz-codec.h d6codec-group-v071.c d6codec-group-v072.c d6codec-group-v071.h | $(BUILD)
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ tsfscheck.c tsfs-format.c d6lz-codec.c d6codec-group-v071.c d6codec-group-v072.c
 
 $(BUILD)/mkstream: mkstream.c | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mkstream.c

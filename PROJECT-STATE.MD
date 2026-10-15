@@ -1,3 +1,16 @@
+## 2026-10-15 HOST SINGLE CODEC MIGRATION V082 (INCOMPLETE)
+
+The host `d6lz` compressor and TSFS `d6lz-codec` compressor/decompressor
+now use the grouped codec exclusively. The native grouped VFS adapter
+correctly rejects trailing compressed words and passes v081 plus earlier
+regressions. A fresh full-profile GCC boot build currently fails linking
+`kinit.dxr` at `undefined symbol: dtfs_minit`, before bootstream creation.
+Stage-1 at 000060, KCORE legacy decoder, userspace default, all generated
+artifacts and other runtime consumers remain **unmigrated**. Do not claim
+a single-codec production cutover or passing boot tests yet. Resolve
+`dtfs_minit` and replace the 000060 decoder ABI, then regenerate all images
+and run the full regression matrix except 32K.
+
 ## 2026-10-15 SINGLE GROUPED CODEC MANDATE V080
 
 The interim TXG-vs-TX2 selection scheme is cancelled. A DXR compressed

@@ -87,15 +87,13 @@ cv_count:
         jumpn   1,cv_consumed
         ; Exact output reached: no buffered or unread trailing words.
         move    0,CV_GROUP(17)
-        camn    0,CV_USED(17)
-        skipn   CV_LEFT(17)
-        jrst    cv_finish_check
+        camn    0,CV_USED(17)          ; unequal skips success path
+        jrst    cv_finish_left
         jrst    cv_bad
-cv_finish_check:
-        move    0,CV_GROUP(17)
-        camn    0,CV_USED(17)
+cv_finish_left:
+        skipe   CV_LEFT(17)            ; zero skips failure path
+        jrst    cv_bad
         jrst    cv_good
-        jrst    cv_bad
 cv_consumed:
         ; Move unconsumed words down; bounded maximum 63 words.
         move    6,CV_USED(17)

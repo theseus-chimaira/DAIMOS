@@ -28,6 +28,14 @@
 
 # DAIMOS TODO
 
+## GROUPED D6 CODEC V082 BUILD BLOCKER (2026-10-15)
+
+- Fix unresolved `dtfs_minit` during full-profile GCC KINIT link before
+  interpreting any compressed boot image result.
+- Replace the fixed-000060 Stage-1 decoder and all callers/producers as a
+  coordinated change. The host compressor has already switched to grouped
+  output; existing installed host tools must be rebuilt before use.
+
 ## GROUPED D6 CODEC V080: SINGLE FORMAT, NO DISPATCH (2026-10-15)
 
 - Remove all legacy compressor and decompressor implementations, including

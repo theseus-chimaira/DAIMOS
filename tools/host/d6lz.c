@@ -1,3 +1,4 @@
+#include "d6codec-group-v071.h"
 #include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -157,52 +158,16 @@ static uint64_t six3(char a, char b, char c)
 
 static uint64_t *compress_words(const uint64_t *in, size_t n, size_t *outn)
 {
-    size_t cap, op, pos;
     uint64_t *out;
-
-    cap = n + (n + 35U) / 36U + 1U;
-    out = cap == 0U ? NULL : (uint64_t *)malloc(cap * sizeof(*out));
-    if (cap != 0U && out == NULL)
+    size_t cap;
+    if (n > (SIZE_MAX - 32U) / 2U)
+        die("compressed input too large");
+    cap = 2U * n + 32U;
+    out = malloc(cap * sizeof(*out));
+    if (out == NULL)
         die("out of memory");
-    op = 0U;
-    pos = 0U;
-    while (pos < n) {
-        size_t ctrl_pos = op++;
-        uint64_t control = 0U;
-        unsigned tok;
-
-        for (tok = 0U; tok < 36U && pos < n; ++tok) {
-            size_t best_len = 0U;
-            size_t best_dist = 0U;
-            size_t max_dist = pos < D6LZ_WINDOW ? pos : D6LZ_WINDOW;
-            size_t dist;
-
-            for (dist = 1U; dist <= max_dist; ++dist) {
-                size_t len = 0U;
-                size_t max_len = n - pos;
-                if (max_len > D6LZ_MAX)
-                    max_len = D6LZ_MAX;
-                while (len < max_len && in[pos + len] == in[pos + len - dist])
-                    ++len;
-                if (len >= D6LZ_MIN && len > best_len) {
-                    best_len = len;
-                    best_dist = dist;
-                    if (best_len == D6LZ_MAX)
-                        break;
-                }
-            }
-            if (best_len >= D6LZ_MIN) {
-                control |= UINT64_C(1) << (35U - tok);
-                out[op++] = ((uint64_t)(best_len - D6LZ_MIN) << 7) |
-                    (uint64_t)(best_dist - 1U);
-                pos += best_len;
-            } else {
-                out[op++] = in[pos++];
-            }
-        }
-        out[ctrl_pos] = control;
-    }
-    *outn = op;
+    if (d6codec_group_v072_encode(in, n, out, cap, outn) != 0)
+        die("grouped compression failed");
     return out;
 }
 
