@@ -1,3 +1,16 @@
+## 2026-10-15 SWAP BACKING MOUNT-WIDTH CORRECTION V10
+
+Preparatory VFS work targets boot-configured mount capacity <=16. The active
+one-word executable swap/PURE backing record previously encoded only four
+mount slots. Its two provider bits have been reassigned to the mount field,
+giving index:18, mount:4, PURE-text:14 while retaining exactly one word per
+process. Native restore recovers the provider from the mounted root; swapped
+PURE processes keep their backing mount busy. PDP-6 tests for raw/compressed
+PURE swap and mount-16 reconstruction pass. The disk and tape dedicated-root
+permanent-size gates pass; linked permanent footprint is four words smaller
+than the preceding VFS mount-mutation v9 build. This does NOT activate VFS
+mounts above four: dynamic slab callers and KINIT connection remain pending.
+
 ## 2026-10-14 LIBC STRING ASM/C SPLIT V1
 
 DAIMOS libc now uses PDP-6 assembler for `memset`, `memcmp`, `strlen`,

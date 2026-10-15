@@ -1,5 +1,31 @@
 # VFS mount capacity: boot sizing and 16-slot upper bound (2026-10-15)
 
+## Native one-word PURE backing for 16 mounts (v10)
+
+The production swap backing format contained a previously missed two-bit
+mount-slot field (`PROC_SWAP_MOUNT_MASK=03`). Merely widening VFS tables
+would cause swapped PURE executables from mounts 5..16 to be reconstructed
+from the wrong volume. The corrected active record retains exactly one
+36-bit word per process: 18 bits of vnode index, 4 bits of zero-based mount
+slot, and 14 bits of PURE-text length. Two former provider bits now belong
+to the mount field. A mount has only one provider, and `proc_swap_mount_busy`
+pins its presence while nonresident PURE text depends on it. The native
+`proc_swap_unpack_backing` therefore reads provider identity from that
+slot's mounted root, returning an unusable/empty backing if it is absent.
+`proc_swap_backing_busy` compares mount/index within that uniquely owned
+slot; its per-process format needs no additional RAM. Mount attach remains
+limited to the active four-slot VFS until the common runtime migration.
+
+Native PDP-6 full PURE swap tests pass after updating their fixture to link
+the production PURE backing/storage-state assembly and initialize the
+storage-mode map. A separate versioned PDP-6 test validates 16th-slot
+provider reconstruction, maximum 14-bit text length and missing-root
+rejection (`daimos-testkit/tests/target/daimos-swap-mount16-pdp6-v10`).
+The linked permanent-size gates pass for both dedicated profiles. Relative
+to v9, permanent last addresses decrease by 4 decimal words: disk single
+036653 (596 decimal free), disk multi 036714 (563 free), tape 036025
+(1002 free). The active VFS remains limited to four mounts.
+
 ## Linked size baseline (2026-10-15)
 
 Following the KCC-safe staged packed-function symbol fix, the complete

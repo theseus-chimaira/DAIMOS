@@ -19,11 +19,16 @@
 #define PROC_SWAP_RECORD_WORDS 1U
 #define PROC_SWAP_TEXT_MASK       037777UL
 #define PROC_SWAP_INDEX_MASK      0777777UL
-#define PROC_SWAP_MOUNT_MASK      03UL
-#define PROC_SWAP_PROVIDER_MASK   03UL
+#define PROC_SWAP_MOUNT_MASK      017UL
 #define PROC_SWAP_MOUNT_SHIFT     18U
-#define PROC_SWAP_PROVIDER_SHIFT  20U
 #define PROC_SWAP_TEXT_SHIFT      22U
+
+/* Resident record (one 36-bit word): index:18 | mount slot:4 | PURE text:14.
+ * A filesystem provider need not be stored: one public mount ID names exactly
+ * one mounted provider. The mount remains pinned while swapped PURE text
+ * depends on its executable, so restore derives the provider from the live
+ * mount root. This preserves the full 18-bit index and 14-bit PURE span while
+ * permitting the boot-sized VFS to use all 16 mount IDs without extra RAM. */
 
 /** One-word resident/swapped process backing descriptor. */
 struct proc_swap_record {

@@ -62,7 +62,6 @@
         .equ    PROC_SWAP_TEXT_MASK,037777
         .equ    PROC_SWAP_TEXT_SHIFT,026
         .equ    PROC_SWAP_MOUNT_SHIFT,022
-        .equ    PROC_SWAP_PROVIDER_SHIFT,024
 
 /* Return the complete 0200-word sectors covered by low user words + PURE text. */
 proc_swap_skip_words:

@@ -37,8 +37,6 @@ proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
                 return -1;
         packed = VFS_INDEX(backing);
         packed |= (kword_t)(mount - 1U) << PROC_SWAP_MOUNT_SHIFT;
-        packed |= (kword_t)(provider - MEMFS_PROVIDER) <<
-            PROC_SWAP_PROVIDER_SHIFT;
         packed |= text_words << PROC_SWAP_TEXT_SHIFT;
         proc_swap_records[slot].state = packed;
         return 0;
