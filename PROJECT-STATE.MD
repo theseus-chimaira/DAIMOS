@@ -1,3 +1,15 @@
+## 2026-10-15 GROUPED CODEC PURE DXR ADMISSION V087
+
+`daimos-testkit/tests/system/d6codec-pure-admission-v087` passed on a
+fresh 256K GCC PDP-6 D6FS boot: a test-only copy of grouped-compressed
+`LS` marked with DXR PURE and COMPRESSED executes correctly, alongside
+the prior external EXEC, file extraction and independent host/native
+decode probes. The PURE bit was applied after linking, *not* produced
+through DLINK `--PURE` text-write validation. The run establishes header
+admission and initial EXEC loading only, **not** PURE swap eviction or
+reload of the grouped payload. That remains the next required test.
+All complete acceptance matrices exclude 32K configurations.
+
 ## 2026-10-15 GROUPED CODEC COMPRESSED EXEC V086
 
 The fresh 256K GCC PDP-6 D6FS system regression

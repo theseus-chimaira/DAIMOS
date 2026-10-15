@@ -1,3 +1,12 @@
+## GROUPED CODEC V087 PURE RELOAD GATE
+
+- Completed: test-only PURE-marked grouped DXR admission, compressed LS
+  execution, and full 256K D6FS host/native extraction parity.
+- Required next: link a **genuine** PURE image through DLINK `--PURE`,
+  validate the toolchain's no-text-write contract, trigger real process
+  eviction and reload, and compare reconstructed text and writable state.
+- Do not describe flag-only admission as proof of backing reload.
+
 ## GROUPED CODEC V086 REMAINING ACCEPTANCE
 
 - Compressed external EXEC through D6FS: validated on PDP-6 256K
