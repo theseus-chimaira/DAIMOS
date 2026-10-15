@@ -4,7 +4,7 @@
 
 #include "kcore.h"
 
-#define VFS_LAYOUT_V3_MAX_MOUNTS 17U
+#define VFS_LAYOUT_V3_MAX_MOUNTS 16U
 
 /* The common slab is intentionally contiguous. Offset units are PDP-6
  * 36-bit words, not host bytes. Never store host pointers in the layout. */

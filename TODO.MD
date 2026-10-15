@@ -42,8 +42,8 @@
   impossible non-root TSFS sets; the boot TSFS root counts as one mount.
 - [ ] Audit VFS mount tables, mount-ID dispatch, D6FS/DTFS/TSFS/MEMFS mount
   state, and packed per-mount policy before selecting a boot-time capacity.
-  Compare 16 and 17 mounts by full post-fold resident plus dynamic RAM cost;
-  retain 17 if the extra slot is inexpensive. Account for future/removable
+  Enforce a maximum of 16 mounts and size dynamically at boot; a theoretical
+  17th simultaneously mountable volume is not supported. Account for future/removable
   media rather than sizing solely to currently mounted filesystems. Audit and
   implementation sequence: `design/vfs-mount-capacity-20261015-v1.md`.
 - [ ] Defer block-cache policy changes pending a separate design discussion.

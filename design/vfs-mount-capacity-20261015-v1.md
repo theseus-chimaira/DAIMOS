@@ -1,4 +1,4 @@
-# VFS mount capacity: boot sizing and 17-slot upper bound (2026-10-15)
+# VFS mount capacity: boot sizing and 16-slot upper bound (2026-10-15)
 
 Status: design/audit only; implementation and native acceptance pending.
 
@@ -9,7 +9,7 @@ side-effect-free calculator. The inputs are the controller-supported physical
 unit counts (disk 0..4, drum 0..4, DECtape 0..8), the validated member mask
 of exactly one selected root set, and the MEMFS availability flag. The result
 counts that root once and all remaining supported physical units individually,
-plus optional MEMFS. It rejects invalid masks and inconsistent root selection.
+plus optional MEMFS, capped at 16 simultaneous mounts. It rejects invalid masks and inconsistent root selection.
 This is not yet connected to live KINIT, and is not a claim of native boot
 acceptance. Its standalone tests live in daimos-testkit at
 `tests/system/vfs-mount-capacity-v1`.
@@ -18,7 +18,7 @@ acceptance. Its standalone tests live in daimos-testkit at
 
 `system/kernel/fs/vfs_mount_policy_v2.c/.h` implements a separate, unlinked
 policy object with one 36-bit bitmap each for readonly, SWAP reservation and
-LOGSTORE reservation. The selected capacity is validated in 1..17; all
+LOGSTORE reservation. The selected capacity is validated in 1..16; all
 accesses validate slot bounds. Reservations are exclusive across mounts;
 release checks ownership before mutation, remount can toggle readonly and
 unmount can clear all three bits for slot reuse. The policy uses three maps
@@ -35,11 +35,11 @@ necessary before v2 can be linked and activated.
 MM-owned region sized to the boot-selected mount capacity. Six one-word-per-
 mount arrays are planned: VFS target, VFS root, D6FS reader, shared DTFS/TSFS
 media, TSFS file shape and TSFS extent locator. The exact offsets are derived
-once from capacity; 4 mounts require 24 words, 17 mounts require 102 words.
+once from capacity; 4 mounts require 24 words, 16 mounts require 96 words.
 No resident array has been converted to use the slab yet. This is a staged
 planner, not an active allocation. It deliberately does not force separate
 arrays for all providers and does not include the three-word policy bitmap.
-The layout passes standalone host tests for capacities 1..17, and its C source
+The layout passes standalone host tests for capacities 1..16, and its C source
 generates PDP-6 GCC assembly. Native KCORE sizes are not yet measured.
 
 ## Staged KINIT slab provisioning (v4)
@@ -77,10 +77,10 @@ regardless of member count. Until non-root disk/drum discovery is corrected,
 count every unit outside known root BLOCKSET membership as potentially
 mountable: do not infer a drum belongs to a set or is dedicated to swap.
 
-Support up to 17 slots (the six-bit vnode mount-ID format has sufficient
+Support up to 16 slots (the six-bit vnode mount-ID format has sufficient
 headroom), but allocate only the boot-selected hardware-derived capacity.
 Do not round capacity to a power of two. Three densely packed policy bits
-per mount require two 36-bit words for either 16 or 17 mounts; measure the
+per mount require two 36-bit words at 16 mounts; measure the
 additional provider table entries and code separately. Preserve mount slots
 for removable media, not just currently mounted volumes. Do not equate
 installed controller services with safely detected individual drives.
@@ -109,7 +109,7 @@ media membership but current tape presence is not lifetime mount capacity.
   MonitorFS input counter slot. It contains four per-slot groups: readonly
   bit 0, SWAP bit 4, LOGSTORE bit 8 (shifted by mount index).
 - `fs/vfs.s`: mount flags, storage reservation tests, and unmount clearing
-  rely on the one-word packing. A simple 4->17 limit change is invalid.
+  rely on the one-word packing. A simple 4->16 limit change is invalid.
 - `fs/d6fs_runtime.s`: remount flips `vfs_mount_ro` with XOR.
 - `proc/syscall_dispatch_pdp6.s`: FSINFO accepts only slots 0..3 and reads
   the readonly bit directly from `vfs_mount_ro`.
@@ -131,8 +131,8 @@ reader-pointer and per-provider metadata only after all access conventions are
 converted together; ensure unmount reuse clears every per-mount field.
 
 One 36-bit policy word holds 36 independently indexed RO bits; storing three
-independent 17-bit RO/SWAP/LOGSTORE maps needs three words. A fully packed
-three-bit-per-mount encoding needs two words for 17 mounts, but may cost more
+independent 16-bit RO/SWAP/LOGSTORE maps needs three words. A fully packed
+three-bit-per-mount encoding needs two words for 16 mounts, but may cost more
 instructions in the hot path. Measure both implementations, rather than
 assuming the minimum policy bits minimize total resident RAM.
 
@@ -152,7 +152,7 @@ DECtape capacity; later removable DTFS volumes need reserved slots.
 ## Implementation sequence
 
 1. Define and test a per-slot mount-policy representation that can encode
-   RO, SWAP and LOGSTORE independently for at least 17 mount slots. Avoid
+   RO, SWAP and LOGSTORE independently for up to 16 mount slots. Avoid
    introducing branches into ordinary filesystem I/O; compare compact
    representation with a per-mount word. Preserve storage ownership rules,
    atomic publication, and cleanup on mount/remount/unmount/failure.
@@ -168,7 +168,7 @@ DECtape capacity; later removable DTFS volumes need reserved slots.
    disk/drum units and preserving future DTFS mountability. Reduce the count
    for validated known blocksets only. Separate this from correcting non-root
    DRM BLOCKSET discovery; do not perform unsafe I/O.
-5. Test four-slot baseline, 16 and 17 slots, root-only and mixed filesystems,
+5. Test four-slot baseline and 16 slots, root-only and mixed filesystems,
    exhaustion, mount-ID reuse, RO/remount and SWAP/LOGSTORE pinning; place
    tests in daimos-testkit. Compare full post-p10fold KCORE and permanent plus
    dynamic RAM; boot and test on PDP-6 SIMH before activation.

@@ -4,7 +4,7 @@
 
 #include "kcore.h"
 
-#define VFS_POLICY_V2_MAX_MOUNTS 17U
+#define VFS_POLICY_V2_MAX_MOUNTS 16U
 #define VFS_POLICY_V2_RDONLY 1U
 #define VFS_POLICY_V2_SWAP 2U
 #define VFS_POLICY_V2_LOGSTORE 4U

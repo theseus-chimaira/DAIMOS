@@ -7,7 +7,7 @@
 ; vfs_mount_lookup_v5:
 ;   AC1 = absolute target-table base
 ;   AC2 = absolute root-table base
-;   AC3 = selected mount capacity (1..17)
+;   AC3 = selected mount capacity (1..16)
 ;   AC4 = target vnode to find (0 is the namespace root target)
 ; Returns AC1 = matching mounted root, or zero if none. AC5..AC7 scratch.
 ;
@@ -17,7 +17,7 @@
         .globl vfs_mount_lookup_v5
 vfs_mount_lookup_v5:
         jumple 3,vfs_mount_lookup_v5_none
-        caile 3,021                  ; 17 decimal, 021 octal
+        caile 3,020                  ; 16 decimal, 020 octal
         jrst vfs_mount_lookup_v5_none
         setz 5,                      ; zero-based slot
 vfs_mount_lookup_v5_loop:
