@@ -38,6 +38,22 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v070 producer-to-refill decoder regression
+
+`daimos-testkit/tests/validation/d6codec-vfs-v070` now uses the native
+v053 encoder to compress 90 distinct words, reads the encoded stream in
+seven-word fragments through a vnode-style read callback, and validates
+all output words from the v061/v062 grouped decoder. PDP-6 native PASS.
+The callback is not a registered production VFS provider; real-provider
+integration and nested stack measurement remain open.
+
+After atomic integration of the new format and all producers/consumers,
+run the complete applicable DAIMOS and daimos-testkit test suites, including
+boot, FS, EXEC, swap, compression, malformed data, and regression coverage,
+**excluding 32K configurations as requested**. Do not present the current
+staged probe or the 32K development smoke results as post-integration
+acceptance tests.
+
 ### v069 linked-codec boot smoke
 
 Built a fresh GCC 32K disk-root image with `D6CODEC_LINK_PROBE_V068=1`,
