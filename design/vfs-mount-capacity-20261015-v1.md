@@ -1,5 +1,18 @@
 # VFS mount capacity: boot sizing and 16-slot upper bound (2026-10-15)
 
+## Linked size baseline (2026-10-15)
+
+Following the KCC-safe staged packed-function symbol fix, the complete
+`permanent-size` link succeeds but the combined auto-root profile exceeds
+the 040000 permanent-address gate: KCORE 023633, KCORE+MRES 042223,
+permanent last 042302. With `ROOT=disk`, the single-root last address is
+036643 (604 decimal words free) and the multi-member last address is
+036704 (571 free). With `ROOT=tape`, the last address is 036015
+(1010 decimal words free). Both dedicated profiles pass. These are linked
+profile measurements, not native PDP-6 boot acceptance. Future dynamic VFS
+integration should be measured against these distinct build configurations;
+do not mistake the combined auto-root overrun for a universal kernel failure.
+
 Status: design/audit only; implementation and native acceptance pending.
 
 ## Staged KINIT capacity calculator (v1)
