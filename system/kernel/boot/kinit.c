@@ -10,11 +10,15 @@
 #include "mm.h"
 #include "mm_internal.h"
 #include "proc.h"
+#include "vfs_mount_slab_v4.h"
+#include "vfs.h"
 
 
 extern kword_t sys_resident_words_immediate;
 extern kword_t __kcore_load_end;
 extern kword_t __kinit_image_end;
+extern kword_t vfs_mount_target_base;
+extern kword_t vfs_mount_root_base;
 #if KINIT_STACK_WATERMARK
 extern kword_t kinit_stack_highwater;
 #endif
@@ -458,6 +462,7 @@ kinit_enter(void)
         unsigned int memory_kwords;
         kword_t kernel_stack_base;
         kword_t reclaim_end;
+        struct vfs_mount_slab_v4 vfs_slab;
 
 #if KINIT_STACK_WATERMARK
         /* kinit_enter() has already allocated its fixed frame.  Mark only
@@ -525,6 +530,13 @@ kinit_enter(void)
 #endif
         /* Dynamic kernel objects begin only after the packed permanent MRES
          * block is complete.  This keeps KCORE+MRES gapless in low memory. */
+        /* Switch the live VFS target/root arrays together, before mounting
+         * the root. Provider metadata still uses four-entry tables, so the
+         * runtime capacity remains four until their cutover is complete. */
+        if (vfs_mount_slab_v4_prepare(VFS_NMOUNT, &vfs_slab) != 0)
+                kinit_halt();
+        vfs_mount_target_base = vfs_slab.target;
+        vfs_mount_root_base = vfs_slab.root;
         if (mm_alloc(KERNEL_IDLE_STACK_WORDS, MM_TYPE_KERNEL_DYNAMIC, 2U,
             MM_ALLOC_LOW,
             &kernel_stack_base) != MM_OK ||

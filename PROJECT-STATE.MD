@@ -1,3 +1,24 @@
+## 2026-10-15 VFS LIVE MM TARGET/ROOT TABLES V12
+
+KINIT now allocates the 24-word four-slot VFS slab from MM after MRES
+installation and publishes target/root bases before root mount. Production
+VFS, FSINFO, and PURE backing use the MM-backed target/root arrays; provider
+metadata is still fixed and the live mount capacity remains four (maximum
+planned sixteen). The source and complete KINIT image link succeed for the
+dedicated disk-root profile. Fixed-symbol test regressions and a new PDP-6
+test switching table bases to separate arrays pass. The disk-root permanent
+last is 036721, multi-root 036762, and tape-root 036073, octal. Permanent
+text grew 35 decimal words compared to v11; MM adds 24 slab words for four
+slots, partly unused until provider migration. Remove redundant fixed tables
+and optimize pointer hot paths in the final cutover, not by unsafe capacity
+changes now. The module-table conditional DTFS import and explicit KINIT
+object lists were corrected to make the real image link work.
+
+Diagnostic disk-root PDP-6 SIMH boot reached ROOT login and ran an ECHO
+command successfully. The documented DSH_IMAGE_LIMIT=037000 diagnostic
+override was necessary because the unmodified production 036000 DSH gate
+rejects the 036021 DSH image. This is NOT production-size acceptance.
+
 ## 2026-10-15 VFS SHARED RUNTIME SLOT LIMIT V11
 
 The live four-slot VFS now reads one resident `vfs_mount_limit` word instead

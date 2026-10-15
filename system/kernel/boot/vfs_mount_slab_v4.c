@@ -2,9 +2,10 @@
 #include "vfs_mount_slab_v4.h"
 #include "mm.h"
 
-/* Allocate a kernel-owned slab only once the MM arenas exist. The owner is
- * deliberately private to the VFS mount slab; KINIT retains its descriptor
- * until native callers have been switched to the new address convention. */
+/* Allocate a kernel-owned slab only after all MRES packages are installed.
+ * MM keeps the non-movable KERNEL_DYNAMIC extent registered for its entire
+ * lifetime; the transient descriptor is no longer needed after KINIT has
+ * published the absolute table bases into KCORE. */
 #define VFS_MOUNT_SLAB_V4_OWNER 020U
 
 int

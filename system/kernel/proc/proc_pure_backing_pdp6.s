@@ -13,7 +13,7 @@
         .globl d6lz36_decode_vfs
         .globl proc_table
         .globl proc_high_slot
-        .globl vfs_mount_root
+        .globl vfs_mount_root_base
         /* Constants are supplied by the parent proc_swap assembly unit.
          * When this leaf becomes an independently linked package, move the
          * constants into a common assembler include. */
@@ -36,7 +36,9 @@ proc_swap_unpack_backing:
         move    1,5
         lsh     1,-PROC_SWAP_MOUNT_SHIFT
         andi    1,017                   ; 16 zero-based mount slots
-        move    2,vfs_mount_root(1)     ; provider of the still-mounted volume
+        move    2,vfs_mount_root_base
+        add     2,1
+        move    2,(2)                   ; provider of the mounted volume
         jumpe   2,proc_swap_unpack_backing_bad
         lsh     2,-036                  ; vnode provider:6
         caige   2,4                     ; reject anything outside MEMFS..TSFS

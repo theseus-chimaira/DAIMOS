@@ -46,6 +46,11 @@
   17th simultaneously mountable volume is not supported. Account for future/removable
   media rather than sizing solely to currently mounted filesystems. Audit and
   implementation sequence: `design/vfs-mount-capacity-20261015-v1.md`.
+  V12 progress: active target/root arrays now reside in a KINIT-allocated MM
+  slab and pass diagnostic native boot; provider-specific reader, media,
+  shape/extent state and policy still use four-slot layouts. Retire the
+  redundant resident fallback tables and measure the pointer hot paths after
+  all consumers are converted; do not raise `vfs_mount_limit` prematurely.
 - [ ] Defer block-cache policy changes pending a separate design discussion.
 
 

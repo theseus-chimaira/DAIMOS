@@ -1,4 +1,4 @@
-/* KINIT-only MM slab provisioning, staged until VFS callers are converted. */
+/* Transient KINIT MM slab provisioning for boot-sized VFS arrays. */
 #ifndef DAIMON_VFS_MOUNT_SLAB_V4_H
 #define DAIMON_VFS_MOUNT_SLAB_V4_H
 

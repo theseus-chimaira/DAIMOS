@@ -108,6 +108,8 @@ KERNEL_HEADERS = boot/kinit.h \
 	storage/storage.h
 
 KINIT_SRCS = boot/kinit.c \
+        boot/vfs_mount_slab_v4.c \
+        fs/vfs_mount_layout_v3.c \
 	boot/kinit_diag.c \
 	modules/module_minit.c \
 	boot/kinit_boot.c \
@@ -123,6 +125,8 @@ KINIT_SRCS = boot/kinit.c \
 	proc/proc_swap_boot.c
 
 KINIT_C_ASM = $(BUILD)/kinit.s \
+        $(BUILD)/vfs_mount_slab_v4.s \
+        $(BUILD)/vfs_mount_layout_v3.s \
 	$(BUILD)/kinit_diag.s \
 	$(BUILD)/module_minit.s \
 	$(BUILD)/kinit_boot.s \

@@ -645,9 +645,13 @@ native_sys_fsinfo:
         hrrz    4,2                     ; zero-based mount slot
         caml    4,vfs_mount_limit
         jrst    native_sys_fsinfo_bad
-        move    5,vfs_mount_root(4)
+        move    5,vfs_mount_root_base
+        add     5,4
+        move    5,(5)
         jumpe   5,native_sys_fsinfo_empty
-        move    6,vfs_mount_target(4)
+        move    6,vfs_mount_target_base
+        add     6,4
+        move    6,(6)
         jumpn   6,native_sys_fsinfo_have_path
         move    6,vfs_namespace_root    ; root mount is '/'
 native_sys_fsinfo_have_path:

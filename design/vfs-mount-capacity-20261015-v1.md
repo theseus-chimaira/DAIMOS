@@ -1,5 +1,45 @@
 # VFS mount capacity: boot sizing and 16-slot upper bound (2026-10-15)
 
+Status (v12): **partially integrated**. VFS target/root tables are allocated
+from MM by KINIT and used by active native VFS, FSINFO, and PURE backing;
+provider metadata and mount policy still require conversion. The configured
+mount limit remains four, with an eventual maximum of sixteen.
+
+## Production MM-backed VFS target/root tables (v12)
+
+After `module_run_minits()` has finished installing the permanent MRES
+packages, but before `kinit_boot()` mounts the root, KINIT calls
+`vfs_mount_slab_v4_prepare(VFS_NMOUNT, ...)`, zeroes the MM-owned allocation,
+and publishes the `target` and `root` word addresses into the resident
+`vfs_mount_target_base`/`vfs_mount_root_base` pointers. The tables occupy the
+first two of six contiguous per-mount slab arrays. Runtime VFS lookup,
+parent-boundary lookup, mount-slot discovery/publication/retirement, readonly,
+unmount, FSINFO and the PURE swap backing unpacker use these pointer bases.
+Other provider tables still reside in fixed four-entry arrays. KINIT does not
+increase `vfs_mount_limit` above four. Original four-entry VFS BSS tables are
+kept as bootstrap fallback until the whole mount conversion is complete.
+
+With four configured mounts the MM slab is 24 words, of which eight are now
+used for live target/root tables; the other sixteen remain reserved for the
+pending provider migration. The current migration increases folded permanent
+KCORE+MRES by 35 decimal words versus v11 because pointer addressing is more
+expensive than absolute indexed assembly accesses. The dedicated disk-root
+single permanent last is 036721 (558 decimal free), multi 036762 (525 free),
+and tape-root last 036073 (964 free). This is a temporary RAM regression, not
+a demonstrated net saving. After the whole cutover, remove the redundant
+fixed arrays and review boot-patched addressing if hot-path overhead remains.
+
+The first boot-image link also exposed two build-graph issues: the new KINIT
+objects were missing from the explicit image link/object lists, and the MINIT
+table declared `dtfs_minit` unconditionally even when tape boot was disabled.
+Both are corrected. Native PDP-6 execution tests pass for VFS reservation,
+slot reuse, PURE swap, and the relocated-target/root-table case in
+`daimos-testkit/tests/validation/daimos-vfs-slab-live-v12.sh`.
+The disk-root diagnostic SIMH boot reached ROOT login and ran an ECHO command
+with the documented, test-only `DSH_IMAGE_LIMIT=037000` override. The normal
+production DSH gate still rejects the 036021 image against 036000, so no
+production image-size acceptance is claimed.
+
 ## Production runtime mount-count bound (v11)
 
 Production `fs/vfs.s` exports `vfs_mount_limit`, initialized to four in its
@@ -59,8 +99,6 @@ permanent last 042302. With `ROOT=disk`, the single-root last address is
 profile measurements, not native PDP-6 boot acceptance. Future dynamic VFS
 integration should be measured against these distinct build configurations;
 do not mistake the combined auto-root overrun for a universal kernel failure.
-
-Status: design/audit only; implementation and native acceptance pending.
 
 ## Staged KINIT capacity calculator (v1)
 

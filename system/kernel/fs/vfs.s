@@ -12,6 +12,8 @@
 ; PDP-6 stack.
         .globl  vfs_mount_target
         .globl  vfs_mount_root
+        .globl  vfs_mount_target_base
+        .globl  vfs_mount_root_base
         .globl  vfs_mount_limit
         .globl  vfs_namespace_root
         .globl  mfsdev_lookup
@@ -91,9 +93,15 @@ vfs_lookup_pop:
 vfs_lookup_resolve_mount:
         setz    6,
 vfs_lookup_mount_loop:
-        move    7,vfs_mount_target(6)
-        camn    7,4
-        move    4,vfs_mount_root(6)
+        move    7,vfs_mount_target_base
+        add     7,6
+        move    7,(7)
+        came    7,4
+        jrst    vfs_lookup_mount_next
+        move    7,vfs_mount_root_base
+        add     7,6
+        move    4,(7)
+vfs_lookup_mount_next:
         addi    6,1
         camge   6,vfs_mount_limit
         jrst    vfs_lookup_mount_loop
@@ -243,10 +251,14 @@ vfs_parent_mount_check:
 ; The fixed-array addressing is isolated here, ready for the coordinated
 ; boot-sized slab cutover; AC2/AC3 (caller pointers) must remain untouched.
 vfs_parent_resolve_slot:
-        move    5,vfs_mount_root(4)
+        move    5,vfs_mount_root_base
+        add     5,4
+        move    5,(5)
         came    5,1
         popj    17,
-        move    1,vfs_mount_target(4)
+        move    1,vfs_mount_target_base
+        add     1,4
+        move    1,(1)
         popj    17,
 
 ; int vfs_parent_name(node, parentp, namep)
@@ -780,7 +792,9 @@ vfs_readonly:
         caml    1,vfs_mount_limit
         jrst    kret_zero
 vfs_readonly_slot:
-        skipn   vfs_mount_root(1)
+        move    2,vfs_mount_root_base
+        add     2,1
+        skipn   (2)
         jrst    kret_zero
         move    2,vfs_mount_ro
         movn    3,1
@@ -886,9 +900,13 @@ vfs_mount_find:
 vfs_mount_find_slot:
         setz    7,
 vfs_mount_find_loop:
-        skipn   vfs_mount_root(7)
+        move    6,vfs_mount_root_base
+        add     6,7
+        skipn   (6)
         jrst    vfs_mount_find_free
-        move    6,vfs_mount_target(7)
+        move    6,vfs_mount_target_base
+        add     6,7
+        move    6,(6)
         camn    6,1
         jrst    vfs_mount_find_full
         addi    7,1
@@ -924,8 +942,12 @@ vfs_mount_found:
 ; AC1 = target, AC5 = mounted root, AC7 = slot, AC0 = packed flags.
 ; The caller holds the same serialization as the former inline publication.
 vfs_mount_publish_slot:
-        movem   1,vfs_mount_target(7)
-        movem   5,vfs_mount_root(7)
+        move    6,vfs_mount_target_base
+        add     6,7
+        movem   1,(6)
+        move    6,vfs_mount_root_base
+        add     6,7
+        movem   5,(6)
         lsh     0,0(7)                  ; place RO and pin bits for slot
         iorm    0,vfs_mount_ro
         popj    17,
@@ -971,7 +993,9 @@ vfs_unmount:
         caml    2,vfs_mount_limit
         jrst    kret_neg1
 vfs_unmount_slot:
-        move    3,vfs_mount_root(2)
+        move    3,vfs_mount_root_base
+        add     3,2
+        move    3,(3)
         came    3,1
         jrst    kret_neg1
         movei   4,0420                 ; swap(020) | logstore(0400) for slot 0
@@ -1007,7 +1031,9 @@ vfs_unmount_prepare:
 vfs_unmount_after_prepare:
         came    1,vfs_namespace_root
         jrst    vfs_unmount_unlock
-        move    3,vfs_mount_target(2)
+        move    3,vfs_mount_target_base
+        add     3,2
+        move    3,(3)
         movem   3,vfs_namespace_root
 vfs_unmount_unlock:
         move    1,2
@@ -1023,8 +1049,12 @@ vfs_unmount_unlock:
 ; AC2 = zero-based slot, AC3 scratch. Keep all cleanup in one place so the
 ; dynamic tables can be cleared together in the eventual cutover.
 vfs_mount_retire_slot:
-        setzm   vfs_mount_target(2)
-        setzm   vfs_mount_root(2)
+        move    3,vfs_mount_target_base
+        add     3,2
+        setzm   (3)
+        move    3,vfs_mount_root_base
+        add     3,2
+        setzm   (3)
         hrroi   3,0777776
         rot     3,(2)
         andm    3,vfs_mount_ro
@@ -1034,6 +1064,12 @@ vfs_unmount_fail:
         jrst    kret_neg1
 
         .data
+; Boot swaps both bases to the MM slab only after MRES installation and
+; before the first root mount. The fallback symbols support early boot/tests.
+vfs_mount_target_base:
+        .word   vfs_mount_target
+vfs_mount_root_base:
+        .word   vfs_mount_root
 ; Remains four until KINIT can atomically publish all six MM-backed arrays.
 ; The live upper bound is never allowed to exceed sixteen mounts.
 vfs_mount_limit:

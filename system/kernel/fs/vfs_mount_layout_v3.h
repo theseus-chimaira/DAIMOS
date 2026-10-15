@@ -1,4 +1,4 @@
-/* Staged KINIT layout for one MM allocation holding mount-indexed state. */
+/* KINIT layout for one MM allocation holding mount-indexed state. */
 #ifndef DAIMON_VFS_MOUNT_LAYOUT_V3_H
 #define DAIMON_VFS_MOUNT_LAYOUT_V3_H
 

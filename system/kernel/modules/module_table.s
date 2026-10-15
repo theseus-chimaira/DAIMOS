@@ -48,6 +48,8 @@
 .if KINIT_FULL
         .globl slv_minit
         .globl memfs_minit
+.endif
+.if KINIT_TAPE_BOOT
         .globl dtfs_minit
 .endif
 .if BLOCKSET_FS_ENABLED
