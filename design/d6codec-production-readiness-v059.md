@@ -38,6 +38,20 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v074 host halfword-match emission
+
+The staged v072 host encoder now searches odd 18-bit halfword distances
+up to 511 halfwords and emits kind-2 descriptors where they exceed an
+ordinary word match. The decoder's overlapping high-half/low-half
+semantics are preserved. `daimos-testkit/tests/validation/d6codec-host-native-v074`
+generates a 350-word mixed workload with a constructed odd-distance
+match, compresses it on the host and validates every output word using
+the native PDP-6 v061 decoder: PASS. Inspection of the generated 196-word
+stream confirms one kind-2 descriptor, plus zero-run and word matches.
+The production D6LZ36 encoder/decoder remain unchanged. Further
+adversarial, capacity and real-provider tests are required before cutover;
+the final regression sweep excludes all 32K configurations.
+
 ### v073 host encoder to native decoder differential test
 
 `daimos-testkit/tests/validation/d6codec-host-native-v073` generates a

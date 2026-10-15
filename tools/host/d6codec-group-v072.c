@@ -1,12 +1,20 @@
 /* Staged bounded C99 host encoder for grouped 36-bit streams.
- * Fast path emits literal, zero-run and ordinary word-match tokens.
- * The native decoder also understands halfword references, but they are
- * not needed to produce a valid stream. No heap or large temporary arrays.
+ * Emits literal, zero-run, word-match and halfword-match tokens.
+ * No heap or large temporary arrays.
  */
 #include "d6codec-group-v071.h"
 #include <stdint.h>
 #define W36 UINT64_C(0777777777777)
+#define H18 UINT64_C(0777777)
 #define CONTROL_FLAG UINT64_C(04000000000)
+
+/* High half first, as in the PDP-6 output-word construction. */
+static uint64_t
+half_at(const uint64_t *words, size_t half)
+{
+    uint64_t w = words[half / 2];
+    return (half & 1) ? (w & H18) : ((w >> 18) & H18);
+}
 
 int
 d6codec_group_v072_encode(const uint64_t *in, size_t nw,
@@ -34,6 +42,7 @@ d6codec_group_v072_encode(const uint64_t *in, size_t nw,
             size_t distance_limit = pos < 128 ? pos : 128;
             uint64_t descriptor = 0;
             size_t len = 0;
+            unsigned bestkind = 0;
             if (in[pos] > W36) return -1;
             if (in[pos] == 0) {
                 len = 1;
@@ -47,9 +56,27 @@ d6codec_group_v072_encode(const uint64_t *in, size_t nw,
                         in[pos + run] == in[pos + run - dist]) ++run;
                     if (run > bestlen) { bestlen = run; bestdist = dist; }
                 }
+                /* An odd halfword offset permits matches between word
+                 * boundaries; even offsets duplicate ordinary word matches.
+                 * Source may overlap destination, exactly as native copy. */
+                for (dist = 1; dist <= 511 && dist <= pos * 2; dist += 2) {
+                    size_t run = 0, maxrun = nw - pos;
+                    if (maxrun > 127) maxrun = 127;
+                    while (run < maxrun &&
+                        half_at(in, 2 * pos + 2 * run - dist) ==
+                            half_at(in, 2 * pos + 2 * run) &&
+                        half_at(in, 2 * pos + 2 * run + 1 - dist) ==
+                            half_at(in, 2 * pos + 2 * run + 1)) ++run;
+                    if (run > bestlen) {
+                        bestlen = run;
+                        bestdist = dist;
+                        bestkind = 2;
+                    }
+                }
                 if (bestlen >= 2) {
                     len = bestlen;
-                    descriptor = ((uint64_t)len << 9) | bestdist;
+                    descriptor = ((uint64_t)bestkind << 16) |
+                        ((uint64_t)len << 9) | bestdist;
                 }
             }
             if (len) {
