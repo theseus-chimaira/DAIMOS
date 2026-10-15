@@ -10,8 +10,6 @@
 ; Compact namespace operations.  These use the permanent register-provider
 ; ABI directly and keep only values that must survive a provider call on the
 ; PDP-6 stack.
-        .globl  vfs_mount_target
-        .globl  vfs_mount_root
         .globl  vfs_mount_target_base
         .globl  vfs_mount_root_base
         .globl  vfs_mount_limit
@@ -1064,12 +1062,13 @@ vfs_unmount_fail:
         jrst    kret_neg1
 
         .data
-; Boot swaps both bases to the MM slab only after MRES installation and
-; before the first root mount. The fallback symbols support early boot/tests.
+; KINIT publishes both bases after MRES installation and before the first
+; root mount. No mount table exists before that point: permanent fallback
+; arrays previously reserved eight words but are not used in this phase.
 vfs_mount_target_base:
-        .word   vfs_mount_target
+        .word   0
 vfs_mount_root_base:
-        .word   vfs_mount_root
+        .word   0
 ; Remains four until KINIT can atomically publish all six MM-backed arrays.
 ; The live upper bound is never allowed to exceed sixteen mounts.
 vfs_mount_limit:
@@ -1106,10 +1105,4 @@ monitorfs_names:
         .word   020001000000           ; DEVICES
 
         .bss
-        .globl  vfs_mount_target
-vfs_mount_target:
-        .block  4
-        .globl  vfs_mount_root
-vfs_mount_root:
-        .block  4
         .text

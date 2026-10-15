@@ -30,6 +30,12 @@
 
 ## KINIT storage inventory and VFS mount sizing (2026-10-15)
 
+- [ ] V14 KCORE audit eliminated nine redundant resident words. See
+  `design/kcore-legacy-audit-20261016-v14.md` for protected compatibility
+  paths and remaining table candidates. Optimize dynamic-pointer hot paths
+  after the other provider tables have migrated; the 32K KCORE end still
+  exceeds its strict gate by 1879 words.
+
 - [ ] V13: the D6FS reader now uses the MM slab and the bootstrap fallback
   is down to one word. Finish DTFS/TSFS media and shape/extent, policy, and
   hardware-derived capacity before raising the live mount limit above four.

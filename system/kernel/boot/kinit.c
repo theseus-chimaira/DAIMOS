@@ -19,7 +19,7 @@ extern kword_t __kcore_load_end;
 extern kword_t __kinit_image_end;
 extern kword_t vfs_mount_target_base;
 extern kword_t vfs_mount_root_base;
-extern kword_t d6fs_reader_slots[];
+extern kword_t d6fs_active_reader;
 extern kword_t d6fs_reader_slots_base;
 #if KINIT_STACK_WATERMARK
 extern kword_t kinit_stack_highwater;
@@ -537,10 +537,11 @@ kinit_enter(void)
          * runtime capacity remains four until their cutover is complete. */
         if (vfs_mount_slab_v4_prepare(VFS_NMOUNT, &vfs_slab) != 0)
                 kinit_halt();
-        /* D6FS's optional boot reader is installed during MINIT, before
-         * slab allocation. Preserve it before switching the reader base. */
+        /* MINIT already stores the initial D6FS reader in the active-reader
+         * word. Transfer that pointer into the slab before selecting it;
+         * retaining a second fixed reader-slot array is unnecessary. */
         ((kword_t *)(unsigned long)vfs_slab.reader)[0] =
-            d6fs_reader_slots[0];
+            d6fs_active_reader;
         d6fs_reader_slots_base = vfs_slab.reader;
         vfs_mount_target_base = vfs_slab.target;
         vfs_mount_root_base = vfs_slab.root;

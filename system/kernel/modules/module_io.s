@@ -74,7 +74,6 @@ dsk_minit:
         .globl minit_slv_cono
         .globl d6fs_reader_bootstrap_call
         .globl d6fs_active_reader
-        .globl d6fs_reader_slots
         .globl mm_alloc
 
 ; Allocate the boot-root D6FS reader from managed core.  The reader is
@@ -100,7 +99,6 @@ d6fs_reader_bootstrap_zero:
         setzm 014(5)                    ; backing.opaque
         move 4,-1(017)                  ; saved backing.ops
         movem 4,013(5)
-        movem 5,d6fs_reader_slots        ; root is VFS mount id 1
 d6fs_reader_bootstrap_done:
         sub 017,[2,,2]
         popj 017,

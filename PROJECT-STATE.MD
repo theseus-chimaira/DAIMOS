@@ -1,3 +1,16 @@
+## 2026-10-16 KCORE LEGACY TABLE REMOVAL V14
+
+Removed obsolete four-word VFS target/root arrays (eight words) and one
+duplicate D6FS boot-reader slot. KINIT already publishes MM-backed VFS
+tables and now transfers the D6FS initial reader directly from its active
+reader word. Disk/tape size gates and disk-root diagnostic PDP-6 boot pass.
+Nine 36-bit permanent words saved over v13: disk permanent last 036712,
+tape 036060; lowmem KCORE end 023527, still FAILING the independent 020000
+32K gate by 1879 decimal words. Other compatibility-looking paths remain
+live, are unlinked, or cost zero words; details in
+`design/kcore-legacy-audit-20261016-v14.md`. VFS remains limited to four
+mounts until provider metadata and mount-policy migration completes.
+
 ## 2026-10-16 VFS D6FS READER SLAB AND 32K MEASUREMENTS V13
 
 D6FS now uses the MM-backed slab reader array via `d6fs_reader_slots_base`.
