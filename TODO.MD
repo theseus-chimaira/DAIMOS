@@ -28,6 +28,16 @@
 
 # DAIMOS TODO
 
+## GROUPED D6 CODEC V080: SINGLE FORMAT, NO DISPATCH (2026-10-15)
+
+- Remove all legacy compressor and decompressor implementations, including
+  fixed Stage-1, kernel, userspace, host and TSFS copies, as part of one
+  coordinated source and artifact format cutover; retain no legacy fallback.
+- Keep DXR `COMPRESSED` and TX2 text metadata; **do not** use TXG, flags
+  selecting a compression scheme, format sniffing or mixed images.
+- Do not partially delete live decoder symbols before updating their
+  producers/consumers; regenerate every compressed image before boot test.
+
 ## GROUPED D6 CODEC V077 ACCEPTANCE GATES (2026-10-15)
 
 - Completed: fresh isolated 256K full-profile GCC D6FS v077 boot passes.

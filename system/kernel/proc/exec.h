@@ -23,14 +23,6 @@
 #define EXEC_DXR_MAX_IMAGE_WORDS    0300000U
 #define EXEC_DXR_MAX_BSS_WORDS      EXEC_DXR_BSS_MASK
 #define EXEC_DXR_TEXT_TAG            0647022U /* SIXBIT /TX2/ */
-/* Staged format discriminator for compressed grouped-codec DXR2 images.
- * DXR word 1 has no free flag bits: low 15 are BSS and upper three are
- * COMPRESSED/PURE/RT_REQUIRED.  Use a distinct third-word SIXBIT tag
- * instead of silently reinterpreting any existing DXR flag.
- * Production EXEC and PURE reload deliberately reject this tag until the
- * grouped runtime decoder and all consumers are switched together.
- */
-#define EXEC_DXR_GROUPED_TAG         0647047U /* SIXBIT /TXG/ */
 
 #define EXEC_LOAD_OK                 0
 #define EXEC_LOAD_RT_REQUIRED        1

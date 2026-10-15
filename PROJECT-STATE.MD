@@ -1,3 +1,14 @@
+## 2026-10-15 SINGLE GROUPED CODEC MANDATE V080
+
+The interim TXG-vs-TX2 selection scheme is cancelled. A DXR compressed
+image must use the sole grouped-control codec; no old-format fallback or
+legacy compressor/decompressor survives the final atomic cutover. Removed
+the staged TXG-only host producer and GROUPED_TAG definition. Production
+legacy codec paths must be removed **together** with replacement of all
+boot/runtime/host/userspace format producers; this removal is not yet done.
+The current build stays bootable until then. The final regression matrix
+excludes all 32K configurations.
+
 ## 2026-10-15 D6 CODEC EXTRACTED USERSPACE PARITY V077
 
 Read-only testkit exporter reuses the real D6FS fsck logical/extent

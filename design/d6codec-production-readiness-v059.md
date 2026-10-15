@@ -1,4 +1,17 @@
-### v079 staged host TXG DXR producer
+## v080 single-codec cutover directive (2026-10-15)
+
+**Only one compressed stream format is permitted:** the grouped-control
+paired-18-bit-descriptor codec. All old D6LZ36 compressors and decompressors
+are to be removed after coordinated replacement of Stage-1, KCORE, EXEC,
+PURE reload, TSFS, all host and userspace producers/checkers and images.
+The existing COMPRESSED DXR bit continues to indicate compression; the
+DXR2 TX2 extension retains text length metadata, not codec identification.
+The proposed TXG tag and staged `d6codec-dxr-v079.c` producer were removed.
+There must be no dual-format dispatch, fallback or format sniffing.
+Do not activate grouped output in any production image until all consumers
+are migrated and full non-32K regression tests pass.
+
+### v079 abandoned TXG producer (superseded by single-codec cutover)
 
 `tools/host/d6codec-dxr-v079.c` constructs experimental DXR2 executables
 using the TXG discriminator introduced by v078. It preserves DXR entry,
@@ -9,7 +22,7 @@ an 80-word executable fixture and independent grouped decoder round trip.
 The production `d6lz -x`, EXEC and PURE loader are unchanged: this is a
 test-only producer and TXG executable launch remains unsupported.
 
-### v078 DXR codec discriminator: no spare base-header flag
+### v078 abandoned format-selection proposal
 
 The DXR header's low 18 bits are exhausted: 15 bits hold the BSS word
 count (`0077777` mask), and bits 15..17 are COMPRESSED (`0100000`),
