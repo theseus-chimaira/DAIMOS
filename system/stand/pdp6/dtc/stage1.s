@@ -51,13 +51,13 @@ start:
         ; Validate the normal compressed-image header.
         pushj 017,read_word
         came 03,daimon_magic
-        jrst bad_tape
+        jrst stage1_fail_b1
         pushj 017,read_word
         hlrz 013,03
-        jumpe 013,bad_tape
+        jumpe 013,stage1_fail_b1
         hrrz 05,03
         caml 05,013
-        jrst bad_tape
+        jrst stage1_fail_b1
         addi 05,030000
         pushj 017,read_word
         hlrz 04,03
@@ -87,14 +87,12 @@ read_word:
         popj 017,
 
 read_wait:
-        consz 0214,0000034
-        jrst read_error
-        consz 0214,0000002
-        jrst bad_tape
+        ; Both Type-136 status conditions are fatal: controller/data error
+        ; (034) or end-zone reached before the declared length (002).
+        ; One inclusive mask has exactly the same error semantics.
+        consz 0214,0000036
+        jrst stage1_fail_b1
         jrst read_word
-
-read_error:
-        jrst bad_tape
 
 daimon_magic: .word 0444151555756
         .include "../common/decompressor.inc"
@@ -114,28 +112,24 @@ stage1_handoff:
         move 014,012
         setz 011,
         pushj 017,d6lz_fixed_base
-        jumpn 00,bad_tape
-        jumpn 04,bad_tape
+        jumpn 00,stage1_fail_b1
+        jumpn 04,stage1_fail_b1
         ; Match DSK/DRM handoff semantics: KINIT's bootstrap pushdown list
         ; begins immediately after the expanded image.  Leaving AC17 on the
         ; low Stage1 stack would let kcore_load overwrite live return words.
         move 017,012
-        setz 01,
-        setz 02,
-        jrst 0(05)
+        jrst stage1_final_handoff
 
 ; The raw stream is already resident at 030000.  Enter without installing
 ; the decompressor or maintaining a compressed image beyond 32K.
 stage1_raw_handoff:
-        movei 017,030000
-        add 017,013
-        setz 01,
-        setz 02,
+        ; The direct raw load leaves AC1 at 030000 + image words.
+        move 017,01
+stage1_final_handoff:
+        setzb 01,02                    ; AC1 and memory word 2 (= AC2)
         jrst 0(05)
 
 ; This diagnostic must remain above the decoder destination.  Decoder failure
 ; is detected only after 000060..000127 has been overwritten by the installed
 ; low-core image.
-bad_tape:
-        jrst stage1_fail_b1
         .include "../common/stage1-error.inc"
