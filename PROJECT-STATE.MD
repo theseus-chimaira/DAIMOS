@@ -1,3 +1,23 @@
+# 2026-10-15 v154: repaired PDP-6 GCC stack-byte selection; DSH 115/115
+
+- The DSH `HELP ECHO` and `HELP DAS` failures were NOT SIXMD/HELP source
+  defects. GCC 3.2 PDP-10 backend re-applied `MEM_OFFSET` when emitting a
+  `lshiftrt:SI (mem:SI FRAME_PLUS_CONSTANT) 27` that already addressed the
+  correct packed 36-bit stack word. At optimized `-O1`/`-O2`/`-Os`, this
+  selected byte 1/2/3 instead of byte 0 for local `char[]` indices 4/8/12.
+  The compiler backend now recognizes frame-relative PLUS addresses as
+  already adjusted, while preserving the real byte-pointer register path.
+- Existing v153 and new v154 compiler tests initialize local packed buffers
+  from assembler, then check all character positions through word 4. Both
+  pass at `-O0`, `-O1`, `-O2`, `-Os` with patched GCC; the original compiler
+  fails optimized runs. A fresh 256K full-profile disk image built using
+  patched GCC (without any DAIMOS HELP source changes) passed every one of
+  the 115 DSH conformance probes, including both former HELP failures.
+- Permanent KCORE and per-process RAM are unchanged. GCC installation in
+  the normal PDP10_PREFIX toolchain is required before default builds use
+  the corrected backend. Full 32-row GCC/KCC matrix remains unaccepted:
+  separate filesystem image, linker and testkit harness failures persist.
+
 # 2026-10-15 v152: corrected 256K target and full-profile boot acceptance
 
 - Earlier `254K` mentions were a typo: the intended high-memory PDP-6 target
