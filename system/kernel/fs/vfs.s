@@ -77,6 +77,17 @@ vfs_lookup_return:
         move    6,-1(17)               ; original directory
         and     6,[07700000000]
         ior     4,6                    ; inherit directory mount id
+        pushj   17,vfs_lookup_resolve_mount
+        movem   4,(5)
+vfs_lookup_pop:
+        sub     17,kconst_2_2
+        popj    17,
+
+; Mounted-target substitution is shared by the ordinary lookup path.
+; AC4 = returned vnode, AC6/AC7 scratch.  The loop is deliberately isolated
+; so the later boot-sized table conversion has only one lookup consumer.
+; Do not replace the four-slot limit until KINIT publishes dynamic bases.
+vfs_lookup_resolve_mount:
         setz    6,
 vfs_lookup_mount_loop:
         move    7,vfs_mount_target(6)
@@ -85,9 +96,6 @@ vfs_lookup_mount_loop:
         addi    6,1
         caige   6,4
         jrst    vfs_lookup_mount_loop
-        movem   4,(5)
-vfs_lookup_pop:
-        sub     17,kconst_2_2
         popj    17,
 
 vfs_lookup_root_store:

@@ -92,6 +92,18 @@ and direct `vfs_mount_root`/`vfs_mount_target` addressing; it is NOT the
 as a relocatable kernel object with `das -C`; linked KCORE and native boot
 regressions remain pending.
 
+## Production lookup isolation (v8)
+
+The active `fs/vfs.s` now calls `vfs_lookup_resolve_mount` for mounted-target
+substitution. The same four-entry loop is retained in a dedicated leaf; the
+future slab-base substitution will not have to disturb provider dispatch or
+the VFS return/pop path. Relocatable DAS assembly passes, as do complete
+linked `permanent-size` checks for dedicated disk and tape root profiles.
+Both linked profiles grow by two words against the v7 baseline: disk-root
+single last 036645 (602 decimal words free), multi last 036706 (569 free),
+tape-root last 036017 (1008 free). Native boot remains untested; no dynamic
+table addressing is active yet.
+
 `system/kernel/fs/vfs_mount_access_v5.s` is the first standalone native
 consumer of the proposed slab. It takes explicit absolute target/root bases,
 the KINIT-selected capacity and a target vnode, searches only in-bounds slots,
