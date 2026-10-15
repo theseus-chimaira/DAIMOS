@@ -38,6 +38,21 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v068 opt-in full KCORE link probe
+
+The boot Makefile now accepts `D6CODEC_LINK_PROBE_V068=1` to place the
+staged v061 group decoder and v062/v063 VFS adapter into the complete
+GCC 32K disk-root KCORE link **before** `kcore_end`. The default is off;
+the old `000060` decoder and all D6LZ36 call sites are unchanged.
+The probe image built and packaged successfully with the added object
+symbols in `kcore.map`. The size audit reports the exclusive KCORE end
+at `024024` octal, compared with the earlier v141 inactive baseline
+`023451` octal (235 decimal words difference). This is a provisional
+link-size comparison across checkpoints, not a measured codec replacement
+saving. No native execution with actual registered filesystem providers
+has been performed; their nested stack and cache-miss paths still gate
+activation.
+
 ### v067 staged VFS adapter register preservation
 
 The native PDP-6 regression at
