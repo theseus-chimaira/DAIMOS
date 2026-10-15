@@ -10,7 +10,8 @@
         .globl proc_swap_unpack_backing
         .globl proc_swap_reload_pure
         .globl vfs_read_words
-        .globl d6lz36_decode_vfs
+        .globl vfs_stat
+        .globl d6codec_vfs_decode
         .globl proc_table
         .globl proc_high_slot
         /* Constants are supplied by the parent proc_swap assembly unit.
@@ -63,7 +64,8 @@ proc_swap_unpack_backing:
  * Return AC1 = 0 on success, -1 on backing/read/decode failure.
  */
 proc_swap_reload_pure:
-        add     17,[010,,010]
+        ; Seven-word vfs_stat scratch plus the existing saved-AC frame.
+        add     17,[020,,020]
         movei   0,-7(17)
         hrli    0,010
         blt     0,-1(17)                ; preserve AC10..AC16
@@ -98,14 +100,27 @@ proc_swap_reload_pure:
 proc_swap_reload_compressed:
         hlrz    15,14                   ; uncompressed image words
         jumpe   15,proc_swap_reload_fail
+        ; Grouped decompression requires the exact compressed payload count.
+        ; The immutable DXR2 backing contains 3 header words, the grouped
+        ; payload, and ceil(image_words/36) relocation words.
+        move    1,12
+        movei   2,-016(17)             ; seven-word vfs_stat buffer
+        pushj   17,vfs_stat
+        jumpn   1,proc_swap_reload_fail
+        move    3,-013(17)             ; vfs_stat.size_words
+        move    0,15
+        addi    0,043
+        idivi   0,044                  ; ceil(image_words / 36)
+        sub     3,0
+        subi    3,3                    ; remove DXR2 header
+        jumple  3,proc_swap_reload_fail
         hrlz    4,15
         move    6,11
         addi    6,EXEC_USER_ORIGIN
         hrr     4,6
         move    1,12
         movei   2,3
-        setz    3,                      ; trusted immutable backing
-        pushj   17,d6lz36_decode_vfs
+        pushj   17,d6codec_vfs_decode
         jumpn   1,proc_swap_reload_fail
 proc_swap_reload_ok:
         setz    1,
@@ -116,7 +131,7 @@ proc_swap_reload_return:
         movei   0,010
         hrli    0,-7(17)
         blt     0,016
-        sub     17,[010,,010]
+        sub     17,[020,,020]
         popj    17,
 
 

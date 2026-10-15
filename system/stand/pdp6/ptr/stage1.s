@@ -139,17 +139,19 @@ stage1_handoff:
         hrri 01,d6lz_fixed_base
         blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
 
-        movei 012,030000
-        move 013,image_words
-        move 03,012
-        add 03,013
-        move 04,compressed_words
-        move 014,012
-        setz 011,
+        ; Preserve the saved entry address: kind-2 halfword decoding uses
+        ; AC16. Stage-1 stores its complete compressed payload above KINIT.
+        push 017,016
+        move 01,03
+        move 02,04
+        movei 03,030000
+        move 04,03
+        add 04,image_words
+        movei 05,030000
         pushj 017,d6lz_fixed_base
-        jumpn 00,bad_tape
-        jumpn 04,bad_tape
-        move 017,012                  ; KINIT stack starts at image end
+        jumpn 01,bad_tape
+        pop 017,016
+        move 017,04
         jrst 0(016)
 
 ; Keep the post-decode failure target above the installed decoder image.

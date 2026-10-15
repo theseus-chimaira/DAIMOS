@@ -4,21 +4,16 @@
 #define D6LZ_WINDOW 128U
 #define D6LZ_LOOK 130U
 #define D6LZ_RING (D6LZ_WINDOW + D6LZ_LOOK)
-#define D6LZ_GROUP_TOKENS 36U
 #define D6CODEC_GROUP_TOKENS 30U
-#define D6CODEC_DESCRIPTOR_RESERVE 15U
 #define D6LZ_MIN_MATCH 3U
-#define D6LZ_CONTROL_FIRST 0400000000000UL
-#define D6LZ_DESC_LEN_SHIFT 7U
 #define D6LZ_HALF_MASK 0777777UL
 #define D6LZ_WORD_MASK 0777777777777UL
 #define D6LZ_DXR_MAGIC \
     ((PDP10_SIX6('D','X','R',' ',' ',' ') >> 18U) & D6LZ_HALF_MASK)
 
 static kword_t d6lz_ring[D6LZ_RING];
-/* Shared output workspace: +9 words relative to the old 37-word group. */
-static kword_t d6lz_group[46U];
-#define d6codec_group_v075 d6lz_group
+/* One 46-word grouped-output workspace: no legacy token buffer. */
+static kword_t d6codec_group_v075[46U];
 static unsigned int d6lz_head;
 static unsigned int d6lz_hist;
 static unsigned int d6lz_avail;
@@ -123,54 +118,10 @@ write_words(const kword_t *words, unsigned int n)
         return 0;
 }
 
+/* One stream format: grouped controls with paired 18-bit descriptors.
+ * The encoder keeps its existing bounded ring and shared scratch buffer. */
 static int
 compress_words(kword_t words)
-{
-        unsigned int ntok;
-        unsigned int len;
-        unsigned int dist;
-        kword_t control;
-        kword_t mask;
-
-        d6lz_head = 0U;
-        d6lz_hist = 0U;
-        d6lz_avail = 0U;
-        d6lz_left = words;
-        for (;;) {
-                control = 0;
-                mask = D6LZ_CONTROL_FIRST;
-                ntok = 0U;
-                while (ntok < D6LZ_GROUP_TOKENS) {
-                        if (fill_lookahead() != 0) return -1;
-                        if (d6lz_avail == 0U) break;
-                        len = best_match(&dist);
-                        if (len >= D6LZ_MIN_MATCH) {
-                                control |= mask;
-                                d6lz_group[ntok + 1U] =
-                                    ((kword_t)(len - D6LZ_MIN_MATCH) <<
-                                    D6LZ_DESC_LEN_SHIFT) |
-                                    (kword_t)(dist - 1U);
-                                consume_words(len);
-                        } else {
-                                d6lz_group[ntok + 1U] =
-                                    d6lz_ring[d6lz_head] & D6LZ_WORD_MASK;
-                                consume_words(1U);
-                        }
-                        ++ntok;
-                        mask >>= 1U;
-                }
-                if (ntok == 0U) break;
-                d6lz_group[0] = control;
-                if (write_words(d6lz_group, ntok + 1U) != 0) return -1;
-        }
-        return d6lz_left == 0 && d6lz_avail == 0U ? 0 : -1;
-}
-
-/* Opt-in raw grouped 36-bit stream. Never use for EXEC until runtime
- * consumers and the fixed-address boot decoder are migrated together.
- * A 46-word scratch group is a conservative upper bound. */
-static int
-compress_grouped_v075(kword_t words)
 {
         d6lz_head = 0U;
         d6lz_hist = 0U;
@@ -328,18 +279,12 @@ main(int argc, kword_t **argv)
         const kword_t *inpath;
         const kword_t *outpath;
         int exec_mode;
-        int grouped_mode;
         int rc;
 
         exec_mode = 0;
-        grouped_mode = 0;
         if (argc == 3) {
                 inpath = argv[1];
                 outpath = argv[2];
-        } else if (argc == 4 && u_s6_eq(argv[1], "-G")) {
-                grouped_mode = 1;
-                inpath = argv[2];
-                outpath = argv[3];
         } else if (argc == 4 && u_s6_eq(argv[1], "-X")) {
                 exec_mode = 1;
                 inpath = argv[2];
@@ -359,9 +304,7 @@ main(int argc, kword_t **argv)
                 return fail("OUTPUT", outpath);
         }
         d6lz_out_words = 0;
-        rc = exec_mode ? compress_exec(&st) :
-            grouped_mode ? compress_grouped_v075(st.size_words) :
-            compress_raw(&st);
+        rc = exec_mode ? compress_exec(&st) : compress_raw(&st);
         if (dsys_close(d6lz_infd) != 0) rc = -1;
         if (dsys_close(d6lz_outfd) != 0) rc = -1;
         if (rc == 0 && dsys_chmod((kword_t *)outpath, st.mode & 0777U) != 0)

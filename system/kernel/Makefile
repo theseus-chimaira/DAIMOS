@@ -329,9 +329,9 @@ ${BUILD}/exec.s: proc/exec.c proc/exec_lowmem_pdp6.s proc/exec_load.s ${KERNEL_H
 	cat $@.c proc/exec_lowmem_pdp6.s proc/exec_load.s > $@
 	rm -f $@.c
 
-${BUILD}/d6lz.s: core/d6lz_pdp6.s
+${BUILD}/d6lz.s: core/d6lz_pdp6.s core/d6codec_encode_v053.s
 	@mkdir -p ${BUILD}
-	cp core/d6lz_pdp6.s $@
+	cat core/d6lz_pdp6.s core/d6codec_encode_v053.s > $@
 
 ${BUILD}/module_runtime.s: modules/module_runtime.c modules/module_runtime_pdp6.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}

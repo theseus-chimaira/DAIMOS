@@ -159,17 +159,21 @@ stage1_handoff:
         hrri 01,d6lz_fixed_base
         blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
 
-        movei 012,030000
-        move 03,012
-        add 03,013
-        move 014,012
-        setz 011,
+        ; Save the entry PC and output end: grouped decoding uses AC5 and
+        ; AC10..16 for its history/copy engine. The Stage-1 stack remains live.
+        push 017,05
+        movei 03,030000
+        add 03,013                    ; compressed stream begins at end of image
+        move 01,03                    ; staged source above KINIT output
+        move 02,04                    ; complete compressed-word count
+        push 017,03                   ; save uncompressed image end
+        movei 03,030000
+        move 04,(017)                 ; saved exclusive output end
+        movei 05,030000
         pushj 017,d6lz_fixed_base
-        jumpn 00,bad_tape
-        jumpn 04,bad_tape
-        ; Match DSK/DRM handoff semantics: KINIT's bootstrap pushdown list
-        ; begins immediately after the expanded image.  Leaving AC17 on the
-        ; low Stage1 stack would let kcore_load overwrite live return words.
+        jumpn 01,bad_tape
+        pop 017,012                   ; restore KINIT stack base
+        pop 017,05                    ; restore entry point
         move 017,012
         setz 01,
         setz 02,

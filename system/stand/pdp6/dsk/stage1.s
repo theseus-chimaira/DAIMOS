@@ -414,17 +414,16 @@ stage1_handoff:
         hrri 01,d6lz_fixed_base
         blt 01,d6lz_fixed_base+(d6lz_image_end-d6lz_image_start)-1
 
-        ; Expand the opaque boot image into its normal KINIT load address.
-        movei 012,030000
-        move 013,kinit_stack_base
-        subi 013,030000
-        move 03,kinit_stack_base
-        move 04,compressed_words
-        move 014,012                  ; output base for match validation
-        setz 011,                      ; force first control-word load
-        pushj 017,d6lz_fixed_base      ; execute installed low-core core
-        jumpn 00,fail_decompress
-        jumpn 04,fail_decompress        ; exact compressed payload required
+        ; The grouped decoder consumes the complete staged image exactly.
+        ; AC1/2 are source cursor/length; AC3/4 output start/exclusive end;
+        ; AC5 is the immutable history origin. AC10..16 are decoder scratch.
+        move 01,kinit_stack_base
+        move 02,compressed_words
+        movei 03,030000
+        move 04,kinit_stack_base
+        movei 05,030000
+        pushj 017,d6lz_fixed_base
+        jumpn 01,fail_decompress
 
         ; Compressed input is dead now; KINIT may reuse it as stack.
 stage1_enter_kinit:

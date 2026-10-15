@@ -34,7 +34,7 @@
         .globl  backstore_blocks
         .globl  proc_swap_blocks_used
         .globl  vfs_read_words
-        .globl  d6lz36_decode_vfs
+        .globl  d6codec_vfs_decode
         .globl  fs_zero_words
         .globl  fs_block_workspace
         .globl  bcache_workspace_invalidate
