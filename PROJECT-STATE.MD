@@ -1,3 +1,15 @@
+## 2026-10-15 GROUPED CODEC PURE VERIFIER BUILD V088
+
+`daimos-testkit/tests/system/d6codec-pure-verify-v088` passed the fresh
+256K PDP-6 D6FS boot, compressed PURE-marked LS admission, grouped userland
+compression and host/native round-trip checks with the expensive
+`PROC_SWAP_VERIFY_PURE=1` kernel diagnostic compiled in. The generated
+`proc_swap.s` contains `proc_swap_verify_pure:`. This validates the
+diagnostic-enabled build and existing smoke workload; the test does not
+force PURE eviction/reload and does not assert that verifier was called.
+Genuine `DLINK --PURE` linkage and swap-triggered exact reconstruction
+remain mandatory. Exclude all 32K configurations from final acceptance.
+
 ## 2026-10-15 GROUPED CODEC PURE DXR ADMISSION V087
 
 `daimos-testkit/tests/system/d6codec-pure-admission-v087` passed on a

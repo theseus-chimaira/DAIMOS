@@ -1,3 +1,12 @@
+## GROUPED CODEC V088 PURE RELOAD ACCEPTANCE
+
+- Verified 256K D6FS system smoke with `PROC_SWAP_VERIFY_PURE=1` and
+  the actual diagnostic assembler body present; this is NOT evidence of
+  a swap invocation or actual PURE reload.
+- Required: genuine toolchain `DLINK --PURE` executable, deterministic
+  process eviction/reload trigger, observed reconstruction and compare,
+  rejection of mutable text, and measurable stack usage under nested VFS.
+
 ## GROUPED CODEC V087 PURE RELOAD GATE
 
 - Completed: test-only PURE-marked grouped DXR admission, compressed LS
