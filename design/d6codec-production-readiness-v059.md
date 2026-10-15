@@ -38,6 +38,22 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v071 staged C99 host reference decoder
+
+Added `tools/host/d6codec-group-v071.c` and `.h` as an independent
+bounded, allocation-free reference decoder for the grouped format. It
+supports literals, zero runs, ordinary overlapping word matches, aligned
+halfword matches, and odd-distance halfword matches, rejecting invalid
+descriptors, truncation, and trailing groups. The staged decoder has no
+effect on `d6lz-codec.c` or production host/userland format selection.
+The host testkit's `tests/host/d6codec-group-v071/run-v071.sh` passes six
+initial valid/invalid fixtures under strict C99 compilation. Additional
+golden-corpus parity, randomized adversarial coverage, native differential
+testing and both host/userland *encoder* migrations remain mandatory.
+
+After integration run the full applicable regression matrix, excluding
+all 32K configurations. Production D6LZ36 remains unchanged.
+
 ### v070 producer-to-refill decoder regression
 
 `daimos-testkit/tests/validation/d6codec-vfs-v070` now uses the native
