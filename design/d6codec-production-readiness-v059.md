@@ -1,3 +1,14 @@
+### v079 staged host TXG DXR producer
+
+`tools/host/d6codec-dxr-v079.c` constructs experimental DXR2 executables
+using the TXG discriminator introduced by v078. It preserves DXR entry,
+flags, TX2 text extent, and trailing relocation words, changing only the
+compressed flag, TXG tag, and payload. It refuses compressed input and
+invalid DXR layouts. `daimos-testkit/tests/host/d6codec-dxr-v079` passes
+an 80-word executable fixture and independent grouped decoder round trip.
+The production `d6lz -x`, EXEC and PURE loader are unchanged: this is a
+test-only producer and TXG executable launch remains unsupported.
+
 ### v078 DXR codec discriminator: no spare base-header flag
 
 The DXR header's low 18 bits are exhausted: 15 bits hold the BSS word
