@@ -1,3 +1,17 @@
+## 2026-10-15 D6 CODEC EXTRACTED USERSPACE PARITY V077
+
+Read-only testkit exporter reuses the real D6FS fsck logical/extent
+reader. A retained successful 256K v076 PDP-6 disk image contains the
+six-word `/CONFIG/PASSWD` input and seven-word `/TEMP/GRP` grouped output
+from userspace `D6LZ -G`. The v071 host decoder and v061 native PDP-6
+decoder independently reproduce all six words (PASS); see
+`daimos-testkit/tests/system/d6codec-userspace-v077`. Production D6LZ36
+is unchanged. Expanded `/SYSTEM/INIT` coverage is **blocked**: fresh
+full-profile 256K GCC v076/v077 boots now halt after `D6FS LOADED`, before
+`INIT V1`. Investigate and correct that boot regression before claiming
+real-provider or larger-input acceptance. The completed codec cutover must
+run all applicable tests except 32K configurations.
+
 ## 2026-10-14 LIBC STRING ASM/C SPLIT V1
 
 DAIMOS libc now uses PDP-6 assembler for `memset`, `memcmp`, `strlen`,

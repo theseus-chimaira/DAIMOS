@@ -28,6 +28,20 @@
 
 # DAIMOS TODO
 
+## GROUPED D6 CODEC V077 ACCEPTANCE GATES (2026-10-15)
+
+- Highest priority: reproduce and fix 256K full-profile GCC D6FS boot
+  HALT after `D6FS LOADED` but before `INIT V1`; v076 also reproduces it.
+- Extend actual userspace `D6LZ -G` extraction/host/native parity beyond
+  six words to long mixed-pattern and multi-block inputs; the blocked
+  experimental v077 extended harness is retained under `$TMPDIR`.
+- Verify registered provider/cache-miss/lock-wait stack high-water and
+  error paths before enabling the new grouped decoder in KCORE.
+- Complete coherent host, userspace, EXEC, swap, filesystem and Stage-1
+  single-format migration, then run the complete applicable regression
+  matrix **excluding 32K configurations**.
+
+
 ## LIBC ASSEMBLY OPTIMIZATION CANDIDATES — DEFERRED (2026-10-14)
 
 - Investigate `qsort` first: profile the existing generic comparator-based

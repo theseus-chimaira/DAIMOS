@@ -38,6 +38,29 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v077 extracted real-D6FS stream parity and boot blocker
+
+Testkit `tests/system/d6codec-userspace-v077` includes a **read-only**
+single-member D6FS exporter sharing the logical-block, remapping,
+FCB-extent and directory readers of host `d6fsck.c`. Applied to the saved
+v076 successful 256K PDP-6 disk image, it exports `/CONFIG/PASSWD` (6
+words) and the actual userspace `D6LZ -G` result `/TEMP/GRP` (7 words).
+The independent host grouped decoder v071 restores all six input words,
+and the native PDP-6 grouped decoder v061 independently passes on the
+same extracted compressed words. Testkit `run-extract-v077.sh` and
+`run-native-v077.sh` both pass against the completed disk image. This
+establishes end-to-end *small-file* parity; the larger-file producer and
+real-provider streaming path are not yet accepted.
+
+Attempts to rerun the v076 and expanded v077 *full-profile* 256K GCC
+D6FS boot harness now reproducibly reach `D6FS LOADED` and then issue a
+SIMH `HALT instruction, PC: 000000` **before `INIT V1`**. This is distinct
+from the codec and occurs with the original v076 probes as well. The
+extended `/SYSTEM/INIT` compressor probe cannot yet run; its experimental
+script is retained outside the test suite pending root-cause diagnosis.
+Do not count this aborted run as codec acceptance. The final full test
+matrix continues to exclude all 32K configurations.
+
 ### v076 256K userspace `-G` execution smoke
 
 The new `daimos-testkit/tests/system/d6codec-userspace-v076` boots a
