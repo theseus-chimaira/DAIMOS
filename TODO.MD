@@ -30,6 +30,13 @@
 
 ## KINIT storage inventory and VFS mount sizing (2026-10-15)
 
+- [ ] V15: all six MM slab table regions now have active DTFS/TSFS/D6FS/VFS
+  callers, but the fixed four-slot runtime limit remains. Migrate the
+  packed RO/SWAP/LOGSTORE representation and *all* provider bounds, including
+  optional foreign DTFS personality XCT indexing, before raising the limit.
+  The pointer-access conversion currently costs 3/15 permanent words in
+  disk/tape-root profiles over v14: optimize for RAM as part of cutover.
+
 - [ ] V14 KCORE audit eliminated nine redundant resident words. See
   `design/kcore-legacy-audit-20261016-v14.md` for protected compatibility
   paths and remaining table candidates. Optimize dynamic-pointer hot paths

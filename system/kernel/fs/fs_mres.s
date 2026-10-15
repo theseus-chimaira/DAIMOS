@@ -359,11 +359,23 @@ fs_provider_ready:
 ; Active D6FS dispatch pointer only.  Reader state itself is dynamic/mount-owned.
 d6fs_active_reader:  .block 1
         .globl  d6fs_reader_slots_base
+        .globl  dtfs_media_base
+        .globl  tsfs_file_shape_base
+        .globl  tsfs_extent_media_base
         .data
 ; KINIT publishes the MM slab reader table before the first root mount.
 ; Until then the boot reader is held by d6fs_active_reader; there is no
 ; mounted VFS volume and the slot table must not be indexed.
 d6fs_reader_slots_base:
+        .word   0
+; All three mount-indexed tape tables are initially inaccessible. MINIT
+; prepares only the shared directory cache, not mount metadata. KINIT
+; publishes the three MM-slab bases before root selection and TSFS mount.
+dtfs_media_base:
+        .word   0
+tsfs_file_shape_base:
+        .word   0
+tsfs_extent_media_base:
         .word   0
         .bss
 blockset_direct_map:    .block 1

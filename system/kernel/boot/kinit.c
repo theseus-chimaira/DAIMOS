@@ -21,6 +21,9 @@ extern kword_t vfs_mount_target_base;
 extern kword_t vfs_mount_root_base;
 extern kword_t d6fs_active_reader;
 extern kword_t d6fs_reader_slots_base;
+extern kword_t dtfs_media_base;
+extern kword_t tsfs_file_shape_base;
+extern kword_t tsfs_extent_media_base;
 #if KINIT_STACK_WATERMARK
 extern kword_t kinit_stack_highwater;
 #endif
@@ -543,6 +546,9 @@ kinit_enter(void)
         ((kword_t *)(unsigned long)vfs_slab.reader)[0] =
             d6fs_active_reader;
         d6fs_reader_slots_base = vfs_slab.reader;
+        dtfs_media_base = vfs_slab.media;
+        tsfs_file_shape_base = vfs_slab.shape;
+        tsfs_extent_media_base = vfs_slab.extent;
         vfs_mount_target_base = vfs_slab.target;
         vfs_mount_root_base = vfs_slab.root;
         if (mm_alloc(KERNEL_IDLE_STACK_WORDS, MM_TYPE_KERNEL_DYNAMIC, 2U,

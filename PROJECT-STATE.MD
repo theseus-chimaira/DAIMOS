@@ -1,3 +1,23 @@
+## 2026-10-16 MM-BACKED DTFS/TSFS MEDIA TABLES V15
+
+KINIT now publishes all six MM-slab table bases: VFS target/root, D6FS
+reader, shared DTFS/TSFS media, TSFS file shape, and TSFS extent locator.
+The former `dtfs_media[4]` and TSFS file-shape/extent fixed arrays are no
+longer linked. Active tape C/native assembly accesses the MM-backed tables;
+PDP-6 TSFS multi-extent, D6LZ, nonzero-slot, and DTFS NATIVE/TENEX/ITS
+chain-walk fixtures PASS. Tape-root without D6FS/BLOCKSET/BADMAP links,
+and diagnostic disk-root ROOT login and ECHO PASS (DSH size override only).
+
+RAM accounting is not a net saving yet: the new absolute base pointers and
+access instructions increase disk-root permanent last from 036712 to 036715
+(+3 decimal words), and tape-root last from 036060 to 036077 (+15 decimal).
+GCC 32K lowmem KCORE end 023532 still FAILS the strict 020000 gate by 1882
+decimal words. Boot streams build without shell: KINIT ends disk 072432,
+tape 073371, leaving 1766/1287 decimal words after the 02000-octal KINIT
+stack reserve. No 32K runtime acceptance is claimed. The active mount count
+remains four until the live policy representation, provider bounds, boot
+inventory and optional foreign-format personality indexing are migrated.
+
 ## 2026-10-16 KCORE LEGACY TABLE REMOVAL V14
 
 Removed obsolete four-word VFS target/root arrays (eight words) and one

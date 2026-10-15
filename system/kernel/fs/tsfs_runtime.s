@@ -53,9 +53,9 @@ tsfs_mres_vector:
 ; records can be consumed directly from that workspace until the next DTC
 ; read; copying each eight-word record onto a kernel stack only wastes RAM and
 ; time.  Media checksum/structural validation remains in transient userspace.
-        .globl  dtfs_media
-        .globl  tsfs_file_shape
-        .globl  tsfs_extent_media
+        .globl  dtfs_media_base
+        .globl  tsfs_file_shape_base
+        .globl  tsfs_extent_media_base
         .globl  fs_block_workspace
         .globl  dtfs_dtc_read
         .globl  bcache_reclaim
@@ -68,12 +68,12 @@ tsfs_mres_vector:
 ; per-mount locator array; AC6 packs BLOCK_SHIFT,,SLOT_MASK.  Record-word
 ; shift is 7 + BLOCK_SHIFT because every DTC block contains 128 words.
 tsfs_file_record:
-        movei   3,dtfs_media
+        move    3,dtfs_media_base
         move    6,[-4,,017]            ; 16 eight-word records per block
         jrst    tsfs_table_record
 
 tsfs_extent_record:
-        movei   3,tsfs_extent_media
+        move    3,tsfs_extent_media_base
         move    6,[-5,,037]            ; 32 four-word records per block
 
 tsfs_table_record:
@@ -139,7 +139,9 @@ tsfs_node_record_root:
         lsh     4,-6
         andi    4,077
         subi    4,1
-        hlrz    5,dtfs_media(4)
+        move    5,4
+        add     5,dtfs_media_base
+        hlrz    5,(5)
         andi    5,077777
         jumpe   5,tsfs_node_record_empty
         setz    2,                     ; root file record is zero
@@ -390,7 +392,9 @@ tsfs_read_words:
         lsh     4,-6
         andi    4,077
         subi    4,1
-        move    016,tsfs_file_shape(4)
+        move    016,tsfs_file_shape_base
+        add     016,4
+        move    016,(016)
 
 tsfs_read_restart:
         move    2,011
@@ -597,11 +601,17 @@ tsfs_mount_do:
         andi    4,077
         subi    4,1
         move    5,0(010)
-        movem   5,dtfs_media(4)
+        move    3,dtfs_media_base
+        add     3,4
+        movem   5,(3)
         move    5,1(010)
-        movem   5,tsfs_file_shape(4)
+        move    3,tsfs_file_shape_base
+        add     3,4
+        movem   5,(3)
         move    5,2(010)
-        movem   5,tsfs_extent_media(4)
+        move    3,tsfs_extent_media_base
+        add     3,4
+        movem   5,(3)
         pushj   17,bcache_reclaim       ; accepted removable-media handoff
         move    5,(17)
         movem   5,(012)
@@ -683,7 +693,3 @@ tsfs_lookup_pop:
         blt     0,014
         sub     17,kconst_5_5
         popj    17,
-
-        .bss
-tsfs_file_shape:       .block 4        ; logical->physical map per mount
-tsfs_extent_media:      .block 4        ; extent-table locator per mount

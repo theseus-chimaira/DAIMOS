@@ -17,9 +17,12 @@
 kword_t *dtfs_dir;
 #define dtfs_block fs_block_workspace
 unsigned int dtfs_cache_mount;
-/* Unit number and the read-only foreign-media personality share one word. */
-/* Low half carries unit/personality; high half carries mount UID9,GID9. */
-kword_t dtfs_media[VFS_NMOUNT];
+/* DTFS/TSFS share the MM-backed per-mount media table. KINIT publishes the
+ * pointer before either provider mounts a filesystem. Low half carries the
+ * unit/personality and high half carries UID9,GID9. No static four-slot array
+ * is retained in the optional DTFS MRES package. */
+extern kword_t dtfs_media_base;
+#define DTFS_MEDIA_WORDS ((kword_t *)(unsigned long)dtfs_media_base)
 
 extern int dtfs_is_root(vnode_t node);
 extern int dtfs_is_file(vnode_t node);
@@ -40,7 +43,8 @@ extern unsigned int dtfs_personality(vnode_t node);
 unsigned int
 dtfs_unit(vnode_t node)
 {
-        return dtfs_media[VFS_MOUNT_ID(node) - 1U] & DTFS_MEDIA_UNIT_MASK;
+        return DTFS_MEDIA_WORDS[VFS_MOUNT_ID(node) - 1U] &
+            DTFS_MEDIA_UNIT_MASK;
 }
 
 extern int dtfs_load(vnode_t node);
@@ -51,7 +55,7 @@ dtfs_commit(vnode_t node)
 {
         unsigned int media;
 
-        media = dtfs_media[VFS_MOUNT_ID(node) - 1U];
+        media = DTFS_MEDIA_WORDS[VFS_MOUNT_ID(node) - 1U];
 #if DTFS_ENABLE_ITS
         return dtfs_dtc_write(media & DTFS_MEDIA_UNIT_MASK,
             (media & DTFS_MEDIA_ITS) != 0U ? DTFS_ITS_DIR_BLOCK :

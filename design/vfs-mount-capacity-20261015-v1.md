@@ -1,5 +1,33 @@
 # VFS mount capacity: boot sizing and 16-slot upper bound (2026-10-15)
 
+## Active DTFS/TSFS metadata migration (v15)
+
+The last three regions of the existing six-array MM slab are now used by
+the live DTFS/TSFS providers. Resident `dtfs_media_base`,
+`tsfs_file_shape_base` and `tsfs_extent_media_base` are initialized to zero,
+then published by KINIT before the first root mount. `dtfs.c`,
+`dtfs_runtime.s`, `dtfs_chain_walk.s` and `tsfs_runtime.s` now load the
+appropriate base before accessing a slot. The old `dtfs_media[4]`,
+`tsfs_file_shape[4]` and `tsfs_extent_media[4]` arrays are gone.
+
+Native PDP-6 TSFS multi-extent, D6LZ and third-mount-slot table access,
+DTFS chain walk (including the TENEX/ITS oracle), tape-root kernel link,
+and diagnostic disk-root SIMH login tests pass. The 32K disk/tape streams
+build without shell. Lowmem KCORE ends at 023532, 1882 decimal words above
+its strict 020000 gate; 32K KINIT ends at 072432/073371 for disk/tape,
+leaving 1766/1287 decimal words above its reserved stack.
+
+The conversion increases linked permanent words: disk-root single last
+036715 (+3 decimal over v14), multi last 036756 (+3), tape-root 036077
+(+15). The source removes twelve fixed provider metadata entries, but
+address-loading instructions exceed those savings. Do not claim a RAM win
+until the final native addressing/policy sweep. The foreign-format
+`dtfs_personality_xct` array is still compiled only when TENEX/ITS is
+enabled and has four entries: it needs a separate indexed-capacity fix
+before enabling 16 slots with foreign-media personalities. Likewise audit
+remaining fixed provider opcode bounds and packed mount-policy width.
+
+
 ## Active D6FS reader migration and 32K measurement (v13)
 
 KINIT transfers the initial MINIT reader pointer from the one-word fallback

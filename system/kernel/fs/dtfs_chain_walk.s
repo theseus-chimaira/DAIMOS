@@ -214,7 +214,9 @@ dtfs_block_info:
 	setzm (3)
 dtfs_bi_52:
 	ldb 4,[POINT 6,1,11]
-	move 4,dtfs_media-1(4)
+	subi 4,1
+	add 4,dtfs_media_base
+	move 4,(4)
 	move 012,4
 	lsh 012,-3
 	move 015,4

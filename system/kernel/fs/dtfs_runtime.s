@@ -34,7 +34,9 @@ dtfs_space:
         sojl    4,dtfs_space_fail
         caile   4,3
         jrst    dtfs_space_fail
-        move    5,dtfs_media(4)
+        move    5,4
+        add     5,dtfs_media_base
+        move    5,(5)
         hrrz    5,5
         andi    5,030                   ; personality
         setz    7,                      ; allocation-map word base
@@ -1170,7 +1172,10 @@ dtfs_personality_xct:
 
         .globl  dtfs_patch_media
 dtfs_patch_media:
-        movem   2,dtfs_media-1(1)
+        move    3,1
+        subi    3,1
+        add     3,dtfs_media_base
+        movem   2,(3)
         move    3,dtfs_personality_xct  ; MOVEI 1,0 template
         andi    2,030
         ior     3,2
@@ -1194,7 +1199,9 @@ dtfs_personality:
 dtfs_stat_owner:
         ldb     3,[POINT 6,1,11]        ; mount id 1..4
         subi    3,1
-        hlrz    4,dtfs_media(3)         ; owner18
+        move    4,3
+        add     4,dtfs_media_base
+        hlrz    4,(4)                  ; owner18
         move    3,4
         lsh     3,-011
         andi    3,0777
@@ -1207,7 +1214,7 @@ dtfs_stat_owner:
 ; established the media personality; runtime only reloads the selected
 ; directory block when another DTFS/TSFS mount displaced the cache.
         .globl  dtfs_cache_mount
-        .globl  dtfs_media
+        .globl  dtfs_media_base
 
 dtfs_load:
         push    17,010
@@ -1215,7 +1222,10 @@ dtfs_load:
         move    4,dtfs_cache_mount
         camn    4,010
         jrst    dtfs_load_ok
-        move    4,dtfs_media-1(010)     ; unit + personality
+        move    4,010
+        subi    4,1
+        add     4,dtfs_media_base
+        move    4,(4)                   ; unit + personality
         move    1,4
         andi    1,7                     ; unit
         movei   2,0144                  ; native/TENEX directory
@@ -1243,7 +1253,9 @@ dtfs_load_fail:
 dtfs_stat_owner:
         ldb     3,[POINT 6,1,11]
         subi    3,1
-        hlrz    4,dtfs_media(3)
+        move    4,3
+        add     4,dtfs_media_base
+        hlrz    4,(4)
         move    3,4
         lsh     3,-011
         andi    3,0777
@@ -1265,12 +1277,15 @@ dtfs_scan_slot:
 
         .globl  dtfs_patch_media
 dtfs_patch_media:
-        movem   2,dtfs_media-1(1)
+        move    3,1
+        subi    3,1
+        add     3,dtfs_media_base
+        movem   2,(3)
         pushj   17,bcache_reclaim
         popj    17,
 
         .globl  dtfs_cache_mount
-        .globl  dtfs_media
+        .globl  dtfs_media_base
 
 dtfs_load:
         push    17,010
@@ -1278,7 +1293,10 @@ dtfs_load:
         move    4,dtfs_cache_mount
         camn    4,010
         jrst    dtfs_load_native_ok
-        move    1,dtfs_media-1(010)
+        move    1,010
+        subi    1,1
+        add     1,dtfs_media_base
+        move    1,(1)
         andi    1,7
         movei   2,0144
         move    3,dtfs_dir
