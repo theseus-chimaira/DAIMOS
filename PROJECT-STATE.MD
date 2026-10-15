@@ -1,3 +1,24 @@
+# 2026-10-15 v152: corrected 256K target and full-profile boot acceptance
+
+- Earlier `254K` mentions were a typo: the intended high-memory PDP-6 target
+  is **256K words**. Both lowmem and full-profile fresh 256K D6FS-root boots
+  reached DCS0 `LOGIN:`, authenticated `ROOT`, and entered `DSH V1`.
+- Full-profile KINIT incorrectly declared `dtfs_minit` under `KINIT_FULL`
+  instead of `KINIT_TAPE_BOOT`; corrected the declaration guard in the
+  module table, making the full 256K KINIT link and interactive boot pass.
+- Testkit 256K boot gate extended; KCC-specific PDP-6 codegen validation
+  now forces `COMPILER=kcc` even inside GCC test matrix, and regression
+  runner propagates DAS/KCC repository paths for isolated worktrees.
+- Clean GCC acceptance matrix reached storage/device rows but could not be
+  completed due to failing legacy tool/path assumptions and execution service
+  interruption. Direct fresh-media DSH conformance: **113/115** passed.
+  `HELP ECHO` omitted `[ARG ...]` and `HELP DAS` omitted `-O FILE`;
+  full `MAN DAS`, other HELP cases, shell syntax, pipelines, and job control
+  passed. The KCC DSH image exceeds the current EXEC image cap by 021 octal
+  words (036021 > 036000) and was not boot-accepted by that build.
+- Full GCC/KCC matrix acceptance remains OPEN; do not infer it from boot
+  acceptance or from the independently completed DSH probes.
+
 # 2026-10-15 v151: forced low-memory EXEC succeeds under real BRK pressure
 
 - An instrumented 64K native userspace test expanded PID 1's user break to
