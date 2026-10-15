@@ -359,9 +359,17 @@ fs_provider_ready:
 ; Active D6FS dispatch pointer only.  Reader state itself is dynamic/mount-owned.
 d6fs_active_reader:  .block 1
         .globl  d6fs_reader_slots
-; Four direct reader pointers indexed by VFS mount id.  Four words cost less
-; total resident RAM than halfword packing because dispatch becomes much smaller.
-d6fs_reader_slots:    .block 4
+        .globl  d6fs_reader_slots_base
+; MINIT needs only the boot-reader pointer until KINIT publishes the new
+; MM-owned table. One fallback word avoids retaining a redundant array.
+d6fs_reader_slots:    .block 1
+        .data
+; KINIT publishes the MM slab reader table before the first root mount.
+; MINIT's early D6FS bootstrap reader is initially stored in slot zero of
+; the fallback table, then copied into the dynamic table at publication.
+d6fs_reader_slots_base:
+        .word   d6fs_reader_slots
+        .bss
 blockset_direct_map:    .block 1
 blockset_direct_blocks: .block 1
 blockset_direct_tail:   .block 1

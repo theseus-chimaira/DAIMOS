@@ -30,6 +30,12 @@
 
 ## KINIT storage inventory and VFS mount sizing (2026-10-15)
 
+- [ ] V13: the D6FS reader now uses the MM slab and the bootstrap fallback
+  is down to one word. Finish DTFS/TSFS media and shape/extent, policy, and
+  hardware-derived capacity before raising the live mount limit above four.
+  Separately investigate the strict 32K KCORE end limit: fresh lowmem GCC
+  disk/tape profiles end at 023540, exceeding 020000 by 1888 decimal words.
+
 - [ ] Fix drum D6FS BLOCKSET discovery separately: root selection currently
   discovers a selected DSK/DRM root set, while AUXSTORE discovery checks only
   DRM0 (then DSK0). Audit other drum units and complete/non-root BLOCKSET

@@ -614,7 +614,8 @@ d6fs_mres_reg_dispatch:
         sojl    7,kret_neg1        ; convert to zero-based slot
         caile   7,3
         jrst    kret_neg1
-        move    7,d6fs_reader_slots(7)
+        add     7,d6fs_reader_slots_base
+        move    7,(7)
         jumpe   7,kret_neg1
         movem   7,d6fs_active_reader
         cain    6,024                    ; FS_MRES_OP_D6FS_REMOUNT (20)
@@ -741,7 +742,9 @@ d6fs_mount_validated:
         jumpn   1,d6fs_mount_free
 
         move    5,(17)
-        movem   5,d6fs_reader_slots(7)
+        move    6,d6fs_reader_slots_base
+        add     6,7
+        movem   5,(6)
         movem   5,d6fs_active_reader
         move    6,1(5)                   ; prepacked summary/copy state
         move    4,7                      ; mount helper leaves zero-based slot AC7
@@ -1263,7 +1266,8 @@ d6fs_provider_unmount_done:
         pushj   17,mm_free
         jumpn   1,d6fs_provider_unmount_free_fail
         pop     17,4
-        setzm   d6fs_reader_slots(4)
+        add     4,d6fs_reader_slots_base
+        setzm   (4)
         setzm   d6fs_active_reader
         jrst    kret_zero
 d6fs_provider_unmount_free_fail:

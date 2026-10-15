@@ -1,5 +1,25 @@
 # VFS mount capacity: boot sizing and 16-slot upper bound (2026-10-15)
 
+## Active D6FS reader migration and 32K measurement (v13)
+
+KINIT transfers the initial MINIT reader pointer from the one-word fallback
+`d6fs_reader_slots` to the slab reader region before publishing
+`d6fs_reader_slots_base`. D6FS dispatch, additional mount and unmount now
+use this base. Native PDP-6 context, multi-mount, remount, and poisoned
+fallback tests pass. The diagnostic disk-root SIMH ROOT login and ECHO also
+pass. This does not raise `vfs_mount_limit` above four: DTFS/TSFS metadata
+and mount-policy conversion are pending.
+
+Normal permanent-size gates pass: disk single last 036723 (556 free), disk
+multi last 036764 (523 free), tape last 036071 (966 free), octal addresses.
+GCC 32K lowmem disk/tape KINIT images build without shell. The KCORE ends
+at 023540, **failing** its separate 020000 strict gate by 1888 decimal
+words in both. KCORE+MRES is 12837/12705 decimal words (disk/tape); KINIT
+ends at 072422/073327, with 1774/1321 words remaining after the 02000-octal
+boot stack. This is not successful 32K native boot. The measurements are
+reproducible using the daimos-testkit v13 footprint script.
+
+
 Status (v12): **partially integrated**. VFS target/root tables are allocated
 from MM by KINIT and used by active native VFS, FSINFO, and PURE backing;
 provider metadata and mount policy still require conversion. The configured

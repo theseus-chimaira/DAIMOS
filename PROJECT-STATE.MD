@@ -1,3 +1,21 @@
+## 2026-10-16 VFS D6FS READER SLAB AND 32K MEASUREMENTS V13
+
+D6FS now uses the MM-backed slab reader array via `d6fs_reader_slots_base`.
+MINIT stores its initial reader in a single fallback word; KINIT transfers
+that pointer into the MM slab before publishing the new base. Native PDP-6
+dispatch, multi-mount, remount, and fallback-poisoning tests pass. Diagnostic
+disk-root SIMH ROOT login and ECHO pass under the existing test-only DSH size
+override. DTFS/TSFS provider metadata and mount policy are not yet converted;
+the active VFS mount limit is still four (planned maximum sixteen).
+
+Normal permanent-size last addresses (octal): disk single 036723, disk multi
+036764, tape 036071. Fresh GCC lowmem 32K builds without shell produce KINIT
+ends 072422 (disk) and 073327 (tape), leaving 1774 and 1321 words after the
+02000-octal stack reserve. KCORE end is 023540, failing the independent
+020000 KCORE gate by 1888 decimal words in both profiles. KCORE+MRES is
+12837/12705 decimal words (disk/tape). These are build/layout measurements,
+NOT 32K boot acceptance. See daimos-testkit's versioned 32K footprint test.
+
 ## 2026-10-15 VFS LIVE MM TARGET/ROOT TABLES V12
 
 KINIT now allocates the 24-word four-slot VFS slab from MM after MRES
