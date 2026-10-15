@@ -42,6 +42,18 @@ arrays for all providers and does not include the three-word policy bitmap.
 The layout passes standalone host tests for capacities 1..17, and its C source
 generates PDP-6 GCC assembly. Native KCORE sizes are not yet measured.
 
+## Staged KINIT slab provisioning (v4)
+
+`system/kernel/boot/vfs_mount_slab_v4.c/.h` uses the v3 layout to acquire a
+single owner-tagged `MM_TYPE_KERNEL_DYNAMIC` extent, zero exactly its selected
+word count, and publish six absolute bases. Failed validation and MM allocation
+leave its output untouched. This is deliberately unlinked: permanent native
+VFS and provider array accesses must be converted together before KINIT can
+publish these addresses. Standalone host tests (including MM failure and
+canary checking) live in `daimos-testkit/tests/system/vfs-mount-slab-v4`;
+PDP-6 GCC source assembly generation passes, but no linked size or boot test
+has been performed. The owner tag 020 octal is reserved for this staged slab.
+
 ## Capacity policy
 
 MONITORFS built-in entries consume no VFS mount slot. The root D6FS or TSFS
