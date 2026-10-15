@@ -874,17 +874,31 @@ vfs_mount_stat_fail:
         jrst    kret_neg1
 
 vfs_mount_find:
+        pushj   17,vfs_mount_find_slot
+        jumpn   0,kret_neg1
+        jrst    vfs_mount_found
+
+; Find an unoccupied mount slot while rejecting an already mounted target.
+; AC1 = target, AC7 = resulting slot, AC0 = status (0/-1); AC6 scratch.
+; This is the only place where the mount insertion loop reads the fixed
+; target/root tables.  KINIT's future slab capacity will replace its bound.
+vfs_mount_find_slot:
         setz    7,
 vfs_mount_find_loop:
         skipn   vfs_mount_root(7)
-        jrst    vfs_mount_found
+        jrst    vfs_mount_find_free
         move    6,vfs_mount_target(7)
         camn    6,1
-        jrst    kret_neg1
+        jrst    vfs_mount_find_full
         addi    7,1
         caige   7,4
         jrst    vfs_mount_find_loop
-        jrst    kret_neg1
+vfs_mount_find_full:
+        seto    0,
+        popj    17,
+vfs_mount_find_free:
+        setz    0,
+        popj    17,
 
 vfs_mount_found:
         ; root = provider:6 | mount/kind:12 | index:18.
@@ -897,16 +911,23 @@ vfs_mount_found:
         lsh     6,022
         ior     5,6
         ior     5,4
-        movem   1,vfs_mount_target(7)
-        movem   5,vfs_mount_root(7)
         move    0,-1(17)               ; packed VFS_MOUNT_* flags
-        lsh     0,0(7)                  ; place RO and pin bits for slot
-        iorm    0,vfs_mount_ro
+        pushj   17,vfs_mount_publish_slot
         move    6,-2(17)
         movem   5,(6)
         jumpn   1,kret_zero
         movem   5,vfs_namespace_root
         jrst    kret_zero
+
+; Publish one validated slot and its policy without touching provider state.
+; AC1 = target, AC5 = mounted root, AC7 = slot, AC0 = packed flags.
+; The caller holds the same serialization as the former inline publication.
+vfs_mount_publish_slot:
+        movem   1,vfs_mount_target(7)
+        movem   5,vfs_mount_root(7)
+        lsh     0,0(7)                  ; place RO and pin bits for slot
+        iorm    0,vfs_mount_ro
+        popj    17,
 
 ; int vfs_remount(node)
 ; Kernel/storage-internal D6FS remount.  Callers supply a D6FS vnode; the
@@ -992,13 +1013,21 @@ vfs_unmount_unlock:
         addi    1,1
         pushj   17,file_unlock_mount
         move    2,(17)
+        pushj   17,vfs_mount_retire_slot
+        sub     17,kconst_2_2
+        jrst    kret_zero
+
+; Retire exactly one unmounted slot. The caller has completed all unmount
+; preparation, sync, busy checks, and open-file unlocks before entering here.
+; AC2 = zero-based slot, AC3 scratch. Keep all cleanup in one place so the
+; dynamic tables can be cleared together in the eventual cutover.
+vfs_mount_retire_slot:
         setzm   vfs_mount_target(2)
         setzm   vfs_mount_root(2)
         hrroi   3,0777776
         rot     3,(2)
         andm    3,vfs_mount_ro
-        sub     17,kconst_2_2
-        jrst    kret_zero
+        popj    17,
 vfs_unmount_fail:
         sub     17,kconst_2_2
         jrst    kret_neg1

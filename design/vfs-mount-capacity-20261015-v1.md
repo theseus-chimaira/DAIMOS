@@ -104,6 +104,28 @@ single last 036645 (602 decimal words free), multi last 036706 (569 free),
 tape-root last 036017 (1008 free). Native boot remains untested; no dynamic
 table addressing is active yet.
 
+## Production mount mutation isolation (v9)
+
+`fs/vfs.s` now routes mount insertion-slot discovery through
+`vfs_mount_find_slot`, successful target/root/policy publication through
+`vfs_mount_publish_slot`, and successful unmount slot retirement through
+`vfs_mount_retire_slot`. All three remain native resident assembly and retain
+the exact existing four-slot table layout and policy representation. The
+find-slot helper returns its status in AC0, leaving AC1 and the packed mount
+arguments available to the caller. Publication takes its flags in AC0 so
+its extra PDP-6 return address cannot change the KINIT/proc stack offsets.
+
+The dedicated disk-root linked size gate passes: single-root permanent last
+036657 (592 decimal free), multi-root last 036720 (559 free). The dedicated
+tape-root gate passes: permanent last 036031 (998 free). Relative to v8, the
+extra three calls and cleanup paths grow the folded linked permanent size by
+10 decimal words. The native `p10run --machine pdp6` tests for existing VFS
+storage reservations and STAT stack frames pass. A new test in daimos-testkit,
+`tests/validation/daimos-vfs-mount-mutation-v9.sh`, also executes production
+mount/unmount and verifies all policy bits, root retirement and slot reuse.
+This validates the current four-slot behavior, not dynamic addressing or full
+PDP-6 operating-system boot acceptance.
+
 `system/kernel/fs/vfs_mount_access_v5.s` is the first standalone native
 consumer of the proposed slab. It takes explicit absolute target/root bases,
 the KINIT-selected capacity and a target vnode, searches only in-bounds slots,
