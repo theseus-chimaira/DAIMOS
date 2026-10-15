@@ -10,6 +10,25 @@ static int cmd_mounts(int argc, kword_t **argv, struct u_io *io);
 #include "text.h"
 #include "dtfs_media.h"
 
+#if DAIMOS_CMD_PROGRAM == CMD_PROGRAM_MKFS_DTFS
+/* Map a literal physical drive path to its unit; formatting is restricted
+ * to the eight direct DECtape endpoints, never an arbitrary pathname. */
+static int
+cmd_dtfs_device_unit(const kword_t *path)
+{
+        static const char *const names[8] = {
+                "/DEV/DTC0", "/DEV/DTC1", "/DEV/DTC2", "/DEV/DTC3",
+                "/DEV/DTC4", "/DEV/DTC5", "/DEV/DTC6", "/DEV/DTC7"
+        };
+        unsigned int unit;
+
+        for (unit = 0U; unit < 8U; ++unit)
+                if (u_s6_eq(path, names[unit]))
+                        return (int)unit;
+        return -1;
+}
+#endif
+
 static int
 cmd_err(struct u_io *io, const char *name, kword_t *path)
 {
@@ -828,12 +847,15 @@ cmd_mkfs_dtfs(int argc, kword_t **argv, struct u_io *io)
         unsigned int i;
         unsigned int block;
         unsigned int type;
+        int unit;
+
+        unit = argc == 4 ? cmd_dtfs_device_unit(argv[3]) : -1;
 
         if (argc != 4 || !u_s6_eq(argv[1], "-O") ||
             cmd_dtfs_options(argv[2], &flags, &type) != 0 ||
             (type != SYS_DTFS_TYPE_NATIVE && type != SYS_DTFS_TYPE_TENEX &&
             type != SYS_DTFS_TYPE_ITS) || flags != SYS_MOUNT_RDONLY ||
-            !u_s6_eq(argv[3], "/DEV/DTC0"))
+            unit < 0)
                 return cmd_err(io, "MKFS.DTFS", 0);
         for (i = 0U; i != DTFS_BLOCK_WORDS; ++i)
                 dir[i] = 0UL;
@@ -859,7 +881,7 @@ cmd_mkfs_dtfs(int argc, kword_t **argv, struct u_io *io)
                 dir[DTFS_ITS_MAP_LAST] = DTFS_ITS_MAP_END;
                 block = DTFS_ITS_DIR_BLOCK;
         }
-        return dsys_dtc_write_block(0U, block, dir) == 0 ? 0 :
+        return dsys_dtc_write_block((unsigned int)unit, block, dir) == 0 ? 0 :
             cmd_err(io, "MKFS.DTFS", argv[3]);
 }
 #endif

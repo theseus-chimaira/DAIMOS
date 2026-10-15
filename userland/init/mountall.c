@@ -40,6 +40,7 @@ parse_uint(const char *s, unsigned int *vp)
  * FSTAB V1 contains policy, not device discovery:
  *
  *     MEMFS:/existing/mount/point:words[:PERSIST]
+ *     DTFS:/DEV/DTCn:/existing/mount/point:RW
  *
  * Blank lines and comments beginning with '#' are ignored.  MEMFS is a
  * singleton provider, so at most one MEMFS entry can succeed.
@@ -47,15 +48,27 @@ parse_uint(const char *s, unsigned int *vp)
 static int
 mount_line(char *line, int *temp_memfs)
 {
-        char *field[4];
-        kword_t path[U_PATH_WORDS];
+    char *field[4];
+    kword_t path[U_PATH_WORDS];
+    kword_t device[U_PATH_WORDS];
         unsigned int words;
         unsigned int flags;
         int n;
 
-        n = u_text_fields(line, field, 4U);
-        if (n == 0)
-                return 1;
+    n = u_text_fields(line, field, 4U);
+    if (n == 0)
+        return 1;
+    if (n == 4 && text_eq(field[0], "DTFS")) {
+        /* The lowmem tape profile mounts only a native writable DTFS;
+         * the kernel still validates both the device and on-media format.
+         * No device-specific policy is introduced into resident KCORE. */
+        if (!text_eq(field[3], "RW") ||
+            u_s6_pack(device, U_PATH_WORDS, field[1]) != 0 ||
+            u_s6_pack(path, U_PATH_WORDS, field[2]) != 0)
+            return -1;
+        return dsys_dtfs_mount(device, path, SYS_DTFS_TYPE_NATIVE) == 0 ?
+            0 : -1;
+    }
         flags = 0U;
         if ((n != 3 && n != 4) || !text_eq(field[0], "MEMFS") ||
             parse_uint(field[2], &words) != 0 ||

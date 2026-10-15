@@ -401,12 +401,30 @@ native_sys_lookup_user_path_bad:
         pushj   17,vm_user_mapping_release
         jrst    kret_zero
 
-; Return the DTC0 vnode for a valid translated user path, or zero on failure.
-native_sys_dtc0_path:
-        pushj   17,native_sys_lookup_user_path
-        came    1,[020002000014]        ; /DEV/DTC0 direct endpoint
+; Decode a literal /DEV/DTC0 through /DEV/DTC7 device pathname without
+; allocating eight MonitorFS vnodes or expanding resident device counters.
+; Input AC1 is a user SIXBIT counted pathname.  Return AC1=unit+1, or zero.
+; The mapping is held only while inspecting its three immutable words.
+native_sys_dtc_unit_path:
+        pushj   17,native_sys_map_one
+        jumpe   1,kret_zero
+        move    4,(1)
+        caie    4,011                  ; nine characters
+        jrst    native_sys_dtc_unit_bad
+        move    4,1(1)
+        came    4,[174445661744]      ; SIXBIT /DEV/D
+        jrst    native_sys_dtc_unit_bad
+        hrrz    4,2(1)
+        jumpn   4,native_sys_dtc_unit_bad ; trailing SIXBIT blanks
+        hlrz    4,2(1)
+        subi    4,0644320              ; SIXBIT TC0 (first three chars)
+        caile   4,7
+        jrst    native_sys_dtc_unit_bad
+        movei   1,1(4)                 ; zero reserved for failure
+        jrst    vm_user_mapping_release
+native_sys_dtc_unit_bad:
+        pushj   17,vm_user_mapping_release
         jrst    kret_zero
-        popj    17,
 
 native_sys_chmod:
         ; Preserve mode across pointer translation and VFS lookup.
@@ -440,18 +458,21 @@ native_sys_dtfs_mount:
         pop     17,1
         push    17,2                    ; preserve mount path
         push    17,3                    ; preserve flags
-        pushj   17,native_sys_dtc0_path
+        pushj   17,native_sys_dtc_unit_path
         jumpe   1,native_sys_dtfs_mount_bad2
-        move    1,-1(17)                ; saved mount path
+        push    17,1                    ; verified device unit + 1
+        move    1,-2(17)                ; saved mount path
         pushj   17,native_sys_lookup_user_path
-        jumpe   1,native_sys_dtfs_mount_bad2
+        jumpe   1,native_sys_dtfs_mount_bad3
         move    2,1                     ; mounted-on root vnode
+        pop     17,4                    ; device unit + 1
         pop     17,3                    ; restore flags
         pop     17,0                    ; discard saved mount path
         hrrz    3,3
         caile   3,031                   ; RO plus DTFS type override
         jrst    %L137
-        movei   1,0                     ; DTC0 unit
+        move    1,4
+        subi    1,1                     ; requested DTC0..DTC7 unit
         push    17,0                    ; returned root scratch
         movei   4,(17)
         .globl  sys_dtfs_mount_jump
@@ -463,6 +484,9 @@ native_sys_dtfs_mount_bad2:
         pop     17,0
         pop     17,0
         jrst    %L137
+native_sys_dtfs_mount_bad3:
+        pop     17,0
+        jrst    native_sys_dtfs_mount_bad2
 native_sys_dtfs_mount_denied:
         pop     17,0
         jrst    kret_neg1

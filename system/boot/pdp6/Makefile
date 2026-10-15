@@ -22,6 +22,7 @@ MKDSK ?= mkdsk
 MKD6FS ?= mkd6fs
 MKAUXSTORE ?= mkauxstore
 MKDT ?= mkdt
+MKDTFS ?= mkdtfs
 MKTSFS ?= mktsfs
 MKTAP ?= mktap
 WORDS2PT ?= words2pt
@@ -425,7 +426,11 @@ SYSTEM_PASSWD_TEXT ?= $(PROJECT_ROOT)/userland/config/passwd
 SYSTEM_SYSTEM_TEXT ?= $(PROJECT_ROOT)/userland/config/system
 ifeq ($(BOOT_PROFILE),lowmem)
 SYSTEM_INITTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/inittab.lowmem
+ifeq ($(TSFS_INPLACE_BOOT),1)
+SYSTEM_FSTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/fstab.lowmem.tape-v22
+else
 SYSTEM_FSTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/fstab.lowmem
+endif
 else
 ifeq ($(DPY_LOGIN),1)
 SYSTEM_INITTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/inittab.dpy
@@ -593,15 +598,22 @@ MEDIA_DIR = $(BUILD)/media
 DTC0_IMAGE = $(MEDIA_DIR)/dtc0.tap
 DTC1_IMAGE = $(MEDIA_DIR)/dtc1.tap
 DTC2_IMAGE = $(MEDIA_DIR)/dtc2.tap
-DTC3_IMAGE = $(MEDIA_DIR)/dtc3.tap
+DTC3_IMAGE = $(MEDIA_DIR)/$(if $(filter 1,$(TSFS_INPLACE_BOOT)),dtc3-home-v22.tap,dtc3.tap)
 TSFS_ROOT_MANIFEST = $(BUILD)/tsfs-root.manifest
 TSFS_ROOT_PREFIX = $(MEDIA_DIR)/tsfs-root
 TSFS_ROOT_IMAGE = $(TSFS_ROOT_PREFIX)0.dta
 TSFS_ROOT_MEMBERS ?= 1
+TSFS_INPLACE_BOOT ?= 0
 ifneq ($(filter $(TSFS_ROOT_MEMBERS),1 2 3),$(TSFS_ROOT_MEMBERS))
 $(error TSFS_ROOT_MEMBERS must be 1, 2, or 3 with this DTC boot layout)
 endif
+ifeq ($(TSFS_INPLACE_BOOT),1)
+ifneq ($(ROOT):$(STAGE1_DEVICE):$(BOOT_PROFILE):$(TSFS_ROOT_MEMBERS),tape:dtc:lowmem:3)
+$(error TSFS_INPLACE_BOOT=1 currently requires ROOT=tape BOOT=dtc BOOT_PROFILE=lowmem TSFS_ROOT_MEMBERS=3)
+endif
+endif
 TSFS_ROOT_MODE_STAMP = $(BUILD)/.tsfs-root-members-v21-$(TSFS_ROOT_MEMBERS)
+TSFS_INPLACE_MODE_STAMP = $(BUILD)/.tsfs-inplace-v22-$(TSFS_INPLACE_BOOT)
 MTC0_IMAGE = $(MEDIA_DIR)/mtc0.tap
 MTC1_IMAGE = $(MEDIA_DIR)/mtc1.tap
 DRUM_DIR = $(BUILD)/drum
@@ -1204,12 +1216,17 @@ $(TSFS_ROOT_MODE_STAMP): | $(BUILD)
 	@rm -f $(BUILD)/.tsfs-root-members-v21-1 $(BUILD)/.tsfs-root-members-v21-2 $(BUILD)/.tsfs-root-members-v21-3
 	@touch $@
 
+$(TSFS_INPLACE_MODE_STAMP): | $(BUILD)
+	@rm -f $(BUILD)/.tsfs-inplace-v22-0 $(BUILD)/.tsfs-inplace-v22-1
+	@touch $@
+
 $(TSFS_ROOT_IMAGE): $(INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFS_ROOT_COMMAND_DXRS) $(DTFSPROBE_DXR) \
-	$(SYSTEM_CONFIG_S6REC) $(TSFS_ROOT_MODE_STAMP) | $(MEDIA_DIR)
+	$(SYSTEM_CONFIG_S6REC) $(TSFS_ROOT_MODE_STAMP) $(TSFS_INPLACE_MODE_STAMP) $(if $(filter 1,$(TSFS_INPLACE_BOOT)),$(IMAGE_LOWMEM_WORDS)) | $(MEDIA_DIR)
 	@set -eu; \
 	tmp='$(TSFS_ROOT_MANIFEST).tmp.$$$$'; \
 	trap 'rm -f "$$tmp"' 0 1 2 3 15; \
 	{ \
+	  echo 'D /HOME 0755 0 0'; \
 	  echo 'D /MOUNT 0755 0 0'; \
 	  echo 'D /TEMP 0777 0 0'; \
 	  echo 'D /SYSTEM 0555 0 0'; \
@@ -1230,7 +1247,7 @@ $(TSFS_ROOT_IMAGE): $(INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $
 	} > "$$tmp"; \
 	mv "$$tmp" '$(TSFS_ROOT_MANIFEST)'; \
 	trap - 0 1 2 3 15
-	$(MKTSFS) -n $(TSFS_ROOT_MEMBERS) -i 1:1 -g 1 -m '$(TSFS_ROOT_MANIFEST)' \
+	$(MKTSFS) -n $(TSFS_ROOT_MEMBERS) -i 1:1 -g 1 -m '$(TSFS_ROOT_MANIFEST)' $(if $(filter 1,$(TSFS_INPLACE_BOOT)),-b '$(IMAGE_LOWMEM_WORDS)') \
 	    -o '$(TSFS_ROOT_PREFIX)'
 
 $(BOOT_MEDIA_STAMP): $(IMAGE_BOOT_WORDS) $(DISK_IMAGES) $(DRUM_IMAGES) \
@@ -1240,10 +1257,11 @@ $(BOOT_MEDIA_STAMP): $(IMAGE_BOOT_WORDS) $(DISK_IMAGES) $(DRUM_IMAGES) \
 		echo 'BOOT_PROFILE=lowmem requires BOOT=dsk or BOOT=dtc' >&2; exit 2; \
 	fi; \
 	mkdir -p '$(MEDIA_DIR)'; \
-	touch '$(DTC0_IMAGE)' '$(DTC1_IMAGE)' '$(DTC2_IMAGE)' '$(DTC3_IMAGE)' '$(MTC0_IMAGE)' '$(MTC1_IMAGE)'; \
+	touch '$(DTC0_IMAGE)' '$(DTC1_IMAGE)' '$(DTC2_IMAGE)' '$(MTC0_IMAGE)' '$(MTC1_IMAGE)'; \
+	if [ '$(TSFS_INPLACE_BOOT)' != 1 ]; then touch '$(DTC3_IMAGE)'; fi; \
 	case '$(STAGE1_DEVICE)' in \
 	  dsk|drm) : ;; \
-	  dtc) '$(MKDT)' -t dtc -p '$(IMAGE_BOOT_WORDS)' -o '$(DTC0_IMAGE)' ;; \
+	  dtc) if [ '$(TSFS_INPLACE_BOOT)' != 1 ]; then '$(MKDT)' -t dtc -p '$(IMAGE_BOOT_WORDS)' -o '$(DTC0_IMAGE)'; fi ;; \
 	  mtc) '$(MKTAP)' -t mtc -p '$(IMAGE_COMPRESSED_WORDS)' -o '$(MTC0_IMAGE)' ;; \
 	  ptr) \
 	    cwords=$$(tail -n +4 '$(IMAGE_COMPRESSED_WORDS)' | wc -l | tr -d ' '); \
@@ -1258,14 +1276,23 @@ $(BOOT_MEDIA_STAMP): $(IMAGE_BOOT_WORDS) $(DISK_IMAGES) $(DRUM_IMAGES) \
 	esac; \
 	if [ '$(ROOT)' = tape ]; then \
 	  if [ '$(STAGE1_DEVICE)' = dtc ]; then \
-	    cp '$(TSFS_ROOT_IMAGE)' '$(DTC1_IMAGE)'; \
-	    if [ '$(TSFS_ROOT_MEMBERS)' -ge 2 ]; then cp '$(TSFS_ROOT_PREFIX)1.dta' '$(DTC2_IMAGE)'; fi; \
-	    if [ '$(TSFS_ROOT_MEMBERS)' -ge 3 ]; then cp '$(TSFS_ROOT_PREFIX)2.dta' '$(DTC3_IMAGE)'; fi; \
+	    if [ '$(TSFS_INPLACE_BOOT)' = 1 ]; then \
+	      cp '$(TSFS_ROOT_IMAGE)' '$(DTC0_IMAGE)'; \
+	      cp '$(TSFS_ROOT_PREFIX)1.dta' '$(DTC1_IMAGE)'; \
+	      cp '$(TSFS_ROOT_PREFIX)2.dta' '$(DTC2_IMAGE)'; \
+	    else \
+	      cp '$(TSFS_ROOT_IMAGE)' '$(DTC1_IMAGE)'; \
+	      if [ '$(TSFS_ROOT_MEMBERS)' -ge 2 ]; then cp '$(TSFS_ROOT_PREFIX)1.dta' '$(DTC2_IMAGE)'; fi; \
+	      if [ '$(TSFS_ROOT_MEMBERS)' -ge 3 ]; then cp '$(TSFS_ROOT_PREFIX)2.dta' '$(DTC3_IMAGE)'; fi; \
+	    fi; \
 	  else \
 	    cp '$(TSFS_ROOT_IMAGE)' '$(DTC0_IMAGE)'; \
 	    if [ '$(TSFS_ROOT_MEMBERS)' -ge 2 ]; then cp '$(TSFS_ROOT_PREFIX)1.dta' '$(DTC1_IMAGE)'; fi; \
 	    if [ '$(TSFS_ROOT_MEMBERS)' -ge 3 ]; then cp '$(TSFS_ROOT_PREFIX)2.dta' '$(DTC2_IMAGE)'; fi; \
 	  fi; \
+	fi; \
+	if [ '$(TSFS_INPLACE_BOOT)' = 1 ] && [ ! -e '$(DTC3_IMAGE)' ]; then \
+	  $(MKDTFS) -o '$(DTC3_IMAGE)'; \
 	fi; \
 	{ \
 	  if [ '$(STAGE1_DEVICE)' = ptr ]; then \

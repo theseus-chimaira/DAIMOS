@@ -10,7 +10,7 @@ MAGICKWAND_CFLAGS ?= $(shell $(PKG_CONFIG) --cflags MagickWand)
 MAGICKWAND_LIBS ?= $(shell $(PKG_CONFIG) --libs MagickWand)
 
 TOOLS = d6lz mkdsk mkd6fs mkauxstore d6fsck packfs d6bad logstore d6swap \
-	mkdt dta2dtr mktsfs tsfscheck mkstream mktap words2pt dlink darc \
+	mkdt mkdtfs dta2dtr mktsfs tsfscheck mkstream mktap words2pt dlink darc \
 	p10run p10job pdp10-objdump p10fold p10super mkinitfs0 mkbootbanner \
 	sixmd-check csix img2dpic
 PROGRAMS = $(addprefix $(BUILD)/,$(TOOLS))
@@ -63,6 +63,9 @@ $(BUILD)/dta2dtr: dta2dtr.c | $(BUILD)
 
 $(BUILD)/mktsfs: mktsfs.c tsfs-format.c tsfs-format.h d6lz-codec.c d6lz-codec.h | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mktsfs.c tsfs-format.c d6lz-codec.c
+
+$(BUILD)/mkdtfs: mkdtfs.c tsfs-format.h | $(BUILD)
+	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mkdtfs.c
 
 $(BUILD)/tsfscheck: tsfscheck.c tsfs-format.c tsfs-format.h d6lz-codec.c d6lz-codec.h | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ tsfscheck.c tsfs-format.c d6lz-codec.c

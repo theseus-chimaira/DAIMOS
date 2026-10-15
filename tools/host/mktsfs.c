@@ -38,7 +38,7 @@ static void
 usage(void)
 {
         fprintf(stderr,
-            "usage: mktsfs -n members -i hi:lo [-g generation] [-m manifest] -o prefix\n");
+            "usage: mktsfs -n members -i hi:lo [-g generation] [-m manifest] [-b raw-lowmem-image] -o prefix\n");
         exit(2);
 }
 
@@ -54,6 +54,67 @@ parse_octal_word(const char *text, uint64_t *value)
             (v & ~TSFS_WORD_MASK) != 0)
                 return -1;
         *value = (uint64_t)v;
+        return 0;
+}
+
+/* Read the uncompressed three-word Stage1 stream header plus its body.
+ * The host is free to use a large temporary buffer; the PDP-6 never sees it.
+ * Only raw 32K streams may be placed inside a TSFS member's boot reservation.
+ */
+static int
+read_raw_boot_stream(const char *path, uint64_t **wordsp,
+    unsigned int *countp)
+{
+        enum { MAX_BOOT_WORDS = 0100000U + 3U };
+        uint64_t *words;
+        unsigned int count;
+        int complete;
+        int close_rc;
+        char line[256];
+        FILE *f;
+
+        f = fopen(path, "r");
+        if (f == NULL)
+                return -1;
+        words = (uint64_t *)malloc(MAX_BOOT_WORDS * sizeof(*words));
+        if (words == NULL) {
+                fclose(f);
+                return -1;
+        }
+        count = 0U;
+        while (fgets(line, sizeof(line), f) != NULL) {
+                char *p;
+                char *end;
+                unsigned long long v;
+
+                p = line;
+                while (*p == ' ' || *p == '\t')
+                        ++p;
+                if (*p == '#' || *p == '\n' || *p == '\0')
+                        continue;
+                errno = 0;
+                v = strtoull(p, &end, 8);
+                while (*end == ' ' || *end == '\t' ||
+                    *end == '\r' || *end == '\n')
+                        ++end;
+                if (errno != 0 || end == p || *end != '\0' ||
+                    v > TSFS_WORD_MASK || count >= MAX_BOOT_WORDS)
+                        break;
+                words[count++] = (uint64_t)v;
+        }
+        complete = !ferror(f) && feof(f);
+        close_rc = fclose(f);
+        if (!complete || close_rc != 0 || count < 4U ||
+            words[0] != tsfs_sixbit_word("DAIMON") ||
+            words[2] != 0U ||
+            (words[1] >> 18) != (uint64_t)(count - 3U) ||
+            (words[1] & TSFS_HALF_MASK) >= (words[1] >> 18)) {
+                free(words);
+                errno = EINVAL;
+                return -1;
+        }
+        *wordsp = words;
+        *countp = count;
         return 0;
 }
 
@@ -628,6 +689,7 @@ main(int argc, char **argv)
         const char *prefix;
         const char *id_text;
         const char *manifest;
+        const char *boot_path;
         struct tsfs_id id;
         struct manifest_node *nodes;
         unsigned int node_count;
@@ -638,6 +700,8 @@ main(int argc, char **argv)
         uint64_t tdir[TSFS_BLOCK_WORDS];
         uint64_t *file_words;
         uint64_t *extent_words;
+        uint64_t *boot_words;
+        unsigned int boot_word_count;
         uint64_t file_checksum;
         uint64_t extent_checksum;
         unsigned int file_count;
@@ -657,11 +721,14 @@ main(int argc, char **argv)
         prefix = NULL;
         id_text = NULL;
         manifest = NULL;
+        boot_path = NULL;
         generation = 1;
         members = 0;
         images = NULL;
         file_words = NULL;
         extent_words = NULL;
+        boot_words = NULL;
+        boot_word_count = 0U;
         for (i = 1U; i < (unsigned int)argc; ++i) {
                 if (strcmp(argv[i], "-n") == 0 && i + 1U < (unsigned int)argc) {
                         char *end;
@@ -683,6 +750,9 @@ main(int argc, char **argv)
                 } else if (strcmp(argv[i], "-m") == 0 &&
                     i + 1U < (unsigned int)argc) {
                         manifest = argv[++i];
+                } else if (strcmp(argv[i], "-b") == 0 &&
+                    i + 1U < (unsigned int)argc) {
+                        boot_path = argv[++i];
                 } else if (strcmp(argv[i], "-o") == 0 &&
                     i + 1U < (unsigned int)argc) {
                         prefix = argv[++i];
@@ -699,6 +769,13 @@ main(int argc, char **argv)
         }
         if (assign_records(nodes, node_count, &record_to_node) != 0) {
                 fprintf(stderr, "mktsfs: cannot order manifest\n");
+                free(nodes);
+                return 1;
+        }
+        if (boot_path != NULL && read_raw_boot_stream(boot_path,
+            &boot_words, &boot_word_count) != 0) {
+                fprintf(stderr, "mktsfs: invalid raw bootstrap: %s\n", boot_path);
+                free(record_to_node);
                 free(nodes);
                 return 1;
         }
@@ -809,6 +886,40 @@ main(int argc, char **argv)
         next_block[0] = extent_block + extent_blocks;
         for (member = 1U; member < members; ++member)
                 next_block[member] = TSFS_TDIR_DEFAULT_BLOCK;
+        if (boot_words != NULL) {
+                /* Block zero is TSFS-reserved; descriptors and metadata
+                 * remain untouched. Embed 124 initial payload words there,
+                 * then reserve a contiguous tail before file data allocation.
+                 * The Stage1 tail-block pointer is a physical block number.
+                 */
+                unsigned int initial;
+                unsigned int remainder;
+                unsigned int tail_blocks;
+                unsigned int tail_start;
+
+                initial = boot_word_count - 3U;
+                if (initial > TSFS_BLOCK_WORDS - 4U)
+                        initial = TSFS_BLOCK_WORDS - 4U;
+                remainder = boot_word_count - 3U - initial;
+                tail_blocks = (remainder + TSFS_BLOCK_WORDS - 1U) /
+                    TSFS_BLOCK_WORDS;
+                tail_start = next_block[0];
+                if (tail_start < 4U ||
+                    tail_start + tail_blocks > TSFS_BLOCK_COUNT) {
+                        fprintf(stderr, "mktsfs: bootstrap exceeds member 0\n");
+                        goto fail;
+                }
+                images[0][0] = boot_words[0];
+                images[0][1] = boot_words[1];
+                images[0][2] = 1U; /* zero compressed words, hybrid marker */
+                images[0][3] = tail_start;
+                memcpy(images[0] + 4U, boot_words + 3U,
+                    (size_t)initial * sizeof(*boot_words));
+                memcpy(images[0] + (size_t)tail_start * TSFS_BLOCK_WORDS,
+                    boot_words + 3U + initial,
+                    (size_t)remainder * sizeof(*boot_words));
+                next_block[0] += tail_blocks;
+        }
         data_member = 0U;
 
         /*
@@ -945,6 +1056,7 @@ main(int argc, char **argv)
         free(images);
         free(extent_words);
         free(file_words);
+        free(boot_words);
         free(record_to_node);
         free(nodes);
         return 0;
@@ -959,6 +1071,7 @@ fail:
         }
         free(extent_words);
         free(file_words);
+        free(boot_words);
         free(record_to_node);
         free(nodes);
         return 1;

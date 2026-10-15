@@ -18,8 +18,15 @@
 ;
 ;       word 0      SIXBIT DAIMON
 ;       word 1      uncompressed_words,,entry_offset
-;       word 2      compressed_words,,0 (zero for raw 32K image)
+;       word 2      compressed_words,,mode
 ;       remainder   D6LZ36 payload or raw image words
+;
+; Mode 0 is the original contiguous stream. Mode 1 (compressed_words=0)
+; embeds the stream within an ordinary TSFS V1.1 member: word 3 gives the
+; first physical tail block, words 4..127 carry 124 raw KINIT words, and
+; the remaining words occupy reserved blocks beginning at that tail block.
+; Blocks 1..tail-1 are normal TSFS descriptors and metadata and are skipped
+; sequentially. Stage1 requires no TSFS parser or additional image buffer.
 ;
 ; The compressed stream is staged immediately after its final image range,
 ; expanded at 030000 by the shared fixed low-core decoder, then entered at the
@@ -61,11 +68,18 @@ start:
         addi 05,030000
         pushj 017,read_word
         hlrz 04,03
+        hrrz 06,03
         ; Zero compressed length selects the direct 32K image stream.
         ; Like the DSK lowmem loader, this needs no second staging copy.
         movei 01,030000
         move 02,013
-        jumpe 04,load_loop
+        jumpn 04,compressed_stream
+        jumpe 06,load_loop
+        caie 06,1
+        jrst bad_tape
+        jrst hybrid_stream
+compressed_stream:
+        jumpn 06,bad_tape
         ; Normal compressed images stage the payload above their output.
         add 01,013
         move 02,04
@@ -76,6 +90,43 @@ load_loop:
         sojg 02,load_loop
         jumpe 04,stage1_raw_handoff
         jrst stage1_handoff
+
+; A TSFS bootable member puts its normal redundant descriptors in blocks 1
+; and 2 and its table directory at block 3.  Skip these (and any file/extent
+; metadata blocks) without copying them into RAM.  The host formatter has
+; reserved the tail extent before allocating ordinary file data.
+hybrid_stream:
+        pushj 017,read_word
+        move 014,03               ; physical tail block
+        caige 014,4
+        jrst bad_tape
+        caile 014,01101           ; TSFS has 01102 blocks per member
+        jrst bad_tape
+        movei 010,0174           ; 128 - 4 header words
+        camle 010,02
+        move 010,02
+hybrid_prefix_loop:
+        pushj 017,read_word
+        movem 03,0(01)
+        aoj 01,
+        subi 02,1
+        sojg 010,hybrid_prefix_loop
+        jumpe 02,stage1_raw_handoff
+
+        ; We have just finished physical block zero.  The next tail word is
+        ; at block 014, so discard exactly (014-1)*0200 metadata words.
+        move 07,014
+        subi 07,1
+        lsh 07,7
+hybrid_skip_loop:
+        pushj 017,read_word
+        sojg 07,hybrid_skip_loop
+hybrid_tail_loop:
+        pushj 017,read_word
+        movem 03,0(01)
+        aoj 01,
+        sojg 02,hybrid_tail_loop
+        jrst stage1_raw_handoff
 
 ; Return the next 36-bit DCT word in AC3.  DTC status B distinguishes genuine
 ; controller/data errors from reaching the end zone before the declared image
