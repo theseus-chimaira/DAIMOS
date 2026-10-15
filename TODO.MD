@@ -281,3 +281,27 @@ KERNEL ABIS.
   MAINTENANCE TOOLS; DO NOT ADD AN INITFS ROOT.
 - SLAVE REVERSE INTERRUPTS AND PCLK INTERRUPT DELIVERY.
 - A HARDWARE-PAGER VM BACKEND FOR LATER PDP-10 MACHINES.
+
+## Deferred: executable opt-in for compressed process swap (2026-10-15)
+
+- [ ] Reserve an unused, backwards-compatible DXR executable-header flag
+  (`COMPRESSIBLE` or equivalent) after auditing existing DXR flag allocations.
+  This flag describes the expected compressibility of *runtime process memory*;
+  it is distinct from the existing DXR `COMPRESSED` executable-payload flag.
+- [ ] On `exec`, initialize the process compressibility bit from the executable;
+  inherit it across `fork`, and replace it on a subsequent `exec`. Keep the
+  default uncompressed for unmarked executables; no adaptive statistics,
+  heuristics, size-only prepass, or runtime policy controls initially.
+- [ ] Swap-out: bypass the codec entirely for unmarked processes. For marked
+  processes, attempt the native compressor; if it cannot encode safely or
+  produces no useful reduction, retain the existing raw swap transaction.
+  Preserve atomic allocation/write/rollback semantics on any failure.
+- [ ] Keep a separate *swap-record* `COMPRESSED` bit to describe the actual
+  stored representation, independent of the process opt-in bit. Swap-in must
+  decode according to the record and validate the exact restored word count.
+- [ ] Before activation, benchmark representative non-text 36-bit process
+  images with AAP logical ticks for encode/decode, compressed block count,
+  temporary stack/RAM, and I/O tradeoffs. Test roundtrip, incompressible
+  fallback, allocation failure, rollback, `fork`/`exec` inheritance and
+  mixed compressed/raw swap records in daimos-testkit. Do not modify the
+  running parallel kernel implementation as part of this TODO entry.
