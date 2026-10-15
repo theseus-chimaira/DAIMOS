@@ -86,14 +86,15 @@ cv_count:
         movem   3,CV_CURSOR(17)
         jumpn   1,cv_consumed
         ; Exact output reached: no buffered or unread trailing words.
+        ; Check each condition independently.  CAMN skips the NEXT
+        ; instruction on equality, so pairing it with SKIPN could
+        ; accidentally accept a group when CV_LEFT was still nonzero.
         move    0,CV_GROUP(17)
         camn    0,CV_USED(17)
-        skipn   CV_LEFT(17)
-        jrst    cv_finish_check
+        jrst    cv_check_left
         jrst    cv_bad
-cv_finish_check:
-        move    0,CV_GROUP(17)
-        camn    0,CV_USED(17)
+cv_check_left:
+        skipn   CV_LEFT(17)
         jrst    cv_good
         jrst    cv_bad
 cv_consumed:

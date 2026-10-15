@@ -38,6 +38,19 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v078 exact-consumption correctness regression
+
+Fixed the staged `d6codec_vfs_v062.s` exact-output check: the old
+CAMN/SKIPN chain could accept completed output when the advertised
+compressed stream still had unread trailing words. The corrected branch
+checks both `CV_GROUP == CV_USED` and `CV_LEFT == 0` independently.
+`daimos-testkit/tests/validation/d6codec-vfs-v078` exercises a five-word
+source with a four-word complete compressed payload and an actual unread
+trailer; native PDP-6 rejects it. Native v062 success/truncation, v066
+64-word window carry, and v067 register ABI regressions all PASS. This
+fix changes only the inactive staged VFS adapter; real registered-provider
+invocation and measured nested provider-stack bounds are still required.
+
 ### v077 real-D6FS extracted parity, host and native PDP-6
 
 Testkit `tests/system/d6codec-userspace-v077` includes a **read-only**
