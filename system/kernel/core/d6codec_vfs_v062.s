@@ -36,9 +36,13 @@ d6codec_vfs_v062:
         jumpe   3,cv_bad
         movem   1,CV_ORIGIN(17)
         movem   1,CV_CURSOR(17)
-        add     2,1
-        caile   2,0777777
+        ; The output span must fit in the 18-bit PDP-6 address space.
+        ; Do not let arithmetic wrap or reach the first word beyond core.
+        move    0,1
+        add     0,2
+        camle   0,[01000000]
         jrst    cv_bad
+        add     2,1
         movem   2,CV_END(17)
         setzm   CV_USED(17)
 cv_next:
@@ -122,8 +126,14 @@ cv_refill:
         move    2,CV_OFFSET(17)
         movei   3,CV_INPUT(17)
         add     3,6
+        ; Save the requested capacity: a faulty provider must never be
+        ; allowed to publish more words than fit in the stack window.
+        push    17,4
         pushj   17,vfs_read_words
+        pop     17,4
         jumple  1,cv_bad
+        camle   1,4
+        jrst    cv_bad
         addm    1,CV_USED(17)
         addm    1,CV_OFFSET(17)
         movn    0,1

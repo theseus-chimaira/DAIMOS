@@ -38,6 +38,21 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v063 provider-count and address-bound audit
+
+The inactive VFS adapter now rejects output spans extending beyond the
+18-bit PDP-6 physical address range and checks every VFS return count
+against the actual requested capacity before treating the refill as valid.
+An overreporting VFS provider could previously raise `CV_USED` beyond the
+64-word stack window; that is a correctness bug, not a permitted fast path.
+`daimos-testkit/tests/validation/d6codec-vfs-v063` passes on PDP-6 using a
+stub which returns 65 words for a one-word actual copy. The earlier v062
+native short-read/truncation fixture continues to pass. One additional
+transient stack word holds requested capacity across the read; no permanent
+storage or additional decoder buffer is allocated.
+
+The adapter remains inactive and unaccepted for real VFS integration.
+
 `system/kernel/core/d6codec_vfs_v062.s` is a separate, inactive native
 adapter for the v061 grouped decoder. It preserves AC10..AC16, holds a
 64-word VFS refill window on the kernel stack, counts descriptors from
