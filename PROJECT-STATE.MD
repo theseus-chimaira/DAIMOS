@@ -1,3 +1,25 @@
+# 2026-10-15 v155: resolve PDP-6 SIMH GO/address regression
+
+- A clean GCC regression restart exposed many unrelated direct-target tests
+  timing out under `p10run --exec-mode go`.  The same test completed with
+  bounded `STEP`, and a minimal `HALT` at 001000 reproduced `GO 1000`
+  timing out in the then-installed simulator.  This was not a compiler,
+  kernel, or backstore algorithm defect.
+- Root cause in the newer SIMH PDP-6 CPU register table: the newly added
+  512-entry OPCOUNT histogram was placed before PC.  SIMH's GO/RUN address
+  handling requires PC to be the first CPU register.  Restored that invariant
+  in the `sims` repository without changing the histogram's counters.
+- Clean emulator built, minimal HALT GO test PASS, target backstore via
+  `p10run` PASS, and KCC stack-adjustment codegen guard PASS.  Installed the
+  fixed simulator in `$PDP10_PREFIX/bin/pdp6`, retaining the preceding binary
+  in `$TMPDIR/pdp6-pre-v155-go-regression.bin` for comparison.  New testkit
+  `check-simh-pdp6-go-pc-v155.sh` rejects the broken binary and passes the
+  fixed one; the guard runs before the direct-target suite.
+- Full 32-row GCC/KCC matrix acceptance remains open pending clean sweeps
+  with the corrected simulator.  The earlier GO timeouts must not be counted
+  as target-code failures; unrelated image-size and integration failures
+  remain independent.
+
 # 2026-10-15 v154: repair compact SIXMD HELP on PDP-6
 
 - Isolated the two DSH v152 conformance failures: `HELP ECHO` showed only
