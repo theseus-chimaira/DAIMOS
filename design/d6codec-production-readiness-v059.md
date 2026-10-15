@@ -38,6 +38,20 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v076 256K userspace `-G` execution smoke
+
+The new `daimos-testkit/tests/system/d6codec-userspace-v076` boots a
+non-32K GCC full-profile D6FS image, loads the *uncompressed* userspace
+D6LZ utility, runs `D6LZ -G /CONFIG/PASSWD /TEMP/GRP`, and checks that
+the resulting regular file is visible through `STAT`. Both shell probes
+pass on PDP-6 SIMH. This proves execution and file creation only; the
+test does not yet extract the compressed bytes or compare decoding against
+the independent host/native reference implementations. Initial KCC
+build attempts also exposed a separate pre-existing packed-process
+prototype/identifier collision; the successful run used a clean GCC
+full-profile build with explicit local toolchain source paths. The
+full post-cutover matrix remains required and must exclude all 32K cases.
+
 ### v075 staged userspace raw grouped writer
 
 The existing `userland/d6lz/d6lz.c` now offers an experimental `-G`
