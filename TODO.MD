@@ -28,6 +28,27 @@
 
 # DAIMOS TODO
 
+## KINIT storage inventory and VFS mount sizing (2026-10-15)
+
+- [ ] Fix drum D6FS BLOCKSET discovery separately: root selection currently
+  discovers a selected DSK/DRM root set, while AUXSTORE discovery checks only
+  DRM0 (then DSK0). Audit other drum units and complete/non-root BLOCKSET
+  detection without unsafe probes of unattached hardware. Preserve existing
+  root-selection and AUXSTORE semantics until native tests establish the fix.
+- [ ] For the current VFS capacity plan, count every disk/drum unit outside
+  *known* BLOCKSET membership as potentially independently mountable. Do not
+  assume an unexamined drum is reserved for swap or belongs to a BLOCKSET.
+  Count a known BLOCKSET as one logical filesystem. Exclude independently
+  impossible non-root TSFS sets; the boot TSFS root counts as one mount.
+- [ ] Audit VFS mount tables, mount-ID dispatch, D6FS/DTFS/TSFS/MEMFS mount
+  state, and packed per-mount policy before selecting a boot-time capacity.
+  Compare 16 and 17 mounts by full post-fold resident plus dynamic RAM cost;
+  retain 17 if the extra slot is inexpensive. Account for future/removable
+  media rather than sizing solely to currently mounted filesystems. Audit and
+  implementation sequence: `design/vfs-mount-capacity-20261015-v1.md`.
+- [ ] Defer block-cache policy changes pending a separate design discussion.
+
+
 ## LIBC ASSEMBLY OPTIMIZATION CANDIDATES — DEFERRED (2026-10-14)
 
 - Investigate `qsort` first: profile the existing generic comparator-based
