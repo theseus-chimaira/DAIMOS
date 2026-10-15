@@ -290,8 +290,8 @@ exec_replace_return:
         popj    17,
 
         ; Frame offsets relative to the fully advanced AC17.
-        .equ    EXEC_LM_SAVE_FIRST,-010
-        .equ    EXEC_LM_SAVE_LAST,-002
+        .equ    EXEC_LM_SAVE_FIRST,-011
+        .equ    EXEC_LM_SAVE_LAST,-003
         .equ    EXEC_LM_META,-002
         .equ    EXEC_LM_LAUNCH,-001
         .equ    EXEC_LM_FRAME,012

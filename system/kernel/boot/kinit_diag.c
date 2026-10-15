@@ -48,10 +48,11 @@ kinit_probe_word(volatile kword_t *addr)
 /**
  * @brief Detect installed core in the supported 32K..256K range.
  *
- * PDP-6 memory is tested at the last word of each 32K boundary.  The minimum
- * supported configuration is 32K, so probing starts at 64K and records the
- * highest boundary that responds as writable core.  APR state is cleared
- * after every attempt because an absent boundary normally raises NXM.
+ * PDP-6 core can be expanded in 8K-word modules.  Probe the last word of
+ * each 8K boundary beyond the 32K boot minimum.  Installed core is a
+ * contiguous prefix: stop at the first absent bank rather than counting
+ * higher addresses that might alias or be independently mapped.  Clear APR
+ * NXM state after each attempt, including the first unsuccessful probe.
  *
  * The returned value is in Kwords (1024 PDP-10 words), matching the boot
  * diagnostics and the conversion performed by kinit_enter().
@@ -66,10 +67,13 @@ kinit_memory_kwords(void)
         kword_t words;
 
         found = 32U;
-        for (k = 64U; k <= 256U; k += 32U) {
+        for (k = 40U; k <= 256U; k += 8U) {
                 words = ((kword_t)k) << 10;
-                if (kinit_probe_word((volatile kword_t *)(unsigned long)(words - 1UL)))
-                        found = k;
+                if (!kinit_probe_word((volatile kword_t *)(unsigned long)(words - 1UL))) {
+                        kinit_apr_clear();
+                        break;
+                }
+                found = k;
                 /* A failed probe is expected to set the PDP-6 APR NXM flag.
                  * Do not leave it pending until PI/clock initialization. */
                 kinit_apr_clear();
@@ -89,47 +93,35 @@ kinit_put6_spaces(unsigned int words)
 }
 
 /*
- * Memory probing returns only 32K multiples from 32K through 256K.  The
- * corresponding display field is therefore a fixed eight-entry table rather
- * than a general decimal formatter.  This keeps KINIT small and avoids integer
- * division on the PDP-6 merely to print one boot-time value.
- *
- * Each row is two six-character SIXBIT words.  The leading word right-aligns
- * the hundreds digit; the second word supplies the remaining digits and "K".
- */
-static const kword_t kinit_memory_text[8][2] = {
-        { PDP10_SIX6(' ', ' ', ' ', ' ', ' ', ' '),
-            PDP10_SIX6('3', '2', ' ', 'K', ' ', ' ') },
-        { PDP10_SIX6(' ', ' ', ' ', ' ', ' ', ' '),
-            PDP10_SIX6('6', '4', ' ', 'K', ' ', ' ') },
-        { PDP10_SIX6(' ', ' ', ' ', ' ', ' ', ' '),
-            PDP10_SIX6('9', '6', ' ', 'K', ' ', ' ') },
-        { PDP10_SIX6(' ', ' ', ' ', ' ', ' ', '1'),
-            PDP10_SIX6('2', '8', ' ', 'K', ' ', ' ') },
-        { PDP10_SIX6(' ', ' ', ' ', ' ', ' ', '1'),
-            PDP10_SIX6('6', '0', ' ', 'K', ' ', ' ') },
-        { PDP10_SIX6(' ', ' ', ' ', ' ', ' ', '1'),
-            PDP10_SIX6('9', '2', ' ', 'K', ' ', ' ') },
-        { PDP10_SIX6(' ', ' ', ' ', ' ', ' ', '2'),
-            PDP10_SIX6('2', '4', ' ', 'K', ' ', ' ') },
-        { PDP10_SIX6(' ', ' ', ' ', ' ', ' ', '2'),
-            PDP10_SIX6('5', '6', ' ', 'K', ' ', ' ') }
-};
-
-/*
- * Print the fixed-width memory-size field for a detected 32K multiple.
- *
- * Shifting by five divides the Kword count by 32; subtracting one maps
- * 32K..256K to table indices 0..7.
+ * Format the 32K..256K detected size without the old 32K-step lookup table.
+ * The three decimal digits fit in one SIXBIT word alongside " K ".  Repeated
+ * subtraction is small and bounded (at most nine iterations for each digit),
+ * and avoids pulling integer division into the early bootstrap.
  */
 static void
 kinit_put_memory(unsigned int value)
 {
-        unsigned int index;
+        unsigned int hundreds;
+        unsigned int tens;
+        kword_t field;
 
-        index = (value >> 5) - 1U;
-        kinit_put6(kinit_memory_text[index][0]);
-        kinit_put6(kinit_memory_text[index][1]);
+        hundreds = 0U;
+        while (value >= 100U) {
+                value -= 100U;
+                ++hundreds;
+        }
+        tens = 0U;
+        while (value >= 10U) {
+                value -= 10U;
+                ++tens;
+        }
+        field = (kword_t)SIXBIT("    K ");
+        if (hundreds != 0U)
+                field |= ((kword_t)(hundreds + 020U)) << 30U;
+        field |= ((kword_t)(tens + 020U)) << 24U;
+        field |= ((kword_t)(value + 020U)) << 18U;
+        kinit_put6(0);
+        kinit_put6(field);
 }
 
 /**
