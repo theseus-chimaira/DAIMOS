@@ -1,3 +1,18 @@
+## 2026-10-15 NATIVE GROUPED PURE SWAP RELOAD V091
+
+`daimos-testkit/tests/target/daimos-swap-pure-grouped-v091` PASSes
+on PDP-6 with the **actual** `proc_swap_out` and `proc_swap_in`
+assembly, current split PURE backing code and storage lifecycle map.
+The fixture supplies correctly framed 30-token grouped literal streams
+through a mock VFS provider, asserts actual compressed-payload reads,
+and verifies every PURE text word and every writable suffix word after
+swap-in. It also verifies omitted swap-prefix geometry, release of swap
+blocks, non-PURE whole-image fallback, backing pins and the optional
+PURE verification assertion. This is real native swap execution, but
+not a full-system pressure/eviction regression against a real D6FS node.
+The codec remains single-format; no TXG negotiation or legacy fallback.
+Full final configurations exclude 32K.
+
 ## 2026-10-15 GENUINE PURE GROUPED DXR V090
 
 `daimos-testkit/tests/validation/d6codec-pure-v090` proves that host

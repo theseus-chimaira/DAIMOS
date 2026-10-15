@@ -1,3 +1,12 @@
+## GROUPED CODEC V091 PURE SWAP ACCEPTANCE
+
+- Native PDP-6 assembly `proc_swap_out`/`proc_swap_in` grouped-PURE
+  fixture PASS, with observed grouped payload reads and exact complete
+  TEXT and writable-suffix restoration (`daimos-testkit` v091).
+- Remaining: full-system 256K eviction against a real filesystem-backed
+  PURE DXR, other boot media, TSFS, failure paths, and stack high-water.
+- Do not treat mock-provider native swap as real-device D6FS coverage.
+
 ## GROUPED CODEC V090 REMAINING PURE SWAP GATE
 
 - Completed: genuine linked `--pure` grouped-compressed DXR, identical
