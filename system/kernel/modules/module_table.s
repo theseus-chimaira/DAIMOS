@@ -47,6 +47,8 @@
         .globl storage_minit
 .if KINIT_FULL
         .globl slv_minit
+.endif
+.if KINIT_TAPE_BOOT
         .globl dtfs_minit
 .endif
 .if KINIT_FULL | BOOT_MEMFS

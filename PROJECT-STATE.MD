@@ -1,3 +1,25 @@
+# 2026-10-15 v152: 256K target, full-profile module declaration, testkit audit
+
+- Corrected the intended high-memory target from the earlier typo 254K to
+  **256K**. Fresh 256K lowmem-profile and full-profile D6FS-root boots each
+  reach DCS0 LOGIN, authenticate ROOT and start DSH V1.
+- Fixed full-profile `dtfs_minit` linkage: module-table references were
+  declared under KINIT_FULL but the actual DTFS entry is conditional on
+  KINIT_TAPE_BOOT. The declaration now uses the same feature condition as
+  the entry. This avoids an undefined external on 256K full-profile KINIT.
+- The independently isolated 115-probe DSH conformance run completed with
+  113 PASS and 2 FAIL. HELP ECHO omitted `[ARG ...]`; HELP DAS omitted
+  `-O FILE`. Full MAN DAS output, quoting, globbing, pipelines, jobs and
+  the other tested DSH behaviors passed. Compact HELP rendering remains open.
+- A clean GCC full regression matrix was started with distinct TMPDIR; it
+  reached row 025 of 032 before execution-environment interruption. Multiple
+  groups failed due to nonportable `../kcc` source paths and wrong installed
+  `mkd6fs` selection in older test runners; separate failures include a DTC
+  Stage1 size cap (112 > 106 words), a PDP-6 stack-codegen test expectation,
+  and a target swap-test link error (`proc_swap_backing_busy`). It is NOT a
+  completed or passing full matrix. KCC matrix not completed. Do not treat
+  the 256K boot acceptance or 113/115 DSH as full-suite acceptance.
+
 # 2026-10-15 v151: forced low-memory EXEC succeeds under real BRK pressure
 
 - An instrumented 64K native userspace test expanded PID 1's user break to

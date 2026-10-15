@@ -169,6 +169,14 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
+- [x] v152: Accept 256K (not 254K) lowmem/full boot; full KINIT DTFS
+  declaration now matches KINIT_TAPE_BOOT. DCS0 LOGIN -> ROOT -> DSH PASS.
+- [ ] v152: Compact HELP ECHO/DAS missing operand/option details (two
+  failures in 115-probe DSH suite); resolve renderer and retest.
+- [ ] v152: Re-run complete GCC and KCC matrix on a clean worktree-compatible
+  harness; DTC Stage1 size, PDP-6 compiler stack expectation and swap-test
+  undefined external need investigation.
+
 - [x] v151: Force 64K EXEC staging allocation failure using user BRK +
   a large BSS target. Fix full-width `EXEC_LOAD_NOMEM` compare and clear
   `PROC_TRANSITION` after old-VM retirement so blocking VFS can resume.
