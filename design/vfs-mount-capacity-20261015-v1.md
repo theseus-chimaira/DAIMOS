@@ -68,6 +68,17 @@ there are no four-slot fixed-symbol references. Standalone DAS assembly
 passes; native execution and integration into live parent paths are pending.
 This is intentionally separate from the unrelated filesystem parent dispatch.
 
+## Production parent-boundary consolidation (v7)
+
+The active `fs/vfs.s` now shares one `vfs_parent_resolve_slot` leaf between
+`vfs_parent` and `vfs_parent_name`, instead of duplicating fixed-array loads
+and comparisons. This limits the eventual dynamic-address cutover to one
+internal parent-resolution site. It preserves the existing four-mount bound
+and direct `vfs_mount_root`/`vfs_mount_target` addressing; it is NOT the
+16-mount activation. The modified production source assembles successfully
+as a relocatable kernel object with `das -C`; linked KCORE and native boot
+regressions remain pending.
+
 `system/kernel/fs/vfs_mount_access_v5.s` is the first standalone native
 consumer of the proposed slab. It takes explicit absolute target/root bases,
 the KINIT-selected capacity and a target vnode, searches only in-bounds slots,

@@ -225,11 +225,20 @@ vfs_parent_mount:
         cail   3,4
         jrst    vfs_parent_raw_asm
 vfs_parent_mount_check:
-        move    4,vfs_mount_root(3)
-        came    4,1
+        move    4,3
+        pushj   17,vfs_parent_resolve_slot
         jrst    vfs_parent_raw_asm
-        move    1,vfs_mount_target(3)
-        jrst    vfs_parent_raw_asm
+
+; Common mount-root boundary resolver for vfs_parent and vfs_parent_name.
+; AC1 = vnode, AC4 = validated zero-based mount slot; AC5 = scratch.
+; The fixed-array addressing is isolated here, ready for the coordinated
+; boot-sized slab cutover; AC2/AC3 (caller pointers) must remain untouched.
+vfs_parent_resolve_slot:
+        move    5,vfs_mount_root(4)
+        came    5,1
+        popj    17,
+        move    1,vfs_mount_target(4)
+        popj    17,
 
 ; int vfs_parent_name(node, parentp, namep)
 ; MonitorFS directories use this same component-name path as mounted providers,
@@ -245,9 +254,7 @@ vfs_parent_name:
         sojl    4,vfs_parent_name_dispatch
         cail    4,4
         jrst    vfs_parent_name_dispatch
-        move    5,vfs_mount_root(4)
-        camn    5,1
-        move    1,vfs_mount_target(4)
+        pushj   17,vfs_parent_resolve_slot
 vfs_parent_name_dispatch:
         ldb     7,[POINT 6,1,5]
         cain    7,2
