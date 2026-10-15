@@ -190,9 +190,15 @@ exec_replace_loaded:
         pushj   17,vm_space_startup
         jumpe   1,exec_replace_startup_ok
 
+        ; Packed-VM retirement requires the live owner to be in a lifecycle
+        ; transition, including cleanup of a staged (unpublished) image.
+        movei   1,0200000               ; PROC_F_TRANSITION in descriptor RH
+        iorm    1,(16)
         movei   1,EXEC_R_STAGED(17)
         move    2,13
         pushj   17,vm_space_destroy
+        movei   1,0200000
+        andcam  1,(16)
         jrst    exec_replace_restore_fail
 
 exec_replace_startup_ok:
@@ -209,6 +215,10 @@ exec_replace_startup_ok:
         move    2,PROC_FDCTL_OFFSET(1)
         andcmi  2,PROC_USER_MAP_BIT
         movem   2,PROC_FDCTL_OFFSET(1)
+        ; The active packed backend rejects VM teardown unless the owning
+        ; process has PROC_TRANSITION set.  Keep it set through commit/rollback.
+        movei   1,0200000
+        iorm    1,(16)
         move    1,16
         move    2,13
         pushj   17,vm_space_destroy
@@ -221,6 +231,8 @@ exec_replace_startup_ok:
         movei   1,EXEC_R_STAGED(17)
         move    2,13
         pushj   17,vm_space_destroy
+        movei   1,0200000
+        andcam  1,(16)
         jrst    exec_replace_restore_fail
 
 exec_replace_commit:
@@ -249,6 +261,9 @@ exec_replace_commit:
         movem   1,3(12)
         move    1,EXEC_R_STARTUP+2(17)
         movem   1,4(12)
+
+        movei   1,0200000
+        andcam  1,(16)                 ; replacement is fully committed
 
         jumpe   14,exec_replace_success
         skipn   EXEC_R_STAGED+2(17)     ; old RT + new non-RT image
@@ -337,6 +352,9 @@ exec_replace_current_lowmem:
         ; Release the direct user-map hold before destroying its containing VM.
         pushj   17,vm_user_mapping_release
 
+        movei   1,0200000               ; PROC_F_TRANSITION
+        iorm    1,(15)
+
         move    1,15
         move    2,14
         pushj   17,vm_space_destroy
@@ -344,6 +362,8 @@ exec_replace_current_lowmem:
 
         ; Destruction failed before proc_swap_detach; the old image remains
         ; valid, so restore its user-map hold and return non-destructively.
+        movei   1,0200000
+        andcam  1,(15)
         pushj   17,vm_user_mapping_hold
         seto    16,
         jrst    exec_lowmem_free
@@ -372,6 +392,7 @@ exec_lowmem_old_gone:
         hlrz    1,(15)
         movem   1,(13)
         move    1,EXEC_LM_META(17)
+        iori    1,0200000               ; preserve transition through startup
         movem   1,(15)
 
         move    1,15
@@ -415,6 +436,8 @@ exec_lowmem_release_old_rt:
         camn    1,14
         setzm   proc_rt_owner
 exec_lowmem_success:
+        movei   1,0200000
+        andcam  1,(15)
         setz    16,
         jrst    exec_lowmem_free
 

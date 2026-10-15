@@ -169,7 +169,17 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
 
 ## P2: kernel data structures and workload-specific sizing
 
-- [ ] v143: Determine whether compressed LOGIN's third `exec_load_process`
+- [x] v150: Packed-VM EXEC lifecycle fixed in both C and PDP-6 assembly.
+  `PROC_TRANSITION` now brackets live/staged VM retirement, including the
+  low-memory direct-EXEC path. Fresh D6FS boots at 64K and 128K PASS DCS0
+  LOGIN -> ROOT -> DSH V1; testkit `daimos-login-dsh-boot-v150.sh` covers
+  this full acceptance gate. All 16 native MM/VM regressions and EXEC ABI
+  PASS. KCORE end 027152 (+021 octal = 17 decimal code words), no new
+  per-process words.
+- [ ] v150: Targeted fault-injection coverage for forced low-memory EXEC
+  rollback; do not confuse this with accepted normal EXEC commit.
+
+- [x] v143: Determine whether compressed LOGIN's third `exec_load_process`
   invocation completes successfully, and whether slot 2 becomes runnable.
   Host D6LZ36 format/image parity verified; do not confuse the Stage1 decoder
   at 000060 or INIT slot-1 queue operations with LOGIN publication.
@@ -178,12 +188,12 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
   at 000060, matching Stage1's absolute branch targets. Both Makefiles'
   linker input orders now agree; 64K/128K compressed boot milestone tests
   PASS with unchanged KCORE size. All 16 native MM/VM tests PASS.
-- [ ] v142 follow-up: Diagnose why DCS0 does not emit LOGIN despite INIT
-  reaching its milestone and staying alive; interactive boot not yet accepted.
+- [x] v142 follow-up: DCS0 LOGIN is operational. Earlier missing output was
+  due to a conflicting simulator TCP port; dedicated-port 64K/128K runs
+  confirm LOGIN, ROOT authentication, and DSH V1 (v150).
 
-- [ ] v140: Fix the reproducible INIT WAIT-to-PC-zero failure. New testkit
-  isolated dual-breakpoint trace proves WAIT entry and later PC-zero;
-  investigate syscall return, stack lifetime and PI6 subsequent transitions.
+- [x] v140: PC-zero failure fixed by v142 D6LZ fixed-address link ordering;
+  the earlier WAIT/PI6 context trace was not the root cause.
 
 - [x] v138: Load and mount a real MEMFS on `/TEMP` at 64K+ lowmem;
   retain 32K's deliberately absent provider. Keep MEMFS MRES before D6FS

@@ -1,3 +1,28 @@
+# 2026-10-15 v150: complete 64K/128K DCS0 LOGIN -> ROOT -> DSH boot
+
+- Resolved the remaining ROOT `LOGIN: EXEC FAILED` defect. The active packed
+  PDP-6 backend calls `proc_packed_destroy_v084`, which rejects VM teardown
+  unless the owning process has `PROC_TRANSITION` set. EXEC replacement had
+  omitted that lifecycle exclusion even though ordinary process exit already
+  establishes it. The old LOGIN VM could not be retired after DSH image load
+  and startup succeeded. Fixed in both `proc/exec.c` and the actual PDP-6
+  `proc/exec_lowmem_pdp6.s` paths, including staged-image rollback and the
+  low-memory direct-replacement path. Transition is cleared on successful
+  commit and on recoverable failure. No new per-process memory.
+- Fresh GCC lowmem D6FS-root **64K and 128K** boots reach `MEMFS LOADED`,
+  `D6FS LOADED`, `INIT V1`, DCS0 `LOGIN:`, then authenticate `ROOT` and print
+  `DSH V1` and the shell prompt. New isolated-port testkit gate
+  `daimos-login-dsh-boot-v150.sh` PASS at both sizes. Prior missing LOGIN
+  observations used a conflicting default DCS TCP port and were not kernel
+  failures. The host/target D6LZ format is compatible for this executable.
+- All 16 PDP-6 native MM/VM tests PASS; EXEC ABI test PASS. With the
+  lifecycle code, `__kcore_low_end` is 027152 (previous 027131): 021 octal
+  additional resident code words = 17 decimal. The D6LZ core remains 000060.
+- **Remaining:** The 32K full boot remains deferred pending DSH minimization.
+  Exactly 254K is not an accepted boot configuration yet; 64K/128K are now
+  interactive-boot-accepted. Low-memory forced EXEC rollback remains a
+  separate unexercised edge case, although its transition protocol was fixed.
+
 # 2026-10-14 v143: LOGIN compressed image parity and load-path trace
 
 - A freshly compiled `tools/host/d6lz.c` and the installed `d6lz -x`

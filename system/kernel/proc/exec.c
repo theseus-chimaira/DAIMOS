@@ -115,7 +115,9 @@ exec_replace_current(const kword_t *block,
                 goto restore_swap_fail;
         counts = ((kword_t)argc << 18U) | (kword_t)envc;
         if (vm_space_startup(&staged, records, counts, startup) != 0) {
+                PROC_SET_TRANSITION(current);
                 (void)vm_space_destroy(&staged, slot);
+                PROC_CLEAR_TRANSITION(current);
                 if (!old_rt_owner && load_result == EXEC_LOAD_RT_REQUIRED &&
                     (unsigned int)proc_rt_owner == slot)
                         proc_rt_owner = 0UL;
@@ -127,9 +129,11 @@ exec_replace_current(const kword_t *block,
         /* The mapped launch block is no longer referenced.  Clear the hold
          * before freeing its containing VM; the failure path restores it. */
         PROC_CTL_WORD(current) &= ~PROC_USER_MAP_BIT;
+        PROC_SET_TRANSITION(current);
         if (vm_space_destroy(current, slot) != 0) {
                 PROC_CTL_WORD(current) |= PROC_USER_MAP_BIT;
                 (void)vm_space_destroy(&staged, slot);
+                PROC_CLEAR_TRANSITION(current);
                 goto restore_swap_fail;
         }
 
@@ -144,6 +148,7 @@ exec_replace_current(const kword_t *block,
         entry_startup[2] = startup[0];
         entry_startup[3] = startup[1];
         entry_startup[4] = startup[2];
+        PROC_CLEAR_TRANSITION(current);
         if (old_rt_owner && load_result == EXEC_LOAD_OK &&
             (unsigned int)proc_rt_owner == slot)
                 proc_rt_owner = 0UL;
