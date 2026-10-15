@@ -15,6 +15,54 @@
 
         .text
         .globl vfs_mount_lookup_v5
+        .globl vfs_mount_slot_read_v5
+        .globl vfs_mount_slot_write_v5
+        .globl vfs_mount_slot_clear_v5
+
+; Common indexed access ABI:
+;   AC1 = table base, AC2 = capacity (1..16), AC3 = slot (0..capacity-1)
+; READ:  AC4 <- word, AC1 <- 0 on success or -1 on invalid access.
+; WRITE: AC4 = word; AC1 <- 0 on success, -1 on invalid access.
+; CLEAR: AC1 <- 0 on success, -1 on invalid access.
+; AC5 is scratch. AC4 is unchanged on READ failure. A separate status avoids
+; reserving any special sentinel from the full 36-bit value domain.
+vfs_mount_slot_read_v5:
+        pushj 17,vfs_mount_slot_addr_v5
+        jumpl 5,vfs_mount_slot_invalid_v5
+        move 4,(5)
+        setz 1,
+        popj 17,
+vfs_mount_slot_write_v5:
+        pushj 17,vfs_mount_slot_addr_v5
+        jumpl 5,vfs_mount_slot_invalid_v5
+        movem 4,(5)
+        setz 1,
+        popj 17,
+vfs_mount_slot_clear_v5:
+        pushj 17,vfs_mount_slot_addr_v5
+        jumpl 5,vfs_mount_slot_invalid_v5
+        setzm (5)
+        setz 1,
+        popj 17,
+vfs_mount_slot_invalid_v5:
+        seto 1,
+        popj 17,
+
+; Internal address calculation does not touch AC1..AC4.
+vfs_mount_slot_addr_v5:
+        jumple 2,vfs_mount_slot_addr_bad_v5
+        caile 2,020
+        jrst vfs_mount_slot_addr_bad_v5
+        jumpl 3,vfs_mount_slot_addr_bad_v5
+        caml 3,2
+        jrst vfs_mount_slot_addr_bad_v5
+        move 5,1
+        add 5,3
+        popj 17,
+vfs_mount_slot_addr_bad_v5:
+        seto 5,
+        popj 17,
+
 vfs_mount_lookup_v5:
         jumple 3,vfs_mount_lookup_v5_none
         caile 3,020                  ; 16 decimal, 020 octal

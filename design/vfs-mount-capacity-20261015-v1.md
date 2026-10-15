@@ -67,6 +67,12 @@ testkit execution fixture and migrate remaining parent, lookup, mount,
 unmount and FSINFO paths as a coordinated change. Direct fixed-symbol access
 cannot safely coexist with slab-based publication.
 
+The same staged assembly now exports checked READ/WRITE/CLEAR table access
+primitives for slots 0..capacity-1. READ publishes the full 36-bit datum
+separately from success/failure status, and invalid access does not mutate
+the table. DAS object generation is checked in daimos-testkit at
+`tests/system/vfs-mount-access-v5`; native runtime execution remains pending.
+
 ## Capacity policy
 
 MONITORFS built-in entries consume no VFS mount slot. The root D6FS or TSFS
