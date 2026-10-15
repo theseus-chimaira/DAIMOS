@@ -55,12 +55,9 @@ mm_delete:
         move    3,1
 mm_delete_loop:
         move    4,3
-        addi    4,1
         lsh     4,1
-        move    5,mm_extents(4)
-        move    6,mm_extents+1(4)
-        move    4,3
-        lsh     4,1
+        move    5,mm_extents+2(4)
+        move    6,mm_extents+3(4)
         movem   5,mm_extents(4)
         movem   6,mm_extents+1(4)
         aoj     3,
@@ -84,12 +81,9 @@ mm_extent_insert_space:
         move    5,7
 mm_extent_insert_shift:
         move    4,5
-        subi    4,1
         lsh     4,1
-        move    2,mm_extents(4)
-        move    3,mm_extents+1(4)
-        move    4,5
-        lsh     4,1
+        move    2,mm_extents-2(4)
+        move    3,mm_extents-1(4)
         movem   2,mm_extents(4)
         movem   3,mm_extents+1(4)
         soj     5,
@@ -148,6 +142,9 @@ mm_find_fit:
         move    011,2
         move    012,3
         move    013,4
+        move    0,011                     ; alignment mask computed once
+        subi    0,1
+        setcm   0,0
         setz    014,
         setz    015,
         seto    016,
@@ -179,6 +176,10 @@ mm_find_fit_extent:
         hrrz    2,mm_extents(1)
         caml    2,5
         jrst    mm_find_fit_tail
+
+; Inspect an interior or arena-tail gap using the same low/high policy.
+; AC2 is the exclusive gap end; AC4 is the first free word.
+mm_find_fit_gap:
         camg    2,4
         jrst    mm_find_fit_after_gap
         move    6,2
@@ -189,10 +190,7 @@ mm_find_fit_extent:
         jrst    mm_find_fit_after_gap
         move    7,2
         sub     7,010
-        move    3,011
-        subi    3,1
-        setcm   3,3
-        and     7,3
+        and     7,0
         caml    7,4
         move    016,7
         jrst    mm_find_fit_after_gap
@@ -200,16 +198,18 @@ mm_find_fit_low_gap:
         move    7,4
         add     7,011
         subi    7,1
-        move    3,011
-        subi    3,1
-        setcm   3,3
-        and     7,3
+        and     7,0
         move    6,2
         sub     6,7
         camg    010,6
         jrst    mm_find_fit_low_found
 
 mm_find_fit_after_gap:
+        ; A tail gap has no in-arena extent to advance past.
+        caml    015,mm_extent_count
+        jrst    mm_find_fit_next_arena
+        caml    2,5
+        jrst    mm_find_fit_next_arena
         move    1,015
         lsh     1,1
         hrrz    2,mm_extents(1)
@@ -220,35 +220,8 @@ mm_find_fit_after_gap:
         aoja    015,mm_find_fit_extent
 
 mm_find_fit_tail:
-        camg    5,4
-        jrst    mm_find_fit_next_arena
-        move    6,5
-        sub     6,4
-        addm    6,(17)
-        jumpe   012,mm_find_fit_low_tail
-        camge   6,010
-        jrst    mm_find_fit_next_arena
-        move    7,5
-        sub     7,010
-        move    3,011
-        subi    3,1
-        setcm   3,3
-        and     7,3
-        caml    7,4
-        move    016,7
-        jrst    mm_find_fit_next_arena
-mm_find_fit_low_tail:
-        move    7,4
-        add     7,011
-        subi    7,1
-        move    3,011
-        subi    3,1
-        setcm   3,3
-        and     7,3
-        move    6,5
-        sub     6,7
-        camg    010,6
-        jrst    mm_find_fit_low_found
+        move    2,5                      ; arena end is final gap boundary
+        jrst    mm_find_fit_gap
 
 mm_find_fit_next_arena:
         aoja    014,mm_find_fit_arena
@@ -299,12 +272,10 @@ mm_alloc_aligned_noreclaim:
         and     1,011
         jumpn   1,mm_alloc_nr_inval
         jumpe   012,mm_alloc_nr_inval
-        move    1,012
-        and     1,[-4]
-        jumpn   1,mm_alloc_nr_inval
-        move    1,014
-        and     1,[-2]
-        jumpn   1,mm_alloc_nr_inval
+        tdne    012,[-4]
+        jrst    mm_alloc_nr_inval
+        tdne    014,[-2]
+        jrst    mm_alloc_nr_inval
 
         movei   4,-1(17)
         move    1,010
@@ -402,12 +373,13 @@ mm_move_extent:
         movem   1,-1(17)
         jumpn   1,mm_move_restore_pi
 
-        hrlz    1,013
-        hrr     1,015
-        movem   1,-5(17)
+        ; Preserve saved extent length: only its physical base changes.
+        hrrm    015,-5(17)
         move    1,010
         pushj   17,mm_delete
-        setz    014,
+        ; Moving upward: the destination insertion index is never below
+        ; the source index. Start there instead of rescanning from zero.
+        move    014,010
 mm_move_new_slot:
         caml    014,mm_extent_count
         jrst    mm_move_publish
@@ -454,11 +426,7 @@ mm_compact:
         subi    1,1
         and     1,011
         jumpn   1,mm_compact_inval
-        move    1,010
-        move    2,011
-        movei   3,MM_ALLOC_LOW
-        movei   4,(17)
-        pushj   17,mm_find_fit
+        pushj   17,mm_compact_find
         jumpn   1,mm_compact_ok
         move    1,(17)
         camge   1,010
@@ -481,14 +449,18 @@ mm_compact_scan:
         movei   2,VM_EXTENT_ALIGN_WORDS
         pushj   17,mm_move_extent
         jumpn   1,mm_compact_next
-        move    1,010
-        move    2,011
-        movei   3,MM_ALLOC_LOW
-        movei   4,(17)
-        pushj   17,mm_find_fit
+        pushj   17,mm_compact_find
         jumpn   1,mm_compact_ok
         setz    012,
         jrst    mm_compact_scan
+; Private common setup for repeated LOW gap checks.
+mm_compact_find:
+        move    1,010
+        move    2,011
+        movei   3,MM_ALLOC_LOW
+        movei   4,-1(17)
+        jrst    mm_find_fit
+
 mm_compact_next:
         aoja    012,mm_compact_scan
 mm_compact_ok:

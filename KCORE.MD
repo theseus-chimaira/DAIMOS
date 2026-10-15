@@ -1,5 +1,33 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-15 GCC 32K disk-root measurement and MM recovery v138
+
+Isolated baseline at commit `37fba7e`, with `BOOT_PROFILE=lowmem`,
+`COMPILER=gcc`, `ROOT=disk`, `BOOT=dsk`, `BOOT_CORE_WORDS=0100000`,
+`SIMH_CPU_KWORDS=32`, and unchanged `02000` KINIT stack reserve:
+complete image build PASS; KCORE exclusive endpoint `023503` octal
+(10051 decimal); KINIT image end `072203` octal. The MM object is
+520 text + 70 BSS words. The baseline is above the strict 8K target
+by 1860 decimal words (exclusive endpoint must be below 020000).
+
+Current committed MM assembler had lost optimizations from v094, v095,
+v096, v106, v109, v110 and v111 compared with commit `9d52bb0`.
+Restoring that exact v111 assembly in isolation builds a complete GCC
+32K image: KCORE endpoint `023435` octal (10013 decimal), KINIT end
+`072135` octal, MM object 482 text + 70 BSS words. Net whole-image
+improvement is 38 decimal words after folding/layout;
+the MM text contribution also falls by 38 words. The optimized image still
+requires 1822 more words for a strictly below-8K exclusive endpoint.
+
+This is a GCC link-and-package measurement, NOT native runtime
+acceptance. `daimos-testkit` host `mm-core` cannot currently link due to
+missing `proc_storage_publish_v30` and
+`proc_swap_storage_invariant_v30`; fix the test fixture and rerun native
+PDP-6 MM allocation, freeing, relocation and compaction regressions
+before calling the recovered code runtime accepted. The older v136
+external-descriptor branch additionally changes the insertion capacity
+guard; it was not imported into the v138 image.
+
 Date: 2026-10-13
 Basis: current DAIMOS checkout, source code, PROJECT-STATE.MD and
 active build notes. A staged, host-tested implementation is not considered
