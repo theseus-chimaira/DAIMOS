@@ -38,6 +38,19 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v073 host encoder to native decoder differential test
+
+`daimos-testkit/tests/validation/d6codec-host-native-v073` generates a
+350-word deterministic mixed payload in host C99, compresses it using the
+staged v072 host encoder, emits exact octal 36-bit words for the PDP-6
+assembler, and checks that the native v061 decoder reconstructs every
+source word. PASS on PDP-6. Existing v071 host decoder and v072 host
+encoder round-trip tests also pass. The source is generated at test time;
+no golden compressed stream is hardcoded. The staged VFS adapter,
+registered real providers, halfword-match encoder emission and production
+format selection remain outside this test. After full integration the
+user-requested full test run excludes all 32K configurations.
+
 ### v072 bounded staged host encoder
 
 `tools/host/d6codec-group-v072.c` adds a caller-buffered C99 encoder for
