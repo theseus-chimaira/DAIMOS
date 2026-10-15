@@ -30,11 +30,13 @@
 
 ## GROUPED D6 CODEC V077 ACCEPTANCE GATES (2026-10-15)
 
-- Highest priority: reproduce and fix 256K full-profile GCC D6FS boot
-  HALT after `D6FS LOADED` but before `INIT V1`; v076 also reproduces it.
-- Extend actual userspace `D6LZ -G` extraction/host/native parity beyond
-  six words to long mixed-pattern and multi-block inputs; the blocked
-  experimental v077 extended harness is retained under `$TMPDIR`.
+- Completed: fresh isolated 256K full-profile GCC D6FS v077 boot passes.
+  Earlier pre-INIT HALTs occurred on reused cross-worktree build artifacts;
+  keep per-run versioned isolated build roots, never reuse mixed toolchain
+  objects. Four probes and both host/native parity checks PASS.
+- Extend actual userspace `D6LZ -G` host/native extracted parity beyond
+  the verified 2052-word `/SYSTEM/INIT` image to longer mixed-pattern,
+  adversarial and multi-block inputs, including malformed cases.
 - Verify registered provider/cache-miss/lock-wait stack high-water and
   error paths before enabling the new grouped decoder in KCORE.
 - Complete coherent host, userspace, EXEC, swap, filesystem and Stage-1

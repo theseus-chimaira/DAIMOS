@@ -1,16 +1,21 @@
 ## 2026-10-15 D6 CODEC EXTRACTED USERSPACE PARITY V077
 
 Read-only testkit exporter reuses the real D6FS fsck logical/extent
-reader. A retained successful 256K v076 PDP-6 disk image contains the
-six-word `/CONFIG/PASSWD` input and seven-word `/TEMP/GRP` grouped output
-from userspace `D6LZ -G`. The v071 host decoder and v061 native PDP-6
-decoder independently reproduce all six words (PASS); see
-`daimos-testkit/tests/system/d6codec-userspace-v077`. Production D6LZ36
-is unchanged. Expanded `/SYSTEM/INIT` coverage is **blocked**: fresh
-full-profile 256K GCC v076/v077 boots now halt after `D6FS LOADED`, before
-`INIT V1`. Investigate and correct that boot regression before claiming
-real-provider or larger-input acceptance. The completed codec cutover must
-run all applicable tests except 32K configurations.
+reader. A fresh isolated 256K GCC full-profile PDP-6 D6FS image now passes
+four userspace `D6LZ -G`/`STAT` probes. It exports `/CONFIG/PASSWD` (6
+original, 7 compressed words) and `/SYSTEM/INIT` (2052 original, 1888
+compressed words), then independently verifies exact reconstruction with
+both the host v071 decoder and native PDP-6 v061 decoder: ALL PASS.
+The tested code and read-only filesystem export helpers are in
+`daimos-testkit/tests/system/d6codec-userspace-v077`.
+
+Two earlier runs using reused build objects halted after `D6FS LOADED`;
+the halt did not recur with fresh per-run build directories. The v077
+harness defaults to an isolated versioned build root to prevent those
+stale-artifact cross-worktree collisions. Production D6LZ36 is unchanged.
+Real registered-provider decoding, nested stack bounds, Stage-1 and
+production consumers remain open. After coordinated cutover run all
+applicable regressions except 32K configurations.
 
 ## 2026-10-14 LIBC STRING ASM/C SPLIT V1
 
