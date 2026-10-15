@@ -5,7 +5,7 @@
  * Stage0 loads this read-in image at 000060. It scans drum units 0..3 for the
  * same DBC/DB0/DB1/DBX set metadata used by DSK, reconstructs one round-robin
  * stream across all members, skips bad runs, and stages the compressed payload
- * above the final image. The shared D6LZ36 decoder is copied to 000060 and
+ * above the final image. The shared grouped D6 codec decoder is copied to 000060 and
  * expands KINIT at 030000 before entry.
  *
  * Type-236 media addresses are 16-word groups; DAIMOS DBOOT blocks are 128
@@ -20,7 +20,7 @@
 ; reconstructs a round-robin compressed
 ; image stream across one to four
 ; members, skips each member's bad-run
-; table, stages the D6LZ36 payload after
+; table, stages the grouped D6 codec payload after
 ; its final image range, expands it at
 ; 030000, and jumps to the relative entry.
 ;
@@ -28,7 +28,7 @@
 ;   0  SIXBIT DAIMON
 ;   1  uncompressed_words,,entry_offset
 ;   2  compressed_words,,0
-;   3+ D6LZ36 payload
+;   3+ grouped D6 codec payload
 
         .text
         .globl __start

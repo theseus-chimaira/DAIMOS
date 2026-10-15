@@ -26,7 +26,7 @@ typedef unsigned long kword_t;
  * First word of the permanently resident KCORE image in PDP-6 low memory.
  *
  * Address 000060 immediately follows the architectural low-memory region used
- * by the PDP-6 and is also the fixed address of the shared D6LZ36 decoder.
+ * by the PDP-6 and is also the fixed address of the shared grouped D6 decoder.
  * The KCORE link therefore begins here and all resident-size accounting uses
  * this address as its lower bound.
  */

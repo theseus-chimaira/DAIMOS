@@ -3,7 +3,7 @@
  * @brief Compact resident DXR loader for the PDP-6/PDP-10 family.
  *
  * exec_load_process() validates a regular executable, checks execute access,
- * accepts DXR1 or DXR2 shape, optionally decompresses D6LZ36 payload directly
+ * accepts DXR1 or DXR2 shape, optionally decompresses grouped codec payload directly
  * into the new VM, attaches pure-text swap backing, and publishes the initial
  * process entry/state only after the image is complete.  A failed load destroys
  * the staged VM and releases only an RT reservation acquired by this attempt.

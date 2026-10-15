@@ -1,3 +1,17 @@
+## SINGLE GROUPED CODEC V085 — FOLLOW-UP ACCEPTANCE (2026-10-15)
+
+- DONE: 256K DSK/DSK270 GCC full-profile boot and live D6FS userspace
+  grouped compression with exact host/fixed-native decoding.
+- DONE: replace the 000060 decoder in all Stage-1 sources and KCORE, link
+  grouped encoder resident, remove D6LZ36 decoding/compression code from
+  active host/runtime/userspace paths.
+- TODO: validate DRM, DTC, MTC, PTR Stage-1 compressed boot paths; test
+  compressed TSFS extents and root volumes, PURE reload, swap, corrupt streams.
+- TODO: optimize net +303 linked KCORE words while respecting exact format
+  and memory safety; avoid algorithm duplication or compatibility fallback.
+- TODO: complete full relevant test matrix excluding every 32K case,
+  then synchronize finished design documentation to pdp10-doc.
+
 ## Native MAKE V0.9 feature freeze (2026-10-11)
 
 - Native MAKE is feature-complete for V0.9. No new features unless required

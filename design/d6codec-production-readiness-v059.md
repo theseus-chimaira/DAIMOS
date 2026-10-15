@@ -1,3 +1,18 @@
+## v085 production single-format boot milestone
+
+The sole active compressed format is grouped-control with paired 18-bit
+match descriptors. The fixed decoder at 000060 is built from
+`system/stand/pdp6/common/decompressor.inc`, installed by all five Stage-1
+loaders and linked identically into KCORE. Resident frontends for VFS and
+TSFS share it; kernel encoder `d6codec_v053_encode_literals` is linked.
+Host tools d6lz, mktsfs and tsfscheck compile against grouped codec only,
+and userspace D6LZ raw and -X encode it by default (the -G selector is gone).
+A fresh 256K full-profile disk boot reached LOGIN, and testkit v085 ran
+four shell commands and dual host/fixed-native exact decompression checks.
+KCORE low-core end grew from 023451 to 024130 octal (+303 words).
+Additional non-32K boot devices, TSFS, PURE and fault tests remain required
+before final acceptance. No legacy codec fallback is implemented.
+
 ## v080 single-codec cutover directive (2026-10-15)
 
 **Only one compressed stream format is permitted:** the grouped-control

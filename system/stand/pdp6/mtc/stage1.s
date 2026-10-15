@@ -19,7 +19,7 @@
 ;       word 0      SIXBIT DAIMON
 ;       word 1      uncompressed_words,,entry_offset
 ;       word 2      compressed_words,,0
-;       remainder   D6LZ36 payload
+;       remainder   grouped D6 codec payload
 ;
 ; Compressed input is staged immediately after the final image range, expanded
 ; at 030000 by the shared fixed low-core decoder, and entered at the relative

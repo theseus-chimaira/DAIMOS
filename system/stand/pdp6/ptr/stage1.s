@@ -6,7 +6,7 @@
  * tape containing the DAIMON header and first compressed segment, prompts
  * "TAPE2 ", resets the reader, then appends a counted second compressed
  * segment. Both segments must exactly equal the declared compressed-word count.
- * The fixed D6LZ36 decoder is then installed at 000060 and expands KINIT at
+ * The fixed grouped D6 codec decoder is then installed at 000060 and expands KINIT at
  * 030000. AC17 is reset above the image before entry.
  *
  * Type-760 PTR exposes no reader-error status; a missing tape therefore waits

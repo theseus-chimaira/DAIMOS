@@ -279,18 +279,6 @@ KCORE_FIXED_NAMES = $(KCORE_C_NAMES) backstore ret \
 KCORE_FIXED_ASM = $(KCORE_BUILD)/d6lz_fixed.s $(KCORE_BUILD)/exec.s $(KCORE_BUILD)/d6lz.s $(KCORE_BUILD)/mm.s $(KCORE_BUILD)/proc.s $(KCORE_BUILD)/backstore.s $(KCORE_BUILD)/vm_backend.s $(KCORE_BUILD)/proc_swap.s $(KCORE_BUILD)/file.s $(KCORE_BUILD)/ret.s $(KCORE_BUILD)/dsk270.s $(KCORE_BUILD)/drm236.s $(KCORE_BUILD)/kfmt_pdp6.s $(KCORE_BUILD)/s6rec.s $(KCORE_BUILD)/vfs.s $(KCORE_BUILD)/fs_mres.s $(KCORE_BUILD)/file_runtime.s $(KCORE_BUILD)/pipe.s $(KCORE_BUILD)/monitorfs_runtime.s $(KCORE_BUILD)/proc_pdp6.s $(KCORE_BUILD)/proc_run.s $(KCORE_BUILD)/device_state.s $(KCORE_BUILD)/syscall_info.s $(KCORE_BUILD)/pclk.s $(KCORE_BUILD)/syscall_dispatch_pdp6.s $(KCORE_BUILD)/mach_user_pdp6.s $(KCORE_BUILD)/vm_backend_pdp6.s $(KCORE_BUILD)/kcore_pi_pdp6.s $(KCORE_BUILD)/bcache_pdp6.s $(KCORE_BUILD)/storage_router.s $(KCORE_BUILD)/kcore_end.s
 KCORE_FIXED_OBJS = $(BUILD)/d6lz_fixed.dobj $(BUILD)/exec.dobj $(BUILD)/d6lz.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/backstore.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/ret.dobj $(BUILD)/dsk270.dobj $(BUILD)/drm236.dobj $(BUILD)/kfmt_pdp6.dobj $(BUILD)/s6rec.dobj $(BUILD)/vfs.dobj $(BUILD)/fs_mres.dobj $(BUILD)/file_runtime.dobj $(BUILD)/pipe.dobj $(BUILD)/monitorfs_runtime.dobj $(BUILD)/proc_pdp6.dobj $(BUILD)/proc_run.dobj $(BUILD)/device_state.dobj $(BUILD)/syscall_info.dobj $(BUILD)/pclk.dobj $(BUILD)/syscall_dispatch_pdp6.dobj $(BUILD)/mach_user_pdp6.dobj $(BUILD)/vm_backend_pdp6.dobj $(BUILD)/kcore_pi_pdp6.dobj $(BUILD)/bcache_pdp6.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj
 
-# Test-only link probe. Never enabled in production images by default.
-# This measures actual linked codec text without changing 000060 or consumers.
-ifeq ($(D6CODEC_LINK_PROBE_V068),1)
-KCORE_FIXED_OBJS := $(filter-out $(BUILD)/kcore_end.dobj,$(KCORE_FIXED_OBJS)) \
- $(BUILD)/d6codec_group_probe_v068.dobj $(BUILD)/d6codec_vfs_probe_v068.dobj \
- $(BUILD)/kcore_end.dobj
-endif
-
-$(BUILD)/d6codec_group_probe_v068.dobj: $(KERNEL_DIR)/core/d6codec_decode_group_v061.s | $(BUILD)
-	$(DAS) $(DASFLAGS) -C -O $@ $<
-$(BUILD)/d6codec_vfs_probe_v068.dobj: $(KERNEL_DIR)/core/d6codec_vfs_v062.s | $(BUILD)
-	$(DAS) $(DASFLAGS) -C -O $@ $<
 MRES_NAMES = cty_io clk_io ptr_io ptp_io lpt_io cr_io cp_io dcs_io ge_io dpy_io \
 	dpy_text tty_io wcnsls_io ocnsls_io dsk_io drm236_io tape_io slv_io memfs_runtime \
 	dtfs dtfs_runtime tsfs tsfs_runtime blockset_dispatch badmap_dispatch fs_backing d6fs_provider d6fs_validate d6fs_runtime

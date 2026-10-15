@@ -8,9 +8,6 @@
 #define WORD_MASK UINT64_C(0777777777777)
 #define HALF_MASK UINT64_C(0777777)
 #define DXR_F_COMPRESSED UINT64_C(0100000)
-#define D6LZ_WINDOW 128U
-#define D6LZ_MIN 3U
-#define D6LZ_MAX 130U
 
 static void die(const char *s)
 {

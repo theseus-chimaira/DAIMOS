@@ -19,7 +19,7 @@
 ;       word 0      SIXBIT DAIMON
 ;       word 1      uncompressed_words,,entry_offset
 ;       word 2      compressed_words,,mode
-;       remainder   D6LZ36 payload or raw image words
+;       remainder   grouped D6 codec payload or raw image words
 ;
 ; Mode 0 is the original contiguous stream. Mode 1 (compressed_words=0)
 ; embeds the stream within an ordinary TSFS V1.1 member: word 3 gives the

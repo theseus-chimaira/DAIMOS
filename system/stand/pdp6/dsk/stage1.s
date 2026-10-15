@@ -21,7 +21,7 @@
 ; reconstructs a round-robin compressed
 ; image stream across one to four
 ; members, skips each member's bad-run
-; table, stages the D6LZ36 payload after
+; table, stages the grouped D6 codec payload after
 ; its final image range, expands it at
 ; 030000, and jumps to the relative entry.
 ;
@@ -29,7 +29,7 @@
 ;   0  SIXBIT DAIMON
 ;   1  uncompressed_words,,entry_offset
 ;   2  compressed_words,,0
-;   3+ D6LZ36 payload
+;   3+ grouped D6 codec payload
 
         .text
         .globl __start

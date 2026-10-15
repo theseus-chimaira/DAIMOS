@@ -1,3 +1,20 @@
+## 2026-10-15 SINGLE GROUPED FORMAT KCORE/STAGE-1 V085 — 256K PASS
+
+All five Stage-1 implementations now install the grouped-control decoder at
+000060; the resident KCORE uses that *same* fixed decoder through grouped VFS
+and direct-buffer frontends. KCORE also includes the native grouped encoder.
+Host d6lz/mktsfs/tsfscheck and userspace D6LZ raw/-X emit the new format,
+with no format selector or D6LZ36 decoding path linked in production.
+A fresh 256K full-profile GCC DSK boot reached D6FS LOADED, INIT V1 and
+LOGIN:. The daimos-testkit v085 system regression passed 4 shell probes,
+verified extracted userspace grouped output (6->7 and 2052->1888 words),
+and independently decoded both with the host decoder and installed 000060
+PDP-6 decoder. The `dtfs_minit` module table declaration was corrected to
+respect KINIT_TAPE_BOOT. Current KCORE endpoint is 024130 octal versus
+023451 before the integrated codec (+303 words). Tests of other Stage-1
+devices, TSFS, PURE swap-reload, malformed streams and wider regressions
+remain pending. No 32K configuration is part of post-cutover acceptance.
+
 ## 2026-10-15 HOST SINGLE CODEC MIGRATION V082 (INCOMPLETE)
 
 The host `d6lz` compressor and TSFS `d6lz-codec` compressor/decompressor
