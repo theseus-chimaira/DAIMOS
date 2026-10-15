@@ -16,6 +16,24 @@ semantics. No permanent data, heap buffer or scratch BSS is introduced.
 Native DAS compilation: PASS; 115 text words, zero data and BSS. This
 is not a native functional test or evidence of safe decoding.
 
+## Native regression checkpoint v060 (2026-10-15)
+
+`daimos-testkit/tests/validation/d6codec-native-v060/run-v060.sh` now
+tests odd-distance halfword copies of distances one (overlapping) and
+three (across two literal source words). Both pass on the PDP-6 simulator.
+The runner also rebuilds and executes all 21 historical v048 decoding
+fixtures against the v059 entry point, including malformed descriptor,
+overrun, invalid kind, truncation, empty stream and even-halfword tests:
+23/23 PASS. The existing v055 kernel ABI/golden-corpus regression also
+passes (using the older v053 decoder).
+
+The initial distance-one test failed due to an incorrectly emitted
+decimal assembler descriptor; adding a leading octal zero fixed the
+fixture without changing the decoder. No v059 implementation failure
+was established by this test. Native v060 tests are **not** an end-to-end
+streaming, full-boundary or kernel-ABI acceptance test; remaining checks
+below still gate production use.
+
 ## Mandatory validation before replacing anything
 
 1. Put native tests in daimos-testkit for distances 1, 3, maximum supported,
