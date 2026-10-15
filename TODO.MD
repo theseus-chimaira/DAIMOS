@@ -1,3 +1,13 @@
+## GROUPED CODEC V089 PURE LINKER FOLLOW-UP
+
+- Host dlink now checks direct TEXT stores against the absolute image base;
+  genuine `--pure` header and a definite text-store rejection PASS.
+- Verify indirect/indexed and dynamically computed TEXT stores remain
+  conservatively handled by PURE admission policy; no claim of proof from
+  simple direct-opcode scanning.
+- Priority remains a deterministic 256K swap-out/swap-in test that observes
+  `proc_swap_reload_pure` and validates reconstructed text and writable data.
+
 ## GROUPED CODEC V088 PURE RELOAD ACCEPTANCE
 
 - Verified 256K D6FS system smoke with `PROC_SWAP_VERIFY_PURE=1` and

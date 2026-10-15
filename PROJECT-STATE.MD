@@ -1,3 +1,15 @@
+## 2026-10-15 PURE HOST LINKER ABSOLUTE TEXT RANGE V089
+
+Host `dlink --pure` incorrectly compared absolute instruction effective
+addresses against a zero-based text length; it could admit definite TEXT
+stores at nonzero image base (e.g. `020`). v089 corrects the comparison
+using `image_base <= ea < image_base+text_words` with overflow-safe
+subtraction. Testkit v089 builds a genuine linked PURE DXR, verifies its
+header, and ensures a direct store into its own TEXT is rejected. Both
+cases PASS with the rebuilt host `dlink`. This is a definite-store check,
+not exhaustive proof against indirect/dynamic text modification; actual
+PURE swap eviction/reconstruction is still unverified. No 32K tests.
+
 ## 2026-10-15 GROUPED CODEC PURE VERIFIER BUILD V088
 
 `daimos-testkit/tests/system/d6codec-pure-verify-v088` passed the fresh

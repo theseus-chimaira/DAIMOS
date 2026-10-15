@@ -96,6 +96,7 @@ static int opcode_writes_ea(unsigned long op)
  */
 static int definite_text_write(const struct dobj_word *image,
                                unsigned long text_words,
+                               unsigned long image_base,
                                unsigned long *where)
 {
     unsigned long i;
@@ -105,7 +106,8 @@ static int definite_text_write(const struct dobj_word *image,
         indirect = (image[i].lh >> 4) & 1UL;
         index = image[i].lh & 017UL;
         ea = image[i].rh & HALF_MASK;
-        if (!indirect && index == 0UL && ea < text_words &&
+        if (!indirect && index == 0UL && ea >= image_base &&
+            ea - image_base < text_words &&
             opcode_writes_ea(op)) {
             if (where != NULL)
                 *where = i;
@@ -1036,7 +1038,7 @@ static int write_dxr(const char *name, struct linker *l, int purity_request, int
         free(image); free(relmap); return -1;
     }
     flags = rt_required ? DXR_F_RT_REQUIRED : 0UL;
-    if (definite_text_write(image, tw, &text_write_at)) {
+    if (definite_text_write(image, tw, l->image_base, &text_write_at)) {
         if (purity_request == PURITY_PURE) {
             fprintf(stderr,
                     "dlink: --pure contradicted by definite TEXT write at %06lo\n",
