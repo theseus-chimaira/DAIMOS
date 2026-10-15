@@ -36,6 +36,30 @@ below still gate production use.
 
 ## Mandatory validation before replacing anything
 
+## Group-boundary streaming prototype v061 (2026-10-15)
+
+`system/kernel/core/d6codec_decode_group_v061.s` implements a staged
+group-boundary resumable decoder without a static buffer or persistent
+workspace. Every refill must supply one or more **complete** groups.
+AC1/AC2 identify the compressed window; AC3 is the retained output cursor;
+AC4 is the absolute exclusive output end; AC5 is the fixed output origin.
+AC1 returns 0 for exact completion, +1 when an entire group was consumed
+and further input is required, and -1 on malformed input. This is a new
+experimental ABI, **not** a replacement for fixed address 000060.
+
+Native DAS object size: 122 text words, zero static data/BSS. Each group
+requires at most 46 compressed words (control + 15 paired descriptors +
+30 literals), so the existing 64-word VFS stack refill window can hold a
+complete group with headroom for carry; the VFS adapter must implement
+incomplete-group compaction and must not hand an incomplete group to this
+engine. The new core does not allocate or copy its own window.
+
+`daimos-testkit/tests/validation/d6codec-native-v061/run-v061.sh`:
+3/3 native PDP-6 fixtures PASS (two-group resume with overlapping odd
+halfword copy; reject truncated descriptor group; reject trailing input
+after exact output completion). This is **not** full ABI, refill, stage-1,
+address-wrap, or stress acceptance; production D6LZ36 remains unchanged.
+
 1. Put native tests in daimos-testkit for distances 1, 3, maximum supported,
    overlap, destination/source boundaries, truncated and malformed groups,
    input/output alias rejection and exact consumption. Compare with an
