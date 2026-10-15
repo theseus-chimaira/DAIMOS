@@ -38,6 +38,22 @@ below still gate production use.
 
 ## Native VFS refill adapter v062 (2026-10-15)
 
+### v066 full-window group carry and provider-dispatch inspection
+
+The native PDP-6 test in `daimos-testkit/tests/validation/d6codec-vfs-v066`
+decodes three 30-literal groups (93 compressed, 90 decoded words), forcing
+the 64-word VFS window to hold two complete groups and the beginning of
+the third. The adapter shifts the unconsumed prefix into the window,
+refills it, and verifies all 90 reconstructed words: PASS. No changes to
+the staged decoder/adapter were necessary for this test.
+
+`system/kernel/fs/vfs.s:vfs_read_words` dispatches to the pipe, MFS or
+registered FS provider; `system/kernel/fs/fs_mres.s:fs_provider_reg_call`
+serializes D6FS/DTFS/TSFS and may enter `proc_wait_event` while waiting.
+The existing v064 synthetic stack measurement is therefore insufficient
+to establish maximum cache-miss or provider-lock-wait depth. A real
+provider-integrated stack canary run remains a production activation gate.
+
 ### v065 output geometry and real-provider dispatch audit
 
 The actual VFS entry is `system/kernel/fs/vfs.s:vfs_read_words`, which
