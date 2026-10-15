@@ -1,3 +1,21 @@
+# 2026-10-15 v154: repair compact SIXMD HELP on PDP-6
+
+- Isolated the two DSH v152 conformance failures: `HELP ECHO` showed only
+  its heading without `[ARG ...]`, and `HELP DAS` omitted `-O FILE`.
+  The generated SIXMD manual image contains both sections, and `MAN DAS`
+  reads the same image correctly. The problem was HELP's long compound
+  heading test in the target utility, not manual packaging or the DSH parser.
+- Replaced that test with a bounded, exact-match section-name comparator in
+  `userland/exec/utility.c`. A fresh 64K lowmem D6FS-root image booted to
+  `LOGIN: ROOT` and `DSH V1`; direct DCS commands verified the missing
+  ECHO operand and DAS option help appear and `MAN DAS` still works.
+  The standalone HELP executable grew 35 36-bit image words (not KCORE);
+  no new kernel or per-process storage is required.
+- The earlier full DSH 115-probe baseline was 113 PASS / 2 FAIL, both now
+  directly corrected on target. A complete post-fix 115-probe rerun and
+  both full 32-row GCC/KCC regression matrices are still pending; do not
+  report a complete regression pass from the focused verification alone.
+
 # 2026-10-15 v152: corrected 256K target and full-profile boot acceptance
 
 - Earlier `254K` mentions were a typo: the intended high-memory PDP-6 target

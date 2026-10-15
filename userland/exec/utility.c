@@ -1235,6 +1235,30 @@ util_render_manual_path(const char *path, const kword_t *topic, struct u_io *io)
 #endif
 
 #if DAIMOS_UTILITY_PROGRAM == UTILITY_PROGRAM_HELP
+/* Recognize exactly the two sections used for compact command help.
+ * A bounded comparison avoids the large Boolean expression formerly
+ * generated for each heading in the PDP-6 target build.
+ */
+static int
+util_help_section(const char *line)
+{
+        static const char *const sections[] = { "OPTIONS", "OPERANDS" };
+        unsigned int section;
+        unsigned int i;
+
+        if (line[0] != '#' || line[1] != '#' || line[2] != ' ' ||
+            line[3] != '@' || line[4] != '?')
+                return 0;
+        for (section = 0U; section < 2U; ++section) {
+                for (i = 0U; line[i + 5U] == sections[section][i] &&
+                     sections[section][i] != 0; ++i)
+                        ;
+                if (line[i + 5U] == 0 && sections[section][i] == 0)
+                        return 1;
+        }
+        return 0;
+}
+
 static int
 util_render_help_path(const char *path, const kword_t *topic, struct u_io *io)
 {
@@ -1282,18 +1306,8 @@ util_render_help_path(const char *path, const kword_t *topic, struct u_io *io)
                         }
                         continue;
                 }
-                if (line[0] == '#' && line[1] == '#' && line[2] == ' ') {
-                        selected = line[3] == '@' && line[4] == '?' &&
-                            ((line[5] == 'O' && line[6] == 'P' &&
-                            line[7] == 'T' && line[8] == 'I' &&
-                            line[9] == 'O' && line[10] == 'N' &&
-                            line[11] == 'S' && line[12] == 0) ||
-                            (line[5] == 'O' && line[6] == 'P' &&
-                            line[7] == 'E' && line[8] == 'R' &&
-                            line[9] == 'A' && line[10] == 'N' &&
-                            line[11] == 'D' && line[12] == 'S' &&
-                            line[13] == 0));
-                }
+                if (line[0] == '#' && line[1] == '#' && line[2] == ' ')
+                        selected = util_help_section(line);
                 if (line[0] == 'U' && line[1] == 'S' && line[2] == 'A' &&
                     line[3] == 'G' && line[4] == 'E' && line[5] == ' ' &&
                     line[6] == 'I' && line[7] == 'S' && line[8] == ' ') {
