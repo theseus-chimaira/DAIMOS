@@ -1,3 +1,19 @@
+### v078 DXR codec discriminator: no spare base-header flag
+
+The DXR header's low 18 bits are exhausted: 15 bits hold the BSS word
+count (`0077777` mask), and bits 15..17 are COMPRESSED (`0100000`),
+PURE (`0200000`) and RT_REQUIRED (`0400000`). Therefore the previously
+proposed extra codec flag **cannot** be inserted into the existing base
+word without breaking valid executables. The staged solution is an
+explicit DXR2 extension *tag*, not a bit flag: existing `TX2` (`0647022`)
+means the established format, while reserved `TXG` (`0647047`) will mean
+grouped compression **only when COMPRESSED is set**. An uncompressed TXG
+must be rejected; no implicit format sniffing or fallback is allowed.
+`EXEC_DXR_GROUPED_TAG` is now defined in `system/kernel/proc/exec.h`.
+Production loaders still reject TXG; they do not switch decoders until
+EXEC, PURE reload, producers and Stage-1 compatibility are coordinated.
+This is a format-contract staging step, not activation.
+
 # D6 codec production readiness v059
 
 Status: staged native decoder correction only. No production cutover.
