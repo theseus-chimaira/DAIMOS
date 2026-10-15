@@ -53,6 +53,37 @@ media membership but current tape presence is not lifetime mount capacity.
 - `fs/tsfs_runtime.s`: two four-word mount metadata arrays.
 - `proc/proc_pure_attach.c`: compares mount ID with `VFS_NMOUNT`.
 
+## Additional runtime audit (2026-10-15)
+
+The current fixed symbols are direct operands in native assembly, not merely
+arrays referenced via pointers. Simply replacing `.block 4` with an MM-backed
+pointer would silently break `vfs_mount_root(index)` and related addressing.
+The migration needs an explicit base register or a bounded helper, with exact
+before/after instruction accounting. In particular, `tsfs_file_record` takes
+the address of `dtfs_media` as an immediate, whereas other providers directly
+index that symbol. A runtime-sized slab should group mount-target, mount-root,
+reader-pointer and per-provider metadata only after all access conventions are
+converted together; ensure unmount reuse clears every per-mount field.
+
+One 36-bit policy word holds 36 independently indexed RO bits; storing three
+independent 17-bit RO/SWAP/LOGSTORE maps needs three words. A fully packed
+three-bit-per-mount encoding needs two words for 17 mounts, but may cost more
+instructions in the hot path. Measure both implementations, rather than
+assuming the minimum policy bits minimize total resident RAM.
+
+The current `native_sys_fsinfo` hard-codes the maximum zero-based slot 3.
+The D6FS remount path directly XORs the packed RO policy word. Both need
+replacement before any mount count above four is safe. The existing
+`vfs_mount_ro` alias within `mfsdev_io_in` must not be enlarged in place:
+the following device counters occupy adjacent words.
+
+Controller detection alone cannot establish disk/drum per-unit presence:
+the Type-270 source warns that a read on an unattached trailing unit can
+render the controller unusable. The interim capacity calculation must use
+controller-supported unit counts, subtracting only *validated known* root
+BLOCKSET member overlap. TSFS root members reduce separately mountable
+DECtape capacity; later removable DTFS volumes need reserved slots.
+
 ## Implementation sequence
 
 1. Define and test a per-slot mount-policy representation that can encode
