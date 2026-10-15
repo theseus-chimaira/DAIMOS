@@ -36,6 +36,27 @@ below still gate production use.
 
 ## Mandatory validation before replacing anything
 
+## Native VFS refill adapter v062 (2026-10-15)
+
+`system/kernel/core/d6codec_vfs_v062.s` is a separate, inactive native
+adapter for the v061 grouped decoder. It preserves AC10..AC16, holds a
+64-word VFS refill window on the kernel stack, counts descriptors from
+the control bitmap, and only invokes v061 once a complete group is present.
+Unconsumed words are shifted down in the same window. VFS may return short
+reads; the adapter tracks file offset, unread input, output cursor, and
+exact completion. There is no permanent codec BSS or heap allocation.
+
+Native DAS: 106 text words, 0 data/BSS (separate from v061's 122 words).
+`daimos-testkit/tests/validation/d6codec-vfs-v062` passes on PDP-6 with
+a one-word-per-read VFS stub, including an odd-halfword overlapping match
+split across reads, excess advertised compressed length (premature EOF),
+and insufficient declared input (truncated final group).
+
+This test does NOT establish the worst-case stack high-water, real VFS
+integration, fixed address 000060 ABI, all failure cases, bootloader
+operation, or net linked KCORE footprint. The new adapter is not linked
+into production and the legacy implementation remains untouched.
+
 ## Group-boundary streaming prototype v061 (2026-10-15)
 
 `system/kernel/core/d6codec_decode_group_v061.s` implements a staged
