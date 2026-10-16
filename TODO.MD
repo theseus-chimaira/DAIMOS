@@ -30,6 +30,14 @@
 
 ## KINIT storage inventory and VFS mount sizing (2026-10-15)
 
+- [ ] V17: one-word 26-mount policy and 26-slot six-array slab layout tested
+  natively; boot capacity stays four. Next resolve the two-bit FILE descriptor
+  mount-ID overlay collision and the mathematically overfull PURE backing
+  record (18 index + 5 mount + 14 PURE-text = 37 bits). Preserve all file
+  metadata and PURE length semantics; never silently truncate IDs. Audit
+  optional TENEX/ITS personality arrays and the remaining provider bounds
+  before KINIT activates larger mount counts. Current 32K gate still fails.
+
 - [ ] V16 compact mount policy now handles sixteen slots in the original
   one-word MonitorFS counter alias. Finish native provider bounds and the
   optional foreign DTFS personality dispatch, then connect the boot inventory

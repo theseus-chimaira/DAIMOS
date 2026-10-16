@@ -1,4 +1,46 @@
-# VFS mount capacity: boot sizing and 16-slot upper bound (2026-10-15)
+# VFS mount capacity: boot sizing and 26-slot upper bound (2026-10-15)
+
+## Policy and slab expansion to 26 (v17, 2026-10-16)
+
+The one-word live policy stores a 26-bit per-slot read-only bitmap in bits
+0..25, a five-bit SWAP owner ID in bits 26..30 and a five-bit LOGSTORE owner
+ID in bits 31..35, with zero denoting unowned. The PDP-10 `POINT` right-hand
+bit indexes are 9 and 4 respectively. Native PDP-6 policy tests pass at
+mount IDs 16 and 26, including both reservations, an invalid release, and
+complete unmount cleanup. No extra resident policy word or instructions were
+required relative to v16.
+
+The existing six-table slab layout now permits 1..26 slots, consuming
+6*N words (156 at maximum). The staged inventory calculator's prior 16-slot
+clamp is raised to 26, allowing all 17 potential volumes of its currently
+enumerated controller inventory to be represented. It is still not linked
+into active KINIT. Runtime `VFS_NMOUNT` and `vfs_mount_limit` stay **four**;
+the expansion is intentionally preparation, not production activation.
+
+### Compact-format blockers to 26-slot activation
+
+* FILE descriptors reserve nine bits of the canonical vnode for read/write,
+  directory/append, lock-family and lock-state metadata. Its old mount field
+  uses only three canonical bits; with a five-bit mount ID, two more bits
+  must be preserved without discarding flags or file-offset range. The
+  existing two-word representation cannot simply mask them back in, since
+  they overlap live descriptor metadata. `file_unlock_mount` likewise reads
+  only three bits. Repacking needs an audited per-process representation.
+* PURE swap backing currently has 18 index + 4 mount + 14 text bits. For
+  26 mounts, a five-bit slot needs 18 + 5 + 14 = **37** independent bits.
+  This cannot fit a single 36-bit word without changing one field's range,
+  sourcing information from another guaranteed field, or carrying an extra
+  bit elsewhere. Do not silently truncate mount IDs or PURE text lengths.
+* The optional TENEX/ITS personality table and remaining provider-local
+  bounds require a separate complete audit. KINIT may publish a larger
+  slab only once every consumer is safe.
+
+The full-disk/tape permanent-size checks remain at 036746 and 036130
+(octal). Fresh 32K GCC layout checks without shell yield KCORE end 023563,
+still 1907 decimal words above the strict 020000 gate. The actual active
+kernel/boot allocator still uses four slots; this does not certify a 26-mount
+full operating-system boot.
+
 
 ## Active compact mount policy (v16)
 

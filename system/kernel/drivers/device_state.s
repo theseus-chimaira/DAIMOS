@@ -57,7 +57,7 @@ file_table:
 vfs_namespace_root:
         .block  1                      ; 010 DPY0 has no IN
 vfs_mount_policy:
-        .block  1                      ; RO bitmap:16 | SWAP owner:5 | LOG owner:5
+        .block  1                      ; RO bitmap:26 | SWAP owner:5 | LOG owner:5
         .block  5                      ; 012..016 remaining IN counters
         .globl  drm236_active_request
         .globl  mfsdev_d6set_reads

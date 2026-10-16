@@ -85,9 +85,8 @@ vfs_lookup_pop:
         popj    17,
 
 ; Mounted-target substitution is shared by the ordinary lookup path.
-; AC4 = returned vnode, AC6/AC7 scratch.  The loop is deliberately isolated
-; so the later boot-sized table conversion has only one lookup consumer.
-; Do not replace the four-slot limit until KINIT publishes dynamic bases.
+; AC4 = returned vnode, AC6/AC7 scratch. The loop uses MM-backed bases and
+; KINIT's published slot count (still four until all consumers are safe).
 vfs_lookup_resolve_mount:
         setz    6,
 vfs_lookup_mount_loop:
@@ -780,10 +779,10 @@ vfs_writechar:
         jrst    kret_neg1
         jrst    kret_busy          ; VFS_DEVICE_IO = -3
 
-; Compact 36-bit policy supports all sixteen mounts without adding RAM:
-; bits 0..15: RO bitmap, bits 16..20: public SWAP owner (0 = free),
-; bits 21..25: public LOGSTORE owner (0 = free). Bits 26..35 reserved.
-; Exclusive reservation owners replace two 16-bit masks because exactly one
+; Compact 36-bit policy supports up to 26 mounts without adding RAM:
+; bits 0..25: RO bitmap, bits 26..30: public SWAP owner (0 = free),
+; bits 31..35: public LOGSTORE owner (0 = free). No unused policy bits.
+; Exclusive reservation owners replace two 26-bit masks because exactly one
 ; mount may own each type.  Keep this one word in the dead MonitorFS input
 ; counter slot; no extra MM allocation or resident arrays are necessary.
         .globl  vfs_readonly
@@ -817,21 +816,21 @@ vfs_storage_release:
         jumpe   2,kret_zero
         trnn    2,020
         jrst    vfs_storage_release_log_check
-        ldb     5,[POINT 5,vfs_mount_policy,19]
+        ldb     5,[POINT 5,vfs_mount_policy,9]
         came    5,4                    ; only actual owner may release
         jrst    kret_neg1
 vfs_storage_release_log_check:
         trnn    2,0400
         jrst    vfs_storage_release_clear
-        ldb     5,[POINT 5,vfs_mount_policy,14]
+        ldb     5,[POINT 5,vfs_mount_policy,4]
         came    5,4
         jrst    kret_neg1
 vfs_storage_release_clear:
         setz    5,
         trne    2,020
-        dpb     5,[POINT 5,vfs_mount_policy,19]
+        dpb     5,[POINT 5,vfs_mount_policy,9]
         trne    2,0400
-        dpb     5,[POINT 5,vfs_mount_policy,14]
+        dpb     5,[POINT 5,vfs_mount_policy,4]
         jrst    kret_zero
 
 ; int vfs_mount(target, provider, kind, index, flags, rootp)
@@ -866,12 +865,12 @@ vfs_mount_common:
         jrst    kret_neg1
         trnn    5,020
         jrst    vfs_mount_check_log_owner
-        ldb     6,[POINT 5,vfs_mount_policy,19]
+        ldb     6,[POINT 5,vfs_mount_policy,9]
         jumpn   6,kret_neg1
 vfs_mount_check_log_owner:
         trnn    5,0400
         jrst    vfs_mount_owner_checked
-        ldb     6,[POINT 5,vfs_mount_policy,14]
+        ldb     6,[POINT 5,vfs_mount_policy,4]
         jumpn   6,kret_neg1
 vfs_mount_owner_checked:
         jumpn   1,vfs_mount_nonroot_target
@@ -971,9 +970,9 @@ vfs_mount_publish_slot:
         iorm    6,vfs_mount_policy
         movei   6,1(7)                  ; public mount ID is owner token
         trne    0,020
-        dpb     6,[POINT 5,vfs_mount_policy,19]
+        dpb     6,[POINT 5,vfs_mount_policy,9]
         trne    0,0400
-        dpb     6,[POINT 5,vfs_mount_policy,14]
+        dpb     6,[POINT 5,vfs_mount_policy,4]
         popj    17,
 
 ; int vfs_remount(node)
@@ -1024,10 +1023,10 @@ vfs_unmount_slot:
         jrst    kret_neg1
         move    4,2
         addi    4,1                    ; public mount owner token
-        ldb     5,[POINT 5,vfs_mount_policy,19]
+        ldb     5,[POINT 5,vfs_mount_policy,9]
         camn    5,4
         jrst    kret_neg1
-        ldb     5,[POINT 5,vfs_mount_policy,14]
+        ldb     5,[POINT 5,vfs_mount_policy,4]
         camn    5,4
         jrst    kret_neg1
         push    17,1                    ; root

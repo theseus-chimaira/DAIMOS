@@ -44,7 +44,8 @@ vfs_mount_capacity_v1(const struct vfs_mount_inventory_v1 *inv)
          * drums not proven to be reserved for auxiliary storage. */
         count = inv->disk_units - disks + inv->drum_units - drums +
             inv->tape_units - tapes + inv->memfs_enabled + 1U;
-        /* At most 16 concurrent mounts, even if the physical configuration
-         * could theoretically expose a seventeenth logical volume. */
-        return count > 16U ? 16U : count;
+        /* Do not discard the seventeenth potential volume: the 36-bit VFS
+         * policy and its six-array slab can hold up to 26 mount slots.
+         * Current controller inventory describes at most 17 volumes. */
+        return count > 26U ? 26U : count;
 }

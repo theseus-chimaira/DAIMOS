@@ -1,10 +1,11 @@
-/* Staged indexed mount policy; not installed in active KCORE yet. */
+/* Staged three-bitmap reference policy; the resident implementation is the
+ * single-word 26-bit RO bitmap plus two five-bit owner IDs in fs/vfs.s. */
 #ifndef DAIMON_VFS_MOUNT_POLICY_V2_H
 #define DAIMON_VFS_MOUNT_POLICY_V2_H
 
 #include "kcore.h"
 
-#define VFS_POLICY_V2_MAX_MOUNTS 16U
+#define VFS_POLICY_V2_MAX_MOUNTS 26U
 #define VFS_POLICY_V2_RDONLY 1U
 #define VFS_POLICY_V2_SWAP 2U
 #define VFS_POLICY_V2_LOGSTORE 4U

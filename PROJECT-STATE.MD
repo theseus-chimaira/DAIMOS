@@ -1,3 +1,33 @@
+## 2026-10-16 VFS 26-SLOT POLICY AND SLAB PLANNER V17
+
+The active 36-bit `vfs_mount_policy` word now uses 26 read-only bits (0..25),
+five SWAP-owner bits (26..30), and five LOGSTORE-owner bits (31..35). Public
+owner IDs 1..26 fit in five bits. Native PDP-6 tests exercise mount ID 26,
+its RO flag, exclusive ownership/release, and unmount retirement; the prior
+mount-16 regression and mount/storage/D6FS tests pass. No additional
+resident words are required; disk/tape permanent last remain 036746/036130.
+The six-array KINIT slab planner accepts up to 26 slots (156 dynamic words).
+The staged inventory calculator no longer discards the possible seventeenth
+device, although its currently described controllers provide at most 17
+potential volumes. Full KINIT still allocates exactly four slots and publishes
+`vfs_mount_limit=4`, intentionally: production support above four is NOT
+enabled or boot-accepted yet.
+
+Two compact runtime formats must be solved before raising the limit:
+(1) FILE descriptors overlay metadata on the top three bits of the six-bit
+vnode mount field, retaining only THREE mount-ID bits (`file.h` and
+`file_unlock_mount`), and (2) resident PURE swap backing packs a full
+18-bit index, four-bit mount slot, and 14-bit text length into 36 bits.
+Keeping all three full ranges with five mount bits requires 37 bits and is
+mathematically impossible in the present one-word swap format. Provider
+limits including optional TENEX/ITS personality indexing also remain.
+Do not enable >4 production mount slots until these are correctly migrated.
+
+GCC lowmem 32K measurements are unchanged: KCORE ends 023563, failing the
+020000 gate by 1907 decimal words; disk/tape KINIT ends 072463/073422,
+leaving 1741/1262 words after reserved boot stack. No shell is required for
+these size tests, and no 32K boot acceptance is claimed.
+
 ## 2026-10-16 COMPACT 16-SLOT VFS POLICY V16
 
 The native VFS policy no longer uses four-slot RO/SWAP/LOGSTORE bit groups.
