@@ -1,3 +1,41 @@
+## 2026-10-16 PURE BACKING 26-MOUNT EXTENSION V20
+
+The one-word resident PURE swap record still contains its complete 18-bit
+vnode index, four low mount-slot bits, and 14-bit text length. The fifth
+mount-slot bit (public IDs 17..26) lives in the existing stable u-area
+credential word 066, bit 27, with **no additional process words**. For RUN,
+which attaches the executable before allocating the u-area, the bit is staged
+in otherwise-unused SIDL scheduler RH bit 0 and published after inheriting
+credentials but before setting SRUN. Detach clears the attached/staged bit.
+This fixes an actual early RUN boot regression encountered when attachment
+was initially made to require an already-allocated u-area.
+
+PURE swap-out/in, raw/compressed reload, optional PURE verifier, vnode and
+mount-busy guards all preserve five slot bits. Native unpack validates
+`vfs_mount_limit` before indexing the MM-backed root array, and busy guards
+skip slots lacking a valid u-area. Ordinary and destructive EXEC preserve
+the lifecycle; transactional EXEC snapshots both the old and new extension
+in transient stack words and restores the correct bit on failure/commit.
+
+PDP-6 native tests pass for mount IDs 10/26, maximal index/text, corruption
+bounds, full raw/compressed PURE swap and verifier, attachment and SIDL
+staging, RUN inherited-credential isolation, and EXEC load/startup/VM
+rollback and successful commits. Diagnostic disk-root SIMH ROOT login/ECHO
+passes after fixing RUN staging. See
+`design/pure-backing-mount26-20261016-v20.md`.
+
+Final v20 linked permanent ends (octal): disk single `037355`, disk multi
+`037416`, tape single `036537`. This is +116 decimal permanent words over
+v19, with no extra per-process memory. GCC lowmem 32K KCORE end `024142`
+still fails its strict `020000` limit by 2146 decimal words. Disk/tape KINIT
+ends `073042`/`074001`, leaving 1502/1023 words after reserved boot stack.
+Diagnostic disk-root PDP-6 ROOT login/ECHO is verified with the existing
+test-only DSH size override. No production 32K boot claim is made.
+
+Production still publishes four mounts; remaining 26-mount blockers are
+provider-local bounds, optional TENEX/ITS DTFS personality dispatch, and
+KINIT's capacity selection. The 32K strict KCORE gate is not yet met.
+
 ## 2026-10-16 TWO-WORD FILE DESCRIPTOR 26-MOUNT EXTENSION V19
 
 Active native FILE descriptors now preserve mount bits 3..4 (canonical vnode

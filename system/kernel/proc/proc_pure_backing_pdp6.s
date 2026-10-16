@@ -14,6 +14,7 @@
         .globl proc_table
         .globl proc_high_slot
         .globl vfs_mount_root_base
+        .globl vfs_mount_limit
         /* Constants are supplied by the parent proc_swap assembly unit.
          * When this leaf becomes an independently linked package, move the
          * constants into a common assembler include. */
@@ -23,7 +24,7 @@
  * backing record. Provider identity is supplied by the mount root: a mounted
  * slot has one provider, and swapped PURE users prevent its unmount.
  *
- * Input:  AC1 = packed resident backing state.
+ * Input:  AC1 = packed resident backing state; AC2 = owning u-area base.
  * Output: AC1 = vnode, AC2 = PURE text words.
  * Clobbers AC3..AC5.
  */
@@ -35,7 +36,12 @@ proc_swap_unpack_backing:
         hrrz    3,5                     ; vnode index
         move    1,5
         lsh     1,-PROC_SWAP_MOUNT_SHIFT
-        andi    1,017                   ; 16 zero-based mount slots
+        andi    1,017                   ; low four zero-based slot bits
+        move    0,066(2)
+        tlne    0,001000              ; credential word bit 27 is slot bit 4
+        addi    1,020
+        caml    1,vfs_mount_limit       ; validate before indexing the MM slab
+        jrst    proc_swap_unpack_backing_bad
         move    2,vfs_mount_root_base
         add     2,1
         move    2,(2)                   ; provider of the mounted volume
@@ -71,7 +77,8 @@ proc_swap_unpack_backing_bad:
  * complete initialized image and the subsequently restored swap suffix
  * overwrites all writable state, avoiding a second compressed-text decoder.
  *
- * Input: AC1 = packed backing state, AC2 = physical process base.
+ * Input: AC1 = packed backing state, AC2 = physical process base,
+ *        AC3 = owning stable u-area base.
  * Return AC1 = 0 on success, -1 on backing/read/decode failure.
  */
 proc_swap_reload_pure:
@@ -81,6 +88,7 @@ proc_swap_reload_pure:
         blt     0,-1(17)                ; preserve AC10..AC16
         move    10,1                    ; packed backing
         move    11,2                    ; physical base
+        move    2,3                     ; owning u-area for slot bit 4
         pushj   17,proc_swap_unpack_backing
         move    12,1                    ; executable vnode
         move    13,2                    ; text words
@@ -144,11 +152,15 @@ proc_swap_backing_busy:
         push    17,11
         push    17,12
         push    17,13
+        push    17,14
         hrrz    10,1                    ; packed key: index + 4-bit mount slot
         move    11,1
         lsh     11,-030                 ; public mount id
         andi    11,077
         subi    11,1
+        move    14,11
+        lsh     14,-4
+        andi    14,1                    ; expected fifth slot bit
         andi    11,017
         lsh     11,PROC_SWAP_MOUNT_SHIFT
         ior     10,11
@@ -162,8 +174,16 @@ proc_swap_backing_busy_loop:
         lsh     13,1
         add     13,11
         add     13,proc_table
-        hlrz    1,(13)
+        move    1,(13)
+        trnn    1,0400000              ; SIDL may hold an entry PC, not u-area
+        jrst    proc_swap_backing_busy_next
+        hlrz    1,1
         jumpe   1,proc_swap_backing_busy_next
+        move    3,066(1)
+        lsh     3,-033                 ; bit 27 decimal = 033 octal
+        andi    3,1
+        came    3,14
+        jrst    proc_swap_backing_busy_next
         move    1,PROC_SWAP_BACKING_OFFSET(1)
         move    2,1
         lsh     2,-PROC_SWAP_TEXT_SHIFT
@@ -180,6 +200,7 @@ proc_swap_backing_is_busy:
 proc_swap_backing_not_busy:
         setz    1,
 proc_swap_backing_busy_return:
+        pop     17,14
         pop     17,13
         pop     17,12
         pop     17,11
@@ -202,8 +223,14 @@ proc_swap_mount_busy_loop:
         lsh     2,1
         add     2,11
         add     2,proc_table
-        hlrz    1,(2)
+        move    1,(2)
+        trnn    1,0400000
+        jrst    proc_swap_mount_busy_next
+        hlrz    1,1
         jumpe   1,proc_swap_mount_busy_next
+        move    4,066(1)
+        lsh     4,-033
+        andi    4,1
         move    1,PROC_SWAP_BACKING_OFFSET(1)
         move    3,1
         lsh     3,-PROC_SWAP_TEXT_SHIFT
@@ -211,6 +238,8 @@ proc_swap_mount_busy_loop:
         jumpe   3,proc_swap_mount_busy_next
         lsh     1,-PROC_SWAP_MOUNT_SHIFT
         andi    1,017
+        lsh     4,4
+        ior     1,4
         addi    1,1
         camn    1,10
         jrst    proc_swap_mount_is_busy

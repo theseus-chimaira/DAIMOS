@@ -85,7 +85,8 @@ proc_swap_skip_return:
  * entitled to discard; restore the image, release scratch backing, and halt at
  * a named assertion site.  The complete body is absent from normal kernels.
  *
- * Input: AC1 backing state, AC2 base, AC3 full words, AC4 skipped words.
+ * Input: AC1 backing state, AC2 base, AC3 full words, AC4 skipped words,
+ *        AC5 owning stable u-area base (fifth mount-slot bit).
  * Return AC1 = 0 when verified, -1 when the verifier itself cannot run.
  */
 proc_swap_verify_pure:
@@ -97,6 +98,7 @@ proc_swap_verify_pure:
         move    11,2                    ; process base
         move    12,3                    ; complete extent words
         move    13,4                    ; omitted prefix words
+        move    16,5                    ; stable u-area for PURE reload
         jumpe   13,proc_swap_verify_ok
         move    14,12
         lsh     14,-7                   ; complete temporary image blocks
@@ -120,6 +122,7 @@ proc_swap_verify_pure:
         pushj   17,fs_zero_words
         move    1,10
         move    2,11
+        move    3,16
         pushj   17,proc_swap_reload_pure
         jumpn   1,proc_swap_verify_restore_fail
 
@@ -266,6 +269,7 @@ proc_swap_out_state_ok:
         move    1,16
         move    2,13
         move    3,14
+        hlrz    5,(11)
         pushj   17,proc_swap_verify_pure
         jumpn   1,proc_swap_out_verify_fail
         move    1,16
@@ -432,6 +436,7 @@ proc_swap_in:
         pushj   17,fs_zero_words
         move    1,14
         move    2,-1(17)
+        hlrz    3,(11)                 ; owning stable u-area
         pushj   17,proc_swap_reload_pure
         jumpn   1,proc_swap_in_reload_fail
         pop     17,3

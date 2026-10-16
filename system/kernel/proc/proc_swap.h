@@ -22,13 +22,24 @@
 #define PROC_SWAP_MOUNT_MASK      017UL
 #define PROC_SWAP_MOUNT_SHIFT     18U
 #define PROC_SWAP_TEXT_SHIFT      22U
+#define PROC_SWAP_MOUNT_EXT_BIT   ((kword_t)1UL << 27U)
+/* Only while SIDL lacks its u-area, the otherwise unused scheduler RH bit 0
+ * temporarily carries the fifth mount-slot bit until RUN publishes u-area.
+ * It is cleared before SRUN uses RH for its runnable-queue link. */
+#define PROC_SWAP_STAGE_MOUNT_EXT_BIT 1UL
 
-/* Resident record (one 36-bit word): index:18 | mount slot:4 | PURE text:14.
+/* Resident record (one 36-bit word): index:18 | mount slot low 4 | PURE text:14.
  * A filesystem provider need not be stored: one public mount ID names exactly
  * one mounted provider. The mount remains pinned while swapped PURE text
  * depends on its executable, so restore derives the provider from the live
- * mount root. This preserves the full 18-bit index and 14-bit PURE span while
- * permitting the boot-sized VFS to use all 16 mount IDs without extra RAM. */
+ * mount root. This preserves the full 18-bit index and 14-bit PURE span.
+ * Mount slot bit 4 (for public IDs 17..26) lives in an otherwise spare high
+ * bit of the owning stable u-area credential word (offset 066, bit 27).
+ * Together they preserve all 5 slot bits and the complete 18+14 other bits,
+ * with no extra per-process word. While SIDL has no u-area, RUN stages the
+ * extra bit in scheduler RH bit 0, then publishes it when the u-area exists.
+ * EXEC rolls the bit back or forward with the record. Swapped PURE restore
+ * must read the same owner's u-area; it cannot use the record alone. */
 
 /** One-word resident/swapped process backing descriptor. */
 struct proc_swap_record {

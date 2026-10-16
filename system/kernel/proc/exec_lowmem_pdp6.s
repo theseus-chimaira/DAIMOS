@@ -43,6 +43,7 @@
         .equ    PROC_USER_MAP_BIT,2
         .equ    PROC_FDCTL_OFFSET,024
         .equ    PROC_SWAP_BACKING_OFFSET,0406
+        .equ    PROC_CRED_OFFSET,066
         .equ    PROC_BRK_OFFSET,0407
         .equ    EXEC_LOAD_RT_REQUIRED,1
         .equ    EXEC_LOAD_NOMEM,-2
@@ -54,7 +55,12 @@
         .equ    EXEC_R_OLD_SWAP,-002
         .equ    EXEC_R_NEW_SWAP,-001
         .equ    EXEC_R_COUNTS,0
-        .equ    EXEC_R_FRAME,021
+        ; Two transient EXEC stack words preserve the otherwise spare fifth
+        ; mount-slot bit across staged backing, commit and failed rollback.
+        ; Persistent process RAM and the one-word swap record are unchanged.
+        .equ    EXEC_R_OLD_EXT,-022
+        .equ    EXEC_R_NEW_EXT,-021
+        .equ    EXEC_R_FRAME,023
 
 /**
  * @brief Transactionally replace the current process image.
@@ -164,6 +170,11 @@ exec_replace_old_rt_done:
         add     1,13
         move    2,(1)
         movem   2,EXEC_R_OLD_SWAP(17)
+        hlrz    1,(16)
+        move    2,PROC_CRED_OFFSET(1)
+        lsh     2,-033
+        andi    2,1
+        movem   2,EXEC_R_OLD_EXT(17)
 
         move    1,(16)
         movem   1,EXEC_R_STAGED(17)     ; staged.meta = current->meta
@@ -196,6 +207,11 @@ exec_replace_loaded:
         jrst    exec_replace_restore_fail
 
 exec_replace_startup_ok:
+        hlrz    1,(16)
+        move    2,PROC_CRED_OFFSET(1)
+        lsh     2,-033
+        andi    2,1
+        movem   2,EXEC_R_NEW_EXT(17)
         move    1,proc_swap_records
         add     1,13
         move    2,(1)
@@ -238,6 +254,10 @@ exec_replace_commit:
         add     1,13
         move    2,EXEC_R_NEW_SWAP(17)
         movem   2,(1)
+        ; vm_space_destroy detached the old backing and cleared its extension.
+        hlrz    1,(16)
+        move    2,EXEC_R_NEW_EXT(17)
+        dpb     2,[POINT 1,PROC_CRED_OFFSET(1),8]
 
         hlrz    1,EXEC_R_STAGED(17)
         movem   1,(12)
@@ -280,6 +300,9 @@ exec_replace_restore_swap:
         add     1,13
         move    2,EXEC_R_OLD_SWAP(17)
         movem   2,(1)
+        hlrz    1,(16)
+        move    2,EXEC_R_OLD_EXT(17)
+        dpb     2,[POINT 1,PROC_CRED_OFFSET(1),8]
 exec_replace_invalid:
         seto    1,
 exec_replace_return:

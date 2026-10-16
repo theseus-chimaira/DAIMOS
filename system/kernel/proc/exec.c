@@ -54,6 +54,8 @@ exec_replace_current(const kword_t *block,
         kword_t startup[4];
         kword_t old_swap;
         kword_t new_swap;
+        kword_t old_mount_ext;
+        kword_t new_mount_ext;
         kword_t counts;
         unsigned int slot;
         unsigned int words;
@@ -103,6 +105,7 @@ exec_replace_current(const kword_t *block,
         current = &proc_table[slot];
 
         old_swap = proc_swap_records[slot].state;
+        old_mount_ext = PROC_CRED_WORD(current) & PROC_SWAP_MOUNT_EXT_BIT;
         old_rt_owner = ((unsigned int)proc_rt_owner == slot);
         staged.meta = current->meta;
         load_result = exec_load_process(&staged, slot, path);
@@ -122,6 +125,7 @@ exec_replace_current(const kword_t *block,
                 goto restore_swap_fail;
         }
         new_swap = proc_swap_records[slot].state;
+        new_mount_ext = PROC_CRED_WORD(current) & PROC_SWAP_MOUNT_EXT_BIT;
         proc_swap_records[slot].state = old_swap;
 
         /* The mapped launch block is no longer referenced.  Clear the hold
@@ -138,6 +142,8 @@ exec_replace_current(const kword_t *block,
             (VM_SPACE_WORDS(current) << PROC_HALF_SHIFT) |
             VM_SPACE_WORDS(current);
         proc_swap_records[slot].state = new_swap;
+        PROC_CRED_WORD(current) = (PROC_CRED_WORD(current) &
+            ~PROC_SWAP_MOUNT_EXT_BIT) | new_mount_ext;
         PROC_SWAP_BACKING_WORD(current) = 0UL;
         entry_startup[0] = PROC_ENTRY(&staged);
         entry_startup[1] = startup[3];
@@ -154,6 +160,8 @@ restore_swap_fail:
             (unsigned int)proc_rt_owner == slot)
                 proc_rt_owner = 0UL;
         proc_swap_records[slot].state = old_swap;
+        PROC_CRED_WORD(current) = (PROC_CRED_WORD(current) &
+            ~PROC_SWAP_MOUNT_EXT_BIT) | old_mount_ext;
 invalid:
         return -1;
 }

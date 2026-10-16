@@ -30,6 +30,21 @@
 
 ## KINIT storage inventory and VFS mount sizing (2026-10-15)
 
+- [x] V20: fifth PURE backing mount-slot bit in spare credential bit 27,
+  transiently staged in SIDL scheduler RH bit0 until RUN allocates u-area.
+  Full 18-bit index, 14-bit PURE text length and one-word swap record are
+  retained. EXEC rollback, swap raw/compressed/verify, busy guards and mount
+  26 native tests pass. No additional process words allocated.
+- [ ] V21: audit/fix every provider-local mount bound (including optional
+  TENEX/ITS DTFS personality dispatch), then activate and validate a safe
+  boot-selected VFS capacity capped at 26. Preserve 32K measurements and
+  optimize the accumulated permanent KCORE addressing instructions.
+- [ ] Repair stale daimos-testkit `mm-core` host fixture linking of
+  `vfs_mount_limit` and `proc_storage_publish_v30`/
+  `proc_swap_storage_invariant_v30`. These services are already used in the
+  target kernel; the current host fixture predates their integration. Native
+  PDP-6 swap/EXEC/RUN validation is passing independently.
+
 - [ ] V19: native FILE mount-extension map now preserves mount IDs up to 26
   across file operations, DUP/DUP2, FLOCK, FIFO substitution, unmount, pipe
   dispatch and RUN fd-map inheritance, with unchanged two-word descriptors

@@ -310,7 +310,19 @@ proc_run_watermark_loop:
         ; file_table points at parent u-area 026. Credentials including
         ; umask live at 066; word 067 is reserved for fd mount extensions.
         move    4,040(7)
+        tlz     4,001000               ; PURE backing mount bit belongs to
+                                      ; parent executable, not child credentials
         movem   4,PROC_CRED_OFFSET(014)
+        ; EXEC was loaded while the child still had no u-area. Its fifth
+        ; backing slot bit was staged in the unused SIDL scheduler RH bit0.
+        ; Publish it only after inheriting credentials, before SRUN reuses
+        ; scheduler RH as a run-queue link. No additional process words.
+        move    4,2(013)
+        trnn    4,1
+        jrst    proc_run_pure_ext_ready
+        movsi   4,001000
+        iorm    4,PROC_CRED_OFFSET(014)
+proc_run_pure_ext_ready:
         ; Child's extension map starts zero; fd-specific bits are transferred
         ; with RUN's explicit descriptor mapping when 26-mount activation is
         ; completed. The new u-area is already cleared by MM allocation.
