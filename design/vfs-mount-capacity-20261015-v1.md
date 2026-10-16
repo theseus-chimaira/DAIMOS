@@ -1,5 +1,35 @@
 # VFS mount capacity: boot sizing and 16-slot upper bound (2026-10-15)
 
+## Active compact mount policy (v16)
+
+The live PDP-6 policy uses one 36-bit word, `vfs_mount_policy`, overlaid on
+the unused MonitorFS TTY0 input counter. Its low sixteen bits are a RO
+bitmap indexed by zero-based slot. Two five-bit fields encode the unique
+public mount IDs for SWAP and LOGSTORE reservations (zero = unowned).
+These owner fields handle mounts 1..16 without a second policy word; the
+remaining high ten bits are reserved. This is intentionally **not** the
+unlinked `vfs_mount_policy_v2.c` prototype, which used three bitmap words.
+
+The native `vfs_mount`, `vfs_storage_release`, `vfs_readonly`, `vfs_unmount`,
+`vfs_shutdown_root`, D6FS remount CLEAN transitions, and FSINFO all use the
+new encoding. Reservation ownership is checked before committing a release;
+invalid release requests have no side effects. Unmount rejects outstanding
+reservations and then removes its slot's RO bit. A versioned PDP-6 test
+constructs sixteen mount entries and verifies RO, SWAP, and LOGSTORE at the
+last slot, illegal owner releases, correct release and retirement. Existing
+mount/remount, reduced-limit, and MM-base-switching native tests pass, as
+does diagnostic disk-root SIMH ROOT login.
+
+Production capacity stays four pending provider-wide bounds/foreign DTFS
+personality migration and KINIT capacity activation. Linked permanent ends
+(octal) are disk single 036746 (+25 decimal words from v15), disk multi
+037007 (+25), and tape 036130 (+25). GCC 32K KCORE end 023563 fails its
+strict 020000 gate by 1907 decimal words; shell boot is not necessary for
+this measurement. The policy adds no extra resident data words but its more
+general native instructions cost 25 words; retain this as an optimization
+target after all mount limits have been migrated.
+
+
 ## Active DTFS/TSFS metadata migration (v15)
 
 The last three regions of the existing six-array MM slab are now used by

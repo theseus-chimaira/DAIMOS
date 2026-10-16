@@ -49,9 +49,10 @@ that gate. No 32K boot success is claimed.
   and extent state) must be converted to the MM slab, then their duplicates
   can be removed. Do not shrink or remove them before all provider readers
   and writers are migrated, including MINIT handling.
-- The packed `vfs_mount_ro` policy and its callers are live. Replace them
-  as one coordinated transition before enabling capacity above four;
-  they are not obsolete merely because a v2 policy prototype exists.
+- As of v16, the former four-slot `vfs_mount_ro` has been replaced with one
+  36-bit `vfs_mount_policy` word (16 RO bits and two five-bit reservation
+  owners). The staged v2 three-bitmap prototype remains unlinked. The
+  resident policy word cannot be discarded, because it tracks live ownership.
 - The pointer-based VFS hot paths currently cost more resident instructions
   than direct fixed indexed addressing. Profile and optimize those paths
   after the full slab cutover rather than reintroducing fixed arrays or

@@ -1241,7 +1241,7 @@ d6fs_provider_toggle_state:
         ldb     4,[POINT 6,1(5),35]      ; mount id
         movei   6,1
         lsh     6,-1(4)
-        xorm    6,vfs_mount_ro           ; VFS policy changes after publication
+        xorm    6,vfs_mount_policy       ; toggle RO bit after CLEAN publication
         jrst    kret_zero
 
 ; int d6fs_provider_prepare_unmount(vnode_t root)

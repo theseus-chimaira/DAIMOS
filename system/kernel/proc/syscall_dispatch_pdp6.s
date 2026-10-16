@@ -663,7 +663,7 @@ native_sys_fsinfo_have_path:
         movem   7,-3(17)
         movei   0,1
         lsh     0,0(4)
-        tdnn    0,vfs_mount_ro
+        tdnn    0,vfs_mount_policy
         setz    0,
         movem   0,-2(17)                ; VFS_MOUNT_RDONLY
 

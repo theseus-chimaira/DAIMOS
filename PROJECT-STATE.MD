@@ -1,3 +1,31 @@
+## 2026-10-16 COMPACT 16-SLOT VFS POLICY V16
+
+The native VFS policy no longer uses four-slot RO/SWAP/LOGSTORE bit groups.
+It retains **one** resident 36-bit word, aliased with the unused MonitorFS
+TTY0 input counter: bits 0..15 are per-slot RO flags, bits 16..20 contain
+the public SWAP owner mount ID (0=none), and bits 21..25 contain the public
+LOGSTORE owner ID (0=none). The owner representation exploits the existing
+exclusive reservation rule and avoids allocating three separate bitmaps.
+All active users are converted: VFS publish/read/release/unmount/shutdown,
+D6FS CLEAN/RW toggling, and FSINFO. The unlinked three-bitmap v2 policy
+prototype is not the resident implementation.
+
+Native PDP-6 tests pass for reservation lifetime, atomic rejection of
+invalid release, remount CLEAN policy, slot reuse, a reduced runtime bound,
+and a synthetic 16-slot table exercising public mount ID 16 (RO and both
+exclusive owners, wrong-owner release, correct release, retirement).
+Diagnostic disk-root SIMH ROOT login and ECHO also pass under the existing
+test-only DSH size override. Production VFS capacity remains four until
+the separate provider bounds and hardware-derived KINIT sizing are ready.
+
+The more general owner checks increase permanent instructions by 25 words
+over v15, despite adding zero policy data words: disk single last 036746,
+multi last 037007, tape last 036130 (octal). GCC 32K KCORE end 023563
+FAILS the 020000 gate by 1907 decimal words. KINIT disk/tape ends are
+072463/073422, leaving 1741/1262 decimal words after the reserved stack.
+Native 32K boot remains unaccepted. Preserve the compact one-word data
+representation while optimizing the instruction paths in a later RAM sweep.
+
 ## 2026-10-16 MM-BACKED DTFS/TSFS MEDIA TABLES V15
 
 KINIT now publishes all six MM-slab table bases: VFS target/root, D6FS

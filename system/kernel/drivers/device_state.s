@@ -27,7 +27,7 @@ mfsdev_names:
         .globl  mach_user_sp
         .globl  file_table
         .globl  vfs_namespace_root
-        .globl  vfs_mount_ro
+        .globl  vfs_mount_policy
 /**
  * Completed input/read counters indexed by MonitorFS device id.
  *
@@ -36,7 +36,7 @@ mfsdev_names:
  *   03 PTP0  -> mach_user_sp
  *   05 CP0   -> file_table
  *   010 DPY0 -> vfs_namespace_root
- *   011 TTY0 -> vfs_mount_ro
+ *   011 TTY0 -> vfs_mount_policy
  *   017 SLV0 -> drm236_active_request
  * D6SET0 (020) and DRM0 (021) are real counters. LPT0 (022) has no input
  * counter and aliases the first word of mfsdev_io_out instead of consuming a
@@ -56,8 +56,8 @@ file_table:
         .block  2                      ; 06 DCS0, 07 GE0 IN
 vfs_namespace_root:
         .block  1                      ; 010 DPY0 has no IN
-vfs_mount_ro:
-        .block  1                      ; packed VFS RO bits 0..3, storage-pin bits 4..7
+vfs_mount_policy:
+        .block  1                      ; RO bitmap:16 | SWAP owner:5 | LOG owner:5
         .block  5                      ; 012..016 remaining IN counters
         .globl  drm236_active_request
         .globl  mfsdev_d6set_reads

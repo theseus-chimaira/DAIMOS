@@ -30,6 +30,12 @@
 
 ## KINIT storage inventory and VFS mount sizing (2026-10-15)
 
+- [ ] V16 compact mount policy now handles sixteen slots in the original
+  one-word MonitorFS counter alias. Finish native provider bounds and the
+  optional foreign DTFS personality dispatch, then connect the boot inventory
+  to select a 1..16 limit. Full v16 policy adds 25 instruction words over v15:
+  recover the instruction cost in the post-cutover RAM optimization sweep.
+
 - [ ] V15: all six MM slab table regions now have active DTFS/TSFS/D6FS/VFS
   callers, but the fixed four-slot runtime limit remains. Migrate the
   packed RO/SWAP/LOGSTORE representation and *all* provider bounds, including

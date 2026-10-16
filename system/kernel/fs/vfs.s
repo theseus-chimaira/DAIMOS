@@ -780,9 +780,12 @@ vfs_writechar:
         jrst    kret_neg1
         jrst    kret_busy          ; VFS_DEVICE_IO = -3
 
-; Compact mount policy.  The four-entry namespace table is a bounded PDP-6
-; structure, so keeping the policy in fixed assembly avoids the C callee-save
-; frames and unsigned comparison glue without changing the VFS ABI.
+; Compact 36-bit policy supports all sixteen mounts without adding RAM:
+; bits 0..15: RO bitmap, bits 16..20: public SWAP owner (0 = free),
+; bits 21..25: public LOGSTORE owner (0 = free). Bits 26..35 reserved.
+; Exclusive reservation owners replace two 16-bit masks because exactly one
+; mount may own each type.  Keep this one word in the dead MonitorFS input
+; counter slot; no extra MM allocation or resident arrays are necessary.
         .globl  vfs_readonly
 vfs_readonly:
         ldb     1,[POINT 6,1,11]        ; mount id
@@ -794,7 +797,7 @@ vfs_readonly_slot:
         add     2,1
         skipn   (2)
         jrst    kret_zero
-        move    2,vfs_mount_ro
+        move    2,vfs_mount_policy
         movn    3,1
         lsh     2,0(3)
         andi    2,1
@@ -805,19 +808,30 @@ vfs_readonly_slot:
 ; Clear selected active reservation ownership for exactly one mounted instance.
         .globl  vfs_storage_release
 vfs_storage_release:
+        move    4,1                     ; save public mount ID
         sojl    1,kret_neg1       ; public mount id -> zero-based slot
         caml    1,vfs_mount_limit
         jrst    kret_neg1
         trne    2,0777357              ; only SWAP(020) | LOGSTORE(0400)
         jrst    kret_neg1
         jumpe   2,kret_zero
-        move    4,2
-        lsh     4,0(1)
-        move    5,vfs_mount_ro
-        and    5,4
-        came    5,4                    ; caller may release only owned types
+        trnn    2,020
+        jrst    vfs_storage_release_log_check
+        ldb     5,[POINT 5,vfs_mount_policy,19]
+        came    5,4                    ; only actual owner may release
         jrst    kret_neg1
-        andcam  4,vfs_mount_ro
+vfs_storage_release_log_check:
+        trnn    2,0400
+        jrst    vfs_storage_release_clear
+        ldb     5,[POINT 5,vfs_mount_policy,14]
+        came    5,4
+        jrst    kret_neg1
+vfs_storage_release_clear:
+        setz    5,
+        trne    2,020
+        dpb     5,[POINT 5,vfs_mount_policy,19]
+        trne    2,0400
+        dpb     5,[POINT 5,vfs_mount_policy,14]
         jrst    kret_zero
 
 ; int vfs_mount(target, provider, kind, index, flags, rootp)
@@ -850,11 +864,16 @@ vfs_mount_common:
         move    5,-1(17)                ; flags
         trne    5,0777356              ; RDONLY(1), SWAP(020), LOGSTORE(0400)
         jrst    kret_neg1
-        move    6,5
-        andi    6,0420                  ; requested swap/logstore ownership
-        imuli   6,017                   ; expand slot-0 bits over four slots
-        tdne    6,vfs_mount_ro
-        jrst    kret_neg1
+        trnn    5,020
+        jrst    vfs_mount_check_log_owner
+        ldb     6,[POINT 5,vfs_mount_policy,19]
+        jumpn   6,kret_neg1
+vfs_mount_check_log_owner:
+        trnn    5,0400
+        jrst    vfs_mount_owner_checked
+        ldb     6,[POINT 5,vfs_mount_policy,14]
+        jumpn   6,kret_neg1
+vfs_mount_owner_checked:
         jumpn   1,vfs_mount_nonroot_target
         skipe   vfs_namespace_root
         jrst    kret_neg1
@@ -893,8 +912,8 @@ vfs_mount_find:
 
 ; Find an unoccupied mount slot while rejecting an already mounted target.
 ; AC1 = target, AC7 = resulting slot, AC0 = status (0/-1); AC6 scratch.
-; This is the only place where the mount insertion loop reads the fixed
-; target/root tables.  KINIT's future slab capacity will replace its bound.
+; The target/root tables are MM-backed. KINIT still publishes capacity four
+; until provider bounds and the hardware inventory have been converted.
 vfs_mount_find_slot:
         setz    7,
 vfs_mount_find_loop:
@@ -946,8 +965,15 @@ vfs_mount_publish_slot:
         move    6,vfs_mount_root_base
         add     6,7
         movem   5,(6)
-        lsh     0,0(7)                  ; place RO and pin bits for slot
-        iorm    0,vfs_mount_ro
+        move    6,0
+        andi    6,1                     ; only RDONLY uses a slot bitmap
+        lsh     6,0(7)
+        iorm    6,vfs_mount_policy
+        movei   6,1(7)                  ; public mount ID is owner token
+        trne    0,020
+        dpb     6,[POINT 5,vfs_mount_policy,19]
+        trne    0,0400
+        dpb     6,[POINT 5,vfs_mount_policy,14]
         popj    17,
 
 ; int vfs_remount(node)
@@ -976,7 +1002,7 @@ vfs_shutdown_root:
         jrst    kret_neg1
         movei   4,1
         lsh     4,0(2)
-        tdne    4,vfs_mount_ro          ; already read-only/CLEAN
+        tdne    4,vfs_mount_policy      ; already read-only/CLEAN
         jrst    kret_zero
         pushj   17,vfs_sync             ; synchronous write barrier
         jumpn   1,kret_neg1
@@ -996,9 +1022,13 @@ vfs_unmount_slot:
         move    3,(3)
         came    3,1
         jrst    kret_neg1
-        movei   4,0420                 ; swap(020) | logstore(0400) for slot 0
-        lsh     4,0(2)
-        tdne    4,vfs_mount_ro
+        move    4,2
+        addi    4,1                    ; public mount owner token
+        ldb     5,[POINT 5,vfs_mount_policy,19]
+        camn    5,4
+        jrst    kret_neg1
+        ldb     5,[POINT 5,vfs_mount_policy,14]
+        camn    5,4
         jrst    kret_neg1
         push    17,1                    ; root
         push    17,2                    ; slot
@@ -1053,9 +1083,9 @@ vfs_mount_retire_slot:
         move    3,vfs_mount_root_base
         add     3,2
         setzm   (3)
-        hrroi   3,0777776
-        rot     3,(2)
-        andm    3,vfs_mount_ro
+        movei   3,1
+        lsh     3,0(2)
+        andcam  3,vfs_mount_policy     ; other owners cannot be retired here
         popj    17,
 vfs_unmount_fail:
         sub     17,kconst_2_2
