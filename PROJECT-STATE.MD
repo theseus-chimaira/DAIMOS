@@ -1,3 +1,25 @@
+## 2026-10-16 COMPACT CREDENTIAL / FILE EXTENSION RESERVATION V18
+
+UID9, GID9 and UMASK9 now share u-area credential word 066, leaving the
+existing word 067 completely available for 16 two-bit FILE mount extensions
+(32 of 36 bits). The native GETUID/GETGID/SETUID/SETGID, file credential
+checks, PROC_UMASK macro, UMASK syscall and RUN credential inheritance use
+the new layout. PDP-6 native tests for packed identity/umask preservation and
+the unchanged 0410-octal u-area layout pass. The FILE two-word descriptors
+and full 36-bit offsets are unchanged. **Descriptor extension storage is
+reserved but not yet used**; KINIT still publishes only four mounts.
+
+Next update all FILE vnode readers/writers and FD lifecycle paths atomically,
+including RUN fd-map inheritance, then solve the separate overfull PURE-swap
+record. See `design/file-mount-packing-20261016-v18.md`.
+
+An unused high credential bit is a possible home for PURE backing's fifth
+mount-slot bit, keeping its 36-bit primary record; attachment/restore/release
+lifetimes have not been migrated yet. The repacking adds nine permanent
+words over v17: disk/tape last 036757/036141 octal. GCC lowmem 32K KCORE
+end 023574 still exceeds 020000 by 1916 decimal words. Boot-image ends
+disk/tape 072474/073433, leaving 1732/1253 words after stack reservation.
+
 ## 2026-10-16 VFS 26-SLOT POLICY AND SLAB PLANNER V17
 
 The active 36-bit `vfs_mount_policy` word now uses 26 read-only bits (0..25),

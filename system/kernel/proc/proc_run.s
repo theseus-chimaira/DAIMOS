@@ -19,7 +19,7 @@
         .equ    PROC_FILE_CWD_OFFSET,025
         .equ    PROC_FILE_TABLE_OFFSET,026
         .equ    PROC_CRED_OFFSET,066
-        .equ    PROC_UMASK_OFFSET,067
+        .equ    PROC_FDMOUNT_OFFSET,067
         .equ    PROC_USTACK_BASE,070
         .equ    PROC_UAREA_OWNER_BASE,01000
         .equ    MM_TYPE_KERNEL_DYNAMIC,3
@@ -307,11 +307,13 @@ proc_run_watermark_loop:
         jrst    proc_run_filetable_bad
         move    4,-1(7)
         movem   4,PROC_FILE_CWD_OFFSET(014)
-        ; file_table points at parent u-area 026; credentials/umask are 066/067.
+        ; file_table points at parent u-area 026. Credentials including
+        ; umask live at 066; word 067 is reserved for fd mount extensions.
         move    4,040(7)
         movem   4,PROC_CRED_OFFSET(014)
-        move    4,041(7)
-        movem   4,PROC_UMASK_OFFSET(014)
+        ; Child's extension map starts zero; fd-specific bits are transferred
+        ; with RUN's explicit descriptor mapping when 26-mount activation is
+        ; completed. The new u-area is already cleared by MM allocation.
         setz    4,                      ; child-fd duplicate bitmap
         hrrz    3,3(010)
         jumpe   3,proc_run_map_done

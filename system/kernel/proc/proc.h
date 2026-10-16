@@ -105,9 +105,10 @@
 #define PROC_UAREA_WORDS        0410UL
 /*
  * One compact control word precedes cwd/file state.  Descriptors 0..15 are
- * ordinary two-word FILE records.  Credentials and the 9-bit process umask
- * follow the descriptor table; the umask consumes the former first kernel-stack
- * word.  Low bit 0 carries the pipe
+ * ordinary two-word FILE records. UID9, GID9 and UMASK9 fit in the one
+ * credential word. The following word is reserved for 16 two-bit FILE mount
+ * extensions, with four high bits available. No u-area growth is necessary.
+ * Low bit 0 of the separate control word carries the pipe
  * event and bit 1 marks a live direct user mapping.
  * Session and domain IDs share this already-resident word; process-group ID
  * lives in meta RH so it survives after EXIT releases the u-area and group WAIT can
@@ -117,7 +118,9 @@
 #define PROC_FILE_CWD_OFFSET     0025UL
 #define PROC_FILE_TABLE_OFFSET   0026UL
 #define PROC_CRED_OFFSET         0066UL
-#define PROC_UMASK_OFFSET        0067UL
+#define PROC_FDMOUNT_OFFSET      0067UL
+#define PROC_UMASK_SHIFT             9U
+#define PROC_UMASK_MASK           0777UL
 #define PROC_USTACK_BASE         0070UL
 #define PROC_SESSION_MASK         0377UL
 #define PROC_SESSION_SHIFT            3U
@@ -282,7 +285,8 @@ void proc_sched_pi_tick(void);
 #define PROC_CTL_WORD(p) PROC_UAREA_WORD((p), PROC_FDCTL_OFFSET)
 #define PROC_CRED_WORD(p) PROC_UAREA_WORD((p), PROC_CRED_OFFSET)
 #define PROC_UMASK(p) \
-        ((unsigned int)(PROC_UAREA_WORD((p), PROC_UMASK_OFFSET) & 0777UL))
+        ((unsigned int)((PROC_CRED_WORD(p) >> PROC_UMASK_SHIFT) & \
+            PROC_UMASK_MASK))
 #define PROC_UID(p) \
         ((unsigned int)((PROC_CRED_WORD(p) >> 18U) & 0777UL))
 #define PROC_GID(p) \

@@ -30,6 +30,15 @@
 
 ## KINIT storage inventory and VFS mount sizing (2026-10-15)
 
+- [ ] V18: credentials UID9/GID9/UMASK9 are packed into u-area word 066;
+  formerly dedicated umask word 067 can hold all 16 two-bit FILE mount
+  extensions at no process-memory increase. Complete the atomic native FILE
+  open/read/write/dup/close/lock/FIFO/unmount and RUN-inheritance migration
+  using word 067, then separately resolve PURE backing's 37-bit requirement.
+  One of credential word 066's nine remaining spare bits may hold PURE's
+  additional mount-slot bit if its entire process lifecycle is audited.
+  See `design/file-mount-packing-20261016-v18.md`.
+
 - [ ] V17: one-word 26-mount policy and 26-slot six-array slab layout tested
   natively; boot capacity stays four. Next resolve the two-bit FILE descriptor
   mount-ID overlay collision and the mathematically overfull PURE backing

@@ -83,6 +83,7 @@ file_current_cred:
         jrst    file_current_cred_zero
         hlrz    7,7
         move    6,066(7)
+        and     6,[000777000777]        ; UID9,,GID9, not future FD extension bits
         popj    17,
 
 file_current_cred_zero:

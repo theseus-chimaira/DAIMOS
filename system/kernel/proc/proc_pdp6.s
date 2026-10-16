@@ -39,7 +39,7 @@
         .equ    PROC_FDCTL_OFFSET,024
         .equ    PROC_FILE_TABLE_OFFSET,026
         .equ    PROC_CRED_OFFSET,066
-        .equ    PROC_UMASK_OFFSET,067
+        .equ    PROC_FDMOUNT_OFFSET,067
         .equ    PROC_USTACK_BASE,070
         .equ    PROC_KSTACK_WORDS,0316
         .equ    KERNEL_IDLE_STACK_WORDS,0100
@@ -915,6 +915,7 @@ proc_nice_current:
         jrst    proc_nice_store
         hlrz    4,(2)
         hlrz    4,PROC_CRED_OFFSET(4)
+        andi    4,0777                ; UID9, ignore upper credential extension
         jumpn   4,kret_neg1
 proc_nice_store:
         move    3,1
@@ -1302,8 +1303,10 @@ proc_event_uid_check:
         move    1,proc_current_ptr
         hlrz    3,(1)
         hlrz    2,PROC_CRED_OFFSET(3)              ; caller UID
+        andi    2,0777
         jumpe   2,kret_zero            ; UID 0 may administer all users
         hlrz    5,PROC_CRED_OFFSET(4)              ; target UID
+        andi    5,0777
         camn    2,5
         jrst    kret_zero
         jrst    kret_neg1
@@ -1741,6 +1744,7 @@ proc_control_getgid:
         caie    1,06                   ; GETUID keeps LH, GETGID selects RH
         hrrz    6,PROC_CRED_OFFSET(5)
         move    1,6
+        andi    1,0777                ; return UID9/GID9 only
         popj    17,
 
 ; UID 0 may install login credentials.  An ordinary process may only request
@@ -1755,16 +1759,18 @@ proc_control_setcred:
         hlrz    5,(4)
         move    6,PROC_CRED_OFFSET(5)
         hlrz    7,6                    ; current UID controls privilege
+        andi    7,0777
         jumpe   7,proc_control_setcred_store
         caie    1,07                   ; SETUID compares UID, SETGID compares GID
         hrrz    7,6
+        andi    7,0777                 ; packed UMASK9 is not part of GID
         came    2,7
         jrst    kret_neg1
 proc_control_setcred_store:
         cain    1,07                   ; SETUID executes only the LH store
-        hrlm    2,PROC_CRED_OFFSET(5)
+        dpb     2,[POINT 9,PROC_CRED_OFFSET(5),17] ; preserve upper UID-half bits
         caie    1,07                   ; SETGID executes only the RH store
-        hrrm    2,PROC_CRED_OFFSET(5)
+        dpb     2,[POINT 9,PROC_CRED_OFFSET(5),35] ; preserve packed UMASK9
         move    1,2
         popj    17,
 
@@ -1784,13 +1790,14 @@ proc_control_isatty:
         jrst    proc_control_tty_owned
         jrst    kret_neg1
 
-; Classic umask semantics: install ARG low nine bits and return the old mask.
-; The word is process-private, inherited by RUN and retained by EXEC.
+; Classic umask semantics: UMASK9 shares the credential word with UID9,GID9
+; without changing either. The former umask word 067 is a dedicated 32-bit
+; file-mount extension bitmap, inherited/updated separately by FILE and RUN.
 proc_control_umask:
         andi    2,0777
         hlrz    5,(4)
-        move    1,PROC_UMASK_OFFSET(5)
-        movem   2,PROC_UMASK_OFFSET(5)
+        ldb     1,[POINT 9,PROC_CRED_OFFSET(5),26]
+        dpb     2,[POINT 9,PROC_CRED_OFFSET(5),26]
         popj    17,
 
 proc_control_tty_setfg:
