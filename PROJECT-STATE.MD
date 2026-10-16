@@ -4301,3 +4301,25 @@ SELF-COMPILATION IS NOT YET CONFIRMED COMPLETE.
   WORDS, THEN REASSESS THE 32K BOOT GAP WITH ACTUAL LIVE MEASUREMENTS.
   DO NOT SIMPLY DISABLE FEATURES OR RAISE THE 32K MINIMUM; THE 8397-WORD
   WORKLOAD DIFFERENCE CANNOT BE ASSUMED RECOVERABLE FROM KCORE ALONE.
+
+
+## 2026-10-16 — Isolated paper-tape/TSFS SIMH comparison
+
+An isolated `ROOT=tape BOOT=ptr` 256K SIMH image build initially failed
+the production `DSH_IMAGE_LIMIT=036000` gate at octal `036021`. The DSH
+fold-plan recipe considered only assembly objects and used a four-word
+minimum. Including all C and assembly objects and lowering the minimum
+to two produces 29 validated fold-plan records and a freshly linked DSH
+image `035537` (BSS `012751`), below the unchanged limit. The isolated
+full image, two counted paper-tape payloads, and TSFS root DECtape image
+subsequently built successfully. These changes are confined to the
+DSH fold-plan rule; linked-runtime shell conformance has not yet been
+re-run for this exact image.
+
+The resulting SIMH `ROOT=tape BOOT=ptr` run reached the `TAPE2` handoff,
+printed `DAIMON V0.5`, and loaded initialization drivers through `SLV OK`,
+but halted at PC `000000` before `INIT V1`. The underlying boot fault is
+not established. This was run in an isolated worktree and BUILD directory;
+existing checkout modifications were preserved. AAP's independent linked
+KINIT/KCORE/MRES startup instrumentation remains at mandatory coverage
+18/19 pending exception-aware steady-state profiling and complete boot.
