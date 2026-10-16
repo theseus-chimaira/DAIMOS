@@ -1,3 +1,34 @@
+## 2026-10-16 DSH EXEC SIZE / SIMH PAPER-TAPE TSFS BASELINE V1
+
+The private `dsh_s6_literal` helper no longer performs redundant runtime
+lowercase-to-uppercase conversion: all five callsites pass fixed uppercase
+ASCII/SIXBIT names (including the `PS1`/`PS2` choice). It still clears and
+appends with the same bounds checks. In an isolated KCC/DAS full build,
+`dxrcheck` reports DSH image `035754`, down from `036021` (37 36-bit
+words saved) and below the **unchanged** `036000` EXEC limit. The
+versioned validation in `daimos-testkit/tests/validation/daimos-simh-ptr-tsfs-image-v1.py`
+guards these literal inputs, DXR image bound and boot-log evidence.
+
+An isolated `make image ROOT=tape BOOT=ptr SIMH_DPY_MODE=HEADLESS` generated
+PDP-6 Stage-1 RIM paper tape, both counted KINIT payload tapes and the
+TSFS member on DTC0. SIMH with console switch `SW=2` printed `DTC OK`,
+`DTFS LOADED`, `INIT V1` and `LOGIN:` within an 85-second bounded run.
+This validates a paper-tape-boot plus populated TSFS-root startup to the
+login prompt, not interactive authentication or long-running stability.
+The original disk-root build tree was not overwritten.
+
+The matching AAP paper-tape test consumed its new first payload
+(57540/57540 bytes), completed the second Stage-1 payload handoff and
+executed the new image's KINIT entry at `054540`. Three linked image
+readbacks matched the source image. AAP then HALTed at `kinit_halt`
+(`072040`), with 37 PI-cycle events. The older fixed-entry linked profiler
+is not valid for this newly linked address. **AAP did not have the
+same TSFS medium attached**, since its Type-555 model requires raw
+mark/data tape lines rather than SIMH's 32-bit halfword `.tap` format.
+Do not attribute the AAP HALT to the CPU without an equivalent TSFS
+transport and root configuration; the linked ordinary-tick gate remains
+18/19 in `pdp10-testkit`.
+
 ## 2026-10-16 BOOT-SELECTED MM VFS CAPACITY V22
 
 KINIT now derives its mount slot count from validated physical root-member

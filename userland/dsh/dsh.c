@@ -470,15 +470,10 @@ dsh_getline_text(struct u_text_reader *reader)
 static int
 dsh_s6_literal(struct dsh_s6 *dst, const char *text)
 {
-        unsigned int i;
-        int ch;
-
+        /* All callers pass uppercase, compile-time SIXBIT literals. */
         dsh_s6_clear(dst);
-        for (i = 0U; text[i] != 0; ++i) {
-                ch = (unsigned char)text[i];
-                if (ch >= 'a' && ch <= 'z')
-                        ch -= 'a' - 'A';
-                if (dsh_s6_append(dst, ch) != 0)
+        while (*text != 0) {
+                if (dsh_s6_append(dst, (unsigned char)*text++) != 0)
                         return -1;
         }
         return 0;

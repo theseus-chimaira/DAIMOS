@@ -371,3 +371,13 @@ CROSS-BLOCK GROWTH, TWO-PREOPENED DESCRIPTORS, TWO BACKGROUND WRITERS,
 AND HISTFILE REBOOT. BACKING-WRITE FAULT INJECTION/POWER CUTS AND
 CRASH-ATOMIC RECORD COMMIT REMAIN OPEN. DO NOT DECLARE PHASE ONE
 FAILURE-PATH COMPLETE UNTIL THESE ARE RESOLVED.
+
+## 2026-10-16 EXEC IMAGE SIZE GATE CHECK
+
+- [x] For the isolated KCC/PDP-6 `ROOT=tape BOOT=ptr` configuration,
+  reduce DSH from octal `036021` to `035754` without increasing the
+  octal `036000` image limit. `dsh_s6_literal` no longer folds case for
+  already-uppercase fixed constants; bounds checking is retained.
+- [ ] Continue the broader interactive/conformance and steady-state DSH
+  test suite; reaching a SIMH `LOGIN:` prompt by itself does not verify
+  interactive shell behavior.
