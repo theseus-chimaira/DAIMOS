@@ -15,6 +15,12 @@
 #include "kinit.h"
 #include "d6fs_boot.h"
 #include "tsfs_boot.h"
+#include "vfs_mount_capacity_v1.h"
+#include "dsk270.h"
+#include "module.h"
+#if KINIT_FULL
+#include "drm236.h"
+#endif
 
 static unsigned int root_class_selected = KINIT_ROOT_AUTO;
 
@@ -84,4 +90,87 @@ unsigned int
 root_select_class(void)
 {
         return root_class_selected;
+}
+
+/* Root discovery already checked all D6FS member descriptors. Each 18-bit
+ * handoff half carries the selected *physical* unit in bits 16..17 or is
+ * 0777777 when absent. Do not use the logical member mask as a unit mask:
+ * members may have been assembled from nonconsecutive physical drives. */
+static unsigned int
+root_select_d6fs_units_v22(void)
+{
+        unsigned int mask;
+        unsigned int i;
+
+        mask = 0U;
+        for (i = 0U; i < 4U; ++i) {
+                kword_t half;
+                unsigned int unit;
+
+                half = (kinit_boot_handoff[i / 2U] >>
+                    ((i & 1U) != 0U ? 0U : 18U)) & 0777777UL;
+                if (half == 0777777UL)
+                        continue;
+                unit = (unsigned int)((half >> 16U) & 03U);
+                if ((mask & (1U << unit)) != 0U)
+                        return 0U;      /* duplicate selected physical unit */
+                mask |= 1U << unit;
+        }
+        return mask;
+}
+
+unsigned int
+root_select_mount_capacity_v22(void)
+{
+        struct vfs_mount_inventory_v1 inv;
+
+        /* MINIT publishes device services only after successful controller
+         * probes. Count supported positions (even when media is empty) on
+         * detected transports; absent controllers must cost no slab RAM. */
+        /* D6FS MRES is not installed on a TSFS root, and DTFS/TSFS MRES is
+         * only installed on a DTC root. Hardware without its filesystem
+         * provider cannot currently produce another VFS mount. Excluding
+         * it saves six dynamic words per otherwise-wasted mount slot. */
+        inv.disk_units = D6FS_FS_ENABLED &&
+            root_class_selected != KINIT_ROOT_DTC &&
+            module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) != 0U &&
+            module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U ?
+            DSK270_UNITS : 0U;
+#if KINIT_FULL
+        inv.drum_units = D6FS_FS_ENABLED &&
+            root_class_selected != KINIT_ROOT_DTC &&
+            module_service_get(MODULE_SERVICE_DRM_READ_BLOCK) != 0U &&
+            module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK) != 0U ?
+            DRM236_UNITS : 0U;
+        inv.memfs_enabled = 1U;          /* MEMFS MINIT is in full builds */
+#else
+        inv.drum_units = 0U;
+        inv.memfs_enabled = 0U;
+#endif
+#if KINIT_TAPE_BOOT
+        inv.tape_units = root_class_selected == KINIT_ROOT_DTC &&
+            module_service_get(MODULE_SERVICE_DTC_READ_BLOCK) != 0U &&
+            module_service_get(MODULE_SERVICE_DTC_WRITE_BLOCK) != 0U ?
+            8U : 0U;                    /* installed DTC, 8 transport slots */
+#else
+        inv.tape_units = 0U;
+#endif
+        inv.root_disk_members = 0U;
+        inv.root_drum_members = 0U;
+        inv.root_tape_members = 0U;
+
+        if (root_class_selected == KINIT_ROOT_DSK)
+                inv.root_disk_members = root_select_d6fs_units_v22();
+#if D6FS_FS_ENABLED && KINIT_FULL
+        else if (root_class_selected == KINIT_ROOT_DRM)
+                inv.root_drum_members = root_select_d6fs_units_v22();
+#endif
+#if KINIT_TAPE_BOOT
+        else if (root_class_selected == KINIT_ROOT_DTC)
+                inv.root_tape_members = tsfs_boot_selected_unit_mask_v22();
+#endif
+        /* The planner validates one selected root, capacity and every unit
+         * mask before MM allocation. Zero is a hard boot configuration error,
+         * never a request to silently allocate four fallback slots. */
+        return vfs_mount_capacity_v1(&inv);
 }

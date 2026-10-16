@@ -20,4 +20,9 @@ void root_select_minit(void);
  */
 unsigned int root_select_class(void);
 
+/* Derive the VFS table capacity from the selected, validated physical-root
+ * handoff and the transports compiled into this boot profile. Zero means
+ * root selection/inventory is incomplete or inconsistent. KINIT-only. */
+unsigned int root_select_mount_capacity_v22(void);
+
 #endif

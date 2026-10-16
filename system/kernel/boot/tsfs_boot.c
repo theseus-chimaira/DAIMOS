@@ -78,6 +78,7 @@ struct table_info {
 static kword_t tsfs_block[0200];
 static kword_t tsfs_handoff[3];
 static int tsfs_selected;
+static unsigned int tsfs_selected_units_v22;
 
 static kword_t
 rol36(kword_t v)
@@ -362,6 +363,7 @@ tsfs_boot_select(unsigned int ordinal)
         unsigned int unit;
 
         tsfs_selected = 0;
+        tsfs_selected_units_v22 = 0U;
         found = 0U;
         for (unit = 0U; unit < 8U; ++unit) {
                 if (read_member(unit, &seed) != 0 || seed.member != 0U)
@@ -370,10 +372,31 @@ tsfs_boot_select(unsigned int ordinal)
                         continue;
                 if (found++ != ordinal)
                         continue;
+                {
+                        unsigned int i;
+                        unsigned int units;
+
+                        units = 0U;
+                        for (i = 0U; i < scan.seed.members; ++i) {
+                                unsigned int bit;
+
+                                bit = 1U << scan.unit[i];
+                                if ((units & bit) != 0U)
+                                        return -1;
+                                units |= bit;
+                        }
+                        tsfs_selected_units_v22 = units;
+                }
                 tsfs_selected = 1;
                 return 0;
         }
         return -1;
+}
+
+unsigned int
+tsfs_boot_selected_unit_mask_v22(void)
+{
+        return tsfs_selected ? tsfs_selected_units_v22 : 0U;
 }
 
 int

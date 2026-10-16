@@ -11,6 +11,7 @@
 #include "mm_internal.h"
 #include "proc.h"
 #include "vfs_mount_slab_v4.h"
+#include "root_select.h"
 #include "vfs.h"
 
 
@@ -19,6 +20,7 @@ extern kword_t __kcore_load_end;
 extern kword_t __kinit_image_end;
 extern kword_t vfs_mount_target_base;
 extern kword_t vfs_mount_root_base;
+extern kword_t vfs_mount_limit;
 extern kword_t d6fs_active_reader;
 extern kword_t d6fs_reader_slots_base;
 extern kword_t dtfs_media_base;
@@ -468,6 +470,7 @@ kinit_enter(void)
         kword_t kernel_stack_base;
         kword_t reclaim_end;
         struct vfs_mount_slab_v4 vfs_slab;
+        unsigned int mount_capacity;
 
 #if KINIT_STACK_WATERMARK
         /* kinit_enter() has already allocated its fixed frame.  Mark only
@@ -535,11 +538,13 @@ kinit_enter(void)
 #endif
         /* Dynamic kernel objects begin only after the packed permanent MRES
          * block is complete.  This keeps KCORE+MRES gapless in low memory. */
-        /* Publish all six MM-backed VFS tables before root mounting.
-         * The formats and provider bounds support 26 slots, but activation
-         * remains four until KINIT has a validated physical-unit inventory
-         * and selected-root membership to choose the exact capacity. */
-        if (vfs_mount_slab_v4_prepare(VFS_NMOUNT, &vfs_slab) != 0)
+        /* MINIT has selected and validated the physical root. Reserve space
+         * for all configured transports, less the members consumed by its
+         * root set, plus optional MEMFS. Do not treat absent media as absent
+         * removable transports or invent a fallback capacity on error. */
+        mount_capacity = root_select_mount_capacity_v22();
+        if (mount_capacity == 0U ||
+            vfs_mount_slab_v4_prepare(mount_capacity, &vfs_slab) != 0)
                 kinit_halt();
         /* MINIT already stores the initial D6FS reader in the active-reader
          * word. Transfer that pointer into the slab before selecting it;
@@ -552,6 +557,9 @@ kinit_enter(void)
         tsfs_extent_media_base = vfs_slab.extent;
         vfs_mount_target_base = vfs_slab.target;
         vfs_mount_root_base = vfs_slab.root;
+        /* Publish the count LAST: readers can only traverse table entries
+         * after all six fully zeroed base pointers have been installed. */
+        vfs_mount_limit = (kword_t)mount_capacity;
         if (mm_alloc(KERNEL_IDLE_STACK_WORDS, MM_TYPE_KERNEL_DYNAMIC, 2U,
             MM_ALLOC_LOW,
             &kernel_stack_base) != MM_OK ||

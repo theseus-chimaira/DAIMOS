@@ -38,11 +38,14 @@
 - [x] V21 provider bound phase: replaced D6FS dispatch/DTFS SPACE fixed
   four-slot checks and removed optional TENEX/ITS four-word personality XCT
   table; validated mount 26 and invalid 27. No RAM growth.
-- [ ] V22 boot capacity phase: obtain validated device unit inventory and
-  selected root member masks in KINIT, call the existing 26-slot capacity
-  planner, allocate corresponding MM slab and publish `vfs_mount_limit`
-  before the root mount. Test actual multi-provider mounts above slot 4 and
-  keep independent disk/tape 32K measurements. Do not infer unattached units.
+- [x] V22 capacity activation: KINIT derives selected physical root members
+  and installed provider/controller slots from MINIT state, calls the
+  26-slot planner, allocates the exact six-array MM slab, then publishes
+  `vfs_mount_limit` last. Native full/reduced inventory tests pass.
+- [ ] Exercise simultaneously mounted D6FS/DTFS/TSFS filesystems above slot
+  four on real/emulated attached devices when the boot MRES provider matrix
+  supports those combinations; current D6FS-root and TSFS-root profiles do
+  not install the other family's MRES, so do not advertise phantom slots.
 - [ ] Reduce the accrued permanent KCORE descriptor/dispatch cost after the
   VFS activation path is stable; no workarounds or unsupported 32K claims.
 - [ ] Repair stale daimos-testkit `mm-core` host fixture linking of

@@ -1,3 +1,34 @@
+## 2026-10-16 BOOT-SELECTED MM VFS CAPACITY V22
+
+KINIT now derives its mount slot count from validated physical root-member
+masks and the MINIT service directory. D6FS handoff locators expose physical
+disk/drum units (including nonconsecutive drives); TSFS selection stores a
+transient mask of its validated DECtape units. The installed DSK/DRM/DTC
+controllers contribute supported transport slots, not media occupancy.
+Controllers without their installed filesystem provider do not consume
+mount-table space (D6FS excludes TSFS/DTFS MRES and vice versa in the
+current boot profile). MEMFS contributes one slot only in full builds.
+
+KINIT calls the existing 26-slot `vfs_mount_capacity_v1` planner, allocates
+and zeroes the exact six-array MM slab, moves the boot reader, publishes all
+six table bases and **then** publishes the `vfs_mount_limit`. There is no
+fixed-four fallback on inconsistent inventory. A full D6FS/DSK+DRM boot
+with one root member allocates nine slots/54 MM words; a detected DSK-only
+full boot uses five slots/30 MM words, and a minimal disk-only profile uses
+four/24. A full TSFS/DTC one-member root also uses nine slots. The packed
+record and policy upper bounds remain 26; current bootable MRES combinations
+require at most nine rather than reserving phantom controller/provider slots.
+
+Native PDP-6 full/reduced inventory tests and the existing MM/policy/provider
+regressions pass. Disk-root diagnostic ROOT login/ECHO uses the documented
+test-only DSH size override. Documentation:
+`design/vfs-boot-capacity-20261016-v22.md`.
+
+V22 disk/tape permanent last words remain 037355/036537 octal (disk multi
+037416). Static 32K KCORE end 024142 fails the 020000 gate by 2146 words.
+The KINIT disk/tape image ends are 073277/074277, leaving 1345/833 words
+after reserved bootstrap stacks; these are **not** 32K boot acceptance.
+
 ## 2026-10-16 VFS 26-SLOT PROVIDER BOUNDS V21
 
 Replaced the last explicit 4-slot D6FS MRES dispatch and DTFS SPACE bounds
