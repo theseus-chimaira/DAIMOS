@@ -384,8 +384,8 @@ pipe_write_words_done:
 pipe_add_ref:
         move    6,1
         tlz     6,0707070               ; strip descriptor metadata
-        lsh     6,-036
-        caie    6,7                     ; PIPE_PROVIDER
+        hlrz    6,6
+        caie    6,070001               ; only PIPE, mount 0, stream kind
         popj    17,
         hrrz    6,1
         jumpge  1,pipe_add_ref_write
@@ -398,15 +398,35 @@ pipe_add_ref_write:
 
         .globl  pipe_add_refs
 pipe_add_refs:
-        jumpe   1,pipe_add_refs_done
+        jumpe   1,pipe_add_refs_empty
+        push    17,010
+        move    010,1                    ; child file-table base
         move    2,1
         movei   3,020
 pipe_add_refs_loop:
         move    1,(2)
+        move    6,1
+        tlz     6,0707070
+        hlrz    6,6
+        caie    6,070001               ; PIPE-like low vnode bits?
+        jrst    pipe_add_refs_next
+        ; A TSFS root on mount 8/16/24 has the same low fields as PIPE.
+        ; Consult the *child* u-area's extension map, not file_table, which
+        ; still points at the parent during RUN construction.
+        move    7,2
+        sub     7,010
+        movn    7,7
+        move    6,041(010)
+        lsh     6,0(7)
+        trne    6,3
+        jrst    pipe_add_refs_next
         pushj   17,pipe_add_ref
+pipe_add_refs_next:
         addi    2,2
         sojg    3,pipe_add_refs_loop
 pipe_add_refs_done:
+        pop     17,010
+pipe_add_refs_empty:
         popj    17,
 
         .globl  pipe_close_ref

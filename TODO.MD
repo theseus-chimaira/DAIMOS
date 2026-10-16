@@ -30,11 +30,19 @@
 
 ## KINIT storage inventory and VFS mount sizing (2026-10-15)
 
-- [ ] V18: credentials UID9/GID9/UMASK9 are packed into u-area word 066;
+- [ ] V19: native FILE mount-extension map now preserves mount IDs up to 26
+  across file operations, DUP/DUP2, FLOCK, FIFO substitution, unmount, pipe
+  dispatch and RUN fd-map inheritance, with unchanged two-word descriptors
+  and u-area size. Restore the +138 permanent-word instruction cost in a
+  dedicated source-level KCORE optimization sweep once remaining consumers
+  are stable. Next: PURE backing fifth-bit lifetime and optional DTFS
+  personality/bounds, then safe boot-selected mount count.
+
+- [x] V18/V19: credentials UID9/GID9/UMASK9 are packed into word 066;
   formerly dedicated umask word 067 can hold all 16 two-bit FILE mount
-  extensions at no process-memory increase. Complete the atomic native FILE
-  open/read/write/dup/close/lock/FIFO/unmount and RUN-inheritance migration
-  using word 067, then separately resolve PURE backing's 37-bit requirement.
+  extensions at no process-memory increase. Native FILE open/read/write,
+  dup/close/lock/FIFO/unmount and RUN-inheritance paths now use word 067;
+  separately resolve PURE backing's 37-bit requirement.
   One of credential word 066's nine remaining spare bits may hold PURE's
   additional mount-slot bit if its entire process lifecycle is audited.
   See `design/file-mount-packing-20261016-v18.md`.

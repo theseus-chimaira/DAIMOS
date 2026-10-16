@@ -1,3 +1,30 @@
+## 2026-10-16 TWO-WORD FILE DESCRIPTOR 26-MOUNT EXTENSION V19
+
+Active native FILE descriptors now preserve mount bits 3..4 (canonical vnode
+bits 27..28) in the existing per-process two-bit-per-fd extension bitmap
+at u-area word 067. The packed two-word descriptors, full 36-bit offset,
+and `0410`-octal u-area remain unchanged. FILE open/close, canonical-vnode
+I/O dispatch, FIFO substitution, DUP/DUP2, FLOCK, unmount lock cleanup and
+RUN mapped-descriptor inheritance now maintain the extension. Pipe/TSFS
+provider-7 special dispatch was hardened: a TSFS root on mount 8 must not
+be mistaken for a PIPE endpoint when duplicated, closed or inherited.
+Native PDP-6 tests cover mount IDs 2 versus 26, high-bit preservation, lock
+independence, duplicate/close/unmount cleanup, RUN fd remapping, and TSFS
+versus PIPE reference ownership; diagnostic disk-root ROOT login/ECHO passes.
+Full PDP-6 FIFO and word-FIFO simulator regressions also pass with the
+existing diagnostic-only DSH `037000` size override. Without that override
+the standard `036000` DSH gate still fails; production acceptance is not
+claimed.
+
+Memory costs: +138 linked permanent words versus v18, no per-process data
+increase. Disk-root single permanent last 037171, multi 037232, tape root
+036353 (octal). GCC 32K lowmem KCORE end 024006 FAILS strict 020000 by
+2054 decimal words; KINIT disk/tape ends 072706/073645 leaving 1594/1115
+words after reserved stack. Production mount capacity is still **four**.
+PURE backing's fifth mount bit, optional TENEX/ITS provider table/bounds,
+and KINIT capacity selection remain pending. Details in
+`design/file-mount-packing-20261016-v18.md`.
+
 ## 2026-10-16 COMPACT CREDENTIAL / FILE EXTENSION RESERVATION V18
 
 UID9, GID9 and UMASK9 now share u-area credential word 066, leaving the

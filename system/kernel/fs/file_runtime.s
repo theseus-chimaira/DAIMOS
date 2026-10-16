@@ -23,6 +23,65 @@
         .globl  proc_swap_backing_busy
         .globl  file_new_fd
         .globl  file_table
+; The former umask word in each u-area is a 16*2-bit mount extension map.
+; file_table points at u-area 026, so the map is at file_table+041 octal.
+; Each descriptor needs its mount bits 3 and 4 reconstructed: these bits
+; overlap the packed lock-family token in node_meta (not the FILE state).
+; These leaves preserve AC1/AC2 where their calling contracts require it.
+        .globl  file_node_from_fd
+file_node_from_fd:
+        move    7,1
+        sub     7,file_table          ; 2*fd
+        movn    7,7
+        move    6,file_table
+        move    0,041(6)               ; AC0 cannot serve as an index register
+        lsh     0,0(7)                 ; selected two-bit extension
+        andi    0,3
+        lsh     0,033                 ; vnode mount bits 3..4 (bits 27..28)
+        move    7,(1)
+        tlz     7,707070              ; remove all FILE metadata
+        ior     7,0
+        move    1,7
+        popj    17,
+
+; AC1 descriptor pointer, AC2 canonical vnode, preserves AC1/AC2.
+; Also accepts zero as AC2 to clear a closed descriptor's extension bits.
+        .globl  file_mount_ext_store
+file_mount_ext_store:
+        move    7,1
+        sub     7,file_table          ; 2*fd
+        move    6,2
+        lsh     6,-033
+        andi    6,3
+        lsh     6,0(7)
+        movei   0,3
+        lsh     0,0(7)
+        move    7,file_table
+        addi    7,041
+        andcam  0,(7)
+        iorm    6,(7)
+        popj    17,
+
+; AC1 source descriptor pointer, AC2 destination pointer. Both preserved.
+; The destination's old extension is replaced, never OR'ed with stale bits.
+file_mount_ext_copy:
+        move    7,1
+        sub     7,file_table
+        movn    7,7
+        move    6,file_table
+        move    6,041(6)
+        lsh     6,0(7)
+        andi    6,3
+        move    7,2
+        sub     7,file_table
+        lsh     6,0(7)
+        movei   0,3
+        lsh     0,0(7)
+        move    7,file_table
+        addi    7,041
+        andcam  0,(7)
+        iorm    6,(7)
+        popj    17,
 file_check_access:
         caile   2,7
         jrst    kret_neg1
@@ -182,6 +241,11 @@ file_open_newfd_call:
         move    2,(13)
         pushj   17,pipe_fifo_open
         jumpe   1,file_open_fifo_fail
+        push    17,1
+        move    2,1
+        move    1,13
+        pushj   17,file_mount_ext_store  ; FIFO now names the pipe vnode
+        pop     17,1
         move    2,(13)
         and     2,[-070710000000]
         ior     1,2
@@ -193,6 +257,9 @@ file_open_newfd_call:
 file_open_fifo_fail:
         setzm   (13)
         setzm   1(13)
+        move    1,13
+        setz    2,
+        pushj   17,file_mount_ext_store
         seto    1,
         jrst    file_open_return
 
@@ -354,15 +421,15 @@ file_readchar_notdir:
         tlnn    3,400000               ; FILE_META_READ
         jrst    file_readchar_fail
         move    010,1
-        move    1,(010)
-        tlz     1,707070               ; strip packed descriptor metadata
+        move    1,010
+        pushj   17,file_node_from_fd
         move    2,1(010)
         movei   3,(17)
         pushj   17,vfs_readchar
         came    1,[-3]                 ; VFS_DEVICE_IO
         jrst    file_readchar_result
-        move    1,(010)
-        tlz     1,707070
+        move    1,010
+        pushj   17,file_node_from_fd
         camn    1,[020002000000]       ; MonitorFS device view CTY0 IO endpoint
         jrst    file_readchar_cty
         camn    1,[020002000023]       ; TTYDPY0: CTY0 input + DPY0 output
@@ -410,15 +477,15 @@ file_writechar_notdir:
         tlnn    4,200000               ; FILE_META_WRITE
         jrst    file_writechar_fail
         move    010,1
-        move    1,(010)
-        tlz     1,707070               ; strip packed descriptor metadata
+        move    1,010
+        pushj   17,file_node_from_fd
         move    3,(17)
         move    2,1(010)
         pushj   17,vfs_writechar
         came    1,[-3]
         jrst    file_writechar_result
-        move    1,(010)
-        tlz     1,707070
+        move    1,010
+        pushj   17,file_node_from_fd
         camn    1,[020002000000]
         jrst    file_writechar_cty
         camn    1,[020002000022]       ; MonitorFS device view LPT0 IO endpoint
@@ -458,13 +525,13 @@ file_close:
         jumpe   1,file_close_fail
         move    010,1
         move    2,(1)                  ; packed descriptor for pipe refs
-        move    1,2
-        tlz     1,707070
+        move    1,010
+        pushj   17,file_node_from_fd
         camn    1,[020002000010]       ; DPY0 owns a persistent raw list
         jrst    file_close_dpy
         move    3,1
-        lsh     3,-036                 ; provider
-        caie    3,7                    ; PIPE_PROVIDER
+        hlrz    3,3
+        caie    3,070001               ; PIPE provider, mount 0, kind 1
         jrst    file_close_vfs
         pushj   17,pipe_close_ref
         jrst    file_close_finish
@@ -473,13 +540,17 @@ file_close_dpy:
         setz    1,
         setz    2,
         pushj   17,dpy_write_words_jump
-        move    1,(010)
-        tlz     1,707070
+        move    1,010
+        pushj   17,file_node_from_fd
 file_close_vfs:
         pushj   17,vfs_sync
 file_close_finish:
         jumpn   1,file_close_done
         setzm   (010)
+        move    1,010
+        setz    2,
+        pushj   17,file_mount_ext_store
+        setz    1,
 file_close_done:
         pop     17,010
         popj    17,
@@ -510,6 +581,12 @@ file_dup_store:
         movem   4,(2)
         move    4,1(1)
         movem   4,1(2)
+        pushj   17,file_mount_ext_copy
+        move    1,2
+        pushj   17,file_node_from_fd
+        hlrz    1,1
+        caie    1,070001               ; exclude mounted TSFS root nodes
+        jrst    file_dup_return
         move    1,(2)
         push    17,3
         pushj   17,pipe_add_ref         ; no-op for non-pipe descriptors
@@ -555,8 +632,15 @@ file_dup2_copy:
         movem   3,(2)
         move    4,1(1)
         movem   4,1(2)
+        pushj   17,file_mount_ext_copy
+        move    1,2
+        pushj   17,file_node_from_fd
+        hlrz    1,1
+        caie    1,070001
+        jrst    file_dup2_no_pipe
         move    1,3
         pushj   17,pipe_add_ref         ; no-op for non-pipe descriptors
+file_dup2_no_pipe:
         move    1,(17)
         jrst    file_dup2_done
 file_dup2_bad:
@@ -568,8 +652,8 @@ file_dup2_done:
 
 ; int file_lock(int fd, unsigned int op)
 ; The packed node word carries both the canonical vnode and descriptor state.
-; FLOCK compares canonical vnode bits and the four-bit dup-family token
-; directly in packed form, so neither field needs unpacking.
+; FLOCK compares the packed low vnode bits and dup-family token directly;
+; the two-bit mount extension must also match before changing lock state.
         .globl  file_lock
 file_lock:
         push    17,2                    ; file_find may clobber operation
@@ -584,6 +668,14 @@ file_lock:
         caile   2,3
         jrst    kret_neg1
         move    6,file_lock_modes-1(2)
+        move    7,1
+        sub     7,file_table
+        movn    7,7
+        move    4,file_table
+        move    0,041(4)
+        lsh     0,0(7)
+        andi    0,3
+        move    5,0                   ; extension of target vnode
         jumpe   6,file_lock_update      ; unlock cannot conflict
 
         move    2,file_table
@@ -593,6 +685,17 @@ file_lock_check:
         move    7,4
         xor     7,(1)
         tdne    7,[070707777777]        ; any canonical vnode field differs
+        jrst    file_lock_check_next
+        move    7,2
+        sub     7,file_table
+        movn    7,7
+        push    17,4
+        move    4,file_table
+        move    0,041(4)
+        pop     17,4
+        lsh     0,0(7)
+        andi    0,3
+        came    0,5                    ; distinct high mount bits cannot lock
         jrst    file_lock_check_next
         tlnn    7,007040                ; same owner never conflicts
         jrst    file_lock_check_next
@@ -617,6 +720,17 @@ file_lock_update_loop:
         xor     7,(1)
         tdne    7,[070707777777]
         jrst    file_lock_update_next
+        move    7,2
+        sub     7,file_table
+        movn    7,7
+        push    17,4
+        move    4,file_table
+        move    0,041(4)
+        pop     17,4
+        lsh     0,0(7)
+        andi    0,3
+        came    0,5
+        jrst    file_lock_update_next
         tlne    7,007040
         jrst    file_lock_update_next
         tlz     4,000030                ; replace regular/lock state
@@ -638,9 +752,8 @@ file_lock_modes:
         .long   0                       ; VFS_LOCK_UNLOCK
 
 ; void file_unlock_mount(unsigned int mount_id)
-; Clear lock/regular state for descriptors of an unmounted filesystem.  Only
-; the low three canonical mount-id bits are extracted; the high three bits of
-; that six-bit VFS field carry packed FILE metadata.
+; Clear lock/regular state for the specified mount. The three packed low
+; mount bits and the two-bit u-area extension form the five-bit public ID.
         .globl  file_unlock_mount
 file_unlock_mount:
         move    2,file_table
@@ -649,6 +762,15 @@ file_unlock_mount_loop:
         skipn   4,(2)
         jrst    file_unlock_mount_next
         ldb     4,[POINT 3,4,11]
+        move    7,2
+        sub     7,file_table
+        movn    7,7
+        move    6,file_table
+        move    0,041(6)
+        lsh     0,0(7)
+        andi    0,3
+        lsh     0,3
+        ior     4,0
         came    4,1
         jrst    file_unlock_mount_next
         move    4,(2)
@@ -715,8 +837,8 @@ file_words_notdir:
         jrst    file_words_fail
         move    010,1
         move    2,1(010)                ; word offset
-        move    1,(010)
-        tlz     1,707070                ; canonical vnode
+        move    1,010
+        pushj   17,file_node_from_fd
         jumpl   5,file_read_words_dispatch
 
         camn    1,[020002000003]        ; PTP0
@@ -836,8 +958,8 @@ file_words_append_result:
 file_words_append_provider:
         push    17,1                    ; preserve transferred word count
         add     17,kconst_7_7
-        move    1,(010)
-        tlz     1,707070
+        move    1,010
+        pushj   17,file_node_from_fd
         movei   2,-6(17)
         pushj   17,vfs_stat
         jumpn   1,file_words_append_stat_done
@@ -902,8 +1024,8 @@ file_readdir:
         tlne    4,000030                ; regular O_APPEND is not directory
         jrst    file_readdir_fail
         move    010,1
-        move    1,(010)
-        tlz     1,707070                ; canonical vnode
+        move    1,010
+        pushj   17,file_node_from_fd
         move    2,1(010)
         move    3,(17)
         pushj   17,vfs_readdir
@@ -1414,13 +1536,14 @@ file_find:
         popj    17,
 
 ; int file_new_fd(vnode_t node, unsigned int flags, int isdir)
-; Pack the persistent READ/WRITE/DIR bits and lock-family token into the nine
-; vnode bits which are zero for every current DAIMOS provider/mount/kind.
+; Pack READ/WRITE/DIR, lock-family and regular/lock state into spare vnode
+; bits. Public mount bits 3..4 overlap owner-family bits, and are preserved
+; separately in two bits per fd of u-area word 067. Mount bit 5 must be zero.
 ; CREATE/TRUNC are OPEN-only.  APPEND is retained later in file_open_append
 ; using the DIR bit when the descriptor has nonzero regular-file state.
         .globl  file_new_fd
 file_new_fd:
-        tlne    1,707070               ; packed metadata bits must be free
+        tlne    1,704070               ; provider/kind extras and mount bit 5
         jrst    file_new_fd_fail
         trne    2,1
         tlo     1,400000               ; FILE_META_READ
@@ -1442,6 +1565,12 @@ file_new_fd_fail:
         jrst    kret_neg1
 file_new_fd_store:
 ; Scatter fd bits 0..2 into LH 007000 and bit 3 into LH 000040.
+        push    17,1
+        move    2,1
+        move    1,4
+        pushj   17,file_mount_ext_store
+        pop     17,1
+        tlz     1,003000              ; mount bits 3..4 saved in u-area 067
         move    0,5
         andi    0,7
         lsh     0,033
@@ -1483,8 +1612,7 @@ file_seek_end_check:
         push    17,1                    ; descriptor pointer
         add     17,kconst_7_7               ; seven-word struct vfs_stat
         move    1,-7(17)
-        move    1,(1)
-        tlz     1,707070                ; canonical vnode
+        pushj   17,file_node_from_fd
         movei   2,-6(17)
         pushj   17,vfs_stat
         jumpn   1,file_seek_end_fail

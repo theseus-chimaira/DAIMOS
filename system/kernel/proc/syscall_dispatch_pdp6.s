@@ -40,6 +40,7 @@
         .globl  file_mkfifo
         .globl  file_table
         .globl  file_find
+        .globl  file_node_from_fd
         .globl  exec_replace_current
         .globl  proc_exec_enter
         .globl  pclk_time36
@@ -144,8 +145,12 @@ native_sys_mapped_return:
         move    1,6
         pushj   17,file_find
         jumpe   1,native_sys_read_words_mapped
-        move    4,(1)
-        tlz     4,707070               ; canonical vnode
+        push    17,6
+        push    17,7
+        pushj   17,file_node_from_fd
+        move    4,1                    ; canonical vnode incl mount bits 3..4
+        pop     17,7
+        pop     17,6
         camn    4,[020002000000]        ; CTY0 controlling-TTY proxy
         jrst    native_sys_tty_read_words
         hlrz    5,4
@@ -169,8 +174,12 @@ native_sys_read_words_mapped:
         move    1,6
         pushj   17,file_find
         jumpe   1,native_sys_write_words_mapped
-        move    4,(1)
-        tlz     4,707070               ; canonical vnode
+        push    17,6
+        push    17,7
+        pushj   17,file_node_from_fd
+        move    4,1
+        pop     17,7
+        pop     17,6
         hlrz    5,4
         caie    5,070001               ; PIPE_PROVIDER, PIPE_KIND_STREAM
         jrst    native_sys_write_words_mapped

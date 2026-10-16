@@ -94,6 +94,7 @@
         .globl  mach_syscall_save
         .globl  file_table
         .globl  file_find
+        .globl  file_node_from_fd
         .globl  vm_activate_current
         .globl  proc_slot_ptr
         .globl  proc_runq_add
@@ -1782,8 +1783,7 @@ proc_control_isatty:
         move    1,2
         pushj   17,file_find
         jumpe   1,kret_neg1
-        move    1,(1)
-        tlz     1,707070               ; strip packed FILE metadata
+        pushj   17,file_node_from_fd   ; includes high mount bits
         camn    1,[020002000000]       ; MonitorFS device view CTY0 IO endpoint
         jrst    proc_control_tty_owned
         camn    1,[020002000023]       ; TTYDPY0 is TTY0 with DPY output

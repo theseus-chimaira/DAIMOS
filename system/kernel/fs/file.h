@@ -20,7 +20,11 @@
  * FILE descriptors use two words.  The complete 36-bit word offset is
  * kept intact.  Descriptor metadata occupies the nine bits which are known
  * zero in every canonical DAIMOS vnode: providers, mount ids and local kinds
- * are all 0..7 even though VFS reserves six bits for each field.
+ * providers and local kinds are 0..7, but mount IDs can reach 26. Mount
+ * bits 3..4 overlap lock-family token bits in node_meta; a separate two-bit
+ * extension per descriptor in u-area word 067 preserves those mount bits.
+ * Canonical vnode reconstruction therefore requires file_node_from_fd(),
+ * not just masking node_meta. The two-word FILE and full offset remain.
  *
  * node_meta therefore contains a canonical vnode plus:
  *   LH 400000  readable
@@ -46,6 +50,8 @@ struct file {
 #define FILE_META_APPEND           FILE_META_DIR
 #define FILE_META_LOCK_SHARED      0000020000000UL
 #define FILE_META_LOCK_EXCL        0000030000000UL
+/* This raw mask only removes metadata. It cannot restore a high mount ID;
+ * use the FILE descriptor's extension map for canonical vnode reconstruction. */
 #define FILE_NODE(nm)              ((vnode_t)((nm) & FILE_NODE_VNODE_MASK))
 /* FILE descriptors and cwd are process-private and live in the stable
  * process u-area.  KCORE retains only a pointer to the current table. */

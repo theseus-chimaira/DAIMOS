@@ -144,6 +144,7 @@ file_parent_path(const kword_t *path, vnode_t *dirp,
 
 extern struct file *file_find(int fd);
 extern int file_new_fd(vnode_t node, unsigned int flags, int isdir);
+extern void file_mount_ext_store(struct file *fp, vnode_t node);
 
 #ifndef FILE_OPEN_PDP6_ASM
 int
@@ -190,10 +191,12 @@ file_open(const kword_t *path, unsigned int flags)
                 if (node == VFS_NODE_NONE) {
                         fp->node_meta = 0UL;
                         fp->offset = 0UL;
+                        file_mount_ext_store(fp, VFS_NODE_NONE);
                         return -1;
                 }
-                fp->node_meta = node |
+                fp->node_meta = (node & FILE_NODE_VNODE_MASK) |
                     (fp->node_meta & ~FILE_NODE_VNODE_MASK);
+                file_mount_ext_store(fp, node);
                 fp->offset = 0UL;
                 return fd;
         }

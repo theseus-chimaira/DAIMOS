@@ -345,6 +345,21 @@ proc_run_map_loop:
         movem   2,(1)
         move    2,1(7)
         movem   2,1(1)
+        ; Copy the high two mount-ID bits of the selected parent descriptor.
+        ; Word 067 is zeroed with the child u-area before this loop. The
+        ; parent map sits 041 octal words beyond parent file_table (026).
+        move    6,7
+        sub     6,file_table           ; parent descriptor offset = 2*fd
+        movn    6,6
+        move    2,file_table
+        move    0,041(2)               ; AC0 is never an index register
+        lsh     0,0(6)
+        andi    0,3
+        move    6,1
+        sub     6,014
+        subi    6,PROC_FILE_TABLE_OFFSET ; child descriptor offset = 2*fd
+        lsh     0,0(6)
+        iorm    0,PROC_FDMOUNT_OFFSET(014)
 proc_run_map_next:
         addi    015,1
         sojg    3,proc_run_map_loop
