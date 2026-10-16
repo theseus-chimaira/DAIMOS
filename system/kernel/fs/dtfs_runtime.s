@@ -32,7 +32,7 @@ dtfs_mres_reg_dispatch:
 dtfs_space:
         ldb     4,[POINT 6,1,11]        ; public mount id
         sojl    4,dtfs_space_fail
-        caile   4,3
+        caml    4,vfs_mount_limit       ; MM media table is boot-sized
         jrst    dtfs_space_fail
         move    5,4
         add     5,dtfs_media_base
@@ -1159,16 +1159,11 @@ dtfs_chmod_fail:
         jrst    kret_neg1
 
 .if DTFS_ENABLE_FOREIGN
-; Per-mount personality instructions are patched once by mount.  XCT turns a
-; personality lookup into MOVEI 1,{0,010,020}; dtfs_media[] remains the packed
-; unit/personality store used by paths that need the unit too.
-        .data
-dtfs_personality_xct:
-        movei   1,0
-        movei   1,0
-        movei   1,0
-        movei   1,0
-        .text
+; The optional TENEX/ITS personality is already encoded in the MM-backed
+; media word.  Do not maintain a separate four-instruction self-modifying XCT
+; table: it both truncates mount IDs and wastes permanent resident words.
+; Lookup is cold relative to tape I/O.  The published table and limit remain
+; the single authoritative source of the media personality for all 26 slots.
 
         .globl  dtfs_patch_media
 dtfs_patch_media:
@@ -1176,17 +1171,21 @@ dtfs_patch_media:
         subi    3,1
         add     3,dtfs_media_base
         movem   2,(3)
-        move    3,dtfs_personality_xct  ; MOVEI 1,0 template
-        andi    2,030
-        ior     3,2
-        movem   3,dtfs_personality_xct-1(1)
         pushj   17,bcache_reclaim       ; source id may refer to new media
         popj    17,
 
         .globl  dtfs_personality
 dtfs_personality:
-        ldb     2,[POINT 6,1,11]
-        xct     dtfs_personality_xct-1(2)
+        ldb     2,[POINT 6,1,11]       ; public mount ID
+        sojl    2,dtfs_personality_bad
+        caml    2,vfs_mount_limit
+        jrst    dtfs_personality_bad
+        add     2,dtfs_media_base
+        move    1,(2)
+        andi    1,030                 ; native 0, TENEX 010, ITS 020
+        popj    17,
+dtfs_personality_bad:
+        setz    1,                    ; invalid mount cannot acquire mode
         popj    17,
 
  ; Mount ownership is VFS policy, never DECtape media metadata.  The high
@@ -1197,7 +1196,7 @@ dtfs_personality:
 ; dtfs_media LH is compact UID9,,GID9 for the mount.
         .globl  dtfs_stat_owner
 dtfs_stat_owner:
-        ldb     3,[POINT 6,1,11]        ; mount id 1..4
+        ldb     3,[POINT 6,1,11]        ; public mount ID 1..capacity
         subi    3,1
         move    4,3
         add     4,dtfs_media_base

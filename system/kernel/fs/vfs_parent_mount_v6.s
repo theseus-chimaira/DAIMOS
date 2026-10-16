@@ -1,9 +1,10 @@
 ; Staged native replacement for VFS parent mount-boundary resolution.
 ; This contains the mount-specific logic of vfs_parent/vfs_parent_name,
-; but is not linked until the common slab addresses are published by KINIT.
+; but is not linked: production VFS performs this resolution directly using
+; its KINIT-published MM-backed bases.
 ;
 ; AC1 = vnode; AC2 = absolute root table; AC3 = absolute target table;
-; AC4 = selected capacity, 1..16.
+; AC4 = selected capacity, 1..26.
 ; Returns AC1 = containing mount target when the vnode is exactly a mounted
 ; root; otherwise AC1 is unchanged. AC5..AC7 scratch.
 ;
@@ -16,7 +17,7 @@ vfs_parent_mount_v6:
         ldb 5,[POINT 6,1,11]
         sojl 5,vfs_parent_mount_v6_done
         jumple 4,vfs_parent_mount_v6_done
-        caile 4,020
+        caile 4,032
         jrst vfs_parent_mount_v6_done
         caml 5,4
         jrst vfs_parent_mount_v6_done

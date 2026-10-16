@@ -60,9 +60,9 @@ typedef kword_t vnode_t;
 #define VFS_NAME_WORDS       4U
 #define VFS_NAME_MAX_CHARS   (VFS_NAME_WORDS * 6U)
 
-/* Active KINIT still publishes four mounts. The MM planner and one-word
- * policy support up to 26, but FILE/swap backing formats and provider bounds
- * must be converted before KINIT may activate more than four. */
+/* KINIT still publishes four mounts. All live FILE/PURE record formats and
+ * provider table accesses now accommodate up to 26; a boot-validated unit
+ * inventory and an atomic KINIT capacity publication remain outstanding. */
 #define VFS_NMOUNT           4U
 extern kword_t vfs_mount_limit;
 #define VFS_ID_MASK          0777U

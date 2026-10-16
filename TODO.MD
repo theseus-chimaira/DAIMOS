@@ -35,10 +35,16 @@
   Full 18-bit index, 14-bit PURE text length and one-word swap record are
   retained. EXEC rollback, swap raw/compressed/verify, busy guards and mount
   26 native tests pass. No additional process words allocated.
-- [ ] V21: audit/fix every provider-local mount bound (including optional
-  TENEX/ITS DTFS personality dispatch), then activate and validate a safe
-  boot-selected VFS capacity capped at 26. Preserve 32K measurements and
-  optimize the accumulated permanent KCORE addressing instructions.
+- [x] V21 provider bound phase: replaced D6FS dispatch/DTFS SPACE fixed
+  four-slot checks and removed optional TENEX/ITS four-word personality XCT
+  table; validated mount 26 and invalid 27. No RAM growth.
+- [ ] V22 boot capacity phase: obtain validated device unit inventory and
+  selected root member masks in KINIT, call the existing 26-slot capacity
+  planner, allocate corresponding MM slab and publish `vfs_mount_limit`
+  before the root mount. Test actual multi-provider mounts above slot 4 and
+  keep independent disk/tape 32K measurements. Do not infer unattached units.
+- [ ] Reduce the accrued permanent KCORE descriptor/dispatch cost after the
+  VFS activation path is stable; no workarounds or unsupported 32K claims.
 - [ ] Repair stale daimos-testkit `mm-core` host fixture linking of
   `vfs_mount_limit` and `proc_storage_publish_v30`/
   `proc_swap_storage_invariant_v30`. These services are already used in the

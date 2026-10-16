@@ -1,3 +1,24 @@
+## 2026-10-16 VFS 26-SLOT PROVIDER BOUNDS V21
+
+Replaced the last explicit 4-slot D6FS MRES dispatch and DTFS SPACE bounds
+with `vfs_mount_limit`, protecting MM-backed table indexing. Optional
+TENEX/ITS DTFS personality lookup no longer uses a four-word self-modifying
+XCT table: it reads the existing MM-backed `dtfs_media_base` entry and
+validates its slot. Foreign support remains disabled in the shipped build,
+but the enabled assembly branch builds and its exact production leaves pass
+native PDP-6 tests at mounts 10 and 26, including invalid mount 27.
+The separate staged VFS access/parent helpers now also admit 26 slots.
+
+No added resident/process RAM. Disk single/multi/tape permanent last remain
+037355/037416/036537 octal; 32K lowmem KCORE end remains 024142 octal,
+2146 decimal words above its strict gate. Diagnostic disk-root ROOT login
+and ECHO pass under the documented test-only DSH size override.
+
+**Capacity remains four in production.** `vfs_mount_capacity_v1` is a
+staged inventory planner, not wired to KINIT. Boot must obtain validated
+controller unit counts and root membership before it can publish an MM slab
+capacity up to 26. See `design/vfs-provider-26-20261016-v21.md`.
+
 ## 2026-10-16 PURE BACKING 26-MOUNT EXTENSION V20
 
 The one-word resident PURE swap record still contains its complete 18-bit

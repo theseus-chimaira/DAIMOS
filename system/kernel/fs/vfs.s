@@ -86,7 +86,7 @@ vfs_lookup_pop:
 
 ; Mounted-target substitution is shared by the ordinary lookup path.
 ; AC4 = returned vnode, AC6/AC7 scratch. The loop uses MM-backed bases and
-; KINIT's published slot count (still four until all consumers are safe).
+; KINIT's published slot count (four until unit inventory is validated).
 vfs_lookup_resolve_mount:
         setz    6,
 vfs_lookup_mount_loop:
@@ -912,7 +912,7 @@ vfs_mount_find:
 ; Find an unoccupied mount slot while rejecting an already mounted target.
 ; AC1 = target, AC7 = resulting slot, AC0 = status (0/-1); AC6 scratch.
 ; The target/root tables are MM-backed. KINIT still publishes capacity four
-; until provider bounds and the hardware inventory have been converted.
+; until its hardware inventory and root membership are validated.
 vfs_mount_find_slot:
         setz    7,
 vfs_mount_find_loop:
@@ -1098,8 +1098,8 @@ vfs_mount_target_base:
         .word   0
 vfs_mount_root_base:
         .word   0
-; Remains four until KINIT can atomically publish all six MM-backed arrays.
-; The live upper bound is never allowed to exceed sixteen mounts.
+; Remains four until KINIT computes a validated unit inventory and publishes
+; the resulting 1..26 capacity with all six MM-backed arrays.
 vfs_mount_limit:
         .word   4
         .globl  monitorfs_names

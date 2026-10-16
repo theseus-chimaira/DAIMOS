@@ -610,9 +610,9 @@ d6fs_mres_dispatch:
 d6fs_mres_reg_dispatch:
         cain    6,022                    ; FS_MRES_OP_MOUNT_UNIT (18)
         jrst    d6fs_mount_validated
-        ldb     7,[POINT 6,1,11]        ; vnode mount id 1..4
-        sojl    7,kret_neg1        ; convert to zero-based slot
-        caile   7,3
+        ldb     7,[POINT 6,1,11]        ; public mount id 1..capacity
+        sojl    7,kret_neg1             ; zero-based MM reader slot
+        caml    7,vfs_mount_limit
         jrst    kret_neg1
         add     7,d6fs_reader_slots_base
         move    7,(7)
@@ -1258,7 +1258,7 @@ d6fs_provider_unmount_done:
         pushj   17,bcache_reclaim        ; source id may be reused after unmount
         move    5,d6fs_active_reader
         ldb     4,[POINT 6,1(5),35]      ; mount id
-        subi    4,1                      ; VFS mount ids are 1..4
+        subi    4,1                      ; public mount ID -> MM slot
         push    17,4                     ; mm_free may clobber argument ACs
         move    1,5
         movei   2,3                      ; MM_TYPE_KERNEL_DYNAMIC

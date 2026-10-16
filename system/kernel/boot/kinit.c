@@ -536,8 +536,9 @@ kinit_enter(void)
         /* Dynamic kernel objects begin only after the packed permanent MRES
          * block is complete.  This keeps KCORE+MRES gapless in low memory. */
         /* Publish all six MM-backed VFS tables before root mounting.
-         * Leave capacity at four until FILE/swap backing formats, remaining
-         * provider bounds, and hardware-based sizing have been validated. */
+         * The formats and provider bounds support 26 slots, but activation
+         * remains four until KINIT has a validated physical-unit inventory
+         * and selected-root membership to choose the exact capacity. */
         if (vfs_mount_slab_v4_prepare(VFS_NMOUNT, &vfs_slab) != 0)
                 kinit_halt();
         /* MINIT already stores the initial D6FS reader in the active-reader
