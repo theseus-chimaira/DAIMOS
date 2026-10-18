@@ -141,6 +141,9 @@ proc_swap_out(int slot)
         r->state = ((first & MM_HALF_MASK) << 18U) |
             (blocks & MM_HALF_MASK);
         proc_swap_blocks_used += blocks;
+        if (proc_storage_publish_v30((unsigned int)slot,
+            PROC_STORAGE_RESIDENT, PROC_STORAGE_DISK) != 0)
+                proc_swap_storage_invariant_v30();
         PROC_CLEAR_TRANSITION(p);
         return 0;
 
@@ -250,6 +253,9 @@ proc_swap_in(int slot)
         backstore_free(first, blocks);
         r->state = resident_state;
         PROC_SWAP_BACKING_WORD(p) = 0UL;
+        if (proc_storage_publish_v30((unsigned int)slot,
+            PROC_STORAGE_DISK, PROC_STORAGE_RESIDENT) != 0)
+                proc_swap_storage_invariant_v30();
         PROC_CLEAR_TRANSITION(p);
         return 0;
 

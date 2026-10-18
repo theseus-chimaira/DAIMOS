@@ -1,3 +1,19 @@
+## 2026-10-18 UNCOMMITTED-CODE TRIAGE V23A
+
+The native FILE FLOCK traversal once again computes the owning descriptor's
+packed-node difference after extracting the per-fd high mount bits. This
+prevents the candidate table displacement from being mistaken for the lock
+family comparison. `proc_swap_boot.c` invalidates the shared filesystem
+block-cache workspace before a direct persistent BACKSTORE read. The GCC
+process swap-out and swap-in paths now publish RESIDENT/DISK state changes
+through the production storage map, matching the native assembly path.
+
+The PDP-6 FILE mount-extension and VFS 26-slot policy regressions pass. The
+Termux host `mm-core` fixture links the existing storage-map implementation
+and supplies an inert block-cache invalidation stub; its full MM suite passes.
+These fixes do not enable experimental AAP bootstrap diagnostics or CTY FIFO
+changes. The DECtape PI3 search rewrite is reviewed and tested separately.
+
 ## 2026-10-16 BOOT-SELECTED MM VFS CAPACITY V22
 
 KINIT now derives its mount slot count from validated physical root-member

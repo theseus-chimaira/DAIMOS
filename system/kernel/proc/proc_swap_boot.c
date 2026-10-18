@@ -12,6 +12,7 @@
 #include "blockset_mres.h"
 #include "bstore.h"
 #include "proc_storage_map_v28.h"
+#include "bcache.h"
 
 #define PROC_SWAP_MM_OWNER 4U
 #define SWAP_PERSIST_MAGIC   055464663UL
@@ -29,6 +30,12 @@ proc_swap_reserve_persistent(kword_t blocks)
 
         if (blocks == 0UL)
                 return 0;
+        /* BACKSTORE writes into the filesystem's shared block workspace.
+         * Invalidate its clean-cache tag before the direct read; otherwise
+         * a subsequent TSFS/DTFS metadata lookup may accept stale contents
+         * as a cached DECtape block.  The independent cache slot stays valid.
+         */
+        bcache_workspace_invalidate();
         h = fs_block_workspace;
         last = blocks - 1UL;
         if (backstore_read(last, 1UL, h) != 0)

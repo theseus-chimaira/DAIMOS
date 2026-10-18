@@ -697,6 +697,8 @@ file_lock_check:
         andi    0,3
         came    0,5                    ; distinct high mount bits cannot lock
         jrst    file_lock_check_next
+        move    7,4
+        xor     7,(1)                   ; restore owner difference after indexing
         tlnn    7,007040                ; same owner never conflicts
         jrst    file_lock_check_next
         tlnn    4,000020                ; candidate is not locked
@@ -731,6 +733,8 @@ file_lock_update_loop:
         andi    0,3
         came    0,5
         jrst    file_lock_update_next
+        move    7,4
+        xor     7,(1)                   ; compare owner, not table displacement
         tlne    7,007040
         jrst    file_lock_update_next
         tlz     4,000030                ; replace regular/lock state
