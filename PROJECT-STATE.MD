@@ -1,3 +1,33 @@
+## 2026-10-18 AAP DEFAULT-INITTAB BOOT RECOVERY V23C
+
+INIT no longer launches LOGIN against missing physical terminal controllers.
+The default INITTAB still lists TTY0 (CTY), TTY1 (DCS0) and TTY17 (GE0),
+but `init_tty_input_present_v23c` checks the corresponding MINIT-published
+MonitorFS `/DEV/CTY0`, `/DEV/DCS0`, or `/DEV/GE0` endpoint before admitting
+each entry.  A successfully probed controller permits all its logical lines
+even without carrier; unprobed/absent controllers do not allocate a LOGIN
+process or enter a failed respawn cycle.  No kernel ABI or resident RAM change.
+
+With the previous v23b packed CTY FIFO and still-**uncommitted** experimental
+Type-551 PI3 tape driver, a fresh AAP root-tape boot **using the unchanged
+three-entry INITTAB** reaches INIT, ROOT authentication and `DSH V1`.
+Evidence: `$HOME/tmp/aap-dtc-boot-v41/aap-boot-console-pi3-v41.log`,
+validated by the new testkit v23c trace verifier: 234 forward plus 21 reverse
+128-word DECtape audits, zero word errors, no respawn/session/auth messages.
+Host C99 tests of the exact production check cover TTY 0/1/16/17/20,
+missing hardware, invalid status, and syscall failures.  A previous failed
+AAP boot capture is correctly rejected by the verifier.
+
+The transient INIT code text grew from 983 to 1050 words (+67), BSS remains
+177 words; KCORE/MRES residency is unchanged. The boot still uses a
+diagnostic-only expanded DSH image ceiling, not strict 32K acceptance.
+
+**Separate open issue:** a subsequent AAP DSH `ECHO AAPBOOTOK` request is
+delivered and echoed as a command line but does not produce the command's
+result or a fresh prompt within the longer v43 experiment. Correct DECtape
+word content does not establish provider lookup/search completion. This does
+not invalidate the completed default-INITTAB INIT/LOGIN/DSH boot fix.
+
 ## 2026-10-18 CTY TYPE-626 INPUT PRESERVATION V23B
 
 The CTY PI4 driver previously used a one-character mailbox which each

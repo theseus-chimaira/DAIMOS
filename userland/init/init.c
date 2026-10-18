@@ -113,6 +113,40 @@ parse_uint(const char *s, unsigned int *vp)
         return 0;
 }
 
+/**
+ * @brief Verify that the input provider for an INITTAB TTY exists.
+ *
+ * Hardware MINIT publishes a MonitorFS device only after its probe succeeds.
+ * INITTAB may still list CTY0, DCS0 or GE0 on a smaller machine, but running
+ * LOGIN on a missing input controller immediately fails and wastes scarce
+ * process/user/swap resources.  Query the existing namespace instead of
+ * duplicating hardware-presence state or changing the configured INITTAB.
+ *
+ * The DCS controller supplies TTY1..16; GE supplies TTY17..20. A present
+ * controller is sufficient even if no terminal is presently connected.
+ */
+static int
+init_tty_input_present_v23c(unsigned int tty)
+{
+        const char *path;
+        kword_t packed[U_PATH_WORDS];
+        struct vfs_stat st;
+
+        if (tty == 0U)
+                path = "/DEV/CTY0";
+        else if (tty <= 16U)
+                path = "/DEV/DCS0";
+        else if (tty <= SYS_TTY_ID_MAX)
+                path = "/DEV/GE0";
+        else
+                return 0;
+
+        if (u_s6_pack(packed, U_PATH_WORDS, path) != 0 ||
+            dsys_stat(packed, &st) != 0)
+                return 0;
+        return st.type == VFS_TYPE_CHAR;
+}
+
 static int
 parse_entry(char *line, struct init_entry *e)
 {
@@ -172,7 +206,8 @@ load_inittab(void)
                 if (rc < 0) {
                         (void)u_puts(2, "INIT: BAD INITTAB");
                         (void)u_crlf(2);
-                } else if (rc == 0) {
+                } else if (rc == 0 &&
+                    init_tty_input_present_v23c(init_entries[init_count].tty)) {
                         ++init_count;
                 }
         }

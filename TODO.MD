@@ -35,11 +35,17 @@
   boot with CTY-only INITTAB reaches DSH.  Permanent CTY MRES cost +54 words,
   including +2 resident data words.  Optimize only after proving equivalent
   lossless handoff and PI4 wakeup behavior.
-- [ ] Diagnose **default** three-session INITTAB startup on AAP: CTY/DCS/GE
-  LOGIN sessions cause repeated `INIT: RESPAWN FAILED`, and ROOT authentication
-  then returns `LOGIN INCORRECT`.  Do not permanently reduce INITTAB to one
-  service as a workaround.  Investigate per-TTY availability, memory/swap
-  exhaustion and `proc_run`/`wait`/`exit` resource lifetime.
+- [x] V23C recover **default** three-session INITTAB startup on AAP without
+  reducing the configuration: INIT tests the MINIT-published CTY/DCS/GE
+  MonitorFS input endpoint and starts LOGIN only for detected controllers.
+  ROOT reaches DSH; no failed respawn/auth lines, correct 255 audited tape
+  blocks. C99 source-leaf and AAP evidence tests pass.
+- [ ] Investigate AAP DSH command execution after successful V23C ROOT boot.
+  `ECHO AAPBOOTOK` arrives intact and is echoed as a command line, but
+  the v43 run produces neither a separate ECHO result nor a new prompt before
+  timing out. Distinguish provider block search and executable/process
+  startup from terminal input; do not mask this by claiming DSH command
+  acceptance based only on the command echo.
 - [ ] Validate and either commit or discard the *separate* Type-551 PI3
   DECtape block-mark search/transfer rewrite.  Native reverse and the AAP
   physical 128-word audits are clean, but a full default multi-session boot
