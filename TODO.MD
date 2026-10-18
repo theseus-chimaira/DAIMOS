@@ -28,6 +28,24 @@
 
 # DAIMOS TODO
 
+## AAP PDP-6 boot and CTY work (2026-10-18)
+
+- [x] V23B CTY PI4 10-byte packed FIFO: eliminate one-character mailbox
+  overwrite; native PDP-6 FIFO and TTY routing tests pass.  AAP diagnostic
+  boot with CTY-only INITTAB reaches DSH.  Permanent CTY MRES cost +54 words,
+  including +2 resident data words.  Optimize only after proving equivalent
+  lossless handoff and PI4 wakeup behavior.
+- [ ] Diagnose **default** three-session INITTAB startup on AAP: CTY/DCS/GE
+  LOGIN sessions cause repeated `INIT: RESPAWN FAILED`, and ROOT authentication
+  then returns `LOGIN INCORRECT`.  Do not permanently reduce INITTAB to one
+  service as a workaround.  Investigate per-TTY availability, memory/swap
+  exhaustion and `proc_run`/`wait`/`exit` resource lifetime.
+- [ ] Validate and either commit or discard the *separate* Type-551 PI3
+  DECtape block-mark search/transfer rewrite.  Native reverse and the AAP
+  physical 128-word audits are clean, but a full default multi-session boot
+  and combined-provider persisted media checks remain outstanding.
+
+
 ## KINIT storage inventory and VFS mount sizing (2026-10-15)
 
 - [x] V20: fifth PURE backing mount-slot bit in spare credential bit 27,

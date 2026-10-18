@@ -1,3 +1,33 @@
+## 2026-10-18 CTY TYPE-626 INPUT PRESERVATION V23B
+
+The CTY PI4 driver previously used a one-character mailbox which each
+incoming DATAI unconditionally overwrote.  Under DECtape I/O latency this
+lost queued input: a controlled AAP headless run received all five letters
+of `ROOT` and CR, but echoed only `RO`.  V23B replaces the mailbox with a
+bounded ten-character, two-word packed seven-bit FIFO and a one-word count.
+If full, PI4 masks its input priority without acknowledging the hardware
+byte; the foreground dequeue releases a slot and re-enables PI4.  The
+Type-626 can then deliver its pending byte.  The producer/consumer use no
+unbounded loops and no dynamic allocation; the implementation adds two
+resident data words relative to the old one-byte mailbox.  CTY MRES grows
+from 58 to 112 words (+54 linked resident words including instructions).
+
+Native PDP-6 exact-assembly FIFO tests pass (NUL, ten-byte capacity, full
+rejection, cross-word FIFO order, reuse).  Existing TTY routing tests pass.
+An AAP PI3 DECtape + CTY FIFO diagnostic boot with a **CTY-only test
+INITTAB** successfully reached ROOT login and DSH.  The original three-
+session INITTAB does not: extra LOGIN process/respawn attempts trigger
+`INIT: RESPAWN FAILED` and `LOGIN INCORRECT` despite physically correct
+DECtape word transfers.  Only the CTY FIFO is accepted here; the PI3
+DECtape search changes and the multi-session startup investigation remain
+uncommitted.  The diagnostic INITTAB is not the shipped configuration.
+
+The repaired installed `pdp10-objdump` correctly reports MRES resident size
+using the current source, packaged as versioned `local.tar.gz` and installed
+to `$PDP10_PREFIX`.  The disk permanent gate passes with 170 free words
+and tape permanent gate with 568 free words for this *experimental PI3*
+working tree; they are not strict 32K KCORE acceptance.
+
 ## 2026-10-18 UNCOMMITTED-CODE TRIAGE V23A
 
 The native FILE FLOCK traversal once again computes the owning descriptor's
