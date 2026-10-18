@@ -1,3 +1,31 @@
+## 2026-10-18 CROSS-EMULATOR BOOT RETEST V24
+
+Fresh 256K images from HEAD bc22c27 plus the uncommitted DECtape PI3
+driver/router changes were exercised on AAP, comparable-hardware
+SIMH with DTC/TSFS root, and full-device SIMH with DSK/D6FS root.
+The diagnostic DSH size override 037000 remains necessary.
+
+AAP reaches INIT, ROOT and DSH but ECHO RETESTED_OK_V24 never produces
+output or a new prompt within 240 seconds. SIMH with non-AAP disk,
+drum, MTC and terminal peripherals disabled reaches DTC OK but does
+not reach INIT. A second AAP run, using the headless emulator forcibly
+rebuilt from cleaned revision ac603e8, reproduces the same ECHO timeout.
+Debugging the SIMH tape run found an active 128-word Type-136 DECtape
+read with IOWD count -9 (119 words transferred), no progress on
+resumption. This is an open cross-simulator DECtape regression; the
+source of the discrepancy has not been assigned to DAIMOS or SIMH.
+
+Full-device SIMH disk boot reaches ROOT/DSH on DCS0 and runs external
+ECHO and PWD. A separate fresh-media CTY boot passes the same tests.
+The first DCS0 test also logged INIT: RUN FAILED, and reusing its disk
+media led to a subsequent ?RT root-mount halt; regenerating the
+media made the CTY test pass. Startup consistency and disk persistence
+still require investigation.
+
+Reproduction probes are in daimos-testkit. Detailed evidence is in
+pdp10-doc STATUS/EMULATOR-BOOT-RETEST-20261018-V24.MD.
+No production code or emulator fix was made during the retest.
+
 ## 2026-10-18 AAP DEFAULT-INITTAB BOOT RECOVERY V23C
 
 INIT no longer launches LOGIN against missing physical terminal controllers.
