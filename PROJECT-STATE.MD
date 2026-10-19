@@ -1,3 +1,28 @@
+## 2026-10-19 SIMH TYPE-551 MULTI-UNIT BOOT REPAIR V34
+
+The high-priority V24 AAP-like SIMH DECtape-root stall is fixed in the
+SIMH source tree (local commit `8361359`).  The SIMH Type-551 event routine
+was updating a shared `DTSB` from nonselected moving drives; an inactive
+drive's end-of-tape could stop the selected drive with a Type-136 read still
+in progress (V24 observed 119/128 words, IOWD -9).  A new selected-unit
+owner gates status, Type-136 data, and interrupt operations while retaining
+physical motion for unselected drives.  The same SIMH commit restores CPU
+`PC` as the first register, which is necessary for `GO 020` in rebuilt SIMH.
+
+On the **unchanged experimental DAIMOS PI3** tape driver, AAP-like SIMH
+DECtape/TSFS root now reaches INIT, ROOT, DSH and successfully executes
+external ECHO and PWD (2/2 tests).  Freshly rebuilt full-device SIMH with
+DSK/D6FS root also reaches ROOT/DSH and passes ECHO/PWD (2/2).  A disk-root
+`?RT` on reused media remains a distinct unresolved persistence regression;
+it did not reproduce after regenerating the image.  All runs here are 256K
+with the diagnostic `DSH_IMAGE_LIMIT=037000`, **not** 32K acceptance.
+
+The AAP post-DSH ECHO timeout from V24 has **not** been retested or fixed.
+The DAIMOS DECtape PI3 work in `tape_io.s` and `storage_router.s` remains
+uncommitted, unchanged by the SIMH repair.  Test reproduction is in
+`daimos-testkit/tests/validation/daimos-simh-dtc-selected-v34.sh` and
+`pdp10-doc/STATUS/PDP6-SIMH-TYPE551-REGRESSION-20261019-V34.MD`.
+
 ## 2026-10-18 CROSS-EMULATOR BOOT RETEST V24
 
 Fresh 256K images from HEAD bc22c27 plus the uncommitted DECtape PI3
