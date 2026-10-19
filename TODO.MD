@@ -1,3 +1,21 @@
+## GCC PDP-6 functional regression recovery (2026-10-19)
+
+- [x] Repair GCC local 9-bit char-array loads across 36-bit words at
+  -O1/-O2/-Os; preserve the selected stack word rather than interpreting
+  the word address as a byte offset.  Testkit v45 target execution passes
+  at -O0/-O1/-O2/-Os, compiler commit df27247.
+- [x] Retest full GCC DSH conformance with a fresh 256K disk image:
+  115/115 PASS, including HELP ECHO and HELP DAS previously failing.
+- [x] Update three outdated D6FS assembly test oracles, TSFS eight-member
+  test compilation and SIXBIT headers, and the PDP-6 stack-adjustment
+  codegen oracle.  All six focused cases pass, testkit commit 2804838.
+- [ ] Diagnose the distinct GCC multiprocess scheduler preemption failure:
+  corrected v45 GCC still produces `<aAbB2cCxxxxxxxxdDeEyyyyyyyy314D5`
+  and does not schedule all boot users before the first CPU checkpoint.
+  Verify clock/quantum behavior and compare KCC before changing assertions.
+- [ ] Address remaining GCC and KCC disk-testkit group failures without
+  re-running already passing groups.  32K and size gates are separate.
+
 ## Native MAKE V0.9 feature freeze (2026-10-11)
 
 - Native MAKE is feature-complete for V0.9. No new features unless required
@@ -40,12 +58,11 @@
   MonitorFS input endpoint and starts LOGIN only for detected controllers.
   ROOT reaches DSH; no failed respawn/auth lines, correct 255 audited tape
   blocks. C99 source-leaf and AAP evidence tests pass.
-- [ ] Investigate AAP DSH command execution after successful V23C ROOT boot.
-  `ECHO AAPBOOTOK` arrives intact and is echoed as a command line, but
-  the v43 run produces neither a separate ECHO result nor a new prompt before
-  timing out. Distinguish provider block search and executable/process
-  startup from terminal input; do not mask this by claiming DSH command
-  acceptance based only on the command echo.
+- [x] Retest AAP DSH external command execution after ROOT boot: v37
+  headless AAP passes ECHO at 300.2 seconds and PWD at 548.2 seconds;
+  the former 240-second command timeout was insufficient for DECtape seeks.
+  The comparable SIMH Type-551 tape-root path also passes both probes.
+  This is 256K functional acceptance only, not 32K or persistence testing.
 - [ ] Validate and either commit or discard the *separate* Type-551 PI3
   DECtape block-mark search/transfer rewrite.  Native reverse and the AAP
   physical 128-word audits are clean, but a full default multi-session boot

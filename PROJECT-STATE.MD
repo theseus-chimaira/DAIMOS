@@ -1,3 +1,30 @@
+## 2026-10-19 GCC PDP-6 NINE-BIT ARRAY COMPILER REPAIR V46
+
+The GCC backend had a target-executed, reproducible compiler bug at -O1,
+-O2 and -Os: a 9-bit char array on the stack returned the wrong character
+at a 36-bit word boundary.  A frame-relative 36-bit word access already
+selected by the RTL was incorrectly treated as a byte displacement during
+final assembly output.  GCC commit df27247 repairs that output path;
+the direct PDP-6 testkit regression (commit e24488e) now passes at -O0,
+-O1, -O2 and -Os.  The neighboring multidimensional-char regression
+passes -O0/-O1/-O2.  No DAIMOS production-code change is involved.
+
+An isolated rebuild with the repaired GCC booted a fresh 256K DAIMOS disk
+image and passed **all 115 DSH conformance probes**, including HELP ECHO
+and HELP DAS, which were the only two failing GCC probes before the fix.
+Reproduction: $TMPDIR/daimos-gcc-v46/dsh-conformance-v46.log, result v46
+exit 0.  The patched GCC was tested with an isolated toolchain wrapper;
+the installed compiler was not overwritten.  Dedicated 32K and image-size
+tests remain explicitly excluded.
+
+The GCC multiprocess scheduler preemption test still fails under the
+repaired compiler (v47); its clock/quantum behavior must be diagnosed
+independently rather than weakening the test.  The disk regression groups
+also retain separate VFS/MonitorFS, storage, DECtape and D6FS failures.
+The original 30-group matrix has not been rerun in full after this repair;
+do not claim full testkit acceptance.  See
+pdp10-doc/TOOLCHAIN/GCC-PDP6-LOCAL-CHAR-ARRAY-20261019-V45.MD.
+
 ## 2026-10-19 AAP AND SIMH DECTAPE COMMAND ACCEPTANCE V37
 
 Both supported simulator tape-root paths now reach INIT, ROOT, and DSH
