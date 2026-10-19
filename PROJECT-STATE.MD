@@ -1,3 +1,27 @@
+## 2026-10-19 AAP AND SIMH DECTAPE COMMAND ACCEPTANCE V37
+
+Both supported simulator tape-root paths now reach INIT, ROOT, and DSH
+and execute external ECHO and PWD successfully at 256K with the diagnostic
+DSH image ceiling 037000.  The repaired SIMH Type-551 selected-transport
+case passes 2/2 command probes.  A fresh AAP headless PDP-6 run passes
+ECHO and PWD too: DSH was entered after 103.4 seconds, ECHO finished
+after 300.2 seconds, and PWD finished after 548.2 seconds total.
+The former 240-second AAP test timeout was insufficient for the observed
+DECtape seeks and does not establish a permanent command-execution stall.
+No new DAIMOS or AAP production change was required for this retest.
+
+The separate full-device SIMH disk/D6FS functional regression sweep is
+still under way with 32K and dedicated size tests excluded.  The 12-way
+independent boot/root cross-matrix has passed.  The automatic-root-priority
+testkit had inconsistent INIT/login expectations; its corrected fixture
+is being independently retested.  No full disk-testkit acceptance is yet
+claimed, and strict 32K boot and persistence remain separate gates.
+
+Reproductions: daimos-testkit/tests/validation/daimos-aap-boot-basic-v37.py,
+daimos-simh-dtc-selected-v34.sh, and
+daimos-regression-disk-nosize-v35.tsv.  Details are in
+pdp10-doc/STATUS/PDP6-SIMH-TYPE551-REGRESSION-20261019-V34.MD.
+
 ## 2026-10-19 SIMH TYPE-551 MULTI-UNIT BOOT REPAIR V34
 
 The high-priority V24 AAP-like SIMH DECtape-root stall is fixed in the
