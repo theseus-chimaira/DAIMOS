@@ -1,5 +1,20 @@
 ## GCC PDP-6 functional regression recovery (2026-10-19)
 
+- [x] GCC group 004 fresh targeted run passes all five boot origins,
+  four-member DSK root discovery, Stage1 KINIT entry, SIXBIT lifetime,
+  and corrected compiler-codegen validation.
+- [x] Restore MonitorFS online-device test: detach SIMH DTC3 as well as
+  DTC0-DTC2 before disabling the controller. Direct GCC test PASS; all
+  other originally failing group-023 subtests pass independently.
+- [x] Repair D6FS host checker power-cut regression: current optimal repair
+  uses exactly three durable writes, with CLEAN already published after
+  cut 3. Verify DIRTY recovery, final CLEAN, no fourth write and ambiguous
+  no-modification. Full group-032 host-tools suite PASS, testkit 11feecb.
+- [ ] Recheck group 023 as a single group and resolve remaining GCC/KCC
+  matrix failures; focused subtest success is not a complete suite pass.
+- [ ] Rework secondary TSFS/DTFS mount acceptance to match the intentionally
+  root-selected MRES package. Do not introduce extra resident MRES solely
+  to satisfy a fixture that boots the wrong root class.
 - [x] Repair GCC local 9-bit char-array loads across 36-bit words at
   -O1/-O2/-Os; preserve the selected stack word rather than interpreting
   the word address as a byte offset.  Testkit v45 target execution passes

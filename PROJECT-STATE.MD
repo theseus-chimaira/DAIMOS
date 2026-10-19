@@ -1,3 +1,25 @@
+## 2026-10-19 GCC DISK FUNCTIONAL RETEST V52
+
+The focused 256K disk-suite GCC regressions now PASS group 004 (five boot
+origins, DSK root discovery, Stage1/KINIT, SIXBIT lifetime and PDP-6
+codegen), group 031 (115/115 DSH probes), and group 032 (all host-tools
+scripts). Group 023's three D6FS mount oracles and its previously failing
+MonitorFS device-state test all pass independently; group 023 has not
+yet been rerun atomically.  Testkit commit 81b2610 detaches all four DTC
+units before disabling the SIMH controller.  Testkit commit 11feecb
+updates the host D6FS repair crash fixture to verify the actual three
+durable writes: DIRTY, changed summary, CLEAN; cut 4 never triggers.
+The prior fourth-write expectation was stale, not a host checker bug.
+
+The GCC scheduler multiprocess case (017) still fails under patched GCC.
+Some group 027 tape mount fixtures request a DTFS/TSFS package in a D6FS
+root profile where it is deliberately absent; neither a kernel feature
+nor a test skip has been accepted.  Other original matrix failures remain
+open.  The corrected compiler has not been installed systemwide.  All
+retakes here are 256K, DSH_IMAGE_LIMIT=037000; no 32K claims.  Detailed
+evidence: pdp10-doc/STATUS/DAIMOS-GCC-FUNCTIONAL-REGRESSION-REPAIRS-
+20261019-V52.MD.
+
 ## 2026-10-19 GCC PDP-6 NINE-BIT ARRAY COMPILER REPAIR V46
 
 The GCC backend had a target-executed, reproducible compiler bug at -O1,
