@@ -9,11 +9,11 @@ PDP10_GCC ?= pdp10-dec-none-gcc
 # An explicit command-line CC still overrides this default.
 COMPILER ?= kcc
 MONITORFS_MRES_ENABLED ?= 0
-MONITORFS_MODE_STAMP = ${BUILD}/.monitorfs-v17-mode-${MONITORFS_MRES_ENABLED}
+MONITORFS_MODE_STAMP = ${BUILD}/.monitorfs-v18-mode-${MONITORFS_MRES_ENABLED}
 
 ${MONITORFS_MODE_STAMP}:
 	@mkdir -p ${BUILD}
-	@rm -f ${BUILD}/.monitorfs-v17-mode-0 ${BUILD}/.monitorfs-v17-mode-1
+	@rm -f ${BUILD}/.monitorfs-v18-mode-0 ${BUILD}/.monitorfs-v18-mode-1
 	@touch $@
 CC = ${COMPILER}
 KCCFLAGS ?= -Pgnu99 -O -x=pdp6 -m=gas
@@ -465,7 +465,6 @@ COPY_ASM_TARGETS = $(BUILD)/ret.s \
 	$(BUILD)/tsfs_runtime.s \
 	$(BUILD)/file_runtime.s \
 	$(BUILD)/pipe.s \
-	$(BUILD)/monitorfs_runtime.s \
 	$(BUILD)/device_state.s \
 	$(BUILD)/syscall_info.s \
 	$(BUILD)/pclk.s \
@@ -508,7 +507,16 @@ ${COPY_ASM_TARGETS}: ${COPY_ASM_SRCS}
 	@mkdir -p ${BUILD}
 	@base=`basename "$@"`; src=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base"; then src="$$d/$$base"; break; fi; done; test -n "$$src"; if test "$$base" = monitorfs_runtime.s && test "${MONITORFS_MRES_ENABLED}" = 1; then src=fs/monitorfs_dispatch_v14.s; fi; cp "$$src" "$@"
 
-${BUILD}/monitorfs_runtime.s: ${MONITORFS_MODE_STAMP}
+${BUILD}/monitorfs_runtime.s: ${MONITORFS_MODE_STAMP} fs/monitorfs_runtime.s fs/monitorfs_dispatch_v14.s fs/monitorfs_swap_v63.c ${KERNEL_HEADERS}
+	@mkdir -p ${BUILD}
+	@if test '${MONITORFS_MRES_ENABLED}' = 1; then \
+	    cp fs/monitorfs_dispatch_v14.s '$@'; \
+	else \
+	    ${PDP10_CC} ${PDP10_CFLAGS} ${INCLUDES} -S \
+	        fs/monitorfs_swap_v63.c -o '$@.v63.c'; \
+	    { cat fs/monitorfs_runtime.s '$@.v63.c'; } > '$@'; \
+	    rm -f '$@.v63.c'; \
+	fi
 
 clean:
 	rm -rf ${BUILD}

@@ -863,6 +863,7 @@ mfsproc_state_swapped:
 ; counted SIXBIT vector entry.  This keeps record boundaries explicit and
 ; removes the old character-at-offset renderer.
         .globl  mfsproc_read_words
+        .globl  mfsproc_swapped_read_words_v63
         .globl  proc_scope_id
         .globl  kfmt_u18_sixbit
 
@@ -1095,6 +1096,19 @@ mfsproc_read_words:
         jrst    mfsproc_read_words_basic
         caile   2,5
         jrst    mfsproc_read_words_fail
+        ; The parent shell is normally swapped out while CAT runs.  Its
+        ; startup records remain in BACKSTORE, not in the resident image.
+        ; Read only the requested blocks, using the existing 0200-word FS
+        ; workspace, instead of mistaking a missing image base for EOF.
+        hrrz    6,1(1)
+        jumpn   6,mfsproc_read_words_resident
+        move    1,013                ; original process-file vnode
+        move    2,010                ; S6REC serialized word offset
+        move    3,011                ; destination
+        move    4,012                ; destination capacity
+        pushj   17,mfsproc_swapped_read_words_v63
+        jrst    mfsproc_read_words_done
+mfsproc_read_words_resident:
         move    3,010
         move    4,011
         move    5,012
