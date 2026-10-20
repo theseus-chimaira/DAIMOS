@@ -20,6 +20,10 @@ improvement is 469 words.  The live test used the documented KCC DSH test
 limit of `037000`.  Strict 32K size work is deliberately deferred; live
 swapped-parent integration and optional MonitorFS MRES acceptance remain open.
 
+The same full MonitorFS live oracle also PASSes on a fresh 48K GCC lowmem
+disk-root image, KCORE endpoint `024454` octal.  DSH remained resident in
+that test; do not misrepresent it as swapped-process integration coverage.
+
 ## 2026-10-20 resident startup snapshots, isolated v72
 
 Swapped-process MonitorFS reads no longer need the 691-text-word KCC reader

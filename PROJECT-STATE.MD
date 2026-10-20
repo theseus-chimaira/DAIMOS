@@ -23,6 +23,12 @@ decimal words); the net improvement against the previous disk reader's
 025723 endpoint is 469 decimal words.  The live acceptance fixture used the
 current documented KCC `DSH_IMAGE_LIMIT=037000` test override.
 
+A separate fresh **48K GCC lowmem/disk-root SIMH run** of the same complete
+MonitorFS live oracle also PASSes, including NAME/CMDLINE/ENVIRONMENT and
+relative traversal.  Its KCORE endpoint is 024454 octal; the observed
+`PS` output identified the DSH process as resident, so this is **not** a
+live swapped-parent integration PASS.  The 32K size issue remains deferred.
+
 **Scope:** 32K image sizing is known open work, explicitly deferred at user
 request.  The native snapshot target plus resident MonitorFS live test do
 not together constitute a full swapped-parent/live integration acceptance;
