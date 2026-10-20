@@ -23,8 +23,13 @@
   alongside concurrent processes on 48K SIMH (`STATE=SWAP` and all three
   exact S6REC streams), followed by wake/resume/WAIT.  All pass in V75 with
   the corrected slot-0 stack capacity.
-- [ ] Validate new snapshot access through optional pinned MonitorFS MRES
-  and retire its experimental default-disable gate only after live acceptance.
+- [x] Validate snapshot access through pinned MonitorFS MRES: GCC 48K live
+  namespace probes (5/5) and real swapped-process NAME/CMDLINE/ENVIRONMENT,
+  wake and WAIT all PASS in V76.
+- [ ] Keep MonitorFS MRES **optional** unless its fixed-memory overhead is
+  eliminated and KCC acceptance confirms no regression.  GCC 48K measurement
+  currently shows +19 permanently resident words compared with KCORE
+  MonitorFS; the experimental gate therefore remains default-off.
 
 ## V64 validation follow-ups (2026-10-20)
 

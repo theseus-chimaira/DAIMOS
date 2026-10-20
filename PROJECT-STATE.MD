@@ -1,3 +1,31 @@
+## 2026-10-20 V76 OPTIONAL MONITORFS MRES — LIVE ACCEPTED, DEFAULT OFF
+
+The optional MonitorFS MRES package (`MONITORFS_MRES_ENABLED=1`) links, boots,
+and passes 5/5 live process/device/domain probes on a fresh 48K GCC PDP-6
+disk-root image.  More importantly, the existing 48K real-swap regression
+PASSes with the MRES enabled: it observes `STATE=SWAP`, validates the complete
+NAME/CMDLINE/ENVIRONMENT snapshot streams, wakes the reader, and reaps the
+reader and three pressure children.  This verifies snapshot calls from the
+pinned/relocated MRES, not just the resident MonitorFS code path.
+
+Comparable fresh lowmem/disk-root GCC permanent-size reports (PDP-10 words):
+
+                              Resident MonitorFS   Pinned MonitorFS MRES
+    KCORE                         10492                   9472
+    MonitorFS MRES                    0                   1039
+    KCORE + all selected MRES     13368                  13387
+    PERMANENT_LAST                13415                  13434
+
+MRES removes 1020 words from KCORE but costs 1039 additional MRES words, a
+**net increase of 19 irreducibly resident words**.  The permanent low-end
+changes by the same 19 words.  Given DAIMOS's RAM-first optimization policy,
+the default remains `MONITORFS_MRES_ENABLED=0`.  Optional MRES operation is
+verified for GCC on this boot configuration, but no claimed KCC size or
+32K-size acceptance follows from these tests.  A later zero/negative-growth
+linkage optimization and KCC measurement would be needed to justify a default
+switch.  The previously absent V17 runtime probe fixture is restored in
+daimos-testkit, and its script explicitly uses the verified 48K disk profile.
+
 ## 2026-10-20 V75 SLOT-0 STACK CAPACITY — MEASURED 0140 OCTAL
 
 The complete live 48K PDP-6 swap/MonitorFS/wake/WAIT regression V74 first

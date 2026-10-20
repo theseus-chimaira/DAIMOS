@@ -1,5 +1,22 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-20 V76: MonitorFS MRES cost and live-swap acceptance
+
+The optional pinned MonitorFS MRES has now passed both resident namespace
+probes and exact swapped startup-record streams through a real 48K GCC PDP-6
+SIMH wake/resume/WAIT lifecycle.  Enabling it shifts 1020 words out of KCORE
+but requires a 1039-word MRES, **increasing fixed resident use by 19 words**.
+The GCC lowmem/disk-root comparison is 13368 (resident) versus 13387
+(pinned-MRES) words for KCORE+MRES, with PERMANENT_LAST 13415 versus 13434.
+These numbers include the V75 96-word dynamic slot-0 stack setting; that
+stack itself is outside fixed KCORE+MRES accounting.
+
+The MRES gate remains default-off because RAM reduction outranks modularity.
+Do not conflate the 1020-word KCORE shrink with a net resident saving.  Any
+default enablement must first remove the 19-word overhead and pass KCC
+permanent-size and live integration measurement.  Strict 32K is deferred.
+
+
 ## 2026-10-20 V75: measured slot-0 kernel stack depth
 
 The slot-0 stack must cover swap-in and nested MM/I/O work, not just the idle
