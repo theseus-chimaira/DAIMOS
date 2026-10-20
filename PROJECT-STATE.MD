@@ -1,3 +1,18 @@
+## 2026-10-20 SECONDARY TSFS MOUNT ON TAPE ROOT V96
+
+The independent 256K PDP-6 SIMH tape-root experiment passed **3/3**
+secondary-volume probes: `MOUNT.TSFS /DEV/DTC4 /MOUNT/DT0`,
+`STAT /MOUNT/DT0` (read-only directory, `TYPE 1`, `MODE 0555`), and
+`LS /MOUNT/DT0` (entries `README`, `DOC`).  The bootable TSFS root
+was attached on DTC0, and separate three-member TSFS media on DTC4–6.
+The kernel's existing tape-root-only provider was used; there were no
+additional resident TSFS modules on disk-root systems or kernel changes.
+Evidence: `$TMPDIR/daimos-tsfs-tape-root-v96/report-v96.md` and
+`pdp10-doc/STATUS/DAIMOS-TSFS-SECONDARY-MOUNT-TAPE-ROOT-20261020-V96.MD`.
+This validates the three specific probes only.  The original group-027
+disk-root TSFS mount fixtures require adaptation and full retesting.
+The 32K and permanent-size gates remain **deferred**.
+
 ## 2026-10-20 AUTO ROOT DRM FOUR-MEMBER FIXTURE V91
 
 The v74 non-size GCC AUTO-root run passed DISK and TAPE, but initially
