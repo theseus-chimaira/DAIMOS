@@ -30,8 +30,9 @@ image, and the two PI3 kernel changes passed **both external commands**:
 `ECHO RETESTED_OK_V24` produced its output and a prompt, and `PWD` produced
 `/` and a prompt.  The v34 harness returned exit zero (2/2 PASS).  Evidence:
 `$TMPDIR/daimos-uncommitted-20261020-v64/simh-tape-sims-fixed-v64/report-v34.md`.
-Only `tape_io.s` and `storage_router.s` are ready for the separate kernel
-commit; the three MonitorFS files remain uncommitted.  These checks are
+The two PI3 files were committed separately as `2c85325`; project-state
+acceptance is commit `c1f693a`. The three MonitorFS files remain
+uncommitted.  These checks are
 256K runtime acceptance, not strict 32K size/boot acceptance.
 
 ## 2026-10-20 GCC STORAGE GROUP 023 VERIFIED V53

@@ -1,3 +1,14 @@
+## V64 validation follow-ups (2026-10-20)
+
+- [ ] Repair swapped-process NAME/CMDLINE/ENVIRONMENT reads in MonitorFS
+  without allocating persistent per-process metadata.  KCC/GCC compilation
+  and fresh 256K image linking succeed, but the live `CAT 2/NAME` and absolute
+  process-name checks fail.  The reader, assembler integration and Makefile
+  remain uncommitted; retain the unchanged failing test oracle.
+- [ ] Run the corrected three-root automatic-priority/login regression on
+  fresh hardware media before committing its testkit fixture.  The fixture
+  currently remains uncommitted pending its runtime acceptance.
+
 ## GCC PDP-6 functional regression recovery (2026-10-19)
 
 - [x] GCC group 004 fresh targeted run passes all five boot origins,
@@ -78,10 +89,12 @@
   the former 240-second command timeout was insufficient for DECtape seeks.
   The comparable SIMH Type-551 tape-root path also passes both probes.
   This is 256K functional acceptance only, not 32K or persistence testing.
-- [ ] Validate and either commit or discard the *separate* Type-551 PI3
-  DECtape block-mark search/transfer rewrite.  Native reverse and the AAP
-  physical 128-word audits are clean, but a full default multi-session boot
-  and combined-provider persisted media checks remain outstanding.
+- [x] Accept the Type-551 PI3 DECtape block-mark search/transfer rewrite:
+  rebuilt SIMH with the corrected transport controller booted the 256K
+  TSFS root, reached ROOT/DSH, and passed external ECHO and PWD (2/2).
+  The independent PI3 driver/router commit is `2c85325`.
+- [ ] Complete strict 32K residency/boot and combined-provider persisted
+  media acceptance.  The 256K PI3 command test is not either of these gates.
 
 
 ## KINIT storage inventory and VFS mount sizing (2026-10-15)
