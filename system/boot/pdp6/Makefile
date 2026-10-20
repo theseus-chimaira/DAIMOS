@@ -155,6 +155,8 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/drivers/drm236.h \
 	$(KERNEL_DIR)/drivers/dsk270.s \
 	$(KERNEL_DIR)/drivers/drm236.s \
+	$(KERNEL_DIR)/drivers/dsk270_mres_v1.s \
+	$(KERNEL_DIR)/drivers/drm236_mres_v1.s \
 	$(KERNEL_DIR)/drivers/dsk_io.s \
 	$(KERNEL_DIR)/drivers/drm236_io.s \
 	$(KERNEL_DIR)/drivers/ge.h \
@@ -279,6 +281,7 @@ MRES_NAMES = cty_io clk_io ptr_io ptp_io lpt_io cr_io cp_io dcs_io ge_io dpy_io 
 	dpy_text tty_io wcnsls_io ocnsls_io dsk_io drm236_io tape_io slv_io memfs_runtime \
 	dtfs dtfs_runtime tsfs tsfs_runtime blockset_dispatch badmap_dispatch fs_backing d6fs_provider d6fs_validate d6fs_runtime
 MRES_ASM = $(KCORE_BUILD)/cty_io.s $(KCORE_BUILD)/clk_io.s $(KCORE_BUILD)/ptr_io.s $(KCORE_BUILD)/ptp_io.s $(KCORE_BUILD)/lpt_io.s $(KCORE_BUILD)/cr_io.s $(KCORE_BUILD)/cp_io.s $(KCORE_BUILD)/dcs_io.s $(KCORE_BUILD)/ge_io.s $(KCORE_BUILD)/dpy_io.s $(KCORE_BUILD)/dpy_text.s $(KCORE_BUILD)/tty_io.s $(KCORE_BUILD)/wcnsls_io.s $(KCORE_BUILD)/ocnsls_io.s $(KCORE_BUILD)/dsk_io.s $(KCORE_BUILD)/drm236_io.s $(KCORE_BUILD)/tape_io.s $(KCORE_BUILD)/slv_io.s $(KCORE_BUILD)/memfs_data.s $(KCORE_BUILD)/memfs_snapshot.s $(KCORE_BUILD)/memfs_runtime.s $(KCORE_BUILD)/dtfs.s $(KCORE_BUILD)/dtfs_runtime.s $(KCORE_BUILD)/tsfs.s $(KCORE_BUILD)/tsfs_runtime.s $(KCORE_BUILD)/blockset_dispatch.s $(KCORE_BUILD)/badmap_dispatch.s $(KCORE_BUILD)/fs_backing.s $(KCORE_BUILD)/logstore_runtime.s $(KCORE_BUILD)/d6fs_provider.s $(KCORE_BUILD)/d6fs_validate.s $(KCORE_BUILD)/d6fs_runtime.s
+MRES_ASM += $(KCORE_BUILD)/dsk270_mres_v1.s $(KCORE_BUILD)/drm236_mres_v1.s
 
 KCORE_DXR = $(BUILD)/kcore.dxr
 KCORE_MAP = $(BUILD)/kcore.map
@@ -677,6 +680,7 @@ $(KCORE_FIXED_ASM) $(MRES_ASM): $(KCORE_STAMP)
 	@test -f $@
 
 KERNEL_ASM_OBJS = $(BUILD)/kinit.dobj $(BUILD)/vfs_mount_slab_v4.dobj $(BUILD)/vfs_mount_capacity_v1.dobj $(BUILD)/vfs_mount_layout_v3.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/root_select.dobj $(BUILD)/tsfs_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/auxstore_boot.dobj $(BUILD)/logstore_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io_pdp6.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj $(BUILD)/kinit_late_begin_pdp6.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj $(BUILD)/d6lz_fixed.dobj $(BUILD)/exec.dobj $(BUILD)/d6lz.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/backstore.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/ret.dobj $(BUILD)/dsk270.dobj $(BUILD)/drm236.dobj $(BUILD)/kfmt_pdp6.dobj $(BUILD)/s6rec.dobj $(BUILD)/vfs.dobj $(BUILD)/fs_mres.dobj $(BUILD)/file_runtime.dobj $(BUILD)/pipe.dobj $(BUILD)/monitorfs_runtime.dobj $(BUILD)/proc_pdp6.dobj $(BUILD)/proc_run.dobj $(BUILD)/device_state.dobj $(BUILD)/syscall_info.dobj $(BUILD)/pclk.dobj $(BUILD)/syscall_dispatch_pdp6.dobj $(BUILD)/mach_user_pdp6.dobj $(BUILD)/vm_backend_pdp6.dobj $(BUILD)/kcore_pi_pdp6.dobj $(BUILD)/bcache_pdp6.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj $(BUILD)/cty_io.dobj $(BUILD)/clk_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj $(BUILD)/lpt_io.dobj $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj $(BUILD)/dcs_io.dobj $(BUILD)/ge_io.dobj $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj $(BUILD)/tty_io.dobj $(BUILD)/wcnsls_io.dobj $(BUILD)/ocnsls_io.dobj $(BUILD)/dsk_io.dobj $(BUILD)/drm236_io.dobj $(BUILD)/tape_io.dobj $(BUILD)/slv_io.dobj $(BUILD)/memfs_data.dobj $(BUILD)/memfs_snapshot.dobj $(BUILD)/memfs_runtime.dobj $(BUILD)/dtfs.dobj $(BUILD)/dtfs_runtime.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_runtime.dobj $(BUILD)/blockset_dispatch.dobj $(BUILD)/badmap_dispatch.dobj $(BUILD)/fs_backing.dobj $(BUILD)/logstore_runtime.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj
+KERNEL_ASM_OBJS += $(BUILD)/dsk270_mres_v1.dobj $(BUILD)/drm236_mres_v1.dobj
 
 $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM)
 	@mkdir -p $(BUILD)
@@ -797,17 +801,19 @@ $(OCNSLS_MRES_OBJ): $(BUILD)/ocnsls_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ocnsls-mres.dxr -M $(BUILD)/ocnsls-mres.map \
 	    -R $@ -N ocnsls_mres_package -X ocnsls_read $(BUILD)/ocnsls_io.dobj
 
-$(DSK_MRES_OBJ): $(BUILD)/dsk_io.dobj $(KCORE_MAP)
+$(DSK_MRES_OBJ): $(BUILD)/dsk_io.dobj $(BUILD)/dsk270_mres_v1.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/dsk-mres.dxr -M $(BUILD)/dsk-mres.map \
 	    -R $@ -N dsk_mres_package -X dsk_pi_handler -X dsk_read_sector \
 	    -X dsk_write_sector -X dsk_dct_handler -X dsk_watchdog_tick \
-	    $(BUILD)/dsk_io.dobj
+	    -X dsk270_mres_read_v1 -X dsk270_mres_write_v1 \
+	    $(BUILD)/dsk_io.dobj $(BUILD)/dsk270_mres_v1.dobj
 
-$(DRM_MRES_OBJ): $(BUILD)/drm236_io.dobj $(KCORE_MAP)
+$(DRM_MRES_OBJ): $(BUILD)/drm236_io.dobj $(BUILD)/drm236_mres_v1.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/drm-mres.dxr -M $(BUILD)/drm-mres.map \
 	    -R $@ -N drm236_mres_package -X drm236_pi_handler \
 	    -X drm236_read_block_service -X drm236_write_block_service \
-	    $(BUILD)/drm236_io.dobj
+	    -X drm236_mres_read_v1 -X drm236_mres_write_v1 \
+	    $(BUILD)/drm236_io.dobj $(BUILD)/drm236_mres_v1.dobj
 
 $(TAPE_MRES_OBJ): $(BUILD)/tape_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/tape-mres.dxr -M $(BUILD)/tape-mres.map \
