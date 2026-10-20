@@ -112,9 +112,14 @@ mfsdev_present_mark(unsigned int id)
 #define DSK_X_WRITE_SECTOR       2U
 #define DSK_X_DCT_HANDLER        3U
 #define DSK_X_WATCHDOG           4U
+/* Validated public sector ABI follows the five raw controller exports. */
+#define DSK_X_PUBLIC_READ_V1     5U
+#define DSK_X_PUBLIC_WRITE_V1    6U
 #define DRM_X_HANDLER             0U
 #define DRM_X_READ_BLOCK          1U
 #define DRM_X_WRITE_BLOCK         2U
+#define DRM_X_PUBLIC_READ_V1      3U
+#define DRM_X_PUBLIC_WRITE_V1     4U
 
 #define LOGSTORE_X_DISPATCH       0U
 #define LOGSTORE_X_STATE          1U
@@ -1010,8 +1015,10 @@ storage_minit(unsigned int kind, kword_t name)
                             DSK_X_READ_SECTOR);
                         write_service = minit_export(name, base,
                             DSK_X_WRITE_SECTOR);
-                        storage_patch_jump(&dsk270_read_jump, read_service);
-                        storage_patch_jump(&dsk270_write_jump, write_service);
+                        storage_patch_jump(&dsk270_read_jump,
+                            minit_export(name, base, DSK_X_PUBLIC_READ_V1));
+                        storage_patch_jump(&dsk270_write_jump,
+                            minit_export(name, base, DSK_X_PUBLIC_WRITE_V1));
                         module_service_set(MODULE_SERVICE_DSK_READ_SECTOR,
                             read_service);
                         module_service_set(MODULE_SERVICE_DSK_WRITE_SECTOR,
@@ -1047,8 +1054,10 @@ drm236_minit(void)
         read_service = minit_export(name, base, DRM_X_READ_BLOCK);
         write_service = minit_export(name, base, DRM_X_WRITE_BLOCK);
         minit_register(name, DRM_NATIVE_PI_LEVEL, handler, 0U);
-        storage_patch_jump(&drm236_read_jump, read_service);
-        storage_patch_jump(&drm236_write_jump, write_service);
+        storage_patch_jump(&drm236_read_jump,
+            minit_export(name, base, DRM_X_PUBLIC_READ_V1));
+        storage_patch_jump(&drm236_write_jump,
+            minit_export(name, base, DRM_X_PUBLIC_WRITE_V1));
         module_service_set(MODULE_SERVICE_DRM_READ_BLOCK, read_service);
         module_service_set(MODULE_SERVICE_DRM_WRITE_BLOCK, write_service);
         mfsdev_present_mark(MONITORFS_DEV_DRM0);

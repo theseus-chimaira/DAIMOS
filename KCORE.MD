@@ -1,5 +1,38 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-20 Optional Type-270/Type-236 glue relocation v1
+
+The public Type-270 and Type-236 read/write entrypoints now occupy two
+patchable KCORE words per controller family (four total).  All validation
+and device-address conversion has moved into versioned MRES sources
+`drivers/dsk270_mres_v1.s` and `drivers/drm236_mres_v1.s`.  MINIT patches
+the public entries to additional MRES exports when the controller is
+detected; absent hardware leaves both entries returning `kret_neg1`.
+The original raw controller exports and all existing callers retain their
+ABIs.  The DSK and DRM packages remain optional at runtime.
+
+Source-object comparison before folding: former KCORE bridges occupied
+20+17=37 text words; replacements occupy 2+2=4 words.  The 33-word KCORE
+improvement is an **object-level** result and must not be confused with
+linked post-p10fold size or a reduction of total permanent RAM.  The
+versioned MRES conversion routines occupy 19+16=35 text words, plus
+package-export metadata.  The relocation is primarily a low-core saving;
+for installed devices, total resident cost can increase slightly.
+
+The isolated GCC lowmem link builds KCORE and both extended MRES exports,
+and an isolated 48K disk-root image builds and boots through `DSK270 OK`,
+`D6FS LOADED`, and `INIT V1`.  This is boot smoke, **not** native read/write
+or absent-controller acceptance.  Before merging into the active checkout,
+run the existing daimos-testkit Type-270 disk read/write, Type-167/236 drum,
+and controller-absent tests, plus KCC full-profile link and native boot.
+The active checkout contains unrelated in-progress storage and MonitorFS
+changes; these are not part of the isolated v1 patch.
+
+MonitorFS extraction already exists behind `MONITORFS_MRES_ENABLED=1` and
+must remain opt-in until its live VFS/LOGIN probes pass and the current
+swapped-process metadata reader is included in the MRES build.  Enabling it
+without that reader would silently remove MonitorFS data for swapped parents.
+
 ## 2026-10-15 GCC 32K disk-root measurement and MM recovery v138
 
 Isolated baseline at commit `37fba7e`, with `BOOT_PROFILE=lowmem`,

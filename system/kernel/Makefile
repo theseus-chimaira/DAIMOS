@@ -301,6 +301,7 @@ MRES_ASM = $(BUILD)/dtfs.s \
 	$(BUILD)/drm236_io.s \
 	$(BUILD)/tape_io.s \
 	$(BUILD)/slv_io.s
+MRES_ASM += $(BUILD)/dsk270_mres_v1.s $(BUILD)/drm236_mres_v1.s
 
 .PHONY: kinit kcore clean
 
@@ -411,6 +412,8 @@ COPY_ASM_SRCS = core/ret.s \
 	fs/monitorfs_dispatch_v14.s \
 	drivers/dsk270.s \
 	drivers/drm236.s \
+	drivers/dsk270_mres_v1.s \
+	drivers/drm236_mres_v1.s \
 	core/kfmt_pdp6.s \
 	core/s6rec.s \
 	fs/vfs.s \
@@ -458,6 +461,8 @@ COPY_ASM_SRCS = core/ret.s \
 COPY_ASM_TARGETS = $(BUILD)/ret.s \
 	$(BUILD)/dsk270.s \
 	$(BUILD)/drm236.s \
+	$(BUILD)/dsk270_mres_v1.s \
+	$(BUILD)/drm236_mres_v1.s \
 	$(BUILD)/kfmt_pdp6.s \
 	$(BUILD)/s6rec.s \
 	$(BUILD)/vfs.s \
