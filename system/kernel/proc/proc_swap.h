@@ -51,6 +51,11 @@ struct proc_swap_record {
 
 extern struct proc_swap_record *proc_swap_records;
 extern kword_t proc_swap_blocks_used;
+/* Exact-size resident startup prefixes for nonresident processes only.
+ * Capture requires the original image to remain physically pinned. */
+extern kword_t proc_snap_words_v72;
+int proc_snap_take_v72(unsigned int slot);
+void proc_snap_drop_v72(unsigned int slot);
 /** Allocate and initialize one swap-record word per configured process slot. */
 int proc_swap_boot_init(unsigned int slots);
 

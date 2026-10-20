@@ -1,5 +1,26 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-20 resident startup snapshots, isolated v72
+
+Swapped-process MonitorFS reads no longer need the 691-text-word KCC reader
+for BACKSTORE startup strings.  When swap-out has a pinned VM, the new
+`proc_startup_snapshot_v72.c` validates and retains only the occupied
+`argc/argv/envp` counted-SIXBIT prefix in an exact-size nonmoving allocation.
+The single extra u-area word (0410) points to the snapshot and stays zero for
+resident processes.  Snapshot words are freed on swap-in or EXIT/abort and
+included in MEMINFO; the on-disk swap format and three-word process descriptor
+are unchanged.  Allocation uses MM's existing no-reclaim entry to prevent
+swap-reclaim recursion; failure aborts swap without losing user memory.
+
+Native PDP-6 snapshot test PASSes (`daimos-testkit` `b23f962`).  KCC object
+text is 225 words (versus the
+removed disk-reader 691), and the linked KCORE end falls by 487 decimal words:
+025723 -> 024754 octal on fresh 256K KCC images.  GCC 48K image plus
+permanent-size checks PASS.  Do not infer strict 32K or MonitorFS live
+acceptance: 32K KINIT stack reserve still fails, and the unchanged 256K live
+oracle has a *resident* PID 2 NAME failure after LOGIN/EXEC, independent of
+the swapped snapshot path.  MonitorFS MRES remains opt-in until validated.
+
 ## 2026-10-20 Optional Type-270/Type-236 glue relocation v1
 
 The public Type-270 and Type-236 read/write entrypoints now occupy two

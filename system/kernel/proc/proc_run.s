@@ -14,7 +14,7 @@
         .equ    PROC_SCHED_SIDL_LH,0100024
         .equ    PROC_SCHED_SRUN_LH,0200024
         .equ    PROC_F_UAREA_RH,0400000
-        .equ    PROC_UAREA_WORDS,0410
+        .equ    PROC_UAREA_WORDS,0411
         .equ    PROC_FDCTL_OFFSET,024
         .equ    PROC_FILE_CWD_OFFSET,025
         .equ    PROC_FILE_TABLE_OFFSET,026
@@ -247,6 +247,8 @@ proc_run_watermark_loop:
         camge   1,2
         jrst    proc_run_watermark_loop
 .endif
+        ; The trailing u-area word is a snapshot pointer, not a watermark.
+        setzm   0410(014)
 
         ; Locate first argv record and let the machine VM backend relocate
         ; argv/environment into the child image.

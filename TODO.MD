@@ -1,11 +1,24 @@
+## V72 resident startup snapshot follow-ups (2026-10-20)
+
+- [x] Replace the speculative swapped-process MonitorFS disk reader with a
+  compact, verified, resident argc/argv/envp prefix allocated at swap-out;
+  no per-process fixed-size buffer and no recursive MM reclaim.  Native PDP-6
+  snapshot capture/retain/drop/malformed/failure oracle PASSes.
+- [ ] Repair the *resident* PID 2 NAME/CMDLINE/ENVIRONMENT failure during
+  LOGIN -> DSH EXEC.  The unchanged 256K KCC MonitorFS oracle still finds PID
+  2 SLEEP with its user image present but NAME empty; the v72 snapshot branch
+  deliberately does not change that broken EXEC/resident-image path.
+- [ ] Recover strict 32K KINIT stack-reserve headroom, then rerun unchanged
+  swap-wait and swap-stress native tests for exact snapshot transaction
+  acceptance.  The separate 48K boot cannot substitute for 32K pressure.
+- [ ] Validate new snapshot access through optional pinned MonitorFS MRES
+  and retire its experimental default-disable gate only after live acceptance.
+
 ## V64 validation follow-ups (2026-10-20)
 
-- [ ] Repair swapped-process NAME/CMDLINE/ENVIRONMENT reads in MonitorFS
-  without allocating persistent per-process metadata.  KCC/GCC compilation
-  and fresh 256K image linking succeed, but the live `CAT 2/NAME` and absolute
-  process-name checks fail.  The reader, assembler integration and Makefile
-  are saved in experimental commit `dc1f96f` (V71), but are **not accepted**;
-  retain the unchanged failing test oracle.
+- [ ] Complete live process-name acceptance after the v72 resident-snapshot
+  replacement.  The former experimental disk reader remains preserved in
+  history (`dc1f96f`) but is no longer part of active source or KCORE.
 - [x] Validate the corrected three-root AUTO/login testkit fixture at 256K:
   all-media selects DISK, no-DSK selects TAPE, and drum-only selects DRUM.
   The three individual fresh-media probes pass; tape `CAT /CONFIG/SYSTEM`

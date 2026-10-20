@@ -65,6 +65,8 @@ proc_swap_detach(int slot)
         int was_disk;
 
         p = &proc_table[slot];
+        /* EXIT, abort, and EXEC teardown must not leak a swapped snapshot. */
+        proc_snap_drop_v72((unsigned int)slot);
         state = proc_swap_records[slot].state;
         was_disk = VM_PDP6_BASE(p) == 0UL && state != 0UL;
         if (was_disk) {

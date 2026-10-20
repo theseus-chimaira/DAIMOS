@@ -863,7 +863,6 @@ mfsproc_state_swapped:
 ; counted SIXBIT vector entry.  This keeps record boundaries explicit and
 ; removes the old character-at-offset renderer.
         .globl  mfsproc_read_words
-        .globl  mfsproc_swapped_read_words_v63
         .globl  proc_scope_id
         .globl  kfmt_u18_sixbit
 
@@ -1008,10 +1007,21 @@ mfsproc_image_read_words:
         move    013,5                  ; capacity
         move    4,1(1)
         hrrz    014,4                  ; resident image base
+        jumpn   014,mfsproc_image_words_live
+        ; The swapped image's SIXBIT startup prefix is kept separately in
+        ; stable, exact-size core with pointers rebased to this origin.
+        hlrz    014,(1)                ; stable u-area base
         jumpe   014,mfsproc_image_words_eof
+        move    014,0410(014)          ; PROC_STARTUP_SNAPSHOT_OFFSET
+        jumpe   014,mfsproc_image_words_eof
+        aoj     014,                   ; skip allocation-size header
+        move    6,014                  ; start at argc,,envc
+        jrst    mfsproc_image_words_start
+mfsproc_image_words_live:
         hlrz    6,4
         subi    6,02000
         add     6,014                  ; argc,,envc metadata
+mfsproc_image_words_start:
         move    7,(6)
         hlrz    4,7                    ; argc
         hrrz    5,7                    ; envc
@@ -1096,19 +1106,8 @@ mfsproc_read_words:
         jrst    mfsproc_read_words_basic
         caile   2,5
         jrst    mfsproc_read_words_fail
-        ; The parent shell is normally swapped out while CAT runs.  Its
-        ; startup records remain in BACKSTORE, not in the resident image.
-        ; Read only the requested blocks, using the existing 0200-word FS
-        ; workspace, instead of mistaking a missing image base for EOF.
-        hrrz    6,1(1)
-        jumpn   6,mfsproc_read_words_resident
-        move    1,013                ; original process-file vnode
-        move    2,010                ; S6REC serialized word offset
-        move    3,011                ; destination
-        move    4,012                ; destination capacity
-        pushj   17,mfsproc_swapped_read_words_v63
-        jrst    mfsproc_read_words_done
-mfsproc_read_words_resident:
+        ; Resident and swapped startup records share one S6REC renderer;
+        ; swapped processes never incur a MonitorFS BACKSTORE read.
         move    3,010
         move    4,011
         move    5,012

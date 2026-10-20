@@ -31,6 +31,8 @@
         .globl  backstore_free
         .globl  backstore_read
         .globl  backstore_write
+        .globl  proc_snap_take_v72
+        .globl  proc_snap_drop_v72
         .globl  backstore_blocks
         .globl  proc_swap_blocks_used
         .globl  vfs_read_words
@@ -294,6 +296,12 @@ proc_swap_out_verified:
         pushj   17,backstore_write
         jumpn   1,proc_swap_out_unpin
 
+        ; No recursive reclaim here: capture the valid startup prefix before
+        ; releasing the process VM.  Failure aborts the swap transaction.
+        move    1,10
+        pushj   17,proc_snap_take_v72
+        jumpn   1,proc_swap_out_unpin
+
         hlrz    1,(11)
         movem   16,PROC_SWAP_BACKING_OFFSET(1)
         move    1,13
@@ -327,6 +335,8 @@ proc_swap_out_unpin:
         move    1,13
         pushj   17,mm_unpin
 proc_swap_out_record_fail:
+        move    1,10
+        pushj   17,proc_snap_drop_v72
         move    1,(17)
         caml    1,backstore_blocks
         jrst    proc_swap_out_no_free
@@ -464,6 +474,9 @@ proc_swap_in_read_offset:
         move    2,16
         pushj   17,backstore_free
         movem   14,(12)
+        ; Restored user memory now owns startup data; discard the snapshot.
+        move    1,10
+        pushj   17,proc_snap_drop_v72
         hlrz    1,(11)
         setzm   PROC_SWAP_BACKING_OFFSET(1)
         move    1,10

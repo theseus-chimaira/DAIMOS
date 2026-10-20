@@ -1,3 +1,32 @@
+## 2026-10-20 SWAPPED STARTUP SNAPSHOT IMPLEMENTATION V72
+
+An isolated DAIMOS branch replaces the unaccepted 691-word KCC MonitorFS
+BACKSTORE reader (V71) with compact, dynamically allocated resident startup
+snapshots (`proc_startup_snapshot_v72.c`).  On swap-out, with the original VM
+pinned, the code verifies the argv/envp counted SIXBIT records, copies only
+their actual occupied prefix into nonmoving kernel-dynamic core, and rebases
+the record pointers.  One new stable u-area pointer at 0410 holds the copy;
+the process descriptor remains three words, and the swap-disk format is
+unchanged.  After swap-in or teardown, the snapshot is freed; its allocated
+words are counted in MEMINFO.  Non-reclaiming allocation prevents recursive
+swap requests; memory exhaustion aborts swap-out without discarding the VM.
+
+Fresh 48K GCC image build and permanent-size check PASS.  A fresh KCC 256K
+link decreases the KCORE endpoint from 025723 to 024754 octal: 487 decimal
+words.  The dedicated, unchanged-production-code native PDP-6 snapshot test
+in daimos-testkit (commit `b23f962`) PASSes (copy/rebase, retention after VM removal, exact free,
+invalid record and allocation-failure cases).  The snapshot's KCC object is
+225 text words plus one global BSS word; the removed reader was 691 words.
+
+**Not full functional acceptance:** the unchanged 256K KCC MonitorFS live
+oracle still fails NAME for PID 2, observed resident in SLEEP state with no
+swap.  That longstanding resident-image/EXEC startup-metadata bug is distinct
+from snapshot capture.  Strict 32K swap stress cannot boot because KINIT
+violates the reserved stack headroom.  A 48K reconfiguration of that 32K
+pressure fixture boots but cannot meet its 32K-designed pressure markers.
+No regression is silently reclassified as PASS.  Separate resident-path and
+32K integration fixes remain required.  No remote Git push is confirmed.
+
 ## 2026-10-20 MONITORFS SWAP READER CHECKPOINT V71
 
 The experimental MonitorFS swapped-process startup-record reader, its

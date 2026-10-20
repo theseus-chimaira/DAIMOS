@@ -17,9 +17,10 @@
         .globl  proc_comm_words
         .globl  sys_memfs_usage_call
         .globl  mm_core_words
+        .globl  proc_snap_words_v72
 
         .equ    PROC_WORDS,3
-        .equ    PROC_UAREA_WORDS,0410
+        .equ    PROC_UAREA_WORDS,0411
         .equ    PROC_STATE_LH_MASK,0700000
         .equ    PROC_UAREA_RH,0400000
 
@@ -178,6 +179,7 @@ sys_meminfo_proc_next:
         addi    4,PROC_WORDS
         aoja    6,sys_meminfo_proc_loop
 sys_meminfo_proc_done:
+        add     1,proc_snap_words_v72  ; resident swapped argv/envp extents
         movem   1,2(2)
         movem   3,5(2)
         move    3,proc_slots

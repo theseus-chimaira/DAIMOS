@@ -71,6 +71,8 @@ proc_user_context_init(unsigned int slot, kword_t entry, kword_t stack,
                         ctx[i] = base + (kword_t)i;
         }
 #endif
+        /* Watermark mode must leave the snapshot pointer null. */
+        ctx[PROC_STARTUP_SNAPSHOT_OFFSET] = 0UL;
         ctx[1] = ac1;
         ctx[2] = ac2;
         ctx[3] = ac3;
