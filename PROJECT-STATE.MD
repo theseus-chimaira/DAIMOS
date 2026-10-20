@@ -1,3 +1,39 @@
+## 2026-10-20 UNCOMMITTED-WORK TRIAGE V64
+
+The pending D6FS host maintenance changes have been independently tested and
+committed: `daimos-tools` c79752c and `pdp10-tools` 74ef3aa.  `mkd6fs` now
+accepts an empty auxiliary root; `d6fsck` verifies that result as CLEAN.
+The `d6maint` helper correctly resolves `d6fsck` through PATH when invoked
+as `packfs` without an explicit directory.  The host tests for directory
+creation, consistency checking, recovery and PATH-based compaction passed.
+The GE lost-carrier output-completion fix was built with a forced SIMH PDP-6
+rebuild and its register sanity check passed (SIMH 220f839).
+
+The experimental MonitorFS swapped-process startup-metadata reader
+(`system/kernel/fs/monitorfs_swap_v63.c`, the runtime assembler change and
+the kernel Makefile integration) compiles with KCC and GCC, and a fresh
+256K KCC disk boot image links.  It is **not accepted**: the live MonitorFS
+test reaches ROOT/DSH but both relative `CAT 2/NAME` and absolute
+`CAT /MONITOR/PROCESSES/2/NAME` return without the expected DSH process
+name.  The v64 test re-run failed its existing read oracle.  These three
+kernel files must remain uncommitted until the real reader contract is
+repaired; successful compilation is not functional acceptance.  Diagnostic
+log: `$TMPDIR/daimos-uncommitted-20261020-v64/monitorfs-live-retest-v64.log`.
+The testkit diagnostic-preservation change is committed as b3c458a; the
+separate automatic-root-priority test remains unverified in this sweep.
+
+The first DECtape retest used an outdated installed SIMH PDP-6 binary and
+timed out after DTC startup.  That timeout is invalid as an assessment of
+the PI3 kernel experiment, because it did not run the repaired Type-551
+simulator.  The repeat with freshly rebuilt `sims/BIN/pdp6`, the same tape
+image, and the two PI3 kernel changes passed **both external commands**:
+`ECHO RETESTED_OK_V24` produced its output and a prompt, and `PWD` produced
+`/` and a prompt.  The v34 harness returned exit zero (2/2 PASS).  Evidence:
+`$TMPDIR/daimos-uncommitted-20261020-v64/simh-tape-sims-fixed-v64/report-v34.md`.
+Only `tape_io.s` and `storage_router.s` are ready for the separate kernel
+commit; the three MonitorFS files remain uncommitted.  These checks are
+256K runtime acceptance, not strict 32K size/boot acceptance.
+
 ## 2026-10-20 GCC STORAGE GROUP 023 VERIFIED V53
 
 The complete non-size, 256K GCC storage-integration group 023 now PASSes
