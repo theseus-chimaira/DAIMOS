@@ -1,3 +1,16 @@
+## 2026-10-20 GCC STORAGE GROUP 023 VERIFIED V53
+
+The complete non-size, 256K GCC storage-integration group 023 now PASSes
+all ten tests, including MonitorFS online controller state, independent
+D6FS mount contexts, drum backing, BCACHE, remount/recovery, reservation,
+and BADMAP root recovery.  This is the first atomic rerun of the group
+since the testkit fixture repairs `2804838` and `81b2610`.  The compiler
+is the isolated GCC backend `df27247`; there are no new DAIMOS kernel
+changes.  Evidence: `$TMPDIR/daimos-gcc-v53/group023-v53.log` (exit 0),
+and pdp10-doc `STATUS/DAIMOS-GCC-STORAGE-INTEGRATION-20261020-V53.MD`.
+Other non-size GCC failures are still under investigation; neither full
+functional-suite nor 32K size acceptance is implied.
+
 ## 2026-10-19 GCC DISK FUNCTIONAL RETEST V52
 
 The focused 256K disk-suite GCC regressions now PASS group 004 (five boot
