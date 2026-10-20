@@ -1,12 +1,11 @@
 ## V72 resident startup snapshot follow-ups (2026-10-20)
 
-- [ ] **P1 V74 real swapped-process resume:** testkit commit `844e497`
-  proves live `STATE=SWAP` and NAME/CMDLINE/ENVIRONMENT data under 48K
-  memory pressure, but wake/WAIT hangs after the target becomes RUN.  SIMH
-  breakpoints show PID 2 swap-in service, MM allocation and snapshot-drop
-  are reached.  Investigate subsequent scheduler/parent restoration (the
-  waiting parent can itself be evicted), validate without speculative MM
-  workarounds, and make the complete test PASS.  Keep 32K sizing deferred.
+- [x] **P1 V74 real swapped-process resume:** testkit commit `844e497`
+  exercises `STATE=SWAP`, NAME/CMDLINE/ENVIRONMENT, wake, and WAIT on 48K.
+  **Resolved V75:** the previous slot-0 stack was too small for nested
+  swap-in/MM call depth.  With 96 words (`0140` octal), the complete test
+  PASSes.  The native watermark reports 77 words used.  Strict 32K remains
+  deferred at user request.
 
 - [x] Replace the speculative swapped-process MonitorFS disk reader with a
   compact, verified, resident argc/argv/envp prefix allocated at swap-out;
@@ -21,9 +20,9 @@
   **deferred by user** until code size is reduced.  Do not block higher
   priority functional correctness work on this known limitation.
 - [x] Exercise a *live swapped* process's MonitorFS NAME/CMDLINE/ENVIRONMENT
-  alongside concurrent processes on 48K SIMH (`STATE=SWAP` observed and all
-  three exact S6REC streams verified, V74).  **Do not mark the whole V74
-  integration test accepted** until the separate wake/resume/WAIT stall is fixed.
+  alongside concurrent processes on 48K SIMH (`STATE=SWAP` and all three
+  exact S6REC streams), followed by wake/resume/WAIT.  All pass in V75 with
+  the corrected slot-0 stack capacity.
 - [ ] Validate new snapshot access through optional pinned MonitorFS MRES
   and retire its experimental default-disable gate only after live acceptance.
 

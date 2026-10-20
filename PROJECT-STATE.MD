@@ -1,4 +1,30 @@
-## 2026-10-20 V74 LIVE SWAPPED MONITORFS INTEGRATION (PARTIAL; RESUME OPEN)
+## 2026-10-20 V75 SLOT-0 STACK CAPACITY — MEASURED 0140 OCTAL
+
+The complete live 48K PDP-6 swap/MonitorFS/wake/WAIT regression V74 first
+PASSed when the permanent slot-0 idle/exit/swap-service stack was enlarged
+from `0100` to `0200` octal words (64 to 128 decimal).  This was a capacity
+experiment, not a justified permanent RAM increase.  Repeating the same
+real-swap test with `PROC_STACK_WATERMARK=1` measured `0116` octal as the
+**first untouched stack word**: 78 decimal offset, i.e. 77 words used.
+The original 64-word stack could not hold this nested swap-in/MM/I/O chain.
+
+V75 therefore sets `KERNEL_IDLE_STACK_WORDS=0140` octal (96 decimal) in
+both `system/kernel/boot/kinit.h` and `system/kernel/proc/proc_pdp6.s`.
+This costs **32 additional resident RAM words** against the former 64-word
+allocation, saving **32 words** against the conservative 128-word trial.
+It leaves 18 untouched stack words beyond the measured peak.  The fresh
+48K disk-root V74 integration with native stack-watermark instrumentation
+PASSes at 96 words and again reports `0116` octal; the compiled KCORE text
+endpoint does not grow from this dynamic MM allocation.  The exact empirical
+minimum is *78 allocated words under this workload*, but providing only two
+words of headroom (`0120` octal) is not appropriate for other kernel paths.
+Only the tested 48K configuration is claimed; 32K sizing remains deferred.
+
+## 2026-10-20 V74 LIVE SWAPPED MONITORFS INTEGRATION (HISTORICAL CHECKPOINT)
+
+**Superseded by accepted V75 stack-capacity correction above.** The failures
+documented below are the original observations on the undersized stack, not
+the current test result.
 
 The new 48K lowmem/disk-root PDP-6 SIMH acceptance in `daimos-testkit`,
 `tests/validation/daimos-monitorfs-swapped-live-v74.{c,sh}` (commit

@@ -42,7 +42,8 @@
         .equ    PROC_FDMOUNT_OFFSET,067
         .equ    PROC_USTACK_BASE,070
         .equ    PROC_KSTACK_WORDS,0316
-        .equ    KERNEL_IDLE_STACK_WORDS,0100
+        ; Must match kinit.h: slot-0 swap-in nests MM allocation/reclaim.
+        .equ    KERNEL_IDLE_STACK_WORDS,0140
 
         .equ    CTX_PC,020
         .equ    CTX_KSP,021

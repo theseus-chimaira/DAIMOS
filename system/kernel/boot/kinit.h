@@ -29,8 +29,13 @@ typedef unsigned long kword_t;
 #ifndef KINIT_STACK_RESERVE_WORDS
 #define KINIT_STACK_RESERVE_WORDS 02000UL
 #endif
-/* Permanent idle-process kernel stack: 0100 octal = 64 words. */
-#define KERNEL_IDLE_STACK_WORDS   00100UL
+/* Slot-0 idle/exit/swap-service stack: 0140 octal = 96 words.
+ * V75's real 48K swapped-process test measured an 0116-octal watermark:
+ * first untouched sentinel at offset 78, hence 77 stack words used.
+ * The old 0100-octal allocation (64 words) could not contain that call
+ * chain.  Reserve 18 words past the observed peak for nested MM/I/O calls;
+ * 0200 octal (128 words) passed but wasted another 32 permanent words. */
+#define KERNEL_IDLE_STACK_WORDS   00140UL
 /**
  * @brief Fixed Stage1-to-KINIT handoff addresses.
  *

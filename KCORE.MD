@@ -1,5 +1,25 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-20 V75: measured slot-0 kernel stack depth
+
+The slot-0 stack must cover swap-in and nested MM/I/O work, not just the idle
+loop.  The first successful 48K V74 live-swapped-process test used a temporary
+`0200`-octal (128-word) stack.  Native `PROC_STACK_WATERMARK=1` measured its
+first untouched slot-0 word at offset `0116` octal, i.e. 77 words used.  The
+former `0100`-octal (64-word) stack cannot support that call depth.
+
+Final V75 allocation: `0140` octal, or 96 words, in both the C KINIT header
+and the PDP-6 assembler.  This is +32 dynamically allocated resident words
+versus the old allocation, and -32 versus the oversized 128-word experiment.
+A fresh 48K SIMH V74 run with stack-watermark instrumentation **PASSes all
+stages**, including confirmed `STATE=SWAP`, exact NAME/CMDLINE/ENVIRONMENT,
+pipe wake, swapped-process restoration, pressure-child cleanup and WAIT.
+Its watermark is again `0116` octal, leaving 18 untouched words.  The KCORE
+linked endpoint is unaffected by this dynamic stack allocation.  This is a
+measured peak, not a universal proof against any larger future call depth;
+the 32K sizing constraint remains deliberately outside this task.
+
+
 ## 2026-10-20 V73 corrected startup records after heap growth
 
 MonitorFS, PROCINFO COMM and the V72 snapshot capture incorrectly used
