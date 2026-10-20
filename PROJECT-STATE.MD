@@ -1,3 +1,35 @@
+## 2026-10-20 V74 LIVE SWAPPED MONITORFS INTEGRATION (PARTIAL; RESUME OPEN)
+
+The new 48K lowmem/disk-root PDP-6 SIMH acceptance in `daimos-testkit`,
+`tests/validation/daimos-monitorfs-swapped-live-v74.{c,sh}` (commit
+`844e497`), uses the normal MM/reclaim and pipe wakeup paths; it does not
+add test-only kernel hooks or weaken the deferred 32K sizing requirement.
+The custom `/SYSTEM/INIT` test launches a sleeping reader with nonempty
+`argv` and `envp`, ages it, and launches pressure children until it can
+observe the target's actual MonitorFS `STATE=SWAP`.  It then reads and
+checks exact counted-SIXBIT `NAME=INIT`, `CMDLINE=/SYSTEM/INIT, R`, and
+`ENVIRONMENT=SNAP=OK` streams.  This portion **PASSes on live hardware
+simulation**, confirming V72/V73 snapshot-backed MonitorFS functionality.
+
+The remainder is **not accepted**: after writing the wake pipe and closing
+it, the target reports logical `RUN` (state 2), but `WAIT` does not finish
+before a 25-105 second simulator timeout, even if the pressure-children
+writer is closed first.  Debug-only simulator breakpoints, removed from
+the committed runner, confirmed a scheduler swap request `0402` (PID 2),
+entry into `proc_swap_service_one` and `proc_swap_in`, return from MM
+allocation, and entry into `proc_snap_drop_v72`.  MM descriptors remained
+nonoverlapping; some raw SIMH process-table EXAMINE results changed after
+MM pressure, but the raw observations alone do **not** establish an MM
+overlap or root cause.  A parent process was itself swapped during one
+restore; further debugging should examine nested parent/child restore and
+run-queue scheduling.  **No kernel fix has yet been made for this stall.**
+
+The separate unchanged 256K KCC and 48K GCC resident MonitorFS live oracles
+and the GCC/KCC snapshot unit oracles remain PASS.  V74's combined target
+is intentionally *failing* until real wake/resume/WAIT can complete; do not
+reclassify its `SWAP`+metadata markers as a full test PASS.  No new 32K
+work was attempted (user explicitly deferred it).
+
 ## 2026-10-20 V73 RESIDENT STARTUP METADATA / BRK FIX (ACCEPTED)
 
 The MonitorFS and PROCINFO resident process-name failure was caused by
