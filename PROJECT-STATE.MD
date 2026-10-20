@@ -1,3 +1,23 @@
+## 2026-10-20 AUTO ROOT DRM FOUR-MEMBER FIXTURE V91
+
+The v74 non-size GCC AUTO-root run passed DISK and TAPE, but initially
+failed DRUM.  Inspection of the live `d6fs_boot_scan_unit` return showed
+that the Type-236 read succeeded and the blockset root marker advertised a
+four-member D6FS set (membership mask 017).  The testkit fixture had copied
+only drum member zero into the AUTO image, leaving its other three drum
+volumes from an unrelated build.  Root discovery correctly rejected that
+incomplete set; `kinit_boot_handoff` remained unset and mount capacity was
+zero.  The testkit now copies **all four** drum image members in commit
+`68d5664`.  A focused 256K GCC/PDP-6 SIMH boot with fresh, complete drum
+media reached `D6FS LOADED`, `INIT V1`, ROOT login, DSH, and passed
+`CAT /CONFIG/SYSTEM` with `ROOTCLASS DRUM` (one of one probes, v91).
+No production KINIT or D6FS change was required.  DISK/TAPE from v74 and
+DRUM from v91 are separate verified runs, not yet a single full atomic
+three-case acceptance.  Evidence:
+`$TMPDIR/daimos-root-four-member-v91/report-v91.md` and
+`$TMPDIR/daimos-nonsize-acceptance-v74/006.log`.  The 32K boot and all
+dedicated size tests remain **deferred** at the user's direction.
+
 ## 2026-10-20 MONITORFS SWAP READER CHECKPOINT V71
 
 The experimental MonitorFS swapped-process startup-record reader, its
