@@ -38,6 +38,14 @@ storage_pi_tape_jump:
 
 storage_dct_handler:
         move 2,storage_state
+        ; DECtape RBN search needs Type-136 PI3 to claim the mark word
+        ; before the following DATA SYNC.  Search states >= 0200 belong to
+        ; tape; the negative read/write states retain their original odd/even
+        ; ownership distinction below.  DSK's -3/-4 paths are unaffected.
+        caige 2,0200
+        jrst storage_dct_transfer_router
+        jrst storage_dct_tape_jump
+storage_dct_transfer_router:
         trne 2,2
         jrst storage_dct_tape_jump
 storage_dct_dsk_jump:

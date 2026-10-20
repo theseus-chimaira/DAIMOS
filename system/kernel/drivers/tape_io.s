@@ -146,6 +146,15 @@ tape_pi_cleanup:
  * by write pipelines.
  */
 tape_dct_handler:
+        ; A block-number interrupt must claim the narrow RBN -> DATA SYNC
+        ; handoff before the lower-priority clock/scheduler PI6 can run.
+        ; During search storage_state is >= 0200; transfers use negative
+        ; states and completed transfers are < 0200.
+        move 2,storage_state
+        caige 2,0200
+        jrst tape_dct_data_handler
+        jrst dtc_search_pi_handler
+tape_dct_data_handler:
         skipn dtc_request_reverse
         jrst tape_dct_select
         skipg storage_count
@@ -302,8 +311,38 @@ dtc_block_start:
         jrst kret_arg
         movem 4,dtc_request_write
         setzm dtc_request_reverse
-        movei 7,7
         movem 6,storage_state
+        movem 1,dtc_request_unit
+        movem 2,dtc_target_block
+        movei 6,7
+        movem 6,dtc_search_retries
+        ; The Type-551 supplies only a few mark-track lines between the
+        ; block-number DATAI and the next DATA SYNC.  Arm the complete DCT
+        ; DMA descriptor, PI3 vector, and waiter event *before* searching.
+        ; The search DCT command runs with PIA=0, so this cannot trigger a
+        ; premature BLKI/BLKO.  Search timers reuse storage_count and the
+        ; 0200-word count is restored as soon as the block number matches.
+        ; Waiting until after the match sometimes missed DATA SYNC on AAP,
+        ; silently reading an adjacent block without an information error.
+        move 5,2                       ; preserve desired physical block
+        move 6,3                       ; preserve data buffer
+        move 2,3
+        move 3,storage_state           ; 0200 or 0400-word physical run
+        skipn dtc_request_write
+        jrst dtc_prearm_read
+        pushj 017,tape_setup_write
+        jrst dtc_prearm_done
+dtc_prearm_read:
+        pushj 017,tape_setup_read
+dtc_prearm_done:
+        ; RBN requests must enter PI3 via its saved JSR vector at 000047.
+        ; Installing a direct JRST here bypasses the interrupt return frame
+        ; and can return to the interrupted process as ordinary code.
+        ; Type-136 is still unselected so this swap cannot race an interrupt.
+        move 4,000047
+        movem 4,000046
+        move 3,6
+        move 2,5
         move 5,dtc_motion(1)
         jumpe 5,dtc_search_begin
         move 6,5
@@ -316,44 +355,39 @@ dtc_search_choose_reverse:
         movem 6,dtc_request_reverse
 
 dtc_search_begin:
-        cono 0200,004040
+        ; The Type-136 reports RBN data on PI3, not by polling DATAI in the
+        ; interrupted process.  No user-mode or PI6 scheduling delay may
+        ; intervene between recognizing a block mark and arming its data.
+        cono 0200,004043
         pushj 017,dtc_search_command
 dtc_search_wait:
+        move 4,storage_state
+        caie 4,7
+        jrst dtc_search_state_ok
+        jrst tape_ioerr
+dtc_search_state_ok:
+        caige 4,0200
+        jrst tape_transfer_wait
         coni 0214,4
-        trne 4,0000034
-        jrst dtc_search_retry
+        ; At the physical end zone the Type-551 can raise both TAPE END and
+        ; a mark-track INFO ERROR as its serial decoder loses framing.  TAPE
+        ; END is the authoritative transport boundary: reverse the search
+        ; before generic error retry.  Retrying in the same direction with
+        ; GO cleared would strand the controller at the end of the reel.
         trne 4,0000002
         jrst dtc_search_turn
-        conso 0200,0001000
-        jrst dtc_search_wait_more
-        datai 0200,4
-        jrst dtc_search_have_block
-dtc_search_wait_more:
+        trne 4,0000034
+        jrst dtc_search_retry
         skipn storage_count
         jrst dtc_search_fail
         jrst dtc_search_wait
-dtc_search_have_block:
-        andi 4,001777
-        move 5,1
-        move 6,4
-        aoj 6,
-        skipe dtc_request_reverse
-        movns 6
-        movem 6,dtc_motion(5)
-        move 6,4
-        sub 6,2
-        jumpe 6,dtc_search_found
-        skipn dtc_request_reverse
-        jrst dtc_search_forward
-        jumpg 6,dtc_search_continue
-        jrst dtc_search_turn
-dtc_search_forward:
-        jumpl 6,dtc_search_continue
 dtc_search_turn:
         movei 6,0010000
         xorm 6,dtc_request_reverse
 dtc_search_retry:
-        sojle 7,dtc_search_fail
+        sosle dtc_search_retries
+        jrst dtc_search_continue
+        jrst dtc_search_fail
 dtc_search_continue:
         pushj 017,dtc_search_command
         jrst dtc_search_wait
@@ -370,49 +404,105 @@ dtc_search_command:
         cono 0210,0(4)
         popj 017,
 
-dtc_search_found:
+/**
+ * @brief Accept a DECtape block-number word at Type-136 PI3 priority.
+ *
+ * AAP and the real 551 do not stop physical tape motion while software
+ * handles RBN.  The block number becomes available only a few tape lines
+ * before data-start synchronization.  Polling in the process context lets
+ * a line-clock PI6 scheduler interrupt consume that window.  The 551 then
+ * quietly reads the NEXT physical block, producing 128 valid but incorrect
+ * words with no 551 information error.  Read the mark, compare the target,
+ * and arm the prebuilt data transfer here, where PI6 cannot preempt us.
+ *
+ * AC1 and AC2 are PI-dispatch scratch.  No process-private stack, AC3..AC7,
+ * or dynamically allocated kernel state is used by this interrupt path.
+ */
+dtc_search_pi_handler:
+        conso 0200,0001000
+        jrst pdp10_pi_dispatch_done
+        datai 0200,1
+        andi 1,001777
+        movem 1,dtc_last_mark
+        move 2,1
+        aoj 2,
         skipn dtc_request_reverse
-        jrst dtc_search_found_forward
-        move 4,storage_state
-        caie 4,0200
-        jrst dtc_search_turn
-dtc_search_found_forward:
-        cono 0200,0
-        move 2,3
-        move 3,storage_state
+        movns 2
+        move 1,dtc_request_unit
+        movem 2,dtc_motion(1)
+        move 1,dtc_last_mark
+        sub 1,dtc_target_block
+        jumpe 1,dtc_search_pi_found
+        skipn dtc_request_reverse
+        jrst dtc_search_pi_forward
+        jumpg 1,dtc_search_pi_continue
+        jrst dtc_search_pi_turn
+dtc_search_pi_forward:
+        jumpl 1,dtc_search_pi_continue
+dtc_search_pi_turn:
+        movei 2,0010000
+        xorm 2,dtc_request_reverse
+dtc_search_pi_retry:
+        sosle dtc_search_retries
+        jrst dtc_search_pi_continue
+        movei 2,7
+        movem 2,storage_state
+        jrst pdp10_pi_dispatch_done
+dtc_search_pi_continue:
+        ; Each completed block mark/reversal restarts the bounded search.
+        hrroi 2,DTC_SEARCH_TIMEOUT_NEG_RH
+        movem 2,storage_count
+        move 1,dtc_request_unit
+        lsh 1,3
+        iori 1,0220200
+        ior 1,dtc_request_reverse
+        cono 0210,0(1)
+        jrst pdp10_pi_dispatch_done
+
+dtc_search_pi_found:
+        ; A reverse read/write is valid only for a single block.  If the
+        ; transfer spans two blocks, turn around while retaining the RBN
+        ; JSR vector.  Do not arm BLKI/BLKO until the direction is settled.
+        skipn dtc_request_reverse
+        jrst dtc_search_pi_found_direction_ok
+        move 2,storage_state
+        caie 2,0200
+        jrst dtc_search_pi_turn
+dtc_search_pi_found_direction_ok:
+        move 2,tape_dct_blki
         skipn dtc_request_write
-        jrst dtc_block_setup_read
-        pushj 017,tape_setup_write
-        jrst dtc_block_setup_direction
-dtc_block_setup_read:
-        pushj 017,tape_setup_read
-dtc_block_setup_direction:
+        jrst dtc_search_pi_vector_ready
+        move 2,tape_dct_blko
+dtc_search_pi_vector_ready:
+        movem 2,000046
         skipn dtc_request_reverse
-        jrst dtc_block_setup_state
-        move 4,2
-        addi 4,0200
-        hrrm 4,storage_iowd
-        move 4,000047
-        movem 4,000046
-dtc_block_setup_state:
-        movem 1,dtc_request_unit
+        jrst dtc_search_pi_setup
+        hrrz 2,storage_iowd
+        addi 2,0200
+        hrrm 2,storage_iowd
+        move 2,000047
+        movem 2,000046
+dtc_search_pi_setup:
+        move 2,storage_state           ; restore complete prearmed run length
+        movem 2,storage_count
+        move 1,dtc_request_unit
         lsh 1,3
         skipn dtc_request_write
-        jrst dtc_block_start_read
-        hrroi 4,0777772
-        movem 4,storage_state
+        jrst dtc_search_pi_read
+        hrroi 2,0777772
+        movem 2,storage_state
         iori 1,0220705
         ior 1,dtc_request_reverse
         cono 0210,0(1)
         cono 0200,003443
-        jrst tape_transfer_wait
-dtc_block_start_read:
+        jrst pdp10_pi_dispatch_done
+dtc_search_pi_read:
         setom storage_state
         iori 1,0220305
         ior 1,dtc_request_reverse
         cono 0200,004043
         cono 0210,0(1)
-        jrst tape_transfer_wait
+        jrst pdp10_pi_dispatch_done
 
 dtc_search_fail:
         aos mfsdev_storage_errors     ; DTC0 search failure
@@ -553,6 +643,12 @@ dtc_request_unit: .block 1
 dtc_request_write: .block 1
 /** Zero forward; 0010000 when the active DECtape request runs in reverse. */
 dtc_request_reverse: .block 1
+/** Requested physical DECtape block for the PI3 RBN search owner. */
+dtc_target_block: .block 1
+/** Bound each RBN search to seven direction changes/restarts. */
+dtc_search_retries: .block 1
+/** Last Type-136 RBN DATAI, retained while PI3 updates the motion hint. */
+dtc_last_mark: .block 1
 /** Shared DTC/MTC process event for one Type 136 tape data transfer. */
 tape_transfer_event: .block 1
 /** Signed per-unit last-block+direction motion estimate for eight DTC units. */
