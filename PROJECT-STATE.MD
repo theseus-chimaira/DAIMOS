@@ -1,3 +1,15 @@
+## 2026-10-20 MONITORFS SWAP READER CHECKPOINT V71
+
+The experimental MonitorFS swapped-process startup-record reader, its
+resident assembler dispatch, and its kernel Makefile integration were
+committed as DAIMOS `dc1f96f` at the user's request.  This is a source
+checkpoint, **not functional acceptance**.  Previous KCC/GCC source builds
+and a 256K KCC image link passed, but the runtime test did not return the
+expected swapped-process NAME/CMDLINE/ENVIRONMENT metadata.  Repair and
+rerun the unchanged acceptance oracle before declaring the reader ready;
+the strict 32K residency/boot gate is also open.  This commit was made
+locally, without pushing.
+
 ## 2026-10-20 AUTO ROOT THREE-CLASS ACCEPTANCE V70
 
 The corrected `daimos-auto-root-priority-v1.sh` fixture is committed as
@@ -16,7 +28,8 @@ regenerated clean test media after a diagnostic run left its previous
 instance unclean.  These are independently verified cases, not an atomic
 end-to-end rerun of the final test script, and they establish neither a
 strict 32K boot nor MonitorFS swapped-process metadata correctness.  The
-three experimental MonitorFS source/build changes remain **uncommitted**.
+three experimental MonitorFS source/build changes were subsequently
+checkpointed in `dc1f96f` without runtime acceptance (see V71 above).
 
 ## 2026-10-20 UNCOMMITTED-WORK TRIAGE V64
 
@@ -36,8 +49,9 @@ the kernel Makefile integration) compiles with KCC and GCC, and a fresh
 test reaches ROOT/DSH but both relative `CAT 2/NAME` and absolute
 `CAT /MONITOR/PROCESSES/2/NAME` return without the expected DSH process
 name.  The v64 test re-run failed its existing read oracle.  These three
-kernel files must remain uncommitted until the real reader contract is
-repaired; successful compilation is not functional acceptance.  Diagnostic
+kernel files were uncommitted at the time of this V64 triage and were later
+committed as the unaccepted V71 checkpoint; compilation alone is not
+functional acceptance.  Diagnostic
 log: `$TMPDIR/daimos-uncommitted-20261020-v64/monitorfs-live-retest-v64.log`.
 The testkit diagnostic-preservation change is committed as b3c458a; the
 separate automatic-root-priority test remains unverified in this sweep.
@@ -51,8 +65,8 @@ image, and the two PI3 kernel changes passed **both external commands**:
 `/` and a prompt.  The v34 harness returned exit zero (2/2 PASS).  Evidence:
 `$TMPDIR/daimos-uncommitted-20261020-v64/simh-tape-sims-fixed-v64/report-v34.md`.
 The two PI3 files were committed separately as `2c85325`; project-state
-acceptance is commit `c1f693a`. The three MonitorFS files remain
-uncommitted.  These checks are
+acceptance is commit `c1f693a`. The three MonitorFS files were later
+checkpointed, without acceptance, as `dc1f96f`.  These checks are
 256K runtime acceptance, not strict 32K size/boot acceptance.
 
 ## 2026-10-20 GCC STORAGE GROUP 023 VERIFIED V53

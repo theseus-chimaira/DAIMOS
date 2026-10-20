@@ -4,7 +4,8 @@
   without allocating persistent per-process metadata.  KCC/GCC compilation
   and fresh 256K image linking succeed, but the live `CAT 2/NAME` and absolute
   process-name checks fail.  The reader, assembler integration and Makefile
-  remain uncommitted; retain the unchanged failing test oracle.
+  are saved in experimental commit `dc1f96f` (V71), but are **not accepted**;
+  retain the unchanged failing test oracle.
 - [x] Validate the corrected three-root AUTO/login testkit fixture at 256K:
   all-media selects DISK, no-DSK selects TAPE, and drum-only selects DRUM.
   The three individual fresh-media probes pass; tape `CAT /CONFIG/SYSTEM`
