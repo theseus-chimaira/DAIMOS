@@ -1,3 +1,23 @@
+## 2026-10-20 AUTO ROOT THREE-CLASS ACCEPTANCE V70
+
+The corrected `daimos-auto-root-priority-v1.sh` fixture is committed as
+daimos-testkit `ab730fe`.  Under a rebuilt Type-551 SIMH with a fresh 256K
+KCC AUTO image, independent probes verified the full desired preference:
+DSK present selects `ROOTCLASS DISK`, all DSK units absent selects
+`ROOTCLASS TAPE`, and both DSK and DTC classes absent selects
+`ROOTCLASS DRUM`.  All three root-class assertions passed and reached ROOT
+login and DSH.  The initial 120-second per-command TSFS fallback allowance
+timed out with the shell already running; the repeat using 360 seconds
+completed `CAT /CONFIG/SYSTEM` and produced `ROOTCLASS TAPE`.
+
+Evidence is preserved under `$TMPDIR/daimos-auto-root-priority-v1-26755/`:
+`all.md`, `no-dsk-long-v66.md`, and `drm-only-v69.md`.  The drum test used
+regenerated clean test media after a diagnostic run left its previous
+instance unclean.  These are independently verified cases, not an atomic
+end-to-end rerun of the final test script, and they establish neither a
+strict 32K boot nor MonitorFS swapped-process metadata correctness.  The
+three experimental MonitorFS source/build changes remain **uncommitted**.
+
 ## 2026-10-20 UNCOMMITTED-WORK TRIAGE V64
 
 The pending D6FS host maintenance changes have been independently tested and

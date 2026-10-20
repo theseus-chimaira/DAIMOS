@@ -5,9 +5,11 @@
   and fresh 256K image linking succeed, but the live `CAT 2/NAME` and absolute
   process-name checks fail.  The reader, assembler integration and Makefile
   remain uncommitted; retain the unchanged failing test oracle.
-- [ ] Run the corrected three-root automatic-priority/login regression on
-  fresh hardware media before committing its testkit fixture.  The fixture
-  currently remains uncommitted pending its runtime acceptance.
+- [x] Validate the corrected three-root AUTO/login testkit fixture at 256K:
+  all-media selects DISK, no-DSK selects TAPE, and drum-only selects DRUM.
+  The three individual fresh-media probes pass; tape `CAT /CONFIG/SYSTEM`
+  needs the measured 360-second allowance.  Testkit commit `ab730fe`.
+  An atomic rerun of the updated three-case script is still separate work.
 
 ## GCC PDP-6 functional regression recovery (2026-10-19)
 
