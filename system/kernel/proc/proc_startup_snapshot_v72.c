@@ -67,7 +67,13 @@ proc_snap_take_v72(unsigned int slot)
             !mm_is_pinned(base))
                 return -1;
 
-        logical = VM_SPACE_WORDS(p) - EXEC_DXR_STACK_WORDS;
+        /* BRK can grow the allocated VM beyond its initial length.  Startup
+         * records stay in the original stack reservation, not at the new
+         * end.  The permanent u-area's heap floor keeps that initial size. */
+        logical = (PROC_BRK_WORD(p) >> PROC_HALF_SHIFT) & PROC_HALF_MASK;
+        if (logical < EXEC_DXR_STACK_WORDS || logical > VM_SPACE_WORDS(p))
+                return -1;
+        logical -= EXEC_DXR_STACK_WORDS;
         src = (const kword_t *)(unsigned long)(base + logical);
         counts = src[0];
         argc = (unsigned int)((counts >> 18U) & PROC_HALF_MASK);

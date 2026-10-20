@@ -1,3 +1,34 @@
+## 2026-10-20 V73 RESIDENT STARTUP METADATA / BRK FIX (ACCEPTED)
+
+The MonitorFS and PROCINFO resident process-name failure was caused by
+computing startup-record addresses from `vm_state` LH.  `BRK` increases that
+allocation length without relocating the original `argc/argv/envp` prefix.
+`PROC_BRK_WORD` LH in the stable u-area already retains the initial image
+length.  `monitorfs_runtime.s`, `syscall_info.s` and the V72 swapped-process
+snapshot capture all now use this stable value (the capture additionally
+checks the original extent is within the current allocation).  No additional
+per-process RAM was added, and the three-word descriptor is unchanged.
+
+**Verification:** the unchanged 256K KCC DSH/LOGIN MonitorFS live acceptance
+PASSes, including relative `CAT 2/NAME`, absolute NAME/CMDLINE/ENVIRONMENT,
+and derived domain PIDS.  The live diagnostic reproduced a resident PID 2
+with `SWAPPED=0` and `SWAPWORDS=0` before the fix.  Both GCC and KCC versions
+of the updated native PDP-6 snapshot target PASS with heap growth before
+capture, correct pointer rebasing and allocation-failure validation.  The
+existing native MonitorFS word-I/O target now PASSes with a correct u-area
+and a deliberately grown VM fixture (testkit commit `964ad83`).  Fresh KCC
+kernel-source build PASS.
+The live KCC KCORE endpoint is 024776 octal versus 024754 for V72 (+18
+decimal words); the net improvement against the previous disk reader's
+025723 endpoint is 469 decimal words.  The live acceptance fixture used the
+current documented KCC `DSH_IMAGE_LIMIT=037000` test override.
+
+**Scope:** 32K image sizing is known open work, explicitly deferred at user
+request.  The native snapshot target plus resident MonitorFS live test do
+not together constitute a full swapped-parent/live integration acceptance;
+that remains to be tested separately.  Optional MonitorFS MRES relocation
+also remains experimental.  Nothing was pushed remotely without credentials.
+
 ## 2026-10-20 SWAPPED STARTUP SNAPSHOT IMPLEMENTATION V72
 
 An isolated DAIMOS branch replaces the unaccepted 691-word KCC MonitorFS

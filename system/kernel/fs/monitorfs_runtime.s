@@ -1018,7 +1018,11 @@ mfsproc_image_read_words:
         move    6,014                  ; start at argc,,envc
         jrst    mfsproc_image_words_start
 mfsproc_image_words_live:
-        hlrz    6,4
+        ; BRK may enlarge vm_state LH without moving argv/envp.  The stable
+        ; heap-floor LH in the u-area is the initial allocated image size.
+        hlrz    6,(1)                  ; u-area physical base
+        jumpe   6,mfsproc_image_words_eof
+        hlrz    6,0407(6)              ; PROC_BRK_OFFSET: original VM words
         subi    6,02000
         add     6,014                  ; argc,,envc metadata
 mfsproc_image_words_start:

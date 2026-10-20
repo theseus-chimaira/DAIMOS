@@ -1,5 +1,25 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-20 V73 corrected startup records after heap growth
+
+MonitorFS, PROCINFO COMM and the V72 snapshot capture incorrectly used
+`VM_SPACE_WORDS(p)` to find the startup metadata.  On heap growth `BRK`
+changes that length but preserves the original startup area, so the correct
+origin is `PROC_BRK_WORD(p)` high half (initial VM words) minus `02000`.
+All three access paths now agree.  The snapshot path rejects a saved origin
+beyond the currently allocated extent.  There is no new per-process state.
+
+The unchanged 256K KCC MonitorFS DSH/LOGIN live oracle PASSes for NAME,
+CMDLINE, ENVIRONMENT, relative paths and domain leaves.  The native PDP-6
+MonitorFS word-I/O oracle PASSes with a realistic grown-heap u-area, and the
+exact-size snapshot oracle PASSes for GCC and KCC, including heap growth
+(testkit commit `964ad83`).
+The new linked KCORE endpoint `024776` octal is 18 decimal words above V72
+`024754`; relative to the old BACKSTORE reader's `025723` endpoint the net
+improvement is 469 words.  The live test used the documented KCC DSH test
+limit of `037000`.  Strict 32K size work is deliberately deferred; live
+swapped-parent integration and optional MonitorFS MRES acceptance remain open.
+
 ## 2026-10-20 resident startup snapshots, isolated v72
 
 Swapped-process MonitorFS reads no longer need the 691-text-word KCC reader

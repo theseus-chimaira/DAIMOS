@@ -4,21 +4,25 @@
   compact, verified, resident argc/argv/envp prefix allocated at swap-out;
   no per-process fixed-size buffer and no recursive MM reclaim.  Native PDP-6
   snapshot capture/retain/drop/malformed/failure oracle PASSes.
-- [ ] Repair the *resident* PID 2 NAME/CMDLINE/ENVIRONMENT failure during
-  LOGIN -> DSH EXEC.  The unchanged 256K KCC MonitorFS oracle still finds PID
-  2 SLEEP with its user image present but NAME empty; the v72 snapshot branch
-  deliberately does not change that broken EXEC/resident-image path.
-- [ ] Recover strict 32K KINIT stack-reserve headroom, then rerun unchanged
-  swap-wait and swap-stress native tests for exact snapshot transaction
-  acceptance.  The separate 48K boot cannot substitute for 32K pressure.
+- [x] Repair resident PID 2 NAME/CMDLINE/ENVIRONMENT after LOGIN -> DSH EXEC.
+  Heap BRK growth preserves the startup-record origin, so use stable u-area
+  `PROC_BRK_WORD` LH instead of changing `vm_state` LH.  The unchanged 256K
+  KCC MonitorFS live oracle now PASSes; native word-I/O regression PASSes
+  with a grown-heap fixture.
+- [ ] Recover strict 32K KINIT headroom and rerun native swap-wait/stress;
+  **deferred by user** until code size is reduced.  Do not block higher
+  priority functional correctness work on this known limitation.
+- [ ] Exercise a *live swapped* process's MonitorFS NAME/CMDLINE/ENVIRONMENT
+  alongside a concurrent process on SIMH.  Snapshot unit tests and the 256K
+  resident process acceptance both pass but do not replace this combined test.
 - [ ] Validate new snapshot access through optional pinned MonitorFS MRES
   and retire its experimental default-disable gate only after live acceptance.
 
 ## V64 validation follow-ups (2026-10-20)
 
-- [ ] Complete live process-name acceptance after the v72 resident-snapshot
-  replacement.  The former experimental disk reader remains preserved in
-  history (`dc1f96f`) but is no longer part of active source or KCORE.
+- [x] Complete resident live process-name acceptance after the v72
+  snapshot replacement (V73, KCC 256K).  The experimental disk reader remains
+  in Git history (`dc1f96f`) but is not in active source or KCORE.
 - [x] Validate the corrected three-root AUTO/login testkit fixture at 256K:
   all-media selects DISK, no-DSK selects TAPE, and drum-only selects DRUM.
   The three individual fresh-media probes pass; tape `CAT /CONFIG/SYSTEM`

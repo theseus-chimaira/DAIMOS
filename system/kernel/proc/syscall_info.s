@@ -71,7 +71,12 @@ sys_procinfo_user_comm:
         move    6,1(5)                 ; logical user words,,image base
         hrrz    7,6
         jumpe   7,sys_procinfo_comm    ; swapped/unavailable image: USER
-        hlrz    1,6
+        ; A process can grow vm_state LH via BRK.  Its startup records do
+        ; not move: the high half of the stable BRK word retains the initial
+        ; image size even after physical reallocation or in-place growth.
+        hlrz    1,(5)                  ; stable u-area base
+        jumpe   1,sys_procinfo_comm
+        hlrz    1,0407(1)              ; original image words
         subi    1,02000                ; startup metadata offset in image
         add     1,7
         hlrz    6,(1)                  ; argc
