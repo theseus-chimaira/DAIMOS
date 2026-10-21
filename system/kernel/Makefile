@@ -8,7 +8,7 @@ PDP10_GCC ?= pdp10-dec-none-gcc
 # KCC is the default; the testkit exports COMPILER for either toolchain.
 # An explicit command-line CC still overrides this default.
 COMPILER ?= kcc
-MONITORFS_MRES_ENABLED ?= 0
+MONITORFS_MRES_ENABLED ?= 1
 MONITORFS_MODE_STAMP = ${BUILD}/.monitorfs-v19-mode-${MONITORFS_MRES_ENABLED}
 
 ${MONITORFS_MODE_STAMP}:

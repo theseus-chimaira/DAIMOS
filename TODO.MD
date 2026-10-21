@@ -1,5 +1,11 @@
 ## V72 resident startup snapshot follow-ups (2026-10-20)
 
+- [x] **V86:** default MonitorFS to MRES, replacing its 1039-word KCORE
+  body with nine-word KCORE dispatch.  Fresh KCC 256K full-profile image
+  passes DSH 115/115, KCORE **10702 -> 9674** words (-1028).  Previous
+  GCC 48K live MonitorFS/swap probes had passed with optional MRES.
+  Active 8K KCORE goal now requires 1482 additional words to reach 8192.
+
 - [ ] **V85 ACTIVE: shrink KCORE below 020000 octal / 8192 words.**
   Total KCORE+MRES occupancy and individual MRES sizes are informational;
   suspend the 040000 permanent-address size gate during this phase.
@@ -49,10 +55,10 @@
 - [x] Validate snapshot access through pinned MonitorFS MRES: GCC 48K live
   namespace probes (5/5) and real swapped-process NAME/CMDLINE/ENVIRONMENT,
   wake and WAIT all PASS in V76.
-- [ ] Keep MonitorFS MRES **optional** unless its fixed-memory overhead is
-  eliminated and KCC acceptance confirms no regression.  GCC 48K measurement
-  currently shows +19 permanently resident words compared with KCORE
-  MonitorFS; the experimental gate therefore remains default-off.
+- [x] V86 policy supersedes the prior optional-only MonitorFS MRES gate:
+  KCORE-only 8K optimization now has priority over combined occupancy;
+  default MRES accepted after the fresh KCC full-profile 115/115 test.
+  The earlier +19-word combined-residency measurement remains historical.
 
 ## V64 validation follow-ups (2026-10-20)
 

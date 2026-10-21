@@ -1,3 +1,22 @@
+## 2026-10-21 V86 DEFAULT MONITORFS MRES — KCORE REDUCTION ACCEPTED
+
+MonitorFS has been removed from the default KCORE implementation: both
+the boot and kernel Makefiles now select `MONITORFS_MRES_ENABLED=1`.
+The existing nine-word KCORE dispatch replaces the 1039-word full
+MonitorFS KCORE object; the existing 1039-word pinned MRES implements
+the full service.  On a fresh full-profile 256K KCC disk-root image,
+`__kcore_low_end=023002` octal.  KCORE now occupies **9674 decimal words**,
+down from **10702** (V79/V85), a **1028-word KCORE saving**.  This does
+not claim an MRES or combined-residency decrease; the separate KCORE 8K
+goal remains 1482 words away (1483 words for strictly below 8K).
+
+Fresh V86 KCC full-profile image builds and links; the DSH harness
+passes **115/115** conformance probes, with zero failures.  Earlier
+optional MonitorFS MRES testing already validated the live MonitorFS
+process/device/domain probes and actual 48K swapped-process snapshot,
+wake and WAIT behavior under GCC.  The current V86 acceptance is KCC
+full-profile image + conformance; 32K tests remain suspended.
+
 ## 2026-10-21 V85 OPTIMIZATION SCOPE — KCORE 8K ONLY
 
 By explicit instruction, suspend the total permanent KCORE+MRES address

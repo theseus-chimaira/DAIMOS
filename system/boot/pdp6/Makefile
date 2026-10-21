@@ -75,8 +75,8 @@ ifeq ($(ROOT),tape)
 override KINIT_BADMAP = 0
 endif
 KINIT_STACK_WATERMARK ?= 0
-# Experimental complete MonitorFS relocation in low-memory configuration.
-MONITORFS_MRES_ENABLED ?= 0
+# Full MonitorFS is housed in pinned MRES; KCORE retains dispatch only.
+MONITORFS_MRES_ENABLED ?= 1
 MONITORFS_MODE_STAMP = $(BUILD)/.monitorfs-v19-mode-$(MONITORFS_MRES_ENABLED)
 KINIT_TAPE_MODE_STAMP = $(BUILD)/.kinit-tape-v20-mode-$(KINIT_TAPE_BOOT)
 PDP10_GCC ?= pdp10-dec-none-gcc
