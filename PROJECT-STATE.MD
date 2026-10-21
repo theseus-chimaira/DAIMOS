@@ -1,3 +1,41 @@
+## 2026-10-21 PDP-6 SIMH STOP/CONTINUE REGRESSION V111 — OPEN
+
+The checkpointed non-size matrix v75 has finished under **both GCC and
+KCC**.  Groups 022 (trap), 027 (DECtape/TSFS), 028 (kernel runtime),
+029 (D6FS), and 030 (userspace runtime) remain FAIL under both compilers.
+They must be repaired independently; neither compiler has achieved full
+non-size functional acceptance.  Evidence:
+`$TMPDIR/daimos-nonsize-acceptance-v75/{gcc,kcc}-v75.state`.
+
+Trap group 022 fails *before* it measures syscall rates.  The original
+test reported `LOGIN INCORRECT` following an asynchronous SIMH Ctrl-E
+stop/resume.  The isolated v98 experiment moved the first measurement
+until after DSH login: ROOT authentication then succeeded, but the first
+stop/resume still caused an invalid UUO and a HALT near PC 000001.
+Independently, with **no syscall breakpoint installed**, a tape-root
+SIMH session reproduced the stop/resume problem (v103).  In the v108
+single-step diagnostic SIMH reported stopping at PC 024162 but a
+subsequent `EXAMINE PC` returned 024000; a step ran from 024000 and
+the machine halted.  This establishes a simulator console/PC-state
+discrepancy, but its exact cause remains unresolved.  Temporarily
+restoring the reported PC (v110) did **not** restore a completed DSH
+command, so it is not an accepted workaround or fix.
+
+An experimental PDP-6 CPU asynchronous-stop deferral also failed its
+v105/v107 runtime controls.  It was removed in sims commit `3ae21bb`,
+preserving the independent Type-166 floating-point implementation in
+commit `828459c`.  Testkit commit `3ccaaa2` preserves CTY/DCS error
+transcripts on request (`DAIMOS_TRAP_KEEP_WORK=1`), without altering the
+original syscall-count thresholds.  Diagnostic transcripts:
+`$TMPDIR/daimos-trap-frequency-v1-24813/cty.log`,
+`$TMPDIR/daimos-simh-resume-v108/cty.log`, and
+`$TMPDIR/daimos-simh-resume-v110/driver-v110.log`.
+
+Next: isolate the simulator console's saved PC across a stop and
+`CONTINUE` and add a target-executed test to `daimos-testkit`; do not
+weaken the trap-frequency oracle.  **All 32K and dedicated size tests
+remain deferred** by user direction.
+
 ## 2026-10-20 SECONDARY TSFS MOUNT ON TAPE ROOT V96
 
 The independent 256K PDP-6 SIMH tape-root experiment passed **3/3**
