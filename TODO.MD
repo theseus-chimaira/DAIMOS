@@ -100,10 +100,15 @@
 - [x] Update three outdated D6FS assembly test oracles, TSFS eight-member
   test compilation and SIXBIT headers, and the PDP-6 stack-adjustment
   codegen oracle.  All six focused cases pass, testkit commit 2804838.
-- [ ] Diagnose the distinct GCC multiprocess scheduler preemption failure:
-  corrected v45 GCC still produces `<aAbB2cCxxxxxxxxdDeEyyyyyyyy314D5`
-  and does not schedule all boot users before the first CPU checkpoint.
-  Verify clock/quantum behavior and compare KCC before changing assertions.
+- [x] Recheck the distinct GCC multiprocess scheduler preemption regression:
+  V80 fresh 256K full-profile `COMPILER=gcc`, `PROC_BOOT_USERS=5`, SIMH
+  throttle 8M, unmodified test assertions **PASS** (preemption, process
+  context, nice ABI, disk sleep/wakeup).  Native transcript starts
+  `<abBcdCeExyxyxyxyxyxy2xxyyDA35D14`; unlike the older failing
+  `<aAbB2cCxxxxxxxxdDeEyyyyyyyy314D5`, every boot user runs before
+  the `A` CPU-loop checkpoint.  No compiler or scheduler code changed
+  in V80.  The exact prior regression's resolving change remains unknown;
+  additional GCC/KCC test matrix work is tracked separately.
 - [ ] Address remaining GCC and KCC disk-testkit group failures without
   re-running already passing groups.  32K and size gates are separate.
 

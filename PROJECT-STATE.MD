@@ -1,3 +1,20 @@
+## 2026-10-21 V80 GCC MULTIPROCESS SCHEDULER RECHECK — PASS
+
+The previously open GCC-kernel preemption regression no longer reproduces
+on a *fresh*, full-profile 256K PDP-6 image with `COMPILER=gcc` and
+`PROC_BOOT_USERS=5`.  The testkit's real-target multiprocess oracle runs
+under the standard SIMH throttle (`8M`) and preserves its existing checks
+for all boot users preempting before the first `A` CPU checkpoint, process
+context, NICE, and disk sleep/wakeup.  It PASSes.  Its native output marker
+sequence is `<abBcdCeExyxyxyxyxyxy2xxyyDA35D14`.
+
+This is distinct from the previously recorded failing
+`<aAbB2cCxxxxxxxxdDeEyyyyyyyy314D5`.  No scheduler/compiler changes were
+required during V80.  The precise prior resolving change has not yet been
+isolated.  The regression test now supports selecting a KCC or GCC kernel
+through `DAIMOS_SCHED_KERNEL_COMPILER` (default KCC), using identical guest
+assertions.  Strict 32K tests remain deferred.
+
 ## 2026-10-21 V79 DCS TRANSMIT BACKPRESSURE — SIMH KCC ACCEPTED
 
 V78/V79 `HELP DAS` output loss is now resolved **for the paired SIMH
