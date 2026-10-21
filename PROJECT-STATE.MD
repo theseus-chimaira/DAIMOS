@@ -1,3 +1,56 @@
+## 2026-10-21 V79 DCS TRANSMIT BACKPRESSURE — SIMH KCC ACCEPTED
+
+V78/V79 `HELP DAS` output loss is now resolved **for the paired SIMH
+PDP-6 simulator and DAIMOS driver**.  The simulator advertises selected-line
+transmit-queue readiness in DCSB CONI bit `0100` without changing the
+legacy receiver-scanner line field.  When the queue is full, the simulator
+services its TMXR transmit buffers before answering readiness; without
+this latter step, the guest's bounded poll could time out before the next
+simulator poll.  `dcs_putchar` waits for readiness before DATAO and returns
+an explicit error on timeout rather than silently discarding a character.
+
+A fresh 256K full-profile KCC PDP-6 SIMH disk-root image, using both modified
+components, passes isolated `HELP DAS` with all original content assertions.
+The **complete DSH conformance suite passes 115/115** on independently
+refreshed media, including HELP DAS, MAN DAS and all source/job/variable
+probes.  The prior 150-second timeout and garbled `OPERAND# ` text no
+longer reproduce in this tested configuration.  Both simulator compilation
+and SIMH internal register sanity checks pass; `dcs_io.s` assembles.
+
+Cost: DCS MRES DXR grows `000074` -> `000105` octal, **nine additional
+permanently resident PDP-10 words**, while `__kcore_low_end` remains
+`024776` octal.  DSH remains `035764` octal words.  This is an explicit
+correctness-versus-RAM tradeoff, not a KCORE text reduction.
+
+**Compatibility scope:** DCSB CONI bit `0100` is a paired SIMH interface
+extension, not yet verified against an original Type 630 hardware manual.
+The updated DAIMOS driver must not be used with an unmodified SIMH or on
+physical Type 630 hardware without a verified equivalent ready signal.
+The earlier V79 CPU-poll-only experiment below is superseded by the
+simulator transmit-poll integration and its passing conformance evidence.
+
+## 2026-10-21 V79 DCS TRANSMITTER-READY EXPERIMENT — NOT ACCEPTED
+
+The isolated simulator worktree now contains an experimental DCSB CONI
+`0100` send-queue-readiness indication (preserving the receiver-scanner
+line bits); the isolated DAIMOS worktree has a bounded `dcs_putchar` wait
+before DATAO.  Both compile: SIMH PDP-6 `make pdp6` and register sanity
+checks PASS; DAS assembles `dcs_io.s`.  A fresh 256K KCC disk image also
+builds successfully, with DSH still `035764` octal words.
+
+**Runtime acceptance FAILS.**  Using both modified components, isolated
+`HELP DAS` output stalls after approximately 535 terminal bytes, earlier
+than the pre-patch 1 KiB cutoff.  A partial `-F` option and interleaved
+prompt remain.  A key implementation error is that the new driver's
+finite CPU polling loop can time out before SIMH's terminal-multiplexer
+transmit poll drains buffered characters, causing a WRITECHAR error.
+This does not invalidate transmitter readiness as an idea, but proves
+that bounded CPU spinning is not the correct wait/notification protocol.
+Do not merge these changes as a fix or relax the output oracle.  Design
+an interrupt/event-driven transmitter-ready wakeup (or equivalent
+scheduler-integrated completion handshake), maintain exact byte ordering,
+then retest against an unchanged complete HELP DAS output oracle.
+
 ## 2026-10-21 V78 HELP DAS DCS OUTPUT INVESTIGATION — OPEN
 
 The 256K KCC DSH V77 image passes its normal `036000`-octal size gate.

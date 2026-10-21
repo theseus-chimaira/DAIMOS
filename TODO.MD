@@ -44,7 +44,7 @@
 
 ## GCC PDP-6 functional regression recovery (2026-10-19)
 
-- [ ] V78 HELP DAS sustained DCS output regression on fresh KCC 256K disk
+- [x] V78 HELP DAS sustained DCS output regression on fresh KCC 256K disk
   boot: the full DSH suite reaches HELP DAS (earlier 20 probes PASS), then
   stalls partway through its OPTIONS/OPERANDS output.  Isolated HELP DAS
   with 150-second allowance also stalls after ~1 KiB of DCS0 output and
@@ -60,6 +60,15 @@
   DAIMOS DCS driver; merely extending timeouts or dropping/retrying a
   DATAO without ordering guarantees is not acceptable.  CTY comparison
   remains blocked by a separate `?RT` boot halt on reused media.
+  **Resolved for paired SIMH PDP-6 / DAIMOS V79:** the simulator's DCSB
+  CONI readiness bit `0100` forces a TMXR transmit-poll when necessary;
+  DAIMOS waits for readiness before DATAO.  Fresh KCC 256K isolated HELP
+  DAS PASS and full DSH conformance 115/115 PASS.  DCS MRES adds nine
+  permanently resident words.  The extra bit is simulator-specific and
+  needs genuine Type 630 hardware verification before hardware use.
+- [ ] Verify the V79 DCS transmit-ready protocol against original Type 630
+  device documentation and other supported simulator implementations;
+  do not assume that SIMH's DCSB CONI extension exists in hardware.
 
 - [x] Restore the normal KCC DSH image ceiling (`036000` octal): V77 merges
   duplicate counted-SIXBIT line readers.  KCC image shrinks `036021` to

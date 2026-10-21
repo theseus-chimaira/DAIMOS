@@ -27,6 +27,7 @@
         .globl pdp10_pi_handler_return
         .globl kret_ok
         .globl kret_arg
+        .globl kret_neg2
 
 /**
  * @brief Capture one stopped-scanner receive byte at PI2.
@@ -122,14 +123,28 @@ dcs_getchar_done:
  * @return AC1 = DCS_E_OK (0) or DCS_E_ARG (-1).
  *
  * AC2 is clobbered while extracting the line; AC17 is the normal return stack.
- * DCSB CONO selects the send-buffer line, then DCSA DATAO transmits the masked
- * eight-bit character. Higher-level output serialization belongs to TTY.
+ * DCSB CONO selects the send-buffer line.  DCSB CONI bit 0100 advertises
+ * sufficient host transmit-queue space for the next DATAO.  Wait for that
+ * indication before sending, so a full multiplexer queue cannot silently
+ * discard characters.  Bound the wait and return an error on exhaustion;
+ * higher-level output serialization belongs to TTY.
  */
 dcs_putchar:
         ldb 2,[POINT 6,1,27]
         caile 2,017
         jrst kret_arg
         cono 0304,0(2)
+        push 17,1
+        movei 1,0200000
+dcs_putchar_wait_ready:
+        coni 0304,2
+        trne 2,0100
+        jrst dcs_putchar_ready
+        sojg 1,dcs_putchar_wait_ready
+        pop 17,1
+        jrst kret_neg2
+dcs_putchar_ready:
+        pop 17,1
         andi 1,0377
         datao 0300,1
         jrst kret_ok
