@@ -238,6 +238,19 @@ dsh_find_equal(const struct dsh_s6 *s)
         return -1;
 }
 
+/* Both the builtin assignments and a leading command assignment use the
+ * same bounded NAME=VALUE split.  The caller owns validation of whether
+ * '=' is required and whether an empty name is allowed. */
+static int
+dsh_split_assignment(const struct dsh_s6 *word, unsigned int eq,
+    struct dsh_s6 *name, struct dsh_s6 *value)
+{
+        if (dsh_s6_copy_slice(name, word, 0U, eq) != 0 ||
+            dsh_s6_copy_slice(value, word, eq + 1U, word->len) != 0)
+                return -1;
+        return 0;
+}
+
 static int
 dsh_parse_octal(const struct dsh_s6 *s, unsigned int *vp)
 {
@@ -361,11 +374,8 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
 
                 if (argc == 2U) {
                         eq = dsh_find_equal(&argv[1]);
-                        if (eq <= 0 ||
-                            dsh_s6_copy_slice(&name, &argv[1], 0U,
-                            (unsigned int)eq) != 0 ||
-                            dsh_s6_copy_slice(&value, &argv[1],
-                            (unsigned int)eq + 1U, argv[1].len) != 0)
+                        if (eq <= 0 || dsh_split_assignment(&argv[1],
+                            (unsigned int)eq, &name, &value) != 0)
                                 return 2;
                         return dsh_var_set(st, &name, &value, 0) != 0;
                 }
@@ -395,10 +405,8 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                         return 2;
                 eq = dsh_find_equal(&argv[1]);
                 if (eq >= 0) {
-                        if (dsh_s6_copy_slice(&name, &argv[1], 0U,
-                            (unsigned int)eq) != 0 ||
-                            dsh_s6_copy_slice(&value, &argv[1],
-                            (unsigned int)eq + 1U, argv[1].len) != 0)
+                        if (dsh_split_assignment(&argv[1],
+                            (unsigned int)eq, &name, &value) != 0)
                                 return 2;
                         return dsh_var_set(st, &name, &value, 1) != 0;
                 }
@@ -514,10 +522,8 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 }
                 if (argc != 2U || (eq = dsh_find_equal(&argv[1])) <= 0)
                         return 2;
-                if (dsh_s6_copy_slice(&name, &argv[1], 0U,
-                    (unsigned int)eq) != 0 ||
-                    dsh_s6_copy_slice(&value, &argv[1], (unsigned int)eq + 1U,
-                    argv[1].len) != 0)
+                if (dsh_split_assignment(&argv[1], (unsigned int)eq,
+                    &name, &value) != 0)
                         return 2;
                 for (i = 0U; i < DSH_MAX_ALIASES; ++i)
                         if (st->aliases[i].used &&
@@ -1513,8 +1519,7 @@ dsh_exec_assignment(struct dsh_state *st, const struct dsh_s6 *word,
 
         if (launch_only)
                 return 126;
-        if (dsh_s6_copy_slice(&name, word, 0U, eq) != 0 ||
-            dsh_s6_copy_slice(&value, word, eq + 1U, word->len) != 0)
+        if (dsh_split_assignment(word, eq, &name, &value) != 0)
                 return DSH_ERROR;
         return dsh_var_set(st, &name, &value, 0) != 0;
 }
