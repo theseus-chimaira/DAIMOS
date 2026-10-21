@@ -1,5 +1,22 @@
 # DSH TODO
 
+## 2026-10-21 V34-V37 PARSER OPTIMIZATION ACCEPTANCE
+
+All parser language features remain in the 32K-default build.  V34 shared
+token-to-AST word/quote-mask transfer; V35 cached keyword dispatch;
+V36 cached AND/OR classification; V37 shared binary AST node linking.
+GCC DXR image octal: 031326 (V32) -> 031105 -> 031071 -> 031036 ->
+031021 (V37), saving 0305 octal/197 decimal words.  BSS stays 012755.
+Every version passed 161/161 isolated target SIMH probes and the host
+media-isolation test; source D6FS roots remained CLEAN.
+
+Remaining gates: save at least 01022 octal (530 decimal) further image
+words for *strictly below* 030000; measure stack/BRK collision risk and
+physical 32K acceptance.  Do not reduce the grammar or job-control
+capabilities as a shortcut.  Continue identifying shared, demonstrably
+cold or inexpensive code paths and measure GCC link size per experiment.
+
+
 ## 2026-10-21 V31/V32 TEXT AND BOOT-TEST ACCEPTANCE
 
 Implemented packed six-character-word equality for names shared by

@@ -1,3 +1,38 @@
+## 2026-10-21 DSH V34-V37 PARSER TEXT REDUCTION — ACCEPTED
+
+Successive source-level improvements to the full DSH grammar, with all
+features and the 32K-default completion option preserved:
+
+* V34: one bounded token-to-AST word transfer copies the SIXBIT text and
+  both literal/quote masks for simple commands, FOR words, DEF names and
+  CASE patterns.  Avoids six repeated copy/mask/error/advance sequences.
+* V35: decode the current keyword only once during command dispatch.
+* V36: decode each AND/OR operator once in both simple-command and
+  operator-list parsing rather than comparing twice.
+* V37: share binary AST allocation and child-link initialization for
+  PIPE, AND, OR and command-list nodes.
+
+Measured GCC default DSH DXR image and BSS (all in octal PDP-10 words):
+V32 031326/012755; V34 031105/012755; V35 031071/012755;
+V36 031036/012755; V37 **031021/012755**.  Relative to V32 this saves
+0305 octal = 197 decimal image words with zero BSS growth.  Getting the
+image strictly below 030000 still needs another 01022 octal (530 decimal)
+words; this is a text-only target, not a substitute for stack/BRK or
+physical 32K occupancy testing.
+
+Isolated native SIMH runs of each version passed the full 115-case DSH
+conformance suite, 4 packed-name tests, 4 packed-UNALIAS tests, 25 angle
+parameter tests and 12 BREAK/CONTINUE tests: **161/161** per version.
+The host media-isolation contract also passed on each run.  `d6fsck -n`
+confirmed the source root remained selected superblock 703 seq=1 CLEAN
+for V35, V36 and V37.  V34 had likewise passed 161/161.  No kernel,
+D6FS or test-fixture recovery workaround was introduced.  Testkit has
+no new runtime changes for V34-V37; prior isolated targets cover them.
+
+The four increments were committed in order: 5e68ae3 (V34), 04bba19
+(V35), be8c444 (V36), 9c52931 (V37).  Each has a separate versioned
+SHAR patch based on the preceding commit, with commit/push instructions.
+
 ## 2026-10-21 DSH V31/V32 PACKED-NAME SAVINGS AND SIMH ROOT ISOLATION
 
 DSH name equality (`dsh_s6_same`) compares the six-character SIXBIT words
