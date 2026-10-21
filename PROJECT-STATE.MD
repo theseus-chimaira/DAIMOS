@@ -1,3 +1,31 @@
+## 2026-10-21 V81 MATRIX TRIAGE — TSFS MOUNT OPEN
+
+The V75 non-size GCC and KCC matrices both recorded FAIL for groups 022,
+027, 028, 029 and 030.  The user has deferred timeout/simulator-control
+failures on the Android host (notably 022 and 030).  Group 027 contains a
+distinct deterministic filesystem failure: fresh three-member TSFS media
+scans, but `/SYSTEM/EXEC/MOUNT.TSFS /DEV/DTC0 /MOUNT/DT0` prints
+`MOUNT.TSFS: MOUNT FAILED`; STAT still reports an ordinary 0755 directory,
+not a readonly 0555 TSFS mount.  This reproduced in a fresh standalone
+KCC test in V81.  The scan itself did not report `NO COMPLETE SET`, so
+the failure is after scan/handoff construction, in the syscall/provider/
+VFS-mount path.  No kernel or TSFS source fix is yet accepted.
+
+**Architecture correction from design owner:** TSFS is mounted through a
+BLOCKSET device, including one-DECtape sets.  The `/DEV/DTC0` operand is
+a member-discovery seed, not a filesystem backing device.  Source audit
+shows `tsfs.h` defines a composite BLOCKSET descriptor plus TSFS metadata,
+but `userland/tsfs/mount_tsfs.c`, syscall dispatch and `tsfs_mount_set`
+currently pass only the three TSFS metadata words directly to the provider.
+The existing userspace mount tests likewise do not verify a BLOCKSET-backed
+mount.  Treat this as an interface/design mismatch to reconcile before
+repairing mount failure; do not implement a direct-DTC mount workaround.
+
+The standalone testkit runner needed explicit KCC_REPO in isolated DevSpace2
+worktrees; its two earlier attempts stopped at build prerequisites and are
+not filesystem results.  Group 023 has ten successful old focused subtests
+but awaits a single atomic run.  Strict 32K remains deferred.
+
 ## 2026-10-21 V80 GCC MULTIPROCESS SCHEDULER RECHECK — PASS
 
 The previously open GCC-kernel preemption regression no longer reproduces

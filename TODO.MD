@@ -44,6 +44,22 @@
 
 ## GCC PDP-6 functional regression recovery (2026-10-19)
 
+- [ ] V81: diagnose reproducible TSFS userspace mount failure from group
+  027 on fresh KCC disk-root media.  `MOUNT.TSFS /DEV/DTC0 /MOUNT/DT0`
+  reports `MOUNT FAILED`, not `NO COMPLETE SET`; target remains TYPE 1
+  MODE 0755, rather than mounted readonly MODE 0555.  Investigate syscall
+  handoff/provider and `vfs_mount_prevalidated` without changing oracle.
+  Ignore timing/simulator-control errors in groups 022/030 for now at user
+  request; these are not established compiler defects.
+  **Design clarification:** TSFS mounts through the BLOCKSET device, even
+  for a one-member DECtape set.  `/DEV/DTCN` is only a discovery seed, not
+  the mounted filesystem device.  Current helper/syscall implementation
+  sends only the three-word TSFS metadata to the TSFS provider and bypasses
+  a BLOCKSET descriptor, while `tsfs.h` describes a composite BLOCKSET +
+  TSFS handoff.  Reconcile this interface before calling the test failure
+  a TSFS provider defect; adjust mount tests to assert BLOCKSET-backed
+  identity rather than accepting a direct DECtape mount.
+
 - [x] V78 HELP DAS sustained DCS output regression on fresh KCC 256K disk
   boot: the full DSH suite reaches HELP DAS (earlier 20 probes PASS), then
   stalls partway through its OPTIONS/OPERANDS output.  Isolated HELP DAS
