@@ -76,6 +76,16 @@ experiment is installed in current V86 KCORE.
 
 ### Per-step audit protocol
 
+**V92 accepted VFS parent helper:** `vfs_parent` formerly decoded the mount
+slot into AC3, then copied it to AC4 before calling the shared
+`vfs_parent_resolve_slot` (which expects AC4). Directly decoding and
+validating in AC4 eliminates that copy. The shared resolver's AC2/AC3
+preservation contract remains intact; mount bounds and fallback are
+unchanged. Folded KCC 256K full-profile KCORE endpoint `023001 ->
+023000` octal: **9673 -> 9672 words (-1)**. Targeted PDP-6
+`target-file-walk-pdp6` PASS. No full testkit, 32K, or TSFS testing.
+
+
 **V91 test scope rule:** Do **not** run the full daimos-testkit matrix after
 each KCORE reduction. Run the folded KCORE link-size check and only the
 smallest existing functional/regression tests whose code paths or ABI could

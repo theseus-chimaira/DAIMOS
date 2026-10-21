@@ -234,12 +234,10 @@ vfs_parent:
         movem   1,(2)
         jrst    kret_zero
 vfs_parent_mount:
-        ldb     3,[POINT 6,1,11]
-        sojl    3,vfs_parent_raw_asm
-        caml    3,vfs_mount_limit
+        ldb     4,[POINT 6,1,11]
+        sojl    4,vfs_parent_raw_asm
+        caml    4,vfs_mount_limit
         jrst    vfs_parent_raw_asm
-vfs_parent_mount_check:
-        move    4,3
         pushj   17,vfs_parent_resolve_slot
         jrst    vfs_parent_raw_asm
 

@@ -1,3 +1,12 @@
+## 2026-10-21 V92 DIRECT VFS PARENT SLOT REGISTER
+
+`KCORE.MD` consulted before VFS pass. In `vfs_parent`, AC4 now receives
+the decoded mount slot directly, eliminating `move 4,3` before the shared
+resolver. The resolver already consumes AC4 and preserves AC2/AC3.
+Folded KCC KCORE `023001 -> 023000`, **9673 -> 9672 words**. Focused
+PDP-6 file-walk regression PASS. No other code or runtime semantics
+changed; 8K KCORE goal now requires 1481 words to fall strictly below.
+
 ## 2026-10-21 V91 VFS ONE-WORD ELIMINATION AND FOCUSED TEST POLICY
 
 KCORE.MD's active V90 register was consulted. The local label
