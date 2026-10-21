@@ -1,5 +1,18 @@
 # DSH TODO
 
+## V77 KCC IMAGE GATE RECOVERY (2026-10-20)
+
+History has already been compile-time disabled by default since V25.
+The remaining `036021`-octal KCC image exceeded the normal `036000`
+EXEC gate by `021` octal words.  V77 unifies the two checked counted-SIXBIT
+line decoders: `dsh_getline_text()` uses `dsh_line_from_counted()` rather
+than duplicating its length validation and word copying.  The KCC image
+is now `035764` octal (-`035` octal / 29 decimal words), BSS unchanged
+at `012751`, leaving `014` octal / 12 decimal words below the gate.
+The fresh 256K KCC-kernel multiprocess test passes.  Full DSH conformance
+is a separate validation requirement.
+
+
 ## V25 OPTIONAL HISTORY BUILD (2026-10-13)
 
 DSH history is now compile-time optional and **off by default** for the

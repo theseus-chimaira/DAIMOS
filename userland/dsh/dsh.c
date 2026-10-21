@@ -28,6 +28,7 @@ static unsigned int dsh_history_persistent;
 
 static void dsh_put_prompt(struct dsh_state *st, unsigned int more);
 static int dsh_s6_literal(struct dsh_s6 *dst, const char *text);
+static int dsh_line_from_counted(struct dsh_line *line, const kword_t *record);
 
 static void
 dsh_line_set(struct dsh_line *line, unsigned int pos, int ch)
@@ -447,24 +448,15 @@ static int
 dsh_getline_text(struct u_text_reader *reader)
 {
         kword_t record[DSH_LINE_MAX_WORDS + 1U];
-        unsigned int len;
-        unsigned int words;
-        unsigned int i;
         int rc;
 
         rc = u_text_gets6(reader, record, DSH_LINE_MAX_WORDS + 1U);
         if (rc < 0)
                 return -1;
-        len = (unsigned int)record[0];
-        if (len > DSH_LINE_MAX_CHARS)
-                return -1;
-        dsh_line_clear(&dsh_input_line);
-        dsh_input_line.len = len;
-        words = (len + DSH_S6_CHARS_PER_WORD - 1U) /
-            DSH_S6_CHARS_PER_WORD;
-        for (i = 0U; i < words; ++i)
-                dsh_input_line.words[i] = record[i + 1U];
-        return 0;
+        /* Both text input and counted command input use the same checked
+         * SIXBIT record representation.  Keep the copy/length logic in one
+         * routine rather than maintaining two slightly different loops. */
+        return dsh_line_from_counted(&dsh_input_line, record);
 }
 
 static int

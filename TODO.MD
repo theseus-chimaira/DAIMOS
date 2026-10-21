@@ -44,6 +44,20 @@
 
 ## GCC PDP-6 functional regression recovery (2026-10-19)
 
+- [ ] V78 HELP DAS sustained DCS output regression on fresh KCC 256K disk
+  boot: the full DSH suite reaches HELP DAS (earlier 20 probes PASS), then
+  stalls partway through its OPTIONS/OPERANDS output.  Isolated HELP DAS
+  with 150-second allowance also stalls after ~1 KiB of DCS0 output and
+  emits a partially merged `OPERAND# ` prompt.  Increasing the timeout
+  alone is NOT a fix; investigate WRITECHAR/TTY/DCS transmission and process
+  completion, compare CTY before changing HELP syntax or test assertions.
+
+- [x] Restore the normal KCC DSH image ceiling (`036000` octal): V77 merges
+  duplicate counted-SIXBIT line readers.  KCC image shrinks `036021` to
+  `035764` (29 decimal words); full-profile KCC scheduler test PASSes with
+  unchanged process-preemption assertions.  This does not close the
+  distinct GCC-kernel scheduler regression.
+
 - [x] GCC group 004 fresh targeted run passes all five boot origins,
   four-member DSK root discovery, Stage1 KINIT entry, SIXBIT lifetime,
   and corrected compiler-codegen validation.

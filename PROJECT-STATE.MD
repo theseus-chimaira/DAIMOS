@@ -1,3 +1,22 @@
+## 2026-10-20 V77 DSH KCC SIZE GATE RESTORED
+
+DSH history already defaults to disabled (`DSH_ENABLE_HISTORY=0`, V25),
+so turning it off again could not recover the 17 decimal words by which
+the KCC DSH DXR exceeded the production `036000`-octal image limit.
+V77 instead removes duplicate counted-SIXBIT input-line decoding in
+`userland/dsh/dsh.c`: the script text reader now calls the existing
+length-checked `dsh_line_from_counted()` used by command-record input.
+No feature was disabled and BSS remains unchanged.
+
+Exact KCC linker results, octal image words: before `036021`, after
+`035764`; a saving of `035` octal (29 decimal) words.  The optimized DXR is
+`014` octal (12 decimal) words below the normal `036000` limit.  A fresh
+256K full-profile PDP-6 multiprocess scheduler regression with the KCC
+kernel and GCC-built test INIT **PASSes**, including preemption, process
+context and disk sleep/wakeup.  This is not acceptance of the separate
+GCC-compiled kernel scheduler regression.  The historical temporary DSH
+ceiling override is no longer required by this regression.
+
 ## 2026-10-20 V76 OPTIONAL MONITORFS MRES — LIVE ACCEPTED, DEFAULT OFF
 
 The optional MonitorFS MRES package (`MONITORFS_MRES_ENABLED=1`) links, boots,
