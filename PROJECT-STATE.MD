@@ -1,3 +1,30 @@
+## 2026-10-21 CTY COUNTER DEFECT / GROUP 030 PARTIAL V136
+
+DAIMOS commit `08625cf` fixes missing completed-CTY I/O counters:
+`cty_putchar` now increments the existing MonitorFS CTY0 output slot
+only after PI4 confirms transmission, while `cty_getchar` increments
+the CTY0 input slot only after actually returning a character.
+The driver has no new BSS, buffer, or queue allocation. Before the fix,
+the independent CTY READCHAR test read the three correctly formatted
+octal STAT lines but returned `<C!4` because output accounting never
+advanced. After the fix it passed under KCC and GCC. Evidence:
+`$TMPDIR/daimos-monitorfs-cty-kcc-v133.log`,
+`$TMPDIR/daimos-monitorfs-cty-gcc-v134.log`.
+
+The original runtime probe suite used obsolete STAT/DF output formats
+and attempted to read MonitorFS CTY0/STATS with CAT, which consumes
+S6REC word records rather than the READCHAR character API. Testkit
+commit `77f7d89` provides versioned `daimos-runtime-probes-v132.txt`
+and the separate `test-daimos-monitorfs-cty-stats-v132` target.
+All **66/66 runtime probes pass KCC and GCC** on fresh 256K disks:
+`$TMPDIR/daimos-group030-runtime-kcc-v135.log` and
+`$TMPDIR/daimos-group030-runtime-gcc-v136.log`.
+
+This independently closes only the runtime-build/MonitorFS portion
+of regression group 030. Exec, DTFS, display and multi-TTY acceptance
+remain OPEN; group 027 is deferred by request, and strict 32K gates
+remain deferred.
+
 ## 2026-10-21 D6FS REGRESSION GROUP 029 V131 ACCEPTED
 
 The 256K non-size **group 029** D6FS HDD, multimember and recovery
