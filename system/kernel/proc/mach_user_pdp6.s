@@ -20,6 +20,8 @@
         .globl mach_return_to_kernel_request
         .globl exec_native_syscall
         .globl mach_kernel_sp
+        .globl proc_current_slot
+        .globl proc_current_ptr
 
 /** Saved PDP-6 hardware JSR return word for the current monitor UUO. */
 mach_syscall_save:
@@ -91,6 +93,24 @@ mach_syscall_invalid:
         movei 1,040                 ; separator
         pushj 17,mach_invalid_putchar
         move 4,mach_invalid_uuo_pc
+        pushj 17,mach_invalid_oct36
+        ; Diagnostic-only trailer: running slot and context PC saved in the
+        ; current process's 0410-word u-area.  Neither affects trap return.
+        movei 1,040
+        pushj 17,mach_invalid_putchar
+        move 4,proc_current_slot
+        pushj 17,mach_invalid_oct36
+        movei 1,040
+        pushj 17,mach_invalid_putchar
+        move 2,proc_current_ptr
+        jumpe 2,mach_invalid_context_unset
+        hlrz 2,(2)
+        jumpe 2,mach_invalid_context_unset
+        move 4,020(2)
+        jrst mach_invalid_context_show
+mach_invalid_context_unset:
+        setz 4,
+mach_invalid_context_show:
         pushj 17,mach_invalid_oct36
         movei 1,015
         pushj 17,mach_invalid_putchar
