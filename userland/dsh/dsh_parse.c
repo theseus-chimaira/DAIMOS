@@ -643,23 +643,27 @@ static int
 dsh_parse_command(struct dsh_parser *p, unsigned int stops, unsigned int *out)
 {
         const struct dsh_token *t;
+        unsigned int keyword;
 
         if (p->pos >= p->ntokens || dsh_at_stop(p, stops))
                 return dsh_mark_error(p, DSH_E_SYNTAX, DSH_PE_COMMAND);
         t = &p->tokens[p->pos];
-        if (dsh_tok_kw(t) == DSH_K_IF)
+        /* The token cannot change during command dispatch.  Decode it once
+         * instead of re-running every SIXBIT keyword comparison. */
+        keyword = dsh_tok_kw(t);
+        if (keyword == DSH_K_IF)
                 return dsh_parse_if(p, out);
-        if (dsh_tok_kw(t) == DSH_K_FOR)
+        if (keyword == DSH_K_FOR)
                 return dsh_parse_for(p, out);
-        if (dsh_tok_kw(t) == DSH_K_WHILE)
+        if (keyword == DSH_K_WHILE)
                 return dsh_parse_loop(p, out, DSH_N_WHILE);
-        if (dsh_tok_kw(t) == DSH_K_UNTIL)
+        if (keyword == DSH_K_UNTIL)
                 return dsh_parse_loop(p, out, DSH_N_UNTIL);
-        if (dsh_tok_kw(t) == DSH_K_DEF)
+        if (keyword == DSH_K_DEF)
                 return dsh_parse_def(p, out);
-        if (dsh_tok_kw(t) == DSH_K_CASE)
+        if (keyword == DSH_K_CASE)
                 return dsh_parse_case(p, out);
-        if (dsh_tok_kw(t) == DSH_K_BEGIN)
+        if (keyword == DSH_K_BEGIN)
                 return dsh_parse_group(p, out);
         if (DSH_TOKEN_TYPE(t) == DSH_T_LPAREN)
                 return dsh_parse_paren_group(p, out);
