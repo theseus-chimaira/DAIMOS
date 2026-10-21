@@ -997,11 +997,16 @@ static int
 dsh_s6_same(const struct dsh_s6 *a, const struct dsh_s6 *b)
 {
         unsigned int i;
+        unsigned int words;
 
         if (a == 0 || b == 0 || a->len != b->len)
                 return 0;
-        for (i = 0U; i < a->len; ++i)
-                if (dsh_s6_get(a, i) != dsh_s6_get(b, i))
+        /* SIXBIT strings are stored in caller-owned, zero-padded words.
+         * Compare only the words containing actual characters: at most
+         * six comparisons rather than two character decodes per byte. */
+        words = (a->len + 5U) / 6U;
+        for (i = 0U; i < words; ++i)
+                if (a->words[i] != b->words[i])
                         return 0;
         return 1;
 }
