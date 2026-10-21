@@ -1,3 +1,32 @@
+## 2026-10-21 V89 KCORE BOTTOM-UP PASS 2 — TTY, SCHEDULER, VFS
+
+Second source/caller audit, without a code change:
+
+- `proc_tty_pending_take`/`proc_tty_pending_store` preserve a pending byte
+  in the packed logical TTY session word. Both GE and DCS MRES directly
+  call these resident interfaces. Relocation into only one MRES would
+  introduce a cross-device dependency; removing either loses input state.
+- `proc_tty_output_route_get`/`set` handle a packed route with native
+  fallback, validation and a 077 sentinel. A unified read/write routine
+  would add dispatch and should be measured, not assumed smaller.
+- `proc_sched_resched_select` and `proc_sched_tick_select` share
+  `proc_select_runnable_pdp6`. The latter enforces a minimum elapsed tick;
+  combining the two entry semantics risks scheduler behavior. The PI
+  interrupt path calls these selectors and must remain resident.
+- `proc_sched_resched_current` is a tiny deferred reschedule + PI request,
+  invoked by active process scheduler paths. Not safely boot-only.
+- `vfs_chmod` chooses `FS_MRES_OP_CHMOD` then tail-enters `vfs_mutate2`;
+  `vfs_chown`/`vfs_utime` share `vfs_setattr` for mode/UID/GID/time updates.
+  The direct syscall paths retain different argument semantics. These are
+  already compact shared handlers, not redundant implementations.
+- `vfs_readdir_raw` routes MonitorFS providers separately and dispatches
+  other providers to FS MRES, which preserves the namespace service ABI.
+
+Potential next measurement: compare `vfs_readonly` and mutation call sites
+for safe shared fast paths; inspect syscall argument marshaling and TTY
+pending-byte bitfields for real consolidation. Any candidate needs a new
+link-size delta and functional tests on >32K memory. No TSFS work.
+
 ## 2026-10-21 V88 KCORE BOTTOM-UP PASS 1 — SHORT WRAPPERS
 
 First source-level review of the V87 short-entry inventory (current V86
