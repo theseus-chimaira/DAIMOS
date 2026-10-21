@@ -128,15 +128,20 @@ native_sys_mapped_return:
         hrrz    1,1
         jrst    file_close
 %L75:
-        pushj   17,native_sys_map_one
-        jumpe   1,%L137
-        pushj   17,file_chdir
-        jrst    native_sys_mapped_return
+        movei   5,file_chdir
+        jrst    native_sys_one_ptr
 %L80:
+        hrrz    2,2
+        movei   5,file_getcwd
+        jrst    native_sys_one_ptr
+
+; Common single mapped-pointer syscall. AC5 holds a selected KCORE service.
+; The VM mapping hold saves/restores AC5, and vm_user_words never changes it.
+; AC2 remains the original scalar second argument, when one exists.
+native_sys_one_ptr:
         pushj   17,native_sys_map_one
         jumpe   1,%L137
-        hrrz    2,2
-        pushj   17,file_getcwd
+        pushj   17,(5)
         jrst    native_sys_mapped_return
 %L83:
         ; AC1 fd, AC2 buffer, AC3 word count.
@@ -346,16 +351,12 @@ native_sys_fd_buffer:
         jrst    native_sys_mapped_return
 %L102:
         ; AC1 path, AC2 mode.
-        pushj   17,native_sys_map_one
-        jumpe   1,%L137
         hrrz    2,2
-        pushj   17,file_mkdir
-        jrst    native_sys_mapped_return
+        movei   5,file_mkdir
+        jrst    native_sys_one_ptr
 %L107:
-        pushj   17,native_sys_map_one
-        jumpe   1,%L137
-        pushj   17,file_unlink
-        jrst    native_sys_mapped_return
+        movei   5,file_unlink
+        jrst    native_sys_one_ptr
 %L112:
         ; AC1 old path, AC2 new path.
         pushj   17,native_sys_two_paths
@@ -364,19 +365,15 @@ native_sys_fd_buffer:
         jrst    native_sys_mapped_return
 %L119:
         ; AC1 path, AC2 new size.
-        pushj   17,native_sys_map_one
-        jumpe   1,%L137
-        pushj   17,file_truncate
-        jrst    native_sys_mapped_return
+        movei   5,file_truncate
+        jrst    native_sys_one_ptr
 %L124:
         ; AC1 slot, AC2 result buffer.
         movei   6,sys_procinfo
         jrst    native_sys_fd_buffer
 %L129:
-        pushj   17,native_sys_map_one
-        jumpe   1,%L137
-        pushj   17,sys_meminfo
-        jrst    native_sys_mapped_return
+        movei   5,sys_meminfo
+        jrst    native_sys_one_ptr
 %L134:
         hrrz    1,1
         pushj   17,file_readchar

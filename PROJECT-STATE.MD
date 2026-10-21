@@ -1,3 +1,27 @@
+## 2026-10-21 V97 SIX-WAY MAPPED SYSCALL TAIL (-9 KCORE WORDS)
+
+Consulted `KCORE.MD` before this optimization. Six single-user-pointer
+native syscalls (CHDIR, GETCWD, MKDIR, UNLINK, TRUNCATE, MEMINFO)
+now share `native_sys_one_ptr`, which uses AC5 as the selected KCORE
+service and preserves original AC2 scalar arguments. It maps the user
+pointer, rejects invalid mappings, calls the selected handler, and
+releases the VM hold on return. The VM helpers preserve AC5.
+Folded KCC 256K full-profile KCORE endpoint **022747 -> 022736** octal,
+**9655 -> 9646 decimal words (-9)**; dispatch DOBJ **817 -> 808** words.
+New focused `daimos-testkit` target `test-daimos-kcore-oneptr-v97`
+PASS on real 256K SIMH, including all six operations, low-address mapping
+failures and recovery. No full testkit, 32K or TSFS testing. Strictly
+below-8192 KCORE now needs **1455** more words removed.
+
+Historical TENEX and ITS dispatcher sources were also inspected.
+DAIMOS uses a 16-word packed primary UUO table and 14-word extension
+table (two 18-bit addresses per word); TENEX's JSYS vector is up to
+512 words in the examined source, while ITS uses nested UUO-class and
+symbolic `.CALL` tables. These are **table**, not total syscall-code,
+comparisons. DAIMOS's packed dispatcher should be retained; the next
+meaningful goal is moving validated cold syscall services into MRES.
+The analysis and source references are recorded in `KCORE.MD`.
+
 ## 2026-10-21 V96 SHARED DIRREAD/PROCINFO MAPPED OUTPUT (-5 WORDS)
 
 `KCORE.MD` consulted before modification. Native syscall `%L97`

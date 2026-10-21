@@ -1,3 +1,10 @@
+- [x] **V97:** consolidate six native single-user-pointer syscall
+  wrappers, saving nine folded KCORE words (**9655 -> 9646**), with a
+  new targeted 256K PDP-6 functional + bad-mapping regression PASS.
+  Comparative TENEX/ITS dispatcher review confirms DAIMOS already has
+  an efficient 30-word packed primary+extension table. Remaining to
+  strictly below 8K: 1455 words. Consult `KCORE.MD` for next stage.
+
 - [x] **V96:** share native DIRREAD and PROCINFO mapped-output syscall
   path via AC6-selected handler and AC5-preserved index; folded KCORE
   **9660 -> 9655 words (-5)**. Focused 256K PDP-6 test checks both

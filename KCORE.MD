@@ -21,9 +21,12 @@ completed results; KCORE decisions and ongoing work belong **here**.
 - **Previous V95:** `__kcore_low_end=022754`, KCORE **9660 words** after
   sharing mapped READ_WORDS/WRITE_WORDS syscall code; **1469** words
   remain to fall strictly below 8192 (1468 to reach it).
-- **Latest V96:** `__kcore_low_end=022747`, KCORE **9655 words** after
+- **Previous V96:** `__kcore_low_end=022747`, KCORE **9655 words** after
   sharing mapped DIRREAD/PROCINFO output handling; **1464** words remain
   to fall strictly below 8192 (1463 to reach it).
+- **Latest V97:** `__kcore_low_end=022736`, KCORE **9646 words** after
+  sharing the six single-pointer mapped syscall wrappers; **1455** words
+  remain to fall strictly below 8192 (1454 to reach it).
 - MRES size and whole-KCORE+MRES permanent-address gate are **informational**
   during this phase, not optimization blockers; the old total limit can be
   explicitly enabled with `PERMANENT_SIZE_ENFORCE=1`.
@@ -48,6 +51,7 @@ completed results; KCORE decisions and ongoing work belong **here**.
 | Bulk device file I/O | **V94 -15 folded KCORE words** (9680 -> 9665): nine device-word paths share a single AC1/AC2 load, indirect PUSHJ via the selected patchable one-word MRES jump slot, and common file-offset result | Keep WCNSLS raw-read append handling and jump-slot ABI; focused unit + live PTR/PTP accepted |
 | Mapped READ/WRITE_WORDS syscalls | **V95 -5 folded KCORE words** (9665 -> 9660): map/translate and FILE call argument paths now shared; AC5 selects read versus write handler and survives translation | Keep per-op device/pipe and zero-count write handling; live 256K PTR/PTP full and partial transfers PASS |
 | Mapped DIRREAD/PROCINFO syscalls | **V96 -5 folded KCORE words** (9660 -> 9655): AC6 selects FILE dirread or PROCINFO, AC5 retains original FD/slot, and one shared path translates the output buffer | Preserve user mapping hold/release and service signatures; focused 256K `/PROC` DIRREAD + PROCINFO test PASS |
+| Six mapped single-pointer syscalls | **V97 -9 folded KCORE words** (9655 -> 9646): `CHDIR`, `GETCWD`, `MKDIR`, `UNLINK`, `TRUNCATE`, `MEMINFO` share `native_sys_one_ptr`, selecting the KCORE handler in AC5 | Keep scalar AC2, VM mapping lifetime and error return; focused 256K native test including invalid pointers PASS |
 | Shared word operations | `fs_copy_words`/`fs_move_words`/`fs_zero_words` serve MM/VM/module and filesystem providers; overlap-safe move already reuses forward copy | Cannot relocate into detachable filesystem MRES without lifetime solution |
 | TTY packed fields | Halfword canonical-line bases and pending-byte/session routes already packed; DCS and GE MRES both use KCORE pending interfaces | Retain consistent live shared state |
 | P10FOLD | Existing production `-m 2` 21-object census has 31 folds/70 estimated words; `-m 1` yields only +4 more | Don't widen fold hazard surface for four words |
@@ -87,6 +91,44 @@ experiment is installed in current V86 KCORE.
    do not silently enable or remove current swap path to claim size savings.
 
 ### Per-step audit protocol
+
+**V97 accepted six-way single-pointer syscall sharing:** Reviewed this
+register and the V96 9655-word map. In `syscall_dispatch_pdp6.s`, six
+native syscall entrypoints now select their service in AC5 and converge
+on one `native_sys_one_ptr` path (user mapping hold, translation, error
+test, `PUSHJ 17,(5)`, mapping release). The GETCWD/MKDIR scalar second
+argument is masked before entering the common path; other AC2 arguments
+remain unchanged. `vm_user_mapping_hold` explicitly saves/restores AC5;
+`vm_user_words` changes AC1/AC3/AC4, not AC5. Failed translation exits
+through the same `%L137` path. Fully folded KCC 256K full-profile KCORE
+`__kcore_low_end=022747 -> 022736` octal, **9655 -> 9646 (-9)** words;
+the syscall dispatch input DOBJ text **817 -> 808** words. New focused
+PDP-6 testkit target `test-daimos-kcore-oneptr-v97` PASS: CHDIR, GETCWD,
+MKDIR, UNLINK, TRUNCATE, MEMINFO plus low-address map failure and
+recovery. The test uses an actual 256K SIMH full-profile image. No full
+testkit, 32K machine or TSFS tests.
+
+**V97 TENEX/ITS dispatch comparison (source-backed):** Inspected the
+supplied `tenex.tar.gz` (`128-tenex/sys.collec`, `stenex.mac`, `pidisp.mac`)
+and `its.tar.gz` (`src/system/its.1652`), alongside DAIMOS's assembler.
+DAIMOS's **primary** UUO table contains 16 words for opcodes 040..077,
+and the packed extension table 14 words, **30 table words total** (plus
+dispatch instructions). TENEX's `JD` macro constructs a full JSYS vector
+at location 1000 octal with `XWD FPC,handler` per JSYS number, padded
+with illegal-call entries; this source assigns a JSYS at 0777 octal,
+implying **512 dispatch-table words**, excluding trap and service code.
+Its slow JSYS path goes through `JSYS MENTR` (`sys.collec` UUOH/MENTR).
+ITS uses an approximately nine-entry `UUODSP` opcode-class table and
+`CALDIS` AC-field selection for numbered calls; symbolic `.CALL` resolves
+SIXBIT names with `SYSCTB` and operation descriptors in `SYSCTD`. The
+examined source has about 113 names, depending on conditional assembly.
+**This is a comparison of mechanisms and table words, not total linked
+syscall sizes:** TENEX/ITS services and trap/context code live elsewhere.
+DAIMOS's packed front end is already more word-efficient; do not replace
+it with a full JSYS-style vector or symbolic-call directory. The useful
+TENEX idea is keeping thin resident entries while moving validated cold
+services out of KCORE into pinned MRES, not larger dispatch tables.
+
 
 **V96 accepted native mapped-output syscall sharing:** In
 `syscall_dispatch_pdp6.s`, `%L97` (DIRREAD) and `%L124` (PROCINFO)
