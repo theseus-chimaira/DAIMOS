@@ -76,6 +76,24 @@ experiment is installed in current V86 KCORE.
 
 ### Per-step audit protocol
 
+**V91 test scope rule:** Do **not** run the full daimos-testkit matrix after
+each KCORE reduction. Run the folded KCORE link-size check and only the
+smallest existing functional/regression tests whose code paths or ABI could
+be affected. Broader integration suites are reserved for cumulative
+milestones or changes affecting shared scheduler/VM/boot interfaces.
+Document the chosen tests and any untested paths for each change.
+
+**V91 VFS dead instruction:** `vfs_mutate3_ro` was an unreferenced label
+followed by one unreachable stack subtraction before the live
+`vfs_mutate2_ro` entry. Removing the dead instruction leaves reachable
+control flow unchanged. Fresh KCC folded relink: `__kcore_low_end`
+`023002 -> 023001` octal, **9674 -> 9673 KCORE words (-1)**. Full image
+rebuild PASS; VFS-targeted regression coverage is to be recorded separately.
+The focused `test-daimos-vfs-storage-reservation` test PASSes (PDP-6
+runtime). It checks VFS mount/reservation handling, but does **not**
+directly execute the removed unreachable instruction. No full matrix was
+run. The reachability argument is from the source control-flow inspection.
+
 1. Re-read this register, `PROJECT-STATE.MD`, current V86/V-later KCORE
    link map and relevant historical designs before touching a candidate.
 2. Inspect exact source and symbol/reference paths in KCORE, installed

@@ -656,8 +656,6 @@ vfs_mutate2:
         pop     17,1
         ldb     7,[POINT 6,1,5]
         jrst    fs_provider_reg_call
-vfs_mutate3_ro:
-        sub     17,kconst_1_1
 vfs_mutate2_ro:
         sub     17,kconst_2_2
         jrst    kret_neg1

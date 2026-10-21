@@ -1,3 +1,16 @@
+## 2026-10-21 V91 VFS ONE-WORD ELIMINATION AND FOCUSED TEST POLICY
+
+KCORE.MD's active V90 register was consulted. The local label
+`vfs_mutate3_ro` had no incoming references, and the one stack-adjust
+instruction below it could not be reached by normal entry or fallthrough.
+Removing it leaves `vfs_mutate2_ro` intact. Fresh KCC folded link:
+`__kcore_low_end=023001` octal, **9673 words**, down one from V86.
+Full image build PASS. The focused PDP-6
+`test-daimos-vfs-storage-reservation` PASSes; it does not exercise the
+dead instruction directly. The full testkit is explicitly **not** run
+after individual KCORE reductions: select tests relevant to affected
+paths, with broader suites only at integration milestones. No 32K/TSFS.
+
 ## 2026-10-21 V90 CANONICAL KCORE OPTIMIZATION REGISTER
 
 `KCORE.MD` is the authoritative, continuously consulted KCORE optimization
