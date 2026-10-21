@@ -1,3 +1,25 @@
+## 2026-10-21 V87 KCORE LINKED SYMBOL INVENTORY — BOTTOM-UP REVIEW
+
+Generated a full linker-visible inventory from the accepted V86
+`MONITORFS_MRES_ENABLED=1` KCC image (`__kcore_low_end=023002`,
+KCORE 9674 words).  `pdp10-doc/STATUS/DAIMOS-KCORE-FUNCTION-INVENTORY-
+20261021-V87.MD` and companion `.TSV` list 381 defined linked
+symbols, of which 315 are text entries, ordered by conservative local
+entry-span estimates.  Each row includes octal address, source object,
+section, estimated upper-bound span, and available static relocation
+references from KCORE/MRES/KINIT objects.  These are **not** exact sizes
+for every private function; aliases, internal assembly labels, indirect
+dispatch, and module patching require additional per-function study.
+
+The smallest entries are dominated by return constants, two-word
+driver stubs, MRES service vector slots, and shared tail-branch wrappers.
+Existing wrappers such as `mm_pin`, `vfs_create`, `vfs_mount`, and
+`file_unlink` already share their implementations; indiscriminate inlining
+would likely increase KCORE.  No function was deleted or moved in V87.
+Begin detailed source/caller inspections from small, *actual* routines,
+including MRES and KINIT call sites.  Strict 32K testing and TSFS
+development remain deferred.
+
 ## 2026-10-21 V86 DEFAULT MONITORFS MRES — KCORE REDUCTION ACCEPTED
 
 MonitorFS has been removed from the default KCORE implementation: both
