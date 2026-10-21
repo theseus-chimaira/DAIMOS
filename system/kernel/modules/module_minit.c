@@ -935,6 +935,26 @@ storage_patch_module_jump(unsigned int base, kword_t *word,
         storage_patch_jump(word, address);
 }
 
+/** Install mandatory SYSINFO runtime queries into permanent MRES.
+ *
+ * The exported entries keep their public KCORE one-word trampolines. The
+ * MEMFS usage hook is a separate KCORE patch slot, filled only when that
+ * optional provider is installed later in the MINIT order.
+ */
+void
+sysinfo_install_minit(void)
+{
+        extern kword_t sys_procinfo;
+        extern kword_t sys_meminfo;
+        kword_t name;
+        unsigned int base;
+
+        name = (kword_t)SIXBIT("SINFO ");
+        base = minit_install(name);
+        storage_patch_jump(&sys_procinfo, minit_export(name, base, 0U));
+        storage_patch_jump(&sys_meminfo, minit_export(name, base, 1U));
+}
+
 static void
 storage_register_router(kword_t name)
 {

@@ -62,6 +62,8 @@
         .globl d6fs_minit
 .endif
         .globl mfsdev_minit
+        .globl sysinfo_install_minit
+        .globl sysinfo_mres_package
 .if MONITORFS_MRES_ENABLED
         .globl monitorfs_mres_package
         .globl mfsdev_install_minit
@@ -118,6 +120,9 @@ __kinit_image_start:
 __minit_table_begin:
         .word cty_minit,,cty_mres_package
         .word clk_minit,,clk_mres_package
+        ; Core PROCINFO/MEMINFO queries are needed by every runtime profile.
+        ; Install and pin before optional providers/boot-created processes.
+        .word sysinfo_install_minit,,sysinfo_mres_package
 .if MONITORFS_MRES_ENABLED
         .word mfsdev_install_minit,,monitorfs_mres_package
 .endif

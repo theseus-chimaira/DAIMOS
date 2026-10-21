@@ -1,3 +1,11 @@
+- [x] **V98:** relocate cold generic PROCINFO/MEMINFO service bodies into
+  pinned `SINFO` MRES; retain two entry jumps, MEMFS usage jump, and
+  KINIT-published permanent-size data word in KCORE. Folded KCORE
+  **9646 -> 9528 (-118)**. Complete 256K image and focused native
+  `PROCINFO`/`MEMINFO` regression PASS. Below 8K needs 1337 words.
+- [ ] Review 272-word `proc_run_block` for possible pinned MRES transfer,
+  preserving live RUN/EXEC call, scheduler interactions and package lifetime.
+
 - [x] **V97:** consolidate six native single-user-pointer syscall
   wrappers, saving nine folded KCORE words (**9655 -> 9646**), with a
   new targeted 256K PDP-6 functional + bad-mapping regression PASS.

@@ -581,12 +581,11 @@ kinit_enter(void)
         }
 #endif
         /*
-         * SYS_MEMINFO uses a patched immediate for permanent resident words.
-         * The permanent range starts at KINIT_KCORE_BASE and ends at the first
-         * word after the packed MRES block.
+         * The resident MEMINFO implementation lives in pinned SYSINFO MRES.
+         * Publish its permanent-size measurement as a fixed KCORE data word
+         * instead of patching an instruction within a relocatable module.
          */
         sys_resident_words_immediate =
-            (sys_resident_words_immediate & ~((kword_t)KINIT_HALF_MASK)) |
             (kword_t)(mres_next_addr - KINIT_KCORE_BASE);
         /*
          * KINIT's linked image and bootstrap stack are reclaimed together.

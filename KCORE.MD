@@ -24,9 +24,12 @@ completed results; KCORE decisions and ongoing work belong **here**.
 - **Previous V96:** `__kcore_low_end=022747`, KCORE **9655 words** after
   sharing mapped DIRREAD/PROCINFO output handling; **1464** words remain
   to fall strictly below 8192 (1463 to reach it).
-- **Latest V97:** `__kcore_low_end=022736`, KCORE **9646 words** after
+- **Previous V97:** `__kcore_low_end=022736`, KCORE **9646 words** after
   sharing the six single-pointer mapped syscall wrappers; **1455** words
   remain to fall strictly below 8192 (1454 to reach it).
+- **Latest V98:** `__kcore_low_end=022550`, KCORE **9528 words** after
+  relocating generic `PROCINFO` and `MEMINFO` into mandatory pinned
+  SYSINFO MRES; **1337** words remain to fall strictly below 8192.
 - MRES size and whole-KCORE+MRES permanent-address gate are **informational**
   during this phase, not optimization blockers; the old total limit can be
   explicitly enabled with `PERMANENT_SIZE_ENFORCE=1`.
@@ -52,6 +55,7 @@ completed results; KCORE decisions and ongoing work belong **here**.
 | Mapped READ/WRITE_WORDS syscalls | **V95 -5 folded KCORE words** (9665 -> 9660): map/translate and FILE call argument paths now shared; AC5 selects read versus write handler and survives translation | Keep per-op device/pipe and zero-count write handling; live 256K PTR/PTP full and partial transfers PASS |
 | Mapped DIRREAD/PROCINFO syscalls | **V96 -5 folded KCORE words** (9660 -> 9655): AC6 selects FILE dirread or PROCINFO, AC5 retains original FD/slot, and one shared path translates the output buffer | Preserve user mapping hold/release and service signatures; focused 256K `/PROC` DIRREAD + PROCINFO test PASS |
 | Six mapped single-pointer syscalls | **V97 -9 folded KCORE words** (9655 -> 9646): `CHDIR`, `GETCWD`, `MKDIR`, `UNLINK`, `TRUNCATE`, `MEMINFO` share `native_sys_one_ptr`, selecting the KCORE handler in AC5 | Keep scalar AC2, VM mapping lifetime and error return; focused 256K native test including invalid pointers PASS |
+| Pinned SYSINFO MRES | **V98 -118 folded KCORE words** (9646 -> 9528): resident 122-word `syscall_info.s` becomes three KCORE service jumps plus one permanent-size data word; two read-only information implementations live in new pinned `SINFO` MRES | MINIT installs before user processes/MEMFS, patches both public entries; MEMFS patchable jump and KINIT size publication stay in KCORE; focused 256K test PASS |
 | Shared word operations | `fs_copy_words`/`fs_move_words`/`fs_zero_words` serve MM/VM/module and filesystem providers; overlap-safe move already reuses forward copy | Cannot relocate into detachable filesystem MRES without lifetime solution |
 | TTY packed fields | Halfword canonical-line bases and pending-byte/session routes already packed; DCS and GE MRES both use KCORE pending interfaces | Retain consistent live shared state |
 | P10FOLD | Existing production `-m 2` 21-object census has 31 folds/70 estimated words; `-m 1` yields only +4 more | Don't widen fold hazard surface for four words |
@@ -91,6 +95,38 @@ experiment is installed in current V86 KCORE.
    do not silently enable or remove current swap path to claim size savings.
 
 ### Per-step audit protocol
+
+**V98 accepted cold SYSINFO MRES relocation:** Source/caller audit found
+`sys_procinfo` and `sys_meminfo` were the only runtime implementations in
+`proc/syscall_info.s` (122 raw text words). Callers are the native syscall
+dispatcher; neither is entered by interrupts or KINIT. Replaced the KCORE
+object with **three one-word patchable JRST stubs** (`sys_procinfo`,
+`sys_meminfo`, `sys_memfs_usage_call`) plus **one permanent-size data word**
+(`sys_resident_words_immediate`). All original query logic now lives in
+`proc/syscall_info_mres_v98.s`, linked as `sysinfo-mres-v98.dobj` with two
+exports, installed by `sysinfo_install_minit` before optional providers
+and before runtime. KINIT publishes the total permanent KCORE+MRES word
+count to the KCORE data word; MEMINFO loads it, rather than modifying a
+relocatable MRES instruction. Existing optional MEMFS MINIT still patches
+the permanent KCORE `sys_memfs_usage_call`; module-runtime fixed-binding
+retargeting therefore remains valid. The MRES is pinned and its public
+entry addresses are fixed for the lifetime of all processes.
+
+Fresh folded 256K KCC KCORE **022736 -> 022550 octal**:
+**9646 -> 9528 decimal (-118)**. KCORE syscall-info input DOBJ **122
+text words -> 3 text + 1 data**. Complete 256K full-profile image and
+package link PASS. Focused 256K SIMH `test-daimos-kcore-oneptr-v97`
+extended with actual `dsys_procinfo` validation, nonzero permanent
+MEMINFO count, invalid pointers to *both* services, and recovery: PASS.
+No full testkit, 32K configurations or TSFS tests were run.
+
+**Next high-impact candidate (not yet modified):** `proc_run_block` is
+272 raw text words in `proc_run.s`, with one external runtime caller in
+`syscall_dispatch_pdp6.s` and no KINIT call. Analyze its exact process
+startup/lock and sleep lifetime, inspect MRES/MM callers and shared
+constant references, then consider a *separately named pinned* RUN MRES
+using one permanent KCORE jump. Never unload a package during RUN/EXEC.
+
 
 **V97 accepted six-way single-pointer syscall sharing:** Reviewed this
 register and the V96 9655-word map. In `syscall_dispatch_pdp6.s`, six

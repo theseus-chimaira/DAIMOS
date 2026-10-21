@@ -1,0 +1,196 @@
+/**
+ * @file syscall_info_mres_v98.s
+ * @brief Pinned MRES implementations of cold PROCINFO/MEMINFO queries.
+ *
+ * These routines inspect packed process/file/MM state without depending on
+ * PDP-6 trap mechanics, so the source intentionally has no machine suffix.
+ * KCORE retains the MINIT-patchable MEMFS usage jump, the permanent-size
+ * value updated by KINIT, and two service entry vectors. No duplicate
+ * implementation remains in KCORE.
+ * MEMINFO reuses its destination fields as a temporary filesystem request to
+ * avoid a resident scratch buffer.
+ */
+        .text
+        .globl  kret_zero
+        .globl  kret_neg1
+        .globl  file_table
+        .globl  proc_table
+        .globl  proc_slots
+        .globl  proc_high_slot
+        .globl  proc_comm_words
+        .globl  sys_memfs_usage_call
+        .globl  sys_resident_words_immediate
+        .globl  sys_resident_words_immediate
+        .globl  mm_core_words
+        .globl  proc_snap_words_v72
+
+        .equ    PROC_WORDS,3
+        .equ    PROC_UAREA_WORDS,0411
+        .equ    PROC_STATE_LH_MASK,0700000
+        .equ    PROC_UAREA_RH,0400000
+
+/**
+ * @brief Fill one sys_procinfo record for a live process-table slot.
+ * @param AC1 Slot/PID.
+ * @param AC2 Validated result pointer.
+ * @return Zero or -1 for an invalid/FREE slot.
+ */
+        .globl  sys_procinfo_mres_v98
+sys_procinfo_mres_v98:
+        caml    1,proc_slots
+        jrst    kret_neg1
+        move    4,1                    ; preserve slot
+        move    5,1
+        lsh     5,1
+        add     5,4                    ; 3 * slot
+        add     5,proc_table           ; AC5 -> struct proc
+        hlrz    3,2(5)
+        andi    3,PROC_STATE_LH_MASK
+        jumpe   3,kret_neg1       ; FREE slots are not processes
+        movem   4,(2)                  ; pid is the process-table slot
+        move    3,(5)
+        move    6,3
+        lsh     6,-010
+        andi    6,0377
+        movem   6,1(2)                 ; parent slot
+        hlrz    6,2(5)
+        lsh     6,-017
+        andi    6,07
+        movem   6,2(2)                 ; logical scheduler state
+        hlrz    6,1(5)
+        movem   6,3(2)                 ; logical user words
+        move    3,proc_comm_words+2    ; fallback USER
+        jumpe   4,sys_procinfo_mres_v98_swapper
+        caie    4,1
+        jrst    sys_procinfo_mres_v98_user_comm
+        move    3,proc_comm_words+1
+        jrst    sys_procinfo_mres_v98_comm
+sys_procinfo_mres_v98_swapper:
+        move    3,proc_comm_words
+        jrst    sys_procinfo_mres_v98_comm
+
+; Ordinary process names are already present as basename(argv[0]) in the
+; live startup image.  Reconstruct the first SIXBIT word directly instead of
+; spending one permanent word per process on a duplicate COMM field.
+sys_procinfo_mres_v98_user_comm:
+        move    6,1(5)                 ; logical user words,,image base
+        hrrz    7,6
+        jumpe   7,sys_procinfo_mres_v98_comm    ; swapped/unavailable image: USER
+        ; A process can grow vm_state LH via BRK.  Its startup records do
+        ; not move: the high half of the stable BRK word retains the initial
+        ; image size even after physical reallocation or in-place growth.
+        hlrz    1,(5)                  ; stable u-area base
+        jumpe   1,sys_procinfo_mres_v98_comm
+        hlrz    1,0407(1)              ; original image words
+        subi    1,02000                ; startup metadata offset in image
+        add     1,7
+        hlrz    6,(1)                  ; argc
+        jumpe   6,sys_procinfo_mres_v98_comm
+        move    1,1(1)                 ; argv[0] counted-record offset
+        add     7,1                    ; AC7 -> counted SIXBIT path record
+        hrrz    6,(7)                  ; source character count
+        jumpe   6,sys_procinfo_mres_v98_comm
+        move    0,[POINT 6,1(7)]       ; ILDB pointer before first SIXBIT char
+        setz    3,                     ; COMM accumulator
+        setz    4,                     ; basename chars retained, max six
+sys_procinfo_mres_v98_comm_scan:
+        ildb    1,0
+        caie    1,017                  ; SIXBIT '/'
+        jrst    sys_procinfo_mres_v98_comm_char
+        setz    3,                     ; a later component is the basename
+        setz    4,
+        jrst    sys_procinfo_mres_v98_comm_next
+sys_procinfo_mres_v98_comm_char:
+        caige   4,6
+        jrst    sys_procinfo_mres_v98_comm_append
+        jrst    sys_procinfo_mres_v98_comm_next
+sys_procinfo_mres_v98_comm_append:
+        lsh     3,6
+        ior     3,1
+        aoj     4,
+sys_procinfo_mres_v98_comm_next:
+        sojg    6,sys_procinfo_mres_v98_comm_scan
+        jumpe   4,sys_procinfo_mres_v98_comm    ; malformed trailing slash: USER
+        movei   1,6
+        sub     1,4
+        imuli   1,6
+        lsh     3,0(1)                 ; pad short names with SIXBIT spaces
+sys_procinfo_mres_v98_comm:
+        movem   3,4(2)
+        jrst    kret_zero
+
+/**
+ * @brief Fill runtime memory, MEMFS, process-slot, and file-slot counters.
+ * @param AC1 Validated sys_meminfo pointer.
+ * @return Zero; unavailable optional MEMFS statistics are reported as zero.
+ */
+        .globl  sys_meminfo_mres_v98
+sys_meminfo_mres_v98:
+        move    2,1                    ; validated info pointer
+        movei   1,0                    ; count active FILE slots in place
+        move    3,file_table
+        movei   4,015
+sys_meminfo_mres_v98_file_loop:
+        skipn   (3)
+        jrst    sys_meminfo_mres_v98_file_next
+        addi    1,1
+sys_meminfo_mres_v98_file_next:
+        addi    3,2
+        sojg    4,sys_meminfo_mres_v98_file_loop
+        movem   1,7(2)
+        move    3,mm_core_words
+        movem   3,(2)
+        move    3,sys_resident_words_immediate
+        movem   3,1(2)
+; Reuse info[2..8] as the seven-word filesystem request.  These fields are
+; filled with their final values after the optional MEMFS call returns.
+        setzm   2(2)
+        movei   1,3(2)
+        hrli    1,2(2)
+        blt     1,010(2)
+        movei   1,2(2)
+        push    17,2                    ; MRES calls may clobber AC2
+        pushj   17,sys_memfs_usage_call
+        pop     17,2                    ; restore struct sys_meminfo pointer
+        jumpn   1,sys_meminfo_mres_v98_no_memfs
+        move    4,3(2)
+        move    5,4(2)
+        jrst    sys_meminfo_mres_v98_have_memfs
+sys_meminfo_mres_v98_no_memfs:
+        movei   4,0
+        movei   5,0
+sys_meminfo_mres_v98_have_memfs:
+        ; Commit MEMFS results before reusing AC4 as an index register.
+        movem   4,3(2)
+        movem   5,4(2)
+        ; Count occupied slots and resident process+u-area words.
+        movei   1,0                    ; resident process words
+        movei   3,0                    ; occupied logical slots
+        movei   6,0                    ; slot index
+        move    4,proc_table           ; process pointer; AC4 is caller-scratch
+sys_meminfo_mres_v98_proc_loop:
+        caml    6,proc_high_slot
+        jrst    sys_meminfo_mres_v98_proc_done
+        hlrz    7,2(4)
+        andi    7,PROC_STATE_LH_MASK
+        jumpe   7,sys_meminfo_mres_v98_proc_next
+        addi    3,1
+        move    7,(4)
+        trne    7,PROC_UAREA_RH
+        addi    1,PROC_UAREA_WORDS      ; stable u-area remains while swapped
+        hrrz    7,1(4)
+        jumpe   7,sys_meminfo_mres_v98_proc_next
+        hlrz    7,1(4)
+        add     1,7
+sys_meminfo_mres_v98_proc_next:
+        addi    4,PROC_WORDS
+        aoja    6,sys_meminfo_mres_v98_proc_loop
+sys_meminfo_mres_v98_proc_done:
+        add     1,proc_snap_words_v72  ; resident swapped argv/envp extents
+        movem   1,2(2)
+        movem   3,5(2)
+        move    3,proc_slots
+        movem   3,6(2)
+        movei   3,015
+        movem   3,010(2)
+        jrst    kret_zero

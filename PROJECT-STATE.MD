@@ -1,3 +1,20 @@
+## 2026-10-21 V98 PINNED SYSINFO MRES (-118 KCORE WORDS)
+
+Following `KCORE.MD` protocol, cold generic PROCINFO/MEMINFO query
+implementations have moved from `proc/syscall_info.s` into the new pinned
+`SINFO` MRES. MINIT installs and patches their two permanent KCORE jump
+stubs before any userspace process runs. The optional MEMFS usage jump
+remains fixed in KCORE, preserving its existing MINIT patching and runtime
+relocation binding. KINIT now writes its permanent-resident word count to
+a fixed KCORE data word, rather than patching an instruction in a
+relocatable module. Native syscalls and struct layouts remain unchanged.
+Folded KCC KCORE **022736 -> 022550 octal**, **9646 -> 9528 words (-118)**.
+Full 256K disk-root KCC image build PASS; focused `daimos-testkit`
+`test-daimos-kcore-oneptr-v97` PASS with `PROCINFO`, `MEMINFO` counters,
+resident-size value, low invalid pointers and recovery. No 32K, TSFS or
+full testkit. Strictly below-8192 requires 1337 further words.
+Next candidate: audit `proc_run_block` (272 text words) for pinned MRES.
+
 ## 2026-10-21 V97 SIX-WAY MAPPED SYSCALL TAIL (-9 KCORE WORDS)
 
 Consulted `KCORE.MD` before this optimization. Six single-user-pointer
