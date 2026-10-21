@@ -228,19 +228,6 @@ dsh_exec_function(struct dsh_state *st, const struct dsh_function_store *fn,
 }
 
 static int
-dsh_copy_range(struct dsh_s6 *dst, const struct dsh_s6 *src,
-    unsigned int first, unsigned int last)
-{
-        unsigned int i;
-
-        dsh_s6_clear(dst);
-        for (i = first; i < last; ++i)
-                if (dsh_s6_append(dst, dsh_s6_get(src, i)) != 0)
-                        return -1;
-        return 0;
-}
-
-static int
 dsh_find_equal(const struct dsh_s6 *s)
 {
         unsigned int i;
@@ -375,9 +362,9 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 if (argc == 2U) {
                         eq = dsh_find_equal(&argv[1]);
                         if (eq <= 0 ||
-                            dsh_copy_range(&name, &argv[1], 0U,
+                            dsh_s6_copy_slice(&name, &argv[1], 0U,
                             (unsigned int)eq) != 0 ||
-                            dsh_copy_range(&value, &argv[1],
+                            dsh_s6_copy_slice(&value, &argv[1],
                             (unsigned int)eq + 1U, argv[1].len) != 0)
                                 return 2;
                         return dsh_var_set(st, &name, &value, 0) != 0;
@@ -408,9 +395,9 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                         return 2;
                 eq = dsh_find_equal(&argv[1]);
                 if (eq >= 0) {
-                        if (dsh_copy_range(&name, &argv[1], 0U,
+                        if (dsh_s6_copy_slice(&name, &argv[1], 0U,
                             (unsigned int)eq) != 0 ||
-                            dsh_copy_range(&value, &argv[1],
+                            dsh_s6_copy_slice(&value, &argv[1],
                             (unsigned int)eq + 1U, argv[1].len) != 0)
                                 return 2;
                         return dsh_var_set(st, &name, &value, 1) != 0;
@@ -527,9 +514,9 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 }
                 if (argc != 2U || (eq = dsh_find_equal(&argv[1])) <= 0)
                         return 2;
-                if (dsh_copy_range(&name, &argv[1], 0U,
+                if (dsh_s6_copy_slice(&name, &argv[1], 0U,
                     (unsigned int)eq) != 0 ||
-                    dsh_copy_range(&value, &argv[1], (unsigned int)eq + 1U,
+                    dsh_s6_copy_slice(&value, &argv[1], (unsigned int)eq + 1U,
                     argv[1].len) != 0)
                         return 2;
                 for (i = 0U; i < DSH_MAX_ALIASES; ++i)
@@ -793,17 +780,15 @@ dsh_launch_path(struct dsh_state *st, const struct dsh_s6 *path,
         return 0;
 }
 
+static int dsh_join_path_record(struct dsh_s6 *out,
+    const struct dsh_s6 *prefix, const struct dsh_s6 *name,
+    int glob_semantics);
+
 static int
 dsh_make_path(struct dsh_s6 *out, const struct dsh_s6 *dir,
     const struct dsh_s6 *cmd)
 {
-        dsh_s6_clear(out);
-        if (dsh_s6_append_record(out, dir) != 0)
-                return -1;
-        if (out->len != 0U && dsh_s6_get(out, out->len - 1U) != '/' &&
-            dsh_s6_append(out, '/') != 0)
-                return -1;
-        return dsh_s6_append_record(out, cmd);
+        return dsh_join_path_record(out, dir, cmd, 0);
 }
 
 static const struct dsh_s6 *
@@ -831,7 +816,7 @@ dsh_launch_path_search(struct dsh_state *st, const struct dsh_s6 *pval,
         for (i = 0U; i <= pval->len; ++i) {
                 if (i != pval->len && dsh_s6_get(pval, i) != ':')
                         continue;
-                if (dsh_copy_range(&dir, pval, start, i) != 0 ||
+                if (dsh_s6_copy_slice(&dir, pval, start, i) != 0 ||
                     dsh_make_path(&path, &dir, &argv[0]) != 0)
                         return DSH_ERROR;
                 rc = dsh_launch_path(st, &path, argc, argv, infd, outfd,
@@ -1124,18 +1109,35 @@ dsh_has_wild(const struct dsh_s6 *s, kword_t quote_mask)
         return 0;
 }
 
+/* PATH lookup preserves an existing trailing slash; glob traversal adds a
+ * separator except when its prefix is precisely the root directory.  Both
+ * otherwise perform the same bounded SIXBIT record concatenation. */
 static int
-dsh_path_join(struct dsh_s6 *out, const struct dsh_s6 *prefix,
-    const struct dsh_s6 *name)
+dsh_join_path_record(struct dsh_s6 *out, const struct dsh_s6 *prefix,
+    const struct dsh_s6 *name, int glob_semantics)
 {
         dsh_s6_clear(out);
         if (dsh_s6_append_record(out, prefix) != 0)
                 return -1;
-        if (prefix->len != 0U &&
-            !(prefix->len == 1U && dsh_s6_get(prefix, 0U) == '/') &&
-            dsh_s6_append(out, '/') != 0)
-                return -1;
+        if (prefix->len != 0U) {
+                int insert_slash;
+
+                if (glob_semantics)
+                        insert_slash = !(prefix->len == 1U &&
+                            dsh_s6_get(prefix, 0U) == '/');
+                else
+                        insert_slash = dsh_s6_get(out, out->len - 1U) != '/';
+                if (insert_slash && dsh_s6_append(out, '/') != 0)
+                        return -1;
+        }
         return dsh_s6_append_record(out, name);
+}
+
+static int
+dsh_path_join(struct dsh_s6 *out, const struct dsh_s6 *prefix,
+    const struct dsh_s6 *name)
+{
+        return dsh_join_path_record(out, prefix, name, 1);
 }
 
 static int
@@ -1511,8 +1513,8 @@ dsh_exec_assignment(struct dsh_state *st, const struct dsh_s6 *word,
 
         if (launch_only)
                 return 126;
-        if (dsh_copy_range(&name, word, 0U, eq) != 0 ||
-            dsh_copy_range(&value, word, eq + 1U, word->len) != 0)
+        if (dsh_s6_copy_slice(&name, word, 0U, eq) != 0 ||
+            dsh_s6_copy_slice(&value, word, eq + 1U, word->len) != 0)
                 return DSH_ERROR;
         return dsh_var_set(st, &name, &value, 0) != 0;
 }

@@ -112,12 +112,9 @@ dsh_var_get_range(const struct dsh_state *st, const struct dsh_s6 *in,
     unsigned int first, unsigned int last)
 {
         struct dsh_s6 name;
-        unsigned int i;
 
-        dsh_s6_clear(&name);
-        for (i = first; i < last; ++i)
-                if (dsh_s6_append(&name, dsh_s6_get(in, i)) != 0)
-                        return 0;
+        if (dsh_s6_copy_slice(&name, in, first, last) != 0)
+                return 0;
         return dsh_var_get(st, &name);
 }
 

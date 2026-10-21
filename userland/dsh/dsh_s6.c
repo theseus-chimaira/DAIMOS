@@ -78,6 +78,21 @@ dsh_s6_append_record(struct dsh_s6 *dst, const struct dsh_s6 *src)
         return 0;
 }
 
+/* Copy a bounded character range.  Parameter name extraction and builtin
+ * NAME=VALUE splitting share this routine, including its overflow check. */
+int
+dsh_s6_copy_slice(struct dsh_s6 *dst, const struct dsh_s6 *src,
+    unsigned int first, unsigned int last)
+{
+        unsigned int i;
+
+        dsh_s6_clear(dst);
+        for (i = first; i < last; ++i)
+                if (dsh_s6_append(dst, dsh_s6_get(src, i)) != 0)
+                        return -1;
+        return 0;
+}
+
 int
 dsh_s6_eq_text(const struct dsh_s6 *s, const char *text)
 {

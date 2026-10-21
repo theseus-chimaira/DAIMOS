@@ -111,6 +111,8 @@ int dsh_s6_append(struct dsh_s6 *s, int ch);
 int dsh_s6_get(const struct dsh_s6 *s, unsigned int pos);
 int dsh_s6_copy(struct dsh_s6 *dst, const struct dsh_s6 *src);
 int dsh_s6_append_record(struct dsh_s6 *dst, const struct dsh_s6 *src);
+int dsh_s6_copy_slice(struct dsh_s6 *dst, const struct dsh_s6 *src,
+    unsigned int first, unsigned int last);
 int dsh_s6_eq_text(const struct dsh_s6 *s, const char *text);
 int dsh_s6_eq_packed(const struct dsh_s6 *s, unsigned int len,
     kword_t word0, kword_t word1);
