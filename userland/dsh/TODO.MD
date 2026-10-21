@@ -1,5 +1,15 @@
 # DSH TODO
 
+## 2026-10-21 V28 SHARED QUOTE-MASK LOOP
+
+Combined repeated quote-mask propagation in `dsh_expand_quoted` into one
+shared branch.  GCC image 032307 -> 032104 octal, saving 0203; BSS remains
+012755.  SIMH angle-expansion suite 25/25; full conformance unchanged at
+113/115 (the two prior compact HELP format discrepancies).  No script,
+job-control or interactive features removed.  Next: independently gate TAB
+completion for the 32K GCC build while keeping line editing and scripting.
+
+
 ## 2026-10-21 V27 ANGLE PARAMETER EXPANSION
 
 Implemented the bounded, nonrecursive `$<NAME>` and `:-`, `:=`, `:+`, `:?`

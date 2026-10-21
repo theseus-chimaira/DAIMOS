@@ -1,3 +1,15 @@
+## 2026-10-21 DSH V28 SHARED QUOTE-MASK EMISSION
+
+`dsh_expand_quoted` now uses a single post-expansion quote-mask pass for
+angle, numbered, special, positional-list and named variables, rather than
+generating separate equivalent loops for each branch.  This retains the
+literal-dollar path and exact globbing quote masks.  GCC image shrinks from
+032307 to 032104 octal words (0203 saved), with BSS unchanged at 012755.
+The targeted v27 angle-expansion SIMH suite passes 25/25, and the full DSH
+suite is unchanged at 113/115: its only failures remain the preexisting
+compact HELP ECHO and HELP DAS assertions.  No overlays or limits changed.
+The strict below-030000 text goal still requires 02105 octal words saved.
+
 ## 2026-10-21 DSH V27 ANGLE PARAMETER EXPANSION
 
 On top of the v26 shared-ED/loop-control experiment, DSH's lexer and
