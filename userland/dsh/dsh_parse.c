@@ -230,6 +230,22 @@ dsh_alloc_node(struct dsh_parser *p, int type, unsigned int *out)
         return DSH_OK;
 }
 
+/* Every binary operator stores the same two child links.  Keep the
+ * allocation/overflow path shared across PIPE, AND, OR and command lists. */
+static int
+dsh_join_binary(struct dsh_parser *p, int type, unsigned int left,
+    unsigned int right, unsigned int *out)
+{
+        int rc;
+
+        rc = dsh_alloc_node(p, type, out);
+        if (rc != DSH_OK)
+                return rc;
+        p->nodes[*out].left = left;
+        p->nodes[*out].right = right;
+        return DSH_OK;
+}
+
 /* One token-to-AST transfer serves ordinary commands, FOR items, function
  * names and CASE arms.  Keep text and both quotation masks together: a
  * copied literal without its mask would silently enable expansions/globs. */
@@ -691,11 +707,9 @@ dsh_parse_pipeline(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                 rc = dsh_parse_command(p, stops, &right);
                 if (rc != DSH_OK)
                         return rc;
-                rc = dsh_alloc_node(p, DSH_N_PIPE, &node);
+                rc = dsh_join_binary(p, DSH_N_PIPE, left, right, &node);
                 if (rc != DSH_OK)
                         return rc;
-                p->nodes[node].left = left;
-                p->nodes[node].right = right;
                 left = node;
         }
         *out = left;
@@ -751,11 +765,9 @@ dsh_parse_andor(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                 rc = dsh_parse_notpipe(p, stops, &right);
                 if (rc != DSH_OK)
                         return rc;
-                rc = dsh_alloc_node(p, type, &node);
+                rc = dsh_join_binary(p, type, left, right, &node);
                 if (rc != DSH_OK)
                         return rc;
-                p->nodes[node].left = left;
-                p->nodes[node].right = right;
                 left = node;
         }
         *out = left;
@@ -797,11 +809,10 @@ dsh_parse_list(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                 if (result == DSH_NONE) {
                         result = current;
                 } else {
-                        rc = dsh_alloc_node(p, DSH_N_LIST, &node);
+                        rc = dsh_join_binary(p, DSH_N_LIST, result,
+                            current, &node);
                         if (rc != DSH_OK)
                                 return rc;
-                        p->nodes[node].left = result;
-                        p->nodes[node].right = current;
                         result = node;
                 }
                 while (p->pos < p->ntokens &&
@@ -821,11 +832,10 @@ dsh_parse_list(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                         /* A trailing separator already committed current. */
                         if (p->nodes[result].type != DSH_N_LIST ||
                             p->nodes[result].right != current) {
-                                rc = dsh_alloc_node(p, DSH_N_LIST, &node);
+                                rc = dsh_join_binary(p, DSH_N_LIST,
+                                    result, current, &node);
                                 if (rc != DSH_OK)
                                         return rc;
-                                p->nodes[node].left = result;
-                                p->nodes[node].right = current;
                                 result = node;
                         }
                 }
