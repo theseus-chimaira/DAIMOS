@@ -64,18 +64,25 @@ dsh_s6_copy(struct dsh_s6 *dst, const struct dsh_s6 *src)
         return 0;
 }
 
-/* Append a whole SIXBIT record without allocating another record.  Used
- * by expansion and path construction, where the same checked per-character
- * loop previously appeared in separate translation units. */
-int
-dsh_s6_append_record(struct dsh_s6 *dst, const struct dsh_s6 *src)
+/* One checked SIXBIT slice append serves whole-record concatenation and
+ * bounded range extraction, without heap storage or a second copy loop. */
+static int
+dsh_s6_append_slice(struct dsh_s6 *dst, const struct dsh_s6 *src,
+    unsigned int first, unsigned int last)
 {
         unsigned int i;
 
-        for (i = 0U; i < src->len; ++i)
+        for (i = first; i < last; ++i)
                 if (dsh_s6_append(dst, dsh_s6_get(src, i)) != 0)
                         return -1;
         return 0;
+}
+
+/* Append a whole SIXBIT record, used by expansion and path construction. */
+int
+dsh_s6_append_record(struct dsh_s6 *dst, const struct dsh_s6 *src)
+{
+        return dsh_s6_append_slice(dst, src, 0U, src->len);
 }
 
 /* Copy a bounded character range.  Parameter name extraction and builtin
@@ -84,13 +91,8 @@ int
 dsh_s6_copy_slice(struct dsh_s6 *dst, const struct dsh_s6 *src,
     unsigned int first, unsigned int last)
 {
-        unsigned int i;
-
         dsh_s6_clear(dst);
-        for (i = first; i < last; ++i)
-                if (dsh_s6_append(dst, dsh_s6_get(src, i)) != 0)
-                        return -1;
-        return 0;
+        return dsh_s6_append_slice(dst, src, first, last);
 }
 
 int
