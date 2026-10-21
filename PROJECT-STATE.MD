@@ -1,3 +1,41 @@
+## 2026-10-21 V88 KCORE BOTTOM-UP PASS 1 — SHORT WRAPPERS
+
+First source-level review of the V87 short-entry inventory (current V86
+KCORE 9674 words) finds no safe, meaningful deletion in the first group:
+
+- `mm_pin`/`mm_unpin` are two-word argument setup plus tail-branches
+  into `mm_pin_adjust`, preserving shared validation/adjustment.
+- `file_unlink`/`file_rmdir` are small flag selectors sharing `file_remove`;
+  `vfs_create` selects a provider op and shares `vfs_create_common`;
+  `vfs_mount` shares `vfs_mount_common`.  Inline duplication is not a
+  demonstrated shrink.
+- `vfs_name_is6` uses four compact compare/return instructions and is
+  shared by both dot and dot-dot pathname tests.
+- `proc_slot_ptr` computes the three-word process table stride and is
+  called from EXEC, process scheduling, and several process-runtime sites.
+- `fs_copy_words`, `fs_move_words`, `fs_zero_words` are common BLT/memmove
+  utilities used by filesystem MRES, MM, VM and module runtime.  The move
+  code already dispatches forward-copy cases to `fs_copy_words`; moving
+  these into a removable filesystem package is unsafe with VM/module
+  dependencies.  Some caller source files are inactive on PDP-6, so
+  source grep counts are not runtime call frequencies.
+- Two-word DSK/DRM KCORE patchable vectors and MonitorFS dispatch are
+  service ABI, not redundant hardware-driver implementations.
+
+No code changed or new fold accepted.  Next bottom-up tranche is small
+TTY route/state getters and process selectors, with explicit callsite and
+MINIT/MRES address-patching review before any proposed merge.  Do not
+resume TSFS or 32K tests.
+
+Initial TTY helper check: `proc_tty_line_base_get`/`set` access packed
+18-bit halves of the same `proc_tty_line_bases` words, and are called by
+the canonical-line code in `proc.c` plus the TTY MRES path.  Both functions
+already use compact indexed halfword operations.  Consolidating their
+different read/write paths would require extra mode dispatch; moving
+them wholesale to TTY MRES would require checking the resident canonical
+input call chain and how module attachment patches service addresses.
+Neither action is justified without a measured net KCORE reduction.
+
 ## 2026-10-21 V87 KCORE LINKED SYMBOL INVENTORY — BOTTOM-UP REVIEW
 
 Generated a full linker-visible inventory from the accepted V86
