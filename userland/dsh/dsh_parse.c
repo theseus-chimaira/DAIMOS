@@ -365,9 +365,13 @@ dsh_parse_simple(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                 }
                 if (DSH_TOKEN_TYPE(&p->tokens[p->pos]) != DSH_T_WORD)
                         break;
-                if (dsh_tok_kw(&p->tokens[p->pos]) == DSH_K_AND ||
-                    dsh_tok_kw(&p->tokens[p->pos]) == DSH_K_OR)
-                        break;
+                {
+                        unsigned int keyword;
+
+                        keyword = dsh_tok_kw(&p->tokens[p->pos]);
+                        if (keyword == DSH_K_AND || keyword == DSH_K_OR)
+                                break;
+                }
                 if (n->argc >= DSH_PARSE_MAX_WORDS)
                         return dsh_mark_error(p, DSH_E_OVERFLOW,
                             DSH_PE_WORD);
@@ -726,6 +730,7 @@ dsh_parse_andor(struct dsh_parser *p, unsigned int stops, unsigned int *out)
         unsigned int left;
         unsigned int right;
         unsigned int node;
+        unsigned int keyword;
         int type;
         int rc;
 
@@ -735,9 +740,10 @@ dsh_parse_andor(struct dsh_parser *p, unsigned int stops, unsigned int *out)
         while (p->pos < p->ntokens) {
                 if (dsh_at_stop(p, stops))
                         break;
-                if (dsh_tok_kw(&p->tokens[p->pos]) == DSH_K_AND)
+                keyword = dsh_tok_kw(&p->tokens[p->pos]);
+                if (keyword == DSH_K_AND)
                         type = DSH_N_AND;
-                else if (dsh_tok_kw(&p->tokens[p->pos]) == DSH_K_OR)
+                else if (keyword == DSH_K_OR)
                         type = DSH_N_OR;
                 else
                         break;
