@@ -1,3 +1,35 @@
+## 2026-10-22 DSH SIMH SOURCE-PROVENANCE CORRECTION (OVERRIDES V42/V43/V44 CLAIMS)
+
+The earlier V42 115/115 SIMH acceptance claim and the attribution of five
+V43 failures to `dsh_split_assignment` are **withdrawn**.  The SIMH testkit
+build directories named `gcc-shared-s6slice-core-20261021-v42` and
+`gcc-split-assignment-20261021-v43` contain BYTE-IDENTICAL DSH DXRs
+(SHA-256 f37bd05faadd8eed...), both the V43 text 030636 image.  Their
+KCORE, KINIT, ECHO/CAT DXRs and original D6FS disk files are also bytewise
+identical.  The V42 standalone compiler artifact is different
+(SHA-256 a688d14505a137e3..., text 030645), and V44 is bytewise identical
+only to that *standalone* V42 file, not to the mislabeled V42 testkit image.
+V44 is therefore not a completed 115-case SIMH acceptance.  A freshly built,
+provenance-checked V44 fixture exhibited intermittent external-command
+lookup failures after other commands.  Likewise the same V43 test image
+both passed and failed process tests under different isolated command
+histories: a 29-probe prefix followed by `ECHO PIPEOK ! CAT` passed, while
+adding `CD / ! CAT` failed in one run, but a repeated longer prefix already
+had failures at HELP before that operation.  No isolated source-level cause
+has yet been established.  Guest invalid-UUO diagnostics recorded a zero
+instruction and hardware return word `340000000004` in some failed child
+processes; investigate process entry/return, memory and launcher state.
+
+The latest **provenance-verified FULL acceptance is V41**: standalone and
+installed DXR SHA-256 dea1b5ea3084ce8e..., image/BSS 030657/012755,
+171/171 isolated SIMH probes.  Strictly below 030000 still requires 0660
+(octal) words (432 decimal).  V42/V44 030645 and V43 030636 are compiled
+candidates, not conformance-accepted.  The previously described V44 revert
+is retained as a diagnostic experiment, not proof of a compiler fault.
+The testkit now includes a strict reference-versus-installed DXR byte/hash
+check, committed as `6c41bb7`.  This section supersedes the acceptance and
+root-cause assertions in the dated V39-V44 summaries below.
+
 ## 2026-10-21 DSH V39-V44 SIXBIT CODE SHARING / PROCESS REGRESSION
 
 This stage continued from the verified V37 default GCC image/BSS

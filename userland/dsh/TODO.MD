@@ -1,3 +1,19 @@
+## 2026-10-22 PRIORITY: SIMH PROVENANCE AND PROCESS FAILURE
+
+Correction to V39-V44 acceptance notes below: the testkit image labeled
+V42 in fact contains V43's executable; a 115/115 result obtained from it
+cannot certify the genuine V42 or reverted V44 standalone binaries.  The
+same installed V43 executable and root disk have passed and failed under
+separate isolated run histories.  No V43 source/compiler fault is proven.
+The genuine V44 fixture exhibited external-command lookup failures in one
+long test but succeeded in a shorter diagnostic run.  High priority: obtain
+minimal reproducible process/loader/pipe regression with a fingerprint-
+checked image, isolate process PC/UUO `340000000004`, and fix the underlying
+cause.  The *last fully accepted* revision remains V41, image 030657,
+BSS 012755 (octal), requiring 0660 additional image words to get strictly
+below 030000.  Do not claim V42/V43/V44 accepted until correctly rebuilt
+and fully tested.  Testkit provenance check: commit 6c41bb7.
+
 # DSH TODO
 
 ## 2026-10-21 V39-V44 ACCEPTANCE / HIGH-PRIORITY V43 REGRESSION
