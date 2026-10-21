@@ -112,6 +112,34 @@ mach_invalid_context_unset:
         setz 4,
 mach_invalid_context_show:
         pushj 17,mach_invalid_oct36
+        ; On the invalid-UUO path only, inspect the child's physical image:
+        ; VM state word 1 RH is its physical relocation base and logical
+        ; entry 020 maps to base+020.  Preserve that base in AC10 because
+        ; mach_invalid_putchar uses AC2 scratch.
+        setz 10,
+        move 2,proc_current_ptr
+        jumpe 2,mach_invalid_entry_base_ready
+        hrrz 10,1(2)
+mach_invalid_entry_base_ready:
+        movei 1,040
+        pushj 17,mach_invalid_putchar
+        move 4,10
+        pushj 17,mach_invalid_oct36
+        ; Dump three consecutive entry instructions, or zeros when unmapped.
+        movei 11,020
+mach_invalid_entry_word_loop:
+        movei 1,040
+        pushj 17,mach_invalid_putchar
+        setz 4,
+        jumpe 10,mach_invalid_entry_word_output
+        move 4,10
+        add 4,11
+        move 4,(4)
+mach_invalid_entry_word_output:
+        pushj 17,mach_invalid_oct36
+        addi 11,1
+        caige 11,023
+        jrst mach_invalid_entry_word_loop
         movei 1,015
         pushj 17,mach_invalid_putchar
         movei 1,012
