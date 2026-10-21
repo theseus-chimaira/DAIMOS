@@ -1,3 +1,25 @@
+## 2026-10-21 KERNEL/STANDALONE REGRESSION GROUP 028 V123 ACCEPTED
+
+The independent non-size **group 028** test now passes KCC and GCC on
+fresh 256K production PDP-6 disk images. Its previous three-second CTY
+watcher incorrectly required an interactive `LOGIN:` prompt on CTY;
+the actual interactive LOGIN/DSH transport is DCS0. The versioned testkit
+v121 replacement requires the DAIMON version banner and BSET initialization
+on CTY, ROOT login through DCS0, a fresh DSH prompt, and successful
+external ECHO and PWD commands. Both compiler builds passed both probes.
+
+The standalone PDP-6 bootloader suite was rerun independently and passed
+**26/26** DSK/PTR/MTC/DTC cases, with zero failures. This was a test-harness
+contract correction; no DAIMOS kernel source changed. The functional
+DSH ceiling was explicitly set to `037000`. Strict 32K/size acceptance
+remains deferred.
+
+Evidence is `$TMPDIR/daimos-kernel-group028-kcc-v121.log`,
+`$TMPDIR/daimos-kernel-group028-gcc-v122.log`, and
+`$TMPDIR/daimos-stand-group028-v122.txt`. **Group 027** (DECtape/TSFS)
+is deferred by user request. Groups **029/030** and the complete
+non-size matrix remain open.
+
 ## 2026-10-21 PDP-6 SIMH CONSOLE PC / TRAP GROUP 022 V120 ACCEPTED
 
 The independent 256K non-size group-022 trap-frequency retest now passes
