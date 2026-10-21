@@ -1,3 +1,15 @@
+## 2026-10-21 V90 CANONICAL KCORE OPTIMIZATION REGISTER
+
+`KCORE.MD` is the authoritative, continuously consulted KCORE optimization
+document (as already required by the older TODO). Its new V90 lead section
+records active KCORE-only 8K acceptance, current V86 9674-word size,
+previously verified optimizations (with measured versus object-only
+comparisons distinguished), open bottom-up candidates, nonremovable shared
+ABI and MRES/KINIT lifetime dependencies, deferred packed-process
+experiments, and a mandatory read/measure/record process for each stage.
+Older 32K and permanent-residency directions in the historical document
+sections are explicitly superseded. No KCORE source change in V90.
+
 ## 2026-10-21 V89 KCORE BOTTOM-UP PASS 2 — TTY, SCHEDULER, VFS
 
 Second source/caller audit, without a code change:

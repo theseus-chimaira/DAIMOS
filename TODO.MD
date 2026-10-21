@@ -1,3 +1,9 @@
+- [ ] **V90 KCORE work authority:** consult `KCORE.MD` V90 register before
+  *each* KCORE analysis or patch; maintain measured baseline, completed
+  optimizations, proposed caller/lifetime audit, active candidates and
+  post-fold KCORE deltas there.  Historical 32K/total-residency gates and
+  old MonitorFS default-off policy are superseded.
+
 ## V72 resident startup snapshot follow-ups (2026-10-20)
 
 - [x] **V86:** default MonitorFS to MRES, replacing its 1039-word KCORE

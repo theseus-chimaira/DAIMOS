@@ -1,5 +1,114 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## V90 — AUTHORITATIVE KCORE OPTIMIZATION REGISTER (2026-10-21)
+
+**Read this section and the relevant older entries before every KCORE
+analysis, experiment, or implementation step.** Record the candidate,
+baseline, callers/lifetime, proposed transformation, *linked KCORE delta*,
+tests, status, and commit here at each step. `PROJECT-STATE.MD` retains
+architecture/current-state summaries; `pdp10-doc` receives verified
+completed results; KCORE decisions and ongoing work belong **here**.
+
+### Active requirements and baseline
+
+- Objective: **KCORE alone** strictly below **8192 decimal words**
+  (`020000` octal words). The accepted fresh V86 KCC 256K full disk-root
+  build has `__kcore_low_end=023002` and **9674** linked KCORE words;
+  **1483** must be saved to fall strictly below 8K (1482 to reach 8192).
+- MRES size and whole-KCORE+MRES permanent-address gate are **informational**
+  during this phase, not optimization blockers; the old total limit can be
+  explicitly enabled with `PERMANENT_SIZE_ENFORCE=1`.
+- **No 32K machine configurations/tests**, no TSFS work, and no experiments
+  altering either subsystem while this KCORE analysis is in progress.
+- Optimize RAM first, then speed; preserve functionality and existing ABI.
+  No workarounds and no speculative module removals. Prefer genuine KCORE
+  removal into a correctly pinned MRES or disposable KINIT when lifecycle
+  proves it safe. Verify folded *linked* delta, not DOBJ totals.
+
+### Already optimized — do not rediscover as unimplemented opportunities
+
+| Area | Confirmed state / result | Remaining restriction |
+| --- | --- | --- |
+| MonitorFS | V86 moves full implementation into pinned MRES, leaves nine KCORE dispatch words; **KCORE 10702 -> 9674, -1028**; fresh 256K KCC image and DSH 115/115 PASS; prior GCC 48K MonitorFS/swap probes PASS | Do not remove VFS-facing dispatch or the MRES pin |
+| Legacy VFS mount arrays | v14 audit removed dead eight-word legacy BSS arrays following KINIT MM-backed slab migration; removed redundant early D6FS reader slot/store; historical **nine-word net** saving | Retain live `vfs_mount_policy` and MM slab bases |
+| DSK270 / DRM236 | Two-word KCORE dispatch per controller, validation/conversion relocated to optional MRES; **33 pre-fold KCORE-object words** removed, not independently measured link savings | MINIT patches endpoints; preserve controller-absent behavior |
+| Process startup snapshots | V72 replaced obsolete BACKSTORE startup reader with exact-size pinned argc/argv/envp snapshot; KCC linked KCORE `025723 -> 024754`, **-487 words** in that historical comparison | Retain swap-out/in atomicity, descriptor lifetime and live metadata |
+| MM assembler | Earlier recovery restored compact PDP-6 MM implementation with **38-word historical linked reduction** in a GCC isolated comparison | Don't reimport alternative stale MM source blindly |
+| VFS mount policy | Four-slot readonly bitmap replaced with packed policy word, and mount/MM slab work accepted in earlier states | Keep live reservation/ownership semantics |
+| Shared short KCORE wrappers | V88/V89 verified `mm_pin/unpin`, `file_unlink/rmdir`, `vfs_create/mount`, scheduler selectors, `vfs_chmod/chown/utime` already share common implementations | Inlining often duplicates code; measure before changing |
+| Shared word operations | `fs_copy_words`/`fs_move_words`/`fs_zero_words` serve MM/VM/module and filesystem providers; overlap-safe move already reuses forward copy | Cannot relocate into detachable filesystem MRES without lifetime solution |
+| TTY packed fields | Halfword canonical-line bases and pending-byte/session routes already packed; DCS and GE MRES both use KCORE pending interfaces | Retain consistent live shared state |
+| P10FOLD | Existing production `-m 2` 21-object census has 31 folds/70 estimated words; `-m 1` yields only +4 more | Don't widen fold hazard surface for four words |
+| Process/process-I/O foundations | Existing compact three-word descriptors, intrusive runqueue, boot-selected slots, word-only eight-word pipe | Treat as accepted foundations; profile before altering |
+
+Historical size comparisons may use different compilers, profiles and
+revision bases. **Do not add their savings together** or assume a staged
+experiment is installed in current V86 KCORE.
+
+### Current candidate register — analyze bottom-up, but prioritize impact
+
+1. **[OPEN] KCORE VFS/file-runtime and syscall common paths:** analyze
+   `vfs_readonly`, mutation and file path setup, syscall argument packing,
+   duplicate validation/tails and potential common functions. Check KINIT,
+   FS-provider MRES and boot callers. `file_runtime` ≈1175 and syscall
+   dispatch ≈827 raw words in current build, *not* estimated savings.
+2. **[OPEN] Process scheduling/control:** `proc_pdp6` ≈2170 raw words;
+   investigate cold process-management paths and call-site commonality,
+   independently of latency-critical PI/scheduler hot paths. `proc_swap`
+   ≈729 words; packed-process plans are staged/inactive, not a free or
+   currently safe substitute for disk swap.
+3. **[OPEN] KINIT lifetime:** check every initialization-only KCORE helper
+   and MINIT registration path; move only when no post-KINIT references,
+   patchable entries or persistent state remain.
+4. **[OPEN] KCORE/MRES duplicate implementations:** prove real duplicate
+   *linked* code, not similar interface names; retain minimal patchable
+   entrypoints for optional removable drivers, and preserve pinned package
+   lifetimes for services with open handles.
+5. **[OPEN] Shared sequences/folding:** scan same-domain common tails and
+   relocation-safe cold cross-domain donors using P10FOLD read-only mode.
+   External-anchor folding only with >~20-word net benefit, no KCORE growth,
+   hot JRST regression, or removal of module independence.
+6. **[OPEN] Small TTY/PI/route helpers:** keep packed-state and semantic
+   checks; evaluate merges only after proving a net linked saving.
+7. **[DEFERRED] Packed-process eviction and D6CODEC integration:** design
+   stages in `design/kcore-packed-process-v1.md` are explicitly inactive;
+   do not silently enable or remove current swap path to claim size savings.
+
+### Per-step audit protocol
+
+1. Re-read this register, `PROJECT-STATE.MD`, current V86/V-later KCORE
+   link map and relevant historical designs before touching a candidate.
+2. Inspect exact source and symbol/reference paths in KCORE, installed
+   MRES and KINIT. Distinguish interrupt/indirect/MINIT patched entries
+   from apparently unreferenced functions. Classify cold/boot-only vs hot.
+3. Estimate gross removable words, new dispatch/call/relocation overhead,
+   and any retained state. Reject obvious non-savings before experimenting.
+4. For a viable change, produce a versioned isolated build and compare
+   both compiler configurations when useful; require a **folded KCORE map**
+   and >32K functional acceptance in daimos-testkit. Do not run 32K tests.
+5. Update candidate and verified-completed tables **here first**; document
+   confirmed results in `PROJECT-STATE.MD` and `pdp10-doc` after acceptance.
+   Commit early; attempt push; do not claim remote success without proof.
+
+### Source documents and inventories
+
+- `design/kcore-gcc-size-audit-v10.md`: older GCC/lowmem object audit;
+  its MonitorFS priority is completed, and old 32K instructions are stale.
+- `design/kcore-legacy-audit-20261016-v14.md`: precise dead-array removal,
+  live aliases, KINIT cutover and MM-slab reader lifetime requirements.
+- `design/monitorfs-mres-extraction-v13.md`: historical optional extraction;
+  superseded by verified V86 default-enabled MRES.
+- `design/kcore-packed-process-v1.md`: staged packed eviction/restore,
+  not active production KCORE; its atomicity dependencies remain important.
+- `pdp10-doc/STATUS/DAIMOS-KCORE-FUNCTION-INVENTORY-20261021-V87.MD`
+  and `.TSV`: linker-visible bottom-up inventory, with *upper-bound* entry
+  spans, aliases and incomplete relocation call counts.
+
+### Historical sections below
+
+Entries below are preserved for provenance. Their older RAM/32K acceptance
+policies and MonitorFS default-off decisions are **superseded by V90**.
+
 ## 2026-10-20 V76: MonitorFS MRES cost and live-swap acceptance
 
 The optional pinned MonitorFS MRES has now passed both resident namespace
