@@ -32,6 +32,8 @@
         .globl pdp10_pi_handler_return
         .globl kret_ok
         .globl kret_busy
+        .globl mfsdev_io_in
+        .globl mfsdev_io_out
 
 /**
  * @brief Service CTY PI4 input and output events.
@@ -157,11 +159,15 @@ cty_putchar_ready:
         movei 2,0200000
 cty_putchar_wait_done:
         move 3,cty_tx_pending
-        jumpe 3,kret_ok
+        jumpe 3,cty_putchar_complete
         sojg 2,cty_putchar_wait_done
         setzm cty_tx_pending
 cty_putchar_timeout:
         jrst    kret_neg2
+cty_putchar_complete:
+        ; Account a character only after PI4 confirms transmission.
+        aos mfsdev_io_out
+        jrst kret_ok
 
 /**
  * @brief Return one seven-bit input character, sleeping until one is ready.
@@ -180,6 +186,8 @@ cty_getchar_loop:
         skipg cty_rx_count
         jrst cty_getchar_empty
         pushj 17,cty_rx_get
+        ; Count delivered input, not bytes merely queued by PI4.
+        aos mfsdev_io_in
         cono 0120,4                    ; re-arm a held hardware character
         popj 17,
 cty_getchar_empty:
@@ -187,6 +195,7 @@ cty_getchar_empty:
         jrst cty_getchar_sleep
         datai 0120,1
         andi 1,0177
+        aos mfsdev_io_in
         cono 0120,4
         popj 017,
 cty_getchar_sleep:
