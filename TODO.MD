@@ -1,5 +1,13 @@
 ## V72 resident startup snapshot follow-ups (2026-10-20)
 
+- [ ] **V83 KCORE/MRES permanent-size gate:** current full KCC disk-root
+  baseline has `KCORE+MRES=040070` octal and last permanent address
+  `040147`, exceeding the `040000` limit by 103 addresses; at least
+  **104 decimal resident words** must be saved.  The mixed option with
+  BLOCKSET has last address `040210`.  Seek genuinely optional code or
+  relocation-safe common implementations: moving code into already pinned
+  MRES alone does not free RAM.  Report both total residency and KCORE.
+
 - [x] **P1 V74 real swapped-process resume:** testkit commit `844e497`
   exercises `STATE=SWAP`, NAME/CMDLINE/ENVIRONMENT, wake, and WAIT on 48K.
   **Resolved V75:** the previous slot-0 stack was too small for nested

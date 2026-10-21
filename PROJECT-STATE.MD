@@ -1,3 +1,32 @@
+## 2026-10-21 V83 KCORE/MRES BASELINE AUDIT — NO CODE MOVE YET
+
+Returned to KCORE modularization using the latest V79 KCC full-profile
+disk-root image and the real `permanent-size` gate.  `KCORE=024716`
+octal (10702 decimal), `KCORE+MRES=040070` (16440 decimal), and
+`PERMANENT_LAST=040147` (16487 decimal).  The configured `040000`
+octal permanent-address limit is exceeded by 103 decimal addresses
+(104 words must be freed to bring the last address below the limit).
+The optional second BLOCKSET installation increases the reported last
+address to `040210`; **neither full-profile configuration is size-green**.
+This is not a fresh kernel regression diagnosis: earlier full-profile
+size-gate overruns are documented, whereas smaller disk/lowmem-root
+combinations have passed.  A successful 256K SIMH boot does not override
+the independent permanent-address gate.
+
+Current major full-profile MRES package sizes (installed words):
+`d6fs=2168`, `memfs=1408`, `dpy=444`, `tape=375`, `dsk=230`,
+`tty=165`, `drm=140` (decimal).  The `syscall_info.s` routines
+`sys_procinfo`/`sys_meminfo` reside in KCORE and use process, MM, file,
+and MEMFS state.  Moving them into another *always resident* MRES does
+not by itself save RAM and may add dispatch cost; no speculative
+relocation was performed.  Future candidates must be evaluated with
+actual package selection, dispatch linkage, link size and boot tests.
+
+**Next optimization target:** identify truly optional or mutually
+exclusive services in the full profile, or shared relocation-safe code
+with a net removal of at least 104 resident words.  Do not trade a
+smaller KCORE for a larger total KCORE+MRES.  TSFS work stays stopped.
+
 ## 2026-10-21 V82 PRIORITY RESET — KCORE MODULARIZATION
 
 TSFS work is **stopped by user instruction**.  The future design follows
