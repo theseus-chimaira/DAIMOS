@@ -64,6 +64,20 @@ dsh_s6_copy(struct dsh_s6 *dst, const struct dsh_s6 *src)
         return 0;
 }
 
+/* Append a whole SIXBIT record without allocating another record.  Used
+ * by expansion and path construction, where the same checked per-character
+ * loop previously appeared in separate translation units. */
+int
+dsh_s6_append_record(struct dsh_s6 *dst, const struct dsh_s6 *src)
+{
+        unsigned int i;
+
+        for (i = 0U; i < src->len; ++i)
+                if (dsh_s6_append(dst, dsh_s6_get(src, i)) != 0)
+                        return -1;
+        return 0;
+}
+
 int
 dsh_s6_eq_text(const struct dsh_s6 *s, const char *text)
 {

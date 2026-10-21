@@ -91,17 +91,6 @@ dsh_state_init(struct dsh_state *st, int argc, kword_t **argv,
 }
 
 static int
-dsh_append_s6(struct dsh_s6 *dst, const struct dsh_s6 *src)
-{
-        unsigned int i;
-
-        for (i = 0U; i < src->len; ++i)
-                if (dsh_s6_append(dst, dsh_s6_get(src, i)) != 0)
-                        return -1;
-        return 0;
-}
-
-static int
 dsh_append_uint(struct dsh_s6 *out, unsigned int value)
 {
         char digits[12];
@@ -202,7 +191,7 @@ dsh_expand_angle(struct dsh_state *st, const struct dsh_s6 *in,
                 (void)u_crlf(2);
                 return -1;
         }
-        return value == 0 ? 0 : dsh_append_s6(out, value);
+        return value == 0 ? 0 : dsh_s6_append_record(out, value);
 }
 
 int
@@ -251,7 +240,7 @@ dsh_expand_quoted(struct dsh_state *st, const struct dsh_s6 *in,
                                 value = &st->args[n - 1U];
                         else
                                 value = 0;
-                        if (value != 0 && dsh_append_s6(out, value) != 0)
+                        if (value != 0 && dsh_s6_append_record(out, value) != 0)
                                 return -1;
                         goto mark_expansion;
                 }
@@ -285,7 +274,7 @@ dsh_expand_quoted(struct dsh_state *st, const struct dsh_s6 *in,
                                 if (a != 0U &&
                                     dsh_s6_append(out, ' ') != 0)
                                         return -1;
-                                if (dsh_append_s6(out, &st->args[a]) != 0)
+                                if (dsh_s6_append_record(out, &st->args[a]) != 0)
                                         return -1;
                         }
                         goto mark_expansion;
@@ -316,7 +305,7 @@ dsh_expand_quoted(struct dsh_state *st, const struct dsh_s6 *in,
                         last = i;
                 }
                 value = dsh_var_get_range(st, in, first, last);
-                if (value != 0 && dsh_append_s6(out, value) != 0)
+                if (value != 0 && dsh_s6_append_record(out, value) != 0)
                         return -1;
 mark_expansion:
                 /* Every expansion inherits the quoting of its initiating

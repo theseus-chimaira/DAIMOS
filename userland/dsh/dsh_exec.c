@@ -797,19 +797,13 @@ static int
 dsh_make_path(struct dsh_s6 *out, const struct dsh_s6 *dir,
     const struct dsh_s6 *cmd)
 {
-        unsigned int i;
-
         dsh_s6_clear(out);
-        for (i = 0U; i < dir->len; ++i)
-                if (dsh_s6_append(out, dsh_s6_get(dir, i)) != 0)
-                        return -1;
+        if (dsh_s6_append_record(out, dir) != 0)
+                return -1;
         if (out->len != 0U && dsh_s6_get(out, out->len - 1U) != '/' &&
             dsh_s6_append(out, '/') != 0)
                 return -1;
-        for (i = 0U; i < cmd->len; ++i)
-                if (dsh_s6_append(out, dsh_s6_get(cmd, i)) != 0)
-                        return -1;
-        return 0;
+        return dsh_s6_append_record(out, cmd);
 }
 
 static const struct dsh_s6 *
@@ -1134,20 +1128,14 @@ static int
 dsh_path_join(struct dsh_s6 *out, const struct dsh_s6 *prefix,
     const struct dsh_s6 *name)
 {
-        unsigned int i;
-
         dsh_s6_clear(out);
-        for (i = 0U; i < prefix->len; ++i)
-                if (dsh_s6_append(out, dsh_s6_get(prefix, i)) != 0)
-                        return -1;
+        if (dsh_s6_append_record(out, prefix) != 0)
+                return -1;
         if (prefix->len != 0U &&
             !(prefix->len == 1U && dsh_s6_get(prefix, 0U) == '/') &&
             dsh_s6_append(out, '/') != 0)
                 return -1;
-        for (i = 0U; i < name->len; ++i)
-                if (dsh_s6_append(out, dsh_s6_get(name, i)) != 0)
-                        return -1;
-        return 0;
+        return dsh_s6_append_record(out, name);
 }
 
 static int
