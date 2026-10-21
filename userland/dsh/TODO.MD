@@ -1,5 +1,23 @@
 # DSH TODO
 
+## 2026-10-21 V27 ANGLE PARAMETER EXPANSION
+
+Implemented the bounded, nonrecursive `$<NAME>` and `:-`, `:=`, `:+`, `:?`
+forms, with explicit adjacent-prefix disambiguation from shell redirection.
+Quoted and escaped dollar signs retain their existing literal behavior.
+`:=` preserves a variable's existing export flag; defaults use bounded
+caller-stack SIXBIT storage, with no new BSS.  Host lexer and 25-case SIMH
+tests are in the testkit and pass; full conformance passes 113/115 with
+the same two preexisting compact HELP failures as v26.  See
+`design/DSH-ANGLE-PARAMETER-20261021-v27.MD`.
+
+Beyond the present v27 subset: nested expansions, recursive defaults,
+embedded `>`, general escape/quote expressions inside defaults, and longer
+than 36-character parameter expressions are not supported.  No feature
+limits have been increased.  Full conformance and below-030000 GCC text,
+stack and real 32K physical-occupancy gates remain independent TODOs.
+
+
 ## 2026-10-21 V26 SHARED EDITOR / LOOP CONTROL
 
 An experimental, allocation-free `edcore` shared line buffer now implements

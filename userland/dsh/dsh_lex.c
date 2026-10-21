@@ -44,6 +44,32 @@ dsh_add_op(struct dsh_token *tokens, unsigned int max_tokens, unsigned int *ntok
         return DSH_OK;
 }
 
+/* Consume an adjacent $<...> as one word fragment, regardless of embedded
+ * spaces or characters which otherwise delimit redirections.  Escaping the
+ * dollar leaves the entire fragment literal, including its angle brackets. */
+static int
+dsh_add_angle_word(struct dsh_token *t, const struct dsh_line *line,
+    unsigned int *posp, int escaped)
+{
+        unsigned int pos;
+        int ch;
+
+        pos = *posp;
+        if (escaped) {
+                t->literal_mask |= (kword_t)1 << t->text.len;
+                t->quote_mask |= (kword_t)1 << t->text.len;
+        }
+        do {
+                ch = dsh_line_ch(line, pos++);
+                if (ch == 0)
+                        return DSH_E_CHAR;
+                if (dsh_s6_append(&t->text, ch) != DSH_OK)
+                        return DSH_E_LONG;
+        } while (ch != '>');
+        *posp = pos;
+        return DSH_OK;
+}
+
 static int
 dsh_add_word(const struct dsh_line *line, unsigned int *posp, struct dsh_token *tokens, unsigned int max_tokens, unsigned int *ntokens)
 {
@@ -63,6 +89,17 @@ dsh_add_word(const struct dsh_line *line, unsigned int *posp, struct dsh_token *
         had_fragment = 0U;
 
         while ((ch = dsh_line_ch(line, pos)) != 0) {
+                if (ch == '$' && dsh_line_ch(line, pos + 1U) == '<') {
+                        /* The adjacent $< prefix has priority over the
+                         * ordinary < and > redirection operators.  Keep
+                         * the entire bounded expression in one word; its
+                         * contents are parsed by the variable expander. */
+                        had_fragment = 1U;
+                        rc = dsh_add_angle_word(t, line, &pos, 0);
+                        if (rc != DSH_OK)
+                                return rc;
+                        continue;
+                }
                 if (ch == '\'' || ch == '"') {
                         quote = ch;
                         t->type |= DSH_T_QUOTED;
@@ -117,6 +154,13 @@ dsh_add_word(const struct dsh_line *line, unsigned int *posp, struct dsh_token *
                         ch = dsh_line_ch(line, pos);
                         if (ch == 0)
                                 return DSH_E_CHAR;
+                        if (ch == '$' &&
+                            dsh_line_ch(line, pos + 1U) == '<') {
+                                rc = dsh_add_angle_word(t, line, &pos, 1);
+                                if (rc != DSH_OK)
+                                        return rc;
+                                continue;
+                        }
                         pos++;
                         t->literal_mask |= (kword_t)1 << t->text.len;
                         t->quote_mask |= (kword_t)1 << t->text.len;

@@ -132,8 +132,81 @@ dsh_var_get_range(const struct dsh_state *st, const struct dsh_s6 *in,
         return dsh_var_get(st, &name);
 }
 
+/* Expand exactly one nonrecursive $<NAME[:OPLITERAL]> expression.  The
+ * fallback is copied to a local SIXBIT record so := cannot invalidate the
+ * global scratch record returned by the compact assembler variable getter.
+ * No heap allocation or persistent state is needed beyond := itself. */
+static int
+dsh_expand_angle(struct dsh_state *st, const struct dsh_s6 *in,
+    unsigned int *index, struct dsh_s6 *out)
+{
+        struct dsh_s6 name;
+        struct dsh_s6 fallback;
+        const struct dsh_s6 *value;
+        unsigned int i;
+        int op;
+        int ch;
+        int active;
+
+        dsh_s6_clear(&name);
+        dsh_s6_clear(&fallback);
+        i = *index;
+        while (i < in->len &&
+            dsh_name_char(dsh_s6_get(in, i), name.len == 0U)) {
+                if (dsh_s6_append(&name, dsh_s6_get(in, i)) != 0)
+                        return -1;
+                ++i;
+        }
+        if (name.len == 0U || i >= in->len)
+                return -1;
+        op = 0;
+        ch = dsh_s6_get(in, i);
+        if (ch == ':') {
+                if (++i >= in->len)
+                        return -1;
+                op = dsh_s6_get(in, i++);
+                if (op != '-' && op != '=' && op != '+' && op != '?')
+                        return -1;
+                while (i < in->len && (ch = dsh_s6_get(in, i)) != '>') {
+                        /* Defaults are literal SIXBIT, not recursively
+                         * expanded or interpreted as shell syntax. */
+                        if (ch == '$' || ch == '<' || ch == '\\' ||
+                            ch == '"' || ch == '\'')
+                                return -1;
+                        if (dsh_s6_append(&fallback, ch) != 0)
+                                return -1;
+                        ++i;
+                }
+        }
+        if (i >= in->len || dsh_s6_get(in, i) != '>')
+                return -1;
+        *index = i + 1U;
+        value = dsh_var_get(st, &name);
+        active = value != 0 && value->len != 0U;
+        if (op == '-' && !active)
+                value = &fallback;
+        else if (op == '=' && !active) {
+                /* Negative export mode preserves an existing export bit,
+                 * including when an exported variable was empty. */
+                if (dsh_var_set(st, &name, &fallback, -1) != 0)
+                        return -1;
+                value = &fallback;
+        } else if (op == '+')
+                value = active ? &fallback : 0;
+        else if (op == '?' && !active) {
+                (void)u_puts(2, "DSH: PARAMETER: ");
+                if (fallback.len != 0U)
+                        (void)dsh_s6_put(2, &fallback);
+                else
+                        (void)dsh_s6_put(2, &name);
+                (void)u_crlf(2);
+                return -1;
+        }
+        return value == 0 ? 0 : dsh_append_s6(out, value);
+}
+
 int
-dsh_expand_quoted(const struct dsh_state *st, const struct dsh_s6 *in,
+dsh_expand_quoted(struct dsh_state *st, const struct dsh_s6 *in,
     kword_t literal_mask, kword_t quote_mask, struct dsh_s6 *out,
     kword_t *out_quote_mask)
 {
@@ -163,6 +236,15 @@ dsh_expand_quoted(const struct dsh_state *st, const struct dsh_s6 *in,
                 }
                 begin = out->len;
                 ch = dsh_s6_get(in, i);
+                if (ch == '<') {
+                        ++i;
+                        if (dsh_expand_angle(st, in, &i, out) != 0)
+                                return -1;
+                        if (quoted && out_quote_mask != 0)
+                                for (n = begin; n < out->len; ++n)
+                                        *out_quote_mask |= (kword_t)1 << n;
+                        continue;
+                }
                 if (ch >= '0' && ch <= '9') {
                         ++i;
                         n = (unsigned int)(ch - '0');
@@ -262,14 +344,14 @@ dsh_expand_quoted(const struct dsh_state *st, const struct dsh_s6 *in,
 }
 
 int
-dsh_expand_mask(const struct dsh_state *st, const struct dsh_s6 *in,
+dsh_expand_mask(struct dsh_state *st, const struct dsh_s6 *in,
     kword_t literal_mask, struct dsh_s6 *out)
 {
         return dsh_expand_quoted(st, in, literal_mask, 0, out, 0);
 }
 
 int
-dsh_expand(const struct dsh_state *st, const struct dsh_s6 *in,
+dsh_expand(struct dsh_state *st, const struct dsh_s6 *in,
     struct dsh_s6 *out)
 {
         return dsh_expand_mask(st, in, 0, out);

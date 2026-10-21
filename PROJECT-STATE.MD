@@ -1,3 +1,22 @@
+## 2026-10-21 DSH V27 ANGLE PARAMETER EXPANSION
+
+On top of the v26 shared-ED/loop-control experiment, DSH's lexer and
+existing expansion path now support the bounded `$<NAME>` family with
+POSIX-like `:-`, `:=`, `:+`, `:?` operator semantics.  `$<` is recognized
+before `<` redirection, and subsequent normal redirections remain intact.
+Single quoting and escaped `$` are literal; double quotes expand.  The
+current implementation has no nested/default recursion and uses no new BSS.
+Assign-default preserves the previous exported state.  The host lexer
+test and 25 dedicated target/SIMH probes pass.  Full legacy conformance
+passes 113/115: its only two failures are `help-compact-echo` and
+`help-compact-das`, exactly the same preexisting failures observed on v26.
+No additional language/job/pipeline regression was introduced by v27.
+
+Measured GCC image 032307, BSS 012755 octal words (v26 baseline
+031633/012755).  New text cost is 0454 octal words; the strict image
+limit below 030000 is not met.  Documentation and explicit exclusions:
+`design/DSH-ANGLE-PARAMETER-20261021-v27.MD`.
+
 ## 2026-10-21 DSH V26 SHARED EDITOR CORE AND LOOP COMMANDS
 
 Experimental branch based on the latest accepted kernel state.  Added the
