@@ -648,6 +648,11 @@ SIMH_DPY_MODE ?= HEADLESS
 
 .PHONY: image boot permanent-size kcore-32k-gate clean force-simh-config
 
+# During KCORE modularization, keep full-profile MRES totals visible but do
+# not gate builds on their address occupancy.  Set to 1 to restore the strict
+# permanent-address gate; the separate KCORE optimization goal is 8K words.
+PERMANENT_SIZE_ENFORCE ?= 0
+
 # Acceptance gate, deliberately separate from the normal optimization link.
 # Run with BOOT_PROFILE=lowmem COMPILER=gcc; KCORE map must match that build.
 kcore-32k-gate: $(KCORE_MAP)
@@ -1377,6 +1382,7 @@ image: $(SIMH_INI)
 
 permanent-size: $(KCORE_MAP) $(MRES_PACKAGE_OBJS)
 	@./image/report-permanent.sh --kcore-map $(KCORE_MAP) --build $(BUILD) \
+	    $(if $(filter 1,$(PERMANENT_SIZE_ENFORCE)),--limit 040000,--no-limit) \
 	    --objdump $(PDP10_OBJDUMP) --packages '$(patsubst %-mres.dobj,%,$(notdir $(MRES_PACKAGE_OBJS)))' --omit-blockset \
 	    $(if $(filter 0,$(TAPE_FS_ENABLED)),--omit-dtfs) \
 	    $(if $(filter 0,$(D6FS_FS_ENABLED)),--omit-d6fs) \

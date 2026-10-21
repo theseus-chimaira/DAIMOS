@@ -6,7 +6,7 @@ set -eu
 
 usage()
 {
-        echo "usage: $0 --kcore-map MAP --build DIR --objdump TOOL [--packages 'NAMES'] [--omit-blockset] [--no-blockset] [--omit-badmap] [--omit-dtfs] [--omit-d6fs] [--limit OCTAL]" >&2
+        echo "usage: $0 --kcore-map MAP --build DIR --objdump TOOL [--packages 'NAMES'] [--omit-blockset] [--no-blockset] [--omit-badmap] [--omit-dtfs] [--omit-d6fs] [--limit OCTAL | --no-limit]" >&2
         exit 2
 }
 
@@ -19,6 +19,7 @@ omit_badmap=0
 omit_dtfs=0
 omit_d6fs=0
 limit_arg=040000
+enforce_limit=1
 packages=
 while [ $# -gt 0 ]; do
         case "$1" in
@@ -31,7 +32,8 @@ while [ $# -gt 0 ]; do
         --omit-badmap) omit_badmap=1; shift ;;
         --omit-dtfs) omit_dtfs=1; shift ;;
         --omit-d6fs) omit_d6fs=1; shift ;;
-        --limit) [ $# -ge 2 ] || usage; limit_arg=$2; shift 2 ;;
+        --limit) [ $# -ge 2 ] || usage; limit_arg=$2; enforce_limit=1; shift 2 ;;
+        --no-limit) enforce_limit=0; shift ;;
         *) usage ;;
         esac
 done
@@ -126,6 +128,10 @@ check_limit()
         free=$((distance - 1))
         printf '%-16s limit=%06o distance=%d free=%d\n' "$label" "$limit" \
             "$distance" "$free"
+        if [ "$enforce_limit" -eq 0 ]; then
+                printf '%s: informational only (permanent-address gate deferred)\n' "$label"
+                return 0
+        fi
         if [ "$high" -ge "$limit" ]; then
                 printf '%s exceeds permanent-address limit %06o: last=%06o\n' \
                     "$label" "$limit" "$high" >&2

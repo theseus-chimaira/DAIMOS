@@ -1,5 +1,11 @@
 ## V72 resident startup snapshot follow-ups (2026-10-20)
 
+- [ ] **V85 ACTIVE: shrink KCORE below 020000 octal / 8192 words.**
+  Total KCORE+MRES occupancy and individual MRES sizes are informational;
+  suspend the 040000 permanent-address size gate during this phase.
+  Exclude *all* 32K machine-configuration tests until explicitly resumed.
+  Focus analysis, code moves and optimization acceptance on KCORE alone.
+
 - [x] V84 P10FOLD fold threshold audit: on the same 21 handwritten KCORE
   objects, `-m 2` selects 31 folds / 70 saved words; `-m 1` selects 35 /
   74.  Only four extra words; retain the existing safer threshold and do

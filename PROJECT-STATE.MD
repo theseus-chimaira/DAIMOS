@@ -1,3 +1,19 @@
+## 2026-10-21 V85 OPTIMIZATION SCOPE — KCORE 8K ONLY
+
+By explicit instruction, suspend the total permanent KCORE+MRES address
+limit while optimizing KCORE.  The **only active optimization size target is
+KCORE below 020000 octal (8192 PDP-10 words)**.  MRES module sizes and
+KCORE+MRES sums remain informational, not optimization acceptance gates.
+Do not run or diagnose 32K memory-configuration tests at this stage.
+Likewise TSFS remains deferred.
+
+`make permanent-size` now reports the same full-profile measurements but
+defaults to `--no-limit`, which prints the nominal 040000 distance without
+failing the build.  To explicitly restore the old total-resident check,
+use `PERMANENT_SIZE_ENFORCE=1`.  No KCORE size success is implied: the
+current full-profile KCORE baseline is still above 8K.  Focus subsequent
+work on actual KCORE reduction, even when code is relocated into MRES.
+
 ## 2026-10-21 V84 FOLD/MODULARIZATION COST CHECK — NO UNSAFE FOLD
 
 The same V79 KCC full-profile KCORE fold-object set (21 existing
