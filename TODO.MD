@@ -1,5 +1,14 @@
 ## V72 resident startup snapshot follow-ups (2026-10-20)
 
+- [x] V84 P10FOLD fold threshold audit: on the same 21 handwritten KCORE
+  objects, `-m 2` selects 31 folds / 70 saved words; `-m 1` selects 35 /
+  74.  Only four extra words; retain the existing safer threshold and do
+  not spend regression budget on tiny one-instruction folds.
+- [ ] Compare a genuine reduced-device full profile (optional DPY / tape)
+  against the standard full profile with unchanged KCORE and all necessary
+  MRES, including actual MINIT selection and executable boot acceptance.
+  Do not treat omitted devices as valid if the profile promises them.
+
 - [ ] **V83 KCORE/MRES permanent-size gate:** current full KCC disk-root
   baseline has `KCORE+MRES=040070` octal and last permanent address
   `040147`, exceeding the `040000` limit by 103 addresses; at least

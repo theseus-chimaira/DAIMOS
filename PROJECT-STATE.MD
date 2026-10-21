@@ -1,3 +1,25 @@
+## 2026-10-21 V84 FOLD/MODULARIZATION COST CHECK — NO UNSAFE FOLD
+
+The same V79 KCC full-profile KCORE fold-object set (21 existing
+handwritten objects, all present) was rerun with P10FOLD's production
+minimum `-m 2` and experimental `-m 1`, without touching the kernel
+or its generated production fold plan.  The production run selects 31
+FOLD records with an estimated **70 words** saved; the one-word-threshold
+experiment selects 35 records for **74 words**, only **four extra words**.
+One-word folding introduces extra equivalence/safety cases for negligible
+benefit against the 104-word permanent-address deficit.  Keep `-m 2`.
+Diagnostics are in `$TMPDIR/daimos-v84-kcore-m{1,2}.{fold,log}`.
+
+The full-profile package table always *includes* DPY (444 words),
+DECtape (375), and numerous other independently probed MRES modules.
+Omitting optional modules from an actual configured boot profile can save
+far more than four words, but reporting an absent physical device as
+equivalent to eliminating its *installed package* would be incorrect.
+Further modularization should preserve explicit feature/profile semantics,
+MINIT probe/discovery, and module detachability, and compare the **whole
+permanent installed set**, not the apparent KCORE shrink alone.  No
+production code or build-profile semantics changed in V84.
+
 ## 2026-10-21 V83 KCORE/MRES BASELINE AUDIT — NO CODE MOVE YET
 
 Returned to KCORE modularization using the latest V79 KCC full-profile
