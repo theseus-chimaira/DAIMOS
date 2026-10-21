@@ -1,3 +1,34 @@
+## 2026-10-21 PDP-6 SIMH CONSOLE PC / TRAP GROUP 022 V120 ACCEPTED
+
+The independent 256K non-size group-022 trap-frequency retest now passes
+under **both KCC and GCC**, with unchanged syscall-count ceilings. KCC
+measured startup/echo/memstat/ls/ps/cat128 as 111/16/19/33/23/18;
+GCC measured 90/16/19/33/25/18. Both passed ceilings of
+128/35/70/70/110/45, respectively. The GCC run used the isolated
+corrected PDP-6 compiler and the same corrected SIMH CPU as KCC.
+
+The root cause was a host ELF symbol collision: the SIMH KX10 CPU's global
+`PC` overlapped terminal-library padding `PC`, which interactive readline
+overwrote. The corrected symbol `kx10_pc` (sims `1a41f45`) passed direct
+script-to-console PC preservation, PDP-6 breakpoint/step execution, and
+register sanity for PDP-6, KA10, KI10, KL10, and KS10. The standalone
+testkit regression is `test-daimos-simh-console-pc-v115` (commit `58150fd`).
+KA10/KI10 also received a separate default `-lm` link correction
+(sims `5f6d21b`).
+
+Testkit `0f6ad07` explicitly selects diagnostic `DSH_IMAGE_LIMIT=037000`
+for this *functional* trap test; the original default 036000 limit rejected
+the current 036021 image before boot. Strict 32K boot and permanent size
+acceptance remain deferred, not silently passed. Runtime evidence:
+`$TMPDIR/daimos-trap-runtime-fixed-pc-v117.log` and
+`$TMPDIR/daimos-trap-gcc-fixed-pc-v118.log`.
+
+This verifies group 022 independently; **full non-size matrix acceptance
+is still open**. Groups 027, 028, 029, and 030 require separate repair and
+retakes, and the complete matrix has not been rerun atomically. The v111
+investigation below is retained as historical evidence, superseded for
+the console-PC root cause and group-022 outcome.
+
 ## 2026-10-21 D6FS FOUR-MEMBER LOGSTORE RUNTIME V119
 
 The non-size 256K GCC D6FS HDD runtime's `invalid badmap` post-check was
