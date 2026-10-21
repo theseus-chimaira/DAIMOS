@@ -1,5 +1,28 @@
 # DSH TODO
 
+## 2026-10-21 V31/V32 TEXT AND BOOT-TEST ACCEPTANCE
+
+Implemented packed six-character-word equality for names shared by
+alias and function lookup; removed the redundant `UNALIAS` character
+loop in favor of that same helper.  GCC image 031365 -> 031353 ->
+031326 octal; BSS remains 012755.  Net saving 037 octal words, without
+changing full scripting, command substitution, jobs or line editing.
+Target SIMH tests pass: packed alias/function 4/4, packed UNALIAS 4/4,
+full shell conformance 115/115.  The root image remains CLEAN after tests.
+
+The previous intermittent `?RT` resulted from testkit runs reusing a
+root fixture marked DIRTY by a prior simulated session.  A new testkit
+`--isolate-media` option makes per-run copies for DSH targets, leaving
+true persistence/recovery tests in control of their media semantics.
+D6FS code and its mount safety policy were not modified.
+
+Still open: 01327 octal words (727 decimal) of text reduction to reach
+strictly below 030000; stack/BRK and physical 32K runtime acceptance.
+Do not fold the 1174 generic P10FOLD candidates indiscriminately: no
+zero-execution-cost fold was found, and the safe cold-path criterion
+must be established before inserting additional JRSTs.
+
+
 ## 2026-10-21 V30 GCC TOOLCHAIN CORRECTION ACCEPTED
 
 The compact-HELP failures inherited by v26-v29 are resolved by rebuilding

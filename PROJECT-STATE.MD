@@ -1,3 +1,41 @@
+## 2026-10-21 DSH V31/V32 PACKED-NAME SAVINGS AND SIMH ROOT ISOLATION
+
+DSH name equality (`dsh_s6_same`) compares the six-character SIXBIT words
+containing actual data instead of decoding each character twice.  `UNALIAS`
+now uses this same helper rather than another handwritten byte loop.
+SIXBIT strings remain caller-owned and zero-padded; both changes preserve
+name lengths and full second-word distinctions.  Tested aliases and
+functions with names equal in their first six characters, redefinitions,
+and `UNALIAS` of either member.
+
+GCC image/BSS (all octal words): V30 031365/012755; V31
+031353/012755; V32 031326/012755.  Net text saving is 037 octal words
+(31 decimal) with **no** added BSS, loss of shell functionality, or new
+resident state.  Strict below-030000 text still requires saving 01327
+octal words (727 decimal).  Physical 32K occupancy/stack/BRK acceptance
+is still independent.
+
+The intermittent testkit `?RT` boot failure was traced to the TEST
+FIXTURE, not a D6FS mount bug.  Running a second SIMH invocation against
+the same writable root after DSH tests found the source disk's selected
+superblock 704, seq=2, DIRTY; the kernel correctly refused it.  The
+testkit harness now supports `--isolate-media`, copying each attached
+disk/tape/drum/output into a private per-run directory and rewriting a
+temporary boot.ini.  Nine DSH test targets enable this; persistence and
+crash/recovery tests remain free to reuse intentionally shared media.
+The original source image was regenerated once, and remained at selected
+superblock 703, seq=1, CLEAN across consecutive private SIMH runs.
+
+V32 acceptance: four packed-name probes, four packed-UNALIAS probes,
+and **115/115** full GCC DSH conformance pass in separate, isolated
+SIMH invocations (123/123 total).  The host media-isolation contract test
+passes and verifies a modified first-run copy cannot contaminate the next
+run or the original fixtures.  Earlier host keyword-switch, byte-decoder,
+and alternative GCC flag experiments were reverted after showing no text
+improvement.  Applying P10FOLD to all DSH objects showed 1174 candidate
+duplicate runs but no zero-execution-cost folds; no new JRSTs were added
+to hot paths without call-frequency justification.
+
 ## 2026-10-21 DSH GCC HELP RECOVERY V30 (TOOLCHAIN, NO SOURCE WORKAROUND)
 
 The two persistent v26-v29 compact HELP failures were caused by an
