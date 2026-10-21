@@ -44,6 +44,15 @@
 
 ## GCC PDP-6 functional regression recovery (2026-10-19)
 
+- [ ] **DEFERRED TSFS/BLOCKSET design:** Model TSFS media sets like D6FS
+  disksets.  BLOCKSET owns media-set identity, member discovery, physical
+  DECtape mapping and logical-block translation, including a *one-member*
+  set; TSFS owns only filesystem metadata, extents and read-only operations.
+  `/DEV/DTCN` may seed discovery but is not the mounted backing device.
+  Reconcile the composite BLOCKSET+TSFS handoff in `tsfs.h` with the current
+  three-word direct-provider helper/syscall and live tests; preserve tape
+  seek locality.  **Do not implement now.** Resume KCORE modularization.
+
 - [ ] V81: diagnose reproducible TSFS userspace mount failure from group
   027 on fresh KCC disk-root media.  `MOUNT.TSFS /DEV/DTC0 /MOUNT/DT0`
   reports `MOUNT FAILED`, not `NO COMPLETE SET`; target remains TYPE 1

@@ -1,3 +1,19 @@
+## 2026-10-21 V82 PRIORITY RESET — KCORE MODULARIZATION
+
+TSFS work is **stopped by user instruction**.  The future design follows
+D6FS disksets: BLOCKSET owns the member set and logical-to-physical block
+mapping for one or many DECtapes, while TSFS owns read-only filesystem
+semantics.  The seed `/DEV/DTCN` is for member discovery, not a bypass of
+BLOCKSET.  Restore the composite BLOCKSET+TSFS mount handoff and audit
+tests only when TSFS work is explicitly resumed; no TSFS implementation
+changes were made in V82.
+
+Return to KCORE/MRES modularization and permanent-memory reduction.  Keep
+strict 32K experiments and environment-sensitive simulator timeouts
+deferred.  The last proven optional MonitorFS MRES switch adds 19 words
+to permanently resident KCORE+MRES compared with its KCORE form; it
+remains disabled by default pending a genuine net memory reduction.
+
 ## 2026-10-21 V81 MATRIX TRIAGE — TSFS MOUNT OPEN
 
 The V75 non-size GCC and KCC matrices both recorded FAIL for groups 022,
