@@ -76,6 +76,15 @@ experiment is installed in current V86 KCORE.
 
 ### Per-step audit protocol
 
+**V93 rejected source-only fallthrough cleanup:** The explicit `JRST`
+immediately preceding `vfs_lookup_provider` and the corresponding `JRST`
+before `vfs_read_words_provider` were removed experimentally (both target
+the following instruction). The full folded KCC link **did not shrink**:
+`__kcore_low_end` remained `023000` octal (9672 words). Both changes were
+reverted. No functional tests were needed or run for the rejected trial.
+The effective folded image, not redundant source syntax, governs savings.
+
+
 **V92 accepted VFS parent helper:** `vfs_parent` formerly decoded the mount
 slot into AC3, then copied it to AC4 before calling the shared
 `vfs_parent_resolve_slot` (which expects AC4). Directly decoding and

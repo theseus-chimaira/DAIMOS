@@ -1,3 +1,12 @@
+## 2026-10-21 V93 VFS FALLTHROUGH NON-SAVING EXPERIMENT
+
+Consulted `KCORE.MD`. Two consecutive-label VFS `JRST` instructions were
+removed experimentally and a folded KCC link was measured. No KCORE
+change: endpoint stayed `023000` octal, 9672 words. The experiment was
+reverted, so there is no code change and no affected-path regression test
+was required. Continue examining other candidates, measuring net folded
+savings before acceptance. No 32K or TSFS work.
+
 ## 2026-10-21 V92 DIRECT VFS PARENT SLOT REGISTER
 
 `KCORE.MD` consulted before VFS pass. In `vfs_parent`, AC4 now receives
