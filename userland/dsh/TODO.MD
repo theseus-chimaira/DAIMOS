@@ -1,5 +1,31 @@
 # DSH TODO
 
+## 2026-10-21 V39-V44 ACCEPTANCE / HIGH-PRIORITY V43 REGRESSION
+
+V39 shared bounded SIXBIT-record append (image 030717); V40 shared name
+slice copying (030674); V41 shared path-building without merging its
+distinct slash semantics (030657); V42 shared their checked append loop
+(030645).  All BSS measurements remain 012755 octal words.  V39 passed
+161/161; V41 passed 171/171; V42 passed 115/115 standard conformance and
+6/6 isolated pipeline/background probes.  No shell features removed.
+
+V43 tried factoring the four NAME=VALUE split callsites (image 030636),
+but two full conformance runs each failed five process-related cases,
+starting with ECHO PIPEOK ! CAT.  The identical six-case process subset
+passes when run in isolation.  The suspect helper is not called by the
+prefix preceding the first failure; unchanged pipeline/launch routines
+have identical normalized assembler listings versus V42.  Investigate
+the code-layout-sensitive compiler/linker/loader/kernel process interaction
+as a **priority bug**, not a reason to add branch padding or disable pipes.
+The original implementation idea remains sound, but V43 is not accepted.
+V44 reverted it so the current image (030645/012755) is the V42-tested
+source while the V43 commit and failure logs remain available for analysis.
+
+Still open: 0646 octal image words (422 decimal) to get STRICTLY BELOW
+030000, full physical 32K boot acceptance, peak stack/BRK accounting,
+and proper root-cause resolution of the V43 pipeline/UUO regression.
+
+
 ## 2026-10-21 V34-V37 PARSER OPTIMIZATION ACCEPTANCE
 
 All parser language features remain in the 32K-default build.  V34 shared

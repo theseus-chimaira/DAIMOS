@@ -1,3 +1,47 @@
+## 2026-10-21 DSH V39-V44 SIXBIT CODE SHARING / PROCESS REGRESSION
+
+This stage continued from the verified V37 default GCC image/BSS
+031021/012755 (octal words).  Source-level text changes preserve the full
+DSH scripting grammar, packed SIXBIT editor, pipelines and job control:
+
+* V39 (`35297c5`): use a single bounded SIXBIT-record append for variable
+  expansion, executable PATH construction, and glob paths; 030717/012755.
+* V40 intermediate: share bounded SIXBIT character-range copying between
+  builtins and parameter names; 030674/012755.
+* V41 (`9a86068`): additionally share PATH/glob concatenation while
+  retaining their different trailing-separator rules; 030657/012755.
+* V42 (`39c064f`): use one private, bounded append-slice loop for whole
+  record append and character-range copying; 030645/012755.
+* V43 (`39bd17a`, **NOT ACCEPTED**): extract repeated NAME=VALUE splitting;
+  030636/012755.  This image reproducibly fails five of 115 conformance
+  tests in two separate full runs, beginning with piped ECHO/CAT (guest
+  prints UUO 000000000000 340000000004) and including background jobs.
+  The isolated six-case process regression PASSes for this same image.
+  The helper is not exercised by commands preceding the first failure,
+  and normalized PDP-6 assembly for `dsh_exec_pipeline` and
+  `dsh_launch_external` is identical to V42.  The true root cause is not
+  established: code-layout-sensitive linker/loader/compiler or timing/
+  kernel process-state defects remain candidates.  Do not classify this
+  as a verified compiler bug or mask the symptom with padding.
+* V44 (`4b96b8a`): revert the unaccepted V43 change, preserving the
+  separately committed experiment for root-cause investigation.  The
+  restored image/BSS is 030645/012755, identical to the tested V42.
+
+V39 passed 161/161 isolated SIMH probes.  V41 passed 171/171 including
+four new PATH/glob tests and six isolated pipeline/background probes.
+V42 passed full conformance 115/115 and six isolated process probes.  The
+V43 full suite failed 5/115 on two separate runs despite passing the
+isolated 6/6 process reproducer.  Source D6FS images stayed CLEAN at
+selected superblock 703 seq=1.  No DAIMOS/D6FS kernel workaround was
+introduced.  New process/path testkit coverage: commit `00c7b0d`.
+
+The latest accepted V44/V42 text saves 0154 octal words (108 decimal)
+relative to V37 with zero BSS increase.  To reach image STRICTLY BELOW
+030000 still requires 0646 octal words (422 decimal), independently of
+physical 32K occupancy and stack/BRK measurement.  Highest-priority
+follow-up: isolate the code-layout/process fault exposed by V43; do not
+promote V43 until the root defect is understood and corrected.
+
 ## 2026-10-21 DSH V34-V37 PARSER TEXT REDUCTION — ACCEPTED
 
 Successive source-level improvements to the full DSH grammar, with all
