@@ -1,3 +1,27 @@
+## 2026-10-21 DSH V26 SHARED EDITOR CORE AND LOOP COMMANDS
+
+Experimental branch based on the latest accepted kernel state.  Added the
+allocation-free, I/O-independent packed-SIXBIT `edcore` line operations for
+DSH and future ED/EX reuse.  DSH interactive input uses the shared insertion
+and deletion primitives; a future editor line store and ex command parser
+are **not** implemented by this commit.  Host testkit editor cases pass.
+
+Added bounded BREAK and CONTINUE [levels], propagating across IF/AND/OR,
+FOR/WHILE/UNTIL, and sourced scripts without crossing a called function's
+own loop floor.  The dedicated SIMH suite passes 12/12.  Full DSH SIMH
+conformance passes 113/115: HELP ECHO and HELP DAS omit expected compact
+synopsis text.  Those two failures must be compared with the unmodified
+base checkout before treating overall conformance as accepted.  All 113
+other probes, including source, functions, jobs and pipes, pass.
+
+Current GCC DXR image/BSS: 031633/012755 octal words; previous historical
+v25 baseline 031321/012751.  Script feature additions therefore consume
+code, and the strict below-030000 image target remains unsatisfied.
+Parameter syntax `$<...>` remains a documented, unimplemented proposal;
+there is a lexical redirection collision that requires an explicit scanner
+rule.  No overlays introduced.  Related implementation notes:
+`design/DSH-EDCORE-20261021-v1.MD`, `userland/dsh/TODO.MD`.
+
 ## 2026-10-21 KERNEL/STANDALONE REGRESSION GROUP 028 V123 ACCEPTED
 
 The independent non-size **group 028** test now passes KCC and GCC on

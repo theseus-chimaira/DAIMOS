@@ -27,6 +27,10 @@
 #define DSH_ERROR               2
 #define DSH_NOT_FOUND         127
 
+#define DSH_LOOP_NONE          0U
+#define DSH_LOOP_BREAK         1U
+#define DSH_LOOP_CONTINUE      2U
+
 struct dsh_s6 {
         unsigned int len;
         kword_t words[DSH_S6_MAX_WORDS];
@@ -80,6 +84,12 @@ struct dsh_state {
         unsigned int return_requested;
         unsigned int return_status;
         unsigned int call_depth;
+        /* BREAK/CONTINUE propagate through compound commands, but cannot
+         * escape the current function's loop floor. */
+        unsigned int loop_depth;
+        unsigned int loop_floor;
+        unsigned int loop_action;
+        unsigned int loop_levels;
         unsigned int job_serial;
 };
 

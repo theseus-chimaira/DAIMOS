@@ -194,6 +194,7 @@ dsh_exec_function(struct dsh_state *st, const struct dsh_function_store *fn,
     unsigned int argc, struct dsh_s6 *argv)
 {
         unsigned int saved_argc;
+        unsigned int saved_floor;
         unsigned int i;
         int status;
 
@@ -208,6 +209,8 @@ dsh_exec_function(struct dsh_state *st, const struct dsh_function_store *fn,
         for (i = 0U; i < st->argc; ++i)
                 dsh_s6_swap(&st->args[i], &argv[i + 1U]);
         ++st->call_depth;
+        saved_floor = st->loop_floor;
+        st->loop_floor = st->loop_depth;
         st->return_requested = 0U;
         st->return_status = 0U;
         status = dsh_exec_node(st, &dsh_function_nodes[fn->base], fn->root);
@@ -216,6 +219,7 @@ dsh_exec_function(struct dsh_state *st, const struct dsh_function_store *fn,
                 st->return_requested = 0U;
         }
         --st->call_depth;
+        st->loop_floor = saved_floor;
         for (i = 0U; i < st->argc; ++i)
                 dsh_s6_swap(&st->args[i], &argv[i + 1U]);
         dsh_s6_swap(&st->arg0, &argv[0]);
@@ -483,6 +487,23 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 st->return_status = code & 0377U;
                 return (int)st->return_status;
         }
+        if (dsh_s6_eq_text(&argv[0], "BREAK") ||
+            dsh_s6_eq_text(&argv[0], "CONTINUE")) {
+                unsigned int levels;
+
+                if (argc > 2U)
+                        return 2;
+                levels = 1U;
+                if (argc == 2U && dsh_parse_uint(&argv[1], &levels) != 0)
+                        return 2;
+                if (levels == 0U ||
+                    levels > st->loop_depth - st->loop_floor)
+                        return 2;
+                st->loop_action = dsh_s6_eq_text(&argv[0], "BREAK") ?
+                    DSH_LOOP_BREAK : DSH_LOOP_CONTINUE;
+                st->loop_levels = levels;
+                return 0;
+        }
         if (dsh_s6_eq_text(&argv[0], "JOBS"))
                 return dsh_builtin_jobs(st, argc, argv);
         if (dsh_s6_eq_text(&argv[0], "WAIT"))
@@ -612,10 +633,15 @@ dsh_execute_file_with_script(struct dsh_state *st, const struct dsh_s6 *path,
                         break;
                 }
                 st->status = (unsigned int)status;
-                if (st->exit_requested)
+                /* SOURCE executes in its caller's loop frame.  Once a
+                 * BREAK/CONTINUE escapes the current parsed command, stop
+                 * reading later records; they belong to the skipped body. */
+                if (st->exit_requested || st->return_requested ||
+                    st->loop_action != DSH_LOOP_NONE)
                         break;
         }
-        if (rc == 0 && !st->exit_requested) {
+        if (rc == 0 && !st->exit_requested && !st->return_requested &&
+            st->loop_action == DSH_LOOP_NONE) {
                 rc = dsh_script_finish(st, script, &status);
                 if (rc == DSH_OK)
                         rc = status;
@@ -1361,6 +1387,8 @@ dsh_is_builtin_name(const struct dsh_s6 *name)
             dsh_s6_eq_text(name, "READ") ||
             dsh_s6_eq_text(name, "SHIFT") ||
             dsh_s6_eq_text(name, "RETURN") ||
+            dsh_s6_eq_text(name, "BREAK") ||
+            dsh_s6_eq_text(name, "CONTINUE") ||
             dsh_s6_eq_text(name, "SOURCE") ||
             dsh_s6_eq_text(name, ".") ||
             dsh_s6_eq_text(name, "WAIT") ||
@@ -2535,16 +2563,40 @@ dsh_exec_loop(struct dsh_state *st, const struct dsh_node *nodes,
 {
         int cond;
         int status;
+        unsigned int action;
 
         status = 0;
+        ++st->loop_depth;
         for (;;) {
                 cond = dsh_exec_node(st, nodes, n->left);
+                if (st->exit_requested || st->return_requested)
+                        break;
+                if (st->loop_action != DSH_LOOP_NONE) {
+                        action = st->loop_action;
+                        if (--st->loop_levels == 0U)
+                                st->loop_action = DSH_LOOP_NONE;
+                        if (action == DSH_LOOP_CONTINUE &&
+                            st->loop_action == DSH_LOOP_NONE)
+                                continue;
+                        break;
+                }
                 if ((!until && cond != 0) || (until && cond == 0))
-                        return status;
+                        break;
                 status = dsh_exec_node(st, nodes, n->right);
                 if (st->exit_requested || st->return_requested)
-                        return status;
+                        break;
+                if (st->loop_action != DSH_LOOP_NONE) {
+                        action = st->loop_action;
+                        if (--st->loop_levels == 0U)
+                                st->loop_action = DSH_LOOP_NONE;
+                        if (action == DSH_LOOP_CONTINUE &&
+                            st->loop_action == DSH_LOOP_NONE)
+                                continue;
+                        break;
+                }
         }
+        --st->loop_depth;
+        return status;
 }
 
 static int
@@ -2570,24 +2622,28 @@ dsh_exec_node_raw(struct dsh_state *st, const struct dsh_node *nodes,
                     SYS_RUN_PGRP_INHERIT, 0U, 0);
         case DSH_N_LIST:
                 status = dsh_exec_node(st, nodes, n->left);
-                if (st->exit_requested || st->return_requested)
+                if (st->exit_requested || st->return_requested ||
+                    st->loop_action != DSH_LOOP_NONE)
                         return status;
                 return dsh_exec_node(st, nodes, n->right);
         case DSH_N_AND:
                 status = dsh_exec_node(st, nodes, n->left);
-                if (st->exit_requested || st->return_requested || status != 0)
+                if (st->exit_requested || st->return_requested ||
+                    st->loop_action != DSH_LOOP_NONE || status != 0)
                         return status;
                 return dsh_exec_node(st, nodes, n->right);
         case DSH_N_OR:
                 status = dsh_exec_node(st, nodes, n->left);
-                if (st->exit_requested || st->return_requested || status == 0)
+                if (st->exit_requested || st->return_requested ||
+                    st->loop_action != DSH_LOOP_NONE || status == 0)
                         return status;
                 return dsh_exec_node(st, nodes, n->right);
         case DSH_N_NOT:
                 return dsh_exec_node(st, nodes, n->left) == 0 ? 1 : 0;
         case DSH_N_IF:
                 status = dsh_exec_node(st, nodes, n->left);
-                if (st->exit_requested || st->return_requested)
+                if (st->exit_requested || st->return_requested ||
+                    st->loop_action != DSH_LOOP_NONE)
                         return status;
                 if (status == 0)
                         return dsh_exec_node(st, nodes, n->right);
@@ -2596,15 +2652,30 @@ dsh_exec_node_raw(struct dsh_state *st, const struct dsh_node *nodes,
                 return 0;
         case DSH_N_FOR:
                 status = 0;
+                ++st->loop_depth;
                 for (i = 1U; i < n->argc; ++i) {
                         if (dsh_expand_mask(st, &n->words[i],
                             n->literal_mask[i], &value) != 0 ||
-                            dsh_var_set(st, &n->words[0], &value, 0) != 0)
-                                return DSH_ERROR;
+                            dsh_var_set(st, &n->words[0], &value, 0) != 0) {
+                                status = DSH_ERROR;
+                                break;
+                        }
                         status = dsh_exec_node(st, nodes, n->left);
                         if (st->exit_requested || st->return_requested)
-                                return status;
+                                break;
+                        if (st->loop_action != DSH_LOOP_NONE) {
+                                unsigned int action;
+
+                                action = st->loop_action;
+                                if (--st->loop_levels == 0U)
+                                        st->loop_action = DSH_LOOP_NONE;
+                                if (action == DSH_LOOP_CONTINUE &&
+                                    st->loop_action == DSH_LOOP_NONE)
+                                        continue;
+                                break;
+                        }
                 }
+                --st->loop_depth;
                 return status;
         case DSH_N_WHILE:
                 return dsh_exec_loop(st, nodes, n, 0);

@@ -1,6 +1,7 @@
 #include "dsh.h"
 #include "text.h"
 #include "dsh_heap.h"
+#include "edcore.h"
 
 /* Keep the history implementation available but omit it from small-memory
  * builds until the interactive line editor is an explicit target. */
@@ -29,23 +30,6 @@ static unsigned int dsh_history_persistent;
 static void dsh_put_prompt(struct dsh_state *st, unsigned int more);
 static int dsh_s6_literal(struct dsh_s6 *dst, const char *text);
 
-static void
-dsh_line_set(struct dsh_line *line, unsigned int pos, int ch)
-{
-        unsigned int wi;
-        unsigned int sh;
-        kword_t mask;
-
-        if (line == 0 || pos >= DSH_LINE_MAX_CHARS)
-                return;
-        wi = pos / DSH_S6_CHARS_PER_WORD;
-        sh = 30U - (pos % DSH_S6_CHARS_PER_WORD) * 6U;
-        mask = (kword_t)077UL << sh;
-        line->words[wi] &= ~mask;
-        if (ch >= 040 && ch <= 0137)
-                line->words[wi] |= ((kword_t)(ch - 040) & 077UL) << sh;
-}
-
 #if DSH_ENABLE_HISTORY
 static void
 dsh_line_copy(struct dsh_line *dst, const struct dsh_line *src)
@@ -61,31 +45,27 @@ dsh_line_copy(struct dsh_line *dst, const struct dsh_line *src)
 static int
 dsh_input_insert(unsigned int pos, int ch)
 {
-        unsigned int i;
+        struct edcore_line line;
+        int rc;
 
-        if (pos > dsh_input_line.len ||
-            dsh_input_line.len >= DSH_LINE_MAX_CHARS)
-                return -1;
-        for (i = dsh_input_line.len; i > pos; --i)
-                dsh_line_set(&dsh_input_line, i,
-                    dsh_line_get(&dsh_input_line, i - 1U));
-        dsh_line_set(&dsh_input_line, pos, ch);
-        ++dsh_input_line.len;
-        return 0;
+        line.words = dsh_input_line.words;
+        line.length = dsh_input_line.len;
+        line.capacity = DSH_LINE_MAX_CHARS;
+        rc = edcore_insert(&line, pos, ch);
+        dsh_input_line.len = line.length;
+        return rc;
 }
 
 static void
 dsh_input_delete(unsigned int pos)
 {
-        unsigned int i;
+        struct edcore_line line;
 
-        if (pos >= dsh_input_line.len)
-                return;
-        for (i = pos + 1U; i < dsh_input_line.len; ++i)
-                dsh_line_set(&dsh_input_line, i - 1U,
-                    dsh_line_get(&dsh_input_line, i));
-        --dsh_input_line.len;
-        dsh_line_set(&dsh_input_line, dsh_input_line.len, 0);
+        line.words = dsh_input_line.words;
+        line.length = dsh_input_line.len;
+        line.capacity = DSH_LINE_MAX_CHARS;
+        if (edcore_delete(&line, pos) == 0)
+                dsh_input_line.len = line.length;
 }
 
 static void

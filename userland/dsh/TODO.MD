@@ -1,5 +1,38 @@
 # DSH TODO
 
+## 2026-10-21 V26 SHARED EDITOR / LOOP CONTROL
+
+An experimental, allocation-free `edcore` shared line buffer now implements
+packed-SIXBIT get/insert/delete/replace for DSH and future ED/EX frontends.
+The 32K shell retains a command-line editor; it does **not** trade editing
+correctness for removal of completion/history.  The multi-line ED/EX
+store, ranges, ex command interpreter and terminal frontend are subsequent
+layers, not duplicated in DSH.  See `design/DSH-EDCORE-20261021-v1.MD`.
+
+BREAK/CONTINUE now have bounded level counts, loop action propagation and
+a per-function loop floor.  The host editor test passes; dedicated SIMH
+loop-control and full conformance must pass before this is accepted.
+
+Next correctness milestones, independent of parameter expansion:
+
+1. EXEC replacement preserving PATH search, argument/environment records
+   and FD state, with no extra waiting DSH process.
+2. COMMAND/WHENCE lookup diagnostics and bounded GETOPTS semantics.
+3. Multi-variable READ and documented EOF handling; function locals.
+4. Minimal EXIT/INT/TERM/HUP TRAP ABI integration, respecting DAIMOS events.
+5. Descriptor redirections and bounded here-documents, including nested
+   scripts and pipeline failure cleanup.
+6. ED/EX line-store and command layers on top of the shared editing core;
+   subsequently integrate Vi-style interaction without a second editor.
+7. Reserve `$<NAME...>` for future parameter expansion: `<` and `>`
+   currently tokenize as redirections, so `$<` needs context-sensitive
+   recognition before ordinary operators.  No syntax change in V26.
+
+All new features must retain the strict below-030000 GCC text target as
+an explicit optimization gate, with separately measured BSS and stack.
+Scripts, functions, job control, globbing and pipelines remain mandatory.
+
+
 ## V25 OPTIONAL HISTORY BUILD (2026-10-13)
 
 DSH history is now compile-time optional and **off by default** for the
