@@ -230,6 +230,25 @@ dsh_alloc_node(struct dsh_parser *p, int type, unsigned int *out)
         return DSH_OK;
 }
 
+/* One token-to-AST transfer serves ordinary commands, FOR items, function
+ * names and CASE arms.  Keep text and both quotation masks together: a
+ * copied literal without its mask would silently enable expansions/globs. */
+static int
+dsh_node_add_word(struct dsh_node *n, const struct dsh_token *token)
+{
+        unsigned int i;
+        int rc;
+
+        i = n->argc;
+        rc = dsh_s6_copy(&n->words[i], &token->text);
+        if (rc != DSH_OK)
+                return rc;
+        n->literal_mask[i] = token->literal_mask;
+        n->quote_mask[i] = token->quote_mask;
+        ++n->argc;
+        return DSH_OK;
+}
+
 static int
 dsh_expect_word(struct dsh_parser *p, unsigned int kw)
 {
@@ -352,15 +371,9 @@ dsh_parse_simple(struct dsh_parser *p, unsigned int stops, unsigned int *out)
                 if (n->argc >= DSH_PARSE_MAX_WORDS)
                         return dsh_mark_error(p, DSH_E_OVERFLOW,
                             DSH_PE_WORD);
-                rc = dsh_s6_copy(&n->words[n->argc],
-                    &p->tokens[p->pos].text);
+                rc = dsh_node_add_word(n, &p->tokens[p->pos]);
                 if (rc != DSH_OK)
                         return rc;
-                n->literal_mask[n->argc] =
-                    p->tokens[p->pos].literal_mask;
-                n->quote_mask[n->argc] =
-                    p->tokens[p->pos].quote_mask;
-                n->argc++;
                 p->pos++;
         }
         if (n->argc == 0U)
@@ -423,12 +436,9 @@ dsh_parse_for(struct dsh_parser *p, unsigned int *out)
         if (rc != DSH_OK)
                 return rc;
         n = &p->nodes[node];
-        rc = dsh_s6_copy(&n->words[0], &p->tokens[p->pos].text);
+        rc = dsh_node_add_word(n, &p->tokens[p->pos]);
         if (rc != DSH_OK)
                 return rc;
-        n->literal_mask[0] = p->tokens[p->pos].literal_mask;
-        n->quote_mask[0] = p->tokens[p->pos].quote_mask;
-        n->argc = 1U;
         p->pos++;
         rc = dsh_expect_word(p, DSH_K_IN);
         if (rc != DSH_OK)
@@ -440,15 +450,9 @@ dsh_parse_for(struct dsh_parser *p, unsigned int *out)
                 if (n->argc >= DSH_PARSE_MAX_WORDS)
                         return dsh_mark_error(p, DSH_E_OVERFLOW,
                             DSH_PE_WORD);
-                rc = dsh_s6_copy(&n->words[n->argc],
-                    &p->tokens[p->pos].text);
+                rc = dsh_node_add_word(n, &p->tokens[p->pos]);
                 if (rc != DSH_OK)
                         return rc;
-                n->literal_mask[n->argc] =
-                    p->tokens[p->pos].literal_mask;
-                n->quote_mask[n->argc] =
-                    p->tokens[p->pos].quote_mask;
-                n->argc++;
                 p->pos++;
         }
         rc = dsh_expect_word(p, DSH_K_DO);
@@ -509,12 +513,9 @@ dsh_parse_def(struct dsh_parser *p, unsigned int *out)
         rc = dsh_alloc_node(p, DSH_N_DEF, &node);
         if (rc != DSH_OK)
                 return rc;
-        rc = dsh_s6_copy(&p->nodes[node].words[0], &p->tokens[p->pos].text);
+        rc = dsh_node_add_word(&p->nodes[node], &p->tokens[p->pos]);
         if (rc != DSH_OK)
                 return rc;
-        p->nodes[node].literal_mask[0] = p->tokens[p->pos].literal_mask;
-        p->nodes[node].quote_mask[0] = p->tokens[p->pos].quote_mask;
-        p->nodes[node].argc = 1U;
         p->pos++;
         rc = dsh_expect_word(p, DSH_K_DO);
         if (rc != DSH_OK)
@@ -548,12 +549,9 @@ dsh_parse_case(struct dsh_parser *p, unsigned int *out)
         rc = dsh_alloc_node(p, DSH_N_CASE, &node);
         if (rc != DSH_OK)
                 return rc;
-        rc = dsh_s6_copy(&p->nodes[node].words[0], &p->tokens[p->pos].text);
+        rc = dsh_node_add_word(&p->nodes[node], &p->tokens[p->pos]);
         if (rc != DSH_OK)
                 return rc;
-        p->nodes[node].literal_mask[0] = p->tokens[p->pos].literal_mask;
-        p->nodes[node].quote_mask[0] = p->tokens[p->pos].quote_mask;
-        p->nodes[node].argc = 1U;
         p->pos++;
         rc = dsh_expect_word(p, DSH_K_IN);
         if (rc != DSH_OK)
@@ -575,15 +573,9 @@ dsh_parse_case(struct dsh_parser *p, unsigned int *out)
                             a->argc >= DSH_PARSE_MAX_WORDS)
                                 return dsh_mark_error(p, DSH_E_SYNTAX,
                                     DSH_PE_WORD);
-                        rc = dsh_s6_copy(&a->words[a->argc],
-                            &p->tokens[p->pos].text);
+                        rc = dsh_node_add_word(a, &p->tokens[p->pos]);
                         if (rc != DSH_OK)
                                 return rc;
-                        a->literal_mask[a->argc] =
-                            p->tokens[p->pos].literal_mask;
-                        a->quote_mask[a->argc] =
-                            p->tokens[p->pos].quote_mask;
-                        a->argc++;
                         p->pos++;
                 }
                 if (a->argc == 0U)
