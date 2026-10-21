@@ -1,3 +1,9 @@
+- [x] **V95:** unify READ_WORDS/WRITE_WORDS mapped syscall tail through
+  an AC5-preserving shared handler: 5 folded KCORE words saved,
+  `022761 -> 022754` octal, **9665 -> 9660 words**. Targeted 256K
+  PTR/PTP physical round-trip PASS. Next KCORE reduction to below 8192:
+  1469 more words. Refer to `KCORE.MD` before each follow-up.
+
 - [x] **V94:** shared nine patchable FILE device bulk-I/O entries through
   one call/offset tail, **15 folded KCORE words saved** (`023000 -> 022761`,
   9680 -> 9665 words). Native nine-path FILE test and live 256K PTR/PTP

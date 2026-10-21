@@ -1,3 +1,19 @@
+## 2026-10-21 V95 SHARED MAPPED READ/WRITE SYSCALLS (-5 KCORE WORDS)
+
+After reviewing canonical `KCORE.MD`, the two native bulk-word syscall
+paths now share user-buffer translation and FILE argument setup.
+`READ_WORDS` and `WRITE_WORDS` select the appropriate FILE routine in AC5;
+the common path uses `PUSHJ 17,(5)` and the unchanged mapping-release tail.
+`vm_user_mapping_hold` saves/restores AC5 and `vm_user_words` does not
+modify it. Separate blocking TTY/pipe read and zero-word DPY write paths
+remain unchanged. Fully folded KCC `__kcore_low_end` **022761 -> 022754**
+octal: KCORE **9665 -> 9660 words (-5)**; syscall dispatch object
+**827 -> 822 words**. Focused 256K SIMH `test-daimos-pt-wordio` PASS
+(physical PTR/PTP complete/partial word-token round-trip, mapped READ and
+WRITE). No full testkit, 32K or TSFS testing. Strictly below-8192 KCORE
+now needs 1469 more words eliminated. Next potential shared mapped
+syscall pair is READDIRENT/PROCINFO; not yet modified or measured.
+
 ## 2026-10-21 V94 SHARED DEVICE WORD-I/O DISPATCH (-15 KCORE WORDS)
 
 Following the canonical `KCORE.MD` register, nine FILE bulk device paths

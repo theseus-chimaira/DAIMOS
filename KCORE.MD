@@ -15,9 +15,12 @@ completed results; KCORE decisions and ongoing work belong **here**.
   (`020000` octal words). The accepted fresh V86 KCC 256K full disk-root
   build has `__kcore_low_end=023002` and **9682** linked KCORE words;
   **1491** must be saved to fall strictly below 8K (1490 to reach 8192).
-- **Latest V94:** `__kcore_low_end=022761`, KCORE **9665 words** after
+- **Previous V94:** `__kcore_low_end=022761`, KCORE **9665 words** after
   nine device bulk-I/O entries share one dispatcher; **1474** words
   remain to fall strictly below 8192 (1473 to reach it).
+- **Latest V95:** `__kcore_low_end=022754`, KCORE **9660 words** after
+  sharing mapped READ_WORDS/WRITE_WORDS syscall code; **1469** words
+  remain to fall strictly below 8192 (1468 to reach it).
 - MRES size and whole-KCORE+MRES permanent-address gate are **informational**
   during this phase, not optimization blockers; the old total limit can be
   explicitly enabled with `PERMANENT_SIZE_ENFORCE=1`.
@@ -40,6 +43,7 @@ completed results; KCORE decisions and ongoing work belong **here**.
 | VFS mount policy | Four-slot readonly bitmap replaced with packed policy word, and mount/MM slab work accepted in earlier states | Keep live reservation/ownership semantics |
 | Shared short KCORE wrappers | V88/V89 verified `mm_pin/unpin`, `file_unlink/rmdir`, `vfs_create/mount`, scheduler selectors, `vfs_chmod/chown/utime` already share common implementations | Inlining often duplicates code; measure before changing |
 | Bulk device file I/O | **V94 -15 folded KCORE words** (9680 -> 9665): nine device-word paths share a single AC1/AC2 load, indirect PUSHJ via the selected patchable one-word MRES jump slot, and common file-offset result | Keep WCNSLS raw-read append handling and jump-slot ABI; focused unit + live PTR/PTP accepted |
+| Mapped READ/WRITE_WORDS syscalls | **V95 -5 folded KCORE words** (9665 -> 9660): map/translate and FILE call argument paths now shared; AC5 selects read versus write handler and survives translation | Keep per-op device/pipe and zero-count write handling; live 256K PTR/PTP full and partial transfers PASS |
 | Shared word operations | `fs_copy_words`/`fs_move_words`/`fs_zero_words` serve MM/VM/module and filesystem providers; overlap-safe move already reuses forward copy | Cannot relocate into detachable filesystem MRES without lifetime solution |
 | TTY packed fields | Halfword canonical-line bases and pending-byte/session routes already packed; DCS and GE MRES both use KCORE pending interfaces | Retain consistent live shared state |
 | P10FOLD | Existing production `-m 2` 21-object census has 31 folds/70 estimated words; `-m 1` yields only +4 more | Don't widen fold hazard surface for four words |
@@ -79,6 +83,30 @@ experiment is installed in current V86 KCORE.
    do not silently enable or remove current swap path to claim size savings.
 
 ### Per-step audit protocol
+
+**V95 accepted native mapped syscall sharing:** `syscall_dispatch_pdp6.s`
+formerly duplicated the `native_sys_map_one` / physical-buffer setup /
+FILE handler call / mapping-release tail for `READ_WORDS` and `WRITE_WORDS`.
+The two entry points now load `file_read_words` or `file_write_words` into
+AC5 and enter `native_sys_words_mapped`, which uses `PUSHJ 17,(5)`. This
+does not change the distinct prechecks for blocking TTY/pipe reads,
+device writes or the zero-count DPY write case. `vm_user_mapping_hold`
+explicitly saves/restores AC5, while `vm_user_words` changes only AC1,
+AC3 and AC4; the mapping failure path remains unchanged. The syscall
+dispatch object is **827 -> 822 words**. The fresh folded KCC KCORE link
+is **022761 -> 022754 octal**, **9665 -> 9660 words (-5)**. Targeted
+`test-daimos-pt-wordio` native 256K SIMH physical PTR/PTP full/partial
+WORDTOKEN8 round-trip PASS, exercising both mapped syscall operations.
+No full testkit, 32K or TSFS tests were run. Other syscall services were
+not retested in this focused change.
+
+**Next possible sharing candidate (unmeasured):** The mapped user-buffer
+translation code in `native_sys_readdir` (`%L97`) and `native_sys_procinfo`
+(`%L124`) is similarly structured. Inspect AC5/AC6 lifetimes, their
+distinct service semantics and callers; accept only a measured link-time
+reduction with focused syscall tests. Larger cold-path relocation remains
+an open high-impact task.
+
 
 **V94 accepted shared FILE device-word dispatcher:** `file_runtime.s`
 previously repeated AC1=buffer, AC2=count, `PUSHJ` to MINIT-patchable
