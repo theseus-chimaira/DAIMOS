@@ -1,3 +1,18 @@
+## 2026-10-21 D6FS FOUR-MEMBER LOGSTORE RUNTIME V119
+
+The non-size 256K GCC D6FS HDD runtime's `invalid badmap` post-check was
+caused by the **testkit** invoking host `logstore --dump -n 1` against the
+standard **four-member** D6FS disk set.  The incorrect logical-to-physical
+mapping read a non-BADMAP block.  Direct comparison against the same disk
+demonstrated `-n 1` FAIL (`invalid badmap`) and `-n 4` PASS (valid metadata).
+Testkit commit `16ccd39` corrects the geometry to `-n 4`, without changing
+any kernel or filesystem source.  A fresh GCC/256K `d6fs-hdd-runtime` run
+then passed **16/16 guest probes** and its host LOGSTORE check (exit 0),
+at `$TMPDIR/daimos-d6fs-logstore-v119/d6fs-hdd-runtime-v119.log`.
+This resolves that specific group-029 subtest, **not** the complete group
+(multi-member and recovery acceptance remain separate).  All dedicated
+size and strict 32K tests remain **deferred**.
+
 ## 2026-10-21 PDP-6 SIMH STOP/CONTINUE REGRESSION V111 — OPEN
 
 The checkpointed non-size matrix v75 has finished under **both GCC and
