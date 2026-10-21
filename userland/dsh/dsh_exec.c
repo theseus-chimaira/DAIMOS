@@ -552,17 +552,10 @@ dsh_builtin(struct dsh_state *st, unsigned int argc, struct dsh_s6 *argv)
                 if (argc != 2U)
                         return 2;
                 for (i = 0U; i < DSH_MAX_ALIASES; ++i)
-                        if (st->aliases[i].used &&
-                            st->aliases[i].name.len == argv[1].len) {
-                                unsigned int j;
-                                for (j = 0U; j < argv[1].len; ++j)
-                                        if (dsh_s6_get(&st->aliases[i].name,
-                                            j) != dsh_s6_get(&argv[1], j))
-                                                break;
-                                if (j == argv[1].len) {
-                                        st->aliases[i].used = 0U;
-                                        return 0;
-                                }
+                    if (st->aliases[i].used &&
+                        dsh_s6_same(&st->aliases[i].name, &argv[1])) {
+                                st->aliases[i].used = 0U;
+                                return 0;
                         }
                 return 0;
         }
