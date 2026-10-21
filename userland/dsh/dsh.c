@@ -238,6 +238,7 @@ dsh_history_add(void)
 }
 #endif
 
+#if DSH_ENABLE_COMPLETION
 static int
 dsh_complete_tab(struct dsh_state *st, unsigned int *cursorp, int list_ambiguous)
 {
@@ -300,6 +301,7 @@ dsh_complete_tab(struct dsh_state *st, unsigned int *cursorp, int list_ambiguous
         *cursorp = cursor;
         return i > word.len;
 }
+#endif
 
 static int
 dsh_getline_tty(struct dsh_state *st)
@@ -311,7 +313,9 @@ dsh_getline_tty(struct dsh_state *st)
 #if DSH_ENABLE_HISTORY
         int history_pos;
 #endif
+#if DSH_ENABLE_COMPLETION
         int tab_pending;
+#endif
         int ch;
 
         dsh_line_clear(&dsh_input_line);
@@ -319,15 +323,19 @@ dsh_getline_tty(struct dsh_state *st)
 #if DSH_ENABLE_HISTORY
         history_pos = -1;
 #endif
+#if DSH_ENABLE_COMPLETION
         tab_pending = 0;
+#endif
         for (;;) {
                 ch = dsys_readchar(0);
                 if (ch == -2)
                         continue;
                 if (ch < 0)
                         return -1;
+#if DSH_ENABLE_COMPLETION
                 if (ch != '\t')
                         tab_pending = 0;
+#endif
                 if (ch == '\r' || ch == '\n') {
                         (void)u_crlf(1);
 #if DSH_ENABLE_HISTORY
@@ -380,6 +388,7 @@ dsh_getline_tty(struct dsh_state *st)
                         continue;
                 }
                 if (ch == '\t') {
+#if DSH_ENABLE_COMPLETION
                         int cr;
 
                         cr = dsh_complete_tab(st, &cursor, tab_pending);
@@ -390,6 +399,11 @@ dsh_getline_tty(struct dsh_state *st)
                         tab_pending = 0;
                         if (!cr)
                                 (void)u_putc(1, 007);
+#else
+                        /* Plain bounded line editing stays usable without
+                         * loading the command/path-completion subsystem. */
+                        (void)u_putc(1, 007);
+#endif
                         continue;
                 }
                 if (ch == 010 || ch == 0177) {

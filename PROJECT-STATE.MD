@@ -1,3 +1,15 @@
+## 2026-10-21 DSH V29 OPTIONAL TAB COMPLETION
+
+DSH's interactive TAB command/path completion and its external helper
+launcher are now controlled by `DSH_ENABLE_COMPLETION`.  The 32K GCC
+default is 0; explicitly define `DSH_ENABLE_COMPLETION=1` for the full
+interactive build.  The editor's cursor movement, insertion/deletion,
+Backspace, Enter, Ctrl-C, script execution and job-control paths are not
+gated.  Both modes build successfully.  GCC image/BSS (octal):
+completion-off 031365/012755, completion-on 032104/012755, saving 0517
+image words and no BSS.  The v29 angle-expansion suite passes 25/25.
+Physical 32K boot and full target conformance still require acceptance.
+
 ## 2026-10-21 DSH V28 SHARED QUOTE-MASK EMISSION
 
 `dsh_expand_quoted` now uses a single post-expansion quote-mask pass for

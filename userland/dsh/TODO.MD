@@ -1,5 +1,16 @@
 # DSH TODO
 
+## 2026-10-21 V29 OPTIONAL TAB COMPLETION
+
+`DSH_ENABLE_COMPLETION=0` by default omits the external TAB completion
+helper/worker and TAB insertion/listing code.  Explicitly compile with
+`DSH_ENABLE_COMPLETION=1` to retain full interactive completion.  Both
+variants link; image 031365 vs 032104 octal respectively, BSS 012755.
+Cursor editing, line input, all scripting constructs and job control
+remain enabled.  The 25-case `$<...>` suite passes with completion off.
+Full conformance/real DCS editing and strict below-030000 text still open.
+
+
 ## 2026-10-21 V28 SHARED QUOTE-MASK LOOP
 
 Combined repeated quote-mask propagation in `dsh_expand_quoted` into one

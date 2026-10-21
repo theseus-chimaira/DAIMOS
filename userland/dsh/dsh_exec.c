@@ -929,6 +929,7 @@ dsh_run_external(struct dsh_state *st, unsigned int argc,
         return DSH_ERROR;
 }
 
+#if DSH_ENABLE_COMPLETION
 int
 dsh_complete_external(struct dsh_state *st, int mode,
     const struct dsh_s6 *word, struct dsh_s6 *match)
@@ -990,6 +991,7 @@ failed:
         (void)dsys_close(readfd);
         return 0;
 }
+#endif
 
 static int
 dsh_s6_same(const struct dsh_s6 *a, const struct dsh_s6 *b)

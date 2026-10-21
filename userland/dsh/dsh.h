@@ -17,6 +17,12 @@
 #define DSH_FUNC_MAX_CALLS      3U
 #define DSH_SCRIPT_MAX_TOKENS  32U
 
+/* Optional interactive convenience.  The bounded line editor and all
+ * scripting/foreground job semantics remain enabled when this is zero. */
+#ifndef DSH_ENABLE_COMPLETION
+#define DSH_ENABLE_COMPLETION 0
+#endif
+
 #define DSH_OK                  0
 #define DSH_E_ARG              -1
 #define DSH_E_RANGE            -2
@@ -128,8 +134,10 @@ int dsh_expand_mask(struct dsh_state *st, const struct dsh_s6 *in,
 int dsh_expand_quoted(struct dsh_state *st, const struct dsh_s6 *in,
     kword_t literal_mask, kword_t quote_mask, struct dsh_s6 *out,
     kword_t *out_quote_mask);
+#if DSH_ENABLE_COMPLETION
 int dsh_complete_external(struct dsh_state *st, int mode,
     const struct dsh_s6 *word, struct dsh_s6 *match);
+#endif
 int dsh_execute_line(struct dsh_state *st, const struct dsh_line *line);
 int dsh_execute_file(struct dsh_state *st, const struct dsh_s6 *path);
 void dsh_script_init(struct dsh_script *script);
