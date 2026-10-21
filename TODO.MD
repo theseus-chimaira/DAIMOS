@@ -1,3 +1,9 @@
+- [x] **V94:** shared nine patchable FILE device bulk-I/O entries through
+  one call/offset tail, **15 folded KCORE words saved** (`023000 -> 022761`,
+  9680 -> 9665 words). Native nine-path FILE test and live 256K PTR/PTP
+  word-I/O PASS. KCORE strictly below 8192 still needs 1474 words.
+  Correct V86–V93 measurements use base `060` octal, not `070`.
+
 - [ ] **V90 KCORE work authority:** consult `KCORE.MD` V90 register before
   *each* KCORE analysis or patch; maintain measured baseline, completed
   optimizations, proposed caller/lifetime audit, active candidates and
@@ -8,9 +14,9 @@
 
 - [x] **V86:** default MonitorFS to MRES, replacing its 1039-word KCORE
   body with nine-word KCORE dispatch.  Fresh KCC 256K full-profile image
-  passes DSH 115/115, KCORE **10702 -> 9674** words (-1028).  Previous
+  passes DSH 115/115, KCORE **10702 -> 9682** words (-1020).  Previous
   GCC 48K live MonitorFS/swap probes had passed with optional MRES.
-  Active 8K KCORE goal now requires 1482 additional words to reach 8192.
+  Active 8K KCORE goal now requires 1490 additional words to reach 8192.
 
 - [ ] **V85 ACTIVE: shrink KCORE below 020000 octal / 8192 words.**
   Total KCORE+MRES occupancy and individual MRES sizes are informational;

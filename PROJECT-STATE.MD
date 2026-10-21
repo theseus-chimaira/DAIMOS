@@ -1,8 +1,33 @@
+## 2026-10-21 V94 SHARED DEVICE WORD-I/O DISPATCH (-15 KCORE WORDS)
+
+Following the canonical `KCORE.MD` register, nine FILE bulk device paths
+(TTY, PTP, CP, LPT, DPY, WCNSLS write; TTY, PTR, CR read) now select
+their existing patchable jump slot in AC4 and share AC1/AC2 buffer/count
+preparation plus a `PUSHJ 17,(4)` returning via normal file-result
+offset handling. The separate WCNSLS raw-read append-result path is not
+changed. MINIT still patches the same one-word jump slots to MRES; the
+indirect call adds a small amount of device-path work but reduces KCORE.
+`file_runtime` object text **1175 -> 1160**, and fully folded KCC KCORE
+`__kcore_low_end` **023000 -> 022761** octal, **9680 -> 9665** words,
+**15 linked words saved**. The updated testkit native PDP-6 FILE test
+exercises all nine jump-slot address selections, AC1/AC2, return counts,
+file offsets and absent-device behavior (PASS). Real 256K PTR/PTP SIMH
+word-I/O full/partial transfer also PASS. No full suite, 32K or TSFS.
+
+**Size-accounting correction:** the correct KCORE start address is
+`000060` octal, as used in `image/report-permanent.sh`. Prior V86–V93
+reports had inadvertently subtracted `000070` and understated size by
+eight decimal words. Their map endpoints and savings between consecutive
+maps were correct, but baseline word counts and MonitorFS savings were
+not. The revised V85=10702, V86=9682 (-1020), V91=9681, V92/V93=9680,
+V94=9665 values use `endpoint - 060`. The KCORE target remains strictly
+less than 8192 words, requiring **1474 more words** from V94.
+
 ## 2026-10-21 V93 VFS FALLTHROUGH NON-SAVING EXPERIMENT
 
 Consulted `KCORE.MD`. Two consecutive-label VFS `JRST` instructions were
 removed experimentally and a folded KCC link was measured. No KCORE
-change: endpoint stayed `023000` octal, 9672 words. The experiment was
+change: endpoint stayed `023000` octal, 9680 words. The experiment was
 reverted, so there is no code change and no affected-path regression test
 was required. Continue examining other candidates, measuring net folded
 savings before acceptance. No 32K or TSFS work.
@@ -12,9 +37,9 @@ savings before acceptance. No 32K or TSFS work.
 `KCORE.MD` consulted before VFS pass. In `vfs_parent`, AC4 now receives
 the decoded mount slot directly, eliminating `move 4,3` before the shared
 resolver. The resolver already consumes AC4 and preserves AC2/AC3.
-Folded KCC KCORE `023001 -> 023000`, **9673 -> 9672 words**. Focused
+Folded KCC KCORE `023001 -> 023000`, **9681 -> 9680 words**. Focused
 PDP-6 file-walk regression PASS. No other code or runtime semantics
-changed; 8K KCORE goal now requires 1481 words to fall strictly below.
+changed; 8K KCORE goal now requires 1489 words to fall strictly below.
 
 ## 2026-10-21 V91 VFS ONE-WORD ELIMINATION AND FOCUSED TEST POLICY
 
@@ -22,7 +47,7 @@ KCORE.MD's active V90 register was consulted. The local label
 `vfs_mutate3_ro` had no incoming references, and the one stack-adjust
 instruction below it could not be reached by normal entry or fallthrough.
 Removing it leaves `vfs_mutate2_ro` intact. Fresh KCC folded link:
-`__kcore_low_end=023001` octal, **9673 words**, down one from V86.
+`__kcore_low_end=023001` octal, **9681 words**, down one from V86.
 Full image build PASS. The focused PDP-6
 `test-daimos-vfs-storage-reservation` PASSes; it does not exercise the
 dead instruction directly. The full testkit is explicitly **not** run
@@ -33,7 +58,7 @@ paths, with broader suites only at integration milestones. No 32K/TSFS.
 
 `KCORE.MD` is the authoritative, continuously consulted KCORE optimization
 document (as already required by the older TODO). Its new V90 lead section
-records active KCORE-only 8K acceptance, current V86 9674-word size,
+records active KCORE-only 8K acceptance, current V86 9682-word size,
 previously verified optimizations (with measured versus object-only
 comparisons distinguished), open bottom-up candidates, nonremovable shared
 ABI and MRES/KINIT lifetime dependencies, deferred packed-process
@@ -73,7 +98,7 @@ link-size delta and functional tests on >32K memory. No TSFS work.
 ## 2026-10-21 V88 KCORE BOTTOM-UP PASS 1 — SHORT WRAPPERS
 
 First source-level review of the V87 short-entry inventory (current V86
-KCORE 9674 words) finds no safe, meaningful deletion in the first group:
+KCORE 9682 words) finds no safe, meaningful deletion in the first group:
 
 - `mm_pin`/`mm_unpin` are two-word argument setup plus tail-branches
   into `mm_pin_adjust`, preserving shared validation/adjustment.
@@ -112,7 +137,7 @@ Neither action is justified without a measured net KCORE reduction.
 
 Generated a full linker-visible inventory from the accepted V86
 `MONITORFS_MRES_ENABLED=1` KCC image (`__kcore_low_end=023002`,
-KCORE 9674 words).  `pdp10-doc/STATUS/DAIMOS-KCORE-FUNCTION-INVENTORY-
+KCORE 9682 words).  `pdp10-doc/STATUS/DAIMOS-KCORE-FUNCTION-INVENTORY-
 20261021-V87.MD` and companion `.TSV` list 381 defined linked
 symbols, of which 315 are text entries, ordered by conservative local
 entry-span estimates.  Each row includes octal address, source object,
@@ -137,10 +162,10 @@ the boot and kernel Makefiles now select `MONITORFS_MRES_ENABLED=1`.
 The existing nine-word KCORE dispatch replaces the 1039-word full
 MonitorFS KCORE object; the existing 1039-word pinned MRES implements
 the full service.  On a fresh full-profile 256K KCC disk-root image,
-`__kcore_low_end=023002` octal.  KCORE now occupies **9674 decimal words**,
-down from **10702** (V79/V85), a **1028-word KCORE saving**.  This does
+`__kcore_low_end=023002` octal.  KCORE now occupies **9682 decimal words**,
+down from **10702** (V79/V85), a **1020-word KCORE saving**.  This does
 not claim an MRES or combined-residency decrease; the separate KCORE 8K
-goal remains 1482 words away (1483 words for strictly below 8K).
+goal remains 1490 words away (1491 words for strictly below 8K).
 
 Fresh V86 KCC full-profile image builds and links; the DSH harness
 passes **115/115** conformance probes, with zero failures.  Earlier

@@ -877,35 +877,23 @@ file_write_regular_pos:
         pushj   17,vfs_write_words
         jrst    file_words_append_result
 file_write_words_tty:
-        move    1,-1(17)                ; mapped S6REC words
-        move    2,(17)                  ; supplied word count
-        pushj   17,tty_write_s6rec_jump
-        jrst    file_words_result
+        movei   4,tty_write_s6rec_jump
+        jrst    file_words_device_call
 file_write_words_ptp:
-        move    1,-1(17)                ; mapped PT8 source
-        move    2,(17)                  ; supplied word count
-        pushj   17,ptp_write_words_jump
-        jrst    file_words_result
+        movei   4,ptp_write_words_jump
+        jrst    file_words_device_call
 file_write_words_cp:
-        move    1,-1(17)                ; mapped CARD12 source
-        move    2,(17)                  ; supplied word count
-        pushj   17,cp_write_words_jump
-        jrst    file_words_result
+        movei   4,cp_write_words_jump
+        jrst    file_words_device_call
 file_write_words_lpt:
-        move    1,-1(17)                ; mapped S6REC source
-        move    2,(17)                  ; supplied word count
-        pushj   17,lpt_write_s6rec_jump
-        jrst    file_words_result
+        movei   4,lpt_write_s6rec_jump
+        jrst    file_words_device_call
 file_write_words_dpy:
-        move    1,-1(17)                ; mapped packed Type-340 words
-        move    2,(17)                  ; zero count stops/releases the list
-        pushj   17,dpy_write_words_jump
-        jrst    file_words_result
+        movei   4,dpy_write_words_jump
+        jrst    file_words_device_call
 file_write_words_wcnsls:
-        move    1,-1(17)                ; tagged raw CONO/DATAO source
-        move    2,(17)
-        pushj   17,wcnsls_write_words_jump
-        jrst    file_words_result
+        movei   4,wcnsls_write_words_jump
+        jrst    file_words_device_call
 
 file_read_words_dispatch:
         camn    1,[020002000002]        ; PTR0
@@ -921,19 +909,24 @@ file_read_words_dispatch:
         pushj   17,vfs_read_words
         jrst    file_words_result
 file_read_words_tty:
-        move    1,-1(17)                ; mapped S6REC destination
-        move    2,(17)                  ; destination capacity
-        pushj   17,tty_read_s6rec_jump
-        jrst    file_words_result
+        movei   4,tty_read_s6rec_jump
+        jrst    file_words_device_call
 file_read_words_ptr:
-        move    1,-1(17)                ; mapped PT8 destination
-        move    2,(17)                  ; destination word capacity
-        pushj   17,ptr_read_words_jump
-        jrst    file_words_result
+        movei   4,ptr_read_words_jump
+        jrst    file_words_device_call
 file_read_words_cr:
-        move    1,-1(17)                ; mapped CARD12 destination
-        move    2,(17)                  ; destination word capacity
-        pushj   17,cr_read_words_jump
+        movei   4,cr_read_words_jump
+        jrst    file_words_device_call
+
+; All these device providers use AC1=buffer and AC2=word count.  Call via
+; the existing MINIT-patchable KCORE jump slot selected in AC4; PUSHJ
+; executes that one-word JRST trampoline and the MRES POPJ returns here.
+; Preserve the ordinary file_words_result path (offset update).  WCNSLS
+; read still has its original separate fallthrough into append handling.
+file_words_device_call:
+        move    1,-1(17)
+        move    2,(17)
+        pushj   17,(4)
         jrst    file_words_result
 file_read_words_wcnsls:
         move    1,-1(17)
