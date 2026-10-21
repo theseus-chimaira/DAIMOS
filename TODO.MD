@@ -1,3 +1,8 @@
+- [x] **V96:** share native DIRREAD and PROCINFO mapped-output syscall
+  path via AC6-selected handler and AC5-preserved index; folded KCORE
+  **9660 -> 9655 words (-5)**. Focused 256K PDP-6 test checks both
+  `/PROC` DIRREAD and PROCINFO. Strictly below 8K needs 1464 words.
+
 - [x] **V95:** unify READ_WORDS/WRITE_WORDS mapped syscall tail through
   an AC5-preserving shared handler: 5 folded KCORE words saved,
   `022761 -> 022754` octal, **9665 -> 9660 words**. Targeted 256K

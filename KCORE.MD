@@ -18,9 +18,12 @@ completed results; KCORE decisions and ongoing work belong **here**.
 - **Previous V94:** `__kcore_low_end=022761`, KCORE **9665 words** after
   nine device bulk-I/O entries share one dispatcher; **1474** words
   remain to fall strictly below 8192 (1473 to reach it).
-- **Latest V95:** `__kcore_low_end=022754`, KCORE **9660 words** after
+- **Previous V95:** `__kcore_low_end=022754`, KCORE **9660 words** after
   sharing mapped READ_WORDS/WRITE_WORDS syscall code; **1469** words
   remain to fall strictly below 8192 (1468 to reach it).
+- **Latest V96:** `__kcore_low_end=022747`, KCORE **9655 words** after
+  sharing mapped DIRREAD/PROCINFO output handling; **1464** words remain
+  to fall strictly below 8192 (1463 to reach it).
 - MRES size and whole-KCORE+MRES permanent-address gate are **informational**
   during this phase, not optimization blockers; the old total limit can be
   explicitly enabled with `PERMANENT_SIZE_ENFORCE=1`.
@@ -44,6 +47,7 @@ completed results; KCORE decisions and ongoing work belong **here**.
 | Shared short KCORE wrappers | V88/V89 verified `mm_pin/unpin`, `file_unlink/rmdir`, `vfs_create/mount`, scheduler selectors, `vfs_chmod/chown/utime` already share common implementations | Inlining often duplicates code; measure before changing |
 | Bulk device file I/O | **V94 -15 folded KCORE words** (9680 -> 9665): nine device-word paths share a single AC1/AC2 load, indirect PUSHJ via the selected patchable one-word MRES jump slot, and common file-offset result | Keep WCNSLS raw-read append handling and jump-slot ABI; focused unit + live PTR/PTP accepted |
 | Mapped READ/WRITE_WORDS syscalls | **V95 -5 folded KCORE words** (9665 -> 9660): map/translate and FILE call argument paths now shared; AC5 selects read versus write handler and survives translation | Keep per-op device/pipe and zero-count write handling; live 256K PTR/PTP full and partial transfers PASS |
+| Mapped DIRREAD/PROCINFO syscalls | **V96 -5 folded KCORE words** (9660 -> 9655): AC6 selects FILE dirread or PROCINFO, AC5 retains original FD/slot, and one shared path translates the output buffer | Preserve user mapping hold/release and service signatures; focused 256K `/PROC` DIRREAD + PROCINFO test PASS |
 | Shared word operations | `fs_copy_words`/`fs_move_words`/`fs_zero_words` serve MM/VM/module and filesystem providers; overlap-safe move already reuses forward copy | Cannot relocate into detachable filesystem MRES without lifetime solution |
 | TTY packed fields | Halfword canonical-line bases and pending-byte/session routes already packed; DCS and GE MRES both use KCORE pending interfaces | Retain consistent live shared state |
 | P10FOLD | Existing production `-m 2` 21-object census has 31 folds/70 estimated words; `-m 1` yields only +4 more | Don't widen fold hazard surface for four words |
@@ -83,6 +87,30 @@ experiment is installed in current V86 KCORE.
    do not silently enable or remove current swap path to claim size savings.
 
 ### Per-step audit protocol
+
+**V96 accepted native mapped-output syscall sharing:** In
+`syscall_dispatch_pdp6.s`, `%L97` (DIRREAD) and `%L124` (PROCINFO)
+formerly duplicated the same eight-instruction path: preserve original
+FD/slot, translate the user result pointer with a VM hold, set AC2 to
+the physical destination, restore the index to AC1, call FILE/PROCINFO,
+then release the mapping. The entrypoints now select their service in
+AC6 and converge at `native_sys_fd_buffer`, which holds the original index
+in AC5 and calls `PUSHJ 17,(6)`. `vm_user_mapping_hold` preserves AC5,
+does not touch AC6, and `vm_user_words` uses AC1/AC3/AC4 only; service
+calls are dispatched before they may overwrite AC6. The original mapping
+failure branch to `%L137` and mapping-release exit are retained.
+Fresh folded full-profile 256K KCC KCORE `__kcore_low_end` changed
+`022754 -> 022747` octal; **9660 -> 9655 words (-5)**. The dispatch DOBJ
+text fell **822 -> 817** words. Targeted `test-daimos-monitorfs-process-decimal`
+PASS on real 256K PDP-6 SIMH, extending its existing `dsys_procinfo`
+checks with `dsys_dirread` of `/PROC`, including directory-type/entry
+validation. No full testkit, 32K configurations, or TSFS tests run.
+
+**Next:** Investigate remaining repeated mapped-output syscall wrappers
+(stat/readdir/meminfo), then the much larger cold process/file-runtime
+paths and whether strictly initialization-only routines can live in KINIT.
+Do not merge wrappers whose argument lifetime or fault behavior differs.
+
 
 **V95 accepted native mapped syscall sharing:** `syscall_dispatch_pdp6.s`
 formerly duplicated the `native_sys_map_one` / physical-buffer setup /

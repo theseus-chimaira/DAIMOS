@@ -327,13 +327,22 @@ native_sys_two_paths_bad:
         jrst    native_sys_mapped_return
 %L97:
         ; AC1 fd, AC2 directory entry buffer.
+        movei   6,file_readdir
+        jrst    native_sys_fd_buffer
+; Common native syscall with AC1 = small index (FD or process slot),
+; AC2 = user result-buffer address, AC6 = selected resident service.
+; vm_user_mapping_hold preserves AC5 and leaves AC6 untouched;
+; vm_user_words only changes AC1/AC3/AC4.  Keep AC5 for the original
+; index while the user mapping is held.  The FILE/PROCINFO service is
+; free to use AC6 as scratch after the indirect call is dispatched.
+native_sys_fd_buffer:
         move    5,1
         move    1,2
         pushj   17,native_sys_map_one
         jumpe   1,%L137
         move    2,1
         hrrz    1,5
-        pushj   17,file_readdir
+        pushj   17,(6)
         jrst    native_sys_mapped_return
 %L102:
         ; AC1 path, AC2 mode.
@@ -361,14 +370,8 @@ native_sys_two_paths_bad:
         jrst    native_sys_mapped_return
 %L124:
         ; AC1 slot, AC2 result buffer.
-        move    5,1
-        move    1,2
-        pushj   17,native_sys_map_one
-        jumpe   1,%L137
-        move    2,1
-        hrrz    1,5
-        pushj   17,sys_procinfo
-        jrst    native_sys_mapped_return
+        movei   6,sys_procinfo
+        jrst    native_sys_fd_buffer
 %L129:
         pushj   17,native_sys_map_one
         jumpe   1,%L137

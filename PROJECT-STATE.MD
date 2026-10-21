@@ -1,3 +1,19 @@
+## 2026-10-21 V96 SHARED DIRREAD/PROCINFO MAPPED OUTPUT (-5 WORDS)
+
+`KCORE.MD` consulted before modification. Native syscall `%L97`
+(DIRREAD) and `%L124` (PROCINFO) share output-pointer translation,
+hold/failure, FD/slot reassembly and mapping release by selecting the
+target handler in AC6 and entering `native_sys_fd_buffer`. AC5 retains
+the original index; the mapping hold preserves AC5 and never modifies
+AC6, while VM user translation changes AC1/AC3/AC4 only. The common
+path dispatches through `PUSHJ 17,(6)`. Fully folded KCC full-profile
+KCORE map endpoint **022754 -> 022747** octal, **9660 -> 9655 words**;
+syscall-dispatch object text **822 -> 817**. The 256K SIMH targeted
+`test-daimos-monitorfs-process-decimal` PASSes, now checking DIRREAD
+on `/PROC`, its entry type and name, as well as existing PROCINFO,
+PID and MonitorFS metadata. No 32K, TSFS or full testkit run. Strict
+below-8192 KCORE still requires **1464** words of reductions.
+
 ## 2026-10-21 V95 SHARED MAPPED READ/WRITE SYSCALLS (-5 KCORE WORDS)
 
 After reviewing canonical `KCORE.MD`, the two native bulk-word syscall
