@@ -51,6 +51,15 @@
   emits a partially merged `OPERAND# ` prompt.  Increasing the timeout
   alone is NOT a fix; investigate WRITECHAR/TTY/DCS transmission and process
   completion, compare CTY before changing HELP syntax or test assertions.
+  V78 simulator inspection: `PDP10/pdp6_dcs.c` discards the return from
+  `tmxr_putc_ln()` for DCSA DATAO, although `sim_tmxr.c` returns
+  `SCPE_STALL` when the output queue is full (and does not enqueue that
+  character).  This is a confirmed potential character-loss mechanism,
+  consistent with the corrupted DAS help text.  A correct repair must
+  coordinate the Type 630 transmitter-ready/scanner handshake with the
+  DAIMOS DCS driver; merely extending timeouts or dropping/retrying a
+  DATAO without ordering guarantees is not acceptable.  CTY comparison
+  remains blocked by a separate `?RT` boot halt on reused media.
 
 - [x] Restore the normal KCC DSH image ceiling (`036000` octal): V77 merges
   duplicate counted-SIXBIT line readers.  KCC image shrinks `036021` to

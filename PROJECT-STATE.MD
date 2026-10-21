@@ -1,3 +1,23 @@
+## 2026-10-21 V78 HELP DAS DCS OUTPUT INVESTIGATION — OPEN
+
+The 256K KCC DSH V77 image passes its normal `036000`-octal size gate.
+Full DSH conformance passes the first 20 probes but stalls during
+`HELP DAS`.  A fresh-image isolated HELP DAS test with a 150-second
+allowance reproduces the stall after approximately 1 KiB of DCS0 text;
+its OPTIONS/OPERANDS lines are corrupted and the prompt is interleaved.
+This is not a short-timeout-only or incorrect expected-text problem.
+
+Source inspection identifies a concrete simulator-side output-loss hazard:
+`sims/PDP10/pdp6_dcs.c` invokes `tmxr_putc_ln()` for DATAO and ignores
+the status, while `sims/sim_tmxr.c` returns `SCPE_STALL` *without queuing
+the character* when the transmit queue is full.  DAIMOS's `dcs_putchar`
+performs DCSB line selection and DCSA DATAO without a transmitter-ready
+handshake.  The paired transmitter-scanner protocol and guest-driver
+backpressure require a correct design and a targeted runtime verification;
+neither a timing delay nor a one-byte simulator retry is accepted as a fix.
+The comparison over CTY is inconclusive: the reused disk boot halted with
+`?RT` before DSH.  **No production DCS or simulator code was modified.**
+
 ## 2026-10-20 V77 DSH KCC SIZE GATE RESTORED
 
 DSH history already defaults to disabled (`DSH_ENABLE_HISTORY=0`, V25),
