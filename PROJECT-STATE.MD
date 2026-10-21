@@ -1,3 +1,28 @@
+## 2026-10-21 DSH GCC HELP RECOVERY V30 (TOOLCHAIN, NO SOURCE WORKAROUND)
+
+The two persistent v26-v29 compact HELP failures were caused by an
+out-of-date **installed** GCC `cc1`, not by the DSH/HELP parser or the
+SIXMD catalog.  The source correction was already committed to
+`gcc-pdp10` as `df27247` (local 9-bit array word-boundary load v45).
+The installed compiler predates that commit; its optimized `line[4]`
+load selected byte 1 rather than byte 0 of the next 36-bit word.
+
+Rebuilt the existing gcc-pdp10 source tree and updated the installed
+`$PDP10_PREFIX/lib/gcc-lib/pdp10-dec-none/3.2/cc1`.  Installed binary
+SHA-256: `dca2ce75da0e128ac0f6309ee2d1b2c55bcf539bdd590449e065afa0e3ee7768`.
+The previous binary is backed up as
+`$TMPDIR/pdp10-gcc-cc1-installed-before-char-boundary-v46-20261021`.
+
+The existing `daimos-testkit` v45 target-executed regression now passes
+all four optimization levels (`-O0`, `-O1`, `-O2`, `-Os`) using the installed
+compiler.  New paired SIMH `HELP ECHO` / `HELP DAS` checks pass 2/2,
+and a clean GCC-image full DSH conformance run passes **115/115** with
+no exclusions.  The GCC v29 image is unchanged at 031365 octal words,
+BSS 012755.  No DAIMOS runtime workaround and no new GCC source change
+were introduced for this recovery.  The strict GCC image target is still
+below 030000 octal, requiring a further 01366 octal words saved; this
+verification used a 256K simulator and is not a physical 32K acceptance.
+
 ## 2026-10-21 DSH V29 OPTIONAL TAB COMPLETION
 
 DSH's interactive TAB command/path completion and its external helper

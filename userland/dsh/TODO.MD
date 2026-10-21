@@ -1,5 +1,18 @@
 # DSH TODO
 
+## 2026-10-21 V30 GCC TOOLCHAIN CORRECTION ACCEPTED
+
+The compact-HELP failures inherited by v26-v29 are resolved by rebuilding
+and installing GCC from `gcc-pdp10` after the existing backend fix
+`df27247` (the installed `cc1` was stale).  The v45 byte-boundary
+target-executed compiler regression passes -O0/-O1/-O2/-Os; the two HELP
+cases pass; the entire new GCC-built DSH v29 suite passes **115/115**.
+No source-level HELP workaround was needed; 32K-default completion-off
+GCC image/BSS remain 031365/012755 octal.  Still open: save 01366 octal
+words to reach strict below-030000 image target, check stack/BRK and
+physical 32K boot, and address the other deferred scripting/editor work.
+
+
 ## 2026-10-21 V29 OPTIONAL TAB COMPLETION
 
 `DSH_ENABLE_COMPLETION=0` by default omits the external TAB completion
@@ -63,9 +76,8 @@ Next correctness milestones, independent of parameter expansion:
    scripts and pipeline failure cleanup.
 6. ED/EX line-store and command layers on top of the shared editing core;
    subsequently integrate Vi-style interaction without a second editor.
-7. Reserve `$<NAME...>` for future parameter expansion: `<` and `>`
-   currently tokenize as redirections, so `$<` needs context-sensitive
-   recognition before ordinary operators.  No syntax change in V26.
+7. HISTORICAL V26 DEFERRED ITEM: `$<NAME...>` lexical disambiguation.  This
+   was implemented in V27; the limitations are documented above.
 
 All new features must retain the strict below-030000 GCC text target as
 an explicit optimization gate, with separately measured BSS and stack.
