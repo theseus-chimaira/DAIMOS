@@ -1,3 +1,35 @@
+## 2026-10-21 D6FS REGRESSION GROUP 029 V131 ACCEPTED
+
+The 256K non-size **group 029** D6FS HDD, multimember and recovery
+tests now pass independently under both KCC and GCC.
+
+The multimember test fixture had two unrelated defects: its generated
+SIMH command files reattached obsolete DSK1-3 media, and its synthetic
+D6FS roots omitted production MOUNTALL/configuration and the external
+executables required by the 16 file-operation probes. Testkit commit
+`552428c` selects versioned `run-multimember-v126.sh`, which seeds
+correctly populated roots and attaches only the intended test members.
+KCC v126 and GCC v127 each pass all 16 operations on both two-member
+and four-member roots, including both rejected invalid-member layouts
+and LOGSTORE post-checks. No DAIMOS kernel or D6FS code changed.
+
+The ordinary HDD runtime passed 16 probes and the corrected four-member
+LOGSTORE badmap check under KCC v128 and GCC v119. The separate
+dual-superblock recovery fixture also passed 16 probes, bootstream
+preservation, LOGSTORE inspection and dirty-reboot rejection under
+KCC v130 and GCC v129.
+
+Evidence logs are `$TMPDIR/daimos-d6fs-multi-kcc-v126.log`,
+`$TMPDIR/daimos-d6fs-multi-gcc-v127.log`,
+`$TMPDIR/daimos-d6fs-hdd-runtime-kcc-v128.log`,
+`$TMPDIR/daimos-d6fs-recovery-gcc-v129.log` and
+`$TMPDIR/daimos-d6fs-recovery-kcc-v130.log`, plus the earlier GCC
+`$TMPDIR/daimos-d6fs-logstore-v119/d6fs-hdd-runtime-v119.log`.
+
+Groups **022, 028, 029** are independently accepted; **027** is deferred
+by request. **030** and atomic full-matrix acceptance remain open.
+Strict 32K and size gates remain deferred.
+
 ## 2026-10-21 KERNEL/STANDALONE REGRESSION GROUP 028 V123 ACCEPTED
 
 The independent non-size **group 028** test now passes KCC and GCC on
