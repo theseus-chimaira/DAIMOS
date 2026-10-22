@@ -24,7 +24,5 @@ struct tsfs_scan_result {
 };
 
 int tsfs_scan(unsigned int seed_unit, struct tsfs_scan_result *out);
-int tsfs_build_mount_handoff(const struct tsfs_scan_result *scan,
-    kword_t out[SYS_TSFS_MOUNT_WORDS]);
 
 #endif

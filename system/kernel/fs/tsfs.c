@@ -3,8 +3,6 @@
 /*
  * The PDP-6 TSFS provider is implemented in tsfs_runtime.s.  TSFS metadata is
  * deliberately simple enough that the assembly implementation is both much
- * smaller than KCC output and faster on the target.  Media-set discovery,
- * checksums, and structural validation remain in the transient userspace
- * MOUNT.TSFS helper; the resident provider validates only addresses it will
- * dereference.
+ * smaller than KCC output and faster on the target.  Boot-root discovery, checksums and structural validation are handled
+ * by KINIT before the resident read-only provider is invoked.
  */

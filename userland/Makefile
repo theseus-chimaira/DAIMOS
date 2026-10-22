@@ -46,7 +46,7 @@ KCC_HEADERS = $(wildcard $(PROJECT_ROOT)/userland/libc/*.h) \
 	$(wildcard $(PROJECT_ROOT)/system/kernel/storage/*.h) \
 	$(wildcard $(PDP10_PREFIX)/include/*.h)
 
-CHECK_SRCS = libc/u.c libc/text.c exec/commands.c exec/standalone.c exec/utility.c exec/utility_standalone.c exec/xargs.c exec/sed.c exec/configctl.c exec/make.c dsh/dsh.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c init/init.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c tsfs/mount_tsfs.c dtfs/dtfs_probe.c dtfs/dtfsprobe.c d6lz/d6lz.c logstore/logdrain.c logstore/logcompat.c toolchain/dobj.c toolchain/darc.c toolchain/dlink.c toolchain/objdump.c
+CHECK_SRCS = libc/u.c libc/text.c exec/commands.c exec/standalone.c exec/utility.c exec/utility_standalone.c exec/xargs.c exec/sed.c exec/configctl.c exec/make.c dsh/dsh.c dsh/dsh_s6.c dsh/dsh_lex.c dsh/dsh_parse.c dsh/dsh_env.c dsh/dsh_exec.c init/init.c login/login.c tsfs/tsfs_scan.c tsfs/tsfsprobe.c dtfs/dtfs_probe.c dtfs/dtfsprobe.c d6lz/d6lz.c logstore/logdrain.c logstore/logcompat.c toolchain/dobj.c toolchain/darc.c toolchain/dlink.c toolchain/objdump.c
 CHECK_ASMS = $(CHECK_SRCS:%.c=$(USERLAND_BUILD)/check/%.s)
 COMMON_C_SRCS = libc/u.c libc/text.c
 COMMON_S_SRCS = libc/crt0.s libc/syscall.s libc/syscall_helpers.s $(GCC_STARTUP_SRC)
@@ -165,12 +165,6 @@ TSFSPROBE_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/tsfsprobe/%.dobj)
 TSFSPROBE_DXR = $(USERLAND_BUILD)/tsfsprobe.dxr
 TSFSPROBE_MAP = $(USERLAND_BUILD)/tsfsprobe.map
 
-MOUNTTSFS_C_SRCS = $(COMMON_C_SRCS) tsfs/tsfs_scan.c tsfs/mount_tsfs.c
-MOUNTTSFS_C_OBJS = $(MOUNTTSFS_C_SRCS:%.c=$(USERLAND_BUILD)/mounttsfs/%.dobj)
-MOUNTTSFS_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/mounttsfs/%.dobj)
-MOUNTTSFS_DXR = $(USERLAND_BUILD)/mounttsfs.dxr
-MOUNTTSFS_MAP = $(USERLAND_BUILD)/mounttsfs.map
-
 DTFSPROBE_C_SRCS = $(COMMON_C_SRCS) dtfs/dtfs_probe.c dtfs/dtfsprobe.c
 DTFSPROBE_C_OBJS = $(DTFSPROBE_C_SRCS:%.c=$(USERLAND_BUILD)/dtfsprobe/%.dobj)
 DTFSPROBE_S_OBJS = $(COMMON_S_SRCS:%.s=$(USERLAND_BUILD)/dtfsprobe/%.dobj)
@@ -214,7 +208,7 @@ KCC_GENERATED = $(CHECK_ASMS) $(INIT_C_OBJS) $(MOUNTALL_C_OBJS) \
 	$(LOGIN_C_OBJS) $(DSH_C_OBJS) \
 	$(DSHCOMP_C_OBJS) \
 	$(XARGS_C_OBJS) $(SED_C_OBJS) $(CONFIGCTL_C_OBJS) $(MAKE_C_OBJS) \
-	$(TSFSPROBE_C_OBJS) $(MOUNTTSFS_C_OBJS) \
+	$(TSFSPROBE_C_OBJS) \
 	$(DTFSPROBE_C_OBJS) $(D6LZ_C_OBJS) $(LOGDRAIN_C_OBJS) \
 	$(DARC_C_OBJS) $(DLINK_C_OBJS) $(OBJDUMP_C_OBJS)
 
@@ -223,11 +217,11 @@ $(KCC_GENERATED): $(KCC_TOOL_DEP) $(KCC_HEADERS)
 .DEFAULT_GOAL := build
 .PHONY: build check manual-check clean
 
-build: manual-check $(INIT_DXR) $(MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(DSHCOMP_DXR) $(PUBLIC_PROGRAM_DXRS) $(XARGS_DXR) $(SED_DXR) $(CONFIGCTL_DXR) $(MAKE_DXR) $(LOGD_DXR) $(LOGDUMP_DXR) $(TSFSPROBE_DXR) $(MOUNTTSFS_DXR) $(DTFSPROBE_DXR) $(D6LZ_DXR) $(LOGDRAIN_DXR) $(DARC_DXR) $(DLINK_DXR) $(OBJDUMP_DXR)
+build: manual-check $(INIT_DXR) $(MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(DSHCOMP_DXR) $(PUBLIC_PROGRAM_DXRS) $(XARGS_DXR) $(SED_DXR) $(CONFIGCTL_DXR) $(MAKE_DXR) $(LOGD_DXR) $(LOGDUMP_DXR) $(TSFSPROBE_DXR) $(DTFSPROBE_DXR) $(D6LZ_DXR) $(LOGDRAIN_DXR) $(DARC_DXR) $(DLINK_DXR) $(OBJDUMP_DXR)
 
 PUBLIC_MANUAL_NAMES = $(COMMAND_PROGRAMS) $(UTILITY_MISC_PROGRAMS) \
 	$(UTILITY_TEXT_PROGRAMS) $(UTILITY_DOC_PROGRAMS) LOGD LOGDUMP \
-	INIT LOGIN DSH XARGS SED CONFIGCTL MAKE TSFSPROBE MOUNT.TSFS DTFSPROBE \
+	INIT LOGIN DSH XARGS SED CONFIGCTL MAKE TSFSPROBE DTFSPROBE \
 	D6LZ LOGDRAIN DARC DLINK OBJDUMP
 PUBLIC_MANUAL_FILES = $(addprefix manual/,$(addsuffix .SIXMD,$(PUBLIC_MANUAL_NAMES)))
 
@@ -484,18 +478,6 @@ $(USERLAND_BUILD)/tsfsprobe/%.dobj: %.s
 
 $(TSFSPROBE_DXR): $(TSFSPROBE_C_OBJS) $(TSFSPROBE_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(TSFSPROBE_MAP) $(TSFSPROBE_S_OBJS) $(TSFSPROBE_C_OBJS) $(TARGET_LINK_LIBS)
-
-$(USERLAND_BUILD)/mounttsfs/%.dobj: %.c
-	mkdir -p $(dir $@)
-	$(KCC) $(KCCFLAGS) $(CPPFLAGS) -S $< -o $(@:.dobj=.s)
-	$(DAS) $(DASFLAGS) -C -O $@ $(@:.dobj=.s)
-
-$(USERLAND_BUILD)/mounttsfs/%.dobj: %.s
-	mkdir -p $(dir $@)
-	$(DAS) $(DASFLAGS) -C -O $@ $<
-
-$(MOUNTTSFS_DXR): $(MOUNTTSFS_C_OBJS) $(MOUNTTSFS_S_OBJS)
-	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(MOUNTTSFS_MAP) $(MOUNTTSFS_S_OBJS) $(MOUNTTSFS_C_OBJS) $(TARGET_LINK_LIBS)
 
 $(USERLAND_BUILD)/dtfsprobe/%.dobj: %.c
 	mkdir -p $(dir $@)

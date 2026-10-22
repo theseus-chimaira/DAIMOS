@@ -11,12 +11,6 @@
 
 /* The transient mount helper validates metadata and leaves only compact table
  * locators.  This keeps the handoff/state at the existing 20 words. */
-#define TSFS_MOUNT_META_WORDS      4U
-#define TSFS_MOUNT_WORDS           (BLOCKSET_DESCRIPTOR_WORDS + TSFS_MOUNT_META_WORDS)
-#define TSFS_MOUNT_FILE_LOC        BLOCKSET_DESCRIPTOR_WORDS
-#define TSFS_MOUNT_FILE_SHAPE      (BLOCKSET_DESCRIPTOR_WORDS + 1U)
-#define TSFS_MOUNT_EXTENT_LOC      (BLOCKSET_DESCRIPTOR_WORDS + 2U)
-#define TSFS_MOUNT_EXTENT_SHAPE    (BLOCKSET_DESCRIPTOR_WORDS + 3U)
 
 #define TSFS_FILE_WORDS            8U
 #define TSFS_FILE_PARENT_FLAGS     0U
@@ -40,8 +34,6 @@
 #define TSFS_EXTENT_FLAG_MASK      1U
 #define TSFS_RESTART_WORDS         0400U
 
-int tsfs_mount_set(const kword_t *handoff, vnode_t target,
-    unsigned int flags, vnode_t *rootp);
 int tsfs_lookup(vnode_t dir, const struct vfs_name *name,
     vnode_t *nodep);
 int tsfs_readdir(vnode_t dir, unsigned int off, struct vfs_dirent *ent);

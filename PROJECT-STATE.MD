@@ -1,3 +1,31 @@
+## 2026-10-22 TSFS BOOT-ROOT-ONLY CONTRACT / TEST REMOVAL V165
+
+By design TSFS is usable only as the **boot filesystem**. Mounting
+another TSFS set later is not supported. TSFS filesystem generation
+and writing to DECtape belong in userspace tooling and `dd`. Do not
+change the root-selected TSFS MRES install policy to satisfy obsolete
+secondary-mount tests.
+
+The testkit removed the post-boot `MOUNT.TSFS` runtime tests
+(`daimos-tsfs-mount-v1.sh` and `daimos-tsfs-dir-v2.sh`), and
+removed their registration from both regression matrices. The
+obsolete v1 host scan fixture, which tested the retired mount handoff,
+is deleted; the retained eight-member v2 scanner validates member
+discovery/ninth-member rejection and passes.
+
+The DAIMOS userspace build and production disk root no longer compile,
+package, document or expose `MOUNT.TSFS`. Its source and manual,
+userspace syscall stub and declaration, extension dispatch entry,
+mount-handoff builder and its unused metadata validation are removed.
+The old syscall selector is directed to the existing unsupported
+extension handler. KINIT's separate boot-root MRES mount operation
+(`tsfs_boot_mount_root` -> `FS_MRES_OP_MOUNT_UNIT` ->
+`tsfs_mount_set`) remains intact, as required for TSFS boot.
+
+Group 027 remains active for DTC I/O, TSFS scanning, image generation,
+compressed extents and tape-root boot, under KCC and GCC. Strict
+32K-size tests remain independent.
+
 ## 2026-10-22 GE0 / TYPE-340 TOOLCHAIN ROOT CAUSE V164
 
 GE0 LOGIN failure root-caused to an obsolete *installed*

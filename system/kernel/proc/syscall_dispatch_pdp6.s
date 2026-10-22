@@ -610,7 +610,7 @@ native_sys_ext_table:
         .word   native_sys_seek,,native_sys_chown
         .word   native_sys_rmdir,,native_sys_utime
         .word   native_sys_sleep,,native_sys_procctl
-        .word   native_sys_dtc_read_block,,native_sys_tsfs_mount
+        .word   native_sys_dtc_read_block,,native_sys_procctl
         .word   native_sys_d6fs_mount,,native_sys_rtctl
         .word   native_sys_logctl,,native_sys_dtc_write_block
         .word   native_sys_memfs_mount,,native_sys_storagectl
@@ -1011,14 +1011,8 @@ native_sys_memfs_mount_bad:
         jrst    kret_neg1
 
 
-; Mount one userspace-validated filesystem handoff.  TSFS passes its compact
-; three-word runtime state; D6FS passes the 17-word reader seed.  Both providers
-; use FS_MRES_OP_MOUNT_UNIT through the normal serialized provider dispatcher.
-native_sys_tsfs_mount:
-        movei   5,3                      ; compact TSFS runtime words
-        movei   6,7                      ; TSFS_PROVIDER
-        jrst    native_sys_mount_handoff
-
+; D6FS userspace handoff remains supported.  TSFS mount is boot-only:
+; KINIT invokes the resident TSFS provider directly, not this syscall.
 native_sys_d6fs_mount:
         movei   5,016                    ; D6FS_MOUNT_WORDS
         movei   6,6                      ; D6FS_PROVIDER
