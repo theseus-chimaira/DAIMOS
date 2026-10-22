@@ -125,9 +125,8 @@ exec_replace_current:
         jumpe   1,exec_replace_invalid
         move    2,15
         add     2,1
-        move    3,16
-        sub     3,2
-        jumpl   3,exec_replace_invalid
+        camle   2,16                  ; path record must fit block
+        jrst    exec_replace_invalid
         move    15,2                   ; argv/env record stream
 
         add     13,14                  ; number of following records

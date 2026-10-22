@@ -1,5 +1,15 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-22 EXEC path record endpoint check v179
+
+`exec_replace_current` now checks the parsed path-record end directly
+against the validated launch-block end (`CAMLE/JRST`) instead of using
+`MOVE/SUB/JUMPL`. The `sixbit_record_words` parse and its nonzero check
+remain in place. The same-checkout KCC/p10fold KCORE relink reduced the
+exclusive `__kcore_low_end` from `025675` to `025674` octal, saving one
+resident word without changing the syscall ABI, stack, or persistent state.
+Native malformed-record and EXEC/RUN regression tests remain pending.
+
 ## 2026-10-22 EXEC launch size comparison v178
 
 In `exec_replace_current`, replaced `MOVE/SUB/JUMPL` for the declared
