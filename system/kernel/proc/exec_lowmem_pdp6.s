@@ -96,9 +96,8 @@ exec_replace_current:
         hrrz    7,(10)
         caige   7,5
         jrst    exec_replace_invalid
-        move    1,11
-        sub     1,7
-        jumpl   1,exec_replace_invalid
+        camle   7,11                  ; launch words must fit mapped span
+        jrst    exec_replace_invalid
         move    11,7
 
         move    1,1(10)                ; argc must be a pure RH value

@@ -1,5 +1,16 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-22 EXEC launch size comparison v178
+
+In `exec_replace_current`, replaced `MOVE/SUB/JUMPL` for the declared
+launch-block length against available mapped words with the equivalent
+`CAMLE/JRST` bound. The earlier minimum-length validations are preserved;
+declared words greater than mapped words still fail before record parsing.
+Same-checkout KCC/p10fold KCORE link reduced `__kcore_low_end` from
+`025676` to `025675` octal, saving one resident word. A separate attempt
+to change the RUN slot increment was reverted because it saved no
+post-fold words. Native EXEC/RUN malformed-input testing remains pending.
+
 ## 2026-10-22 RUN record count combination v177
 
 Following the existing validation of the RUN V2 argc and envc count
