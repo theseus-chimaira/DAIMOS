@@ -2538,9 +2538,17 @@ pipeline_launch_fail:
                 (void)dsys_close(next_read);
         if (next_write >= 0)
                 (void)dsys_close(next_write);
-        if (pgrp != 0U)
+        if (pgrp != 0U) {
+                /* Earlier stages already own process slots, VM extents and
+                 * pipe descriptors.  TERM closes their descriptors, but a
+                 * zombie remains allocated until its parent WAITs for it.
+                 * Collect every successfully launched stage before another
+                 * pipeline can consume those slots or MM allocations. */
                 (void)dsys_procctl(SYS_PROCCTL_EVENT_PGRP,
                     SYS_EVENT_ARG(pgrp, SYS_EVENT_TERM));
+                (void)dsh_wait_pgrp(st, pgrp, (unsigned int)last_pid,
+                    i, 0U, 0);
+        }
         if (!background && st->interactive && st->tty_attached)
                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETFG,
                     st->shell_pgrp);
