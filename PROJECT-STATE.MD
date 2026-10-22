@@ -1,3 +1,33 @@
+## 2026-10-22 GROUP 027 INDEPENDENT KCC/GCC ACCEPTANCE V172
+
+Against immutable DAIMOS commit `40bc094`, all eight supported
+DECtape/TSFS group 027 tests passed independently under KCC and GCC.
+These cover userspace native-DTFS formatting and persisted-media FSCK
+across two boots, counted DTC stream I/O, host-created TSFS images
+read through the production Type-551 driver, eight-member scanning
+and KINIT boot selection, cross-member extents, D6LZ restart and
+physical reverse-direction DTC transfer.
+
+Testkit v171 replaces an invalid post-boot `MOUNT.DTFS` check in a
+D6FS-root configuration (where `dtfs_minit` deliberately does not
+install the DTFS/TSFS provider) with a genuine persisted-media
+userspace FSCK. It propagates `COMPILER` to both image builds and
+selects the corrected SIMH explicitly. The userspace-created tape
+format is verified after a reboot from a pristine disk root.
+No post-boot `MOUNT.TSFS` interface has been restored.
+
+The KCC dual-boot evidence is
+`$TMPDIR/daimos-group027-dtc-online-v170-isolated2.log`; GCC is
+`$TMPDIR/daimos-group027-dtc-gcc-v171.log`, with seven other GCC
+targets in `$TMPDIR/daimos-group027-gcc-v172-*.log` and prior KCC
+target results in `$TMPDIR/daimos-group027-v167-*.log` and `v168-*.log`.
+**Independent non-size functional group 027 is accepted**. The strict
+036000 DSH size cap and full serialized regression matrix remain open.
+
+This update resides in an isolated DAIMOS worktree because the main
+DAIMOS checkout has an unrelated ongoing KCORE optimization. Do not
+merge that unfinished optimization into group-027 acceptance.
+
 ## 2026-10-22 DECtape/TSFS GROUP 027 RETEST V169
 
 Group 027's supported boot-root-only test inventory has seven
