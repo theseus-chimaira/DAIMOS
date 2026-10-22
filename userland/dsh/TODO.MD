@@ -1,3 +1,28 @@
+## 2026-10-22 V53 REAP ACCEPTED; NESTED PIPE/UUO STILL TOP PRIORITY
+
+The partial pipeline-launch failure path leaked unreaped children after
+terminating a process group.  V53 adds the missing WAIT for each already
+launched stage; its targeted test passes 3/3, and `PS` no longer shows
+the previous ZOMB process.  The new installed DXR exactly matches its
+independently built source image, SHA-256 b6985a64ad87ed285b9bd8084711eb01b492d6f2c7f1833289ceec9d8d89e158.
+V53 image/BSS = 030655/012755 octal.  With the V51 diagnostic kernel,
+all 173/173 isolated SIMH feature probes passed; the host lexer and media
+isolation passed and D6FS remained CLEAN.
+
+The extended 42-case nested-pipeline stress is STILL FAILING, including
+on original V41 and V43 binaries built with identical KCORE.  V53 on the
+V51 diagnostic KCORE passed 35/42 and trapped invalid UUOs with child
+saved entry PC 020 and runtime trap PC 004.  This is independent of the
+V53 reaping bug, and does not establish a compiler/codegen defect.
+Preserve the 42-case testkit opt-in regression (`27b3a8d`); investigate
+process context save/restore, pipe descriptor/reference lifetime and
+wakeup/WAIT behavior, not padding or feature removal.
+
+Other open items: save 0656 octal image words (430 decimal) for the
+strictly-below-030000 target; determine peak stack/BRK and verify actual
+physical 32K boot and interaction.  This heading supersedes dated
+size/acceptance summaries below where they conflict.
+
 ## 2026-10-22 PRIORITY: SIMH PROVENANCE AND PROCESS FAILURE
 
 Correction to V39-V44 acceptance notes below: the testkit image labeled

@@ -1,3 +1,46 @@
+## 2026-10-22 DSH V53 PIPELINE PARTIAL-LAUNCH REAP — VERIFIED
+
+When a pipeline successfully launched one or more children and a later
+stage failed to start, `dsh_exec_pipeline()` sent TERM to the process
+group but returned without WAITing for the already launched children.
+This left ZOMB processes retaining process-table slots.  The pre-fix
+three-probe SIMH reproducer showed a `PS` row with state 4 (ZOMB), PPID
+2 and a stale USER entry after `ECHO ... ! /NO/SUCH/PROGRAM`.
+
+V53 (`affe718`) closes inherited parent pipe descriptors, sends TERM to
+the launched group as before, then waits for the `i` successfully
+launched stages before returning the original launch-error status.
+No new resident state or BSS is needed.  The permanent testkit regression
+(`3c67166`) verifies status 127, rejects *any* numeric PS state 4 row,
+and executes a successful follow-on pipeline; all 3/3 cases pass.
+
+Independent build and SIMH-installed DSH images are byte-identical,
+SHA-256 `b6985a64ad87ed285b9bd8084711eb01b492d6f2c7f1833289ceec9d8d89e158`.
+GCC image/BSS is 030655/012755 **octal words**; relative to the last
+original-kernel fully accepted V41 image 030657, text is two words
+smaller with unchanged BSS.  The strict text target <030000 still needs
+0656 octal words (430 decimal).  Physical 32K and stack/BRK acceptance
+remain separate, uncompleted work.
+
+A fresh V53 image using the **V51 diagnostic KCORE**, not the original
+V41 KCORE, passed 173/173 isolated SIMH probes: 115 conformance, 4 packed
+name, 4 packed UNALIAS, 25 angle parameter, 12 loop control, 4 PATH/glob,
+6 process, and 3 new zombie-reap cases.  The host parameter lexer and
+SIMH media-isolation tests also passed.  D6FS source root remained CLEAN.
+This is genuine V53 acceptance with verified executable provenance, but
+it must not be represented as an unchanged-original-kernel comparison.
+
+**Separate high-priority defect remains:** the extended 42-case nested
+pipeline stress on the original KCORE timed out on case 41 in both V41
+and V43 images.  The V53 diagnostic-KCORE stress passed 35 and failed
+7, including invalid UUOs with trapped PC 004 in several child slots,
+despite valid entry instructions and initial context PC 020.  Thus this
+fault predates V43 and is NOT fixed by V53's zombie cleanup; do not blame
+the V43 assignment factoring or mask the issue with code padding.  An
+opt-in versioned 42-probe reproducer lives in testkit commit `27b3a8d`.
+Next: isolate the process/pipe/scheduler root cause with the recorded
+context, and only then resume aggressive text-size reductions.
+
 ## 2026-10-22 DSH SIMH SOURCE-PROVENANCE CORRECTION (OVERRIDES V42/V43/V44 CLAIMS)
 
 The earlier V42 115/115 SIMH acceptance claim and the attribution of five
