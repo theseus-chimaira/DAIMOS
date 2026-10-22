@@ -3,8 +3,12 @@
   KINIT-published permanent-size data word in KCORE. Folded KCORE
   **9646 -> 9528 (-118)**. Complete 256K image and focused native
   `PROCINFO`/`MEMINFO` regression PASS. Below 8K needs 1337 words.
-- [ ] Review 272-word `proc_run_block` for possible pinned MRES transfer,
-  preserving live RUN/EXEC call, scheduler interactions and package lifetime.
+- [x] **V99:** make pinned SYSINFO noncritical and omit it with
+  `SYSINFO_MRES_ENABLED=0`. Without it, PROCINFO/MEMINFO return -1 and
+  DAIMOS keeps working; focused 256K absent-package runtime PASS.
+- [ ] RUN/EXEC is required in every configuration. **Never relocate it to
+  optional MRES.** Review only small, provably equivalent instruction
+  simplifications with an explicit folded-size win and focused tests.
 
 - [x] **V97:** consolidate six native single-user-pointer syscall
   wrappers, saving nine folded KCORE words (**9655 -> 9646**), with a

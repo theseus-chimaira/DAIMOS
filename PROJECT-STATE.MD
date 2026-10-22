@@ -1,3 +1,22 @@
+## 2026-10-22 V99 OPTIONAL SYSINFO, ESSENTIAL RUN/EXEC POLICY
+
+`KCORE.MD` was consulted. Runtime `PROCINFO`/`MEMINFO` are optional
+diagnostic services, not prerequisites for boot. The `SINFO` MRES now has
+`SYSINFO_MRES_ENABLED ?= 1`; when disabled, its image and MINIT table
+entry are omitted and both KCORE syscall jump stubs retain their original
+`-1` return. Installation/export failure is nonfatal and publishes neither
+service if either export is missing. 256K focused SYSINFO-absent SIMH
+test PASS: other syscalls still operate and information syscalls return -1.
+Normal `SYSINFO_MRES_ENABLED=1` 256K focused SIMH test also PASS.
+KCORE footprint remains the V98 **9528 words**, target requires 1337
+fewer words strictly below 8K. No 32K or TSFS work.
+
+RUN/EXEC is essential on every DAIMOS configuration. Preserve its core
+resident implementation and existing startup semantics; only conservative
+proven-equivalent single-instruction optimizations with focused tests are
+permitted. Previous suggestion to relocate `proc_run_block` to MRES is
+explicitly cancelled.
+
 ## 2026-10-21 V98 PINNED SYSINFO MRES (-118 KCORE WORDS)
 
 Following `KCORE.MD` protocol, cold generic PROCINFO/MEMINFO query

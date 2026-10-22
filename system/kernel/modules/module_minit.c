@@ -948,11 +948,26 @@ sysinfo_install_minit(void)
         extern kword_t sys_meminfo;
         kword_t name;
         unsigned int base;
+        unsigned int procinfo_addr;
+        unsigned int meminfo_addr;
+        const kword_t *package;
 
         name = (kword_t)SIXBIT("SINFO ");
-        base = minit_install(name);
-        storage_patch_jump(&sys_procinfo, minit_export(name, base, 0U));
-        storage_patch_jump(&sys_meminfo, minit_export(name, base, 1U));
+        package = module_current_mres();
+        if (package == 0 || mres_install(package, &base) != 0) {
+                minit_diag_nodev(name);
+                return;
+        }
+        procinfo_addr = mres_export(package, base, 0U);
+        meminfo_addr = mres_export(package, base, 1U);
+        /* Publish only a complete, working pair of services. */
+        if (procinfo_addr == 0U || meminfo_addr == 0U) {
+                minit_diag_nodev(name);
+                return;
+        }
+        storage_patch_jump(&sys_procinfo, procinfo_addr);
+        storage_patch_jump(&sys_meminfo, meminfo_addr);
+        minit_diag_loaded(name);
 }
 
 static void

@@ -27,8 +27,8 @@ completed results; KCORE decisions and ongoing work belong **here**.
 - **Previous V97:** `__kcore_low_end=022736`, KCORE **9646 words** after
   sharing the six single-pointer mapped syscall wrappers; **1455** words
   remain to fall strictly below 8192 (1454 to reach it).
-- **Latest V98:** `__kcore_low_end=022550`, KCORE **9528 words** after
-  relocating generic `PROCINFO` and `MEMINFO` into mandatory pinned
+- **Latest V98/V99:** `__kcore_low_end=022550`, KCORE **9528 words** after
+  relocating generic `PROCINFO` and `MEMINFO` into optional pinned
   SYSINFO MRES; **1337** words remain to fall strictly below 8192.
 - MRES size and whole-KCORE+MRES permanent-address gate are **informational**
   during this phase, not optimization blockers; the old total limit can be
@@ -55,7 +55,7 @@ completed results; KCORE decisions and ongoing work belong **here**.
 | Mapped READ/WRITE_WORDS syscalls | **V95 -5 folded KCORE words** (9665 -> 9660): map/translate and FILE call argument paths now shared; AC5 selects read versus write handler and survives translation | Keep per-op device/pipe and zero-count write handling; live 256K PTR/PTP full and partial transfers PASS |
 | Mapped DIRREAD/PROCINFO syscalls | **V96 -5 folded KCORE words** (9660 -> 9655): AC6 selects FILE dirread or PROCINFO, AC5 retains original FD/slot, and one shared path translates the output buffer | Preserve user mapping hold/release and service signatures; focused 256K `/PROC` DIRREAD + PROCINFO test PASS |
 | Six mapped single-pointer syscalls | **V97 -9 folded KCORE words** (9655 -> 9646): `CHDIR`, `GETCWD`, `MKDIR`, `UNLINK`, `TRUNCATE`, `MEMINFO` share `native_sys_one_ptr`, selecting the KCORE handler in AC5 | Keep scalar AC2, VM mapping lifetime and error return; focused 256K native test including invalid pointers PASS |
-| Pinned SYSINFO MRES | **V98 -118 folded KCORE words** (9646 -> 9528): resident 122-word `syscall_info.s` becomes three KCORE service jumps plus one permanent-size data word; two read-only information implementations live in new pinned `SINFO` MRES | MINIT installs before user processes/MEMFS, patches both public entries; MEMFS patchable jump and KINIT size publication stay in KCORE; focused 256K test PASS |
+| Optional pinned SYSINFO MRES | **V98 -118 folded KCORE words** (9646 -> 9528): resident 122-word `syscall_info.s` becomes three KCORE service jumps plus one permanent-size data word; two read-only information implementations live in `SINFO` MRES | V99 makes installation nonfatal and `SYSINFO_MRES_ENABLED=0` supported: absent package leaves both -1 stubs, no boot dependency; MEMFS patch and KINIT size publication stay in KCORE |
 | Shared word operations | `fs_copy_words`/`fs_move_words`/`fs_zero_words` serve MM/VM/module and filesystem providers; overlap-safe move already reuses forward copy | Cannot relocate into detachable filesystem MRES without lifetime solution |
 | TTY packed fields | Halfword canonical-line bases and pending-byte/session routes already packed; DCS and GE MRES both use KCORE pending interfaces | Retain consistent live shared state |
 | P10FOLD | Existing production `-m 2` 21-object census has 31 folds/70 estimated words; `-m 1` yields only +4 more | Don't widen fold hazard surface for four words |
@@ -96,6 +96,30 @@ experiment is installed in current V86 KCORE.
 
 ### Per-step audit protocol
 
+**V99 accepted optional SYSINFO fallback:** User clarified that information
+query services must never become a boot prerequisite. The preexisting
+KCORE `sys_procinfo` and `sys_meminfo` initial `JRST kret_neg1` entries
+remain untouched if SYSINFO is omitted or fails installation/export
+validation. MINIT now calls `mres_install` directly without fatal
+`minit_install`, checks both exports before patching either entry, and
+leaves the kernel operational when it cannot install optional diagnostics.
+`SYSINFO_MRES_ENABLED ?= 1` retains the normal package; setting it to 0
+omits the package and its MINIT entry from the linked image, leaving the
+full SYSINFO-free configuration bootable. A focused 256K simulated runtime
+test with `SYSINFO_MRES_ENABLED=0` checks that valid and invalid SYSINFO
+calls return -1 while ordinary file syscalls still work. The normal
+`SYSINFO_MRES_ENABLED=1` 256K focused test also PASSes. The current
+KCORE-only link footprint is unchanged at 9528 words. SYSINFO package
+installation is not a reason to reject a boot configuration.
+
+**RUN/EXEC policy (2026-10-22):** User confirmed RUN/EXEC are essential
+for DAIMOS. **Do not relocate their core implementations into an optional
+MRES, remove startup functionality, or change descriptor/process creation
+semantics.** Conservative local KCORE instruction improvements are allowed
+only with exact-equivalence argument, folded-link size saving, and focused
+RUN/EXEC runtime tests. Retain existing code in KCORE.
+
+
 **V98 accepted cold SYSINFO MRES relocation:** Source/caller audit found
 `sys_procinfo` and `sys_meminfo` were the only runtime implementations in
 `proc/syscall_info.s` (122 raw text words). Callers are the native syscall
@@ -120,12 +144,10 @@ extended with actual `dsys_procinfo` validation, nonzero permanent
 MEMINFO count, invalid pointers to *both* services, and recovery: PASS.
 No full testkit, 32K configurations or TSFS tests were run.
 
-**Next high-impact candidate (not yet modified):** `proc_run_block` is
-272 raw text words in `proc_run.s`, with one external runtime caller in
-`syscall_dispatch_pdp6.s` and no KINIT call. Analyze its exact process
-startup/lock and sleep lifetime, inspect MRES/MM callers and shared
-constant references, then consider a *separately named pinned* RUN MRES
-using one permanent KCORE jump. Never unload a package during RUN/EXEC.
+**Retired V98 RUN MRES proposal:** `proc_run_block` has 272 raw text words
+but is needed to start processes; user explicitly requires preserving it
+in KCORE. Review only small provably safe assembly improvements, never
+the previously proposed RUN MRES relocation.
 
 
 **V97 accepted six-way single-pointer syscall sharing:** Reviewed this

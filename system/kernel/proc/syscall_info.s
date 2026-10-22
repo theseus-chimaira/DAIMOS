@@ -2,8 +2,9 @@
  * @file syscall_info.s
  * @brief Small permanent KCORE ABI for pinned SYSINFO MRES.
  *
- * MINIT patches the first two one-word entries after installing the pinned
- * package; the services are not callable before installation. MEMFS uses a
+ * MINIT optionally patches the first two one-word entries after installing
+ * SYSINFO MRES. Without the package, each syscall returns -1 without
+ * preventing RUN/EXEC or other mandatory kernel services. MEMFS uses a
  * separate patchable jump so its absence still reports unavailable stats.
  * The resident size value is data (not a patched instruction immediate),
  * written once by KINIT before any userspace process can call MEMINFO.
