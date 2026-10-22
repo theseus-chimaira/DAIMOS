@@ -1,3 +1,38 @@
+## 2026-10-22 GROUP 030 EXEC / DTFS / MULTI-TTY INVESTIGATION V148
+
+The independently accepted 66-probe KCC/GCC runtime suite and CTY
+READCHAR accounting are unchanged. Group 030 as a whole is still open.
+
+Two custom INIT targets, EXEC replacement and child-session EXEC,
+complete on corrected SIMH with expected `<E` and `<xEP` HALT
+markers. Fresh-image simulation-only timings are 18 and 19 seconds,
+respectively, versus the existing 15-second wall-clock acceptance
+timeouts. No acceptance timeout or EXEC assertion was weakened.
+Versioned testkit diagnostics v137/v140 permit an explicit longer
+observation window but default to the original 15 seconds.
+
+DTFS-native testkit v143 boots D6FS-root and fails to mount DECtape.
+That is consistent with the intentional root-selected MRES policy:
+`dtfs_minits` installs the DTFS/TSFS package only for
+`KINIT_ROOT_DTC`. Successful file probes after failed MOUNT.DTFS
+target the underlying mountpoint, not DTFS. This test must be
+adapted to a supported DECtape-root configuration before any
+DTFS acceptance can be claimed. Group 027 is still deferred by
+request; this investigation did not modify the root/provider policy.
+
+With corrected SIMH, standalone multi-TTY v144 obtains DCS0 LOGIN
+but not GE0 LOGIN. Process-inventory diagnostic v145 could not
+distinguish session spawn from transport, because one attempt
+reused a dirty disk (HALT `?RT`) and another had a DCS0 TCP
+connection timeout. No kernel TTY change is yet justified.
+
+Evidence: `$TMPDIR/daimos-exec-simh-timed-v148.log`,
+`$TMPDIR/daimos-exec-child-diagnostic-v141.log`,
+`$TMPDIR/daimos-dtfs-group030-v143.log`,
+`$TMPDIR/daimos-userspace-multitty-v144.log`, and
+`$TMPDIR/daimos-userspace-multitty-pristine-v146.log`.
+Strict 32K and full serialized matrix acceptance remain deferred/open.
+
 ## 2026-10-21 CTY COUNTER DEFECT / GROUP 030 PARTIAL V136
 
 DAIMOS commit `08625cf` fixes missing completed-CTY I/O counters:
