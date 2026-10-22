@@ -970,6 +970,28 @@ sysinfo_install_minit(void)
         minit_diag_loaded(name);
 }
 
+/** Install the mandatory backing allocator into pinned MRES.
+ *
+ * The allocator is needed by swap and filesystem backing after MINIT.
+ * Its bitmap and two permanent call entries stay in KCORE. Failure is
+ * fatal: a partially installed allocator must not be used at runtime.
+ */
+void
+backstore_alloc_minit_v102(void)
+{
+        extern kword_t backstore_alloc;
+        extern kword_t backstore_free;
+        kword_t name;
+        unsigned int base;
+
+        name = (kword_t)SIXBIT("BALOC ");
+        base = minit_install(name);
+        storage_patch_jump(&backstore_alloc,
+            minit_export(name, base, 0U));
+        storage_patch_jump(&backstore_free,
+            minit_export(name, base, 1U));
+}
+
 static void
 storage_register_router(kword_t name)
 {

@@ -39,6 +39,11 @@ completed results; KCORE decisions and ongoing work belong **here**.
   success and failure return tails, saving **2 words**; strict below-8K
   still requires **1334** further words. Focused PDP-6 PURE swap and
   contract-verification runs PASS.
+- **Latest V102 accepted:** folded KCC endpoint **`022403`**, KCORE
+  **9427 words**. The first-fit backing allocator and release loops now
+  reside in mandatory pinned `BALOC` MRES. KCORE retains its four state
+  words, boot initializer, bitmap-size helper, and two public jump slots;
+  **98 KCORE words saved**. Strictly below 8K requires **1236 words**.
 - MRES size and whole-KCORE+MRES permanent-address gate are **informational**
   during this phase, not optimization blockers; the old total limit can be
   explicitly enabled with `PERMANENT_SIZE_ENFORCE=1`.
@@ -70,6 +75,7 @@ completed results; KCORE decisions and ongoing work belong **here**.
 | P10FOLD | Existing production `-m 2` 21-object census has 31 folds/70 estimated words; `-m 1` yields only +4 more | Don't widen fold hazard surface for four words |
 | Process/process-I/O foundations | Existing compact three-word descriptors, intrusive runqueue, boot-selected slots, word-only eight-word pipe | Treat as accepted foundations; profile before altering |
 | Swap storage-mode return tails | **V101 -2 folded KCORE words** (9527 -> 9525): `proc_storage_publish_v30` branches to already existing common success/error returns, rather than duplicating `SETZ/SETO` plus `POPJ` | The mode publication and expectation check are unchanged; targeted PDP-6 normal/PURE-verifier regression PASS |
+| First-fit BACKSTORE allocator relocation | **V102 -98 folded KCORE words** (9525 -> 9427): move bitmap scan/allocation/free implementations into pinned BALOC MRES; KCORE retains 10 text + 4 BSS words and patchable ABI entries | MINIT installs before process boot and filesystem backing, both exports mandatory; full-profile 256K image and live 48K swapped-process test PASS |
 
 Historical size comparisons may use different compilers, profiles and
 revision bases. **Do not add their savings together** or assume a staged
@@ -105,6 +111,45 @@ experiment is installed in current V86 KCORE.
    do not silently enable or remove current swap path to claim size savings.
 
 ### Per-step audit protocol
+
+**V102 accepted pinned BACKSTORE allocator relocation (2026-10-22):**
+The canonical register was consulted after V101. `storage/backstore.s`
+was 108 KCORE text words + four BSS words. Two operations (`backstore_alloc`
+and `backstore_free`) consume the bulk of text. Only KINIT's bitmap-size
+computation and `backstore_init` must execute during initialization; the
+allocator loops are used later by process swap and filesystem backing.
+Moved the single authoritative first-fit loops to versioned
+`storage/backstore_allocator_mres_v102.s`; the KCORE file has the two
+original fixed-address, MINIT-patchable call words and four original
+allocation bitmap/control BSS words. Before installation allocations
+fail and frees are inert, avoiding access to uninstalled code. A mandatory
+MINIT `backstore_alloc_minit_v102` is ordered immediately after console
+and clock and before later filesystem/process services. It installs and
+pins `BALOC`, then patches the two exported call addresses. All references
+to the shared bitmap remain to the original KCORE words, so no state or
+allocation bookkeeping is duplicated. `module_runtime` retargeting is
+unnecessary because BALOC is pinned and only KCORE entries reference it.
+The new package has **100 initialized MRES words**, including code and
+metadata; only the **98-word KCORE** reduction is the acceptance goal.
+
+Fresh folded 256K KCC KCORE link `__kcore_low_end` **022545 -> 022403**
+octal, **9525 -> 9427 decimal words (-98)**, and the KCORE backing-store
+object shrank from 108 text to **10 text words**; four BSS remain.
+Complete 256K KCC full-profile image, package export and MINIT link PASS.
+The targeted real 48K SIMH `test-daimos-monitorfs-swapped-live-v74`
+PASSes actual process swap/resume, swapped-process MonitorFS metadata,
+wakeup and WAIT. No full testkit or 32K configuration was executed.
+
+**Build/debug detail:** The first image-link attempt used a MINIT symbol
+longer than the PDP-10 object-linker symbol length and failed to resolve
+it; short fixed names (`backstore_alloc_minit_v102` and
+`bst_alloc_mres_package_v102`) resolved correctly. Do not reintroduce
+overlong exported symbols when creating further MRES packages.
+
+**Next:** Evaluate whether additional cold storage/VM functionality can
+be separated without moving the RUN/EXEC essential core, changing the
+page-reclaim critical path, or introducing unpinned cross-module calls.
+
 
 **V101 accepted storage-mode tail consolidation (2026-10-22):**
 Inspected `proc_swap_pdp6.s` and `proc_storage_runtime_v30.s` with the

@@ -62,6 +62,8 @@
         .globl d6fs_minit
 .endif
         .globl mfsdev_minit
+        .globl backstore_alloc_minit_v102
+        .globl bst_alloc_mres_package_v102
 .if SYSINFO_MRES_ENABLED
         .globl sysinfo_install_minit
         .globl sysinfo_mres_package
@@ -122,6 +124,8 @@ __kinit_image_start:
 __minit_table_begin:
         .word cty_minit,,cty_mres_package
         .word clk_minit,,clk_mres_package
+        ; The pinned backing allocator precedes process swap and FS MINIT.
+        .word backstore_alloc_minit_v102,,bst_alloc_mres_package_v102
 .if SYSINFO_MRES_ENABLED
         ; Diagnostic PROCINFO/MEMINFO services are optional and pinned when
         ; installed. The KCORE -1 stubs are valid with this entry omitted.

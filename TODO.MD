@@ -1,3 +1,9 @@
+- [x] **V102:** extract first-fit backing-store allocation/free to pinned
+  BALOC MRES, retain boot/init and bitmap state plus two jump slots in
+  KCORE. Folded KCORE **9525 -> 9427 (-98)**. Full 256K image and 48K
+  real swapped-process/wake/WAIT test PASS. Strict below-8K needs 1236
+  more words. No 32K/TSFS or full testkit run.
+
 - [x] **V101:** reuse storage-mode success/failure returns in swap core;
   fully folded KCORE **9527 -> 9525 (-2)**. Focused normal/PURE swap
   and verifier test PASS after fixing outdated V72 snapshot ABI fixture.

@@ -250,6 +250,7 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/proc/vm_$(VM_BACKEND).s \
 	$(KERNEL_DIR)/proc/syscall_info.s \
 	$(KERNEL_DIR)/proc/syscall_info_mres_v98.s \
+	$(KERNEL_DIR)/storage/backstore_allocator_mres_v102.s \
 	$(KERNEL_DIR)/drivers/pclk.s \
 	$(KERNEL_DIR)/storage/blockset.h \
 	$(KERNEL_DIR)/storage/blockset_boot.c \
@@ -342,13 +343,14 @@ LOGSTORE_MRES_OBJ = $(BUILD)/logstore-mres.dobj
 D6FS_MRES_OBJ = $(BUILD)/d6fs-mres.dobj
 MONITORFS_MRES_OBJ = $(BUILD)/monitorfs-mres.dobj
 SYSINFO_MRES_OBJ = $(BUILD)/sysinfo-mres-v98.dobj
+BACKSTORE_ALLOC_MRES_OBJ = $(BUILD)/backstore-alloc-mres-v102.dobj
 ifeq ($(BOOT_PROFILE),lowmem)
-MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(if $(filter 1,$(SYSINFO_MRES_ENABLED)),$(SYSINFO_MRES_OBJ)) $(if $(filter 1,$(MONITORFS_MRES_ENABLED)),$(MONITORFS_MRES_OBJ)) $(DCS_MRES_OBJ) \
+MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(BACKSTORE_ALLOC_MRES_OBJ) $(if $(filter 1,$(SYSINFO_MRES_ENABLED)),$(SYSINFO_MRES_OBJ)) $(if $(filter 1,$(MONITORFS_MRES_ENABLED)),$(MONITORFS_MRES_OBJ)) $(DCS_MRES_OBJ) \
 	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(TAPE_MRES_OBJ)) $(DSK_MRES_OBJ) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(DTFS_MRES_OBJ)) $(if $(filter 1,$(BLOCKSET_FS_ENABLED)),$(BLOCKSET_MRES_OBJ)) \
 	$(if $(filter 1,$(D6FS_FS_ENABLED)),$(D6FS_MRES_OBJ))
 KINIT_FULL = 0
 else
-MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(if $(filter 1,$(SYSINFO_MRES_ENABLED)),$(SYSINFO_MRES_OBJ)) $(if $(filter 1,$(MONITORFS_MRES_ENABLED)),$(MONITORFS_MRES_OBJ)) $(PTR_MRES_OBJ) \
+MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(BACKSTORE_ALLOC_MRES_OBJ) $(if $(filter 1,$(SYSINFO_MRES_ENABLED)),$(SYSINFO_MRES_OBJ)) $(if $(filter 1,$(MONITORFS_MRES_ENABLED)),$(MONITORFS_MRES_OBJ)) $(PTR_MRES_OBJ) \
 	$(PTP_MRES_OBJ) $(LPT_MRES_OBJ) $(CR_MRES_OBJ) $(CP_MRES_OBJ) \
 	$(DCS_MRES_OBJ) $(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) \
 	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(TAPE_MRES_OBJ) $(DSK_MRES_OBJ) $(DRM_MRES_OBJ) \
@@ -865,6 +867,17 @@ $(SYSINFO_MRES_OBJ): $(BUILD)/syscall_info_mres_v98.dobj $(KCORE_MAP)
 	    $(BUILD)/syscall_info_mres_v98.dobj
 
 $(BUILD)/syscall_info_mres_v98.dobj: $(KERNEL_DIR)/proc/syscall_info_mres_v98.s | $(BUILD)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+# First-fit backing allocation is needed throughout process/FS runtime but
+# never by KINIT until after MINIT has installed the pinned package.
+$(BACKSTORE_ALLOC_MRES_OBJ): $(BUILD)/backstore_allocator_mres_v102.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/backstore-alloc-mres-v102.dxr -M $(BUILD)/backstore-alloc-mres-v102.map \
+	    -R $@ -N bst_alloc_mres_package_v102 \
+	    -X backstore_alloc_mres_v102 -X backstore_free_mres_v102 \
+	    $(BUILD)/backstore_allocator_mres_v102.dobj
+
+$(BUILD)/backstore_allocator_mres_v102.dobj: $(KERNEL_DIR)/storage/backstore_allocator_mres_v102.s | $(BUILD)
 	$(DAS) $(DASFLAGS) -C -O $@ $<
 
 $(BUILD)/monitorfs_mres_v16.dobj: $(KERNEL_DIR)/fs/monitorfs_runtime.s $(PROJECT_ROOT)/tools/host/monitorfs-mres-probe-v15.py | $(BUILD)

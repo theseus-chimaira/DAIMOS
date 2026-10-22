@@ -1,3 +1,25 @@
+## 2026-10-22 V102 PINNED BACKSTORE ALLOCATOR (-98 KCORE WORDS)
+
+Following `KCORE.MD`, the permanent `backstore.s` first-fit allocation
+and free loops are now in a mandatory pinned `BALOC` MRES, installed by
+MINIT before process boot or later filesystem providers. KCORE retains
+the bitmap-size/boot-init helpers, its four bitmap/control BSS words,
+and two patchable public jump entries. The new MRES provides two exports
+and has **100 initialized words**. No duplicate bitmap is allocated;
+the MRES references original KCORE state. The module stays pinned while
+swap, VM and backing filesystem services can access it.
+
+Fresh 256K full-profile folded KCC link KCORE **022545 -> 022403** octal,
+**9525 -> 9427 words (-98)**. The original backing-store object changed
+from 108 text + 4 BSS to **10 text + 4 BSS words**. Complete full-profile
+256K image and package link PASS. Focused 48K real PDP-6 SIMH
+`test-daimos-monitorfs-swapped-live-v74` PASS (swap/resume, MonitorFS
+NAME/CMDLINE/ENVIRONMENT, wake, WAIT). No full testkit or 32K machine.
+Strictly below 8192 KCORE needs **1236 more words** removed. RUN/EXEC
+remains essential and fully resident, while allocator remains installed
+in pinned MRES. The new MINIT/package symbols were shortened to respect
+the toolchain's symbol limit after the first build exposed truncation.
+
 ## 2026-10-22 V101 SWAP STORAGE-MODE COMMON RETURNS (-2 KCORE WORDS)
 
 Read `KCORE.MD` and examined PDP-6 swap storage-mode transitions.
