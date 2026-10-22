@@ -213,9 +213,7 @@ proc_run_slot_found:
         move    3,014
         pushj   17,exec_load_process
         jumpge  1,proc_run_exec_ok
-        came    1,[-2]
-        jrst    proc_run_exec_bad
-        movei   2,011
+        ; All loader errors discard the claimed child slot identically.
         jrst    proc_run_claimed_bad
 proc_run_exec_ok:
         hlrz    011,(013)

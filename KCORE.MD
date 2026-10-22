@@ -1,5 +1,16 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-22 RUN loader error cleanup v174
+
+`proc_run_block` now routes all negative `exec_load_process` return values
+directly to the existing claimed-slot discard path. The former comparison
+against `EXEC_LOAD_NOMEM` and `MOVEI AC2,011` did not affect that cleanup
+or its return value. A same-checkout KCC/p10fold relink moves the exclusive
+KCORE endpoint from `025711` to `025704` octal: five resident words saved.
+No permanent data or ABI changes; native process-launch regression remains
+pending. A separate experimental merge of EXEC loader error rollback paths
+linked successfully but yielded zero post-fold savings and was reverted.
+
 ## 2026-10-22 RUN validated pointer reuse v173
 
 RUN previously called `sixbit_record_words` again after successful block
