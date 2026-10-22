@@ -1,3 +1,14 @@
+## 2026-10-22 GROUP 027 REACTIVATED V149
+
+Group 027 (DECtape/TSFS) is back in the active testkit TODO at the
+user's request; it is no longer deferred. Revalidate its ten member,
+mount, compressed extent, eight-member boot, and reverse-operation
+targets under KCC/GCC. Existing root-selected DTFS/TSFS MRES policy
+must remain intact: fix test boot-class assumptions instead of
+unconditionally loading resident filesystem code. Strict 32K size
+acceptance remains separately deferred. Continue group 030 first,
+especially multi-TTY, EXEC timing and Type-340 refresh.
+
 ## 2026-10-22 GROUP 030 EXEC / DTFS / MULTI-TTY INVESTIGATION V148
 
 The independently accepted 66-probe KCC/GCC runtime suite and CTY
