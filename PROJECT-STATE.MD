@@ -1,3 +1,17 @@
+## 2026-10-22 V100 RUN U-AREA ZERO WORD (ONE-WORD SAVING)
+
+RUN/EXEC stay fully resident and essential. `KCORE.MD` was consulted.
+`proc_run.s` now emits the extra clear of the final u-area word only
+under `PROC_STACK_WATERMARK`: ordinary RUN already clears this word via
+`fs_zero_words` over the full 0411-word u-area. Instrumentation overwrites
+the word with a sentinel and therefore still explicitly resets it.
+Default folded KCC KCORE `022550 -> 022547`, **9528 -> 9527 words (-1)**;
+`proc_run.dobj` 272 -> 271. Instrumented assembly (`PROC_STACK_WATERMARK=1`)
+builds with the reset retained. Focused 256K SIMH
+`test-daimos-process-lifecycle` PASS (RUN/GETPID/WAIT, reaping,
+orphan adoption and explicit descriptor maps). No full-suite/32K/TSFS tests.
+
+
 ## 2026-10-22 V99 OPTIONAL SYSINFO, ESSENTIAL RUN/EXEC POLICY
 
 `KCORE.MD` was consulted. Runtime `PROCINFO`/`MEMINFO` are optional

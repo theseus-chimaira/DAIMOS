@@ -246,9 +246,12 @@ proc_run_watermark_loop:
         addi    1,1
         camge   1,2
         jrst    proc_run_watermark_loop
-.endif
-        ; The trailing u-area word is a snapshot pointer, not a watermark.
+        ; Instrumentation deliberately writes sentinel addresses through
+        ; the final u-area word. Restore its snapshot pointer to zero.
         setzm   0410(014)
+.endif
+        ; Without instrumentation fs_zero_words already cleared the entire
+        ; u-area (including 0410): do not clear that word twice in KCORE.
 
         ; Locate first argv record and let the machine VM backend relocate
         ; argv/environment into the child image.

@@ -30,6 +30,10 @@ completed results; KCORE decisions and ongoing work belong **here**.
 - **Latest V98/V99:** `__kcore_low_end=022550`, KCORE **9528 words** after
   relocating generic `PROCINFO` and `MEMINFO` into optional pinned
   SYSINFO MRES; **1337** words remain to fall strictly below 8192.
+- **Latest V100 accepted:** folded KCC endpoint `022547`, **9527**
+  words after conditionalizing one redundant RUN u-area word clear;
+  strictly below 8K requires **1336** more words. Focused RUN lifecycle
+  regression PASS.
 - MRES size and whole-KCORE+MRES permanent-address gate are **informational**
   during this phase, not optimization blockers; the old total limit can be
   explicitly enabled with `PERMANENT_SIZE_ENFORCE=1`.
@@ -95,6 +99,24 @@ experiment is installed in current V86 KCORE.
    do not silently enable or remove current swap path to claim size savings.
 
 ### Per-step audit protocol
+
+**V100 RUN conservative one-word candidate:** `proc_run_block` calls
+`fs_zero_words` with AC1=child u-area base and AC2=`PROC_UAREA_WORDS`
+(0411 octal), clearing offsets 0..0410 inclusive. The old unconditional
+`setzm 0410(014)` then repeated the last write. With
+`PROC_STACK_WATERMARK=1`, the sentinel loop instead writes addresses
+through the trailing word, and this clear is required. We therefore
+placed the original `setzm 0410(014)` *inside* the existing watermark
+conditional. No ordinary RUN/EXEC instructions, descriptor layout,
+allocator calls, failure paths, or scheduler semantics change.
+Fully folded default KCC KCORE: `022550 -> 022547` octal,
+**9528 -> 9527 (-1)**; `proc_run.dobj` **272 -> 271** text words.
+The separate `PROC_STACK_WATERMARK=1` version assembles successfully
+at 280 text words with the clear retained. Focused 256K SIMH
+`test-daimos-process-lifecycle` PASS (RUN, GETPID, WAIT/nohang, zombie
+reap, orphan adoption, explicit descriptor maps). No full testkit,
+32K or TSFS tests. This is an accepted one-word KCORE reduction.
+
 
 **V99 accepted optional SYSINFO fallback:** User clarified that information
 query services must never become a boot prerequisite. The preexisting

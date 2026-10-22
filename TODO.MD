@@ -1,3 +1,9 @@
+- [x] **V100:** one redundant child u-area `SETZM` removed from ordinary
+  RUN, retained under `PROC_STACK_WATERMARK` where its sentinel restoration
+  is needed. Folded KCORE **9528 -> 9527 (-1)**. Instrumented object
+  assembles; focused 256K RUN lifecycle PASS. 1336 words remain to fall
+  strictly below 8K. RUN/EXEC stays essential and resident.
+
 - [x] **V98:** relocate cold generic PROCINFO/MEMINFO service bodies into
   pinned `SINFO` MRES; retain two entry jumps, MEMFS usage jump, and
   KINIT-published permanent-size data word in KCORE. Folded KCORE
