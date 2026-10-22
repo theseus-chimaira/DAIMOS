@@ -56,6 +56,7 @@
         ; TEMPORARY v55: verify VM entry words before the first user dispatch.
         .globl  mach_invalid_putchar
         .globl  mach_invalid_oct36
+        .globl  diag_entry_expected
 
 proc_run_block:
         add     17,kconst_6_6
@@ -379,54 +380,14 @@ proc_run_map_next:
         addi    015,1
         sojg    3,proc_run_map_loop
 proc_run_map_done:
-        ; v55 diagnostic only.  Dump CHILD-SLOT, VM-BASE, UAREA-BASE,
-        ; INIT-USER-PC and the first three physical executable words.
-        ; The invalid-UUO trap dump uses this same physical coordinate
-        ; system; comparing the two shows whether image corruption occurs
-        ; during RUN or later (swap/restore/context switch).
-        movei   1,015
-        pushj   17,mach_invalid_putchar
-        movei   1,012
-        pushj   17,mach_invalid_putchar
-        movei   1,0122                ; R
-        pushj   17,mach_invalid_putchar
-        movei   1,0125                ; U
-        pushj   17,mach_invalid_putchar
-        movei   1,0116                ; N
-        pushj   17,mach_invalid_putchar
-        movei   1,040
-        pushj   17,mach_invalid_putchar
-        move    4,012
-        pushj   17,mach_invalid_oct36
-        movei   1,040
-        pushj   17,mach_invalid_putchar
-        hrrz    6,1(013)
-        move    4,6
-        pushj   17,mach_invalid_oct36
-        movei   1,040
-        pushj   17,mach_invalid_putchar
-        move    4,014
-        pushj   17,mach_invalid_oct36
-        movei   1,040
-        pushj   17,mach_invalid_putchar
-        move    4,020(014)
-        pushj   17,mach_invalid_oct36
-        movei   1,040
-        pushj   17,mach_invalid_putchar
-        move    4,020(6)
-        pushj   17,mach_invalid_oct36
-        movei   1,040
-        pushj   17,mach_invalid_putchar
-        move    4,021(6)
-        pushj   17,mach_invalid_oct36
-        movei   1,040
-        pushj   17,mach_invalid_putchar
-        move    4,022(6)
-        pushj   17,mach_invalid_oct36
-        movei   1,015
-        pushj   17,mach_invalid_putchar
-        movei   1,012
-        pushj   17,mach_invalid_putchar
+        ; TEMPORARY v58 diagnostic: remember the freshly loaded first user
+        ; instruction by slot.  The scheduler checks its unchanged value
+        ; *before* user resume, and emits a CTY report only on corruption.
+        ; This 0400-word debug table covers every possible 256-slot process
+        ; configuration and is not retained in production builds.
+        hrrz    4,1(013)                ; new child VM physical base
+        move    4,020(4)                ; first loaded user instruction
+        movem   4,diag_entry_expected(012)
         movei   1,PROC_FILE_TABLE_OFFSET(014)
         pushj   17,pipe_add_refs
         movsi   4,PROC_SCHED_SRUN_LH
@@ -460,3 +421,9 @@ proc_run_return:
         blt     0,015
         sub     17,kconst_6_6
         popj    17,
+
+        .bss
+; TEMPORARY v58 only, 256 slots x one instruction snapshot.
+diag_entry_expected:
+        .block 0400
+        .text

@@ -55,6 +55,10 @@
         .globl  proc_high_slot
         .globl  proc_current_slot
         .globl  proc_current_ptr
+        ; TEMPORARY v58 debug, linked only with the test RUN entry table.
+        .globl  diag_entry_expected
+        .globl  mach_invalid_putchar
+        .globl  mach_invalid_oct36
         .globl  proc_sched_cursor
         .globl  proc_sched_deferred_ticks
         .globl  proc_runq_head
@@ -2678,6 +2682,48 @@ proc_restore_pi_common:
         jrst    0(3)
 
 proc_restore_user_tail:
+        ; TEMPORARY v58: catch the *first* executable-word mutation before
+        ; resuming user space, without CTY output in the normal hot path.
+        ; AC4..AC7 are restored from the process u-area below, and AC1/AC2
+        ; are PI scratch, so this comparison does not change user state.
+        move    4,proc_current_slot
+        move    5,diag_entry_expected(4)
+        jumpe   5,proc_restore_user_entry_checked
+        move    6,proc_current_ptr
+        hrrz    6,1(6)
+        jumpe   6,proc_restore_user_entry_checked
+        move    7,020(6)
+        camn    7,5
+        jrst    proc_restore_user_entry_checked
+        setzm   diag_entry_expected(4) ; once per slot until next RUN
+        movei   1,012
+        pushj   17,mach_invalid_putchar
+        movei   1,0103               ; C
+        pushj   17,mach_invalid_putchar
+        movei   1,0110               ; H
+        pushj   17,mach_invalid_putchar
+        movei   1,0107               ; G
+        pushj   17,mach_invalid_putchar
+        movei   1,040
+        pushj   17,mach_invalid_putchar
+        move    4,proc_current_slot
+        pushj   17,mach_invalid_oct36
+        movei   1,040
+        pushj   17,mach_invalid_putchar
+        move    4,5                   ; expected instruction
+        pushj   17,mach_invalid_oct36
+        movei   1,040
+        pushj   17,mach_invalid_putchar
+        ; oct36 uses AC7 as its digit counter: reload the actual word.
+        move    6,proc_current_ptr
+        hrrz    6,1(6)
+        move    4,020(6)              ; actual instruction
+        pushj   17,mach_invalid_oct36
+        movei   1,015
+        pushj   17,mach_invalid_putchar
+        movei   1,012
+        pushj   17,mach_invalid_putchar
+proc_restore_user_entry_checked:
         move    1,CTX_PC(2)
         movem   1,pdp10_pi_level6
         move    1,CTX_KSP(2)
