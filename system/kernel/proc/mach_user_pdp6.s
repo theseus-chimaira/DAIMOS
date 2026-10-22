@@ -69,6 +69,9 @@ mach_syscall:
 
         .globl mach_invalid_uuo_word
         .globl mach_invalid_uuo_pc
+        ; TEMPORARY v55: shared direct CTY formatting for a RUN entry probe.
+        .globl mach_invalid_putchar
+        .globl mach_invalid_oct36
 mach_syscall_invalid:
         ; Record the actual low-core trap and the hardware JSR return word
         ; before output can invoke a PI handler or clobber AC1..AC3.
