@@ -2682,9 +2682,11 @@ proc_restore_pi_common:
         jrst    0(3)
 
 proc_restore_user_tail:
-        ; TEMPORARY v59: compare only with the PI-scratch AC1/AC3 in the
-        ; regular restore path.  Previous v58 unnecessarily touched AC4..AC7,
-        ; changing interrupt-sensitive timing; preserve the user registers.
+        ; TEMPORARY v60: compare before resume without changing the PI6
+        ; dispatcher continuation in AC3.  The enclosing PI dispatcher may
+        ; need its live return stub after proc_restore_user_tail returns;
+        ; unlike the low-core saved user AC3, that executive AC3 must survive.
+        push    17,3
         move    1,proc_current_slot
         move    3,diag_entry_expected(1)
         jumpe   3,proc_restore_user_entry_checked
@@ -2728,6 +2730,7 @@ proc_restore_user_tail:
         pushj   17,proc_uarea_slot
         move    2,1
 proc_restore_user_entry_checked:
+        pop     17,3                   ; restore live PI continuation
         move    1,CTX_PC(2)
         movem   1,pdp10_pi_level6
         move    1,CTX_KSP(2)
