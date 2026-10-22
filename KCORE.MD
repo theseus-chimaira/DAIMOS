@@ -1,5 +1,25 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-22 redundant C implementation sweep v170
+
+The PDP-6 build now constructs EXEC exclusively from
+`proc/exec_lowmem_pdp6.s` and `proc/exec_load.s`; the entirely disabled
+`proc/exec.c` fallback was removed.  Likewise `proc/vm_pdp6.c` was removed:
+all six functions were already compiled out by `VM_SPACE_*_PDP6_ASM`
+defines, and the live routines remain in `proc/vm_pdp6.s`.  The PDP-6
+`vm_backend.s` target is now an empty `.text` section; other backend
+selections retain their C compilation rule.  These changes eliminate dead
+source and compiler work, NOT linked KCORE instructions.  Do not count
+the source-line reduction as resident RAM savings.
+
+The same-basename kernel C/assembly inventory identified `vm_pdp6` as
+the only exact pair; a build-rule examination additionally found EXEC's
+differently named assembly replacement.  Other mixed units must remain:
+`proc.c` and `file.c` still contribute active C functions after their
+assembly-specific feature guards, and `module_runtime.c` contributes
+descriptor/binding storage absent from its assembly implementation.
+No runtime acceptance or new size measurement is claimed for this sweep.
+
 ## 2026-10-15 GCC 32K disk-root measurement and MM recovery v138
 
 Isolated baseline at commit `37fba7e`, with `BOOT_PROFILE=lowmem`,

@@ -158,8 +158,7 @@ KINIT_FIXED_SRCS = boot/kinit_io_pdp6.s \
 
 KINIT_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${BUILD}/kinit_io_pdp6.s ${BUILD}/module_io.s ${BUILD}/bootbanner_generated.s ${BUILD}/kinit_late_begin_pdp6.s ${BUILD}/kinit_late_end.s
 
-KCORE_C_SRCS = proc/exec.c \
-		mm/mm.c \
+KCORE_C_SRCS = mm/mm.c \
 	proc/proc.c \
 	fs/file.c
 
@@ -329,11 +328,9 @@ ${BUILD}/d6lz_fixed.s: ../stand/pdp6/common/decompressor.inc
 	@mkdir -p ${BUILD}
 	cp $< $@
 
-${BUILD}/exec.s: proc/exec.c proc/exec_lowmem_pdp6.s proc/exec_load.s ${KERNEL_HEADERS}
+${BUILD}/exec.s: proc/exec_lowmem_pdp6.s proc/exec_load.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} -DEXEC_REPLACE_CURRENT_PDP6_ASM=1 ${INCLUDES} -S proc/exec.c -o $@.c
-	cat $@.c proc/exec_lowmem_pdp6.s proc/exec_load.s > $@
-	rm -f $@.c
+	cat proc/exec_lowmem_pdp6.s proc/exec_load.s > $@
 
 ${BUILD}/d6lz.s: core/d6lz_pdp6.s
 	@mkdir -p ${BUILD}
@@ -345,9 +342,9 @@ ${BUILD}/module_runtime.s: modules/module_runtime.c modules/module_runtime_pdp6.
 	cat $@.c modules/module_runtime_pdp6.s > $@
 	rm -f $@.c
 
-${BUILD}/vm_backend.s: ${VM_BACKEND_C} ${KERNEL_HEADERS}
+${BUILD}/vm_backend.s: ${KERNEL_HEADERS} $(if $(filter pdp6,${VM_BACKEND}),,${VM_BACKEND_C})
 	@mkdir -p ${BUILD}
-	@extra=; if test "${VM_BACKEND}" = pdp6; then extra="-DVM_SPACE_CAN_SWAP_PDP6_ASM=1 -DVM_SPACE_STARTUP_PDP6_ASM=1 -DVM_EXTENT_MOVE_PDP6_ASM=1 -DVM_SPACE_LOAD_FILE_PDP6_ASM=1 -DVM_SPACE_CREATE_PDP6_ASM=1 -DVM_SPACE_DESTROY_PDP6_ASM=1"; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S ${VM_BACKEND_C} -o $@
+	@if test "${VM_BACKEND}" = pdp6; then printf ' .text\n' > $@; else ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} ${INCLUDES} -S ${VM_BACKEND_C} -o $@; fi
 
 ${BUILD}/proc_swap.s: ${VM_SWAP_C} proc/proc_swap_pdp6.s proc/proc_pure_backing_pdp6.s proc/proc_storage_runtime_v30.s proc/proc_pure_attach.c proc/proc_storage_map_v28.h ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}

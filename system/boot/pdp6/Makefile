@@ -220,7 +220,6 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/modules/module_runtime.c \
 	$(KERNEL_DIR)/modules/module_runtime.h \
 	$(KERNEL_DIR)/modules/module_table.s \
-	$(KERNEL_DIR)/proc/exec.c \
 	$(KERNEL_DIR)/proc/exec.h \
 	$(KERNEL_DIR)/proc/exec_lowmem_pdp6.s \
 	$(KERNEL_DIR)/proc/mach_user.h \
@@ -238,7 +237,7 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/proc/syscall_dispatch_pdp6.s \
 	$(KERNEL_DIR)/proc/vm.h \
 	$(KERNEL_DIR)/proc/vm_$(VM_BACKEND).h \
-	$(KERNEL_DIR)/proc/vm_$(VM_BACKEND).c \
+	$(if $(filter pdp6,$(VM_BACKEND)),,$(KERNEL_DIR)/proc/vm_$(VM_BACKEND).c) \
 	$(KERNEL_DIR)/proc/vm_$(VM_BACKEND)_swap.c \
 	$(KERNEL_DIR)/proc/vm_$(VM_BACKEND).s \
 	$(KERNEL_DIR)/proc/syscall_info.s \

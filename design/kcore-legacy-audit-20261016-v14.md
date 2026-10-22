@@ -32,9 +32,8 @@ that gate. No 32K boot success is claimed.
   built-in namespace. Their names are not automatically removable as stale
   code; removing an alias changes observable filesystem behavior.
 - The PDP-6 EXEC low-memory retry is a current out-of-memory recovery path.
-  The C EXEC implementation is compiled with
-  `EXEC_REPLACE_CURRENT_PDP6_ASM=1` in the active kernel, so the unused C
-  replacement implementation does not contribute resident words.
+  As of the 2026-10-22 v170 sweep, the unused C replacement source was
+  deleted; `exec_lowmem_pdp6.s` and `exec_load.s` supply resident EXEC.
 - DECtape TENEX/ITS branches in `dtfs_runtime.s` are gated or reside in the
   DTFS MRES package, **not** the always resident KCORE. Compatibility with
   non-native tape formats should be preserved unless deliberately removed
