@@ -1,3 +1,36 @@
+## 2026-10-22 GROUP 030 TAPE-ROOT DTC3 DIAGNOSTICS V180
+
+The supported `BOOT=dtc ROOT=tape` image successfully loads the
+shared DTFS/TSFS MRES and enters DSH (`DTFS LOADED`). The next
+deep integration fixture uses DTC3 as a separate writable DTFS
+volume; TSFS itself remains read-only and boot-root only.
+
+The testkit's diagnostic V179 attempted guest `MKFS.DTFS -O NATIVE
+/DEV/DTC3` on an initially empty DTC3 image. The guest did not
+return to the shell, and no DTC3 file bytes were written during
+the observed run. Diagnostic V180 instead initialized the DTC3
+image with the host `mkdtfs` tool (591872-byte native image); its
+first `MOUNT.DTFS -O RW,NATIVE /DEV/DTC3 /HOME` also failed to
+return during the observed run. Both runs were interrupted and
+remain **failures**, not functional acceptance. The source of the
+stall is unknown. The tests are retained but not in the matrix.
+
+Investigate DTC3 raw block service/unit selection, tape ownership
+or scheduling interactions between TSFS-root reads and DTC3
+operations, and the DTFS mount dispatch. Preserve root-only MRES
+installation and the native write/persistence assertions. Do not
+declare group 030 complete from the passing tape-root login smoke.
+
+Further isolated tests in testkit: V181 directly invokes the actual
+Type-551 block driver for counted DTC3 write/read and **passes**;
+V182 first writes DTC1, then writes/reads DTC3 and **passes**.
+Thus basic DTC3 unit selection and sequential controller handoff work
+outside the running OS. Prioritize the full guest syscall/provider
+path under TSFS-root I/O, including mapping and process wait/PI
+interaction, instead of changing basic driver unit addressing without
+evidence. V179/V180 remain failing diagnostics, and the deep group
+030 DTFS functional gate stays open.
+
 ## 2026-10-22 GROUP 027 INDEPENDENT KCC/GCC ACCEPTANCE V172
 
 Against immutable DAIMOS commit `40bc094`, all eight supported
