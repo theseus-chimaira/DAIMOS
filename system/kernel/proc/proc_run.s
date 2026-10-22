@@ -81,21 +81,18 @@ proc_run_block:
         move    011,3
 
         ; Every scalar count is a nonnegative 18-bit value.
-        move    4,3(010)
-        hrrz    3,4
-        came    3,4
+        move    3,3(010)
+        tlne    3,0777777
         jrst    proc_run_bad
         caile   3,RUN_MAX_FDMAP
         jrst    proc_run_bad
-        move    4,4(010)
-        hrrz    3,4
-        came    3,4
+        move    3,4(010)
+        tlne    3,0777777
         jrst    proc_run_bad
         caile   3,RUN_MAX_ARGC
         jrst    proc_run_bad
-        move    4,5(010)
-        hrrz    3,4
-        came    3,4
+        move    3,5(010)
+        tlne    3,0777777
         jrst    proc_run_bad
         caile   3,RUN_MAX_ENVC
         jrst    proc_run_bad

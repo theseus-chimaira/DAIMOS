@@ -1,5 +1,15 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-22 RUN scalar count checks v175
+
+RUN now checks the three scalar count fields (fd-map, argc, envc) with
+`TLNE` on the full loaded value instead of using `HRRZ` followed by
+`CAME`.  The left-half nonzero rejection and existing maximum-count
+comparisons preserve the validation ABI. A KCC/p10fold relink in the
+same checkout reduced `__kcore_low_end` from `025704` to `025701`
+octal (three resident words). No extra permanent or stack state.
+Native launch and malformed-block regression tests remain pending.
+
 ## 2026-10-22 RUN loader error cleanup v174
 
 `proc_run_block` now routes all negative `exec_load_process` return values
