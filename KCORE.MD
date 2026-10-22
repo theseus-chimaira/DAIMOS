@@ -1,5 +1,18 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-22 RUN validated pointer reuse v173
+
+RUN previously called `sixbit_record_words` again after successful block
+validation, to reconstruct the argv/environment record address for
+`vm_space_startup`. `proc_run.s` now saves that address in one additional
+temporary stack word before scanning the records and reuses it after
+child image loading. This removes redundant parsing and its failure branch.
+Same-checkout KCC/p10fold relink changed the `__kcore_low_end` exclusive
+address from `025715` to `025711` octal (four resident words saved).
+Peak RUN kernel stack increases by one word; permanent tables, EXEC/RUN
+ABI and process descriptor size are unchanged. Native RUN/EXEC regression
+and full image boot acceptance remain pending.
+
 ## 2026-10-22 EXEC validation pointer reuse v172
 
 `exec_replace_current` in `proc/exec_lowmem_pdp6.s` now retains the

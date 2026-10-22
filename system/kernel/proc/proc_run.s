@@ -55,10 +55,11 @@
         .globl  sixbit_record_words
 
 proc_run_block:
-        add     17,kconst_6_6
-        movei   0,-5(17)
+        ; Seven-word frame: six saved ACs plus validated records pointer.
+        add     17,kconst_7_7
+        movei   0,-6(17)
         hrli    0,010
-        blt     0,(17)
+        blt     0,-1(17)
         move    010,1
         move    011,2
 
@@ -113,6 +114,7 @@ proc_run_block:
         add     015,1
         camle   015,7
         jrst    proc_run_bad
+        movem   015,(17)               ; validated argv/environment start
 
         hrrz    5,4(010)
         hrrz    6,5(010)
@@ -248,14 +250,8 @@ proc_run_watermark_loop:
         jrst    proc_run_watermark_loop
 .endif
 
-        ; Locate first argv record and let the machine VM backend relocate
-        ; argv/environment into the child image.
-        movei   6,RUN_FIXED_WORDS(010)
-        move    1,6
-        movei   2,1
-        pushj   17,sixbit_record_words
-        jumpe   1,proc_run_start_record_bad
-        add     6,1
+        ; Reuse the previously validated record start, without reparsing path.
+        move    6,(17)
         add     17,kconst_4_4
         move    1,013
         move    2,6
@@ -405,7 +401,7 @@ proc_run_bad:
         seto    1,
 proc_run_return:
         movei   0,010
-        hrli    0,-5(17)
+        hrli    0,-6(17)
         blt     0,015
-        sub     17,kconst_6_6
+        sub     17,kconst_7_7
         popj    17,
