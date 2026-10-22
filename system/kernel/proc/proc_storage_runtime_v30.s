@@ -47,9 +47,7 @@ proc_storage_publish_v30:
         lsh     3,0(5)
         iorm    3,(4)                  ; publish new mode
         sub     17,[1,,1]
-        setz    1,
-        popj    17,
+        jrst    proc_storage_good_v30
 proc_storage_publish_fail_v30:
         sub     17,[1,,1]
-        seto    1,
-        popj    17,
+        jrst    proc_storage_bad_v30

@@ -1,3 +1,9 @@
+- [x] **V101:** reuse storage-mode success/failure returns in swap core;
+  fully folded KCORE **9527 -> 9525 (-2)**. Focused normal/PURE swap
+  and verifier test PASS after fixing outdated V72 snapshot ABI fixture.
+  Next review cold swap/reclaim dependencies, preserving RUN/EXEC and
+  retaining hot reclaim paths. Read `KCORE.MD` before each step.
+
 - [x] **V100:** one redundant child u-area `SETZM` removed from ordinary
   RUN, retained under `PROC_STACK_WATERMARK` where its sentinel restoration
   is needed. Folded KCORE **9528 -> 9527 (-1)**. Instrumented object

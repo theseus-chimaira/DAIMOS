@@ -34,6 +34,11 @@ completed results; KCORE decisions and ongoing work belong **here**.
   words after conditionalizing one redundant RUN u-area word clear;
   strictly below 8K requires **1336** more words. Focused RUN lifecycle
   regression PASS.
+- **Latest V101 accepted:** folded KCC endpoint `022545`, **9525**
+  words. The packed swap-mode publisher now reuses its existing common
+  success and failure return tails, saving **2 words**; strict below-8K
+  still requires **1334** further words. Focused PDP-6 PURE swap and
+  contract-verification runs PASS.
 - MRES size and whole-KCORE+MRES permanent-address gate are **informational**
   during this phase, not optimization blockers; the old total limit can be
   explicitly enabled with `PERMANENT_SIZE_ENFORCE=1`.
@@ -64,6 +69,7 @@ completed results; KCORE decisions and ongoing work belong **here**.
 | TTY packed fields | Halfword canonical-line bases and pending-byte/session routes already packed; DCS and GE MRES both use KCORE pending interfaces | Retain consistent live shared state |
 | P10FOLD | Existing production `-m 2` 21-object census has 31 folds/70 estimated words; `-m 1` yields only +4 more | Don't widen fold hazard surface for four words |
 | Process/process-I/O foundations | Existing compact three-word descriptors, intrusive runqueue, boot-selected slots, word-only eight-word pipe | Treat as accepted foundations; profile before altering |
+| Swap storage-mode return tails | **V101 -2 folded KCORE words** (9527 -> 9525): `proc_storage_publish_v30` branches to already existing common success/error returns, rather than duplicating `SETZ/SETO` plus `POPJ` | The mode publication and expectation check are unchanged; targeted PDP-6 normal/PURE-verifier regression PASS |
 
 Historical size comparisons may use different compilers, profiles and
 revision bases. **Do not add their savings together** or assume a staged
@@ -99,6 +105,47 @@ experiment is installed in current V86 KCORE.
    do not silently enable or remove current swap path to claim size savings.
 
 ### Per-step audit protocol
+
+**V101 accepted storage-mode tail consolidation (2026-10-22):**
+Inspected `proc_swap_pdp6.s` and `proc_storage_runtime_v30.s` with the
+canonical optimization register open. `proc_storage_publish_v30` already
+calls `proc_storage_expect_v30` and publishes the same packed mode. Its
+success and failure exits used identical two-instruction `SETZ/SETO` +
+`POPJ` sequences present in the shared `proc_storage_good_v30` and
+`proc_storage_bad_v30` return paths. Replaced those two pairs with one
+`JRST` each, leaving the stack adjustment and mode update unchanged.
+Regenerated the composed swap assembler **from the current source** (the
+outer image Makefile's existing `.kcore-built` stamp did not notice the
+direct source edit until the kernel generator target was invoked), then
+reassembled and relinked P10FOLD: `proc_swap.dobj` text **725 -> 723**;
+KCORE endpoint **022547 -> 022545**, **9527 -> 9525 (-2)** words.
+The `daimos-testkit` `target-swap-pure-text-pdp6` focused target PASSes
+in normal and PURE verification modes. Its fixture was updated to supply
+the V72 snapshot acquisition/drop ABI (stubbed only for this narrow
+swap/mode transaction unit test; actual startup snapshots are covered by
+separate integration tests). No full testkit, 32K machine or TSFS tests.
+
+**Audit correction:** A suspected four-word process descriptor stride in
+`proc_swap_out` was an artefact of printing overlapping source line ranges;
+the boundary instruction appeared twice in the analysis output. Exact
+line-numbered source and `git blame` confirm three words per descriptor.
+There is **no stride bug**, and no code was changed for that suspicion.
+
+**Next candidate:** Analyze larger cold process-swap/reclaim paths and
+KINIT/runtime dependencies before considering any relocation. Do not
+move essential RUN/EXEC or hot MM-reclaim dependencies, or create a new
+removable dependency on storage backing merely to reduce KCORE size.
+
+**V101 build-graph correction:** The outer boot Makefile omitted four
+sources used by the composed `proc_swap.s` generator from `KERNEL_INPUTS`
+(`proc_pure_backing_pdp6.s`, `proc_pure_attach.c`,
+`proc_storage_runtime_v30.s`, and `proc_storage_map_v28.h`). They are now
+tracked, so a modified constituent triggers `.kcore-built` regeneration
+without manual intervention. The focused testkit
+`test-daimos-kcore-swap-input-deps-v101` compares the actual kernel
+generator prerequisites with outer dependencies and PASSes (five inputs).
+
+
 
 **V100 RUN conservative one-word candidate:** `proc_run_block` calls
 `fs_zero_words` with AC1=child u-area base and AC2=`PROC_UAREA_WORDS`

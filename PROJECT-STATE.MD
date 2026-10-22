@@ -1,3 +1,28 @@
+## 2026-10-22 V101 SWAP STORAGE-MODE COMMON RETURNS (-2 KCORE WORDS)
+
+Read `KCORE.MD` and examined PDP-6 swap storage-mode transitions.
+`proc_storage_publish_v30` now jumps into existing `proc_storage_good_v30`
+and `proc_storage_bad_v30` return sequences after its normal stack pop,
+removing two duplicate returns without changing mode publication.
+After explicit regeneration of the composed swap assembler and folded KCC
+relink, KCORE endpoint **022547 -> 022545 octal**; **9527 -> 9525 words**.
+Focused `daimos-testkit` native PDP-6 swap/PURE test PASS in both normal
+and verifier modes. The test fixture had lacked the V72 snapshot symbols;
+the updated fixture supplies success/no-op interfaces appropriate to the
+unit's scope, while independent snapshot tests retain full coverage.
+No full suite, 32K configuration or TSFS test. Strict below-8K target
+needs **1334** further words removed. KCORE RUN/EXEC remains resident.
+
+An apparent four-word process descriptor stride was caused by overlap in
+two printed source slices, not an assembler defect. The actual out/in
+paths both use the correct three-word stride; no correction is needed.
+
+The outer image Makefile was also missing four constituent swap-generator
+sources from `KERNEL_INPUTS`, allowing stale KCORE objects during an
+incremental source edit. Added the missing prerequisites. The new focused
+testkit target `test-daimos-kcore-swap-input-deps-v101` PASSes, comparing
+the kernel generator's actual dependencies with outer input coverage.
+
 ## 2026-10-22 V100 RUN U-AREA ZERO WORD (ONE-WORD SAVING)
 
 RUN/EXEC stay fully resident and essential. `KCORE.MD` was consulted.
