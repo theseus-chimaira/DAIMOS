@@ -2682,20 +2682,20 @@ proc_restore_pi_common:
         jrst    0(3)
 
 proc_restore_user_tail:
-        ; TEMPORARY v58: catch the *first* executable-word mutation before
-        ; resuming user space, without CTY output in the normal hot path.
-        ; AC4..AC7 are restored from the process u-area below, and AC1/AC2
-        ; are PI scratch, so this comparison does not change user state.
-        move    4,proc_current_slot
-        move    5,diag_entry_expected(4)
-        jumpe   5,proc_restore_user_entry_checked
-        move    6,proc_current_ptr
-        hrrz    6,1(6)
-        jumpe   6,proc_restore_user_entry_checked
-        move    7,020(6)
-        camn    7,5
+        ; TEMPORARY v59: compare only with the PI-scratch AC1/AC3 in the
+        ; regular restore path.  Previous v58 unnecessarily touched AC4..AC7,
+        ; changing interrupt-sensitive timing; preserve the user registers.
+        move    1,proc_current_slot
+        move    3,diag_entry_expected(1)
+        jumpe   3,proc_restore_user_entry_checked
+        move    1,proc_current_ptr
+        hrrz    1,1(1)
+        jumpe   1,proc_restore_user_entry_checked
+        camn    3,020(1)
         jrst    proc_restore_user_entry_checked
-        setzm   diag_entry_expected(4) ; once per slot until next RUN
+        move    1,proc_current_slot
+        setzm   diag_entry_expected(1) ; report only once until next RUN
+        ; A mismatch is exceptional: the CTY formatter may use AC4/AC7.
         movei   1,012
         pushj   17,mach_invalid_putchar
         movei   1,0103               ; C
@@ -2710,19 +2710,23 @@ proc_restore_user_tail:
         pushj   17,mach_invalid_oct36
         movei   1,040
         pushj   17,mach_invalid_putchar
-        move    4,5                   ; expected instruction
+        move    4,3                   ; expected first instruction
         pushj   17,mach_invalid_oct36
         movei   1,040
         pushj   17,mach_invalid_putchar
-        ; oct36 uses AC7 as its digit counter: reload the actual word.
         move    6,proc_current_ptr
         hrrz    6,1(6)
-        move    4,020(6)              ; actual instruction
+        move    4,020(6)              ; actual first instruction
         pushj   17,mach_invalid_oct36
         movei   1,015
         pushj   17,mach_invalid_putchar
         movei   1,012
         pushj   17,mach_invalid_putchar
+        ; CTY uses AC2 internally; recover the saved u-area address before
+        ; reading CTX_PC/CTX_KSP, otherwise reporting a fault changes state.
+        move    1,proc_current_slot
+        pushj   17,proc_uarea_slot
+        move    2,1
 proc_restore_user_entry_checked:
         move    1,CTX_PC(2)
         movem   1,pdp10_pi_level6
