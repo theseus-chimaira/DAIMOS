@@ -1,3 +1,20 @@
+## 2026-10-22 GROUP 030 DTFSPROBE/WAIT DIAGNOSTICS V185/V186
+
+On immutable source `40bc094`, a tape-root guest with a host-built
+native DTC3 filesystem returns to DSH after direct `DTFSPROBE
+/DEV/DTC3` and `DTFSPROBE /DEV/DTC3 DEEP`. The test harness checks
+shell prompt recovery only; the probes' exit statuses were not
+verified. `FSCK.DTFS -O NATIVE /DEV/DTC3` timed out in V185, and
+`HALT` timed out after the direct DEEP command in V186.
+
+`cmd_dtfs_probe` in `userland/exec/commands.c` invokes DTFSPROBE
+through `dsys_run` followed by `dsys_wait`, unlike direct command
+execution. This makes child-exit/wakeup and RUN/WAIT interactions
+plausible candidates, not established faults. Examine
+`proc_wait_status` / `proc_wait_child` and shell process lifecycle
+under TSFS before modifying storage I/O. V185/V186 remain
+diagnostics rather than passing group-030 acceptance.
+
 ## 2026-10-22 GROUP 030 TAPE-ROOT DTC3 DIAGNOSTICS V180
 
 The supported `BOOT=dtc ROOT=tape` image successfully loads the
