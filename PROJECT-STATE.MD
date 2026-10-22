@@ -1,3 +1,24 @@
+## 2026-10-22 DECtape/TSFS GROUP 027 RETEST V169
+
+Group 027's supported boot-root-only test inventory has seven
+independently passing checks on the installed PDP-6 toolchain:
+counted DECtape block-stream I/O, userspace-created TSFS images
+read through the production Type-551 driver, eight-member scanning
+and KINIT boot selection, cross-member extent reads, D6LZ restart
+handling and real reverse-direction DECtape transfer. Testkit v169
+uses installed `mktsfs` instead of the retired external `make build`
+target. The result logs are `$TMPDIR/daimos-group027-v168-*.log`
+plus the stream and scanner v167 logs.
+
+The `dtc-online` test originally failed at the deferred DSH image
+size cap 036000. Versioned testkit runner v169 runs with the
+functional-only cap 037000 and reaches the PDP-6 guest. The first
+format/mount cycle runs, but persisted DECtape media fails to mount
+on the second boot with `MOUNT.DTFS:` diagnostic output. Group 027
+is therefore still open; this is a DTFS compatibility mount test,
+not a reason to restore the obsolete `MOUNT.TSFS` interface.
+Atomic KCC/GCC matrix retesting has not yet passed.
+
 ## 2026-10-22 TSFS BOOT-ROOT-ONLY CONTRACT / TEST REMOVAL V165
 
 By design TSFS is usable only as the **boot filesystem**. Mounting
