@@ -1,3 +1,14 @@
+## 2026-10-22 TYPE-340 NATIVE REFRESH V150 BLOCKED BY GE0 LOGIN
+
+The corrected-SIMH, fresh-256K KCC testkit Type-340 native-refresh
+runtime v150 boots DAIMOS, connects DCS0 and GE0 and receives DCS0
+LOGIN, but receives no GE0 LOGIN prompt; FAIL `remote LOGIN missing`
+before running Type-340 refresh assertions. This reproduces the GE0
+startup symptom of standalone multi-TTY v144 and does not yet
+identify a display-driver bug. Testkit `e1d49ab`; log
+`$TMPDIR/daimos-dpy-native-v150.log`. Root-cause the common GE0
+LOGIN/session/transport issue with pristine media and unique ports.
+
 ## 2026-10-22 GROUP 027 REACTIVATED V149
 
 Group 027 (DECtape/TSFS) is back in the active testkit TODO at the
