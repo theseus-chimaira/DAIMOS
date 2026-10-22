@@ -145,14 +145,14 @@ ge_put_decoded_wait:
 ge_putchar:
         skipe ge_tx_state
         jrst kret_busy
-        ; GTYO DONE is initially clear. FROB primes the first byte;
-        ; without it ge_put_decoded waits forever for DONE.
-        cono 0750,0200
 ge_putchar_idle:
         move 4,1
         ldb 5,[POINT 6,1,27]
         caile 5,3
         jrst kret_arg
+        ; Do not alter hardware state for an invalid console ID.
+        ; GTYO DONE is initially clear; FROB primes the first byte.
+        cono 0750,0200
         setom ge_tx_state
         movei 1,1
         pushj 017,ge_put_decoded

@@ -1,3 +1,26 @@
+## 2026-10-22 GE0 / TYPE-340 TOOLCHAIN ROOT CAUSE V164
+
+GE0 LOGIN failure root-caused to an obsolete *installed*
+`$PDP10_PREFIX/bin/p10fold` binary. On `ge_io.dobj` the installed
+binary emitted a zero-cost two-word CONSO/JRST fold between distinct
+GTYO readiness loops, redirecting a status skip into an unrelated
+continuation. The current `tools/host/p10fold.c` source has the
+skip-sensitive I/O checks and emits only `P10FOLD1` for the same
+object. The source was compiled and installed to `$HOME/cross/bin`.
+No P10FOLD source fix was needed in this turn.
+
+On the repaired toolchain, the complete CTY/DCS0/GE0 multi-TTY
+runtime v145 PASS, including respawn, routing, resource checks and
+STOP isolation. The full native Type-340 DPY login and primary/shifted
+refresh test v150 also PASS. Testkit v164 now checks the *installed*
+P10FOLD against the real GE assembly source to prevent stale binaries
+from silently reintroducing the defect. Logs:
+`$TMPDIR/daimos-ge-correct-p10fold-multitty-v161.log`,
+`$TMPDIR/daimos-ge-correct-p10fold-dpy-v163.log`.
+
+KCC standalone paths are green; GCC and the full atomic group 030
+are not accepted yet. Group 027 DECtape/TSFS is active.
+
 ## 2026-10-22 TYPE-340 NATIVE REFRESH V150 BLOCKED BY GE0 LOGIN
 
 The corrected-SIMH, fresh-256K KCC testkit Type-340 native-refresh
