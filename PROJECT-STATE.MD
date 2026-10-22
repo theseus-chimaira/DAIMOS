@@ -1,3 +1,22 @@
+## 2026-10-22 GROUP 030 TIMING-CONTROLLED V190/V191 RECHECK
+
+The tape-root command baseline was rechecked after discovering that
+exploratory V187-V189 probes used a 55-second command deadline, not
+the 240-second limit established by the previously accepted tape-root
+runtime suite. V187 also requested TRUE, which is not installed in
+the small TSFS image. Those exploratory failures do not establish
+a RUN/WAIT scheduler regression.
+
+V190 on isolated DAIMOS source `40bc094` successfully executed
+ordinary external ECHO and PWD with the established 240-second
+per-probe deadline, while using host-initialized native DTC3 media.
+V191 retained that setup and allowed 240 seconds for
+`MOUNT.DTFS -O RW,NATIVE /DEV/DTC3 /HOME`; it again **timed out**
+after booting, loading DTFS and entering DSH. This narrows the
+reproducible issue to DTFS mount/probe behavior compared with the
+normal command baseline. It does not yet identify the failure's
+source. The two-boot mutation/persistence matrix remains unaccepted.
+
 ## 2026-10-22 GROUP 030 DTFSPROBE/WAIT DIAGNOSTICS V185/V186
 
 On immutable source `40bc094`, a tape-root guest with a host-built
