@@ -132,6 +132,7 @@ exec_replace_current:
         move    15,2                   ; argv/env record stream
 
         add     13,14                  ; number of following records
+        move    14,15                  ; preserve validated argv/env start
 exec_replace_validate_records:
         jumpe   13,exec_replace_validate_done
         move    1,16
@@ -150,13 +151,8 @@ exec_replace_validate_done:
         came    15,16
         jrst    exec_replace_invalid
 
-        ; Reconstruct the records pointer from the validated path span because
-        ; AC15 now equals END after the validation walk.
-        movei   15,3(10)
-        move    1,15
-        movei   2,1
-        pushj   17,sixbit_record_words
-        add     15,1
+        ; Record stream was already validated; do not parse the path twice.
+        move    15,14
 
         move    13,proc_current_slot
         move    16,proc_current_ptr

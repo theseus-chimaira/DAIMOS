@@ -1,5 +1,19 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-22 EXEC validation pointer reuse v172
+
+`exec_replace_current` in `proc/exec_lowmem_pdp6.s` now retains the
+already-validated argv/environment record pointer in AC14 across its
+record scan, rather than calling `sixbit_record_words` again on the path.
+AC14 is available after argc/envc are merged and is repurposed for the
+old RT-owner flag only after the scan. The next linked EXEC symbol moved
+from `000430` to `000425` (octal), corresponding to five fewer words
+in the leading EXEC section. The current linked `__kcore_low_end` is
+`025715` octal; it is not compared against a freshly rebuilt matching
+baseline, and no whole-image net saving or runtime acceptance is claimed.
+Keep EXEC/RUN permanently resident; continue with RUN input-validation
+and error-cleanup audit after native tests.
+
 ## 2026-10-22 additional unused C source sweep v171
 
 The production MEMFS MRES builds `memfs_data_pdp6.s` and
