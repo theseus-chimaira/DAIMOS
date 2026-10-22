@@ -112,9 +112,9 @@ proc_run_block:
         jrst    proc_run_bad
         movem   015,(17)               ; validated argv/environment start
 
-        hrrz    5,4(010)
-        hrrz    6,5(010)
-        add     5,6
+        ; Upper halves were rejected above; both counts are pure RH values.
+        move    5,4(010)
+        add     5,5(010)
 proc_run_record_scan:
         jumpe   5,proc_run_records_done
         caml    015,7

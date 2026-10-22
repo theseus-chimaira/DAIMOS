@@ -1,5 +1,16 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-22 RUN record count combination v177
+
+Following the existing validation of the RUN V2 argc and envc count
+fields as pure 18-bit values, the record scanner now sums the two source
+words directly (`MOVE` and `ADD`) instead of extracting both RH fields
+into separate registers. This retains the exact nonnegative count bounds
+and record-scanning semantics, and reduces the post-p10fold linked KCORE
+exclusive end from `025677` to `025676` octal (one resident word).
+KCC/p10fold link succeeded; native malformed-argument and startup tests
+remain pending. No additional RAM or stack requirement.
+
 ## 2026-10-22 RUN initial path bound reduction v176
 
 RUN V2 verifies `RUN_MIN_WORDS=010` before computing the path position
