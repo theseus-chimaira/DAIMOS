@@ -101,8 +101,7 @@ proc_run_block:
         move    7,010
         add     7,011
         movei   014,RUN_FIXED_WORDS(010)
-        caml    014,7
-        jrst    proc_run_bad
+        ; RUN_MIN_WORDS exceeds RUN_FIXED_WORDS, so path begins before end.
         move    1,014
         movei   2,1
         pushj   17,sixbit_record_words

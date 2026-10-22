@@ -1,5 +1,16 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-22 RUN initial path bound reduction v176
+
+RUN V2 verifies `RUN_MIN_WORDS=010` before computing the path position
+at `RUN_FIXED_WORDS=6`; consequently the path record starts strictly
+before the validated block end. Removed the redundant `CAML/JRST`
+pair in `proc_run_block`, retaining the `sixbit_record_words` validation
+and the subsequent record-end bounds check. Same-checkout KCC/p10fold
+link reduced exclusive `__kcore_low_end` from `025701` to `025677`
+octal (two resident words). No additional stack or permanent storage.
+Native malformed RUN block tests remain outstanding.
+
 ## 2026-10-22 RUN scalar count checks v175
 
 RUN now checks the three scalar count fields (fd-map, argc, envc) with
