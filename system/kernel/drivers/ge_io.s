@@ -145,7 +145,9 @@ ge_put_decoded_wait:
 ge_putchar:
         skipe ge_tx_state
         jrst kret_busy
-        cono 0750,0
+        ; GTYO DONE is initially clear. FROB primes the first byte;
+        ; without it ge_put_decoded waits forever for DONE.
+        cono 0750,0200
 ge_putchar_idle:
         move 4,1
         ldb 5,[POINT 6,1,27]
