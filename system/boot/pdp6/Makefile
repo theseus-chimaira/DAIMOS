@@ -200,8 +200,6 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/fs/fs_mres.h \
 	$(KERNEL_DIR)/fs/fs_mres.s \
 	$(KERNEL_DIR)/fs/memfs.c \
-	$(KERNEL_DIR)/fs/memfs_data.c \
-	$(KERNEL_DIR)/fs/memfs_snapshot.c \
 	$(KERNEL_DIR)/fs/memfs.h \
 	$(KERNEL_DIR)/fs/memfs_runtime.s \
 	$(KERNEL_DIR)/fs/vfs.h \

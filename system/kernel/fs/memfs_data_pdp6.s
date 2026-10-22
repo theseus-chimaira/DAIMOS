@@ -2,7 +2,7 @@
  * @file memfs_data_pdp6.s
  * @brief Compact PDP-6 MEMFS mutable-data allocator and backing runtime.
  *
- * The portable policy lives in memfs_data.c.  KCC expands its small free-list
+ * The former portable policy was superseded by this PDP-6 implementation.  KCC expands its small free-list
  * walks and eviction loops into large save frames, so the PDP-6 target keeps
  * the same policy here with private register ABIs.  Ordinary 02000-word chunks
  * contain only eight 0200-word allocation sectors, so one packed state,,base

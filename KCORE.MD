@@ -1,5 +1,20 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-22 additional unused C source sweep v171
+
+The production MEMFS MRES builds `memfs_data_pdp6.s` and
+`memfs_snapshot_pdp6.s` directly. Neither portable C source was
+compiled by the active rule. Both superseded C files and their stale
+source dependencies were removed; the assembly sources remain unchanged
+except for a comment describing the replacement. Kernel `kcore` source
+generation and boot integration dry run passed. This eliminates obsolete
+source, with **no demonstrated resident KCORE or MRES word saving**.
+
+Retain `d6fs_provider.c`: external daimos-testkit validation references
+it even though the production D6FS provider uses handwritten assembly.
+Also retain the live C portions of the mixed `proc`, `file`, module-runtime,
+and swap implementations. No native machine execution is claimed.
+
 ## 2026-10-22 redundant C implementation sweep v170
 
 The PDP-6 build now constructs EXEC exclusively from

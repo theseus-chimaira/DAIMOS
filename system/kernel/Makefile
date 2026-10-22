@@ -233,8 +233,6 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/kcore_end.s
 
 MRES_C_SRCS = fs/d6fs_provider.c \
-	fs/memfs_data.c \
-	fs/memfs_snapshot.c \
 	fs/tsfs.c
 
 MRES_C_ASM = $(BUILD)/dpy_text.s \
