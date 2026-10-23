@@ -1,3 +1,15 @@
+## XIP restricted linker producer v218
+
+- [x] Implement an opt-in, distinct dlink raw XIP output mode reusing PURE
+  and existing relocation resolution; reject writable/op-unsafe images.
+- [x] Cover exact format, alignment padding, plain DXR compatibility,
+  writable instructions, alternative UUOs, DATA/BSS, and invalid options
+  in daimos-testkit host regressions.
+- [ ] Add an opt-in **privileged** EXEC/RUN path for raw XIP with no argv,
+  environment, writable startup, or stack; preserve ordinary PURE/DXR.
+- [ ] Verify a production scheduled RUN/EXIT and EXEC replacement rollback
+  on both PDP-6 simulators before declaring XIP runtime enabled.
+
 ## MEMFS XIP PURE reuse v217
 
 - [x] Require the existing PURE flag in the distinct raw-XIP file header;

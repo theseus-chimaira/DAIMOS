@@ -10,6 +10,11 @@
 #define DXR_F_COMPRESSED 0100000UL
 #define DXR_F_PURE   0200000UL
 #define DXR_F_RT_REQUIRED 0400000UL
+#define XIP_MAGIC_LH 054506UL
+#define XIP_HEADER_WORDS 020UL
+#define XIP_FILE_WORDS 04000UL
+#define XIP_EXIT_OPCODE 040UL
+#define XIP_MOVEI_OPCODE 0201UL
 
 #define PURITY_UNKNOWN 0
 #define PURITY_PURE    1
@@ -998,7 +1003,34 @@ static int write_map(const char *name, struct linker *l)
     return 0;
 }
 
-static int write_dxr(const char *name, struct linker *l, int purity_request, int rt_required)
+/* Restricted first-generation XIP programs cannot write user memory:
+ * unindexed, non-indirect MOVEI is the only instruction before the final
+ * SYS_EXIT monitor UUO. No other calls or computed memory operands can be
+ * mistaken for a proof of read-only behavior. This is intentionally much
+ * stronger than the ordinary DXR --pure text-write heuristic. */
+static int xip_instructions_safe(const struct dobj_word *image,
+                                  unsigned long words)
+{
+    unsigned long i;
+    if (words == 0UL)
+        return 0;
+    for (i = 0UL; i < words; i++) {
+        unsigned long op = (image[i].lh >> 9) & 0777UL;
+        unsigned long indirect = (image[i].lh >> 4) & 1UL;
+        unsigned long index = image[i].lh & 017UL;
+        if (i == words - 1UL) {
+            if (op != XIP_EXIT_OPCODE ||
+                (image[i].lh & 0777UL) != 0UL || image[i].rh != 0UL)
+                return 0;
+        } else if (op != XIP_MOVEI_OPCODE || indirect || index) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+static int write_dxr(const char *name, struct linker *l, int purity_request,
+                     int rt_required, int xip_mode)
 {
     unsigned long tw, dw, bw, iw, rw;
     struct dobj_word *image;
@@ -1067,8 +1099,36 @@ static int write_dxr(const char *name, struct linker *l, int purity_request, int
         free(image); free(relmap); return -1;
     }
     entry -= l->image_base;
+    if (xip_mode && (l->image_base != XIP_HEADER_WORDS ||
+        entry != 0UL || dw != 0UL || bw != 0UL ||
+        iw > XIP_FILE_WORDS - XIP_HEADER_WORDS ||
+        !xip_instructions_safe(image, tw))) {
+        fprintf(stderr, "dlink: XIP requires origin 020, entry 020, "
+                        "MOVEI*/SYS_EXIT only, and no DATA/BSS\n");
+        free(image); free(relmap); return -1;
+    }
     f = fopen(name, "wb");
     if (f == NULL) { free(image); free(relmap); return -1; }
+    if (xip_mode) {
+        struct dobj_word zero = dobj_word_halves(0UL, 0UL);
+        /* Logical address equals offset in the MEMFS allocation, including
+         * the two header words and 016 reserved low-core words. Pad to an
+         * exact two-page extent, also forcing dedicated MEMFS allocation. */
+        if (dobj_write_word(f, dobj_word_halves(XIP_MAGIC_LH, 0UL)) != 0 ||
+            dobj_write_word(f, dobj_word_halves(DXR_F_PURE,
+                                                XIP_HEADER_WORDS)) != 0)
+            goto bad;
+        for (pos = 2UL; pos < XIP_HEADER_WORDS; pos++)
+            if (dobj_write_word(f, zero) != 0) goto bad;
+        for (pos = 0UL; pos < iw; pos++)
+            if (dobj_write_word(f, image[pos]) != 0) goto bad;
+        for (pos = XIP_HEADER_WORDS + iw; pos < XIP_FILE_WORDS; pos++)
+            if (dobj_write_word(f, zero) != 0) goto bad;
+        if (fclose(f) != 0) {
+            remove(name); free(image); free(relmap); return -1;
+        }
+        free(image); free(relmap); return 0;
+    }
     h = sixbit_word("DXR2  ");
     h.rh = entry;
     if (dobj_write_word(f, h) != 0 ||
@@ -1273,7 +1333,7 @@ static void cleanup(struct linker *l)
 
 static void usage(void)
 {
-    fprintf(stderr, "usage: dlink -o out.dxr [--pure] [--rt-required] [--daimos-uuo-relax] [--fold-plan file] [-M out.map] [-b octal] [-A map] [-R out.dobj -N symbol [-X export] ...] input.dobj|library.darc ...\n");
+    fprintf(stderr, "usage: dlink -o out.dxr [--pure] [--xip] [--rt-required] [--daimos-uuo-relax] [--fold-plan file] [-M out.map] [-b octal] [-A map] [-R out.dobj -N symbol [-X export] ...] input.dobj|library.darc ...\n");
 }
 
 int main(int argc, char **argv)
@@ -1293,6 +1353,7 @@ int main(int argc, char **argv)
     int rc;
     int purity_request;
     int rt_required;
+    int xip_mode;
 
     memset(&l, 0, sizeof(l));
     out = NULL;
@@ -1306,6 +1367,7 @@ int main(int argc, char **argv)
     l.daimos_uuo_relax = 0;
     purity_request = PURITY_UNKNOWN;
     rt_required = 0;
+    xip_mode = 0;
     first = 1;
     while (first < argc && argv[first][0] == '-') {
         if (strcmp(argv[first], "-o") == 0 && first + 1 < argc) {
@@ -1313,6 +1375,9 @@ int main(int argc, char **argv)
             first += 2;
         } else if (strcmp(argv[first], "--pure") == 0) {
             purity_request = PURITY_PURE;
+            first++;
+        } else if (strcmp(argv[first], "--xip") == 0) {
+            xip_mode = 1;
             first++;
         } else if (strcmp(argv[first], "--rt-required") == 0) {
             rt_required = 1;
@@ -1353,7 +1418,10 @@ int main(int argc, char **argv)
         }
     }
     if (out == NULL || first >= argc ||
-        ((mres_out == NULL) != (mres_symbol == NULL))) { usage(); return 1; }
+        ((mres_out == NULL) != (mres_symbol == NULL)) ||
+        (xip_mode && (purity_request != PURITY_PURE || rt_required ||
+                      mres_out != NULL || mres_symbol != NULL ||
+                      mres_export_count != 0))) { usage(); return 1; }
     rc = 1;
     for (i = 0; i < abs_map_count; i++)
         if (add_abs_map(&l, abs_maps[i]) != 0) goto done;
@@ -1392,7 +1460,7 @@ int main(int argc, char **argv)
         (load_fold_plan(&l, fold_plan) != 0 ||
          prepare_text_maps(&l) != 0))
         goto done;
-    if (write_dxr(out, &l, purity_request, rt_required) != 0) {
+    if (write_dxr(out, &l, purity_request, rt_required, xip_mode) != 0) {
         fprintf(stderr, "dlink: link failed\n");
         goto done;
     }

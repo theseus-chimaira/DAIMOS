@@ -1,3 +1,19 @@
+## 2026-10-23 experimental linker XIP producer v218
+
+Host `dlink --xip --pure -b 020` now creates a distinct 04000-word RAW
+MEMFS image using the existing text-link layout and relocation engine.
+Word 0 holds XIP magic, word 1 holds `PURE,,020`, 2..017 are zero, text
+begins at logical 020 and the remainder is zero-padded. The extra padding
+forces an aligned dedicated MEMFS extent under its existing allocator.
+For this experimental generator, accepted images have **no DATA or BSS**
+and instruction text is restricted to unindexed, non-indirect `MOVEI`
+instructions followed by one `SYS_EXIT` (monitor UUO 040). All other
+instructions/syscalls are rejected; this is stricter than the normal DXR
+PURE heuristic, which alone cannot prove absence of user stores. Normal
+DXR/PURE output is unchanged. Negative/format host tests live in
+daimos-testkit. Production EXEC/RUN **does not accept raw XIP yet**:
+`vm_space_startup` still writes into the user image. No KCORE change.
+
 ## 2026-10-23 reuse DXR PURE for raw MEMFS XIP admission v217
 
 Simplified the experimental XIP image contract to reuse the existing DXR

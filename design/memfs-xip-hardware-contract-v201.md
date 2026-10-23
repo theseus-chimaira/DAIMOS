@@ -1,3 +1,16 @@
+## v218 restricted raw-XIP producer
+
+The opt-in host linker command `dlink --xip --pure -b 020 -o IMAGE.XIP
+PROGRAM.DOBJ` writes a precisely 04000-word raw MEMFS file. It retains
+the normal linked/relocated text at logical 020, puts `054506000000` in
+word 0 and `0200000,,020` in word 1, and zero-fills all other unused words.
+Large padding ensures the existing MEMFS dedicated/aligned allocation rule
+applies. There is no DXR header, relocation map, or writable data/BSS in the
+file. For now the instruction verifier accepts only unindexed, direct
+`MOVEI` operations followed by exactly one `SYS_EXIT` monitor UUO 040.
+This narrow proof is intentionally stronger than DXR `PURE`, and is only a
+first-format experiment; a root-only production XIP launch still needs a
+non-writing startup route and scheduled EXIT/EXEC rollback tests.
 ## v216 non-writing native user-mode lifecycle
 
 The testkit now assembles a raw XIP fixture whose user-mode instructions
