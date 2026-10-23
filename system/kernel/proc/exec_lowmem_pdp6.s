@@ -129,9 +129,8 @@ exec_replace_current:
         move    14,15                  ; preserve validated argv/env start
 exec_replace_validate_records:
         jumpe   13,exec_replace_validate_done
-        move    1,16
-        sub     1,15
-        jumple  1,exec_replace_invalid
+        caml    15,16                  ; each record must start before block end
+        jrst    exec_replace_invalid
         move    1,15
         setz    2,
         pushj   17,sixbit_record_words
@@ -416,8 +415,7 @@ exec_lowmem_commit:
         cain    16,EXEC_LOAD_RT_REQUIRED
         jrst    exec_lowmem_success
 exec_lowmem_release_old_rt:
-        move    1,proc_rt_owner
-        camn    1,14
+        camn    14,proc_rt_owner        ; release only current owner
         setzm   proc_rt_owner
 exec_lowmem_success:
         setz    16,

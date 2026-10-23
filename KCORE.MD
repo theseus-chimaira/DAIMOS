@@ -1,5 +1,26 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 EXEC strict record start and low-memory RT cleanup v188
+
+In `exec_replace_current` the argv/env record scanner tests that AC15
+points strictly before the validated block end with `CAML/JRST`,
+replacing the unused `MOVE/SUB/JUMPLE` difference. A nonzero record
+count still requires a valid first word before calling the record
+parser; record-end validation is unchanged. In low-memory EXEC the old
+RT reservation is released only if AC14 equals `proc_rt_owner`, using
+`CAMN/SETZM` directly instead of loading the owner in AC1 first.
+The same-checkout KCC/p10fold exclusive KCORE endpoint changed from
+`025661` to `025657` octal, two resident words saved. Native runtime
+and malformed-block testing on v188 are still pending.
+
+Full KCC `make permanent-size` accounting on the same profile reports:
+KCORE 11135 words (`025577`), KCORE+MRES 18670 words (`044356`),
+PERMANENT_LAST `044435`, MULTI_LAST `044476`. The strict `040000`
+permanent-address limit still fails by 2333 addresses (single root)
+or 2366 (multi root), as shown by the report's distance metric.
+The KCORE exclusive-end address is not interchangeable with the
+report's standalone KCORE size; keep both measurements distinct.
+
 ## 2026-10-23 EXEC/RUN native regression follow-up v187
 
 Fresh-image PDP-6 simulator diagnostics for v186 PASS both EXEC current

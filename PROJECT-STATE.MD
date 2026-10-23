@@ -1,3 +1,19 @@
+## 2026-10-23 KCORE EXEC SIZE AND FULL PERMANENT ACCOUNTING V188
+
+KCC/p10fold linked resident EXEC v188 saves two further KCORE words:
+`__kcore_low_end` `025661` -> `025657` octal. The latest full
+`make -C system/boot/pdp6 permanent-size` run (default full/auto
+KCC configuration) reports KCORE 11135 words, KCORE+MRES 18670 words,
+PERMANENT_LAST `044435`, MULTI_LAST `044476`. Both the single-root
+and multi-root strict `040000` permanent-address tests FAIL (report
+distances -2333 and -2366 addresses respectively). This is a current
+verified size failure, not a successful 16K target. The full report
+is `$TMPDIR/daimos-permanent-v188b.log`.
+
+The EXEC record-start comparison and low-memory RT cleanup changes
+need native replacement, child-session and malformed-record regression
+coverage. Previously validated v186 native tests are not v188 tests.
+
 ## 2026-10-23 EXEC/RUN POST-OPTIMIZATION REGRESSIONS V187
 
 Current resident EXEC/RUN optimizations through v186 have KCC/p10fold
