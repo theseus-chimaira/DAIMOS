@@ -1,5 +1,17 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 EXEC direct validated scalar counts v185
+
+`exec_replace_current` now loads the argc and envc launch words
+directly into AC13 and AC14 for their existing upper-half-zero and
+maximum-count checks. The formerly separate `HRRZ` copies are
+redundant: both values are already validated pure 18-bit counts before
+their use in the packed count pair or record total. Same-checkout
+KCC/p10fold relink reduced exclusive `__kcore_low_end` from `025667`
+to `025665` octal (two permanent words), with no additional RAM or
+stack requirement. Native EXEC/RUN regression tests for v184-v185
+remain pending at the time of this size measurement.
+
 ## 2026-10-23 EXEC old real-time ownership comparison v184
 
 `exec_replace_current` now uses `CAMN 13,proc_rt_owner` followed by

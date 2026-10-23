@@ -100,16 +100,14 @@ exec_replace_current:
         jrst    exec_replace_invalid
         move    11,7
 
-        move    1,1(10)                ; argc must be a pure RH value
-        tlne    1,0777777
+        move    13,1(10)               ; argc must be a pure RH value
+        tlne    13,0777777
         jrst    exec_replace_invalid
-        hrrz    13,1
         caile   13,020
         jrst    exec_replace_invalid
-        move    1,2(10)                ; envc
-        tlne    1,0777777
+        move    14,2(10)               ; envc must also be a pure RH value
+        tlne    14,0777777
         jrst    exec_replace_invalid
-        hrrz    14,1
         caile   14,020
         jrst    exec_replace_invalid
         hrlz    1,13
