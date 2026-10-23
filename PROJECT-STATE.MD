@@ -1,3 +1,12 @@
+## 2026-10-23 MEMFS XIP v204: aligned allocation failure contract
+
+The native testkit MEMFS fixture now injects `MM_ERR_FRAGMENTED` for an
+aligned large allocation and confirms there is no fallback to an unaligned
+extent, published data pointer, logical quota change, or stale XIP pin.
+The subsequent aligned retry succeeds. SIMH and AAP PDP-6 both PASS.
+This is a deterministic failure-injection test, not a realistic MM stress
+measurement. The production XIP process launch remains disabled.
+
 ## 2026-10-23 MEMFS XIP aligned backing v203
 
 Dedicated large MEMFS allocations use 02000-word alignment through MM.

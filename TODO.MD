@@ -1,3 +1,12 @@
+## MEMFS XIP v204 (2026-10-23)
+
+- [x] Native aligned-allocation `MM_ERR_FRAGMENTED` failure injection on
+  SIMH and AAP, followed by successful retry without leaked storage.
+- [ ] Run real MM fragmentation/compaction pressure tests and measure wasted
+  free words caused by `02000` alignment.
+- [ ] Integrate safe XIP VM provenance, process teardown and image admission;
+  do not enable ordinary DXR shared writable images.
+
 ## MEMFS XIP alignment milestone v203 (2026-10-23)
 
 - [x] Request 02000 alignment for dedicated large MEMFS allocations; both
