@@ -1,3 +1,33 @@
+## 2026-10-23 EXEC RT OWNER FLAG STACK OVERLAP FIX V191
+
+Native testkit v191 discovered and reproduced an EXEC loader RT-owner
+rollback defect: `exec_load_process` stored its new-RT-claim flag in
+`-003(17)`, which is also the seventh/last word (`mtime`) of the
+`struct vfs_stat` output at `-011(17)` through `-003(17)`.
+Consequently, after a failed RT_REQUIRED EXEC, a process that owned the
+reservation before EXEC could lose it despite never claiming a new one.
+The v191 PDP-6 fixture verified RT ownership immediately before EXEC
+and reproduced the erroneous release after a two-word valid-header,
+incomplete-payload DXR failure.
+
+`exec_load.s` now reuses the vnode output scratch at `-012(17)` for the
+RT-claim flag **after** copying that vnode to AC12. The early null/path
+lookup failures return directly without testing a not-yet-initialized
+flag. Seven-word `vfs_stat` output no longer aliases the flag. No stack
+growth or persistent allocation is required. KCC/p10fold link PASS:
+`__kcore_low_end` remains `025657` octal; full KCORE 11135 words and
+KCORE+MRES 18670 words are unchanged. Strict 16K gate still FAILs.
+
+Testkit `test-daimos-exec-rt-owner` native fresh-image PDP-6 PASS:
+new RT claim released on failing EXEC; existing owner preserved on a
+failing EXEC; RT_REQUIRED successful EXEC acquires ownership; ordinary
+replacement releases ownership; subsequent acquisition/release works.
+Evidence: `$TMPDIR/daimos-exec-rt-owner-v191-fixed-native.log`.
+This uses diagnostic `DAIMOS_EXEC_OBSERVE_SECONDS=35` and functional
+`DSH_IMAGE_LIMIT=037000`; default timing and image-size gates remain
+unmodified. Additional failure injection after VM creation and native
+32K acceptance are still open.
+
 ## 2026-10-23 EXEC/RUN MALFORMED LAUNCH REJECTION V190
 
 The native PDP-6 EXEC replacement test in daimos-testkit commit

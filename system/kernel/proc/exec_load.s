@@ -96,14 +96,18 @@ exec_load_process:
         move    10,1                    ; proc
         move    11,2                    ; owner
         move    12,3                    ; path
-        setzm   -003(17)                ; no new RT reservation yet
-        jumpe   10,exec_load_fail
-        jumpe   12,exec_load_fail
+        ; -011..-003 is the seven-word vfs_stat scratch area.  The RT
+        ; ownership flag cannot live there: vfs_stat writes the final
+        ; mtime word at -003.  Once lookup returns, the vnode is held in
+        ; AC12 and its former -012 scratch word can hold this flag.
+        jumpe   10,exec_load_fail_result
+        jumpe   12,exec_load_fail_result
         move    1,12
         movei   2,-012(17)              ; vnode
         pushj   17,file_lookup_path
-        jumpn   1,exec_load_fail
+        jumpn   1,exec_load_fail_result ; no reservation exists yet
         move    12,-012(17)             ; vnode stays in AC12
+        setzm   -012(17)                ; no new RT reservation yet
 
         move    1,12
         movei   2,-011(17)              ; struct vfs_stat
@@ -156,7 +160,7 @@ exec_load_read_header:
         jrst    exec_load_header_shape
 exec_load_rt_claim:
         movem   11,proc_rt_owner
-        setom   -003(17)
+        setom   -012(17)
 
 exec_load_header_shape:
         move    4,13
@@ -270,7 +274,7 @@ exec_load_vm_fail:
         jumpn   1,exec_load_fail
         hrrzs   0(10)                   ; clear entry LH after destroy
 exec_load_fail:
-        skipn   -003(17)                ; release only a reservation made here
+        skipn   -012(17)                ; release only a reservation made here
         jrst    exec_load_fail_result
         camn    11,proc_rt_owner
         setzm   proc_rt_owner
@@ -278,7 +282,7 @@ exec_load_fail_result:
         seto    1,
         jrst    exec_load_return
 exec_load_nomem:
-        skipn   -003(17)                ; undo RT reservation before retry
+        skipn   -012(17)                ; undo RT reservation before retry
         jrst    exec_load_nomem_result
         camn    11,proc_rt_owner
         setzm   proc_rt_owner

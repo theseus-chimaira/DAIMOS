@@ -1,5 +1,18 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 EXEC loader RT claim scratch lifetime correction v191
+
+The seven-word VFS stat output at `-011..-003(17)` was overwriting the
+RT-claim marker previously stored at `-003(17)`. An existing RT owner
+could therefore be released by a failed EXEC. Reuse `-012(17)` only
+after its vnode output has been copied to AC12, initialize it before
+the VFS stat call, and bypass marker-based cleanup on earlier failures.
+The v191 native RT-owner transaction regression reproduces the prior
+failure and PASSes after correction (new-claim rollback, old-owner
+preservation, admission and normal-EXEC release). Both KCORE text/end
+and transient stack usage are unchanged; `__kcore_low_end=025657`
+octal after KCC/p10fold. Full memory still exceeds the strict limit.
+
 ## 2026-10-23 EXEC/RUN malformed launch regression v190
 
 The PDP-6 native EXEC replacement fixture in daimos-testkit v190
