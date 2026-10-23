@@ -1,3 +1,19 @@
+## 2026-10-23 GROUP 030 CLEAN NESTED TSFS RUN/WAIT V197
+
+The testkit reran V196 unchanged, with its shell wrapper validated
+before execution. The entire test passed (`exit 0`): nested
+`DSH -C "ECHO NESTED_V196"` produced `NESTED_EXIT:0`, and a
+subsequent independent ECHO succeeded. Evidence:
+`$TMPDIR/daimos-tsfs-nested-runwait-clean-v197.log`.
+
+This supersedes the earlier wrapper-edit uncertainty and confirms
+ordinary TSFS-root child RUN/WAIT, status propagation and follow-on
+command execution. Direct shallow/deep DTFSPROBE also yield the
+native format status `010` (octal). FSCK.DTFS and MOUNT.DTFS on
+host-initialized DTC3 still time out. Investigate the specialized
+`cmd_dtfs_probe` RUN-block/FD mapping and provider code. Avoid
+generic WAIT changes without a focused reproducer.
+
 ## 2026-10-23 GROUP 030 TSFS-ROOT NESTED RUN CONTROL V196
 
 Testkit V196 used genuine TSFS-root media plus a host-initialized
