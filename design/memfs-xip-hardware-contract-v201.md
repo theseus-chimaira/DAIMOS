@@ -1,3 +1,12 @@
+## v219 private MRES admission ABI
+
+The movable MEMFS provider's existing register dispatcher accepts private
+operation 027: AC1 vnode, AC2 pointer to physical base result, AC3 pointer
+to logical entry result. It forwards to `memfs_xip_admit` inside MEMFS MRES
+and returns zero for success, -1 otherwise. The corresponding release op
+026 continues to accept AC1 physical base. The production loader must still
+enforce privileged/trusted admission and avoid calling `vm_space_startup`
+for shared backing: a PURE file flag cannot replace that runtime check.
 ## v218 restricted raw-XIP producer
 
 The opt-in host linker command `dlink --xip --pure -b 020 -o IMAGE.XIP

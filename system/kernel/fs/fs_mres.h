@@ -32,6 +32,9 @@
 /* Private VM teardown request: AC1 physical base; 1 released, 0 unknown,
  * -1 failure/unavailable. This does not change the public VFS ABI. */
 #define FS_MRES_OP_XIP_RELEASE          22U
+/* Privileged kernel-only XIP admission: AC1=vnode, AC2=basep,
+ * AC3=entryp. Does not itself install any process VM mapping. */
+#define FS_MRES_OP_XIP_ADMIT            23U
 
 struct fs_mres_request {
         kword_t op;

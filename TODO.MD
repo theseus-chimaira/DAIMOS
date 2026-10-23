@@ -1,3 +1,12 @@
+## XIP v219 MRES gateway
+
+- [x] Publish raw PURE XIP admission through existing private MEMFS MRES
+  register gateway (op 027), tested on SIMH and AAP, with no new KCORE slot.
+- [ ] Connect a privileged loader path only with zero argv/environment and
+  no writes to the shared VM during RUN/EXEC startup.
+- [ ] Test scheduled process EXIT and low-memory EXEC rollback end to end;
+  reject any trust/pin failure before changing process VM state.
+
 ## XIP restricted linker producer v218
 
 - [x] Implement an opt-in, distinct dlink raw XIP output mode reusing PURE

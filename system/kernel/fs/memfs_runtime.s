@@ -72,6 +72,7 @@ memfs_read_return:
 ; int memfs_write_words(struct memfs *fs, vnode_t node,
 ;     unsigned int off, const kword_t *buf, unsigned int nwords)
         .globl  memfs_write_words
+        .globl  memfs_xip_admit
         .globl  memfs_xip_owns_base
         .globl  memfs_xip_unpin_base
 memfs_write_words:
@@ -869,6 +870,8 @@ memfs_mres_reg_dispatch:
         jrst    memfs_mres_not_mount
         jrst    memfs_mres_mount
 memfs_mres_not_mount:
+        cain    6,027                   ; private XIP image admit, no VFS slot
+        jrst    memfs_mres_xip_admit
         cain    6,026                   ; private VM XIP release (22 decimal)
         jrst    memfs_mres_xip_release
         cain    6,025                   ; FS_MRES_OP_SPACE
@@ -876,6 +879,16 @@ memfs_mres_not_mount:
         move    7,[memfs_mres_vector]
         movei   0,memfs_mres_fs
         jrst    fs_mres_context_vector_dispatch
+
+; AC1=vnode, AC2=&base, AC3=&entry. All validation/pinning stays inside
+; movable MEMFS; only a separately trusted caller may use this private
+; operation to construct a process mapping. Return 0 or -1.
+memfs_mres_xip_admit:
+        move    4,3
+        move    3,2
+        move    2,1
+        movei   1,memfs_mres_fs
+        jrst    memfs_xip_admit
 
 ; AC1=physical base. Return 1 if this XIP reference was released, 0 if
 ; not owned, -1 if an owned pin could not be released. No new MRES vector.

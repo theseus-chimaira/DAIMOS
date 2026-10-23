@@ -1,3 +1,15 @@
+## 2026-10-23 movable MEMFS XIP admission gateway v219
+
+The existing MEMFS provider register dispatch now accepts private op 027:
+AC1=vnode, AC2=&base, AC3=&entry. It calls `memfs_xip_admit` wholly inside
+MRES, which validates the raw PURE header and owns pin failure/rollback.
+This is the symmetric counterpart of VM XIP release op 026. No new kernel
+entry vector, process state or permanent data is required. Native PDP-6
+SIMH and AAP MEMFS/XIP lifecycle tests call the real dispatch and PASS.
+Normal EXEC/RUN has not yet been changed to request this service, so raw
+XIP remains unlaunchable by ordinary users. Privileged, argument-free
+admission and no-write startup are still needed before runtime enablement.
+
 ## 2026-10-23 experimental linker XIP producer v218
 
 Host `dlink --xip --pure -b 020` now creates a distinct 04000-word RAW
