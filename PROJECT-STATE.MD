@@ -1,3 +1,13 @@
+## 2026-10-23 MEMFS XIP native execute probe v208
+
+The daimos-testkit MEMFS fixture now uses executive-mode PDP-6 `XCT` to
+execute a single instruction at `admitted MEMFS physical base + entry` while
+holding the file's pin. Both SIMH and PDP6-AAP PASS and observe the expected
+AC result. This verifies native instruction fetch directly from MEMFS-owned
+backing without a copied process extent. It does **not** exercise user APR
+relocation, startup, process scheduling, swapping, or EXEC/RUN integration.
+No production KCORE or EXEC/RUN code changed for v208.
+
 ## 2026-10-23 XIP MRES image admission v207
 
 Implemented `memfs_xip_admit` in the separately loadable MEMFS MRES. It

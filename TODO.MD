@@ -1,3 +1,11 @@
+## MEMFS XIP v208
+
+- [x] Execute a real PDP-6 instruction from pinned MEMFS backing on SIMH
+  and AAP using a testkit-only executive XCT trampoline.
+- [ ] Add user-mode APR instruction-fetch/native process test with an
+  explicitly non-writing startup and guaranteed teardown/unpin.
+- [ ] Only after this passes enable privilege-gated production EXEC/RUN XIP.
+
 ## XIP integration gate v207 (2026-10-23)
 
 - [x] Implement distinct MEMFS raw-image admission with stable pinned
