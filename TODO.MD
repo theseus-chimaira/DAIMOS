@@ -1,3 +1,13 @@
+## MEMFS user APR XIP validation v209
+
+- [x] Validate PDP-6 user-mode APR instruction fetch and physical relocation
+  from admitted, pinned MEMFS backing on AAP. Demonstrate that user stores
+  also modify backing (test-only). Add repeatable testkit Make target.
+- [ ] Implement safe XIP process provenance and teardown/unpin, swap
+  exclusion, and non-writing startup without copying the executable.
+- [ ] Test a strictly non-writing user program and syscall handoff from
+  pinned storage on both SIMH and AAP before production EXEC/RUN admission.
+
 ## MEMFS XIP v208
 
 - [x] Execute a real PDP-6 instruction from pinned MEMFS backing on SIMH

@@ -1,3 +1,19 @@
+## 2026-10-23 MEMFS user-mode APR XIP hardware test v209
+
+daimos-testkit now provides `target-memfs-xip-user-apr-v209`. The test first
+admits and pins a separately marked raw MEMFS XIP file; it then programs the
+PDP-6 APR relocation base and enters user mode at logical 020 directly into
+that file's words. The test user code intentionally executes `MOVEM 2,030`,
+and AAP confirms the marker at the corresponding MEMFS physical word and
+the correct pinned file base. **AAP PASS.** The native PDP-6 image is built
+using p10run, but a completed SIMH user-mode run is not claimed.
+
+This is intentionally a test-only *writable* example. It demonstrates that
+the PDP-6 APR cannot prevent writes to mapped MEMFS backing; it does not
+prove that ordinary user applications are safe to share or that process
+teardown, swapping, and non-writing startup are integrated. EXEC/RUN, KCORE,
+and production MEMFS source are unchanged by v209.
+
 ## 2026-10-23 MEMFS XIP native execute probe v208
 
 The daimos-testkit MEMFS fixture now uses executive-mode PDP-6 `XCT` to
