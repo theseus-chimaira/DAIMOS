@@ -1,3 +1,39 @@
+## 2026-10-23 NATIVE RUN CHILD-VM CREATION OUT-OF-MEMORY V199
+
+The new daimos-testkit `test-daimos-run-create-oom` PASSed on a fresh
+256K PDP-6 image. The fixture first verifies that a large, valid child
+DXR can be RUN and reaped normally. The boot INIT/parent remains the
+known-working v197 image; `/SYSTEM/EXEC/TSFSPROBE` is replaced only
+in this test image by a separate executable with 077000 octal BSS
+words (below the DXR loader's 077777 BSS limit). The child's complete
+text/BSS/stack requires at least 0100000 physical words.
+
+The parent then grows its break via bounded 02000-quantum search until
+the remaining 256K core cannot accommodate the large child, checking
+that the parent process-word allocation plus minimum child requirement
+exceeds all installed core. Four otherwise VALID RUN V2 requests for
+the already-proven child return -1. After each rejection, the parent's
+break and writable sentinel, its live process slots and aggregate
+process-word accounting remain unchanged. Shrinking the parent back to
+the original break restores the original process accounting, and the
+EXACT SAME child RUN/WAIT succeeds again. The fixture then also passes
+v197's 16 late descriptor-map rollback failures with three blocked
+children, normal reap and final valid RUN/WAIT recovery.
+
+This specifically tests insufficient physical core at RUN's
+`exec_load_process -> vm_space_create` stage, without adding kernel
+fault switches or reducing memory limits. Early fixture trials failed
+for test reasons: an oversized parent image stopped during INIT boot,
+and a 0100000-octal BSS child exceeded the documented DXR 077777 limit.
+The corrected separate-child fixture PASSed. Evidence:
+`$TMPDIR/daimos-run-create-oom-v199-native-c.log`.
+
+All v197/v198/v199 test sources compile with PDP-6 GCC/C99, and runner
+shell syntax/diff checks pass. No DAIMOS code, kernel stack, KCORE or
+MRES changes; linked KCORE end stays `025657` octal. A forced EXEC
+replacement allocation failure and late-commit fault injection are
+still separate open scenarios. Strict 32K remains deferred by request.
+
 ## 2026-10-23 PDP-6 VM ALLOCATION-FAILURE AND RUN RECOVERY V198
 
 The versioned daimos-testkit v198 regression extends the v197 native

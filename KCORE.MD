@@ -1,5 +1,18 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 RUN loader VM creation resource exhaustion v199
+
+Native 256K PDP-6 testkit v199 **PASS**: a separately installed valid
+large child DXR RUNs before and after pressure, but four identical RUN
+requests fail while the parent's live, unswappable VM consumes enough
+physical core that `vm_space_create` cannot allocate another child.
+Each rejection preserves caller break/data, live process slots and
+process-word accounting. Shrink restores the old baseline, and v197
+late descriptor-map rollback/reap/recovery tests also pass. Source
+change is test-only: `__kcore_low_end=025657` octal, no added stack or
+persistent RAM. EXEC replacement failure under deliberate pressure
+remains unverified; 32K acceptance remains explicitly deferred.
+
 ## 2026-10-23 256K physical MM exhaustion regression v198
 
 New daimos-testkit v198 native fixture PASSes four unallocatable but
