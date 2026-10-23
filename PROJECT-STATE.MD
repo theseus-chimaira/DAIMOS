@@ -1,3 +1,27 @@
+## 2026-10-23 RUN LATE-FDMAP ROLLBACK UNDER LIVE PRESSURE V197
+
+The new native PDP-6 testkit `test-daimos-run-late-rollback` PASSed on
+a fresh normal 256K image. While three children remained alive and
+blocked on a pipe, sixteen RUN V2 requests passed launch validation,
+executable loading, child VM creation, startup construction and u-area
+allocation, then failed at the deliberately unavailable parent FD 15
+in the final explicit descriptor map. All returned `-1`; each subsequent
+`SYS_MEMINFO` sample retained the same process slot count and process
+extent accounting as before the failures. After closing the pipe writer,
+all three children exited and were reaped; process accounting returned
+to the initial baseline. A further valid RUN and WAIT also succeeded.
+This tests a late child-creation rollback route and recovery, not a
+deliberately exhausted MM allocator or a complete dynamic-MM leak audit.
+
+Testkit fixture: `tests/validation/daimos-run-late-rollback-v197.c`;
+runner: `tests/validation/daimos-run-late-rollback-v197.sh`.
+Evidence: `$TMPDIR/daimos-run-late-rollback-v197-native-b.log`.
+The first diagnostic run failed on an overly strict initial
+`process_slots_used == 1` fixture assumption; the corrected fixture
+accepts the runtime's actual nonzero baseline and the fresh native
+rerun PASSed. DAIMOS source and size are unchanged:
+`__kcore_low_end=025657` octal. The 32K gate stays deferred.
+
 ## 2026-10-23 RUN PROCESS LIFECYCLE AND ID REUSE RETEST V196
 
 Two existing daimos-testkit native PDP-6 tests PASSed on fresh 256K

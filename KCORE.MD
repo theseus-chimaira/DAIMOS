@@ -1,5 +1,17 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 RUN late descriptor-map rollback regression v197
+
+Native 256K PDP-6 RUN V2 fixture PASSes sixteen late-stage failures
+after child VM, startup and u-area setup, with three other children
+live. Process slots and reported process words remain stable across
+each failed RUN; after releasing/reaping the children, both return to
+their baseline, and a subsequent valid RUN/WAIT succeeds. This is
+not forced MM allocation exhaustion and does not individually audit
+orphaned dynamic MM allocations. No kernel text or persistent data
+changed; linked `__kcore_low_end` remains `025657` octal. The 32K
+gate remains deferred by request.
+
 ## 2026-10-23 RUN native lifecycle/ID reuse pass v196
 
 Existing 256K native PDP-6 process-lifecycle and process-ID-lifetime
