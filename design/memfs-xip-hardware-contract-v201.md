@@ -3,6 +3,22 @@
 Status: MEMFS pinning foundation implemented and native-tested in v202;
 the production EXEC loader is unchanged and XIP launches remain disabled.
 
+## v207 explicit admission milestone (2026-10-23)
+
+MEMFS MRES now exports `memfs_xip_admit(fs, vnode, &base, &entry)`.
+This is **not an EXEC hook** and does not start a process. It requires the
+existing large-file 02000-aligned allocation and checks a separate raw-image
+format: word 0 is octal `054506000000`, word 1 is a full 18-bit logical entry
+at or beyond `020`, within the file's logical extent. Generic DXR files are
+rejected. Validation occurs while pinned; all rejected candidates are
+un-pinned, and a successful caller owns the pin until explicit release.
+The native testkit fixture checks both cases on SIMH and AAP PDP-6.
+
+The header is **not a certificate of immutability or non-writing code**.
+No user process may be mapped from it until a privileged executable trust
+contract, no-write startup, swapping exclusion, and VM unpin-on-teardown
+exist. EXEC/RUN and KCORE still have no XIP launch code.
+
 ## Hardware cross-check
 
 The PDP-6 has one user relocation base and one upper protection bound.

@@ -52,6 +52,10 @@ int memfs_xip_pin(struct memfs *fs, vnode_t node, kword_t *basep);
 int memfs_xip_unpin(struct memfs *fs, vnode_t node);
 int memfs_xip_is_pinned(unsigned int slot);
 int memfs_xip_any_pinned(void);
+/* Explicit raw-image admission. Caller must unpin after a successful probe.
+ * This does not establish a user VM mapping or certify absence of writes. */
+int memfs_xip_admit(struct memfs *fs, vnode_t node,
+    kword_t *basep, kword_t *entryp);
 
 int memfs_snapshot_mount(struct memfs *fs, unsigned int flags);
 int memfs_snapshot_shutdown(void);

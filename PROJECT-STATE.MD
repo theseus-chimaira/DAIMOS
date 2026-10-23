@@ -1,3 +1,12 @@
+## 2026-10-23 XIP MRES image admission v207
+
+Implemented `memfs_xip_admit` in the separately loadable MEMFS MRES. It
+recognizes an explicit raw-image header and entry address, pins backing while
+validating, and unpins on rejection; ordinary DXR is never auto-admitted.
+Native MEMFS target tests PASS on SIMH and AAP PDP-6. No XIP process launch
+is implemented; `vm_space_startup` and MM_TYPE_PROCESS teardown still make
+transparent substitution unsafe. No EXEC/RUN or KCORE change in this patch.
+
 ## 2026-10-23 post-EXEC-optimization XIP integration audit v206
 
 The optimized `exec_load_process` calls `vm_space_create` followed by

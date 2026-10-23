@@ -24,6 +24,7 @@
         .globl  memfs_xip_unpin
         .globl  memfs_xip_is_pinned
         .globl  memfs_xip_any_pinned
+        .globl  memfs_xip_admit
 
         .globl  mm_alloc
         .globl  mm_alloc_aligned
@@ -43,6 +44,7 @@
 
         .equ    MEMFS_CHUNKS,4
         .equ    MEMFS_XIP_SLOTS,4
+        .equ    MEMFS_XIP_MAGIC,054506000000
         .equ    MEMFS_CHUNK_WORDS,02000
         .equ    MEMFS_MM_OWNER,011
         .equ    MEMFS_SECTOR_WORDS,0200
@@ -463,6 +465,65 @@ memfs_xip_pin_return:
         hrli    0,-6(17)
         blt     0,016
         sub     17,[7,,7]
+        popj    17,
+
+; int memfs_xip_admit(fs,vnode,&base,&entry)
+; A strict *format* gate, distinct from general DXR images. The dedicated
+; extent contains its raw logical user image: first word carries the 36-bit
+; XIP magic, second holds its logical entry. Instructions begin at >= 020.
+; Pin first to keep the file stable through inspection; undo on rejection.
+; A trusted no-write certification is still required before EXEC may use it.
+memfs_xip_admit:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        move    010,1
+        move    011,2
+        move    012,3
+        move    013,4
+        jumpe   012,memfs_xip_admit_fail
+        jumpe   013,memfs_xip_admit_fail
+        push    17,[0]                ; preserve caller basep on failure
+        movei   3,(17)
+        pushj   17,memfs_xip_pin
+        jumpn   1,memfs_xip_admit_unreserved
+        move    2,(17)                ; pinned physical base
+        move    1,(2)
+        came    1,[MEMFS_XIP_MAGIC]
+        jrst    memfs_xip_admit_bad
+        move    3,1(2)                ; logical entry point
+        tlne    3,0777777             ; 18-bit logical address only
+        jrst    memfs_xip_admit_bad
+        caige   3,020
+        jrst    memfs_xip_admit_bad
+        move    4,011
+        hrrz    4,4                    ; slot encoded in vnode
+        imuli   4,7
+        add     4,MEMFS_NODES(010)
+        hrrz    4,MEMFS_NODE_DATA(4)  ; complete logical file size
+        caml    3,4
+        jrst    memfs_xip_admit_bad
+        movem   2,(012)
+        movem   3,(013)
+        setz    1,
+        jrst    memfs_xip_admit_return
+memfs_xip_admit_bad:
+        move    1,010
+        move    2,011
+        pushj   17,memfs_xip_unpin
+memfs_xip_admit_unreserved:
+        seto    1,
+memfs_xip_admit_return:
+        sub     17,[1,,1]
+        jrst    memfs_xip_admit_done
+memfs_xip_admit_fail:
+        seto    1,
+memfs_xip_admit_done:
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
         popj    17,
 
 ; int memfs_xip_unpin(fs, vnode)

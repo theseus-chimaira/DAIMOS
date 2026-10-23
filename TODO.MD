@@ -1,3 +1,12 @@
+## XIP integration gate v207 (2026-10-23)
+
+- [x] Implement distinct MEMFS raw-image admission with stable pinned
+  backing and rollback, native-tested on SIMH and AAP.
+- [ ] Implement privileged non-writing image contract, VM MEMFS provenance,
+  swap exclusion, and startup/teardown without shared-memory stores.
+- [ ] Only then enable the new image kind through the existing EXEC/RUN
+  loading interface and test native process launches on SIMH and AAP.
+
 ## Post-optimization MEMFS XIP safety gate v206
 
 - [x] Audit optimized EXEC/RUN VM call sites and establish linked KCORE size.
