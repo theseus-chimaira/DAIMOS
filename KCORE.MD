@@ -1,5 +1,18 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 EXEC late transaction boundary tests v200
+
+daimos-testkit v200 executes the production `exec_replace_current`
+assembler under PDP-6 instruction-level fault injection. Eight modes
+PASS: load, startup and old-VM destruction failure; PURE backing-bit
+commit variants; RT newly-claimed rollback, old-owner preservation and
+non-RT successful release. Restored user mapping hold, swap backing
+and prior credential mount bit are also checked. External call stubs
+are injected, so these are not native MM allocation/destroy failures;
+native full-image replacement/rollback tests are tracked separately.
+No KCORE growth (`__kcore_low_end=025657`). Successful RT-to-RT EXEC
+and direct EXEC ENOMEM under physical pressure remain to be verified.
+
 ## 2026-10-23 RUN loader VM creation resource exhaustion v199
 
 Native 256K PDP-6 testkit v199 **PASS**: a separately installed valid

@@ -1,3 +1,30 @@
+## 2026-10-23 EXEC STAGED COMMIT FAILURE INJECTION V200
+
+The new daimos-testkit `test-daimos-exec-commit-rollback` PASSes eight
+instruction-level scenarios against the **actual resident**
+`exec_replace_current` implementation extracted from
+`system/kernel/proc/exec_lowmem_pdp6.s`; only its external
+`exec_load_process`, `vm_space_startup` and `vm_space_destroy` call
+boundaries are replaced by deterministic test doubles. Covered cases:
+failed image loading, startup creation failure, failed destruction of
+the old VM, successful PURE/backing commit with either fifth mount bit,
+rollback of a newly claimed RT owner after startup failure, preservation
+of an existing RT owner after startup failure, and releasing an existing
+owner when a non-RT image commits. The old-VM-destroy failure also
+asserts restoration of the user mapping hold. Each failed transaction
+must restore the previous backing record/credential bits and return -1.
+
+Evidence: `$TMPDIR/daimos-exec-commit-rollback-v200-final.log`;
+testkit commit `de17627`. This is a PDP-6 instruction-level emulator
+test of the production transaction with injected call results, **not**
+a native full-kernel failure or a real failed `mm_free` invocation.
+Successful RT-to-RT replacement is not in the eight-case matrix; its
+experimental ninth scenario remained unaccepted and was excluded from
+the committed regression. Native v191-v193 owner and decode failure
+tests remain the independent real-kernel checks. The 32K gate is
+deferred. No kernel code or resident RAM change was made; KCORE
+exclusive end remains `025657` octal.
+
 ## 2026-10-23 NATIVE RUN CHILD-VM CREATION OUT-OF-MEMORY V199
 
 The new daimos-testkit `test-daimos-run-create-oom` PASSed on a fresh
