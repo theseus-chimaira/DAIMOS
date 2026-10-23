@@ -1,3 +1,16 @@
+## 2026-10-23 RT REQUIRED CHILD CROSS-REGRESSION V194
+
+Following the v193 post-VM EXEC compressed decode failure checks,
+the existing `make test-daimos-rt-required` testkit target PASSed with
+a fresh native PDP-6 image. It covers compressed RT_REQUIRED child
+admission, competing-owner rejection, and eventual release/reacquire.
+Evidence: `$TMPDIR/daimos-rt-required-v193-regression.log`.
+This verifies the RUN-created child path separately from the v193
+same-process EXEC RT rollback tests. Kernel source, KCORE exclusive
+end (`025657` octal), and full residency were unchanged. The image
+was built with the existing functional `DSH_IMAGE_LIMIT=037000`; the
+strict permanent-memory, executable-size and timing gates remain open.
+
 ## 2026-10-23 EXEC POST-VM-CREATION RT ROLLBACK V193
 
 The native PDP-6 testkit real-time-owner fixture now additionally

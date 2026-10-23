@@ -1,5 +1,13 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 native RT_REQUIRED RUN child follow-up v194
+
+The existing compressed RT_REQUIRED child admission/rejection/release
+native PDP-6 test passed after v193 post-VM EXEC rollback coverage.
+This independent RUN path check introduced no KCORE modifications.
+The linked `__kcore_low_end` remains `025657` octal. Functional-only
+image-size settings are not strict permanent-memory acceptance.
+
 ## 2026-10-23 EXEC compressed decode failure RT cleanup v193
 
 Native PDP-6 testkit v193 PASSes new RT owner cleanup and existing
