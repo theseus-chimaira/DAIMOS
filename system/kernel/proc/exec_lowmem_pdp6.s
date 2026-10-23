@@ -141,9 +141,8 @@ exec_replace_validate_records:
         pushj   17,sixbit_record_words
         jumpe   1,exec_replace_invalid
         add     15,1
-        move    2,16
-        sub     2,15
-        jumpl   2,exec_replace_invalid
+        camle   15,16                  ; record end must not exceed block
+        jrst    exec_replace_invalid
         sojg    13,exec_replace_validate_records
 exec_replace_validate_done:
         came    15,16

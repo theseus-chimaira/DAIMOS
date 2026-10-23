@@ -1,5 +1,15 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 EXEC argument-record end comparison v180
+
+`exec_replace_current` now checks each argument/environment record end
+directly (`CAMLE/JRST`) against the validated EXEC block endpoint rather
+than subtracting the two addresses and testing the sign. This completes
+the interrupted v180 edit without altering error handling or record
+semantics. The same-checkout KCC/p10fold link reduced the exclusive
+`__kcore_low_end` from `025674` to `025673` octal: one resident word.
+Native EXEC/RUN malformed-input and process-launch tests are pending.
+
 ## 2026-10-22 EXEC path record endpoint check v179
 
 `exec_replace_current` now checks the parsed path-record end directly
