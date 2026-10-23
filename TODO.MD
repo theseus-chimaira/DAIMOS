@@ -1,3 +1,26 @@
+## MEMFS execute-in-place (XIP) requirement (2026-10-23)
+
+- [ ] Support genuine zero-copy MEMFS executable launch: execute from the
+  resident MEMFS backing allocation rather than copying the image into a
+  separate process VM allocation. Treat this as a MEMFS design requirement,
+  not as completed functionality.
+- [ ] Determine a viable PDP-6 mapping strategy before implementing XIP.
+  The current APR exposes one contiguous relocated/protected process space
+  (02000-word-aligned physical base); it does not independently map shared
+  text and private writable data. Do not claim shared-text XIP until private
+  data, stack, and relocation semantics are demonstrated.
+- [ ] Require executable-backend pin/refcount ownership, immutability while
+  mapped, and release at exit/exec failure. Coordinate with MEMFS resize,
+  unlink, reclaim/spill, swap, and process teardown; prevent dangling
+  physical addresses and mutation of live executable instructions.
+- [ ] Check executable-format alignment, header offset, relocation, writable
+  text, RT-required mode, and compressed DXR2 behavior. Preserve conventional
+  EXEC/RUN fallback for images not eligible for direct execution.
+- [ ] Add native tests in daimos-testkit covering repeated/shared launches,
+  simultaneous execution, unlink/truncate/write attempts, memory pressure,
+  failed EXEC rollback, process exit, and swap interaction. Measure total
+  RAM savings and KCORE/MRES word changes before enabling the path.
+
 ## V64 validation follow-ups (2026-10-20)
 
 - [ ] Repair swapped-process NAME/CMDLINE/ENVIRONMENT reads in MonitorFS
