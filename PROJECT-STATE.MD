@@ -1,3 +1,21 @@
+## 2026-10-23 EXEC/RUN POST-OPTIMIZATION REGRESSIONS V187
+
+Current resident EXEC/RUN optimizations through v186 have KCC/p10fold
+link acceptance and two passing fresh-image native PDP-6 diagnostics:
+EXEC replacement (preserved PID, credentials, cwd, session, pgrp, TTY,
+descriptors) and session-leader child EXEC with successful parent reap.
+The preceding v185 EXEC replacement run also passed. Logs:
+`$TMPDIR/daimos-exec-v185-replace.log`,
+`$TMPDIR/daimos-exec-v186-replace.log`, and
+`$TMPDIR/daimos-exec-v186-child.log`.
+
+These tests used `DAIMOS_EXEC_OBSERVE_SECONDS=35` and the existing
+functional-only `DSH_IMAGE_LIMIT=037000` without changing the default
+15-second or `036000` production gates. The v186 post-p10fold linked
+KCORE exclusive end is `025661` octal (28 words below `025715` at v173).
+Strict acceptance, malformed-input stress, and targeted real-time-owner
+handoff/rollback testing remain open.
+
 ## 2026-10-23 EXEC/RUN NATIVE DIAGNOSTIC ACCEPTANCE V183
 
 After the v172-v181 resident EXEC/RUN instruction reductions, the

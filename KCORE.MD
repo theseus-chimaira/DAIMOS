@@ -1,5 +1,16 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 EXEC/RUN native regression follow-up v187
+
+Fresh-image PDP-6 simulator diagnostics for v186 PASS both EXEC current
+image replacement and session-leader child EXEC/parent reap. The v185
+EXEC replacement diagnostic also PASSed. Observation window was
+explicitly extended to 35 seconds, with the functional-only `037000`
+DSH image cap; original production timing and executable-size gates
+remain open. Targeted RT-owner rollback and malformed launch-block
+coverage also remain open. No new code or resident-word change here;
+the current exclusive KCORE end remains `025661` octal.
+
 ## 2026-10-23 EXEC real-time owner cleanup v186
 
 In the successful old-real-time reservation release and the failure
