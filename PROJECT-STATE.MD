@@ -1,3 +1,26 @@
+## 2026-10-23 EXEC UNCOMPRESSED STAGED-VM OOM REGRESSION V205
+
+The outstanding v205 testkit pressure experiment now PASSes natively
+on the 256K PDP-6. The test builds an uncompressed, valid DXR of
+0100000 octal image words plus 077000 BSS words. The current PID 1
+image first grows to 0600000 words, so staging both resident VMs
+cannot fit in physical core. EXEC succeeds through the existing
+destructive low-memory retry, and the replacement checks PID 1 and
+continues execution. The initial failing run before the v201 resident
+36-bit ENOMEM comparison correction returned `<H!x`; a corrected
+kernel had already passed an early v205 run. A later test-only failure
+was caused by expecting `dxrcheck` to print a leading zero in the
+octal image word count; the output is `image=100000 bss=077000`.
+The v205 fixture now accepts the tool's actual octal formatting while
+checking both image and BSS size fields.
+
+Fresh native proof: `$TMPDIR/daimos-exec-create-oom-v205-accepted.log`:
+`PASS (staged VM cannot fit physically; low-memory EXEC replaced PID 1)`.
+`__kcore_low_end=025657` octal. No additional DAIMOS kernel change,
+permanent state, or stack growth. The 32K gate stays deferred, and
+the independent full-profile permanent-memory acceptance limit remains
+open.
+
 ## 2026-10-23 EXEC LOW-MEMORY RETRY CORRECTION V201
 
 The native 256K PDP-6 v201 EXEC pressure regression identified a real

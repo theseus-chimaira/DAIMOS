@@ -17,6 +17,15 @@ MEMFS pinning target fixture; actual AAP XIP process launch is pending.
 
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 native uncompressed EXEC physical OOM v205
+
+daimos-testkit v205 PASSes uncompressed executable replacement on a
+256K PDP-6 where old+new VM extents exceed physical memory. The
+replacement executes as PID 1 by the v201-corrected low-memory EXEC
+path. A false-negative DXR metadata assertion was fixed in the
+testkit. No new KCORE text or static data; fresh link endpoint
+`025657` octal. 32K acceptance remains deferred.
+
 ## 2026-10-23 resident EXEC -2 comparison correction v201
 
 The EXEC staged-loader out-of-memory return must be tested with a
