@@ -1,3 +1,10 @@
+## XIP v215 native VM teardown
+
+- [x] Native-test production `vm_space_destroy` on a pinned MEMFS VM
+  descriptor with injected MM-unpin failure and successful cleanup retry.
+- [ ] Exercise a full native process exit/EXEC replacement, including MM
+  ownership checks and non-writing user startup, on both PDP-6 emulators.
+
 ## XIP v214 release rollback proof
 
 - [x] Inject an MM unpin failure through the MEMFS MRES release dispatcher;

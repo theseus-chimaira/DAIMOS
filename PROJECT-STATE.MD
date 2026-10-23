@@ -1,3 +1,15 @@
+## 2026-10-23 production VM destroy native XIP rollback v215
+
+daimos-testkit now extracts the unchanged `vm_space_destroy` body from
+`system/kernel/proc/vm_pdp6.s` and links it into the native MEMFS fixture.
+The fixture uses a real two-half VM descriptor and injects `MM_ERR_BUSY` on
+the final XIP unpin. First destruction fails with VM state unchanged and
+the pinned MEMFS extent still owned; retry succeeds and clears VM state.
+Both SIMH and AAP PDP-6 PASS. Scheduler/storage mode expectations and swap
+detach are focused stubs, not a full native process exit. There were no
+DAIMOS production changes or KCORE growth in v215. Real process EXEC/exit
+and non-writing startup remain open.
+
 ## 2026-10-23 XIP release failure injection v214
 
 The daimos-testkit native MEMFS regression now fault-injects `MM_ERR_BUSY`
