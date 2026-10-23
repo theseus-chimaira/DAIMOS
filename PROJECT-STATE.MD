@@ -1,3 +1,9 @@
+## 2026-10-23 MEMFS XIP aligned backing v203
+
+Dedicated large MEMFS allocations use 02000-word alignment through MM.
+Both SIMH and AAP MEMFS pinning regressions PASS. No XIP process launch
+is enabled; executable admission and VM provenance remain open.
+
 ## 2026-10-23 MEMFS XIP protection milestone v202
 
 An explicit MEMFS XIP reservation is now supported in the MEMFS MRES, without

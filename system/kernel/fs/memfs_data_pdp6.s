@@ -26,6 +26,7 @@
         .globl  memfs_xip_any_pinned
 
         .globl  mm_alloc
+        .globl  mm_alloc_aligned
         .globl  mm_free
         .globl  backstore_blocks
         .globl  backstore_alloc
@@ -186,12 +187,29 @@ memfs_data_alloc_have_slot:
         push    17,1                   ; fifth C argument: &base
         setom   memfs_data_allocating
         move    1,012
+        ; Large dedicated files may later be mapped directly by the APR.
+        ; Allocate them with a 02000-word relocation boundary.  Small
+        ; sector-packed chunks keep their existing MM allocation policy.
+        caile   011,MEMFS_CHUNK_WORDS
+        jrst    memfs_data_alloc_mm_aligned
         movei   2,MM_TYPE_KERNEL_DYNAMIC
         movei   3,MEMFS_MM_OWNER
         setz    4,                     ; MM_ALLOC_LOW
         pushj   17,mm_alloc
+        sub     17,[1,,1]              ; discard basep
+        jrst    memfs_data_alloc_mm_result
+memfs_data_alloc_mm_aligned:
+        ; mm_alloc_aligned(words, align, type, owner, preference, basep).
+        ; PDP-6 ABI: basep is pushed before preference, as in VM creation.
+        push    17,[0]
+        move    1,012
+        movei   2,MEMFS_CHUNK_WORDS
+        movei   3,MM_TYPE_KERNEL_DYNAMIC
+        movei   4,MEMFS_MM_OWNER
+        pushj   17,mm_alloc_aligned
+        sub     17,[2,,2]              ; remove both extra arguments
+memfs_data_alloc_mm_result:
         setzm   memfs_data_allocating
-        sub     17,[1,,1]              ; discard fifth argument
         jumpn   1,memfs_data_alloc_mm_fail
         move    2,(17)                 ; allocated chunk base
         sub     17,[1,,1]              ; discard result word

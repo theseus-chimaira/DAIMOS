@@ -78,9 +78,17 @@ unmount also refuses to free the metadata while any XIP reference exists.
 
 These routines reuse MM's existing physical pin mechanism; they do not
 create a new independent memory-owner system. The ordinary mutable MEMFS
-allocator does not guarantee `02000` alignment, so some otherwise eligible
-large files will still be refused. Aligned allocation and a formally
-non-writing executable format remain future prerequisites.
+allocator did not originally guarantee `02000` alignment for large files.
+The v203 allocator now requests `02000` alignment for new large dedicated
+extents (including fault-in); small packed chunks retain their prior policy.
+Executable admission and a non-writing contract remain prerequisites.
+
+## v203 aligned large-file allocation
+
+Large MEMFS file allocations now use MM's six-argument aligned allocator,
+with `02000` alignment, `MM_TYPE_KERNEL_DYNAMIC` and MEMFS owner `011`.
+Both SIMH and AAP native MEMFS pin tests pass. Fragmentation under pressure,
+VM ownership and actual XIP execution remain untested.
 
 Focused PDP-6 SIMH tests under daimos-testkit's `target-memfs-pdp6` fixture
 exercise rejected small-file pins, aligned dedicated-file pins, repeated

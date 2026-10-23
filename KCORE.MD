@@ -1,3 +1,9 @@
+## 2026-10-23 MEMFS XIP alignment v203
+
+Large dedicated MEMFS allocations now use `mm_alloc_aligned` with `02000`
+alignment. Small packed chunks keep their existing path. Focused native
+MEMFS pinning tests PASS on SIMH and AAP. EXEC/RUN remains unchanged.
+
 ## 2026-10-23 MEMFS XIP reservation foundation v202
 
 MEMFS MRES has a four-word per-file XIP reference table and reuses the MM

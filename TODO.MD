@@ -1,3 +1,11 @@
+## MEMFS XIP alignment milestone v203 (2026-10-23)
+
+- [x] Request 02000 alignment for dedicated large MEMFS allocations; both
+  SIMH and AAP MEMFS pinning target fixtures PASS.
+- [ ] Test aligned allocation fragmentation under pressure, then implement
+  executable admission and an XIP-aware VM teardown without changing normal
+  EXEC/RUN behavior.
+
 ## MEMFS XIP implementation progress (2026-10-23 v202)
 
 - [x] Add per-file XIP pin/refcount reservation with existing MM chunk pins,
