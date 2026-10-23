@@ -72,6 +72,8 @@ memfs_read_return:
 ; int memfs_write_words(struct memfs *fs, vnode_t node,
 ;     unsigned int off, const kword_t *buf, unsigned int nwords)
         .globl  memfs_write_words
+        .globl  memfs_xip_owns_base
+        .globl  memfs_xip_unpin_base
 memfs_write_words:
         add     17,[6,,6]
         movei   0,-5(17)
@@ -867,11 +869,33 @@ memfs_mres_reg_dispatch:
         jrst    memfs_mres_not_mount
         jrst    memfs_mres_mount
 memfs_mres_not_mount:
+        cain    6,026                   ; private VM XIP release (22 decimal)
+        jrst    memfs_mres_xip_release
         cain    6,025                   ; FS_MRES_OP_SPACE
         jrst    memfs_mres_space
         move    7,[memfs_mres_vector]
         movei   0,memfs_mres_fs
         jrst    fs_mres_context_vector_dispatch
+
+; AC1=physical base. Return 1 if this XIP reference was released, 0 if
+; not owned, -1 if an owned pin could not be released. No new MRES vector.
+memfs_mres_xip_release:
+        push    17,1
+        pushj   17,memfs_xip_owns_base
+        jumpe   1,memfs_mres_xip_not_owned
+        move    1,(17)
+        pushj   17,memfs_xip_unpin_base
+        jumpn   1,memfs_mres_xip_error
+        movei   1,1
+        jrst    memfs_mres_xip_release_done
+memfs_mres_xip_not_owned:
+        setz    1,
+        jrst    memfs_mres_xip_release_done
+memfs_mres_xip_error:
+        seto    1,
+memfs_mres_xip_release_done:
+        sub     17,[1,,1]
+        popj    17,
 
 ; SPACE returns total/used logical data words in AC1/AC2.
 memfs_mres_space:

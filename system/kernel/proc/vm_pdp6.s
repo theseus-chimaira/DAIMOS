@@ -26,6 +26,7 @@
         .globl  fs_zero_words
         .globl  mm_alloc_aligned
         .globl  mm_free
+        .globl  fs_provider_reg_call
         .globl  mm_extents
         .globl  mm_arenas
         .globl  mm_extent_count
@@ -492,6 +493,21 @@ vm_space_destroy_mode_ok:
         move    1,-1(17)              ; restore descriptor for MM teardown
         hrrz    3,1(1)
         jumpe   3,vm_space_destroy_detach
+        ; MEMFS XIP belongs to its MRES, not MM_TYPE_PROCESS. Query the
+        ; existing movable-provider gateway; unloaded provider returns -1,
+        ; which must never turn into an unsafe process-owned MM free.
+        push    17,3                    ; provider dispatch clobbers scratch ACs
+        move    1,3
+        movei   6,026                  ; FS_MRES_OP_XIP_RELEASE
+        movei   7,4                    ; MEMFS provider
+        pushj   17,fs_provider_reg_call
+        pop     17,3
+        caie    1,1
+        jrst    vm_space_destroy_maybe_process
+        jrst    vm_space_destroy_detach
+vm_space_destroy_maybe_process:
+        ; A non-XIP base is freed only through MM's type/owner validation.
+        ; Thus a missing MRES cannot cause a MEMFS-owned extent to be freed.
         move    1,3
         movei   2,1                    ; MM_TYPE_PROCESS
         move    3,(17)

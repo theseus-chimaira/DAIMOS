@@ -1,3 +1,11 @@
+## v213 VM teardown integration
+
+KCORE `vm_space_destroy` uses the existing FS register gateway (MEMFS op 026)
+before process-owned MM free. An owned XIP base unpins through the movable
+MEMFS MRES; unknown/unavailable/error cases reach only a type/owner-checked
+process MM free, so they cannot free MEMFS's allocation. Native dispatch tests
+pass and the lowmem KCORE grows nine words. Actual process-XIP startup remains
+disabled until no-writing and rollback invariants are established.
 ## v212 exact-base ownership probe
 
 `memfs_xip_owns_base(base)` reuses the pinned-node reference table to

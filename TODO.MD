@@ -1,3 +1,13 @@
+## MEMFS XIP teardown v213
+
+- [x] Route VM destroy through the movable MEMFS provider's private release
+  operation, falling back to MM owner/type validation for regular processes.
+- [x] Native-test the release dispatcher and quantify KCORE growth (+9 words).
+- [ ] Prove teardown of a staged XIP-backed *process VM* on both emulators,
+  including EXEC rollback, then implement verified non-writing startup.
+- [ ] Enable separately trusted process XIP launches only after lifecycle
+  and swap/heap guards are covered by process-level tests.
+
 ## MEMFS XIP v212 provenance
 
 - [x] Implement exact-base pinned MEMFS ownership lookup in MRES without

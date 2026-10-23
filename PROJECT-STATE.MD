@@ -1,3 +1,21 @@
+## 2026-10-23 MEMFS XIP VM teardown dispatch v213
+
+`vm_space_destroy` now probes the existing MEMFS MRES register gateway with
+private operation 026, passing the resident physical VM base. The MEMFS
+provider uses the existing XIP base provenance and reverse-unpin functions:
+result 1 means released; result 0 means ordinary/non-owned VM; -1 means
+provider unavailable or release failure. In the latter two cases only the
+normal `mm_free(MM_TYPE_PROCESS, owner)` is tried, which cannot free a
+MEMFS-owned dynamic extent. No new per-process storage or provider vector.
+An MRES-dispatch native test checks unknown, valid, and repeated releases on
+SIMH and PDP6-AAP. GCC lowmem image PASS; linked KCORE is now 025134
+octal (10844 words), a 9-word increase over v212's 025123.
+
+The existing swap-out path checks `mm_is_pinned`; `vm_space_brk_current`
+requires MM_TYPE_PROCESS for resizing. The separately trusted non-writing
+startup and true process-XIP launch remain disabled; this commit does not
+make arbitrary DXR images safe to map from MEMFS.
+
 ## 2026-10-23 MEMFS XIP base provenance v212
 
 MEMFS MRES now exposes `memfs_xip_owns_base(base)` using its existing four
