@@ -1,3 +1,23 @@
+## 2026-10-23 EXEC/RUN NATIVE DIAGNOSTIC ACCEPTANCE V183
+
+After the v172-v181 resident EXEC/RUN instruction reductions, the
+existing native PDP-6 EXEC-replacement and child-session EXEC tests both
+PASS on fresh images using an explicit 35-second observation window and
+the functional-only `DSH_IMAGE_LIMIT=037000`. The ABI smoke test also
+PASSes after daimos-testkit v182 corrected its stale `proc/exec.c`
+reference to the live assembler `exec_replace_current` and
+`exec_load_process` entry points. Testkit v183 adds an opt-in
+`DAIMOS_EXEC_OBSERVE_SECONDS` parameter; its default remains 15 seconds.
+Evidence: `$TMPDIR/daimos-exec-v183-observe.log` and
+`$TMPDIR/daimos-exec-child-v183-observe.log`.
+
+This is **functional-only runtime acceptance**, not the strict production
+EXEC image-size or 15-second timing gate. The default `036000` image
+limit still rejects an oversized generated executable (`036013`), and
+the default 15-second simulation test timed out. No production limits
+were changed. Current same-profile KCORE exclusive endpoint after v181:
+`025671` octal. Further low-memory and malformed-input coverage remains open.
+
 ## 2026-10-22 DECtape/TSFS GROUP 027 RETEST V169
 
 Group 027's supported boot-root-only test inventory has seven

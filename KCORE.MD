@@ -1,5 +1,15 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 EXEC/RUN runtime verification v183
+
+Native PDP-6 fresh-image EXEC replacement and child-session EXEC both
+PASS after v181, using daimos-testkit's opt-in 35-second observation
+window and functional-only `DSH_IMAGE_LIMIT=037000`. ABI inspection
+PASSes using the live assembler rather than the retired C fallback.
+Original 15-second timing acceptance and `036000` production executable
+size remain outstanding, as do malformed-input and strict low-memory
+regressions. No further code or resident-word change in this test pass.
+
 ## 2026-10-23 EXEC in-place path advancement v181
 
 The first path record parse in `exec_replace_current` now advances AC15
