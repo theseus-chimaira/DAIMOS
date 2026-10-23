@@ -1,3 +1,12 @@
+## MEMFS XIP v212 provenance
+
+- [x] Implement exact-base pinned MEMFS ownership lookup in MRES without
+  a new process descriptor or persistent reference-table word; native tested.
+- [ ] Route VM destroy to MRES unpin for XIP-owned extents, with unloaded-MRES
+  and failure/rollback handling. Never free a MEMFS extent as MM_TYPE_PROCESS.
+- [ ] Prevent XIP swap and brk changes; implement non-writing startup and
+  actual privileged EXEC/RUN process lifecycle tests.
+
 ## MEMFS XIP v211 lifetime primitive
 
 - [x] Implement native-tested exact-base reverse MEMFS XIP unpin for VM

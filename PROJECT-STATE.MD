@@ -1,3 +1,13 @@
+## 2026-10-23 MEMFS XIP base provenance v212
+
+MEMFS MRES now exposes `memfs_xip_owns_base(base)` using its existing four
+pinned-node reference words. It recognizes exact physical bases only while
+an XIP reference is live, requires no extra per-process or persistent MEMFS
+data, and becomes false after final unpin. The corresponding native tests
+PASS on SIMH and PDP6-AAP. This supplies a prospective VM provenance query,
+but **does not yet connect VM teardown or swap to MEMFS MRES**. EXEC/RUN
+and resident VM remain unchanged and production XIP launches remain disabled.
+
 ## 2026-10-23 MEMFS XIP reverse ownership release v211
 
 Added `memfs_xip_unpin_base(base)` inside MEMFS MRES. It finds the exact

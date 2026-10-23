@@ -23,6 +23,7 @@
         .globl  memfs_xip_pin
         .globl  memfs_xip_unpin
         .globl  memfs_xip_unpin_base
+        .globl  memfs_xip_owns_base
         .globl  memfs_xip_is_pinned
         .globl  memfs_xip_any_pinned
         .globl  memfs_xip_admit
@@ -632,6 +633,32 @@ memfs_xip_unpin_base_fail:
 memfs_xip_unpin_base_done:
         pop     17,011
         pop     17,010
+        popj    17,
+
+; int memfs_xip_owns_base(base)
+; Exact lookup in the existing four-slot ref table. A matching physical
+; base means this is currently pinned MEMFS storage, not a process MM
+; extent. Deliberately read-only and independent of vnode decoding.
+memfs_xip_owns_base:
+        move    7,1
+        movei   6,memfs_xip_refs
+        movei   5,MEMFS_XIP_SLOTS
+memfs_xip_owns_base_loop:
+        hlrz    2,(6)
+        jumpe   2,memfs_xip_owns_base_next
+        subi    2,1
+        imuli   2,7
+        add     2,memfs_mres_fs
+        hlrz    3,MEMFS_NODE_DATA(2)
+        camn    3,7
+        jrst    memfs_xip_owns_base_yes
+memfs_xip_owns_base_next:
+        addi    6,1
+        sojg    5,memfs_xip_owns_base_loop
+        setz    1,
+        popj    17,
+memfs_xip_owns_base_yes:
+        movei   1,1
         popj    17,
 
 ; int memfs_data_ensure(struct memfs *fs, unsigned int slot)

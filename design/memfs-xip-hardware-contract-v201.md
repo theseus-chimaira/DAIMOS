@@ -1,3 +1,9 @@
+## v212 exact-base ownership probe
+
+`memfs_xip_owns_base(base)` reuses the pinned-node reference table to
+recognize an exact live MEMFS physical base. It is read-only, incurs no new
+resident data words, and returns false after final unpin. VM provenance and
+safe KCORE-to-MRES release dispatch are still to be integrated.
 ## v211 reverse-release primitive
 
 MEMFS MRES now offers `memfs_xip_unpin_base(base)`, which scans the existing
