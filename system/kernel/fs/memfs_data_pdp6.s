@@ -22,6 +22,7 @@
         .globl  memfs_resize
         .globl  memfs_xip_pin
         .globl  memfs_xip_unpin
+        .globl  memfs_xip_unpin_base
         .globl  memfs_xip_is_pinned
         .globl  memfs_xip_any_pinned
         .globl  memfs_xip_admit
@@ -584,6 +585,51 @@ memfs_xip_unpin_fail:
         seto    1,
 memfs_xip_unpin_return:
         pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; int memfs_xip_unpin_base(base)
+; Exact base-to-slot reverse lookup using the existing four-entry reference
+; table. No additional resident or MEMFS data words are required. Refusing
+; unknown bases prevents VM teardown from dropping somebody else's MM pin.
+memfs_xip_unpin_base:
+        push    17,010
+        push    17,011
+        move    010,1                  ; pinned physical base
+        movei   011,memfs_xip_refs
+        movei   4,MEMFS_XIP_SLOTS
+memfs_xip_unpin_base_loop:
+        hlrz    2,(011)                ; slot + 1, or empty
+        jumpe   2,memfs_xip_unpin_base_next
+        subi    2,1
+        imuli   2,7
+        add     2,memfs_mres_fs        ; node-table base
+        hlrz    3,MEMFS_NODE_DATA(2)
+        camn    3,010
+        jrst    memfs_xip_unpin_base_found
+memfs_xip_unpin_base_next:
+        addi    011,1
+        sojg    4,memfs_xip_unpin_base_loop
+        seto    1,
+        jrst    memfs_xip_unpin_base_done
+memfs_xip_unpin_base_found:
+        hrrz    2,(011)
+        caie    2,1
+        jrst    memfs_xip_unpin_base_multi
+        move    1,010
+        pushj   17,mm_unpin
+        jumpn   1,memfs_xip_unpin_base_fail
+        setzm   (011)
+        jrst    memfs_xip_unpin_base_ok
+memfs_xip_unpin_base_multi:
+        sos     (011)
+memfs_xip_unpin_base_ok:
+        setz    1,
+        jrst    memfs_xip_unpin_base_done
+memfs_xip_unpin_base_fail:
+        seto    1,
+memfs_xip_unpin_base_done:
         pop     17,011
         pop     17,010
         popj    17,

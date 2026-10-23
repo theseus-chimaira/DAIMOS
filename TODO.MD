@@ -1,3 +1,11 @@
+## MEMFS XIP v211 lifetime primitive
+
+- [x] Implement native-tested exact-base reverse MEMFS XIP unpin for VM
+  teardown without a vnode in the three-word process descriptor.
+- [ ] Add explicit process VM provenance, swap exclusion and brk rejection,
+  then call the reverse release instead of `mm_free(MM_TYPE_PROCESS)`.
+- [ ] Validate non-writing startup and actual EXEC/RUN lifetime on PDP-6.
+
 ## MEMFS XIP admission gate v210
 
 - [x] Require executable/non-writable file mode before XIP pin/admission;

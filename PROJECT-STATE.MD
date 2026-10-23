@@ -1,3 +1,14 @@
+## 2026-10-23 MEMFS XIP reverse ownership release v211
+
+Added `memfs_xip_unpin_base(base)` inside MEMFS MRES. It finds the exact
+MEMFS-owned physical base using the existing four-entry pinned-node table,
+decrements a shared file reference, and releases the underlying MM pin only
+on the last reference. Unknown bases return failure without changing pins.
+Native SIMH and PDP6-AAP MEMFS target tests PASS. No new persistent MEMFS
+reference-table words, no KCORE changes, and no production EXEC/RUN XIP path.
+This is the primitive needed before the VM teardown path can distinguish
+MEMFS-backed mappings from ordinary MM_TYPE_PROCESS allocations.
+
 ## 2026-10-23 MEMFS XIP admission hardening v210
 
 `memfs_xip_admit` now checks mode bits before taking an image pin: at least

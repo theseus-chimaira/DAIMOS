@@ -1,3 +1,10 @@
+## v211 reverse-release primitive
+
+MEMFS MRES now offers `memfs_xip_unpin_base(base)`, which scans the existing
+four-entry file reference table for an exact pinned physical base. It releases
+one reference without requiring VM to retain a vnode. A last release unpins
+the MM-owned allocation; invalid or repeated releases fail. The routine adds
+no additional persistent state and does not itself change a process VM.
 ## v210 file admission mode restriction
 
 `memfs_xip_admit` additionally rejects file modes that contain any write

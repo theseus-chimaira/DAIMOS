@@ -50,6 +50,9 @@ struct memfs {
  */
 int memfs_xip_pin(struct memfs *fs, vnode_t node, kword_t *basep);
 int memfs_xip_unpin(struct memfs *fs, vnode_t node);
+/* Drop a previously acquired reservation by its exact physical base.
+ * Intended for VM teardown, which retains the base but not the file vnode. */
+int memfs_xip_unpin_base(kword_t base);
 int memfs_xip_is_pinned(unsigned int slot);
 int memfs_xip_any_pinned(void);
 /* Explicit raw-image admission. Caller must unpin after a successful probe.
