@@ -1,3 +1,14 @@
+## XIP v216 user-mode lifecycle
+
+- [x] Native-test strict non-writing MEMFS-backed user instruction fetch,
+  monitor-UUO handoff, and production VM teardown on SIMH and AAP PDP-6.
+- [x] Verify image immutability, pin lifetime, VM state reset, and reclaim
+  after termination without adding KCORE or per-process state.
+- [ ] Test real scheduler process exit and EXEC replacement/rollback for a
+  trusted XIP image, including storage-map state and swap interactions.
+- [ ] Define and enforce the privileged no-user-write contract before
+  enabling this distinct image format in production EXEC/RUN.
+
 ## XIP v215 native VM teardown
 
 - [x] Native-test production `vm_space_destroy` on a pinned MEMFS VM

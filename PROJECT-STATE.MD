@@ -1,3 +1,21 @@
+## 2026-10-23 MEMFS non-writing XIP user lifecycle v216
+
+daimos-testkit adds `target-memfs-xip-user-lifecycle-v216`. A distinct
+non-writable/executable MEMFS raw image is admitted and pinned, then entered
+at logical `020` under the PDP-6 APR. The user image executes only `MOVEI`
+and a monitor UUO (`040`), without stack or other user-memory stores.
+The hardware UUO invokes an executive-only handler, which checks both user
+instructions are unchanged and calls the unchanged production
+`vm_space_destroy` body. The test requires VM state to be cleared, MM pin
+released, and the original MEMFS extent to become reclaimable.
+
+Native SIMH and AAP PDP-6 both PASS. The testkit uses scheduler/storage
+stubs and is **not** a fully scheduled process or production EXEC/RUN.
+For SIMH, the dedicated runner omits p10run's unconditional `break 20`,
+which otherwise intercepts this legitimate user entry before relocation.
+This changes no DAIMOS production code or per-process RAM; the last measured
+permanent KCORE remains 025134 octal (10844 words).
+
 ## 2026-10-23 production VM destroy native XIP rollback v215
 
 daimos-testkit now extracts the unchanged `vm_space_destroy` body from

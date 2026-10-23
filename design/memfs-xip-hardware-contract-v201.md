@@ -1,3 +1,14 @@
+## v216 non-writing native user-mode lifecycle
+
+The testkit now assembles a raw XIP fixture whose user-mode instructions
+are only `MOVEI 2,01234` and monitor UUO `040`. The latter enters a PDP-6
+executive-only handler, which verifies the MEMFS image remains unchanged,
+calls the production `vm_space_destroy` body, and checks final unpin/VM
+reset and release of the backing extent. This passes on SIMH and AAP.
+The dedicated SIMH runner intentionally removes its default `break 20`
+sentinel, since `020` is a *legitimate* user entry PC in this test.
+The fixture stubs storage/scheduler behavior: real process scheduling,
+EXEC/exit syscalls and a privilege-gated executable trust model remain open.
 ## v213 VM teardown integration
 
 KCORE `vm_space_destroy` uses the existing FS register gateway (MEMFS op 026)
