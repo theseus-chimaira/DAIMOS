@@ -1,3 +1,20 @@
+## 2026-10-23 GROUP 030 TSFS-ROOT NESTED RUN CONTROL V196
+
+Testkit V196 used genuine TSFS-root media plus a host-initialized
+native DTC3 image to run nested `DSH -C "ECHO NESTED_V196"`.
+The guest transcript reports `NESTED_V196`, `NESTED_EXIT:0`,
+and the harness marks that probe PASS. A separate `ECHO DIRECT_V196`
+probe also passed, each with the accepted 240-second deadline.
+The wrapper was edited as it ran and reported a trailing shell
+syntax error after both results; its current source passes syntax
+checking, but a clean full-wrapper acceptance rerun remains due.
+
+This is positive evidence for ordinary nested child execution and
+status return under TSFS root, **not** for DTFS FSCK/MOUNT or generic
+child-wait correctness. Focus next on `cmd_dtfs_probe` RUN block and
+descriptor handoff, process exit while TSFS is active, and provider
+mount I/O. No kernel modifications have been made for group 030.
+
 ## 2026-10-23 GROUP 030 DTFSPROBE EXIT STATUS V193/V194
 
 Two direct user-mode probes on real TSFS-root, native DTC3 media
