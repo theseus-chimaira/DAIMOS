@@ -1,3 +1,19 @@
+## 2026-10-23 GROUP 030 DTFSPROBE EXIT STATUS V193/V194
+
+Two direct user-mode probes on real TSFS-root, native DTC3 media
+completed and returned to DSH: `DTFSPROBE /DEV/DTC3` and
+`DTFSPROBE /DEV/DTC3 DEEP`. Captured shell exit statuses were both
+decimal 8, which is the correct value for
+`SYS_DTFS_TYPE_NATIVE = 010U` (octal) in `syscall.h`.
+
+V193 incorrectly expected status 1 and falsely failed its own
+assertions. Testkit V194 now expects status 8, but has not been
+rerun. This is stronger evidence than previous prompt recovery alone
+that raw DTC3 reads and direct shallow/deep probe exit are working.
+FSCK.DTFS and MOUNT.DTFS with their nested RUN/WAIT probe remain
+timed out at the established 240-second host deadline; do not
+modify the transport driver or mark group 030 accepted on this basis.
+
 ## 2026-10-22 GROUP 030 TIMING-CONTROLLED V190/V191 RECHECK
 
 The tape-root command baseline was rechecked after discovering that
