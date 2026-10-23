@@ -1,3 +1,20 @@
+## 2026-10-23 EXEC RT FIX FOLLOW-UP NEGATIVE REGRESSIONS V192
+
+The v191 RT-owner scratch-lifetime correction also passed the native
+v190 malformed-launch/ordinary-EXEC fixture when rebuilt against DAIMOS
+commit `e2248c0`. All 28 malformed RUN and EXEC requests returned the
+expected error; the original process then performed normal EXEC and
+preserved its expected state. Evidence:
+`$TMPDIR/daimos-exec-v192-malformed-retest.log`.
+
+The tested RT-owner regression separately passed all four transaction
+paths and subsequent re-acquisition in v191. No code, stack, KCORE or
+MRES growth followed the defect correction (`__kcore_low_end=025657`
+octal). Functional-only observation at 35 seconds and the `037000`
+DSH cap were used. The strict 15-second timing, `036000` DSH cap,
+16K fixed memory, and further post-VM-creation failure injection remain
+open; none of those gates has been weakened.
+
 ## 2026-10-23 EXEC RT OWNER FLAG STACK OVERLAP FIX V191
 
 Native testkit v191 discovered and reproduced an EXEC loader RT-owner

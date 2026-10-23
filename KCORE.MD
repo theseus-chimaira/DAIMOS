@@ -1,5 +1,15 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 EXEC RT correction cross-regression v192
+
+After correcting the live RT-claim marker/VFS stat overlap, the
+versioned native fixture with 28 malformed EXEC/RUN blocks still PASSes
+and the normal EXEC replacement completes successfully. Its full log
+is `$TMPDIR/daimos-exec-v192-malformed-retest.log`. The v191 RT owner
+transaction test independently PASSes. KCC/p10fold linked KCORE and
+full permanent-memory measurements are unchanged; strict production
+timing and memory acceptance are still open.
+
 ## 2026-10-23 EXEC loader RT claim scratch lifetime correction v191
 
 The seven-word VFS stat output at `-011..-003(17)` was overwriting the
