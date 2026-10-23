@@ -1,3 +1,46 @@
+## 2026-10-23 RUN PROCESS LIFECYCLE AND ID REUSE RETEST V196
+
+Two existing daimos-testkit native PDP-6 tests PASSed on fresh 256K
+images, independent of the deferred 32K boot/image constraints:
+
+* `test-daimos-process-lifecycle`: RUN, GETPID, WAIT/nohang,
+  zombie reaping, orphan adoption and explicit descriptor mapping.
+* `test-daimos-process-id-lifetime`: process-group, session and domain
+  IDs remain protected while referenced after the creator slot is reused.
+
+Versioned logs: `$TMPDIR/daimos-run-lifecycle-v196-native.log` and
+`$TMPDIR/daimos-run-id-lifetime-v196-native.log`. DSH functional-only
+`DSH_IMAGE_LIMIT=037000` was exported without changing the production
+default. No kernel modifications were required. Linked resident KCORE
+exclusive end remains `025657` octal. The 32K-specific failures remain
+deferred by request as documented separately in v196, not resolved.
+
+## 2026-10-23 EXEC/RUN SCOPE: 32K GATE DEFERRED V196
+
+By explicit project direction, pause **all strict 32K-specific sizing,
+configuration-error and native boot acceptance work** while DSH remains
+too large for that profile. Do not treat a 32K boot, LOGIN/DSH EXEC,
+KINIT reserve or 8K KCORE gate failure as a current EXEC/RUN blocker;
+do not relax the architectural limits or consume time engineering
+32K-only workarounds. Continue checking resident RAM growth in normal
+builds, and continue EXEC/RUN correctness on the 256K PDP-6 profile.
+
+The last exploratory GCC lowmem comparisons (not acceptance) showed
+ROOT=auto KINIT end `102552`, above the `076000` stack-safe bound by
+`04552` octal (2410 words). ROOT=disk/BOOT=dsk built an image with
+KINIT end `074435`, but its KCORE end `025203` still exceeded the
+separate `020000` strict size target, and the native disk-root login
+reported `LOGIN: EXEC FAILED` while boot, INIT and LOGIN ran. These
+observations are *deferred*, not fixed or accepted. Logs:
+`$TMPDIR/daimos-lowmem-v195-audit-build.log`,
+`$TMPDIR/daimos-lowmem-v195-disk-build.log`, and
+`$TMPDIR/daimos-lowmem-v195-disk-native.log`.
+
+The full-profile KCORE/MRES permanent-memory limit is a separate
+project-wide size issue. Do not mistake the lowmem deferral for a
+claim that the full-profile strict memory gate has passed. The
+non-32K EXEC/RUN functional regression program continues below.
+
 ## 2026-10-23 RT REQUIRED CHILD CROSS-REGRESSION V194
 
 Following the v193 post-VM EXEC compressed decode failure checks,

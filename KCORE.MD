@@ -1,5 +1,23 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 RUN native lifecycle/ID reuse pass v196
+
+Existing 256K native PDP-6 process-lifecycle and process-ID-lifetime
+testkit targets both PASS: RUN/WAIT/reap/orphan/descriptor cases and
+creator-slot reuse protection for pgrp, session and domain IDs.
+No resident code change; `__kcore_low_end=025657` octal. Continue
+non-32K EXEC/RUN validation; the 32K gate is explicitly deferred.
+
+## 2026-10-23 EXEC/RUN 32K acceptance deferred v196
+
+Per current project direction, stop investigating 32K-only configuration,
+KINIT packaging and oversized DSH EXEC errors for now. Keep the 8K/32K
+targets documented as deferred, not passed; do not reduce memory reserves
+or weaken size gates. Prioritize 256K native EXEC/RUN correctness,
+rollback and process lifecycle tests, while preserving the resident RAM
+footprint. The most recent 256K linked KCORE end remains `025657`
+octal. The independent full-profile permanent-size overage remains open.
+
 ## 2026-10-23 native RT_REQUIRED RUN child follow-up v194
 
 The existing compressed RT_REQUIRED child admission/rejection/release
