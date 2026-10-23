@@ -1,3 +1,21 @@
+## 2026-10-23 EXEC V188 NATIVE REGRESSIONS V189
+
+Both supported fresh-image PDP-6 EXEC testkit targets PASS on the
+v188 source revision `6b9ce2a`: current-image replacement preserving
+PID, credentials, cwd, session, process group, TTY and descriptors;
+and session-leader child EXEC with successful parent reap. Logs:
+`$TMPDIR/daimos-exec-v188-replace.log` and
+`$TMPDIR/daimos-exec-v188-child.log`.
+
+The same explicit diagnostic settings were used as v186:
+`DAIMOS_EXEC_OBSERVE_SECONDS=35`, `DSH_IMAGE_LIMIT=037000`.
+This validates ordinary EXEC and RUN/child-EXEC flows after the v188
+record-start comparison and low-memory RT owner check. It is not
+acceptance of the strict 15-second deadline or `036000` image cap;
+malformed argument blocks and real-time-owner rollback remain untested.
+Resident KCORE exclusive end stays `025657` octal; permanent-size
+figures remain as recorded in v188.
+
 ## 2026-10-23 KCORE EXEC SIZE AND FULL PERMANENT ACCOUNTING V188
 
 KCC/p10fold linked resident EXEC v188 saves two further KCORE words:

@@ -1,5 +1,15 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 EXEC/RUN native functional retest v189
+
+Native PDP-6 replacement and child-session EXEC tests PASS on v188
+(`6b9ce2a`), covering normal image replacement and child-process reap.
+This follows the v188 linked `025657`-octal KCORE measurement.
+The 35-second test observation and `037000` functional image cap do
+not satisfy the strict timing/size gates. Malformed launch-block and
+RT reservation failure cases remain open; this documentation-only
+checkpoint does not alter the resident size.
+
 ## 2026-10-23 EXEC strict record start and low-memory RT cleanup v188
 
 In `exec_replace_current` the argv/env record scanner tests that AC15
