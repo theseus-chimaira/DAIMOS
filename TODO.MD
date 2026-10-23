@@ -1,3 +1,10 @@
+## XIP v214 release rollback proof
+
+- [x] Inject an MM unpin failure through the MEMFS MRES release dispatcher;
+  verify retained reference, exact-base ownership, and successful retry.
+- [ ] Test staged process VM teardown (not only its MRES dispatcher) and
+  both EXEC commit/rollback, with a trusted non-writing user startup.
+
 ## MEMFS XIP teardown v213
 
 - [x] Route VM destroy through the movable MEMFS provider's private release

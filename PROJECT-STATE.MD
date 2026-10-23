@@ -1,3 +1,12 @@
+## 2026-10-23 XIP release failure injection v214
+
+The daimos-testkit native MEMFS regression now fault-injects `MM_ERR_BUSY`
+from `mm_unpin` during private MEMFS XIP release op 026. It verifies the
+dispatch reports failure (-1), leaves the MEMFS pin/reference intact, and
+permits normal successful release after the injected failure is removed.
+Both SIMH and AAP PDP-6 tests PASS. No DAIMOS production source or KCORE
+change was necessary. A full process-VM exit/EXEC rollback test remains open.
+
 ## 2026-10-23 MEMFS XIP VM teardown dispatch v213
 
 `vm_space_destroy` now probes the existing MEMFS MRES register gateway with
