@@ -1,3 +1,29 @@
+## 2026-10-23 PDP-6 VM ALLOCATION-FAILURE AND RUN RECOVERY V198
+
+The versioned daimos-testkit v198 regression extends the v197 native
+RUN pressure fixture, keeping three children alive while issuing four
+valid 18-bit `BRK` requests for `0776000` words each. This is below
+the 18-bit logical address ceiling, but the requested resident process
+extent cannot fit alongside the kernel and running processes in 256K
+physical memory. All four requests returned `-1` through the actual
+VM growth/MM allocation failure path rather than a malformed-address
+check. After each failure the original process break, own logical VM
+word count, existing sentinel data and occupied slot count remained
+intact. Resident process-word accounting never increased; it may
+decrease when the reclaim path swaps a sleeping process. The fixture
+then completed the existing 16 late RUN descriptor-mapping failures,
+reaped the three children and launched/reaped one valid recovery child.
+
+The native fresh-image PDP-6 test `test-daimos-run-vm-oom` PASSed;
+evidence: `$TMPDIR/daimos-run-vm-oom-v198-native.log`. The baseline
+v197 C99 fixture still target-compiles without the v198 extension.
+No DAIMOS kernel changes or permanent RAM additions were needed;
+post-p10fold `__kcore_low_end=025657` octal. This does *not* yet
+force `vm_space_create` to return ENOMEM from an actual RUN or EXEC
+loader, nor does it individually audit every transient MM descriptor.
+The 32K gate stays deferred; strict full-profile residency and
+production image-size/timing requirements are unchanged.
+
 ## 2026-10-23 RUN LATE-FDMAP ROLLBACK UNDER LIVE PRESSURE V197
 
 The new native PDP-6 testkit `test-daimos-run-late-rollback` PASSed on

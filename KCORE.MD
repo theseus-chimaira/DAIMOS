@@ -1,5 +1,17 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 256K physical MM exhaustion regression v198
+
+New daimos-testkit v198 native fixture PASSes four unallocatable but
+well-formed `BRK(0776000)` growth requests with three live children.
+After each failed VM/MM growth attempt, caller break, VM word count,
+sentinel contents and process slot count remain intact. The combined
+fixture subsequently passes v197's late RUN failure rollback and
+healthy child recovery. Kernel unchanged: `__kcore_low_end=025657`
+octal. Direct RUN/EXEC loader allocation failure injection and
+fine-grained MM descriptor leakage tests remain unverified. The 32K
+gate is deferred, not passed.
+
 ## 2026-10-23 RUN late descriptor-map rollback regression v197
 
 Native 256K PDP-6 RUN V2 fixture PASSes sixteen late-stage failures
