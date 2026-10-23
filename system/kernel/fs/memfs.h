@@ -10,6 +10,7 @@
 #define MEMFS_F_WRITABLE             0004U
 #define MEMFS_MOUNT_PERSIST          0002U
 
+
 #define MEMFS_SNAPSHOT_MAGIC         055464663UL
 #define MEMFS_SNAPSHOT_VERSION       2UL
 #define MEMFS_SNAPSHOT_HEADER_WORDS  6U
@@ -43,6 +44,14 @@ struct memfs {
         unsigned int pool_words;   /* configured mutable-data word ceiling */
         unsigned int used_words;
 };
+
+/* Kernel-only XIP reservation: no ordinary DXR execution is enabled here.
+ * The returned physical base remains MEMFS-owned until the matching unpin.
+ */
+int memfs_xip_pin(struct memfs *fs, vnode_t node, kword_t *basep);
+int memfs_xip_unpin(struct memfs *fs, vnode_t node);
+int memfs_xip_is_pinned(unsigned int slot);
+int memfs_xip_any_pinned(void);
 
 int memfs_snapshot_mount(struct memfs *fs, unsigned int flags);
 int memfs_snapshot_shutdown(void);

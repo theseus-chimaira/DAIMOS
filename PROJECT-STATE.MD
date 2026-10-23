@@ -1,3 +1,17 @@
+## 2026-10-23 MEMFS XIP protection milestone v202
+
+An explicit MEMFS XIP reservation is now supported in the MEMFS MRES, without
+enabling any XIP launch path. Four packed (slot+1),,reference-count words
+represent the maximum four simultaneously dedicated MEMFS chunks; MM pinning
+guards the underlying physical extents. The new API only pins regular files
+on large dedicated 02000-aligned resident extents. Pinned file writes,
+resizes/truncations, chunk evictions and unmount teardown are denied. Final
+unpin releases the MM reference. This avoids additional permanent KCORE data;
+MRES size effect has not been measured in a comparable post-fold baseline.
+GCC lowmem image build and focused SIMH MEMFS/FIFO native tests PASS.
+The identical MEMFS fixture PASSes on AAP PDP-6 as well. This is not
+general XIP, and no native XIP process launch has been claimed.
+
 ## 2026-10-23 EXEC STAGED COMMIT FAILURE INJECTION V200
 
 The new daimos-testkit `test-daimos-exec-commit-rollback` PASSes eight

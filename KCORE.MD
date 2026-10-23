@@ -1,3 +1,14 @@
+## 2026-10-23 MEMFS XIP reservation foundation v202
+
+MEMFS MRES has a four-word per-file XIP reference table and reuses the MM
+extent pin count. The privileged reservation API currently admits only an
+existing dedicated large MEMFS chunk with a `02000`-aligned physical base;
+regular DXR files are not launched from this storage. Write, truncate,
+reclaim and unmount paths now respect active reservations. No EXEC/VM
+ownership changes have been made. The GCC lowmem image links, and focused
+SIMH MEMFS and FIFO native target tests pass. AAP also passes the same
+MEMFS pinning target fixture; actual AAP XIP process launch is pending.
+
 # KCORE - Verified Open Work and Optimization Backlog
 
 ## 2026-10-23 EXEC late transaction boundary tests v200

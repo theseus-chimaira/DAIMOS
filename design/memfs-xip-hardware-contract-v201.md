@@ -1,6 +1,7 @@
 # MEMFS XIP hardware contract v201 (2026-10-23)
 
-Status: design verification only; the production EXEC loader is unchanged.
+Status: MEMFS pinning foundation implemented and native-tested in v202;
+the production EXEC loader is unchanged and XIP launches remain disabled.
 
 ## Hardware cross-check
 
@@ -59,3 +60,30 @@ PDP-6 hardware and cannot be made safe by a MEMFS-only change.
    daimos-testkit; report RAM and resident word effects separately.
 
 No XIP code path is enabled by this document.
+
+## v202 MEMFS pinning milestone
+
+The PDP-6 MEMFS MRES now exports `memfs_xip_pin`, `memfs_xip_unpin`,
+`memfs_xip_is_pinned`, and `memfs_xip_any_pinned`. The reservation API is
+kernel-only and accepts only a resident regular file with a dedicated large
+chunk whose physical base is aligned to `02000` words. It does **not**
+declare any DXR image safe to execute.
+
+Four packed `(slot+1),,refs` words track the four possible dedicated MEMFS
+chunks; multiple reservations for the same file consume only one MM pin.
+The final release drops that MM pin before retiring the reference entry.
+Pinned files reject writes and truncation, and their chunks resist reclaim;
+unmount also refuses to free the metadata while any XIP reference exists.
+`memfs_data_init` resets the reference table at mount initialization.
+
+These routines reuse MM's existing physical pin mechanism; they do not
+create a new independent memory-owner system. The ordinary mutable MEMFS
+allocator does not guarantee `02000` alignment, so some otherwise eligible
+large files will still be refused. Aligned allocation and a formally
+non-writing executable format remain future prerequisites.
+
+Focused PDP-6 SIMH tests under daimos-testkit's `target-memfs-pdp6` fixture
+exercise rejected small-file pins, aligned dedicated-file pins, repeated
+references, blocked writes/truncation, reclaim exclusion, and final unpin.
+The FIFO fixture also links and passes. The same MEMFS target fixture passes
+on AAP using `run-aap-v202.sh`; neither test constitutes an XIP process launch.

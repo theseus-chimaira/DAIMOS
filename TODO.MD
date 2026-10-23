@@ -1,3 +1,12 @@
+## MEMFS XIP implementation progress (2026-10-23 v202)
+
+- [x] Add per-file XIP pin/refcount reservation with existing MM chunk pins,
+  plus write/truncate/reclaim/unmount exclusion. Target MEMFS/FIFO fixture
+  passes on SIMH and AAP; ordinary EXEC/RUN remains unchanged.
+- [ ] Add dedicated `02000`-aligned MEMFS image allocation, image admission,
+  VM provenance/lifetime and read-only execution contract; then validate
+  native XIP process behavior on both SIMH and AAP. No general DXR XIP yet.
+
 ## MEMFS execute-in-place (XIP) requirement (2026-10-23)
 
 - [ ] Support genuine zero-copy MEMFS executable launch: execute from the

@@ -20,6 +20,10 @@
         .globl  memfs_data_dirty
         .globl  memfs_data_reclaim
         .globl  memfs_resize
+        .globl  memfs_xip_pin
+        .globl  memfs_xip_unpin
+        .globl  memfs_xip_is_pinned
+        .globl  memfs_xip_any_pinned
 
         .globl  mm_alloc
         .globl  mm_free
@@ -31,8 +35,13 @@
         .globl  fs_copy_words
         .globl  fs_zero_words
         .globl  memfs_mres_fs
+        .globl  memfs_slot
+        .globl  mm_pin
+        .globl  mm_unpin
+        .globl  mm_is_pinned
 
         .equ    MEMFS_CHUNKS,4
+        .equ    MEMFS_XIP_SLOTS,4
         .equ    MEMFS_CHUNK_WORDS,02000
         .equ    MEMFS_MM_OWNER,011
         .equ    MEMFS_SECTOR_WORDS,0200
@@ -302,6 +311,190 @@ memfs_data_init:
         hrli    3,memfs_data_chunks
         blt     3,memfs_data_chunks+3   ; four packed chunk descriptors
         setzm   memfs_data_allocating
+        setzm   memfs_xip_refs
+        movei   3,memfs_xip_refs+1
+        hrli    3,memfs_xip_refs
+        blt     3,memfs_xip_refs+MEMFS_XIP_SLOTS-1
+        popj    17,
+
+; Is a particular MEMFS node pinned? AC1=slot, returns AC1=0/1.
+; A four-entry table suffices for dedicated XIP chunks: MEMFS permits only
+; four physical data chunks. Each table word is (slot+1),,reference-count.
+; Zero means unused; no per-node allocation or 64-word reference table.
+memfs_xip_is_pinned:
+        addi    1,1
+        movei   2,MEMFS_XIP_SLOTS
+        movei   3,memfs_xip_refs
+memfs_xip_is_pinned_loop:
+        hlrz    4,(3)
+        camn    1,4
+        jrst    memfs_xip_is_pinned_yes
+        addi    3,1
+        sojg    2,memfs_xip_is_pinned_loop
+        setz    1,
+        popj    17,
+memfs_xip_is_pinned_yes:
+        movei   1,1
+        popj    17,
+
+; Return whether any node is pinned. Used to reject unmount before teardown.
+memfs_xip_any_pinned:
+        movei   2,MEMFS_XIP_SLOTS
+        movei   3,memfs_xip_refs
+memfs_xip_any_pinned_loop:
+        skipn   (3)
+        jrst    memfs_xip_any_pinned_next
+        movei   1,1
+        popj    17,
+memfs_xip_any_pinned_next:
+        addi    3,1
+        sojg    2,memfs_xip_any_pinned_loop
+        setz    1,
+        popj    17,
+
+; int memfs_xip_pin(fs, vnode, &base)
+; Reserve an existing, dedicated, 02000-aligned resident MEMFS extent.
+; This is kernel-only preparation: no normal DXR is automatically eligible.
+; A newly reserved node pins its owning MM chunk only once; subsequent users
+; increment the node reference count. MM still owns the physical pin count.
+memfs_xip_pin:
+        add     17,[7,,7]
+        movei   0,-6(17)
+        hrli    0,010
+        blt     0,(17)
+        move    010,1                  ; fs
+        move    011,2                  ; vnode
+        move    012,3                  ; basep
+        jumpe   012,memfs_xip_pin_fail
+        caie    010,memfs_mres_fs
+        jrst    memfs_xip_pin_fail
+        pushj   17,memfs_slot
+        jumpl   1,memfs_xip_pin_fail
+        move    013,1                  ; validated slot
+        ldb     4,[POINT 3,5(5),20]
+        caie    4,2                    ; regular file
+        jrst    memfs_xip_pin_fail
+        hrrz    4,6(5)                 ; logical file size
+        caig    4,MEMFS_CHUNK_WORDS    ; large/dedicated only
+        jrst    memfs_xip_pin_fail
+        move    1,010
+        move    2,013
+        pushj   17,memfs_data_ensure
+        jumpn   1,memfs_xip_pin_fail
+        move    014,013
+        imuli   014,7
+        add     014,MEMFS_NODES(010)
+        hlrz    016,MEMFS_NODE_DATA(014)
+        jumpe   016,memfs_xip_pin_fail
+        trne    016,MEMFS_CHUNK_WORDS-1 ; APR requires 02000 alignment
+        jrst    memfs_xip_pin_fail
+        movei   015,memfs_data_chunks
+        movei   5,MEMFS_CHUNKS
+memfs_xip_pin_chunk_loop:
+        hlrz    1,(015)
+        trnn    1,MEMFS_CHUNK_LARGE
+        jrst    memfs_xip_pin_chunk_next
+        hrrz    2,(015)
+        camn    2,016                  ; dedicated extent begins at file base
+        jrst    memfs_xip_pin_have_chunk
+memfs_xip_pin_chunk_next:
+        addi    015,1
+        sojg    5,memfs_xip_pin_chunk_loop
+        jrst    memfs_xip_pin_fail
+memfs_xip_pin_have_chunk:
+        move    4,013
+        addi    4,1                    ; slot+1 is never zero
+        movei   5,MEMFS_XIP_SLOTS
+        movei   015,memfs_xip_refs
+        setz    014,                   ; first free reference entry
+memfs_xip_pin_ref_loop:
+        hlrz    2,(015)
+        camn    2,4
+        jrst    memfs_xip_pin_existing
+        jumpn   2,memfs_xip_pin_ref_next
+        jumpn   014,memfs_xip_pin_ref_next
+        move    014,015
+memfs_xip_pin_ref_next:
+        addi    015,1
+        sojg    5,memfs_xip_pin_ref_loop
+        jumpe   014,memfs_xip_pin_fail
+        move    1,016
+        pushj   17,mm_pin
+        jumpn   1,memfs_xip_pin_fail
+        move    4,013                  ; mm_pin uses AC4 as scratch
+        addi    4,1
+        hrlz    1,4
+        iori    1,1                    ; first reference
+        movem   1,(014)
+        jrst    memfs_xip_pin_ok
+memfs_xip_pin_existing:
+        hrrz    1,(015)
+        caie    1,0777777              ; reject reference-count overflow
+        jrst    memfs_xip_pin_increment
+        jrst    memfs_xip_pin_fail
+memfs_xip_pin_increment:
+        aos     (015)
+memfs_xip_pin_ok:
+        movem   016,(012)
+        setz    1,
+        jrst    memfs_xip_pin_return
+memfs_xip_pin_fail:
+        seto    1,
+memfs_xip_pin_return:
+        movei   0,010
+        hrli    0,-6(17)
+        blt     0,016
+        sub     17,[7,,7]
+        popj    17,
+
+; int memfs_xip_unpin(fs, vnode)
+; Remove a reference. The last reference unpins the owning MM chunk before
+; clearing the table entry; failed MM unpins leave the reference intact.
+memfs_xip_unpin:
+        push    17,010
+        push    17,011
+        push    17,012
+        move    010,1
+        move    011,2
+        caie    010,memfs_mres_fs
+        jrst    memfs_xip_unpin_fail
+        pushj   17,memfs_slot
+        jumpl   1,memfs_xip_unpin_fail
+        move    011,1
+        addi    011,1
+        movei   012,memfs_xip_refs
+        movei   3,MEMFS_XIP_SLOTS
+memfs_xip_unpin_loop:
+        hlrz    4,(012)
+        camn    4,011
+        jrst    memfs_xip_unpin_found
+        addi    012,1
+        sojg    3,memfs_xip_unpin_loop
+        jrst    memfs_xip_unpin_fail
+memfs_xip_unpin_found:
+        hrrz    2,(012)
+        caie    2,1
+        jrst    memfs_xip_unpin_multi
+        move    1,011
+        subi    1,1
+        imuli   1,7
+        add     1,MEMFS_NODES(010)
+        hlrz    1,MEMFS_NODE_DATA(1)
+        pushj   17,mm_unpin
+        jumpn   1,memfs_xip_unpin_fail
+        setzm   (012)
+        jrst    memfs_xip_unpin_ok
+memfs_xip_unpin_multi:
+        sos     (012)
+memfs_xip_unpin_ok:
+        setz    1,
+        jrst    memfs_xip_unpin_return
+memfs_xip_unpin_fail:
+        seto    1,
+memfs_xip_unpin_return:
+        pop     17,012
+        pop     17,011
+        pop     17,010
         popj    17,
 
 ; int memfs_data_ensure(struct memfs *fs, unsigned int slot)
@@ -367,6 +560,9 @@ memfs_resize:
         jumpe   010,memfs_resize_fail
         caile   011,077
         jrst    memfs_resize_fail
+        move    1,011
+        pushj   17,memfs_xip_is_pinned
+        jumpn   1,memfs_resize_fail     ; never relocate a live executable
         tlne    012,0777777            ; logical size must fit RH18
         jrst    memfs_resize_fail
         move    013,011
@@ -557,6 +753,9 @@ memfs_evict_chunk:
         pushj   17,memfs_chunk_bounds
         move    014,1                  ; chunk base
         move    015,2                  ; chunk words
+        move    1,014
+        pushj   17,mm_is_pinned
+        jumpn   1,memfs_evict_zero      ; pinned XIP chunks are never spilled
         movei   012,1                  ; slot 0 is root metadata
 
 memfs_evict_back_loop:
@@ -706,4 +905,7 @@ memfs_data_chunks:
         .block  4
 memfs_data_allocating:
         .block  1
+; Four (slot+1),,refcount words, one per possible dedicated XIP chunk.
+memfs_xip_refs:
+        .block  MEMFS_XIP_SLOTS
 

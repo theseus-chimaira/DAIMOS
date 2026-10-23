@@ -4,6 +4,8 @@
         .globl  fs_copy_words
         .globl  memfs_data_ensure
         .globl  memfs_data_dirty
+        .globl  memfs_xip_is_pinned
+        .globl  memfs_xip_any_pinned
         .globl  kret_zero
         .globl  kret_neg1
         .globl  kret_neg2
@@ -83,6 +85,9 @@ memfs_write_words:
         pushj   17,memfs_slot   ; AC5=np, AC6=meta
         jumpl   1,memfs_write_fail
         move    011,1           ; slot
+        move    1,011
+        pushj   17,memfs_xip_is_pinned
+        jumpn   1,memfs_write_fail  ; bypassing resize must not alter XIP
         ldb     4,[POINT 3,5(5),20]
         caie    4,2             ; regular file
         jrst    memfs_write_fail
@@ -807,6 +812,10 @@ memfs_mres_mount_done:
 ; rejected active FIFO users and synchronized the provider before this call,
 ; so no live vnode may retain storage after the allocations are returned.
 memfs_mres_prepare_unmount:
+        push    17,1                    ; context across reference check
+        pushj   17,memfs_xip_any_pinned
+        jumpn   1,memfs_mres_unmount_pinned
+        pop     17,1
         push    17,1                    ; struct memfs * context
         pushj   17,memfs_data_destroy   ; release demand-allocated data chunks
         move    1,(17)
@@ -822,6 +831,9 @@ memfs_mres_prepare_unmount:
         sub     17,kconst_1_1
         jrst    kret_zero
 memfs_mres_unmount_bad:
+        sub     17,kconst_1_1
+        jrst    kret_neg1
+memfs_mres_unmount_pinned:
         sub     17,kconst_1_1
         jrst    kret_neg1
 
