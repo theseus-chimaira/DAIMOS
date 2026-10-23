@@ -152,11 +152,8 @@ exec_replace_validate_done:
         move    13,proc_current_slot
         move    16,proc_current_ptr
         setz    14,
-        move    1,proc_rt_owner
-        came    1,13
-        jrst    exec_replace_old_rt_done
+        camn    13,proc_rt_owner       ; skip setting old-RT flag if owner differs
         movei   14,1
-exec_replace_old_rt_done:
         move    1,proc_swap_records
         add     1,13
         move    2,(1)

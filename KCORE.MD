@@ -1,5 +1,15 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 EXEC old real-time ownership comparison v184
+
+`exec_replace_current` now uses `CAMN 13,proc_rt_owner` followed by
+`MOVEI 14,1` to set its existing old-RT flag only when the current
+slot owns the real-time reservation. This avoids a temporary AC1 load
+and a branch, preserving the original owner-equality behavior and
+unchanged rollback logic. A same-checkout KCC/p10fold link moved
+`__kcore_low_end` from `025671` to `025667` octal (two resident words).
+No additional RAM or stack; v184 native EXEC regression pending.
+
 ## 2026-10-23 EXEC/RUN runtime verification v183
 
 Native PDP-6 fresh-image EXEC replacement and child-session EXEC both
