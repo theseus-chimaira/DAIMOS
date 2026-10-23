@@ -123,11 +123,9 @@ exec_replace_current:
         movei   2,1
         pushj   17,sixbit_record_words
         jumpe   1,exec_replace_invalid
-        move    2,15
-        add     2,1
-        camle   2,16                  ; path record must fit block
+        add     15,1                   ; first argv/env record
+        camle   15,16                  ; path record must fit block
         jrst    exec_replace_invalid
-        move    15,2                   ; argv/env record stream
 
         add     13,14                  ; number of following records
         move    14,15                  ; preserve validated argv/env start

@@ -1,5 +1,16 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 EXEC in-place path advancement v181
+
+The first path record parse in `exec_replace_current` now advances AC15
+directly to the first argv/environment record with `ADD 15,1` instead of
+constructing the address in AC2 and copying it back. The existing
+`CAMLE` end-of-block check still validates the computed address before
+use. In a same-checkout KCC/p10fold KCORE relink, exclusive
+`__kcore_low_end` moved from `025673` to `025671` octal, saving two
+resident words. No extra stack or persistent RAM; syscall ABI unchanged.
+Native EXEC/RUN launch and malformed-input regressions remain pending.
+
 ## 2026-10-23 EXEC argument-record end comparison v180
 
 `exec_replace_current` now checks each argument/environment record end
