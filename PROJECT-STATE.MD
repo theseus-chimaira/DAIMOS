@@ -1,3 +1,14 @@
+## 2026-10-23 MEMFS XIP admission hardening v210
+
+`memfs_xip_admit` now checks mode bits before taking an image pin: at least
+one execute bit must be present and all write bits must be absent. A valid
+magic/header without safe file modes is rejected without pinning. The native
+testkit confirms that both writable and non-executable modes are rejected;
+mode 0555 is admitted. SIMH MEMFS and PDP6-AAP MEMFS/user-APR tests PASS.
+This is only a file-admission restriction, not hardware write protection:
+the PDP-6 can still store into admitted MEMFS physical memory in user mode.
+No VM ownership, swap, startup or EXEC/RUN XIP path has been enabled.
+
 ## 2026-10-23 MEMFS user-mode APR XIP hardware test v209
 
 daimos-testkit now provides `target-memfs-xip-user-apr-v209`. The test first

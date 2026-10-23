@@ -1,3 +1,12 @@
+## MEMFS XIP admission gate v210
+
+- [x] Require executable/non-writable file mode before XIP pin/admission;
+  test mode 0000, 0444, writable mode, and successful 0555 on PDP-6.
+- [ ] Establish process owner/provenance and MEMFS unpin on VM teardown;
+  exclude XIP allocations from normal process swap and brk growth.
+- [ ] Implement a guaranteed non-writing user startup/termination contract,
+  then integrate a separately trusted XIP image path into EXEC/RUN.
+
 ## MEMFS user APR XIP validation v209
 
 - [x] Validate PDP-6 user-mode APR instruction fetch and physical relocation

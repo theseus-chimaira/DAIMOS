@@ -1,3 +1,10 @@
+## v210 file admission mode restriction
+
+`memfs_xip_admit` additionally rejects file modes that contain any write
+permission bits (0222) or lack all execute bits (0111). The test image is
+staged while writable and then changed to mode 0555 before admission.
+This reduces accidental XIP admission and does not make user instructions
+read-only: APR provides no write protection for shared image storage.
 # MEMFS XIP hardware contract v201 (2026-10-23)
 
 Status: MEMFS pinning foundation implemented and native-tested in v202;

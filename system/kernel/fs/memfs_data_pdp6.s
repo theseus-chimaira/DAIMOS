@@ -484,6 +484,18 @@ memfs_xip_admit:
         move    013,4
         jumpe   012,memfs_xip_admit_fail
         jumpe   013,memfs_xip_admit_fail
+        ; XIP is never implicitly admitted from a writable executable.
+        ; The file must have execute permission and no mode write bits.
+        ; This protects image selection, not against a malicious user store.
+        pushj   17,memfs_slot
+        jumpl   1,memfs_xip_admit_fail
+        ldb     2,[POINT 12,5(5),32]
+        trne    2,0222
+        jrst    memfs_xip_admit_fail
+        trnn    2,0111
+        jrst    memfs_xip_admit_fail
+        move    1,010
+        move    2,011
         push    17,[0]                ; preserve caller basep on failure
         movei   3,(17)
         pushj   17,memfs_xip_pin
