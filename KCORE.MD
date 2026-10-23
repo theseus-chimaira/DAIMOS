@@ -1,5 +1,18 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 EXEC real-time owner cleanup v186
+
+In the successful old-real-time reservation release and the failure
+rollback, compare the saved process slot directly against
+`proc_rt_owner` using `CAMN` and conditionally execute `SETZM`.
+This replaces each `MOVE/CAME/JRST/SETZM` sequence with two words,
+without clearing a reservation transferred to another owner. The
+same-checkout post-p10fold KCORE exclusive end changed from `025665`
+to `025661` octal (four resident words), without additional RAM or
+stack. The v185 native EXEC replacement diagnostic PASSed using the
+existing 35-second functional-only observation window; v186 native
+runtime regression remains pending at this size measurement.
+
 ## 2026-10-23 EXEC direct validated scalar counts v185
 
 `exec_replace_current` now loads the argc and envc launch words

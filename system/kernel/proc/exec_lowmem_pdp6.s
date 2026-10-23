@@ -261,9 +261,7 @@ exec_replace_commit:
         jrst    exec_replace_release_rt
         jrst    exec_replace_success
 exec_replace_release_rt:
-        move    1,proc_rt_owner
-        came    1,13
-        jrst    exec_replace_success
+        camn    13,proc_rt_owner        ; clear only if still owned by this slot
         setzm   proc_rt_owner
 exec_replace_success:
         setz    1,
@@ -277,9 +275,7 @@ exec_replace_restore_fail:
         move    1,EXEC_R_STAGED+2(17)
         caie    1,EXEC_LOAD_RT_REQUIRED
         jrst    exec_replace_restore_swap
-        move    1,proc_rt_owner
-        came    1,13
-        jrst    exec_replace_restore_swap
+        camn    13,proc_rt_owner        ; preserve ownership if it changed
         setzm   proc_rt_owner
 exec_replace_restore_swap:
         move    1,proc_swap_records
