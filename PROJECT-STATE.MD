@@ -1,3 +1,27 @@
+## 2026-10-23 EXEC LOW-MEMORY RETRY CORRECTION V201
+
+The native 256K PDP-6 v201 EXEC pressure regression identified a real
+full-word error-comparison bug in resident `exec_replace_current`:
+`CAIE 1,EXEC_LOAD_NOMEM` compares against an 18-bit immediate and
+cannot recognize the 36-bit `-2` returned by `exec_load_process` when
+staged VM allocation fails.  Replace it with `CAME 1,[-2]` so the
+existing destructive low-memory EXEC retry is actually invoked.
+
+The previously failing compressed/padded large executable now replaces
+PID 1 with physical pressure forcing the staged allocation to fail;
+native v201 PASS (`$TMPDIR/daimos-exec-pressure-v201-fullcompare-test.log`).
+The same large executable also PASSes without pressure
+(`$TMPDIR/daimos-exec-pressure-control-v201-afterfix.log`).  The
+independent v200 eight-case PDP-6 instruction-level loader/commit
+rollback fixture PASSes after this correction
+(`$TMPDIR/daimos-exec-commit-rollback-v201-retest.log`).
+No persistent kernel data or added stack words. A fresh full-profile
+v201 link map confirms `__kcore_low_end=025657` octal, unchanged from
+the pre-fix full-profile KCC/p10fold baseline. This is *not* an
+acceptance of the separate 16K permanent-memory, default DSH image
+size or 15-second runtime gates. The 32K-specific gate remains
+deferred by explicit direction.
+
 ## 2026-10-23 MEMFS XIP v204: aligned allocation failure contract
 
 The native testkit MEMFS fixture now injects `MM_ERR_FRAGMENTED` for an

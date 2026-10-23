@@ -168,7 +168,11 @@ exec_replace_validate_done:
         movei   3,3(10)                 ; validated path
         pushj   17,exec_load_process
         movem   1,EXEC_R_STAGED+2(17)   ; staged.sched is dead; keep result here
-        caie    1,EXEC_LOAD_NOMEM
+        ; CAIE uses an 18-bit immediate and cannot match the full 36-bit
+        ; negative error (-2). Compare with a memory literal instead, as
+        ; native_sys_exec does for EXEC_REPLACE_FATAL. Otherwise VM pressure
+        ; is misreported as ordinary load failure and the retry is skipped.
+        came    1,[-2]
         jrst    exec_replace_loaded
         move    1,10
         move    2,11

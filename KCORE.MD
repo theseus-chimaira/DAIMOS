@@ -17,6 +17,17 @@ MEMFS pinning target fixture; actual AAP XIP process launch is pending.
 
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 resident EXEC -2 comparison correction v201
+
+The EXEC staged-loader out-of-memory return must be tested with a
+full 36-bit compare (`CAME 1,[-2]`), not `CAIE` with an 18-bit immediate.
+The latter bypassed the already implemented low-memory replacement
+retry. Native PDP-6 v201 pressured and unpressured compressed EXEC
+replacement PASS after the fix; the v200 eight-case staged transaction
+test also PASSes. No persistent RAM growth; the fresh full-profile
+`__kcore_low_end=025657` octal. 32K acceptance remains deferred and
+the full-profile permanent-memory limit remains open.
+
 ## 2026-10-23 EXEC late transaction boundary tests v200
 
 daimos-testkit v200 executes the production `exec_replace_current`
