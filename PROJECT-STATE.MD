@@ -1,3 +1,25 @@
+## 2026-10-23 EXEC POST-VM-CREATION RT ROLLBACK V193
+
+The native PDP-6 testkit real-time-owner fixture now additionally
+constructs a validly framed compressed DXR2 executable with the
+RT_REQUIRED bit, one output image word, a one-word D6LZ payload, and
+one relocation word. Its zero control word requires an absent literal,
+causing `d6lz36_decode_vfs` to fail after `vm_space_create` on the
+normal 256K simulation profile. The test checks both the release of a
+newly claimed RT reservation and preservation of an existing owner.
+Both checks PASS; the earlier header-failure rollback, RT-required
+successful EXEC, and subsequent ordinary EXEC release also PASS.
+The stage markers are `<abcdRN` followed by HALT. Testkit commit
+`dcaca8c`; native log `$TMPDIR/daimos-exec-rt-postvm-v193-native.log`.
+
+No kernel changes were required after the v191 scratch-overlap fix.
+The linked KCORE exclusive end remains `025657` octal. This is
+functional-only validation (`DAIMOS_EXEC_OBSERVE_SECONDS=35`,
+`DSH_IMAGE_LIMIT=037000`); strict 15-second and `036000` image gates,
+native 32K acceptance, and full 16K permanent-memory accounting remain
+open. Fault injection after successful startup/VM commit is not part
+of this test.
+
 ## 2026-10-23 EXEC RT FIX FOLLOW-UP NEGATIVE REGRESSIONS V192
 
 The v191 RT-owner scratch-lifetime correction also passed the native

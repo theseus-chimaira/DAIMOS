@@ -1,5 +1,17 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 EXEC compressed decode failure RT cleanup v193
+
+Native PDP-6 testkit v193 PASSes new RT owner cleanup and existing
+owner preservation when an RT_REQUIRED compressed DXR2 has valid
+header geometry but a truncated D6LZ control/literal stream. The
+loader's normal path allocates the staged VM before invoking the
+decoder; failure then destroys that staged VM and rolls back only a
+new reservation. The earlier header-failure and successful EXEC
+scenarios also PASS. No new kernel code or resident memory; current
+post-p10fold KCORE end `025657` octal. Production timing, executable
+image cap and 16K residency are still unaccepted.
+
 ## 2026-10-23 EXEC RT correction cross-regression v192
 
 After correcting the live RT-claim marker/VFS stat overlap, the
