@@ -5,6 +5,9 @@
 
 #define MEMFS_PROVIDER               4U
 #define MEMFS_KIND_NODE              1U
+/* Raw XIP header word 1 LH uses the existing DXR PURE flag value.
+ * The RH contains the logical entry. PURE is a software promise only. */
+#define MEMFS_XIP_PURE_FLAG           0200000UL
 
 #define MEMFS_F_USED                 0001U
 #define MEMFS_F_WRITABLE             0004U

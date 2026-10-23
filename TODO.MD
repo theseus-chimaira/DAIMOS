@@ -1,3 +1,12 @@
+## MEMFS XIP PURE reuse v217
+
+- [x] Require the existing PURE flag in the distinct raw-XIP file header;
+  reject absent PURE without leaving a pin. No new permanent process state.
+- [ ] Implement the minimum raw-image producer for statically pure code,
+  preserving logical origin 020 without any loader-time relocations.
+- [ ] Add narrowly gated EXEC/RUN use only when both trust and no-writing
+  runtime conditions are met; ordinary DXR PURE keeps its existing behavior.
+
 ## XIP v216 user-mode lifecycle
 
 - [x] Native-test strict non-writing MEMFS-backed user instruction fetch,

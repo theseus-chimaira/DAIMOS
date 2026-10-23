@@ -1,3 +1,16 @@
+## 2026-10-23 reuse DXR PURE for raw MEMFS XIP admission v217
+
+Simplified the experimental XIP image contract to reuse the existing DXR
+`PURE` flag (octal 0200000) rather than invent a new immutable-image bit.
+The raw image remains a separately laid-out format: word 0 is XIP magic,
+and word 1 is `PURE_FLAG,,entry` (LH flag, RH logical entry). MEMFS admission
+requires exactly this flag in addition to the existing execute/no-write
+file modes and physical alignment. A missing PURE flag must reject without
+retaining a pin. This is software metadata only, NOT hardware protection.
+Ordinary DXR PURE images remain unchanged and are not automatically XIP.
+No EXEC/RUN/VM/KCORE change was made. A privileged loader path with genuine
+user-mode no-write constraints remains an open integration task.
+
 ## 2026-10-23 MEMFS non-writing XIP user lifecycle v216
 
 daimos-testkit adds `target-memfs-xip-user-lifecycle-v216`. A distinct

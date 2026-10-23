@@ -47,6 +47,7 @@
         .equ    MEMFS_CHUNKS,4
         .equ    MEMFS_XIP_SLOTS,4
         .equ    MEMFS_XIP_MAGIC,054506000000
+        .equ    MEMFS_XIP_PURE,0200000   ; same PURE flag as DXR
         .equ    MEMFS_CHUNK_WORDS,02000
         .equ    MEMFS_MM_OWNER,011
         .equ    MEMFS_SECTOR_WORDS,0200
@@ -472,7 +473,8 @@ memfs_xip_pin_return:
 ; int memfs_xip_admit(fs,vnode,&base,&entry)
 ; A strict *format* gate, distinct from general DXR images. The dedicated
 ; extent contains its raw logical user image: first word carries the 36-bit
-; XIP magic, second holds its logical entry. Instructions begin at >= 020.
+; XIP magic, second has PURE in LH and logical entry in RH. Instructions
+; begin at >= 020. PURE reuses the DXR promise; it is not hardware RO.
 ; Pin first to keep the file stable through inspection; undo on rejection.
 ; A trusted no-write certification is still required before EXEC may use it.
 memfs_xip_admit:
@@ -506,9 +508,11 @@ memfs_xip_admit:
         move    1,(2)
         came    1,[MEMFS_XIP_MAGIC]
         jrst    memfs_xip_admit_bad
-        move    3,1(2)                ; logical entry point
-        tlne    3,0777777             ; 18-bit logical address only
+        move    3,1(2)                ; PURE flag,,logical entry
+        hlrz    1,3
+        caie    1,MEMFS_XIP_PURE
         jrst    memfs_xip_admit_bad
+        hrrz    3,3
         caige   3,020
         jrst    memfs_xip_admit_bad
         move    4,011

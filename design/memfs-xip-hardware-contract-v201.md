@@ -47,8 +47,9 @@ the production EXEC loader is unchanged and XIP launches remain disabled.
 MEMFS MRES now exports `memfs_xip_admit(fs, vnode, &base, &entry)`.
 This is **not an EXEC hook** and does not start a process. It requires the
 existing large-file 02000-aligned allocation and checks a separate raw-image
-format: word 0 is octal `054506000000`, word 1 is a full 18-bit logical entry
-at or beyond `020`, within the file's logical extent. Generic DXR files are
+format: word 0 is octal `054506000000`, word 1 is a PURE flag in the left half
+and a logical entry in the right half, at or beyond `020` and within the file's
+logical extent. Generic DXR files are
 rejected. Validation occurs while pinned; all rejected candidates are
 un-pinned, and a successful caller owns the pin until explicit release.
 The native testkit fixture checks both cases on SIMH and AAP PDP-6.
@@ -57,6 +58,16 @@ The header is **not a certificate of immutability or non-writing code**.
 No user process may be mapped from it until a privileged executable trust
 contract, no-write startup, swapping exclusion, and VM unpin-on-teardown
 exist. EXEC/RUN and KCORE still have no XIP launch code.
+
+## v217 PURE flag reuse
+
+The raw XIP word at offset 1 now stores `0200000,,entry`: the same PURE flag
+value as DXR's `EXEC_DXR_F_PURE`, but in the raw XIP header's left half.
+MEMFS admission checks this flag exactly and rejects its absence without
+leaving an MM pin. This avoids a second immutability marker but is **not**
+equivalent to hardware write protection, and does not render ordinary DXR
+PURE programs directly executable in place. The privileged, no-write runtime
+contract must be enforced before integrating EXEC/RUN.
 
 ## Hardware cross-check
 
