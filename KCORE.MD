@@ -1,5 +1,17 @@
 # KCORE - Verified Open Work and Optimization Backlog
 
+## 2026-10-23 EXEC/RUN malformed launch regression v190
+
+The PDP-6 native EXEC replacement fixture in daimos-testkit v190
+now also PASSes 28 rejected malformed EXEC/RUN launch requests before
+completing normal replacement. Invalid headers, count upper halves,
+oversized counts, bad SIXBIT length fields and out-of-block records
+were rejected without destroying the caller. Functional-only image
+size and 35-second observation settings were retained. RT-owner
+rollback, strict 15-second/`036000` gates and the full permanent
+memory deficit remain open. This test-only checkpoint does not change
+the `025657`-octal post-p10fold KCORE exclusive endpoint.
+
 ## 2026-10-23 EXEC/RUN native functional retest v189
 
 Native PDP-6 replacement and child-session EXEC tests PASS on v188

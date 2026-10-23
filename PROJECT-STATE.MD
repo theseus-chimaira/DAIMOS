@@ -1,3 +1,25 @@
+## 2026-10-23 EXEC/RUN MALFORMED LAUNCH REJECTION V190
+
+The native PDP-6 EXEC replacement test in daimos-testkit commit
+`9bc72d6` now runs 28 explicit malformed EXEC V1 and RUN V2 launch
+probes before its successful replacement path. All 28 invalid calls
+returned `-1`, the original process stayed alive, and the subsequent
+EXEC replacement passed with preserved PID, credentials, cwd, session,
+process group, TTY and descriptors. Cases include incorrect header
+version/word count, nonzero upper halves and excessive scalar counts,
+invalid counted-SIXBIT path/argv lengths, truncated records and
+inconsistent block endings. The RUN probes never submit a valid child
+request, avoiding incidental process creation.
+
+The GCC cross-compiled test source passed; the fresh-image PDP-6 native
+runner also PASSed. Evidence:
+`$TMPDIR/daimos-exec-malformed-v190-native.log`. This is a functional
+diagnostic with `DAIMOS_EXEC_OBSERVE_SECONDS=35` and
+`DSH_IMAGE_LIMIT=037000`, not strict 15-second/`036000` acceptance.
+Dedicated RT owner admission/release/rollback and native 32K testing
+remain open. No DAIMOS kernel source or resident-memory change was
+needed; linked KCORE exclusive endpoint remains `025657` octal.
+
 ## 2026-10-23 EXEC V188 NATIVE REGRESSIONS V189
 
 Both supported fresh-image PDP-6 EXEC testkit targets PASS on the
