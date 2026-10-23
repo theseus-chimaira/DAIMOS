@@ -1,3 +1,26 @@
+## 2026-10-23 post-EXEC-optimization XIP integration audit v206
+
+The optimized `exec_load_process` calls `vm_space_create` followed by
+`vm_space_load_file`, `proc_swap_attach`, and the RUN/EXEC commit path calls
+`vm_space_startup`. That routine unconditionally writes argc/envc metadata
+through the translated VM base (`movem 3,(11)`); it is not safe to replace
+the process's MM_TYPE_PROCESS extent with immutable/shared MEMFS backing.
+`vm_space_destroy` still unconditionally frees a resident base under
+MM_TYPE_PROCESS ownership, and normal swapping assumes resident process
+storage. Therefore **no XIP executable is admitted** yet, despite the
+completed MEMFS alignment/pinning support. Do not add an unconditional
+MEMFS-base substitution to `vm_space_load_file`.
+
+Post-optimization GCC lowmem disk `permanent-size` check PASS:
+KCORE 025123 octal (10835 words); KCORE+MRES 032602 octal (13698 words);
+PERMANENT_LAST 032661 octal (13745 words). No XIP loader code was added.
+
+The supported next implementation is a privilege-gated, separately marked
+non-writing executable ABI, a mapping/teardown provenance mechanism and an
+XIP-specific startup path that does not write into backing storage, followed
+by testkit native execution on SIMH and AAP. The public EXEC/RUN syscall ABI
+need not change, but VM/startup/swap behavior must change before launch.
+
 ## 2026-10-23 EXEC UNCOMPRESSED STAGED-VM OOM REGRESSION V205
 
 The outstanding v205 testkit pressure experiment now PASSes natively

@@ -1,3 +1,13 @@
+## Post-optimization MEMFS XIP safety gate v206
+
+- [x] Audit optimized EXEC/RUN VM call sites and establish linked KCORE size.
+- [ ] Implement restricted image admission and non-writing startup: current
+  `vm_space_startup` writes into memory even for empty argv/envp.
+- [ ] Add VM MEMFS ownership and unpin-on-teardown; reject ordinary swap,
+  writable break growth, and mutable text before switching physical base.
+- [ ] Only then connect the MEMFS XIP path and test actual launches on both
+  native PDP-6 simulators. Do not substitute MEMFS base in ordinary DXR.
+
 ## MEMFS XIP v204 (2026-10-23)
 
 - [x] Native aligned-allocation `MM_ERR_FRAGMENTED` failure injection on
