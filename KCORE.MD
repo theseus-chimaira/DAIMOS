@@ -1,3 +1,22 @@
+## 2026-10-25 swap-pressure acceptance investigation v269
+
+The older daimos-testkit daimos-swap-stress-v1 workload assumes
+32K physical memory and forces a blocked pipe writer to swap
+using two pressure children. Naively running that identical guest
+at 256K does NOT reproduce the needed pressure: the guest emits
+`<ws!W`, with `s` identifying failure of the explicit target-swapped
+assertion in `run_writer_case`. This is not evidence of a broken
+swap implementation: pressure requirements changed. Independently,
+rerunning the original 32K profile fails at image construction:
+`mkimage: KINIT image leaves less than the configured stack reserve`.
+No 32K guest swap result can therefore be claimed from v269.
+
+Next: construct a dedicated 256K test with enough concurrently held
+process images to force real reclaim, explicit procinfo-backed
+nonresidency checks, and resume/integrity verification. Preserve
+32K GCC lowmem disk-root as the KCORE *size* reference even while
+its runtime image does not fit. No production code changed in v269.
+
 ### Native descriptor saturation and reclaim v268 (2026-10-25)
 
 The PDP-6 production mm_extent_insert/mm_delete test
