@@ -562,6 +562,25 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal D simulator replay/root diagnostic correction v256 (2026-10-24)
+
+Revisited the v255 simulator failure. Manual artifact discovery had
+used lexicographic sort of `daimos-scheduler-multiproc-v1-<pid>`
+paths, selecting an October 20 image rather than the October 24
+fixture. Corrected the selection to modification-time ordering and
+replayed the newest saved October 24 image (MM count at 024537,
+insert entry at 001145 octal), preserving its 8M SIMH throttle.
+The subsequent replay also exited with `?RT` before the insertion
+breakpoint. Kernel `KINIT_ERR_RT` documentation establishes that
+`?RT` means root mount/validation failure or absence of a valid
+`/SYSTEM/INIT`; it is **not a scheduler failure code**. The official
+single-use scheduler build/run still PASSes, so a repeat execution
+of saved mutable media is not a valid workload measurement.
+Fresh-build breakpoint telemetry must be installed before the
+first boot (with reproducible disposable media), not introduced
+into a previously executed image. No MM high-water result or
+production change is claimed.
+
 ### Proposal D fresh-image insertion tracing attempt v255 (2026-10-24)
 
 Reran the unmodified official five-user scheduler regression with

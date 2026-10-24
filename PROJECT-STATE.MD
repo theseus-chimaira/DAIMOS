@@ -1,3 +1,15 @@
+## 2026-10-24 MM SIMH replay diagnostic correction v256
+
+An MM replay helper erroneously chose a stale fixture via
+lexicographic path sorting. Correct modification-time selection
+of the latest October 24 image still produced `?RT`.
+KINIT_ERR_RT identifies root mount/validation or missing
+/SYSTEM/INIT, not failed scheduler preemption. The official
+one-shot scheduler test passes, but reusing its executed media
+does not establish MM occupancy. Future trace must attach to
+first boot of a fresh isolated build. No production changes,
+and the 32-entry extent limit remains unchanged.
+
 ## 2026-10-24 fresh-image MM insertion trace v255
 
 Official five-user PDP-6 SIMH scheduler regression PASSes again
