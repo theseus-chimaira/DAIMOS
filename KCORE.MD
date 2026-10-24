@@ -574,7 +574,9 @@ PERMANENT_LAST 13729 -> 13723. No new static data or stack.
 Both target-file-pdp6 and target-file-walk-pdp6 PASS on PDP-6.
 The preceding one-branch provider fallthrough experiment was
 size-neutral after linking and reverted. Further native directory
-enumeration and getcwd acceptance remains useful.
+enumeration and getcwd acceptance remains useful. The native
+test-daimos-monitorfs-devices-online on SIMH also PASSes with
+COMPILER=gcc and SDL_VIDEODRIVER=dummy.
 
 ### Proposal B bulk device argument consolidation v233 (2026-10-24)
 

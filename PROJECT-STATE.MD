@@ -5707,4 +5707,5 @@ full link KCORE 025075 octal (10813 decimal), KCORE+MRES 13676,
 PERMANENT_LAST 13723; saving six permanent words from v234.
 Target PDP-6 file and file-walk fixtures PASS. A size-neutral
 VFS provider fallthrough branch experiment was reverted.
+Native SIMH MonitorFS device view-online PASSes (GCC profile).
 Strict 32K acceptance and JRST folding remain deferred.
