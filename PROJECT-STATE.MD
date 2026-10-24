@@ -1,3 +1,17 @@
+## 2026-10-24 256K MM first-boot acceptance v262
+
+The fresh-image PDP-6 full-profile 256K GCC scheduler fixture
+`daimos-mm-256k-scheduler-v262.sh` PASSed timer preemption,
+private process context, nice ABI and disk sleep/wakeup. The
+configuration explicitly uses `BOOT_PROFILE=full`,
+`BOOT_CORE_WORDS=01000000` and `SIMH_CPU_KWORDS=256`, selecting
+64 process slots and 136 MM descriptors (272 descriptor words).
+This validates basic 256K first-boot and five-user operation,
+not simultaneous execution of 64 processes or a high-water
+extent count. There is no new production code or claimed RAM
+savings in v262. Continue measuring KCORE using the separate
+32K-word GCC lowmem disk-root configuration.
+
 ## 2026-10-24 RAM-sized MM extent registry v261
 
 Restored dynamic KINIT selection of MM descriptors based on

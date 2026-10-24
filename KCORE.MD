@@ -1,3 +1,14 @@
+### 256K first-boot scheduler acceptance v262 (2026-10-24)
+
+The separate daimos-testkit `daimos-mm-256k-scheduler-v262.sh`
+builds a new GCC full-profile 256K PDP-6 image with five boot
+users. Native SIMH PASSed preemption, process context, nice ABI
+and disk sleep/wakeup with boot-selected 136-descriptor backing.
+This checks real boot/scheduler functionality, but does not
+establish 64-process stress or a peak extent occupancy value.
+Production source remains unchanged. Continue using 32K-word
+lowmem disk-root builds for KCORE size measurements.
+
 ### KINIT RAM-sized MM extent capacity v261 (2026-10-24)
 
 Extended the v260 external backing to a boot-selected capacity:
