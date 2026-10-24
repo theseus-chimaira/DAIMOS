@@ -1,3 +1,20 @@
+## 2026-10-25 256K large-image swap-pressure probe v270
+
+A disposable test-only derivative of the original 32K swap-stress
+fixture enlarged each process's pressure array from 8K words to
+56K words and built a fresh 256K full-profile GCC PDP-6 image.
+The image linked and reached device initialization but halted
+before the INIT guest's first `<` marker. The test thus yielded
+**no swap-path result**. Simply enlarging each guest is not a
+validated way to create pressure; startup / VM image sizing must
+be examined before retrying. The failed experimental source was
+not installed as an acceptance test or merged into production.
+The correct next test should employ more moderate guest images,
+additional sleeping pressure processes, verified physical process
+residency, and explicit swapped-process resume checks. Existing
+v267/v268 saturation and high-water results remain valid.
+No production source or 32K KCORE-size reference changed.
+
 ## 2026-10-25 swap-pressure acceptance investigation v269
 
 The older daimos-testkit daimos-swap-stress-v1 workload assumes
