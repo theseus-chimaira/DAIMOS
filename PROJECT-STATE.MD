@@ -5757,6 +5757,17 @@ vfs-stat-frame and pre-dsh-fs-closure tests PASS; linked baseline
 remains KCORE 025065 octal (10805 decimal). Proposal B open,
 JRST folding and strict 32K acceptance deferred.
 
+## 2026-10-24 filesystem transfer workspace lifetime audit v245
+
+Reviewed `fs_block_workspace` (0200 octal words) and the
+`fs_provider_serialized` lifecycle. DTFS, TSFS and D6FS already
+share the resident transfer buffer while holding the serialization
+lock over sleeping I/O; MEMFS uses a distinct non-sleeping path.
+No second large permanent transfer buffer or safe unprotected
+overlap was identified. No source changes; baseline KCORE remains
+025065 octal (10805 decimal). Proposal F remains open subject to
+explicit concurrency/lifetime proof. Proposal B remains open.
+
 ## 2026-10-24 KCORE bulk device I/O sharing v233
 
 Both resident bulk I/O paths now prepare mapped-buffer arguments once

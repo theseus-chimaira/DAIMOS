@@ -562,6 +562,24 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal F filesystem workspace ownership check v245 (2026-10-24)
+
+Inspected resident filesystem static allocations and provider
+serialization for possible buffer lifetime overlap. The only
+128-word resident VFS transfer block is already `fs_block_workspace`.
+DTFS, TSFS and D6FS share it, and `fs_provider_serialized` holds
+the provider lock over potentially sleeping physical I/O. Arguments
+are held on private process stacks during lock waits. MEMFS bypasses
+that serialization because it does not sleep or use this block.
+Reusing the transfer block for unprotected path/lookup scratch
+would permit an unrelated process to corrupt an in-flight request.
+The remaining assembly storage declarations inspected in this
+area are small state variables or MEMFS-owned allocations rather
+than obvious duplicate permanent transfer blocks. No safe
+ownership-preserving static overlay was identified, and no source
+change or new saving is claimed. Retain v244 KCORE baseline 025065
+octal (10805 words); revisit only with a documented lifetime proof.
+
 ### Proposal B file-path request-frame inspection v244 (2026-10-24)
 
 Audited the resident `file_symlink`, `file_rename`, `file_chdir`,
