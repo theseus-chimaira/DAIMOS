@@ -1,3 +1,14 @@
+## 2026-10-24 fresh-image MM insertion trace v255
+
+Official five-user PDP-6 SIMH scheduler regression PASSes again
+with GCC. A retained freshly linked image puts mm_extent_count
+at octal 023543 and mm_extent_insert at 001167. Separate
+one-shot-breakpoint manual replay of that image emitted `?RT`
+before the breakpoint, indicating an unresolved difference
+between manual and official simulator launch conditions.
+No reliable MM peak measurement, production change, or registry
+reduction. Maintain the 32-entry capacity.
+
 ## 2026-10-24 scheduler acceptance restored v254
 
 Official `daimos-testkit test-daimos-scheduler-multiproc`

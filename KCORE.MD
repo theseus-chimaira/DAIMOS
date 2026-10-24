@@ -562,6 +562,22 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal D fresh-image insertion tracing attempt v255 (2026-10-24)
+
+Reran the unmodified official five-user scheduler regression with
+`MAKEFLAGS=COMPILER=gcc` and retained its isolated build; the
+native SIMH acceptance **PASSed**. Its freshly linked `kcore.map`
+identified `mm_extent_count` at 023543 and
+`mm_extent_insert` at 001167 octal. A separate manual SIMH
+replay of that same build, with a one-shot breakpoint on
+`mm_extent_insert`, instead emitted `?RT` and never reached
+the breakpoint. Therefore the replay environment is not yet
+equivalent to the official test invocation. No occupancy or
+high-water data were accepted from that replay and there were
+no kernel or testkit source changes. Resolve the launch-path
+discrepancy before using debugger-based telemetry; keep all
+32 extents.
+
 ### Proposal D official scheduler rerun v254 (2026-10-24)
 
 After DevSpace2 became reachable again, reran the unmodified
