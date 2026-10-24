@@ -579,7 +579,9 @@ Full GCC lowmem disk-root linked measurement: KCORE 025115 -> 025103
 target-file-walk-pdp6 PASS. Native PTR/PTP test compilation completed but
 SIMH terminated with status 139 after SDL2 window-event warnings. This
 is **not** a native device I/O acceptance pass; separate device validation
-remains open. No changes to JRST folding or the deferred 32K gate.
+remains open. A separate native card WORDTOKEN12/CR/CP round-trip test
+PASSed with SDL_VIDEODRIVER=dummy. No changes to JRST folding or the
+deferred 32K gate.
 
 ### Proposal B CHDIR stat reuse v232 (2026-10-24)
 

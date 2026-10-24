@@ -5694,5 +5694,7 @@ octal (10829 -> 10819 decimal), KCORE+MRES 13692 -> 13682,
 PERMANENT_LAST 13739 -> 13729. No static data, stack or ABI growth.
 Target PDP-6 file and file-walk fixtures PASS. Native PTR/PTP simulator
 fixture stopped with SIMH status 139 and SDL2 window-event warnings; it is
-not recorded as a pass. Further native device I/O acceptance is open.
+not recorded as a pass. Native card WORDTOKEN12/CR/CP round trip PASSed
+on an independent SIMH test with SDL_VIDEODRIVER=dummy. Further native
+PTR/PTP and other device I/O acceptance is open.
 Strict 32K acceptance and JRST folding remain deferred.
