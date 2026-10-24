@@ -1,3 +1,15 @@
+## 2026-10-24 KCORE process-finish RT ownership v223
+
+`proc_finish_slot` now uses `CAMN/SETZM` rather than
+`MOVE/CAME/JRST/SETZM` for conditional RT owner cleanup. The GCC lowmem
+disk-root permanent-size link passed: KCORE=025131 octal (10841 decimal),
+KCORE+MRES=13704 decimal and PERMANENT_LAST=13751 decimal. This saves two
+resident words relative to v222. No new permanent data or process ABI
+change. Runtime termination, RT ownership and native hierarchy tests have
+not been reaccepted at v223; v222's strict DSH fixture size blocker
+remains relevant. Process lifecycle/TTY/teardown architectural audit
+continues without collapsing distinct rollback and ownership contracts.
+
 ## 2026-10-24 KCORE process-adoption branch reduction v222
 
 In `proc_adopt_children_pdp6` the INIT special case now uses one `CAIN`

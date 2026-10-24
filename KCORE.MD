@@ -564,6 +564,19 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ### Proposal A first source experiment v222 (2026-10-24)
 
+### Proposal A process-finish RT ownership v223 (2026-10-24)
+
+Replaced the four-instruction `MOVE/CAME/JRST/SETZM` real-time-owner
+conditional in `proc_finish_slot` with `CAMN/SETZM`. This preserves the
+ownership test and termination order without a new branch or storage.
+The GCC lowmem disk-root `permanent-size` link passes with KCORE
+`025131` octal (10841 decimal), KCORE+MRES=13704 and
+PERMANENT_LAST=13751 decimal words; net reduction from v222 is two
+resident words. A native process termination / RT-owner regression still
+must be run; linker success is not runtime acceptance. Architectural
+cleanup remains the priority over further micro-optimizations.
+
+
 `proc_adopt_children_pdp6` now uses `CAIN` to branch directly for the
 INIT-parent case, eliminating the former `CAIE/JRST/JRST` arrangement.
 The production lowmem disk-root `make permanent-size` completed and reports

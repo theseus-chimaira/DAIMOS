@@ -407,9 +407,8 @@ proc_finish_slot:
         lsh     12,1
         add     12,10
         add     12,proc_table           ; descriptor
-        move    1,proc_rt_owner
-        came    1,10
-        jrst    proc_finish_ids
+        ; Drop RT ownership only when this process is the owner.
+        camn    10,proc_rt_owner
         setzm   proc_rt_owner
 proc_finish_ids:
         move    1,(12)
