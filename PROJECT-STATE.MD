@@ -1,3 +1,15 @@
+## 2026-10-24 native first-boot MM observation v257
+
+Added daimos-testkit v257 first-boot PDP-6 scheduler fixture
+(testkit commit 32dfb7e) with mapped MM extent-count
+examination and standard scheduler acceptance checks.
+Two fresh GCC-profile runs passed scheduler assertions.
+The second explicitly reported six extents at one checkpoint
+(octal count 000000000006 at address 024537).
+This is a point sample, not a workload high-water or a safe
+smaller-capacity finding. No DAIMOS production changes;
+MM registry remains 32 entries/64 words.
+
 ## 2026-10-24 MM SIMH replay diagnostic correction v256
 
 An MM replay helper erroneously chose a stale fixture via

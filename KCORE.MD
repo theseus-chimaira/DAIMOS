@@ -562,6 +562,26 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal D first-boot MM checkpoint fixture v257 (2026-10-24)
+
+Added `tests/validation/daimos-mm-firstboot-v257.sh` to
+`daimos-testkit` (commit `32dfb7e`). The fixture builds its
+own disposable five-process GCC-profile PDP-6 boot image,
+checks the existing scheduler preemption/context/nice and
+disk sleep/wakeup assertions, and examines the mapped
+`mm_extent_count` during its **first** SIMH boot.
+The first acceptance run PASSed the scheduler but deleted its
+transcript before the observation was extracted. A second
+independent fresh-build run PASSed and emitted one explicit
+checkpoint sample of `000000000006` (six decimal) at
+octal address 024537. The fixture now derives this address
+from the fresh link map and requires an observation.
+The test demonstrates successful non-production observation
+without replaying modified media. **One point sample is not
+the high-water value**: no MM registry reduction or permanent
+kernel instrumentation is justified. KCORE stays 025065
+octal (10805 words).
+
 ### Proposal D simulator replay/root diagnostic correction v256 (2026-10-24)
 
 Revisited the v255 simulator failure. Manual artifact discovery had
