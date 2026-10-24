@@ -1,3 +1,16 @@
+## 2026-10-25 256K extent high-water acceptance v267
+
+Fresh 63-process 256K GCC PDP-6 SIMH test with execution
+breakpoint at the native `mm_extent_insert` entry PASS.
+151 entry-point count samples showed pre-insert maximum 131.
+Assembler audit verifies the only successful insertion count
+increment is inside that routine; the independently observed
+v266 count 132 establishes exact first-boot workload peak 132.
+Capacity 136 leaves 4 free at peak. This is not acceptance of
+additional allocations during high concurrency or process
+swap/reclaim transitions. No production memory instrumentation
+or KCORE changes; 32K GCC lowmem remains measurement reference.
+
 ## 2026-10-25 native MM insertion breakpoint trace v267
 
 The daimos-testkit 256K full-profile GCC native PDP-6

@@ -1,3 +1,21 @@
+### 256K 63-process MM insertion high-water v267 (2026-10-25)
+
+Fresh-image 256K GCC PDP-6 SIMH successfully completed all 63
+process starts/finishes while an execution breakpoint sampled
+`mm_extent_count` at each `mm_extent_insert` entry. There were
+151 observations and a maximum **pre-insertion count of 131**
+decimal. The PDP-6 production MM assembler increments this
+count only once, at successful insertion. Therefore occupancy
+cannot exceed 132 from these observed insertion entries. The
+independent v266 point sample directly observed 132 allocated
+descriptors, establishing the **132-descriptor peak** for this
+specific first-boot workload (capacity 136, spare 4). The
+breakpoint-action mechanism adds no persistent KCORE storage.
+This does not prove adequacy for concurrent new allocations,
+process replacement, repeated reuse or swapping/reclaim under
+pressure. Do not change the eight-entry safety allowance before
+testing those operations. No production code changed.
+
 ### MM native insertion trace v267 (2026-10-25)
 
 A fresh 256K GCC PDP-6 first-boot workload exercising all
