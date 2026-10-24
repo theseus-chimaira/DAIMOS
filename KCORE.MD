@@ -568,6 +568,21 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ### Proposal A supported GCC native rollback verification v227 (2026-10-24)
 
+### Proposal A shared post-VM cleanup experiment v228 (2026-10-24)
+
+Tested one common `proc_cleanup_after_vm` routine to serve both normal EXIT
+and failed RUN slot discard after successful `vm_space_destroy`. It shared
+TTY session release, u-area release and runnable-queue removal while keeping
+distinct VM transitions and process publication. The GCC lowmem disk-root
+link **grew** from v226/v227 KCORE `025127` (10839 decimal) to `025136`
+(10846 decimal), an increase of seven resident words; KCORE+MRES likewise
+grew from 13702 to 13709 words. The additional calls and register saves
+outweighed eliminated local operations. **Rejected and reverted**: no
+production code change retained and no native test claimed for this
+discarded experiment. Do not attempt the same wrapper without a new
+measurable reason to expect savings. Further A candidates must eliminate
+actual work or data, not merely factor assembly source.
+
 The production DSH size gate of `036000` octal must remain unchanged.
 Investigation found the default KCC userland fixture generated DSH `036013`,
 but DAIMOS already documents `COMPILER=gcc` as the supported smaller-DSH

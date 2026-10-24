@@ -1,3 +1,13 @@
+## 2026-10-24 process teardown factoring rejected v228
+
+An experimental shared `proc_cleanup_after_vm` service for EXIT and RUN
+discard was measured using the production GCC lowmem disk-root link.
+KCORE grew from v226/v227 `025127` (10839 decimal) to `025136` (10846),
+seven resident words; KCORE+MRES grew 13702 -> 13709. The change was
+reverted rather than trading RAM for a source-level abstraction. No native
+test was run for the rejected prototype. The supported v227 implementation
+and its native lifecycle and rollback passes remain the accepted baseline.
+
 ## 2026-10-24 native GCC lifecycle acceptance v227
 
 The recurring native process-fixture blocker was the default KCC-produced
