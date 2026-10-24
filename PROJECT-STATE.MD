@@ -1,3 +1,22 @@
+## 2026-10-25 native MM insertion breakpoint trace v267
+
+The daimos-testkit 256K full-profile GCC native PDP-6
+`daimos-mm-256k-highwater-v267.sh` creates a fresh image with
+63 guest processes and installs a SIMH execution breakpoint
+on the mapped native `mm_extent_insert` entry point. Its
+actions EXAMINE `mm_extent_count` and resume, requiring
+no permanent kernel code or RAM. The first complete test
+PASSed all process start/completion markers and collected
+151 insertion-entry count samples. Maximum pre-insertion
+count was 131 decimal; adding one gives an insertion-related
+ceiling of 132, in agreement with the independent v266
+snapshot of 132 allocated of 136 descriptors. A breakpoint
+records an attempted insertion, not necessarily successful
+insertion, and this run is not a formal global high-water
+bound for all workloads or swap/reclaim sequences. The
+existing 136-entry policy remains unchanged. Measure KCORE
+using the 32K-word GCC low-memory disk-root profile.
+
 ## 2026-10-25 PDP-6 MM occupancy observations v266
 
 Native 256K GCC full-profile 63-process first-boot test PASS,

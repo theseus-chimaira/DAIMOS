@@ -1,3 +1,19 @@
+### MM native insertion trace v267 (2026-10-25)
+
+A fresh 256K GCC PDP-6 first-boot workload exercising all
+63 numbered process slots PASSed with a SIMH execution
+breakpoint at `mm_extent_insert`. Breakpoint actions read
+`mm_extent_count` at entry and resume. The test captured
+151 pre-insert observations, peaking at 131 existing extents
+(at most 132 immediately after that insertion); independent
+v266 point sampling confirms 132. Capacity was 136 and no
+descriptor-pressure failure was reported. This is a workload
+trace, not a universal guarantee or validated swap/reclaim
+peak; breakpoint actions do not establish whether each
+insertion succeeded. No permanent kernel instrumentation
+or new KCORE RAM. Size reference remains the 32K GCC lowmem
+disk-root profile.
+
 ### 256K MM descriptor point observations v266 (2026-10-25)
 
 The fresh-image 63-process 256K GCC PDP-6 SIMH test sampled MM
