@@ -5685,6 +5685,17 @@ and file ABI remain unchanged. GCC lowmem link PASS: KCORE 025115 octal
 PDP-6 target file-walk fixture PASSes, including CHDIR. Continue
 proposal B looking for resident text and data reduction.
 
+## 2026-10-24 VFS failure-epilogue audit v238
+
+On the v237 025075-octal (10813 decimal) GCC lowmem full-link baseline,
+sharing SETATTR's three-word unwind was size-neutral; sharing SYMLINK
+and RENAME's four-word unwind with WRITE_WORDS unexpectedly increased
+KCORE to 025077 octal (10815 decimal), KCORE+MRES to 13678, and
+PERMANENT_LAST to 13725. Both experiments were reverted. No new
+production savings or runtime acceptance; continue proposal B at
+larger VFS/provider boundaries. JRST folding and strict 32K work
+remain deferred.
+
 ## 2026-10-24 KCORE bulk device I/O sharing v233
 
 Both resident bulk I/O paths now prepare mapped-buffer arguments once

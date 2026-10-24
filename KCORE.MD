@@ -562,6 +562,23 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal B VFS mutation epilogue experiments v238 (2026-10-24)
+
+From the clean v237 checkout (KCORE 025075 octal, 10813 decimal),
+two cold error-path sharing candidates were compiled and measured
+against the complete GCC lowmem disk-root image. Redirecting
+`vfs_setattr` errors through the existing three-word unwind
+`vfs_mutate3_ro` was size-neutral at 025075, so it was reverted.
+Redirecting `vfs_symlink` and `vfs_rename` four-word failure
+unwinds through `vfs_write_words_ro` **increased** the full linked
+KCORE to 025077 (10815 decimal), KCORE+MRES to 13678 and
+PERMANENT_LAST to 13725. It added an extra cold-path branch and was
+also reverted. The linker/folder already removes or shares more than
+the source-level instruction count suggests. No production changes
+were accepted and no native runtime acceptance is claimed for these
+discarded experiments. Continue proposal B with larger structural
+opportunities rather than tiny branch/epilogue rewrites.
+
 ### Proposal B MonitorFS namespace BLT copies v235 (2026-10-24)
 
 Two fixed three-word name-record copies in resident VFS, one in
