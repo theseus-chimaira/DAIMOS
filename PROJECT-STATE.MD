@@ -1,3 +1,15 @@
+## 2026-10-24 KCORE A teardown overlap audit v225
+
+Identified a concrete source-level consolidation candidate: production
+KCC-generated `proc_slot_discard` and handwritten `proc_finish_slot` both
+perform RT ownership release, VM destruction, TTY/u-area release, run-queue
+removal and slot trimming. They differ in FREE handling, session/HUP
+semantics, child adoption and FREE versus ZOMB publication; their distinct
+rollback/ownership contracts must survive any factoring. The inspected
+generated discard body is about 50 instructions gross, not a predicted
+post-fold saving. No production source changed and no new native run passed.
+KCORE.MD records the gated assembler/common-teardown experiment.
+
 ## 2026-10-24 KCORE proposal A cleanup semantics v225
 
 Compared normal/fatal `proc_finish_slot`, failed-creation

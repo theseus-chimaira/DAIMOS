@@ -562,6 +562,34 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal A teardown sharing investigation v225 (2026-10-24)
+
+Source comparison identifies a real, but not yet safely merged, code overlap:
+`proc_slot_discard` in `proc/proc.c` is a production KCC-compiled resident
+function (`build/system/boot/pdp6/kcore-asm/proc.s`), whereas
+`proc_finish_slot` is handwritten in `proc/proc_pdp6.s`. Both release RT
+ownership, set process TRANSITION, call `vm_space_destroy`, release session
+TTY ownership and u-area, remove the runnable slot and trim process slots.
+
+The generated `proc_slot_discard` is about 50 assembly instructions in the
+inspected build, including save/restore and local labels. This is *gross*
+code to investigate, not 50 words of recoverable savings. Its implementation
+differs from finish-slot materially: discard checks FREE, does not perform
+session-leader HUP teardown or adopt children, and frees the slot instead
+of publishing ZOMB. Preserve VM-failure transition clearing and the exact
+MM/u-area release order. `proc_exit_finish` is a separate small generated
+wrapper; fatal-event termination can enter `proc_finish_slot` directly.
+
+Candidate A architecture: a single carefully delimited teardown *middle*
+operating on a validated slot and explicit caller contract, with distinct
+normal-exit and failed-creation publication tails. First measure whether
+replacing the generated discard path with an ABI-compatible assembler
+implementation can reduce the full post-fold KCORE without an extra hot-path
+dispatch or more permanent state. Do not merge paths by inferring lifetime
+semantics merely from similar instructions. Native lifecycle/RT/failed-RUN
+injection acceptance is a prerequisite. No source change or saving is
+claimed from this inventory.
+
 ### Proposal A lifecycle/RT audit v224 (2026-10-24)
 
 ### Proposal A cleanup ownership and rollback v225 (2026-10-24)
