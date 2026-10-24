@@ -158,13 +158,21 @@ native_sys_mapped_return:
         jrst    native_sys_read_words_mapped
         jrst    native_sys_pipe_read_words
 native_sys_read_words_mapped:
+        movei   5,file_read_words
+        jrst    native_sys_words_mapped
+
+; Common mapped bulk-word path.  vm_user_mapping_hold preserves AC5 and
+; vm_user_words only changes AC1/AC3/AC4, so the selected FILE entry in
+; AC5 survives native_sys_map_one without a stack slot.  Keep separate
+; read/write validation above (notably zero-count DPY write semantics).
+native_sys_words_mapped:
         move    1,2
         pushj   17,native_sys_map_one
         jumpe   1,%L137
         move    2,1
         hrrz    1,6
         hrrz    3,7
-        pushj   17,file_read_words
+        pushj   17,(5)
         jrst    native_sys_mapped_return
 %L86:
         ; AC1 fd, AC2 buffer, AC3 word count.
@@ -185,14 +193,8 @@ native_sys_read_words_mapped:
         jrst    native_sys_write_words_mapped
         jrst    native_sys_pipe_write_words
 native_sys_write_words_mapped:
-        move    1,2
-        pushj   17,native_sys_map_one
-        jumpe   1,%L137
-        move    2,1
-        hrrz    1,6
-        hrrz    3,7
-        pushj   17,file_write_words
-        jrst    native_sys_mapped_return
+        movei   5,file_write_words
+        jrst    native_sys_words_mapped
 native_sys_write_words_zero:
         ; Zero-word device commands do not dereference a user buffer.  DPY0
         ; uses this to stop/release a persistent display list without forcing
@@ -325,13 +327,22 @@ native_sys_two_paths_bad:
         jrst    native_sys_mapped_return
 %L97:
         ; AC1 fd, AC2 directory entry buffer.
+        movei   6,file_readdir
+        jrst    native_sys_fd_buffer
+; Common native syscall with AC1 = small index (FD or process slot),
+; AC2 = user result-buffer address, AC6 = selected resident service.
+; vm_user_mapping_hold preserves AC5 and leaves AC6 untouched;
+; vm_user_words only changes AC1/AC3/AC4.  Keep AC5 for the original
+; index while the user mapping is held.  The FILE/PROCINFO service is
+; free to use AC6 as scratch after the indirect call is dispatched.
+native_sys_fd_buffer:
         move    5,1
         move    1,2
         pushj   17,native_sys_map_one
         jumpe   1,%L137
         move    2,1
         hrrz    1,5
-        pushj   17,file_readdir
+        pushj   17,(6)
         jrst    native_sys_mapped_return
 %L102:
         ; AC1 path, AC2 mode.
@@ -359,14 +370,8 @@ native_sys_two_paths_bad:
         jrst    native_sys_mapped_return
 %L124:
         ; AC1 slot, AC2 result buffer.
-        move    5,1
-        move    1,2
-        pushj   17,native_sys_map_one
-        jumpe   1,%L137
-        move    2,1
-        hrrz    1,5
-        pushj   17,sys_procinfo
-        jrst    native_sys_mapped_return
+        movei   6,sys_procinfo
+        jrst    native_sys_fd_buffer
 %L129:
         pushj   17,native_sys_map_one
         jumpe   1,%L137
