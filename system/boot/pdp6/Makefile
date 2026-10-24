@@ -839,7 +839,7 @@ $(MONITORFS_MRES_OBJ): $(BUILD)/monitorfs_mres_v16.dobj $(BUILD)/monitorfs_swap_
     -X mfsproc_format_slot_mres_v15 $(BUILD)/monitorfs_mres_v16.dobj $(BUILD)/monitorfs_swap_mres_v63.dobj
 
 $(BUILD)/monitorfs_swap_mres_v63.dobj: $(KERNEL_DIR)/fs/monitorfs_swap_v63.c | $(BUILD)
-	$(PDP10_KCC) -Pgnu99 -O -x=pdp6 -m=gas -I$(KERNEL_DIR)/boot -I$(KERNEL_DIR)/core -I$(KERNEL_DIR)/drivers -I$(KERNEL_DIR)/fs -I$(KERNEL_DIR)/ipc -I$(KERNEL_DIR)/mm -I$(KERNEL_DIR)/modules -I$(KERNEL_DIR)/proc -I$(KERNEL_DIR)/storage -I$(PDP10_PREFIX)/include -S $< -o $(BUILD)/monitorfs_swap_mres_v63.s
+	$(if $(filter gcc,$(COMPILER)),$(PDP10_GCC) -std=gnu99 -Os -march=pdp6 -mcpu=pdp6,$(PDP10_KCC) -Pgnu99 -O -x=pdp6 -m=gas) -I$(KERNEL_DIR)/boot -I$(KERNEL_DIR)/core -I$(KERNEL_DIR)/drivers -I$(KERNEL_DIR)/fs -I$(KERNEL_DIR)/ipc -I$(KERNEL_DIR)/mm -I$(KERNEL_DIR)/modules -I$(KERNEL_DIR)/proc -I$(KERNEL_DIR)/storage -I$(PDP10_PREFIX)/include -S $< -o $(BUILD)/monitorfs_swap_mres_v63.s
 	$(DAS) $(DASFLAGS) -C -O $@ $(BUILD)/monitorfs_swap_mres_v63.s
 
 $(BUILD)/monitorfs_mres_v16.dobj: $(KERNEL_DIR)/fs/monitorfs_runtime.s $(PROJECT_ROOT)/tools/host/monitorfs-mres-probe-v15.py | $(BUILD)
