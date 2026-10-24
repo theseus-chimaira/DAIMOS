@@ -5727,6 +5727,16 @@ daimos-file-mountext-v19 tests PASS 26-mount vnode, lock, DUP/DUP2,
 close and unmount; PDP-6 file/file-walk fixtures PASS. Strict 32K
 and JRST folding remain deferred.
 
+## 2026-10-24 compact FILE DUP2 v242
+
+The DUP2 descriptor pair uses a bounded BLT, and pipe reference
+handling reads the copied destination metadata. The full GCC
+lowmem disk-root link PASSes: KCORE 025065 octal (10805 decimal),
+KCORE+MRES=13668 and PERMANENT_LAST=13715, one more permanent
+word saved. Native daimos-file-mountext-v19 and PDP-6 file and
+file-walk fixtures PASS. No ABI, resident data or stack growth.
+Strict 32K acceptance and JRST folding remain deferred.
+
 ## 2026-10-24 KCORE bulk device I/O sharing v233
 
 Both resident bulk I/O paths now prepare mapped-buffer arguments once

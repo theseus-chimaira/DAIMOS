@@ -627,17 +627,17 @@ file_dup2_copy:
         move    2,(17)
         lsh     2,1
         add     2,file_table
-        move    3,(1)
-        movem   3,(2)
-        move    4,1(1)
-        movem   4,1(2)
+        ; Copy the contiguous two-word descriptor, as in file_dup.
+        move    4,2
+        hrl     4,1
+        blt     4,1(2)
         pushj   17,file_mount_ext_copy
         move    1,2
         pushj   17,file_node_from_fd
         hlrz    1,1
         caie    1,070001
         jrst    file_dup2_no_pipe
-        move    1,3
+        move    1,(2)
         pushj   17,pipe_add_ref         ; no-op for non-pipe descriptors
 file_dup2_no_pipe:
         move    1,(17)
