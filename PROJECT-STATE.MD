@@ -5684,3 +5684,15 @@ and file ABI remain unchanged. GCC lowmem link PASS: KCORE 025115 octal
 (10829 decimal), KCORE+MRES=13692, no resident size change. The
 PDP-6 target file-walk fixture PASSes, including CHDIR. Continue
 proposal B looking for resident text and data reduction.
+
+## 2026-10-24 KCORE bulk device I/O sharing v233
+
+Both resident bulk I/O paths now prepare mapped-buffer arguments once
+before device selection and preserve the vnode for ordinary VFS fallthrough.
+The full linked GCC lowmem disk-root KCORE decreased 025115 -> 025103
+octal (10829 -> 10819 decimal), KCORE+MRES 13692 -> 13682,
+PERMANENT_LAST 13739 -> 13729. No static data, stack or ABI growth.
+Target PDP-6 file and file-walk fixtures PASS. Native PTR/PTP simulator
+fixture stopped with SIMH status 139 and SDL2 window-event warnings; it is
+not recorded as a pass. Further native device I/O acceptance is open.
+Strict 32K acceptance and JRST folding remain deferred.

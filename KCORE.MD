@@ -562,6 +562,25 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal B bulk device argument consolidation v233 (2026-10-24)
+
+The resident file-runtime bulk READ/WRITE dispatch previously reloaded
+the buffer pointer and word count separately in ten individual device
+leaves (six WRITE, four READ). Both dispatchers now save their canonical
+vnode in AC0 and establish the device-call arguments once before selecting
+the device. The ordinary VFS provider fallback restores the vnode and
+original word offset before calling VFS, preserving descriptor advancement,
+append handling, provider ABI and the mapped-buffer contract. No data,
+extra stack slots, or provider dispatch layers are added.
+
+Full GCC lowmem disk-root linked measurement: KCORE 025115 -> 025103
+(10829 -> 10819 decimal), KCORE+MRES 13692 -> 13682 and PERMANENT_LAST
+13739 -> 13729: ten permanent words saved. PDP-6 target-file-pdp6 and
+target-file-walk-pdp6 PASS. Native PTR/PTP test compilation completed but
+SIMH terminated with status 139 after SDL2 window-event warnings. This
+is **not** a native device I/O acceptance pass; separate device validation
+remains open. No changes to JRST folding or the deferred 32K gate.
+
 ### Proposal B CHDIR stat reuse v232 (2026-10-24)
 
 `file_chdir` already obtains a seven-word `vfs_stat` frame to check that

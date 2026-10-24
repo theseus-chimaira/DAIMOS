@@ -844,21 +844,28 @@ file_words_notdir:
         move    1,010
         pushj   17,file_node_from_fd
         jumpl   5,file_read_words_dispatch
+        ; Device bulk-I/O routines all take (buffer, count).  Prepare
+        ; these arguments once; keep the vnode in AC0 for dispatch.
+        move    0,1
+        move    1,-1(17)
+        move    2,(17)
 
-        camn    1,[020002000003]        ; PTP0
+        camn    0,[020002000003]        ; PTP0
         jrst    file_write_words_ptp
-        camn    1,[020002000005]        ; CP0
+        camn    0,[020002000005]        ; CP0
         jrst    file_write_words_cp
-        camn    1,[020002000022]        ; LPT0
+        camn    0,[020002000022]        ; LPT0
         jrst    file_write_words_lpt
-        camn    1,[020002000010]        ; DPY0 native display program
+        camn    0,[020002000010]        ; DPY0 native display program
         jrst    file_write_words_dpy
-        camn    1,[020002000012]        ; WCNSLS raw device-0420 operations
+        camn    0,[020002000012]        ; WCNSLS raw device-0420 operations
         jrst    file_write_words_wcnsls
-        camn    1,[020002000000]        ; CTY0 controlling-TTY proxy
+        camn    0,[020002000000]        ; CTY0 controlling-TTY proxy
         jrst    file_write_words_tty
-        move    3,-1(17)
-        move    4,(17)
+        move    3,1
+        move    4,2
+        move    1,0
+        move    2,1(010)
         ; D6FS provider serializes the entire write.  Offset -1 asks that
         ; provider to resolve EOF under its lock, not at OPEN time.
         move    5,(010)
@@ -877,67 +884,52 @@ file_write_regular_pos:
         pushj   17,vfs_write_words
         jrst    file_words_append_result
 file_write_words_tty:
-        move    1,-1(17)                ; mapped S6REC words
-        move    2,(17)                  ; supplied word count
         pushj   17,tty_write_s6rec_jump
         jrst    file_words_result
 file_write_words_ptp:
-        move    1,-1(17)                ; mapped PT8 source
-        move    2,(17)                  ; supplied word count
         pushj   17,ptp_write_words_jump
         jrst    file_words_result
 file_write_words_cp:
-        move    1,-1(17)                ; mapped CARD12 source
-        move    2,(17)                  ; supplied word count
         pushj   17,cp_write_words_jump
         jrst    file_words_result
 file_write_words_lpt:
-        move    1,-1(17)                ; mapped S6REC source
-        move    2,(17)                  ; supplied word count
         pushj   17,lpt_write_s6rec_jump
         jrst    file_words_result
 file_write_words_dpy:
-        move    1,-1(17)                ; mapped packed Type-340 words
-        move    2,(17)                  ; zero count stops/releases the list
         pushj   17,dpy_write_words_jump
         jrst    file_words_result
 file_write_words_wcnsls:
-        move    1,-1(17)                ; tagged raw CONO/DATAO source
-        move    2,(17)
         pushj   17,wcnsls_write_words_jump
         jrst    file_words_result
 
 file_read_words_dispatch:
-        camn    1,[020002000002]        ; PTR0
+        move    0,1
+        move    1,-1(17)
+        move    2,(17)
+        camn    0,[020002000002]        ; PTR0
         jrst    file_read_words_ptr
-        camn    1,[020002000004]        ; CR0
+        camn    0,[020002000004]        ; CR0
         jrst    file_read_words_cr
-        camn    1,[020002000000]        ; CTY0 controlling-TTY proxy
+        camn    0,[020002000000]        ; CTY0 controlling-TTY proxy
         jrst    file_read_words_tty
-        camn    1,[020002000012]        ; WCNSLS raw DATAI samples
+        camn    0,[020002000012]        ; WCNSLS raw DATAI samples
         jrst    file_read_words_wcnsls
-        move    3,-1(17)
-        move    4,(17)
+        move    3,1
+        move    4,2
+        move    1,0
+        move    2,1(010)
         pushj   17,vfs_read_words
         jrst    file_words_result
 file_read_words_tty:
-        move    1,-1(17)                ; mapped S6REC destination
-        move    2,(17)                  ; destination capacity
         pushj   17,tty_read_s6rec_jump
         jrst    file_words_result
 file_read_words_ptr:
-        move    1,-1(17)                ; mapped PT8 destination
-        move    2,(17)                  ; destination word capacity
         pushj   17,ptr_read_words_jump
         jrst    file_words_result
 file_read_words_cr:
-        move    1,-1(17)                ; mapped CARD12 destination
-        move    2,(17)                  ; destination word capacity
         pushj   17,cr_read_words_jump
         jrst    file_words_result
 file_read_words_wcnsls:
-        move    1,-1(17)
-        move    2,(17)
         pushj   17,wcnsls_read_words_jump
 
 file_words_append_result:
