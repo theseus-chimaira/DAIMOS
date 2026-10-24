@@ -562,6 +562,28 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal A lifecycle/RT audit v224 (2026-10-24)
+
+The RT owner release at the beginning of `proc_finish_slot` is intentional
+in the existing C fallback (`proc.c`) as well as PDP-6 assembler. The same
+early release is used by `proc_slot_discard` before VM destruction. This
+ordering cannot be unilaterally changed in assembler as a size optimization:
+failure-path policy must be investigated in both paths and with the event
+fatal-process caller. No RT rollback bug is established by code inspection
+alone, and no behavior change was made.
+
+The v223 runtime verification attempt using daimos-testkit
+`test-daimos-process-lifecycle` failed at image construction, before any
+native process assertions: DSH `036013` exceeds the unchanged `036000`
+EXEC gate. This repeats the independent v222 fixture blocker; it is not
+a pass or evidence of a new process-management failure. A dedicated
+failure-injection test of RT ownership during teardown remains open.
+
+Further A work should target duplicated resource acquisition/release
+mechanics across process exit, failed slot creation and event termination,
+while preserving their distinct ownership and commit points. Do not add a
+common service wrapper without proving lower post-fold memory consumption.
+
 ### Proposal A first source experiment v222 (2026-10-24)
 
 ### Proposal A process-finish RT ownership v223 (2026-10-24)

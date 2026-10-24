@@ -1,3 +1,14 @@
+## 2026-10-24 KCORE lifecycle/RT policy audit v224
+
+Compared `proc_finish_slot` in PDP-6 assembler and the C fallback, plus
+`proc_slot_discard` and fatal-event termination. Early RT-owner release
+precedes VM teardown in both implementations; code review alone does not
+establish a rollback bug. No production semantics or source were changed.
+Attempted native `test-daimos-process-lifecycle` but the fixture build
+stopped before execution because DSH `036013` exceeds EXEC gate `036000`.
+Keep the production size gate unchanged and native acceptance open. See
+KCORE.MD for the next source-level consolidation candidates.
+
 ## 2026-10-24 KCORE process-finish RT ownership v223
 
 `proc_finish_slot` now uses `CAMN/SETZM` rather than
