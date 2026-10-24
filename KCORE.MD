@@ -562,6 +562,20 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal D unstepped scheduler cross-check v253 (2026-10-24)
+
+Replayed the preserved GCC five-process image without SIMH
+EXPECT stepping, using the fixture's 8M instruction/second
+throttle. SIMH booted the filesystem providers and halted
+normally, but the guest emitted `?RT` instead of the expected
+multichild scheduler progress markers. Therefore the earlier
+v252 scheduler completion failure cannot be attributed solely
+to intrusive diagnostic stepping. The only confirmed extent
+data remain three point samples of 020 octal (16) from v252;
+there is **no validated workload high-water result**. Do not
+downsize the 32-entry MM table on these observations. No
+production or testkit source changes were accepted.
+
 ### Proposal D GCC-profile MM occupancy checkpoints v252 (2026-10-24)
 
 The earlier `036013 > 036000` DSH gate failure was caused by

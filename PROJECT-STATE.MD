@@ -1,3 +1,13 @@
+## 2026-10-24 unstepped scheduler validation v253
+
+An unstepped replay of the retained GCC five-process SIMH
+image booted but ended with guest output `?RT`, not the
+complete scheduler markers required by the test. Thus the
+v252 diagnostic run's failure is not solely an EXPECT-stepping
+artifact. MM has only three unvalidated-for-peak observations
+of 16 live extents; no high-water conclusion. Preserve 32
+descriptors, current KCORE baseline and strict image limits.
+
 ## 2026-10-24 GCC-profile MM occupancy snapshots v252
 
 The supported COMPILER=gcc lowmem profile cleared the
