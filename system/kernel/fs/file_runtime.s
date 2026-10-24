@@ -54,13 +54,7 @@ file_mount_ext_store:
         lsh     6,-033
         andi    6,3
         lsh     6,0(7)
-        movei   0,3
-        lsh     0,0(7)
-        move    7,file_table
-        addi    7,041
-        andcam  0,(7)
-        iorm    6,(7)
-        popj    17,
+        jrst    file_mount_ext_update
 
 ; AC1 source descriptor pointer, AC2 destination pointer. Both preserved.
 ; The destination's old extension is replaced, never OR'ed with stale bits.
@@ -75,6 +69,11 @@ file_mount_ext_copy:
         move    7,2
         sub     7,file_table
         lsh     6,0(7)
+        jrst    file_mount_ext_update
+
+; AC6 contains the already-positioned extension bits; AC7 is the
+; destination two-bit field offset. Used by copy and direct store.
+file_mount_ext_update:
         movei   0,3
         lsh     0,0(7)
         move    7,file_table

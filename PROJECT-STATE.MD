@@ -5706,6 +5706,17 @@ is clobbered by name comparison on subsequent iterations. No
 production change, unverified size claim or new runtime acceptance.
 KCORE remains 025075 octal (10813 decimal). Proposal B remains open.
 
+## 2026-10-24 file mount-extension update sharing v240
+
+The direct-store and descriptor-copy paths now share the two-bit mount
+extension bitmap update sequence in file_runtime.s, preserving the
+destination-clearing semantics. GCC lowmem disk-root full image PASS:
+KCORE 025067 octal (10807 decimal), KCORE+MRES 13670,
+PERMANENT_LAST 13717, six permanent words saved from v239.
+PDP-6 file and file-walk tests PASS. Extended native descriptor
+mount-extension lifecycle acceptance remains open. JRST folding
+and strict 32K acceptance remain deferred.
+
 ## 2026-10-24 KCORE bulk device I/O sharing v233
 
 Both resident bulk I/O paths now prepare mapped-buffer arguments once

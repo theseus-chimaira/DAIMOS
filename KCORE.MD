@@ -562,6 +562,24 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal B file mount-extension bitmap update v240 (2026-10-24)
+
+`file_mount_ext_store` and `file_mount_ext_copy` previously duplicated
+the final two-bit descriptor mount-extension clear/set sequence. Both
+paths now enter `file_mount_ext_update` with the destination bit offset
+in AC7 and already-positioned replacement bits in AC6. Clearing
+outdated destination bits precedes ORing the replacement, as before.
+The canonical vnode, descriptor layout, AC1/AC2 preservation and
+zero-to-clear behavior remain unchanged. This adds no resident
+state or stack frame.
+
+Full linked GCC lowmem disk-root KCORE: 025075 -> 025067 octal
+(10813 -> 10807 decimal). KCORE+MRES 13676 -> 13670;
+PERMANENT_LAST 13723 -> 13717. PDP-6 target-file-pdp6 and
+target-file-walk-pdp6 PASS. Specific full native descriptor mount
+extension lifecycle verification remains open; the size result
+does not imply that broader acceptance.
+
 ### Proposal B provider boundary and leaf-loop audit v239 (2026-10-24)
 
 The v238 follow-up reviewed `vfs_lookup_provider`,
