@@ -564,6 +564,25 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ### Proposal A teardown sharing investigation v225 (2026-10-24)
 
+### Proposal A discard assembler prototype v226 (2026-10-24)
+
+Replaced the production KCC-generated `proc_slot_discard` with a dedicated
+PDP-6 assembler implementation, guarded by `PROC_SLOT_DISCARD_PDP6_ASM` in
+the C fallback build. It preserves separate discard semantics: FREE early
+return, conditional RT owner release, transition setup and failure rollback,
+VM destruction, TTY/u-area release, run-queue removal, descriptor zeroing
+and trailing slot trim. This is NOT yet a shared teardown middle with EXIT.
+The lowmem disk-root permanent-size build PASSes: KCORE=`025127` octal
+(10839 decimal), KCORE+MRES=13702, PERMANENT_LAST=13749 decimal. Net
+post-link saving versus v223: **two words**. No persistent data added.
+
+The targeted native RUN late-rollback fixture was attempted but stopped
+before executing: DSH `036013` exceeded the unchanged production `036000`
+EXEC image gate. Thus the prototype is linked and size-measured, but native
+RUN rollback and resource ownership remain unaccepted. Fix the independent
+DSH image-size problem, or use a genuinely independent targeted fixture,
+before claiming native completion. Do not bypass the gate.
+
 Source comparison identifies a real, but not yet safely merged, code overlap:
 `proc_slot_discard` in `proc/proc.c` is a production KCC-compiled resident
 function (`build/system/boot/pdp6/kcore-asm/proc.s`), whereas

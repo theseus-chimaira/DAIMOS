@@ -1,3 +1,16 @@
+## 2026-10-24 KCORE discard assembler prototype v226
+
+Replaced KCC-generated `proc_slot_discard` in the PDP-6 KCORE build with
+an ABI-compatible assembler implementation; the C fallback is guarded by
+`PROC_SLOT_DISCARD_PDP6_ASM`. No change to normal EXIT publication, MM
+ownership, u-area lifetime or on-error transition clearing was intended.
+Lowmem disk-root permanent-size link PASS: KCORE 025127 octal (10839
+decimal), KCORE+MRES 13702 and PERMANENT_LAST 13749 decimal; two words
+saved against v223. No extra permanent data. Targeted native RUN late
+rollback fixture could not start because DSH 036013 exceeds the unchanged
+036000 EXEC limit. This implementation remains **native-unaccepted** until
+rollback and process lifecycle tests pass on a valid fixture. See KCORE.MD.
+
 ## 2026-10-24 KCORE A teardown overlap audit v225
 
 Identified a concrete source-level consolidation candidate: production

@@ -251,6 +251,7 @@ proc_tty_release_session(unsigned int session, unsigned int leaving_slot)
 
 
 /** Destroy an uncommitted process slot and all resources already attached to it. */
+#ifndef PROC_SLOT_DISCARD_PDP6_ASM
 int
 proc_slot_discard(unsigned int slot)
 {
@@ -278,6 +279,7 @@ proc_slot_discard(unsigned int slot)
         proc_trim_high();
         return 0;
 }
+#endif
 
 extern void proc_notify_parent(unsigned int parent);
 

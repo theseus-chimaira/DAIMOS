@@ -81,6 +81,8 @@
         .globl  proc_record_kernel_sp
         .globl  proc_exit_current
         .globl  proc_finish_slot
+        .globl  proc_slot_discard
+        .globl  proc_scope_id
         .globl  kret_zero
         .globl  kret_one
         .globl  kret_neg1
@@ -481,6 +483,63 @@ proc_finish_restore:
         hrli    0,-6(17)
         blt     0,16
         sub     17,kconst_7_7
+        popj    17,
+
+/**
+ * @brief Discard an uncommitted RUN slot without publishing a zombie.
+ *
+ * This is distinct from process exit: there is no session-leader HUP or
+ * child adoption. AC10 holds the descriptor, AC11 the slot across MM and
+ * terminal cleanup. Transition rollback matches proc_slot_discard in C.
+ */
+proc_slot_discard:
+        push    17,10
+        push    17,11
+        move    11,1
+        move    10,1
+        lsh     10,1
+        add     10,11
+        add     10,proc_table
+        camn    11,proc_rt_owner
+        setzm   proc_rt_owner
+        move    1,2(10)
+        tlne    1,PROC_STATE_LH_MASK
+        jrst    proc_discard_live
+        jrst    proc_discard_ok
+proc_discard_live:
+        movei   1,PROC_TRANSITION_RH
+        iorb    1,(10)
+        move    1,10
+        move    2,11
+        pushj   17,vm_space_destroy
+        jumpe   1,proc_discard_vm_done
+        movni   1,PROC_TRANSITION_RH+1
+        andb    1,(10)
+        jrst    proc_discard_fail
+proc_discard_vm_done:
+        move    1,10
+        pushj   17,proc_scope_id
+        andi    1,0377
+        move    2,11
+        pushj   17,proc_tty_release_session
+        move    1,11
+        move    2,10
+        pushj   17,proc_uarea_release
+        jumpn   1,proc_discard_fail
+        move    1,11
+        pushj   17,proc_runq_remove
+        setzm   (10)
+        setzm   1(10)
+        setzm   2(10)
+        pushj   17,proc_trim_high
+proc_discard_ok:
+        setz    1,
+        jrst    proc_discard_return
+proc_discard_fail:
+        seto    1,
+proc_discard_return:
+        pop     17,11
+        pop     17,10
         popj    17,
 
 /**
