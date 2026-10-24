@@ -562,6 +562,19 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal D official scheduler rerun v254 (2026-10-24)
+
+After DevSpace2 became reachable again, reran the unmodified
+`daimos-testkit` target `test-daimos-scheduler-multiproc`
+with `MAKEFLAGS=COMPILER=gcc`. Its full isolated PDP-6 build
+and SIMH regression **PASSed**, including preemption, process
+context, nice ABI and disk sleep/wakeup. This supersedes the
+earlier v253 implication of a persistent scheduler failure
+from the ad hoc replay, without establishing a specific cause
+for that `?RT` output. It does not turn v252's three extent
+snapshots into a high-water measurement: the 32-entry MM
+capacity remains unchanged. No kernel or testkit changes.
+
 ### Proposal D unstepped scheduler cross-check v253 (2026-10-24)
 
 Replayed the preserved GCC five-process image without SIMH

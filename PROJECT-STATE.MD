@@ -1,3 +1,13 @@
+## 2026-10-24 scheduler acceptance restored v254
+
+Official `daimos-testkit test-daimos-scheduler-multiproc`
+PASSed in native PDP-6 SIMH with `MAKEFLAGS=COMPILER=gcc`,
+covering timer preemption, process context, nice ABI and disk
+sleep/wakeup. The prior v253 ad hoc replay's `?RT` is not a
+reproduced failure of the official acceptance path. Its root
+cause remains unproven. Still no validated MM extent high-water;
+retain all 32 descriptors. No production changes.
+
 ## 2026-10-24 unstepped scheduler validation v253
 
 An unstepped replay of the retained GCC five-process SIMH
