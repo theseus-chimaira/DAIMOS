@@ -422,27 +422,62 @@ before calling the recovered code runtime accepted. The older v136
 external-descriptor branch additionally changes the insertion capacity
 guard; it was not imported into the v138 image.
 
-Date: 2026-10-13
-Basis: current DAIMOS checkout, source code, PROJECT-STATE.MD and
-active build notes. A staged, host-tested implementation is not considered
-completed until it is linked, measured and accepted on the relevant PDP-6.
+Date: 2026-10-24 (source reconciliation at v219, a405005)
+Basis: checked DAIMOS source, PROJECT-STATE.MD, TODO.MD, and committed
+native-test evidence. This is a documentation audit, not a new full link or
+native simulator acceptance run. A staged, host-tested implementation is not
+completed until linked, measured and accepted on the relevant PDP-6.
+
+### Verified implementation baseline (v219)
+
+- `proc/proc.h` defines three-word descriptors and 24/40/64/88/128/192/256
+  boot-selected slot tiers; `proc/proc_boot.c` provides tier selection.
+- `mm/mm.h` and `mm/mm_pdp6.s` still define 32 two-word MM extents.
+  `ipc/pipe.h` still defines an eight-word FIFO buffer.
+- `proc/exec_lowmem_pdp6.s` and `proc/proc_run.s` are the resident EXEC/RUN
+  paths. Production `vm_space_startup` in `proc/vm_pdp6.s` writes user VM
+  metadata even with zero arguments; it is not XIP-safe.
+- The production VM destruction path in `proc/vm_pdp6.s` invokes the MEMFS
+  provider's XIP release operation (026), with normal MM owner/type fallback.
+  Private MEMFS operation 027 supplies restricted raw PURE XIP admission.
+  Ordinary EXEC/RUN does not invoke that admission operation.
+- The restricted linker XIP producer is experimental, with a limited
+  instruction format. v215-v219 native fixtures validate selected admission,
+  release, rollback and non-writing user-mode paths, **not** fully scheduled
+  production EXEC/RUN, process exit, or swap interaction.
+- The most recent documented **GCC lowmem** linked KCORE exclusive endpoint
+  is `025134` octal (10844 decimal words, v213). Reaching a *strictly below*
+  `020000` octal endpoint requires at least 2653 fewer words. The distinct
+  EXEC/RUN **full-profile** checkpoint is `025657` octal (11183 words,
+  v205); profiles must not be mixed. Neither is a newly measured v219 link.
+- v190-v205 recorded native malformed EXEC/RUN, staged transaction, RUN
+  failure rollback, and compressed/uncompressed low-memory EXEC regressions.
+  This is positive targeted evidence, not 32K boot acceptance.
+- The 32K strict gate is explicitly deferred by v196; do not report it as
+  passing or relax it. The v138 GCC lowmem result (`023435` octal) and the
+  older v41/v42 (`021541`) are historical, not current size baselines.
 
 ## P0: 32K resident limit and correctness
 
-- [ ] Shrink the GCC lowmem KCORE link endpoint below 020000 octal; the
-  2026-10-13 PROJECT-STATE.MD v41/v42 checkpoint reports 021541 octal.
-  Run a fresh full build, not just an object-level estimate.
+- [ ] When the deferred strict 32K work resumes, shrink the GCC lowmem KCORE
+  exclusive endpoint below `020000` octal. The latest documented comparable
+  lowmem link is `025134` (v213); first repeat a fresh v219 full link and
+  full accounting, not just an object-level estimate.
 - [ ] Measure full permanent KCORE plus committed MRES, irreducible scratch,
   KINIT allocations and process startup headroom; retain the separate general
   below-040000 permanent-address limit where applicable.
-- [ ] Pass the strict GCC 32K size gate and native 32K boot/INIT/LOGIN/DSH,
-  process-pressure and filesystem tests with the same fresh image.
+- [ ] [Deferred at v196] Pass the strict GCC 32K size gate and native 32K
+  boot/INIT/LOGIN/DSH, process-pressure and filesystem tests with the same
+  fresh image. Do not conflate 256K EXEC/RUN passes with this acceptance.
 - [ ] Fix compiler, assembler and kernel correctness bugs at their source;
   add regression tests in daimos-testkit before marking the sweep complete.
 - [ ] Audit source-level size hotspots, generated objects and real post-p10fold
   link maps; reject optimizations that increase the 32K resident footprint.
 
 ## P1: packed-process lifecycle and compression
+
+The v33-v45 packed registry/layout and transaction sources are staged
+experiments, not active production packed processes; retain ordinary swap.
 
 - [ ] Choose a compact dense or bounded sparse packed registry using measured
   whole-KCORE code + dynamic data + MM extent cost, not isolated v33-v45
@@ -461,6 +496,9 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
   transaction failures and real PDP-6 execution before activating it.
 
 ## P2: kernel data structures and workload-specific sizing
+
+These are profiling/selection tasks, not claims that the existing MM,
+scheduler, pipe or slot-tier implementations are absent.
 
 - [ ] Evaluate runtime-sized MM extent descriptors versus the current static
   `MM_MAX_EXTENTS=32` two-word table (mm/mm.h, mm/mm.c, mm/mm_pdp6.s);
@@ -500,6 +538,21 @@ completed until it is linked, measured and accepted on the relevant PDP-6.
   forms), not by editing generated assembly.
 - [ ] Defer native streaming low-memory p10fold and larger semantic/SMT
   searches until self-hosting and simpler optimizations justify their cost.
+
+## P1 follow-up: restricted MEMFS XIP production integration
+
+- [x] Provide aligned dedicated MEMFS XIP storage, pin lifetime, restricted
+  PURE admission (private provider op 027) and VM release (op 026); native
+  SIMH/AAP fixtures validate the individual mechanisms (v203-v219).
+- [x] Provide an experimental raw PURE XIP linker mode limited to a verified
+  non-writing instruction subset (v218); ordinary DXR/PURE is not XIP.
+- [ ] Design a privileged argument-free, environment-free EXEC/RUN admission
+  path, preserving existing ABI and no additional permanent process fields.
+- [ ] Make XIP startup genuinely non-writing: zero argc/envc alone is not
+  sufficient because `vm_space_startup` unconditionally stores VM metadata.
+- [ ] Native-test *production* scheduler entry, failed EXEC replacement and
+  rollback, process exit, swap exclusion, storage-map state, and memory
+  pressure on both simulators before claiming XIP enabled.
 
 ## Acceptance and documentation
 

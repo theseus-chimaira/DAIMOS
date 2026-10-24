@@ -23,8 +23,9 @@
 
 - [x] Require the existing PURE flag in the distinct raw-XIP file header;
   reject absent PURE without leaving a pin. No new permanent process state.
-- [ ] Implement the minimum raw-image producer for statically pure code,
-  preserving logical origin 020 without any loader-time relocations.
+- [x] Implement the restricted raw-image producer for statically pure code
+  (v218), preserving logical origin 020 without loader-time relocation;
+  its intentionally narrow instruction subset is not general PURE XIP.
 - [ ] Add narrowly gated EXEC/RUN use only when both trust and no-writing
   runtime conditions are met; ordinary DXR PURE keeps its existing behavior.
 
@@ -67,7 +68,7 @@
 
 - [x] Implement exact-base pinned MEMFS ownership lookup in MRES without
   a new process descriptor or persistent reference-table word; native tested.
-- [ ] Route VM destroy to MRES unpin for XIP-owned extents, with unloaded-MRES
+- [x] Route VM destroy to MRES unpin for XIP-owned extents (v213), with unloaded-MRES
   and failure/rollback handling. Never free a MEMFS extent as MM_TYPE_PROCESS.
 - [ ] Prevent XIP swap and brk changes; implement non-writing startup and
   actual privileged EXEC/RUN process lifecycle tests.

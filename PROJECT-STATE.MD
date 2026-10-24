@@ -1,3 +1,24 @@
+## 2026-10-24 KCORE source/TODO reconciliation v220
+
+Audited KCORE.MD's active backlog against the v219 DAIMOS tree. Verified
+the three-word process ABI and boot slot tiers in proc/proc.h/proc_boot.c,
+32 static MM extents in mm/mm.h/mm_pdp6.s, and eight-word pipe storage in
+ipc/pipe.h. Confirmed EXEC/RUN's resident assembly implementations and that
+vm_space_startup still writes to user VM even with empty argument lists.
+MEMFS private XIP admission op 027 and VM release op 026 are implemented,
+but production EXEC/RUN does not use XIP admission. The restricted raw XIP
+linker producer is experimental; native fixtures do not constitute a full
+scheduled-process XIP acceptance. Updated KCORE.MD and stale TODO.MD
+checkboxes accordingly. No production source or ABI changes.
+
+The most recent recorded GCC lowmem KCORE exclusive endpoint is 025134
+octal (10844 words, v213); strict below-020000 would require at least
+2653 words of reduction at that profile. The separate full EXEC/RUN profile
+reported 025657 octal (11183 words, v205). Neither endpoint was remeasured
+at v219 during this documentation-only audit. The strict 32K acceptance
+remains deferred and unpassed. The outstanding packed-process, D6 codec,
+folding, and size-profiling tasks remain open, not silently promoted.
+
 ## 2026-10-23 movable MEMFS XIP admission gateway v219
 
 The existing MEMFS provider register dispatch now accepts private op 027:
