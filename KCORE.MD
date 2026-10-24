@@ -1,3 +1,22 @@
+### KINIT external MM backing restoration v260 (2026-10-24)
+
+Restored the historical direct-address table boundary design as
+an **intermediate 32-descriptor stage**: `mm_extents` aliases
+`__kcore_low_end` without linked BSS storage. KINIT reserves and
+zeroes the following 64 words before releasing any low arena;
+MRES starts after that reserved metadata. The native PDP-6
+insertion guard now reads `mm_extent_capacity`, currently reset
+to 32 in `mm_boot_init` until dynamic higher capacities are
+boot-validated. Native extent v249/v250 insertion/deletion tests
+PASS; the 32K GCC disk-root image links and layout test v260
+PASS. This change does **not** yet permit more than 32 extents.
+32K-profile linked KCORE decreases from 10805 to 10742 words,
+but the external 64-word reservation remains resident; with
+one added capacity word the actual KCORE-plus-table footprint
+is 10806 rather than 10805 words. Do not count moving the
+table past the KCORE label as physical-RAM savings. Full
+boot acceptance and memory-tier capacity selection remain open.
+
 ### KCORE measurement configuration v259 (2026-10-24)
 
 For every KCORE size comparison, use a **32K-word** GCC

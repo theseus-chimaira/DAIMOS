@@ -1,3 +1,20 @@
+## 2026-10-24 KINIT external MM backing v260
+
+First stage of restoring boot-sized MM extent descriptors:
+`mm_extents` is a zero-sized symbol at `__kcore_low_end`,
+with 64 backing words reserved and cleared by KINIT before
+low free arenas are published. MRES begins after this region.
+Native capacity comparisons use `mm_extent_capacity`, but it
+is reset to 32 at boot; larger memory-dependent capacities
+are **not yet enabled**. v249/v250 native PDP-6 extent tests
+PASS; v260 map/boundary test PASS; lowmem GCC 32K-profile
+image build PASS. KCORE link 024766 octal (10742 words),
+but KCORE plus 64 descriptor words plus runtime-capacity word
+totals 10806 words, one more than the previous 10805-word
+fixed table. Full system boot and dynamic-capacity acceptance
+are still pending. Do not equate KCORE label shrink with RAM
+savings.
+
 ## 2026-10-24 measurement convention v259
 
 All reported KCORE resident-size measurements must use the

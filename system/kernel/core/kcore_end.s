@@ -35,4 +35,6 @@ __kcore_low_init_end:
  * and the first address available for MRES package installation.
  */
         .globl __kcore_low_end
+        .globl mm_extents
+mm_extents:
 __kcore_low_end:

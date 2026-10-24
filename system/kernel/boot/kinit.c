@@ -114,7 +114,8 @@ mres_init(void)
         KINIT_TRACE(MRES_INIT);
 #endif
         /* MRES packages are packed immediately above fixed KCORE. */
-        mres_next_addr = (unsigned int)(unsigned long)&__kcore_low_end;
+        mres_next_addr = (unsigned int)(unsigned long)&__kcore_low_end +
+            2U * mm_extent_capacity;
         mres_owner_next = 1U;
         mres_last_owner = 0U;
         mres_last_image_words = 0U;
@@ -496,6 +497,19 @@ kinit_enter(void)
                 low_base = (kword_t)(unsigned long)&__kcore_low_end;
                 image_end = (kword_t)(unsigned long)&__kinit_image_end;
                 mm_boot_init(core_words);
+                /* Reserve the direct-address extent table before exposing
+                 * the adjacent low-memory arena or installing MRES. */
+                if (low_base > KINIT_IMAGE_BASE ||
+                    (kword_t)(2U * mm_extent_capacity) >
+                        KINIT_IMAGE_BASE - low_base)
+                        kinit_halt();
+                {
+                        kword_t *table = (kword_t *)(unsigned long)low_base;
+                        unsigned int i;
+                        for (i = 0U; i < 2U * mm_extent_capacity; ++i)
+                                table[i] = 0UL;
+                        low_base += 2U * mm_extent_capacity;
+                }
                 if (low_base < KINIT_IMAGE_BASE && low_base < core_words) {
                         kword_t low_end = KINIT_IMAGE_BASE;
                         if (low_end > core_words)

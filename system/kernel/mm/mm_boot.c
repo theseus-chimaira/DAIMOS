@@ -36,6 +36,7 @@ void
 mm_boot_init(kword_t core_words)
 {
         mm_core_words = core_words;
+        mm_extent_capacity = MM_MAX_EXTENTS;
         mm_extent_count = 0;
         mm_arena_count = 0;
 }

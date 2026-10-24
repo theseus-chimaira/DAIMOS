@@ -11,6 +11,7 @@
 
         .text
         .globl  mm_extents
+        .globl  mm_extent_capacity
         .globl  mm_arenas
         .globl  mm_core_words
         .globl  mm_extent_count
@@ -70,7 +71,7 @@ mm_delete_done:
 ; int mm_extent_insert(int slot, const struct mm_extent *extent)
 mm_extent_insert:
         move    7,mm_extent_count
-        caige   7,MM_MAX_EXTENTS
+        camge   7,mm_extent_capacity
         jrst    mm_extent_insert_space
         movni   1,3
         popj    17,
@@ -643,8 +644,6 @@ mm_unpin:
         jrst    mm_pin_adjust
 
         .bss
-mm_extents:
-        .block  0100
 mm_arenas:
         .block  MM_MAX_ARENAS
 mm_core_words:
@@ -653,3 +652,6 @@ mm_extent_count:
         .block  1
 mm_arena_count:
         .block  1
+        .data
+mm_extent_capacity:
+        .word   MM_MAX_EXTENTS
