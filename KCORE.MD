@@ -562,6 +562,25 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal B file-path request-frame inspection v244 (2026-10-24)
+
+Audited the resident `file_symlink`, `file_rename`, `file_chdir`,
+`file_make_node`, `file_remove`, `file_truncate` and
+`file_stat_path` paths together with `vfs_create_common` and
+`vfs_create_op`. MKDIR/MKFIFO already share their parent/access
+frame, UNLINK/RMDIR share a typed removal frame, and the one-argument
+TRUNCATE/STAT wrappers already share stack cleanup. The CREATE
+provider request and returned-vnode publication are already common
+for the relevant operations. A new cross-operation frame would have
+to preserve distinct permissions, argument lifetimes and stack
+offsets, with no identified positive linked-size candidate. No
+production source changes were made.
+
+`test-daimos-vfs-stat-frame` and `test-daimos-pre-dsh-fs-closure`
+PASS with GCC. Retain v243 KCORE baseline 025065 octal (10805
+decimal). Continue looking for a concrete full-image reduction,
+without touching deferred JRST folding or 32K acceptance.
+
 ### Proposal B descriptor and GETCWD clear follow-up v243 (2026-10-24)
 
 After v242, the descriptor duplication paths both use bounded BLT

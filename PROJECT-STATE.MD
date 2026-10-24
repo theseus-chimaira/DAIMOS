@@ -5746,6 +5746,17 @@ zero-fill was reverted before measurement because setup and overlap
 semantics offered no demonstrated advantage. No production changes.
 KCORE baseline remains 025065 octal (10805 decimal).
 
+## 2026-10-24 file path/provider request-frame audit v244
+
+Reviewed resident SYMLINK, RENAME, CHDIR, MKDIR/MKFIFO,
+UNLINK/RMDIR, TRUNCATE/STAT and VFS CREATE request staging.
+The principal request frames and failure unwinds are already
+shared where their lifetimes agree; no safe additional reduction
+was established. No production code changes. GCC testkit
+vfs-stat-frame and pre-dsh-fs-closure tests PASS; linked baseline
+remains KCORE 025065 octal (10805 decimal). Proposal B open,
+JRST folding and strict 32K acceptance deferred.
+
 ## 2026-10-24 KCORE bulk device I/O sharing v233
 
 Both resident bulk I/O paths now prepare mapped-buffer arguments once
