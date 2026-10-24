@@ -1,3 +1,24 @@
+### 256K MM descriptor point observations v266 (2026-10-25)
+
+The fresh-image 63-process 256K GCC PDP-6 SIMH test sampled MM
+metadata at the last process's start and completion markers,
+using test-only SIMH EXPECT and EXAMINE (no resident instrumentation).
+The raw transcript shows `mm_extent_capacity=0210` octal
+(136 decimal), `mm_extent_count=0204` octal (132) at
+`[3F]`, and `mm_extent_count=0010` octal (8) at
+`{3F}`. All 63 guest start/completion tokens were present.
+There were only **four spare descriptors** at the last-start
+sample; the eight-descriptor non-process/transient allowance
+has not been demonstrated sufficient for further overlap.
+These are instantaneous point observations, not a measured
+peak, and do not prove descriptor safety during concurrent
+allocation or swap/reclaim transitions. The simulator places
+EXAMINE text on the same line as prior guest console markers;
+the v266 fixture therefore extracts embedded address/value
+pairs rather than anchoring them to the beginning of lines.
+Production KCORE remains unchanged; use the established
+32K-word GCC lowmem disk-root configuration for its size.
+
 ### Full 256K numbered process range v265 (2026-10-25)
 
 The fresh-image 256K GCC PDP-6 concurrency fixture PASSed

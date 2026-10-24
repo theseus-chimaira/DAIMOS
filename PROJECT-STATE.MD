@@ -1,3 +1,17 @@
+## 2026-10-25 PDP-6 MM occupancy observations v266
+
+Native 256K GCC full-profile 63-process first-boot test PASS,
+using SIMH EXPECT/EXAMINE for non-production MM observations.
+At process 63's start, 132 of 136 descriptors were allocated;
+at its completion, 8 remained allocated. The 136 capacity
+was independently read from the same guest image. These two
+point samples do not establish the lifetime high-water or
+adequate reserve for simultaneous swapping/allocations.
+Testkit v266 observation parser explicitly supports examination
+text appended to guest console marker lines. KCORE source and
+the 32K GCC size reference remain unchanged. Next: test
+allocation overlap / reclaim behavior and measure peak count.
+
 ## 2026-10-25 full 256K numbered process range v265
 
 daimos-testkit `daimos-mm-256k-concurrency-v265.sh` creates
