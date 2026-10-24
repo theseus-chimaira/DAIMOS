@@ -562,6 +562,24 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal D host MM fixture dependency investigation v248 (2026-10-24)
+
+The `mm-core` failure described in v247 is not only an obsolete
+Makefile path. A temporary testkit-only build experiment omitted
+the missing `vm_pdp6.c` dependency. The host linker then
+reported three unresolved VM functions: `vm_extent_move`,
+`vm_space_can_swap`, and `vm_space_destroy`. These production
+functions belong to the PDP-6 VM implementation, including
+`vm_pdp6.s`, and host C tests cannot link the assembly directly.
+The fixture asserts actual movement, pinning, live mapping and
+swap-destruction behaviors; no dummy symbol implementations
+would be valid acceptance evidence. The testkit Makefile was
+restored byte-for-byte from a temporary backup, preserving
+all unrelated pre-existing testkit edits. A proper test repair
+requires an equivalent host implementation with verified semantics
+or a PDP-6-native MM fixture. No production code or extent
+registry limit changed; baseline remains 025065 octal KCORE.
+
 ### Proposal D extent registry acceptance gate v247 (2026-10-24)
 
 The PDP-6 MM implementation has `MM_MAX_EXTENTS=040` (32)

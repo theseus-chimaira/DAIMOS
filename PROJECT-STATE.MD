@@ -5789,6 +5789,18 @@ currently compile because it references a nonexistent
 unrelated local edits and was not modified. No production change
 or accepted memory reduction.
 
+## 2026-10-24 MM host test dependency investigation v248
+
+Temporarily excluded the missing vm_pdp6.c from the testkit
+mm-core build, revealing unresolved host symbols
+vm_extent_move, vm_space_can_swap and vm_space_destroy. Real
+implementations are in the target-side PDP-6 VM code; replacing
+them with trivial host stubs would invalidate the test's
+movement/compaction/swap assertions. The testkit Makefile was
+restored and unrelated pre-existing modifications preserved.
+The MM registry remains 32 entries/64 words pending validated
+workload high-water data. No production change or size saving.
+
 ## 2026-10-24 KCORE bulk device I/O sharing v233
 
 Both resident bulk I/O paths now prepare mapped-buffer arguments once
