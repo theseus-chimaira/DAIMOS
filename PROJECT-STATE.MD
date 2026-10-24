@@ -5778,6 +5778,17 @@ demonstrated. No production change; preserve KCORE 025065 octal
 (10805 decimal). Measure MM extent high-water before revisiting
 the descriptor count.
 
+## 2026-10-24 MM extent registry validation gate v247
+
+PDP-6 MM permits 040 octal (32) live extent descriptors occupying
+0100 octal (64) words. Full-registry insertions return
+MM_ERR_DESCRIPTORS (-3), so a smaller limit needs measured workload
+high-water and fragmentation evidence. Testkit `mm-core` cannot
+currently compile because it references a nonexistent
+`system/kernel/proc/vm_pdp6.c`. The existing testkit tree has
+unrelated local edits and was not modified. No production change
+or accepted memory reduction.
+
 ## 2026-10-24 KCORE bulk device I/O sharing v233
 
 Both resident bulk I/O paths now prepare mapped-buffer arguments once

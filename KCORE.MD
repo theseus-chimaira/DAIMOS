@@ -562,6 +562,25 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal D extent registry acceptance gate v247 (2026-10-24)
+
+The PDP-6 MM implementation has `MM_MAX_EXTENTS=040` (32)
+two-word descriptors, occupying 0100 octal (64) resident words.
+`mm_extent_insert` explicitly returns MM_ERR_DESCRIPTORS (-3)
+when full; shrinking the registry would change real failure behavior.
+No representative runtime high-water readings are available here,
+so do not reduce this count merely to reclaim static words.
+
+The daimos-testkit `mm-core` target currently fails to compile
+before test execution: its Makefile references removed/missing
+`system/kernel/proc/vm_pdp6.c`; the checkout contains
+`vm_pdp6.s` and `vm_pdp6_swap.c` instead. The testkit checkout
+also contains unrelated pre-existing working-tree changes; these
+were preserved. Repairing the fixture requires identifying the
+correct host-side VM implementation/link requirements, not simply
+replacing the path with assembly. No source changes or new
+permanent-memory savings were accepted.
+
 ### Proposal F static allocator and VM lifetime inventory v246 (2026-10-24)
 
 Following the committed v245 filesystem scratch audit, inspected
