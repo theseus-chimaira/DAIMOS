@@ -562,6 +562,22 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal B MonitorFS shared device classification v230 (2026-10-24)
+
+`mfsdev_stat` independently duplicated the device-type classification
+already implemented by `mfsdev_io_type` for READDIR. It now passes the
+device ID in AC0, calls that existing classifier, and uses returned AC7
+as the STAT type. No new data or provider dispatch is introduced. GCC
+lowmem disk-root permanent-size link PASS: KCORE `025115` octal (10829
+decimal), KCORE+MRES=13692, PERMANENT_LAST=13739 decimal, **10 words**
+below the v229 accepted baseline. Native MonitorFS device tests remain
+required before calling the change runtime accepted. The daimos-testkit
+`test-daimos-monitorfs-devices-online` native SIMH test subsequently
+**PASSed** using the supported `COMPILER=gcc` configuration and the unchanged
+DSH executable size gate. This confirms the online device view; a separate
+STAT/READDIR mode/type matrix remains useful to directly exercise all
+device-classification categories.
+
 ### Proposal A process-table scan census and next boundary v229 (2026-10-24)
 
 Current `proc_pdp6.s` has distinct hand-written scans with different

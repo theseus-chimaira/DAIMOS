@@ -254,25 +254,11 @@ mfsdev_stat_not_root:
         jrst    mfsdev_stat_dir
         caie    3,020002
         jrst    mfsdev_stat_file
-        caige   4,014
-        jrst    mfsdev_stat_char
-        caile   4,016
-        jrst    mfsdev_stat_maybe_mount
-        movei   5,4
-        jrst    mfsdev_stat_device_mode
-mfsdev_stat_maybe_mount:
-        cain    4,021                  ; DRM0
-        jrst    mfsdev_stat_block
-        caie    4,020
-        jrst    mfsdev_stat_char
-        movei   5,5
-        jrst    mfsdev_stat_device_mode
-mfsdev_stat_block:
-        movei   5,4
-        jrst    mfsdev_stat_device_mode
-mfsdev_stat_char:
-        movei   5,3
-mfsdev_stat_device_mode:
+        ; STAT and READDIR must classify device nodes identically.
+        ; The common leaf routine uses AC0 as ID and returns type in AC7.
+        move    0,4
+        pushj   17,mfsdev_io_type
+        move    5,7
         movei   6,0600
         jrst    mfsdev_stat_store
 

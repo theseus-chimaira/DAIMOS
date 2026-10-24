@@ -1,3 +1,14 @@
+## 2026-10-24 KCORE MonitorFS classification sharing v230
+
+`mfsdev_stat` now reuses `mfsdev_io_type` already called by READDIR to
+classify character, block and mount-source devices. A GCC lowmem disk-root
+permanent-size link passed: KCORE `025115` octal (10829 decimal),
+KCORE+MRES 13692 and PERMANENT_LAST 13739 decimal, net saving 10 words
+versus v229. `daimos-testkit` native SIMH MonitorFS device view-online
+test PASSed using `COMPILER=gcc` and the unchanged DSH limit. Dedicated
+STAT/READDIR classification combinations remain to be checked. No extra
+permanent data or provider indirection was introduced.
+
 ## 2026-10-24 KCORE A scan audit and B entry v229
 
 Proposal A's process table scans were reviewed after the seven-word-growth
