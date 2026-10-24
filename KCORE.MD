@@ -1,3 +1,13 @@
+### Process-slot 8K policy v258 (2026-10-24)
+
+The boot process-slot count now grows from eight at 32K by two
+for each complete extra 8K bank up to 64 slots at 256K.
+The min-slot contract used by packed/storage metadata is eight.
+Testkit checks 8K boundaries and incomplete banks; full GCC
+lowmem disk link keeps KCORE+MRES at 032544 octal (13668).
+This is process-slot sizing, not restoration of runtime MM
+extent capacity; that remains a separate boot-layout task.
+
 ## 2026-10-23 MEMFS XIP alignment v203
 
 Large dedicated MEMFS allocations now use `mm_alloc_aligned` with `02000`

@@ -1,3 +1,16 @@
+## 2026-10-24 process-slot policy v258
+
+Implemented the agreed 8K-granularity process-slot policy in
+`proc_slots_for_core`: eight slots through 32K, plus two for
+each completed additional 8K, capped at 64 from 256K upward.
+`PROC_MIN_SLOTS` is now eight so packed/storage validators
+accept valid small-system tables. Testkit
+`daimos-proc-slot-policy-v258.sh` passes all 8K boundaries,
+partial-bank rounding, and the upper cap. GCC lowmem disk
+permanent-size link PASS: KCORE+MRES 032544 octal (13668 words),
+PERMANENT_LAST 032623 octal (13715). No change to the
+separate fixed 32-entry MM extent registry yet.
+
 ## 2026-10-24 native first-boot MM observation v257
 
 Added daimos-testkit v257 first-boot PDP-6 scheduler fixture

@@ -16,23 +16,18 @@
 
 extern unsigned int proc_sched_age_phase;
 
-/** Map physical-core size to the process-slot policy tier. */
+/** Two slots per 8K above the 32K/8-slot baseline, capped at 64.
+ * Round down incomplete 8K banks; the 8K shift followed by a doubling
+ * avoids division while preserving every intermediate 8K boundary.
+ */
 unsigned int
 proc_slots_for_core(kword_t core_words)
 {
         if (core_words <= 0100000UL)
-                return 24U;
-        if (core_words <= 0200000UL)
-                return 40U;
-        if (core_words <= 0300000UL)
+                return PROC_MIN_SLOTS;
+        if (core_words >= 01000000UL)
                 return 64U;
-        if (core_words <= 0400000UL)
-                return 88U;
-        if (core_words <= 0600000UL)
-                return 128U;
-        if (core_words <= 01000000UL)
-                return 192U;
-        return PROC_MAX_SLOTS;
+        return (unsigned int)((core_words >> 13U) << 1U);
 }
 
 /** Allocate, zero, and publish process/swap tables after MM discovery. */
