@@ -1,3 +1,14 @@
+### Full 256K numbered process range v265 (2026-10-25)
+
+The fresh-image 256K GCC PDP-6 concurrency fixture PASSed
+both 48 and 63 guest process start/completion sets, including
+guest private-state checks. Hexadecimal slot markers avoid
+the earlier single-character marker collision. Slot zero is
+reserved, so 63 is the largest numbered process count in the
+64-entry table. This does not establish peak MM extent count
+or sustained swap/descriptor reuse. KCORE code and the
+required 32K-word measurement reference are unchanged.
+
 ### PDP-6 thirty-two-process 256K acceptance v264 (2026-10-24)
 
 Fresh 256K full-profile GCC PDP-6 SIMH boot completed 32

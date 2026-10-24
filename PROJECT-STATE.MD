@@ -1,3 +1,18 @@
+## 2026-10-25 full 256K numbered process range v265
+
+daimos-testkit `daimos-mm-256k-concurrency-v265.sh` creates
+fresh GCC full-profile 256K PDP-6 images with 48 and 63
+bootstrap guest processes. Both configurations PASSed:
+all numbered start and completion markers appeared, with
+private-state corruption reported as a separate error token.
+The 64-entry process table reserves slot 0, thus all 63
+usable numbered slots have now passed first-boot execution.
+The marker protocol uses unambiguous hex slot tokens to
+avoid collision with legitimate completions. This is not
+an MM high-water, repeated fork/exit/reuse, or swap-pressure
+acceptance result. No production code changed. The size
+reference remains 32K GCC lowmem disk-root.
+
 ## 2026-10-24 PDP-6 256K thirty-two-process concurrency v264
 
 Extended the fresh-image 256K GCC process-private state test
