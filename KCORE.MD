@@ -527,6 +527,12 @@ scheduler, pipe or slot-tier implementations are absent.
 
 ## P3: folding and compiler optimization
 
+Priority decision (2026-10-24): further one-JRST folding is a **last-effort**
+optimization after source and architectural shrinking opportunities are
+exhausted. Preserve existing p10fold behavior, but do not spend current
+engineering time expanding cross-domain JRST folding. Reconsider only after
+a fresh final linked census and the existing >20-net-word/cold-path gate.
+
 - [ ] Rerun p10fold read-only cross-domain census after final handwritten
   KCORE objects and fold plans stabilize; use explicit `-a` anchors, `-x`
   fold-plan exclusions and `-C` verified cold donors.
@@ -553,6 +559,54 @@ scheduler, pipe or slot-tier implementations are absent.
 - [ ] Native-test *production* scheduler entry, failed EXEC replacement and
   rollback, process exit, swap exclusion, storage-map state, and memory
   pressure on both simulators before claiming XIP enabled.
+
+## 2026-10-24 architectural shrink roadmap and proposal A start v221
+
+Measure total physical RAM (KCORE + MRES + dynamic allocations) first, and
+the permanent KCORE endpoint separately. Execution cost is nearly as
+important. None of these candidate savings is yet measured or additive.
+
+1. **A: process-management decomposition.** Keep interrupt, scheduler,
+   context-switch, runnable-queue, essential sleep/wakeup and exit-state
+   paths in KCORE. Audit child hierarchy, terminal/session management,
+   signal policy, wait/reap and resource teardown for duplicate cold logic.
+   Eliminate code before considering MRES relocation; do not put another
+   dispatch on the context-switch or tick path.
+2. **B: file/VFS/MonitorFS consolidation.** Share repeated validation,
+   exceptional dispatch and error handling where actual paths overlap;
+   preserve existing provider ABI, direct fast paths and compatibility.
+3. **C: EXEC/RUN consolidation.** Loader code is already shared. Fold only
+   further proven duplicated validation and startup paths, while retaining
+   distinct resident EXEC replacement and RUN publication transactions.
+4. **D: MM architecture.** Preserve MM-authoritative ownership/pinning;
+   profile real fragmentation and extent high-water before redesign. The
+   current 32 two-word descriptors total only 64 words.
+5. **E: packed inactive processes.** Long-term total-RAM candidate; assess
+   registry, codec, stack and swap costs; retain disk swap until verified.
+6. **F: scratch lifetime sharing.** Reuse nonoverlapping buffers only with
+   proved reentrancy/ownership and a positive measured total-RAM benefit.
+7. Revisit assembler/compiler cleanup and then additional JRST folding only
+   after architecture opportunities are exhausted (subject to >20-word gate).
+
+Proposal A initial source inventory (not an implementation):
+
+- `system/kernel/proc/proc_pdp6.s` is one mixed assembly unit, with
+  2164 text, 3 data and 3 BSS words in the available
+  `build/system/boot/pdp6/proc_pdp6.dobj` (pre-fold, not a freshly
+  rebuilt v221 object). Its size is NOT solely scheduler cost.
+- Scheduler selection is near source lines 120-315, runnable queue near
+  589-640, sleep/wakeup near 2345-2541 and PI/context-switch/timer work
+  near 2597-2944. These are likely hot or latency-sensitive paths.
+- Child adoption and finish/reap, u-area/session release and wait/status
+  occur near lines 329-1024. Events/signal control and TTY/canonical
+  input/output occupy substantial additional code in the same object.
+- The current map exports `proc_finish_slot`, `proc_wait_status`,
+  `proc_event_apply`, `proc_tty_canon_input`, `proc_sched_pi_resched` and
+  `proc_swap_victim`; no cold-path move can yet be declared safe.
+- Next: construct an entry/call-site graph including PI/indirect paths,
+  then identify *one* duplicated internal routine or policy path to simplify.
+  Compare full post-fold RAM and native scheduler/process/TTY tests; do not
+  implement dispatch-only movement which merely hides memory in MRES.
 
 ## Acceptance and documentation
 

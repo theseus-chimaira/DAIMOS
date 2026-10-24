@@ -1,3 +1,16 @@
+## 2026-10-24 KCORE architectural reduction A inventory v221
+
+KCORE.MD now records the ordered architectural shrinking candidates A-F.
+Additional JRST folding is explicitly last-effort work, after structural
+source reductions, still subject to the existing >20-net-word acceptance.
+Proposal A has begun with a source/map inventory of proc_pdp6.s: it mixes
+scheduler/PI/context-switch code with wait/reap, process-control, event,
+session, and TTY handlers. Available pre-fold object sections are 2164
+text + 3 data + 3 BSS words, not a fresh full-link measurement and not all
+scheduler. No production code or test assertion changed; no shrink gain is
+claimed. Next is an accurate external/indirect dependency graph and one
+measured internal consolidation, preserving native process/TTY semantics.
+
 ## 2026-10-24 KCORE source/TODO reconciliation v220
 
 Audited KCORE.MD's active backlog against the v219 DAIMOS tree. Verified
