@@ -5709,3 +5709,12 @@ Target PDP-6 file and file-walk fixtures PASS. A size-neutral
 VFS provider fallthrough branch experiment was reverted.
 Native SIMH MonitorFS device view-online PASSes (GCC profile).
 Strict 32K acceptance and JRST folding remain deferred.
+
+## 2026-10-24 PTR/PTP native verification v237
+
+The v233 bulk I/O pathway's previously incomplete paper-tape native
+acceptance is now verified: `test-daimos-pt-wordio` PASS on PDP-6 SIMH
+using GCC and SDL dummy video/audio drivers. Both full and partial
+PTR/PTP WORDTOKEN8 physical round trips passed. No production changes;
+last KCORE measurement remains 025075 octal (10813 decimal), with
+KCORE+MRES=13676. The strict 32K gate and JRST folding stay deferred.

@@ -887,3 +887,15 @@ an intrusive runnable queue, a word-only eight-word pipe, a p10fold build
 path, and an explicit strict GCC 32K size gate. These are baselines to test
 and optimize, not absent features to implement again. The v33-v45 packed
 registry/transaction components are staged prototypes, not production KCORE.
+
+### Proposal B native PTR/PTP acceptance v237 (2026-10-24)
+
+Re-ran `daimos-testkit test-daimos-pt-wordio` using the supported GCC
+userland configuration and `SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy`.
+Native SIMH **PASS**: PTR/PTP WORDTOKEN8 full and partial physical
+round trip. The earlier status-139 window-event failure is not reproduced
+with the headless SDL configuration. This strengthens native acceptance
+of the v233 bulk-device argument consolidation without changing any kernel
+source, persistent data, or the 036000 DSH image limit. KCORE remains
+025075 octal (10813 decimal), KCORE+MRES=13676, based on the prior
+full lowmem link. Continue proposal B on file/VFS structural savings.
