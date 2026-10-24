@@ -5698,3 +5698,13 @@ not recorded as a pass. Native card WORDTOKEN12/CR/CP round trip PASSed
 on an independent SIMH test with SDL_VIDEODRIVER=dummy. Further native
 PTR/PTP and other device I/O acceptance is open.
 Strict 32K acceptance and JRST folding remain deferred.
+
+## 2026-10-24 KCORE MonitorFS name copy v235
+
+Two VFS three-word static name-record copies use bounded BLT
+instead of six scalar instructions each. GCC lowmem disk-root
+full link KCORE 025075 octal (10813 decimal), KCORE+MRES 13676,
+PERMANENT_LAST 13723; saving six permanent words from v234.
+Target PDP-6 file and file-walk fixtures PASS. A size-neutral
+VFS provider fallthrough branch experiment was reverted.
+Strict 32K acceptance and JRST folding remain deferred.

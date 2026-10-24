@@ -562,6 +562,20 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal B MonitorFS namespace BLT copies v235 (2026-10-24)
+
+Two fixed three-word name-record copies in resident VFS, one in
+`vfs_readdir_table` and one in `monitorfs_name_record`, now use
+bounded PDP-10 BLT transfers instead of three MOVE/MOVEM pairs.
+The source/destination record layout and length are unchanged.
+Full GCC lowmem disk-root image: KCORE 025103 -> 025075 octal
+(10819 -> 10813 decimal); KCORE+MRES 13682 -> 13676 and
+PERMANENT_LAST 13729 -> 13723. No new static data or stack.
+Both target-file-pdp6 and target-file-walk-pdp6 PASS on PDP-6.
+The preceding one-branch provider fallthrough experiment was
+size-neutral after linking and reverted. Further native directory
+enumeration and getcwd acceptance remains useful.
+
 ### Proposal B bulk device argument consolidation v233 (2026-10-24)
 
 The resident file-runtime bulk READ/WRITE dispatch previously reloaded

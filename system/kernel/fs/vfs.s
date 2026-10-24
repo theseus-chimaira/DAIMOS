@@ -160,12 +160,10 @@ vfs_readdir_done:
 
 ; AC4 -> static four-word MonitorFS name record, AC3 -> dirent.
 vfs_readdir_table:
-        move    5,(4)
-        movem   5,(3)
-        move    5,1(4)
-        movem   5,1(3)
-        move    5,2(4)
-        movem   5,2(3)
+        ; Copy the three counted-name words in one bounded BLT.
+        move    5,3
+        hrl     5,4
+        blt     5,2(3)
         setzm   3(3)
         setzm   4(3)
         movei   5,1                    ; VFS_TYPE_DIR
@@ -352,12 +350,10 @@ monitorfs_name_dev:
 monitorfs_name_devices:
         movei   4,monitorfs_names+024
 monitorfs_name_record:
-        move    5,(4)
-        movem   5,(7)
-        move    5,1(4)
-        movem   5,1(7)
-        move    5,2(4)
-        movem   5,2(7)
+        ; The same three-word layout is used by getcwd components.
+        move    5,7
+        hrl     5,4
+        blt     5,2(7)
 monitorfs_parent_name_done:
         sub     17,kconst_2_2
         jrst    kret_zero
