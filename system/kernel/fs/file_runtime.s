@@ -1356,9 +1356,11 @@ file_chdir:
         move    3,-6(17)
         caie    3,1                    ; VFS_TYPE_DIR
         jrst    file_chdir_fail
-        move    1,-7(17)
+        ; Reuse the STAT record already validated above.  Calling
+        ; file_check_access here would stat the same vnode twice.
+        movei   1,-6(17)
         movei   2,1
-        pushj   17,file_check_access
+        pushj   17,file_access_stat
         jumpn   1,file_chdir_fail
         move    1,-7(17)
         move    2,file_table

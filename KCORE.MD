@@ -562,6 +562,19 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal B CHDIR stat reuse v232 (2026-10-24)
+
+`file_chdir` already obtains a seven-word `vfs_stat` frame to check that
+the target is a directory. Its subsequent `file_check_access` call repeated
+`vfs_stat` on the same vnode. Use `file_access_stat` directly on that
+validated frame for the same search-permission mask (1). This removes a
+redundant provider STAT invocation from successful CHDIR, with no ABI,
+permission-policy or persistent-state change. GCC lowmem disk-root full
+link PASS: KCORE `025115` (10829 decimal), KCORE+MRES=13692; size-neutral.
+`daimos-testkit target-file-walk-pdp6` PASSes on PDP-6 including CHDIR.
+This is a runtime-path simplification rather than a KCORE shrink. Further
+proposal B work must find actual text/data reduction.
+
 ### Proposal B MonitorFS namespace/classifier audit v231 (2026-10-24)
 
 Reviewed MonitorFS device lookup, directory enumeration and STAT. They

@@ -5675,3 +5675,12 @@ SELF-COMPILATION IS NOT YET CONFIRMED COMPLETE.
   WORDS, THEN REASSESS THE 32K BOOT GAP WITH ACTUAL LIVE MEASUREMENTS.
   DO NOT SIMPLY DISABLE FEATURES OR RAISE THE 32K MINIMUM; THE 8397-WORD
   WORKLOAD DIFFERENCE CANNOT BE ASSUMED RECOVERABLE FROM KCORE ALONE.
+
+## 2026-10-24 file CHDIR STAT reuse v232
+
+CHDIR now supplies its existing validated VFS STAT frame to the access
+policy, rather than performing another provider STAT. Search permissions
+and file ABI remain unchanged. GCC lowmem link PASS: KCORE 025115 octal
+(10829 decimal), KCORE+MRES=13692, no resident size change. The
+PDP-6 target file-walk fixture PASSes, including CHDIR. Continue
+proposal B looking for resident text and data reduction.
