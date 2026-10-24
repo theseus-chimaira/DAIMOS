@@ -1,3 +1,13 @@
+### KCORE measurement configuration v259 (2026-10-24)
+
+For every KCORE size comparison, use a **32K-word** GCC
+low-memory disk-root build, explicitly setting
+`BOOT_PROFILE=lowmem ROOT=disk COMPILER=gcc
+BOOT_CORE_WORDS=0100000 SIMH_CPU_KWORDS=32`.
+The physical 32K boot may remain unsupported; linking and
+measuring this profile is nonetheless the mandatory optimization
+reference. Report KCORE, KCORE+MRES and PERMANENT_LAST separately.
+
 ### Process-slot 8K policy v258 (2026-10-24)
 
 The boot process-slot count now grows from eight at 32K by two

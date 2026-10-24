@@ -1,3 +1,15 @@
+## 2026-10-24 measurement convention v259
+
+All reported KCORE resident-size measurements must use the
+32K-word GCC low-memory disk-root configuration explicitly:
+`BOOT_PROFILE=lowmem ROOT=disk COMPILER=gcc BOOT_CORE_WORDS=0100000
+SIMH_CPU_KWORDS=32`. This applies even while a complete 32K
+runtime boot remains unsupported. Distinguish a successful
+32K-profile link/size measurement from a passing 32K boot.
+The v258 lowmem size report already used these 32K defaults:
+KCORE 025065 octal (10805 words), KCORE+MRES 032544 octal
+(13668 words), PERMANENT_LAST 032623 octal (13715 words).
+
 ## 2026-10-24 process-slot policy v258
 
 Implemented the agreed 8K-granularity process-slot policy in
