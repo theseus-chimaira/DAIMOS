@@ -1,3 +1,14 @@
+## 2026-10-24 MonitorFS lookup and classifier follow-up v231
+
+Audited MonitorFS lookup, readdir and STAT after the successful v230
+device-type sharing. An alternative character-default device classifier
+saved only one post-link word (`025114` versus `025115`) but added common
+character-device path work; it was rejected and reverted. A restored
+GCC lowmem disk-root permanent-size build confirms KCORE=025115 octal
+(10829 decimal), KCORE+MRES=13692. No production changes or new runtime
+acceptance are claimed for v231; previous v230 device-view native pass
+remains applicable. Continue proposal B at larger file/VFS boundaries.
+
 ## 2026-10-24 KCORE MonitorFS classification sharing v230
 
 `mfsdev_stat` now reuses `mfsdev_io_type` already called by READDIR to

@@ -562,6 +562,22 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal B MonitorFS namespace/classifier audit v231 (2026-10-24)
+
+Reviewed MonitorFS device lookup, directory enumeration and STAT. They
+already share `mfsdev_name_length`, `mfsdev_validate_id`, leaf table
+lookup/readdir and (since v230) `mfsdev_io_type`; lookup and enumeration
+retain distinct return layouts and device-name matching requirements.
+Tested making character devices the default in `mfsdev_io_type` and
+checking mount/block exceptions first. The lowmem full link saved only
+**one word** (`025114`, 10828 decimal), while adding instructions to the
+ordinary character-device path. Rejected the tradeoff and reverted it;
+restored full link PASSes at `025115` (10829 decimal), KCORE+MRES=13692.
+No production source change was retained. Next proposal B work should
+concentrate on larger file/VFS semantics or duplicated provider operations,
+not device-classification instruction rearrangements. Dedicated native
+STAT/READDIR type-matrix coverage is still desirable.
+
 ### Proposal B MonitorFS shared device classification v230 (2026-10-24)
 
 `mfsdev_stat` independently duplicated the device-type classification
