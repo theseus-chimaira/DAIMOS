@@ -1,3 +1,14 @@
+### PDP-6 thirty-two-process 256K acceptance v264 (2026-10-24)
+
+Fresh 256K full-profile GCC PDP-6 SIMH boot completed 32
+process start and completion markers with private-state checks.
+An initial false positive was an acceptance-script collision
+between slot 24's valid 'X' completion and an error marker;
+using '@' for errors resolved the fixture, and the clean
+rerun PASSed. The test does not measure MM high-water,
+simultaneous residency or swapping. Production KCORE was
+unchanged; the 32K GCC lowmem disk-root reference remains.
+
 ### PDP-6 sixteen-process 256K acceptance v263 (2026-10-24)
 
 First-boot 256K GCC full-profile native SIMH PASSed 16 process

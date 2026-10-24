@@ -1,3 +1,17 @@
+## 2026-10-24 PDP-6 256K thirty-two-process concurrency v264
+
+Extended the fresh-image 256K GCC process-private state test
+to 32 guest processes. Initial host acceptance accidentally
+treated the legitimate slot-24 completion marker 'X' as a
+failure marker; the fixture was corrected to reserve '@'
+for private-state failure. Rebuilt and reran against new
+filesystem media: PASS, all 32 start and completion markers
+observed without process-private state corruption.
+This does not measure maximum concurrent residency, peak
+MM extents, or swap pressure. Capacity policy remains 64
+table entries with slot zero reserved (63 numbered slots).
+No DAIMOS production source modifications.
+
 ## 2026-10-24 PDP-6 256K sixteen-process concurrency v263
 
 New daimos-testkit 256K full-profile GCC first-boot fixture
