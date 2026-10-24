@@ -564,6 +564,25 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ### Proposal A lifecycle/RT audit v224 (2026-10-24)
 
+### Proposal A cleanup ownership and rollback v225 (2026-10-24)
+
+Inspected three distinct cleanup entries: `proc_finish_slot` (normal/fatal
+termination), `proc_slot_discard` (failed creation) and
+`proc_event_fatal_other` (closes the target's file table before finishing).
+Although all involve VM/u-area/runq release, their ordering and ownership
+requirements differ. No shared lifecycle state machine or MRES dispatch
+has been introduced; a new wrapper is not justified without actual net
+post-fold saving and proof of failure behavior.
+
+Existing daimos-testkit host `proc-abort-transition-v40` PASSes against
+current `proc.c`, including held TRANSITION during VM destroy, failed
+destroy rollback, successful retry and slot reuse. The first invocation
+could not find `pdp10-sixbit.h`; a rerun with `CPATH` pointing to the
+existing DAIMOS `tools/host` headers PASSed. No test source changes.
+This is focused C host coverage, not native PDP-6 assembler acceptance.
+The DSH image gate continues to block the full lifecycle simulator fixture.
+
+
 The RT owner release at the beginning of `proc_finish_slot` is intentional
 in the existing C fallback (`proc.c`) as well as PDP-6 assembler. The same
 early release is used by `proc_slot_discard` before VM destruction. This

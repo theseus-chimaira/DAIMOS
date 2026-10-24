@@ -1,3 +1,15 @@
+## 2026-10-24 KCORE proposal A cleanup semantics v225
+
+Compared normal/fatal `proc_finish_slot`, failed-creation
+`proc_slot_discard` and remote fatal-event file closure. Their shared
+VM/u-area/runq calls have different transaction requirements, so no
+unproven shared cleanup wrapper was introduced. Existing daimos-testkit
+host `proc-abort-transition-v40` PASSed with `CPATH` set to DAIMOS's
+`tools/host` header directory, proving transition-flag hold, destroy
+failure rollback, retry and slot reuse in the C path. PDP-6 native
+assembler cleanup acceptance remains outstanding; there is no new size
+measurement or production code change in this checkpoint.
+
 ## 2026-10-24 KCORE lifecycle/RT policy audit v224
 
 Compared `proc_finish_slot` in PDP-6 assembler and the C fallback, plus
