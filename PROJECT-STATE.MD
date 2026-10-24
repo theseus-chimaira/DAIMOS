@@ -1,3 +1,15 @@
+## 2026-10-24 GCC-profile MM occupancy snapshots v252
+
+The supported COMPILER=gcc lowmem profile cleared the
+unchanged DSH 036000-octal gate and booted the isolated
+five-process fixture. SIMH diagnostic examinations of
+mm_extent_count (address 024537 octal) returned 020 octal
+(16 decimal) at three scheduler checkpoints. The stepped
+fixture subsequently failed its completion assertion, so
+these are only point observations, not a validated high-water
+measurement or passing scheduler test. Temporary fixture
+removed, no production changes. Keep the MM registry at 32.
+
 ## 2026-10-24 runtime extent occupancy attempt v251
 
 Non-invasive mm_extent_count observation using a versioned

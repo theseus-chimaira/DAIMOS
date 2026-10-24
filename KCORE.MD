@@ -562,6 +562,23 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal D GCC-profile MM occupancy checkpoints v252 (2026-10-24)
+
+The earlier `036013 > 036000` DSH gate failure was caused by
+building the five-process diagnostic with the default KCC
+configuration. The previously documented lowmem `COMPILER=gcc`
+configuration builds past the unchanged gate and reaches SIMH.
+An isolated scheduler fixture inspection of mapped symbol
+`mm_extent_count` at octal address 024537 yielded 020 octal
+(16 decimal) at each of three scripted checkpoints. However the
+diagnostic-stepped scheduler run then reported that timer
+preemption did not complete all boot users; this is **not a
+passing scheduler regression or an extent high-water measurement**.
+No persistent instrumentation, production code or MM allocation
+changes were made; the experimental fixture was removed.
+Retain the 32-descriptor limit until representative full
+workloads are measured with nonintrusive peak tracking.
+
 ### Proposal D real workload MM occupancy attempt v251 (2026-10-24)
 
 Attempted a non-invasive PDP-6 runtime snapshot of `mm_extent_count`
