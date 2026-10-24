@@ -562,6 +562,21 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal F static allocator and VM lifetime inventory v246 (2026-10-24)
+
+Following the committed v245 filesystem scratch audit, inspected
+resident BSS declarations in MM, MEMFS, IPC, PROC and VM. MM's
+`mm_extents` is 0100 octal words (64 decimal) for its live
+extent descriptors, not a disposable scratch buffer. MEMFS
+`memfs_data_chunks` and `memfs_xip_refs` track allocator
+and XIP ownership; the separate VM APR word and IPC/PROC
+singletons hold live state. None can be aliased safely to the
+128-word filesystem transfer workspace without first proving
+non-overlapping use and ownership. No production change is
+proposed; retain the v245 GCC lowmem KCORE baseline 025065
+octal (10805 decimal). Measure peak extent occupancy before
+any MM descriptor count reduction.
+
 ### Proposal F filesystem workspace ownership check v245 (2026-10-24)
 
 Inspected resident filesystem static allocations and provider

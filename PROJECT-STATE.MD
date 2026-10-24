@@ -5768,6 +5768,16 @@ overlap was identified. No source changes; baseline KCORE remains
 025065 octal (10805 decimal). Proposal F remains open subject to
 explicit concurrency/lifetime proof. Proposal B remains open.
 
+## 2026-10-24 static allocator and VM storage audit v246
+
+Inspected BSS allocations across MM, MEMFS, IPC, PROC and VM.
+The MM extent registry is 0100 octal (64 decimal) words of live
+descriptors; MEMFS chunk/XIP registries and VM/IPC/PROC singleton
+words preserve distinct live state. No safe scratch overlay was
+demonstrated. No production change; preserve KCORE 025065 octal
+(10805 decimal). Measure MM extent high-water before revisiting
+the descriptor count.
+
 ## 2026-10-24 KCORE bulk device I/O sharing v233
 
 Both resident bulk I/O paths now prepare mapped-buffer arguments once
