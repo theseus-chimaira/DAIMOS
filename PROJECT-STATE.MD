@@ -1,3 +1,16 @@
+## 2026-10-24 KCORE A scan audit and B entry v229
+
+Proposal A's process table scans were reviewed after the seven-word-growth
+shared-cleanup experiment was rejected. Live-user, session/pgrp, trailing
+FREE slot, and intrusive runnable-queue scans have different contracts;
+no generic iterator or new resident state is justified. No production
+change and no additional size saving in v229. Next source-level shrink
+focus is the file/VFS/MonitorFS boundary (proposal B). Available compiled
+object section measurements: file_runtime 1175 text; monitorfs_runtime
+1565 text + 39 data; vfs 778 text + 27 data + 128 BSS (pre-fold; not
+recoverable savings estimates). Native v227 process lifecycle and rollback
+acceptance remains valid for the unchanged production source.
+
 ## 2026-10-24 process teardown factoring rejected v228
 
 An experimental shared `proc_cleanup_after_vm` service for EXIT and RUN

@@ -562,6 +562,33 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal A process-table scan census and next boundary v229 (2026-10-24)
+
+Current `proc_pdp6.s` has distinct hand-written scans with different
+contracts: `proc_has_live_user` checks only an active state, whereas
+`proc_tty_session_has` excludes a slot and conditionally checks pgrp,
+u-area presence and session. `proc_trim_high` traverses backward only over
+FREE trailing descriptors; `proc_runq_add/remove` operate the intrusive
+runnable queue. Sharing these through a general scan helper would add
+calling convention, predicates and/or persistent state to short fast paths;
+there is no measured benefit. **Do not implement a generic iterator.**
+The existing boot-selected process capacity and three-word descriptors
+remain the baseline; no new process metadata is proposed.
+
+After the failed common teardown prototype (v228), proposal A has no
+currently justified large source-level rewrite. Treat A's first pass as
+measured but not exhausted forever; revisit only with a concrete duplicate
+instruction block or demonstrable lifetime/state simplification. Turn to
+proposal B (file/VFS/MonitorFS) next rather than spend time on one-word
+instruction substitutions. No source change or additional saving at v229.
+
+Initial B measurement from the current available compiled lowmem objects
+(section totals **before** final link/folding; not additive potential):
+`file_runtime` text=1175, `monitorfs_runtime` text=1565 data=39,
+`vfs` text=778 data=27 BSS=128 words. Prioritize the MonitorFS dispatch
+surface and file permissions/lookup interactions, but preserve provider
+semantics and measure the post-fold whole-image result before editing.
+
 ### Proposal A teardown sharing investigation v225 (2026-10-24)
 
 ### Proposal A discard assembler prototype v226 (2026-10-24)
