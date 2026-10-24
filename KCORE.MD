@@ -1,3 +1,15 @@
+### Native descriptor saturation and reclaim v268 (2026-10-25)
+
+The PDP-6 production mm_extent_insert/mm_delete test
+fills the registry to 132 entries, adds four entries to
+reach the 136-entry ceiling, verifies rejection of the
+137th allocation without count mutation, and tests a middle
+deletion followed by successful reinsertion at full capacity.
+Testkit v268 PASS. This verifies the registry boundary and
+slot reuse, not physical-memory pressure or process swap.
+No KCORE source change; the 32K GCC lowmem disk-root size
+baseline remains in force.
+
 ### 256K 63-process MM insertion high-water v267 (2026-10-25)
 
 Fresh-image 256K GCC PDP-6 SIMH successfully completed all 63

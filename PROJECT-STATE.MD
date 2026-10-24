@@ -1,3 +1,18 @@
+## 2026-10-25 Native MM descriptor saturation v268
+
+The daimos-testkit daimos-mm-pressure-v268.sh executes
+production PDP-6 MM assembler insertion/deletion at the
+256K-configured 136-descriptor ceiling. Starting with 132
+entries (the measured v267 full-workload peak), four further
+insertions reach 136; the 137th rejects with descriptor
+exhaustion without mutating the count; a middle deletion
+reduces occupancy to 135 and reinsertion restores 136 with
+the expected shifted-table content. Native fixture PASS.
+This tests allocator mechanics on a synthetic registry, not
+live 63-process swap/reclaim transactions. No production
+code or 32K KCORE size change. Live high-concurrency swap
+pressure is the next acceptance gate.
+
 ## 2026-10-25 256K extent high-water acceptance v267
 
 Fresh 63-process 256K GCC PDP-6 SIMH test with execution
