@@ -562,6 +562,18 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal D native MM sorted insertion verification v250 (2026-10-24)
+
+Added a separately versioned `daimos-mm-extents-v250` test to
+daimos-testkit, extending v249's full 32-entry boundary and -3
+rejection coverage with deletion followed by insertion into the
+middle of the live descriptor array. The fixture checks both the
+inserted two-word slot and the displaced old slot. It PASSes
+using production PDP-6 `mm_extent_insert`/`mm_delete` leaves,
+testkit commit `580e978`. This is deterministic correctness
+coverage, not workload high-water telemetry; the 32-entry MM
+limit stays unchanged and KCORE remains 025065 octal.
+
 ### Proposal D native extent registry boundary fixture v249 (2026-10-24)
 
 Added a native PDP-6 fixture to daimos-testkit:

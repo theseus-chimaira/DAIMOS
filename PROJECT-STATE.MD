@@ -1,3 +1,11 @@
+## 2026-10-24 MM extent shifting validation v250
+
+Native daimos-testkit fixture v250 (testkit commit 580e978)
+PASSes full 32-entry MM registry insertion/rejection and
+middle-slot deletion/reinsertion with displaced descriptor
+verification. No real workload extent high-water measurement
+or capacity reduction is claimed; KCORE remains 025065 octal.
+
 ## 2026-10-24 native MM extent boundary test v249
 
 daimos-testkit commit 11dc124 adds a native PDP-6 test based on
