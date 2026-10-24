@@ -1,3 +1,11 @@
+## 2026-10-24 native MM extent boundary test v249
+
+daimos-testkit commit 11dc124 adds a native PDP-6 test based on
+production MM insertion/deletion. PASS: 32 slots filled, 33rd
+returns MM_ERR_DESCRIPTORS (-3), deletion enables refill. It is
+not workload high-water evidence. No production code change,
+and KCORE baseline remains 025065 octal (10805 decimal).
+
 ## 2026-10-24 MonitorFS lookup and classifier follow-up v231
 
 Audited MonitorFS lookup, readdir and STAT after the successful v230

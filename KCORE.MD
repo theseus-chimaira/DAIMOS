@@ -562,6 +562,19 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal D native extent registry boundary fixture v249 (2026-10-24)
+
+Added a native PDP-6 fixture to daimos-testkit:
+`tests/validation/daimos-mm-extents-v249.s` and
+`daimos-mm-extents-v249.sh`. It extracts the production
+`mm_delete` and `mm_extent_insert` leaves, fills all 040 octal
+(32) slots, confirms that insertion 33 returns -3, deletes one
+slot and successfully refills. It PASSes with p10run/PDP-6;
+testkit commit `11dc124`. This tests the boundary, not real
+workload high-water, fragmentation or VM compaction. No DAIMOS
+production allocation or code change is justified. Preserve the
+025065-octal (10805-word) KCORE baseline.
+
 ### Proposal D host MM fixture dependency investigation v248 (2026-10-24)
 
 The `mm-core` failure described in v247 is not only an obsolete
