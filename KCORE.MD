@@ -562,6 +562,22 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal B provider boundary and leaf-loop audit v239 (2026-10-24)
+
+The v238 follow-up reviewed `vfs_lookup_provider`,
+`vfs_parent_return`, `vfs_create_op`, `vfs_symlink` and MonitorFS
+`mfsleaf_lookup`/`mfsleaf_readdir`. CREATE/MKDIR already share the
+request formatter and SYMLINK already shares vnode publication.
+Lookup must additionally resolve mounted targets, unlike PARENT.
+MonitorFS leaf lookup must retain the requested count across the
+entire loop; AC5 is reused for packed-name comparison, so naively
+hoisting the length load would be incorrect. That source experiment
+was immediately reverted without a misleading size claim.
+No ABI-safe larger common routine was identified, and no production
+code or tests were changed. Preserve the 025075-octal KCORE baseline;
+further investigation should target a concrete duplicated data
+lifetime or full provider request frame, not an extra dispatcher.
+
 ### Proposal B VFS mutation epilogue experiments v238 (2026-10-24)
 
 From the clean v237 checkout (KCORE 025075 octal, 10813 decimal),

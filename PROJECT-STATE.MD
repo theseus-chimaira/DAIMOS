@@ -5696,6 +5696,16 @@ production savings or runtime acceptance; continue proposal B at
 larger VFS/provider boundaries. JRST folding and strict 32K work
 remain deferred.
 
+## 2026-10-24 VFS/provider architectural audit v239
+
+Reviewed VFS lookup/parent resolution, CREATE/MKDIR/SYMLINK
+publication, and MonitorFS leaf lookup/READDIR. Existing common
+helpers already cover the main overlapping operations. A tentative
+leaf-length loop-invariant move was reverted immediately because AC5
+is clobbered by name comparison on subsequent iterations. No
+production change, unverified size claim or new runtime acceptance.
+KCORE remains 025075 octal (10813 decimal). Proposal B remains open.
+
 ## 2026-10-24 KCORE bulk device I/O sharing v233
 
 Both resident bulk I/O paths now prepare mapped-buffer arguments once
