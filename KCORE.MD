@@ -562,6 +562,23 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal A first source experiment v222 (2026-10-24)
+
+`proc_adopt_children_pdp6` now uses `CAIN` to branch directly for the
+INIT-parent case, eliminating the former `CAIE/JRST/JRST` arrangement.
+The production lowmem disk-root `make permanent-size` completed and reports
+KCORE `025133` (10843 decimal words), one word below the previously
+recorded `025134` baseline; KCORE+MRES is 13706 words in this build.
+The lowmem map is profile-dependent, so do not compare it to the stale
+full-profile map in another build directory.
+
+Native process-hierarchy regression was attempted via daimos-testkit, but
+its fixture build stopped at the *unchanged* strict DSH image size limit:
+`036013` > `036000` octal. It did not execute the runtime assertion stage.
+Do not call the behavior native-accepted; keep the production DSH size gate
+unchanged. The next A step remains a measured call-site/lifetime audit of
+process cleanup, signal/session and TTY responsibilities.
+
 Measure total physical RAM (KCORE + MRES + dynamic allocations) first, and
 the permanent KCORE endpoint separately. Execution cost is nearly as
 important. None of these candidate savings is yet measured or additive.

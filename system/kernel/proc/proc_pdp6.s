@@ -333,8 +333,9 @@ proc_adopt_children_pdp6:
         push    17,13
         move    10,1                   ; old parent
         setz    11,                    ; new parent
-        caie    10,1
-        jrst    proc_adopt_check_init
+        ; Slot 1 cannot adopt its own children.  Keep the INIT lookup
+        ; on the non-INIT path without a second unconditional branch.
+        cain    10,1
         jrst    proc_adopt_scan_start
 proc_adopt_check_init:
         move    1,proc_table

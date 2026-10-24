@@ -1,3 +1,14 @@
+## 2026-10-24 KCORE process-adoption branch reduction v222
+
+In `proc_adopt_children_pdp6` the INIT special case now uses one `CAIN`
+branch, removing one unconditional branch word. A lowmem disk-root
+`make permanent-size` build completed with KCORE `025133` octal (10843
+decimal), a one-word reduction relative to the recorded `025134` profile;
+KCORE+MRES = 13706 decimal words for this build. A targeted native
+daimos-testkit process-hierarchy run was attempted but its fixture failed
+before execution: DSH image `036013` exceeds production gate `036000`.
+No hierarchy runtime pass is claimed and the gate was not changed.
+
 ## 2026-10-24 KCORE architectural reduction A inventory v221
 
 KCORE.MD now records the ordered architectural shrinking candidates A-F.
