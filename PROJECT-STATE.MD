@@ -1,3 +1,16 @@
+## 2026-10-24 native GCC lifecycle acceptance v227
+
+The recurring native process-fixture blocker was the default KCC-produced
+DSH exceeding production `036000`, not a process-runtime failure. Using
+the already supported `COMPILER=gcc` policy through `MAKEFLAGS=COMPILER=gcc`
+without relaxing the gate, daimos-testkit native SIMH passes both:
+`test-daimos-run-late-rollback` (16 post-VM descriptor-map failures, stable
+process accounting and recovery) and `test-daimos-process-lifecycle`
+(RUN, GETPID, WAIT/nohang, zombie reap, orphan adoption, explicit fd maps).
+These exercise the new v226 discard implementation. No production source
+changed at v227, no new KCORE saving is claimed; RT-owner fault injection
+and full VM teardown fault coverage remain open.
+
 ## 2026-10-24 KCORE discard assembler prototype v226
 
 Replaced KCC-generated `proc_slot_discard` in the PDP-6 KCORE build with

@@ -566,6 +566,27 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ### Proposal A discard assembler prototype v226 (2026-10-24)
 
+### Proposal A supported GCC native rollback verification v227 (2026-10-24)
+
+The production DSH size gate of `036000` octal must remain unchanged.
+Investigation found the default KCC userland fixture generated DSH `036013`,
+but DAIMOS already documents `COMPILER=gcc` as the supported smaller-DSH
+policy for low-memory operation (`design/dsh-compiler-size-comparison-20261012-v20.md`).
+Without bypassing the gate, reran daimos-testkit's
+`test-daimos-run-late-rollback` with inherited `MAKEFLAGS=COMPILER=gcc`.
+Native target **PASS**: 16 post-VM RUN descriptor-map failures under three
+live children, stable process accounting and successful recovery. This
+validates an important failure path of the v226 assembler discard replacement,
+not every termination, signal, hierarchy or RT-ownership case. The separate
+full process-lifecycle regression is tracked independently.
+
+The independent `test-daimos-process-lifecycle` was also rerun with the
+supported GCC configuration and **PASSed** native SIMH execution: RUN,
+GETPID, WAIT/nohang, zombie reap, orphan adoption and explicit descriptor
+maps. Neither test required a DSH image size override. This lifts the
+previous general lifecycle acceptance blocker for these covered paths,
+but does not prove RT-owner failure injection or all VM teardown faults.
+
 Replaced the production KCC-generated `proc_slot_discard` with a dedicated
 PDP-6 assembler implementation, guarded by `PROC_SLOT_DISCARD_PDP6_ASM` in
 the C fallback build. It preserves separate discard semantics: FREE early
