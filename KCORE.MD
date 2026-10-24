@@ -562,6 +562,20 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal B contiguous FILE descriptor duplication v241 (2026-10-24)
+
+`file_dup` copies the packed descriptor node and offset from two
+adjacent words. One bounded two-word BLT replaces four MOVE/MOVEM
+instructions with a three-instruction pointer setup and BLT, without
+changing destination extension replacement, lock-family semantics,
+or pipe reference handling. No resident data or stack increase.
+GCC lowmem disk-root full linked KCORE 025067 -> 025066 octal
+(10807 -> 10806 decimal), KCORE+MRES 13670 -> 13669,
+PERMANENT_LAST 13717 -> 13716. The existing daimos-testkit
+`daimos-file-mountext-v19` PDP-6 test PASSes its 26-mount vnode,
+lock, DUP/DUP2, close and unmount assertions; target-file-pdp6 and
+target-file-walk-pdp6 PASS. No JRST folding or 32K acceptance work.
+
 ### Proposal B file mount-extension bitmap update v240 (2026-10-24)
 
 `file_mount_ext_store` and `file_mount_ext_copy` previously duplicated

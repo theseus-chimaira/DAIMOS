@@ -576,10 +576,10 @@ file_dup_scan:
         sojg    4,file_dup_scan
         jrst    kret_neg1
 file_dup_store:
-        move    4,(1)
-        movem   4,(2)
-        move    4,1(1)
-        movem   4,1(2)
+        ; Descriptor pair is contiguous: copy node/meta and offset together.
+        move    4,2
+        hrl     4,1
+        blt     4,1(2)
         pushj   17,file_mount_ext_copy
         move    1,2
         pushj   17,file_node_from_fd

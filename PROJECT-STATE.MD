@@ -5717,6 +5717,16 @@ PDP-6 file and file-walk tests PASS. Extended native descriptor
 mount-extension lifecycle acceptance remains open. JRST folding
 and strict 32K acceptance remain deferred.
 
+## 2026-10-24 compact FILE duplicate v241
+
+Two contiguous FILE descriptor words now copy by one bounded BLT
+instead of two MOVE/MOVEM pairs in file_dup. GCC lowmem disk-root
+full linked size KCORE=025066 octal (10806 decimal), KCORE+MRES=13669,
+PERMANENT_LAST=13716, one resident word below v240. Native
+daimos-file-mountext-v19 tests PASS 26-mount vnode, lock, DUP/DUP2,
+close and unmount; PDP-6 file/file-walk fixtures PASS. Strict 32K
+and JRST folding remain deferred.
+
 ## 2026-10-24 KCORE bulk device I/O sharing v233
 
 Both resident bulk I/O paths now prepare mapped-buffer arguments once
