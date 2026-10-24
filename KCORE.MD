@@ -562,6 +562,19 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal B descriptor and GETCWD clear follow-up v243 (2026-10-24)
+
+After v242, the descriptor duplication paths both use bounded BLT
+and the mount-extension replacement operation is shared. Examined
+the variable-length output zeroing in `file_getpath_common` and
+its `file_getcwd_clear` loop. A prospective BLT-based fill needs
+additional pointer, destination and end-address preparation and
+would add overlap/lifetime complexity. The exploratory source edit
+was reverted immediately without accepting or benchmarking it.
+No production code change and no new RAM reduction was claimed.
+Do not force an additional dispatcher or BLT on this short loop
+without a positive complete-link result and path regression.
+
 ### Proposal B DUP2 descriptor pair copy v242 (2026-10-24)
 
 `file_dup2` now uses the same bounded two-word BLT as `file_dup`
