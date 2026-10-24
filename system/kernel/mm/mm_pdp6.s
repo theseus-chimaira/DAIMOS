@@ -32,7 +32,7 @@
         .globl  mach_pi_disable
         .globl  mach_pi_restore
 
-        .equ    MM_MAX_EXTENTS,040
+        .equ    MM_BOOT_DEFAULT_EXTENTS,040
         .equ    MM_MAX_ARENAS,3
         .equ    MM_TYPE_PROCESS,1
         .equ    MM_ALLOC_LOW,0
@@ -654,4 +654,4 @@ mm_arena_count:
         .block  1
         .data
 mm_extent_capacity:
-        .word   MM_MAX_EXTENTS
+        .word   MM_BOOT_DEFAULT_EXTENTS

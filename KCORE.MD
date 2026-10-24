@@ -1,3 +1,29 @@
+### KINIT RAM-sized MM extent capacity v261 (2026-10-24)
+
+Extended the v260 external backing to a boot-selected capacity:
+`mm_extent_capacity = 2 * proc_slots_for_core(core_words) + 8`.
+This yields 24 descriptors at 32K, 40 at 64K, 72 at 128K,
+and 136 at 256K; capacity grows by four for each complete
+8K bank. The fixed address of `mm_extents` and the direct
+PDP-6 MM/VM memory operands remain unchanged. KINIT reserves
+exactly two words per selected descriptor before publishing
+its first free arena, and MRES starts afterward.
+Native PDP-6 production-assembler tests at 24 and 136 extents
+PASS, along with v249/v250 32-entry boundaries, the 32K
+layout test and the **fresh-image five-process scheduler**
+(preemption, context, nice ABI and disk sleep/wakeup). GCC
+32K-profile KCORE is 024766 octal (10742 linked words), but
+its 24-entry external registry occupies another 48 words:
+actual fixed KCORE-plus-registry is 10790 words, 15 fewer
+than the old 10805-word fixed-KCORE baseline. Likewise,
+the linked KCORE+MRES report 13605 excludes these 48 words;
+combined physical footprint is 13653 versus old 13668.
+This is not a guarantee of 64 fully resident processes:
+physical memory, pinned allocations and pressure still limit
+simultaneous residency. High-load 256K boot acceptance is
+still outstanding; only the maximum-capacity native allocator
+boundary has been exercised at 136 extents.
+
 ### KINIT external MM backing restoration v260 (2026-10-24)
 
 Restored the historical direct-address table boundary design as

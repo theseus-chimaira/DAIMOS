@@ -24,7 +24,7 @@
  */
 
 struct mm_extent mm_extents[MM_MAX_EXTENTS];
-unsigned int mm_extent_capacity = MM_MAX_EXTENTS;
+unsigned int mm_extent_capacity = MM_BOOT_DEFAULT_EXTENTS;
 kword_t mm_arenas[MM_MAX_ARENAS];
 kword_t mm_core_words;
 int mm_extent_count;

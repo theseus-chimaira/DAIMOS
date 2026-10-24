@@ -14,6 +14,7 @@
  */
 #include "mm.h"
 #include "mm_internal.h"
+#include "proc.h"
 
 /** Pack a managed boot arena as size,,base. */
 static kword_t
@@ -36,7 +37,10 @@ void
 mm_boot_init(kword_t core_words)
 {
         mm_core_words = core_words;
-        mm_extent_capacity = MM_MAX_EXTENTS;
+        /* One VM and one u-area per process, plus eight shared/temporary
+         * descriptors. The process-slot policy advances in complete 8K
+         * banks, so the table grows only at real memory-size boundaries. */
+        mm_extent_capacity = 2U * proc_slots_for_core(core_words) + 8U;
         mm_extent_count = 0;
         mm_arena_count = 0;
 }

@@ -1,3 +1,18 @@
+## 2026-10-24 RAM-sized MM extent registry v261
+
+Restored dynamic KINIT selection of MM descriptors based on
+two per boot-selected process slot plus eight shared/transient
+entries: 32K=24 extents, 64K=40, 128K=72, 256K=136.
+KINIT reserves exactly `2 * mm_extent_capacity` words just
+above the fixed KCORE symbol; the allocator/VM continue to
+use the direct-address table. Native PDP-6 24/136 descriptor
+boundary tests and the fresh five-process scheduler boot PASS.
+The mandatory GCC 32K-profile link reports KCORE=10742 and
+KCORE+MRES=13605 words; add the 48-word external table when
+comparing real physical usage: 10790 and 13653 respectively,
+both 15 words below the old fixed-table baseline. 256K full
+workload/peak acceptance remains to be measured.
+
 ## 2026-10-24 KINIT external MM backing v260
 
 First stage of restoring boot-sized MM extent descriptors:

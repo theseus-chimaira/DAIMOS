@@ -14,14 +14,13 @@
 #include "kcore.h"
 
 /**
- * Maximum simultaneously allocated physical extents tracked by MM.
- *
- * The earlier 21-descriptor limit covered the measured eight-stage DSH
- * pipeline, but native compilation adds nested MAKE, KCC and KCPP processes.
- * Each needs both a user VM extent and a kernel u-area extent, so retain
- * bounded headroom for this ordinary build workload.
+ * Maximum descriptor capacity selected by the 256K process-slot policy.
+ * Actual PDP-6 backing is reserved by KINIT after linked KCORE, not here.
+ * A process generally needs user-VM and u-area extents. Keep eight more
+ * entries for ordinary non-process and transient allocations.
  */
-#define MM_MAX_EXTENTS          32
+#define MM_MAX_EXTENTS         136
+#define MM_BOOT_DEFAULT_EXTENTS 32
 /** Maximum disjoint managed physical arenas needed during/after KINIT. */
 #define MM_MAX_ARENAS           3
 
