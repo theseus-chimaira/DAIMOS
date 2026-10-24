@@ -562,6 +562,20 @@ a fresh final linked census and the existing >20-net-word/cold-path gate.
 
 ## 2026-10-24 architectural shrink roadmap and proposal A start v221
 
+### Proposal D real workload MM occupancy attempt v251 (2026-10-24)
+
+Attempted a non-invasive PDP-6 runtime snapshot of `mm_extent_count`
+at scheduler checkpoints by adapting the existing five-process SIMH
+fixture in a separately versioned testkit-only script. The build
+failed before simulator execution at the existing strict DSH user
+image size gate: `036013` octal exceeds `036000`.
+Consequently **no runtime extent occupancy samples or high-water
+measurements exist from this attempt**. The DSH acceptance limit
+was not relaxed, the experimental test script was discarded,
+and unrelated testkit working-tree modifications were preserved.
+The tested production MM registry remains 32 entries (64 words),
+with no justified shrink or new permanent RAM saving.
+
 ### Proposal D native MM sorted insertion verification v250 (2026-10-24)
 
 Added a separately versioned `daimos-mm-extents-v250` test to

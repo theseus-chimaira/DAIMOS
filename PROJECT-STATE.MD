@@ -1,3 +1,14 @@
+## 2026-10-24 runtime extent occupancy attempt v251
+
+Non-invasive mm_extent_count observation using a versioned
+five-process PDP-6 scheduler fixture did not reach SIMH:
+the isolated image build stopped at the unchanged DSH EXEC size
+gate, 036013 octal versus limit 036000. No runtime occupancy
+or high-water measurements were obtained. The experimental
+testkit script was discarded, pre-existing unrelated changes
+preserved, and no DAIMOS production changes were made.
+Keep the 32-entry/64-word registry until real measurements exist.
+
 ## 2026-10-24 MM extent shifting validation v250
 
 Native daimos-testkit fixture v250 (testkit commit 580e978)
