@@ -1,3 +1,16 @@
+## 2026-10-24 PDP-6 256K sixteen-process concurrency v263
+
+New daimos-testkit 256K full-profile GCC first-boot fixture
+`daimos-mm-256k-concurrency-v263.sh` runs 16 independent
+INIT images. The guest verifies process-private state across
+CPU work; the host checks distinct start/completion markers.
+Fresh native SIMH PASSed all 16 starts and completions.
+This is stronger than v262's five-user acceptance, but is not
+an extent high-water measurement or evidence of 32/63 process
+operation. Process slot zero is reserved, so a 64-entry table
+has at most 63 numbered slots. No production code changed.
+The canonical size comparison remains 32K GCC lowmem.
+
 ## 2026-10-24 256K MM first-boot acceptance v262
 
 The fresh-image PDP-6 full-profile 256K GCC scheduler fixture

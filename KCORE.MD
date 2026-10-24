@@ -1,3 +1,12 @@
+### PDP-6 sixteen-process 256K acceptance v263 (2026-10-24)
+
+First-boot 256K GCC full-profile native SIMH PASSed 16 process
+start markers and 16 completion markers with per-process private
+state checks. Test lives in daimos-testkit. The 64-slot policy
+includes reserved slot zero, hence at most 63 numbered slots.
+No MM peak occupancy was measured, and no KCORE change occurred.
+KCORE size reference remains the 32K GCC lowmem disk-root build.
+
 ### 256K first-boot scheduler acceptance v262 (2026-10-24)
 
 The separate daimos-testkit `daimos-mm-256k-scheduler-v262.sh`
