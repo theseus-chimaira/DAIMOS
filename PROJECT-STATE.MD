@@ -1,3 +1,22 @@
+## 2026-10-25 Proposal B MonitorFS MRES domain root access v344
+
+Added `daimos-testkit` native 64K PDP-6 GCC lowmem test
+`test-daimos-monitorfs-mres-domains-v344` with
+`MONITORFS_MRES_ENABLED=1`. Extends the proven v343 no-child
+`/PROC/1/STATE` STAT/open/read/S6REC/close checks with
+`STAT /MONITOR/DOMAINS`, open the domain directory, one READDIR
+(no negative/error return allowed), and close. Native simulator
+run **PASS**. This verifies service dispatch and basic domain-root
+access; it does **not** yet verify returned entry identities,
+child/decimal PID lifecycle, specific domain leaf data, or swapped
+process metadata. Testkit commit `9ed13b0`.
+
+No production code changes and no new RAM savings. Opt-in MonitorFS
+MRES remains KCORE 9151, KCORE+MRES 15699 (+17 permanent words)
+versus default KCORE 10726, KCORE+MRES 15682. Strict 32K acceptance
+deferred. Next acceptance should validate specific domain entries
+and metadata values, then isolate child process/RUN regressions.
+
 ## 2026-10-25 Proposal B native minimal MonitorFS MRES process access v343
 
 Added `daimos-testkit` target `test-daimos-monitorfs-mres-proc-basic-v343`
