@@ -1,3 +1,20 @@
+## 2026-10-25 backing-store rollback trace v275
+
+On the fresh 256K PDP-6 eighth-pressure-child reproducer,
+SIMH execution breakpoints recorded one call each to
+`backstore_write`, `mm_unpin`, and `backstore_free`, with no
+call to `proc_storage_publish_v30`. The guest still emitted
+`<wp7!W`. This matches the `proc_swap_out_unpin` rollback
+branch following a failed `backstore_write`, but the return
+register after the write was not sampled, so the precise
+failure remains to be proved. The absence of storage-state
+publication confirms that this attempt did not complete the
+normal swap-out commit sequence. The fixture remains a failing
+diagnostic, not a swap acceptance test. Next inspect the native
+backstore write return code and the blockset/direct-tail I/O
+mapping under the tested 256K image. No production code or 32K
+KCORE size-reference changes.
+
 ## 2026-10-25 256K pressure admission native traces v273/v274
 
 SIMH breakpoints on the unchanged native PDP-6 guest captured one
