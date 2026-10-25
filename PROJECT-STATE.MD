@@ -1,3 +1,23 @@
+## 2026-10-25 MonitorFS MRES MINIT halt probes v338-v339
+
+Investigated v337's post-BLOCKSET `kinit_halt` with two separate
+temporary diagnostic builds, both using matching 64K PDP-6 SIMH
+configuration. The first printed `GAPERR` only on failed
+`mm_add_free(previous_package, package - previous_package)`; the
+second additionally printed `REVERSE` for descending source-package
+addresses. Neither marker appeared before the HALT, so neither branch
+was conclusively identified as the caller. A failed debug-output
+routine or different `kinit_halt` caller has not been excluded.
+Both builds still halted after `BSET LOADED`. The instrumentation
+was removed entirely; source is unchanged. The previous v337
+inference that `mm_add_free` was specifically rejecting an interval
+remains **unproven** and must not be used as the basis for an MM fix.
+Next: capture the PDP-6 halted CPU's return chain or trace calls to
+`kinit_halt` directly, then inspect the implicated MM/initializer
+condition. MonitorFS MRES remains opt-in; v333 measured fixed KCORE
+9151 words and combined KCORE+MRES 15699 versus default 10726/15682.
+No runtime PASS or additional saving claimed; strict 32K deferred.
+
 ## 2026-10-25 MonitorFS opt-in MINIT source-reclaim localization v337
 
 Built an isolated 64K lowmem MonitorFS-MRES image with temporary
