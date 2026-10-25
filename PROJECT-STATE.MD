@@ -1,3 +1,29 @@
+## 2026-10-25 Native lowmem SYS_PROCINFO immediately after RUN v351
+
+Adapted the baseline native one-child RUN/PIPE test to call
+`dsys_procinfo(pid,&info)` immediately after `SYS_RUN` returns,
+before closing parent pipe descriptors or waiting for the child.
+Using 64K GCC lowmem, `MONITORFS_MRES_ENABLED=0`, native PDP-6 trace
+reached `D6FS LOADED`, then `<RSQT` before halting later at
+`PC: 000000 (LUUO00 0,300)`. The `T` marker is emitted after the
+first `PROCINFO(2)` returned zero; the fixture also checked that
+`info.pid` equals 2. Hence initial child-slot PROCINFO dispatch and
+record population work. The subsequent `wait_zombie_by_eof` path
+still fails when querying PROCINFO after writer close, EOF read and
+reader close, as previously shown in v348/v349. The defect is
+associated with child completion/zombie state or with its preceding
+lifecycle transition, not ordinary PROCINFO dispatch, and reproduces
+without MonitorFS MRES.
+
+The experimental fixture was withdrawn after the diagnostic run;
+unrelated dirty testkit state was left untouched. No production
+source or permanent RAM changes. Next isolate PROCINFO after each
+individual teardown operation and study process slot zombie-layout
+in `syscall_info.s`; reject any speculative workaround. MonitorFS
+MRES native namespace acceptance v341/v343/v344/v346 remains PASS,
+feature opt-in with KCORE=9151 and combined 15699 (+17 default),
+strict 32K acceptance deferred.
+
 ## 2026-10-25 Native lowmem no-child SYS_PROCINFO acceptance v350
 
 Added `daimos-testkit` native 64K PDP-6 GCC lowmem test
