@@ -685,15 +685,7 @@ file_lock_check:
         xor     7,(1)
         tdne    7,[070707777777]        ; any canonical vnode field differs
         jrst    file_lock_check_next
-        move    7,2
-        sub     7,file_table
-        movn    7,7
-        push    17,4
-        move    4,file_table
-        move    0,041(4)
-        pop     17,4
-        lsh     0,0(7)
-        andi    0,3
+        pushj   17,file_lock_mount_ext_v319
         came    0,5                    ; distinct high mount bits cannot lock
         jrst    file_lock_check_next
         move    7,4
@@ -721,15 +713,7 @@ file_lock_update_loop:
         xor     7,(1)
         tdne    7,[070707777777]
         jrst    file_lock_update_next
-        move    7,2
-        sub     7,file_table
-        movn    7,7
-        push    17,4
-        move    4,file_table
-        move    0,041(4)
-        pop     17,4
-        lsh     0,0(7)
-        andi    0,3
+        pushj   17,file_lock_mount_ext_v319
         came    0,5
         jrst    file_lock_update_next
         move    7,4
@@ -753,6 +737,20 @@ file_lock_modes:
         .long   000020000000            ; VFS_LOCK_SHARED
         .long   000030000000            ; VFS_LOCK_EXCLUSIVE
         .long   0                       ; VFS_LOCK_UNLOCK
+
+; Decode the mount extension for descriptor AC2, preserving packed AC4.
+; Both lock passes need the same two-bit mount identity in AC0.
+file_lock_mount_ext_v319:
+        move    7,2
+        sub     7,file_table
+        movn    7,7
+        push    17,4
+        move    4,file_table
+        move    0,041(4)
+        pop     17,4
+        lsh     0,0(7)
+        andi    0,3
+        popj    17,
 
 ; void file_unlock_mount(unsigned int mount_id)
 ; Clear lock/regular state for the specified mount. The three packed low

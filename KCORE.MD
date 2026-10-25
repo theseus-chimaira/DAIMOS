@@ -1,3 +1,25 @@
+## 2026-10-25 Proposal B file lock mount decode v321
+
+Consolidated the identical two-bit mount-extension lookup in the
+resident FLOCK conflict and update passes into a single internal leaf
+helper, preserving AC4, the public descriptor/mount ABI, lock ownership,
+and shared/exclusive/unlock semantics. This is not a new provider dispatch
+or permanent storage allocation. The experiment was present as an
+uncommitted workspace change before this audit; it was independently
+measured against committed v318 source with full GCC lowmem disk-root
+links. Baseline: KCORE 024764 (10740 decimal), KCORE+MRES 036520
+(15696), PERMANENT_LAST 036577 (15743). Accepted candidate: KCORE
+024756 (10734), KCORE+MRES 036512 (15690), PERMANENT_LAST 036571
+(15737). Net saving: 6 permanent words; MRES component sizes unchanged.
+
+GCC daimos-testkit target-file-pdp6, target-file-walk-pdp6,
+test-daimos-vfs-stat-frame and test-daimos-pre-dsh-fs-closure all PASS.
+The file-runtime native fixture exercises shared/exclusive locking,
+conflict, unlock and descriptor duplicate behavior. An additional
+explicit cross-mount high-extension collision scenario is still a
+valuable follow-up; do not claim that narrow scenario was separately
+tested here. The 32K acceptance gate and JRST folding remain deferred.
+
 ## 2026-10-25 v318 EXEC RT cleanup native acceptance v320
 
 The previously linked and measured v318 two-word EXEC-loader cleanup
