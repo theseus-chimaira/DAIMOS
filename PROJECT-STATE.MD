@@ -1,3 +1,17 @@
+## 2026-10-25 Proposal B remove-type native fixture investigation v330
+
+Attempted a dedicated PDP-6 UNLINK/RMDIR type-matrix fixture by extracting
+v328's actual `file_remove` type check and iterating 16 STAT-type / action
+cases. The initial fixture had undefined link symbols and incorrect test
+expectation/loop instructions; those were corrected, but `p10run`
+continued to time out (SIMH status 124) without readable test exit.
+No native acceptance is claimed, and the testkit experiment was removed
+rather than committing an unverified fixture. Existing unrelated testkit
+edits were preserved. No production code changed; retain the last v329
+full-image measurement (KCORE 024746, KCORE+MRES 036502,
+PERMANENT_LAST 036561 octal). Dedicated native UNLINK/RMDIR semantics
+remain unverified. Strict 32K acceptance remains deferred.
+
 ## 2026-10-25 Proposal B CREATE/SYMLINK result publication v329
 
 The shared `vfs_create_store_result` epilogue formerly loaded the
