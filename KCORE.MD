@@ -1,3 +1,21 @@
+## 2026-10-25 256K preload-pressure admission probe v280
+
+Test-only PDP-6 GCC user image enlarged each guest with a private
+`010000`-octal (4096-word) BSS array, checked at its first and last
+word. The original 63-process preload and a reduced 48-process preload
+both built valid boot images but halted without any guest start marker.
+Consequently the test never reached runtime swap/reclaim; no high-water
+value or allocator defect is established. This is a failed diagnostic,
+not a passing or high-water acceptance fixture. The v265 63-process
+small-image concurrency PASS and v278/v279 independently exercised
+runtime swap remain the supported results.
+
+The next high-concurrency swap fixture should create or enlarge user
+memory after INIT has activated swap, not preload 48-63 large images
+before the boot handoff. All simulator core settings remain in 16K-word
+increments, the DAIMOS process policy in 8K increments.
+No production changes or KCORE size increase.
+
 ### Three-cycle 256K swap descriptor high-water v279
 
 Native PDP-6 SIMH `mm_extent_insert` breakpoints sampled 101
