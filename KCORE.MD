@@ -1,3 +1,15 @@
+### Post-INIT swap pressure acceptance v311
+
+The native 256K PDP-6 GCC 20-pressure-child single-cycle fixture
+passed with 012000 octal (5120) drum backing blocks, guest completion
+marker `Q` and normal HALT. The 16-child fixture already passed with
+010000 octal (4096) backing blocks. This resolves the immediate swap
+correctness investigation following the real failed-swap-in local-stack
+pop repair `3b41e87`; it does not validate smaller backing or all
+possible 64-slot pressure workloads. No KCORE or descriptor-size
+increase. Return to resident EXEC/RUN minimization and low-RAM
+correctness analysis; 32K strict acceptance remains deferred.
+
 ## 2026-10-25 v311 twenty-child native swap acceptance — RUNNING / NOT ACCEPTED
 
 The production kernel remains unchanged after the successful v310

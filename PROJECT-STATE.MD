@@ -1,3 +1,22 @@
+## 2026-10-25 v311 twenty-child native swap acceptance — PASS
+
+The preserved v311-r2 native testkit run completed successfully:
+`daimos-mm-swap-progress-v311: PASS (one post-INIT 20-child pressure cycle)`.
+The 256K PDP-6 GCC full-profile guest using a 012000-octal-block
+(5120 block) drum backing configuration printed
+`<wP0P1P2P3P4P5P6P7P8P9PAPBPCPDPEPFPGPHPIPJSRQ` and a normal
+HALT. All twenty children were admitted; writer data integrity,
+wait/reap and one full pressure cycle were checked by the guest.
+The simulator-only timeout ceiling was 900 seconds; success must not
+be read as proof that smaller swap capacity suffices or that every
+64-slot simultaneous pressure scenario passes. This completes the
+immediate high-concurrency swap correctness regression following the
+production swap-in failure-path stack pop fix `3b41e87` and 12-/16-
+child passes. No further kernel, KCORE or descriptor-policy change.
+Resume the original permanent EXEC/RUN minimization/source sweep.
+Further capacity/large concurrency tests remain optional backlog,
+not a blocker for EXEC/RUN work.
+
 ## 2026-10-25 v311 twenty-child native swap acceptance — RUNNING / NOT ACCEPTED
 
 The production kernel remains unchanged after the successful v310
