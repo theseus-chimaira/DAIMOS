@@ -1,3 +1,28 @@
+## 2026-10-25 Baseline lowmem SYS_PROCINFO comparison v349
+
+Compared the one-child PIPE/RUN/EOF/PROCINFO probe against an isolated
+64K GCC lowmem image with `MONITORFS_MRES_ENABLED=0`, matching v348
+apart from disabling the extracted MonitorFS MRES. Both builds booted
+through `D6FS LOADED`, and both emitted `<RSWabcd` before HALT at
+`PC: 000000 (LUUO00 0,0)`. Thus the failure in `dsys_procinfo()`
+also occurs in the default lowmem baseline. It is **not** evidence of
+a defect introduced by MonitorFS MRES extraction. The probe did not
+access MonitorFS namespace paths.
+
+Source inspection locates the syscall ABI in `userland/libc/syscall.s`
+(`dsys_procinfo: uuo 057,0(1)`), native dispatch in
+`system/kernel/proc/syscall_dispatch_pdp6.s` (map result buffer, call
+`sys_procinfo`), and the implementation in
+`system/kernel/proc/syscall_info.s`. The root cause of the halt remains
+unresolved; next step is a minimal zero-child SYS_PROCINFO probe and
+trap/return tracing, with assembler/compiler defects prioritized.
+The temporary failing baseline testkit fixture was withdrawn with
+unrelated dirty testkit files intact. No production code or RAM change.
+
+Prior accepted MRES tests v341/v343/v344/v346 remain PASS; optional
+KCORE 9151 and combined 15699 (+17 versus default). Feature stays
+opt-in; strict 32K acceptance deferred.
+
 ## 2026-10-25 Proposal B one-child SYS_PROCINFO trap localization v348
 
 Created a temporary daimos-testkit native lowmem GCC 64K PDP-6
