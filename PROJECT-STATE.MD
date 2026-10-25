@@ -1,3 +1,22 @@
+## 2026-10-25 native swap-transition event trace v285
+
+The unchanged 16-pressure-child test reproduced the unexpected UUO.
+A new SIMH breakpoint fixture sampled `proc_current_slot`,
+`proc_sched_cursor`, and AC1 on each `proc_swap_out`, `proc_swap_in`,
+`proc_swap_service_one`, `backstore_read`, `backstore_write` entry,
+without changing KCORE. The execution logged 10 `proc_swap_out`
+entries, one `proc_swap_service_one`, one `proc_swap_in`, one
+`backstore_read` and 9 `backstore_write` entries. The final sequence
+was swap service request `proc_sched_cursor=0402` (octal),
+`proc_swap_in` AC1=2 in slot-0 context, then `proc_swap_out`
+AC1=1 in slot-0 context, followed by the same unexpected
+`UUO 000000777777 340000000003` and PC 000001 HALT.
+These are entry observations, not verified successful transitions.
+The process-control corruption origin is still unresolved. Prioritize
+return-path/instruction-state tracing of the first swap-in and the
+following swap-out; do not increase process or descriptor limits.
+No production code or permanent memory change.
+
 ## 2026-10-25 v284 unexpected UUO simulator breakpoint diagnostic
 
 The unchanged v283 16-child guest was rerun under a new testkit
