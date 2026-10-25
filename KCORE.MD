@@ -1,3 +1,17 @@
+## 2026-10-25 Proposal B SETATTR unwind experiment v323 (reverted)
+
+Re-tested reusing `vfs_mutate3_ro` for `vfs_setattr_ro` in the
+current v322 GCC lowmem configuration. Although the source contains
+one fewer inline cleanup instruction, the full linked image **grew**:
+KCORE 024755 -> 024756 octal (10733 -> 10734 decimal),
+KCORE+MRES 036511 -> 036512 octal (15689 -> 15690),
+PERMANENT_LAST 036570 -> 036571 octal (15736 -> 15737).
+This is a one-word permanent RAM regression. The experiment was
+reverted immediately; no semantic acceptance claimed. Retain v322 as
+the measured baseline. Continue Proposal B with structural
+file-runtime/VFS/provider consolidation, not SETATTR cleanup sharing.
+Strict 32K acceptance remains deferred.
+
 ## 2026-10-25 Proposal B VFS CREATE mode staging v322
 
 The common CREATE/MKDIR/MKFIFO request staging in `vfs_create_common`
