@@ -1,3 +1,26 @@
+## 2026-10-25 native full-core swap snapshots v312
+
+The testkit captured both 256K-word (262144-word) PDP-6 physical
+RAM images for a swap-out, from `proc_swap_out` entry to
+`proc_storage_publish_v30` entry (the latter is **pre-publication**, not
+post-commit). The two complete, equally addressed dumps differ in
+82 words: 20 below KCORE, nine in permanent code/data below the MM
+extent table, two MM descriptor words, and 51 words above it.
+`mm_extent_count` moved from `031` to `030` octal, consistent with an
+extent release, and the swap record/accounting changed as expected.
+This is a reproducible memory comparison tool, **not a global
+non-corruption proof**, an after-return snapshot, or another guest
+acceptance run. In particular, some AC/low-memory words naturally
+change and must not be called corruption. The fixed 20-child v311
+acceptance run still passes, so no speculative kernel fix is needed.
+The testkit scripts `daimos-mm-swap-snapshot-v312.sh`,
+`daimos-mm-swap-snapshot-split-v312.py`, and
+`daimos-mm-swap-snapshot-compare-v312.py` capture, extract, and
+classify the images without consuming guest RAM. The comparator
+requires identical full 256K address coverage. More granular
+semantic invariants and optional post-return capture can be pursued
+separately if another swap regression warrants them.
+
 ## 2026-10-25 v311 twenty-child native swap acceptance — PASS
 
 The preserved v311-r2 native testkit run completed successfully:
