@@ -1,3 +1,20 @@
+## 2026-10-25 writer termination event confirmation v303
+
+A diagnostic SIMH run of the 16-child v302 guest placed one breakpoint
+at `proc_event_apply` (linked address `015370`). At the breakpoint,
+AC1=2, AC2=1 (`SYS_EVENT_TERM`), and `proc_sched_cursor=2`.
+The guest emitted `<w!2101c!W` and halted, matching the earlier
+v302 observation of writer PID low digit 2, EXITED kind 1, exit status
+001 octal instead of 050. This establishes a kernel TERM event for
+slot 2 in the failing run, rather than a normal writer exit.
+The trace does not yet establish the event call's return address nor
+that every exhausted swap-in should be terminated. Previously
+captured swap backing space was insufficient for the tenth allocation;
+the correct treatment of a temporarily nonresident process requires
+investigation before changing scheduler semantics.
+The event-only breakpoint took substantially longer than a plain
+guest run. No production source or permanent memory change.
+
 ## 2026-10-25 writer WAIT exit status capture v302
 
 The versioned 16-child guest v302 instrumented `wait_report()` with
