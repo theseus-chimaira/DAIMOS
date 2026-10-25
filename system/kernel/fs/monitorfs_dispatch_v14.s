@@ -1,7 +1,8 @@
 ; monitorfs_dispatch_v14.s -- staged VFS-to-MonitorFS MRES entrypoints.
 ;
-; NOT linked into KCORE yet. Once the MonitorFS MRES is installed, MINIT
-; must patch each one-word JRST to its relocated implementation address.
+; Linked into KCORE as ABI jump slots only; the complete MonitorFS runtime
+; and swapped-process metadata reader reside in the always-loaded MRES.
+; MINIT patches each one-word JRST to its relocated implementation address.
 ; The package must remain pinned for as long as MonitorFS is reachable.
 ;
 ; Every entry has the same register/stack calling convention as the old

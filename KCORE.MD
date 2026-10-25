@@ -1,3 +1,39 @@
+## 2026-10-25 MonitorFS always-loaded MRES, no resident implementation v355
+
+MonitorFS is now **MRES-only by construction**. The PDP-6 boot build
+includes the `monitorfs-mres` package unconditionally in both lowmem
+and full MRES package sets, and both boot and kernel Makefiles force
+`MONITORFS_MRES_ENABLED=1` even against old command-line requests to
+disable it. Kernel build `monitorfs_runtime.s` is always assembled from
+`fs/monitorfs_dispatch_v14.s` rather than the old full
+`monitorfs_runtime.s` + `monitorfs_swap_v63.c` implementation.
+Thus the MonitorFS device, process, domain, and swapped metadata runtime
+is linked into the pinned, boot-installed MRES and **not resident as
+full KCORE implementation**. The unavoidable nine one-word ABI/MINIT
+jump slots remain in KCORE and are patched to the relocated package at
+boot; VFS's shared generic provider routing stays resident. Do not
+claim literally zero MonitorFS-related KCORE words.
+
+Full-linked lowmem GCC default build measured KCORE=9151,
+KCORE+MRES=15699, PERMANENT_LAST=15746. An explicit obsolete
+`MONITORFS_MRES_ENABLED=0` argument still produces these figures,
+proving resident fallback is disabled. Native daimos-testkit
+`test-daimos-procinfo-zombie-v354` **PASS** under this forced default
+(including RUN/WAIT, PROCINFO and decimal `/PROC/10/STATE`). Existing
+native device, process, and domain MRES tests v341/v343/v344/v346
+remain useful. No new permanent RAM change compared with prior
+opt-in MRES, but compared with former normal non-MRES default,
+KCORE is reduced by 1575 words while combined RAM is increased by 17.
+
+Full-profile GCC size-only build yields KCORE=9151,
+KCORE+MRES=18463, PERMANENT_LAST=18510 and fails its existing
+`040000` permanent-address gate; full-profile boot acceptance is **not
+claimed**. Keep the larger size restriction and strict 32K acceptance
+on the deferred backlog; do not change this limit by workaround.
+Future optimization may recover the 17 combined resident words and
+remove unnecessary jump slots only if ABI-safe, with full linked
+measurement before acceptance. Feature is no longer opt-in.
+
 ## 2026-10-25 Native zombie PROCINFO safety and RAM-neutral fix v354
 
 Root cause of baseline v348-v351 lowmem child-completion halt found in

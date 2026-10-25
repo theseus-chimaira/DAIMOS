@@ -75,8 +75,8 @@ ifeq ($(ROOT),tape)
 override KINIT_BADMAP = 0
 endif
 KINIT_STACK_WATERMARK ?= 0
-# Experimental complete MonitorFS relocation in low-memory configuration.
-MONITORFS_MRES_ENABLED ?= 0
+# MonitorFS runtime is exclusively in its pinned, boot-loaded MRES.
+override MONITORFS_MRES_ENABLED := 1
 MONITORFS_MODE_STAMP = $(BUILD)/.monitorfs-v17-mode-$(MONITORFS_MRES_ENABLED)
 KINIT_TAPE_MODE_STAMP = $(BUILD)/.kinit-tape-v20-mode-$(KINIT_TAPE_BOOT)
 PDP10_GCC ?= pdp10-dec-none-gcc
@@ -331,12 +331,12 @@ LOGSTORE_MRES_OBJ = $(BUILD)/logstore-mres.dobj
 D6FS_MRES_OBJ = $(BUILD)/d6fs-mres.dobj
 MONITORFS_MRES_OBJ = $(BUILD)/monitorfs-mres.dobj
 ifeq ($(BOOT_PROFILE),lowmem)
-MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(if $(filter 1,$(MONITORFS_MRES_ENABLED)),$(MONITORFS_MRES_OBJ)) $(DCS_MRES_OBJ) \
+MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(MONITORFS_MRES_OBJ) $(DCS_MRES_OBJ) \
 	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(TAPE_MRES_OBJ)) $(DSK_MRES_OBJ) $(if $(filter 1,$(BLOCKSET_FS_ENABLED)),$(BLOCKSET_MRES_OBJ)) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(DTFS_MRES_OBJ)) \
 	$(if $(filter 1,$(D6FS_FS_ENABLED)),$(D6FS_MRES_OBJ))
 KINIT_FULL = 0
 else
-MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(if $(filter 1,$(MONITORFS_MRES_ENABLED)),$(MONITORFS_MRES_OBJ)) $(PTR_MRES_OBJ) \
+MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(MONITORFS_MRES_OBJ) $(PTR_MRES_OBJ) \
 	$(PTP_MRES_OBJ) $(LPT_MRES_OBJ) $(CR_MRES_OBJ) $(CP_MRES_OBJ) \
 	$(DCS_MRES_OBJ) $(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) \
 	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(TAPE_MRES_OBJ) $(DSK_MRES_OBJ) $(DRM_MRES_OBJ) \
