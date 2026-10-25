@@ -1,3 +1,19 @@
+## 2026-10-25 v318 EXEC RT cleanup native acceptance v320
+
+The previously linked and measured v318 two-word EXEC-loader cleanup
+is now native regression accepted for the covered failure and ownership
+paths. `make COMPILER=gcc test-daimos-exec-rt-owner` in `daimos-testkit`
+PASSed with `DAIMOS_EXEC_OBSERVE_SECONDS=120`, verifying RT rollback
+at header and post-VM decoder failure, existing-owner preservation,
+RT admission and release. The default 15-second run timed out at SIMH
+boot without reaching assertions; the extended run completed.
+The separate `test-daimos-exec-create-oom` PASS is recorded at v319.
+
+Accepted comparative lowmem KCORE size: v316 `024766` to v318
+`024764` octal, saving two words post-fold, with no additional
+persistent data. This does not constitute strict 32K acceptance.
+The unrelated working-tree file-runtime experiment is not included.
+
 ## 2026-10-25 EXEC allocation-failure native retest v319
 
 `make -C ../daimos-testkit COMPILER=gcc test-daimos-exec-create-oom`
