@@ -1,3 +1,27 @@
+## 2026-10-25 physical swap-map overlap probe v292
+
+A native 256K PDP-6 16-child failing guest was traced with SIMH
+breakpoints examining the storage-state map and 28 MM descriptors.
+At the unexpected-UUO aftermath the state-map pointer was physical
+`041141` octal; its allocated MM extent was `[040750,041145)`,
+`MM_TYPE_KERNEL_DYNAMIC=3`, owner `4` (swap metadata). The captured
+neighboring extent boundaries were contiguous and did not overlap
+this range. `proc_storage_runtime_v29.slots=0100` (64 slots).
+The map's first word was `000005252520` octal, encoding slot 1 as
+RESIDENT (0) and slot 2 as DISK (1). The earlier block-count check
+matched `0320` octal; the swap-in storage-state expectation for slot 2
+reached the good branch. Two failed mode checks observed **after**
+the unexpected UUO do not establish the fault's original cause.
+The trace covers only the descriptor range requested from SIMH, so
+it does not establish a full-table global overlap invariant. It does
+rule out a different visible MM extent overlapping this specific
+storage-state allocation in the captured snapshot.
+
+The next priority is to trace allocator pressure/compaction calls
+nested in the first swap-in and the following swap-out, including
+stack bounds and return paths; avoid attributing the UUO to the
+storage-state map without new evidence. No production change.
+
 ## 2026-10-25 first swap-read return probe v287 — inconclusive
 
 Three iterations of the existing 16-child reproducer attempted

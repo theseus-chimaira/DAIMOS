@@ -1,3 +1,14 @@
+### Swap metadata extent overlap inspection v292
+
+At the 16-child failing guest's UUO aftermath, the two-bit storage
+map at `041141` octal is within kernel-dynamic owner-4 extent
+`[040750,041145)`. Captured neighboring MM extents do not overlap.
+Slot 1 is RESIDENT, slot 2 DISK in its first map word
+`000005252520` octal. Earlier slot-2 mode and block count validation
+succeeded. Post-UUO checks that failed are not evidence of the
+initial cause. Full descriptor-table overlap validation and nested
+allocator/stack instrumentation remain open. No KCORE size change.
+
 ## 2026-10-25 first swap-read return probe v287 — inconclusive
 
 Three iterations of the existing 16-child reproducer attempted
