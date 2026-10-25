@@ -1,3 +1,19 @@
+## 2026-10-25 PDP-6 256K executable BSS admission v271
+
+The native exec loader in `system/kernel/proc/exec_load.s` masks
+the DXR BSS field to 15 bits and rejects BSS exceeding `077777`
+octal (32767) words. This explains v270's 56K-word BSS guest
+failing before INIT startup. A separate 256K GCC full-profile
+image with a 24K-word pressure array now reaches guest INIT and
+prints `<ws!W`: startup succeeds, but the existing two-child
+pressure test does not actually force swapping at 256K (`s`).
+Testkit v271 records this as an explicitly expected negative
+control, not a successful swap stress test; its static bound
+check PASSes. The SIMH memory-size increment is 16K words,
+while DAIMOS process/extent table policy retains 8K increments.
+KCORE size reporting remains at the 32K GCC lowmem disk-root
+configuration. No production code change.
+
 ## 2026-10-25 256K large-image swap-pressure probe v270
 
 A disposable test-only derivative of the original 32K swap-stress

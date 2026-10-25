@@ -1,3 +1,15 @@
+### 256K test BSS admission and SIMH granularity v271
+
+SIMH physical-core selections use 16K-word increments; the
+DAIMOS boot-slot and MM capacity formulas still use complete
+8K-word banks. The 32K GCC lowmem disk-root profile remains
+the KCORE size reference. The DXR loader rejects BSS values
+above `077777` octal (32767 words). A 56K-word test array
+therefore prevented INIT startup; a 24K-word test array
+successfully reaches INIT on a fresh 256K image, then hits
+the expected insufficient-swap-pressure assertion. This is
+an admission/negative-control test, not swap acceptance.
+
 ## 2026-10-25 256K large-image swap-pressure probe v270
 
 A disposable test-only derivative of the original 32K swap-stress
