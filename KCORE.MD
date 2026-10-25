@@ -1,3 +1,28 @@
+## 2026-10-25 Native lowmem no-child SYS_PROCINFO acceptance v350
+
+Added `daimos-testkit` native 64K PDP-6 GCC lowmem test
+`test-daimos-procinfo-current-v350` with `MONITORFS_MRES_ENABLED=0`.
+User INIT calls `dsys_procinfo(1,&info)` without RUN, PIPE, WAIT or
+other child lifecycle activity, verifies that the UUO returns zero and
+that `info.pid == 1`, then emits the completion marker. Target run
+**PASS**. Consequently, the native UUO 057 path is functional for
+the initial process with a mapped caller result buffer.
+
+Earlier v348-v349 tests consistently halted inside PROCINFO(2)
+after completing child RUN, pipe-writer close, pipe EOF read and
+pipe-reader close, regardless of the MonitorFS MRES switch. The
+remaining fault is therefore related either to non-initial/zombie
+process-table record handling or to state left by the preceding
+lifecycle operations, not merely to invoking PROCINFO itself.
+Check `sys_procinfo` handling of a zombie slot and its `COMM`
+reconstruction, plus native syscall mapping/return invariants;
+compare a direct PROCINFO(2) after RUN without pipe teardown.
+
+The accepted testkit commit is `7dc7023`; the test touches no kernel
+production source. Fixed KCORE baseline 10726, combined 15682;
+optional MonitorFS MRES remains KCORE 9151 and combined 15699 (+17).
+Feature stays opt-in, strict 32K acceptance deferred.
+
 ## 2026-10-25 Baseline lowmem SYS_PROCINFO comparison v349
 
 Compared the one-child PIPE/RUN/EOF/PROCINFO probe against an isolated
