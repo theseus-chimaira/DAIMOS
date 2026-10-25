@@ -1,3 +1,19 @@
+## 2026-10-25 Proposal B PDP-6 provider lock native probe v326
+
+Added `daimos-testkit` `test-daimos-provider-lock-native-v326` and ran it
+successfully on PDP-6 via `p10run`. The fixture extracts the real
+resident provider gateway and uses a controlled wait oracle that initially
+holds the lock, releases it through `proc_wait_event`, and deliberately
+clobbers request registers before retry. The production save/restore path
+returns the original arguments to the provider, preserves its result across
+wakeup and releases the lock. The MEMFS path bypasses serialization.
+This is native execution of production gateway instructions with oracle
+wait/wakeup services, **not** proof of true multi-process scheduler contention
+or real physical-provider I/O. No production source changed. The accepted
+v324 full linked baseline remains KCORE 024752 (10730 decimal),
+KCORE+MRES 036506 (15686 decimal), PERMANENT_LAST 036565 (15733).
+Strict 32K acceptance remains deferred.
+
 ## 2026-10-25 Proposal B provider lock invariants gate v325
 
 Audited the v324 resident provider dispatch and shared transfer-workspace
