@@ -1,3 +1,27 @@
+## 2026-10-25 writer WAIT exit status capture v302
+
+The versioned 16-child guest v302 instrumented `wait_report()` with
+`!` plus low PID octal digit, status kind, and 2-digit octal status.
+The unmodified native PDP-6 GCC 256K kernel ran to guest HALT,
+producing `<w!2101c!W`, **not** the former unexpected UUO.
+The writer wait returned a PID with low three bits 2, EXITED kind 1,
+and **exit status 001 octal** rather than the expected writer exit
+status 050 octal. The writer source explicitly exits with 041, 042
+or 050 only; this implicates kernel-side process termination.
+`proc_swap_service_failed` on an unsuccessful restore invokes
+`proc_event_apply(...,SYS_EVENT_TERM)`, a fatal event; termination
+status 001 is consistent with this path, although no direct event
+breakpoint has yet established the causal call for this writer.
+
+Earlier v297 established 2048 swap blocks total, 1872 used, and a
+208-block request with only 176 remaining. The 16-child case thus
+probes real backing-store exhaustion, not simply MM descriptor or
+storage map overlap. Further work must distinguish required graceful
+capacity failure from incorrect scheduler termination and evaluate
+whether the acceptance test should use an adequately sized swap tail.
+Do not claim a 16-child PASS or change swap policy without an observed
+failure path. Production code unchanged in v302.
+
 ## 2026-10-25 lightweight writer outcome isolation v300/v301
 
 The 16-child 256K PDP-6 fixture used a versioned guest (v300) to
