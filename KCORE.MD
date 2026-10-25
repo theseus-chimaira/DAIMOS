@@ -1,3 +1,26 @@
+## 2026-10-25 Proposal B MonitorFS device/namespace audit v331
+
+Inspected the resident `monitorfs_runtime.s` device-name lookup,
+READDIR, device-ID validation, special TTYDPY0 name handling,
+leaf selection and IO type classification. The already shared
+`mfsdev_name_length`, `mfsdev_validate_id`, `mfsleaf_lookup` and
+`mfsdev_readdir_store` leaves account for the obvious overlapping
+operations. The D6SET0 special leaf count and TTYDPY0 seventh character
+must remain exceptional. No safe additional resident reduction was
+established: no production code changed, and no RAM saving is claimed.
+
+`daimos-testkit` GCC `test-daimos-monitorfs-devices-online` PASSed on
+PDP-6 after its independent boot-image build (roughly 200 seconds).
+This is a native MonitorFS device-visibility test, not a comprehensive
+process-namespace or multi-process provider test. The attempted v330
+UNLINK/RMDIR type-matrix fixture remains unaccepted; no false regression
+PASS was recorded. Preserve the last measured v329 GCC lowmem full link:
+KCORE 024746 (10726 decimal), KCORE+MRES 036502 (15682 decimal),
+PERMANENT_LAST 036561 (15729 decimal). Strict 32K acceptance remains
+deferred. Further B source work should target MonitorFS process/domain
+namespace lifetime and file-path permission/lookup interactions, with
+whole-image measurement before acceptance.
+
 ## 2026-10-25 Proposal B remove-type native fixture investigation v330
 
 Attempted a dedicated PDP-6 UNLINK/RMDIR type-matrix fixture by extracting
