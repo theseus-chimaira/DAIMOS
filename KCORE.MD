@@ -1,3 +1,26 @@
+## 2026-10-25 swap-in failed allocation return correction v299 test — partial
+
+After commit `3b41e87` corrected the missing one-word stack-local
+pop on the `proc_swap_in_alloc_fail` path, the existing native 256K
+PDP-6 GCC 16-pressure-child v298 diagnostic was rerun. The original
+`UUO 000000777777 340000000003` was **not** seen. Instead the
+fixture emitted `d!W`: the writer output/read or wait verification
+failed after all pressure children had been created. SIMH then ran
+until its 300-second timeout (`SIGTERM`, PC `017441`, within
+`proc_wait_event` boot wait), so the test is still **FAIL**, not an
+acceptance run. `d` comes from the fixture's pipe/read/wait/drain
+validation, not the swap allocator directly. The existing trace
+shows recurrent `proc_swap_in` failure-return handling and the old
+control-flow UUO is no longer reproduced under this workload.
+
+The validated defect is the missing local pop. Do not interpret the
+absence of a UUO in one run as complete repair: next identify which
+writer outcome caused `d`, distinguish legitimate swap-capacity
+failure from bad process termination semantics, and rerun the 12-child
+PASS fixture to detect regressions. The old 16-child case cannot be
+accepted until pipe integrity and complete child reaping succeed.
+No additional production changes in v299.
+
 ## 2026-10-25 nested swap and backing-store exhaustion v294-v297
 
 v294 captured the actual idle stack base `040350` and AC17
