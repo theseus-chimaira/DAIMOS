@@ -1,3 +1,22 @@
+## 2026-10-25 Proposal B MonitorFS MRES domain lookup acceptance v346
+
+The failed v345 domain enumeration-to-STAT test was caused by a testkit
+SIXBIT encoding error: literal `/` requires octal `017`, but v345
+constructed the prefix with `057`. Corrected the prefix in a new
+versioned daimos-testkit native test `test-daimos-monitorfs-mres-domains-v346`.
+With `MONITORFS_MRES_ENABLED=1`, a 64K GCC lowmem PDP-6 image
+successfully validates the v343 process and v344 domain-root checks,
+reads a numeric domain ID from READDIR, constructs the corresponding
+`/MONITOR/DOMAINS/<id>` SIXBIT path with correct separators, then
+successfully STATs it. Native test **PASS**. The domain identity
+mismatch from v345 was a fixture bug, not evidence of a kernel
+namespace defect. Testkit commit `26c6404`.
+
+No kernel production code or RAM changes. The optional MRES remains
+KCORE 9151 and combined 15699, +17 words versus default v329.
+Child RUN/WAIT and swapped-process metadata acceptance remain open;
+strict 32K acceptance deferred.
+
 ## 2026-10-25 Proposal B MonitorFS MRES domain identity probe v345
 
 Extended v344's successful 64K native MRES domain-root test to require
