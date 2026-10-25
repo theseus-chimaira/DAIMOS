@@ -1,3 +1,27 @@
+## 2026-10-25 nested allocator stack trace v293 — unresolved
+
+The unchanged 16-pressure-child PDP-6 guest was traced through
+`mm_alloc_aligned`, `mm_compact`, `proc_swap_reclaim`,
+`proc_swap_victim`, `proc_swap_out`, and `proc_swap_in` with AC17.
+At the first swap-in for slot 2, `mm_alloc_aligned` entered reclaim,
+selected resident slot 1, and entered a nested `proc_swap_out` before
+`UUO 000000777777 340000000003`. The trace captured AC17 as
+`000034040404` octal at that swap-out entry. The configured idle stack
+was 0100 octal (64 words), making stack overrun a hypothesis but not
+proof: the full frame depth and actual allocated stack boundary were
+not verified from that trace.
+
+A controlled source experiment doubled the configured KINIT and
+scheduler idle-stack size from 0100 to 0200 octal words. The same
+16-child test still failed with the same UUO and the same captured
+AC17. The two source changes were restored. This does not demonstrate
+that expanding the idle stack fixed anything, and the unchanged SP
+merits independent verification of stack selection/boot initialization.
+Next check actual `mach_kernel_stack_base`, its owner-2 MM extent and
+saved scheduler stack pointer under SIMH, and test stack bounds rather
+than increasing permanent RAM or guessing at a larger stack.
+No production code was retained.
+
 ### Swap metadata extent overlap inspection v292
 
 At the 16-child failing guest's UUO aftermath, the two-bit storage
