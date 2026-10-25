@@ -1,3 +1,21 @@
+## 2026-10-25 MonitorFS MRES post-BSET boot localization v336
+
+Using the existing optional `MONITORFS_MRES_ENABLED=1` image from
+v333, compared unmodified boot media under SIMH configured for 64K
+and 256K physical memory (versioned simulator INI copies). Both
+executions reached the DAIMON KINIT banner and reported
+`BSET LOADED`, then halted through `kinit_halt` at octal PC 063116.
+This excludes the original 32K/64K configuration mismatch as the
+sole reason for the *later* halt; simply increasing simulator RAM does
+not resolve it. The module table places `d6fs_minit` after BLOCKSET,
+so the next investigation should instrument the exact pre-D6FS/MRES
+call boundary, plus early MM reservations, without asserting that D6FS
+or MonitorFS caused the halt. A generic `kinit_halt` PC alone cannot
+attribute the caller. No production code changed and the default
+MonitorFS MRES option remains off. The +17 permanent-word difference
+is provisionally acceptable contingent on real boot and service tests;
+no additional RAM saving or runtime PASS is claimed.
+
 ## 2026-10-25 MonitorFS opt-in boot diagnosis v335
 
 Examined the opt-in 64K MonitorFS-MRES image boot from v334. The
