@@ -1,3 +1,19 @@
+## 2026-10-25 Proposal B expanded native provider gateway test v327
+
+Expanded daimos-testkit's v326 PDP-6 gateway oracle into a distinct
+`test-daimos-provider-lock-native-v327` target. Native simulator PASS
+covers the v326 locked-wait/register-recovery and MEMFS bypass cases,
+plus unlocked D6FS and TSFS table dispatch and rejection of provider
+IDs outside the 4..7 range. This executes the extracted production
+assembly gateway with test-controlled service jumps and wait/wakeup;
+it is not an actual competing-process filesystem I/O test. The
+multi-process physical-provider contention acceptance remains open.
+
+No production source changed and no new RAM saving is claimed.
+Last fully linked GCC lowmem v324 baseline remains KCORE 024752
+(10730 decimal), KCORE+MRES 036506 (15686), PERMANENT_LAST
+036565 (15733). No strict 32K acceptance work was performed.
+
 ## 2026-10-25 Proposal B PDP-6 provider lock native probe v326
 
 Added `daimos-testkit` `test-daimos-provider-lock-native-v326` and ran it
