@@ -1,3 +1,24 @@
+## 2026-10-25 MonitorFS opt-in boot diagnosis v335
+
+Examined the opt-in 64K MonitorFS-MRES image boot from v334. The
+original `?B`, `HALT 000544` was produced with an inconsistent boot
+configuration: the lowmem profile's generated `boot.ini` still set
+`cpu 32k` while `BOOT_CORE_WORDS=0200000` built a 64K image.
+An isolated boot-configuration copy using `set cpu 64k` proceeds past
+Stage1 and emits the DAIMON V0.5 / PDP6 / MEM 64K KINIT banner and
+MINIT statuses through `BSET LOADED`, but then halts at `kinit_halt`
+(PC 063116). Thus there is still a later boot/installation failure;
+no functional MonitorFS runtime acceptance is claimed. The boot failure
+has not been attributed to the MRES itself. A matching CPU-size option
+must accompany larger-image tests; do not weaken stack-reserve checks.
+
+The opt-in MonitorFS MRES link fix from v333 is retained and remains
+disabled by default. The proposed +17 combined permanent words is
+provisionally acceptable if runtime validation succeeds, but should
+be optimized afterward. Memory figures remain KCORE=9151,
+KCORE+MRES=15699 (enabled) versus 10726/15682 (default).
+The strict 32K gate remains deferred.
+
 ## 2026-10-25 MonitorFS MRES build and boot gate v334
 
 The optional MonitorFS MRES full link (v333) saves 1575 KCORE words
