@@ -1,3 +1,31 @@
+## 2026-10-25 v296/v297 physical pre/post swap-out snapshots
+
+Native 256K PDP-6 full-image, sixteen-pressure-child SIMH breakpoints
+captured 9 successful swap-outs as matching pre-entry and pre-storage-
+publication snapshots (v296). A tenth swap-out entered but never
+reached publication before `UUO 000000777777 340000000003`.
+The v297 repeat added checkpoints at `mm_pin`, `backstore_alloc` and
+a final dump after the UUO halt. On the failing tenth swap-out,
+`mach_kernel_stack_base=040350` octal. AC17 at `proc_swap_out` entry
+was `000034040404`, then `000044040414` at `mm_pin`, but at
+`backstore_alloc` it was `000001040351`, nearly reset to the idle
+stack base. The after-HALT dump again had AC17=`000001040351`.
+Comparing the tenth swap-out entry with the post-HALT dump across
+captured memory found 28 changed words in the inspected idle-stack
+region, one process-table word and one MM extent-descriptor word.
+The first packed storage-state word at `041141` remained
+`000005252520` octal. These differences span continued execution
+and an asynchronous fault, so they do not on their own prove illegal
+memory writes. The abrupt stack-pointer change is strong evidence to
+inspect PI6/PI7 handler and scheduler stack reset/return handling;
+there is not yet proof of the specific mechanism.
+
+Diagnostic files: daimos-testkit `daimos-mm-swap-snapshot-v295.sh`
+(reuses boot, but a previously run disk image stopped at `?RT`),
+`daimos-mm-swap-snapshot-v296.sh` and
+`daimos-mm-swap-fault-snapshot-v297.sh` (fresh image), plus
+`daimos-mm-swap-snapshot-diff-v297.py`. No production code change.
+
 ## 2026-10-25 nested allocator stack trace v293 — unresolved
 
 The unchanged 16-pressure-child PDP-6 guest was traced through
