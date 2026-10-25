@@ -1,3 +1,32 @@
+## 2026-10-25 Proposal B MonitorFS MRES missing swap-helper build fix v333
+
+Fixed the opt-in `MONITORFS_MRES_ENABLED=1` package link in
+`system/boot/pdp6/Makefile`: compile the existing
+`fs/monitorfs_swap_v63.c` with PDP-10 GCC into a distinct MRES object
+and link it alongside the generated namespace service object. The
+normal non-MRES KCORE build remains unchanged. This resolves the
+previous `undefined symbol: mfsproc_swapped_read_words_v63` failure
+without dropping functionality, stubbing a syscall, or adding KCORE
+resident storage. A fresh isolated GCC lowmem `permanent-size` build
+now **links successfully** with MonitorFS MRES enabled.
+
+Measured default v329 versus experimental enabled profile:
+KCORE 024746 (10726) -> 021677 (9151), a 1575-word reduction;
+MonitorFS MRES adds 003070 (1592) words; KCORE+MRES 036502
+(15682) -> 036523 (15699), an increase of 17 permanent words;
+PERMANENT_LAST 036561 (15729) -> 036602 (15746), likewise +17.
+This is a large **fixed-KCORE size reduction**, but **not a total
+permanent occupancy reduction**. The feature stays opt-in, not the
+accepted default permanent-RAM optimization baseline.
+
+A successful link does not prove boot, MINIT export patching, pinned
+module lifetime, swapped-process reads, or namespace semantics; those
+are outstanding native runtime acceptance gates. Existing
+`mfsdev_install_minit` already patches nine dispatch entries (contrary
+to the earlier assumption that the installer was absent). Do not
+mark MonitorFS extraction complete until those gates pass. Strict 32K
+acceptance remains deferred.
+
 ## 2026-10-25 Proposal B MonitorFS MRES configuration investigation v332
 
 Re-examined the effective build rather than inferring residency from the

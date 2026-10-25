@@ -824,14 +824,18 @@ $(MEMFS_MRES_OBJ): $(BUILD)/memfs_data.dobj $(BUILD)/memfs_snapshot.dobj $(BUILD
 	    -R $@ -N memfs_mres_package -X memfs_mres_dispatch -X memfs_mres_usage -X memfs_data_reclaim -X memfs_mres_shutdown \
 	    $(BUILD)/memfs_data.dobj $(BUILD)/memfs_snapshot.dobj $(BUILD)/memfs_runtime.dobj
 
-$(MONITORFS_MRES_OBJ): $(BUILD)/monitorfs_mres_v16.dobj $(KCORE_MAP)
+$(MONITORFS_MRES_OBJ): $(BUILD)/monitorfs_mres_v16.dobj $(BUILD)/monitorfs_swap_v63_mres.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/monitorfs-mres.dxr -M $(BUILD)/monitorfs-mres.map \
 	    -R $@ -N monitorfs_mres_package \
 	    -X mfsdev_lookup_mres_v15 -X mfsdev_readdir_mres_v15 \
 	    -X mfsdev_stat_mres_v15 -X mfsdev_readchar_mres_v15 \
 	    -X mfsproc_lookup_mres_v15 -X mfsproc_readdir_mres_v15 \
 	    -X mfsproc_stat_mres_v15 -X mfsproc_read_words_mres_v15 \
-	    -X mfsproc_format_slot_mres_v15 $(BUILD)/monitorfs_mres_v16.dobj
+	    -X mfsproc_format_slot_mres_v15 $(BUILD)/monitorfs_mres_v16.dobj $(BUILD)/monitorfs_swap_v63_mres.dobj
+
+$(BUILD)/monitorfs_swap_v63_mres.dobj: $(KERNEL_DIR)/fs/monitorfs_swap_v63.c | $(BUILD)
+	$(PDP10_GCC) -std=c99 -Os -I$(KERNEL_DIR)/boot -I$(KERNEL_DIR)/core -I$(KERNEL_DIR)/drivers -I$(KERNEL_DIR)/fs -I$(KERNEL_DIR)/mm -I$(KERNEL_DIR)/modules -I$(KERNEL_DIR)/proc -I$(KERNEL_DIR)/storage -I$(PDP10_PREFIX)/include -S $< -o $(BUILD)/monitorfs_swap_v63_mres.s
+	$(DAS) $(DASFLAGS) -C -O $@ $(BUILD)/monitorfs_swap_v63_mres.s
 
 $(BUILD)/monitorfs_mres_v16.dobj: $(KERNEL_DIR)/fs/monitorfs_runtime.s $(PROJECT_ROOT)/tools/host/monitorfs-mres-probe-v15.py | $(BUILD)
 	python3 $(PROJECT_ROOT)/tools/host/monitorfs-mres-probe-v15.py $(KERNEL_DIR)/fs/monitorfs_runtime.s $(BUILD)/monitorfs_mres_v16.s
