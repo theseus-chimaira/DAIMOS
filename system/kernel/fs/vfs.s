@@ -435,8 +435,7 @@ vfs_create_store_result:
         move    4,-1(17)
         and     4,[07700000000]
         ior     3,4
-        move    4,(17)
-        movem   3,(4)
+        movem   3,@(17)                ; publish via stacked caller nodep
 vfs_create_done:
         sub     17,kconst_3_3
         popj    17,

@@ -1,3 +1,25 @@
+## 2026-10-25 Proposal B CREATE/SYMLINK result publication v329
+
+The shared `vfs_create_store_result` epilogue formerly loaded the
+caller's output-node pointer from `(17)` into AC4 before storing the
+provider-result vnode. PDP-6 indirect addressing can publish the
+result directly with `MOVEM 3,@(17)`, eliminating the intermediary
+register load. The preceding success check, mount-ID inheritance,
+caller-owned pointer and three-word stack unwind remain unchanged;
+CREATE/MKDIR/MKFIFO and SYMLINK retain the existing provider ABI.
+
+Fresh full GCC lowmem disk-root linked image compared with v328:
+KCORE 024747 (10727 decimal) -> 024746 (10726), KCORE+MRES
+036503 (15683) -> 036502 (15682), PERMANENT_LAST 036562 (15730)
+-> 036561 (15729). One permanent word saved, no added state.
+
+GCC daimos-testkit `target-file-pdp6`, `target-file-walk-pdp6`,
+`test-daimos-vfs-stat-frame`, and `test-daimos-pre-dsh-fs-closure`
+PASS. `test-daimos-d6fs-context-dispatch` and
+`test-daimos-vfs-storage-reservation` also PASSed in this review.
+The existing tests do not separately prove every CREATE/SYMLINK
+failure-mode combination. Strict 32K acceptance remains deferred.
+
 ## 2026-10-25 Proposal B UNLINK/RMDIR type normalization v328
 
 Consolidated `file_remove`'s duplicated directory and non-directory
