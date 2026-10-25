@@ -1,3 +1,21 @@
+## 2026-10-25 expanded swap capacity experiment v305 — FAIL/timeout
+
+A native 256K full-profile PDP-6 GCC 16-child acceptance attempt
+with `DRUM_BACKSTORE_BLOCKS=010000` (octal; 4096 blocks), doubled
+from the default `04000` (2048), used the v302 instrumented guest
+without SIMH debugger breakpoints. The guest emitted `<w` but never
+reached `Q`; the simulator stopped at its 360-second timeout
+(`SIGTERM`, PC `017441` in the wait path). The run did **not** show
+the previous unexpected UUO, but did not satisfy writer completion
+or child reaping. The larger backing area therefore does not yet
+establish 16-child acceptance or settle whether the failure is
+capacity-only. A concurrent separate v305 run may also exist;
+this result belongs to the run preserved as
+`$TMPDIR/daimos-mm-swap-capacity-v305.log`.
+Next distinguish slow forward progress from blocked writer / scheduler
+wait with a lower-overhead trace, and retain correct behavior under
+insufficient backing capacity. No production change or KCORE growth.
+
 ## 2026-10-25 writer termination event confirmation v303
 
 A diagnostic SIMH run of the 16-child v302 guest placed one breakpoint
