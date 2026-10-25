@@ -1,3 +1,27 @@
+## 2026-10-25 EXEC/RUN measurement checkpoint v316
+
+Fresh `make -C system/boot/pdp6 BOOT_PROFILE=lowmem COMPILER=gcc
+permanent-size` PASSed on the current checkout without production edits.
+Its report gives KCORE `024766` octal (10742 words), KCORE+MRES
+`036522` (15698), PERMANENT_LAST `036601` (15745), and the single-root
+limit `040000` with 638 free words. This is 101 words below the older
+documented `025133` lowmem number, but profile/build inputs and tool
+versions have not yet been demonstrated equivalent; **do not attribute
+the difference to EXEC/RUN optimization**.
+
+The scanned EXEC/RUN record loops both require their input-range checks:
+`sixbit_record_words` reads the pointed-to count word, so removing the
+pre-call `pointer < end` check permits an out-of-range read even though
+the post-call span check remains. Likewise the post-call span bound is
+necessary to reject a record claiming data beyond its mapped block.
+Do not remove either check as a size shortcut. RUN's descriptors,
+hierarchy and publication require distinct cleanup ordering from EXEC.
+
+Next: compare linked instruction sequences and call graphs for proven
+intra-path redundancies; use this exact build command as the baseline
+for before/after size tests. No code change, runtime retest or new
+size-saving claim follows from this measurement alone.
+
 ## 2026-10-25 resident EXEC/RUN sharing audit v315
 
 Source-only audit of `exec_lowmem_pdp6.s`, `proc_run.s`, and
