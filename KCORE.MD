@@ -1,3 +1,27 @@
+## 2026-10-25 Mandatory MonitorFS MRES install cleanup v356
+
+Removed the remaining compile-time `MONITORFS_MRES_ENABLED` branches
+around the MonitorFS MRES package declarations and boot MINIT table
+entry in `system/kernel/modules/module_table.s`, and around
+`mfsdev_install_minit` in `module_minit.c`. MonitorFS now has an
+unconditional MINIT installer in both configurations; the resident
+MonitorFS implementation cannot be selected by disabling a build flag.
+The kernel assembly copy selection is also unconditional and always
+uses the ABI trampoline-only `fs/monitorfs_dispatch_v14.s`. The nine
+resident ABI jump words remain necessary under the current interface.
+
+Full-linked GCC 64K lowmem image metrics: KCORE 9151, KCORE+MRES
+15699, PERMANENT_LAST 15746 words, **no RAM growth** from v355.
+Native `daimos-testkit` `test-daimos-monitorfs-mres-domains-v346`
+PASS with an isolated lowmem PDP-6 image, exercising process stat/read,
+domain directory enumeration and numeric-domain lookup under the
+forced always-on package. Earlier child/zombie test v354 passed under
+the same forced package model in v355. This v356 cleanup does **not**
+recover the remaining +17 combined words; do not remove ABI trampolines
+without proving external callers and MINIT patch relocation remain
+correct. Full-profile permanent-address overflow and strict 32K
+acceptance remain deferred.
+
 ## 2026-10-25 MonitorFS always-loaded MRES, no resident implementation v355
 
 MonitorFS is now **MRES-only by construction**. The PDP-6 boot build

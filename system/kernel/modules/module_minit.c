@@ -1515,7 +1515,6 @@ d6fs_minit(void)
 #endif
 
 /** Install a pinned MonitorFS MRES before any runtime MM allocations. */
-#if defined(MONITORFS_MRES_ENABLED) && MONITORFS_MRES_ENABLED
 void
 mfsdev_install_minit(void)
 {
@@ -1550,7 +1549,6 @@ mfsdev_install_minit(void)
         storage_patch_jump(&mfsproc_format_slot_entry_v16,
             minit_export((kword_t)SIXBIT("MFS   "), base, 8U));
 }
-#endif
 
 /** @brief Register MonitorFS device namespace after module services are known. */
 void
