@@ -1,3 +1,23 @@
+## 2026-10-25 Proposal B MonitorFS MRES domain identity probe v345
+
+Extended v344's successful 64K native MRES domain-root test to require
+one `/MONITOR/DOMAINS` directory entry, validate a one-to-three-digit
+SIXBIT domain ID, construct `/MONITOR/DOMAINS/<id>` from that returned
+name, and call STAT on the resulting domain directory. The native PDP-6
+image booted and passed v343's process checks and the v344 domain-root
+checks, but reported `<ABCDE!c`: domain-entry identity was numeric,
+yet STAT on the constructed path failed. This may be a fixture
+path-encoding error or a real MonitorFS domain lookup inconsistency;
+not established. The fixture's new code was withdrawn after failure,
+and pre-existing dirty testkit files were preserved. Do not cite this
+as native domain-leaf acceptance. Future investigation should compare
+an independently encoded literal domain path, the returned directory
+name and the VFS lookup chain before modifying the kernel.
+
+No production code changes or RAM savings. The accepted native domain
+root v344 remains PASS. Optional MonitorFS MRES is KCORE 9151 words,
+KCORE+MRES 15699 (+17 versus default); 32K acceptance remains deferred.
+
 ## 2026-10-25 Proposal B MonitorFS MRES domain root access v344
 
 Added `daimos-testkit` native 64K PDP-6 GCC lowmem test
