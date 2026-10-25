@@ -1,3 +1,14 @@
+### Physical fault snapshots v307
+
+The retained v297 snapshot compared 317 memory words, changing 27 of
+64 sampled idle-stack words, 1 of 83 sampled process/MM metadata words,
+and 0 of 4 sampled storage-map words. Both idle-stack base pointers
+remain `040350` octal. Execution continued between captures, so these
+changes cannot by themselves establish illegal writes or a stack
+overflow. The v307 testkit report classifies physical changes without
+assuming that a changed stack word is a corrupted word. No KCORE
+growth or production change.
+
 ## 2026-10-25 current-kernel twelve-child regression v306 — PASS
 
 After the production swap-in allocation-failure local-pop correction

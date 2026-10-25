@@ -1,3 +1,19 @@
+## 2026-10-25 physical fault snapshot invariants v307
+
+Reanalyzed the preserved v297 physical pre-swap-out/post-HALT trace
+with versioned testkit tool `daimos-mm-swap-snapshot-invariants-v307.py`.
+Of 317 common octal memory words, 30 changed: 27/64 sampled idle-stack
+words and one of 83 process/MM metadata words. None of the four sampled
+storage-map words changed. Both `mach_kernel_stack_base` and
+`mach_kernel_sp` remained `040350` octal, and the first storage-mode
+word remained `000005252520` octal. These diffs occurred across
+continued execution and therefore do **not** prove stack overflow or
+an illegal memory overlap. They also do not rule out unsampled memory
+corruption. The known missing stack-local pop was separately repaired
+in `3b41e87`; v306 revalidated 12 children. Current unresolved issue
+is 16-child swap-space exhaustion, writer TERM handling, and the
+higher-capacity v305 timeout. No production change in v307.
+
 ## 2026-10-25 current-kernel twelve-child regression v306 — PASS
 
 After the production swap-in allocation-failure local-pop correction
