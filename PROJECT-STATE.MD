@@ -1,3 +1,26 @@
+## 2026-10-25 MonitorFS MRES linked-overhead audit v357
+
+Audited the always-loaded MonitorFS ABI trampoline file,
+`mfsdev_install_minit` in `module_minit.c`, VFS process/domain name
+callers, nine export declarations in the boot MRES link, and the
+relocated `monitorfs-mres.map`. Nine fixed KCORE jump words correspond
+to distinct ABI services, including `mfsproc_format_slot` called by
+resident VFS; nine MRES exports have non-contiguous code offsets. Thus
+neither dropping the last formatter entry nor assuming contiguous
+function addresses is ABI-safe. A staged C simplification caching
+`SIXBIT("MFS   ")` in a local name variable was compiled and measured
+against the **complete linked lowmem image**; figures remained exactly
+KCORE 9151, KCORE+MRES 15699, PERMANENT_LAST 15746. Because it saved
+no permanent words, the experiment was reverted without commit.
+
+No accepted production change from v356. The combined +17 words
+compared with the historical resident default remain unresolved. A
+future reduction should derive export/trampoline overhead from actual
+linked package metadata and preserve independent ABI entry addresses,
+then validate a native boot and filesystem semantic regression. The
+full-profile permanent-address overflow and strict 32K acceptance
+remain deferred.
+
 ## 2026-10-25 Mandatory MonitorFS MRES install cleanup v356
 
 Removed the remaining compile-time `MONITORFS_MRES_ENABLED` branches
