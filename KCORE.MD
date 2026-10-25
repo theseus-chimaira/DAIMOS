@@ -1,3 +1,20 @@
+## 2026-10-25 first swap-read return probe v287 — inconclusive
+
+Three iterations of the existing 16-child reproducer attempted
+breakpoints around the linked `proc_swap_in` read return and rollback.
+The base object-file disassembly exposes instructions after
+`PUSHJ backstore_read`, but the inferred relocated breakpoints did
+not trigger; early iterations also contained incorrect octal
+address arithmetic. The native trace still reproduced the UUO.
+A separate direct-image probe attempted to examine the linked code
+but halted early at `?RT` and supplied no usable instruction evidence.
+Therefore the read return code and the exact rollback cause remain
+**unmeasured**. Do not conclude a read failure or a specific code
+corruption mechanism from this probe. Next obtain authoritative final
+linked disassembly or a simulator return-stack/trace snapshot and
+verify each breakpoint address before launching a costly reproducer.
+No production code change or KCORE growth.
+
 ## 2026-10-25 first swap-in rollback trace v286
 
 The unmodified 16-pressure-child PDP-6 GCC reproducer again emitted
