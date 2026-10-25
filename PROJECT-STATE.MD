@@ -1,3 +1,22 @@
+## 2026-10-25 Proposal B provider lock invariants gate v325
+
+Audited the v324 resident provider dispatch and shared transfer-workspace
+lock. The private 7-word request save survives the `proc_wait_event`
+loop, the ready lock is acquired before registers are restored, and
+provider completion releases the lock and wakes waiters while preserving
+the returned AC1. MEMFS still bypasses serialization; DTFS/D6FS/TSFS
+continue to serialize over potentially sleeping I/O. No production code
+change or memory saving is claimed. The accepted full-linked baseline
+remains v324: KCORE 024752 (10730 decimal), KCORE+MRES 036506
+(15686 decimal), PERMANENT_LAST 036565 (15733 decimal).
+
+Added `daimos-testkit` target `test-daimos-provider-lock-contract-v325`
+(PASS). It enforces assembly source-level register/lock invariants only;
+it is not a scheduler contention test. The testkit had unrelated local
+edits which were preserved. Further reentrancy changes require actual
+multi-process sleep/wakeup and concurrent-provider native acceptance.
+Strict 32K acceptance remains deferred.
+
 ## 2026-10-25 Proposal B provider table index normalization v324
 
 Normalized the provider number (4 MEMFS through 7 TSFS) to a 0..3
