@@ -1,3 +1,26 @@
+## 2026-10-25 Proposal B one-child SYS_PROCINFO trap localization v348
+
+Created a temporary daimos-testkit native lowmem GCC 64K PDP-6
+`MONITORFS_MRES_ENABLED=1` single-child RUN/PIPE lifecycle probe.
+Instrumented the four distinct steps of `wait_zombie_by_eof` after
+parent's RUN return: `a` before closing parent writer, `b` after
+writer close, `c` after reading EOF, `d` after closing reader, `e`
+only after returning from `dsys_procinfo`. PDP-6 trace reached
+`D6FS LOADED`, emitted `<RSWabcd`, then halted at
+`PC: 000000 (LUUO00 0,0)`. Thus writer close, EOF read, reader
+close all completed successfully. The failure occurs within or while
+returning from `dsys_procinfo(pid,&info)`, before `e` could print.
+The libc entry uses `uuo 057,0(1)` in `userland/libc/syscall.s`.
+No MonitorFS path is used by this probe. Diagnose the SYS_PROCINFO
+UUO dispatch/return path and compare identical lowmem configuration
+with `MONITORFS_MRES_ENABLED=0` before attributing to MRES.
+
+The failed tracing fixture was withdrawn; all other dirty testkit
+files were preserved. No production code or memory footprint changed.
+Accepted native MRES namespaces v341/v343/v344/v346 remain passing.
+Optional KCORE 9151, KCORE+MRES 15699 (+17 vs default), opt-in,
+strict 32K acceptance deferred.
+
 ## 2026-10-25 Proposal B one-child RUN/WAIT isolation v347
 
 Adapted the existing full-profile process decimal native fixture to an
