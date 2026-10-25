@@ -1,3 +1,24 @@
+## 2026-10-25 EXEC/RUN linked-fold audit v317
+
+Inspected the GCC lowmem linked map and `kcore.fold` after the v316
+fresh build. Resident entries appear at `exec_replace_current=000130`,
+`exec_replace_current_lowmem=000407`, `sixbit_record_words=000540`,
+and `proc_run_block=020332` (octal). The fold-plan text has no entries
+for either `proc_run.dobj` or `exec_lowmem_pdp6.dobj`: there is no
+existing cross-block folding in these two units to harvest directly.
+
+Checked both startup-record loops against the decoder contract.
+Their pre-call address test protects the count-word read, and their
+post-call address test protects payload extent. The count-zero path
+is necessary for argc/envc=0. Preserve these checks, even though
+the loops superficially resemble each other. No safe positive-size
+candidate was verified, so this audit makes **no production change**.
+
+Retain the v316 `024766` GCC lowmem size measurement as baseline.
+Next investigate executable-loader and startup helpers for proved
+redundancy, with exact before/after post-fold and native regression
+tests; do not infer code savings from source-level similarity.
+
 ## 2026-10-25 EXEC/RUN measurement checkpoint v316
 
 Fresh `make -C system/boot/pdp6 BOOT_PROFILE=lowmem COMPILER=gcc
