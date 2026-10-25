@@ -134,13 +134,11 @@ blockset_tail_blocks:
 ; Use that binding directly instead of adding another permanent republished
 ; entry point.
 fs_provider_reg_call:
-        caige   7,4
+        subi    7,4                    ; service-table index, 0..3
+        jumpl   7,fs_mres_no_service
+        caile   7,3
         jrst    fs_mres_no_service
-        caile   7,7
-        jrst    fs_mres_no_service
-        caie    7,4                    ; MEMFS never sleeps; no shared block
-        jrst    fs_provider_serialized
-        subi    7,4
+        jumpn   7,fs_provider_serialized ; index zero: MEMFS never sleeps
         hrrz    7,fs_memfs_service_jump(7)
         cain    7,fs_mres_no_service
         jrst    fs_mres_no_service
@@ -167,7 +165,6 @@ fs_provider_lock_retry:
         hrli    0,-6(17)
         blt     0,7
         sub     17,kconst_7_7
-        subi    7,4
         hrrz    7,fs_memfs_service_jump(7)
         cain    7,fs_mres_no_service
         jrst    fs_provider_locked_no_service

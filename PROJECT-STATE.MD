@@ -1,3 +1,25 @@
+## 2026-10-25 Proposal B provider table index normalization v324
+
+Normalized the provider number (4 MEMFS through 7 TSFS) to a 0..3
+service-table index on entry to `fs_provider_reg_call`. The MEMFS
+fast path remains direct and non-sleeping. The other providers retain
+the seven-register process-private save, lock wait, dispatch and wakeup;
+the index is now saved instead of the original provider number, removing
+the redundant subtraction after a lock acquisition. Invalid provider
+numbers still return `fs_mres_no_service`. No ABI or persistent storage
+changes were made.
+
+Full GCC lowmem disk-root linked image versus accepted v322:
+KCORE 024755 (10733) -> 024752 (10730), KCORE+MRES 036511
+(15689) -> 036506 (15686), PERMANENT_LAST 036570 (15736) ->
+036565 (15733). Saving: three permanent words, unchanged MRES sizes.
+
+GCC daimos-testkit `target-file-pdp6`, `target-file-walk-pdp6`,
+`test-daimos-vfs-stat-frame`, and `test-daimos-pre-dsh-fs-closure`
+PASS. These tests do not exhaustively exercise concurrent lock waiters;
+a targeted stress regression remains useful. Strict 32K acceptance
+and further JRST folding remain deferred.
+
 ## 2026-10-25 Proposal B SETATTR unwind experiment v323 (reverted)
 
 Re-tested reusing `vfs_mutate3_ro` for `vfs_setattr_ro` in the
