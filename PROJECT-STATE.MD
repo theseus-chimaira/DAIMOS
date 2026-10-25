@@ -1,3 +1,18 @@
+## 2026-10-25 expanded backstore 16-child progress localization v308
+
+The unmodified 256K PDP-6 kernel, with `DRUM_BACKSTORE_BLOCKS=010000`
+(octal, 4096 blocks), ran a lightly marked v308 guest (no SIMH
+breakpoints). Its guest output was `<wP0P1P2P3P4P5P6P7P8P9PAPBPCPDPEPFS`.
+Each `P` index proves a pressure child was admitted; `S` is printed
+only after all sixteen reached PROC_SLEEP. The simulator nonetheless
+timed out after 360 seconds at `proc_wait_event` PC `017440` without
+`Q`, `a` or `s` error markers. Thus the long-run stall is **after**
+all sixteen children sleep, in the `dsys_close(gate_r)` /
+`target_is_swapped` check or first writer-pipe read before its
+return. It is NOT an admission bottleneck. A v309 check should place
+low-cost markers around this boundary, avoiding MM breakpoints.
+No production code change or KCORE growth.
+
 ## 2026-10-25 physical fault snapshot invariants v307
 
 Reanalyzed the preserved v297 physical pre-swap-out/post-HALT trace
