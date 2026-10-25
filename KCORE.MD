@@ -1,3 +1,25 @@
+## 2026-10-25 extended 16-child swap acceptance v310 — PASS
+
+The earlier 360-second high-capacity 16-child tests (v304/v305/v308/
+v309) ended in host timeout, even though v309 reached marker `R`
+just before the parent's first writer-pipe read. The unchanged v309
+instrumented guest was rerun with `DRUM_BACKSTORE_BLOCKS=010000`
+(4096 octal blocks), 256K PDP-6 full GCC image, no SIMH debugger
+breakpoints and a **900-second simulator timeout**. Versioned testkit
+fixture `daimos-mm-swap-progress-v310.sh` passed its one-cycle guest
+completion checks (`<`, `w`, `Q`, guest HALT): writer pipe payload
+integrity, sixteen pressure children, wait/reap and cleanup succeeded.
+The full command including image build took roughly 569 seconds;
+that duration is **not** the simulator-only elapsed time.
+
+The v309 `proc_wait_event` snapshot was thus insufficient to conclude
+a deadlock: under this configuration the program completed with a
+longer execution budget. Original 2048-block backing remains a
+separate capacity-exhaustion case and is not accepted at 16 children.
+The 12-child current-kernel passing baseline remains valid.
+No production code change, linked KCORE growth or descriptor-capacity
+increase. Do not add debugger-heavy traces to this acceptance fixture.
+
 ## 2026-10-25 expanded swap writer-pipe blocking boundary v309
 
 An additional one-byte progress marker `R` was emitted by the native
