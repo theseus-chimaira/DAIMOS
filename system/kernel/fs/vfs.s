@@ -386,9 +386,8 @@ vfs_create_common:
         move    6,file_table
         move    6,041(6)               ; u-area 067: process umask
         andca   6,3                    ; mode &= ~umask
-        move    3,6
         push    17,4                   ; nodep as C arg 5
-        move    4,3
+        move    4,6                    ; masked mode for request
         move    3,2
         move    2,1
         move    1,5

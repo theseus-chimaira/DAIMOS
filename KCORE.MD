@@ -1,3 +1,23 @@
+## 2026-10-25 Proposal B VFS CREATE mode staging v322
+
+The common CREATE/MKDIR/MKFIFO request staging in `vfs_create_common`
+carried the umask-filtered mode through an unnecessary intermediate AC3
+assignment before moving it into AC4. Passing the masked value directly
+from AC6 into AC4 retains the fifth argument, original call conventions,
+provider request order and mode semantics. No new state or dispatch.
+
+Full GCC lowmem disk-root linked image against v321: KCORE 024756
+(10734 decimal) to 024755 (10733); KCORE+MRES 036512 (15690) to
+036511 (15689); PERMANENT_LAST 036571 (15737) to 036570 (15736).
+Savings: one permanent word. Component MRES sizes are unchanged.
+
+`daimos-testkit` GCC `target-file-pdp6`, `target-file-walk-pdp6`,
+`test-daimos-vfs-stat-frame`, and `test-daimos-pre-dsh-fs-closure`
+all PASS. No dedicated native CREATE/mode matrix was added in this
+step. Architectural follow-up should seek meaningful savings in
+request frames and provider interactions rather than new dispatch
+abstractions. Strict 32K acceptance and JRST folding remain deferred.
+
 ## 2026-10-25 Proposal B file lock mount decode v321
 
 Consolidated the identical two-bit mount-extension lookup in the
