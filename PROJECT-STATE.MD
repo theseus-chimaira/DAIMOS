@@ -1,3 +1,25 @@
+## 2026-10-25 MonitorFS opt-in MINIT source-reclaim localization v337
+
+Built an isolated 64K lowmem MonitorFS-MRES image with temporary
+SIXBIT `NEXT` and `DONE` trace markers around each call in
+`module_run_minits` (not retained in production). The PDP-6 simulator
+trace shows `BSET LOADED`, then `DONE`, followed by a HALT without the
+next `NEXT`. The failure therefore follows successful return from the
+BLOCKSET initializer and occurs before the next initializer call.
+The intervening branch validates/free-publishes the previous package
+source between two successive MRES package addresses. In the
+instrumented linker map `blockset_mres_package=075633` and
+`d6fs_mres_package=075672` octal, so the expected reclaimed gap is
+037 octal words. Since the next `NEXT` marker follows the reclamation
+branch and the addresses are increasing, `mm_add_free` rejecting this
+source interval is the leading diagnosis; confirm the exact
+allocation/arena overlap or MM return code before any fix. `mm_add_free`
+explicitly rejects overlapping extents and arenas, and no bypass is
+acceptable. The diagnostic KINIT edits were reverted immediately and
+no kernel production source was changed. The option remains off by
+default; +17 combined permanent words remains provisionally acceptable
+if full runtime acceptance is achieved. Strict 32K gate deferred.
+
 ## 2026-10-25 MonitorFS MRES post-BSET boot localization v336
 
 Using the existing optional `MONITORFS_MRES_ENABLED=1` image from
