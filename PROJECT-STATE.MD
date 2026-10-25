@@ -1,3 +1,23 @@
+## 2026-10-25 Proposal B native MonitorFS MRES devices acceptance v341
+
+Added `daimos-testkit` native PDP-6 target
+`test-daimos-monitorfs-mres-device-v341`, running an isolated GCC
+lowmem `MONITORFS_MRES_ENABLED=1` image with matching 64K RAM.
+The existing full-profile device-view test expected 0377 octal and
+initially failed `!5`, as the lowmem profile omits PTR/OCNSLS/DRM.
+The new fixture specifies the lowmem expected present set 0153 octal
+(CTY0, CLK0, TTY0, DSK0, D6SET0), with absence checks inherited from
+the source fixture. Native PDP-6 run **PASS**: MonitorFS device
+namespace works through the relocated MRES entrypoints following the
+v340 boot-source ordering correction. This is not yet a test of
+process/domain leaves, swapped-process record reads, or module unloading.
+
+No kernel production code changed; no new size saving is claimed.
+Continue to use the accepted default v329 KCORE 10726 and combined
+15682 words; the opt-in MonitorFS MRES is KCORE 9151 and combined
+15699 (+17 words). The MRES mode remains opt-in pending broader
+runtime acceptance; strict 32K acceptance remains deferred.
+
 ## 2026-10-25 MonitorFS MRES package-source ordering boot fix v340
 
 Confirmed that v339's `REVERS` (six-character SIXBIT diagnostic)
