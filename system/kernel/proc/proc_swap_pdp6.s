@@ -493,8 +493,11 @@ proc_swap_in_pin_fail:
         move    3,10
         pushj   17,mm_free
 proc_swap_in_drop_local:
-        sub     17,kconst_1_1
 proc_swap_in_alloc_fail:
+        ; Both allocation failure and post-allocation rollback retain the
+        ; one-word result local after discarding the two call arguments.
+        ; Drop it before restoring AC10..AC16 and the saved return address.
+        sub     17,kconst_1_1
         move    1,(11)
         andcmi  1,PROC_TRANSITION_RH
         movem   1,(11)
