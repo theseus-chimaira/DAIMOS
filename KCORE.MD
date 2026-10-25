@@ -1,3 +1,20 @@
+## 2026-10-25 EXEC allocation-failure native retest v319
+
+`make -C ../daimos-testkit COMPILER=gcc test-daimos-exec-create-oom`
+PASSed against the current v318 production EXEC loader. The independent
+PDP-6 test image printed `__kcore_low_end=025036` and
+`daimos-exec-create-oom-v205: PASS (staged VM cannot fit physically;
+low-memory EXEC replaced PID 1)`. This is positive native evidence for
+the low-memory EXEC retry after a staged allocation failure. The test
+image has a different build configuration; its endpoint must **not**
+be compared with the v318 `024764` lowmem permanent-size image.
+
+The native `test-daimos-exec-rt-owner` timeout described under v318
+remains unresolved; this retest alone does not establish full v318 RT
+release semantics. No production change or new permanent-size gain was
+made here. An unrelated uncommitted `file_runtime.s` experiment in the
+workspace was left untouched.
+
 ## 2026-10-25 EXEC loader RT cleanup fold v318
 
 `exec_load.s` now shares the post-lookup RT-reservation release sequence
