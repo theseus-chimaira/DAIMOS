@@ -1,3 +1,22 @@
+## 2026-10-25 MonitorFS MRES build and boot gate v334
+
+The optional MonitorFS MRES full link (v333) saves 1575 KCORE words
+but increases KCORE+MRES and PERMANENT_LAST by 17 words. The 17-word
+cost is an acceptable provisional tradeoff if native behavior is correct;
+seek to recover it only after the runtime acceptance gate, without
+adding state or compromising module boundaries.
+
+`BOOT_PROFILE=lowmem MONITORFS_MRES_ENABLED=1` with default 32K
+`BOOT_CORE_WORDS` failed `mkimage` because KINIT left less than the
+configured stack reserve. Without relaxing that protection, rebuilt
+with isolated `BOOT_CORE_WORDS=0200000` (64K) and the image target
+completed. A SIMH boot using its generated `boot.ini` then printed
+`?B` and halted at PC `000544` (`HALT 544`). Consequently, successful
+MRES linking/image creation is *not* successful runtime installation
+or MonitorFS namespace acceptance. The failure needs diagnosis before
+enabling MRES by default. The default v329 configuration is unchanged.
+Strict 32K acceptance stays deferred.
+
 ## 2026-10-25 Proposal B MonitorFS MRES missing swap-helper build fix v333
 
 Fixed the opt-in `MONITORFS_MRES_ENABLED=1` package link in
