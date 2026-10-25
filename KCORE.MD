@@ -1,3 +1,25 @@
+## 2026-10-25 Proposal B MonitorFS MRES process acceptance probe v342
+
+Attempted a native process-namespace regression by adapting the
+existing full-profile `daimos-monitorfs-process-decimal-v1` fixture
+to a 64K GCC lowmem image with `MONITORFS_MRES_ENABLED=1`.
+The fixture exercises child RUN/WAIT, two-digit decimal `/PROC/10/STATE`
+lookup, and S6REC zombie-state payload. Image build and boot succeeded
+and userspace emitted the initial `<` marker; then SIMH halted with
+`PC: 000000 (LUUO00 0,300)` before any normal fixture error or final
+`P` marker. Thus the test **did not pass**. The defect has not been
+isolated to MonitorFS rather than the child/RUN or lowmem assumptions.
+The versioned experimental fixture was removed rather than committed
+as accepted test coverage. All pre-existing unrelated testkit changes
+were preserved. No DAIMOS production change or new RAM saving.
+
+The accepted native opt-in device namespace test v341 continues to
+PASS. Further process acceptance should first isolate minimal
+`/PROC` path STAT/open/read from the multi-child RUN/WAIT fixture,
+then add child lifecycle and swapped metadata cases individually.
+MonitorFS remains opt-in, KCORE=9151, KCORE+MRES=15699 (+17 over
+v329 default); strict 32K acceptance remains deferred.
+
 ## 2026-10-25 Proposal B native MonitorFS MRES devices acceptance v341
 
 Added `daimos-testkit` native PDP-6 target
