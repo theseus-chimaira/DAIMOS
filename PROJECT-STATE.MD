@@ -1,3 +1,31 @@
+## 2026-10-25 Native zombie PROCINFO safety and RAM-neutral fix v354
+
+Root cause of baseline v348-v351 lowmem child-completion halt found in
+`system/kernel/proc/syscall_info.s`: `vm_space_destroy` publishes
+`VM_SPACE_NONE` (`-1`) in the zombie's `vm_state`, while
+`sys_procinfo_user_comm` previously checked only the nonzero RH
+image base and could dereference the invalid `0777777` image address
+while reconstructing COMM from argv[0]. A negative VM descriptor is
+now treated as unavailable and selects the existing `USER` fallback.
+The argv[0] offset is also added directly from memory to AC7,
+eliminating one intermediate MOVe and offsetting the one-word safety
+check without altering pointer interpretation. The first experimental
+explicit zombie-state check would have cost +5 KCORE words and was
+replaced; the narrower VM sentinel guard initially cost +1 word; the
+final combined fix has **zero full-linked permanent RAM growth**.
+
+Native 64K GCC lowmem regression in daimos-testkit
+`test-daimos-procinfo-zombie-v354` **PASS**, including the previously
+failing child `PROCINFO`, pipe EOF, WAIT and decimal `/PROC/10/STATE`
+S6REC lookup checks. With the final source, full-linked default
+KCORE 10726, combined 15682, PERMANENT_LAST 15729 words; optional
+MonitorFS MRES KCORE 9151, combined 15699, PERMANENT_LAST 15746,
+unchanged against v329/v333 respective baselines. Testkit commit
+`c772b54`. Related v348-v351 HALTs are resolved in this tested
+configuration, independent of MonitorFS extraction. The broader
+MRES swapped-process metadata acceptance remains outstanding;
+MonitorFS MRES stays opt-in, strict 32K gate deferred.
+
 ## 2026-10-25 Native lowmem SYS_PROCINFO immediately after RUN v351
 
 Adapted the baseline native one-child RUN/PIPE test to call

@@ -67,7 +67,10 @@ sys_procinfo_swapper:
 ; live startup image.  Reconstruct the first SIXBIT word directly instead of
 ; spending one permanent word per process on a duplicate COMM field.
 sys_procinfo_user_comm:
-        move    6,1(5)                 ; logical user words,,image base
+        move    6,1(5)                 ; logical words,,VM image base
+        ; vm_space_destroy publishes VM_SPACE_NONE (-1) for zombies.
+        ; A negative descriptor has no readable startup image.
+        jumpl   6,sys_procinfo_comm
         hrrz    7,6
         jumpe   7,sys_procinfo_comm    ; swapped/unavailable image: USER
         hlrz    1,6
@@ -75,8 +78,7 @@ sys_procinfo_user_comm:
         add     1,7
         hlrz    6,(1)                  ; argc
         jumpe   6,sys_procinfo_comm
-        move    1,1(1)                 ; argv[0] counted-record offset
-        add     7,1                    ; AC7 -> counted SIXBIT path record
+        add     7,1(1)                 ; AC7 -> argv[0] counted SIXBIT path
         hrrz    6,(7)                  ; source character count
         jumpe   6,sys_procinfo_comm
         move    0,[POINT 6,1(7)]       ; ILDB pointer before first SIXBIT char
