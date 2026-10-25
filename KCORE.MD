@@ -1,3 +1,29 @@
+## 2026-10-25 resident EXEC/RUN sharing audit v315
+
+Source-only audit of `exec_lowmem_pdp6.s`, `proc_run.s`, and
+`exec_load.s`; no code or native acceptance change. Both entry points
+already call `sixbit_record_words` for bounded counted-SIXBIT records
+and `exec_load_process` for DXR loading. The remaining record scans
+use different persistent registers and failure targets; a separate
+shared loop would add call/return and register adaptation, so no
+positive post-fold saving has been demonstrated. Do not introduce it
+without a measured whole-image reduction.
+
+EXEC replacement stages a VM, creates startup data, preserves the old
+swap/RT/extension state on failure and only then commits. Its low-memory
+retry deliberately destroys the old VM before loading again and has a
+distinct fatal-after-commit result. RUN instead claims a child slot,
+creates a new u-area, inherits hierarchy and descriptors, then publishes
+the runnable child; all post-claim errors use `proc_slot_discard`.
+Merging these transaction tails would risk ownership and rollback
+semantics and is not recommended.
+
+Next optimization unit: count individual validation/check sequences
+against actual linked object and p10fold output; prioritize proven
+redundant work within a single path over generic cross-path helpers.
+Preserve the deferred strict-32K policy. The existing comparable lowmem
+size reference remains `025133` octal; no fresh measurement was made.
+
 ## 2026-10-25 verified whole-core swap-out return snapshots v314
 
 The PDP-6 SIMH debugger stops at the successor instruction when a
