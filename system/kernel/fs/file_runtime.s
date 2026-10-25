@@ -1437,13 +1437,11 @@ file_remove:
         jumpn   1,file_remove_stat_fail
         move    3,-6(17)                ; st.type
         move    4,-016(17)              ; want directory
-        jumpe   4,file_remove_need_nondir
+        ; Normalize STAT type to boolean directory state and compare with
+        ; the requested UNLINK/RMDIR class without separate branch trees.
         caie    3,1                    ; VFS_TYPE_DIR
-        jrst    file_remove_stat_fail
-        jrst    file_remove_type_ok
-file_remove_need_nondir:
-        caie    3,1
-        jrst    file_remove_type_ok
+        setz    3,
+        came    3,4
         jrst    file_remove_stat_fail
 file_remove_type_ok:
         sub     17,kconst_7_7

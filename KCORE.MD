@@ -1,3 +1,23 @@
+## 2026-10-25 Proposal B UNLINK/RMDIR type normalization v328
+
+Consolidated `file_remove`'s duplicated directory and non-directory
+STAT result branches. Normalizing `VFS_TYPE_DIR` (1) to a boolean and
+comparing it with the existing requested-directory flag preserves UNLINK
+(reject directories) and RMDIR (accept directories only), without
+changing the parent permission, backing-busy or provider removal paths.
+No ABI, new storage or provider dispatch changes.
+
+Full linked GCC lowmem disk-root image compared with accepted v324:
+KCORE 024752 (10730 decimal) -> 024747 (10727), KCORE+MRES
+036506 (15686) -> 036503 (15683), PERMANENT_LAST 036565 (15733)
+-> 036562 (15730). Three permanent words saved, no MRES growth.
+
+GCC daimos-testkit `target-file-pdp6`, `target-file-walk-pdp6`,
+`test-daimos-vfs-stat-frame` and `test-daimos-pre-dsh-fs-closure`
+all PASS. A dedicated native UNLINK/RMDIR type matrix is still useful
+for stronger semantic acceptance. The strict 32K acceptance gate
+remains deferred.
+
 ## 2026-10-25 Proposal B expanded native provider gateway test v327
 
 Expanded daimos-testkit's v326 PDP-6 gateway oracle into a distinct
