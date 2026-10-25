@@ -1,3 +1,16 @@
+## 2026-10-25 current-kernel twelve-child regression v306 — PASS
+
+After the production swap-in allocation-failure local-pop correction
+(commit `3b41e87`), the original 256K PDP-6 GCC v281 twelve-child
+post-INIT guest was rebuilt and rerun unchanged. Native SIMH reported
+`PASS (one post-INIT 12-child pressure cycle)`, with allocator
+insertion peak 31/136 across 71 samples. This reconfirms writer
+restoration, pipe data integrity and child completion at 12 children
+under the current code. It does **not** prove the 16-child case,
+which still fails due to swap-space exhaustion and an observed writer
+TERM event, or resolve the 4096-block v305 timeout. No production
+source or KCORE-size change in this regression.
+
 ## 2026-10-25 expanded swap capacity experiment v305 — FAIL/timeout
 
 A native 256K full-profile PDP-6 GCC 16-child acceptance attempt
