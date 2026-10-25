@@ -1,3 +1,20 @@
+## 2026-10-25 v284 unexpected UUO simulator breakpoint diagnostic
+
+The unchanged v283 16-child guest was rerun under a new testkit
+SIMH script with a memory-insert breakpoint and an additional PC=000001
+breakpoint intended to examine `proc_current_slot`,
+`proc_sched_cursor`, `mm_extent_count`, and selected ACs. The
+same abnormal terminal output recurred:
+`UUO 000000777777 340000000003` followed by
+`HALT instruction, PC: 000001`. The new PC=1 breakpoint did **not**
+fire, so no process/AC snapshot was captured. The fault remains
+unresolved. In particular, PC 000001 in the terminal line must not
+be interpreted as a successfully executed instruction at that PC.
+No production change or swap high-water acceptance follows from v284.
+Further debugging requires an emulator-side trap/event trace or an
+earlier breakpoint on the actual UUO entry path, rather than relying
+on post-fault PC=1 execution.
+
 ### Post-INIT stress escalation v282/v283: unexpected UUO unresolved
 
 v282 (20 pressure children) fails creation at the 17th requested
