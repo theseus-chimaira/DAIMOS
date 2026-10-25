@@ -1,3 +1,14 @@
+### Correct AUXSTORE/root boot ordering and live swap recovery v277
+
+`auxstore_post_minits()` now publishes dedicated backing-store mapping
+after `kinit_boot()` mounts D6FS. Previously root mounting could
+overwrite the shared direct-tail mapping, leaving backing allocation
+capacity inconsistent with the active I/O span. With the corrected
+order the 256K PDP-6 eight-child pressure fixture completes, including
+blocked-writer restoration and pipe data checks. The standard 32K GCC
+lowmem disk-root size run reports unchanged KCORE 10742 and
+KCORE+MRES 13605 words; PERMANENT_LAST is 13652.
+
 ## 2026-10-25 live backing-tail measurements v276
 
 Corrected test-only SIMH breakpoint examination at `backstore_write`

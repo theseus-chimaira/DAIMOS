@@ -1,3 +1,18 @@
+## 2026-10-25 AUXSTORE/root mapping order fix v277
+
+The v272 eight-pressure-child 256K native PDP-6 GCC workload now
+PASSes after moving `auxstore_post_minits()` from before root mounting
+to immediately after `kinit_boot()` in `system/kernel/boot/kinit.c`.
+Root D6FS mounting updates the shared BLOCKSET direct-tail mapping;
+publishing AUXSTORE before root mounting left its backing-store count
+advertised while the root mount replaced the live direct-tail extent.
+The corrected order permits all eight pressure children and restores
+the blocked pipe writer with the fixture's data-integrity checks.
+This is live swap-path acceptance, not comprehensive repeated swap
+stress. No permanent KCORE data added. Mandatory 32K GCC lowmem
+disk-root size: KCORE 10742 words, KCORE+MRES 13605 words,
+PERMANENT_LAST 13652 (unchanged).
+
 ## 2026-10-25 live backing-tail measurements v276
 
 Corrected test-only SIMH breakpoint examination at `backstore_write`

@@ -541,9 +541,6 @@ kinit_enter(void)
 #if KINIT_TAPE_BOOT
         dtfs_post_minits();
 #endif
-#if KINIT_FULL
-        auxstore_post_minits();
-#endif
 #if KINIT_BADMAP
         badmap_post_minits();
 #endif
@@ -615,6 +612,13 @@ kinit_enter(void)
         kinit_diag_finished();
 #endif
         kinit_boot();
+#if KINIT_FULL
+        /* Root D6FS mounting configures the BLOCKSET tail.  Publish
+         * dedicated AUXSTORE backing only after that configuration,
+         * otherwise D6FS can replace its direct-tail mapping while
+         * leaving backstore_blocks advertised at AUXSTORE capacity. */
+        auxstore_post_minits();
+#endif
 #if KINIT_STACK_WATERMARK
         kinit_stack_watermark_record();
 #endif
