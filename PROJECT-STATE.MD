@@ -1,3 +1,17 @@
+## 2026-10-25 256K pressure admission native traces v273/v274
+
+SIMH breakpoints on the unchanged native PDP-6 guest captured one
+`proc_swap_reclaim` entry, one `proc_swap_victim` entry, one
+`proc_swap_out` entry, one `backstore_alloc` entry and one
+`backstore_write` entry before the `p7` admission failure.
+The deeper trace also observed 11 storage-state checks and
+21 MM-free entries over the boot. Counts are entry observations,
+not successful return results. In particular, whether the backing
+write or subsequent transition fails remains unresolved.
+The v272 eighth-child reproducer still fails; no new production
+code or claimed swap acceptance. Continue at backing-store
+return/rollback analysis, maintaining the 32K GCC KCORE baseline.
+
 ## 2026-10-25 256K eight-child swap-pressure diagnostic v272
 
 A dedicated GCC full-profile 256K PDP-6 testkit guest uses a
