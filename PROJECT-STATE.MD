@@ -1,3 +1,25 @@
+## 2026-10-25 first swap-in rollback trace v286
+
+The unmodified 16-pressure-child PDP-6 GCC reproducer again emitted
+`UUO 000000777777 340000000003` and halted at PC 000001. A new
+SIMH-only breakpoint fixture traced storage-state checks and
+publication, backstore reads/writes, unpin, and MM-free operations.
+The run recorded **one** `proc_swap_in` entry, **one**
+`backstore_read` entry, **no** storage-publication entry associated
+with that swap-in, and an `mm_free` entry before the subsequent
+`proc_swap_out`. This is consistent with the first swap-in falling
+into its rollback path; the exact failing return value was not
+sampled. Over the entire run there were 10 swap-out entries,
+9 backstore-write entries, 9 publication entries, 19 MM-free
+entries and 10 unpin entries. Following the first swap-in rollback,
+`proc_swap_out` was entered again, then the unexpected UUO appeared.
+The 16-child workload remains a **FAIL**. No kernel source was
+modified, no instruction-corruption root cause is claimed and
+KCORE size/descriptor policy remain unchanged.
+Next: sample the return from `backstore_read`, distinguish read
+failure from unpin failure, and check saved process state after
+failed restore.
+
 ## 2026-10-25 native swap-transition event trace v285
 
 The unchanged 16-pressure-child test reproduced the unexpected UUO.
