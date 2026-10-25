@@ -1,3 +1,16 @@
+## 2026-10-25 repeated 256K native swap cycles v278
+
+The daimos-testkit native PDP-6 GCC full-profile 256K fixture
+`daimos-mm-swap-cycles-v278.sh` passed three successive rounds
+of blocked pipe writer plus eight sleeping pressure children.
+Every round exercised the memory-pressure check, writer resume,
+pipe-integrity assertions and reaping of all pressure children.
+This validates repeated swap/reclaim and process-slot reuse beyond
+the v277 single-cycle acceptance result. It does not yet provide
+the 136-descriptor registry high-water under these cycles.
+No production source change; the 32K GCC lowmem disk-root
+KCORE size reference remains 10742 words, KCORE+MRES 13605.
+
 ## 2026-10-25 AUXSTORE/root mapping order fix v277
 
 The v272 eight-pressure-child 256K native PDP-6 GCC workload now

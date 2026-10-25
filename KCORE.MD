@@ -1,3 +1,12 @@
+### Repeated native swap/reclaim and process reuse v278
+
+The 256K PDP-6 GCC full-profile test completed three successive
+pressure rounds (blocked writer, eight pressure sleepers, swap
+recovery, pipe data checks and child reaping). Testkit v278 PASS.
+No permanent KCORE change. Descriptor high-water tracing during
+these cycles and longer repeated evictions remain open; 32K GCC
+lowmem disk-root is still the size measurement baseline.
+
 ### Correct AUXSTORE/root boot ordering and live swap recovery v277
 
 `auxstore_post_minits()` now publishes dedicated backing-store mapping
