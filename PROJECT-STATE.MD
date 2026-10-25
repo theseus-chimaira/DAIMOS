@@ -1,3 +1,26 @@
+## 2026-10-25 Proposal B one-child RUN/WAIT isolation v347
+
+Adapted the existing full-profile process decimal native fixture to an
+isolated 64K lowmem GCC image with `MONITORFS_MRES_ENABLED=1`, exactly
+one child rather than nine, and markers for pipe creation (`N`),
+`SYS_RUN` entry (`R`), return from RUN (`S`), and entering the
+zombie-by-pipe/PROCINFO check (`W`). The PDP-6 boot reached D6FS
+LOADED; userspace emitted `<NRSW` and then halted at
+`PC: 000000 (LUUO00 0,300)`. Thus the pipe creation and first RUN
+returned to the parent successfully. The issue occurs inside the
+completion routine, which closes the parent's pipe writer, consumes
+pipe EOF, closes the reader, then checks `dsys_procinfo` for the zombie.
+**No MonitorFS path was accessed** in this probe. The remaining
+fault must be separated into those pipe and PROCINFO steps, and
+lowmem baseline behavior should be compared before attributing to
+MRES. The failed experimental testkit fixture was withdrawn; unrelated
+dirty files remain untouched.
+
+No production modification or RAM savings. Accepted v341/v343/v344/v346
+MonitorFS MRES namespace tests retain PASS status. Permanent optional
+KCORE 9151, combined 15699 (+17 over default). Feature remains
+opt-in; strict 32K acceptance deferred.
+
 ## 2026-10-25 Proposal B MonitorFS MRES domain lookup acceptance v346
 
 The failed v345 domain enumeration-to-STAT test was caused by a testkit
