@@ -1,3 +1,13 @@
+### Post-INIT stress escalation v282/v283: unexpected UUO unresolved
+
+v282 (20 pressure children) fails creation at the 17th requested
+child and exceeds simulator time. v283 (16 children) instead reaches
+an unexpected UUO and halts at PC 000001 before normal guest markers.
+SIMH descriptor insert observations for both runs were below 36/136;
+neither run passed. A native trap/control-flow investigation now takes
+precedence over increasing process counts or descriptor capacity.
+No production changes or KCORE size growth.
+
 ### Post-INIT twelve-child swap/high-water acceptance v281
 
 The 256K native PDP-6 test launches twelve 24K-word pressure children

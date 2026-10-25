@@ -1,3 +1,24 @@
+## 2026-10-25 post-INIT concurrency escalation v282/v283 — UNRESOLVED
+
+Starting from the passing 12-pressure-child v281 fixture, v282 raised
+the guest's post-INIT pressure children to 20. In the 256K PDP-6 GCC
+SIMH image the 17th requested pressure child (zero-based index 16)
+failed admission (`pG!W`); the run eventually timed out at 360 seconds.
+88 MM-insert samples showed maximum pre-insertion count 34, implying
+an observed insertion upper bound 35/136. This is **not** proof of a
+descriptor exhaustion error or an accepted pressure test.
+
+v283 reduced the same test to 16 children. Instead of completing,
+SIMH reported unexpected `UUO 000000777777 340000000003` and halted
+at PC 000001. The transcript emitted `<w` but no normal failure or
+completion marker. 72 MM-insert samples again gave maximum pre-count
+34 and observed insertion upper bound 35/136. Treat this as a possible
+runtime correctness fault with higher priority than further capacity
+tuning. Determine the trap's origin and instruction corruption or
+control-flow issue before declaring high-concurrency swap acceptance.
+The v281 12-child PASS and v279 repeated-swap PASS remain valid.
+No production code or 32K KCORE size change.
+
 ## 2026-10-25 post-INIT twelve-child live swap/high-water v281
 
 The 256K PDP-6 GCC full-profile testkit workload now starts from one
