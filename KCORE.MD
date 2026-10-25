@@ -1,3 +1,35 @@
+## 2026-10-25 v311 twenty-child native swap acceptance — RUNNING / NOT ACCEPTED
+
+The production kernel remains unchanged after the successful v310
+16-child 256K PDP-6 GCC full-profile one-cycle acceptance using
+`DRUM_BACKSTORE_BLOCKS=010000` (4096 decimal blocks) and a 900-second
+SIMH-only ceiling. v311 extends the existing instrumented guest from
+16 to 20 pressure children, retaining writer pipe integrity, swapped
+writer restore, child wait/reap, and guest completion checks. The
+original requested `020000`-octal backstore could not fit the single
+`020000`-sector drum with logstore and cachestore and failed at
+`mkdsk` before SIMH. v311 was corrected to `012000` octal backing
+(5120 decimal blocks); the drum image built and `d6fsck` passed.
+
+The no-breakpoint simulator run has so far emitted
+`<wP0P1P2P3P4P5P6P7P8P9PAPBPCPDPEPFPGPHPIPJSR`:
+all 20 children were admitted (`P0`..`PJ`), reached sleep (`S`),
+and the parent reached its first writer-pipe read (`R`). At this
+checkpoint the simulator process is **still running**; no `Q`, guest
+HALT, or shell PASS result has been observed. This is *not* 20-child
+acceptance, nor proof of a deadlock. The fixture has a 900-second
+SIMH ceiling and retains its work directory for post-run inspection.
+The two testkit commits are `f775ae4` (fixture) and `96d8711`
+(drum geometry correction). Do not alter production swap policy,
+KCORE size or descriptor capacity on this incomplete evidence.
+
+Previous v307 snapshot analysis found expected live stack changes,
+not a demonstrated memory overlap. v294 measured 28 of 64 idle-stack
+words at the nested swap-out entry; v293 doubling the idle stack did
+not remove the old UUO. Later `3b41e87` fixed a genuine swap-in
+failure-path stack pop error, and v310 passed with sufficient backing.
+Further tests belong only in daimos-testkit.
+
 ## 2026-10-25 extended 16-child swap acceptance v310 — PASS
 
 The earlier 360-second high-capacity 16-child tests (v304/v305/v308/
