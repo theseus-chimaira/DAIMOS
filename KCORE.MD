@@ -1,3 +1,32 @@
+## 2026-10-25 nested swap and backing-store exhaustion v294-v297
+
+v294 captured the actual idle stack base `040350` and AC17
+`000034040404` octal at the failing nested swap-out, i.e. 28
+pushed words of the configured 0100-octal (64-word) idle stack.
+At v295, execution reached the nested `proc_swap_out` call to
+`proc_swap_skip_words` and the subsequent `mm_pin` check, with AC17
+`000043040413` (35 pushed words). v296 traced the later
+`backstore_alloc` return of -1 with AC17 `000045040415`
+(37 pushed words). These snapshots do **not** demonstrate an idle
+stack overflow at the sampled points; future deeper use is not
+excluded. The separate 128-word experiment in v293 still failed.
+
+v297 directly confirms backing-store exhaustion: total
+`backstore_blocks=04000` octal (2048), in-use
+`backstore_blocks_used=03520` octal (1872),
+`backstore_enabled=1`, and new allocation AC1=`0320` octal
+(208). Only `0260` octal (176) blocks remain. Nine prior 208-block
+swap writes used 1872 blocks; the tenth allocation correctly returns
+-1. This is a capacity refusal, not a detected overlapping MM
+extent or a proven stack overflow. The subsequent unexpected UUO
+`000000777777 340000000003` remains a **kernel error-path defect**
+to diagnose. In particular, trace the propagation of the allocation
+error from `proc_swap_out` through `proc_swap_reclaim`,
+`mm_alloc_aligned` and `proc_swap_in` into `proc_swap_service_one`.
+Do not increase KCORE, the idle stack or backing-store capacity as
+a substitute for fixing error handling. The 12-child acceptance
+fixture remains valid, the 16-child fixture still fails.
+
 ## 2026-10-25 v296/v297 physical pre/post swap-out snapshots
 
 Native 256K PDP-6 full-image, sixteen-pressure-child SIMH breakpoints
