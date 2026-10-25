@@ -1,3 +1,13 @@
+### Post-INIT twelve-child swap/high-water acceptance v281
+
+The 256K native PDP-6 test launches twelve 24K-word pressure children
+after enabling swap and verifies a blocked writer resumes with intact
+pipe data. One complete cycle PASS; 71 MM insert-entry samples give
+peak descriptor occupancy 31/136. A three-cycle variant exceeded its
+300-second simulator timeout during the second cycle and was not
+counted as PASS. Full 63-slot concurrent swap remains unverified.
+No KCORE source or size change.
+
 ## 2026-10-25 256K preload-pressure admission probe v280
 
 Test-only PDP-6 GCC user image enlarged each guest with a private

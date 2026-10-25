@@ -1,3 +1,17 @@
+## 2026-10-25 post-INIT twelve-child live swap/high-water v281
+
+The 256K PDP-6 GCC full-profile testkit workload now starts from one
+INIT, activates swap and progressively launches twelve 24K-word
+pressure children alongside a blocked pipe writer. A single cycle
+PASSes writer restoration, pipe integrity, process cleanup and
+MM insertion breakpoint sampling: 71 observations, maximum successful
+post-insert descriptor occupancy 31 of 136 (105 spare). The initial
+three-cycle version made progress through its second round but hit a
+300-second SIMH runtime limit; it was not an acceptance pass.
+This confirms post-INIT memory pressure at thirteen user processes,
+not swapping with all 63 user slots occupied. The latter remains open.
+No production code change or KCORE size growth.
+
 ## 2026-10-25 256K preload-pressure admission probe v280
 
 Test-only PDP-6 GCC user image enlarged each guest with a private
