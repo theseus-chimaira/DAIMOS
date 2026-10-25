@@ -1,3 +1,39 @@
+## 2026-10-25 Proposal B MonitorFS MRES configuration investigation v332
+
+Re-examined the effective build rather than inferring residency from the
+KCORE object names. `MONITORFS_MRES_ENABLED` defaults to 0; its normal
+KCORE build concatenates `monitorfs_runtime.s` with the compiled
+`monitorfs_swap_v63.c` implementation. With the option set to 1,
+`system/kernel/Makefile` **instead substitutes**
+`monitorfs_dispatch_v14.s` for the resident MonitorFS object, leaving
+nine one-word `JRST kret_neg1` service entrypoints. Thus the KCORE
+object list alone does not show which implementation actually resides
+there. This corrects the earlier interpretation of the Makefile.
+
+Attempted isolated GCC lowmem full-link build with
+`MONITORFS_MRES_ENABLED=1` in a distinct TMPDIR build root. KCORE
+assembly/link succeeded, but the optional MonitorFS package link failed
+with `undefined symbol: mfsproc_swapped_read_words_v63`. The
+`monitorfs-mres-probe-v15.py` generator rewrites the full assembler
+source, which references that helper; the helper is supplied by
+`monitorfs_swap_v63.c` in the normal resident build but was not included
+in this package. The generator explicitly says its output is a
+**non-installable probe**. `monitorfs_dispatch_v14.s` explicitly says
+MINIT must still patch its nine JRST destinations after MRES relocation
+and pin the MRES while MonitorFS is reachable. Neither link repair nor
+runtime installation was attempted; the enabled configuration is NOT
+a working MonitorFS extraction. No complete permanent-size comparison
+or native enabled-mode acceptance can be claimed. No source changes
+were made. Last accepted standard lowmem baseline remains v329:
+KCORE 024746 (10726), KCORE+MRES 036502 (15682), PERMANENT_LAST
+036561 (15729), octal values followed by decimal in parentheses.
+
+Next B stage: supply the swapped-reader code/dependencies to the MRES
+package properly, verify package relocation/link and resident entries,
+implement and test MINIT patching and lifetime/pinning, measure both
+profiles, and test MonitorFS device/process/domain namespace on the
+PDP-6. Strict 32K acceptance remains deferred.
+
 ## 2026-10-25 Proposal B MonitorFS device/namespace audit v331
 
 Inspected the resident `monitorfs_runtime.s` device-name lookup,
