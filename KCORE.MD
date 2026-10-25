@@ -1,3 +1,12 @@
+### Three-cycle 256K swap descriptor high-water v279
+
+Native PDP-6 SIMH `mm_extent_insert` breakpoints sampled 101
+pre-insertion descriptor counts across three passing pressure
+cycles. Maximum resulting descriptor occupancy was 27/136;
+109 entries remained unused in that particular test. This is
+distinct from the 63-process boot peak of 132/136; combined
+63-process swapping has not been measured. No KCORE change.
+
 ### Repeated native swap/reclaim and process reuse v278
 
 The 256K PDP-6 GCC full-profile test completed three successive

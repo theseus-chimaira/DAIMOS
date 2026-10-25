@@ -1,3 +1,18 @@
+## 2026-10-25 native 256K swap descriptor high-water v279
+
+Testkit `daimos-mm-swap-highwater-v279.sh` completed the three
+256K PDP-6 swap/reclaim rounds from v278 with a native SIMH
+breakpoint on `mm_extent_insert`. From 101 pre-insertion count
+samples, the greatest observed post-insertion occupancy was
+27 of 136 descriptors (109 spare) in this particular workload.
+The test passed all existing writer, pipe-integrity and process
+reaping assertions. SIMH strips leading octal zeros from printed
+addresses, so the trace parser explicitly normalizes addresses;
+earlier unsound parser results of 1 were rejected. This does NOT
+replace the 63-process workload's separate peak of 132 or prove
+peak occupancy under simultaneous 63-process pressure. No
+production code or KCORE size change.
+
 ## 2026-10-25 repeated 256K native swap cycles v278
 
 The daimos-testkit native PDP-6 GCC full-profile 256K fixture
