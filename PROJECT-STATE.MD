@@ -1,3 +1,22 @@
+## 2026-10-25 expanded swap writer-pipe blocking boundary v309
+
+An additional one-byte progress marker `R` was emitted by the native
+16-child 4096-block backing-store guest only after `dsys_close(gate_r)`
+and `target_is_swapped()` both succeeded, immediately before the
+first writer-pipe `dsys_read_words` call. The SIMH run printed
+`<wP0P1P2P3P4P5P6P7P8P9PAPBPCPDPEPFSR` then timed out at kernel
+`proc_wait_event` PC `017440` after the configured 360 seconds.
+All 16 pressure children were admitted and asleep. The parent reached
+the first pipe read but never returned from it. This strongly
+localizes the high-capacity failure to the writer process resuming,
+pipe output availability/wakeup, or related scheduling, not to
+pressure-child admission or the prior swap-state guard. The marker
+does not itself prove whether the writer ran or attempted to write.
+Next inspect the writer's PROC_SLEEP reason, SWAP residency and
+run-queue state at the blocked pipe read without high-volume SIMH
+breakpoints; compare with 12-child passing trace. No production code
+change or KCORE growth.
+
 ## 2026-10-25 expanded backstore 16-child progress localization v308
 
 The unmodified 256K PDP-6 kernel, with `DRUM_BACKSTORE_BLOCKS=010000`
