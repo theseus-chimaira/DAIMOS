@@ -1,3 +1,23 @@
+## 2026-10-25 lightweight writer outcome isolation v300/v301
+
+The 16-child 256K PDP-6 fixture used a versioned guest (v300) to
+replace the compound `d` writer-failure marker with distinct markers:
+`a` first pipe read, `b` first word mismatch, `c` writer WAIT exit
+status mismatch, `d` pipe drain, `e` pipe close. A verbose v300 SIMH
+breakpoint run timed out before any of these guest markers, so its
+result was inconclusive. Version v301 removed the high-volume MM
+breakpoints and ran the same guest with a 360-second SIMH timeout.
+It completed with `<wc!W` and HALT, not the old unexpected UUO.
+The first pipe read returned one word with the expected `A` value;
+`wait_report(writer, SYS_WAIT_EXITED, WRITER_STATUS)` failed. The
+actual wait PID, status kind and value remain unmeasured. It is not
+established whether the writer was terminated on swap-in failure,
+returned the wrong status, or produced some other wait result.
+This run is still a FAIL, not 16-child swap acceptance. Next obtain
+exact wait result and writer state, then repair the verified error
+path, preserving correct backing-store exhaustion behavior.
+No production kernel modifications in v300/v301.
+
 ## 2026-10-25 swap-in failed allocation return correction v299 test — partial
 
 After commit `3b41e87` corrected the missing one-word stack-local
