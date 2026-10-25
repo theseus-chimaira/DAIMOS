@@ -1,3 +1,20 @@
+## 2026-10-25 Proposal B native minimal MonitorFS MRES process access v343
+
+Added `daimos-testkit` target `test-daimos-monitorfs-mres-proc-basic-v343`
+with a dedicated GCC lowmem, 64K PDP-6 image and
+`MONITORFS_MRES_ENABLED=1`. Unlike the failed full process lifecycle
+probe v342, the native test does not RUN or create children. It checks
+`STAT /PROC`, `STAT /PROC/1/STATE`, OPEN/READ/CLOSE of that state
+leaf and a nonempty S6REC text header. Simulator **PASS**. This proves
+basic MonitorFS process namespace services are callable through the
+relocated MRES; child/RUN/WAIT, decimal PID 10, domain namespace,
+and swapped-process argument metadata still require separate tests.
+
+No production source or permanent RAM change. Optional MRES stays
+KCORE 9151 and KCORE+MRES 15699 (+17 over default), remains opt-in;
+strict 32K acceptance deferred. The native v343 testkit commit is
+`3d82596`; unrelated testkit changes were not staged.
+
 ## 2026-10-25 Proposal B MonitorFS MRES process acceptance probe v342
 
 Attempted a native process-namespace regression by adapting the
