@@ -332,7 +332,7 @@ D6FS_MRES_OBJ = $(BUILD)/d6fs-mres.dobj
 MONITORFS_MRES_OBJ = $(BUILD)/monitorfs-mres.dobj
 ifeq ($(BOOT_PROFILE),lowmem)
 MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(if $(filter 1,$(MONITORFS_MRES_ENABLED)),$(MONITORFS_MRES_OBJ)) $(DCS_MRES_OBJ) \
-	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(TAPE_MRES_OBJ)) $(DSK_MRES_OBJ) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(DTFS_MRES_OBJ)) $(if $(filter 1,$(BLOCKSET_FS_ENABLED)),$(BLOCKSET_MRES_OBJ)) \
+	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(TAPE_MRES_OBJ)) $(DSK_MRES_OBJ) $(if $(filter 1,$(BLOCKSET_FS_ENABLED)),$(BLOCKSET_MRES_OBJ)) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(DTFS_MRES_OBJ)) \
 	$(if $(filter 1,$(D6FS_FS_ENABLED)),$(D6FS_MRES_OBJ))
 KINIT_FULL = 0
 else

@@ -1,3 +1,31 @@
+## 2026-10-25 MonitorFS MRES package-source ordering boot fix v340
+
+Confirmed that v339's `REVERS` (six-character SIXBIT diagnostic)
+actually appeared in the full simulator log, although the earlier
+grep for `REVERSE` omitted it. The underlying fault was a mismatch
+between MRES source layout and MINIT execution order: lowmem
+`MRES_PACKAGE_OBJS` placed `dtfs-mres` **before** `blockset-mres`,
+while `module_table.s` runs `blockset_minit` **before** `dtfs_minit`.
+`module_run_minits` requires monotonically increasing nonzero package
+source addresses to reclaim consumed boot MRES source intervals.
+
+Fixed the lowmem package list in `system/boot/pdp6/Makefile` to link
+BLOCKSET before DTFS, matching MINIT. This is the underlying ownership
+ordering fix, not a relaxation of MM overlap checks. Fresh isolated
+64K GCC lowmem MonitorFS MRES image built and booted in PDP-6 SIMH:
+`BSET LOADED`, `D6FS LOADED`, `INIT V1`. Simulator ran until explicit
+17-second timeout (exit 124); **no prior post-BSET `kinit_halt`**.
+INIT reported `MEMFS NOT MOUNTED ON /TEMP`, not yet investigated.
+Native MonitorFS namespace/swapped-process semantic acceptance remains
+open, so the optional feature stays disabled by default.
+
+Full linked optional lowmem `permanent-size` unchanged by reordering:
+KCORE 021677 (9151), KCORE+MRES 036523 (15699),
+PERMANENT_LAST 036602 (15746), +17 words combined versus default v329
+(10726 / 15682 / 15729). The +17 cost is provisionally acceptable;
+optimization of that overhead follows functional acceptance. Strict
+32K gate deferred.
+
 ## 2026-10-25 MonitorFS MRES MINIT halt probes v338-v339
 
 Investigated v337's post-BLOCKSET `kinit_halt` with two separate
