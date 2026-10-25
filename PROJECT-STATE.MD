@@ -1,3 +1,18 @@
+## 2026-10-25 256K eight-child swap-pressure diagnostic v272
+
+A dedicated GCC full-profile 256K PDP-6 testkit guest uses a
+24K-word BSS array (inside the DXR BSS limit) and attempts
+eight pressure children behind a blocked pipe writer. The
+first seven pressure children start and reach PROC_SLEEP;
+the eighth `dsys_run` invocation (zero-based child index 7)
+fails, emitting `<wp7!W`. This is a **failing diagnostic**,
+not swap acceptance. The specific returned error and allocator
+state have not yet been observed. Investigate process-create
+admission, memory allocation and reclaim rather than raising
+MM descriptor limits or declaring a swap bug prematurely.
+No production source changed; KCORE measurement remains the
+32K GCC lowmem disk-root configuration.
+
 ## 2026-10-25 PDP-6 256K executable BSS admission v271
 
 The native exec loader in `system/kernel/proc/exec_load.s` masks

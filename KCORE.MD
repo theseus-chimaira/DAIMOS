@@ -1,3 +1,12 @@
+### Live 256K swap pressure: eighth child fails admission v272
+
+The new test-only PDP-6 fixture holds a pipe writer blocked,
+then starts sleeping 24K-word pressure children. Seven children
+enter PROC_SLEEP; spawning the eighth reports failure (`<wp7!W`).
+This reproduces pressure on the process creation path but does
+not yet establish why admission failed or exercise successful
+swap-out/resume. No KCORE modification or size change.
+
 ### 256K test BSS admission and SIMH granularity v271
 
 SIMH physical-core selections use 16K-word increments; the
