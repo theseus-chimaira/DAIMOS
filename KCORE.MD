@@ -1,3 +1,30 @@
+## 2026-10-25 verified whole-core swap-out return snapshots v314
+
+The PDP-6 SIMH debugger stops at the successor instruction when a
+breakpoint is requested on an instruction. The v313 attempt stopped
+at reclaim's `PUSHJ proc_swap_out` address 003266 and its 003267 return,
+producing two identical 256K dumps because the call had already
+returned at the first snapshot. Its zero-difference output is an
+**invalid before/after transaction comparison**, not proof of no change.
+
+v314 fixes the pre-call stop to 003265 (SIMH displays the following
+`PUSHJ 17,2623`) while retaining 003267 for the post-return stop.
+The DXR call, prior branch and return instructions are verified before
+SIMH runs. Captures contained all 262144 PDP-6 physical words apiece,
+identical address coverage, and **75 changed words**: 12 below KCORE,
+9 in permanent KCORE code/data range, 2 MM descriptors, and 52 beyond
+the descriptor table. `mm_extent_count` changed 031 -> 030 octal;
+there were zero unmatched addresses. This is a genuine pre-call to
+post-return memory difference; expected kernel stack, MM extent and
+swap metadata updates are present. Not all 75 changes have been
+semantically proven correct, so it is **not a global non-corruption
+proof**. The 20-child native swap guest remains PASS under v311.
+The testkit fixture is `daimos-mm-swap-snapshot-v314.sh`, using the
+v312 splitter/comparator. No production modification or KCORE growth.
+With swap correctness restored, return to EXEC/RUN permanent kernel
+minimization; additional memory investigations are optional unless a
+new regression appears.
+
 ## 2026-10-25 native full-core swap snapshots v312
 
 The testkit captured both 256K-word (262144-word) PDP-6 physical
