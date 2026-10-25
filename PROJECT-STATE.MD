@@ -1,3 +1,21 @@
+## 2026-10-25 live backing-tail measurements v276
+
+Corrected test-only SIMH breakpoint examination at `backstore_write`
+entry on the 256K PDP-6 pressure failure reads these **octal**
+values: `backstore_blocks=04000` (2048),
+`backstore_blocks_used=0320` (208), and
+`blockset_direct_tail=02000` (1024). The allocator's advertised
+backing extent exceeds the active direct-tail span. A first
+experimental reading before boot incorrectly showed zero and was
+replaced by readings within the execution breakpoint. The guest
+still fails at child seven (`p7!W`) after swap-out rollback.
+This is a verified configuration inconsistency; the test did not
+capture the failing write's exact logical range or return code,
+so the inconsistency is not yet proved to cause this particular
+failure. Next trace configuration ownership and the write return
+status; do not change production memory limits as a workaround.
+32K GCC lowmem disk-root stays the KCORE size reference.
+
 ## 2026-10-25 backing-store rollback trace v275
 
 On the fresh 256K PDP-6 eighth-pressure-child reproducer,
