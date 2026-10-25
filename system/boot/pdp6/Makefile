@@ -220,6 +220,7 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/modules/module_table.s \
 	$(KERNEL_DIR)/proc/exec.h \
 	$(KERNEL_DIR)/proc/exec_lowmem_pdp6.s \
+	$(KERNEL_DIR)/proc/exec_load.s \
 	$(KERNEL_DIR)/proc/mach_user.h \
 	$(KERNEL_DIR)/proc/mach_user_pdp6.s \
 	$(KERNEL_DIR)/proc/proc.c \

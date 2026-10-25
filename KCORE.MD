@@ -1,3 +1,24 @@
+## 2026-10-25 EXEC loader RT cleanup fold v318
+
+`exec_load.s` now shares the post-lookup RT-reservation release sequence
+for ordinary loader failure (`-1`) and VM allocation failure (`-2`).
+The early argument/lookup failure still bypasses RT cleanup and returns
+`-1`. This avoids changing reservation ownership or error semantics.
+The PDP-6 boot Makefile's KERNEL_INPUTS was also missing the included
+`exec_load.s` source: add it to force recompilation when that source
+changes. A first build without this fix was stale and is not evidence.
+
+After correcting the dependency, GCC lowmem `permanent-size` PASSed:
+KCORE `024764` octal (10740 words), KCORE+MRES `036520` (15696),
+PERMANENT_LAST `036577` (15743). This is a **two-word post-fold
+reduction** from the comparable v316 KCORE `024766` build. The
+targeted native `test-daimos-exec-rt-owner` assembled and launched its
+256K PDP-6 SIMH guest, but timed out during boot before assertions
+(`simulator failed: 124`); `test-daimos-exec-create-oom` did not run
+because Make stopped on that failure. Therefore **runtime acceptance is
+pending**, despite successful assembly and size measurement. Rerun
+native failure-path testing before treating the change as complete.
+
 ## 2026-10-25 EXEC/RUN linked-fold audit v317
 
 Inspected the GCC lowmem linked map and `kcore.fold` after the v316

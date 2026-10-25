@@ -274,20 +274,19 @@ exec_load_vm_fail:
         jumpn   1,exec_load_fail
         hrrzs   0(10)                   ; clear entry LH after destroy
 exec_load_fail:
-        skipn   -012(17)                ; release only a reservation made here
-        jrst    exec_load_fail_result
-        camn    11,proc_rt_owner
-        setzm   proc_rt_owner
-exec_load_fail_result:
         seto    1,
-        jrst    exec_load_return
+        jrst    exec_load_release_rt
 exec_load_nomem:
-        skipn   -012(17)                ; undo RT reservation before retry
-        jrst    exec_load_nomem_result
+        move    1,[-2]                  ; EXEC_LOAD_NOMEM
+exec_load_release_rt:
+        skipn   -012(17)                ; release only a reservation made here
+        jrst    exec_load_return
         camn    11,proc_rt_owner
         setzm   proc_rt_owner
-exec_load_nomem_result:
-        move    1,[-2]                  ; EXEC_LOAD_NOMEM
+        jrst    exec_load_return
+exec_load_fail_result:
+        ; Early argument/lookup failures have not initialized RT state.
+        seto    1,
 exec_load_return:
         ; Restore the contiguous callee-saved range with one BLT.
         movei   0,010
