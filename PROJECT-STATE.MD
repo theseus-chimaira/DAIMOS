@@ -1,3 +1,21 @@
+## 2026-10-26 Proposal B KCORE indexed path byte-pointer offset v365
+
+In `system/kernel/fs/file_runtime.s`, `file_component` constructs
+its packed-SIXBIT input pointer after dividing the current character
+position by six. Replaced `ADD 6,1` / `ADDI 6,1` with indexed
+`ADDI 6,1(1)` to include both the path address and the one-word
+counted-path header offset in one PDP-6 effective-address operation.
+Both path pointers lie within the native lowmem address range; the
+byte position remainder, SIXBIT pointer LH and path semantics remain
+unchanged. No MRES packaging, exports or runtime was changed.
+
+Full linked GCC lowmem KCORE 9134 -> **9133** (-1), all-MRES
+combined size 15682 -> **15681** (-1), PERMANENT_LAST 15729 ->
+**15728** (-1). `daimos-testkit` native PDP-6 `target-file-pdp6`,
+`target-file-walk-pdp6`, `test-daimos-vfs-stat-frame`, and
+`test-daimos-pre-dsh-fs-closure` PASS. A further 942 words are
+needed to get strictly below 8192. Strict 32K acceptance deferred.
+
 ## 2026-10-26 Proposal B KCORE output SIXBIT pointer setup v364
 
 `file_component` initialized its output SIXBIT byte pointer through a

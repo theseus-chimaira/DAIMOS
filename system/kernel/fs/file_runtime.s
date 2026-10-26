@@ -1046,8 +1046,7 @@ file_component:
         move    7,5
         setz    6,
         divi    6,6
-        add     6,1
-        addi    6,1             ; path data starts at path[1]
+        addi    6,1(1)         ; path data starts at path[1]
         hll     6,[POINT 6,0]    ; retain path address, install SIXBIT pointer LH
         move    0,7
 file_component_seek:
