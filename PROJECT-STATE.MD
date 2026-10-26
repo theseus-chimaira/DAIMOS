@@ -1,3 +1,10 @@
+## 2026-10-26 Proposal B v458: rejected RENAME unwind experiment
+
+Separated RENAME success and failure cleanup experimentally; full
+linked lowmem KCORE rose 8961 -> 8963 (+2). Reverted production source.
+No accepted memory change, baseline KCORE 8961, KCORE+MRES 15508,
+PERMANENT_LAST 15555. See v458 design note. Strict 32K deferred.
+
 ## 2026-10-26 Proposal B v457: native FILE RENAME failure handling
 
 Native PDP-6 production FILE RENAME assembly now passes independent

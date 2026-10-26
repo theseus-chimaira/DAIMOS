@@ -1,3 +1,9 @@
+## 2026-10-26 Proposal B v458 rejected FILE RENAME cleanup split
+
+Duplicating the FILE RENAME cleanup tail increased full linked lowmem
+KCORE **8961 -> 8963**. Reverted the experiment; the accepted baseline
+remains **8961** with no production changes. See v458 design note.
+
 ## 2026-10-26 Proposal B v457 native FILE RENAME lifecycle fixture
 
 New daimos-testkit PDP-6 fixture executes production FILE RENAME
