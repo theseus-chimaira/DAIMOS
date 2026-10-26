@@ -1,3 +1,13 @@
+## 2026-10-26 Proposal B v422: disk/drum/tape root-login PASS
+
+Full `test-daimos-root-login-lifecycle` passed in the PDP-6 simulator
+with GCC userland and the v421 tape-root 15-minute response timeout.
+All three root backends DSK/D6FS, DRM/D6FS and DTC/TSFS completed
+invalid-login rejection, ROOT login, PWD, EXIT/respawn and relogin.
+This resolves the previous incomplete TSFS `PWD` observation without
+changing kernel source or the DSH size limit. See
+`design/file-direct-mount-root-login-validation-20261026-v422.md`.
+
 ## 2026-10-26 Proposal B v420: D6FS provider post-cutover checks
 
 Committed FILE v417 passes native PDP-6 D6FS multimount, remount and

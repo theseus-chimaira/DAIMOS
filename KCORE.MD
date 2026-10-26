@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v422 complete root-login validation
+
+Full PDP-6 disk/drum/tape login matrix PASS after raising the tape
+interactive response timeout to 15 minutes in daimos-testkit;
+disk/drum retain five minutes. No production source change or new size
+measurement. Accepted v417 KCORE remains **8999 words** (110 saved).
+Strict 32K acceptance remains deferred.
+
 ## 2026-10-26 Proposal B v420 provider lifecycle regression
 
 Native PDP-6 D6FS multimount, remount and direct DRM backing tests
