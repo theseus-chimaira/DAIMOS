@@ -312,11 +312,9 @@ tsfs_readdir:
         move    1,010
         pushj   17,tsfs_file_record
         jumpl   1,tsfs_readdir_pop_bad
-        move    5,1                    ; child record pointer
-        hrrz    011,(5)                ; preserve child flags across call
+        hrrz    011,(1)                ; retain only required child type
         andi    011,3
-
-        movei   1,1(5)                 ; record NAME0
+        addi    1,1                    ; record NAME0
         move    2,012                   ; ent->name
         pushj   17,vfs_name_from_words
 

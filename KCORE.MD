@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v430 TSFS READDIR projection
+
+Removed redundant record-pointer AC transfer in TSFS READDIR while
+retaining caller-owned name/type projection. Full linked PDP-6 GCC
+lowmem KCORE **8995**, KCORE+MRES **15542**, PERMANENT_LAST **15589**.
+Native TSFS multiextent, D6LZ and projection guards PASS. The global
+provider lock remains necessary. See v430 design note.
+
 ## 2026-10-26 Proposal B v429 TSFS value-record cost gate
 
 Testkit guard PASS: returning owned copies of TSFS records would cost

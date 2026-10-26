@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v430: TSFS READDIR projection
+
+Accepted removal of a redundant TSFS child-record pointer copy.
+Full linked image KCORE=8995 (unchanged), KCORE+MRES=15542,
+PERMANENT_LAST=15589 (one MRES word saved). TSFS multiextent, D6LZ
+and source-projection tests PASS. Provider locking unchanged; see
+`design/tsfs-readdir-projection-20261026-v430.md`.
+
 ## 2026-10-26 Proposal B v429: TSFS value-record cost gate
 
 New testkit source guard PASS establishes eight-word TSFS file records,
