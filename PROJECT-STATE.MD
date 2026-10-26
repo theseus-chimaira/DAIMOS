@@ -1,3 +1,20 @@
+## 2026-10-26 Proposal B v400 decisions locked; next-chat handoff v401
+
+Recorded the four approved v400 decisions in
+`design/file-descriptor-mount-redesign-20261026-v400.md`:
+(1) DUP/DUP2 and RUN descriptor remapping copy offsets independently;
+(2) use minimal, demonstrably sufficient descriptor flags;
+(3) boot/hardware/provider-dependent capacity must support at least 26
+mounts when available, without preallocating 26 slots every boot, and
+remain expandable; (4) retain existing locking and provider serialization
+initially. Canonical full-vnode plus full 36-bit offset in two words is
+the proposed B1 target. No implicit shared offsets, semantic relaxation,
+or production change is authorized. Next chat: audit actual metadata
+users, propose an exact no-growth encoding, quantify complete RAM/speed,
+and prepare the full regression matrix **before seeking approval to edit
+code**. Latest measured linked baseline: KCORE 9109; KCORE+MRES 15657;
+PERMANENT_LAST 15704. See the design document for detailed handoff.
+
 ## 2026-10-26 Proposal B descriptor/mount design review v400
 
 User-selected architecture: at least 26 mount slots with future expansion,

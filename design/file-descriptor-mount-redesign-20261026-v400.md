@@ -36,11 +36,13 @@ B1 is the **first analysis target**, not an instruction to implement. B2 is rese
 - Put new tests only in `daimos-testkit`: 26 distinct mount IDs (including 16/26), simultaneous mount/unmount, two mounts with same provider/local vnode, mount owner reservations and readonly flags, open/close, duplicate and DUP2 replacement, independent and optional shared offsets, RUN fd remapping, FIFO/pipe refs, provider-7 TSFS-vs-PIPE distinction, FD exhaustion, lock contention, failed OPEN/CLOSE/RUN/UNMOUNT, swap/PURE lifetime and disk/tape boot.
 - Compare PDP-6 and PDP-10 full post-fold KCORE/MRES/permanent images, peak MM allocations, per-process bytes/words, operation timings and simulator regressions. No compatibility-only prohibition, but correctness, real total RAM improvement, efficiency and essential functionality are mandatory.
 
-## Open decisions for review
+## Agreed design decisions (2026-10-26, v400 decision lock)
 
-1. Is copied-offset DUP/RUN sufficient, with shared offsets only when explicitly requested? (Current two-word assembly copies offset values.)
-2. Which permissions and descriptor state should survive, and can they be computed or represented without per-process growth?
-3. Is the 26-slot requirement satisfied by boot-dependent mount capacity, or must any given supported configuration have 26 slots independently of detected hardware?
-4. Should provider-lock semantics change in this redesign, or remain untouched until descriptor correctness is established?
+These four items are **decided design requirements**, not remaining questions:
 
-**No implementation is authorized by this document.**
+1. **DUP/RUN:** retain duplication and RUN descriptor mapping with **independently copied offsets**. Do not add an implicit shared-offset object or shared-offset lifetime protocol. If a future use case justifies optional offset sharing, discuss it as a separate extension before changing production semantics.
+2. **Descriptor flags:** minimize stored per-descriptor flags. Derive state from the canonical vnode or operation only when proven correct; first audit READ/WRITE, DIR, APPEND, FLOCK owner/state, pipe references and exceptional devices. Do not claim a zero-cost encoding without a complete bit allocation.
+3. **Mount capacity:** the supported mount slot count is **hardware- and installed-provider-dependent**, computed at boot, with architectural support for **at least 26 simultaneous slots where sufficient resources/providers exist**. Do not reserve all 26 slots on every boot; leave a path to future expansion without weakening identity or ownership correctness.
+4. **Locking:** **retain existing locking behavior initially**, including provider serialization, descriptor/FLOCK semantics and lifetime ordering. A lock redesign requires a separate discussion and approval after canonical-descriptor behavior is verified.
+
+**Next-chat handoff:** Continue the v400 **design-only** audit by enumerating every descriptor metadata consumer and classifying each required bit/state, documenting a concrete B1 canonical-vnode layout and comparing total permanent/per-process/MM RAM and hot-path costs against the existing 32-word table plus extension map. Investigate the current `VFS_NMOUNT=4` header versus boot-published dynamic limit, 26-slot provider/PURE bounds, and test coverage. Present the precise layout, tradeoffs, migration plan and full regression matrix **for discussion before any production edit**. Keep tests in `daimos-testkit`; no implementation is currently authorized. The last measured baseline is v388: KCORE 9109, KCORE+MRES 15657, PERMANENT_LAST 15704.
