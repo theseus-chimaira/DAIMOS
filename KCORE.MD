@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v455 native VFS RENAME dispatch
+
+New native PDP-6 testkit executable exercises production VFS RENAME
+dispatch, same-namespace success and cross-provider/cross-mount
+rejection. PASS. No production code or permanent RAM changed; linked
+baseline remains KCORE **8961**, KCORE+MRES **15508**,
+PERMANENT_LAST **15555**. See v455 design note.
+
 ## 2026-10-26 Proposal B v454 RENAME ownership guards
 
 Expanded testkit namespace comparisons and added an explicit FILE

@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v455: native VFS RENAME dispatch
+
+New testkit native PDP-6 fixture links production `vfs.s` and tests
+RENAME opcode 012, provider call on same namespace and suppression on
+cross-provider/cross-mount cases. PASS. Full FILE/VFS integration and
+readonly mount cases are still pending. No production change or RAM
+saving; v452 linked KCORE 8961, KCORE+MRES 15508,
+PERMANENT_LAST 15555. See v455 design note; strict 32K deferred.
+
 ## 2026-10-26 Proposal B v454: RENAME ownership coverage
 
 Testkit now checks every provider/mount identity against twelve
