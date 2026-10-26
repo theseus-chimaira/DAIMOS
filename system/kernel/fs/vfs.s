@@ -1015,8 +1015,7 @@ vfs_unmount_slot:
         move    3,(3)
         came    3,1
         jrst    kret_neg1
-        move    4,2
-        addi    4,1                    ; public mount owner token
+        movei   4,1(2)                 ; public mount owner token
         ldb     5,[POINT 5,vfs_mount_policy,9]
         camn    5,4
         jrst    kret_neg1
@@ -1056,8 +1055,7 @@ vfs_unmount_after_prepare:
         move    3,(3)
         movem   3,vfs_namespace_root
 vfs_unmount_unlock:
-        move    1,2
-        addi    1,1
+        movei   1,1(2)
         pushj   17,file_unlock_mount
         move    2,(17)
         pushj   17,vfs_mount_retire_slot

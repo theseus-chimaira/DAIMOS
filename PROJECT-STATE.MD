@@ -1,3 +1,24 @@
+## 2026-10-26 Proposal B KCORE UNMOUNT mount-ID preparation v371
+
+After restoring DevSpace2 connectivity, inspected the v370 checkout
+and optimized two zero-based-slot-to-public-mount-ID preparations in
+resident `system/kernel/fs/vfs.s` `vfs_unmount`:
+`MOVE 4,2` + `ADDI 4,1` in the protected owner checks, and
+`MOVE 1,2` + `ADDI 1,1` before `file_unlock_mount`, each replaced
+by one PDP-6 indexed `MOVEI dest,1(2)`. AC2 remains the source slot,
+with unchanged public owner tokens, error order and unmount lock
+release. No new state and no MRES modifications.
+
+Complete linked GCC lowmem image versus v370: KCORE 9129 ->
+**9127** (-2), KCORE+MRES 15677 -> **15675** (-2),
+PERMANENT_LAST 15724 -> **15722** (-2). Native daimos-testkit
+`target-file-pdp6`, `target-file-walk-pdp6`,
+`test-daimos-vfs-stat-frame`, `test-daimos-pre-dsh-fs-closure`
+all PASS. No concurrent physical-provider unmount acceptance is
+claimed. Another 936 words are needed to reach below 8192; strict
+32K acceptance remains deferred. Larger structural VFS/FILE work
+remains the main Proposal B priority.
+
 ## 2026-10-26 Proposal B VFS unmount provider-field decode v370
 
 In `system/kernel/fs/vfs.s`, after `vfs_sync` and before deciding
