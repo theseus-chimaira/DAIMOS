@@ -1,3 +1,14 @@
+## 2026-10-26 Proposal B v425: new provider transaction candidate
+
+Source audit identifies an untried coordinated redesign of shared
+filesystem transfer-workspace ownership and provider serialization.
+`fs_provider_reg_call` saves seven ACs during blocking DTFS/D6FS/TSFS
+operations; the single 128-word workspace also backs BCACHE slot 0,
+so simply removing or splitting the existing lock is unsafe. Proposed
+transaction-lifetime experiment and native concurrency gates are in
+`design/provider-transaction-ownership-redesign-20261026-v425.md`.
+No production edit or new RAM reduction claimed; baseline KCORE 8995.
+
 ## 2026-10-26 Proposal B v424 branch-free FLOCK mode replacement
 
 Moving UNLOCK's regular state into the FLOCK mode table removes three

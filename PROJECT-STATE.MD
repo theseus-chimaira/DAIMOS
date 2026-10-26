@@ -1,3 +1,13 @@
+## 2026-10-26 Proposal B v425: provider transaction redesign scoped
+
+Identified a previously unimplemented architectural candidate:
+transaction-scoped ownership for the single 128-word filesystem/BCACHE
+workspace, permitting eventual replacement of the resident provider
+serialization/wait bridge only if all blocking lifetime constraints
+can be proven. This is a source-grounded candidate, not a code change
+or measured saving. See
+`design/provider-transaction-ownership-redesign-20261026-v425.md`.
+
 ## 2026-10-26 Proposal B v424: FLOCK state update saves 3 words
 
 The three FLOCK operations now select their final state directly from
