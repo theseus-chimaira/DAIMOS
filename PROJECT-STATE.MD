@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v424: FLOCK state update saves 3 words
+
+The three FLOCK operations now select their final state directly from
+`file_lock_modes`, including UNLOCK=REGULAR, eliminating a special
+branch. Full GCC PDP-6 lowmem KCORE 8995, KCORE+MRES 15543,
+PERMANENT_LAST 15590: three words below v423, 114 words below v388.
+Native FILE/directmount tests PASS. Details in
+`design/file-flock-mode-table-20261026-v424.md`.
+
 ## 2026-10-26 Proposal B v423: one-word FILE mount-unlock saving
 
 Accepted `file_unlock_mount` redundant load elimination. Full-linked

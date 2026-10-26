@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v424 branch-free FLOCK mode replacement
+
+Moving UNLOCK's regular state into the FLOCK mode table removes three
+instructions from the full linked PDP-6 GCC lowmem image. KCORE
+**8995**, KCORE+MRES **15543**, PERMANENT_LAST **15590**. Native FILE
+and directmount/PIPE/UMASK regressions PASS. Total saving against
+pre-v417 KCORE 9109 is **114 permanent words**, with no process
+u-area growth. Strict 32K acceptance remains deferred.
+
 ## 2026-10-26 Proposal B v423 mount-unlock instruction reduction
 
 Retaining the packed descriptor in AC4 while extracting its full

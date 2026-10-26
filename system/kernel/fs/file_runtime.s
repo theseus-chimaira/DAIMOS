@@ -624,12 +624,7 @@ file_lock_update_loop:
         tdne    7,[077707777777]       ; all provider/kind/mount/index bits
         jrst    file_lock_update_next
         tlz     4,000030                ; replace regular/lock state
-        jumpn   6,file_lock_update_set
-        tlo     4,000010                ; unlock -> regular, unlocked
-        jrst    file_lock_update_store
-file_lock_update_set:
         ior     4,6
-file_lock_update_store:
         movem   4,(2)
 file_lock_update_next:
         addi    2,2
@@ -639,7 +634,7 @@ file_lock_update_next:
 file_lock_modes:
         .long   000020000000            ; VFS_LOCK_SHARED
         .long   000030000000            ; VFS_LOCK_EXCLUSIVE
-        .long   0                       ; VFS_LOCK_UNLOCK
+        .long   000010000000            ; UNLOCK -> regular, unlocked
 
 ; void file_unlock_mount(unsigned int mount_id)
 ; Clear regular/lock state for the specified full six-bit mount ID.
