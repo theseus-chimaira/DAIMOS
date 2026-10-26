@@ -1,3 +1,23 @@
+## 2026-10-26 Proposal B VFS dispatch / resident transfer workspace audit v381
+
+Tested removal of the apparent redundant JRST immediately before
+`vfs_read_words_provider` in resident `vfs.s`; full linked GCC PDP-6
+lowmem image remained **KCORE 9113**, **KCORE+MRES 15661**,
+**PERMANENT_LAST 15708**. Reverted the size-neutral experiment.
+No accepted production code modification or new runtime acceptance.
+
+Resident VFS also contains `fs_block_workspace`, a 0200-octal
+(128-decimal)-word BSS transfer buffer, documented as shared between
+filesystem providers. This is potentially much more significant than
+single-instruction edits, but no reassignment is safe until all
+provider references, boot-before-MM use, locking/sleep lifetimes,
+concurrency and MM allocation policies are proven. In particular,
+replacing it with another permanent 128-word reservation would not
+improve total permanent RAM; lowering KCORE alone is not proof of a
+net resident saving. Analyze provider calls and lifetimes before
+editing, and retain the documented ABI. Strict 32K acceptance stays
+deferred. Baseline KCORE requires 922 fewer words to reach 8191.
+
 ## 2026-10-26 Proposal B VFS READ_WORDS provider decode audit v380
 
 Reviewed the resident READ_WORDS VFS dispatch and its fast paths for
