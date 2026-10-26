@@ -1,3 +1,24 @@
+## 2026-10-26 Proposal B FILE OPEN access-mask consolidation v374
+
+Consolidated the `file_open` READ/WRITE/TRUNC permission-mask builder
+in resident `system/kernel/fs/file_runtime.s`. The prior branch tree
+set bit 4 if READ and bit 2 if WRITE or TRUNC. Replaced it with two
+conditional `TRNE` / `TRO` pairs, checking combined flag mask 022
+for WRITE|TRUNC. The resulting mask for all 8 combinations of these
+three input bits is identical, as are the subsequent STAT record
+access check, CREATE path and failure handling. No public ABI, extra
+persistent state or MRES modification.
+
+Full linked GCC PDP-6 lowmem versus v373: KCORE 9125 -> **9121**
+(-4 words), KCORE+MRES 15673 -> **15669** (-4), PERMANENT_LAST
+15720 -> **15716** (-4). Native daimos-testkit `target-file-pdp6`,
+`target-file-walk-pdp6`, `test-daimos-vfs-stat-frame`, and
+`test-daimos-pre-dsh-fs-closure` PASS. Full Open flag/error matrix
+and physical-provider concurrency have not been separately accepted;
+strict 32K acceptance remains deferred. Below-8192 KCORE requires
+930 additional words. Continue resident file-runtime and VFS
+structural analysis, prioritizing persistent RAM over speed.
+
 ## 2026-10-26 Proposal B KCORE FILE OPEN parent permission reuse v373
 
 The resident FILE OPEN create-on-miss branch performed its parent

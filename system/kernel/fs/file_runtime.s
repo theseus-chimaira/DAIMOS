@@ -190,15 +190,9 @@ file_open_stat:
         jumpn   1,file_open_fail
 
         setz    12,                    ; requested access mask
-        trnn    11,1                   ; FILE_O_READ
-        jrst    file_open_need_write
+        trne    11,1                   ; FILE_O_READ
         tro     12,4
-file_open_need_write:
-        trne    11,2                   ; FILE_O_WRITE
-        jrst    file_open_add_write
-        trnn    11,020                 ; FILE_O_TRUNC
-        jrst    file_open_access
-file_open_add_write:
+        trne    11,022                 ; WRITE or TRUNC requires write access
         tro     12,2
 file_open_access:
         movei   1,-6(17)
