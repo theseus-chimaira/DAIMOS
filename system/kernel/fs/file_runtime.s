@@ -798,19 +798,17 @@ file_close_all_next:
 ; int file_read_words(int fd, kword_t *buf, unsigned int nwords)
         .globl  file_read_words
 file_read_words:
-        push    17,010
-        push    17,2                    ; buf
-        push    17,3                    ; nwords
         movsi   5,400000                ; FILE_META_READ; negative selects read
-        jrst    file_words_common
+        jrst    file_words_save_args_v376
 
 ; int file_write_words(int fd, const kword_t *buf, unsigned int nwords)
         .globl  file_write_words
 file_write_words:
+        movsi   5,200000                ; FILE_META_WRITE
+file_words_save_args_v376:
         push    17,010
         push    17,2                    ; buf
         push    17,3                    ; nwords
-        movsi   5,200000                ; FILE_META_WRITE
 file_words_common:
         pushj   17,file_find
         jumpe   1,file_words_fail

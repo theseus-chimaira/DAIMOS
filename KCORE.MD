@@ -1,3 +1,23 @@
+## 2026-10-26 Proposal B shared bulk READ/WRITE argument save v376
+
+In resident `system/kernel/fs/file_runtime.s`, `file_read_words` and
+`file_write_words` duplicated three entry PUSH instructions saving
+AC10, AC2 buffer and AC3 transfer length. Moved those three identical
+PUSHes into common `file_words_save_args_v376`, after the distinct
+READ/WRITE permission selector in AC5 is initialized. READ branches
+to the shared prologue and WRITE falls through into it. Both enter
+`file_words_common` with identical stack layout, original AC1 fd,
+arguments, and selector values; the existing result cleanup and
+provider-side append semantics remain untouched. No MRES change.
+
+Full linked GCC PDP-6 lowmem versus v375: KCORE 9120 -> **9117**
+(-3 words), KCORE+MRES 15668 -> **15665** (-3), PERMANENT_LAST
+15715 -> **15712** (-3). daimos-testkit `target-file-pdp6`,
+`target-file-walk-pdp6`, `test-daimos-vfs-stat-frame` and
+`test-daimos-pre-dsh-fs-closure` PASS. No new physical-device
+concurrency acceptance is claimed. The below-8192 KCORE goal requires
+926 further words; strict 32K acceptance remains deferred.
+
 ## 2026-10-26 Proposal B FILE OPEN directory flag branch v375
 
 In resident `file_open`, replace the conditional branch around
