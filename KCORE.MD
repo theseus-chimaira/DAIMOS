@@ -1,3 +1,61 @@
+## 2026-10-26 Proposal B bounded structural review v389–v398 (ten passes)
+
+User requested ten further review iterations after v388, except that an
+unexpected large-saving opportunity should extend the effort. Ten
+independent candidate boundaries were inspected in the current
+`system/kernel/fs/vfs.s` and `file_runtime.s`, using the existing
+A–F roadmap. **These are source-level review passes, not ten new
+compiled patches or runtime acceptance results.** No proposed change
+met a credible >=10–20 net resident-word saving threshold with a
+proved unchanged ABI and lifetime, so no production edit was made.
+
+1. **v389 LOOKUP namespace table:** both three-record namespaces now
+   share loop-count initialization (v387); a further common loop would
+   add branching without a demonstrated saving.
+2. **v390 READDIR namespace merge:** built-in `/MONITOR` and mounted
+   root offsets depend on different input traversal states and
+   distinct stack frames. No safe common-entry reduction established.
+3. **v391 PARENT_NAME:** MonitorFS device/PROCESSES/DOMAINS paths
+   publish different counted names, while provider parent lookup has
+   its own mount inheritance and ABI. Existing provider dispatch is
+   shared where feasible (v386).
+4. **v392 MOUNT slot search:** free-slot selection rejects existing
+   mounts and uses MM-backed target/root tables; changing scan order
+   risks duplicate target acceptance.
+5. **v393 MOUNT publication:** target/root table entries and RO/SWAP/
+   LOGSTORE owner policy have distinct publication requirements.
+   No redundant full-sized resident table is present.
+6. **v394 UNMOUNT retirement:** busy checks, sync, prepare-unmount,
+   namespace-root substitution and descriptor unlocking precede
+   shared slot retirement. Folding into publication would conflate
+   failure and lifetime states.
+7. **v395 CREATE/MKDIR/MKFIFO:** common `vfs_create_common` and
+   `vfs_create_store_result` already share mode handling, provider
+   result publication and error unwind; remaining differences are
+   provider/operation policy.
+8. **v396 SYMLINK/RENAME:** their readonly checks resemble CREATE,
+   but arguments, namespace transitions, provider operations and
+   stacked node-result publication differ. No verified net gain from
+   a generic new frame helper.
+9. **v397 bulk READ/WRITE:** common permission validation and
+   provider arguments already exist (v376/v377); device dispatch,
+   atomic APPEND and offset publication remain operation-specific.
+10. **v398 FILE pathname wrappers:** common parent write-access check,
+    one-argument cleanup and descriptor constructors are already in
+    place. OPEN/FIFO error cleanup, RENAME two-parent validation and
+    UNLINK/RMDIR type/busy checks have different ownership semantics.
+
+**Conclusion:** none of these ten source reviews revealed a large
+unimplemented consolidation supported by current evidence. The latest
+measured linked baseline (v388) remains KCORE **9109**, KCORE+MRES
+**15657**, PERMANENT_LAST **15704**; reaching KCORE <8192 needs
+**918** further words. No new size build or test run is claimed,
+because there is no production source change. Proposal C EXEC/RUN
+is the next distinct roadmap phase. Proposal B can be closed after
+any desired final dedicated regression/acceptance pass; avoid
+continuing single-word instruction churn as a substitute for an
+architectural change. Strict 32K acceptance remains deferred.
+
 ## 2026-10-26 Proposal B direct READDIR namespace vnode comparison v388
 
 Removed a redundant AC4 load before `CAME` in the resident
