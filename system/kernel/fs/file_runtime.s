@@ -840,12 +840,12 @@ file_words_notdir:
         move    2,1(010)                ; word offset
         move    1,010
         pushj   17,file_node_from_fd
-        jumpl   5,file_read_words_dispatch
-        ; Device bulk-I/O routines all take (buffer, count).  Prepare
-        ; these arguments once; keep the vnode in AC0 for dispatch.
+        ; All bulk-I/O paths share the same arguments, including provider
+        ; fallbacks: AC0 vnode, AC1 buffer, AC2 count.
         move    0,1
         move    1,-1(17)
         move    2,(17)
+        jumpl   5,file_read_words_dispatch
 
         camn    0,[020002000003]        ; PTP0
         jrst    file_write_words_ptp
@@ -900,9 +900,6 @@ file_write_words_wcnsls:
         jrst    file_words_result
 
 file_read_words_dispatch:
-        move    0,1
-        move    1,-1(17)
-        move    2,(17)
         camn    0,[020002000002]        ; PTR0
         jrst    file_read_words_ptr
         camn    0,[020002000004]        ; CR0

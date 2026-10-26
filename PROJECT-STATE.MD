@@ -1,3 +1,25 @@
+## 2026-10-26 Proposal B shared bulk-I/O register preparation v360
+
+Reduced permanent KCORE by three words in
+`system/kernel/fs/file_runtime.s`. Resident `file_words_common` used
+to build identical register arguments separately for READ and WRITE:
+AC0 canonical vnode, AC1 user buffer, AC2 word count. These three
+moves now execute once before the existing READ/WRITE branch. Device
+selection, provider register ABI, append-at-EOF handling, lock and
+sleep semantics, and descriptor offset updates remain unchanged.
+
+Full linked GCC lowmem disk-root image versus v359: KCORE
+9151 -> **9148**, KCORE+all MRES 15699 -> **15696**, and
+PERMANENT_LAST 15746 -> **15743**. All MRES objects are unchanged;
+the saving is entirely resident KCORE. PDP-6 `daimos-testkit`
+`target-file-pdp6` and `target-file-walk-pdp6` PASS, along with
+`test-daimos-vfs-stat-frame` and
+`test-daimos-pre-dsh-fs-closure` PASS. This is targeted regression
+coverage, not a full physical-provider concurrency stress test.
+The next KCORE milestone below 8192 requires 957 further words.
+Strict 32K acceptance remains deferred. No MRES size optimization
+is part of this change.
+
 ## 2026-10-26 Proposal B KCORE-only file-runtime entry audit v359
 
 Resumed Proposal B strictly on KCORE (`file_runtime.s`, its VFS
