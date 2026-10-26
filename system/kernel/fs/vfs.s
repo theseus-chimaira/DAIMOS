@@ -426,6 +426,10 @@ vfs_create_policy:
         movei   4,-2(17)               ; provider d = result nodep
         jrst    vfs_create_dispatch_v445
 vfs_create_dispatch_v445:
+        caie    6,010                  ; SYMLINK request e is unused
+        jrst    vfs_create_dispatch_call_v446
+        setz    5,
+vfs_create_dispatch_call_v446:
         pushj   17,fs_provider_reg_call
 vfs_create_store_result:
         jumpn   1,vfs_create_done
@@ -446,28 +450,14 @@ vfs_create_ro:
         .globl  vfs_symlink
 vfs_symlink:
         jumpe   4,kret_neg1
-        push    17,1
-        push    17,2
-        push    17,3
-        push    17,4
-        pushj   17,vfs_readonly
-        jumpn   1,vfs_symlink_ro
-        pop     17,4
-        pop     17,3
-        pop     17,2
-        pop     17,1
-        add     17,kconst_3_3
-        movem   4,(17)                  ; caller nodep
-        movem   1,-1(17)
-        setzm   -2(17)                  ; provider result vnode
-        movei   4,-2(17)               ; request d = provider nodep
-        setz    5,                      ; request e unused
-        ldb     7,[POINT 6,1,5]
-        movei   6,010                  ; FS_MRES_OP_SYMLINK
-        jrst    vfs_create_dispatch_v445
-vfs_symlink_ro:
-        sub     17,kconst_4_4
-        jrst    kret_neg1
+        push    17,4                   ; fifth argument: output vnode
+        move    4,3                    ; fourth argument: counted target
+        move    3,2                    ; third argument: leaf name
+        move    2,1                    ; second argument: parent vnode
+        movei   1,010                  ; FS_MRES_OP_SYMLINK
+        pushj   17,vfs_create_op
+        sub     17,kconst_1_1
+        popj    17,
 
 ; int vfs_rename(olddir, oldname, newdir, newname)
         .globl  vfs_rename

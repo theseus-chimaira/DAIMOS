@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v446 SYMLINK/CREATE policy consolidation
+
+Replaced the separate SYMLINK read-only check and vnode publication
+sequence with the existing CREATE policy via exact argument mapping.
+Full linked **KCORE 8973** (8 saved), no permanent RAM growth. Native
+provider, FILE/PIPE, DTFS CREATE and SYMLINK ABI guard PASS. Dedicated
+SYMLINK end-to-end test pending. See v446 design note.
+
 ## 2026-10-26 Proposal B v445 CREATE/SYMLINK shared dispatch
 
 Removed duplicated provider call from VFS CREATE/SYMLINK; both now

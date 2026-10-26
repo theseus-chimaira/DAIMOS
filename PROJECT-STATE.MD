@@ -1,3 +1,14 @@
+## 2026-10-26 Proposal B v446: SYMLINK/CREATE policy cutover
+
+VFS SYMLINK now shares `vfs_create_op` permission checking and vnode
+publication, preserving the separate SYMLINK opcode and provider e=0.
+Linked lowmem KCORE **8973**, KCORE+MRES 15520, PERMANENT_LAST 15567,
+saving eight resident words without new permanent allocations.
+FILE/PIPE, provider lock, DTFS CREATE and mapping guard PASS; full
+SYMLINK runtime test still pending. Two earlier source experiments
+were rejected or neutral; see
+`design/vfs-symlink-create-policy-consolidation-20261026-v446.md`.
+
 ## 2026-10-26 Proposal B v445: CREATE/SYMLINK call consolidation
 
 Shared physical provider call and vnode publication for CREATE and
