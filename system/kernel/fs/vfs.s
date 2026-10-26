@@ -1036,8 +1036,7 @@ vfs_unmount_slot:
         jumpn   1,vfs_unmount_fail
         move    2,(17)
         move    1,-1(17)
-        move    3,1
-        lsh     3,-036
+        ldb     3,[POINT 6,1,5]        ; vnode provider number
         cain    3,4                     ; MEMFS_PROVIDER
         jrst    vfs_unmount_prepare
         caie    3,6                     ; D6FS_PROVIDER

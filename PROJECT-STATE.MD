@@ -1,3 +1,22 @@
+## 2026-10-26 Proposal B VFS unmount provider-field decode v370
+
+In `system/kernel/fs/vfs.s`, after `vfs_sync` and before deciding
+whether a provider requires PREPARE_UNMOUNT, replaced `MOVE 3,1` plus
+`LSH 3,-036` with the direct `LDB 3,[POINT 6,1,5]` provider-field
+extraction already used elsewhere in resident VFS. The existing
+MEMFS/D6FS prepare-only dispatch and unmount completion order remain
+unchanged; no MRES code or interface was modified.
+
+Full linked GCC lowmem image against v369: KCORE 9130 -> **9129**,
+KCORE+MRES 15678 -> **15677**, PERMANENT_LAST 15725 -> **15724**
+(all -1 word). `daimos-testkit` native PDP-6 `target-file-pdp6`,
+`target-file-walk-pdp6`, `test-daimos-vfs-stat-frame`, and
+`test-daimos-pre-dsh-fs-closure` PASS. The test scope does not include
+full multi-provider concurrent physical unmount acceptance. KCORE
+strictly below 8192 still needs 938 words. Strict 32K boot acceptance
+is deferred; further Proposal B work remains on resident MOUNT/UNMOUNT,
+FILE OPEN and provider-boundary restructuring.
+
 ## 2026-10-26 Proposal B KCORE structural size census v369
 
 Resumed KCORE-only optimization after v368. Inspected the live
