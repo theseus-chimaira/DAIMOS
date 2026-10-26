@@ -1,3 +1,10 @@
+## 2026-10-26 Proposal B v436 OPEN flag normalization
+
+Accepted one KCORE word saving: GCC PDP-6 lowmem KCORE 8989,
+KCORE+MRES 15536, PERMANENT_LAST 15583. New exhaustive 18-bit OPEN
+flag semantics guard and EXEC ABI PASS. No FILE/VFS ownership redesign
+yet. See `design/open-flag-register-abi-20261026-v436.md`.
+
 ## 2026-10-26 Proposal B v435: OPEN vertical-slice design
 
 Recorded a new unified pathname-request ABI candidate joining syscall

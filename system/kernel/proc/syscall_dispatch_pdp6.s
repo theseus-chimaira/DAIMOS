@@ -113,15 +113,15 @@ native_sys_mapped_return:
         ; AC1 path, AC2 flags.
         pushj   17,native_sys_map_one
         jumpe   1,%L137
-        hrrz    3,2
-        move    4,3
-        andi    4,3
-        addi    4,1
-        caile   4,3
-        movei   4,3
+        ; Normalize flags in AC2 directly; preserve option bits in AC3.
+        hrrz    2,2
+        move    3,2
+        andi    2,3
+        caile   2,2
+        movei   2,2
+        addi    2,1
         andi    3,034
-        ior     3,4
-        move    2,3
+        ior     2,3
         pushj   17,file_open
         jrst    native_sys_mapped_return
 %L72:

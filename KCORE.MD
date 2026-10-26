@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v436 OPEN normalization
+
+Accepted one KCORE word saved by normalizing OPEN flags directly in
+the argument register. Full linked KCORE **8989**, no new RAM
+allocation. Exhaustive 18-bit flag equivalence and EXEC ABI tests PASS.
+The unified FILE/VFS/syscall architecture remains unfinished. See
+`design/open-flag-register-abi-20261026-v436.md`.
+
 ## 2026-10-26 Proposal B v435 unified pathname ABI design
 
 Identified OPEN's syscall -> FILE -> VFS/provider ownership chain,
