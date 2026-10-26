@@ -1,3 +1,9 @@
+## 2026-10-26 Proposal B v459 size-neutral RENAME XOR experiment
+
+Reversing RENAME namespace XOR operands left full linked lowmem KCORE
+at **8961**. The experiment was reverted. No production change or
+RAM saving is accepted. See v459 design note.
+
 ## 2026-10-26 Proposal B v458 rejected FILE RENAME cleanup split
 
 Duplicating the FILE RENAME cleanup tail increased full linked lowmem

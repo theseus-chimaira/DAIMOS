@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v459: rejected XOR operand order
+
+Full linked PDP-6 lowmem KCORE remained 8961 after reversing VFS
+RENAME XOR operand order; reverted size-neutral production edit.
+Baseline KCORE 8961, KCORE+MRES 15508, PERMANENT_LAST 15555.
+Next pursue structural FILE/VFS pathname savings, not operand-order
+churn. Strict 32K deferred. See v459 design note.
+
 ## 2026-10-26 Proposal B v458: rejected RENAME unwind experiment
 
 Separated RENAME success and failure cleanup experimentally; full
