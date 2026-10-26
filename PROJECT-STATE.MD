@@ -1,3 +1,11 @@
+## 2026-10-26 v444: native DTFS UNLINK fixture repaired
+
+The standalone extracted DTFS unlink routine had an unresolved shared
+`kconst_2_2` stack constant. Testkit now supplies the same 2,,2
+word as `core/ret.s`; `test-daimos-dtfs-unlink` PASS with native/ITS,
+TENEX, corruption and rollback paths. No production change; KCORE
+baseline **8982**. See `design/dtfs-unlink-testkit-link-contract-20261026-v444.md`.
+
 ## 2026-10-26 Proposal B v443: shared VFS mutation path
 
 Removed duplicated read-only validation and provider dispatch across
