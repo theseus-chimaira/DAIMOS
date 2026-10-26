@@ -1,3 +1,32 @@
+## 2026-10-26 Proposal B shared filesystem workspace lifetime audit v382
+
+Inspected the 0200-octal (128-decimal)-word `.bss` `fs_block_workspace`
+owned by resident `vfs.s`. Direct references extend beyond D6FS and
+DTFS: TSFS, MEMFS snapshot, MonitorFS swap, the `fs_mres` zero-block
+bridge and block-cache operations also depend on this fixed address.
+`fs_provider_reg_call` serializes physical providers DTFS, D6FS and
+TSFS across their full requests: those requests may sleep, and the
+provider lock prevents cross-provider workspace corruption. The
+MEMFS fast path deliberately bypasses this lock because it does not
+sleep. The MonitorFS swap reader explicitly invalidates the shared
+block-cache workspace tag before loading a swap block and keeps a
+cached-block key local to its source.
+
+Consequently an unconditional MM relocation is **not accepted**:
+fixed-address references across assembler/C, calls in potentially
+different contexts, and synchronization/caching assumptions must
+first be audited. In particular we have not proved that every
+MonitorFS swap or snapshot access is covered by provider locking, or
+that any MM block can be released with no persistent replacement.
+Merely moving the 128 words outside KCORE would not establish a net
+permanent-RAM saving. No source changed and no size reduction claimed;
+linked baseline remains KCORE **9113**, KCORE+MRES **15661**,
+PERMANENT_LAST **15708**, as measured in v381. Next investigation:
+map each user and caller to the lock domain, establish boot-before-MM
+requirements, then identify an *existing* mutually exclusive 128-word
+area before attempting a zero-extra-memory overlay. Strict 32K
+acceptance stays deferred.
+
 ## 2026-10-26 Proposal B VFS dispatch / resident transfer workspace audit v381
 
 Tested removal of the apparent redundant JRST immediately before
