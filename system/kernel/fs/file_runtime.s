@@ -1244,6 +1244,11 @@ file_getcwd_return:
         popj    17,
 
 
+; Parent mutation permission: write plus search (mask 3).
+file_parent_write_access_v367:
+        movei   2,3
+        jrst    file_check_access
+
 ; int file_symlink(const kword_t *target, const kword_t *linkpath)
 ; TARGET is one counted packed-SIXBIT path record.
         .globl  vfs_symlink
@@ -1264,8 +1269,7 @@ file_symlink:
         pushj   17,file_parent_path
         jumpn   1,file_symlink_fail
         move    1,-5(17)
-        movei   2,3
-        pushj   17,file_check_access
+        pushj   17,file_parent_write_access_v367
         jumpn   1,file_symlink_fail
         move    1,-5(17)
         movei   2,-4(17)
@@ -1292,8 +1296,7 @@ file_rename:
         pushj   17,file_parent_path
         jumpn   1,file_rename_fail
         move    1,-013(17)
-        movei   2,3
-        pushj   17,file_check_access
+        pushj   17,file_parent_write_access_v367
         jumpn   1,file_rename_fail
         move    1,-014(17)             ; saved newpath
         movei   2,-5(17)               ; newdir
@@ -1301,8 +1304,7 @@ file_rename:
         pushj   17,file_parent_path
         jumpn   1,file_rename_fail
         move    1,-5(17)
-        movei   2,3
-        pushj   17,file_check_access
+        pushj   17,file_parent_write_access_v367
         jumpn   1,file_rename_fail
         move    1,-013(17)
         movei   2,-012(17)
@@ -1372,8 +1374,7 @@ file_make_node:
         pushj   17,file_parent_path
         jumpn   1,file_make_node_fail
         move    1,-5(17)
-        movei   2,3
-        pushj   17,file_check_access
+        pushj   17,file_parent_write_access_v367
         jumpn   1,file_make_node_fail
         move    3,-6(17)
         move    1,-5(17)
@@ -1409,8 +1410,7 @@ file_remove:
         pushj   17,file_parent_path
         jumpn   1,file_remove_fail
         move    1,-6(17)
-        movei   2,3
-        pushj   17,file_check_access
+        pushj   17,file_parent_write_access_v367
         jumpn   1,file_remove_fail
         move    1,-6(17)
         movei   2,-5(17)

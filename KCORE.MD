@@ -1,3 +1,24 @@
+## 2026-10-26 Proposal B KCORE parent-mutation access helper v367
+
+Consolidated the repeated parent write-plus-search permission call
+in resident `system/kernel/fs/file_runtime.s`. `file_symlink`,
+`file_rename` (both parent directories), `file_make_node` and
+`file_remove` now invoke the small internal
+`file_parent_write_access_v367` leaf; it loads access mask 3 and
+uses a tail JRST to `file_check_access` so the original caller's
+return address, arguments and error semantics are preserved.
+The common helper has no persistent state and no MRES changes.
+
+Complete GCC PDP-6 lowmem linked image versus v366: KCORE
+9133 -> **9130** (-3 words), KCORE+all MRES 15681 -> **15678**
+(-3), PERMANENT_LAST 15728 -> **15725** (-3). Native
+`daimos-testkit` targets `target-file-pdp6`,
+`target-file-walk-pdp6`, `test-daimos-vfs-stat-frame` and
+`test-daimos-pre-dsh-fs-closure` PASS. This does not demonstrate
+all failure branches of RENAME/SYMLINK or physical-provider
+concurrency. Below-8192 KCORE target requires 939 additional
+words. Strict 32K acceptance remains deferred.
+
 ## 2026-10-26 Proposal B KCORE component clear BLT audit v366
 
 Audited the resident `file_component` five-word output `vfs_name`
