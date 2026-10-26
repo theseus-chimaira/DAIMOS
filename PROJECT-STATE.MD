@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v429: TSFS value-record cost gate
+
+New testkit source guard PASS establishes eight-word TSFS file records,
+four-word extent records and buffer pointer consumers in parent,
+READDIR and D6LZ paths. Copying entire records requires 8/4
+additional per-call stack words, without inherently shortening
+sleeping I/O ownership. No production change or saving accepted.
+See `design/tsfs-value-record-lease-cost-20261026-v429.md`.
+
 ## 2026-10-26 Proposal B v428: native provider interleaving test
 
 New daimos-testkit PDP-6 test PASS: a simulated wait preserves a

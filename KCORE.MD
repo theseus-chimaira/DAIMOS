@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v429 TSFS value-record cost gate
+
+Testkit guard PASS: returning owned copies of TSFS records would cost
+at least 8 file-record or 4 extent-record stack words per call, while
+sleeping transfers still require shared-buffer serialization. No
+unproven value-copy code added to production. Accepted KCORE **8995**;
+see v429 design note. Strict 32K acceptance remains deferred.
+
 ## 2026-10-26 Proposal B v428 native workspace interleaving
 
 The actual provider bridge passes a new PDP-6 deterministic wait and
