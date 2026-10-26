@@ -1,3 +1,13 @@
+## 2026-10-26 Proposal B v452: masked-XOR RENAME namespace
+
+Replaced separate masked vnode comparisons with masked XOR/TDNE.
+Full linked lowmem KCORE **8961** (two words saved), KCORE+MRES
+15508, PERMANENT_LAST 15555. No permanent state or ABI change.
+Testkit v450/v452 namespace and PDP-6 FILE, pathname-walk and
+provider-lock tests PASS. End-to-end RENAME transaction remains open;
+strict 32K deferred. See
+`design/vfs-rename-namespace-xor-20261026-v452.md`.
+
 ## 2026-10-26 Proposal B v451: RENAME namespace regression closure
 
 Added pairwise collision-freedom coverage for all 4096 combined

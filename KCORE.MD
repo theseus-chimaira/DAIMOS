@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v452 masked-XOR RENAME identity
+
+Use one XOR and masked nonzero test for provider/mount mismatch.
+Full linked GCC PDP-6 lowmem KCORE **8961** (-2), KCORE+MRES
+**15508**, PERMANENT_LAST **15555**. Testkit namespace, native
+PDP-6 FILE, pathname-walk and provider-lock tests PASS. No new
+persistent allocation or ABI change. See v452 design note.
+
 ## 2026-10-26 Proposal B v451 RENAME namespace regression closure
 
 Strengthened testkit coverage to detect collisions between distinct

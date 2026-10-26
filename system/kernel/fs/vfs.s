@@ -476,10 +476,8 @@ vfs_rename:
         ; Namespace identity is provider[35:30], mount[29:24].
         ; Compare both fields at once, excluding local kind and index.
         move    7,1
-        and     7,[0777700000000]
-        move    5,3
-        and     5,[0777700000000]
-        came    7,5
+        xor     7,3
+        tdne    7,[0777700000000]
         jrst    kret_neg1
         movei   6,012                  ; FS_MRES_OP_RENAME
         jrst    fs_provider_reg_call
