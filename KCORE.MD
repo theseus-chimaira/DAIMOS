@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v426 provider transaction baseline
+
+Existing PDP-6 provider lock native/static gates PASS. New testkit
+inventory counts 60 shared-workspace references across seven files;
+blocking I/O is reached via driver wrappers, so transaction lifetimes
+are not yet proven separable. Production unchanged; KCORE **8995**.
+See `design/provider-transaction-call-boundaries-20261026-v426.md`.
+
 ## 2026-10-26 Proposal B v425: new provider transaction candidate
 
 Source audit identifies an untried coordinated redesign of shared

@@ -1,3 +1,13 @@
+## 2026-10-26 Proposal B v426: provider lock and workspace baseline
+
+Native PDP-6 provider lock wait/retry and static contract tests PASS.
+New daimos-testkit inventory reports 60 source references to the shared
+filesystem/BCACHE workspace across seven files. DSK/DRM/tape driver
+waits are indirect from provider paths, so lock removal remains unsafe
+without tracing I/O continuations and concurrency tests. No kernel
+change or size saving; see
+`design/provider-transaction-call-boundaries-20261026-v426.md`.
+
 ## 2026-10-26 Proposal B v425: provider transaction redesign scoped
 
 Identified a previously unimplemented architectural candidate:
