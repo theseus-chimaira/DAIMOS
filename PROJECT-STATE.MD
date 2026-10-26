@@ -1,3 +1,26 @@
+## 2026-10-26 Proposal B shared descriptor clone v361
+
+Consolidated duplicated resident `file_dup`/`file_dup2` descriptor
+cloning in `system/kernel/fs/file_runtime.s` into the internal
+`file_clone_descriptor_v361` leaf. The shared sequence copies both
+contiguous FILE words, copies the descriptor mount-extension field,
+reconstructs the canonical vnode and increments pipe references only
+for the PIPE provider. `file_dup` preserves its returned fd across the
+helper; `file_dup2` retains close-before-overwrite, equality, and error
+semantics. Public FILE ABI and MRES sources remain untouched.
+
+Full linked GCC PDP-6 lowmem disk-root measurement against v360:
+KCORE **9148 -> 9139** (-9 words); KCORE+all MRES
+15696 -> 15687 (-9); PERMANENT_LAST 15743 -> 15734 (-9).
+`daimos-testkit` PDP-6 targets `target-file-pdp6`,
+`target-file-walk-pdp6`, and checks `test-daimos-vfs-stat-frame`,
+`test-daimos-pre-dsh-fs-closure` all PASS. Targeted native extracted
+FILE mount-extension contract `daimos-file-mountext-v19.sh` PASS,
+covering DUP/DUP2, 26-mount vnode extensions, locks, close and unmount.
+This does not replace full concurrent-provider stress testing. KCORE
+below 8192 needs another 948 words from the new baseline. Strict
+32K acceptance remains deferred; no MRES optimization was performed.
+
 ## 2026-10-26 Proposal B shared bulk-I/O register preparation v360
 
 Reduced permanent KCORE by three words in

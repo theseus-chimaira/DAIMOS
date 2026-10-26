@@ -576,19 +576,9 @@ file_dup_scan:
         sojg    4,file_dup_scan
         jrst    kret_neg1
 file_dup_store:
-        ; Descriptor pair is contiguous: copy node/meta and offset together.
-        move    4,2
-        hrl     4,1
-        blt     4,1(2)
-        pushj   17,file_mount_ext_copy
-        move    1,2
-        pushj   17,file_node_from_fd
-        hlrz    1,1
-        caie    1,070001               ; exclude mounted TSFS root nodes
-        jrst    file_dup_return
-        move    1,(2)
-        push    17,3
-        pushj   17,pipe_add_ref         ; no-op for non-pipe descriptors
+        ; Shared clone preserves both FILE words and the mount extension.
+        push    17,3                    ; preserve new fd across pipe call
+        pushj   17,file_clone_descriptor_v361
         pop     17,3
 file_dup_return:
         move    1,3
@@ -627,18 +617,7 @@ file_dup2_copy:
         move    2,(17)
         lsh     2,1
         add     2,file_table
-        ; Copy the contiguous two-word descriptor, as in file_dup.
-        move    4,2
-        hrl     4,1
-        blt     4,1(2)
-        pushj   17,file_mount_ext_copy
-        move    1,2
-        pushj   17,file_node_from_fd
-        hlrz    1,1
-        caie    1,070001
-        jrst    file_dup2_no_pipe
-        move    1,(2)
-        pushj   17,pipe_add_ref         ; no-op for non-pipe descriptors
+        pushj   17,file_clone_descriptor_v361
 file_dup2_no_pipe:
         move    1,(17)
         jrst    file_dup2_done
@@ -648,6 +627,23 @@ file_dup2_done:
         pop     17,2
         pop     17,2
         popj    17,
+
+ ; Shared FILE pair cloning: AC1 source descriptor pointer, AC2 destination.
+ ; The helpers below consume AC1/AC2/AC4 and can clobber AC3, AC6, AC7.
+ ; Preserve destination in AC2 for pipe reference accounting; callers preserve
+ ; any live fd index across the call.
+file_clone_descriptor_v361:
+        move    4,2
+        hrl     4,1
+        blt     4,1(2)
+        pushj   17,file_mount_ext_copy
+        move    1,2
+        pushj   17,file_node_from_fd
+        hlrz    1,1
+        caie    1,070001               ; PIPE provider
+        popj    17,
+        move    1,(2)
+        jrst    pipe_add_ref           ; tail-call; preserves existing ABI
 
 ; int file_lock(int fd, unsigned int op)
 ; The packed node word carries both the canonical vnode and descriptor state.
