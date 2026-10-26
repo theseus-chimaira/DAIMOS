@@ -1,3 +1,19 @@
+## 2026-10-26 Proposal B FILE character I/O register-move audit v379
+
+Examined resident `file_readchar` and `file_writechar` for redundant
+AC1 descriptor-pointer reloads immediately after saving the same
+pointer in AC10 and before `file_node_from_fd`. Removed one source
+MOVE from each call path experimentally. The complete linked GCC
+PDP-6 lowmem measurement remained unchanged at KCORE **9113**,
+KCORE+MRES **15661** and PERMANENT_LAST **15708** words, equal to
+v378. This strongly indicates existing assembly folding already
+removes the moves. Reverted the size-neutral source experiment;
+there is no accepted runtime modification or new test acceptance.
+The KCORE below-8192 target still needs 922 words. Future work
+should concentrate on demonstrably larger shared request and VFS
+blocks, not textual edits already folded by the toolchain. Strict
+32K acceptance remains deferred.
+
 ## 2026-10-26 Proposal B remove dead bulk FILE offset setup v378
 
 In resident `file_runtime.s`, the shared READ/WRITE bulk entry had
