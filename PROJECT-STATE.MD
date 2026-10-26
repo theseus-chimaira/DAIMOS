@@ -1,3 +1,13 @@
+## 2026-10-26 v418: DSH-size blocker fixed in PIPE regression
+
+The pipe-wordfifo-v2 test inadvertently built a KCC DSH image 036013
+against the unchanged 036000 production gate, although its target INIT
+was compiled with GCC. Corrected the testkit boot submake to
+`BOOT_PROFILE=full COMPILER=gcc`. Full-profile GCC DSH image=031313;
+native PDP-6 PIPE word-FIFO regression PASS. No gate override, no KCC
+code modification, and no change to strict 32K acceptance. See
+`design/dsh-size-fixture-compiler-fix-20261026-v418.md`.
+
 ## 2026-10-26 Proposal B v400 decisions locked; next-chat handoff v401
 
 Recorded the four approved v400 decisions in
