@@ -1,3 +1,10 @@
+## 2026-10-26 Proposal B v449 TRUNCATE/WRITE safety guard
+
+TRUNCATE and WRITE_WORDS reuse one resident readonly/swap-protection
+and provider-dispatch continuation. Linked KCORE **8966** (−6), with
+two extra transient stack words for TRUNCATE and no permanent data.
+Focused native provider/FILE/PIPE and frame tests PASS. See v449 note.
+
 ## 2026-10-26 Proposal B v447 CREATE/SYMLINK E argument
 
 Removed the redundant branch around the SYMLINK-only provider E=0

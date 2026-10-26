@@ -1,3 +1,13 @@
+## 2026-10-26 Proposal B v449: shared TRUNCATE/WRITE guard
+
+Unified duplicated readonly, swapped-backing and provider-dispatch
+logic for TRUNCATE and WRITE_WORDS. Full linked lowmem GCC PDP-6
+KCORE **8966**, KCORE+MRES 15513, PERMANENT_LAST 15560, saving six
+resident words. TRUNCATE now uses two additional transient stack
+words, no permanent storage. Static ABI guard and native provider,
+FILE/PIPE and VFS STAT tests PASS. Syscall end-to-end still open.
+See `design/vfs-write-truncate-guard-20261026-v449.md`.
+
 ## 2026-10-26 v448: native SYMLINK provider dispatch regression
 
 New testkit v448 PDP-6 executable drives resident VFS SYMLINK into a

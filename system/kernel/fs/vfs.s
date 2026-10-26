@@ -608,21 +608,12 @@ vfs_unlink:
 
         .globl  vfs_truncate
 vfs_truncate:
+        movei   6,13                   ; FS_MRES_OP_TRUNCATE
         push    17,1
         push    17,2
-        pushj   17,vfs_readonly
-        jumpn   1,vfs_truncate_ro
-        move    1,-1(17)
-        pushj   17,proc_swap_backing_busy
-        jumpn   1,vfs_truncate_ro
-        pop     17,2
-        pop     17,1
-        ldb     7,[POINT 6,1,5]
-        movei   6,13                   ; FS_MRES_OP_TRUNCATE
-        jrst    fs_provider_reg_call
-vfs_truncate_ro:
-        sub     17,kconst_2_2
-        jrst    kret_neg1
+        push    17,3
+        push    17,4
+        jrst    vfs_write_guard_v449
 
         .globl  vfs_chmod
 vfs_chmod:
@@ -693,6 +684,8 @@ vfs_write_words:
         push    17,2
         push    17,3
         push    17,4
+        movei   6,16                   ; FS_MRES_OP_WRITE_WORDS
+vfs_write_guard_v449:
         pushj   17,vfs_readonly
         jumpn   1,vfs_write_words_ro
         move    1,-3(17)
@@ -703,7 +696,6 @@ vfs_write_words:
         pop     17,2
         pop     17,1
         ldb     7,[POINT 6,1,5]
-        movei   6,16                   ; FS_MRES_OP_WRITE_WORDS
         jrst    fs_provider_reg_call
 vfs_write_words_ro:
         sub     17,kconst_4_4
