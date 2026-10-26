@@ -1,3 +1,16 @@
+## 2026-10-26 Proposal B descriptor/mount design review v400
+
+User-selected architecture: at least 26 mount slots with future expansion,
+canonical-vnode two-word per-process descriptor (alternative B), retain
+useful DUP and shared-offset capabilities. Discussion-first constraint:
+no production edit without design agreement and an explicit functionality
+and regression review. See `design/file-descriptor-mount-redesign-20261026-v400.md`
+for the current code inventory, three candidate formats, offset-sharing
+clarification, migration gates and open decisions. This is a design draft;
+no production code changed, no new size or test acceptance claimed.
+Latest measured baseline remains v388 KCORE 9109, KCORE+MRES 15657,
+PERMANENT_LAST 15704.
+
 ## 2026-10-26 Cross-proposal architectural redesign policy v399
 
 **Applies to the entire A–F KCORE architectural shrink roadmap, not just
