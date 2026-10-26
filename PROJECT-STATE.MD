@@ -1,3 +1,25 @@
+## 2026-10-26 Proposal B KCORE-only file-runtime entry audit v359
+
+Resumed Proposal B strictly on KCORE (`file_runtime.s`, its VFS
+boundary); no MRES packaging or metadata work. Inspected resident
+readchar/writechar/readdir descriptor-to-vnode setup and the path,
+permission and create/remove request frames. Three places redundantly
+copied AC1 from a saved descriptor register back into AC1 immediately
+after saving it. Tested removing one such move (v358) and then all
+three (v359) against the complete GCC lowmem linked image, using
+the current mandatory MonitorFS MRES build configuration. Both
+experiments were **size neutral**: KCORE 9151, KCORE+MRES 15699,
+PERMANENT_LAST 15746. Reverted all changes, including the three-move
+experiment. No runtime test is claimed for rejected experiments.
+
+This verifies that source-level micro-deletions are insufficient after
+current assembler/link folding. Continue with actual structural
+file-runtime/VFS opportunities: eliminate substantial duplicated
+request preparation or persistent state only with ownership/lifetime
+proofs. Keep provider sleeping/serialization contract intact. MonitorFS
+MRES/export size work is explicitly out of scope in this KCORE phase.
+KCORE goal remains below 8192 words; strict 32K acceptance deferred.
+
 ## 2026-10-25 MonitorFS MRES linked-overhead audit v357
 
 Audited the always-loaded MonitorFS ABI trampoline file,
