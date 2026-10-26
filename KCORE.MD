@@ -1,3 +1,21 @@
+## 2026-10-26 Proposal B VFS LOOKUP common namespace loop count v387
+
+Both built-in MonitorFS namespace branches (`/` and `/MONITOR`)
+search exactly three static four-word records. Moved their duplicated
+`MOVEI 0,3` to `vfs_lookup_builtin_start`, where both paths converge;
+all comparison fields, mount-root behavior and provider fallthrough
+remain unchanged. No state, MRES or ABI changes.
+
+Full linked GCC PDP-6 lowmem versus v386: KCORE **9111 -> 9110**
+(-1), KCORE+MRES **15659 -> 15658** (-1), PERMANENT_LAST
+**15706 -> 15705** (-1). All four daimos-testkit checks pass:
+`target-file-pdp6`, `target-file-walk-pdp6`,
+`test-daimos-vfs-stat-frame`, `test-daimos-pre-dsh-fs-closure`.
+The global below-8192 goal still requires 919 words. The
+remaining B work needs larger verified consolidation, not repeated
+one-word tuning; Proposal C remains the separately defined EXEC/RUN
+phase of the original A–F architectural roadmap.
+
 ## 2026-10-26 Proposal B VFS PARENT_NAME provider selection v386
 
 Revisited the earlier invalid-assembler trial without retaining it.

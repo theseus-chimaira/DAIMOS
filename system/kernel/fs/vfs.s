@@ -31,12 +31,11 @@ vfs_lookup:
         came    1,4
         jrst    vfs_lookup_provider
         movei   4,monitorfs_names+014  ; PROCESSES, DOMAINS, DEVICES
-        movei   0,3
         jrst    vfs_lookup_builtin_start
 vfs_lookup_root_names:
         movei   4,monitorfs_names      ; DEV, MONITOR, PROC alias
-        movei   0,3
 vfs_lookup_builtin_start:
+        movei   0,3                    ; both static namespaces have 3 names
         move    5,(2)                  ; name chars
 vfs_lookup_builtin_loop:
         came    5,(4)
