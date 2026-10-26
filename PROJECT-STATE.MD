@@ -1,3 +1,31 @@
+## 2026-10-26 Proposal B resident storage overlay candidate scan v384
+
+Reviewed large explicit resident `.block` declarations, filesystem
+workspace call sites, BCACHE slot ownership, MEMFS snapshot entry
+points and MonitorFS swapped-process read dispatch. The only obvious
+fixed 0200-octal transfer block is `fs_block_workspace` in `vfs.s`;
+`bcache_pdp6.s` already overlays slot 0 there while slot 1 is a
+**separately allocated 0201-word MM slab** that is needed to preserve
+an old clean workspace block across cache misses. The second cache
+slot is not an unused permanent block and cannot serve as the VFS
+transfer destination without invalidating the cache's recovery model.
+
+`memfs_runtime.s` calls `memfs_snapshot_mount` and
+`memfs_snapshot_shutdown`; `monitorfs_runtime.s` dispatches
+`mfsproc_swapped_read_words_v63`, which invokes `backstore_read`
+with `fs_block_workspace` and invalidates the BCACHE workspace tag
+first. These entry paths cannot be assumed to share the physical
+provider's DTFS/TSFS/D6FS serialization merely because they operate
+on the same scratch address. The audit did **not** establish a
+mutually exclusive 128-word replacement allocation or safe buffer
+lifetime, so **no storage overlay or memory saving is accepted**.
+No code change was made; the latest measured complete linked image
+remains KCORE **9113**, KCORE+MRES **15661**, PERMANENT_LAST
+**15708**. Next prioritize structural code savings with demonstrable
+linked impact, or first prove an exact lock/call graph for the entire
+workspace lifetime. Below-8192 KCORE still requires 922 words;
+strict 32K acceptance remains deferred.
+
 ## 2026-10-26 Proposal B BCACHE/workspace overlay audit v383
 
 Continued the fixed 128-word `fs_block_workspace` lifetime analysis.
