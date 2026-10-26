@@ -1,3 +1,36 @@
+## 2026-10-26 Proposal B BCACHE/workspace overlay audit v383
+
+Continued the fixed 128-word `fs_block_workspace` lifetime analysis.
+`system/kernel/storage/bcache_pdp6.s` **already aliases** BCACHE
+slot 0 to that exact VFS scratch region. Its shared slot-0 tag takes
+one fixed resident word. The separate MM-managed slot 1 is a
+`0201`-word allocation (128 data plus tag), made lazily with
+`mm_alloc_aligned_noreclaim`, not a second permanent KCORE buffer.
+On workspace-backed cache misses, slot 0's live clean block is copied
+to slot 1 before the workspace is overwritten. Reusing the MM slab as
+scratch concurrently would destroy that protection; removing the
+resident scratch and retaining another permanently allocated 128-word
+buffer would merely relocate the RAM cost. The current sharing
+already captures the obvious BCACHE overlay opportunity.
+
+The MonitorFS swapped-process read explicitly invalidates the shared
+workspace tag before `backstore_read` and uses a per-call stack source
+record. The source comments say that swapping and scheduling preserve
+executive syscall completion, but this does not prove safe arbitrary
+overlap with every other filesystem/snapshot call. Physical provider
+serialization through `fs_provider_reg_call` remains an independent
+lifetime guarantee; MEMFS and snapshot paths require separate review.
+
+No code change is accepted in v383. Linked v381/v382 baseline remains
+KCORE **9113**, KCORE+MRES **15661**, PERMANENT_LAST **15708**;
+no additional size saving or runtime test claim. Before a storage
+rewrite, require a complete call graph including boot-before-MM,
+reentrant provider callbacks, MonitorFS swapped reads and snapshot
+mount/shutdown. Search for a *different* existing mutually exclusive
+allocation rather than overlaying BCACHE's required backup slot.
+Strict 32K acceptance remains deferred, and 922 additional KCORE
+words are required for the below-8192 target.
+
 ## 2026-10-26 Proposal B shared filesystem workspace lifetime audit v382
 
 Inspected the 0200-octal (128-decimal)-word `.bss` `fs_block_workspace`
