@@ -1,3 +1,45 @@
+## 2026-10-26 Proposal B KCORE structural size census v369
+
+Resumed KCORE-only optimization after v368. Inspected the live
+`file_runtime.s` and `vfs.s` source and target DOBJ symbol sections,
+using the current v368 GCC lowmem linked baseline. No MRES code,
+package metadata, or exports were considered optimization targets.
+
+**Pre-link section census, not a claim of additive linked savings:**
+`file_runtime.dobj`: text 1127 words, data 0, BSS 0;
+`vfs.dobj`: text 770, data 27, BSS 128. The VFS mount
+base pointers and active slot-count form three data words. Several
+other VFS counters/policies already alias otherwise unused resident
+device-state words, and mount target/root tables are MM-backed;
+blindly moving them or adding a second allocation would increase
+permanent RAM or break boot publication. Thus a simple mount-table
+relocation is not a justified candidate.
+
+DOBJ symbol-entry spans (a useful hotspot ranking, **not** exact
+function sizes because local routines and helper code may be included):
+
+- FILE: `file_open` 116; `file_write_words` 117 (includes common bulk
+  READ/WRITE dispatch); `file_getpath` 93; `file_lock` 79;
+  `file_component` 51; `file_dup2` 43; `file_readchar` 43;
+  `file_writechar` 43 words.
+- VFS: `vfs_mount_prevalidated` 101 (includes mount setup),
+  `vfs_readdir` 91; `vfs_unmount` 82; `vfs_parent_name` 81;
+  `vfs_lookup` 64; `vfs_create_op` 41 words.
+
+**Next investigation order:** (1) compare VFS MOUNT/UNMOUNT
+request and publication phases, proving lifetime and error unwind
+semantics before sharing any state; (2) review FILE OPEN and bulk
+READ/WRITE dispatch for large mutually exclusive pathways without
+changing device ABI, EOF/APPEND handling or offset publication;
+(3) check VFS READDIR/PARENT_NAME for duplicated namespace-name
+handling while preserving mount-root traversal. Retain the already
+MM-backed mount arrays and serialized physical-provider gateway.
+Build-native tests in `daimos-testkit`, including concurrency and
+error paths, remain required for any accepted change. No production
+edit or new saving is claimed in this census: full linked KCORE
+remains **9130** words; below 8192 requires 939 more. Strict 32K
+acceptance remains deferred.
+
 ## 2026-10-26 Proposal B parent/leaf frame helper experiment v368
 
 Inspected resident parent/leaf request setup in `file_runtime.s` for
