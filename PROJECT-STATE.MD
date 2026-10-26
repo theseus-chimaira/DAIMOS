@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v433: provider bridge bounded at 30 words
+
+The complete `fs_provider_reg_call` to unlock region has 30 resident
+instruction words, excluding four service bindings and lock state.
+That ceiling rules out a large KCORE saving from this bridge alone.
+No kernel change, baseline KCORE=8990. Continue architectural census
+of larger FILE/VFS and syscall resident code. See
+`design/provider-bridge-size-ceiling-20261026-v433.md`.
+
 ## 2026-10-26 Proposal B v432: 2 KCORE words saved
 
 Direct MEMFS dispatch uses its normal missing-service trampoline,

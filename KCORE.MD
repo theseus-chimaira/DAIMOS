@@ -1,3 +1,13 @@
+## 2026-10-26 Proposal B v433 provider bridge size ceiling
+
+Source census shows the *entire* resident provider call/serialize/wait/
+unlock bridge contains 30 instruction words, plus four binding slots
+and one lock word. It cannot by itself supply the hundreds of KCORE
+words sought, and replacing it safely requires preserving sleeping
+workspace leases. No production edit; KCORE **8990**. Redirect major
+architectural review to larger resident FILE/VFS and syscall regions.
+See `design/provider-bridge-size-ceiling-20261026-v433.md`.
+
 ## 2026-10-26 Proposal B v432 direct MEMFS dispatch
 
 Removed the redundant missing-service compare from direct MEMFS
