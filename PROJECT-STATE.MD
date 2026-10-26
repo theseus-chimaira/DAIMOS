@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v457: native FILE RENAME failure handling
+
+Native PDP-6 production FILE RENAME assembly now passes independent
+parent lookup, permission and provider-error injection in daimos-testkit;
+native VFS and DTFS RENAME fixtures also PASS. Complete integrated
+transaction remains outstanding. No production changes or new RAM
+savings; linked v452 KCORE 8961, KCORE+MRES 15508,
+PERMANENT_LAST 15555. Strict 32K deferred. See v457 design note.
+
 ## 2026-10-26 Proposal B v456: VFS RENAME failure coverage
 
 Extended daimos-testkit native VFS RENAME fixture with readonly

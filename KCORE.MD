@@ -1,3 +1,13 @@
+## 2026-10-26 Proposal B v457 native FILE RENAME lifecycle fixture
+
+New daimos-testkit PDP-6 fixture executes production FILE RENAME
+assembly with controlled parent, access and provider callbacks.
+Success, both lookup failures, both permission failures and provider
+error PASS. Native VFS and DTFS RENAME regressions also PASS.
+No production edit: linked KCORE **8961**, KCORE+MRES **15508**,
+PERMANENT_LAST **15555** remain the accepted v452 values.
+See v457 design note.
+
 ## 2026-10-26 Proposal B v456 RENAME readonly and provider failures
 
 Native PDP-6 VFS RENAME test covers readonly source/destination,
