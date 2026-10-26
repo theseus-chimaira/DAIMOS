@@ -1,25 +1,29 @@
 #include "dsh.h"
 
-void
-dsh_s6_clear(struct dsh_s6 *s)
+/* Both fixed SIXBIT buffers use the same word-clear loop. */
+static void
+dsh_clear_words(kword_t *words, unsigned int count)
 {
         unsigned int i;
 
+        for (i = 0U; i < count; ++i)
+                words[i] = 0;
+}
+
+void
+dsh_s6_clear(struct dsh_s6 *s)
+{
         s->len = 0U;
-        for (i = 0U; i < DSH_S6_MAX_WORDS; ++i)
-                s->words[i] = 0;
+        dsh_clear_words(s->words, DSH_S6_MAX_WORDS);
 }
 
 void
 dsh_line_clear(struct dsh_line *line)
 {
-        unsigned int i;
-
         if (line == 0)
                 return;
         line->len = 0U;
-        for (i = 0U; i < DSH_LINE_MAX_WORDS; ++i)
-                line->words[i] = 0;
+        dsh_clear_words(line->words, DSH_LINE_MAX_WORDS);
 }
 
 int

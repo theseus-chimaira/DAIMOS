@@ -1,3 +1,12 @@
+## 2026-10-26 v440: KCC DSH code-size fix
+
+Unified fixed SIXBIT and input-line word clearing in one helper.
+Clean KCC PDP-6 DSH image 036013 -> 035757 octal, saving 034 octal
+(28 decimal) words, unchanged BSS 012751 and EXEC gate 036000.
+The FIFO fixture explicitly selects KCC; the full PDP-6 FIFO runtime
+regression PASS. No GCC substitute or limit increase. See
+`design/dsh-kcc-clear-loop-size-fix-20261026-v440.md`.
+
 ## 2026-10-26 v439: DSH FIFO test size gate recovered
 
 The v438 test's DSH 036013 > 036000 failure was due to a FIFO fixture
