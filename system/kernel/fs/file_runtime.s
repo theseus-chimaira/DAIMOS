@@ -174,8 +174,7 @@ file_open:
         pushj   17,file_parent_path
         jumpn   1,file_open_fail
         move    1,-014(17)
-        movei   2,3                    ; write + search
-        pushj   17,file_check_access
+        pushj   17,file_parent_write_access_v367
         jumpn   1,file_open_fail
         move    1,-014(17)
         movei   2,-013(17)

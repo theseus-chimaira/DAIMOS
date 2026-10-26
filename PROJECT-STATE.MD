@@ -1,3 +1,21 @@
+## 2026-10-26 Proposal B KCORE FILE OPEN parent permission reuse v373
+
+The resident FILE OPEN create-on-miss branch performed its parent
+write/search access check with an inline `MOVEI 2,3` followed by
+`PUSHJ file_check_access`, duplicating the contract already
+centralized for SYMLINK/RENAME/MKDIR/UNLINK in the existing
+`file_parent_write_access_v367` tail-call helper. Reused that helper
+in `file_open` with unchanged parent vnode, permission mask and
+failure semantics. No MRES changes, new state or new public ABI.
+
+Full linked GCC PDP-6 lowmem versus v372: KCORE 9126 -> **9125**
+(-1), KCORE+MRES 15674 -> **15673** (-1), PERMANENT_LAST 15721 ->
+**15720** (-1). Native daimos-testkit `target-file-pdp6`,
+`target-file-walk-pdp6`, `test-daimos-vfs-stat-frame`, and
+`test-daimos-pre-dsh-fs-closure` PASS. KCORE below 8192 requires
+934 additional words. Continue larger structural FILE/VFS analysis;
+strict 32K acceptance remains deferred.
+
 ## 2026-10-26 Proposal B KCORE MOUNT vnode slot encoding v372
 
 In the resident `vfs_mount_found` path, the public mount ID is the
