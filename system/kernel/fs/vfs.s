@@ -424,6 +424,8 @@ vfs_create_policy:
         move    2,3                    ; provider b = name
         move    3,4                    ; provider c = mode
         movei   4,-2(17)               ; provider d = result nodep
+        jrst    vfs_create_dispatch_v445
+vfs_create_dispatch_v445:
         pushj   17,fs_provider_reg_call
 vfs_create_store_result:
         jumpn   1,vfs_create_done
@@ -462,8 +464,7 @@ vfs_symlink:
         setz    5,                      ; request e unused
         ldb     7,[POINT 6,1,5]
         movei   6,010                  ; FS_MRES_OP_SYMLINK
-        pushj   17,fs_provider_reg_call
-        jrst    vfs_create_store_result
+        jrst    vfs_create_dispatch_v445
 vfs_symlink_ro:
         sub     17,kconst_4_4
         jrst    kret_neg1

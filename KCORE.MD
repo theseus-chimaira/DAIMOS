@@ -1,3 +1,9 @@
+## 2026-10-26 Proposal B v445 CREATE/SYMLINK shared dispatch
+
+Removed duplicated provider call from VFS CREATE/SYMLINK; both now
+share call and vnode publication. Fully linked **KCORE 8981** (-1).
+FILE/PIPE, provider lock and shared-dispatch guards PASS. See v445 note.
+
 ## 2026-10-26 Proposal B v443 consolidated VFS mutations
 
 UNLINK/CHMOD and CHOWN/UTIME now share the readonly-check and physical

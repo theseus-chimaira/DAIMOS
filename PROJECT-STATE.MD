@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v445: CREATE/SYMLINK call consolidation
+
+Shared physical provider call and vnode publication for CREATE and
+SYMLINK. Linked lowmem KCORE 8981, KCORE+MRES 15528,
+PERMANENT_LAST 15575; one KCORE word saved, no new data. FILE/PIPE,
+UMASK, provider and common-dispatch checks PASS. See
+`design/vfs-create-symlink-common-dispatch-20261026-v445.md`.
+
 ## 2026-10-26 v444: native DTFS UNLINK fixture repaired
 
 The standalone extracted DTFS unlink routine had an unresolved shared
