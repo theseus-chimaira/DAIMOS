@@ -1,3 +1,12 @@
+## 2026-10-26 v439: DSH FIFO test size gate recovered
+
+The v438 test's DSH 036013 > 036000 failure was due to a FIFO fixture
+boot submake selecting KCC despite a GCC-built INIT. Testkit now uses
+`BOOT_PROFILE=full COMPILER=gcc` and native PDP-6 FIFO integration
+PASSES (MKFIFO, OPEN, rename, unlink, mount-busy, D6FS persistence).
+This does **not** optimize KCC DSH or relax its size limit. KCORE
+unchanged at 8988. See `design/dsh-fifo-size-gate-validation-20261026-v439.md`.
+
 ## 2026-10-26 Proposal B v438: FIFO OPEN completion
 
 The FIFO success path reuses `file_open_success` instead of publishing
