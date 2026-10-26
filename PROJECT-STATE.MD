@@ -1,3 +1,21 @@
+## 2026-10-26 Proposal B KCORE MOUNT vnode slot encoding v372
+
+In the resident `vfs_mount_found` path, the public mount ID is the
+validated zero-based slot plus one. Replaced `MOVE 6,7` followed by
+`ADDI 6,1` with `MOVEI 6,1(7)` before the unchanged mount/kind
+field shifts and bitwise packing. No state storage, ABI, root vnode
+bit layout or provider interface changed.
+
+Full linked GCC PDP-6 lowmem relative to v371: KCORE 9127 ->
+**9126** (-1), KCORE+MRES 15675 -> **15674** (-1),
+PERMANENT_LAST 15722 -> **15721** (-1). `daimos-testkit` targets
+`target-file-pdp6`, `target-file-walk-pdp6`,
+`test-daimos-vfs-stat-frame`, `test-daimos-pre-dsh-fs-closure`
+PASS. Multi-provider concurrent MOUNT/UNMOUNT acceptance remains
+separate; strict 32K acceptance deferred. KCORE below 8192 requires
+935 further words. Larger resident structural consolidations remain
+the focus of Proposal B.
+
 ## 2026-10-26 Proposal B KCORE UNMOUNT mount-ID preparation v371
 
 After restoring DevSpace2 connectivity, inspected the v370 checkout

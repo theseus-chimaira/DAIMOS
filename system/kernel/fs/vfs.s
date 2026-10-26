@@ -933,8 +933,7 @@ vfs_mount_found:
         ; root = provider:6 | mount/kind:12 | index:18.
         move    5,2
         lsh     5,036
-        move    6,7
-        addi    6,1
+        movei   6,1(7)
         lsh     6,6
         ior     6,3
         lsh     6,022
