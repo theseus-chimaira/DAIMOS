@@ -1,3 +1,22 @@
+## 2026-10-26 Proposal B FILE OPEN directory flag branch v375
+
+In resident `file_open`, replace the conditional branch around
+`MOVEI 3,1` (directory argument to `file_new_fd`) with a conditional
+`CAIN 1,1` followed by `MOVEI 3,1`: CAIN executes the MOVEI only
+for `VFS_TYPE_DIR=1`, leaving zero for every other type. The first
+experiment incorrectly used CAIE, which inverted the condition;
+it was caught in review and immediately corrected **before testing
+or committing**. Only the correct CAIN version is retained.
+
+Full linked GCC PDP-6 lowmem against accepted v374: KCORE
+9121 -> **9120** (-1), KCORE+MRES 15669 -> **15668** (-1),
+PERMANENT_LAST 15716 -> **15715** (-1). daimos-testkit
+`target-file-pdp6`, `target-file-walk-pdp6`,
+`test-daimos-vfs-stat-frame` and `test-daimos-pre-dsh-fs-closure`
+PASS on the corrected source. Public FILE ABI, directory semantics
+and provider behavior unchanged. No MRES code modified. KCORE below
+8192 needs 929 more words; strict 32K acceptance deferred.
+
 ## 2026-10-26 Proposal B FILE OPEN access-mask consolidation v374
 
 Consolidated the `file_open` READ/WRITE/TRUNC permission-mask builder
