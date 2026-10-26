@@ -1,3 +1,13 @@
+## 2026-10-26 Proposal B v460 RENAME cross-layer ownership gate
+
+Audited syscall two-pointer VM lease, FILE dual parent/name frame,
+VFS readonly/namespace policy and serialized provider transaction.
+A replacement must delete an existing syscall/FILE boundary together,
+not add a trampoline; integrated mapping and blocking-I/O tests are
+required before cutover. No production change or new RAM saving.
+Last fully linked KCORE **8961**, KCORE+MRES **15508**,
+PERMANENT_LAST **15555**. See v460 design note.
+
 ## 2026-10-26 Proposal B v459 size-neutral RENAME XOR experiment
 
 Reversing RENAME namespace XOR operands left full linked lowmem KCORE

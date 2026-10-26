@@ -1,3 +1,13 @@
+## 2026-10-26 Proposal B v460: RENAME integrated cutover gate
+
+Mapped complete syscall -> FILE -> VFS -> provider ownership,
+including the user mapping hold and sleeping I/O transaction lease.
+An integrated native test must precede a coordinated removal of
+existing wrappers; independent leaf tests are insufficient. No
+production edit, no new size saving. Linked baseline KCORE 8961,
+KCORE+MRES 15508, PERMANENT_LAST 15555. Strict 32K deferred.
+See v460 design note.
+
 ## 2026-10-26 Proposal B v459: rejected XOR operand order
 
 Full linked PDP-6 lowmem KCORE remained 8961 after reversing VFS
