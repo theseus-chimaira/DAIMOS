@@ -1,3 +1,13 @@
+## 2026-10-26 Proposal B v451: RENAME namespace regression closure
+
+Added pairwise collision-freedom coverage for all 4096 combined
+provider/mount identities in `daimos-testkit`. Static namespace,
+PDP-6 FILE and pathname-walk and native provider lock PASS. No
+production code change; accepted full linked v450 KCORE 8963,
+KCORE+MRES 15510, PERMANENT_LAST 15557 remain the baseline.
+No new saving claimed. See
+`design/vfs-rename-namespace-regression-20261026-v451.md`.
+
 ## 2026-10-26 Proposal B v450: compact RENAME namespace check
 
 VFS RENAME compares combined provider/mount vnode namespace identity

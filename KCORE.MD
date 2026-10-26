@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v451 RENAME namespace regression closure
+
+Strengthened testkit coverage to detect collisions between distinct
+provider/mount identities across all 4096 combinations. Focused
+PDP-6 FILE, pathname-walk, provider-lock and identity checks PASS.
+No production change or added permanent RAM. Last fully linked
+baseline remains v450 KCORE **8963**, KCORE+MRES **15510**,
+PERMANENT_LAST **15557**. See v451 design note.
+
 ## 2026-10-26 Proposal B v450 RENAME namespace identity
 
 One upper-12-bit provider+mount comparison replaces independent
