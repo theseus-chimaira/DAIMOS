@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v423: one-word FILE mount-unlock saving
+
+Accepted `file_unlock_mount` redundant load elimination. Full-linked
+PDP-6 GCC lowmem image KCORE 8998, KCORE+MRES 15546,
+PERMANENT_LAST 15593 (one word below v417, 111 below v388). Native
+FILE/directmount tests PASS, no new storage. See
+`design/file-unlock-mount-live-word-20261026-v423.md`.
+
 ## 2026-10-26 Proposal B v422: disk/drum/tape root-login PASS
 
 Full `test-daimos-root-login-lifecycle` passed in the PDP-6 simulator

@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v423 mount-unlock instruction reduction
+
+Retaining the packed descriptor in AC4 while extracting its full
+six-bit mount ID into AC5 removes a redundant table reload from
+`file_unlock_mount`. Full PDP-6 GCC lowmem linked measurements:
+KCORE **8998**, KCORE+MRES **15546**, PERMANENT_LAST **15593**,
+one word smaller than v417/v422 and **111 words below v388**.
+Native FILE and directmount/PIPE/UMASK tests PASS. No u-area growth.
+
 ## 2026-10-26 Proposal B v422 complete root-login validation
 
 Full PDP-6 disk/drum/tape login matrix PASS after raising the tape

@@ -642,8 +642,7 @@ file_lock_modes:
         .long   0                       ; VFS_LOCK_UNLOCK
 
 ; void file_unlock_mount(unsigned int mount_id)
-; Clear lock/regular state for the specified mount. The three packed low
-; mount bits and the two-bit u-area extension form the five-bit public ID.
+; Clear regular/lock state for the specified full six-bit mount ID.
         .globl  file_unlock_mount
 file_unlock_mount:
         move    2,file_table
@@ -651,10 +650,9 @@ file_unlock_mount:
 file_unlock_mount_loop:
         skipn   4,(2)
         jrst    file_unlock_mount_next
-        ldb     4,[POINT 6,4,11]       ; full mount ID, not a map lookup
-        came    4,1
+        ldb     5,[POINT 6,4,11]       ; retain packed word in AC4
+        came    5,1
         jrst    file_unlock_mount_next
-        move    4,(2)
         tlz     4,000030
         movem   4,(2)
 file_unlock_mount_next:
