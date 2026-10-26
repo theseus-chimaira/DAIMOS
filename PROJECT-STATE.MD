@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v434: linked KCORE architecture census
+
+Map spans: VFS-to-bridge 823 words, FILE-to-PIPE 1050, native syscall
+to getchar bridge 787, provider bridge 30. Spans are bounded address
+intervals, not exclusive object size or potential savings. Next
+candidate is unified FILE/VFS/syscall interface with measured linked
+KCORE reduction. No production edit; KCORE 8990. See
+`design/kcore-resident-layer-census-20261026-v434.md`.
+
 ## 2026-10-26 Proposal B v433: provider bridge bounded at 30 words
 
 The complete `fs_provider_reg_call` to unlock region has 30 resident

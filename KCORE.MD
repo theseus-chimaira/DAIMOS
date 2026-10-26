@@ -1,3 +1,13 @@
+## 2026-10-26 Proposal B v434: larger resident layer census
+
+The linked PDP-6 map shows contiguous spans of 823 words around VFS,
+1050 around FILE and 787 from `exec_native_syscall` to the later
+syscall/device bridge, versus only 30 for provider serialization.
+These spans are not exact exclusive subsystem sizes or guaranteed
+savings. Prioritize a cross-layer FILE/VFS/syscall ABI redesign over
+further provider bridge tuning. No production change; KCORE **8990**.
+See `design/kcore-resident-layer-census-20261026-v434.md`.
+
 ## 2026-10-26 Proposal B v433 provider bridge size ceiling
 
 Source census shows the *entire* resident provider call/serialize/wait/
