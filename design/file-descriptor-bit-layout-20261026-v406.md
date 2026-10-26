@@ -19,8 +19,7 @@ public mount capacity through 26). Under those limits:
 
 For the current 26-mount target the raw canonical vnode mask is
 `073707777777` octal and the available metadata mask is
-`0704070000000` octal (both as 36-bit values, with leading zero
-allowed). The complement calculation is the authority; verify literal
+`704070000000` octal (both as 36-bit values). The complement calculation is the authority; verify literal
 width and target assembler acceptance before using any mask in code.
 For 63 mounts, canonical mask becomes `077707777777` and only six
 metadata bits remain. These are restricted-profile storage layouts,
