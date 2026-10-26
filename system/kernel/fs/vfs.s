@@ -111,8 +111,7 @@ vfs_lookup_root_store:
         .globl  vfs_readdir
 vfs_readdir:
         jumpe   3,kret_neg1
-        move    4,monitorfs_names+7    ; /MONITOR
-        came    1,4
+        came    1,monitorfs_names+7    ; /MONITOR
         jrst    vfs_readdir_general
         cail    2,3
         jrst    kret_zero

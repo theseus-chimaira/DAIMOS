@@ -1,3 +1,21 @@
+## 2026-10-26 Proposal B direct READDIR namespace vnode comparison v388
+
+Removed a redundant AC4 load before `CAME` in the resident
+`vfs_readdir` `/MONITOR` special-case test: compare AC1 directly
+against `monitorfs_names+7`, which already stores the canonical vnode.
+The provider fallback, directory index bounds, special namespace
+entries and ABI are unchanged; no persistent state or MRES movement.
+
+Full linked GCC PDP-6 lowmem versus v387: KCORE **9110 -> 9109**
+(-1), KCORE+MRES **15658 -> 15657** (-1), PERMANENT_LAST
+**15705 -> 15704** (-1). All four native daimos-testkit checks
+passed: `target-file-pdp6`, `target-file-walk-pdp6`,
+`test-daimos-vfs-stat-frame`, `test-daimos-pre-dsh-fs-closure`.
+Global below-8192 goal still needs 918 words. Remaining Proposal B
+work should prioritize larger FILE/VFS consolidation over repetitive
+single-instruction changes; the original Proposal C addresses
+EXEC/RUN separately.
+
 ## 2026-10-26 Proposal B VFS LOOKUP common namespace loop count v387
 
 Both built-in MonitorFS namespace branches (`/` and `/MONITOR`)
