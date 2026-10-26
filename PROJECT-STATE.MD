@@ -1,3 +1,22 @@
+## 2026-10-26 Proposal B VFS PARENT_NAME provider selection v386
+
+Revisited the earlier invalid-assembler trial without retaining it.
+The valid PDP-6 `CAIE 7,2` / `CAIN 7,3` skip pair replaces two
+independent equal comparisons and jumps in the resident
+`vfs_parent_name_dispatch`. Exactly providers 2 and 3 enter
+`monitorfs_parent_name`; other providers continue to the existing
+FS_MRES_OP_PARENT_NAME path. Both mount-root resolution and the
+provider ABI stay unchanged. The rejected experimental `CAINE`
+mnemonic is not used anywhere in this accepted edit.
+
+Full linked GCC PDP-6 lowmem versus v385: KCORE **9112 -> 9111**
+(-1), KCORE+MRES **15660 -> 15659** (-1), PERMANENT_LAST
+**15707 -> 15706** (-1). Native daimos-testkit targets
+`target-file-pdp6`, `target-file-walk-pdp6`,
+`test-daimos-vfs-stat-frame` and `test-daimos-pre-dsh-fs-closure`
+all PASS. The global below-8192 KCORE goal still needs 920 words;
+Proposal B remains distinct from original Proposal C EXEC/RUN.
+
 ## 2026-10-26 Proposal B VFS READDIR builtin bounds branch v385
 
 Reconfirmed the original 2026-10-24 A–F architectural roadmap:

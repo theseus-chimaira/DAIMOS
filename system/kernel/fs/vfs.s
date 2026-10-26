@@ -272,8 +272,7 @@ vfs_parent_name:
         pushj   17,vfs_parent_resolve_slot
 vfs_parent_name_dispatch:
         ldb     7,[POINT 6,1,5]
-        cain    7,2
-        jrst    monitorfs_parent_name
+        caie    7,2
         cain    7,3
         jrst    monitorfs_parent_name
         push    17,1
