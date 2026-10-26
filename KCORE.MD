@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v420 provider lifecycle regression
+
+Native PDP-6 D6FS multimount, remount and direct DRM backing tests
+PASS against v417 full six-bit FILE mount descriptors. KCORE remains
+**8999 words** (last measured full linked image); no new saving is
+claimed. Root filesystem boot/login and broad provider testing remain
+independent acceptance gates; strict 32K is deferred.
+
 ## 2026-10-26 Proposal B v419 native RUN lifecycle regression
 
 Both full PDP-6 simulator fixtures PASS: process lifecycle

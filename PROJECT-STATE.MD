@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v420: D6FS provider post-cutover checks
+
+Committed FILE v417 passes native PDP-6 D6FS multimount, remount and
+direct/multi-DRM backing regressions. Validated independent mount
+identities/readers, RW/RO publication and unmount cleanup, failure
+atomicity, and missing-driver behavior. No production source or memory
+size change; full root-login end-to-end acceptance remains separate.
+See `design/file-direct-mount-provider-validation-20261026-v420.md`.
+
 ## 2026-10-26 Proposal B v419: RUN lifecycle acceptance
 
 The committed v417 direct-mount FILE conversion passes full PDP-6
