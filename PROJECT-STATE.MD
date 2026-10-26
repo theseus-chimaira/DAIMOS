@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v438: FIFO OPEN completion
+
+The FIFO success path reuses `file_open_success` instead of publishing
+the descriptor twice. Full linked KCORE 8988 (one word saved),
+KCORE+MRES 15535, PERMANENT_LAST 15582. No extra allocation; OPEN
+lifetime guard PASS. FIFO integration build blocked by `DSH image
+036013 exceeds EXEC limit 036000`; runtime result unknown. See
+`design/open-fifo-result-unification-20261026-v438.md`.
+
 ## 2026-10-26 Proposal B v437: OPEN lifetime audit
 
 Testkit v437 source guard PASS for OPEN's create/stat frame phases,

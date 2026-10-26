@@ -187,8 +187,7 @@ file_open_newfd_call:
         ior     1,2
         movem   1,(13)
         setzm   1(13)
-        move    1,12
-        jrst    file_open_return
+        jrst    file_open_success        ; share descriptor publication
 
 file_open_fifo_fail:
         setzm   (13)

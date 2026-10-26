@@ -1,3 +1,10 @@
+## 2026-10-26 Proposal B v438 FIFO OPEN completion
+
+FILE OPEN now shares the descriptor result publication between FIFO
+and regular-file success paths. Fully linked KCORE **8988**, one word
+below v437; no RAM expansion. OPEN lifetime source guard PASS; see
+the v438 design note for verification scope.
+
 ## 2026-10-26 Proposal B v437 OPEN ownership boundary
 
 Source audit and testkit guard PASS: OPEN's 14-word scratch, retained
