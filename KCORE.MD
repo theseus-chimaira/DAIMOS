@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v435 unified pathname ABI design
+
+Identified OPEN's syscall -> FILE -> VFS/provider ownership chain,
+including the separate held user mapping and sleeping I/O workspace.
+Drafted a single pathname-request contract to replace (not add to)
+existing syscall/FILE branches, first targeting OPEN success and
+failure publication. No production edit or measured saving; KCORE
+**8990**. See v435 design note.
+
 ## 2026-10-26 Proposal B v434: larger resident layer census
 
 The linked PDP-6 map shows contiguous spans of 823 words around VFS,

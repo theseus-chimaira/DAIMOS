@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v435: OPEN vertical-slice design
+
+Recorded a new unified pathname-request ABI candidate joining syscall
+mapping, FILE OPEN publication and VFS provider selection while
+preserving distinct I/O buffer ownership. Requires atomic removal of
+the replaced veneers and native success/error/rollback tests before
+acceptance. No code change or KCORE saving yet. Baseline 8990.
+See `design/file-vfs-syscall-unified-contract-20261026-v435.md`.
+
 ## 2026-10-26 Proposal B v434: linked KCORE architecture census
 
 Map spans: VFS-to-bridge 823 words, FILE-to-PIPE 1050, native syscall
