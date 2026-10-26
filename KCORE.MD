@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v427: provider I/O lease boundaries
+
+Source tracing proves that shared `fs_block_workspace` remains live
+across sleeping DSK/DRM/DTC operations and cache publication. A new
+testkit guard checks these specific I/O boundaries. Do not shorten
+serialization without replacing the live-buffer ownership contract.
+Production unchanged; KCORE **8995**. See v427 design note.
+
 ## 2026-10-26 Proposal B v426 provider transaction baseline
 
 Existing PDP-6 provider lock native/static gates PASS. New testkit

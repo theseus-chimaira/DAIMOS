@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v427: live buffer across device sleeps
+
+Traced D6FS backing read/write, TSFS table/word reads and DTFS DTC
+veneer into shared `fs_block_workspace` use. Physical DSK/DRM/tape
+drivers can wait; buffer ownership therefore must continue through
+completion, consumption and cache publication. New testkit guard PASS.
+No kernel edit or claimed RAM saving. See
+`design/provider-io-lease-boundaries-20261026-v427.md`.
+
 ## 2026-10-26 Proposal B v426: provider lock and workspace baseline
 
 Native PDP-6 provider lock wait/retry and static contract tests PASS.
