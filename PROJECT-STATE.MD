@@ -1,3 +1,28 @@
+## 2026-10-26 Proposal B VFS READDIR builtin bounds branch v385
+
+Reconfirmed the original 2026-10-24 A–F architectural roadmap:
+Proposal B covers resident FILE/VFS/MonitorFS consolidation, while
+Proposal C is distinct EXEC/RUN consolidation, preserving their
+resident, distinct publication/replacement transactions. Therefore
+v385 changes only resident VFS namespace READDIR, not EXEC/RUN.
+
+In `vfs_readdir`, the post-provider namespace insertion index is
+rejected if negative or at least three. Replaced `CAIGE 4,3; JRST
+vfs_readdir_builtin; JRST vfs_readdir_zero` with `CAIL 4,3; JRST
+vfs_readdir_zero`, falling through for valid indices 0..2. The
+negative index rejection is unchanged; returned dirent records and
+mount-root traversal are unchanged. No MRES, ABI or permanent state
+changes.
+
+Full linked GCC PDP-6 lowmem versus v384: KCORE **9113 -> 9112**
+(-1), KCORE+MRES **15661 -> 15660** (-1), PERMANENT_LAST
+**15708 -> 15707** (-1). Native daimos-testkit targets
+`target-file-pdp6`, `target-file-walk-pdp6`,
+`test-daimos-vfs-stat-frame`, `test-daimos-pre-dsh-fs-closure`
+all PASS. KCORE target <8192 still requires 921 words; completion
+of Proposal B is assessed by worthwhile structural savings rather
+than that independent global target. Proposal C remains separate.
+
 ## 2026-10-26 Proposal B resident storage overlay candidate scan v384
 
 Reviewed large explicit resident `.block` declarations, filesystem
