@@ -1,3 +1,10 @@
+## 2026-10-26 Proposal B v437: OPEN lifetime audit
+
+Testkit v437 source guard PASS for OPEN's create/stat frame phases,
+append-size lifetime, FIFO rollback and syscall VM mapping release.
+No production changes or KCORE saving: baseline remains 8989 words.
+See `design/open-frame-ownership-analysis-20261026-v437.md`.
+
 ## 2026-10-26 Proposal B v436 OPEN flag normalization
 
 Accepted one KCORE word saving: GCC PDP-6 lowmem KCORE 8989,

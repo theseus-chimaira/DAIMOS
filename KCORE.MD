@@ -1,3 +1,10 @@
+## 2026-10-26 Proposal B v437 OPEN ownership boundary
+
+Source audit and testkit guard PASS: OPEN's 14-word scratch, retained
+node, post-create stat, FIFO rollback and caller VM mapping lease
+constrain FILE/syscall consolidation. No production edits, no saving;
+accepted linked **KCORE 8989**. See v437 design note.
+
 ## 2026-10-26 Proposal B v436 OPEN normalization
 
 Accepted one KCORE word saved by normalizing OPEN flags directly in
