@@ -1,3 +1,13 @@
+## 2026-10-26 Proposal B v431: provider bridge saves 3 KCORE words
+
+Accepted common missing-service call/unlock in `fs_provider_reg_call`.
+Full linked GCC PDP-6 KCORE=8992, KCORE+MRES=15539,
+PERMANENT_LAST=15586, all three below v430. PDP-6 native provider
+lock/lease and missing-service unlock tests PASS. A faster fast-path
+experiment increased KCORE by four words and was reverted; a test-
+caught fall-through bug was fixed before acceptance. Details in
+`design/provider-bridge-no-service-unification-20261026-v431.md`.
+
 ## 2026-10-26 Proposal B v430: TSFS READDIR projection
 
 Accepted removal of a redundant TSFS child-record pointer copy.

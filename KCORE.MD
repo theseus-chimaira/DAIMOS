@@ -1,3 +1,13 @@
+## 2026-10-26 Proposal B v431 provider-bridge KCORE shrink
+
+The serialized provider bridge now calls the missing-service stub
+through its ordinary ABI and uses the common unlock. Linked PDP-6
+GCC lowmem **KCORE 8992** (three words saved), KCORE+MRES 15539,
+PERMANENT_LAST 15586. Native provider lock, missing service and
+workspace interleaving PASS. Rejected fast-path experiment increased
+KCORE 8995 -> 8999; corrected fall-through failure before acceptance.
+See v431 design note. Strict 32K remains deferred.
+
 ## 2026-10-26 Proposal B v430 TSFS READDIR projection
 
 Removed redundant record-pointer AC transfer in TSFS READDIR while

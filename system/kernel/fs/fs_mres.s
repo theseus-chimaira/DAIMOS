@@ -166,8 +166,8 @@ fs_provider_lock_retry:
         blt     0,7
         sub     17,kconst_7_7
         hrrz    7,fs_memfs_service_jump(7)
-        cain    7,fs_mres_no_service
-        jrst    fs_provider_locked_no_service
+        ; The missing-service trampoline already returns -1 normally.
+        ; Invoke it under the same lease and use the common unlock path.
         pushj   17,(7)
         jrst    fs_provider_unlock
 
@@ -177,8 +177,6 @@ fs_provider_lock_wait:
         pushj   17,proc_wait_event
         jrst    fs_provider_lock_retry
 
-fs_provider_locked_no_service:
-        hrroi   1,1
 fs_provider_unlock:
         push    17,1
         setom   fs_provider_ready
