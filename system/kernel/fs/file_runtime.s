@@ -1172,8 +1172,7 @@ file_getcwd_up:
         cail    013,020                  ; depth >= 16
         jrst    file_getcwd_local_fail
         move    4,013
-        lsh     4,2
-        add     4,013                    ; depth * 5
+        imuli   4,5                     ; depth * 5
         movei   5,-0120(17)             ; parts[0]
         add     4,5
         move    1,010                   ; current vnode
@@ -1204,8 +1203,7 @@ file_getcwd_components:
         jumpe   013,file_getcwd_store_len
         subi    013,1
         move    4,013
-        lsh     4,2
-        add     4,013
+        imuli   4,5
         movei   7,-0120(17)
         add     7,4                     ; AC7 -> component name
         move    3,(7)                   ; component chars

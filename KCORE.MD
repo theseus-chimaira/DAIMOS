@@ -1,3 +1,23 @@
+## 2026-10-26 Proposal B KCORE file_getpath index multiply v362
+
+The resident absolute-path formatter `file_getpath_common` uses a
+five-word component array of up to sixteen path parts. Both the
+upward parent-walk and reverse output walk computed `5 * depth` with
+`LSH 4,2` plus `ADD 4,depth`. Replaced each two-word sequence with
+single `IMULI 4,5`, preserving AC4, stack record indexing, operation
+order, public ABI and pathname semantics. No MRES source was changed.
+
+Full linked GCC PDP-6 lowmem baseline v361: KCORE 9139 -> **9137**
+(-2 words), KCORE+all MRES 15687 -> **15685**, PERMANENT_LAST
+15734 -> **15732**. daimos-testkit PDP-6 targets
+`target-file-pdp6`, `target-file-walk-pdp6`,
+`test-daimos-vfs-stat-frame` and `test-daimos-pre-dsh-fs-closure`
+PASS. These are general file/VFS regression tests; a dedicated
+native deep GETPATH/GETCWD path-component matrix has not yet been
+run, and broader acceptance should include one. The reduction
+is entirely resident KCORE. To get below 8192 from 9137 requires
+946 additional words; strict 32K acceptance stays deferred.
+
 ## 2026-10-26 Proposal B shared descriptor clone v361
 
 Consolidated duplicated resident `file_dup`/`file_dup2` descriptor
