@@ -1,3 +1,11 @@
+## 2026-10-26 v448: native SYMLINK provider dispatch regression
+
+New testkit v448 PDP-6 executable drives resident VFS SYMLINK into a
+recording provider. Native simulation PASS for opcode 010, unused
+provider E=0, counted target and vnode publication. Full backing FS
+symlink lifecycle is separate. No production edits or KCORE saving;
+baseline **8972**. See `design/vfs-symlink-native-validation-20261026-v448.md`.
+
 ## 2026-10-26 Proposal B v447: shared CREATE/SYMLINK dispatch
 
 Use PDP-6 conditional execution for the SYMLINK-only unused provider
