@@ -1,3 +1,17 @@
+## 2026-10-26 Proposal B parent/leaf frame helper experiment v368
+
+Inspected resident parent/leaf request setup in `file_runtime.s` for
+SYMLINK, MKDIR/MKFIFO, RENAME and UNLINK/RMDIR. Tested a new tail-call
+helper deriving the contiguous leaf output pointer from the directory
+output pointer, replacing duplicated `MOVEI AC3` setup at two call
+sites. A full linked GCC lowmem image measured KCORE **9130**, all
+MRES combined **15678**, PERMANENT_LAST **15725**, equal to v367.
+The helper saved no RAM and was reverted immediately; no change to
+filesystem semantics or production source is retained, and no new
+runtime test is claimed for this rejected candidate. Continue
+Proposal B with larger resident file-runtime/VFS request handling;
+MRES optimization and strict 32K acceptance remain deferred.
+
 ## 2026-10-26 Proposal B KCORE parent-mutation access helper v367
 
 Consolidated the repeated parent write-plus-search permission call
