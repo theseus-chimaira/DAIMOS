@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v419 native RUN lifecycle regression
+
+Both full PDP-6 simulator fixtures PASS: process lifecycle
+(RUN/GETPID/WAIT/nohang/zombies/orphans/explicit fdmap) and late-RUN
+rollback (16 mapping failures under three active children with stable
+accounting/recovery). `MAKEFLAGS=COMPILER=gcc` uses the documented
+smaller DSH without relaxing its EXEC image-size limit. No source
+change; previous accepted v417 linked KCORE **8999** remains current.
+
 ## 2026-10-26 Proposal B v417 direct-mount descriptor cutover
 
 Accepted full linked GCC PDP-6 lowmem change: KCORE **9109 -> 8999**,

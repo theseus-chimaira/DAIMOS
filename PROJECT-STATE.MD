@@ -1,3 +1,14 @@
+## 2026-10-26 Proposal B v419: RUN lifecycle acceptance
+
+The committed v417 direct-mount FILE conversion passes full PDP-6
+`test-daimos-process-lifecycle` and `test-daimos-run-late-rollback`
+with supported GCC userland and unchanged DSH image limit. Validated
+RUN/WAIT/zombie/orphan handling, explicit descriptor mappings and 16
+late RUN mapping failures under three live children with successful
+recovery. No production change or size difference from v417's
+KCORE=8999, KCORE+MRES=15547, PERMANENT_LAST=15594. See
+`design/file-direct-mount-lifecycle-validation-20261026-v419.md`.
+
 ## 2026-10-26 Proposal B v417: direct-mount FILE accepted
 
 The atomic FILE format conversion stores all six mount bits directly
