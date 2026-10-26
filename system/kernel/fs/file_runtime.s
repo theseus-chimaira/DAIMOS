@@ -161,10 +161,9 @@ file_open_access:
         jumpn   1,file_open_fail
 
 file_open_newfd:
+        move    3,-6(17)               ; VFS type is already 1 for DIR
+        caie    3,1                    ; other types have no DIR marker
         setz    3,
-        move    1,-6(17)
-        cain    1,1                    ; VFS_TYPE_DIR
-        movei   3,1
 file_open_newfd_call:
         move    1,-015(17)
         move    2,11

@@ -1,3 +1,10 @@
+## 2026-10-26 Proposal B v441 OPEN directory projection
+
+Directory descriptor argument now derives directly from the VFS stat
+type, saving one linked KCORE word: **8987**. FILE/PIPE direct-mount,
+UMASK, OPEN lifetime and type-equivalence guards PASS. KCC DSH remains
+within the original size gate. See v441 design note.
+
 ## 2026-10-26 v439 FIFO regression unblocked
 
 GCC full-profile test image avoids the unintended KCC DSH overflow;

@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v441: OPEN directory argument
+
+Accepted one KCORE word reduction (full linked GCC PDP-6 lowmem
+KCORE=8987, KCORE+MRES=15534, PERMANENT_LAST=15581) by deriving
+`file_new_fd` directory flag from VFS stat type without an extra
+initialization. Native FILE/PIPE direct-mount, UMASK and OPEN lifetime
+checks PASS; new type projection guard PASS. DSH KCC gate remains
+fixed separately by v440. See `design/open-directory-projection-20261026-v441.md`.
+
 ## 2026-10-26 v440: KCC DSH code-size fix
 
 Unified fixed SIXBIT and input-line word clearing in one helper.
