@@ -1,3 +1,10 @@
+## 2026-10-26 Proposal B v447 CREATE/SYMLINK E argument
+
+Removed the redundant branch around the SYMLINK-only provider E=0
+assignment. Full linked KCORE **8972** (-1); DTFS CREATE, FILE/PIPE,
+UMASK, provider lock and updated SYMLINK ABI guard PASS. Native
+end-to-end SYMLINK runtime test remains open. See v447 design note.
+
 ## 2026-10-26 Proposal B v446 SYMLINK/CREATE policy consolidation
 
 Replaced the separate SYMLINK read-only check and vnode publication

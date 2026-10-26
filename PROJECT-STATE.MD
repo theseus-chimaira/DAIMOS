@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v447: shared CREATE/SYMLINK dispatch
+
+Use PDP-6 conditional execution for the SYMLINK-only unused provider
+argument E=0 instead of branching around it. Full linked GCC lowmem
+KCORE **8972**, KCORE+MRES 15519, PERMANENT_LAST 15566; saving one
+permanent word. Updated SYMLINK guard, DTFS CREATE and FILE/PIPE and
+provider tests PASS. Native SYMLINK runtime test still pending.
+See `design/vfs-symlink-provider-e-20261026-v447.md`.
+
 ## 2026-10-26 Proposal B v446: SYMLINK/CREATE policy cutover
 
 VFS SYMLINK now shares `vfs_create_op` permission checking and vnode

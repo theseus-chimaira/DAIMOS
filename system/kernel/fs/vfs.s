@@ -426,10 +426,8 @@ vfs_create_policy:
         movei   4,-2(17)               ; provider d = result nodep
         jrst    vfs_create_dispatch_v445
 vfs_create_dispatch_v445:
-        caie    6,010                  ; SYMLINK request e is unused
-        jrst    vfs_create_dispatch_call_v446
+        cain    6,010                  ; SYMLINK request e is unused
         setz    5,
-vfs_create_dispatch_call_v446:
         pushj   17,fs_provider_reg_call
 vfs_create_store_result:
         jumpn   1,vfs_create_done
