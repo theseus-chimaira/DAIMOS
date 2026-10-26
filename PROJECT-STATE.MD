@@ -1,3 +1,13 @@
+## 2026-10-26 Proposal B v454: RENAME ownership coverage
+
+Testkit now checks every provider/mount identity against twelve
+single-bit namespace mismatches, plus the FILE RENAME two-parent
+lookup, access and frame contract. Static, native PDP-6 FILE/walk
+and DTFS RENAME provider tests PASS. No production change or RAM
+saving; full linked v452 KCORE 8961, KCORE+MRES 15508,
+PERMANENT_LAST 15555. Integrated FILE/VFS transaction pending;
+strict 32K deferred. See v454 design note.
+
 ## 2026-10-26 Proposal B v453: DTFS RENAME native fixture
 
 daimos-testkit's extracted DTFS RENAME fixture lacked the resident

@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v454 RENAME ownership guards
+
+Expanded testkit namespace comparisons and added an explicit FILE
+RENAME two-parent/permission/frame guard. Static checks, native PDP-6
+FILE and pathname-walk, and DTFS RENAME provider tests PASS. No
+production edit. Last fully linked KCORE **8961**, KCORE+MRES
+**15508**, PERMANENT_LAST **15555**. See v454 design note.
+
 ## 2026-10-26 Proposal B v453 native DTFS RENAME regression
 
 Restored the standalone native DTFS RENAME fixture by providing the
