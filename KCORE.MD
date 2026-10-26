@@ -1,3 +1,10 @@
+## 2026-10-26 Proposal B v450 RENAME namespace identity
+
+One upper-12-bit provider+mount comparison replaces independent
+namespace field decodes. Linked KCORE **8963** (−3); all 4096
+provider/mount combinations and focused provider/FILE/PIPE tests PASS.
+See v450 design note.
+
 ## 2026-10-26 Proposal B v449 TRUNCATE/WRITE safety guard
 
 TRUNCATE and WRITE_WORDS reuse one resident readonly/swap-protection

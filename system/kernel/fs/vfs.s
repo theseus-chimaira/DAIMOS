@@ -473,13 +473,13 @@ vfs_rename:
         pop     17,3
         pop     17,2
         pop     17,1
-        ldb     7,[POINT 6,1,5]
-        ldb     5,[POINT 6,3,5]
+        ; Namespace identity is provider[35:30], mount[29:24].
+        ; Compare both fields at once, excluding local kind and index.
+        move    7,1
+        and     7,[0777700000000]
+        move    5,3
+        and     5,[0777700000000]
         came    7,5
-        jrst    kret_neg1
-        ldb     5,[POINT 6,1,11]
-        ldb     0,[POINT 6,3,11]
-        came    5,0
         jrst    kret_neg1
         movei   6,012                  ; FS_MRES_OP_RENAME
         jrst    fs_provider_reg_call

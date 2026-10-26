@@ -1,3 +1,13 @@
+## 2026-10-26 Proposal B v450: compact RENAME namespace check
+
+VFS RENAME compares combined provider/mount vnode namespace identity
+under `0777700000000`. Full linked lowmem KCORE **8963**, KCORE+MRES
+15510, PERMANENT_LAST 15557; three permanent code words saved with
+no storage growth. Exhaustive 4096-identity test and focused FILE/PIPE,
+UMASK and native provider-lock tests PASS. A smaller intermediate
+mask was detected and corrected prior to acceptance. See
+`design/vfs-rename-namespace-20261026-v450.md`.
+
 ## 2026-10-26 Proposal B v449: shared TRUNCATE/WRITE guard
 
 Unified duplicated readonly, swapped-backing and provider-dispatch
