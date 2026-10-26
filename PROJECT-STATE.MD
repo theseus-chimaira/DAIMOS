@@ -1,3 +1,23 @@
+## 2026-10-26 Proposal B remove dead bulk FILE offset setup v378
+
+In resident `file_runtime.s`, the shared READ/WRITE bulk entry had
+loaded descriptor offset into AC2 and redundantly moved the descriptor
+pointer from AC1 back into AC1 just before calling `file_node_from_fd`.
+Inspection of the helper confirms that it requires only AC1 (already
+holding the descriptor pointer), preserves AC2, and returns the vnode
+in AC1. The subsequent shared request setup overwrites AC2 with the
+transfer length; the descriptor offset is loaded at the VFS provider
+boundary where needed. Both dead moves were removed. No provider
+semantics, public ABI, or MRES source changes.
+
+Full linked GCC PDP-6 lowmem against v377: KCORE **9115 -> 9113**
+(-2), KCORE+MRES **15663 -> 15661** (-2), PERMANENT_LAST
+**15710 -> 15708** (-2). daimos-testkit `target-file-pdp6`,
+`target-file-walk-pdp6`, `test-daimos-vfs-stat-frame` and
+`test-daimos-pre-dsh-fs-closure` PASS. No new concurrent physical
+I/O acceptance is claimed. Below-8192 KCORE still requires 922
+further words; strict 32K acceptance remains deferred.
+
 ## 2026-10-26 Proposal B shared bulk VFS provider arguments v377
 
 Resident `file_runtime.s` bulk READ and WRITE previously duplicated

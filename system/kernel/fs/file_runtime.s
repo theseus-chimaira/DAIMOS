@@ -823,8 +823,6 @@ file_words_notdir:
         tdnn    4,5                     ; requested READ/WRITE permission
         jrst    file_words_fail
         move    010,1
-        move    2,1(010)                ; word offset
-        move    1,010
         pushj   17,file_node_from_fd
         ; All bulk-I/O paths share the same arguments, including provider
         ; fallbacks: AC0 vnode, AC1 buffer, AC2 count.
