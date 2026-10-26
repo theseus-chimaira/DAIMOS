@@ -845,10 +845,12 @@ file_words_notdir:
         jrst    file_write_words_wcnsls
         camn    0,[020002000000]        ; CTY0 controlling-TTY proxy
         jrst    file_write_words_tty
+file_words_provider_common_v377:
         move    3,1
         move    4,2
         move    1,0
         move    2,1(010)
+        jumpl   5,file_words_provider_read_v377
         ; D6FS provider serializes the entire write.  Offset -1 asks that
         ; provider to resolve EOF under its lock, not at OPEN time.
         move    5,(010)
@@ -894,10 +896,8 @@ file_read_words_dispatch:
         jrst    file_read_words_tty
         camn    0,[020002000012]        ; WCNSLS raw DATAI samples
         jrst    file_read_words_wcnsls
-        move    3,1
-        move    4,2
-        move    1,0
-        move    2,1(010)
+        jrst    file_words_provider_common_v377
+file_words_provider_read_v377:
         pushj   17,vfs_read_words
         jrst    file_words_result
 file_read_words_tty:

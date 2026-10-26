@@ -1,3 +1,25 @@
+## 2026-10-26 Proposal B shared bulk VFS provider arguments v377
+
+Resident `file_runtime.s` bulk READ and WRITE previously duplicated
+four register moves to prepare fallback VFS provider requests:
+AC3 buffer, AC4 count, AC1 vnode, AC2 descriptor offset. A common
+`file_words_provider_common_v377` block now prepares these once;
+WRITE reaches it by fallthrough, READ jumps to it. The signed
+READ/WRITE selector in AC5 then dispatches READ directly to
+`vfs_read_words` while WRITE retains the original APPEND provider
+EOF-lock decision and `vfs_write_words` path. Direct physical-device
+shortcuts and shared descriptor-offset handling remain unchanged.
+No ABI, MRES code or permanent state is added.
+
+Full linked GCC PDP-6 lowmem vs v376: KCORE **9117 -> 9115**
+(-2), KCORE+MRES **15665 -> 15663** (-2), PERMANENT_LAST
+**15712 -> 15710** (-2). daimos-testkit `target-file-pdp6`,
+`target-file-walk-pdp6`, `test-daimos-vfs-stat-frame`, and
+`test-daimos-pre-dsh-fs-closure` all PASS. Physical-provider
+concurrency/APPEND end-to-end acceptance remains separate.
+KCORE below 8192 needs 924 further words; strict 32K acceptance
+remains deferred.
+
 ## 2026-10-26 Proposal B shared bulk READ/WRITE argument save v376
 
 In resident `system/kernel/fs/file_runtime.s`, `file_read_words` and
