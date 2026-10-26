@@ -1071,9 +1071,8 @@ file_component_start:
         movei   0,1(3)
         hrli    0,(3)
         blt     0,4(3)
-        move    1,[POINT 6,0]
-        movei   0,1(3)
-        hrr     1,0
+        movei   1,1(3)
+        hll     1,[POINT 6,0]  ; install SIXBIT pointer LH
         movei   0,0             ; component character count
 
 file_component_copy:

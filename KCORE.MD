@@ -1,3 +1,22 @@
+## 2026-10-26 Proposal B KCORE output SIXBIT pointer setup v364
+
+`file_component` initialized its output SIXBIT byte pointer through a
+literal pointer MOVE, a separate effective destination address load,
+and HRR register merge. Replaced that three-instruction sequence with
+`MOVEI 1,1(3)` followed by `HLL 1,[POINT 6,0]`, preserving the
+right-half address and installing the same left-half byte-pointer
+format. Source record parsing, component count, trailing separator
+consumption and public VFS name semantics are unchanged. No MRES
+source or export metadata was changed.
+
+Full linked GCC PDP-6 lowmem KCORE 9135 -> **9134** (-1), combined
+KCORE+all MRES 15683 -> **15682** (-1), PERMANENT_LAST 15730 ->
+**15729** (-1). daimos-testkit `target-file-pdp6`,
+`target-file-walk-pdp6`, `test-daimos-vfs-stat-frame` and
+`test-daimos-pre-dsh-fs-closure` PASS. This is an accepted resident
+KCORE-only size reduction. KCORE below 8192 requires 943 additional
+words; strict 32K acceptance remains deferred.
+
 ## 2026-10-26 Proposal B KCORE SIXBIT path pointer construction v363
 
 In the resident `file_component` implementation, after `DIVI` and
