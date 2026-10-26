@@ -1,3 +1,17 @@
+## 2026-10-26 Proposal B VFS READ_WORDS provider decode audit v380
+
+Reviewed the resident READ_WORDS VFS dispatch and its fast paths for
+PIPE and MonitorFS process data. After the packed provider/kind check,
+experimentally replaced the explicit halfword shift that extracts the
+provider from AC7 with `LDB 7,[POINT 6,1,5]`. The complete linked
+GCC PDP-6 lowmem measurement was unchanged: KCORE **9113**,
+KCORE+MRES **15661**, PERMANENT_LAST **15708** words. The size-neutral
+change was reverted; no production code or MRES source changed.
+These paths remain candidates only for larger semantic-preserving
+consolidations, not ineffective register decode rewriting. No new
+runtime acceptance is claimed. KCORE strictly below 8192 needs 922
+additional words; strict 32K acceptance remains deferred.
+
 ## 2026-10-26 Proposal B FILE character I/O register-move audit v379
 
 Examined resident `file_readchar` and `file_writechar` for redundant
