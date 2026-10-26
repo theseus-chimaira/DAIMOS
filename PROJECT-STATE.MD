@@ -1,3 +1,10 @@
+## 2026-10-26 Proposal B v442: direct-op cutover rejected
+
+Shared FILE/VFS MKDIR/MKFIFO opcode cutover increased linked GCC PDP-6
+lowmem KCORE 8987 -> 8990 (+3 words), KCORE+MRES 15534 -> 15537;
+fully reverted. No change accepted. See
+`design/file-vfs-direct-op-cutover-20261026-v442.md`.
+
 ## 2026-10-26 Proposal B v441: OPEN directory argument
 
 Accepted one KCORE word reduction (full linked GCC PDP-6 lowmem

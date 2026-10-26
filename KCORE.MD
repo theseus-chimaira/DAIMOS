@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v442 rejected direct-op experiment
+
+FILE/VFS MKDIR/MKFIFO opcode handoff with shared VFS entry compiled,
+but full linked KCORE increased **8987 -> 8990** (+3). Both source
+files reverted. Baseline KCORE **8987** unchanged. Future consolidation
+must delete a full layer rather than insert another dispatch adapter.
+See v442 design note.
+
 ## 2026-10-26 Proposal B v441 OPEN directory projection
 
 Directory descriptor argument now derives directly from the VFS stat
