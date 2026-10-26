@@ -1,3 +1,17 @@
+## 2026-10-26 Proposal B KCORE component clear BLT audit v366
+
+Audited the resident `file_component` five-word output `vfs_name`
+zero-initialization and its PDP-6 `BLT` source/destination pointer
+setup. Experiment replaced `HRLI 0,(3)` with `HRL 0,3` after loading
+`1(3)` into AC0; it compiles, but the complete linked GCC lowmem
+image is unchanged: KCORE **9133**, KCORE+all MRES **15681**,
+PERMANENT_LAST **15728** words. The experiment was reverted rather
+than retain a size-neutral rephrasing. No MRES source changes and no
+new runtime acceptance are claimed. Follow-on Proposal B work should
+favor large resident file-runtime/VFS structural consolidation over
+more zero-gain instruction substitutions. The below-8192 KCORE target
+requires 942 further words; strict 32K acceptance remains deferred.
+
 ## 2026-10-26 Proposal B KCORE indexed path byte-pointer offset v365
 
 In `system/kernel/fs/file_runtime.s`, `file_component` constructs
