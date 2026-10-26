@@ -115,7 +115,7 @@ pipe_fifo_unlink_done:
 ; kword_t pipe_create(void)
 ; Descriptor allocation is deliberately delegated to file_new_fd().  Besides
 ; being smaller than a private two-slot scan, this keeps pipe descriptors on
-; the same metadata/lock-family path as every other newly opened descriptor.
+; the same metadata path as every other newly opened descriptor.
         .globl  pipe_create
 pipe_create:
         push    17,010
@@ -383,7 +383,7 @@ pipe_write_words_done:
         .globl  pipe_add_ref
 pipe_add_ref:
         move    6,1
-        tlz     6,0707070               ; strip descriptor metadata
+        tlz     6,0700070               ; strip descriptor metadata
         hlrz    6,6
         caie    6,070001               ; only PIPE, mount 0, stream kind
         popj    17,
@@ -406,20 +406,11 @@ pipe_add_refs:
 pipe_add_refs_loop:
         move    1,(2)
         move    6,1
-        tlz     6,0707070
+        tlz     6,0700070
         hlrz    6,6
         caie    6,070001               ; PIPE-like low vnode bits?
         jrst    pipe_add_refs_next
-        ; A TSFS root on mount 8/16/24 has the same low fields as PIPE.
-        ; Consult the *child* u-area's extension map, not file_table, which
-        ; still points at the parent during RUN construction.
-        move    7,2
-        sub     7,010
-        movn    7,7
-        move    6,041(010)
-        lsh     6,0(7)
-        trne    6,3
-        jrst    pipe_add_refs_next
+        ; Full mount ID already participates in the PIPE vnode comparison.
         pushj   17,pipe_add_ref
 pipe_add_refs_next:
         addi    2,2

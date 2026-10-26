@@ -39,7 +39,6 @@
         .equ    PROC_FDCTL_OFFSET,024
         .equ    PROC_FILE_TABLE_OFFSET,026
         .equ    PROC_CRED_OFFSET,066
-        .equ    PROC_FDMOUNT_OFFSET,067
         .equ    PROC_USTACK_BASE,070
         .equ    PROC_KSTACK_WORDS,0316
         .equ    KERNEL_IDLE_STACK_WORDS,0100
@@ -1851,7 +1850,7 @@ proc_control_isatty:
 
 ; Classic umask semantics: UMASK9 shares the credential word with UID9,GID9
 ; without changing either. The former umask word 067 is a dedicated 32-bit
-; file-mount extension bitmap, inherited/updated separately by FILE and RUN.
+; six-bit FILE mount IDs are embedded in each descriptor, not mapped here.
 proc_control_umask:
         andi    2,0777
         hlrz    5,(4)

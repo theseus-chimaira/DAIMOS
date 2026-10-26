@@ -106,8 +106,8 @@
 /*
  * One compact control word precedes cwd/file state.  Descriptors 0..15 are
  * ordinary two-word FILE records. UID9, GID9 and UMASK9 fit in the one
- * credential word. The following word is reserved for 16 two-bit FILE mount
- * extensions, with four high bits available. No u-area growth is necessary.
+ * credential word. U-area 067 is currently unallocated logical padding;
+ * descriptor mount bits no longer require an extension bitmap.
  * Low bit 0 of the separate control word carries the pipe
  * event and bit 1 marks a live direct user mapping.
  * Session and domain IDs share this already-resident word; process-group ID
@@ -118,7 +118,6 @@
 #define PROC_FILE_CWD_OFFSET     0025UL
 #define PROC_FILE_TABLE_OFFSET   0026UL
 #define PROC_CRED_OFFSET         0066UL
-#define PROC_FDMOUNT_OFFSET      0067UL
 #define PROC_UMASK_SHIFT             9U
 #define PROC_UMASK_MASK           0777UL
 #define PROC_USTACK_BASE         0070UL

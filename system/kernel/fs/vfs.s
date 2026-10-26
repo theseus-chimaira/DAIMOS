@@ -380,7 +380,8 @@ vfs_mkdir:
         movei   5,7                    ; FS_MRES_OP_MKDIR
 vfs_create_common:
         move    6,file_table
-        move    6,041(6)               ; u-area 067: process umask
+        move    6,040(6)               ; u-area 066: UID/GID/UMASK word
+        ldb     6,[POINT 9,6,26]       ; packed UMASK9
         andca   6,3                    ; mode &= ~umask
         push    17,4                   ; nodep as C arg 5
         move    4,6                    ; masked mode for request

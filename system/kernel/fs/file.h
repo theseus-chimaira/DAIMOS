@@ -18,19 +18,15 @@
 
 /*
  * FILE descriptors use two words.  The complete 36-bit word offset is
- * kept intact.  Descriptor metadata occupies the nine bits which are known
- * zero in every canonical DAIMOS vnode: providers, mount ids and local kinds
- * providers and local kinds are 0..7, but mount IDs can reach 26. Mount
- * bits 3..4 overlap lock-family token bits in node_meta; a separate two-bit
- * extension per descriptor in u-area word 067 preserves those mount bits.
- * Canonical vnode reconstruction therefore requires file_node_from_fd(),
- * not just masking node_meta. The two-word FILE and full offset remain.
+ * kept intact.  FILE restricts provider and local kind to three bits each,
+ * preserving the canonical six-bit mount identity directly in node_meta.
+ * Six metadata bits occupy otherwise unused positions. No mount bitmap or
+ * duplication-family token is required. This is the v417 encoding.
  *
  * node_meta therefore contains a canonical vnode plus:
  *   LH 400000  readable
  *   LH 200000  writable
  *   LH 100000  directory
- *   LH 007040  four-bit lock-family token (the originating fd)
  *   LH 000030  regular/lock state: 0 other, 1 regular, 2 shared, 3 exclusive
  *   LH 100000  directory when state=0; O_APPEND when regular state!=0.
  *              Directory/regular state is disjoint, saving a tenth bit.
@@ -40,18 +36,16 @@ struct file {
         kword_t offset;
 };
 
-#define FILE_NODE_VNODE_MASK       070707777777UL
+#define FILE_NODE_VNODE_MASK       077707777777UL
 #define FILE_META_READ             0400000000000UL
 #define FILE_META_WRITE            0200000000000UL
 #define FILE_META_DIR              0100000000000UL
-#define FILE_META_OWNER_MASK       0007040000000UL
 #define FILE_META_STATE_MASK       0000030000000UL
 #define FILE_META_REGULAR          0000010000000UL
 #define FILE_META_APPEND           FILE_META_DIR
 #define FILE_META_LOCK_SHARED      0000020000000UL
 #define FILE_META_LOCK_EXCL        0000030000000UL
-/* This raw mask only removes metadata. It cannot restore a high mount ID;
- * use the FILE descriptor's extension map for canonical vnode reconstruction. */
+/* Raw masking restores the full vnode including all six mount bits. */
 #define FILE_NODE(nm)              ((vnode_t)((nm) & FILE_NODE_VNODE_MASK))
 /* FILE descriptors and cwd are process-private and live in the stable
  * process u-area.  KCORE retains only a pointer to the current table. */

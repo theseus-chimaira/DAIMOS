@@ -1,3 +1,16 @@
+## 2026-10-26 Proposal B v417 direct-mount descriptor cutover
+
+Accepted full linked GCC PDP-6 lowmem change: KCORE **9109 -> 8999**,
+KCORE+MRES **15657 -> 15547**, PERMANENT_LAST **15704 -> 15594**
+(110 permanent words saved). FILE now stores full six-bit mount IDs
+directly in the first descriptor word, retains independent 36-bit
+offsets, and uses process-local vnode-wide FLOCK. The mount-extension
+bitmap and per-OPEN lock-family token are removed; VFS CREATE reads
+the credential UMASK9. Physical process u-area allocation is unchanged.
+Focused PDP-6 FILE, directmount, PIPE identity and UMASK tests PASS;
+full boot/multiuser acceptance remains pending. Strict 32K acceptance
+and unrelated folding experiments remain deferred. See v417 design note.
+
 ## 2026-10-26 Proposal B v400 decisions locked; next-chat handoff v401
 
 Recorded the four approved v400 decisions in

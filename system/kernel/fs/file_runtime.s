@@ -23,64 +23,14 @@
         .globl  proc_swap_backing_busy
         .globl  file_new_fd
         .globl  file_table
-; The former umask word in each u-area is a 16*2-bit mount extension map.
-; file_table points at u-area 026, so the map is at file_table+041 octal.
-; Each descriptor needs its mount bits 3 and 4 reconstructed: these bits
-; overlap the packed lock-family token in node_meta (not the FILE state).
-; These leaves preserve AC1/AC2 where their calling contracts require it.
+; Every descriptor contains its entire six-bit mount ID. A single mask
+; reconstructs the canonical vnode without accessing other process words.
         .globl  file_node_from_fd
 file_node_from_fd:
-        move    7,1
-        sub     7,file_table          ; 2*fd
-        movn    7,7
-        move    6,file_table
-        move    0,041(6)               ; AC0 cannot serve as an index register
-        lsh     0,0(7)                 ; selected two-bit extension
-        andi    0,3
-        lsh     0,033                 ; vnode mount bits 3..4 (bits 27..28)
-        move    7,(1)
-        tlz     7,707070              ; remove all FILE metadata
-        ior     7,0
-        move    1,7
+        move    1,(1)
+        tlz     1,700070              ; retain all six mount bits
         popj    17,
 
-; AC1 descriptor pointer, AC2 canonical vnode, preserves AC1/AC2.
-; Also accepts zero as AC2 to clear a closed descriptor's extension bits.
-        .globl  file_mount_ext_store
-file_mount_ext_store:
-        move    7,1
-        sub     7,file_table          ; 2*fd
-        move    6,2
-        lsh     6,-033
-        andi    6,3
-        lsh     6,0(7)
-        jrst    file_mount_ext_update
-
-; AC1 source descriptor pointer, AC2 destination pointer. Both preserved.
-; The destination's old extension is replaced, never OR'ed with stale bits.
-file_mount_ext_copy:
-        move    7,1
-        sub     7,file_table
-        movn    7,7
-        move    6,file_table
-        move    6,041(6)
-        lsh     6,0(7)
-        andi    6,3
-        move    7,2
-        sub     7,file_table
-        lsh     6,0(7)
-        jrst    file_mount_ext_update
-
-; AC6 contains the already-positioned extension bits; AC7 is the
-; destination two-bit field offset. Used by copy and direct store.
-file_mount_ext_update:
-        movei   0,3
-        lsh     0,0(7)
-        move    7,file_table
-        addi    7,041
-        andcam  0,(7)
-        iorm    6,(7)
-        popj    17,
 file_check_access:
         caile   2,7
         jrst    kret_neg1
@@ -232,13 +182,8 @@ file_open_newfd_call:
         move    2,(13)
         pushj   17,pipe_fifo_open
         jumpe   1,file_open_fifo_fail
-        push    17,1
-        move    2,1
-        move    1,13
-        pushj   17,file_mount_ext_store  ; FIFO now names the pipe vnode
-        pop     17,1
         move    2,(13)
-        and     2,[-070710000000]
+        and     2,[700070000000]      ; retain only descriptor metadata
         ior     1,2
         movem   1,(13)
         setzm   1(13)
@@ -248,9 +193,6 @@ file_open_newfd_call:
 file_open_fifo_fail:
         setzm   (13)
         setzm   1(13)
-        move    1,13
-        setz    2,
-        pushj   17,file_mount_ext_store
         seto    1,
         jrst    file_open_return
 
@@ -260,6 +202,31 @@ file_open_regular:
         jrst    file_open_append
         movsi   1,010                  ; FILE_META_REGULAR
         iorm    1,(13)
+        ; Existing local descriptors for this vnode share FLOCK mode.
+        ; This scan is paid only by regular OPEN, never READ/WRITE.
+        move    4,(13)
+        and     4,[077707777777]
+        move    2,file_table
+        movei   3,020
+file_open_lock_scan_v417:
+        camn    2,13
+        jrst    file_open_lock_next_v417
+        move    5,(2)
+        move    6,5
+        and     6,[077707777777]
+        came    6,4
+        jrst    file_open_lock_next_v417
+        tlnn    5,000030
+        jrst    file_open_lock_next_v417
+        and     5,[000030000000]
+        move    6,(13)
+        tlz     6,000030
+        ior     6,5
+        movem   6,(13)
+        jrst    file_open_append
+file_open_lock_next_v417:
+        addi    2,2
+        sojg    3,file_open_lock_scan_v417
 file_open_append:
         trnn    11,4                   ; FILE_O_APPEND
         jrst    file_open_success
@@ -538,9 +505,6 @@ file_close_vfs:
 file_close_finish:
         jumpn   1,file_close_done
         setzm   (010)
-        move    1,010
-        setz    2,
-        pushj   17,file_mount_ext_store
         setz    1,
 file_close_done:
         pop     17,010
@@ -550,9 +514,8 @@ file_close_fail:
         jrst    file_close_done
 
 ; int file_dup(int fd)
-; A duplicate has the same vnode, access state, lock-family token, lock state and
-; offset.  Copying both words directly is smaller than unpacking and rebuilding
-; a descriptor through file_new_fd, and preserves lock-family semantics exactly.
+; A duplicate has the same vnode, access and lock state, and a separately
+; copied full-word offset. No shared seek position is introduced.
         .globl  file_dup
 file_dup:
         pushj   17,file_find
@@ -568,7 +531,7 @@ file_dup_scan:
         sojg    4,file_dup_scan
         jrst    kret_neg1
 file_dup_store:
-        ; Shared clone preserves both FILE words and the mount extension.
+        ; Both words include the entire vnode and descriptor metadata.
         push    17,3                    ; preserve new fd across pipe call
         pushj   17,file_clone_descriptor_v361
         pop     17,3
@@ -628,7 +591,6 @@ file_clone_descriptor_v361:
         move    4,2
         hrl     4,1
         blt     4,1(2)
-        pushj   17,file_mount_ext_copy
         move    1,2
         pushj   17,file_node_from_fd
         hlrz    1,1
@@ -637,10 +599,7 @@ file_clone_descriptor_v361:
         move    1,(2)
         jrst    pipe_add_ref           ; tail-call; preserves existing ABI
 
-; int file_lock(int fd, unsigned int op)
-; The packed node word carries both the canonical vnode and descriptor state.
-; FLOCK compares the packed low vnode bits and dup-family token directly;
-; the two-bit mount extension must also match before changing lock state.
+; Process-local vnode-wide advisory FLOCK; separate OPENs share lock state.
         .globl  file_lock
 file_lock:
         push    17,2                    ; file_find may clobber operation
@@ -655,43 +614,6 @@ file_lock:
         caile   2,3
         jrst    kret_neg1
         move    6,file_lock_modes-1(2)
-        move    7,1
-        sub     7,file_table
-        movn    7,7
-        move    4,file_table
-        move    0,041(4)
-        lsh     0,0(7)
-        andi    0,3
-        move    5,0                   ; extension of target vnode
-        jumpe   6,file_lock_update      ; unlock cannot conflict
-
-        move    2,file_table
-        movei   3,020                  ; FILE_NFILE = 16
-file_lock_check:
-        move    4,(2)
-        move    7,4
-        xor     7,(1)
-        tdne    7,[070707777777]        ; any canonical vnode field differs
-        jrst    file_lock_check_next
-        pushj   17,file_lock_mount_ext_v319
-        came    0,5                    ; distinct high mount bits cannot lock
-        jrst    file_lock_check_next
-        move    7,4
-        xor     7,(1)                   ; restore owner difference after indexing
-        tlnn    7,007040                ; same owner never conflicts
-        jrst    file_lock_check_next
-        tlnn    4,000020                ; candidate is not locked
-        jrst    file_lock_check_next
-; An exclusive request conflicts with either lock.  A shared request conflicts
-; only with exclusive (state 11); shared itself is state 10.
-        tlne    6,000010                ; requested exclusive?
-        jrst    kret_neg1
-        tlne    4,000010                ; candidate exclusive?
-        jrst    kret_neg1
-file_lock_check_next:
-        addi    2,2
-        sojg    3,file_lock_check
-
 file_lock_update:
         move    2,file_table
         movei   3,020
@@ -699,14 +621,7 @@ file_lock_update_loop:
         move    4,(2)
         move    7,4
         xor     7,(1)
-        tdne    7,[070707777777]
-        jrst    file_lock_update_next
-        pushj   17,file_lock_mount_ext_v319
-        came    0,5
-        jrst    file_lock_update_next
-        move    7,4
-        xor     7,(1)                   ; compare owner, not table displacement
-        tlne    7,007040
+        tdne    7,[077707777777]       ; all provider/kind/mount/index bits
         jrst    file_lock_update_next
         tlz     4,000030                ; replace regular/lock state
         jumpn   6,file_lock_update_set
@@ -726,20 +641,6 @@ file_lock_modes:
         .long   000030000000            ; VFS_LOCK_EXCLUSIVE
         .long   0                       ; VFS_LOCK_UNLOCK
 
-; Decode the mount extension for descriptor AC2, preserving packed AC4.
-; Both lock passes need the same two-bit mount identity in AC0.
-file_lock_mount_ext_v319:
-        move    7,2
-        sub     7,file_table
-        movn    7,7
-        push    17,4
-        move    4,file_table
-        move    0,041(4)
-        pop     17,4
-        lsh     0,0(7)
-        andi    0,3
-        popj    17,
-
 ; void file_unlock_mount(unsigned int mount_id)
 ; Clear lock/regular state for the specified mount. The three packed low
 ; mount bits and the two-bit u-area extension form the five-bit public ID.
@@ -750,16 +651,7 @@ file_unlock_mount:
 file_unlock_mount_loop:
         skipn   4,(2)
         jrst    file_unlock_mount_next
-        ldb     4,[POINT 3,4,11]
-        move    7,2
-        sub     7,file_table
-        movn    7,7
-        move    6,file_table
-        move    0,041(6)
-        lsh     0,0(7)
-        andi    0,3
-        lsh     0,3
-        ior     4,0
+        ldb     4,[POINT 6,4,11]       ; full mount ID, not a map lookup
         came    4,1
         jrst    file_unlock_mount_next
         move    4,(2)
@@ -923,7 +815,7 @@ file_words_append_result:
         ; The packed DIR/APPEND bit overlaps the on-vnode provider field;
         ; decode only after removing all descriptor metadata bits.
         move    5,4
-        tlz     5,707070
+        tlz     5,700070
         ldb     5,[POINT 6,5,5]
         cain    5,6                     ; D6FS
         jrst    file_words_append_provider
@@ -1504,14 +1396,13 @@ file_find:
         popj    17,
 
 ; int file_new_fd(vnode_t node, unsigned int flags, int isdir)
-; Pack READ/WRITE/DIR, lock-family and regular/lock state into spare vnode
-; bits. Public mount bits 3..4 overlap owner-family bits, and are preserved
-; separately in two bits per fd of u-area word 067. Mount bit 5 must be zero.
+; Pack READ/WRITE/DIR and regular/lock state into six spare vnode bits.
+; Preserve all six mount bits directly; reject unsupported provider/kind.
 ; CREATE/TRUNC are OPEN-only.  APPEND is retained later in file_open_append
 ; using the DIR bit when the descriptor has nonzero regular-file state.
         .globl  file_new_fd
 file_new_fd:
-        tlne    1,704070               ; provider/kind extras and mount bit 5
+        tlne    1,700070               ; provider and local-kind high bits
         jrst    file_new_fd_fail
         trne    2,1
         tlo     1,400000               ; FILE_META_READ
@@ -1521,7 +1412,7 @@ file_new_fd:
         tlo     1,100000               ; FILE_META_DIR
 file_new_fd_nodir:
         move    4,file_table
-        movei   5,0                    ; descriptor / lock-family token
+        movei   5,0                    ; descriptor index
         movei   6,020                  ; FILE_NFILE = 16
 file_new_fd_scan:
         skipn   (4)
@@ -1532,19 +1423,7 @@ file_new_fd_scan:
 file_new_fd_fail:
         jrst    kret_neg1
 file_new_fd_store:
-; Scatter fd bits 0..2 into LH 007000 and bit 3 into LH 000040.
-        push    17,1
-        move    2,1
-        move    1,4
-        pushj   17,file_mount_ext_store
-        pop     17,1
-        tlz     1,003000              ; mount bits 3..4 saved in u-area 067
-        move    0,5
-        andi    0,7
-        lsh     0,033
-        ior     1,0
-        trne    5,010
-        tlo     1,000040
+; All six mount bits are retained in the descriptor itself.
         movem   1,(4)
         setzm   1(4)
         move    1,5

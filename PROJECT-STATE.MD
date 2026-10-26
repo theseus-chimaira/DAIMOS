@@ -1,3 +1,15 @@
+## 2026-10-26 Proposal B v417: direct-mount FILE accepted
+
+The atomic FILE format conversion stores all six mount bits directly
+within each two-word descriptor, removes the extension-map machinery
+and duplication-family token, and implements approved process-local
+vnode-wide FLOCK. Full GCC PDP-6 lowmem link reduces KCORE from 9109
+to 8999, KCORE+MRES 15657 to 15547, PERMANENT_LAST 15704 to 15594:
+110 permanent words saved, without claiming a smaller process u-area.
+Focused PDP-6 FILE/path/directmount/PIPE/UMASK tests PASS. Broad boot
+and multiuser acceptance is still pending. See
+`design/file-direct-mount-cutover-20261026-v417.md`.
+
 ## 2026-10-26 v418: DSH-size blocker fixed in PIPE regression
 
 The pipe-wordfifo-v2 test inadvertently built a KCC DSH image 036013

@@ -19,7 +19,6 @@
         .equ    PROC_FILE_CWD_OFFSET,025
         .equ    PROC_FILE_TABLE_OFFSET,026
         .equ    PROC_CRED_OFFSET,066
-        .equ    PROC_FDMOUNT_OFFSET,067
         .equ    PROC_USTACK_BASE,070
         .equ    PROC_UAREA_OWNER_BASE,01000
         .equ    MM_TYPE_KERNEL_DYNAMIC,3
@@ -298,7 +297,7 @@ proc_run_watermark_loop:
         move    4,-1(7)
         movem   4,PROC_FILE_CWD_OFFSET(014)
         ; file_table points at parent u-area 026. Credentials including
-        ; umask live at 066; word 067 is reserved for fd mount extensions.
+        ; Packed UMASK9 lives in credential word 066.
         move    4,040(7)
         tlz     4,001000               ; PURE backing mount bit belongs to
                                       ; parent executable, not child credentials
@@ -313,9 +312,8 @@ proc_run_watermark_loop:
         movsi   4,001000
         iorm    4,PROC_CRED_OFFSET(014)
 proc_run_pure_ext_ready:
-        ; Child's extension map starts zero; fd-specific bits are transferred
-        ; with RUN's explicit descriptor mapping when 26-mount activation is
-        ; completed. The new u-area is already cleared by MM allocation.
+        ; Child's descriptor table starts zero; all mount bits are embedded
+        ; in the full first word copied during explicit RUN mapping.
         setz    4,                      ; child-fd duplicate bitmap
         hrrz    3,3(010)
         jumpe   3,proc_run_map_done
@@ -347,21 +345,7 @@ proc_run_map_loop:
         movem   2,(1)
         move    2,1(7)
         movem   2,1(1)
-        ; Copy the high two mount-ID bits of the selected parent descriptor.
-        ; Word 067 is zeroed with the child u-area before this loop. The
-        ; parent map sits 041 octal words beyond parent file_table (026).
-        move    6,7
-        sub     6,file_table           ; parent descriptor offset = 2*fd
-        movn    6,6
-        move    2,file_table
-        move    0,041(2)               ; AC0 is never an index register
-        lsh     0,0(6)
-        andi    0,3
-        move    6,1
-        sub     6,014
-        subi    6,PROC_FILE_TABLE_OFFSET ; child descriptor offset = 2*fd
-        lsh     0,0(6)
-        iorm    0,PROC_FDMOUNT_OFFSET(014)
+        ; Vnode and full mount ID were copied with descriptor word zero.
 proc_run_map_next:
         addi    015,1
         sojg    3,proc_run_map_loop
