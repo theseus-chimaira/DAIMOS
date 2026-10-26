@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v453 native DTFS RENAME regression
+
+Restored the standalone native DTFS RENAME fixture by providing the
+production-equivalent `kconst_1_1` stack constant in daimos-testkit.
+Native ITS/TENEX, destination-exists and cross-mount cases PASS.
+No DAIMOS production change; last fully linked KCORE **8961**,
+KCORE+MRES **15508**, PERMANENT_LAST **15555** (v452).
+See v453 design note.
+
 ## 2026-10-26 Proposal B v452 masked-XOR RENAME identity
 
 Use one XOR and masked nonzero test for provider/mount mismatch.

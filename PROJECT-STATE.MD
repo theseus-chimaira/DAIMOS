@@ -1,3 +1,13 @@
+## 2026-10-26 Proposal B v453: DTFS RENAME native fixture
+
+daimos-testkit's extracted DTFS RENAME fixture lacked the resident
+`kconst_1_1` link constant. Supplied the production-equivalent word;
+native PDP-6 provider RENAME regression PASS (ITS/TENEX,
+destination-exists, cross-mount). No kernel modification or saving;
+linked v452 baseline KCORE 8961, KCORE+MRES 15508,
+PERMANENT_LAST 15555. See v453 design note. Full FILE/VFS RENAME
+transaction coverage remains open, strict 32K deferred.
+
 ## 2026-10-26 Proposal B v452: masked-XOR RENAME namespace
 
 Replaced separate masked vnode comparisons with masked XOR/TDNE.
