@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v428: native provider interleaving test
+
+New daimos-testkit PDP-6 test PASS: a simulated wait preserves a
+leased 128-word workspace while request registers are clobbered, then
+the resident bridge restores arguments and dispatches after release.
+TSFS record pointer returns constrain early unlock. No production edit
+or size savings. See `design/provider-workspace-interleaving-20261026-v428.md`.
+
 ## 2026-10-26 Proposal B v427: live buffer across device sleeps
 
 Traced D6FS backing read/write, TSFS table/word reads and DTFS DTC

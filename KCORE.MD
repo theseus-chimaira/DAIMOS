@@ -1,3 +1,10 @@
+## 2026-10-26 Proposal B v428 native workspace interleaving
+
+The actual provider bridge passes a new PDP-6 deterministic wait and
+shared-buffer lease regression in daimos-testkit. TSFS pointer-return
+paths need explicit owned record values before workspace ownership can
+be shortened. No kernel change; KCORE remains **8995**. See v428 note.
+
 ## 2026-10-26 Proposal B v427: provider I/O lease boundaries
 
 Source tracing proves that shared `fs_block_workspace` remains live
