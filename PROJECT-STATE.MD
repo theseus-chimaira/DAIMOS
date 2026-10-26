@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v443: shared VFS mutation path
+
+Removed duplicated read-only validation and provider dispatch across
+two- and three-argument VFS mutations. Full linked KCORE 8982 (−5),
+KCORE+MRES 15529, PERMANENT_LAST 15576. Native provider and FILE/PIPE
+tests plus new mutation-frame guard PASS. The 2-argument path pays one
+additional process-stack word, with no permanent storage growth.
+See `design/vfs-mutation-dispatch-consolidation-20261026-v443.md`.
+
 ## 2026-10-26 Proposal B v442: direct-op cutover rejected
 
 Shared FILE/VFS MKDIR/MKFIFO opcode cutover increased linked GCC PDP-6

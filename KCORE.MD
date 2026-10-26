@@ -1,3 +1,10 @@
+## 2026-10-26 Proposal B v443 consolidated VFS mutations
+
+UNLINK/CHMOD and CHOWN/UTIME now share the readonly-check and physical
+provider dispatch continuation. Full linked lowmem **KCORE 8982**
+(five words saved); no permanent RAM allocation. Focused provider,
+FILE/PIPE and frame-contract tests PASS. See v443 design note.
+
 ## 2026-10-26 Proposal B v442 rejected direct-op experiment
 
 FILE/VFS MKDIR/MKFIFO opcode handoff with shared VFS entry compiled,

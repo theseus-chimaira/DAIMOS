@@ -641,16 +641,17 @@ vfs_chmod:
 vfs_mutate2:
         push    17,1
         push    17,2
+        push    17,3                   ; common setattr/mutation frame
+vfs_mutate3:
         pushj   17,vfs_readonly
-        jumpn   1,vfs_mutate2_ro
+        jumpn   1,vfs_mutate3_ro
+        pop     17,3
         pop     17,2
         pop     17,1
         ldb     7,[POINT 6,1,5]
         jrst    fs_provider_reg_call
 vfs_mutate3_ro:
-        sub     17,kconst_1_1
-vfs_mutate2_ro:
-        sub     17,kconst_2_2
+        sub     17,kconst_3_3
         jrst    kret_neg1
 
 ; CHMOD is the compact common setattr provider slot.  Ordinary modes are <=07777;
@@ -673,20 +674,11 @@ vfs_utime:
         move    3,2
         movei   2,0100001
 vfs_setattr:
+        movei   6,14                   ; FS_MRES_OP_CHMOD / common setattr
         push    17,1
         push    17,2
         push    17,3
-        pushj   17,vfs_readonly
-        jumpn   1,vfs_setattr_ro
-        pop     17,3
-        pop     17,2
-        pop     17,1
-        ldb     7,[POINT 6,1,5]
-        movei   6,14                   ; FS_MRES_OP_CHMOD / common setattr
-        jrst    fs_provider_reg_call
-vfs_setattr_ro:
-        sub     17,kconst_3_3
-        jrst    kret_neg1
+        jrst    vfs_mutate3
 
         .globl  vfs_read_words
         .globl  pipe_read_words
