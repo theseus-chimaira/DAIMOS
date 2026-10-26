@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v456 RENAME readonly and provider failures
+
+Native PDP-6 VFS RENAME test covers readonly source/destination,
+writable dispatch and negative provider-result propagation. VFS and
+DTFS RENAME regressions PASS. No production changes or RAM savings;
+fully linked v452 baseline KCORE **8961**, KCORE+MRES **15508**,
+PERMANENT_LAST **15555**. See v456 design note.
+
 ## 2026-10-26 Proposal B v455 native VFS RENAME dispatch
 
 New native PDP-6 testkit executable exercises production VFS RENAME

@@ -1,3 +1,12 @@
+## 2026-10-26 Proposal B v456: VFS RENAME failure coverage
+
+Extended daimos-testkit native VFS RENAME fixture with readonly
+source/destination mount rejection, writable control and provider
+error propagation. Native VFS and DTFS RENAME tests PASS. Production
+unchanged; full linked v452 baseline KCORE 8961, KCORE+MRES 15508,
+PERMANENT_LAST 15555. Integrated FILE syscall transaction pending;
+strict 32K deferred. See v456 design note.
+
 ## 2026-10-26 Proposal B v455: native VFS RENAME dispatch
 
 New testkit native PDP-6 fixture links production `vfs.s` and tests
