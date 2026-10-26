@@ -1,3 +1,21 @@
+## 2026-10-26 Proposal B KCORE SIXBIT path pointer construction v363
+
+In the resident `file_component` implementation, after `DIVI` and
+addition of the path-data base, AC6 already contains the desired
+right-half address for the input SIXBIT byte pointer. Replaced the
+three-instruction MOVe literal / HRR / MOVe sequence with one
+`HLL 6,[POINT 6,0]`, installing the byte-pointer left-half while
+preserving the computed right-half address. No change to byte offset,
+separator handling, component-size limit or caller ABI; no MRES work.
+
+Complete GCC PDP-6 lowmem linked image compared with v362:
+KCORE 9137 -> **9135** (-2), combined KCORE+MRES 15685 ->
+**15683** (-2), PERMANENT_LAST 15732 -> **15730** (-2).
+`daimos-testkit` `target-file-pdp6`, `target-file-walk-pdp6`,
+`test-daimos-vfs-stat-frame`, `test-daimos-pre-dsh-fs-closure`
+all PASS. KCORE below 8192 requires 944 further words.
+Strict 32K acceptance remains deferred.
+
 ## 2026-10-26 Proposal B KCORE file_getpath index multiply v362
 
 The resident absolute-path formatter `file_getpath_common` uses a

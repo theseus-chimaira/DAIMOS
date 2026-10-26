@@ -1048,9 +1048,7 @@ file_component:
         divi    6,6
         add     6,1
         addi    6,1             ; path data starts at path[1]
-        move    0,[POINT 6,0]
-        hrr     0,6
-        move    6,0
+        hll     6,[POINT 6,0]    ; retain path address, install SIXBIT pointer LH
         move    0,7
 file_component_seek:
         jumpe   0,file_component_skip
