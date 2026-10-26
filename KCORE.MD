@@ -1,3 +1,58 @@
+## 2026-10-26 Cross-proposal architectural redesign policy v399
+
+**Applies to the entire A–F KCORE architectural shrink roadmap, not just
+Proposal B.** Existing interfaces, internal and public ABIs, descriptor
+semantics, locking protocols, error/rollback rules and historical
+compatibility requirements are **not immutable constraints**. The team
+may rewrite producers, consumers, callers, filesystem providers,
+userland and tests together when a simpler design has a demonstrable
+memory/performance benefit. Do not reject a proposal solely because
+its behavior or interface differs from the current implementation.
+
+The invariants that **do** remain mandatory are:
+
+- Correctness and explicit resource ownership: no corrupted state,
+  leaks, deadlocks, use-after-free or half-published objects. Rollback
+  may be redesigned or replaced by a simpler transaction protocol, but
+  partial failure must leave a well-defined recoverable state.
+- Keep the necessary capabilities available to the OS; alternatives
+  need not preserve historical invocation or descriptor semantics.
+  EXEC and RUN remain resident essential syscalls, notwithstanding
+  permitted changes to their calling interface or internals.
+- Optimize **actual physical RAM consumption first**, including KCORE,
+  MRES, per-process memory and MM-managed allocations, rather than
+  moving memory cost between accounting categories. Execution speed is
+  nearly as important; disk size is secondary.
+- No workaround-driven redesign or feature creep: fix underlying bugs,
+  preserve a readable, documented implementation and measure the
+  post-fold fully linked image as well as runtime memory costs.
+- Before accepting changed semantics, define the *new* contract,
+  migrate all affected call sites and userland, and add appropriate
+  tests in `daimos-testkit`. Test both normal operation and concurrency,
+  failure, resource cleanup, boot and process lifecycle as applicable.
+
+**A:** process/wait/signal/session and teardown semantics may be
+simplified together, but essential scheduling/ownership correctness
+remains. **B:** FILE/VFS/MonitorFS APIs, descriptor representation,
+DUP/DUP2 and offset semantics, mount policy, locking and rollback
+may all change in a coordinated rewrite. Compare packed descriptors,
+independent local descriptors and minimal shared handles, including
+per-process storage and decode costs. **C:** EXEC/RUN validation,
+startup and publication APIs may change, but essential resident
+EXEC/RUN and sound replacement/creation semantics stay. **D:** MM
+registry and allocation rules may be redesigned based on actual
+high-water and fragmentation evidence. **E:** inactive-process
+representation and swap interfaces are redesignable if correct state
+restoration and total RAM benefit are demonstrated. **F:** scratch
+workspace ownership/lock conventions may be rewritten after a proven
+lifetime and reentrancy analysis.
+
+This policy supersedes *compatibility-only* restrictions in older
+proposal reviews, **not** their factual measurements or correctness
+warnings. No production code or ABI was changed by this documentation
+update. The latest accepted post-link baseline remains v388: KCORE
+**9109**, KCORE+MRES **15657**, PERMANENT_LAST **15704**.
+
 ## 2026-10-26 Proposal B bounded structural review v389–v398 (ten passes)
 
 User requested ten further review iterations after v388, except that an
