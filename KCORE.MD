@@ -1,3 +1,10 @@
+## 2026-10-26 Proposal B v432 direct MEMFS dispatch
+
+Removed the redundant missing-service compare from direct MEMFS
+dispatch. The existing stub returns -1. Full linked PDP-6 GCC lowmem
+KCORE **8990** (two words below v431); native direct/unbound MEMFS,
+provider locking, and lease interleaving tests PASS. See v432 note.
+
 ## 2026-10-26 Proposal B v431 provider-bridge KCORE shrink
 
 The serialized provider bridge now calls the missing-service stub

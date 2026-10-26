@@ -140,8 +140,6 @@ fs_provider_reg_call:
         jrst    fs_mres_no_service
         jumpn   7,fs_provider_serialized ; index zero: MEMFS never sleeps
         hrrz    7,fs_memfs_service_jump(7)
-        cain    7,fs_mres_no_service
-        jrst    fs_mres_no_service
         jrst    (7)
 
 ; DTFS, TSFS and D6FS share fs_block_workspace and provider state across calls.

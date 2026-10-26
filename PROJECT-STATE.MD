@@ -1,3 +1,11 @@
+## 2026-10-26 Proposal B v432: 2 KCORE words saved
+
+Direct MEMFS dispatch uses its normal missing-service trampoline,
+eliminating a duplicated check. Full linked KCORE 8990, KCORE+MRES
+15537, PERMANENT_LAST 15584. Native PDP-6 provider dispatch including
+unbound MEMFS, lock and workspace interleaving PASS. See
+`design/provider-memfs-unbound-dispatch-20261026-v432.md`.
+
 ## 2026-10-26 Proposal B v431: provider bridge saves 3 KCORE words
 
 Accepted common missing-service call/unlock in `fs_provider_reg_call`.
