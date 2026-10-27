@@ -232,3 +232,15 @@ The fixture stubs PI enable/restore only. This removes v537's uncertain
 memory-pressure trigger but is still an isolated PDP-6 step test, not
 continued user-mode instruction execution through APR under full SIMH.
 No permanent kernel instrumentation or RAM growth introduced.
+
+## V539 pinned-compaction rejection then unpin recovery (2026-10-27)
+
+New native PDP-6 testkit `daimos-mm-pin-compact-v539.{s,sh}` extends
+the real `mm_compact`/fit/extent/VM/FS/runqueue v538 transaction: with
+the process extent pinned, compaction must return `MM_ERR_FRAGMENTED`
+without changing the VM base or extent descriptor. Releasing that pin
+and retrying the same fragmented arena then succeeds, preserves payload,
+and restores runnable state and queue membership. PASS. The fixture
+stubs only PI control; it does not demonstrate resumed user instructions
+after APR reprogramming under a full multiprocess boot. No production
+code or resident RAM changed.
