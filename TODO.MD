@@ -4,10 +4,23 @@
   MEMFS MRES and `memfs_minit` through `KINIT_FULL=0`, and deliberately
   leaves `/TEMP` unmounted as MEMFS. Do not introduce a MEMFS dependency
   into tape-only optional-swap discovery.
-- [ ] Review and finish the existing **DATE** utility (`userland/exec/COMMANDS`,
-  `commands.c`, and `manual/DATE.SIXMD` already implement date/time display).
-  Verify native operation and 32K TSFS-root usability; extend behavior only
-  with a specified clock-setting requirement, not a duplicate command.
+- [ ] Extend the existing **DATE** utility (`userland/exec/COMMANDS`,
+  `commands.c`, and `manual/DATE.SIXMD`) to **set** as well as display the
+  UTC date/time. DATE must be able to initialize/correct wall time when the
+  optional PCLK device is absent; require a privileged SETTIME operation,
+  strict calendar validation (including leap years), and native 32K TSFS-root
+  coverage. Preserve the existing no-argument display behavior.
+- [ ] Add a **settable software wall clock** driven by the existing APR
+  50/60-Hz scheduler-clock interrupt when PCLK is unavailable. Detect PCLK
+  availability safely at boot in KINIT; never blindly issue PCLK I/O against
+  absent hardware. Advance the UTC calendar clock using the actual tick
+  frequency with correct subsecond accumulation and rollover (including
+  day/month/year and leap years); handle concurrent GETTIME and SETTIME
+  atomically. Keep the 50/60-Hz monotonic scheduler clock independent of
+  wall-clock adjustments, preserve TIME36 encoding and existing GETTIME/
+  filesystem timestamp semantics, and minimize KCORE resident RAM/CPU cost.
+  Test both PCLK-present and PCLK-absent boots and both 50/60-Hz settings
+  exclusively in daimos-testkit; document behavior after passing tests.
 - [ ] Add **MKSWAP** as a userspace provisioning utility for deliberately
   selected DSK/DRM swap and optional LOGSTORE reserved regions. Provide a
   non-destructive inspection/dry-run mode, exact controller/unit/range
