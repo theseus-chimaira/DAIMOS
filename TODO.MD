@@ -134,9 +134,13 @@ Architecture-changing features requiring an explicit pre-sweep decision:
   KCORE/VFS service interfaces. Audit any unavoidable permanent KCORE or
   KINIT ABI impact before freezing those interfaces. Decision only; v1.2
   is not yet implemented.
-- [ ] BSTORE migration to generic shared backing/BCACHE/LOGSTORE. Identify
-  remaining gaps against the implemented AUXST1/BACKSTORE split; decide
-  which are required for 0.9, without reopening accepted raw AUXSTORE.
+- [ ] **DECISION 3 ACCEPTED (2026-10-27):** Complete the remaining BSTORE
+  migration to generic shared backing/BCACHE/LOGSTORE BEFORE final KCORE
+  optimization as a version 0.9 prerequisite. Audit remaining gaps against
+  the accepted AUXST1/BACKSTORE implementation; preserve raw AUXSTORE and
+  existing D6FS-root validation contracts. Verify all production consumers,
+  removable MRES boundaries, dynamic RAM and native rollback/recovery before
+  freezing the service ABI. Decision recorded; implementation not complete.
 - [ ] Production raw MEMFS XIP: privileged zero-write EXEC/RUN, provenance,
   swap/BRK exclusion, unpin and rollback. Existing admission and isolated
   VM tests are not production process launch acceptance. Decide release scope.
