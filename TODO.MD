@@ -38,6 +38,11 @@
   and optional BLOCKSET descriptors, reusing on-disk format definitions
   without installing the D6FS filesystem provider. Reject inconsistent,
   incomplete, overlapping or ambiguous layouts before publishing backing.
+  Scope clarification (v509/v510): AUXST1 descriptor isolation is already
+  validated and its optional D6FS partition may be unformatted. D6FS-root
+  dual-superblock selection and BLOCKSET discovery already exist. Do not
+  require D6FS superblocks for raw AUXSTORE; only implement additional
+  non-root validation when a concrete D6FS consumer is introduced.
 - [ ] Have KINIT select tape-only (no physical swap) versus tape with validated
   AUXSTORE (DSK/DRM), using existing resident service bindings and backing
   capacity rather than adding a new KCORE boot-mode word. Lowmem DRM was

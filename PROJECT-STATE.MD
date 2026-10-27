@@ -1,3 +1,13 @@
+## 2026-10-27 v510: validation scope closed; proc_swap audit initiated
+
+Confirmed D6FS-root KINIT already performs BLOCKSET descriptor discovery
+and dual-superblock selection. Non-root raw AUXSTORE uses its own
+validated descriptor and may have unformatted D6FS space; no additional
+automatic D6FS parser is justified. The separate `proc_swap` fixed
+KCORE object audit has begun, distinguishing mandatory process/PURE
+metadata cleanup from the optional swapv481 MRES. No source behavior
+changed and no memory reduction is yet accepted. Baseline remains v508.
+
 ## 2026-10-27 v509: AUXSTORE/D6FS format separation verified
 
 `mkauxstore` does not format its optional D6FS partition. For TSFS

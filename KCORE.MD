@@ -1,3 +1,25 @@
+## 2026-10-27 v510: root-only D6FS validation and next KCORE audit
+
+Verified call sites: `d6fs_boot_mount_root()` invokes
+`blockset_boot_discover()`, reads both superblocks and calls
+`d6fs_super_select()` before mounting. `kinit_boot()` routes DSK/DRM
+root classes to that path, while TSFS root uses the separate tape path.
+The D6FS runtime MRES mount gateway is prevalidated, not a general
+unvalidated non-root partition discovery interface. Accordingly there
+is no existing non-root D6FS consumer for an additional automatic
+KINIT superblock check. Preserve the raw AUXST1 contract and avoid
+inventing a loader or redundant read-only parser solely for discovery.
+
+Commenced the next deferred KCORE audit: the `proc_swap` fixed object
+is a concatenation of compiled `vm_pdp6_swap.c` (with several transaction
+functions disabled in favor of assembly), PURE backing assembly and
+storage-runtime assembly. The actual physical swap service is packaged
+separately as the optional 412-word `swapv481` MRES. Resident symbols
+such as `proc_swap_detach` also clear executable backing and mount
+provenance, so removing the entire fixed object for tape-only builds
+would be unsafe without a precise call-graph and full-link measurement.
+No kernel change or RAM saving is claimed in this audit checkpoint.
+
 ## 2026-10-27 v509: AUXST1 D6FS superblock compatibility finding
 
 Inspected `auxstore_boot.c`, `d6fs_super_boot.c`,
