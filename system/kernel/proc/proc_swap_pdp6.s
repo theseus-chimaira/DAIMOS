@@ -9,8 +9,8 @@
  */
 
         .text
-        .globl  proc_swap_service_one
-        .globl  proc_swap_reclaim
+        .globl  proc_swap_mres_service_v481
+        .globl  proc_swap_mres_reclaim_v481
         .globl  proc_swap_out
         .globl  proc_swap_in
         .globl  proc_sched_cursor
@@ -305,8 +305,7 @@ proc_swap_out_verified:
         pushj   17,mm_free
         jumpn   1,proc_swap_out_record_fail
 
-        setz    1,
-        hrrm    1,1(11)
+        hllzs   1(11)                  ; clear VM base, preserve extent LH
         hrlz    1,(17)
         hrr     1,15
         movem   1,(12)
@@ -512,16 +511,14 @@ proc_swap_in_restore:
 
 /* An impossible late mode mismatch must not release a partially committed
  * process to the scheduler: retain TRANSITION and halt, never fake success. */
-proc_swap_storage_invariant_v30:
         .globl  proc_swap_storage_invariant_v30
-        halt    .
 
 /**
  * @brief Service one scheduler-requested swap-in from slot-0 context.
  * @return AC1 selected slot on success, zero if no valid request, -1 when the
  *         requested process cannot be restored and is terminated.
  */
-proc_swap_service_one:
+proc_swap_mres_service_v481:
         move    1,proc_sched_cursor
         trnn    1,PROC_SCHED_SWAP_REQUEST
         jrst    kret_zero
@@ -578,7 +575,7 @@ proc_swap_service_clear:
  * @param AC3 Owner excluded from victim selection.
  * @return AC1 zero on success, -1 when no further victim can be reclaimed.
  */
-proc_swap_reclaim:
+proc_swap_mres_reclaim_v481:
         push    17,10
         push    17,11
         push    17,12
@@ -595,7 +592,7 @@ proc_swap_reclaim_loop:
         move    2,11
         pushj   17,mm_compact
         jumpn   1,proc_swap_reclaim_loop
-        setz    1,
+        ; mm_compact returned zero: preserve it as the success result.
         jrst    proc_swap_reclaim_done
 proc_swap_reclaim_fail:
         seto    1,

@@ -402,6 +402,19 @@ minit_export(kword_t name, unsigned int base, unsigned int index)
         return address;
 }
 
+extern kword_t proc_swap_reclaim;
+extern kword_t proc_swap_service_one;
+
+void
+proc_swap_minit_v481(void)
+{
+        kword_t name = (kword_t)SIXBIT("SWAP  ");
+        unsigned int base = minit_install(name);
+
+        storage_patch_jump(&proc_swap_reclaim, minit_export(name, base, 0U));
+        storage_patch_jump(&proc_swap_service_one, minit_export(name, base, 1U));
+}
+
 /** Register a resident PI handler and enable its hardware PI level. */
 static void
 minit_register(kword_t name, unsigned int level, unsigned int handler,

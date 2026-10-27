@@ -1,3 +1,46 @@
+## 2026-10-27 v481: process swap transfer/reclaim moved into pinned MRES
+
+Accepted focused KCORE relocation, **without increasing combined permanent
+residency**. `proc_swap_pdp6.s` is now a separate `swapv481` MRES package;
+`proc_swap.s` retains PURE backing helpers, executable metadata, and the
+two-bit per-process storage-map operations in KCORE. Resident entry words
+`proc_swap_reclaim` and `proc_swap_service_one` are patched by SWAP MINIT
+to call the package's `proc_swap_mres_reclaim_v481` and
+`proc_swap_mres_service_v481` exports. Prior to publication both entries
+return -1. The immutable-transaction invariant HALT remains in KCORE.
+The package is placed directly after MonitorFS in *both* MRES source and
+MINIT order; putting it last caused a native 32K MRES installation failure,
+because reclaimable package-source lifetime is boot-order sensitive.
+
+Fully linked GCC PDP-6 lowmem measurements, decimal 36-bit words:
+
+| Root | KCORE old -> new | MRES change | KCORE+MRES old -> new |
+|---|---:|---:|---:|
+| disk | 8960 -> **8652** | +308 | 13415 -> **13415** |
+| tape | 8960 -> **8652** | +308 | 13339 -> **13339** |
+
+Disk-root native SIMH PASS: `test-daimos-swap-wait` (sleep/restore/WAIT),
+`test-daimos-swap-stress` (full-pipe and stopped-job swap/resume). PDP-6
+standalone PURE reconstruction and verification PASS. The 32K DSH strict
+acceptance task is separate and not addressed by these tests.
+
+No change to the swap record layout, process state transitions, backing
+allocator, MEMFS, or storage ABI. The private `proc_swap_out/in` bodies are
+now in the swap MRES; the resident KCORE symbols retained for MM and idle
+are the reclaim/service entries. Keep package source order and embedded
+export order checked in future updates.
+
+Follow-on **analysis only**: `backstore.s` (108 text + 4 BSS prelink) is
+shared by process swap *and MEMFS*. Moving it into swap MRES would make
+MEMFS depend on swap and is not justified; investigate a common resident
+service while preserving the single authoritative bitmap. Boot still
+allocates one swap record per process, the bitmap of `ceil(blocks/36)`
+words, and a packed storage-state map even with zero backing capacity.
+Resident executable-backing records and storage-mode validation remain
+necessary independently of physical swap availability. Runtime block
+capacity and peak dynamic allocations need separate measurement before
+any boot metadata reduction. No backstore/boot-state source was changed.
+
 ## 2026-10-27 Proposal B v480: ten final searches; optimization closed
 
 Ten additional small-saving source searches covering FILE OPEN,

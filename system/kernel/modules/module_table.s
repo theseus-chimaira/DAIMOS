@@ -64,6 +64,8 @@
         .globl mfsdev_minit
         .globl monitorfs_mres_package
         .globl mfsdev_install_minit
+        .globl proc_swap_minit_v481
+        .globl proc_swap_mres_package_v481
         .globl cty_mres_package
         .globl clk_mres_package
 .if KINIT_FULL
@@ -117,6 +119,7 @@ __minit_table_begin:
         .word cty_minit,,cty_mres_package
         .word clk_minit,,clk_mres_package
         .word mfsdev_install_minit,,monitorfs_mres_package
+        .word proc_swap_minit_v481,,proc_swap_mres_package_v481
 .if KINIT_FULL
         .word ptr_minit,,ptr_mres_package
         .word ptp_minit,,ptp_mres_package

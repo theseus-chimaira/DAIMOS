@@ -231,6 +231,7 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/bcache_pdp6.s \
 	$(BUILD)/storage_router.s \
 	$(BUILD)/kcore_end.s
+KCORE_FIXED_ASM += $(BUILD)/proc_swap_entry_v481.s
 
 MRES_C_SRCS = fs/d6fs_provider.c \
 	fs/tsfs.c
@@ -303,7 +304,7 @@ MRES_ASM = $(BUILD)/dtfs.s \
 
 kinit: ${KINIT_ASM}
 
-kcore: ${KCORE_FIXED_ASM} ${MRES_ASM}
+kcore: ${KCORE_FIXED_ASM} ${MRES_ASM} ${BUILD}/proc_swap_mres_v481.s
 
 ${KINIT_C_ASM} ${KINIT_LATE_C_ASM}: ${KINIT_SRCS} ${KINIT_LATE_SRCS} ${KERNEL_HEADERS} ${VERSION_FILE} ${MONITORFS_MODE_STAMP} ${KINIT_TAPE_MODE_STAMP}
 	@mkdir -p ${BUILD}
@@ -351,9 +352,22 @@ ${BUILD}/proc_swap.s: ${VM_SWAP_C} proc/proc_swap_pdp6.s proc/proc_pure_backing_
 	    -DPROC_SWAP_SERVICE_PDP6_ASM=1 -DPROC_SWAP_RECLAIM_PDP6_ASM=1 \
 	    -DPROC_SWAP_TRANSACTIONS_PDP6_ASM=1 \
 	    ${INCLUDES} -S ${VM_SWAP_C} -o $@.c
-	{ cat $@.c; printf '.equ PROC_SWAP_VERIFY_PURE,%s\n' '${PROC_SWAP_VERIFY_PURE}'; \
-	    cat proc/proc_swap_pdp6.s proc/proc_pure_backing_pdp6.s proc/proc_storage_runtime_v30.s; } > $@
+	{ cat $@.c; printf '%s\n' '.equ PROC_SWAP_TEXT_SHIFT,026' \
+	  '.equ PROC_SWAP_TEXT_MASK,037777' '.equ PROC_SWAP_MOUNT_SHIFT,022' \
+	  '.equ PROC_SWAP_BACKING_OFFSET,0406' '.equ EXEC_DXR_F_COMPRESSED,0100000' \
+	  '.equ EXEC_USER_ORIGIN,020'; \
+	  cat proc/proc_pure_backing_pdp6.s proc/proc_storage_runtime_v30.s; } > $@
 	rm -f $@.c
+
+${BUILD}/proc_swap_mres_v481.s: proc/proc_swap_pdp6.s
+	@mkdir -p ${BUILD}
+	{ printf '.equ PROC_SWAP_VERIFY_PURE,%s\n' '${PROC_SWAP_VERIFY_PURE}'; \
+	  cat proc/proc_swap_pdp6.s; } > $@
+MRES_ASM += $(BUILD)/proc_swap_mres_v481.s
+
+${BUILD}/proc_swap_entry_v481.s: proc/proc_swap_entry_v481.s
+	@mkdir -p ${BUILD}
+	cp $< $@
 
 ${BUILD}/vm_backend_pdp6.s: ${VM_BACKEND_FIXED}
 	@mkdir -p ${BUILD}

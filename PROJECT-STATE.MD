@@ -1,3 +1,17 @@
+## 2026-10-27 v481: measured KCORE swap relocation
+
+Process swap transfer/reclaim has moved to a pinned boot `swapv481` MRES;
+KCORE keeps only two patchable entry instructions and its existing PURE
+metadata/storage-state runtime. Fully linked GCC lowmem disk-root KCORE
+is **8652 words** (was 8960). Swap MRES adds **308 words**, leaving total
+permanent KCORE+MRES unchanged at **13415**. The separate tape-root link
+also gives KCORE **8652**, combined **13339**, unchanged versus its prior
+root-specific package footprint. Swap-wait, swap-stress, and native PURE
+image reconstruction/verifier tests PASS. SWAP MINIT must be installed
+early in physical package order for the 32K boot to succeed. Strict 32K
+DSH acceptance remains a separate issue. `backstore` and swap boot-state
+relocation remain unimplemented, pending consumer/lifetime analysis.
+
 ## 2026-10-27 Proposal B v480: optimization phase closed
 
 Ten final bounded resident source searches found no credible safe
