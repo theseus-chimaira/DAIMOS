@@ -1,3 +1,13 @@
+## 2026-10-27 v505: maximal KINIT boot measured, 256 not adopted
+
+Fresh 256K GCC full/auto SIMH image booted through DRM236, BLOCKSET,
+LOGSTORE, MEMFS and D6FS to INIT; KINIT stack watermark octal `0311` =
+**201 words**, compared with prior 32K TSFS 129 / TSFS+DRM 136.
+Only 55 words would remain with a 256-word reserve; this is not
+"clearly below" 256 and cannot cover untested worst-case/error paths.
+No stack-size default changed. 512 remains a candidate subject to wider
+coverage; original 1024-word stack reserve remains active.
+
 ## 2026-10-27 v504: native 512-word KINIT watermark measured
 
 Fresh 32K GCC lowmem builds with temporary 512-word stack and watermark

@@ -1,3 +1,22 @@
+## 2026-10-27 v505: full-feature 256K KINIT stack watermark
+
+Built a fresh `BOOT_PROFILE=full ROOT=auto` GCC PDP-6 256K image in
+an isolated build directory with `KINIT_STACK_WATERMARK=1` and the
+unchanged `02000` (1024-word) default stack reservation. Ran headless
+SIMH with its full enabled device configuration; a 65-second native
+boot reached `INIT V1` after `DRM236 OK`, `BSET LOADED`, `LOGSTR LOADED`,
+`MEMFS LOADED` and `D6FS LOADED`. Reading the live KCORE watermark
+symbol at `020474` yielded octal `0311` = **201 decimal words**.
+
+For comparison, earlier 32K lowmem TSFS/DSK used 129 words and the
+experimental 32K TSFS/DRM variant 136 words. A hypothetical 256-word
+reserve would leave only **55 words** at this observed maximum;
+this is NOT clearly sufficient safety margin for untested exceptional
+paths, failures, or other root/provider configurations. Thus the user
+condition ('clearly below 256') is not met, and the standard remains
+**1024 words**. A future policy change to 512 requires complete testkit
+coverage; full boot success does not prove every failure path safe.
+
 ## 2026-10-27 v504: native KINIT watermark, 512-word stack, TSFS and DRM
 
 Fresh separate GCC PDP-6 32K lowmem TSFS builds with
