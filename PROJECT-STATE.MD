@@ -1,3 +1,12 @@
+## 2026-10-27 Proposal B v464: simulated provider interruption
+
+Native integrated mapped FILE/VFS RENAME test extended with a provider
+callback that simulates a sleep/wakeup register clobber. PASS: mapping
+lease remains held during interruption, balanced on success and
+failures. This is not actual scheduler wait/retry validation. No
+production change; KCORE **8961**. See
+`design/rename-mapping-simulated-wait-20261027-v464.md`.
+
 ## 2026-10-27 Proposal B v463: mapped FILE/VFS RENAME integration
 
 Native PDP-6 test now joins actual two-path mapping helper, FILE
