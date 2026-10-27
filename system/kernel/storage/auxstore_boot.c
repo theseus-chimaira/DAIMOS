@@ -55,6 +55,10 @@ auxstore_try(unsigned int kind, unsigned int unit)
         kword_t ln;
         kword_t c;
         kword_t cn;
+        kword_t d;
+        kword_t dn;
+        kword_t super_a;
+        kword_t super_b;
 
         block = fs_block_workspace;
         if (auxstore_phys_read(kind, unit, 0UL, block) != 0 ||
@@ -69,12 +73,23 @@ auxstore_try(unsigned int kind, unsigned int unit)
         ln = block[AUXSTORE_DESC_LOGSTORE] & AUXSTORE_HALF_MASK;
         c = (block[AUXSTORE_DESC_CACHE] >> 18U) & AUXSTORE_HALF_MASK;
         cn = block[AUXSTORE_DESC_CACHE] & AUXSTORE_HALF_MASK;
+        d = (block[AUXSTORE_DESC_D6FS] >> 18U) & AUXSTORE_HALF_MASK;
+        dn = block[AUXSTORE_DESC_D6FS] & AUXSTORE_HALF_MASK;
+        super_a = (block[AUXSTORE_DESC_D6SUPER] >> 18U) &
+            AUXSTORE_HALF_MASK;
+        super_b = block[AUXSTORE_DESC_D6SUPER] & AUXSTORE_HALF_MASK;
         if ((sn != 0UL && (s == 0UL || s >= limit || sn > limit - s)) ||
             (ln != 0UL && (l == 0UL || l >= limit || ln > limit - l)) ||
             (cn != 0UL && (c == 0UL || c >= limit || cn > limit - c)) ||
             auxstore_overlap(s, sn, l, ln) ||
             auxstore_overlap(s, sn, c, cn) ||
-            auxstore_overlap(l, ln, c, cn))
+            auxstore_overlap(l, ln, c, cn) ||
+            (dn != 0UL && (d == 0UL || d >= limit || dn > limit - d ||
+                super_a >= dn || super_b >= dn || super_a == super_b)) ||
+            (dn == 0UL && (d != 0UL || super_a != 0UL || super_b != 0UL)) ||
+            auxstore_overlap(d, dn, s, sn) ||
+            auxstore_overlap(d, dn, l, ln) ||
+            auxstore_overlap(d, dn, c, cn))
                 return -1;
         auxstore_kind = kind;
         auxstore_unit = unit;

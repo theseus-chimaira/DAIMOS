@@ -1,3 +1,29 @@
+## 2026-10-27 v507: AUXST1 D6FS partition overlap rejection
+
+The 384-word KINIT stack is retained. Code inspection showed that
+`auxstore_try` previously checked the AUXST1 BACKSTORE/LOGSTORE/CACHESTORE
+ranges against each other, but did not check the descriptor's optional
+D6FS partition. KINIT now rejects a D6FS partition extending beyond
+the physical device or overlapping any of those three ranges. It also
+rejects duplicated/out-of-bounds superblock offsets and inconsistent
+empty-partition fields. An absent D6FS partition remains valid.
+
+This check reuses the existing physical descriptor block and involves
+no additional I/O or permanent state. Full GCC lowmem tape link passed:
+KCORE **8548**, packaged KCORE+MRES **13463**, unchanged. Native 32K
+TSFS+AUXST1 swap-out/wake/swap-in/WAIT regression passed. Existing
+AUXSTORE choice test and new v507 invalid-descriptor host test passed
+in daimos-testkit. This is descriptor validation, **not yet** validation
+of D6FS on-disk superblocks or a full BLOCKSET member inventory.
+
+Based on native stack watermarks 129/136/201 words and direct inspection
+of KINIT fatal paths, ordinary early rejection paths typically stop
+through diagnostic output and `kinit_halt`; they do not do complex
+unwinding. A 20–50-word incremental exceptional-path allowance is a
+**rough estimate only**, not a measured bound. The 384-word reserve
+still leaves 183 words above the largest observed 201-word successful
+full-profile boot; no further reduction is indicated.
+
 ## 2026-10-27 v506: default KINIT stack 384 words and lowmem DRM
 
 Per explicit policy decision, changed the default KINIT bootstrap stack

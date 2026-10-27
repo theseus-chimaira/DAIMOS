@@ -1,3 +1,14 @@
+## 2026-10-27 v507: AUXST1 D6FS partition validation
+
+KINIT AUXST1 discovery now rejects D6FS partition overlap against
+BACKSTORE/LOGSTORE/CACHESTORE, out-of-medium partition bounds,
+bad/duplicated relative superblock offsets and inconsistent absence.
+No additional permanent state or linked-size growth: GCC 32K lowmem
+KCORE 8548, packaged tape 13463. New testkit v507 invalid-descriptor
+test PASS, existing AUXSTORE choice PASS, native 32K TSFS+AUXST1 swap/
+wake/WAIT PASS. Full D6FS superblock/BLOCKSET read-only validation
+remains open; 384-word KINIT stack default retained.
+
 ## 2026-10-27 v506: 384-word default KINIT stack and lowmem DRM
 
 Default KINIT stack reduced to octal `0600` (384 words), based on
