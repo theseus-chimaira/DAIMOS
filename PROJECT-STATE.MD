@@ -1,3 +1,11 @@
+## 2026-10-27 Proposal B v467: native VM mapping hold bits
+
+Testkit v467 executes actual PDP-6 VM mapping hold/release code;
+PASS on set/clear, preservation of the full 36-bit control word,
+preexisting hold, and boot/no-user-area path. Actual PI6 rescheduling
+across provider wait remains untested; no production changes and
+KCORE stays **8962**. See `design/mapping-hold-native-20261027-v467.md`.
+
 ## 2026-10-27 Proposal B v466: RENAME provider ABI regression fixed
 
 Found a real regression in consolidated VFS RENAME: AC7 retained the
