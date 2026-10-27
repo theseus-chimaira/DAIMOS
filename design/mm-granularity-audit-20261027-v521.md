@@ -136,3 +136,16 @@ This is a deliberately *isolated* transaction test, not a claim that
 real `vm_extent_move` process payload copying, scheduler/runqueue state,
 or the hardware APR mapping were exercised. Integrated relocation native
 acceptance remains open and RAM savings are not claimed.
+
+## V532 native VM physical move (2026-10-27)
+
+The new daimos-testkit `daimos-vm-extent-move-v532.{s,sh}` executes the
+actual `vm_extent_move` and `fs_move_words` PDP-6 assembly using a minimal
+non-runnable SIDL process without u-area. It verifies current-process
+relocation rejection without mutation, then copies four physical words to
+an APR-aligned destination, checks payload, published process base,
+cleared transition bit and unchanged runqueue. Native test PASS.
+The original fixture mistakenly stored the process records directly in
+`proc_table`, which actually holds their pointer; fixing the fixture fixed
+the failure without touching production code. Full stable-u-area/runqueue
+resumption and actual user APR continuation still need integrated tests.
