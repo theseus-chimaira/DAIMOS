@@ -1,3 +1,12 @@
+## 2026-10-27 v501: automatic MEMFS/backingstore work cancelled
+
+Automatic MEMFS enablement whenever backingstore exists is cancelled,
+including for systems below 64K. There is no active lowmem MEMFS
+delivery/auto-mount implementation task. Keep the v496 accepted behavior;
+investigate general loadable modules only after KINIT size optimization,
+with explicit loading rather than device-triggered MEMFS autoloading.
+Existing swap work and deferred SIZEOPT audits remain in scope.
+
 ## 2026-10-27 v500: optional MEMFS delivery constraint quantified
 
 Accepted 32K tape KINIT ends at octal 075637, only **97 words** below

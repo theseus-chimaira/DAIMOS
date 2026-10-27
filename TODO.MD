@@ -1,5 +1,10 @@
 ## TSFS-root auxiliary backing and command tools (2026-10-27)
 
+- [ ] DEFERRED: design explicit loadable MRES modules only after KINIT size
+  optimization makes module loading feasible. Do not automatically load
+  MEMFS when a backingstore is detected. The earlier automatic lowmem
+  MEMFS proposal was cancelled on 2026-10-27.
+
 - [ ] Keep the 32K `lowmem` profile free of MEMFS: it currently omits the
   MEMFS MRES and `memfs_minit` through `KINIT_FULL=0`, and deliberately
   leaves `/TEMP` unmounted as MEMFS. Do not introduce a MEMFS dependency

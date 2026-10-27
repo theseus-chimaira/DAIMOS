@@ -1,3 +1,14 @@
+## 2026-10-27 v501: automatic backed-lowmem MEMFS cancelled
+
+Decision: cancel automatic MEMFS activation on detection of backingstore,
+regardless of RAM size. The v499 prototype had already been reverted;
+v500's external-package loading idea is not an active implementation task.
+Current lowmem FSTAB policy remains unchanged and MEMFS stays excluded.
+Explicitly loadable modules may be reconsidered only after a dedicated
+KINIT size-optimization pass. Do not add special automatic MEMFS loading.
+This does not cancel existing SWAP/AUXSTORE work or the deferred KCORE
+SIZEOPT object audits.
+
 ## 2026-10-27 v500: measured KINIT headroom and optional MEMFS delivery
 
 Read `mkimage.sh`, `kinit.c`/`mres_install`, the native image map and the
