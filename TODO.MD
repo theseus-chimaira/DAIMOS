@@ -1,3 +1,32 @@
+## TSFS-root auxiliary backing and command tools (2026-10-27)
+
+- [ ] Keep the 32K `lowmem` profile free of MEMFS: it currently omits the
+  MEMFS MRES and `memfs_minit` through `KINIT_FULL=0`, and deliberately
+  leaves `/TEMP` unmounted as MEMFS. Do not introduce a MEMFS dependency
+  into tape-only optional-swap discovery.
+- [ ] Review and finish the existing **DATE** utility (`userland/exec/COMMANDS`,
+  `commands.c`, and `manual/DATE.SIXMD` already implement date/time display).
+  Verify native operation and 32K TSFS-root usability; extend behavior only
+  with a specified clock-setting requirement, not a duplicate command.
+- [ ] Add **MKSWAP** as a userspace provisioning utility for deliberately
+  selected DSK/DRM swap and optional LOGSTORE reserved regions. Provide a
+  non-destructive inspection/dry-run mode, exact controller/unit/range
+  identification, explicit destructive confirmation, and strong overlap and
+  existing-format checks. No automatic formatting or overwrite at boot;
+  INIT may offer an interactive provisioning action, but unattended boot
+  must safely continue with no swap.
+- [ ] Keep TSFS root free of the loaded D6FS filesystem MRES. Add a small
+  reclaimable **KINIT-only** read-only validator for D6FS reservation metadata
+  and optional BLOCKSET descriptors, reusing on-disk format definitions
+  without installing the D6FS filesystem provider. Reject inconsistent,
+  incomplete, overlapping or ambiguous layouts before publishing backing.
+- [ ] Have KINIT select tape-only (no physical swap) versus tape with validated
+  AUXSTORE (DSK/DRM), using existing resident service bindings and backing
+  capacity rather than adding a new KCORE boot-mode word. Keep common
+  executable/PURE backing operational without swap and measure both full
+  linked and native boot footprints. Preserve tape+drum, disk, disk+drum,
+  and complete BLOCKSET member semantics with testkit-only regressions.
+
 ## Active priority, 2026-10-27: P0 strict 32K first
 
 - [ ] Pass strict GCC PDP-6 KCORE endpoint **below** octal `020000`.
