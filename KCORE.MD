@@ -1,3 +1,15 @@
+## 2026-10-27 v493: positive AUXST1 tape-root boot fixture
+
+Native 32K TSFS-root boot with a disposable DSK0 AUXST1 descriptor
+(`BACKSTORE 07001+01000`) reached INIT V1 with DSK270 detected. The
+descriptor was provisioned explicitly in a temporary simulator image;
+no physical device or root image was overwritten. A reusable native
+testkit v493 fixture generates this medium and exercises the boot.
+This is **boot reachability**, not yet an end-to-end swap-out/in proof.
+The image reports `INIT: MOUNTALL FAILED`, seen in earlier control boots;
+do not treat that as evidence of swap correctness or failure without
+separate transaction coverage. No KCORE or package layout changes.
+
 ## 2026-10-27 v492: AUXSTORE selects a backing-capable device
 
 Reclaimable KINIT AUXST1 discovery now prefers DRM0 when its validated

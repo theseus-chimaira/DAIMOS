@@ -1,3 +1,11 @@
+## 2026-10-27 v493: native positive AUXST1 boot fixture
+
+Introduced a daimos-testkit native fixture for a 32K TSFS root using an
+explicitly formatted, disposable AUXST1 DSK0 image with nonzero backing
+reservation. Initial native boot reaches INIT V1; actual swap-out/in,
+resident MEMINFO boundary and optional DRM remain unverified. This is a
+test-only step; KCORE and kernel service code remain unchanged.
+
 ## 2026-10-27 v492: validated AUXST1 swap preference correction
 
 KINIT discovery no longer treats a log-only DRM descriptor as a reason
