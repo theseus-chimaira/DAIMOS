@@ -273,3 +273,18 @@ user-mode-aware SIMH/AAP fixture that can observe an exit/marker after
 APR entry, rather than the existing executive-step harness's expectations.
 No production source changes were made. Preserve the existing v540 PASS
 without extrapolating it to scheduler/APR continuation acceptance.
+
+## V542 native user instruction fetch after relocation (2026-10-27)
+
+The testkit `daimos-mm-user-fetch-v542.{s,sh}` corrects the experimental
+v541 fixture: its third instruction must be stored as an assembled word,
+not executed as a host-test JRST during setup. With this correction, real
+PDP-6 `mm_compact`/VM/FS/runqueue assembly moves an image containing
+actual user instructions, production `vm_activate_current` programs APR,
+and a user-mode JRST to logical `0100` executes a MOVEI/MOVEM pair.
+The SIMH breakpoint confirms reaching logical `0102`; an executive
+examination confirms the mapped MOVEM wrote `012345` at physical
+`020200` under the relocated `020000`-word base. Native step test PASS.
+This closes direct APR instruction-fetch and data-access verification
+after relocation, but is not the full-system scenario of a preempted
+user process restored by the real scheduler. No production changes.
