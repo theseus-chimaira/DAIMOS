@@ -52,7 +52,16 @@ removed (current KCORE 8548 versus octal 020000 = 8192).
 - [ ] Keep XIP disabled for production until these tests pass; 32K lowmem
   must not acquire an automatic MEMFS dependency just to enable XIP.
 
-### P0: reduce memory allocation granularity to 512 words (pre-sweep gate)
+### P0: reduce avoidable allocation rounding toward 512 words (pre-sweep gate)
+
+SOURCE AUDIT 2026-10-27 v521: `mm_alloc()` already requests precise word
+counts with alignment 1; `mm_alloc_aligned()` and the extent descriptors do
+not impose a global 02000-word allocation quantum. `vm_pdp6.s` and
+`vm_pdp6_swap.c` enforce 02000-octal alignment for user APR images.
+Therefore a global 512-word allocator conversion would be a regression,
+not an optimization. Next measure rounding waste per user VM and enumerate
+any software-managed consumers that actually overallocate at 02000 octal.
+Only implement reductions where supported by hardware and measurements.
 
 Priority changed by explicit decision on 2026-10-27. Complete the
 hardware/allocator/VM feasibility investigation and implement every safe
@@ -120,6 +129,9 @@ Release-critical or prerequisite correctness/acceptance:
   testkit linking and secondary DTFS/TSFS mount test assumptions.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
+
+All five decisions are resolved below. An unchecked item now means
+implementation/acceptance is outstanding, NOT that scheduling is undecided.
 
 - [ ] **DECISION 1 ACCEPTED (2026-10-27):** Complete the D6 codec production
   streaming low-core decoder and atomic producer/consumer cutover before the
