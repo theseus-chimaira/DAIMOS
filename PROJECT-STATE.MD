@@ -1,3 +1,11 @@
+## 2026-10-27 v503: KINIT 512-word stack exploratory boot passed
+
+With `KINIT_STACK_RESERVE_WORDS=01000` only as a make-time override,
+the 32K GCC lowmem TSFS image built and reached `INIT V1` on SIMH.
+No default stack-size or kernel source change; watermark and maximal
+boot-path stack usage remain unverified. The earlier lowmem DRM experiment
+remains reverted until separately retested with measured stack safety.
+
 ## 2026-10-27 v502: lowmem DRM blocked by KINIT image overlap
 
 Optional DRM support was prototyped by enabling the existing 124-word

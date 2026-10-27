@@ -1,3 +1,15 @@
+## 2026-10-27 v503: exploratory 512-word KINIT stack boot
+
+Built the accepted GCC PDP-6 `BOOT_PROFILE=lowmem ROOT=tape` image with
+`KINIT_STACK_RESERVE_WORDS=01000` (512 decimal words), **without** changing
+the default `02000` (1024 decimal) reserve. The complete native image
+build passed. A headless SIMH PDP-6 32K boot reported `DTC OK`,
+`DSK270 OK`, `DTFS LOADED` and reached `INIT V1`; a 16-second controlled
+timeout ended the session (124), not a kernel HALT. This is one boot-path
+success, **not** a measured high-water result or approval to shrink the
+default stack. Retest with KINIT stack watermark and stress the complete
+DSK/DRM/BLOCKSET/provider matrix before accepting a smaller reserve.
+
 ## 2026-10-27 v502: optional DRM lowmem experiment, boot-space blocker
 
 Tested separating `drm236_minit` and its package from `KINIT_FULL` so
