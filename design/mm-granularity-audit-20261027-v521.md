@@ -288,3 +288,22 @@ examination confirms the mapped MOVEM wrote `012345` at physical
 This closes direct APR instruction-fetch and data-access verification
 after relocation, but is not the full-system scenario of a preempted
 user process restored by the real scheduler. No production changes.
+
+## V543 full-kernel trigger feasibility audit (2026-10-27)
+
+Re-ran native PDP-6 compaction v538, pin/retry v539 and relocated user
+fetch v542 against the current checkout: all PASS. The remaining
+full-system gate is more specific than merely observing an overcommitted
+boot or BRK call. `mm_alloc_aligned` calls `mm_compact` only after an
+initial fragmented allocation and the pressure/reclaim stage; the
+request must have sufficient total free words but no aligned fitting
+gap. A `BRK` request normally grows in adjacent space or first uses
+reclaim; even its full-image fallback is not guaranteed to compact.
+The existing v537 workload is consequently not an adequate acceptance
+trigger: at 16 users it completed without any VM move, and at 48 users
+it failed admission before guest startup. A decisive test must arrange
+allocation/free lifetimes that cause this specific allocator transition,
+observe entry and successful return from real `vm_extent_move`, and then
+verify the relocated scheduled process's data and continuation. Merely
+counting allocations or completing the scheduler test cannot substitute.
+No kernel source or resident instrumentation was changed in this audit.
