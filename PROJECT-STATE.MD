@@ -1,3 +1,14 @@
+## 2026-10-27 v504: native 512-word KINIT watermark measured
+
+Fresh 32K GCC lowmem builds with temporary 512-word stack and watermark
+reached INIT in SIMH. Native `kinit_stack_highwater` yielded **129 words**
+for TSFS/DSK, **136 words** for the experimental DRM-enabled TSFS image;
+the DRM probe reported `DRM236 OK`. The instrumented DRM image passed
+the 512-word stack-bound build check. Neither the default 1024-word
+stack reservation nor optional lowmem DRM has been accepted/changed;
+both require broader boot and failure-path coverage. Experimental code
+was reverted. Unrelated DSH working tree change was preserved.
+
 ## 2026-10-27 v503: KINIT 512-word stack exploratory boot passed
 
 With `KINIT_STACK_RESERVE_WORDS=01000` only as a make-time override,

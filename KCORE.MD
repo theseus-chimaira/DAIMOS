@@ -1,3 +1,30 @@
+## 2026-10-27 v504: native KINIT watermark, 512-word stack, TSFS and DRM
+
+Fresh separate GCC PDP-6 32K lowmem TSFS builds with
+`KINIT_STACK_RESERVE_WORDS=01000` and `KINIT_STACK_WATERMARK=1` passed
+the complete image builder and booted in headless SIMH to `INIT V1`.
+Read the instrumented KCORE `kinit_stack_highwater` symbol (`020474`)
+through SIMH console `ex` using a PTY, not a redirected pipe:
+
+- Stock lowmem TSFS/DSK boot: octal `0201` = **129 decimal words**
+  used, leaving **383** of the 512-word reservation.
+- Experimental optional DRM MINIT/MRES added to lowmem: SIMH reported
+  `DRM236 OK`, reached INIT, and highwater was octal `0210` = **136
+  decimal words**, leaving **376** words.
+- Instrumented DRM image end octal `076215`; the 512-word stack-safe
+  bound is octal `077000`, so the generated image passes. The default
+  octal `02000` (1024-word) KINIT reserve has **not** been changed.
+
+Both measurements cover these successful native boot paths, not worst
+case failure handling, every root provider, simultaneous disks/drums,
+BLOCKSET metadata or severe resource exhaustion. Consequently **do not
+yet adopt 512 words as the default** or claim universal safety. The
+temporary DRM code was reverted; only the pre-existing unrelated DSH
+working-tree change remains. Follow-up: test the 512-word instrumented
+reserve across the remaining boot/error matrix and add reproducible
+native watermark regression in daimos-testkit before accepting the
+stack policy or optional lowmem DRM driver.
+
 ## 2026-10-27 v503: exploratory 512-word KINIT stack boot
 
 Built the accepted GCC PDP-6 `BOOT_PROFILE=lowmem ROOT=tape` image with
