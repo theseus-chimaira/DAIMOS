@@ -52,7 +52,18 @@ removed (current KCORE 8548 versus octal 020000 = 8192).
 - [ ] Keep XIP disabled for production until these tests pass; 32K lowmem
   must not acquire an automatic MEMFS dependency just to enable XIP.
 
-### Future: examine 512-word allocation granularity (deferred)
+### P0: reduce memory allocation granularity to 512 words (pre-sweep gate)
+
+Priority changed by explicit decision on 2026-10-27. Complete the
+hardware/allocator/VM feasibility investigation and implement every safe
+512-word granularity reduction before the final KCORE optimization sweep.
+The requested "2K to 512" reduction must not be interpreted as a direct
+PDP-6 APR change: current source uses `02000` octal, which is 1024 decimal
+words; `01000` octal is 512 decimal words. First audit all quantities and
+units, then measure the actual RAM gain. If the original PDP-6 APR forbids
+512-word protected process maps, retain its mandatory mapping boundary and
+reduce only independently software-managed allocation granularity; report
+the hardware limitation explicitly rather than silently simulating support.
 
 - [ ] Audit where the current `02000`-octal (**1024 decimal words**)
   alignment/quantum is a real PDP-6 APR requirement versus an MM allocator,
@@ -85,6 +96,13 @@ and testkit immediately before implementing an item.
 
 Release-critical or prerequisite correctness/acceptance:
 
+- [ ] **P0 memory granularity**: audit the nominal 2K allocation policy,
+  actual octal/decimal units and PDP-6 APR relocation/limit semantics;
+  implement feasible 512-decimal-word MM/heap/MEMFS/backstore granularity
+  (with compaction, swap and XIP invariants) before final KCORE shrinking.
+  Preserve any hardware-mandated 1024-word process-map alignment and measure
+  metadata, fragmentation, runtime, and true physical RAM consumption.
+  Native boundary, protection and rollback tests belong in daimos-testkit.
 - [ ] Settable UTC wall clock without PCLK: privileged SETTIME, DATE SET,
   safe PCLK presence detection, APR 50/60-Hz calendar accumulation, atomic
   GETTIME/SETTIME, and TIME36 timestamp preservation.
