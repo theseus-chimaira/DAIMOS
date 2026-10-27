@@ -54,3 +54,18 @@ eligible-image compressed swap have stabilized. Use current measurements
 only to diagnose correctness failures. Preserve native 1024-word APR maps;
 verify descriptor/pin/compaction/rollback invariants first, then profile
 realistic 32K/48K/256K workloads and assess net RAM and CPU benefits.
+
+## V525 native descriptor checks (2026-10-27)
+
+Under daimos-testkit using the current DAIMOS checkout, both existing
+PDP-6 step-execution tests pass:
+
+- `daimos-mm-extents-v250.sh`: 32 descriptor entries, capacity rejection,
+  insertion and shifted contents.
+- `daimos-mm-pressure-v268.sh`: 132-to-136 descriptor pressure, rejection,
+  middle removal and refill.
+
+These establish descriptor-table arithmetic only. APR hardware isolation,
+physical compaction, pin/release and transactional swap/BRK rollback still
+require independent native runtime acceptance; no fragmentation optimization
+or RAM-saving source change is warranted on this evidence alone.
