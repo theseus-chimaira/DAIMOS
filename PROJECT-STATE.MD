@@ -1,3 +1,12 @@
+## 2026-10-27 Proposal B v462: native dual-path mapping gate
+
+Added native PDP-6 test for actual `native_sys_two_paths` helper.
+PASS for valid dual mapping and failure of first or second pointer;
+each acquires/releases exactly one VM mapping hold. Integration with
+real FILE/VFS RENAME and sleeping provider remains outstanding.
+No production edit; KCORE baseline **8961**. See
+`design/rename-two-path-mapping-native-20261027-v462.md`.
+
 ## 2026-10-27 Proposal B v461: native FILE + VFS RENAME test
 
 New `daimos-testkit` PDP-6 native test links real FILE RENAME with
