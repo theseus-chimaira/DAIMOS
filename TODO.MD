@@ -1,3 +1,20 @@
+## Active priority, 2026-10-27: P0 strict 32K first
+
+- [ ] Pass strict GCC PDP-6 KCORE endpoint **below** octal `020000`.
+  Fresh default link = 8960 words (769 to remove); single disk/tape
+  = 9008 words (817 to remove). Do not merely move required resident
+  code to an always-loaded MRES to mask permanent RAM usage.
+- [ ] Pass KINIT stack/headroom and native 32K DCS ROOT -> DSH,
+  MEMSTAT, DATE, filesystem and process-pressure checks on the same
+  image. Default auto-root packaging fails stack budget; single disk
+  reaches LOGIN but rejects ROOT. Diagnose lookup vs memory failure.
+- [ ] Repeat all size and correctness gates after each accepted source
+  reduction; fix compiler/assembler/kernel correctness bugs first.
+
+**P2 profiling, data-structure experiments and workload-specific
+sizing are paused until P0 is complete.** See
+`design/p0-strict-32k-gates-20261027-v474.md`.
+
 ## XIP v219 MRES gateway
 
 - [x] Publish raw PURE XIP admission through existing private MEMFS MRES

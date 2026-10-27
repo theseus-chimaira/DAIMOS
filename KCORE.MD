@@ -1,3 +1,14 @@
+## 2026-10-27 P0 v474: strict 32K acceptance resumed
+
+Fresh GCC lowmem full link (default): **KCORE 8960** (`021400`),
+KCORE+MRES 15507, PERMANENT_LAST 15554. Strict endpoint `<020000`
+requires **769** saved KCORE words. Explicit single disk/tape links:
+**9008** (`021460`), requiring **817** words saved. Their KINIT
+footprints leave 764/209 words after reserved stack. Auto-root 32K
+boot failed pre-simulator for stack room; single-disk boot reached
+LOGIN, then rejected ROOT. P0 **NOT ACCEPTED**; P2 paused. See
+`design/p0-strict-32k-gates-20261027-v474.md`.
+
 ## 2026-10-27 Proposal B v472: VFS RENAME save-frame reduction
 
 Preserve AC4 directly across readonly checks (the helper uses AC1–3).

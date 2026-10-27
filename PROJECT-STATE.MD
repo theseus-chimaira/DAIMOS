@@ -1,3 +1,16 @@
+## 2026-10-27 P0 v474: strict 32K gate still failing; P2 paused
+
+Reprioritized to strict P0; P2 optimization/profiling is paused.
+Fresh default GCC PDP-6 lowmem KCORE **8960**, KCORE+MRES 15507,
+PERMANENT_LAST 15554: **769** words must be removed to get strictly
+below 8192. Explicit single disk/tape profiles KCORE **9008**, need
+**817** words removed; footprint KINIT+02000-stack free 764/209 words.
+Auto-root full 32K boot image fails `mkimage` stack reserve; explicit
+single-disk boots to DCS LOGIN but ROOT reports LOGIN INCORRECT,
+with DSH never reached. Root cause of login failure not established.
+Strict 32K gate FAIL; P0 remains open, no production modifications.
+See `design/p0-strict-32k-gates-20261027-v474.md`.
+
 ## 2026-10-27 Proposal B v473: CREATE fallthrough neutral, reverted
 
 Removed an apparently redundant jump at the shared CREATE/SYMLINK
