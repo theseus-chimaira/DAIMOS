@@ -111,3 +111,13 @@ before SIMH with `DSH image 036157 exceeds EXEC limit 036000`. Thus APR
 hardware protection was *not* exercised in this run. The concurrent DSH
 working-tree edit was preserved. Correct the image-size/build blocker or
 use a valid reduced APR fixture, then rerun protection and relocation tests.
+
+## V530 update after KCC DSH size fix (2026-10-27)
+
+The full PDP-6 APR user-protection regression now PASSES after DSH v528
+folding. Repeated native EXEC commit/rollback v200: eight cases PASS;
+MM pin lifetime v526 and MM descriptor v250 also PASS. These tests do not
+directly exercise successful physical `mm_move_extent` relocation or its
+VM-rejected rollback with real process payload/runqueue preservation.
+That dedicated native acceptance remains open. Do not claim reduced RAM
+consumption or completed fragmentation optimization from these checks.
