@@ -1,3 +1,11 @@
+## 2026-10-27 v495: native TSFS swap test INIT mismatch isolated
+
+The v494 custom INIT is recorded correctly in the TSFS manifest, but
+SIMH boots the normal `INIT V1` program instead. The swap regression is
+therefore blocked before proven process-swap execution. Preserve
+test artifacts and trace the actual boot executable-selection path
+before modifying VM/swap logic. KCORE and permanent RAM unchanged.
+
 ## 2026-10-27 v494: positive AUXST1 process-swap test not yet passing
 
 The TSFS-root native swap-wait diagnostic with explicit AUXST1 DSK0

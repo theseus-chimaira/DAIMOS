@@ -1,3 +1,16 @@
+## 2026-10-27 v495: narrowed TSFS swap-wait diagnostic to INIT selection
+
+Repeated the v494 32K TSFS-root/AUXST1 swap-wait fixture with preserved
+build media and a manifest assertion. The generated `tsfs-root.manifest`
+correctly names the custom swap-wait `init.dxr`, and `dtc1.tap` is an exact
+copy of the generated TSFS root member. Nevertheless the native simulator
+prints the **stock** `INIT V1` banner, which is absent from the custom
+workload, and the test times out without swap markers. Do not attribute
+this failure to swap transfer/restoration until the executable actually
+launched at boot is identified. The testkit diagnostic now reports
+unexpected stock INIT explicitly and can preserve artifacts with
+`KEEP_V494_FILES=1`. No kernel or KCORE change is justified yet.
+
 ## 2026-10-27 v494: TSFS AUXST1 native swap transaction blocker
 
 Adapted the existing native swap-wait workload to a lowmem TSFS root
