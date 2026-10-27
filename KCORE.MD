@@ -1,3 +1,31 @@
+## 2026-10-27 v499: conditional lowmem MEMFS image experiment rejected
+
+Investigated conditional MEMFS installation for 32K TSFS-root systems with
+validated AUXST1 backing. The existing MEMFS resident package is **1710
+words**. A prototype separated its MINIT from `KINIT_FULL`, checked the
+SWAP MINIT's published `backstore_blocks`, added the conditional VFS mount
+slot and let MOUNTALL attempt `/TEMP` only when FSTAB lacked explicit MEMFS.
+The lowmem full link kept KCORE **8548** but packaged tape KCORE+MRES grew
+from **13339 to 15049** and disk from **13415 to 15125**. These are
+*packaged* upper bounds, not verified native resident values.
+
+**Native test failed before boot:** `mkimage: KINIT image leaves less than
+the configured stack reserve`. The current lowmem image includes MEMFS
+package source and relocation metadata in transient KINIT even if its
+MINIT would later skip installation. Thus a conditional runtime guard
+does not solve the boot-image occupancy problem. Reducing the KINIT
+stack reserve would mask the failure, not fix it. The prototype was
+fully reverted, restoring the accepted tape size **13339**. No kernel
+changes were accepted and the unrelated DSH change was preserved.
+
+Next: design an optional MEMFS package delivery or reclaimed source
+arrangement that **does not consume the lowmem KINIT stack headroom**;
+account for package/relocation source, installed 1710-word MRES, VFS
+mount slab increment and MEMFS's minimum 640-word metadata allocation.
+Then validate unbacked tape, backed TSFS/AUXST1 mount and swap-wait,
+and explicit FSTAB error semantics on native 32K. The policy goal remains
+MEMFS when backing exists, independently of installed RAM size.
+
 ## 2026-10-27 v496: native TSFS AUXST1 swap path verified
 
 Root cause of v494/v495 test failure: TSFS packaging named its INIT

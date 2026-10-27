@@ -1,3 +1,13 @@
+## 2026-10-27 v499: lowmem MEMFS experiment blocked by KINIT headroom
+
+MEMFS-on-backed-32K prototype failed `mkimage` stack-reserve acceptance
+even though linked KCORE remained 8548: including the 1710-word MEMFS
+MRES source in transient KINIT exceeds available image/stack space.
+No workaround or stack-budget relaxation accepted. All experimental
+source changes reverted; the accepted tape full link is 13339 words.
+Need new optional-package source/reclamation design before MEMFS can be
+activated on backed lowmem roots. SIZEOPT object backlog remains deferred.
+
 ## 2026-10-27 v496: TSFS AUXST1 native swap regression resolved
 
 Corrected TSFS `SYSTEM_INIT_DXR` override rather than changing KCORE
