@@ -69,3 +69,16 @@ These establish descriptor-table arithmetic only. APR hardware isolation,
 physical compaction, pin/release and transactional swap/BRK rollback still
 require independent native runtime acceptance; no fragmentation optimization
 or RAM-saving source change is warranted on this evidence alone.
+
+## V526 native pin lifetime regression (2026-10-27)
+
+New daimos-testkit `daimos-mm-pin-lifetime-v526.{s,sh}` extracts the actual
+PDP-6 MM assembly and verifies missing-pin underflow, first pin, pin query,
+refusal to free while pinned, saturated 255-pin rejection, last unpin,
+wrong-owner free rejection and final valid free. The initial diagnostic
+fixture mistakenly cleared the extent's type bit when setting a one-pin
+value; corrected packed metadata to `[011,,07]` (one pin, type one, owner
+seven) and `[03771,,07]` (255 pins, type one, owner seven). Native v526,
+v250, v268 and v523 source-guard tests now pass. No production MM change
+or RAM saving follows from these contract tests. Physical compaction and
+APR process isolation remain separate native acceptance tasks.
