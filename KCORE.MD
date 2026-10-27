@@ -1,3 +1,29 @@
+## 2026-10-27 v509: AUXST1 D6FS superblock compatibility finding
+
+Inspected `auxstore_boot.c`, `d6fs_super_boot.c`,
+`d6fs_boot_mount_root()`, and host `mkauxstore`. The v507 AUXST1
+validator already rejects out-of-device, overlapping, and inconsistent
+partition offsets. Crucially, `mkauxstore` records D6FS partition and
+relative superblock *locations* but does not format their contents.
+Consequently, a valid TSFS+AUXST1 swap volume may contain an unformatted
+D6FS partition. Requiring `d6fs_super_select()` to succeed during
+AUXSTORE discovery would break the existing v494/v508 native swap cases.
+
+For D6FS **root** mounts, KINIT already reads both superblocks via
+`blockset_boot_read()` and uses `d6fs_super_select()` to validate
+generation, UUID, CLEAN state, and reservation structure before mounting.
+For AUXSTORE **raw** backing, the validated block-zero AUXST1 descriptor
+is authoritative; no D6FS filesystem is mounted or required. Its
+partition-superblock locations must not be mistaken for a requirement
+that D6FS is formatted. No additional permanent metadata, I/O or code
+has been introduced. The new testkit v509 regression verifies that a
+legal AUXST1 descriptor is accepted with only its descriptor-block read.
+
+Future work, if separately required: validation of an explicitly
+*selected* formatted non-root D6FS/BLOCKSET set before it is published
+as D6FS-backed storage. Do not introduce such verification into plain
+AUXSTORE detection, and do not weaken existing D6FS-root checks.
+
 ## 2026-10-27 v508: positive TSFS+DRM0 AUXST1 swap acceptance
 
 A new daimos-testkit native regression provisions a private 020000-block

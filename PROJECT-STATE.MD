@@ -1,3 +1,16 @@
+## 2026-10-27 v509: AUXSTORE/D6FS format separation verified
+
+`mkauxstore` does not format its optional D6FS partition. For TSFS
+raw-swap AUXST1, block-zero descriptor validation (v507) is sufficient
+for isolating BACKSTORE/LOGSTORE/CACHESTORE; reading or requiring valid
+D6FS superblocks there would regress valid unformatted media. D6FS-root
+KINIT already performs dual-superblock verification through
+`d6fs_boot_mount_root()` and `d6fs_super_select()` after BLOCKSET
+discovery. New testkit v509 host regression passes; no kernel code or
+permanent RAM change. Further formatted non-root D6FS/BLOCKSET
+validation must have an explicit consumer, not be part of bare AUXSTORE
+discovery. Prior v508 size baseline unchanged.
+
 ## 2026-10-27 v508: pre-chat closeout, positive DRM swap and fresh sizes
 
 32K GCC TSFS root with a separately provisioned DRM0 AUXST1 passed the
