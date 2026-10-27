@@ -149,3 +149,16 @@ The original fixture mistakenly stored the process records directly in
 `proc_table`, which actually holds their pointer; fixing the fixture fixed
 the failure without touching production code. Full stable-u-area/runqueue
 resumption and actual user APR continuation still need integrated tests.
+
+## V533 resident u-area stop/resume relocation (2026-10-27)
+
+The native PDP-6 testkit `daimos-vm-uarea-relocate-v533.{s,sh}` executes
+production `vm_extent_move` and `fs_move_words`, with an SRUN process
+descriptor and stable u-area. A held translated user mapping correctly
+rejects relocation before runqueue modification. Once released, four
+physical data words relocate, the VM physical base updates, `PROC_STOP_MM`
+is cleared, the process returns to SRUN, and the controlled runqueue hooks
+observe one removal and one addition. PASS. No DAIMOS kernel source
+changed. The runqueue service is stubbed and the test does not resume
+real user instruction execution; fully integrated scheduler and APR
+continuation remain open.
