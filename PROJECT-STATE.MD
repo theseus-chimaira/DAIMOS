@@ -1,3 +1,25 @@
+## 2026-10-27 Proposal B v480: optimization phase closed
+
+Ten final bounded resident source searches found no credible safe
+>2-word cut beyond v479. Native SYMLINK v448 and RENAME v455/v457
+PASS. No production change. KCORE 8960, KCORE+MRES 15507, permanent
+last 15554 remain the accepted baseline. Full-system SYMLINK and
+within-RENAME PI6 switching are pending targeted acceptance coverage;
+P0 strict 32K remains failing. See
+`design/proposal-b-final-ten-searches-20261027-v480.md`.
+
+## 2026-10-27 P0 v480: 32K DSH builtin does not execute
+
+Reproduced lowmem ROOT -> DSH startup; the v478 `MEMSTAT` check
+failed. New testkit v480 diagnostic first tested `DATE` and then
+corrected a terminal-echo false positive: exact-line `ECHO V480OK`
+produces no output although the shell returns a prompt. Failure is
+upstream of MEMSTAT specifically; DSH parse/execute and available
+heap remain suspects, not established causes. Preserved unrelated
+uncommitted DSH work. No production edits or new RAM acceptance;
+KCORE baseline **8960**, strict 32K P0 FAIL. See
+`design/p0-32k-dsh-command-diagnostic-20261027-v480.md`.
+
 ## 2026-10-27 Proposal B v479: RENAME closed at verified boundary
 
 RENAME correctness and current size reduction work complete. Retain

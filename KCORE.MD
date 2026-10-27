@@ -1,3 +1,15 @@
+## 2026-10-27 Proposal B v480: ten final searches; optimization closed
+
+Ten additional small-saving source searches covering FILE OPEN,
+CLOSE, SEEK, descriptor allocation, removal, SYMLINK, VFS attribute
+mutations, WRITE/TRUNCATE, MOUNT and UNMOUNT found no credible safe
+>2-word candidate. No production code change. Native SYMLINK v448,
+VFS RENAME v455 and FILE RENAME v457 PASS. Full-system SYMLINK and
+forced in-RENAME PI6 rescheduling remain unverified. Close Proposal B
+optimization at KCORE 8960, KCORE+MRES 15507, PERMANENT_LAST 15554.
+Strict 32K P0 is still open. See
+`design/proposal-b-final-ten-searches-20261027-v480.md`.
+
 ## 2026-10-27 Proposal B v479: RENAME work closed
 
 Accepted VFS RENAME improvements include namespace identity checking,
