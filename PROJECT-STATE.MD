@@ -1,3 +1,13 @@
+## 2026-10-27 Proposal B v471: two native physical RENAME transactions
+
+Full-system PDP-6 SIMH regression PASS: two separate user processes
+create, rename, verify and remove their own `/CONFIG` D6FS files while
+the remaining processes exercise PI6 scheduling and disk I/O. Does not
+prove a context switch during RENAME. FILE/VFS/provider and filesystem
+implementations are open to redesign when permanent RAM decreases and
+ABI/filesystem semantics remain intact. No production edit; accepted
+KCORE **8962**. See `design/rename-two-physical-processes-20261027-v471.md`.
+
 ## 2026-10-27 Proposal B v470: successful native UUO RENAME
 
 Full-system PDP-6 SIMH multiprocess v470 regression PASS: slot 5
