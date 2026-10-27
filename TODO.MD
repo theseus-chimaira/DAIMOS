@@ -52,7 +52,16 @@ removed (current KCORE 8548 versus octal 020000 = 8192).
 - [ ] Keep XIP disabled for production until these tests pass; 32K lowmem
   must not acquire an automatic MEMFS dependency just to enable XIP.
 
-### P0: reduce avoidable allocation rounding toward 512 words (pre-sweep gate)
+### P0: efficient physical RAM management using native PDP-6 APR (pre-sweep gate)
+
+POLICY REVISED 2026-10-27 v522: 512-word process mapping is no longer a
+target. Preserve the PDP-6 APR's native `02000`-octal (1024 decimal word)
+relocation and protection granularity. Never bypass, simulate or weaken APR
+to obtain smaller process extents. General MM allocation is already exact
+word-granular. Optimize measured physical RAM utilization, allocation
+placement, fragmentation, compaction, extent lifetime and reuse, with CPU
+cost as the next criterion; reject added metadata or indirection without
+proven net benefit. Native 1K process granularity is an accepted outcome.
 
 SOURCE AUDIT 2026-10-27 v521: `mm_alloc()` already requests precise word
 counts with alignment 1; `mm_alloc_aligned()` and the extent descriptors do
@@ -63,36 +72,14 @@ not an optimization. Next measure rounding waste per user VM and enumerate
 any software-managed consumers that actually overallocate at 02000 octal.
 Only implement reductions where supported by hardware and measurements.
 
-Priority changed by explicit decision on 2026-10-27. Complete the
-hardware/allocator/VM feasibility investigation and implement every safe
-512-word granularity reduction before the final KCORE optimization sweep.
-The requested "2K to 512" reduction must not be interpreted as a direct
-PDP-6 APR change: current source uses `02000` octal, which is 1024 decimal
-words; `01000` octal is 512 decimal words. First audit all quantities and
-units, then measure the actual RAM gain. If the original PDP-6 APR forbids
-512-word protected process maps, retain its mandatory mapping boundary and
-reduce only independently software-managed allocation granularity; report
-the hardware limitation explicitly rather than silently simulating support.
-
-- [ ] Audit where the current `02000`-octal (**1024 decimal words**)
-  alignment/quantum is a real PDP-6 APR requirement versus an MM allocator,
-  MEMFS extent, heap (`brk`), swap, or compaction policy choice. The current
-  source's `02000` is **not 2048 decimal words**.
-- [ ] Investigate reducing **software-managed** allocation/fragmentation
-  granularity to `01000` octal (**512 decimal words**) where hardware does
-  not constrain placement. Quantify actual RAM savings, extra MM metadata,
-  fragmentation and CPU costs; preserve smaller allocations already possible.
-- [ ] For **user process and XIP mappings**, establish hardware feasibility
-  before implementation: PDP-6 APR masks the low ten bits of relocation and
-  limit, requiring 02000-octal alignment. Do **not** simply change APR
-  masks/VM rounding to 01000 or emulate protection inaccurately. Retain
-  PDP-6-compatible alignment unless real hardware support is demonstrated;
-  a future backend with 512-word mapping support may use that quantum.
-- [ ] If a supported backend or hardware revision permits it, implement
-  512-word mappings and matching MM/VM/BRK/compaction/swap/XIP semantics,
-  then run native tests in daimos-testkit including boundary faults,
-  relocation, fragmentation, rollback and old-format compatibility.
-  Document only an implemented and measured result in pdp10-doc.
+- [ ] Measure physical allocation high-water, total free words, largest free
+  gap, process APR rounding waste and extent-descriptor overhead on 32K,
+  48K and 256K workloads in daimos-testkit.
+- [ ] Evaluate placement and compaction against measured fragmentation;
+  eliminate only proven redundant allocations or retention. Keep APR
+  process granularity intact and avoid new persistent metadata.
+- [ ] Run protection, swap, BRK, XIP, reclaim and compaction regression
+  tests after any accepted change; record total resident RAM and CPU cost.
 
 ## Pre-final-KCORE functional freeze inventory (2026-10-27 v512)
 
@@ -105,13 +92,10 @@ and testkit immediately before implementing an item.
 
 Release-critical or prerequisite correctness/acceptance:
 
-- [ ] **P0 memory granularity**: audit the nominal 2K allocation policy,
-  actual octal/decimal units and PDP-6 APR relocation/limit semantics;
-  implement feasible 512-decimal-word MM/heap/MEMFS/backstore granularity
-  (with compaction, swap and XIP invariants) before final KCORE shrinking.
-  Preserve any hardware-mandated 1024-word process-map alignment and measure
-  metadata, fragmentation, runtime, and true physical RAM consumption.
-  Native boundary, protection and rollback tests belong in daimos-testkit.
+- [ ] **P0 efficient native-APR memory management**: preserve 1024-word
+  PDP-6 process mapping alignment, measure real waste and fragmentation,
+  improve placement/compaction/retention only where total RAM decreases,
+  and verify execution cost and regressions in daimos-testkit.
 - [ ] Settable UTC wall clock without PCLK: privileged SETTIME, DATE SET,
   safe PCLK presence detection, APR 50/60-Hz calendar accumulation, atomic
   GETTIME/SETTIME, and TIME36 timestamp preservation.
