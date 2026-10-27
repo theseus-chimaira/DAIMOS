@@ -1,5 +1,20 @@
 ## TSFS-root auxiliary backing and command tools (2026-10-27)
 
+### P-1 KCORE TODO reconciliation (v511)
+
+Before beginning any unchecked KCORE item, inspect current source, latest
+commits, linked maps and tests to decide whether it is already implemented,
+superseded, or no longer needed. Preserve historical evidence in Git; do
+not implement stale proposals. `SIZEOPT.MD` is the active, ordered RAM-size
+worklist; `KCORE.MD` and `PROJECT-STATE.MD` are chronological evidence.
+
+Run kernel-only 32K boot/initialization tests, including no-DSH device and
+swap tests, at 32K. Functional tests requiring DSH use 48K, 96K or 256K.
+The complete ROOT -> DSH -> command workload at 32K is explicitly deferred
+to a separate DSH optimization run and is not a gate for this sweep.
+Keep the KCORE below-020000 size goal as a tracked, deferred acceptance
+milestone while exhausting verified no-growth RAM optimizations.
+
 - [ ] DEFERRED: design explicit loadable MRES modules only after KINIT size
   optimization makes module loading feasible. Do not automatically load
   MEMFS when a backingstore is detected. The earlier automatic lowmem
@@ -33,24 +48,21 @@
   existing-format checks. No automatic formatting or overwrite at boot;
   INIT may offer an interactive provisioning action, but unattended boot
   must safely continue with no swap.
-- [ ] Keep TSFS root free of the loaded D6FS filesystem MRES. Add a small
-  reclaimable **KINIT-only** read-only validator for D6FS reservation metadata
-  and optional BLOCKSET descriptors, reusing on-disk format definitions
-  without installing the D6FS filesystem provider. Reject inconsistent,
-  incomplete, overlapping or ambiguous layouts before publishing backing.
-  Scope clarification (v509/v510): AUXST1 descriptor isolation is already
-  validated and its optional D6FS partition may be unformatted. D6FS-root
-  dual-superblock selection and BLOCKSET discovery already exist. Do not
-  require D6FS superblocks for raw AUXSTORE; only implement additional
-  non-root validation when a concrete D6FS consumer is introduced.
-- [ ] Have KINIT select tape-only (no physical swap) versus tape with validated
+- [x] Reject unsafe AUXST1 overlap/range layouts without installing D6FS;
+  preserve unformatted optional D6FS partition compatibility (v507-v510).
+  D6FS-root dual-superblock and BLOCKSET validation already exists. The
+  proposed generic KINIT-only superblock parser is **superseded**: add
+  validation for a specifically selected non-root D6FS/BLOCKSET only when
+  a real consumer needs it; do not parse D6FS for raw AUXSTORE.
+- [x] Have KINIT select tape-only (no physical swap) versus tape with validated
   AUXSTORE (DSK/DRM), using existing resident service bindings and backing
   capacity rather than adding a new KCORE boot-mode word. Lowmem DRM was
   enabled in v506; the 32K DSK AUXST1 positive swap regression passed v507.
-  The positive 32K TSFS+DRM0 AUXST1 swap/wake/WAIT regression passed v508. Keep common
-  executable/PURE backing operational without swap and measure both full
-  linked and native boot footprints. Preserve tape+drum, disk, disk+drum,
-  and complete BLOCKSET member semantics with testkit-only regressions.
+  The positive 32K TSFS+DRM0 AUXST1 swap/wake/WAIT regression passed v508.
+  Continue separate combined-provider/BLOCKSET coverage below.
+- [ ] Validate combined tape+drum, disk+drum and complete BLOCKSET member
+  inventories when corresponding supported boot profiles exist; verify
+  installed MRES and persistent dynamic allocation footprints separately.
 
 ## Deferred acceptance gate: strict 32K (not active priority)
 
@@ -58,10 +70,12 @@
   Accepted v507 lowmem KCORE = 8548 words, 357 words above the
   strict below-8192 target. Do not merely move required resident
   code to an always-loaded MRES to mask permanent RAM usage.
-- [ ] Pass KINIT stack/headroom and native 32K DCS ROOT -> DSH,
-  MEMSTAT, DATE, filesystem and process-pressure checks on the same
-  image. Default auto-root packaging fails stack budget; single disk
-  reaches LOGIN but rejects ROOT. Diagnose lookup vs memory failure.
+- [ ] Keep native 32K **boot without DSH** and KINIT stack/headroom checks.
+  v503-v508 passed native 32K TSFS/AUXST1 tests with a 384-word KINIT
+  stack; 129/136/201-word highwaters are not exhaustive failure-path
+  maxima. DSH-dependent commands, filesystem and process-pressure tests
+  run at 48K, 96K or 256K in this sweep. The full 32K ROOT -> DSH ->
+  command acceptance is deferred to a separate DSH optimization effort.
 - [ ] Repeat all size and correctness gates after each accepted source
   reduction; fix compiler/assembler/kernel correctness bugs first.
 

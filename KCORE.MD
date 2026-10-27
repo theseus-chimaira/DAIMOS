@@ -1,3 +1,17 @@
+## 2026-10-27 v511: KCORE worklist reconciliation
+
+P-1 documentation cleanup checked the newest v507-v510 changes before
+continuing size optimization. AUXST1 raw DSK/DRM safety and native swap
+acceptance are complete; an additional D6FS superblock reader for raw
+AUXSTORE would incorrectly reject valid unformatted partitions. Remaining
+combined-provider/BLOCKSET coverage is distinct. Next live size audit is
+the mandatory `proc_swap` resident object and its optional swap service
+entry points; first establish actual call-graph/lifetime requirements and
+measure the complete linked image before changing any code. The strict
+32K full DSH command gate is deferred to a separate DSH optimization run:
+boot-only kernel tests remain at 32K, while DSH functional tests use
+48K/96K/256K. No kernel change or claimed saving in this checkpoint.
+
 ## 2026-10-27 v510: root-only D6FS validation and next KCORE audit
 
 Verified call sites: `d6fs_boot_mount_root()` invokes

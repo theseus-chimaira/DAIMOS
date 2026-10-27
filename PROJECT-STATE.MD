@@ -1,3 +1,17 @@
+## 2026-10-27 v511: P-1 KCORE backlog reconciliation
+
+Rechecked current v510 source/documentation before optimizing. v507-v508
+already established validated AUXST1 and native 32K DSK/DRM swap; v509-v510
+established that new raw-AUXSTORE D6FS superblock parsing is unnecessary.
+`TODO.MD` and `SIZEOPT.MD` now separate completed/superseded storage work
+from remaining combined-provider coverage and the first active `proc_swap`
+object audit. Before each TODO, verify whether implementation is already
+present or the premise is stale. Native 32K testing covers boot without
+DSH; DSH functional checks run at 48K/96K/256K. Full 32K DSH command
+acceptance is deferred to a separate shell optimization run. No kernel
+implementation or RAM saving is claimed. Preserve the v508 full linked
+baseline until an exactly matched fresh build supersedes it.
+
 ## 2026-10-27 v510: validation scope closed; proc_swap audit initiated
 
 Confirmed D6FS-root KINIT already performs BLOCKSET descriptor discovery
