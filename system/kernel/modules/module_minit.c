@@ -412,6 +412,14 @@ extern kword_t backstore_free;
 void
 proc_swap_minit_v481(void)
 {
+#if !KINIT_FULL && !D6FS_FS_ENABLED
+        /* Low-memory TSFS roots do not install DRM or discover AUXSTORE.
+         * Without a validated raw backing pool, retaining this pinned
+         * package wastes scarce permanent RAM. KCORE failure entries and
+         * the KINIT zero-capacity process-record path remain functional.
+         * Do not extend this guard to AUXSTORE-capable configurations. */
+        return;
+#else
         kword_t name = (kword_t)SIXBIT("SWAP  ");
         unsigned int base = minit_install(name);
 
@@ -421,6 +429,7 @@ proc_swap_minit_v481(void)
         storage_patch_jump(&backstore_init, minit_export(name, base, 3U));
         storage_patch_jump(&backstore_alloc, minit_export(name, base, 4U));
         storage_patch_jump(&backstore_free, minit_export(name, base, 5U));
+#endif
 }
 
 /** Register a resident PI handler and enable its hardware PI level. */

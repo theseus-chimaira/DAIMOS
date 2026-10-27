@@ -1,3 +1,24 @@
+## 2026-10-27 v490: lowmem TSFS without pinned SWAP MRES
+
+For the currently supported lowmem TSFS-root build (`KINIT_FULL=0`,
+`D6FS_FS_ENABLED=0`), KINIT no longer installs the pinned SWAP/BACKSTORE
+package. Its resident KCORE failure entries remain unchanged; v489's
+zero-capacity process boot initializes executable backing and the packed
+state map without allocator exports. This is a deliberately narrow
+device-free configuration, **not** a solution for future lowmem
+TSFS+DSK/DRM AUXSTORE: enable runtime, validated backing discovery before
+extending this path to such devices.
+
+The tape image still *packages* 412 SWAP words, so the static complete
+link remains 8548 KCORE / 13339 KCORE+MRES and PERMANENT_LAST 13386.
+But `mres_install` advances the actual permanent MRES boundary only for
+installed packages. Skipping SWAP therefore eliminates **412 resident
+words** on this tape-only boot, implying an installed KCORE+MRES endpoint
+of 12927 words rather than 13339; this is derived from exact package
+size and loader behavior, not independently measured with runtime
+MEMINFO yet. Native 32K tape-root boot reached INIT V1; disk-root
+static link unchanged at 8548 / 13415. No KCORE change.
+
 ## 2026-10-27 v489: device-free process boot no longer calls BACKSTORE MRES
 
 The reclaimable `proc_swap_boot_init` now handles a validated zero-block

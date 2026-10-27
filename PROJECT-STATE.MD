@@ -1,3 +1,15 @@
+## 2026-10-27 v490: swapless lowmem TSFS bootstrap
+
+KINIT suppresses pinned SWAP/BACKSTORE MRES installation on the existing
+device-free lowmem TSFS root configuration. The v489 zero-capacity process
+boot preserves executable backing with no allocator service. Static tape
+package-linked combined 13339 (includes uninstalled SWAP 412), actual
+installed MRES is therefore expected to be 12927 based on `mres_install`
+semantics. Native 32K TSFS root reached INIT; KCORE unchanged at 8548.
+Disk lowmem full link unchanged at 13415. This is not yet runtime
+selection for TSFS+auxiliary DSK/DRM; KINIT read-only discovery and an
+explicit AUXSTORE-capable lowmem build remain required.
+
 ## 2026-10-27 v489: zero-capacity backing independence
 
 `proc_swap_boot_init` in reclaimable KINIT now initializes executable
