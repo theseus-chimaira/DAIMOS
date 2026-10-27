@@ -1,3 +1,12 @@
+## 2026-10-27 Proposal B v461: native FILE + VFS RENAME test
+
+New `daimos-testkit` PDP-6 native test links real FILE RENAME with
+real resident VFS RENAME and a recording provider. PASS: success,
+both pathname failures, both permission failures and provider failure.
+The syscall VM mapping lease and sleeping provider remain untested.
+No production edit or size change: KCORE **8961**, KCORE+MRES 15508.
+See `design/file-vfs-rename-integrated-native-20261027-v461.md`.
+
 ## 2026-10-26 Proposal B v460: RENAME integrated cutover gate
 
 Mapped complete syscall -> FILE -> VFS -> provider ownership,
