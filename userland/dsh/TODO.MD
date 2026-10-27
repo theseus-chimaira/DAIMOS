@@ -1,5 +1,22 @@
 # DSH TODO
 
+## V528 KCC IMAGE FOLDING (2026-10-27)
+
+Production KCC DSH passed its `036000`-octal EXEC image limit after extending
+the existing p10fold four-word threshold analysis from assembler objects to
+both assembler and C objects. The original KCC image was `036157` octal;
+the revised image is `035725` octal (154 decimal words saved) with the
+unchanged `001763`-octal BSS. The compiler remains KCC, no executable-size
+limit was raised, and no language features or fixed limits were removed.
+
+Validated against the current tree: DSH direct lexer/parser, bracketed
+expansion, and the complete fresh-image PDP-6 SIMH APR user-protection
+regression (fault delivered and offending user terminated) pass. The
+separate concurrent AST heap-allocation edits in `dsh_exec.c` were neither
+changed nor committed here. A full DSH command-conformance suite remains
+separate from this focused validation; further shrinkage should keep the
+strict longer-term `030000`-octal image target in view.
+
 ## V25 OPTIONAL HISTORY BUILD (2026-10-13)
 
 DSH history is now compile-time optional and **off by default** for the

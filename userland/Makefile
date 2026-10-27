@@ -291,8 +291,10 @@ $(MOUNTALL_DXR): $(MOUNTALL_C_OBJS) $(MOUNTALL_S_OBJS)
 $(LOGIN_DXR): $(LOGIN_C_OBJS) $(LOGIN_S_OBJS)
 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(LOGIN_MAP) $(LOGIN_S_OBJS) $(LOGIN_C_OBJS) $(TARGET_LINK_LIBS)
 
-$(DSH_FOLD_PLAN): $(DSH_S_OBJS) $(P10FOLD_TOOL_DEP) Makefile
-	$(P10FOLD) -m 4 -P $@ $(DSH_S_OBJS) >/dev/null
+ # DSH has enough repeated KCC-generated instruction runs in C objects to
+ # reduce its linked image without removing features or raising EXEC limits.
+$(DSH_FOLD_PLAN): $(DSH_S_OBJS) $(DSH_C_OBJS) $(P10FOLD_TOOL_DEP) Makefile
+	$(P10FOLD) -m 4 -P $@ $(DSH_S_OBJS) $(DSH_C_OBJS) >/dev/null
 
 $(DSH_DXR): $(DSH_C_OBJS) $(DSH_S_OBJS) $(DSH_FOLD_PLAN)
 	$(DLINK) --daimos-uuo-relax -b 020 --fold-plan $(DSH_FOLD_PLAN) -o $@ -M $(DSH_MAP) $(DSH_S_OBJS) $(DSH_C_OBJS) $(TARGET_LINK_LIBS)
