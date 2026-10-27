@@ -1,3 +1,25 @@
+## 2026-10-27 v508: pre-chat closeout, positive DRM swap and fresh sizes
+
+32K GCC TSFS root with a separately provisioned DRM0 AUXST1 passed the
+native swap-out, wake, slot-0 swap-in and WAIT workload. The test first
+failed a *test-media* tail-layout check (CACHESTORE was zero rather than
+filling the rest of the 020000-block drum); fixing that fixture and
+allowing 180 seconds for drum I/O produced PASS. This is real native
+DRM0-backed process swapping, not merely successful driver probing.
+The separate v507 32K DSK AUXST1 positive regression also passed.
+
+Final fresh full linked GCC lowmem reports: KCORE 8548 words; tape
+KCORE+packaged MRES 13463; disk 13539. Optional DRM MRES is 124
+words included in those package totals, installed only when detected.
+Default KINIT stack 0600 octal = 384 words; measured successful boot
+watermarks are 129 (TSFS), 136 (TSFS+DRM) and 201 (full 256K).
+Full-image package totals do not include additional persistent runtime
+MM allocations or prove worst-case failure-path stack depth. Strict 32K
+acceptance is deferred by policy. Lowmem MEMFS autoload remains cancelled.
+TODO.MD/SIZEOPT.MD reviewed. Next work: read-only D6FS superblock and
+BLOCKSET reservation validator in KINIT, followed by ordered SIZEOPT
+objects. Preserve unrelated DSH working-tree edits.
+
 ## 2026-10-27 v507: AUXST1 D6FS partition validation
 
 KINIT AUXST1 discovery now rejects D6FS partition overlap against

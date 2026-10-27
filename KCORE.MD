@@ -1,3 +1,22 @@
+## 2026-10-27 v508: positive TSFS+DRM0 AUXST1 swap acceptance
+
+A new daimos-testkit native regression provisions a private 020000-block
+DRM0 AUXST1 image and boots 32K TSFS with the v506 optional DRM MRES.
+The workload successfully swaps out a sleeping pipe reader, wakes it,
+restores the swapped process via slot zero, and obtains WAIT status.
+A first attempt failed during host image provisioning because its
+CACHESTORE tail did not exactly fill the medium; the corrected fixture
+passes with a longer 180-second runtime limit for drum operations.
+The earlier positive 32K DSK0 AUXST1 test remains passing.
+
+Fresh GCC lowmem full-image sizes: 8548 KCORE words, 13463 packaged
+KCORE+MRES for tape and 13539 for disk. Default KINIT stack remains
+0600 octal (384 decimal) words. Existing native high-water readings
+129/136/201 words are observations, not a maximum over every failure
+path. No memory-growth optimization or runtime kernel change in v508.
+Next chat starts KINIT-only D6FS superblock/BLOCKSET read-only validation;
+new SIZEOPT source-object audits remain queued afterward.
+
 ## 2026-10-27 v507: AUXST1 D6FS partition overlap rejection
 
 The 384-word KINIT stack is retained. Code inspection showed that

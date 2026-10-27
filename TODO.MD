@@ -5,7 +5,7 @@
   MEMFS when a backingstore is detected. The earlier automatic lowmem
   MEMFS proposal was cancelled on 2026-10-27.
 
-- [ ] Keep the 32K `lowmem` profile free of MEMFS: it currently omits the
+- [x] Keep the 32K `lowmem` profile free of MEMFS: it currently omits the
   MEMFS MRES and `memfs_minit` through `KINIT_FULL=0`, and deliberately
   leaves `/TEMP` unmounted as MEMFS. Do not introduce a MEMFS dependency
   into tape-only optional-swap discovery.
@@ -40,16 +40,18 @@
   incomplete, overlapping or ambiguous layouts before publishing backing.
 - [ ] Have KINIT select tape-only (no physical swap) versus tape with validated
   AUXSTORE (DSK/DRM), using existing resident service bindings and backing
-  capacity rather than adding a new KCORE boot-mode word. Keep common
+  capacity rather than adding a new KCORE boot-mode word. Lowmem DRM was
+  enabled in v506; the 32K DSK AUXST1 positive swap regression passed v507.
+  The positive 32K TSFS+DRM0 AUXST1 swap/wake/WAIT regression passed v508. Keep common
   executable/PURE backing operational without swap and measure both full
   linked and native boot footprints. Preserve tape+drum, disk, disk+drum,
   and complete BLOCKSET member semantics with testkit-only regressions.
 
-## Active priority, 2026-10-27: P0 strict 32K first
+## Deferred acceptance gate: strict 32K (not active priority)
 
 - [ ] Pass strict GCC PDP-6 KCORE endpoint **below** octal `020000`.
-  Fresh default link = 8960 words (769 to remove); single disk/tape
-  = 9008 words (817 to remove). Do not merely move required resident
+  Accepted v507 lowmem KCORE = 8548 words, 357 words above the
+  strict below-8192 target. Do not merely move required resident
   code to an always-loaded MRES to mask permanent RAM usage.
 - [ ] Pass KINIT stack/headroom and native 32K DCS ROOT -> DSH,
   MEMSTAT, DATE, filesystem and process-pressure checks on the same
@@ -58,8 +60,8 @@
 - [ ] Repeat all size and correctness gates after each accepted source
   reduction; fix compiler/assembler/kernel correctness bugs first.
 
-**P2 profiling, data-structure experiments and workload-specific
-sizing are paused until P0 is complete.** See
+**Strict 32K acceptance is explicitly deferred; current storage work and
+source-level RAM optimization continue independently.** See
 `design/p0-strict-32k-gates-20261027-v474.md`.
 
 ## XIP v219 MRES gateway
