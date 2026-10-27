@@ -307,3 +307,18 @@ observe entry and successful return from real `vm_extent_move`, and then
 verify the relocated scheduled process's data and continuation. Merely
 counting allocations or completing the scheduler test cannot substitute.
 No kernel source or resident instrumentation was changed in this audit.
+
+## V544 production 256K swap-cycle relocation observation (2026-10-27)
+
+Prepared an external SIMH-only observer based on the existing v278
+256K full-system swap/reclaim test, using the same test guest and a
+breakpoint/examine at the production `vm_extent_move` symbol. A fresh
+image completed all three guest swap/reclaim and process-reuse cycles,
+but there were **zero** observed relocation entries. Accordingly v544
+is an **inconclusive relocation diagnostic**, not a relocation acceptance
+PASS; the observer remains experimental in daimos-testkit. This confirms
+that forcing process swap does not by itself create an affordable yet
+fragmented allocation demand that reaches `mm_compact`. Follow-up needs
+a deterministically ordered guest extent lifetime and explicit request
+with total free space sufficient but largest aligned gap insufficient.
+No production changes, added resident counters, or claimed RAM savings.
