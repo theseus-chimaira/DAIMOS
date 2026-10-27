@@ -1,3 +1,13 @@
+## 2026-10-27 Proposal B v473: CREATE fallthrough neutral, reverted
+
+Removed an apparently redundant jump at the shared CREATE/SYMLINK
+provider dispatch and adjusted layout guards temporarily. CREATE,
+SYMLINK and native DTFS tests PASS, but the full linked GCC PDP-6
+lowmem result was unchanged: KCORE **8960**, KCORE+MRES 15507,
+PERMANENT_LAST 15554. Reverted both source and test changes; no RAM
+reduction accepted. See
+`design/vfs-create-fallthrough-size-experiment-20261027-v473.md`.
+
 ## 2026-10-27 Proposal B v472: VFS RENAME three-word frame
 
 Removed redundant saved AC4 across two `vfs_readonly` calls; AC4 is
