@@ -1,3 +1,34 @@
+## 2026-10-27 v482: shared BACKSTORE MRES relocation experiment rejected
+
+Moved only the 108-word allocator TEXT into a dedicated boot MRES while
+keeping the four public entry points and authoritative four-word backing
+state in KCORE. The GCC PDP-6 lowmem disk-root full link was size-neutral:
+KCORE 8652 -> 8544, BSTORE MRES +108, combined permanent 13415 -> 13415.
+The tape-root link likewise held combined residency at 13339. This is a
+valid static separation, **not an accepted kernel change**.
+
+The native 32K disk-root swap-wait regression halted after D6FS setup
+(`kinit_halt`, PC 060407 in the experiment image), before INIT ran. The
+first four-word entry assembly included a non-patchable POPJ for FREE;
+that was corrected to JRST and boot failure persisted. The experiment
+was reverted, including the build configuration and MINIT/service
+publication edits. Rebuilt baseline: KCORE **8652**, combined **13415**.
+The native failure's exact origin remains unproven; a targeted bootstrap
+allocation/service-publication trace is necessary before reconsideration.
+Do not claim a 108-word accepted saving or assume the MRES design is
+invalid merely because this initial integration failed.
+
+The swap-specific boot state remains unchanged: `proc_swap_boot_init`
+allocates `slots + ceil(backstore_blocks/36) + ceil(slots/18)` dynamic
+words in a single extent. Even if backing capacity is zero, the one-word
+per-slot executable backing record is required for EXEC, VFS unmount
+protection, MonitorFS process reporting, and process lifecycle. The
+two-bit-per-slot storage map is consumed by swap transitions and packed
+process-state machinery. The zero-capacity allocation offers at most a
+small conditional optimization; do not eliminate the map or change
+transaction representation without native coverage for both absent and
+present backing storage. No boot-state source changes were made.
+
 ## 2026-10-27 v481: process swap transfer/reclaim moved into pinned MRES
 
 Accepted focused KCORE relocation, **without increasing combined permanent

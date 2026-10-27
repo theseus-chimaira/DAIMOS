@@ -1,3 +1,15 @@
+## 2026-10-27 v482: BACKSTORE relocation unaccepted
+
+Shared BACKSTORE allocator TEXT (108 words) was experimentally separated
+into MRES with KCORE state and four patched entry points. Both lowmem
+disk and tape full linked resident totals were unchanged, but native
+32K disk-root boot halted in KINIT after D6FS initialization, before
+swap-wait process execution. Reverted all v482 implementation files.
+Accepted v481 KCORE **8652**, disk-root KCORE+MRES **13415** unchanged.
+The bootstrap failure needs direct root-cause tracing; do not adopt v482
+from link-only evidence. Process-swap boot record/map allocation remains
+unchanged and is still used independently of physical swap capacity.
+
 ## 2026-10-27 v481: measured KCORE swap relocation
 
 Process swap transfer/reclaim has moved to a pinned boot `swapv481` MRES;
