@@ -1,3 +1,14 @@
+## 2026-10-27 v491: TSFS AUXST1-based optional SWAP selection
+
+In D6FS-disabled images, SWAP MINIT uses reclaimable KINIT AUXST1 discovery
+after physical storage driver MINITs. Valid nonzero backing capacity is
+necessary before installing the 412-word pinned SWAP MRES. Unprovisioned
+32K tape-root native boot reaches INIT; D6FS module is not loaded. GCC
+lowmem linked KCORE 8548, packaged tape 13339 and disk 13415 unchanged.
+Do not assume this implements lowmem tape+DRM: the lowmem profile still
+excludes DRM and positive native AUXST1 tests are pending, along with
+safe D6FS reservation and BLOCKSET discovery in KINIT.
+
 ## 2026-10-27 v490: swapless lowmem TSFS bootstrap
 
 KINIT suppresses pinned SWAP/BACKSTORE MRES installation on the existing

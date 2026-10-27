@@ -1,3 +1,22 @@
+## 2026-10-27 v491: conditional TSFS SWAP installation via AUXST1
+
+KINIT's SWAP MINIT now probes already-installed DSK/DRM device services
+using the reclaimable `auxstore_boot_discover` AUXST1 descriptor reader
+when D6FS is excluded. Only a validated nonzero BACKSTORE reservation
+causes `auxstore_post_minits` to publish the direct backing mapping and
+the pinned SWAP/BACKSTORE MRES to install. Unprovisioned TSFS boots leave
+both services absent; no media formatting or writes occur during probe.
+No D6FS filesystem provider is loaded and KCORE is untouched.
+
+Full GCC lowmem links remain KCORE **8548**, packaged tape total **13339**
+and disk total **13415**. Native 32K tape without AUXST1 reaches INIT V1.
+The dynamic installed MRES saving for that case is the 412-word SWAP
+package, as in v490. This stage provides AUXST1 discovery for an already
+supported DSK driver, but does **not** yet include a lowmem DRM driver,
+D6FS reservation reader, non-root BLOCKSET recognition or positive native
+AUXST1 swap transaction fixture. Those remain required before claiming
+full adaptive tape+drum/disk support.
+
 ## 2026-10-27 v490: lowmem TSFS without pinned SWAP MRES
 
 For the currently supported lowmem TSFS-root build (`KINIT_FULL=0`,
