@@ -25,6 +25,18 @@ for process relocation/limit. Software allocations may be more flexible;
 do not promise native 512-word process mappings on original hardware.
 Preserved the unrelated working-tree `userland/dsh/dsh_exec.c` edit.
 
+## 2026-10-27 v512: final KCORE optimization waits for functional freeze
+
+The consolidated functional freeze checklist is now in TODO.MD, with a
+matching SIZEOPT.MD gate and KCORE.MD chronological note. Required
+acceptance/correctness includes timekeeping, MKSWAP, mixed storage/BLOCKSET
+inventory, swapped MonitorFS process metadata and scheduler/testkit
+regressions. Before declaring the source ABI frozen, decide inclusion of
+the D6 codec production cutover, TSFS v1.2, BSTORE remainder, production
+MEMFS XIP and compressed process swap. Post-0.9 module relocation and
+user overlays remain deferred. This is planning/documentation only; no
+runtime changes or measured savings. Preserve the v508 accepted size base.
+
 ## 2026-10-27 v511: P-1 KCORE backlog reconciliation
 
 Rechecked current v510 source/documentation before optimizing. v507-v508

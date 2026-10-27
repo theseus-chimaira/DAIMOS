@@ -18,6 +18,20 @@ No production kernel changes and no attributed word savings in v513.
 512-decimal-word granularity investigation, explicitly separating PDP-6
 hardware APR alignment from software allocation policy.
 
+## 2026-10-27 v512: pre-final-sweep functional gate
+
+Consolidated the unresolved functional prerequisites in TODO.MD. Before the
+final KCORE size pass, close UTC clock/DATE/SETTIME, explicit swap formatting,
+combined device/BLOCKSET/provider inventory, MonitorFS swapped-process
+metadata correctness and scheduler/compiler regression gates. Decide whether
+the production D6 codec cutover, TSFS v1.2, remainder of BSTORE migration,
+privileged raw MEMFS XIP and optional compressed swap are in release scope;
+if yes, implement and test them before freezing the permanent image. They
+are not all automatically required for version 0.9. Keep the accepted v508
+lowmem size numbers as the baseline, and do not resurrect obsolete mount
+capacity v13-v21 substeps or failed MEMFS auto-loading proposals. No kernel
+implementation or size saving is claimed by this inventory.
+
 ## 2026-10-27 v511: KCORE worklist reconciliation
 
 P-1 documentation cleanup checked the newest v507-v510 changes before

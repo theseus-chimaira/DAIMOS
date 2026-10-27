@@ -74,6 +74,57 @@ removed (current KCORE 8548 versus octal 020000 = 8192).
   relocation, fragmentation, rollback and old-format compatibility.
   Document only an implemented and measured result in pdp10-doc.
 
+## Pre-final-KCORE functional freeze inventory (2026-10-27 v512)
+
+This is the authoritative functional checklist before the final linked-image
+RAM sweep.  Historical unchecked v13-v21 mount and v208-v219 XIP substeps
+below are evidence, not independent commands to reimplement accepted work.
+`SIZEOPT.MD` tracks size-only experiments; `KCORE.MD` and
+`PROJECT-STATE.MD` record accepted chronological evidence.  Check source
+and testkit immediately before implementing an item.
+
+Release-critical or prerequisite correctness/acceptance:
+
+- [ ] Settable UTC wall clock without PCLK: privileged SETTIME, DATE SET,
+  safe PCLK presence detection, APR 50/60-Hz calendar accumulation, atomic
+  GETTIME/SETTIME, and TIME36 timestamp preservation.
+- [ ] Finish tested, non-destructive AUXSTORE swap provisioning (MKSWAP),
+  including explicit destructive confirmation and existing-format/overlap
+  protections. No automatic formatting at boot.
+- [ ] Complete combined tape+drum, disk+drum, BLOCKSET member and non-root
+  storage inventories, including other safely discoverable DRM units, and
+  real supported mixed-provider mount/capacity tests.
+- [ ] Fix or conclusively classify swapped-process MonitorFS NAME/CMDLINE/
+  ENVIRONMENT reads and the GCC multiprocess scheduler/preemption failure.
+  Rerun remaining GCC/KCC grouped acceptance; no assertion-only workaround.
+- [ ] Validate KINIT failure-path stack reserve and 32K kernel-only boot;
+  retain separate 48K/96K/256K DSH functional gates. Repair stale MM
+  testkit linking and secondary DTFS/TSFS mount test assumptions.
+
+Architecture-changing features requiring an explicit pre-sweep decision:
+
+- [ ] D6 codec production streaming low-core decoder and atomic producer/
+  consumer cutover. If included in 0.9, complete it before freezing KCORE;
+  otherwise explicitly defer it and retain D6LZ36 as the release ABI.
+- [ ] TSFS v1.2 sharded metadata, read path and boot/format compatibility.
+  Decide whether v1.2 is part of the release before the final sweep.
+- [ ] BSTORE migration to generic shared backing/BCACHE/LOGSTORE. Identify
+  remaining gaps against the implemented AUXST1/BACKSTORE split; decide
+  which are required for 0.9, without reopening accepted raw AUXSTORE.
+- [ ] Production raw MEMFS XIP: privileged zero-write EXEC/RUN, provenance,
+  swap/BRK exclusion, unpin and rollback. Existing admission and isolated
+  VM tests are not production process launch acceptance. Decide release scope.
+- [ ] Compressed process swap: benchmark and explicitly decide release scope
+  before adding DXR/process/swap-record flags or codec integration.
+
+Explicitly outside the 0.9 final KCORE functional freeze unless a verified
+release dependency is found: new dynamic/unloadable MRES framework, user
+overlays, runtime module movement, hardware pager, online D6FS packer,
+Type-340 input/chess, PDP-6 TS 1.4 foreign DECtape, and full 32K DSH
+command execution (separate DSH shrink effort). Never auto-load MEMFS
+based on AUXSTORE presence. Do not treat KCORE `proc_swap`, `bcache`,
+`fs_mres`, p10fold or dead-data audits as functional prerequisites.
+
 ## TSFS-root auxiliary backing and command tools (2026-10-27)
 
 ### P-1 KCORE TODO reconciliation (v511)

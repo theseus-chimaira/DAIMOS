@@ -1,5 +1,13 @@
 # DAIMOS SIZE OPTIMIZATION WORKLIST
 
+FUNCTIONAL FREEZE GATE (2026-10-27 v512): Complete or explicitly defer the
+architecture-changing feature decisions in TODO.MD section
+"Pre-final-KCORE functional freeze inventory" before conducting the final
+linked-image sweep. Functional correction and grouped regression work comes
+first; do not interpret the size queue below as permission to optimize a
+subsystem whose production ABI is still unsettled. The existing `proc_swap`
+call-graph audit is useful preparatory analysis only.
+
 DATE: 2026-10-27 (P-1 reconciled v511; size refresh v513)
 
 ACTIVE TEST POLICY: 32K IS FOR KERNEL BOOT/INITIALIZATION WITHOUT DSH;
