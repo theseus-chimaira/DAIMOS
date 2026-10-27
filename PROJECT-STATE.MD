@@ -1,3 +1,15 @@
+## 2026-10-27 v502: lowmem DRM blocked by KINIT image overlap
+
+Optional DRM support was prototyped by enabling the existing 124-word
+DRM MRES and MINIT on a 32K tape profile. The linked permanent image
+fit (KCORE 8548, packaged tape 13463), but KINIT ended at octal
+`076144`, **100 words over** the `076000` stack-safe boundary. Native
+boot tests could not run. All code changes were reverted; accepted tape
+packaged total 13339 remains. Next work: reduce transient KINIT image
+by more than 100 linked words without compromising the stack reserve,
+then retry optional DRM and native swap tests. The separate SIZEOPT
+KCORE object backlog remains deferred.
+
 ## 2026-10-27 v501: automatic MEMFS/backingstore work cancelled
 
 Automatic MEMFS enablement whenever backingstore exists is cancelled,

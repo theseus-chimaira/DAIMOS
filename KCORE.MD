@@ -1,3 +1,27 @@
+## 2026-10-27 v502: optional DRM lowmem experiment, boot-space blocker
+
+Tested separating `drm236_minit` and its package from `KINIT_FULL` so
+the normal 32K TSFS-root KINIT could install Type-236 DRM if detected
+before the conditional SWAP MINIT. This preserved the existing driver
+ABI and probe sequence. Full GCC PDP-6 permanent-size link succeeded:
+KCORE **8548** unchanged; DRM MRES **124** resident words; tape
+KCORE+packaged-MRES **13339 -> 13463** words. Actual installed RAM on a
+DRM-equipped simulator was **not tested**.
+
+`make image BOOT_PROFILE=lowmem ROOT=tape` then failed the existing
+KINIT bootstrap stack check. Experimental `__kinit_image_end` was
+octal `076144`, **100 words beyond** the highest stack-safe end
+`076000` for the 32K profile's octal `02000` stack reserve. This is
+separate from the final permanent-size limit and must not be solved by
+reducing the reserved stack. The experiment was reverted and the
+baseline remeasured: KCORE 8548, tape packaged total 13339.
+
+Before enabling lowmem DRM, perform a source-level KINIT/MINIT size
+reduction of at least 100 linked transient words **plus safety margin**,
+without growing permanent RAM or changing hardware/FS semantics. Then
+repeat 32K native image + stack gate, tape-only boot, positive drum AUXST1
+swap transaction, disk AUXST1 regression and full-image accounting.
+
 ## 2026-10-27 v501: automatic backed-lowmem MEMFS cancelled
 
 Decision: cancel automatic MEMFS activation on detection of backingstore,
