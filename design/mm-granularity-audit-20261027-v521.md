@@ -216,3 +216,19 @@ not be added to a passing test aggregate until it reliably triggers
 real relocation and verifies the resumed guest. Next construct a
 deterministic, legitimate fragmentation/compaction trigger instead of
 increasing concurrency blindly or introducing a production debug hook.
+
+## V538 deterministic native compaction-to-VM transaction (2026-10-27)
+
+`daimos-testkit/tests/validation/daimos-mm-full-path-v538.{s,sh}`
+builds a deliberate fragmented arena in an isolated PDP-6 step fixture.
+It executes the actual `mm_compact`, `mm_find_fit`, `mm_move_extent`,
+extent table mutation, `vm_extent_move`, `fs_move_words`, and intrusive
+`proc_runq_add/remove` routines. Moving the resident stable-u-area SRUN
+process from `014000` to `020000` (octal) joins two smaller gaps into
+the requested contiguous `04000`-word region. The test verifies physical
+payload at both ends of the 02000-word image, published VM base, extent
+ordering, restored SRUN state and real runqueue membership. PASS.
+The fixture stubs PI enable/restore only. This removes v537's uncertain
+memory-pressure trigger but is still an isolated PDP-6 step test, not
+continued user-mode instruction execution through APR under full SIMH.
+No permanent kernel instrumentation or RAM growth introduced.
