@@ -121,9 +121,12 @@ Release-critical or prerequisite correctness/acceptance:
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 
-- [ ] D6 codec production streaming low-core decoder and atomic producer/
-  consumer cutover. If included in 0.9, complete it before freezing KCORE;
-  otherwise explicitly defer it and retain D6LZ36 as the release ABI.
+- [ ] **DECISION 1 ACCEPTED (2026-10-27):** Complete the D6 codec production
+  streaming low-core decoder and atomic producer/consumer cutover before the
+  final KCORE sweep. This is a version 0.9 release prerequisite, not an
+  optional future experiment. Keep the old D6LZ36 system bootable until
+  the new format passes native regression; do not ship mixed formats or a
+  permanent legacy decoder. The decision is recorded, NOT implemented.
 - [ ] TSFS v1.2 sharded metadata, read path and boot/format compatibility.
   Decide whether v1.2 is part of the release before the final sweep.
 - [ ] BSTORE migration to generic shared backing/BCACHE/LOGSTORE. Identify

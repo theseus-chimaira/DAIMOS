@@ -8,6 +8,10 @@ first; do not interpret the size queue below as permission to optimize a
 subsystem whose production ABI is still unsettled. The existing `proc_swap`
 call-graph audit is useful preparatory analysis only.
 
+DECISION 1 (2026-10-27): THE PRODUCTION D6 CODEC STREAMING DECODER AND
+ATOMIC FORMAT CUTOVER ARE REQUIRED BEFORE THE FINAL SIZE SWEEP. THIS IS
+A RELEASE-SCOPE DECISION, NOT A CLAIM THAT IMPLEMENTATION HAS LANDED.
+
 DATE: 2026-10-27 (P-1 reconciled v511; size refresh v513)
 
 ACTIVE TEST POLICY: 32K IS FOR KERNEL BOOT/INITIALIZATION WITHOUT DSH;
