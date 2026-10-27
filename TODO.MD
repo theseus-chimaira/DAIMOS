@@ -141,9 +141,12 @@ Architecture-changing features requiring an explicit pre-sweep decision:
   existing D6FS-root validation contracts. Verify all production consumers,
   removable MRES boundaries, dynamic RAM and native rollback/recovery before
   freezing the service ABI. Decision recorded; implementation not complete.
-- [ ] Production raw MEMFS XIP: privileged zero-write EXEC/RUN, provenance,
-  swap/BRK exclusion, unpin and rollback. Existing admission and isolated
-  VM tests are not production process launch acceptance. Decide release scope.
+- [ ] **DECISION 4 ACCEPTED (2026-10-27):** Complete production raw MEMFS
+  XIP BEFORE the final KCORE optimization as a version 0.9 prerequisite.
+  Implement privileged non-writing EXEC/RUN, provenance, swap/BRK exclusion,
+  unpin and rollback; validate scheduled process lifetime on native PDP-6
+  simulators. Existing admission and isolated VM tests are not production
+  process-launch acceptance. Decision recorded, implementation outstanding.
 - [ ] Compressed process swap: benchmark and explicitly decide release scope
   before adding DXR/process/swap-record flags or codec integration.
 
