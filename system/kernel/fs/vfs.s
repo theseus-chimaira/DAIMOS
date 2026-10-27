@@ -479,6 +479,7 @@ vfs_rename:
         xor     7,3
         tdne    7,[0777700000000]
         jrst    kret_neg1
+        ldb     7,[POINT 6,1,5]       ; provider ABI: AC7 must not retain XOR
         movei   6,012                  ; FS_MRES_OP_RENAME
         jrst    fs_provider_reg_call
 vfs_rename_ro:

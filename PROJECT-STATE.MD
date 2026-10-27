@@ -1,3 +1,15 @@
+## 2026-10-27 Proposal B v466: RENAME provider ABI regression fixed
+
+Found a real regression in consolidated VFS RENAME: AC7 retained the
+namespace XOR rather than the provider ID required by FS_MRES. Reload
+AC7 after namespace comparison. Actual extracted provider gateway
+and mapped FILE/VFS RENAME now PASS native PDP-6 wait/retry and error
+tests, plus earlier v455/v461/v464 regressions. The fixture uses a
+synchronous wait callback, not true scheduler context switching.
+Mandatory correctness repair increases full linked KCORE to **8962**,
+KCORE+MRES 15509, PERMANENT_LAST 15556. See
+`design/rename-provider-ac7-correctness-20261027-v466.md`.
+
 ## 2026-10-27 Proposal B v465: gateway experiment not accepted
 
 Tried to combine mapped FILE/VFS RENAME with the actual FS_MRES

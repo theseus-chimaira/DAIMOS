@@ -1,3 +1,11 @@
+## 2026-10-27 Proposal B v466 RENAME provider dispatch correction
+
+Restore AC7 provider field after RENAME namespace XOR; previously
+valid RENAME operations failed before provider dispatch. Native
+mapped FILE/VFS and real gateway lock/wait fixture PASS. Correct
+linked baseline **KCORE 8962** (+1 necessary repair); no data growth.
+See v466 design note.
+
 ## 2026-10-26 Proposal B v460 RENAME cross-layer ownership gate
 
 Audited syscall two-pointer VM lease, FILE dual parent/name frame,
