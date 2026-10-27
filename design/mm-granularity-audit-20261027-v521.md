@@ -322,3 +322,19 @@ fragmented allocation demand that reaches `mm_compact`. Follow-up needs
 a deterministically ordered guest extent lifetime and explicit request
 with total free space sufficient but largest aligned gap insufficient.
 No production changes, added resident counters, or claimed RAM savings.
+
+## V545 allocator-entry integration probe (2026-10-27)
+
+An experimental daimos-testkit native fixture extends the deterministic
+v538 physical layout to call production `mm_alloc_aligned` instead of
+calling `mm_compact` directly. The initial public allocation request
+returned `MM_ERR_FRAGMENTED` (-2), with no descriptor movement or VM
+base change. Temporary **test-fixture-only** counters subsequently showed
+two `fs_memory_reclaim` calls but zero `mach_pi_disable` calls from the
+move path. Thus this attempt has **not** demonstrated that the public
+allocator reached the compactor; it must not be reported as a PASS.
+Next inspect the native 6-argument call frame and the exact return values
+and control flow through `mm_alloc_aligned_noreclaim` and the retry stage.
+Do not change kernel MM policy or fabricate pressure until the root cause
+is established. All temporary counters are local to the unaccepted test
+fixture, not permanent kernel instrumentation. No source code changes.
