@@ -127,8 +127,13 @@ Architecture-changing features requiring an explicit pre-sweep decision:
   optional future experiment. Keep the old D6LZ36 system bootable until
   the new format passes native regression; do not ship mixed formats or a
   permanent legacy decoder. The decision is recorded, NOT implemented.
-- [ ] TSFS v1.2 sharded metadata, read path and boot/format compatibility.
-  Decide whether v1.2 is part of the release before the final sweep.
+- [ ] **DECISION 2 ACCEPTED (2026-10-27):** Complete TSFS v1.2 sharded
+  metadata, reader, boot/format compatibility and native acceptance AFTER
+  the final KCORE optimization but BEFORE the 0.9 release. Keep the TSFS
+  implementation in its provider MRES and host tools; preserve existing
+  KCORE/VFS service interfaces. Audit any unavoidable permanent KCORE or
+  KINIT ABI impact before freezing those interfaces. Decision only; v1.2
+  is not yet implemented.
 - [ ] BSTORE migration to generic shared backing/BCACHE/LOGSTORE. Identify
   remaining gaps against the implemented AUXST1/BACKSTORE split; decide
   which are required for 0.9, without reopening accepted raw AUXSTORE.
