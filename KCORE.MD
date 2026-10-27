@@ -1,3 +1,16 @@
+## 2026-10-27 v472 DSH 32K physical budget (no code change)
+
+The 036000-octal DSH DXR **image** cap is distinct from the full 32K
+**physical** KCORE+MRES+process-memory budget. v440 KCC image 035757
+has 17 decimal words of image-gate headroom. A historical stripped
+kernel plus aligned DSH VM estimate missed 32K by **210 words before
+other allocations**; it is not today's measured target. The old
+20,480-word DSH allocation combined with current PERMANENT_LAST 15556
+would miss by 3268 words, but mixes build profiles and dates. Obtain
+matched current DSH DXR/BSS and live 32K allocation peaks before
+setting an accepted size-cut objective. Strict acceptance stays
+deferred; `design/dsh-32k-size-cut-budget-20261027-v472.md`.
+
 ## 2026-10-27 P0 v474: strict 32K acceptance resumed
 
 Fresh GCC lowmem full link (default): **KCORE 8960** (`021400`),

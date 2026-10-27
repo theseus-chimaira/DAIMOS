@@ -1,3 +1,17 @@
+## 2026-10-27 v472: documented DSH 32K size-cut budget
+
+Separated the unchanged DSH executable image gate (`036000` octal,
+15360 words; v440 KCC image `035757`, 17-word headroom) from the
+strict 32768-word *physical* boot requirement. Historical stripped
+kernel + aligned shell estimate exceeded 32K by **210** words before
+other costs; applying the old shell VM allocation to v466-v470 full
+linked PERMANENT_LAST gives a **conditional**, non-current 3268-word
+deficit. Historical 48K workload exceeded 32K by 8397 words, but is
+not a minimum boot requirement. Exact current DSH cut requires matched
+clean-image and live allocation measurements. No production changes;
+KCORE baseline **8962**. See
+`design/dsh-32k-size-cut-budget-20261027-v472.md`.
+
 ## 2026-10-27 P0 v474: strict 32K gate still failing; P2 paused
 
 Reprioritized to strict P0; P2 optimization/profiling is paused.
