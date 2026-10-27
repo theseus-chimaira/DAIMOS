@@ -1,3 +1,79 @@
+## Size refresh and pending work (v513, 2026-10-27)
+
+The **fresh GCC linked/package sizes** for the current source are:
+
+| PDP-6 profile | KCORE | KCORE + packaged MRES | Permanent endpoint | Below `040000` |
+| --- | ---: | ---: | ---: | ---: |
+| 32K lowmem TSFS/tape | 8548 | 13463 | 13510 | 2873 free |
+| 32K lowmem D6FS/disk | 8548 | 13539 | 13586 | 2797 free |
+| 256K full/auto | 8548 | 18271 | 18318 | **1934 over** |
+
+The full/auto `permanent-size` target **fails** its `040000` limit; its
+multi-root endpoint is 18351 (1967 over). Package size includes optional
+MRES components that may not be simultaneously installed; it is **not** a
+measured runtime RAM high-water mark. Dynamic MM allocations, actual loaded
+MRES combinations, stacks, and process footprints must be measured separately.
+The strict lowmem KCORE `<020000` target still requires at least 357 words
+removed (current KCORE 8548 versus octal 020000 = 8192).
+
+- [ ] Resolve or correctly gate the **full/auto packaged permanent-image
+  overflow** (1934 words single-root, 1967 multi-root). Audit which MRES
+  packages really require permanent residency before changing the loader;
+  do not hide genuinely always-resident RAM as a nominally removable module.
+- [ ] Measure runtime physical MM allocations and peak working set for both
+  lowmem roots and the actual full/auto loaded-module combinations; keep
+  linked-package totals separate from peak resident RAM.
+
+### Remaining XIP integration (active checklist; v201-v219 tests completed)
+
+- [ ] Add an **opt-in root-only** RUN/EXEC admission branch for the distinct
+  raw MEMFS XIP format (`PURE` header, mode no-write, exact aligned resident
+  base), using MRES op `027` and retaining its pin through process lifetime.
+  Ordinary DXR/PURE executables must continue through the normal loader.
+- [ ] Enforce the **no-user-memory-write contract**, not just a PURE header:
+  only admit the restricted verified instruction/exit class, refuse any
+  unsupported or mutable image, and explicitly define the credential/trust
+  boundary. Never treat a user-writeable PURE file as trusted executable.
+- [ ] Add no-stack/no-argv/no-environment XIP startup/entry; bypass the
+  ordinary `vm_space_startup` write into user memory, initialize APR and
+  scheduler-owned state without modifying shared MEMFS bytes. Reject
+  requests needing a private stack, data, BSS, or writable brk.
+- [ ] Keep XIP mappings unswappable and non-growable. Verify MM pins,
+  credential inheritance, provider unmount/reclaim resistance, scheduler
+  transitions, and the existing process-descriptor provenance under load.
+- [ ] Complete failure-safe RUN/EXEC replacement (admission rollback,
+  no partial process publication, old/new image replacement, unpin/retry
+  on failures), plus normal EXIT/wait/reap teardown via the tested VM path.
+- [ ] Add **actual production-kernel** SIMH and PDP6-AAP tests for root
+  launch, scheduled user instruction fetch, syscall EXIT, WAIT/reap,
+  reuse/unmount, denied non-root/XIP-bad-image launches, swap/BRK refusal,
+  and EXEC success/failure rollback. Existing v216 tests use stubs, not
+  a scheduled production process. Measure KCORE and dynamic RAM on both.
+- [ ] Keep XIP disabled for production until these tests pass; 32K lowmem
+  must not acquire an automatic MEMFS dependency just to enable XIP.
+
+### Future: examine 512-word allocation granularity (deferred)
+
+- [ ] Audit where the current `02000`-octal (**1024 decimal words**)
+  alignment/quantum is a real PDP-6 APR requirement versus an MM allocator,
+  MEMFS extent, heap (`brk`), swap, or compaction policy choice. The current
+  source's `02000` is **not 2048 decimal words**.
+- [ ] Investigate reducing **software-managed** allocation/fragmentation
+  granularity to `01000` octal (**512 decimal words**) where hardware does
+  not constrain placement. Quantify actual RAM savings, extra MM metadata,
+  fragmentation and CPU costs; preserve smaller allocations already possible.
+- [ ] For **user process and XIP mappings**, establish hardware feasibility
+  before implementation: PDP-6 APR masks the low ten bits of relocation and
+  limit, requiring 02000-octal alignment. Do **not** simply change APR
+  masks/VM rounding to 01000 or emulate protection inaccurately. Retain
+  PDP-6-compatible alignment unless real hardware support is demonstrated;
+  a future backend with 512-word mapping support may use that quantum.
+- [ ] If a supported backend or hardware revision permits it, implement
+  512-word mappings and matching MM/VM/BRK/compaction/swap/XIP semantics,
+  then run native tests in daimos-testkit including boundary faults,
+  relocation, fragmentation, rollback and old-format compatibility.
+  Document only an implemented and measured result in pdp10-doc.
+
 ## TSFS-root auxiliary backing and command tools (2026-10-27)
 
 ### P-1 KCORE TODO reconciliation (v511)

@@ -1,3 +1,23 @@
+## 2026-10-27 v513: fresh current GCC size results (no code change)
+
+Re-ran `permanent-size` on current sources, not the older v219/XIP-linked
+10,844-word snapshot. All three builds link KCORE as `020544` octal,
+8548 decimal words. 32K GCC lowmem TSFS/tape reports KCORE+MRES
+`032227` = 13463; endpoint `032306` = 13510, 2873 words free below
+octal `040000`. 32K GCC lowmem D6FS/disk reports KCORE+MRES
+`032343` = 13539; endpoint `032422` = 13586, 2797 free. Disk multi
+endpoint `032463` = 13619 (2764 free).
+
+The 256K GCC **full/auto** package reports KCORE+MRES `043537` = 18271,
+single-root LAST `043616` = 18318 (1934 over the 16K permanent limit)
+and multi-root LAST `043657` = 18351 (1967 over). `permanent-size`
+**fails** for this profile. This is a package/address-space budget, not
+a measured peak of concurrently resident optional MRES/MM allocations.
+No production kernel changes and no attributed word savings in v513.
+`TODO.MD` now has the consolidated outstanding XIP path and deferred
+512-decimal-word granularity investigation, explicitly separating PDP-6
+hardware APR alignment from software allocation policy.
+
 ## 2026-10-27 v511: KCORE worklist reconciliation
 
 P-1 documentation cleanup checked the newest v507-v510 changes before

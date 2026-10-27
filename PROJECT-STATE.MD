@@ -1,3 +1,30 @@
+## 2026-10-27 v513: fresh permanent-size measurements and XIP/512-word TODO
+
+Rebuilt the current source's GCC `permanent-size` target for three PDP-6
+profiles (not historical v219 binary sizes). 32K lowmem TSFS/tape:
+KCORE `020544` = 8548 words; KCORE+packaged MRES `032227` = 13463;
+permanent endpoint `032306` = 13510; 2873 words free below `040000`.
+32K lowmem D6FS/disk: same KCORE; packaged MRES `032343` = 13539;
+endpoint `032422` = 13586, 2797 free. Disk multi-root LAST is
+`032463` = 13619, 2764 free.
+
+256K GCC full/auto: same KCORE, packaged MRES `043537` = 18271;
+single-root LAST `043616` = 18318, **1934 words above `040000`**;
+multi-root LAST `043657` = 18351, **1967 words above**. The full/auto
+`permanent-size` reporter consequently returns FAILURE; do not portray
+this as a passing full 256K permanent address map. Optional packaged
+MRES counts do not by themselves establish simultaneously installed
+MRES or physical runtime RAM. No production source changes or savings.
+
+Consolidated incomplete XIP RUN/EXEC work at the front of TODO.MD; the
+existing MEMFS admission/release and native proof tests are implemented,
+but general scheduled production XIP remains disabled. Added a deferred
+study of a 512-word allocation quantum. Crucial units: source `02000`
+is octal (1024 decimal), and both PDP-6 APR models hardwire ten low bits
+for process relocation/limit. Software allocations may be more flexible;
+do not promise native 512-word process mappings on original hardware.
+Preserved the unrelated working-tree `userland/dsh/dsh_exec.c` edit.
+
 ## 2026-10-27 v511: P-1 KCORE backlog reconciliation
 
 Rechecked current v510 source/documentation before optimizing. v507-v508
