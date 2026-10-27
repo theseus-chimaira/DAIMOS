@@ -1,3 +1,13 @@
+## 2026-10-27 Proposal B v468: PI6 scheduling baseline validated
+
+Full PDP-6 multiprocess scheduler regression PASS (preemption,
+private process context, nice ABI, sleep/wakeup). New testkit v468
+static guard PASS for RENAME syscall mapping lease, VM hold bit,
+sleeping executive save/restore and provider transaction wait/retry.
+The actual combined RENAME + cross-process PI6 sleep remains untested.
+No production edits; accepted KCORE **8962**. See
+`design/rename-pi6-scheduler-contract-20261027-v468.md`.
+
 ## 2026-10-27 Proposal B v467: native VM mapping hold bits
 
 Testkit v467 executes actual PDP-6 VM mapping hold/release code;
