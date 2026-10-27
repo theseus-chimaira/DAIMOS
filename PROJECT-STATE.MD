@@ -1,3 +1,13 @@
+## 2026-10-27 Proposal B v463: mapped FILE/VFS RENAME integration
+
+Native PDP-6 test now joins actual two-path mapping helper, FILE
+RENAME, VFS RENAME and recording provider. PASS on both mapping
+failures, both parent and permission failures, provider failure and
+success, checking exactly one hold/release and provider hold lifetime
+for every invocation. Full monitor dispatch and sleeping provider
+remain open. No production change; KCORE baseline **8961**.
+See `design/rename-mapping-file-vfs-integrated-20261027-v463.md`.
+
 ## 2026-10-27 Proposal B v462: native dual-path mapping gate
 
 Added native PDP-6 test for actual `native_sys_two_paths` helper.
