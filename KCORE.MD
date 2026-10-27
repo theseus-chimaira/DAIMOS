@@ -1,3 +1,23 @@
+## 2026-10-27 v485: process storage-mode MRES experiment reverted
+
+Investigated dynamic per-slot process backing records and the packed
+two-bit storage-state map. Resident backing descriptors are necessary for
+EXEC/PURE recovery, VFS mount protection and MonitorFS reporting; the
+storage-mode map distinguishes RESIDENT, DISK and PACKED lifecycles and is
+checked by both native swap and packed-process teardown. At eight process
+slots it uses just one word. Eliminating it would require a new encoding
+and coordinated lifecycle changes, rather than a small independent RAM cut.
+
+As a bounded KCORE experiment, moved `proc_storage_expect_v30` and
+`proc_storage_publish_v30` assembly into the already pinned swap MRES,
+leaving two resident patchable entry points. GCC PDP-6 lowmem full link:
+KCORE **8548 -> 8508** (-40), SWAP MRES **412 -> 454** (+42),
+KCORE+MRES **13415 -> 13417** (+2). The extra permanent two words violate
+the no-growth rule. Reverted the implementation before runtime testing and
+rebuilt the accepted v484 baseline (**8548 / 412 / 13415**). No record,
+map, ABI or storage-state changes were retained. A future retry needs at
+least two verified linked-word savings to offset the entry cost.
+
 ## 2026-10-27 v484: accepted shared BACKSTORE allocator relocation
 
 The allocator implementation (originally 108 pre-link TEXT words) now lives

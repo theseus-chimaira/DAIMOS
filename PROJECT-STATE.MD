@@ -1,3 +1,15 @@
+## 2026-10-27 v485: storage-state runtime relocation rejected
+
+The existing process backing records and packed storage-mode map are
+semantically active and already compact (one record per process and two
+bits per process). Moving the two storage-mode native routines to SWAP
+MRES reduced fixed KCORE by 40 words but grew combined permanent RAM by
+two words, **13415 -> 13417**. All v485 implementation edits were reverted
+and the accepted v484 disk-root full link rebuilt: **8548 KCORE**, **412
+SWAP/shared MRES**, **13415 combined**. No runtime tests were needed for
+the rejected no-growth experiment. Continue optimizing only if a measured
+full-image reduction or a truly size-neutral change can be demonstrated.
+
 ## 2026-10-27 v484: accepted BACKSTORE KCORE-to-MRES split
 
 Corrected prior v482/v483 failed bootstrap experiments: KCORE linker
