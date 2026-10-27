@@ -441,7 +441,11 @@ SYSTEM_INITTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/inittab.dpy
 else
 SYSTEM_INITTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/inittab
 endif
+ifneq ($(shell test $(SIMH_CPU_KWORDS) -lt 64 && echo small),)
+SYSTEM_FSTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/fstab.lowmem
+else
 SYSTEM_FSTAB_TEXT ?= $(PROJECT_ROOT)/userland/config/fstab
+endif
 endif
 SYSTEM_CONFIG_BUILD = $(BUILD)/config
 SYSTEM_INITTAB_S6REC = $(SYSTEM_CONFIG_BUILD)/INITTAB.s6rec
@@ -1235,7 +1239,7 @@ $(TSFS_INPLACE_MODE_STAMP): | $(BUILD)
 	@rm -f $(BUILD)/.tsfs-inplace-v22-0 $(BUILD)/.tsfs-inplace-v22-1
 	@touch $@
 
-$(TSFS_ROOT_IMAGE): $(INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFS_ROOT_COMMAND_DXRS) $(DTFSPROBE_DXR) \
+$(TSFS_ROOT_IMAGE): $(SYSTEM_INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $(TSFS_ROOT_COMMAND_DXRS) $(DTFSPROBE_DXR) \
 	$(SYSTEM_CONFIG_S6REC) $(TSFS_ROOT_MODE_STAMP) $(TSFS_INPLACE_MODE_STAMP) $(if $(filter 1,$(TSFS_INPLACE_BOOT)),$(IMAGE_LOWMEM_WORDS)) | $(MEDIA_DIR)
 	@set -eu; \
 	tmp='$(TSFS_ROOT_MANIFEST).tmp.$$$$'; \
@@ -1247,7 +1251,7 @@ $(TSFS_ROOT_IMAGE): $(INIT_DXR) $(SYSTEM_MOUNTALL_DXR) $(LOGIN_DXR) $(DSH_DXR) $
 	  echo 'D /SYSTEM 0555 0 0'; \
 	  echo 'D /SYSTEM/EXEC 0555 0 0'; \
 	  echo 'D /CONFIG 0755 0 0'; \
-	  printf 'F /SYSTEM/INIT %s 0555 0 0\n' '$(INIT_DXR)'; \
+	  printf 'F /SYSTEM/INIT %s 0555 0 0\n' '$(SYSTEM_INIT_DXR)'; \
 	  printf 'F /SYSTEM/EXEC/MOUNTALL %s 0555 0 0\n' '$(SYSTEM_MOUNTALL_DXR)'; \
 	  printf 'F /CONFIG/FSTAB %s 0644 0 0\n' '$(SYSTEM_FSTAB_S6REC)'; \
 	  printf 'F /CONFIG/INITTAB %s 0644 0 0\n' '$(SYSTEM_INITTAB_S6REC)'; \

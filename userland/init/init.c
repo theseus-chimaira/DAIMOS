@@ -323,10 +323,7 @@ main(void)
                 (void)u_crlf(2);
         }
         mount_status = run_mountall();
-        if (mount_status == 2) {
-                (void)u_puts(2, "INIT: WARNING: MEMFS NOT MOUNTED ON /TEMP");
-                (void)u_crlf(2);
-        } else if (mount_status != 0) {
+        if (mount_status != 0) {
                 (void)u_puts(2, "INIT: MOUNTALL FAILED");
                 (void)u_crlf(2);
         }

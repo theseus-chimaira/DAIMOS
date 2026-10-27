@@ -1,3 +1,22 @@
+## 2026-10-27 v496: native TSFS AUXST1 swap path verified
+
+Root cause of v494/v495 test failure: TSFS packaging named its INIT
+using the fixed `INIT_DXR` Makefile variable, whereas the native test
+and disk-root packaging require the externally selectable
+`SYSTEM_INIT_DXR`. TSFS now uses `SYSTEM_INIT_DXR` consistently in its
+dependency and manifest. The unchanged swap-wait process workload then
+**PASS**ed native 32K TSFS root with disposable DSK0 AUXST1: sleeping
+reader swap-out, wake, slot-0 restoration, and WAIT result. No swap
+engine workaround or KCORE change was needed.
+
+INIT/MOUNTALL no longer warn merely because a filesystem was not
+requested in FSTAB: absent MEMFS means no MEMFS warning, while failed
+requested mounts still return failure. Full-profile builds configured
+below 64K now select the no-MEMFS FSTAB, including 32K and 63K; 64K
+and 256K retain the normal MEMFS FSTAB. The fstab.lowmem comments remain
+SIXBIT-safe. Measured complete GCC PDP-6 lowmem links: KCORE **8548**,
+packaged tape **13339**, disk **13415** words, all unchanged.
+
 ## 2026-10-27 v495: narrowed TSFS swap-wait diagnostic to INIT selection
 
 Repeated the v494 32K TSFS-root/AUXST1 swap-wait fixture with preserved

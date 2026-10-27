@@ -1,3 +1,13 @@
+## 2026-10-27 v496: TSFS AUXST1 native swap regression resolved
+
+Corrected TSFS `SYSTEM_INIT_DXR` override rather than changing KCORE
+or swap internals. Native 32K TSFS+AUXST1 swap-wait now PASSes swap-out,
+wake, restoration and WAIT. Suppressed false MEMFS warning if not
+requested by fstab, and set no-MEMFS FSTAB for configured RAM below 64K.
+Full linked GCC lowmem KCORE 8548; tape packaged 13339, disk 13415.
+Lowmem drum and KINIT-only D6FS reservation/BLOCKSET discovery remain
+open. The unrelated DSH working-tree changes are untouched.
+
 ## 2026-10-27 v495: native TSFS swap test INIT mismatch isolated
 
 The v494 custom INIT is recorded correctly in the TSFS manifest, but

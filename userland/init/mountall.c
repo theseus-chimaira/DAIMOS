@@ -112,5 +112,7 @@ main(void)
         u_text_close(&r);
         if (failed)
                 return 1;
-        return temp_memfs ? 0 : 2;
+        /* A filesystem not requested in FSTAB is not a boot warning.
+         * A requested but unsuccessful mount is already reported above. */
+        return 0;
 }
