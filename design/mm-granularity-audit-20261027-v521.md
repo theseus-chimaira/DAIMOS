@@ -257,3 +257,19 @@ separately rerun production APR fault-path test also PASSED on the AAP
 PDP-6 emulator (`daimos-apr-aap-v1.sh`). These are distinct component
 tests; resumed user instruction fetch after relocation under full SIMH
 remains **unverified**. No production code or resident RAM was added.
+
+## V541 user-fetch integration attempt (2026-10-27)
+
+Attempted a testkit-only extension of the v540 native compaction fixture:
+write a short PDP-6 instruction sequence inside the process image, move it
+with actual `mm_compact`/`vm_extent_move`, program the APR through
+`vm_activate_current`, and enter user mode at the relocated logical PC.
+The first `p10run` attempt entered its low-core-break check at logical
+`020`, not an MM fault. Moving the user entry to `0100` instead caused
+the runner to time out without a readable result. Therefore this
+experiment is **not accepted**; no user-execution-after-compaction PASS is
+claimed. The underlying direct-fetch idea remains valid, but requires a
+user-mode-aware SIMH/AAP fixture that can observe an exit/marker after
+APR entry, rather than the existing executive-step harness's expectations.
+No production source changes were made. Preserve the existing v540 PASS
+without extrapolating it to scheduler/APR continuation acceptance.
