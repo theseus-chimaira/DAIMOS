@@ -1,3 +1,13 @@
+## 2026-10-27 Proposal B v465: gateway experiment not accepted
+
+Tried to combine mapped FILE/VFS RENAME with the actual FS_MRES
+provider serialization gateway and a deterministic lock wait.
+Standalone PDP-6 fixture linked but failed its first RENAME assertion;
+root cause undetermined. Exploratory test files discarded; no kernel
+changes or RAM acceptance. Baseline KCORE **8961**. Investigate
+gateway binding and lock wait before further cutover; see
+`design/rename-real-provider-gateway-experiment-20261027-v465.md`.
+
 ## 2026-10-27 Proposal B v464: simulated provider interruption
 
 Native integrated mapped FILE/VFS RENAME test extended with a provider
