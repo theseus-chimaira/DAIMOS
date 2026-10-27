@@ -1,3 +1,13 @@
+## 2026-10-27 v492: validated AUXST1 swap preference correction
+
+KINIT discovery no longer treats a log-only DRM descriptor as a reason
+to ignore usable DSK swap. The probe still prefers a DRM reservation
+when present, preserves log-only DRM when neither device has swap, and
+does not modify media. Testkit v492 host fixture exercises the actual
+discovery code. Native lowmem tape-root still boots to INIT; KCORE 8548,
+tape packaged 13339, disk packaged 13415 unchanged. Positive native
+AUXST1 swap and full lowmem tape+drum are pending.
+
 ## 2026-10-27 v491: TSFS AUXST1-based optional SWAP selection
 
 In D6FS-disabled images, SWAP MINIT uses reclaimable KINIT AUXST1 discovery

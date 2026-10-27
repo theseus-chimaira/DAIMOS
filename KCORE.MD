@@ -1,3 +1,22 @@
+## 2026-10-27 v492: AUXSTORE selects a backing-capable device
+
+Reclaimable KINIT AUXST1 discovery now prefers DRM0 when its validated
+descriptor contains a nonzero swap reservation, but checks DSK0 when
+the drum descriptor has no swap capacity. If the disk offers a swap
+reservation, KINIT selects that disk; otherwise it preserves a valid
+log-only drum descriptor. Discovery remains read-only, with neither
+D6FS runtime nor any KCORE changes. The Type-270 safe-probe limit of
+unit zero is unchanged.
+
+Full linked GCC lowmem memory remains KCORE **8548**, tape package
+**13339**, disk package **13415**. Native 32K tape-root without AUXST1
+reaches INIT V1. The independent host testkit v492 test executes the
+actual KINIT discovery function against deterministic synthetic device
+descriptors, covering drum-only, disk-only, both with swap, log-only
+drum with disk swap, and no backing device. A *positive native* TSFS
+AUXST1 swap-in/out transaction is not yet demonstrated; lowmem DRM and
+D6FS-reservation/BLOCKSET recognition remain open.
+
 ## 2026-10-27 v491: conditional TSFS SWAP installation via AUXST1
 
 KINIT's SWAP MINIT now probes already-installed DSK/DRM device services

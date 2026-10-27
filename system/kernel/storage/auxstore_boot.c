@@ -90,6 +90,8 @@ auxstore_try(unsigned int kind, unsigned int unit)
 int
 auxstore_boot_discover(void)
 {
+        unsigned int drum_valid;
+
         auxstore_kind = AUXSTORE_KIND_NONE;
         auxstore_backstore_blocks = 0UL;
         auxstore_logstore_blocks = 0UL;
@@ -103,13 +105,22 @@ auxstore_boot_discover(void)
          * future explicit AUXSTORE selector may name higher units without
          * making boot guess by destructive I/O.  Systems with the intended
          * single auxiliary drum naturally use DRM0; DSK0 is the fallback. */
+        drum_valid = 0U;
         if (module_service_get(MODULE_SERVICE_DRM_READ_BLOCK) != 0U &&
             module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK) != 0U &&
-            auxstore_try(AUXSTORE_KIND_DRM, 0U) == 0)
-                return 0;
+            auxstore_try(AUXSTORE_KIND_DRM, 0U) == 0) {
+                if (auxstore_backstore_blocks != 0UL)
+                        return 0;
+                /* Preserve a log-only drum when no disk swap exists. */
+                drum_valid = 1U;
+        }
         if (module_service_get(MODULE_SERVICE_DSK_READ_SECTOR) != 0U &&
             module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR) != 0U &&
-            auxstore_try(AUXSTORE_KIND_DSK, 0U) == 0)
+            auxstore_try(AUXSTORE_KIND_DSK, 0U) == 0) {
+                if (auxstore_backstore_blocks != 0UL || !drum_valid)
+                        return 0;
+        }
+        if (drum_valid && auxstore_try(AUXSTORE_KIND_DRM, 0U) == 0)
                 return 0;
         return -1;
 }
