@@ -119,7 +119,6 @@ __minit_table_begin:
         .word cty_minit,,cty_mres_package
         .word clk_minit,,clk_mres_package
         .word mfsdev_install_minit,,monitorfs_mres_package
-        .word proc_swap_minit_v481,,proc_swap_mres_package_v481
 .if KINIT_FULL
         .word ptr_minit,,ptr_mres_package
         .word ptp_minit,,ptp_mres_package
@@ -145,6 +144,8 @@ __minit_table_begin:
 .if KINIT_FULL
         .word drm236_minit,,drm236_mres_package
 .endif
+        ; Swap services are installed after physical storage discovery.
+        .word proc_swap_minit_v481,,proc_swap_mres_package_v481
         .word root_select_minit,,0
 .if KINIT_FULL
         .word auxstore_minit,,0

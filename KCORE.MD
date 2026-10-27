@@ -1,3 +1,22 @@
+## 2026-10-27 v488: storage-first SWAP MINIT ordering
+
+Moved the pinned SWAP MRES package immediately after the DSK/DRM driver
+packages in both the physical package-source order and MINIT table.
+This is a necessary boot-order prerequisite for KINIT to decide whether
+to install swap after probing the physical storage devices, rather than
+unconditionally installing SWAP before the probes. KCORE is unchanged.
+
+Measured GCC PDP-6 lowmem full links: disk-root KCORE 8548,
+KCORE+MRES 13415, tape-root KCORE 8548, KCORE+MRES 13339, all
+unchanged versus v484. Both native 32K disk-root and tape-root boots
+reached INIT V1; testkit eight-member TSFS selection PASS. This change
+**does not yet disable the SWAP MRES** on tape-only boots: the shared
+BACKSTORE allocator and `proc_swap_boot_init` still require published
+exports. The next stage must separate always-needed metadata helpers
+from optional transfer/reclaim services and have KINIT select only after
+validated device-space discovery. D6FS runtime is never needed to read
+its reservation metadata during TSFS-root KINIT.
+
 ## 2026-10-27 v485: process storage-mode MRES experiment reverted
 
 Investigated dynamic per-slot process backing records and the packed

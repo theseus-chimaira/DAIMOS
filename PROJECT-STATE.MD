@@ -1,3 +1,13 @@
+## 2026-10-27 v488: preparatory SWAP installation ordering
+
+SWAP MINIT/package-source order now follows DSK/DRM physical driver
+MINITs, instead of preceding them. The KCORE ABI and source are untouched;
+GCC 32K lowmem disk KCORE 8548/combined 13415, tape KCORE 8548/combined
+13339. Both native root boots reach INIT; TSFS eight-member test passes.
+Actual conditional SWAP/BACKSTORE installation remains open: KINIT must
+discover valid auxiliary backing space without loading the D6FS filesystem
+provider on TSFS roots, and retain minimal process backing with no device.
+
 ## 2026-10-27 v485: storage-state runtime relocation rejected
 
 The existing process backing records and packed storage-mode map are
