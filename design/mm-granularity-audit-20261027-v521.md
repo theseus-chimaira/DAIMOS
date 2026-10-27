@@ -244,3 +244,16 @@ and restores runnable state and queue membership. PASS. The fixture
 stubs only PI control; it does not demonstrate resumed user instructions
 after APR reprogramming under a full multiprocess boot. No production
 code or resident RAM changed.
+
+## V540 native relocation-to-APR activation handoff (2026-10-27)
+
+New testkit `daimos-mm-apr-handoff-v540.{s,sh}` extends deterministic
+production assembly compaction (MM, VM, FS copy and real runqueue) by
+executing production `vm_activate_current`. With the process VM word
+correctly initialized to the `size,,base` ABI, after physical relocation
+the APR shadow equals `0,,020000`: the expected relocated base and
+limit for a `02000`-word process. Native PDP-6 step test PASS. The
+separately rerun production APR fault-path test also PASSED on the AAP
+PDP-6 emulator (`daimos-apr-aap-v1.sh`). These are distinct component
+tests; resumed user instruction fetch after relocation under full SIMH
+remains **unverified**. No production code or resident RAM was added.
