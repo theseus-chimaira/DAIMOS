@@ -63,6 +63,15 @@ placement, fragmentation, compaction, extent lifetime and reuse, with CPU
 cost as the next criterion; reject added metadata or indirection without
 proven net benefit. Native 1K process granularity is an accepted outcome.
 
+V524 SEQUENCING (2026-10-27): current fragmentation readings are useful
+as correctness diagnostics, not final optimization evidence. First validate
+native APR isolation, MM ownership, pin/release, compaction and transactional
+swap/BRK failure recovery without resident telemetry. BSTORE, production XIP
+and compressed swap change occupancy and lifetimes. After those features
+are accepted, measure representative 32K/48K/256K physical high-water,
+free gaps, APR rounding and fragmentation and only then optimize placement
+or compaction based on net physical RAM and CPU measurements.
+
 SOURCE AUDIT 2026-10-27 v521: `mm_alloc()` already requests precise word
 counts with alignment 1; `mm_alloc_aligned()` and the extent descriptors do
 not impose a global 02000-word allocation quantum. `vm_pdp6.s` and
@@ -72,7 +81,7 @@ not an optimization. Next measure rounding waste per user VM and enumerate
 any software-managed consumers that actually overallocate at 02000 octal.
 Only implement reductions where supported by hardware and measurements.
 
-- [ ] Measure physical allocation high-water, total free words, largest free
+- [ ] After BSTORE/XIP/compressed swap integration, measure physical allocation high-water, total free words, largest free
   gap, process APR rounding waste and extent-descriptor overhead on 32K,
   48K and 256K workloads in daimos-testkit.
 - [ ] Evaluate placement and compaction against measured fragmentation;

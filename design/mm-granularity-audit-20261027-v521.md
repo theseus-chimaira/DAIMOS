@@ -48,4 +48,9 @@ not smaller emulated user maps. `daimos-testkit` adds
 regression for exact-size unaligned MM allocation, VM and swap alignment,
 BRK rounding, and process compaction. It passes on the current source.
 This is not a physical fragmentation/pressure benchmark; no RAM saving or
-new runtime implementation is claimed. Next gather physical profile data.
+new runtime implementation is claimed. V524: postpone representative
+fragmentation profiling and optimization until BSTORE, production XIP and
+eligible-image compressed swap have stabilized. Use current measurements
+only to diagnose correctness failures. Preserve native 1024-word APR maps;
+verify descriptor/pin/compaction/rollback invariants first, then profile
+realistic 32K/48K/256K workloads and assess net RAM and CPU benefits.
