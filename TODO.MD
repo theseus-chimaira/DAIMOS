@@ -147,8 +147,19 @@ Architecture-changing features requiring an explicit pre-sweep decision:
   unpin and rollback; validate scheduled process lifetime on native PDP-6
   simulators. Existing admission and isolated VM tests are not production
   process-launch acceptance. Decision recorded, implementation outstanding.
-- [ ] Compressed process swap: benchmark and explicitly decide release scope
-  before adding DXR/process/swap-record flags or codec integration.
+- [ ] **DECISION 5 ACCEPTED (2026-10-27):** Implement and benchmark opt-in
+  compressed process swap BEFORE final KCORE optimization, restricted to
+  explicitly allowed executable images (for example, the shell). Mark
+  eligibility in a validated executable-header flag at EXEC; unmarked or
+  unapproved images MUST use raw swap without attempting compression.
+  Fork inherits the opt-in only as appropriate to the image contract; EXEC
+  replaces it. Keep an independent swap-record compressed bit recording
+  actual encoding, plus atomic failure/non-shrinking raw fallback. Confirm
+  eligibility cannot be forged by untrusted executables or writable media.
+  Benchmark PDP-6 ticks, compressed blocks, transient RAM and full linked
+  resident size. Accept production only with no net permanent RAM growth
+  and passing mixed raw/packed rollback and process tests in daimos-testkit.
+  Decision recorded; not yet implemented or benchmarked.
 
 Explicitly outside the 0.9 final KCORE functional freeze unless a verified
 release dependency is found: new dynamic/unloadable MRES framework, user
