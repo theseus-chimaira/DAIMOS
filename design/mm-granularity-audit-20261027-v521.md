@@ -82,3 +82,18 @@ seven) and `[03771,,07]` (255 pins, type one, owner seven). Native v526,
 v250, v268 and v523 source-guard tests now pass. No production MM change
 or RAM saving follows from these contract tests. Physical compaction and
 APR process isolation remain separate native acceptance tasks.
+
+## V527 compaction audit and APR test blocker (2026-10-27)
+
+Production `mm_move_extent` excludes the source descriptor temporarily
+while interrupts are disabled to find an overlapping destination, then
+restores the descriptor before invoking `vm_extent_move`. A failed move
+keeps the old descriptor; successful relocation is published afterward.
+`mm_compact` skips pinned/non-process extents and retains the `02000`
+octal APR alignment. This is source review, not native rollback acceptance.
+
+Attempted `daimos-apr-user-protection-v1.sh`: the full image build failed
+before SIMH with `DSH image 036157 exceeds EXEC limit 036000`. Thus APR
+hardware protection was *not* exercised in this run. The concurrent DSH
+working-tree edit was preserved. Correct the image-size/build blocker or
+use a valid reduced APR fixture, then rerun protection and relocation tests.
