@@ -1,3 +1,10 @@
+## 2026-10-27 Proposal B v472: VFS RENAME save-frame reduction
+
+Preserve AC4 directly across readonly checks (the helper uses AC1–3).
+RENAME save frame shrinks from four to three words; full linked KCORE
+**8960**, down 2 words from v471. Native provider integration and
+source-level AC4 contract tests PASS. See v472 design note.
+
 ## 2026-10-27 Proposal B v466 RENAME provider dispatch correction
 
 Restore AC7 provider field after RENAME namespace XOR; previously

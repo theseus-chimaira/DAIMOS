@@ -1,3 +1,11 @@
+## 2026-10-27 Proposal B v472: VFS RENAME three-word frame
+
+Removed redundant saved AC4 across two `vfs_readonly` calls; AC4 is
+unchanged by the current helper. Native RENAME v455 and integrated
+gateway v466 PASS; v450 namespace and new v472 AC4 contract guards
+PASS. Full GCC PDP-6 lowmem KCORE **8960** (-2), KCORE+MRES 15507,
+PERMANENT_LAST 15554. See `design/vfs-rename-ac4-stack-20261027-v472.md`.
+
 ## 2026-10-27 Proposal B v471: two native physical RENAME transactions
 
 Full-system PDP-6 SIMH regression PASS: two separate user processes

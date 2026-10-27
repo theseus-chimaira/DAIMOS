@@ -463,13 +463,11 @@ vfs_rename:
         push    17,1
         push    17,2
         push    17,3
-        push    17,4
         pushj   17,vfs_readonly
         jumpn   1,vfs_rename_ro
         move    1,-1(17)               ; newdir
         pushj   17,vfs_readonly
         jumpn   1,vfs_rename_ro
-        pop     17,4
         pop     17,3
         pop     17,2
         pop     17,1
@@ -483,7 +481,7 @@ vfs_rename:
         movei   6,012                  ; FS_MRES_OP_RENAME
         jrst    fs_provider_reg_call
 vfs_rename_ro:
-        sub     17,kconst_4_4
+        sub     17,kconst_3_3
         jrst    kret_neg1
 
         .globl  vfs_name_valid
