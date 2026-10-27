@@ -162,3 +162,15 @@ observe one removal and one addition. PASS. No DAIMOS kernel source
 changed. The runqueue service is stubbed and the test does not resume
 real user instruction execution; fully integrated scheduler and APR
 continuation remain open.
+
+## V534 full 256K scheduler baseline (2026-10-27)
+
+Ran `daimos-testkit/tests/validation/daimos-mm-256k-scheduler-v262.sh`
+against current DAIMOS in fresh SIMH/full 256K configuration. PASS:
+preemption, process context, nice ABI, sleep and wakeup. This executes
+actual scheduler service and user processes, independent of the v533
+isolated relocation fixture. It does **not** deliberately provoke a
+physical relocation while a runnable process is parked and subsequently
+resumed. Therefore the combined scheduler+compaction acceptance remains
+open, even though the component regressions pass. No kernel source change
+or RAM reduction is attributed to this baseline test.
