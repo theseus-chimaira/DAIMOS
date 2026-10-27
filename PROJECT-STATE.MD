@@ -1,3 +1,14 @@
+## 2026-10-27 Proposal B v479: RENAME closed at verified boundary
+
+RENAME correctness and current size reduction work complete. Retain
+syscall/FILE/VFS/provider split: unproven removal risks blocking-I/O
+ownership and has no measured RAM benefit. Revalidated v450, v468,
+native v455/v461/v466: all PASS; earlier native full-system v471 PASS.
+Actual PI6 resumption *inside* RENAME is an unverified future targeted
+test, not a known defect. No production edit. Accepted KCORE **8960**,
+KCORE+MRES 15507, PERMANENT_LAST 15554. Resume strict-32K P0 work.
+See `design/rename-closure-20261027-v479.md`.
+
 ## 2026-10-27 v472: documented DSH 32K size-cut budget
 
 Separated the unchanged DSH executable image gate (`036000` octal,

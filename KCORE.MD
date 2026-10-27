@@ -1,3 +1,14 @@
+## 2026-10-27 Proposal B v479: RENAME work closed
+
+Accepted VFS RENAME improvements include namespace identity checking,
+mandatory AC7 provider restoration and the v472 three-word save frame.
+Native v455/v461/v466 and namespace v450 tests PASS on current source;
+v471 full-system multiprocess physical RENAME passed previously.
+Retain existing FILE/VFS/provider boundaries until a cross-layer
+replacement demonstrates real RAM savings and safe blocking ownership.
+Current linked lowmem KCORE 8960, KCORE+MRES 15507, permanent last
+15554. Strict 32K P0 remains the active priority; see v479 closure.
+
 ## 2026-10-27 v472 DSH 32K physical budget (no code change)
 
 The 036000-octal DSH DXR **image** cap is distinct from the full 32K
