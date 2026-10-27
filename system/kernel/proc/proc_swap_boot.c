@@ -71,7 +71,10 @@ proc_swap_boot_init(unsigned int slots)
         blocks = backstore_blocks;
         if (blocks == 0UL)
                 blocks = blockset_tail_blocks();
-        bitmap_words = backstore_bitmap_words(blocks);
+        /* A device-free TSFS boot still needs per-process executable
+         * backing and packed storage modes, but no BACKSTORE bitmap.
+         * Keep this KINIT-only path independent of optional MRES exports. */
+        bitmap_words = blocks != 0UL ? backstore_bitmap_words(blocks) : 0U;
         words = (kword_t)slots * (kword_t)PROC_SWAP_RECORD_WORDS +
             (kword_t)bitmap_words +
             (kword_t)PROC_STORAGE_MAP_WORDS_V28(slots);
@@ -81,7 +84,16 @@ proc_swap_boot_init(unsigned int slots)
         wp = (kword_t *)(unsigned long)base;
         fs_zero_words(wp, (unsigned int)words);
         proc_swap_records = (struct proc_swap_record *)(unsigned long)base;
-        backstore_init(wp + slots * PROC_SWAP_RECORD_WORDS, blocks);
+        if (blocks != 0UL)
+                backstore_init(wp + slots * PROC_SWAP_RECORD_WORDS, blocks);
+        else {
+                /* Clear stale backing publication without calling the
+                 * optional allocator. All four words remain authoritative. */
+                backstore_bitmap = 0;
+                backstore_blocks = 0UL;
+                backstore_blocks_used = 0UL;
+                backstore_enabled = 0U;
+        }
         /* KINIT zeroed the entire extent; initial mode is RESIDENT. */
         proc_storage_runtime_v29.words =
             wp + slots * PROC_SWAP_RECORD_WORDS + bitmap_words;

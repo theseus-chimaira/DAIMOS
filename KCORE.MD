@@ -1,3 +1,18 @@
+## 2026-10-27 v489: device-free process boot no longer calls BACKSTORE MRES
+
+The reclaimable `proc_swap_boot_init` now handles a validated zero-block
+backing pool without calling `backstore_bitmap_words` or `backstore_init`.
+It allocates the required per-process executable backing records and packed
+storage-mode map, publishes an empty authoritative BACKSTORE state, and
+retains the existing nonzero-capacity initialization path unchanged.
+This is a prerequisite for omitting the swap/BACKSTORE MRES in KINIT on
+systems with no validated physical backing source; it does not yet omit
+that package. No permanent KCORE changes were made.
+
+Full GCC PDP-6 lowmem links remain tape 8548 KCORE / 13339 combined and
+disk 8548 KCORE / 13415 combined. Native 32K tape boot reached INIT V1;
+native disk swap-wait passed swap-out, wake, restoration and WAIT.
+
 ## 2026-10-27 v488: storage-first SWAP MINIT ordering
 
 Moved the pinned SWAP MRES package immediately after the DSK/DRM driver

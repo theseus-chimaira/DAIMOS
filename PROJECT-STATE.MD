@@ -1,3 +1,14 @@
+## 2026-10-27 v489: zero-capacity backing independence
+
+`proc_swap_boot_init` in reclaimable KINIT now initializes executable
+backing records and packed storage state without calling optional
+BACKSTORE allocator exports when its discovered block capacity is zero.
+Both full linked permanent baselines are unchanged (disk 13415,
+tape 13339; KCORE 8548). Native 32K tape-root reaches INIT V1 and disk
+swap-wait passes. Conditional swap MRES installation and the independent
+KINIT-only reservation reader remain pending; no D6FS module was added
+to TSFS-root images.
+
 ## 2026-10-27 v488: preparatory SWAP installation ordering
 
 SWAP MINIT/package-source order now follows DSK/DRM physical driver
