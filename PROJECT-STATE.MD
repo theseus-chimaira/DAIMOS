@@ -1,3 +1,14 @@
+## 2026-10-27 v500: optional MEMFS delivery constraint quantified
+
+Accepted 32K tape KINIT ends at octal 075637, only **97 words** below
+the stack-safe octal 076000 boundary (1024-word stack reserve). The
+1710-word MEMFS MRES cannot be embedded there, regardless of whether
+KINIT would later skip installation. Existing MINIT source reclamation
+happens after image loading and cannot solve the overlap. No RAM-growth
+experiment was accepted. External, validated package delivery after root
+selection is prerequisite to backed lowmem MEMFS; preserve contiguous
+MRES placement, loader ABI, native swap regression and boot stack budget.
+
 ## 2026-10-27 v499: lowmem MEMFS experiment blocked by KINIT headroom
 
 MEMFS-on-backed-32K prototype failed `mkimage` stack-reserve acceptance

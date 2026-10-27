@@ -1,3 +1,31 @@
+## 2026-10-27 v500: measured KINIT headroom and optional MEMFS delivery
+
+Read `mkimage.sh`, `kinit.c`/`mres_install`, the native image map and the
+accepted package configuration. For the accepted 32K TSFS lowmem build,
+`__kinit_image_end = 075637` (31647 decimal); the preserved octal
+`02000`-word (1024-word) stack requires the image end to be no higher
+than `076000` (31744). Thus just **97 words** of transient image headroom
+remain. The existing MEMFS resident payload alone is **1710 words**, not
+counting its MRES header, exports and relocation map. It cannot be
+included in the initial image under this layout.
+
+`run_minits()` already releases MRES source ranges as MINIT progresses,
+but the loader must first place the **whole KINIT image** below the
+stack-reserve boundary. Earlier reclamation or conditional installation
+cannot address the pre-execution overlap. It would be incorrect to
+decrease the configured stack reserve to conceal this constraint.
+
+For lowmem systems with backing, optional MEMFS therefore requires an
+**external MRES source** (for example, a TSFS-root-resident module file)
+read only after filesystem root selection and validation. The loader
+must retain package ABI/relocation checks, reserve contiguous permanent
+MRES placement before any unrelated low allocations, and prevent using
+the package as a mutable scratch buffer while installing it. This is a
+design prerequisite, NOT a completed loader. Test a mounted-root package
+failure, no-backing tape absence, a valid-backed tape mount with correct
+VFS capacity, and existing swap/wake/WAIT before accepting the change.
+No kernel source change is accepted in v500.
+
 ## 2026-10-27 v499: conditional lowmem MEMFS image experiment rejected
 
 Investigated conditional MEMFS installation for 32K TSFS-root systems with
