@@ -1,3 +1,13 @@
+## 2026-10-27 Proposal B v470: successful native UUO RENAME
+
+Full-system PDP-6 SIMH multiprocess v470 regression PASS: slot 5
+creates private `/CONFIG/R470A`, writes one 36-bit word, renames to
+`R470B`, checks disappearance of source and content of destination,
+unlinks test file, and completes the existing failed-RENAME and
+disk-wait/preemption checks. It does not establish an actual scheduler
+switch *within* RENAME. No production edit; KCORE **8962**.
+See `design/rename-successful-uuo-multiprocess-20261027-v470.md`.
+
 ## 2026-10-27 Proposal B v469: native UUO RENAME with scheduler
 
 Full-system PDP-6 multiprocess scheduler regression now invokes actual
