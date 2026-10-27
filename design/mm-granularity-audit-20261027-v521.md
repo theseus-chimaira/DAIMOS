@@ -83,6 +83,20 @@ v250, v268 and v523 source-guard tests now pass. No production MM change
 or RAM saving follows from these contract tests. Physical compaction and
 APR process isolation remain separate native acceptance tasks.
 
+## V527 APR user-mode regression build blocker (2026-10-27)
+
+Attempted existing daimos-testkit
+`tests/validation/daimos-apr-user-protection-v1.sh` against the current
+checkout with fresh 256K/full image. Compilation stopped before SIMH:
+`DSH image 036157 exceeds EXEC limit 036000` (111 decimal words over).
+The DAIMOS checkout has a separate uncommitted DSH AST-allocation change
+in `userland/dsh/dsh_exec.c`; its causality has **not** been established.
+Preserve that parallel work. This is a build-size blocker, **not** an APR
+test failure. Do not mark hardware APR isolation or physical-compaction
+rollback accepted on this run. The pin/descriptor stand-alone PDP-6
+regressions remain passing. Fix the DSH image-size source issue in its
+own workstream, then rerun the full-image APR and rollback tests.
+
 ## V527 compaction audit and APR test blocker (2026-10-27)
 
 Production `mm_move_extent` excludes the source descriptor temporarily
