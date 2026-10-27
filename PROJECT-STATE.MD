@@ -1,3 +1,12 @@
+## 2026-10-27 Proposal B v469: native UUO RENAME with scheduler
+
+Full-system PDP-6 multiprocess scheduler regression now invokes actual
+monitor-UUO RENAME on nonexistent `/SYSTEM` names, verifies -1 and
+continues with native disk I/O and PI6 scheduling. PASS. This is the
+nonmutating error path, not a successful RENAME across provider sleep.
+No production edit; KCORE stays **8962**. See
+`design/rename-real-uuo-multiprocess-20261027-v469.md`.
+
 ## 2026-10-27 Proposal B v468: PI6 scheduling baseline validated
 
 Full PDP-6 multiprocess scheduler regression PASS (preemption,
