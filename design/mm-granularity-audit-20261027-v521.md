@@ -121,3 +121,18 @@ directly exercise successful physical `mm_move_extent` relocation or its
 VM-rejected rollback with real process payload/runqueue preservation.
 That dedicated native acceptance remains open. Do not claim reduced RAM
 consumption or completed fragmentation optimization from these checks.
+
+## V531 isolated native MM relocation transaction (2026-10-27)
+
+The new daimos-testkit native step test
+`daimos-mm-relocation-v531.{s,sh}` runs the unmodified production
+`mm_move_extent` and descriptor insert/delete assembler routines under
+PDP-6 execution. A controlled fit and VM service verifies the original
+descriptor is restored **before** VM invocation, then rejects the move:
+the old extent, owner and count are preserved. A second run returns
+success: the new physical base is published, preserving size/type/owner
+and descriptor count. Both cases PASS, and PI disable/restore is balanced.
+This is a deliberately *isolated* transaction test, not a claim that
+real `vm_extent_move` process payload copying, scheduler/runqueue state,
+or the hardware APR mapping were exercised. Integrated relocation native
+acceptance remains open and RAM savings are not claimed.
