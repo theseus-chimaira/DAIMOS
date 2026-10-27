@@ -200,3 +200,19 @@ success. Native PDP-6 step test PASS. As free-gap search and relocation
 are stubbed, this does not establish actual process relocation under the
 full scheduler. That integrated resumption test remains open. No kernel
 RAM growth or savings are asserted.
+
+## V537 full-SIMH relocation pressure probe (2026-10-27)
+
+An experimental testkit script `daimos-mm-relocation-integrated-v537.sh`
+reuses the v280 private-data overcommit workload, observing the real
+`vm_extent_move` entry via SIMH breakpoints. No kernel instrumentation is
+added. The initial 48-user configuration failed before its first guest
+start marker (admission not verified). A preserved 16-user diagnostic
+completed all users and sampled 59 extent-insert entries (maximum
+pre-insert descriptor count 37, hence at most 38/136), but observed **zero**
+VM relocation entries. Neither configuration establishes an integrated
+relocation success. The script is an **unaccepted diagnostic** and must
+not be added to a passing test aggregate until it reliably triggers
+real relocation and verifies the resumed guest. Next construct a
+deterministic, legitimate fragmentation/compaction trigger instead of
+increasing concurrency blindly or introducing a production debug hook.
