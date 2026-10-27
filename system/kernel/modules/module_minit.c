@@ -1057,7 +1057,7 @@ storage_minit(unsigned int kind, kword_t name)
         minit_diag_ok(name);
 }
 
-#if KINIT_FULL
+#if KINIT_DRM_ENABLED
 /** @brief Probe Type-167/236 drum hardware and install resident block I/O. */
 void
 drm236_minit(void)
@@ -1088,7 +1088,9 @@ drm236_minit(void)
         minit_diag_ok(name);
 }
 
+#endif /* KINIT_DRM_ENABLED */
 
+#if KINIT_FULL
 /** @brief Install the MEMFS resident service when the package is available. */
 void
 memfs_minit(void)

@@ -36,8 +36,10 @@
         .globl mtc_minit
 .endif
         .globl dsk_minit
-.if KINIT_FULL
+.if KINIT_DRM_ENABLED
         .globl drm236_minit
+.endif
+.if KINIT_FULL
         .globl logstore_minit
 .endif
         .globl root_select_minit
@@ -88,8 +90,10 @@
         .globl tape_mres_package
 .endif
         .globl dsk_mres_package
-.if KINIT_FULL
+.if KINIT_DRM_ENABLED
         .globl drm236_mres_package
+.endif
+.if KINIT_FULL
         .globl logstore_mres_package
         .globl slv_mres_package
         .globl memfs_mres_package
@@ -141,7 +145,7 @@ __minit_table_begin:
         .word mtc_minit,,tape_mres_package
 .endif
         .word dsk_minit,,dsk_mres_package
-.if KINIT_FULL
+.if KINIT_DRM_ENABLED
         .word drm236_minit,,drm236_mres_package
 .endif
         ; Swap services are installed after physical storage discovery.

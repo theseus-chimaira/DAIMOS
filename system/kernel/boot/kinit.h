@@ -27,7 +27,7 @@ typedef unsigned long kword_t;
 #define KINIT_KCORE_BASE         000060UL
 #define KINIT_IMAGE_BASE         030000UL
 #ifndef KINIT_STACK_RESERVE_WORDS
-#define KINIT_STACK_RESERVE_WORDS 02000UL
+#define KINIT_STACK_RESERVE_WORDS 0600UL
 #endif
 /* Permanent idle-process kernel stack: 0100 octal = 64 words. */
 #define KERNEL_IDLE_STACK_WORDS   00100UL

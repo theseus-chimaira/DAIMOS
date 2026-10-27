@@ -1,3 +1,29 @@
+## 2026-10-27 v506: default KINIT stack 384 words and lowmem DRM
+
+Per explicit policy decision, changed the default KINIT bootstrap stack
+reserve from octal `02000` (1024) to `0600` (384) words in the PDP-6
+boot Makefile and the KINIT header. Prior instrumented successful
+boot high-water results were 129 words (32K TSFS), 136 (32K TSFS+DRM)
+and 201 (256K full device configuration). The latter leaves **183
+words** under a 384-word reservation. These measurements do not prove
+all exceptional paths; the change remains subject to native regression.
+
+Enabled the existing 124-word DRM MRES and `drm236_minit` in lowmem
+independently of `KINIT_FULL` (which continues to gate MEMFS and other
+full-profile services). The original probe, relocation, PI service and
+storage patch ABI are unchanged. The complete GCC lowmem TSFS image
+build passed: KINIT end octal `076144`, permissible end with 384-word
+stack `077200`. Live 32K SIMH boot reported `DTC OK`, `DSK270 OK`,
+`DRM236 OK`, `DTFS LOADED` and `INIT V1`. Full linked KCORE remains
+8548 words; packaged tape KCORE+MRES **13463** (increase 124 words,
+resident only when drum is present). Dedicated testkit regression:
+`tests/validation/daimos-kinit-stack384-drm-v506.sh`.
+
+Outstanding: positive TSFS+DRM AUXST1 swap/wake test, full-profile
+boot with the smaller stack reserve, error-path stack measurement and
+KINIT-only D6FS reservation/BLOCKSET discovery. Do not extrapolate
+successful boots to a proven global worst-case high-water limit.
+
 ## 2026-10-27 v505: full-feature 256K KINIT stack watermark
 
 Built a fresh `BOOT_PROFILE=full ROOT=auto` GCC PDP-6 256K image in

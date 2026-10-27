@@ -1,3 +1,15 @@
+## 2026-10-27 v506: 384-word default KINIT stack and lowmem DRM
+
+Default KINIT stack reduced to octal `0600` (384 words), based on
+instrumented prior TSFS 129, TSFS+DRM 136, full 256K 201-word boot
+highwaters. Lowmem now includes optional hardware-probed DRM236 MRES
+(124-word resident payload when installed), while MEMFS remains
+excluded. Native 32K TSFS/DRM boot reaches INIT, KCORE unchanged at
+8548, packaged tape total 13463. Testkit v506 regression added.
+Positive DRM AUXST1 swap and expanded exceptional-path stack testing
+remain open; 384 is a policy choice with 183-word margin over the
+maximum successful boot measured, not a proof for every boot path.
+
 ## 2026-10-27 v505: maximal KINIT boot measured, 256 not adopted
 
 Fresh 256K GCC full/auto SIMH image booted through DRM236, BLOCKSET,
