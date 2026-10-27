@@ -1,3 +1,39 @@
+## 2026-10-27 v484: accepted shared BACKSTORE allocator relocation
+
+The allocator implementation (originally 108 pre-link TEXT words) now lives
+in the pinned `swapv481` MRES shared by process swap and MEMFS. The four
+authoritative state words remain in KCORE, together with stable one-word
+`backstore_bitmap_words`, `backstore_init`, `backstore_alloc`, and
+`backstore_free` entry points. SWAP MINIT patches all four entry points
+from additional package exports, preserving the public caller ABI. There
+is **no second MRES installation** or duplicate bitmap. Bitmap mark/free
+instructions were shortened using `IORM` and `ANDM`, respectively.
+
+Root cause of the v482/v483 failed boots: `kcore_end.dobj` was no longer
+the last fixed KCORE link object. `__kcore_low_end` was placed at octal
+`020620`, exactly on `backstore_bitmap`; KINIT allocated the MM extent
+registry starting there and overwrote BACKSTORE state. `proc_swap_boot_init`
+then received an invalid bitmap-size result and failed allocation. The
+v484 build explicitly moves `kcore_end.dobj` last, placing the four backing
+state words at `020620`-`020623` and the exclusive KCORE/MM boundary at
+`020624`. The regression in daimos-testkit checks this invariant.
+
+Fully linked GCC PDP-6 lowmem results (decimal 36-bit words):
+
+| Root | KCORE v481 -> v484 | SWAP/shared MRES v481 -> v484 | Combined |
+|---|---:|---:|---:|
+| disk | 8652 -> **8548** | 308 -> **412** | **13415**, unchanged |
+| tape | 8652 -> **8548** | 308 -> **412** | **13339**, unchanged |
+
+The accepted KCORE reduction is **104 words**, not the original 108-word
+allocator count: four patchable resident entry words are required.
+Standalone PDP-6 BACKSTORE test PASS; 32K disk-root native SWAP WAIT and
+SWAP STRESS both PASS, including wake, restoration, stopped jobs, and WAIT.
+The normal 32K disk-root control and changed kernel both reach INIT; the
+normal image reports `INIT: MOUNTALL FAILED`, independently of this change.
+The strict 32K DSH acceptance work remains deferred. Swap boot metadata
+remains unchanged and requires further analysis before any modification.
+
 ## 2026-10-27 v482: shared BACKSTORE MRES relocation experiment rejected
 
 Moved only the 108-word allocator TEXT into a dedicated boot MRES while

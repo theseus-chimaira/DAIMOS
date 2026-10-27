@@ -96,9 +96,7 @@ backstore_alloc_mark:
         add     1,backstore_bitmap
         movei   3,1
         lsh     3,0(2)
-        move    4,(1)
-        ior     4,3
-        movem   4,(1)
+        iorm    3,(1)                   ; atomic-style read-modify-write
         aoja    014,backstore_alloc_mark
 
 backstore_alloc_done:
@@ -145,9 +143,7 @@ backstore_free_loop:
         movei   3,1
         lsh     3,0(2)
         setcm   3,3
-        move    4,(1)
-        and     4,3
-        movem   4,(1)
+        andm    3,(1)
         aoja    012,backstore_free_loop
 
 backstore_free_count:

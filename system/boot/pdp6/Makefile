@@ -119,6 +119,7 @@ KINIT_STAMP = $(BUILD)/.kinit-built
 KCORE_STAMP = $(BUILD)/.kcore-built
 KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/proc/proc_swap_entry_v481.s \
+	$(KERNEL_DIR)/storage/backstore_entry_v484.s \
 	$(PROJECT_ROOT)/system/stand/pdp6/common/decompressor.inc \
 	$(KERNEL_DIR)/boot/kinit.c \
 	$(KERNEL_DIR)/boot/kinit.h \
@@ -278,6 +279,10 @@ KCORE_FIXED_NAMES = $(KCORE_C_NAMES) backstore ret \
 KCORE_FIXED_ASM = $(KCORE_BUILD)/d6lz_fixed.s $(KCORE_BUILD)/exec.s $(KCORE_BUILD)/d6lz.s $(KCORE_BUILD)/mm.s $(KCORE_BUILD)/proc.s $(KCORE_BUILD)/backstore.s $(KCORE_BUILD)/vm_backend.s $(KCORE_BUILD)/proc_swap.s $(KCORE_BUILD)/file.s $(KCORE_BUILD)/ret.s $(KCORE_BUILD)/dsk270.s $(KCORE_BUILD)/drm236.s $(KCORE_BUILD)/kfmt_pdp6.s $(KCORE_BUILD)/s6rec.s $(KCORE_BUILD)/vfs.s $(KCORE_BUILD)/fs_mres.s $(KCORE_BUILD)/file_runtime.s $(KCORE_BUILD)/pipe.s $(KCORE_BUILD)/monitorfs_runtime.s $(KCORE_BUILD)/proc_pdp6.s $(KCORE_BUILD)/proc_run.s $(KCORE_BUILD)/device_state.s $(KCORE_BUILD)/syscall_info.s $(KCORE_BUILD)/pclk.s $(KCORE_BUILD)/syscall_dispatch_pdp6.s $(KCORE_BUILD)/mach_user_pdp6.s $(KCORE_BUILD)/vm_backend_pdp6.s $(KCORE_BUILD)/kcore_pi_pdp6.s $(KCORE_BUILD)/bcache_pdp6.s $(KCORE_BUILD)/storage_router.s $(KCORE_BUILD)/kcore_end.s
 KCORE_FIXED_OBJS = $(BUILD)/d6lz_fixed.dobj $(BUILD)/exec.dobj $(BUILD)/d6lz.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/backstore.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/ret.dobj $(BUILD)/dsk270.dobj $(BUILD)/drm236.dobj $(BUILD)/kfmt_pdp6.dobj $(BUILD)/s6rec.dobj $(BUILD)/vfs.dobj $(BUILD)/fs_mres.dobj $(BUILD)/file_runtime.dobj $(BUILD)/pipe.dobj $(BUILD)/monitorfs_runtime.dobj $(BUILD)/proc_pdp6.dobj $(BUILD)/proc_run.dobj $(BUILD)/device_state.dobj $(BUILD)/syscall_info.dobj $(BUILD)/pclk.dobj $(BUILD)/syscall_dispatch_pdp6.dobj $(BUILD)/mach_user_pdp6.dobj $(BUILD)/vm_backend_pdp6.dobj $(BUILD)/kcore_pi_pdp6.dobj $(BUILD)/bcache_pdp6.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj
 KCORE_FIXED_OBJS += $(BUILD)/proc_swap_entry_v481.dobj
+KCORE_FIXED_OBJS := $(filter-out $(BUILD)/backstore.dobj,$(KCORE_FIXED_OBJS)) $(BUILD)/backstore_entry_v484.dobj
+# The boundary marker MUST be the last object: KINIT installs the MM
+# descriptor area precisely at __kcore_low_end, after every KCORE BSS word.
+KCORE_FIXED_OBJS := $(filter-out $(BUILD)/kcore_end.dobj,$(KCORE_FIXED_OBJS)) $(BUILD)/kcore_end.dobj
 MRES_NAMES = cty_io clk_io ptr_io ptp_io lpt_io cr_io cp_io dcs_io ge_io dpy_io \
 	dpy_text tty_io wcnsls_io ocnsls_io dsk_io drm236_io tape_io slv_io memfs_runtime \
 	dtfs dtfs_runtime tsfs tsfs_runtime blockset_dispatch badmap_dispatch fs_backing d6fs_provider d6fs_validate d6fs_runtime
@@ -682,11 +687,14 @@ $(KCORE_FIXED_ASM) $(MRES_ASM): $(KCORE_STAMP)
 
 KERNEL_ASM_OBJS = $(BUILD)/kinit.dobj $(BUILD)/vfs_mount_slab_v4.dobj $(BUILD)/vfs_mount_capacity_v1.dobj $(BUILD)/vfs_mount_layout_v3.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/root_select.dobj $(BUILD)/tsfs_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/auxstore_boot.dobj $(BUILD)/logstore_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io_pdp6.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj $(BUILD)/kinit_late_begin_pdp6.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj $(BUILD)/d6lz_fixed.dobj $(BUILD)/exec.dobj $(BUILD)/d6lz.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/backstore.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/ret.dobj $(BUILD)/dsk270.dobj $(BUILD)/drm236.dobj $(BUILD)/kfmt_pdp6.dobj $(BUILD)/s6rec.dobj $(BUILD)/vfs.dobj $(BUILD)/fs_mres.dobj $(BUILD)/file_runtime.dobj $(BUILD)/pipe.dobj $(BUILD)/monitorfs_runtime.dobj $(BUILD)/proc_pdp6.dobj $(BUILD)/proc_run.dobj $(BUILD)/device_state.dobj $(BUILD)/syscall_info.dobj $(BUILD)/pclk.dobj $(BUILD)/syscall_dispatch_pdp6.dobj $(BUILD)/mach_user_pdp6.dobj $(BUILD)/vm_backend_pdp6.dobj $(BUILD)/kcore_pi_pdp6.dobj $(BUILD)/bcache_pdp6.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj $(BUILD)/cty_io.dobj $(BUILD)/clk_io.dobj $(BUILD)/ptr_io.dobj $(BUILD)/ptp_io.dobj $(BUILD)/lpt_io.dobj $(BUILD)/cr_io.dobj $(BUILD)/cp_io.dobj $(BUILD)/dcs_io.dobj $(BUILD)/ge_io.dobj $(BUILD)/dpy_io.dobj $(BUILD)/dpy_text.dobj $(BUILD)/tty_io.dobj $(BUILD)/wcnsls_io.dobj $(BUILD)/ocnsls_io.dobj $(BUILD)/dsk_io.dobj $(BUILD)/drm236_io.dobj $(BUILD)/tape_io.dobj $(BUILD)/slv_io.dobj $(BUILD)/memfs_data.dobj $(BUILD)/memfs_snapshot.dobj $(BUILD)/memfs_runtime.dobj $(BUILD)/dtfs.dobj $(BUILD)/dtfs_runtime.dobj $(BUILD)/tsfs.dobj $(BUILD)/tsfs_runtime.dobj $(BUILD)/blockset_dispatch.dobj $(BUILD)/badmap_dispatch.dobj $(BUILD)/fs_backing.dobj $(BUILD)/logstore_runtime.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj
 KERNEL_ASM_OBJS += $(BUILD)/proc_swap_entry_v481.dobj $(BUILD)/proc_swap_mres_v481.dobj
+KERNEL_ASM_OBJS += $(BUILD)/backstore_entry_v484.dobj $(BUILD)/backstore_mres_v484.dobj
 
-$(SWAP_MRES_OBJ_V481): $(BUILD)/proc_swap_mres_v481.dobj $(KCORE_MAP)
+$(SWAP_MRES_OBJ_V481): $(BUILD)/proc_swap_mres_v481.dobj $(BUILD)/backstore_mres_v484.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/swap-mres-v481.dxr -M $(BUILD)/swap-mres-v481.map \
-	    -R $@ -N proc_swap_mres_package_v481 -X proc_swap_mres_reclaim_v481 -X proc_swap_mres_service_v481 \
-	    $(BUILD)/proc_swap_mres_v481.dobj
+    -R $@ -N proc_swap_mres_package_v481 -X proc_swap_mres_reclaim_v481 -X proc_swap_mres_service_v481 \
+    -X backstore_mres_bitmap_words_v484 -X backstore_mres_init_v484 \
+    -X backstore_mres_alloc_v484 -X backstore_mres_free_v484 \
+    $(BUILD)/proc_swap_mres_v481.dobj $(BUILD)/backstore_mres_v484.dobj
 
 $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM)
 	@mkdir -p $(BUILD)

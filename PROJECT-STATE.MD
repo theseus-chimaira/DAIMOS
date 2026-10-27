@@ -1,3 +1,16 @@
+## 2026-10-27 v484: accepted BACKSTORE KCORE-to-MRES split
+
+Corrected prior v482/v483 failed bootstrap experiments: KCORE linker
+boundary `kcore_end.dobj` must be **last** in the full fixed link. Earlier
+attempts placed BACKSTORE BSS over `__kcore_low_end`/MM descriptors. In v484
+the four state words remain in KCORE (`020620`-`020623`), the allocator
+TEXT joins pinned SWAP MRES, and `__kcore_low_end=mm_extents=020624`.
+GCC lowmem disk KCORE **8548** (v481 8652), SWAP/shared MRES **412**
+(v481 308), combined permanent **13415** unchanged; tape combined **13339**
+unchanged. Native 32K swap-wait, swap-stress, PDP-6 backstore fixture and
+KCORE-boundary guard PASS. No process-swap boot-data layout change. Strict
+DSH 32K acceptance remains deferred.
+
 ## 2026-10-27 v482: BACKSTORE relocation unaccepted
 
 Shared BACKSTORE allocator TEXT (108 words) was experimentally separated
