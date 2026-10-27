@@ -1,3 +1,11 @@
+## 2026-10-27 v494: positive AUXST1 process-swap test not yet passing
+
+The TSFS-root native swap-wait diagnostic with explicit AUXST1 DSK0
+booted to INIT but timed out (45 seconds, status 124), without a verified
+swap/wake/WAIT completion. This is an open blocker, not a passing test.
+Diagnostic v494 is kept in daimos-testkit; no kernel implementation
+change is accepted. Inspect INIT workload execution and restoration.
+
 ## 2026-10-27 v493: native positive AUXST1 boot fixture
 
 Introduced a daimos-testkit native fixture for a 32K TSFS root using an

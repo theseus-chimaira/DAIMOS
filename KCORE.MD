@@ -1,3 +1,19 @@
+## 2026-10-27 v494: TSFS AUXST1 native swap transaction blocker
+
+Adapted the existing native swap-wait workload to a lowmem TSFS root
+with a separately provisioned, disposable AUXST1 DSK0 backing image.
+The kernel detects DSK270 and reaches INIT V1, but the existing
+45-second SIMH execution window expires without the expected swap,
+wake and WAIT markers (simulator timeout status 124). The native
+swap transaction therefore remains **unverified**; do not claim
+successful swapping or accept kernel changes on this evidence.
+
+The diagnostic lives exclusively in daimos-testkit as an opt-in v494
+target. Next inspect TSFS executable lookup/INIT startup versus actual
+swap service dispatch, extending the deadline only after establishing
+which stage consumes the execution window. No KCORE changes or
+permanent-memory increase were made.
+
 ## 2026-10-27 v493: positive AUXST1 tape-root boot fixture
 
 Native 32K TSFS-root boot with a disposable DSK0 AUXST1 descriptor
