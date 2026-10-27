@@ -175,6 +175,19 @@ resumed. Therefore the combined scheduler+compaction acceptance remains
 open, even though the component regressions pass. No kernel source change
 or RAM reduction is attributed to this baseline test.
 
+## V536 production runqueue integration with VM relocation (2026-10-27)
+
+New `daimos-testkit/tests/validation/daimos-vm-runq-relocate-v536.{s,sh}`
+runs real PDP-6 assembly for `vm_extent_move`, `fs_move_words`,
+`proc_runq_add` and `proc_runq_remove` on a stable-u-area SRUN fixture
+with actual intrusive queue state. A held mapping rejects relocation;
+after release the VM physical base/payload are updated, stop state is
+cleared, and the process is queued again. Native PDP-6 step test PASS.
+This removes the controlled runqueue stubs used by v533, but does not
+cause a preempted user process to resume and execute through its newly
+programmed hardware APR. That final full-system acceptance remains open.
+No production source or resident RAM changed.
+
 ## V535 native compactor dispatch coverage (2026-10-27)
 
 `daimos-testkit/tests/validation/daimos-mm-compact-dispatch-v535.{s,sh}`
