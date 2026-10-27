@@ -338,3 +338,22 @@ and control flow through `mm_alloc_aligned_noreclaim` and the retry stage.
 Do not change kernel MM policy or fabricate pressure until the root cause
 is established. All temporary counters are local to the unaccepted test
 fixture, not permanent kernel instrumentation. No source code changes.
+
+## V546 public allocator signed-error comparison fix (2026-10-27)
+
+Root cause of the v545 allocator-to-compactor failure: PDP-6 assembly
+`mm_alloc_aligned` compared the signed 36-bit `MM_ERR_FRAGMENTED` (-2)
+using `CAIE`, whose 18-bit effective-address immediate did not match the
+full-width negative error result. The production test incorrectly skipped
+`mm_compact` after reclaim. Changed the comparison to full-word
+`CAME 1,[MM_ERR_FRAGMENTED]` in `mm_pdp6.s`.
+
+The v545 testkit native fixture now uses the real allocator, free-gap
+search, compactor, MM extent movement, VM physical relocation, FS copying,
+and intrusive runqueue routines; its reclaim and PI functions are test
+boundaries. It asserts that compaction actually moved a process, returned
+the requested `04000`-octal contiguous module allocation, and preserved
+process data and runnable state. PASS: v545, v538, v539, v540 and v542.
+The complete preemptive-SIMH process-resumption gate remains outstanding.
+No persistent kernel state added; measure linked-code size in subsequent
+size accounting instead of presuming unchanged code size.

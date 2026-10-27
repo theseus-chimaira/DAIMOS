@@ -520,7 +520,7 @@ mm_alloc_aligned_retry:
         sub     17,[2,,2]
         movem   1,(17)
         jumpe   016,mm_alloc_aligned_after_compact
-        caie    1,MM_ERR_FRAGMENTED
+        came    1,[MM_ERR_FRAGMENTED]   ; compare signed 36-bit result, not 18-bit EA
         jrst    mm_alloc_aligned_after_compact
         move    1,010
         move    2,011
