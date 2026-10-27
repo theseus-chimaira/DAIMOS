@@ -39,3 +39,13 @@ Decision: the P0 optimization target remains active, but changing the generic
 MM allocation quantum is **not** an implementation task: no such global
 quantum currently exists. Do not misrepresent a software suballocator as a
 512-word PDP-6 APR capability. No source code changes or savings are claimed.
+
+## V523 native APR contract guard (2026-10-27)
+
+The accepted policy is now native PDP-6 APR mapping at 1024 decimal words,
+not smaller emulated user maps. `daimos-testkit` adds
+`tests/validation/daimos-mm-apr-granularity-v523.py`: a source-contract
+regression for exact-size unaligned MM allocation, VM and swap alignment,
+BRK rounding, and process compaction. It passes on the current source.
+This is not a physical fragmentation/pressure benchmark; no RAM saving or
+new runtime implementation is claimed. Next gather physical profile data.
