@@ -20,6 +20,12 @@ MM/D6FS/MEMFS ASSEMBLY PASS, AND CORRECTED PERMANENT-MRES ACCOUNTING IS:
 
 THE IMAGE IS THEREFORE 442 ADDRESS WORDS ABOVE 040000.
 
+NOTE (2026-10-27): THE ABOVE OCTOBER 6 BASELINE IS HISTORICAL, NOT THE
+CURRENT LOWMEM LINK. ACCEPTED V496 GCC PDP-6 LOWMEM MEASUREMENTS ARE
+KCORE 8548, TAPE KCORE+PACKAGED MRES 13339 AND DISK 13415 WORDS.
+THESE ARE DIFFERENT BUILD CONFIGURATIONS, NOT A VALID SHRINK DELTA.
+ACCOUNT FOR ACTUALLY INSTALLED MRES AND PERSISTENT MM ALLOCATIONS TOO.
+
 THE PREVIOUS REPORTER COUNTED ONLY MEMFS_RUNTIME FOR THE MEMFS PACKAGE AND
 OMITTED BADMAP.  THE INSTALLED MEMFS PACKAGE ALSO CONTAINS MEMFS_DATA AND
 MEMFS_SNAPSHOT; BADMAP IS A REAL RESIDENT MRES WHEN ENABLED.  THE REPORTER NOW
@@ -115,3 +121,65 @@ VALID PERMANENT-SIZE RESULT.
 CONTINUE THIS SWEEP UNTIL EVERY LIVE IDEA ABOVE HAS BEEN MEASURED AND EITHER
 LANDED OR REMOVED AS EXHAUSTED.  CROSSING 040000 IS A REQUIRED MILESTONE, NOT
 THE STOP CONDITION FOR THIS FINAL SWEEP.
+
+## 6. DEFERRED KCORE OBJECT AUDIT — AFTER MEMFS AND SWAP (2026-10-27)
+
+DO NOT START THESE OBJECT EXPERIMENTS UNTIL THE PREVIOUS LOWMEM STORAGE WORK
+IS FINISHED: CONDITIONAL MEMFS WITH VALIDATED BACKING EVEN BELOW 64K,
+SWAPLESS AND MEMFS-FREE TAPE BOOT WITHOUT BACKING, OPTIONAL DRM, AND
+KINIT-ONLY D6FS RESERVATION/BLOCKSET DISCOVERY. THE NATIVE 32K TSFS+AUXST1
+SWAP/WAKE/WAIT TEST PASSED IN V496. WORK ON THE ITEMS ONE BY ONE, BASED ON
+THE MOST RECENT ACCEPTED PATCH.
+
+THE FIGURES BELOW ARE V496 PRE-FOLD INPUT OBJECT TEXT+DATA+BSS WORDS,
+NOT EXPECTED SAVINGS. RE-MEASURE THE FULL LINKED KCORE, ACTUALLY INSTALLED
+MRES, AND PERSISTENT DYNAMIC ALLOCATIONS: MM EXTENT REGISTRY, VFS MOUNT
+SLAB, PROCESS/U-AREA TABLES, FILE/TTY BUFFERS, BACKING MAPS, IDLE STACK
+AND PROVIDER CACHES. COMPARE UNBACKED TAPE, TAPE+AUXST1, DISK AND
+RELEVANT DRM/BLOCKSET PROFILES. PRESERVE ABI, FILESYSTEM AND PROCESS
+SEMANTICS. RUN ALL REGRESSIONS FROM DAIMOS-TESTKIT. REVERT ANY NET RAM
+GROWTH; EXECUTION TIME IS THE SECOND PRIORITY.
+
+### 6.1 FIRST — MINIMAL TAPE-ONLY KCORE
+
+- [ ] **proc_swap: 353 (349 text + 4 BSS).** Trace precisely which calls
+  are necessary for RUN/EXEC, PURE executable backing and zero-capacity
+  process bookkeeping, versus physical swap-out/in and victim reclaim.
+  Consider split/conditional residency only after tracing entry points and
+  linked implications. Include proc_swap_entry_v481 (3) and
+  backstore_entry_v484 (8) in the dependency audit. Do not break the
+  zero-backstore boot or change the documented KCORE ABI.
+- [ ] **bcache_pdp6: 101 (99 text + 2 BSS).** Determine whether any cache
+  routing is needed with tape-only TSFS and no auxiliary device. Audit the
+  shared fs_block_workspace as cache slot zero and the existing 129-word
+  dynamic private cache slab. Do not double-count already reclaimed RAM.
+- [ ] **fs_mres: 201 (192 text + 5 data + 4 BSS).** Inventory gateways,
+  dispatch tables and patchable entry points. Separate minimal TSFS/root
+  needs from optional D6FS, MEMFS, BLOCKSET and other provider operations
+  while preserving removable provider semantics and public entry points.
+
+### 6.2 SECOND — SERVICE BRIDGES, CLOCK AND COMPRESSION
+
+- [ ] **dsk270: 20, drm236: 17, storage_router: 18.** Audit always-linked
+  hardware service/interrupt bridges; preserve optional DSK/DRM backing.
+- [ ] **monitorfs_runtime: 9.** Audit resident forwarding and the larger
+  MonitorFS MRES dependency (1592 words in the lowmem image).
+- [ ] **backstore_entry_v484: 8, proc_swap_entry_v481: 3.** Review their
+  patchable ABI stubs and four authoritative backing state words with the
+  proc_swap investigation, not independently as an unsafe removal.
+- [ ] **pclk: 24.** Hardware PCLK must be optional. Complete the earlier
+  DATE SETTIME and APR 50/60-Hz software wall-clock fallback first;
+  measure any always-resident clock state and tick-path cost, preserving
+  TIME36 and filesystem timestamps.
+- [ ] **d6lz: 57, d6lz_fixed: 40.** Establish why two compression decoder
+  objects are included, map all callers and boot/runtime requirements,
+  and assess safe consolidation. Their 97 words are NOT necessarily
+  redundant; do not merge them on naming evidence alone.
+- [ ] **fs_block_workspace: 128 BSS words in vfs.** Check mandatory
+  128-word sector I/O, callers, non-reentrancy, interrupt safety and
+  relationship to cache slot zero. The buffer is already shared among
+  providers; avoid adding copies or violating I/O contract assumptions.
+
+THIS IS A QUEUE FOR SEPARATE EXPERIMENTS, NOT PERMISSION TO MAKE ALL
+CHANGES TOGETHER. FINISH MEMFS/SWAP FIRST; THEN MEASURE, TEST, DOCUMENT,
+COMMIT AND PUSH EACH ACCEPTED CHANGE.
