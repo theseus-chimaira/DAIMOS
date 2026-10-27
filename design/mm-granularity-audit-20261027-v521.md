@@ -174,3 +174,16 @@ physical relocation while a runnable process is parked and subsequently
 resumed. Therefore the combined scheduler+compaction acceptance remains
 open, even though the component regressions pass. No kernel source change
 or RAM reduction is attributed to this baseline test.
+
+## V535 native compactor dispatch coverage (2026-10-27)
+
+`daimos-testkit/tests/validation/daimos-mm-compact-dispatch-v535.{s,sh}`
+executes the unchanged production `mm_compact` PDP-6 assembly. Its
+controlled free-gap/move boundaries demonstrate that zero-size requests
+are rejected without probing memory, non-process and pinned process
+extents are skipped, the eligible process extent is selected with
+`02000`-octal alignment, and a subsequent fit ends the transaction with
+success. Native PDP-6 step test PASS. As free-gap search and relocation
+are stubbed, this does not establish actual process relocation under the
+full scheduler. That integrated resumption test remains open. No kernel
+RAM growth or savings are asserted.
