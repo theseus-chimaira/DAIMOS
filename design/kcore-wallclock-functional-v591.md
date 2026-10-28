@@ -334,3 +334,12 @@ checked, but the resulting target assembly has a shorter error path.
 Fresh 60-Hz lowmem link: software clock MRES 312 -> 306 words, KCORE
 8537 unchanged, conservative all-MRES 15955 -> 15949 words. Native clock
 regressions PASS with PCLK enabled/disabled at 50 and 60 Hz.
+
+## 2026-10-28 v631 BCD century arithmetic
+
+Reorder the shared TIME36 decoder's year arithmetic to add the optional
+100-year century adjustment to the base-2000 value. All BCD checks and the
+2026..2125 bounds remain unchanged. This reduces the fresh lowmem-linked
+SCLK MRES from 306 to 303 words; conservative KCORE+MRES becomes 15946
+words, with KCORE still 8537. The native PCLK-enabled/disabled clock
+regressions PASS at 50 and 60 Hz.

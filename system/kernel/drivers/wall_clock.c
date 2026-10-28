@@ -52,8 +52,8 @@ decode_time(kword_t t, unsigned int *year, unsigned int *month,
         lo = bcd & 017U;
         if (hi > 9U || lo > 9U)
                 return -1;
-        *year = ((t & WALL_CENTURY) != 0UL ? 2100U : 2000U) +
-            hi * 10U + lo;
+        *year = 2000U + hi * 10U + lo +
+            (((t & WALL_CENTURY) != 0UL) ? 100U : 0U);
         *month = (unsigned int)((t >> 22U) & 017UL);
         *day = (unsigned int)((t >> 17U) & 037UL);
         *hour = (unsigned int)((t >> 12U) & 037UL);
