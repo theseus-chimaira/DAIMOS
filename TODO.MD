@@ -117,8 +117,12 @@ Release-critical or prerequisite correctness/acceptance:
 - [x] Revalidate swapped-process MonitorFS NAME/CMDLINE/ENVIRONMENT reads
   and subsequent wake/WAIT: fresh 48K PDP-6 SIMH testkit v562 PASS
   (2026-10-28). The earlier v74 restore stall no longer reproduces.
-- [ ] Resolve the **separate** GCC multiprocess scheduler/preemption failure
-  and rerun remaining GCC/KCC grouped acceptance; no assertion-only workaround.
+- [x] Recheck GCC multiprocess timer preemption using the unchanged native
+  five-user scheduler test with SIMH rate 8M: 2026-10-28 fresh run PASS,
+  all users start before slot-1 checkpoint `A`; process-context and disk
+  sleep/wakeup assertions also pass. No test-oracle or kernel modification.
+- [ ] Rerun remaining GCC/KCC grouped acceptance; the focused GCC
+  preemption PASS does not establish that the complete groups pass.
 - [ ] Validate KINIT failure-path stack reserve and 32K kernel-only boot;
   retain separate 48K/96K/256K DSH functional gates. Repair stale MM
   testkit linking and secondary DTFS/TSFS mount test assumptions.
@@ -479,10 +483,12 @@ source-level RAM optimization continue independently.** See
 - [x] Update three outdated D6FS assembly test oracles, TSFS eight-member
   test compilation and SIXBIT headers, and the PDP-6 stack-adjustment
   codegen oracle.  All six focused cases pass, testkit commit 2804838.
-- [ ] Diagnose the distinct GCC multiprocess scheduler preemption failure:
-  corrected v45 GCC still produces `<aAbB2cCxxxxxxxxdDeEyyyyyyyy314D5`
-  and does not schedule all boot users before the first CPU checkpoint.
-  Verify clock/quantum behavior and compare KCC before changing assertions.
+- [x] Reproduce GCC multiprocess scheduler preemption on current code:
+  the unchanged `daimos-scheduler-multiproc-v1.sh` returned PASS with
+  `<abB2cCxxxxdDeEyyyyAxxxxyyyy314D5` (v563). All boot users run before
+  slot-1's first `A`. The historical failing sequence is not reproduced
+  using the runner's documented 8M SIMH throttle; no compiler/kernel fix
+  is attributed to this observation. GCC/KCC group matrix remains open.
 - [ ] Address remaining GCC and KCC disk-testkit group failures without
   re-running already passing groups.  32K and size gates are separate.
 
