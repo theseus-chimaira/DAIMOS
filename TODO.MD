@@ -478,6 +478,10 @@ source-level RAM optimization continue independently.** See
   PASS in v566 (2026-10-28); no source or fixture changes.
 - [x] Recheck matrix row 025 (DSK270 online and elevator): both targets
   PASS in v567 (2026-10-28); no source or fixture changes.
+- [x] Recheck matrix row 026 (DRM236 capacity, online, MINIT/MRES, Stage1
+  boot): all four targets PASS in v568–v570. The MINIT-only test fixture
+  now uses supported `BOOT_PROFILE=lowmem ROOT=drum` rather than the known
+  oversized default full profile; all original module checks remain.
 - [ ] Rework secondary TSFS/DTFS mount acceptance to match the intentionally
   root-selected MRES package. Do not introduce extra resident MRES solely
   to satisfy a fixture that boots the wrong root class.
