@@ -148,6 +148,22 @@ attempt. The fixture disables the unrelated DPY device rather than
 altering clock or display production code; the retained failing image
 was used to confirm boot with DPY disabled. Both final runs PASS.
 
+## 2026-10-28 v609 D6FS UTC modification timestamps
+
+Testkit `daimos-date-mtime-v609` PASS at 60 Hz with PCLK present and
+absent. The PCLK-absent fixture initializes UTC using SETTIME, creates
+and writes a D6FS file, verifies its nonzero UTC mtime, advances across
+leap-day midnight, writes again, and checks the updated mtime. PCLK
+presence continues to give nonzero filesystem timestamps. No production
+code change was necessary.
+
+Source concurrency review: `wall_clock_now` reads TIME36, the tick base,
+and counter under PI masking and checks the base/value again before
+publishing an advanced calendar. `wall_clock_set` changes TIME36 and its
+base together under PI masking. This protects against torn state and
+stale publication, but a multi-process native GETTIME/SETTIME stress
+test remains open and is not claimed as passed.
+
 ## 2026-10-28 v594 unified TIME36 gateway
 
 Introduced `wall_time36` as the single entry for GETTIME and D6FS/MEMFS

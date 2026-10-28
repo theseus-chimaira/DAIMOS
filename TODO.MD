@@ -153,6 +153,11 @@ Release-critical or prerequisite correctness/acceptance:
   50- and 60-tick UTC rollover/privilege tests PASS. Physical 50-Hz
   accuracy and system-wide scheduler/device timeout rate audit remain
   open; SIMH's native APR source itself stays 60 Hz.
+  Native v609 D6FS mtime regression PASS at 60 Hz, both PCLK modes;
+  verifies timestamp propagation after SETTIME and leap-day rollover.
+  Source concurrency audit found PI-masked snapshots and guarded
+  publication; multiprocess stress and MEMFS timestamp acceptance remain
+  open.
 - [ ] Finish tested, non-destructive AUXSTORE swap provisioning (MKSWAP),
   including explicit destructive confirmation and existing-format/overlap
   protections. No automatic formatting at boot.
