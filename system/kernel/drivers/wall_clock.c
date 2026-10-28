@@ -60,8 +60,8 @@ decode_time(kword_t t, unsigned int *year, unsigned int *month,
         *minute = (unsigned int)((t >> 6U) & 077UL);
         *second = (unsigned int)(t & 077UL);
         if (*year < 2026U || *year > 2125U ||
-            *day == 0U || *day > days_in_month(*year, *month) ||
-            *hour > 23U || *minute > 59U || *second > 59U)
+            *hour > 23U || *minute > 59U || *second > 59U ||
+            *day == 0U || *day > days_in_month(*year, *month))
                 return -1;
         return 0;
 }

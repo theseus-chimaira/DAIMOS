@@ -325,3 +325,12 @@ is identical across the supported TIME36 interval. KCORE remains 8537
 words; conservative KCORE+MRES is 15955 words and PERMANENT_LAST is
 16002. The native clock test passes with PCLK enabled and disabled at
 both 50 and 60 Hz (SDL dummy video backend).
+
+## 2026-10-28 v630 early TIME36 validation checks
+
+Move inexpensive hours/minutes/seconds range checks ahead of the
+calendar-day validation in `decode_time`. All fields and bounds are still
+checked, but the resulting target assembly has a shorter error path.
+Fresh 60-Hz lowmem link: software clock MRES 312 -> 306 words, KCORE
+8537 unchanged, conservative all-MRES 15955 -> 15949 words. Native clock
+regressions PASS with PCLK enabled/disabled at 50 and 60 Hz.
