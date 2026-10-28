@@ -390,3 +390,19 @@ physical `020200` write. Native SIMH step test PASS. Only reclaim and PI
 services are controlled boundaries; no permanent resident data added.
 The remaining full-system gate is actual scheduler-restored continuation
 following relocation during a complete kernel boot, not native APR fetch.
+
+## V549 24-process full SIMH relocation probe (2026-10-28)
+
+Re-ran the experimental v537 256K SIMH multiprocess observer with
+`DAIMOS_MM_CONCURRENCY_COUNT=24` against the v546 signed-status fix.
+The guest completed its expected markers, and the test recorded 75
+extent-insertion samples with a maximum pre-insertion descriptor count
+of 53 (at most 54 used of 136 capacity). It observed zero entries
+to `vm_extent_move` and therefore returned INCONCLUSIVE as designed.
+This is useful evidence that the admission/pressure workload is not a
+deterministic fragmented-but-affordable allocator test; high descriptor
+occupancy is not the problem. Do not interpret missing relocations as
+evidence of a kernel relocation failure. Preserve the already accepted
+v548 native public-allocator-through-APR validation; full-scheduler
+post-relocation continuation remains unverified. No source code or
+resident kernel state changed.
