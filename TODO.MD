@@ -195,6 +195,10 @@ Release-critical or prerequisite correctness/acceptance:
   failure paths remain open. v641 native 32K kernel-only boot PASS:
   SIMH breaks at the map-derived `proc_boot_init` entry after KINIT
   initializes DTC/DSK/DTFS, before running `/SYSTEM/INIT` or DSH.
+  v642 additionally verifies the same instrumented lowmem KINIT image
+  at 48K, 96K and 256K core: all three native SIMH kernel-only runs
+  PASS through the process-bootstrap boundary. These are not full
+  profile or DSH functional acceptance tests.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 

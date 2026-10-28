@@ -1,3 +1,11 @@
+## 2026-10-28 v642: KINIT lowmem image with larger installed core
+
+Native PDP-6 SIMH KINIT-only testkit v642 PASS at 48K, 96K and 256K
+installed core using the same GCC lowmem TSFS-root image. It verified
+exact memory banners, DTC/DSK270 startup, and a map-derived breakpoint
+before process initialization. No production change. Full-profile and
+DSH acceptance remain open; see `design/kinit-memory-profiles-v642.md`.
+
 ## 2026-10-28 v641: 32K KINIT-only native acceptance
 
 Native testkit v641 PASS: standard GCC 32K TSFS boot satisfies the

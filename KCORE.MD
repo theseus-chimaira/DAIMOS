@@ -1,3 +1,10 @@
+## 2026-10-28 v642: lowmem KINIT installed-core matrix
+
+The native 48K/96K/256K installed-core early-boot matrix passes
+with the same instrumented lowmem tape-root image. All reach the
+`proc_boot_init` breakpoint with correct MEM banners and device probes.
+The full-profile and userland gates remain outstanding.
+
 ## 2026-10-28 v641: 32K KINIT-only boot test
 
 Native PDP-6 SIMH 32K kernel-only test PASS. The test uses a
