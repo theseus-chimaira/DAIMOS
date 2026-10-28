@@ -474,6 +474,10 @@ source-level RAM optimization continue independently.** See
   headless SIMH policy, then the unchanged guest oracle passed. V565 ran
   the other nine row-023 targets in matrix order; all PASS (2026-10-28).
   This is row-level evidence, not full GCC/KCC matrix acceptance.
+- [x] Recheck matrix row 024 (LOGSTORE and MTC516 online): both targets
+  PASS in v566 (2026-10-28); no source or fixture changes.
+- [x] Recheck matrix row 025 (DSK270 online and elevator): both targets
+  PASS in v567 (2026-10-28); no source or fixture changes.
 - [ ] Rework secondary TSFS/DTFS mount acceptance to match the intentionally
   root-selected MRES package. Do not introduce extra resident MRES solely
   to satisfy a fixture that boots the wrong root class.
