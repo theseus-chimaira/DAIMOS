@@ -199,6 +199,9 @@ Release-critical or prerequisite correctness/acceptance:
   at 48K, 96K and 256K core: all three native SIMH kernel-only runs
   PASS through the process-bootstrap boundary. These are not full
   profile or DSH functional acceptance tests.
+  v643 native GCC 96K full-profile disk-root KINIT PASS: image end
+  `107421` octal, full device markers and `proc_boot_init` breakpoint.
+  The 96K userland/DSH, KCC and 256K full-profile gates remain open.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 

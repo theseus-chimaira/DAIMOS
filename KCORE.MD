@@ -1,3 +1,9 @@
+## 2026-10-28 v643: GCC 96K full-profile KINIT
+
+Native 96K GCC disk-root full-profile KINIT reached `proc_boot_init`
+after initializing DSK270, DRM236, BSET, D6FS, and MEMFS. The linked
+`107421` image end plus `0600` reserve fits. No production changes.
+
 ## 2026-10-28 v642: lowmem KINIT installed-core matrix
 
 The native 48K/96K/256K installed-core early-boot matrix passes

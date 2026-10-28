@@ -1,3 +1,10 @@
+## 2026-10-28 v643: GCC 96K full-profile KINIT PASS
+
+Native PDP-6 SIMH full-profile GCC disk-root build and kernel-only
+boot PASS, reaching linked `proc_boot_init` after D6FS/BLOCKSET/MEMFS
+initialization. The `0600`-octal stack reserve fits. Userland/DSH,
+KCC and 256K full-profile remain open. See `design/kinit-full96-gcc-v643.md`.
+
 ## 2026-10-28 v642: KINIT lowmem image with larger installed core
 
 Native PDP-6 SIMH KINIT-only testkit v642 PASS at 48K, 96K and 256K
