@@ -295,3 +295,5 @@ the shared `clk_tick_count` / `wall_clock_ticks` word remains unchanged.
 The lowmem GCC build reports APR MRES 42 words and conservative
 KCORE+MRES 15972 words (v621: 15974). Native PCLK-on/off UTC acceptance
 PASS at 60 Hz. The 50-Hz regression is tracked separately.
+Native `daimos-clock-mres-v618` also PASS at 50 Hz, PCLK enabled/disabled,
+with SDL dummy backend. Thus the two-rate v622 clock regression gate is met.
