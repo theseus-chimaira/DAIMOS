@@ -1,3 +1,9 @@
+## 2026-10-28 v646: 256K GCC full-profile KINIT acceptance
+
+Native 256K GCC full-profile kernel initialization PASS, KINIT end
+`107421`, stack reserve `0600`, D6FS/BSET/MEMFS loaded, process-init
+breakpoint at `063067`. No production code change.
+
 ## 2026-10-28 v645: KCC 256K full-profile initialization
 
 Fresh KCC full-profile 256K native SIMH image PASS: image end

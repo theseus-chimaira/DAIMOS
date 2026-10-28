@@ -1,3 +1,9 @@
+## 2026-10-28 v646: full-profile GCC 256K KINIT PASS
+
+Native 256K GCC full-profile disk-root build and kernel-only SIMH
+boot PASS. All 96K and 256K full-profile KINIT GCC/KCC gates now
+PASS. DSH and further KINIT error-path stack testing remain open.
+
 ## 2026-10-28 v645: KCC 256K full-profile KINIT PASS
 
 Native KCC 256K full-profile disk-root build and kernel initialization

@@ -209,6 +209,10 @@ Release-critical or prerequisite correctness/acceptance:
   v645: native 256K KCC full-profile KINIT PASS; exact memory banner,
   DSK/DRM and filesystem markers and process-init breakpoint verified.
   256K GCC and interactive DSH functional acceptance remain open.
+  v646 closes the 256K GCC full-profile kernel-only boot gate with a
+  native SIMH PASS at `proc_boot_init` (`063067`), image end `107421`.
+  Full-profile 96K/256K GCC/KCC kernel initialization is complete;
+  interactive DSH and remaining KINIT failure paths stay open.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 
