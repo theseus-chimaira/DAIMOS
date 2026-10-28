@@ -132,6 +132,22 @@ The setting changes software UTC accumulation only; other historical
 60-Hz scheduler, sleep and device-timeout policies are not silently
 retimed. Their 50-Hz audit remains a distinct acceptance requirement.
 
+## 2026-10-28 v608 native rate regression
+
+`daimos-testkit/tests/validation/daimos-date-hz-v608.sh` builds separate
+PDP-6 images for `WALL_CLOCK_HZ=50` and `60`. Each boots with PCLK off
+and on using pristine restored media. Native acceptance PASS for both:
+APR tick-to-UTC rollover, invalid calendar rejection, non-root SETTIME
+denial and hardware PCLK non-writability. The test uses the selected
+frequency as its elapsed tick count. SIMH's physical interrupt stream
+still operates at its built-in 60 Hz, so this verifies configured tick
+conversion, not an externally timed physical 50-Hz clock.
+
+SIMH's optional DPY SDL window crashed before INIT during the first
+attempt. The fixture disables the unrelated DPY device rather than
+altering clock or display production code; the retained failing image
+was used to confirm boot with DPY disabled. Both final runs PASS.
+
 ## 2026-10-28 v594 unified TIME36 gateway
 
 Introduced `wall_time36` as the single entry for GETTIME and D6FS/MEMFS

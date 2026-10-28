@@ -149,8 +149,10 @@ Release-critical or prerequisite correctness/acceptance:
   independent reference or explicit platform/boot configuration instead.
   v607: `WALL_CLOCK_HZ=50|60` hardcodes the operator's installation-time
   choice in the software UTC accumulator, default 60. Both cross-builds
-  and lowmem links pass; invalid rate rejected. Native 50-Hz timekeeping
-  and system-wide scheduler/device timeout rate audit remain open.
+  and lowmem links pass; invalid rate rejected. Native v608 configured
+  50- and 60-tick UTC rollover/privilege tests PASS. Physical 50-Hz
+  accuracy and system-wide scheduler/device timeout rate audit remain
+  open; SIMH's native APR source itself stays 60 Hz.
 - [ ] Finish tested, non-destructive AUXSTORE swap provisioning (MKSWAP),
   including explicit destructive confirmation and existing-format/overlap
   protections. No automatic formatting at boot.
