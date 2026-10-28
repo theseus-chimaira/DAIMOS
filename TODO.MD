@@ -160,6 +160,7 @@ Release-critical or prerequisite correctness/acceptance:
   publication; multiprocess stress remains open. Native v610 MEMFS mtime
   regression PASS (both PCLK modes, leap-day rollover); `memfs_touch_slot`
   now preserves caller-scratch AC5 across the software clock gateway.
+  Native v610 rerun at WALL_CLOCK_HZ=50 PASS in both PCLK modes too.
 - [ ] Finish tested, non-destructive AUXSTORE swap provisioning (MKSWAP),
   including explicit destructive confirmation and existing-format/overlap
   protections. No automatic formatting at boot.
