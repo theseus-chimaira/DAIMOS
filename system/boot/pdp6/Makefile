@@ -764,6 +764,7 @@ $(CLK_MRES_OBJ): $(BUILD)/clk_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/clk-mres.dxr -M $(BUILD)/clk-mres.map \
 	    -R $@ -N clk_mres_package -X clk_pi_handler -X clk_ticks -X clk_pi_service \
 	    -X clk_pi_post_handler -X clk_tick_count -X clk_pi_tail \
+	    -X clk_wall_tick_instruction \
 	    $(BUILD)/clk_io.dobj
 
 $(BUILD)/pclk_gateway.dobj: $(KERNEL_DIR)/drivers/pclk_gateway.s | $(BUILD)

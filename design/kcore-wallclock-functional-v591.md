@@ -253,3 +253,17 @@ Native `daimos-clock-mres-v618` PASS with both `WALL_CLOCK_HZ=50` and
 PCLK or SCLK installation, UTC rollover and privilege checks. The
 provider-specific resident totals above are computed from the confirmed
 selection and linked module sizes.
+
+## 2026-10-28 v620 eliminate unused APR calendar ticks under PCLK
+
+The APR MRES exports the address of its `AOS wall_clock_ticks` instruction
+as `CLK_X_WALL_TICK`. KINIT patches this word to `JFCL 0` (PDP-6 no-op)
+when it selects PCLK, eliminating the second per-interrupt counter update
+without a runtime conditional or another resident dispatch word. SCLK
+retains the AOS unchanged. The shared scheduler tick and all device timing
+are unaffected. Lowmem GCC KCORE+MRES remains 15976 words, unchanged from
+v618; native `daimos-clock-mres-v618` PASS at 60 Hz in both PCLK modes.
+
+A bulk-day/month software-calendar advancement candidate linked at 16018
+words (+42), so it was rejected under RAM-first SIZEOPT criteria. The
+original compact lazy per-second advancement algorithm remains intact.

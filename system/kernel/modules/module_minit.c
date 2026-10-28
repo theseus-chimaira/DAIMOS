@@ -67,6 +67,7 @@ mfsdev_present_mark(unsigned int id)
 #define CLK_X_POST_HANDLER      3U
 #define CLK_X_TICK_COUNT        4U
 #define CLK_X_PI_TAIL           5U
+#define CLK_X_WALL_TICK         6U
 #define PTR_X_READ_WORDS         0U
 #define PTP_X_WRITE_WORDS        0U
 #define LPT_X_PUTCHAR            0U
@@ -544,6 +545,12 @@ clk_minit(void)
         clk_pi_post_handler_addr = minit_export(name, base,
             CLK_X_POST_HANDLER);
         clk_tick_count_addr = minit_export(name, base, CLK_X_TICK_COUNT);
+        /* The hardware calendar has its own clock. Remove the redundant
+         * APR wall-tick AOS from the PI hot path without runtime branching.
+         * JFCL with zero flags is the PDP-6 no-op instruction. */
+        if (clock_pclk_selected)
+                *(kword_t *)(unsigned long)minit_export(name, base,
+                    CLK_X_WALL_TICK) = 0255000000000UL;
         clock_apr_installed = 1;
         mfsdev_present_mark(MONITORFS_DEV_CLK0);
         minit_clk_cono((kword_t)CLK_NATIVE_PI_LEVEL | CLK_APR_CO_CLEAR_FLAG |
