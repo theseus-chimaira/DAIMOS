@@ -291,6 +291,48 @@ setup_tty(unsigned int tty)
         return 0;
 }
 
+/* Offer the DATE utility only to a privileged session with unset UTC.
+ * The child inherits the authenticated terminal but cannot replace LOGIN.
+ * DATE handles interactive UTC entry before the shell is executed.
+ */
+static void
+login_unset_date(unsigned int uid)
+{
+        kword_t path[U_PATH_WORDS];
+        kword_t block[SYS_RUN_V2_FIXED_WORDS + 2U * U_PATH_WORDS + 3U];
+        struct sys_run_v2 *run;
+        kword_t status;
+        unsigned int words;
+        unsigned int i;
+        unsigned int off;
+        int pid;
+
+        if (uid != 0U || dsys_gettime() != 0UL ||
+            u_s6_pack(path, U_PATH_WORDS, "/SYSTEM/EXEC/DATE") != 0)
+                return;
+        words = 1U + ((unsigned int)path[0] + 5U) / 6U;
+        off = SYS_RUN_V2_FIXED_WORDS;
+        for (i = 0U; i < sizeof(block) / sizeof(block[0]); ++i)
+                block[i] = 0UL;
+        run = (struct sys_run_v2 *)block;
+        run->version_words = SYS_RUN_HEADER(SYS_RUN_VERSION_2,
+            off + 2U * words + 3U);
+        run->flags = SYS_RUN_PGRP_INHERIT;
+        run->fdmap_count = 3UL;
+        run->argc = 1UL;
+        for (i = 0U; i < words; ++i) {
+                block[off + i] = path[i];
+                block[off + words + i] = path[i];
+        }
+        off += 2U * words;
+        block[off] = SYS_RUN_FD_MAP(0U, 0U);
+        block[off + 1U] = SYS_RUN_FD_MAP(1U, 1U);
+        block[off + 2U] = SYS_RUN_FD_MAP(2U, 2U);
+        pid = dsys_run(run);
+        if (pid >= 0)
+                (void)dsys_wait((unsigned int)pid, &status, 0U);
+}
+
 int
 main(int argc, kword_t **argv, kword_t **envp)
 {
@@ -352,6 +394,7 @@ main(int argc, kword_t **argv, kword_t **envp)
                         (void)u_crlf(2);
                         break;
                 }
+                login_unset_date(account.uid);
                 if (exec_shell(account.shell, account.home, name) != 0) {
                         (void)ulog_event(ULOG_SEV_ERROR, ULOG_SRC_LOGIN,
                             ULOG_LOGIN_EXEC_FAIL, (kword_t)tty);

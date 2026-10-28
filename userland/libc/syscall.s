@@ -123,7 +123,7 @@ dsys_gettime:          movei 1,023
                        uuo 077,0(1)
                        popj 17,
 dsys_settime:          move 2,1
-                       movei 1,025
+                       movei 1,037
                        uuo 077,0(1)
                        popj 17,
 dsys_rtctl:            move 2,1

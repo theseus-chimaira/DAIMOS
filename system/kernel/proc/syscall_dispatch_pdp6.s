@@ -605,12 +605,12 @@ native_sys_ext_half_select:
 native_sys_ext_table:
         .word   pipe_create,,native_sys_mkfifo
         .word   native_sys_exec,,wall_time36
-        .word   native_sys_dup2,,native_sys_settime
+        .word   native_sys_dup2,,native_sys_procctl
         .word   native_sys_procctl,,native_sys_procctl
         .word   native_sys_procctl,,native_sys_procctl
         .word   native_sys_seek,,native_sys_chown
         .word   native_sys_rmdir,,native_sys_utime
-        .word   native_sys_sleep,,native_sys_procctl
+        .word   native_sys_sleep,,native_sys_settime
         .word   native_sys_dtc_read_block,,native_sys_procctl
         .word   native_sys_d6fs_mount,,native_sys_rtctl
         .word   native_sys_logctl,,native_sys_dtc_write_block
