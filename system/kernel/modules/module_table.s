@@ -14,6 +14,8 @@
         .text
         .globl cty_minit
         .globl clk_minit
+        .globl pclkclock_minit
+        .globl softclock_minit
 .if KINIT_FULL
         .globl ptr_minit
         .globl ptp_minit
@@ -70,6 +72,8 @@
         .globl proc_swap_mres_package_v481
         .globl cty_mres_package
         .globl clk_mres_package
+        .globl pclk_mres_package
+        .globl softclock_mres_package
 .if KINIT_FULL
         .globl ptr_mres_package
         .globl ptp_mres_package
@@ -122,6 +126,8 @@ __kinit_image_start:
 __minit_table_begin:
         .word cty_minit,,cty_mres_package
         .word clk_minit,,clk_mres_package
+        .word pclkclock_minit,,pclk_mres_package
+        .word softclock_minit,,softclock_mres_package
         .word mfsdev_install_minit,,monitorfs_mres_package
 .if KINIT_FULL
         .word ptr_minit,,ptr_mres_package

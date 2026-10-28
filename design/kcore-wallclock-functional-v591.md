@@ -223,3 +223,30 @@ and mutually exclusive MRES packing require their own linked-size gate.
 This stage preserves existing software SETTIME behavior; further edits
 must not remove its privilege validation. The APR MRES scheduler remains
 shared in all cases.
+
+## 2026-10-28 v618 two exclusive wall-clock MRES packages
+
+KINIT's `clk_minit` reads PCLK once, validates TIME36, and remembers the
+choice in transient state. `pclkclock_minit` installs the PCLK MRES if
+valid; otherwise `softclock_minit` installs the APR-backed software
+calendar MRES. Both use the existing KCORE `wall_time36` JRST gateway,
+and only the software provider redirects root-only SETTIME. The PCLK
+hardware decoder is also compiled into transient KINIT for probing; its
+resident copy exists only inside the selected PCLK package. KINIT
+reclaims the uninstalled source package and probe after boot.
+
+The APR scheduler/timeout clock remains one independent MRES. Its direct
+`wall_clock_ticks` word stays in KCORE, preserving the existing interrupt
+hot path and no additional runtime table. Software calendar arithmetic
+remains outside PI context. Gregorian month days now use a bit mask
+instead of a packed byte array, eliminating a GCC MRES boundary
+relocation (POINT 9,label-1) and reducing stored data.
+
+Lowmem linked v618 values: KCORE 8537 words, APR MRES 46, PCLK MRES 26,
+software calendar MRES 329. Conservative KCORE+all MRES 15976;
+PERMANENT_LAST 16023. Exactly one calendar package is installed at
+boot; PCLK configuration omits 329 permanent words (15647 total),
+while software configuration omits 26 (15950 total), relative to the
+conservative linked report. This excludes no other optional MRES.
+The two selected footprints require native provider-selection validation
+before claiming final acceptance.

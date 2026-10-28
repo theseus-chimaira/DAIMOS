@@ -1009,3 +1009,8 @@ KERNEL ABIS.
   v616 KINIT one-time selection. Confirm only one provider is installed,
   preserve shared APR scheduling, verify both boot modes and SETTIME, and
   measure **linked KCORE+MRES** size rather than source/object size.
+
+- [ ] v618 runtime gate: verify exclusive PCLK or SCLK MRES boot
+  selection with native `daimos-clock-mres-v618` under PCLK-on/off;
+  preserve SETTIME, GETTIME and all mtime regressions. Lowmem link
+  passes; exclusive-package source and linker layout implemented.

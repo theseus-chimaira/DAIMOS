@@ -1,42 +1,7 @@
-/**
- * @file pclk.s
- * @brief Resident PDP-6 Stanford Phil Petit calendar-clock reader.
- *
- * PCLK device 0730 supplies DAIMOS wall-clock UTC. It is independent of the
- * APR 60 Hz monotonic scheduler clock and is polled only when wall time is
- * requested. The routine is permanent KCORE code, has no BSS, and keeps no
- * state between calls.
- *
- * DATAI contains BCD year/month, zero-based day, hour, and minute plus the
- * historical 05004 offset. CONI contains minute/second information plus the
- * Petit/Panofsky 02020136700 offset. DATAI is sampled on both sides of CONI;
- * differing samples mean a minute boundary was crossed and the read retries.
- */
-
+/** Stanford Phil Petit PCLK coherent UTC reader, used by KINIT probe
+ * and the optional PCLK MRES. Calendar decode preserves TIME36 semantics. */
         .text
-        .globl  pclk_time36
-        .globl  wall_time36
-        .globl  wall_clock_now
-        .globl  wall_time36_provider_jump
-/**
- * @brief Shared civil-time gateway for GETTIME and filesystem timestamps.
- *
- * This first stage preserves the historical PCLK reader semantics exactly.
- * Later fallback calendar support belongs behind this gateway, rather than
- * in each filesystem's timestamp call site.
- */
-wall_time36:
-wall_time36_provider_jump:
-        jrst    wall_clock_now           ; KINIT patches destination on valid PCLK
-/**
- * @brief Read PCLK and return one coherent packed TIME36 value.
- * @return AC1 = TIME36 UTC value.
- *
- * AC1 holds the first DATAI sample and final result. AC2 holds CONI data;
- * AC3 holds the verification DATAI sample and then the BCD year; AC4 holds
- * the optional 21xx century bit. AC17 is only the normal return stack and is
- * otherwise untouched. No PDP-10-only instruction is required here.
- */
+        .globl pclk_time36
 pclk_time36:
 pclk_time36_retry:
         datai   0730,1

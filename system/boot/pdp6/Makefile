@@ -279,6 +279,7 @@ KINIT_LATE_NAMES = kinit_late_begin_pdp6 proc_late mm_boot kinit_late kinit_late
 KINIT_ASM = $(KINIT_BUILD)/kinit.s $(KINIT_BUILD)/vfs_mount_slab_v4.s $(KINIT_BUILD)/vfs_mount_capacity_v1.s $(KINIT_BUILD)/vfs_mount_layout_v3.s $(KINIT_BUILD)/kinit_diag.s $(KINIT_BUILD)/module_minit.s $(KINIT_BUILD)/kinit_boot.s $(KINIT_BUILD)/root_select.s $(KINIT_BUILD)/d6fs_boot.s $(KINIT_BUILD)/d6fs_super_boot.s $(KINIT_BUILD)/blockset_boot.s $(KINIT_BUILD)/auxstore_boot.s $(KINIT_BUILD)/logstore_boot.s $(KINIT_BUILD)/proc_boot.s $(KINIT_BUILD)/proc_swap_boot.s $(KINIT_BUILD)/kinit_io_pdp6.s $(KINIT_BUILD)/module_io.s $(KINIT_BUILD)/bootbanner_generated.s
 KINIT_LATE_ASM = $(KINIT_BUILD)/kinit_late_begin_pdp6.s $(KINIT_BUILD)/proc_late.s $(KINIT_BUILD)/mm_boot.s $(KINIT_BUILD)/kinit_late.s $(KINIT_BUILD)/kinit_late_end.s
 KINIT_OBJS = $(BUILD)/kinit.dobj $(BUILD)/vfs_mount_slab_v4.dobj $(BUILD)/vfs_mount_capacity_v1.dobj $(BUILD)/vfs_mount_layout_v3.dobj $(BUILD)/kinit_diag.dobj $(BUILD)/module_minit.dobj $(BUILD)/kinit_boot.dobj $(BUILD)/root_select.dobj $(BUILD)/tsfs_boot.dobj $(BUILD)/d6fs_boot.dobj $(BUILD)/d6fs_super_boot.dobj $(BUILD)/blockset_boot.dobj $(BUILD)/auxstore_boot.dobj $(BUILD)/logstore_boot.dobj $(BUILD)/logstore.dobj $(BUILD)/proc_boot.dobj $(BUILD)/proc_swap_boot.dobj $(BUILD)/kinit_io_pdp6.dobj $(BUILD)/module_io.dobj $(BUILD)/bootbanner_generated.dobj
+KINIT_OBJS += $(BUILD)/pclk.dobj
 KINIT_LATE_OBJS = $(BUILD)/kinit_late_begin_pdp6.dobj $(BUILD)/proc_late.dobj $(BUILD)/mm_boot.dobj $(BUILD)/kinit_late.dobj $(BUILD)/kinit_late_end.dobj
 
 KCORE_C_NAMES = exec d6lz vfs mm proc vm_backend proc_swap file wall_clock
@@ -290,6 +291,7 @@ KCORE_FIXED_ASM = $(KCORE_BUILD)/d6lz_fixed.s $(KCORE_BUILD)/exec.s $(KCORE_BUIL
 KCORE_FIXED_OBJS = $(BUILD)/d6lz_fixed.dobj $(BUILD)/exec.dobj $(BUILD)/d6lz.dobj $(BUILD)/mm.dobj $(BUILD)/proc.dobj $(BUILD)/backstore.dobj $(BUILD)/vm_backend.dobj $(BUILD)/proc_swap.dobj $(BUILD)/file.dobj $(BUILD)/wall_clock.dobj $(BUILD)/ret.dobj $(BUILD)/dsk270.dobj $(BUILD)/drm236.dobj $(BUILD)/kfmt_pdp6.dobj $(BUILD)/s6rec.dobj $(BUILD)/vfs.dobj $(BUILD)/fs_mres.dobj $(BUILD)/file_runtime.dobj $(BUILD)/pipe.dobj $(BUILD)/monitorfs_runtime.dobj $(BUILD)/proc_pdp6.dobj $(BUILD)/proc_run.dobj $(BUILD)/device_state.dobj $(BUILD)/syscall_info.dobj $(BUILD)/pclk.dobj $(BUILD)/syscall_dispatch_pdp6.dobj $(BUILD)/mach_user_pdp6.dobj $(BUILD)/vm_backend_pdp6.dobj $(BUILD)/kcore_pi_pdp6.dobj $(BUILD)/bcache_pdp6.dobj $(BUILD)/storage_router.dobj $(BUILD)/kcore_end.dobj
 KCORE_FIXED_OBJS += $(BUILD)/proc_swap_entry_v481.dobj
 KCORE_FIXED_OBJS := $(filter-out $(BUILD)/backstore.dobj,$(KCORE_FIXED_OBJS)) $(BUILD)/backstore_entry_v484.dobj
+KCORE_FIXED_OBJS := $(filter-out $(BUILD)/wall_clock.dobj $(BUILD)/pclk.dobj,$(KCORE_FIXED_OBJS)) $(BUILD)/pclk_gateway.dobj
 # The boundary marker MUST be the last object: KINIT installs the MM
 # descriptor area precisely at __kcore_low_end, after every KCORE BSS word.
 KCORE_FIXED_OBJS := $(filter-out $(BUILD)/kcore_end.dobj,$(KCORE_FIXED_OBJS)) $(BUILD)/kcore_end.dobj
@@ -323,6 +325,8 @@ KCORE_EMBED_OBJ = $(BUILD)/kcore-embed.dobj
 
 CTY_MRES_OBJ = $(BUILD)/cty-mres.dobj
 CLK_MRES_OBJ = $(BUILD)/clk-mres.dobj
+PCLK_MRES_OBJ = $(BUILD)/pclk-mres.dobj
+SOFTCLOCK_MRES_OBJ = $(BUILD)/softclock-mres.dobj
 PTR_MRES_OBJ = $(BUILD)/ptr-mres.dobj
 PTP_MRES_OBJ = $(BUILD)/ptp-mres.dobj
 LPT_MRES_OBJ = $(BUILD)/lpt-mres.dobj
@@ -349,12 +353,12 @@ D6FS_MRES_OBJ = $(BUILD)/d6fs-mres.dobj
 MONITORFS_MRES_OBJ = $(BUILD)/monitorfs-mres.dobj
 SWAP_MRES_OBJ_V481 = $(BUILD)/swapv481-mres.dobj
 ifeq ($(BOOT_PROFILE),lowmem)
-MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(MONITORFS_MRES_OBJ) $(DCS_MRES_OBJ) \
+MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PCLK_MRES_OBJ) $(SOFTCLOCK_MRES_OBJ) $(MONITORFS_MRES_OBJ) $(DCS_MRES_OBJ) \
 	$(GE_MRES_OBJ) $(TTY_MRES_OBJ) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(TAPE_MRES_OBJ)) $(DSK_MRES_OBJ) $(DRM_MRES_OBJ) $(SWAP_MRES_OBJ_V481) $(if $(filter 1,$(BLOCKSET_FS_ENABLED)),$(BLOCKSET_MRES_OBJ)) $(if $(filter 1,$(KINIT_TAPE_BOOT)),$(DTFS_MRES_OBJ)) \
 	$(if $(filter 1,$(D6FS_FS_ENABLED)),$(D6FS_MRES_OBJ))
 KINIT_FULL = 0
 else
-MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(MONITORFS_MRES_OBJ) $(PTR_MRES_OBJ) \
+MRES_PACKAGE_OBJS = $(CTY_MRES_OBJ) $(CLK_MRES_OBJ) $(PCLK_MRES_OBJ) $(SOFTCLOCK_MRES_OBJ) $(MONITORFS_MRES_OBJ) $(PTR_MRES_OBJ) \
 	$(PTP_MRES_OBJ) $(LPT_MRES_OBJ) $(CR_MRES_OBJ) $(CP_MRES_OBJ) \
 	$(DCS_MRES_OBJ) $(GE_MRES_OBJ) $(DPY_MRES_OBJ) $(TTY_MRES_OBJ) \
 	$(WCNSLS_MRES_OBJ) $(OCNSLS_MRES_OBJ) $(TAPE_MRES_OBJ) $(DSK_MRES_OBJ) $(DRM_MRES_OBJ) $(SWAP_MRES_OBJ_V481) \
@@ -761,6 +765,18 @@ $(CLK_MRES_OBJ): $(BUILD)/clk_io.dobj $(KCORE_MAP)
 	    -R $@ -N clk_mres_package -X clk_pi_handler -X clk_ticks -X clk_pi_service \
 	    -X clk_pi_post_handler -X clk_tick_count -X clk_pi_tail \
 	    $(BUILD)/clk_io.dobj
+
+$(BUILD)/pclk_gateway.dobj: $(KERNEL_DIR)/drivers/pclk_gateway.s | $(BUILD)
+	$(DAS) $(DASFLAGS) -C -O $@ $<
+
+$(PCLK_MRES_OBJ): $(BUILD)/pclk.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/pclk-mres.dxr -M $(BUILD)/pclk-mres.map \
+	    -R $@ -N pclk_mres_package -X pclk_time36 $(BUILD)/pclk.dobj
+
+$(SOFTCLOCK_MRES_OBJ): $(BUILD)/wall_clock.dobj $(KCORE_MAP)
+	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/softclock-mres.dxr -M $(BUILD)/softclock-mres.map \
+	    -R $@ -N softclock_mres_package -X wall_clock_now -X softclock_mres_set \
+	    $(BUILD)/wall_clock.dobj
 
 $(PTR_MRES_OBJ): $(BUILD)/ptr_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/ptr-mres.dxr -M $(BUILD)/ptr-mres.map \

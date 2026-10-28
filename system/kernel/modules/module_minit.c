@@ -187,6 +187,9 @@ static unsigned int pi_level_tail[PDP10_PI_LEVELS + 1U];
 
 static void storage_patch_jump(kword_t *word, unsigned int address);
 extern kword_t wall_time36_provider_jump;
+extern kword_t wall_clock_set_provider_jump;
+static int clock_pclk_selected;
+static int clock_apr_installed;
 
 /* PCLK is a calendar source; invalid or absent hardware selects the
  * software APR calendar. Keep this probe transient in KINIT. */
@@ -520,9 +523,7 @@ clk_minit(void)
 
         /* Select the wall-calendar provider exactly once, at boot. The
          * resident gateway is a single JRST and has no probe overhead. */
-        if (minit_pclk_valid(pclk_time36()))
-                storage_patch_jump(&wall_time36_provider_jump,
-                    (unsigned int)(unsigned long)pclk_time36);
+        clock_pclk_selected = minit_pclk_valid(pclk_time36());
 
         name = (kword_t)SIXBIT("HZ    ");
         minit_clk_cono((kword_t)CLK_NATIVE_PI_LEVEL | CLK_APR_CO_CLEAR_FLAG |
@@ -543,10 +544,52 @@ clk_minit(void)
         clk_pi_post_handler_addr = minit_export(name, base,
             CLK_X_POST_HANDLER);
         clk_tick_count_addr = minit_export(name, base, CLK_X_TICK_COUNT);
+        clock_apr_installed = 1;
         mfsdev_present_mark(MONITORFS_DEV_CLK0);
         minit_clk_cono((kword_t)CLK_NATIVE_PI_LEVEL | CLK_APR_CO_CLEAR_FLAG |
             CLK_APR_CO_ENABLE);
         minit_diag_hz();
+}
+
+/** Bind the hardware calendar only when the transient PCLK probe succeeds. */
+void
+pclkclock_minit(void)
+{
+        unsigned int base;
+        kword_t name;
+
+        if (!clock_pclk_selected)
+                return;
+        name = (kword_t)SIXBIT("PCLK  ");
+        base = minit_install(name);
+        storage_patch_jump(&wall_time36_provider_jump,
+            minit_export(name, base, 0U));
+        minit_diag_ok(name);
+}
+
+/** Install the software calendar only when no usable PCLK was found.
+ * KINIT reclaims the provider choice and installer code at boot completion.
+ * The APR clock service is shared with either calendar provider.
+ */
+void
+softclock_minit(void)
+{
+        unsigned int base;
+        kword_t name;
+
+        if (clock_pclk_selected)
+                return;
+        name = (kword_t)SIXBIT("SCLK  ");
+        if (!clock_apr_installed) {
+                minit_diag_notok(name);
+                return;
+        }
+        base = minit_install(name);
+        storage_patch_jump(&wall_time36_provider_jump,
+            minit_export(name, base, 0U));
+        storage_patch_jump(&wall_clock_set_provider_jump,
+            minit_export(name, base, 1U));
+        minit_diag_ok(name);
 }
 
 #if KINIT_FULL

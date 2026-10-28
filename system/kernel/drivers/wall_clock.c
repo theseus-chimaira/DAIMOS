@@ -18,7 +18,8 @@
 extern kword_t mach_pi_disable(void);
 extern void mach_pi_restore(kword_t state);
 
-volatile kword_t wall_clock_ticks;
+/* APR writes this one permanent word; calendar code lives in an MRES. */
+extern volatile kword_t wall_clock_ticks;
 static kword_t wall_clock_time;
 static kword_t wall_clock_base;
 /* Installation-time hardware selection; compile-time constant uses no RAM. */
@@ -26,15 +27,14 @@ static kword_t wall_clock_base;
 static unsigned int
 days_in_month(unsigned int year, unsigned int month)
 {
-        static const unsigned char days[12] = {
-            31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
-        };
         if (month < 1U || month > 12U)
                 return 0U;
-        if (month == 2U && year % 4U == 0U &&
-            (year % 100U != 0U || year % 400U == 0U))
-                return 29U;
-        return (unsigned int)days[month - 1U];
+        if (month == 2U)
+                return 28U + (year % 4U == 0U &&
+                    (year % 100U != 0U || year % 400U == 0U));
+        /* Bit n marks a 31-day month (January is bit zero).  This
+         * replaces the byte table with one literal and no stored words. */
+        return 30U + ((05325U >> (month - 1U)) & 1U);
 }
 
 static int
@@ -148,7 +148,9 @@ wall_clock_now(void)
         }
 }
 
-/* Called by privileged SYS_EXT_SETTIME only. PCLK hardware is read-only. */
+/* Called only through the KINIT-selected software-provider SETTIME entry.
+ * Privilege belongs to the syscall handler; the unavailable/PCLK path
+ * stays bound to the permanent rejection stub. No PCLK probe is needed. */
 int
 wall_clock_set(kword_t requested)
 {
@@ -156,7 +158,7 @@ wall_clock_set(kword_t requested)
         kword_t ps;
 
         if (decode_time(requested, &year, &month, &day, &hour,
-            &minute, &second) != 0 || pclk_time36() != 0UL)
+            &minute, &second) != 0)
                 return -1;
         ps = mach_pi_disable();
         wall_clock_time = requested;
