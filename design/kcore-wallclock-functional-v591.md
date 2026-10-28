@@ -50,3 +50,14 @@ Date: 2026-10-28. Status: implementation pending; no runtime change.
 The UTC wall-clock feature stays open until all callers use the safe
 interface and native coverage passes. No size saving, new resident object,
 or supported PCLK-absent mode is claimed by this source audit.
+
+## 2026-10-28 v592 incremental PCLK reader guard
+
+SIMH's PDP-6 `null_dev` returns zero for DATAI/CONI of an unassigned
+device. The reader now recognizes a zero initial DATAI and returns the
+documented unknown TIME36 value instead of decoding it as a date. This
+is an interim safety guard only: it does not prove physical-hardware
+presence detection and does not provide a software clock or SETTIME.
+The lowmem `permanent-size` profile links successfully; the full/auto
+profile still fails its known permanent address limit. Native enabled/
+disabled device execution must be tested before claiming acceptance.

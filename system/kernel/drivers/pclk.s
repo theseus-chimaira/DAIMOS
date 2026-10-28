@@ -27,6 +27,9 @@
 pclk_time36:
 pclk_time36_retry:
         datai   0730,1
+        ; The PDP-6 SIMH null device returns zero when PCLK is disabled.
+        ; Do not decode that as a civil timestamp. TIME36 zero is unknown.
+        jumpe   1,pclk_time36_absent
         coni    0730,2
         datai   0730,3
         came    1,3
@@ -49,4 +52,6 @@ pclk_time36_century_done:
         andi    2,077
         ior     1,2
         ior     1,4
+        popj    17,
+pclk_time36_absent:
         popj    17,
