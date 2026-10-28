@@ -557,3 +557,33 @@ extent at this breakpoint, then identify the precise failing conditional.
 No kernel changes, no permanently resident diagnostics, no claimed
 scheduler-relocation acceptance. The v557 trace harness remains
 experimental in daimos-testkit.
+
+## V558–V560 actual BRK reclaim retry defect and accepted fix (2026-10-28)
+
+The v558 full-SIMH failure snapshot showed that INIT's process record
+(`024000,,752000`) and corresponding MM process extent match in size,
+base, owner 1 and pin count 0; the managed arena encompasses the image.
+V559 external breakpoints established the exact sequence: initial process
+extent lookup succeeded; the BRK growth path entered reclaim; MM extent
+count dropped from `031` to `030` octal; the subsequent lookup failed
+before the arena and full-image allocator stages. The defect was in
+`vm_space_brk_current`: its reclaim retry jumped directly to
+`vm_brk_find_extent` without resetting AC16, which still held the
+previous descriptor index, even though reclaim may delete and shift
+descriptors. This causes the retry to skip the current process extent.
+
+An initial hypothesis that swap reclaim needed additional AC13–AC16
+preservation was tested with a full 256K SIMH boot; the guest still
+failed (`[024000+034000=777777]!G`), so that experiment was reverted.
+The actual production fix is one `setz 16,` before the reclaim retry's
+`jrst vm_brk_find_extent` in `system/kernel/proc/vm_pdp6.s`, with a
+comment explaining descriptor-table reordering. No resident storage.
+
+After the fix, the previously failing guest produced
+`<AB[024000+034000=034000]CQ` under full 256K SIMH. The standalone,
+versioned testkit `daimos-mm-brk-reclaim-retry-v560.{c,sh}` independently
+rebuilt and passed the same complete 16-child/reclaim/BRK/continuation
+scenario. The existing native public allocator/relocated user fetch v548
+regression also still passed. This closes the production BRK retry bug,
+**not** the remaining full-system scheduler-after-physical-relocation
+acceptance requirement; no `vm_extent_move` was required in v560.

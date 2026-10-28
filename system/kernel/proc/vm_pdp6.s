@@ -324,6 +324,9 @@ vm_brk_fallback:
         coni    0004,1
         movem   1,-003(17)
         cono    0004,000400
+        ; Reclaim deletes/reorders extent descriptors.  Retry the search
+        ; from slot zero, not the stale pre-reclaim index in AC16.
+        setz    16,
         jrst    vm_brk_find_extent
 
 vm_brk_full_alloc:
