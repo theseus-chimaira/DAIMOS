@@ -22,8 +22,6 @@
         .globl clk_pi_service
         .globl clk_ticks
         .globl clk_tick_count
-        .globl clk_wall_tick_instruction
-        .globl wall_clock_ticks
         .globl pdp10_pi_handler_return
         .globl proc_sched_pi_tick
         .globl proc_sched_pi_resched
@@ -88,8 +86,6 @@ clk_pi_service:
         jrst clk_pi_kick
 clk_pi_tick:
         aos clk_tick_count
-clk_wall_tick_instruction:
-        aos wall_clock_ticks             ; elapsed APR time, never a PI kick
         cono 0000,003006
         pushj 017,storage_clock_tick
         setzm proc_sched_kick
@@ -161,9 +157,7 @@ clk_ticks:
         popj 017,
 
         .bss
-/** Resident 36-bit tick counter; initialized to zero when the MRES is installed. */
-clk_tick_count:
-        .block 1
+/** The single clock counter is in the fixed KCORE gateway, not this MRES. */
 /** PI6 dispatcher cursor saved across scheduler/storage service calls. */
 clk_pi_saved_ac2:
         .block 1

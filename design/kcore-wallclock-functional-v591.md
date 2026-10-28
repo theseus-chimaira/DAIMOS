@@ -267,3 +267,21 @@ v618; native `daimos-clock-mres-v618` PASS at 60 Hz in both PCLK modes.
 A bulk-day/month software-calendar advancement candidate linked at 16018
 words (+42), so it was rejected under RAM-first SIZEOPT criteria. The
 original compact lazy per-second advancement algorithm remains intact.
+
+## 2026-10-28 v621 single APR tick counter
+
+The APR scheduler and optional software calendar used to maintain two
+identical elapsed-APR counters. Both now use the existing fixed KCORE
+`wall_clock_ticks` word, exported also as `clk_tick_count`. The APR MRES
+increments it once; the optional SCLK MRES reads it directly. This removes
+the duplicate hot-path AOS, the duplicate MRES BSS word, the separate
+MRES tick-counter export and the v620 conditional instruction patch.
+PCLK systems use the same scheduler counter but install no SCLK calendar.
+
+The low-memory GCC link passes for 50 and 60 Hz: KCORE+all listed MRES
+15974 words (v620: 15976), APR MRES 44 words (v620: 46). Native
+`daimos-clock-mres-v618` PASS at 60 Hz and 50 Hz for both PCLK-on and
+off boots. The first 50-Hz test run stopped with simulator SDL2 failure
+(139); repeating with `SDL_VIDEODRIVER=dummy`, using an otherwise
+identical kernel and test, passed. The initial failure was not a clock
+assertion failure.
