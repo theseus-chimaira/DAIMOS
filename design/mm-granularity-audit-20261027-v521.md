@@ -502,3 +502,18 @@ or succeeded before later copy/free/commit rejection. Next instrument
 these exact boundaries *externally* (without persistent kernel hooks)
 prior to modifying kernel logic. v554 remains an unaccepted diagnostic
 fixture in daimos-testkit. No production changes or permanent RAM cost.
+
+## V555 full-system allocator-entry breakpoint (2026-10-28)
+
+A fresh isolated 256K SIMH image of the v554 guest was run with an
+external breakpoint on exported production `mm_alloc_aligned` (map
+address `001665`). The guest again printed `AB[024000+034000=777777]!G`.
+The breakpoint occurred 62 times during startup/guest execution, proving
+that production allocator entry is reachable in this boot. The captured
+pre-call descriptor counts alone do not identify which specific entry,
+if any, belongs to the failed parent `BRK` transaction. No claim is made
+that the failed BRK entered or returned from the allocator; the necessary
+next diagnostic is to correlate caller PC, arguments, and return value
+with the parent BRK syscall boundary, without adding persistent KCORE
+state. The v555 observer is still experimental in daimos-testkit.
+No production code or permanent RAM change.
