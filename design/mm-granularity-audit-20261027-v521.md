@@ -450,3 +450,29 @@ via the external simulator at the growth boundary to determine whether
 there is enough total free memory and insufficient contiguous free space.
 No kernel changes or permanent resident counters. The unaccepted v552
 fixture remains in daimos-testkit working tree for further diagnosis.
+
+## V553 measured MM free-space geometry at failed BRK (2026-10-28)
+
+A fresh, isolated 256K SIMH boot of the v552 shared-gate guest used an
+external breakpoint on exported `vm_space_brk_current` and examined the
+production MM arena/count/descriptor addresses. This avoided the invalid
+post-boot writable-media replay used in the first attempt. The guest
+reached `AB` before `!G` (growth failure); two BRK-entry snapshots were
+observed, with 25 sorted occupied extents in the first snapshot.
+
+Decoded managed arena: physical `037771` through `1000000` (octal,
+exclusive end). The free gaps between those 25 extents total **150,685
+DECIMAL words**, and the largest individual gap is **`0224746` OCTAL
+words** (76,262 decimal). This is much greater than the parent's
+requested extra `010000` octal (4,096 decimal) words. Consequently,
+a simple global RAM exhaustion / no sufficiently large physical hole
+explanation is inconsistent with the snapshot. However, the `BRK` path
+may require a larger **full replacement image** than the requested delta,
+or reject a logical break constraint; the snapshot alone does not isolate
+the exact return cause. No compaction event was observed. A versioned
+host-side snapshot decoder is in the testkit as
+`tests/validation/daimos-mm-extent-gaps-v553.py`; it decodes the
+specific kernel-map locations of this v553 image, not a universal ABI.
+Do not infer a production MM defect without observing the BRK input,
+rounded size, allocator result, and current process image extent.
+No production code, persistent counters, or RAM overhead added.
