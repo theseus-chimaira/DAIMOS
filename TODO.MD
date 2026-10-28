@@ -469,8 +469,11 @@ source-level RAM optimization continue independently.** See
   uses exactly three durable writes, with CLEAN already published after
   cut 3. Verify DIRTY recovery, final CLEAN, no fourth write and ambiguous
   no-modification. Full group-032 host-tools suite PASS, testkit 11feecb.
-- [ ] Recheck group 023 as a single group and resolve remaining GCC/KCC
-  matrix failures; focused subtest success is not a complete suite pass.
+- [x] Recheck complete regression row 023 (ten storage targets): v564
+  repaired the MonitorFS device test's SDL2 crash by applying the existing
+  headless SIMH policy, then the unchanged guest oracle passed. V565 ran
+  the other nine row-023 targets in matrix order; all PASS (2026-10-28).
+  This is row-level evidence, not full GCC/KCC matrix acceptance.
 - [ ] Rework secondary TSFS/DTFS mount acceptance to match the intentionally
   root-selected MRES package. Do not introduce extra resident MRES solely
   to satisfy a fixture that boots the wrong root class.
