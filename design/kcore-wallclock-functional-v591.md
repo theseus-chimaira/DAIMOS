@@ -297,3 +297,20 @@ KCORE+MRES 15972 words (v621: 15974). Native PCLK-on/off UTC acceptance
 PASS at 60 Hz. The 50-Hz regression is tracked separately.
 Native `daimos-clock-mres-v618` also PASS at 50 Hz, PCLK enabled/disabled,
 with SDL dummy backend. Thus the two-rate v622 clock regression gate is met.
+
+## 2026-10-28 v625 calendar leap optimization and build dependency
+
+The lowmem boot Makefile's `KERNEL_INPUTS` omitted `drivers/wall_clock.c`.
+This caused successive source-only clock experiments to leave the generated
+assembly/MRES package stale and incorrectly report identical sizes. The
+source is now explicitly tracked, so changes force rebuilt target assembly
+and a fresh relocatable clock MRES link.
+
+DAIMOS TIME36 supports only 2026..2125, where Gregorian leap years are
+exactly `(year & 3) == 0 && year != 2100`. Replacing the general century
+and 400-year divisions with that rule reduces linked SCLK MRES from 329 to
+315 words (14 words saved). Lowmem GCC KCORE+MRES is now 15958 words;
+KCORE remains 8537 words; the final permanent address decreases from
+16019 to 16005. Native `daimos-clock-mres-v618` PASS at both 50 and 60 Hz,
+PCLK enabled/disabled (SDL dummy backend). The change affects only the
+software calendar and preserves the TIME36 year range and 2100 exception.

@@ -30,8 +30,7 @@ days_in_month(unsigned int year, unsigned int month)
         if (month < 1U || month > 12U)
                 return 0U;
         if (month == 2U)
-                return 28U + (year % 4U == 0U &&
-                    (year % 100U != 0U || year % 400U == 0U));
+                return 28U + ((year & 3U) == 0U && year != 2100U);
         /* Bit n marks a 31-day month (January is bit zero).  This
          * replaces the byte table with one literal and no stored words. */
         return 30U + ((05325U >> (month - 1U)) & 1U);

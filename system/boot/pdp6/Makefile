@@ -152,6 +152,7 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/drivers/card.h \
 	$(KERNEL_DIR)/drivers/clk.h \
 	$(KERNEL_DIR)/drivers/clk_io.s \
+	$(KERNEL_DIR)/drivers/wall_clock.c \
 	$(KERNEL_DIR)/drivers/cp_io.s \
 	$(KERNEL_DIR)/drivers/cr_io.s \
 	$(KERNEL_DIR)/drivers/cty.h \
