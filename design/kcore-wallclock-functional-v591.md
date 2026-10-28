@@ -97,6 +97,22 @@ No claimed general KCORE optimization and no independent RAM increase.
 Open gates: actual 50/60-Hz configuration, physical PDP-6 PCLK discovery,
 additional concurrent time-setting/stamp stress and boot reuse forensics.
 
+## 2026-10-28 v606 line-frequency discovery audit
+
+Native PDP-6 APR `CONI` reports the clock flag and enable state, not the
+frequency of the physical AC line. `clk_minit` probes only those states;
+`minit_diag_hz` prints a hardcoded `HZ 60 LINE` label. The PDP-6 SIMH
+`rtc_srv` delivers the same APR tick regardless of the internal `rtc_tps`
+setting; its default PDP-6 build rate is 60 ticks/second. There is no
+hardware-visible 50/60-Hz selector in the inspected device ABI.
+
+**Conclusion:** Automatic 50/60-Hz determination is impossible from the
+APR tick stream alone without an independent calibrated time reference.
+No speculative tick-based auto-detection is permitted. The current
+software wall clock remains explicitly 60 Hz; a 50-Hz implementation
+must obtain its rate from verified platform/boot configuration or a
+separate trustworthy reference and cover both cases in native tests.
+
 ## 2026-10-28 v594 unified TIME36 gateway
 
 Introduced `wall_time36` as the single entry for GETTIME and D6FS/MEMFS

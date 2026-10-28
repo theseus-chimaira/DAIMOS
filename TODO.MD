@@ -143,6 +143,10 @@ Release-critical or prerequisite correctness/acceptance:
   50-Hz configuration, concurrency/timestamp stress and physical-device
   presence policy remain acceptance work; repeated-boot ?RT forensics
   are tracked separately.
+  v606 source audit: PDP-6 APR CONI exposes clock flag/enable, **not**
+  line frequency. SIMH's `rtc_tps` is simulator-internal. No automatic
+  50/60-Hz discovery is possible from APR ticks alone; use a verified
+  independent reference or explicit platform/boot configuration instead.
 - [ ] Finish tested, non-destructive AUXSTORE swap provisioning (MKSWAP),
   including explicit destructive confirmation and existing-format/overlap
   protections. No automatic formatting at boot.
