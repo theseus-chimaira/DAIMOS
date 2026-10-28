@@ -762,7 +762,7 @@ $(CTY_MRES_OBJ): $(BUILD)/cty_io.dobj $(KCORE_MAP)
 
 $(CLK_MRES_OBJ): $(BUILD)/clk_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/clk-mres.dxr -M $(BUILD)/clk-mres.map \
-	    -R $@ -N clk_mres_package -X clk_pi_handler -X clk_ticks -X clk_pi_service \
+	    -R $@ -N clk_mres_package -X clk_pi_handler -X clk_pi_service \
 	    -X clk_pi_post_handler -X clk_pi_tail \
 	    $(BUILD)/clk_io.dobj
 

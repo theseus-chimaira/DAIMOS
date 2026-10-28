@@ -62,10 +62,9 @@ mfsdev_present_mark(unsigned int id)
 #define CTY_X_PI_TAIL           3U
 
 #define CLK_X_HANDLER           0U
-#define CLK_X_TICKS             1U
-#define CLK_X_PI_SERVICE        2U
-#define CLK_X_POST_HANDLER      3U
-#define CLK_X_PI_TAIL           4U
+#define CLK_X_PI_SERVICE        1U
+#define CLK_X_POST_HANDLER      2U
+#define CLK_X_PI_TAIL           3U
 #define PTR_X_READ_WORDS         0U
 #define PTP_X_WRITE_WORDS        0U
 #define LPT_X_PUTCHAR            0U
@@ -540,7 +539,6 @@ clk_minit(void)
         clk_pi_service_addr = minit_export(name, base, CLK_X_PI_SERVICE);
         minit_register(name, CLK_NATIVE_PI_LEVEL, clk_pi_handler_addr,
             minit_export(name, base, CLK_X_PI_TAIL));
-        (void)minit_export(name, base, CLK_X_TICKS);
         clk_pi_post_handler_addr = minit_export(name, base,
             CLK_X_POST_HANDLER);
         /* APR and SCLK now share the fixed counter, without an MRES

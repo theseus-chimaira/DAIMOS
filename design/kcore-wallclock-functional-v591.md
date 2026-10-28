@@ -285,3 +285,13 @@ off boots. The first 50-Hz test run stopped with simulator SDL2 failure
 (139); repeating with `SDL_VIDEODRIVER=dummy`, using an otherwise
 identical kernel and test, passed. The initial failure was not a clock
 assertion failure.
+
+## 2026-10-28 v622 remove dead APR tick reader
+
+The `clk_ticks()` reader had no callers; KINIT previously resolved and
+immediately discarded its MRES export. Removing the unused two-instruction
+reader and renumbering subsequent exports saves two resident words, while
+the shared `clk_tick_count` / `wall_clock_ticks` word remains unchanged.
+The lowmem GCC build reports APR MRES 42 words and conservative
+KCORE+MRES 15972 words (v621: 15974). Native PCLK-on/off UTC acceptance
+PASS at 60 Hz. The 50-Hz regression is tracked separately.

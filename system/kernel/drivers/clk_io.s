@@ -20,7 +20,6 @@
         .globl clk_pi_tail
         .globl clk_pi_post_handler
         .globl clk_pi_service
-        .globl clk_ticks
         .globl clk_tick_count
         .globl pdp10_pi_handler_return
         .globl proc_sched_pi_tick
@@ -143,18 +142,6 @@ clk_pi_user_fault_exit:
 clk_pi_kernel_fault:
         halt
         jrst clk_pi_kernel_fault
-
-/**
- * @brief Read the resident 60 Hz monotonic tick counter.
- *
- * @return AC1 = clk_tick_count; AC17 is unchanged after the return.
- *
- * The single-word read is intentionally lock-free.  PDP-6 memory-word loads
- * are atomic, and the interrupt path updates the counter with one AOS.
- */
-clk_ticks:
-        move 1,clk_tick_count
-        popj 017,
 
         .bss
 /** The single clock counter is in the fixed KCORE gateway, not this MRES. */

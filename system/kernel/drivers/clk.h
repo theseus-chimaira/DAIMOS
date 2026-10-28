@@ -69,14 +69,6 @@
         CLK_APR_CO_CLEAR_PDL_OV)
 
 /**
- * @brief Return the resident monotonic line-clock tick count.
- *
- * @return Number of qualified APR line-clock interrupts since CLK MRES was
- *         installed.  The counter is a native 36-bit word and wraps naturally.
- */
-unsigned int clk_ticks(void);
-
-/**
  * @brief PI level 6 entry for the resident APR line-clock service.
  *
  * The generic PI dispatcher saves the interrupted AC1..AC3 and AC17 state.
