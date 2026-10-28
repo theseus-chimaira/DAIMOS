@@ -220,6 +220,10 @@ Release-critical or prerequisite correctness/acceptance:
   a stop at `proc_boot_init` leaves writable root DIRTY, so it is
   unsuitable as a second-boot fixture. See
   `design/kinit-dsh-full-profile-v647.md`.
+  v648: instrumented 48K tape-root boot with explicit disk selector
+  `1` reaches HALT with stack high-water `0164` octal (116 words),
+  below the unchanged `0600` reserve. This adds selector coverage;
+  independent D6FS mount and MM allocation failures remain open.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 

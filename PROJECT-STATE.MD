@@ -1,3 +1,10 @@
+## 2026-10-29 v648: KINIT disk-selector failure watermark PASS
+
+The native instrumented 48K tape-root image with disk-root selector
+`1` HALTs with recorded `0164` octal (116 words) stack high-water.
+Testkit v648 PASS; no production changes. More complex KINIT root-mount
+and MM-failure stack measurements remain open.
+
 ## 2026-10-28 v647: four full-profile interactive DSH gates PASS
 
 All GCC/KCC x 96K/256K native PDP-6 full-profile ROOT login, DSH

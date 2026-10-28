@@ -1,3 +1,10 @@
+## 2026-10-29 v648: explicit disk-selector fatal stack bound
+
+Native 48K tape-root PDP-6 SIMH `SW=1` failure HALT records
+`0164` octal (116 words) versus `0600` reserved. Testkit PASS.
+This shares early selector-failure coverage; D6FS mount and allocator
+failure-path measurements are still open. No production RAM impact.
+
 ## 2026-10-28 v647: full-profile native DSH acceptance
 
 GCC/KCC at 96K/256K: native ROOT login, DSH, ECHO, external TRUE,
