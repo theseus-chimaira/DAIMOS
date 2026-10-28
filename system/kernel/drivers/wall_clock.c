@@ -73,7 +73,8 @@ encode_time(unsigned int year, unsigned int month, unsigned int day,
         unsigned int yy;
         kword_t t;
 
-        yy = year % 100U;
+        /* TIME36 only admits years 2026..2125; avoid century division. */
+        yy = year - (year >= 2100U ? 2100U : 2000U);
         t = (kword_t)(((yy / 10U) << 4U) | (yy % 10U)) << 26U;
         if (year >= 2100U)
                 t |= WALL_CENTURY;

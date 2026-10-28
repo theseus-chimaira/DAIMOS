@@ -314,3 +314,14 @@ KCORE remains 8537 words; the final permanent address decreases from
 16019 to 16005. Native `daimos-clock-mres-v618` PASS at both 50 and 60 Hz,
 PCLK enabled/disabled (SDL dummy backend). The change affects only the
 software calendar and preserves the TIME36 year range and 2100 exception.
+
+## 2026-10-28 v626 compact TIME36 century encoding
+
+With fresh generated assembly after the v625 dependency fix, replacing
+`year % 100U` in `encode_time` with one selection/subtraction based on
+`year >= 2100U` saves three words in the software-calendar MRES: 315 to
+312 words. Only years 2026..2125 reach this routine, so the arithmetic
+is identical across the supported TIME36 interval. KCORE remains 8537
+words; conservative KCORE+MRES is 15955 words and PERMANENT_LAST is
+16002. The native clock test passes with PCLK enabled and disabled at
+both 50 and 60 Hz (SDL dummy video backend).
