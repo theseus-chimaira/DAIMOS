@@ -61,7 +61,13 @@ kcore_init_end=$((0$(sym "$kcore_map" __kcore_low_init_end)))
 [ "$image_start" -eq "$IMAGE_BASE" ] && [ "$image_start" -lt "$image_end" ] && \
     [ "$image_end" -le "$HALF_MASK" ] || fail "invalid KINIT image bounds"
 [ "$KINIT_CORE_TOP" -ge "$KINIT_MIN_STACK_WORDS" ] || fail "configured core is smaller than the KINIT stack reserve"
-[ "$image_end" -le $((KINIT_CORE_TOP - KINIT_MIN_STACK_WORDS)) ] || fail "KINIT image leaves less than the configured stack reserve"
+if [ "$image_end" -gt $((KINIT_CORE_TOP - KINIT_MIN_STACK_WORDS)) ]; then
+        printf 'mkimage: KINIT image end %o exceeds stack-safe limit %o by %o words (core %o, reserve %o)\n' \
+            "$image_end" "$((KINIT_CORE_TOP - KINIT_MIN_STACK_WORDS))" \
+            "$((image_end + KINIT_MIN_STACK_WORDS - KINIT_CORE_TOP))" \
+            "$KINIT_CORE_TOP" "$KINIT_MIN_STACK_WORDS" >&2
+        fail "KINIT image leaves less than the configured stack reserve"
+fi
 [ "$image_start" -le "$load_begin" ] && [ "$load_begin" -le "$load_end" ] && \
     [ "$load_end" -le "$image_end" ] || fail "invalid KCORE load slot"
 [ "$image_start" -le "$entry" ] && [ "$entry" -lt "$image_end" ] || fail "invalid KINIT entry"
