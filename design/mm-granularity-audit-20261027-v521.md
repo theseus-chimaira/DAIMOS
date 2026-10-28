@@ -539,3 +539,21 @@ path using the exact linked image and source. Avoid attributing this
 failure to compaction or changing the kernel without further proof.
 No production code or permanent RAM modification. The v556 breakpoint
 harness remains experimental in daimos-testkit.
+
+## V557 BRK failure-exit breakpoint confirmation (2026-10-28)
+
+A fresh 256K PDP-6 SIMH boot of the v554 shared-gate guest used external
+breakpoints calculated from the linked `vm_backend_pdp6.dobj` text offset
+and map position. At the parent `dsys_brk(034000)` request, production
+`vm_space_brk_current` transferred to `vm_brk_fail_pi` at `017134`, then
+to `vm_brk_fail` at `017137`, returning `777777` (`-1`). `proc_current_slot`
+was 1, `proc_current_ptr` was `040156`, and the descriptor count at the
+failure was `030` octal. The public allocator was not entered during this
+failing call (consistent with v556). This establishes a pre-allocator
+PI-disabled failure exit; it does **not** yet distinguish invalid process
+extent type, owner, length, pin state, or arena validation, since these
+checks share `vm_brk_fail_pi`. Next sample the parent record and matched
+extent at this breakpoint, then identify the precise failing conditional.
+No kernel changes, no permanently resident diagnostics, no claimed
+scheduler-relocation acceptance. The v557 trace harness remains
+experimental in daimos-testkit.
