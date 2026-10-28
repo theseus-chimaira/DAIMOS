@@ -61,3 +61,14 @@ presence detection and does not provide a software clock or SETTIME.
 The lowmem `permanent-size` profile links successfully; the full/auto
 profile still fails its known permanent address limit. Native enabled/
 disabled device execution must be tested before claiming acceptance.
+
+## 2026-10-28 v593 native proof
+
+The versioned `daimos-testkit` fixture
+`tests/validation/daimos-pclk-presence-v593.sh` builds one PDP-6 system
+image with a dedicated INIT program and boots that image with PCLK
+enabled and disabled. The enabled case returns a valid TIME36 calendar
+via GETTIME; the disabled case returns TIME36 zero. Both native runs
+PASS. This proves the guarded SIMH device behavior, not the absence
+probe's safety on unspecified physical PDP-6 hardware. The software
+calendar accumulator, SETTIME and DATE SET remain unfinished.

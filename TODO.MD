@@ -128,6 +128,9 @@ Release-critical or prerequisite correctness/acceptance:
 - [ ] Settable UTC wall clock without PCLK: privileged SETTIME, DATE SET,
   safe PCLK presence detection, APR 50/60-Hz calendar accumulation, atomic
   GETTIME/SETTIME, and TIME36 timestamp preservation.
+  Native milestone v592-v593: absent SIMH PCLK now produces unknown TIME36
+  rather than a fabricated date; native PCLK-on/off GETTIME tests PASS.
+  This does not yet implement the calendar fallback or setting interface.
 - [ ] Finish tested, non-destructive AUXSTORE swap provisioning (MKSWAP),
   including explicit destructive confirmation and existing-format/overlap
   protections. No automatic formatting at boot.
