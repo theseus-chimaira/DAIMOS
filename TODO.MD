@@ -1004,3 +1004,8 @@ KERNEL ABIS.
   fallback, allocation failure, rollback, `fork`/`exec` inheritance and
   mixed compressed/raw swap records in daimos-testkit. Do not modify the
   running parallel kernel implementation as part of this TODO entry.
+
+- [ ] Finish mutually exclusive wall-clock provider MRES packaging after
+  v616 KINIT one-time selection. Confirm only one provider is installed,
+  preserve shared APR scheduling, verify both boot modes and SETTIME, and
+  measure **linked KCORE+MRES** size rather than source/object size.

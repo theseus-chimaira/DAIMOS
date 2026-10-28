@@ -205,3 +205,21 @@ timestamps, including the provider C path. The original `pclk_time36`
 continues to read physical PCLK and the gateway currently tail-jumps to it.
 This preserves timestamp semantics while allowing a future fallback
 calendar in one place. No software fallback or SETTIME is enabled yet.
+
+## 2026-10-28 v616 KINIT provider selection (first stage)
+
+KINIT `clk_minit` performs a single PCLK probe using the coherent hardware
+reader and checks the full supported TIME36 calendar (including leap days).
+It patches the one-word KCORE `wall_time36_provider_jump` to the hardware
+reader only when its UTC value is valid; the default jump leads to the
+APR-backed software calendar. Thus GETTIME and filesystem timestamp reads
+never probe unavailable PCLK repeatedly. Native testkit
+`daimos-date-hz-v608.sh` PASS at 60 Hz in PCLK-on and PCLK-off modes.
+
+**Stage boundary:** this selects the provider at boot but does NOT yet
+place each provider in a separate MRES or omit the unselected code from
+permanent RAM. Both providers still reside in linked KCORE. Source removal
+and mutually exclusive MRES packing require their own linked-size gate.
+This stage preserves existing software SETTIME behavior; further edits
+must not remove its privilege validation. The APR MRES scheduler remains
+shared in all cases.

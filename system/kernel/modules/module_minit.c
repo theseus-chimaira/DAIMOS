@@ -18,6 +18,7 @@
 #include "kcore_pi.h"
 #include "cty.h"
 #include "clk.h"
+#include "pclk.h"
 #include "pt.h"
 #include "lpt.h"
 #include "card.h"
@@ -185,6 +186,40 @@ static unsigned int pi_level_registered[PDP10_PI_LEVELS + 1U];
 static unsigned int pi_level_tail[PDP10_PI_LEVELS + 1U];
 
 static void storage_patch_jump(kword_t *word, unsigned int address);
+extern kword_t wall_time36_provider_jump;
+
+/* PCLK is a calendar source; invalid or absent hardware selects the
+ * software APR calendar. Keep this probe transient in KINIT. */
+static int
+minit_pclk_valid(kword_t value)
+{
+        static const unsigned char mdays[12] = {
+                31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31
+        };
+        unsigned int year, m, d, h, n, s, bcd, limit;
+
+        if (value == 0UL || (value & 0400000000000UL) != 0UL)
+                return 0;
+        bcd = (unsigned int)((value >> 26U) & 0377UL);
+        if ((bcd & 017U) > 9U || (bcd >> 4U) > 9U)
+                return 0;
+        year = (bcd >> 4U) * 10U + (bcd & 017U);
+        year += (value & 0200000000000UL) != 0UL ? 2100U : 2000U;
+        if (year < 2026U || year > 2125U)
+                return 0;
+        m = (unsigned int)((value >> 22U) & 017UL);
+        d = (unsigned int)((value >> 17U) & 037UL);
+        h = (unsigned int)((value >> 12U) & 037UL);
+        n = (unsigned int)((value >> 6U) & 077UL);
+        s = (unsigned int)(value & 077UL);
+        if (m < 1U || m > 12U || h >= 24U || n >= 60U || s >= 60U)
+                return 0;
+        limit = (unsigned int)mdays[m - 1U];
+        if (m == 2U && year % 4U == 0U &&
+            (year % 100U != 0U || year % 400U == 0U))
+                ++limit;
+        return d >= 1U && d <= limit;
+}
 static void storage_patch_module_jump(unsigned int base, kword_t *word,
     unsigned int address);
 static unsigned int pi_enabled_mask;
@@ -482,6 +517,12 @@ clk_minit(void)
         kword_t st;
         unsigned int base;
         kword_t name;
+
+        /* Select the wall-calendar provider exactly once, at boot. The
+         * resident gateway is a single JRST and has no probe overhead. */
+        if (minit_pclk_valid(pclk_time36()))
+                storage_patch_jump(&wall_time36_provider_jump,
+                    (unsigned int)(unsigned long)pclk_time36);
 
         name = (kword_t)SIXBIT("HZ    ");
         minit_clk_cono((kword_t)CLK_NATIVE_PI_LEVEL | CLK_APR_CO_CLEAR_FLAG |

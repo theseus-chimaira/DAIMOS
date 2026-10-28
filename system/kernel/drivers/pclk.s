@@ -17,6 +17,7 @@
         .globl  pclk_time36
         .globl  wall_time36
         .globl  wall_clock_now
+        .globl  wall_time36_provider_jump
 /**
  * @brief Shared civil-time gateway for GETTIME and filesystem timestamps.
  *
@@ -25,11 +26,8 @@
  * in each filesystem's timestamp call site.
  */
 wall_time36:
-        pushj   17,pclk_time36
-        jumpn   1,wall_time36_done
-        pushj   17,wall_clock_now
-wall_time36_done:
-        popj    17,
+wall_time36_provider_jump:
+        jrst    wall_clock_now           ; KINIT patches destination on valid PCLK
 /**
  * @brief Read PCLK and return one coherent packed TIME36 value.
  * @return AC1 = TIME36 UTC value.
