@@ -1,3 +1,10 @@
+## 2026-10-29 v649: D6FS mount-validation fatal-path stack
+
+Native 96K GCC full-profile instrumented disk-root boot with corrupted
+copies of both D6FS superblocks reaches `?RT`/HALT and records stack
+`0172` octal (122 words) against `0600` reserve. Testkit PASS. This
+is a distinct mount-validation path; allocation/I/O failures remain.
+
 ## 2026-10-29 v648: explicit disk-selector fatal stack bound
 
 Native 48K tape-root PDP-6 SIMH `SW=1` failure HALT records

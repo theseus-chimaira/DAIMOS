@@ -1,3 +1,10 @@
+## 2026-10-29 v649: D6FS mount-validation stack bound PASS
+
+Native 96K GCC full-profile fatal-path watermark `0172` octal
+(122 words) on D6FS superblock-validation failure; original disk media
+preserved, copies only corrupted. Testkit v649 PASS, no production
+change. MM allocation, I/O and missing-INIT fatal paths remain open.
+
 ## 2026-10-29 v648: KINIT disk-selector failure watermark PASS
 
 The native instrumented 48K tape-root image with disk-root selector

@@ -224,6 +224,11 @@ Release-critical or prerequisite correctness/acceptance:
   `1` reaches HALT with stack high-water `0164` octal (116 words),
   below the unchanged `0600` reserve. This adds selector coverage;
   independent D6FS mount and MM allocation failures remain open.
+  v649: independent D6FS superblock-validation failure is now measured:
+  native 96K GCC full-profile boot with both superblock magic words
+  invalidated in disposable disk copies emits `?RT`, HALTs and records
+  `0172` octal (122 words) against `0600` reserve. Allocation, I/O
+  and missing-INIT error paths remain unmeasured.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 
