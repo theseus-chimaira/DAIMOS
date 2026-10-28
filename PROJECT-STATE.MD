@@ -1,3 +1,13 @@
+## 2026-10-28 v639: optional KINIT watermark boundary corrected
+
+The optional stack-watermark fill and scan used an inclusive upper
+bound even though `__kinit_image_end + reserve` is exclusive. At 32K
+this could reference nonexistent physical address `0100000`.
+Both loops now stop at endpoint minus one. Native 48K GCC lowmem
+watermark-enabled TSFS boot PASS (MEM 48 K, INIT V1), testkit v639.
+No permanent KCORE growth or reserve reduction. The separate 32K
+failure-path watermark and kernel-only acceptance are still open.
+
 ## 2026-10-28 v638: 32K KINIT native bootstrap restored
 
 Transient PDP-6 KINIT diagnostic/probe assembly recovered 30 decimal

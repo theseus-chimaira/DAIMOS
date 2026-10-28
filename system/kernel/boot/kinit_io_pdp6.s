@@ -287,12 +287,14 @@ kinit_halt:
  *
  * The caller's fixed frame and this PUSHJ return word are intentionally left
  * unmarked so they count as stack use in the final high-water measurement.
+ * The reserve endpoint is exclusive, so the last legal word is endpoint - 1.
  */
 kinit_stack_watermark_begin:
         hrrz 01,017
         addi 01,1
         movei 02,__kinit_image_end
         addi 02,KINIT_STACK_RESERVE_WORDS
+        subi 02,1                     ; inclusive last address in core
         move 03,[0525252525252]
 kinit_stack_watermark_fill:
         camle 01,02
@@ -304,13 +306,15 @@ kinit_stack_watermark_fill:
  * @brief Measure maximum KINIT stack use from the watermark.
  *
  * Scanning from the top tolerates arbitrary values in the initially live
- * frame.
+ * frame. Never read the exclusive endpoint, which on a 32K machine can
+ * be address 0100000 (outside installed memory).
  *
  * @return AC1: highest stack word touched, measured from __kinit_image_end.
  */
 kinit_stack_watermark_measure:
         movei 02,__kinit_image_end
         addi 02,KINIT_STACK_RESERVE_WORDS
+        subi 02,1                     ; never read past installed core
         movei 04,__kinit_image_end
         move 03,[0525252525252]
 kinit_stack_watermark_scan:

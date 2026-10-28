@@ -1,3 +1,11 @@
+## 2026-10-28 v639: KINIT watermark bounds
+
+Corrected the optional watermark fill/scan inclusive endpoint in
+transient KINIT assembly. The 32K `077200` image plus `0600` reserve
+has exclusive endpoint `0100000`, outside installed 32K core.
+48K watermark-enabled native boot PASS; full 32K failure-path stack
+usage remains unmeasured. See `design/kinit-watermark-bound-v639.md`.
+
 ## 2026-10-28 v638: KINIT transient-only 32K image reduction
 
 PDP-6 native IDIVI decimal memory formatting, the blank SIXBIT count

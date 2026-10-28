@@ -186,6 +186,9 @@ Release-critical or prerequisite correctness/acceptance:
   v493 and independent PDP-6 32K diagnostic/INIT boot PASS; the image
   exactly meets the limit without extra margin. Failure-path stack
   watermark, kernel-only and other-profile acceptance remain open.
+  v639 fixes the watermark fill/scan exclusive-endpoint off-by-one; a
+  native 48K watermark-enabled boot PASS reached INIT V1. The 32K
+  failure-path stack high-water measurement remains outstanding.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 
