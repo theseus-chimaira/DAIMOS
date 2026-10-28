@@ -1,10 +1,13 @@
 /* mkauxstore.c - format/inspect DAIMOS AUXSTORE media descriptors. */
 
 #include <errno.h>
+#include <fcntl.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #define WORD_MASK              0777777777777ULL
 #define HALF_MASK              0777777U
@@ -110,14 +113,31 @@ image_blocks(FILE *fp)
         return (unsigned)((unsigned long)bytes / BLOCK_BYTES);
 }
 
+/* The host formatter operates on an image file, never a live block device.
+ * A caller must explicitly choose and provision the actual controller/unit. */
+static void
+require_regular_image(FILE *fp, const char *path)
+{
+        struct stat st;
+        struct stat lst;
+
+        if (fstat(fileno(fp), &st) != 0 || lstat(path, &lst) != 0 ||
+            !S_ISREG(st.st_mode) || !S_ISREG(lst.st_mode))
+                die("refusing non-regular or symlinked image");
+}
+
 static void
 make_blank(const char *path, unsigned blocks)
 {
         FILE *fp;
+        int fd;
 
         if (blocks == 0U)
                 die("blank image must contain at least one block");
-        fp = fopen(path, "wb");
+        fd = open(path, O_WRONLY | O_CREAT | O_EXCL, 0666);
+        if (fd < 0)
+                die_path(path);
+        fp = fdopen(fd, "wb");
         if (fp == NULL)
                 die_path(path);
         if (fseek(fp, (long)blocks * (long)BLOCK_BYTES - 1L, SEEK_SET) != 0 ||
@@ -136,18 +156,38 @@ zero_range(FILE *fp, unsigned start, unsigned blocks)
                 write_block(fp, start + i, zero);
 }
 
+/* Reject existing media contents before any destructive write.  This also
+ * protects unknown formats; interpreting their superblocks is unnecessary. */
+static void
+require_empty(FILE *fp, unsigned start, unsigned blocks)
+{
+        unsigned char raw[BLOCK_BYTES];
+        unsigned i, j;
+        if (fseek(fp, (long)start * (long)BLOCK_BYTES, SEEK_SET) != 0)
+                die("cannot seek image for safety scan");
+        for (i = 0U; i < blocks; ++i) {
+                if (fread(raw, 1U, sizeof(raw), fp) != sizeof(raw))
+                        die("cannot read image for safety scan");
+                for (j = 0U; j < sizeof(raw); ++j)
+                        if (raw[j] != 0U)
+                                die("refusing nonempty descriptor or backing region");
+        }
+}
+
 static void
 format_auxstore(const char *path, unsigned back_blocks, unsigned log_blocks,
     unsigned cache_blocks, unsigned d6fs_base, unsigned d6fs_blocks,
-    unsigned d6fs_super_a, unsigned d6fs_super_b)
+    unsigned d6fs_super_a, unsigned d6fs_super_b, int dry_run,
+    int confirmed)
 {
         FILE *fp;
         uint64_t desc[BLOCK_WORDS];
         unsigned total, log_start, back_start, cache_start, aux_start;
 
-        fp = fopen(path, "rb+");
+        fp = fopen(path, dry_run ? "rb" : "rb+");
         if (fp == NULL)
                 die_path(path);
+        require_regular_image(fp, path);
         total = image_blocks(fp);
         if (d6fs_base == 0U || d6fs_blocks == 0U ||
             d6fs_base >= total || d6fs_blocks > total - d6fs_base)
@@ -167,6 +207,20 @@ format_auxstore(const char *path, unsigned back_blocks, unsigned log_blocks,
             cache_start + cache_blocks != total)
                 die("AUXSTORE regions must exactly fill the image tail");
 
+        printf("mkauxstore: %s: D6FS %o+%o, LOGSTORE %o+%o, "
+            "BACKSTORE %o+%o, CACHESTORE %o+%o\n", path,
+            d6fs_base, d6fs_blocks, log_start, log_blocks,
+            back_start, back_blocks, cache_start, cache_blocks);
+        if (!dry_run && !confirmed)
+                die("format requires --confirm-destructive (use --dry-run first)");
+        require_empty(fp, 0U, 1U);
+        require_empty(fp, aux_start, total - aux_start);
+        if (dry_run) {
+                if (fclose(fp) != 0)
+                        die_path(path);
+                return;
+        }
+
         zero_range(fp, log_start, log_blocks);
         zero_range(fp, back_start, back_blocks);
         zero_range(fp, cache_start, cache_blocks);
@@ -182,10 +236,6 @@ format_auxstore(const char *path, unsigned back_blocks, unsigned log_blocks,
         if (fclose(fp) != 0)
                 die_path(path);
 
-        printf("mkauxstore: %s: D6FS %o+%o, LOGSTORE %o+%o, "
-            "BACKSTORE %o+%o, CACHESTORE %o+%o\n", path,
-            d6fs_base, d6fs_blocks, log_start, log_blocks,
-            back_start, back_blocks, cache_start, cache_blocks);
 }
 
 static void
@@ -198,6 +248,7 @@ inspect_auxstore(const char *path)
         fp = fopen(path, "rb");
         if (fp == NULL)
                 die_path(path);
+        require_regular_image(fp, path);
         (void)image_blocks(fp);
         if (fseek(fp, 0L, SEEK_SET) != 0)
                 die("cannot seek image");
@@ -232,7 +283,8 @@ usage(void)
             "       mkauxstore --inspect IMAGE\n"
             "       mkauxstore -i IMAGE --backstore-blocks N "
             "--logstore-blocks N --cache-blocks N --d6fs-base N "
-            "--d6fs-blocks N --d6fs-super-a N --d6fs-super-b N\n");
+            "--d6fs-blocks N --d6fs-super-a N --d6fs-super-b N "
+            "[--dry-run | --confirm-destructive]\n");
         exit(2);
 }
 
@@ -242,16 +294,21 @@ main(int argc, char **argv)
         const char *image, *blank, *inspect;
         unsigned blocks, back_blocks, log_blocks, cache_blocks;
         unsigned d6fs_base, d6fs_blocks, d6fs_super_a, d6fs_super_b;
-        int i;
+        int i, dry_run, confirmed;
 
         image = NULL;
         blank = NULL;
         inspect = NULL;
+        dry_run = confirmed = 0;
         blocks = back_blocks = log_blocks = cache_blocks = 0U;
         d6fs_base = d6fs_blocks = 0U;
         d6fs_super_a = d6fs_super_b = HALF_MASK + 1U;
         for (i = 1; i < argc; ++i) {
-                if (strcmp(argv[i], "-i") == 0 && i + 1 < argc)
+                if (strcmp(argv[i], "--dry-run") == 0)
+                        dry_run = 1;
+                else if (strcmp(argv[i], "--confirm-destructive") == 0)
+                        confirmed = 1;
+                else if (strcmp(argv[i], "-i") == 0 && i + 1 < argc)
                         image = argv[++i];
                 else if (strcmp(argv[i], "--blank") == 0 && i + 1 < argc)
                         blank = argv[++i];
@@ -276,13 +333,19 @@ main(int argc, char **argv)
                 else
                         usage();
         }
+        if (dry_run && confirmed)
+                usage();
         if (blank != NULL) {
+                if (dry_run || confirmed)
+                        usage();
                 if (image != NULL || inspect != NULL || blocks == 0U || argc != 5)
                         usage();
                 make_blank(blank, blocks);
                 return 0;
         }
         if (inspect != NULL) {
+                if (dry_run || confirmed)
+                        usage();
                 if (image != NULL || blocks != 0U || argc != 3)
                         usage();
                 inspect_auxstore(inspect);
@@ -293,6 +356,7 @@ main(int argc, char **argv)
             d6fs_super_b > HALF_MASK)
                 usage();
         format_auxstore(image, back_blocks, log_blocks, cache_blocks,
-            d6fs_base, d6fs_blocks, d6fs_super_a, d6fs_super_b);
+            d6fs_base, d6fs_blocks, d6fs_super_a, d6fs_super_b,
+            dry_run, confirmed);
         return 0;
 }
