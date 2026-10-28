@@ -147,6 +147,10 @@ Release-critical or prerequisite correctness/acceptance:
   line frequency. SIMH's `rtc_tps` is simulator-internal. No automatic
   50/60-Hz discovery is possible from APR ticks alone; use a verified
   independent reference or explicit platform/boot configuration instead.
+  v607: `WALL_CLOCK_HZ=50|60` hardcodes the operator's installation-time
+  choice in the software UTC accumulator, default 60. Both cross-builds
+  and lowmem links pass; invalid rate rejected. Native 50-Hz timekeeping
+  and system-wide scheduler/device timeout rate audit remain open.
 - [ ] Finish tested, non-destructive AUXSTORE swap provisioning (MKSWAP),
   including explicit destructive confirmation and existing-format/overlap
   protections. No automatic formatting at boot.

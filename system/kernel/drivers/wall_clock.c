@@ -5,6 +5,13 @@
  */
 #include "pclk.h"
 
+#ifndef WALL_CLOCK_HZ
+#define WALL_CLOCK_HZ 60
+#endif
+#if WALL_CLOCK_HZ != 50 && WALL_CLOCK_HZ != 60
+#error "WALL_CLOCK_HZ must be 50 or 60"
+#endif
+
 #define WALL_MASK 0777777777777UL
 #define WALL_CENTURY 0200000000000UL
 
@@ -14,9 +21,7 @@ extern void mach_pi_restore(kword_t state);
 volatile kword_t wall_clock_ticks;
 static kword_t wall_clock_time;
 static kword_t wall_clock_base;
-/* Default PDP-6 APR rate. This must be wired to a validated 50-Hz setting
- * before claiming 50-Hz system acceptance. */
-static unsigned int wall_clock_hz = 60U;
+/* Installation-time hardware selection; compile-time constant uses no RAM. */
 
 static unsigned int
 days_in_month(unsigned int year, unsigned int month)
@@ -125,7 +130,7 @@ wall_clock_now(void)
                 if (value == 0UL)
                         return 0UL;
                 elapsed = (now - base) & WALL_MASK;
-                whole = elapsed / (kword_t)wall_clock_hz;
+                whole = elapsed / (kword_t)WALL_CLOCK_HZ;
                 if (whole == 0UL)
                         return value;
                 updated = value;
@@ -135,7 +140,7 @@ wall_clock_now(void)
                 if (wall_clock_time == value && wall_clock_base == base) {
                         wall_clock_time = updated;
                         wall_clock_base = (base + whole *
-                            (kword_t)wall_clock_hz) & WALL_MASK;
+                            (kword_t)WALL_CLOCK_HZ) & WALL_MASK;
                         mach_pi_restore(ps);
                         return updated;
                 }

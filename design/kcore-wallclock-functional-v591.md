@@ -113,6 +113,25 @@ software wall clock remains explicitly 60 Hz; a 50-Hz implementation
 must obtain its rate from verified platform/boot configuration or a
 separate trustworthy reference and cover both cases in native tests.
 
+## 2026-10-28 v607 installation-time frequency setting
+
+The operator specifies the known physical APR line frequency at build time:
+
+    make -C system/boot/pdp6 image WALL_CLOCK_HZ=50
+    make -C system/boot/pdp6 image WALL_CLOCK_HZ=60
+
+The default is 60. Values other than 50 or 60 fail at make time and in
+the C preprocessor. The selected constant is propagated to the KCORE
+wall-clock compilation, and changing it invalidates the generated
+`wall_clock.s` even when reusing the same build directory. No mutable
+frequency word remains in permanent kernel RAM. Cross-compilation was
+verified for both rates: generated PDP-6 DIVI/MULI divisors are octal
+062 for 50 and 074 for 60; invalid 49 fails. Both lowmem links pass.
+
+The setting changes software UTC accumulation only; other historical
+60-Hz scheduler, sleep and device-timeout policies are not silently
+retimed. Their 50-Hz audit remains a distinct acceptance requirement.
+
 ## 2026-10-28 v594 unified TIME36 gateway
 
 Introduced `wall_time36` as the single entry for GETTIME and D6FS/MEMFS
