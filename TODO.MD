@@ -130,11 +130,14 @@ Release-critical or prerequisite correctness/acceptance:
   GETTIME/SETTIME, and TIME36 timestamp preservation.
   Native milestone v592-v593: absent SIMH PCLK now produces unknown TIME36
   rather than a fabricated date; native PCLK-on/off GETTIME tests PASS.
-  v595-v596: shared TIME36 service now falls back to APR-tick-driven UTC
+  v595-v599: shared TIME36 service now falls back to APR-tick-driven UTC
   when PCLK is absent; root-only SETTIME validates TIME36 and rejects
   attempts to modify physical PCLK. Native PDP-6 SETTIME acceptance PASS
-  in both PCLK modes. DATE/LOGIN integration and 50-Hz configuration,
-  rollover/stress/credential tests remain acceptance work.
+  in both PCLK modes. SETTIME extension opcode moved from the conflicting
+  PROCCTL SETGID 025 to unused 037. Native ROOT LOGIN on an unset clock
+  invokes DATE, initializes UTC, then enters DSH (testkit v597 PASS).
+  50-Hz configuration, rollover/stress/non-root credential tests and
+  physical-device presence policy remain acceptance work.
 - [ ] Finish tested, non-destructive AUXSTORE swap provisioning (MKSWAP),
   including explicit destructive confirmation and existing-format/overlap
   protections. No automatic formatting at boot.
