@@ -1,3 +1,15 @@
+## 2026-10-28 v638: 32K KINIT native bootstrap restored
+
+Transient PDP-6 KINIT diagnostic/probe assembly recovered 30 decimal
+linked words: image end `077236` -> `077200`, meeting the existing 32K
+`0600`-octal stack reserve exactly. No permanent KCORE change or weaker
+stack bound. Native 32K TSFS+AUXSTORE v493 PASS; standalone SIMH boot
+shows `MEM 32 K` and reaches INIT V1. The auxiliary image generator's
+DBOOT-to-AUXST1 conversion is now explicitly confirmed, signature- and
+layout-validated, preserving D6FS. Host v636/v638 safety tests PASS.
+Other profiles, stack watermark and failure-path acceptance remain open.
+See `design/kinit-lowmem-footprint-v638.md`.
+
 ## 2026-10-27 v513: fresh permanent-size measurements and XIP/512-word TODO
 
 Rebuilt the current source's GCC `permanent-size` target for three PDP-6

@@ -181,6 +181,11 @@ Release-critical or prerequisite correctness/acceptance:
 - [ ] Validate KINIT failure-path stack reserve and 32K kernel-only boot;
   retain separate 48K/96K/256K DSH functional gates. Repair stale MM
   testkit linking and secondary DTFS/TSFS mount test assumptions.
+  v638 recovered 30 transient KINIT words: 32K image end `077236` ->
+  `077200` at unchanged octal `0600` stack reserve. Native TSFS+AUXSTORE
+  v493 and independent PDP-6 32K diagnostic/INIT boot PASS; the image
+  exactly meets the limit without extra margin. Failure-path stack
+  watermark, kernel-only and other-profile acceptance remain open.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 

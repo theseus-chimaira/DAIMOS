@@ -15,9 +15,6 @@
  * patterns can be written and read back, after which its original contents
  * are restored.
  */
-#define KINIT_PROBE_PATTERN_A    0525252525252UL
-#define KINIT_PROBE_PATTERN_B    0252525252525UL
-
 /*
  * Probe one physical word without changing its final contents.
  *
@@ -25,25 +22,7 @@
  * clears APR state after each probe so this helper only reports whether the
  * tested location behaved like writable memory.
  */
-static int
-kinit_probe_word(volatile kword_t *addr)
-{
-        kword_t old;
-
-        old = *addr;
-        *addr = KINIT_PROBE_PATTERN_A;
-        if (*addr != KINIT_PROBE_PATTERN_A) {
-                *addr = old;
-                return 0;
-        }
-        *addr = KINIT_PROBE_PATTERN_B;
-        if (*addr != KINIT_PROBE_PATTERN_B) {
-                *addr = old;
-                return 0;
-        }
-        *addr = old;
-        return 1;
-}
+extern int kinit_probe_word(volatile kword_t *addr);
 
 /**
  * @brief Detect installed core in the supported 32K..256K range.
@@ -85,44 +64,11 @@ kinit_memory_kwords(void)
  * @brief Emit whole blank SIXBIT words for fixed-column diagnostics.
  * @param words Number of six-character blank fields to emit.
  */
-void
-kinit_put6_spaces(unsigned int words)
-{
-        while (words-- != 0U)
-                kinit_put6(0);
-}
+extern void kinit_put6_spaces(unsigned int words);
 
-/*
- * Format the 32K..256K detected size without the old 32K-step lookup table.
- * The three decimal digits fit in one SIXBIT word alongside " K ".  Repeated
- * subtraction is small and bounded (at most nine iterations for each digit),
- * and avoids pulling integer division into the early bootstrap.
- */
-static void
-kinit_put_memory(unsigned int value)
-{
-        unsigned int hundreds;
-        unsigned int tens;
-        kword_t field;
-
-        hundreds = 0U;
-        while (value >= 100U) {
-                value -= 100U;
-                ++hundreds;
-        }
-        tens = 0U;
-        while (value >= 10U) {
-                value -= 10U;
-                ++tens;
-        }
-        field = (kword_t)SIXBIT("    K ");
-        if (hundreds != 0U)
-                field |= ((kword_t)(hundreds + 020U)) << 30U;
-        field |= ((kword_t)(tens + 020U)) << 24U;
-        field |= ((kword_t)(value + 020U)) << 18U;
-        kinit_put6(0);
-        kinit_put6(field);
-}
+/* The native PDP-6 implementation in kinit_io_pdp6.s formats 32K..256K
+ * as three decimal SIXBIT digits using two IDIVI instructions. */
+extern void kinit_put_memory(unsigned int value);
 
 /**
  * @brief Print the KINIT identification banner.

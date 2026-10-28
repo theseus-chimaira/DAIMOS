@@ -25,6 +25,12 @@
 #define AUXSTORE_DESC_D6FS     5U
 #define AUXSTORE_DESC_D6SUPER  6U
 
+/* Exact one-member clean DBOOT descriptor produced by mkdsk before
+ * conversion to the AUXST1 partition descriptor. */
+#define DBOOT_CLEAN_HEADER      0444243000000ULL
+#define DBOOT_SINGLE_MEMBER     04010000ULL
+#define DBOOT_D6FS_MAGIC       0442654636222ULL
+
 static void
 die(const char *msg)
 {
@@ -84,7 +90,9 @@ get64le(FILE *fp)
         v = 0U;
         for (i = 0U; i < 8U; ++i)
                 v |= (uint64_t)raw[i] << (i * 8U);
-        return v & WORD_MASK;
+        if ((v & ~WORD_MASK) != 0U)
+                die("image word has nonzero bits above bit 35");
+        return v;
 }
 
 static void
@@ -174,11 +182,41 @@ require_empty(FILE *fp, unsigned start, unsigned blocks)
         }
 }
 
+/* Convert only a known disposable DBOOT descriptor. Never permit a generic
+ * overwrite of block zero: exact layout matching is essential because the
+ * existing D6FS partition must survive the conversion unchanged. */
+static void
+require_dboot_conversion(FILE *fp, unsigned d6fs_base,
+    unsigned d6fs_blocks, unsigned super_a, unsigned super_b,
+    unsigned tail_blocks)
+{
+        uint64_t w[BLOCK_WORDS];
+        unsigned i;
+
+        if (fseek(fp, 0L, SEEK_SET) != 0)
+                die("cannot seek DBOOT descriptor");
+        for (i = 0U; i < BLOCK_WORDS; ++i)
+                w[i] = get64le(fp);
+        if (w[0] != DBOOT_CLEAN_HEADER ||
+            w[5] != DBOOT_SINGLE_MEMBER ||
+            w[6] != DBOOT_D6FS_MAGIC ||
+            w[7] != pair(d6fs_base, d6fs_blocks) ||
+            w[8] != super_a || w[9] != super_b ||
+            w[10] != tail_blocks)
+                die("DBOOT conversion metadata does not match requested layout");
+        for (i = 1U; i < BLOCK_WORDS; ++i) {
+                if (i >= 5U && i <= 10U)
+                        continue;
+                if (w[i] != 0U)
+                        die("DBOOT descriptor contains unexpected metadata");
+        }
+}
+
 static void
 format_auxstore(const char *path, unsigned back_blocks, unsigned log_blocks,
     unsigned cache_blocks, unsigned d6fs_base, unsigned d6fs_blocks,
     unsigned d6fs_super_a, unsigned d6fs_super_b, int dry_run,
-    int confirmed)
+    int confirmed, int convert_dboot)
 {
         FILE *fp;
         uint64_t desc[BLOCK_WORDS];
@@ -213,7 +251,11 @@ format_auxstore(const char *path, unsigned back_blocks, unsigned log_blocks,
             back_start, back_blocks, cache_start, cache_blocks);
         if (!dry_run && !confirmed)
                 die("format requires --confirm-destructive (use --dry-run first)");
-        require_empty(fp, 0U, 1U);
+        if (convert_dboot)
+                require_dboot_conversion(fp, d6fs_base, d6fs_blocks,
+                    d6fs_super_a, d6fs_super_b, total - aux_start);
+        else
+                require_empty(fp, 0U, 1U);
         require_empty(fp, aux_start, total - aux_start);
         if (dry_run) {
                 if (fclose(fp) != 0)
@@ -284,7 +326,7 @@ usage(void)
             "       mkauxstore -i IMAGE --backstore-blocks N "
             "--logstore-blocks N --cache-blocks N --d6fs-base N "
             "--d6fs-blocks N --d6fs-super-a N --d6fs-super-b N "
-            "[--dry-run | --confirm-destructive]\n");
+            "[--dry-run | --confirm-destructive] [--convert-dboot]\n");
         exit(2);
 }
 
@@ -294,12 +336,13 @@ main(int argc, char **argv)
         const char *image, *blank, *inspect;
         unsigned blocks, back_blocks, log_blocks, cache_blocks;
         unsigned d6fs_base, d6fs_blocks, d6fs_super_a, d6fs_super_b;
-        int i, dry_run, confirmed;
+        int i, dry_run, confirmed, convert_dboot;
 
         image = NULL;
         blank = NULL;
         inspect = NULL;
         dry_run = confirmed = 0;
+        convert_dboot = 0;
         blocks = back_blocks = log_blocks = cache_blocks = 0U;
         d6fs_base = d6fs_blocks = 0U;
         d6fs_super_a = d6fs_super_b = HALF_MASK + 1U;
@@ -308,6 +351,8 @@ main(int argc, char **argv)
                         dry_run = 1;
                 else if (strcmp(argv[i], "--confirm-destructive") == 0)
                         confirmed = 1;
+                else if (strcmp(argv[i], "--convert-dboot") == 0)
+                        convert_dboot = 1;
                 else if (strcmp(argv[i], "-i") == 0 && i + 1 < argc)
                         image = argv[++i];
                 else if (strcmp(argv[i], "--blank") == 0 && i + 1 < argc)
@@ -336,7 +381,7 @@ main(int argc, char **argv)
         if (dry_run && confirmed)
                 usage();
         if (blank != NULL) {
-                if (dry_run || confirmed)
+                if (dry_run || confirmed || convert_dboot)
                         usage();
                 if (image != NULL || inspect != NULL || blocks == 0U || argc != 5)
                         usage();
@@ -344,7 +389,7 @@ main(int argc, char **argv)
                 return 0;
         }
         if (inspect != NULL) {
-                if (dry_run || confirmed)
+                if (dry_run || confirmed || convert_dboot)
                         usage();
                 if (image != NULL || blocks != 0U || argc != 3)
                         usage();
@@ -357,6 +402,6 @@ main(int argc, char **argv)
                 usage();
         format_auxstore(image, back_blocks, log_blocks, cache_blocks,
             d6fs_base, d6fs_blocks, d6fs_super_a, d6fs_super_b,
-            dry_run, confirmed);
+            dry_run, confirmed, convert_dboot);
         return 0;
 }

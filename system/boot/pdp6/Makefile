@@ -1243,7 +1243,7 @@ $(DRUM_IMAGES) &:
 	    --swap-tail-blocks $(DRUM_AUX_TAIL_BLOCKS) --spare-blocks 0 \
 	    --member-sectors 020000
 	$(MKD6FS) -n 1 -d $(DRUM_DIR)
-	$(MKAUXSTORE) -i $(DR0_IMAGE) \
+	$(MKAUXSTORE) -i $(DR0_IMAGE) --confirm-destructive --convert-dboot \
 	    --logstore-blocks $(DRUM_LOGSTORE_BLOCKS) \
 	    --backstore-blocks $(DRUM_BACKSTORE_BLOCKS) \
 	    --cache-blocks $(DRUM_CACHESTORE_BLOCKS) \

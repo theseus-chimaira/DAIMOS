@@ -1,3 +1,16 @@
+## 2026-10-28 v638: KINIT transient-only 32K image reduction
+
+PDP-6 native IDIVI decimal memory formatting, the blank SIXBIT count
+loop, and complementary memory probes replace larger GCC-generated
+transient KINIT routines. Link end `077236` -> `077200`: 30 decimal
+words recovered, with the original `0600`-octal stack reserve intact.
+Native 32K TSFS+AUXSTORE boot and `MEM 32 K` diagnostics PASS; the
+linked image sits exactly at the boundary, so stack watermark and
+other-profile tests remain outstanding. Permanent KCORE is unchanged.
+The generated DRM DBOOT descriptor is converted to AUXST1 only after
+strict signature/layout checks and explicit build-time confirmation.
+See `design/kinit-lowmem-footprint-v638.md` for full evidence.
+
 ## 2026-10-27 v513: fresh current GCC size results (no code change)
 
 Re-ran `permanent-size` on current sources, not the older v219/XIP-linked

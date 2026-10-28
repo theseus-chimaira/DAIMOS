@@ -25,6 +25,67 @@
         .globl kinit_call18_1
         .globl kinit_halt
         .globl kinit_apr_clear
+        .globl kinit_put_memory
+        .globl kinit_put6_spaces
+        .globl kinit_probe_word
+
+/* Save/test/restore a physical core word. The two diagnostic bit patterns
+ * are complements, so one literal suffices. Preserve all original content
+ * even when the first write fails. Each read must access physical core. */
+kinit_probe_word:
+        move 4,1
+        move 3,(4)
+        movei 1,0
+        move 6,[0525252525252]
+        movem 6,(4)
+        came 6,(4)
+        jrst kinit_probe_restore
+        setca 6,
+        movem 6,(4)
+        came 6,(4)
+        jrst kinit_probe_restore
+        movei 1,1
+kinit_probe_restore:
+        movem 3,(4)
+        popj 017,
+
+/* The normal banner uses four or five blank SIXBIT words.  Keep the
+ * public zero-count behavior as well, with one countdown loop. */
+kinit_put6_spaces:
+        jumpe 1,kinit_put6_spaces_done
+        push 017,010
+        move 010,1
+kinit_put6_spaces_loop:
+        movei 1,0
+        pushj 017,kinit_put6
+        sojg 010,kinit_put6_spaces_loop
+        pop 017,010
+kinit_put6_spaces_done:
+        popj 017,
+
+/* Print a detected 32..256 Kword size as decimal "XYZ K ".  The
+ * positive input is bounded, so two native signed IDIVI operations are
+ * equivalent to the prior unsigned C subtraction loops.  IDIVI uses
+ * adjacent ACs for remainders; no division runtime is required. */
+kinit_put_memory:
+        push 017,010
+        idivi 1,0144                   ; AC1 hundreds, AC2 remainder
+        idivi 2,012                    ; AC2 tens, AC3 units
+        movei 010,05300               ; SIXBIT "    K " fits in 18 bits
+        jumpe 1,kinit_memory_no_hundreds
+        addi 1,020
+        lsh 1,036
+        ior 010,1
+kinit_memory_no_hundreds:
+        addi 2,020
+        lsh 2,030
+        ior 010,2
+        tlo 010,020(3)
+        movei 1,0
+        pushj 017,kinit_put6
+        move 1,010
+        pop 017,010
+        jrst kinit_put6
 
 /**
  * @brief Write one packed six-character SIXBIT word to the polling console.
