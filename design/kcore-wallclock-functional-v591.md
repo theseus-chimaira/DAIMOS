@@ -373,3 +373,15 @@ it was corrected before commit. The accepted reader is 23 words versus
 its post-handler JRST is a live DPY-installation patch site and must
 not be folded into the PI tail. KCORE remains 8537 words; SCLK remains
 292 words; conservative KCORE+MRES is 15932 words.
+
+## 2026-10-28 v635 PCLK return/branch consolidation and APR audit
+
+PCLK now shares its hardware-absent and ordinary return instruction,
+then uses a single CAIGE skip/TLO pair for the TIME36 21xx century bit.
+The 50/60-Hz native PCLK-present and PCLK-absent regression tests pass.
+The linked PCLK MRES decreases from 23 words (v633) to 21 words; APR
+remains 42 words, SCLK remains 292 words, and conservative KCORE+MRES
+is 15930 words. The APR save words cannot be eliminated because the PI6
+scheduler may switch kernel stacks; the post-handler JRST must remain
+patchable for the Type 340 display. No unverified APR transformation is
+retained. v635 closes the APR/PCLK size audit.
