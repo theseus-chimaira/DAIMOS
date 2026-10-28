@@ -101,6 +101,12 @@ and testkit immediately before implementing an item.
 
 Release-critical or prerequisite correctness/acceptance:
 
+- [x] Regression row 028 (v580): `kernel-runtime` and `stand-runtime` PASS.
+- [x] Regression row 029 (v581–v583): D6FS HDD runtime, two/four-member
+  HDD tests and dual-superblock recovery PASS. Existing multimember fixture
+  omitted external DSH commands; accepted v582 testkit fixture packages
+  nine required binaries without altering the kernel or weakening assertions.
+
 - [ ] **Preserve and diagnose every future `?RT` boot failure before
   rebuilding/resetting media.** Save SIMH transcript, exact boot image and
   mutable media, selected-root/handoff evidence and filesystem state;
