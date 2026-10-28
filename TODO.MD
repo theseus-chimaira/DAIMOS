@@ -482,12 +482,17 @@ source-level RAM optimization continue independently.** See
   boot): all four targets PASS in v568–v570. The MINIT-only test fixture
   now uses supported `BOOT_PROFILE=lowmem ROOT=drum` rather than the known
   oversized default full profile; all original module checks remain.
-- [ ] Row 027 remains blocked: fresh v571 native `test-daimos-dtc-online`
-  reproduced the historical persisted-media failure on its second boot.
-  The first boot formats/checks native DTFS; the second boot reaches DSH,
-  but `MOUNT` and `MOUNT.DTFS` report `MOUNT.DTFS: /MOUNT/DT0`.
-  This is a real `cmd_mount_dtfs` error path, **not** a success marker or a
-  reason to relax the oracle. Diagnose media probe vs DTFS mount rejection.
+- [ ] Row 027 is partially accepted: v573 proves native DTFS media survives
+  two boots and passes second-boot FSCK; disk-root `MOUNT.DTFS` refusal is
+  intentional because `dtfs_minit()` installs its MRES only when the selected
+  root is DTC. Testkit v573 now asserts this exact supported contract.
+  v575 updates the eight-member TSFS scanner regression for its current
+  direct-result API (old SYS_TSFS handoff ABI retired). V577 verifies TSFS
+  root directory lookup/listing/STAT on a real tape-root SIMH image, replacing
+  the obsolete secondary `MOUNT.TSFS` oracle in the matrix. First eight
+  row-027 tests have passing evidence. Complete the separate native DTFS
+  secondary-mount acceptance under a tape-selected root and the reverse
+  transfer test before declaring all of row 027 accepted.
 - [ ] Rework secondary TSFS/DTFS mount acceptance to match the intentionally
   root-selected MRES package. Do not introduce extra resident MRES solely
   to satisfy a fixture that boots the wrong root class.
