@@ -1,5 +1,35 @@
 # PDP-6 memory granularity P0 source audit (v521, 2026-10-27)
 
+## V561 acceptance: full-system scheduler continuation after compaction (2026-10-28)
+
+**Accepted.** The production 256K full-profile PDP-6 SIMH kernel now has
+deterministic testkit coverage for physical relocation and resumed process
+execution: `tests/validation/daimos-mm-compaction-scheduler-v561.{c,sh}`.
+The workload starts sixteen `020000`-word-data child processes (resident
+images of `024000` octal words), blocks them, terminates and reaps the
+alternating children, then grows INIT's logical BRK from `024000` to
+`0300000` octal words. This allocation exceeds the largest free gap of
+the earlier measured fragment layout but is within aggregate free RAM.
+
+A fresh end-to-end run recorded **two `mm_compact` entries and two
+production `vm_extent_move` entries**; the BRK succeeded, and the guest
+continued through `CQ` and halted normally. After the move, all surviving
+children resumed from the shared-pipe wait, verified sentinel data at
+both ends of their private BSS, exited, and were reaped with expected
+exit status. The harness checks each status and requires both real
+physical relocation and guest completion. SIMH breakpoint/examine lines
+may interrupt individual guest serial characters; the harness therefore
+matches the ordered completion markers across those lines instead of
+requiring an uninterrupted console string. It does not infer relocation
+from successful BRK alone. The earlier native v548 public-allocator to
+relocated user fetch/MOVEM test also passed after v561.
+
+**The specific P0 physical-compaction plus scheduler-resumption gate is
+closed.** This does not mark the other P0 correctness/release work in
+`TODO.MD` complete and does not replace post-freeze RAM-placement and
+high-water measurements. No v561 production source change or additional
+permanent RAM was required beyond the accepted v560 BRK retry fix.
+
 Status: source inspection completed; implementation and native acceptance open.
 
 ## Actual units and mechanisms
