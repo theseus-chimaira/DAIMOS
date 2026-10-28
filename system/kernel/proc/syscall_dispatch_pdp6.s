@@ -621,14 +621,12 @@ native_sys_ext_table:
 ; AC2 is zero to query, otherwise the requested logical break.  The VM helper
 ; owns APR-granularity resize and returns the current/new break or -1.
 native_sys_settime:
-        push    17,2
+        ; file_check_root preserves AC2 (the requested TIME36).
+        ; Avoid the redundant stack save/restore on this syscall path.
         pushj   17,file_check_root
-        jumpn   1,native_sys_settime_denied
-        pop     17,1
+        jumpn   1,kret_neg1
+        move    1,2
         jrst    wall_clock_set
-native_sys_settime_denied:
-        pop     17,2
-        jrst    kret_neg1
 
 native_sys_brk:
         move    1,2
