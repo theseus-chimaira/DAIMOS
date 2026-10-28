@@ -375,3 +375,18 @@ The corrected guest cross-compiles without that warning, and the full
 process-slot reuse cycles. No DAIMOS production code changes in v547.
 The complete scheduled-relocation gate remains open: neither running
 swap pressure scenario generated the necessary fragmented allocation.
+
+## V548 public allocator to relocated user instruction execution (2026-10-28)
+
+New testkit `daimos-mm-alloc-user-fetch-v548.{s,sh}` integrates the
+production PDP-6 `mm_alloc_aligned` allocation/reclaim/compaction entry
+with the deterministic fragmented extent fixture and v542 real APR user
+instruction fetch. A `04000`-octal MODULE allocation forces the fixed
+allocator path to move a resident `02000`-word process. The test checks
+the new `012000` allocation, updated extent table and process mapping,
+copied process payload, restored runqueue, APR programming, and mapped
+user-mode MOVEI/MOVEM execution ending at logical `0102` with the expected
+physical `020200` write. Native SIMH step test PASS. Only reclaim and PI
+services are controlled boundaries; no permanent resident data added.
+The remaining full-system gate is actual scheduler-restored continuation
+following relocation during a complete kernel boot, not native APR fetch.
