@@ -106,13 +106,13 @@ Release-critical or prerequisite correctness/acceptance:
   HDD tests and dual-superblock recovery PASS. Existing multimember fixture
   omitted external DSH commands; accepted v582 testkit fixture packages
   nine required binaries without altering the kernel or weakening assertions.
-- [x] Regression row 030 CTY0/STATS stream failure diagnosed (v589):
-  the dedicated native v586-v588 SIXBIT pathname accidentally encoded
-  `/MONITOR/DEVICES/DTY0/STATS` rather than `CTY0/STATS`. Corrected v589
-  OPEN/READCHAR/CLOSE test passes with the production kernel on PDP-6 SIMH;
-  no kernel change was needed. The older CAT-based runtime-build row still
-  needs its oracle replaced with a character-stream-aware check before the
-  *entire* runtime-build target can be recorded as passing.
+- [x] Regression row 030 runtime-build (v589-v590): the dedicated native
+  v586-v588 SIXBIT pathname accidentally encoded `/MONITOR/DEVICES/DTY0/STATS`
+  rather than `CTY0/STATS`. Corrected v589 OPEN/READCHAR/CLOSE test passes
+  on PDP-6 SIMH. The v590 probe manifest preserves all 65 valid command
+  probes (65 PASS, zero FAIL), replacing only the inapplicable CAT/STATS
+  oracle with mandatory native character-stream acceptance in runtime-build.
+  Complete runtime-build PASS; no kernel source change or optimization.
 
 - [ ] **Preserve and diagnose every future `?RT` boot failure before
   rebuilding/resetting media.** Save SIMH transcript, exact boot image and
