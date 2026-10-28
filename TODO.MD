@@ -136,8 +136,13 @@ Release-critical or prerequisite correctness/acceptance:
   in both PCLK modes. SETTIME extension opcode moved from the conflicting
   PROCCTL SETGID 025 to unused 037. Native ROOT LOGIN on an unset clock
   invokes DATE, initializes UTC, then enters DSH (testkit v597 PASS).
-  50-Hz configuration, rollover/stress/non-root credential tests and
-  physical-device presence policy remain acceptance work.
+  Native v604 leap-day rollover, invalid calendar and non-root SETTIME
+  denial PASS in both PCLK modes with restored pristine boot media.
+  The targeted v602 SETTIME handler size pass saves three linked lowmem
+  words (KCORE+MRES 15983 -> 15980), with no new data structure.
+  50-Hz configuration, concurrency/timestamp stress and physical-device
+  presence policy remain acceptance work; repeated-boot ?RT forensics
+  are tracked separately.
 - [ ] Finish tested, non-destructive AUXSTORE swap provisioning (MKSWAP),
   including explicit destructive confirmation and existing-format/overlap
   protections. No automatic formatting at boot.

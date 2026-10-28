@@ -73,6 +73,30 @@ PASS. This proves the guarded SIMH device behavior, not the absence
 probe's safety on unspecified physical PDP-6 hardware. The software
 calendar accumulator, SETTIME and DATE SET remain unfinished.
 
+## 2026-10-28 v604 tested UTC clock and SETTIME acceptance
+
+The shared TIME36 entry now returns PCLK when available and the software
+APR-tick accumulator otherwise. Privileged SETTIME uses UUO-077 extension
+037, avoiding PROCCTL SETGID's reserved 025 extension. DATE can prompt for
+UTC, and privileged LOGIN invokes DATE only when the clock is unset.
+
+Native PDP-6 tests: v596 (PCLK present/absent SETTIME), v597 (ROOT LOGIN
+invokes DATE, then DSH), and v604 (leap-day rollover, invalid calendars,
+non-root SETTIME denial and PCLK-present refusal) PASS. v604 snapshots and
+restores the pristine boot media before each simulated PCLK mode; earlier
+repeated boots against mutated media hit `?RT` before INIT. Separate boot
+forensics remain open rather than treating a clean rebuild as a repair.
+
+Targeted v602 SIZEOPT.MD-style resident syscall change: the existing
+`file_check_root` preserves AC2, so SETTIME no longer spills the TIME36
+argument to the stack. Same lowmem permanent-size profile before/after:
+packaged KCORE+MRES 15983 -> 15980 words; PERMANENT_LAST 16030 -> 16027
+decimal (octal 037236 -> 037233), **three linked words saved**.
+No claimed general KCORE optimization and no independent RAM increase.
+
+Open gates: actual 50/60-Hz configuration, physical PDP-6 PCLK discovery,
+additional concurrent time-setting/stamp stress and boot reuse forensics.
+
 ## 2026-10-28 v594 unified TIME36 gateway
 
 Introduced `wall_time36` as the single entry for GETTIME and D6FS/MEMFS
