@@ -189,6 +189,10 @@ Release-critical or prerequisite correctness/acceptance:
   v639 fixes the watermark fill/scan exclusive-endpoint off-by-one; a
   native 48K watermark-enabled boot PASS reached INIT V1. The 32K
   failure-path stack high-water measurement remains outstanding.
+  v640 adds an instrumented fatal-HALT stack sample. A native 48K
+  invalid-root-selector test measured octal `0164` (116 decimal) words
+  against the unchanged octal `0600` (384 decimal) reserve. Other
+  failure paths and the strict 32K kernel-only boot remain open.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 

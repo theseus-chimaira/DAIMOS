@@ -136,6 +136,9 @@ kinit_error18_loop:
         sojg 06,kinit_error18_loop
         pushj 017,knl_wait
 kinit_error18_halt:
+.if KINIT_STACK_WATERMARK
+        pushj 017,kinit_stack_watermark_record_halt
+.endif
         halt .
         jrst kinit_error18_halt
 
@@ -274,6 +277,9 @@ kinit_apr_clear:
  * through into unrelated bootstrap code.
  */
 kinit_halt:
+.if KINIT_STACK_WATERMARK
+        pushj 017,kinit_stack_watermark_record_halt
+.endif
         halt .
         jrst kinit_halt
 
@@ -281,6 +287,15 @@ kinit_halt:
         .globl kinit_stack_watermark_begin
         .globl kinit_stack_watermark_measure
         .globl __kinit_image_end
+        .globl kinit_stack_highwater
+
+/* A halted failure path never reaches late KINIT's final watermark sample.
+ * Sample before HALT in diagnostic builds; leave normal boot unchanged. */
+kinit_stack_watermark_record_halt:
+        pushj 017,kinit_stack_watermark_measure
+        camle 01,kinit_stack_highwater
+        movem 01,kinit_stack_highwater
+        popj 017,
 
 /**
  * @brief Fill the unused KINIT pushdown list with watermark sentinels.

@@ -1,3 +1,11 @@
+## 2026-10-28 v640: KINIT fatal-HALT watermark verification
+
+For instrumented KINIT builds, both ordinary and short-code fatal
+HALT paths record the existing stack high-water word. Native 48K
+invalid-root boot HALT measured `0164` octal (116 decimal) stack words
+versus a `0600` octal reserve. Production KCORE and KINIT are unchanged
+when watermarking is off. See `design/kinit-failure-watermark-v640.md`.
+
 ## 2026-10-28 v639: KINIT watermark bounds
 
 Corrected the optional watermark fill/scan inclusive endpoint in

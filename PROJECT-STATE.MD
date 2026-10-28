@@ -1,3 +1,12 @@
+## 2026-10-28 v640: native KINIT fatal-path stack sample
+
+Optional watermark-enabled HALT paths now save the stack high-water
+before stopping; production paths remain unchanged. A native PDP-6
+48K invalid-root HALT recorded octal `0164` (116 decimal) words, below
+the octal `0600` reserve. Testkit v640 PASS. Other failure paths and
+32K kernel-only acceptance remain open. Full details in
+`design/kinit-failure-watermark-v640.md`.
+
 ## 2026-10-28 v639: optional KINIT watermark boundary corrected
 
 The optional stack-watermark fill and scan used an inclusive upper
