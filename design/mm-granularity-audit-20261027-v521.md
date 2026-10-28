@@ -432,3 +432,21 @@ lifetimes and sizes so an MM_ERR_FRAGMENTED request has enough **total**
 free memory to be resolved by moving a runnable process. A fixed oversized
 BRK request or generic swap pressure does not establish that condition.
 No production kernel code or permanent runtime instrumentation changed.
+
+## V552 shared-gate SIMH fragmentation probe (2026-10-28)
+
+Created a testkit-only experimental full-boot guest with one shared pipe
+and 16 sleeping process images. It releases alternating child PIDs through
+`SYS_PROCCTL_EVENT_PID` / `SYS_EVENT_TERM` and waits for their termination,
+avoiding the per-process file-descriptor limit found in v551. The full
+256K PDP-6 SIMH run reached `AB`, confirming both creation and selective
+release. Parent `BRK` growth by `010000` octal words still returned
+failure (`!G`); the production `vm_extent_move` breakpoint was not hit.
+Therefore this is **not** a relocation acceptance test or evidence of a
+kernel relocation bug. It confirms the gate-count limitation can be
+removed without changing production code. Further arbitrary BRK sizing
+is not warranted: first instrument the actual physical extents/free gaps
+via the external simulator at the growth boundary to determine whether
+there is enough total free memory and insufficient contiguous free space.
+No kernel changes or permanent resident counters. The unaccepted v552
+fixture remains in daimos-testkit working tree for further diagnosis.
