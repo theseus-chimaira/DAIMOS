@@ -179,6 +179,21 @@ AC5 across `wall_time36`. Although the current GCC assembly incidentally
 restores AC5, the production caller now saves and restores the pointer
 explicitly. This is an ABI correctness fix, not a claimed size saving.
 
+## 2026-10-28 v612 multiprocess GETTIME/SETTIME acceptance
+
+Native testkit `daimos-date-race-v612` PASS for independently built
+`WALL_CLOCK_HZ=50` and `60` systems with PCLK absent. A privileged
+parent repeatedly alternates valid leap-day-boundary TIME36 settings
+while three separate child processes read GETTIME under normal scheduler
+preemption, validating decoded fields and child exit status. This tests
+the PI-masked snapshot and guarded publication paths in a multiprocess
+setting. No production clock change or additional RAM was needed.
+
+This bounded native race closes the targeted concurrency acceptance gate;
+it does not constitute exhaustive indefinite stress testing. Physical
+PCLK presence semantics and device/scheduler timing on actual 50-Hz
+hardware remain independently open.
+
 Additional native v610 rerun with `WALL_CLOCK_HZ=50` PASS in both PCLK
 modes, including MEMFS mtime across leap-day midnight. This closes the
 50/60-Hz MEMFS timestamp regression, not multiprocess clock stress.

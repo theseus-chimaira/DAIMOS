@@ -157,7 +157,9 @@ Release-critical or prerequisite correctness/acceptance:
   verifies timestamp propagation after SETTIME and leap-day rollover.
   Native rerun with WALL_CLOCK_HZ=50 PASS in both PCLK modes as well.
   Source concurrency audit found PI-masked snapshots and guarded
-  publication; multiprocess stress remains open. Native v610 MEMFS mtime
+  publication; native v612 multiprocess GETTIME/SETTIME race PASS at
+  50 and 60 configured Hz, with three concurrent reader processes and
+  a privileged clock writer. Native v610 MEMFS mtime
   regression PASS (both PCLK modes, leap-day rollover); `memfs_touch_slot`
   now preserves caller-scratch AC5 across the software clock gateway.
   Native v610 rerun at WALL_CLOCK_HZ=50 PASS in both PCLK modes too.
