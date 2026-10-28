@@ -155,6 +155,7 @@ Release-critical or prerequisite correctness/acceptance:
   open; SIMH's native APR source itself stays 60 Hz.
   Native v609 D6FS mtime regression PASS at 60 Hz, both PCLK modes;
   verifies timestamp propagation after SETTIME and leap-day rollover.
+  Native rerun with WALL_CLOCK_HZ=50 PASS in both PCLK modes as well.
   Source concurrency audit found PI-masked snapshots and guarded
   publication; multiprocess stress and MEMFS timestamp acceptance remain
   open.

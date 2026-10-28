@@ -157,6 +157,11 @@ leap-day midnight, writes again, and checks the updated mtime. PCLK
 presence continues to give nonzero filesystem timestamps. No production
 code change was necessary.
 
+The same native fixture was additionally run with `WALL_CLOCK_HZ=50`:
+PASS in both PCLK configurations with the same D6FS mtime and midnight
+rollover checks. This validates the 50-tick configured conversion, not
+SIMH physical 50-Hz interrupt generation.
+
 Source concurrency review: `wall_clock_now` reads TIME36, the tick base,
 and counter under PI masking and checks the base/value again before
 publishing an advanced calendar. `wall_clock_set` changes TIME36 and its
