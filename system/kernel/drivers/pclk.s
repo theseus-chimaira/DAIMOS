@@ -17,11 +17,6 @@ pclk_time36_retry:
         move    3,1
         lsh     3,-024                  ; BCD year digits to low 8 bits
         andi    3,0377
-        setz    4,
-        cail    3,046                   ; 00..25 denote 2100..2125
-        jrst    pclk_time36_century_done
-        move    4,[0200000000000]
-pclk_time36_century_done:
         subi    1,0600000               ; month code 4..17 -> month 1..12
         addi    1,04000                 ; zero-based day -> day 1..31
         lsh     1,6                     ; reserve low six bits for seconds
@@ -29,7 +24,12 @@ pclk_time36_century_done:
         lsh     2,-024
         andi    2,077
         ior     1,2
-        ior     1,4
+        ; The century bit is in the final TIME36 word; no temporary
+        ; register or literal pool word is needed.
+        cail    3,046                   ; 00..25 denote 2100..2125
+        jrst    pclk_time36_done
+        tlo     1,0200000
+pclk_time36_done:
         popj    17,
 pclk_time36_absent:
         popj    17,

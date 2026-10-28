@@ -359,3 +359,17 @@ and were rejected; (3) single-caller encode inlining saved eleven words
 (v632); (4) BCD century arithmetic saved three words (v631). No internal
 clock representation redesign is planned. This closes the SCLK RAM-first
 optimization sweep; further experiments require a new, measurable target.
+
+## 2026-10-28 v633 PCLK century-bit compacting and APR audit
+
+The Petit hardware PCLK TIME36 reader now sets the 21xx century bit
+after constructing the word, using `CAIL`/`JRST`/`TLO` rather than
+holding a full-width century literal in a temporary AC. The correct
+PCLK BCD comparison polarity was verified by native PCLK-present and
+PCLK-absent tests at both 50 and 60 Hz. An earlier inverted-condition
+experiment linked at 22 words but **failed native PCLK-present testing**;
+it was corrected before commit. The accepted reader is 23 words versus
+26 words previously. The fixed APR clock MRES remains 42 words:
+its post-handler JRST is a live DPY-installation patch site and must
+not be folded into the PI tail. KCORE remains 8537 words; SCLK remains
+292 words; conservative KCORE+MRES is 15932 words.
