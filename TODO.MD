@@ -1005,12 +1005,10 @@ KERNEL ABIS.
   mixed compressed/raw swap records in daimos-testkit. Do not modify the
   running parallel kernel implementation as part of this TODO entry.
 
-- [ ] Finish mutually exclusive wall-clock provider MRES packaging after
-  v616 KINIT one-time selection. Confirm only one provider is installed,
-  preserve shared APR scheduling, verify both boot modes and SETTIME, and
-  measure **linked KCORE+MRES** size rather than source/object size.
+- [x] v618 mutually exclusive PCLK/SCLK MRES: KINIT boot selection,
+  shared APR scheduler, target GETTIME/SETTIME acceptance, and measured
+  linked low-memory occupancy. Both calendar providers are optional.
 
-- [ ] v618 runtime gate: verify exclusive PCLK or SCLK MRES boot
-  selection with native `daimos-clock-mres-v618` under PCLK-on/off;
-  preserve SETTIME, GETTIME and all mtime regressions. Lowmem link
-  passes; exclusive-package source and linker layout implemented.
+- [x] v618 native exclusive-provider gate: testkit
+  `daimos-clock-mres-v618` PASS at 50 and 60 Hz, with PCLK enabled
+  and disabled in separate clean boots. Lowmem GCC links PASS at both rates.

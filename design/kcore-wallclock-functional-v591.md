@@ -248,5 +248,8 @@ PERMANENT_LAST 16023. Exactly one calendar package is installed at
 boot; PCLK configuration omits 329 permanent words (15647 total),
 while software configuration omits 26 (15950 total), relative to the
 conservative linked report. This excludes no other optional MRES.
-The two selected footprints require native provider-selection validation
-before claiming final acceptance.
+Native `daimos-clock-mres-v618` PASS with both `WALL_CLOCK_HZ=50` and
+`60`, each in PCLK enabled/disabled boots. Native tests assert exactly one
+PCLK or SCLK installation, UTC rollover and privilege checks. The
+provider-specific resident totals above are computed from the confirmed
+selection and linked module sizes.
