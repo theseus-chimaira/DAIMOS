@@ -406,3 +406,29 @@ evidence of a kernel relocation failure. Preserve the already accepted
 v548 native public-allocator-through-APR validation; full-scheduler
 post-relocation continuation remains unverified. No source code or
 resident kernel state changed.
+
+## V550–V551 controlled process-lifetime SIMH probes (2026-10-28)
+
+Created experimental testkit-only full-boot guests which create sleeping
+child processes gated by distinct pipes, release alternating children,
+and check continued execution. Both load complete 256K PDP-6 SIMH
+images. The v550 six-child allocation/release/replacement run reached
+all its guest completion markers but produced **zero** breakpoint hits
+on the production `vm_extent_move` entry: INCONCLUSIVE for relocation.
+
+The initial v551 fourteen-child variant stopped at guest marker `!P`
+before growth: it exceeded the INIT process's per-process file descriptor
+capacity by creating too many private gate pipes. The corrected seven-
+child variant reached `AB` (all children created and alternating children
+released), but the requested parent `BRK` growth of `030000` octal words
+failed (`!G`) and no VM relocation was observed. It was not an accepted
+fragmented-but-affordable allocation, and no kernel bug is inferred.
+
+Both experiments remain uncommitted in daimos-testkit; the successful
+v548 deterministic native public-allocator-to-user-fetch test is
+unchanged. A viable final full-system acceptance workload must measure
+available/maximum contiguous space or otherwise constrain allocation
+lifetimes and sizes so an MM_ERR_FRAGMENTED request has enough **total**
+free memory to be resolved by moving a runnable process. A fixed oversized
+BRK request or generic swap pressure does not establish that condition.
+No production kernel code or permanent runtime instrumentation changed.
