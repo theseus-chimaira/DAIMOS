@@ -101,6 +101,13 @@ and testkit immediately before implementing an item.
 
 Release-critical or prerequisite correctness/acceptance:
 
+- [ ] **Preserve and diagnose every future `?RT` boot failure before
+  rebuilding/resetting media.** Save SIMH transcript, exact boot image and
+  mutable media, selected-root/handoff evidence and filesystem state;
+  distinguish root selection, root mount/validation, and missing/nonregular
+  `/SYSTEM/INIT`. Reproduce against the failing image and repair DAIMOS if
+  defective. A clean-image rebuild is only a comparison, not a fix.
+
 - [ ] **P0 efficient native-APR memory management**: preserve 1024-word
   PDP-6 process mapping alignment, measure real waste and fragmentation,
   improve placement/compaction/retention only where total RAM decreases,
@@ -482,20 +489,23 @@ source-level RAM optimization continue independently.** See
   boot): all four targets PASS in v568–v570. The MINIT-only test fixture
   now uses supported `BOOT_PROFILE=lowmem ROOT=drum` rather than the known
   oversized default full profile; all original module checks remain.
-- [ ] Row 027 is partially accepted: v573 proves native DTFS media survives
+- [x] Row 027 has all ten targets passing in focused, ordered continuation
+  runs v573–v579 (not a single clean-sweep invocation). V573 proves
+  native DTFS media survives
   two boots and passes second-boot FSCK; disk-root `MOUNT.DTFS` refusal is
   intentional because `dtfs_minit()` installs its MRES only when the selected
   root is DTC. Testkit v573 now asserts this exact supported contract.
   v575 updates the eight-member TSFS scanner regression for its current
   direct-result API (old SYS_TSFS handoff ABI retired). V577 verifies TSFS
   root directory lookup/listing/STAT on a real tape-root SIMH image, replacing
-  the obsolete secondary `MOUNT.TSFS` oracle in the matrix. First eight
-  row-027 tests have passing evidence. Complete the separate native DTFS
-  secondary-mount acceptance under a tape-selected root and the reverse
-  transfer test before declaring all of row 027 accepted.
-- [ ] Rework secondary TSFS/DTFS mount acceptance to match the intentionally
-  root-selected MRES package. Do not introduce extra resident MRES solely
-  to satisfy a fixture that boots the wrong root class.
+  the obsolete secondary `MOUNT.TSFS` oracle in the matrix. V578 verifies native DTFS format,
+  FSCK, secondary mount, root STAT and unmount on a DTC-selected root;
+  v579 verifies production reverse-direction single-block read/write.
+  Retain strict complete-matrix release sweep as a separate gate.
+- [x] Rework secondary DTFS mount acceptance to match the intentionally
+  root-selected MRES package: v578 native secondary mount on tape root PASS;
+  v573 disk-root mount refusal PASS. Retired MOUNT.TSFS secondary fixture
+  replaced by v577 root-selected TSFS directory acceptance. No extra MRES.
 - [x] Repair GCC local 9-bit char-array loads across 36-bit words at
   -O1/-O2/-Os; preserve the selected stack word rather than interpreting
   the word address as a byte offset.  Testkit v45 target execution passes
