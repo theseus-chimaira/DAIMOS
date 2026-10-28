@@ -294,7 +294,9 @@ memfs_touch_slot:
         move    5,(1)
         addi    5,01100
         add     5,2
-        pushj   17,wall_time36          ; PCLK clobbers AC1..AC4 only
+        push    17,5                     ; AC5 is caller-scratch for C fallback
+        pushj   17,wall_time36
+        pop     17,5                     ; restore destination across gateway
         movem   1,(5)
         popj    17,
 

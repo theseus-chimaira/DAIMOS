@@ -169,6 +169,16 @@ base together under PI masking. This protects against torn state and
 stale publication, but a multi-process native GETTIME/SETTIME stress
 test remains open and is not claimed as passed.
 
+## 2026-10-28 v610 MEMFS UTC modification timestamps
+
+Testkit `daimos-memfs-mtime-v610` PASS at 60 Hz with PCLK enabled and
+disabled. It verifies MEMFS file mtime creation and mutation after
+SETTIME and across leap-day midnight. Source review found that
+`memfs_touch_slot` carried its destination pointer in caller-scratch
+AC5 across `wall_time36`. Although the current GCC assembly incidentally
+restores AC5, the production caller now saves and restores the pointer
+explicitly. This is an ABI correctness fix, not a claimed size saving.
+
 ## 2026-10-28 v594 unified TIME36 gateway
 
 Introduced `wall_time36` as the single entry for GETTIME and D6FS/MEMFS
