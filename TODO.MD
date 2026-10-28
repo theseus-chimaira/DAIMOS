@@ -192,7 +192,9 @@ Release-critical or prerequisite correctness/acceptance:
   v640 adds an instrumented fatal-HALT stack sample. A native 48K
   invalid-root-selector test measured octal `0164` (116 decimal) words
   against the unchanged octal `0600` (384 decimal) reserve. Other
-  failure paths and the strict 32K kernel-only boot remain open.
+  failure paths remain open. v641 native 32K kernel-only boot PASS:
+  SIMH breaks at the map-derived `proc_boot_init` entry after KINIT
+  initializes DTC/DSK/DTFS, before running `/SYSTEM/INIT` or DSH.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 

@@ -1,3 +1,12 @@
+## 2026-10-28 v641: 32K KINIT-only native acceptance
+
+Native testkit v641 PASS: standard GCC 32K TSFS boot satisfies the
+unchanged `0600`-octal stack reserve, initializes DTC/DSK270/DTFS,
+and stops at the linked `proc_boot_init` breakpoint before any
+userspace execution. No new kernel mode or permanent code change.
+Other-profile and remaining error-path checks remain open. See
+`design/kinit-kernel-only-v641.md`.
+
 ## 2026-10-28 v640: native KINIT fatal-path stack sample
 
 Optional watermark-enabled HALT paths now save the stack high-water

@@ -1,3 +1,11 @@
+## 2026-10-28 v641: 32K KINIT-only boot test
+
+Native PDP-6 SIMH 32K kernel-only test PASS. The test uses a
+map-derived breakpoint at `proc_boot_init` after hardware/TSFS boot,
+before userland. DTC, DSK270 and DTFS markers pass; octal `0600`
+KINIT reserve is retained. No production kernel mode added. See
+`design/kinit-kernel-only-v641.md`.
+
 ## 2026-10-28 v640: KINIT fatal-HALT watermark verification
 
 For instrumented KINIT builds, both ordinary and short-code fatal
