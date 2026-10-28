@@ -202,6 +202,10 @@ Release-critical or prerequisite correctness/acceptance:
   v643 native GCC 96K full-profile disk-root KINIT PASS: image end
   `107421` octal, full device markers and `proc_boot_init` breakpoint.
   The 96K userland/DSH, KCC and 256K full-profile gates remain open.
+  v644: 96K KCC full-profile disk-root KINIT also PASS, with image
+  end `113573` octal and process-init breakpoint at `066510`. KCC
+  96K kernel-initialization gate is closed; userland/DSH and 256K
+  functional gates remain open.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 

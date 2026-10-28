@@ -1,3 +1,10 @@
+## 2026-10-28 v644: KCC 96K full-profile KINIT
+
+Native KCC full-profile GCC-comparison gate PASS at 96K: linked KINIT
+ends at octal `113573`, fits the unchanged `0600` reserve, and boots
+to `proc_boot_init` after D6FS/BSET/MEMFS device initialization.
+Userspace and 256K acceptance remain separate.
+
 ## 2026-10-28 v643: GCC 96K full-profile KINIT
 
 Native 96K GCC disk-root full-profile KINIT reached `proc_boot_init`

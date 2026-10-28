@@ -1,3 +1,10 @@
+## 2026-10-28 v644: KCC 96K full-profile KINIT PASS
+
+Native KCC PDP-6 96K disk-root full-profile build and SIMH kernel
+boot PASS through `proc_boot_init`. KINIT end `113573` octal, stack
+reserve `0600` intact; testkit v644 PASS. No production source change.
+DSH and 256K full-profile functional checks remain open.
+
 ## 2026-10-28 v643: GCC 96K full-profile KINIT PASS
 
 Native PDP-6 SIMH full-profile GCC disk-root build and kernel-only
