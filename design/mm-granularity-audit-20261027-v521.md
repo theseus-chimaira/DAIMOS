@@ -357,3 +357,21 @@ process data and runnable state. PASS: v545, v538, v539, v540 and v542.
 The complete preemptive-SIMH process-resumption gate remains outstanding.
 No persistent kernel state added; measure linked-code size in subsequent
 size accounting instead of presuming unchanged code size.
+
+## V547 corrected full-system swap-cycle regression (2026-10-28)
+
+Re-ran the existing v544 SIMH relocation observer after the production
+v546 allocator error-comparison fix: the 256K guest again completed all
+three swap/reclaim cycles without any observed `vm_extent_move` entry.
+That is a valid negative relocation result, not a failed swap test.
+
+Separately, source inspection uncovered a pre-existing C99 call-site bug
+in daimos-testkit `daimos-mm-swap-cycles-v278.c`: the stopped-job case
+passed two integer process IDs to `target_is_swapped`, whose second
+argument requires `const int *` and third argument requires a count.
+Replaced these arguments with a local two-element ID array and count 2.
+The corrected guest cross-compiles without that warning, and the full
+256K SIMH v278 regression PASSES all three swap/reclaim, wait, and
+process-slot reuse cycles. No DAIMOS production code changes in v547.
+The complete scheduled-relocation gate remains open: neither running
+swap pressure scenario generated the necessary fragmented allocation.
