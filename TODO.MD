@@ -206,6 +206,9 @@ Release-critical or prerequisite correctness/acceptance:
   end `113573` octal and process-init breakpoint at `066510`. KCC
   96K kernel-initialization gate is closed; userland/DSH and 256K
   functional gates remain open.
+  v645: native 256K KCC full-profile KINIT PASS; exact memory banner,
+  DSK/DRM and filesystem markers and process-init breakpoint verified.
+  256K GCC and interactive DSH functional acceptance remain open.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 

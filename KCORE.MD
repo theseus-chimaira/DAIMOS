@@ -1,3 +1,10 @@
+## 2026-10-28 v645: KCC 256K full-profile initialization
+
+Fresh KCC full-profile 256K native SIMH image PASS: image end
+`113573` octal, stack reserve `0600` intact, correct `MEM 256 K`
+and D6FS/BSET/MEMFS initialization before `proc_boot_init`.
+See `design/kinit-full256-kcc-v645.md`.
+
 ## 2026-10-28 v644: KCC 96K full-profile KINIT
 
 Native KCC full-profile GCC-comparison gate PASS at 96K: linked KINIT

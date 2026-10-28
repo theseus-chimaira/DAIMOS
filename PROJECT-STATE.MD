@@ -1,3 +1,9 @@
+## 2026-10-28 v645: KCC 256K full-profile KINIT PASS
+
+Native KCC 256K full-profile disk-root build and kernel initialization
+PASS through `proc_boot_init`. Testkit v645 PASS. No production source
+change. 256K GCC and interactive userland/DSH gates remain open.
+
 ## 2026-10-28 v644: KCC 96K full-profile KINIT PASS
 
 Native KCC PDP-6 96K disk-root full-profile build and SIMH kernel
