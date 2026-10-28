@@ -1004,3 +1004,5 @@ KERNEL ABIS.
   fallback, allocation failure, rollback, `fork`/`exec` inheritance and
   mixed compressed/raw swap records in daimos-testkit. Do not modify the
   running parallel kernel implementation as part of this TODO entry.
+
+- [ ] v614 architectural migration: replace kernel TIME36 with unsigned seconds; expose coherent raw PCLK fields to privileged userspace for initialization, migrate GETTIME/SETTIME, D6FS/MEMFS mtimes, DATE and libc together. Userspace-only 1858 conversion implemented/tested; kernel ABI not yet changed. See `design/kcore-seconds-pclk-migration-v614.md`.
