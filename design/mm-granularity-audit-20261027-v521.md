@@ -476,3 +476,29 @@ specific kernel-map locations of this v553 image, not a universal ABI.
 Do not infer a production MM defect without observing the BRK input,
 rounded size, allocator result, and current process image extent.
 No production code, persistent counters, or RAM overhead added.
+
+## V554 exact logical BRK request and fallback analysis (2026-10-28)
+
+The experimental v554 guest extended the shared-gate v552 test with
+six-digit octal serial reporting of the parent `dsys_brk` arguments and
+result. Fresh 256K SIMH run reached `AB` and reported
+`[024000+034000=777777]!G`: current logical break `024000`, requested
+break `034000` (delta `010000` octal words), failure result `-1`.
+The new break is a valid 18-bit logical address already aligned to the
+native `02000` APR quantum; logical overflow or excessive virtual break
+cannot explain failure. The previously recorded v553 extent snapshot
+contains a gap substantially larger than the *entire* requested `034000`
+word replacement image, not merely the delta. This rules out simple lack
+of any physical space for the replacement as a sufficient explanation.
+
+Source inspection of `vm_pdp6.s` shows BRK tries same-base upward growth,
+then in-gap downward relocation, retries after swap reclaim, and finally
+allocates a complete new process extent via production `mm_alloc_aligned`
+with `MM_ALLOC_HIGH`. The old image at the high end is adjacent to a
+preceding occupied extent and has only a small gap above it. Thus a
+full-image fallback is plausible. The snapshot and syscall result alone
+still do not show whether the allocator was reached, returned failure,
+or succeeded before later copy/free/commit rejection. Next instrument
+these exact boundaries *externally* (without persistent kernel hooks)
+prior to modifying kernel logic. v554 remains an unaccepted diagnostic
+fixture in daimos-testkit. No production changes or permanent RAM cost.
