@@ -343,3 +343,19 @@ Reorder the shared TIME36 decoder's year arithmetic to add the optional
 SCLK MRES from 306 to 303 words; conservative KCORE+MRES becomes 15946
 words, with KCORE still 8537. The native PCLK-enabled/disabled clock
 regressions PASS at 50 and 60 Hz.
+
+## 2026-10-28 v632 final SCLK optimization sweep
+
+Inline the single-caller `encode_time()` function into `next_second()`.
+The compiler eliminates the separate call/argument setup and reduces the
+linked SCLK MRES by 11 words (303 -> 292). The permanent KCORE remains
+8537 words, and conservative KCORE+MRES falls to 15935 words. Native
+PCLK-enabled/disabled clock regressions PASS at both 50 and 60 Hz.
+
+The four selected final topics are closed: (1) shared TIME36 decoder
+validation ordering saved six words (v630); (2) alternative direct packed
+calendar and repeated-calculation elimination grew the MRES (+8 to +22)
+and were rejected; (3) single-caller encode inlining saved eleven words
+(v632); (4) BCD century arithmetic saved three words (v631). No internal
+clock representation redesign is planned. This closes the SCLK RAM-first
+optimization sweep; further experiments require a new, measurable target.

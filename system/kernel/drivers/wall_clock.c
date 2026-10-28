@@ -66,7 +66,7 @@ decode_time(kword_t t, unsigned int *year, unsigned int *month,
         return 0;
 }
 
-static kword_t
+static inline kword_t
 encode_time(unsigned int year, unsigned int month, unsigned int day,
     unsigned int hour, unsigned int minute, unsigned int second)
 {
