@@ -1,3 +1,11 @@
+## 2026-10-28 v647: four full-profile interactive DSH gates PASS
+
+All GCC/KCC x 96K/256K native PDP-6 full-profile ROOT login, DSH
+command, external TRUE and orderly HALT tests PASS, with verified
+CLEAN D6FS after shutdown. Testkit v647 isolates writable media and
+rejects reusing a DIRTY diskset. No production code change. Remaining
+KINIT failure-path stack measurement coverage is still open.
+
 ## 2026-10-28 v646: full-profile GCC 256K KINIT PASS
 
 Native 256K GCC full-profile disk-root build and kernel-only SIMH

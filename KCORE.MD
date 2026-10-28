@@ -1,3 +1,11 @@
+## 2026-10-28 v647: full-profile native DSH acceptance
+
+GCC/KCC at 96K/256K: native ROOT login, DSH, ECHO, external TRUE,
+STATUS:0, HALT and CLEAN D6FS shutdown PASS in all four configurations.
+An earlier ?RT was caused by reusing test media left DIRTY at the
+pre-userspace breakpoint, not by a filesystem implementation failure.
+See `design/kinit-dsh-full-profile-v647.md`.
+
 ## 2026-10-28 v646: 256K GCC full-profile KINIT acceptance
 
 Native 256K GCC full-profile kernel initialization PASS, KINIT end

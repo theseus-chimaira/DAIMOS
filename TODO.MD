@@ -178,8 +178,9 @@ Release-critical or prerequisite correctness/acceptance:
   sleep/wakeup assertions also pass. No test-oracle or kernel modification.
 - [ ] Rerun remaining GCC/KCC grouped acceptance; the focused GCC
   preemption PASS does not establish that the complete groups pass.
-- [ ] Validate KINIT failure-path stack reserve and 32K kernel-only boot;
-  retain separate 48K/96K/256K DSH functional gates. Repair stale MM
+- [ ] Complete additional KINIT failure-path stack reserve checks;
+  32K kernel-only and 96K/256K full-profile DSH acceptance are PASS.
+  Repair stale MM
   testkit linking and secondary DTFS/TSFS mount test assumptions.
   v638 recovered 30 transient KINIT words: 32K image end `077236` ->
   `077200` at unchanged octal `0600` stack reserve. Native TSFS+AUXSTORE
@@ -213,6 +214,12 @@ Release-critical or prerequisite correctness/acceptance:
   native SIMH PASS at `proc_boot_init` (`063067`), image end `107421`.
   Full-profile 96K/256K GCC/KCC kernel initialization is complete;
   interactive DSH and remaining KINIT failure paths stay open.
+  v647: interactive ROOT login, DSH ECHO, external TRUE, STATUS:0,
+  orderly HALT, and postflight CLEAN D6FS all PASS for GCC and KCC
+  at both 96K and 256K. Source media must be CLEAN before reuse;
+  a stop at `proc_boot_init` leaves writable root DIRTY, so it is
+  unsuitable as a second-boot fixture. See
+  `design/kinit-dsh-full-profile-v647.md`.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 
