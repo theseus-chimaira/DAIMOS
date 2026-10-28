@@ -114,9 +114,11 @@ Release-critical or prerequisite correctness/acceptance:
 - [ ] Complete combined tape+drum, disk+drum, BLOCKSET member and non-root
   storage inventories, including other safely discoverable DRM units, and
   real supported mixed-provider mount/capacity tests.
-- [ ] Fix or conclusively classify swapped-process MonitorFS NAME/CMDLINE/
-  ENVIRONMENT reads and the GCC multiprocess scheduler/preemption failure.
-  Rerun remaining GCC/KCC grouped acceptance; no assertion-only workaround.
+- [x] Revalidate swapped-process MonitorFS NAME/CMDLINE/ENVIRONMENT reads
+  and subsequent wake/WAIT: fresh 48K PDP-6 SIMH testkit v562 PASS
+  (2026-10-28). The earlier v74 restore stall no longer reproduces.
+- [ ] Resolve the **separate** GCC multiprocess scheduler/preemption failure
+  and rerun remaining GCC/KCC grouped acceptance; no assertion-only workaround.
 - [ ] Validate KINIT failure-path stack reserve and 32K kernel-only boot;
   retain separate 48K/96K/256K DSH functional gates. Repair stale MM
   testkit linking and secondary DTFS/TSFS mount test assumptions.
@@ -439,12 +441,12 @@ source-level RAM optimization continue independently.** See
 
 ## V64 validation follow-ups (2026-10-20)
 
-- [ ] Repair swapped-process NAME/CMDLINE/ENVIRONMENT reads in MonitorFS
-  without allocating persistent per-process metadata.  KCC/GCC compilation
-  and fresh 256K image linking succeed, but the live `CAT 2/NAME` and absolute
-  process-name checks fail.  The reader, assembler integration and Makefile
-  are saved in experimental commit `dc1f96f` (V71), but are **not accepted**;
-  retain the unchanged failing test oracle.
+- [x] Swapped-process NAME/CMDLINE/ENVIRONMENT reads in MonitorFS:
+  live 48K PDP-6 SIMH v562 verifies exact records for a swapped process,
+  its wake, expected child exit and WAIT completion. Existing reader retained;
+  no persistent per-process metadata added. The v74 wake/WAIT stall from
+  2026-10-20 does not reproduce on the current source. This does not close
+  the separate GCC preemption or grouped regression gates.
 - [x] Validate the corrected three-root AUTO/login testkit fixture at 256K:
   all-media selects DISK, no-DSK selects TAPE, and drum-only selects DRUM.
   The three individual fresh-media probes pass; tape `CAT /CONFIG/SYSTEM`
