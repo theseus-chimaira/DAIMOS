@@ -517,3 +517,25 @@ next diagnostic is to correlate caller PC, arguments, and return value
 with the parent BRK syscall boundary, without adding persistent KCORE
 state. The v555 observer is still experimental in daimos-testkit.
 No production code or permanent RAM change.
+
+## V556 correlated parent BRK and allocator entry trace (2026-10-28)
+
+Fresh isolated full-profile 256K SIMH boot, using the experimental v554
+parent/16-child guest and external breakpoints on `vm_space_brk_current`
+(`016614`) and `mm_alloc_aligned` (`001665`). At guest phase `AB`, two
+successive BRK entries have current process slot 1 and MM descriptor
+count 25 (`031` octal): the first is `dsys_brk(0)`, returning `024000`;
+the second is `dsys_brk(034000)`, which returns `777777` (`-1`). There
+is **no intervening `mm_alloc_aligned` breakpoint** between that second
+BRK entry and the guest `!G` failure. The overall boot recorded 62
+allocator entries, but the only entry after the failed parent BRK belongs
+to process slot 0 during exit/cleanup (extent count `026` octal).
+
+Thus this particular BRK failure happens before the full-image public
+allocator fallback. The allocator's ability to find a large gap is not
+relevant until the early return is explained. Investigate BRK's preflight,
+process descriptor/pin/owner checks, arena checks, and pre-fallback
+path using the exact linked image and source. Avoid attributing this
+failure to compaction or changing the kernel without further proof.
+No production code or permanent RAM modification. The v556 breakpoint
+harness remains experimental in daimos-testkit.
