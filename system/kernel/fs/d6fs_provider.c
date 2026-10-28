@@ -2,8 +2,8 @@
 #include "fs_mres.h"
 #include "../proc/proc.h"
 
-extern kword_t pclk_time36(void);
-#define D6FS_NOW() pclk_time36()
+extern kword_t wall_time36(void);
+#define D6FS_NOW() wall_time36()
 
 void d6fs_provider_set_extent(kword_t fcb[D6FS_FCB_WORDS],
     unsigned int index, kword_t start, kword_t blocks);

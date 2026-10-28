@@ -294,7 +294,7 @@ memfs_touch_slot:
         move    5,(1)
         addi    5,01100
         add     5,2
-        pushj   17,pclk_time36          ; PCLK clobbers AC1..AC4 only
+        pushj   17,wall_time36          ; PCLK clobbers AC1..AC4 only
         movem   1,(5)
         popj    17,
 
@@ -709,7 +709,7 @@ memfs_mres_fs:
         .globl  memfs_data_destroy
         .globl  memfs_snapshot_mount
         .globl  vfs_current_owner
-        .globl  pclk_time36
+        .globl  wall_time36
         .globl  vfs_mount
         .globl  memfs_mres_dispatch
         .globl  memfs_lookup
@@ -772,7 +772,7 @@ memfs_mres_mount_size_ok:
         subi    6,0700                  ; preserve old data-capacity semantics
         movem   6,memfs_mres_fs+1
         setzm   memfs_mres_fs+2         ; logical file words in use
-        pushj   17,pclk_time36
+        pushj   17,wall_time36
         move    5,memfs_mres_fs
         movem   1,01100(5)              ; fresh root mtime; restore may replace it
         movei   1,memfs_mres_fs

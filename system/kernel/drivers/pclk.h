@@ -53,4 +53,10 @@
  */
 kword_t pclk_time36(void);
 
+/** Shared TIME36 gateway for syscall and filesystem consumers.
+ * Currently returns PCLK time, or zero if SIMH PCLK is absent.
+ * Fallback calendar integration will preserve this caller interface.
+ */
+kword_t wall_time36(void);
+
 #endif

@@ -43,7 +43,7 @@
         .globl  file_node_from_fd
         .globl  exec_replace_current
         .globl  proc_exec_enter
-        .globl  pclk_time36
+        .globl  wall_time36
         .globl  vfs_utime
         .globl  vfs_chown
         .globl  file_rmdir
@@ -603,7 +603,7 @@ native_sys_ext_half_select:
         hrrz    5,native_sys_ext_table(6)
 native_sys_ext_table:
         .word   pipe_create,,native_sys_mkfifo
-        .word   native_sys_exec,,pclk_time36
+        .word   native_sys_exec,,wall_time36
         .word   native_sys_dup2,,native_sys_procctl
         .word   native_sys_procctl,,native_sys_procctl
         .word   native_sys_procctl,,native_sys_procctl

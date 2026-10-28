@@ -15,6 +15,16 @@
 
         .text
         .globl  pclk_time36
+        .globl  wall_time36
+/**
+ * @brief Shared civil-time gateway for GETTIME and filesystem timestamps.
+ *
+ * This first stage preserves the historical PCLK reader semantics exactly.
+ * Later fallback calendar support belongs behind this gateway, rather than
+ * in each filesystem's timestamp call site.
+ */
+wall_time36:
+        jrst    pclk_time36
 /**
  * @brief Read PCLK and return one coherent packed TIME36 value.
  * @return AC1 = TIME36 UTC value.

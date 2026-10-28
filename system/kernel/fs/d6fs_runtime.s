@@ -1274,7 +1274,7 @@ d6fs_provider_unmount_free_fail:
         pop     17,4
         jrst    kret_neg1
 
-        .globl  pclk_time36
+        .globl  wall_time36
 
 ; int d6fs_provider_chmod(vnode_t node, unsigned int mode)
 ; The VFS also uses this provider slot as a private compact setattr channel:
@@ -1355,7 +1355,7 @@ d6fs_provider_truncate:
         move    4,-1(17)
         pushj   17,d6fs_provider_resize_fcb
         jumpn   1,d6fs_provider_truncate_fail
-        pushj   17,pclk_time36
+        pushj   17,wall_time36
         movem   1,-031(17)
         ; CHMOD/CHOWN/UTIME use the identical FCB commit and 035-word frame.
         jrst    d6fs_provider_attr_commit
@@ -1488,7 +1488,7 @@ d6fs_provider_write_words_store:
         came    1,-1(17)                ; never publish short payload
         jrst    d6fs_provider_write_words_store_fail
         movem   1,(17)
-        pushj   17,pclk_time36
+        pushj   17,wall_time36
         movem   1,-033(17)
         move    1,d6fs_active_reader
         hrrz    2,-4(17)

@@ -29,7 +29,7 @@
         .globl  vfs_current_owner
         .globl  fs_copy_words
         .globl  fs_zero_words
-        .globl  pclk_time36
+        .globl  wall_time36
 
         .equ    D6FS_TYPE_DIR,2
         .equ    D6FS_TYPE_SYMLINK,3
@@ -171,7 +171,7 @@ d6fs_create_mode_ready:
         lsh     2,014
         ior     1,2
         movem   1,-043(17)             ; FCB meta
-        pushj   17,pclk_time36
+        pushj   17,wall_time36
         movem   1,-040(17)             ; FCB mtime, word 3
         pushj   17,vfs_current_owner
         move    2,1

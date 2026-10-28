@@ -72,3 +72,11 @@ via GETTIME; the disabled case returns TIME36 zero. Both native runs
 PASS. This proves the guarded SIMH device behavior, not the absence
 probe's safety on unspecified physical PDP-6 hardware. The software
 calendar accumulator, SETTIME and DATE SET remain unfinished.
+
+## 2026-10-28 v594 unified TIME36 gateway
+
+Introduced `wall_time36` as the single entry for GETTIME and D6FS/MEMFS
+timestamps, including the provider C path. The original `pclk_time36`
+continues to read physical PCLK and the gateway currently tail-jumps to it.
+This preserves timestamp semantics while allowing a future fallback
+calendar in one place. No software fallback or SETTIME is enabled yet.
