@@ -714,13 +714,100 @@ cmd_put2(int fd, unsigned int v)
             u_putc(fd, '0' + (int)(v % 10U)) != 0;
 }
 
+/* Strict YYYY-MM-DD HH:MM:SS UTC parser for DATE SET. */
+static int
+cmd_date_parse(const char *s, kword_t *tp)
+{
+        unsigned int y, m, d, h, n, sec, maxday, yy;
+        unsigned int i;
+        static const unsigned char mdays[12] = {
+            31,28,31,30,31,30,31,31,30,31,30,31
+        };
+        static const unsigned int pos[14] = {
+            0,1,2,3,5,6,8,9,11,12,14,15,17,18
+        };
+        unsigned int digit[14];
+        for (i = 0U; i < 19U; ++i) {
+                unsigned int j, found;
+                if (i == 4U || i == 7U || i == 10U ||
+                    i == 13U || i == 16U) {
+                        if (s[i] != (i == 4U || i == 7U ? '-' :
+                            (i == 10U ? ' ' : ':')))
+                                return -1;
+                        continue;
+                }
+                found = 0U;
+                for (j = 0U; j < 14U; ++j) {
+                        if (pos[j] == i) {
+                                if (s[i] < '0' || s[i] > '9')
+                                        return -1;
+                                digit[j] = (unsigned int)(s[i] - '0');
+                                found = 1U;
+                                break;
+                        }
+                }
+                if (!found)
+                        return -1;
+        }
+        if (s[19] != 0)
+                return -1;
+        y = digit[0]*1000U+digit[1]*100U+digit[2]*10U+digit[3];
+        m = digit[4]*10U+digit[5];
+        d = digit[6]*10U+digit[7];
+        h = digit[8]*10U+digit[9];
+        n = digit[10]*10U+digit[11];
+        sec = digit[12]*10U+digit[13];
+        if (y < 2026U || y > 2125U || m < 1U || m > 12U ||
+            h > 23U || n > 59U || sec > 59U)
+                return -1;
+        maxday = (unsigned int)mdays[m-1U];
+        if (m == 2U && y % 4U == 0U &&
+            (y % 100U != 0U || y % 400U == 0U))
+                ++maxday;
+        if (d == 0U || d > maxday)
+                return -1;
+        yy = y % 100U;
+        *tp = ((kword_t)(((yy / 10U) << 4U) | (yy % 10U)) << 26U) |
+            ((y >= 2100U) ? 0200000000000UL : 0UL) |
+            ((kword_t)m << 22U) | ((kword_t)d << 17U) |
+            ((kword_t)h << 12U) | ((kword_t)n << 6U) | sec;
+        return 0;
+}
+
+static int
+cmd_date_set(struct u_io *io)
+{
+        char value[21];
+        unsigned int i;
+        int ch;
+        kword_t t;
+        (void)u_puts(io->out_fd, "UTC (YYYY-MM-DD HH:MM:SS): ");
+        for (i = 0U; i < 20U; ++i) {
+                ch = dsys_readchar(io->in_fd);
+                if (ch < 0)
+                        return cmd_err(io, "DATE", 0);
+                if (ch == 015 || ch == 012)
+                        break;
+                value[i] = (char)ch;
+        }
+        if (i != 19U)
+                return cmd_err(io, "DATE", 0);
+        value[i] = 0;
+        if (cmd_date_parse(value, &t) != 0 || dsys_settime(t) != 0)
+                return cmd_err(io, "DATE", 0);
+        return 0;
+}
+
 static int
 cmd_date(int argc, kword_t **argv, struct u_io *io)
 {
         kword_t t;
         unsigned int bcd, year, month, day, hour, minute, second;
 
-        (void)argv;
+        if (argc == 1 && dsys_gettime() == 0UL)
+                return cmd_date_set(io);
+        if (argc == 2 && u_s6_eq(argv[1], "SET"))
+                return cmd_date_set(io);
         if (argc != 1) return cmd_err(io, "DATE", 0);
         t = dsys_gettime();
         if (t == 0UL) return cmd_err(io, "DATE", 0);

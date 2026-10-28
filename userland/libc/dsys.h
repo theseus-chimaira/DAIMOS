@@ -45,6 +45,7 @@ kword_t dsys_pipe(void);
 int dsys_mkfifo(kword_t *p, unsigned int mode);
 int dsys_exec(struct sys_exec_v1 *args);
 kword_t dsys_gettime(void);
+int dsys_settime(kword_t value);
 int dsys_dtc_read_block(unsigned int unit, unsigned int block, kword_t *buf);
 int dsys_dtc_write_block(unsigned int unit, unsigned int block, kword_t *buf);
 int dsys_d6fs_mount(kword_t *handoff, kword_t *path, unsigned int flags);

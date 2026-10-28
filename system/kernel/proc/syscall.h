@@ -53,6 +53,7 @@
 #define SYS_EXT_EXEC               022U
 #define SYS_EXT_GETTIME            023U
 #define SYS_EXT_DUP2               024U
+#define SYS_EXT_SETTIME            025U
 #define SYS_EXT_SEEK               032U
 #define SYS_EXT_CHOWN              033U
 #define SYS_EXT_RMDIR              034U

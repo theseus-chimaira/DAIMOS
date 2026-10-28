@@ -44,6 +44,7 @@
         .globl  exec_replace_current
         .globl  proc_exec_enter
         .globl  wall_time36
+        .globl  wall_clock_set
         .globl  vfs_utime
         .globl  vfs_chown
         .globl  file_rmdir
@@ -604,7 +605,7 @@ native_sys_ext_half_select:
 native_sys_ext_table:
         .word   pipe_create,,native_sys_mkfifo
         .word   native_sys_exec,,wall_time36
-        .word   native_sys_dup2,,native_sys_procctl
+        .word   native_sys_dup2,,native_sys_settime
         .word   native_sys_procctl,,native_sys_procctl
         .word   native_sys_procctl,,native_sys_procctl
         .word   native_sys_seek,,native_sys_chown
@@ -619,6 +620,16 @@ native_sys_ext_table:
 
 ; AC2 is zero to query, otherwise the requested logical break.  The VM helper
 ; owns APR-granularity resize and returns the current/new break or -1.
+native_sys_settime:
+        push    17,2
+        pushj   17,file_check_root
+        jumpn   1,native_sys_settime_denied
+        pop     17,1
+        jrst    wall_clock_set
+native_sys_settime_denied:
+        pop     17,2
+        jrst    kret_neg1
+
 native_sys_brk:
         move    1,2
         jrst    vm_space_brk_current

@@ -161,10 +161,12 @@ KINIT_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${BUILD}/kinit_io_pdp6.s ${BUILD}
 
 KCORE_C_SRCS = mm/mm.c \
 	proc/proc.c \
-	fs/file.c
+	fs/file.c \
+	drivers/wall_clock.c
 
 KCORE_C_ASM = $(BUILD)/proc.s \
-	$(BUILD)/file.s
+	$(BUILD)/file.s \
+	$(BUILD)/wall_clock.s
 
 KCORE_VM_ASM = $(BUILD)/vm_backend.s \
 	$(BUILD)/proc_swap.s
@@ -206,6 +208,7 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/proc.s \
 	$(BUILD)/backstore.s \
 	$(BUILD)/file.s \
+	$(BUILD)/wall_clock.s \
 	$(BUILD)/vm_backend.s \
 	$(BUILD)/proc_swap.s \
 	$(BUILD)/ret.s \
