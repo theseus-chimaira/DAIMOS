@@ -1,3 +1,10 @@
+## 2026-10-29 v670: D6FS root mount-stage diagnosis
+
+The scheduler-pressure boot's `?RT` occurs after BLOCKSET discovery,
+physical block reads and entry to D6FS superblock selection, before
+VFS mounting. The diagnostic v670 test reproduces this stage; it
+does not pass the full-system scheduler test. Root cause remains open.
+
 ## 2026-10-29 v669: scheduler fault-acceptance blocker
 
 The historic full-system pressure runner v298 has stale fixed-KCORE

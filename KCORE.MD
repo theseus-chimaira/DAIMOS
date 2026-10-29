@@ -1,3 +1,10 @@
+## 2026-10-29 v670: root mount failure staged
+
+Native KINIT trace confirms BLOCKSET discovery, block reads and D6FS
+superblock selection are reached before `?RT`; neither VFS mount nor
+VFS stat is reached. Testkit v670 diagnostic PASSes as a failure-stage
+classification only. Full-system swap acceptance remains BLOCKED.
+
 ## 2026-10-29 v669: full-system swap pressure blocked
 
 The v298 test assumes swap transactions are in `kcore.map`; current
