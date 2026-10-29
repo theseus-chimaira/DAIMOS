@@ -634,10 +634,10 @@ native_sys_d6fs_read_block:
         push    17,2                    ; save logical address
         push    17,3                    ; preserve user buffer across VFS query
         pushj   17,vfs_readonly
-        jumpe   1,native_sys_d6fs_read_bad_map ; reject mounted RW data
+        jumpe   1,native_sys_d6fs_read_unmapped ; reject mounted RW data
         move    1,(17)                  ; user buffer
         pushj   17,native_sys_map_one
-        jumpe   1,native_sys_d6fs_read_bad_map
+        jumpe   1,native_sys_d6fs_read_unmapped
         add     3,4                     ; physical one-past user mapping
         movei   5,0200(1)
         camle   5,3
@@ -647,12 +647,13 @@ native_sys_d6fs_read_block:
         pushj   17,blockset_read_block
         jrst    native_sys_d6fs_read_done
 native_sys_d6fs_read_bad:
-        pushj   17,vm_user_mapping_release
-native_sys_d6fs_read_bad_map:
         seto    1,
 native_sys_d6fs_read_done:
         sub     17,kconst_2_2
         jrst    native_sys_mapped_return
+native_sys_d6fs_read_unmapped:
+        sub     17,kconst_2_2
+        jrst    kret_neg1
 
 ; AC2 is zero to query, otherwise the requested logical break.  The VM helper
 ; owns APR-granularity resize and returns the current/new break or -1.
