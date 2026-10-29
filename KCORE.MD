@@ -1,3 +1,10 @@
+## 2026-10-29 v665: BACKING partial-write fault acceptance
+
+Native PDP-6 test confirms a failure on block 2 of a 3-block BACKING
+write stops further I/O and returns an error. Swap/MEMFS write-failure
+publication ordering checks PASS. This is not a claim of physical
+multi-block atomicity; full-system fault recovery is still open.
+
 ## 2026-10-29 v664: native missing-VOLUME-mapper test
 
 PDP-6 native instruction test executes actual `fs_mres.s` BACKING I/O

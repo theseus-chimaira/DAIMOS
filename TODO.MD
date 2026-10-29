@@ -312,6 +312,10 @@ implementation/acceptance is outstanding, NOT that scheduling is undecided.
   v664: targeted native PDP-6 BACKING gateway test PASS: unavailable
   multi-member mapper fails without device I/O; direct DEVICE still
   succeeds. Full-system in-flight failure tests remain outstanding.
+  v665: native PDP-6 partial BACKING write test PASS (second write
+  fails, third never issued). Swap/MEMFS publication-order source
+  regression PASS. Full-system in-flight fault and late MM rollback
+  remain open; BACKING media writes are not physically atomic.
 - [ ] **DECISION 4 ACCEPTED (2026-10-27):** Complete production raw MEMFS
   XIP BEFORE the final KCORE optimization as a version 0.9 prerequisite.
   Implement privileged non-writing EXEC/RUN, provenance, swap/BRK exclusion,

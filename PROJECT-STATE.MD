@@ -1,3 +1,10 @@
+## 2026-10-29 v665: BACKING partial-write failure contract
+
+Native PDP-6 gateway test PASS: injected second-block error stops a
+three-block write and returns failure. Source audits confirm swap and
+MEMFS do not publish newly allocated backing extents after write
+failure. Physical writes are not atomic; broader rollback remains open.
+
 ## 2026-10-29 v664: native VOLUME mapper absence confirmed
 
 daimos-testkit v664 executes production BACKING assembly on PDP-6:
