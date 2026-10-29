@@ -1,3 +1,10 @@
+## 2026-10-29 v650: KINIT MM allocation-failure bound PASS
+
+Native 96K GCC full-profile KINIT idle-stack `mm_alloc` failure forced
+via simulator-only instruction replacement after Stage1 loading.
+Fatal HALT watermark `0172` octal (122 words); `0600` reserve intact.
+Media CLEAN pre/post, testkit v650 PASS. No production changes.
+
 ## 2026-10-29 v649: D6FS mount-validation stack bound PASS
 
 Native 96K GCC full-profile fatal-path watermark `0172` octal

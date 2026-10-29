@@ -229,6 +229,11 @@ Release-critical or prerequisite correctness/acceptance:
   invalidated in disposable disk copies emits `?RT`, HALTs and records
   `0172` octal (122 words) against `0600` reserve. Allocation, I/O
   and missing-INIT error paths remain unmeasured.
+  v650: targeted native KINIT idle-stack `mm_alloc` failure PASS:
+  inject only an impossible request into simulator RAM after Stage1
+  loads, then measure fatal HALT high-water `0172` octal (122 words)
+  against `0600` reserve. Disk media remains CLEAN. Independent
+  I/O and missing-INIT fatal paths remain open.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 

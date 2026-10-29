@@ -1,3 +1,10 @@
+## 2026-10-29 v650: native MM allocation-failure stack bound
+
+96K GCC full-profile KINIT: runtime-only SIMH fault at linked idle-stack
+`mm_alloc` request forces a genuine allocation failure. Fatal HALT
+watermark `0172` octal (122 words), reserve `0600` octal. Testkit PASS;
+source and persistent media unchanged. I/O and missing-INIT pending.
+
 ## 2026-10-29 v649: D6FS mount-validation fatal-path stack
 
 Native 96K GCC full-profile instrumented disk-root boot with corrupted
