@@ -1622,10 +1622,6 @@ d6fs_minit(void)
                 direct_write = minit_export(name, base, 6U);
                 backing_ops = ((kword_t)direct_read << 18U) |
                     (kword_t)direct_write;
-                storage_patch_module_jump(base, (kword_t *)(unsigned long)
-                    minit_export(name, base, 7U), read_addr);
-                storage_patch_module_jump(base, (kword_t *)(unsigned long)
-                    minit_export(name, base, 8U), write_addr);
         } else {
                 backing_ops = ((kword_t)d6fs_backing_read_addr << 18U) |
                     (kword_t)d6fs_backing_write_addr;
@@ -1634,6 +1630,23 @@ d6fs_minit(void)
                 storage_patch_module_jump(base,
                     (kword_t *)(unsigned long)callback_write, write_addr);
         }
+        /* Secondary direct D6FS mounts need the physical DSK bindings even
+         * when the boot root uses a multi-member BLOCKSET. Patch both the
+         * ordinary branch/tail and accounting PUSHJ sites during KINIT. */
+        read_addr = module_service_get(MODULE_SERVICE_DSK_READ_SECTOR);
+        write_addr = module_service_get(MODULE_SERVICE_DSK_WRITE_SECTOR);
+        if (read_addr != 0U) {
+                storage_patch_module_jump(base, (kword_t *)(unsigned long)
+                    minit_export(name, base, 7U), read_addr);
+                storage_patch_module_jump(base, (kword_t *)(unsigned long)
+                    minit_export(name, base, 11U), read_addr);
+        }
+        if (write_addr != 0U) {
+                storage_patch_module_jump(base, (kword_t *)(unsigned long)
+                    minit_export(name, base, 8U), write_addr);
+                storage_patch_module_jump(base, (kword_t *)(unsigned long)
+                    minit_export(name, base, 12U), write_addr);
+        }
         /* The per-mount direct adapter is also used by secondary D6FS
          * instances.  Patch DRM independently of the root backing so a
          * multi-DSK root does not disable later direct or interleaved DRM
@@ -1641,13 +1654,27 @@ d6fs_minit(void)
         read_addr = module_service_get(MODULE_SERVICE_DRM_READ_BLOCK);
         write_addr = module_service_get(MODULE_SERVICE_DRM_WRITE_BLOCK);
         if (read_addr != 0U)
-                storage_patch_module_jump(base, (kword_t *)(unsigned long)
-                    minit_export(name, base, 9U),
-                    (unsigned int)(unsigned long)&drm236_read_block);
+                {
+                        storage_patch_module_jump(base,
+                            (kword_t *)(unsigned long)
+                            minit_export(name, base, 9U),
+                            (unsigned int)(unsigned long)&drm236_read_block);
+                        storage_patch_module_jump(base,
+                            (kword_t *)(unsigned long)
+                            minit_export(name, base, 13U),
+                            (unsigned int)(unsigned long)&drm236_read_block);
+                }
         if (write_addr != 0U)
-                storage_patch_module_jump(base, (kword_t *)(unsigned long)
-                    minit_export(name, base, 10U),
-                    (unsigned int)(unsigned long)&drm236_write_block);
+                {
+                        storage_patch_module_jump(base,
+                            (kword_t *)(unsigned long)
+                            minit_export(name, base, 10U),
+                            (unsigned int)(unsigned long)&drm236_write_block);
+                        storage_patch_module_jump(base,
+                            (kword_t *)(unsigned long)
+                            minit_export(name, base, 14U),
+                            (unsigned int)(unsigned long)&drm236_write_block);
+                }
         if (d6fs_reader_bootstrap_call(backing_ops) != 0) {
                 minit_diag_notok(name);
                 return;

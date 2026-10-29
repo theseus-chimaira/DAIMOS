@@ -146,17 +146,15 @@ fs_backing_direct_have_unit:
         jrst    fs_backing_direct_root
         trne    6,0400000
         jrst    fs_backing_direct_drm
-        jumpe   7,fs_backing_direct_read_jump
-fs_backing_direct_write_jump:
-        jrst    0
 fs_backing_direct_read_jump:
-        jrst    0
+        jumpe   7,kret_neg1           ; KINIT patches RH to DSK read
+fs_backing_direct_write_jump:
+        jrst    kret_neg1             ; KINIT patches RH to DSK write
 
 fs_backing_direct_drm:
-        jumpe   7,fs_backing_direct_drm_read_jump
-fs_backing_direct_drm_write_jump:
-        jrst    kret_neg1
 fs_backing_direct_drm_read_jump:
+        jumpe   7,kret_neg1           ; KINIT patches RH to DRM read
+fs_backing_direct_drm_write_jump:
         jrst    kret_neg1
 
 ; The root tag is the only case in which direct-device I/O also represents a
@@ -166,17 +164,25 @@ fs_backing_direct_root:
         trne    6,0400000
         jrst    fs_backing_direct_root_drm
         jumpn   7,fs_backing_direct_root_write
-        pushj   17,fs_backing_direct_read_jump
+        .globl  fs_backing_direct_root_read_call
+fs_backing_direct_root_read_call:
+        pushj   17,kret_neg1
         jrst    fs_backing_direct_root_done
 fs_backing_direct_root_write:
-        pushj   17,fs_backing_direct_write_jump
+        .globl  fs_backing_direct_root_write_call
+fs_backing_direct_root_write_call:
+        pushj   17,kret_neg1
         jrst    fs_backing_direct_root_done
 fs_backing_direct_root_drm:
         jumpn   7,fs_backing_direct_root_drm_write
-        pushj   17,fs_backing_direct_drm_read_jump
+        .globl  fs_backing_direct_root_drm_read_call
+fs_backing_direct_root_drm_read_call:
+        pushj   17,kret_neg1
         jrst    fs_backing_direct_root_done
 fs_backing_direct_root_drm_write:
-        pushj   17,fs_backing_direct_drm_write_jump
+        .globl  fs_backing_direct_root_drm_write_call
+fs_backing_direct_root_drm_write_call:
+        pushj   17,kret_neg1
 fs_backing_direct_root_done:
         jumpn   1,fs_backing_root_error
         jumpe   7,fs_backing_direct_root_read_done

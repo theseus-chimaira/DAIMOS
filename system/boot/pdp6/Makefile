@@ -946,6 +946,8 @@ $(D6FS_MRES_OBJ): $(BUILD)/fs_backing.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/
 	    -X fs_backing_direct_read -X fs_backing_direct_write \
 	    -X fs_backing_direct_read_jump -X fs_backing_direct_write_jump \
 	    -X fs_backing_direct_drm_read_jump -X fs_backing_direct_drm_write_jump \
+	    -X fs_backing_direct_root_read_call -X fs_backing_direct_root_write_call \
+	    -X fs_backing_direct_root_drm_read_call -X fs_backing_direct_root_drm_write_call \
 	    $(BUILD)/fs_backing.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj
 
 # KINIT contains one load slot whose size must exactly match initialized KCORE.
