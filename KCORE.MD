@@ -1,3 +1,9 @@
+## 2026-10-29 v668: native swap MM-free rollback
+
+PDP-6 native execution verifies successful unpin followed by failed
+MM free retains resident ownership and original swap record, clears
+TRANSITION, and frees provisional BACKING. No KCORE optimization.
+
 ## 2026-10-29 v667: swap-out MM unpin failure invariant
 
 The PDP-6 swap-out path now rejects either failed unpin through the

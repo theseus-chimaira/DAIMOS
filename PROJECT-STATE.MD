@@ -1,3 +1,10 @@
+## 2026-10-29 v668: recoverable late MM-free rollback verified
+
+The testkit v668 isolated native PDP-6 test PASSes: after successful
+`mm_unpin`, injected `mm_free` failure retains resident VM/swap record,
+releases provisional BACKING, clears the staging word and TRANSITION.
+Full-system scheduler and I/O fault integration tests remain open.
+
 ## 2026-10-29 v667: fix unsafe swap-out unpin failure cleanup
 
 Both `mm_unpin` results in production PDP-6 `proc_swap_out` are now

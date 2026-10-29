@@ -324,6 +324,10 @@ implementation/acceptance is outstanding, NOT that scheduling is undecided.
   the existing storage invariant instead of unlocking the process;
   v667 source check and native PDP-6 branch fault tests PASS.
   Full-system MM fault injection remains open.
+  v668: isolated native PDP-6 `mm_free` failure after successful unpin
+  PASS: resident process record preserved, provisional BACKING released,
+  staging word and TRANSITION cleared. Full scheduler fault injection
+  and live I/O recovery remain open.
 - [ ] **DECISION 4 ACCEPTED (2026-10-27):** Complete production raw MEMFS
   XIP BEFORE the final KCORE optimization as a version 0.9 prerequisite.
   Implement privileged non-writing EXEC/RUN, provenance, swap/BRK exclusion,
