@@ -1221,9 +1221,9 @@ memfs_minit(void)
                 storage_patch_jump(&fs_memfs_service_jump, service);
                 storage_patch_jump(&sys_memfs_usage_call,
                     minit_export(name, base, 1U));
-                storage_patch_jump(&memfs_reclaim_jump,
+                storage_patch_jump(&memfs_reclaim_call,
                     minit_export(name, base, 2U));
-                storage_patch_jump(&memfs_shutdown_jump,
+                storage_patch_jump(&memfs_shutdown_call,
                     minit_export(name, base, 3U));
         }
         minit_diag_loaded(name);

@@ -62,8 +62,8 @@ module_fixed_bindings:
         .word   sys_dtfs_mount_jump
         .word   fs_d6fs_service_jump
         .word   fs_tsfs_service_jump
-        .word   memfs_reclaim_jump
-        .word   memfs_shutdown_jump
+        .word   memfs_reclaim_call
+        .word   memfs_shutdown_call
         .word   blockset_runtime_service_jump
 module_fixed_bindings_end:
 

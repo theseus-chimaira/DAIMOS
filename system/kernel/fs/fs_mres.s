@@ -220,29 +220,23 @@ fs_tsfs_service_jump:
 ; its independently movable MRES.
         .globl  fs_memory_reclaim
         .globl  bcache_reclaim
-        .globl  memfs_reclaim_jump
+        .globl  memfs_reclaim_call
 fs_memory_reclaim:
         jumpn   2,fs_memory_reclaim_memfs
         jrst    bcache_reclaim
 fs_memory_reclaim_memfs:
-        hrrz    4,memfs_reclaim_jump
-        cain    4,fs_mres_no_service
-        jrst    kret_zero
-        jrst    (4)
-memfs_reclaim_jump:
-        jrst    fs_mres_no_service
+memfs_reclaim_call:
+        pushj   17,kret_zero           ; KINIT patches target when installed
+        popj    17,
 
 ; Orderly-halt bridge.  Volatile/unmounted MEMFS returns immediately in MRES;
 ; a persistent instance commits its snapshot before the hardware HALT.
         .globl  fs_memfs_shutdown
-        .globl  memfs_shutdown_jump
+        .globl  memfs_shutdown_call
 fs_memfs_shutdown:
-        hrrz    4,memfs_shutdown_jump
-        cain    4,fs_mres_no_service
-        jrst    kret_zero
-        jrst    (4)
-memfs_shutdown_jump:
-        jrst    fs_mres_no_service
+memfs_shutdown_call:
+        pushj   17,kret_zero           ; absent MEMFS: successful no-op
+        popj    17,
 fs_mres_no_service:
         jrst    kret_neg1
 
