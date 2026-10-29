@@ -1,3 +1,10 @@
+## 2026-10-29 v653: invalid /SYSTEM/INIT rejection accepted
+
+Native full-profile PDP-6 SIMH rejects missing INIT directory entry
+and nonregular INIT FCB with `?RT`/HALT after D6FS initializes.
+Disposable disk copies; original media CLEAN; testkit PASS for both.
+No production code or RAM change.
+
 ## 2026-10-29 v652: KINIT reserve reduced to 256 words
 
 Default KINIT bootstrap reserve `0600` -> `0400` octal, based on

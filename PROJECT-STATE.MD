@@ -1,3 +1,10 @@
+## 2026-10-29 v653: missing/nonregular INIT root validation PASS
+
+Native 96K GCC full-profile D6FS root: absent `/SYSTEM/INIT` entry
+and nonregular (directory-type) INIT FCB both emit `?RT` and HALT;
+no INIT V1 startup. Two testkit v653 scenarios PASS using isolated
+disk copies, original media CLEAN. No production changes.
+
 ## 2026-10-29 v652: KINIT 256-word reserve accepted
 
 KINIT bootstrap stack default reduced from `0600` (384 words) to

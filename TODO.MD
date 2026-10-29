@@ -242,6 +242,10 @@ Release-critical or prerequisite correctness/acceptance:
   (256 words); prior failure-path high-water maximum is `0172`
   octal (122 words). Fresh native 32K lowmem watermark-enabled image
   boots through `proc_boot_init`, and invalid-root HALT records `0164`.
+  v653: missing and nonregular `/SYSTEM/INIT` acceptance PASS after
+  successful D6FS initialization on native PDP-6 SIMH, using clean
+  disposable disk copies. Physical-controller errors remain a
+  separate coverage item.
   Remaining `/SYSTEM/INIT` validation is separate from this size change.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
