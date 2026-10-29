@@ -23,11 +23,10 @@
 static kword_t d6fs_boot_scratch[D6FS_BLOCK_WORDS];
 static kword_t root_info[ROOT_D6FS_UNITS];
 
-/* Recovery RO mounts must be able to load all three essential programs.
- * Use the normal validated VFS lookup and read paths: raw FCB arithmetic
- * would bypass their extent and block bounds checks.  Checking the first
- * image word is a bootstrap probe, not a complete executable integrity
- * check; the normal loader still validates the full image at RUN. */
+/* Recovery RO mounts must be able to read all three essential programs.
+ * Stream complete images through the existing transient scratch block,
+ * without a second buffer or raw FCB arithmetic.  The normal loader still
+ * validates DXR format when the process is started. */
 static int
 d6fs_boot_recovery_file(vnode_t directory, kword_t nameword,
     unsigned int chars)
@@ -35,7 +34,9 @@ d6fs_boot_recovery_file(vnode_t directory, kword_t nameword,
         struct vfs_name name;
         struct vfs_stat st;
         vnode_t node;
-        kword_t first;
+        kword_t *scratch;
+        kword_t offset;
+        unsigned int count;
         unsigned int i;
 
         name.chars = chars;
@@ -44,8 +45,19 @@ d6fs_boot_recovery_file(vnode_t directory, kword_t nameword,
                 name.words[i] = 0UL;
         if (vfs_lookup(directory, &name, &node) != 0 ||
             vfs_stat(node, &st) != 0 || st.type != VFS_TYPE_REG ||
-            st.size_words == 0UL || vfs_read_words(node, 0U, &first, 1U) != 1)
+            st.size_words == 0UL || st.size_words > 0777777UL)
                 return -1;
+        scratch = d6fs_boot_block_buffer();
+        offset = 0UL;
+        while (offset < st.size_words) {
+                count = (unsigned int)(st.size_words - offset);
+                if (count > D6FS_BLOCK_WORDS)
+                        count = D6FS_BLOCK_WORDS;
+                if (vfs_read_words(node, (unsigned int)offset,
+                    scratch, count) != (int)count)
+                        return -1;
+                offset += (kword_t)count;
+        }
         return 0;
 }
 
