@@ -304,7 +304,15 @@ d6fs_boot_mount_root(unsigned int flags)
                 return -1;
         for (i = 0U; i < D6FS_SUPER_WORDS; ++i)
                 b[i] = scratch[i];
-        if (d6fs_super_select(a, b, total, &super, &copy) != 0)
+        /* A recovery mount may inspect the newest structurally valid DIRTY
+         * generation, but only if the caller explicitly requested RO.
+         * Ordinary mounts retain the existing CLEAN-only acceptance rule.
+         * No DIRTY generation can enter the writable bootstrap path. */
+        if ((flags & VFS_MOUNT_RDONLY) != 0U) {
+                if (d6fs_super_select_recovery(a, b, total,
+                    &super, &copy) != 0)
+                        return -1;
+        } else if (d6fs_super_select(a, b, total, &super, &copy) != 0)
                 return -1;
         selected = copy == 0U ? a : b;
         summary_start = selected[D6FS_SB_SUMMARY_START];
