@@ -351,7 +351,8 @@ file_path_setchar:
         .globl  tty_read_s6rec_call
         .globl  ttydpy_putchar_call
         .globl  ttydpy_getchar_call
-        .globl  dpy_write_words_jump
+        .globl  dpy_close_words_call
+        .globl  dpy_write_words_call
         .globl  wcnsls_read_words_call
         .globl  wcnsls_write_words_call
         .globl  ptr_read_words_call
@@ -497,7 +498,8 @@ file_close_dpy:
         ; Zero-word WRITE_WORDS stops the active raw list and frees its extent.
         setz    1,
         setz    2,
-        pushj   17,dpy_write_words_jump
+dpy_close_words_call:
+        pushj   17,kret_neg1
         move    1,010
         pushj   17,file_node_from_fd
 file_close_vfs:
@@ -768,7 +770,8 @@ lpt_write_s6rec_call:
         pushj   17,kret_neg1
         jrst    file_words_result
 file_write_words_dpy:
-        pushj   17,dpy_write_words_jump
+dpy_write_words_call:
+        pushj   17,kret_neg1
         jrst    file_words_result
 file_write_words_wcnsls:
 wcnsls_write_words_call:
@@ -851,8 +854,6 @@ file_words_fail:
 
 ; Patched by TTY MINIT when the logical-terminal MRES is installed.
 lpt_putchar_jump:
-        jrst    kret_neg1
-dpy_write_words_jump:
         jrst    kret_neg1
 
 ; int file_readdir(int fd, struct vfs_dirent *ent)

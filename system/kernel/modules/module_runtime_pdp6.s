@@ -42,7 +42,8 @@ module_fixed_bindings:
         .word   cp_write_words_call
         .word   lpt_putchar_jump
         .word   lpt_write_s6rec_call
-        .word   dpy_write_words_jump
+        .word   dpy_close_words_call
+        .word   dpy_write_words_call
         .word   wcnsls_read_words_call
         .word   wcnsls_write_words_call
         .word   sys_dtc_read_block_jump
