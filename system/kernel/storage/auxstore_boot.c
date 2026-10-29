@@ -157,22 +157,70 @@ auxstore_post_minits(void)
         backstore_blocks = auxstore_backstore_blocks;
 }
 
+/* Translate a region-relative block after validating its entire partition.
+ * Avoid additions until the range check is complete: callers must never
+ * accidentally cross from LOGSTORE into BACKSTORE or CACHESTORE. */
+static int
+auxstore_region_block(unsigned int region, kword_t first, kword_t *phys)
+{
+        kword_t start;
+        kword_t count;
+
+        if (auxstore_kind == AUXSTORE_KIND_NONE || phys == 0)
+                return -1;
+        switch (region) {
+        case AUXSTORE_REGION_BACKSTORE:
+                start = auxstore_backstore_start;
+                count = auxstore_backstore_blocks;
+                break;
+        case AUXSTORE_REGION_LOGSTORE:
+                start = auxstore_logstore_start;
+                count = auxstore_logstore_blocks;
+                break;
+        case AUXSTORE_REGION_CACHE:
+                start = auxstore_cache_start;
+                count = auxstore_cache_blocks;
+                break;
+        default:
+                return -1;
+        }
+        if (count == 0UL || first >= count)
+                return -1;
+        *phys = start + first;
+        return 0;
+}
+
+int
+auxstore_boot_region_read(unsigned int region, kword_t first, kword_t *buf)
+{
+        kword_t phys;
+
+        if (buf == 0 || auxstore_region_block(region, first, &phys) != 0)
+                return -1;
+        return auxstore_phys_read(auxstore_kind, auxstore_unit, phys, buf);
+}
+
+int
+auxstore_boot_region_write(unsigned int region, kword_t first,
+    const kword_t *buf)
+{
+        kword_t phys;
+
+        if (buf == 0 || auxstore_region_block(region, first, &phys) != 0)
+                return -1;
+        return auxstore_phys_write(auxstore_kind, auxstore_unit, phys, buf);
+}
+
 int
 auxstore_boot_log_read(kword_t first, kword_t *buf)
 {
-        if (auxstore_kind == AUXSTORE_KIND_NONE || buf == 0 ||
-            first >= auxstore_logstore_blocks)
-                return -1;
-        return auxstore_phys_read(auxstore_kind, auxstore_unit,
-            auxstore_logstore_start + first, buf);
+        return auxstore_boot_region_read(AUXSTORE_REGION_LOGSTORE,
+            first, buf);
 }
 
 int
 auxstore_boot_log_write(kword_t first, const kword_t *buf)
 {
-        if (auxstore_kind == AUXSTORE_KIND_NONE || buf == 0 ||
-            first >= auxstore_logstore_blocks)
-                return -1;
-        return auxstore_phys_write(auxstore_kind, auxstore_unit,
-            auxstore_logstore_start + first, buf);
+        return auxstore_boot_region_write(AUXSTORE_REGION_LOGSTORE,
+            first, buf);
 }

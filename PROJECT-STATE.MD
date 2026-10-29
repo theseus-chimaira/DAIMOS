@@ -1,3 +1,13 @@
+## 2026-10-29 v657: BSTORE shared-region feature implementation begins
+
+The production AUXSTORE code now provides a range-checked, shared
+region-relative raw I/O interface for BACKSTORE, LOGSTORE and
+CACHESTORE. LOGSTORE bootstrap wrappers use it. Testkit host region
+bounds, AUXSTORE selection and D6FS overlap PASS. BACKSTORE integration
+and native recovery remain unfinished; no size-sweep work was done.
+The online D6FS packer and agreed storage/admin extensions are 0.9
+release scope (not post-0.9). DTFS/TSFS work is deferred for now.
+
 ## 2026-10-29 v656: mm-core host regression PASS
 
 The stale `mm-core` testkit fixture now builds and passes with C99

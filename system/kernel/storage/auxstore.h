@@ -23,6 +23,12 @@
 #define AUXSTORE_KIND_DSK       1U
 #define AUXSTORE_KIND_DRM       2U
 
+/* Shared raw-partition I/O interface. All offsets are region-relative;
+ * no caller may reach descriptor block zero or an adjacent partition. */
+#define AUXSTORE_REGION_BACKSTORE 1U
+#define AUXSTORE_REGION_LOGSTORE  2U
+#define AUXSTORE_REGION_CACHE     3U
+
 extern unsigned int auxstore_kind;
 extern unsigned int auxstore_unit;
 extern kword_t auxstore_backstore_start;
@@ -34,6 +40,10 @@ extern kword_t auxstore_cache_blocks;
 
 int auxstore_boot_discover(void);
 void auxstore_post_minits(void);
+int auxstore_boot_region_read(unsigned int region, kword_t first,
+    kword_t *buf);
+int auxstore_boot_region_write(unsigned int region, kword_t first,
+    const kword_t *buf);
 int auxstore_boot_log_read(kword_t first, kword_t *buf);
 int auxstore_boot_log_write(kword_t first, const kword_t *buf);
 

@@ -1,3 +1,11 @@
+## 2026-10-29 v657: shared backing feature interface
+
+First BSTORE feature increment: bounded raw AUXSTORE region read/write
+API for three partitions, used by LOGSTORE boot I/O. Host regression
+PASS, earlier AUXSTORE selection/overlap PASS. No KCORE size
+optimization performed. Further production BACKSTORE/BCACHE/recovery
+integration remains open.
+
 ## 2026-10-29 v656: host mm-core fixture repaired
 
 daimos-testkit `make mm-core` now PASS after restoring test-only VM

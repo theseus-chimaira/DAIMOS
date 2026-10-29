@@ -280,6 +280,12 @@ implementation/acceptance is outstanding, NOT that scheduling is undecided.
   existing D6FS-root validation contracts. Verify all production consumers,
   removable MRES boundaries, dynamic RAM and native rollback/recovery before
   freezing the service ABI. Decision recorded; implementation not complete.
+  v657 first feature increment: shared bounded raw AUXSTORE region
+  read/write interface for BACKSTORE/LOGSTORE/CACHESTORE landed;
+  LOGSTORE bootstrap I/O now delegates through that interface.
+  Host partition-bounds regression and earlier AUXSTORE choice/overlap
+  checks PASS. BACKSTORE conversion, recovery and native acceptance
+  remain open; no KCORE optimization or completion claim.
 - [ ] **DECISION 4 ACCEPTED (2026-10-27):** Complete production raw MEMFS
   XIP BEFORE the final KCORE optimization as a version 0.9 prerequisite.
   Implement privileged non-writing EXEC/RUN, provenance, swap/BRK exclusion,
@@ -302,11 +308,17 @@ implementation/acceptance is outstanding, NOT that scheduling is undecided.
 
 Explicitly outside the 0.9 final KCORE functional freeze unless a verified
 release dependency is found: new dynamic/unloadable MRES framework, user
-overlays, runtime module movement, hardware pager, online D6FS packer,
+overlays, runtime module movement, hardware pager,
 Type-340 input/chess, PDP-6 TS 1.4 foreign DECtape, and full 32K DSH
 command execution (separate DSH shrink effort). Never auto-load MEMFS
 based on AUXSTORE presence. Do not treat KCORE `proc_swap`, `bcache`,
 `fs_mres`, p10fold or dead-data audits as functional prerequisites.
+
+The **online D6FS packer and other agreed storage/admin extensions are
+required for 0.9**, not post-0.9. This release-scope correction does not
+bring the deferred DTFS/TSFS work into the current KCORE feature sequence.
+Implement these features before release acceptance; KCORE feature
+implementation takes precedence over any new size-optimization sweep.
 
 ## TSFS-root auxiliary backing and command tools (2026-10-27)
 
