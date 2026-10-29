@@ -55,6 +55,7 @@
         .globl dsys_dtc_read_block
         .globl dsys_dtc_write_block
         .globl dsys_d6fs_mount
+        .globl dsys_d6fs_read_block
 
 dsys_exit:             uuo 040,0(1)
                        popj 17,
@@ -217,5 +218,12 @@ dsys_d6fs_mount:        move 4,3
                         move 3,2
                         move 2,1
                         movei 1,042
+                        uuo 077,0(1)
+                        popj 17,
+
+; AC1=logical root BLOCKSET block, AC2=128-word user buffer.
+dsys_d6fs_read_block:   move 3,2
+                        move 2,1
+                        movei 1,053
                         uuo 077,0(1)
                         popj 17,

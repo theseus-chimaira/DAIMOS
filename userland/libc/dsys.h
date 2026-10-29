@@ -49,6 +49,7 @@ int dsys_settime(kword_t value);
 int dsys_dtc_read_block(unsigned int unit, unsigned int block, kword_t *buf);
 int dsys_dtc_write_block(unsigned int unit, unsigned int block, kword_t *buf);
 int dsys_d6fs_mount(kword_t *handoff, kword_t *path, unsigned int flags);
+int dsys_d6fs_read_block(kword_t block, kword_t *buf);
 int dsys_memfs_mount(kword_t *path, unsigned int words, unsigned int flags);
 int dsys_storagectl(unsigned int mask);
 int dsys_ttyctl(unsigned int op, unsigned int tty, unsigned int sink);

@@ -592,7 +592,7 @@ native_sys_extctl:
         hrrz    5,1
         subi    5,020
         jumpl   5,native_sys_procctl
-        caile   5,032
+        caile   5,033
         jrst    native_sys_procctl
         move    6,5
         andi    5,1
@@ -616,7 +616,43 @@ native_sys_ext_table:
         .word   native_sys_logctl,,native_sys_dtc_write_block
         .word   native_sys_memfs_mount,,native_sys_storagectl
         .word   native_sys_ttyctl,,native_sys_fsinfo
-        .word   native_sys_brk,,native_sys_procctl
+        .word   native_sys_brk,,native_sys_d6fs_read_block
+
+; Read a logical block of the mounted root D6FS through the existing
+; BLOCKSET mapper. This is intentionally read-only: metadata repair needs
+; a separate exclusive, checked transition and cannot use this syscall.
+; AC2=logical block, AC3=user destination (128 words).
+native_sys_d6fs_read_block:
+        pushj   17,file_check_root      ; raw metadata is privileged
+        jumpn   1,kret_neg1
+        move    5,vfs_namespace_root
+        jumpe   5,kret_neg1
+        ldb     4,[POINT 6,5,5]         ; vnode provider
+        caie    4,6                     ; D6FS only
+        jrst    kret_neg1
+        move    1,5
+        push    17,2                    ; save logical address
+        push    17,3                    ; preserve user buffer across VFS query
+        pushj   17,vfs_readonly
+        jumpe   1,native_sys_d6fs_read_bad_map ; reject mounted RW data
+        move    1,(17)                  ; user buffer
+        pushj   17,native_sys_map_one
+        jumpe   1,native_sys_d6fs_read_bad_map
+        add     3,4                     ; physical one-past user mapping
+        movei   5,0200(1)
+        camle   5,3
+        jrst    native_sys_d6fs_read_bad
+        move    2,1                     ; mapped user destination
+        move    1,-1(17)                ; logical BLOCKSET block
+        pushj   17,blockset_read_block
+        jrst    native_sys_d6fs_read_done
+native_sys_d6fs_read_bad:
+        pushj   17,vm_user_mapping_release
+native_sys_d6fs_read_bad_map:
+        seto    1,
+native_sys_d6fs_read_done:
+        sub     17,kconst_2_2
+        jrst    native_sys_mapped_return
 
 ; AC2 is zero to query, otherwise the requested logical break.  The VM helper
 ; owns APR-granularity resize and returns the current/new break or -1.
