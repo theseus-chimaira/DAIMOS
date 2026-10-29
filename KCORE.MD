@@ -1,3 +1,12 @@
+## 2026-10-29 v652: KINIT reserve reduced to 256 words
+
+Default KINIT bootstrap reserve `0600` -> `0400` octal, based on
+previously measured worst-case failure watermark `0172` octal (122
+words). Fresh 32K GCC lowmem instrumented image ends `077260` and
+boots to `proc_boot_init`; image plus reserve ends at `077660`, below
+`0100000`. Invalid-root HALT uses `0164` octal. No permanent KCORE
+growth. See `design/kinit-stack-reserve-256-v652.md`.
+
 ## 2026-10-29 v651: root BLOCKSET read-error stack bound
 
 Native 96K GCC full-profile KINIT: runtime-only BLOCKSET read-service

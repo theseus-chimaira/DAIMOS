@@ -1,3 +1,12 @@
+## 2026-10-29 v652: KINIT 256-word reserve accepted
+
+KINIT bootstrap stack default reduced from `0600` (384 words) to
+`0400` octal (256 words). Previously verified fatal paths reached at
+most `0172` octal (122 words). A fresh 32K GCC lowmem native SIMH
+boot reached `proc_boot_init`, and the invalid-root HALT recorded
+`0164` octal. Image end `077260`, reserve end `077660`, safely below
+`0100000`. Unrelated unmeasured error paths remain open.
+
 ## 2026-10-29 v651: BLOCKSET read-I/O failure watermark PASS
 
 Native 96K GCC full-profile KINIT with simulator-only BLOCKSET read

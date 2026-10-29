@@ -238,6 +238,11 @@ Release-critical or prerequisite correctness/acceptance:
   D6FS root mount PASS: `?RT`, HALT, `0172` octal (122-word) stack
   watermark, CLEAN source media before/after. Physical controller
   errors and absent/nonregular `/SYSTEM/INIT` still need coverage.
+  v652: KINIT bootstrap reserve reduced from `0600` to `0400` octal
+  (256 words); prior failure-path high-water maximum is `0172`
+  octal (122 words). Fresh native 32K lowmem watermark-enabled image
+  boots through `proc_boot_init`, and invalid-root HALT records `0164`.
+  Remaining `/SYSTEM/INIT` validation is separate from this size change.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 

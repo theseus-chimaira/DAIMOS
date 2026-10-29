@@ -69,7 +69,7 @@ DPY_LOGIN ?= 0
 ifneq ($(filter $(BOOT_PROFILE),full lowmem),$(BOOT_PROFILE))
 $(error unsupported BOOT_PROFILE=$(BOOT_PROFILE); expected full or lowmem)
 endif
-KINIT_STACK_RESERVE_WORDS ?= 0600
+KINIT_STACK_RESERVE_WORDS ?= 0400
 ifeq ($(BOOT_PROFILE),lowmem)
 BOOT_CORE_WORDS ?= 0100000
 SIMH_CPU_KWORDS ?= 32
