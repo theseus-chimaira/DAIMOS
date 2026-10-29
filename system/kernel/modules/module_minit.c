@@ -190,16 +190,16 @@ static unsigned int pi_level_tail[PDP10_PI_LEVELS + 1U];
 
 static void storage_patch_jump(kword_t *word, unsigned int address);
 static void storage_patch_optional_calls(unsigned int address, int logstore);
-extern kword_t wall_time36_provider_jump;
-extern kword_t wall_clock_set_provider_jump;
 extern kword_t native_sys_clock_table_word;
 extern kword_t native_sys_settime_call;
-/* The clock provider installs before filesystem MRES consumers.  Its
- * existing patched gateway RH is a transient KINIT-time link resolver. */
+/* Transient provider selections; missing calendar reads return zero and
+ * missing SETTIME returns -1 through the fixed fallback entry points. */
+static unsigned int minit_calendar_provider;
 static unsigned int
 minit_clock_target(void)
 {
-        return (unsigned int)(wall_time36_provider_jump & KINIT_HALF_MASK);
+        return minit_calendar_provider != 0U ? minit_calendar_provider :
+            (unsigned int)(unsigned long)&wall_time36;
 }
 static int clock_pclk_selected;
 static int clock_apr_installed;
@@ -576,10 +576,9 @@ pclkclock_minit(void)
                 return;
         name = (kword_t)SIXBIT("PCLK  ");
         base = minit_install(name);
-        storage_patch_jump(&wall_time36_provider_jump,
-            minit_export(name, base, 0U));
+        minit_calendar_provider = minit_export(name, base, 0U);
         storage_patch_jump(&native_sys_clock_table_word,
-            minit_export(name, base, 0U));
+            minit_calendar_provider);
         minit_diag_ok(name);
 }
 
@@ -601,12 +600,9 @@ softclock_minit(void)
                 return;
         }
         base = minit_install(name);
-        storage_patch_jump(&wall_time36_provider_jump,
-            minit_export(name, base, 0U));
+        minit_calendar_provider = minit_export(name, base, 0U);
         storage_patch_jump(&native_sys_clock_table_word,
-            minit_export(name, base, 0U));
-        storage_patch_jump(&wall_clock_set_provider_jump,
-            minit_export(name, base, 1U));
+            minit_calendar_provider);
         storage_patch_jump(&native_sys_settime_call,
             minit_export(name, base, 1U));
         minit_diag_ok(name);
