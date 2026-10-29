@@ -69,6 +69,8 @@ d6fs_provider_write_dirent_store:
         pushj   17,d6fs_reader_write_words
         caie    1,6
         jrst    d6fs_provider_write_dirent_fail
+        .globl  clkbind_dfm0
+clkbind_dfm0:
         pushj   17,wall_time36
         movem   1,-035(17)               ; directory FCB MTIME: -040 + 3
         move    1,d6fs_active_reader

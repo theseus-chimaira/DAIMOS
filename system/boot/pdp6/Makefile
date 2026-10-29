@@ -879,6 +879,7 @@ $(SLV_MRES_OBJ): $(BUILD)/slv_io.dobj $(KCORE_MAP)
 $(MEMFS_MRES_OBJ): $(BUILD)/memfs_data.dobj $(BUILD)/memfs_snapshot.dobj $(BUILD)/memfs_runtime.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/memfs-mres.dxr -M $(BUILD)/memfs-mres.map \
 	    -R $@ -N memfs_mres_package -X memfs_mres_dispatch -X memfs_mres_usage -X memfs_data_reclaim -X memfs_mres_shutdown \
+	    -X clkbind_mfr0 -X clkbind_mfr1 \
 	    $(BUILD)/memfs_data.dobj $(BUILD)/memfs_snapshot.dobj $(BUILD)/memfs_runtime.dobj
 
 $(MONITORFS_MRES_OBJ): $(BUILD)/monitorfs_mres_v16.dobj $(BUILD)/monitorfs_swap_v63_mres.dobj $(KCORE_MAP)
@@ -948,6 +949,7 @@ $(D6FS_MRES_OBJ): $(BUILD)/fs_backing.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/
 	    -X fs_backing_direct_drm_read_jump -X fs_backing_direct_drm_write_jump \
 	    -X fs_backing_direct_root_read_call -X fs_backing_direct_root_write_call \
 	    -X fs_backing_direct_root_drm_read_call -X fs_backing_direct_root_drm_write_call \
+	    -X clkbind_dfr0 -X clkbind_dfr1 -X clkbind_dfm0 -X clkbind_dfn0 \
 	    $(BUILD)/fs_backing.dobj $(BUILD)/d6fs_provider.dobj $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj
 
 # KINIT contains one load slot whose size must exactly match initialized KCORE.

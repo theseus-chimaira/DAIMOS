@@ -171,6 +171,8 @@ d6fs_create_mode_ready:
         lsh     2,014
         ior     1,2
         movem   1,-043(17)             ; FCB meta
+        .globl  clkbind_dfn0
+clkbind_dfn0:
         pushj   17,wall_time36
         movem   1,-040(17)             ; FCB mtime, word 3
         pushj   17,vfs_current_owner

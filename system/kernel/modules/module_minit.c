@@ -192,6 +192,13 @@ static void storage_patch_jump(kword_t *word, unsigned int address);
 static void storage_patch_optional_calls(unsigned int address, int logstore);
 extern kword_t wall_time36_provider_jump;
 extern kword_t wall_clock_set_provider_jump;
+/* The clock provider installs before filesystem MRES consumers.  Its
+ * existing patched gateway RH is a transient KINIT-time link resolver. */
+static unsigned int
+minit_clock_target(void)
+{
+        return (unsigned int)(wall_time36_provider_jump & KINIT_HALF_MASK);
+}
 static int clock_pclk_selected;
 static int clock_apr_installed;
 
@@ -1214,6 +1221,10 @@ memfs_minit(void)
 
         name = (kword_t)SIXBIT("MEMFS ");
         base = minit_install(name);
+        storage_patch_module_jump(base, (kword_t *)(unsigned long)
+            minit_export(name, base, 4U), minit_clock_target());
+        storage_patch_module_jump(base, (kword_t *)(unsigned long)
+            minit_export(name, base, 5U), minit_clock_target());
         {
                 unsigned int service;
 
@@ -1611,6 +1622,14 @@ d6fs_minit(void)
         }
         base = minit_install(name);
         d6fs_backing_read_addr = minit_export(name, base, 1U);
+        storage_patch_module_jump(base, (kword_t *)(unsigned long)
+            minit_export(name, base, 15U), minit_clock_target());
+        storage_patch_module_jump(base, (kword_t *)(unsigned long)
+            minit_export(name, base, 16U), minit_clock_target());
+        storage_patch_module_jump(base, (kword_t *)(unsigned long)
+            minit_export(name, base, 17U), minit_clock_target());
+        storage_patch_module_jump(base, (kword_t *)(unsigned long)
+            minit_export(name, base, 18U), minit_clock_target());
         d6fs_backing_write_addr = minit_export(name, base, 2U);
         callback_read = minit_export(name, base, 3U);
         callback_write = minit_export(name, base, 4U);

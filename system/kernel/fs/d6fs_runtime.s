@@ -1369,6 +1369,8 @@ d6fs_provider_truncate:
         move    4,-1(17)
         pushj   17,d6fs_provider_resize_fcb
         jumpn   1,d6fs_provider_truncate_fail
+        .globl  clkbind_dfr0
+clkbind_dfr0:
         pushj   17,wall_time36
         movem   1,-031(17)
         ; CHMOD/CHOWN/UTIME use the identical FCB commit and 035-word frame.
@@ -1502,6 +1504,8 @@ d6fs_provider_write_words_store:
         came    1,-1(17)                ; never publish short payload
         jrst    d6fs_provider_write_words_store_fail
         movem   1,(17)
+        .globl  clkbind_dfr1
+clkbind_dfr1:
         pushj   17,wall_time36
         movem   1,-033(17)
         move    1,d6fs_active_reader

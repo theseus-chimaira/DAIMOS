@@ -295,6 +295,8 @@ memfs_touch_slot:
         addi    5,01100
         add     5,2
         push    17,5                     ; AC5 is caller-scratch for C fallback
+        .globl  clkbind_mfr0
+clkbind_mfr0:
         pushj   17,wall_time36
         pop     17,5                     ; restore destination across gateway
         movem   1,(5)
@@ -774,6 +776,8 @@ memfs_mres_mount_size_ok:
         subi    6,0700                  ; preserve old data-capacity semantics
         movem   6,memfs_mres_fs+1
         setzm   memfs_mres_fs+2         ; logical file words in use
+        .globl  clkbind_mfr1
+clkbind_mfr1:
         pushj   17,wall_time36
         move    5,memfs_mres_fs
         movem   1,01100(5)              ; fresh root mtime; restore may replace it
