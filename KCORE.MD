@@ -6,6 +6,17 @@ the test's symbol assumptions, but a no-breakpoint native run halts
 at `?RT`/`065206` before workload completion. Full-system swap-out
 recovery remains UNVERIFIED; no kernel size/production change.
 
+`?RT` originates from `kinit_boot()` root mount/INIT validation,
+not from the swap transaction code.
+
+## 2026-10-29 v669: full-system swap pressure blocked
+
+The v298 test assumes swap transactions are in `kcore.map`; current
+swap transactions reside in loadable SWAP MRES. Testkit v669 corrects
+the test's symbol assumptions, but a no-breakpoint native run halts
+at `?RT`/`065206` before workload completion. Full-system swap-out
+recovery remains UNVERIFIED; no kernel size/production change.
+
 ## 2026-10-29 v668: native swap MM-free rollback
 
 PDP-6 native execution verifies successful unpin followed by failed

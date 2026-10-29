@@ -20,3 +20,8 @@ not establish full-system scheduler recovery. Next investigate the
 `?RT` startup halt and trace the actual loaded SWAP MRES calls without
 fixed offsets or high-volume breakpoints. No kernel change or size
 optimization was made in v669.
+
+Source diagnosis: `?RT` is the `KINIT_ERR_RT` emitted by `kinit_boot()`
+when root mounting fails or root validation cannot find a regular
+`/SYSTEM/INIT`. The pressure workload has not started at that point.
+The precise root-validation failure remains to be isolated.
