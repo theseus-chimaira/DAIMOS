@@ -162,8 +162,12 @@ extern kword_t drm236_write_jump;
 extern kword_t native_sys_getchar_call;
 extern kword_t sys_dtc_read_block_jump;
 extern kword_t sys_dtc_write_block_jump;
-extern kword_t sys_logstore_service_jump;
-extern kword_t sys_mtc_service_jump;
+/* Each direct PUSHJ is patched while KINIT is resident.  No runtime table. */
+extern kword_t sys_logstore_call_0, sys_logstore_call_1;
+extern kword_t sys_logstore_call_2, sys_logstore_call_3;
+extern kword_t sys_logstore_call_4;
+extern kword_t sys_mtc_call_0, sys_mtc_call_1;
+extern kword_t sys_mtc_call_2, sys_mtc_call_3;
 extern kword_t native_sys_putchar_call;
 extern kword_t tty_write_s6rec_jump;
 extern kword_t tty_read_s6rec_jump;
@@ -185,6 +189,7 @@ static unsigned int pi_level_registered[PDP10_PI_LEVELS + 1U];
 static unsigned int pi_level_tail[PDP10_PI_LEVELS + 1U];
 
 static void storage_patch_jump(kword_t *word, unsigned int address);
+static void storage_patch_optional_calls(unsigned int address, int logstore);
 extern kword_t wall_time36_provider_jump;
 extern kword_t wall_clock_set_provider_jump;
 static int clock_pclk_selected;
@@ -1039,6 +1044,31 @@ storage_patch_jump(kword_t *word, unsigned int address)
             (kword_t)(address & KINIT_HALF_MASK);
 }
 
+/* This table exists only on the KINIT stack during module installation. */
+static void
+storage_patch_optional_calls(unsigned int address, int logstore)
+{
+        kword_t *calls[5];
+        unsigned int i, count;
+
+        if (logstore) {
+                calls[0] = &sys_logstore_call_0;
+                calls[1] = &sys_logstore_call_1;
+                calls[2] = &sys_logstore_call_2;
+                calls[3] = &sys_logstore_call_3;
+                calls[4] = &sys_logstore_call_4;
+                count = 5U;
+        } else {
+                calls[0] = &sys_mtc_call_0;
+                calls[1] = &sys_mtc_call_1;
+                calls[2] = &sys_mtc_call_2;
+                calls[3] = &sys_mtc_call_3;
+                count = 4U;
+        }
+        for (i = 0U; i < count; ++i)
+                storage_patch_jump(calls[i], address);
+}
+
 static void
 storage_patch_module_jump(unsigned int base, kword_t *word,
     unsigned int address)
@@ -1116,7 +1146,7 @@ storage_minit(unsigned int kind, kword_t name)
                 unsigned int mtc_service;
 
                 mtc_service = minit_export(name, base, TAPE_X_MTC_SERVICE);
-                storage_patch_jump(&sys_mtc_service_jump, mtc_service);
+                storage_patch_optional_calls(mtc_service, 0);
                 mfsdev_present_mark(MONITORFS_DEV_MTC0);
         } else {
                 {
@@ -1412,7 +1442,7 @@ logstore_minit(void)
         storage_patch_module_jump(base,
             (kword_t *)(unsigned long)minit_export(name, base,
             LOGSTORE_X_WRITE_JUMP), write_addr);
-        storage_patch_jump(&sys_logstore_service_jump, service);
+        storage_patch_optional_calls(service, 1);
         minit_diag_loaded(name);
 }
 #endif

@@ -780,7 +780,8 @@ native_sys_storagectl:
         move    1,6
         andi    1,2
         movei   5,6                    ; LOGSTORE MRES ENABLE
-        pushj   17,sys_logstore_service_jump
+sys_logstore_call_0:
+        pushj   17,kret_neg1
         setz    7,                     ; optional enable failure
         trnn    6,2
         jrst    native_sys_storagectl_log_ok
@@ -841,7 +842,8 @@ native_sys_logctl:
         ; MTC REWIND
         move    1,-1(17)               ; unit
         movei   4,0000400
-        pushj   17,sys_mtc_service_jump
+sys_mtc_call_0:
+        pushj   17,kret_neg1
         jrst    native_sys_logctl_done3
 
 native_sys_logctl_status:
@@ -849,7 +851,8 @@ native_sys_logctl_status:
         movei   5,3
         pushj   17,native_sys_logctl_map
         movei   5,1
-        pushj   17,sys_logstore_service_jump
+sys_logstore_call_1:
+        pushj   17,kret_neg1
         movem   1,(6)
         movem   2,1(6)
         movem   3,2(6)
@@ -865,7 +868,8 @@ native_sys_logctl_logio:
         move    2,6
         move    5,-2(17)
         addi    5,1                    ; LOGSTORE MRES READ=2/WRITE=3
-        pushj   17,sys_logstore_service_jump
+sys_logstore_call_2:
+        pushj   17,kret_neg1
         push    17,1
         pushj   17,vm_user_mapping_release
         pop     17,1
@@ -878,7 +882,8 @@ native_sys_logctl_mtc_status:
         move    6,1
         move    1,-1(17)               ; unit
         movei   4,1
-        pushj   17,sys_mtc_service_jump
+sys_mtc_call_1:
+        pushj   17,kret_neg1
         movem   1,(6)
         pushj   17,vm_user_mapping_release
         setz    1,
@@ -892,7 +897,8 @@ native_sys_logctl_mtc_write:
         move    2,6
         movei   3,0200
         seto    4,                     ; MTC_OP_WRITE
-        pushj   17,sys_mtc_service_jump
+sys_mtc_call_2:
+        pushj   17,kret_neg1
         push    17,1
         pushj   17,vm_user_mapping_release
         pop     17,1
@@ -901,13 +907,15 @@ native_sys_logctl_mtc_write:
 native_sys_logctl_mtc_filemark:
         move    1,-1(17)               ; unit
         movei   4,0001400
-        pushj   17,sys_mtc_service_jump
+sys_mtc_call_3:
+        pushj   17,kret_neg1
         jrst    native_sys_logctl_done3
 
 native_sys_logctl_wait:
         move    1,-1(17)               ; producer sequence seen by caller
         movei   5,5                    ; LOGSTORE_MRES_OP_WAIT
-        pushj   17,sys_logstore_service_jump
+sys_logstore_call_3:
+        pushj   17,kret_neg1
         jrst    native_sys_logctl_done3
 
 native_sys_logctl_append:
@@ -916,7 +924,8 @@ native_sys_logctl_append:
         pushj   17,native_sys_logctl_map
         move    1,6
         movei   5,4                    ; LOGSTORE_MRES_OP_APPEND
-        pushj   17,sys_logstore_service_jump
+sys_logstore_call_4:
+        pushj   17,kret_neg1
         push    17,1
         pushj   17,vm_user_mapping_release
         pop     17,1
@@ -945,12 +954,17 @@ native_sys_logctl_done3:
         sub     17,kconst_3_3
         popj    17,
 
-        .globl  sys_logstore_service_jump
-sys_logstore_service_jump:
-        jrst    kret_neg1
-        .globl  sys_mtc_service_jump
-sys_mtc_service_jump:
-        jrst    kret_neg1
+        ; KINIT patches the RH of each PUSHJ directly to the installed MRES.
+        ; Uninstalled services retain their native kret_neg1 target.
+        .globl sys_logstore_call_0
+        .globl sys_logstore_call_1
+        .globl sys_logstore_call_2
+        .globl sys_logstore_call_3
+        .globl sys_logstore_call_4
+        .globl sys_mtc_call_0
+        .globl sys_mtc_call_1
+        .globl sys_mtc_call_2
+        .globl sys_mtc_call_3
 
 ; EXEC AC2 points at an inline, versioned launch block.  Five stable
 ; kernel-stack words receive entry, stack, argc, argv, and envp.  Success has
