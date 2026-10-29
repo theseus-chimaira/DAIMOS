@@ -1,3 +1,9 @@
+## 2026-10-29 v651: root BLOCKSET read-error stack bound
+
+Native 96K GCC full-profile KINIT: runtime-only BLOCKSET read-service
+failure during root mount reaches `?RT`/HALT. Watermark `0172` octal
+(122 words) below `0600` reserve. Testkit PASS; production unchanged.
+
 ## 2026-10-29 v650: native MM allocation-failure stack bound
 
 96K GCC full-profile KINIT: runtime-only SIMH fault at linked idle-stack

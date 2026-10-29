@@ -234,6 +234,10 @@ Release-critical or prerequisite correctness/acceptance:
   loads, then measure fatal HALT high-water `0172` octal (122 words)
   against `0600` reserve. Disk media remains CLEAN. Independent
   I/O and missing-INIT fatal paths remain open.
+  v651: BLOCKSET read-service I/O error injection during full-profile
+  D6FS root mount PASS: `?RT`, HALT, `0172` octal (122-word) stack
+  watermark, CLEAN source media before/after. Physical controller
+  errors and absent/nonregular `/SYSTEM/INIT` still need coverage.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 

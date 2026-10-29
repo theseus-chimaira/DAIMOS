@@ -1,3 +1,10 @@
+## 2026-10-29 v651: BLOCKSET read-I/O failure watermark PASS
+
+Native 96K GCC full-profile KINIT with simulator-only BLOCKSET read
+failure during D6FS mount emits `?RT`, HALTs, and records `0172`
+octal (122 words) stack usage. CLEAN input media is preserved; testkit
+v651 PASS. No production changes; missing-INIT remains open.
+
 ## 2026-10-29 v650: KINIT MM allocation-failure bound PASS
 
 Native 96K GCC full-profile KINIT idle-stack `mm_alloc` failure forced
