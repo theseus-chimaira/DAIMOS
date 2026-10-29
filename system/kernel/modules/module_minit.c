@@ -1347,7 +1347,7 @@ blockset_minit(void)
                     minit_export(name, base, 4U), read_addr);
                 storage_patch_module_jump(base, (kword_t *)(unsigned long)
                     minit_export(name, base, 5U), write_addr);
-                storage_patch_jump(&blockset_runtime_service_jump, service);
+                storage_patch_jump(&blockset_runtime_service_call, service);
                 module_service_set(MODULE_SERVICE_BLOCKSET, service);
                 minit_diag_loaded(name);
         }
@@ -1513,7 +1513,7 @@ badmap_minit(void)
                 storage_patch_module_jump(base, (kword_t *)(unsigned long)
                     minit_export(name, base, 6U),
                     module_service_get(MODULE_SERVICE_BLOCKSET));
-        storage_patch_jump(&blockset_runtime_service_jump, service);
+        storage_patch_jump(&blockset_runtime_service_call, service);
         module_service_set(MODULE_SERVICE_BLOCKSET, service);
         minit_diag_loaded(name);
 }

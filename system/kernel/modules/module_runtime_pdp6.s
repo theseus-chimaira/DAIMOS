@@ -64,7 +64,7 @@ module_fixed_bindings:
         .word   fs_tsfs_service_jump
         .word   memfs_reclaim_call
         .word   memfs_shutdown_call
-        .word   blockset_runtime_service_jump
+        .word   blockset_runtime_service_call
 module_fixed_bindings_end:
 
         .text

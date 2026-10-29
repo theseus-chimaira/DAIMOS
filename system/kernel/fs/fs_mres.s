@@ -9,7 +9,7 @@
         .globl proc_wait_event
         .globl proc_wakeup_event
 
-        .globl blockset_runtime_service_jump
+        .globl blockset_runtime_service_call
         .globl blockset_tail_blocks
         .globl blockset_direct_configure
         .globl device_range_configure
@@ -24,9 +24,6 @@
         .globl dsk270_write_sector
         .globl drm236_read_block
         .globl drm236_write_block
-
-blockset_runtime_service_jump:
-        jrst    fs_mres_no_service
 
 ; Legacy configuration entry: AC3 nonzero requests VOLUME (BLOCKSET)
 ; mapping; AC3 zero selects a direct DEVICE range. Preserve its ABI.
@@ -91,12 +88,11 @@ blockset_direct_tail_loop:
         ; A configured multi-member VOLUME requires its mapper.  Treat a
         ; missing/unloaded mapper as an I/O error; direct arithmetic would
         ; silently access the wrong physical sector on the first unit.
-        hrrz    4,blockset_runtime_service_jump
-        cain    4,fs_mres_no_service
-        jrst    blockset_direct_tail_error
+        ; Absent MRES calls kret_neg1: never translate VOLUME as DEVICE.
         move    1,011
         add     1,volume_data_blocks ; offset past filesystem data
-        pushj   17,(4)
+blockset_runtime_service_call:
+        pushj   17,kret_neg1           ; KINIT patches RH to mapper service
         jumpl   1,blockset_direct_tail_done
         jrst    device_block_transfer
 

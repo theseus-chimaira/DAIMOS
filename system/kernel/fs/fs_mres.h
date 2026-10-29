@@ -53,7 +53,7 @@ extern kword_t memfs_reclaim_call;
 extern kword_t memfs_shutdown_call;
 int fs_memory_reclaim(kword_t words, unsigned int level);
 int fs_memfs_shutdown(void);
-extern kword_t blockset_runtime_service_jump;
+extern kword_t blockset_runtime_service_call;
 kword_t blockset_tail_blocks(void);
 /* Runtime backing capacity, regardless of DEVICE or VOLUME mapping. */
 kword_t backing_region_blocks(void);
