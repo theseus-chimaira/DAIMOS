@@ -1,3 +1,13 @@
+## 2026-10-29 v655: DSK0 media loss PASS; mixed-mode KINIT build fixed
+
+Fresh 96K GCC full-profile native PDP-6 SIMH, 256-word KINIT stack:
+detaching DSK0 at KINIT entry reaches fatal HALT and records valid
+`0172` octal (122-word) high-water; source D6FS remains CLEAN.
+Versioned mode stamp now rebuilds both KINIT C and assembler sources
+when watermark or stack reserve changes. A preliminary mixed-build
+`0577` reading was an instrumentation artifact. Mode-toggle 1/0/1
+regression PASS. KCORE permanent memory unchanged.
+
 ## 2026-10-29 v653: missing/nonregular INIT root validation PASS
 
 Native 96K GCC full-profile D6FS root: absent `/SYSTEM/INIT` entry

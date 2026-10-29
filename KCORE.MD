@@ -1,3 +1,13 @@
+## 2026-10-29 v655: physical root media loss and KINIT build-coherence fix
+
+Native 96K GCC full-profile boot with DSK0 detached after Stage1
+reaches fatal HALT; validated stack watermark `0172` octal (122 words)
+inside `0400` reserve (256 words). Fixes KINIT reserve/watermark
+Makefile-mode invalidation: generated C and assembler helpers must
+agree. A `0577` measurement from a previously reused mixed-mode build
+was spurious. Native loss and 1/0/1 mode-switch tests PASS. No new
+permanent KCORE memory. See `design/kinit-controller-media-loss-v655.md`.
+
 ## 2026-10-29 v653: invalid /SYSTEM/INIT rejection accepted
 
 Native full-profile PDP-6 SIMH rejects missing INIT directory entry

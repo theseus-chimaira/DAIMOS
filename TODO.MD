@@ -246,6 +246,13 @@ Release-critical or prerequisite correctness/acceptance:
   successful D6FS initialization on native PDP-6 SIMH, using clean
   disposable disk copies. Physical-controller errors remain a
   separate coverage item.
+  v655: physical DSK0 media-loss after Stage1 now PASS in native 96K
+  GCC full-profile SIMH: KINIT HALT, validated watermark `0172`
+  octal (122 words) inside the `0400` reserve. A prior `0577` reading
+  was invalid because a reused build mixed watermark-disabled KINIT C
+  with watermark-enabled assembly. KINIT reserve/watermark changes now
+  invalidate both generated files; mode-toggle 1/0/1 regression PASS.
+  Other transient physical-controller error modes remain separate.
   Remaining `/SYSTEM/INIT` validation is separate from this size change.
 
 Architecture-changing features requiring an explicit pre-sweep decision:
@@ -713,11 +720,18 @@ source-level RAM optimization continue independently.** See
   not install the other family's MRES, so do not advertise phantom slots.
 - [ ] Reduce the accrued permanent KCORE descriptor/dispatch cost after the
   VFS activation path is stable; no workarounds or unsupported 32K claims.
-- [ ] Repair stale daimos-testkit `mm-core` host fixture linking of
-  `vfs_mount_limit` and `proc_storage_publish_v30`/
-  `proc_swap_storage_invariant_v30`. These services are already used in the
-  target kernel; the current host fixture predates their integration. Native
-  PDP-6 swap/EXEC/RUN validation is passing independently.
+- [ ] Repair stale daimos-testkit `mm-core` host fixture: its Makefile
+  still references removed `system/kernel/proc/vm_pdp6.c`. VM lifecycle
+  functions now live in native PDP-6 assembly; simply dropping that
+  source leaves `vm_extent_move`, `vm_space_can_swap` and
+  `vm_space_destroy` unresolved on the host. Implement a verified host
+  reference matching current production VM semantics, or restructure
+  the fixture to test only available host policy functions. Earlier
+  TODO claims of missing `vfs_mount_limit`, `proc_storage_publish_v30`
+  and `proc_swap_storage_invariant_v30` definitions were stale: the
+  fixture already provides all three. Native PDP-6 swap/EXEC/RUN
+  acceptance passes independently. Source audit v655; no outdated
+  VM C implementation restored.
 
 - [ ] V19: native FILE mount-extension map now preserves mount IDs up to 26
   across file operations, DUP/DUP2, FLOCK, FIFO substitution, unmount, pipe
