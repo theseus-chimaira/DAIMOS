@@ -170,19 +170,19 @@ extern kword_t sys_logstore_call_4;
 extern kword_t sys_mtc_call_0, sys_mtc_call_1;
 extern kword_t sys_mtc_call_2, sys_mtc_call_3;
 extern kword_t native_sys_putchar_call;
-extern kword_t tty_write_s6rec_jump;
-extern kword_t tty_read_s6rec_jump;
+extern kword_t tty_write_s6rec_call;
+extern kword_t tty_read_s6rec_call;
 extern kword_t ptr_read_words_call;
 extern kword_t ptp_write_words_call;
 extern kword_t cr_read_words_call;
 extern kword_t cp_write_words_call;
 extern kword_t lpt_putchar_jump;
-extern kword_t lpt_write_s6rec_jump;
+extern kword_t lpt_write_s6rec_call;
 extern kword_t dpy_write_words_jump;
-extern kword_t wcnsls_read_words_jump;
-extern kword_t wcnsls_write_words_jump;
-extern kword_t ttydpy_putchar_jump;
-extern kword_t ttydpy_getchar_jump;
+extern kword_t wcnsls_read_words_call;
+extern kword_t wcnsls_write_words_call;
+extern kword_t ttydpy_putchar_call;
+extern kword_t ttydpy_getchar_call;
 extern int d6fs_reader_bootstrap_call(kword_t backing_ops);
 
 
@@ -676,7 +676,7 @@ lpt_minit(void)
         service = minit_export(name, base, LPT_X_PUTCHAR);
         storage_patch_jump(&lpt_putchar_jump, service);
         service = minit_export(name, base, LPT_X_WRITE_S6REC);
-        storage_patch_jump(&lpt_write_s6rec_jump, service);
+        storage_patch_jump(&lpt_write_s6rec_call, service);
         mfsdev_present_mark(MONITORFS_DEV_LPT0);
         minit_diag_ok(name);
 }
@@ -958,14 +958,14 @@ tty_minit(void)
         service = minit_export(name, base, TTY_X_GETCHAR);
         storage_patch_jump(&native_sys_getchar_call, service);
         service = minit_export(name, base, TTY_X_WRITE_S6REC);
-        storage_patch_jump(&tty_write_s6rec_jump, service);
+        storage_patch_jump(&tty_write_s6rec_call, service);
         service = minit_export(name, base, TTY_X_READ_S6REC);
-        storage_patch_jump(&tty_read_s6rec_jump, service);
+        storage_patch_jump(&tty_read_s6rec_call, service);
         if (dpy_putchar != 0U && cty_getchar != 0U) {
                 service = minit_export(name, base, TTY_X_TTYDPY_PUTCHAR);
-                storage_patch_jump(&ttydpy_putchar_jump, service);
+                storage_patch_jump(&ttydpy_putchar_call, service);
                 service = minit_export(name, base, TTY_X_TTYDPY_GETCHAR);
-                storage_patch_jump(&ttydpy_getchar_jump, service);
+                storage_patch_jump(&ttydpy_getchar_call, service);
                 mfsdev_present_mark(MONITORFS_DEV_TTYDPY0);
         }
         mfsdev_present_mark(MONITORFS_DEV_TTY0);
@@ -1024,9 +1024,9 @@ wcnsls_minit(void)
                 return;
         }
         base = minit_install(name);
-        storage_patch_jump(&wcnsls_read_words_jump,
+        storage_patch_jump(&wcnsls_read_words_call,
             minit_export(name, base, WCNSLS_X_READ_WORDS));
-        storage_patch_jump(&wcnsls_write_words_jump,
+        storage_patch_jump(&wcnsls_write_words_call,
             minit_export(name, base, WCNSLS_X_WRITE_WORDS));
         mfsdev_present_mark(MONITORFS_DEV_WCNSLS);
         minit_wcnsls_banner();

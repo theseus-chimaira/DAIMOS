@@ -34,17 +34,17 @@ module_fixed_bindings:
         .word   pdp10_pi_level6_dispatch_jump
         .word   native_sys_putchar_call
         .word   native_sys_getchar_call
-        .word   tty_write_s6rec_jump
-        .word   tty_read_s6rec_jump
+        .word   tty_write_s6rec_call
+        .word   tty_read_s6rec_call
         .word   ptr_read_words_call
         .word   ptp_write_words_call
         .word   cr_read_words_call
         .word   cp_write_words_call
         .word   lpt_putchar_jump
-        .word   lpt_write_s6rec_jump
+        .word   lpt_write_s6rec_call
         .word   dpy_write_words_jump
-        .word   wcnsls_read_words_jump
-        .word   wcnsls_write_words_jump
+        .word   wcnsls_read_words_call
+        .word   wcnsls_write_words_call
         .word   sys_dtc_read_block_jump
         .word   sys_dtc_write_block_jump
         .word   storage_pi_dsk_jump

@@ -346,14 +346,14 @@ file_path_setchar:
         .globl  pipe_close_ref
         .globl  pipe_fifo_detach
         .globl  lpt_putchar_jump
-        .globl  lpt_write_s6rec_jump
-        .globl  tty_write_s6rec_jump
-        .globl  tty_read_s6rec_jump
-        .globl  ttydpy_putchar_jump
-        .globl  ttydpy_getchar_jump
+        .globl  lpt_write_s6rec_call
+        .globl  tty_write_s6rec_call
+        .globl  tty_read_s6rec_call
+        .globl  ttydpy_putchar_call
+        .globl  ttydpy_getchar_call
         .globl  dpy_write_words_jump
-        .globl  wcnsls_read_words_jump
-        .globl  wcnsls_write_words_jump
+        .globl  wcnsls_read_words_call
+        .globl  wcnsls_write_words_call
         .globl  ptr_read_words_call
         .globl  ptp_write_words_call
         .globl  cr_read_words_call
@@ -393,7 +393,8 @@ file_readchar_notdir:
         seto    1,                     ; other device streams are unsupported
         jrst    file_readchar_done
 file_readchar_ttydpy:
-        pushj   17,ttydpy_getchar_jump
+ttydpy_getchar_call:
+        pushj   17,kret_neg1
         jrst    file_readchar_done
 file_readchar_cty:
         move    1,[-3]
@@ -452,7 +453,8 @@ file_writechar_notdir:
         jrst    file_writechar_done
 file_writechar_ttydpy:
         move    1,(17)                 ; original character
-        pushj   17,ttydpy_putchar_jump
+ttydpy_putchar_call:
+        pushj   17,kret_neg1
         jrst    file_writechar_done
 file_writechar_lpt:
         move    1,(17)                 ; original character
@@ -750,7 +752,8 @@ file_write_regular_pos:
         pushj   17,vfs_write_words
         jrst    file_words_append_result
 file_write_words_tty:
-        pushj   17,tty_write_s6rec_jump
+tty_write_s6rec_call:
+        pushj   17,kret_neg1
         jrst    file_words_result
 file_write_words_ptp:
 ptp_write_words_call:
@@ -761,13 +764,15 @@ cp_write_words_call:
         pushj   17,kret_neg1
         jrst    file_words_result
 file_write_words_lpt:
-        pushj   17,lpt_write_s6rec_jump
+lpt_write_s6rec_call:
+        pushj   17,kret_neg1
         jrst    file_words_result
 file_write_words_dpy:
         pushj   17,dpy_write_words_jump
         jrst    file_words_result
 file_write_words_wcnsls:
-        pushj   17,wcnsls_write_words_jump
+wcnsls_write_words_call:
+        pushj   17,kret_neg1
         jrst    file_words_result
 
 file_read_words_dispatch:
@@ -784,7 +789,8 @@ file_words_provider_read_v377:
         pushj   17,vfs_read_words
         jrst    file_words_result
 file_read_words_tty:
-        pushj   17,tty_read_s6rec_jump
+tty_read_s6rec_call:
+        pushj   17,kret_neg1
         jrst    file_words_result
 file_read_words_ptr:
 ptr_read_words_call:
@@ -795,7 +801,8 @@ cr_read_words_call:
         pushj   17,kret_neg1
         jrst    file_words_result
 file_read_words_wcnsls:
-        pushj   17,wcnsls_read_words_jump
+wcnsls_read_words_call:
+        pushj   17,kret_neg1
 
 file_words_append_result:
         jumple  1,file_words_done
@@ -843,23 +850,9 @@ file_words_fail:
         jrst    file_words_done
 
 ; Patched by TTY MINIT when the logical-terminal MRES is installed.
-tty_write_s6rec_jump:
-        jrst    kret_neg1
-tty_read_s6rec_jump:
-        jrst    kret_neg1
 lpt_putchar_jump:
         jrst    kret_neg1
-lpt_write_s6rec_jump:
-        jrst    kret_neg1
-ttydpy_putchar_jump:
-        jrst    kret_neg1
-ttydpy_getchar_jump:
-        jrst    kret_neg1
 dpy_write_words_jump:
-        jrst    kret_neg1
-wcnsls_read_words_jump:
-        jrst    kret_neg1
-wcnsls_write_words_jump:
         jrst    kret_neg1
 
 ; int file_readdir(int fd, struct vfs_dirent *ent)
