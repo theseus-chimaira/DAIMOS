@@ -162,6 +162,9 @@ int vfs_mount_prevalidated(vnode_t target, unsigned int provider,
     vnode_t *rootp);
 int vfs_unmount(vnode_t root);
 int vfs_remount(vnode_t node);
+/* Explicit, idempotent internal transition; not a recovery authorization.
+ * Callers must verify DIRTY media before requesting RW. */
+int vfs_remount_to(vnode_t node, unsigned int flags);
 int vfs_readonly(vnode_t node);
 extern vnode_t vfs_namespace_root;
 

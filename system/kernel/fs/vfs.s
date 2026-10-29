@@ -945,6 +945,30 @@ vfs_remount:
         movei   7,6                      ; D6FS_PROVIDER
         jrst    fs_provider_reg_call
 
+; int vfs_remount_to(node, flags)
+; Internal explicit-target wrapper around the historical state toggle.
+; Accept only RDONLY (1) or RW (0).  Repeating an already satisfied request
+; does not publish another superblock.  This is not a public recovery bypass:
+; userspace permission, exclusive fsck and media revalidation still belong
+; at the future syscall boundary.
+        .globl  vfs_remount_to
+vfs_remount_to:
+        caile   2,1
+        jrst    kret_neg1
+        ldb     3,[POINT 6,1,5]
+        caie    3,6                     ; D6FS provider only
+        jrst    kret_neg1
+        push    17,1                     ; preserve node across readonly query
+        push    17,2                     ; requested RO bit
+        pushj   17,vfs_readonly
+        camn    1,(17)                  ; already in requested state
+        jrst    vfs_remount_to_done
+        move    1,-1(17)
+        pushj   17,vfs_remount
+vfs_remount_to_done:
+        sub     17,kconst_2_2
+        popj    17,
+
 ; Publish CLEAN for a writable D6FS namespace root during orderly HALT.
 ; Never toggle an already read-only root: REMOUNT would mark it DIRTY.
 ; Any publication failure must abort HALT so the disk is not misreported.
