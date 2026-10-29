@@ -620,10 +620,24 @@ d6fs_mres_reg_dispatch:
         movem   7,d6fs_active_reader
         cain    6,024                    ; FS_MRES_OP_D6FS_REMOUNT (20)
         jrst    d6fs_provider_toggle_state
+        cain    6,026                    ; recovery raw block read (22)
+        jrst    d6fs_provider_recovery_read
         cain    6,025                    ; FS_MRES_OP_SPACE (21)
         jrst    d6fs_provider_space
         move    7,[d6fs_mres_vector]
         jrst    fs_mres_vector_dispatch
+
+; Recovery inspection, serialized by fs_provider_reg_call.
+; AC2=logical D6FS block, AC3=physical mapped user buffer.
+; The syscall checks privileges and read-only policy before reaching here.
+d6fs_provider_recovery_read:
+        jumpe   3,kret_neg1
+        move    1,d6fs_active_reader
+        jumpe   1,kret_neg1
+        move    4,1                      ; backing descriptor starts at word 013
+        addi    4,013
+        move    1,4
+        jrst    fs_backing_read
 
 ; Return exact filesystem capacity and allocated words.  Scan the freemap a
 ; word at a time; counting set bits with x &= x-1 makes cost proportional to

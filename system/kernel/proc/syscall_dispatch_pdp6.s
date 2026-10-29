@@ -642,9 +642,12 @@ native_sys_d6fs_read_block:
         movei   5,0200(1)
         camle   5,3
         jrst    native_sys_d6fs_read_bad
-        move    2,1                     ; mapped user destination
-        move    1,-1(17)                ; logical BLOCKSET block
-        pushj   17,blockset_read_block
+        move    3,1                     ; mapped user destination
+        move    2,-1(17)                ; logical D6FS block
+        move    1,vfs_namespace_root
+        movei   6,026                   ; D6FS private raw RO read
+        movei   7,6                     ; D6FS provider
+        pushj   17,fs_provider_reg_call
         jrst    native_sys_d6fs_read_done
 native_sys_d6fs_read_bad:
         seto    1,
