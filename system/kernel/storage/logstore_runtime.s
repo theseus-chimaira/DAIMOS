@@ -25,7 +25,8 @@
         .text
         .globl  logstore_mres_dispatch
         .globl  logstore_mres_state
-        .globl  logstore_backend_read_jump
+        .globl  logstore_backend_read_call
+        .globl  logstore_direct_read_call
         .globl  logstore_backend_write_jump
         .globl  kret_neg1
         .globl  proc_wait_event
@@ -144,10 +145,9 @@ logstore_io:
         ; Multi-member root: the patched BLOCKSET read/write entry consumes
         ; AC1=root-logical block, AC2=buffer.
         move    2,4
-        jumpe   5,logstore_backend_read_jump
+logstore_backend_read_call:
+        jumpe   5,kret_neg1
 logstore_backend_write_jump:
-        jrst    0
-logstore_backend_read_jump:
         jrst    0
 
 logstore_io_direct:
@@ -158,7 +158,8 @@ logstore_io_direct:
         hlrz    1,6
         subi    1,1
         move    3,4
-        jumpe   5,logstore_backend_read_jump
+logstore_direct_read_call:
+        jumpe   5,kret_neg1
         jrst    logstore_backend_write_jump
 
         .bss

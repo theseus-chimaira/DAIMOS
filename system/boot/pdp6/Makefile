@@ -930,8 +930,9 @@ $(BADMAP_MRES_OBJ): $(BUILD)/badmap_dispatch.dobj $(KCORE_MAP)
 $(LOGSTORE_MRES_OBJ): $(BUILD)/logstore_runtime.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/logstore-mres.dxr -M $(BUILD)/logstore-mres.map \
 	    -R $@ -N logstore_mres_package -X logstore_mres_dispatch \
-	    -X logstore_mres_state -X logstore_backend_read_jump \
-	    -X logstore_backend_write_jump $(BUILD)/logstore_runtime.dobj
+	    -X logstore_mres_state -X logstore_backend_read_call \
+	    -X logstore_backend_write_jump -X logstore_direct_read_call \
+	    $(BUILD)/logstore_runtime.dobj
 
 $(D6FS_MRES_FOLD_PLAN): $(BUILD)/fs_backing.dobj $(BUILD)/d6fs_provider.dobj \
 	    $(BUILD)/d6fs_validate.dobj $(BUILD)/d6fs_runtime.dobj $(P10FOLD_DEP)

@@ -117,8 +117,9 @@ mfsdev_present_mark(unsigned int id)
 
 #define LOGSTORE_X_DISPATCH       0U
 #define LOGSTORE_X_STATE          1U
-#define LOGSTORE_X_READ_JUMP      2U
+#define LOGSTORE_X_READ_CALL      2U
 #define LOGSTORE_X_WRITE_JUMP     3U
+#define LOGSTORE_X_DIRECT_READ    4U
 
 
 #define DRM_PROBE_PI              7U
@@ -1453,7 +1454,10 @@ logstore_minit(void)
         state[6] = 0UL;
         storage_patch_module_jump(base,
             (kword_t *)(unsigned long)minit_export(name, base,
-            LOGSTORE_X_READ_JUMP), read_addr);
+            LOGSTORE_X_READ_CALL), read_addr);
+        storage_patch_module_jump(base,
+            (kword_t *)(unsigned long)minit_export(name, base,
+            LOGSTORE_X_DIRECT_READ), read_addr);
         storage_patch_module_jump(base,
             (kword_t *)(unsigned long)minit_export(name, base,
             LOGSTORE_X_WRITE_JUMP), write_addr);
