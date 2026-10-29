@@ -1,3 +1,11 @@
+## 2026-10-29 v667: swap-out MM unpin failure invariant
+
+The PDP-6 swap-out path now rejects either failed unpin through the
+existing storage/MM invariant halt. Returning to the scheduler with
+uncertain pin ownership is no longer permitted. This is a correctness
+fix, not a KCORE size optimization. Source and isolated native PDP-6
+unpin fault tests PASS; fresh 32K boot reaches `proc_boot_init`.
+
 ## 2026-10-29 v666: late swap MM failure ordering audit
 
 Source control-flow regression verifies MM unpin/free failure branches

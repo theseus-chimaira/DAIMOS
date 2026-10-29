@@ -1,3 +1,12 @@
+## 2026-10-29 v667: fix unsafe swap-out unpin failure cleanup
+
+Both `mm_unpin` results in production PDP-6 `proc_swap_out` are now
+checked. Unexpected failures enter the existing swap invariant
+handler rather than unlocking a potentially pinned resident process.
+Testkit v667 and updated v666 source checks PASS; isolated native
+PDP-6 branch fault tests PASS at both unpin sites. Fresh GCC 32K
+disk-root boot PASS. Full-system MM fault handling remains open.
+
 ## 2026-10-29 v666: swap late rollback audit
 
 Production PDP-6 swap-out control flow confirms MM unpin/free failures

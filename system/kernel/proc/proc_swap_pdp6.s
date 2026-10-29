@@ -298,7 +298,9 @@ proc_swap_out_verified:
         movem   16,PROC_SWAP_BACKING_OFFSET(1)
         move    1,13
         pushj   17,mm_unpin
-        jumpn   1,proc_swap_out_record_fail
+        ; A failed unpin after a successful write leaves MM ownership
+        ; uncertain.  Never unlock a possibly pinned process.
+        jumpn   1,proc_swap_storage_invariant_v30
         move    1,13
         movei   2,MM_TYPE_PROCESS
         move    3,10
@@ -325,6 +327,9 @@ proc_swap_out_verified:
 proc_swap_out_unpin:
         move    1,13
         pushj   17,mm_unpin
+        ; Rollback cannot safely return to the scheduler if the pin was
+        ; not released.  Treat this as an MM invariant violation.
+        jumpn   1,proc_swap_storage_invariant_v30
 proc_swap_out_record_fail:
         move    1,(17)
         caml    1,backstore_blocks

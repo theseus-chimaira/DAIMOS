@@ -319,6 +319,11 @@ implementation/acceptance is outstanding, NOT that scheduling is undecided.
   v666: late swap-out MM unpin/free error branches audited; source
   regression PASS. Real native MM failure injection and complete
   scheduler/recovery acceptance remain outstanding.
+  v667: subsequent audit found `mm_unpin` errors were not handled
+  safely by normal rollback. Both unpin failure paths now halt via
+  the existing storage invariant instead of unlocking the process;
+  v667 source check and native PDP-6 branch fault tests PASS.
+  Full-system MM fault injection remains open.
 - [ ] **DECISION 4 ACCEPTED (2026-10-27):** Complete production raw MEMFS
   XIP BEFORE the final KCORE optimization as a version 0.9 prerequisite.
   Implement privileged non-writing EXEC/RUN, provenance, swap/BRK exclusion,
