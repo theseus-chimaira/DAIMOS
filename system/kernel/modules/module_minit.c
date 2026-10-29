@@ -172,10 +172,10 @@ extern kword_t sys_mtc_call_2, sys_mtc_call_3;
 extern kword_t native_sys_putchar_call;
 extern kword_t tty_write_s6rec_jump;
 extern kword_t tty_read_s6rec_jump;
-extern kword_t ptr_read_words_jump;
-extern kword_t ptp_write_words_jump;
-extern kword_t cr_read_words_jump;
-extern kword_t cp_write_words_jump;
+extern kword_t ptr_read_words_call;
+extern kword_t ptp_write_words_call;
+extern kword_t cr_read_words_call;
+extern kword_t cp_write_words_call;
 extern kword_t lpt_putchar_jump;
 extern kword_t lpt_write_s6rec_jump;
 extern kword_t dpy_write_words_jump;
@@ -625,7 +625,7 @@ ptr_minit(void)
                 return;
         }
         base = minit_install(name);
-        storage_patch_jump(&ptr_read_words_jump,
+        storage_patch_jump(&ptr_read_words_call,
             minit_export(name, base, PTR_X_READ_WORDS));
         mfsdev_present_mark(MONITORFS_DEV_PTR0);
         minit_ptr_cono(0);
@@ -647,7 +647,7 @@ ptp_minit(void)
                 return;
         }
         base = minit_install(name);
-        storage_patch_jump(&ptp_write_words_jump,
+        storage_patch_jump(&ptp_write_words_call,
             minit_export(name, base, PTP_X_WRITE_WORDS));
         mfsdev_present_mark(MONITORFS_DEV_PTP0);
         minit_ptp_cono(0);
@@ -705,7 +705,7 @@ cr_minit(void)
                 return;
         }
         base = minit_install(name);
-        storage_patch_jump(&cr_read_words_jump,
+        storage_patch_jump(&cr_read_words_call,
             minit_export(name, base, CR_X_READ_WORDS));
         mfsdev_present_mark(MONITORFS_DEV_CR0);
         minit_cr_cono(CR_CO_CLR_DRDY | CR_CO_CLR_END_CARD |
@@ -735,7 +735,7 @@ cp_minit(void)
                 return;
         }
         base = minit_install(name);
-        storage_patch_jump(&cp_write_words_jump,
+        storage_patch_jump(&cp_write_words_call,
             minit_export(name, base, CP_X_WRITE_WORDS));
         mfsdev_present_mark(MONITORFS_DEV_CP0);
         minit_cp_cono(CP_CO_CLR_PUNCH);

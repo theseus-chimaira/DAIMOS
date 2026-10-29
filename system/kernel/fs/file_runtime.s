@@ -354,10 +354,10 @@ file_path_setchar:
         .globl  dpy_write_words_jump
         .globl  wcnsls_read_words_jump
         .globl  wcnsls_write_words_jump
-        .globl  ptr_read_words_jump
-        .globl  ptp_write_words_jump
-        .globl  cr_read_words_jump
-        .globl  cp_write_words_jump
+        .globl  ptr_read_words_call
+        .globl  ptp_write_words_call
+        .globl  cr_read_words_call
+        .globl  cp_write_words_call
 
 ; int file_readchar(int fd)
 ; Validate the descriptor exactly as the C wrapper did, then advance the
@@ -753,10 +753,12 @@ file_write_words_tty:
         pushj   17,tty_write_s6rec_jump
         jrst    file_words_result
 file_write_words_ptp:
-        pushj   17,ptp_write_words_jump
+ptp_write_words_call:
+        pushj   17,kret_neg1
         jrst    file_words_result
 file_write_words_cp:
-        pushj   17,cp_write_words_jump
+cp_write_words_call:
+        pushj   17,kret_neg1
         jrst    file_words_result
 file_write_words_lpt:
         pushj   17,lpt_write_s6rec_jump
@@ -785,10 +787,12 @@ file_read_words_tty:
         pushj   17,tty_read_s6rec_jump
         jrst    file_words_result
 file_read_words_ptr:
-        pushj   17,ptr_read_words_jump
+ptr_read_words_call:
+        pushj   17,kret_neg1
         jrst    file_words_result
 file_read_words_cr:
-        pushj   17,cr_read_words_jump
+cr_read_words_call:
+        pushj   17,kret_neg1
         jrst    file_words_result
 file_read_words_wcnsls:
         pushj   17,wcnsls_read_words_jump
@@ -842,14 +846,6 @@ file_words_fail:
 tty_write_s6rec_jump:
         jrst    kret_neg1
 tty_read_s6rec_jump:
-        jrst    kret_neg1
-ptr_read_words_jump:
-        jrst    kret_neg1
-ptp_write_words_jump:
-        jrst    kret_neg1
-cr_read_words_jump:
-        jrst    kret_neg1
-cp_write_words_jump:
         jrst    kret_neg1
 lpt_putchar_jump:
         jrst    kret_neg1

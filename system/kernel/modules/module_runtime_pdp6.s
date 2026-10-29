@@ -36,10 +36,10 @@ module_fixed_bindings:
         .word   native_sys_getchar_call
         .word   tty_write_s6rec_jump
         .word   tty_read_s6rec_jump
-        .word   ptr_read_words_jump
-        .word   ptp_write_words_jump
-        .word   cr_read_words_jump
-        .word   cp_write_words_jump
+        .word   ptr_read_words_call
+        .word   ptp_write_words_call
+        .word   cr_read_words_call
+        .word   cp_write_words_call
         .word   lpt_putchar_jump
         .word   lpt_write_s6rec_jump
         .word   dpy_write_words_jump
