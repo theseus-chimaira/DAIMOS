@@ -12,6 +12,8 @@
         .globl blockset_runtime_service_jump
         .globl blockset_tail_blocks
         .globl blockset_direct_configure
+        .globl device_range_configure
+        .globl volume_tail_configure
         .globl blockset_direct_blocks
         .globl blockset_direct_tail
         .globl dsk270_read_sector
@@ -22,13 +24,10 @@
 blockset_runtime_service_jump:
         jrst    fs_mres_no_service
 
-; Root swap-tail service shared by singleton and multi-member BLOCKSET roots.
-; direct_map/data describe the singleton fast path.  direct_tail is always the
-; total logical tail span.  When BLOCKSET is installed, op 10 maps each tail
-; logical block; otherwise the singleton arithmetic below is used directly.
-; A zero direct_blocks value identifies an explicitly configured raw range
-; such as AUXSTORE BACKSTORE and therefore bypasses BLOCKSET mapping.
+; Legacy configuration entry: AC3 nonzero requests VOLUME (BLOCKSET)
+; mapping; AC3 zero selects a direct DEVICE range. Preserve its ABI.
 blockset_direct_configure:
+volume_tail_configure:
         move    5,1
         lsh     5,022
         ior     5,2
@@ -36,6 +35,14 @@ blockset_direct_configure:
         movem   3,blockset_direct_blocks
         movem   4,blockset_direct_tail
         popj    17,
+
+; DEVICE: one physical unit, bounded contiguous range, no VOLUME mapper.
+; AC1=unit selector, AC2=physical start, AC3=block count.
+; Pass through the legacy state layout until all consumers are migrated.
+device_range_configure:
+        move    4,3
+        setz    3,
+        jrst    blockset_direct_configure
 
         .globl  backstore_read
 backstore_read:
@@ -74,23 +81,25 @@ blockset_direct_tail_account_done:
 
 blockset_direct_tail_loop:
         skipn   blockset_direct_blocks
-        jrst    blockset_direct_tail_single
+        jrst    device_range_translate
         hrrz    4,blockset_runtime_service_jump
         cain    4,fs_mres_no_service
-        jrst    blockset_direct_tail_single
+        jrst    device_range_translate
         move    1,011
         add     1,blockset_direct_blocks ; offset past filesystem data
         pushj   17,(4)
         jumpl   1,blockset_direct_tail_done
-        jrst    blockset_direct_tail_mapped
+        jrst    device_block_transfer
 
-blockset_direct_tail_single:
+; Direct DEVICE path: selector/physical base come from the configured range.
+device_range_translate:
         hlrz    1,blockset_direct_map
         andi    1,07                     ; strip direct-device tag bits
         hrrz    2,blockset_direct_map
         add     2,011
 
-blockset_direct_tail_mapped:
+; Shared final hardware transfer, with no duplicate DSK/DRM dispatch.
+device_block_transfer:
         move    3,010
         hlrz    0,blockset_direct_map
         trne    0,0400000

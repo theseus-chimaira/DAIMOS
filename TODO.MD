@@ -286,6 +286,10 @@ implementation/acceptance is outstanding, NOT that scheduling is undecided.
   Host partition-bounds regression and earlier AUXSTORE choice/overlap
   checks PASS. BACKSTORE conversion, recovery and native acceptance
   remain open; no KCORE optimization or completion claim.
+  v658: direct DEVICE regions are now named/configured separately from
+  multi-member VOLUME tails, keeping the legacy BLOCKSET entry alias
+  and one shared physical DSK/DRM transfer path. Source routing
+  regression PASS. Remaining full storage feature cutover is open.
 - [ ] **DECISION 4 ACCEPTED (2026-10-27):** Complete production raw MEMFS
   XIP BEFORE the final KCORE optimization as a version 0.9 prerequisite.
   Implement privileged non-writing EXEC/RUN, provenance, swap/BRK exclusion,

@@ -1,3 +1,12 @@
+## 2026-10-29 v658: direct DEVICE vs multi-member VOLUME split
+
+Named direct DEVICE configuration for AUXSTORE backing and singleton
+root swap tails; VOLUME configuration used for multi-member roots.
+Legacy BLOCKSET ABI is preserved and hardware dispatch remains shared.
+This is storage feature reorganization, not RAM optimization.
+Fresh native 32K D6FS/disk lowmem GCC image reached `proc_boot_init`
+with BSET and D6FS loaded. Multi-member regression remains open.
+
 ## 2026-10-29 v657: BSTORE shared-region feature implementation begins
 
 The production AUXSTORE code now provides a range-checked, shared

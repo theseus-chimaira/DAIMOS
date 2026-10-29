@@ -57,6 +57,12 @@ extern kword_t blockset_runtime_service_jump;
 kword_t blockset_tail_blocks(void);
 void blockset_direct_configure(unsigned int unit, kword_t tail_base,
     kword_t blocks, kword_t tail_blocks);
+/* Direct physical DEVICE range: no multi-member VOLUME mapping. */
+void device_range_configure(unsigned int selector, kword_t physical_start,
+    kword_t block_count);
+/* VOLUME root with multiple interleaved devices and a logical swap tail. */
+void volume_tail_configure(unsigned int selector, kword_t direct_base,
+    kword_t volume_blocks, kword_t tail_blocks);
 extern kword_t blockset_direct_blocks;
 extern kword_t blockset_direct_tail;
 extern kword_t sys_memfs_usage_call;

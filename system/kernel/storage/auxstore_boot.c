@@ -152,7 +152,7 @@ auxstore_post_minits(void)
         selector = auxstore_unit;
         if (auxstore_kind == AUXSTORE_KIND_DRM)
                 selector |= (unsigned int)FS_BACKING_DIRECT_DRM_TAG;
-        blockset_direct_configure(selector, auxstore_backstore_start, 0UL,
+        device_range_configure(selector, auxstore_backstore_start,
             auxstore_backstore_blocks);
         backstore_blocks = auxstore_backstore_blocks;
 }

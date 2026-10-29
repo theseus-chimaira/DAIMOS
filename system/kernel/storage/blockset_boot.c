@@ -203,17 +203,18 @@ blockset_boot_configure(const struct blockset *config)
         direct_selector = config->unit[0];
 #endif
         if (config->members == 1U) {
-                blockset_direct_configure(direct_selector,
+                /* One root DEVICE needs no VOLUME mapper for its swap tail. */
+                device_range_configure(direct_selector,
                     config->base[0] + config->blocks[0],
-                    config->blocks[0], config->tail_blocks);
+                    config->tail_blocks);
                 return 0;
         }
 #if KINIT_FULL
-        blockset_direct_configure(blockset_boot_is_drm() ?
+        volume_tail_configure(blockset_boot_is_drm() ?
             (unsigned int)FS_BACKING_DIRECT_DRM_TAG : 0U, 0UL, total,
             config->tail_blocks * (kword_t)config->members);
 #else
-        blockset_direct_configure(0U, 0UL, total,
+        volume_tail_configure(0U, 0UL, total,
             config->tail_blocks * (kword_t)config->members);
 #endif
         if (blockset_state_addr == 0U ||

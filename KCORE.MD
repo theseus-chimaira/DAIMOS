@@ -1,3 +1,10 @@
+## 2026-10-29 v658: DEVICE/VOLUME first structural split
+
+Direct physical ranges and multi-member root tails now have explicit
+configuration entries, preserving original BLOCKSET ABI and one
+DSK/DRM I/O implementation. No size optimization. See
+`design/device-volume-separation-v658.md`.
+
 ## 2026-10-29 v657: shared backing feature interface
 
 First BSTORE feature increment: bounded raw AUXSTORE region read/write
