@@ -156,9 +156,9 @@ extern kword_t storage_dct_tape_jump;
 extern kword_t storage_clock_dsk_jump;
 extern kword_t minit_dpy_blko_template;
 
-extern kword_t dsk270_read_jump;
+extern kword_t dsk270_read_call;
 extern kword_t dsk270_write_jump;
-extern kword_t drm236_read_jump;
+extern kword_t drm236_read_call;
 extern kword_t drm236_write_jump;
 extern kword_t native_sys_getchar_call;
 extern kword_t sys_dtc_read_block_jump;
@@ -1171,7 +1171,7 @@ storage_minit(unsigned int kind, kword_t name)
                             DSK_X_READ_SECTOR);
                         write_service = minit_export(name, base,
                             DSK_X_WRITE_SECTOR);
-                        storage_patch_jump(&dsk270_read_jump, read_service);
+                        storage_patch_jump(&dsk270_read_call, read_service);
                         storage_patch_jump(&dsk270_write_jump, write_service);
                         module_service_set(MODULE_SERVICE_DSK_READ_SECTOR,
                             read_service);
@@ -1208,7 +1208,7 @@ drm236_minit(void)
         read_service = minit_export(name, base, DRM_X_READ_BLOCK);
         write_service = minit_export(name, base, DRM_X_WRITE_BLOCK);
         minit_register(name, DRM_NATIVE_PI_LEVEL, handler, 0U);
-        storage_patch_jump(&drm236_read_jump, read_service);
+        storage_patch_jump(&drm236_read_call, read_service);
         storage_patch_jump(&drm236_write_jump, write_service);
         module_service_set(MODULE_SERVICE_DRM_READ_BLOCK, read_service);
         module_service_set(MODULE_SERVICE_DRM_WRITE_BLOCK, write_service);

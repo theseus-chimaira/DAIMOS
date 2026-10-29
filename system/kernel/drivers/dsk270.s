@@ -12,7 +12,7 @@
         .text
         .globl  dsk270_read_sector
         .globl  dsk270_write_sector
-        .globl  dsk270_read_jump
+        .globl  dsk270_read_call
         .globl  dsk270_write_jump
         .globl  kret_neg1
 
@@ -51,10 +51,8 @@ dsk270_sector_addr:
         ior     1,5
         ior     1,6
         move    2,3
-        jumpe   4,dsk270_read_jump
+dsk270_read_call:
+        jumpe   4,kret_neg1
 
 dsk270_write_jump:
-        jrst    0                       ; patched by MINIT
-
-dsk270_read_jump:
         jrst    0                       ; patched by MINIT

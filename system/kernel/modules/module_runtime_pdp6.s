@@ -53,9 +53,9 @@ module_fixed_bindings:
         .word   storage_pi_tape_jump
         .word   storage_dct_tape_jump
         .word   storage_clock_dsk_jump
-        .word   dsk270_read_jump
+        .word   dsk270_read_call
         .word   dsk270_write_jump
-        .word   drm236_read_jump
+        .word   drm236_read_call
         .word   drm236_write_jump
         .word   fs_memfs_service_jump
         .word   sys_memfs_usage_call

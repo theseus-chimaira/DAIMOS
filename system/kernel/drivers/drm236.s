@@ -13,7 +13,7 @@
         .text
         .globl  drm236_read_block
         .globl  drm236_write_block
-        .globl  drm236_read_jump
+        .globl  drm236_read_call
         .globl  drm236_write_jump
         .globl  kret_neg1
 
@@ -48,10 +48,8 @@ drm236_block_io:
         lsh     2,3
         ior     1,2
         move    2,3                    ; MRES service AC2 = buffer
-        jumpe   4,drm236_read_jump
+drm236_read_call:
+        jumpe   4,kret_neg1
 
 drm236_write_jump:
-        jrst    0                       ; patched by MINIT
-
-drm236_read_jump:
         jrst    0                       ; patched by MINIT
