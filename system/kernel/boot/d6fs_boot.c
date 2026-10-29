@@ -23,6 +23,57 @@
 static kword_t d6fs_boot_scratch[D6FS_BLOCK_WORDS];
 static kword_t root_info[ROOT_D6FS_UNITS];
 
+/* Recovery RO mounts must be able to load all three essential programs.
+ * Use the normal validated VFS lookup and read paths: raw FCB arithmetic
+ * would bypass their extent and block bounds checks.  Checking the first
+ * image word is a bootstrap probe, not a complete executable integrity
+ * check; the normal loader still validates the full image at RUN. */
+static int
+d6fs_boot_recovery_file(vnode_t directory, kword_t nameword,
+    unsigned int chars)
+{
+        struct vfs_name name;
+        struct vfs_stat st;
+        vnode_t node;
+        kword_t first;
+        unsigned int i;
+
+        name.chars = chars;
+        name.words[0] = nameword;
+        for (i = 1U; i < VFS_NAME_WORDS; ++i)
+                name.words[i] = 0UL;
+        if (vfs_lookup(directory, &name, &node) != 0 ||
+            vfs_stat(node, &st) != 0 || st.type != VFS_TYPE_REG ||
+            st.size_words == 0UL || vfs_read_words(node, 0U, &first, 1U) != 1)
+                return -1;
+        return 0;
+}
+
+static int
+d6fs_boot_recovery_programs(void)
+{
+        struct vfs_name name;
+        struct vfs_stat st;
+        vnode_t system;
+        unsigned int i;
+
+        name.chars = 6U;
+        name.words[0] = PDP10_SIX6('S', 'Y', 'S', 'T', 'E', 'M');
+        for (i = 1U; i < VFS_NAME_WORDS; ++i)
+                name.words[i] = 0UL;
+        if (vfs_lookup(vfs_namespace_root, &name, &system) != 0 ||
+            vfs_stat(system, &st) != 0 || st.type != VFS_TYPE_DIR)
+                return -1;
+        if (d6fs_boot_recovery_file(system,
+            PDP10_SIX6('I', 'N', 'I', 'T', ' ', ' '), 4U) != 0 ||
+            d6fs_boot_recovery_file(system,
+            PDP10_SIX6('D', '6', 'F', 'S', 'C', 'K'), 6U) != 0 ||
+            d6fs_boot_recovery_file(system,
+            PDP10_SIX6('M', 'O', 'U', 'N', 'T', ' '), 5U) != 0)
+                return -1;
+        return 0;
+}
+
 /**
  * @brief Scan one physical D6FS-capable unit for a root blockset member.
  *
@@ -364,6 +415,18 @@ d6fs_boot_mount_root(unsigned int flags)
                         logstore_boot_configure(0UL, 0UL);
                         (void)vfs_unmount(vfs_namespace_root);
                 }
+                return -1;
+        }
+        /* Do not expose a restricted root unless its recovery tools can
+         * actually be found and read. Normal writable boot is unchanged. */
+        if ((flags & VFS_MOUNT_RDONLY) != 0U &&
+            d6fs_boot_recovery_programs() != 0) {
+                i = VFS_MOUNT_ID(vfs_namespace_root);
+                (void)vfs_storage_release(i,
+                    flags & VFS_MOUNT_STORAGE_MASK);
+                blockset_direct_tail = 0UL;
+                logstore_boot_configure(0UL, 0UL);
+                (void)vfs_unmount(vfs_namespace_root);
                 return -1;
         }
         return 0;
