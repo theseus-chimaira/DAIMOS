@@ -1,3 +1,10 @@
+## 2026-10-29 v664: native VOLUME mapper absence confirmed
+
+daimos-testkit v664 executes production BACKING assembly on PDP-6:
+missing VOLUME mapper returns -1 with zero device calls, while direct
+DEVICE mode remains operational. Live full-system mapper removal and
+partial physical transfer faults remain separate validation work.
+
 ## 2026-10-29 v663: native multi-member VOLUME regression
 
 Two- and four-member D6FS HDD runtime and missing/mismatched-member

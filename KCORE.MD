@@ -1,3 +1,9 @@
+## 2026-10-29 v664: native missing-VOLUME-mapper test
+
+PDP-6 native instruction test executes actual `fs_mres.s` BACKING I/O
+with an unavailable mapper: mapped VOLUME fails without device I/O;
+direct DEVICE mode succeeds. Full-system live faults remain open.
+
 ## 2026-10-29 v663: native multi-member VOLUME acceptance
 
 The unchanged D6FS HDD native multi-member suite passed with host-native
