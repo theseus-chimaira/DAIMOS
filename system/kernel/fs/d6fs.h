@@ -171,6 +171,12 @@ int d6fs_super_decode(const kword_t sb[D6FS_SUPER_WORDS],
 int d6fs_super_select(const kword_t a[D6FS_SUPER_WORDS],
     const kword_t b[D6FS_SUPER_WORDS], kword_t blockset_blocks,
     struct d6fs_super_info *info, unsigned int *copyp);
+/* Select structurally valid newest superblock for recovery inspection.
+ * Unlike d6fs_super_select, DIRTY is reported in info->state rather than
+ * rejected. This alone does NOT authorize normal mount or metadata writes. */
+int d6fs_super_select_recovery(const kword_t a[D6FS_SUPER_WORDS],
+    const kword_t b[D6FS_SUPER_WORDS], kword_t blockset_blocks,
+    struct d6fs_super_info *info, unsigned int *copyp);
 
 /* Directory entry codec and read-only media helpers. */
 int d6fs_dirent_decode_valid(const kword_t ent[D6FS_DIRENT_WORDS],

@@ -122,8 +122,8 @@ d6fs_super_decode_valid(const kword_t sb[D6FS_SUPER_WORDS],
         return 1;
 }
 
-int
-d6fs_super_select(const kword_t a[D6FS_SUPER_WORDS],
+static int
+d6fs_super_select_validated(const kword_t a[D6FS_SUPER_WORDS],
     const kword_t b[D6FS_SUPER_WORDS], kword_t blockset_blocks,
     struct d6fs_super_info *info, unsigned int *copyp)
 {
@@ -165,8 +165,32 @@ d6fs_super_select(const kword_t a[D6FS_SUPER_WORDS],
                 *copyp = 1U;
         }
 
-        /* DIRTY is a recovery marker, never a mountable filesystem state.
-         * Writable metadata may already have changed after that generation was
-         * published, so falling back to an older CLEAN copy would be unsafe. */
+        /* The newest structurally valid generation is authoritative, even
+         * when DIRTY.  Never fall back to an older CLEAN generation. */
+        return 0;
+}
+
+/* Recovery selection reports DIRTY but grants no permission to mount RW.
+ * A restricted recovery reader must validate every traversed metadata
+ * reference before loading the trusted checker or INIT. */
+int
+d6fs_super_select_recovery(const kword_t a[D6FS_SUPER_WORDS],
+    const kword_t b[D6FS_SUPER_WORDS], kword_t blockset_blocks,
+    struct d6fs_super_info *info, unsigned int *copyp)
+{
+        return d6fs_super_select_validated(a, b, blockset_blocks,
+            info, copyp);
+}
+
+/* Preserve CLEAN-only production mounts until the native checker and
+ * guarded RO-to-RW transition are ready. */
+int
+d6fs_super_select(const kword_t a[D6FS_SUPER_WORDS],
+    const kword_t b[D6FS_SUPER_WORDS], kword_t blockset_blocks,
+    struct d6fs_super_info *info, unsigned int *copyp)
+{
+        if (d6fs_super_select_validated(a, b, blockset_blocks,
+            info, copyp) != 0)
+                return -1;
         return info->state == D6FS_STATE_CLEAN ? 0 : -1;
 }
