@@ -1,3 +1,10 @@
+## 2026-10-29 v656: host mm-core fixture repaired
+
+daimos-testkit `make mm-core` now PASS after restoring test-only VM
+host lifecycle coverage and fixing runtime descriptor and process-slot
+expectations. No production KCORE code or RAM changes. See
+`design/mm-core-host-fixture-v656.md`.
+
 ## 2026-10-29 v655: physical root media loss and KINIT build-coherence fix
 
 Native 96K GCC full-profile boot with DSK0 detached after Stage1

@@ -1,3 +1,10 @@
+## 2026-10-29 v656: mm-core host regression PASS
+
+The stale `mm-core` testkit fixture now builds and passes with C99
+test-only reference VM lifecycle functions, runtime-sized descriptor
+checks, and current 8-to-64 process-slot expectations. No kernel
+source changes or permanent RAM growth.
+
 ## 2026-10-29 v655: DSK0 media loss PASS; mixed-mode KINIT build fixed
 
 Fresh 96K GCC full-profile native PDP-6 SIMH, 256-word KINIT stack:

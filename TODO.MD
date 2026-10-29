@@ -720,7 +720,7 @@ source-level RAM optimization continue independently.** See
   not install the other family's MRES, so do not advertise phantom slots.
 - [ ] Reduce the accrued permanent KCORE descriptor/dispatch cost after the
   VFS activation path is stable; no workarounds or unsupported 32K claims.
-- [ ] Repair stale daimos-testkit `mm-core` host fixture: its Makefile
+- [x] Repair stale daimos-testkit `mm-core` host fixture: its Makefile
   still references removed `system/kernel/proc/vm_pdp6.c`. VM lifecycle
   functions now live in native PDP-6 assembly; simply dropping that
   source leaves `vm_extent_move`, `vm_space_can_swap` and
@@ -732,6 +732,11 @@ source-level RAM optimization continue independently.** See
   fixture already provides all three. Native PDP-6 swap/EXEC/RUN
   acceptance passes independently. Source audit v655; no outdated
   VM C implementation restored.
+  v656: completed in testkit with C99 host reference for the assembly
+  VM lifecycle calls and corrected dynamic MM descriptor/process-slot
+  expectations. `make mm-core` now reports `mm-v1: PASS`. Production
+  VM assembly remains authoritative; MEMFS XIP provider teardown is
+  not covered by this host fixture.
 
 - [ ] V19: native FILE mount-extension map now preserves mount IDs up to 26
   across file operations, DUP/DUP2, FLOCK, FIFO substitution, unmount, pipe
