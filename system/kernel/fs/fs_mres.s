@@ -82,14 +82,21 @@ blockset_direct_tail_account_done:
 blockset_direct_tail_loop:
         skipn   blockset_direct_blocks
         jrst    device_range_translate
+        ; A configured multi-member VOLUME requires its mapper.  Treat a
+        ; missing/unloaded mapper as an I/O error; direct arithmetic would
+        ; silently access the wrong physical sector on the first unit.
         hrrz    4,blockset_runtime_service_jump
         cain    4,fs_mres_no_service
-        jrst    device_range_translate
+        jrst    blockset_direct_tail_error
         move    1,011
         add     1,blockset_direct_blocks ; offset past filesystem data
         pushj   17,(4)
         jumpl   1,blockset_direct_tail_done
         jrst    device_block_transfer
+
+blockset_direct_tail_error:
+        seto    1,
+        jrst    blockset_direct_tail_done
 
 ; Direct DEVICE path: selector/physical base come from the configured range.
 device_range_translate:

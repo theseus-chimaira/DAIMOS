@@ -1,3 +1,11 @@
+## 2026-10-29 v659: fail closed on unavailable VOLUME mapper
+
+The permanent backing bridge now rejects missing multi-member mapping
+instead of silently addressing the first physical device. Existing
+direct DEVICE path unchanged; native 32K disk-root boot reaches
+`proc_boot_init` with BSET/D6FS loaded. Targeted native mapper-loss
+fault injection remains pending. No size-optimization work.
+
 ## 2026-10-29 v658: direct DEVICE vs multi-member VOLUME split
 
 Named direct DEVICE configuration for AUXSTORE backing and singleton

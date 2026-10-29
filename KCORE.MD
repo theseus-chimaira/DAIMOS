@@ -1,3 +1,10 @@
+## 2026-10-29 v659: VOLUME fail-closed I/O semantics
+
+Multi-member VOLUME mapping no longer falls back to direct physical
+sector arithmetic if the mapper is unavailable. Direct DEVICE I/O is
+unchanged. Fresh native 32K GCC disk-root boot and source regressions
+PASS; native mapper-loss injection pending. No optimization sweep.
+
 ## 2026-10-29 v658: DEVICE/VOLUME first structural split
 
 Direct physical ranges and multi-member root tails now have explicit
