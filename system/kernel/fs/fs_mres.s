@@ -162,8 +162,9 @@ fs_provider_reg_call:
         caile   7,3
         jrst    fs_mres_no_service
         jumpn   7,fs_provider_serialized ; index zero: MEMFS never sleeps
-        hrrz    7,fs_memfs_service_jump(7)
-        jrst    (7)
+        ; MINIT patches a JRST target into each provider slot.  Follow its
+        ; address field directly rather than extracting it into AC7 first.
+        jrst    @fs_memfs_service_jump(7)
 
 ; DTFS, TSFS and D6FS share fs_block_workspace and provider state across calls.
 ; A physical disk request may sleep, so another process can otherwise enter
@@ -186,10 +187,9 @@ fs_provider_lock_retry:
         hrli    0,-6(17)
         blt     0,7
         sub     17,kconst_7_7
-        hrrz    7,fs_memfs_service_jump(7)
         ; The missing-service trampoline already returns -1 normally.
         ; Invoke it under the same lease and use the common unlock path.
-        pushj   17,(7)
+        pushj   17,@fs_memfs_service_jump(7)
         jrst    fs_provider_unlock
 
 ; The executive is not process-preemptible between the ready test and clear.
