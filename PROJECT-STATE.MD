@@ -1,3 +1,9 @@
+## 2026-10-29 v662: BACKING naming in runtime consumers
+
+Process swap and MonitorFS both use `backing_region_blocks()`;
+the old BLOCKSET query remains an alias. One shared DEVICE/VOLUME
+hardware path remains. No runtime layer or storage-format change.
+
 ## 2026-10-29 v661: LOG remains independent of BACKING/CACHE
 
 Reclaimable LOG boot I/O now directly uses AUXSTORE REGION read/write

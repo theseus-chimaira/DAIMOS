@@ -299,6 +299,9 @@ implementation/acceptance is outstanding, NOT that scheduling is undecided.
   symbol aliases share exactly the same storage and entry point.
   Process swap boot uses `backing_region_blocks()`.
   v661: LOG boot I/O directly selects the bounded AUXSTORE LOG REGION;
+  v662: MonitorFS SWAP statistics uses `backing_region_blocks`, as
+  process swap already does. Legacy BLOCKSET query/transfer symbols
+  remain ABI aliases; runtime mapping fault injection remains open.
   redundant LOG-only AUXSTORE wrappers were removed. Legacy root-backed
   LOG remains supported. Persistent LOG recovery and native fault
   injection remain independent acceptance work.

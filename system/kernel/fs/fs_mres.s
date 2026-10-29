@@ -52,13 +52,15 @@ device_range_configure:
 backstore_read:
 blockset_direct_tail_read:
         setz    4,
-        jrst    blockset_direct_tail_io
+        jrst    backing_region_io
         .globl  backstore_write
 backstore_write:
 blockset_direct_tail_write:
         movei   4,1
 
-blockset_direct_tail_io:
+; One BACKING transfer gateway: direct DEVICE or mapped VOLUME.  The
+; legacy tail labels above retain their exact callable addresses.
+backing_region_io:
         jumpe   2,kret_zero
         jumpe   3,kret_neg1
         jumpl   1,kret_neg1

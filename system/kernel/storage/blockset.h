@@ -50,6 +50,8 @@ int blockset_write_block(kword_t logical,
 int blockset_writable(void);
 
 kword_t blockset_tail_blocks(void);
+/* BACKING capacity, valid for direct DEVICE ranges and mapped VOLUMEs. */
+kword_t backing_region_blocks(void);
 int blockset_tail_read(kword_t logical, kword_t count, kword_t *block);
 int blockset_tail_write(kword_t logical, kword_t count, const kword_t *block);
 

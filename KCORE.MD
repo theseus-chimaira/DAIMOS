@@ -1,3 +1,10 @@
+## 2026-10-29 v662: BACKING runtime vocabulary
+
+MonitorFS SWAP stats now query `backing_region_blocks`, matching
+process swap initialization. The physical I/O gateway is renamed
+internally without altering callable aliases, media formats or
+resident state. No optimization sweep.
+
 ## 2026-10-29 v661: direct LOG REGION interface
 
 Reclaimable LOG boot I/O now uses bounded AUXSTORE REGION operations
