@@ -192,6 +192,8 @@ static void storage_patch_jump(kword_t *word, unsigned int address);
 static void storage_patch_optional_calls(unsigned int address, int logstore);
 extern kword_t wall_time36_provider_jump;
 extern kword_t wall_clock_set_provider_jump;
+extern kword_t native_sys_clock_table_word;
+extern kword_t native_sys_settime_call;
 /* The clock provider installs before filesystem MRES consumers.  Its
  * existing patched gateway RH is a transient KINIT-time link resolver. */
 static unsigned int
@@ -576,6 +578,8 @@ pclkclock_minit(void)
         base = minit_install(name);
         storage_patch_jump(&wall_time36_provider_jump,
             minit_export(name, base, 0U));
+        storage_patch_jump(&native_sys_clock_table_word,
+            minit_export(name, base, 0U));
         minit_diag_ok(name);
 }
 
@@ -599,7 +603,11 @@ softclock_minit(void)
         base = minit_install(name);
         storage_patch_jump(&wall_time36_provider_jump,
             minit_export(name, base, 0U));
+        storage_patch_jump(&native_sys_clock_table_word,
+            minit_export(name, base, 0U));
         storage_patch_jump(&wall_clock_set_provider_jump,
+            minit_export(name, base, 1U));
+        storage_patch_jump(&native_sys_settime_call,
             minit_export(name, base, 1U));
         minit_diag_ok(name);
 }

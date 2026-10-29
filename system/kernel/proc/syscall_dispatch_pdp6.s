@@ -604,6 +604,8 @@ native_sys_ext_half_select:
         hrrz    5,native_sys_ext_table(6)
 native_sys_ext_table:
         .word   pipe_create,,native_sys_mkfifo
+        .globl  native_sys_clock_table_word
+native_sys_clock_table_word:
         .word   native_sys_exec,,wall_time36
         .word   native_sys_dup2,,native_sys_procctl
         .word   native_sys_procctl,,native_sys_procctl
@@ -666,6 +668,8 @@ native_sys_settime:
         pushj   17,file_check_root
         jumpn   1,kret_neg1
         move    1,2
+        .globl  native_sys_settime_call
+native_sys_settime_call:
         jrst    wall_clock_set
 
 native_sys_brk:
