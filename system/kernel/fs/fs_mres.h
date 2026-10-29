@@ -55,6 +55,8 @@ int fs_memory_reclaim(kword_t words, unsigned int level);
 int fs_memfs_shutdown(void);
 extern kword_t blockset_runtime_service_jump;
 kword_t blockset_tail_blocks(void);
+/* Runtime backing capacity, regardless of DEVICE or VOLUME mapping. */
+kword_t backing_region_blocks(void);
 void blockset_direct_configure(unsigned int unit, kword_t tail_base,
     kword_t blocks, kword_t tail_blocks);
 /* Direct physical DEVICE range: no multi-member VOLUME mapping. */
@@ -65,6 +67,9 @@ void volume_tail_configure(unsigned int selector, kword_t direct_base,
     kword_t volume_blocks, kword_t tail_blocks);
 extern kword_t blockset_direct_blocks;
 extern kword_t blockset_direct_tail;
+extern kword_t device_region_map;
+extern kword_t volume_data_blocks;
+extern kword_t backing_region_count;
 extern kword_t sys_memfs_usage_call;
 extern kword_t sys_dtfs_mount_jump;
 

@@ -16,6 +16,10 @@
         .globl volume_tail_configure
         .globl blockset_direct_blocks
         .globl blockset_direct_tail
+        .globl backing_region_blocks
+        .globl device_region_map
+        .globl volume_data_blocks
+        .globl backing_region_count
         .globl dsk270_read_sector
         .globl dsk270_write_sector
         .globl drm236_read_block
@@ -31,9 +35,9 @@ volume_tail_configure:
         move    5,1
         lsh     5,022
         ior     5,2
-        movem   5,blockset_direct_map
-        movem   3,blockset_direct_blocks
-        movem   4,blockset_direct_tail
+        movem   5,device_region_map
+        movem   3,volume_data_blocks
+        movem   4,backing_region_count
         popj    17,
 
 ; DEVICE: one physical unit, bounded contiguous range, no VOLUME mapper.
@@ -59,7 +63,7 @@ blockset_direct_tail_io:
         jumpe   3,kret_neg1
         jumpl   1,kret_neg1
         jumpl   2,kret_neg1
-        move    6,blockset_direct_tail
+        move    6,backing_region_count
         jumpe   6,kret_neg1
         caml    1,6
         jrst    kret_neg1
@@ -80,7 +84,7 @@ blockset_direct_tail_account_done:
         move    013,4                  ; write flag
 
 blockset_direct_tail_loop:
-        skipn   blockset_direct_blocks
+        skipn   volume_data_blocks
         jrst    device_range_translate
         ; A configured multi-member VOLUME requires its mapper.  Treat a
         ; missing/unloaded mapper as an I/O error; direct arithmetic would
@@ -89,7 +93,7 @@ blockset_direct_tail_loop:
         cain    4,fs_mres_no_service
         jrst    blockset_direct_tail_error
         move    1,011
-        add     1,blockset_direct_blocks ; offset past filesystem data
+        add     1,volume_data_blocks ; offset past filesystem data
         pushj   17,(4)
         jumpl   1,blockset_direct_tail_done
         jrst    device_block_transfer
@@ -100,15 +104,15 @@ blockset_direct_tail_error:
 
 ; Direct DEVICE path: selector/physical base come from the configured range.
 device_range_translate:
-        hlrz    1,blockset_direct_map
+        hlrz    1,device_region_map
         andi    1,07                     ; strip direct-device tag bits
-        hrrz    2,blockset_direct_map
+        hrrz    2,device_region_map
         add     2,011
 
 ; Shared final hardware transfer, with no duplicate DSK/DRM dispatch.
 device_block_transfer:
         move    3,010
-        hlrz    0,blockset_direct_map
+        hlrz    0,device_region_map
         trne    0,0400000
         jrst    blockset_direct_tail_drm
         jumpe   013,blockset_direct_tail_read_one
@@ -138,7 +142,8 @@ blockset_direct_tail_done:
         sub     17,kconst_6_6
         popj    17,
 blockset_tail_blocks:
-        move    1,blockset_direct_tail
+backing_region_blocks:
+        move    1,backing_region_count
         popj    17,
 
 ; Register provider ABI used by the private PDP-6 UUO bridge:
@@ -387,6 +392,10 @@ tsfs_file_shape_base:
 tsfs_extent_media_base:
         .word   0
         .bss
-blockset_direct_map:    .block 1
-blockset_direct_blocks: .block 1
-blockset_direct_tail:   .block 1
+; Existing exported names are aliases, not additional resident words.
+blockset_direct_map:
+device_region_map:       .block 1     ; selector,,physical start
+blockset_direct_blocks:
+volume_data_blocks:      .block 1     ; 0 means direct DEVICE mode
+blockset_direct_tail:
+backing_region_count:    .block 1     ; logical BACKING capacity

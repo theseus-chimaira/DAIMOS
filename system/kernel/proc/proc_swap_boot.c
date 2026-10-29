@@ -70,7 +70,7 @@ proc_swap_boot_init(unsigned int slots)
                 return -1;
         blocks = backstore_blocks;
         if (blocks == 0UL)
-                blocks = blockset_tail_blocks();
+                blocks = backing_region_blocks();
         /* A device-free TSFS boot still needs per-process executable
          * backing and packed storage modes, but no BACKSTORE bitmap.
          * Keep this KINIT-only path independent of optional MRES exports. */

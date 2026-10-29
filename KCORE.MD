@@ -1,3 +1,10 @@
+## 2026-10-29 v660: DEVICE/VOLUME/REGION state naming
+
+The three preexisting resident backing-service state words now have
+clear DEVICE/VOLUME/REGION names; old external symbols remain aliases
+at their original addresses. Swap boot calls `backing_region_blocks`.
+No additional resident state, abstraction, or optimization.
+
 ## 2026-10-29 v659: VOLUME fail-closed I/O semantics
 
 Multi-member VOLUME mapping no longer falls back to direct physical

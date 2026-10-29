@@ -1,3 +1,10 @@
+## 2026-10-29 v660: region state vocabulary without additional RAM
+
+Existing backing transfer config words have direct-device selector,
+optional VOLUME mapping span, and BACKING region-capacity names.
+Legacy aliases remain at identical addresses. Swap boot now queries
+`backing_region_blocks`; source regressions v658-v660 PASS.
+
 ## 2026-10-29 v659: fail closed on unavailable VOLUME mapper
 
 The permanent backing bridge now rejects missing multi-member mapping
