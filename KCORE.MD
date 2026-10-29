@@ -1,3 +1,11 @@
+## 2026-10-29 v663: native multi-member VOLUME acceptance
+
+The unchanged D6FS HDD native multi-member suite passed with host-native
+relay helpers, covering two/four members, file I/O and invalid-member
+rejection. Testkit v663 now regenerates the relay helpers to avoid
+reusing wrong-architecture binaries. Native mapper-loss injection is
+still open; no KCORE optimization performed.
+
 ## 2026-10-29 v662: BACKING runtime vocabulary
 
 MonitorFS SWAP stats now query `backing_region_blocks`, matching

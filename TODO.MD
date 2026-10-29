@@ -302,6 +302,10 @@ implementation/acceptance is outstanding, NOT that scheduling is undecided.
   v662: MonitorFS SWAP statistics uses `backing_region_blocks`, as
   process swap already does. Legacy BLOCKSET query/transfer symbols
   remain ABI aliases; runtime mapping fault injection remains open.
+  v663: native multi-member D6FS HDD suite PASS on two-/four-member
+  volumes after rebuilding AArch64 host relay helpers. New testkit
+  v663 launcher builds versioned native helpers and runs the unchanged
+  v582 suite. In-process mapper-loss fault injection remains open.
   redundant LOG-only AUXSTORE wrappers were removed. Legacy root-backed
   LOG remains supported. Persistent LOG recovery and native fault
   injection remain independent acceptance work.

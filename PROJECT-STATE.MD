@@ -1,3 +1,10 @@
+## 2026-10-29 v663: native multi-member VOLUME regression
+
+Two- and four-member D6FS HDD runtime and missing/mismatched-member
+rejection PASS after correcting stale x86-64 host relay executables on
+an AArch64 host. Testkit v663 launcher creates native relay binaries
+for each run. Targeted runtime mapper-loss fault injection still open.
+
 ## 2026-10-29 v662: BACKING naming in runtime consumers
 
 Process swap and MonitorFS both use `backing_region_blocks()`;
