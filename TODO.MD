@@ -328,6 +328,10 @@ implementation/acceptance is outstanding, NOT that scheduling is undecided.
   PASS: resident process record preserved, provisional BACKING released,
   staging word and TRANSITION cleared. Full scheduler fault injection
   and live I/O recovery remain open.
+  v669: full-system swap scheduler regression is BLOCKED: historic
+  v298 expects `proc_swap_out` in KCORE rather than SWAP MRES; updated
+  v669 simulator run reaches startup `?RT` and HALT at `065206` without
+  workload completion. Determine root cause, then run fault injection.
 - [ ] **DECISION 4 ACCEPTED (2026-10-27):** Complete production raw MEMFS
   XIP BEFORE the final KCORE optimization as a version 0.9 prerequisite.
   Implement privileged non-writing EXEC/RUN, provenance, swap/BRK exclusion,

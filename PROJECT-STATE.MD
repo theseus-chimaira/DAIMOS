@@ -1,3 +1,12 @@
+## 2026-10-29 v669: scheduler fault-acceptance blocker
+
+The historic full-system pressure runner v298 has stale fixed-KCORE
+assumptions for SWAP MRES functions. A corrected v669 diagnostic
+runner reaches native SIMH boot but the guest emits `?RT` and halts
+at `065206` before workload completion. This is NOT a passed swap
+or rollback test. Isolated v664-v668 remain PASS; diagnose the startup
+failure before full-system scheduler acceptance. No production edits.
+
 ## 2026-10-29 v668: recoverable late MM-free rollback verified
 
 The testkit v668 isolated native PDP-6 test PASSes: after successful
