@@ -1,3 +1,9 @@
+## 2026-10-29 v666: late swap MM failure ordering audit
+
+Source control-flow regression verifies MM unpin/free failure branches
+before DISK publication and provisional BACKING cleanup. No production
+code modified; native late-MM fault injection remains open.
+
 ## 2026-10-29 v665: BACKING partial-write fault acceptance
 
 Native PDP-6 test confirms a failure on block 2 of a 3-block BACKING

@@ -1,3 +1,10 @@
+## 2026-10-29 v666: swap late rollback audit
+
+Production PDP-6 swap-out control flow confirms MM unpin/free failures
+return through provisional BACKING release before DISK publication.
+Testkit v666 source regression PASS; native late-MM fault injection
+still outstanding. No KCORE optimization or production change.
+
 ## 2026-10-29 v665: BACKING partial-write failure contract
 
 Native PDP-6 gateway test PASS: injected second-block error stops a

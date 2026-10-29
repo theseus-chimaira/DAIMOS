@@ -316,6 +316,9 @@ implementation/acceptance is outstanding, NOT that scheduling is undecided.
   fails, third never issued). Swap/MEMFS publication-order source
   regression PASS. Full-system in-flight fault and late MM rollback
   remain open; BACKING media writes are not physically atomic.
+  v666: late swap-out MM unpin/free error branches audited; source
+  regression PASS. Real native MM failure injection and complete
+  scheduler/recovery acceptance remain outstanding.
 - [ ] **DECISION 4 ACCEPTED (2026-10-27):** Complete production raw MEMFS
   XIP BEFORE the final KCORE optimization as a version 0.9 prerequisite.
   Implement privileged non-writing EXEC/RUN, provenance, swap/BRK exclusion,
