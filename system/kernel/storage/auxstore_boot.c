@@ -210,17 +210,3 @@ auxstore_boot_region_write(unsigned int region, kword_t first,
                 return -1;
         return auxstore_phys_write(auxstore_kind, auxstore_unit, phys, buf);
 }
-
-int
-auxstore_boot_log_read(kword_t first, kword_t *buf)
-{
-        return auxstore_boot_region_read(AUXSTORE_REGION_LOGSTORE,
-            first, buf);
-}
-
-int
-auxstore_boot_log_write(kword_t first, const kword_t *buf)
-{
-        return auxstore_boot_region_write(AUXSTORE_REGION_LOGSTORE,
-            first, buf);
-}

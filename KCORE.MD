@@ -1,3 +1,9 @@
+## 2026-10-29 v661: direct LOG REGION interface
+
+Reclaimable LOG boot I/O now uses bounded AUXSTORE REGION operations
+without redundant LOG-specific wrappers. LOG record/recovery ownership
+and its permanent MRES ABI are unchanged. Not a KCORE size sweep.
+
 ## 2026-10-29 v660: DEVICE/VOLUME/REGION state naming
 
 The three preexisting resident backing-service state words now have

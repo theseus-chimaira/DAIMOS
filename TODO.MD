@@ -298,6 +298,10 @@ implementation/acceptance is outstanding, NOT that scheduling is undecided.
   have explicit DEVICE/VOLUME/REGION source names, while legacy
   symbol aliases share exactly the same storage and entry point.
   Process swap boot uses `backing_region_blocks()`.
+  v661: LOG boot I/O directly selects the bounded AUXSTORE LOG REGION;
+  redundant LOG-only AUXSTORE wrappers were removed. Legacy root-backed
+  LOG remains supported. Persistent LOG recovery and native fault
+  injection remain independent acceptance work.
 - [ ] **DECISION 4 ACCEPTED (2026-10-27):** Complete production raw MEMFS
   XIP BEFORE the final KCORE optimization as a version 0.9 prerequisite.
   Implement privileged non-writing EXEC/RUN, provenance, swap/BRK exclusion,

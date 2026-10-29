@@ -44,7 +44,5 @@ int auxstore_boot_region_read(unsigned int region, kword_t first,
     kword_t *buf);
 int auxstore_boot_region_write(unsigned int region, kword_t first,
     const kword_t *buf);
-int auxstore_boot_log_read(kword_t first, kword_t *buf);
-int auxstore_boot_log_write(kword_t first, const kword_t *buf);
 
 #endif

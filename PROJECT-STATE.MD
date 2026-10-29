@@ -1,3 +1,10 @@
+## 2026-10-29 v661: LOG remains independent of BACKING/CACHE
+
+Reclaimable LOG boot I/O now directly uses AUXSTORE REGION read/write
+with explicit LOG selection; redundant AUXSTORE LOG wrappers removed.
+Legacy root-backed LOG remains supported. No change to LOG on-media
+record format or persistent MRES ABI.
+
 ## 2026-10-29 v660: region state vocabulary without additional RAM
 
 Existing backing transfer config words have direct-device selector,
