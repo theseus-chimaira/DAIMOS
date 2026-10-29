@@ -11,7 +11,7 @@
         .globl badmap_state
         .globl badmap_backend_read_jump
         .globl badmap_backend_write_jump
-        .globl badmap_base_map_jump
+        .globl badmap_base_map_call
         .globl kret_neg1
 
 ; state layout:
@@ -24,7 +24,8 @@
 
 ; AC1=logical block; return AC1=physical unit, AC2=member-local block.
 badmap_map_block:
-        pushj   17,badmap_base_map
+badmap_base_map_call:
+        pushj   17,badmap_direct_map
         jumpl   1,kret_neg1
         move    6,1                     ; physical unit
         move    7,2                     ; physical block
@@ -68,11 +69,8 @@ badmap_match:
         move    2,0
         popj    17,
 
-; Base mapper.  MINIT patches the jump to BLOCKSET for a multi-member set.
+; Base mapper. MINIT patches the call above for a multi-member set.
 ; The singleton default uses the compact direct geometry in state words 7/8.
-badmap_base_map:
-badmap_base_map_jump:
-        jrst    badmap_direct_map
 badmap_direct_map:
         jumpl   1,kret_neg1
         caml    1,badmap_direct_blocks

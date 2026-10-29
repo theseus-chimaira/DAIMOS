@@ -925,7 +925,7 @@ $(BADMAP_MRES_OBJ): $(BUILD)/badmap_dispatch.dobj $(KCORE_MAP)
 	    -R $@ -N badmap_mres_package -X badmap_map_block -X badmap_state \
 	    -X badmap_read_block -X badmap_write_block \
 	    -X badmap_backend_read_jump -X badmap_backend_write_jump \
-	    -X badmap_base_map_jump $(BUILD)/badmap_dispatch.dobj
+	    -X badmap_base_map_call $(BUILD)/badmap_dispatch.dobj
 
 $(LOGSTORE_MRES_OBJ): $(BUILD)/logstore_runtime.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/logstore-mres.dxr -M $(BUILD)/logstore-mres.map \
