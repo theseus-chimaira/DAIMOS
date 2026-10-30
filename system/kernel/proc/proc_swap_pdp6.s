@@ -18,6 +18,9 @@
         .globl  proc_swap_exchange_transfer_v774
         .globl  proc_swap_exchange_mm_v779
         .globl  proc_swap_exchange_prepare_ram_v780
+        .globl  proc_swap_exchange_prepare_v781
+        .globl  backstore_extend
+        .globl  mm_process_shrink_pinned
         .globl  mm_process_transfer_pinned
         .globl  mm_process_shrink_pinned
         .globl  mm_process_grow_pinned
@@ -365,6 +368,54 @@ proc_swap_exchange_prepare_ram_v780:
         popj    17,
 proc_swap_prepare_ram_ok_v780:
         setz    1,
+        popj    17,
+
+; int proc_swap_exchange_prepare_v781(const kword_t *request)
+; Nine words: five-word MM request (base, A owner, B owner, A words,
+; B words), followed by disk first, existing B blocks, A blocks,
+; and reserved flag output (0 on entry, 1 after disk extension).
+; Reserve disk extension FIRST, then any required RAM growth. If RAM
+; growth fails, release ONLY the newly extended disk tail. B's original
+; run remains allocated. No destructive transfer or publication occurs.
+proc_swap_exchange_prepare_v781:
+        push    17,010
+        push    17,011
+        push    17,012
+        move    010,1
+        setzm   010(010)
+        move    011,6(010)
+        move    012,7(010)
+        camg    012,011
+        jrst    proc_swap_prepare_ram_v781
+        move    1,5(010)
+        move    2,011
+        move    3,012
+        pushj   17,backstore_extend
+        jumpn   1,proc_swap_prepare_fail_v781
+        movei   1,1
+        movem   1,010(010)
+proc_swap_prepare_ram_v781:
+        move    1,010
+        pushj   17,proc_swap_exchange_prepare_ram_v780
+        jumpe   1,proc_swap_prepare_ok_v781
+        skipn   010(010)
+        jrst    proc_swap_prepare_fail_v781
+        ; Release [disk_first+B_blocks, disk_first+A_blocks).
+        move    1,5(010)
+        add     1,011
+        move    2,012
+        sub     2,011
+        pushj   17,backstore_free
+        setzm   010(010)
+proc_swap_prepare_fail_v781:
+        seto    1,
+        jrst    proc_swap_prepare_done_v781
+proc_swap_prepare_ok_v781:
+        setz    1,
+proc_swap_prepare_done_v781:
+        pop     17,012
+        pop     17,011
+        pop     17,010
         popj    17,
 
 /* Return the complete 0200-word sectors covered by low user words + PURE text. */

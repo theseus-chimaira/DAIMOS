@@ -3,6 +3,22 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v781: Coordinated disk and RAM preparation
+
+`proc_swap_exchange_prepare_v781` accepts a nine-word request: the
+five-word MM request, disk-first, existing incoming B block count,
+outgoing A block count, and a reservation flag. It reserves the
+contiguous disk extension first, then prepares RAM capacity using the
+v780 helper. If RAM preparation fails, it releases only the newly
+reserved disk suffix and clears the flag, preserving B's original
+extent. Native PDP-6 isolated rollback regression PASS (v781).
+No exchange sectors or process records are altered by preparation.
+
+Remaining work includes failure injection for unsuccessful extension,
+success-path capacity checks, cancellation of completed preparation
+before destructive I/O, PURE reload, process-record publication and
+native scheduler acceptance. The v758 writer remains blocked.
+
 ## v780: Reserve incoming RAM before transfer
 
 The v779 commit helper could previously grow the outgoing MM extent
