@@ -13,6 +13,19 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v806: Nonzero PURE prefix in integrated native commit
+
+Testkit v806 extends the v805 production commit-coordinator test with
+a nonzero 0200-word PURE prefix. The filesystem zero callback clears
+all prefix words and the executable reload callback verifies their
+zero state before reconstructing every word. Callback arguments and
+invocation counts are checked. The remainder of the real v789
+coordinator, pinned MM ownership transfer and unpin, BACKSTORE release,
+process records, accounting and packed storage publication remain
+integrated and pass on native PDP-6. The filesystem callbacks are
+deterministic fixtures; v790 stage/transfer and full-system v758
+acceptance remain unverified.
+
 ## v805: Native integrated commit coordinator
 
 Testkit v805 links the production v789 commit coordinator with v785
