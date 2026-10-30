@@ -195,11 +195,13 @@ backstore_extend_fail:
 ; void backstore_free(kword_t first, kword_t blocks)
 backstore_free:
         jumpe   2,backstore_free_return
+        jumpl   1,backstore_free_return
+        jumpl   2,backstore_free_return
         caml    1,backstore_blocks      ; first >= total blocks
         jrst    backstore_free_return
         move    3,backstore_blocks
-        sub     3,1                     ; blocks available from first
-        camle   2,3
+        sub     3,2                     ; last legal starting block
+        camle   1,3                     ; first + count <= total
         jrst    backstore_free_return
 
         push    17,010

@@ -3,6 +3,16 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v777: BACKSTORE release boundary correction
+
+The release path in `backstore_free` had the same missing start-plus-count
+bound as the v776 extension issue. It now rejects negative arguments
+and requires `first <= backstore_blocks - count` before modifying the
+bitmap or changing usage accounting. Native PDP-6 v777 verifies a
+cross-boundary release leaves the bitmap/accounting untouched and that
+the final legal block can still be released (PASS). This is a correctness
+prerequisite, not process exchange completion.
+
 ## v776: BACKSTORE extension boundary correction
 
 The transaction audit found that `backstore_extend` checked the new
