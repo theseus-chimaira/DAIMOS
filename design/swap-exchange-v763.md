@@ -3,6 +3,24 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v780: Reserve incoming RAM before transfer
+
+The v779 commit helper could previously grow the outgoing MM extent
+only *after* the incoming sector data had already been copied into
+that larger range. That ordering risks writing outside a reserved
+process allocation. Growth is now separate:
+`proc_swap_exchange_prepare_ram_v780(request)` enlarges A's pinned
+extent under A ownership before destructive transfer if B requires
+additional RAM. The v779 commit helper now only retags ownership and
+optionally shrinks afterward. Native PDP-6 v780 checks the sequence
+growth -> transfer owner, and the no-growth -> owner -> shrink path.
+The v779 standalone regression is superseded by v780 for this contract.
+
+This is not a full preflight: backing-space reservation, transaction
+failure handling, PURE reload, state publication, and full-system swap
+acceptance remain outstanding. In particular, a successful growth
+must be undone while A remains intact if subsequent preparation fails.
+
 ## v779: Native MM exchange transition ordering
 
 `proc_swap_exchange_mm_v779` takes a five-word caller-owned request

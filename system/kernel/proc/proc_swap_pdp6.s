@@ -17,6 +17,7 @@
         .globl  proc_swap_exchange_tails_v773
         .globl  proc_swap_exchange_transfer_v774
         .globl  proc_swap_exchange_mm_v779
+        .globl  proc_swap_exchange_prepare_ram_v780
         .globl  mm_process_transfer_pinned
         .globl  mm_process_shrink_pinned
         .globl  mm_process_grow_pinned
@@ -304,10 +305,9 @@ proc_swap_transfer_done_v774:
 
 ; int proc_swap_exchange_mm_v779(const kword_t *request)
 ; Five request words: base, old_slot, new_slot, old_words, new_words.
-; This is a commit-stage leaf, not a preflight. The caller must have
-; completed the image transfer, held the only physical pin, and locked
-; both processes. Growth occurs under the old owner, retagging next,
-; and shrinkage under the new owner. Once retagged, failure halts.
+; Commit only. A larger B MUST already have been reserved via v780,
+; before copying any incoming words. Retag then optionally shrink.
+; After ownership changes, failure halts rather than unlocking either.
 proc_swap_exchange_mm_v779:
         push    17,010
         push    17,011
@@ -319,8 +319,6 @@ proc_swap_exchange_mm_v779:
         move    013,3(1)
         move    4,4(1)
         push    17,4
-        camle   4,013
-        jrst    proc_swap_mm_grow_v779
 proc_swap_mm_transfer_v779:
         move    1,010
         move    2,011
@@ -333,13 +331,6 @@ proc_swap_mm_transfer_v779:
 proc_swap_mm_ok_v779:
         setz    1,
         jrst    proc_swap_mm_done_v779
-proc_swap_mm_grow_v779:
-        move    1,010
-        move    2,011
-        move    3,4
-        pushj   17,mm_process_grow_pinned
-        jumpn   1,proc_swap_mm_fail_v779
-        jrst    proc_swap_mm_transfer_v779
 proc_swap_mm_shrink_v779:
         move    1,010
         move    2,012
@@ -355,6 +346,25 @@ proc_swap_mm_done_v779:
         pop     17,012
         pop     17,011
         pop     17,010
+        popj    17,
+
+; int proc_swap_exchange_prepare_ram_v780(request)
+; Reserve B's entire RAM extent BEFORE any destructive sector transfer.
+; The five-word request matches v779. A pinned A remains the MM owner.
+; No resize is needed if B fits A's existing extent. On failure no
+; process owner changes. Caller is responsible for canceling any grow
+; if later *pre-destructive* preparation fails.
+proc_swap_exchange_prepare_ram_v780:
+        move    2,3(1)               ; A words
+        move    3,4(1)               ; B words
+        camg    3,2
+        jrst    proc_swap_prepare_ram_ok_v780
+        move    2,1(1)               ; A owner
+        move    1,(1)                ; physical base
+        pushj   17,mm_process_grow_pinned
+        popj    17,
+proc_swap_prepare_ram_ok_v780:
+        setz    1,
         popj    17,
 
 /* Return the complete 0200-word sectors covered by low user words + PURE text. */
