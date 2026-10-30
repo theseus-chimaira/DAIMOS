@@ -13,6 +13,18 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v805: Native integrated commit coordinator
+
+Testkit v805 links the production v789 commit coordinator with v785
+PURE dispatch (zero-prefix case), v779 MM ownership transfer, v786
+process records, v787 BACKSTORE tail release and accounting, and v788
+packed storage-mode publication. The MM lookup, pinned owner transfer,
+unpin and BACKSTORE bitmap mutation use real PDP-6 code. All final
+records, counters, bitmap, modes and pin state are checked (PASS).
+PURE filesystem callbacks are isolated and no destructive sector I/O
+is performed here; v790 preflight/stage and scheduler acceptance remain
+untested together. The v758 writer deadlock is unresolved.
+
 ## v804: Native PURE prefix reconstruction test
 
 Testkit v804 runs the production v785 PURE-reconstruction coordinator
