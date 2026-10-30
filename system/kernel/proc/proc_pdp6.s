@@ -75,6 +75,7 @@
         .globl  proc_sched_resched_current
         .globl  proc_swap_service_one
         .globl  proc_swap_records
+        .globl  proc_swap_pressure_ticks
         .globl  mm_is_pinned
         .globl  proc_swap_victim
         .globl  proc_record_kernel_sp
@@ -202,6 +203,10 @@ proc_select_rt:
         move    1,1(16)
         trne    1,0777777
         jrst    proc_select_return_slot
+        skipn   proc_swap_pressure_ticks
+        jrst    proc_select_rt_swap
+        jrst    proc_select_runq_start
+proc_select_rt_swap:
         movei   1,0400
         iorm    1,proc_sched_cursor
         jrst    proc_select_none
@@ -258,6 +263,9 @@ proc_select_candidate:
         add     1,15
         move    1,(1)
         jumpe   1,proc_select_next
+        skipn   proc_swap_pressure_ticks
+        jrst    proc_select_score
+        jrst    proc_select_next
 
 proc_select_score:
         ; priority = biased nice + recent CPU
@@ -2829,6 +2837,10 @@ proc_sched_pi_tick:
         ; 200000, and the next deadline in RH.  The process table is scanned
         ; only after the exact frontier tick becomes due.
         aos     1,proc_timer_clock
+        skipg   proc_swap_pressure_ticks
+        jrst    proc_sched_pressure_clock_done
+        sos     proc_swap_pressure_ticks
+proc_sched_pressure_clock_done:
         skipn   2,proc_timer_next
         jrst    proc_sched_timer_done
         tlne    2,PROC_TIMER_DUE_LH
@@ -3130,6 +3142,9 @@ proc_idle_wait:
 proc_idle_loop_end:
 
         .bss
+; One shared clock-quantum delay, no per-process resident retry table.
+proc_swap_pressure_ticks:
+        .block 1
 proc_timer_clock:
         .block 1
 proc_timer_next:

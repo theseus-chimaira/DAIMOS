@@ -14,6 +14,7 @@
         .globl  proc_swap_out
         .globl  proc_swap_in
         .globl  proc_sched_cursor
+        .globl  proc_swap_pressure_ticks
         .globl  proc_high_slot
         .globl  proc_table
         .globl  proc_swap_records
@@ -571,10 +572,21 @@ proc_swap_mres_service_v481:
 
         move    1,(17)
         pushj   17,proc_swap_in
+        jumpg   1,proc_swap_service_pressure
         jumpn   1,proc_swap_service_failed
         pop     17,1
         movem   1,proc_sched_cursor
         popj    17,
+
+proc_swap_service_pressure:
+        ; The swapped image is intact. Defer another restore attempt long
+        ; enough for resident jobs to run and free resources. Clock PI6
+        ; ages the delay; the scheduler ignores swapped jobs during it.
+        movei   1,0100
+        movem   1,proc_swap_pressure_ticks
+        pop     17,1
+        movem   1,proc_sched_cursor
+        jrst    kret_zero
 
 proc_swap_service_failed:
         move    1,(17)
