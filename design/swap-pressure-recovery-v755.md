@@ -1,6 +1,26 @@
 # v755: Swap-in resource pressure and scheduler liveness
 
-Status: design audit, not implemented or accepted.
+Status: partially implemented, native pressure acceptance failed (v758).
+
+## v758: Fresh native pressure workload FAIL
+
+Ran the complete testkit `daimos-mm-swap-scheduler-v669.sh` against a
+fresh 256K PDP-6 full-profile image built from v757 sources, with
+`DAIMOS_MM_TRACE_KEEP=1`. The D6FS root preflight passed: superblock
+715 seq=1 CLEAN, 179196 blocks, 360 FCBs clean. Native boot reached
+`D6FS LOADED` and the diagnostic INIT emitted `<w`, but no writer
+completion or `Q HALT` followed. The simulator timed out after 300
+seconds (exit 124; validation script exit 1). Its last PC was 014112.
+This is a **native acceptance FAIL** and does not establish forward
+progress or recovery.
+
+Retained DevSpace2 artifacts: `$TMPDIR/daimos-mm-swap-scheduler-v669-4191`
+and `$TMPDIR/daimos-scheduler-v758-native.log`. The native run changes
+the test boot disk: do not reuse it as a CLEAN image. Next determine
+whether the scheduler is repeatedly requesting swap, selecting resident
+jobs, or idle without an eligible process. Capture the run queue,
+current slot, cursor, cooldown, and backstore occupancy at the stall.
+Do not claim a scheduler-policy fix without a passing native workload.
 
 ## v756: Typed transaction result implemented (partial)
 
