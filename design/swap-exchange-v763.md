@@ -13,6 +13,20 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v818: Production plain-DXR2 PURE reload in native exchange
+
+Testkit v818 links the production `proc_swap_unpack_backing` and
+`proc_swap_reload_pure` routines with the v817 native PDP-6 exchange.
+A deterministic mounted-VFS fixture supplies a valid provider root,
+DXR2 flags and an executable text payload. The production reload
+reconstructs the text starting at EXEC_USER_ORIGIN while the native
+transaction also exercises preflight, live backing validation,
+BACKSTORE extension and gateway, destructive exchange, MM ownership,
+records, accounting and mode publication (PASS). VFS reads and the
+underlying sector-driver remain deterministic fixtures. Compressed
+DXR2 reconstruction, actual VFS/device I/O and the v758 full-system
+writer deadlock remain outstanding.
+
 ## v817: Production PURE zeroing in integrated native exchange
 
 Testkit v817 replaces the synthetic PURE-prefix clear callback in v816
