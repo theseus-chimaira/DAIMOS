@@ -16,6 +16,10 @@
         .globl  proc_swap_exchange_overlap_v772
         .globl  proc_swap_exchange_tails_v773
         .globl  proc_swap_exchange_transfer_v774
+        .globl  proc_swap_exchange_mm_v779
+        .globl  mm_process_transfer_pinned
+        .globl  mm_process_shrink_pinned
+        .globl  mm_process_grow_pinned
         .globl  proc_swap_in
         .globl  proc_sched_cursor
         .globl  proc_swap_pressure_ticks
@@ -293,6 +297,61 @@ proc_swap_transfer_in_v774:
 proc_swap_transfer_fail_v774:
         seto    1,
 proc_swap_transfer_done_v774:
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; int proc_swap_exchange_mm_v779(const kword_t *request)
+; Five request words: base, old_slot, new_slot, old_words, new_words.
+; This is a commit-stage leaf, not a preflight. The caller must have
+; completed the image transfer, held the only physical pin, and locked
+; both processes. Growth occurs under the old owner, retagging next,
+; and shrinkage under the new owner. Once retagged, failure halts.
+proc_swap_exchange_mm_v779:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        move    010,(1)
+        move    011,1(1)
+        move    012,2(1)
+        move    013,3(1)
+        move    4,4(1)
+        push    17,4
+        camle   4,013
+        jrst    proc_swap_mm_grow_v779
+proc_swap_mm_transfer_v779:
+        move    1,010
+        move    2,011
+        move    3,012
+        pushj   17,mm_process_transfer_pinned
+        jumpn   1,proc_swap_mm_fail_v779
+        move    4,(17)
+        camge   4,013
+        jrst    proc_swap_mm_shrink_v779
+proc_swap_mm_ok_v779:
+        setz    1,
+        jrst    proc_swap_mm_done_v779
+proc_swap_mm_grow_v779:
+        move    1,010
+        move    2,011
+        move    3,4
+        pushj   17,mm_process_grow_pinned
+        jumpn   1,proc_swap_mm_fail_v779
+        jrst    proc_swap_mm_transfer_v779
+proc_swap_mm_shrink_v779:
+        move    1,010
+        move    2,012
+        move    3,4
+        pushj   17,mm_process_shrink_pinned
+        jumpn   1,proc_swap_storage_invariant_v30
+        jrst    proc_swap_mm_ok_v779
+proc_swap_mm_fail_v779:
+        seto    1,
+proc_swap_mm_done_v779:
+        sub     17,[1,,1]
+        pop     17,013
         pop     17,012
         pop     17,011
         pop     17,010

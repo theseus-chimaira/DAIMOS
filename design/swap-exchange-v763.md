@@ -3,6 +3,19 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v779: Native MM exchange transition ordering
+
+`proc_swap_exchange_mm_v779` takes a five-word caller-owned request
+(`base`, `old_slot`, `new_slot`, `old_words`, `new_words`). Following
+completed data transfer and while both processes remain excluded, it
+grows the pinned extent as its old owner when necessary, transfers the
+MM owner, then shrinks under the new owner when necessary. Failures
+before owner transfer return failure; failure after retagging halts.
+Native PDP-6 isolated tests exercise both growth/retag and retag/shrink
+ordering (v779 PASS). The caller must still establish preflight capacity,
+PURE reconstruction, swap record updates and storage publication.
+The scheduler does not invoke this helper; v758 remains unresolved.
+
 ## v778: Paired storage-mode publication primitive
 
 `proc_storage_exchange_modes_v778(a_slot,b_slot)` validates both packed
