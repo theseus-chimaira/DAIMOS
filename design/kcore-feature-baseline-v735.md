@@ -105,3 +105,22 @@ Its shell syntax check PASSed; no native execution of this new probe is
 claimed yet. Next acquire a verified CLEAN, pressure-INIT-matched fixture,
 run the probe and capture the caller/return address before changing swap
 transaction behavior. Testkit commit: `85f7e81`.
+
+## v745-v746: Native event entry and stack captured
+
+Found retained CLEAN original pressure fixture
+`daimos-mm-swap-scheduler-v669-22735/build/system/boot/pdp6` with
+`kcore.map` and the pressure-INIT hash. The old v744 trace copy is DIRTY
+and was not reused. The testkit v745 run against a copied disk PASSed its
+map-resolved event-entry test: `proc_event_apply` at 011215, AC1=2 (slot),
+AC2=1 (TERM). The next versioned testkit v746 run captured the current
+executive stack on the same path: AC17=000003040117, memory at 040117
+contains 340000027740, and 040116 contains 000000000002. This provides
+a return-site candidate at 027740; it is **not yet confirmed** as a
+specific instruction or provider-module call. The event cause remains
+unknown. Neither run is a complete scheduler-pressure PASS.
+
+Testkit v746 commit `b4367e8` includes the map-resolved native stack
+probe. Subsequent investigation must resolve 027740 using the actual
+runtime-installed module placement, not assume the MRES map's package
+offsets are absolute runtime addresses.
