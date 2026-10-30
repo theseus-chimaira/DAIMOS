@@ -33,6 +33,7 @@
         .globl  backstore_extend
         .globl  mm_process_shrink_pinned
         .globl  mm_process_transfer_pinned
+        .globl  mm_process_verify_pinned_v792
         .globl  mm_process_shrink_pinned
         .globl  mm_process_grow_pinned
         .globl  proc_swap_in
@@ -677,6 +678,12 @@ proc_swap_exchange_preflight_v791:
         move    2,(3)               ; physical base
         came    2,4(1)
         jrst    proc_swap_preflight_fail_v791
+        ; Verify the live MM descriptor before reserving backing or RAM.
+        move    1,(3)
+        move    2,1(3)
+        move    3,3(3)
+        pushj   17,mm_process_verify_pinned_v792
+        jumpn   1,proc_swap_preflight_fail_v791
         setz    1,
         pop     17,010
         popj    17,

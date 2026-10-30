@@ -21,6 +21,7 @@
         .globl  mm_alloc_aligned_noreclaim
         .globl  mm_free
         .globl  mm_process_transfer_pinned
+        .globl  mm_process_verify_pinned_v792
         .globl  mm_process_shrink_pinned
         .globl  mm_process_grow_pinned
         .globl  mm_pin
@@ -607,6 +608,52 @@ mm_free_busy:
         popj    17,
 
 ; int mm_process_transfer_pinned(base,old_owner,new_owner)
+; int mm_process_verify_pinned_v792(base,owner,words)
+; Validate the precise pre-exchange extent without changing MM state.
+; Requires a process extent, exact owner, exact allocated size and one
+; physical pin. AC4..AC7 scratch; mm_find_base clobbers AC2..AC4.
+mm_process_verify_pinned_v792:
+        jumpe   1,mm_verify_bad_v792
+        jumpe   2,mm_verify_bad_v792
+        caile   2,0377
+        jrst    mm_verify_bad_v792
+        jumpe   3,mm_verify_bad_v792
+        trne    3,01777
+        jrst    mm_verify_bad_v792
+        push    17,010
+        push    17,011
+        move    010,2
+        move    011,3
+        pushj   17,mm_find_base
+        caml    1,mm_extent_count
+        jrst    mm_verify_fail_v792
+        lsh     1,1
+        hlrz    4,mm_extents(1)
+        came    4,011
+        jrst    mm_verify_fail_v792
+        move    4,mm_extents+1(1)
+        hlrz    5,4
+        andi    5,7
+        caie    5,MM_TYPE_PROCESS
+        jrst    mm_verify_fail_v792
+        hrrz    5,4
+        came    5,010
+        jrst    mm_verify_fail_v792
+        and     4,[MM_PIN_FIELD]
+        came    4,[MM_PIN_ONE]
+        jrst    mm_verify_fail_v792
+        setz    1,
+        jrst    mm_verify_done_v792
+mm_verify_fail_v792:
+        seto    1,
+mm_verify_done_v792:
+        pop     17,011
+        pop     17,010
+        popj    17,
+mm_verify_bad_v792:
+        seto    1,
+        popj    17,
+
 ; Only a process extent pinned exactly once may change slot ownership.
 ; AC5..AC7 scratch.  No descriptor insert/delete or physical movement.
 mm_process_transfer_pinned:

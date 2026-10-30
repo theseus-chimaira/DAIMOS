@@ -3,6 +3,20 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v792: Real pinned MM ownership preflight
+
+`mm_process_verify_pinned_v792(base,owner,words)` checks the live sorted
+MM extent table for the exact base, expected resident length, process
+allocation type, owner slot, and a pin count of exactly one. The v791
+cross-request preflight invokes it before v784 can reserve resources
+or overwrite incoming BACKSTORE sectors. The native PDP-6 regression
+uses the actual MM extent lookup and verifies a valid pinned process
+and rejection of wrong ownership or an unpinned extent (PASS).
+The updated v791 request test verifies that the new MM check is called
+with the expected request fields (PASS). Disk allocation ownership,
+live process-state checks and complete scheduler integration are still
+unimplemented. The v758 writer regression remains blocked.
+
 ## v791: Cross-request consistency before transfer
 
 `proc_swap_exchange_preflight_v791` is called by v790 before v784
