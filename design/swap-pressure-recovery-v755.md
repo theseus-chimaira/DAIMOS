@@ -2,6 +2,27 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v762: Native victim-footprint evidence (raw swap)
+
+The testkit v762 native simulator diagnostic stopped at the same failed
+reclaim transaction as v754 and captured the process table and per-slot
+swap records. The resident process slots were **1 and 11 through 18**;
+all nine retained an executable-backing record `037` (octal) with zero
+PURE text length. Every resident image was `064000` octal words
+(26624 decimal), and the raw swap-out requirement for each was 208
+BACKSTORE sectors. Only 176 sectors were free. The other process slots
+2 through 10 were already nonresident. The testkit checker verifies
+this exact native signature and PASSed; testkit commit `5d4c700`.
+
+Therefore selecting a different ordinary resident victim cannot fix the
+**observed** full-image capacity stall; none has a smaller PURE-adjusted
+payload. Generic reclaim policy may still benefit from capacity-aware
+victim selection, but that is not a sufficient correction here. Any real
+fix must prove a resource-progress guarantee for admitted processes or
+transactionally exchange images without requiring another full swap span.
+Do not solve this by enabling untested compressed swap or PACKED state.
+The native writer WAIT/EXIT acceptance remains FAIL.
+
 ## v759: Deadlock capacity gate and workload dependency
 
 The v283 native writer workload creates a writer and 16 pressure children.
