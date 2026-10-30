@@ -13,6 +13,18 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v809: Native aligned destructive stage transfer
+
+Testkit v809 runs the production v784 stage, v781 reservation and
+v783/v774/v772/v771 destructive exchange against deterministic
+in-memory backing I/O. The RAM fixture is aligned at runtime within
+a larger pool, so validation exercises the accepted transfer path.
+With three outgoing A sectors and two incoming B sectors, all words
+of the outgoing disk image, incoming RAM image and outgoing-only tail
+are checked (PASS). Disk extension and MM growth remain fixtures;
+the v790 full transaction is not yet integrated with this stage.
+The v758 writer deadlock and scheduler acceptance remain unresolved.
+
 ## v808: Native stage rejection and reservation cancellation
 
 Testkit v808 links the real v784 stage, v781 preparation, v783 checked
