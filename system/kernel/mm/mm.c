@@ -458,6 +458,48 @@ mm_process_shrink_pinned(kword_t base, unsigned int owner,
         return MM_OK;
 }
 
+/** Grow in place only when the following managed physical words are free. */
+int
+mm_process_grow_pinned(kword_t base, unsigned int owner,
+    kword_t new_words)
+{
+        int i;
+        unsigned int a;
+        kword_t end;
+        kword_t limit;
+        struct mm_extent *extent;
+
+        if (owner == 0U || owner >= 0400U || new_words == 0UL ||
+            (new_words & (VM_EXTENT_ALIGN_WORDS - 1UL)) != 0UL)
+                return MM_ERR_INVAL;
+        i = mm_find_base(base);
+        if (i >= mm_extent_count)
+                return MM_ERR_INVAL;
+        extent = &mm_extents[i];
+        if (MM_EXTENT_TYPE(extent) != MM_TYPE_PROCESS ||
+            MM_EXTENT_OWNER(extent) != owner)
+                return MM_ERR_INVAL;
+        if (MM_EXTENT_PINS(extent) != 1U)
+                return MM_ERR_BUSY;
+        if (new_words <= MM_EXTENT_WORDS(extent))
+                return MM_OK;
+        end = base + new_words;
+        for (a = 0; a < (unsigned int)mm_arena_count; ++a) {
+                kword_t start = MM_ARENA_BASE(mm_arenas[a]);
+                limit = start + MM_ARENA_WORDS(mm_arenas[a]);
+                if (base >= start && base < limit)
+                        break;
+        }
+        if (a == (unsigned int)mm_arena_count)
+                return MM_ERR_INVAL;
+        if (end > limit || end > MM_HALF_MASK + 1UL ||
+            (i + 1 < mm_extent_count &&
+             end > MM_EXTENT_BASE(&mm_extents[i + 1])))
+                return MM_ERR_NOMEM;
+        extent->span = (new_words << 18U) | base;
+        return MM_OK;
+}
+
 /** Adjust one extent's packed physical pin count by exactly +1 or -1. */
 static int
 mm_pin_adjust(kword_t base, int delta)

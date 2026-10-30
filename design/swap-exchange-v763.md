@@ -3,6 +3,18 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v769: Adjacent-gap MM process growth
+
+`mm_process_grow_pinned(base,owner,new_words)` is implemented in the
+PDP-6 assembly MM and matching C reference. It changes no process
+location and allocates no new descriptor; it permits growth only for
+an exactly-once pinned, owned process extent, with nonzero APR-aligned
+new size, within the containing arena and strictly before the next
+allocated extent. Otherwise it preserves the old extent unchanged.
+The isolated PDP-6 test validates successful growth and rejection of
+overlap and wrong-owner requests (testkit v769 PASS). The native swap
+exchange does not yet call this primitive. This does not resolve v758.
+
 ## v768: Pinned resident extent shrink
 
 The native MM implementation and C reference now provide

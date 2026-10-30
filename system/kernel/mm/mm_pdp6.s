@@ -22,6 +22,7 @@
         .globl  mm_free
         .globl  mm_process_transfer_pinned
         .globl  mm_process_shrink_pinned
+        .globl  mm_process_grow_pinned
         .globl  mm_pin
         .globl  mm_unpin
         .globl  mm_is_pinned
@@ -684,6 +685,86 @@ mm_shrink_busy:
         movni   1,5
         popj    17,
 mm_shrink_inval:
+        movni   1,4
+        popj    17,
+
+; int mm_process_grow_pinned(base,owner,new_words)
+; AC5=owner, AC6=size, AC7=span; AC10=index, AC11=limit.
+; The next extent or arena end must accommodate the enlarged image.
+mm_process_grow_pinned:
+        move    5,2
+        move    6,3
+        jumpe   5,mm_grow_inval
+        caile   5,0377
+        jrst    mm_grow_inval
+        jumpe   6,mm_grow_inval
+        trne    6,01777
+        jrst    mm_grow_inval
+        pushj   17,mm_find_base
+        caml    1,mm_extent_count
+        jrst    mm_grow_inval
+        move    010,1
+        lsh     1,1
+        move    4,mm_extents+1(1)
+        hlrz    7,4
+        andi    7,7
+        caie    7,MM_TYPE_PROCESS
+        jrst    mm_grow_inval
+        hrrz    7,4
+        came    7,5
+        jrst    mm_grow_inval
+        move    7,4
+        and     7,[MM_PIN_FIELD]
+        came    7,[MM_PIN_ONE]
+        jrst    mm_grow_busy
+        hlrz    7,mm_extents(1)
+        camge   7,6
+        jrst    mm_grow_limit
+        ; No growth is needed; do not modify the descriptor.
+        setz    1,
+        popj    17,
+mm_grow_limit:
+        hrrz    7,mm_extents(1)
+        move    011,7
+        add     011,6
+        ; Locate the containing managed arena, not another arena.
+        setz    2,
+mm_grow_arena:
+        caml    2,mm_arena_count
+        jrst    mm_grow_inval
+        hrrz    3,mm_arenas(2)
+        caml    7,3
+        jrst    mm_grow_arena_upper
+        aoja    2,mm_grow_arena
+mm_grow_arena_upper:
+        hlrz    4,mm_arenas(2)
+        add     4,3
+        caml    7,4
+        aoja    2,mm_grow_arena
+        camle   011,4
+        jrst    mm_grow_nospace
+        ; Sorted table: only the immediately following extent can overlap.
+        move    2,010
+        addi    2,1
+        caml    2,mm_extent_count
+        jrst    mm_grow_commit
+        lsh     2,1
+        hrrz    3,mm_extents(2)
+        camle   011,3
+        jrst    mm_grow_nospace
+mm_grow_commit:
+        move    1,010
+        lsh     1,1
+        hrlm    6,mm_extents(1)
+        setz    1,
+        popj    17,
+mm_grow_nospace:
+        movni   1,1
+        popj    17,
+mm_grow_busy:
+        movni   1,5
+        popj    17,
+mm_grow_inval:
         movni   1,4
         popj    17,
 
