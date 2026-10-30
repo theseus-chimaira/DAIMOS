@@ -25,6 +25,7 @@
         .globl  proc_swap_exchange_commit_v789
         .globl  proc_swap_exchange_run_v790
         .globl  proc_swap_exchange_preflight_v791
+        .globl  proc_swap_exchange_live_v794
         .globl  proc_storage_exchange_modes_v778
         .globl  proc_swap_exchange_mm_v779
         .globl  proc_swap_exchange_prepare_ram_v780
@@ -608,6 +609,9 @@ proc_swap_exchange_commit_v789:
 proc_swap_exchange_run_v790:
         push    17,010
         move    010,1
+        pushj   17,proc_swap_exchange_live_v794
+        jumpn   1,proc_swap_run_fail_v790
+        move    1,010
         pushj   17,proc_swap_exchange_preflight_v791
         jumpn   1,proc_swap_run_fail_v790
         move    1,(010)
@@ -621,6 +625,69 @@ proc_swap_exchange_run_v790:
 proc_swap_run_fail_v790:
         seto    1,
 proc_swap_run_done_v790:
+        pop     17,010
+        popj    17,
+
+; Validate live process storage before any irreversible exchange.
+; Input: v790 two-pointer request. Both TRANSITION bits must be set.
+; A is resident, B is swapped, and the B disk record must match the
+; preparation request. AC10..AC12 preserved across subroutine calls.
+proc_swap_exchange_live_v794:
+        push    17,010
+        push    17,011
+        push    17,012
+        move    010,(1)              ; stage pair
+        move    011,1(1)             ; commit array
+        jumpe   010,proc_swap_live_bad_v794
+        jumpe   011,proc_swap_live_bad_v794
+        skipn   012,2(011)           ; record request
+        jrst    proc_swap_live_bad_v794
+        skipn   010,(010)           ; preparation request
+        jrst    proc_swap_live_bad_v794
+        move    4,(012)             ; A entry
+        move    5,1(012)            ; B entry
+        jumpe   4,proc_swap_live_bad_v794
+        jumpe   5,proc_swap_live_bad_v794
+        move    6,(4)
+        trnn    6,PROC_TRANSITION_RH
+        jrst    proc_swap_live_bad_v794
+        move    6,(5)
+        trnn    6,PROC_TRANSITION_RH
+        jrst    proc_swap_live_bad_v794
+        hrrz    6,1(4)
+        came    6,(010)              ; A resident base
+        jrst    proc_swap_live_bad_v794
+        hrrz    6,1(5)
+        jumpn   6,proc_swap_live_bad_v794
+        hlrz    6,1(4)
+        came    6,3(010)             ; outgoing RAM words
+        jrst    proc_swap_live_bad_v794
+        hlrz    6,1(5)
+        came    6,4(010)             ; incoming RAM words
+        jrst    proc_swap_live_bad_v794
+        move    6,3(012)             ; B record address
+        jumpe   6,proc_swap_live_bad_v794
+        hlrz    7,(6)                ; incoming first disk block
+        came    7,5(010)
+        jrst    proc_swap_live_bad_v794
+        hrrz    7,(6)                ; incoming disk blocks
+        came    7,6(010)
+        jrst    proc_swap_live_bad_v794
+        move    1,1(010)             ; A slot, RESIDENT
+        setz    2,
+        pushj   17,proc_storage_expect_v30
+        jumpn   1,proc_swap_live_bad_v794
+        move    1,2(010)             ; B slot, DISK
+        movei   2,1
+        pushj   17,proc_storage_expect_v30
+        jumpn   1,proc_swap_live_bad_v794
+        setz    1,
+        jrst    proc_swap_live_done_v794
+proc_swap_live_bad_v794:
+        seto    1,
+proc_swap_live_done_v794:
+        pop     17,012
+        pop     17,011
         pop     17,010
         popj    17,
 

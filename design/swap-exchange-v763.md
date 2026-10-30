@@ -13,6 +13,20 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v794: Live process-state validation before transfer
+
+`proc_swap_exchange_live_v794` runs from v790 before the v791 MM
+preflight and v784 reservation. It verifies that both process entries
+carry TRANSITION exclusion, A is resident at the requested RAM base,
+B has no resident base, both resident image sizes match the request,
+and B's live disk record agrees with the incoming backing span.
+It calls the existing packed storage-mode checker to require A
+RESIDENT and B DISK. Native PDP-6 test v794 links the real packed
+storage checker and verifies valid state, changed B record rejection,
+and missing transition rejection (PASS). BACKSTORE bitmap ownership,
+u-area executable backing, MM and media integration and scheduler
+acceptance remain outstanding. v758 remains unresolved.
+
 ## v792: Real pinned MM ownership preflight
 
 `mm_process_verify_pinned_v792(base,owner,words)` checks the live sorted
