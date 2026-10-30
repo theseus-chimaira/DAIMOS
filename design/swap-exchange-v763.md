@@ -3,6 +3,19 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v791: Cross-request consistency before transfer
+
+`proc_swap_exchange_preflight_v791` is called by v790 before v784
+reservation or destructive transfer. It checks that the stage and
+commit requests share the actual five-word MM preparation record and
+agree on disk first block, outgoing/incoming saved-block counts,
+physical RAM base and both process slot IDs. An inconsistent request
+returns -1 without entering the transfer. Native PDP-6 isolated v791
+tests verify valid matching requests and reject corrupted accounting
+and publication fields (PASS). This is not yet ownership validation
+against the live process/MM/BACKSTORE tables; scheduler activation and
+full-system v758 acceptance remain blocked.
+
 ## v790: Connected swap exchange entry point
 
 `proc_swap_exchange_run_v790` takes a two-pointer request for the

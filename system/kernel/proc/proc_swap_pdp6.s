@@ -24,6 +24,7 @@
         .globl  proc_swap_exchange_publish_v788
         .globl  proc_swap_exchange_commit_v789
         .globl  proc_swap_exchange_run_v790
+        .globl  proc_swap_exchange_preflight_v791
         .globl  proc_storage_exchange_modes_v778
         .globl  proc_swap_exchange_mm_v779
         .globl  proc_swap_exchange_prepare_ram_v780
@@ -606,6 +607,8 @@ proc_swap_exchange_commit_v789:
 proc_swap_exchange_run_v790:
         push    17,010
         move    010,1
+        pushj   17,proc_swap_exchange_preflight_v791
+        jumpn   1,proc_swap_run_fail_v790
         move    1,(010)
         pushj   17,proc_swap_exchange_stage_v784
         jumpn   1,proc_swap_run_fail_v790
@@ -617,6 +620,69 @@ proc_swap_exchange_run_v790:
 proc_swap_run_fail_v790:
         seto    1,
 proc_swap_run_done_v790:
+        pop     17,010
+        popj    17,
+
+; int proc_swap_exchange_preflight_v791(request)
+; Verify independent stage/commit requests describe the same exchange.
+; The caller still establishes MM ownership, pin and process locks.
+; All checks precede preparation, disk writes and record changes.
+proc_swap_exchange_preflight_v791:
+        push    17,010
+        move    010,1
+        skipn   1,(010)             ; stage pair
+        jrst    proc_swap_preflight_bad_v791
+        skipn   2,1(010)            ; commit pointer array
+        jrst    proc_swap_preflight_bad_v791
+        skipn   3,(1)               ; nine-word prepare request
+        jrst    proc_swap_preflight_bad_v791
+        skipn   4,1(1)              ; seven-word transfer request
+        jrst    proc_swap_preflight_bad_v791
+        skipn   5,(2)               ; five-word MM request
+        jrst    proc_swap_preflight_bad_v791
+        came    3,5                 ; MM request aliases prepare header
+        jrst    proc_swap_preflight_bad_v791
+        skipn   6,1(2)              ; four-word PURE request
+        jrst    proc_swap_preflight_bad_v791
+        skipn   7,2(2)              ; eight-word record request
+        jrst    proc_swap_preflight_bad_v791
+        skipn   010,3(2)            ; four-word accounting request
+        jrst    proc_swap_preflight_fail_v791
+        move    1,5(3)              ; disk first
+        came    1,5(7)
+        jrst    proc_swap_preflight_fail_v791
+        came    1,(010)
+        jrst    proc_swap_preflight_fail_v791
+        move    1,6(3)              ; B saved blocks
+        came    1,1(010)
+        jrst    proc_swap_preflight_fail_v791
+        move    1,7(3)              ; A saved blocks
+        came    1,6(7)
+        jrst    proc_swap_preflight_fail_v791
+        came    1,2(010)
+        jrst    proc_swap_preflight_fail_v791
+        move    1,(3)               ; shared RAM base
+        came    1,4(7)
+        jrst    proc_swap_preflight_fail_v791
+        came    1,1(6)
+        jrst    proc_swap_preflight_fail_v791
+        skipn   1,4(2)              ; publication request
+        jrst    proc_swap_preflight_fail_v791
+        move    2,1(3)              ; A slot
+        came    2,2(1)
+        jrst    proc_swap_preflight_fail_v791
+        move    2,2(3)              ; B slot
+        came    2,3(1)
+        jrst    proc_swap_preflight_fail_v791
+        move    2,(3)               ; physical base
+        came    2,4(1)
+        jrst    proc_swap_preflight_fail_v791
+        setz    1,
+        pop     17,010
+        popj    17,
+proc_swap_preflight_fail_v791:
+proc_swap_preflight_bad_v791:
+        seto    1,
         pop     17,010
         popj    17,
 
