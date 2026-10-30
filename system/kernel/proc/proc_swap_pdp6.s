@@ -19,6 +19,7 @@
         .globl  proc_swap_exchange_mm_v779
         .globl  proc_swap_exchange_prepare_ram_v780
         .globl  proc_swap_exchange_prepare_v781
+        .globl  proc_swap_exchange_cancel_v782
         .globl  backstore_extend
         .globl  mm_process_shrink_pinned
         .globl  mm_process_transfer_pinned
@@ -415,6 +416,37 @@ proc_swap_prepare_ok_v781:
 proc_swap_prepare_done_v781:
         pop     17,012
         pop     17,011
+        pop     17,010
+        popj    17,
+
+; int proc_swap_exchange_cancel_v782(request)
+; Cancel completed v781 preparation ONLY before the first data write.
+; A remains the single pinned owner. Restore its original MM footprint
+; before freeing the optional disk extension. Caller must exclude both
+; processes and must not invoke this after destructive transfer begins.
+proc_swap_exchange_cancel_v782:
+        push    17,010
+        move    010,1
+        move    2,3(010)              ; A original words
+        move    3,4(010)              ; B desired words
+        camg    3,2
+        jrst    proc_swap_cancel_disk_v782
+        move    1,(010)               ; physical base
+        move    3,2                  ; restore A size
+        move    2,1(010)              ; still A owner
+        pushj   17,mm_process_shrink_pinned
+        jumpn   1,proc_swap_storage_invariant_v30
+proc_swap_cancel_disk_v782:
+        skipn   010(010)
+        jrst    proc_swap_cancel_ok_v782
+        move    1,5(010)
+        add     1,6(010)
+        move    2,7(010)
+        sub     2,6(010)
+        pushj   17,backstore_free
+        setzm   010(010)
+proc_swap_cancel_ok_v782:
+        setz    1,
         pop     17,010
         popj    17,
 

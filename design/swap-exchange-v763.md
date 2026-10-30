@@ -3,6 +3,17 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v782: Cancel prepared exchange before destructive I/O
+
+`proc_swap_exchange_cancel_v782` reverses successful v781 preparation
+before the first sector is overwritten. It restores the original A
+extent size under A ownership, releases only the added BACKSTORE tail,
+and clears the reservation flag. A failed MM shrink halts rather than
+allowing an inconsistent process to resume. Native PDP-6 isolated test
+v782 PASS checks both cleanup calls and flag clearing. It must not be
+called after destructive transfer begins; scheduler integration and
+end-to-end acceptance remain unfinished.
+
 ## v781: Coordinated disk and RAM preparation
 
 `proc_swap_exchange_prepare_v781` accepts a nine-word request: the
