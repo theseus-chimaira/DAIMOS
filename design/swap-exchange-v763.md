@@ -3,6 +3,23 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v774: Combined sector transfer coordinator (isolated)
+
+`proc_swap_exchange_transfer_v774` accepts a seven-word, caller-owned
+request describing the common disk span, two writable RAM starts,
+SA/SB block counts, and two RAM sector offsets. It saves A-only disk
+tail sectors before exchanging the overlapping region with the v772
+ordering, then restores any B-only disk tail. The target assembler and
+an isolated native PDP-6 two-sector combined transfer test pass (testkit
+v774). This is **not** the complete process exchange transaction.
+
+The coordinator assumes disk extension and sufficient aligned RAM have
+already been reserved, both processes are excluded from scheduling,
+and any failure after destructive writes is fail-closed by the caller.
+It does not handle PURE reload, MM ownership and extent transitions,
+bitmap release, per-process record publication or victim selection.
+Unequal-length combined native tests remain necessary before integration.
+
 ## v773: Native saved-state excess-tail transfers
 
 `proc_swap_exchange_tails_v773(request,phase)` transfers sectors not

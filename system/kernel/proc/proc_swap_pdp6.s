@@ -15,6 +15,7 @@
         .globl  proc_swap_exchange_sector_v771
         .globl  proc_swap_exchange_overlap_v772
         .globl  proc_swap_exchange_tails_v773
+        .globl  proc_swap_exchange_transfer_v774
         .globl  proc_swap_in
         .globl  proc_sched_cursor
         .globl  proc_swap_pressure_ticks
@@ -234,6 +235,64 @@ proc_swap_tail_fail_v773:
         seto    1,
 proc_swap_tail_done_v773:
         pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; int proc_swap_exchange_transfer_v774(request)
+; Seven words: disk first, A writable RAM, B writable RAM,
+; SA blocks, SB blocks, A RAM sector offset, B RAM sector offset.
+; Caller has already reserved any contiguous disk extension and RAM
+; growth, pinned both processes and excluded scheduling/compaction.
+; Transfer is forward-only: failure after writes is NOT rollback-safe.
+; Caller must halt on failure rather than resume either process.
+proc_swap_exchange_transfer_v774:
+        push    17,010
+        push    17,011
+        push    17,012
+        move    010,1
+        move    1,3(010)
+        move    2,4(010)
+        camle   1,2
+        jrst    proc_swap_transfer_overlap_v774
+        ; Outgoing A-only sectors must be saved first.
+        move    1,010
+        setz    2,
+        pushj   17,proc_swap_exchange_tails_v773
+        jumpn   1,proc_swap_transfer_fail_v774
+proc_swap_transfer_overlap_v774:
+        ; Build the six-word overlap request on the stack.
+        move    011,3(010)
+        move    012,4(010)
+        camle   011,012
+        move    011,012
+        push    17,(010)
+        push    17,1(010)
+        push    17,2(010)
+        push    17,011
+        push    17,5(010)
+        push    17,6(010)
+        movei   1,-5(17)
+        pushj   17,proc_swap_exchange_overlap_v772
+        sub     17,[6,,6]
+        jumpn   1,proc_swap_transfer_fail_v774
+        move    1,3(010)
+        move    2,4(010)
+        camge   1,2
+        jrst    proc_swap_transfer_in_v774
+        setz    1,
+        jrst    proc_swap_transfer_done_v774
+proc_swap_transfer_in_v774:
+        move    1,010
+        movei   2,1
+        pushj   17,proc_swap_exchange_tails_v773
+        jumpn   1,proc_swap_transfer_fail_v774
+        setz    1,
+        jrst    proc_swap_transfer_done_v774
+proc_swap_transfer_fail_v774:
+        seto    1,
+proc_swap_transfer_done_v774:
         pop     17,012
         pop     17,011
         pop     17,010
