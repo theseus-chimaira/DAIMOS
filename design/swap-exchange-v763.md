@@ -3,6 +3,22 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v766: Native MM owner-retag primitive (not yet used by swap)
+
+`mm_process_transfer_pinned(base,old_owner,new_owner)` now changes only
+the RH owner field of an existing `MM_TYPE_PROCESS` extent. It requires
+the current owner to match, distinct valid process-slot IDs (1..0377
+octal), and exactly one physical pin. It preserves type, pin and span;
+it does not allocate, free, resize or move RAM. Caller-held process
+lifecycle exclusion remains mandatory. No swap code calls it yet.
+
+The target assembler and testkit `daimos-mm-owner-transfer-v766.sh`
+assembly/source-contract checks pass; they do NOT yet demonstrate
+native runtime behavior. Before exchange integration, add native
+failure-injection/ownership tests and an explicitly validated size
+transition for unequal resident images. The existing no-progress
+writer regression remains FAIL.
+
 ## v765: Preflight and native MM ownership blocker
 
 The testkit `daimos-swap-exchange-capacity-v765.py` checks 110090

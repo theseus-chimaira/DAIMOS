@@ -80,6 +80,11 @@ int mm_alloc_aligned(kword_t words, kword_t alignment, unsigned int type,
     unsigned int owner, unsigned int preference, kword_t *basep);
 /** Free one exact allocated extent after owner/type/pin validation. */
 int mm_free(kword_t base, unsigned int type, unsigned int owner);
+/** Transfer exactly-once pinned process extent ownership between slots.
+ * Caller holds process lifecycle exclusion; pin stays held on success.
+ * No physical movement, resizing or allocation occurs. */
+int mm_process_transfer_pinned(kword_t base, unsigned int old_owner,
+    unsigned int new_owner);
 /** Increment an extent's physical pin count. */
 int mm_pin(kword_t base);
 /** Decrement an extent's physical pin count. */
