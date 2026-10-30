@@ -149,7 +149,11 @@ dsk_fail_runtime:
 dsk_watchdog_tick:
         skipn dsk_active_request
         popj 017,
-        sub dsk_active_request,[1,,0]
+        ; SUB updates only the accumulator; SUBM stores AC-minus-memory,
+        ; which reverses this subtraction.  Add a negative LH unit in
+        ; memory to age the watchdog without touching its RH pointer.
+        movsi 1,-1
+        addm 1,dsk_active_request
         hlrz 1,dsk_active_request
         jumpe 1,dsk_watchdog_timeout
         popj 017,
