@@ -13,6 +13,18 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v811: Native preflight integrated with destructive transaction
+
+Testkit v811 extends v810 by linking production v791 request-graph
+preflight and v792 pinned-MM extent verification. The PURE request now
+targets the same physical RAM base as stage preparation and commit,
+as the real preflight requires. Aligned destructive exchange, PURE
+reconstruction, MM ownership transfer and unpin, BACKSTORE tail
+accounting, records and paired storage modes all pass on native PDP-6.
+The v794 live-state guard is still isolated, along with device I/O,
+extension, and executable reload test callbacks. Scheduler acceptance
+and the v758 writer deadlock remain unresolved.
+
 ## v810: Native destructive transfer through final commit
 
 Testkit v810 invokes the real v790 entry, v784 stage, v781 resource
