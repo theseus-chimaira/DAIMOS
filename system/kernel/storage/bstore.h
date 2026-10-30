@@ -14,6 +14,10 @@ extern unsigned int backstore_enabled;
 unsigned int backstore_bitmap_words(kword_t blocks);
 void backstore_init(kword_t *bitmap, kword_t blocks);
 int backstore_alloc(kword_t blocks, kword_t reserve, kword_t *firstp);
+/* Extend an allocated contiguous run into free immediately following blocks.
+ * Returns 0 on success, -1 if bounds, occupancy or state prevents growth. */
+int backstore_extend(kword_t first, kword_t old_blocks,
+    kword_t new_blocks);
 void backstore_free(kword_t first, kword_t blocks);
 int backstore_read(kword_t first, kword_t blocks, kword_t *buf);
 int backstore_write(kword_t first, kword_t blocks, const kword_t *buf);

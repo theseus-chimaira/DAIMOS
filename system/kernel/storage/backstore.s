@@ -14,6 +14,7 @@
         .globl  backstore_bitmap_words
         .globl  backstore_init
         .globl  backstore_alloc
+        .globl  backstore_extend
         .globl  backstore_free
 
 ; unsigned int backstore_bitmap_words(kword_t blocks)
@@ -114,6 +115,77 @@ backstore_alloc_restore:
         pop     17,010
         popj    17,
 backstore_alloc_fail_fast:
+        seto    1,
+        popj    17,
+
+; int backstore_extend(first,old_blocks,new_blocks)
+; The existing run must be fully allocated and the added tail fully free.
+; Validate everything before changing a single bitmap bit.
+backstore_extend:
+        skipn   backstore_enabled
+        jrst    backstore_extend_fail
+        skipn   backstore_bitmap
+        jrst    backstore_extend_fail
+        jumpe   2,backstore_extend_fail
+        camle   2,3
+        jrst    backstore_extend_fail
+        move    4,backstore_blocks
+        sub     4,1
+        camle   3,4
+        jrst    backstore_extend_fail
+        push    17,010
+        push    17,011
+        push    17,012
+        move    010,1
+        move    011,2
+        move    012,3
+        setz    4,
+backstore_extend_check:
+        caml    4,012
+        jrst    backstore_extend_mark_start
+        move    1,010
+        add     1,4
+        idivi   1,044
+        add     1,backstore_bitmap
+        movei   3,1
+        lsh     3,0(2)
+        move    2,(1)
+        tdne    2,3
+        jrst    backstore_extend_occupied
+        camge   4,011
+        jrst    backstore_extend_fail_restore
+        aoja    4,backstore_extend_check
+backstore_extend_occupied:
+        camge   4,011
+        aoja    4,backstore_extend_check
+        jrst    backstore_extend_fail_restore
+backstore_extend_mark_start:
+        move    4,011
+backstore_extend_mark:
+        caml    4,012
+        jrst    backstore_extend_done
+        move    1,010
+        add     1,4
+        idivi   1,044
+        add     1,backstore_bitmap
+        movei   3,1
+        lsh     3,0(2)
+        iorm    3,(1)
+        aoja    4,backstore_extend_mark
+backstore_extend_done:
+        move    1,012
+        sub     1,011
+        addm    1,backstore_blocks_used
+        setz    1,
+        jrst    backstore_extend_restore
+backstore_extend_fail_restore:
+        seto    1,
+backstore_extend_restore:
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+backstore_extend_fail:
         seto    1,
         popj    17,
 

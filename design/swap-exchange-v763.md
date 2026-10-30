@@ -3,6 +3,18 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v770: Contiguous BACKSTORE extent extension
+
+`backstore_extend(first,old_blocks,new_blocks)` now validates an existing
+allocated run and an immediately adjacent free tail, then marks only
+the additional blocks and updates `backstore_blocks_used`. Validation
+precedes all bitmap mutations, so rejected requests do not partially
+reserve blocks. This preserves the single-span swap record and does not
+support fragmented allocation. The isolated native PDP-6 regression
+tests successful extension and occupied-tail rejection (v770 PASS).
+No process swap code calls the primitive yet; end-to-end exchange and
+writer WAIT/EXIT remain unfinished.
+
 ## v769: Adjacent-gap MM process growth
 
 `mm_process_grow_pinned(base,owner,new_words)` is implemented in the
