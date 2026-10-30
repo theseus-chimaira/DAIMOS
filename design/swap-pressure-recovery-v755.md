@@ -2,6 +2,26 @@
 
 Status: design audit, not implemented or accepted.
 
+## v756: Typed transaction result implemented (partial)
+
+The swap-in transaction now returns `PROC_SWAP_IN_PRESSURE` (+1) for
+allocator resource errors `MM_ERR_NOMEM`, `MM_ERR_FRAGMENTED`, and
+`MM_ERR_DESCRIPTORS`. It retains `PROC_SWAP_IN_FATAL` (-1) for invalid
+records, failed storage/restore, and rollback failures; zero is success.
+The classification is implemented in the native PDP-6 assembly and
+the C reference path, with matching constants in `proc_swap.h`.
+
+The versioned testkit `daimos-mm-swap-result-contract-v756.sh` passes
+assembly and interface checks. **The scheduler still treats any nonzero
+return as fatal and is not changed by v756.** Consequently v756 does not
+resolve the native writer TERM or establish a recoverable scheduler.
+Production commit `e720c3a`; testkit commit `fb6bbcf`.
+
+Do not change `proc_swap_mres_service_v481` to ignore +1 in isolation:
+the idle loop triggers a new reschedule immediately, and ordinary runq
+selection can choose the same swapped process again. A complete atomic
+scheduler retry/admission policy remains necessary.
+
 ## Reproduced failure
 
 The native v750-v754 trace in `design/kcore-feature-baseline-v735.md`
