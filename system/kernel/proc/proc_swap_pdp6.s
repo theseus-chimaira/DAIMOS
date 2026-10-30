@@ -21,6 +21,8 @@
         .globl  proc_swap_exchange_pure_v785
         .globl  proc_swap_exchange_records_v786
         .globl  proc_swap_exchange_account_v787
+        .globl  proc_swap_exchange_publish_v788
+        .globl  proc_storage_exchange_modes_v778
         .globl  proc_swap_exchange_mm_v779
         .globl  proc_swap_exchange_prepare_ram_v780
         .globl  proc_swap_exchange_prepare_v781
@@ -518,6 +520,51 @@ proc_swap_account_add_v787:
 proc_swap_account_fail_v787:
         seto    1,
         pop     17,011
+        pop     17,010
+        popj    17,
+
+; int proc_swap_exchange_publish_v788(request)
+; Five words: A entry, B entry, A slot, B slot, shared RAM base.
+; Final commit after data transfer, PURE restore, MM ownership,
+; records, and accounting. The caller holds both transition flags
+; and precisely one physical MM pin. Release the pin first, then
+; publish both storage modes, then clear both transition flags.
+; Failure during finalization is not rollback-safe: halt.
+proc_swap_exchange_publish_v788:
+        push    17,010
+        move    010,1
+        skipn   (010)
+        jrst    proc_swap_publish_bad_v788
+        skipn   1(010)
+        jrst    proc_swap_publish_bad_v788
+        move    1,(010)
+        move    2,(1)
+        trnn    2,PROC_TRANSITION_RH
+        jrst    proc_swap_publish_bad_v788
+        move    1,1(010)
+        move    2,(1)
+        trnn    2,PROC_TRANSITION_RH
+        jrst    proc_swap_publish_bad_v788
+        move    1,4(010)
+        pushj   17,mm_unpin
+        jumpn   1,proc_swap_storage_invariant_v30
+        move    1,2(010)
+        move    2,3(010)
+        pushj   17,proc_storage_exchange_modes_v778
+        jumpn   1,proc_swap_storage_invariant_v30
+        move    1,(010)
+        move    2,(1)
+        andcmi  2,PROC_TRANSITION_RH
+        movem   2,(1)
+        move    1,1(010)
+        move    2,(1)
+        andcmi  2,PROC_TRANSITION_RH
+        movem   2,(1)
+        setz    1,
+        pop     17,010
+        popj    17,
+proc_swap_publish_bad_v788:
+        seto    1,
         pop     17,010
         popj    17,
 

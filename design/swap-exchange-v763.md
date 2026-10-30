@@ -3,6 +3,18 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v788: Paired final storage-mode publication
+
+`proc_swap_exchange_publish_v788` takes both process-entry pointers,
+their stable slot IDs, and the common RAM base. It requires both
+TRANSITION exclusions, unpins the shared MM extent, publishes A DISK
+and B RESIDENT together via v778, and only then clears both transition
+flags. A failure after reaching MM unpin is fatal rather than safely
+rollbackable. The isolated native PDP-6 test verifies this ordering
+and flag clearing (v788 PASS). This leaf does not itself validate the
+entire exchange transaction; scheduler integration and the v758
+writer regression remain outstanding.
+
 ## v787: Swap accounting and excess backing release
 
 `proc_swap_exchange_account_v787` takes disk-first, old B saved-block
