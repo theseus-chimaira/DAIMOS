@@ -86,3 +86,22 @@ than the expected normal EXIT. The source includes a TERM-on-swap-in-failure
 branch, but the cause of TERM has not yet been established. Continue at
 that narrower fault boundary, rather than weakening D6FS mount policy or
 repeating the original coarse v283 workload without extra instrumentation.
+
+## v745: TERM tracing must use the linked kernel map
+
+The retained v744 event-entry trace shows AC1=2 (target slot) and AC2=1
+(TERM), but its simulator script uses a fixed breakpoint at octal 011215.
+The currently linked KCORE map instead resolves `proc_event_apply` to
+011472. These are different build addresses; the old breakpoint cannot be
+assumed to identify the event handler in a different image. The v743
+swap-in failure probe also uses fixed instruction addresses and did not
+observe its expected failure breakpoint. Neither observation proves which
+caller sent TERM in the current linked build.
+
+The new independent testkit `daimos-mm-swap-term-event-v745.sh` resolves
+the `proc_event_apply` entry point from the fixture's own `kcore.map` and
+requires a real breakpoint hit, rather than trusting an absolute address.
+Its shell syntax check PASSed; no native execution of this new probe is
+claimed yet. Next acquire a verified CLEAN, pressure-INIT-matched fixture,
+run the probe and capture the caller/return address before changing swap
+transaction behavior. Testkit commit: `85f7e81`.
