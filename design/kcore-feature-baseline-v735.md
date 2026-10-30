@@ -151,3 +151,48 @@ and `6b4d3b2`. All three traces are diagnostic PASS only, not
 full-system scheduler-pressure acceptance. Next capture the allocator
 free-list/extent state and reason for failure before changing production
 MM or scheduling code. No KCORE reduction was performed.
+
+## v750-v754: Physical RAM and swap-capacity exhaustion quantified
+
+The native v750 allocator return at 027563 is AC1=-1 (`MM_ERR_NOMEM`),
+not a descriptor error. Extent capacity is octal 0210 (136) and count
+octal 042 (34), so descriptor exhaustion is excluded. The v751 captured
+extent table reconstructs one managed arena from octal 040032 to
+01000000, containing 245734 decimal words. Nine resident process
+extents each occupy octal 064000 (26624) words. All 34 extents occupy
+244827 words; total free is just **907 words**, with a largest gap of
+**760 words** (147 in the interior and 760 at the arena end). There is
+no free octal 064000-word aligned extent. This is real physical RAM
+exhaustion at the observed swap-in allocation, not an APR-alignment or
+extent-descriptor defect.
+
+Native v752 confirms the SWAP MRES `proc_swap_reclaim_fail` branch is
+entered; v753 independently observes an earlier victim-selection return
+of slot 2, so victim choice sometimes succeeds but that observation is
+not necessarily from the final failing transaction. At the v754
+reclaim-failure breakpoint, AC10=064000 (request words), AC11=02000
+(required alignment), AC12=2 (excluded requester slot), and backstore
+capacity/usage are 04000/03520 octal blocks, i.e. 2048 total,
+1872 used, **176 blocks free**. A complete 26624-word image requires
+26624/128 = **208 blocks**, larger than the remaining backing capacity.
+The process's restore needs another resident extent, and reclaim cannot
+create one by writing another full-size victim into the available swap
+space. The failure is a combined resource-capacity deadlock; it is not
+evidence of a corrupted allocator.
+
+The existing scheduler nevertheless converts every failed `proc_swap_in`
+to fatal TERM, including resource shortage. This is a **correctness and
+admission/liveness policy issue**, not a code-size issue. Do not simply
+retry from the slot-0 idle loop without ensuring a resident runnable
+process can make progress (or the system may spin indefinitely). Do not
+change the return code of all swap-in failures to recoverable: invalid
+swap records and I/O integrity failures must remain distinguishable.
+Before a production patch, design/verify a recoverable resource-pressure
+result, a scheduler path that can run existing resident processes, and an
+admission/headroom invariant for mixed process extents and BACKSTORE.
+
+Native diagnostic probes v750-v751, v752-v753 and v754 live exclusively
+in daimos-testkit, commits `fbed786`, `acc0fa4` and `64ffbdb`.
+They are bounded observed-state tests, **not** scheduler-pressure PASS.
+The KCORE feature-phase measurement remains unchanged; no size reduction
+or production kernel edit was made in this diagnostic series.
