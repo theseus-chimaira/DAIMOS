@@ -17,6 +17,11 @@
 #include "vfs.h"
 
 #define PROC_SWAP_RECORD_WORDS 1U
+/* Swap-in: resource pressure is recoverable; corrupt records and failed
+ * I/O are not. Scheduler integration must explicitly handle PRESSURE. */
+#define PROC_SWAP_IN_OK        0
+#define PROC_SWAP_IN_PRESSURE   1
+#define PROC_SWAP_IN_FATAL     -1
 #define PROC_SWAP_TEXT_MASK       037777UL
 #define PROC_SWAP_INDEX_MASK      0777777UL
 #define PROC_SWAP_MOUNT_MASK      017UL

@@ -201,7 +201,8 @@ proc_swap_verify_return:
 /**
  * @brief Write one resident process extent to backing store and release VM.
  * @param AC1 Process slot.
- * @return AC1 zero on success, -1 on validation or transaction failure.
+ * @return AC1 zero on success, +1 on resource pressure, -1 on invalid
+ *         state, I/O, or failed transaction cleanup.
  *
  * AC10..AC16 hold the complete transaction: slot, descriptor, swap record,
  * physical base, extent words, block count, and resident executable-backing
@@ -425,7 +426,7 @@ proc_swap_in:
         move    4,10
         pushj   17,mm_alloc_aligned
         sub     17,kconst_2_2
-        jumpn   1,proc_swap_in_alloc_fail
+        jumpn   1,proc_swap_in_alloc_status
 
         move    1,(17)
         pushj   17,mm_pin
@@ -497,7 +498,6 @@ proc_swap_in_pin_fail:
         move    3,10
         pushj   17,mm_free
 proc_swap_in_drop_local:
-proc_swap_in_alloc_fail:
         ; Both allocation failure and post-allocation rollback retain the
         ; one-word result local after discarding the two call arguments.
         ; Drop it before restoring AC10..AC16 and the saved return address.
@@ -505,8 +505,25 @@ proc_swap_in_alloc_fail:
         move    1,(11)
         andcmi  1,PROC_TRANSITION_RH
         movem   1,(11)
+        jrst    proc_swap_in_fail
+proc_swap_in_alloc_status:
+        ; Only allocator resource results (-1..-3) are retryable.
+        ; No image has been allocated or published on this path.
+        setz    7,
+        camge   1,[-3]
+        jrst    proc_swap_in_alloc_clear
+        movei   7,1
+proc_swap_in_alloc_clear:
+        sub     17,kconst_1_1
+        move    1,(11)
+        andcmi  1,PROC_TRANSITION_RH
+        movem   1,(11)
+        jumpn   7,proc_swap_in_pressure
 proc_swap_in_fail:
         seto    1,
+        jrst    proc_swap_in_restore
+proc_swap_in_pressure:
+        movei   1,1
 proc_swap_in_restore:
         movei   0,10
         hrli    0,-6(17)

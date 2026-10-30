@@ -232,10 +232,17 @@ proc_swap_in(int slot)
                 return -1;
 
         PROC_SET_TRANSITION(p);
-        if (mm_alloc_aligned(words, VM_PDP6_ALIGN_WORDS,
-            MM_TYPE_PROCESS, slot, MM_ALLOC_HIGH, &base) != MM_OK) {
-                PROC_CLEAR_TRANSITION(p);
-                return -1;
+        {
+                int rc;
+
+                rc = mm_alloc_aligned(words, VM_PDP6_ALIGN_WORDS,
+                    MM_TYPE_PROCESS, slot, MM_ALLOC_HIGH, &base);
+                if (rc != MM_OK) {
+                        PROC_CLEAR_TRANSITION(p);
+                        return rc >= MM_ERR_DESCRIPTORS &&
+                            rc <= MM_ERR_NOMEM ? PROC_SWAP_IN_PRESSURE :
+                            PROC_SWAP_IN_FATAL;
+                }
         }
         if (mm_pin(base) != MM_OK) {
                 (void)mm_free(base, MM_TYPE_PROCESS, slot);
