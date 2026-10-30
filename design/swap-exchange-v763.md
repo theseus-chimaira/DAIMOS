@@ -13,6 +13,17 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v803: Real BACKSTORE release with native MM and metadata commit
+
+Testkit v803 extends v802 by linking the actual PDP-6 `backstore_free`
+allocator routine rather than a stub. With B occupying three sectors
+and A requiring two, the real v787 accounting leaf releases B's final
+sector. The test verifies the remaining allocated bitmap bits,
+`backstore_blocks_used`, `proc_swap_blocks_used`, MM ownership/unpin,
+process records and paired packed storage modes (PASS). Disk media
+I/O and PURE reload are not included. The v758 writer deadlock and
+scheduler integration remain unresolved.
+
 ## v802: Native MM ownership and metadata integration
 
 Testkit v802 extends v801 with the actual PDP-6 MM extent lookup,
