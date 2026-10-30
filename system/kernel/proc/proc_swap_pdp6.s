@@ -18,6 +18,7 @@
         .globl  proc_swap_exchange_transfer_v774
         .globl  proc_swap_exchange_checked_v783
         .globl  proc_swap_exchange_stage_v784
+        .globl  proc_swap_exchange_pure_v785
         .globl  proc_swap_exchange_mm_v779
         .globl  proc_swap_exchange_prepare_ram_v780
         .globl  proc_swap_exchange_prepare_v781
@@ -408,6 +409,30 @@ proc_swap_stage_ok_v784:
         setz    1,
 proc_swap_stage_done_v784:
         pop     17,011
+        pop     17,010
+        popj    17,
+
+; int proc_swap_exchange_pure_v785(const kword_t *request)
+; Four words: incoming executable backing, shared RAM base, stable
+; incoming u-area, PURE prefix words. Called ONLY after transfer and
+; while both process transitions exclude scheduling. On reload failure
+; the original incoming swap image is no longer recoverable: halt.
+proc_swap_exchange_pure_v785:
+        push    17,010
+        move    010,1
+        move    2,3(010)
+        jumpe   2,proc_swap_pure_ok_v785
+        trne    2,0177
+        jrst    proc_swap_storage_invariant_v30
+        move    1,1(010)
+        pushj   17,fs_zero_words
+        move    1,(010)
+        move    2,1(010)
+        move    3,2(010)
+        pushj   17,proc_swap_reload_pure
+        jumpn   1,proc_swap_storage_invariant_v30
+proc_swap_pure_ok_v785:
+        setz    1,
         pop     17,010
         popj    17,
 

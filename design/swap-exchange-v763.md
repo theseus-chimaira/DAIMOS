@@ -3,6 +3,18 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v785: Incoming PURE prefix reconstruction leaf
+
+`proc_swap_exchange_pure_v785` takes executable backing, common RAM
+base, stable incoming u-area and a sector-aligned PURE prefix length.
+After destructive sector transfer, it zeroes the prefix and calls the
+existing `proc_swap_reload_pure` routine; a failed reload enters the
+storage invariant halt. A zero-length PURE prefix needs no I/O.
+Isolated native PDP-6 testkit v785 verifies the zero-then-reload call
+order and the zero-prefix fast path (PASS). This does not test real
+executable backing or complete process exchange, and the scheduler
+still does not invoke the new stage.
+
 ## v784: Combined preparation and guarded transfer stage
 
 `proc_swap_exchange_stage_v784` takes a two-pointer request containing
