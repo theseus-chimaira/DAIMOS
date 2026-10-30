@@ -433,6 +433,31 @@ mm_process_transfer_pinned(kword_t base, unsigned int old_owner,
         return MM_OK;
 }
 
+/** Release the tail of a process image while retaining its physical base. */
+int
+mm_process_shrink_pinned(kword_t base, unsigned int owner,
+    kword_t new_words)
+{
+        int i;
+        struct mm_extent *extent;
+
+        if (owner == 0U || owner >= 0400U || new_words == 0UL ||
+            (new_words & (VM_EXTENT_ALIGN_WORDS - 1UL)) != 0UL)
+                return MM_ERR_INVAL;
+        i = mm_find_base(base);
+        if (i >= mm_extent_count)
+                return MM_ERR_INVAL;
+        extent = &mm_extents[i];
+        if (MM_EXTENT_TYPE(extent) != MM_TYPE_PROCESS ||
+            MM_EXTENT_OWNER(extent) != owner ||
+            new_words > MM_EXTENT_WORDS(extent))
+                return MM_ERR_INVAL;
+        if (MM_EXTENT_PINS(extent) != 1U)
+                return MM_ERR_BUSY;
+        extent->span = (new_words << 18U) | MM_EXTENT_BASE(extent);
+        return MM_OK;
+}
+
 /** Adjust one extent's packed physical pin count by exactly +1 or -1. */
 static int
 mm_pin_adjust(kword_t base, int delta)

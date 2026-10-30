@@ -85,6 +85,11 @@ int mm_free(kword_t base, unsigned int type, unsigned int owner);
  * No physical movement, resizing or allocation occurs. */
 int mm_process_transfer_pinned(kword_t base, unsigned int old_owner,
     unsigned int new_owner);
+/** Shrink an exactly-once pinned process extent without moving its base.
+ * The released high-address tail becomes an implicit free MM gap.
+ * The caller must exclude process execution and MM compaction. */
+int mm_process_shrink_pinned(kword_t base, unsigned int owner,
+    kword_t new_words);
 /** Increment an extent's physical pin count. */
 int mm_pin(kword_t base);
 /** Decrement an extent's physical pin count. */

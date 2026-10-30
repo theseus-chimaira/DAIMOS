@@ -21,6 +21,7 @@
         .globl  mm_alloc_aligned_noreclaim
         .globl  mm_free
         .globl  mm_process_transfer_pinned
+        .globl  mm_process_shrink_pinned
         .globl  mm_pin
         .globl  mm_unpin
         .globl  mm_is_pinned
@@ -642,6 +643,47 @@ mm_transfer_busy:
         movni   1,5
         popj    17,
 mm_transfer_inval:
+        movni   1,4
+        popj    17,
+
+; int mm_process_shrink_pinned(base,owner,new_words)
+; AC5..AC7 scratch; exact one pin and process owner required.
+; Shrinking keeps the base and sorted descriptor order unchanged.
+mm_process_shrink_pinned:
+        move    5,2
+        move    6,3
+        jumpe   5,mm_shrink_inval
+        caile   5,0377
+        jrst    mm_shrink_inval
+        jumpe   6,mm_shrink_inval
+        trne    6,01777
+        jrst    mm_shrink_inval
+        pushj   17,mm_find_base
+        caml    1,mm_extent_count
+        jrst    mm_shrink_inval
+        lsh     1,1
+        move    4,mm_extents+1(1)
+        hlrz    7,4
+        andi    7,7
+        caie    7,MM_TYPE_PROCESS
+        jrst    mm_shrink_inval
+        hrrz    7,4
+        came    7,5
+        jrst    mm_shrink_inval
+        move    7,4
+        and     7,[MM_PIN_FIELD]
+        came    7,[MM_PIN_ONE]
+        jrst    mm_shrink_busy
+        hlrz    7,mm_extents(1)
+        camle   6,7
+        jrst    mm_shrink_inval
+        hrlm    6,mm_extents(1)
+        setz    1,
+        popj    17,
+mm_shrink_busy:
+        movni   1,5
+        popj    17,
+mm_shrink_inval:
         movni   1,4
         popj    17,
 

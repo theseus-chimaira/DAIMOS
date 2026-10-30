@@ -3,6 +3,19 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v768: Pinned resident extent shrink
+
+The native MM implementation and C reference now provide
+`mm_process_shrink_pinned(base,owner,new_words)`. It validates exact
+`MM_TYPE_PROCESS` ownership, a single pin, nonzero APR-aligned size,
+and `new_words <= old_words`, then changes only the size half of the
+existing span descriptor. The base and descriptor order stay intact;
+the released high tail becomes an implicit free gap. The operation is
+not used by the swap scheduler yet. The native PDP-6 leaf simulator
+test verifies a successful shrink and wrong-owner/growth rejection;
+daimos-testkit commit `799a1e3` (PASS). This covers smaller incoming
+images only: growth requires separate adjacent-RAM capacity validation.
+
 ## v767: Native owner-transfer execution verified
 
 The testkit `daimos-mm-owner-transfer-native-v767.sh` executes the
