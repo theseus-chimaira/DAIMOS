@@ -13,6 +13,18 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v802: Native MM ownership and metadata integration
+
+Testkit v802 extends v801 with the actual PDP-6 MM extent lookup,
+pinned process owner transfer, and MM unpin implementation. It tests
+transfer from resident A to incoming B, followed by real v786/v787/
+v788 record, accounting and packed storage-mode publication. After
+commit the MM extent belongs to B and is unpinned; A has the disk
+record and B the shared resident RAM base. Native PDP-6 test: PASS.
+The BACKSTORE free boundary remains stubbed; real device I/O, PURE
+reload and scheduler end-to-end acceptance are not covered. The v758
+writer deadlock remains unresolved.
+
 ## v801: Native post-transfer metadata integration
 
 Testkit v801 links the production v786 process-record update, v787
