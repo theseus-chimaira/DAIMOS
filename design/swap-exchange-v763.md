@@ -13,6 +13,18 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v800: Unequal-sized native transfer regression
+
+Testkit v800 executes the production v771-v774 PDP-6 transfer stack
+against deterministic in-memory sector I/O. It checks all 0200 words
+per sector for two overlapping exchange cases: A has three saved
+sectors and B two (outgoing disk tail saved first), and A has two
+saved sectors and B three (incoming RAM tail read after overlap).
+All outgoing disk sectors and incoming RAM sectors match the original
+images in both cases (PASS). This test uses actual swap transfer
+assembly but mocked BACKSTORE I/O, and does not exercise MM ownership,
+PURE reload or process commit. The v758 writer case remains blocked.
+
 ## v799: Multi-sector overlap regression
 
 Testkit v799 runs the real v772 PDP-6 overlap-order loop with two
