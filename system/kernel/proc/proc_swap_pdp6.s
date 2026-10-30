@@ -26,6 +26,7 @@
         .globl  proc_swap_exchange_run_v790
         .globl  proc_swap_exchange_preflight_v791
         .globl  proc_swap_exchange_live_v794
+        .globl  backstore_verify_allocated_v795
         .globl  proc_storage_exchange_modes_v778
         .globl  proc_swap_exchange_mm_v779
         .globl  proc_swap_exchange_prepare_ram_v780
@@ -675,6 +676,11 @@ proc_swap_exchange_live_v794:
         hrrz    7,(6)                ; incoming disk blocks
         came    7,6(010)
         jrst    proc_swap_live_bad_v794
+        ; v796: check the actual allocation bitmap before any disk write.
+        move    1,5(010)
+        move    2,6(010)
+        pushj   17,backstore_verify_allocated_v795
+        jumpn   1,proc_swap_live_bad_v794
         move    1,1(010)             ; A slot, RESIDENT
         setz    2,
         pushj   17,proc_storage_expect_v30

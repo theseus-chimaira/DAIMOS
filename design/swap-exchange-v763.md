@@ -13,6 +13,18 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v796: Verify B allocation in live exchange preflight
+
+The v794 live-state validator now calls the read-only v795 BACKSTORE
+bitmap checker after confirming the incoming process B disk record.
+An unallocated block in B's saved span rejects exchange before
+resource reservation or destructive transfer. Native PDP-6 test v796
+links the real v795 bitmap operation and the actual packed process
+storage-mode checker; valid backing, free bitmap bits, mismatched disk
+records and missing transition flags are covered (PASS). Full-system
+transaction execution, PURE backing and scheduler activation remain
+outstanding; v758 is not yet resolved.
+
 ## v795: Read-only BACKSTORE allocation verification
 
 `backstore_verify_allocated_v795(first,blocks)` checks that backing
