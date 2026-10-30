@@ -19,6 +19,7 @@
         .globl  proc_swap_exchange_checked_v783
         .globl  proc_swap_exchange_stage_v784
         .globl  proc_swap_exchange_pure_v785
+        .globl  proc_swap_exchange_records_v786
         .globl  proc_swap_exchange_mm_v779
         .globl  proc_swap_exchange_prepare_ram_v780
         .globl  proc_swap_exchange_prepare_v781
@@ -433,6 +434,52 @@ proc_swap_exchange_pure_v785:
         jumpn   1,proc_swap_storage_invariant_v30
 proc_swap_pure_ok_v785:
         setz    1,
+        pop     17,010
+        popj    17,
+
+; int proc_swap_exchange_records_v786(const kword_t *request)
+; Eight words: A table entry, B table entry, A swap-record pointer,
+; B swap-record pointer, shared RAM base, B first disk block,
+; A saved block count, B executable backing state.
+; Called only after both processes have TRANSITION set, sector exchange,
+; PURE reload and MM ownership commit are complete. Does not change
+; packed storage modes: caller publishes both through v778 afterward.
+; No callbacks in this leaf: a record update cannot fail partway.
+proc_swap_exchange_records_v786:
+        push    17,010
+        move    010,1
+        move    2,(010)                ; outgoing A process entry
+        move    3,1(010)               ; incoming B process entry
+        move    4,2(010)               ; outgoing A swap record
+        move    5,3(010)               ; incoming B swap record
+        jumpe   2,proc_swap_records_bad_v786
+        jumpe   3,proc_swap_records_bad_v786
+        jumpe   4,proc_swap_records_bad_v786
+        jumpe   5,proc_swap_records_bad_v786
+        move    6,5(010)              ; disk first
+        move    7,6(010)              ; outgoing saved sector count
+        jumple  7,proc_swap_records_bad_v786
+        trne    6,0777777000000      ; disk first must fit 18 bits
+        jrst    proc_swap_records_bad_v786
+        hrlz    6,6                   ; packed A record (first,,blocks)
+        hrr     6,7
+        hrrz    7,4(010)              ; resident RAM base
+        jumpe   7,proc_swap_records_bad_v786
+        ; Check all input before changing any process metadata.
+        hrrz    1,1(2)                ; A must be resident
+        jumpe   1,proc_swap_records_bad_v786
+        hrrz    1,1(3)                ; B must be on disk
+        jumpn   1,proc_swap_records_bad_v786
+        hllzs   1(2)                  ; A: clear resident base
+        hrrm    7,1(3)                ; B: set resident base
+        movem   6,(4)                 ; A: now backed by disk
+        move    1,7(010)
+        movem   1,(5)                 ; B: now backed by executable
+        setz    1,
+        pop     17,010
+        popj    17,
+proc_swap_records_bad_v786:
+        seto    1,
         pop     17,010
         popj    17,
 

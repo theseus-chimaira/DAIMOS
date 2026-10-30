@@ -3,6 +3,21 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v786: Two process-record updates after exchange
+
+`proc_swap_exchange_records_v786` accepts an eight-word request with
+both process-table entry pointers, both swap-record pointers, shared
+resident base, disk first block, A saved block count, and incoming B
+executable backing state. After validation, it clears A's resident
+base, installs B's resident base, stores A's disk record in the actual
+`(first_block,,block_count)` layout, and replaces B's swap record with
+its original executable backing. The native PDP-6 isolated test
+verifies these changes and rejects a repeat with A no longer resident
+(v786 PASS). The exchange caller must still synchronize both storage
+modes, update accounting and PURE/u-area state, and clear transitions.
+The helper is not called by the scheduler; full-system acceptance and
+v758 writer recovery remain outstanding.
+
 ## v785: Incoming PURE prefix reconstruction leaf
 
 `proc_swap_exchange_pure_v785` takes executable backing, common RAM
