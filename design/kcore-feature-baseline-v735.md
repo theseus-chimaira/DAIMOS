@@ -50,3 +50,21 @@ The existing `daimos-testkit/tests/validation/daimos-dsk-watchdog-fix-v734.md`
 records a native corrected-image countdown regression PASS: the left-half
 count changes `000454` to `000453` while the right-half descriptor remains
 `035024`. This does not establish full timeout or scheduler-pressure PASS.
+
+## v736: Full-system scheduler fixture reproduction attempt
+
+Ran the native `daimos-mm-swap-scheduler-v669.sh` runner against the current
+checkout, with the pressure INIT compiled anew and an isolated `BUILD`
+directory. An outer 115-second deadline expired while the full userland
+image was still compiling. Make terminated and removed unfinished output;
+the simulator did not start. **No scheduler or root-mount result is claimed.**
+The compiler emitted repeated cross-include search-order and libc builtin
+prototype warnings, but no identified fatal compiler diagnostic preceding
+the timeout. A subsequent run needs a longer build allowance or a verified
+prebuilt CLEAN image with the matching pressure-INIT hash; do not bypass
+the fixture's hash and CLEAN-media preflight checks.
+
+Source review confirms `d6fs_super_select` intentionally rejects DIRTY
+generations for a normal mount; the explicit read-only recovery path uses
+`d6fs_super_select_recovery`. Do not change that policy based solely on
+the historical v670 trace. The earlier v670 failure is still unresolved.
