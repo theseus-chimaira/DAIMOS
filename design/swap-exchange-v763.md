@@ -3,6 +3,22 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v773: Native saved-state excess-tail transfers
+
+`proc_swap_exchange_tails_v773(request,phase)` transfers sectors not
+present in both saved-state streams. Phase zero writes A-only sectors
+at indices `[SB,SA)` into already-reserved contiguous BACKSTORE blocks
+*before* the overlap exchange. Phase one restores B-only sectors at
+indices `[SA,SB)` directly from BACKSTORE *after* overlap exchange.
+No new data buffers are allocated. A native PDP-6 test exercises both
+branches with independent disk contents (testkit v773 PASS).
+
+The caller must reserve the needed disk extension, validate RAM extent
+capacity and sector offsets, exclude both processes, and publish MM and
+swap records only after all transfers and PURE reload complete. This
+leaf does not implement those responsibilities. Native writer acceptance
+remains FAIL.
+
 ## v772: Native multi-sector overlapping exchange loop
 
 `proc_swap_exchange_overlap_v772` consumes a six-word request with disk

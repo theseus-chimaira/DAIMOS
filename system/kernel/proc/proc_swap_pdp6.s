@@ -14,6 +14,7 @@
         .globl  proc_swap_out
         .globl  proc_swap_exchange_sector_v771
         .globl  proc_swap_exchange_overlap_v772
+        .globl  proc_swap_exchange_tails_v773
         .globl  proc_swap_in
         .globl  proc_sched_cursor
         .globl  proc_swap_pressure_ticks
@@ -170,6 +171,68 @@ proc_swap_overlap_fail_v772:
         seto    1,
 proc_swap_overlap_done_v772:
         pop     17,014
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; int proc_swap_exchange_tails_v773(request, phase)
+; request: disk first, A writable RAM start, B writable RAM start,
+;          A saved block count, B saved block count.
+; phase=0: save A-only disk tail BEFORE overlap, phase=1: read B-only
+; tail AFTER overlap. Caller must have reserved disk extension already.
+; No scratch allocation and no process-state publication.
+proc_swap_exchange_tails_v773:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        move    010,1
+        move    011,2
+        move    012,3(010)          ; SA
+        move    013,4(010)          ; SB
+        jumpn   011,proc_swap_tail_in_v773
+        ; Save only indices [SB, SA) to the reserved disk extension.
+        camg    012,013
+        jrst    proc_swap_tail_ok_v773
+        move    011,013
+proc_swap_tail_out_loop_v773:
+        move    1,(010)
+        add     1,011
+        movei   2,1
+        move    3,011
+        lsh     3,7
+        add     3,1(010)
+        pushj   17,backstore_write
+        jumpn   1,proc_swap_tail_fail_v773
+        aoj     011,
+        camge   011,012
+        jrst    proc_swap_tail_out_loop_v773
+        jrst    proc_swap_tail_ok_v773
+proc_swap_tail_in_v773:
+        ; Read indices [SA, SB) after all A sectors are preserved.
+        camg    013,012
+        jrst    proc_swap_tail_ok_v773
+        move    011,012
+proc_swap_tail_in_loop_v773:
+        move    1,(010)
+        add     1,011
+        movei   2,1
+        move    3,011
+        lsh     3,7
+        add     3,2(010)
+        pushj   17,backstore_read
+        jumpn   1,proc_swap_tail_fail_v773
+        aoj     011,
+        camge   011,013
+        jrst    proc_swap_tail_in_loop_v773
+proc_swap_tail_ok_v773:
+        setz    1,
+        jrst    proc_swap_tail_done_v773
+proc_swap_tail_fail_v773:
+        seto    1,
+proc_swap_tail_done_v773:
         pop     17,013
         pop     17,012
         pop     17,011
