@@ -17,6 +17,7 @@
         .globl  proc_swap_exchange_tails_v773
         .globl  proc_swap_exchange_transfer_v774
         .globl  proc_swap_exchange_checked_v783
+        .globl  proc_swap_exchange_stage_v784
         .globl  proc_swap_exchange_mm_v779
         .globl  proc_swap_exchange_prepare_ram_v780
         .globl  proc_swap_exchange_prepare_v781
@@ -346,6 +347,68 @@ proc_swap_exchange_checked_v783:
         popj    17,
 proc_swap_checked_bad_v783:
         seto    1,
+        popj    17,
+
+; int proc_swap_exchange_stage_v784(const kword_t *pair)
+; pair[0] -> nine-word v781 reservation, pair[1] -> seven-word v783
+; transfer. Validate matching disk spans and resident writable offsets
+; before preparation; the caller still validates ownership, pins, PURE,
+; and exclusion. No state is published here. An I/O failure in v783
+; halts; only a rejected, untouched request can be canceled.
+proc_swap_exchange_stage_v784:
+        push    17,010
+        push    17,011
+        move    010,(1)
+        move    011,1(1)
+        jumpe   010,proc_swap_stage_bad_v784
+        jumpe   011,proc_swap_stage_bad_v784
+        move    1,5(010)
+        came    1,(011)                ; same disk start
+        jrst    proc_swap_stage_bad_v784
+        move    1,6(010)
+        came    1,4(011)               ; B blocks
+        jrst    proc_swap_stage_bad_v784
+        move    1,7(010)
+        came    1,3(011)               ; A blocks
+        jrst    proc_swap_stage_bad_v784
+        ; Both writable starts must lie inside the reserved RAM span.
+        move    1,1(011)
+        caml    1,(010)
+        jrst    proc_swap_stage_a_offset_v784
+        jrst    proc_swap_stage_bad_v784
+proc_swap_stage_a_offset_v784:
+        move    2,1
+        sub     2,(010)
+        lsh     2,-7
+        came    2,5(011)
+        jrst    proc_swap_stage_bad_v784
+        move    1,2(011)
+        caml    1,(010)
+        jrst    proc_swap_stage_b_offset_v784
+        jrst    proc_swap_stage_bad_v784
+proc_swap_stage_b_offset_v784:
+        move    2,1
+        sub     2,(010)
+        lsh     2,-7
+        came    2,6(011)
+        jrst    proc_swap_stage_bad_v784
+        move    1,010
+        pushj   17,proc_swap_exchange_prepare_v781
+        jumpn   1,proc_swap_stage_bad_v784
+        move    1,011
+        pushj   17,proc_swap_exchange_checked_v783
+        jumpe   1,proc_swap_stage_ok_v784
+        move    1,010
+        pushj   17,proc_swap_exchange_cancel_v782
+        jumpn   1,proc_swap_storage_invariant_v30
+proc_swap_stage_bad_v784:
+        seto    1,
+        jrst    proc_swap_stage_done_v784
+proc_swap_stage_ok_v784:
+        setz    1,
+proc_swap_stage_done_v784:
+        pop     17,011
+        pop     17,010
         popj    17,
 
 ; int proc_swap_exchange_mm_v779(const kword_t *request)

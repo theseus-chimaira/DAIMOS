@@ -3,6 +3,24 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v784: Combined preparation and guarded transfer stage
+
+`proc_swap_exchange_stage_v784` takes a two-pointer request containing
+the v781 nine-word resource preparation record and the v783 seven-word
+transfer record. Before reservation it verifies that both refer to the
+same contiguous disk span and saved-state lengths and that writable
+RAM starts correspond to sector offsets from the common base. It then
+prepares backing/RAM, dispatches the guarded transfer, and invokes
+v782 cancellation if v783 rejects the request before destructive I/O.
+Once transfer begins, v783 halts on I/O failure rather than rolling
+back data already overwritten. Native PDP-6 isolated v784 tests verify
+success, cancellation, and early mismatch rejection (PASS).
+
+No MM ownership or process record is published here. Caller must
+validate physical extent ownership, full sector coverage, matching
+PURE offsets, serialized operation and lifecycle exclusion before
+entry. This does not resolve the native v758 writer regression.
+
 ## v783: Destructive-transfer guard
 
 `proc_swap_exchange_checked_v783` checks positive saved-sector lengths,
