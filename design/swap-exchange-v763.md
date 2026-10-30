@@ -3,6 +3,20 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v790: Connected swap exchange entry point
+
+`proc_swap_exchange_run_v790` takes a two-pointer request for the
+v784 preparation/transfer stage and v789 commit. A stage rejection
+returns -1 without invoking commit; a completed destructive stage
+dispatches the full commit sequence, and unexpected commit failure
+enters the invariant halt. The native PDP-6 testkit v790 verifies
+the stage-before-commit order and that a rejected stage skips commit
+(PASS, mocked stage and commit). This is not yet native integration
+against real MM, BACKSTORE, PURE, or process storage. The caller must
+validate requests against live process ownership and hold both
+transition exclusions. Scheduler use remains disabled; v758 remains
+unresolved.
+
 ## v789: Ordered post-transfer commit coordinator
 
 `proc_swap_exchange_commit_v789` calls the v785 PURE reconstruction,

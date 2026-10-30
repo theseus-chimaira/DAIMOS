@@ -23,6 +23,7 @@
         .globl  proc_swap_exchange_account_v787
         .globl  proc_swap_exchange_publish_v788
         .globl  proc_swap_exchange_commit_v789
+        .globl  proc_swap_exchange_run_v790
         .globl  proc_storage_exchange_modes_v778
         .globl  proc_swap_exchange_mm_v779
         .globl  proc_swap_exchange_prepare_ram_v780
@@ -593,6 +594,29 @@ proc_swap_exchange_commit_v789:
         pushj   17,proc_swap_exchange_publish_v788
         jumpn   1,proc_swap_storage_invariant_v30
         setz    1,
+        pop     17,010
+        popj    17,
+
+; int proc_swap_exchange_run_v790(const kword_t *request)
+; Two words: v784 stage-pair pointer and v789 commit pointer.
+; Caller holds both TRANSITION locks and the sole A RAM pin. All
+; transaction requests must be prevalidated against live ownership.
+; A failed stage returns -1 only before destructive transfer; v783
+; halts on transfer failure. Commit failures also halt, never unwind.
+proc_swap_exchange_run_v790:
+        push    17,010
+        move    010,1
+        move    1,(010)
+        pushj   17,proc_swap_exchange_stage_v784
+        jumpn   1,proc_swap_run_fail_v790
+        move    1,1(010)
+        pushj   17,proc_swap_exchange_commit_v789
+        jumpn   1,proc_swap_storage_invariant_v30
+        setz    1,
+        jrst    proc_swap_run_done_v790
+proc_swap_run_fail_v790:
+        seto    1,
+proc_swap_run_done_v790:
         pop     17,010
         popj    17,
 
