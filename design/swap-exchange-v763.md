@@ -13,6 +13,19 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v801: Native post-transfer metadata integration
+
+Testkit v801 links the production v786 process-record update, v787
+swap accounting and v788 final publication against the real v30
+packed storage-mode routines. Its outgoing A saves three sectors
+into B's formerly two-sector run, and the test verifies the exact
+disk record layout, new B executable backing, resident base,
+`proc_swap_blocks_used` delta, both storage-mode transitions,
+both cleared transition flags and one MM unpin (PASS).
+MM unpin and disk-tail operations are isolated stubs; full exchange
+with actual MM ownership and device-backed I/O is still unverified.
+No production changes are required for this test. v758 remains blocked.
+
 ## v800: Unequal-sized native transfer regression
 
 Testkit v800 executes the production v771-v774 PDP-6 transfer stack
