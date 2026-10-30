@@ -13,6 +13,17 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v798: Whole-sector native transfer regression
+
+Testkit v798 exercises the existing v771 PDP-6 sector-exchange leaf
+with a real 0200-octal-word BLT and deterministic in-memory backing
+I/O. All 128 words of both resulting disk and incoming RAM sectors
+are compared, rather than only a sentinel word. Cache workspace
+invalidation is also checked (PASS). This increases coverage of the
+real transfer instructions but is not a complete exchange transaction:
+disk I/O is mocked, MM and process records are not involved, and the
+v758 full-system writer regression remains unresolved.
+
 ## v797: Incoming executable backing preflight
 
 The live exchange gate now requires a stable incoming B u-area with
