@@ -15,6 +15,7 @@
         .globl  backstore_init
         .globl  backstore_alloc
         .globl  backstore_extend
+        .globl  backstore_verify_allocated_v795
         .globl  backstore_free
 
 ; unsigned int backstore_bitmap_words(kword_t blocks)
@@ -115,6 +116,41 @@ backstore_alloc_restore:
         pop     17,010
         popj    17,
 backstore_alloc_fail_fast:
+        seto    1,
+        popj    17,
+
+; int backstore_extend(first,old_blocks,new_blocks)
+; int backstore_verify_allocated_v795(first,blocks)
+; Read-only validation of a complete allocated run. AC4..AC7 scratch.
+; Reject invalid ranges before examining any bitmap word.
+backstore_verify_allocated_v795:
+        skipn   backstore_enabled
+        jrst    backstore_verify_fail_v795
+        skipn   backstore_bitmap
+        jrst    backstore_verify_fail_v795
+        jumpl   1,backstore_verify_fail_v795
+        jumple  2,backstore_verify_fail_v795
+        move    4,backstore_blocks
+        sub     4,2
+        camle   1,4
+        jrst    backstore_verify_fail_v795
+        setz    4,
+backstore_verify_loop_v795:
+        caml    4,2
+        jrst    backstore_verify_ok_v795
+        move    5,1
+        add     5,4
+        idivi   5,044
+        add     5,backstore_bitmap
+        movei   7,1
+        lsh     7,0(6)
+        tdnn    7,(5)
+        jrst    backstore_verify_fail_v795
+        aoja    4,backstore_verify_loop_v795
+backstore_verify_ok_v795:
+        setz    1,
+        popj    17,
+backstore_verify_fail_v795:
         seto    1,
         popj    17,
 
