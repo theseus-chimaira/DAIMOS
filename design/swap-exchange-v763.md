@@ -3,6 +3,16 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v776: BACKSTORE extension boundary correction
+
+The transaction audit found that `backstore_extend` checked the new
+length against pool capacity but failed to account for the starting
+block. The native helper now rejects negative arguments and requires
+`first <= backstore_blocks - new_blocks` before reading any bitmap
+word. Native PDP-6 regression v776 tests the formerly unsafe
+end-of-pool case alongside successful extension and occupied-tail
+rejection (PASS). No process transaction is published by this change.
+
 ## v775: Unequal-length native coordinator regression and fix
 
 The combined v774 coordinator incorrectly bypassed the outgoing A-only

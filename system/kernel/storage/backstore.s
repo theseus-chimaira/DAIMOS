@@ -126,12 +126,15 @@ backstore_extend:
         jrst    backstore_extend_fail
         skipn   backstore_bitmap
         jrst    backstore_extend_fail
+        jumpl   1,backstore_extend_fail
+        jumpl   2,backstore_extend_fail
+        jumpl   3,backstore_extend_fail
         jumpe   2,backstore_extend_fail
         camle   2,3
         jrst    backstore_extend_fail
         move    4,backstore_blocks
-        sub     4,1
-        camle   3,4
+        sub     4,3                     ; last legal starting block
+        camle   1,4                     ; first + new <= total
         jrst    backstore_extend_fail
         push    17,010
         push    17,011
