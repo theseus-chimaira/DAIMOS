@@ -12,6 +12,7 @@
         .globl  proc_swap_mres_service_v481
         .globl  proc_swap_mres_reclaim_v481
         .globl  proc_swap_out
+        .globl  proc_swap_exchange_sector_v771
         .globl  proc_swap_in
         .globl  proc_sched_cursor
         .globl  proc_swap_pressure_ticks
@@ -63,6 +64,48 @@
         .equ    PROC_SWAP_TEXT_MASK,037777
         .equ    PROC_SWAP_TEXT_SHIFT,026
         .equ    PROC_SWAP_MOUNT_SHIFT,022
+
+; int proc_swap_exchange_sector_v771(disk_block, a_ram, b_ram)
+; Exchange one writable sector: B disk -> scratch, A RAM -> disk,
+; scratch -> B RAM. Caller excludes both processes and establishes the
+; multi-sector dependency order. This leaf MUST NOT be used directly
+; by the scheduler: it does not commit either process state.
+;
+; The backing gateway uses a caller buffer. Invalidate the shared VFS
+; cache tag before using its 0200-word scratch workspace. The scratch
+; is not shared across two concurrent calls; swap service is serialized.
+proc_swap_exchange_sector_v771:
+        push    17,010
+        push    17,011
+        push    17,012
+        move    010,1                  ; disk block
+        move    011,2                  ; source A RAM sector
+        move    012,3                  ; destination B RAM sector
+        pushj   17,bcache_workspace_invalidate
+        move    1,010
+        movei   2,1
+        movei   3,fs_block_workspace
+        pushj   17,backstore_read
+        jumpn   1,proc_swap_exchange_sector_fail_v771
+        move    1,010
+        movei   2,1
+        move    3,011
+        pushj   17,backstore_write
+        jumpn   1,proc_swap_exchange_sector_fail_v771
+        movei   1,fs_block_workspace
+        hrli    1,fs_block_workspace
+        move    2,012
+        hrr     1,2
+        blt     1,0177(2)             ; copy exactly 0200 words
+        setz    1,
+        jrst    proc_swap_exchange_sector_done_v771
+proc_swap_exchange_sector_fail_v771:
+        seto    1,
+proc_swap_exchange_sector_done_v771:
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
 
 /* Return the complete 0200-word sectors covered by low user words + PURE text. */
 proc_swap_skip_words:

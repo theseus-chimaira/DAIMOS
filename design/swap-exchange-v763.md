@@ -3,6 +3,23 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v771: One-sector exchange transfer leaf
+
+`proc_swap_exchange_sector_v771(disk_block,a_ram,b_ram)` now executes
+the bounded per-sector operation: invalidate cache workspace tag, read
+the incoming sector to the shared 0200-word buffer, write the outgoing
+resident sector into that disk block, and copy buffered incoming data
+into its resident destination. An I/O failure returns -1 and a complete
+transfer returns 0. The native PDP-6 isolated test with mock backing
+I/O verifies both the first and last sector words (testkit commit
+`70a323e`, PASS). No new persistent RAM data structures are used.
+
+This leaf is deliberately NOT invoked by the scheduler or process swap
+service yet. It assumes serialized access to the VFS scratch workspace,
+does not schedule sectors or manage unequal excess lengths, does not
+reserve backing extensions or publish process states, and requires
+additional I/O-failure injection and full native-system validation.
+
 ## v770: Contiguous BACKSTORE extent extension
 
 `backstore_extend(first,old_blocks,new_blocks)` now validates an existing
