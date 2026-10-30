@@ -124,3 +124,30 @@ Testkit v746 commit `b4367e8` includes the map-resolved native stack
 probe. Subsequent investigation must resolve 027740 using the actual
 runtime-installed module placement, not assume the MRES map's package
 offsets are absolute runtime addresses.
+
+## v747-v749: Failure localized to resident allocation during swap-in
+
+Native v747 captured runtime instructions 027734-027740. Instruction
+027737 is `PUSHJ 17,011215`, calling the linked `proc_event_apply`.
+This matches the `proc_swap_service_failed` sequence in the installed
+SWAP MRES: the swap-in service itself delivers TERM after a failed
+`proc_swap_in`. The actual loaded-module placement was verified against
+the assembled package offsets, not assumed from a fixed historical map.
+
+On the same CLEAN pressure fixture, v748 broke at 027662, the
+`proc_swap_in_alloc_fail`/common local cleanup entry. It did *not*
+first hit the separate pin-failure or backing-read/restore-failure
+breakpoints. Native v749 captured the pre-call register arguments at
+027562, the `mm_alloc_aligned` call site: AC1=000000064000 (octal
+words requested), AC2=000000002000 (octal alignment), AC3=1 (process
+extent type), AC4=2 (process slot), AC13=000000064000. These are
+26,624 words with 1,024-word alignment, for slot 2. The request is
+plausible for a large resident user image, but whether allocation
+failure reflects exhaustion, fragmentation, pinning or MM state is
+**not yet known**. Do not add a fallback or weaken APR alignment.
+
+v747/v748 and v749 are committed to `daimos-testkit` as `8a90685`
+and `6b4d3b2`. All three traces are diagnostic PASS only, not
+full-system scheduler-pressure acceptance. Next capture the allocator
+free-list/extent state and reason for failure before changing production
+MM or scheduling code. No KCORE reduction was performed.
