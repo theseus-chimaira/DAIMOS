@@ -13,6 +13,18 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v819: Native compressed-DXR2 reload dispatch
+
+Testkit v819 extends the v818 native exchange with a compressed DXR2
+image header containing the compressed flag and 03400-word decoded
+image length. Production `proc_swap_reload_pure` selects its compressed
+branch and passes the packed destination/length to a deterministic
+`d6lz36_decode_vfs` fixture, which reconstructs the text image. The
+decoder call count and resulting image are checked alongside the full
+sector exchange, BACKSTORE gateway/extension and MM/metadata commit
+(PASS). This does not validate the actual D6LZ36 decoder or physical
+device/VFS I/O. The v758 writer deadlock remains unresolved.
+
 ## v818: Production plain-DXR2 PURE reload in native exchange
 
 Testkit v818 links the production `proc_swap_unpack_backing` and
