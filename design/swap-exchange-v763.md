@@ -3,6 +3,22 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v778: Paired storage-mode publication primitive
+
+`proc_storage_exchange_modes_v778(a_slot,b_slot)` validates both packed
+storage modes (A RESIDENT, B DISK) before changing either. It then
+publishes A as DISK and B as RESIDENT under the caller's two process
+TRANSITION exclusions. Unexpected failures after the first publication
+halt rather than allowing a half-updated pair to run. The isolated
+native PDP-6 test checks success, stale-mode rejection without changes,
+and same-slot rejection (testkit v778 PASS). The test reproduces the
+real runtime header with a separate pointer to packed mode storage.
+
+This primitive is not invoked by the scheduler. It does not transfer
+physical MM ownership, modify swap records, reload PURE text, or
+provide crash persistence. All those steps still require a complete
+exchange transaction and native integration validation.
+
 ## v777: BACKSTORE release boundary correction
 
 The release path in `backstore_free` had the same missing start-plus-count

@@ -5,6 +5,7 @@
         .globl  proc_storage_runtime_v29
         .globl  proc_storage_expect_v30
         .globl  proc_storage_publish_v30
+        .globl  proc_storage_exchange_modes_v778
 
 proc_storage_expect_v30:
         skipn   4,proc_storage_runtime_v29
@@ -51,5 +52,52 @@ proc_storage_publish_v30:
         popj    17,
 proc_storage_publish_fail_v30:
         sub     17,[1,,1]
+        seto    1,
+        popj    17,
+
+; int proc_storage_exchange_modes_v778(a_slot,b_slot)
+; Change RESIDENT A (0) to DISK (1), and DISK B (1) to RESIDENT (0).
+; Caller holds both PROC_TRANSITION locks and must have published both
+; VM and backing records. AC10/AC11 preserve the slot IDs across calls.
+; Both expected modes are validated before either bit pair changes.
+proc_storage_exchange_modes_v778:
+        jumpe   1,proc_storage_exchange_invalid_v778
+        jumpe   2,proc_storage_exchange_invalid_v778
+        camn    1,2
+        jrst    proc_storage_exchange_invalid_v778
+        push    17,010
+        push    17,011
+        move    010,1
+        move    011,2
+        move    1,010
+        setz    2,
+        pushj   17,proc_storage_expect_v30
+        jumpn   1,proc_storage_exchange_fail_v778
+        move    1,011
+        movei   2,1
+        pushj   17,proc_storage_expect_v30
+        jumpn   1,proc_storage_exchange_fail_v778
+        move    1,010
+        movei   2,0
+        movei   3,1
+        pushj   17,proc_storage_publish_v30
+        jumpn   1,proc_storage_exchange_invariant_v778
+        move    1,011
+        movei   2,1
+        setz    3,
+        pushj   17,proc_storage_publish_v30
+        jumpn   1,proc_storage_exchange_invariant_v778
+        setz    1,
+        jrst    proc_storage_exchange_return_v778
+proc_storage_exchange_invariant_v778:
+        ; Unexpected mutation under lifecycle exclusion: do not resume.
+        halt    .
+proc_storage_exchange_fail_v778:
+        seto    1,
+proc_storage_exchange_return_v778:
+        pop     17,011
+        pop     17,010
+        popj    17,
+proc_storage_exchange_invalid_v778:
         seto    1,
         popj    17,
