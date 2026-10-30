@@ -22,6 +22,26 @@ the idle loop triggers a new reschedule immediately, and ordinary runq
 selection can choose the same swapped process again. A complete atomic
 scheduler retry/admission policy remains necessary.
 
+## v757: Bounded pressure retry and resident scheduling (candidate)
+
+The native PDP-6 swap service now distinguishes +1 (pressure) from
+negative fatal results. On pressure it leaves the swap record intact,
+clears the pending service request, and sets a shared 0100-octal-tick
+cooldown. The 60 Hz scheduler clock decrements the cooldown. During the
+delay, ordinary selection skips swapped runnable candidates and a
+swapped RT owner yields to ordinary run-queue selection; resident jobs
+remain runnable. Once the delay expires, swapped candidates become
+eligible for a fresh restore attempt. No per-process retry table is
+allocated. Existing fatal TERM delivery remains unchanged.
+
+The isolated PDP-6 compiler/assembler run and the testkit v757 structural
+contract PASSed. Production commit `7cc44e6`; testkit `1d50cb6`.
+**Native full-system acceptance is still pending**, including writer WAIT,
+actual recovery after memory becomes free, no-resident-runnable behavior,
+and RT priority restoration. The 0100-octal-tick delay is a provisional
+retry mechanism, not a substitute for the outstanding admission/headroom
+invariant. Do not mark the swap feature complete on this evidence alone.
+
 ## Reproduced failure
 
 The native v750-v754 trace in `design/kcore-feature-baseline-v735.md`
