@@ -3,6 +3,40 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v764: Bounded transfer-order feasibility (host model)
+
+The testkit `daimos-swap-exchange-order-v764.py` models 256564 synthetic
+layouts with unequal complete resident sizes, writable suffix offsets,
+and saved-sector counts. All simulated *capacity-feasible* layouts pass.
+Testkit commit `592e8de`. This is NOT native kernel acceptance.
+
+For a single contiguous resident A span, an incoming B span fitting
+inside that RAM allocation, and a disk extent extended contiguously
+before exchange when required, the following ordering preserves unread
+saved sectors with one 0200-word transfer buffer:
+
+1. Write A's saved tail beyond B's existing disk span into the newly
+   reserved contiguous disk extension **before** modifying resident RAM.
+   These blocks do not contain B data.
+2. For the overlapping disk-sector indices `0..min(SA,SB)-1`, read B
+   sector into scratch, write A's corresponding saved sector directly
+   from resident RAM to the B disk sector, then place the buffered B
+   sector into its resident destination. Transfer in descending index
+   order if B's writable suffix begins later in RAM than A's; otherwise
+   use ascending order. This is the same dependency direction as memmove.
+3. If SB > SA, copy the remaining B-only disk sectors to RAM **after**
+   the overlap: every A source sector has already been saved to disk.
+4. Reconstruct B's omitted PURE portion only after the saved-state copy
+   is complete, so executable loading cannot overwrite still-needed A.
+
+The model validates byte-for-byte final RAM and disk state, but does not
+model device calls, bitmap fragmentation, process locks, or nested VFS
+workspace usage. It cannot establish that the exchange works when B's
+complete image is larger than A's resident allocation, that an adjacent
+contiguous disk extension is available, or that a sector buffer survives
+device calls. Those are explicit preconditions to validate before kernel
+integration. There is no justification yet for scatter/gather swap records.
+
 ## Scope and failure model
 
 Exchange one resident process A with one disk-swapped runnable process B
