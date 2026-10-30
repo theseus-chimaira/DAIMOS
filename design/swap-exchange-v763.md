@@ -13,6 +13,18 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v812: Native live-state and BACKSTORE allocation validation
+
+Testkit v812 extends v811 by invoking production v794 live-state
+validation and the real v795 read-only BACKSTORE bitmap verifier.
+With a B backing-sector allocation bit cleared, v790 rejects the
+transaction before destructive transfer. After restoring the bit,
+the same native PDP-6 fixture passes the aligned sector exchange,
+PURE reconstruction, MM ownership commit, records, accounting and
+storage-mode publication. The v797 executable-backing contract is
+still a deterministic fixture; device I/O and extension remain
+isolated. Full-system v758 writer acceptance remains blocked.
+
 ## v811: Native preflight integrated with destructive transaction
 
 Testkit v811 extends v810 by linking production v791 request-graph
