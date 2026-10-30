@@ -13,6 +13,18 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v799: Multi-sector overlap regression
+
+Testkit v799 runs the real v772 PDP-6 overlap-order loop with two
+complete 0200-word sectors and a destination one sector above the
+source. A deterministic in-memory sector gateway preserves each
+incoming disk sector while replacing it with outgoing RAM, then copies
+the saved incoming sector to its overlapping destination. The test
+checks every word in the outgoing disk image and incoming RAM image
+(PASS). This verifies the descending dependency order for this case;
+unequal tails, real backing I/O and full-system v758 acceptance remain
+unverified.
+
 ## v798: Whole-sector native transfer regression
 
 Testkit v798 exercises the existing v771 PDP-6 sector-exchange leaf
