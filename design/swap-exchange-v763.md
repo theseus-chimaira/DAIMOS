@@ -3,6 +3,18 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v787: Swap accounting and excess backing release
+
+`proc_swap_exchange_account_v787` takes disk-first, old B saved-block
+count, new A saved-block count and the v781 reservation flag. After MM
+and process-record commit, it applies the process-only BACKSTORE usage
+delta A-B and releases `[disk_first+A, disk_first+B)` if B is larger.
+The extension when A is larger was already allocated by v781; no extra
+allocation is made here. The isolated native PDP-6 test checks both
+directions and the release block/length (v787 PASS). The caller must
+ensure one-time use and exclusive lifecycle transitions; this helper
+does not publish storage modes or activate the scheduler path.
+
 ## v786: Two process-record updates after exchange
 
 `proc_swap_exchange_records_v786` accepts an eight-word request with

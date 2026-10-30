@@ -20,6 +20,7 @@
         .globl  proc_swap_exchange_stage_v784
         .globl  proc_swap_exchange_pure_v785
         .globl  proc_swap_exchange_records_v786
+        .globl  proc_swap_exchange_account_v787
         .globl  proc_swap_exchange_mm_v779
         .globl  proc_swap_exchange_prepare_ram_v780
         .globl  proc_swap_exchange_prepare_v781
@@ -480,6 +481,43 @@ proc_swap_exchange_records_v786:
         popj    17,
 proc_swap_records_bad_v786:
         seto    1,
+        pop     17,010
+        popj    17,
+
+; int proc_swap_exchange_account_v787(request)
+; Four words: disk first, old incoming B block count, new outgoing A
+; block count, reservation flag from v781. Run only after record/MM
+; commit with both process transitions held. Disk extension from v781
+; already belongs to A; release B's excess only when B > A.
+; Adjust the process-only accounting delta (A-B) exactly once.
+proc_swap_exchange_account_v787:
+        push    17,010
+        push    17,011
+        move    010,1
+        move    011,1(010)
+        move    2,2(010)
+        jumple  011,proc_swap_account_fail_v787
+        jumple  2,proc_swap_account_fail_v787
+        move    3,2
+        sub     3,011
+        jumpge  3,proc_swap_account_add_v787
+        ; B has more saved blocks: trailing disk blocks are now free.
+        move    1,(010)
+        add     1,2
+        movn    2,3
+        push    17,3
+        pushj   17,backstore_free
+        pop     17,3
+proc_swap_account_add_v787:
+        addm    3,proc_swap_blocks_used
+        setzm   3(010)
+        setz    1,
+        pop     17,011
+        pop     17,010
+        popj    17,
+proc_swap_account_fail_v787:
+        seto    1,
+        pop     17,011
         pop     17,010
         popj    17,
 
