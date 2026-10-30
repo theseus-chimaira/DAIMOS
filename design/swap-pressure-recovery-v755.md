@@ -2,6 +2,32 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v759: Deadlock capacity gate and workload dependency
+
+The v283 native writer workload creates a writer and 16 pressure children.
+The pressure children sleep on a gate that the parent opens **only after**
+`wait_report(writer)` succeeds. At the captured v754 failure there are
+just 907 free managed RAM words (largest gap 760), and 176 BACKSTORE
+blocks free, against 26624 resident words/208 blocks needed for a full
+process image. No additional full-sized resident process can be swapped
+out into the free BACKSTORE space to restore the writer. The v757
+cooldown does not release the blocked gate or produce either resource.
+
+The testkit `daimos-mm-swap-capacity-deadlock-v759.py` verifies the
+physical extent descriptors and backing-capacity inequality directly
+from the preserved native v754 trace. It PASSed with RAM free=907,
+largest gap=760, BACKSTORE free=176 versus 208 required; testkit commit
+`ece0d8a`. This is a diagnostic PASS, not a scheduler recovery PASS.
+
+For successful execution of this **admitted** workload, a scheduler-only
+retry policy is inadequate. Design must either support a crash-safe
+resident/swapped-image exchange without requiring a second full-sized
+BACKSTORE span, or prevent over-admission and make the workload correctly
+handle an explicit resource error. Simply failing RUN would change the
+existing v283 acceptance contract, which assumes all 16 pressure children
+start successfully. Preserve the v758 failure until this policy is
+resolved and tested. No additional production kernel change in v759.
+
 ## v758: Fresh native pressure workload FAIL
 
 Ran the complete testkit `daimos-mm-swap-scheduler-v669.sh` against a
