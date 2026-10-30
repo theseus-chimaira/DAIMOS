@@ -13,6 +13,18 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v815: Production BACKSTORE I/O gateway on native PDP-6
+
+Testkit v815 extracts the production `backstore_read` and
+`backstore_write` entry points and their common `backing_region_io`
+dispatcher from fs_mres.s. A direct-DEVICE configuration requests two
+blocks starting at logical block 1, and deterministic hardware sector
+callbacks verify the mapped physical addresses and write invocation
+count (PASS). This establishes an independent production storage-path
+test; hardware callbacks are simulated. The gateway is not yet linked
+into the integrated v814 exchange transaction. The full-system v758
+writer deadlock remains unresolved.
+
 ## v814: Production BACKSTORE extension in native transaction
 
 Testkit v814 links the production `backstore_extend` allocation routine
