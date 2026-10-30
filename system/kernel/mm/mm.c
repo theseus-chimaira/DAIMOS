@@ -404,6 +404,35 @@ mm_free(kword_t base, unsigned int type, unsigned int owner)
         return MM_OK;
 }
 
+/** Change ownership of an exclusively pinned process image in place.
+ * The caller must exclude scheduler, compactor and process lifecycle use
+ * until it has published the corresponding process descriptors.
+ */
+int
+mm_process_transfer_pinned(kword_t base, unsigned int old_owner,
+    unsigned int new_owner)
+{
+        int i;
+        struct mm_extent *extent;
+
+        if (old_owner == 0U || new_owner == 0U ||
+            old_owner >= 0400U || new_owner >= 0400U ||
+            old_owner == new_owner)
+                return MM_ERR_INVAL;
+        i = mm_find_base(base);
+        if (i >= mm_extent_count)
+                return MM_ERR_INVAL;
+        extent = &mm_extents[i];
+        if (MM_EXTENT_TYPE(extent) != MM_TYPE_PROCESS ||
+            MM_EXTENT_OWNER(extent) != old_owner)
+                return MM_ERR_INVAL;
+        if (MM_EXTENT_PINS(extent) != 1U)
+                return MM_ERR_BUSY;
+        extent->meta = (extent->meta & ~MM_OWNER_MASK) |
+            (kword_t)new_owner;
+        return MM_OK;
+}
+
 /** Adjust one extent's packed physical pin count by exactly +1 or -1. */
 static int
 mm_pin_adjust(kword_t base, int delta)

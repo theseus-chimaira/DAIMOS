@@ -3,6 +3,19 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v767: Native owner-transfer execution verified
+
+The testkit `daimos-mm-owner-transfer-native-v767.sh` executes the
+production `mm_process_transfer_pinned` instruction sequence on PDP-6,
+with a one-entry MM descriptor table and the real packed pin/type/owner
+metadata. A valid 1->2 and 2->3 transfer preserves type and pin count;
+wrong-owner and same-owner transfers are rejected. Testkit PASS,
+commit `8ac38f6`. The portable C MM reference now defines the same
+transfer contract. The native test is limited to the transfer leaf;
+it does not validate scheduler exclusion, variable-size extent changes,
+or the complete exchange transaction. The original writer stall still
+requires the latter.
+
 ## v766: Native MM owner-retag primitive (not yet used by swap)
 
 `mm_process_transfer_pinned(base,old_owner,new_owner)` now changes only
