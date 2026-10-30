@@ -13,6 +13,18 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v808: Native stage rejection and reservation cancellation
+
+Testkit v808 links the real v784 stage, v781 preparation, v783 checked
+transfer boundary and v782 cancellation code. A deliberately unaligned
+physical RAM image triggers v783 rejection after a simulated backing
+extension. The regression verifies no disk or RAM words change, the
+extension is released and the reservation flag is cleared (PASS).
+The backing extension/free and MM growth boundaries are fixtures.
+An aligned full-stage transaction with actual sector transfer remains
+to be integrated with v807. Scheduler acceptance and the v758 writer
+deadlock remain unresolved.
+
 ## v807: Native v790 entry-to-commit integration
 
 Testkit v807 invokes the production v790 transaction entry and v789
