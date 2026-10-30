@@ -3,6 +3,19 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v783: Destructive-transfer guard
+
+`proc_swap_exchange_checked_v783` checks positive saved-sector lengths,
+nonnegative disk and sector-offset arguments, sector-aligned RAM starts,
+and 18-bit RAM end bounds before invoking the v774 transfer. Invalid
+requests fail without I/O. Any nonzero result after entering destructive
+transfer halts through the storage invariant handler rather than
+returning an unrecoverable half-exchanged image to the scheduler.
+The isolated native PDP-6 test covers rejected zero-length and RAM
+overflow cases without transfer calls, plus a valid transfer (PASS).
+The helper does not yet validate actual disk allocation ownership or
+guarantee full end-to-end publication. Scheduler invocation remains off.
+
 ## v782: Cancel prepared exchange before destructive I/O
 
 `proc_swap_exchange_cancel_v782` reverses successful v781 preparation

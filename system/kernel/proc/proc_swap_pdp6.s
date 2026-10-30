@@ -16,6 +16,7 @@
         .globl  proc_swap_exchange_overlap_v772
         .globl  proc_swap_exchange_tails_v773
         .globl  proc_swap_exchange_transfer_v774
+        .globl  proc_swap_exchange_checked_v783
         .globl  proc_swap_exchange_mm_v779
         .globl  proc_swap_exchange_prepare_ram_v780
         .globl  proc_swap_exchange_prepare_v781
@@ -305,6 +306,46 @@ proc_swap_transfer_done_v774:
         pop     17,012
         pop     17,011
         pop     17,010
+        popj    17,
+
+; int proc_swap_exchange_checked_v783(request)
+; Check sector counts and both RAM spans before destructive transfer.
+; Caller must already have reserved disk/RAM and locked both slots.
+; Invalid input returns -1 without I/O. Any failure after entering
+; the transfer halts: the original B swap image may be overwritten.
+proc_swap_exchange_checked_v783:
+        move    2,3(1)                 ; A sectors
+        move    3,4(1)                 ; B sectors
+        jumple  2,proc_swap_checked_bad_v783
+        jumple  3,proc_swap_checked_bad_v783
+        skipge  (1)                   ; disk first must be nonnegative
+        jrst    proc_swap_checked_bad_v783
+        skipge  5(1)                  ; A offset in sectors
+        jrst    proc_swap_checked_bad_v783
+        skipge  6(1)                  ; B offset in sectors
+        jrst    proc_swap_checked_bad_v783
+        move    4,1(1)
+        trne    4,0177                ; sector-aligned A start
+        jrst    proc_swap_checked_bad_v783
+        move    4,2(1)
+        trne    4,0177                ; sector-aligned B start
+        jrst    proc_swap_checked_bad_v783
+        ; Reject physical end addresses outside the PDP-6 18-bit range.
+        move    4,2
+        lsh     4,7
+        add     4,1(1)
+        camle   4,[01000000]
+        jrst    proc_swap_checked_bad_v783
+        move    4,3
+        lsh     4,7
+        add     4,2(1)
+        camle   4,[01000000]
+        jrst    proc_swap_checked_bad_v783
+        pushj   17,proc_swap_exchange_transfer_v774
+        jumpn   1,proc_swap_storage_invariant_v30
+        popj    17,
+proc_swap_checked_bad_v783:
+        seto    1,
         popj    17,
 
 ; int proc_swap_exchange_mm_v779(const kword_t *request)
