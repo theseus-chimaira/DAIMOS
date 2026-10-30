@@ -22,6 +22,7 @@
         .globl  proc_swap_exchange_records_v786
         .globl  proc_swap_exchange_account_v787
         .globl  proc_swap_exchange_publish_v788
+        .globl  proc_swap_exchange_commit_v789
         .globl  proc_storage_exchange_modes_v778
         .globl  proc_swap_exchange_mm_v779
         .globl  proc_swap_exchange_prepare_ram_v780
@@ -565,6 +566,33 @@ proc_swap_exchange_publish_v788:
         popj    17,
 proc_swap_publish_bad_v788:
         seto    1,
+        pop     17,010
+        popj    17,
+
+; Commit a prepared, already-transferred exchange. Six pointers:
+; MM request, PURE request, record request, accounting request,
+; publication request, and an optional result word (not used).
+; Caller must have completed v784 and excluded both processes.
+; Failure after destructive transfer is fatal; no rollback is possible.
+proc_swap_exchange_commit_v789:
+        push    17,010
+        move    010,1
+        move    1,1(010)
+        pushj   17,proc_swap_exchange_pure_v785
+        jumpn   1,proc_swap_storage_invariant_v30
+        move    1,(010)
+        pushj   17,proc_swap_exchange_mm_v779
+        jumpn   1,proc_swap_storage_invariant_v30
+        move    1,2(010)
+        pushj   17,proc_swap_exchange_records_v786
+        jumpn   1,proc_swap_storage_invariant_v30
+        move    1,3(010)
+        pushj   17,proc_swap_exchange_account_v787
+        jumpn   1,proc_swap_storage_invariant_v30
+        move    1,4(010)
+        pushj   17,proc_swap_exchange_publish_v788
+        jumpn   1,proc_swap_storage_invariant_v30
+        setz    1,
         pop     17,010
         popj    17,
 

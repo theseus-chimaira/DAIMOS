@@ -3,6 +3,18 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v789: Ordered post-transfer commit coordinator
+
+`proc_swap_exchange_commit_v789` calls the v785 PURE reconstruction,
+v779 MM owner transfer, v786 paired records, v787 block accounting,
+and v788 storage publication in that order. It is only valid after
+v784 has completed destructive exchange under both transition locks.
+Every unexpected return failure enters the storage invariant halt.
+Native PDP-6 v789 checks successful dispatch sequencing with mock
+dependencies (PASS). Full integration, request consistency checks,
+actual media exchange, scheduler activation and the blocked v758 writer
+case remain outstanding. This is not yet an end-to-end transaction.
+
 ## v788: Paired final storage-mode publication
 
 `proc_swap_exchange_publish_v788` takes both process-entry pointers,
