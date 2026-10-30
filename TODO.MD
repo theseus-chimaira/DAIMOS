@@ -1130,6 +1130,37 @@ KERNEL ABIS.
 
 ## Deferred: executable opt-in for compressed process swap (2026-10-15)
 
+### v760 design separation: capacity recovery first; compression later
+
+- [ ] Treat RESIDENT, PACKED-in-RAM, and DISK as *alternative storage
+  representations*, not a mandatory RESIDENT -> PACKED -> DISK sequence.
+  A disk-backed image may be raw or compressed. The reclaim policy must
+  select a representation using measured RAM savings, BACKSTORE blocks,
+  compression CPU cost, restore latency, and scratch/rollback headroom.
+  On a PDP-6, do not assume compressing before each disk swap is faster.
+- [ ] Preserve the original *logical process image size* in the stable
+  process descriptor across every storage transition, independently of
+  the encoded payload length. For PACKED, also retain the omitted PURE
+  boundary and decoded writable extent; for compressed DISK, retain the
+  encoded block count and exact decoded word count, including any padding.
+  First audit the existing three-word process descriptor, one-word
+  overloaded disk record, stable u-area, and two-bit storage mode map;
+  do not allocate another per-slot word or steal an encoding bit without
+  proving non-overlap. Reject mismatching sizes on restore.
+- [ ] Before activation, benchmark PURE prefix omission alone against
+  raw disk swap, compressed disk swap, and PACKED-in-RAM using actual
+  process data and PDP-6 timing; record worst-case incompressible images
+  and temporary peak RAM, not only compression ratios. Reuse lossless
+  codec primitives where safe, not disk/RAM transaction semantics.
+- [ ] Keep the native v758/v759 writer deadlock as a separate critical
+  correctness problem. Fix resource-pressure admission/forward progress
+  without making either compressed swap or PACKED a prerequisite. First
+  establish which eligible victims require 208 blocks after PURE omission;
+  then specify an admission/headroom invariant covering the case with no
+  runnable resident producer of free RAM or swap space. Preserve valid
+  swapped processes on retryable pressure and require passing native
+  writer WAIT/EXIT acceptance. A cooldown is not a capacity guarantee.
+
 - [ ] Reserve an unused, backwards-compatible DXR executable-header flag
   (`COMPRESSIBLE` or equivalent) after auditing existing DXR flag allocations.
   This flag describes the expected compressibility of *runtime process memory*;
