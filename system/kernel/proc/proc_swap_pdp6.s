@@ -254,7 +254,7 @@ proc_swap_exchange_transfer_v774:
         move    010,1
         move    1,3(010)
         move    2,4(010)
-        camle   1,2
+        camg    1,2
         jrst    proc_swap_transfer_overlap_v774
         ; Outgoing A-only sectors must be saved first.
         move    1,010

@@ -3,6 +3,18 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v775: Unequal-length native coordinator regression and fix
+
+The combined v774 coordinator incorrectly bypassed the outgoing A-only
+tail whenever `SA > SB`: an inverted PDP-6 `CAMLE` branch. Replace it
+with `CAMG`, so it writes the outgoing excess before overlapping sectors.
+The testkit v775 native PDP-6 tests exercise both `SA=3, SB=2` and
+`SA=2, SB=3`, checking the excess disk/restore sectors as well as the
+overlapping sectors. Both PASS; prior equal-length v774 also PASS.
+Testkit commit `5e69d4e`. This corrects a real production transfer
+helper bug, but process-record publication and native writer recovery
+are still not implemented or accepted.
+
 ## v774: Combined sector transfer coordinator (isolated)
 
 `proc_swap_exchange_transfer_v774` accepts a seven-word, caller-owned
