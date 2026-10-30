@@ -3,6 +3,18 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v772: Native multi-sector overlapping exchange loop
+
+`proc_swap_exchange_overlap_v772` consumes a six-word request with disk
+start, A writable RAM start, B writable RAM start, overlap sector count,
+and their respective saved-sector offsets. The loop chooses ascending or
+descending indices (memmove-style) to avoid destroying A sectors not yet
+written, and invokes the tested v771 sector transfer for each block.
+An isolated PDP-6 reverse-overlap test verifies both disk-sector and
+RAM-destination contents (testkit v772 PASS). The helper is not connected
+to the swap scheduler, does not handle non-overlapping tails, PURE reload,
+MM ownership, or storage-record publication. No full-system recovery claim.
+
 ## v771: One-sector exchange transfer leaf
 
 `proc_swap_exchange_sector_v771(disk_block,a_ram,b_ram)` now executes

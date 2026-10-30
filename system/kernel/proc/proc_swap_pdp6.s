@@ -13,6 +13,7 @@
         .globl  proc_swap_mres_reclaim_v481
         .globl  proc_swap_out
         .globl  proc_swap_exchange_sector_v771
+        .globl  proc_swap_exchange_overlap_v772
         .globl  proc_swap_in
         .globl  proc_sched_cursor
         .globl  proc_swap_pressure_ticks
@@ -102,6 +103,74 @@ proc_swap_exchange_sector_v771:
 proc_swap_exchange_sector_fail_v771:
         seto    1,
 proc_swap_exchange_sector_done_v771:
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; int proc_swap_exchange_overlap_v772(const kword_t *request)
+; A six-word request: disk first, A writable first, B writable first,
+; overlap block count, A writable sector offset, B writable sector offset.
+; Offsets are in sectors from the common resident-image physical base.
+; Caller has already saved A's disk-only tail and reserved disk growth,
+; and will restore B's disk-only tail after this helper completes.
+; No process records or MM ownership are published here.
+proc_swap_exchange_overlap_v772:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        push    17,014
+        move    010,1
+        move    011,3(010)           ; number of common sectors
+        jumpe   011,proc_swap_overlap_ok_v772
+        move    012,4(010)
+        move    013,5(010)
+        setz    014,                ; ascending index by default
+        camg    013,012
+        jrst    proc_swap_overlap_loop_v772
+        ; Later B destination needs descending copy to preserve unread A.
+        move    014,011
+        subi    014,1
+proc_swap_overlap_reverse_v772:
+        move    1,(010)
+        add     1,014
+        move    2,1(010)
+        move    3,014
+        lsh     3,7
+        add     2,3
+        move    3,2(010)
+        move    4,014
+        lsh     4,7
+        add     3,4
+        pushj   17,proc_swap_exchange_sector_v771
+        jumpn   1,proc_swap_overlap_fail_v772
+        sojge   014,proc_swap_overlap_reverse_v772
+        jrst    proc_swap_overlap_ok_v772
+proc_swap_overlap_loop_v772:
+        move    1,(010)
+        add     1,014
+        move    2,1(010)
+        move    3,014
+        lsh     3,7
+        add     2,3
+        move    3,2(010)
+        move    4,014
+        lsh     4,7
+        add     3,4
+        pushj   17,proc_swap_exchange_sector_v771
+        jumpn   1,proc_swap_overlap_fail_v772
+        aoj     014,
+        camge   014,011
+        jrst    proc_swap_overlap_loop_v772
+proc_swap_overlap_ok_v772:
+        setz    1,
+        jrst    proc_swap_overlap_done_v772
+proc_swap_overlap_fail_v772:
+        seto    1,
+proc_swap_overlap_done_v772:
+        pop     17,014
+        pop     17,013
         pop     17,012
         pop     17,011
         pop     17,010
