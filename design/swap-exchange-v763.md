@@ -13,6 +13,17 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v807: Native v790 entry-to-commit integration
+
+Testkit v807 invokes the production v790 transaction entry and v789
+commit coordinator, including nonzero PURE prefix reconstruction, real
+MM pinned ownership transfer and unpin, process records, actual
+BACKSTORE tail release, accounting and packed mode publication.
+Preflight checks and the destructive v784 transfer stage are controlled
+fixtures; a successful stage invocation and all final metadata are
+validated on native PDP-6 (PASS). This is not full transaction or
+device-I/O acceptance. The v758 writer deadlock remains unresolved.
+
 ## v806: Nonzero PURE prefix in integrated native commit
 
 Testkit v806 extends the v805 production commit-coordinator test with
