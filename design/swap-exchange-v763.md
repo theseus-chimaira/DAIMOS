@@ -13,6 +13,20 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v797: Incoming executable backing preflight
+
+The live exchange gate now requires a stable incoming B u-area with
+its saved nonzero executable backing state. The PURE reconstruction
+request must use that identical backing state and u-area, target the
+shared RAM extent, and specify precisely the discarded sector-aligned
+prefix calculated by the existing `proc_swap_skip_words` rule. B's
+complete image size minus that prefix must account for every allocated
+incoming BACKSTORE block. These validations run before sector transfer.
+The native PDP-6 regression links the actual skip calculation, bitmap
+checker and packed storage-mode checks; it tests matching backing,
+mismatched executable backing, free bitmap, changed disk record and
+missing transition (PASS). Full-system writer v758 is still blocked.
+
 ## v796: Verify B allocation in live exchange preflight
 
 The v794 live-state validator now calls the read-only v795 BACKSTORE

@@ -26,6 +26,7 @@
         .globl  proc_swap_exchange_run_v790
         .globl  proc_swap_exchange_preflight_v791
         .globl  proc_swap_exchange_live_v794
+        .globl  proc_swap_exchange_backing_v797
         .globl  backstore_verify_allocated_v795
         .globl  proc_storage_exchange_modes_v778
         .globl  proc_swap_exchange_mm_v779
@@ -689,11 +690,72 @@ proc_swap_exchange_live_v794:
         movei   2,1
         pushj   17,proc_storage_expect_v30
         jumpn   1,proc_swap_live_bad_v794
+        move    1,010
+        move    2,011
+        move    3,012
+        pushj   17,proc_swap_exchange_backing_v797
+        jumpn   1,proc_swap_live_bad_v794
         setz    1,
         jrst    proc_swap_live_done_v794
 proc_swap_live_bad_v794:
         seto    1,
 proc_swap_live_done_v794:
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; int proc_swap_exchange_backing_v797(prepare,commit,records)
+; Require B's stable u-area backing to agree with the PURE request,
+; and the complete saved-state sector count to match the same PURE
+; truncation rule used by proc_swap_in. No storage is modified.
+proc_swap_exchange_backing_v797:
+        push    17,010
+        push    17,011
+        push    17,012
+        move    010,1                ; nine-word preparation
+        move    011,2                ; commit pointer array
+        move    012,3                ; paired records
+        jumpe   010,proc_swap_backing_bad_v797
+        jumpe   011,proc_swap_backing_bad_v797
+        jumpe   012,proc_swap_backing_bad_v797
+        skipn   7,1(011)             ; PURE request
+        jrst    proc_swap_backing_bad_v797
+        skipn   5,1(012)             ; B process entry
+        jrst    proc_swap_backing_bad_v797
+        move    6,(5)
+        trnn    6,PROC_UAREA_RH
+        jrst    proc_swap_backing_bad_v797
+        hlrz    6,6                 ; stable B u-area
+        jumpe   6,proc_swap_backing_bad_v797
+        move    4,PROC_SWAP_BACKING_OFFSET(6)
+        jumpe   4,proc_swap_backing_bad_v797
+        came    4,(7)               ; same executable backing
+        jrst    proc_swap_backing_bad_v797
+        move    4,2(7)              ; PURE owner u-area
+        came    4,6
+        jrst    proc_swap_backing_bad_v797
+        move    4,1(7)              ; target RAM base
+        came    4,(010)
+        jrst    proc_swap_backing_bad_v797
+        move    1,(7)
+        pushj   17,proc_swap_skip_words
+        move    7,1(011)
+        came    1,3(7)              ; exact reconstructible prefix
+        jrst    proc_swap_backing_bad_v797
+        move    2,4(010)            ; complete B extent
+        sub     2,1
+        jumple  2,proc_swap_backing_bad_v797
+        trne    2,0177
+        jrst    proc_swap_backing_bad_v797
+        lsh     2,-7
+        came    2,6(010)            ; saved B blocks
+        jrst    proc_swap_backing_bad_v797
+        setz    1,
+        jrst    proc_swap_backing_done_v797
+proc_swap_backing_bad_v797:
+        seto    1,
+proc_swap_backing_done_v797:
         pop     17,012
         pop     17,011
         pop     17,010
