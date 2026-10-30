@@ -13,6 +13,19 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v810: Native destructive transfer through final commit
+
+Testkit v810 invokes the real v790 entry, v784 stage, v781 resource
+preparation, v783/v774 destructive transfer, v789 commit and its PURE,
+MM, records, accounting and packed storage-mode operations. The
+aligned RAM fixture contains three outgoing saved sectors and B has
+two incoming sectors. Native PDP-6 verifies every overlap sector word,
+the reconstructed PURE prefix, MM ownership, records, and final modes
+(PASS). Preflight and live validation are stubs, and BACKSTORE device
+I/O, extension and PURE filesystem callbacks use deterministic fixtures;
+the backing bitmap's extra sector is preallocated in the fixture.
+The full-system v758 writer deadlock remains unresolved.
+
 ## v809: Native aligned destructive stage transfer
 
 Testkit v809 runs the production v784 stage, v781 reservation and
