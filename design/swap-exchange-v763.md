@@ -3,6 +3,32 @@
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v765: Preflight and native MM ownership blocker
+
+The testkit `daimos-swap-exchange-capacity-v765.py` checks 110090
+synthetic BACKSTORE bitmap/contiguous-extension cases and explicitly
+rejects incoming images exceeding the available resident image extent.
+Host model PASS, testkit commit `4b0c014`. The model never modifies the
+production allocator or its bitmap. Contiguity is mandatory under the
+current one-word disk swap record; even enough aggregate free blocks
+cannot make an unavailable adjacent extension safe.
+
+The current native `mm.h` and `mm_pdp6.s` provide allocation, pinning,
+unpinning, freeing, and compaction, but **no verified atomic ownership
+transfer** of a pinned `MM_TYPE_PROCESS` extent from victim A to incoming
+B. Changing the process VM base and disk swap records without changing
+MM extent ownership would leave teardown, compaction and future MM frees
+using the wrong owner. A native exchange must have an MM-validated retag
+operation (and a carefully bounded resize operation for differing RAM
+sizes) performed under lifecycle exclusion. Do not silently emulate it
+by freeing A's descriptor before B's image is safely installed: that
+exposes the occupied RAM span to allocator reuse.
+
+Before implementation verify the exact MM extent representation,
+pin-count transition, descriptor capacity, APR-aligned boundaries and
+whether larger B can be accommodated without relocating A while its
+source is still needed. The full native writer gate is still FAIL.
+
 ## v764: Bounded transfer-order feasibility (host model)
 
 The testkit `daimos-swap-exchange-order-v764.py` models 256564 synthetic
