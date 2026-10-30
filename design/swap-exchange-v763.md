@@ -1,3 +1,13 @@
+## v793: Reject malformed exchange identities and image sizes
+
+The v791 transaction preflight now rejects zero or identical process
+slots, zero or unaligned resident image sizes, and empty saved backing
+block counts before any resource reservation or destructive transfer.
+The native PDP-6 v793 regression exercises each rejection alongside a
+valid request and passes. Existing v792 consistency test also passes.
+The scheduler remains disconnected; this is validation hardening, not
+full-system exchange acceptance.
+
 # v763: Variable-sized in-place process swap exchange
 
 Status: source-level design/invariants, NOT implemented or native accepted.

@@ -639,6 +639,27 @@ proc_swap_exchange_preflight_v791:
         jrst    proc_swap_preflight_bad_v791
         skipn   4,1(1)              ; seven-word transfer request
         jrst    proc_swap_preflight_bad_v791
+        ; v793: fail before reservation on impossible process identities
+        ; or non-sector-sized process images. The stage helper validates
+        ; writable offsets but must not be the first size gate.
+        move    6,1(3)
+        jumpe   6,proc_swap_preflight_bad_v791
+        move    7,2(3)
+        jumpe   7,proc_swap_preflight_bad_v791
+        camn    6,7
+        jrst    proc_swap_preflight_bad_v791
+        move    6,3(3)
+        jumple  6,proc_swap_preflight_bad_v791
+        trne    6,0177
+        jrst    proc_swap_preflight_bad_v791
+        move    7,4(3)
+        jumple  7,proc_swap_preflight_bad_v791
+        trne    7,0177
+        jrst    proc_swap_preflight_bad_v791
+        skipg   6,6(3)              ; B has a nonempty disk record
+        jrst    proc_swap_preflight_bad_v791
+        skipg   7,7(3)              ; A has writable blocks
+        jrst    proc_swap_preflight_bad_v791
         skipn   5,(2)               ; five-word MM request
         jrst    proc_swap_preflight_bad_v791
         came    3,5                 ; MM request aliases prepare header
