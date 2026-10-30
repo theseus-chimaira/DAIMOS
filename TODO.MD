@@ -1130,7 +1130,21 @@ KERNEL ABIS.
 
 ## Deferred: executable opt-in for compressed process swap (2026-10-15)
 
+### v763: variable-sized in-place swap exchange (critical correctness)
+
+- [ ] Establish the bounded, lossless sector-transfer order for unequal
+  resident/swap sizes and unequal PURE boundaries; see
+  `design/swap-exchange-v763.md`. RAM capacity, disk extent capacity,
+  contiguous allocation, and workspace lifetime are distinct invariants.
+  No persistent journal/crash recovery is required for volatile swap.
+- [ ] Implement and test exchange as a new transaction only when source
+  preservation, MM ownership, BACKSTORE bitmap accounting, and process
+  descriptor publication are proven. Keep the current disk format unless
+  variable-sized exchange demonstrably requires a replacement. Accept only
+  after native writer WAIT/EXIT and failure-injection regression pass.
+
 ### v761: optional link-time compression of PURE executable backing
+
 
 - [ ] Evaluate opting PURE DXR2 executables into the already-supported
   compressed executable-payload format at link time. Measure raw versus
