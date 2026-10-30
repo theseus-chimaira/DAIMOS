@@ -609,10 +609,12 @@ proc_swap_exchange_commit_v789:
 proc_swap_exchange_run_v790:
         push    17,010
         move    010,1
-        pushj   17,proc_swap_exchange_live_v794
-        jumpn   1,proc_swap_run_fail_v790
         move    1,010
         pushj   17,proc_swap_exchange_preflight_v791
+        jumpn   1,proc_swap_run_fail_v790
+        ; Validate request graph before v794 dereferences nested records.
+        move    1,010
+        pushj   17,proc_swap_exchange_live_v794
         jumpn   1,proc_swap_run_fail_v790
         move    1,(010)
         pushj   17,proc_swap_exchange_stage_v784

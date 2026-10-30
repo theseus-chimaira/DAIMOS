@@ -13,6 +13,27 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v795: Read-only BACKSTORE allocation verification
+
+`backstore_verify_allocated_v795(first,blocks)` checks that backing
+storage is enabled, the bitmap exists, the nonempty range is within
+the pool, and every requested sector has an allocated bitmap bit.
+It does not allocate, release or rewrite any blocks. The isolated
+native PDP-6 test verifies an allocated run and rejection of a free
+bit or an out-of-range request (PASS). This allocator primitive is
+not yet called by the exchange's live-state preflight; completing
+that integration and broader native system tests remains necessary.
+
+## v795: Reject malformed request graphs before live lookup
+
+`proc_swap_exchange_run_v790` now calls the structural request
+preflight (v791) before the live-record validator (v794). The
+previous order allowed v794 to dereference nested pointers before
+v791 had rejected malformed request graphs. Native PDP-6 v795 test
+verifies preflight rejection returns failure without invoking live
+validation or entering destructive transfer. Scheduler integration
+and full-system acceptance remain outstanding.
+
 ## v794: Live process-state validation before transfer
 
 `proc_swap_exchange_live_v794` runs from v790 before the v791 MM
