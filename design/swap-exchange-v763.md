@@ -13,6 +13,18 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v804: Native PURE prefix reconstruction test
+
+Testkit v804 runs the production v785 PURE-reconstruction coordinator
+on native PDP-6. With a nonzero 0200-word prefix, it checks that the
+entire prefix is cleared before the executable reload callback, and
+that the requested backing, RAM base and u-area are forwarded intact.
+It also tests that a zero-length prefix performs no zero or reload
+operation (PASS). The filesystem zero and executable reload callbacks
+are deterministic fixtures, not the production implementations.
+This test does not yet exercise the entire transfer-to-commit path;
+v758 full-system acceptance remains blocked.
+
 ## v803: Real BACKSTORE release with native MM and metadata commit
 
 Testkit v803 extends v802 by linking the actual PDP-6 `backstore_free`
