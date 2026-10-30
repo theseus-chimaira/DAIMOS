@@ -68,3 +68,21 @@ Source review confirms `d6fs_super_select` intentionally rejects DIRTY
 generations for a normal mount; the explicit read-only recovery path uses
 `d6fs_super_select_recovery`. Do not change that policy based solely on
 the historical v670 trace. The earlier v670 failure is still unresolved.
+
+## v737: Full image built; pressure writer fails (not accepted)
+
+Re-ran `daimos-mm-swap-scheduler-v669.sh` from a fresh isolated BUILD with
+a 540-second outer limit. The image and separate test INIT compiled, disk
+creation completed, and `d6fsck` reported `state=CLEAN` for the generated
+root. The PDP-6 SIMH run reached the KINIT device banner and reported
+`D6FS LOADED`, so the historical pre-VFS `?RT` did not recur in this image.
+The workload emitted `<wd!W` and remained without the required success
+markers until the runner's own 300-second simulator timeout (exit 124).
+The runner returned failure; **this is not scheduler/swap acceptance**.
+
+The existing testkit `daimos-mm-swap-writer-diagnostic-v741.md` records
+more detailed independent follow-up: the writer's WAIT sees TERM rather
+than the expected normal EXIT. The source includes a TERM-on-swap-in-failure
+branch, but the cause of TERM has not yet been established. Continue at
+that narrower fault boundary, rather than weakening D6FS mount policy or
+repeating the original coarse v283 workload without extra instrumentation.
