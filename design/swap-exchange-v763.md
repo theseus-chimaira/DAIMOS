@@ -13,6 +13,19 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v814: Production BACKSTORE extension in native transaction
+
+Testkit v814 links the production `backstore_extend` allocation routine
+into the v813 native PDP-6 transaction. Initially only B's two backing
+sectors are allocated (bitmap 01400, device allocation count 2).
+The real v781 preparation reserves a third outgoing A sector before
+destructive transfer; after commit the bitmap is 03400 and physical
+BACKSTORE allocation count is 3 (PASS). The full v790 preflight,
+live-state backing validation, transfer, PURE reconstruction and MM/
+process metadata publication are retained. Physical device I/O and
+executable reconstruction callbacks remain fixtures. The v758 writer
+deadlock and scheduler acceptance are still unresolved.
+
 ## v813: Production executable-backing validation
 
 Testkit v813 replaces the remaining v797 live-state stub with the
