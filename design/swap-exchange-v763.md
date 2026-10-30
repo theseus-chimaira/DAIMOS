@@ -13,6 +13,20 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v816: Production BACKSTORE gateway in complete native transaction
+
+Testkit v816 replaces the v814 direct in-memory BACKSTORE read/write
+stubs with production `backstore_read`, `backstore_write`, and the
+shared `backing_region_io` implementation from fs_mres.s. Direct
+DEVICE mode maps the swap blocks into a configured physical range;
+deterministic disk-sector callbacks preserve the full sector content.
+The integrated native PDP-6 test passes preflight, live backing checks,
+real BACKSTORE extension, destructive exchange, PURE reconstruction,
+MM owner transfer, account/records and final mode publication (PASS).
+Physical hardware callbacks and executable reconstruction remain
+simulated. The v758 writer deadlock and scheduler acceptance remain
+unresolved.
+
 ## v815: Production BACKSTORE I/O gateway on native PDP-6
 
 Testkit v815 extracts the production `backstore_read` and
