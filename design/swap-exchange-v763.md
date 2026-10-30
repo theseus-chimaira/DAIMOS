@@ -13,6 +13,19 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v813: Production executable-backing validation
+
+Testkit v813 replaces the remaining v797 live-state stub with the
+production PDP-6 executable-backing validator and PURE skip calculator.
+The fixture models B's stable u-area, matching executable backing,
+03400-word reconstructible PURE prefix, 04000-word complete image and
+two saved disk sectors. A missing u-area backing value causes v790 to
+reject before any destructive transfer; restoring it permits the full
+native transaction to complete (PASS). v791/v792/v794/v795 and all
+sector-transfer/commit leaves remain production code. Physical device
+I/O, extension and executable reload callbacks are still fixtures.
+The v758 scheduler writer deadlock remains unresolved.
+
 ## v812: Native live-state and BACKSTORE allocation validation
 
 Testkit v812 extends v811 by invoking production v794 live-state
