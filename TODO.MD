@@ -1130,6 +1130,20 @@ KERNEL ABIS.
 
 ## Deferred: executable opt-in for compressed process swap (2026-10-15)
 
+### v761: optional link-time compression of PURE executable backing
+
+- [ ] Evaluate opting PURE DXR2 executables into the already-supported
+  compressed executable-payload format at link time. Measure raw versus
+  encoded storage blocks and estimate PDP-6 decode time for disk and DECtape;
+  select compressed backing only when it pays off. Reuse existing executable
+  size/PURE-boundary metadata and swap-in reload; do not confuse executable
+  payload compression with runtime process-state compression.
+- [ ] Validate original-image reconstruction and repeated PURE eviction /
+  reload for compressed and raw DXR2, without storing another compressed
+  text copy in RAM by default. Keep this strictly deferred and independent
+  from the currently failing native raw-swap pressure regression.
+
+
 ### v760 design separation: capacity recovery first; compression later
 
 - [ ] Treat RESIDENT, PACKED-in-RAM, and DISK as *alternative storage
