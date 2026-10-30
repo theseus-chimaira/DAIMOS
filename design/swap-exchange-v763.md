@@ -13,6 +13,18 @@ full-system exchange acceptance.
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
+## v817: Production PURE zeroing in integrated native exchange
+
+Testkit v817 replaces the synthetic PURE-prefix clear callback in v816
+with the production `fs_zero_words` implementation from fs_mres.s.
+The complete native PDP-6 transaction now clears the executable PURE
+region using the real BLT-based filesystem zero routine; the isolated
+reload callback verifies the cleared region before reconstructing its
+test image (PASS). The production BACKSTORE gateway, extension,
+destructive exchange, validation, MM and metadata commit remain linked.
+The executable vnode/VFS reload and physical device-driver callbacks
+are still fixtures; full-system v758 writer acceptance remains blocked.
+
 ## v816: Production BACKSTORE gateway in complete native transaction
 
 Testkit v816 replaces the v814 direct in-memory BACKSTORE read/write
