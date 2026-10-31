@@ -24,6 +24,32 @@ from `proc_run.s` without adding code or persistent RAM. The testkit
 `daimos-swap-run-admission-v845.sh` traces those resident points in a
 fresh native build. Writer WAIT/EXIT acceptance remains FAILED.
 
+The completed v845 trace observed 17 RUN entries, one hit at
+`proc_run_claimed_bad`, and AC1 `-2` before child-slot rollback.
+`exec_load_process` defines this exact result as `EXEC_LOAD_NOMEM` and
+reaches it when `vm_space_create` cannot allocate the aligned user VM.
+The immediate observed failure is insufficient allocatable process VM,
+not slot-table exhaustion, u-area allocation, or WAIT notification.
+
+The auxiliary drum's full-profile default is `DRUM_BACKSTORE_BLOCKS`
+`04000` (octal, 2048 sectors). v846 is testing a targeted fixture
+configuration of `010000` (4096 sectors) to determine whether
+insufficient backing capacity prevents swap reclaim from satisfying
+the final RUN. The experiment is not yet acceptance evidence; no
+production backstore default or kernel logic is changed.
+
+The completed v846 capacity experiment built a fresh full-profile
+image with `DRUM_BACKSTORE_BLOCKS=010000`. It reached all 17 RUN
+entries without any `proc_run_claimed_bad` or `proc_run_bad` hits,
+and no `pF` marker was emitted. This confirms the enlarged backing
+configuration removes the immediate final-child RUN failure. However,
+the writer WAIT/EXIT workload still timed out after 300 seconds
+(exit 124, PC 013604). Eight swap-ins completed normally and no
+exchange-pressure entry was observed. The next investigation should
+trace pipe progress, parent scheduling, and sleep-state transitions
+using the v846-sized backing store; returning to default backstore
+would reintroduce the known RUN setup blocker.
+
 ## v844: Trace the writer's pipe wakeup before WAIT (2026-10-31)
 
 The v843b native regression timed out at PC 013605. Eight normal
