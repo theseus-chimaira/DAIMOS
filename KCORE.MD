@@ -1,3 +1,32 @@
+## 2026-11-01 v889: full guest APR fatal FILE rejection acceptance
+
+No permanent kernel code or data changes. The disposable PDP-6
+guest test `daimos-fatal-file-integration-v889.sh` confirms that a
+real user-mode APR protection/address fault enters the production
+PI6 fault trampoline and `proc_fatal_close_current_v879` on its
+process-owned kernel stack. Only the copied test kernel intercepts
+the affected process's VFS-sync entry for FD 0, returning -5 on
+its first two calls and allowing the third to run normally.
+
+The guest records exactly one actual APR fault, three VFS-sync
+calls, two rejections, three fatal FILE cleanup passes, two
+owner-stack sleeps at 1 and 2 timer ticks, retained FD 0 after
+each rejected close, and a valid `GETTEARDOWN` FILE stage with
+error class 5 (actual returned -5). Successful provider service
+clears FD 0 and the u-area word-067 error witness; the process
+exits once and its parent `WAIT` receives the expected fault
+status. Guest CTY output `<FH` followed by normal HALT, zero
+test error counters: PASS.
+
+The native v888 FILE/provider-error and MM result tests, v885
+backoff, v878/v879 fatal EXEC, and v887 owner-detail fixtures
+also PASS. No production source changes and therefore KCORE
+remains `022124` octal = 9,300 resident words (+1,108 above
+the 8,192-word goal). This accepts APR-fatal transient FILE
+recovery; a true post-commit EXEC failure under a booted guest
+and permanent provider refusal remain separate acceptance work.
+Automatic OOM victim killing remains disabled.
+
 ## 2026-11-01 v888: preserve the rejecting FILE provider's return
 
 The v887 FILE detail identified surviving descriptors and their

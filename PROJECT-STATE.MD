@@ -1,3 +1,26 @@
+## 2026-11-01 v889: genuine full-system APR fault/FILE recovery
+
+A full PDP-6 guest now validates v879/v885/v888 fatal FILE
+continuation, rather than only isolated assembly calls.
+Test user slot 2 generates a real APR address fault, routed
+through CLK PI6 to the production private owner-stack fatal
+cleanup. A temporary overlay rejects two VFS-sync requests on
+its FD 0 with -5. The resulting full-system counters show
+one APR fault, three FILE passes, 3 VFS calls / 2 refusals,
+two sleeps (1 and 2 ticks), two checks that the FD remained
+owned, one successful descriptor release, one cleared
+word-067 error witness, and one final exit. Parent `WAIT`
+receives the expected fault status; CTY `<FH` and HALT PASS.
+The original `GETTEARDOWN` FILE stage/ERR 5 is observable
+while the refusal is active. Injection and diagnostic counters
+live only in the copied test kernel, never in production RAM.
+
+No production code changes. KCORE stays `022124` octal
+(9,300 words), 1,108 above 8,192. Native v888, v885,
+v878/v879, v887 regressions PASS. The separate full-system
+post-commit EXEC fatal route and indefinitely rejecting
+provider cases remain open. OOM killing is disabled.
+
 ## 2026-11-01 v888: first actual FILE-close rejection is observable
 
 The private-stack fatal FILE close scanner preserves its first

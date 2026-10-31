@@ -3,6 +3,45 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v889: Full-system private-stack APR FILE rejection and recovery
+
+v888 proved actual FILE provider return propagation in native
+assembly, not in an executing multitasking guest. v889 adds
+testkit-only fault injection and exercises the real kernel flow:
+user reads from an out-of-range virtual address, PDP-6 APR
+fault is handled through CLK PI6 and its executive trampoline,
+and `proc_fatal_close_current_v879` takes responsibility for
+all descriptors while retaining the faulting process's
+pre-existing private kernel stack and exit status.
+
+The disposable kernel's `vfs_sync` rejects only the selected
+faulting process's FD 0 during its first two fatal bulk-close
+passes, returning -5. Its third request is allowed through
+the normal VFS implementation. No permanent provider is
+modified or disabled, and ordinary processes' VFS operations
+are not injected. The faulting process sleeps for exactly 1
+and 2 clock ticks and is resumable by the production scheduler.
+Before each retry the descriptor remains live; the existing
+teardown detail reads FILE stage and error class 5. Once the
+provider call succeeds, the descriptor and the word-067 error
+witness are cleared before the victim exits.
+
+The full guest records one APR fault, two rejected VFS-sync
+calls of three, three fatal-close passes, two expected
+sleep intervals, correct FD ownership, precisely one fatal
+EXIT, and a successful parent WAIT with APR/TERM status.
+Its normal CTY `<FH`/HALT and zero test errors PASS.
+The production kernel is identical to v888: KCORE
+`022124` octal (9,300 words), zero change in static RAM
+or resident text. Focused native v888/v885/v878/v879/v887
+regressions also PASS.
+
+This proves recovery from transient FILE rejection in the
+real APR fault path. It does not establish safe forced
+reclamation under indefinite provider refusal, or the
+separate post-commit EXEC fallback in a real guest. OOM
+victim termination remains disabled.
+
 ## v888: Actual FILE rejection, without persistent provider counters
 
 The v887 provider/descriptor detail was a read-only snapshot: a

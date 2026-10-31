@@ -2,6 +2,18 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [x] v889: full-system, actual user APR fault to private-stack
+  fatal FILE cleanup acceptance. Disposable test kernel injects
+  -5 from VFS-sync on the first two FD-0 close attempts.
+  SIMH PASS: 1 real APR fault, 3 VFS calls, 2 rejections,
+  3 fatal close passes, 1/2-tick sleeps, FD retained across
+  failures, ERR class 5 visible, FD/witness cleared on
+  success, correct parent WAIT and clean HALT. Zero production
+  code/data changes; KCORE remains 9,300 words.
+- [ ] v889 follow-up: booted PDP-6 post-commit EXEC fatal
+  provider-failure acceptance (APR path now accepted), persistent
+  rejection diagnosis/recovery, and admission policy for
+  automatic OOM termination.
 - [x] v888: preserve the first actual rejecting FILE provider
   result and FD during private fatal close using otherwise-unused
   u-area word 067. Expose a compact 0..6 result class through
