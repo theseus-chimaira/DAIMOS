@@ -26,6 +26,8 @@
         .equ    PROC_NICE_BIAS,024
         .equ    PROC_USER_MAP_BIT,2
         .equ    PROC_FATAL_CLOSE_BIT,4
+        .equ    PROC_FINALIZE_OFFSET,067
+        .equ    PROC_FINALIZE_MARK_LH,0400000
         .equ    PROC_WAIT_LH_MASK,060000
         .equ    PROC_WAIT_EVENT_LH,020000
         .equ    PROC_WAIT_CHILD_LH,040000
@@ -86,6 +88,7 @@
         .globl  proc_exit_current
         .globl  proc_fatal_close_current_v879
         .globl  proc_finish_slot
+        .globl  proc_finish_service_v881
         .globl  proc_slot_discard
         .globl  proc_scope_id
         .globl  kret_zero
@@ -537,12 +540,35 @@ proc_finish_slot:
         ; Do not discard those descriptors with the u-area. This check
         ; uses only existing process memory, before any destructive step.
         move    1,(12)
-        trne    1,PROC_TRANSITION_RH     ; cannot terminate a swapping slot
+        trnn    1,PROC_TRANSITION_RH
+        jrst    proc_finish_new_v881
+        ; Only a failed *post-VM* u-area release may resume under
+        ; TRANSITION. A swapping/partially destroyed user image must not.
+        trnn    1,0400000
         jrst    proc_finish_fail
+        hlrz    3,1
+        jumpe   3,proc_finish_fail
+        move    4,PROC_FINALIZE_OFFSET(3)
+        tlne    4,PROC_FINALIZE_MARK_LH
+        jrst    proc_finish_check_vm_v881
+        jrst    proc_finish_fail
+proc_finish_check_vm_v881:
+        move    4,1(12)
+        camn    4,[-1]
+        jrst    proc_finish_resume_v881
+        jrst    proc_finish_fail
+proc_finish_resume_v881:
+        hrrz    11,PROC_FINALIZE_OFFSET(3) ; saved exit status, VM gone
+        jrst    proc_finish_ids
+proc_finish_new_v881:
+        move    1,(12)
         trnn    1,0400000               ; PROC_F_UAREA
         jrst    proc_finish_fail
         hlrz    3,1
         jumpe   3,proc_finish_fail
+        move    4,PROC_FINALIZE_OFFSET(3)
+        tlne    4,PROC_FINALIZE_MARK_LH
+        jrst    proc_finish_fail      ; marker requires TRANSITION+VM_NONE
         addi    3,PROC_FILE_TABLE_OFFSET
         movei   4,020                   ; FILE_NFILE
 proc_finish_fd_check_v869:
@@ -568,6 +594,9 @@ proc_finish_ids:
         move    16,15
         lsh     16,-3
         andi    16,0177777             ; zombie scope
+        move    4,PROC_FINALIZE_OFFSET(1)
+        tlne    4,PROC_FINALIZE_MARK_LH
+        jrst    proc_finish_uarea_retry_v881
 
         move    1,10
         move    2,15
@@ -589,10 +618,11 @@ proc_finish_vm_done:
         andi    1,0377
         move    2,10
         pushj   17,proc_tty_release_session
+proc_finish_uarea_retry_v881:
         move    1,10
         move    2,12
         pushj   17,proc_uarea_release
-        jumpn   1,proc_finish_fail
+        jumpn   1,proc_finish_defer_uarea_v881
         move    1,10
         pushj   17,proc_runq_remove
         move    1,10
@@ -625,6 +655,16 @@ proc_finish_hup_fail_v876:
         movni   1,PROC_TRANSITION_RH+1
         andb    1,(12)                 ; re-enable scheduling after HUP error
         jrst    proc_finish_fail
+proc_finish_defer_uarea_v881:
+        ; VM has been destroyed. Do not discard identity or spin with
+        ; scheduler PI6 masked on slot 0. Preserve status in the dead
+        ; u-area's previously unused word 067, retaining transition
+        ; and not changing any session/domain control bits.
+        hlrz    3,(12)
+        movsi   4,PROC_FINALIZE_MARK_LH
+        hrr     4,11
+        movem   4,PROC_FINALIZE_OFFSET(3)
+        jrst    proc_finish_fail
 proc_finish_fail:
         seto    1,
 proc_finish_restore:
@@ -632,6 +672,63 @@ proc_finish_restore:
         hrli    0,-6(17)
         blt     0,16
         sub     17,kconst_7_7
+        popj    17,
+
+/**
+ * @brief Retry post-VM u-area releases from the permanent idle stack.
+ *
+ * No allocation or scheduler-private process stack is needed. Only
+ * descriptors tagged by a failed post-VM MM free are eligible; ordinary
+ * swapping TRANSITION slots and failed session/VM teardown stay excluded.
+ * This is called with scheduler PI6 inhibited, once per clock tick.
+ */
+proc_finish_service_v881:
+        push    17,10
+        push    17,11
+        setz    11,                    ; any completion this tick?
+        movei   10,1
+proc_finish_service_scan_v881:
+        caml    10,proc_high_slot
+        jrst    proc_finish_service_done_v881
+        move    2,10
+        lsh     2,1
+        add     2,10
+        add     2,proc_table
+        move    3,(2)
+        trnn    3,PROC_TRANSITION_RH
+        jrst    proc_finish_service_next_v881
+        trnn    3,0400000
+        jrst    proc_finish_service_next_v881
+        move    4,1(2)
+        camn    4,[-1]
+        jrst    proc_finish_service_check_v881
+        jrst    proc_finish_service_next_v881
+proc_finish_service_check_v881:
+        hlrz    3,3
+        move    4,PROC_FINALIZE_OFFSET(3)
+        tlnn    4,PROC_FINALIZE_MARK_LH
+        jrst    proc_finish_service_next_v881
+        move    1,10
+        setz    2,                     ; status comes from saved u-area
+        pushj   17,proc_finish_slot
+        jumpn   1,proc_finish_service_next_v881
+        movei   11,1
+        setom   proc_sched_kick       ; notify an awakened WAIT parent
+proc_finish_service_next_v881:
+        aoja    10,proc_finish_service_scan_v881
+proc_finish_service_done_v881:
+        move    1,11
+        jumpe   1,proc_finish_service_return_v881
+        pushj   17,proc_has_live_user
+        jumpn   1,proc_finish_service_not_last_v881
+        movei   11,1                  ; last user now fully released
+        jrst    proc_finish_service_return_v881
+proc_finish_service_not_last_v881:
+        setz    11,
+proc_finish_service_return_v881:
+        move    1,11
+        pop     17,11
+        pop     17,10
         popj    17,
 
 /**
@@ -3474,6 +3571,26 @@ proc_swap_victim_return:
 
         .globl  proc_idle_loop         ; v843 scheduler handoff trace
 proc_idle_loop:
+        ; Try deferred post-VM u-area releases at most once per clock
+        ; tick. Unlike a busy retry, this permits running jobs to
+        ; unpin MM resources. No per-slot retry table is allocated.
+        move    1,proc_timer_clock
+        camn    1,proc_finish_last_tick_v881
+        jrst    proc_idle_swap_v881
+        movem   1,proc_finish_last_tick_v881
+        pushj   17,mach_pi_disable
+        push    17,1
+        cono    0004,01002             ; inhibit scheduler PI6 only
+        move    2,(17)
+        trne    2,000200
+        cono    0004,000200           ; allow disk PI3/PI5
+        pushj   17,proc_finish_service_v881
+        move    3,1                   ; last deferred user now gone?
+        pop     17,1
+        jumpn   3,proc_exit_halt       ; do not reenable PI6 before HALT
+        trne    1,000002
+        cono    0004,02002
+proc_idle_swap_v881:
         ; Disk-backed swap-in must never run in PI context.  The scheduler
         ; marks the exact swapped winner in proc_sched_cursor.  Slot 0 services
         ; only that request, then asks PI6 to perform the normal context switch.
@@ -3494,6 +3611,8 @@ proc_swap_pressure_ticks:
 proc_timer_clock:
         .block 1
 proc_timer_next:
+        .block 1
+proc_finish_last_tick_v881:
         .block 1
 .if KINIT_STACK_WATERMARK
         .globl  kinit_stack_highwater

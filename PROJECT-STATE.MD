@@ -1,3 +1,20 @@
+## 2026-10-31 v881: retryable post-VM u-area finalization
+
+The PDP-6 process finalizer can now defer an MM-rejected u-area free
+after VM destruction, preserving the process's TRANSITION and VM_NONE
+state and saving status in the unused per-process u-area word 067.
+The slot-0 idle loop scans pending finalizers at clock-tick cadence,
+with PI6 inhibited while touching shared process/MM state; after a
+successful release, the normal zombie/free path runs exactly once.
+The saved marker does not consume any session/domain control bit.
+Native PDP-6 fault injection and compiled production C EXIT handoff
+PASS. The older finalizer/session/VM regressions PASS. KCORE end
+`021567` octal (9,079 words; +100 against v880, one resident tick
+word). A genuine full-system MM-busy injection, bounded cleanup and
+automatic OOM kill remain unaccepted. See TODO.MD and swap design.
+Ordinary full-system session leader HUP, TTY detach and reattach also
+PASS with the v881 build; actual MM-busy guest fault injection remains open.
+
 ## 2026-10-31 v880: preserve process ownership on backing-detach error
 
 Repaired silently ignored backing-release failure at the

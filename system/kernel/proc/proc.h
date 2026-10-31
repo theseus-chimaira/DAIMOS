@@ -106,8 +106,9 @@
 /*
  * One compact control word precedes cwd/file state.  Descriptors 0..15 are
  * ordinary two-word FILE records. UID9, GID9 and UMASK9 fit in the one
- * credential word. U-area 067 is currently unallocated logical padding;
- * descriptor mount bits no longer require an extension bitmap.
+ * credential word. The formerly unused u-area word 067 carries the v881
+ * post-VM deferred-finalizer marker and its low-18-bit exit status;
+ * descriptor mount bits do not require an extension bitmap.
  * Low bit 0 of the separate control word carries the pipe
  * event, bit 1 marks a live direct user mapping, and bit 2 marks an
  * unrecoverable user fault or post-commit EXEC error whose private
@@ -133,6 +134,9 @@
 #define PROC_PIPE_EVENT_BIT            01UL
 #define PROC_USER_MAP_BIT              02UL
 #define PROC_FATAL_CLOSE_BIT           04UL
+#define PROC_FINALIZE_OFFSET          067UL
+/* Existing unused u-area word: marker in bit 35, exit status in RH. */
+#define PROC_FINALIZE_MARK            ((kword_t)1UL << 35U)
 #define PROC_TIMER_TAG_RH            0400000UL
 #define PROC_TIMER_CLOCK_MASK         0377777UL
 #define PROC_STOP_MASK              03UL
@@ -296,6 +300,7 @@ void proc_sched_pi_tick(void);
 #define PROC_SWAP_BACKING_WORD(p) \
         PROC_UAREA_WORD((p), PROC_SWAP_BACKING_OFFSET)
 #define PROC_BRK_WORD(p) PROC_UAREA_WORD((p), PROC_BRK_OFFSET)
+#define PROC_FINALIZE_WORD(p) PROC_UAREA_WORD((p), PROC_FINALIZE_OFFSET)
 #define PROC_USER_MAPPING_HELD(p) \
         ((PROC_CTL_WORD(p) & PROC_USER_MAP_BIT) != 0UL)
 #define PROC_SESSION(p) \

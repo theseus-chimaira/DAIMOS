@@ -339,9 +339,17 @@ proc_finish_slot(unsigned int slot, unsigned int status)
         /* Do not release a live descriptor table even when a fatal caller
          * skipped/failed close(). The native assembly enforces the same
          * check before it modifies RT, session, or VM ownership. */
-        if (PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) ||
-            PROC_UAREA_BASE(p) == 0UL)
+        if (!PROC_HAS_UAREA(p) || PROC_UAREA_BASE(p) == 0UL)
                 return -1;
+        if ((PROC_FINALIZE_WORD(p) & PROC_FINALIZE_MARK) != 0UL &&
+            (!PROC_TRANSITION(p) || p->vm_state != ~(kword_t)0))
+                return -1;
+        if (PROC_TRANSITION(p)) {
+                if (p->vm_state != ~(kword_t)0 ||
+                    (PROC_FINALIZE_WORD(p) & PROC_FINALIZE_MARK) == 0UL)
+                        return -1;
+                status = (unsigned int)(PROC_FINALIZE_WORD(p) & PROC_HALF_MASK);
+        }
         files = (const struct file *)(unsigned long)
             (PROC_UAREA_BASE(p) + PROC_FILE_TABLE_OFFSET);
         for (fd = 0U; fd < FILE_NFILE; ++fd) {
@@ -352,22 +360,26 @@ proc_finish_slot(unsigned int slot, unsigned int status)
         pgrp = PROC_PGRP(p);
         ctl = PROC_CTL_WORD(p);
         scope = (ctl >> PROC_SESSION_SHIFT) & PROC_ZOMB_SCOPE_MASK;
-        PROC_SET_TRANSITION(p);
-        if (proc_session_teardown(slot, ctl) != 0) {
-                PROC_CLEAR_TRANSITION(p);
+        if ((PROC_FINALIZE_WORD(p) & PROC_FINALIZE_MARK) == 0UL) {
+                PROC_SET_TRANSITION(p);
+                if (proc_session_teardown(slot, ctl) != 0) {
+                        PROC_CLEAR_TRANSITION(p);
+                        return -1;
+                }
+                if (vm_space_destroy(p, slot) != 0) {
+                        PROC_CLEAR_TRANSITION(p);
+                        return -1;
+                }
+                if ((unsigned int)proc_rt_owner == slot)
+                        proc_rt_owner = 0UL;
+                proc_tty_release_session((unsigned int)(scope &
+                    PROC_ZOMB_SESSION_MASK), slot);
+        }
+        if (proc_uarea_release(slot, p) != 0) {
+                PROC_FINALIZE_WORD(p) = PROC_FINALIZE_MARK |
+                    ((kword_t)status & PROC_HALF_MASK);
                 return -1;
         }
-
-        if (vm_space_destroy(p, slot) != 0) {
-                PROC_CLEAR_TRANSITION(p);
-                return -1;
-        }
-        if ((unsigned int)proc_rt_owner == slot)
-                proc_rt_owner = 0UL;
-        proc_tty_release_session((unsigned int)(scope &
-            PROC_ZOMB_SESSION_MASK), slot);
-        if (proc_uarea_release(slot, p) != 0)
-                return -1;
         proc_runq_remove(slot);
         proc_adopt_children(slot);
 
@@ -396,12 +408,19 @@ int
 proc_exit_finish(int status)
 {
         unsigned int slot;
+        struct proc *p;
 
         slot = (unsigned int)proc_current_slot;
         proc_current_slot = 0UL;
         proc_current_ptr = 0;
-        if (proc_finish_slot(slot, (unsigned int)status) != 0)
+        if (proc_finish_slot(slot, (unsigned int)status) != 0) {
+                p = &proc_table[slot];
+                if (PROC_TRANSITION(p) && PROC_HAS_UAREA(p) &&
+                    p->vm_state == ~(kword_t)0 &&
+                    (PROC_FINALIZE_WORD(p) & PROC_FINALIZE_MARK) != 0UL)
+                        return 1; /* slot 0 retries at the next clock tick */
                 return -1;
+        }
         return proc_has_live_user();
 }
 

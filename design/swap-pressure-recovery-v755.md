@@ -3,6 +3,67 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v881: Recover from post-VM u-area MM release failure (2026-10-31)
+
+After the VM and swap backing are destroyed, `proc_finish_slot`
+may still fail to free the stable 0410-word u-area, for example
+because MM refuses a pinned extent. v880 retained the transition
+flag and u-area owner but `proc_exit_current` had already moved to
+slot 0, so `proc_exit_finish` failure HALTed the system. Retrying
+immediately there would occupy the shared permanent idle stack,
+masking scheduler PI6 and starving any process that could release
+the competing pin.
+
+v881 stores a pending marker and original low-18-bit exit status
+in the previously unused u-area word 067. This word is already
+allocated per process, so no process descriptor or u-area expansion
+is required. Earlier experimentation with a low control-word bit
+was rejected: bit 010 is actually the lowest session-ID bit.
+The implemented marker does not alter session/domain or event bits.
+The victim retains its u-area flag, TRANSITION and VM_SPACE_NONE
+until successful MM release. A nonpending TRANSITION slot remains
+ineligible for this special completion branch.
+
+The resident slot-0 idle loop retries eligible pending finalizers
+once per system clock tick, masking scheduler PI6 around MM/parent/
+run-queue changes while leaving disk interrupt levels available.
+It uses one permanent last-retry-clock word and scans the existing
+three-word process table; there is no permanent per-process retry
+queue or new heap allocation. A completed retry resumes only the
+post-VM tail, so session HUP, VM destruction, TTY detachment and
+RT release cannot be repeated. It safely publishes FREE/ZOMB,
+adopts children, removes runq membership and wakes WAIT parents.
+If the deferred victim was the last live user, slot 0 follows the
+normal final HALT path.
+
+The production C fallback uses the same marker, validates both
+TRANSITION and VM_SPACE_NONE and preserves the exit status.
+`proc_exit_finish` distinguishes the deferred, still-owned u-area
+from unrelated cleanup failure, handing the former to slot 0
+instead of HALT. Other failures remain errors.
+
+Native PDP-6 `daimos-deferred-uarea-v881.sh` tests rejected MM
+release, correct status and session preservation, clock-service
+retry, no repeated HUP/VM, exact-once FREE/ZOMB publication and
+unrelated TRANSITION rejection: PASS.
+`daimos-exit-deferred-v881.sh` compiles production KCC C code and
+executes its `proc_exit_finish` leaf with deferred/unrecoverable/
+success outcomes: PASS. v869/v876/v879/v880 regressions PASS.
+Lowmem KCORE link PASS at `021567` octal (9,079 words; +100
+against v880; +887 against 020000). Only one new resident tick
+word; the rest is text.
+
+The headless full-system ordinary session/HUP/TTY regression also
+PASSes with v881. This tests normal guest boot and teardown, not
+injected MM busy while a saved idle finalizer is pending.
+
+**Limits:** Idle-service retries depend on slot-0 execution and
+clock progress; they cannot guarantee reclamation while other
+users remain continuously busy or when MM failure is permanent.
+This does not yet prove a full-system injected-MM-failure / PI6
+continuation run, or make OOM victim killing safe. A failure
+before VM destruction still follows the older failure policy.
+
 ## v880: Validate swap allocation before irreversible detach (2026-10-31)
 
 `vm_space_destroy` previously ignored the result of the `void`

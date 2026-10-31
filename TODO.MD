@@ -2,6 +2,14 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [ ] v881 defers a failed post-VM stable u-area MM free to the
+  clock-throttled slot-0 reaper, using unused u-area word 067 for
+  marker/status. No per-process queue, unchanged session bits,
+  one new permanent retry-clock word. Native retry/compiled EXIT
+  and old teardown tests PASS; next inject a genuine full-system
+  MM-busy failure and prove PI6 progress under competing users.
+  Ordinary full-system HUP/TTY regression already PASSes.
+  The idle-only mechanism is not a bounded OOM killer.
 - [ ] v880 makes disk-swap detach ownership-preserving under a
   missing/invalid backing span: the complete bitmap run is verified
   before free, and failed detach prevents VM_SPACE_NONE publication.

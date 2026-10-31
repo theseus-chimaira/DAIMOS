@@ -1,3 +1,22 @@
+## 2026-10-31 v881: defer failed post-VM u-area release from slot 0
+
+When MM refuses to release an exiting process's stable u-area after
+VM destruction, its finalizer now retains TRANSITION, VM_SPACE_NONE,
+the u-area owner and exit status instead of trapping the machine in
+the slot-0 HALT path. Pending status is encoded in formerly unused
+u-area word 067 (LH marker, RH status). Session, domain and event
+control bits remain unchanged. The idle kernel retries eligible
+finalizers once per clock tick with scheduler PI6 inhibited, without
+allocating any per-slot queue. A successful retry removes the runq
+entry, adopts children and publishes FREE/ZOMB exactly once.
+Native PDP-6 retry, untagged-transition exclusion and the compiled
+production C EXIT return behavior PASS. Old close, HUP and VM tests
+remain PASS. Lowmem KCORE links at `021567` octal (9,079 words):
++100 over v880, 887 over the strict 020000 limit. One resident
+clock word, no new process descriptor/u-area words. Persistent MM
+errors and the full-system injected-failure / OOM tests remain open.
+Ordinary full-system session leader HUP and TTY regression PASSes.
+
 ## 2026-10-31 v880: transactional disk-swap detach and VM ownership
 
 `proc_swap_detach` now returns an error when its nonresident backing
