@@ -2,6 +2,22 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v822: Exchange resource-admission boundary (2026-10-31)
+
+The testkit `daimos-swap-exchange-admission-v822.c` verifies ten
+resource-preflight cases (PASS). Equal 064000-octal-word resident and
+incoming images with 208 saved sectors each require no additional RAM
+extent or BACKSTORE tail, unlike ordinary 208-sector swap-out when only
+176 sectors are free. Larger incoming RAM or outgoing backing images
+require the exact contiguous extension; aggregate free space is not
+enough. Invalid alignment and zero-sized images are rejected.
+
+This is a host model of capacity only, not a production scheduler gate.
+An actual admission must additionally check process-state provenance,
+RUN/SLEEP policy, MM pin and in-place ownership, transition exclusion,
+executable PURE backing, disk bitmap and workspace lifetime. The v758
+writer WAIT/EXIT regression remains FAIL; no production change is claimed.
+
 ## v821: Scheduler-to-exchange integration audit (2026-10-31)
 
 The production `proc_swap_mres_service_v481` still calls only
