@@ -27,6 +27,7 @@
         .globl  proc_swap_exchange_pair_v826
         .globl  proc_swap_exchange_lock_v829
         .globl  proc_swap_exchange_abort_v830
+        .globl  proc_swap_exchange_build_v831
         .globl  proc_current_slot
         .globl  proc_swap_exchange_preflight_v791
         .globl  proc_swap_exchange_live_v794
@@ -322,6 +323,133 @@ proc_swap_exchange_abort_v830:
         andcam  6,(4)
         andcam  6,(5)
         setz    1,
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; int proc_swap_exchange_build_v831(a_slot,b_slot,base,graph)
+; Construct the raw, equal-size v790 graph in 52 caller-owned words.
+; Must follow successful v829 locking, before any destructive transfer.
+; Graph layout: run[2], stage[2], commit[6], prepare[9], transfer[7],
+; MM[5], PURE[4], records[8], account[4], publish[5].
+; The v790 preflight/live checks remain authoritative.
+proc_swap_exchange_build_v831:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        move    010,1
+        move    011,2
+        move    012,3
+        move    013,4
+        jumpe   013,proc_swap_build_fail_v831
+        ; Resolve current entries and incoming record.
+        move    5,010
+        lsh     5,1
+        add     5,010
+        add     5,proc_table
+        move    6,011
+        lsh     6,1
+        add     6,011
+        add     6,proc_table
+        move    7,proc_swap_records
+        add     7,011
+        hlrz    1,(7)                 ; incoming first sector
+        hrrz    2,(7)                 ; incoming sector count
+        jumpe   2,proc_swap_build_fail_v831
+        ; Build only the exact equal-size, zero-PURE subset.
+        hlrz    3,1(5)
+        hlrz    4,1(6)
+        came    3,4
+        jrst    proc_swap_build_fail_v831
+        move    4,3
+        lsh     4,-7
+        came    2,4
+        jrst    proc_swap_build_fail_v831
+        ; Pointer graph. Constants are offsets from the caller base.
+        move    4,013
+        addi    4,2
+        movem   4,(013)
+        addi    4,2
+        movem   4,1(013)
+        move    4,013
+        addi    4,012
+        movem   4,2(013)
+        addi    4,011
+        movem   4,3(013)
+        move    4,013
+        addi    4,012                ; commit MM aliases prepare
+        movem   4,4(013)
+        addi    4,025                ; PURE at offset 31
+        movem   4,5(013)
+        addi    4,4
+        movem   4,6(013)
+        addi    4,010
+        movem   4,7(013)
+        addi    4,4
+        movem   4,010(013)
+        setzm   011(013)
+        ; Prepare request (offset 10).
+        movem   012,012(013)
+        movem   010,013(013)
+        movem   011,014(013)
+        movem   3,015(013)
+        movem   3,016(013)
+        movem   1,017(013)
+        movem   2,020(013)
+        movem   2,021(013)
+        setzm   022(013)
+        ; Transfer request (offset 19).
+        movem   1,023(013)
+        movem   012,024(013)
+        movem   012,025(013)
+        movem   2,026(013)
+        movem   2,027(013)
+        setzm   030(013)
+        setzm   031(013)
+        ; MM request (offset 26).
+        movem   012,032(013)
+        movem   010,033(013)
+        movem   011,034(013)
+        movem   3,035(013)
+        movem   3,036(013)
+        ; PURE request: saved B backing, destination, B uarea, skip=0.
+        hlrz    4,(6)
+        move    4,PROC_SWAP_BACKING_OFFSET(4)
+        movem   4,037(013)
+        movem   012,040(013)
+        hlrz    4,(6)
+        movem   4,041(013)
+        setzm   042(013)
+        ; Records request (offset 35).
+        movem   5,043(013)
+        movem   6,044(013)
+        move    4,proc_swap_records
+        add     4,010
+        movem   4,045(013)
+        movem   7,046(013)
+        movem   012,047(013)
+        movem   1,050(013)
+        movem   2,051(013)
+        move    4,037(013)
+        movem   4,052(013)
+        ; Account and publish requests.
+        movem   1,053(013)
+        movem   2,054(013)
+        movem   2,055(013)
+        setzm   056(013)
+        movem   5,057(013)
+        movem   6,060(013)
+        movem   010,061(013)
+        movem   011,062(013)
+        movem   012,063(013)
+        setz    1,
+        jrst    proc_swap_build_done_v831
+proc_swap_build_fail_v831:
+        seto    1,
+proc_swap_build_done_v831:
+        pop     17,013
         pop     17,012
         pop     17,011
         pop     17,010

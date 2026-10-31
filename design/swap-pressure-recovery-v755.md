@@ -2,6 +2,23 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v831: Native construction of locked raw exchange graph (2026-10-31)
+
+`proc_swap_exchange_build_v831(a_slot,b_slot,base,graph)` now constructs
+the v790 pointer graph for equal-sized, raw-image exchange in 52
+caller-owned temporary words. It allocates no permanent kernel state.
+The graph covers the run and stage pointers, preparation and transfer,
+MM ownership, PURE metadata, swap records, backing accounting and
+publication. In particular, the commit MM pointer must alias the
+preparation request, as demanded by the existing v791 preflight.
+
+The extended testkit native PDP-6 fixture checks graph pointers and
+sector fields, invokes the production `proc_swap_exchange_preflight_v791`
+on the generated graph, and then aborts the paired lock safely (PASS).
+Real MM and disk callbacks are still stubbed in this fixture; the
+graph builder is not wired to the scheduler or destructive v790
+dispatch. The v758 writer WAIT/EXIT full-system regression remains FAIL.
+
 ## v830: Pre-transfer paired lock abort (2026-10-31)
 
 Added `proc_swap_exchange_abort_v830(a_slot,b_slot,base)` to the SWAP
