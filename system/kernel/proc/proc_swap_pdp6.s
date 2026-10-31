@@ -29,6 +29,12 @@
         .globl  proc_swap_exchange_abort_v830
         .globl  proc_swap_exchange_build_v831
         .globl  proc_swap_exchange_execute_v832
+        ; v840: exported diagnostic branch labels, no additional code/data.
+        .globl  proc_swap_service_pressure
+        .globl  proc_swap_service_pop_clear
+        .globl  proc_swap_service_failed
+        .globl  proc_swap_service_cooldown_v833
+        .globl  proc_swap_service_candidate_v834
         .globl  proc_current_slot
         .globl  proc_swap_exchange_preflight_v791
         .globl  proc_swap_exchange_live_v794

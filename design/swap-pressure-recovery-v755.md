@@ -2,6 +2,23 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v840: Export native swap-service branch trace points (2026-10-31)
+
+The clean v839 regression observed 10 resident swap-service calls but
+no calls to the v826 pair-admission helper. To separate an early
+request rejection from failed `proc_swap_in` and resource pressure,
+the SWAP MRES now exports local branch symbols for `service_pressure`,
+`service_pop_clear`, `service_failed`, `service_cooldown_v833`, and
+`service_candidate_v834`. These are symbol visibility changes only:
+no executable code, disk format or permanent RAM was added. The complete
+SWAP MRES assembler passes.
+
+Testkit `daimos-swap-branches-v840.sh` creates a fresh full-system
+image with explicit breakpoints for these branch points and the v826,
+v832, and v790 entries. Shell syntax validation passes. The full-system
+v840 diagnostic has not yet completed; the last writer WAIT/EXIT
+acceptance result remains the v839 timeout (FAIL).
+
 ## v839: Clean image with live MRES exchange breakpoints (2026-10-31)
 
 The testkit `daimos-swap-clean-trace-v839.sh` generates a private v669
