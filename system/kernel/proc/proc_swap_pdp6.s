@@ -207,10 +207,13 @@ proc_swap_pair_a_state_v827:
         hrrz    5,(7)
         came    5,6
         jrst    proc_swap_pair_fail_v826
+        .globl  proc_swap_pair_admitted_v857
+proc_swap_pair_admitted_v857:
         setz    1,
         jrst    proc_swap_pair_done_v826
 proc_swap_pair_fail_v826:
         seto    1,
+        .globl  proc_swap_pair_done_v826   ; v857 admission trace
 proc_swap_pair_done_v826:
         pop     17,011
         pop     17,010
