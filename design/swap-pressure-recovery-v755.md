@@ -2,6 +2,24 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v838: Runtime SWAP MRES address resolution and boot limitation (2026-10-31)
+
+The preserved v837 trace showed `proc_swap_service_one` executing
+`JRST 0,032255` (octal). Subtracting the v837 SWAP MRES service
+link offset `002423` gives the installed SWAP module base `027632`.
+Consequently, the candidate native breakpoints for that exact image
+are v826 `027632`, v832 `030315` and v790 `031171` (all octal).
+
+Testkit `daimos-swap-live-mres-v838.sh` derives these from the preserved
+trampoline and matching link map, rather than assuming an overlay
+address is fixed across builds. Dry-run address resolution PASSed.
+An attempted actual diagnostic run against the preserved v837 boot
+image HALTED at `?RT` before executing the writer workload. This is an
+inconclusive runtime exchange trace, not a passed regression. The
+runner now fails explicitly on `?RT` or missing workload markers.
+For reliable exchange-path evidence, rebuild or restore a clean native
+boot image before running with these breakpoints. v758 remains FAILED.
+
 ## v837: Preserved native breakpoint evidence (2026-10-31)
 
 Executed the testkit v836 full-profile diagnostic with retained build
