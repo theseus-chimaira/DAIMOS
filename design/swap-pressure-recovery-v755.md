@@ -2,6 +2,31 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v851: One-shot dispatch after successful swap-in (2026-10-31)
+
+The v849 trace proved all 16 pressure children were woken by gate
+EOF. The v850 trace showed the selector continuing to request slot-0
+swap service, without completing any pressure-child exit. On success,
+SWAP MRES had written the newly restored slot to `proc_sched_cursor`,
+but the selector treated that as a *previous* round-robin cursor and
+could immediately choose the next swapped child instead of running the
+restored one. This creates a repeatable overcommitment liveness hazard.
+
+v851 carries a one-shot `01000` bit in the existing scheduler cursor
+after successful swap-in or exchange (no additional persistent RAM).
+The resident selector honors this hint after real-time-owner priority,
+but only after checking the slot is in range, RUN, not transitioning,
+and has a resident VM base. It clears the bit upon selecting that
+slot, so later elections use the normal nice/CPU/cyclic policy. A
+rejected hint falls through to regular election. This change targets
+the dispatch boundary, not WAIT or pipe EOF, both already exercised
+correctly in the native traces.
+
+Full SWAP MRES and scheduler assembly pass. The isolated native v826
+pair/lock/abort test passes. Full-system v851 acceptance is being
+evaluated with the proven `010000`-sector test backstore rather than
+the too-small default; the result must be recorded separately.
+
 ## v849: Gate EOF wakes all pressure children; dispatch still stalls (2026-10-31)
 
 Using the `010000`-sector backstore fixture, the completed v847 trace

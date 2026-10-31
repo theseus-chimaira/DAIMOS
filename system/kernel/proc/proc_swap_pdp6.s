@@ -87,6 +87,7 @@
         .globl  proc_storage_publish_v30
 
         .equ    PROC_WORDS,3
+        .equ    PROC_SCHED_READY_ONCE,01000
         .equ    PROC_STATE_RUN,2
         .equ    PROC_STATE_SLEEP,3
         .equ    PROC_STATE_STOP,6
@@ -1943,6 +1944,7 @@ proc_swap_mres_service_v481:
         jumpn   1,proc_swap_service_failed
 proc_swap_service_restore_done_v842:
         pop     17,1
+        iori    1,PROC_SCHED_READY_ONCE ; one dispatch after swap-in
         movem   1,proc_sched_cursor
         popj    17,
 
@@ -1973,6 +1975,7 @@ proc_swap_service_exchanged_v834:
         pop     17,2                   ; discard candidate
         ; v790 published B resident and released both transitions.
         pop     17,1
+        iori    1,PROC_SCHED_READY_ONCE
         movem   1,proc_sched_cursor
         popj    17,
 proc_swap_service_no_pair_v834:

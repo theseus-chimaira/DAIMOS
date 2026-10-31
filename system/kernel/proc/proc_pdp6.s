@@ -32,6 +32,7 @@
         .equ    PROC_CPU_SLEEP_LH_MASK,017700
         .equ    PROC_SCHED_QUANTUM_TICKS,4
         .equ    PROC_TRANSITION_RH,0200000
+        .equ    PROC_SCHED_READY_ONCE,01000
         .equ    PROC_TIMER_ACTIVE_LH,0400000
         .equ    PROC_TIMER_DUE_LH,0200000
         .equ    PROC_TIMER_TAG_RH,0400000
@@ -212,6 +213,34 @@ proc_select_rt_swap:
         jrst    proc_select_none
 
 proc_select_runq_start:
+        ; v851: a successful slot-0 swap-in must run once before another
+        ; equally ranked swapped candidate can force a new disk exchange.
+        ; The existing cursor carries this one-shot hint; verify that the
+        ; restored child is still runnable and resident before honoring it.
+        move    1,proc_sched_cursor
+        trnn    1,PROC_SCHED_READY_ONCE
+        jrst    proc_select_runq_normal_v851
+        andi    1,0377
+        jumpe   1,proc_select_runq_normal_v851
+        caml    1,proc_high_slot
+        jrst    proc_select_runq_normal_v851
+        move    16,1
+        lsh     16,1
+        add     16,1
+        add     16,proc_table
+        hlrz    2,2(16)
+        andi    2,PROC_STATE_LH_MASK
+        caie    2,PROC_STATE_RUN
+        jrst    proc_select_runq_normal_v851
+        move    2,(16)
+        trne    2,PROC_TRANSITION_RH
+        jrst    proc_select_runq_normal_v851
+        move    2,1(16)
+        trnn    2,0777777
+        jrst    proc_select_runq_normal_v851
+        movem   1,proc_sched_cursor
+        jrst    proc_select_restore
+proc_select_runq_normal_v851:
         hrrz    15,proc_runq_head
 proc_select_runq:
         jumpe   15,proc_select_done
