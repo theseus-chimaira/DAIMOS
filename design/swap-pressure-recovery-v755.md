@@ -2,6 +2,17 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v828: Live victim exclusion in native pair gate (2026-10-31)
+
+The read-only exchange pair gate now rejects the current CPU process,
+an outgoing user-map owner and a resident victim whose MM extent is
+already pinned. The native PDP-6 fixture now checks these three negative
+cases and verifies an eligible pair afterward (PASS). The gate preserves
+the original process-entry pointer across the MM pin query. No persistent
+RAM or disk state is modified. Scheduler transition locking and full
+v790 transaction dispatch are still disconnected; the v758 writer
+WAIT/EXIT acceptance remains unresolved.
+
 ## v827: Native scheduler-state admission gate (2026-10-31)
 
 The conservative `proc_swap_exchange_pair_v826` now additionally

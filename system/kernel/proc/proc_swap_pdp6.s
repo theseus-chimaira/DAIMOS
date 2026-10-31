@@ -25,6 +25,7 @@
         .globl  proc_swap_exchange_commit_v789
         .globl  proc_swap_exchange_run_v790
         .globl  proc_swap_exchange_pair_v826
+        .globl  proc_current_slot
         .globl  proc_swap_exchange_preflight_v791
         .globl  proc_swap_exchange_live_v794
         .globl  proc_swap_exchange_backing_v797
@@ -111,6 +112,9 @@ proc_swap_exchange_pair_v826:
         push    17,011
         move    010,1
         move    011,2
+        ; Never displace the process currently executing on the CPU.
+        camn    010,proc_current_slot
+        jrst    proc_swap_pair_fail_v826
         lsh     1,1
         add     1,010
         add     1,proc_table
@@ -137,6 +141,10 @@ proc_swap_pair_a_state_v827:
         jrst    proc_swap_pair_fail_v826
         trnn    4,PROC_UAREA_RH
         jrst    proc_swap_pair_fail_v826
+        hlrz    7,(1)
+        move    5,PROC_FDCTL_OFFSET(7)
+        trne    5,PROC_USER_MAP_BIT
+        jrst    proc_swap_pair_fail_v826
         move    4,(3)
         trne    4,PROC_TRANSITION_RH
         jrst    proc_swap_pair_fail_v826
@@ -144,6 +152,14 @@ proc_swap_pair_a_state_v827:
         jrst    proc_swap_pair_fail_v826
         hrrz    4,1(1)
         jumpe   4,proc_swap_pair_fail_v826
+        push    17,1
+        push    17,3
+        move    1,4
+        pushj   17,mm_is_pinned
+        move    5,1
+        pop     17,3
+        pop     17,1
+        jumpn   5,proc_swap_pair_fail_v826
         hrrz    4,1(3)
         jumpn   4,proc_swap_pair_fail_v826
         hlrz    4,1(1)
