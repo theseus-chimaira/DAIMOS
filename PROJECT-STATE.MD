@@ -1,3 +1,14 @@
+## 2026-10-31 v877: post-v876 full-system HUP/TTY regression PASS
+
+The full-system session teardown guest successfully completed on the
+v876 process finalizer. Leader exit HUPed both running/stopped session
+members, detached its controlling TTY and allowed reattachment.
+The test isolates CTY from unrelated SDL graphics backends; the old
+unisolated simulator crash (139) was pre-INIT. All native v875-v876
+failure/rollback tests also PASS. No OOM kill, APR/EXEC deferred cleanup
+or full-system fault-injection acceptance is implied. KCORE size stays
+`021226` octal, with no source changes in v877.
+
 ## 2026-10-31 v876: fatal finalizer scheduler/RT safety
 
 Fixed early RT-lease revocation and a period of schedulability during

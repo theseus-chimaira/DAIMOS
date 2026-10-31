@@ -3,6 +3,22 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v877: Post-v876 full-system session teardown acceptance (2026-10-31)
+
+With the v875 controlling-TTY commit-order and v876 RT/TRANSITION
+changes present, the unchanged session-leader exit/HUP guest
+(`daimos-session-teardown-v1.sh`) PASSes end to end: running and
+stopped members receive HUP, the controlling TTY detaches and later
+reattachment succeeds. The simulator launches with Type 340 headless
+and unrelated WCNSLS/OCNSLS SDL graphical devices disabled; the
+previous unisolated execution crashed in SDL with exit 139 before INIT
+could run, so that crash was not evidence about session behavior.
+
+This is ordinary full-system session-lifecycle acceptance, separate
+from native fault injection of failed FILE/VM/HUP destruction, and is
+**not** full-system OOM or forced APR/EXEC cleanup acceptance. v877
+changes documentation only; KCORE stays at `021226` octal.
+
 ## v876: Guard fatal teardown transition and preserve live RT ownership (2026-10-31)
 
 The old `proc_finish_slot` revoked a target's real-time owner lease
@@ -32,9 +48,8 @@ TTY/HUP regression and v869 final-FILE guard remain independent tests.
 Lowmem KCORE link PASS: exclusive end `021226` octal, four words above
 v875 `021222`. No automatic OOM victim kill is enabled.
 
-The full-system v875 session-leader exit/HUP test PASSes with unrelated
-color-scope SDL backends disabled. A separate post-v876 system rerun is
-required before claiming the same full-system coverage for this change.
+The full-system session-leader exit/HUP test PASSes both after v875
+and in a separate post-v876 run with unrelated SDL backends disabled.
 Nonreturning APR/EXEC fatal teardown and bounded provider cleanup
 remain the principal OOM blockers.
 

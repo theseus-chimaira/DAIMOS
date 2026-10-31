@@ -1,3 +1,13 @@
+## 2026-10-31 v877: full-system session teardown acceptance
+
+Post-v876 `daimos-session-teardown-v1.sh` PASSes in a headless
+CTY/DPY guest with unrelated graphical color-scope devices disabled.
+It covers leader exit, HUP to running/stopped members and TTY reattach.
+The earlier unisolated run had crashed in SDL before INIT. This is
+ordinary session-lifecycle acceptance, not injected failing cleanup
+or automatic OOM termination. No code or size change in v877;
+resident KCORE endpoint remains `021226` octal.
+
 ## 2026-10-31 v876: exclude and preserve RT victim through HUP errors
 
 The native finalizer now marks TRANSITION before sending session HUP,

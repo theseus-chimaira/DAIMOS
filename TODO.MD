@@ -2,6 +2,10 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [ ] v877: ordinary full-system session teardown PASSes on the post-v876
+  code under headless CTY/DPY test isolation. This does *not* validate
+  injected HUP/VM failures during the full-system run or guarantee
+  asynchronous cleanup after a nonreturning APR/EXEC fault.
 - [ ] v876 now excludes a victim from scheduling before possibly sleeping
   session-HUP callbacks, and preserves RT ownership on failed HUP or VM
   destruction. Native failure/rollback test PASS; old-code negative
