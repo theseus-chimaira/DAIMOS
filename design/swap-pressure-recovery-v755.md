@@ -2,6 +2,20 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v830: Pre-transfer paired lock abort (2026-10-31)
+
+Added `proc_swap_exchange_abort_v830(a_slot,b_slot,base)` to the SWAP
+MRES. It is callable only before destructive transfer by the owner of
+both v829 TRANSITION locks and the unique resident MM pin. It verifies
+the process identities, state of both locks, resident/nonresident bases,
+and exact MM owner/extent/single-pin contract before unpinning and
+clearing both locks. Invariant violations halt rather than releasing an
+unverified process. There is no new persistent RAM allocation. The
+native PDP-6 v826 fixture now exercises the complete lock/abort cycle
+with deterministic MM callbacks (PASS). The v790 request graph and
+scheduler dispatch are not yet connected, and the v758 writer WAIT/EXIT
+regression remains unpassed.
+
 ## v829: Paired transition lock and MM pin acquisition (2026-10-31)
 
 `proc_swap_exchange_lock_v829` is a new SWAP MRES entry for execution

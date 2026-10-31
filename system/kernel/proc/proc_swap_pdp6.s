@@ -26,6 +26,7 @@
         .globl  proc_swap_exchange_run_v790
         .globl  proc_swap_exchange_pair_v826
         .globl  proc_swap_exchange_lock_v829
+        .globl  proc_swap_exchange_abort_v830
         .globl  proc_current_slot
         .globl  proc_swap_exchange_preflight_v791
         .globl  proc_swap_exchange_live_v794
@@ -258,6 +259,69 @@ proc_swap_lock_fail_v829:
         seto    1,
 proc_swap_lock_done_v829:
         pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; void proc_swap_exchange_abort_v830(a_slot,b_slot,base)
+; Release an acquired v829 pair before ANY destructive transfer.
+; The caller must hold both transitions and the unique A MM pin.
+; Unexpected ownership errors are fatal, not a reason to unlock.
+proc_swap_exchange_abort_v830:
+        push    17,010
+        push    17,011
+        push    17,012
+        move    010,1
+        move    011,2
+        move    012,3
+        jumpe   010,proc_swap_storage_invariant_v30
+        jumpe   011,proc_swap_storage_invariant_v30
+        camn    010,011
+        jrst    proc_swap_storage_invariant_v30
+        caml    010,proc_high_slot
+        jrst    proc_swap_storage_invariant_v30
+        caml    011,proc_high_slot
+        jrst    proc_swap_storage_invariant_v30
+        move    4,010
+        lsh     4,1
+        add     4,010
+        add     4,proc_table
+        move    5,011
+        lsh     5,1
+        add     5,011
+        add     5,proc_table
+        move    6,(4)
+        trnn    6,PROC_TRANSITION_RH
+        jrst    proc_swap_storage_invariant_v30
+        move    6,(5)
+        trnn    6,PROC_TRANSITION_RH
+        jrst    proc_swap_storage_invariant_v30
+        hrrz    6,1(4)
+        came    6,012
+        jrst    proc_swap_storage_invariant_v30
+        hrrz    6,1(5)
+        jumpn   6,proc_swap_storage_invariant_v30
+        move    1,012
+        move    2,010
+        hlrz    3,1(4)
+        pushj   17,mm_process_verify_pinned_v792
+        jumpn   1,proc_swap_storage_invariant_v30
+        move    1,012
+        pushj   17,mm_unpin
+        jumpn   1,proc_swap_storage_invariant_v30
+        move    4,010
+        lsh     4,1
+        add     4,010
+        add     4,proc_table
+        move    5,011
+        lsh     5,1
+        add     5,011
+        add     5,proc_table
+        movei   6,PROC_TRANSITION_RH
+        andcam  6,(4)
+        andcam  6,(5)
+        setz    1,
         pop     17,012
         pop     17,011
         pop     17,010
