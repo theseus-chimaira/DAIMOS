@@ -2,6 +2,22 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v842: Swap restore/return branch observability (2026-10-31)
+
+Added exported branch symbols for the normal swap-service restore
+completion and the `proc_swap_in` return, pressure, and failure labels.
+These are labels and symbol exports only: no new instructions or
+persistent kernel RAM. The full SWAP MRES assembles and the isolated
+native v826 pair/lock/abort regression passes. Testkit
+`daimos-swap-return-trace-v842.sh` instruments these paths alongside
+the v840 pressure and transaction entries in a clean full-system build.
+
+The v841 trace saw ten swap-service calls and no hits on any pressure,
+early-rejection, cooldown, or exchange entry point. The purpose of
+v842 is to distinguish the normal swap-in return from the other
+possible outcomes. The v758 writer WAIT/EXIT regression must not be
+marked fixed without a completed full-system acceptance test.
+
 ## v841: Clean native service-branch tracing (2026-10-31)
 
 Executed testkit `daimos-swap-branches-v840.sh` against a fresh full

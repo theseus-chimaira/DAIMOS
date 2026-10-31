@@ -35,6 +35,11 @@
         .globl  proc_swap_service_failed
         .globl  proc_swap_service_cooldown_v833
         .globl  proc_swap_service_candidate_v834
+        ; v842: observe normal restore and allocator return without code.
+        .globl  proc_swap_service_restore_done_v842
+        .globl  proc_swap_in_restore
+        .globl  proc_swap_in_pressure
+        .globl  proc_swap_in_fail
         .globl  proc_current_slot
         .globl  proc_swap_exchange_preflight_v791
         .globl  proc_swap_exchange_live_v794
@@ -1936,6 +1941,7 @@ proc_swap_mres_service_v481:
         pushj   17,proc_swap_in
         jumpg   1,proc_swap_service_pressure
         jumpn   1,proc_swap_service_failed
+proc_swap_service_restore_done_v842:
         pop     17,1
         movem   1,proc_sched_cursor
         popj    17,
