@@ -2,31 +2,42 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [x] v883: non-current fatal HUP returns success once VM destruction
+  commits and u-area release is explicitly deferred under the
+  TRANSITION/VM_NONE/word-067 marker; duplicate events and precommit
+  failures remain rejected. Native PDP-6 test PASS; old code FAILs
+  the negative-control fixture. Full-system non-current MM-busy
+  injection PASS (3 frees / 2 busy / 1 pin / 1 unpin / no error);
+  the older current-EXIT injected test also PASSes.
+- [ ] v883 follow-up: prove prolonged runnable-load reaper fairness,
+  genuine pre-VM fatal-event error propagation in a booted guest,
+  and a policy for permanent MM/resource-provider refusal.
 - [x] v882 full-system transient MM_BUSY test for process-owned EXIT:
   real u-area MM pin, two rejected frees, clock-yielded idle cleanup,
   one unpin, and eventual normal session/HUP/TTY HALT PASS. All
   instrumentation stays in the disposable daimos-testkit kernel
   overlay, zero production resident words.
-- [ ] v882 follow-up: non-current fatal teardown can return failure
-  while its pending u-area awaits idle reaping. Test the caller
-  semantics and demonstrate useful progress with another process
-  continuously runnable. Persistent MM errors still require policy.
-- [ ] v881 defers a failed post-VM stable u-area MM free to the
+- [x] v882/v883 follow-up: non-current fatal teardown now reports
+  committed delivery correctly, and a full-system MM-busy/HUP
+  fault-injection regression PASSes. Sustained continuously runnable
+  companion progress and permanent-MM-error policy remain open
+  under the v883 follow-up above.
+- [x] v881 defers a failed post-VM stable u-area MM free to the
   clock-throttled slot-0 reaper, using unused u-area word 067 for
   marker/status. No per-process queue, unchanged session bits,
   one new permanent retry-clock word. Native retry/compiled EXIT
-  and old teardown tests PASS; next inject a genuine full-system
-  MM-busy failure and prove PI6 progress under competing users.
-  Ordinary full-system HUP/TTY regression already PASSes.
+  and old teardown tests PASS; v882/v883 now demonstrate genuine
+  full-system MM-busy recovery for current and non-current victims.
+  Continuously runnable competing-user PI6 fairness remains open.
   The idle-only mechanism is not a bounded OOM killer.
-- [ ] v880 makes disk-swap detach ownership-preserving under a
+- [x] v880 makes disk-swap detach ownership-preserving under a
   missing/invalid backing span: the complete bitmap run is verified
   before free, and failed detach prevents VM_SPACE_NONE publication.
   Native VM and actual C detach tests PASS with expected failure
   against pre-v880 code. The SWAP MRES verifier is reused through
   a patched KCORE entry (+16 resident words); full-system ordinary
-  session HUP/TTY regression also PASSes. Next investigate
-  post-VM u-area MM-free failure and a safe deferred finalizer.
+  session HUP/TTY regression also PASSes. Post-VM u-area failure is
+  handled by the v881/v882/v883 deferred-finalizer series.
 - [ ] v879: APR and post-commit EXEC now use a process-owned kernel
   FILE-close continuation with timer-yielded retries; duplicate fatal
   events, native direct swap-out/exchange and OOM selection exclude

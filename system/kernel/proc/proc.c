@@ -470,7 +470,16 @@ proc_event_apply(unsigned int slot, unsigned int event)
                         return -1;
                 }
                 file_table = saved;
-                return proc_finish_slot(slot, SYS_WAIT_EVENT_FLAG | event);
+                if (proc_finish_slot(slot, SYS_WAIT_EVENT_FLAG | event) == 0)
+                        return 0;
+                /* The event has committed once the old VM is gone.
+                 * Its stable u-area stays quarantined for idle cleanup.
+                 * Pre-commit failures still reject event delivery. */
+                if (PROC_HAS_UAREA(p) && PROC_TRANSITION(p) &&
+                    p->vm_state == ~(kword_t)0 &&
+                    (PROC_FINALIZE_WORD(p) & PROC_FINALIZE_MARK) != 0UL)
+                        return 0;
+                return -1;
         }
         ctl = PROC_CTL_WORD(p);
         if (event == SYS_EVENT_PIPE)

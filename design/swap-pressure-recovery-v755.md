@@ -3,6 +3,53 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v883: Non-current fatal HUP completion is not MM release (2026-10-31)
+
+For a non-current fatal event, `proc_event_apply` first closes all
+FILE entries, then calls `proc_finish_slot`. The v881 u-area reaper
+made it possible for VM destruction to complete even when the final
+MM free returned busy, but the event-delivery caller still received
+`-1`. Session-leader HUP could then fail after the member had
+irreversibly lost its VM. Re-delivery was impossible because the
+member was in TRANSITION; this led to a false session-teardown failure.
+
+The native event branch now distinguishes failure to commit fatal
+teardown from failure to reclaim the final u-area immediately. If
+the pending target retains a stable u-area, has TRANSITION set,
+has VM_SPACE_NONE and carries the word-067 finalize marker,
+`proc_event_apply` returns 0: the irreversible event was delivered.
+The existing slot-0 reaper owns subsequent reclamation and parent
+notification. Other error cases still return -1. A duplicate event
+cannot re-enter the already quarantined victim. The C fallback
+matches this rule. No new descriptor bits or per-process state.
+
+Native PDP-6 `daimos-noncurrent-fatal-v883.sh` exercises the
+production event branch and finalizer together: committed HUP,
+preserved fatal wait status, second-event rejection, two failed
+MM releases, eventual zombie publication and exactly-once parent
+notification PASS. The fixture first injects a VM-destroy failure
+and proves event failure, no u-area release and cleared TRANSITION
+before retrying delivery. Against the unchanged pre-v883 assembly,
+the same test FAILs immediately as expected. Earlier native
+FILE, current-EXIT, fatal-close, RT and VM-detach tests PASS.
+KCORE links at `021610` octal, 9,096 words (+17 resident text,
+no new persistent table). Sustained-load service progress is
+still to be accepted before automatic OOM killing.
+
+Full-system `daimos-noncurrent-uarea-pin-v883.sh` also PASSes on a
+disposable PDP-6 kernel. The test-only probe chooses the first
+non-current fatal HUP target and uses real MM pin/unpin operations
+without intercepting `mm_free`. Post-HALT SIMH memory readback
+confirms target slot 2, 3 release attempts, 2 actual MM_ERR_BUSY
+returns, one successful pin/unpin and zero probe errors. The
+session leader completes HUP delivery and TTY detach/reattach
+and reaches normal HALT. Re-running the original v882 current-EXIT
+variant against the modified event-delivery code also PASSes.
+The user-visible event commitment and u-area reclamation are
+therefore correctly separated in both exercised full-system paths.
+The test does not establish idle-reaper progress under continuously
+runnable CPU load or resolution of permanently pinned extents.
+
 ## v882: Full-system actual pinned u-area recovery (2026-10-31)
 
 The standalone testkit harness `daimos-uarea-pin-integration-v882.sh`

@@ -1,3 +1,25 @@
+## 2026-10-31 v883: committed non-current fatal delivery
+
+Non-current fatal events previously returned an ambiguous -1 after
+`proc_finish_slot` had already destroyed the target VM but failed
+to release a pinned u-area. A session leader therefore treated a
+successfully delivered HUP as failed, preventing synchronous session
+teardown although slot 0 owned the deferred finalization.
+`proc_event_apply` now returns success for precisely the verified
+TRANSITION + VM_SPACE_NONE + u-area word 067 pending marker state.
+Failure before irreversible teardown, including FILE close rejection
+and VM destroy failure, still returns an error. Duplicate events
+remain rejected while the process is quarantined. The C fallback
+mirrors this contract. Native PDP-6 acceptance and pre-v883 negative
+control PASS/expected FAIL (including injected VM precommit failure),
+along with earlier FILE/EXIT/finalizer regressions. KCORE exclusive
+end `021610` octal (9,096 words), +17
+over v882 and 904 above 020000; no permanent data change.
+The full-system disposable-kernel non-current HUP injection also
+PASSes: target slot 2, 3 final u-area frees, 2 genuine MM_ERR_BUSY,
+1 MM pin and unpin, no hook error, normal session HUP/TTY HALT.
+The unchanged current-EXIT v882 variant also PASSes.
+
 ## 2026-10-31 v882: full-system genuine MM_BUSY retry acceptance
 
 A testkit-only full-system PDP-6 image pins a real stable u-area on

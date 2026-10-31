@@ -1453,10 +1453,32 @@ proc_event_fatal_other:
         move    1,010
         move    2,011
         iori    2,0400000
+        pushj   17,proc_finish_slot
+        jumpe   1,proc_event_fatal_other_done_v883
+        ; A post-VM u-area MM_BUSY means fatal delivery committed.
+        ; Its TRANSITION/VM_NONE owner is queued for slot-0 completion.
+        ; Do not make the session leader retry an already delivered HUP.
+        move    3,(012)
+        trnn    3,PROC_TRANSITION_RH
+        jrst    proc_event_fatal_other_done_v883
+        trnn    3,0400000
+        jrst    proc_event_fatal_other_done_v883
+        move    4,1(012)
+        camn    4,[-1]
+        jrst    proc_event_fatal_other_pending_v883
+        jrst    proc_event_fatal_other_done_v883
+proc_event_fatal_other_pending_v883:
+        hlrz    3,3
+        jumpe   3,proc_event_fatal_other_done_v883
+        move    4,PROC_FINALIZE_OFFSET(3)
+        tlnn    4,PROC_FINALIZE_MARK_LH
+        jrst    proc_event_fatal_other_done_v883
+        setz    1,                   ; irreversible delivery accepted
+proc_event_fatal_other_done_v883:
         pop     17,012
         pop     17,011
         pop     17,010
-        jrst    proc_finish_slot
+        popj    17,
 proc_event_fatal_other_close_fail_v867:
         pop     17,012
         pop     17,011

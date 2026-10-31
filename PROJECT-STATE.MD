@@ -1,3 +1,22 @@
+## 2026-10-31 v883: non-current fatal HUP commit status corrected
+
+Fixed the non-current fatal-event caller contract: after FILE close
+and successful VM destruction, a rejected final u-area MM free
+quarantines the target for v881 slot-0 completion. This is now a
+committed event and returns success to session teardown. An event
+rejected before VM destruction still fails. A duplicate fatal event
+against the pending target remains forbidden; the original exit
+status is preserved. Native PDP-6 testkit coverage PASS, and the
+pre-v883 version FAILs the new negative control as expected.
+The C fallback enforces the same commitment test. KCORE link PASS
+at `021610` octal, 9,096 words (+17 over v882), no new static RAM.
+Sustained runnable-load fairness remains a separate acceptance
+gate; OOM stays disabled.
+The final full-system non-current injected-MM-busy acceptance now
+PASSes (slot 2, 3 release attempts, 2 busy, pin/unpin once each,
+no error, normal session/HUP/TTY HALT), as does the preserved
+current-EXIT v882 scenario. Sustained-load fairness is still open.
+
 ## 2026-10-31 v882: guest MM pin/failed-free/retry accepted
 
 Full-system testkit fault injection on the actual PDP-6 kernel
