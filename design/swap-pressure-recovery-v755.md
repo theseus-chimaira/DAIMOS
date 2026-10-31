@@ -2,6 +2,28 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v821: Scheduler-to-exchange integration audit (2026-10-31)
+
+The production `proc_swap_mres_service_v481` still calls only
+`proc_swap_in`. On a resource-pressure result it installs a 0100-octal
+tick cooldown, preserves the disk record, and returns to the scheduler.
+`proc_swap_mres_reclaim_v481` still calls `proc_swap_victim`, then
+`proc_swap_out`, before attempting `mm_compact`. A source search found
+no production call site of `proc_swap_exchange_run_v790` outside the
+exchange implementation itself. Thus the accepted isolated native
+v819 exchange fixture does not yet provide resource progress to the
+v758 writer workload. This is an integration finding, not a native
+regression rerun or a claim that the deadlock is fixed.
+
+Before connecting the scheduler, establish a locked resident-victim and
+swapped-target pairing, verify both stable process identities and PURE
+backing, and prove that the pinned victim can contain the incoming image
+or can grow in place. Verify contiguous BACKSTORE extension or release,
+and ensure no dependency on a third process or unavailable scratch RAM.
+The scheduler must distinguish an exchange that is feasible from one
+that cannot progress. Preserve the existing v758 failure as an active
+release gate until the original writer WAIT/EXIT workload passes.
+
 ## v762: Native victim-footprint evidence (raw swap)
 
 The testkit v762 native simulator diagnostic stopped at the same failed
