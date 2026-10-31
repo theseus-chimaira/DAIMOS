@@ -1,3 +1,14 @@
+## 2026-10-31 v876: exclude and preserve RT victim through HUP errors
+
+The native finalizer now marks TRANSITION before sending session HUP,
+rejects pre-existing TRANSITION, and leaves RT ownership intact until
+successful VM destruction. HUP and VM-free failures clear TRANSITION
+while preserving the live process's RT ownership. Native PDP-6 v876
+fault-injection PASS and pre-v876 negative control FAIL as expected.
+Lowmem KCORE link PASS: exclusive end `021226` octal (+4 code words).
+No new persistent words. APR/EXEC nonreturning cleanup and OOM kill
+remain unresolved.
+
 ## 2026-10-31 v875: session HUP cannot detach TTY prematurely
 
 Session-leader teardown now leaves the existing controlling-TTY record

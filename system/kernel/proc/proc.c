@@ -339,7 +339,8 @@ proc_finish_slot(unsigned int slot, unsigned int status)
         /* Do not release a live descriptor table even when a fatal caller
          * skipped/failed close(). The native assembly enforces the same
          * check before it modifies RT, session, or VM ownership. */
-        if (!PROC_HAS_UAREA(p) || PROC_UAREA_BASE(p) == 0UL)
+        if (PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) ||
+            PROC_UAREA_BASE(p) == 0UL)
                 return -1;
         files = (const struct file *)(unsigned long)
             (PROC_UAREA_BASE(p) + PROC_FILE_TABLE_OFFSET);
@@ -347,20 +348,22 @@ proc_finish_slot(unsigned int slot, unsigned int status)
                 if (files[fd].node_meta != 0UL)
                         return -1;
         }
-        if ((unsigned int)proc_rt_owner == slot)
-                proc_rt_owner = 0UL;
         parent = PROC_PARENT_SLOT(p);
         pgrp = PROC_PGRP(p);
         ctl = PROC_CTL_WORD(p);
         scope = (ctl >> PROC_SESSION_SHIFT) & PROC_ZOMB_SCOPE_MASK;
-        if (proc_session_teardown(slot, ctl) != 0)
-                return -1;
-
         PROC_SET_TRANSITION(p);
+        if (proc_session_teardown(slot, ctl) != 0) {
+                PROC_CLEAR_TRANSITION(p);
+                return -1;
+        }
+
         if (vm_space_destroy(p, slot) != 0) {
                 PROC_CLEAR_TRANSITION(p);
                 return -1;
         }
+        if ((unsigned int)proc_rt_owner == slot)
+                proc_rt_owner = 0UL;
         proc_tty_release_session((unsigned int)(scope &
             PROC_ZOMB_SESSION_MASK), slot);
         if (proc_uarea_release(slot, p) != 0)

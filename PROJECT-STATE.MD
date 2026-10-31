@@ -1,3 +1,14 @@
+## 2026-10-31 v876: fatal finalizer scheduler/RT safety
+
+Fixed early RT-lease revocation and a period of schedulability during
+potentially sleeping session HUP. `proc_finish_slot` now rejects an
+existing VM transition, publishes its own TRANSITION before member
+callbacks, clears it after failed HUP/VM destruction, and drops RT
+ownership only once the VM is destroyed. Native failure/rollback and
+successful-zombie tests PASS, with old-source negative control FAILing.
+KCORE lowmem link PASS at `021226` octal. No extra resident data.
+Nonreturning fatal APR/EXEC cleanup remains an OOM prerequisite.
+
 ## 2026-10-31 v875: session controlling-TTY teardown ordering
 
 Reordered the resident `proc_session_teardown` commit: it now delays

@@ -2,6 +2,12 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [ ] v876 now excludes a victim from scheduling before possibly sleeping
+  session-HUP callbacks, and preserves RT ownership on failed HUP or VM
+  destruction. Native failure/rollback test PASS; old-code negative
+  control FAIL as expected. Prove remaining teardown stages can either
+  complete or keep a nonreturning process safely quarantined before
+  enabling any OOM kill.
 - [ ] v875 delays controlling-TTY detach until all session HUP calls
   succeed; failed HUP leaves original attachment for retry. Native
   fault-injection and pre-change negative control PASS/expected FAIL.

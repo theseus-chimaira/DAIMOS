@@ -3,6 +3,41 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v876: Guard fatal teardown transition and preserve live RT ownership (2026-10-31)
+
+The old `proc_finish_slot` revoked a target's real-time owner lease
+*before* running `proc_session_teardown`, and marked the process
+TRANSITION only *after* those HUPs succeeded. HUP may invoke provider
+cleanup that sleeps. A fatal-other target could therefore become
+runnable during its own partial teardown; failed HUP left it alive
+with RT ownership already revoked. A later `vm_space_destroy` error
+could also leave a still-live target without its RT lease.
+
+The resident PDP-6 finalizer and its C fallback now reject a target
+already in TRANSITION. After validating that its FILE table is empty,
+they mark TRANSITION before session-HUP callbacks and keep RT ownership
+intact. Failed HUP clears TRANSITION before returning an error; failed
+VM destroy already clears TRANSITION and now also leaves RT ownership
+unchanged. Only after the VM has been successfully removed is RT
+ownership revoked. This does not allocate memory or add a static table.
+Failure *after* VM deletion is still a distinct incomplete-teardown
+case and may leave TRANSITION set; never resume its invalid user VM.
+
+Native PDP-6 v876 runs the production finalizer, checks pre-existing
+transition rejection, observes TRANSITION and unchanged RT ownership
+during HUP and VM callbacks, injects both failures, verifies rollback,
+then verifies normal finalization and RT lease release: PASS. Against
+pre-v876 v875 code the same test FAILs, as expected. The v875 native
+TTY/HUP regression and v869 final-FILE guard remain independent tests.
+Lowmem KCORE link PASS: exclusive end `021226` octal, four words above
+v875 `021222`. No automatic OOM victim kill is enabled.
+
+The full-system v875 session-leader exit/HUP test PASSes with unrelated
+color-scope SDL backends disabled. A separate post-v876 system rerun is
+required before claiming the same full-system coverage for this change.
+Nonreturning APR/EXEC fatal teardown and bounded provider cleanup
+remain the principal OOM blockers.
+
 ## v875: Delay controlling-TTY detach until session HUPs finish (2026-10-31)
 
 Before v875, `proc_session_teardown` removed a session leader's TTY

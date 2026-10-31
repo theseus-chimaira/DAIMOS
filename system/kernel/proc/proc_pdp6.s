@@ -457,6 +457,8 @@ proc_finish_slot:
         ; Do not discard those descriptors with the u-area. This check
         ; uses only existing process memory, before any destructive step.
         move    1,(12)
+        trne    1,PROC_TRANSITION_RH     ; cannot terminate a swapping slot
+        jrst    proc_finish_fail
         trnn    1,0400000               ; PROC_F_UAREA
         jrst    proc_finish_fail
         hlrz    3,1
@@ -470,9 +472,10 @@ proc_finish_fd_check_v869:
 proc_finish_fd_next_v869:
         addi    3,2
         sojg    4,proc_finish_fd_check_v869
-        ; Drop RT ownership only when this process is the owner.
-        camn    10,proc_rt_owner
-        setzm   proc_rt_owner
+        ; Exclude this target from the scheduler during possibly sleeping
+        ; session HUPs, but preserve its RT lease until VM release commits.
+        movei   1,PROC_TRANSITION_RH
+        iorb    1,(12)
 proc_finish_ids:
         move    1,(12)
         lsh     1,-010
@@ -489,10 +492,8 @@ proc_finish_ids:
         move    1,10
         move    2,15
         pushj   17,proc_session_teardown
-        jumpn   1,proc_finish_fail
+        jumpn   1,proc_finish_hup_fail_v876
 
-        movei   1,PROC_TRANSITION_RH
-        iorb    1,(12)
         move    1,12
         move    2,10
         pushj   17,vm_space_destroy
@@ -501,6 +502,9 @@ proc_finish_ids:
         andb    1,(12)                 ; clear transition after VM failure
         jrst    proc_finish_fail
 proc_finish_vm_done:
+        ; An unsuccessful HUP or VM destroy must retain a live RT owner.
+        camn    10,proc_rt_owner
+        setzm   proc_rt_owner
         move    1,16
         andi    1,0377
         move    2,10
@@ -537,6 +541,10 @@ proc_finish_zombie:
         pushj   17,proc_notify_parent
         setz    1,
         jrst    proc_finish_restore
+proc_finish_hup_fail_v876:
+        movni   1,PROC_TRANSITION_RH+1
+        andb    1,(12)                 ; re-enable scheduling after HUP error
+        jrst    proc_finish_fail
 proc_finish_fail:
         seto    1,
 proc_finish_restore:
