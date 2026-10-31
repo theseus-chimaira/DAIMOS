@@ -2,6 +2,22 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v844: Trace the writer's pipe wakeup before WAIT (2026-10-31)
+
+The v843b native regression timed out at PC 013605. Eight normal
+swap-in restores were observed, together with 2297 run-queue insertions;
+`proc_notify_parent` and `proc_wait_child` were not reached. The actual
+test program `daimos-mm-swap-postinit-v283.c` first blocks its parent
+in `dsys_read_words(pipe_r, ...)` and calls `dsys_wait` only after
+reading the first 'A' written by the child. Consequently, absent WAIT
+hits do not identify a defective child-notification path. The v843b
+trace does not establish whether the writer ran or the pipe reader woke.
+
+The v844 testkit trace targets KCORE `pipe_read_words`,
+`pipe_write_words` and `proc_wakeup_event`, while retaining swap-in
+completion instrumentation. This is a diagnostic-only change; the
+writer WAIT/EXIT acceptance remains FAILED pending a successful run.
+
 ## v843: Trace scheduler handoff and child WAIT notification (2026-10-31)
 
 The v842 full-system trace proved nine normal swap-in completions, but
