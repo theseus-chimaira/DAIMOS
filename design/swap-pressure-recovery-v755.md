@@ -18,6 +18,17 @@ v842 is to distinguish the normal swap-in return from the other
 possible outcomes. The v758 writer WAIT/EXIT regression must not be
 marked fixed without a completed full-system acceptance test.
 
+The subsequent fresh full-system v842 run timed out after 300 seconds
+(exit 124; PC 013605), preserving the failed writer acceptance. Its
+runtime trace recorded nine hits at `proc_swap_in_restore` and nine at
+`proc_swap_service_restore_done_v842`, with zero hits on swap-in
+pressure, swap-in failure, service early rejection, pressure cooldown,
+pair admission, or exchange execution. Thus the observed scheduler
+requests can restore swapped processes normally, but writer WAIT/EXIT
+still does not finish. Next investigate scheduler handoff, completion
+notification, and writer wakeup rather than assuming swap-in allocation
+pressure is the immediate blocker.
+
 ## v841: Clean native service-branch tracing (2026-10-31)
 
 Executed testkit `daimos-swap-branches-v840.sh` against a fresh full
