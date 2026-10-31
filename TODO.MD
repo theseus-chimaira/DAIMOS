@@ -1,5 +1,32 @@
 ## Size refresh and pending work (v513, 2026-10-27)
 
+### v864: OOM handling for already-running processes (2026-10-31)
+
+- [ ] Apply the same allocation-free, static KCORE OOM policy to **every
+  memory allocation or growth requested by an already-running process**,
+  including BRK/heap, process-VM expansion, and other user-triggered MM
+  allocations. Do not limit OOM recovery to EXEC/SYS_RUN admission.
+- [ ] First retry normal allocation after packing/compaction and permitted
+  reclaim. If sufficient realizable, aligned free RAM exists but packing
+  fails, fix the allocator regression; do not use OOM to hide it. Measure
+  available words, alignment, pinning and fragmented gaps before deciding.
+- [ ] If the running request still cannot be satisfied because resources
+  are genuinely exhausted, invoke the **minimal static KCORE OOM path**.
+  Terminate the requesting process when required rather than letting it
+  spin or leave a half-updated address space. All kill, cleanup, backing
+  release, parent notification, and zombie/WAIT bookkeeping must run
+  without new RAM, new backing sectors, dynamic buffers, or removable
+  modules; never swap in the victim merely to terminate it.
+- [ ] Bound victim selection and retry attempts, preserve protection for
+  INIT, kernel, current in-flight transitions, pinned or privileged critical
+  processes where applicable, and define the requesting-process fatal case
+  explicitly. Verify failure atomicity and zero-allocation teardown with
+  native daimos-testkit fault injection for both RUN and live BRK/heap
+  expansion, with RAM-only, backing-only, simultaneous exhaustion and
+  no-killable-victim tests. OOM must not require a victim-held provider
+  lock to make progress.
+
+
 The **fresh GCC linked/package sizes** for the current source are:
 
 | PDP-6 profile | KCORE | KCORE + packaged MRES | Permanent endpoint | Below `040000` |
