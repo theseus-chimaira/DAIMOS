@@ -3,6 +3,20 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v856: Mid-transfer write fault is fatal (2026-10-31)
+
+The native PDP-6 testkit `daimos-swap-midwrite-fault-v856.sh`
+injects an I/O failure on the second disk-sector write, after the
+first destructive write succeeds. It executes the real exchange
+transfer code with simulated sector I/O. The test verifies that two
+writes were attempted and that the kernel reached
+`proc_swap_storage_invariant_v30`; native test PASS.
+
+The transaction must not resume or attempt ordinary rollback after
+an irreversible partial write. This test confirms the fatal invariant
+path, not recovery or full-system process resumption. No production
+kernel logic was changed.
+
 ## v855: Incoming writable image before PURE reload (2026-10-31)
 
 Testkit `daimos-swap-incoming-v855.sh` links the real transaction and
