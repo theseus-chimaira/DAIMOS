@@ -3,6 +3,20 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v855: Incoming writable image before PURE reload (2026-10-31)
+
+Testkit `daimos-swap-incoming-v855.sh` links the real transaction and
+intercepts the entry to `proc_swap_exchange_pure_v785` before executable
+reload. It verifies both incoming B writable sectors at the declared
+RAM destination, then executes the real PURE reload and full v854
+metadata/data-integrity assertions. Native PDP-6 test PASS.
+
+This establishes the incoming writable contents at the destructive
+transfer/reload boundary, in addition to v854's three-sector outgoing
+disk verification. It does not establish recovery after a failed disk
+write; a fault after irreversible writes must still reach the kernel
+invariant halt, not resume with inconsistent process images.
+
 ## v854: Full outgoing writable-sector image verification (2026-10-31)
 
 The new native testkit `daimos-swap-exchange-data-v854.sh` extends the
