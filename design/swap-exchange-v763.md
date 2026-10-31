@@ -10,6 +10,16 @@ full-system exchange acceptance.
 
 # v763: Variable-sized in-place process swap exchange
 
+## v825: Reject misaligned writable offsets before preparation (2026-10-31)
+
+The stage preflight now rejects writable RAM starts that are not an
+integral 0200-word sector displacement from the common process base.
+Previously the right shift truncated an unaligned displacement into a
+matching sector index. The native integrated test supplies an A start
+one word beyond its declared base and confirms rejection, unchanged
+disk contents, and subsequent successful valid exchange (PASS).
+No scheduler integration or v758 writer WAIT/EXIT recovery is claimed.
+
 ## v824: Native rejection of out-of-image transfer (2026-10-31)
 
 Extended the existing testkit v819 integrated native PDP-6 fixture with

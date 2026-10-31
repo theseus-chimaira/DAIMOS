@@ -391,6 +391,10 @@ proc_swap_exchange_stage_v784:
 proc_swap_stage_a_offset_v784:
         move    2,1
         sub     2,(010)
+        ; Do not truncate a misaligned byte/word displacement into a
+        ; seemingly valid sector index before resource preparation.
+        trne    2,0177
+        jrst    proc_swap_stage_bad_v784
         lsh     2,-7
         came    2,5(011)
         jrst    proc_swap_stage_bad_v784
@@ -407,6 +411,8 @@ proc_swap_stage_a_offset_v784:
 proc_swap_stage_b_offset_v784:
         move    2,1
         sub     2,(010)
+        trne    2,0177
+        jrst    proc_swap_stage_bad_v784
         lsh     2,-7
         came    2,6(011)
         jrst    proc_swap_stage_bad_v784
