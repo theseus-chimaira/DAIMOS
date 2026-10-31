@@ -1099,6 +1099,7 @@ proc_session_teardown:
         push    17,010                  ; preserve callee-saved scan state
         push    17,011
         push    17,012
+        push    17,013                  ; TTY index across member HUPs
         move    010,1                  ; leader slot, then session id
         move    3,2                    ; leader control word
         ldb     5,[POINT 8,3,32]       ; session
@@ -1110,16 +1111,14 @@ proc_session_teardown:
         jumpl   4,proc_session_teardown_ok
         cail    4,025
         jrst    proc_session_teardown_fail
-        move    6,proc_tty_records(4)
-        and     6,[174000000000]       ; preserve output route
-        movem   6,proc_tty_records(4)
+        move    013,4                  ; retain TTY until every HUP succeeds
 
         movei   011,1
         move    012,proc_table
         addi    012,PROC_WORDS
 proc_session_teardown_loop:
         caml    011,proc_high_slot
-        jrst    proc_session_teardown_ok
+        jrst    proc_session_teardown_commit_v875
         camn    011,010
         jrst    proc_session_teardown_next
         hrrz    3,(012)
@@ -1136,12 +1135,20 @@ proc_session_teardown_loop:
 proc_session_teardown_next:
         addi    012,PROC_WORDS
         aoja    011,proc_session_teardown_loop
+proc_session_teardown_commit_v875:
+        ; No member can have an unclosed FD after successful HUP.
+        ; A failed HUP leaves this original TTY record intact for retry.
+        move    6,proc_tty_records(013)
+        and     6,[174000000000]       ; preserve output route
+        movem   6,proc_tty_records(013)
+        jrst    proc_session_teardown_ok
 proc_session_teardown_fail:
         seto    1,
         jrst    proc_session_teardown_return
 proc_session_teardown_ok:
         setz    1,
 proc_session_teardown_return:
+        pop     17,013
         pop     17,012
         pop     17,011
         pop     17,010

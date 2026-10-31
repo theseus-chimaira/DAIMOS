@@ -1,3 +1,14 @@
+## 2026-10-31 v875: session controlling-TTY teardown ordering
+
+Reordered the resident `proc_session_teardown` commit: it now delays
+controlling-TTY detachment until member HUPs succeed. If an HUP fails
+because FILE or other victim cleanup cannot finish, the original TTY
+state remains for retry. The native v875 test PASSes failed-second-HUP,
+retry, nonleader and detached cases, while pre-change code FAILs the
+early-detach check. Lowmem KCORE link PASS at `021222` octal.
+The recursive HUP sequence is still not fully atomic, and fatal APR/
+EXEC cleanup plus OOM victim killing remain disabled/open in TODO.MD.
+
 ## 2026-10-31 v874: atomic DPY list replacement
 
 Fixed the Type 340 old-list MM allocation leak: replacement now frees

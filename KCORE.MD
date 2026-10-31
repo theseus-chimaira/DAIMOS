@@ -1,3 +1,14 @@
+## 2026-10-31 v875: session HUP cannot detach TTY prematurely
+
+Session-leader teardown now leaves the existing controlling-TTY record
+intact until every member's fatal HUP returns success. A failed FILE
+close in one member can no longer silently detach the still-live
+session before its leader's release reports failure. Native PDP-6
+failed-HUP, successful-retry and nonleader tests PASS; the pre-v875
+negative control FAILs as expected. KCORE link PASS, exclusive lowmem
+endpoint `021222` octal (+4 words versus v874). Nonreturning APR/EXEC
+exit and complete OOM termination remain unverified.
+
 ## 2026-10-31 v874: transactional Type 340 replacement
 
 The optional DPY MRES no longer publishes a replacement display list

@@ -2,6 +2,11 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [ ] v875 delays controlling-TTY detach until all session HUP calls
+  succeed; failed HUP leaves original attachment for retry. Native
+  fault-injection and pre-change negative control PASS/expected FAIL.
+  Earlier members may still exit before a later HUP failure, so audit
+  recursive teardown and nonreturning fatal EXIT before OOM killing.
 - [ ] v874 closes the Type 340 replacement old-extent ownership leak.
   Native transactional rollback tests PASS, including a failing old-code
   negative control. Still verify replay after an injected free failure

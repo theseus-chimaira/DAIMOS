@@ -3,6 +3,40 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v875: Delay controlling-TTY detach until session HUPs finish (2026-10-31)
+
+Before v875, `proc_session_teardown` removed a session leader's TTY
+association and kept only the output route *before* attempting HUP on
+its other session members. A member could fail FILE close and retain
+its u-area (as required by v867-v869), causing HUP to fail while the
+leader and other live members had already lost their TTY attachment.
+The leader's final cleanup then failed, leaving inconsistent session
+ownership and an unsafe later retry.
+
+The PDP-6 session-teardown path now retains the original TTY record
+until each member HUP returns success. The TTY index lives in one saved
+callee-saved AC across the bounded scan. After success it publishes the
+same old output-route-only TTY record; on failure it leaves the original
+association unchanged. No new static words, heap or backing are used.
+This is *commit ordering*, not all-or-nothing HUP: earlier members may
+have been terminated before a later HUP fails, and retry scans only
+those with still-live u-areas.
+
+Native PDP-6 v875 runs the real `proc_session_teardown`, injecting a
+failed second HUP and clobbering caller-scratch ACs in the event stub.
+It verifies unchanged TTY and retained state on failure, then successful
+retry and route-preserving detach; nonleader/detached no-op also PASS.
+The same fixture FAILs on pre-v875 code at the early-detach invariant.
+Lowmem KCORE link PASS: exclusive end `021222` octal, four words above
+v874 `021216`. Existing full-system session-leader exit/HUP acceptance
+is tracked separately.
+
+This reduces cleanup partial-commit damage but cannot safely resume
+an APR-faulting or post-commit EXEC-failed process after an unclosable
+descriptor. Kernel exit still HALTs on unrecoverable finalization;
+provider-call blocking and an allocation-free deferred reaper remain
+unresolved. Do not enable OOM victim termination.
+
 ## v874: Transactional Type 340 list replacement under MM failure (2026-10-31)
 
 The old DPY replacement path wrote the new BLKO IOWD and published the
