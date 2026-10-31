@@ -3,6 +3,43 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v874: Transactional Type 340 list replacement under MM failure (2026-10-31)
+
+The old DPY replacement path wrote the new BLKO IOWD and published the
+new extent before freeing the previous list. An unsuccessful old-list
+`mm_free` was ignored, permanently losing the reference to its allocation.
+This defeats resource accounting and makes memory-pressure recovery unsafe.
+
+Replacement now allocates and copies a new list into an unpublished extent.
+Its new IOWD stays in a saved register. With PI7 quiesced, the old extent
+is released *before* publication of the new base/IOWD. An old-free error
+preserves the original published base and IOWD, frees the unpublished
+replacement, rearms clock refresh, and returns -1. A successful release
+publishes the complete new list and advances the accepted-write counter
+exactly once. The initial-install, allocation-failure and STOP paths
+remain supported without persistent new RAM or backing storage.
+
+If the new extent also cannot be freed while rolling back, there is no
+safe owner for it in the one-base display state. The kernel therefore
+HALTs as an explicit MM ownership invariant violation rather than
+returning with a silently leaked live allocation. This double-failure
+case, and live post-failure Type 340 replay, require separate acceptance.
+
+The new native PDP-6 testkit v874 uses the real `dpy_write_words` assembly
+with injected allocator/free results. It verifies old-list preservation,
+new-list rollback, subsequent successful replacement, IOWD contents,
+write-count publication, allocation failure, STOP and fresh installation:
+PASS. The same test FAILs against pre-v870 source as the negative control.
+v709/v871 DPY gateway and close tests, v870 PIPE close, and the Type 340
+interrupt-policy test PASS. Direct DPY MRES assembly/link and the lowmem
+KCORE link PASS: resident KCORE exclusive end stays `021216` octal,
+because this additional code is confined to optional DPY MRES.
+
+This completes the identified DPY replacement ownership fix but does
+not turn on automatic OOM termination. Forced-fatal APR/EXEC cleanup,
+provider-lock bounds, full-system named-FIFO startup and actual OOM
+resource-progress acceptance remain open.
+
 ## v873: Named-FIFO full-system timeout predates v870 (2026-10-31)
 
 The unchanged KCC `daimos-pipe-fifo-v2.sh` workload timed out with exit

@@ -2,14 +2,18 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [ ] v874 closes the Type 340 replacement old-extent ownership leak.
+  Native transactional rollback tests PASS, including a failing old-code
+  negative control. Still verify replay after an injected free failure
+  in a full-system DPY guest, and explicitly test the MM invariant HALT
+  when even the new allocation cannot be rolled back.
 - [ ] v873: the KCC full-system named-FIFO workload times out both
   before v870 (v869) and on v871 after D6FS startup. Diagnose guest
   progress and the failing stage; do not weaken the test or claim the
   v870 native MM-rollback check provides full FIFO acceptance.
 - [ ] v871 fixes DPY CLOSE error propagation and loss of the Type 340
   raw-list base after failed MM release (native fault injection PASS).
-  Separately fix the list-*replacement* old-extent free failure, and
-  verify native refresh after a failed stop before declaring Type 340
+  Verify native refresh after a failed stop before declaring Type 340
   teardown fully allocation-free and retry-safe.
 - [ ] v870 fixes final PIPE/FIFO close retry after an MM free error;
   native fault-injection PASS. Audit and prove remaining release helpers,

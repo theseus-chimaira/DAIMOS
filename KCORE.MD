@@ -1,3 +1,14 @@
+## 2026-10-31 v874: transactional Type 340 replacement
+
+The optional DPY MRES no longer publishes a replacement display list
+before the old extent is freed. Failed old-list release rolls back the
+unpublished new allocation, retains the original list and IOWD, and
+returns an error. Native PDP-6 replacement/rollback fault injection,
+existing DPY close and interrupt tests, and DPY MRES link PASS. The
+lowmem KCORE endpoint remains `021216` octal; no extra resident KCORE
+words or persistent state were introduced. Full-system replay after a
+forced MM failure and automatic OOM termination remain unverified.
+
 ## 2026-10-31 v873: named-FIFO full-system test baseline
 
 The unchanged KCC named-FIFO full-system test times out after D6FS

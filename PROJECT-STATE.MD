@@ -1,3 +1,17 @@
+## 2026-10-31 v874: atomic DPY list replacement
+
+Fixed the Type 340 old-list MM allocation leak: replacement now frees
+the previous extent before publishing the new program, with rollback
+that frees the unpublished replacement on an old-free failure.
+Native PDP-6 fault injection PASS for failure, recovery, successful
+replacement, no-old-list installation and allocation failure. The
+pre-v870 negative control FAILs as expected. Existing v709/v871 DPY
+tests, v870 PIPE close, Type 340 PI policy, direct DPY MRES link and
+lowmem KCORE link PASS; KCORE exclusive endpoint `021216` octal.
+If both rollback releases fail, an explicit MM invariant HALT remains.
+Actual full-system replay/combined-failure and OOM kill acceptance
+remain open in TODO.MD and design/swap-pressure-recovery-v755.md.
+
 ## 2026-10-31 v873: named-FIFO full-system baseline comparison
 
 Full-system KCC named-FIFO validation times out (124) after D6FS

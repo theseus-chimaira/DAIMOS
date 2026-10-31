@@ -276,13 +276,12 @@ dpy_put_ok:
  * @param AC2 Packed 36-bit word count; zero stops/releases the active list.
  * @return AC1 = accepted word count, or -1 on allocation/input failure.
  *
- * Replacement is transactional with respect to allocation: the old list keeps
- * refreshing while the new list is copied.  Publication runs with the DPY PIA
- * disabled, so PI7 never observes partially initialized list state.  The list
- * is then replayed only by the normal 30-Hz clock hook; dpy_pending is asserted
- * for one finite pass, not for the whole list lifetime.  Stopping the list
- * releases its dynamic extent and the next 30-Hz clock tick resumes native-
- * block TTY refresh.
+ * Replacement is transactional: prepare the new extent and IOWD privately,
+ * quiesce PI7, then release the old extent before publishing the new list.
+ * A rejected old free leaves its list live, discards the new allocation and
+ * resumes clock-driven refresh of the original program.  PI7 never observes
+ * a partially initialized list.  Stopping the list releases its dynamic
+ * extent and the next 30-Hz tick resumes native-block TTY refresh.
  */
 dpy_write_words:
         push 17,010
@@ -291,6 +290,11 @@ dpy_write_words:
         move 011,2                    ; requested packed words
         jumpe 011,dpy_list_stop
         jumpe 010,dpy_list_fail
+        ; These ACs preserve both extents and the unpublished BLKO IOWD
+        ; across MM calls. The STOP/no-input paths keep their old frame.
+        push 17,012
+        push 17,013
+        push 17,014
 
         push 17,[0]                   ; allocation-result local
         movei 5,(17)
@@ -302,14 +306,14 @@ dpy_write_words:
         pushj 17,mm_alloc
         sub 17,kconst_1_1
         jumpn 1,dpy_list_alloc_fail
-        move 6,(17)                   ; new list base
-        jumpe 6,dpy_list_alloc_fail
+        move 012,(17)                 ; new list base
+        jumpe 012,dpy_list_alloc_fail
 
         ; Copy mapped userspace words before taking over the controller.
         setz 1,
         hrl 1,010
-        hrr 1,6
-        move 2,6
+        hrr 1,012
+        move 2,012
         add 2,011
         subi 2,1
         blt 1,(2)
@@ -318,38 +322,62 @@ dpy_write_words:
         move 1,011
         movn 1,1
         lsh 1,022
-        move 5,6
+        move 5,012
         subi 5,1
         hrr 1,5
-        movem 1,dpy_list_iowd
+        move 014,1                    ; do not publish IOWD early
 
-        ; Reset with PIA disabled and publish complete state.  The next real
-        ; line-clock tick starts the first hardware-BLKO pass; userspace does
-        ; not need to resubmit the list for refresh.
-        move 7,dpy_list_base          ; old extent, if any
-        setzm dpy_list_base
+        ; Quiesce hardware before the old extent can be freed. Both
+        ; published pointers remain unchanged until MM confirms release.
+        move 013,dpy_list_base
         cono 0130,000100
         setzm dpy_refresh_iowd
-        movem 6,dpy_list_base
         setzm dpy_pending
-        movei 1,1
-        movem 1,dpy_refresh_divider
-
-        jumpe 7,dpy_list_installed
-        move 1,7
+        jumpe 013,dpy_list_commit_v874
+        move 1,013
         movei 2,3
         movei 3,014
         pushj 17,mm_free
-dpy_list_installed:
+        jumpn 1,dpy_list_rollback_v874
+dpy_list_commit_v874:
+        movem 014,dpy_list_iowd
+        movem 012,dpy_list_base
+        movei 1,1
+        movem 1,dpy_refresh_divider
         ; One accepted WRITE_WORDS request installed/replaced one persistent
         ; native display program.  Count requests, not 30-Hz hardware replays.
         aos mfsdev_io_out+010
         move 1,011
         sub 17,kconst_1_1
-        jrst dpy_list_done
+        jrst dpy_list_replace_done_v874
 
+; Old release failed. It is still the only published list and IOWD.
+; Discard the unpublished new extent, and let the clock rearm the old.
+; A failed rollback-free violates MM's allocation ownership invariant:
+; halting is safer than returning with an untracked live extent.
+dpy_list_rollback_v874:
+        move 1,012
+        movei 2,3
+        movei 3,014
+        pushj 17,mm_free
+        jumpn 1,dpy_list_rollback_bad_v874
+        movei 2,1
+        movem 2,dpy_refresh_divider
+        sub 17,kconst_1_1
+        seto 1,
+        jrst dpy_list_replace_done_v874
+dpy_list_rollback_bad_v874:
+        halt
+        jrst dpy_list_rollback_bad_v874
 dpy_list_alloc_fail:
         sub 17,kconst_1_1
+        seto 1,
+        jrst dpy_list_replace_done_v874
+dpy_list_replace_done_v874:
+        pop 17,014
+        pop 17,013
+        pop 17,012
+        jrst dpy_list_done
 dpy_list_fail:
         seto 1,
         jrst dpy_list_done
