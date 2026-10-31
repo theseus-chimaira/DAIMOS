@@ -25,6 +25,7 @@
         .globl  proc_swap_exchange_commit_v789
         .globl  proc_swap_exchange_run_v790
         .globl  proc_swap_exchange_pair_v826
+        .globl  proc_swap_exchange_lock_v829
         .globl  proc_current_slot
         .globl  proc_swap_exchange_preflight_v791
         .globl  proc_swap_exchange_live_v794
@@ -201,6 +202,65 @@ proc_swap_pair_done_v826:
         popj    17,
 proc_swap_pair_bad_v826:
         seto    1,
+        popj    17,
+
+; int proc_swap_exchange_lock_v829(a_slot,b_slot)
+; Slot-0-only preparation, under scheduler exclusion. On success both
+; TRANSITION flags and exactly one A extent pin belong to the caller.
+; AC2 returns the shared physical base. On failure no lock/pin remains.
+; This helper does NOT submit the destructive v790 transaction.
+proc_swap_exchange_lock_v829:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        move    010,1
+        move    011,2
+        pushj   17,proc_swap_exchange_pair_v826
+        jumpn   1,proc_swap_lock_fail_v829
+        move    012,010
+        lsh     012,1
+        add     012,010
+        add     012,proc_table
+        move    013,011
+        lsh     013,1
+        add     013,011
+        add     013,proc_table
+        movei   1,PROC_TRANSITION_RH
+        iorm    1,(012)
+        iorm    1,(013)
+        hrrz    1,1(012)
+        push    17,1                  ; preserve base across MM call
+        pushj   17,mm_pin
+        jumpn   1,proc_swap_lock_rollback_v829
+        move    1,(17)
+        move    2,010
+        hlrz    3,1(012)
+        pushj   17,mm_process_verify_pinned_v792
+        jumpe   1,proc_swap_lock_ok_v829
+        move    1,(17)
+        pushj   17,mm_unpin
+        jumpn   1,proc_swap_storage_invariant_v30
+proc_swap_lock_rollback_v829:
+        move    1,(012)
+        andcmi  1,PROC_TRANSITION_RH
+        movem   1,(012)
+        move    1,(013)
+        andcmi  1,PROC_TRANSITION_RH
+        movem   1,(013)
+        sub     17,[1,,1]
+        jrst    proc_swap_lock_fail_v829
+proc_swap_lock_ok_v829:
+        pop     17,2                  ; return pinned base
+        setz    1,
+        jrst    proc_swap_lock_done_v829
+proc_swap_lock_fail_v829:
+        seto    1,
+proc_swap_lock_done_v829:
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
         popj    17,
 
 ; int proc_swap_exchange_sector_v771(disk_block, a_ram, b_ram)

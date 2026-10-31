@@ -2,6 +2,23 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v829: Paired transition lock and MM pin acquisition (2026-10-31)
+
+`proc_swap_exchange_lock_v829` is a new SWAP MRES entry for execution
+only from serialized slot-0 scheduler context. It first applies the
+conservative pair gate, then sets both TRANSITION bits, pins A's
+resident extent and verifies the precise MM owner/size/single-pin
+contract. On failure, it releases any acquired pin and clears both
+transition bits; on success it returns the physical base with both
+locks and the single pin held for the v790 caller. It allocates no
+persistent RAM. The testkit native PDP-6 fixture uses deterministic MM
+callbacks to check pin failure rollback and successful lock acquisition
+(PASS). Real MM pin behavior and integration with the transaction are
+not yet covered by this fixture.
+
+The function is not yet called by the production scheduler. The v758
+writer WAIT/EXIT regression remains an active acceptance failure.
+
 ## v828: Live victim exclusion in native pair gate (2026-10-31)
 
 The read-only exchange pair gate now rejects the current CPU process,
