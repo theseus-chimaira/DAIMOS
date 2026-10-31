@@ -2,6 +2,18 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v849: Parent dispatch tracing after successful writer exit (2026-10-31)
+
+The v848 native run observed the writer exiting with status 050 and
+executing `proc_notify_parent_wake`, but the full WAIT/EXIT acceptance
+still timed out. v849 exports the existing KCORE labels
+`proc_sched_resched_choose` and `proc_sched_restore_selected` without
+adding instructions or resident data. The testkit's clean-image
+`daimos-swap-parent-dispatch-v849.sh` retains enlarged drum backing and
+records these dispatch entries alongside the parent WAIT and wake paths.
+The precise scheduler state after wakeup remains unverified until the
+v849 native execution completes. No behavioral fix has been made.
+
 ## v851: One-shot dispatch after successful swap-in (2026-10-31)
 
 The v849 trace proved all 16 pressure children were woken by gate

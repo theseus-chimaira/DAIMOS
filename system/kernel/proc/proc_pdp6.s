@@ -2858,6 +2858,7 @@ proc_sched_pi_resched:
         jrst    proc_sched_resched_choose
 proc_sched_resched_save:
         pushj   17,proc_save_kernel
+        .globl  proc_sched_resched_choose  ; v849 dispatch trace
 proc_sched_resched_choose:
         pushj   17,proc_sched_resched_select
         jrst    proc_sched_restore_selected
@@ -2962,6 +2963,7 @@ proc_sched_exec_switch:
 proc_sched_select:
         pushj   17,proc_timer_service
         pushj   17,proc_sched_tick_select
+        .globl  proc_sched_restore_selected ; v849 dispatch trace
 proc_sched_restore_selected:
         movem   1,proc_current_slot
         jumpe   1,proc_restore_idle
