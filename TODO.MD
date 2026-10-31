@@ -2,6 +2,11 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [ ] v867 closes a resource-orphaning hole in fatal-other cleanup: a failed
+  VFS sync now prevents freeing the victim u-area. It does not guarantee
+  OOM progress. Finish the allocation-free termination graph, including
+  failed/sleeping provider operations, current-process exit and nested
+  session HUP, before enabling automatic kills.
 - [ ] Apply the same allocation-free, static KCORE OOM policy to **every
   memory allocation or growth requested by an already-running process**,
   including BRK/heap, process-VM expansion, and other user-triggered MM

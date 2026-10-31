@@ -3,6 +3,32 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v867: Report failed victim closes before releasing the u-area (2026-10-31)
+
+The previously allocation-free `file_close_all_at_v865` ignored individual
+`file_close_entry_v865` failures. The latter deliberately retains an FD
+when `vfs_sync` fails. Thus `proc_event_apply` could proceed to
+`proc_finish_slot` and destroy the victim's u-area while live descriptors
+still owned provider or pipe resources. This is unsafe for ordinary fatal
+events and would be more dangerous in an OOM kill path.
+
+Bulk close now retains a failure bit in one saved register, attempts all
+16 fixed descriptors, and returns -1 if any close failed. The fatal-other
+event path refuses to finalize a process with unclosed FDs, leaving its
+remaining descriptors and u-area intact. Native PDP-6 testkit v867
+injects a failed sync followed by a successful second FD close, verifies
+that finalization does not happen, then retries after the sync recovers:
+PASS. The existing v865 explicit-target close regression also PASSES.
+The PDP-6 lowmem KCORE link PASSES. No persistent words, heap or backing
+storage were added; the close frame temporarily saves one extra AC.
+
+This is deliberately not a general atomic rollback of a partially closed
+file table and not an OOM kill implementation. A blocked provider, a
+persistently failing close, current-process exit, recursive HUP teardown,
+or a device-specific cleanup failure still needs a bounded policy before
+OOM termination can be activated. The failed target remains alive so its
+descriptor storage cannot be accidentally reclaimed.
+
 ## v866: Encode physical-provider lease owner without new RAM (2026-10-31)
 
 The KCORE serialized physical-provider lease formerly stored only

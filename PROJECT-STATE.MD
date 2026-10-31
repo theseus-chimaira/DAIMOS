@@ -1,3 +1,15 @@
+## 2026-10-31 v867: victim FILE close failure is now visible
+
+The static fatal-other event path no longer destroys a process u-area
+after any descriptor close fails. `file_close_all_at_v865` checks all
+16 descriptors and reports the aggregate failure; the victim remains
+live and retryable. Testkit v867 native PDP-6 failed/successful-sync
+fault-injection PASS, previous v865 explicit-target regression PASS,
+lowmem KCORE link PASS. No new persistent data or backing sectors.
+This is a precondition for, not activation of, allocation-free OOM kills.
+Held provider leases, nested session HUP, current-process EXIT and
+failure-atomic no-progress policy remain open in TODO.MD.
+
 ## 2026-10-29 v670: D6FS root mount-stage diagnosis
 
 The scheduler-pressure boot's `?RT` occurs after BLOCKSET discovery,

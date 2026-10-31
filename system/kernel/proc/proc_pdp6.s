@@ -1172,6 +1172,11 @@ proc_event_fatal_other:
         hlrz    1,(012)
         addi    1,PROC_FILE_TABLE_OFFSET ; target private file table
         pushj   17,file_close_all_at_v865
+        ; A failed SYNC leaves the descriptor live. Do not release the
+        ; victim's u-area and silently orphan that resource. The caller
+        ; may report failure; OOM cannot use this path until all close
+        ; error/lock cases have a bounded allocation-free resolution.
+        jumpn   1,proc_event_fatal_other_close_fail_v867
         move    1,010
         move    2,011
         iori    2,0400000
@@ -1179,6 +1184,11 @@ proc_event_fatal_other:
         pop     17,011
         pop     17,010
         jrst    proc_finish_slot
+proc_event_fatal_other_close_fail_v867:
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        jrst    kret_neg1
 
 proc_event_nonfatal:
         ; Events 3..6 map directly to the packed pending-event bitmap.

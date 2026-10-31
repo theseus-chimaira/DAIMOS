@@ -1,3 +1,13 @@
+## 2026-10-31 v867: failed FILE close blocks fatal-other teardown
+
+Native KCORE `file_close_all_at_v865` now reports unsuccessful descriptor
+closure. The fatal-other event path does not free its target u-area when
+one or more FDs remain open due to failed VFS sync. Native PDP-6 v867
+fault injection PASS; v865 ordinary explicit-table close PASS. Lowmem
+KCORE linked without additional permanent data. This protects against
+orphaning target resources but is not an enabled OOM kill path. Provider
+blocking, current EXIT and recursive teardown still need OOM-safe proof.
+
 ## 2026-10-29 v670: root mount failure staged
 
 Native KINIT trace confirms BLOCKSET discovery, block reads and D6FS

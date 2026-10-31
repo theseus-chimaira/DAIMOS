@@ -672,16 +672,22 @@ file_close_all:
 file_close_all_at_v865:
         push    17,010
         push    17,011
+        push    17,012
         movei   010,020                ; FILE_NFILE
         move    011,1
+        setz    012,                    ; remember any failed close
 file_close_all_loop:
         skipn   (011)
         jrst    file_close_all_next
         move    1,011                  ; explicit descriptor entry
         pushj   17,file_close_entry_v865
+        jumpe   1,file_close_all_next
+        seto    012,                    ; keep failed entry for later retry
 file_close_all_next:
         addi    011,2
         sojg    010,file_close_all_loop
+        move    1,012                   ; report failure after closing others
+        pop     17,012
         pop     17,011
         pop     17,010
         popj    17,
