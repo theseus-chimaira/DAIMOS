@@ -1,3 +1,36 @@
+## 2026-10-31 v886: readonly teardown diagnostics
+
+The existing UUO-077 extension dispatcher forwards unused
+SYS_PROCCTL operation 041 to a new
+`GETTEARDOWN(pid)` without adding a syscall entry or permanent
+process table. It returns -1 for invalid/FREE slots, 0 for ordinary
+and fully committed zombie processes, 1 for a fatal FILE owner
+holding its private kernel stack, or `(ticks << 2) | 2` for an
+irreversibly terminated process whose u-area remains quarantined
+after VM destruction. The MM retry ticks are read from the
+already resident shared reaper-clock word (16..512 ticks); they
+are not individual per-process retry counters. The FILE-specific
+private-stack delay is deliberately not exposed. No kernel address,
+FILE pointer or MM extent address is returned.
+
+Operation 020 was not free (it is `pipe_create`); choosing 041
+preserves the preexisting pipe and other extension ABIs and adds
+only four packed readonly dispatch-table words.
+The `ps` user utility now reports numeric `TD` stage and `RETRY`
+columns, offering a practical way to identify stuck termination
+without unsafe forced release. Normal PID queries continue to
+return zero. The native PDP-6 handler fixture exercises invalid,
+FREE, ordinary, FILE, MM, stale marker, no-VM and zombie cases:
+PASS. The old reserved-op dispatch FAILs the negative control.
+The full-system PDP-6 test PASSes user-mode normal/invalid PID
+queries and actual pending MM state while a separate process
+spins; it records two real MM_ERR_BUSY releases, later recovery,
+and normal HUP/TTY completion. PIPE creation stays functional.
+The PS program compiles with the PDP-6 compiler. KCORE
+lowmem link PASS at `021762` octal (9,202 words), +37 over v885,
+no new permanent data. Persistent resource refusal still has no
+safe automatic forced reclaim; OOM killing stays disabled.
+
 ## 2026-10-31 v885: capped fatal FILE and deferred MM retry overhead
 
 An unavailable FILE provider previously forced the fatal APR/EXEC

@@ -2,6 +2,18 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [x] v886: user-visible readonly teardown state, via
+  `procctl(GETTEARDOWN, pid)` in unused UUO-077 sub-op 041 and `ps`
+  TD/RETRY columns. Distinguish normal/zombie (0), private
+  fatal FILE owner (1), and deferred VM-free MM owner (2 with
+  the existing shared 16..512-tick retry delay). No new
+  permanent data or privileged forced-release operation.
+  Native PDP-6 leaf/dispatch tests, KCORE/PS builds, and
+  full-system actual-UUO/MM_BUSY/spinner/HUP tests PASS.
+- [ ] v886 administrative follow-up: no claim that a provider is
+  permanently failed can be made solely from a stage or retry
+  interval. Investigate provider-specific recovery and diagnostic
+  checks before allowing any automatic OOM victim termination.
 - [x] v885: bound fatal FILE-close and quarantined MM u-area retry
   frequency without discarding any owned resource. FILE sleeps
   exponentially from 1 to 01000 octal ticks on its private stack.

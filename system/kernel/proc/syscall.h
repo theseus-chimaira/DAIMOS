@@ -128,11 +128,30 @@ struct sys_fsinfo {
 #define SYS_PROCCTL_GETUID       015U
 #define SYS_PROCCTL_GETGID       016U
 #define SYS_PROCCTL_SETUID       017U
+#define SYS_PROCCTL_GETTEARDOWN  041U
 #define SYS_PROCCTL_SETGID       025U
 #define SYS_PROCCTL_TTY_GETMODE  026U
 #define SYS_PROCCTL_TTY_SETMODE  027U
 #define SYS_PROCCTL_ISATTY       030U
 #define SYS_PROCCTL_UMASK        031U
+
+/* Read-only teardown diagnostic returned by GETTEARDOWN(pid).
+ * Returns -1 for invalid/FREE slots, otherwise stage in low two bits:
+ * NONE (includes fully committed zombies), FILE (owned fatal close),
+ * MM (post-VM u-area release deferred). For MM the upper bits report
+ * the global current reaper delay in 60 Hz ticks; for FILE they are
+ * zero, as its private-stack delay is not externally accessible.
+ * No MM or FILE addresses or other sensitive owner data are exported.
+ */
+#define SYS_TEARDOWN_NONE            0U
+#define SYS_TEARDOWN_FILE            1U
+#define SYS_TEARDOWN_MM              2U
+#define SYS_TEARDOWN_STAGE_MASK      03U
+#define SYS_TEARDOWN_RETRY_SHIFT     2U
+#define SYS_TEARDOWN_STAGE(word) \
+        ((unsigned int)(word) & SYS_TEARDOWN_STAGE_MASK)
+#define SYS_TEARDOWN_RETRY_TICKS(word) \
+        ((unsigned int)(word) >> SYS_TEARDOWN_RETRY_SHIFT)
 
 #define SYS_TTY_MODE_CANONICAL   01U
 #define SYS_TTY_MODE_ECHO        02U

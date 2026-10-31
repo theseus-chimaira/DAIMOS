@@ -1960,7 +1960,7 @@ proc_child_set:
         .globl  proc_tty_release_session
 proc_control:
         jumpl   1,kret_neg1
-        caile   1,031
+        caile   1,041
         jrst    kret_neg1
         ; AC3 is the current slot/session identity used by NEWSESSION,
         ; NEWDOMAIN, and the TTY ownership operations below.  Do not depend
@@ -1984,11 +1984,60 @@ proc_control_table:
         .word   proc_control_tty_detach,,proc_control_tty_getfg
         .word   proc_control_tty_setfg,,proc_control_getuid
         .word   proc_control_getgid,,proc_control_setuid
-        .word   kret_neg1,,kret_neg1   ; 020..021 extension bank
+        .word   kret_neg1,,kret_neg1   ; 020 pipe, 021 mkfifo
         .word   kret_neg1,,kret_neg1   ; 022..023 extension bank
         .word   kret_neg1,,proc_control_setgid ; 024 reserved, 025 SETGID
         .word   proc_control_tty_getmode,,proc_control_tty_setmode
         .word   proc_control_isatty,,proc_control_umask
+        ; 032..040 belong to the native UUO extension dispatcher.
+        ; Its next free PROCCTL-routed slot is 041 (not 020: PIPE).
+        .word   kret_neg1,,kret_neg1   ; 032..033
+        .word   kret_neg1,,kret_neg1   ; 034..035
+        .word   kret_neg1,,kret_neg1   ; 036..037
+        .word   kret_neg1,,proc_control_getteardown_v886 ; 040..041
+
+; Read-only per-slot fatal-teardown diagnostic, no new permanent state.
+; AC2 contains a PID (process slot); zero/invalid/FREE return -1.
+; Return 0 for normal process or zombie, 1 for owner-stack FILE
+; cleanup, or (retry_ticks << 2)|2 for deferred post-VM MM cleanup.
+; The shared MM retry interval is already resident in the LH of
+; proc_finish_last_tick_v881. Do not expose private stack addresses.
+        .globl  proc_control_getteardown_v886
+proc_control_getteardown_v886:
+        jumpe   2,kret_neg1           ; slot 0 is not a user process
+        caml    2,proc_high_slot
+        jrst    kret_neg1
+        move    3,2
+        lsh     3,1
+        add     3,2
+        add     3,proc_table
+        hlrz    5,2(3)                ; scheduler state, FREE = 0
+        andi    5,PROC_STATE_LH_MASK
+        jumpe   5,kret_neg1
+        move    5,(3)
+        trnn    5,0400000             ; no stable u-area (ZOMB etc.)
+        jrst    kret_zero
+        hlrz    5,5
+        jumpe   5,kret_neg1           ; inconsistent stable owner
+        move    6,PROC_FDCTL_OFFSET(5)
+        trne    6,PROC_FATAL_CLOSE_BIT
+        jrst    kret_one
+        move    6,(3)
+        trnn    6,PROC_TRANSITION_RH
+        jrst    kret_zero
+        move    6,1(3)
+        camn    6,[-1]                ; VM_SPACE_NONE only
+        jrst    proc_control_td_vm_none_v886
+        jrst    kret_zero
+proc_control_td_vm_none_v886:
+        move    6,PROC_FINALIZE_OFFSET(5)
+        tlnn    6,PROC_FINALIZE_MARK_LH
+        jrst    kret_zero
+        hlrz    1,proc_finish_last_tick_v881
+        andi    1,0377777
+        lsh     1,2
+        ori     1,2
+        popj    17,
 
 proc_control_getpgrp:
         jumpn   2,kret_neg1

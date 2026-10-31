@@ -3,6 +3,66 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v886: Administrative, non-destructive teardown visibility
+
+A pending u-area or fatal FILE owner cannot be safely discarded
+just because v885 has saturated a retry delay. A provider might
+hold an active reference, a disk transaction or pinned MM extent;
+there is no reliable finite-time test of permanent failure.
+The appropriate first recovery action is to identify the owner,
+inspect the responsible provider and correct the underlying
+reference or I/O issue while retaining the owning process slot.
+
+v886 adds a readonly query through the already allocated
+`SYS_PROCCTL` extension selector `041` (`GETTEARDOWN(pid)`).
+The number is deliberately 041, not 020: the outer native UUO-077
+extension table already assigns 020 to PIPE creation; 041 is
+the first unused selector forwarded to `proc_control`.
+Return values have the following 18-bit format:
+
+- -1: invalid or FREE user-process slot, including PID 0
+- 0: ordinary process or completed zombie; no cleanup owner
+- 1: fatal FILE-close continuation still owns its private stack
+- `(retry_ticks << 2)|2`: post-VM deferred MM u-area owner.
+
+The low two bits are the teardown stage; upper bits are the
+existing shared MM reaper delay in 60 Hz ticks (16 to 512,
+not a per-process history). The FILE owner's exponential delay
+is kept on its private executive stack and is not exposed:
+the query reports FILE stage with zero retry bits. It is unsafe
+to infer a specific provider's error count from the delay.
+The query verifies actual resident u-area ownership for FILE,
+and requires TRANSITION, VM_SPACE_NONE and the word-067 finalizer
+mark for MM. All other process states report normal. Inconsistent
+or FREE entries cannot cause a stale owner to be reported.
+
+The existing `ps` command now displays `TD` and `RETRY`:
+TD 0 = no fatal teardown, TD 1 = FILE, TD 2 = deferred MM.
+Administrators can inspect these states before fixing provider
+configuration, completing outstanding I/O or releasing a legitimate
+pin through the owning subsystem. There is deliberately no
+forced-close, forcibly unpin, retry-limit kill, or arbitrary
+destruction of a live FILE handle. When the provider eventually
+succeeds, v885 retries already perform normal finalization.
+
+The native PDP-6 `daimos-teardown-query-v886.sh` acceptance tests
+valid, FREE, invalid, FILE, MM, transient/stale marker, cap and
+zombie cases: PASS. `ps` compiles through the target compiler.
+The full PROCCTL operation table likewise PASSes native execution,
+including the corrected sub-op 041; a simulated reserved-slot
+prechange table FAILs the negative control as expected. The
+full-system user-mode `dsys_procctl(GETTEARDOWN)` test PASSes
+normal/invalid PID queries and two MM-pending status samples
+at 020 octal retry ticks (taken inside failed releases, before
+the subsequent reaper backoff update). Real MM pinning causes
+two MM_ERR_BUSY results, after which normal unpin/reaping and
+session HUP/TTY completion PASS while a bystander keeps running.
+The KCORE linker reports `021762` octal = 9,202 resident words,
++37 against v885 (including four packed dispatch-table words),
+no permanent data growth. This is a diagnostic
+and ownership-preservation feature, not a guaranteed permanent
+failure recovery or permission to enable automatic OOM killing.
+
 ## v885: Capped exponential retries for persistent providers (2026-10-31)
 
 A permanently rejected FILE close should not monopolize a process

@@ -1,3 +1,24 @@
+## 2026-10-31 v886: visible, non-destructive teardown status
+
+The existing `procctl` UUO 077 uses the previously unassigned
+and correctly forwarded sub-op 041 to expose
+`GETTEARDOWN(pid)` as a read-only integer:
+0 normal/zombie, 1 owned fatal FILE close, or MM-pending stage 2
+with shared reaper retry interval in upper bits. Invalid/FREE
+slots return -1. These stages are derived from the existing
+fatal-close bit and exact TRANSITION + VM_NONE + u-area-word-067
+marker. No addresses, new permanent state or forced-release
+capability are exported. `ps` displays `TD` and `RETRY`.
+
+Native PDP-6 query/dispatch tests PASS; reserved-op negative
+control FAILs as expected. Full-system native-UUO acceptance
+PASSes with real MM_BUSY, independent spinner and session HUP/TTY.
+PDP-6 PS compilation and KCORE link PASS.
+KCORE `021762` octal = 9,202 words (+37 v885,
++1,010 above 8,192), zero new static RAM. Permanent MM/FILE
+provider failure is diagnosable but still unreclaimable until
+the original provider accepts release. OOM remains disabled.
+
 ## 2026-10-31 v885: bounded retry CPU load without abandoning owners
 
 Fatal APR/EXEC FILE-close continuation now retries with a
