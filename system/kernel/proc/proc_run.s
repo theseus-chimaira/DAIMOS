@@ -36,6 +36,13 @@
 
         .text
         .globl  proc_run_block
+        ; v845: zero-word native RUN admission failure tracing.
+        .globl  proc_run_bad
+        .globl  proc_run_claimed_bad
+        .globl  proc_run_mm_bad
+        .globl  proc_run_exec_bad
+        .globl  proc_run_startup_failed
+        .globl  proc_run_slot_next
         .globl  proc_table
         .globl  proc_slots
         .globl  proc_high_slot

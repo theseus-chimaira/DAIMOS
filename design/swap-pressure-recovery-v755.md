@@ -2,6 +2,28 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v845: RUN admission is the current blocker (2026-10-31)
+
+The full v844 pipe/wakeup trace timed out at PC 013605 with eight
+normal swap-in restorations. `pipe_write_words` was entered nine times,
+all by writer slot 2; `pipe_read_words` was entered 15 times by pressure
+slots 3 through 021 (octal). No parent slot-1 pipe read or WAIT was
+observed. The test transcript contains `pF!W`. From
+`daimos-mm-swap-postinit-v283.c`, `pF` uniquely identifies the RUN
+failure while creating the last (sixteenth, index 15) pressure child,
+not a failed parent wakeup. The test immediately returns failure from
+`run_writer_case` and therefore never executes its later pipe-read or
+WAIT assertions. The previous apparent WAIT deadlock diagnosis was
+premature; this fixture currently fails its process-creation setup.
+
+The PDP-6 full profile has a 64-slot process table, so the intended
+18 live processes fit the configured descriptor limit; RUN resource
+admission or a more specific construction failure remains to be
+determined. v845 exports the existing RUN rejection and cleanup labels
+from `proc_run.s` without adding code or persistent RAM. The testkit
+`daimos-swap-run-admission-v845.sh` traces those resident points in a
+fresh native build. Writer WAIT/EXIT acceptance remains FAILED.
+
 ## v844: Trace the writer's pipe wakeup before WAIT (2026-10-31)
 
 The v843b native regression timed out at PC 013605. Eight normal
