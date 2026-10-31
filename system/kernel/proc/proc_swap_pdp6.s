@@ -96,6 +96,7 @@
         .equ    PROC_TRANSITION_RH,0200000
         .equ    PROC_UAREA_RH,0400000
         .equ    PROC_USER_MAP_BIT,02
+        .equ    PROC_FATAL_CLOSE_BIT,04
         .equ    PROC_FDCTL_OFFSET,024
         .equ    PROC_SWAP_BACKING_OFFSET,0406
         .equ    MM_TYPE_PROCESS,1
@@ -159,7 +160,7 @@ proc_swap_pair_a_state_v827:
         jrst    proc_swap_pair_fail_v826
         hlrz    7,(1)
         move    5,PROC_FDCTL_OFFSET(7)
-        trne    5,PROC_USER_MAP_BIT
+        trne    5,PROC_USER_MAP_BIT+PROC_FATAL_CLOSE_BIT
         jrst    proc_swap_pair_fail_v826
         move    4,(3)
         trne    4,PROC_TRANSITION_RH
@@ -1606,7 +1607,7 @@ proc_swap_out_state_ok:
         jrst    proc_swap_out_fail
         hlrz    2,1
         move    3,PROC_FDCTL_OFFSET(2)
-        trne    3,PROC_USER_MAP_BIT
+        trne    3,PROC_USER_MAP_BIT+PROC_FATAL_CLOSE_BIT
         jrst    proc_swap_out_fail
 
         move    12,proc_swap_records

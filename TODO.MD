@@ -2,11 +2,21 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
-- [ ] v878 restores the missing FILE-close call in post-commit fatal
-  PDP-6 EXEC. Native successful/failed close and pre-v878 negative
-  control PASS/expected FAIL; still needs full-system post-commit
-  fault injection. A persistent close error remains nonreturning and
-  cannot be handled by a retry without an owned kernel continuation.
+- [ ] v879: APR and post-commit EXEC now use a process-owned kernel
+  FILE-close continuation with timer-yielded retries; duplicate fatal
+  events, native direct swap-out/exchange and OOM selection exclude
+  that owner. VM_SPACE_NONE (-1) is now correctly excluded by native/C
+  scheduling unless it has a tagged executive continuation. Native
+  selection, direct swap guard and APR-safe restoration PASS; the
+  pre-change swap guard FAILs the negative control. Obtain genuine
+  full-system failing-provider/PI6/clock acceptance (the ordinary
+  full-system session regression already PASSes), bound *total*
+  cleanup latency or define unrecoverable-provider policy, and fix
+  post-VM-destroy finalization errors before enabling OOM termination.
+- [x] v878: post-commit fatal EXEC now enters FILE cleanup; v879 moves
+  it onto the process-owned retry continuation. Native EXEC and prior
+  pre-v878 negative control passed. Full-system injected failure stays
+  open under v879, not under this completed wiring prerequisite.
 - [ ] v877: ordinary full-system session teardown PASSes on the post-v876
   code under headless CTY/DPY test isolation. This does *not* validate
   injected HUP/VM failures during the full-system run or guarantee

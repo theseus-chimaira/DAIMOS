@@ -1,3 +1,22 @@
+## 2026-10-31 v879: process-owned fatal cleanup retry
+
+APR-user faults and post-commit EXEC failures now keep an owned kernel
+continuation for retrying failed FILE closes. The existing per-u-area
+control bit 2 marks the continuation; event delivery, OOM selection
+and swap-victim selection exclude it. Failed closes yield a clock tick
+on the private stack instead of HALTing immediately on the slot-0
+stack. A tagged VM-less EXEC-fatal continuation is schedulable and
+restores in executive mode without loading an invalid APR map.
+Native PDP-6 owner-stack, VM-less selection/restore, swap-out guard,
+EXEC/FILE/EXIT, HUP and OOM selector tests PASS. Untagged
+VM_SPACE_NONE (-1) is now rejected in native/C scheduling, including
+RT and ready-once selection. The pre-v879 swap-out guard FAILs the
+negative-control test, as expected. Lowmem KCORE link PASS at
+`021403` octal (8,963 words), +108 words over v878 and 771 above the
+strict 8,192-word target; no additional persistent data words.
+Full-system failed-provider/PI6 acceptance, bounded total cleanup,
+post-VM destruction release failures and OOM termination remain open.
+
 ## 2026-10-31 v878: post-commit EXEC must close FILE descriptors
 
 `native_sys_exec` now closes the stable process FILE table before

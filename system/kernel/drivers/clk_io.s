@@ -29,8 +29,7 @@
         .globl pdp10_pi_level6
         .globl pdp10_pi_sp_save
         .globl mach_kernel_sp
-        .globl file_close_all
-        .globl proc_exit_current
+        .globl proc_fatal_close_current_v879
 
         .equ APR_ST_CLOCK,0001000
         .equ APR_ST_FAULTS,0230000
@@ -134,9 +133,8 @@ clk_pi_fault:
 
 /* PI6 has been dismissed and AC17 is the process-private executive stack. */
 clk_pi_user_fault_exit:
-        pushj 017,file_close_all
         movei 1,SYS_WAIT_EVENT_TERM
-        jrst proc_exit_current
+        jrst proc_fatal_close_current_v879
 
 /* Executive APR faults indicate a kernel defect or failed hardware state. */
 clk_pi_kernel_fault:

@@ -23,6 +23,7 @@
         .globl  exec_native_syscall
         .globl  proc_nice_current
         .globl  proc_exit_current
+        .globl  proc_fatal_close_current_v879
         .globl  proc_run_block
         .globl  proc_wait_status
         .globl  proc_control
@@ -996,15 +997,11 @@ native_sys_exec:
         jumpe   1,native_sys_exec_commit
         came    1,[-2]                 ; EXEC_REPLACE_FATAL after low-core commit
         jrst    native_sys_exec_bad
-        ; The old user VM is already gone, so EXEC cannot return an error.
-        ; Unlike ordinary EXIT, this path never visited FILE close_all.
-        ; Close from the surviving private u-area stack before moving to
-        ; slot 0; a rejected close must leave its descriptor intact for the
-        ; finalizer's FD guard, never silently orphan the provider lease.
-        ; There is no safe return path after this point, even on close error.
-        pushj   17,file_close_all
+        ; The old VM is gone, so keep the private kernel continuation
+        ; until every FILE close succeeds. A rejected provider release
+        ; must yield rather than strand the machine on the slot-0 stack.
         movei   1,1
-        jrst    proc_exit_current
+        jrst    proc_fatal_close_current_v879
 native_sys_exec_commit:
         move    6,file_table
         subi    6,026

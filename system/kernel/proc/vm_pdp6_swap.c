@@ -103,7 +103,8 @@ proc_swap_out(int slot)
         state = PROC_STATE(p);
         if ((state != PROC_SRUN && state != PROC_SLEEP && state != PROC_STOP) ||
             PROC_TRANSITION(p) || !PROC_HAS_UAREA(p) ||
-            PROC_USER_MAPPING_HELD(p))
+            PROC_USER_MAPPING_HELD(p) ||
+            (PROC_CTL_WORD(p) & PROC_FATAL_CLOSE_BIT) != 0UL)
                 return -1;
         r = &proc_swap_records[slot];
         resident_state = r->state;

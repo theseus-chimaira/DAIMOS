@@ -25,6 +25,7 @@
         .equ    PROC_WAIT_LH_FIELD_MASK,03
         .equ    PROC_NICE_BIAS,024
         .equ    PROC_USER_MAP_BIT,2
+        .equ    PROC_FATAL_CLOSE_BIT,4
         .equ    PROC_WAIT_LH_MASK,060000
         .equ    PROC_WAIT_EVENT_LH,020000
         .equ    PROC_WAIT_CHILD_LH,040000
@@ -83,6 +84,7 @@
         .globl  fs_provider_ready
         .globl  proc_record_kernel_sp
         .globl  proc_exit_current
+        .globl  proc_fatal_close_current_v879
         .globl  proc_finish_slot
         .globl  proc_slot_discard
         .globl  proc_scope_id
@@ -205,8 +207,32 @@ proc_select_rt:
         jrst    proc_select_runq_start
         movem   15,proc_sched_cursor
         move    1,1(16)
+        camn    1,[-1]                 ; VM_SPACE_NONE is not a resident map
+        jrst    proc_select_rt_vm_none_v879
         trne    1,0777777
         jrst    proc_select_return_slot
+        jrst    proc_select_rt_fatal_check_v879
+proc_select_rt_vm_none_v879:
+        ; An untagged process with no VM can neither run nor swap in.
+        move    2,(16)
+        trnn    2,0400000
+        jrst    proc_select_runq_start
+        hlrz    2,2
+        move    2,PROC_FDCTL_OFFSET(2)
+        trnn    2,PROC_FATAL_CLOSE_BIT
+        jrst    proc_select_runq_start
+        jrst    proc_select_return_slot
+proc_select_rt_fatal_check_v879:
+        ; A post-commit EXEC failure may have no user VM at all. Its
+        ; explicitly tagged private executive continuation still runs.
+        move    2,(16)
+        trnn    2,0400000
+        jrst    proc_select_rt_normal_swap_v879
+        hlrz    2,2
+        move    2,PROC_FDCTL_OFFSET(2)
+        trne    2,PROC_FATAL_CLOSE_BIT
+        jrst    proc_select_return_slot
+proc_select_rt_normal_swap_v879:
         skipn   proc_swap_pressure_ticks
         jrst    proc_select_rt_swap
         jrst    proc_select_runq_start
@@ -239,7 +265,19 @@ proc_select_runq_start:
         trne    2,PROC_TRANSITION_RH
         jrst    proc_select_runq_normal_v851
         move    2,1(16)
+        camn    2,[-1]
+        jrst    proc_select_ready_none_v879
         trnn    2,0777777
+        jrst    proc_select_runq_normal_v851
+        movem   1,proc_sched_cursor
+        jrst    proc_select_restore
+proc_select_ready_none_v879:
+        move    2,(16)
+        trnn    2,0400000
+        jrst    proc_select_runq_normal_v851
+        hlrz    2,2
+        move    2,PROC_FDCTL_OFFSET(2)
+        trnn    2,PROC_FATAL_CLOSE_BIT
         jrst    proc_select_runq_normal_v851
         movem   1,proc_sched_cursor
         jrst    proc_select_restore
@@ -289,8 +327,29 @@ proc_select_candidate:
         trne    1,PROC_TRANSITION_RH
         jrst    proc_select_next
         move    1,1(16)
+        camn    1,[-1]
+        jrst    proc_select_candidate_vm_none_v879
         trne    1,0777777
         jrst    proc_select_score
+        jrst    proc_select_candidate_flag_v879
+proc_select_candidate_vm_none_v879:
+        move    2,(16)
+        trnn    2,0400000
+        jrst    proc_select_next
+        hlrz    2,2
+        move    2,PROC_FDCTL_OFFSET(2)
+        trnn    2,PROC_FATAL_CLOSE_BIT
+        jrst    proc_select_next
+        jrst    proc_select_score
+proc_select_candidate_flag_v879:
+        move    2,(16)
+        trnn    2,0400000
+        jrst    proc_select_candidate_check_swap_v879
+        hlrz    2,2
+        move    2,PROC_FDCTL_OFFSET(2)
+        trne    2,PROC_FATAL_CLOSE_BIT
+        jrst    proc_select_score
+proc_select_candidate_check_swap_v879:
         move    1,proc_swap_records
         add     1,15
         move    1,(1)
@@ -342,8 +401,29 @@ proc_select_done:
         add     16,11
         add     16,proc_table
         move    1,1(16)
+        camn    1,[-1]
+        jrst    proc_select_done_vm_none_v879
         trne    1,0777777
         jrst    proc_select_return_best
+        jrst    proc_select_done_flag_v879
+proc_select_done_vm_none_v879:
+        move    2,(16)
+        trnn    2,0400000
+        jrst    proc_select_none
+        hlrz    2,2
+        move    2,PROC_FDCTL_OFFSET(2)
+        trnn    2,PROC_FATAL_CLOSE_BIT
+        jrst    proc_select_none
+        jrst    proc_select_return_best
+proc_select_done_flag_v879:
+        move    2,(16)
+        trnn    2,0400000
+        jrst    proc_select_done_swap_v879
+        hlrz    2,2
+        move    2,PROC_FDCTL_OFFSET(2)
+        trne    2,PROC_FATAL_CLOSE_BIT
+        jrst    proc_select_return_best
+proc_select_done_swap_v879:
         movei   1,0400
         iorm    1,proc_sched_cursor
         jrst    proc_select_none
@@ -965,6 +1045,48 @@ proc_exit_release_failed:
         jrst    .-1
 
 /**
+ * @brief Finish an irreversible user fault using its owned kernel stack.
+ *
+ * Entry is a JRST with AC1=exit status from APR or post-commit EXEC.
+ * A provider close may sleep and can fail without relinquishing ownership;
+ * therefore retain the private executive continuation and all live FILE
+ * entries until the provider eventually accepts closure. Each unsuccessful
+ * pass sleeps for a clock tick, so other runnable users can make progress.
+ * No extra per-process table, heap, or backing extent is allocated.
+ *
+ * Bit 2 of the existing u-area control word excludes another fatal event
+ * from destroying the suspended private stack. It remains set until the
+ * successful finalizer frees that u-area. Permanent provider failure does
+ * NOT give bounded resource reclamation: this path is not an OOM killer.
+ */
+proc_fatal_close_current_v879:
+        ; User APR and EXEC fatal traps require a live current u-area.
+        ; Do not write a control bit through an absent FILE base.
+        skipn   proc_current_slot
+        jrst    proc_fatal_close_no_owner_v879
+        skipn   file_table
+        jrst    proc_fatal_close_no_owner_v879
+        push    17,1                   ; eventual exit status
+        move    2,file_table
+        movei   3,PROC_FATAL_CLOSE_BIT
+        iorm    3,-2(2)               ; existing packed u-area control word
+proc_fatal_close_retry_v879:
+        pushj   17,file_close_all
+        jumpe   1,proc_fatal_close_done_v879
+        movei   1,1                   ; relinquish CPU for one clock tick
+        pushj   17,proc_sleep_ticks   ; save the private executive context
+        jumpe   1,proc_fatal_close_retry_v879
+        ; An absent current slot cannot own a sleep continuation.
+        halt    2
+        jrst    .-1
+proc_fatal_close_done_v879:
+        pop     17,1
+        jrst    proc_exit_current
+proc_fatal_close_no_owner_v879:
+        halt    3
+        jrst    .-1
+
+/**
  * @brief Publish the current process-private kernel stack after first user entry.
  *
  * Initial argument ACs are preserved while CTX_KSP, mach_kernel_sp, and the
@@ -1183,6 +1305,18 @@ proc_event_apply:
         lsh     012,1
         add     012,1
         add     012,proc_table
+        ; Reject a process whose private stack is being torn down, or one
+        ; already irreversibly closing FILEs on its own sleeping stack.
+        move    1,(012)
+        trnn    1,0400000             ; no stable u-area
+        jrst    proc_event_fatal_close_busy_v879
+        trne    1,PROC_TRANSITION_RH
+        jrst    proc_event_fatal_close_busy_v879
+        hlrz    1,1
+        jumpe   1,proc_event_fatal_close_busy_v879
+        move    1,PROC_FDCTL_OFFSET(1)
+        trne    1,PROC_FATAL_CLOSE_BIT
+        jrst    proc_event_fatal_close_busy_v879
 
         ; INT/TERM/HUP (0..2) and PIPE (7) are fatal.
         caile   011,2
@@ -1227,6 +1361,12 @@ proc_event_fatal_other:
         pop     17,010
         jrst    proc_finish_slot
 proc_event_fatal_other_close_fail_v867:
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        jrst    kret_neg1
+
+proc_event_fatal_close_busy_v879:
         pop     17,012
         pop     17,011
         pop     17,010
@@ -2851,7 +2991,23 @@ proc_restore_kernel_tail:
         movem   1,mach_syscall_save
         move    1,CTX_KSP(2)
         movem   1,mach_kernel_sp
+        ; A VM-less post-commit EXEC fatal continuation must not program
+        ; the APR from VM_SPACE_NONE. It runs only executive close code and
+        ; never returns to a user image.
+        move    1,proc_current_ptr
+        move    3,1(1)
+        camn    3,[-1]                 ; vm_space_destroy publishes NONE=-1
+        jrst    proc_restore_kernel_vm_none_v879
+        trne    3,0777777
+        jrst    proc_restore_kernel_apr_v879
+proc_restore_kernel_vm_none_v879:
+        hlrz    3,(1)
+        move    3,PROC_FDCTL_OFFSET(3)
+        trne    3,PROC_FATAL_CLOSE_BIT
+        jrst    proc_restore_kernel_no_vm_v879
+proc_restore_kernel_apr_v879:
         pushj   17,vm_activate_current
+proc_restore_kernel_no_vm_v879:
         move    1,proc_current_slot
         pushj   17,proc_uarea_slot
         move    2,1
@@ -3161,6 +3317,8 @@ proc_oom_provider_clear_v866:
         move    2,PROC_FDCTL_OFFSET(1)
         trne    2,PROC_USER_MAP_BIT
         jrst    proc_oom_next_v863
+        trne    2,PROC_FATAL_CLOSE_BIT
+        jrst    proc_oom_next_v863  ; the private cleanup owns this slot
         hlrz    1,2(013)
         andi    1,PROC_STATE_LH_MASK
         caie    1,PROC_STATE_RUN
@@ -3243,6 +3401,8 @@ proc_swap_victim_state_ok:
         hlrz    1,1                     ; stable u-area base
         move    2,PROC_FDCTL_OFFSET(1)
         trne    2,PROC_USER_MAP_BIT
+        jrst    proc_swap_victim_next
+        trne    2,PROC_FATAL_CLOSE_BIT
         jrst    proc_swap_victim_next
         move    1,proc_swap_records
         add     1,011

@@ -3,6 +3,73 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v879: Process-owned fatal FILE cleanup with scheduler yields (2026-10-31)
+
+The user-origin APR fault and post-commit EXEC-fatal paths now share a
+resident `proc_fatal_close_current_v879` continuation, entered by JRST
+while still on the dying process's stable private executive stack.
+It keeps the exit status on that stack and marks the previously unused
+low bit 2 of the existing per-process control word (`PROC_FATAL_CLOSE_BIT`).
+Every FILE-close attempt uses `file_close_all`; if a provider rejects a
+close, the descriptor stays live and the continuation sleeps one clock
+tick via `proc_sleep_ticks` before retrying. No new permanent table,
+dynamic extent, or swap allocation is needed. Only once every FILE
+entry has closed does the continuation enter `proc_exit_current` and
+switch to the permanent slot-0 stack for irreversible finalization.
+
+The native event-delivery path rejects any event aimed at a fatal-close
+continuation, preventing another process from destroying a sleeping
+executive stack or job-control STOP from suspending cleanup. It also
+rejects an already-transitioning slot or a missing u-area before
+touching target FILE state. The C fallback implements the matching
+preflight. Both the ordinary resident swap-victim selector and the
+static OOM selector exclude flagged fatal-cleanup owners.
+
+A post-commit EXEC failure may have **no user VM**: an ordinary
+scheduler would never select such a job, or would request an invalid
+swap-in. The PDP-6 scheduler now treats the tagged private kernel
+continuation as runnable even without a VM or swap record, including
+RT-owner dispatch. Restoring that *executive* continuation skips
+`vm_activate_current` for tagged VM_SPACE_NONE (-1) or zero-base
+states. The scheduler now distinguishes the all-ones VM_SPACE_NONE
+sentinel from a resident base and a genuine swapped zero-base process;
+untagged destroyed jobs are ineligible, including RT and ready-once
+paths. The machine-independent `VM_SPACE_ACTIVE` predicate and C
+scheduler fallback enforce the same invariant.
+
+Direct native swap-out and swap-exchange admission now reject the
+fatal-close bit in the process's existing u-area control word, rather
+than relying only on victim-selection checks. Native swap-out guard
+tests verify tagged owner, mapping hold, transition and ordinary
+admission: PASS. The old native swap-out guard FAILs the test as
+expected, confirming the missing exclusion.
+
+Native PDP-6 v879 tests prove two rejected closes, per-pass timer
+yields, retained exit status and descriptor, exclusion of duplicate
+fatal events, successful final close/exit, no-extra-yield success,
+tagged VM-less scheduling, RT selection, direct swap-out guard and APR-safe executive
+restoration: PASS. The updated v878 EXEC integration and v865/v867/
+v868/v875/v876 FILE/EXIT/session/finalizer and v863/v866 OOM selector
+regressions also PASS. Direct lowmem KCORE link PASS at exclusive end
+`021403` octal = 8,963 words, +108 versus v878 `021227` and +771
+beyond the strict 8,192-word target. All extra code is resident text;
+the process tag reuses an existing word.
+
+The post-change full-system `daimos-session-teardown-v1.sh` ordinary
+session-lifecycle regression PASSes in headless mode, including HUP to
+running/stopped jobs and TTY detach/reattach. It does not inject a
+rejected FILE close or prove PI6 saved-stack replay under that failure.
+
+**Limits:** This ensures each failed pass can yield without discarding
+its owner, but it does not provide an upper bound on total reclamation
+time when a provider persistently refuses close, nor prove that a
+provider's own blocking operation can always return. It does not
+repair failures *after* VM destruction (particularly u-area release),
+prove full-system timer/PI6 context switching through a failed close,
+or establish full-system APR/EXEC fault injection. Older C fallback
+cross-process FILE-pointer substitution also needs audit. These are
+separate gates; automatic OOM killing remains OFF.
+
 ## v878: Post-commit EXEC fatal path closes FILE before irreversible EXIT (2026-10-31)
 
 The PDP-6 `native_sys_exec` branch handling `EXEC_REPLACE_FATAL` (-2)

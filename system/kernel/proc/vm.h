@@ -19,6 +19,8 @@
  * user-space size; its RH is owned entirely by the selected machine backend.
  * A zero word means that no user address space has been established; a zero
  * RH means there is no currently activatable/resident machine mapping.
+ * VM destruction publishes the all-ones sentinel.  It must not be mistaken
+ * for an active address simply because its RH is nonzero.
  *
  * PDP-6 stores the contiguous physical relocation base in the private RH.
  * Paged machines may instead store a page-map/address-space handle there.
@@ -29,7 +31,8 @@
         ((kword_t)(((p)->vm_state >> PROC_HALF_SHIFT) & PROC_HALF_MASK))
 #define VM_SPACE_RESET(p) ((p)->vm_state = 0UL)
 #define VM_SPACE_ACTIVE(p) \
-        (((p)->vm_state & PROC_HALF_MASK) != 0UL)
+        ((p)->vm_state != ~(kword_t)0 && \
+        ((p)->vm_state & PROC_HALF_MASK) != 0UL)
 
 /*
  * Callers validate process pointers and logical ranges before entering the

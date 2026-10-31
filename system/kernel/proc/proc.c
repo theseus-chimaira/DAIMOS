@@ -423,6 +423,12 @@ proc_event_apply(unsigned int slot, unsigned int event)
         unsigned int state;
 
         p = &proc_table[slot];
+        /* Do not kill a suspended fatal-close continuation or mutate
+         * another finalizer's in-flight process descriptor. */
+        if (!PROC_HAS_UAREA(p) || PROC_UAREA_BASE(p) == 0UL ||
+            PROC_TRANSITION(p) ||
+            (PROC_CTL_WORD(p) & PROC_FATAL_CLOSE_BIT) != 0UL)
+                return -1;
         state = PROC_STATE(p);
 
         /* Fatal events are reported through the zombie wait status.  Their
@@ -612,8 +618,14 @@ proc_select_runnable(int elapsed_ticks)
 
                 p = &proc_table[(unsigned int)proc_rt_owner];
                 if (PROC_STATE(p) == PROC_SRUN && !PROC_TRANSITION(p)) {
+                        if (p->vm_state == ~(kword_t)0 &&
+                            (!PROC_HAS_UAREA(p) ||
+                            (PROC_CTL_WORD(p) & PROC_FATAL_CLOSE_BIT) == 0UL))
+                                goto scan_runq;
                         proc_sched_cursor = proc_rt_owner;
-                        if (!VM_SPACE_ACTIVE(p)) {
+                        if (!VM_SPACE_ACTIVE(p) &&
+                            (!PROC_HAS_UAREA(p) ||
+                            (PROC_CTL_WORD(p) & PROC_FATAL_CLOSE_BIT) == 0UL)) {
                                 proc_sched_cursor |= PROC_SCHED_SWAP_REQUEST;
                                 return 0U;
                         }
@@ -621,6 +633,7 @@ proc_select_runnable(int elapsed_ticks)
                 }
         }
 
+scan_runq:
         /* Recent CPU is relevant only while a process competes to run.
          * Account exactly the elapsed clock ticks while walking the run queue:
          * the current job accumulates penalty, competitors decay.  Blocking
@@ -653,7 +666,9 @@ proc_select_runnable(int elapsed_ticks)
                             ((kword_t)(unsigned int)cpu << PROC_CPU_SHIFT);
                 }
                 if (!PROC_TRANSITION(p) &&
-                    (VM_SPACE_ACTIVE(p) || PROC_SWAP_RECORD_PRESENT(slot))) {
+                    (VM_SPACE_ACTIVE(p) || PROC_SWAP_RECORD_PRESENT(slot) ||
+                    (PROC_HAS_UAREA(p) &&
+                    (PROC_CTL_WORD(p) & PROC_FATAL_CLOSE_BIT) != 0UL))) {
                         prio = (int)PROC_EFFECTIVE(p);
                         /* Slots fit in eight bits.  Mod-256 distance preserves
                          * cyclic slot order; distance zero is the current slot
@@ -672,7 +687,9 @@ proc_select_runnable(int elapsed_ticks)
         }
         if (best != 0) {
                 proc_sched_cursor = (kword_t)best;
-                if (!VM_SPACE_ACTIVE(&proc_table[best])) {
+                if (!VM_SPACE_ACTIVE(&proc_table[best]) &&
+                    (PROC_CTL_WORD(&proc_table[best]) &
+                    PROC_FATAL_CLOSE_BIT) == 0UL) {
                         proc_sched_cursor |= PROC_SCHED_SWAP_REQUEST;
                         return 0U;
                 }
@@ -731,6 +748,7 @@ proc_swap_victim(unsigned int exclude_owner)
                 if ((state != PROC_SLEEP && state != PROC_STOP &&
                     state != PROC_SRUN) || PROC_TRANSITION(p) ||
                     !PROC_HAS_UAREA(p) || PROC_USER_MAPPING_HELD(p) ||
+                    (PROC_CTL_WORD(p) & PROC_FATAL_CLOSE_BIT) != 0UL ||
                     !PROC_SWAP_RECORD_PRESENT(i))
                         continue;
                 if (!vm_space_can_swap(p))

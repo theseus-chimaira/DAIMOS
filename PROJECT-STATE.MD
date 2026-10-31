@@ -1,3 +1,26 @@
+## 2026-10-31 v879: owned fatal-close continuation before slot-0 EXIT
+
+PDP-6 user APR and post-commit EXEC fatal paths now preserve their
+private executive stack until FILE resources close successfully.
+They retry a rejected close after timer-yielding rather than lose
+descriptors in slot-0 teardown. Existing process control bit 2 marks
+the continuation, blocking duplicate event termination, swap-out
+and OOM victim selection without a new permanent table. A VM-less
+post-commit EXEC fatal process remains selectable and restores its
+executive continuation without programming APR from VM_SPACE_NONE.
+Native retry/VM-less selection and APR restoration, direct swap-out
+guard, EXEC/FILE/session/OOM selector tests PASS; KCORE link PASS at
+`021403` octal (+108 words, no new persistent data). Untagged
+VM_SPACE_NONE (-1) is excluded by native/C scheduling instead of
+being mistaken for a resident map. The old native swap-out guard
+FAILs the new negative-control test, as expected.
+The final-source full-system ordinary session HUP/TTY integration test
+also PASSes (headless display isolation); injected fatal-provider
+rejection is still not covered by that test.
+No full-system forced-provider-failure or total-latency guarantee,
+and final release after VM destruction remains unproven. Automatic
+OOM killing stays disabled. See TODO.MD and swap-pressure design.
+
 ## 2026-10-31 v878: missing post-commit EXEC FILE close corrected
 
 The unrecoverable PDP-6 EXEC branch now runs `file_close_all` on the

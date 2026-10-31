@@ -109,7 +109,9 @@
  * credential word. U-area 067 is currently unallocated logical padding;
  * descriptor mount bits no longer require an extension bitmap.
  * Low bit 0 of the separate control word carries the pipe
- * event and bit 1 marks a live direct user mapping.
+ * event, bit 1 marks a live direct user mapping, and bit 2 marks an
+ * unrecoverable user fault or post-commit EXEC error whose private
+ * kernel continuation is still closing FILE resources.
  * Session and domain IDs share this already-resident word; process-group ID
  * lives in meta RH so it survives after EXIT releases the u-area and group WAIT can
  * reap zombies.
@@ -130,6 +132,7 @@
 /* Event 7 uses one spare low control-word bit; events 0..6 stay packed. */
 #define PROC_PIPE_EVENT_BIT            01UL
 #define PROC_USER_MAP_BIT              02UL
+#define PROC_FATAL_CLOSE_BIT           04UL
 #define PROC_TIMER_TAG_RH            0400000UL
 #define PROC_TIMER_CLOCK_MASK         0377777UL
 #define PROC_STOP_MASK              03UL
