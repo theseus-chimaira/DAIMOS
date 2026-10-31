@@ -3,6 +3,28 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v858: Runtime SWAP MRES breakpoint correction (2026-10-31)
+
+The installed KCORE swap-service trampoline in the v857/v858 image was
+at octal 020511, containing `JRST 0,32304`. Subtracting the SWAP MRES
+service link-map offset 002423 establishes runtime base 027661, not
+the stale 027632 assumed by earlier diagnostics. The old alleged v826
+breakpoint therefore addressed unrelated code; its 255 hits were not
+exchange pair calls. Testkit v858 recalculates breakpoints with the
+correct base and verifies the resident trampoline instruction.
+
+After fixing a diagnostic generator mistake that had accidentally
+renamed the still-exported `proc_swap_pair_admitted_v857` symbol, the
+native SIMH image was run with corrected pair and transaction probes.
+The 16-child workload reached its `Q` and HALT success markers (SIMH
+exit 0). Twelve swap-in service restorations and twelve resident
+swap-service trampoline calls were observed. There were zero hits at
+the corrected v826 pair entry, admission branch, or v832/v790 entry.
+Thus ordinary swap restoration, not physical exchange, satisfies this
+particular scheduler-pressure test. The successful full-system exchange
+and subsequent process-resumption acceptance remain open. The v858
+trace fix is testkit-only and adds no kernel RAM or executable code.
+
 ## v857: Pair-admission probe exposes invalid fixed MRES address (2026-10-31)
 
 Added exported labels `proc_swap_pair_admitted_v857` and
