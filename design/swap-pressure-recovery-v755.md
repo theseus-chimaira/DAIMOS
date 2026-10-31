@@ -3,6 +3,27 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v859: Default drum backstore RUN admission failure reproduced (2026-10-31)
+
+Testkit `daimos-swap-default-pair-v859.sh` builds a fresh full-profile
+PDP-6 boot with DRUM_BACKSTORE_BLOCKS=04000 and corrected v858 runtime
+SWAP MRES breakpoint mapping. The native 16-child post-INIT pressure
+regression FAILS: guest marker `pF!W` reports failure spawning the
+last pressure child, before the writer case can finish. At
+`proc_run_claimed_bad` AC1 is 777777777776 octal (-2), the
+`EXEC_LOAD_NOMEM` status returned by executable loading. There are
+17 RUN attempts, one `proc_run_claimed_bad` and `proc_run_bad`, no
+`proc_run_mm_bad`, and nine ordinary swap-in restorations. No v832/v790
+transaction was entered. The simulator reached HALT but the test's
+guest success predicate correctly rejected it (runner exit 1).
+
+This is an EXEC/RUN admission-capacity failure under the small
+backstore, not proof of an exchange implementation defect. The v851
+and v858 successes require the larger 010000-octal-sector fixture.
+Do not declare swap-pressure recovery complete. Investigate whether
+RUN can make resource progress under this backing capacity without
+relaxing allocation invariants, or document a strict admission limit.
+
 ## v858: Runtime SWAP MRES breakpoint correction (2026-10-31)
 
 The installed KCORE swap-service trampoline in the v857/v858 image was
