@@ -2,6 +2,32 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v837: Preserved native breakpoint evidence (2026-10-31)
+
+Executed the testkit v836 full-profile diagnostic with retained build
+and simulator files. The native guest still timed out before the writer
+WAIT/EXIT completion, so acceptance remains FAILED. Unlike v835, this
+run retained its SWAP MRES link map and SIMH breakpoint transcript.
+
+The current run's resident KCORE map identifies `proc_swap_service_one`
+at 020462, `proc_swap_reclaim` at 020461 and `proc_swap_victim` at
+014277 (octal). The trace observed **10 swap-service, 18 reclaim, and
+18 victim-selection hits**. The first service hit had scheduler cursor
+000000000402 (octal), identifying a pending swapped slot 2. Thus the
+service entry IS reached; the earlier hypothesis that it might never
+execute is disproven. The MRES map lists v826 at relative 000000,
+v832 at 000463 and v790 at 001337; these cannot be used as permanent
+physical breakpoints without accounting for the runtime MRES load.
+
+The diagnostic's original report accidentally selected an older
+retained map by lexical directory order. The testkit v837 correction
+selects by map modification time and reports resident breakpoint hit
+counts. The raw v837 transcript and live map were inspected directly,
+not inferred from the erroneous original report. It is still unknown
+whether the v832 wrapper or the v790 transaction reaches commit.
+The next targeted trace should follow the live MRES load/entry and
+the v826/v832/v790 paths rather than speculate about victim ordering.
+
 ## v836: Preserve native scheduler trace and distinguish MRES symbols (2026-10-31)
 
 The v835 full-system runner removed its boot directory, including the
