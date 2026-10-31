@@ -2,6 +2,24 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v835: Full-system acceptance of v834 candidate scan FAILED (2026-10-31)
+
+Ran the testkit v669 full-profile scheduler pressure regression with the
+committed v834 candidate-scan source. The boot image built successfully,
+D6FS consistency checks passed, and the PDP-6 guest loaded D6FS before
+starting the workload. The SIMH run timed out after 300 seconds (exit
+124), with terminal markers `<wpF!W` and no required writer WAIT/EXIT
+completion. The simulator reported PC 013604 (SKIPN 0,0(1)) when
+terminated. The test host log is `$TMPDIR/daimos-v835-full.log`.
+
+This reproduces the v833 incomplete writer result despite scanning all
+exchange-eligible slots. It does not establish that any pair reached
+v832 or that v790 committed an exchange. The next investigation must
+trace admission and the live transaction results, preferably with a
+persisted full-system boot image and explicit breakpoints for SWAP
+MRES symbols. Do not infer that candidate ordering alone explains the
+remaining block. v758 writer WAIT/EXIT acceptance remains FAILED.
+
 ## v834: Bounded search for an exchange-eligible resident victim (2026-10-31)
 
 The v833 pressure fallback selected exactly one `proc_swap_victim`
