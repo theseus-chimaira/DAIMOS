@@ -169,7 +169,10 @@ proc_sched_tick_reaper_check_v884:
         andi    2,PROC_TIMER_CLOCK_MASK
         sub     3,2
         andi    3,PROC_TIMER_CLOCK_MASK ; handle timer epoch wrap
-        caige   3,020                ; avoid penalizing active users
+        hlrz    5,proc_finish_last_tick_v881
+        andi    5,0377777            ; retry delay in unused LH bits
+        jumpe   5,proc_sched_tick_normal_v884 ; reject invalid zero delay
+        camge   3,5                  ; retry interval has not elapsed
         jrst    proc_sched_tick_normal_v884
         setz    1,                   ; one resumable idle maintenance turn
         popj    17,
@@ -699,6 +702,15 @@ proc_finish_defer_uarea_v881:
         ; u-area's previously unused word 067, retaining transition
         ; and not changing any session/domain control bits.
         hlrz    3,(12)
+        move    4,PROC_FINALIZE_OFFSET(3)
+        tlne    4,PROC_FINALIZE_MARK_LH
+        jrst    proc_finish_rearm_v885
+        ; A new pending owner resets global backoff so a permanent
+        ; failure in another slot cannot delay its first cleanup.
+        hrrz    4,proc_finish_last_tick_v881
+        hrli    4,020               ; first retry after 16 ticks
+        movem   4,proc_finish_last_tick_v881
+proc_finish_rearm_v885:
         movsi   4,PROC_FINALIZE_MARK_LH
         hrr     4,11
         movem   4,PROC_FINALIZE_OFFSET(3)
@@ -1188,7 +1200,9 @@ proc_exit_release_failed:
  * A provider close may sleep and can fail without relinquishing ownership;
  * therefore retain the private executive continuation and all live FILE
  * entries until the provider eventually accepts closure. Each unsuccessful
- * pass sleeps for a clock tick, so other runnable users can make progress.
+ * pass sleeps with exponential backoff up to 01000 clock ticks (512 at
+ * 60 Hz). That keeps permanent provider rejection from consuming CPU
+ * every tick, without abandoning the private owner or its FILE handles.
  * No extra per-process table, heap, or backing extent is allocated.
  *
  * Bit 2 of the existing u-area control word excludes another fatal event
@@ -1204,19 +1218,27 @@ proc_fatal_close_current_v879:
         skipn   file_table
         jrst    proc_fatal_close_no_owner_v879
         push    17,1                   ; eventual exit status
+        push    17,[1]                 ; initial retry interval: one tick
         move    2,file_table
         movei   3,PROC_FATAL_CLOSE_BIT
         iorm    3,-2(2)               ; existing packed u-area control word
 proc_fatal_close_retry_v879:
         pushj   17,file_close_all
         jumpe   1,proc_fatal_close_done_v879
-        movei   1,1                   ; relinquish CPU for one clock tick
+        move    1,(17)                ; owner-stack retry interval
         pushj   17,proc_sleep_ticks   ; save the private executive context
-        jumpe   1,proc_fatal_close_retry_v879
+        jumpn   1,proc_fatal_close_sleep_fail_v885
+        move    1,(17)
+        caige   1,01000               ; cap at 512 ticks (8.5 seconds)
+        lsh     1,1
+        movem   1,(17)
+        jrst    proc_fatal_close_retry_v879
+proc_fatal_close_sleep_fail_v885:
         ; An absent current slot cannot own a sleep continuation.
         halt    2
         jrst    .-1
 proc_fatal_close_done_v879:
+        pop     17,2                   ; discard retry interval
         pop     17,1
         jrst    proc_exit_current
 proc_fatal_close_no_owner_v879:
@@ -3657,10 +3679,11 @@ proc_idle_loop:
         move    3,1                   ; last deferred user now gone?
         pop     17,1
         jumpn   3,proc_exit_halt       ; do not reenable PI6 before HALT
+        pushj   17,proc_finish_backoff_advance_v885
         trne    1,000002
         cono    0004,02002
-        ; Return control to runnable users immediately.  Staying in
-        ; slot 0 until the next hardware tick would waste a quantum.
+        ; Return control to runnable users immediately. Staying in
+        ; slot 0 until the next hardware tick wastes a user quantum.
         setom   proc_sched_kick
         cono    0004,004002
 proc_idle_swap_v881:
@@ -3676,6 +3699,26 @@ proc_idle_swap_v881:
 proc_idle_wait:
         jrst    proc_idle_loop
 proc_idle_loop_end:
+
+/** Retry interval update under PI6 inhibition (one existing word). */
+        .globl  proc_finish_backoff_advance_v885
+proc_finish_backoff_advance_v885:
+        ; Successful release leaves no pending marker. Otherwise
+        ; increase the interval (16,32,64,...,512 ticks); this is
+        ; only one compact shared backoff word, not per-slot state.
+        move    4,proc_finish_last_tick_v881
+        tlnn    4,0400000
+        jrst    proc_finish_idle_clear_v885
+        hlrz    4,4
+        andi    4,0377777
+        caige   4,01000
+        lsh     4,1
+        ori     4,0400000
+        hrlm    4,proc_finish_last_tick_v881
+        popj    17,
+proc_finish_idle_clear_v885:
+        hrrzs   proc_finish_last_tick_v881
+        popj    17,
 
         .bss
 ; One shared clock-quantum delay, no per-process resident retry table.

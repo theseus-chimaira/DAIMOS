@@ -2,6 +2,18 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [x] v885: bound fatal FILE-close and quarantined MM u-area retry
+  frequency without discarding any owned resource. FILE sleeps
+  exponentially from 1 to 01000 octal ticks on its private stack.
+  The shared MM reaper uses the existing last-service word for a
+  020..01000 octal tick exponential delay, reset for a new owner
+  and cleared when no pending u-area remains. Native tests and the
+  real full-system transient MM-busy spinner regression PASS.
+  No permanent RAM growth; KCORE +30 words over v884.
+- [ ] v885 remaining: permanent MM/FILE provider rejection cannot
+  guarantee eventual reclamation. Define diagnostic/administrative
+  recovery policy without an unsafe forced free. Automatic OOM
+  victim killing remains disabled.
 - [x] v884: slot-0 MM cleanup is now eligible for one throttled
   maintenance turn after 020 octal timer ticks despite another
   runnable user; runnable realtime and disk-swap service retain
@@ -12,8 +24,9 @@
   real MM-busy injection with a continuously spinning companion
   PASSes (reaper runs twice with nonempty run queue, 2 busy frees,
   1 pin/unpin pair and normal HUP/TTY completion).
-- [ ] v884 follow-up: permanently pinned MM extent and
-  persistent FILE provider failures still require a bounded policy.
+- [x] v884 follow-up: permanently refusing MM/FILE providers now
+  have bounded retry frequency in v885. They still retain ownership,
+  so reclamation itself remains explicitly unbounded.
 - [x] v883: non-current fatal HUP returns success once VM destruction
   commits and u-area release is explicitly deferred under the
   TRANSITION/VM_NONE/word-067 marker; duplicate events and precommit

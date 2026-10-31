@@ -1,3 +1,35 @@
+## 2026-10-31 v885: capped fatal FILE and deferred MM retry overhead
+
+An unavailable FILE provider previously forced the fatal APR/EXEC
+owner to sleep exactly one tick and retry closure again, indefinitely.
+v885 keeps a one-word retry interval on the already allocated private
+kernel stack. Consecutive provider failures sleep 1, 2, 4, 8, ...
+through 01000 octal ticks (512 = about 8.5 seconds at 60 Hz);
+later failures stay capped. The existing FILE handle owner, fatal
+control bit, saved exit status, and private continuation remain
+intact until close succeeds. No forced release or status loss occurs.
+
+For post-VM MM u-area release, the preexisting reaper clock word
+now carries pending in its highest bit, the capped retry interval
+in remaining LH bits, and its prior last-service clock in RH.
+An initial pending owner requests a 020-octal-tick (16-tick)
+retry; each unsuccessful service doubles the shared interval
+through 01000 octal ticks. The next new owner resets the interval
+so it does not inherit a permanently pinned victim's delay.
+Once no pending owner remains, the entire LH is cleared.
+No permanent counter, table, or extra u-area word is allocated.
+
+Native PDP-6 capped FILE and MM backoff tests PASS (14 rejected
+FILE closes and later success; several MM rounds through the cap,
+new-owner reset and successful final clear). Earlier fatal close,
+deferred MM, non-current HUP, scheduler and swap tests PASS.
+Pre-v885 FILE close negative control FAILs as expected.
+The full-system continuously runnable companion/real MM_BUSY
+transient recovery also PASSes. KCORE exclusive lowmem end
+`021715` octal = 9,165 resident words, +30 over v884, 973
+above 020000. A permanently refusing provider is **not** forcibly
+freed: reclamation remains unbounded and OOM killing remains off.
+
 ## 2026-10-31 v884: bounded slot-0 maintenance turn under CPU load
 
 The v881 idle-only deferred u-area finalizer could starve behind a

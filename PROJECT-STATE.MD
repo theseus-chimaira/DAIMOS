@@ -1,3 +1,24 @@
+## 2026-10-31 v885: bounded retry CPU load without abandoning owners
+
+Fatal APR/EXEC FILE-close continuation now retries with a
+private-stack exponential delay, doubling from one tick up to
+01000 octal ticks (512, about 8.5 seconds at 60 Hz). The
+post-VM quarantined u-area reaper shares the same capped maximum,
+starting at 020 octal ticks (16). Its existing resident word
+packs pending, last service epoch, and delay; no new permanent
+RAM or process descriptor bits. A newly failing owner resets the
+MM delay; a repeated failure preserves backoff. Success clears
+the MM interval and completes normal zombie/free ownership.
+
+Native fatal close, MM backoff, scheduler/RT, v881 deferred
+finalization, v883 fatal HUP, v880 swap rollback and older
+regressions PASS. Pre-v885 constant-interval FILE negative control
+FAILs as expected. Full-system PDP-6 real MM_BUSY and continuously
+runnable bystander session test PASSes. KCORE `021715` octal
+(9,165 words, +30 v884, +973 above 8192). This bounds frequency,
+not eventual resource reclamation; persistent provider refusal
+still retains resources and automatic OOM killing remains disabled.
+
 ## 2026-10-31 v884: no idle-only starvation of deferred MM cleanup
 
 v881-v883 deferred u-area cleanup was possible only in slot 0:

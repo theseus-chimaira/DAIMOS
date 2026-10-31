@@ -3,6 +3,56 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v885: Capped exponential retries for persistent providers (2026-10-31)
+
+A permanently rejected FILE close should not monopolize a process
+and wake for another expensive provider attempt every 60 Hz tick.
+Fatal APR/EXEC teardown must nevertheless keep its own private
+kernel continuation, exit status, FILE ownership and live handles.
+v885 therefore allocates **no new permanent state**: it stores one
+retry interval above the already pushed exit status on that
+process's preallocated kernel stack. Unsuccessful close passes
+sleep 1, 2, 4, ... up to 01000 octal (512) clock ticks, then hold
+that cap. A successful pass discards the interval and continues
+normal finalization. This is a delay policy, not a limit on the
+number of attempts or permission to force-close a stuck provider.
+
+Likewise, v884's per-system `proc_finish_last_tick_v881` packs
+the pending flag in its top bit and the last 17-bit service time
+in RH. v885 uses the previously unused other LH bits for a
+shared 020..01000-octal-tick retry interval. The scheduler grants
+slot 0 a maintenance turn only when this interval has elapsed
+(subject to runnable RT and disk swap priority). After a pass,
+pending failures double the interval through 01000, whereas a
+fully successful pass clears the interval and pending indication.
+For a newly failing u-area owner, the interval resets to 020
+even if another slot has been stuck much longer. Repeated failure
+for the *same* owner does not reset the interval.
+
+An MM_BUSY provider can still return success later; no swap
+bitmap, u-area, FILE entry, process ID, or owned stack is
+discarded before actual provider success. The clock uses 17-bit
+modular arithmetic, and delays never approach half the clock range.
+Permanent refusal still consumes a process slot and allocated
+resource forever. The policy limits the CPU overhead of retrying,
+**not** resource lifetime; there is no safe arbitrary retry-count
+cutoff that proves such an allocation is free. OOM killing remains
+disabled pending a separately designed recovery mechanism.
+
+Native `daimos-fatal-close-backoff-v885.sh` injects 14 failed FILE
+closes and an eventual success, verifies all sleep intervals through
+the 01000 cap, preserved exit status and duplicate event rejection:
+PASS. Pre-v885 constant-tick source FAILs the negative control.
+`daimos-reaper-backoff-v885.sh` tests repeated MM backoff, cap,
+success reset, first-owner reset and same-owner retention: PASS.
+The v884 scheduler test checks scaled MM retry gates and all older
+fatal cleanup, event, RT and swap-detach fixtures PASS. The
+full-system simulated PDP-6 continuously runnable companion,
+real MM pin/busy/unpin recovery, normal HUP/TTY and final HALT
+also PASS. KCORE link PASS at `021715` octal (9,165 words),
++30 resident text over v884, +973 above the strict 8,192 target,
+with zero new permanent data words.
+
 ## v884: Throttled idle-reaper scheduling with a runnable user (2026-10-31)
 
 v881's deferred MM finalizer originally ran only in `proc_idle_loop`.
