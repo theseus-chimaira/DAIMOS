@@ -2,6 +2,25 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v848: Writer exits and parent wakeup executes; dispatch unresolved (2026-10-31)
+
+With the v847 larger backstore retained, the v848 fresh native full
+system again timed out after 300 seconds (exit 124, PC 013604).
+The testkit `daimos-swap-wait-dispatch-v848.sh` recorded two hits each
+at `proc_wait_status` and `proc_wait_child`, plus one each at
+`proc_exit_current`, `proc_finish_slot`, `proc_notify_parent`, and
+`proc_notify_parent_wake`. The writer slot 2 called exit with AC1
+octal 050 (the expected `WRITER_STATUS`), and parent slot 1 was the
+target of notification and the wake branch. Eight swap-ins completed
+normally; no RUN rejection or exchange-pressure branch was hit.
+
+This disproves the hypothesis that a missing writer exit or missing
+parent wakeup caused the remaining timeout. The next diagnostic needs
+to inspect the parent descriptor and run-queue state *after* wakeup,
+and determine whether PI6 dispatches the parent and which WAIT status
+or pipe-drain step prevents final completion. No scheduler behavior
+was changed and v758 WAIT/EXIT acceptance is still FAILED.
+
 ## v847: Increased backstore reaches WAIT; still no completion (2026-10-31)
 
 The full clean v847 profile retained `DRUM_BACKSTORE_BLOCKS=010000`
