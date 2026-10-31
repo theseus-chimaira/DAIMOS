@@ -28,6 +28,7 @@
         .globl  proc_swap_exchange_lock_v829
         .globl  proc_swap_exchange_abort_v830
         .globl  proc_swap_exchange_build_v831
+        .globl  proc_swap_exchange_execute_v832
         .globl  proc_current_slot
         .globl  proc_swap_exchange_preflight_v791
         .globl  proc_swap_exchange_live_v794
@@ -449,6 +450,49 @@ proc_swap_exchange_build_v831:
 proc_swap_build_fail_v831:
         seto    1,
 proc_swap_build_done_v831:
+        pop     17,013
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        popj    17,
+
+; int proc_swap_exchange_execute_v832(a_slot,b_slot,graph)
+; Caller provides 064 octal (52 decimal) writable words for the graph.
+; Slot-0 serialized context only. No permanent allocation or scheduler
+; dispatch. A failed v790 leaves both locks and the sole pin intact and
+; is followed by v830 abort; a successful v790 publishes and unlocks.
+proc_swap_exchange_execute_v832:
+        push    17,010
+        push    17,011
+        push    17,012
+        push    17,013
+        move    010,1
+        move    011,2
+        move    012,3
+        jumpe   012,proc_swap_execute_fail_v832
+        move    1,010
+        move    2,011
+        pushj   17,proc_swap_exchange_lock_v829
+        jumpn   1,proc_swap_execute_fail_v832
+        move    013,2                   ; locked resident base
+        move    1,010
+        move    2,011
+        move    3,013
+        move    4,012
+        pushj   17,proc_swap_exchange_build_v831
+        jumpn   1,proc_swap_execute_abort_v832
+        move    1,012
+        pushj   17,proc_swap_exchange_run_v790
+        jumpe   1,proc_swap_execute_done_v832
+proc_swap_execute_abort_v832:
+        move    1,010
+        move    2,011
+        move    3,013
+        pushj   17,proc_swap_exchange_abort_v830
+        jumpn   1,proc_swap_storage_invariant_v30
+proc_swap_execute_fail_v832:
+        seto    1,
+proc_swap_execute_done_v832:
         pop     17,013
         pop     17,012
         pop     17,011

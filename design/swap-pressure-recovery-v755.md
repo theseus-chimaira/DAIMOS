@@ -2,6 +2,24 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v832: Locked exchange orchestration, scheduler still disconnected (2026-10-31)
+
+`proc_swap_exchange_execute_v832(a_slot,b_slot,graph)` now composes
+v829 pair-lock acquisition, v831 graph construction, and v790 exchange
+execution. The caller supplies 064 octal (52 decimal) temporary graph
+words; there is no new permanent RAM allocation. On pre-destructive
+failure it uses v830 to verify ownership, release the pin and clear
+both transitions. A successful v790 publishes the two process states
+and releases the pin and locks itself.
+
+The native PDP-6 v826 fixture exercises the new wrapper with an
+injected v790 failure and verifies that neither transition remains
+held (PASS). The separate integrated v819 transaction fixture still
+passes with the current production sources. Neither fixture proves
+successful full orchestration with real MM/device callbacks, and the
+scheduler has not yet been connected. The v758 writer WAIT/EXIT
+full-system acceptance remains FAIL.
+
 ## v831: Native construction of locked raw exchange graph (2026-10-31)
 
 `proc_swap_exchange_build_v831(a_slot,b_slot,base,graph)` now constructs
