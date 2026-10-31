@@ -1,3 +1,29 @@
+## 2026-11-01 v890: irreversible EXEC/FILE retry full-system PASS
+
+The remaining v889 full-system post-commit EXEC fatal recovery
+gate now PASSes. In an isolated PDP-6 guest, a valid user
+`dsys_exec` stages a replacement; the test injects
+`EXEC_LOAD_NOMEM` at the staged-load boundary. The real
+low-memory fallback executes `vm_space_destroy` of the old
+process VM, verified as `VM_SPACE_NONE` before a test-only
+replacement-loader -1 response. The production
+`EXEC_REPLACE_FATAL` and `native_sys_exec` handlers then
+enter the existing process-owned private-stack fatal FILE loop.
+
+The guest proves one stage fallback, one VM destruction, one
+post-commit failed loader, three close passes, two VFS-sync -5
+rejections, two sleeps at 1/2 ticks, retained ownership and
+real FILE stage/ERR 5 diagnostic, successful close and cleared
+word-067 witness, one exit, parent WAIT status 1, CTY `<EH`,
+normal HALT, zero faults in test assertions. All instrumentation
+remains in a disposable test kernel.
+
+Native fatal EXEC/backoff/provider/MM regressions PASS. DAIMOS
+source and resident allocation are unchanged. KCORE `022124`
+octal = 9,300 words (+1,108 relative to 8,192), zero new RAM.
+Permanent provider failure still has unbounded ownership
+lifetime, so automatic OOM termination remains disabled.
+
 ## 2026-11-01 v889: genuine full-system APR fault/FILE recovery
 
 A full PDP-6 guest now validates v879/v885/v888 fatal FILE

@@ -2,6 +2,22 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [x] v890: real full-system post-commit EXEC fatal FILE failure
+  recovery. Valid user `EXEC` enters true low-memory fallback
+  after injected pre-stage NOMEM; the production VM destroy
+  commits `VM_SPACE_NONE` before test-only replacement-load
+  rejection. Simulated VFS close fails twice; private kernel
+  continuation retries after 1/2 ticks, retains FD and recorded
+  ERR 5, clears witness on success, and parent WAIT returns
+  fatal EXEC status 1. Booted PDP-6 SIMH PASS, no production
+  code/data changes (KCORE 9,300).
+- [ ] v890 next: investigate permanently refusing FILE/MM
+  providers while another user remains runnable; retention,
+  diagnostic availability, bounded CPU usage, and a safe
+  administrative remedy. Do not enable automatic OOM killing
+  without proving resource-lifetime and admission guarantees.
+- [x] v889 follow-up: booted post-commit EXEC fatal failure
+  acceptance completed in v890; APR path accepted in v889.
 - [x] v889: full-system, actual user APR fault to private-stack
   fatal FILE cleanup acceptance. Disposable test kernel injects
   -5 from VFS-sync on the first two FD-0 close attempts.
@@ -10,10 +26,10 @@
   failures, ERR class 5 visible, FD/witness cleared on
   success, correct parent WAIT and clean HALT. Zero production
   code/data changes; KCORE remains 9,300 words.
-- [ ] v889 follow-up: booted PDP-6 post-commit EXEC fatal
-  provider-failure acceptance (APR path now accepted), persistent
-  rejection diagnosis/recovery, and admission policy for
-  automatic OOM termination.
+- [x] v889 EXEC follow-up: booted PDP-6 post-commit fatal
+  provider-failure acceptance completed in v890.
+  Persistent rejection diagnosis/recovery and the admission
+  policy for automatic OOM termination remain open.
 - [x] v888: preserve the first actual rejecting FILE provider
   result and FD during private fatal close using otherwise-unused
   u-area word 067. Expose a compact 0..6 result class through
@@ -24,9 +40,9 @@
   source/negative tests PASS. Real MM allocator busy/invalid
   distinction test PASS and full-system ordinary session/HUP/TTY
   regression PASS. KCORE +26 text words, no static data.
-- [ ] v888 remaining: prove transient rejecting FILE providers
-  through a full-system fatal private-stack continuation; ordinary
-  session teardown regression does not inject provider rejection.
+- [x] v888 transient FILE regression: proven in a full-system
+  private-stack APR fatal continuation (v889), followed by an
+  irreversible EXEC continuation (v890).
   Continue investigating invalid MM owner/type metadata failures
   rather than forcibly reclaiming such allocations.
 - [x] v887: add on-demand exact provider diagnostics to the existing

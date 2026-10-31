@@ -1,3 +1,41 @@
+## 2026-11-01 v890: full-system destructive EXEC failure recovery
+
+No production KCORE code or data changes. The disposable PDP-6
+guest `daimos-fatal-exec-integration-v890.sh` uses an actual
+user-mode `dsys_exec` with a valid versioned launch record.
+The kernel's first staged `exec_load_process` is made to report
+`EXEC_LOAD_NOMEM` only for the selected child, entering the
+production low-memory EXEC fallback. The production
+`vm_space_destroy` really destroys the old image; a test-only
+observation requires its descriptor to be `VM_SPACE_NONE`.
+Only **after** that irreversible commit does the isolated
+replacement `exec_load_process` return -1. The normal
+`EXEC_REPLACE_FATAL` return and `native_sys_exec` route
+enter `proc_fatal_close_current_v879` on the original
+process-owned executive stack.
+
+The isolated VFS-sync hook returns -5 for the selected child's
+FD 0 on its first two closes; the third goes through the real
+VFS path. SIMH guest PASS: one staged-memory failure, one actual
+VM destruction, one post-commit replacement-load rejection,
+three FILE passes, three VFS calls (two -5 failures), two private
+sleep intervals at 1 and 2 ticks, two retained-descriptor
+observations, FILE stage 1/ERR 5 from `GETTEARDOWN`, exactly
+one descriptor/witness clear and one terminal exit. The parent
+receives the original fatal EXEC exit status 1 through `WAIT`.
+CTY `<EH`, final HALT, and zero test errors PASS.
+
+The v878/v879 native fatal EXEC, v885 FILE backoff, v888 real
+provider error/MM classification, v887 detail and v881 deferred
+MM tests also PASS. No production binary changed: KCORE remains
+`022124` octal = 9,300 words, 1,108 above the 8,192-word
+resident target, with zero new permanent data.
+
+Transient APR-fatal and post-commit EXEC-fatal FILE rejection
+recovery are now both full-system accepted. Indefinitely
+rejecting providers still prevent guaranteed reclamation;
+no forced close/unpin or automatic OOM killing is enabled.
+
 ## 2026-11-01 v889: full guest APR fatal FILE rejection acceptance
 
 No permanent kernel code or data changes. The disposable PDP-6

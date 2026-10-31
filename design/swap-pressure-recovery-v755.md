@@ -3,6 +3,49 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v890: Real destructive EXEC failure with transient FILE refusal
+
+The v889 APR-fault acceptance proved the genuine hardware-fault
+route into the owner-stack fatal-close continuation. v890 proves
+the other documented entry, `native_sys_exec` after an
+irreversible low-memory EXEC commit. The test program makes a
+valid EXEC UUO call. A disposable-kernel hook simulates
+pre-stage `EXEC_LOAD_NOMEM`; this invokes the ordinary
+`exec_replace_current_lowmem` sequence, including the real
+`vm_space_destroy` and `proc_swap_detach` of the old VM.
+The test explicitly verifies that the old descriptor is now
+`VM_SPACE_NONE`, then injects replacement-loader failure -1.
+That is a failed replacement **after real old-VM destruction**,
+not a fabricated `EXEC_REPLACE_FATAL` return at the syscall
+dispatcher.
+
+The unchanged kernel returns `EXEC_REPLACE_FATAL` (-2) through
+`native_sys_exec` and enters
+`proc_fatal_close_current_v879`, retaining the user process's
+private executive stack and u-area despite the missing VM.
+The copied test kernel rejects two close-time VFS-sync requests
+for its FD 0 with -5, then allows normal provider service.
+The genuine timer/scheduler mechanism yields at 1 and 2
+ticks, reenters FILE cleanup for three total passes, retains
+the descriptor and error witness through failures, and clears
+both before the final exit. `GETTEARDOWN` reports FILE stage
+and actual provider error class 5 during failure.
+
+The PDP-6 guest verifies a single staged-memory failure, one
+irreversible VM destroy, one failed post-commit loader,
+three VFS calls/two rejections, exactly two private sleeps,
+correct parent WAIT status 1, `<EH` console markers and
+normal HALT. All guest error counters remain zero. Earlier
+native v878/v879, v885, v887/v888, and v881 tests PASS.
+The production kernel is unmodified: KCORE `022124` octal
+(9,300 words), zero new permanent RAM.
+
+Both transient APR and destructive EXEC fatal FILE recovery
+paths are now full-system accepted. There remains no safe
+automatic reclamation of a permanently busy FILE provider
+or pinned/malformed MM extent. Automatic OOM victim
+termination remains disabled.
+
 ## v889: Full-system private-stack APR FILE rejection and recovery
 
 v888 proved actual FILE provider return propagation in native
