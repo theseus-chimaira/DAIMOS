@@ -118,6 +118,20 @@ proc_swap_exchange_pair_v826:
         lsh     3,1
         add     3,011
         add     3,proc_table
+        ; Candidate must be schedulable or safely parked; the target
+        ; must be RUN to satisfy the pending scheduler request.
+        move    4,2(1)
+        lsh     4,-041
+        caie    4,2                    ; RUN
+        cain    4,3                    ; SLEEP
+        jrst    proc_swap_pair_a_state_v827
+        caie    4,6                    ; STOP
+        jrst    proc_swap_pair_fail_v826
+proc_swap_pair_a_state_v827:
+        move    4,2(3)
+        lsh     4,-041
+        caie    4,2                    ; incoming must be RUN
+        jrst    proc_swap_pair_fail_v826
         move    4,(1)
         trne    4,PROC_TRANSITION_RH
         jrst    proc_swap_pair_fail_v826

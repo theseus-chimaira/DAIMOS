@@ -2,6 +2,20 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v827: Native scheduler-state admission gate (2026-10-31)
+
+The conservative `proc_swap_exchange_pair_v826` now additionally
+checks the actual packed scheduler states. The outgoing resident
+candidate must be RUN, SLEEP or STOP, matching existing victim
+eligibility. The incoming swapped process must be RUN, matching the
+pending scheduler request. The extended native PDP-6 fixture rejects
+an incoming SLEEP and an outgoing invalid/zero state, then admits
+the restored SLEEP/RUN pair (PASS). No persistent RAM allocation.
+
+The helper remains side-effect-free: this is neither a paired lock nor
+a call from the scheduler. MM pin ownership, the full request graph,
+and native v758 writer WAIT/EXIT acceptance are still open.
+
 ## v826: Native read-only equal-size exchange pair gate (2026-10-31)
 
 Added `proc_swap_exchange_pair_v826(a_slot,b_slot)` in the existing SWAP
