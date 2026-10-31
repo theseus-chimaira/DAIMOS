@@ -2,6 +2,28 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v841: Clean native service-branch tracing (2026-10-31)
+
+Executed testkit `daimos-swap-branches-v840.sh` against a fresh full
+PDP-6 image. The full image built and booted, and the SWAP MRES
+trampoline still targeted octal 032255. The native test again timed
+out after 300 seconds (exit 124), with PC 013605 and no writer
+WAIT/EXIT completion. Ten resident `proc_swap_service_one` breakpoint
+hits were seen, but ZERO hits at each of the eight instrumented SWAP
+MRES branch/entry points: pressure, pop-clear, failed, cooldown,
+candidate selection, pair admission, exchange execute, and exchange
+run. The trace is preserved under the v669 runner's versioned TMPDIR
+directory; the last run's log is `$TMPDIR/daimos-v841.log`.
+
+This evidence shows that the exchange-pressure branch is NOT observed
+in the failing workload, despite repeated swap-service entry. It does
+not by itself prove that every service invocation successfully swapped
+in a process: a direct early return or another path is still possible.
+The next instrumentation should explicitly capture the `proc_swap_in`
+return value and the normal service-success path, then correlate with
+the writer's wait state. The v758 acceptance remains FAILED; no
+production control-flow change was made for v841.
+
 ## v840: Export native swap-service branch trace points (2026-10-31)
 
 The clean v839 regression observed 10 resident swap-service calls but
