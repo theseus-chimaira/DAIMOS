@@ -3,6 +3,26 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v857: Pair-admission probe exposes invalid fixed MRES address (2026-10-31)
+
+Added exported labels `proc_swap_pair_admitted_v857` and
+`proc_swap_pair_done_v826` (zero added kernel words) and a full-system
+testkit `daimos-swap-pair-admission-v857.sh`. The fresh full-profile
+PDP-6 run with 010000-octal backstore sectors PASSED its 16-child
+post-INIT pressure cycle (descriptor peak 34/136).
+
+The trace script printed 255 hits at the presumed pair entry 027632,
+zero at admission/return, and zero at v832/v790. **Those hits are not
+valid pair-admission evidence**: the SIMH trace disassembled 027632 as
+`CONO PAG,0`, although the pair source begins with `JUMPE 1,...`.
+The static MRES base assumption in the v837/v851-derived breakpoint
+script is therefore not verified for this image. Do not infer either
+255 real pair calls or zero eligible pairs from these breakpoint counts.
+Next resolve the installed SWAP MRES code address from a runtime-verified
+entry and disassemble the expected instructions before placing branch
+breakpoints. Preserve the successful guest workload acceptance as a
+separate, valid result. End-to-end physical exchange remains unproven.
+
 ## v856: Mid-transfer write fault is fatal (2026-10-31)
 
 The native PDP-6 testkit `daimos-swap-midwrite-fault-v856.sh`
