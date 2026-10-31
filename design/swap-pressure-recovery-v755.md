@@ -17,6 +17,24 @@ symbol when versioning; this was corrected before the fresh rerun.
 The original v758 WAIT/EXIT acceptance remains FAILED until the full
 system completes the writer workload.
 
+The first v843 attempt stopped before SIMH because the versioned
+diagnostic mistakenly renamed the existing v842 symbol; the second
+attempt used a breakpoint in the busy idle loop and was stopped after
+excessive trace output. Both faults were corrected in the testkit,
+including removing the idle-loop breakpoint and binding the report
+to the current run's trace rather than a stale retained file.
+
+The clean v843 rerun reached SIMH and timed out at 300 seconds (exit
+124, PC 013605), again without writer completion. It recorded eight
+normal `proc_swap_in_restore` / service-success hits; zero swap-in
+pressure and zero exchange entry hits. KCORE breakpoint counts were
+`proc_runq_add` 2297, `proc_wait_child` 0, `proc_notify_parent` 0.
+These observations do not prove a parent wakeup failure: neither
+WAIT-child entry nor parent notification was observed. Investigate
+the test workload's user-level WAIT/EXIT phase, its syscall entry
+and the child exit/finish path before changing notification semantics.
+The v758 acceptance remains FAILED.
+
 ## v842: Swap restore/return branch observability (2026-10-31)
 
 Added exported branch symbols for the normal swap-service restore
