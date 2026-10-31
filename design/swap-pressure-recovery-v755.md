@@ -2,6 +2,23 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v826: Native read-only equal-size exchange pair gate (2026-10-31)
+
+Added `proc_swap_exchange_pair_v826(a_slot,b_slot)` in the existing SWAP
+MRES assembly. It performs a side-effect-free, conservative shape check:
+distinct valid slots, present stable u-areas, no TRANSITION, resident A,
+nonresident B, equal nonzero 02000-aligned image sizes, a present A
+executable-backing record and B disk record, no omitted PURE prefix in
+either executable, and B's disk block count exactly covering the raw
+image. A native PDP-6 testkit fixture exercises valid admission, unequal
+image rejection and absent disk record rejection (PASS).
+
+This does NOT lock the processes, check scheduler state or MM ownership,
+choose a victim, construct the full v790 pointer graph, or trigger an
+exchange. Those checks must occur under scheduler exclusion before the
+transaction can be used. No new permanent data allocation is introduced;
+the v758 writer WAIT/EXIT full-system regression remains unpassed.
+
 ## v822: Exchange resource-admission boundary (2026-10-31)
 
 The testkit `daimos-swap-exchange-admission-v822.c` verifies ten

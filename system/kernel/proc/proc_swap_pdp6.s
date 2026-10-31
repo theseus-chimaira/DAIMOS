@@ -24,6 +24,7 @@
         .globl  proc_swap_exchange_publish_v788
         .globl  proc_swap_exchange_commit_v789
         .globl  proc_swap_exchange_run_v790
+        .globl  proc_swap_exchange_pair_v826
         .globl  proc_swap_exchange_preflight_v791
         .globl  proc_swap_exchange_live_v794
         .globl  proc_swap_exchange_backing_v797
@@ -90,6 +91,87 @@
         .equ    PROC_SWAP_TEXT_MASK,037777
         .equ    PROC_SWAP_TEXT_SHIFT,026
         .equ    PROC_SWAP_MOUNT_SHIFT,022
+
+; int proc_swap_exchange_pair_v826(a_slot,b_slot)
+; Side-effect-free initial admission for equal-sized raw-image pairs.
+; The caller must still lock both processes, pin A, and revalidate all
+; live state before constructing/committing a transaction. No scheduling
+; action is taken here. A larger or PURE image is deliberately deferred.
+; AC1=resident candidate, AC2=swapped target. Return 0 or -1.
+proc_swap_exchange_pair_v826:
+        jumpe   1,proc_swap_pair_bad_v826
+        jumpe   2,proc_swap_pair_bad_v826
+        camn    1,2
+        jrst    proc_swap_pair_bad_v826
+        caml    1,proc_high_slot
+        jrst    proc_swap_pair_bad_v826
+        caml    2,proc_high_slot
+        jrst    proc_swap_pair_bad_v826
+        push    17,010
+        push    17,011
+        move    010,1
+        move    011,2
+        lsh     1,1
+        add     1,010
+        add     1,proc_table
+        move    3,011
+        lsh     3,1
+        add     3,011
+        add     3,proc_table
+        move    4,(1)
+        trne    4,PROC_TRANSITION_RH
+        jrst    proc_swap_pair_fail_v826
+        trnn    4,PROC_UAREA_RH
+        jrst    proc_swap_pair_fail_v826
+        move    4,(3)
+        trne    4,PROC_TRANSITION_RH
+        jrst    proc_swap_pair_fail_v826
+        trnn    4,PROC_UAREA_RH
+        jrst    proc_swap_pair_fail_v826
+        hrrz    4,1(1)
+        jumpe   4,proc_swap_pair_fail_v826
+        hrrz    4,1(3)
+        jumpn   4,proc_swap_pair_fail_v826
+        hlrz    4,1(1)
+        jumpe   4,proc_swap_pair_fail_v826
+        trne    4,01777
+        jrst    proc_swap_pair_fail_v826
+        hlrz    5,1(3)
+        came    4,5
+        jrst    proc_swap_pair_fail_v826
+        ; Only raw images: each saved disk record must span all words.
+        move    6,4
+        lsh     6,-7
+        move    7,proc_swap_records
+        add     7,010
+        skipn   1,(7)
+        jrst    proc_swap_pair_fail_v826
+        push    17,3
+        pushj   17,proc_swap_skip_words
+        pop     17,3
+        jumpn   1,proc_swap_pair_fail_v826
+        hlrz    7,(3)
+        jumpe   7,proc_swap_pair_fail_v826
+        skipn   1,PROC_SWAP_BACKING_OFFSET(7)
+        jrst    proc_swap_pair_fail_v826
+        pushj   17,proc_swap_skip_words
+        jumpn   1,proc_swap_pair_fail_v826
+        move    7,proc_swap_records
+        add     7,011
+        hrrz    5,(7)
+        came    5,6
+        jrst    proc_swap_pair_fail_v826
+        setz    1,
+        jrst    proc_swap_pair_done_v826
+proc_swap_pair_fail_v826:
+        seto    1,
+proc_swap_pair_done_v826:
+        pop     17,011
+        pop     17,010
+        popj    17,
+proc_swap_pair_bad_v826:
+        seto    1,
+        popj    17,
 
 ; int proc_swap_exchange_sector_v771(disk_block, a_ram, b_ram)
 ; Exchange one writable sector: B disk -> scratch, A RAM -> disk,
