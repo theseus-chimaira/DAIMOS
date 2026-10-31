@@ -2,6 +2,11 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [ ] v878 restores the missing FILE-close call in post-commit fatal
+  PDP-6 EXEC. Native successful/failed close and pre-v878 negative
+  control PASS/expected FAIL; still needs full-system post-commit
+  fault injection. A persistent close error remains nonreturning and
+  cannot be handled by a retry without an owned kernel continuation.
 - [ ] v877: ordinary full-system session teardown PASSes on the post-v876
   code under headless CTY/DPY test isolation. This does *not* validate
   injected HUP/VM failures during the full-system run or guarantee

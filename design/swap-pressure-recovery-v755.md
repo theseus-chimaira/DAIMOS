@@ -3,6 +3,38 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v878: Post-commit EXEC fatal path closes FILE before irreversible EXIT (2026-10-31)
+
+The PDP-6 `native_sys_exec` branch handling `EXEC_REPLACE_FATAL` (-2)
+used to jump straight to `proc_exit_current`, unlike ordinary EXIT,
+fatal events and user APR faults. After low-core EXEC has destroyed the
+old VM, returning to userspace is forbidden, but the surviving stable
+u-area may still own up to 16 open FILE descriptors. The direct exit
+skipped FILE cleanup. `proc_finish_slot` then correctly rejected the
+live descriptors (v869), resulting in `proc_exit_release_failed` HALT
+even when all FILE closes would have succeeded.
+
+The fatal EXEC branch now invokes the existing `file_close_all` from
+the process-private executive stack before switching to the permanent
+slot-0 stack. Successful closes permit ordinary finalization; a close
+failure preserves its descriptor for the finalizer's ownership guard,
+not an orphaned provider reference. Because the old VM is already gone,
+even a failed close cannot return an error to user EXEC. That condition
+still HALTs until the nonreturning deferred-cleanup mechanism is safe;
+this patch does **not** claim system-wide fatal-exit progress or OOM
+recovery. No new RAM or backing state is introduced.
+
+Native PDP-6 testkit v878 uses the actual `native_sys_exec` leaf and
+injects post-commit fatal return, successful/failed FILE close,
+recoverable pre-commit EXEC failure, successful EXEC and failed mapping.
+It verifies finalizer handoff only for fatal EXEC, preserves a rejected
+descriptor, and leaves all nonfatal paths unchanged: PASS. The same
+fixture FAILs on pre-v878 v877 source at the missing close check.
+Native v867/v868/v869/v875/v876 FILE/EXIT/teardown regressions PASS.
+Lowmem KCORE link PASS, exclusive end `021227` octal, one word above
+v877 `021226`. Full-system post-commit EXEC fault injection remains
+open; automatic OOM victim killing stays disabled.
+
 ## v877: Post-v876 full-system session teardown acceptance (2026-10-31)
 
 With the v875 controlling-TTY commit-order and v876 RT/TRANSITION

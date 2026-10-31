@@ -1,3 +1,15 @@
+## 2026-10-31 v878: post-commit EXEC must close FILE descriptors
+
+`native_sys_exec` now closes the stable process FILE table before
+nonreturning `proc_exit_current` after `EXEC_REPLACE_FATAL`. This
+prevents the v869 finalizer guard from rejecting otherwise closable
+descriptors solely because the fatal EXEC branch skipped cleanup.
+Native v878 test including pre-v878 negative control PASS/expected
+FAIL; earlier EXIT, FILE and finalizer tests PASS. Lowmem KCORE link
+PASS at exclusive endpoint `021227` octal (+1 word). No new static
+data. Persistently failed closes and APR fatal cleanup still need
+process-owned deferral before OOM termination can be enabled.
+
 ## 2026-10-31 v877: full-system session teardown acceptance
 
 Post-v876 `daimos-session-teardown-v1.sh` PASSes in a headless

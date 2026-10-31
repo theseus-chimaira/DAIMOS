@@ -1,3 +1,15 @@
+## 2026-10-31 v878: missing post-commit EXEC FILE close corrected
+
+The unrecoverable PDP-6 EXEC branch now runs `file_close_all` on the
+surviving process-private stack before jumping to slot-0 EXIT. Without
+that call the v869 FILE invariant would force a HALT with otherwise
+closable descriptors after the old VM had gone. Native successful
+close, failed close, normal EXEC and pre-commit failure PASS; older
+source FAILs the new negative-control test as expected. Other
+FILE/EXIT/finalizer tests PASS. KCORE endpoint `021227` octal (+1
+word). Persistent failure still requires deferred reaping and is not
+OOM-safe; no kill activation. See TODO.MD and swap-pressure design.
+
 ## 2026-10-31 v877: post-v876 full-system HUP/TTY regression PASS
 
 The full-system session teardown guest successfully completed on the
