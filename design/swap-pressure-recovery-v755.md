@@ -2,6 +2,22 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v836: Preserve native scheduler trace and distinguish MRES symbols (2026-10-31)
+
+The v835 full-system runner removed its boot directory, including the
+SWAP MRES symbol map and guest trace, on failure. The testkit now has
+`daimos-swap-trace-map-v836.sh`, which enables the existing native v669
+resident-breakpoint trace, preserves its build directory, writes a
+versioned runner transcript and reports both KCORE and SWAP MRES symbol
+addresses for follow-up investigation. Link-time MRES addresses are
+explicitly NOT asserted to be permanently resident breakpoints, since
+the module may load or unload. Shell syntax has been validated; a fresh
+full-system execution of this new diagnostic has NOT yet completed.
+
+This is diagnostic tooling only. The v835 300-second writer WAIT/EXIT
+failure remains the acceptance result, and production scheduler code
+is unchanged.
+
 ## v835: Full-system acceptance of v834 candidate scan FAILED (2026-10-31)
 
 Ran the testkit v669 full-profile scheduler pressure regression with the
