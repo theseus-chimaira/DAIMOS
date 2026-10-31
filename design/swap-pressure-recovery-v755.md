@@ -2,6 +2,29 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v833: Scheduler pressure invokes exchange; full-system FAIL (2026-10-31)
+
+`proc_swap_mres_service_v481` now tries the resident candidate from
+`proc_swap_victim` after a `+1` resource-pressure response from
+`proc_swap_in`. It supplies a temporary 064-octal-word graph on the
+slot-0 stack to `proc_swap_exchange_execute_v832`. Successful exchange
+returns the requested incoming slot to the scheduler; an ineligible
+candidate or pre-transfer failure retains the existing 0100-octal-tick
+cooldown. No permanent RAM allocation was added.
+
+The complete SWAP MRES assembler and isolated native v826 admission /
+abort regression PASS. The full-profile testkit scheduler runner v669
+was rebuilt with the v833 source and ran in PDP-6 SIMH, but TIMED OUT
+after 300 seconds (exit 124), output ending `<wpF!W` rather than the
+required writer WAIT/EXIT completion. The last reported simulator PC
+was 013605. Log: `$TMPDIR/daimos-v833-native.log` on the test host.
+This is a failing integration attempt, NOT a v758 fix. The next
+diagnostic must distinguish whether a suitable resident pair is found,
+whether v832 is entered/rejected, and where the writer remains blocked.
+In particular, the single `proc_swap_victim` choice is not yet a search
+over all exchange-admissible candidates. Do not mark the scheduler
+acceptance resolved until the original workload completes.
+
 ## v832: Locked exchange orchestration, scheduler still disconnected (2026-10-31)
 
 `proc_swap_exchange_execute_v832(a_slot,b_slot,graph)` now composes

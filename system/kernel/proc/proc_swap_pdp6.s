@@ -1935,6 +1935,26 @@ proc_swap_mres_service_v481:
         popj    17,
 
 proc_swap_service_pressure:
+        ; v833: a raw equal-size exchange can progress without another
+        ; full BACKSTORE allocation. One candidate, no retry loop.
+        ; Preserve the pending B slot below the temporary victim slot.
+        move    1,(17)
+        pushj   17,proc_swap_victim
+        jumpl   1,proc_swap_service_cooldown_v833
+        push    17,1                   ; A slot, B is now -1(17)
+        add     17,[064,,064]          ; 52-word temporary v790 graph
+        move    1,-064(17)             ; A candidate
+        move    2,-065(17)             ; pending B
+        movei   3,-063(17)             ; graph words -063..0
+        pushj   17,proc_swap_exchange_execute_v832
+        sub     17,[064,,064]
+        pop     17,2                   ; discard A candidate
+        jumpn   1,proc_swap_service_cooldown_v833
+        ; v790 published B resident and released both transitions.
+        pop     17,1
+        movem   1,proc_sched_cursor
+        popj    17,
+proc_swap_service_cooldown_v833:
         ; The swapped image is intact. Defer another restore attempt long
         ; enough for resident jobs to run and free resources. Clock PI6
         ; ages the delay; the scheduler ignores swapped jobs during it.
