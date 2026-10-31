@@ -3,6 +3,24 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v854: Full outgoing writable-sector image verification (2026-10-31)
+
+The new native testkit `daimos-swap-exchange-data-v854.sh` extends the
+real v819 exchange integration with verification of all three outgoing
+0200-word disk sectors (0600 words), rather than only the first two.
+It exercises the real transfer, preflight, commit, accounting and
+metadata publication, with simulated disk-sector I/O in native PDP-6
+memory. The same fixture tests rejection before disk writes for invalid
+backing, allocation bitmap, span and alignment. The test PASSES.
+
+An initial assertion against the incoming process writable RAM after
+commit was invalid, because executable reload replaces that region;
+the assertion was replaced with checks of the persistent outgoing
+backing sectors. A post-transfer pre-reload check of incoming writable
+RAM and a fault-injected mid-transfer recovery test are still required.
+This is native simulated-device data-path evidence, not full-system
+hardware or simultaneous process-resumption acceptance.
+
 ## v853: Real v832-to-v790 control-flow native test (2026-10-31)
 
 The new testkit `daimos-swap-orchestrator-v853.sh` links the actual
