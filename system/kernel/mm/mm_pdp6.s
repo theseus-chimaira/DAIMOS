@@ -27,6 +27,7 @@
         .globl  mm_pin
         .globl  mm_unpin
         .globl  mm_is_pinned
+        .globl  mm_uarea_probe_v887
         .globl  mm_compact
         .globl  mm_extent_insert
 
@@ -133,6 +134,38 @@ mm_is_pinned_no:
         popj    17,
 mm_is_pinned_yes:
         movei   1,1
+        popj    17,
+
+; Read-only u-area extent ownership/pin diagnostic. AC1 exact base,
+; AC2 owning process slot. Returns 0..255 pins, or 0400 missing,
+; 0401 wrong type, 0402 wrong owner. No allocation, no mutation.
+mm_uarea_probe_v887:
+        move    6,2
+        pushj   17,mm_find_base
+        caml    1,mm_extent_count
+        jrst    mm_uarea_probe_missing_v887
+        lsh     1,1
+        move    4,mm_extents+1(1)
+        hlrz    5,4
+        andi    5,7
+        caie    5,3                    ; MM_TYPE_KERNEL_DYNAMIC
+        jrst    mm_uarea_probe_type_v887
+        hrrz    5,4
+        addi    6,01000               ; PROC_UAREA_MM_OWNER_BASE
+        came    5,6
+        jrst    mm_uarea_probe_owner_v887
+        move    1,4
+        lsh     1,-025                 ; pin field starts at bit 21
+        andi    1,0377
+        popj    17,
+mm_uarea_probe_missing_v887:
+        movei   1,0400
+        popj    17,
+mm_uarea_probe_type_v887:
+        movei   1,0401
+        popj    17,
+mm_uarea_probe_owner_v887:
+        movei   1,0402
         popj    17,
 
 ; Find a fitting free gap.

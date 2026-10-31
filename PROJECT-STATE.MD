@@ -1,3 +1,26 @@
+## 2026-11-01 v887: read-only provider diagnostics, no persistent state
+
+The v886 `procctl(GETTEARDOWN,pid)` stage and retry ABI stays
+backward compatible. Adding 0400 octal to the PID argument requests
+actual provider-owned state: a fatal FILE owner's remaining
+descriptor count/first FD and VFS/PIPE/DPY provider class; or a
+deferred-MM u-area owner's exact MM allocator pin count, subject
+to type/owner verification. Invalid MM metadata produces distinct
+missing/type/owner codes, never a fabricated zero pin count.
+No mutation, raw addresses, permanent words or new syscall slot.
+The `ps` utility displays the packed numeric `DETAIL` alongside
+the existing TD and RETRY columns, with zero additional kernel RAM.
+
+Native PDP-6 detail and v886 compatibility tests PASS.
+The pre-v887 source FAILs the native negative control. A
+full-system PDP-6 guest PASSes live MM pin count 1, two real
+MM_ERR_BUSY results, eventual unpin and successful reaping,
+and session HUP/TTY while an independent user remains runnable.
+KCORE links at `022072` octal = 9,274 words (+72 over v886, 1,082
+above 8192), with no added permanent data. The result is a
+current snapshot only: a provider might later complete cleanup.
+Automatic OOM killing remains disabled.
+
 ## 2026-10-31 v886: visible, non-destructive teardown status
 
 The existing `procctl` UUO 077 uses the previously unassigned

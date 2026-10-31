@@ -1171,6 +1171,7 @@ cmd_ps(int argc, kword_t **argv, struct u_io *io)
         unsigned int slots;
         unsigned int used;
         unsigned int td;
+        unsigned int td_detail;
         int td_status;
         int own_sink;
         int rc;
@@ -1184,7 +1185,7 @@ cmd_ps(int argc, kword_t **argv, struct u_io *io)
         }
         own_sink = u_text_sink_attach(io->out_fd) == 0;
         rc = 0;
-        if (u_puts(io->out_fd, "PID PPID S WORDS TD RETRY COMM") != 0 ||
+        if (u_puts(io->out_fd, "PID PPID S WORDS TD RETRY DETAIL COMM") != 0 ||
             u_crlf(io->out_fd) != 0) {
                 rc = 1;
                 goto ps_done;
@@ -1195,6 +1196,9 @@ cmd_ps(int argc, kword_t **argv, struct u_io *io)
                 td_status = dsys_procctl(SYS_PROCCTL_GETTEARDOWN, i);
                 td = td_status < 0 ? SYS_TEARDOWN_NONE :
                     (unsigned int)td_status;
+                td_status = dsys_procctl(SYS_PROCCTL_GETTEARDOWN,
+                    SYS_TEARDOWN_DETAIL_ARG(i));
+                td_detail = td_status < 0 ? 0U : (unsigned int)td_status;
                 if (u_put_uint(io->out_fd, p.pid) != 0 || u_putc(io->out_fd, ' ') != 0 ||
                     u_put_uint(io->out_fd, p.ppid) != 0 || u_putc(io->out_fd, ' ') != 0 ||
                     u_put_uint(io->out_fd, p.state) != 0 || u_putc(io->out_fd, ' ') != 0 ||
@@ -1202,6 +1206,8 @@ cmd_ps(int argc, kword_t **argv, struct u_io *io)
                     u_put_uint(io->out_fd, SYS_TEARDOWN_STAGE(td)) != 0 ||
                     u_putc(io->out_fd, ' ') != 0 ||
                     u_put_uint(io->out_fd, SYS_TEARDOWN_RETRY_TICKS(td)) != 0 ||
+                    u_putc(io->out_fd, ' ') != 0 ||
+                    u_put_uint(io->out_fd, td_detail) != 0 ||
                     u_putc(io->out_fd, ' ') != 0) {
                         rc = 1;
                         goto ps_done;

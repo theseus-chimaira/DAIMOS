@@ -152,6 +152,28 @@ struct sys_fsinfo {
         ((unsigned int)(word) & SYS_TEARDOWN_STAGE_MASK)
 #define SYS_TEARDOWN_RETRY_TICKS(word) \
         ((unsigned int)(word) >> SYS_TEARDOWN_RETRY_SHIFT)
+/* Request a live resource snapshot, without changing the v886 query.
+ * The low 8 bits select the process slot; bit 8 enables detail.
+ * FILE: stage 1 | (open descriptor count << 2) | (first fd << 8) |
+ *       (first fd provider class << 13).
+ * MM:   stage 2 | (physical pins or MM_DETAIL_* sentinel << 2).
+ * The MM details describe exact current extent ownership, not the
+ * reason for a historical failed mm_free() call.
+ */
+#define SYS_TEARDOWN_DETAIL_FLAG      0400U
+#define SYS_TEARDOWN_DETAIL_ARG(pid)  \
+        (((unsigned int)(pid) & 0377U) | SYS_TEARDOWN_DETAIL_FLAG)
+#define SYS_TEARDOWN_DETAIL_VALUE(w)  (((unsigned int)(w) >> 2U) & 0377U)
+#define SYS_TEARDOWN_DETAIL_FD(w)     (((unsigned int)(w) >> 8U) & 037U)
+#define SYS_TEARDOWN_DETAIL_PROVIDER(w) (((unsigned int)(w) >> 13U) & 03U)
+#define SYS_TEARDOWN_PROVIDER_VFS    0U
+#define SYS_TEARDOWN_PROVIDER_PIPE   1U
+#define SYS_TEARDOWN_PROVIDER_DPY    2U
+#define SYS_TEARDOWN_DETAIL_NONE_FD  020U
+#define SYS_TEARDOWN_MM_NO_EXTENT    0400U
+#define SYS_TEARDOWN_MM_WRONG_TYPE   0401U
+#define SYS_TEARDOWN_MM_WRONG_OWNER  0402U
+#define SYS_TEARDOWN_MM_PINS(w)      ((unsigned int)(w) >> 2U)
 
 #define SYS_TTY_MODE_CANONICAL   01U
 #define SYS_TTY_MODE_ECHO        02U

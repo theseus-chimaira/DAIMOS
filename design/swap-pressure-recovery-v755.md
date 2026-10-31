@@ -3,6 +3,50 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v887: Check the provider's existing ownership metadata
+
+The v886 stage/interval is necessary but insufficient to identify
+whether a FILE provider still has references or an MM allocation
+is actually pinned. A saturated retry delay does not establish
+the cause of a historical provider rejection. v887 adds an
+**on-demand read-only** detail form to the existing
+`SYS_PROCCTL_GETTEARDOWN` op 041:
+`GETTEARDOWN(pid | SYS_TEARDOWN_DETAIL_FLAG)`, where the flag
+is octal 0400 and PID occupies the low eight bits. Other high
+argument bits are rejected. Ordinary calls are unchanged.
+
+If the owner is still in the fatal FILE-close continuation, the
+detail result packs stage 1 (low two bits), remaining descriptor
+count in bits 2..7, first live FD in bits 8..12 (020 means none)
+and first FD's provider class in bits 13..14. Classes are 0 VFS,
+1 PIPE, 2 DPY raw list. The scan reads the stable 16-entry u-area
+FILE table, not the current context's global file_table pointer;
+already-closed descriptors do not count. A provider can change
+between a snapshot and an operator's next command, so the result
+is observational and gives no automatic release authority.
+The ordinary `ps` command shows the full packed result in its
+`DETAIL` numeric column, following `TD` and `RETRY`. Interpret
+its fields using the shared `syscall.h` constants.
+
+If the owner is post-VM deferred MM, the detail result packs stage
+2 with exact physical pin count in bits 2 and higher. A fresh
+lookup verifies that the u-area base has an existing MM extent,
+type MM_TYPE_KERNEL_DYNAMIC and owner 01000+PID before exposing
+the pin count. Three distinct values (0400 missing, 0401 wrong
+type, 0402 wrong owner), shifted left by two and ORed with stage
+2, distinguish metadata corruption from a real pin. Zero pins
+is a possible transient snapshot before the next reaper pass; it
+does *not* retroactively change an earlier MM_ERR_BUSY return.
+
+The native PDP-6 detail fixture PASSes FILE count, first FD and
+PIPE/DPY classification, and MM exact pin/type/owner checks,
+including unpinned, missing and mismatched cases. The old v886
+leaf and real dispatcher compatibility fixtures PASS. KCORE
+`022072` octal = 9,274 words, +72 resident instructions
+over v886, zero new static words. A failed FILE sync or
+invalid MM extent still requires provider-specific diagnosis;
+timeout-based forced resource reclamation remains prohibited.
+
 ## v886: Administrative, non-destructive teardown visibility
 
 A pending u-area or fatal FILE owner cannot be safely discarded

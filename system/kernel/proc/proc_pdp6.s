@@ -2004,6 +2004,11 @@ proc_control_table:
 ; proc_finish_last_tick_v881. Do not expose private stack addresses.
         .globl  proc_control_getteardown_v886
 proc_control_getteardown_v886:
+        move    7,2
+        move    6,2
+        andi    6,0777000             ; reject unsupported argument flags
+        jumpn   6,kret_neg1
+        andi    2,0377                ; PID is still an 8-bit slot
         jumpe   2,kret_neg1           ; slot 0 is not a user process
         caml    2,proc_high_slot
         jrst    kret_neg1
@@ -2021,7 +2026,7 @@ proc_control_getteardown_v886:
         jumpe   5,kret_neg1           ; inconsistent stable owner
         move    6,PROC_FDCTL_OFFSET(5)
         trne    6,PROC_FATAL_CLOSE_BIT
-        jrst    kret_one
+        jrst    proc_control_td_file_v887
         move    6,(3)
         trnn    6,PROC_TRANSITION_RH
         jrst    kret_zero
@@ -2033,8 +2038,61 @@ proc_control_td_vm_none_v886:
         move    6,PROC_FINALIZE_OFFSET(5)
         tlnn    6,PROC_FINALIZE_MARK_LH
         jrst    kret_zero
+        trne    7,0400
+        jrst    proc_control_td_mm_detail_v887
         hlrz    1,proc_finish_last_tick_v881
         andi    1,0377777
+        lsh     1,2
+        ori     1,2
+        popj    17,
+
+; Detail is an on-demand snapshot of still-live FILE entries.
+; A successful close already cleared its entry; remaining entries
+; retain their original provider IDs. No address leaves the kernel.
+proc_control_td_file_v887:
+        trnn    7,0400
+        jrst    kret_one
+        movei   3,PROC_FILE_TABLE_OFFSET(5)
+        setz    6,                     ; number of remaining descriptors
+        movei   4,020                 ; no first fd yet
+        setz    0,                     ; first provider class: VFS
+        setz    2,                     ; fd index
+proc_control_td_file_loop_v887:
+        skipn   (3)
+        jrst    proc_control_td_file_next_v887
+        aoj     6,
+        caie    4,020
+        jrst    proc_control_td_file_next_v887
+        move    4,2
+        move    1,(3)
+        tlz     1,700070              ; canonical VFS/PIPE/DPY vnode
+        camn    1,[020002000010]      ; active DPY raw list
+        jrst    proc_control_td_dpy_v887
+        hlrz    1,1
+        caie    1,070001              ; PIPE provider (mount 0,kind 1)
+        jrst    proc_control_td_file_next_v887
+        movei   0,1
+        jrst    proc_control_td_file_next_v887
+proc_control_td_dpy_v887:
+        movei   0,2
+proc_control_td_file_next_v887:
+        addi    3,2
+        aoj     2,
+        caige   2,020
+        jrst    proc_control_td_file_loop_v887
+        move    1,0
+        lsh     1,015
+        move    2,4
+        lsh     2,010
+        ior     1,2
+        lsh     6,2
+        ior     1,6
+        ori     1,1
+        popj    17,
+
+proc_control_td_mm_detail_v887:
+        move    1,5                   ; exact stable u-area base
+        pushj   17,mm_uarea_probe_v887 ; AC2=PID, returns pins/error
         lsh     1,2
         ori     1,2
         popj    17,

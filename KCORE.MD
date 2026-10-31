@@ -1,3 +1,43 @@
+## 2026-11-01 v887: inspect actual FILE and MM teardown owners
+
+Existing `procctl(GETTEARDOWN, pid)` remains unchanged. Set bit 8
+(octal 0400) in the PID argument to request a read-only detail
+snapshot; bits 9..17 are rejected. No UUO number, process-table
+slot, resident diagnostic buffer, or persistent provider counter
+is introduced.
+
+For a fatal FILE owner, the result encodes stage 1, the number of
+still-open entries among the existing 16 descriptors, the first
+remaining FD (020 means none), and its provider class (VFS, PIPE
+or DPY raw-list). The original FILE table and provider's close
+policy remain untouched. A descriptor remaining after the
+bulk-close pass is a **current outstanding reference**, not proof
+of a permanent provider error.
+
+For a post-VM deferred MM owner, the new read-only helper reuses
+the allocator's existing exact-base lookup. It checks the
+u-area's MM_TYPE_KERNEL_DYNAMIC and owner 01000+PID before
+returning the actual pin count (0..255). Distinct sentinels 0400,
+0401, 0402 mean missing extent, wrong type, wrong owner, each
+packed above stage 2. This distinguishes an actual MM_BUSY pin
+from invalid allocation state; it never forcibly unpins or frees.
+
+The `ps` program now adds a `DETAIL` numeric column to its existing
+`TD` and `RETRY` fields. It prints the packed detail result rather
+than allocating buffers or formatting raw provider addresses.
+
+Native PDP-6 detail validation PASS: ordinary/invalid states,
+open FILE counts, PIPE/DPY classification, release-to-next FD,
+exact MM pin counts, zero pins, missing extent, type mismatch and
+owner mismatch. v886 compatibility and dispatch regressions PASS.
+The pre-v887 source FAILs the detail negative control as expected.
+The full-system PDP-6 guest PASSes the user-mode detailed UUO,
+one real u-area pin, two MM_ERR_BUSY failures, successful unpin
+and cleanup, runnable companion and normal HUP/TTY completion.
+KCORE lowmem link PASS at `022072` octal (9,274 words), +72
+over v886, no new permanent RAM. The higher code size remains
+above the 020000-octal-word target; no OOM victim killing enabled.
+
 ## 2026-10-31 v886: readonly teardown diagnostics
 
 The existing UUO-077 extension dispatcher forwards unused

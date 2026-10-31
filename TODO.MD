@@ -2,6 +2,17 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [x] v887: add on-demand exact provider diagnostics to the existing
+  GETTEARDOWN(pid) syscall using PID flag 0400. FILE stage reports
+  count, first remaining descriptor and VFS/PIPE/DPY class. MM
+  stage reports verified exact pin count or missing/type/owner
+  inconsistency. The existing stage/retry query is unchanged.
+  Native PDP-6 tests PASS, zero new permanent RAM; KCORE +72
+  text words over v886. No forced owner release is permitted.
+- [ ] v887 follow-up: diagnose actual rejecting provider operations,
+  not merely snapshots of surviving references. A persistent
+  mm_free MM_ERR_INVAL needs a different recovery investigation
+  from a legitimate pin. Automatic OOM killing remains disabled.
 - [x] v886: user-visible readonly teardown state, via
   `procctl(GETTEARDOWN, pid)` in unused UUO-077 sub-op 041 and `ps`
   TD/RETRY columns. Distinguish normal/zombie (0), private
