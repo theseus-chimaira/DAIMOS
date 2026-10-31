@@ -2,6 +2,10 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [ ] v873: the KCC full-system named-FIFO workload times out both
+  before v870 (v869) and on v871 after D6FS startup. Diagnose guest
+  progress and the failing stage; do not weaken the test or claim the
+  v870 native MM-rollback check provides full FIFO acceptance.
 - [ ] v871 fixes DPY CLOSE error propagation and loss of the Type 340
   raw-list base after failed MM release (native fault injection PASS).
   Separately fix the list-*replacement* old-extent free failure, and

@@ -1,3 +1,13 @@
+## 2026-10-31 v873: named-FIFO full-system baseline comparison
+
+Full-system KCC named-FIFO validation times out (124) after D6FS
+startup on current v871 and on the isolated pre-v870 v869 source
+`8b4e7d9`. Neither run reaches its completion marker, so no FIFO
+full-system acceptance is claimed and the cause is still unknown.
+Separately, the native v870 rollback fixture detects the old bug:
+it FAILs against v869 source and PASSes after the repair. No kernel
+code changes in v873. See TODO.MD and the swap-pressure design.
+
 ## 2026-10-31 v871: Type 340 final-close resource ownership
 
 Fixed ignored DPY raw-list release failure and loss of the old

@@ -3,6 +3,23 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v873: Named-FIFO full-system timeout predates v870 (2026-10-31)
+
+The unchanged KCC `daimos-pipe-fifo-v2.sh` workload timed out with exit
+124 after D6FS startup on current v871. The same test also timed out
+after D6FS startup against an isolated pre-v870 v869 checkout
+(`8b4e7d9`); the isolated build used explicit DAS/KCC source roots.
+Both runs reached native simulator execution, but neither emitted the
+final named-FIFO completion marker. Their final PCs differ and the
+underlying stall has **not** been identified. No full-system named-FIFO
+PASS is claimed; do not attribute its timeout specifically to v870.
+
+As a separate negative control, the new native v870 failed-MM-close
+fixture FAILs on v869 source at its original reference-count check,
+and PASSes on v870/v871 source. That verifies the isolated rollback
+test detects the intended bug, not that the complete FIFO workload
+now passes. No production code changed for this diagnostic.
+
 ## v871: Preserve Type 340 display-list ownership on failed CLOSE (2026-10-31)
 
 `file_close_dpy` formerly called the DPY raw-list stop service but then

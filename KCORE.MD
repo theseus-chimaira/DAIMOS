@@ -1,3 +1,11 @@
+## 2026-10-31 v873: named-FIFO full-system test baseline
+
+The unchanged KCC named-FIFO full-system test times out after D6FS
+startup on both pre-v870 v869 and current v871. This is not a PASS;
+the stall remains undiagnosed. Native v870 MM-free fault injection
+provides a positive repair check and a failing pre-v870 control.
+No new KCORE code or size change in v873.
+
 ## 2026-10-31 v871: DPY CLOSE propagates failed MM release
 
 FILE no longer masks a Type 340 raw-list release failure with the
