@@ -80,6 +80,7 @@
         .globl  mm_is_pinned
         .globl  proc_swap_victim
         .globl  proc_oom_select_v863
+        .globl  fs_provider_ready
         .globl  proc_record_kernel_sp
         .globl  proc_exit_current
         .globl  proc_finish_slot
@@ -3088,6 +3089,17 @@ proc_oom_scan_v863:
         jrst    proc_oom_next_v863
         camn    012,proc_rt_owner
         jrst    proc_oom_next_v863
+        ; A victim holding the serialized filesystem lease cannot be
+        ; reaped while close() needs that same lease. The existing lock
+        ; word encodes owner_slot+1 in LH, zero in RH while held.
+        hrrz    1,fs_provider_ready
+        jumpn   1,proc_oom_provider_clear_v866
+        hlrz    1,fs_provider_ready
+        jumpe   1,proc_oom_unknown_provider_v866
+        subi    1,1
+        camn    012,1
+        jrst    proc_oom_next_v863
+proc_oom_provider_clear_v866:
         move    1,(013)
         trne    1,PROC_TRANSITION_RH
         jrst    proc_oom_next_v863
@@ -3130,6 +3142,9 @@ proc_oom_take_v863:
 proc_oom_next_v863:
         addi    013,PROC_WORDS
         aoja    012,proc_oom_scan_v863
+proc_oom_unknown_provider_v866:
+        ; No owner encoding: never gamble on terminating a lease holder.
+        seto    014,
 proc_oom_done_v863:
         move    1,014
         movei   0,-6(17)

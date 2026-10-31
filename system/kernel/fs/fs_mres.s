@@ -176,9 +176,13 @@ fs_provider_serialized:
         hrli    0,1
         blt     0,(17)
 fs_provider_lock_retry:
-        skipn   fs_provider_ready
-        jrst    fs_provider_lock_wait
-        setzm   fs_provider_ready
+        ; RH nonzero denotes FREE. While held, store owner_slot+1 in LH
+        ; and zero RH. OOM can identify the owner without another word.
+        hrrz    0,fs_provider_ready
+        jumpe   0,fs_provider_lock_wait
+        move    0,proc_current_slot
+        addi    0,1
+        hrlzm   0,fs_provider_ready
         movei   0,1
         hrli    0,-6(17)
         blt     0,7
@@ -357,6 +361,8 @@ fs_mres_context_vector_dispatch:
         popj    17,
 
         .data
+        .globl  fs_provider_ready
+        .globl  proc_current_slot
 fs_provider_ready:
         .word   1
 

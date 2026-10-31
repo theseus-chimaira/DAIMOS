@@ -3,6 +3,33 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v866: Encode physical-provider lease owner without new RAM (2026-10-31)
+
+The KCORE serialized physical-provider lease formerly stored only
+FREE (nonzero) or BUSY (zero). A victim could be selected for OOM while
+it held this lease; fatal-other descriptor cleanup might then block
+on the same lease, preventing the victim from ever finishing cleanup.
+
+The existing `fs_provider_ready` word now uses RH nonzero for FREE
+(unchanged at public wait/wakeup boundaries), and while BUSY records
+`owner_slot+1,,0` in LH/RH. The KCORE provider gateway checks RH and
+publishes the owner when entering the serialized call; unlock still
+sets the word to -1 and wakes waiters. Bootstrap slot 0 is encoded as
+LH 1. The OOM selector excludes this owner; if BUSY lacks a known owner
+(all zero), selection fails closed rather than risking a deadlock.
+
+Native PDP-6 provider tests v326/v327 and new v866 owner-encoding
+test PASS; native OOM selector v863 and v866 provider-owner/unknown
+owner tests PASS. Updated v325 static gateway check PASS. Fresh
+lowmem KCORE link PASS: end 021313 octal versus v865 021301, a net
+ten code words, no added permanent data or table words. The strict
+020000 gate remains independently over budget.
+
+This protects one known shared lock. It is not a proof for all victim
+resources or a license to enable OOM termination: other lock classes,
+close failures, recursive session/HUP cleanup and cleanup rollback
+still require explicit analysis and fault injection.
+
 ## v865: Close another process's descriptors without global FILE switch (2026-10-31)
 
 The previous `proc_event_apply` fatal-other path temporarily swapped
