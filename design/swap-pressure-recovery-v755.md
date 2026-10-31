@@ -3,6 +3,50 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v884: Throttled idle-reaper scheduling with a runnable user (2026-10-31)
+
+v881's deferred MM finalizer originally ran only in `proc_idle_loop`.
+If another user remained continuously runnable, ordinary PI6 quantum
+selection never selected slot 0 and a pinned u-area could remain
+quarantined even after the pin became removable. This is a scheduler
+progress defect, distinct from v883's successful non-current fatal
+delivery return value.
+
+v884 reuses the existing `proc_finish_last_tick_v881` resident word:
+its top bit is the pending-finalization indicator, and its low 17
+bits record the last reaper service tick. A failed post-VM u-area
+free sets the indicator. Each service pass clears the bit before
+processing pending owners, so any failure re-arms it and successful
+reclamation leaves it clear. No new memory word, u-area field, or
+per-process retry queue is allocated.
+
+At a regular qualified PI6 quantum, a pending owner that has not
+been serviced in 020 octal ticks (16 at 60 Hz) receives one slot-0
+maintenance turn, even if another user is continuously runnable.
+A runnable realtime owner and outstanding swap-service request keep
+their established priority. A sleeping/stopped or transitioning RT
+owner does not suppress maintenance of ordinary runnable jobs.
+The check uses 17-bit modular timer
+arithmetic so epoch wrap cannot permanently prevent service. Normal
+selection preserves the elapsed-quantum CPU charge. After its
+MM service, slot 0 requests a software PI6 reschedule immediately
+instead of wasting a further user quantum; the ordinary scheduler
+chooses the next runnable job. Without pending cleanup, the idle
+loop skips the MM scan altogether.
+
+Native PDP-6 `daimos-reaper-sched-v884.sh` verifies runnable user
+selection, maintenance not too early, forced slot 0 after throttle,
+runnable real-time and swap priority, dormant-RT exemption, no-op
+when not pending, and 17-bit timer
+wrap: PASS. The unchanged pre-v884 scheduler FAILs that negative
+control. Older native v879/v881/v883 VM-less executive, idle
+finalization and fatal HUP tests PASS. KCORE lowmem link PASS at
+`021657` octal = 9,135 words, +39 resident text from v883
+`021610` and +943 above the strict 8,192-word goal. No permanent
+data increase. A full-system continuously spinning companion
+and actual MM pin/unpin acceptance is exercised separately in
+`daimos-reaper-fair-v884.sh`.
+
 ## v883: Non-current fatal HUP completion is not MM release (2026-10-31)
 
 For a non-current fatal event, `proc_event_apply` first closes all

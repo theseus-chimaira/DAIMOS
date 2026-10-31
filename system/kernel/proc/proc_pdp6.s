@@ -135,8 +135,46 @@ proc_sched_resched_select:
 
 /** Select after a clock quantum, charging at least one elapsed tick. */
 proc_sched_tick_select:
-        move    1,proc_sched_deferred_ticks
+        move    4,proc_sched_deferred_ticks
         setzm   proc_sched_deferred_ticks
+        ; v884: A permanently runnable user must not starve the
+        ; post-VM u-area reaper.  Give slot 0 one short maintenance
+        ; turn every 020 clock ticks while cleanup is pending.  Never
+        ; steal a runnable realtime owner's turn or a pending disk swap.
+        move    2,proc_finish_last_tick_v881
+        tlnn    2,0400000             ; deferred MM owner(s) exist
+        jrst    proc_sched_tick_normal_v884
+        skipn   5,proc_rt_owner
+        jrst    proc_sched_tick_reaper_check_v884
+        ; A sleeping/stopped RT lease must not starve maintenance when
+        ; some other normal user is continuously runnable.
+        move    3,5
+        lsh     3,1
+        add     3,5
+        add     3,proc_table
+        hlrz    5,2(3)
+        andi    5,PROC_STATE_LH_MASK
+        caie    5,PROC_STATE_RUN
+        jrst    proc_sched_tick_reaper_check_v884
+        move    5,(3)
+        trne    5,PROC_TRANSITION_RH
+        jrst    proc_sched_tick_reaper_check_v884
+        jrst    proc_sched_tick_normal_v884
+proc_sched_tick_reaper_check_v884:
+        move    3,proc_sched_cursor
+        trne    3,0400                ; pending slot-0 swap service
+        jrst    proc_sched_tick_normal_v884
+        hrrz    3,proc_timer_clock
+        andi    3,PROC_TIMER_CLOCK_MASK
+        andi    2,PROC_TIMER_CLOCK_MASK
+        sub     3,2
+        andi    3,PROC_TIMER_CLOCK_MASK ; handle timer epoch wrap
+        caige   3,020                ; avoid penalizing active users
+        jrst    proc_sched_tick_normal_v884
+        setz    1,                   ; one resumable idle maintenance turn
+        popj    17,
+proc_sched_tick_normal_v884:
+        move    1,4                   ; retain real deferred CPU charge
         jumpn   1,proc_select_runnable_pdp6
         movei   1,1
 
@@ -664,6 +702,8 @@ proc_finish_defer_uarea_v881:
         movsi   4,PROC_FINALIZE_MARK_LH
         hrr     4,11
         movem   4,PROC_FINALIZE_OFFSET(3)
+        movsi   4,0400000
+        iorm    4,proc_finish_last_tick_v881 ; pending; no extra RAM word
         jrst    proc_finish_fail
 proc_finish_fail:
         seto    1,
@@ -3596,22 +3636,33 @@ proc_idle_loop:
         ; Try deferred post-VM u-area releases at most once per clock
         ; tick. Unlike a busy retry, this permits running jobs to
         ; unpin MM resources. No per-slot retry table is allocated.
+        move    2,proc_finish_last_tick_v881
+        tlnn    2,0400000
+        jrst    proc_idle_swap_v881   ; no deferred work, skip MM scan
         move    1,proc_timer_clock
-        camn    1,proc_finish_last_tick_v881
+        andi    1,PROC_TIMER_CLOCK_MASK
+        andi    2,PROC_TIMER_CLOCK_MASK
+        camn    1,2
         jrst    proc_idle_swap_v881
-        movem   1,proc_finish_last_tick_v881
+        hrrm    1,proc_finish_last_tick_v881
         pushj   17,mach_pi_disable
         push    17,1
         cono    0004,01002             ; inhibit scheduler PI6 only
         move    2,(17)
         trne    2,000200
         cono    0004,000200           ; allow disk PI3/PI5
+        movsi   4,0400000
+        andcam  4,proc_finish_last_tick_v881 ; retried failures re-arm
         pushj   17,proc_finish_service_v881
         move    3,1                   ; last deferred user now gone?
         pop     17,1
         jumpn   3,proc_exit_halt       ; do not reenable PI6 before HALT
         trne    1,000002
         cono    0004,02002
+        ; Return control to runnable users immediately.  Staying in
+        ; slot 0 until the next hardware tick would waste a quantum.
+        setom   proc_sched_kick
+        cono    0004,004002
 proc_idle_swap_v881:
         ; Disk-backed swap-in must never run in PI context.  The scheduler
         ; marks the exact swapped winner in proc_sched_cursor.  Slot 0 services

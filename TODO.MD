@@ -2,6 +2,18 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [x] v884: slot-0 MM cleanup is now eligible for one throttled
+  maintenance turn after 020 octal timer ticks despite another
+  runnable user; runnable realtime and disk-swap service retain
+  priority, while dormant RT leases cannot starve cleanup.
+  Pending is packed into the existing last-reaper-tick word, no
+  permanent data growth. Native scheduler fairness and timer-wrap
+  test PASS; pre-v884 negative control FAILs as expected. Full-system
+  real MM-busy injection with a continuously spinning companion
+  PASSes (reaper runs twice with nonempty run queue, 2 busy frees,
+  1 pin/unpin pair and normal HUP/TTY completion).
+- [ ] v884 follow-up: permanently pinned MM extent and
+  persistent FILE provider failures still require a bounded policy.
 - [x] v883: non-current fatal HUP returns success once VM destruction
   commits and u-area release is explicitly deferred under the
   TRANSITION/VM_NONE/word-067 marker; duplicate events and precommit
@@ -9,9 +21,10 @@
   the negative-control fixture. Full-system non-current MM-busy
   injection PASS (3 frees / 2 busy / 1 pin / 1 unpin / no error);
   the older current-EXIT injected test also PASSes.
-- [ ] v883 follow-up: prove prolonged runnable-load reaper fairness,
-  genuine pre-VM fatal-event error propagation in a booted guest,
-  and a policy for permanent MM/resource-provider refusal.
+- [x] v883/v884 follow-up: prove reaper progress alongside an
+  independently spinning user in a booted guest (v884 PASS).
+- [ ] v883 follow-up: genuine pre-VM fatal-event error propagation
+  in a booted guest and permanent MM/resource-provider failure policy.
 - [x] v882 full-system transient MM_BUSY test for process-owned EXIT:
   real u-area MM pin, two rejected frees, clock-yielded idle cleanup,
   one unpin, and eventual normal session/HUP/TTY HALT PASS. All

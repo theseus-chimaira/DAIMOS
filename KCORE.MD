@@ -1,3 +1,28 @@
+## 2026-10-31 v884: bounded slot-0 maintenance turn under CPU load
+
+The v881 idle-only deferred u-area finalizer could starve behind a
+continuously runnable user. v884 uses the high bit of the existing
+`proc_finish_last_tick_v881` word as the pending flag, with the low
+17 bits retaining the last service epoch. A failed u-area free arms
+the flag, and the service pass clears it before retrying, so only
+remaining failures re-arm it. No new permanent data or per-process
+queue is allocated. On a qualified PI6 quantum, pending cleanup
+at least 020 octal ticks old receives one slot-0 maintenance turn.
+A runnable RT owner and pending disk swap take precedence; a
+sleeping/stopped RT lease does not starve cleanup. After the pass,
+slot 0 immediately requests normal scheduling instead of occupying
+a further user quantum. The no-pending idle path skips MM scanning.
+
+Native PDP-6 scheduler, 17-bit timer wrap, RT/swap, dormant RT,
+v879 VM-less fatal and v881/v883 finalizer/event regressions PASS.
+Pre-v884 scheduler FAILs the new negative-control test as expected.
+Full-system MM pin/unpin/HUP with an independent nonstop spinner
+PASSes (2 reaper passes with a nonempty run queue, 3 frees, 2 actual
+MM_ERR_BUSY, 1 pin/unpin, no errors). KCORE link PASS at `021657`
+octal (9,135 resident words), +39 over v883 and +943 above 020000.
+Permanent resource refusal and hard RT owner starvation remain open;
+automatic OOM victim killing is still disabled.
+
 ## 2026-10-31 v883: committed non-current fatal delivery
 
 Non-current fatal events previously returned an ambiguous -1 after

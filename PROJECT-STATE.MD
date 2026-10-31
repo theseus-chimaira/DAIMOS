@@ -1,3 +1,24 @@
+## 2026-10-31 v884: no idle-only starvation of deferred MM cleanup
+
+v881-v883 deferred u-area cleanup was possible only in slot 0:
+continuously runnable user work could indefinitely postpone MM
+reclamation. v884 packs a pending flag into the existing
+`proc_finish_last_tick_v881` word. The PI6 scheduler grants one
+short slot-0 maintenance turn after 020 octal ticks with a pending
+owner, then the idle loop software-kicks ordinary selection.
+Runnable RT jobs and disk swap preempt maintenance; dormant
+RT leases no longer block it. No new static data or queue.
+
+Native PDP-6 throttle, timestamp-wrap, runnable-user, RT/disk
+priority and dormant-RT tests PASS; pre-v884 negative control FAILs
+as expected. The guest session/HUP/MM pin test with an independently
+spinning bystander PASSes: 2 reaper passes with a populated run
+queue, 3 u-area releases with 2 real MM_ERR_BUSY responses, 1
+pin/unpin and normal HALT. KCORE `021657` octal (9,135 words),
++39 from v883 with no extra permanent data. Permanent errors,
+guaranteed progress with an indefinitely running real-time owner,
+and automatic OOM termination remain unresolved.
+
 ## 2026-10-31 v883: non-current fatal HUP commit status corrected
 
 Fixed the non-current fatal-event caller contract: after FILE close
