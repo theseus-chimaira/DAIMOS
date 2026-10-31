@@ -1185,7 +1185,7 @@ cmd_ps(int argc, kword_t **argv, struct u_io *io)
         }
         own_sink = u_text_sink_attach(io->out_fd) == 0;
         rc = 0;
-        if (u_puts(io->out_fd, "PID PPID S WORDS TD RETRY DETAIL COMM") != 0 ||
+        if (u_puts(io->out_fd, "PID PPID S WORDS TD RETRY DETAIL ERR COMM") != 0 ||
             u_crlf(io->out_fd) != 0) {
                 rc = 1;
                 goto ps_done;
@@ -1208,6 +1208,9 @@ cmd_ps(int argc, kword_t **argv, struct u_io *io)
                     u_put_uint(io->out_fd, SYS_TEARDOWN_RETRY_TICKS(td)) != 0 ||
                     u_putc(io->out_fd, ' ') != 0 ||
                     u_put_uint(io->out_fd, td_detail) != 0 ||
+                    u_putc(io->out_fd, ' ') != 0 ||
+                    u_put_uint(io->out_fd,
+                        SYS_TEARDOWN_DETAIL_FILE_ERROR(td_detail)) != 0 ||
                     u_putc(io->out_fd, ' ') != 0) {
                         rc = 1;
                         goto ps_done;

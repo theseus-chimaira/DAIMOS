@@ -1,3 +1,43 @@
+## 2026-11-01 v888: preserve the rejecting FILE provider's return
+
+The v887 FILE detail identified surviving descriptors and their
+provider class but not the actual failed close result. On a private
+fatal FILE-close continuation, the existing bulk-close scanner
+now retains the **first rejected descriptor and its actual signed
+provider return** in previously unused u-area word 067.
+LH encodes valid flag 040 plus FD 0..017, RH the provider's
+18-bit return. This word is reset after all closes succeed and is
+later reused, as before, for the independent post-VM MM finalizer
+marker/status. Nonfatal bulk closes leave word 067 untouched.
+No static RAM, process-table field, heap or provider table is added.
+
+The existing `GETTEARDOWN(pid|0400)` query now places a compact
+actual FILE-close error class in result bits 15..17: 0 if not
+recorded, 1..5 for returned -1..-5, and 6 for any other nonzero
+provider result. The first rejected FD remains the first live FD
+after the bulk pass. `ps` exposes the class in a numeric ERR column
+alongside TD/RETRY/DETAIL. For deferred MM, v887's exact-extent
+pin/type/owner probe already distinguishes a busy extent from
+invalid metadata; this is a snapshot, not a historical errno.
+
+Native PDP-6 `daimos-file-provider-error-v888.sh` executes the
+production bulk-close and diagnostic routines with externally
+mocked rejecting providers. It verifies first-return capture,
+multiple failures, preserved descriptors, error replacement on
+retry, cleanup success resetting word 067, and a nonfatal close
+never writing the marker: PASS. Pre-v888 negative control FAILs.
+Earlier native provider/backoff, v887/v886 diagnostics and fatal
+event regressions PASS. Actual production `mm_free` native
+validation also PASSes pinned-busy versus missing/type/owner-invalid
+distinctions, preserved ownership and successful release after
+unpin. The ordinary full-system PDP-6 session-leader HUP/TTY
+detach/reattach regression PASSes with the modified FILE runtime;
+it does not inject fatal-private-stack provider rejection.
+KCORE lowmem link PASS at `022124` octal
+(9,300 words), +26 resident words over v887 and +1,108 over 8192,
+with no additional permanent data. Automatic OOM killing remains
+disabled; no timeout-based forced release is authorized.
+
 ## 2026-11-01 v887: inspect actual FILE and MM teardown owners
 
 Existing `procctl(GETTEARDOWN, pid)` remains unchanged. Set bit 8

@@ -166,6 +166,13 @@ struct sys_fsinfo {
 #define SYS_TEARDOWN_DETAIL_VALUE(w)  (((unsigned int)(w) >> 2U) & 0377U)
 #define SYS_TEARDOWN_DETAIL_FD(w)     (((unsigned int)(w) >> 8U) & 037U)
 #define SYS_TEARDOWN_DETAIL_PROVIDER(w) (((unsigned int)(w) >> 13U) & 03U)
+/* FILE detail bits 15..17: 0 no failed provider call recorded;
+ * 1..5 actual provider returns -1..-5; 6 any other nonzero result.
+ * This is the first rejection of the most recent fatal-close pass,
+ * not a prediction of the next provider outcome.
+ */
+#define SYS_TEARDOWN_DETAIL_FILE_ERROR(w) (((unsigned int)(w) >> 15U) & 07U)
+#define SYS_TEARDOWN_FILE_OTHER_ERROR 6U
 #define SYS_TEARDOWN_PROVIDER_VFS    0U
 #define SYS_TEARDOWN_PROVIDER_PIPE   1U
 #define SYS_TEARDOWN_PROVIDER_DPY    2U

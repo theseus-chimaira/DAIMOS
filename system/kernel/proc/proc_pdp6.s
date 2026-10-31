@@ -2088,6 +2088,21 @@ proc_control_td_file_next_v887:
         lsh     6,2
         ior     1,6
         ori     1,1
+        ; v888: actual first rejecting provider return, saved by
+        ; FILE-close-all in u-area word 067 while the fatal stack
+        ; owns its descriptors. Codes 1..5 represent -1..-5;
+        ; 6 denotes other nonzero results; 0 means no recorded fail.
+        move    3,PROC_FINALIZE_OFFSET(5)
+        tlnn    3,040                  ; valid FILE failure witness?
+        popj    17,
+        hrre    3,PROC_FINALIZE_OFFSET(5)
+        movn    3,3
+        caige   3,1
+        movei   3,6
+        caile   3,5
+        movei   3,6
+        lsh     3,017
+        ior     1,3
         popj    17,
 
 proc_control_td_mm_detail_v887:

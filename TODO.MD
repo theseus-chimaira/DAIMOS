@@ -2,6 +2,21 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [x] v888: preserve the first actual rejecting FILE provider
+  result and FD during private fatal close using otherwise-unused
+  u-area word 067. Expose a compact 0..6 result class through
+  existing GETTEARDOWN detail bits 15..17 and a new numeric
+  `ps ERR` column. A full successful close clears the record;
+  nonfatal FILE closes leave it untouched. MM mismatches remain
+  distinguishable through the v887 exact-extent snapshot. Native
+  source/negative tests PASS. Real MM allocator busy/invalid
+  distinction test PASS and full-system ordinary session/HUP/TTY
+  regression PASS. KCORE +26 text words, no static data.
+- [ ] v888 remaining: prove transient rejecting FILE providers
+  through a full-system fatal private-stack continuation; ordinary
+  session teardown regression does not inject provider rejection.
+  Continue investigating invalid MM owner/type metadata failures
+  rather than forcibly reclaiming such allocations.
 - [x] v887: add on-demand exact provider diagnostics to the existing
   GETTEARDOWN(pid) syscall using PID flag 0400. FILE stage reports
   count, first remaining descriptor and VFS/PIPE/DPY class. MM

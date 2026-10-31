@@ -1,3 +1,27 @@
+## 2026-11-01 v888: first actual FILE-close rejection is observable
+
+The private-stack fatal FILE close scanner preserves its first
+failed FD and provider's original return value in the already
+reserved u-area word 067 while FILE ownership remains live.
+Each retry replaces the witness with that pass's first failure;
+successful closure clears it. Nonfatal FILE closes do not touch
+word 067. Later MM finalization reuses the word exactly as before.
+
+Existing `GETTEARDOWN(pid|0400)` packs the actual FILE failure
+class in bits 15..17 (1..5 = -1..-5, 6 = other, 0 = no witness),
+and `ps` now displays a numeric ERR column. v887's read-only MM
+extent probe already distinguishes currently pinned, missing,
+wrong-type and wrong-owner allocations. No forced release, new
+resident word, process descriptor or syscall operation is added.
+
+Native PDP-6 actual-error/retry and previous fatal and diagnostic
+tests PASS; the real MM allocator's busy/invalid distinctions
+and unpin/release also PASS. Pre-v888 negative control FAILs
+as expected. Full-system session-leader HUP/TTY detach and
+reattach regression PASSes without injected FILE rejection. KCORE
+`022124` octal = 9,300 words (+26 from v887, +1,108 above 8192),
+without permanent RAM growth. Automatic OOM killing stays off.
+
 ## 2026-11-01 v887: read-only provider diagnostics, no persistent state
 
 The v886 `procctl(GETTEARDOWN,pid)` stage and retry ABI stays

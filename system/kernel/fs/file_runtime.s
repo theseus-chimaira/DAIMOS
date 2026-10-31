@@ -674,6 +674,7 @@ file_close_all_at_v865:
         push    17,010
         push    17,011
         push    17,012
+        push    17,[0]                 ; v888 first failed FD/provider result
         movei   010,020                ; FILE_NFILE
         move    011,1
         setz    012,                    ; remember any failed close
@@ -683,10 +684,30 @@ file_close_all_loop:
         move    1,011                  ; explicit descriptor entry
         pushj   17,file_close_entry_v865
         jumpe   1,file_close_all_next
+        jumpn   012,file_close_all_failed_v888
+        ; Preserve the FIRST actual provider error, not a guess based
+        ; on surviving descriptors. LH: 040|FD, RH: signed return.
+        movei   4,020
+        sub     4,010
+        hrl     4,4                    ; keep FD in LH before RH error
+        tlo     4,040
+        hrr     4,1
+        movem   4,(17)
+file_close_all_failed_v888:
         seto    012,                    ; keep failed entry for later retry
 file_close_all_next:
         addi    011,2
         sojg    010,file_close_all_loop
+        ; On the private fatal-close continuation only, retain an
+        ; error witness in otherwise-unused u-area word 067. It is
+        ; overwritten by the separate post-VM finalizer marker later.
+        move    4,-042(011)            ; FDCTL at FILE table -2 words
+        trnn    4,04                   ; PROC_FATAL_CLOSE_BIT
+        jrst    file_close_all_no_witness_v888
+        move    4,(17)
+        movem   4,1(011)               ; FILE table+041 = u-area 067
+file_close_all_no_witness_v888:
+        pop     17,4
         move    1,012                   ; report failure after closing others
         pop     17,012
         pop     17,011

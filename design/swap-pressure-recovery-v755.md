@@ -3,6 +3,58 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v888: Actual FILE rejection, without persistent provider counters
+
+The v887 provider/descriptor detail was a read-only snapshot: a
+live FILE handle does not identify which call rejected closure.
+v888 retains the first actual nonzero return from
+`file_close_entry_v865` during each fatal bulk-close pass in
+the owner's already allocated u-area word 067. Bits 18..23 of
+its LH encode a 040-octal valid marker plus FD 0..017; RH stores
+the unmodified signed 18-bit provider return. The marker does
+not collide with the v881 post-VM finalizer's separate top-bit
+mark; the FILE witness is discarded after final close success
+and can then be replaced by the normal MM finalization record.
+Nonfatal bulk-close calls do not write this word.
+
+The existing user-visible `GETTEARDOWN(pid|0400)` result's
+unused bits 15..17 now return FILE error classification:
+0 = no failed provider return recorded, 1..5 = the actual
+negative return -1..-5, 6 = all other nonzero results. Class 1
+does not establish whether the root cause was a transient
+device, VFS sync or filesystem provider rejection; it only
+reports exactly what the FILE boundary returned. The existing
+FD count, first surviving FD and VFS/PIPE/DPY classification
+remain unchanged. `ps` adds ERR as a numeric column. The
+actual error witness is not a request to bypass the provider.
+
+For deferred MM, `mm_free` already distinguishes -5 (pinned)
+and -4 (missing/type/owner invalid) internally; the v887
+read-only extent probe can verify current physical pinning or
+type/owner inconsistency without recording a redundant error.
+This observation must not be treated as an atomic snapshot
+of the historical `mm_free` return.
+
+Native PDP-6 `daimos-file-provider-error-v888.sh` uses the
+real bulk-close and query routines with fault-injected external
+FILE providers to verify actual error capture, repeated retries
+with changing errno, exact FD identity, retained descriptors,
+successful-release clearing and nonfatal-scan exclusion: PASS.
+The pre-v888 negative control FAILs as expected. Old v887/v886
+diagnostics and v885 FILE retry/fatal-event native tests PASS.
+Native `daimos-mm-release-cause-v888.sh` additionally uses real
+`mm_free`, `mm_unpin` and MM detail routines, verifying that
+physical pins cause -5 without losing the extent, while absent/
+wrong-type/wrong-owner extents cause -4; after a valid unpin,
+free succeeds. The full-system ordinary session/HUP/TTY
+detach/reattach regression PASSes with the changed FILE runtime,
+but this is not acceptance of full-system injected APR/EXEC fatal
+FILE provider rejection.
+KCORE `022124` octal = 9,300 words (+26 from v887,
+no new resident data). Permanent refusal still preserves
+FILE ownership and the associated process slot; OOM killing
+remains disabled.
+
 ## v887: Check the provider's existing ownership metadata
 
 The v886 stage/interval is necessary but insufficient to identify
