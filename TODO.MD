@@ -2,6 +2,14 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [ ] v880 makes disk-swap detach ownership-preserving under a
+  missing/invalid backing span: the complete bitmap run is verified
+  before free, and failed detach prevents VM_SPACE_NONE publication.
+  Native VM and actual C detach tests PASS with expected failure
+  against pre-v880 code. The SWAP MRES verifier is reused through
+  a patched KCORE entry (+16 resident words); full-system ordinary
+  session HUP/TTY regression also PASSes. Next investigate
+  post-VM u-area MM-free failure and a safe deferred finalizer.
 - [ ] v879: APR and post-commit EXEC now use a process-owned kernel
   FILE-close continuation with timer-yielded retries; duplicate fatal
   events, native direct swap-out/exchange and OOM selection exclude

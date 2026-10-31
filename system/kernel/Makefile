@@ -320,13 +320,15 @@ kcore: ${BUILD}/backstore_entry_v484.s ${BUILD}/backstore_mres_v484.s
 ${BUILD}/backstore_entry_v484.s: storage/backstore_entry_v484.s
 	@mkdir -p ${BUILD}
 	cp $< $@
-${BUILD}/backstore_mres_v484.s: storage/backstore.s
+${BUILD}/backstore_mres_v484.s: storage/backstore.s Makefile
 	@mkdir -p ${BUILD}
+	# Export the existing read-only bitmap verifier through SWAP.
 	sed '/^[[:space:]]*\.bss[[:space:]]*$$/,$$d' $< | \
 	  sed -e 's/\<backstore_bitmap_words\>/backstore_mres_bitmap_words_v484/g' \
 	      -e 's/\<backstore_init\>/backstore_mres_init_v484/g' \
 	      -e 's/\<backstore_alloc\>/backstore_mres_alloc_v484/g' \
-	      -e 's/\<backstore_free\>/backstore_mres_free_v484/g' > $@
+	      -e 's/\<backstore_free\>/backstore_mres_free_v484/g' \
+	      -e 's/\<backstore_verify_allocated_v795\>/backstore_mres_verify_allocated_v880/g' > $@
 
 ${KINIT_C_ASM} ${KINIT_LATE_C_ASM}: ${KINIT_SRCS} ${KINIT_LATE_SRCS} ${KERNEL_HEADERS} ${VERSION_FILE} ${MONITORFS_MODE_STAMP} ${KINIT_TAPE_MODE_STAMP} ${KINIT_STACK_MODE_STAMP}
 	@mkdir -p ${BUILD}

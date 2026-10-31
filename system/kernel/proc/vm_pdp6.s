@@ -519,6 +519,7 @@ vm_space_destroy_maybe_process:
 vm_space_destroy_detach:
         move    1,(17)
         pushj   17,proc_swap_detach
+        jumpn   1,vm_space_destroy_fail  ; keep VM and swap record retryable
         move    2,-1(17)
         setom   1(2)                   ; VM_SPACE_NONE
         setz    1,

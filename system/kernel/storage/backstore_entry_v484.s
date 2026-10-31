@@ -4,11 +4,13 @@
         .globl backstore_init
         .globl backstore_alloc
         .globl backstore_free
+        .globl backstore_verify_allocated_v795
         .globl kret_neg1
 backstore_bitmap_words: jrst kret_neg1
 backstore_init: jrst kret_neg1
 backstore_alloc: jrst kret_neg1
 backstore_free: jrst kret_neg1
+backstore_verify_allocated_v795: jrst kret_neg1
         .bss
         .globl backstore_bitmap
         .globl backstore_blocks

@@ -56,21 +56,32 @@ proc_swap_transfer_words(int write, kword_t first,
 }
 #endif
 
-/** Release only a nonresident disk span, then clear executable backing. */
-void
+/** Release only validated nonresident disk backing, then clear ownership.
+ *
+ * Never erase a swap record when its disk allocation cannot be released.
+ * The VM destroy caller must preserve the process u-area for retry.
+ */
+int
 proc_swap_detach(int slot)
 {
         struct proc *p;
         kword_t state;
-        int was_disk;
+        kword_t blocks;
+        kword_t first;
 
         p = &proc_table[slot];
         state = proc_swap_records[slot].state;
-        was_disk = VM_PDP6_BASE(p) == 0UL && state != 0UL;
-        if (was_disk) {
-                backstore_free((state >> 18U) & MM_HALF_MASK,
-                    state & MM_HALF_MASK);
-                proc_swap_blocks_used -= state & MM_HALF_MASK;
+        if (VM_PDP6_BASE(p) == 0UL && state != 0UL) {
+                first = (state >> 18U) & MM_HALF_MASK;
+                blocks = state & MM_HALF_MASK;
+                if (blocks == 0UL || proc_swap_blocks_used < blocks ||
+                    backstore_verify_allocated_v795(first, blocks) != 0)
+                        return -1;
+                /* A checked MRES export verifies the whole bitmap run.
+                 * An unloaded SWAP module returns -1 from its resident
+                 * entry instead of discarding ownership state. */
+                backstore_free(first, blocks);
+                proc_swap_blocks_used -= blocks;
                 /* The discarded slot must not retain the DISK mode. */
                 if (proc_storage_publish_v30((unsigned int)slot,
                     PROC_STORAGE_DISK, PROC_STORAGE_RESIDENT) != 0)
@@ -82,6 +93,7 @@ proc_swap_detach(int slot)
                 PROC_CRED_WORD(p) &= ~PROC_SWAP_MOUNT_EXT_BIT;
         } else if (PROC_STATE(p) == PROC_SIDL)
                 p->sched &= ~PROC_SWAP_STAGE_MOUNT_EXT_BIT;
+        return 0;
 }
 
 /** Pin, write, free, and atomically publish one process as nonresident. */

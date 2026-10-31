@@ -461,6 +461,7 @@ extern kword_t backstore_bitmap_words;
 extern kword_t backstore_init;
 extern kword_t backstore_alloc;
 extern kword_t backstore_free;
+extern kword_t backstore_verify_allocated_v795;
 
 void
 proc_swap_minit_v481(void)
@@ -486,6 +487,8 @@ proc_swap_minit_v481(void)
         storage_patch_jump(&backstore_init, minit_export(name, base, 3U));
         storage_patch_jump(&backstore_alloc, minit_export(name, base, 4U));
         storage_patch_jump(&backstore_free, minit_export(name, base, 5U));
+        storage_patch_jump(&backstore_verify_allocated_v795,
+            minit_export(name, base, 6U));
 }
 
 /** Register a resident PI handler and enable its hardware PI level. */

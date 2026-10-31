@@ -722,6 +722,7 @@ $(SWAP_MRES_OBJ_V481): $(BUILD)/proc_swap_mres_v481.dobj $(BUILD)/backstore_mres
     -R $@ -N proc_swap_mres_package_v481 -X proc_swap_mres_reclaim_v481 -X proc_swap_mres_service_v481 \
     -X backstore_mres_bitmap_words_v484 -X backstore_mres_init_v484 \
     -X backstore_mres_alloc_v484 -X backstore_mres_free_v484 \
+    -X backstore_mres_verify_allocated_v880 \
     $(BUILD)/proc_swap_mres_v481.dobj $(BUILD)/backstore_mres_v484.dobj
 
 $(KERNEL_ASM_OBJS): $(KINIT_ASM) $(KINIT_LATE_ASM) $(KCORE_FIXED_ASM) $(MRES_ASM)

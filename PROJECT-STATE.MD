@@ -1,3 +1,19 @@
+## 2026-10-31 v880: preserve process ownership on backing-detach error
+
+Repaired silently ignored backing-release failure at the
+`proc_swap_detach` / `vm_space_destroy` boundary. Disk swap records
+and block accounting remain intact if the existing SWAP MRES verifier
+rejects any block of the allocation. VM_SPACE_NONE is published only
+after successful detach. SWAP MRES exports its existing verifier at
+index 6 through a single new resident patchable jump; generated MRES
+and KCORE link PASS. Native VM and actual C detach tests PASS,
+pre-v880 negative-control VM test FAIL as expected. KCORE end
+`021423` octal, +16 resident words; no persistent data allocated.
+U-area MM failure after VM teardown and complete OOM termination
+remain unresolved in TODO.MD.
+The full-system headless session/HUP/TTY regression also PASSes with
+the newly exported verifier installed in SWAP MRES.
+
 ## 2026-10-31 v879: owned fatal-close continuation before slot-0 EXIT
 
 PDP-6 user APR and post-commit EXEC fatal paths now preserve their

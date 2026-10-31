@@ -3,6 +3,58 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v880: Validate swap allocation before irreversible detach (2026-10-31)
+
+`vm_space_destroy` previously ignored the result of the `void`
+`proc_swap_detach`. For a disk-resident process, `backstore_free`
+could reject an invalid span without reporting failure; the detach
+routine nevertheless reduced the process block count, discarded its
+swap record, and returned. The VM caller then published
+`VM_SPACE_NONE`, losing ownership information required for retry.
+This violates the ownership-preserving teardown rule even with no
+FILE descriptors left.
+
+`proc_swap_detach` now returns success/failure. On DISK, it validates
+the complete allocated block span and the per-process block count
+before calling `backstore_free`. A failed verification leaves the
+record, counters, and storage mode unchanged. On success the backing
+bitmap and record are released and storage mode is published.
+`vm_space_destroy` checks the return before publishing
+`VM_SPACE_NONE`; a failed detach keeps the descriptor's old VM state
+for retry. This change does not attempt to retry indefinitely.
+
+The verifier already exists in SWAP MRES
+(`backstore_verify_allocated_v795`), not the core. To avoid a large
+duplicate bitmap scan in permanent memory, its preexisting code is
+exported as `backstore_mres_verify_allocated_v880` at index 6. The
+resident verifier entry defaults to a negative return if SWAP is
+unloaded, and MINIT patches it at installation. The MRES source
+generation rule now depends on its Makefile to prevent stale
+unrenamed symbols during rebuild. The real SWAP MRES link PASSes and
+its map contains the new export.
+
+Native PDP-6 testkit `daimos-swap-detach-v880.sh` injects failed
+detach, successful retry, and invalid DISK VM preflight into the
+actual `vm_space_destroy` assembly: PASS. An old-source negative
+control FAILs at the missing error propagation. The separate
+`daimos-swap-detach-state-v880.sh` compiles production C
+`proc_swap_detach` with failure-injected bitmap/free/publish
+providers and proves unchanged state on missing bits, underflow,
+invalid range, zero count, plus successful retry and idempotence:
+PASS. Existing backing bitmap verifier/free tests PASS. KCORE link
+PASS at exclusive end `021423` octal (8,979 words), +16 words
+against v879 `021403`; no permanent data allocation.
+
+The final post-v880 headless full-system session-teardown regression
+also PASSes: the new SWAP verifier export is installed, leader exit
+HUPs running/stopped jobs, and TTY detach/reattach works. It does
+not inject a corrupted backing bitmap in a live guest.
+
+**Still open:** errors after VM destruction, especially releasing the
+last stable u-area on the slot-0 stack; persistent provider failures;
+and full-system OOM progress. This check cannot recover a corrupted
+backing bitmap or imply that MM teardown can never fail.
+
 ## v879: Process-owned fatal FILE cleanup with scheduler yields (2026-10-31)
 
 The user-origin APR fault and post-commit EXEC-fatal paths now share a

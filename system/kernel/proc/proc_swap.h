@@ -62,7 +62,8 @@ int proc_swap_boot_init(unsigned int slots);
 /** Attach validated executable backing metadata to a resident process. */
 int proc_swap_attach(int slot, vnode_t backing,
     kword_t text_words, unsigned int pure);
-void proc_swap_detach(int slot);
+/** Detach swap backing only after validating the complete live disk run. */
+int proc_swap_detach(int slot);
 /** Write one resident process image to swap-tail storage and release its VM. */
 int proc_swap_out(int slot);
 /** Restore one swapped process image into a new aligned resident extent. */

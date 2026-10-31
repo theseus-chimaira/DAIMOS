@@ -1,3 +1,17 @@
+## 2026-10-31 v880: transactional disk-swap detach and VM ownership
+
+`proc_swap_detach` now returns an error when its nonresident backing
+run is incomplete or invalid. It checks the entire allocation through
+the existing SWAP MRES bitmap verifier before freeing blocks and
+clearing its swap record. `vm_space_destroy` propagates a failed
+detach and does not publish VM_SPACE_NONE, retaining a retryable
+process owner. A one-word resident jump entry is patched by MINIT to
+SWAP export 6; no new persistent bitmap/table or duplicate verifier.
+Native PDP-6 VM error/rollback and real C detach fault injection PASS;
+pre-v880 VM code fails the negative control as expected. Lowmem KCORE
+link PASS at `021423` octal (8,979 words), +16 over v879.
+Persistent MM/u-area release failure after VM destruction remains open.
+
 ## 2026-10-31 v879: process-owned fatal cleanup retry
 
 APR-user faults and post-commit EXEC failures now keep an owned kernel
