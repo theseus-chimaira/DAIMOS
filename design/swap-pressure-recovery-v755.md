@@ -3,6 +3,37 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v860: RUN admission needs a resource-progress protocol (2026-10-31)
+
+Source inspection confirms the constrained v859 failure is structural.
+`exec_load_process` calls `vm_space_create`, which must acquire an aligned
+contiguous resident extent using `mm_alloc_aligned`. The allocator first
+tries ordinary allocation, compaction and filesystem reclaim, then calls
+`proc_swap_reclaim`. That path chooses a resident victim and attempts
+`proc_swap_out`; it must reserve the victim's writable backstore span
+*before* freeing its RAM. Once no span can be allocated, neither a
+retry nor more compaction can produce the missing resident extent.
+
+Existing equal-sized exchange replaces one resident with one already
+swapped process, but does not create a free resident extent. Exchange
+can enable progress only if the incoming process subsequently exits,
+shrinks or releases resources. It runs from slot-0 idle scheduler
+context, whereas `SYS_RUN` is currently synchronous in the caller.
+Calling exchange directly from a failed `vm_space_create` would violate
+the slot-0 serialization, live-process exclusion and scheduling rules.
+
+A general fix therefore requires a bounded admission/scheduling
+protocol, not more allocation retries or a special-case process count:
+the pending RUN must retain its validated launch and resource state,
+allow scheduler-visible work to free resources, and retry admission
+only after a provable resource change; the child must not become RUN
+until its VM and backing resources are committed. Define cancellation,
+waiter wakeups, fairness and no-progress reporting, with bounded
+resident metadata. Avoid deadlocking when all runnable processes are
+themselves blocked on admission, and preserve process/accounting/FD
+ownership on every cancellation path. No production patch has yet
+implemented these semantics; v859 remains a release-blocking FAIL.
+
 ## v859: Default drum backstore RUN admission failure reproduced (2026-10-31)
 
 Testkit `daimos-swap-default-pair-v859.sh` builds a fresh full-profile
