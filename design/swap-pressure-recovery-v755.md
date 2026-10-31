@@ -3,6 +3,41 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v882: Full-system actual pinned u-area recovery (2026-10-31)
+
+The standalone testkit harness `daimos-uarea-pin-integration-v882.sh`
+copies kernel sources to a private `$TMPDIR` directory and adds
+temporary probes only to that copy of `proc_pdp6.s` and `proc.c`.
+The compiled production `proc_exit_finish` identifies an exiting
+process on its own EXIT path, after which the unmodified production
+`proc_uarea_release` invokes the real MM subsystem. The temporary
+probe calls real `mm_pin` before the first release and `mm_unpin`
+before the third. A counter reads the actual `mm_free` return, not
+a stubbed provider value. The original session HUP/TTY integration
+program exercises the booted kernel.
+
+In SIMH, post-HALT memory inspection records: target process slot
+1 in the manual run and slot 2 in the clean run,
+3 release attempts, 1 successful pin, 2 actual `MM_ERR_BUSY`
+results, 1 successful unpin and 0 probe errors. The guest prints
+the expected completion sentinel and reaches normal HALT after
+session leader HUP and TTY detach/reattach. The v881 slot-0 retry
+therefore works with a real pinned MM extent and clock progress,
+not only with an injected -1 return from a unit stub.
+
+An earlier probe targeting the first release (slot 3) triggered
+non-current fatal teardown. Its caller legitimately received a
+failure while the pending owner remained quarantined; that broke
+the synchronous session-test expectation. v882 deliberately selects
+the process-owned EXIT route. A separate non-current-fatal and
+continuously runnable companion test is still required.
+
+No production source, resident data or KCORE text changed in v882.
+The v881 production endpoint remains `021567` octal, 9,079 words.
+The test does not establish bounded reclamation with a permanently
+busy MM owner or guarantee reaper execution under sustained load.
+Automatic OOM killing remains disabled.
+
 ## v881: Recover from post-VM u-area MM release failure (2026-10-31)
 
 After the VM and swap backing are destroyed, `proc_finish_slot`

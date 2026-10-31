@@ -1,3 +1,18 @@
+## 2026-10-31 v882: full-system genuine MM_BUSY retry acceptance
+
+A testkit-only full-system PDP-6 image pins a real stable u-area on
+its first process-owned EXIT, verifies two genuine `mm_free`
+`MM_ERR_BUSY` responses, then unpins on the third release attempt.
+Guest counters read through SIMH after normal HALT report:
+target slot 1 in the manual run and slot 2 in the clean run,
+3 calls, 1 pin, 2 busy, 1 unpin, 0 errors.
+The same session HUP/TTY scenario completes. Fault instrumentation
+is generated only inside a disposable test source tree; production
+KCORE is unchanged, still `021567` octal (9,079 words).
+Non-current fatal finalizers return a transient failure to their
+caller and need a separate acceptance contract. Permanent MM errors
+and progress under sustained runnable load remain open.
+
 ## 2026-10-31 v881: defer failed post-VM u-area release from slot 0
 
 When MM refuses to release an exiting process's stable u-area after

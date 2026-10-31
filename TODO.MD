@@ -2,6 +2,15 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [x] v882 full-system transient MM_BUSY test for process-owned EXIT:
+  real u-area MM pin, two rejected frees, clock-yielded idle cleanup,
+  one unpin, and eventual normal session/HUP/TTY HALT PASS. All
+  instrumentation stays in the disposable daimos-testkit kernel
+  overlay, zero production resident words.
+- [ ] v882 follow-up: non-current fatal teardown can return failure
+  while its pending u-area awaits idle reaping. Test the caller
+  semantics and demonstrate useful progress with another process
+  continuously runnable. Persistent MM errors still require policy.
 - [ ] v881 defers a failed post-VM stable u-area MM free to the
   clock-throttled slot-0 reaper, using unused u-area word 067 for
   marker/status. No per-process queue, unchanged session bits,

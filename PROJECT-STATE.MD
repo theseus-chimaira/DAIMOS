@@ -1,3 +1,18 @@
+## 2026-10-31 v882: guest MM pin/failed-free/retry accepted
+
+Full-system testkit fault injection on the actual PDP-6 kernel
+establishes that `mm_pin` prevents u-area `mm_free` twice and
+`mm_unpin` permits subsequent deferred finalizer completion.
+The first experiment intercepted non-current fatal teardown and
+showed that its caller reports a transient failure. The accepted
+scenario selects a process entering its own `proc_exit_finish`,
+which passes ownership to the slot-0 retry. SIMH readback:
+the selected current-EXIT slot (1/2 across runs), three frees,
+two MM_ERR_BUSY, one pin/unpin each, no errors,
+and normal session HUP/TTY final HALT. No production kernel changes
+or KCORE size growth: `021567` octal. Sustained-load fairness and
+permanent-MM-error policies remain unresolved; OOM stays disabled.
+
 ## 2026-10-31 v881: retryable post-VM u-area finalization
 
 The PDP-6 process finalizer can now defer an MM-rejected u-area free
