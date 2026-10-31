@@ -2,6 +2,26 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v839: Clean image with live MRES exchange breakpoints (2026-10-31)
+
+The testkit `daimos-swap-clean-trace-v839.sh` generates a private v669
+runner with SWAP MRES exchange-entry breakpoints installed during the
+first, clean full-profile boot. This avoids the reused-image `?RT`
+failure seen in v838 and preserves the build, link maps and SIMH trace.
+For this build the installed service trampoline still points to octal
+032255, yielding module base 027632 and exported v826/v832/v790 entry
+addresses 027632/030315/031171 respectively. The script's source and
+generated map match those offsets.
+
+The native v839 run again timed out after 300 seconds (exit 124) with
+the writer incomplete and simulator PC 013604. Resident scheduler
+service breakpoint hits were present, but no break at the exchange
+pair, execute or transaction entry was observed. Thus the observed
+failure occurs before these entry points, or follows another service
+branch: the next investigation should capture `proc_swap_in` result
+and pressure-branch admission within the loaded MRES. Do not assume
+victim scanning itself was exercised. v758 acceptance remains FAILED.
+
 ## v838: Runtime SWAP MRES address resolution and boot limitation (2026-10-31)
 
 The preserved v837 trace showed `proc_swap_service_one` executing
