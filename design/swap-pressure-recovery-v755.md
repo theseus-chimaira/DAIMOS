@@ -2,6 +2,23 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v847: Increased backstore reaches WAIT; still no completion (2026-10-31)
+
+The full clean v847 profile retained `DRUM_BACKSTORE_BLOCKS=010000`
+and timed out at PC 013605 after the 300-second SIMH limit (exit 124).
+All 17 RUN entries succeeded without rejection; seven swap-in
+restorations succeeded, with no exchange-pressure branch hits.
+Unlike the default-backstore fixture, the parent (slot 1) entered
+`pipe_read_words` ten times and `proc_wait_child` twice; the kernel
+entered `proc_notify_parent` once. Fifteen other pipe reads came from
+pressure slots 3..022 (octal), and nine writes were made by writer
+slot 2. Thus the v846 capacity change *did* permit post-RUN test
+progress, including WAIT and child-notification activity, but did not
+complete the writer assertions. The earlier prediction that WAIT was
+not reached was only true for the default-capacity failed RUN case.
+Next trace the precise writer exit report, WAIT result, and event
+wakeup/dispatch for the restored parent. Do not claim acceptance.
+
 ## v845: RUN admission is the current blocker (2026-10-31)
 
 The full v844 pipe/wakeup trace timed out at PC 013605 with eight

@@ -1423,6 +1423,7 @@ proc_notify_parent:
         xor     4,[0640000000000]      ; STOP + WAIT_CHILD
         and     4,[0760000000000]
         jumpn   4,proc_notify_parent_done
+        .globl  proc_notify_parent_wake  ; v848 diagnostic entry
 proc_notify_parent_wake:
         move    4,2(2)
         hllz    4,4                    ; clear wait channel
