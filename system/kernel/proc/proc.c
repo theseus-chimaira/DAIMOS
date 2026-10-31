@@ -328,12 +328,25 @@ int
 proc_finish_slot(unsigned int slot, unsigned int status)
 {
         struct proc *p;
+        const struct file *files;
+        unsigned int fd;
         unsigned int parent;
         unsigned int pgrp;
         kword_t scope;
         kword_t ctl;
 
         p = &proc_table[slot];
+        /* Do not release a live descriptor table even when a fatal caller
+         * skipped/failed close(). The native assembly enforces the same
+         * check before it modifies RT, session, or VM ownership. */
+        if (!PROC_HAS_UAREA(p) || PROC_UAREA_BASE(p) == 0UL)
+                return -1;
+        files = (const struct file *)(unsigned long)
+            (PROC_UAREA_BASE(p) + PROC_FILE_TABLE_OFFSET);
+        for (fd = 0U; fd < FILE_NFILE; ++fd) {
+                if (files[fd].node_meta != 0UL)
+                        return -1;
+        }
         if ((unsigned int)proc_rt_owner == slot)
                 proc_rt_owner = 0UL;
         parent = PROC_PARENT_SLOT(p);
@@ -416,14 +429,18 @@ proc_event_apply(unsigned int slot, unsigned int event)
                 struct file *saved;
 
                 if (slot == (unsigned int)proc_current_slot) {
-                        file_close_all();
+                        if (file_close_all() != 0)
+                                return -1;
                         proc_exit_current((int)(SYS_WAIT_EVENT_FLAG | event));
                         return -1;
                 }
                 saved = file_table;
                 file_table = (struct file *)(unsigned long)
                     (PROC_UAREA_BASE(p) + PROC_FILE_TABLE_OFFSET);
-                file_close_all();
+                if (file_close_all() != 0) {
+                        file_table = saved;
+                        return -1;
+                }
                 file_table = saved;
                 return proc_finish_slot(slot, SYS_WAIT_EVENT_FLAG | event);
         }

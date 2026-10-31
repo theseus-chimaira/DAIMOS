@@ -3,6 +3,36 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v868-v869: Fail closed on current EXIT and before final process teardown (2026-10-31)
+
+v868 extends the v867 aggregate FILE-close result to the ordinary PDP-6
+EXIT syscall and the current-process fatal-event path. When VFS sync fails,
+the affected descriptor remains live; EXIT or fatal-event delivery now
+returns -1 instead of destroying its owning u-area. The C reference
+fatal-event path also checks the bulk-close result. Native PDP-6 v868
+injects a failed first close with a successful second close, proves both
+current fatal-event and explicit EXIT avoid finalization, then checks
+successful retry and unchanged exit status: PASS.
+
+v869 adds a bounded, read-only final FILE guard to `proc_finish_slot`.
+Before clearing RT ownership or changing session/VM state, it requires a
+stable u-area and scans all 16 two-word FILE entries. Any live node
+prevents finalization. The C reference implementation has the same guard.
+Native PDP-6 v869 verifies that even the last descriptor blocks teardown
+without helper calls, a missing u-area fails closed, and empty entries
+permit normal zombie publication: PASS. Neither version introduces a
+persistent table or dynamic allocation. A lowmem KCORE link PASSes at
+exclusive end `021211` octal, compared with `021167` after v867, a net
+increase of 18 words. The strict `020000` octal size goal is still open.
+
+**Not yet safe for automatic OOM termination:** an APR user fault and a
+post-commit EXEC fatal exit cannot return to the faulting process if the
+close fails; the new guard prevents silent loss of descriptors but the
+current fatal teardown can still reach the invariant HALT. Provider lock
+waits, recursive session HUP, device-specific cleanup failures, swapped
+victim release and a guaranteed resource-progress policy remain unproved.
+Full-system fault-injection and actual OOM kills remain disabled.
+
 ## v867: Report failed victim closes before releasing the u-area (2026-10-31)
 
 The previously allocation-free `file_close_all_at_v865` ignored individual

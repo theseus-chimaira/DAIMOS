@@ -2,6 +2,11 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [ ] v868-v869 now preserve current-process FILE resources on ordinary
+  close failure and reject `proc_finish_slot` while any FD remains live.
+  Native PDP-6 branch tests PASS. Resolve nonreturning APR/EXEC fatal exits
+  and other cleanup failures without orphaning resources or hanging before
+  using this path as an OOM killer.
 - [ ] v867 closes a resource-orphaning hole in fatal-other cleanup: a failed
   VFS sync now prevents freeing the victim u-area. It does not guarantee
   OOM progress. Finish the allocation-free termination graph, including

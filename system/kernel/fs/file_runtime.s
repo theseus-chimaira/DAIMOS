@@ -661,7 +661,7 @@ file_unlock_mount_next:
         sojg    3,file_unlock_mount_loop
         popj    17,
 
-; void file_close_all(void)
+; int file_close_all(void): zero if all entries closed, -1 if any failed.
         .globl  file_close_all
 file_close_all:
         move    1,file_table

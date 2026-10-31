@@ -1,3 +1,15 @@
+## 2026-10-31 v868-v869: current EXIT and final FILE teardown guard
+
+Ordinary PDP-6 EXIT and current fatal-event handling now honor failed
+`file_close_all` results, leaving the requesting process and any failed
+descriptor intact. `proc_finish_slot` additionally validates the stable
+u-area and all 16 FILE descriptors before any resource release. Native
+PDP-6 testkit v868 and v869 PASS; lowmem KCORE link PASS at `021211`
+octal, 18 words larger than the v867 `021167` baseline. These changes
+prevent silent descriptor loss but do not activate OOM termination.
+Nonreturning APR and EXEC fatal exits, provider waits and full OOM
+resource-progress acceptance are still unresolved.
+
 ## 2026-10-31 v867: failed FILE close blocks fatal-other teardown
 
 Native KCORE `file_close_all_at_v865` now reports unsuccessful descriptor

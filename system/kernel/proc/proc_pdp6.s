@@ -451,6 +451,25 @@ proc_finish_slot:
         lsh     12,1
         add     12,10
         add     12,proc_table           ; descriptor
+        ; Last-chance teardown invariant: the target must own a stable
+        ; u-area and have no live FILE entries. Some fatal exits bypass
+        ; syscall-level closes (e.g. unrecoverable EXEC and APR faults).
+        ; Do not discard those descriptors with the u-area. This check
+        ; uses only existing process memory, before any destructive step.
+        move    1,(12)
+        trnn    1,0400000               ; PROC_F_UAREA
+        jrst    proc_finish_fail
+        hlrz    3,1
+        jumpe   3,proc_finish_fail
+        addi    3,PROC_FILE_TABLE_OFFSET
+        movei   4,020                   ; FILE_NFILE
+proc_finish_fd_check_v869:
+        skipn   (3)
+        jrst    proc_finish_fd_next_v869
+        jrst    proc_finish_fail
+proc_finish_fd_next_v869:
+        addi    3,2
+        sojg    4,proc_finish_fd_check_v869
         ; Drop RT ownership only when this process is the owner.
         camn    10,proc_rt_owner
         setzm   proc_rt_owner
@@ -1161,12 +1180,20 @@ proc_event_fatal:
         came    010,proc_current_slot
         jrst    proc_event_fatal_other
         pushj   17,file_close_all
+        ; Like fatal-other, a failed SYNC must not be followed by
+        ; release of the still-live current process's descriptor table.
+        jumpn   1,proc_fatal_self_fail_v868
         move    1,011
         iori    1,0400000               ; SYS_WAIT_EVENT_FLAG
         pop     17,012
         pop     17,011
         pop     17,010
         jrst    proc_exit_current
+proc_fatal_self_fail_v868:
+        pop     17,012
+        pop     17,011
+        pop     17,010
+        jrst    kret_neg1
 
 proc_event_fatal_other:
         hlrz    1,(012)

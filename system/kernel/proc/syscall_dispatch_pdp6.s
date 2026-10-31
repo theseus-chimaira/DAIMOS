@@ -107,6 +107,12 @@ native_sys_mapped_return:
 %L66:
         push    17,1
         pushj   17,file_close_all
+        jumpe   1,native_sys_exit_close_ok_v868
+        ; Failed SYNC leaves its FD live. EXIT must not discard the
+        ; process u-area while that descriptor still owns resources.
+        pop     17,2                   ; discard saved exit status
+        jrst    kret_neg1
+native_sys_exit_close_ok_v868:
         pop     17,1
         ; EXIT never returns through the dying process's u-area stack.
         jrst    proc_exit_current

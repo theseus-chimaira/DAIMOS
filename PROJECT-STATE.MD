@@ -1,3 +1,15 @@
+## 2026-10-31 v868-v869: process-finalization guard
+
+Current-process fatal event and SYS_EXIT return failure without destroying
+an unclosed FILE descriptor after failed SYNC (v868). The PDP-6 final
+process teardown rejects missing u-area or any live descriptor before
+changing RT, session, VM or scheduler state (v869). C reference paths
+have matching error handling and final guard. Native v868 and v869
+fault/guard fixtures PASS and lowmem KCORE link PASS, exclusive endpoint
+`021211` octal. No permanent data table was added; OOM killing is still
+OFF because forced nonreturning APR/EXEC exits, potentially blocking
+providers and reclaim progress are not yet OOM-safe. Track in TODO.MD.
+
 ## 2026-10-31 v867: victim FILE close failure is now visible
 
 The static fatal-other event path no longer destroys a process u-area

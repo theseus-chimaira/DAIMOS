@@ -60,7 +60,8 @@ int file_dup2(int oldfd, int newfd);
 kword_t file_seek(int fd, kword_t offset, unsigned int whence);
 int file_lock(int fd, unsigned int op);
 void file_unlock_mount(unsigned int mount_id);
-void file_close_all(void);
+/* On failure a descriptor remains live; process teardown must not free it. */
+int file_close_all(void);
 int file_readchar(int fd);
 int file_writechar(int fd, unsigned int ch);
 int file_read_words(int fd, kword_t *buf, unsigned int nwords);
