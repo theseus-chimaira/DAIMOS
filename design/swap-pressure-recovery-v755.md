@@ -1,6 +1,30 @@
 # v755: Swap-in resource pressure and scheduler liveness
 
-Status: partially implemented, native pressure acceptance failed (v758).
+Status: v851 full-system scheduler-pressure acceptance PASSES with the
+010000-octal-sector test backstore; exchange transaction unproven.
+
+## v851 full-system native acceptance result (2026-10-31)
+
+Executed testkit `daimos-swap-dispatch-acceptance-v851.sh` against a
+fresh full-profile PDP-6 boot with DRUM_BACKSTORE_BLOCKS=010000.
+The native v669 regression PASSed one post-INIT 16-child pressure cycle.
+The descriptor peak was 34/136 from 138 insertion samples. All 17 RUN
+entries succeeded with no RUN admission or claimed-child failures.
+
+The instrumented execution recorded 12 service-success branch hits,
+12 pressure/cooldown visits, and 255 v826 pair admission calls, but
+zero entries into v832 exchange execution or v790 transaction.
+The recorded `proc_swap_in_restore` hit count was zero despite the
+service-success hits, so do not use it as a restoration-count measure
+without checking label placement. The runner's fixed-address trampoline
+confirmation also failed after layout changes; its PASS comes from
+the actual guest workload completion check, not that auxiliary check.
+
+This closes the *writer WAIT/EXIT liveness regression* under the enlarged
+test backing configuration. The default 04000-sector configuration
+previously failed RUN admission, and the unrelated full exchange
+transaction still requires its own acceptance test. No permanent RAM
+was added by the v851 dispatch hint.
 
 ## v849: Parent dispatch tracing after successful writer exit (2026-10-31)
 
@@ -37,7 +61,7 @@ correctly in the native traces.
 Full SWAP MRES and scheduler assembly pass. The isolated native v826
 pair/lock/abort test passes. Full-system v851 acceptance is being
 evaluated with the proven `010000`-sector test backstore rather than
-the too-small default; the result must be recorded separately.
+the too-small default; the completed PASS is recorded above.
 
 ## v849: Gate EOF wakes all pressure children; dispatch still stalls (2026-10-31)
 
