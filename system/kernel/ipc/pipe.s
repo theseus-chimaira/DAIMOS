@@ -442,6 +442,32 @@ pipe_close_writer:
         jumpe   3,pipe_close_bad
         subi    011,1
 pipe_close_store:
+        ; Last reference: release before publishing zero refs or waking
+        ; waiters. mm_free can reject a pinned/invalid extent. In that
+        ; case FILE retains the descriptor for retry, so the original
+        ; reader/writer counts MUST remain unchanged. There can be no
+        ; legitimate pipe waiters after the last reference closes.
+        jumpn   011,pipe_close_publish_v870
+        skipn   1(010)                  ; anonymous pipe: no FIFO list
+        jrst    pipe_close_free_v870
+        move    1,010
+        pushj   17,pipe_fifo_unlink_object
+pipe_close_free_v870:
+        move    1,010
+        movei   2,3
+        movei   3,5
+        pushj   17,mm_free
+        jumpe   1,pipe_close_ok
+        ; A failed free must restore a named FIFO to the active list.
+        ; Its vnode and original counts were never changed. This
+        ; nonallocating head insertion is safe under executive exclusion.
+        skipn   1(010)
+        jrst    pipe_close_bad
+        move    1,pipe_fifo_head
+        movem   1,(010)
+        movem   010,pipe_fifo_head
+        jrst    pipe_close_bad
+pipe_close_publish_v870:
         movem   011,3(010)
         hlrz    3,011
         jumpn   3,pipe_close_writers
@@ -453,17 +479,8 @@ pipe_close_writers:
         movei   1,4(010)
         pushj   17,pipe_signal_event
 pipe_close_live:
-        jumpn   011,pipe_close_ok
-        skipn   1(010)
-        jrst    pipe_close_free
-        move    1,010
-        pushj   17,pipe_fifo_unlink_object
-pipe_close_free:
-        move    1,010
-        movei   2,3
-        movei   3,5
-        pushj   17,mm_free
-        jumpn   1,pipe_close_bad
+        ; Non-final close: the object is still live and ref updates are
+        ; already published. Last close was handled before publication.
 pipe_close_ok:
         setz    1,
         jrst    pipe_close_done

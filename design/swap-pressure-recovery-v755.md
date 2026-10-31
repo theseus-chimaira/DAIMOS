@@ -3,6 +3,34 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v870: Final PIPE close is retry-safe after MM release failure (2026-10-31)
+
+The existing `pipe_close_ref` decremented reader/writer counts and
+signaled waiters *before* attempting to free the pipe object when the
+last reference disappeared. If `mm_free` rejected the last free, the
+FILE descriptor remained live (correct), but the pipe count was already
+zero (incorrect). A second close could underflow or be rejected, leaving
+the process impossible to terminate cleanly under memory pressure.
+
+The final-reference path now invokes `mm_free` before publishing the
+zero reference count or signaling events. For named FIFOs it first
+unlinks the object, and if the free fails it restores the existing
+object to the FIFO list head without allocating memory. The original
+reader/writer counts and FD remain untouched on failure. Other list
+members are preserved; successful last-close frees without reaccessing
+the released memory. Non-final close retains the original count update
+and wakeup semantics. No persistent storage or removable service added.
+
+The native PDP-6 v870 test executes the real FILE entry close and PIPE
+close/unlink routines. Injected final MM-free failure and retry PASS for
+both anonymous and named pipes, including FIFO list restoration, plus
+the normal non-final reference decrement. Native v417 mount-reference
+regression and full-system pipe regressions are tracked separately.
+The fresh lowmem KCORE link PASSes at exclusive end `021217` octal,
+six words above v869 `021211`. This is another OOM-teardown
+prerequisite, **not** activation of OOM killing or proof that all other
+resource releases are infallible.
+
 ## v868-v869: Fail closed on current EXIT and before final process teardown (2026-10-31)
 
 v868 extends the v867 aggregate FILE-close result to the ordinary PDP-6

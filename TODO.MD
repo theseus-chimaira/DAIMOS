@@ -2,6 +2,10 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [ ] v870 fixes final PIPE/FIFO close retry after an MM free error;
+  native fault-injection PASS. Audit and prove remaining release helpers,
+  and test full process cleanup with PIPE descriptors before activating
+  OOM victim termination.
 - [ ] v868-v869 now preserve current-process FILE resources on ordinary
   close failure and reject `proc_finish_slot` while any FD remains live.
   Native PDP-6 branch tests PASS. Resolve nonreturning APR/EXEC fatal exits

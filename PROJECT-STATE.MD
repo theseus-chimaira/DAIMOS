@@ -1,3 +1,14 @@
+## 2026-10-31 v870: PIPE/FIFO release rollback repaired
+
+Fixed a retry bug in final PIPE close: before v870, failed MM release
+could leave a live FD with a zeroed pipe reference count. Now the final
+free precedes ref-count publication, and named FIFO list removal is
+reversible without allocation when `mm_free` rejects the request.
+Native PDP-6 testkit v870 verifies anonymous and FIFO failed-free
+retry, list preservation and normal non-final close: PASS. Lowmem
+KCORE link PASS at `021217` octal. OOM teardown is incomplete; no
+automatic process killing or broad full-system OOM acceptance claimed.
+
 ## 2026-10-31 v868-v869: process-finalization guard
 
 Current-process fatal event and SYS_EXIT return failure without destroying

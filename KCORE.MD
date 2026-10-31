@@ -1,3 +1,12 @@
+## 2026-10-31 v870: retry-safe final PIPE/FIFO close
+
+The last `pipe_close_ref` no longer changes reader/writer counts before
+the final `mm_free` succeeds. Failed release leaves the descriptor and
+original reference counts for retry; named FIFOs are relinked to the
+existing list without allocation. Native PDP-6 v870 final-release fault
+injection PASS; lowmem KCORE link PASS at `021217` octal, six words above
+v869. OOM killing is still disabled pending a complete teardown audit.
+
 ## 2026-10-31 v868-v869: current EXIT and final FILE teardown guard
 
 Ordinary PDP-6 EXIT and current fatal-event handling now honor failed
