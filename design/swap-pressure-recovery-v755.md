@@ -2,6 +2,24 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v834: Bounded search for an exchange-eligible resident victim (2026-10-31)
+
+The v833 pressure fallback selected exactly one `proc_swap_victim`
+candidate, although the reclaim scoring policy does not incorporate
+exchange eligibility. The v834 scheduler path now scans slots 1 through
+`proc_high_slot - 1`, checks each candidate through the existing v826
+read-only pair gate, and attempts v832 only for eligible pairs. It stops
+on successful exchange, or retains the original cooldown after every
+candidate is exhausted. The same 064-octal-word temporary graph is
+reused for each attempt; no permanent RAM is added. The swap MRES
+assembles, the isolated native pair regression passes, and testkit
+v834 checks six bounded-selection cases (PASS). The latter is a host
+policy model, not native scheduler acceptance.
+
+The v833 full-system SIMH regression still stands as FAIL (`<wpF!W`,
+timeout). A new full-profile v834 writer WAIT/EXIT run is required to
+establish whether multiple-candidate admission solves the deadlock.
+
 ## v833: Scheduler pressure invokes exchange; full-system FAIL (2026-10-31)
 
 `proc_swap_mres_service_v481` now tries the resident candidate from

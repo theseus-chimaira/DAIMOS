@@ -1935,25 +1935,36 @@ proc_swap_mres_service_v481:
         popj    17,
 
 proc_swap_service_pressure:
-        ; v833: a raw equal-size exchange can progress without another
-        ; full BACKSTORE allocation. One candidate, no retry loop.
-        ; Preserve the pending B slot below the temporary victim slot.
+        ; v834: walk all resident candidates. The reclaim-policy winner
+        ; need not be exchange-eligible; one rejected slot must not stall
+        ; a feasible equal-sized exchange. Slot 0 is never a victim.
+        ; Stack: pending B, candidate A, then 064 graph words.
+        push    17,[1]
+proc_swap_service_candidate_v834:
         move    1,(17)
-        pushj   17,proc_swap_victim
-        jumpl   1,proc_swap_service_cooldown_v833
-        push    17,1                   ; A slot, B is now -1(17)
-        add     17,[064,,064]          ; 52-word temporary v790 graph
+        caml    1,proc_high_slot
+        jrst    proc_swap_service_no_pair_v834
+        move    2,-1(17)
+        pushj   17,proc_swap_exchange_pair_v826
+        jumpn   1,proc_swap_service_next_v834
+        add     17,[064,,064]
         move    1,-064(17)             ; A candidate
         move    2,-065(17)             ; pending B
         movei   3,-063(17)             ; graph words -063..0
         pushj   17,proc_swap_exchange_execute_v832
         sub     17,[064,,064]
-        pop     17,2                   ; discard A candidate
-        jumpn   1,proc_swap_service_cooldown_v833
+        jumpe   1,proc_swap_service_exchanged_v834
+proc_swap_service_next_v834:
+        aos     (17)
+        jrst    proc_swap_service_candidate_v834
+proc_swap_service_exchanged_v834:
+        pop     17,2                   ; discard candidate
         ; v790 published B resident and released both transitions.
         pop     17,1
         movem   1,proc_sched_cursor
         popj    17,
+proc_swap_service_no_pair_v834:
+        pop     17,2                   ; discard candidate
 proc_swap_service_cooldown_v833:
         ; The swapped image is intact. Defer another restore attempt long
         ; enough for resident jobs to run and free resources. Clock PI6
