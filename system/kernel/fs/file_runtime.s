@@ -500,12 +500,13 @@ file_close_entry_v865:
         jrst    file_close_finish
 file_close_dpy:
         ; Zero-word WRITE_WORDS stops the active raw list and frees its extent.
+        ; Unlike VFS_SYNC (a no-op for devices), this result must reach
+        ; file_close_finish: a failed MM release retains the descriptor.
         setz    1,
         setz    2,
 dpy_close_words_call:
-        pushj   17,kret_neg1
-        move    1,010
-        pushj   17,file_node_from_fd
+        pushj   17,kret_zero           ; absent DPY has no owned list
+        jrst    file_close_finish
 file_close_vfs:
         pushj   17,vfs_sync
 file_close_finish:

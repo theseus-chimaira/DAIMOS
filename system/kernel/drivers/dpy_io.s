@@ -355,19 +355,27 @@ dpy_list_fail:
         jrst dpy_list_done
 
 dpy_list_stop:
-        move 7,dpy_list_base
+        move 010,dpy_list_base        ; preserve base across mm_free
         setzm dpy_list_base            ; PI7 must stop recycling first
         cono 0130,000100               ; INIT, PIA disabled
-        setzm dpy_list_iowd
         setzm dpy_refresh_iowd
         setzm dpy_pending
         cono 0130,000007
-        jumpe 7,dpy_list_stopped
-        move 1,7
+        jumpe 010,dpy_list_stopped
+        move 1,010
         movei 2,3
         movei 3,014
         pushj 17,mm_free
+        jumpe 1,dpy_list_stopped
+        ; Failure leaves the original extent allocated. Keep its original
+        ; IOWD and resume clock-driven replay instead of losing ownership.
+        ; FILE close will retain its descriptor and can retry later.
+        movem 010,dpy_list_base
+        movei 2,1
+        movem 2,dpy_refresh_divider
+        jrst dpy_list_done
 dpy_list_stopped:
+        setzm dpy_list_iowd
         setz 1,
 dpy_list_done:
         pop 17,011

@@ -2,6 +2,11 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [ ] v871 fixes DPY CLOSE error propagation and loss of the Type 340
+  raw-list base after failed MM release (native fault injection PASS).
+  Separately fix the list-*replacement* old-extent free failure, and
+  verify native refresh after a failed stop before declaring Type 340
+  teardown fully allocation-free and retry-safe.
 - [ ] v870 fixes final PIPE/FIFO close retry after an MM free error;
   native fault-injection PASS. Audit and prove remaining release helpers,
   and test full process cleanup with PIPE descriptors before activating

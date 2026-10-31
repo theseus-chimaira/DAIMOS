@@ -3,6 +3,37 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v871: Preserve Type 340 display-list ownership on failed CLOSE (2026-10-31)
+
+`file_close_dpy` formerly called the DPY raw-list stop service but then
+discarded its result and invoked `vfs_sync`. Device SYNC returns zero, so
+even a failed DPY extent release silently closed the descriptor. The DPY
+MRES stop routine also cleared its list-base and IOWD before checking
+`mm_free`, irreversibly losing the extent address on a release failure.
+
+FILE now returns the actual DPY stop result, preserving the FD on failure.
+The absent-MRES close target is `kret_zero` because no raw list can be
+owned when DPY is absent; the absent-MRES write target remains `kret_neg1`.
+The stop routine disables PI7 before freeing and keeps the original
+immutable list IOWD until free succeeds. On failed `mm_free`, it restores
+the original base and schedules the clock refresh again; on success, it
+clears the IOWD and returns zero. No extra permanent words are allocated.
+
+Native PDP-6 v871 injects failed and successful final frees through the
+real FILE close and DPY stop paths, checking descriptor retention, list
+base/IOWD preservation and retry: PASS. The v709 static and native
+patched-gateway tests were updated for the intentional absent-MRES
+contract change and PASS. Direct assembly of the full DPY MRES and the
+lowmem KCORE link PASS; KCORE exclusive end `021216` octal, one word
+smaller than v870 `021217`. An actual Type 340 replay after fault
+recovery has not yet been exercised on native full-system hardware.
+
+The DPY raw-list *replacement* path still ignores failure freeing the
+old list after publishing its replacement; it requires separate
+transactional correction. APR/EXEC forced exits, remaining provider and
+descriptor cleanup failures, and system-wide OOM progress remain open.
+No automatic OOM kill is enabled.
+
 ## v870: Final PIPE close is retry-safe after MM release failure (2026-10-31)
 
 The existing `pipe_close_ref` decremented reader/writer counts and
@@ -25,7 +56,9 @@ The native PDP-6 v870 test executes the real FILE entry close and PIPE
 close/unlink routines. Injected final MM-free failure and retry PASS for
 both anonymous and named pipes, including FIFO list restoration, plus
 the normal non-final reference decrement. Native v417 mount-reference
-regression and full-system pipe regressions are tracked separately.
+regression PASS. The full-system `daimos-pipe-wordfifo-v2` regression
+also PASSes (opaque words, EOF/EPIPE, duplication, RUN references and
+blocking wakeups); named-FIFO acceptance is tracked separately.
 The fresh lowmem KCORE link PASSes at exclusive end `021217` octal,
 six words above v869 `021211`. This is another OOM-teardown
 prerequisite, **not** activation of OOM killing or proof that all other

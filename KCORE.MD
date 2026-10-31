@@ -1,3 +1,13 @@
+## 2026-10-31 v871: DPY CLOSE propagates failed MM release
+
+FILE no longer masks a Type 340 raw-list release failure with the
+device VFS_SYNC no-op. The display MRES preserves its list base and
+IOWD when `mm_free` fails, permitting retry and refresh restoration.
+Absent DPY CLOSE succeeds without an owned list. Native v871 and
+updated v709 gateway tests PASS; the DPY assembler and lowmem KCORE
+link PASS at `021216` octal, one word below v870. DPY replacement
+and broader OOM termination remain unfinished.
+
 ## 2026-10-31 v870: retry-safe final PIPE/FIFO close
 
 The last `pipe_close_ref` no longer changes reader/writer counts before

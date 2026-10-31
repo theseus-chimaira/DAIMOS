@@ -1,3 +1,14 @@
+## 2026-10-31 v871: Type 340 final-close resource ownership
+
+Fixed ignored DPY raw-list release failure and loss of the old
+display-list MM base. The FILE close now reports service failure;
+DPY stop retains the original list/IOWD and resumes clock replay
+after a rejected free. Native v871 fault injection, revised v709
+gateway checks, direct DPY assembly, and lowmem KCORE link PASS,
+endpoint `021216` octal. Separate DPY replacement failure and
+full-system stop/replay fault injection remain open. Automatic OOM
+termination is still disabled; see TODO.MD and swap-pressure design.
+
 ## 2026-10-31 v870: PIPE/FIFO release rollback repaired
 
 Fixed a retry bug in final PIPE close: before v870, failed MM release
