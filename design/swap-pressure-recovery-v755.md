@@ -916,3 +916,30 @@ Do not use a larger swap partition as a substitute for fixing scheduling
 semantics. Do not change the backstore record format or introduce resident
 telemetry merely to hide this capacity failure. The final code-size sweep
 remains deferred until feature/correctness acceptance.
+
+## v862: Static OOM teardown contract (2026-10-31)
+
+OOM selection, victim termination, owned-resource release, and final
+reaping must execute entirely from resident KCORE using an existing
+fixed kernel stack and bounded register frames. The whole call graph
+must be audited for **zero allocations**: no MM allocations, backstore
+allocation, per-request buffers, dynamically allocated file or event
+records, or loading removable services. In particular, inspect
+`proc_event_apply`, `file_close_all`, `proc_finish_slot`,
+`proc_session_teardown`, `vm_space_destroy`, `proc_swap_detach`,
+`proc_uarea_release`, `proc_adopt_children_pdp6`, and
+`proc_notify_parent`. A routine being statically linked alone does not
+establish zero-allocation behavior.
+
+Current `proc_finish_slot` uses an existing fixed stack/register frame,
+releases VM and u-area before publishing ZOMB, and the regular WAIT
+path reaps in place by clearing three existing descriptor words.
+These are usable foundations, but the entire helper graph and swapped
+victim cleanup must be verified before enabling OOM kills. Never
+require a swapped victim to be paged into RAM to terminate it. Prefer
+reuse of the normal parent-visible zombie/wait status semantics; no
+allocation is permitted for notification. Protect slot 0, INIT,
+current/transition-locked/critical processes; maintain deterministic
+bounded victim selection. Perform packing first: enough *realizably*
+reclaimable aligned RAM is an allocator defect, not an OOM condition.
+No OOM implementation or full-path allocation-free proof exists yet.
