@@ -10,6 +10,18 @@ full-system exchange acceptance.
 
 # v763: Variable-sized in-place process swap exchange
 
+## v824: Native rejection of out-of-image transfer (2026-10-31)
+
+Extended the existing testkit v819 integrated native PDP-6 fixture with
+an outgoing A writable span that begins inside its 04000-word process
+image but whose three sectors cross the image end. Production v790/v784
+rejects the malformed request before destructive I/O; the fixture checks
+the original first disk sector and then performs its full valid exchange.
+The complete native test reports PASS. This verifies the v823 preflight
+under the integrated transaction, not only in a host arithmetic model.
+The scheduler still does not invoke exchange, and the v758 writer
+WAIT/EXIT acceptance remains unresolved.
+
 ## v823: Writable-span end bounds in stage preflight (2026-10-31)
 
 The native `proc_swap_exchange_stage_v784` now checks that both A and B
