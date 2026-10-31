@@ -479,9 +479,13 @@ file_writechar_fail:
 ; Mask the packed descriptor bits only at the VFS boundary.
         .globl  file_close
 file_close:
-        push    17,010
         pushj   17,file_find
-        jumpe   1,file_close_fail
+        jumpe   1,kret_neg1
+        ; The entry helper also closes descriptors belonging to another
+        ; process. It never reads or changes the global file_table pointer.
+        .globl  file_close_entry_v865
+file_close_entry_v865:
+        push    17,010
         move    010,1
         move    2,(1)                  ; packed descriptor for pipe refs
         move    1,010
@@ -660,20 +664,24 @@ file_unlock_mount_next:
 ; void file_close_all(void)
         .globl  file_close_all
 file_close_all:
+        move    1,file_table
+        ; Close a specific stable u-area descriptor table. A provider may
+        ; sleep; never substitute its pointer into the current process's
+        ; global file_table while another process can be scheduled.
+        .globl  file_close_all_at_v865
+file_close_all_at_v865:
         push    17,010
         push    17,011
-        movei   010,0
-        move    011,file_table
+        movei   010,020                ; FILE_NFILE
+        move    011,1
 file_close_all_loop:
         skipn   (011)
         jrst    file_close_all_next
-        move    1,010                  ; FILE_FD_FIRST is zero
-        pushj   17,file_close
+        move    1,011                  ; explicit descriptor entry
+        pushj   17,file_close_entry_v865
 file_close_all_next:
         addi    011,2
-        addi    010,1
-        caige   010,020                 ; FILE_NFILE
-        jrst    file_close_all_loop
+        sojg    010,file_close_all_loop
         pop     17,011
         pop     17,010
         popj    17,

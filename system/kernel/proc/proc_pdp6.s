@@ -99,6 +99,7 @@
         .globl  file_table
         .globl  file_find
         .globl  file_node_from_fd
+        .globl  file_close_all_at_v865
         .globl  vm_activate_current
         .globl  proc_slot_ptr
         .globl  proc_runq_add
@@ -1169,11 +1170,7 @@ proc_event_fatal:
 proc_event_fatal_other:
         hlrz    1,(012)
         addi    1,PROC_FILE_TABLE_OFFSET ; target private file table
-        exch    1,file_table            ; AC1 = caller file table
-        push    17,1
-        pushj   17,file_close_all
-        pop     17,1
-        movem   1,file_table
+        pushj   17,file_close_all_at_v865
         move    1,010
         move    2,011
         iori    2,0400000

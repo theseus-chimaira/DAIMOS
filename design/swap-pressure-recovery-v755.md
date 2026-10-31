@@ -3,6 +3,38 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v865: Close another process's descriptors without global FILE switch (2026-10-31)
+
+The previous `proc_event_apply` fatal-other path temporarily swapped
+the global `file_table` pointer to the victim's table, called
+`file_close_all`, and restored the pointer afterward. A filesystem
+provider call may sleep, allowing other processes to execute with a
+wrong global FILE table. This is a correctness defect independent of OOM.
+
+`file_close_entry_v865` now performs normal close on an explicit
+descriptor-entry address; both ordinary `file_close(fd)` and the new
+`file_close_all_at_v865(table)` use the same close semantics.
+`file_close_all` remains the current-process wrapper. Fatal event
+delivery for another process now passes its stable u-area FILE table
+directly, with no global pointer substitution.
+
+Native PDP-6 testkit `daimos-file-close-target-v865.sh` executes the
+real close routines and fatal-other dispatch, with instrumented VFS
+sync and process finalization, and verifies that the caller's table
+pointer is never changed: PASS. Existing v417 six-bit direct-mount
+FILE regression PASS. Historical v19 fails with the same exit code
+on both pre-change source and changed source; it uses obsolete FILE
+mount-extension expectations and is not a v865 regression.
+Fresh lowmem KCORE link PASS, exclusive end 021301 octal versus
+v863 021306, saving five resident words. The independent 020000
+KCORE size gate remains over its threshold.
+
+OOM termination remains disabled. Explicit FILE pointer isolation
+does not prove that a victim holding a provider lock can safely be
+killed or that file-close errors and other finalization steps always
+release resources. Continue with the lock/teardown audit before
+enabling a kernel OOM kill transaction.
+
 ## v863: Allocation-free KCORE OOM victim selection (2026-10-31)
 
 The fixed KCORE `proc_oom_select_v863(excluded_slot, resource_kind)`
