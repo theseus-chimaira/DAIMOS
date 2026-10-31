@@ -79,6 +79,7 @@
         .globl  proc_swap_pressure_ticks
         .globl  mm_is_pinned
         .globl  proc_swap_victim
+        .globl  proc_oom_select_v863
         .globl  proc_record_kernel_sp
         .globl  proc_exit_current
         .globl  proc_finish_slot
@@ -3056,6 +3057,90 @@ proc_timer_service_none:
 ; callee-saved AC10..AC16 rather than KCC's eleven-word stack frame.
 ; AC10 exclude slot, AC11 scan slot, AC12 descriptor, AC13 best slot,
 ; AC14 best score, AC15 sched LH, AC16 candidate score.
+/*
+ * Select an OOM victim using only the resident process table and the
+ * existing swap records. No allocation, I/O, or process mutation.
+ * AC1: excluded slot; AC2: 0 = reclaim RAM, 1 = reclaim backing.
+ * Return AC1: largest eligible resource owner, or -1.
+ * Slot 0, INIT, current, RT owner, transition-locked, user-mapped and
+ * pinned processes are protected. Lowest slot breaks equal-size ties.
+ * This is selection only: termination must never be called until the
+ * complete KCORE teardown chain is proved allocation-free.
+ */
+proc_oom_select_v863:
+        jumpl   2,kret_neg1
+        caile   2,1
+        jrst    kret_neg1                ; only RAM or backing selection
+        add     17,kconst_7_7
+        movei   0,-6(17)
+        hrli    0,010
+        blt     0,(17)
+        move    010,1
+        move    011,2
+        movei   012,2                   ; slot 0 and INIT are protected
+        move    013,proc_table
+        addi    013,2*PROC_WORDS
+        seto    014,                     ; no victim
+        setz    015,                     ; largest resource span
+proc_oom_scan_v863:
+        caml    012,proc_high_slot
+        jrst    proc_oom_done_v863
+        camn    012,010
+        jrst    proc_oom_next_v863
+        camn    012,proc_current_slot
+        jrst    proc_oom_next_v863
+        camn    012,proc_rt_owner
+        jrst    proc_oom_next_v863
+        move    1,(013)
+        trne    1,PROC_TRANSITION_RH
+        jrst    proc_oom_next_v863
+        trnn    1,0400000               ; stable u-area required
+        jrst    proc_oom_next_v863
+        hlrz    1,1
+        move    2,PROC_FDCTL_OFFSET(1)
+        trne    2,PROC_USER_MAP_BIT
+        jrst    proc_oom_next_v863
+        hlrz    1,2(013)
+        andi    1,PROC_STATE_LH_MASK
+        caie    1,PROC_STATE_RUN
+        cain    1,PROC_STATE_SLEEP
+        jrst    proc_oom_state_ok_v863
+        caie    1,PROC_STATE_STOP
+        jrst    proc_oom_next_v863
+proc_oom_state_ok_v863:
+        move    2,proc_swap_records
+        add     2,012
+        skipn   (2)
+        jrst    proc_oom_next_v863
+        jumpn   011,proc_oom_disk_v863
+        hrrz    1,1(013)               ; only resident VM frees RAM
+        jumpe   1,proc_oom_next_v863
+        pushj   17,mm_is_pinned
+        jumpn   1,proc_oom_next_v863
+        hlrz    016,1(013)
+        jrst    proc_oom_consider_v863
+proc_oom_disk_v863:
+        hrrz    1,1(013)
+        jumpn   1,proc_oom_next_v863   ; only nonresident frees backing
+        hrrz    016,(2)                ; allocated disk-sector count
+proc_oom_consider_v863:
+        camle   016,015
+        jrst    proc_oom_take_v863
+        jrst    proc_oom_next_v863
+proc_oom_take_v863:
+        move    014,012
+        move    015,016
+proc_oom_next_v863:
+        addi    013,PROC_WORDS
+        aoja    012,proc_oom_scan_v863
+proc_oom_done_v863:
+        move    1,014
+        movei   0,-6(17)
+        hrli    0,010
+        blt     0,016
+        sub     17,kconst_7_7
+        popj    17,
+
 proc_swap_victim:
         add     17,kconst_7_7
         movei   0,-6(17)

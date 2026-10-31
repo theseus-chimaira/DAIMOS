@@ -3,6 +3,33 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v863: Allocation-free KCORE OOM victim selection (2026-10-31)
+
+The fixed KCORE `proc_oom_select_v863(excluded_slot, resource_kind)`
+scans existing process descriptors, swap records and pin state without
+allocating memory, writing data, performing I/O or mutating processes.
+Kind 0 chooses the largest eligible resident VM extent; kind 1 chooses
+the largest eligible nonresident swap extent. Invalid kinds return -1.
+Equal sizes choose the lowest slot. Slot 0, INIT (slot 1), current and
+explicitly excluded processes, the RT owner, transition-locked and
+user-mapped processes, and pinned resident extents are ineligible.
+No BSS or kernel table was added. Native PDP-6 fixture
+`daimos-oom-select-v863.sh` verifies both kinds and exclusions (PASS).
+
+**Do not call the selector as a kill routine yet.** The existing
+`proc_event_apply` fatal-other path closes the victim's FDs through
+`file_close_all` before calling `proc_finish_slot`. `file_close` may
+invoke `vfs_sync`; the KCORE `fs_provider_reg_call` serializer may wait
+on `fs_provider_ready` via `proc_wait_event`, using a process-private
+stack. This creates a potential OOM-time wait for a resource held by
+the intended victim, even though D6FS and DTFS SYNC handlers currently
+use allocation-free return paths. Termination needs a strictly bounded
+no-new-RAM, no-new-backing, no-victim-owned-lock cleanup contract for
+all providers and descriptors. Also test freeing swapped records and
+correct zombie/WAIT reporting without paging the victim into RAM.
+This is a safely testable selector, not an enabled OOM killer or a fix
+for the v859 admission failure.
+
 ## v860: RUN admission needs a resource-progress protocol (2026-10-31)
 
 Source inspection confirms the constrained v859 failure is structural.
