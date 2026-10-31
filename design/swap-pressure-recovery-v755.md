@@ -2,6 +2,21 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v843: Trace scheduler handoff and child WAIT notification (2026-10-31)
+
+The v842 full-system trace proved nine normal swap-in completions, but
+the writer WAIT/EXIT workload still timed out. v843 exports the existing
+`proc_idle_loop` KCORE label (one symbol only, zero additional words)
+and adds testkit `daimos-swap-handoff-v843.sh`. This clean-image native
+diagnostic observes resident `proc_idle_loop`, `proc_notify_parent`,
+`proc_wait_child`, and `proc_runq_add`, together with the v842 swap-in
+completion path. It records process slot and scheduler cursor at each
+resident breakpoint and retains the exact current-run trace. The
+initial testkit script accidentally renamed the pre-existing v842
+symbol when versioning; this was corrected before the fresh rerun.
+The original v758 WAIT/EXIT acceptance remains FAILED until the full
+system completes the writer workload.
+
 ## v842: Swap restore/return branch observability (2026-10-31)
 
 Added exported branch symbols for the normal swap-service restore

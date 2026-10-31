@@ -3127,6 +3127,7 @@ proc_swap_victim_return:
         sub     17,kconst_7_7
         popj    17,
 
+        .globl  proc_idle_loop         ; v843 scheduler handoff trace
 proc_idle_loop:
         ; Disk-backed swap-in must never run in PI context.  The scheduler
         ; marks the exact swapped winner in proc_sched_cursor.  Slot 0 services
