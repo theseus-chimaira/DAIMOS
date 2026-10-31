@@ -10,6 +10,18 @@ full-system exchange acceptance.
 
 # v763: Variable-sized in-place process swap exchange
 
+## v823: Writable-span end bounds in stage preflight (2026-10-31)
+
+The native `proc_swap_exchange_stage_v784` now checks that both A and B
+saved writable sector spans, including their process-relative PURE offsets,
+fit their respective complete process-image word counts. A malformed
+extent that starts inside the RAM reservation but ends beyond the image
+is rejected before reservation or destructive disk transfer. This is
+essential for scheduler admission of differently sized and PURE images.
+Native assembler syntax check PASS with `PROC_SWAP_VERIFY_PURE=0`.
+The testkit host boundary model v823 PASSes nine cases. Native fault
+injection and scheduler writer WAIT/EXIT acceptance remain outstanding.
+
 ## v820: Exhaustive host sector-order model (2026-10-31)
 
 The standalone daimos-testkit `probes/swap-exchange-order-v820.c` model

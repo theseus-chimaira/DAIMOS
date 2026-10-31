@@ -394,6 +394,12 @@ proc_swap_stage_a_offset_v784:
         lsh     2,-7
         came    2,5(011)
         jrst    proc_swap_stage_bad_v784
+        ; A writable span must fit inside A's original complete image.
+        move    3,3(011)              ; A saved sectors
+        add     3,5(011)              ; A offset in sectors
+        lsh     3,7
+        camle   3,3(010)              ; A complete words
+        jrst    proc_swap_stage_bad_v784
         move    1,2(011)
         caml    1,(010)
         jrst    proc_swap_stage_b_offset_v784
@@ -403,6 +409,12 @@ proc_swap_stage_b_offset_v784:
         sub     2,(010)
         lsh     2,-7
         came    2,6(011)
+        jrst    proc_swap_stage_bad_v784
+        ; Likewise B's restored writable span must fit its image.
+        move    3,4(011)              ; B saved sectors
+        add     3,6(011)              ; B offset in sectors
+        lsh     3,7
+        camle   3,4(010)              ; B complete words
         jrst    proc_swap_stage_bad_v784
         move    1,010
         pushj   17,proc_swap_exchange_prepare_v781
