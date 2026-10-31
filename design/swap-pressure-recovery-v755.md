@@ -3,6 +3,45 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v853: Real v832-to-v790 control-flow native test (2026-10-31)
+
+The new testkit `daimos-swap-orchestrator-v853.sh` links the actual
+v832 orchestrator and the actual v790 transaction control path on a
+native PDP-6. Its test fixture supplies preflight data, an injected
+live-state validation success, and controlled stage/commit leaves.
+It verifies failure with lock/pin abort followed by a successful
+stage-to-commit call, including the prepared graph pointer and held
+transaction locks. This native test PASSES. The existing v826, v819,
+and repaired v790 tests also PASS.
+
+This validates the *control-flow integration* but does not claim
+sector-transfer correctness: the destructive stage and metadata commit
+are test stubs. A real physical swap exchange, rollback of partial
+disk writes, and resumption of both actual processes remain pending.
+No production kernel change was made for v853.
+
+## v852: Native exchange orchestration coverage (2026-10-31)
+
+Existing native v826 pair-admission/lock/abort, v819 real v790 metadata
+commit integration, and isolated v790 stage/commit tests all pass.
+The isolated v790 harness had become stale: its source extraction
+accidentally included live-state validation dependencies. The testkit
+now extracts only the v790 orchestration leaf and substitutes explicit
+preflight/live stubs; the *real* validation/commit integration remains
+tested independently in v819.
+
+The new `daimos-swap-orchestrator-v852.sh` runs a native PDP-6 fixture
+covering both v832 abort and success-return branches. Its success
+case substitutes a successful v790 result and verifies the passed graph
+pointer and held transaction locks; it then invokes v830 abort to
+release test-only locks. This does NOT represent a real committed disk
+exchange. All three native suites passed after the test correction.
+
+The untested acceptance requirement remains: construct a genuinely
+eligible equal-sized resident/disk pair, run the real v832/v790 path,
+verify data and metadata, exercise rollback under injected failure,
+and resume both processes. No production code was modified in v852.
+
 ## v851 full-system native acceptance result (2026-10-31)
 
 Executed testkit `daimos-swap-dispatch-acceptance-v851.sh` against a
