@@ -2,6 +2,40 @@
 
 Status: partially implemented, native pressure acceptance failed (v758).
 
+## v849: Gate EOF wakes all pressure children; dispatch still stalls (2026-10-31)
+
+Using the `010000`-sector backstore fixture, the completed v847 trace
+reached pipe reads by parent slot 1, two WAIT invocations, and a
+successful writer exit/parent notification. v848 confirmed the parent
+WAIT selectors were writer slot 2 followed by pressure child slot 3;
+both regressions timed out. No RUN admission failures occurred.
+
+The v849 native trace specifically observed the gate pipe's last
+writer-reference release and EOF read-event signal (event address
+044207 in this image). Exactly **16** `proc_wakeup_after_runq` hits
+matched that gate read event, one for every pressure child. Thus
+the gate's reference count, EOF notification and waiter wakeup are
+working in the failing workload. `proc_wait_status` and
+`proc_wait_child` were each entered twice, but only writer slot 2
+reached `proc_exit_current`; no pressure child exited before timeout.
+After the gate wake, the scheduler continued issuing swap-in requests
+for pressure slots (beginning at 3) without executing a pressure-child
+exit. The simulator timed out after 300 seconds (exit 124, PC 013604),
+with eight successful swap-in restores and zero exchange-pressure hits.
+
+The next target is **scheduler progress after successful swap-in**:
+determine whether restored runnable children actually receive user
+dispatch before the scheduler chooses further swapped candidates.
+Do not alter pipe EOF or WAIT notification based on this trace.
+Testkit `daimos-swap-gate-eof-v849.sh` contains the reproducible trace.
+
+v850 exports the existing KCORE scheduler labels `proc_select_done`,
+`proc_select_return_best`, and `proc_select_none`, with no additional
+machine instructions or resident words. The testkit
+`daimos-swap-dispatch-v850.sh` records the selected slot and scheduler
+cursor at these branches using the same enlarged-backstore fixture.
+The native v850 acceptance result is pending.
+
 ## v848: Writer exits and parent wakeup executes; dispatch unresolved (2026-10-31)
 
 With the v847 larger backstore retained, the v848 fresh native full

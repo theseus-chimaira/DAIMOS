@@ -299,6 +299,9 @@ proc_select_next:
         hrrz    15,2(16)
         jrst    proc_select_runq
 
+        .globl  proc_select_done          ; v850 native dispatch trace
+        .globl  proc_select_return_best
+        .globl  proc_select_none
 proc_select_done:
         jumpe   11,proc_select_none
         movem   11,proc_sched_cursor
@@ -2591,6 +2594,7 @@ proc_wakeup_scan:
         move    1,3
         pushj   17,proc_runq_add
         pop     17,1
+        .globl  proc_wakeup_after_runq  ; v849 trace of matched sleepers
 proc_wakeup_after_runq:
         ; The RT owner regains preference immediately when its wait completes.
         ; Idle wakeups likewise request PI6 instead of waiting for a clock tick.

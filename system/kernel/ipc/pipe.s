@@ -28,6 +28,10 @@
         .globl  proc_wakeup_event
         .globl  proc_event_apply
         .globl  proc_current_slot
+        ; v849: cold EOF/reference diagnostics, no executable overhead.
+        .globl  pipe_close_store
+        .globl  pipe_close_writers
+        .globl  pipe_close_live
 
 ; Allocate and initialize a 016-word pipe object.  AC1 is fifo_node, zero for
 ; an anonymous pipe.  Payload words need no clearing: only queued slots are
