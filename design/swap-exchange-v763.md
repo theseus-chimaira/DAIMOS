@@ -10,6 +10,22 @@ full-system exchange acceptance.
 
 # v763: Variable-sized in-place process swap exchange
 
+## v820: Exhaustive host sector-order model (2026-10-31)
+
+The standalone daimos-testkit `probes/swap-exchange-order-v820.c` model
+checks 16,384 combinations of sector-aligned A and B writable offsets
+(0..7 sectors each) and saved lengths (1..16 sectors each). It models
+the existing v774 order: outgoing-only tail first, overlap descending
+when B begins later than A and ascending otherwise, incoming-only tail
+last. Both A's disk image and B's RAM image match their original data
+in every case (PASS). No production source or persistent RAM change.
+
+This is an algorithmic dependency check, not native physical I/O or
+full-system scheduler acceptance. In particular, shared workspace
+lifetime across storage callbacks, device failures, MM bounds and the
+v758 writer WAIT/EXIT deadlock remain open. The model does not justify
+enabling scheduler exchange yet.
+
 Status: source-level design/invariants, NOT implemented or native accepted.
 The v758 writer WAIT/EXIT regression remains failing.
 
