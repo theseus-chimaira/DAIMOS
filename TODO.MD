@@ -1,3 +1,27 @@
+### Feature completion priority and TTY ownership v897 (2026-11-01)
+
+- [x] Defer the KCORE 8,192-word size-reduction sweep until functional
+  work and its real-system regression gates are complete. Memory
+  footprint remains an invariant to avoid unnecessary growth, not
+  the present optimization target.
+- [x] v897: prevent `TTY_DETACH` from dropping controlling-session state
+  if the canonical SIXBIT line MM extent is pinned or has invalid owner/
+  type metadata. Reject `TTY_ATTACH` by a new session until a leftover
+  line is successfully released; preserve existing TTY output routing.
+  `proc_tty_mode_set` reuses the same checked, allocation-free helper.
+- [x] v897 native PDP-6 `procctl` tests PASS failure/retained session,
+  output-route preservation, retry after unpin, and successful handoff.
+  The pre-v897 negative control incorrectly transfers a pinned line,
+  as expected. A second native harness builds the actual C helper and
+  executes real PDP-6 `mm_free` and `mm_unpin` for pinned, wrong-owner,
+  missing-extent and successful-release cases: PASS.
+- [x] v897 production full-system PDP-6 session attach/detach/reattach
+  and independent child regression PASS. The headless test harness
+  uses the original session-state user workload and normal kernel.
+- [ ] Continue allocation-free teardown audit, persistent FILE/MM
+  provider recovery, fatal process isolation, and safe OOM admission.
+  Do not enable automatic OOM killing on a failed-provider path.
+
 ### v896: RUN startup owns allocated u-area before fallible work (2026-11-01)
 
 - [x] Move the existing u-area descriptor publication before

@@ -1,3 +1,30 @@
+## 2026-11-01 v897: TTY canonical-buffer owner gate, no size sweep
+
+With feature correctness taking priority over KCORE size reduction, the
+process teardown audit found that the native `TTY_DETACH` transaction
+ignored `mm_free` failure in `proc_tty_line_reset` and immediately
+cleared the controlling session. A later `TTY_ATTACH` could claim the
+free TTY while its previous owner's canonical SIXBIT input remained
+pinned and readable. A new checked, allocation-free helper in `proc.c`
+only reports success once the exact MM base has been removed. Native
+`TTY_DETACH` refuses to change session state on rejection; the
+previously unowned `TTY_ATTACH` path retries any retained buffer and
+refuses a new session until release succeeds. Existing route bits are
+preserved across the KCC helper call. TTY mode changes share the
+checked helper. The policy is safe for both transient MM_BUSY and
+persistent owner/type/extent inconsistencies; no forced free occurs.
+
+Native PDP-6 process-control tests PASS and a negative control against
+pre-v897 process assembly FAILS as expected. Another native test links
+the **actual extracted C reset/checked-reset functions** against the
+real PDP-6 `mm_free`/`mm_unpin`: pinned/wrong owner/missing extent all
+retain the base, and the unpinned correct owner releases it exactly
+once. The booted production PDP-6 `daimos-tty-session-state-v897.sh` also
+PASSes the full attach/detach/reattach and independent child session
+workload with headless console devices.
+Automatic OOM termination remains disabled until remaining FILE,
+TTY, MM and session lifetime gates are proved; no size sweep was run.
+
 ## 2026-11-01 v896: close RUN startup MM ownership window
 
 Source audit found that the PDP-6 `RUN` path allocated and zeroed a

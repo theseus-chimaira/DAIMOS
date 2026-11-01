@@ -1,3 +1,20 @@
+## v897: TTY canonical input ownership is an OOM teardown gate
+
+An EXIT or explicit `TTY_DETACH` could attempt to free its per-TTY
+canonical SIXBIT buffer while the MM extent was still pinned, or
+its metadata did not match the expected TTY owner. Previously explicit
+`TTY_DETACH` cleared the session unconditionally, and a new attachment
+could reuse the old line's bytes. The checked reset helper preserves
+its physical base on MM rejection. Native attach/detach now withholds
+session transfer until the old line can be released; it also preserves
+output routing across the helper call. Ordinary TTY mode switching
+uses the same check. This is a correct rejection/retry and disclosure
+barrier, not guaranteed reclamation from a permanently broken provider.
+Native control tests, real MM operation tests, and booted PDP-6
+session attach/detach/reattach with an independent child PASS.
+Automatic
+OOM process killing remains prohibited pending broader teardown proof.
+
 ## v896: RUN startup MM ownership before potential rejection
 
 The PDP-6 RUN constructor used to attach its allocated u-area to the

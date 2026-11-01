@@ -1,3 +1,24 @@
+## 2026-11-01 v897: feature-first TTY owner containment
+
+At the user's direction the KCORE shrinking effort is deferred until
+feature work and tests are complete. The next teardown audit found a
+real TTY lifetime error: `TTY_DETACH` could remove a session after
+its canonical input `mm_free` failed, and another session could
+subsequently claim that terminal without releasing the old line.
+The checked, allocation-free C helper now refuses ownership change
+while the exact line MM base persists. PDP-6 native attach/detach
+preserves output routing, original session and retryability on refusal.
+An unowned terminal can be claimed only after successfully releasing
+its leftover input. TTY mode changes share the same release contract.
+
+Native positive and old-code negative controls PASS. A separate native
+test compiles the actual C helpers and links real PDP-6 MM operations:
+BUSY/invalid owner/missing extent preserve the pointer; unpin/correct
+owner permits exact release. Full-system PDP-6 attach/detach/reattach and child session
+acceptance (`daimos-tty-session-state-v897.sh`) also PASSes. Existing fatal FILE/MM provider inconsistencies,
+allocation-free OOM termination, and several other feature gates remain
+unresolved. No forced reclamation or automatic OOM kill was introduced.
+
 ## 2026-11-01 v896: publish RUN u-area ownership before startup
 
 The unpublished PDP-6 RUN path now records its newly allocated,
