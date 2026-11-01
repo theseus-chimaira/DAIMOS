@@ -67,6 +67,12 @@ Do not substitute forced remote cleanup for this handoff.
 
 ## First implementation and results
 
+- Booted `daimos-provider-term-live-v926` uses a disposable 256K PDP-6
+  image with a real held FS lease, foreign waiter, WAIT_CHILD parent and
+  independently runnable bystander. Three deferred TERM deliveries pass,
+  lease 4,,0 is unchanged, 72 bystander sleep cycles complete and no errors
+  appear. The parent does NOT receive CHLD in this test; full owner-side
+  continuation acceptance remains open.
 - The existing event-1 bitmap position (LH 000004 in FDCTL) records deferred
   TERM after either the WAIT-class or saved executive CTX_PC guard rejects
   foreign cleanup. Recording coalesces repeated TERM requests, without

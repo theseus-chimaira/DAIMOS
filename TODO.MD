@@ -1,5 +1,11 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] Booted 256K PDP-6 `daimos-provider-term-live-v926` PASS: three
+  protected foreign TERM requests accepted, including real WAIT_CHILD and
+  held FS owner/waiter, unchanged lease 4,,0, 72 independent bystander
+  cycles, no errors and controlled HALT. The test leaves its WAIT_CHILD
+  parent blocked, so owner-side termination after CHLD wakeup is NOT yet
+  full-system accepted.
 - [x] Re-run current v925 native fatal, direct-finish and OOM handoff
   regressions: all three PASS on PDP-6. These are extracted source tests,
   not full-system CHLD wakeup-handoff injection.
