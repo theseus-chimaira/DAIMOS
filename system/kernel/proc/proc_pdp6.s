@@ -603,6 +603,15 @@ proc_finish_resume_v881:
         hrrz    11,PROC_FINALIZE_OFFSET(3) ; saved exit status, VM gone
         jrst    proc_finish_ids
 proc_finish_new_v881:
+        ; A foreign target still sleeping inside the executive owns its
+        ; private stack and may be inside a filesystem or MM operation.
+        ; Self-exit is different: it runs on and unwinds its own stack.
+        camn    10,proc_current_slot
+        jrst    proc_finish_new_self_v920
+        move    1,2(12)
+        tlne    1,PROC_WAIT_EVENT_LH
+        jrst    proc_finish_fail
+proc_finish_new_self_v920:
         move    1,(12)
         trnn    1,0400000               ; PROC_F_UAREA
         jrst    proc_finish_fail
