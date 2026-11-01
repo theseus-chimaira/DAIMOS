@@ -91,6 +91,12 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- First v929 stage-witness run: CHLD notification counter 0, owner-side
+  return-gate counter 2, and no INIT completion. This bounds the observed
+  failure before confirmed CHLD notification, but the descendant EXIT has
+  not been established. The test now preserves AC2 across its injected
+  owner witness and writes guest marker `Z` after the descendant's sleep
+  returns. This corrected fixture has not yet been rerun.
 - The v928 no-stalled-provider control likewise reaches the three deferred
   TERM guards (one WAIT_CHILD) but does not reach INIT's completion marker.
   No FS gateway owner/waiter is active and the lease is zero. This rules out

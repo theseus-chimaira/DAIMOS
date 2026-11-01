@@ -1,5 +1,13 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [ ] v929 stage diagnostic (initial run FAIL): real guest observed owner
+  return-gate entry twice, but no `proc_notify_parent(5)` witness. The
+  simulator reached its terminal HALT without INIT completion, with no
+  provider hold and no independent sleep-witness activity. This does not
+  prove a notification defect: first establish whether the descendant
+  returned from its timed sleep and executed EXIT. A new guest `Z` marker
+  was added to distinguish timer wakeup from EXIT/CHLD failure; rerun the
+  corrected fixture before further kernel changes.
 - [ ] v928 control: the booted CHLD/TERM test also fails with holder and
   waiter kept entirely outside the filesystem provider gateway. All three
   deferred TERM requests were observed, including one WAIT_CHILD; there was
