@@ -74,15 +74,23 @@ mach_syscall:
 ; private executive stack and file_table are installed; dispatch to the
 ; existing allocation-free private fatal-close/retry path on pending TERM.
 proc_deferred_term_check_v926:
+        push 17,2
+        push 17,3
         skipn 2,file_table
-        popj 17,
+        jrst proc_deferred_term_return_v926
         move 3,-2(2)
         tlnn 3,004
-        popj 17,
+        jrst proc_deferred_term_return_v926
         movsi 3,004
         andcam 3,-2(2)
+        pop 17,3
+        pop 17,2
         movei 1,0400001
         jrst proc_fatal_close_current_v879
+proc_deferred_term_return_v926:
+        pop 17,3
+        pop 17,2
+        popj 17,
 
 
         .globl mach_invalid_uuo_word
