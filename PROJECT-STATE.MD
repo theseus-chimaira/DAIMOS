@@ -1,3 +1,16 @@
+## 2026-11-01 v899: PIPE last-reference physical MM recovery PASS
+
+Feature-first cleanup testing now accepts v870's anonymous PIPE
+last-reference rollback in a booted 256K PDP-6 image. An isolated
+kernel hook pins the exact PIPE object; one real `mm_free` returns
+MM_ERR_BUSY and the original FILE descriptor remains usable. A
+second close unpins and frees the resource; a separate new PIPE
+opens and closes successfully. Counters: 3 tracked final-close
+calls, 1 pin, 1 unpin, 1 busy, 0 errors, normal HALT. The native
+v870 test passes too. No DAIMOS kernel change or size sweep was
+required. Named FIFO, DPY and permanent-provider teardown and the
+allocation-free OOM termination gate remain unfinished.
+
 ## 2026-11-01 v898: real PDP-6 TTY pinned-release test PASS
 
 The production v897 canonical line owner guard is additionally

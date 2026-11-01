@@ -1,3 +1,15 @@
+## v899: booted PIPE final-close exact-MM pin/retry acceptance
+
+The v870 PIPE close implementation avoids publishing zero refs
+until `mm_free` has accepted final physical release. On a real
+256K PDP-6, a disposable kernel pins the exact last PIPE object
+before production `mm_free`; the failed close leaves the read
+FILE descriptor and PIPE reader count valid. Following unpin,
+the same file closes exactly once. A new PIPE also works. Full
+guest: 1 pin, 1 MM_ERR_BUSY, 1 unpin, 0 errors, normal HALT;
+native v870 remains PASS. This verifies transient MM refusal,
+not permanent provider repair or an OOM killer.
+
 ## v898: booted TTY MM pin/retry owner lifetime acceptance
 
 The v897 checked TTY release no longer relies only on a native unit

@@ -1,3 +1,21 @@
+### v899: real PIPE final-close MM_BUSY recovery (2026-11-01)
+
+- [x] Native v870 final PIPE close retry remains PASS.
+- [x] Full-system 256K PDP-6 acceptance with actual MM pin,
+  `mm_free` MM_ERR_BUSY and `mm_unpin` before retry PASS. The
+  failed final close retains the original read FILE and PIPE
+  reference, which can still report EOF. Later close releases
+  the exact extent, and a new PIPE can be created/closed.
+  Isolated guest counters: target 19687 (decimal), final-close
+  calls 3 (including reuse), pins 1, unpins 1, busy 1, errors 0.
+  The test kernel alone contains injection/counters, and the
+  production KCORE is unchanged. No shrinking work attempted.
+- [ ] Still open: named FIFO lifetime under real MM refusal, DPY
+  raw-list cleanup, session-HUP partial commit, persistent FILE/MM
+  provider refusal, and allocation-free automatic OOM retirement.
+  An indefinitely pinned or inconsistent provider cannot be
+  forcibly discarded.
+
 ### v898: booted PDP-6 real TTY MM_BUSY release acceptance (2026-11-01)
 
 - [x] Production v897 control path accepted with actual physical

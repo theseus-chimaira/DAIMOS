@@ -1,3 +1,23 @@
+## 2026-11-01 v899: real PIPE final close retry in full PDP-6 guest
+
+The v870 allocation-free PIPE last-reference path now passes a
+booted 256K PDP-6 real-MM fault-injection acceptance. A copied
+kernel pins the exact anonymous PIPE physical object just before
+its regular last-reference `mm_free`, which returns the genuine
+MM_ERR_BUSY -5. The failed CLOSE leaves the read FILE descriptor
+and original PIPE reader count intact; a normal word-read still
+reports EOF because the writer closed earlier. The next CLOSE
+unpins that extent, then the original MM release succeeds and
+clears the descriptor. Repeated close is refused, and a fresh
+independent PIPE opens/closes normally with stable FILE counts.
+Guest SIMH counters: tracked physical base 19687 decimal, three
+last-close calls including the new PIPE's possible base reuse,
+1 pin, 1 unpin, 1 MM_BUSY, zero errors, normal HALT. The separate
+native v870 final-PIPE test also passes. All hooks are test-only;
+there is no production change, resident state, or size optimization.
+This does not establish safe forced cleanup of permanently refusing
+FILE/MM providers or authorize automatic OOM killing.
+
 ## 2026-11-01 v898: full-system real pinned TTY detach rejection
 
 The v897 ownership guard now passes a second, stronger acceptance test.
