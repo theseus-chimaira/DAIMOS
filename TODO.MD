@@ -5,8 +5,10 @@
 - [x] Native PDP-6 v920 PASS: no VM/u-area release under blocked event;
   normal fatal lifecycle still succeeds when wait state clears.
 - [x] Native v883, v918 OOM/fatal and v868 regressions PASS. No new RAM.
-- [ ] Complete booted v919 compatibility regression; prove all OOM
-  termination helpers allocation-free before enabling any killer.
+- [x] Booted v919 compatibility on v920 source PASS: two fatal refusals,
+  stable lease, 72 bystander cycles, zero errors, controlled HALT.
+- [ ] Prove all OOM termination helpers allocation-free before enabling
+  any killer.
   Recovery of permanently stalled providers remains open P0.
 
 ### v919: booted remote fatal refusal for private FS waits (2026-11-01)

@@ -7,6 +7,14 @@ resource cleanup. A self-exiting process remains allowed to unwind its
 own stack normally. This adds nine assembly lines with no new BSS,
 per-process state, syscall or module ABI changes.
 
+Post-v920 booted PDP-6 compatibility acceptance: the full 256K v919
+remote-fatal provider test PASSes against v920. One suspended lease
+owner, one foreign waiter, exactly two refused fatal deliveries,
+stable lease 4,,0, 72 runnable bystander sleep cycles, zero errors
+and controlled HALT. This confirms no scheduler/provider/fatal regression
+from the direct finalizer guard; it does not inject a direct
+proc_finish_slot request from another guest process.
+
 Native PDP-6 v920 verifies that a direct attempt does not release VM or
 u-area while the foreign private executive continuation is live, and
 that normal fatal teardown remains functional after the event wait
