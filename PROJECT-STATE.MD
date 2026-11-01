@@ -1,3 +1,15 @@
+## 2026-11-01 v905: prevent duplicate committed session HUP
+
+Fixed retry following a session leader's partial member-HUP success:
+an already-finalized fatal child may retain its u-area due to MM_BUSY,
+so its descriptor stays TRANSITION until background cleanup. A second
+HUP would be rejected and block the still-live controlling TTY.
+The scanner now recognizes only TRANSITION+VM_NONE+FINALIZE as a
+committed event and skips it during retry. Native PDP-6 v905 tests
+and original v875 PASS, old-order negative FAILS as expected.
+Other live-member failure handling remains conservative. Full-system
+partial-fault and indefinite-provider acceptance remain open.
+
 ## 2026-11-01 v904: DPY STOP publishes no stale PI7 ownership
 
 P0 DPY STOP now disables the Type-340 controller/PI7 before

@@ -1,3 +1,16 @@
+## 2026-11-01 v905: prevent duplicate committed session HUP
+
+During a session leader retry, a prior child HUP may have successfully
+terminated the child but been unable to release its u-area MM extent.
+If a later member fails HUP, reissuing HUP to that transitional child
+would be rejected by `proc_event_apply` and permanently block TTY
+teardown. The session scanner now skips only an actual completed
+TRANSITION+VM_NONE+FINALIZE owner, not an arbitrary transition.
+Native PDP-6 v905 positive/negative control verifies retry, member
+call counts, retained TTY, final commit and marker/VM guards; v875
+retains its original acceptance. Permanent-provider and complete
+full-system partial-fault testing remain open.
+
 ## 2026-11-01 v904: DPY STOP publishes no stale PI7 ownership
 
 P0 DPY STOP now issues `CONO 0130,000100` (INIT/PIA disabled)

@@ -1,3 +1,19 @@
+### v905: P0 partial session-HUP retry (2026-11-01)
+
+- [x] During session-leader teardown, skip an already terminal member
+  only if its descriptor is TRANSITION, VM is NONE, and the original
+  u-area contains PROC_FINALIZE_MARK_LH. This is the precise committed
+  fatal-event/deferred-MM owner; `proc_event_apply` correctly rejects a
+  second HUP, so retry must not try it again after another member fails.
+- [x] Native PDP-6 partial HUP regression v905 PASS: first child commits
+  with deferred u-area; second member fails, TTY remains; retry skips the
+  committed child, HUPs only the failed member, then detaches. Cases with
+  non-NONE VM or absent finalize mark cannot be skipped. Pre-v905 negative
+  control fails as expected (guest failure code 010). Historical v875 PASS.
+- [ ] Full-system HUP partial-fault injection and indefinitely refusing
+  FILE/MM providers remain open; ordinary session integration is separate.
+  Do not enable automatic OOM termination before ownership is safe.
+
 ### v904: P0 DPY teardown quiesce-before-unpublish (2026-11-01)
 
 - [x] STOP disables the Type-340 controller and PI7 before removing the
