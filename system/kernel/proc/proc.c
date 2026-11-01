@@ -431,7 +431,11 @@ proc_exit_finish(int status)
         slot = (unsigned int)proc_current_slot;
         proc_current_slot = 0UL;
         proc_current_ptr = 0;
+#ifdef PROC_FINISH_SLOT_PDP6_ASM
+        if (proc_finish_slot_owner_v932(slot, (unsigned int)status) != 0) {
+#else
         if (proc_finish_slot(slot, (unsigned int)status) != 0) {
+#endif
                 p = &proc_table[slot];
                 if (PROC_TRANSITION(p) && PROC_HAS_UAREA(p) &&
                     p->vm_state == ~(kword_t)0 &&

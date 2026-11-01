@@ -91,6 +91,15 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v932 fixes the demonstrated owner-vs-foreign classification error:
+  `proc_exit_finish` must clear `proc_current_slot` before idle-stack
+  teardown, but the assembler finalizer previously compared the zeroed
+  current slot with the owner and enforced foreign CTX_PC restrictions.
+  A dedicated owner entry identifies self-EXIT without resident state;
+  foreign calls retain all guards. Booted stage witnesses now observe
+  descendant `proc_finish_slot` success and CHLD notification. The
+  subsequent INIT status assertion fails (`!A`) and needs examination;
+  this is not full end-to-end acceptance.
 - Booted v931 confirmed the precise first failure *function*: slot 6
   reaches `proc_finish_slot`, which branches once to `proc_finish_fail`;
   no CHLD notification is published. A possible cause requiring direct

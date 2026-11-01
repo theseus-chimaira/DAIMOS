@@ -1,5 +1,11 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [ ] v932 owner finalization fix restores child EXIT completion in booted
+  256K PDP-6 test: slot-6 finalizer enters once, failure count zero,
+  `proc_notify_parent(5)` count one, and INIT reaches status check.
+  The expected TERM status mismatches (`!A`), so end-to-end delivery
+  remains open. Capture actual parent status and owner-side EXIT status,
+  then fix/verify status propagation. Never weaken foreign finish guard.
 - [ ] v931 booted finalization witness: descendant slot 6 reached
   `proc_exit_current` once and `proc_finish_slot` once, then took
   `proc_finish_fail` once; `proc_notify_parent(5)` remains zero. No

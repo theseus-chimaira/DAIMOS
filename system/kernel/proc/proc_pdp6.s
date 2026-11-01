@@ -566,6 +566,12 @@ proc_adopt_done:
  * AC10..AC16 across helper calls instead of KCC's seven-word local frame.
  */
 proc_finish_slot:
+        setz    5,                      ; foreign finish: enforce context guard
+        jrst    proc_finish_common_v932
+        .globl  proc_finish_slot_owner_v932
+proc_finish_slot_owner_v932:
+        movei   5,1                    ; owner EXIT after slot zeroing
+proc_finish_common_v932:
         add     17,kconst_7_7
         movei   0,-6(17)
         hrli    0,10
@@ -606,6 +612,7 @@ proc_finish_new_v881:
         ; Every private wait class (EVENT, CHILD or INTR) preserves a live
         ; executive stack. A foreign finalizer must not reclaim it.
         ; Self-exit is different: it runs on and unwinds its own stack.
+        jumpn   5,proc_finish_new_self_v920
         camn    10,proc_current_slot
         jrst    proc_finish_new_self_v920
         move    1,2(12)

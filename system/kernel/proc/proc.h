@@ -217,6 +217,8 @@ int proc_slot_claim(unsigned int parent_slot);
 int proc_exit_finish(int status);
 /** Release one process slot and publish FREE or ZOMB terminal state. */
 int proc_finish_slot(unsigned int slot, unsigned int status);
+/* Owner-only EXIT after proc_current_slot has been cleared for idle teardown. */
+int proc_finish_slot_owner_v932(unsigned int slot, unsigned int status);
 /** Release one process's stable kernel u-area. */
 int proc_uarea_release(unsigned int slot, struct proc *p);
 /** Release TTY ownership when the final process in a session exits. */
