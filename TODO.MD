@@ -1,5 +1,10 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [ ] v930 booted control: descendant reaches `proc_exit_current` exactly
+  once (slot 6); `proc_notify_parent(5)` remains unobserved, owner-return
+  gate count 2, and INIT does not complete. No held provider. Instrument
+  `proc_exit_finish`, `proc_finish_slot` and their failure/commit exits to
+  locate the first blocked or failed cleanup step. No kernel fix yet.
 - [ ] v929 staged no-provider diagnostic: instrumented owner-return helper
   was entered twice, but `proc_notify_parent(5)` was never observed (CHLD
   counter zero). With shortened test-only sleeps the descendant printed

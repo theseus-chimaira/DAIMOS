@@ -91,6 +91,11 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- Booted v930 adds a descendant-slot-6 `proc_exit_current` witness. Its
+  count is 1 while `proc_notify_parent(5)` remains 0, with the owner-return
+  witness at 2. Thus the guest reaches actual EXIT but the notification
+  boundary is still not observed; inspect finish-stage outcomes before
+  assigning blame to CHLD handling. No FS lease is artificially held.
 - v929 source-level stage instrumentation distinguishes parent return-gate
   entries from actual CHLD delivery. Its accelerated no-provider test printed
   the descendant's pre-EXIT `Z` marker but sampled zero `proc_notify_parent(5)`
