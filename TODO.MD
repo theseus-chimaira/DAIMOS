@@ -1,3 +1,18 @@
+### v914: permanent invalid FILE-provider refusal containment (2026-11-01)
+
+- [x] Booted 256K PDP-6; real APR fault causes permanent VFS_SYNC
+  error -4 on the victim's FD 0, not the previously tested -5.
+- [x] 11 rejected close passes and owner-stack sleeps with a 512-tick
+  retry cap; FILE ownership, error-class-4 witness and process identity
+  persist while an independent user runs. No premature close or EXIT;
+  normal controlled test HALT. No production code or RAM change.
+- [x] Native v888 MM error classification, v909 fatal MM stage and
+  v885 private FILE backoff regressions PASS.
+- [ ] This does not repair corrupted/missing MM extents or ensure
+  eventual resource reclaim. Provider-lock refusal, fatal teardown
+  completeness and allocation-free OOM killing remain P0. OOM stays
+  OFF; TSFS v1.2 and KCORE final shrink remain deferred.
+
 ### v913: live PDP-6 double-MM release refusal acceptance (2026-11-01)
 
 - [x] Booted 256K PDP-6 with Type-340 PI6 refresh/PI7 completion and

@@ -1,3 +1,27 @@
+## 2026-11-01 v914: persistent invalid FILE-provider errors remain owned
+
+The v891 full-system 256K PDP-6 APR-fault continuation already proved
+safe retention under permanent VFS provider error -5. The v914 testkit
+extends that exact real hardware-fault and bystander workload to a
+permanently invalid provider result -4, without changing production
+code. A copied kernel returns -4 only from the victim's FD 0 vfs_sync.
+The first build deliberately caught a stale v891 guest assertion
+(expect class 5); the corrected v914 guest expects class 4 and PASSes.
+Measured: one real APR fault, 11 provider calls/rejections, 11 FILE
+cleanup passes, 11 owner-stack sleeps, 11 retained-FD checks, zero
+premature closes, witness clears, victim exits or test errors. The
+retry cap reaches 01000 octal (512 decimal) ticks. GETTEARDOWN reports
+FILE stage and the actual negative provider error, while an independent
+user remains runnable. Controlled guest HALT does not reap the owner.
+Native v888 MM_BUSY/INVAL classification, v909 fatal stage/finalizer
+and v885 fatal FILE retry/backoff regressions PASS.
+
+The test proves containment of a permanently invalid FILE provider,
+not recovery of corrupt or missing MM extents or bounded reclamation.
+Automatic OOM termination remains disabled. Fatal provider-lock and
+allocation-free victim retirement acceptance are still P0. No new
+kernel instructions, RAM, syscall ABI or module dependency.
+
 ## 2026-11-01 v913: booted Type-340 double-MM refusal accepted
 
 Full-system 256K PDP-6 with a live raw Type-340 program exercises the
