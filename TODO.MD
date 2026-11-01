@@ -1,3 +1,18 @@
+### v904: P0 DPY teardown quiesce-before-unpublish (2026-11-01)
+
+- [x] STOP disables the Type-340 controller and PI7 before removing the
+  active raw-list base. This closes an interrupt window where PI7 could
+  treat the still-running raw-list completion as a retained-text frame.
+  No new instructions or permanent allocation; instruction order only.
+- [x] v904 native PDP-6 checks actual MM pin/unpin/free: pinned extent
+  refuses CLOSE without losing FILE or DPY ownership; invalid MM owner
+  also refuses; correct owner then frees exact extent, and empty CLOSE
+  succeeds. Pre-v904 STOP-order negative control rejects the old order.
+  Existing v709, v871 and v874 tests PASS.
+- [ ] Full-system DPY STOP under a live PI7 replay and permanent MM provider
+  refusal remain separate P0 acceptance. Continue session/HUP partial
+  failure and safe automatic OOM teardown; do not force-release MM.
+
 ### v903: TSFS scheduled strictly after KCORE (2026-11-01)
 
 - [x] Remove TSFS v1.2 format/metadata implementation and its acceptance

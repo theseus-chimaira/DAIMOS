@@ -1,3 +1,15 @@
+## 2026-11-01 v904: DPY STOP publishes no stale PI7 ownership
+
+P0 DPY STOP now issues `CONO 0130,000100` (INIT/PIA disabled)
+before clearing the published `dpy_list_base`. Previously an
+intervening PI7 completion could observe an absent raw list while
+hardware still owned the span. Reordering existing instructions does
+not add code or permanent state. Native PDP-6 actual-MM v904 verifies
+pinned and wrong-owner CLOSE rejection, retained FILE/DPY identity,
+correct-owner retry/free and absent-list close. The isolated old-order
+contract is rejected; v709/v871/v874 regressions PASS. A live PI7
+full-system replay fault remains unverified.
+
 ## 2026-11-01 v903: TSFS deferred until after KCORE
 
 The KCORE feature and size backlog excludes TSFS v1.2 sharded-metadata

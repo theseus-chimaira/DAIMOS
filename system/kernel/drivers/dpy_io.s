@@ -384,8 +384,11 @@ dpy_list_fail:
 
 dpy_list_stop:
         move 010,dpy_list_base        ; preserve base across mm_free
-        setzm dpy_list_base            ; PI7 must stop recycling first
+        ; Quiesce hardware before removing the published raw-list owner.
+        ; Otherwise PI7 can run between setzm and CONO, mistake an active
+        ; raw-list completion for a retained-text frame, and rearm the DPY.
         cono 0130,000100               ; INIT, PIA disabled
+        setzm dpy_list_base
         setzm dpy_refresh_iowd
         setzm dpy_pending
         cono 0130,000007

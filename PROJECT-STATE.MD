@@ -1,3 +1,14 @@
+## 2026-11-01 v904: DPY STOP publishes no stale PI7 ownership
+
+P0 DPY STOP now disables the Type-340 controller/PI7 before
+unpublishing its raw-list pointer, removing a PI7 interrupt window.
+No code size or permanent memory increase. The v904 native PDP-6 test
+uses actual `mm_free` and `mm_unpin`: pinned MM_BUSY and wrong-owner
+invalid failures preserve the descriptor and list; correction permits
+exact free; absent-list close succeeds. Pre-v904 ordering negative
+control rejects old source; v709/v871/v874 PASS. Real live-PI7
+full-system fault and permanent-provider failure remain open.
+
 ## 2026-11-01 v903: TSFS deferred until after KCORE
 
 Decision v903: TSFS v1.2 is not a KCORE feature, optimization, or
