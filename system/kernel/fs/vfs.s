@@ -717,6 +717,9 @@ fs_block_workspace:
         .text
 
 ; Character I/O is stream/device-only.  Regular files are word streams.
+; A PIPE is also a stream: READCHAR/WRITECHAR transfer one full native
+; word (the caller's character value), using the same queue and wakeups
+; as READ_WORDS/WRITE_WORDS. No byte packing or extra RAM is needed.
         .globl  mfsproc_read_words
         .globl  mfsdev_readchar
 
@@ -724,6 +727,12 @@ fs_block_workspace:
         .globl  vfs_readchar
 vfs_readchar:
         jumpe   3,kret_neg1
+        hlrz    4,1
+        caie    4,070001               ; native PIPE stream vnode
+        jrst    vfs_readchar_device_v901
+        movei   4,1                    ; one complete 36-bit word
+        jrst    pipe_read_words
+vfs_readchar_device_v901:
         ldb     4,[POINT 6,1,5]
         cain    4,2
         jrst    mfsdev_readchar
@@ -732,6 +741,18 @@ vfs_readchar:
 ; int vfs_writechar(vnode_t node, kword_t off, unsigned int ch)
         .globl  vfs_writechar
 vfs_writechar:
+        hlrz    4,1
+        caie    4,070001               ; native PIPE stream vnode
+        jrst    vfs_writechar_device_v901
+        push    17,3                   ; one-word character source
+        movei   3,(17)
+        movei   4,1
+        pushj   17,pipe_write_words
+        sub     17,kconst_1_1
+        caie    1,1                    ; WRITECHAR returns zero, not count
+        jrst    kret_neg1
+        jrst    kret_zero
+vfs_writechar_device_v901:
         ldb     4,[POINT 6,1,5]
         caie    4,2
         jrst    kret_neg1
