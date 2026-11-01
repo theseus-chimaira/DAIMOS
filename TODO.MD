@@ -1,3 +1,19 @@
+### v907: full-system HUP partial failure with physical MM (2026-11-01)
+
+- [x] Disposable copied-kernel hooks pin the first real session child's
+  u-area before normal fatal HUP, reject a second child's first HUP,
+  then retry the leader's fatal HUP through the real PROCCTL syscall.
+  The first child's VM_NONE+FINALIZE ownership remains physically pinned
+  during the second scan and is skipped only by production v905 logic.
+- [x] Booted 256K PDP-6 PASS: first child PID 3, leader PID 2, exact
+  pinned u-area 20020 decimal; 1 MM pin/unpin, 1 injected HUP rejection,
+  1 second-member delivery, 0 duplicate first-member HUPs, 1 observed
+  deferred finalization, 0 errors. Parent WAIT and TTY reattach pass;
+  normal HALT. No production kernel change or KCORE size work.
+- [ ] A persistently rejecting FILE/MM provider still must never be
+  force-released. Continue DPY live interrupt/MM-fault testing and the
+  allocation-free OOM safe-victim gate; OOM killing stays disabled.
+
 ### v906: reconcile older TSFS entries after KCORE deferral (2026-11-01)
 
 - [x] Supersede the remaining unchecked cross-provider TSFS mount and
@@ -23,9 +39,10 @@
 - [x] Existing full-system `daimos-session-teardown-v1.sh` on the v905
   kernel PASS: booted PDP-6 session-leader exit, HUP of running/stopped
   children, controlling-TTY detach and later reattach.
-- [ ] Full-system *injected* HUP partial-fault and indefinitely refusing
-  FILE/MM providers remain open. Do not enable automatic OOM termination
-  before failure-path ownership is safe.
+- [x] Full-system injected HUP partial-fault/actual-MM rollback PASS
+  as v907, including one pinned terminal victim and later TTY handoff.
+- [ ] Indefinitely refusing FILE/MM providers still require safe ownership
+  handling; automatic OOM termination remains disabled.
 
 ### v904: P0 DPY teardown quiesce-before-unpublish (2026-11-01)
 

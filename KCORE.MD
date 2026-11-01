@@ -1,3 +1,18 @@
+## 2026-11-01 v907: physical MM session-HUP retry accepted
+
+A booted 256K PDP-6 now accepts the v905 partial-session-HUP recovery
+under a real `mm_pin`/`mm_unpin` of the first victim's physical u-area.
+The first child's HUP commits but MM_BUSY retains its stable owner;
+the second child's first HUP is rejected by a disposable test hook.
+A second leader HUP through the actual PROCCTL syscall skips the
+TRANSITION+VM_NONE+FINALIZE child, delivers only the outstanding HUP,
+then permits MM unpin, TTY detach, parent WAIT and TTY reattachment.
+Guest counters: leader 2, first child 3, u-area base 20020 decimal,
+one physical pin/unpin, one rejected HUP, one later delivered HUP,
+zero repeats, one pending-owner verification, zero errors and normal
+HALT. Fault injection is confined to daimos-testkit's copied kernel.
+No production kernel source or permanent-state changes in v907.
+
 ## 2026-11-01 v906: stale TSFS-specific KCORE backlog entries retired
 
 Historical V13/V15/V22 cross-provider mount and TSFS metadata/format

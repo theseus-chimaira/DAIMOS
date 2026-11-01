@@ -1,3 +1,18 @@
+## 2026-11-01 v907: physical MM session-HUP retry accepted
+
+Full-system 256K PDP-6 session/HUP failure injection now passes
+against production v905. A test-only kernel copy pins the first
+child's actual u-area, allows fatal HUP to commit with deferred MM
+release, refuses the second member's first HUP, and exercises the
+normal parent PROCCTL retry. It verifies exactly one HUP for the
+pending child, one successful second-member HUP, retained TTY until
+commit, physical unpin, eventual WAIT and normal TTY reattachment.
+Guest counters: first child 3, leader 2, base 20020 decimal, pins 1,
+unpins 1, refusals 1, second HUP 1, duplicates 0, pending 1,
+errors 0, normal HALT. Testkit v907 contains all instrumentation;
+no KCORE production code or size change. Permanent FILE/MM failures
+and safe OOM victim retirement remain unresolved.
+
 ## 2026-11-01 v906: TSFS backlog legacy items superseded; session smoke PASS
 
 The remaining V13/V15/V22 unchecked TSFS provider/format experiments
