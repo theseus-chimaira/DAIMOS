@@ -1,3 +1,13 @@
+## 2026-11-01 v902: original anonymous PIPE integration PASS
+
+The v901 VFS character-stream fix passes the unchanged historical
+`daimos-pipe-anon-v1.c` full-system workload under headless PDP-6.
+This covers FIFO-style word and character use, pipe creation,
+EOF/EPIPE, dup, RUN inheritance and sleeping peer wakeup. It provides
+an independent broader check beyond the native and focused v901
+regressions. No production change or size work in v902. Outstanding
+OOM/FILE/MM/DPY/session teardown gates remain open.
+
 ## 2026-11-01 v901: native PIPE character syscalls PASS
 
 Restored missing PIPE vnode dispatch in resident VFS READCHAR and

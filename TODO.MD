@@ -1,3 +1,15 @@
+### v902: historical anonymous PIPE regression rerun (2026-11-01)
+
+- [x] The full-system historical `daimos-pipe-anon-v1.c` user workload
+  now passes on the v901 kernel with only headless simulator settings
+  changed. Verified PIPE create, character I/O, EOF, EPIPE, duplicated
+  references, `RUN` descriptor inheritance and blocking wakeups.
+  The versioned v902 harness preserves the legacy test program.
+- [ ] Keep feature completion and allocation-free teardown as the
+  priority. OOM killing remains disabled until permanent FILE/MM
+  provider faults, DPY cleanup and session-HUP failure graphs have
+  safe ownership and recovery semantics.
+
 ### v901: PIPE character-stream feature restored (2026-11-01)
 
 - [x] Native `READCHAR` and `WRITECHAR` on PIPE and named FIFO

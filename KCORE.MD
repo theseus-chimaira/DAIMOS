@@ -1,3 +1,15 @@
+## 2026-11-01 v902: existing full-system PIPE workload passes
+
+After v901 restored native PIPE character I/O, the original
+`daimos-pipe-anon-v1.c` workload was re-run unmodified in a booted
+256K PDP-6 with headless simulator console settings. It verifies
+PIPE creation, READCHAR/WRITECHAR, EOF, EPIPE, duplicated references,
+`RUN` inheritance and blocked-peer wakeup. All phases and normal
+HALT PASS. The versioned v902 harness is in daimos-testkit.
+There are no production code or permanent-data changes, and no
+KCORE size optimization was attempted. Remaining FILE/MM/DPY and
+safe OOM termination feature gates are tracked in TODO.MD.
+
 ## 2026-11-01 v901: PIPE character I/O uses existing word FIFO
 
 The v899 exploratory full-system test initially tried `READCHAR`
