@@ -1,5 +1,13 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [ ] v927 diagnostic: full 256K guest with a genuine descendant EXIT/CHLD
+  after TERM is deferred to WAIT_CHILD has NOT completed. With the
+  deliberately held FS provider, the guest stopped before INIT's final
+  marker (`final_lease` sample zero; 88 bystander cycles). The recorded
+  deferred TERM guards still saw three requests and one WAIT_CHILD.
+  Separate the provider-stall dependency from the CHLD/TERM handoff,
+  instrument exact parent/child teardown stages, and retain failure media
+  and full SIMH transcript before treating this as a kernel defect.
 - [x] Booted 256K PDP-6 `daimos-provider-term-live-v926` PASS: three
   protected foreign TERM requests accepted, including real WAIT_CHILD and
   held FS owner/waiter, unchanged lease 4,,0, 72 independent bystander

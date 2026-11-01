@@ -91,6 +91,13 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- An initial booted CHLD/TERM diagnostic (`daimos-child-term-handoff-v927`)
+  deliberately retains the blocked FS owner and waiter while arranging an
+  actual child EXIT. It does not pass: INIT's final completion hook is not
+  reached (`final_lease` zero), despite three deferred TERM guards and 88
+  independent bystander cycles. A separate non-stalled-provider control and
+  stage-specific witnesses are necessary to distinguish a teardown wait from
+  a regression in deferred TERM. This is not release acceptance.
 - Native `daimos-deferred-owner-return-v926.sh` now executes the production
   helper and the existing private fatal-close/retry path. PASS: TERM is
   consumed once, two FILE refusals cause two sleeps, then successful close
