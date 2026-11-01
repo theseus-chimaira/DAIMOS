@@ -1,3 +1,16 @@
+### v919: booted remote fatal refusal for private FS waits (2026-11-01)
+
+- [x] Full 256K PDP-6 guest: real owner holds FS gateway lease,
+  independent waiter sleeps, and third process remains runnable.
+- [x] INIT sends TERM to holder and waiter; both reach the actual
+  non-current fatal guard and return refusal. Two guard rejections,
+  lease 4,,0 preserved, 72 independent sleep cycles, zero errors,
+  controlled HALT. Fault hooks only in disposable testkit kernel.
+- [x] No production source or RAM change; native v918 protection remains
+  accepted. Documentation synchronized with pdp10-doc.
+- [ ] Permanently stalled provider owner reclamation and the full
+  allocation-free OOM termination proof remain P0. OOM killing OFF.
+
 ### v918: protect private kernel-event stacks from remote teardown (2026-11-01)
 
 - [x] Refuse non-current fatal close/VM release when victim has an active

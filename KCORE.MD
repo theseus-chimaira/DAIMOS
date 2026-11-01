@@ -1,3 +1,22 @@
+## 2026-11-01 v919: booted remote fatal protection for provider waits
+
+A full 256K PDP-6 guest now verifies the v918 private kernel-event
+stack lifetime guard with real TERM delivery. One process owns a live
+serialized filesystem gateway lease while suspended in proc_wait_event,
+and a second process sleeps on the occupied provider lock. INIT sends
+TERM to both. The fatal-event path refuses both before remote FILE
+close, VM destruction, or private-stack release. Disposable test-only
+instrumentation records exactly two actual guard rejections.
+
+The filesystem lease remains encoded 4,,0 at acquisition, contention,
+and final controlled HALT. The independent third job runs 72 sleep
+cycles, and the guest reports zero errors. The existing v917 scheduler
+regression and v918 native safeguards remain accepted. v919 adds no
+production KCORE instructions, resident RAM, ABI, or per-process state.
+Recovery or eventual reclamation of genuinely nonreturning provider
+resources remains an open P0 gate, as does allocation-free OOM killing.
+Automatic OOM victim termination stays OFF.
+
 ## 2026-11-01 v918: preserve private kernel-event continuations
 
 A process in PROC_WAIT_EVENT_LH sleep may still own an active private
