@@ -1,3 +1,20 @@
+## 2026-11-01 v920: protect direct noncurrent process finalization
+
+The direct `proc_finish_slot` entry can destroy a target VM without
+passing through the v918 fatal-event gate. It now refuses a foreign
+target with `PROC_WAIT_EVENT_LH` set before transition marking or
+resource cleanup. A self-exiting process remains allowed to unwind its
+own stack normally. This adds nine assembly lines with no new BSS,
+per-process state, syscall or module ABI changes.
+
+Native PDP-6 v920 verifies that a direct attempt does not release VM or
+u-area while the foreign private executive continuation is live, and
+that normal fatal teardown remains functional after the event wait
+clears. Native v883, v918 OOM/fatal, and v868 regressions pass. Full
+booted v919 provider/fatal compatibility is being checked separately.
+Reclaiming a genuinely unresponsive provider remains open; automatic
+OOM killing stays disabled.
+
 ## 2026-11-01 v919: booted remote fatal protection for provider waits
 
 A full 256K PDP-6 guest now verifies the v918 private kernel-event

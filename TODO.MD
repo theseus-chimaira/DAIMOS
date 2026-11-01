@@ -1,3 +1,14 @@
+### v920: protect direct noncurrent process finalization (2026-11-01)
+
+- [x] Reject `proc_finish_slot` against a foreign target with suspended
+  private kernel event continuation, before changing ownership.
+- [x] Native PDP-6 v920 PASS: no VM/u-area release under blocked event;
+  normal fatal lifecycle still succeeds when wait state clears.
+- [x] Native v883, v918 OOM/fatal and v868 regressions PASS. No new RAM.
+- [ ] Complete booted v919 compatibility regression; prove all OOM
+  termination helpers allocation-free before enabling any killer.
+  Recovery of permanently stalled providers remains open P0.
+
 ### v919: booted remote fatal refusal for private FS waits (2026-11-01)
 
 - [x] Full 256K PDP-6 guest: real owner holds FS gateway lease,
