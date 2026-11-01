@@ -1,3 +1,16 @@
+### v921: OOM teardown safety inventory (2026-11-01)
+
+- [x] Audit actual PDP-6 FILE, session-HUP, VM, backing and u-area
+  teardown call edges; add executable testkit static safety gate.
+- [x] Check resident selector is not wired into MM pressure killing and
+  v918/v920 suspended-stack guards remain in the source. Audit PASS.
+- [ ] Establish bounded behavior and failure-atomic ownership of FILE
+  sync, HUP fanout and VM/backing release under exhausted RAM; prove
+  complete termination chain allocation-free before enabling a killer.
+- [ ] Recover or safely quarantine permanently nonreturning provider
+  requests without forced release. No production RAM/ABI change in v921;
+  OOM killing stays OFF.
+
 ### v920: protect direct noncurrent process finalization (2026-11-01)
 
 - [x] Reject `proc_finish_slot` against a foreign target with suspended

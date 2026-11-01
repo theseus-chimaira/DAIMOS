@@ -1,3 +1,22 @@
+## 2026-11-01 v921: OOM teardown safety-path inventory
+
+The resident OOM victim selector remains read-only; automatic OOM
+termination is disabled. A new executable testkit static audit checks
+the current PDP-6 fatal/finish teardown edges and private-wait guards.
+It finds FILE close -> VFS_SYNC (potentially sleeping or failing),
+process finish -> session HUP (partial delivery possible), and VM
+release -> MEMFS XIP provider, MM free and backing detach. The u-area
+is freed through the resident MM table. Individual MM deletion uses no
+allocation but does not establish transitive allocation-freedom or
+bounded completion for all provider and session callbacks.
+
+v921 testkit audit PASS for current call-chain inventory and existing
+private-stack protection; it explicitly reports the termination chain
+NOT CERTIFIED. v917-v920 native and booted acceptance remains valid.
+No production KCORE/RAM/ABI changes in this stage. Safe reclamation of
+nonreturning providers, failure-atomic multi-stage teardown and full
+allocation-free OOM kill proof remain open P0. OOM killing stays OFF.
+
 ## 2026-11-01 v920: protect direct noncurrent process finalization
 
 The direct `proc_finish_slot` entry can destroy a target VM without
