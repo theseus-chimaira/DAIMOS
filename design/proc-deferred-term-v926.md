@@ -91,6 +91,12 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v929 source-level stage instrumentation distinguishes parent return-gate
+  entries from actual CHLD delivery. Its accelerated no-provider test printed
+  the descendant's pre-EXIT `Z` marker but sampled zero `proc_notify_parent(5)`
+  calls and did not complete the INIT wait. This locates the next probe at
+  descendant EXIT/finish and parent notification, not provider cancellation.
+  The completed TERM handoff is not accepted.
 - Corrected v929 guest confirms descendant reached pre-EXIT `Z`, but no
   `proc_notify_parent(5)` stage witness was observed (owner-return gate 2).
   The next control must distinguish ENTER EXIT, FILE closure, slot finishing,

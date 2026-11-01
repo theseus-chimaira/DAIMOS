@@ -1,5 +1,12 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [ ] v929 staged no-provider diagnostic: instrumented owner-return helper
+  was entered twice, but `proc_notify_parent(5)` was never observed (CHLD
+  counter zero). With shortened test-only sleeps the descendant printed
+  its pre-EXIT `Z` marker; INIT still did not finish. The prior v928 timing
+  theory is insufficient. Next instrument descendant `proc_exit_current`,
+  `proc_exit_finish`, and parent notify/WAIT before changing kernel logic.
+  The v929 fixture must remain marked FAIL until that chain is proven.
 - [ ] Corrected v929 boot: guest printed `Z` after descendant timer sleep,
   immediately before EXIT. CHLD notification witness remains zero and
   owner-return witness is two; three deferred TERM guards, one CHILD wait.
