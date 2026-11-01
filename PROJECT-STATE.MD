@@ -1,3 +1,18 @@
+## 2026-11-01 v923: repeated FILE SYNC refusal and partial close retry
+
+A new native PDP-6 v923 test retries remote fatal FILE cleanup across
+two consecutive SYNC refusals. The failing target descriptor remains
+owned, a successful independent descriptor stays closed and is never
+replayed, global `file_table` remains associated with its original
+caller, and final successful retry closes the sole survivor before
+one fatal-slot completion. Native v923, v867, v865 and v885 PASS.
+
+The test extends the existing explicit-target close fixture and proves
+this particular partial-close retry sequence without new production
+KCORE instructions, data words or ABI changes. Infinite provider
+refusal, an operation that never returns, and allocation-free OOM
+termination remain unresolved P0. Automatic OOM killing stays OFF.
+
 ## 2026-11-01 v922: repeated partial session HUP retry proof
 
 The v905 session-HUP retry path already recognizes an irreversibly

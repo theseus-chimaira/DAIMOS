@@ -1,3 +1,14 @@
+### v923: repeated FILE SYNC refusal retains ownership (2026-11-01)
+
+- [x] Native PDP-6 regression: two refused SYNC attempts preserve the
+  failed FD; previously successful closes are not replayed, and the
+  caller's global FILE table stays intact.
+- [x] Final successful retry closes only the outstanding FD and
+  finalizes the target once. v923/v867/v865/v885 regressions PASS.
+- [x] Existing code correct for tested sequence; no KCORE/RAM/ABI change.
+- [ ] Permanently unresponsive providers and complete allocation-free
+  OOM teardown remain P0. Automatic OOM killing stays OFF.
+
 ### v922: repeated partial session HUP retry (2026-11-01)
 
 - [x] Confirm a member with TRANSITION+VM_NONE+FINALIZE is never HUPed
