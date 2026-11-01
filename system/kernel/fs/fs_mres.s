@@ -183,6 +183,9 @@ fs_provider_lock_retry:
         move    0,proc_current_slot
         addi    0,1
         hrlzm   0,fs_provider_ready
+        ; Waiters sleep on a separate zero-valued event, not on the
+        ; owner-encoded lock word (which is nonzero even while held).
+        setzm   fs_provider_wait_event_v917
         movei   0,1
         hrli    0,-6(17)
         blt     0,7
@@ -194,12 +197,17 @@ fs_provider_lock_retry:
 
 ; The executive is not process-preemptible between the ready test and clear.
 fs_provider_lock_wait:
+        ; Slot 0 has no sleeping process context. Never enter the boot
+        ; wait-spin when another process owns the provider lease.
+        skipn   proc_current_slot
+        jrst    fs_provider_lock_refuse_v917
         ; A recursive call by the owner cannot make progress by sleeping:
         ; this very stack must release the lease. Fail without unlocking.
         hlrz    0,fs_provider_ready
         subi    0,1                   ; decode owner_slot+1
         came    0,proc_current_slot
         jrst    fs_provider_lock_sleep_v915
+fs_provider_lock_refuse_v917:
         ; Restore the same request ACs as successful dispatch before
         ; discarding the frame. AC1 is then replaced by the -5 result.
         movei   0,1
@@ -208,14 +216,15 @@ fs_provider_lock_wait:
         sub     17,kconst_7_7
         jrst    kret_neg5           ; busy lease owned by this caller
 fs_provider_lock_sleep_v915:
-        movei   1,fs_provider_ready
+        movei   1,fs_provider_wait_event_v917
         pushj   17,proc_wait_event
         jrst    fs_provider_lock_retry
 
 fs_provider_unlock:
         push    17,1
         setom   fs_provider_ready
-        movei   1,fs_provider_ready
+        setom   fs_provider_wait_event_v917
+        movei   1,fs_provider_wait_event_v917
         pushj   17,proc_wakeup_event
         pop     17,1
         popj    17,
@@ -378,6 +387,12 @@ fs_mres_context_vector_dispatch:
         .globl  fs_provider_ready
         .globl  proc_current_slot
 fs_provider_ready:
+        .word   1
+; Real proc_wait_event examines the entire event word. Owner metadata
+; lives in the lock word, so this independent word stays zero while
+; locked and becomes nonzero on unlock. A waiter cannot poll forever.
+        .globl  fs_provider_wait_event_v917
+fs_provider_wait_event_v917:
         .word   1
 
         .bss
