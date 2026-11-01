@@ -1,3 +1,17 @@
+### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
+
+- [x] Re-run current v925 native fatal, direct-finish and OOM handoff
+  regressions: all three PASS on PDP-6. These are extracted source tests,
+  not full-system CHLD wakeup-handoff injection.
+- [x] Record the required ownership, pending-delivery, PI6 and test contract
+  in `design/proc-deferred-term-v926.md`. No production behavior changed.
+- [ ] Audit packed pending-event, finalization and scheduler bits before
+  selecting an existing durable slot for deferred INT/TERM/HUP/PIPE.
+- [ ] Implement accepted pending fatal delivery and a self-owned safe return
+  consumer; keep the v925 foreign executive-stack guards intact.
+- [ ] Prove repeated-send coalescing, FILE refusal/retry, exact-once teardown,
+  and booted CHLD wakeup-to-executive-restore delivery. Keep OOM killing OFF.
+
 ### v925: guard saved executive wakeup handoff (2026-11-01)
 
 - [x] Detect CHLD wakeup gap: WAIT_CHILD cleared before the private
