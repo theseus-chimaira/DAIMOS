@@ -1,3 +1,23 @@
+### v908: live DPY raw-list MM_BUSY and PI7 completion (2026-11-01)
+
+- [x] Full-system 256K PDP-6 headless Type-340 (`DPY OK`) verifies the
+  *actual* raw-list PI6 refresh and PI7 BLKO completion path, not just
+  static source/isolated assembly. A disposable test-kernel MM hook pins
+  the exact dynamic owner 014 on final CLOSE. The native MM refuses
+  release with -5; FILE and raw-list ownership remain live and clock
+  refresh resumes. Retry physically unpins/frees; a new DPY program
+  installs and closes; FILE/process counts recover; guest HALT normal.
+- [x] v908 guest counters: MM base 19730 decimal, raw-list MM frees 3,
+  pins/unpins 1/1, MM_BUSY 1, raw PI6 refresh 18, raw PI7 completion 18,
+  *six* refreshes after the failed CLOSE but before unpin, errors 0.
+  Standalone target C89 build and shell syntax PASS. Native v709, v871,
+  v874, v904 and the DPY PI7 policy regressions also PASS.
+- [ ] Indefinitely refusing FILE/MM providers, fatal process isolation,
+  and allocation-free automatic OOM termination are NOT accepted by a
+  single recoverable MM_BUSY. Do not force-release or enable OOM killing.
+  DPY-specific persistent-refusal and double-fault behavior remain P0.
+  TSFS development and KCORE shrinking remain deferred.
+
 ### v907: full-system HUP partial failure with physical MM (2026-11-01)
 
 - [x] Disposable copied-kernel hooks pin the first real session child's
@@ -11,8 +31,8 @@
   deferred finalization, 0 errors. Parent WAIT and TTY reattach pass;
   normal HALT. No production kernel change or KCORE size work.
 - [ ] A persistently rejecting FILE/MM provider still must never be
-  force-released. Continue DPY live interrupt/MM-fault testing and the
-  allocation-free OOM safe-victim gate; OOM killing stays disabled.
+  force-released. The DPY live interrupt/MM_BUSY acceptance is covered
+  by v908; the allocation-free OOM safe-victim gate remains closed.
 
 ### v906: reconcile older TSFS entries after KCORE deferral (2026-11-01)
 

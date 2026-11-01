@@ -1,3 +1,20 @@
+## 2026-11-01 v908: live DPY MM_BUSY retains an active raw list
+
+Full 256K PDP-6 with a headless but present Type-340 (`DPY OK`) accepts
+normal raw-list WRITE_WORDS, actual PI6 clock replay and PI7 BLKO
+completion. A disposable copied-kernel MM hook pins the exact owner-014
+physical extent on final CLOSE, causing real MM_BUSY (-5). The FILE
+entry and published raw list survive and *six* further raw frames
+refresh before unpin. The next CLOSE unpins/frees the original extent;
+another DPY OPEN/WRITE/CLOSE succeeds, process/FILE accounting stays
+stable and the guest HALTs normally. Testkit v908 counters: base 19730
+decimal, 3 tracked MM frees, 1 pin, 1 unpin, 1 busy, 18 raw refreshes,
+18 PI7 raw completions, 6 post-error/pre-unpin refreshes, 0 errors.
+Existing native v709/v871/v874/v904 and PI7 policy tests PASS. No
+production change, ABI adjustment, new permanent data, or size sweep.
+Permanent FILE/MM refusal, fatal-process cleanup and OOM termination
+remain unaccepted.
+
 ## 2026-11-01 v907: physical MM session-HUP retry accepted
 
 Full-system 256K PDP-6 session/HUP failure injection now passes
