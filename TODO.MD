@@ -1,3 +1,13 @@
+### v906: reconcile older TSFS entries after KCORE deferral (2026-11-01)
+
+- [x] Supersede the remaining unchecked cross-provider TSFS mount and
+  DTFS/TSFS metadata/capacity experiments in older V13/V15/V22 lists.
+  They are post-KCORE work, not active KCORE feature or size gates.
+- [x] Preserve existing TSFS boot and VFS/codec compatibility checks
+  whenever KCORE changes their shared contracts; this does not reopen
+  TSFS v1.2 feature work. D6FS, generic VFS and backing work remain
+  KCORE tasks. The TSFS feature sequence resumes only after KCORE.
+
 ### v905: P0 partial session-HUP retry (2026-11-01)
 
 - [x] During session-leader teardown, skip an already terminal member
@@ -10,9 +20,12 @@
   committed child, HUPs only the failed member, then detaches. Cases with
   non-NONE VM or absent finalize mark cannot be skipped. Pre-v905 negative
   control fails as expected (guest failure code 010). Historical v875 PASS.
-- [ ] Full-system HUP partial-fault injection and indefinitely refusing
-  FILE/MM providers remain open; ordinary session integration is separate.
-  Do not enable automatic OOM termination before ownership is safe.
+- [x] Existing full-system `daimos-session-teardown-v1.sh` on the v905
+  kernel PASS: booted PDP-6 session-leader exit, HUP of running/stopped
+  children, controlling-TTY detach and later reattach.
+- [ ] Full-system *injected* HUP partial-fault and indefinitely refusing
+  FILE/MM providers remain open. Do not enable automatic OOM termination
+  before failure-path ownership is safe.
 
 ### v904: P0 DPY teardown quiesce-before-unpublish (2026-11-01)
 
@@ -1213,10 +1226,11 @@ source-level RAM optimization continue independently.** See
   and installed provider/controller slots from MINIT state, calls the
   26-slot planner, allocates the exact six-array MM slab, then publishes
   `vfs_mount_limit` last. Native full/reduced inventory tests pass.
-- [ ] Exercise simultaneously mounted D6FS/DTFS/TSFS filesystems above slot
-  four on real/emulated attached devices when the boot MRES provider matrix
-  supports those combinations; current D6FS-root and TSFS-root profiles do
-  not install the other family's MRES, so do not advertise phantom slots.
+- [x] Historical V22 multi-provider experiment deferred post-KCORE (v906):
+  exercising simultaneously mounted D6FS/DTFS/TSFS volumes above slot four
+  requires an MRES provider matrix the current profiles do not install.
+  Keep existing boot-selected mount bounds safe; do not advertise phantom
+  slots or make cross-provider TSFS development a KCORE acceptance gate.
 - [ ] Reduce the accrued permanent KCORE descriptor/dispatch cost after the
   VFS activation path is stable; no workarounds or unsupported 32K claims.
 - [x] Repair stale daimos-testkit `mm-core` host fixture: its Makefile
@@ -1268,12 +1282,11 @@ source-level RAM optimization continue independently.** See
   to select a 1..16 limit. Full v16 policy adds 25 instruction words over v15:
   recover the instruction cost in the post-cutover RAM optimization sweep.
 
-- [ ] V15: all six MM slab table regions now have active DTFS/TSFS/D6FS/VFS
-  callers, but the fixed four-slot runtime limit remains. Migrate the
-  packed RO/SWAP/LOGSTORE representation and *all* provider bounds, including
-  optional foreign DTFS personality XCT indexing, before raising the limit.
-  The pointer-access conversion currently costs 3/15 permanent words in
-  disk/tape-root profiles over v14: optimize for RAM as part of cutover.
+- [x] Historical V15 four-slot mount activation proposal superseded by
+  the completed V21/V22 boot-selected capacity and native bounds checks.
+  The remaining DTFS/TSFS media, shape and optional foreign-personality
+  enhancements are post-KCORE. Retain existing provider isolation and
+  mount safety while working on generic VFS or D6FS functionality.
 
 - [ ] V14 KCORE audit eliminated nine redundant resident words. See
   `design/kcore-legacy-audit-20261016-v14.md` for protected compatibility
@@ -1281,11 +1294,11 @@ source-level RAM optimization continue independently.** See
   after the other provider tables have migrated; the 32K KCORE end still
   exceeds its strict gate by 1879 words.
 
-- [ ] V13: the D6FS reader now uses the MM slab and the bootstrap fallback
-  is down to one word. Finish DTFS/TSFS media and shape/extent, policy, and
-  hardware-derived capacity before raising the live mount limit above four.
-  Separately investigate the strict 32K KCORE end limit: fresh lowmem GCC
-  disk/tape profiles end at 023540, exceeding 020000 by 1888 decimal words.
+- [x] Historical V13 four-slot proposal superseded by V22: D6FS now
+  uses the MM slab and VFS boot-selected capacity is live. DTFS/TSFS
+  media, shape/extent and format enhancements follow KCORE (v906).
+  The older v13 32K KCORE size measurements are historical evidence,
+  not current size-sweep authorization.
 
 - [ ] Fix drum D6FS BLOCKSET discovery separately: root selection currently
   discovers a selected DSK/DRM root set, while AUXSTORE discovery checks only
@@ -1297,8 +1310,10 @@ source-level RAM optimization continue independently.** See
   assume an unexamined drum is reserved for swap or belongs to a BLOCKSET.
   Count a known BLOCKSET as one logical filesystem. Exclude independently
   impossible non-root TSFS sets; the boot TSFS root counts as one mount.
-- [ ] Audit VFS mount tables, mount-ID dispatch, D6FS/DTFS/TSFS/MEMFS mount
-  state, and packed per-mount policy before selecting a boot-time capacity.
+- [ ] Audit generic VFS mount tables, mount-ID dispatch, D6FS/MEMFS
+  mount state and packed policy against the active boot-selected capacity.
+  Preserve existing DTFS/TSFS boot/mount ABI compatibility, but defer new
+  DTFS/TSFS provider metadata and format work until after KCORE.
   Enforce a maximum of 16 mounts and size dynamically at boot; a theoretical
   17th simultaneously mountable volume is not supported. Account for future/removable
   media rather than sizing solely to currently mounted filesystems. Audit and

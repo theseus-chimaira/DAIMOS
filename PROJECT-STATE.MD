@@ -1,3 +1,13 @@
+## 2026-11-01 v906: TSFS backlog legacy items superseded; session smoke PASS
+
+The remaining V13/V15/V22 unchecked TSFS provider/format experiments
+were marked superseded/deferred after KCORE, rather than left as active
+KCORE prerequisites. Existing TSFS boot ABI regression duties remain.
+The v905 production image passes the existing full-system PDP-6
+session-leader teardown and TTY reattach test. Injected partial
+HUP/FILE/MM provider failures still require dedicated full-system tests.
+No new production kernel changes in v906.
+
 ## 2026-11-01 v905: prevent duplicate committed session HUP
 
 Fixed retry following a session leader's partial member-HUP success:

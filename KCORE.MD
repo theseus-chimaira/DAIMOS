@@ -1,3 +1,13 @@
+## 2026-11-01 v906: stale TSFS-specific KCORE backlog entries retired
+
+Historical V13/V15/V22 cross-provider mount and TSFS metadata/format
+items are no longer active KCORE feature or size gates. Post-KCORE
+TSFS v1.2 work retains its separate pre-0.9 milestone; only current
+TSFS boot compatibility remains a regression contract for shared
+KCORE changes. Generic VFS and D6FS acceptance stays in KCORE.
+The ordinary full-system session-leader teardown test on v905 PASSed;
+HUP partial-provider fault injection remains outstanding.
+
 ## 2026-11-01 v905: prevent duplicate committed session HUP
 
 During a session leader retry, a prior child HUP may have successfully
@@ -4924,9 +4934,10 @@ scheduler, pipe or slot-tier implementations are absent.
   measure nested MAKE/KCC/KCPP load and relocation-sensitive assembly cost.
 - [ ] Compare sorted linear MM scans with optional lookup indexes only for
   measured large-core workloads; avoid permanent small-core dispatch cost.
-- [ ] Profile D6FS/DTFS/TSFS cache footprint, replacement and DECtape seek
-  cost under native compilation; evaluate boot-selected budgets based on
-  actual free memory after essential allocations.
+- [ ] Profile D6FS cache footprint and replacement under native
+  compilation; evaluate boot-selected budgets against free memory after
+  essential allocations. Defer DTFS/TSFS cache and DECtape seek profiling
+  to the post-KCORE filesystem effort (v906).
 - [ ] Profile VFS directory lookup under native MAKE/KCC and test compact
   entry caching or optional indexes, reusing D6FS hashing if advantageous.
 - [ ] Benchmark dense versus sparse packed layout capacity and lookup cost
