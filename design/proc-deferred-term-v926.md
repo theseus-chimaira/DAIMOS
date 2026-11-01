@@ -91,6 +91,13 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v935 booted real scheduler with held FS owner/waiter and deferred TERM:
+  a disposable-kernel `file_close_all` entry hook refuses exactly the
+  first two calls for the target owner and then executes unchanged close.
+  Three calls, two refusals, zero finalizer failures, CHLD=1, complete
+  INIT reap, unchanged lease 4,,0, 36 bystander cycles: PASS. This tests
+  owner-stack backoff/retry but not a real open descriptor or provider
+  rejection, nor teardown multiplicity in every failure mode.
 - v934 held-provider full-system control PASS: a real FS lease owner
   (slot 3) and waiter (slot 4) remain suspended across deferred TERM to
   WAIT_CHILD parent (slot 5), descendant EXIT (slot 6), CHLD wakeup,

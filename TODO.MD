@@ -1,5 +1,14 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v935 booted 256K PDP-6 deferred TERM retry with two injected
+  `file_close_all` refusals for slot 5, followed by one successful pass:
+  3 calls, 2 refusals, successful finalizer, CHLD=1, correct WAIT status,
+  36 peer cycles, and held FS owner/waiter lease unchanged at 4,,0.
+  Test-only entry injection does not yet demonstrate a real FILE entry's
+  provider refusal or exact-once VM/u-area release under all failures.
+- [ ] Exercise an actual open descriptor failing close inside the provider;
+  instrument FILE, VM and u-area release multiplicity, and establish
+  fatal-event precedence before allowing automatic OOM killing.
 - [x] v934 full-system 256K PDP-6 CHLD/TERM completion with *both* FS
   owner and waiter blocked: real lease remains 4,,0 at owner, waiter and
   final HALT; CHLD=1, descendant EXIT=1, finalizer entry=1, failure=0,
