@@ -1,3 +1,24 @@
+## 2026-11-01 v915: provider lock detects same-owner recursion
+
+DTFS/D6FS/TSFS share a serialized KCORE gateway with one existing
+`fs_provider_ready` word encoding owner_slot+1 in LH while held.
+Previously a second gateway call on the *same owner's* kernel stack
+entered `proc_wait_event` awaiting its own lease and could never make
+progress. The lock-wait path decodes the existing owner-slot field
+and compares it with `proc_current_slot`; self-ownership returns -5
+without sleeping, restores all saved request registers and the stack,
+and preserves the original lease. Other processes still wait/resume.
+MEMFS remains direct. Nine resident KCORE instructions are added, but
+no new BSS, per-process metadata, heap or provider ABI changes.
+
+Native PDP-6 v915 verifies recursive -5, unchanged lease ownership,
+zero owner sleeps and subsequent cross-process wait/release. The v866,
+v326 and v327 lock/dispatch/AC-preservation regressions also PASS.
+This establishes local self-deadlock avoidance, not recovery when a
+separate process holds a provider lock indefinitely. Full booted
+provider-lock failure/PI6 and allocation-free OOM fatal cleanup remain
+P0; OOM killing remains disabled and TSFS v1.2 work stays deferred.
+
 ## 2026-11-01 v914: persistent invalid FILE-provider errors remain owned
 
 The v891 full-system 256K PDP-6 APR-fault continuation already proved

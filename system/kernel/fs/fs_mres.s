@@ -194,6 +194,20 @@ fs_provider_lock_retry:
 
 ; The executive is not process-preemptible between the ready test and clear.
 fs_provider_lock_wait:
+        ; A recursive call by the owner cannot make progress by sleeping:
+        ; this very stack must release the lease. Fail without unlocking.
+        hlrz    0,fs_provider_ready
+        subi    0,1                   ; decode owner_slot+1
+        came    0,proc_current_slot
+        jrst    fs_provider_lock_sleep_v915
+        ; Restore the same request ACs as successful dispatch before
+        ; discarding the frame. AC1 is then replaced by the -5 result.
+        movei   0,1
+        hrli    0,-6(17)
+        blt     0,7
+        sub     17,kconst_7_7
+        jrst    kret_neg5           ; busy lease owned by this caller
+fs_provider_lock_sleep_v915:
         movei   1,fs_provider_ready
         pushj   17,proc_wait_event
         jrst    fs_provider_lock_retry

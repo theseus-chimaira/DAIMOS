@@ -1,3 +1,18 @@
+### v915: prevent recursive provider-lock self-deadlock (2026-11-01)
+
+- [x] Detect a DTFS/D6FS/TSFS gateway call by the existing lease owner
+  before blocking in `proc_wait_event`; return -5 with the saved
+  seven-word request frame unwound and without unlocking its lease.
+- [x] Reuse the existing owner_slot+1 LH encoding in `fs_provider_ready`;
+  nine additional KCORE instructions, no extra BSS, per-process lock
+  table, provider ABI or MEMFS changes.
+- [x] Native PDP-6 v915 recursive-owner and other-process waiter tests
+  PASS. Existing v866, v326 and v327 tests PASS.
+- [ ] A different process owning a permanently stalled provider remains
+  a separate unresolved progress case. Full-system PI6/clock provider
+  lock acceptance and allocation-free fatal/OOM termination remain P0.
+  OOM killing stays OFF; TSFS v1.2 and KCORE shrink stay deferred.
+
 ### v914: permanent invalid FILE-provider refusal containment (2026-11-01)
 
 - [x] Booted 256K PDP-6; real APR fault causes permanent VFS_SYNC
