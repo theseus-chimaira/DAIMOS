@@ -118,17 +118,6 @@ sys_procinfo_comm:
         .globl  sys_meminfo
 sys_meminfo:
         move    2,1                    ; validated info pointer
-        movei   1,0                    ; count active FILE slots in place
-        move    3,file_table
-        movei   4,015
-sys_meminfo_file_loop:
-        skipn   (3)
-        jrst    sys_meminfo_file_next
-        addi    1,1
-sys_meminfo_file_next:
-        addi    3,2
-        sojg    4,sys_meminfo_file_loop
-        movem   1,7(2)
         move    3,mm_core_words
         movem   3,(2)
         .globl  sys_resident_words_immediate
@@ -157,6 +146,19 @@ sys_meminfo_have_memfs:
         ; Commit MEMFS results before reusing AC4 as an index register.
         movem   4,3(2)
         movem   5,4(2)
+        ; The filesystem MRES request reuses words 2..8, including
+        ; file_slots_used at word 7. Count FILEs only after that BLT.
+        movei   1,0                    ; count active FILE slots in place
+        move    3,file_table
+        movei   4,020                   ; FILE_NFILE = 16 (octal 020)
+sys_meminfo_file_loop:
+        skipn   (3)
+        jrst    sys_meminfo_file_next
+        addi    1,1
+sys_meminfo_file_next:
+        addi    3,2
+        sojg    4,sys_meminfo_file_loop
+        movem   1,7(2)
         ; Count occupied slots and resident process+u-area words.
         movei   1,0                    ; resident process words
         movei   3,0                    ; occupied logical slots
@@ -184,6 +186,6 @@ sys_meminfo_proc_done:
         movem   3,5(2)
         move    3,proc_slots
         movem   3,6(2)
-        movei   3,015
+        movei   3,020                   ; same FILE_NFILE as the scan
         movem   3,010(2)
         jrst    kret_zero

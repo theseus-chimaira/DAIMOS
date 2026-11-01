@@ -1,3 +1,21 @@
+### v911: repair resident SYS_MEMINFO FILE counting (2026-11-01)
+
+- [x] Correct the 16-entry FILE scan and reported capacity from octal
+  015 (13) to octal 020 (16); do not alter FILE allocator semantics.
+- [x] Move the existing count past the temporary MEMFS request whose
+  seven-word BLT erased result word 7. No added instructions or BSS.
+- [x] Booted 256K PDP-6 C89 guest fills all 16 FILE slots by real DUP,
+  checks MEMINFO after every allocation, verifies final FD 15, closes
+  the duplicates, checks baseline, reports <F and halts normally.
+- [x] Two isolated pre-fix negatives: old capacity yields !1; old
+  pre-MEMFS FILE count yields !4. Native v708/v874/v904 PASS. Full v910
+  live DPY permanent-MM_BUSY guest also PASSes with meaningful updated
+  FILE occupancy accounting.
+- [ ] This does not enable automatic OOM victim termination or recover
+  permanently refusing FILE/MM providers. Replacement double-failure,
+  lock/deadlock acceptance, and fatal FILE teardown stay P0; TSFS v1.2
+  and final KCORE shrinking remain deferred.
+
 ### v910: persistent DPY/MM refusal across three live CLOSE attempts (2026-11-01)
 
 - [x] Booted 256K PDP-6 Type-340, kept the raw-list extent physically

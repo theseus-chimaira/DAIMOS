@@ -1,3 +1,28 @@
+## 2026-11-01 v911: SYS_MEMINFO counts all 16 FILE slots
+
+Full-system 256K PDP-6 exposed two independent resident SYS_MEMINFO
+errors. FILE capacity and the counted scan used octal 015 (13) instead
+of FILE_NFILE=16 (octal 020). More seriously, the routine wrote the
+FILE count into result word 7 *before* an in-place filesystem MRES
+request initialized result words 2..8, destroying the count. Fix both
+limits and move the existing FILE scan to after the optional MEMFS
+request, leaving syscall ABI and resident storage unchanged. No new
+instructions or per-process state.
+
+A C89 testkit guest duplicates CTY descriptors until all 16 FILE slots
+are occupied, checks MEMINFO after each DUP, exercises the final FD 15,
+then closes every duplicate and checks baseline counts. Corrected
+full-system guest marker <F and normal HALT PASS. Two independent
+negative guests PASS: the copied 13-slot kernel reports !1 and the
+copied pre-fix FILE-count ordering reports !4. Native v708/v874/v904
+PASS. Re-running v910 with production v911 PASSes permanent DPY MM_BUSY
+(3 refusals, 1 pin, 0 unpins), 18 PI6/PI7 frames, 12 after refusal,
+stable *now genuinely populated* FILE/process counts and normal HALT.
+The former v910 counter comparison alone could not establish positive
+FILE occupancy because the old routine zeroed both samples.
+Permanent provider release, rollback double-fault, OOM and KCORE size
+gates remain open; OOM killing stays disabled, TSFS v1.2 deferred.
+
 ## 2026-11-01 v910: persistent Type-340 MM refusal retains ownership
 
 Full-system 256K PDP-6 (`DPY OK`) now proves the raw-list final CLOSE
