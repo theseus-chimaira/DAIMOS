@@ -1,5 +1,13 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v933 full-system 256K PDP-6 CHLD/TERM non-provider control: guest
+  reaches child EXIT, `proc_finish_slot` success, CHLD publication, owner
+  return gate, correct `SYS_WAIT_STATUS(SYS_WAIT_EXITED, 0400001U)` reap,
+  INIT `P` marker, and controlled HALT. Test's stale contiguous-spinner
+  assertion corrected and rerun against preserved guest transcript: PASS.
+- [ ] Rerun the original provider-held scenario with a genuine CHLD wakeup,
+  verify exactly-once FILE/VM cleanup under retry, then resolve the remaining
+  fatal-event precedence and OOM termination safety gates.
 - [ ] v932 owner finalization fix restores child EXIT completion in booted
   256K PDP-6 test: slot-6 finalizer enters once, failure count zero,
   `proc_notify_parent(5)` count one, and INIT reaches status check.

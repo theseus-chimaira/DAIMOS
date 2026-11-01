@@ -91,6 +91,13 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v933 resolves the earlier apparent TERM status mismatch: WAIT returns
+  `SYS_WAIT_STATUS(SYS_WAIT_EXITED, 0400001U)`, not just `0400001U`.
+  The corrected booted guest prints completion `P` and HALTs with child
+  finalization, CHLD notification and parent reap all observed. The legacy
+  test parser required `SSSP` immediately adjacent; the valid trace is
+  `...SSSZSSP`. Rerunning the corrected assertion on the preserved image
+  transcript PASSes. Provider-held CHLD/retry completion remains unproven.
 - v932 fixes the demonstrated owner-vs-foreign classification error:
   `proc_exit_finish` must clear `proc_current_slot` before idle-stack
   teardown, but the assembler finalizer previously compared the zeroed
