@@ -1,3 +1,38 @@
+### v901: PIPE character-stream feature restored (2026-11-01)
+
+- [x] Native `READCHAR` and `WRITECHAR` on PIPE and named FIFO
+  descriptors now dispatch to the existing one-word PIPE queue
+  operations. These syscalls exchange one complete character word
+  rather than packed SIXBIT; no new pipe buffer or permanent state.
+- [x] Native PDP-6 positive test: WRITECHAR/READCHAR transfer,
+  pending queue count, EOF after last writer, broken-pipe error and
+  unchanged MonitorFS device dispatch PASS. Pre-v901 VFS source
+  rejects PIPE WRITECHAR; negative control FAILS as expected.
+- [x] Full 256K PDP-6 user syscall test PASS: writechar/readchar,
+  cross character/word I/O in both directions, EOF after writer
+  close, exact FILE-slot accounting and normal HALT. The underlying
+  VFS gap also explains the earlier v899 character-read assertion;
+  its separate real-MM word-I/O ownership test remains valid.
+- [ ] Remaining feature work includes DPY raw-list teardown,
+  session/HUP partial failure, permanent provider repair and safe
+  allocation-free OOM victim termination. No size sweep attempted.
+
+### v900: named FIFO MM refusal and list-ownership acceptance (2026-11-01)
+
+- [x] In a booted 256K PDP-6, inject one actual `mm_pin` of the
+  named FIFO's final physical pipe object. Its regular last CLOSE
+  receives real MM_ERR_BUSY and restores the named object to its
+  active linked list, retaining the original FILE descriptor.
+- [x] A second O_RDWR OPEN joins that same object after the failure;
+  writing through the original descriptor and reading from the new
+  one proves cross-descriptor stream identity. The later final CLOSE
+  unpins and frees the exact extent. A new FIFO OPEN/CLOSE and
+  normal HALT pass. Counters: target 19687 decimal, calls 3,
+  physical pins 1, unpins 1, busy 1, errors 0.
+- [ ] Automatic OOM killing still requires complete allocation-free
+  fatal FILE/MM/TTY/session teardown. An indefinitely refusing or
+  invalid provider must not be forcibly released.
+
 ### v899: real PIPE final-close MM_BUSY recovery (2026-11-01)
 
 - [x] Native v870 final PIPE close retry remains PASS.

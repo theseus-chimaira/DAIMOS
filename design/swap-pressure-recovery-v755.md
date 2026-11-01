@@ -1,3 +1,28 @@
+## v901: separate PIPE character-stream dispatch from MM lifetime
+
+The first full guest of v899 observed READCHAR error after a pinned
+PIPE's final close was rejected. The real-MM word-I/O retry test
+later passed and confirmed physical ownership; the character error
+was independently caused by missing `070001` PIPE dispatch in the
+VFS character entrypoints. The v901 source fix uses the existing
+PIPE word queue for one character word per call, with no extra RAM.
+Both native PDP-6 and full booted guest regressions PASS, including
+cross read/write API interoperability and correct EOF. The old
+VFS fails the negative test. This leaves provider refusal and
+allocation-free OOM termination as separate open issues.
+
+## v900: real named FIFO MM rollback retains linked-list identity
+
+A full-system 256K PDP-6 now checks the v870 named FIFO branch,
+which removes the last PIPE object from the active list before
+physical free and reinserts it on MM failure. A test-only pin
+makes the genuine MM allocator refuse that free. A second FIFO
+open by pathname then joins the original object; cross-descriptor
+word I/O proves linked-list identity. Unpin before retry permits
+exact release and normal later open/close. Counts: 1 pin, 1 busy,
+1 unpin, 0 errors. Anonymous PIPE already passed in v899. No
+forced free or automatic OOM kill is implied by this success.
+
 ## v899: booted PIPE final-close exact-MM pin/retry acceptance
 
 The v870 PIPE close implementation avoids publishing zero refs

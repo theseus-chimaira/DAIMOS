@@ -1,3 +1,30 @@
+## 2026-11-01 v901: native PIPE character syscalls PASS
+
+Restored missing PIPE vnode dispatch in resident VFS READCHAR and
+WRITECHAR. A character transfer now uses the existing one-word
+PIPE read/write queue, without new per-process or resident storage.
+The v899 test's initial character-EOF observation was an interface
+gap, not a failure of the retained MM owner or PIPE descriptor.
+Native positive and pre-v901 negative tests PASS; real full-system
+256K PDP-6 guest with alternating character/word I/O, EOF and
+stable FILE counts also PASSes and HALTs normally. No shrinking work
+was run. Permanent provider refusal, DPY and session lifetime
+acceptance, and allocation-free OOM termination remain unfinished.
+
+## 2026-11-01 v900: named FIFO real-MM rollback PASS
+
+Full-system 256K PDP-6 acceptance now covers both anonymous PIPE
+(v899) and linked named FIFO (v900) last-reference MM_BUSY rejection.
+For v900, the disposable test kernel pins the FIFO extent and the
+normal MM provider refuses one free. The existing v870 rollback
+restores its linked-list membership and preserves the FILE descriptor:
+a second descriptor opens the same pathname and shares the stream.
+After physical unpin, final close and a fresh FIFO OPEN/CLOSE succeed.
+Guest counters: one pin, one busy, one unpin, zero errors, HALT.
+No production code, permanent data or size optimization changed.
+The FILE/MM provider and safe automatic OOM retirement gates remain
+unfinished.
+
 ## 2026-11-01 v899: PIPE last-reference physical MM recovery PASS
 
 Feature-first cleanup testing now accepts v870's anonymous PIPE

@@ -1,3 +1,48 @@
+## 2026-11-01 v901: PIPE character I/O uses existing word FIFO
+
+The v899 exploratory full-system test initially tried `READCHAR`
+on a retained PIPE after MM_BUSY. Its result was -1, although
+`READ_WORDS` subsequently proved the descriptor and ring buffer
+were valid. Source audit identified an independent feature gap:
+`vfs_readchar` and `vfs_writechar` only accepted MonitorFS device
+streams, despite the older PIPE tests exercising character I/O.
+The VFS now routes PIPE stream vnodes (`070001`) to existing
+`pipe_read_words` and `pipe_write_words` with a one-word request.
+READCHAR receives the full word into the caller's buffer and uses
+the ordinary positive/zero/error result; WRITECHAR uses one
+stack-local source word and converts a successful count of one to
+its required zero return. The underlying PIPE wait, EOF, event,
+reference-count and pin rules are unchanged. No new static data.
+
+The native PDP-6 test exercises character queue transfer, EOF,
+broken reader, and preserved MFSDEV dispatch; old v900 VFS fails
+its negative control as expected. A booted 256K PDP-6 guest
+accepts READCHAR/WRITECHAR, mixed char/word API interchange,
+EOF after the writer closes, stable FILE-slot accounting, CTY
+success and HALT. The earlier v899/v900 physical MM retry tests
+remain valid as independent lifetime coverage. No size optimization
+was attempted; the permanent provider and OOM-kill gates remain open.
+
+## 2026-11-01 v900: named FIFO final-close linked-list rollback
+
+The last-reference PIPE release validated in v899 has an additional
+named-FIFO linked-list ownership gate. A full PDP-6 guest runs with
+a disposable test-kernel hook that pins the exact named FIFO pipe
+object just before the original `mm_free`. The actual MM allocator
+returns MM_ERR_BUSY. Unlike an anonymous PIPE, the FIFO was already
+unlinked from its active list before attempting release; the original
+v870 code restores the same object to the list after MM refusal.
+The test opens the same pathname again and confirms that a word
+written through the original retained descriptor is read through
+its new descriptor. A later final-close retry unpins and frees the
+physical extent; new OPEN/CLOSE and normal HALT also succeed.
+SIMH full-system PASS: one pin, one busy, one unpin, zero errors;
+tracked object base 19687 decimal, three last-ref calls including
+possible base reuse. All hooks are confined to the copied kernel;
+production KCORE and ABI remain unchanged. No size work was run.
+Permanent provider refusal and allocation-free automatic OOM
+termination remain independent open gates.
+
 ## 2026-11-01 v899: real PIPE final close retry in full PDP-6 guest
 
 The v870 allocation-free PIPE last-reference path now passes a
