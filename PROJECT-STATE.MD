@@ -16,6 +16,13 @@ no second allocation under continued refusal, successful orphan drain,
 subsequent replacement/STOP and unchanged original rollback policy.
 Existing v871/v874/v904 and PI7 policy regressions PASS. One optional
 DPY-MRES BSS word is added; no KCORE BSS or syscall ABI change.
+v912 post-commit full-image regression: the existing v910 256K PDP-6
+physical-MM refusal guest was rebuilt against the v912 DPY-MRES and
+passed again (base 19743 decimal, 3 BUSY, 1 pin, 0 unpins, 18 PI6
+refreshes, 18 PI7 completions, 12 post-error refreshes, 0 errors,
+normal HALT). This is a regression against the changed driver, not a
+full-system injected double-free test.
+
 Permanent refusal can retain both allocations; this is safe ownership,
 not eventual reclamation. Full booted PI7/double-fault acceptance, fatal
 FILE teardown, provider locks, automatic OOM and KCORE size gates remain

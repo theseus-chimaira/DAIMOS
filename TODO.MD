@@ -7,6 +7,9 @@
   to FILE without losing either owner; recovery drains before proceeding.
 - [x] Native PDP-6 v912 double-fault and recovery test PASS. Existing
   v871/v874/v904 and PI7 interrupt-policy regressions PASS.
+- [x] Full-system post-change v910 permanent-MM_BUSY regression PASS on
+  v912: 3 BUSY, one pin, 18 PI6/PI7 frames, normal HALT; no live-path
+  regression. This is not the double-fault injection test.
 - [ ] Full booted guest with live PI6/PI7 double-fault injection is not
   yet accepted. Also outstanding: permanent fatal FILE/MM providers,
   provider-lock refusal and safe allocation-free OOM termination.
