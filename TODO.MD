@@ -12,8 +12,11 @@
   process slot/VM accounting appears normal. Same-profile GCC lowmem
   KCORE 9,426, KCORE+MRES 15,912, endpoint 15,959, all unchanged.
   Native v885/v892/v894 cleanup regressions PASS.
-- [ ] Recheck the original v197 full-system 16-case RUN fdmap rollback
-  regression after moving the u-area publication.
+- [x] Original v197 full-system regression PASS after the v896 change:
+  16 post-VM RUN fdmap failures under three live children, stable
+  accounting and recovery. Its test harness now disables SDL window
+  consoles on headless hosts; the first GUI attempt crashed inside
+  the simulator before guest assertions, not in DAIMOS.
 - [ ] Persistent FILE/MM provider owner inconsistencies and safe OOM
   termination remain open. No forced MM release is authorized.
 

@@ -13,6 +13,8 @@ real-MM u-area probe shows zero leaked extents, subsequent RUN/WAIT and
 normal HALT. The identical test with isolated pre-v896 publication
 ordering detects exactly one leaked extent; occupied process slot
 accounting alone misses it. Native v885/v892/v894 cleanup tests PASS.
+The v197 booted PDP-6 16-case FD-map rollback regression under three
+living children PASSes with headless simulator console configuration.
 Same-profile GCC disk-root lowmem KCORE remains 9,426 words,
 KCORE+MRES 15,912 and permanent endpoint 15,959 (no growth).
 Permanently broken provider recovery and safe allocation-free OOM

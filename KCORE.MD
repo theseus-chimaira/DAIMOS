@@ -18,7 +18,9 @@ one discard, zero leaked extents, successful subsequent RUN and WAIT,
 normal HALT. The isolated v895-ordering negative control performs the
 same guest sequence but detects **one** stranded MM extent despite
 apparently normal process-slot and VM accounting. Native v885/v892/v894
-cleanup regressions PASS. Identical lowmem disk-root GCC package size:
+cleanup regressions PASS. The full-system v197 16-case RUN FD-map
+rollback also PASSes with three living children after correcting the
+test harness's headless console setup. Identical lowmem disk-root GCC package size:
 KCORE 9,426 words, KCORE+MRES 15,912, permanent endpoint 15,959,
 all unchanged from v895, with 1,234 words still above the 8,192 goal.
 This is not evidence that permanently broken FILE/MM providers can be
