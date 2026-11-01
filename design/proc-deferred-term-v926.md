@@ -91,6 +91,12 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- Corrected v929 guest confirms descendant reached pre-EXIT `Z`, but no
+  `proc_notify_parent(5)` stage witness was observed (owner-return gate 2).
+  The next control must distinguish ENTER EXIT, FILE closure, slot finishing,
+  and actual CHLD publish. DCS0 and GE0 simulator port binds also failed
+  because their configured ports were occupied; avoid overlapping ports
+  for a clean repeat. No production defect is yet localized.
 - First v929 stage-witness run: CHLD notification counter 0, owner-side
   return-gate counter 2, and no INIT completion. This bounds the observed
   failure before confirmed CHLD notification, but the descendant EXIT has

@@ -1,5 +1,11 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [ ] Corrected v929 boot: guest printed `Z` after descendant timer sleep,
+  immediately before EXIT. CHLD notification witness remains zero and
+  owner-return witness is two; three deferred TERM guards, one CHILD wait.
+  Therefore investigate descendant EXIT/finalization before changing CHLD
+  handling. The run also reported DCS0/GE0 port conflicts (1101/1201):
+  eliminate fixture port collisions in the next controlled repeat.
 - [ ] v929 stage diagnostic (initial run FAIL): real guest observed owner
   return-gate entry twice, but no `proc_notify_parent(5)` witness. The
   simulator reached its terminal HALT without INIT completion, with no
