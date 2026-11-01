@@ -1,5 +1,13 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [ ] v931 booted finalization witness: descendant slot 6 reached
+  `proc_exit_current` once and `proc_finish_slot` once, then took
+  `proc_finish_fail` once; `proc_notify_parent(5)` remains zero. No
+  artificial FS lease. Next isolate the precise rejection inside
+  `proc_finish_slot` (foreign-context guard, missing u-area, finalize
+  marker, or live FILE entry). In particular, `proc_exit_finish` clears
+  `proc_current_slot` before calling `proc_finish_slot`, so audit whether
+  the foreign-target guard is incorrectly applied to self EXIT.
 - [ ] v930 booted control: descendant reaches `proc_exit_current` exactly
   once (slot 6); `proc_notify_parent(5)` remains unobserved, owner-return
   gate count 2, and INIT does not complete. No held provider. Instrument

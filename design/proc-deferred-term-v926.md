@@ -91,6 +91,13 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- Booted v931 confirmed the precise first failure *function*: slot 6
+  reaches `proc_finish_slot`, which branches once to `proc_finish_fail`;
+  no CHLD notification is published. A possible cause requiring direct
+  verification is that `proc_exit_finish` resets `proc_current_slot` to
+  zero before `proc_finish_slot` tests whether the exiting slot is the
+  current owner. Do not weaken noncurrent teardown protection without
+  proving an owner-safe alternative.
 - Booted v930 adds a descendant-slot-6 `proc_exit_current` witness. Its
   count is 1 while `proc_notify_parent(5)` remains 0, with the owner-return
   witness at 2. Thus the guest reaches actual EXIT but the notification
