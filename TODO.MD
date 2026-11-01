@@ -1,3 +1,20 @@
+### v924: protect all private wait classes (2026-11-01)
+
+- [x] Fix v918/v920 guards in OOM selection, foreign fatal delivery and
+  direct process finalization: PROC_WAIT_LH_MASK covers EVENT, CHILD,
+  and INTR continuations. No growth in instructions, RAM or ABI.
+- [x] Native PDP-6 negative baselines expose old bug (OOM exit 010,
+  fatal 032, finish 033). Repaired CHILD/INTR tests and historical
+  EVENT/finalizer/FILE regressions PASS; v921 static audit strengthened.
+- [x] Booted 256K PDP-6 test: real WAIT_CHILD parent, living child,
+  stalled FS owner/waiter and bystander. Three fatal refusals including
+  one WAIT_CHILD, stable lease 4,,0, 72 cycles, zero errors, HALT.
+- [ ] Restore useful cooperative TERM semantics to private WAIT_CHILD
+  without freeing the live executive stack or allocating resident RAM.
+- [ ] Prove bounded cancellation/recovery for permanently stalled FS
+  providers and allocation-free OOM termination. No forced unlock;
+  automatic OOM killing remains OFF.
+
 ### v923: repeated FILE SYNC refusal retains ownership (2026-11-01)
 
 - [x] Native PDP-6 regression: two refused SYNC attempts preserve the

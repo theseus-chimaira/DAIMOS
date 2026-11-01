@@ -1,3 +1,34 @@
+## 2026-11-01 v924: protect all private wait-class continuations
+
+The v918/v920 remote teardown and OOM guards incorrectly tested only
+PROC_WAIT_EVENT_LH (020000). A child-WAIT owner instead retains its
+private executive stack with PROC_WAIT_CHILD_LH (040000); the old OOM
+selector could select it and remote TERM/direct finish could free its
+live stack. All three guards now use PROC_WAIT_LH_MASK (060000): EVENT,
+CHILD and interruptible waits. These are only operand changes to the
+same three instructions: no additional KCORE instructions, permanent
+RAM words, per-process state or syscall ABI changes.
+
+Native PDP-6 v924 negative baselines all exposed the defect (OOM exit
+010, remote fatal exit 032, direct finish exit 033). Post-fix tests
+cover CHILD and INTR, with existing EVENT and teardown regressions
+passing. The v921 static OOM inventory now verifies all wait encodings
+and all three full-mask guards. Historical extracted-assembly tests
+were updated for the shared constant and missing finalizer fixtures.
+
+Full-system 256K PDP-6 v924 PASS: real child-WAIT parent and living
+child alongside the held serialized FS owner, foreign gateway waiter,
+and runnable bystander. Three actual fatal guard refusals, exactly one
+WAIT_CHILD-class refusal, lease 4,,0 stable at all three samples,
+72 independent bystander sleep cycles, zero errors and controlled HALT.
+
+Safe refusal is not automatic deferred TERM delivery: a sender must
+retry once the private wait completes. A genuinely nonreturning FS
+provider still retains its lease and resources; no forced unlock or
+automatic OOM kill is permitted. Establish cooperative pending fatal
+behavior, bounded cancellation, and allocation-free OOM cleanup before
+relaxing these safety guards. Automatic OOM killing stays OFF.
+
 ## 2026-11-01 v923: repeated FILE SYNC refusal and partial close retry
 
 A new native PDP-6 v923 test retries remote fatal FILE cleanup across
