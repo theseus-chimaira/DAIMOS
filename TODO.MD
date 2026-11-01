@@ -1,3 +1,17 @@
+### v912: DPY double-free replacement failure containment (2026-11-01)
+
+- [x] Replace the HALT on consecutive old-list and new-list MM-free
+  refusal with one tracked unpublished DPY-MRES extent.
+- [x] On every subsequent WRITE_WORDS or STOP, attempt orphan release
+  before allocating or mutating the active display. Refusal propagates
+  to FILE without losing either owner; recovery drains before proceeding.
+- [x] Native PDP-6 v912 double-fault and recovery test PASS. Existing
+  v871/v874/v904 and PI7 interrupt-policy regressions PASS.
+- [ ] Full booted guest with live PI6/PI7 double-fault injection is not
+  yet accepted. Also outstanding: permanent fatal FILE/MM providers,
+  provider-lock refusal and safe allocation-free OOM termination.
+  OOM killing remains OFF, KCORE shrink and TSFS v1.2 deferred.
+
 ### v911: repair resident SYS_MEMINFO FILE counting (2026-11-01)
 
 - [x] Correct the 16-entry FILE scan and reported capacity from octal

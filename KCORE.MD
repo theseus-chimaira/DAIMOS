@@ -1,3 +1,26 @@
+## 2026-11-01 v912: DPY double-MM-free refusal retains both owners
+
+Type-340 replacement previously executed HALT if freeing the old active
+raw list failed and freeing the unpublished new list also failed. The
+normal MM refusal contract makes this possible when both extents are
+physically pinned. The driver now retains that unpublished extent in
+one DPY-MRES word, `dpy_list_orphan_v912`; the original active list
+remains published. The next DPY WRITE_WORDS or STOP first retries the
+orphan release, without allocating further memory or changing PI7.
+If MM still refuses, it propagates the error without losing ownership;
+if MM succeeds, it clears the orphan before the requested operation.
+The original list's clock refresh is rearmed after double failure.
+
+PDP-6 native v912 proves double refusal, no HALT, one tracked orphan,
+no second allocation under continued refusal, successful orphan drain,
+subsequent replacement/STOP and unchanged original rollback policy.
+Existing v871/v874/v904 and PI7 policy regressions PASS. One optional
+DPY-MRES BSS word is added; no KCORE BSS or syscall ABI change.
+Permanent refusal can retain both allocations; this is safe ownership,
+not eventual reclamation. Full booted PI7/double-fault acceptance, fatal
+FILE teardown, provider locks, automatic OOM and KCORE size gates remain
+open. OOM termination stays disabled; TSFS v1.2 remains deferred.
+
 ## 2026-11-01 v911: SYS_MEMINFO counts all 16 FILE slots
 
 Full-system 256K PDP-6 exposed two independent resident SYS_MEMINFO

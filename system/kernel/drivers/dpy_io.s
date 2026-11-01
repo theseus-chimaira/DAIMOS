@@ -288,6 +288,17 @@ dpy_write_words:
         push 17,011
         move 010,1                    ; mapped source
         move 011,2                    ; requested packed words
+        ; A previous two-provider failure may have left an unpublished
+        ; extent owned by DPY. Drain it before allocating again or closing;
+        ; on MM_BUSY preserve both owners and return without new allocation.
+        skipn 1,dpy_list_orphan_v912
+        jrst dpy_list_ready_v912
+        movei 2,3
+        movei 3,014
+        pushj 17,mm_free
+        jumpn 1,dpy_list_done
+        setzm dpy_list_orphan_v912
+dpy_list_ready_v912:
         jumpe 011,dpy_list_stop
         jumpe 010,dpy_list_fail
         ; These ACs preserve both extents and the unpublished BLKO IOWD
@@ -353,8 +364,8 @@ dpy_list_commit_v874:
 
 ; Old release failed. It is still the only published list and IOWD.
 ; Discard the unpublished new extent, and let the clock rearm the old.
-; A failed rollback-free violates MM's allocation ownership invariant:
-; halting is safer than returning with an untracked live extent.
+; A second failed free leaves two legitimate extents. Record the
+; unpublished one for explicit retry; never lose its MM ownership.
 dpy_list_rollback_v874:
         move 1,012
         movei 2,3
@@ -367,8 +378,11 @@ dpy_list_rollback_v874:
         seto 1,
         jrst dpy_list_replace_done_v874
 dpy_list_rollback_bad_v874:
-        halt
-        jrst dpy_list_rollback_bad_v874
+        movem 012,dpy_list_orphan_v912
+        movei 2,1
+        movem 2,dpy_refresh_divider
+        sub 17,kconst_1_1
+        jrst dpy_list_replace_done_v874
 dpy_list_alloc_fail:
         sub 17,kconst_1_1
         seto 1,
@@ -458,6 +472,10 @@ dpy_clk_last_tick:
         .block 1
 /** Base of the active persistent raw display list, or zero. */
 dpy_list_base:
+        .block 1
+/** Unpublished DPY extent retained after a double MM-free failure. */
+        .globl dpy_list_orphan_v912
+dpy_list_orphan_v912:
         .block 1
 /** Immutable initial BLKO descriptor for the active persistent raw list. */
 dpy_list_iowd:
