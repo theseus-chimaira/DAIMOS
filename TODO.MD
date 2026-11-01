@@ -8,6 +8,10 @@
   table, provider ABI or MEMFS changes.
 - [x] Native PDP-6 v915 recursive-owner and other-process waiter tests
   PASS. Existing v866, v326 and v327 tests PASS.
+- [x] Full 256K PDP-6 v914 fatal FILE-provider refusal regression rebuilt
+  against the final nine-instruction v915 KCORE and PASS (11 provider
+  -4 refusals, 11 stable FD checks, 512-tick backoff, normal test HALT).
+  Not yet a full-system recursive-provider-lock injection.
 - [ ] A different process owning a permanently stalled provider remains
   a separate unresolved progress case. Full-system PI6/clock provider
   lock acceptance and allocation-free fatal/OOM termination remain P0.

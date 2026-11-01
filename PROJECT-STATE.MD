@@ -14,6 +14,13 @@ no new BSS, per-process metadata, heap or provider ABI changes.
 Native PDP-6 v915 verifies recursive -5, unchanged lease ownership,
 zero owner sleeps and subsequent cross-process wait/release. The v866,
 v326 and v327 lock/dispatch/AC-preservation regressions also PASS.
+Final integrated v915 rerun: booted 256K PDP-6 with the compacted
+nine-instruction gateway PASSes the full v914 APR-fault/permanent FILE
+provider refusal test: 11 rejected provider calls, 11 preserved FILE
+ownership checks, 11 private sleeps, 512-tick cap, zero errors and a
+runnable bystander through controlled guest HALT. This checks system
+regression, not a booted nested-lock injection.
+
 This establishes local self-deadlock avoidance, not recovery when a
 separate process holds a provider lock indefinitely. Full booted
 provider-lock failure/PI6 and allocation-free OOM fatal cleanup remain
