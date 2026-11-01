@@ -611,6 +611,12 @@ proc_finish_new_v881:
         move    1,2(12)
         tlne    1,PROC_WAIT_LH_MASK
         jrst    proc_finish_fail
+        ; Wakeup clears WAIT_CHILD before the saved executive stack
+        ; resumes. A foreign finalizer must also reject that handoff.
+        hlrz    1,(12)
+        move    1,CTX_PC(1)
+        tlnn    1,010000               ; saved return must be user mode
+        jrst    proc_finish_fail
 proc_finish_new_self_v920:
         move    1,(12)
         trnn    1,0400000               ; PROC_F_UAREA
@@ -1638,6 +1644,9 @@ proc_event_fatal_other:
         tlne    1,PROC_WAIT_LH_MASK
         jrst    proc_event_fatal_other_close_fail_v867
         hlrz    1,(012)
+        move    2,CTX_PC(1)
+        tlnn    2,010000               ; no saved executive continuation
+        jrst    proc_event_fatal_other_close_fail_v867
         addi    1,PROC_FILE_TABLE_OFFSET ; target private file table
         pushj   17,file_close_all_at_v865
         ; A failed SYNC leaves the descriptor live. Do not release the
@@ -3794,6 +3803,9 @@ proc_oom_provider_clear_v866:
         trnn    1,0400000               ; stable u-area required
         jrst    proc_oom_next_v863
         hlrz    1,1
+        move    2,CTX_PC(1)
+        tlnn    2,010000               ; saved executive context is live
+        jrst    proc_oom_next_v863
         move    2,PROC_FDCTL_OFFSET(1)
         trne    2,PROC_USER_MAP_BIT
         jrst    proc_oom_next_v863
