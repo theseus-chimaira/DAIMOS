@@ -1,3 +1,32 @@
+### v909: P0 permanent physical-MM refusal and capped idle reaper (2026-11-01)
+
+- [x] Reproduced a true CPU-intensive leak of retries under permanent
+  physical `mm_pin`: the PDP-6 slot-0 idle loop retried a still-owned
+  u-area every clock tick (1,281 rejected `mm_free` calls, 1,280 reaper
+  passes across the guest's 02400-octal-tick observation period). The
+  timer-driven scheduler admission path had a cap, but the already-idle
+  loop ignored it. Negative control and original simulator transcript
+  retained in v909 test evidence.
+- [x] The idle loop now checks wrapped elapsed ticks against the existing
+  shared retry interval before trying deferred MM release. No new BSS,
+  per-process retry table, forced MM free or module dependency. The real
+  guest records 7 refused frees, 6 reaper passes, 1 physical pin and
+  no test errors; the independent bystander keeps running.
+- [x] Once fatal FILE closure and VM destruction have committed, clear
+  stale `PROC_FATAL_CLOSE_BIT` on the post-VM pending-u-area owner. A
+  TRANSITION+VM_NONE+FINALIZE marker still quarantines it; GETTEARDOWN
+  now correctly reports MM stage and the capped 01000-octal (512-tick)
+  interval rather than the obsolete FILE stage. Native v909 verifies
+  exact-once finalization and the old-code negative control fails.
+- [x] Full-system v909 on 256K PDP-6: real APR fault, permanent pinned
+  u-area, `GETTEARDOWN` MM and physical pin diagnostics, nonblocking
+  WAIT refusal, independent runnable child, controlled test HALT PASS.
+- [ ] Permanent failure still retains physical RAM indefinitely; this
+  is safe ownership and bounded work, NOT successful recovery or safe
+  automatic OOM termination. Continue locked-provider, nested fatal
+  teardown and allocation-free OOM policy work. KCORE shrinking and
+  TSFS v1.2 remain deferred.
+
 ### v908: live DPY raw-list MM_BUSY and PI7 completion (2026-11-01)
 
 - [x] Full-system 256K PDP-6 headless Type-340 (`DPY OK`) verifies the

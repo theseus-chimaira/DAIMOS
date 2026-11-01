@@ -1,3 +1,22 @@
+## 2026-11-01 v909: actual permanently pinned MM u-area, bounded reaper
+
+Full-system 256K PDP-6 v909 exposed an idle-loop P0 bug: with one
+permanently pinned, finalized u-area, the old slot-0 reaper attempted
+`mm_free` 1,281 times in 1,280 elapsed maintenance ticks rather than
+respecting the shared capped retry interval. The kernel now gates the
+idle loop on wrapped elapsed timer ticks, using its existing packed
+retry word. Another post-VM correctness change clears the expired
+fatal-FILE-close phase bit when retaining a finalized u-area; the
+TRANSITION+VM_NONE+FINALIZE owner remains protected. Production
+GETTEARDOWN now identifies the outstanding MM stage and one physical
+pin instead of reporting stale FILE ownership. The corrected guest
+records 7 refused frees, 6 reaper passes, one pin, no errors, a
+continuously runnable bystander, nonreapable WAIT and normal test HALT.
+Test-only fault hooks remain in daimos-testkit. No new permanent data,
+no resource forced free, no size optimization. Permanent provider
+refusal still owns RAM indefinitely; automatic OOM termination stays
+OFF. Tests and negative controls are in daimos-testkit v909.
+
 ## 2026-11-01 v908: live DPY MM_BUSY retains an active raw list
 
 Full 256K PDP-6 with a headless but present Type-340 (`DPY OK`) accepts

@@ -1,3 +1,23 @@
+## 2026-11-01 v909: permanent MM refusal cannot spin the idle reaper
+
+A booted 256K PDP-6 fault-injected physical pin on an APR-fault victim's
+u-area found that `proc_idle_loop` retried MM release every timer tick,
+even though `proc_sched_tick_select` already enforced shared capped
+backoff. The original guest made 1,281 failed frees and 1,280 reaper
+passes under the same one permanent pin. The corrected idle loop
+subtracts the saved timer epoch modulo the existing clock mask and
+requires the existing retry interval to elapse before every attempt.
+The fixed guest makes 7 failed frees and 6 reaper passes in the same
+02400-octal-tick window, with no additional permanent state. A second
+lifecycle correction clears the private fatal-FILE flag only after VM
+teardown has committed and the u-area finalizer has been recorded;
+TRANSITION+VM_NONE+FINALIZE retains ownership. GETTEARDOWN now reports
+MM, 512-tick backoff and one real pin, and WAIT(NO HANG) cannot reap
+the victim. A separate child remains runnable. Native v909 pre-fix
+negative control and deferred-owner/FILE-witness regressions cover the
+transition. This is safe retention, not a permanently failing MM
+provider's recovery or approval to enable OOM killing.
+
 ## 2026-11-01 v908: live DPY MM_BUSY retains an active raw list
 
 Full 256K PDP-6 with a headless but present Type-340 (`DPY OK`) accepts

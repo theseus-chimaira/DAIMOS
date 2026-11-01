@@ -706,6 +706,13 @@ proc_finish_defer_uarea_v881:
         movsi   4,PROC_FINALIZE_MARK_LH
         hrr     4,11
         pushj   17,proc_finish_mark_pending_v892
+        ; VM teardown has committed and the private fatal-FILE close
+        ; continuation is already gone. The remaining owner is the
+        ; pinned u-area, not a FILE provider. Drop the stale fatal-close
+        ; stage bit; TRANSITION+VM_NONE+FINALIZE still quarantines the
+        ; slot until the real MM provider accepts its release.
+        movei   5,PROC_FATAL_CLOSE_BIT
+        andcam  5,PROC_FDCTL_OFFSET(3)
         jrst    proc_finish_fail
 
 /** Register a post-VM cleanup owner without additional resident state.
@@ -3927,17 +3934,26 @@ proc_swap_victim_return:
 
         .globl  proc_idle_loop         ; v843 scheduler handoff trace
 proc_idle_loop:
-        ; Try deferred post-VM u-area releases at most once per clock
-        ; tick. Unlike a busy retry, this permits running jobs to
-        ; unpin MM resources. No per-slot retry table is allocated.
+        ; Both timer-driven admission and this already-running idle
+        ; loop must enforce the shared retry interval. Merely checking
+        ; for a different tick would retry a permanently pinned u-area
+        ; 60 times/second when no runnable user leaves slot 0.
+        ; The timer epoch and capped backoff share the original word.
         move    2,proc_finish_last_tick_v881
         tlnn    2,0400000
         jrst    proc_idle_swap_v881   ; no deferred work, skip MM scan
         move    1,proc_timer_clock
         andi    1,PROC_TIMER_CLOCK_MASK
-        andi    2,PROC_TIMER_CLOCK_MASK
-        camn    1,2
-        jrst    proc_idle_swap_v881
+        hrrz    3,2                    ; epoch of previous attempt
+        sub     1,3
+        andi    1,PROC_TIMER_CLOCK_MASK ; wrapping elapsed interval
+        hlrz    3,2
+        andi    3,0377777             ; current shared retry delay
+        jumpe   3,proc_idle_swap_v881 ; malformed zero delay: fail closed
+        camge   1,3
+        jrst    proc_idle_swap_v881   ; next retry not yet due
+        move    1,proc_timer_clock
+        andi    1,PROC_TIMER_CLOCK_MASK
         hrrm    1,proc_finish_last_tick_v881
         pushj   17,mach_pi_disable
         push    17,1
