@@ -1,3 +1,26 @@
+## 2026-11-01 v891: permanently failing FILE owner survives under load
+
+The new testkit v891 full-system guest injects persistent -5 from
+VFS-sync for the selected real APR-faulted process's FD 0, while a
+separate user program continues running. In a 02400-octal-tick
+observation, the actual fatal FILE continuation performs exactly
+11 failed close passes and 11 private timer sleeps, reaches the
+01000-octal-tick (512 decimal) exponential delay cap, and never
+drops its FD, u-area witness or owner. The user's existing
+`GETTEARDOWN(pid|0400)` check reports stage FILE, first FD 0,
+error class 5. No premature victim EXIT or test errors. The
+disposable kernel deliberately halts on INIT exit for measurement;
+the test does not simulate provider recovery or claim reclamation.
+
+Full-system PDP-6 SIMH PASS. No production changes, kernel size
+or static-RAM growth: KCORE 022124 octal = 9,300 words, +1,108
+relative to 8,192. A permanently refusing or metadata-invalid
+provider still has no universally safe automatic release action;
+automatic OOM process termination stays disabled pending verified
+allocation-free lifetime handling. Continue with actual MM owner
+inconsistencies and release-provider recovery policy before a
+final KCORE feature/size freeze.
+
 ## 2026-11-01 v890: irreversible EXEC/FILE retry full-system PASS
 
 The remaining v889 full-system post-commit EXEC fatal recovery

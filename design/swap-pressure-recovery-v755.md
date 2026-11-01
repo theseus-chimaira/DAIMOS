@@ -3,6 +3,34 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v891: Persistent FILE refusal remains owned and schedulable
+
+The v889/v890 tests ended after the provider accepted its third close;
+v891 tests the different case where the selected owner never gets
+a successful provider return. A booted PDP-6 process actually traps
+in user mode through APR PI6. A disposable-kernel VFS-sync hook
+refuses that process's FD 0 with -5 on **every** close attempt.
+A separately scheduled user process continues producing output.
+
+After 02400 octal ticks the full-system guest reports 11 failed
+VFS calls, 11 FILE-close passes, 11 owner-stack timer sleeps,
+all 11 observations with the descriptor retained, stage FILE/FD 0/
+error 5 still visible to INIT through the production read-only
+`GETTEARDOWN(pid|0400)` syscall, and the expected maximum retry
+delay 01000 octal (512 decimal) ticks. There are no successful
+closes, witness clears, victim exits or test assertion errors.
+INIT reaches a test-only HALT for snapshot collection. PASS.
+
+The existing exponential retry policy therefore bounds repeated
+FILE-cleanup CPU overhead during this observation without releasing
+references behind an uncooperative provider. The victim remains
+quarantined and consumes its process slot and kernel u-area; this
+is **not** guaranteed memory reclamation. Any administrative repair
+must be provider-specific and honor outstanding resource lifetimes.
+No forced unpin, forced descriptor close, retry-count eviction or
+automatic OOM kill may be inferred from the test. Production source,
+size (KCORE 022124 octal), ABI and static RAM are unchanged.
+
 ## v890: Real destructive EXEC failure with transient FILE refusal
 
 The v889 APR-fault acceptance proved the genuine hardware-fault

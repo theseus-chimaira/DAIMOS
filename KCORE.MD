@@ -1,3 +1,28 @@
+## 2026-11-01 v891: permanent FILE-refusal containment accepted
+
+The disposable PDP-6 testkit `daimos-fatal-file-persistent-v891.sh`
+now exercises a real user APR fault with a VFS-sync provider that
+continues returning -5 for FD 0. This differs from v889/v890, whose
+providers eventually accepted the third close. The original owner
+retains its private stack, FILE descriptor and u-area word-067 error
+witness throughout the failing interval; `GETTEARDOWN(pid|0400)`
+continues to report FILE stage 1, FD 0 and actual error class 5.
+
+Native full-system PDP-6 SIMH PASS after 02400 octal timer ticks:
+11 provider rejections, 11 FILE cleanup passes, 11 owner-stack
+sleeps, retry delay capped at 01000 octal (512 decimal) ticks,
+11 owned-FD checks, no forced close, witness clear or victim EXIT,
+an independently running user process and zero test errors.
+The test-only HALT stops the isolated guest after INIT checks the
+read-only diagnostic; it does not imply that the victim was reaped.
+
+**No DAIMOS source/binary or resident data changed.** Last accepted
+KCORE size remains 022124 octal (9,300 words; 1,108 above the
+8,192-word target). This is bounded CPU overhead and safe ownership
+retention, **not** eventual recovery from a permanently broken
+provider. Provider-specific repair, malformed MM owner diagnosis,
+full exhaustion gates and automatic OOM termination remain open.
+
 ## 2026-11-01 v890: full-system destructive EXEC failure recovery
 
 No production KCORE code or data changes. The disposable PDP-6

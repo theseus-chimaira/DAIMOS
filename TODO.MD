@@ -2,6 +2,19 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [x] v891: full-system *permanent* FILE provider refusal containment.
+  Genuine APR fault, copied-kernel VFS-sync rejects FD 0 indefinitely,
+  while an independent user runs. Through 02400 octal clock ticks the
+  private owner performs 11 rejected passes/sleeps, retains FD and
+  real ERR 5 diagnostic, and reaches the 01000 octal (512-tick)
+  exponential backoff cap with no forced release or premature exit.
+  Actual PDP-6 SIMH PASS, no DAIMOS changes or additional kernel RAM.
+- [ ] v891 follow-up: classify and repair invalid/missing/type/owner MM
+  extents and other permanently failing FILE providers in their owning
+  subsystems. A saturated retry delay does not authorize forced free.
+  Define what an administrator can safely do without invalidating
+  outstanding provider references. Automatic OOM termination remains
+  disabled until complete allocation-free teardown is guaranteed.
 - [x] v890: real full-system post-commit EXEC fatal FILE failure
   recovery. Valid user `EXEC` enters true low-memory fallback
   after injected pre-stage NOMEM; the production VM destroy
