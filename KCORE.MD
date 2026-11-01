@@ -1,3 +1,26 @@
+## 2026-11-01 v917: fix owner-encoded provider event busy retry
+
+The real PDP-6 scheduler checks the entire `proc_wait_event` word.
+The filesystem gateway formerly passed `fs_provider_ready` as that
+word, but a held lease stores owner_slot+1 in its left half. The
+nonzero value made a foreign waiter retry without sleeping. A full
+256K booted guest exposed 8193 repeated lock attempts and stalled
+independent work. The gateway now uses one separate resident event
+word, zero while held and signaled when the owner unlocks. The lock
+word continues to identify its original owner. Slot 0 returns -5
+rather than entering the bootstrap wait loop on a foreign lease.
+
+Native v917 validates the zero event and slot-zero refusal, with v915,
+v916, v866, v326 and v327 provider tests passing. Full booted v917
+shows one holder and one waiter blocked, owner encoding 4,,0 stable
+at acquisition, contention and controlled HALT, 72 bystander sleep
+cycles and zero errors. The first post-fix guest timeout came from a
+fault-injection hook accidentally using the old lock word again; the
+corrected hook and genuine scheduler path passed. No forced unlock,
+per-process state or syscall ABI change. One resident event word was
+added. A nonreturning owner's resources remain owned; automatic OOM
+victim termination is not yet enabled.
+
 ## 2026-11-01 v916: foreign FS provider lock cannot be stolen
 
 Native PDP-6 testkit v916 exercises the production fs_provider_reg_call

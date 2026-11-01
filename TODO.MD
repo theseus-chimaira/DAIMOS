@@ -1,3 +1,17 @@
+### v917: correct serialized FS lock event and booted scheduler (2026-11-01)
+
+- [x] Repair busy retries caused by using the nonzero owner-encoded
+  lock as the scheduler event. Use one separate event word; preserve
+  owner identity and normal unlock notification.
+- [x] Reject a foreign held lease from slot zero without bootstrap spin.
+- [x] Native v917 and earlier provider-lock tests PASS.
+- [x] Booted 256K PDP-6 test: owner held, foreign waiter blocked,
+  owner 4,,0 unchanged, 72 bystander ticks, zero errors, normal HALT.
+  Negative control had 8193 busy retries without scheduler progress.
+- [ ] Event-level progress does not guarantee disposal of permanently
+  unresponsive providers. Allocation-free fatal/OOM cleanup remains P0;
+  automatic OOM killing stays OFF, TSFS v1.2 remains deferred.
+
 ### v916: foreign provider-lock ownership/waiter regression (2026-11-01)
 
 - [x] Native PDP-6 FS gateway test holds another process's provider
