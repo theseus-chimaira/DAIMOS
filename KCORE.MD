@@ -1,3 +1,20 @@
+## 2026-11-01 v898: full-system real pinned TTY detach rejection
+
+The v897 ownership guard now passes a second, stronger acceptance test.
+A disposable 256K PDP-6 image builds the production KCORE with a
+single test-only `proc.c` instrumentation hook. On the first TTY
+`DETACH` it allocates a real canonical line extent, pins that exact
+base through the actual PDP-6 MM allocator, and allows the regular
+`mm_free` to reject release. The userland syscall observes -1 and the
+controlling session remains attached. Before the second DETACH, the
+test unpins the same base; normal MM cleanup succeeds. A subsequent
+session ATTACH and an independently running child complete normally.
+Full-system SIMH PASS: helper calls 4, pins 1, MM_BUSY 1, unpins 1,
+errors 0, valid MM base 20005 (decimal), user success and HALT. No
+production source or permanent data changed in v898. No KCORE size
+optimization was attempted. Persistent provider and OOM kill gates
+remain unresolved.
+
 ## 2026-11-01 v897: TTY canonical-buffer owner gate, no size sweep
 
 With feature correctness taking priority over KCORE size reduction, the

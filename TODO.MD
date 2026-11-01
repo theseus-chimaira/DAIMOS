@@ -1,3 +1,18 @@
+### v898: booted PDP-6 real TTY MM_BUSY release acceptance (2026-11-01)
+
+- [x] Production v897 control path accepted with actual physical
+  `mm_alloc`, `mm_pin`, rejected `mm_free`, `mm_unpin`, and successful
+  retry, all in a booted 256K PDP-6 guest. The test kernel is an
+  isolated overlay; the production source is unchanged.
+- [x] Session owner stays attached through the first rejected
+  `TTY_DETACH`; the second attempt succeeds only after unpin.
+  Subsequent attach/child session activity and normal HALT PASS.
+  Test counters: four checked operations, one physical pin, one
+  MM_BUSY, one unpin and zero errors. No KCORE size work was run.
+- [ ] Remaining feature gates: refused FILE/MM providers, nonreturning
+  fatal cleanup, session HUP partial-commit cases, and allocation-free
+  OOM victim retirement. Automatic OOM termination stays disabled.
+
 ### Feature completion priority and TTY ownership v897 (2026-11-01)
 
 - [x] Defer the KCORE 8,192-word size-reduction sweep until functional

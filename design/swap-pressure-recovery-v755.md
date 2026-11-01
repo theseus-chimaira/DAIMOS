@@ -1,3 +1,16 @@
+## v898: booted TTY MM pin/retry owner lifetime acceptance
+
+The v897 checked TTY release no longer relies only on a native unit
+harness. A full 256K PDP-6 guest with a copied-kernel test hook
+performs real MM allocation and pinning of a canonical SIXBIT line.
+The public TTY_DETACH syscall refuses release while pinned and retains
+the original session; after one true `mm_unpin`, the next syscall
+releases the line and removes the session. Normal child and reattach
+behavior continue. Guest counters prove one pin, one MM_BUSY, one
+unpin and zero errors, without production data changes or forced free.
+This closes a concrete FILE/MM cleanup prerequisite, not the full OOM
+allocation-free termination proof.
+
 ## v897: TTY canonical input ownership is an OOM teardown gate
 
 An EXIT or explicit `TTY_DETACH` could attempt to free its per-TTY

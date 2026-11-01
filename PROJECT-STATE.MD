@@ -1,3 +1,16 @@
+## 2026-11-01 v898: real PDP-6 TTY pinned-release test PASS
+
+The production v897 canonical line owner guard is additionally
+accepted in a booted 256K PDP-6 guest with the actual MM allocator.
+An isolated test kernel allocates and pins the exact TTY line, proves
+first `TTY_DETACH` fails without changing session ownership, unpins
+before retry, then observes successful detach, reattach, independent
+child behavior and normal HALT. Counters: 4 checked calls, 1 pin,
+1 blocked MM release, 1 unpin, 0 errors. Test-only hooks are not
+committed into production. KCORE size optimization remains deferred.
+Automatic OOM victim termination is still disabled pending complete
+allocation-free FILE/MM/session cleanup acceptance.
+
 ## 2026-11-01 v897: feature-first TTY owner containment
 
 At the user's direction the KCORE shrinking effort is deferred until
