@@ -1,3 +1,31 @@
+## 2026-11-01 v925: protect saved executive context after wait wakeup
+
+The v924 wait-class guard missed the interval after a child's CHLD
+wakeup clears WAIT_CHILD but before the noncurrent parent's saved
+executive stack resumes. `proc_restore_kernel_tail` restores and clears
+the saved CTX_PC only when the owner runs; while noncurrent, its stable
+u-area CTX_PC still carries the PI return mode. An executive return
+lacks LH 010000 (the user-mode return bit). The OOM selector, remote
+fatal path, and direct foreign finalizer now refuse such a context,
+in addition to existing wait-class/lease and fatal-FILE protections.
+The current owner may still unwind its own stack. Twelve assembly
+instructions, no new KCORE data words, per-process state, or ABI.
+
+Native PDP-6 v925 pre-fix negative controls reproduced unsafe OOM
+selection (exit 010), remote fatal (032), and direct finish (034).
+The repaired source passes these three tests, existing WAIT_CHILD and
+INTR checks, and historical FILE, RT, session/finalizer and rollback
+native regressions. Extracted-source fixtures now explicitly initialize
+saved user PI returns; the v921 static audit asserts all three CTX_PC
+checks as well as the wait-class masks.
+
+Booted 256K PDP-6 v924 provider/WAIT_CHILD compatibility on v925 PASS:
+three fatal refusals (one real WAIT_CHILD), stable owner lease 4,,0,
+73 bystander cycles, zero errors, controlled HALT. This is booted
+nonregression rather than direct handoff injection. Cooperative pending
+TERM delivery, genuinely stalled provider recovery and allocation-free
+OOM termination remain P0. OOM killing stays OFF.
+
 ## 2026-11-01 v924: protect all private wait-class continuations
 
 The v918/v920 remote teardown and OOM guards incorrectly tested only

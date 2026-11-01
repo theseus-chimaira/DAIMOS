@@ -1,3 +1,20 @@
+### v925: guard saved executive wakeup handoff (2026-11-01)
+
+- [x] Detect CHLD wakeup gap: WAIT_CHILD cleared before the private
+  saved executive continuation is restored, so wait bits alone are not
+  an adequate noncurrent teardown guard.
+- [x] Protect read-only OOM selection, remote fatal FILE close, and
+  direct finalization using existing CTX_PC user-return bit in addition
+  to the v924 wait mask. Twelve instructions, zero new resident words.
+- [x] Negative controls: OOM exit 010, fatal 032, finish 034 on old code;
+  corrected native PDP-6 tests and historical teardown regressions PASS.
+- [x] Booted v924 provider/child-wait regression on v925 PASS:
+  three fatal refusals, one WAIT_CHILD, stable 4,,0 lease,
+  73 independent sleep cycles, zero errors, controlled HALT.
+- [ ] Direct full-system wakeup-handoff injection and deferred cooperative
+  TERM delivery remain open. Do not release a live executive stack;
+  bounded provider recovery and allocation-free OOM killing still P0.
+
 ### v924: protect all private wait classes (2026-11-01)
 
 - [x] Fix v918/v920 guards in OOM selection, foreign fatal delivery and
