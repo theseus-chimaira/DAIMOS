@@ -1,3 +1,20 @@
+## 2026-11-01 v918: preserve private kernel-event continuations
+
+A process in PROC_WAIT_EVENT_LH sleep may still own an active private
+executive stack, including a blocked filesystem-provider or MM call.
+Non-current fatal delivery now refuses to close such a victim's FILE
+references or destroy its VM; OOM selection omits the same protected
+waiter. Both changes use existing resident scheduler state. Twelve
+assembly lines added, no BSS, process-table, syscall or module ABI
+changes. This is safety containment, not forced recovery.
+
+Native PDP-6 v918 separately verifies refusal without close/VM mutation,
+normal fatal lifecycle after the event state clears, and exclusion from
+OOM candidate selection. Existing v866, v883, v879, v868, v867, v865
+and v885 native regressions PASS. Full booted v918 fatal delivery under
+a live private-event wait and allocation-free OOM termination remain
+unverified. Automatic OOM killing stays OFF; TSFS v1.2 is deferred.
+
 ## 2026-11-01 v917: fix owner-encoded provider event busy retry
 
 The real PDP-6 scheduler checks the entire `proc_wait_event` word.

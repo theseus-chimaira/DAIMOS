@@ -1,3 +1,14 @@
+### v918: protect private kernel-event stacks from remote teardown (2026-11-01)
+
+- [x] Refuse non-current fatal close/VM release when victim has an active
+  PROC_WAIT_EVENT_LH continuation. Do not reclaim an active stack.
+- [x] Exclude such waiters from read-only OOM candidate selection.
+  No new resident RAM, metadata or syscall ABI changes.
+- [x] Native v918 fatal and OOM regressions PASS; native v866/v883/v879,
+  v868/v867/v865/v885 regression chain PASS.
+- [ ] Booted full-system fatal-event acceptance, stalled-owner recovery
+  and allocation-free OOM cleanup remain P0. OOM killing stays OFF.
+
 ### v917: correct serialized FS lock event and booted scheduler (2026-11-01)
 
 - [x] Repair busy retries caused by using the nonzero owner-encoded
