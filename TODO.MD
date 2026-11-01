@@ -1,3 +1,19 @@
+### v913: live PDP-6 double-MM release refusal acceptance (2026-11-01)
+
+- [x] Booted 256K PDP-6 with Type-340 PI6 refresh/PI7 completion and
+  real MM pinning of two distinct owner-014 raw-list extents.
+- [x] Original list base 19760 equals published `dpy_list_base`;
+  unpublished replacement base 19792 equals `dpy_list_orphan_v912`.
+  Four rejected frees (replacement, rollback, next WRITE and CLOSE),
+  2 pins, 0 unpins, 0 errors, 18 PI6/PI7 cycles and 12 post-error
+  refreshes; guest <D and normal HALT. No extra allocation.
+- [x] Existing native v912/v874/v904 regressions PASS. No production
+  source/ABI/RAM change. Fault hooks remain only in daimos-testkit.
+- [ ] Permanent refusal preserves both physical allocations; forced
+  reclamation is not permitted. Fatal FILE/MM provider teardown,
+  provider locks and allocation-free OOM termination remain P0.
+  OOM killing stays OFF; TSFS v1.2 and size optimization stay deferred.
+
 ### v912: DPY double-free replacement failure containment (2026-11-01)
 
 - [x] Replace the HALT on consecutive old-list and new-list MM-free

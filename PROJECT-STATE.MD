@@ -1,3 +1,26 @@
+## 2026-11-01 v913: booted Type-340 double-MM refusal accepted
+
+Full-system 256K PDP-6 with a live raw Type-340 program exercises the
+v912 double-MM-release path, not only an isolated MM stub. A test-only
+copied kernel pins the active old list (physical base 19760 decimal)
+and the new unpublished list (base 19792 decimal) at their actual MM
+free boundaries. Both free attempts return MM_BUSY. A subsequent
+WRITE_WORDS and final CLOSE each return MM_BUSY before allocating or
+unpublishing anything further. Runtime ownership witnesses confirm
+`dpy_list_base == 19760` and `dpy_list_orphan_v912 == 19792` after
+all four refusals. FILE/process slot accounting remains unchanged.
+There are two physical pins, zero unpins, four rejected frees, zero
+errors, 18 live PI6 refreshes, 18 PI7 BLKO completions and 12 refreshes
+after first MM_BUSY. The guest prints <D and HALTs normally. Native
+v912/v874/v904 regressions pass. Fault hooks and ownership witnesses
+live only in the v913 testkit's disposable kernel copy; production
+image, kernel ABI and permanent RAM are unchanged since v912.
+This proves safe retained ownership under simultaneous permanent
+refusal, not reclamation of the two still-pinned MM extents. Permanent
+fatal FILE teardown, provider lock failures, and allocation-free OOM
+victim retirement remain P0. OOM killing remains OFF; TSFS v1.2 and
+final KCORE shrinking remain deferred.
+
 ## 2026-11-01 v912: DPY double-MM-free refusal retains both owners
 
 Type-340 replacement previously executed HALT if freeing the old active
