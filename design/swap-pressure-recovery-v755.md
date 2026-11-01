@@ -3,6 +3,26 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v895: Full guest pre-VM RUN MM_BUSY retry, not simulated return codes
+
+A disposable 256K PDP-6 image uses the production RUN, VM destroy,
+MM allocator and slot-zero reaper. A valid user RUN fails at a
+deliberately invalid fourth FD map after loading its child process
+VM. Test-only instrumentation pins that exact physical VM base
+before its destructor and unpins before the third overall attempt.
+The first two real `mm_free` calls return MM_ERR_BUSY (-5), with
+unpublished SIDL+TRANSITION and the v894 VM retry marker intact.
+The read-only stage-3 GETTEARDOWN query remains available while
+the owner is quarantined. The reaper retries twice, VM destruction
+then commits and the child becomes FREE without ZOMB or WAIT.
+
+Full-system SIMH PASS: target 3, pin 1, destructor attempts 3,
+busy results 2, unpin 1, reaper 2, errors 0. An independent user
+process runs; CTY `<RFBP` and HALT PASS. All hooks exist solely
+in the copied test kernel. No production change or new kernel RAM.
+This closes the real pre-VM MM_BUSY acceptance gap; permanently
+failing providers and automatic OOM termination remain open.
+
 ## v894: Recover unpublished RUN before VM destruction commits
 
 Unpublished RUN slots used to strand an allocated VM when

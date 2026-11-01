@@ -1,3 +1,31 @@
+## 2026-11-01 v895: full-system pre-VM RUN rollback MM_BUSY accepted
+
+The v894 native pre-VM rollback fix now passes a **booted 256K PDP-6**
+test using the actual MM allocator. A user RUN loads `/SYSTEM/INIT`
+and fails its fourth FD mapping. Only the copied test kernel pins the
+unpublished child's real process VM immediately before the normal
+`vm_space_destroy` call. Two genuine `mm_free` MM_ERR_BUSY (-5)
+results retain the VM, SIDL+TRANSITION, scheduler RH retry bit 02 and
+the read-only `GETTEARDOWN` stage 3 RUN_VM status. The existing
+slot-zero reaper executes twice, unpins the real VM on the third
+overall destructor attempt and finishes the rollback without creating
+a child or parent WAIT report.
+
+Native full-system `daimos-run-prevm-uarea-v895.sh` SIMH PASS:
+target PID 3, one physical pin, three destructor attempts, two
+actual MM_ERR_BUSY responses, one unpin, two slot-zero retry calls,
+zero test errors. An independently scheduled user child runs and
+exits normally. CTY `<RFBP` and normal HALT PASS. All fault
+injection lives in a disposable copied test kernel; there is **no
+new production source, binary, static RAM, ABI or size change**.
+The last v894 GCC lowmem disk-root KCORE remains `022322` octal
+(9,426 words), +1,234 above 8,192.
+
+This completes the v894 pre-VM RUN MM_BUSY native-to-full-system
+acceptance. Permanently rejecting or corrupted providers, wider
+OOM exhaustion/victim/rollback coverage and the final resident size
+reduction remain open; automatic OOM killing is still disabled.
+
 ## 2026-11-01 v894: retry pre-VM RUN cleanup without a u-area
 
 `proc_slot_discard` previously cleared TRANSITION and returned when

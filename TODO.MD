@@ -2,6 +2,12 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [x] v895: real full-system PDP-6 pre-VM RUN MM_BUSY recovery.
+  Test-only `mm_pin` of the actual child process VM before a normal
+  destructor produces two genuine MM_ERR_BUSY failures, then one
+  `mm_unpin` permits the third attempt to complete. Slot-zero retry
+  calls 2, independent child runs, no unpublished-child WAIT,
+  zero errors and normal HALT. No production size or ABI changes.
 - [x] v894: failed VM destruction during unpublished RUN rollback,
   **including before u-area allocation**, retains SIDL+TRANSITION
   and one spare scheduler RH bit 02 for reaper retry. A later
@@ -11,10 +17,10 @@
   retry, stage-3/older query and deferred-cleanup regressions PASS;
   pre-v894 negative control FAILS. Same-profile GCC KCORE +45
   code words, no static RAM, ABI syscall slot or process-table growth.
-- [ ] v894 follow-up: prove actual **booted** PDP-6 pre-VM
-  `vm_space_destroy` MM_BUSY with a pinned unpublished child,
-  real retry/unpin, independent runnable work and no fabricated
-  parent WAIT. Full-system v893 only covered post-VM u-area MM_BUSY.
+- [x] v894 full-system VM-pin follow-up: v895 now verifies actual
+  booted PDP-6 `vm_space_destroy` MM_BUSY, retry/unpin, independent
+  runnable work, and absence of a fabricated parent WAIT. v893's
+  separate post-VM u-area busy case remains accepted.
 - [x] v893: full-system PDP-6 RUN rollback with actual u-area
   `mm_pin`, two genuine MM_ERR_BUSY (-5) releases, one `mm_unpin`,
   two slot-zero retries and final FREE. Test-only kernel overlay;

@@ -1,3 +1,21 @@
+## 2026-11-01 v895: genuine PDP-6 pre-VM RUN MM recovery PASS
+
+The v894 deferred VM cleanup now passes a real full-system
+PDP-6 fault-injection sequence. An unpublished RUN child fails
+its fourth FD mapping with a real process VM already allocated.
+The disposable kernel pins that VM before its real destructor;
+two actual `mm_free` returns are MM_ERR_BUSY -5. The v894 SIDL
+retry marker retains ownership without a spurious WAIT event.
+Slot-zero retry dispatch eventually unpins, completes VM teardown
+and frees the unpublished child. An independent child executes.
+
+SIMH testkit v895 PASS: target 3, pins 1, VM calls 3, busy 2,
+unpins 1, reaper 2, errors 0, guest CTY `<RFBP`, normal HALT.
+No DAIMOS code/data change. Last same-profile KCORE measurement
+remains 9,426 words (1,234 over 8,192). This closes the particular
+v894 real-process-VM release gate but not permanent provider recovery
+or the general allocation-free OOM termination requirement.
+
 ## 2026-11-01 v894: preserve unpublished pre-VM RUN owners
 
 Fixed a second rollback liveness gap after v893: `proc_slot_discard`
