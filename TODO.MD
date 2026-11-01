@@ -6,6 +6,9 @@
   No new resident RAM, metadata or syscall ABI changes.
 - [x] Native v918 fatal and OOM regressions PASS; native v866/v883/v879,
   v868/v867/v865/v885 regression chain PASS.
+- [x] Booted 256K PDP-6 v917 foreign-provider regression on v918 source
+  PASS: one held lease, one waiter, 72 independent bystander cycles,
+  unchanged owner, zero errors, controlled HALT.
 - [ ] Booted full-system fatal-event acceptance, stalled-owner recovery
   and allocation-free OOM cleanup remain P0. OOM killing stays OFF.
 

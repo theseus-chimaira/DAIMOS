@@ -8,6 +8,13 @@ waiter. Both changes use existing resident scheduler state. Twelve
 assembly lines added, no BSS, process-table, syscall or module ABI
 changes. This is safety containment, not forced recovery.
 
+Post-v918 full-system compatibility: the existing isolated 256K PDP-6
+v917 held-provider/waiter/bystander boot regression PASSed against v918
+KCORE. One held owner, one foreign waiter, stable lease 4,,0, 72
+unrelated bystander sleep cycles, zero errors and normal controlled
+HALT. This is a provider/scheduler non-regression, not an injected
+full-system remote fatal delivery against that suspended waiter.
+
 Native PDP-6 v918 separately verifies refusal without close/VM mutation,
 normal fatal lifecycle after the event state clears, and exclusion from
 OOM candidate selection. Existing v866, v883, v879, v868, v867, v865
