@@ -1,3 +1,22 @@
+### v896: RUN startup owns allocated u-area before fallible work (2026-11-01)
+
+- [x] Move the existing u-area descriptor publication before
+  `vm_space_startup`, preserving SIDL exclusion and the same three-word
+  process descriptor. A failed startup must enter `proc_slot_discard`
+  with actual ownership and release the exact MM extent, including
+  v892/v894 deferred cleanup on downstream provider errors.
+- [x] Full-system PDP-6 startup-branch fault injection PASS: one
+  unpublished RUN discard, exact MM u-area probe confirms 0 leaks,
+  valid second RUN/WAIT, and normal HALT. The v895-ordering negative
+  control independently detects exactly 1 leaked MM extent while
+  process slot/VM accounting appears normal. Same-profile GCC lowmem
+  KCORE 9,426, KCORE+MRES 15,912, endpoint 15,959, all unchanged.
+  Native v885/v892/v894 cleanup regressions PASS.
+- [ ] Recheck the original v197 full-system 16-case RUN fdmap rollback
+  regression after moving the u-area publication.
+- [ ] Persistent FILE/MM provider owner inconsistencies and safe OOM
+  termination remain open. No forced MM release is authorized.
+
 ## Size refresh and pending work (v513, 2026-10-27)
 
 ### v864: OOM handling for already-running processes (2026-10-31)

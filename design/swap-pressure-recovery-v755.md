@@ -1,3 +1,21 @@
+## v896: RUN startup MM ownership before potential rejection
+
+The PDP-6 RUN constructor used to attach its allocated u-area to the
+SIDL descriptor only after `vm_space_startup` succeeded. The child
+rollback path cannot release an unrecorded extent, so an injected
+startup error could strand memory even if the slot and process VM are
+properly discarded. Publishing the existing base and PROC_F_UAREA flag
+immediately after zeroing fixes the ownership window without making
+the child runnable. Subsequent rollback uses v892 post-VM and v894
+pre-VM retry ownership as before. This is an ownership correction,
+not proof that permanently failed providers can safely be evicted.
+A booted PDP-6 guest injects the error only at the unpublished RUN
+startup call site; the real MM diagnostic proves the exact u-area is
+freed. An isolated copy with pre-v896 publication ordering returns
+successfully from rollback but retains that MM extent, demonstrating
+a process-table-only check is insufficient. The guest then runs and
+reaps another child normally. No KCORE/MRES growth (9,426/15,912).
+
 # v755: Swap-in resource pressure and scheduler liveness
 
 Status: v851 full-system scheduler-pressure acceptance PASSES with the

@@ -1,3 +1,23 @@
+## 2026-11-01 v896: publish RUN u-area ownership before startup
+
+The unpublished PDP-6 RUN path now records its newly allocated,
+zero-filled kernel-dynamic u-area in the SIDL process descriptor
+before invoking `vm_space_startup`. On startup rejection, the normal
+`proc_slot_discard` path can therefore release the exact MM extent,
+with v892/v894 retry ownership preserved on provider refusal. This
+reorders three existing assembly instructions, with no new permanent
+state or process ABI. The production startup function presently has no
+normal error return, so a test-only injected rejection is required.
+Full-system 256K PDP-6 startup-error injection PASS: one discard,
+real-MM u-area probe shows zero leaked extents, subsequent RUN/WAIT and
+normal HALT. The identical test with isolated pre-v896 publication
+ordering detects exactly one leaked extent; occupied process slot
+accounting alone misses it. Native v885/v892/v894 cleanup tests PASS.
+Same-profile GCC disk-root lowmem KCORE remains 9,426 words,
+KCORE+MRES 15,912 and permanent endpoint 15,959 (no growth).
+Permanently broken provider recovery and safe allocation-free OOM
+termination remain open.
+
 ## 2026-11-01 v895: genuine PDP-6 pre-VM RUN MM recovery PASS
 
 The v894 deferred VM cleanup now passes a real full-system

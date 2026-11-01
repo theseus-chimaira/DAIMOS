@@ -1,3 +1,29 @@
+## 2026-11-01 v896: close RUN startup MM ownership window
+
+Source audit found that the PDP-6 `RUN` path allocated and zeroed a
+kernel-dynamic u-area, but only published its base and ownership flag in
+the SIDL process descriptor *after* `vm_space_startup` returned.
+`proc_run_startup_failed` already branches to `proc_slot_discard`,
+which can only release a u-area represented in the descriptor. Thus a
+startup rejection could leave an MM extent allocated with no owner in
+the process table. The current PDP-6 startup helper normally returns
+zero; fault injection is required to exercise this otherwise latent
+rollback hole. The v896 change moves the existing three publication
+instructions before the startup call; it adds no descriptor field,
+static allocation or normal-path code and does not publish an SRUN child.
+Full-system 256K PDP-6 acceptance injects one rejected startup at the
+RUN-specific call site (the production helper normally returns zero),
+then probes the exact u-area physical base with the real MM allocator:
+one discard, zero leaked extents, successful subsequent RUN and WAIT,
+normal HALT. The isolated v895-ordering negative control performs the
+same guest sequence but detects **one** stranded MM extent despite
+apparently normal process-slot and VM accounting. Native v885/v892/v894
+cleanup regressions PASS. Identical lowmem disk-root GCC package size:
+KCORE 9,426 words, KCORE+MRES 15,912, permanent endpoint 15,959,
+all unchanged from v895, with 1,234 words still above the 8,192 goal.
+This is not evidence that permanently broken FILE/MM providers can be
+forcibly reclaimed or that automatic OOM termination is safe.
+
 ## 2026-11-01 v895: full-system pre-VM RUN rollback MM_BUSY accepted
 
 The v894 native pre-VM rollback fix now passes a **booted 256K PDP-6**
