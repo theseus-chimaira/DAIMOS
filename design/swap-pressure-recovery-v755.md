@@ -3,6 +3,25 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v893: Guest verification of real MM_BUSY on unpublished RUN rollback
+
+An isolated full-profile PDP-6 image executes a user RUN of the real
+`/SYSTEM/INIT` image with a deliberately invalid fourth FD mapping.
+The child has acquired VM and stable u-area when RUN unwinds; the
+production VM destructor commits VM_NONE before a test-only MM pin is
+placed on that exact u-area extent. The actual production `mm_free`
+returns -5 for the first two release attempts, leaving the distinct
+v892 FINALIZE|DISCARD marker intact. Slot-zero cleanup retries twice
+and completes after a test-only `mm_unpin` before the third free.
+
+The parent sees no invalid WAIT report for the discarded child; an
+independent child runs and exits normally. The guest reaches CTY
+`<RFBP` and HALT. Test counters: target PID 3, pin 1, free calls 3,
+busy 2, unpin 1, reaper 2, errors 0: PASS. Hooks and counters exist
+only in the copied kernel. No production source, permanent memory,
+syscall ABI or image-size change in v893. Pre-VM rollback failures
+and permanent-provider failures remain distinct open work.
+
 ## v892: Unpublished RUN rollback after failed u-area MM release
 
 The original `proc_slot_discard` had a post-commit hole: on VM teardown

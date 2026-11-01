@@ -1,3 +1,28 @@
+## 2026-11-01 v893: real MM-busy RUN rollback in a full PDP-6 guest
+
+The v892 deferred unpublished-RUN cleanup is now accepted in a booted
+256K PDP-6 full-system test with the **real MM allocator**. The isolated
+test kernel pins the first rejected RUN child's existing u-area only
+after successful production `vm_space_destroy`, then lets normal
+`proc_uarea_release` call real `mm_free`. Two genuine MM_ERR_BUSY (-5)
+results preserve the TRANSITION/VM_NONE/FINALIZE|DISCARD owner. The
+slot-zero reaper retries twice; a test-only unpin before the third
+real `mm_free` lets cleanup publish FREE once. An independent sleeping/
+runnable user runs during this recovery. The parent never receives a
+spurious WAIT event for the unpublished child.
+
+Native full-system `daimos-run-discard-uarea-v893.sh` SIMH PASS:
+target PID 3, 1 pin, 3 frees, 2 MM_ERR_BUSY, 1 unpin, 2 reaper calls,
+0 test errors; guest CTY `<RFBP` and normal HALT. Fault injection
+and counters are confined to the copied test kernel. **No DAIMOS
+production code, ABI, KCORE size or static data changed in v893.**
+The last same-profile v892 lowmem KCORE remains 9,381 words.
+
+This closes the specific v892 post-VM RUN MM-retry acceptance gate,
+not irreversible pre-VM rollback failures, indefinitely broken
+providers or complete allocation-free OOM termination. Automatic OOM
+killing remains disabled pending those independent correctness gates.
+
 ## 2026-11-01 v892: retryable post-VM RUN rollback
 
 Fixed a resource-ownership hole in resident `proc_slot_discard`. An

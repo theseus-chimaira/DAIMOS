@@ -1,3 +1,21 @@
+## 2026-11-01 v893: full-system real RUN MM_BUSY recovery accepted
+
+The v892 unpublished-RUN deferred u-area fix now passes a 256K
+PDP-6 full-system acceptance with actual MM pin and free operations.
+An invalid fourth FD mapping fails a real user RUN after the child's
+VM and u-area were allocated. An isolated test-kernel hook pins the
+u-area after real VM destruction, causing two real `mm_free` -5
+responses. The existing slot-0 retry mechanism calls the release
+twice, unpins before its third attempt, and publishes FREE without
+zombie/WAIT. A second independently running child exits normally.
+
+SIMH guest PASS: target slot 3, pins=1, releases=3, busy=2,
+unpins=1, reaper=2, errors=0, CTY `<RFBP`, HALT. No production
+source, size, new resident data or syscall ABI change. KCORE's
+last measured v892 lowmem disk-root endpoint remains 9,381 words.
+Permanent provider refusal, pre-VM rollback and automatic OOM
+termination remain open; this pass is not an OOM-killer acceptance.
+
 ## 2026-11-01 v892: unpublished RUN post-VM cleanup is retryable
 
 Found and fixed a lost u-area ownership edge in `proc_slot_discard`:
