@@ -1,5 +1,12 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v934 full-system 256K PDP-6 CHLD/TERM completion with *both* FS
+  owner and waiter blocked: real lease remains 4,,0 at owner, waiter and
+  final HALT; CHLD=1, descendant EXIT=1, finalizer entry=1, failure=0,
+  owner return checks=3, 36 bystander cycles and correct TERM WAIT status.
+  This closes the previously missing held-provider CHLD/TERM control.
+- [ ] Booted FILE-close refusal/retry during owner TERM and exact-once VM,
+  descriptor, and u-area release, followed by other fatal-event precedence.
 - [x] v933 full-system 256K PDP-6 CHLD/TERM non-provider control: guest
   reaches child EXIT, `proc_finish_slot` success, CHLD publication, owner
   return gate, correct `SYS_WAIT_STATUS(SYS_WAIT_EXITED, 0400001U)` reap,

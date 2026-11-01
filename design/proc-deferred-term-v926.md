@@ -91,6 +91,14 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v934 held-provider full-system control PASS: a real FS lease owner
+  (slot 3) and waiter (slot 4) remain suspended across deferred TERM to
+  WAIT_CHILD parent (slot 5), descendant EXIT (slot 6), CHLD wakeup,
+  owner-side TERM consumption and INIT WAIT/reap. Owner, waiter and final
+  lease are all 4,,0; no finalizer failure and 36 independent bystander
+  cycles. The initial fixture ran TERM too early for the waiter; adjusted
+  timing establishes both wait conditions. This verifies safe preservation
+  of the held provider, not forced recovery or booted FILE-close retries.
 - v933 resolves the earlier apparent TERM status mismatch: WAIT returns
   `SYS_WAIT_STATUS(SYS_WAIT_EXITED, 0400001U)`, not just `0400001U`.
   The corrected booted guest prints completion `P` and HALTs with child
