@@ -250,6 +250,15 @@ proc_run_watermark_loop:
         jrst    proc_run_watermark_loop
 .endif
 
+        ; Publish MM ownership before startup can fail.  Discard uses the
+        ; stable descriptor to release this u-area on *every* later error;
+        ; attaching it only after startup stranded its allocation if that
+        ; helper rejected construction.  The freshly zeroed u-area has no
+        ; FILE references and remains unpublished in SIDL.
+        hrlm    014,(013)
+        movei   4,PROC_F_UAREA_RH
+        iorm    4,(013)
+
         ; Reuse the previously validated record start, without reparsing path.
         move    6,(17)
         add     17,kconst_4_4
@@ -285,10 +294,6 @@ proc_run_watermark_loop:
         movem   4,020(014)
         movei   4,PROC_USTACK_BASE(014)
         movem   4,021(014)
-
-        hrlm    014,(013)
-        movei   4,PROC_F_UAREA_RH
-        iorm    4,(013)
 
         ; Inherit SESSION/DOMAIN and resolve INHERIT/NEW/JOIN process-group
         ; semantics only after the child owns a stable u-area.  The helper
