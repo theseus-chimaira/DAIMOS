@@ -1510,6 +1510,24 @@ proc_session_teardown_loop:
         ldb     5,[POINT 8,PROC_FDCTL_OFFSET(4),32]
         came    5,010
         jrst    proc_session_teardown_next
+        ; A previous HUP may have committed its fatal exit but deferred
+        ; u-area MM release. If another member failed in that pass, retry
+        ; must not signal this already-dead member again: event_apply
+        ; refuses TRANSITION and would block TTY release indefinitely.
+        ; Skip only the exact irreversible VM_NONE+FINALIZE owner, not an
+        ; arbitrary transition or temporarily busy living process.
+        move    6,(012)
+        trnn    6,PROC_TRANSITION_RH
+        jrst    proc_session_teardown_deliver_v905
+        move    6,1(012)
+        camn    6,[-1]                 ; VM_SPACE_NONE
+        jrst    proc_session_teardown_pending_v905
+        jrst    proc_session_teardown_deliver_v905
+proc_session_teardown_pending_v905:
+        move    6,PROC_FINALIZE_OFFSET(4)
+        tlne    6,PROC_FINALIZE_MARK_LH
+        jrst    proc_session_teardown_next
+proc_session_teardown_deliver_v905:
         move    1,011
         movei   2,2                    ; default-fatal HUP
         pushj   17,proc_event_apply
