@@ -5,10 +5,14 @@
   not full-system CHLD wakeup-handoff injection.
 - [x] Record the required ownership, pending-delivery, PI6 and test contract
   in `design/proc-deferred-term-v926.md`. No production behavior changed.
-- [ ] Audit packed pending-event, finalization and scheduler bits before
-  selecting an existing durable slot for deferred INT/TERM/HUP/PIPE.
-- [ ] Implement accepted pending fatal delivery and a self-owned safe return
-  consumer; keep the v925 foreign executive-stack guards intact.
+- [x] Audit event bitmap layout and use the existing TERM bit for an
+  initial TERM-only deferred request. Other fatal-event precedence is open.
+- [x] Implement owner-return TERM consumption through the private fatal
+  close/retry path, retaining all v925 foreign executive-stack guards.
+- [x] Native v926 isolated deferral/coalescing and v925 fatal lifecycle PASS;
+  the three original v925 fatal/finish/OOM regressions still PASS.
+- [ ] Execute owner-return helper with a dedicated test of FILE refusal and
+  retry; establish precedence for remaining fatal events.
 - [ ] Prove repeated-send coalescing, FILE refusal/retry, exact-once teardown,
   and booted CHLD wakeup-to-executive-restore delivery. Keep OOM killing OFF.
 

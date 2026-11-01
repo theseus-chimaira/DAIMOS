@@ -20,6 +20,9 @@
         .globl mach_return_to_kernel_request
         .globl exec_native_syscall
         .globl mach_kernel_sp
+        .globl proc_deferred_term_check_v926
+        .globl proc_fatal_close_current_v879
+        .globl file_table
 
 /** Saved PDP-6 hardware JSR return word for the current monitor UUO. */
 mach_syscall_save:
@@ -60,9 +63,26 @@ mach_syscall:
         skipn mach_user_sp
         popj 17,
 
+        ; The owner is about to leave its private executive context. Handle
+        ; a deferred TERM here, never while another process owns this stack.
+        pushj 17,proc_deferred_term_check_v926
 
         move 17,mach_user_sp
         jrst 2,@mach_syscall_save
+
+; Called only at the owning process's monitor-UUO return boundary. The
+; private executive stack and file_table are installed; dispatch to the
+; existing allocation-free private fatal-close/retry path on pending TERM.
+proc_deferred_term_check_v926:
+        skipn 2,file_table
+        popj 17,
+        move 3,-2(2)
+        tlnn 3,004
+        popj 17,
+        movsi 3,004
+        andcam 3,-2(2)
+        movei 1,0400001
+        jrst proc_fatal_close_current_v879
 
 
         .globl mach_invalid_uuo_word

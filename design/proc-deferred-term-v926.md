@@ -1,6 +1,7 @@
 # v926: Deferred fatal delivery across executive continuations
 
-Status: design and baseline validation only; not implemented.
+Status: first TERM-only implementation and isolated event-delivery test; full
+owner-return and booted integration acceptance outstanding.
 Date: 2026-11-01
 
 ## Verified baseline
@@ -63,3 +64,32 @@ PROC_FINALIZE_OFFSET, event pending bitmap, and scheduler state. Then identify
 the self-owned safe return path where a pending fatal action can be consumed
 without violating the PI6 context restore and stack lifetime invariants.
 Do not substitute forced remote cleanup for this handoff.
+
+## First implementation and results
+
+- The existing event-1 bitmap position (LH 000004 in FDCTL) records deferred
+  TERM after either the WAIT-class or saved executive CTX_PC guard rejects
+  foreign cleanup. Recording coalesces repeated TERM requests, without
+  releasing FILE, VM, or u-area ownership. Other fatal events still refuse.
+- `mach_user_pdp6.s` checks pending TERM on the owner-side monitor-UUO return
+  path after restoring `mach_kernel_sp`, before returning to user mode. It
+  clears the bit and enters `proc_fatal_close_current_v879` with TERM status;
+  that path already retries provider close on the owner's private stack.
+- Native `daimos-deferred-term-v926.sh` PASS: two deferred deliveries across
+  CHILD-wait and cleared-wait saved-executive handoff, coalesced bit and no
+  remote FILE/VM release, followed by v925 HUP lifecycle assertions.
+- Native v925 fatal, finish and OOM handoff regressions PASS unchanged.
+- A full packaged `permanent-size` check was attempted but the current
+  configured package exceeds the octal 040000 endpoint (`045714`); that is
+  not a complete booted acceptance or an isolated size delta.
+
+### Still unproved
+
+- Execute the new owner-return helper in a dedicated native test, including
+  provider refusal and private retry, rather than only source inspection.
+- Actual booted CHLD wakeup-to-CTX restore TERM injection, exact-once
+  completion and independent bystander progress.
+- Determine and test precedence of deferred TERM against other pending fatal
+  events, STOP/CONT and nonfatal event visibility. The current increment
+  deliberately handles TERM only.
+- Repeat full linked image and runtime acceptance with a size-valid profile.

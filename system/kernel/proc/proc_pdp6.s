@@ -1642,11 +1642,11 @@ proc_event_fatal_other:
         ; that stack while the saved syscall may still resume.
         move    1,2(012)
         tlne    1,PROC_WAIT_LH_MASK
-        jrst    proc_event_fatal_other_close_fail_v867
+        jrst    proc_event_fatal_other_defer_term_v926
         hlrz    1,(012)
         move    2,CTX_PC(1)
         tlnn    2,010000               ; no saved executive continuation
-        jrst    proc_event_fatal_other_close_fail_v867
+        jrst    proc_event_fatal_other_defer_term_v926
         addi    1,PROC_FILE_TABLE_OFFSET ; target private file table
         pushj   17,file_close_all_at_v865
         ; A failed SYNC leaves the descriptor live. Do not release the
@@ -1688,6 +1688,19 @@ proc_event_fatal_other_close_fail_v867:
         pop     17,011
         pop     17,010
         jrst    kret_neg1
+
+; Only TERM can currently be deferred. Other fatal events retain the
+; existing refusal semantics until their ordering policy is specified.
+; The target still owns its stack and all resources. Its next monitor-UUO
+; return will consume the request on that same private executive stack.
+proc_event_fatal_other_defer_term_v926:
+        caie    011,1
+        jrst    proc_event_fatal_other_close_fail_v867
+        hlrz    1,(012)
+        movsi   2,004                 ; event 1 at (19 + 1) modulo 18
+        iorm    2,PROC_FDCTL_OFFSET(1)
+        setz    1,                    ; recorded, not delivered yet
+        jrst    proc_event_fatal_other_done_v883
 
 proc_event_fatal_close_busy_v879:
         pop     17,012
