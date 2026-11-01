@@ -156,6 +156,25 @@ proc_tty_line_reset(unsigned int tty)
                 proc_tty_line_base_set(tty, 0UL);
 }
 
+/**
+ * Attempt to retire a canonical input buffer before changing TTY ownership.
+ *
+ * The physical MM extent can be pinned or its owner metadata can reject
+ * mm_free(). A failed release keeps proc_tty_line_bases[] intact. In that
+ * case a caller must NOT transfer the TTY to another session: the stale
+ * SIXBIT input would become readable by an unrelated login.
+ *
+ * No new memory is allocated; a later detach/attach may retry safely.
+ */
+int
+proc_tty_line_try_reset_v897(unsigned int tty)
+{
+        if (tty >= PROC_TTY_COUNT)
+                return -1;
+        proc_tty_line_reset(tty);
+        return proc_tty_line_base_get(tty) == 0UL ? 0 : -1;
+}
+
 /** Change TTY input mode, discarding any partially cooked input line. */
 int
 proc_tty_mode_set(unsigned int tty, unsigned int mode)
@@ -166,8 +185,7 @@ proc_tty_mode_set(unsigned int tty, unsigned int mode)
                 return -1;
         if (PROC_TTY_MODE(tty) == mode)
                 return (int)mode;
-        proc_tty_line_reset(tty);
-        if (proc_tty_line_base_get(tty) != 0UL)
+        if (proc_tty_line_try_reset_v897(tty) != 0)
                 return -1;
         record = proc_tty_records[tty];
         record &= ~(((kword_t)PROC_TTY_MODE_MASK << PROC_TTY_MODE_SHIFT) |

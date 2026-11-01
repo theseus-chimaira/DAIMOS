@@ -114,6 +114,7 @@
         .globl  proc_uarea_release
         .globl  proc_tty_release_session
         .globl  proc_tty_line_reset
+        .globl  proc_tty_line_try_reset_v897
         .globl  proc_tty_session_has
         .globl  proc_session_teardown
         .globl  proc_notify_parent
@@ -2322,6 +2323,21 @@ proc_control_tty_attach_state_ok:
         jrst    kret_neg1
         jrst    proc_control_tty_attach_set
 proc_control_tty_attach_claim:
+        ; An earlier owner may have left a pinned canonical input buffer
+        ; behind during EXIT. Never hand its contents to a new session.
+        ; The helper either releases the exact extent or retains its base.
+        push    17,2                    ; tty
+        push    17,3                    ; session
+        push    17,4                    ; descriptor
+        push    17,7                    ; preserve TTY output routing
+        move    1,2
+        pushj   17,proc_tty_line_try_reset_v897
+        move    5,1                    ; MM result, separate from route
+        pop     17,7
+        pop     17,4
+        pop     17,3
+        pop     17,2
+        jumpn   5,kret_neg1
         hrrz    1,(4)
         andi    1,0377
         lsh     1,010
@@ -2367,11 +2383,13 @@ proc_control_tty_detach:
         jumpl   1,kret_neg1
         came    5,3                    ; only the session leader detaches
         jrst    kret_neg1
-        push    17,5                   ; line reset is C and may use ACs
+        push    17,5                   ; line MM release may use ACs
         push    17,1
-        pushj   17,proc_tty_line_reset
+        pushj   17,proc_tty_line_try_reset_v897
+        move    7,1
         pop     17,1
         pop     17,5
+        jumpn   7,kret_neg1           ; preserve session on MM rejection
         move    2,proc_tty_records(1)
         and     2,[174000000000]         ; preserve output route
         movem   2,proc_tty_records(1)
