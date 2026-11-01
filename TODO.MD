@@ -12,6 +12,11 @@
   against the final nine-instruction v915 KCORE and PASS (11 provider
   -4 refusals, 11 stable FD checks, 512-tick backoff, normal test HALT).
   Not yet a full-system recursive-provider-lock injection.
+- [x] Post-v915 full-system regression: 256K PDP-6 v914 APR fatal-FILE
+  provider invalid-refusal workload PASS. 11 VFS refusals, 11 private
+  owner sleeps, 512-tick cap, retained descriptor and independent
+  runnable user, zero errors, controlled HALT. This does not simulate
+  a held-provider-lock deadlock.
 - [ ] A different process owning a permanently stalled provider remains
   a separate unresolved progress case. Full-system PI6/clock provider
   lock acceptance and allocation-free fatal/OOM termination remain P0.

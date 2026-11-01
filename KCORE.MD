@@ -21,6 +21,12 @@ ownership checks, 11 private sleeps, 512-tick cap, zero errors and a
 runnable bystander through controlled guest HALT. This checks system
 regression, not a booted nested-lock injection.
 
+Post-v915 full 256K PDP-6 v914 guest regression PASSes: real APR
+fault, 11 permanent invalid FILE-provider refusals, 11 private sleeps,
+512-tick capped retry, FD retained, independent process runnable and
+normal controlled HALT (zero errors). This is not a test of a separate
+process permanently holding the filesystem provider lease.
+
 This establishes local self-deadlock avoidance, not recovery when a
 separate process holds a provider lock indefinitely. Full booted
 provider-lock failure/PI6 and allocation-free OOM fatal cleanup remain
