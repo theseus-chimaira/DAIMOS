@@ -603,13 +603,13 @@ proc_finish_resume_v881:
         hrrz    11,PROC_FINALIZE_OFFSET(3) ; saved exit status, VM gone
         jrst    proc_finish_ids
 proc_finish_new_v881:
-        ; A foreign target still sleeping inside the executive owns its
-        ; private stack and may be inside a filesystem or MM operation.
+        ; Every private wait class (EVENT, CHILD or INTR) preserves a live
+        ; executive stack. A foreign finalizer must not reclaim it.
         ; Self-exit is different: it runs on and unwinds its own stack.
         camn    10,proc_current_slot
         jrst    proc_finish_new_self_v920
         move    1,2(12)
-        tlne    1,PROC_WAIT_EVENT_LH
+        tlne    1,PROC_WAIT_LH_MASK
         jrst    proc_finish_fail
 proc_finish_new_self_v920:
         move    1,(12)
@@ -1631,12 +1631,11 @@ proc_fatal_self_fail_v868:
         jrst    kret_neg1
 
 proc_event_fatal_other:
-        ; A sleeping kernel-event waiter owns a live private executive
-        ; continuation. Reaping it remotely would free the stack from
-        ; under its suspended provider/MM request. Refuse fatal delivery.
-        ; User-level interruptible waits are not this private event class.
+        ; A sleeping EVENT, CHILD, or INTR waiter still owns its private
+        ; executive continuation. Remote close/VM teardown would free
+        ; that stack while the saved syscall may still resume.
         move    1,2(012)
-        tlne    1,PROC_WAIT_EVENT_LH
+        tlne    1,PROC_WAIT_LH_MASK
         jrst    proc_event_fatal_other_close_fail_v867
         hlrz    1,(012)
         addi    1,PROC_FILE_TABLE_OFFSET ; target private file table
@@ -3784,10 +3783,10 @@ proc_oom_scan_v863:
         camn    012,1
         jrst    proc_oom_next_v863
 proc_oom_provider_clear_v866:
-        ; Selection is read-only, but a future OOM killer must never
-        ; choose a kernel-event waiter with a suspended private stack.
+        ; Selection is read-only, but no private wait class may be a
+        ; future OOM victim while its executive continuation is live.
         move    1,2(013)
-        tlne    1,PROC_WAIT_EVENT_LH
+        tlne    1,PROC_WAIT_LH_MASK
         jrst    proc_oom_next_v863
         move    1,(013)
         trne    1,PROC_TRANSITION_RH
