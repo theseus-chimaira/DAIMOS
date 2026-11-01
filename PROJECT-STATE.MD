@@ -1,3 +1,18 @@
+## 2026-11-01 v916: foreign FS provider lock cannot be stolen
+
+Native PDP-6 testkit v916 exercises the production fs_provider_reg_call
+through four repeated waiter attempts while a different process retains
+the existing FS lease word. It checks that none of those calls can
+enter the provider, corrupt its owner, or release its shared workspace.
+The fifth simulated wait observes normal unlock, then dispatches with
+all seven request registers and stack restored. The v915 recursive
+self-owner rejection and v866 owner encoding regressions also PASS.
+No production code, kernel BSS or ABI change. The test uses a native
+simulated wait/retry oracle, not an actual permanently stalled physical
+provider or full-system scheduler fault. A genuinely nonreturning owner
+still cannot be freed or terminated safely; that full-system progress
+and OOM cleanup acceptance remains P0. OOM killing stays OFF.
+
 ## 2026-11-01 v915: provider lock detects same-owner recursion
 
 DTFS/D6FS/TSFS share a serialized KCORE gateway with one existing

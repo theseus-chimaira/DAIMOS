@@ -1,3 +1,15 @@
+### v916: foreign provider-lock ownership/waiter regression (2026-11-01)
+
+- [x] Native PDP-6 FS gateway test holds another process's provider
+  lease through four simulated waiter retries. No early provider
+  dispatch, stolen ownership or forced unlock. A fifth wait observes
+  release, dispatches and restores request registers and stack.
+- [x] Native v915 recursive-owner and v866 owner-encoding regressions
+  PASS. No production code, RAM, syscall or module ABI change.
+- [ ] Full booted live scheduler test with a truly stalled provider,
+  diagnosis of foreign owner death, and allocation-free fatal/OOM
+  resolution remain open P0. No forced unlock; OOM killing OFF.
+
 ### v915: prevent recursive provider-lock self-deadlock (2026-11-01)
 
 - [x] Detect a DTFS/D6FS/TSFS gateway call by the existing lease owner
