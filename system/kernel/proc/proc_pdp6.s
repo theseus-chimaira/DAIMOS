@@ -702,21 +702,30 @@ proc_finish_defer_uarea_v881:
         ; u-area's previously unused word 067, retaining transition
         ; and not changing any session/domain control bits.
         hlrz    3,(12)
-        move    4,PROC_FINALIZE_OFFSET(3)
-        tlne    4,PROC_FINALIZE_MARK_LH
+        movsi   4,PROC_FINALIZE_MARK_LH
+        hrr     4,11
+        pushj   17,proc_finish_mark_pending_v892
+        jrst    proc_finish_fail
+
+/** Register a post-VM cleanup owner without additional resident state.
+ * AC3 is the owned u-area and AC4 the complete terminal marker.  Both
+ * finalized EXIT and unpublished RUN rollback use the same retry clock.
+ * A second failure preserves backoff rather than resetting it.
+ */
+proc_finish_mark_pending_v892:
+        move    5,PROC_FINALIZE_OFFSET(3)
+        tlne    5,PROC_FINALIZE_MARK_LH
         jrst    proc_finish_rearm_v885
         ; A new pending owner resets global backoff so a permanent
         ; failure in another slot cannot delay its first cleanup.
-        hrrz    4,proc_finish_last_tick_v881
-        hrli    4,020               ; first retry after 16 ticks
-        movem   4,proc_finish_last_tick_v881
+        hrrz    5,proc_finish_last_tick_v881
+        hrli    5,020               ; first retry after 16 ticks
+        movem   5,proc_finish_last_tick_v881
 proc_finish_rearm_v885:
-        movsi   4,PROC_FINALIZE_MARK_LH
-        hrr     4,11
         movem   4,PROC_FINALIZE_OFFSET(3)
-        movsi   4,0400000
-        iorm    4,proc_finish_last_tick_v881 ; pending; no extra RAM word
-        jrst    proc_finish_fail
+        movsi   5,0400000
+        iorm    5,proc_finish_last_tick_v881 ; pending; no extra RAM word
+        popj    17,
 proc_finish_fail:
         seto    1,
 proc_finish_restore:
@@ -760,9 +769,18 @@ proc_finish_service_check_v881:
         move    4,PROC_FINALIZE_OFFSET(3)
         tlnn    4,PROC_FINALIZE_MARK_LH
         jrst    proc_finish_service_next_v881
+        ; Unpublished RUN children must be discarded, not published as
+        ; zombies or sent through process EXIT/session teardown.
+        tlne    4,0200000               ; PROC_FINALIZE_DISCARD_LH
+        jrst    proc_finish_service_discard_v892
         move    1,10
         setz    2,                     ; status comes from saved u-area
         pushj   17,proc_finish_slot
+        jrst    proc_finish_service_result_v892
+proc_finish_service_discard_v892:
+        move    1,10
+        pushj   17,proc_slot_discard
+proc_finish_service_result_v892:
         jumpn   1,proc_finish_service_next_v881
         movei   11,1
         setom   proc_sched_kick       ; notify an awakened WAIT parent
@@ -798,8 +816,26 @@ proc_slot_discard:
         lsh     10,1
         add     10,11
         add     10,proc_table
-        camn    11,proc_rt_owner
-        setzm   proc_rt_owner
+        ; A failed u-area MM free after successful VM destruction is a
+        ; committed rollback. Only the tagged, VM_NONE state may resume.
+        move    3,(10)
+        trnn    3,PROC_TRANSITION_RH
+        jrst    proc_discard_new_v892
+        trnn    3,0400000               ; stable u-area still owned
+        jrst    proc_discard_fail
+        hlrz    4,3
+        jumpe   4,proc_discard_fail
+        move    3,1(10)
+        camn    3,[-1]
+        jrst    proc_discard_check_marker_v892
+        jrst    proc_discard_fail
+proc_discard_check_marker_v892:
+        move    3,PROC_FINALIZE_OFFSET(4)
+        and     3,[0600000,,0]         ; FINALIZE and DISCARD marks
+        came    3,[0600000,,0]
+        jrst    proc_discard_fail
+        jrst    proc_discard_retry_uarea_v892
+proc_discard_new_v892:
         move    1,2(10)
         tlne    1,PROC_STATE_LH_MASK
         jrst    proc_discard_live
@@ -815,21 +851,32 @@ proc_discard_live:
         andb    1,(10)
         jrst    proc_discard_fail
 proc_discard_vm_done:
+        camn    11,proc_rt_owner
+        setzm   proc_rt_owner
         move    1,10
         pushj   17,proc_scope_id
         andi    1,0377
         move    2,11
         pushj   17,proc_tty_release_session
+proc_discard_retry_uarea_v892:
         move    1,11
         move    2,10
         pushj   17,proc_uarea_release
-        jumpn   1,proc_discard_fail
+        jumpn   1,proc_discard_defer_uarea_v892
         move    1,11
         pushj   17,proc_runq_remove
         setzm   (10)
         setzm   1(10)
         setzm   2(10)
         pushj   17,proc_trim_high
+        jrst    proc_discard_ok
+proc_discard_defer_uarea_v892:
+        ; The u-area still belongs to an unpublished child. Retain it and
+        ; schedule slot-0 retries, but never create a zombie/WAIT report.
+        hlrz    3,(10)
+        movsi   4,0600000               ; FINALIZE | DISCARD
+        pushj   17,proc_finish_mark_pending_v892
+        jrst    proc_discard_fail
 proc_discard_ok:
         setz    1,
         jrst    proc_discard_return

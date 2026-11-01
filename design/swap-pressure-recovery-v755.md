@@ -3,6 +3,32 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v892: Unpublished RUN rollback after failed u-area MM release
+
+The original `proc_slot_discard` had a post-commit hole: on VM teardown
+success followed by u-area `mm_free` refusal, it left the unpublished
+child excluded from scheduling but unmarked for deferred cleanup.
+Subsequent slot-zero scans did not recognize it, so freeing the pin or
+repairing the MM provider could not complete the rollback.
+
+Word 067 of the already allocated u-area now carries a distinct
+`FINALIZE|DISCARD` tag (`0600000` in the left half). The existing
+reaper recognizes it, retries only the MM release without repeating
+VM/session/TTY teardown, and finishes with a FREE descriptor. It
+does not generate an EXIT zombie, child adoption or WAIT status for
+a child that was never published. New owners reset the shared retry
+interval, repeated failures retain backoff, and no new static state or
+provider bypass exists. The normal EXIT `FINALIZE` tag is unchanged.
+
+Native PDP-6 rollback fault injection with two rejected releases and
+subsequent successful free PASS; v891 negative control FAILS. Existing
+deferred EXIT and reaper backoff tests PASS. The full-system RUN v197
+post-VM fdmap rollback test PASSes 16 cases without MM refusal injection.
+Same-profile GCC lowmem
+disk-root KCORE 9,351 -> 9,381 words (+30), no new data. A booted
+full-system injected RUN MM failure remains to be accepted. This
+fix does not authorize automatic OOM process killing.
+
 ## v891: Persistent FILE refusal remains owned and schedulable
 
 The v889/v890 tests ended after the provider accepted its third close;

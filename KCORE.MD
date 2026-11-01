@@ -1,3 +1,32 @@
+## 2026-11-01 v892: retryable post-VM RUN rollback
+
+Fixed a resource-ownership hole in resident `proc_slot_discard`. An
+unpublished RUN child whose VM destruction succeeded but whose u-area
+MM free was rejected previously remained TRANSITION/VM_NONE without a
+deferred-finalizer tag. The slot-0 service could not find it again.
+
+The existing u-area word 067 now distinguishes **discard** from EXIT:
+LH `0600000` means FINALIZE + DISCARD, with no new resident table or
+allocation. A failed release leaves the uncommitted child owned and
+arms the existing shared reaper/backoff word. Subsequent retries skip
+VM destruction and TTY release. Successful release clears the slot
+as FREE without a zombie, parent WAIT notification, or HUP. The old
+EXIT marker, retry backoff and fatal FILE continuation are unchanged.
+
+Native PDP-6 v892 fault-injection PASS: two failed releases followed
+by successful rollback, one VM teardown and TTY release, exact-once
+FREE, no EXIT/HUP/WAIT publication. The same test FAILS against
+unmodified v891 at the missing marker. v881/v883/v885 regression
+tests PASS. The existing full-system PDP-6 RUN v197 regression also
+PASSes 16 post-VM fdmap rollback cases with three live children; it
+does not inject an MM-free failure. A same-configuration GCC build links:
+KCORE `022207` (9,351 words) at v891 versus `022245` (9,381) at
+v892, +30 resident code words; KCORE+MRES 15,837 -> 15,867 and
+permanent endpoint 15,884 -> 15,914 words. No new static allocation,
+syscall, per-process descriptor or module. Full-system fault-injected
+RUN cleanup and long-term provider recovery remain separate gates;
+automatic OOM killing remains disabled.
+
 ## 2026-11-01 v891: permanent FILE-refusal containment accepted
 
 The disposable PDP-6 testkit `daimos-fatal-file-persistent-v891.sh`

@@ -1,3 +1,23 @@
+## 2026-11-01 v892: unpublished RUN post-VM cleanup is retryable
+
+Found and fixed a lost u-area ownership edge in `proc_slot_discard`:
+failed `mm_free` after committed VM destruction previously left an
+unpublished RUN slot in TRANSITION/VM_NONE without the v881 cleanup
+marker. The v892 path tags word 067 with FINALIZE|DISCARD and reuses
+the existing slot-0 MM retry throttle. It never redoes VM/TTY teardown
+or turns the uncommitted child into an EXIT zombie/parent WAIT event.
+
+Isolated native PDP-6 fault-injection PASS; pre-v892 negative control
+FAILS, and v881/v883/v885 native regressions PASS. Full-system
+RUN v197 PASSes 16 ordinary post-VM rollback cases; it does not
+inject a rejected u-area free. Identical GCC
+lowmem disk-root package builds show KCORE 9,351 -> 9,381 words
+(+30 text); KCORE+MRES 15,837 -> 15,867; endpoint 15,884 ->
+15,914; permanent data unchanged. This is ownership correctness,
+not a reduction toward the 8,192-word target. A booted guest with
+actual RUN rollback MM rejection remains to be tested. Persistent
+FILE/MM refusal and automatic OOM termination remain unresolved.
+
 ## 2026-11-01 v891: permanently failing FILE owner survives under load
 
 The new testkit v891 full-system guest injects persistent -5 from

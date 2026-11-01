@@ -2,6 +2,19 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [x] v892: retain ownership after an unpublished RUN child has its
+  VM destroyed but its u-area MM free fails. Register FINALIZE|DISCARD
+  in existing word 067, reuse deferred slot-0 retries, and publish
+  FREE (never a zombie or parent WAIT) only after successful free.
+  Native fault-injection and prior deferred-EXIT tests PASS; the
+  full-system v197 RUN fdmap rollback test PASSes 16 cases. Old
+  v891 code FAILS the negative control; same-profile GCC KCORE +30
+  words with zero new static words.
+- [ ] v892 follow-up: full-system guest injection at RUN rollback's
+  actual u-area MM free, with an independently runnable process and
+  real MM pin/unpin. Confirm retry, exact-once discard and no parent
+  event. Keep automatic OOM termination disabled until all provider
+  and transaction ownership gates are met.
 - [x] v891: full-system *permanent* FILE provider refusal containment.
   Genuine APR fault, copied-kernel VFS-sync rejects FD 0 indefinitely,
   while an independent user runs. Through 02400 octal clock ticks the
