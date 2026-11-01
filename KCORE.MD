@@ -1,3 +1,37 @@
+## 2026-11-01 v894: retry pre-VM RUN cleanup without a u-area
+
+`proc_slot_discard` previously cleared TRANSITION and returned when
+`vm_space_destroy` rejected an unpublished RUN child's VM release.
+The child remained SIDL with a live VM (and possibly a stable u-area),
+but the v881-v893 reaper only recognized **post-VM** cleanup. The
+slot could stay allocated indefinitely even if MM later unpinned it.
+
+The resident PDP-6 path now retains TRANSITION and sets unused SIDL
+scheduler RH bit 1 (`PROC_SIDL_DISCARD_VM_PENDING=02`). Slot-zero
+maintenance recognizes only TRANSITION+SIDL+this bit, retries actual
+VM destruction, and clears the bit *only when VM teardown succeeds*.
+If u-area release subsequently fails, the existing v892
+FINALIZE|DISCARD marker and reaper perform the independent second
+stage. This handles children with and without an allocated u-area,
+preserving backing/MM ownership and avoiding a premature FREE,
+ZOMB, HUP, or WAIT event. The same one-word capped retry clock is
+reused, with no new process descriptors or static RAM.
+
+Read-only `GETTEARDOWN` now reports stage 3 (RUN_VM) plus the shared
+retry interval for that SIDL owner, including before a u-area exists.
+Existing stages 0/1/2 and their query ABI are unchanged. Native PDP-6
+v894 fault injection PASSes two rejected VM releases per child,
+successful VM release and an additional u-area retry, correct FREE
+without parent event, and no duplicate VM/TTY cleanup. Native stage-3
+diagnostics and v881/v883/v885/v886/v887/v892 regressions PASS.
+Pre-v894 v893 source fails the v894 rollback negative control.
+
+Paired GCC lowmem disk-root packaged builds: KCORE 9,381 -> 9,426
+words (+45 code), KCORE+MRES 15,867 -> 15,912, permanent endpoint
+15,914 -> 15,959. The full-profile permanent limit is a separate
+issue. A booted guest with **actual** VM MM_BUSY and recovery remains
+the next acceptance gate; automatic OOM killing remains disabled.
+
 ## 2026-11-01 v893: real MM-busy RUN rollback in a full PDP-6 guest
 
 The v892 deferred unpublished-RUN cleanup is now accepted in a booted

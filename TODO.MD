@@ -2,6 +2,19 @@
 
 ### v864: OOM handling for already-running processes (2026-10-31)
 
+- [x] v894: failed VM destruction during unpublished RUN rollback,
+  **including before u-area allocation**, retains SIDL+TRANSITION
+  and one spare scheduler RH bit 02 for reaper retry. A later
+  successful VM destroy clears that mark and continues to v892
+  post-VM cleanup if u-area free fails. Read-only GETTEARDOWN stage
+  3 reports the ownership and shared delay. Native PDP-6 failure/
+  retry, stage-3/older query and deferred-cleanup regressions PASS;
+  pre-v894 negative control FAILS. Same-profile GCC KCORE +45
+  code words, no static RAM, ABI syscall slot or process-table growth.
+- [ ] v894 follow-up: prove actual **booted** PDP-6 pre-VM
+  `vm_space_destroy` MM_BUSY with a pinned unpublished child,
+  real retry/unpin, independent runnable work and no fabricated
+  parent WAIT. Full-system v893 only covered post-VM u-area MM_BUSY.
 - [x] v893: full-system PDP-6 RUN rollback with actual u-area
   `mm_pin`, two genuine MM_ERR_BUSY (-5) releases, one `mm_unpin`,
   two slot-zero retries and final FREE. Test-only kernel overlay;

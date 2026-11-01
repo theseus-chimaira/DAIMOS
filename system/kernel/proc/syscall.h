@@ -138,14 +138,17 @@ struct sys_fsinfo {
 /* Read-only teardown diagnostic returned by GETTEARDOWN(pid).
  * Returns -1 for invalid/FREE slots, otherwise stage in low two bits:
  * NONE (includes fully committed zombies), FILE (owned fatal close),
- * MM (post-VM u-area release deferred). For MM the upper bits report
- * the global current reaper delay in 60 Hz ticks; for FILE they are
+ * MM (post-VM u-area release deferred), or RUN_VM (unpublished RUN
+ * child awaiting VM destruction, possibly without a u-area).
+ * For MM/RUN_VM the upper bits report the shared reaper delay in ticks;
+ * for FILE they are
  * zero, as its private-stack delay is not externally accessible.
  * No MM or FILE addresses or other sensitive owner data are exported.
  */
 #define SYS_TEARDOWN_NONE            0U
 #define SYS_TEARDOWN_FILE            1U
 #define SYS_TEARDOWN_MM              2U
+#define SYS_TEARDOWN_RUN_VM          3U
 #define SYS_TEARDOWN_STAGE_MASK      03U
 #define SYS_TEARDOWN_RETRY_SHIFT     2U
 #define SYS_TEARDOWN_STAGE(word) \

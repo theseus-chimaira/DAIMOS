@@ -3,6 +3,34 @@
 Status: v851 full-system scheduler-pressure acceptance PASSES with the
 010000-octal-sector test backstore; exchange transaction unproven.
 
+## v894: Recover unpublished RUN before VM destruction commits
+
+Unpublished RUN slots used to strand an allocated VM when
+`vm_space_destroy` rejected its release. This can happen before
+stable u-area allocation, so word 067 is not sufficient to retain
+retry ownership. A new marker in the existing SIDL scheduler RH
+bit 1 (`02`) distinguishes the pending VM rollback from staged PURE
+backing (bit 0) and from published RUN queue links.
+
+Slot-zero maintenance requires both TRANSITION and SIDL+bit 1,
+then retries the existing VM destruction transaction without
+allocating a process stack. A successful destructor clears bit 1
+before TTY and u-area cleanup; failed u-area free uses the separate
+v892 FINALIZE|DISCARD marker and reaper. A failed VM destructor
+never discards a backing record, u-area or process descriptor.
+An indefinitely rejecting provider still retains its owner and
+has bounded retry frequency; no forced release is authorized.
+
+The read-only `GETTEARDOWN` returns stage 3 RUN_VM with the existing
+shared retry delay even if no u-area exists; earlier stage numbers
+remain compatible. Native fault injection proves two VM release
+failures for both no-uarea and with-uarea children, a later u-area
+failure and successful final FREE, no duplicate VM teardown and no
+HUP/WAIT publication. Old query and retry tests PASS; unmodified
+v893 negative control FAILS. Identical GCC lowmem disk-root KCORE
+9,381 -> 9,426 words (+45), no new static RAM. Full-system real
+VM MM_BUSY injection and automatic OOM termination remain open.
+
 ## v893: Guest verification of real MM_BUSY on unpublished RUN rollback
 
 An isolated full-profile PDP-6 image executes a user RUN of the real

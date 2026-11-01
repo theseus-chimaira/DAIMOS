@@ -738,9 +738,10 @@ proc_finish_restore:
 /**
  * @brief Retry post-VM u-area releases from the permanent idle stack.
  *
- * No allocation or scheduler-private process stack is needed. Only
- * descriptors tagged by a failed post-VM MM free are eligible; ordinary
- * swapping TRANSITION slots and failed session/VM teardown stay excluded.
+ * No allocation or scheduler-private process stack is needed. Eligible
+ * owners are either explicitly tagged post-VM finalizers or unpublished
+ * SIDL slots whose VM release was rejected. Ordinary swapping and
+ * failed session/HUP teardown are excluded.
  * This is called with scheduler PI6 inhibited, once per clock tick.
  */
 proc_finish_service_v881:
@@ -758,6 +759,20 @@ proc_finish_service_scan_v881:
         move    3,(2)
         trnn    3,PROC_TRANSITION_RH
         jrst    proc_finish_service_next_v881
+        ; An unpublished RUN may fail VM destruction before it acquires
+        ; a stable u-area. Its SIDL scheduler RH bit 1 owns the retry;
+        ; never mistake an unrelated swapping TRANSITION for cleanup.
+        move    4,2(2)
+        trnn    4,02                   ; PROC_SIDL_DISCARD_VM_RH
+        jrst    proc_finish_service_post_vm_v894
+        hlrz    5,4
+        andi    5,PROC_STATE_LH_MASK
+        caie    5,0100000             ; PROC_SIDL
+        jrst    proc_finish_service_next_v881
+        move    1,10
+        pushj   17,proc_slot_discard
+        jrst    proc_finish_service_result_v892
+proc_finish_service_post_vm_v894:
         trnn    3,0400000
         jrst    proc_finish_service_next_v881
         move    4,1(2)
@@ -806,7 +821,8 @@ proc_finish_service_return_v881:
  *
  * This is distinct from process exit: there is no session-leader HUP or
  * child adoption. AC10 holds the descriptor, AC11 the slot across MM and
- * terminal cleanup. Transition rollback matches proc_slot_discard in C.
+ * terminal cleanup. The PDP-6 variant also keeps pre/post-VM failures
+ * retryable; no ordinary process may be published during rollback.
  */
 proc_slot_discard:
         push    17,10
@@ -816,6 +832,21 @@ proc_slot_discard:
         lsh     10,1
         add     10,11
         add     10,proc_table
+        ; A failed pre-VM rollback may have no u-area at all. Its
+        ; SIDL scheduler RH marker is not a run-queue link and survives
+        ; until VM destruction actually succeeds.
+        move    3,2(10)
+        trnn    3,02                   ; PROC_SIDL_DISCARD_VM_RH
+        jrst    proc_discard_check_post_vm_v894
+        hlrz    4,3
+        andi    4,PROC_STATE_LH_MASK
+        caie    4,0100000             ; only unpublished RUN children
+        jrst    proc_discard_fail
+        move    3,(10)
+        trnn    3,PROC_TRANSITION_RH
+        jrst    proc_discard_fail
+        jrst    proc_discard_vm_retry_v894
+proc_discard_check_post_vm_v894:
         ; A failed u-area MM free after successful VM destruction is a
         ; committed rollback. Only the tagged, VM_NONE state may resume.
         move    3,(10)
@@ -843,14 +874,28 @@ proc_discard_new_v892:
 proc_discard_live:
         movei   1,PROC_TRANSITION_RH
         iorb    1,(10)
+proc_discard_vm_retry_v894:
         move    1,10
         move    2,11
         pushj   17,vm_space_destroy
         jumpe   1,proc_discard_vm_done
-        movni   1,PROC_TRANSITION_RH+1
-        andb    1,(10)
+        ; The VM is not committed as destroyed. Keep its process slot,
+        ; any u-area and backing ownership intact. Reuse the existing
+        ; one-word deferred retry clock even when no u-area exists.
+        movei   4,02
+        tdne    4,2(10)
+        jrst    proc_discard_vm_rearm_v894
+        iorm    4,2(10)
+        hrrz    5,proc_finish_last_tick_v881
+        hrli    5,020
+        movem   5,proc_finish_last_tick_v881
+proc_discard_vm_rearm_v894:
+        movsi   5,0400000
+        iorm    5,proc_finish_last_tick_v881
         jrst    proc_discard_fail
 proc_discard_vm_done:
+        movei   4,02
+        andcam  4,2(10)              ; VM owned no longer; drop retry tag
         camn    11,proc_rt_owner
         setzm   proc_rt_owner
         move    1,10
@@ -2046,8 +2091,9 @@ proc_control_table:
 ; Read-only per-slot fatal-teardown diagnostic, no new permanent state.
 ; AC2 contains a PID (process slot); zero/invalid/FREE return -1.
 ; Return 0 for normal process or zombie, 1 for owner-stack FILE
-; cleanup, or (retry_ticks << 2)|2 for deferred post-VM MM cleanup.
-; The shared MM retry interval is already resident in the LH of
+; cleanup, (retry_ticks << 2)|2 for deferred post-VM MM cleanup,
+; or (retry_ticks << 2)|3 for pre-VM unpublished RUN rollback.
+; The shared retry interval is already resident in the LH of
 ; proc_finish_last_tick_v881. Do not expose private stack addresses.
         .globl  proc_control_getteardown_v886
 proc_control_getteardown_v886:
@@ -2066,6 +2112,27 @@ proc_control_getteardown_v886:
         hlrz    5,2(3)                ; scheduler state, FREE = 0
         andi    5,PROC_STATE_LH_MASK
         jumpe   5,kret_neg1
+        ; A failed, unpublished RUN VM teardown can have no u-area.
+        ; Its SIDL-only retry marker is therefore checked before the
+        ; ordinary FILE/MM diagnostic's stable-u-area requirement.
+        move    6,2(3)
+        trnn    6,02                   ; PROC_SIDL_DISCARD_VM_RH
+        jrst    proc_control_td_uarea_v894
+        hlrz    5,6
+        andi    5,PROC_STATE_LH_MASK
+        caie    5,0100000             ; PROC_SIDL
+        jrst    proc_control_td_uarea_v894
+        move    5,(3)
+        trnn    5,PROC_TRANSITION_RH
+        jrst    proc_control_td_uarea_v894
+        ; Stage 3: unpublished RUN VM cleanup, existing shared delay.
+        ; There is no safe address or provider-specific error to export.
+        hlrz    1,proc_finish_last_tick_v881
+        andi    1,0377777
+        lsh     1,2
+        ori     1,3
+        popj    17,
+proc_control_td_uarea_v894:
         move    5,(3)
         trnn    5,0400000             ; no stable u-area (ZOMB etc.)
         jrst    kret_zero

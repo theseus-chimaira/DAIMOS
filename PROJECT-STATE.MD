@@ -1,3 +1,27 @@
+## 2026-11-01 v894: preserve unpublished pre-VM RUN owners
+
+Fixed a second rollback liveness gap after v893: `proc_slot_discard`
+could return from failed VM destruction before the child's u-area
+existed, leaving SIDL allocated but without a retry continuation.
+The PDP-6 kernel now uses SIDL scheduler RH bit 1 and the existing
+TRANSITION flag to mark the VM owner, retries via the slot-zero
+reaper/backoff, and clears the marker only upon committed VM destroy.
+Further u-area release failures switch to v892's distinct post-VM
+FINALIZE|DISCARD marker. No new resident data, process slot width,
+syscall number or removal of provider ownership.
+
+`PROCCTL(GETTEARDOWN)` reports read-only stage 3 RUN_VM even if
+the unfinished RUN child has no u-area. Native PDP-6 pre-VM test
+PASSes two failing VM releases for each of two children, followed
+by successful teardown, independent retry of a rejected u-area
+release, exactly-once FREE and no zombie/HUP/WAIT. Native v894
+stage-3 query, old queries and cleanup regressions PASS; v893
+negative control FAILS as expected. Paired GCC lowmem disk-root
+KCORE 9,381 -> 9,426 words (+45), KCORE+MRES 15,867 -> 15,912,
+permanent endpoint 15,914 -> 15,959; zero new permanent data.
+Booted real VM-pin rollback acceptance and permanent provider policy
+are still open. Automatic OOM termination remains disabled.
+
 ## 2026-11-01 v893: full-system real RUN MM_BUSY recovery accepted
 
 The v892 unpublished-RUN deferred u-area fix now passes a 256K

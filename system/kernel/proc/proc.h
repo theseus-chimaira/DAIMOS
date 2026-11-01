@@ -28,6 +28,10 @@
 #define PROC_NO_SLOT         0400U
 #define PROC_SCHED_SWAP_REQUEST 0400UL
 #define PROC_SCHED_QUANTUM_TICKS    4U
+/* SIDL-only RH bit 1: unpublished RUN VM rollback awaits slot-0 retry.
+ * RH bit 0 already stages the PURE executable backing mount extension.
+ * Neither bit is a runnable-queue link before the child becomes SRUN. */
+#define PROC_SIDL_DISCARD_VM_PENDING 02UL
 
 #define PROC_FREE   0U
 #define PROC_SIDL   1U
