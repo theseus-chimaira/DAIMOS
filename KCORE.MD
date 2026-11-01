@@ -1,3 +1,19 @@
+## 2026-11-01 v910: persistent Type-340 MM refusal retains ownership
+
+Full-system 256K PDP-6 (`DPY OK`) now proves the raw-list final CLOSE
+can encounter *permanent* physical MM_BUSY without destroying its owner.
+A test-only copy of the kernel pins one real MM owner-014 dynamic-list
+extent and never unpins it. Three consecutive CLOSE attempts each return
+MM_BUSY (-5); the FILE count and process count remain unchanged from
+the post-OPEN sample. PI6 clocks keep replaying the same published list:
+18 starts, 18 completed PI7 frames and 12 refreshes after the first
+refusal. Exact physical target 19732 decimal, three frees, one pin,
+zero unpins, three busy results, zero errors; normal test HALT. Native
+v871/v874/v904 and PI7 policy regressions PASS. All v910 instrumentation
+lives in daimos-testkit, with no production kernel, size or ABI changes.
+The still-pinned allocation cannot be reclaimed; replacement double
+failure, locked providers and allocation-free OOM termination remain P0.
+
 ## 2026-11-01 v909: permanent MM refusal cannot spin the idle reaper
 
 A booted 256K PDP-6 fault-injected physical pin on an APR-fault victim's

@@ -1,3 +1,19 @@
+### v910: persistent DPY/MM refusal across three live CLOSE attempts (2026-11-01)
+
+- [x] Booted 256K PDP-6 Type-340, kept the raw-list extent physically
+  pinned across three real MM_BUSY final CLOSE attempts. All returned -5;
+  the already-open FILE/process ownership counters stayed unchanged,
+  and the guest halted normally without forcibly freeing any memory.
+- [x] Measured raw-list owner 014, base 19732 decimal, three MM frees,
+  one pin, zero unpins, three MM_BUSY results, 18 PI6 raw refreshes,
+  18 PI7 completions, 12 post-first-refusal refreshes and zero errors.
+  v871, v874, v904 and the PI7 policy tests remain PASS.
+- [ ] A permanently rejecting provider *retains* its physical RAM. This
+  proves safe DPY ownership, not eventual cleanup. Still open: injected
+  replacement double-fault, provider lock/deadlock handling, fatal FILE
+  teardown and zero-allocation OOM victim retirement. OOM stays OFF;
+  TSFS v1.2 and KCORE size optimization stay deferred.
+
 ### v909: P0 permanent physical-MM refusal and capped idle reaper (2026-11-01)
 
 - [x] Reproduced a true CPU-intensive leak of retries under permanent
