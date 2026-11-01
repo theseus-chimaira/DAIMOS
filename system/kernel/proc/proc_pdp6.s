@@ -1622,6 +1622,13 @@ proc_fatal_self_fail_v868:
         jrst    kret_neg1
 
 proc_event_fatal_other:
+        ; A sleeping kernel-event waiter owns a live private executive
+        ; continuation. Reaping it remotely would free the stack from
+        ; under its suspended provider/MM request. Refuse fatal delivery.
+        ; User-level interruptible waits are not this private event class.
+        move    1,2(012)
+        tlne    1,PROC_WAIT_EVENT_LH
+        jrst    proc_event_fatal_other_close_fail_v867
         hlrz    1,(012)
         addi    1,PROC_FILE_TABLE_OFFSET ; target private file table
         pushj   17,file_close_all_at_v865
@@ -3768,6 +3775,11 @@ proc_oom_scan_v863:
         camn    012,1
         jrst    proc_oom_next_v863
 proc_oom_provider_clear_v866:
+        ; Selection is read-only, but a future OOM killer must never
+        ; choose a kernel-event waiter with a suspended private stack.
+        move    1,2(013)
+        tlne    1,PROC_WAIT_EVENT_LH
+        jrst    proc_oom_next_v863
         move    1,(013)
         trne    1,PROC_TRANSITION_RH
         jrst    proc_oom_next_v863
