@@ -1,3 +1,16 @@
+### v903: TSFS scheduled strictly after KCORE (2026-11-01)
+
+- [x] Remove TSFS v1.2 format/metadata implementation and its acceptance
+  from the active KCORE feature and size backlog. Complete KCORE features,
+  their regressions and the deferred KCORE size/freeze work first. Then
+  resume the separate TSFS v1.2 sharded-metadata effort before 0.9 release.
+- [x] Preserve existing TSFS boot compatibility and regression coverage
+  while changing other subsystems. Such preservation is a KCORE invariant,
+  not permission to start new TSFS work during KCORE completion.
+- [ ] Next active P0: DPY raw-list failure-safe teardown and real-MM
+  acceptance; then session/HUP partial-failure recovery, permanent FILE/MM
+  provider repair, and safe allocation-free OOM victim termination.
+
 ### v902: historical anonymous PIPE regression rerun (2026-11-01)
 
 - [x] The full-system historical `daimos-pipe-anon-v1.c` user workload
@@ -645,8 +658,9 @@ Release-critical or prerequisite correctness/acceptance:
 
 Architecture-changing features requiring an explicit pre-sweep decision:
 
-All five decisions are resolved below. An unchecked item now means
-implementation/acceptance is outstanding, NOT that scheduling is undecided.
+The active KCORE decisions are 1, 3, 4 and 5; decision 2 is explicitly
+POST-KCORE. An unchecked active item means implementation/acceptance is
+outstanding, NOT that scheduling is undecided.
 
 - [ ] **DECISION 1 ACCEPTED (2026-10-27):** Complete the D6 codec production
   streaming low-core decoder and atomic producer/consumer cutover before the
@@ -654,13 +668,6 @@ implementation/acceptance is outstanding, NOT that scheduling is undecided.
   optional future experiment. Keep the old D6LZ36 system bootable until
   the new format passes native regression; do not ship mixed formats or a
   permanent legacy decoder. The decision is recorded, NOT implemented.
-- [ ] **DECISION 2 ACCEPTED (2026-10-27):** Complete TSFS v1.2 sharded
-  metadata, reader, boot/format compatibility and native acceptance AFTER
-  the final KCORE optimization but BEFORE the 0.9 release. Keep the TSFS
-  implementation in its provider MRES and host tools; preserve existing
-  KCORE/VFS service interfaces. Audit any unavoidable permanent KCORE or
-  KINIT ABI impact before freezing those interfaces. Decision only; v1.2
-  is not yet implemented.
 - [ ] **DECISION 3 ACCEPTED (2026-10-27):** Complete the remaining BSTORE
   migration to generic shared backing/BCACHE/LOGSTORE BEFORE final KCORE
   optimization as a version 0.9 prerequisite. Audit remaining gaps against
@@ -744,6 +751,16 @@ implementation/acceptance is outstanding, NOT that scheduling is undecided.
   and passing mixed raw/packed rollback and process tests in daimos-testkit.
   Decision recorded; not yet implemented or benchmarked.
 
+### Deferred post-KCORE work: TSFS v1.2 (not a KCORE gate)
+
+- [ ] **DECISION 2 ACCEPTED (2026-10-27; deferred v903):** After ALL
+  KCORE feature completion, regression acceptance and KCORE optimization,
+  implement TSFS v1.2 sharded metadata, reader, boot/format compatibility
+  and native tests, before the 0.9 release. Keep TSFS-specific changes in
+  provider MRES and host tools wherever possible; audit any necessary
+  KCORE/VFS/KINIT ABI impact when the TSFS effort actually starts.
+  Do not make TSFS v1.2 a blocker for KCORE completion or its size sweep.
+
 Explicitly outside the 0.9 final KCORE functional freeze unless a verified
 release dependency is found: new dynamic/unloadable MRES framework, user
 overlays, runtime module movement, hardware pager,
@@ -755,6 +772,7 @@ based on AUXSTORE presence. Do not treat KCORE `proc_swap`, `bcache`,
 The **online D6FS packer and other agreed storage/admin extensions are
 required for 0.9**, not post-0.9. This release-scope correction does not
 bring the deferred DTFS/TSFS work into the current KCORE feature sequence.
+TSFS v1.2 is explicitly scheduled after completion of KCORE.
 Implement these features before release acceptance; KCORE feature
 implementation takes precedence over any new size-optimization sweep.
 

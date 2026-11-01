@@ -1,3 +1,10 @@
+## 2026-11-01 v903: TSFS deferred until after KCORE
+
+The KCORE feature and size backlog excludes TSFS v1.2 sharded-metadata
+development. Complete and test KCORE (including its deferred size pass)
+first; then implement and accept TSFS v1.2 as separate pre-0.9 work.
+Preserve existing TSFS boot behavior during KCORE regression testing.
+
 ## 2026-11-01 v902: existing full-system PIPE workload passes
 
 After v901 restored native PIPE character I/O, the original

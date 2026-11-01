@@ -1,3 +1,11 @@
+## 2026-11-01 v903: TSFS deferred until after KCORE
+
+Decision v903: TSFS v1.2 is not a KCORE feature, optimization, or
+acceptance prerequisite. KCORE functional completion, regression tests
+and its final size pass come first. TSFS v1.2 sharded metadata follows
+as separate pre-0.9 work. Existing TSFS boot compatibility tests remain
+required for relevant KCORE changes. No kernel source was changed.
+
 ## 2026-11-01 v902: original anonymous PIPE integration PASS
 
 The v901 VFS character-stream fix passes the unchanged historical
