@@ -85,8 +85,11 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
-- Execute the new owner-return helper in a dedicated native test, including
-  provider refusal and private retry, rather than only source inspection.
+- Native `daimos-deferred-owner-return-v926.sh` now executes the production
+  helper and the existing private fatal-close/retry path. PASS: TERM is
+  consumed once, two FILE refusals cause two sleeps, then successful close
+  completes with TERM exit status. A second helper invocation does not
+  repeat cleanup. This is extracted assembly, not a booted process.
 - Actual booted CHLD wakeup-to-CTX restore TERM injection, exact-once
   completion and independent bystander progress.
 - Determine and test precedence of deferred TERM against other pending fatal

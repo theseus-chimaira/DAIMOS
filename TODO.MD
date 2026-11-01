@@ -11,8 +11,10 @@
   close/retry path, retaining all v925 foreign executive-stack guards.
 - [x] Native v926 isolated deferral/coalescing and v925 fatal lifecycle PASS;
   the three original v925 fatal/finish/OOM regressions still PASS.
-- [ ] Execute owner-return helper with a dedicated test of FILE refusal and
-  retry; establish precedence for remaining fatal events.
+- [x] Native owner-return helper execution with two FILE refusals, retry,
+  exact-once TERM consumption and no replay (`daimos-deferred-owner-return-v926`).
+- [ ] Establish precedence for remaining fatal events and prove a complete
+  booted CHLD/TERM handoff with real process scheduling.
 - [ ] Prove repeated-send coalescing, FILE refusal/retry, exact-once teardown,
   and booted CHLD wakeup-to-executive-restore delivery. Keep OOM killing OFF.
 

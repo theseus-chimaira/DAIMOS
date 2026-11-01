@@ -1,3 +1,16 @@
+## 2026-11-01 v926 native owner-return deferred TERM validation
+
+The existing TERM bit in the process control word records a foreign TERM
+when its target still owns a private executive continuation. The owner-side
+monitor-UUO return gate checks this bit before user return and dispatches
+through the private fatal FILE-close retry path. New testkit
+`daimos-deferred-owner-return-v926` executes that helper and actual extracted
+fatal-close assembly: two FILE refusals, two owner sleeps, successful close,
+one TERM exit and no second cleanup on repeat check. Native PASS. Earlier
+v926 coalescing and v925 handoff tests remain separate coverage; actual
+full-system CHLD wakeup/TERM handoff and other fatal-event precedence remain
+open. OOM killing is disabled.
+
 ## 2026-11-01 v925: protect saved executive context after wait wakeup
 
 The v924 wait-class guard missed the interval after a child's CHLD
