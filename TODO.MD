@@ -1,5 +1,13 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [ ] v928 control: the booted CHLD/TERM test also fails with holder and
+  waiter kept entirely outside the filesystem provider gateway. All three
+  deferred TERM requests were observed, including one WAIT_CHILD; there was
+  no held FS lease or provider wait. INIT still did not reach final exit
+  or print its completion marker. Thus the artificial provider stall is
+  NOT necessary for the v927 failure. Instrument CHLD notification, parent
+  CTX_PC restore, owner-side TERM consume, FILE completion, process EXIT,
+  and parent WAIT/reap independently. Retain all failures as regressions.
 - [ ] v927 diagnostic: full 256K guest with a genuine descendant EXIT/CHLD
   after TERM is deferred to WAIT_CHILD has NOT completed. With the
   deliberately held FS provider, the guest stopped before INIT's final

@@ -91,6 +91,12 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- The v928 no-stalled-provider control likewise reaches the three deferred
+  TERM guards (one WAIT_CHILD) but does not reach INIT's completion marker.
+  No FS gateway owner/waiter is active and the lease is zero. This rules out
+  the deliberately held provider as a necessary precondition, but does not
+  yet identify whether the failure is in CHLD scheduling, TERM consumption,
+  teardown, or the test's WAIT/status assumptions. Add stage witnesses.
 - An initial booted CHLD/TERM diagnostic (`daimos-child-term-handoff-v927`)
   deliberately retains the blocked FS owner and waiter while arranging an
   actual child EXIT. It does not pass: INIT's final completion hook is not
