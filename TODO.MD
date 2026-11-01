@@ -1,3 +1,16 @@
+### v922: repeated partial session HUP retry (2026-11-01)
+
+- [x] Confirm a member with TRANSITION+VM_NONE+FINALIZE is never HUPed
+  again while a later session member keeps refusing fatal delivery.
+- [x] Native PDP-6 test: two consecutive HUP failures preserve the first
+  pending VM/u-area owner and the attached TTY; a final successful retry
+  commits TTY release. Negative pre-v905 control fails with exit 023.
+- [x] Native v905/v875/v918 and v921 source audit PASS. No kernel/RAM
+  or ABI change required.
+- [ ] FILE/provider refusal without bound, failure-atomic recovery for
+  all teardown stages and allocation-free OOM termination remain P0.
+  Automatic OOM victim killing stays OFF.
+
 ### v921: OOM teardown safety inventory (2026-11-01)
 
 - [x] Audit actual PDP-6 FILE, session-HUP, VM, backing and u-area

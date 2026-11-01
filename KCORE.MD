@@ -1,3 +1,20 @@
+## 2026-11-01 v922: repeated partial session HUP retry proof
+
+The v905 session-HUP retry path already recognizes an irreversibly
+committed member only through TRANSITION+VM_NONE+FINALIZE. Native PDP-6
+v922 repeatedly fails the second member's HUP after the first has
+committed VM destruction but retained its pending u-area allocation.
+Both failed attempts preserve TTY ownership and the first member's
+finalization marker without redelivering its HUP. The eventual success
+only delivers HUP to the previously failing member before TTY release.
+A test-only pre-v905 negative control fails as required (exit 023).
+
+Native v922, v905, v875 and v918 tests and the v921 source audit PASS.
+No production KCORE, RAM, or ABI changes; this expands test coverage
+rather than claiming comprehensive OOM cleanup. A permanently stalled
+provider or failed FILE SYNC still prevents bounded teardown; automatic
+OOM termination remains disabled.
+
 ## 2026-11-01 v921: OOM teardown safety-path inventory
 
 The resident OOM victim selector remains read-only; automatic OOM
