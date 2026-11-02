@@ -1,5 +1,16 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v965 booted 256K PDP-6 PURE DXR2 guest exercises actual VFS
+  syscalls: root unmount returns -1, `/SYSTEM/INIT` opens writable
+  but `write_words` returns -1 while PURE child processes execute;
+  the guest prints its completion witness and normal TERM/CHLD cleanup
+  finishes (VM/u-area once, 44 bystander cycles, no integrity errors).
+  The test includes a D6FS provider retry (one rejected close of two),
+  and checks the write denial beyond the open boundary. PASS.
+  The root unmount refusal is not solely attributable to PURE lifetime;
+  v961 native guards prove that specific ownership predicate.
+- [ ] Add a separate booted non-root mount lifetime test if isolation
+  of the PURE mount-busy cause is required; avoid DTFS-specific work.
 - [x] v964 booted 256K PDP-6 with actual user DXR2 linked `--pure`:
   RUN/TERM and D6FS close-retry acceptance PASS (three sync calls,
   two injected refusals, VM and u-area released once, CHLD once,

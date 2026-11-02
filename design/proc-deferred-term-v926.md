@@ -91,6 +91,16 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v965 booted a real PURE DXR2 image with guest-initiated filesystem
+  operations while other PURE processes remained runnable. Unmount `/`
+  and a write to `/SYSTEM/INIT` returned -1; opening the backing for
+  writing succeeded, ensuring the write operation was reached. Guest
+  completion, deferred TERM and CHLD, VM/u-area exact-once cleanup and
+  44 bystander cycles passed. The disposable provider's extra INIT
+  close consumes one of the two injected SYNC refusals; the observed
+  fatal-owner close counters are 2 attempts, 1 rejection. An unmount
+  denial may have independent root-mount reasons, while v961/v962 native
+  tests exercise the underlying PURE ownership guards directly.
 - v964 booted a 256K PDP-6 image with the guest DXR2 explicitly linked
   `--pure`. The real RUN/TERM workload passes with two injected D6FS
   provider sync refusals, three close attempts, correct one-time VM
