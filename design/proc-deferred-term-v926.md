@@ -2,6 +2,16 @@
 
 ## v970 extension (2026-11-02)
 
+v977 follow-up resolves the v976 ambiguity: a checkpoint immediately
+after INIT's first WAIT printed R, but the next RUN never returned
+because the v975 fixture deliberately retained an FS gateway lease.
+That fixture cannot load a second executable and is unsuitable for
+testing slot reuse. The independent v977 booted PID-lifetime test has
+no held provider: TERM/reap slot 2, reuse slot 2, and check its fresh
+GETEVENTS bitmap has no INT/TERM/HUP/PIPE bits. v977 PASS without a
+production change. Its launcher disables graphical consoles because
+the inherited SDL-enabled launch crashed before executing assertions.
+
 v975 group-delivery acceptance: the existing held-provider CHLD test
 accepts a repeated PID TERM followed by a process-group HUP to the
 WAIT_CHILD parent. The guest receives HUP status, with one CHLD,

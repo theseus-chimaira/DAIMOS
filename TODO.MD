@@ -1,3 +1,18 @@
+### v977: independent booted fatal-event slot reuse (2026-11-02)
+
+- [x] Isolated v976 failure: INIT printed R after its first WAIT but not
+  U after second RUN. The inherited held-provider test deliberately
+  leaves the FS gateway lease occupied indefinitely, so loading a new
+  `/SYSTEM/INIT` cannot complete. This was a test fixture deadlock,
+  not evidence of stale event bits or incorrect CHLD restoration.
+- [x] Independent v977 booted 256K PDP-6 regression without an occupied
+  provider: TERM and reap slot 2, recreate process in slot 2, verify
+  no pending INT/TERM/HUP/PIPE through GETEVENTS, then complete the
+  existing PGRP/session/domain lifetime tests. PASS. Test launch uses
+  text-only consoles to avoid SDL crashing in the test environment.
+- [ ] Group delivery including sender self-membership, booted mixed
+  FILE/provider refusal/retry, and portable C fallback remain.
+
 ### v975-v976: process-group delivery and slot reuse (2026-11-02)
 
 - [x] v975 booted 256K PDP-6 group HUP delivery to the WAIT_CHILD
