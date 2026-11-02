@@ -116,3 +116,30 @@ be replayed without testing against the latest slot-lifetime contract.
 
 This comparison identifies already integrated functionality only; it
 does not claim new savings or a regression pass. No 32K tests were run.
+
+## v1013 branch pruning and rejected experiments
+
+Git ancestry was evaluated across local branches and origin-tracking refs
+in DAIMOS, daimos-testkit, and pdp10-doc. Before deletion, 69 independent
+commit tips covered the three repositories; every other candidate tip
+was an ancestor of one of those retained tips. The cleanup excludes main,
+live worktree branches, and the independent tips. Remote branch deletions
+use exact expected-SHA leases to avoid removing concurrently updated work.
+Ancestry redundancy is not a claim that the remaining independent work
+is merged to main; those tips require individual review.
+
+The 2026-10-08 odd/even MM metadata packing experiment was explicitly
+rejected in its own measured report. At 32 descriptor slots it saved 16
+resident data words but added 48 code words, **growing total resident
+memory by 32 words** and adding owner/pin limitations. The production
+two-word MM descriptor implementation remains authoritative. The paired
+testkit odd/even prototype is specific to this rejected representation.
+The 160x92 scale-1 DPY terminal experiment similarly enlarged its lazy
+text buffer from 1288 to 4968 words and was never selected for main.
+Their experimental refs may be discarded under the RAM-priority policy;
+this note preserves the decision and quantitative reason.
+
+The KCC native-source documentation was separately recovered into the
+current pdp10-doc main, corrected to match MAKEFILE plus DAIMOS.MK
+staging and current build rules. No target self-hosting acceptance or
+32K testing is claimed by this cleanup.
