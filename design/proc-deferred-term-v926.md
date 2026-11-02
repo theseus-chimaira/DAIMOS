@@ -91,6 +91,15 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v948 booted provider-origin refusal acceptance: the target opens the
+  root D6FS `/SYSTEM/INIT` file and leaves its descriptor open when
+  owner-side TERM cleanup starts. A disposable D6FS provider SYNC patch
+  returns -1 twice and then invokes its normal zero-return behavior.
+  The unchanged VFS and FILE close code reports three attempts and two
+  provider errors; VM and u-area release exactly once, CHLD and INIT
+  reap succeed, and 45 independent scheduler cycles run. No competing
+  held provider lease is used in this fixture. This does not establish
+  DTFS error handling or physical-media-origin SYNC failure.
 - v947 native post-commit guard: a VM_NONE/FINALIZE owner with deferred
   u-area cleanup rejects repeated HUP as well as INT, TERM and PIPE;
   counters prove no repeat FILE, VM or session teardown. Two slot-0

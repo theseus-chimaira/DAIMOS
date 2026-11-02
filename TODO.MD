@@ -1,5 +1,13 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v948 full-system 256K PDP-6 D6FS provider-origin SYNC refusal:
+  a real D6FS-root executable FD is held by the deferred-TERM owner;
+  disposable `d6fs_provider_sync` rejects twice, then returns success.
+  Production VFS/FILE close retries 3 times with 2 errors; VM and
+  u-area release once each, CHLD=1, finalizer errors=0, 45 spinner
+  cycles, free final provider lease and correct INIT TERM reap: PASS.
+  This is a fault inside the real provider routine, not a naturally
+  occurring disk error; DTFS and persistent physical errors remain.
 - [x] v947 native post-commit event guard: after irreversible VM_NONE /
   FINALIZE state with deferred u-area release, HUP, INT, TERM and PIPE
   are all rejected. FILE, VM and session HUP counters do not increase;
