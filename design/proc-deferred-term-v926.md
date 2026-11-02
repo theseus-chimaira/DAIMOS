@@ -91,6 +91,15 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v936 booted full-system FD-specific retry PASS: the owner (slot 5) has
+  its actual stdout descriptor (FD1) pass through `file_close_entry_v865`.
+  A disposable-kernel test hook at `file_close_vfs` injects two VFS_SYNC
+  failures for that exact descriptor, then executes the original sync.
+  The entry remains live across failed syncs; third attempt succeeds;
+  finalizer=1, failures=0, CHLD=1, peer cycles=36, held provider lease
+  remains 4,,0, and INIT reaps TERM correctly. This tests descriptor-level
+  refusal propagation rather than v935's `file_close_all` entry shortcut;
+  the provider refusal is injected, not an actual device I/O error.
 - v935 booted real scheduler with held FS owner/waiter and deferred TERM:
   a disposable-kernel `file_close_all` entry hook refuses exactly the
   first two calls for the target owner and then executes unchanged close.

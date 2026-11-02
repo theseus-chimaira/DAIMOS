@@ -1,5 +1,13 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v936 booted descriptor-level VFS_SYNC refusal/retry: disposable
+  kernel intercepts real slot-5 FD1 `file_close_entry_v865` sync boundary,
+  refuses twice, and allows the third unchanged `vfs_sync` call. 256K
+  PDP-6 held-provider scenario PASS: 3 attempts, 2 refusals, finalizer=1,
+  failure=0, CHLD=1, owner returns=3, 36 peer cycles, lease 4,,0 stable,
+  correct INIT TERM reap. This strengthens v935 whole-table refusal test.
+- [ ] Prove exact-once VM/u-area teardown and fatal-event precedence;
+  exercise permanent provider refusal separately. Keep OOM killing OFF.
 - [x] v935 booted 256K PDP-6 deferred TERM retry with two injected
   `file_close_all` refusals for slot 5, followed by one successful pass:
   3 calls, 2 refusals, successful finalizer, CHLD=1, correct WAIT status,
