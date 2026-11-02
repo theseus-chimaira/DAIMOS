@@ -91,6 +91,13 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v963 validates the source linkage from EXEC path lookup through
+  attached mount-root provider identity and the actual VFS unmount/
+  write guards. The v961/v962 native mount/write tests pass; full-system
+  256K PDP-6 v948 D6FS retry/teardown is again PASS with the new code.
+  The boot regression proves compatibility, not that a guest attempted
+  a live PURE unmount or executable backing write. That additional
+  integration case remains open.
 - v961/v962 correct the actual resident PURE mount and write lifetime
   guards. A resident image's executable backing is in its per-slot swap
   record, while a swapped image's record is saved in its u-area. Both

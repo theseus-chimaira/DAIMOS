@@ -1,5 +1,16 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v963 VFS/EXEC PURE backing source-contract regression checks
+  `file_lookup_path` -> stat/access/read -> `proc_swap_attach`, live
+  mount-root provider validation, unmount's `proc_swap_mount_busy` and
+  writes' `proc_swap_backing_busy` dispatch guards. Native v961 attach,
+  resident/swapped mount and write lifetime PASS. Full-system booted
+  256K PDP-6 v948 after v961/v962 fixes PASS (D6FS SYNC twice rejected,
+  third succeeds, VM and u-area each released once, 45 independent
+  scheduler cycles, no integrity errors). No production change in v963.
+- [ ] A booted, real PURE executable must attempt unmount and backing
+  write while resident; the v963 source guard plus v948 boot regression
+  does not constitute that exact system-level operation test.
 - [x] v961/v962 resident PURE backing ownership fixes. Both
   `proc_swap_mount_busy` (VFS unmount guard) and
   `proc_swap_backing_busy` (VFS write guard) previously inspected only
