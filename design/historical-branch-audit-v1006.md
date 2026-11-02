@@ -33,3 +33,18 @@ non-destructive branch review, not a declaration that all old work is merged.
    push without force; keep regression programs in daimos-testkit.
 
 No source changes, native test passes, or size savings are claimed here.
+
+## v1007 follow-up: DTC Stage-1 status check
+
+The old v155 patch contains a valid local simplification: Type-136 status
+bits 034 (controller/data error) and 002 (premature end zone) may be checked
+by one `CONSZ` with their combined mask 036. This change was reapplied to
+the current hybrid-TSFS Stage-1 without changing its streaming logic.
+The current standalone DAS and DXRCONVERT assembly succeeded. A same-tool
+before/after DXRCHECK reports octal `000217` (143 decimal) before and
+`000214` (140 decimal) afterwards: three linked image words saved.
+The historical `daimos-stage1-size-v1.sh` cap of 106 words is stale for the
+later hybrid loader: the updated DTC image reports 140 words and fails
+that cap.
+Do not count a 32K or hybrid tape boot acceptance until the appropriate
+native test is rerun and the size policy is reconciled independently.

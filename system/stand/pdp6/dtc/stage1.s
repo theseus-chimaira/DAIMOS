@@ -138,14 +138,11 @@ read_word:
         popj 017,
 
 read_wait:
-        consz 0214,0000034
-        jrst read_error
-        consz 0214,0000002
+        ; Either controller/data error (034) or premature end zone (002)
+        ; aborts the transfer.  A single mask preserves both conditions.
+        consz 0214,0000036
         jrst bad_tape
         jrst read_word
-
-read_error:
-        jrst bad_tape
 
 daimon_magic: .word 0444151555756
         .include "../common/decompressor.inc"
