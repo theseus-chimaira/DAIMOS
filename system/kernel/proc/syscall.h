@@ -166,7 +166,7 @@ struct sys_fsinfo {
 #define SYS_TEARDOWN_DETAIL_FLAG      0400U
 #define SYS_TEARDOWN_DETAIL_ARG(pid)  \
         (((unsigned int)(pid) & 0377U) | SYS_TEARDOWN_DETAIL_FLAG)
-#define SYS_TEARDOWN_DETAIL_VALUE(w)  (((unsigned int)(w) >> 2U) & 0377U)
+#define SYS_TEARDOWN_DETAIL_VALUE(w)  (((unsigned int)(w) >> 2U) & 037U)
 #define SYS_TEARDOWN_DETAIL_FD(w)     (((unsigned int)(w) >> 8U) & 037U)
 #define SYS_TEARDOWN_DETAIL_PROVIDER(w) (((unsigned int)(w) >> 13U) & 03U)
 /* FILE detail bits 15..17: 0 no failed provider call recorded;

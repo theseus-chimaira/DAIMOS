@@ -1,5 +1,15 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v951 booted 256K PDP-6 persistent D6FS SYNC diagnostics:
+  three failed provider calls retain FILE-stage GETTEARDOWN with actual
+  -1 error, no premature VM/u-area release, 33 bystander cycles. PASS.
+- [x] v952 correct syscall.h FILE-count decoder: the count occupies
+  bits 2..6 (maximum 16 FILEs); previous 0377 mask overlapped FD index
+  bits 8..9 and could misreport 193 descriptors for one live FD.
+  Native C89 exhaustive count/FD/error matrix PASS, zero kernel RAM
+  or on-wire diagnostic format change.
+- [ ] Permanent provider recovery/quarantine remains a policy and
+  implementation gate; diagnostic visibility alone is not recovery.
 - [x] v950 booted 256K PDP-6 bounded persistent D6FS provider SYNC
   failure: disposable D6FS provider refuses three closes and HALTs
   on attempt four. The deferred TERM target retains its VM and u-area

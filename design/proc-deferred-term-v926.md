@@ -91,6 +91,16 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v951 confirms the production GETTEARDOWN FILE-stage detail remains
+  readable through repeated D6FS provider-origin SYNC errors, with
+  three diagnostic captures and preserved VM/u-area ownership. The
+  diagnostic reports the actual provider return -1 rather than a
+  guessed error. The test HALTs before the fourth provider return.
+- v952 fixes a consumer-side FILE count mask in `syscall.h`: the real
+  encoder stores up to 16 open descriptors in bits 2..6, whereas the
+  old 8-bit count decoder overlapped the first-FD field. Native C89
+  tests cover all valid count/FD and six failure codes, with no kernel
+  runtime format or memory change.
 - v950 full-system diagnostic forces repeated failures inside the D6FS
   SYNC provider itself. A controlled HALT on the fourth attempt shows
   three returned provider errors, four D6FS close entries, zero VM and
