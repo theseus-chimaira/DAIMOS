@@ -123,3 +123,12 @@ v905 HUP fixture fails to link due to its missing
 `proc_tty_line_try_reset_v897` reference; it did not execute and is not
 counted as validation of v991. Dedicated injected HUP refusal acceptance
 is still required under the existing OOM teardown P0.
+
+## v992: native HUP retry fixture restored
+
+The historical v905 native HUP fixture now supplies a test-only empty-line
+reset callback in the executable text section. The normal VM_NONE+FINALIZE
+retry test passes; its deliberately old-behavior negative control fails
+with exit 010. This verifies session retry semantics, not a booted v991
+preflight refusal or VM teardown under physical OOM. Both OOM P0 items
+remain unchanged.
