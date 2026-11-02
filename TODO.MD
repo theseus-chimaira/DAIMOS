@@ -1,3 +1,14 @@
+### v987: permanent-provider OOM containment audit (2026-11-02)
+
+- [x] Source-linked provider-lease audit confirms that only normal
+  provider return unlocks; waiters revalidate and fatal FILE retry does
+  not force unlock or free an owned MM extent. Testkit v987 PASS.
+- [x] Remove stale v863 cross-process victim-selector reference from the
+  permanent provider failure policy; v981 uses requester-only OOM policy.
+- [ ] Provider cancellation or quiescence remains unimplemented and
+  unproven. A permanently nonreturning provider cannot safely be reset
+  or have its owner freed; OOM termination remains OFF.
+
 ### v986: owner fatal teardown OOM safety audit (2026-11-02)
 
 - [x] Native v926 owner-return deferred TERM with real extracted FILE

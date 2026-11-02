@@ -19,9 +19,9 @@ This is a safety contract, not a new administrative syscall.
   including the saved arguments on its private kernel stack. Releasing that
   u-area or resetting the provider lease from a foreign context would permit
   a second request to overwrite shared workspace before the first returns.
-- `proc_oom_select_v863` excludes the encoded lease owner; an unknown owner
-  on a held lease makes victim selection fail closed. Automatic OOM victim
-  killing remains disabled independently of this selector.
+- v981 removed the unused cross-process OOM selector. Only a requesting
+  process can be a future OOM termination candidate, and no automatic
+  termination is currently enabled. A stalled provider remains protected.
 - Fatal owner-side FILE close retains unsuccessful descriptors and the
   failure witness, sleeps with exponential delay capped at 01000 octal
   ticks, and resumes on that same owned stack. v953 demonstrates eventual
@@ -68,3 +68,12 @@ This is a safety contract, not a new administrative syscall.
 
 These tests establish containment and recovery after resumed service, not
 bounded automatic reclamation of a permanently dead provider.
+
+## v987 lease containment audit
+
+The v987 source-linked test confirms that the owner-encoded lease is only
+released on the normal provider return path; recursive access refuses,
+foreign waiters sleep and revalidate, and fatal close retries cannot force
+an unlock or free the owning u-area. The test does not prove quiescence,
+cancellation or eventual recovery of permanently nonreturning hardware.
+Automatic faulting-process OOM termination remains disabled.
