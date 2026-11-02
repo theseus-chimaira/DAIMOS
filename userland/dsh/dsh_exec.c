@@ -25,7 +25,10 @@ static kword_t dsh_run_block[DSH_RUN_WORDS];
 static kword_t dsh_path_record[U_PATH_WORDS];
 static struct dsh_s6 dsh_var_enum_name;
 static struct dsh_s6 dsh_var_enum_value;
-static struct dsh_node dsh_nodes[DSH_PARSE_MAX_NODES];
+/* AST memory is acquired for the actual parse, not charged to every shell
+ * process at EXEC time.  Nested evaluation retains its own live arena. */
+static struct dsh_node dsh_inline_node;
+static unsigned int dsh_inline_busy;
 static unsigned int dsh_nodes_active;
 static struct dsh_script *dsh_script_workspace;
 
@@ -38,7 +41,8 @@ struct dsh_function_store {
 };
 
 static struct dsh_function_store dsh_functions[DSH_MAX_FUNCS];
-static struct dsh_node dsh_function_nodes[DSH_FUNC_MAX_NODES];
+/* Function definitions are optional: no persistent AST before first DEF. */
+static struct dsh_node *dsh_function_nodes;
 static unsigned int dsh_function_nodes_used;
 
 static int dsh_s6_same(const struct dsh_s6 *a, const struct dsh_s6 *b);
@@ -169,6 +173,13 @@ dsh_define_function(struct dsh_state *st, const struct dsh_node *nodes,
                         }
         if (!found)
                 return DSH_ERROR;
+        if (dsh_function_nodes == 0) {
+                dsh_function_nodes = (struct dsh_node *)dsh_heap_alloc(
+                    (unsigned int)(sizeof(struct dsh_node) *
+                    DSH_FUNC_MAX_NODES / sizeof(kword_t)));
+                if (dsh_function_nodes == 0)
+                        return DSH_ERROR;
+        }
         if (old_count != 0U)
                 dsh_remove_function_nodes(slot);
         dsh_functions[slot].used = 1U;
@@ -2728,8 +2739,11 @@ dsh_script_execute(struct dsh_state *st, struct dsh_script *script,
         struct dsh_node *arena;
         unsigned int base;
         unsigned int root;
-        unsigned int used;
-        int rc;
+    unsigned int used;
+    unsigned int capacity;
+    unsigned int remaining;
+    int inline_arena;
+    int rc;
 
         if (script->ntokens == 0U) {
                 *status = 0;
@@ -2738,11 +2752,39 @@ dsh_script_execute(struct dsh_state *st, struct dsh_script *script,
         base = dsh_nodes_active;
         if (base >= DSH_PARSE_MAX_NODES)
                 return DSH_E_OVERFLOW;
-        arena = &dsh_nodes[base];
-        rc = dsh_parse_tokens(script->tokens, script->ntokens, arena,
-            DSH_PARSE_MAX_NODES - base, &root, &used);
-        if (rc != DSH_OK)
+        remaining = DSH_PARSE_MAX_NODES - base;
+        capacity = 1U;
+        for (;;) {
+                inline_arena = (capacity == 1U && !dsh_inline_busy);
+                if (inline_arena) {
+                        arena = &dsh_inline_node;
+                        dsh_inline_busy = 1U;
+                } else {
+                        arena = (struct dsh_node *)dsh_heap_alloc(
+                            (unsigned int)(capacity * sizeof(struct dsh_node) /
+                            sizeof(kword_t)));
+                }
+                if (arena == 0)
+                        return DSH_E_OVERFLOW;
+                rc = dsh_parse_tokens(script->tokens, script->ntokens, arena,
+                    capacity, &root, &used);
+                if (rc != DSH_E_OVERFLOW || capacity == remaining)
+                        break;
+                if (inline_arena)
+                        dsh_inline_busy = 0U;
+                else
+                        dsh_heap_free((kword_t *)arena);
+                capacity = capacity * 2U;
+                if (capacity > remaining)
+                        capacity = remaining;
+        }
+        if (rc != DSH_OK) {
+                if (inline_arena)
+                        dsh_inline_busy = 0U;
+                else
+                        dsh_heap_free((kword_t *)arena);
                 return rc;
+        }
         dsh_script_init(script);
         dsh_nodes_active = base + used;
         saved_workspace = dsh_script_workspace;
@@ -2750,6 +2792,10 @@ dsh_script_execute(struct dsh_state *st, struct dsh_script *script,
         *status = dsh_exec_node(st, arena, root);
         dsh_script_workspace = saved_workspace;
         dsh_nodes_active = base;
+        if (inline_arena)
+                dsh_inline_busy = 0U;
+        else
+                dsh_heap_free((kword_t *)arena);
         st->status = (unsigned int)*status;
         return DSH_OK;
 }
@@ -2811,7 +2857,10 @@ dsh_execute_line(struct dsh_state *st, const struct dsh_line *line)
         struct dsh_node *arena;
         unsigned int base;
         unsigned int root;
-        unsigned int used;
+    unsigned int used;
+    unsigned int capacity;
+    unsigned int remaining;
+    int inline_arena;
         int errpos;
         int status;
         int rc;
@@ -2819,10 +2868,37 @@ dsh_execute_line(struct dsh_state *st, const struct dsh_line *line)
         base = dsh_nodes_active;
         if (base >= DSH_PARSE_MAX_NODES)
                 return DSH_ERROR;
-        arena = &dsh_nodes[base];
-        rc = dsh_parse_s6_line(line, arena, DSH_PARSE_MAX_NODES - base,
-            &root, &used, &errpos);
+        remaining = DSH_PARSE_MAX_NODES - base;
+        capacity = 1U;
+        for (;;) {
+                inline_arena = (capacity == 1U && !dsh_inline_busy);
+                if (inline_arena) {
+                        arena = &dsh_inline_node;
+                        dsh_inline_busy = 1U;
+                } else {
+                        arena = (struct dsh_node *)dsh_heap_alloc(
+                            (unsigned int)(capacity * sizeof(struct dsh_node) /
+                            sizeof(kword_t)));
+                }
+                if (arena == 0)
+                        return DSH_ERROR;
+                rc = dsh_parse_s6_line(line, arena, capacity,
+                    &root, &used, &errpos);
+                if (rc != DSH_E_OVERFLOW || capacity == remaining)
+                        break;
+                if (inline_arena)
+                        dsh_inline_busy = 0U;
+                else
+                        dsh_heap_free((kword_t *)arena);
+                capacity = capacity * 2U;
+                if (capacity > remaining)
+                        capacity = remaining;
+        }
         if (rc != DSH_OK) {
+                if (inline_arena)
+                        dsh_inline_busy = 0U;
+                else
+                        dsh_heap_free((kword_t *)arena);
                 (void)u_puts(2, "DSH: SYNTAX");
                 (void)u_crlf(2);
                 return DSH_ERROR;
@@ -2830,5 +2906,9 @@ dsh_execute_line(struct dsh_state *st, const struct dsh_line *line)
         dsh_nodes_active = base + used;
         status = dsh_exec_node(st, arena, root);
         dsh_nodes_active = base;
+        if (inline_arena)
+                dsh_inline_busy = 0U;
+        else
+                dsh_heap_free((kword_t *)arena);
         return status;
 }

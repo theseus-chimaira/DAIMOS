@@ -1063,15 +1063,6 @@ failure before full-system scheduler acceptance. No production edits.
 The `?RT` code is emitted by `kinit_boot()` on root mount or regular
 `/SYSTEM/INIT` validation failure, before scheduler pressure begins.
 
-## 2026-10-29 v669: scheduler fault-acceptance blocker
-
-The historic full-system pressure runner v298 has stale fixed-KCORE
-assumptions for SWAP MRES functions. A corrected v669 diagnostic
-runner reaches native SIMH boot but the guest emits `?RT` and halts
-at `065206` before workload completion. This is NOT a passed swap
-or rollback test. Isolated v664-v668 remain PASS; diagnose the startup
-failure before full-system scheduler acceptance. No production edits.
-
 ## 2026-10-29 v668: recoverable late MM-free rollback verified
 
 The testkit v668 isolated native PDP-6 test PASSes: after successful
@@ -1306,6 +1297,18 @@ layout-validated, preserving D6FS. Host v636/v638 safety tests PASS.
 Other profiles, stack watermark and failure-path acceptance remain open.
 See `design/kinit-lowmem-footprint-v638.md`.
 
+## 2026-10-27 v512: final KCORE optimization waits for functional freeze
+
+The consolidated functional freeze checklist is now in TODO.MD, with a
+matching SIZEOPT.MD gate and KCORE.MD chronological note. Required
+acceptance/correctness includes timekeeping, MKSWAP, mixed storage/BLOCKSET
+inventory, swapped MonitorFS process metadata and scheduler/testkit
+regressions. Before declaring the source ABI frozen, decide inclusion of
+the D6 codec production cutover, TSFS v1.2, BSTORE remainder, production
+MEMFS XIP and compressed process swap. Post-0.9 module relocation and
+user overlays remain deferred. This is planning/documentation only; no
+runtime changes or measured savings. Preserve the v508 accepted size base.
+
 ## 2026-10-27 v513: fresh permanent-size measurements and XIP/512-word TODO
 
 Rebuilt the current source's GCC `permanent-size` target for three PDP-6
@@ -1332,18 +1335,6 @@ is octal (1024 decimal), and both PDP-6 APR models hardwire ten low bits
 for process relocation/limit. Software allocations may be more flexible;
 do not promise native 512-word process mappings on original hardware.
 Preserved the unrelated working-tree `userland/dsh/dsh_exec.c` edit.
-
-## 2026-10-27 v512: final KCORE optimization waits for functional freeze
-
-The consolidated functional freeze checklist is now in TODO.MD, with a
-matching SIZEOPT.MD gate and KCORE.MD chronological note. Required
-acceptance/correctness includes timekeeping, MKSWAP, mixed storage/BLOCKSET
-inventory, swapped MonitorFS process metadata and scheduler/testkit
-regressions. Before declaring the source ABI frozen, decide inclusion of
-the D6 codec production cutover, TSFS v1.2, BSTORE remainder, production
-MEMFS XIP and compressed process swap. Post-0.9 module relocation and
-user overlays remain deferred. This is planning/documentation only; no
-runtime changes or measured savings. Preserve the v508 accepted size base.
 
 ## 2026-10-27 v511: P-1 KCORE backlog reconciliation
 

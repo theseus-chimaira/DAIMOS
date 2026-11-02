@@ -116,7 +116,9 @@ D6FS_LOGSTORE_BLOCKS ?= 0400
 D6FS_SWAP_TAIL_BLOCKS ?= 0400
 D6FS_SPARE_BLOCKS ?= 0
 DRUM_LOGSTORE_BLOCKS ?= 0400
-DRUM_BACKSTORE_BLOCKS ?= 04000
+# 010000 sectors support the 16-child full-profile pressure workload.
+# The former 04000 could exhaust backing before its final RUN admission.
+DRUM_BACKSTORE_BLOCKS ?= 010000
 # 1024 direct-mapped data slots plus eight 0200-word tag blocks.
 DRUM_CACHESTORE_BLOCKS ?= 02010
 DRUM_AUX_TAIL_BLOCKS != printf '%u' $$(( $(DRUM_LOGSTORE_BLOCKS) + \

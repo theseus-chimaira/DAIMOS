@@ -1,3 +1,14 @@
+## 2026-11-02 v970: deferred fatal-event precedence
+
+PDP-6 foreign fatal delivery now records INT, TERM, HUP and PIPE on a
+protected executive stack instead of refusing non-TERM events. All four
+coalesce in existing control-word bits; owner-side return chooses HUP,
+then INT, then TERM, then PIPE, marks private fatal cleanup ownership,
+and enters the existing allocation-free retry loop. Native source-linked
+v970 deferred-event and HUP retry fixtures pass. No new process fields
+or static allocations. Booted mixed-event, self/group-send and PID reuse
+acceptance remain open; size optimization stays deferred.
+
 ## 2026-11-01 v925: protect saved executive context after wait wakeup
 
 The v924 wait-class guard missed the interval after a child's CHLD
@@ -1198,14 +1209,6 @@ recovery remains UNVERIFIED; no kernel size/production change.
 `?RT` originates from `kinit_boot()` root mount/INIT validation,
 not from the swap transaction code.
 
-## 2026-10-29 v669: full-system swap pressure blocked
-
-The v298 test assumes swap transactions are in `kcore.map`; current
-swap transactions reside in loadable SWAP MRES. Testkit v669 corrects
-the test's symbol assumptions, but a no-breakpoint native run halts
-at `?RT`/`065206` before workload completion. Full-system swap-out
-recovery remains UNVERIFIED; no kernel size/production change.
-
 ## 2026-10-29 v668: native swap MM-free rollback
 
 PDP-6 native execution verifies successful unpin followed by failed
@@ -1427,6 +1430,20 @@ The generated DRM DBOOT descriptor is converted to AUXST1 only after
 strict signature/layout checks and explicit build-time confirmation.
 See `design/kinit-lowmem-footprint-v638.md` for full evidence.
 
+## 2026-10-27 v512: pre-final-sweep functional gate
+
+Consolidated the unresolved functional prerequisites in TODO.MD. Before the
+final KCORE size pass, close UTC clock/DATE/SETTIME, explicit swap formatting,
+combined device/BLOCKSET/provider inventory, MonitorFS swapped-process
+metadata correctness and scheduler/compiler regression gates. Decide whether
+the production D6 codec cutover, TSFS v1.2, remainder of BSTORE migration,
+privileged raw MEMFS XIP and optional compressed swap are in release scope;
+if yes, implement and test them before freezing the permanent image. They
+are not all automatically required for version 0.9. Keep the accepted v508
+lowmem size numbers as the baseline, and do not resurrect obsolete mount
+capacity v13-v21 substeps or failed MEMFS auto-loading proposals. No kernel
+implementation or size saving is claimed by this inventory.
+
 ## 2026-10-27 v513: fresh current GCC size results (no code change)
 
 Re-ran `permanent-size` on current sources, not the older v219/XIP-linked
@@ -1446,20 +1463,6 @@ No production kernel changes and no attributed word savings in v513.
 `TODO.MD` now has the consolidated outstanding XIP path and deferred
 512-decimal-word granularity investigation, explicitly separating PDP-6
 hardware APR alignment from software allocation policy.
-
-## 2026-10-27 v512: pre-final-sweep functional gate
-
-Consolidated the unresolved functional prerequisites in TODO.MD. Before the
-final KCORE size pass, close UTC clock/DATE/SETTIME, explicit swap formatting,
-combined device/BLOCKSET/provider inventory, MonitorFS swapped-process
-metadata correctness and scheduler/compiler regression gates. Decide whether
-the production D6 codec cutover, TSFS v1.2, remainder of BSTORE migration,
-privileged raw MEMFS XIP and optional compressed swap are in release scope;
-if yes, implement and test them before freezing the permanent image. They
-are not all automatically required for version 0.9. Keep the accepted v508
-lowmem size numbers as the baseline, and do not resurrect obsolete mount
-capacity v13-v21 substeps or failed MEMFS auto-loading proposals. No kernel
-implementation or size saving is claimed by this inventory.
 
 ## 2026-10-27 v511: KCORE worklist reconciliation
 
