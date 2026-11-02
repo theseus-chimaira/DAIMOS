@@ -1,5 +1,12 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v944 native process-group TERM acceptance: actual `proc_event_send`
+  group dispatcher matches PGRP 7 to a WAIT_CHILD member in slot 2,
+  records owner-side deferred TERM without FILE/VM teardown, and retains
+  v943 reverse-order and v942 duplicate/competing fatal safeguards: PASS.
+- [ ] Mixed-state process group with multiple members: group delivery
+  applies members sequentially and stops on first refusal, so partial
+  delivery semantics must be specified and tested before OOM enablement.
 - [x] v943 native fatal-event ordering: INT and HUP arriving first at a
   WAIT_CHILD target are rejected, with no FILE/VM cleanup and without
   setting deferred TERM; subsequent TERM is accepted, duplicate TERM

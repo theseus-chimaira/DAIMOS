@@ -91,6 +91,13 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v944 native PDP-6 test includes the real group dispatcher in
+  `proc_event_send`, using caller session/domain control and PGRP 7 to
+  deliver TERM to a WAIT_CHILD target. Its deferred flag is recorded
+  without premature FILE or VM cleanup; v943 ordering still passes.
+  The group loop applies targets in slot order and returns on the first
+  failed member, so mixed-state partial delivery remains an explicit
+  untested policy concern.
 - v943 establishes the reverse ordering of v942: INT and HUP refused
   before a deferred TERM may be accepted for the WAIT_CHILD owner.
   Neither refusal sets the pending TERM bit or releases FILE/VM state.
