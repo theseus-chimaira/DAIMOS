@@ -50,6 +50,11 @@ This is a safety contract, not a new administrative syscall.
 
 ## Tests and remaining gaps
 
+- v955: native MM u-area failures distinguish legitimate multi-pin
+  refusal (-5) from wrong type, owner and missing extents (-4), without
+  modifying retained extent records. Releasing the pin and then freeing
+  works normally. This does not provide authority to repair corrupted
+  metadata by guessing an extent's rightful owner.
 - v866/v915/v916/v917: native serialized lease, recursive refusal, foreign
   waiter, unlock and event behavior.
 - v891/v950/v951: booted retained descriptor and provider error reporting

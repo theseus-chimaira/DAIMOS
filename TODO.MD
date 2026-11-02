@@ -1,5 +1,14 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v955 native PDP-6 MM failure matrix: three-pin type-3 u-area
+  reports the exact pin count, `mm_free` rejects it with -5 and does
+  not modify extent metadata; wrong type and wrong owner return -4
+  without mutation; normal release after unpin succeeds, and the
+  missing extent is rejected. Existing v888 release diagnostics remain
+  covered. No allocator code or RAM growth; PASS.
+- [ ] Permanent missing, wrong-type or wrong-owner extents remain
+  unreclaimable without reconstructing correct ownership. Do not
+  force-free them or interpret -4 as an ordinary retryable pin.
 - [x] v954 provider-lock/quiescence source-contract test and native
   v866/v915/v916/v917 regressions PASS. Lock owner is encoded as
   owner-slot+1 in LH, RH=0; waiters sleep on a distinct event and must
