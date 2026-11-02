@@ -91,6 +91,15 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v954 source-contract regression preserves the serial physical-provider
+  ownership invariant (LH owner+1, RH busy), distinct waiter event,
+  revalidation after wake and one normal unlock path. OOM selection
+  excludes a known lease owner and returns no victim for a held lease
+  with no encoded owner. Private fatal-close retries keep the owner
+  alive and never free its memory or force-unlock a provider. Native
+  v866, v915, v916 and v917 provider-lock regressions pass as controls.
+  This is a static guard plus native control coverage, not a proof that
+  an arbitrary suspended physical I/O can be cancelled safely.
 - v953 booted PDP-6 acceptance proves eventual provider recovery after
   *eleven* failed VFS sync attempts (assembler threshold 013 octal),
   eleven owner-stack sleep/retry passes and a capped 01000-octal tick

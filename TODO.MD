@@ -1,5 +1,17 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v954 provider-lock/quiescence source-contract test and native
+  v866/v915/v916/v917 regressions PASS. Lock owner is encoded as
+  owner-slot+1 in LH, RH=0; waiters sleep on a distinct event and must
+  revalidate after wake. Only the dispatch-return unlock path releases
+  the lease. OOM excludes known owner and rejects all victims with an
+  unknown held-lease owner; private fatal retries never force-unlock.
+  No production changes or extra KCORE words.
+- [ ] No safe forced recovery of a nonreturning provider is demonstrated.
+  The provider may retain a live continuation, private stack, shared
+  workspace and MM/FILE references. Administrative action must not
+  clear the lease, fake wakeup, recycle the PID or free those resources
+  without a provider-specific quiescence and completion proof.
 - [x] v953 booted 256K PDP-6 provider revival after persistent
   refusal: a genuine user APR fatal victim holds its private FILE
   descriptor through eleven failed VFS sync calls and eleven sleeps;
