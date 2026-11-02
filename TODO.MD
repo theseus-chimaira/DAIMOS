@@ -1,3 +1,22 @@
+### v975-v976: process-group delivery and slot reuse (2026-11-02)
+
+- [x] v975 booted 256K PDP-6 group HUP delivery to the WAIT_CHILD
+  parent after repeated PID TERM: selected HUP exit, CHLD=1, EXIT=1,
+  finalization=1, failure=0, 36 bystander cycles, unchanged held FS
+  provider lease 4,,0. PASS, no production change.
+- [x] Source audit: `proc_run.s` zeroes the complete 0410-octal-word
+  freshly allocated u-area before publishing a RUN process. This clears
+  all deferred fatal bits at PROC_FDCTL_OFFSET for slot reuse.
+- [ ] v976 guest-visible slot-reuse and clean pending-event test FAILS
+  to complete: both the initial in-descendant GETEVENTS probe and the
+  isolated new-process probe timed out in disposable 256K builds after
+  original descendant marker Z, with INIT never reaching final P. The
+  unchanged v975 group-delivery fixture passes. Do not infer stale
+  pending state or change production code until the altered fixture's
+  CHLD/finalization/scheduler stages are independently witnessed.
+- [ ] Full group delivery including sender self-membership, provider
+  failure during mixed-event cleanup, and portable C behavior remain.
+
 ### v973-v974: owner self-delivery precedence (2026-11-02)
 
 - [x] Fix native PDP-6 `proc_event_apply` current-process fatal path:

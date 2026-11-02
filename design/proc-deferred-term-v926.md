@@ -2,6 +2,21 @@
 
 ## v970 extension (2026-11-02)
 
+v975 group-delivery acceptance: the existing held-provider CHLD test
+accepts a repeated PID TERM followed by a process-group HUP to the
+WAIT_CHILD parent. The guest receives HUP status, with one CHLD,
+one EXIT, one finalization, 36 bystander cycles and an unchanged lease.
+No production change is necessary for this observed case.
+
+Slot reuse source audit: `proc_run.s` calls `fs_zero_words` for the
+complete newly allocated 0410-octal-word u-area before publishing a RUN
+slot, so deferred fatal bits cannot be inherited through normal u-area
+allocation. However, v976 booted acceptance remains open. Two disposable
+v976 variants timed out after the original descendant's Z marker and
+before INIT completion; no stale-event bit was observed, and no specific
+kernel defect has been established. Diagnose the CHLD and finalizer stages
+before interpreting that timeout as a reuse issue.
+
 v973-v974 close one self-delivery precedence defect. With a fatal event
 already pending, native `proc_event_apply` formerly entered immediate
 `file_close_all` for a current-process fatal event, bypassing the owner
