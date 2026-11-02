@@ -91,6 +91,13 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v940 replaces the v939 synthetic allocator return with a real MM
+  extent-table pin: the first matching slot-5 dynamic u-area free sets
+  the pin bit and executes production `mm_free_busy`; the retry clears
+  that test pin and passes through normal validation/deletion. Full
+  256K PDP-6 held-provider/CHLD/TERM acceptance PASS, MM calls 2,
+  busy 1, u-area release calls 2, VM destroy 1, no finalizer failure.
+  The pin is injected by a disposable fixture, not a concurrent owner.
 - v939 booted PDP-6 regression faults the actual `mm_free` interface for
   a type-3 kernel-dynamic extent owned by slot 5 (owner 01005). The first
   call returns busy without changing the MM extent; the second executes

@@ -1,5 +1,15 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v940 booted 256K PDP-6 MM pinned-extent busy path: disposable
+  injection sets an actual extent pin bit at the matching slot-5 type-3
+  u-area `mm_free` validation; the allocator's own busy branch rejects
+  release, and a second attempt clears the test pin and frees normally.
+  MM calls=2, busy=1, u-area calls=2, VM destroy=1, FILE close=3 with
+  two refusals, CHLD=1, finalizer failures=0, 36 bystander cycles,
+  intact FS lease 4,,0, correct INIT TERM reap: PASS.
+- [ ] Natural concurrent pin ownership and permanent refusal tests;
+  mounted DTFS/D6FS provider-origin sync failure, fatal-event precedence,
+  and OOM safety remain open.
 - [x] v939 256K PDP-6 `mm_free` entry-fault regression: slot-5
   kernel-dynamic u-area free refused once with allocator busy result,
   followed by successful second call. MM calls=2, u-area releases=2,
