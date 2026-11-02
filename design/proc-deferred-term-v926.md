@@ -91,6 +91,12 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v956 native ownership test couples production u-area release with
+  actual MM extent validation. Wrong owner/type and outstanding pins
+  preserve the whole descriptor and extent, a valid release clears
+  both base and flag, and repeated release is idempotent. This narrows
+  the MM inconsistency search to allocation/publication and VM/swap
+  teardown paths rather than the tested u-area release boundary.
 - v954 source-contract regression preserves the serial physical-provider
   ownership invariant (LH owner+1, RH busy), distinct waiter event,
   revalidation after wake and one normal unlock path. OOM selection

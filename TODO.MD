@@ -1,5 +1,13 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v956 native PDP-6 u-area release ownership acceptance: the real
+  `proc_uarea_release` and `mm_free` leaves the process meta word and
+  extent untouched on wrong owner, wrong MM type and pinned-extent
+  refusals. A subsequent valid release clears both the stable u-area
+  flag and stored base, and another release is a no-op. PASS; no
+  production code or permanent RAM change.
+- [ ] Audit resident VM destruction and `proc_swap_detach` ordering for
+  any post-MM-free error that might leave a stale VM base on retry.
 - [x] v955 native PDP-6 MM failure matrix: three-pin type-3 u-area
   reports the exact pin count, `mm_free` rejects it with -5 and does
   not modify extent metadata; wrong type and wrong owner return -4
