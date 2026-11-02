@@ -1,5 +1,14 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v961 resident executable backing now validates its exact live
+  VFS mount-root provider and public mount ID before publishing the
+  one-word swap record or staged mount-extension bit. A syntactically
+  valid but mismatched or unmounted vnode fails closed. v961 native
+  mount-binding matrix, adapted v960 matrix and v959 contract PASS;
+  PDP-10 C89 cross compilation PASS. No new permanent RAM words.
+- [ ] Booted PDP-6 check of vnode/mount-root disagreement and complete
+  RUN/EXEC rollback is still required before claiming full-system
+  acceptance. DTFS-specific tests remain deferred.
 - [x] v960 host C89 executable-backed resident-record test links the
   actual `proc_swap_attach`: all mount IDs 1..26 preserve exact index,
   low mount bits, PURE text and staged fifth mount bit. Out-of-range

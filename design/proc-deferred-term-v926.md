@@ -91,6 +91,14 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v961 closes a record-publication validation gap: `proc_swap_attach`
+  previously checked vnode provider/kind/range but not that the mounted
+  root at the selected slot had the same provider and public mount ID.
+  PURE restoration reconstructs provider identity from that root, so a
+  mismatch could publish a backing record that later resolves to the
+  wrong provider. The check runs before writing either compact record
+  or staged mount-extension bit. v961/v960 native checks and the v959
+  source contract pass. Full-system fault injection remains open.
 - v960 links actual `proc_swap_attach` in a C89 native harness and
   verifies all 26 representable live mount IDs, including the staged
   fifth slot bit before u-area publication. Invalid provider, mount,

@@ -10,6 +10,12 @@
 #include "dtfs.h"
 #include "tsfs.h"
 
+/* Published VFS mount-root slab; each public mount ID selects slot ID-1.
+ * The resident swap record omits provider identity and PURE reload later
+ * reconstructs it from this root, so validate the binding at attach time.
+ */
+extern vnode_t *vfs_mount_root_base;
+
 /** Pack resident executable backing and PURE-text metadata into one record word. */
 int
 proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
@@ -30,6 +36,10 @@ proc_swap_attach(int slot, vnode_t backing, kword_t text_words,
         if (provider < MEMFS_PROVIDER || provider > TSFS_PROVIDER ||
             mount == 0U || mount > (unsigned int)vfs_mount_limit ||
             kind != 1U + (provider & 1U))
+                return -1;
+        if (vfs_mount_root_base == 0 ||
+            VFS_PROVIDER(vfs_mount_root_base[mount - 1U]) != provider ||
+            VFS_MOUNT_ID(vfs_mount_root_base[mount - 1U]) != mount)
                 return -1;
         if (pure == 0U)
                 text_words = 0UL;
