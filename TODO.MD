@@ -1,3 +1,15 @@
+### v983-v984: booted BRK progression and growth rejection (2026-11-02)
+
+- [x] Repair testkit BRK guest's missing libc memset linkage; full
+  256K PDP-6 runtime BRK/SBRK growth, heap contents and shrink PASS.
+- [x] v984 full-system BRK repeated-growth test reaches rejection,
+  proves failed request leaves BRK unchanged, restores original break
+  and exits normally. No automatic OOM termination or unrelated kill.
+- [ ] Attribute v984 rejection to physical RAM/backing exhaustion versus
+  address-space ceiling with an explicit MM witness before certifying
+  the exhaustion gate. Follow with real RUN failure/rollback in a clean
+  fixture and allocation-free fatal cleanup certification.
+
 ### v982: faulting requester RUN and BRK audit (2026-11-02)
 
 - [x] Deleted five obsolete source-linked test pairs for the removed

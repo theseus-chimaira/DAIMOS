@@ -37,3 +37,14 @@ with a requester-local policy without broadening it into arbitrary kills.
 Source-contract tests v982 check these existing failure branches. Actual
 OOM killing remains disabled pending real exhausted-memory guest tests and
 certification of the cleanup dependency graph.
+
+## v984: booted BRK rejection acceptance
+
+The booted 256K PDP-6 v984 guest grows its own BRK repeatedly until a
+request is rejected. It confirms the rejected request did not change BRK,
+shrinks to its starting break, and exits normally. The standard v983 BRK
+growth/data/shrink regression also passes after fixing its test-only
+missing memset link. This is a nonlethal failure-path and rollback proof,
+not yet proof that *physical* memory rather than a user-address ceiling
+caused rejection. An MM rejection witness and separate full-system RUN
+resource-exhaustion acceptance remain open before activating any killer.
