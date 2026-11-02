@@ -91,6 +91,14 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v959 audits the distinct meanings of the existing one-word swap
+  record, guarding attach, detach, swap-out/swap-in commit ordering and
+  v958 rollback via testkit source checks. Resident entries encode
+  executable backing, mount and PURE text, not a disk span. Disk entries
+  encode first block and count, while the prior resident record lives
+  in the stable u-area. The guard and v788/v806/v957/v958 regressions
+  pass. Arbitrary corruption detection and full fault-injected swap
+  publication remain separate acceptance tasks.
 - v958 active PDP-6 assembler swap-in rollback fix: after read failure
   or pin failure, a rejected `mm_unpin` or `mm_free` used to fall through
   and clear the per-process TRANSITION lock. The failure paths now jump

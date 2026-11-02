@@ -1,5 +1,16 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v959 source-contract audit of live PDP-6 one-word swap record:
+  resident entry is executable index/mount/PURE metadata, while disk
+  entry is first-block/count with the old record in the stable u-area.
+  Checked attach, prefree backing validation in detach, swap-out MM
+  release before disk publication, swap-in reload before resident
+  publication, and v958 rollback exclusion. Source gate PASS; native
+  v788/v806/v958 and v957 C branch controls PASS. No production change.
+- [ ] A preexisting corrupted resident backing record is not reliably
+  recognizable from its raw word alone, because resident and disk
+  layouts overlap. Do not guess a disk span from the word bits; audit
+  metadata creation and contextual mount/provider validation instead.
 - [x] v958 fix real PDP-6 swap-in rollback ownership bug: the read-
   failure `mm_unpin` and both post-allocation `mm_free` paths previously
   ignored MM errors and cleared TRANSITION. Failure now enters the
