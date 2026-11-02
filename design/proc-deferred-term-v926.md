@@ -91,6 +91,11 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v943 establishes the reverse ordering of v942: INT and HUP refused
+  before a deferred TERM may be accepted for the WAIT_CHILD owner.
+  Neither refusal sets the pending TERM bit or releases FILE/VM state.
+  The later TERM is accepted, duplicates coalesce, and competing
+  INT/HUP after TERM remain refused. Native PDP-6 test PASS.
 - v942 native PDP-6 test exercises duplicate TERM while the WAIT_CHILD
   owner is already marked for deferred TERM, then delivers INT and HUP
   to that same protected owner. A second TERM coalesces; INT and HUP

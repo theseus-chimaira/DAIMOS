@@ -1,5 +1,11 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v943 native fatal-event ordering: INT and HUP arriving first at a
+  WAIT_CHILD target are rejected, with no FILE/VM cleanup and without
+  setting deferred TERM; subsequent TERM is accepted, duplicate TERM
+  coalesces, and competing later INT/HUP are refused. Native PASS.
+- [ ] Verify process-group event delivery and fatal events following
+  committed teardown; OOM termination remains disabled.
 - [x] v942 native fatal precedence/coalescing control: a repeated TERM
   on an existing deferred TERM owner succeeds without FILE/VM cleanup;
   INT and HUP targeting the same protected private stack are refused.
