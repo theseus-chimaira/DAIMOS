@@ -1,5 +1,13 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v939 256K PDP-6 `mm_free` entry-fault regression: slot-5
+  kernel-dynamic u-area free refused once with allocator busy result,
+  followed by successful second call. MM calls=2, u-area releases=2,
+  VM destroys=1, FILE closes=3 (2 refused), CHLD=1, finalizer failures=0,
+  37 bystander cycles, held provider lease 4,,0, correct TERM WAIT: PASS.
+- [ ] Test internally generated MM errors (busy/pinned extent) rather
+  than entry injection; mounted DTFS/D6FS VFS_SYNC provider-origin refusal,
+  permanent refusal policy, fatal-event precedence, and OOM safety remain.
 - [x] v938 booted 256K PDP-6 post-VM u-area release retry: test-only
   `proc_uarea_release` first attempt returns -1, deferred slot-0
   finalization retries and succeeds. U-area release calls=2, VM destroy

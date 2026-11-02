@@ -91,6 +91,13 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v939 booted PDP-6 regression faults the actual `mm_free` interface for
+  a type-3 kernel-dynamic extent owned by slot 5 (owner 01005). The first
+  call returns busy without changing the MM extent; the second executes
+  production `mm_free`. Two allocator and u-area calls, one VM destroy,
+  three FILE closes with two earlier refusals, one CHLD and full INIT
+  TERM reap: PASS with held FS owner/waiter. A naturally arising internal
+  MM allocation-table busy condition has not been exercised.
 - v938 booted 256K PDP-6 deliberately fails the first call to
   `proc_uarea_release` for the deferred-TERM owner after VM destruction.
   The existing deferred finalizer retries from slot 0: two u-area
