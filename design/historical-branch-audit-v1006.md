@@ -97,3 +97,22 @@ no new linked size reduction or native execution test is claimed.
 The requested 32K-specific tests remain deferred. Further branch review
 must avoid running the 32K boot, memory-pressure, and size gates until
 that deferral is explicitly lifted.
+
+## v1011 filesystem and RUN checkpoint comparison
+
+Reviewed historical backup commit 79b90a71 against current `main`.
+Its four MEMFS scan-loop `AOJA` substitutions are already present in
+`memfs_runtime.s` (find-child, new free slot, unlink child, readdir).
+The D6FS provider free-map population count is also present in
+`d6fs_runtime.s`: fewer saved accumulators, AC6/AC7 quotient/remainder,
+and the tail-bit path reuses the common population-count loop.
+
+The historic `proc_run.s` change separated allocation, startup record,
+hierarchy, file-table, and descriptor-map failures. Those labels still
+exist and now funnel through shared `proc_run_claimed_bad` cleanup.
+Later RUN changes, notably the v896 ownership-publication correction,
+have superseded the old control-flow details. No older RUN hunks should
+be replayed without testing against the latest slot-lifetime contract.
+
+This comparison identifies already integrated functionality only; it
+does not claim new savings or a regression pass. No 32K tests were run.
