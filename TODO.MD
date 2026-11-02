@@ -38,6 +38,8 @@
   switching to idle stack, recoverable HUP/VM refusal currently leads to
   HALT 1; post-VM MM refusal already has a deferred slot-zero retry.
   Booted v978 transient FILE/MM retries PASS.
+  v989 confirms slot-zero retry is post-VM only and cannot safely
+  execute sleeping HUP/provider cleanup while scheduler PI6 is inhibited.
 
 ### v983-v984: booted BRK progression and growth rejection (2026-11-02)
 

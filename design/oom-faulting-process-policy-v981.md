@@ -86,3 +86,17 @@ Resolution must preserve process ownership and normal scheduling on
 recoverable pre-VM failures, without a new resident table or allocation.
 No arbitrary device recovery or new OOM victim selector is authorized.
 Automatic OOM termination remains disabled.
+
+## v989: restriction on idle-stack retry
+
+The slot-zero deferred finalizer only handles post-VM u-area release or
+unpublished RUN discard. It is invoked with scheduler PI6 inhibited.
+`proc_session_teardown` can deliver HUP and invoke sleeping provider
+operations; `vm_space_destroy` can invoke backing/provider callbacks.
+Moving either to the existing post-VM finalizer is NOT safe.
+
+The next implementation must explicitly separate potentially sleeping
+pre-VM operations from non-sleeping terminal release and preserve a valid
+owner continuation until the former finishes. Do not add an idle-stack
+retry that sleeps or force-release an owned private kernel stack.
+This is part of the existing OOM termination P0, not a new P0 gate.
