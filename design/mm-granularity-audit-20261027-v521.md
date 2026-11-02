@@ -36,7 +36,7 @@ Status: source inspection completed; implementation and native acceptance open.
 
 - `02000` octal is 1024 decimal words. `01000` octal is 512 decimal
   words. Neither number implies a generic 2048-decimal-word allocator.
-- `system/kernel/mm/mm.c`: `mm_alloc()` calls `mm_alloc_aligned()` with
+- `system/kernel/mm/mm_pdp6.s`: `mm_alloc()` calls `mm_alloc_aligned()` with
   alignment **1**. Extents record exact lengths. Gaps, not per-quantum
   bitmaps, represent free space. `mm_alloc_aligned_noreclaim()` also honors
   caller-selected power-of-two alignment and exact requested length.
@@ -44,7 +44,7 @@ Status: source inspection completed; implementation and native acceptance open.
   `system/kernel/proc/vm_pdp6.s` uses APR-dependent size rounding and
   relocation at that boundary. The backend cannot grant hardware-protected
   process mappings at a 512-decimal-word boundary on the existing PDP-6.
-- `system/kernel/mm/mm.c` compacts movable process extents using
+- `system/kernel/mm/mm_pdp6.s` compacts movable process extents using
   `VM_EXTENT_ALIGN_WORDS`; changing just the compactor to 512 would violate
   process relocation invariants.
 - Existing software allocations include variable-size mount slabs,

@@ -2,9 +2,9 @@
  * @file mm_pdp6.s
  * @brief Compact PDP-6 permanent contiguous-core allocator.
  *
- * This is the PDP-6 implementation of the policy documented by mm.c.  The
- * portable C source remains the reference implementation.  PDP-6 uses a
- * sorted table of two-word allocated extents and up to three managed arenas;
+ * This is the authoritative PDP-6 implementation of the core allocator.
+ * No alternate C allocator exists. PDP-6 uses a sorted table of two-word
+ * allocated extents and up to three managed arenas;
  * free memory is represented implicitly by gaps.  The assembly path removes
  * KCC save frames and structure-copy scaffolding without changing policy.
  */
