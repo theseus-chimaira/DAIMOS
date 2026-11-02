@@ -76,3 +76,24 @@ every 32K hybrid TSFS read or failure-injection path.
 The historical 106-word DTC size cap remains obsolete: the current
 hybrid loader is 140 words after the reduction. Existing KCC identifier
 truncation and unused-symbol warnings remain separate toolchain work.
+
+## v1010 non-32K checkpoint reconciliation
+
+The v02fa024e `module_runtime_pdp6.s` fixed-binding label-count change
+was subsequently integrated as 65651a49, and current code continues to
+derive the loop count from the table labels rather than a hardcoded count.
+The checkpoint's low-memory EXEC descriptor preservation is also already
+present: the current routine retains the original META word, restores it
+after loading, and resets swap backing and BRK state on commit. No replay.
+
+The old `mm.c` optimization combined free-word accounting with fit search
+to avoid a second scan on fragmented allocations. Current production
+`mm_pdp6.s` already performs that accounting in `mm_find_fit_gap` and
+returns total free words on a failed fit, so that saving is also present.
+All three have changed since the checkpoint; do not mix historical C and
+current assembler implementations. This reconciliation is source-only;
+no new linked size reduction or native execution test is claimed.
+
+The requested 32K-specific tests remain deferred. Further branch review
+must avoid running the 32K boot, memory-pressure, and size gates until
+that deferral is explicitly lifted.
