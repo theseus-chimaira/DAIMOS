@@ -184,3 +184,17 @@ second-attempt success; two FILE-close refusals, stable held FS lease, CHLD
 notification, bystander progress and zero integrity errors. Unmodified
 v978 full-system, native v881 deferred u-area, and v869 finalization guard
 also PASS. The physical-memory OOM kill trigger is not enabled or proven.
+
+## v998: BRK failure classification gate
+
+The native MM allocator returns distinct causes: -1 means fewer free
+words than requested after reclaim; -2 is fragmentation, -3 extent table
+exhaustion, -4 invalid parameters, and -5 pin/busy. The current
+`vm_space_brk_current` funnels validation failures and every allocation
+failure through a single -1 user-visible return. Consequently it cannot
+safely trigger requester termination based solely on the BRK result.
+Native testkit v998 verifies this gap and the existing reclaim chain.
+The booted v985 RUN/BRK resource-regression remains PASS after v997.
+Automatic OOM killing is still OFF. Extend the existing two OOM P0 gates,
+not the task count: preserve internal allocation cause through BRK before
+activating termination in an isolated full-system test.

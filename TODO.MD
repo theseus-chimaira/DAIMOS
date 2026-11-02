@@ -1,3 +1,11 @@
+### v998: BRK physical-OOM classification (2026-11-02)
+
+- [x] Booted v985 resource-pressure regression PASS after v997; native
+  v998 confirms BRK combines invalid/limit/allocator failures into -1.
+- [ ] Preserve MM -1 (physical shortage after reclaim) distinctly from
+  fragmentation, descriptor exhaustion, busy and invalid requests before
+  isolated requester-only OOM exit test. OOM kill remains OFF.
+
 ### v995: fatal owner HUP stage (2026-11-02)
 
 - [x] APR/EXEC fatal owner performs HUP before leaving private kernel
