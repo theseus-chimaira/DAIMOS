@@ -1,5 +1,13 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v950 booted 256K PDP-6 bounded persistent D6FS provider SYNC
+  failure: disposable D6FS provider refuses three closes and HALTs
+  on attempt four. The deferred TERM target retains its VM and u-area
+  (both release counters zero); descendant CHLD=1, 33 independent
+  bystander cycles, and provider lease free. No forced reclamation.
+- [ ] An indefinitely rejecting D6FS provider still has no safe
+  automatic reclamation policy. Administrative quarantine/recovery and
+  OOM termination safety remain open. DTFS tests remain deferred.
 - [x] v949 full-system 256K PDP-6 combined D6FS/MM teardown refusal:
   two failures returned by disposable `d6fs_provider_sync` precede one
   test-only type-3 u-area `mm_free` busy result. D6FS FD closes=3

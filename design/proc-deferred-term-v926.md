@@ -91,6 +91,13 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v950 full-system diagnostic forces repeated failures inside the D6FS
+  SYNC provider itself. A controlled HALT on the fourth attempt shows
+  three returned provider errors, four D6FS close entries, zero VM and
+  u-area release for the target, one descendant CHLD, 33 independent
+  bystander cycles and free provider lease. This proves containment
+  through the bounded observation window only. The test does not
+  implement provider recovery or establish safe forced cleanup.
 - v949 booted PDP-6 test combines failure stages: D6FS provider SYNC
   refuses twice, then succeeds; the first subsequent type-3 u-area MM
   free returns busy, then deferred finalization retries successfully.
