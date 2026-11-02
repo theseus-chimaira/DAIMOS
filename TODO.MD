@@ -14,6 +14,14 @@
   unchanged v975 group-delivery fixture passes. Do not infer stale
   pending state or change production code until the altered fixture's
   CHLD/finalization/scheduler stages are independently witnessed.
+- [ ] v976 reduced reproduction (2026-11-02): removing the additional
+  GETEVENTS and mode-N code, leaving only a post-WAIT recycled-slot
+  spawn, still timed out after the first descendant's Z. Guest never
+  reached P despite CHLD=1, owner checks=3, EXIT=1, finalizer=1,
+  failure=0, and intact provider lease. A new R checkpoint immediately
+  after WAIT was added to the preserved v976 testkit fixture but has
+  not yet run. Investigate CHLD-to-WAIT resume rather than guessing
+  that the u-area contains stale pending bits.
 - [ ] Full group delivery including sender self-membership, provider
   failure during mixed-event cleanup, and portable C behavior remain.
 
