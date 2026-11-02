@@ -1,3 +1,16 @@
+### v981: faulting-process OOM policy (OpenBSD-style) (2026-11-02)
+
+- [x] Choose the process requesting the failed user allocation, never
+  another process scored by memory footprint. Keep existing normal
+  compaction, reclaim and swap attempts before declaring true exhaustion.
+- [x] Delete the uncalled largest-extent OOM victim scanner from KCORE;
+  do not replace it with another scan or duplicate C implementation.
+- [ ] Actual faulting-process termination remains OFF until its owner-side
+  FILE/TTY/VM/provider teardown is allocation-free, bounded and safe;
+  today unrecoverable failures still return the normal allocation error.
+- [ ] Update historical selection tests in daimos-testkit and prove
+  no third-party victim is killed. Test RUN and live BRK failures.
+
 ### v980: delete obsolete whole-file C duplicates (2026-11-02)
 
 - [x] Delete unused `system/kernel/mm/mm.c`, `system/kernel/fs/memfs.c`,
