@@ -91,6 +91,12 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v942 native PDP-6 test exercises duplicate TERM while the WAIT_CHILD
+  owner is already marked for deferred TERM, then delivers INT and HUP
+  to that same protected owner. A second TERM coalesces; INT and HUP
+  return refusal; no resource teardown occurs in the protected window.
+  The subsequent existing fatal lifecycle passes. Other fatal-event
+  ordering and process-group scenarios remain unverified.
 - v941 bounded refusal diagnostic: a disposable kernel halts at the
   fourth rejected close of a genuine owner FILE entry. With no successful
   close, neither `vm_space_destroy` nor `proc_uarea_release` is entered

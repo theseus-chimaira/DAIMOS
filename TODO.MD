@@ -1,5 +1,11 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v942 native fatal precedence/coalescing control: a repeated TERM
+  on an existing deferred TERM owner succeeds without FILE/VM cleanup;
+  INT and HUP targeting the same protected private stack are refused.
+  The original v926 foreign-context fatal lifecycle also passes.
+- [ ] Verify race ordering when INT/HUP precedes TERM, simultaneous
+  process-group delivery, and actual post-commit fatal/retry status.
 - [x] v941 bounded persistent FILE refusal in 256K booted PDP-6:
   four rejected closes of a live descriptor, no VM destroy or u-area
   release for the TERM target, no descriptor integrity error, 25 peer
