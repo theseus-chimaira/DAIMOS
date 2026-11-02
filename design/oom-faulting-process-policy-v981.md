@@ -110,3 +110,16 @@ Neither merely moving VM teardown earlier nor retrying it from the idle
 post-VM finalizer is safe without a tested scheduler/ownership transition.
 No production OOM termination is enabled by this test. The remaining work
 is unchanged: implement safe owner-phase finalization and boot its OOM test.
+
+## v991: first production owner-side EXIT stage
+
+Ordinary EXIT now performs session HUP after successful FILE closure but
+before leaving the dying process's private kernel stack. HUP/provider refusal
+returns a normal -1 while the process still owns its stack and VM; the
+existing finalizer rechecks HUP after the stack switch. This does not move
+VM destruction or enable automatic OOM termination. The full-system BRK
+runtime regression and a source contract test pass. A historical standalone
+v905 HUP fixture fails to link due to its missing
+`proc_tty_line_try_reset_v897` reference; it did not execute and is not
+counted as validation of v991. Dedicated injected HUP refusal acceptance
+is still required under the existing OOM teardown P0.

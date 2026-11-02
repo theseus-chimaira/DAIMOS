@@ -1,3 +1,12 @@
+### v991: owner-side EXIT HUP stage (2026-11-02)
+
+- [x] Stage ordinary EXIT session HUP on the live private owner stack,
+  after FILE closure and before slot-zero switch; errors retain ownership.
+  Booted 256K BRK runtime PASS, v991 source guard PASS.
+- [ ] Booted fault-injected HUP failure/retry and actual OOM exit still
+  part of the two existing OOM P0 gates. v905 standalone HUP harness
+  currently does not link (missing proc_tty_line_try_reset_v897).
+
 ### v987: permanent-provider OOM containment audit (2026-11-02)
 
 - [x] Source-linked provider-lease audit confirms that only normal

@@ -22,6 +22,7 @@
 
         .globl  exec_native_syscall
         .globl  proc_nice_current
+        .globl  proc_session_teardown
         .globl  proc_exit_current
         .globl  proc_fatal_close_current_v879
         .globl  proc_run_block
@@ -114,9 +115,21 @@ native_sys_mapped_return:
         pop     17,2                   ; discard saved exit status
         jrst    kret_neg1
 native_sys_exit_close_ok_v868:
+        ; Session HUP can sleep while closing another member's FILEs.
+        ; Perform it on the owner's private stack, BEFORE slot-zero EXIT.
+        ; A failure leaves the current VM/stack intact and reports -1.
+        ; Finalization rechecks the session after this preflight.
+        move    1,proc_current_slot
+        move    2,file_table
+        move    2,-2(2)               ; PROC_FDCTL_OFFSET - FILE_TABLE_OFFSET
+        pushj   17,proc_session_teardown
+        jumpn   1,native_sys_exit_hup_fail_v991
         pop     17,1
         ; EXIT never returns through the dying process's u-area stack.
         jrst    proc_exit_current
+native_sys_exit_hup_fail_v991:
+        pop     17,2                   ; discard saved exit status
+        jrst    kret_neg1
 %L67:
         ; AC1 path, AC2 flags.
         pushj   17,native_sys_map_one
