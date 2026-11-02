@@ -694,7 +694,21 @@ native_sys_settime_call:
 
 native_sys_brk:
         move    1,2
-        jrst    vm_space_brk_current
+        pushj   17,vm_space_brk_current
+        .equ    PROC_OOM_BRK_ENABLED_V1000,0
+.if PROC_OOM_BRK_ENABLED_V1000
+        camn    1,[-1]
+        jrst    native_sys_brk_check_cause_v1000
+        popj    17,
+native_sys_brk_check_cause_v1000:
+        camn    2,[-1]
+        jrst    native_sys_brk_oom_v1000
+        popj    17,
+native_sys_brk_oom_v1000:
+        movei   1,1
+        jrst    proc_fatal_close_current_v879
+.endif
+        popj    17,
 
 ; Root may rebind any logical terminal's output sink.  GETOUT is readable by
 ; all callers; SETOUT is privileged because the route is terminal-global and

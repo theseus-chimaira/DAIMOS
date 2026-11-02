@@ -1,3 +1,12 @@
+## v1000: gated requester OOM dispatcher
+
+The BRK dispatcher has a default-off compile-time branch. It checks both
+the failed syscall result and the preserved internal MM_ERR_NOMEM cause,
+then enters the existing current-owner fatal cleanup. Other failures
+still return to the requester. Native PDP-6 test v1000 activates only an
+extracted copy of this dispatch and passes successful BRK, invalid,
+fragmentation, and no-memory branches. Production remains disabled;
+genuine physical-OOM reclamation and bystander-survival acceptance is open.
 ## v999: preserve BRK allocator failure cause
 
 The PDP-6 BRK path now returns the unchanged user-visible AC1 result,

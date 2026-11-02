@@ -1,3 +1,10 @@
+### v1000: gated requester OOM dispatcher (2026-11-02)
+
+- [x] Default-off BRK dispatch checks AC1 failure and AC2 MM_ERR_NOMEM;
+  isolated PDP-6 assembler control-flow test PASS.
+- [ ] Genuine physical shortage, requester exit, full resource release,
+  and bystander survival still require booted acceptance before activation.
+
 ### v998: BRK physical-OOM classification (2026-11-02)
 
 - [x] Booted v985 resource-pressure regression PASS after v997; native
