@@ -48,3 +48,14 @@ missing memset link. This is a nonlethal failure-path and rollback proof,
 not yet proof that *physical* memory rather than a user-address ceiling
 caused rejection. An MM rejection witness and separate full-system RUN
 resource-exhaustion acceptance remain open before activating any killer.
+
+## v985: physically pressured RUN and BRK test
+
+A clean isolated committed v197 RUN regression fixture, built in the
+256K PDP-6 full-system simulator with the v198 physical-OOM extension,
+PASSes four valid 18-bit failed BRK requests. The original break, VM
+size, test data, process-slot count and rollback/recovery remain intact.
+No unrelated victim is terminated. This supplies physical-pressure
+acceptance independently of v984's unclassified gradual-growth ceiling.
+The test does not prove allocation-free fatal termination or permit
+activating OOM killing.

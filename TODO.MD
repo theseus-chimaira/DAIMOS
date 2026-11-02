@@ -1,3 +1,17 @@
+### v985: physical OOM regression on clean RUN fixture (2026-11-02)
+
+- [x] Booted 256K PDP-6 isolated clean v197-based guest with v198
+  physical MM pressure assertions: four valid 18-bit BRK requests
+  fail under pressure, caller break/VM/data stay unchanged, RUN
+  rollback and subsequent recovery PASS. No unrelated process kill.
+- [x] Preserve locally modified v197 source; v985 uses an independent
+  committed testkit copy of the previously committed v197 fixture.
+- [ ] v984 gradual-growth rejection has no independent physical-failure
+  witness; v985 supplies the separate physical-pressure coverage, but
+  does not establish why v984 individually rejected growth.
+- [ ] Allocation-free and bounded fatal FILE/TTY/VM/provider teardown
+  remains unverified: automatic OOM termination stays disabled.
+
 ### v983-v984: booted BRK progression and growth rejection (2026-11-02)
 
 - [x] Repair testkit BRK guest's missing libc memset linkage; full
