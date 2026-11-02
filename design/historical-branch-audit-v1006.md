@@ -48,3 +48,16 @@ later hybrid loader: the updated DTC image reports 140 words and fails
 that cap.
 Do not count a 32K or hybrid tape boot acceptance until the appropriate
 native test is rerun and the size policy is reconciled independently.
+
+## v1008 checkpoint implementation ownership review
+
+The assembler routines introduced in checkpoint 02fa024e still have
+corresponding files in current `main`: `mm_pdp6.s`, `memfs_data_pdp6.s`,
+`memfs_snapshot_pdp6.s`, `d6fs_provider_namespace_pdp6.s`, and
+`module_runtime_pdp6.s`. The current MM assembler has undergone later
+functional changes, including pinned extent growth and swap transfer
+validation; the old checkpoint is therefore not a safe wholesale replay.
+Its report-permanent accounting correction and historic size figures are
+also not interchangeable with modern linked/package measurements.
+Any remaining optimization must be rederived against the present code and
+measured independently before being counted as saved RAM.
