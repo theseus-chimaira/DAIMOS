@@ -1,5 +1,13 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v949 booted 256K PDP-6 combined-stage teardown: D6FS provider
+  SYNC rejects two genuine close calls on a held file, succeeds on the
+  third; subsequent owner u-area `mm_free` returns busy once and
+  succeeds on retry. FILE calls=3, provider rejects=2, MM calls=2,
+  MM rejects=1, VM destroy=1, u-area release=2, CHLD=1,
+  finalizer errors=0, 45 independent scheduler cycles, INIT reap PASS.
+  This is sequential cross-stage fault acceptance, not a guarantee for
+  all simultaneous provider failures or permanent-resource deadlock.
 - [x] v948 full-system 256K PDP-6 D6FS provider-origin SYNC refusal:
   a real D6FS-root executable FD is held by the deferred-TERM owner;
   disposable `d6fs_provider_sync` rejects twice, then returns success.

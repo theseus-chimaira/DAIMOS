@@ -91,6 +91,14 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v949 full-system PDP-6 checks combined FILE/provider and MM teardown
+  failure atomicity. D6FS provider SYNC fails twice during the target's
+  own fatal FILE cleanup; successful third close proceeds to VM teardown.
+  Then `mm_free` rejects the slot-5 dynamic u-area once, allowing the
+  deferred finalizer to retry. VM destruction remains once, u-area free
+  runs twice, CHLD is published once, and INIT reaps the expected TERM
+  status. The test runs independent scheduler work; both injected errors
+  are in a disposable image and neither is a permanent failure.
 - v948 booted provider-origin refusal acceptance: the target opens the
   root D6FS `/SYSTEM/INIT` file and leaves its descriptor open when
   owner-side TERM cleanup starts. A disposable D6FS provider SYNC patch
