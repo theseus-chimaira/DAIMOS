@@ -59,3 +59,14 @@ No unrelated victim is terminated. This supplies physical-pressure
 acceptance independently of v984's unclassified gradual-growth ceiling.
 The test does not prove allocation-free fatal termination or permit
 activating OOM killing.
+
+## v986: owner-private fatal-close gate
+
+The native v926 owner-return fatal cleanup test passes on current assembly.
+The v986 source-linked gate checks `proc_fatal_close_current_v879`:
+FILE close happens on the private owner stack; a refusal sleeps and retries;
+backoff saturates at 01000 octal ticks, but the number of retries is not
+bounded. It cannot provide a guaranteed allocation-free OOM reclamation
+contract under a permanently nonreturning or rejecting filesystem provider.
+Resource ownership remains intact rather than being forcibly discarded.
+OOM killing therefore remains OFF.

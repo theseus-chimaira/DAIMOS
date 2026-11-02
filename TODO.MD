@@ -1,3 +1,15 @@
+### v986: owner fatal teardown OOM safety audit (2026-11-02)
+
+- [x] Native v926 owner-return deferred TERM with real extracted FILE
+  close retry, sleep and final exit PASS on current PDP-6 source.
+- [x] Source-linked v986 audit proves owner-only FILE retry and capped
+  backoff interval (01000 ticks), no forced MM release during refusal,
+  and no restored cross-process victim selection.
+- [ ] Repeated retries are not bounded in *count*. A permanently refusing
+  provider can still retain the owner, FILE references and its u-area.
+  Complete provider recovery/quarantine and transitive allocation-free
+  teardown proof before enabling faulting-process OOM termination.
+
 ### v985: physical OOM regression on clean RUN fixture (2026-11-02)
 
 - [x] Booted 256K PDP-6 isolated clean v197-based guest with v198
