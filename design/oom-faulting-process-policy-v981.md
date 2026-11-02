@@ -70,3 +70,19 @@ bounded. It cannot provide a guaranteed allocation-free OOM reclamation
 contract under a permanently nonreturning or rejecting filesystem provider.
 Resource ownership remains intact rather than being forcibly discarded.
 OOM killing therefore remains OFF.
+
+## v988: precise owner-exit barrier
+
+Booted v978 mixed fatal tests pass transient FILE/MM refusal and later
+cleanup (two refused closes and one u-area MM refusal). v988 source-linked
+acceptance identifies the still-open pre-VM owner-exit barrier: C
+`proc_exit_finish` abandons the current slot and private stack before
+calling `proc_finish_slot_owner_v932`. A post-VM u-area MM refusal has
+existing slot-zero deferred cleanup; a failure earlier in session HUP
+or VM destruction returns -1 and `proc_exit_current` executes diagnostic
+HALT 1. This path must not be connected to ordinary user OOM failure.
+
+Resolution must preserve process ownership and normal scheduling on
+recoverable pre-VM failures, without a new resident table or allocation.
+No arbitrary device recovery or new OOM victim selector is authorized.
+Automatic OOM termination remains disabled.

@@ -34,6 +34,10 @@
   does not establish why v984 individually rejected growth.
 - [ ] Allocation-free and bounded fatal FILE/TTY/VM/provider teardown
   remains unverified: automatic OOM termination stays disabled.
+  v988 specifically identifies the pre-VM owner-exit failure path: after
+  switching to idle stack, recoverable HUP/VM refusal currently leads to
+  HALT 1; post-VM MM refusal already has a deferred slot-zero retry.
+  Booted v978 transient FILE/MM retries PASS.
 
 ### v983-v984: booted BRK progression and growth rejection (2026-11-02)
 
