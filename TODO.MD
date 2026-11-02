@@ -1,3 +1,17 @@
+### v982: faulting requester RUN and BRK audit (2026-11-02)
+
+- [x] Deleted five obsolete source-linked test pairs for the removed
+  cross-process OOM selector; retain provider/teardown safety audits.
+- [x] BRK fallback uses the current process's allocation owner, tries
+  mm_alloc_aligned, and returns an error on failure. Source guard PASS.
+- [x] Failed SYS_RUN MM allocation discards its unpublished claimed child
+  through proc_slot_discard and returns error to the parent. Killing the
+  parent for child-admission failure is not authorized. Source guard PASS.
+- [ ] Neither source guard is a full exhausted-RAM guest regression; add
+  booted negative tests before any fatal OOM action is connected.
+- [ ] Owner-side fatal FILE/VM/provider teardown remains unproven
+  allocation-free and bounded: automatic OOM termination stays OFF.
+
 ### v981: faulting-process OOM policy (OpenBSD-style) (2026-11-02)
 
 - [x] Choose the process requesting the failed user allocation, never
