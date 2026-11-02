@@ -1638,6 +1638,15 @@ proc_event_check_pipe:
 proc_event_fatal:
         came    010,proc_current_slot
         jrst    proc_event_fatal_other
+        ; A previously deferred fatal request owns the final event
+        ; selection. Self-delivery must coalesce rather than replace it
+        ; with an immediate, potentially lower-priority exit status.
+        hlrz    1,(012)
+        move    2,PROC_FDCTL_OFFSET(1)
+        tlne    2,016
+        jrst    proc_event_fatal_other_defer_term_v926
+        trne    2,1
+        jrst    proc_event_fatal_other_defer_term_v926
         pushj   17,file_close_all
         ; Like fatal-other, a failed SYNC must not be followed by
         ; release of the still-live current process's descriptor table.

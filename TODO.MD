@@ -1,3 +1,17 @@
+### v973-v974: owner self-delivery precedence (2026-11-02)
+
+- [x] Fix native PDP-6 `proc_event_apply` current-process fatal path:
+  if a fatal event is already pending, self-delivery records/coalesces
+  the new event instead of closing FILEs and overriding the queued
+  higher-priority exit status. The owner-return gateway still selects
+  the final status and performs private, retryable teardown.
+- [x] v973 native owner test: pending TERM then self HUP, no premature
+  FILE close, selected HUP, two FILE retries and one owner completion.
+- [x] v974 native owner test: pending HUP then self TERM must retain HUP;
+  both tests pass alongside v926, v970 and v971 regressions.
+- [ ] Booted self/group event coalescing, slot/PID reuse, and mixed
+  provider-origin failure tests remain before full feature closure.
+
 ### v971-v972: fatal-event precedence regression and booted acceptance (2026-11-02)
 
 - [x] Adapt v925/v926 extracted PDP-6 safety fixtures to deferred HUP:

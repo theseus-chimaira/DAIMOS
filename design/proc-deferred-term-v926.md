@@ -2,6 +2,15 @@
 
 ## v970 extension (2026-11-02)
 
+v973-v974 close one self-delivery precedence defect. With a fatal event
+already pending, native `proc_event_apply` formerly entered immediate
+`file_close_all` for a current-process fatal event, bypassing the owner
+priority selection. It now coalesces that event in the existing pending
+bitmap and leaves all FILEs owned until the ordinary owner-return gate.
+Native source-linked tests cover TERM then HUP and HUP then TERM, including
+two close refusals, one selected HUP EXIT and no premature resource release.
+Booted self/group delivery and PID reuse are still independent gates.
+
 Follow-up v971: the historical v925/v926 foreign HUP safety tests were
 updated to assert accepted deferral, not refusal; the old fatal-lifecycle
 fixture's pre-existing PIPE pending bit must be cleared between independent
