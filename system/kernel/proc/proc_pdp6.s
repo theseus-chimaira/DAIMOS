@@ -1350,7 +1350,15 @@ proc_fatal_close_current_v879:
         iorm    3,-2(2)               ; existing packed u-area control word
 proc_fatal_close_retry_v879:
         pushj   17,file_close_all
+        jumpn   1,proc_fatal_close_wait_v995
+        ; HUP may close another process's FILEs and sleep. Retain this
+        ; private owner continuation until session cleanup succeeds.
+        move    1,proc_current_slot
+        move    2,file_table
+        move    2,-2(2)               ; packed FD/session control word
+        pushj   17,proc_session_teardown
         jumpe   1,proc_fatal_close_done_v879
+proc_fatal_close_wait_v995:
         move    1,(17)                ; owner-stack retry interval
         pushj   17,proc_sleep_ticks   ; save the private executive context
         jumpn   1,proc_fatal_close_sleep_fail_v885

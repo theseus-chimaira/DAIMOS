@@ -1,3 +1,11 @@
+### v995: fatal owner HUP stage (2026-11-02)
+
+- [x] APR/EXEC fatal owner performs HUP before leaving private kernel
+  stack, reusing existing FILE retry/backoff. Native v970 and injected
+  v995 FILE/HUP refusal tests PASS; no new resident state.
+- [ ] VM destruction failure after stack switch remains the existing OOM
+  termination blocker. Automatic OOM kill stays OFF.
+
 ### v991: owner-side EXIT HUP stage (2026-11-02)
 
 - [x] Stage ordinary EXIT session HUP on the live private owner stack,

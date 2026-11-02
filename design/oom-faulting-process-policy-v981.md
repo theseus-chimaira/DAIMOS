@@ -154,3 +154,15 @@ owner EXIT is already on the permanent stack, and `proc_exit_finish` returns
 second recovery framework. A safe, existing-stack continuation must own the
 retry until VM destruction succeeds, after which u-area release may use the
 slot-zero finalizer. No production logic was modified in this audit.
+
+## v995: fatal owner HUP staging
+
+The APR/EXEC fatal owner exit now executes `proc_session_teardown` after
+successfully closing FILEs but before abandoning the private kernel stack.
+Recoverable HUP refusal uses the existing capped-delay, unbounded owner
+retry; no extra resident word or new recovery worker is allocated. Native
+PDP-6 v970 owner-return and v995 injected FILE/HUP refusal tests PASS.
+This improves owner cleanup but does not resolve the potentially partial
+`vm_space_destroy` failure after switching to slot zero. The automatic
+OOM killer remains OFF until this boundary and physical-memory termination
+are validated; the two existing P0 items are unchanged.
