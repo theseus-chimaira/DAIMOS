@@ -1,5 +1,13 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v941 bounded persistent FILE refusal in 256K booted PDP-6:
+  four rejected closes of a live descriptor, no VM destroy or u-area
+  release for the TERM target, no descriptor integrity error, 25 peer
+  scheduler cycles, held FS lease still 4,,0. A controlled test HALT
+  at refusal four permits full counter inspection. Descendant EXIT and
+  CHLD occur normally; the TERM target itself remains unfinalized.
+- [ ] Assess policy for an indefinitely rejecting provider; no automatic
+  resource reclamation or OOM kill is safe on the blocked owner stack.
 - [x] v940 booted 256K PDP-6 MM pinned-extent busy path: disposable
   injection sets an actual extent pin bit at the matching slot-5 type-3
   u-area `mm_free` validation; the allocator's own busy branch rejects

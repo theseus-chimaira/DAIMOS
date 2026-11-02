@@ -91,6 +91,13 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v941 bounded refusal diagnostic: a disposable kernel halts at the
+  fourth rejected close of a genuine owner FILE entry. With no successful
+  close, neither `vm_space_destroy` nor `proc_uarea_release` is entered
+  for slot 5. The independent descendant exits and publishes CHLD, and
+  25 spinner cycles demonstrate scheduler progress. The FS lease stays
+  at 4,,0. This confirms retention while provider close refuses, not
+  progress under unbounded rejection or safe forced reclamation.
 - v940 replaces the v939 synthetic allocator return with a real MM
   extent-table pin: the first matching slot-5 dynamic u-area free sets
   the pin bit and executes production `mm_free_busy`; the retry clears
