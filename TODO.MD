@@ -2,9 +2,11 @@
 
 - [x] Booted v985 resource-pressure regression PASS after v997; native
   v998 confirms BRK combines invalid/limit/allocator failures into -1.
-- [ ] Preserve MM -1 (physical shortage after reclaim) distinctly from
-  fragmentation, descriptor exhaustion, busy and invalid requests before
-  isolated requester-only OOM exit test. OOM kill remains OFF.
+- [x] v999 preserves the MM failure cause in scratch AC2, distinguishing
+  physical shortage (-1) from fragmentation, descriptors, invalid, and busy;
+  booted BRK growth/data/shrink PASS without new resident state.
+- [ ] Isolated requester-only physical-OOM exit and reclamation acceptance
+  remains within the existing OOM P0 gates. Production OOM kill stays OFF.
 
 ### v995: fatal owner HUP stage (2026-11-02)
 

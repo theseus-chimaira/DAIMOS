@@ -111,6 +111,8 @@ vm_activate_current:
  * @brief Query or set the current process break and resize its PDP-6 extent.
  * @param AC1 Zero to query, otherwise the requested logical break.
  * @return AC1 Current/new break, or -1 on validation/allocation failure.
+ *         AC2 carries the internal failure cause (-1..-5); -4 denotes
+ *         local validation failure. The user ABI still reads AC1 only.
  *
  * The active process must never expose a new MM descriptor/base while the APR
  * still describes the old extent.  Keep PI disabled across every in-place
@@ -344,7 +346,7 @@ vm_brk_full_alloc:
         move    4,proc_current_slot
         pushj   17,mm_alloc_aligned
         sub     17,kconst_2_2
-        jumpn   1,vm_brk_fail
+        jumpn   1,vm_brk_alloc_fail_v999
 
         ; Re-enter a critical section for copy, old-descriptor removal and APR
         ; publication.  The current process itself is excluded from swap/move.
@@ -372,7 +374,8 @@ vm_brk_full_alloc:
         movei   2,1
         move    3,proc_current_slot
         pushj   17,mm_free
-        jrst    vm_brk_fail_pi
+        movni   2,5                    ; old mapping not releasable
+        jrst    vm_brk_fail_cause_pi_v999
 
 vm_brk_commit:
         ; Publish logical allocation and exact break before loading APR.  PI is
@@ -394,10 +397,18 @@ vm_brk_commit:
         jrst    vm_brk_return_commit
 
 vm_brk_fail_pi:
+        movni   2,4                    ; invalid mapping/extent state
+vm_brk_fail_cause_pi_v999:
         move    1,-003(17)
         trne    1,000200
         cono    0004,000200
+        jrst    vm_brk_fail_return_v999
+vm_brk_alloc_fail_v999:
+        move    2,1                     ; exact allocator failure cause
+        jrst    vm_brk_fail_return_v999
 vm_brk_fail:
+        movni   2,4                    ; local validation failure
+vm_brk_fail_return_v999:
         seto    1,
 vm_brk_return:
         movei   0,10

@@ -1,3 +1,14 @@
+## v999: preserve BRK allocator failure cause
+
+The PDP-6 BRK path now returns the unchanged user-visible AC1 result,
+while retaining the precise allocator failure in scratch AC2 after a
+failed full-image fallback. Local validation rejection is separately
+classified as MM invalid (-4), and inability to release the old mapping
+is classified as busy (-5). No persistent kernel word or user ABI was
+added. Native source-contract v998 (updated for v999) and the booted
+PDP-6 BRK growth/data/shrink regression PASS. This classification is
+not authorization to terminate the requester: an isolated physical-OOM
+kill-and-reclamation run remains required before production activation.
 # OOM faulting-process policy (v981)
 
 DAIMOS follows the simple OpenBSD-style choice for irrecoverable user
