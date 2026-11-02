@@ -91,6 +91,12 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v964 booted a 256K PDP-6 image with the guest DXR2 explicitly linked
+  `--pure`. The real RUN/TERM workload passes with two injected D6FS
+  provider sync refusals, three close attempts, correct one-time VM
+  and u-area releases, CHLD=1 and 44 independent scheduler cycles.
+  This is PURE executable loader/teardown compatibility, not proof of
+  a guest-issued unmount or backing-write refusal during execution.
 - v963 validates the source linkage from EXEC path lookup through
   attached mount-root provider identity and the actual VFS unmount/
   write guards. The v961/v962 native mount/write tests pass; full-system

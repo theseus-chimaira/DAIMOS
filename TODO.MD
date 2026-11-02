@@ -1,5 +1,15 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v964 booted 256K PDP-6 with actual user DXR2 linked `--pure`:
+  RUN/TERM and D6FS close-retry acceptance PASS (three sync calls,
+  two injected refusals, VM and u-area released once, CHLD once,
+  44 independent scheduler cycles and zero integrity errors). This
+  checks real PURE executable load/scheduling/teardown compatibility
+  with v961/v962 guards, not a live guest unmount/write denial.
+- [ ] Complete the guest-level PURE ownership test by attempting
+  `vfs_unmount` and backing writes from a second process while the
+  executing PURE process remains resident; native v961/v962 tests
+  verify the denial leaves but not their full syscall chain.
 - [x] v963 VFS/EXEC PURE backing source-contract regression checks
   `file_lookup_path` -> stat/access/read -> `proc_swap_attach`, live
   mount-root provider validation, unmount's `proc_swap_mount_busy` and
