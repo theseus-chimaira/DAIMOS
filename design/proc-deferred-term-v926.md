@@ -91,6 +91,12 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v947 native post-commit guard: a VM_NONE/FINALIZE owner with deferred
+  u-area cleanup rejects repeated HUP as well as INT, TERM and PIPE;
+  counters prove no repeat FILE, VM or session teardown. Two slot-0
+  finalize retries complete normally, and TERM after the finalized
+  process has died is refused. The native PDP-6 regression passes;
+  a full-system asynchronous race is still untested.
 - v945/v946 directly execute native `proc_event_send` with mixed-state
   members. In v945 slot 2 records deferred TERM and later slot 3 in
   TRANSITION refuses, causing a group error without undoing slot 2.

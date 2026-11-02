@@ -1,5 +1,12 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v947 native post-commit event guard: after irreversible VM_NONE /
+  FINALIZE state with deferred u-area release, HUP, INT, TERM and PIPE
+  are all rejected. FILE, VM and session HUP counters do not increase;
+  slot-0 reaper still completes u-area release, and TERM after final
+  commit also refuses. The original v942 lifecycle remains PASS.
+- [ ] Booted full-system post-commit fatal race and independent progress
+  acceptance; native v947 does not model asynchronous timer/PI races.
 - [x] v945/v946 native mixed-state group TERM dispatch: the dispatcher
   visits eligible PGRP members in slot order and stops on first failed
   `proc_event_apply`. If a protected WAIT_CHILD member accepts deferred
