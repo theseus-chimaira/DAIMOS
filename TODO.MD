@@ -1,3 +1,16 @@
+### v978: booted mixed fatal FILE/MM retry (2026-11-02)
+
+- [x] Full-system 256K PDP-6 repeated TERM followed by HUP on the
+  WAIT_CHILD parent, using the v939 real FILE-close refusal and MM-free
+  failure hooks. Selected exit status HUP, FILE close=3/refusals=2,
+  MM free=2/refusals=1, VM destroy=1, CHLD=1, EXIT=1, finalizer=1,
+  finalizer failures=0, bystander=36, FS lease unchanged. PASS.
+- [ ] C fallback `proc_event_apply` lacks the PDP-6's owner-stack
+  deferred fatal event coalescing and stack-protection selection;
+  audit supported non-PDP-6 configurations and introduce equivalent
+  semantics only alongside a source-linked acceptance test.
+- [ ] Group sender self-membership and full regression gate remain.
+
 ### v977: independent booted fatal-event slot reuse (2026-11-02)
 
 - [x] Isolated v976 failure: INIT printed R after its first WAIT but not

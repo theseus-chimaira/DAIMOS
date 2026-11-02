@@ -2,6 +2,15 @@
 
 ## v970 extension (2026-11-02)
 
+v978 full-system follow-up: repeated TERM followed by HUP on a protected
+WAIT_CHILD parent passes with the real FILE/MM fault-injection hooks from
+v939: three FILE-close attempts with two refusals, two MM free attempts
+with one refusal, one VM destroy, one CHLD, one EXIT, no finalizer failure,
+and unchanged held-provider lease. Selected wait status is HUP. The
+portable C implementation of `proc_event_apply` does not yet implement
+the PDP-6 owner-stack deferred fatal selection; its supported targets
+and safe equivalent require independent review and tests.
+
 v977 follow-up resolves the v976 ambiguity: a checkpoint immediately
 after INIT's first WAIT printed R, but the next RUN never returned
 because the v975 fixture deliberately retained an FS gateway lease.
