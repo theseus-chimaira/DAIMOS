@@ -1,3 +1,19 @@
+### v980: delete obsolete whole-file C duplicates (2026-11-02)
+
+- [x] Delete unused `system/kernel/mm/mm.c`, `system/kernel/fs/memfs.c`,
+  and `system/kernel/fs/d6fs_provider.c`: their production PDP-6 routines
+  are owned by `mm_pdp6.s`, `memfs_runtime.s`, and the D6FS namespace
+  assembly. Remove stale dependency-only Makefile entries.
+- [x] Delete the disabled DTFS resize C algorithm from `dtfs.c` and remove
+  `DTFS_EXTERNAL_RESIZE`; retain the active distinct DTFS C services and
+  the authoritative `dtfs_resize.s` implementation.
+- [x] Full 256K PDP-6 image builds after deleting obsolete C files;
+  separately compile the DTFS translation unit after resize cleanup.
+- [x] v978 mixed fatal FILE/MM retry full-system regression PASS after v979.
+- [ ] Finish v980 post-deletion booted regressions and clean up remaining
+  references in historical source-contract tests. Do not weaken unrelated
+  assertions to hide existing problems.
+
 ### v979: delete duplicate C/assembly kernel implementations (2026-11-02)
 
 - [x] Delete unused guarded C alternative implementations in proc.c,

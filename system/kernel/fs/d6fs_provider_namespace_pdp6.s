@@ -2,9 +2,9 @@
  * @file d6fs_provider_namespace_pdp6.s
  * @brief Compact PDP-6 D6FS namespace mutation front-end.
  *
- * The portable reference remains d6fs_provider.c.  These cold namespace
- * operations use the same transaction ordering but avoid KCC's large local
- * frames and spill traffic.  The extent/allocation mutation engine remains in
+ * This PDP-6 assembly is the authoritative namespace implementation.
+ * These cold operations retain transaction ordering without C spill frames.
+ * The extent/allocation mutation engine remains in
  * d6fs_provider_mutation.s and is appended by the kernel build.
  */
 

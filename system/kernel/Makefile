@@ -166,8 +166,7 @@ KINIT_FIXED_SRCS = boot/kinit_io_pdp6.s \
 
 KINIT_ASM = ${KINIT_C_ASM} ${KINIT_LATE_C_ASM} ${BUILD}/kinit_io_pdp6.s ${BUILD}/module_io.s ${BUILD}/bootbanner_generated.s ${BUILD}/kinit_late_begin_pdp6.s ${BUILD}/kinit_late_end.s
 
-KCORE_C_SRCS = mm/mm.c \
-	proc/proc.c \
+KCORE_C_SRCS = proc/proc.c \
 	fs/file.c \
 	drivers/wall_clock.c
 
@@ -244,8 +243,7 @@ KCORE_FIXED_ASM = $(BUILD)/d6lz_fixed.s \
 	$(BUILD)/kcore_end.s
 KCORE_FIXED_ASM += $(BUILD)/proc_swap_entry_v481.s
 
-MRES_C_SRCS = fs/d6fs_provider.c \
-	fs/tsfs.c
+MRES_C_SRCS = fs/tsfs.c
 
 MRES_C_ASM = $(BUILD)/dpy_text.s \
 	$(BUILD)/tsfs.s
@@ -415,7 +413,7 @@ ${BUILD}/d6fs_provider.s: fs/d6fs_provider_namespace_pdp6.s fs/d6fs_provider_mut
 # the hand-maintained assembly resize implementation independently.
 ${BUILD}/dtfs.s: Makefile fs/dtfs.c fs/dtfs_chain_walk.s fs/dtfs_resize.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	${PDP10_CC} ${PDP10_CFLAGS} -DDTFS_ENABLE_TENEX=0 -DDTFS_ENABLE_ITS=0 -DDTFS_EXTERNAL_RESIZE=1 ${INCLUDES} -S fs/dtfs.c -o $@.c
+	${PDP10_CC} ${PDP10_CFLAGS} -DDTFS_ENABLE_TENEX=0 -DDTFS_ENABLE_ITS=0 ${INCLUDES} -S fs/dtfs.c -o $@.c
 	@cat $@.c fs/dtfs_chain_walk.s > $@; { echo ".set DTFS_ENABLE_TENEX,0"; echo ".set DTFS_ENABLE_ITS,0"; cat fs/dtfs_resize.s; } >> $@; rm -f $@.c
 
 ${BUILD}/tsfs.s: fs/tsfs.c ${KERNEL_HEADERS}

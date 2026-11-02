@@ -29,3 +29,15 @@ rather than silently adding fallback algorithms to common kernel C files.
 The source deletion alone does not guarantee a smaller linked kernel because
 these C bodies were excluded by previous build switches. Verify actual image
 sizes and regressions independently of source line savings.
+
+## Whole-file cleanup v980
+
+The disabled C-only files `mm/mm.c`, `fs/memfs.c`, and
+`fs/d6fs_provider.c` were also deleted, along with their dependency-only
+Makefile entries. Their native PDP-6 implementations are respectively in
+`mm/mm_pdp6.s`, `fs/memfs_runtime.s`, and
+`fs/d6fs_provider_namespace_pdp6.s` plus its mutation assembly.
+The disabled C `dtfs_resize` body was removed from the otherwise active
+`fs/dtfs.c`. The assembler `fs/dtfs_resize.s` remains authoritative.
+Do not restore these source-only fallbacks. Existing active C functions
+that provide *distinct* services remain.

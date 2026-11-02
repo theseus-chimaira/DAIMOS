@@ -195,7 +195,6 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/boot/d6fs_boot.c \
 	$(KERNEL_DIR)/boot/d6fs_boot.h \
 	$(KERNEL_DIR)/fs/d6fs_runtime.s \
-	$(KERNEL_DIR)/fs/d6fs_provider.c \
 	$(KERNEL_DIR)/fs/d6fs_provider.h \
 	$(KERNEL_DIR)/fs/d6fs_provider_mutation.s \
 	$(KERNEL_DIR)/boot/d6fs_super_boot.c \
@@ -216,14 +215,12 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/fs/monitorfs_dispatch_v14.s \
 	$(KERNEL_DIR)/fs/fs_mres.h \
 	$(KERNEL_DIR)/fs/fs_mres.s \
-	$(KERNEL_DIR)/fs/memfs.c \
 	$(KERNEL_DIR)/fs/memfs.h \
 	$(KERNEL_DIR)/fs/memfs_runtime.s \
 	$(KERNEL_DIR)/fs/vfs.h \
 	$(KERNEL_DIR)/fs/vfs.s \
 	$(KERNEL_DIR)/ipc/pipe.h \
 	$(KERNEL_DIR)/ipc/pipe.s \
-	$(KERNEL_DIR)/mm/mm.c \
 	$(KERNEL_DIR)/mm/mm.h \
 	$(KERNEL_DIR)/mm/mm_boot.c \
 	$(KERNEL_DIR)/mm/mm_internal.h \
