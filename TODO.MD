@@ -1,3 +1,19 @@
+### v979: delete duplicate C/assembly kernel implementations (2026-11-02)
+
+- [x] Delete unused guarded C alternative implementations in proc.c,
+  vm_pdp6_swap.c, and file.c. Preserve distinct shared C services.
+- [x] Delete obsolete *_PDP6_ASM compile flags from kernel Makefile.
+- [x] Document single-authoritative-implementation rule in
+  design/assembler-ownership-v979.md; never add equivalent C fallback
+  algorithms alongside assembly implementations.
+- [x] Full 256K PDP-6 image built and linked; native v971/v974 tests PASS;
+  18-second headless simulator smoke reaches DAIMON V0.5 and loaded
+  MEMFS/D6FS. This smoke is not the full booted test suite.
+- [x] Source diff deletes 961 lines from four kernel files; these guarded
+  bodies were already excluded from current KCORE, so no size savings
+  from deletion alone are claimed.
+- [ ] Re-run broader booted regression suite after cleanup.
+
 ### v979: process-group sender self-membership and C build audit (2026-11-02)
 
 - [x] Booted 256K PDP-6 sender self-membership: a child sends HUP to
@@ -18,10 +34,8 @@
   failure hooks. Selected exit status HUP, FILE close=3/refusals=2,
   MM free=2/refusals=1, VM destroy=1, CHLD=1, EXIT=1, finalizer=1,
   finalizer failures=0, bystander=36, FS lease unchanged. PASS.
-- [ ] C fallback `proc_event_apply` lacks the PDP-6's owner-stack
-  deferred fatal event coalescing and stack-protection selection;
-  audit supported non-PDP-6 configurations and introduce equivalent
-  semantics only alongside a source-linked acceptance test.
+- [x] Superseded by v979: remove duplicate C `proc_event_apply` entirely;
+  never add equivalent fallback algorithms alongside PDP-6 assembly.
 - [ ] Group sender self-membership and full regression gate remain.
 
 ### v977: independent booted fatal-event slot reuse (2026-11-02)

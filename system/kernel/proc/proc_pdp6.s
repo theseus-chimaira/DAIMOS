@@ -1145,7 +1145,7 @@ proc_uarea_slot:
  * materializes the loop state in a large stack frame even though six stable
  * values fit naturally in callee-saved accumulators.  No policy changes live
  * here: selector validation, STOP/CONT reports, zombie status, and retry after
- * proc_wait_child() exactly mirror the C fallback.
+ * proc_wait_child() preserve the WAIT contract without a second C body.
  */
 proc_wait_status:
         add     17,kconst_7_7

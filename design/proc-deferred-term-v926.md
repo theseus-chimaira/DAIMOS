@@ -2,22 +2,13 @@
 
 ## v970 extension (2026-11-02)
 
-v979 full-system PDP-6 sender self-membership: a child uses group HUP
-against its own process group; parent observes HUP fatal WAIT status.
-The standard event tests also pass. Build audit confirms that the
-current kernel Makefile defines PROC_EVENT_APPLY_PDP6_ASM and links
-proc_pdp6.s; the portable C proc_event_apply is not a current PDP-6
-production handler. C parity remains a future-port gate, not a
-justification for changing a dormant fallback without its own tests.
-
-v978 full-system follow-up: repeated TERM followed by HUP on a protected
-WAIT_CHILD parent passes with the real FILE/MM fault-injection hooks from
-v939: three FILE-close attempts with two refusals, two MM free attempts
-with one refusal, one VM destroy, one CHLD, one EXIT, no finalizer failure,
-and unchanged held-provider lease. Selected wait status is HUP. The
-portable C implementation of `proc_event_apply` does not yet implement
-the PDP-6 owner-stack deferred fatal selection; its supported targets
-and safe equivalent require independent review and tests.
+v979 cleanup supersedes earlier portable-C parity plans: the PDP-6
+assembler implementation is authoritative. The alternate C
+`proc_event_apply` and other guarded duplicate bodies have been deleted,
+not adapted. See `design/assembler-ownership-v979.md` for the permanent
+single-implementation rule. The v979 sender self-membership booted test
+passed, as did the v978 mixed fatal FILE/MM retry test (two FILE close
+refusals, one MM free refusal, one CHLD and one final EXIT selecting HUP).
 
 v977 follow-up resolves the v976 ambiguity: a checkpoint immediately
 after INIT's first WAIT printed R, but the next RUN never returned

@@ -340,7 +340,7 @@ ${BUILD}/bootbanner_generated.s: ${VERSION_FILE} ${MKBOOTBANNER_DEP}
 
 ${KCORE_C_ASM}: ${KCORE_C_SRCS} ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
-	@base=`basename "$@" .s`; src=; extra=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; if test "$$base" = proc; then extra="-DPROC_EVENT_APPLY_PDP6_ASM=1 -DPROC_SWAP_VICTIM_PDP6_ASM=1 -DPROC_WAIT_STATUS_PDP6_ASM=1 -DPROC_SCHED_SELECT_PDP6_ASM=1 -DPROC_FINISH_SLOT_PDP6_ASM=1 -DPROC_UAREA_RELEASE_PDP6_ASM=1 -DPROC_TTY_RELEASE_PDP6_ASM=1 -DPROC_SLOT_DISCARD_PDP6_ASM=1"; elif test "$$base" = file; then extra="-DFILE_OPEN_PDP6_ASM=1"; elif test "$$base" = wall_clock; then extra="-DWALL_CLOCK_HZ=${WALL_CLOCK_HZ} -Dwall_clock_set=softclock_mres_set"; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S "$$src" -o "$@"
+	@base=`basename "$@" .s`; src=; extra=; for d in boot core drivers fs ipc mm modules proc storage; do if test -f "$$d/$$base.c"; then src="$$d/$$base.c"; break; fi; done; test -n "$$src"; if test "$$base" = wall_clock; then extra="-DWALL_CLOCK_HZ=${WALL_CLOCK_HZ} -Dwall_clock_set=softclock_mres_set"; fi; ${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} $$extra ${INCLUDES} -S "$$src" -o "$@"
 
 ${BUILD}/mm.s: mm/mm_pdp6.s ${KERNEL_HEADERS}
 	@mkdir -p ${BUILD}
@@ -373,8 +373,6 @@ ${BUILD}/proc_swap.s: ${VM_SWAP_C} proc/proc_swap_pdp6.s proc/proc_pure_backing_
 	@mkdir -p ${BUILD}
 	${PDP10_CC} ${PDP10_CFLAGS} -DPROC_BOOT_USERS=${PROC_BOOT_USERS} \
 	    -DPROC_SWAP_VERIFY_PURE=${PROC_SWAP_VERIFY_PURE} \
-	    -DPROC_SWAP_SERVICE_PDP6_ASM=1 -DPROC_SWAP_RECLAIM_PDP6_ASM=1 \
-	    -DPROC_SWAP_TRANSACTIONS_PDP6_ASM=1 \
 	    ${INCLUDES} -S ${VM_SWAP_C} -o $@.c
 	{ cat $@.c; printf '%s\n' '.equ PROC_SWAP_TEXT_SHIFT,026' \
 	  '.equ PROC_SWAP_TEXT_MASK,037777' '.equ PROC_SWAP_MOUNT_SHIFT,022' \
