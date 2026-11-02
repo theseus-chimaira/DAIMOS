@@ -91,6 +91,14 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v936 extends v935 to a real descriptor: the target duplicates its
+  output FILE before WAIT_CHILD; injection at `file_close_entry_v865`
+  rejects one selected live descriptor twice, preserving its nonzero
+  entry, before permitting the unchanged close path. Full-system PDP-6
+  run PASS: targeted calls 3, refusals 2, descriptor witness errors 0,
+  finalizer failures 0, CHLD 1 and retained provider lease 4,,0.
+  Injection occurs before VFS_SYNC; actual provider-origin failures
+  and independently counted VM/u-area teardown remain open.
 - v936 booted full-system FD-specific retry PASS: the owner (slot 5) has
   its actual stdout descriptor (FD1) pass through `file_close_entry_v865`.
   A disposable-kernel test hook at `file_close_vfs` injects two VFS_SYNC

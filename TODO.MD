@@ -1,5 +1,13 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v936 full-system 256K PDP-6 descriptor-level close refusal:
+  the deferred-TERM target owns an actual additional FILE descriptor;
+  disposable `file_close_entry_v865` injection rejects its first two
+  closes and then runs the normal close. Three targeted attempts,
+  two refusals, zero empty-entry errors, finalizer success, CHLD=1,
+  correct INIT reap, held FS lease 4,,0 and 36 peer cycles: PASS.
+- [ ] Test rejection returned by the actual VFS/provider sync path,
+  and witness exactly-once VM/u-area teardown through failure/retry.
 - [x] v936 booted descriptor-level VFS_SYNC refusal/retry: disposable
   kernel intercepts real slot-5 FD1 `file_close_entry_v865` sync boundary,
   refuses twice, and allows the third unchanged `vfs_sync` call. 256K
