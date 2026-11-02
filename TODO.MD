@@ -1,5 +1,15 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v960 host C89 executable-backed resident-record test links the
+  actual `proc_swap_attach`: all mount IDs 1..26 preserve exact index,
+  low mount bits, PURE text and staged fifth mount bit. Out-of-range
+  mount, provider, kind and text size reject without altering record;
+  an owner without a u-area must be SIDL. v959/v957 controls PASS.
+- [ ] Determine whether the EXEC loader's validated vnode guarantees
+  provider identity agrees with its live VFS mount root at attach time.
+  `proc_swap_attach` validates vnode fields/range but does not itself
+  compare the provider against the mounted root. Do not add costly
+  duplicate checks without auditing the caller's binding contract.
 - [x] v959 source-contract audit of live PDP-6 one-word swap record:
   resident entry is executable index/mount/PURE metadata, while disk
   entry is first-block/count with the old record in the stable u-area.

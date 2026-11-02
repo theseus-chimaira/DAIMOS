@@ -91,6 +91,13 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v960 links actual `proc_swap_attach` in a C89 native harness and
+  verifies all 26 representable live mount IDs, including the staged
+  fifth slot bit before u-area publication. Invalid provider, mount,
+  kind, PURE text length and non-SIDL staging are rejected without
+  mutation of the record. The test does not prove that the executable
+  loader binds the supplied provider to the currently mounted root;
+  this contextual check remains a source audit item.
 - v959 audits the distinct meanings of the existing one-word swap
   record, guarding attach, detach, swap-out/swap-in commit ordering and
   v958 rollback via testkit source checks. Resident entries encode
