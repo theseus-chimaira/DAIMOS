@@ -40,6 +40,8 @@
   Booted v978 transient FILE/MM retries PASS.
   v989 confirms slot-zero retry is post-VM only and cannot safely
   execute sleeping HUP/provider cleanup while scheduler PI6 is inhibited.
+  v990 owner-phase source check PASS: ordinary EXIT closes FILE on its
+  private stack, but HUP/VM still run after idle-stack switch. No new P0.
 
 ### v983-v984: booted BRK progression and growth rejection (2026-11-02)
 

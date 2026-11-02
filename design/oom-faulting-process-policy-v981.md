@@ -100,3 +100,13 @@ pre-VM operations from non-sleeping terminal release and preserve a valid
 owner continuation until the former finishes. Do not add an idle-stack
 retry that sleeps or force-release an owned private kernel stack.
 This is part of the existing OOM termination P0, not a new P0 gate.
+
+## v990: implementation constraint verified, no new P0
+
+The v990 source-linked test verifies that ordinary EXIT closes FILE entries
+on the private stack, then crosses to slot zero before HUP/VM teardown.
+The latter phase can still invoke MEMFS XIP provider and swap callbacks.
+Neither merely moving VM teardown earlier nor retrying it from the idle
+post-VM finalizer is safe without a tested scheduler/ownership transition.
+No production OOM termination is enabled by this test. The remaining work
+is unchanged: implement safe owner-phase finalization and boot its OOM test.
