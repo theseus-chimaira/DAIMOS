@@ -1,5 +1,15 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v966 native PDP-6 fifth mount-slot bit lifetime acceptance:
+  a resident and then swapped PURE owner at public mount 17 blocks
+  mount 17, but not mount 1 (identical low four slot bits); a non-PURE
+  resident process does not pin the mount. Actual
+  `proc_swap_mount_busy` extracted from production assembly PASS.
+  No production code, data or permanent RAM change.
+- [ ] Full-system non-root PURE mount refusal still requires a guest
+  mount/unmount transaction where administrative/root policy is not
+  independently responsible for rejection. Native v966 validates the
+  critical high slot-bit ownership distinction without that ambiguity.
 - [x] v965 booted 256K PDP-6 PURE DXR2 guest exercises actual VFS
   syscalls: root unmount returns -1, `/SYSTEM/INIT` opens writable
   but `write_words` returns -1 while PURE child processes execute;

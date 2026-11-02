@@ -91,6 +91,12 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v966 tests a non-root public mount number 17 through the production
+  PDP-6 `proc_swap_mount_busy` leaf. The fifth mount-ID bit in the
+  existing credential word distinguishes mount 17 from mount 1 for
+  both resident and swapped PURE backing, and non-PURE does not pin
+  the mount. This is native leaf acceptance, not a complete booted
+  non-root unmount syscall test.
 - v965 booted a real PURE DXR2 image with guest-initiated filesystem
   operations while other PURE processes remained runnable. Unmount `/`
   and a write to `/SYSTEM/INIT` returned -1; opening the backing for
