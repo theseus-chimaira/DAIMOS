@@ -1,5 +1,14 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v968 native PDP-6 tests the v967 session-retirement code against
+  the actual C canonical-line reset and MM assembly: a pinned TTY line
+  remains allocated and retains session 5; another session does not
+  release it. After real `mm_unpin`, the original owner retries and
+  releases both extent and session. Wrong MM owner similarly preserves
+  both until the extent owner is corrected. PASS, no production change.
+- [ ] Booted last-session EXIT with physically pinned TTY canonical
+  input remains outstanding; v968 is actual native MM/TTY code but a
+  constructed process/session fixture, not a complete guest EXIT.
 - [x] v967 P0 TTY session retirement ownership fix: the last-member
   `proc_tty_release_session` used to drop the owning session after
   `proc_tty_line_reset` even when pinned/wrong-owner MM prevented the

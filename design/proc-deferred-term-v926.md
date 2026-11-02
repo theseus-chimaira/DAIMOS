@@ -91,6 +91,12 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v968 strengthens v967 with actual MM failure handling. The native
+  PDP-6 fixture links the production TTY session-release assembly,
+  C canonical-line reset, packed line-pointer access and actual MM
+  unpin/free. Pinned and wrong-owner extents retain session ownership;
+  successful corrected retries free the extent and clear the session.
+  No kernel code changes; a booted last-session EXIT remains to test.
 - v967 fixes a separate TTY teardown ownership hazard: the final
   session member's release previously cleared the controlling session
   even when `proc_tty_line_reset` failed its MM free. Rechecking the
