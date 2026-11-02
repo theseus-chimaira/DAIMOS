@@ -1859,17 +1859,24 @@ proc_swap_in_read_offset:
 proc_swap_in_read_fail:
         move    1,(17)
         pushj   17,mm_unpin
+        ; A failed unpin still owns the extent. Never free it or
+        ; unlock the process for scheduling with outstanding pins.
+        jumpn   1,proc_swap_storage_invariant_v30
 proc_swap_in_free_fail:
         move    1,(17)
         movei   2,MM_TYPE_PROCESS
         move    3,10
         pushj   17,mm_free
+        ; If MM refuses rollback, the newly allocated VM remains owned.
+        ; Preserve TRANSITION and stop instead of orphaning that extent.
+        jumpn   1,proc_swap_storage_invariant_v30
         jrst    proc_swap_in_drop_local
 proc_swap_in_pin_fail:
         move    1,(17)
         movei   2,MM_TYPE_PROCESS
         move    3,10
         pushj   17,mm_free
+        jumpn   1,proc_swap_storage_invariant_v30
 proc_swap_in_drop_local:
         ; Both allocation failure and post-allocation rollback retain the
         ; one-word result local after discarding the two call arguments.

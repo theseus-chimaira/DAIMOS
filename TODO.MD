@@ -1,5 +1,13 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v958 fix real PDP-6 swap-in rollback ownership bug: the read-
+  failure `mm_unpin` and both post-allocation `mm_free` paths previously
+  ignored MM errors and cleared TRANSITION. Failure now enters the
+  existing fatal storage-invariant handler before clearing ownership.
+  Native three-case MM-refusal fixture PASS; v667, v788, v806, v880
+  and v957 rollback/publication regressions PASS. No persistent RAM.
+- [ ] Continue swap transaction preflight/rollback review, including
+  verification of any preexisting malformed resident swap record.
 - [x] v957 actual C `proc_swap_detach` resident-vs-disk branch:
   nonzero resident VM base bypasses fallible disk-backing validation;
   disk-backed image with zero VM base rejects unallocated backing

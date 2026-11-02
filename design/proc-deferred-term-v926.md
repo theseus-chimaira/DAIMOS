@@ -91,6 +91,14 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v958 active PDP-6 assembler swap-in rollback fix: after read failure
+  or pin failure, a rejected `mm_unpin` or `mm_free` used to fall through
+  and clear the per-process TRANSITION lock. The failure paths now jump
+  to the existing fatal storage invariant, leaving unresolved MM
+  ownership blocked from scheduling. The native fixture tests failed
+  unpin, failed free after unpin and failed free after pin failure.
+  Earlier v667/v788/v806/v880/v957 controls pass; there is no new
+  allocation or process table field.
 - v957 checks production C `proc_swap_detach` with resident and disk
   records: only VM base zero permits fallible disk-backing verification.
   A resident process with nonzero VM base takes a nonfailing detach
