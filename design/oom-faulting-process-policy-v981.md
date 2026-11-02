@@ -166,3 +166,21 @@ This improves owner cleanup but does not resolve the potentially partial
 `vm_space_destroy` failure after switching to slot zero. The automatic
 OOM killer remains OFF until this boundary and physical-memory termination
 are validated; the two existing P0 items are unchanged.
+
+## v997: deferred owner VM release on slot zero
+
+A failed ordinary/fatal EXIT `vm_space_destroy` now retains TRANSITION
+and a distinct FINALIZE+PREVM marker in the existing u-area word 067.
+The shared slot-zero retry clock discovers only explicitly marked owners.
+The retry re-enters the already validated non-sleeping VM release subset
+(MEMFS direct XIP operation, MM type/owner/pin-checked deletion, and
+backing bitmap detach); it skips further session HUP. On success it clears
+the PREVM marker and enters the existing post-VM u-area release sequence.
+Neither a fresh resident table nor another kernel stack is allocated.
+
+Booted 256K PDP-6 testkit v997 PASS: synthetic first VM refusal before
+MM deletion, second VM attempt success, subsequent u-area MM refusal and
+second-attempt success; two FILE-close refusals, stable held FS lease, CHLD
+notification, bystander progress and zero integrity errors. Unmodified
+v978 full-system, native v881 deferred u-area, and v869 finalization guard
+also PASS. The physical-memory OOM kill trigger is not enabled or proven.

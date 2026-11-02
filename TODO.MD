@@ -4,7 +4,10 @@
   stack, reusing existing FILE retry/backoff. Native v970 and injected
   v995 FILE/HUP refusal tests PASS; no new resident state.
 - [ ] VM destruction failure after stack switch remains the existing OOM
-  termination blocker. Automatic OOM kill stays OFF.
+  termination blocker. v997 now implements explicit PREVM slot-zero
+  retry without new resident data; injected VM+MM failures and the existing
+  v978 full-system regression PASS. Automatic OOM kill stays OFF pending
+  physical exhaustion termination testing.
 
 ### v991: owner-side EXIT HUP stage (2026-11-02)
 

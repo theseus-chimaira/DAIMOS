@@ -144,6 +144,7 @@
 #define PROC_FINALIZE_OFFSET          067UL
 /* Existing unused u-area word: marker in bit 35, exit status in RH. */
 #define PROC_FINALIZE_MARK            ((kword_t)1UL << 35U)
+#define PROC_FINALIZE_PREVM           ((kword_t)1UL << 33U)
 #define PROC_TIMER_TAG_RH            0400000UL
 #define PROC_TIMER_CLOCK_MASK         0377777UL
 #define PROC_STOP_MASK              03UL

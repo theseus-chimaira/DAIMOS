@@ -168,9 +168,10 @@ proc_exit_finish(int status)
         if (proc_finish_slot_owner_v932(slot, (unsigned int)status) != 0) {
                 p = &proc_table[slot];
                 if (PROC_TRANSITION(p) && PROC_HAS_UAREA(p) &&
-                    p->vm_state == ~(kword_t)0 &&
-                    (PROC_FINALIZE_WORD(p) & PROC_FINALIZE_MARK) != 0UL)
-                        return 1; /* slot 0 retries at the next clock tick */
+                    (PROC_FINALIZE_WORD(p) & PROC_FINALIZE_MARK) != 0UL &&
+                    (p->vm_state == ~(kword_t)0 ||
+                     (PROC_FINALIZE_WORD(p) & PROC_FINALIZE_PREVM) != 0UL))
+                        return 1; /* slot 0 owns the deferred finalizer */
                 return -1;
         }
         return proc_has_live_user();

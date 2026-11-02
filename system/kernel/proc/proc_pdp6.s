@@ -28,6 +28,7 @@
         .equ    PROC_FATAL_CLOSE_BIT,4
         .equ    PROC_FINALIZE_OFFSET,067
         .equ    PROC_FINALIZE_MARK_LH,0400000
+        .equ    PROC_FINALIZE_PREVM_LH,0100000
         .equ    PROC_WAIT_LH_MASK,060000
         .equ    PROC_WAIT_EVENT_LH,020000
         .equ    PROC_WAIT_CHILD_LH,040000
@@ -589,8 +590,9 @@ proc_finish_common_v932:
         move    1,(12)
         trnn    1,PROC_TRANSITION_RH
         jrst    proc_finish_new_v881
-        ; Only a failed *post-VM* u-area release may resume under
-        ; TRANSITION. A swapping/partially destroyed user image must not.
+        ; Only explicitly marked EXIT finalization may resume under
+        ; TRANSITION. PREVM is separate from the committed post-VM mark;
+        ; ordinary swapping and private-kernel wait stacks remain excluded.
         trnn    1,0400000
         jrst    proc_finish_fail
         hlrz    3,1
@@ -603,9 +605,13 @@ proc_finish_check_vm_v881:
         move    4,1(12)
         camn    4,[-1]
         jrst    proc_finish_resume_v881
+        ; A failed VM free is retryable only for the exact PREVM owner.
+        move    4,PROC_FINALIZE_OFFSET(3)
+        tlne    4,PROC_FINALIZE_PREVM_LH
+        jrst    proc_finish_resume_v881
         jrst    proc_finish_fail
 proc_finish_resume_v881:
-        hrrz    11,PROC_FINALIZE_OFFSET(3) ; saved exit status, VM gone
+        hrrz    11,PROC_FINALIZE_OFFSET(3) ; saved exit status
         jrst    proc_finish_ids
 proc_finish_new_v881:
         ; Every private wait class (EVENT, CHILD or INTR) preserves a live
@@ -658,22 +664,36 @@ proc_finish_ids:
         lsh     16,-3
         andi    16,0177777             ; zombie scope
         move    4,PROC_FINALIZE_OFFSET(1)
-        tlne    4,PROC_FINALIZE_MARK_LH
+        tlnn    4,PROC_FINALIZE_MARK_LH
+        jrst    proc_finish_hup_new_v997
+        ; Existing post-VM retry cannot execute HUP or VM again.
+        tlne    4,PROC_FINALIZE_PREVM_LH
+        jrst    proc_finish_vm_retry_v997
         jrst    proc_finish_uarea_retry_v881
-
+proc_finish_hup_new_v997:
         move    1,10
         move    2,15
         pushj   17,proc_session_teardown
         jumpn   1,proc_finish_hup_fail_v876
 
+proc_finish_vm_retry_v997:
+        ; This subset is non-sleeping: MEMFS direct XIP dispatch,
+        ; validated MM extent deletion, and swap backing bitmap detach.
         move    1,12
         move    2,10
         pushj   17,vm_space_destroy
         jumpe   1,proc_finish_vm_done
-        movni   1,PROC_TRANSITION_RH+1
-        andb    1,(12)                 ; clear transition after VM failure
+        ; Keep TRANSITION and save owner/status in the existing u-area.
+        ; Never expose a potentially partially released VM to userspace.
+        hlrz    3,(12)
+        movsi   4,PROC_FINALIZE_MARK_LH+PROC_FINALIZE_PREVM_LH
+        hrr     4,11
+        pushj   17,proc_finish_mark_pending_v892
         jrst    proc_finish_fail
 proc_finish_vm_done:
+        ; Clear the PREVM stage before the existing post-VM MM finalizer.
+        hlrz    3,(12)
+        setzm   PROC_FINALIZE_OFFSET(3)
         ; An unsuccessful HUP or VM destroy must retain a live RT owner.
         camn    10,proc_rt_owner
         setzm   proc_rt_owner
@@ -807,6 +827,11 @@ proc_finish_service_post_vm_v894:
         move    4,1(2)
         camn    4,[-1]
         jrst    proc_finish_service_check_v881
+        ; Non-NONE VM can retry only with an explicit PREVM marker.
+        hlrz    5,3
+        jumpe   5,proc_finish_service_next_v881
+        move    4,PROC_FINALIZE_OFFSET(5)
+        tlnn    4,PROC_FINALIZE_PREVM_LH
         jrst    proc_finish_service_next_v881
 proc_finish_service_check_v881:
         hlrz    3,3
