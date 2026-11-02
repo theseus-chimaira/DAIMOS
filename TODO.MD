@@ -7,7 +7,9 @@
   part of the two existing OOM P0 gates. v905 standalone HUP harness
   now links and passes with its test-only TTY reset stub (v992);
   its negative-control variant fails as expected. Booted v991 HUP
-  preflight refusal remains untested.
+  preflight refusal remains untested. Booted v907 partial-HUP physical-MM
+  fault injection PASS on current v991 kernel; this confirms retry and
+  TTY ownership but not direct preflight fault injection.
 
 ### v987: permanent-provider OOM containment audit (2026-11-02)
 
