@@ -91,6 +91,13 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v945/v946 directly execute native `proc_event_send` with mixed-state
+  members. In v945 slot 2 records deferred TERM and later slot 3 in
+  TRANSITION refuses, causing a group error without undoing slot 2.
+  In v946 slot 2 refuses first, and an eligible later slot 3 receives
+  nothing. These establish ordered partial delivery with stop-on-error.
+  Whether this is the intended user-visible group API remains a policy
+  question; neither test justifies a kernel behavior change by itself.
 - v944 native PDP-6 test includes the real group dispatcher in
   `proc_event_send`, using caller session/domain control and PGRP 7 to
   deliver TERM to a WAIT_CHILD target. Its deferred flag is recorded

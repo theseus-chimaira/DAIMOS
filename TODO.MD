@@ -1,5 +1,14 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v945/v946 native mixed-state group TERM dispatch: the dispatcher
+  visits eligible PGRP members in slot order and stops on first failed
+  `proc_event_apply`. If a protected WAIT_CHILD member accepts deferred
+  TERM before a TRANSITION member refuses, the request returns -1 but
+  the first member retains TERM (v945). If a TRANSITION member refuses
+  first, a later eligible member remains untouched (v946). Both PASS.
+- [ ] Specify the process-group API contract: current implementation is
+  partial, slot-ordered, stop-on-error, not atomic. Do not add rollback
+  or prevalidation without establishing required behavior and RAM cost.
 - [x] v944 native process-group TERM acceptance: actual `proc_event_send`
   group dispatcher matches PGRP 7 to a WAIT_CHILD member in slot 2,
   records owner-side deferred TERM without FILE/VM teardown, and retains
