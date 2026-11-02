@@ -1,5 +1,16 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v953 booted 256K PDP-6 provider revival after persistent
+  refusal: a genuine user APR fatal victim holds its private FILE
+  descriptor through eleven failed VFS sync calls and eleven sleeps;
+  the capped 01000-octal tick backoff is reached. The twelfth call
+  succeeds, FILE descriptor and failure witness clear, owner EXIT
+  executes once, and independent user spinner continues: PASS.
+  The disposable provider refusal is test-only; no production changes.
+- [ ] An indefinitely nonreturning or permanently rejecting provider
+  still cannot be forcibly reclaimed without risking live references.
+  Administrative recovery must operate at the owning subsystem and
+  prove outstanding references quiesced first; no blind forced unlock.
 - [x] v951 booted 256K PDP-6 persistent D6FS SYNC diagnostics:
   three failed provider calls retain FILE-stage GETTEARDOWN with actual
   -1 error, no premature VM/u-area release, 33 bystander cycles. PASS.

@@ -91,6 +91,13 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v953 booted PDP-6 acceptance proves eventual provider recovery after
+  *eleven* failed VFS sync attempts (assembler threshold 013 octal),
+  eleven owner-stack sleep/retry passes and a capped 01000-octal tick
+  delay. The twelfth close succeeds: exactly one victim EXIT, cleared
+  FILE descriptor, cleared failure witness and no integrity errors.
+  This establishes automatic completion when a provider eventually
+  resumes, not safe reclamation of a permanently dead provider.
 - v951 confirms the production GETTEARDOWN FILE-stage detail remains
   readable through repeated D6FS provider-origin SYNC errors, with
   three diagnostic captures and preserved VM/u-area ownership. The
