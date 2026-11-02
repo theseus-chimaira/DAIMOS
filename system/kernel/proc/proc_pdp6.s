@@ -1571,7 +1571,13 @@ proc_session_teardown_next:
         aoja    011,proc_session_teardown_loop
 proc_session_teardown_commit_v875:
         ; No member can have an unclosed FD after successful HUP.
-        ; A failed HUP leaves this original TTY record intact for retry.
+        ; Retire any canonical input before unpublishing the session.
+        ; The MM extent may be pinned or have invalid ownership.  A
+        ; failed release must preserve the original TTY session, just
+        ; like a refused HUP, so a later owner-side retry is safe.
+        move    1,013
+        pushj   17,proc_tty_line_try_reset_v897
+        jumpn   1,proc_session_teardown_fail
         move    6,proc_tty_records(013)
         and     6,[174000000000]       ; preserve output route
         movem   6,proc_tty_records(013)

@@ -91,6 +91,16 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v969 exposed and fixed a sequencing bug preceding v967's final
+  session release. The HUP commit path unconditionally cleared the
+  controlling TTY record, even if its canonical MM line buffer was
+  pinned. It now calls `proc_tty_line_try_reset_v897` before committing
+  that ownership transition and propagates refusal through the existing
+  session-teardown retry path. The disposable booted PDP-6 test injects
+  a real MM pin on the final-session EXIT, witnesses an owner-preserving
+  failed finalizer, unpins, and retries the actual owner finalizer.
+  Pin/retention/retry counters each equal one and no errors occur.
+  No permanent allocation or new process metadata is introduced.
 - v968 strengthens v967 with actual MM failure handling. The native
   PDP-6 fixture links the production TTY session-release assembly,
   C canonical-line reset, packed line-pointer access and actual MM

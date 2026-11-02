@@ -1,5 +1,18 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v969 P0 booted PDP-6 final-session TTY/MM fault acceptance:
+  `proc_session_teardown_commit_v875` prematurely cleared the owning
+  TTY record before `proc_tty_release_session` could attempt its MM
+  release. The later v967 guard therefore could not preserve ownership.
+  Production session teardown now calls the existing checked canonical
+  line release before clearing the TTY record and returns failure if
+  MM refuses. Disposable native 256K boot pins the actual MM line at
+  the final EXIT handoff: first finalizer refusal preserves session and
+  extent, real unpin permits retry, second finalizer releases both.
+  Witnesses: one pin, one retained session, one completed retry, zero
+  errors. No static RAM or process table growth.
+- [ ] Continue proving the OOM victim-retirement dependency graph with
+  simultaneous FILE/provider and MM failures; automatic killing OFF.
 - [x] v968 native PDP-6 tests the v967 session-retirement code against
   the actual C canonical-line reset and MM assembly: a pinned TTY line
   remains allocated and retains session 5; another session does not
