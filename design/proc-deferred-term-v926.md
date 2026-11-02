@@ -1,5 +1,28 @@
 # v926: Deferred fatal delivery across executive continuations
 
+## v970 extension (2026-11-02)
+
+Follow-up v971: the historical v925/v926 foreign HUP safety tests were
+updated to assert accepted deferral, not refusal; the old fatal-lifecycle
+fixture's pre-existing PIPE pending bit must be cleared between independent
+test scenarios. Native owner-side priority tests pass for all four selected
+statuses and prove the retry loop retains its status through FILE failure.
+The v972 full-system 256K PDP-6 held-provider case now passes: repeated
+TERM then HUP on a protected WAIT_CHILD parent selects HUP when its
+descendant completes and CHLD wakes the parent. One CHLD, one finalizer,
+zero failures and 36 bystander cycles are observed with the provider lease
+intact. Remaining gates include group/self delivery, PID reuse and
+mixed-event refusal/retry in the booted path.
+
+The PDP-6 implementation now coalesces pending INT, TERM, HUP and PIPE
+on a protected foreign executive continuation. The owner chooses HUP >
+INT > TERM > PIPE and begins the existing private fatal-close retry path
+before user return. It marks fatal-close ownership before clearing pending
+bits, preventing another sender from destroying that stack. Native v970
+foreign-delivery and owner-side HUP retry tests pass. This is not yet
+full-system mixed-event acceptance: verify actual CHLD wakeup, mixed-event
+exit status, PID reuse, and group/self-delivery. Preserve v926 history.
+
 Status: first TERM-only implementation and isolated event-delivery test; full
 owner-return and booted integration acceptance outstanding.
 Date: 2026-11-01

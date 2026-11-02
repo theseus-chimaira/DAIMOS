@@ -1655,6 +1655,14 @@ proc_fatal_self_fail_v868:
         jrst    kret_neg1
 
 proc_event_fatal_other:
+        ; Once a fatal event is pending, its owning process chooses the
+        ; final status. Do not race a later foreign close against it.
+        hlrz    1,(012)
+        move    2,PROC_FDCTL_OFFSET(1)
+        tlne    2,016                 ; pending INT, TERM or HUP
+        jrst    proc_event_fatal_other_defer_term_v926
+        trne    2,1                   ; pending PIPE
+        jrst    proc_event_fatal_other_defer_term_v926
         ; A sleeping EVENT, CHILD, or INTR waiter still owns its private
         ; executive continuation. Remote close/VM teardown would free
         ; that stack while the saved syscall may still resume.
@@ -1707,15 +1715,20 @@ proc_event_fatal_other_close_fail_v867:
         pop     17,010
         jrst    kret_neg1
 
-; Only TERM can currently be deferred. Other fatal events retain the
-; existing refusal semantics until their ordering policy is specified.
-; The target still owns its stack and all resources. Its next monitor-UUO
-; return will consume the request on that same private executive stack.
+; All four fatal events can be deferred. Their pending bits coalesce;
+; the owner selects HUP > INT > TERM > PIPE at its user-return boundary.
+; Never touch another process's private executive stack or resources.
 proc_event_fatal_other_defer_term_v926:
-        caie    011,1
-        jrst    proc_event_fatal_other_close_fail_v867
         hlrz    1,(012)
-        movsi   2,004                 ; event 1 at (19 + 1) modulo 18
+        caie    011,7
+        jrst    evt_def_bits_v970
+        movei   2,1                   ; PIPE has a dedicated RH bit
+        jrst    evt_def_record_v970
+evt_def_bits_v970:
+        movei   2,1
+        lsh     2,0(011)
+        lsh     2,023                 ; event bits begin at bit 19
+evt_def_record_v970:
         iorm    2,PROC_FDCTL_OFFSET(1)
         setz    1,                    ; recorded, not delivered yet
         jrst    proc_event_fatal_other_done_v883

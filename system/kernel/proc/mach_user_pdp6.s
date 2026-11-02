@@ -64,7 +64,7 @@ mach_syscall:
         popj 17,
 
         ; The owner is about to leave its private executive context. Handle
-        ; a deferred TERM here, never while another process owns this stack.
+        ; a deferred fatal event here, never on a foreign executive stack.
         pushj 17,proc_deferred_term_check_v926
 
         move 17,mach_user_sp
@@ -72,20 +72,42 @@ mach_syscall:
 
 ; Called only at the owning process's monitor-UUO return boundary. The
 ; private executive stack and file_table are installed; dispatch to the
-; existing allocation-free private fatal-close/retry path on pending TERM.
+; existing allocation-free private fatal-close/retry path. Priority is
+; HUP > INT > TERM > PIPE. All pending fatal bits are consumed together.
 proc_deferred_term_check_v926:
         push 17,2
         push 17,3
         skipn 2,file_table
         jrst proc_deferred_term_return_v926
         move 3,-2(2)
-        tlnn 3,004
+        tlne 3,010
+        jrst proc_deferred_hup_v970
+        tlne 3,002
+        jrst proc_deferred_int_v970
+        tlne 3,004
+        jrst proc_deferred_term_v970
+        trnn 3,1
         jrst proc_deferred_term_return_v926
-        movsi 3,004
+        movei 1,0400007
+        jrst proc_deferred_commit_v970
+proc_deferred_hup_v970:
+        movei 1,0400002
+        jrst proc_deferred_commit_v970
+proc_deferred_int_v970:
+        movei 1,0400000
+        jrst proc_deferred_commit_v970
+proc_deferred_term_v970:
+        movei 1,0400001
+proc_deferred_commit_v970:
+        ; Block foreign fatal delivery before consuming pending bits.
+        movei 3,04
+        iorm 3,-2(2)
+        movsi 3,016
+        andcam 3,-2(2)
+        movei 3,1
         andcam 3,-2(2)
         pop 17,3
         pop 17,2
-        movei 1,0400001
         jrst proc_fatal_close_current_v879
 proc_deferred_term_return_v926:
         pop 17,3

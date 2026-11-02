@@ -134,6 +134,9 @@
 #define PROC_DOMAIN_SHIFT            11U
 #define PROC_EVENT_MASK           0177UL
 #define PROC_EVENT_SHIFT             19U
+/* Deferred fatal precedence: HUP > INT > TERM > PIPE. These bits remain
+ * owned by the u-area until the process itself starts private teardown.
+ * The pending bitmap is not a process-table allocation or a signal queue. */
 /* Event 7 uses one spare low control-word bit; events 0..6 stay packed. */
 #define PROC_PIPE_EVENT_BIT            01UL
 #define PROC_USER_MAP_BIT              02UL

@@ -1,3 +1,33 @@
+### v971-v972: fatal-event precedence regression and booted acceptance (2026-11-02)
+
+- [x] Adapt v925/v926 extracted PDP-6 safety fixtures to deferred HUP:
+  protected CHILD/INTR/CTX_PC continuations record HUP without closing
+  resources; clear the fixture's preexisting PIPE bit before testing the
+  independent immediate-fatal path. Fatal, finish, OOM, deferred delivery
+  and owner-return regression tests PASS.
+- [x] v971 native owner-side priority matrix PASS: HUP over INT/TERM/PIPE,
+  INT over TERM, TERM over PIPE, and PIPE alone, including private FILE
+  close refusal/retry and consumption of all pending bits.
+- [x] v972 full-system 256K PDP-6 held-provider CHLD wakeup PASS with
+  repeated TERM followed by HUP: correct HUP WAIT status, CHLD=1,
+  EXIT=1, finalizer=1, failure=0, unchanged lease 4,,0, 36 bystander
+  cycles and zero errors. First fixture accidentally inserted sends
+  into descendant rather than INIT; the corrected fixture passed.
+- [ ] Group/self delivery, PID reuse, failure under the mixed-event
+  path and cross-architecture C fallback behavior remain open.
+
+### v970: four-fatal-event deferred precedence (2026-11-02)
+
+- [x] PDP-6 foreign protected continuation now accepts/coalesces INT,
+  TERM, HUP and PIPE without remote FILE/VM release. Native v970
+  source-linked delivery test PASS.
+- [x] Owner chooses HUP > INT > TERM > PIPE, claims private fatal-close
+  ownership before clearing the pending bits, and uses the existing
+  retry/EXIT path. Native HUP owner test with two FILE refusals PASS.
+- [ ] Booted mixed-event CHLD wakeup with exact exit status, repeated
+  sends, PID reuse, self/group delivery and FILE/MM teardown checks.
+  Keep automatic OOM killing OFF; KCORE shrink remains deferred.
+
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
 - [x] v969 P0 booted PDP-6 final-session TTY/MM fault acceptance:
