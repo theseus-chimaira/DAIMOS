@@ -132,3 +132,12 @@ retry test passes; its deliberately old-behavior negative control fails
 with exit 010. This verifies session retry semantics, not a booted v991
 preflight refusal or VM teardown under physical OOM. Both OOM P0 items
 remain unchanged.
+
+## v993: direct owner EXIT preflight instruction test
+
+The native PDP-6 testkit v993 runs the extracted production v991 EXIT
+branch with simulated FILE and session-HUP helpers. First HUP refusal
+returns -1 without switching to permanent-stack termination. A second
+EXIT reaches the normal handoff. This passes; it does not yet establish
+a full-system HUP failure under live processes, nor safe VM teardown or
+physical-OOM requester termination. No new kernel functionality was added.

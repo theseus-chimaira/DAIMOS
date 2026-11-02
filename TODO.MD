@@ -10,6 +10,9 @@
   preflight refusal remains untested. Booted v907 partial-HUP physical-MM
   fault injection PASS on current v991 kernel; this confirms retry and
   TTY ownership but not direct preflight fault injection.
+  v993 native PDP-6 execution of the actual v991 EXIT dispatch with
+  injected HUP rejection and successful second attempt PASS. Full-system
+  preflight fault-injection acceptance remains outstanding.
 
 ### v987: permanent-provider OOM containment audit (2026-11-02)
 
