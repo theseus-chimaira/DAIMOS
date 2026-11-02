@@ -1,5 +1,13 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v949 full-system 256K PDP-6 combined D6FS/MM teardown refusal:
+  two failures returned by disposable `d6fs_provider_sync` precede one
+  test-only type-3 u-area `mm_free` busy result. D6FS FD closes=3
+  (2 rejected), MM frees=2 (1 rejected), VM destroy=1, u-area release=2,
+  CHLD=1, finalizer failures=0, 45 bystander cycles and successful
+  INIT TERM reap: PASS. Production cleanup path unchanged.
+- [ ] DTFS-specific provider failure testing is DEFERRED until the DTFS
+  rewrite; do not block this P0 termination/OOM work on the old DTFS.
 - [x] v949 booted 256K PDP-6 combined-stage teardown: D6FS provider
   SYNC rejects two genuine close calls on a held file, succeeds on the
   third; subsequent owner u-area `mm_free` returns busy once and

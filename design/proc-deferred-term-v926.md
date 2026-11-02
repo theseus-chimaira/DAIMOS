@@ -91,6 +91,14 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v949 booted PDP-6 test combines failure stages: D6FS provider SYNC
+  refuses twice, then succeeds; the first subsequent type-3 u-area MM
+  free returns busy, then deferred finalization retries successfully.
+  VM teardown executes only once; one CHLD and successful INIT TERM
+  reap are observed. The FS lease is free at the test HALT. Faults are
+  injected only in the disposable image, not in production code.
+- DTFS-specific SYNC/provider tests are intentionally postponed until
+  its planned rewrite. Continue D6FS and common kernel P0 acceptance.
 - v949 full-system PDP-6 checks combined FILE/provider and MM teardown
   failure atomicity. D6FS provider SYNC fails twice during the target's
   own fatal FILE cleanup; successful third close proceeds to VM teardown.
