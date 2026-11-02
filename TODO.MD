@@ -1,5 +1,14 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v937 booted 256K PDP-6 exactly-once teardown under two real FILE
+  descriptor-close refusals: VM destruction called once, u-area release
+  called once, descriptor close attempted 3 times (2 refusals), CHLD=1,
+  finalization failure=0, 36 bystander cycles, held lease 4,,0 unchanged,
+  and INIT TERM reap PASS. Test-only fault is at FILE entry, not the
+  provider's own sync operation.
+- [ ] Inject provider-origin VFS_SYNC refusal on a mounted regular file;
+  separately test failed VM teardown, deferred u-area-release retries,
+  permanent provider refusal, and fatal-event precedence. OOM remains OFF.
 - [x] v936 full-system 256K PDP-6 descriptor-level close refusal:
   the deferred-TERM target owns an actual additional FILE descriptor;
   disposable `file_close_entry_v865` injection rejects its first two

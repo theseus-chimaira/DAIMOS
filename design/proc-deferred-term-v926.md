@@ -91,6 +91,13 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v937 stage witness extends booted v936 with slot-5 counters at actual
+  `vm_space_destroy` and `proc_uarea_release` entry points. Both execute
+  exactly once after two injected FILE entry refusals, with a third close
+  attempt succeeding. No descriptor integrity or finalizer error; CHLD,
+  owner return, held provider lease and INIT TERM status checks all PASS.
+  This establishes one successful post-close teardown, not idempotence
+  across separate MM release failures or a real provider VFS_SYNC refusal.
 - v936 extends v935 to a real descriptor: the target duplicates its
   output FILE before WAIT_CHILD; injection at `file_close_entry_v865`
   rejects one selected live descriptor twice, preserving its nonzero
