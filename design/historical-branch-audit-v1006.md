@@ -61,3 +61,18 @@ Its report-permanent accounting correction and historic size figures are
 also not interchangeable with modern linked/package measurements.
 Any remaining optimization must be rederived against the present code and
 measured independently before being counted as saved RAM.
+
+## v1009 native Stage-1 entry acceptance
+
+The testkit `daimos-stage1-kinit-entry-v1.sh` was executed against the
+v1007 three-word DTC Stage-1 reduction on current `main`. After supplying
+the actual sibling DAS and KCC source repositories in the isolated
+worktree layout, the complete image built and the simulator reached
+KINIT entry `53326` (octal): PASS. D6FS image checks also completed.
+The first two isolated attempts were blocked by missing sibling DAS/KCC
+source trees; these were harness layout problems rather than target
+failures. This PASS proves the test's entry breakpoint contract, not
+every 32K hybrid TSFS read or failure-injection path.
+The historical 106-word DTC size cap remains obsolete: the current
+hybrid loader is 140 words after the reduction. Existing KCC identifier
+truncation and unused-symbol warnings remain separate toolchain work.
