@@ -13,6 +13,9 @@
   v993 native PDP-6 execution of the actual v991 EXIT dispatch with
   injected HUP rejection and successful second attempt PASS. Full-system
   preflight fault-injection acceptance remains outstanding.
+  VM detach audits v957 (C resident/disk) and v880 (native failure/retry)
+  PASS; owner EXIT handoff on VM refusal is the remaining implementation
+  blocker, not another independent P0.
 
 ### v987: permanent-provider OOM containment audit (2026-11-02)
 

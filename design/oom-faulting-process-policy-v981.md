@@ -141,3 +141,16 @@ returns -1 without switching to permanent-stack termination. A second
 EXIT reaches the normal handoff. This passes; it does not yet establish
 a full-system HUP failure under live processes, nor safe VM teardown or
 physical-OOM requester termination. No new kernel functionality was added.
+
+## VM release branch audit after v993
+
+Tests v957 (production swap-detach C branches) and v880 (native PDP-6 VM
+release rejection/retry) PASS against the current kernel. The disk-backed
+case preserves a failed backing allocation record for retry; resident
+detach does not enter that fallible backing-release branch. The remaining
+problem is the control transfer following a failed `vm_space_destroy`: an
+owner EXIT is already on the permanent stack, and `proc_exit_finish` returns
+-1 (currently HALT 1) for pre-VM failure. This is not a request to add a
+second recovery framework. A safe, existing-stack continuation must own the
+retry until VM destruction succeeds, after which u-area release may use the
+slot-zero finalizer. No production logic was modified in this audit.
