@@ -13,6 +13,7 @@
         .globl d6lz36_decode_vfs
         .globl proc_table
         .globl proc_high_slot
+        .globl proc_swap_records
         .globl vfs_mount_root_base
         .globl vfs_mount_limit
         /* Constants are supplied by the parent proc_swap assembly unit.
@@ -184,7 +185,15 @@ proc_swap_backing_busy_loop:
         andi    3,1
         came    3,14
         jrst    proc_swap_backing_busy_next
+        hrrz    2,1(13)                 ; nonzero for a resident image
+        jumpe   2,proc_swap_backing_saved_v962
+        move    1,proc_swap_records
+        add     1,11
+        move    1,(1)                   ; resident backing, not disk span
+        jrst    proc_swap_backing_record_v962
+proc_swap_backing_saved_v962:
         move    1,PROC_SWAP_BACKING_OFFSET(1)
+proc_swap_backing_record_v962:
         move    2,1
         lsh     2,-PROC_SWAP_TEXT_SHIFT
         andi    2,PROC_SWAP_TEXT_MASK
@@ -207,7 +216,11 @@ proc_swap_backing_busy_return:
         pop     17,10
         popj    17,
 
-/* Return nonzero while any swapped PURE process depends on public MOUNT id. */
+/* Return nonzero while a resident or swapped PURE image owns MOUNT id.
+ * The resident backing record is in proc_swap_records; swap-out moves it
+ * to the stable u-area before clearing the VM base. Never inspect a disk
+ * span as though it were an executable backing record.
+ */
         .globl  proc_swap_mount_busy
 proc_swap_mount_busy:
         push    17,10
@@ -231,7 +244,15 @@ proc_swap_mount_busy_loop:
         move    4,066(1)
         lsh     4,-033
         andi    4,1
+        hrrz    3,1(2)                 ; resident physical VM base
+        jumpe   3,proc_swap_mount_saved_v961
+        move    1,proc_swap_records
+        add     1,11
+        move    1,(1)                  ; resident executable backing
+        jrst    proc_swap_mount_record_v961
+proc_swap_mount_saved_v961:
         move    1,PROC_SWAP_BACKING_OFFSET(1)
+proc_swap_mount_record_v961:
         move    3,1
         lsh     3,-PROC_SWAP_TEXT_SHIFT
         andi    3,PROC_SWAP_TEXT_MASK

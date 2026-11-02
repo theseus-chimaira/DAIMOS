@@ -91,6 +91,14 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v961/v962 correct the actual resident PURE mount and write lifetime
+  guards. A resident image's executable backing is in its per-slot swap
+  record, while a swapped image's record is saved in its u-area. Both
+  existing guards read only the u-area, leaving resident PURE users
+  unprotected. The two native PDP-6 tests fail before and pass after
+  selecting the record by VM base. v958/v959/v960, v804 PURE prefix
+  reconstruction and v20 EXEC PURE-bit controls pass. The patch adds
+  no static words and does not change the swap-record encoding.
 - v961 closes a record-publication validation gap: `proc_swap_attach`
   previously checked vnode provider/kind/range but not that the mounted
   root at the selected slot had the same provider and public mount ID.

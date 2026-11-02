@@ -1,5 +1,17 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v961/v962 resident PURE backing ownership fixes. Both
+  `proc_swap_mount_busy` (VFS unmount guard) and
+  `proc_swap_backing_busy` (VFS write guard) previously inspected only
+  the u-area's saved backing word, which is populated after swap-out.
+  Resident PURE processes keep their executable backing instead in
+  `proc_swap_records[slot]`. Select by nonzero resident VM base, retain
+  the previous u-area path for swapped images; both native PDP-6
+  negative controls failed before the fix and PASS afterwards.
+  Non-PURE and unrelated mount/index controls PASS. No new static RAM.
+- [ ] Verify the executable vnode's mount/provider association across
+  lookup and EXEC publication in a booted PDP-6 test; the corrected
+  mount and write guards now retain resident PURE backing ownership.
 - [x] v961 resident executable backing now validates its exact live
   VFS mount-root provider and public mount ID before publishing the
   one-word swap record or staged mount-extension bit. A syntactically
