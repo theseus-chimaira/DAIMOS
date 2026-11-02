@@ -91,6 +91,14 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v967 fixes a separate TTY teardown ownership hazard: the final
+  session member's release previously cleared the controlling session
+  even when `proc_tty_line_reset` failed its MM free. Rechecking the
+  existing packed canonical-line base after reset preserves ownership
+  until it is genuinely released. The extracted native PDP-6 leaf test
+  exercises a failed release and successful retry. No persistent state
+  or allocation has been added. Full-system MM-pinned last-session
+  exit remains separate acceptance work.
 - v966 tests a non-root public mount number 17 through the production
   PDP-6 `proc_swap_mount_busy` leaf. The fifth mount-ID bit in the
   existing credential word distinguishes mount 17 from mount 1 for

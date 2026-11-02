@@ -1020,6 +1020,11 @@ proc_tty_release_loop:
         jrst    proc_tty_release_next
         move    1,11
         pushj   17,proc_tty_line_reset
+        ; A pinned or misowned MM line remains live after a failed reset.
+        ; Do not drop the owning session while its input is retained.
+        move    1,11
+        pushj   17,proc_tty_line_base_get
+        jumpn   1,proc_tty_release_next
         movsi   1,0174000
         andb    1,proc_tty_records(11)
 proc_tty_release_next:

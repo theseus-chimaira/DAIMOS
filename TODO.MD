@@ -1,5 +1,16 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v967 P0 TTY session retirement ownership fix: the last-member
+  `proc_tty_release_session` used to drop the owning session after
+  `proc_tty_line_reset` even when pinned/wrong-owner MM prevented the
+  canonical input extent from being freed. Recheck its base after
+  reset, and retain session ownership until the extent is genuinely
+  gone. Native PDP-6 failed-release then successful-retry test PASS;
+  no static RAM or new process state. Earlier v897 attach/detach checks
+  already reject inherited stale input on new-session attach.
+- [ ] Follow up with a booted session-owner exit and MM-pinned TTY
+  line fixture; a persistent MM refusal can retain old TTY ownership
+  indefinitely and must not be hidden by automatic OOM killing.
 - [x] v966 native PDP-6 fifth mount-slot bit lifetime acceptance:
   a resident and then swapped PURE owner at public mount 17 blocks
   mount 17, but not mount 1 (identical low four slot bits); a non-PURE
