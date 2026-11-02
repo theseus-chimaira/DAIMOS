@@ -1,5 +1,14 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v938 booted 256K PDP-6 post-VM u-area release retry: test-only
+  `proc_uarea_release` first attempt returns -1, deferred slot-0
+  finalization retries and succeeds. U-area release calls=2, VM destroy
+  calls=1, live FILE entry close calls=3 with two refusals, CHLD=1,
+  zero finalizer failures and successful INIT TERM reap. Held provider
+  owner/waiter lease stays 4,,0, 36 independent bystander cycles.
+- [ ] Inject a real MM `mm_free` failure at u-area release and verify
+  post-VM retry, then test provider-origin VFS_SYNC rejection on mounted
+  DTFS/D6FS media, permanent refusal, and other fatal events.
 - [x] v937 booted 256K PDP-6 exactly-once teardown under two real FILE
   descriptor-close refusals: VM destruction called once, u-area release
   called once, descriptor close attempted 3 times (2 refusals), CHLD=1,

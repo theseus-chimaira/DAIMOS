@@ -91,6 +91,13 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v938 booted 256K PDP-6 deliberately fails the first call to
+  `proc_uarea_release` for the deferred-TERM owner after VM destruction.
+  The existing deferred finalizer retries from slot 0: two u-area
+  release entries, only one VM destroy, three FILE entry closes (two
+  earlier refusals), one CHLD, correct WAIT/reap and intact held FS lease.
+  Test PASS; this is an entry-level failure, not an actual `mm_free`
+  rejection. Provider-origin sync and permanent failure remain open.
 - v937 stage witness extends booted v936 with slot-5 counters at actual
   `vm_space_destroy` and `proc_uarea_release` entry points. Both execute
   exactly once after two injected FILE entry refusals, with a third close
