@@ -2,6 +2,14 @@
 
 ## v970 extension (2026-11-02)
 
+v979 full-system PDP-6 sender self-membership: a child uses group HUP
+against its own process group; parent observes HUP fatal WAIT status.
+The standard event tests also pass. Build audit confirms that the
+current kernel Makefile defines PROC_EVENT_APPLY_PDP6_ASM and links
+proc_pdp6.s; the portable C proc_event_apply is not a current PDP-6
+production handler. C parity remains a future-port gate, not a
+justification for changing a dormant fallback without its own tests.
+
 v978 full-system follow-up: repeated TERM followed by HUP on a protected
 WAIT_CHILD parent passes with the real FILE/MM fault-injection hooks from
 v939: three FILE-close attempts with two refusals, two MM free attempts

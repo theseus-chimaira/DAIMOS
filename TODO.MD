@@ -1,3 +1,16 @@
+### v979: process-group sender self-membership and C build audit (2026-11-02)
+
+- [x] Booted 256K PDP-6 sender self-membership: a child sends HUP to
+  its own group and the parent observes the correct fatal WAIT exit.
+  Existing PID/group, TSTP/CONT, CHLD and ALRM event regression PASS.
+- [x] Both `system/kernel/Makefile` and PDP-6 boot image build select
+  `PROC_EVENT_APPLY_PDP6_ASM=1` plus `proc_pdp6.s`; portable C
+  `proc_event_apply` is excluded from current PDP-6 production builds.
+  Do not alter C semantics speculatively; require a supported C-port
+  configuration and source-linked tests before porting owner deferral.
+- [ ] Final regression and documentation review remain; KCORE shrinking
+  and automatic OOM killing still deferred.
+
 ### v978: booted mixed fatal FILE/MM retry (2026-11-02)
 
 - [x] Full-system 256K PDP-6 repeated TERM followed by HUP on the
