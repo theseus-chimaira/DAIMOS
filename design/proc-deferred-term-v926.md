@@ -91,6 +91,14 @@ Do not substitute forced remote cleanup for this handoff.
 
 ### Still unproved
 
+- v957 checks production C `proc_swap_detach` with resident and disk
+  records: only VM base zero permits fallible disk-backing verification.
+  A resident process with nonzero VM base takes a nonfailing detach
+  bookkeeping path; a disk image with invalid backing returns -1 with
+  its record intact. Earlier v880 native `vm_space_destroy` tests
+  verify retryability. The proposed post-MM-free fallible-detach error
+  is therefore not reachable in the normal resident/disk state split.
+  Invalid preexisting swap-record metadata remains outside this proof.
 - v956 native ownership test couples production u-area release with
   actual MM extent validation. Wrong owner/type and outstanding pins
   preserve the whole descriptor and extent, a valid release clears

@@ -1,5 +1,15 @@
 ### v926: deferred fatal delivery across saved executive handoff (2026-11-01)
 
+- [x] v957 actual C `proc_swap_detach` resident-vs-disk branch:
+  nonzero resident VM base bypasses fallible disk-backing validation;
+  disk-backed image with zero VM base rejects unallocated backing
+  before clearing its swap record. v880 native VM destroy and v880
+  C detach regressions PASS; v955/v956 MM ownership regressions PASS.
+  The suspected resident-MM-free then fallible disk-detach double-free
+  is not reachable through these validated production branches.
+- [ ] Audit creation and publication of resident swap records so that
+  malformed nonzero disk spans cannot be silently ignored by the
+  resident detach branch; v957 does not establish corruption recovery.
 - [x] v956 native PDP-6 u-area release ownership acceptance: the real
   `proc_uarea_release` and `mm_free` leaves the process meta word and
   extent untouched on wrong owner, wrong MM type and pinned-extent
