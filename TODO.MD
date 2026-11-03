@@ -1,4 +1,4 @@
-### OOM activation gates (current as of v1092, 2026-11-03)
+### OOM activation gates (current as of v1094, 2026-11-03)
 
 Assumptions: a functioning PDP-6 APR line clock and ordinary hardware
 interrupt delivery. A physically failed system clock is a hardware
@@ -60,6 +60,11 @@ software/device deadlocks remain kernel correctness requirements.
   TTY line, XIP/VM, swap backing, PIPE/DPY, and final u-area frees.
   Distinguish retryable MM_BUSY from invalid type/owner (-4); never
   return success while an allocation still lacks a retry owner.
+  v1093 now preserves real -5/-4 results in checked TTY line release,
+  with shared best-effort/checked free implementation. v1094 prevents
+  an *owned* MEMFS XIP unpin failure from falling through to ordinary
+  MM_TYPE_PROCESS deletion. Both retain original stage owners on error.
+  Full cross-stage fault matrix remains OPEN.
 - [ ] P0-E: Booted PDP-6 fault-injection matrix: real memory pressure,
   FILE+HUP+VM/MM combinations, pending EXEC/APR fatal, unpublished
   RUN rollback, pinned TTY/XIP, concurrent provider owner, and a
@@ -71,6 +76,42 @@ software/device deadlocks remain kernel correctness requirements.
   remain ordinary errors; only exhausted requester BRK terminates
   when enabled. Preserve full KCC/KCORE/MRES size and 16K mapping
   constraints; enable the production gate only after P0-A..E pass.
+
+### v1093-v1094: typed TTY/MM and XIP/VM teardown stage fixes (2026-11-03)
+
+- [x] v1093: share one canonical-line MM release between checked TTY
+  teardown and the original void reset. The checked helper now returns
+  actual `mm_free` status: -5 pinned/busy; -4 wrong owner/type, missing
+  extent or invalid tty; zero only after a completed free or if already
+  absent. All refusals retain the line base and session owner, so a
+  later valid retry frees exactly once. No new permanent data.
+- [x] v1093 real PDP-6 C+MM native v897/v968 PASS: typed busy/invalid,
+  pointer and session retention, repaired ownership and exact free.
+  Two unsafe variants (error collapse and early pointer clear) rejected.
+  Booted 256K v898 pinned/unpin TTY session/child regression PASS:
+  5 shared helper calls, 1 pin, 1 unpin, 1 busy, zero errors. Unchecked
+  reset now shares the helper and therefore has one additional counted
+  call; neither physical pin nor release is duplicated.
+- [x] v1094: distinguish the absent MEMFS XIP provider's -1 from an
+  *owned* XIP pin-release error. `memfs_mres_xip_release` now returns
+  -4 for owned unpin refusal. VM teardown will only use MM_TYPE_PROCESS
+  fallback for non-XIP status 0 or an absent-provider -1; other negative
+  statuses preserve the original XIP VM/slot for PREVM retry. No stale
+  VM_NONE/bitmap publication, unexpected MM free or new owner table.
+- [x] Native v1094 source-linked VM/MEMFS release stages PASS: owned XIP
+  refusal and recovery, normal/absent provider fallback, MM -4/-5
+  refusal and retry, failed disk backing detach and retry; four unsafe
+  mutations rejected. Old v1086 PI6, v880 swap-detach, v1081 PREVM
+  finalizer and v1087 transitive no-allocation regressions PASS.
+- [x] Full 256K KCC production image build PASS; `__kcore_low_end`
+  `023161` -> `023154` octal (-5 resident instructions), no new BSS.
+- [x] Booted v1077 256K physical-OOM D6FS/MM guest PASS on this tree:
+  two rejected D6FS SYNC calls, one rejected MM_BUSY free, correct
+  requester recovery and surviving independent witness. The enabled
+  OOM bit exists only in the disposable test image, never production.
+- [ ] Continue P0-D with combined HUP/PIPE/DPY/u-area and swap backing
+  faults, including permanent -4 ownership corruption versus retryable
+  -5 busy. These partial leaf fixes do not close P0-D, nor enable OOM.
 
 ### v1092: P0-B fail-closed quarantine contract (2026-11-03)
 

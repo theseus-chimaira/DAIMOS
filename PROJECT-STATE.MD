@@ -1,3 +1,50 @@
+## 2026-11-03 v1093-v1094: typed MM refusal and XIP/VM commit guard
+
+P0-D identified two release-stage ambiguities, fixed without adding
+process metadata or permanent storage.
+
+v1093: `proc_tty_line_try_reset_v897` previously invoked the void
+canonical-line reset and returned generic -1 for any surviving base.
+That prevented a direct caller from distinguishing retryable MM_BUSY
+(-5) from invalid type/owner/missing extent (-4). The checked helper
+now performs the authoritative `mm_free` directly and propagates its
+real return; zero is published only after successful free or for a
+genuinely absent line. The historical `proc_tty_line_reset` void ABI
+uses that same implementation and intentionally ignores the result.
+On any failure, the original per-TTY base and associated session
+remain owned by their previous process; finalizers retain the PREVM
+stage, and no new allocation or retry field appears. The actual MM
+native v897/v968 tests pass for -5/-4 and subsequent exact free; two
+unsafe mutants (collapse to -1, premature base-clear) are rejected.
+The v898 disposable booted PDP-6 physical-MM TTY pin/refusal/unpin
+guest passes with one pin, one unpin, one busy and no errors. Its
+instrumentation sees five checked helper calls instead of four because
+the unchecked reset now shares the same leaf; no duplicate pin occurs.
+
+v1094: `vm_space_destroy` previously treated all MEMFS XIP release
+returns other than 1 as a reason to try MM_TYPE_PROCESS freeing. But
+an *owned* MEMFS XIP unpin error used -1, indistinguishable from the
+unloaded MRES's absent-provider sentinel. The provider now maps an
+owned unpin failure to -4; VM teardown accepts the MM_TYPE_PROCESS
+fallback only after status 0 (not XIP) or -1 (provider absent).
+Other negative statuses fail closed before swap-bitmap detach or VM_NONE
+publication, leaving the XIP reference and process slot as retry owner.
+The native v1094 source-linked real VM/MEMFS release leaf test covers
+owned refusal/retry, normal and absent provider fallback, MM -4/-5,
+failed swap detach/retry and four unsafe mutations. Its initial
+absent-provider test oracle needed a corrected PDP-6 SETO AC syntax;
+after fixing the fixture, all cases PASS. Existing v1086 PI6, v880
+swap detach, v1081 finalizer and v1087 release-graph checks PASS.
+
+Matched production 256K KCC full-image `__kcore_low_end` changes from
+octal `023161` to `023154`, a **five-word resident decrease**. No
+fixed-data, MRES, FILE, process or MM extent count is added. P0-D is
+still OPEN for the combined HUP/TTY/XIP/swap/PIPE/DPY/u-area retry
+and permanent invalid-owner matrix. Production OOM kill remains OFF.
+The v1077 booted 256K requester/D6FS/MM fault guest also PASSes on
+the updated tree with two D6FS SYNC refusals, one MM_BUSY refusal,
+correct requester exit/reclamation and independent witness survival.
+
 ## 2026-11-03 v1092: P0-B owner-safe provider quarantine policy CLOSED
 
 P0-B is CLOSED as a **safety/containment** gate, deliberately not a

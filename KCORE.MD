@@ -1,3 +1,27 @@
+## 2026-11-03 v1093-v1094: P0-D typed release and XIP safety
+
+The checked canonical TTY buffer reset now returns the real MM_FREE
+error (-5 pinned, -4 invalid type/owner/missing allocation), while
+the unchecked historical void reset delegates to the same release
+leaf. Neither a busy nor an invalid free drops the line base or
+changes its session; successful release commits once. Native PDP-6
+physical MM tests and the full v898 pinned-session guest PASS.
+
+MEMFS XIP release no longer conflates its *owned* unpin failure with
+the -1 absent-MRES trampoline. Owned failure returns -4; VM destroy
+does not attempt MM_TYPE_PROCESS free, detach backing or publish
+VM_NONE until owner-side retry succeeds. Non-XIP status 0 and absent
+provider -1 retain the legitimate process-MM fallback. Native v1094
+tests exercise these states, backing refusal and four unsafe variants;
+v1086 slot-0 PI6, v880 detach, v1081 PREVM and v1087 owner graph PASS.
+
+Matched full KCC image end `023161` -> `023154` octal: five fewer
+resident words, no additional data. P0-D remains OPEN for cross-stage
+idempotence and permanent corrupt-owner diagnostics. Production OOM
+termination remains disabled.
+The 256K v1077 injected D6FS/MM physical-OOM guest also PASSes with
+the expected two SYNC refusals, one MM_BUSY and surviving witness.
+
 ## 2026-11-03 v1092: fail-closed provider ownership (P0-B CLOSED)
 
 P0-B adopts a safety contract, not an unsafe generic recovery scheme.
