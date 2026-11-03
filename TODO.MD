@@ -1,3 +1,15 @@
+### v1059: historical shrink and native VM branch resolution
+
+- [x] Verify all five native-KCC VM commits and the compact process
+  teardown commit are patch-equivalent to current main; preserve their
+  ancestry and retire redundant branch names.
+- [x] Preserve three divergent October backup/shrink/KCC diagnostic
+  checkpoints in the v1059 archive before deleting old references.
+- [ ] Reproduce historical native KCC `MAKE -N ALL` / `MAKE ALL`
+  behavior against current MAKE and a fresh supported 256K guest before
+  declaring the earlier dependency-recursion failure resolved.
+- [ ] Keep further KCORE optimizations and 32K-specific tests deferred.
+
 ### v1058: native KCC staging history
 
 - [x] Verify the old minimal KCC native-source converter and Makefile

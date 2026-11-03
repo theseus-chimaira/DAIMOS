@@ -1,3 +1,24 @@
+## v1059 backup, shrink, native VM and swap diagnostic reconciliation
+
+All five commits in `merge/native-kcc-vm-20261008-v1`, and the one
+commit in `native`, are patch-equivalent to current main according to
+`git cherry`; those original commits can safely become main ancestors
+without replaying source. Original branch refs can then be removed.
+
+The three other October 5-8 checkpoints are preserved in
+`archive/legacy-shrink-kcc-diagnostics-v1059-20261103`, with their
+separate commits reachable through ancestry-only merges. Current
+picture staging and DPY scrolling already cover the old backup
+features; main allocator and native storage code has advanced beyond
+the shrink checkpoint. Historical linked RAM-size numbers are not
+current measurements.
+
+The v1 KCC swap-in instrumentation was exploratory and did not prove
+a swap-in error. Its `MAKE -N ALL` result identified deep dependency
+traversal as a failure condition, but has not been reproduced after
+native MAKE v1054; the source diagnosis is retained in its original
+plan. No unverified diagnostic BSS was merged into KCORE.
+
 ## v1058 native KCC source packaging branch
 
 Historical `push/kcc-native-source-20261008-v1` has a five-argument

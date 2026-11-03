@@ -1,3 +1,28 @@
+## 2026-11-03 v1059: consolidate native VM patches and old shrink studies
+
+`merge/native-kcc-vm-20261008-v1` contains five commits, all reported
+patch-equivalent by `git cherry main`: native KCC brk-backed VM,
+MEMFS partial-chunk free, incremental MEMFS growth, VM peer reclaim
+before BRK relocation, and libc nonadjacent free-list insertion.
+The single `native` branch commit for compact PDP-6 process teardown
+is also patch-equivalent. Their historical commits are preserved in
+main ancestry without source changes and their branch labels retired.
+
+Three further divergent tips are retained in the versioned archive
+`archive/legacy-shrink-kcc-diagnostics-v1059-20261103`:
+`backup/pre-push-20261005-v1`, `checkpoint/shrink-20261006-v1`,
+and `experiment/kcc-swap-in-diag-20261008-v1`. The original commits
+were verified reachable on the remote archive before old local/remote
+refs were deleted. Their old source is not merged: picture staging,
+Type 340 scrolling, native MM/MEMFS, accounting and EXEC behavior
+already have newer implementations in current source.
+
+The old KCC instrumentation did **not** establish a swap-in defect.
+Its historical `MAKE -N ALL` recursion failure needs a fresh check
+after the separate v1054 native MAKE lazy-scratch change. No full
+KCC self-hosting run was performed during this consolidation. No
+new kernel code, KCORE optimization or 32K-specific tests were added.
+
 ## 2026-11-03 v1058: superseded KCC source staging branch
 
 The old `push/kcc-native-source-20261008-v1` branch staged a minimal
