@@ -1,3 +1,48 @@
+## 2026-11-03 v1042: consolidation-only phase; KCORE work deferred
+
+Further KCORE optimization, including the historical syscall-dispatch
+folding and selective-MRES experiments, is deferred by request. During
+this phase no speculative KCORE changes or 32K-specific tests are made.
+Keep unreviewed KCORE branch tips until that optimization work resumes.
+
+The separate `daimos-testkit` `experiment/mm-packed-20261008-v1`
+experiment was compiled and run before retirement. Its one-word
+encoding correctly round-trips aligned physical extents, but discards
+owner identity and limits pins to two bits. Its 1.5-word encoding
+round-trips two 18-bit metadata values but limits owner IDs to 12 bits
+and pin counters to four bits. Neither preserves current MM's full
+18-bit owner and eight-bit pin fields. The experiment's original commit
+was retained in testkit main ancestry, and its branch ref removed.
+
+Historical DSH PTR/TSFS evidence code was recovered as the opt-in
+testkit `test-daimos-simh-ptr-tsfs-evidence-v1042` target. It checks
+the bounded DSH image, five uppercase literal callers, boot media
+identity and captured SIMH milestones. Its static source check passes
+and rejects injected lowercase callers; it refuses invocation without
+a real image build and console log. No PTR/TSFS boot was performed in
+this consolidation. The old `dsh-ptr-tsfs-size-20261016-v1` literal
+change is already integrated and tested by DSH v1016, so its obsolete
+branch label can be retired. A second supervisor branch label with an
+identical commit tip was removed without dropping any source history.
+
+## 2026-11-03 v1040: D6FS checker source consolidation
+
+The historical `d6fsck-fcb-owner-test-v154-20261015` branch exposed a
+host-tool source divergence rather than a KCORE issue: the installed
+`d6fsck` and DAIMOS's current host source pass 260 FCBs, but the
+independently maintained `pdp10-tools/d6fsck.c` still stored block
+owner IDs in unsigned bytes. FCB index 254 has owner ID 256 and its
+byte representation wraps to zero, making a live allocated block look
+leaked. The pdp10-tools checker now uses a full-width (32-bit) block
+owner array and retains the owner ID in all mark/repair comparisons.
+
+The recovered daimos-testkit v1040 source-built checker regression
+passes against both DAIMOS host source and corrected pdp10-tools
+source. The original installed-checker owner-width regression also
+passes. The historical v154 test's swap-fixture source changes are
+already superseded by the current testkit production-ABI fixture.
+No guest kernel, KCORE, or 32K-specific test was changed or run.
+
 ## 2026-11-03 v1038: reject DSK/DRM extraction, accept VFS parent fix
 
 Reassessed `dee93223` from the historical selective-MRES integration

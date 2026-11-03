@@ -1,3 +1,17 @@
+### v1042: consolidation priority; KCORE optimizations on hold
+
+- [x] Stop further KCORE source optimization at the user's request;
+  preserve the current syscall-folding and selective-MRES candidates.
+- [x] Recover and verify the historical D6FS host-checker owner-width
+  test against source, fixing independent `pdp10-tools` source v1040.
+- [x] Classify and retire the incompatible MM packed-descriptor
+  experiment; retain its source commit in testkit main ancestry.
+- [x] Restore optional PTR/TSFS evidence validation in testkit v1042;
+  do not count it as a new boot acceptance run.
+- [ ] Continue semantic consolidation of remaining non-KCORE DSH,
+  supervisor, simulator, and test-infrastructure branches.
+- [ ] Resume KCORE optimization only after the deferral is lifted.
+
 ### v1000: gated requester OOM dispatcher (2026-11-02)
 
 - [x] Default-off BRK dispatch checks AC1 failure and AC2 MM_ERR_NOMEM;

@@ -1,3 +1,38 @@
+## v1042 non-KCORE consolidation and deferral
+
+KCORE optimization is explicitly paused. The independent
+`experiment/mm-packed-20261008-v1` testkit experiment was recompiled
+and passed its internal round-trip/rejection checks, but its layouts
+remove production MM owner/pin capacity; it is not an allocator
+replacement. Its source commit remains reachable via testkit main's
+archival merge, while the historical branch label was deleted.
+
+`dsh-ptr-tsfs-validation-20261016-v1` contained a unique console
+evidence validator absent from testkit main. It is now the opt-in
+v1042 validator requiring real build and log paths; source-only checks
+pass, but real boot acceptance was not rerun. The DAIMOS historical
+DSH compact-literal branch duplicates the v1016 implementation and
+regression and is ready to retire after ancestry preservation. The
+`supervisor-idle-tty-shrink-20261013-v6` local branch had exactly the
+same commit hash as `supervisor-idle-tty-activate-20261013-v5` and
+was deleted as a redundant ref; the latter retains the full history.
+The distinct supervisor functionality is not claimed as current.
+
+## v1040 source-built D6FS checker owner-width consolidation
+
+Historical testkit branch `d6fsck-fcb-owner-test-v154-20261015` had a
+useful test missing from main: it builds the checker from its source
+instead of checking only the installed binary. It caught an independent
+`pdp10-tools` source bug (8-bit FCB owners) that the existing installed
+checker regression could not see. The production DAIMOS host checker
+already used 32-bit owner identifiers. The independent source was fixed
+and validated with 260 files, including FCB owner IDs above 255.
+Testkit v1040 now runs the source-built check against either source
+tree. The branch's older PURE swap fixture changes have been replaced
+by current testkit code, which includes the v481 entry and v30 storage
+runtime leaves. This is host-tool and test consolidation, not KCORE
+optimization; all 32K tests remain deferred.
+
 ## v1038 selective-MRES driver extraction and VFS reconciliation
 
 The `kcore-mres-selective-integration-20261023-v1` branch is only
