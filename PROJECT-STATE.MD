@@ -1,3 +1,37 @@
+## 2026-11-03 v1054: native MAKE lazy recursion-scratch consolidation
+
+The historical `experiment/native-make-recursive-frame-20261008-v1`
+identified a useful userland RAM reduction but was never accepted
+after its self-hosting timeout. Current MAKE had subsequently moved
+the recursion scratch outside the string arena, yet still allocated
+all 33 large implicit-rule records after parsing. Its current code
+has now been adapted to cache just one record per recursion depth
+actually visited, without altering dependency traversal semantics.
+
+Native KCC MAKE compiles and links, and a freshly built 256K
+full-profile PDP-6 image passes both v1054 guest probes: a six-level
+dependency chain and a dependency cycle that must be rejected. The
+unmodified baseline passes the same behavioral probes. The new testkit
+`test-daimos-make-lazy-depth-v1054` target also verifies the lazy
+allocation source contract and rejects the old bulk-allocator source.
+It requires an explicitly supplied 256K image and is not a default
+boot or 32K test. GCC also links the userland binary, with unrelated
+existing target-libc/include warnings in that toolchain path.
+
+KCC emits a 212-character implicit scratch record (53 PDP-6 words).
+The previous unconditional 33-record heap allocation reserved 1749
+words plus one heap header. At six visited depths the new layout uses
+318 record words, six heap headers, and a 33-word static pointer array.
+Including two-word heap headers, this calculates to about 1389 fewer
+process words for that example; this is a source/ABI estimate, not a
+measured guest peak-RAM difference. KCC linked MAKE text changed from
+025124 to 025116 octal (-6 words), and BSS from 001526 to 001566
+octal (+32 words). At the full 33-depth bound the multiple headers and
+pointer array could instead cost 96 words more than the old full slab;
+deepest-case peak remains a follow-up memory test. A full native
+`MAKE ALL` self-hosting run was not repeated. KCORE source is unchanged,
+and 32K-specific testing remains deferred.
+
 ## 2026-11-03 v1050: archive superseded DSH/INIT source branches
 
 Four divergent historical DAIMOS userland/INIT branches are now retained

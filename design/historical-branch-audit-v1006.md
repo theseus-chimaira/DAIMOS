@@ -1,3 +1,17 @@
+## v1054 native MAKE recursion experiment recovery
+
+Historical `experiment/native-make-recursive-frame-20261008-v1`
+correctly identified the high per-depth implicit-rule stack cost.
+Current main had already implemented separate post-parse scratch
+storage and a native assembler `memcpy` implementation, so the old
+branch's entire source or C `memcpy` must not be replayed. Its useful
+remaining change is lazy per-depth scratch allocation, now adapted
+to current native MAKE with a 256K KCC image and two passing guest
+probes. The old full-MAKE-ALL timeout is historical and not thereby
+resolved. The original branch commits may be preserved in main
+ancestry and the obsolete branch name retired once integration is
+committed and the testkit source-contract target is available.
+
 ## v1048-v1050 userland and simulator branch consolidation
 
 PDP-6 simulator interactive console PC regression v115 was distinct

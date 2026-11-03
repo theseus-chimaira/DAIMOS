@@ -1,3 +1,15 @@
+### v1054: native MAKE per-depth scratch recovery
+
+- [x] Recover the historical native MAKE lazy recursion scratch scheme
+  in current userland source, without adding the obsolete C `memcpy`.
+- [x] Build native KCC MAKE and 256K full-profile guest; pass six-level
+  dependency traversal and cycle rejection, with a baseline control.
+- [x] Provide a versioned opt-in 256K testkit target with source guard.
+- [ ] Measure actual peak native MAKE process memory at shallow and
+  maximum recursion depths, and complete a full self-host `MAKE ALL`.
+- [ ] Continue historical branch consolidation; KCORE optimizations
+  and 32K-specific acceptance remain deferred.
+
 ### v1050: legacy source and test branch consolidation
 
 - [x] Integrate SIMH interactive PC/breakpoint/step regression v1048.

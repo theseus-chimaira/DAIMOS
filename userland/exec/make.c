@@ -171,15 +171,14 @@ make_grow_graph(void **array, unsigned int *capacity, unsigned int need,
         *capacity = count;
         return 0;
 }
-/* Parser strings are kept in a compact growable arena.  The fixed-depth
- * implicit recursion scratch stack is allocated separately after parsing,
- * avoiding unused scratch reservation in every arena growth step. */
+/* Parser strings are kept in a compact growable arena.  Implicit-rule
+ * scratch is allocated only for recursion depths actually visited.  A
+ * fixed 33-slot array of scratch records would reserve about 1700
+ * process words, even for a shallow or empty dependency graph.
+ * The per-depth records remain stable while deeper calls run. */
 static char *make_arena;
-static struct make_implicit *make_implicit_stack;
+static struct make_implicit *make_implicit_frames[MAKE_MAX_DEPTH + 1U];
 static unsigned int make_arena_capacity;
-#define MAKE_IMPLICIT_SLOT_CHARS \
-        (((sizeof(struct make_implicit) + sizeof(kword_t) - 1U) / \
-        sizeof(kword_t)) * sizeof(kword_t))
 static unsigned int make_rule_count;
 static unsigned int make_dep_count;
 static unsigned int make_recipe_count;
@@ -1742,13 +1741,18 @@ make_build(const char *name, struct make_result *out, unsigned int depth)
 
         if (depth > MAKE_MAX_DEPTH)
                 return 1;
-        /* Dedicated scratch storage avoids pinning spare arena capacity
-         * during parsing.  Allocated once after parsing completes. */
-        if (make_implicit_stack == 0) {
-                make_diag("IMPLICIT SCRATCH EXHAUSTED", name);
-                return 1;
+        imp = make_implicit_frames[depth];
+        if (imp == 0) {
+                /* One allocation per depth reached, reused for every
+                 * subsequent goal at that depth.  No recursive pointer
+                 * is invalidated by growing another depth's buffer. */
+                imp = realloc(0, sizeof(*imp));
+                if (imp == 0) {
+                        make_diag("IMPLICIT SCRATCH EXHAUSTED", name);
+                        return 1;
+                }
+                make_implicit_frames[depth] = imp;
         }
-        imp = &make_implicit_stack[depth];
         ri = make_find_rule(name);
         if (ri >= 0) {
                 rule = &make_rules[ri];
@@ -2087,12 +2091,6 @@ main(int argc, kword_t **argv, kword_t **envp)
                                 make_arena_capacity = needed;
                         }
                 }
-        }
-        make_implicit_stack = realloc(0, (MAKE_MAX_DEPTH + 1U) *
-            sizeof(*make_implicit_stack));
-        if (make_implicit_stack == 0) {
-                make_diag("IMPLICIT SCRATCH EXHAUSTED", 0);
-                return 2;
         }
         /* A separate suffix index avoids scanning every ordinary rule for
          * every implicit target.  Never allocate if none are present. */
