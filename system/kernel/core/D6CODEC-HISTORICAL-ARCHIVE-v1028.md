@@ -24,3 +24,17 @@ Before a future cutover, follow the staged
 `D6CODEC-INTEGRATION-TODO-v054.md` and revalidate stream geometry,
 ABI register preservation, stack, all producers and all consumers
 together. Never ship mixed old/new codec images.
+
+## v1055: recover original staged-codec branch ancestry
+
+The remote-only v053/v054 branches from 2026-10-13 are now retained
+as ancestry of this experimental archive:
+
+- `d6codec-staging-v053-20261013`
+- `d6codec-integration-todo-v054-20261013`
+
+Current DAIMOS main already carries the v053 decoder and staging note
+unchanged. Its v053 encoder and v054 integration checklist have been
+revised since the original branch tips. The older source and docs are
+preserved for reference, not substituted for the current staged codec.
+No production cutover, KCORE optimization or 32K acceptance was run.
