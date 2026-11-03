@@ -1,3 +1,29 @@
+## 2026-11-03 v1028: consolidate grouped D6CODEC development branches
+
+Four obsolete DAIMOS grouped-codec development branch names and six
+corresponding daimos-testkit branch names were removed locally and on
+origin after their independent commits were made ancestors of two
+versioned archive branches:
+
+- DAIMOS: `archive/d6codec-experimental-cutover-v1028-20261103`
+- daimos-testkit: `archive/d6codec-grouped-tests-v1027-20261103`
+
+These archives retain test and implementation history, not active
+functionality. Current production still uses D6LZ36 for boot, EXEC,
+VFS, PURE backing and swap. The grouped encoder/decoder and v055 ABI
+wrapper remain staged and inactive. The existing native PDP-6
+`d6codec-kcore-abi-v055` test passed against current main; its testkit
+fixture path was corrected to resolve within the executing testkit
+worktree. Historical grouped PURE swap v091 did not link against the
+newer backing store and process-state interfaces and was not accepted
+as a current regression. No 32K-specific tests were run.
+
+The grouped codec format must be switched atomically only after all
+producer, boot, consumer, ABI, memory and failure-injection acceptance
+specified in `D6CODEC-INTEGRATION-TODO-v054.md`. No production kernel,
+boot-loader or codec code changed in this consolidation, and no resident
+RAM saving is claimed. Both archival histories remain accessible.
+
 ## 2026-11-03 v1019: recover failed-pipeline child reaping
 
 Historical DSH v53 exposed a real gap still present in current main:

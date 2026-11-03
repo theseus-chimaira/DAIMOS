@@ -1,3 +1,19 @@
+## v1028 D6CODEC branch consolidation
+
+The v075/v078/v089/v092 DAIMOS single-format grouped cutover histories
+are now reachable through the sole DAIMOS experimental archive branch
+`archive/d6codec-experimental-cutover-v1028-20261103`. Their six testkit
+counterparts (v075/v078/v079/v085/v089/v091) are reachable through
+`archive/d6codec-grouped-tests-v1027-20261103`. Each archival merge used
+`ours` to preserve distinct historical commit trees, not to claim the
+experimental implementations are compatible with current production.
+All ten original local and origin branch references were deleted after
+checking ancestry and exact remote tips. The active v055 staged-codec
+native PDP-6 ABI check passes; the v091 PURE swap test no longer links
+against current backing-store and process state APIs and was not ported.
+The existing D6LZ36 production path is unchanged and 32K tests remain
+deferred. Archive branches are retained for a future atomic codec cutover.
+
 ## v1019 historical DSH failure cleanup recovery
 
 The old DSH v53 source branch was not wholly redundant: the current
