@@ -1,3 +1,16 @@
+### v1082: transactional NEWSESSION TTY release (2026-11-03)
+
+- [x] Preflight last-member canonical input release before rewriting
+  pgrp/session/TTY state. Failed MM free preserves the old live owner,
+  returns -1 and remains retryable without an extra state word.
+- [x] Native PDP-6 v1082 positive/negative regression: pinned refusal,
+  successful retry and other-member ownership. Original v1081 path
+  correctly fails the negative control.
+- [x] Matched full KCC KCORE image: +4 instruction words
+  (`023112` -> `023116` octal); zero persistent data words.
+- [ ] Continue transitive fatal-close and VM/MM allocation-free proof;
+  maintain the disabled production OOM option until all P0s close.
+
 ### v1081: final-session TTY MM ownership and targeted rollback (2026-11-03)
 
 - [x] Preserve a non-leader's final TTY canonical input on a refused

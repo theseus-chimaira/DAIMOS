@@ -1,3 +1,32 @@
+## 2026-11-03 v1082: NEWSESSION checks TTY MM release before publishing identity
+
+PROCCTL_NEWSESSION previously changed the caller's pgrp, session ID and
+TTY state before invoking proc_tty_release_session. If the caller was
+the last member of the old session and MM refused to free its canonical
+TTY input, the original TTY session remained attached with no live
+process able to retry the release. The syscall still returned success.
+
+v1082 calls the existing last-member TTY release with the leaving slot
+excluded from the session scan *before* writing any process identity.
+An MM refusal returns -1 with old pgrp/session/TTY state untouched;
+retry after the owner becomes releasable succeeds. When other session
+members remain, their TTY remains attached and the caller may leave.
+The checked MM routine is non-sleeping; the successful path reloads
+the current descriptor/slot after the callback instead of saving
+caller-scratch registers on a persistent stack. No new owner table,
+retry state, MM allocation, or permanent data is introduced.
+
+Native source-linked PDP-6 positive and original-v1081 negative
+controls pass, including true LAST-member refusal, success after
+MM unpin, and another-member session retention. Existing process/TTY
+full guest passes. Matched noninstrumented KCC KCORE low-end:
+`023112` -> `023116` octal (+4 words); zero data growth.
+The complete TTY-session-state and session-teardown simulator guests
+PASS, as does the 256K v1077 physical-OOM guest with two D6FS SYNC
+refusals, one MM_BUSY refusal, and recovered independent witness.
+The P0 transitive allocation-free closure and foreign provider owner
+proof remain open. Production OOM termination remains disabled.
+
 ## 2026-11-03 v1081: final-member TTY MM refusal uses existing PREVM retry
 
 The final session member (including a non-leader) must not free its

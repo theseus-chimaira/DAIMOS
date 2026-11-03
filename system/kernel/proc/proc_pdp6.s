@@ -2389,8 +2389,21 @@ proc_control_getdomain:
 
 proc_control_newsession:
         jumpn   2,kret_neg1
+        ; v1082: do not publish a new session until its former TTY
+        ; releases its canonical line. The session scanner excludes
+        ; the caller via AC3 while the old membership is still live.
+        ; A refused MM free must leave the caller in its old session,
+        ; which is the remaining natural retry owner for that TTY.
         hlrz    5,(4)
         ldb     1,[POINT 8,PROC_FDCTL_OFFSET(5),32]   ; old session for TTY release
+        move    2,3                    ; leaving slot for session scanner
+        pushj   17,proc_tty_release_session
+        jumpn   1,kret_neg1            ; leave session/pgrp/TTY untouched
+        ; Checked TTY MM free never sleeps or changes the current slot.
+        ; Reload its caller-scratch AC3/AC4 instead of stacking them.
+        move    3,proc_current_slot
+        move    4,proc_current_ptr
+        hlrz    5,(4)
         move    6,(4)
         andcmi  6,0377                 ; preserve LH, clear pgrp in RH
         move    7,3
@@ -2400,8 +2413,6 @@ proc_control_newsession:
         dpb     3,[POINT 8,PROC_FDCTL_OFFSET(5),32]
         hrloi   6,07777
         andm    6,PROC_FDCTL_OFFSET(5)               ; TTY state -> NO_TTY
-        move    2,3                    ; leaving slot
-        pushj   17,proc_tty_release_session
         move    1,proc_current_slot
         popj    17,
 
