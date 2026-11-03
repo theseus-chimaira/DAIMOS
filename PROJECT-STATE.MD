@@ -1,3 +1,34 @@
+## 2026-11-03 v1050: archive superseded DSH/INIT source branches
+
+Four divergent historical DAIMOS userland/INIT branches are now retained
+through `archive/legacy-dsh-init-experiments-v1050-20261103`:
+`dsh-phase0-history-acceptance-20261012-v7`,
+`supervisor-idle-tty-activate-20261013-v5`,
+`diag-dsh-v43-entry-20261022-v52`, and
+`dsh-v53-acceptance-state-20261022-v55`. Original commits are ancestors
+of the versioned archive, while their obsolete local and available
+remote branch names have been removed. The archival `ours` merges
+preserve history only; they do **not** integrate incompatible source.
+
+Current INIT retains its own INITTAB loop. The historical separate
+supervisor, EDCORE, lock-based DSH history repair, and related PI
+diagnostics are not current production features. The useful pipeline
+child-reaping fix was independently recovered and tested in v1019.
+The companion testkit history is retained as
+`archive/legacy-dsh-supervisor-tests-v1049-20261103`; both source and
+test archives have documented boundaries. The D6FS bounded-undo host
+experiment passes its 5,805 modeled interruption cases but provides
+no proven hardware persistence guarantees or implemented journal.
+
+The independent PDP-6 simulator console-PC test has also been restored
+to testkit main as `test-daimos-simh-console-pc-v1048`, passing its
+startup, interactive, breakpoint and step checks. The historical
+`pdp6-simh-console-pc-20261021-v115` local branch must remain checked
+out for now: its separate DevSpace2 worktree has three untracked DTFS
+diagnostic files. Main already preserves its commit history, but the
+dirty worktree must not be deleted or modified without reconciling
+those files. KCORE optimization and 32K-specific tests stay deferred.
+
 ## 2026-11-03 v1047: non-KCORE consolidation, rejected DSH fold threshold
 
 Further KCORE optimization remains deferred. The historical DSH

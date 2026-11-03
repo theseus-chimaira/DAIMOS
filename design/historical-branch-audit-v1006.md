@@ -1,3 +1,23 @@
+## v1048-v1050 userland and simulator branch consolidation
+
+PDP-6 simulator interactive console PC regression v115 was distinct
+from the existing GO-address PC-first test. The original simulator
+test was recovered into testkit main and passed alongside v155.
+The v115 branch's old DTFS diagnostics remain history only, not
+accepted writable-root evidence. Its local branch is checked out in
+a worktree containing three untracked diagnostics; preserve that
+worktree rather than force-deleting its branch.
+
+Four divergent DAIMOS DSH/INIT branch tips have been consolidated into
+`archive/legacy-dsh-init-experiments-v1050-20261103`, and two old
+testkit test branches into
+`archive/legacy-dsh-supervisor-tests-v1049-20261103`. Original commits
+are reachable from these archives; `ours` ancestry merges do not mean
+the historical source is safe to use with present ABI and INITTAB.
+The standalone D6FS undo experiment passed 5,805 modeled interruption
+cuts but was not promoted to a production recovery implementation.
+No KCORE optimization or 32K test was performed.
+
 ## v1047 userland fold safety and historical-status consolidation
 
 `fix/dsh-fold-full-objects-v1`: current main already folds both KCC C
