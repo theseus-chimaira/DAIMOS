@@ -1,3 +1,26 @@
+## 2026-11-03 v1078: fatal FILE closure avoids foreign-provider lock wait
+
+Fixed `fs_provider_lock_wait`: a process in private fatal FILE cleanup
+now returns `-5` when another slot owns the shared DTFS/D6FS/TSFS
+lease, instead of sleeping inside the serialized gateway indefinitely.
+The existing `file_table[-2]` fatal-close bit is consulted only on
+contention. The real provider lease is never stolen or released;
+`file_close_all` preserves the FD, and its private owner retry/backoff
+retains the stable executive stack. Ordinary wait/revalidation, owner
+recursion, free dispatch and MEMFS bypass remain unchanged.
+
+The new native PDP-6 v1078 test passes the foreign-fatal, normal-wait,
+free-dispatch and self-recursion matrix. It fails against the original
+gateway as a negative control. Older native gateway/rename regressions
+v326/v327/v866/v915/v916/v917/v428/v681/v466 and static owner audits
+pass. No new permanent data; linked KCORE low-end increases by six
+words (`023151` -> `023157`) in the comparable full-profile image.
+The full 256K v1077 guest OOM/D6FS/MM retry test also PASSes on this
+code: two provider refusals, one u-area MM_BUSY, successful retirement
+and unrelated PIPE-process progress, without altered memory accounting.
+This does NOT allow forced cancellation of an active provider, prove
+transitive allocation-freedom, or enable production OOM termination.
+
 ## 2026-11-03 v1077: combined provider/MM refusal on real requester OOM
 
 An isolated `daimos-testkit` 256K PDP-6 image with test-only OOM

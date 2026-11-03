@@ -1,3 +1,42 @@
+## 2026-11-03 v1078: fatal-owner FILE close does not wait on a foreign provider
+
+The serialized DTFS/D6FS/TSFS MRES gateway formerly put **all** foreign
+lease contenders to sleep in `proc_wait_event`, including a process
+already retiring through `proc_fatal_close_current_v879`. If a
+different provider retained the shared lease indefinitely, this dying
+owner could never return from `file_close_all` to its bounded-backoff
+private retry; it would stay stuck inside the gateway wait.
+
+The gateway now checks the **existing** `PROC_FATAL_CLOSE_BIT` in
+`file_table[-2]` only after a held foreign lease is established.
+Fatal owners receive `-5` before entering the provider, with their
+request ACs restored; the FILE descriptor remains owned and the
+existing private fatal retry sleeps and reattempts closure. Ordinary
+foreign waiters still sleep/revalidate, recursive owners still refuse,
+free providers still dispatch and only the real provider return
+unlocks/wakes waiters. The offset is loaded using AC1, not AC0
+(which cannot index PDP-6 memory); AC1 is already saved in the
+existing seven-AC gateway frame. No new persistent data or ABI.
+
+Source-extracted native PDP-6 testkit v1078 PASSes fatal fast refusal,
+no unexpected provider execution/wait, normal foreign wait/recovery,
+free-provider fatal dispatch and recursion. Original v1077 gateway
+fails the new native negative control. Existing native provider
+gateway/indirection/lock and rename tests v326/v327/v866/v915/v916/
+v917/v428/v681/v466 PASS; provider ownership/static v954/v986/v987
+checks PASS. The comparable full-profile KCC KCORE linked end rises
+from `023151` to `023157`: **six additional code words, zero
+new permanent data words**.
+The full 256K v1077 requester-only physical-OOM guest with two real
+D6FS SYNC refusals and one u-area MM_BUSY also PASSes on the revised
+gateway (FILE 3/2, MM 2/1; `<KWP`; bystander and accounting preserved).
+
+This fixes a *waiting-to-acquire* deadlock of the fatal owner, not
+a provider already executing an unbounded operation. It cannot cancel
+an in-flight provider call or guarantee reclamation when a provider
+permanently refuses to return. Production requester OOM termination
+remains **DISABLED**.
+
 ## 2026-11-03 v1077: physical-OOM exit across real D6FS and MM refusals
 
 The isolated full-system 256K PDP-6 testkit v1077 guest enables the

@@ -1,6 +1,7 @@
 ; fs_mres.s -- fixed resident bridge to optional filesystem MRES.
         .text
         .globl fs_provider_reg_call
+        .globl file_table
         .globl fs_memfs_service_jump
         .globl fs_dtfs_service_jump
         .globl fs_d6fs_service_jump
@@ -206,7 +207,22 @@ fs_provider_lock_wait:
         hlrz    0,fs_provider_ready
         subi    0,1                   ; decode owner_slot+1
         came    0,proc_current_slot
+        jrst    fs_provider_lock_foreign_v1078
+        jrst    fs_provider_lock_refuse_v917
+fs_provider_lock_foreign_v1078:
+        ; Fatal FILE close is already on the owner's private retry path.
+        ; Do not sleep indefinitely behind a foreign serialized provider:
+        ; return BUSY before dispatch, leaving its lease untouched. The
+        ; descriptor survives and the owner resumes after its backoff.
+        ; Ordinary callers continue sleeping until the holder returns.
+        ; AC0 is not an index register on PDP-6. Use saved AC1 for the
+        ; u-area-relative load; the request frame restores AC1 on return.
+        skipn   1,file_table
         jrst    fs_provider_lock_sleep_v915
+        move    1,-2(1)               ; u-area FDCTL before FILE table
+        trnn    1,04                  ; skip wait when fatal-close is set
+        jrst    fs_provider_lock_sleep_v915
+        jrst    fs_provider_lock_refuse_v917
 fs_provider_lock_refuse_v917:
         ; Restore the same request ACs as successful dispatch before
         ; discarding the frame. AC1 is then replaced by the -5 result.

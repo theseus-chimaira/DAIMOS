@@ -1,3 +1,25 @@
+### v1078: foreign provider contention during fatal FILE close (2026-11-03)
+
+- [x] On a foreign-held serialized provider lease, use the existing
+  private fatal-close bit to refuse immediately with `-5` instead
+  of blocking the dying owner in `proc_wait_event`. Preserve the
+  foreign owner's lease, the failed FILE descriptor and the normal
+  owner-side retry/backoff.
+- [x] Native PDP-6 v1078 verifies fatal fast refusal, free-provider
+  dispatch, ordinary wait/revalidation and recursive refusal. Old
+  gateway fails negative control; the current gateway and inherited
+  provider/rename target and static ownership tests PASS.
+- [x] Full-system 256K v1077 provider/MM-faulted requester-only OOM
+  regression PASS on v1078 gateway: D6FS 3/2, MM 2/1, independent
+  witness and memory accounting intact.
+- [x] No new permanent RAM words. Six additional KCORE code words in
+  comparable full-profile KCC image (`023151` to `023157` octal).
+- [ ] A provider that has *already entered* an unbounded operation
+  still has an owner and live stack/IO buffers; no safe force-unlock,
+  abort or memory reclamation follows from v1078. Design provider
+  quiescence/cancellation only with an explicit completion proof.
+  Automatic requester OOM termination remains OFF.
+
 ### v1077: combined FILE-provider/MM refusal during physical OOM (2026-11-03)
 
 - [x] Inject two real D6FS SYNC failures and one u-area MM_BUSY in a
