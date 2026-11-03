@@ -1,3 +1,17 @@
+## 2026-11-03 v1074: reject orphaned provisional BRK MM allocations
+
+Corrected the PDP-6 BRK full-relocation fallback: a failed old-extent
+`mm_free` now retains its exact error code, and an additional failure
+while releasing the unpublished replacement triggers the resident
+storage-invariant HALT rather than losing the replacement allocation.
+No persistent metadata, user ABI, or automatic OOM-kill policy change.
+The source-linked PDP-6 test passes all three branches, while the
+old source and a deliberately missing second-free guard fail the test.
+GCC KCORE and full KCC boot-image builds pass; the KCC boot reaches
+INIT/LOGIN. The full `daimos-brk-v1` KCC 256K guest runtime regression
+also passes growth, preserved heap data and shrink.
+Permanently refusing providers and allocation-free OOM teardown remain P0.
+
 ## 2026-11-03 v1070: complete cross-repository branch cleanup
 
 The full `~/git` branch audit (twelve repositories) found additional

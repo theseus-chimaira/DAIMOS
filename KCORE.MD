@@ -1,3 +1,29 @@
+## 2026-11-03 v1074: BRK double-MM rollback cannot silently orphan a new extent
+
+Source audit of `proc/vm_pdp6.s` found a real failure path during
+nonadjacent BRK growth: if `mm_free` refused to release the old mapping,
+the kernel attempted to free the provisional new extent but ignored a
+second MM failure and returned to user mode. The provisional allocation
+was never published in the process descriptor; losing its base would
+orphan an MM_TYPE_PROCESS extent and make later recovery impossible.
+
+The rollback now preserves the *exact* old MM refusal (-4 for invalid
+ownership/type, -5 for a pinned extent) in an existing stack local,
+checks the new-extent `mm_free`, and enters the existing resident
+`proc_swap_storage_invariant_v30` HALT on an impossible double refusal.
+The successful rollback still preserves old VM state/APR/BRK and returns
+the original failure; there is no new allocation or permanent data.
+The new `daimos-testkit` PDP-6 source-extracted test verifies -4/-5
+clean rollback and second-free refusal, with two failing negative
+controls (original v1073 source and removal of the new guard).
+GCC KCORE and full-profile KCC image build PASS. The KCC image boots
+through INIT to LOGIN, and the full native `daimos-brk-v1` guest
+regression passes BRK/SBRK growth, data preservation and shrink.
+
+Automatic requester OOM termination remains DISABLED. This fix seals
+one MM rollback invariant; it does not solve permanently refusing
+FILE/MM providers or prove allocation-free, bounded fatal teardown.
+
 ## 2026-11-02 v970: deferred fatal-event precedence
 
 PDP-6 foreign fatal delivery now records INT, TERM, HUP and PIPE on a

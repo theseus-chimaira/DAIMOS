@@ -1,3 +1,17 @@
+### v1074: BRK rollback ownership under two MM failures (2026-11-03)
+
+- [x] Prevent a silent orphan of the unpublished replacement VM extent
+  when both old-extent release and provisional-extent rollback fail.
+  The second MM refusal enters the existing resident invariant HALT.
+- [x] Preserve the exact old MM failure cause (-4 versus -5) when the
+  replacement extent is successfully freed. Native PDP-6 branch tests
+  PASS; both pre-fix and missing-guard negative controls FAIL as expected.
+- [x] Build full-profile KCC image and GCC KCORE; KCC boots to LOGIN.
+  Full native KCC 256K BRK/SBRK growth, heap preservation and shrink
+  regression PASS.
+- [ ] Continue owner-side FILE/MM/provider teardown and physical-OOM
+  process-retirement acceptance. Automatic OOM kill remains disabled.
+
 ### v1065: final branch-tip closeout
 
 - [x] Classify the final two divergent KCORE source tips against
