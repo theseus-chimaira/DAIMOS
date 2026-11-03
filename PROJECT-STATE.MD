@@ -1,3 +1,22 @@
+## 2026-11-03 v1075: full 256K PDP-6 requester-only OOM proof (test-only activation)
+
+The native `daimos-testkit` v1075 fixture uses an isolated copy of the
+kernel with the existing `PROC_OOM_BRK_ENABLED_V1000` compile-time guard
+changed from 0 to 1. A valid 18-bit BRK request encounters real
+insufficient physical memory. The requesting child exits with the
+kernel's OOM status 1, a separate blocked PIPE reader stays alive and
+resumes after its writer closes, and the process memory accounting
+returns to the parent's initial value. The full guest reaches a
+controlled HALT (`<KWP`). A separate full-guest control with the
+default flag 0 returns -1 from BRK instead of terminating its caller
+(`D!S`). Both use a disposable 256K simulator image, without changing
+production source or persistent KCORE memory.
+
+This accepts only the ordinary provider-success path. A forever-busy
+FILE/MM provider can still prevent bounded reclamation, and complete
+allocation-freedom through all fatal teardown callbacks is not proved.
+Automatic OOM termination remains DISABLED in production.
+
 ## 2026-11-03 v1074: reject orphaned provisional BRK MM allocations
 
 Corrected the PDP-6 BRK full-relocation fallback: a failed old-extent

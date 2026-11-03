@@ -1,3 +1,24 @@
+## 2026-11-03 v1075: booted physical-OOM requester and witness acceptance
+
+A new testkit full-system PDP-6 256K fixture tests the already-existing
+BRK OOM dispatch under a disposable, test-only build with
+`PROC_OOM_BRK_ENABLED_V1000=1`. The requesting child grows its logical
+break to valid 0776000 octal, which cannot be physically satisfied
+after allocation/reclaim. Its real fatal-owner FILE/HUP/VM/u-area path
+exits with status 1; the unrelated child remains blocked on a PIPE,
+later wakes after close, and exits normally. The parent confirms that
+process-count and process-word accounting return to baseline and then
+HALTs. Guest output: `<KWP`, no error marker. This is a complete
+256K physical-OOM *success-path* test, not a mocked syscall.
+
+The separate full-guest negative control uses the identical request and
+unchanged production flag 0: BRK returns -1 to the child, which emits
+`D`; the parent observes an exit status other than 1 and emits `!S`.
+No runtime KCORE changes or additional resident words are introduced.
+The owner-private provider-failure retry, unresponsive provider and
+allocation-free bounded teardown gates remain P0; production OOM killing
+must remain OFF.
+
 ## 2026-11-03 v1074: BRK double-MM rollback cannot silently orphan a new extent
 
 Source audit of `proc/vm_pdp6.s` found a real failure path during

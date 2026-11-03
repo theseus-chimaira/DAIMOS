@@ -1,3 +1,18 @@
+### v1075: full-system requester-only physical OOM (2026-11-03)
+
+- [x] Boot a disposable 256K PDP-6 with only the test copy of
+  `PROC_OOM_BRK_ENABLED_V1000` enabled. A valid physical-memory shortage
+  terminates only the requesting child with status 1; a PIPE-blocked
+  bystander survives, resumes, and exits normally. Memory accounting
+  returns to the original process-word and slot count.
+- [x] Full-guest default-off negative control: identical BRK returns -1
+  to the requesting child rather than killing it. Both behaviors are
+  reproduced by versioned `daimos-testkit` tests; no production flag or
+  kernel resident data was changed.
+- [ ] Prove bounded, allocation-free owner teardown across all FILE,
+  session HUP and MM/provider refusal paths, including indefinitely
+  stalled providers. Keep automatic OOM killing disabled until safe.
+
 ### v1074: BRK rollback ownership under two MM failures (2026-11-03)
 
 - [x] Prevent a silent orphan of the unpublished replacement VM extent
