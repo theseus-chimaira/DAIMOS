@@ -1,3 +1,21 @@
+### v1080: DRM236 full-FIFO wait regression (2026-11-03)
+
+- [x] Fix the v1079 loss of conditional branching in
+  `drm236_runtime_queue_full`: a third caller must wait for an
+  active owner's descriptor, not retry forever while the single
+  pending slot is already occupied.
+- [x] Native PDP-6 source-linked v1080 test PASS: third request waits
+  on active owner, retries and claims engine, waits on its own
+  descriptor and returns with correct completion. Original v1079
+  source FAILS negative test.
+- [x] v1079 native watchdog, online real-SIMH Type-167/236 transfer
+  and full 256K physical-OOM FILE/MM regression PASS.
+- [x] One-word instruction replacement, with no KCORE/MRES or
+  persistent data growth.
+- [ ] Design and accept bounded slot-0 I/O when PI6 clock is masked;
+  separate from safe cancellation of an already active foreign
+  provider. Automatic production OOM killing remains disabled.
+
 ### v1079: bounded runtime DRM236 device completion (2026-11-03)
 
 - [x] Add a five-second (300 qualified 60-Hz ticks) deadline to DRM236

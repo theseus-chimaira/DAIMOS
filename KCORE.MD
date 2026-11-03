@@ -1,3 +1,34 @@
+## 2026-11-03 v1080: restore DRM236 full-FIFO owner wait
+
+Source audit of the v1079 watchdog addition found a newly introduced
+runtime failure at `drm236_runtime_queue_full`: masking the active
+descriptor's watchdog LH with `HRRZ` accidentally removed the original
+`SKIPN` conditional branch, leaving an unconditional `JRST retry`.
+When one active and one pending DRM descriptor both existed, a third
+requester hot-spun inside the kernel forever instead of calling
+`proc_wait_event` on the active descriptor. This bypassed the
+normal scheduler and starved the live completion owner.
+
+v1080 uses `HRRZ 1,drm236_active_request` followed by `JUMPE 1,retry`.
+The third requester waits on the live active descriptor's event at
+offset two, returns after its completion, and then claims or queues
+normally. The descriptor pointer is taken only from the RH of the
+packed watchdog word. **No new permanent RAM or MRES words**: `JUMPE`
+replaces the existing `JRST` in place.
+
+The native source-linked PDP-6 v1080 test creates three overlapping
+request descriptors and checks the precise two waits: first on the
+prior active owner, then on the newly claimed request. It verifies the
+fresh 300-tick deadline, returned I/O status, cleared ownership and
+single resumption. PASS. The v1079 driver fails this test as a
+negative control. Existing v1079 watchdog and Type-167/236 real-SIMH
+online I/O tests PASS. The full 256K requester-OOM guest also PASSes
+with unchanged D6FS and MM refusal counts.
+
+The independent DSK slot-0 swap path and the DRM slot-0
+`proc_wait_boot` path still depend on a completing event; this patch
+does not yet establish a bounded slot-0 hardware failure.
+
 ## 2026-11-03 v1079: bound in-flight DRM236 runtime I/O
 
 Auditing active providers exposed a real unbounded device wait: DRM236

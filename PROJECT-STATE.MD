@@ -1,3 +1,22 @@
+## 2026-11-03 v1080: correct full DRM236 pending-queue contention
+
+The v1079 watchdog changed a queued request pointer read from SKIPN
+to HRRZ but inadvertently left an unconditional retry jump in
+`drm236_runtime_queue_full`. A third process could therefore spin
+indefinitely while a live request and one pending request occupied
+the DRM engine. The v1080 fix uses `JUMPE` after RH descriptor
+extraction: only an absent active owner triggers retry; otherwise the
+third caller sleeps on that owner's completion event, which preserves
+the private stack until the owner returns. It adds comments and no
+additional code/data words.
+
+A real PDP-6 source-linked v1080 three-request test PASSes full-queue
+wait, renewed claim and correct event ownership; v1079 source FAILS
+the negative control. v1079 watchdog and real-SIMH DRM read/write/
+queue regressions remain PASS, as does the full 256K physical-OOM
+D6FS/MM refusal guest. The unsolved clock-inhibited slot-0 device
+wait and general provider quiescence remain explicit P0s.
+
 ## 2026-11-03 v1079: DRM236 runtime five-second completion watchdog
 
 The Type-167/236 drum previously had bounded boot-time polling but an

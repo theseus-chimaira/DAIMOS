@@ -105,8 +105,11 @@ drm236_runtime_wait:
         jrst    drm236_runtime_finish
 
 drm236_runtime_queue_full:
+        ; The active word is watchdog_ticks,,descriptor. Test its RH
+        ; before sleeping; an unconditional retry spins forever if a
+        ; second descriptor already occupies the pending FIFO slot.
         hrrz    1,drm236_active_request
-        jrst    drm236_runtime_retry
+        jumpe   1,drm236_runtime_retry
         addi    1,2
         pushj   017,proc_wait_event
         jrst    drm236_runtime_retry
