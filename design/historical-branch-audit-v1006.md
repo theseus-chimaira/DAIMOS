@@ -1,3 +1,18 @@
+## v1033 selective MRES compiler checkpoint
+
+The October 23 `kcore-mres-selective-integration-20261023-v1` tip
+contains a compiler-selection change for the MonitorFS swapped-reader.
+Do not replay it into current main: later main deliberately compiles
+this cold MRES leaf with GCC. Under one identical KCC KCORE map the
+GCC leaf links into a 003070-octal-word MRES, while a KCC leaf yields
+003265 (+125 decimal resident words). Both toolchains assemble and
+link, but the GCC output is smaller and the entry uses an established
+assembly ABI. The v1033 testkit guard now enforces this size-conscious
+compiler exception. The branch is retained for further review of its
+distinct Type-270/236 optional-MRES dispatch extraction; that candidate
+may save KCORE words and must not be discarded without a size and
+driver-MINIT correctness audit. No 32K tests were executed.
+
 ## v1030 MM v125 branch review
 
 `mm-kcore-skeleton-baseline-v125-20261014` is a historical planning

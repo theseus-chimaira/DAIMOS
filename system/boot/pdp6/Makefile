@@ -891,8 +891,11 @@ $(MONITORFS_MRES_OBJ): $(BUILD)/monitorfs_mres_v16.dobj $(BUILD)/monitorfs_swap_
 	    -X mfsproc_stat_mres_v15 -X mfsproc_read_words_mres_v15 \
 	    -X mfsproc_format_slot_mres_v15 $(BUILD)/monitorfs_mres_v16.dobj $(BUILD)/monitorfs_swap_v63_mres.dobj
 
-$(BUILD)/monitorfs_swap_v63_mres.dobj: $(KERNEL_DIR)/fs/monitorfs_swap_v63.c | $(BUILD)
-	$(PDP10_GCC) -std=c99 -Os -I$(KERNEL_DIR)/boot -I$(KERNEL_DIR)/core -I$(KERNEL_DIR)/drivers -I$(KERNEL_DIR)/fs -I$(KERNEL_DIR)/mm -I$(KERNEL_DIR)/modules -I$(KERNEL_DIR)/proc -I$(KERNEL_DIR)/storage -I$(PDP10_PREFIX)/include -S $< -o $(BUILD)/monitorfs_swap_v63_mres.s
+# Deliberate cross-compiler leaf: the public ABI is the PDP-6 assembly
+# AC1..AC4 call. GCC emits 125 fewer pinned MRES words than KCC under
+# the same KCC KCORE map (v1033). Keep GCC even for a KCC kernel.
+$(BUILD)/monitorfs_swap_v63_mres.dobj: $(KERNEL_DIR)/fs/monitorfs_swap_v63.c $(PDP10_GCC_DEP) | $(BUILD)
+	$(PDP10_GCC) -std=gnu99 -Os -march=pdp6 -mcpu=pdp6 -I$(KERNEL_DIR)/boot -I$(KERNEL_DIR)/core -I$(KERNEL_DIR)/drivers -I$(KERNEL_DIR)/fs -I$(KERNEL_DIR)/ipc -I$(KERNEL_DIR)/mm -I$(KERNEL_DIR)/modules -I$(KERNEL_DIR)/proc -I$(KERNEL_DIR)/storage -isystem $(PDP10_PREFIX)/include -S $< -o $(BUILD)/monitorfs_swap_v63_mres.s
 	$(DAS) $(DASFLAGS) -C -O $@ $(BUILD)/monitorfs_swap_v63_mres.s
 
 $(BUILD)/monitorfs_mres_v16.dobj: $(KERNEL_DIR)/fs/monitorfs_runtime.s $(PROJECT_ROOT)/tools/host/monitorfs-mres-probe-v15.py | $(BUILD)

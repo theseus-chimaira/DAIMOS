@@ -1,3 +1,25 @@
+## 2026-11-03 v1033: preserve smaller MonitorFS MRES GCC leaf
+
+Historical selective-MRES branch v6 proposed compiling the cold
+`monitorfs_swap_v63.c` reader with the selected kernel compiler.
+Reassessment against current KCORE shows this would be a resident-RAM
+regression: under the same KCC KCORE map, a KCC-built reader produces
+`monitorfs-mres.dxr` image 003265 octal words, versus 003070 for GCC.
+The 0175-octal difference is 125 decimal pinned-MRES words. The
+reader's entry is called from a stable AC1..AC4 PDP-6 assembly ABI;
+the GCC leaf links against KCC and GCC KCORE maps. Consequently the
+current intentional GCC-only helper policy is retained even when
+`COMPILER=kcc`, rather than replaying the historical compiler change.
+
+The boot Makefile now documents that exception, uses the GCC system
+include directory without a duplicate-search warning, and depends on
+the GCC executable. New testkit v1033 assembles the helper for both
+kernel compiler selections, checks the selected GCC invocation, and
+verifies identical generated objects; it passes warning-free. These
+are build/link checks, not a new native boot or swapped-reader runtime
+acceptance. Total production MonitorFS MRES footprint remains 003070
+octal words, with no new permanent-RAM growth. 32K tests remain deferred.
+
 ## 2026-11-03 v1030: recover MM descriptor-capacity regression
 
 Historical MM v125 documented KINIT-reserved descriptor backing and an
