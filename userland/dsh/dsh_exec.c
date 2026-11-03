@@ -2531,9 +2531,17 @@ pipeline_launch_fail:
                 (void)dsys_close(next_read);
         if (next_write >= 0)
                 (void)dsys_close(next_write);
-        if (pgrp != 0U)
+        if (pgrp != 0U) {
+                /* TERM releases children and their descriptors, but their
+                 * process slots remain occupied until their parent WAITs.
+                 * Reap all stages that started before the failed launch;
+                 * preserve the original launch error in rc.
+                 */
                 (void)dsys_procctl(SYS_PROCCTL_EVENT_PGRP,
                     SYS_EVENT_ARG(pgrp, SYS_EVENT_TERM));
+                (void)dsh_wait_pgrp(st, pgrp, (unsigned int)last_pid,
+                    i, 0U, 0);
+        }
         if (!background && st->interactive && st->tty_attached)
                 (void)dsys_procctl(SYS_PROCCTL_TTY_SETFG,
                     st->shell_pgrp);

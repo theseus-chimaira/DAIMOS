@@ -1,3 +1,23 @@
+## 2026-11-03 v1019: recover failed-pipeline child reaping
+
+Historical DSH v53 exposed a real gap still present in current main:
+`dsh_exec_pipeline` terminated a partially launched process group on a
+later-stage error but failed to WAIT for its children, leaving a ZOMB
+process slot occupied. The recovered cleanup uses the existing
+`dsh_wait_pgrp` with the exact count of successfully launched stages,
+after TERM and pipe-descriptor closure, while preserving the original
+launch error. No per-process or kernel state is added.
+
+The new daimos-testkit `test-daimos-dsh-pipeline-failed-launch-reap-v1019`
+passes 3/3 on the 256K full-profile KCC/SIMH image: error status 127,
+no state-4 process in PS, and successful subsequent pipeline. The
+historical SIMH media-isolation helper and harness switch were recovered
+to keep that boot from altering shared writable media; its host fixture
+passes independently. KCC/DAS/DLINK generated DSH image 035743 octal,
+versus the v1016 035730 baseline (+013 octal / 11 decimal text words),
+BSS still 001763. This correctness expense is in userland, not KCORE.
+No 32K-specific tests were run; those remain deferred.
+
 ## 2026-11-03 v1018: historical branch recovery, DSH literal shrink
 
 The historical PTR/TSFS DSH size repair was re-evaluated against current

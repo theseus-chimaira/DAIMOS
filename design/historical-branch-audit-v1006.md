@@ -1,3 +1,15 @@
+## v1019 historical DSH failure cleanup recovery
+
+The old DSH v53 source branch was not wholly redundant: the current
+`dsh_exec_pipeline` failure path lacked its successful-child WAIT loop.
+The source fix was re-applied against current main, paired with the
+historical three-case simulator acceptance probes, and verified under a
+fresh 256K full-profile KCC image (3/3). The historical testkit media
+isolation facility was likewise missing and has been recovered with a
+passing host isolation regression. These are current integrated changes,
+not merely a historical documentation comparison. The source was not
+wholesale-merged because other branch code predates newer DSH changes.
+
 # Historical branch integration audit v1006 (2026-11-02)
 
 Scope: DAIMOS branches evaluated against `main` at e4e65995. This is a
