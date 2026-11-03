@@ -1,3 +1,32 @@
+## 2026-11-03 v1092: fail-closed provider ownership (P0-B CLOSED)
+
+P0-B adopts a safety contract, not an unsafe generic recovery scheme.
+If an in-flight DTFS/D6FS/TSFS provider never returns, its encoded
+lease, caller's private kernel continuation, FILE/MM ownership and
+PID are quarantined in place. Only that provider's real return may
+unlock the shared workspace. A pre-dispatch waiter may abort on a
+pending fatal event (v1090/v1091); an unrelated normal waiter can
+remain blocked. There is no automatic unlock, forced wakeup or PID
+recycling. Controlled restart or positively proved provider-specific
+quiescence is the only supported response to a truly unreturned call.
+
+For a returned but permanently refusing provider CLOSE, the existing
+fatal owner continues its capped 01000-octal-tick private retry,
+retaining FD and GETTEARDOWN diagnostic status until the provider
+accepts closure. This caps retry CPU cost, not time to completion.
+Native v1092 source contract rejects 14 unsafe mutants. Full-system
+v891 permanent rejection, v953 repaired-provider revival, and v1091
+held-provider/foreign-waiter containment PASS. No production source,
+KCORE, MRES or process table growth at v1092: KCORE `023161` octal.
+Booted v914 permanent invalid -4 refusal also PASSes (eleven attempts,
+FD/ERR owner held, no premature exit), complementing v891's -5 case.
+
+This closes the P0-B *resource lifetime safety* contract. It does not
+establish bounded reclamation of unresponsive resources, nor authorize
+automatic requester OOM termination: P0-D/E/F are still open and
+the production OOM gate is disabled. Reproducible provider bugs still
+require fixes in their owning modules, not forced generic cancellation.
+
 ## 2026-11-03 v1090-v1091: safe fatal wake of FS lease waiters
 
 The fatal-event path now distinguishes an owner already executing in

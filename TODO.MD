@@ -1,4 +1,4 @@
-### OOM activation gates (current as of v1091, 2026-11-03)
+### OOM activation gates (current as of v1092, 2026-11-03)
 
 Assumptions: a functioning PDP-6 APR line clock and ordinary hardware
 interrupt delivery. A physically failed system clock is a hardware
@@ -20,7 +20,8 @@ software/device deadlocks remain kernel correctness requirements.
   Executable contract rejects 11 unsafe source mutations; native PDP-6
   rollback and full physical-OOM guest regressions PASS. A foreign
   provider *already executing* is the separate P0-B lifetime gate.
-- [ ] P0-B: Establish owner-safe lifetime for in-flight provider
+- [x] P0-B (v1092, safety/containment gate): Establish owner-safe lifetime
+  for in-flight provider
   operations, including a foreign live lease, a reentrant request,
   a permanently rejecting provider, and an active call which does
   not return. Do not steal provider locks, invent wakeups or free
@@ -33,7 +34,20 @@ software/device deadlocks remain kernel correctness requirements.
   *undispatched* FS lease waiter to wake and abort its own blocked
   request, without waking or freeing the in-flight provider owner.
   Arbitrary nonreturning provider software and permanent close refusal
-  still require a fail-closed administrative/quiescence policy. OOM OFF.
+  use **fail-closed quarantine**: retain the executing provider owner,
+  lease, FILE/MM references, private kernel stack, process slot and
+  retry continuation. An undispatched fatal waiter may withdraw its own
+  request (v1091). Never free, force unlock, fabricate a completion,
+  or promise eventual reclamation. Existing GETTEARDOWN/PS diagnostics
+  report failed FILE close; KCORE map and read-only lease inspection
+  identify active owner. Provider-specific verified quiescence or a
+  controlled system restart is required when an owner never returns.
+  Native v1092 contract rejects 14 unsafe mutants; v891 permanent -5
+  and v914 permanent -4
+  and v953 recovery-from-11-refusals booted guest PASS on current code;
+  v1088/v1090 and v1091 live held-owner guest previously PASS.
+  This gate establishes *safety*, not bounded liveness. OOM OFF until
+  P0-D/E/F have their own independent acceptance.
 - [x] P0-C (v1086): Both PI6-masked slot-0 entries now have a complete
   non-sleeping call graph: immediate EXIT publishes PREVM+FINALIZE
   before stack switch and never repeats HUP; the periodic idle reaper
@@ -57,6 +71,46 @@ software/device deadlocks remain kernel correctness requirements.
   remain ordinary errors; only exhausted requester BRK terminates
   when enabled. Preserve full KCC/KCORE/MRES size and 16K mapping
   constraints; enable the production gate only after P0-A..E pass.
+
+### v1092: P0-B fail-closed quarantine contract (2026-11-03)
+
+- [x] Decide policy: a permanently rejecting FILE provider remains an
+  owned, diagnosable, throttled retry on the same live private stack;
+  a provider whose call never returns owns its original serialized
+  lease, shared block workspace and process slot indefinitely. A
+  second process blocked *before* entry may consume a pending fatal
+  event and leave safely, but may not alter the held provider.
+- [x] No generic asynchronous cancel, lease theft, forced PID reuse,
+  fabricated wakeup or MM/FILE free. Read-only diagnostic `PS TD=1`
+  and ERR expose an owner-side rejected close; the owner-encoded
+  `fs_provider_ready` word is available in the KCORE symbol map for
+  non-mutating console inspection. Neither gives permission to free.
+- [x] Source-linked v1092 safety contract rejects fourteen independent
+  unsafe mutations involving lease publication/unlock, recursion,
+  foreign fatal wait, fatal owner reuse, targeted wake/WAIT class,
+  resource commit, private backoff and premature OOM activation.
+  v954 owner audit and v1088/v1090 native gateway tests PASS.
+- [x] Booted 256K v891 *permanent* VFS -5 refusal: 11 retries, 11
+  sleeps, every rejected FD retained, actual GETTEARDOWN ERR 5,
+  capped 512-tick backoff, no premature EXIT or FD clear, independent
+  user progress and normal diagnostic HALT PASS.
+- [x] Booted v914 *permanent invalid* VFS -4 refusal: 11 failures,
+  11 sleeps, FD and error witness retained, capped delay, no exit,
+  and independent bystander progress PASS. Invalid provider results
+  are not disguised as successful release or blind MM_BUSY retries.
+- [x] Booted v953 *revival*: 11 refused calls/backoff followed by one
+  successful provider return; FD/error owner clears, EXIT executes
+  exactly once and independent witness progresses PASS.
+- [x] v1091 booted nonreturning lease owner plus targeted TERM of an
+  undispatched waiter remains accepted; new v1092 source contract
+  rejects forced unlock or remote stack destruction.
+- [ ] Provider-specific **online recovery** of an unreturned call may
+  be developed only with positive device quiescence and owner-side
+  completion proof; no generic runtime recovery is claimed. Fix any
+  demonstrated driver or provider infinite loop at its source.
+- [x] No DAIMOS production code, resident RAM, MRES, syscall or ABI
+  change at v1092. P0-B safety gate CLOSED under fail-closed policy;
+  physical OOM termination remains disabled until P0-D/E/F finish.
 
 ### v1090-v1091: cancel pre-dispatch FS waits on fatal event (2026-11-03)
 

@@ -1,3 +1,68 @@
+## 2026-11-03 v1092: P0-B owner-safe provider quarantine policy CLOSED
+
+P0-B is CLOSED as a **safety/containment** gate, deliberately not a
+guarantee of bounded provider completion. The remaining case is an
+executing provider that never returns or a FILE provider whose CLOSE
+continues to reject with -4/-5. In both cases it is impossible to
+free a process-private executive stack, its live FILE/MM references,
+the owner-encoded `fs_provider_ready` lease or the shared provider
+workspace without proof that its actual caller has unwound. An
+arbitrary watchdog, remote fatal delivery or capped retry interval is
+not such proof.
+
+Chosen kernel contract is **fail-closed quarantine** using the
+existing owner and scheduler state, not a new quarantine table:
+
+* An unreturned provider keeps its lease (LH=owner slot+1, RH=0),
+  stable u-area/private continuation, process slot and resources;
+  only the provider's own successful return unlocks and wakes normal
+  waiters. No forced cancel, fake completion or PID reuse is allowed.
+* A fatal event on a process waiting before provider dispatch can
+  withdraw that *unstarted* request as in v1090/v1091. An ordinary
+  waiter may remain blocked until the provider returns; it is not a
+  provider owner and the kernel does not promise its wait will end.
+* A returned, permanently failing CLOSE keeps the process and FILE
+  ownership in `proc_fatal_close_current_v879`. Its private backoff
+  reaches 01000 octal (512) clock ticks, then retries at capped
+  frequency; this bounds CPU load, not the number of retries or the
+  amount of time to reclaim. MM wrong-owner/type failures are separate
+  P0-D stage/idempotence work and cannot be treated as MM_BUSY.
+* Existing `SYS_PROCCTL_GETTEARDOWN`/`PS` stage 1 (FILE), descriptor
+  detail and ERR expose actual returned close refusal without private
+  addresses. For a live provider that has not returned, examine the
+  `fs_provider_ready` word via its KCORE map address in a diagnostic
+  simulator/console: RH nonzero is free; RH=0 and LH nonzero encode
+  owner slot+1. Inspection is read-only: NEVER DEPOSIT a free bit,
+  wake its event artificially or free its owner's u-area.
+* Administrative response is to diagnose and fix the owning provider
+  or media and allow its real return/retry, or perform a controlled
+  full-system restart when it cannot quiesce. Online recovery is
+  permitted only after an independently proven provider-specific
+  quiescence/return protocol; none is asserted here. Reproducible
+  software nonreturn is still a correctness bug to fix at its source.
+
+daimos-testkit v1092 source-linked fail-closed contract PASSes with
+14 unsafe control-flow/ownership mutations rejected; v954, v1088,
+v1090, v1087 transitive owner graph and current native lease tests
+PASS. On current source, booted v891 indefinite VFS -5 rejection
+PASSes: 11 CLOSE attempts, 11 private sleeps, FD/error witness held,
+512-tick delay cap, zero premature EXIT, and independent user progress.
+Booted v914 also PASSes for eleven permanent -4 provider rejections,
+preserving the FD, returned-error witness, live owner and bystander
+without pretending an invalid provider result was a completed CLOSE.
+Booted v953 provider revival after the same eleven refusals PASSes:
+twelfth provider call succeeds; FD/witness are cleared and EXIT
+publishes exactly once. The v1091 booted held-owner/foreign-waiter
+guest establishes owner-stack survival and safe fatal waiter retreat
+while the lease remains held. No production code or resident data is
+changed at v1092; KCORE endpoint remains 023161 octal.
+
+P0-B closure does not enable automatic OOM termination: inability to
+reclaim a quarantined requester is explicitly possible. P0-D/E/F
+must still prove their independent fault-stage, integrated guest,
+negative classification and production enable conditions. Production
+OOM requester kill remains OFF.
+
 ## 2026-11-03 v1090-v1091: fatal event can retire a pre-dispatch FS waiter
 
 P0-B identified an independently recoverable part of the nonreturning
