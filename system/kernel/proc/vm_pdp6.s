@@ -368,13 +368,20 @@ vm_brk_full_alloc:
         pushj   17,mm_free
         jumpe   1,vm_brk_commit
 
-        ; Old mapping still owns the running process.  Release the unused new
-        ; extent and return failure without changing vm_state/APR.
+        ; The old mapping still owns the live APR image. Preserve the exact
+        ; MM error (-4 invalid owner/type, -5 pinned) in the no-longer-used
+        ; extent-pointer local before releasing the provisional new extent.
+        ; If the second free also refuses, returning would orphan a process
+        ; extent with no published VM owner.  Treat that as an MM invariant
+        ; failure, as in swap rollback, rather than leaking it silently.
+vm_brk_rollback_new_v1074:
+        movem   1,-004(17)
         move    1,(17)
         movei   2,1
         move    3,proc_current_slot
         pushj   17,mm_free
-        movni   2,5                    ; old mapping not releasable
+        jumpn   1,proc_swap_storage_invariant_v30
+        move    2,-004(17)             ; original old-extent refusal
         jrst    vm_brk_fail_cause_pi_v999
 
 vm_brk_commit:
