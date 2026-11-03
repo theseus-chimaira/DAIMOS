@@ -1,3 +1,31 @@
+## 2026-11-03 v1047: non-KCORE consolidation, rejected DSH fold threshold
+
+Further KCORE optimization remains deferred. The historical DSH
+`fix/dsh-fold-full-objects-v1` branch contains a two-word p10fold
+threshold experiment, whereas current main folds C and assembler
+objects at four words. On the identical current KCC source object set,
+two-word folding reduced DSH linked image from 035743 to 035707 octal
+(28 decimal words), BSS unchanged at 001763. However, the 256K
+full-profile guest with explicit disk-root selection passed the first
+22 DSH conformance probes and then failed `APROPOS ASSEMBLER` with
+invalid UUOs (including `UUO 000000000000 340000000001`). The same
+command passed on a separately built current-source four-word image.
+The small plan is therefore **rejected as unaccepted**: do not merge
+the `-m 2` setting or count those savings. The exact fold-plan defect
+requires separate p10fold/DLINK diagnosis before reconsideration.
+
+The testkit branch `tsfs-aap-64k-regression-v1-20261015` was redundant:
+its 64K three-member test script and Makefile target already exist in
+current testkit main. Its historical commit was recorded in main's
+ancestry and its local/remote branch refs removed without rerunning the
+AAP boot. No 32K testing or KCORE change was performed.
+
+The historical `group027-functional-acceptance-20261022-v172` branch
+contains only PROJECT-STATE updates. Its later v197 account reports
+success for tape-root DSH nested RUN/WAIT, but explicitly leaves
+DTC3 FSCK/MOUNT timeouts unresolved. Preserve this as historical
+evidence rather than turning it into a new acceptance claim.
+
 ## 2026-11-03 v1042: consolidation-only phase; KCORE work deferred
 
 Further KCORE optimization, including the historical syscall-dispatch

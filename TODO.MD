@@ -1,3 +1,15 @@
+### v1047: userland branch consolidation, KCORE deferred
+
+- [x] Compare historical two-word DSH folding against current source
+  and identical KCC objects; reject the optimization after invalid UUOs
+  in native PDP-6 APROPOS, despite 28 linked words saved.
+- [ ] Investigate the two-word `p10fold`/`DLINK` fold-plan failure as a
+  distinct toolchain correctness defect before enabling shorter folds.
+- [x] Retire historical AAP TSFS 64K testkit branch after verifying the
+  exact script and target already exist in testkit main.
+- [ ] Continue non-KCORE userland/simulator branch consolidation.
+- [ ] Resume KCORE optimization only when the deferral is lifted.
+
 ### v1042: consolidation priority; KCORE optimizations on hold
 
 - [x] Stop further KCORE source optimization at the user's request;

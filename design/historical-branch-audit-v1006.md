@@ -1,3 +1,19 @@
+## v1047 userland fold safety and historical-status consolidation
+
+`fix/dsh-fold-full-objects-v1`: current main already folds both KCC C
+and assembler DSH objects using `p10fold -m 4`. The old `-m 2`
+experiment saved 28 linked words against the same objects, but the
+current-source 256K real-guest test stopped on `APROPOS ASSEMBLER`
+after 22 passing probes and emitted invalid UUOs. A separate current
+`-m 4` guest passed the identical APROPOS check. Do not replay the
+old branch's linker threshold. The rejected experiment is useful
+compiler/linker regression evidence, not a deployable RAM saving.
+
+`group027-functional-acceptance-20261022-v172`: seven history-only
+PROJECT-STATE commits; v197's tape-root success must remain distinct
+from unresolved DTC3 FSCK/MOUNT timeouts. No unique source changes.
+It can be retired after an ancestry-preserving historical merge.
+
 ## v1042 non-KCORE consolidation and deferral
 
 KCORE optimization is explicitly paused. The independent
