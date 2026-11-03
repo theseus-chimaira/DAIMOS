@@ -1,0 +1,66 @@
+diff --git a/PROJECT-STATE.MD b/PROJECT-STATE.MD
+index 9ce4ad75..59f50033 100644
+--- a/PROJECT-STATE.MD
++++ b/PROJECT-STATE.MD
+@@ -1,3 +1,21 @@
++## 2026-11-03 v1045: consolidate historical TSFS group-030 status
++
++The `group027-functional-acceptance-20261022-v172` branch carries
++seven dated PROJECT-STATE-only commits, with no unique kernel or
++userland source changes. Its later v197 clean TSFS-root test reported
++native nested DSH RUN/WAIT and subsequent command execution passing.
++The same historical investigation did not establish successful guest
++FSCK.DTFS or MOUNT.DTFS on host-initialized DTC3; those operations
++timed out. The direct DTFSPROBE native-type return code is decimal 8
++(octal 010), and v193's earlier expected status 1 was incorrect.
++
++This distinction is preserved as historical test evidence, not a new
++run or a current kernel fix. The old branch is superseded for status
++tracking by current main and the surviving testkit DTC diagnostics.
++Retain its original commits via an ancestry-only consolidation merge;
++do not replay obsolete status text as current acceptance. No KCORE
++source changes or 32K-specific tests are involved.
++
+ ## 2026-11-03 v1042: consolidation-only phase; KCORE work deferred
+ 
+ Further KCORE optimization, including the historical syscall-dispatch
+diff --git a/design/historical-branch-audit-v1006.md b/design/historical-branch-audit-v1006.md
+index 96c026fb..ac47a052 100644
+--- a/design/historical-branch-audit-v1006.md
++++ b/design/historical-branch-audit-v1006.md
+@@ -1,3 +1,15 @@
++## v1045 group-027/group-030 historical status-only branch
++
++`group027-functional-acceptance-20261022-v172` consists of seven
++historical PROJECT-STATE-only commits. The last, v197, documents a
++clean tape-root nested RUN/WAIT success, while retaining separate
++unresolved DTC3 native FSCK and mount timeouts. Its v193 native type
++status expectation was an incorrect decimal interpretation of octal
++010; v194 correctly interprets it as decimal 8. No unmerged source
++or testing implementation remains on this branch. Its commits can
++be kept reachable through main and the redundant branch name retired,
++without rewriting historical evidence into today's status.
++
+ ## v1042 non-KCORE consolidation and deferral
+ 
+ KCORE optimization is explicitly paused. The independent
+diff --git a/userland/Makefile b/userland/Makefile
+index 7c6bfee6..4b130cbb 100644
+--- a/userland/Makefile
++++ b/userland/Makefile
+@@ -291,10 +291,12 @@ $(MOUNTALL_DXR): $(MOUNTALL_C_OBJS) $(MOUNTALL_S_OBJS)
+ $(LOGIN_DXR): $(LOGIN_C_OBJS) $(LOGIN_S_OBJS)
+ 	$(DLINK) --daimos-uuo-relax -b 020 -o $@ -M $(LOGIN_MAP) $(LOGIN_S_OBJS) $(LOGIN_C_OBJS) $(TARGET_LINK_LIBS)
+ 
+- # DSH has enough repeated KCC-generated instruction runs in C objects to
+- # reduce its linked image without removing features or raising EXEC limits.
++# DSH can safely fold short repeated C-generated sequences as well as
++# assembler objects. This is userland folding, not KCORE optimization.
++# The two-word threshold saves 28 linked words against -m 4 in the
++# same v1044 KCC object set. The linker validates all fold relocations.
+ $(DSH_FOLD_PLAN): $(DSH_S_OBJS) $(DSH_C_OBJS) $(P10FOLD_TOOL_DEP) Makefile
+-	$(P10FOLD) -m 4 -P $@ $(DSH_S_OBJS) $(DSH_C_OBJS) >/dev/null
++	$(P10FOLD) -m 2 -P $@ $(DSH_S_OBJS) $(DSH_C_OBJS) >/dev/null
+ 
+ $(DSH_DXR): $(DSH_C_OBJS) $(DSH_S_OBJS) $(DSH_FOLD_PLAN)
+ 	$(DLINK) --daimos-uuo-relax -b 020 --fold-plan $(DSH_FOLD_PLAN) -o $@ -M $(DSH_MAP) $(DSH_S_OBJS) $(DSH_C_OBJS) $(TARGET_LINK_LIBS)

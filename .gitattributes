@@ -1,0 +1,3 @@
+# Retain the exact bytes of an archived historical diff, including its
+# original whitespace in added and context lines.
+design/HISTORICAL-DSH-FOLD-M2-UNACCEPTED-V1070.patch -whitespace

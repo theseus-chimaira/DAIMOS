@@ -1,3 +1,20 @@
+## v1070 all-repository closure and rejected DSH experiment
+
+An additional twelve-repository audit recovered KCC's 15 compiler
+commits, daimos-tools' five commits (plus an mkd6fs seek-error fix),
+DAS's DXR2 ST2 validation, pdp10-tools' GO-PC script correction, and
+SIMH's PDP-6 DCS transmit-readiness behavior. The older GCC frame-byte
+and SIMH opcode-histogram commits were superseded by current source;
+their original tips were retained through ancestry-only merges.
+The KCC preprocessor and DXR2 metadata guards were independently
+tested. Other previously divergent remotes are now retired.
+
+The legacy DSH `-m 2` patch was recovered from the last dirty detached
+worktree as `design/HISTORICAL-DSH-FOLD-M2-UNACCEPTED-V1070.patch`
+against cb1e6094; production retains `-m 4`. The original worktree
+was checked against the patch and cleaned. Do not apply this patch
+before diagnosing the invalid-UUO failure under real guest execution.
+
 ## v1065 final source branch-tip consolidation
 
 Both retained KCORE tips (`b2f92fd8` and `bafe9fd8`) have now been

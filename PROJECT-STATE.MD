@@ -1,3 +1,29 @@
+## 2026-11-03 v1070: complete cross-repository branch cleanup
+
+The full `~/git` branch audit (twelve repositories) found additional
+toolchain and simulator work beyond DAIMOS, testkit and pdp10-doc.
+Every remaining development tip has now been incorporated in its own
+repository's main/master history, either by a tested code integration
+or by a history-only merge when current production already superseded
+the old implementation. The old branch references have been retired.
+No KCORE or 32K-specific optimization was resumed.
+
+The final uncommitted DSH two-word-fold experiment from detached
+DAIMOS commit cb1e6094 has been preserved byte-for-byte as
+`design/HISTORICAL-DSH-FOLD-M2-UNACCEPTED-V1070.patch`. Its historical
+claims of 28 linked words saved are *not* acceptance: a 256K PDP-6
+conformance run failed in APROPOS with invalid UUOs, while the four-
+word control passed. The unsafe patch is not applied to production.
+Its former detached worktree was restored clean after checking that
+the archived patch reverses the original modifications exactly.
+
+The separate untracked PDP-6 headless simulator binary, which differed
+from the earlier archived copy, was preserved locally at
+`~/archive/daimos-git-cleanup-v1070-20261103/pdp6_headless-v1070`.
+This generated binary is not a new source commit. Historical missing
+Git worktree registrations were pruned without removing any existing
+worktree directory or source content.
+
 ## 2026-11-03 v1065: close the last independent historical tips
 
 Final DAIMOS KCORE source tips `b2f92fd8` (selective MRES) and
