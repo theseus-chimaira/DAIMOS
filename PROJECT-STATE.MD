@@ -1,3 +1,49 @@
+## 2026-11-03 v1086: P0-C PI6-masked slot-0 teardown CLOSED
+
+The full reachability audit uncovered a real second HUP path: after
+private-stack HUP preflight, `proc_exit_current` switched to the idle
+stack and inhibited PI6, but the unmarked `proc_finish_slot_owner_v932`
+could call `proc_session_teardown` *again*. A deferred/foreign process
+HUP may close FILEs or sleep for an active provider while PI6 is off.
+Likewise, immediate self-fatal event delivery bypassed the preflight
+owner-retry route and jumped directly to `proc_exit_current`.
+
+v1086 publishes the already defined PREVM+FINALIZE marker and the
+TRANSITION owner bit atomically under disabled global PI *before*
+switching the dying process to the permanent idle stack. The marked
+finalizer dispatch bypasses HUP and only performs TTY canonical-line
+checked MM release, MEMFS direct XIP unpin, VM/bitmap detach,
+u-area release and process-table notification. Immediate self-fatal
+events now enter the existing private owner FILE/HUP retry path.
+Normal EXIT already does private-stack HUP preflight; APR/EXEC fatal
+owner also does so. No new permanent retry state or global timer.
+
+The separate periodic `proc_idle_loop` PI6-masked reaper invokes only
+explicitly marked PREVM/post-VM finalizers or SIDL RUN rollback; it
+cannot dispatch HUP or disk-backed swap-in. The latter executes only
+after PI6 restoration. MEMFS provider index 4 uses the nonserialized
+gateway path, and operation 026 dispatches directly to XIP ownership
+lookup and MM unpin. Disk swap-detach checks/changes the bitmap, not
+media I/O. The C TTY canonical reset likewise only invokes mm_free.
+
+The v1086 executable source graph checks these exact gates and all
+direct calls, with seven injected unsafe-source mutations rejected.
+Native PDP-6 tests PASS for real gateway/MEMFS XIP/MM unpin despite a
+foreign-held serialized lease, EXIT marker handoff and old-source
+negative control, and marked idle finalizer with an HUP-refusal trap.
+The v974 self-fatal, v926 deferred owner, v970/v995 owner-HUP, v993
+EXIT preflight and full v1077 physical OOM, session teardown and
+process-events guest tests PASS. Comparable KCC KCORE low end grows
+`023117` -> `023126` octal (+7 instruction words); no new persistent
+data, MRES exports or changed process ABI.
+
+P0-C is CLOSED for the defined *slot-0 fatal finalizer* entry graph.
+This does not certify every unrelated kernel driver against deadlock:
+P0-A transitive owner allocation/cleanup, P0-B foreign in-flight
+provider quiescence, P0-D error commit/idempotence, and P0-E/F broad
+acceptance/activation still remain open. Hardware APR clock failure
+is outside the DAIMOS OOM recovery contract. Production OOM stays OFF.
+
 ## 2026-11-03 v1085: unpublished RUN TTY ownership and OOM clock scope
 
 An unpublished RUN child can be left in SIDL/TRANSITION with VM

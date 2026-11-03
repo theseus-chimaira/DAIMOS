@@ -155,7 +155,9 @@ proc_tty_echo_erase(unsigned int tty)
 }
 
 /** Finish EXIT from the permanent idle stack after switching away from
- * the dying process's private u-area; assembler owns finalization/retry. */
+ * the dying process's private u-area. The assembler handoff has already
+ * published FINALIZE+PREVM after private-stack FILE/HUP completion;
+ * the PI6-masked finalizer must never repeat a sleeping HUP. */
 int
 proc_exit_finish(int status)
 {

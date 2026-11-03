@@ -1321,12 +1321,28 @@ proc_wait_status_return:
  * scheduler PI6 while allowing disk transfer PI3/PI5 to complete: holding
  * global PI disabled over VM destruction starves the Type 136 DCT and causes
  * Type 270 DRL when another process is reading a disk sector.
+ * FILE close and HUP are already completed on the private owner stack
+ * by all three entry routes. Under disabled global PI, publish the
+ * existing PREVM/FINALIZE mark before switching stacks: the idle
+ * finalizer then skips HUP and performs only non-sleeping MM teardown.
  * The machine idles for another runnable process or halts after the final user.
  */
 proc_exit_current:
         move    3,1                    ; preserve low 18-bit exit status
         pushj   17,mach_pi_disable
         move    2,1                    ; saved global PI on/off state
+        ; v1086: every entrance to this nonreturning stack handoff has
+        ; completed FILE close and session HUP on its private stack.
+        ; Publish PREVM+FINALIZE under disabled PI before clearing the
+        ; owner context. The idle finalizer must NEVER re-enter HUP:
+        ; another member's FILE close may sleep waiting for PI6.
+        move    4,proc_current_ptr
+        hlrz    5,(4)
+        movsi   6,PROC_FINALIZE_MARK_LH+PROC_FINALIZE_PREVM_LH
+        hrr     6,3
+        movem   6,PROC_FINALIZE_OFFSET(5)
+        movei   6,PROC_TRANSITION_RH
+        iorm    6,(4)
         move    1,3
         move    17,mach_kernel_stack_base
         setzm   file_table
@@ -1706,7 +1722,9 @@ proc_event_fatal:
         pop     17,012
         pop     17,011
         pop     17,010
-        jrst    proc_exit_current
+        ; v1086: self-fatal event must use the process-owned retry path
+        ; to complete HUP before the permanent stack/PI6 handoff.
+        jrst    proc_fatal_close_current_v879
 proc_fatal_self_fail_v868:
         pop     17,012
         pop     17,011

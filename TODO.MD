@@ -1,4 +1,4 @@
-### OOM activation gates (current as of v1085, 2026-11-03)
+### OOM activation gates (current as of v1086, 2026-11-03)
 
 Assumptions: a functioning PDP-6 APR line clock and ordinary hardware
 interrupt delivery. A physically failed system clock is a hardware
@@ -25,13 +25,14 @@ software/device deadlocks remain kernel correctness requirements.
   stack/FILE/MM buffers behind their owner. Specify whether permanent
   refusal is fail-closed quarantine or demands provider-specific
   recovery; bounded *retry delay* is not bounded *total completion*.
-- [ ] P0-C: Prove no slot-0 finalizer or nested MRES callback invoked
-  with scheduler PI6 inhibited can block waiting for the PI6 clock,
-  sleep on a process stack, or perform a clock-dependent device I/O.
-  Keep HUP on the private stack; keep swap-in outside the PI6 inhibit.
-  Test software PI6 suppression/foreign-provider contention, not
-  physical clock failure; avoid a new watchdog if the reachability
-  proof closes this gate.
+- [x] P0-C (v1086): Both PI6-masked slot-0 entries now have a complete
+  non-sleeping call graph: immediate EXIT publishes PREVM+FINALIZE
+  before stack switch and never repeats HUP; the periodic idle reaper
+  visits only marked EXIT/SIDL rollback. MEMFS XIP uses direct provider
+  dispatch and real MM unpin; swap detach is bitmap-only, and
+  disk-backed swap-in runs only after PI6 restoration. Source contract,
+  unsafe mutation controls, native PDP-6 and full guest tests PASS.
+  No hardware-clock recovery or new watchdog required.
 - [ ] P0-D: Establish fault-stage commit/idempotence for failed HUP,
   TTY line, XIP/VM, swap backing, PIPE/DPY, and final u-area frees.
   Distinguish retryable MM_BUSY from invalid type/owner (-4); never
@@ -47,6 +48,26 @@ software/device deadlocks remain kernel correctness requirements.
   remain ordinary errors; only exhausted requester BRK terminates
   when enabled. Preserve full KCC/KCORE/MRES size and 16K mapping
   constraints; enable the production gate only after P0-A..E pass.
+
+### v1086: P0-C slot-0 PI6 liveness closure (2026-11-03)
+
+- [x] Close the HUP-after-idle-switch bug by publishing the existing
+  PREVM+FINALIZE owner under global PI disable and before PI6 mask.
+  No second HUP, process-private sleeps or FILE provider operations
+  may run on the permanent idle stack.
+- [x] Route immediate self-fatal delivery through the existing private
+  FILE/HUP owner retry, not a direct PI6-masked EXIT handoff.
+- [x] Exercise actual MEMFS register dispatch and MM XIP unpin from
+  slot 0 while a foreign serialized provider lease is held; assert
+  refusal of other provider access without a scheduler wait.
+- [x] Native EXIT marker old/new comparison and marked idle finalizer
+  with deliberately refusing HUP stub PASS; source contract rejects
+  seven deliberately unsafe mutations in the protected graph.
+- [x] v1077 full 256K physical OOM D6FS/MM, session teardown and
+  process-events full guests PASS; v970/v974/v995 HUP/fatal owner
+  and v926/v993 native owner-stage tests PASS.
+- [x] Matched KCORE size `023117` -> `023126` octal (+7 code words),
+  zero new resident data/MRES slots. P0-C CLOSED; P0-A/B/D/E/F OPEN.
 
 ### v1085: deferred unpublished RUN TTY retirement (2026-11-03)
 
