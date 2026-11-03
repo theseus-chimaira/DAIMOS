@@ -1,3 +1,34 @@
+## 2026-11-03 v1079: DRM236 runtime five-second completion watchdog
+
+The Type-167/236 drum previously had bounded boot-time polling but an
+unbounded runtime PI2 wait on process-private three-word I/O
+descriptors. DRM MRES now exports a 300-tick runtime watchdog driven
+through the existing 60-Hz KCORE storage clock path after the DSK
+watchdog. The active request's existing LH encodes remaining ticks;
+RH retains the descriptor pointer. Expiration clears Type-167/236,
+records the actual request failure, wakes its owner and promotes the
+single pending request with a fresh deadline. Actual PI completion and
+timeout share one descriptor lifetime/finalization routine. A
+nonreturning hardware request can thus complete with error without
+stealing the serialized filesystem provider lease.
+
+Native PDP-6 v1079 test PASSES for two successive exact-deadline
+failures, queue promotion, accounting and no double-finish; disabling
+its watchdog correctly FAILS the negative control. Existing real
+Type-167/236 online read/write/queue test PASSES after repairing an
+obsolete test-only read-trampoline symbol. Full 256K v1077 physical
+OOM with provider/MM fault injection PASSES on this clock/DRM code.
+Independent `ROOT=drum` boot with DSK0 unattached also PASSes through
+DRM236, D6FS, INIT and LOGIN, confirming active MRES installation.
+The full KCC KCORE low end grows one word (`023157` -> `023160`,
+octal); DRM MRES grows 17 words (124 -> 141), no new persistent
+data words. Total 18 additional resident words.
+
+This is device-specific bounded runtime completion, not generic
+provider cancellation. Clock-disabled slot-0 transfers, permanently
+rejecting providers and transitive allocation-free fatal teardown are
+still open. OOM termination remains disabled in production.
+
 ## 2026-11-03 v1078: fatal FILE closure avoids foreign-provider lock wait
 
 Fixed `fs_provider_lock_wait`: a process in private fatal FILE cleanup

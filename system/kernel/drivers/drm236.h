@@ -6,7 +6,9 @@
  * words. Up to four units are supported. KINIT probes the controller, installs
  * the resident DRM MRES, and patches the generic KCORE bridge to the relocated
  * read/write services. Early boot uses the same service entry points in polled
- * mode; after the process table exists, transfers use PI2 completion.
+ * mode; after the process table exists, transfers use PI2 completion and a
+ * 300-tick runtime watchdog. A timed-out request completes with I/O error
+ * through the same owner-notification path as an ordinary PI2 error.
  */
 #ifndef DAIMON_DRM236_H
 #define DAIMON_DRM236_H

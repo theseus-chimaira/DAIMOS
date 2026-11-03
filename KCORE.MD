@@ -1,3 +1,48 @@
+## 2026-11-03 v1079: bound in-flight DRM236 runtime I/O
+
+Auditing active providers exposed a real unbounded device wait: DRM236
+runtime I/O kept 3-word descriptors on private executive stacks and
+slept for PI2 Type-236 DONE, but unlike DSK270 only its *early boot*
+polling path had a completion timeout. If drum hardware never
+interrupted, the request and its caller's stack could remain live
+indefinitely, preventing the serialized filesystem lease from
+returning through the normal owner-release path.
+
+The DRM MRES now exports `drm236_watchdog_tick_v1079`, reached on every
+qualified APR/CLK 60-Hz tick after the existing DSK watchdog. KINIT
+patches both direct call sites; no runtime table or extra BSS is used.
+The existing active request word is repacked as
+`remaining_ticks:18,,descriptor_ptr:18` and starts at octal `0454`
+(300 ticks, five seconds). PI2 DONE or timeout share the *same*
+completion and FIFO promotion routine. On timeout the Type-167/236
+controllers are cleared, the live descriptor's event becomes `-1`,
+its owner is awakened and the single queued request, if any, starts
+with its own complete 300-tick deadline. Descriptor pointers are
+always unwrapped from RH before dereference. No foreign lease is
+forcibly released; the device call returns a real error so its caller
+can unwind and release its own resources.
+
+PDP-6 native source-linked v1079 clock+DRM tests PASS for two consecutive
+timeouts, exact 300-tick deadlines, single pending FIFO promotion,
+error accounting, and no double completion. A deliberately disabled
+watchdog fails the same test. The restored Type-167/236 online read,
+write, and nested queue test PASSes (its obsolete `drm236_read_jump`
+test symbol was corrected to the current `drm236_read_call`).
+The full 256K v1077 physical OOM/FILE/MM guest also PASSes with the new
+driver/clock integration. The independent `ROOT=drum` Stage1 SIMH
+build/boot PASSes with DSK0 unattached, reaching DRM236 MRES, D6FS,
+INIT and LOGIN. Full KCC link adds one KCORE word (`023157` to
+`023160`, octal). DRM MRES residency grows from 124 to 141 words
+(+17). Total additional resident RAM: **18 words**, all code and
+relocation metadata, with **zero new permanent state words**.
+
+This closes the **runtime DRM hardware-stall** completion case when
+qualified APR clock ticks continue. It is not general asynchronous
+provider cancellation: a provider looping in other code, permanent
+close refusal, a clock-disabled slot-0 device request or an allocation
+inside fatal teardown still needs separate correctness work. Automatic
+OOM requester termination stays DISABLED.
+
 ## 2026-11-03 v1078: fatal-owner FILE close does not wait on a foreign provider
 
 The serialized DTFS/D6FS/TSFS MRES gateway formerly put **all** foreign

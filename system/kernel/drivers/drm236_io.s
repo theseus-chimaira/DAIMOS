@@ -12,13 +12,16 @@
  * completion on PI2. The first is acknowledged without completing the request;
  * the second publishes status, wakes the owner, and promotes the pending FIFO
  * entry if one exists. Request descriptors live on caller kernel stacks and
- * remain valid until their completion event wakes that caller.
+ * remain valid until their completion event wakes that caller. Runtime
+ * transfers are bounded by a 300-tick clock watchdog; the remaining ticks
+ * share the LH of the existing active request pointer, consuming no new RAM.
  */
 
         .text
         .globl  drm236_pi_handler
         .globl  drm236_read_block_service
         .globl  drm236_write_block_service
+        .globl  drm236_watchdog_tick_v1079
         .globl  drm236_active_request
         .globl  drm236_pending_request
         .globl  mfsdev_drm_reads
@@ -44,6 +47,7 @@
         .set    DRM_PI_LEVEL,2
         .set    DRM_POLL_LIMIT,0777777
         .set    DRM_POLL_PASSES,010
+        .set    DRM_WATCHDOG_TICKS_V1079,0454 ; 300 ticks = 5 seconds at 60 Hz
 
 /**
  * @brief Read one raw Type 236 address/block through boot or runtime service.
@@ -91,7 +95,9 @@ drm236_runtime_queue:
         jrst    drm236_runtime_wait
         setzm   drm236_pending_request
 drm236_runtime_claim:
+        hrli    1,DRM_WATCHDOG_TICKS_V1079
         movem   1,drm236_active_request
+        hrrz    1,1
         pushj   017,drm236_start_active
 drm236_runtime_wait:
         movei   1,(017)
@@ -99,7 +105,7 @@ drm236_runtime_wait:
         jrst    drm236_runtime_finish
 
 drm236_runtime_queue_full:
-        skipn   1,drm236_active_request
+        hrrz    1,drm236_active_request
         jrst    drm236_runtime_retry
         addi    1,2
         pushj   017,proc_wait_event
@@ -185,8 +191,15 @@ drm236_pi_error:
         seto    2,
 
 drm236_pi_finish:
-        skipn   1,drm236_active_request
+        pushj   017,drm236_finish_active_v1079
         jrst    pdp10_pi_dispatch_done
+
+; Shared PI2 and watchdog completion. The controller must be quiesced
+; *before* entering here from a timeout. A descriptor is never detached
+; until its event has been published and the owner woken.
+drm236_finish_active_v1079:
+        hrrz    1,drm236_active_request
+        jumpe   1,drm236_finish_return_v1079
         movem   2,2(1)
         ; Account once at drum completion, not at the earlier DP interrupt
         ; and not when promoting a pending request.  Only AC1/AC2 are scratch.
@@ -206,11 +219,40 @@ drm236_pi_count_done:
         addi    1,2
         pushj   017,proc_wakeup_event
         skipn   1,drm236_pending_request
-        jrst    pdp10_pi_dispatch_done
+        jrst    drm236_finish_return_v1079
         setzm   drm236_pending_request
+        hrli    1,DRM_WATCHDOG_TICKS_V1079
         movem   1,drm236_active_request
+        hrrz    1,1
         pushj   017,drm236_start_active
-        jrst    pdp10_pi_dispatch_done
+drm236_finish_return_v1079:
+        popj    017,
+
+/**
+ * @brief Fail an uncompleted runtime DRM DMA after five seconds.
+ *
+ * PI6 calls this after the storage_clock_dsk_jump watchdog, before the
+ * scheduler may reuse any caller's stack. The active descriptor pointer
+ * stays in the RH of drm236_active_request while the LH countdown ages.
+ * Once the timeout expires, clear both controllers, mark precisely that
+ * request as failed, wake its stack owner and promote one pending request
+ * with an independently rearmed countdown. No force-release of filesystem
+ * provider locks is performed: the sleeping I/O call actually returns an
+ * error through its normal completion path.
+ */
+drm236_watchdog_tick_v1079:
+        skipn   drm236_active_request
+        popj    017,
+        movsi   1,-1
+        addm    1,drm236_active_request
+        hlrz    1,drm236_active_request
+        jumpn   1,drm236_watchdog_return_v1079
+        cono    0010,0
+        cono    0400,DRM_DR_CLEAR_DESELECT
+        seto    2,
+        pushj   017,drm236_finish_active_v1079
+drm236_watchdog_return_v1079:
+        popj    017,
 
 /**
  * @brief Perform the same transfer before process/event services exist.

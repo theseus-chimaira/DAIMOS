@@ -869,6 +869,7 @@ $(DRM_MRES_OBJ): $(BUILD)/drm236_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/drm-mres.dxr -M $(BUILD)/drm-mres.map \
 	    -R $@ -N drm236_mres_package -X drm236_pi_handler \
 	    -X drm236_read_block_service -X drm236_write_block_service \
+	    -X drm236_watchdog_tick_v1079 \
 	    $(BUILD)/drm236_io.dobj
 
 $(TAPE_MRES_OBJ): $(BUILD)/tape_io.dobj $(KCORE_MAP)

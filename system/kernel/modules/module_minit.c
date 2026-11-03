@@ -114,6 +114,7 @@ mfsdev_present_mark(unsigned int id)
 #define DRM_X_HANDLER             0U
 #define DRM_X_READ_BLOCK          1U
 #define DRM_X_WRITE_BLOCK         2U
+#define DRM_X_WATCHDOG            3U
 
 #define LOGSTORE_X_DISPATCH       0U
 #define LOGSTORE_X_STATE          1U
@@ -154,6 +155,7 @@ extern kword_t storage_pi_tape_jump;
 extern kword_t storage_dct_dsk_jump;
 extern kword_t storage_dct_tape_jump;
 extern kword_t storage_clock_dsk_jump;
+extern kword_t storage_clock_drm_jump;
 extern kword_t minit_dpy_blko_template;
 
 extern kword_t dsk270_read_call;
@@ -1213,6 +1215,8 @@ drm236_minit(void)
         minit_register(name, DRM_NATIVE_PI_LEVEL, handler, 0U);
         storage_patch_jump(&drm236_read_call, read_service);
         storage_patch_jump(&drm236_write_jump, write_service);
+        storage_patch_jump(&storage_clock_drm_jump,
+            minit_export(name, base, DRM_X_WATCHDOG));
         module_service_set(MODULE_SERVICE_DRM_READ_BLOCK, read_service);
         module_service_set(MODULE_SERVICE_DRM_WRITE_BLOCK, write_service);
         mfsdev_present_mark(MONITORFS_DEV_DRM0);

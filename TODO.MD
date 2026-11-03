@@ -1,3 +1,27 @@
+### v1079: bounded runtime DRM236 device completion (2026-11-03)
+
+- [x] Add a five-second (300 qualified 60-Hz ticks) deadline to DRM236
+  runtime PI2 requests; the earlier boot-time polled path already has
+  its own bounded deadline. Pack countdown into the LH of the
+  existing active request word, preserving RH descriptor ownership.
+- [x] Share a single PI2/timeout descriptor completion path; on
+  timeout clear the Type-167/236 controllers, publish error, wake the
+  original private-stack owner and promote at most one pending request
+  with a *new* full watchdog interval.
+- [x] Native PDP-6 two-request watchdog and negative-control tests
+  PASS. Existing simulator DRM online read/write/queue test PASS
+  with its stale read-trampoline test symbol corrected.
+- [x] Full KCC/256K boot-image link and physical-OOM requester
+  FILE/MM regression PASS with the new clock/DRM code. KCORE +1
+  word (`023157` -> `023160`, octal), DRM MRES +17 resident words
+  (124 -> 141), no extra persistent data words.
+- [x] Independent `ROOT=drum` Type-167/236 Stage1 simulator boot
+  with DSK0 unattached PASSes through DRM236 MRES, D6FS, INIT, LOGIN.
+- [ ] Still need bounded cancellation/quiescence for providers
+  already running non-I/O code, permanent refusal, and any context
+  where qualified clock ticks cannot run. Fatal teardown's
+  transitive allocation-freedom and production OOM killing stay open.
+
 ### v1078: foreign provider contention during fatal FILE close (2026-11-03)
 
 - [x] On a foreign-held serialized provider lease, use the existing
