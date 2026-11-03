@@ -84,6 +84,7 @@
         .globl  mm_is_pinned
         .globl  proc_swap_victim
         .globl  fs_provider_ready
+        .globl  fs_provider_wait_event_v917
         .globl  proc_record_kernel_sp
         .globl  proc_exit_current
         .globl  proc_fatal_close_current_v879
@@ -1807,6 +1808,34 @@ evt_def_bits_v970:
         lsh     2,023                 ; event bits begin at bit 19
 evt_def_record_v970:
         iorm    2,PROC_FDCTL_OFFSET(1)
+        ; A target asleep *before entering* the serialized filesystem
+        ; provider holds only its private gateway request frame. Unlike an
+        ; in-flight device/provider call, that frame may safely return BUSY
+        ; when a fatal event becomes pending. Wake exactly that process,
+        ; not another provider's live stack or unrelated event waiters.
+        move    5,2(012)
+        ; WAIT_CHILD and WAIT_INTR both include the other wait-class bit.
+        ; An overlapping event address alone must never cancel either.
+        tlne    5,PROC_WAIT_CHILD_LH
+        jrst    evt_def_done_v1090
+        tlne    5,PROC_WAIT_EVENT_LH
+        jrst    evt_def_fs_check_v1090
+        jrst    evt_def_done_v1090
+evt_def_fs_check_v1090:
+        hrrz    6,5                   ; exact gateway wait-event address
+        caie    6,fs_provider_wait_event_v917
+        jrst    evt_def_done_v1090
+        hlrz    6,5
+        andi    6,PROC_STATE_LH_MASK
+        caie    6,PROC_STATE_SLEEP
+        jrst    evt_def_done_v1090    ; STOP retains its wait continuation
+        ; The same SLEEP->RUN/WAIT clear mask as the ALRM wait wake, with
+        ; no modification to target FD, MM or the held provider lease.
+        movsi   5,0600077
+        andb    5,2(012)
+        move    1,010
+        pushj   17,proc_runq_add
+evt_def_done_v1090:
         setz    1,                    ; recorded, not delivered yet
         jrst    proc_event_fatal_other_done_v883
 

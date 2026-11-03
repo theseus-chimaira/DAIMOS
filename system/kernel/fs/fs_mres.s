@@ -177,6 +177,21 @@ fs_provider_serialized:
         hrli    0,1
         blt     0,(17)
 fs_provider_lock_retry:
+        ; A foreign fatal event may wake a waiter before the provider lease
+        ; becomes free. Abort the *undispatched* request on the original
+        ; private stack and let normal user-return event delivery act.
+        ; An already established fatal-close owner bypasses pending bits:
+        ; it must still enter a free provider to finish its own closure.
+        skipn   1,file_table
+        jrst    fs_provider_lock_probe_v1090
+        move    1,-2(1)               ; packed FDCTL, before FILE table
+        trne    1,04                  ; already in owner-side FILE teardown
+        jrst    fs_provider_lock_probe_v1090
+        tlne    1,016                 ; pending INT/TERM/HUP
+        jrst    fs_provider_lock_refuse_v917
+        trne    1,01                  ; pending PIPE
+        jrst    fs_provider_lock_refuse_v917
+fs_provider_lock_probe_v1090:
         ; RH nonzero denotes FREE. While held, store owner_slot+1 in LH
         ; and zero RH. OOM can identify the owner without another word.
         hrrz    0,fs_provider_ready

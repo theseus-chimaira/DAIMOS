@@ -1,3 +1,28 @@
+## 2026-11-03 v1090-v1091: safe fatal wake of FS lease waiters
+
+The fatal-event path now distinguishes an owner already executing in
+the serialized DTFS/D6FS/TSFS provider from an independent process
+waiting *before* gateway dispatch. The waiter receives the normal
+pending fatal bit and an exact-address/exact-wait-class targeted wake;
+its resumed request returns BUSY on its original private stack without
+acquiring the held lease. At user return the ordinary fatal path
+closes owned descriptors and reports the correct WAIT status.
+
+Other wait channels, WAIT_CHILD, WAIT_INTR, STOP and live provider
+owners are not interrupted. Already established fatal-close owners
+may still enter a free provider despite old pending fatal bits.
+No new state word, process slot, lock, MM allocation or forced release.
+Native v1090 plus four negative controls and full-system v1091 PASS:
+one original provider lease retained, the foreign waiter exits after
+TERM, an independent spinner completes 73 cycles, zero errors and
+correct parent WAIT; old v1087 transitive no-allocation checks PASS.
+Matched full-image KCC KCORE end `023127` -> `023161` octal (+26 words),
+no persistent data growth. P0-B remains open for genuinely nonreturning
+executing providers and permanent refusal; production OOM stays OFF.
+The updated 256K v1077 physical-OOM requester/D6FS/MM guest PASSes
+with the expected two SYNC and one MM_BUSY refusals and correct
+independent witness recovery.
+
 ## 2026-11-03 v1088-v1089: P0-B in-flight ownership and tape progress
 
 The production filesystem register gateway's lock cannot be revoked

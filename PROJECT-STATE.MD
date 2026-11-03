@@ -1,3 +1,48 @@
+## 2026-11-03 v1090-v1091: fatal event can retire a pre-dispatch FS waiter
+
+P0-B identified an independently recoverable part of the nonreturning
+provider case. A DTFS/D6FS/TSFS register provider can suspend while
+holding `fs_provider_ready` owner encoding and a process-private stack.
+Another process blocked in `fs_provider_lock_sleep_v915` owns no active
+provider transaction or its shared buffer; previously an accepted TERM,
+HUP, INT or PIPE only set that waiter's pending event bits. It could
+remain stuck forever if the foreign owner never released the lease.
+
+The existing `proc_event_fatal_other_defer_term_v926` now wakes exactly
+one pending-fatal target *only* if its descriptor records the normal
+FS gateway wait-event address and precise SLEEP/WAIT_EVENT class.
+WAIT_CHILD, WAIT_INTR, job-stopped and unrelated event waiters are not
+touched. The awakened `fs_provider_lock_retry` reads the existing
+u-area FDCTL bitmap, refuses an unstarted fatal-marked request with -5
+before acquisition, and unwinds its own saved seven-word frame. User-
+return fatal event consumption performs ordinary owner-side cleanup.
+An established PROC_FATAL_CLOSE_BIT cleanup owner bypasses pending
+bits so its FILE release can continue when the provider is free.
+No foreign provider stack is aborted or lease unlocked by either path.
+
+Native source-linked PDP-6 v1090 proves the waiter wake, exact owner
+retention, unrelated event/job STOP/interrupt exclusions, subsequent
+owner-side free-lease dispatch and four unsafe mutation controls.
+The expanded v1087 allocation closure includes the existing, bounded,
+allocation-free `proc_runq_add` direct edge from this new wake path.
+The booted v1091 disposable 256K guest holds slot 3 indefinitely inside
+the true serialized gateway (`4,,0` lease), sends TERM to its waiting
+slot 4, and observes slot 4 consume the event, exit, and be reaped via
+correct parent WAIT status. A separate slot 2 stays runnable across
+73 sleep cycles. There are two deferred fatal events and zero errors;
+holder lease, owner continuation and device/provider workspace remain
+unchanged. The full production KCC image rebuild PASSes; octal KCORE
+low end increases `023127` -> `023161`, +26 resident words and no BSS,
+MRES or process-table growth.
+The full v1077 256K physical-OOM requester/D6FS/MM fault guest also
+PASSes on the v1091 tree (two D6FS SYNC refusals, one MM_BUSY
+refusal, correct requester recovery and surviving independent witness).
+
+This is deliberately *not* a general kill or cancellation of a live
+provider. Permanently rejecting FILE/MM and arbitrary nonreturning
+provider code remain fail-closed with intact ownership and throttled
+retry. P0-B and P0-D/E/F remain open; production OOM kill stays OFF.
+
 ## 2026-11-03 v1089: bound Type-136 tape data-transfer completion
 
 P0-B investigation found a reachable driver-specific lifetime defect:

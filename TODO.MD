@@ -1,4 +1,4 @@
-### OOM activation gates (current as of v1089, 2026-11-03)
+### OOM activation gates (current as of v1091, 2026-11-03)
 
 Assumptions: a functioning PDP-6 APR line clock and ordinary hardware
 interrupt delivery. A physically failed system clock is a hardware
@@ -29,8 +29,11 @@ software/device deadlocks remain kernel correctness requirements.
   recovery; bounded *retry delay* is not bounded *total completion*.
   v1088 validates the live provider-stack lease with two unsafe native
   negative controls; v1089 bounds DTC/MTC data-transfer hardware stalls
-  on qualified clock ticks. Neither closes arbitrary nonreturning provider
-  software or permanent close refusal. Production OOM kill stays OFF.
+  on qualified clock ticks. v1090-v1091 allow TERM/HUP/INT/PIPE on an
+  *undispatched* FS lease waiter to wake and abort its own blocked
+  request, without waking or freeing the in-flight provider owner.
+  Arbitrary nonreturning provider software and permanent close refusal
+  still require a fail-closed administrative/quiescence policy. OOM OFF.
 - [x] P0-C (v1086): Both PI6-masked slot-0 entries now have a complete
   non-sleeping call graph: immediate EXIT publishes PREVM+FINALIZE
   before stack switch and never repeats HUP; the periodic idle reaper
@@ -54,6 +57,41 @@ software/device deadlocks remain kernel correctness requirements.
   remain ordinary errors; only exhausted requester BRK terminates
   when enabled. Preserve full KCC/KCORE/MRES size and 16K mapping
   constraints; enable the production gate only after P0-A..E pass.
+
+### v1090-v1091: cancel pre-dispatch FS waits on fatal event (2026-11-03)
+
+- [x] Distinguish an executing serialized filesystem provider owner from
+  a different process blocked before gateway dispatch. Foreign fatal
+  delivery already deferred to a live kernel continuation, but the
+  blocked waiter could not consume the event if the owner never returned.
+- [x] Preserve the existing event bitmap and process-private stack;
+  after recording INT/TERM/HUP/PIPE, wake only a `PROC_STATE_SLEEP`
+  process with exactly `PROC_WAIT_EVENT_LH` and the existing FS provider
+  wait-event address. WAIT_CHILD, WAIT_INTR, job STOP and arbitrary
+  wait channels remain untouched. No other wakeup or owner-lock change.
+- [x] The awakened waiter checks pending fatal bits before attempting
+  a lease acquire, unwinds its saved gateway request to -5 without
+  provider dispatch, and consumes the fatal event at user return.
+  A process already in fatal FILE teardown bypasses the new abort check
+  and may enter a free provider to release its own resources.
+- [x] Native PDP-6 v1090 source-linked test PASS: exact owner lease,
+  targeted wake, unmodified private stack, arbitrary-event/STOP/INTR
+  exclusion, fatal-close-owner completion and four rejected unsafe
+  variants. Updated v1087 transitive allocation-closure contract PASS.
+- [x] Booted v1091 disposable 256K PDP-6 PASS: slot 3 stays suspended
+  inside provider with lease `4,,0`; slot 4 sleeping behind that lease
+  consumes remote TERM, returns to user, exits and is reaped with exact
+  WAIT status. Independent slot 2 completes 73 sleep cycles; 2 deferred
+  fatal events, zero errors and unchanged in-flight owner. No forced
+  lock release, orphaned FILE/MM buffers, or premature PID reuse.
+- [x] Production KCC full-image rebuild PASS. Matched `__kcore_low_end`
+  `023127` -> `023161` octal (+26 resident words); no additional
+  persistent KCORE data, MRES data, process fields or owner table.
+- [x] Rerun booted v1077 physical OOM guest against the v1091 tree:
+  2/3 D6FS SYNC refusals, 1/2 MM_BUSY refusals, correct requester
+  recovery and independent witness PASS. Production kill stays OFF.
+- [ ] This recovers an unstarted waiter, not arbitrary software stuck
+  inside a provider. Keep P0-B open and production OOM kill disabled.
 
 ### v1089: Type-136 tape data-transfer watchdog (2026-11-03)
 
