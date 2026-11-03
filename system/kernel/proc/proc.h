@@ -225,8 +225,8 @@ int proc_finish_slot(unsigned int slot, unsigned int status);
 int proc_finish_slot_owner_v932(unsigned int slot, unsigned int status);
 /** Release one process's stable kernel u-area. */
 int proc_uarea_release(unsigned int slot, struct proc *p);
-/** Release TTY ownership when the final process in a session exits. */
-void proc_tty_release_session(unsigned int session, unsigned int leaving_slot);
+/** Release a session TTY; -1 retains MM ownership for caller retry. */
+int proc_tty_release_session(unsigned int session, unsigned int leaving_slot);
 /** Apply a validated event to one process descriptor. */
 int proc_event_apply(unsigned int slot, unsigned int event);
 void proc_exit_current(int status);

@@ -1,3 +1,25 @@
+## 2026-11-03 v1081: final-member TTY MM refusal uses existing PREVM retry
+
+The final session member (including a non-leader) must not free its
+process VM/u-area after a failed TTY canonical-line MM release.
+proc_tty_release_session now returns refusal, and proc_finish_slot
+does the TTY check before vm_space_destroy, reusing PREVM owner retry
+on refusal. The prior VM failure handler is shared, avoiding duplicate
+retry logic; no added persistent allocation state. Native v967/v968,
+v881 and v1081 owner-retry tests pass. The full v1077 physical-OOM
+256K guest also passes. Production OOM kill remains disabled.
+
+Actual FILE close SYNC on D6FS/DTFS/TSFS does not issue media
+transfers, so generic no-clock provider cancellation is not a
+meaningful new P0 requirement for these close operations. However,
+the shared provider lock, fail-preserving FILE ownership, and
+provider-in-flight protections remain necessary. TTY, PIPE, DPY,
+MEMFS-XIP and VM/MM still need complete transitive allocation-free
+closure proof before enabling OOM kill.
+
+Comparable, noninstrumented KCC full-image low-end size:
+`023110` -> `023112` octal (+2 words). No persistent data growth.
+
 ## 2026-11-03 v1080: correct full DRM236 pending-queue contention
 
 The v1079 watchdog changed a queued request pointer read from SKIPN

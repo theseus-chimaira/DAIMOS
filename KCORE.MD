@@ -1,3 +1,42 @@
+## 2026-11-03 v1081: retain final TTY ownership before VM destruction
+
+The last non-leader member of a session can encounter MM_BUSY while
+retiring the session's dynamically allocated canonical input line.
+The prior proc_tty_release_session silently kept its TTY owner but the
+process finalizer proceeded to destroy VM and free the u-area, losing the
+only natural owner of the retry. Leader HUP teardown already refused a
+failed line free; this final-member case was separate.
+
+The TTY helper now returns 0 or -1 using the existing checked line
+reset. proc_finish_slot calls it before vm_space_destroy, and on
+refusal reuses the existing PREVM+FINALIZE owner marker and idle-stack
+retry, including the same failure path as a VM free refusal.
+Successful TTY release, VM destruction and post-VM u-area release
+remain distinct one-way stages. No new static owner table or BSS word.
+The serialized FILE provider lease and device watchdogs remain intact.
+
+The native v1081 finalizer test proves refusal leaves VM untouched and
+the PREVM owner live, followed by a single committed VM teardown and
+u-area MM retries. Source-linked real-MM TTY v967/v968 and existing
+v881 deferred u-area regression pass. The complete 256K v1077
+physical-OOM provider/MM guest also passes. Production requester-OOM
+termination remains off while other transitive cleanup dependencies
+are not proven.
+
+The ordinary FILE close paths are narrower than the general provider
+ABI: current D6FS SYNC is an immediate zero result, DTFS SYNC only
+validates a vnode, and TSFS uses a no-op SYNC. Thus no new generic
+provider abort mechanism is warranted by those particular closes.
+Keep the shared DTFS/D6FS/TSFS serialization and foreign-owner fatal
+nonwait guard: a different in-flight provider operation may still
+hold the lease, and forcing unlock would break resource ownership.
+
+Matched full-image baseline/current KCC configurations give
+`__kcore_low_end` `023110` -> `023112` octal: **two additional
+resident instruction words**, no persistent data words. This is a
+configuration-matched comparison, distinct from the earlier v1080
+full-profile `023160` map and from instrumented test images.
+
 ## 2026-11-03 v1080: restore DRM236 full-FIFO owner wait
 
 Source audit of the v1079 watchdog addition found a newly introduced

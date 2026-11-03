@@ -677,14 +677,25 @@ proc_finish_hup_new_v997:
         jumpn   1,proc_finish_hup_fail_v876
 
 proc_finish_vm_retry_v997:
+        ; Retire an otherwise orphaned TTY input buffer *before* VM
+        ; destruction. A non-leader can be the final session member;
+        ; its pinned line must keep this slot as the retry owner.
+        ; PREVM retry rechecks the session, so no new stage is needed.
+        move    1,16
+        andi    1,0377
+        move    2,10
+        pushj   17,proc_tty_release_session
+        jumpn   1,proc_finish_prevm_fail_v1081
         ; This subset is non-sleeping: MEMFS direct XIP dispatch,
         ; validated MM extent deletion, and swap backing bitmap detach.
         move    1,12
         move    2,10
         pushj   17,vm_space_destroy
         jumpe   1,proc_finish_vm_done
-        ; Keep TRANSITION and save owner/status in the existing u-area.
-        ; Never expose a potentially partially released VM to userspace.
+proc_finish_prevm_fail_v1081:
+        ; TTY ownership and VM extent share the same pre-VM retry
+        ; stage: neither has been permanently discarded on failure.
+        ; Never expose a possibly partially released VM to userspace.
         hlrz    3,(12)
         movsi   4,PROC_FINALIZE_MARK_LH+PROC_FINALIZE_PREVM_LH
         hrr     4,11
@@ -694,13 +705,9 @@ proc_finish_vm_done:
         ; Clear the PREVM stage before the existing post-VM MM finalizer.
         hlrz    3,(12)
         setzm   PROC_FINALIZE_OFFSET(3)
-        ; An unsuccessful HUP or VM destroy must retain a live RT owner.
+        ; An unsuccessful HUP, TTY release or VM destroy retains RT.
         camn    10,proc_rt_owner
         setzm   proc_rt_owner
-        move    1,16
-        andi    1,0377
-        move    2,10
-        pushj   17,proc_tty_release_session
 proc_finish_uarea_retry_v881:
         move    1,10
         move    2,12
@@ -1043,20 +1050,23 @@ proc_tty_release_loop:
         came    1,10
         jrst    proc_tty_release_next
         move    1,11
-        pushj   17,proc_tty_line_reset
-        ; A pinned or misowned MM line remains live after a failed reset.
-        ; Do not drop the owning session while its input is retained.
-        move    1,11
-        pushj   17,proc_tty_line_base_get
-        jumpn   1,proc_tty_release_next
+        pushj   17,proc_tty_line_try_reset_v897
+        ; A pinned/misowned line must keep both its TTY session and
+        ; the process finalizer that can retry releasing that session.
+        jumpn   1,proc_tty_release_fail_v1081
         movsi   1,0174000
         andb    1,proc_tty_records(11)
 proc_tty_release_next:
         aoja    11,proc_tty_release_loop
 proc_tty_release_done:
+        setz    1,
+proc_tty_release_return_v1081:
         pop     17,11
         pop     17,10
         popj    17,
+proc_tty_release_fail_v1081:
+        seto    1,
+        jrst    proc_tty_release_return_v1081
 
 ; Remove only trailing FREE descriptors; interior holes remain reusable.
 proc_trim_high:

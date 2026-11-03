@@ -1,3 +1,22 @@
+### v1081: final-session TTY MM ownership and targeted rollback (2026-11-03)
+
+- [x] Preserve a non-leader's final TTY canonical input on a refused
+  physical MM release. Return busy from proc_tty_release_session,
+  and retain process VM/u-area via existing PREVM+FINALIZE retry.
+- [x] Share the current PREVM VM-failure path instead of adding a
+  separate TTY retry stage, persistent owner record or generic
+  provider abort. Keep the shared provider lease and fatal contention
+  guard.
+- [x] Comparable full-image KCC low-end growth: 2 code words
+  (`023110` -> `023112` octal); no new permanent data.
+- [x] Native v967/v968 physical MM refusal and v1081 staged finalizer
+  PASS; existing v881 deferred MM owner test PASS; full 256K v1077
+  physical-OOM FILE/MM regression PASS.
+- [ ] Complete end-to-end transitive no-allocation/owner retry proof
+  for MEMFS-XIP, PIPE, DPY, TTY and MM/VM before production OOM kill.
+  Actual D6FS/DTFS/TSFS SYNC has no device transfer, so do not add a
+  generic close-provider cancellation framework solely for it.
+
 ### v1080: DRM236 full-FIFO wait regression (2026-11-03)
 
 - [x] Fix the v1079 loss of conditional branching in
