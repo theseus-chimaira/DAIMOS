@@ -9,7 +9,7 @@ PKG_CONFIG ?= pkg-config
 MAGICKWAND_CFLAGS ?= $(shell $(PKG_CONFIG) --cflags MagickWand)
 MAGICKWAND_LIBS ?= $(shell $(PKG_CONFIG) --libs MagickWand)
 
-TOOLS = d6lz mkdsk mkd6fs mkauxstore d6fsck packfs d6bad logstore d6swap \
+TOOLS = d6lz mkdsk mkd6fs mkauxstore mkswap d6fsck packfs d6bad logstore d6swap \
 	mkdt mkdtfs dta2dtr mktsfs tsfscheck mkstream mktap words2pt dlink darc \
 	p10run p10job pdp10-objdump p10fold p10super mkinitfs0 mkbootbanner \
 	sixmd-check csix img2dpic
@@ -18,12 +18,16 @@ ALIASES = pdp10-dec-none-darc pdp10-dec-none-objdump mkinitfs
 STALE_TOOLS = pdp10-dec-none-ar pdp10-dec-none-ranlib dxr2rim mkrim mkrim.py \
 	p10bare p10bare.py
 INSTALL_ROOT = $(DESTDIR)$(PDP10_PREFIX)
+HOST_MANUALS = manual/MKSWAP.SIXMD
 
 .DEFAULT_GOAL := build
-.PHONY: all build install uninstall clean
+.PHONY: all build manual-check install uninstall clean
 
 all: build
-build: $(PROGRAMS)
+build: $(PROGRAMS) manual-check
+
+manual-check: $(BUILD)/sixmd-check $(HOST_MANUALS)
+	$(BUILD)/sixmd-check manual/MKSWAP.SIXMD MKSWAP
 
 $(BUILD):
 	mkdir -p $@
@@ -39,6 +43,9 @@ $(BUILD)/mkd6fs: mkd6fs.c d6maint.c d6maint.h | $(BUILD)
 
 $(BUILD)/mkauxstore: mkauxstore.c | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ mkauxstore.c
+
+$(BUILD)/mkswap: $(BUILD)/mkauxstore
+	ln -sf mkauxstore $@
 
 $(BUILD)/d6fsck: d6fsck.c | $(BUILD)
 	$(CC) $(CFLAGS) -std=c99 -Wall -Wextra -Werror -o $@ d6fsck.c
@@ -118,7 +125,8 @@ $(BUILD)/img2dpic: img2dpic.c | $(BUILD)
 
 install: build
 	mkdir -p $(INSTALL_ROOT)/bin $(INSTALL_ROOT)/include \
-		$(INSTALL_ROOT)/share/daimos/simh
+		$(INSTALL_ROOT)/share/daimos/simh \
+		$(INSTALL_ROOT)/share/daimos/manual
 	@for f in $(STALE_TOOLS); do rm -f $(INSTALL_ROOT)/bin/$$f; done
 	cp $(PROGRAMS) $(INSTALL_ROOT)/bin/
 	ln -sf darc $(INSTALL_ROOT)/bin/pdp10-dec-none-darc
@@ -126,10 +134,12 @@ install: build
 	ln -sf mkinitfs0 $(INSTALL_ROOT)/bin/mkinitfs
 	cp pdp10-sixbit.h tsfs-format.h $(INSTALL_ROOT)/include/
 	cp simh/*.ini $(INSTALL_ROOT)/share/daimos/simh/
+	cp $(HOST_MANUALS) $(INSTALL_ROOT)/share/daimos/manual/
 
 uninstall:
 	@for f in $(TOOLS) $(ALIASES) $(STALE_TOOLS); do rm -f $(INSTALL_ROOT)/bin/$$f; done
 	rm -f $(INSTALL_ROOT)/include/pdp10-sixbit.h $(INSTALL_ROOT)/include/tsfs-format.h
+	rm -f $(INSTALL_ROOT)/share/daimos/manual/MKSWAP.SIXMD
 	@for f in simh/*.ini; do rm -f $(INSTALL_ROOT)/share/daimos/simh/$${f##*/}; done
 
 clean:

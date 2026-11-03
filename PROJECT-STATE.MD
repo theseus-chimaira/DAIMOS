@@ -1,3 +1,41 @@
+## 2026-11-03 v1071-v1073: host MKSWAP, clock recheck, native manuals
+
+The current AUXST1 validator already supports zero D6FS partitions, so
+the host `tools/host/mkswap` utility now shares the existing
+`mkauxstore` image formatter instead of introducing a new media format
+or KCORE parser. Only an explicitly selected unit 0 is supported:
+Type-236 DRM is 020000 blocks and Type-270 DSK is 0130000 blocks.
+Inspection is the default; formatting requires exact nonoverlapping
+region sizes, a zero-filled descriptor and destination regions, and
+`--confirm-destructive`. `--dry-run` scans without writing. Live
+devices, symbolic-link targets, other unit numbers and already
+formatted/nonempty regions are refused. No automatic boot formatting
+was added. Native guest-side MKSWAP is still unimplemented and needs
+a properly guarded exclusive raw-device provisioning interface.
+
+The testkit `test-daimos-mkswap-host-v1071` runs on disposable DRM0
+and DSK0 images; inspection, dry-run, confirmation and rejection
+cases PASS. Manual source `tools/host/manual/MKSWAP.SIXMD` is
+validated by the host build and staged for installation in the host
+documentation directory. The userland inventory has 80 built
+executables, each with a validated SIXMD page (including new pages for
+internal MOUNTALL and DSHCOMP). The boot image additionally ships the
+native DAS and KCC compiler drivers, both documented individually;
+their private phase binaries are documented under the driver topics.
+All 26 installed optional assembler utilities also have manual pages.
+Testkit v1073 enforces coverage of 108 native utilities and the
+separate host-only MKSWAP page.
+
+The native PDP-6 clock v618 regression recheck at `WALL_CLOCK_HZ=60`
+PASSed with PCLK present and absent. The parallel 50-Hz run reached
+SCLK provider selection but the emulator exited 139 amid SDL2 window
+errors; this run is inconclusive, not a valid 50-Hz pass or evidence
+of a software calendar defect. Its original failing boot/media and
+simulator transcript remain under the versioned test TMPDIR. Prior
+v618 acceptance at both configured frequencies is unchanged. Physical
+50-Hz accuracy and scheduler/device tick-rate audit remain open, and
+32K-specific tests remain deferred. No clock or KCORE source changed.
+
 ## 2026-11-03 v1070: complete cross-repository branch cleanup
 
 The full `~/git` branch audit (twelve repositories) found additional

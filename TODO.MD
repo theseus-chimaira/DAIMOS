@@ -1713,7 +1713,7 @@ Release-critical or prerequisite correctness/acceptance:
   PDP-6 process mapping alignment, measure real waste and fragmentation,
   improve placement/compaction/retention only where total RAM decreases,
   and verify execution cost and regressions in daimos-testkit.
-- [ ] Settable UTC wall clock without PCLK: privileged SETTIME, DATE SET,
+- [x] Settable UTC wall clock without PCLK: privileged SETTIME, DATE SET,
   safe PCLK presence detection, APR 50/60-Hz calendar accumulation, atomic
   GETTIME/SETTIME, and TIME36 timestamp preservation.
   Native milestone v592-v593: absent SIMH PCLK now produces unknown TIME36
@@ -1728,9 +1728,11 @@ Release-critical or prerequisite correctness/acceptance:
   denial PASS in both PCLK modes with restored pristine boot media.
   The targeted v602 SETTIME handler size pass saves three linked lowmem
   words (KCORE+MRES 15983 -> 15980), with no new data structure.
-  50-Hz configuration, concurrency/timestamp stress and physical-device
-  presence policy remain acceptance work; repeated-boot ?RT forensics
-  are tracked separately.
+  The later 50-Hz configuration and native concurrency/timestamp tests
+  are accepted in v608-v618. Physical 50-Hz timing accuracy, full
+  scheduler/device rate audit and changing physical-device presence
+  after boot remain separate acceptance work; repeated-boot ?RT
+  forensics are tracked separately.
   v606 source audit: PDP-6 APR CONI exposes clock flag/enable, **not**
   line frequency. SIMH's `rtc_tps` is simulator-internal. No automatic
   50/60-Hz discovery is possible from APR ticks alone; use a verified
@@ -1751,9 +1753,14 @@ Release-critical or prerequisite correctness/acceptance:
   regression PASS (both PCLK modes, leap-day rollover); `memfs_touch_slot`
   now preserves caller-scratch AC5 across the software clock gateway.
   Native v610 rerun at WALL_CLOCK_HZ=50 PASS in both PCLK modes too.
-- [ ] Finish tested, non-destructive AUXSTORE swap provisioning (MKSWAP),
-  including explicit destructive confirmation and existing-format/overlap
-  protections. No automatic formatting at boot.
+- [x] Implement host-only offline MKSWAP on existing AUXST1 media, with
+  unit-zero DRM/DSK selection, default inspection, read-only dry-run,
+  required destructive confirmation, format/overlap protections and
+  disposable-image safety tests (testkit v1071 PASS).
+- [ ] Implement native DAIMOS MKSWAP only after designing a privileged,
+  exclusive, bounded controller/unit raw-write interface and ensuring
+  mounted/root/backing regions cannot be reformatted. No unattended
+  formatting at boot, and no new KCORE service solely for convenience.
 - [ ] Complete combined tape+drum, disk+drum, BLOCKSET member and non-root
   storage inventories, including other safely discoverable DRM units, and
   real supported mixed-provider mount/capacity tests.
@@ -1989,13 +1996,10 @@ milestone while exhausting verified no-growth RAM optimizations.
   MEMFS MRES and `memfs_minit` through `KINIT_FULL=0`, and deliberately
   leaves `/TEMP` unmounted as MEMFS. Do not introduce a MEMFS dependency
   into tape-only optional-swap discovery.
-- [ ] Extend the existing **DATE** utility (`userland/exec/COMMANDS`,
-  `commands.c`, and `manual/DATE.SIXMD`) to **set** as well as display the
-  UTC date/time. DATE must be able to initialize/correct wall time when the
-  optional PCLK device is absent; require a privileged SETTIME operation,
-  strict calendar validation (including leap years), and native 32K TSFS-root
-  coverage. Preserve the existing no-argument display behavior.
-- [ ] Add a **settable software wall clock** driven by the existing APR
+- [x] Extend **DATE** to display and set UTC through root-only SETTIME,
+  preserving no-argument display, initial root-login prompts and strict
+  leap-day validation (native v597-v618).
+- [x] Add a **settable software wall clock** driven by the existing APR
   50/60-Hz scheduler-clock interrupt when PCLK is unavailable. Detect PCLK
   availability safely at boot in KINIT; never blindly issue PCLK I/O against
   absent hardware. Advance the UTC calendar clock using the actual tick
@@ -2004,15 +2008,25 @@ milestone while exhausting verified no-growth RAM optimizations.
   atomically. Keep the 50/60-Hz monotonic scheduler clock independent of
   wall-clock adjustments, preserve TIME36 encoding and existing GETTIME/
   filesystem timestamp semantics, and minimize KCORE resident RAM/CPU cost.
-  Test both PCLK-present and PCLK-absent boots and both 50/60-Hz settings
-  exclusively in daimos-testkit; document behavior after passing tests.
-- [ ] Add **MKSWAP** as a userspace provisioning utility for deliberately
-  selected DSK/DRM swap and optional LOGSTORE reserved regions. Provide a
-  non-destructive inspection/dry-run mode, exact controller/unit/range
-  identification, explicit destructive confirmation, and strong overlap and
-  existing-format checks. No automatic formatting or overwrite at boot;
-  INIT may offer an interactive provisioning action, but unattended boot
-  must safely continue with no swap.
+  Native v618 PCLK-on/off and 50/60-Hz configured-rate tests passed;
+  60-Hz recheck v1072 PASS, 50-Hz recheck interrupted by SIMH/SDL2
+  exit 139 (inconclusive). The clock code itself was unchanged.
+- [ ] Validate physical PDP-6 50-Hz accuracy, rate assumptions outside
+  the wall-clock provider, and the remaining native 32K TSFS-root DATE
+  scenario when the explicit 32K testing deferral is lifted.
+- [x] Provide **host-side offline MKSWAP** via the existing AUXST1
+  formatter, with exact DRM0/DSK0 geometry, inspection, dry-run,
+  explicit destructive confirmation and media safety tests v1071.
+- [ ] Provide **native guest-side MKSWAP** after safe exclusive raw
+  provisioning is implemented; protect root/mounted regions and all
+  existing formats. INIT may offer an interactive action, but never
+  automatically format or overwrite media at boot.
+- [x] Audit native manuals: 80 main userland executables, 2 native
+  compiler drivers (DAS and KCC), and 26 installed optional assembler
+  utilities have valid SIXMD pages. Add internal MOUNTALL/DSHCOMP,
+  native KCC, and host-only MKSWAP pages, and enforce inventory coverage
+  with testkit v1073. Private compiler phases are covered by their
+  parent compiler manuals, not advertised as separate user commands.
 - [x] Reject unsafe AUXST1 overlap/range layouts without installing D6FS;
   preserve unformatted optional D6FS partition compatibility (v507-v510).
   D6FS-root dual-superblock and BLOCKSET validation already exists. The

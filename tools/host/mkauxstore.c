@@ -227,13 +227,24 @@ format_auxstore(const char *path, unsigned back_blocks, unsigned log_blocks,
                 die_path(path);
         require_regular_image(fp, path);
         total = image_blocks(fp);
-        if (d6fs_base == 0U || d6fs_blocks == 0U ||
-            d6fs_base >= total || d6fs_blocks > total - d6fs_base)
-                die("invalid D6FS region");
-        if (d6fs_super_a >= d6fs_blocks || d6fs_super_b >= d6fs_blocks ||
-            d6fs_super_a == d6fs_super_b)
-                die("invalid D6FS superblock locations");
-        aux_start = d6fs_base + d6fs_blocks;
+        /* A standalone MKSWAP medium has no D6FS partition.  The kernel
+         * AUXST1 validator explicitly accepts zero D6FS and super fields.
+         * Keep the existing co-resident D6FS formatting rules unchanged. */
+        if (d6fs_blocks == 0U) {
+                if (d6fs_base != 0U || d6fs_super_a != 0U ||
+                    d6fs_super_b != 0U)
+                        die("invalid absent D6FS region");
+                aux_start = 1U;
+        } else {
+                if (d6fs_base == 0U || d6fs_base >= total ||
+                    d6fs_blocks > total - d6fs_base)
+                        die("invalid D6FS region");
+                if (d6fs_super_a >= d6fs_blocks ||
+                    d6fs_super_b >= d6fs_blocks ||
+                    d6fs_super_a == d6fs_super_b)
+                        die("invalid D6FS superblock locations");
+                aux_start = d6fs_base + d6fs_blocks;
+        }
         if (log_blocks > total - aux_start)
                 die("LOGSTORE region exceeds image");
         log_start = aux_start;
@@ -330,6 +341,162 @@ usage(void)
         exit(2);
 }
 
+/* MKSWAP shares AUXST1's formatter and safety scans.  This deliberately
+ * supports only offline images of the physical unit-zero geometries that
+ * KINIT presently discovers.  Higher units require a future explicit
+ * boot selector; pretending to provision them would be misleading. */
+static void
+mkswap_usage(void)
+{
+        fprintf(stderr,
+            "usage: mkswap --controller drm|dsk --unit 0 --image IMAGE [--inspect]\n"
+            "       mkswap --controller drm|dsk --unit 0 --image IMAGE --format\n"
+            "              --backstore-blocks N [--logstore-blocks N]\n"
+            "              [--cache-blocks N] [--dry-run | --confirm-destructive]\n"
+            "       All numbers are C-style (leading 0 means octal).\n"
+            "       The descriptor and regions must fill the entire offline image.\n");
+        exit(2);
+}
+
+static void
+mkswap_check_image(const char *image, unsigned expected)
+{
+        FILE *fp;
+        unsigned actual;
+
+        fp = fopen(image, "rb");
+        if (fp == NULL)
+                die_path(image);
+        require_regular_image(fp, image);
+        actual = image_blocks(fp);
+        if (fclose(fp) != 0)
+                die_path(image);
+        if (actual != expected)
+                die("image size does not match selected controller/unit geometry");
+}
+
+static void
+mkswap_inspect(const char *path, unsigned total)
+{
+        FILE *fp;
+        uint64_t desc[BLOCK_WORDS];
+        unsigned s[4], n[4], i, j;
+
+        fp = fopen(path, "rb");
+        if (fp == NULL)
+                die_path(path);
+        require_regular_image(fp, path);
+        if (image_blocks(fp) != total || fseek(fp, 0L, SEEK_SET) != 0)
+                die("invalid selected image geometry");
+        for (i = 0U; i < BLOCK_WORDS; ++i)
+                desc[i] = get64le(fp);
+        if (fclose(fp) != 0)
+                die_path(path);
+        if (desc[AUXSTORE_DESC_MAGIC] != AUXSTORE_MAGIC ||
+            desc[AUXSTORE_DESC_VERSION] != AUXSTORE_VERSION)
+                die("not an AUXST1 image");
+        /* Match KINIT's region bounds and overlap invariants.  Indices
+         * 0..2 are BACKSTORE, LOGSTORE and CACHESTORE, 3 is D6FS. */
+        for (i = 0U; i < 4U; ++i) {
+                uint64_t v = desc[AUXSTORE_DESC_BACK + i];
+                s[i] = (unsigned)((v >> 18) & HALF_MASK);
+                n[i] = (unsigned)(v & HALF_MASK);
+                if (n[i] != 0U && (s[i] == 0U || s[i] >= total ||
+                    n[i] > total - s[i]))
+                        die("invalid AUXST1 region bounds");
+        }
+        for (i = 0U; i < 4U; ++i)
+                for (j = i + 1U; j < 4U; ++j)
+                        if (n[i] != 0U && n[j] != 0U &&
+                            s[i] < s[j] + n[j] && s[j] < s[i] + n[i])
+                                die("overlapping AUXST1 regions");
+        if (n[3] == 0U) {
+                if (s[3] != 0U || desc[AUXSTORE_DESC_D6SUPER] != 0U)
+                        die("invalid absent D6FS metadata");
+        } else if ((unsigned)(desc[AUXSTORE_DESC_D6SUPER] >> 18) >= n[3] ||
+            (unsigned)(desc[AUXSTORE_DESC_D6SUPER] & HALF_MASK) >= n[3] ||
+            (unsigned)(desc[AUXSTORE_DESC_D6SUPER] >> 18) ==
+            (unsigned)(desc[AUXSTORE_DESC_D6SUPER] & HALF_MASK)) {
+                die("invalid D6FS superblock metadata");
+        }
+        for (i = AUXSTORE_DESC_D6SUPER + 1U; i < BLOCK_WORDS; ++i)
+                if (desc[i] != 0U)
+                        die("unknown AUXST1 descriptor extension");
+        printf("mkswap: validated AUXST1 image %s (%o blocks)\n",
+            path, total);
+        inspect_auxstore(path);
+}
+
+static int
+mkswap_main(int argc, char **argv)
+{
+        const char *image, *controller;
+        unsigned unit, total, back, log, cache;
+        unsigned seen;
+        int format, inspect, dry_run, confirmed, i;
+
+        image = controller = NULL;
+        unit = total = back = log = cache = seen = 0U;
+        format = inspect = dry_run = confirmed = 0;
+        for (i = 1; i < argc; ++i) {
+                const char *a = argv[i];
+                if (strcmp(a, "--controller") == 0 && i + 1 < argc) {
+                        if (seen & 1U) die("duplicate controller option");
+                        controller = argv[++i]; seen |= 1U;
+                } else if (strcmp(a, "--unit") == 0 && i + 1 < argc) {
+                        if (seen & 2U) die("duplicate unit option");
+                        unit = (unsigned)parse_number(argv[++i]); seen |= 2U;
+                } else if (strcmp(a, "--image") == 0 && i + 1 < argc) {
+                        if (seen & 4U) die("duplicate image option");
+                        image = argv[++i]; seen |= 4U;
+                } else if (strcmp(a, "--backstore-blocks") == 0 && i + 1 < argc) {
+                        if (seen & 8U) die("duplicate BACKSTORE size");
+                        back = (unsigned)parse_number(argv[++i]); seen |= 8U;
+                } else if (strcmp(a, "--logstore-blocks") == 0 && i + 1 < argc) {
+                        if (seen & 16U) die("duplicate LOGSTORE size");
+                        log = (unsigned)parse_number(argv[++i]); seen |= 16U;
+                } else if (strcmp(a, "--cache-blocks") == 0 && i + 1 < argc) {
+                        if (seen & 32U) die("duplicate CACHESTORE size");
+                        cache = (unsigned)parse_number(argv[++i]); seen |= 32U;
+                } else if (strcmp(a, "--format") == 0) {
+                        format = 1;
+                } else if (strcmp(a, "--inspect") == 0) {
+                        inspect = 1;
+                } else if (strcmp(a, "--dry-run") == 0) {
+                        dry_run = 1;
+                } else if (strcmp(a, "--confirm-destructive") == 0) {
+                        confirmed = 1;
+                } else {
+                        mkswap_usage();
+                }
+        }
+        /* Omitted mode means inspection, never formatting. */
+        if (!format && !inspect)
+                inspect = 1;
+        if ((seen & 7U) != 7U || image == NULL ||
+            (strcmp(controller, "drm") != 0 &&
+             strcmp(controller, "dsk") != 0) || unit != 0U ||
+            (format == inspect) || (dry_run && confirmed))
+                mkswap_usage();
+        total = strcmp(controller, "drm") == 0 ? 020000U : 0130000U;
+        mkswap_check_image(image, total);
+        printf("mkswap: selected %s unit %u, offline image %s\n",
+            controller, unit, image);
+        if (inspect) {
+                if ((seen & ~7U) != 0U || dry_run || confirmed)
+                        mkswap_usage();
+                mkswap_inspect(image, total);
+                return 0;
+        }
+        if ((seen & 8U) == 0U || back == 0U ||
+            log > total - 1U || back > total - 1U - log ||
+            cache != total - 1U - log - back)
+                die("BACKSTORE/LOGSTORE/CACHESTORE must fill the image tail");
+        format_auxstore(image, back, log, cache, 0U, 0U, 0U, 0U,
+            dry_run, confirmed, 0);
+        return 0;
+}
+
 int
 main(int argc, char **argv)
 {
@@ -338,6 +505,13 @@ main(int argc, char **argv)
         unsigned d6fs_base, d6fs_blocks, d6fs_super_a, d6fs_super_b;
         int i, dry_run, confirmed, convert_dboot;
 
+        /* The two commands share the same AUXST1 writer, bounds checks,
+         * blank-region scan and little-endian word encoding. */
+        if (strrchr(argv[0], '/') != NULL &&
+            strcmp(strrchr(argv[0], '/') + 1, "mkswap") == 0)
+                return mkswap_main(argc, argv);
+        if (strcmp(argv[0], "mkswap") == 0)
+                return mkswap_main(argc, argv);
         image = NULL;
         blank = NULL;
         inspect = NULL;
