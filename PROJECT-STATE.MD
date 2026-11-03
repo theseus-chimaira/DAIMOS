@@ -1,3 +1,22 @@
+## 2026-11-03 v1077: combined provider/MM refusal on real requester OOM
+
+An isolated `daimos-testkit` 256K PDP-6 image with test-only OOM
+activation runs a real physical-memory shortage while the requester
+owns an open D6FS executable vnode. Its first two provider SYNC calls
+fail, the third succeeds; the subsequent u-area MM free fails once
+with MM_BUSY and succeeds on retry from the idle-stack finalizer.
+KCORE-observed counters confirm 3/2 FILE attempts/refusals and 2/1
+MM attempts/refusals. The parent reaps only the requester (OOM status
+1); a separately blocked PIPE child resumes, completes, and the
+process memory accounting returns to baseline. The guest ends with
+`<KWP` and controlled HALT. PASS.
+
+Finite failure/retry correctness is now covered across both provider
+and MM in the same genuine OOM event. A genuinely nonreturning or
+indefinitely rejecting provider still lacks proven safe cancellation;
+transitive allocation-free termination remains unproved. The
+production OOM switch stays disabled. No kernel changes in v1077.
+
 ## 2026-11-03 v1075: full 256K PDP-6 requester-only OOM proof (test-only activation)
 
 The native `daimos-testkit` v1075 fixture uses an isolated copy of the

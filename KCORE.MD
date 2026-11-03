@@ -1,3 +1,25 @@
+## 2026-11-03 v1077: physical-OOM exit across real D6FS and MM refusals
+
+The isolated full-system 256K PDP-6 testkit v1077 guest enables the
+existing OOM BRK branch *only in its disposable kernel copy*. The
+requesting child opens a real D6FS `/SYSTEM/INIT` vnode before triggering
+genuine physical OOM. Test-only hooks in the actual D6FS SYNC provider
+refuse two close attempts; the third succeeds. The ordinary FILE/VFS
+boundary records exactly three D6FS closes and two failures for that
+child. A separate hook refuses its first MM_TYPE_KERNEL_DYNAMIC
+u-area `mm_free` with MM_BUSY (-5). The permanent idle-stack finalizer
+retries and succeeds on the second call, without a second VM teardown.
+The guest reports `<KWP`, no error markers, correct parent WAIT status,
+unrelated PIPE-blocked witness survival and recovered process-memory
+accounting. Native counter witnesses: close calls/refusals = 3/2,
+u-area free calls/refusals = 2/1. **PASS**.
+
+This is a finite-refusal success and ownership regression, not proof
+that a permanently unresponsive provider can be canceled or that
+every callback on the fatal path is transitively allocation-free.
+Production OOM activation stays OFF; no production source, KCORE code
+or persistent RAM was changed for v1077.
+
 ## 2026-11-03 v1075: booted physical-OOM requester and witness acceptance
 
 A new testkit full-system PDP-6 256K fixture tests the already-existing

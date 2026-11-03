@@ -1,3 +1,16 @@
+### v1077: combined FILE-provider/MM refusal during physical OOM (2026-11-03)
+
+- [x] Inject two real D6FS SYNC failures and one u-area MM_BUSY in a
+  single genuine 256K physical-OOM requester exit, with the production
+  FILE, VM and retry paths unchanged. Count exactly 3/2 FILE
+  calls/refusals and 2/1 MM free calls/refusals. Full guest PASS.
+- [x] Verify the parent reaps only the OOM requester, a blocked PIPE
+  witness completes independently, and process memory accounting
+  returns to its starting value. `<KWP`, normal HALT; PASS.
+- [ ] Prove bounded recovery/quiescence of permanently nonreturning
+  providers and allocation-freedom across *all* fatal teardown
+  callbacks before activating production OOM termination.
+
 ### v1075: full-system requester-only physical OOM (2026-11-03)
 
 - [x] Boot a disposable 256K PDP-6 with only the test copy of
