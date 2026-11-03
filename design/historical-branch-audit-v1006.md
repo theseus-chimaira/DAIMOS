@@ -1,3 +1,15 @@
+## v1057: remote-only early boot and Stage-1 checkpoint archive
+
+The eight old boot-related branches are enumerated and characterized
+in `archive/boot-stage1-checkpoints-v1057-20261103`, document
+`design/LEGACY-BOOT-STAGE1-CHECKPOINTS-V1057.md`. Their original
+commit history is reachable through the archive, but their assembly
+has not been promoted into main. Current D6LZ36 fixed-entry ordering
+and u-area validity guards supersede original fixes. EXEC and Stage-1
+need ABI-aware examination before any old revision can be reintroduced.
+Seven remote-only refs and one local WIP ref were retired. No new
+Stage-1 capacity or 32K acceptance was claimed.
+
 ## v1056: TTY route and DPYVIEW source history
 
 `ttyroute-20261002-v1` already has its command and privileged output

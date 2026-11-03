@@ -1,3 +1,15 @@
+### v1057: early-boot branch consolidation
+
+- [x] Preserve seven early-boot/Stage-1 remote tips and one local
+  Stage-1 WIP tip in an immutable-by-convention, versioned Git archive.
+- [x] Retire their original refs only after verifying the pushed
+  archive contains all eight original commits.
+- [x] Archive the obsolete migrated Type-340 C fixture in testkit;
+  retain the current native-block tests as the relevant coverage.
+- [ ] Review remaining native KCC toolchain and backup/checkpoint
+  histories for unique useful work; do not replay old kernel sources.
+- [ ] Leave KCORE optimization and 32K-specific tests deferred.
+
 ### v1056: TTY and display branch reconciliation
 
 - [x] Verify TTYOUT, privileged TTY routing, Type-340 text, KILL and

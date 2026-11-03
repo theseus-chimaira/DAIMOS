@@ -1,3 +1,25 @@
+## 2026-11-03 v1057: archive obsolete Stage-1 and early-boot refs
+
+Seven remote-only October 14-15 boot, EXEC, and Stage-1 checkpoints,
+plus local `v155-dtc-stage1-wip-20261015`, are now ancestors of the
+versioned branch `archive/boot-stage1-checkpoints-v1057-20261103`.
+Their original exact commit tips were checked against the pushed
+archive before seven remote names and one local name were removed.
+
+Current KCORE already places the D6LZ36 fixed entry first; current
+PURE backing scans guard u-area dereferences with `PROC_F_UAREA`.
+The old staged EXEC transition and DTC Stage-1 word-limit experiments
+use superseded caller and loader layouts and were not replayed.
+The historical SIMH GO-PC regression was independently recovered and
+passed in testkit v1048. The eight ancestry merges were archival
+(`ours`) only: no production code or boot configuration changed.
+
+The migrated Type-340 C testkit fixture referencing deleted
+`dpy_text.c` was moved unchanged into testkit
+`tests/archive/type340-c-obsolete-v1056/`, with a SHA-256 manifest.
+The applicable native display and detached-TTY regressions pass.
+Further KCORE optimization and 32K-specific testing are deferred.
+
 ## 2026-11-03 v1056: consolidate superseded TTY and display branches
 
 `ttyroute-20261002-v1` and `fix/dpyview-process-20261006-v1`
