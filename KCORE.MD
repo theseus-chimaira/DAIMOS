@@ -1,3 +1,20 @@
+## 2026-11-04 v1099: typed final PIPE/FIFO MM refusal
+
+The last-reference PIPE/FIFO close now preserves the actual MM_FREE
+return (-5 pinned, -4 invalid type/owner) rather than collapsing both
+to -1. It leaves the FD, original counts and FIFO list ownership
+untouched on failure; head reinsertion uses AC3 to preserve the
+returned status in AC1. Normal successful closes remain unchanged.
+This exposes the actual allocator result to FILE teardown diagnostics
+without new tables or memory allocations.
+
+Native source-linked PDP-6 v1099 checks both failure classes,
+subsequent exact release, named FIFO link restoration and four unsafe
+mutation controls. The v1096 component matrix and v1087 allocation-
+free release audit plus eleven unsafe mutants PASS. Full 256K KCC
+image builds, KCORE end `023162` octal unchanged from v1098, no new
+static data. P0-D/E/F remain open; production OOM termination OFF.
+
 ## 2026-11-04 v1098: arm first PREVM retry after EXIT stack handoff
 
 The v1086 slot-0 safety handoff publishes FINALIZE+PREVM before

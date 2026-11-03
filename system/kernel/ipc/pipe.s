@@ -463,14 +463,16 @@ pipe_close_free_v870:
         pushj   17,mm_free
         jumpe   1,pipe_close_ok
         ; A failed free must restore a named FIFO to the active list.
-        ; Its vnode and original counts were never changed. This
-        ; nonallocating head insertion is safe under executive exclusion.
+        ; Its vnode and original counts were never changed. Preserve
+        ; MM_ERR_BUSY (-5) versus MM_ERR_INVAL (-4) in AC1 for FILE
+        ; teardown diagnostics; the list reinsertion uses scratch AC3.
+        ; This nonallocating head insertion is safe under exclusion.
         skipn   1(010)
-        jrst    pipe_close_bad
-        move    1,pipe_fifo_head
-        movem   1,(010)
+        jrst    pipe_close_done
+        move    3,pipe_fifo_head
+        movem   3,(010)
         movem   010,pipe_fifo_head
-        jrst    pipe_close_bad
+        jrst    pipe_close_done
 pipe_close_publish_v870:
         movem   011,3(010)
         hlrz    3,011

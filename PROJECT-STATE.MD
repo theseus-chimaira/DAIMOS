@@ -1,3 +1,39 @@
+## 2026-11-04 v1099: preserve PIPE/FIFO final-close MM error type
+
+P0-D source audit found a real error-classification loss in the final
+PIPE/FIFO FILE close path. `pipe_close_ref` correctly delays publishing
+reader/writer decrements and restores a temporarily unlinked named
+FIFO if its last MM extent free fails. But its failure path routed both
+`MM_ERR_BUSY` (-5, pinned) and `MM_ERR_INVAL` (-4, wrong type/owner)
+through `pipe_close_bad`, replacing the original error with -1. That
+prevents FILE and fatal-close diagnostics from distinguishing permanent
+owner corruption from a retryable physical pin.
+
+The failure path now returns directly through `pipe_close_done`. For
+anonymous pipes, no reference count or FD is cleared. For named FIFOs,
+the nonallocating head insertion uses scratch AC3 rather than AC1;
+the restored list and original reader/writer count survive while AC1
+retains the exact MM return to FILE. Invalid *pipe arguments* still
+use the existing generic bad path. Neither successful reference
+decrement nor last-free commit ordering is changed. The extant v899
+and v900 booted real-MM PIPE pin and FIFO reopen tests establish the
+original owner protocol separately.
+
+daimos-testkit native v1099 uses production source for the FILE close
+entry, FIFO unlink and PIPE last-close while injecting exact -5 and
+-4 allocator refusals. The original descriptors, counts and named
+FIFO list remain intact and can later be released once; four unsafe
+mutations are rejected (status collapse twice, lost FIFO owner,
+premature count publication). The extended P0-D v1096 component
+matrix PASSes, as do v1087 no-new-allocation checks and all eleven
+original unsafe source mutations. The production full KCC 256K
+image PASSes: KCORE low end remains `023162` octal, with no new fixed
+state, process fields, MRES or syscall changes.
+
+P0-D remains OPEN for simultaneous booted cross-stage failures and
+permanent wrong-owner diagnostics. P0-E/F remain OPEN; production
+requester OOM termination stays OFF.
+
 ## 2026-11-04 v1098: prepublished PREVM exit now arms retry epoch
 
 P0-D full-system validation exposed a genuine preexisting unbounded

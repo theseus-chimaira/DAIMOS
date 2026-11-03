@@ -1,4 +1,4 @@
-### OOM activation gates (current as of v1098, 2026-11-04)
+### OOM activation gates (current as of v1099, 2026-11-04)
 
 Assumptions: a functioning PDP-6 APR line clock and ordinary hardware
 interrupt delivery. A physically failed system clock is a hardware
@@ -72,7 +72,36 @@ software/device deadlocks remain kernel correctness requirements.
   rejection is followed by exactly one successful retry, then an
   MM_BUSY u-area rejection and successful second attempt. All stages
   retain original owners until actual completion.
+  v1099 preserves typed MM_FREE error (-5 pinned, -4 invalid) across
+  final anonymous PIPE and FIFO CLOSE while retaining the descriptor,
+  references and FIFO list; four unsafe native variants are rejected.
   Full cross-stage fault matrix remains OPEN.
+
+### v1099: typed PIPE/FIFO final-close MM refusal (2026-11-04)
+
+- [x] `pipe_close_ref` already retained live PIPE reader/writer counts
+  and restored named-FIFO list ownership on failed final `mm_free`.
+  However, it discarded the actual MM error and returned generic -1.
+  Propagate the original -5 busy or -4 invalid type/owner through
+  FILE close without changing the release transaction or retry owner.
+- [x] Anonymous failure returns directly through `pipe_close_done`;
+  named FIFO unlink rollback now uses scratch AC3, leaving AC1's MM
+  error intact. No premature reference publication, failed-free success,
+  new allocation, forced MM release or FIFO orphan is permitted.
+- [x] Source-linked native PDP-6 v1099 runs production FILE entry,
+  PIPE close and FIFO unlink with deterministic -5 and -4 MM returns;
+  verified retained FD and FIFO references, exact later success and
+  normal nonfinal close. Four unsafe mutations (anonymous error collapse,
+  FIFO error collapse, lost list owner, premature reference publication)
+  are all rejected.
+- [x] Expanded v1096 PIPE/DPY/HUP/TTY/XIP/SWAP/u-area component matrix
+  PASS. Updated v1087 allocation-free graph audit PASS; its eleven
+  unsafe source mutations still all reject.
+- [x] Full 256K KCC production image PASS, same KCore low-end
+  `023162` octal as v1098. No additional fixed BSS, owner words,
+  MRES, process metadata or ABI fields.
+- [ ] P0-D still needs all requested combined booted stage faults
+  and permanent invalid-owner diagnostics. Production OOM kill OFF.
 - [ ] P0-E: Booted PDP-6 fault-injection matrix: real memory pressure,
   FILE+HUP+VM/MM combinations, pending EXEC/APR fatal, unpublished
   RUN rollback, pinned TTY/XIP, concurrent provider owner, and a
