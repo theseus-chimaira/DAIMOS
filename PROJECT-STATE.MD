@@ -1,3 +1,35 @@
+## 2026-11-03 v1038: reject DSK/DRM extraction, accept VFS parent fix
+
+Reassessed `dee93223` from the historical selective-MRES integration
+branch against current full-profile KCC KCORE. Both Type-270 and
+Type-167/236 address/validation wrappers can move into their optional
+MRES packages, but the combined resident RAM effect is unfavorable
+when both controllers are installed. Measured linked images (octal
+36-bit word counts, unchanged BSS in each comparison):
+
+                   KCORE      DSK MRES    DRM MRES
+  baseline         022403     000312      000174
+  branch layout    022344     000335      000214
+  reduced layout   022344     000334      000212
+
+The reduced version saves 31 decimal KCORE words but adds 18 DSK and
+14 DRM words, net **one extra permanent word** with both present.
+Optional-hardware-absent cases do save RAM, so the underlying design
+is valid, but the net growth with both loaded fails RAM-first
+acceptance. Experimental changes were discarded, their versioned
+`$TMPDIR/daimos-dskdrm-*-v1035/v1036` link results retained. No
+production disk/drum assembly or MINIT change was accepted.
+
+The same historical checkpoint also contained a VFS improvement.
+`vfs_parent_mount` now extracts the mount slot directly into AC4,
+instead of clobbering AC3 and moving AC3 to AC4. Native PDP-6 v1037
+negative control exits 3 on old source (AC3 corrupted); fixed code
+passes. Full KCC KCORE link shrank 022403 -> 022402 octal text, exactly
+one permanent word, with BSS 000415 unchanged. Existing native VFS
+mount-mutation v9 and static mount-slab v688 checks also pass after
+repairing the old v9 test fixture to include the real `vfs_readonly`
+routine. No 32K tests were run.
+
 ## 2026-11-03 v1033: preserve smaller MonitorFS MRES GCC leaf
 
 Historical selective-MRES branch v6 proposed compiling the cold

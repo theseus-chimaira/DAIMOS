@@ -1,3 +1,24 @@
+## v1038 selective-MRES driver extraction and VFS reconciliation
+
+The `kcore-mres-selective-integration-20261023-v1` branch is only
+partially reconciled. Its earlier disk/drum MRES extraction was rebuilt
+against present KCORE and MINIT and then reduced by three more linked
+MRES words. Nevertheless, total permanent code/BSS grows one word
+when both device packages are installed (KCORE -31, DSK +18, DRM +14
+decimal words). Since RAM has priority over fixed-KCORE size alone,
+the driver extraction was rejected and production hardware code left
+unchanged. Its value in no-device profiles is real, but insufficient
+to justify worst-case growth without a better implementation.
+
+The branch's VFS parent-path change is valid and has been restored:
+mount-slot extraction now uses AC4 without clobbering AC3, saving one
+linked KCORE word. A new native PDP-6 v1037 test fails with exit 3
+before the fix and passes after it. Historical `daimos-testkit` VFS
+mount-mutation v9 was also repaired to include the real current
+`vfs_readonly` implementation and now passes. The syscall dispatch
+folding in the branch remains for a later ABI-aware review; preserve
+the branch until that comparison is complete. 32K tests remain deferred.
+
 ## v1033 selective MRES compiler checkpoint
 
 The October 23 `kcore-mres-selective-integration-20261023-v1` tip
