@@ -5,7 +5,7 @@
   archive v1050, and related obsolete testkit commits in archive v1049.
 - [x] Remove original safe local/remote branch names after verifying
   ancestry, without enabling unimplemented EDCORE or supervisor paths.
-- [ ] Reconcile three untracked DTFS diagnostic files in the old v115
+- [ ] Reconcile the untracked DTFS diagnostic files in the old v115
   SIMH testkit worktree before deleting its attached local branch.
 - [ ] Continue reviewing remaining non-KCORE experimental source branches.
 - [ ] Leave KCORE optimizations and all 32K tests deferred.

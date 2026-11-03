@@ -5,7 +5,7 @@ from the existing GO-address PC-first test. The original simulator
 test was recovered into testkit main and passed alongside v155.
 The v115 branch's old DTFS diagnostics remain history only, not
 accepted writable-root evidence. Its local branch is checked out in
-a worktree containing three untracked diagnostics; preserve that
+a worktree containing untracked diagnostics; preserve that
 worktree rather than force-deleting its branch.
 
 Four divergent DAIMOS DSH/INIT branch tips have been consolidated into

@@ -24,7 +24,7 @@ The independent PDP-6 simulator console-PC test has also been restored
 to testkit main as `test-daimos-simh-console-pc-v1048`, passing its
 startup, interactive, breakpoint and step checks. The historical
 `pdp6-simh-console-pc-20261021-v115` local branch must remain checked
-out for now: its separate DevSpace2 worktree has three untracked DTFS
+out for now: its separate DevSpace2 worktree has untracked DTFS
 diagnostic files. Main already preserves its commit history, but the
 dirty worktree must not be deleted or modified without reconciling
 those files. KCORE optimization and 32K-specific tests stay deferred.
