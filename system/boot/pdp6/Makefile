@@ -248,6 +248,10 @@ KERNEL_INPUTS = $(KERNEL_DIR)/Makefile \
 	$(KERNEL_DIR)/proc/proc_swap.h \
 	$(KERNEL_DIR)/proc/proc_swap_boot.c \
 	$(KERNEL_DIR)/proc/proc_swap_pdp6.s \
+	$(KERNEL_DIR)/proc/proc_pure_backing_pdp6.s \
+	$(KERNEL_DIR)/proc/proc_storage_runtime_v30.s \
+	$(KERNEL_DIR)/proc/proc_pure_attach.c \
+	$(KERNEL_DIR)/proc/proc_storage_map_v28.h \
 	$(KERNEL_DIR)/proc/syscall.h \
 	$(KERNEL_DIR)/proc/syscall_dispatch_pdp6.s \
 	$(KERNEL_DIR)/proc/vm.h \

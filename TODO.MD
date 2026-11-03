@@ -1,3 +1,13 @@
+### v1063: recover stale swap-source dependency regression
+
+- [x] Restore the historical testkit v101 swap-composite dependency
+  check as a versioned v1063 host-only regression.
+- [x] Add the four missing outer swap source prerequisites in the
+  PDP-6 boot Makefile; test positive and historical negative controls.
+- [ ] Classify final two KCORE source tips and the original startup
+  test branch, preserving their historical code without running 32K
+  tests or restarting the deferred optimization program.
+
 ### v1061: reduce archival branch count without losing history
 
 - [x] Copy the four archive-only historical summary files into DAIMOS

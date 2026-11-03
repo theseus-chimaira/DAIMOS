@@ -1,3 +1,14 @@
+## v1063: recover a usable build-graph test from the final snapshot tip
+
+The v101 testkit source-graph check on
+`test-daimos-startup-snapshot-v72-20261020` was still applicable.
+It found four absent swap composition inputs in the outer
+`KERNEL_INPUTS` list; the inner kernel makefile already tracked them.
+Adding the exact four missing dependencies fixes incremental rebuild
+invalidation. Testkit has an opt-in v1063 host-only test with a
+passing fixed-source check and a failing old-source negative control.
+No KCORE optimization is inferred from this build-dependency repair.
+
 ## v1061: fold historical archive references into main
 
 The four previously created historical archive branch tips are now

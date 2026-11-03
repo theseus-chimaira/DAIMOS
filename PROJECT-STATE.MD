@@ -1,3 +1,23 @@
+## 2026-11-03 v1063: repair stale outer swap-assembly dependencies
+
+The final KCORE startup-snapshot test branch contained a useful
+host-only source-graph regression from v101. Against current main it
+correctly found a build defect: the outer `system/boot/pdp6/Makefile`
+KERNEL_INPUTS omitted four direct prerequisites of the inner
+`system/kernel/Makefile` generated `proc_swap.s`:
+`proc_pure_backing_pdp6.s`, `proc_storage_runtime_v30.s`,
+`proc_pure_attach.c`, and `proc_storage_map_v28.h` (all in `proc/`).
+
+All four are now explicit outer KERNEL_INPUTS prerequisites, preventing
+an incremental outer boot build from leaving the assembled swap image
+stale when any of them changes. The versioned testkit target
+`test-daimos-kcore-swap-input-deps-v1063` checks the dependency lists.
+It passes against the repaired worktree with five direct composite
+`proc/` inputs and fails against unchanged prior main, identifying
+those four missing inputs. This is an incremental build correctness
+repair, not an alteration to KCORE source, linked size, or RAM use.
+No guest boot or 32K-specific test was run.
+
 ## 2026-11-03 v1061: consolidate retained Git archives into main ancestry
 
 All four historical DAIMOS archive tips have been reviewed for
