@@ -1,3 +1,23 @@
+### v1084: FIFO OPEN interrupted-rollback ownership (2026-11-03)
+
+- [x] Reproduce a real PDP-6 MM-pin refusal during a named FIFO's
+  interrupted provisional OPEN; confirm old code loses its only FD
+  retry owner while the MM extent and PIPE reference stay live.
+- [x] Make failed rollback commit the existing provisional FD as
+  successful OPEN; keep the ordinary interrupted error if rollback
+  succeeds. One instruction replacement, no new code/data words.
+- [x] Source-link real FILE OPEN/NEWFD/CLOSE and PIPE/MM routines in
+  v1084 native positive and pre-fix negative tests. Check unpin/retry,
+  normal interruption, reference counts and exact FD publication.
+- [x] Full named-FIFO simulator regression PASS; update the obsolete
+  word-FIFO-v2 character-I/O expectation to the existing v901 ABI.
+- [x] Full word-FIFO-v2 and true anonymous PIPE v902 guests PASS;
+  test-daimos-pipe-anon now includes the v902 regression.
+- [x] KCC KCORE end unchanged at `023116` octal; no persistent data.
+- [ ] Continue full transitive HUP/provider liveness proof before
+  enabling production OOM termination. Test-only MM pins demonstrate
+  fault safety, not that ordinary unexposed FIFO extents become pinned.
+
 ### v1083: direct fatal teardown allocation-free leaf audit (2026-11-03)
 
 - [x] Executable source contract for direct FILE/PIPE/DPY/TTY/VM/XIP,

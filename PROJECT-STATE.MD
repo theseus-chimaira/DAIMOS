@@ -1,3 +1,45 @@
+## 2026-11-03 v1084: interrupted FIFO OPEN retains its MM retry owner
+
+An interrupted named-FIFO OPEN has already reserved a provisional FILE
+slot and incremented the PIPE reader or writer count. Its rollback
+invokes `pipe_close_ref`. When this is the last reference, MM may
+refuse the free (physical pin or wrong owner), keeping the reference
+and FIFO object intact. The old path ignored that refusal and returned
+an OPEN error; the FILE layer then erased its provisional descriptor.
+This orphaned a live PIPE MM allocation with no retry owner.
+
+The fix changes only the final branch in `pipe_fifo_open_intr`: a
+successful rollback still returns the interrupted-OPEN error; if
+rollback refuses, OPEN commits instead, returning its already reserved
+FD. The existing normal FILE close is the exact retry owner. This is
+an irreversible-operation completion contract, not a new reaper or
+background retry mechanism. Neither data nor executable word count
+changes: one JRST became JUMPE. Comparable KCC KCORE low end remains
+`023116` octal; no MRES or persistent data growth.
+
+The new v1084 native PDP-6 test links production `file_open`,
+`file_new_fd`, `pipe_fifo_open`, `pipe_close_ref`, FILE close and actual
+MM `mm_free`/`mm_unpin`. It checks a pinned final rollback, the
+published descriptor and counts, a second close refusal, physical
+unpin, successful final close, and an ordinary unpinned interrupted
+OPEN. The original v1083 source fails the negative test with a
+stranded extent and cleared FILE FD. All native cases PASS after fix;
+the full named-FIFO guest and direct fatal-release leaf tests PASS.
+The full physical-OOM 256K guest also PASSes two D6FS SYNC failures,
+one actual MM_BUSY refusal and independent witness recovery.
+
+The historical word-FIFO test also required an update: since v901,
+PIPE READCHAR/WRITECHAR transfer one complete native word instead of
+being unsupported. The obsolete `!2` assertion was unrelated to v1084.
+The corrected full word-FIFO guest now PASSes its character round-trip
+and all prior wrap/EOF/dup/RUN/blocking scenarios. The testkit's
+anonymous-PIPE Make target now invokes the dedicated v902 guest,
+instead of only the word-FIFO prerequisite.
+The full v902 anonymous PIPE guest PASSes create, character I/O, EOF,
+EPIPE, duplicate/RUN references and blocking wakeup.
+The production automatic OOM killer remains disabled pending the
+separate transitive teardown and provider-liveness proofs.
+
 ## 2026-11-03 v1083: allocation-free direct fatal-release leaf contract
 
 The v1083 daimos-testkit audit enumerates the current source-linked

@@ -223,7 +223,11 @@ pipe_fifo_open_intr:
         move    1,010
         move    2,011
         pushj   17,pipe_close_ref
-        jrst    pipe_fifo_open_bad
+        ; v1084: rollback may fail when MM refuses the final free.
+        ; In that case the reference is still owned by the provisional
+        ; FILE entry: complete OPEN so its FD remains visible for retry.
+        ; A successful rollback preserves the interrupted-OPEN error.
+        jumpe   1,pipe_fifo_open_bad
 pipe_fifo_open_done:
         move    1,010
         tlo     1,070001
