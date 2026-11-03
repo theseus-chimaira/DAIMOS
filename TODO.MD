@@ -1,3 +1,16 @@
+### v1056: TTY and display branch reconciliation
+
+- [x] Verify TTYOUT, privileged TTY routing, Type-340 text, KILL and
+  DPYVIEW features already exist in current main; do not replay the
+  older kernel implementation.
+- [x] Run detached-TTY, native text-block, and DPY interrupt-policy
+  regressions; all pass.
+- [ ] Retire the obsolete migrated Type-340 C fixture, which still
+  includes removed `dpy_text.c`; current native-block test covers the
+  current implementation.
+- [ ] Continue remaining boot and toolchain branch consolidation;
+  KCORE optimization and 32K tests remain deferred.
+
 ### v1055: branch reference cleanup after artifact recovery
 
 - [x] Preserve all untracked v115 DTFS diagnostics and v54 nested-UUO

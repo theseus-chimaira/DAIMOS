@@ -1,3 +1,17 @@
+## v1056: TTY route and DPYVIEW source history
+
+`ttyroute-20261002-v1` already has its command and privileged output
+service implemented in newer main. The original route's Type-342
+single-character handling has since become a separate native text-
+block implementation; wholesale replay would regress current code.
+`fix/dpyview-process-20261006-v1` has its KILL/DPYVIEW source changes
+and SIXMD documentation in current main; its historical clock and
+device state are obsolete. Three applicable native/host tests pass.
+The migrated Type-340 C test still references deleted `dpy_text.c`
+and must not be counted as a current pass. Preserve both historical
+tips through ancestry-only merges and retire redundant branch names;
+no kernel or userland change is required.
+
 ## v1055 final worktree artifacts and codec staging references
 
 The last attached historical testkit branches were reconciled without

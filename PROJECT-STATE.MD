@@ -1,3 +1,24 @@
+## 2026-11-03 v1056: consolidate superseded TTY and display branches
+
+`ttyroute-20261002-v1` and `fix/dpyview-process-20261006-v1`
+were reviewed against current main. The historical TTYOUT command,
+root-only TTYCTL SETOUT/GETOUT service, output routing, DPY character
+sink, KILL event command and DPYVIEW terminal-read interruption are
+already integrated. Current production has evolved further with the
+separate retained /DEV/TTYDPY0 terminal and native Type-342 blocks.
+The historic DPYVIEW and KILL SIXMD files match current main exactly.
+No old device or syscall assembly should be replayed over newer code.
+
+Testkit current detached-TTY bounds v1, native DPY blocks v1, and
+DPY interrupt-policy v1 checks all pass. The older migrated Type-340
+C fixture could not build because the historical `dpy_text.c` is no
+longer present; the current native-block regression is the applicable
+replacement. This is an obsolete fixture, not proof of a current
+display failure. The two old source tips are preserved as main
+ancestry, without modifying the current TTY/DPY implementation.
+
+KCORE optimization and all 32K-specific testing remain deferred.
+
 ## 2026-11-03 v1055: historical worktree and staged-codec branch cleanup
 
 The old testkit SIMH v115 worktree's four untracked DTC3 diagnostic
