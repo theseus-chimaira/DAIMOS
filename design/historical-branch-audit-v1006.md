@@ -1,3 +1,14 @@
+## v1058 native KCC source packaging branch
+
+Historical `push/kcc-native-source-20261008-v1` has a five-argument
+source-staging helper and placeholder MAKEFILE. Current source uses
+six arguments and stages ABI headers, native DAIMOS.MK, and bootstrap
+objects as well as KCC C-SIX/S6REC sources. Current
+`pdp10-doc/TOOLCHAIN/KCC-NATIVE-SOURCE.MD` describes this evolution.
+The branch's historical VM, storage and kernel code is retained via
+ancestry only, not remerged into present main. It is safe to retire
+the old branch name once its exact tip is reachable from main.
+
 ## v1057: remote-only early boot and Stage-1 checkpoint archive
 
 The eight old boot-related branches are enumerated and characterized

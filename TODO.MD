@@ -1,3 +1,13 @@
+### v1058: native KCC staging history
+
+- [x] Verify the old minimal KCC native-source converter and Makefile
+  are superseded by current staging with ABI/bootstrap packaging.
+- [x] Preserve the original historical source commits in main ancestry
+  without replaying unrelated old kernel and storage modifications.
+- [ ] Native KCC complete self-rebuild remains unaccepted; keep its
+  real guest validation separate from packaging checks.
+- [ ] Preserve the KCORE optimization and 32K-specific test deferral.
+
 ### v1057: early-boot branch consolidation
 
 - [x] Preserve seven early-boot/Stage-1 remote tips and one local

@@ -1,3 +1,19 @@
+## 2026-11-03 v1058: superseded KCC source staging branch
+
+The old `push/kcc-native-source-20261008-v1` branch staged a minimal
+five-argument C-SIX/S6REC converter and a placeholder native KCC
+Makefile. Current main has a six-argument source staging pipeline
+with native DAIMOS.MK, current ABI headers, and packaged bootstrap
+objects. The old packaging code has no missing implementation to
+replay. It also carries unrelated historical VM/memfs/LOGSTORE work,
+which remains available through a history-preserving `ours` merge
+but has not been reintroduced into current kernel source.
+
+The older branch's original commit tip was preserved in main ancestry
+before its obsolete local/remote branch refs were retired. No native
+KCC self-hosting acceptance or 32K guest test was performed, and
+KCORE optimization remains deferred.
+
 ## 2026-11-03 v1057: archive obsolete Stage-1 and early-boot refs
 
 Seven remote-only October 14-15 boot, EXEC, and Stage-1 checkpoints,
