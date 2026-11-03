@@ -1,3 +1,19 @@
+### v1065: final branch-tip closeout
+
+- [x] Classify the final two divergent KCORE source tips against
+  current source, current MRES layout and prior acceptance evidence.
+- [x] Preserve original KCORE source tip commits as main ancestors
+  without replaying the deferred optimization candidates.
+- [x] Recover and test the v101 swap dependency guard (v1063) and
+  the FILE fixture extension storage correction (testkit v1064).
+- [x] Preserve the matching startup-snapshot testkit tip in main
+  ancestry, and remove obsolete branch references after verification.
+- [ ] If KCORE work is explicitly resumed, reconsider syscall service
+  tail folding, optional MRES placement and snapshot ownership against
+  present code and measure **total** permanent RAM, not KCORE alone.
+- [ ] Maintain the deferral on KCORE optimization and 32K-specific
+  tests until it is explicitly lifted.
+
 ### v1063: recover stale swap-source dependency regression
 
 - [x] Restore the historical testkit v101 swap-composite dependency

@@ -1,3 +1,22 @@
+## 2026-11-03 v1065: close the last independent historical tips
+
+Final DAIMOS KCORE source tips `b2f92fd8` (selective MRES) and
+`bafe9fd8` (resident startup snapshot) were reviewed together with
+testkit v72 tip `68b9169`. Their unique historical KCORE code is
+not current-production compatible or independently RAM-accepted.
+Detailed disposition is in `design/FINAL-KCORE-TIPS-AUDIT-V1065.md`.
+Both original source tips are now main ancestors using history-only
+merges. No active syscall dispatch, swap, init, KCORE, DSH, or module
+runtime source was taken from those old trees.
+
+Two separate test issues were recovered before retirement: the v101
+swap assembly dependency list (v1063) and the native FILE test's
+missing mount-extension table space (testkit v1064). The latter
+passes on the PDP-6 without warnings. Current VFS parent-AC3 v1037
+and GCC MonitorFS compiler-selection v1033 checks also pass. Those
+are targeted source/target tests, not a new KCORE RAM-size or 32K
+boot claim. Further KCORE optimization and 32K tests remain deferred.
+
 ## 2026-11-03 v1063: repair stale outer swap-assembly dependencies
 
 The final KCORE startup-snapshot test branch contained a useful

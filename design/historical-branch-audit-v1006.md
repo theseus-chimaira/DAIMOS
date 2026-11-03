@@ -1,3 +1,19 @@
+## v1065 final source branch-tip consolidation
+
+Both retained KCORE tips (`b2f92fd8` and `bafe9fd8`) have now been
+classified in `design/FINAL-KCORE-TIPS-AUDIT-V1065.md`. Their old
+code is preserved as main merge ancestry, with no wholesale source
+replay. The matching v72 testkit tip (`68b9169`) likewise became a
+testkit main ancestor, after its useful v101 dependency guard and
+FILE fixture size fix were recovered and tested independently.
+
+The v1038 disk/drum MRES extraction remains rejected as a one-word
+permanent RAM increase with both devices installed; the v1033 GCC
+MonitorFS reader is retained; the VFS AC3 v1037 fix is already in
+main. Historical syscall-tail and startup snapshot optimizations
+remain unaccepted pending an explicitly requested new KCORE phase.
+No 32K acceptance or current KCORE size savings were asserted.
+
 ## v1063: recover a usable build-graph test from the final snapshot tip
 
 The v101 testkit source-graph check on
