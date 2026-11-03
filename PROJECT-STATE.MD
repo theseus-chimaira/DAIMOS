@@ -1,3 +1,20 @@
+## 2026-11-03 v1030: recover MM descriptor-capacity regression
+
+Historical MM v125 documented KINIT-reserved descriptor backing and an
+adjustable descriptor ceiling. Both are already part of current main:
+`kcore_end.s` exposes `mm_extents` without allocating resident BSS,
+`kinit.c` reserves and clears `2 * mm_extent_capacity` words before
+publishing arenas, and `mm_pdp6.s` checks that capacity on insertion.
+No allocator code was changed during this consolidation.
+
+The historical native PDP-6 31/32/31 descriptor boundary test was
+recovered into `daimos-testkit` as the v1030 acceptance target. Its
+standalone backing now explicitly reserves 64 words because current
+KCORE no longer defines a static MM array; its synthetic core ceiling
+was raised to 256K to avoid deferred 32K-specific tests. Native PDP-6
+v1030 passed. The old experimental pointer-replacement MM proposal
+does not provide a further proved RAM saving and remains deferred.
+
 ## 2026-11-03 v1028: consolidate grouped D6CODEC development branches
 
 Four obsolete DAIMOS grouped-codec development branch names and six

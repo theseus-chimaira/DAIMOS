@@ -1,3 +1,15 @@
+## v1030 MM v125 branch review
+
+`mm-kcore-skeleton-baseline-v125-20261014` is a historical planning
+checkpoint, not an unapplied current allocator change. Current KINIT
+already reserves the descriptor backing immediately after fixed KCORE;
+native MM uses a boot-selected `mm_extent_capacity` for bounded table
+insertion. The distinct usable artifact is the v125 descriptor-limit
+test, adapted and passing on native PDP-6 with a 256K synthetic core
+ceiling and test-owned descriptor backing. No 32K-specific test or new
+kernel size measurement was run. Do not replay the older branch's MM
+implementation or claim its historical 552-word baseline as current.
+
 ## v1028 D6CODEC branch consolidation
 
 The v075/v078/v089/v092 DAIMOS single-format grouped cutover histories
