@@ -1,3 +1,27 @@
+## 2026-11-03 v1083: allocation-free direct fatal-release leaf contract
+
+The v1083 daimos-testkit audit enumerates the current source-linked
+FILE close, PIPE/FIFO final close, zero-length DPY STOP, checked TTY
+session/line release, U-area free, VM destroy, MEMFS XIP release and C
+swap-detach leaves. It rejects new direct MM/backing allocations in
+these release bodies and asserts the established error/owner ordering.
+
+Native PDP-6 v870 final PIPE/FIFO MM refusal/retry, v904 pinned/wrong
+DPY STOP, v912 double-failed DPY MM rollback and host-compiled v957
+real C swap-detach verifier/retry all PASS. No production code was
+altered, so KCORE, MRES, permanent RAM and ABI growth are all zero.
+
+Scope restriction: this is a direct-leaf contract, not a transitive
+OOM-kill readiness proof. Session HUP cascades, foreign in-flight
+provider callbacks, permanent MM pins and clock-dependent retry
+progress require separate closure. `pipe_fifo_open_intr` also drops
+the return from `pipe_close_ref` while `file_open` clears its temporary
+FD: a fault-injected final MM refusal there can leave no FD owner for
+retry. Unlike an ordinary FILE close, this is a provisional FIFO-OPEN
+abort, and normal physical pin reachability remains to be established.
+No blind memory free or speculative global reaper has been installed.
+Production `PROC_OOM_BRK_ENABLED_V1000` remains zero.
+
 ## 2026-11-03 v1082: NEWSESSION checks TTY MM release before publishing identity
 
 PROCCTL_NEWSESSION previously changed the caller's pgrp, session ID and

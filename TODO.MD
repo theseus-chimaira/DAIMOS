@@ -1,3 +1,17 @@
+### v1083: direct fatal teardown allocation-free leaf audit (2026-11-03)
+
+- [x] Executable source contract for direct FILE/PIPE/DPY/TTY/VM/XIP,
+  stable U-area and disk swap release leaves. New allocation in any
+  guarded destructor must fail the test rather than pass silently.
+- [x] Native v870, v904, v912 and actual C v957 regression PASS.
+- [x] No KCORE/MRES, permanent data, ABI or driver change.
+- [ ] Audit full *transitive* HUP and fatal event chains plus foreign
+  provider lease completion before enabling automatic OOM termination.
+- [ ] Decide and test ownership/retry after interrupted FIFO OPEN when
+  its provisional last `mm_free` is refused. Current code discards the
+  close error before any stable FILE descriptor is published; check
+  fault reachability and avoid speculative global garbage collection.
+
 ### v1082: transactional NEWSESSION TTY release (2026-11-03)
 
 - [x] Preflight last-member canonical input release before rewriting
