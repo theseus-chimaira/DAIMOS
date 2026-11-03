@@ -238,6 +238,7 @@ int proc_tty_input(unsigned int tty, unsigned int ch);
 int proc_tty_line_take(unsigned int tty);
 int proc_tty_canon_input(unsigned int tty, unsigned int ch);
 void proc_tty_line_reset(unsigned int tty);
+/* Preserve MM_ERR_BUSY (-5) versus MM_ERR_INVAL (-4) on rejected release. */
 int proc_tty_line_try_reset_v897(unsigned int tty);
 int proc_tty_mode_set(unsigned int tty, unsigned int mode);
 int proc_tty_output_route_get(unsigned int tty);

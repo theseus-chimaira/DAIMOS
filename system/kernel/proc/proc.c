@@ -59,39 +59,45 @@ kword_t proc_tty_line_bases[PROC_TTY_LINE_PTR_WORDS];
 extern kword_t proc_tty_line_base_get(unsigned int tty);
 extern void proc_tty_line_base_set(unsigned int tty, kword_t base);
 
-/** Free one TTY's dynamically allocated canonical-input line buffer. */
+/** Best-effort canonical-input reset for callers with no error channel.
+ * Checked session and finalizer paths use proc_tty_line_try_reset_v897().
+ */
 void
 proc_tty_line_reset(unsigned int tty)
 {
-        kword_t base;
-
-        if (tty >= PROC_TTY_COUNT)
-                return;
-        base = proc_tty_line_base_get(tty);
-        if (base == 0UL)
-                return;
-        if (mm_free(base, MM_TYPE_KERNEL_DYNAMIC,
-            PROC_TTY_LINE_MM_OWNER_BASE + tty) == MM_OK)
-                proc_tty_line_base_set(tty, 0UL);
+        (void)proc_tty_line_try_reset_v897(tty);
 }
 
 /**
  * Attempt to retire a canonical input buffer before changing TTY ownership.
  *
  * The physical MM extent can be pinned or its owner metadata can reject
- * mm_free(). A failed release keeps proc_tty_line_bases[] intact. In that
- * case a caller must NOT transfer the TTY to another session: the stale
- * SIXBIT input would become readable by an unrelated login.
+ * mm_free(). Return MM_ERR_BUSY (-5) for a retryable pin and MM_ERR_INVAL
+ * (-4) for a wrong type/owner, missing extent or invalid tty. A failed
+ * release always keeps proc_tty_line_bases[] intact. A caller must NOT
+ * transfer the TTY to another session: stale SIXBIT input could then
+ * become readable by an unrelated login. Unchecked callers may discard
+ * the error, but checked cleanup preserves the exact failure class.
  *
  * No new memory is allocated; a later detach/attach may retry safely.
  */
 int
 proc_tty_line_try_reset_v897(unsigned int tty)
 {
+        kword_t base;
+        int rc;
+
         if (tty >= PROC_TTY_COUNT)
-                return -1;
-        proc_tty_line_reset(tty);
-        return proc_tty_line_base_get(tty) == 0UL ? 0 : -1;
+                return MM_ERR_INVAL;
+        base = proc_tty_line_base_get(tty);
+        if (base == 0UL)
+                return MM_OK;
+        rc = mm_free(base, MM_TYPE_KERNEL_DYNAMIC,
+            PROC_TTY_LINE_MM_OWNER_BASE + tty);
+        if (rc != MM_OK)
+                return rc;
+        proc_tty_line_base_set(tty, 0UL);
+        return MM_OK;
 }
 
 /** Change TTY input mode, discarding any partially cooked input line. */
