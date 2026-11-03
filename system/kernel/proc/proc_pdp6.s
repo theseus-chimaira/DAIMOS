@@ -792,13 +792,15 @@ proc_finish_restore:
         popj    17,
 
 /**
- * @brief Retry post-VM u-area releases from the permanent idle stack.
+ * @brief Retry marked non-sleeping teardown from the idle stack.
  *
  * No allocation or scheduler-private process stack is needed. Eligible
- * owners are either explicitly tagged post-VM finalizers or unpublished
- * SIDL slots whose VM release was rejected. Ordinary swapping and
- * failed session/HUP teardown are excluded.
- * This is called with scheduler PI6 inhibited, once per clock tick.
+ * owners are tagged post-VM/PREVM finalizers or unpublished SIDL slots
+ * whose TTY/VM release was rejected. Checked canonical TTY/MM release,
+ * VM/XIP unpin and backing detach must remain allocation-free and
+ * non-sleeping. Ordinary swapping and session/HUP teardown are excluded:
+ * never add a device wait or a private-stack sleeper to this PI6-masked
+ * service. It runs only when qualified APR clock ticks are available.
  */
 proc_finish_service_v881:
         push    17,10
@@ -936,12 +938,23 @@ proc_discard_live:
         movei   1,PROC_TRANSITION_RH
         iorb    1,(10)
 proc_discard_vm_retry_v894:
+        ; v1085: an unpublished RUN child may be the last member of
+        ; its inherited session. Retire a canonical TTY line before
+        ; destroying its VM/u-area, exactly as normal finalization does.
+        ; An MM refusal must retain this slot as the SIDL retry owner.
+        move    1,10
+        pushj   17,proc_scope_id
+        andi    1,0377
+        move    2,11
+        pushj   17,proc_tty_release_session
+        jumpn   1,proc_discard_prevm_fail_v1085
         move    1,10
         move    2,11
         pushj   17,vm_space_destroy
         jumpe   1,proc_discard_vm_done
+proc_discard_prevm_fail_v1085:
         ; The VM is not committed as destroyed. Keep its process slot,
-        ; any u-area and backing ownership intact. Reuse the existing
+        ; any TTY/u-area and backing ownership intact. Reuse the existing
         ; one-word deferred retry clock even when no u-area exists.
         movei   4,02
         tdne    4,2(10)
@@ -959,11 +972,6 @@ proc_discard_vm_done:
         andcam  4,2(10)              ; VM owned no longer; drop retry tag
         camn    11,proc_rt_owner
         setzm   proc_rt_owner
-        move    1,10
-        pushj   17,proc_scope_id
-        andi    1,0377
-        move    2,11
-        pushj   17,proc_tty_release_session
 proc_discard_retry_uarea_v892:
         move    1,11
         move    2,10

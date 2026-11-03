@@ -1,3 +1,66 @@
+### OOM activation gates (current as of v1085, 2026-11-03)
+
+Assumptions: a functioning PDP-6 APR line clock and ordinary hardware
+interrupt delivery. A physically failed system clock is a hardware
+failure outside OOM recovery scope. Kernel-caused PI6 inhibition and
+software/device deadlocks remain kernel correctness requirements.
+
+- [x] Requester-only policy, BRK MM_ERR_NOMEM classification, default-
+  disabled production gate, 256K physical exhaustion OOM child exit
+  with surviving independent process, and combined D6FS SYNC/MM_BUSY
+  refusal/recovery guest (v1000/v1075/v1077).
+- [x] Direct release leaf allocation checks, successful TTY/PIPE/DPY
+  MM refusal/retry, and unpublished RUN TTY-before-VM rollback owner
+  (v1081-v1085); no additional owner/reaper table is introduced.
+- [ ] P0-A: Complete a transitive callback call graph from fatal BRK,
+  APR and post-commit EXEC through FILE CLOSE, VFS provider SYNC,
+  session HUP and deferred events, TTY, VM/MEMFS-XIP, swap backing,
+  MM and parent notification. Prove every reachable fatal operation
+  either needs no new MM/backing allocation or fails without losing
+  the owning process/FD/provider lease; cover all return/error edges.
+- [ ] P0-B: Establish owner-safe lifetime for in-flight provider
+  operations, including a foreign live lease, a reentrant request,
+  a permanently rejecting provider, and an active call which does
+  not return. Do not steal provider locks, invent wakeups or free
+  stack/FILE/MM buffers behind their owner. Specify whether permanent
+  refusal is fail-closed quarantine or demands provider-specific
+  recovery; bounded *retry delay* is not bounded *total completion*.
+- [ ] P0-C: Prove no slot-0 finalizer or nested MRES callback invoked
+  with scheduler PI6 inhibited can block waiting for the PI6 clock,
+  sleep on a process stack, or perform a clock-dependent device I/O.
+  Keep HUP on the private stack; keep swap-in outside the PI6 inhibit.
+  Test software PI6 suppression/foreign-provider contention, not
+  physical clock failure; avoid a new watchdog if the reachability
+  proof closes this gate.
+- [ ] P0-D: Establish fault-stage commit/idempotence for failed HUP,
+  TTY line, XIP/VM, swap backing, PIPE/DPY, and final u-area frees.
+  Distinguish retryable MM_BUSY from invalid type/owner (-4); never
+  return success while an allocation still lacks a retry owner.
+- [ ] P0-E: Booted PDP-6 fault-injection matrix: real memory pressure,
+  FILE+HUP+VM/MM combinations, pending EXEC/APR fatal, unpublished
+  RUN rollback, pinned TTY/XIP, concurrent provider owner, and a
+  continuously runnable bystander. Check no unrelated process kill,
+  duplicate HUP/finalization, premature PID reuse, incorrect WAIT,
+  blocked PI6, or leaked MM/FILE/backing references.
+- [ ] P0-F: Verify all standard OOM-disabled negative cases (invalid
+  BRK, address limit, MM descriptors/fragmentation, failed child RUN)
+  remain ordinary errors; only exhausted requester BRK terminates
+  when enabled. Preserve full KCC/KCORE/MRES size and 16K mapping
+  constraints; enable the production gate only after P0-A..E pass.
+
+### v1085: deferred unpublished RUN TTY retirement (2026-11-03)
+
+- [x] Move last-session TTY release ahead of VM destruction in the
+  unpublished RUN discard path, and propagate MM refusal through the
+  existing SIDL/slot-0 retry owner.
+- [x] Positive/old-source negative PDP-6 tests prove refused TTY
+  retains VM and u-area, later retry frees exactly once; v892/v894
+  fixture and native v1081 finalizer checks PASS.
+- [x] Full v969 MM-pinned last-session TTY and v1077 256K physical
+  OOM guest with combined D6FS SYNC/MM_BUSY refusal and retry PASS.
+- [x] KCORE low end +1 instruction word (`023116` -> `023117` octal),
+  zero new resident data or reaper state.
+
 ### v1084: FIFO OPEN interrupted-rollback ownership (2026-11-03)
 
 - [x] Reproduce a real PDP-6 MM-pin refusal during a named FIFO's
@@ -78,9 +141,11 @@
   and full 256K physical-OOM FILE/MM regression PASS.
 - [x] One-word instruction replacement, with no KCORE/MRES or
   persistent data growth.
-- [ ] Design and accept bounded slot-0 I/O when PI6 clock is masked;
-  separate from safe cancellation of an already active foreign
-  provider. Automatic production OOM killing remains disabled.
+- [ ] Close P0-C by proving that slot-0 PI6-masked cleanup never
+  enters clock-dependent I/O or a sleeping provider; fix a real
+  reachable path rather than implementing a speculative timer.
+  Physical APR clock failure is outside scope. Foreign active
+  provider quiescence is separately tracked by P0-B.
 
 ### v1079: bounded runtime DRM236 device completion (2026-11-03)
 
@@ -101,10 +166,11 @@
   (124 -> 141), no extra persistent data words.
 - [x] Independent `ROOT=drum` Type-167/236 Stage1 simulator boot
   with DSK0 unattached PASSes through DRM236 MRES, D6FS, INIT, LOGIN.
-- [ ] Still need bounded cancellation/quiescence for providers
-  already running non-I/O code, permanent refusal, and any context
-  where qualified clock ticks cannot run. Fatal teardown's
-  transitive allocation-freedom and production OOM killing stay open.
+- [ ] Still need owner-safe provider quiescence policy for active
+  nonreturning calls and permanent refusal (P0-B), plus a PI6-safe
+  slot-0 reachability proof (P0-C). The normal runtime DRM watchdog
+  requires operational APR ticks, not recovery from hardware clock
+  failure. Transitive fatal teardown remains P0-A.
 
 ### v1078: foreign provider contention during fatal FILE close (2026-11-03)
 

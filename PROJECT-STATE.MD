@@ -1,3 +1,47 @@
+## 2026-11-03 v1085: unpublished RUN TTY ownership and OOM clock scope
+
+An unpublished RUN child can be left in SIDL/TRANSITION with VM
+rollback pending while its parent later leaves the inherited session.
+The old `proc_slot_discard` released VM first, discarded the result
+of `proc_tty_release_session`, then freed the last stable u-area.
+A final-session canonical TTY buffer whose MM free refused would keep
+its session record but lose the natural process retry owner.
+
+v1085 checks the final-session TTY release *before* VM destruction.
+Its refusal enters the existing `PROC_SIDL_DISCARD_VM_RH` and shared
+slot-0 retry clock, preserving the child and its still-live VM/u-area.
+Subsequent service rechecks the TTY and commits VM/U-area teardown
+only after release succeeds. The no-uarea case retains its zero-session
+no-op, and post-VM retry does not repeat TTY or VM destruction.
+Production assembly gains one instruction word, no permanent state:
+KCC KCORE low end `023116` -> `023117` octal. Source-linked native
+PDP-6 positive and pre-v1085 negative acceptance PASS. v881/v892,
+v894 and v1081 rollback/finalizer tests PASS on corrected fixtures;
+the full v1077 physical-OOM provider/MM guest also PASSes.
+The booted v969 256K physically MM-pinned last-session TTY exit
+guest also PASSes retained line/session, real unpin and successful
+finalizer retry. No TTY ownership is silently discarded.
+
+OOM readiness is distinct from a hardware clock failure. The PDP-6
+APR line clock is assumed operational, just like MM and instruction
+execution. No timeout, fallback timer or recovery protocol for a
+physically broken clock is required. A DAIMOS-created PI6 inhibit,
+an infinite software spin, or a device wait which requires inhibited
+PI6 ticks *is* a kernel defect and still requires a reachable-path
+proof or repair. In the current code the idle PI6 inhibit encloses
+only marked PREVM/post-VM and unpublished RUN retry; HUP is staged
+on the private owner stack, and swap-in service is after PI6 restore.
+The source audit does not yet certify all nested provider callbacks.
+
+Remaining OOM production blockers: transitive no-allocation and
+owner-preserving teardown across FILE/HUP/TTY/VM/MEMFS-XIP/PIPE/DPY,
+in-flight provider lease/quiescence policy, PI6-safe progress of
+slot-zero callbacks, deterministic permanent-refusal containment,
+and full-system combinations of faults and competing live processes.
+The requester-only physical shortage/exit and independent witness
+have already been demonstrated with a disposable OOM-enabled guest.
+`PROC_OOM_BRK_ENABLED_V1000` remains zero in production.
+
 ## 2026-11-03 v1084: interrupted FIFO OPEN retains its MM retry owner
 
 An interrupted named-FIFO OPEN has already reserved a provisional FILE
