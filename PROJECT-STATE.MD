@@ -1,3 +1,32 @@
+## 2026-11-04 v1100: preserve typed old-DPY-list MM refusal
+
+P0-D found another typed release boundary. `dpy_write_words` keeps
+the previously published raw display list, immutable IOWD and clock
+refresh owner if `mm_free` rejects its extent, but its successful
+rollback of the newly allocated replacement overwrote the original
+MM error with generic -1. This hid `MM_ERR_BUSY` (-5) versus invalid
+MM type/owner (`MM_ERR_INVAL`, -4) from the FILE final-close path and
+its error diagnostics.
+
+The rollback now stores the original old-list MM result in the
+already-allocated temporary stack word before freeing the new extent.
+After a successful rollback it restores that result verbatim; a
+second failed free still publishes the new orphan in the preexisting
+`dpy_list_orphan_v912` owner and reports the latter MM result. Neither
+the old display program, its IOWD, refresh state, descriptor, nor
+the original owner are published as freed on a failed release.
+No additional global word, dynamic owner, MRES or process field.
+
+Native PDP-6 v874 replacement rollback/retry PASS; v1100 executes
+actual production driver source for both -5 and -4 old-list failures,
+verifies later successful replacement and stop, and rejects two
+unsafe mutations that lose the first error. The v1100 component matrix
+and combined booted v997/v1077 fault guests PASS on the prior release;
+the current v1100 full KCC 256K production image build also PASSes,
+with unchanged `__kcore_low_end` `023162` octal and no new BSS.
+This is an individual P0-D leaf improvement, not closure of the
+entire multi-stage matrix. Production OOM kill remains disabled.
+
 ## 2026-11-04 v1099: preserve PIPE/FIFO final-close MM error type
 
 P0-D source audit found a real error-classification loss in the final

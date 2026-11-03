@@ -1,4 +1,4 @@
-### OOM activation gates (current as of v1099, 2026-11-04)
+### OOM activation gates (current as of v1100, 2026-11-04)
 
 Assumptions: a functioning PDP-6 APR line clock and ordinary hardware
 interrupt delivery. A physically failed system clock is a hardware
@@ -76,6 +76,26 @@ software/device deadlocks remain kernel correctness requirements.
   final anonymous PIPE and FIFO CLOSE while retaining the descriptor,
   references and FIFO list; four unsafe native variants are rejected.
   Full cross-stage fault matrix remains OPEN.
+
+### v1100: retain original DPY old-list MM failure (2026-11-04)
+
+- [x] A failed MM free of the *published* Type-340 display list
+  previously reported generic -1 when release of its newly allocated
+  unpublished replacement succeeded. This lost the distinction between
+  a pinned old list (-5) and an invalid old extent owner/type (-4).
+- [x] Reuse the existing allocation-result stack local, no additional
+  kernel data: save the old-list MM return before rolling back the
+  unpublished allocation, then return that exact result after a
+  successful rollback. On a second failed free, retain the unpublished
+  orphan owner and return its own failure as before. Installed list,
+  BLKO descriptor, refresh and FILE ownership are preserved.
+- [x] Actual PDP-6 v874 replacement/rollback fixture PASS; new v1100
+  source-linked cases test -5 and -4 with two unsafe error-losing
+  variants rejected. Production full KCC image PASS with unchanged
+  `__kcore_low_end` `023162` octal; v1100 P0-D native matrix PASS.
+  The previous booted v997/v1077 combined fault guests PASS.
+- [ ] P0-D still needs simultaneous cross-stage HUP/DPY/PIPE and
+  permanent invalid owner boot tests; OOM production bit remains OFF.
 
 ### v1099: typed PIPE/FIFO final-close MM refusal (2026-11-04)
 

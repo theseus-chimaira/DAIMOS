@@ -274,7 +274,8 @@ dpy_put_ok:
  * @brief Replace or stop the persistent userspace Type-340 display list.
  * @param AC1 Source packed-word address; ignored when AC2 is zero.
  * @param AC2 Packed 36-bit word count; zero stops/releases the active list.
- * @return AC1 = accepted word count, or -1 on allocation/input failure.
+ * @return AC1 = accepted word count, -1 on allocation/input failure,
+ *         or the original MM error (-4/-5) on owned release refusal.
  *
  * Replacement is transactional: prepare the new extent and IOWD privately,
  * quiesce PI7, then release the old extent before publishing the new list.
@@ -367,6 +368,11 @@ dpy_list_commit_v874:
 ; A second failed free leaves two legitimate extents. Record the
 ; unpublished one for explicit retry; never lose its MM ownership.
 dpy_list_rollback_v874:
+        ; The allocation-result stack word is no longer needed after
+        ; staging AC12. Preserve the *old* extent's exact MM error
+        ; while the unpublished new extent is released. A successful
+        ; rollback must return -4 (invalid) or -5 (busy), not -1.
+        movem 1,(17)
         move 1,012
         movei 2,3
         movei 3,014
@@ -374,8 +380,8 @@ dpy_list_rollback_v874:
         jumpn 1,dpy_list_rollback_bad_v874
         movei 2,1
         movem 2,dpy_refresh_divider
+        move 1,(17)
         sub 17,kconst_1_1
-        seto 1,
         jrst dpy_list_replace_done_v874
 dpy_list_rollback_bad_v874:
         movem 012,dpy_list_orphan_v912

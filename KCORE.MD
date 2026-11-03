@@ -1,3 +1,17 @@
+## 2026-11-04 v1100: typed DPY rollback without persistent state
+
+The Type-340 `dpy_write_words` old-list replacement failure now
+preserves the allocator's exact error (-5 busy/pinned or -4 invalid
+MM type/owner). The existing allocation-result stack word carries
+the old error across the separate `mm_free` of the unpublished new
+list, avoiding a new data or owner word. Failed replacement still
+keeps the original display list, IOWD and FILE descriptor; a second
+failed free retains its original orphan-owner path. Native PDP-6
+source-linked v874 and v1100 cases PASS, including two unsafe
+mutation rejections. The v1100 full KCC image PASSes and retains the
+same `__kcore_low_end` `023162` octal (no new KCore or BSS words).
+P0-D/E/F remain open and production OOM is OFF.
+
 ## 2026-11-04 v1099: typed final PIPE/FIFO MM refusal
 
 The last-reference PIPE/FIFO close now preserves the actual MM_FREE
