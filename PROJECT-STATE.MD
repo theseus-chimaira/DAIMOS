@@ -8,8 +8,10 @@ kernel's OOM status 1, a separate blocked PIPE reader stays alive and
 resumes after its writer closes, and the process memory accounting
 returns to the parent's initial value. The full guest reaches a
 controlled HALT (`<KWP`). A separate full-guest control with the
-default flag 0 returns -1 from BRK instead of terminating its caller
-(`D!S`). Both use a disposable 256K simulator image, without changing
+default flag 0 returns -1 from BRK instead of terminating its caller;
+the child exits normally, the PIPE witness resumes, and the parent
+verifies recovered process memory (`<DNWP`). Both use disposable
+256K simulator images, without changing
 production source or persistent KCORE memory.
 
 This accepts only the ordinary provider-success path. A forever-busy
