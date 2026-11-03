@@ -1065,7 +1065,9 @@ $(SYSTEM_COMMAND_INDEX): $(SYSTEM_MANUAL_SRCS) | $(MANUAL_BUILD)
 		subcmd && /^## / { subcmd=0 } \
 		subcmd && /^### @\?/ { x=substr($$0,7); sub(/ .*/,"",x); print x }' \
 		$(PROJECT_ROOT)/userland/manual/DSH.SIXMD >> "$$tmp"; \
-	sort -u "$$tmp" -o "$$tmp"; \
+	grep -v -x -e MOUNTALL -e DSHCOMP -e MKSWAP "$$tmp" | \
+	    sort -u > "$$tmp.filtered"; \
+	mv "$$tmp.filtered" "$$tmp"; \
 	$(S6FILTER) "$$tmp" > $@; \
 	rm -f "$$tmp"; trap - 0 1 2 3 15
 
