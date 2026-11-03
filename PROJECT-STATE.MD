@@ -1,3 +1,80 @@
+## 2026-11-04 v1098: prepublished PREVM exit now arms retry epoch
+
+P0-D full-system validation exposed a genuine preexisting unbounded
+reaper stall. `proc_exit_current` publishes FINALIZE+PREVM under the
+brief PI-disabled stack handoff as required by v1086; that is an owner
+publication, **not** a pending timeout request. When the first VM
+destroy failed, `proc_finish_mark_pending_v892` saw the marker and
+jumped straight to rearm without initializing the first delay. This
+published the global pending flag with an unset delay. The idle
+reaper's explicit zero-delay safety guard correctly ignored that
+malformed state indefinitely while unrelated users continued running.
+
+Before v1098, the booted v997 disposable 256K guest observed one VM
+destroy attempt, zero u-area attempts, correct descendant CHLD and
+261 bystander cycles, but it timed out waiting for the marked owner
+to complete. That failure was not caused by v1097 typed return codes.
+v1098 makes `proc_finish_mark_pending_v892` distinguish the existing
+per-owner FINALIZE marker from the global pending-bit/clock lifecycle:
+an already pending prior retry preserves its delay, while a first
+refusal with a prepublished marker initializes the same 020-octal-tick
+first retry and bounded APR epoch as a new owner. No new state word,
+forced release or device sleep is introduced.
+
+Source-linked native PDP-6 v1098 exercises prepublication/no clock,
+existing retry backoff, a new finalizer with old backoff and a stale
+epoch; three deliberately unsafe mutations fail. Native v1081/v1085,
+v881, PI6 safety v1086 and allocation closure v1087 also PASS after
+the test fixtures supply their existing kernel clock word.
+
+The repaired booted v997 guest PASSes: two VM calls including one
+initial refusal, two final u-area MM calls with one MM_BUSY refusal,
+three FILE-close attempts with two refused, one descendant CHLD,
+one owner EXIT, an untouched held foreign filesystem lease and
+36 independent bystander cycles. Zero errors, premature frees or
+duplicate finalization observed. Production OOM remains OFF pending
+remaining P0-D/E/F acceptance.
+The v1077 disposable physical OOM/D6FS/MM guest also PASSes on the
+same v1098 sources (two rejected SYNC, one rejected MM free, correct
+requester and independent witness recovery). Full production KCC
+build PASS; KCORE end `023156` -> `023162` octal (+4 code words), no
+additional BSS, timer, process or MRES state. All v1096 component
+matrix tests, v1086 PI6, v1087 allocation closure and v1098 native
+clock/backoff negative controls PASS. The production OOM bit is OFF.
+
+## 2026-11-04 v1096-v1097: typed final u-area release and stage matrix
+
+P0-D found a genuine loss of MM error classification in final process
+resource release. `proc_uarea_release` called the actual `mm_free`
+but returned generic -1 for every failed result, hiding the difference
+between a physically pinned extent (-5) and an impossible owner/type
+or missing extent (-4). The v1097 implementation keeps the exact
+allocator error after restoring saved AC10, and returns -4 for a
+corrupted stable-u-area descriptor whose owner flag is set but whose
+base is zero. Neither branch clears the descriptor or tries to free a
+different owner's memory. Successful MM deletion and the already-
+absent case still return zero; subsequent finalizer stages are gated
+on that success. Existing process/finalizer callers test nonzero and
+retain the same PREVM/POSTVM retry owner and commit ordering.
+
+The v1097 native test runs the production `proc_uarea_release` and
+PDP-6 MM leaves on the simulator, covering invalid owner/type, a
+pinned u-area, corrupted zero base, repaired metadata, exactly-once
+free, and a second harmless release. All PASS. Three deliberately
+unsafe mutations (collapsing errors, reversing the commit guard, and
+misclassifying invalid base) are rejected. The v1096 source-linked
+component matrix additionally PASSes PIPE last close, DPY replacement,
+swap bitmap release, HUP retry, both TTY PREVM finalizers, typed TTY
+release, XIP/VM ownership and allocation-free fatal graph checks.
+
+The full KCC 256K production image builds successfully. KCORE end
+changes `023154` -> `023156` octal (+2 code words), with no extra
+KCORE BSS, owner table, FILE/MM descriptor, MRES or ABI storage.
+The first v997 booted acceptance attempt on v1097 timed out because
+of the first PREVM timer defect detailed in v1098 above. On v1098,
+both v997 and v1077 guest regressions PASS as independent executions.
+P0-D/E/F remain OPEN; OOM requester termination stays OFF.
+
 ## 2026-11-03 v1093-v1094: typed MM refusal and XIP/VM commit guard
 
 P0-D identified two release-stage ambiguities, fixed without adding

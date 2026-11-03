@@ -1,3 +1,49 @@
+## 2026-11-04 v1098: arm first PREVM retry after EXIT stack handoff
+
+The v1086 slot-0 safety handoff publishes FINALIZE+PREVM before
+discarding the private executive stack. That marker is NOT evidence
+that `proc_finish_last_tick_v881` has a valid delay. On a first
+`vm_space_destroy` refusal, the former `proc_finish_mark_pending_v892`
+mistook the prepublished marker for a prior retry and set the global
+pending flag with a zero interval; the idle reaper correctly never
+entered that corrupted zero-delay state, stranding the process.
+
+v1098 initializes a new 020-octal-tick first retry from the current
+APR epoch if a marked finalizer has no global pending owner; existing
+pending owners retain their backoff. The slot-0 reaper still rejects
+a genuinely malformed zero delay, and no FILE/MM owner, PI6 mask,
+private kernel stack, process record or permanent timer word changes.
+Real PDP-6 v1098 native tests and three unsafe clock mutations PASS.
+The previously failing v997 256K guest now finishes its two-stage
+VM then u-area retries with correct CHLD, held provider lease and
+independent bystander progress (36 cycles), without a forced release.
+The v1077 256K requester-only physical-OOM regression also PASSes
+with two D6FS SYNC refusals, one MM_BUSY and surviving bystander.
+The production KCC full-profile build gives `__kcore_low_end` octal
+`023156` -> `023162` (+4 resident code words), with no new BSS,
+MRES exports, process fields, or durable timer metadata.
+
+## 2026-11-04 v1096-v1097: u-area MM error typing, P0-D matrix
+
+`proc_uarea_release` now propagates the real `mm_free` result on a
+failed final u-area deletion: -5 (pinned/busy) versus -4 (wrong type,
+wrong owner, nonexistent extent). A live-u-area flag with zero base
+also reports invalid -4. The process table, stable u-area ownership,
+MM allocation and finalizer retry stage remain unchanged on refusal;
+release status zero means exactly one actual MM free or true absence.
+The existing finalizer checks nonzero before publishing FREE/ZOMB,
+retaining its original retry owner. No MM or new backing allocation is
+introduced.
+
+PDP-6 source-linked v1097 physical-MM tests and three unsafe mutation
+controls PASS; the v1096 PIPE/DPY/HUP/VM/XIP/TTY/u-area component
+matrix and the allocation-free fatal path audits PASS. Full production
+KCC build succeeds: KCORE low end `023154` -> `023156` octal (+2
+resident words), no new permanent state. The full booted v997/v1077
+guest checks initially uncovered the v1098 PREVM clock defect; both
+PASS after that correction. P0-D stays OPEN for untested mixed
+resource faults, and production OOM termination remains disabled.
+
 ## 2026-11-03 v1093-v1094: P0-D typed release and XIP safety
 
 The checked canonical TTY buffer reset now returns the real MM_FREE

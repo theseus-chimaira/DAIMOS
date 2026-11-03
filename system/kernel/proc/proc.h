@@ -223,7 +223,10 @@ int proc_exit_finish(int status);
 int proc_finish_slot(unsigned int slot, unsigned int status);
 /* Owner-only EXIT after proc_current_slot has been cleared for idle teardown. */
 int proc_finish_slot_owner_v932(unsigned int slot, unsigned int status);
-/** Release one process's stable kernel u-area. */
+/** Release one process's stable kernel u-area.
+ * Return MM_OK on success/absence, MM_ERR_BUSY for a pinned extent, or
+ * MM_ERR_INVAL for an invalid base/type/owner. Nonzero preserves its
+ * original descriptor and stable retry owner. */
 int proc_uarea_release(unsigned int slot, struct proc *p);
 /** Release a session TTY; -1 retains MM ownership for caller retry. */
 int proc_tty_release_session(unsigned int session, unsigned int leaving_slot);

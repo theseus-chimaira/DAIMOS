@@ -1,4 +1,4 @@
-### OOM activation gates (current as of v1094, 2026-11-03)
+### OOM activation gates (current as of v1098, 2026-11-04)
 
 Assumptions: a functioning PDP-6 APR line clock and ordinary hardware
 interrupt delivery. A physically failed system clock is a hardware
@@ -63,7 +63,15 @@ software/device deadlocks remain kernel correctness requirements.
   v1093 now preserves real -5/-4 results in checked TTY line release,
   with shared best-effort/checked free implementation. v1094 prevents
   an *owned* MEMFS XIP unpin failure from falling through to ordinary
-  MM_TYPE_PROCESS deletion. Both retain original stage owners on error.
+  MM_TYPE_PROCESS deletion. v1097 now propagates the underlying -5/-4
+  from the final u-area MM release instead of collapsing to -1; wrong
+  base/type/owner retains exact process descriptor and MM retry owner.
+  v1098 fixes the first PREVM retry clock not being armed when EXIT
+  prepublished FINALIZE+PREVM before a refused VM destroy. The repaired
+  v997 booted retry/CHLD/provider ownership guest PASSes; its first VM
+  rejection is followed by exactly one successful retry, then an
+  MM_BUSY u-area rejection and successful second attempt. All stages
+  retain original owners until actual completion.
   Full cross-stage fault matrix remains OPEN.
 - [ ] P0-E: Booted PDP-6 fault-injection matrix: real memory pressure,
   FILE+HUP+VM/MM combinations, pending EXEC/APR fatal, unpublished
@@ -76,6 +84,71 @@ software/device deadlocks remain kernel correctness requirements.
   remain ordinary errors; only exhausted requester BRK terminates
   when enabled. Preserve full KCC/KCORE/MRES size and 16K mapping
   constraints; enable the production gate only after P0-A..E pass.
+
+### v1096-v1097: P0-D component matrix and typed u-area release (2026-11-04)
+
+- [x] Fix `proc_uarea_release`: valid u-area MM errors were previously
+  collapsed into generic -1 after `mm_free`. The real status now survives
+  (-5 pinned/busy, -4 invalid type/owner or missing extent); an invalid
+  base with the live-u-area flag set explicitly returns -4. On all
+  failures the original process descriptor and allocation remain owned.
+  Zero is returned only after the exact free or when no u-area exists.
+- [x] Source-linked real PDP-6 v1097 extends v956 tests for wrong owner,
+  wrong type, pinned extent, zero base with set u-area flag, exact
+  success, and repeated idempotent release. Three unsafe variants
+  (return collapse, early owner clear, wrong base classification) fail.
+- [x] v1096 component matrix executes production PIPE final-close,
+  DPY replacement rollback, swap detach, HUP committed-child skip,
+  u-area release, TTY PREVM and unpublished child rollback, typed
+  TTY and XIP/VM release, plus v1083/v1087 no-new-allocation contracts.
+  All component tests PASS on this tree.
+- [x] Full production KCC 256K image builds with `__kcore_low_end`
+  `023154` -> `023156` octal (+2 words), no new persistent data,
+  process table, MRES or syscall ABI fields.
+- [x] Booted v997 PREVM + u-area two-stage refusal after v1098 PASS:
+  VM calls 2, u-area calls 2, injected MM_BUSY 1, prior FILE rejects 2,
+  correct CHLD/EXIT, live foreign provider lease, bystander 36 cycles,
+  zero ownership errors. Before v1098 the same guest timed out with
+  VM calls 1, u-area calls 0, and bystander progress; that result was
+  an actual unarmed-slot-0-clock defect, not a random simulator stall.
+- [x] Rerun v1077 real physical-OOM D6FS/MM refusal guest on exact
+  v1098 source: 2 rejected D6FS SYNC, 1 MM_BUSY, correct requester
+  recovery and surviving independent witness PASS. Only this
+  disposable guest enables requester OOM; production remains OFF.
+- [ ] P0-D remains open for additional *simultaneous* HUP/PIPE/DPY,
+  swap backing and u-area fault combinations, permanent bad owner
+  classification through finalizer diagnostics, and an exhaustive
+  booted no-leak/no-reused-PID matrix. OOM stays OFF.
+
+### v1098: arm the first prepublished EXIT PREVM retry (2026-11-04)
+
+- [x] Fix a real P0-D/P0-C interaction: v1086 publishes FINALIZE+PREVM
+  while transferring EXIT off its private stack. `proc_finish_mark_pending`
+  previously assumed any marked finalizer already had an armed shared
+  retry clock, and skipped first-time delay initialization after the
+  first refused VM destruction. The resulting `proc_finish_last_tick`
+  pending bit with a zero delay was (correctly) ignored by idle reaper,
+  leaving a permanently unreaped, owned process despite healthy ticks.
+- [x] If an EXIT marker is prepublished but the shared pending flag is
+  absent, initialize the first 020-octal-tick retry from the current
+  bounded APR epoch before publishing pending. A *previously* pending
+  owner retains its existing backoff; a new finalizer resets it. No
+  bypass of zero-delay safety, forced MM release, PI6 sleep or new RAM.
+- [x] Native PDP-6 v1098 executes the real retry publication for
+  first premark, already pending owner, new owner and stale epoch;
+  three unsafe clock/backoff mutations rejected. Existing v1081/v1085
+  TTY/PREVM, v881 u-area, v1086 PI6 and v1087 fatal allocation closure
+  tests PASS with correctly modeled test-only clock word.
+- [x] Previously known-failing v997 full-system fault guest now PASS:
+  exactly two VM and two u-area release calls, one physical MM refusal,
+  correct parent CHLD and completed fatal owner, retained live foreign
+  lease, 36 bystander cycles, no integrity error.
+- [x] Exact production 256K KCC full image PASS: KCORE endpoint
+  `023156` -> `023162` octal (+4 instructions), no new permanent
+  owner, timer, process or MM data. v1077 physical OOM/D6FS/MM guest
+  and the v1096 component matrix including v1097/v1098 PASS.
+- [ ] P0-D stage matrix continues with multi-resource mixed failure,
+  long-term invalid owner and failure-diagnostic cases. OOM stays OFF.
 
 ### v1093-v1094: typed TTY/MM and XIP/VM teardown stage fixes (2026-11-03)
 

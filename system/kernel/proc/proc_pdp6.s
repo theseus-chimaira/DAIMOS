@@ -771,11 +771,21 @@ proc_finish_defer_uarea_v881:
  */
 proc_finish_mark_pending_v892:
         move    5,PROC_FINALIZE_OFFSET(3)
-        tlne    5,PROC_FINALIZE_MARK_LH
+        tlnn    5,PROC_FINALIZE_MARK_LH
+        jrst    proc_finish_new_pending_v1098
+        ; Owner EXIT prepublishes FINALIZE+PREVM before switching away
+        ; from its private stack, but that publication has no retry
+        ; clock. The first failed VM free must arm the clock even though
+        ; the marker already exists. A genuine prior failure has both
+        ; the marker and the shared pending flag; preserve its backoff.
+        move    5,proc_finish_last_tick_v881
+        tlne    5,0400000
         jrst    proc_finish_rearm_v885
+proc_finish_new_pending_v1098:
         ; A new pending owner resets global backoff so a permanent
         ; failure in another slot cannot delay its first cleanup.
-        hrrz    5,proc_finish_last_tick_v881
+        move    5,proc_timer_clock
+        andi    5,0377777             ; 17-bit APR clock epoch
         hrli    5,020               ; first retry after 16 ticks
         movem   5,proc_finish_last_tick_v881
 proc_finish_rearm_v885:
@@ -1006,14 +1016,15 @@ proc_discard_return:
  * @brief Release one process's stable executive u-area.
  * @param AC1 Process slot.
  * @param AC2 Process descriptor.
- * @return Zero on success/no u-area, -1 on invalid base or MM failure.
+ * @return Zero on success/no u-area, -4 on invalid base/type/owner,
+ *         or -5 on a pinned extent. A failure retains the u-area owner.
  */
 proc_uarea_release:
         hrrz    3,(2)
         trnn    3,0400000              ; PROC_F_UAREA
         jrst    kret_zero
         hlrz    4,(2)
-        jumpe   4,kret_neg1
+        jumpe   4,proc_uarea_release_invalid_v1097
         push    17,10
         move    10,2
         addi    1,01000                ; PROC_UAREA_MM_OWNER_BASE
@@ -1029,7 +1040,12 @@ proc_uarea_release:
         jrst    kret_zero
 proc_uarea_release_fail:
         pop     17,10
-        jrst    kret_neg1
+        ; Preserve the real MM_ERR_INVAL (-4) or MM_ERR_BUSY (-5).
+        ; Both keep descriptor base/flag and exact retry owner untouched.
+        popj    17,
+proc_uarea_release_invalid_v1097:
+        movni   1,4
+        popj    17,
 
 /**
  * @brief Release TTY ownership when the final process in a session exits.
