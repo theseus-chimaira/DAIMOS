@@ -897,7 +897,11 @@ memfs_mres_xip_admit:
         jrst    memfs_xip_admit
 
 ; AC1=physical base. Return 1 if this XIP reference was released, 0 if
-; not owned, -1 if an owned pin could not be released. No new MRES vector.
+; not owned, -4 if an owned pin could not be released. The -1 result is
+; reserved for an absent MRES provider: VM teardown may use its normal
+; MM_TYPE_PROCESS fallback only for that absence or a non-XIP base.
+; An owned XIP pin refusal must never be retried as a process MM free.
+; No new MRES vector or ownership word.
 memfs_mres_xip_release:
         push    17,1
         pushj   17,memfs_xip_owns_base
@@ -911,7 +915,7 @@ memfs_mres_xip_not_owned:
         setz    1,
         jrst    memfs_mres_xip_release_done
 memfs_mres_xip_error:
-        seto    1,
+        movni   1,4                    ; owned XIP error, not missing provider
 memfs_mres_xip_release_done:
         sub     17,[1,,1]
         popj    17,

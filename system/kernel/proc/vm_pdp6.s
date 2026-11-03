@@ -524,8 +524,18 @@ vm_space_destroy_mode_ok:
         pushj   17,fs_provider_reg_call
         pop     17,3
         caie    1,1
-        jrst    vm_space_destroy_maybe_process
+        jrst    vm_space_destroy_xip_other_v1094
         jrst    vm_space_destroy_detach
+vm_space_destroy_xip_other_v1094:
+        ; MEMFS returns 0 for a non-XIP base, or the absent-provider
+        ; trampoline returns -1. Both may be MM_TYPE_PROCESS. Any other
+        ; negative status is an OWNED XIP release failure and must keep
+        ; this VM/slot owner for PREVM retry. Do not turn that failure
+        ; into an unrelated process-type mm_free(-4) attempt.
+        jumpge  1,vm_space_destroy_maybe_process
+        camn    1,[-1]
+        jrst    vm_space_destroy_maybe_process
+        jrst    vm_space_destroy_fail
 vm_space_destroy_maybe_process:
         ; A non-XIP base is freed only through MM's type/owner validation.
         ; Thus a missing MRES cannot cause a MEMFS-owned extent to be freed.
