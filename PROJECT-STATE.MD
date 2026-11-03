@@ -1,3 +1,19 @@
+## 2026-11-03 v1018: historical branch recovery, DSH literal shrink
+
+The historical PTR/TSFS DSH size repair was re-evaluated against current
+main rather than replayed blindly. All five `dsh_s6_literal` call sites
+pass compile-time uppercase strings, so its redundant lowercase branch
+was removed. A fresh same-toolchain KCC/DAS/DLINK before/after build
+measures linked DSH image 035736 -> 035730 octal (six fewer words), BSS
+unchanged at 001763 octal. The testkit host guard
+`test-daimos-dsh-uppercase-literals-v1016` passes. This is not a native
+runtime or 32K boot acceptance; all 32K-specific tests remain deferred.
+
+The repository branch cleanup preserves distinct ancestry tips. Historical
+EXEC/DCS/SIMH/TSFS knowledge has been integrated into pdp10-doc; the
+remaining independent tips still require source-aware review, not bulk
+merges. Source-level DSH changes were committed and pushed to main.
+
 ## 2026-11-01 v926 native owner-return deferred TERM validation
 
 The existing TERM bit in the process control word records a foreign TERM
