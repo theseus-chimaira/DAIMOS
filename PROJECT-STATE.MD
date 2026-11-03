@@ -1,3 +1,31 @@
+## 2026-11-03 v1055: historical worktree and staged-codec branch cleanup
+
+The old testkit SIMH v115 worktree's four untracked DTC3 diagnostic
+files were copied byte-for-byte into the versioned testkit main
+archive `tests/archive/dtfs-v199-v200-unaccepted-v1052/`, with SHA-256
+verification. They do not implement their claimed two-boot persistence
+test and were not promoted to active tests. The source v115 history
+was already reachable from testkit main; its local branch was deleted
+and the old DevSpace2 worktree was left clean and detached.
+
+Likewise the historical nested-UUO testkit v54 worktree's twelve
+untracked probes and locally edited runtime report are preserved with
+checksums in `tests/archive/dsh-nested-uuo-v1053/`. Its original
+commits are now ancestors of the retained
+`archive/legacy-dsh-supervisor-tests-v1049-20261103` branch. The old
+local v54 branch was deleted, its source worktree cleaned and detached.
+The existing SIMH media-isolation test was rerun and passed. Old
+nested-UUO failure reproductions remain historical, not accepted
+current regressions.
+
+The original remote-only codec v053 and v054 staging branches were
+preserved as ancestors of DAIMOS
+`archive/d6codec-experimental-cutover-v1028-20261103`; their old remote
+refs were deleted. Main still contains the current staged codec, with
+the original v053 decoder/staging note preserved and newer encoder/
+integration-checklist revisions retained. No production codec switch,
+KCORE optimization or 32K-specific test was performed.
+
 ## 2026-11-03 v1054: native MAKE lazy recursion-scratch consolidation
 
 The historical `experiment/native-make-recursive-frame-20261008-v1`

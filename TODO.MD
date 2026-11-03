@@ -1,3 +1,13 @@
+### v1055: branch reference cleanup after artifact recovery
+
+- [x] Preserve all untracked v115 DTFS diagnostics and v54 nested-UUO
+  evidence with SHA-256 manifests in testkit main; clean and detach
+  their original worktrees and retire the local branch refs.
+- [x] Preserve original remote D6CODEC v053/v054 staging histories in
+  the existing experimental archive and retire the remote-only refs.
+- [ ] Review surviving boot, toolchain and device branches without
+  changing KCORE until its optimization deferral is explicitly lifted.
+
 ### v1054: native MAKE per-depth scratch recovery
 
 - [x] Recover the historical native MAKE lazy recursion scratch scheme

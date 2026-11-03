@@ -1,3 +1,22 @@
+## v1055 final worktree artifacts and codec staging references
+
+The last attached historical testkit branches were reconciled without
+losing their uncommitted diagnostic files. Four DTC3 v199/v200 files
+and thirteen nested-UUO artifacts (twelve probes and one report) are
+preserved in new versioned testkit main archives, with SHA-256
+manifests. Those artifacts are *not* acceptance tests. Both associated
+DevSpace2 source worktrees were detached and cleaned, and their old
+local branch names were removed. The nested-UUO historical commits
+are retained in the testkit legacy test archive, not merged into
+production test targets.
+
+Two remote-only D6CODEC v053/v054 branch tips now exist as ancestors
+of the existing codec archive; their old remote refs were deleted.
+The archive's original encoder differs from current staged source,
+so it is retained as history rather than integrated. The current
+production D6LZ36 path and the deferred KCORE/32K testing remain
+unchanged.
+
 ## v1054 native MAKE recursion experiment recovery
 
 Historical `experiment/native-make-recursive-frame-20261008-v1`
