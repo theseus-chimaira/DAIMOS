@@ -471,14 +471,14 @@ static int
 dsh_s6_literal(struct dsh_s6 *dst, const char *text)
 {
         unsigned int i;
-        int ch;
 
+        /* All callers pass fixed uppercase SIXBIT-compatible literals.
+         * Interactive/user-provided text uses the normal conversion path.
+         * Avoid an unnecessary case test in this private helper.
+         */
         dsh_s6_clear(dst);
         for (i = 0U; text[i] != 0; ++i) {
-                ch = (unsigned char)text[i];
-                if (ch >= 'a' && ch <= 'z')
-                        ch -= 'a' - 'A';
-                if (dsh_s6_append(dst, ch) != 0)
+                if (dsh_s6_append(dst, (unsigned char)text[i]) != 0)
                         return -1;
         }
         return 0;
