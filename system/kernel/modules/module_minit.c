@@ -106,6 +106,7 @@ mfsdev_present_mark(unsigned int id)
 #define TAPE_X_MTC_SERVICE       2U
 #define TAPE_X_DTC_WRITE_BLOCK   3U
 #define TAPE_X_DCT_HANDLER       4U
+#define TAPE_X_WATCHDOG          5U
 #define DSK_X_HANDLER            0U
 #define DSK_X_READ_SECTOR        1U
 #define DSK_X_WRITE_SECTOR       2U
@@ -154,6 +155,7 @@ extern kword_t storage_pi_dsk_jump;
 extern kword_t storage_pi_tape_jump;
 extern kword_t storage_dct_dsk_jump;
 extern kword_t storage_dct_tape_jump;
+extern kword_t storage_clock_tape_jump;
 extern kword_t storage_clock_dsk_jump;
 extern kword_t storage_clock_drm_jump;
 extern kword_t minit_dpy_blko_template;
@@ -1134,6 +1136,8 @@ storage_install(unsigned int kind, kword_t name)
         dct = minit_export(name, base, TAPE_X_DCT_HANDLER);
         storage_patch_jump(&storage_pi_tape_jump, pi);
         storage_patch_jump(&storage_dct_tape_jump, dct);
+        storage_patch_jump(&storage_clock_tape_jump,
+            minit_export(name, base, TAPE_X_WATCHDOG));
         tape_mres_base = base;
         return base;
 }

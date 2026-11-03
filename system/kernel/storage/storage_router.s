@@ -20,6 +20,7 @@
         .globl storage_iowd
         .globl storage_count
         .globl storage_clock_tick
+        .globl storage_clock_tape_jump
         .globl storage_clock_dsk_jump
         .globl storage_clock_drm_jump
         .globl pdp10_pi_dispatch_done
@@ -57,11 +58,13 @@ storage_dct_tape_jump:
 ; CLK calls this fixed KCORE service once per qualified line-clock tick.
 ; A negative storage_count is a shared wall-clock timeout used only while a
 ; polled storage operation is waiting; positive transfer word counts are left
-; alone. DSK and DRM watchdogs share this tick: KINIT patches the RH target
-; of the installed drivers' direct calls. There is no resident timer table.
+; alone. Tape, DSK and DRM watchdogs share this tick: KINIT patches the RH
+; target of the installed drivers' direct calls. No resident timer table.
 storage_clock_tick:
         skipge storage_count
         aos storage_count
+storage_clock_tape_jump:
+        pushj 017,storage_clock_noop
 storage_clock_dsk_jump:
         pushj 017,storage_clock_noop
 storage_clock_drm_jump:

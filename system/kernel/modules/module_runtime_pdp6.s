@@ -52,6 +52,7 @@ module_fixed_bindings:
         .word   storage_dct_dsk_jump
         .word   storage_pi_tape_jump
         .word   storage_dct_tape_jump
+        .word   storage_clock_tape_jump
         .word   storage_clock_dsk_jump
         .word   dsk270_read_call
         .word   dsk270_write_jump

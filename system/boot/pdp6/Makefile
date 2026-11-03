@@ -875,7 +875,8 @@ $(DRM_MRES_OBJ): $(BUILD)/drm236_io.dobj $(KCORE_MAP)
 $(TAPE_MRES_OBJ): $(BUILD)/tape_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/tape-mres.dxr -M $(BUILD)/tape-mres.map \
 	    -R $@ -N tape_mres_package -X tape_pi_handler -X dtc_read_block \
-	    -X mtc_service -X dtc_write_block -X tape_dct_handler $(BUILD)/tape_io.dobj
+	    -X mtc_service -X dtc_write_block -X tape_dct_handler \
+	    -X tape_watchdog_tick_v1089 $(BUILD)/tape_io.dobj
 
 $(SLV_MRES_OBJ): $(BUILD)/slv_io.dobj $(KCORE_MAP)
 	$(DLINK) -b 0 -A $(KCORE_MAP) -o $(BUILD)/slv-mres.dxr -M $(BUILD)/slv-mres.map \

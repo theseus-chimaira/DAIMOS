@@ -28,6 +28,7 @@
         .globl mfsdev_storage_errors
         .globl tape_pi_handler
         .globl tape_dct_handler
+        .globl tape_watchdog_tick_v1089
         .globl dtc_read_block
         .globl dtc_write_block
         .globl mtc_service
@@ -55,6 +56,8 @@
         ; still complete as soon as the requested block arrives.
         .set DTC_SEARCH_TIMEOUT_TICKS,05214      ; 45 seconds
         .set MTC_CONTROL_TIMEOUT_TICKS,0151440   ; 15 minutes
+        .set TAPE_DTC_DATA_TIMEOUT_TICKS,0454     ; 5 seconds at 60 Hz
+        .set TAPE_MTC_DATA_TIMEOUT_TICKS,012430   ; 5400 ticks, 90 seconds at 60 Hz
         .set DTC_SEARCH_TIMEOUT_NEG_RH,01000000-DTC_SEARCH_TIMEOUT_TICKS
         .set MTC_CONTROL_TIMEOUT_NEG_RH,01000000-MTC_CONTROL_TIMEOUT_TICKS
 
@@ -257,6 +260,56 @@ tape_transfer_wakeup:
         setom tape_transfer_event
         movei 1,tape_transfer_event
         jrst proc_wakeup_event
+
+/**
+ * @brief Fail a stalled Type-136 tape data transfer without stealing its owner.
+ *
+ * DECtape search and MTC motion already have bounded clock-based timers in
+ * storage_count. Once the actual data transfer starts, that word must hold a
+ * positive DMA word count instead. Reuse dtc_search_retries (no longer needed
+ * after the block is located) as the one shared transfer countdown. MTC and
+ * DTC cannot have concurrent Type-136 data transfers.
+ *
+ * Called only on qualified APR line-clock ticks. The error is published to
+ * the normal tape waiter; that caller, not the timer, unwinds its provider
+ * stack and releases any filesystem lease. No FILE/MM reference is discarded.
+ */
+tape_watchdog_tick_v1089:
+        move    1,storage_state
+        jumpge  1,tape_watchdog_return_v1089
+        trnn    1,2                   ; only tape states -1,-2,-5,-6
+        jrst    tape_watchdog_return_v1089
+        sosg    dtc_search_retries
+        jrst    tape_watchdog_timeout_v1089
+tape_watchdog_return_v1089:
+        popj    017,
+tape_watchdog_timeout_v1089:
+        ; A higher-priority transfer completion may have arrived while
+        ; PI6 was active. Do not fail an already completed owner.
+        move    1,storage_state
+        jumpge  1,tape_watchdog_return_v1089
+        trnn    1,2
+        jrst    tape_watchdog_return_v1089
+        andi    1,7
+        caie    1,7                   ; DTC read -1
+        cain    1,2                   ; DTC write -6
+        jrst    tape_watchdog_dtc_v1089
+        aos     mfsdev_storage_errors+1 ; MTC read/write
+        jrst    tape_watchdog_fail_v1089
+tape_watchdog_dtc_v1089:
+        aos     mfsdev_storage_errors ; DTC read/write
+tape_watchdog_fail_v1089:
+        ; Stop hardware before making the original waiting stack runnable.
+        ; Mark the transfer failed first so later PI3/PI5 cannot publish
+        ; a successful completion after this timeout has committed.
+        movei   1,7
+        movem   1,storage_state
+        cono    0224,0
+        cono    0210,0
+        cono    0200,0
+        pushj   017,dtc_forget_motion
+        pushj   017,tape_transfer_wakeup
+        popj    017,
 
 /**
  * @brief Build the common Type 136 direct-transfer IOWD and PI3 vector.
@@ -485,6 +538,11 @@ dtc_search_pi_vector_ready:
 dtc_search_pi_setup:
         move 2,storage_state           ; restore complete prearmed run length
         movem 2,storage_count
+        ; The seven search retries are dead after a matching block mark.
+        ; Arm the data-transfer watchdog *before* publishing a negative
+        ; storage_state visible to the PI6 clock handler.
+        movei 2,TAPE_DTC_DATA_TIMEOUT_TICKS
+        movem 2,dtc_search_retries
         move 1,dtc_request_unit
         lsh 1,3
         skipn dtc_request_write
@@ -583,6 +641,10 @@ mtc_control_ok:
         setzm storage_count
         jrst kret_ok
 mtc_rw_start:
+        ; MTC can transfer a long record. Reuse the DTC-only retry slot,
+        ; arming it before the negative data-transfer state becomes live.
+        movei 2,TAPE_MTC_DATA_TIMEOUT_TICKS
+        movem 2,dtc_search_retries
         movem 3,storage_state
         lsh 1,4
         ior 1,4
@@ -645,7 +707,7 @@ dtc_request_write: .block 1
 dtc_request_reverse: .block 1
 /** Requested physical DECtape block for the PI3 RBN search owner. */
 dtc_target_block: .block 1
-/** Bound each RBN search to seven direction changes/restarts. */
+/** Seven RBN search retries; reused as a transfer watchdog after search. */
 dtc_search_retries: .block 1
 /** Last Type-136 RBN DATAI, retained while PI3 updates the motion hint. */
 dtc_last_mark: .block 1

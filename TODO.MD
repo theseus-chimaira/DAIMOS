@@ -1,4 +1,4 @@
-### OOM activation gates (current as of v1087, 2026-11-03)
+### OOM activation gates (current as of v1089, 2026-11-03)
 
 Assumptions: a functioning PDP-6 APR line clock and ordinary hardware
 interrupt delivery. A physically failed system clock is a hardware
@@ -27,6 +27,10 @@ software/device deadlocks remain kernel correctness requirements.
   stack/FILE/MM buffers behind their owner. Specify whether permanent
   refusal is fail-closed quarantine or demands provider-specific
   recovery; bounded *retry delay* is not bounded *total completion*.
+  v1088 validates the live provider-stack lease with two unsafe native
+  negative controls; v1089 bounds DTC/MTC data-transfer hardware stalls
+  on qualified clock ticks. Neither closes arbitrary nonreturning provider
+  software or permanent close refusal. Production OOM kill stays OFF.
 - [x] P0-C (v1086): Both PI6-masked slot-0 entries now have a complete
   non-sleeping call graph: immediate EXIT publishes PREVM+FINALIZE
   before stack switch and never repeats HUP; the periodic idle reaper
@@ -50,6 +54,51 @@ software/device deadlocks remain kernel correctness requirements.
   remain ordinary errors; only exhausted requester BRK terminates
   when enabled. Preserve full KCC/KCORE/MRES size and 16K mapping
   constraints; enable the production gate only after P0-A..E pass.
+
+### v1089: Type-136 tape data-transfer watchdog (2026-11-03)
+
+- [x] Find and fix a reachable in-flight provider liveness defect:
+  `tape_transfer_wait` had no bounded error completion once DECtape search
+  or Type-516 record I/O entered its negative `storage_state` transfer.
+  A missing PI3/PI5 completion could retain the owning filesystem lease
+  and process-private stack indefinitely despite healthy APR ticks.
+- [x] Reuse the now-inactive DTC search retry word as one 60-Hz transfer
+  countdown: 300 ticks for DTC and 5400 ticks for MTC. On expiry the
+  tape driver stops Type-136/controllers, marks state 7, accounts the
+  appropriate tape error and wakes its original transfer waiter. The
+  waiter completes through its existing error path; only its returning
+  provider owner unlocks the shared lease. No forced unlock or new BSS.
+- [x] Patch an optional KINIT-installed tape-MRES clock export after the
+  ordinary storage countdown tick, preserving DSK/DRM hooks and the
+  existing five tape exports. Native PDP-6 timeout/state/source-contract
+  and negative-mutant tests PASS; online MTC read/write/control, DTC
+  two-block stream and reverse read/write regressions PASS.
+- [x] Clean full 256K KCC image build and full-media simulator startup
+  reach `INIT V1` and `LOGIN`, with DTC/MTC both reporting `OK`.
+  Matched KCC `__kcore_low_end` `023126` -> `023127` octal (+1 code
+  word). Pre/post tape MRES source and package comparison: text
+  360 -> 390 (+30), resident 375 -> 405 (+30), BSS 15 unchanged;
+  combined KCORE+installed tape resident cost +31 words, no new
+  persistent state. Stop at LOGIN deliberately after boot.
+- [x] Rerun v1077 disposable 256K physical-OOM provider/MM guest on the
+  updated production tree: two injected D6FS SYNC refusals, one MM_BUSY
+  refusal, correct requester/witness recovery and exit accounting PASS.
+- [ ] P0-B still requires classification of arbitrary software-stalled
+  provider calls and permanent refusal. A healthy clock plus a driver
+  watchdog is not a general cancellation or forced resource-release proof.
+
+### v1088: true in-flight serialized filesystem lease acceptance (2026-11-03)
+
+- [x] Call the production `fs_provider_reg_call` on a native PDP-6 while
+  its provider oracle has a live stack frame and real held lease.
+  Nested same-owner recursion and foreign fatal-close contention both
+  refuse with -5 without sleeping, unlocking, corrupting the owner
+  stack or running a nested provider. The original provider returns an
+  error and unlocks/wakes exactly once; a later call succeeds normally.
+- [x] Deliberately mutate recursive and fatal foreign refusal into
+  sleeping waits; both negative controls are rejected. Existing v1078
+  fatal contention and v327 general provider gateway regressions PASS.
+  No KCORE or MRES source modifications at v1088; P0-B remains OPEN.
 
 ### v1087: P0-A transitive fatal teardown closure (2026-11-03)
 

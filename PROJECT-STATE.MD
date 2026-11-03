@@ -1,3 +1,62 @@
+## 2026-11-03 v1089: bound Type-136 tape data-transfer completion
+
+P0-B investigation found a reachable driver-specific lifetime defect:
+DECtape search and MTC control had wall-clock timeouts, but DTC/MTC
+data transfers awaited their event after entering negative storage_state
+without any clock-based completion guarantee. Lost PI3/PI5 completion
+could indefinitely retain the live Type-136 buffer, process-private
+stack and a DTFS/TSFS serialized filesystem provider lease.
+
+The tape MRES now exports `tape_watchdog_tick_v1089`. KINIT patches a
+direct `storage_clock_tape_jump` into the existing qualified APR tick
+sequence; unloaded tape remains a zero-work no-op. The existing
+`dtc_search_retries` word becomes a watchdog after search succeeds,
+and doubles as the MTC runtime data timer. DECtape gets 0454 octal
+(300) ticks; Type-516 tape gets 012430 octal (5400) ticks. Normal
+PI completion is unchanged. Timeout marks `storage_state=7`, stops
+the Type-136/tape controllers, invalidates DTC motion, accounts the
+device error and wakes the existing tape event. Only the actual
+waiting owner resumes, unwinds and releases the provider lease. No
+foreign lock reset, synthetic wakeup, process retirement or additional
+persistent timer word is introduced. The future module-mover binding
+list includes the new direct tape-clock call.
+
+The `daimos-tape-data-watchdog-v1089` native source-linked PDP-6
+fixture verifies DTC read/write, MTC read/write, exact countdown,
+single timeout completion, unrelated storage states and a negative
+mutant. Production tape-driver online regressions for Type 516 record
+I/O/control, two-block Type 551 streaming and reverse block I/O PASS.
+Full KCC 256K `ROOT=auto` image build PASS; booted full-media SIMH
+reports DTC and MTC `OK`, then reaches `INIT V1` and `LOGIN` before
+an intentional 35-second harness timeout. Comparable KCC KCORE end
+increases `023126` to `023127` octal, one resident instruction word;
+the countdown reuses an existing MRES word and adds no permanent BSS.
+Same-linker baseline/current tape MRES comparison gives source text
+360 -> 390 words and packaged resident 375 -> 405 (+30), unchanged
+15-word BSS. Combined KCORE/tape runtime residency grows 31 words.
+The independent v1077 256K physical-OOM requester/D6FS/MM guest also
+PASSes against the revised tree: SYNC refusal 2/3 calls, MM_BUSY
+refusal 1/2 calls, and original independent witness recovery intact.
+
+This resolves the specific data-controller stall under healthy APR
+ticks, not an arbitrary software-stalled provider or permanently
+refusing FILE close. P0-B/D/E/F remain OPEN; production requester OOM
+termination remains disabled.
+
+## 2026-11-03 v1088: hold a real live provider frame through contention
+
+The new `daimos-provider-inflight-owner-v1088` PDP-6 native test uses
+the actual source-extracted register gateway, and enters a provider
+oracle on the owning kernel stack before making recursive and foreign
+fatal requests. Both fail with -5, never borrow the provider workspace,
+do not sleep and cannot release the owner-encoded lock. The original
+provider's error return unlocks and wakes exactly once; a later
+successful request reacquires/releases it. Two negative controls that
+turn either refusal into a blocking wait fail as expected. The v1078
+fatal-contention and v327 provider-lock regressions PASS. No DAIMOS
+source change or new permanent RAM at this stage. This is an ownership
+test, not a proof of recovering a provider call that never returns.
+
 ## 2026-11-03 v1087: P0-A transitive fatal release graph CLOSED
 
 No new production code is required. An executable fail-closed source

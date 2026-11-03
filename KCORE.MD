@@ -1,3 +1,36 @@
+## 2026-11-03 v1088-v1089: P0-B in-flight ownership and tape progress
+
+The production filesystem register gateway's lock cannot be revoked
+behind an executing provider: it protects shared block workspace and
+private kernel continuations. Native v1088 enters the *actual* gateway
+and tests nested same-owner refusal, foreign fatal-close refusal and
+owner-only unlock on return, with two unsafe negative variants rejected.
+
+Source audit exposed a concrete missed-completion hole in the optional
+Type-136 tape driver. Its DTC search and MTC control operations had
+clock-driven bounds, but their runtime data-transfer wait did not.
+v1089 adds an APR-tick tape MRES watchdog and uses the existing DTC
+search retry word after search to count data-transfer ticks (300 for
+DTC; 5400 for MTC). When expiry occurs, it marks the tape I/O failed,
+stops the controller and wakes the *original* request owner. Normal
+owner-side return, not timer-side lock theft, releases the provider.
+No additional BSS or process metadata is needed.
+
+Native timeout/negative-mutation, DTC stream/reverse I/O and MTC
+record/control regressions PASS. Clean full KCC 256K build PASS;
+full-media SIMH reports DTC and MTC OK and reaches INIT/LOGIN before
+the intentionally bounded boot check ends. KCC KCORE end is `023127`
+octal, one instruction above v1087 `023126`; no new permanent state.
+The tape module itself measures 375 -> 405 resident words (+30), with
+15 BSS words unchanged, for +31 combined resident words after KCORE.
+The updated full 256K v1077 physical-OOM requester/D6FS/MM fault guest
+also PASSes with two D6FS and one MM_BUSY refusals; the production
+OOM-kill build flag is not changed.
+
+P0-B stays OPEN for arbitrary software-stalled provider calls and
+permanent refusal; P0-D/E/F remain open. The production OOM gate is
+still disabled. These driver timeouts require a healthy APR clock.
+
 ## 2026-11-03 v1081: retain final TTY ownership before VM destruction
 
 The last non-leader member of a session can encounter MM_BUSY while
