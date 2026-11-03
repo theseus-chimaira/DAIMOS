@@ -1,3 +1,26 @@
+## 2026-11-03 v1061: consolidate retained Git archives into main ancestry
+
+All four historical DAIMOS archive tips have been reviewed for
+uncommitted files and are being folded into `main` via ancestry-only
+merges. The original archive summaries are now ordinary files in main:
+
+- `design/LEGACY-BOOT-STAGE1-CHECKPOINTS-V1057.md`
+- `system/kernel/core/D6CODEC-HISTORICAL-ARCHIVE-v1028.md`
+- `design/LEGACY-DSH-INIT-ARCHIVE-V1050.md`
+- `design/LEGACY-SHRINK-KCC-DIAGNOSTICS-V1059.md`
+
+The archives contain unaccepted and superseded source trees, including
+KCORE, codec, boot, DSH and MAKE diagnostics. `ours` merges intentionally
+preserve exact commit ancestry without changing current executable,
+kernel, loader or toolchain code. The unique historical v059 codec
+readiness report remains reachable in Git history and is not installed
+as a current design assertion. Old archive branch labels may be
+removed after the pushed main commit is verified as their descendant.
+
+The only independently retained DAIMOS optimization tips after this
+cleanup are the two explicitly deferred KCORE experiments. No new
+KCORE optimization or 32K-specific test is implied by Git ancestry.
+
 ## 2026-11-03 v1059: consolidate native VM patches and old shrink studies
 
 `merge/native-kcc-vm-20261008-v1` contains five commits, all reported

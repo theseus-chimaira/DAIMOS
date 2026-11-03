@@ -1,3 +1,24 @@
+## v1061: fold historical archive references into main
+
+The four previously created historical archive branch tips are now
+incorporated by `ours` ancestry merges, after their descriptive
+archive files were copied byte-for-byte into main. The initial tip
+hashes (before merging) were:
+
+| Historical branch label | Original tip |
+| --- | --- |
+| `archive/boot-stage1-checkpoints-v1057-20261103` | `fd68d38a` |
+| `archive/d6codec-experimental-cutover-v1028-20261103` | `3cf8407a` |
+| `archive/legacy-dsh-init-experiments-v1050-20261103` | `9eb91215` |
+| `archive/legacy-shrink-kcc-diagnostics-v1059-20261103` | `dd7ddfba` |
+
+Source history and original commits remain reachable from main through
+those parents after the redundant branch labels are deleted. One can
+inspect old files with `git show <full-commit>:<path>`, resolving the
+tip from the short hash in the table. This is history preservation,
+not approval of those historical implementations. No production
+source code or 32K-specific boot behavior is changed.
+
 ## v1059 backup, shrink, native VM and swap diagnostic reconciliation
 
 All five commits in `merge/native-kcc-vm-20261008-v1`, and the one

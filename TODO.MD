@@ -1,3 +1,13 @@
+### v1061: reduce archival branch count without losing history
+
+- [x] Copy the four archive-only historical summary files into DAIMOS
+  main before merging archive ancestry; keep unaccepted source out.
+- [x] Preserve original archive tips as main ancestors, then retire
+  standalone branch references after remote verification.
+- [ ] Resume the two deferred KCORE branches only on explicit request.
+- [ ] Keep native MAKE ALL self-hosting and actual RAM-peak measurement
+  open; historical diagnostic logs do not prove those issues fixed.
+
 ### v1059: historical shrink and native VM branch resolution
 
 - [x] Verify all five native-KCC VM commits and the compact process
