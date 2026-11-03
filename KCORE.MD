@@ -13,7 +13,9 @@ HALTs. Guest output: `<KWP`, no error marker. This is a complete
 
 The separate full-guest negative control uses the identical request and
 unchanged production flag 0: BRK returns -1 to the child, which emits
-`D`; the parent observes an exit status other than 1 and emits `!S`.
+`D` and exits normally. The parent verifies its non-OOM exit status,
+resumes the independent witness and confirms memory recovery. The guest
+emits `<DNWP`, not an intentional assertion-failure marker.
 No runtime KCORE changes or additional resident words are introduced.
 The owner-private provider-failure retry, unresponsive provider and
 allocation-free bounded teardown gates remain P0; production OOM killing
