@@ -1,4 +1,4 @@
-### OOM activation gates (current as of v1086, 2026-11-03)
+### OOM activation gates (current as of v1087, 2026-11-03)
 
 Assumptions: a functioning PDP-6 APR line clock and ordinary hardware
 interrupt delivery. A physically failed system clock is a hardware
@@ -12,12 +12,14 @@ software/device deadlocks remain kernel correctness requirements.
 - [x] Direct release leaf allocation checks, successful TTY/PIPE/DPY
   MM refusal/retry, and unpublished RUN TTY-before-VM rollback owner
   (v1081-v1085); no additional owner/reaper table is introduced.
-- [ ] P0-A: Complete a transitive callback call graph from fatal BRK,
-  APR and post-commit EXEC through FILE CLOSE, VFS provider SYNC,
-  session HUP and deferred events, TTY, VM/MEMFS-XIP, swap backing,
-  MM and parent notification. Prove every reachable fatal operation
-  either needs no new MM/backing allocation or fails without losing
-  the owning process/FD/provider lease; cover all return/error edges.
+- [x] P0-A (v1087): Current BRK/APR/EXEC/EXIT and foreign/self fatal
+  release transitive graph CLOSED through FILE/VFS SYNC/PIPE/DPY,
+  session HUP, TTY, VM/MEMFS-XIP, swap bitmap, MM and notification.
+  No new MM/backstore allocation; refused release keeps FD/process
+  owner, partial HUP retries safely, committed finalizers remain marked.
+  Executable contract rejects 11 unsafe source mutations; native PDP-6
+  rollback and full physical-OOM guest regressions PASS. A foreign
+  provider *already executing* is the separate P0-B lifetime gate.
 - [ ] P0-B: Establish owner-safe lifetime for in-flight provider
   operations, including a foreign live lease, a reentrant request,
   a permanently rejecting provider, and an active call which does
@@ -48,6 +50,21 @@ software/device deadlocks remain kernel correctness requirements.
   remain ordinary errors; only exhausted requester BRK terminates
   when enabled. Preserve full KCC/KCORE/MRES size and 16K mapping
   constraints; enable the production gate only after P0-A..E pass.
+
+### v1087: P0-A transitive fatal teardown closure (2026-11-03)
+
+- [x] Inventory and validate normal EXIT, fatal requester BRK, APR,
+  EXEC and deferred/remote event paths through FILE close, VFS/SYNC,
+  HUP, TTY, VM/XIP, PIPE/DPY, swap bitmap, MM and final notification.
+- [x] Confirm DTFS/D6FS only CLOSE-SYNC providers and direct bounded
+  no-allocation SYNC; fatal private provider wait preserves FILE owner,
+  foreign active lease remains P0-B rather than forcibly unlocked.
+- [x] Fail-closed transitive source contract with 11 negative mutation
+  tests, plus native v870/v904/v912/v957/v905/v922/v995/v1078/
+  v1081/v1085 PDP-6 retry/owner acceptance PASS.
+- [x] 256K v1077 physical OOM guest with D6FS/MM injections PASS.
+  No production code or resident data modification, KCORE 023126
+  octal unchanged. P0-A closed; P0-B/D/E/F still open.
 
 ### v1086: P0-C slot-0 PI6 liveness closure (2026-11-03)
 
@@ -98,9 +115,9 @@ software/device deadlocks remain kernel correctness requirements.
 - [x] Full word-FIFO-v2 and true anonymous PIPE v902 guests PASS;
   test-daimos-pipe-anon now includes the v902 regression.
 - [x] KCC KCORE end unchanged at `023116` octal; no persistent data.
-- [ ] Continue full transitive HUP/provider liveness proof before
-  enabling production OOM termination. Test-only MM pins demonstrate
-  fault safety, not that ordinary unexposed FIFO extents become pinned.
+- [x] Transitive HUP and FILE release graph checked in v1087; provider
+  in-flight liveness remains independently open as P0-B. Test-only MM
+  pins demonstrate fault safety, not ordinary FIFO pin reachability.
 
 ### v1083: direct fatal teardown allocation-free leaf audit (2026-11-03)
 
@@ -109,12 +126,11 @@ software/device deadlocks remain kernel correctness requirements.
   guarded destructor must fail the test rather than pass silently.
 - [x] Native v870, v904, v912 and actual C v957 regression PASS.
 - [x] No KCORE/MRES, permanent data, ABI or driver change.
-- [ ] Audit full *transitive* HUP and fatal event chains plus foreign
-  provider lease completion before enabling automatic OOM termination.
-- [ ] Decide and test ownership/retry after interrupted FIFO OPEN when
-  its provisional last `mm_free` is refused. Current code discards the
-  close error before any stable FILE descriptor is published; check
-  fault reachability and avoid speculative global garbage collection.
+- [x] Transitive HUP/fatal event closure audited in v1087. Already
+  executing foreign provider lease completion remains P0-B.
+- [x] Interrupted FIFO OPEN preserves its provisional FILE descriptor
+  on refused last MM free (v1084), with positive and negative PDP-6
+  tests; no speculative global garbage collection needed.
 
 ### v1082: transactional NEWSESSION TTY release (2026-11-03)
 
@@ -126,8 +142,8 @@ software/device deadlocks remain kernel correctness requirements.
   correctly fails the negative control.
 - [x] Matched full KCC KCORE image: +4 instruction words
   (`023112` -> `023116` octal); zero persistent data words.
-- [ ] Continue transitive fatal-close and VM/MM allocation-free proof;
-  maintain the disabled production OOM option until all P0s close.
+- [x] Transitive fatal-close and VM/MM allocation-free graph closed
+  in v1087; production OOM still disabled pending P0-B/D/E/F.
 
 ### v1081: final-session TTY MM ownership and targeted rollback (2026-11-03)
 
@@ -143,8 +159,9 @@ software/device deadlocks remain kernel correctness requirements.
 - [x] Native v967/v968 physical MM refusal and v1081 staged finalizer
   PASS; existing v881 deferred MM owner test PASS; full 256K v1077
   physical-OOM FILE/MM regression PASS.
-- [ ] Complete end-to-end transitive no-allocation/owner retry proof
-  for MEMFS-XIP, PIPE, DPY, TTY and MM/VM before production OOM kill.
+- [x] End-to-end transitive no-allocation/owner retry graph closed in
+  v1087 for MEMFS-XIP, PIPE, DPY, TTY and MM/VM. P0-B still owns
+  active foreign provider quiescence before production OOM kill.
   Actual D6FS/DTFS/TSFS SYNC has no device transfer, so do not add a
   generic close-provider cancellation framework solely for it.
 
@@ -188,10 +205,10 @@ software/device deadlocks remain kernel correctness requirements.
 - [x] Independent `ROOT=drum` Type-167/236 Stage1 simulator boot
   with DSK0 unattached PASSes through DRM236 MRES, D6FS, INIT, LOGIN.
 - [ ] Still need owner-safe provider quiescence policy for active
-  nonreturning calls and permanent refusal (P0-B), plus a PI6-safe
-  slot-0 reachability proof (P0-C). The normal runtime DRM watchdog
-  requires operational APR ticks, not recovery from hardware clock
-  failure. Transitive fatal teardown remains P0-A.
+  nonreturning calls and permanent refusal (P0-B). PI6 slot-0 proof
+  closed v1086 (P0-C) and transitive fatal release graph closed
+  v1087 (P0-A). The normal DRM watchdog requires operational APR
+  ticks, not recovery from hardware clock failure.
 
 ### v1078: foreign provider contention during fatal FILE close (2026-11-03)
 
@@ -467,8 +484,9 @@ software/device deadlocks remain kernel correctness requirements.
   and no restored cross-process victim selection.
 - [ ] Repeated retries are not bounded in *count*. A permanently refusing
   provider can still retain the owner, FILE references and its u-area.
-  Complete provider recovery/quarantine and transitive allocation-free
-  teardown proof before enabling faulting-process OOM termination.
+  Complete provider recovery/quarantine (P0-B); transitive release
+  allocation-freedom was closed separately by v1087 (P0-A). Keep
+  automatic OOM disabled pending remaining gates.
 
 ### v985: physical OOM regression on clean RUN fixture (2026-11-02)
 

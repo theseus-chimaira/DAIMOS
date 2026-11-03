@@ -1,3 +1,56 @@
+## 2026-11-03 v1087: P0-A transitive fatal release graph CLOSED
+
+No new production code is required. An executable fail-closed source
+contract in daimos-testkit now follows the currently reachable
+requester-only BRK, APR and post-commit EXEC fatal entries, normal
+EXIT and immediate/deferred fatal events through the private owner
+FILE closure and session HUP phase, and onward through marked TTY,
+VM/XIP, MM/u-area, swap backing and parent-notification finalization.
+
+Current VFS_SYNC is reachable only for DTFS and D6FS provider numbers
+5 and 6. DTFS SYNC performs vnode validation; D6FS SYNC is a zero
+return. Other providers are not sent a SYNC from file_close. The
+serial register gateway preserves the private owner stack while
+waiting or returns -5 to a fatal owner behind another provider lease.
+Its lock is released only by the actual returning provider owner.
+PIPE last-ref mm_free happens before dropping counts; DPY STOP retains
+the FILE owner if MM refuses its published raw-list extent. PIPE
+non-final close wakeup, FIFO list unlink and parent runqueue/wakeup
+callbacks do not allocate or invoke storage I/O.
+
+The HUP member scan retains the live TTY/session on failed event,
+checked TTY-line free or a pending foreign release; it skips only
+already committed TRANSITION+VM_NONE+FINALIZE members. Fatal-other
+FILE close failure preserves the victim's descriptor and does not
+enter VM destruction. Unpublished RUN does not publish file-reference
+ownership until validation succeeds and uses the SIDL retry owner on
+MM refusal. The private fatal owner retains both FILE refs and its
+stack across failed CLOSE/HUP with a clock-backed retry; after success
+v1086 publishes PREVM before PI6-inhibited finalization. All exposed
+MM/VM/TTY/XIP, u-area and swap backing failures retain their existing
+process or FD retry owner. No new MM or backstore allocation is
+reachable on these current fatal release and retry paths.
+
+The v1087 graph asserts exact callback edges, source result/commit
+ordering and absence of fresh allocations. Eleven injected mutations
+to FILE/HUP/foreign fail guards, VFS/D6FS SYNC, PIPE/DPY, TTY/VM,
+RUN discard and owner retry are rejected. Native PDP-6 v870, v904,
+v912, v957, v905, v922, v995, v1078, v1081 and v1085 PASS; v922's
+historical no-TTY-line fixture gained its checked v897 success stub.
+The v1077 booted 256K physical-OOM requester/provider-MM guest also
+PASSes its two D6FS and one MM_BUSY injected failures. There are no
+new KCORE/MRES instructions or permanent RAM words; the comparable
+production KCORE end remains 023126 octal.
+
+P0-A is CLOSED for the actual current fatal teardown call graph and
+error/owner boundaries, **not** for arbitrary future MRES code or
+infinite in-flight provider quiescence. The latter is explicitly
+P0-B: an already-running foreign provider must retain its live
+stack/lease until its own completion or an independently proven safe
+provider-specific quiescence protocol. P0-D still owns detailed
+failure-stage/idempotence combinations, P0-E the combined booted
+matrix, and P0-F the final enable decision. Production OOM stays OFF.
+
 ## 2026-11-03 v1086: P0-C PI6-masked slot-0 teardown CLOSED
 
 The full reachability audit uncovered a real second HUP path: after
