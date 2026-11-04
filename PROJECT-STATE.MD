@@ -1,3 +1,37 @@
+## 2026-11-04 v1115: booted fragmented-core BRK -2 without OOM kill
+
+The 256K PDP-6 v1115 full guest creates real fragmented physical
+memory using disposable-kernel calls to the production MM allocator:
+allocate aligned 040000-word kernel-dynamic extents until no further
+such extent fits, then free alternating extents while tracking every
+retained physical base. The actual `mm_find_fit` search (exported only
+in the disposable copy) verifies at least 0200000 words free in total
+but no contiguous 0200000-word replacement image. The parent requests
+a 64K BRK; `vm_space_brk_current` returns -1 and real internal cause
+-2, observed by a test-only AC2 capture immediately after the VM call.
+The requester survives, its logical break is unchanged, and exact
+typed MM frees release every recorded test extent.
+
+The first 40K attempt exposed an important valid VM behavior: BRK
+could still grow in place despite the lack of a complete 40K free
+extent. Increasing the target to 64K excludes that delta-only path.
+One MM descriptor was reclaimed during the BRK retry in the observed
+guest. A strict before/after global descriptor equality check was
+therefore incorrect; all tracked test extents were already freed.
+The final test rejects increased descriptor counts, checks every
+typed base/owner release, and restores parent process-MM accounting.
+
+Both independent disposable boots PASS. Default OOM disabled yields
+`<FRILDNWP`; test-only enabled OOM yields `<FRILKWP`. The -2 BRK
+refusal never fatally retires the process, while the subsequent real
+physical-OOM requester dies only with the isolated policy enabled.
+The independent blocked witness, failed-RUN and invalid-BRK controls,
+WAIT statuses and final process-word accounting all PASS.
+
+No production assembly, resident kernel code/BSS, MRES or ABI changed.
+Production OOM remains disabled. Direct internal RUN -3 cause tracing,
+mixed P0-D/E fault integration and final P0-F acceptance remain OPEN.
+
 ## 2026-11-04 v1114: booted actual MM descriptor-table pressure
 
 The disposable 256K PDP-6 v1114 guest extends v1075/v1110/v1112

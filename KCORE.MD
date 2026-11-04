@@ -1,3 +1,19 @@
+## 2026-11-04 v1115: booted fragmented physical core and BRK -2
+
+The full 256K PDP-6 guest constructs actual fragmented MM extents
+using the production allocator and exact frees. A test-only export of
+`mm_find_fit` confirms sufficient aggregate words for a 64K image,
+with no fitting contiguous extent. The real VM BRK returns -1 with
+exact internal cause -2; the disabled and disposable enabled-policy
+boots both PASS without killing the fragmented requester, and the
+later genuine physical-OOM requester behaves correctly. Every tracked
+test extent is freed; parent MM accounting and witness survive.
+An earlier 40K request succeeded via in-place delta growth, which
+the larger target now excludes. The real BRK retry reclaimed one
+unrelated descriptor, so no-leak accounting permits a decreased
+global descriptor count, never an increase. No production KCore/MRES
+memory change. Direct RUN failure cause and P0-D/E gates remain open.
+
 ## 2026-11-04 v1114: booted MM descriptor saturation / RUN rollback
 
 An isolated 256K PDP-6 kernel test extension acquires actual one-word

@@ -1,3 +1,19 @@
+### v1115: booted real physical fragmentation and BRK -2 (2026-11-04)
+
+- [x] Build independent 256K PDP-6 guests under both OOM policies.
+  Create physical fragmentation with real MM allocations and typed
+  frees. Verify the production fit search reports at least 64K
+  aggregate free RAM without a contiguous 64K extent, and the
+  production VM BRK returns -1 with exact internal MM cause -2.
+  Both policy modes preserve the requester, original break and
+  process MM; all test-owned extents are released. The subsequent
+  physical-OOM requester, invalid BRKs, failed RUN and blocked
+  witness produce the expected WAIT/cleanup behavior. Both PASS.
+- [ ] Capture the exact MM descriptor-exhaustion cause (-3) from a
+  booted failed child RUN, rather than only verifying that the real
+  descriptor table is full and RUN returns -1. Continue mixed P0-D/E
+  liveness and final P0-F acceptance before enabling production OOM.
+
 ### v1114: full-system MM descriptor-pressure child RUN (2026-11-04)
 
 - [x] In disposable 256K PDP-6 images, use genuine MM allocations to
