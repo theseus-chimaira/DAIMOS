@@ -1,3 +1,23 @@
+## 2026-11-04 v1142: D13 integrated physical MM_BUSY rollback passes
+
+With v1141's corrected cross-object fold/link validation installed,
+the v1142 full 256K PDP-6 guest combines an APR-faulted child,
+postcommit EXEC fatal FILE refusal/retry and an unpublished failed
+RUN whose actual allocated child u-area is physically pinned.
+The first real u-area MM-free returns MM_BUSY (-5); a verified unpin
+allows slot-zero deferred discard to complete a second real free.
+Two independently rebuilt full guests report identical target
+counters: calls=2, pins=1, busy=1, unpins=1, errors=0.
+Parent RUN return, process-word/slot recovery and the
+EXEC child's final ZOMB/WAIT also PASS with no unexpected UUO.
+
+This satisfies the remaining physical-u-area component of D13.
+The current OOM mandatory checklist is **35/65 complete**, with
+30 open (28 pre-enable blockers, plus the later F12/F13 actions).
+D14-D16 and other C/E/F gates remain open. No production KCORE/MRES
+code, persistent data, ABI or OOM policy change was made; the
+requester-only BRK OOM switch remains disabled.
+
 ## 2026-11-04 v1141: unsafe local relocation fold repaired
 
 The original uninstrumented 256K PDP-6 D13 combined APR fatal,

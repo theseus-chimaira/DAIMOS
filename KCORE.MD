@@ -1,3 +1,22 @@
+## 2026-11-04 v1142: D13 physical unpublished RUN u-area rollback
+
+The disposable 256K PDP-6 nested APR/EXEC/failed-RUN test now
+executes a genuine physical MM_BUSY (-5) on the unpublished child
+u-area. The test pins the child's actual kernel-dynamic MM extent
+immediately before its first attempted free; the resident rollback
+retains the slot, and an explicitly verified unpin permits the
+existing deferred finalizer to release the same extent later.
+Two fresh guest builds each confirm two real target MM-free attempts,
+one pin, one BUSY refusal, one unpin and zero fault-hook errors,
+together with the APR fault,
+EXEC VFS FILE refusals/retry, parent RUN return and final WAIT.
+This fills the previously missing physical-u-area D13 subcase.
+
+The production allocator, rollback path and scheduler are unmodified;
+the six diagnostic words are present only in the disposable test
+kernel. No new permanent RAM or ABI, no production OOM activation.
+D14-D16, E/F and the total RAM high-water audit remain open.
+
 ## 2026-11-04 v1141: compiler/linker fold correction repairs nested RUN
 
 The real defect behind the nonreturning D13 nested RUN was an unsafe

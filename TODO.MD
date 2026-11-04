@@ -1,3 +1,13 @@
+## v1142: real-MM_BUSY nested RUN rollback (2026-11-04)
+
+- [x] Boot complete APR/EXEC/late unpublished-RUN guest with a pin on
+  the child's real u-area, observe MM_BUSY (-5), unpin and allow the
+  original deferred rollback to retry the MM release successfully.
+- [x] Check two real free attempts, one pin/busy/unpin, parent return,
+  restored accounting, and final EXEC child ZOMB/WAIT in one guest.
+- [ ] Continue with D14-D16, C04, E/F and measured permanent/peak
+  runtime RAM; never infer OOM activation from the D13 subcase.
+
 ## v1141: cross-object fold fix and D13 uninstrumented recovery (2026-11-04)
 
 - [x] Prove the old P10FOLD/DLINK cross-object LOCAL TEXT alias with
@@ -318,7 +328,7 @@ not permission to bypass the final combined regression. See
   preserved and all three physical MM refusals repaired (v1124).
 - [x] D12: Booted unrecoverable wrong-owner -4 combined with a live
   foreign provider; no forced finalization or slot recycling (v1125).
-- [ ] D13: Booted nested APR/EXEC fatal request and unpublished RUN
+- [x] D13: Booted nested APR/EXEC fatal request and unpublished RUN
   rollback across failed FILE/HUP/VM or swap backing ownership.
 - [ ] D14: Mixed PIPE/DPY/VM/u-area plus provider-lock fault in one
   boot, with exact release order and zero premature parent WAIT.
