@@ -4,13 +4,23 @@
   unpublished RUN discard-VM marker. Preserve live PREVM+FINALIZE retry
   when the same field contains run-queue successor slot 2. Source-linked
   v1107 test PASS and old unsafe order rejected.
-- [ ] Reconfirm booted fatal finalizer/WAIT acceptance and post-fold
-  permanent KCORE endpoint for the changed branch sequence. Do not
-  enable production OOM on this source-linked test alone.
-- [ ] Complete the separately in-progress booted allocated DISK
-  swap-backing/HUP refusal fixture before closing P0-D.
+- [x] Booted 256K fatal session HUP/WAIT and deferred slot-0 PREVM
+  finalization PASS; original v907 and physical PIPE/DPY/VM guests
+  v1104-v1106 rerun PASS. Full production KCC build PASS with
+  `__kcore_low_end` unchanged at `023171` octal.
+- [x] Genuine SWAP MRES DISK allocation (16 blocks, first block zero)
+  and a test-only bitmap verifier refusal preserve the exact owner.
+  Slot-0 retry restores the bit, validates the extent, frees physical
+  backing exactly once and clears the DISK record. Counters: 2 bitmap
+  verification calls, 1 corruption/repair, 1 backing free, 5 reaper
+  scans, 0 duplicate HUPs, 0 ownership errors. HUP/WAIT/TTY PASS;
+  native P0-D matrix PASS. No production OOM activation.
+- [ ] P0-D still requires a genuine MEMFS-owned XIP release-refusal
+  lifecycle, more simultaneous resource failures and sustained WAIT,
+  PID reuse, leak and liveness acceptance. P0-E/F remain OPEN. This
+  bitmap case does not cover physical storage-I/O errors.
 
-### OOM activation gates (current as of v1106, 2026-11-04)
+### OOM activation gates (current as of v1107, 2026-11-04)
 
 Assumptions: a functioning PDP-6 APR line clock and ordinary hardware
 interrupt delivery. A physically failed system clock is a hardware

@@ -6,8 +6,17 @@ process uses the same RH as an intrusive run-queue successor, so
 successor slot 2 is not evidence of pending SIDL discard. The prior
 ordering could skip a live PREVM+FINALIZE owner entirely. The corrected
 order retains ordinary FINALIZE retry and SIDL discard separately.
-Source-linked v1107 positive/unsafe-mutant test PASS. Booted acceptance
-and post-fold size are still pending; no new persistent data is required.
+Source-linked v1107 positive/unsafe-mutant test PASS. A real 256K PDP-6
+guest also PASSes: one real SWAP MRES DISK swap-out of 16 blocks,
+an injected first backing-bitmap verifier refusal, one successful
+verification and exact physical backing free on slot-0 retry, cleared
+final DISK record and unchanged allocation baseline. The already
+finalized session member is not HUPed twice; WAIT/TTY handoff PASS.
+All v907/v1104/v1105/v1106 booted compatibility guests and the
+native P0-D matrix PASS. The production full KCC image builds;
+`__kcore_low_end` remains `023171` octal after the changed branch
+sequence. No additional KCore BSS, MRES, process fields or persistent
+data; requester OOM disabled. P0-D/E/F remain OPEN.
 
 ## 2026-11-04 v1106: actual process-VM MM refusal and finalizer retry
 

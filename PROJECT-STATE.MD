@@ -9,10 +9,36 @@ post-VM paths retain their original ownership and dispatch behavior.
 
 The daimos-testkit v1107 source-linked PDP-6 test passes for both a
 live PREVM owner with runq successor 2 and a real SIDL discard owner;
-its old-order unsafe mutation is rejected. No process descriptor or
-persistent kernel data was added. Full booted image and KCORE endpoint
-measurements remain to be reconfirmed; OOM activation remains disabled.
-The separate booted DISK swap/HUP v1107 experiment is not yet accepted.
+its old-order unsafe mutation is rejected.
+
+The v1107 disposable 256K PDP-6 session/HUP guest also PASSes with
+genuine DISK backing. Test INIT enables SWAP through STORAGECTL, and
+the actual SWAP MRES reclaims session member slot 4, allocating a
+16-block backing run beginning at valid block zero. The first HUP
+enters the regular swap-detach verifier. A test-only change to one
+allocated bitmap bit makes the verification fail, retaining the
+nonresident process and its exact PREVM+FINALIZE retry owner. Slot 0
+subsequently restores the bit and completes teardown without repeated
+HUP delivery. The ordinary backing-store free is called once with the
+original 16-block extent; the final process swap record is zero and
+the allocation count returns to baseline. INIT receives the expected
+HUP/WAIT statuses for the leader and both members and can reclaim
+the controlling TTY.
+
+Booted counters: one real swap-out; bitmap verification 2 calls, one
+corruption/repair, one physical backing free, five slot-0 reaper scans,
+zero repeat HUP deliveries, one first-member MM pin/unpin and zero
+ownership errors. Original booted v907, pinned PIPE v1104, active
+DPY v1105 and real resident-VM v1106 compatibility guests PASS;
+the native P0-D matrix PASSes. The full production KCC image builds;
+its KCore endpoint remains `023171` octal. No new permanent resident
+state or MRES dependencies were added; production requester OOM stays
+disabled.
+
+This is an allocated-DISK *bitmap ownership verification* refusal,
+not a hardware storage-I/O failure. P0-D remains OPEN for genuine
+MEMFS-owned XIP release and broader simultaneous fault/WAIT/PID/leak
+acceptance; P0-E and P0-F remain OPEN.
 
 ## 2026-11-04 v1106: booted physical process-VM MM_BUSY and owner retry
 
