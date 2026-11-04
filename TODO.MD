@@ -1,4 +1,4 @@
-### OOM activation gates (current as of v1104, 2026-11-04)
+### OOM activation gates (current as of v1105, 2026-11-04)
 
 Assumptions: a functioning PDP-6 APR line clock and ordinary hardware
 interrupt delivery. A physically failed system clock is a hardware
@@ -76,6 +76,26 @@ software/device deadlocks remain kernel correctness requirements.
   final anonymous PIPE and FIFO CLOSE while retaining the descriptor,
   references and FIFO list; four unsafe native variants are rejected.
   Full cross-stage fault matrix remains OPEN.
+
+### v1105: booted physical member HUP + pinned Type-340 DPY (2026-11-04)
+
+- [x] A second real session member installs a 32-word raw DPY0 program,
+  then gets remotely HUPed while the first member owns a previously
+  committed, physically pinned u-area. FILE/DPY STOP calls production
+  `mm_free`, which returns real -5 on a test-only physical pin.
+- [x] The published DPY raw list and descriptor survive refusal;
+  real PI6 clocks replay 8 frames after MM_BUSY and before unpin.
+  Subsequent HUP unpins and frees precisely that original DPY extent
+  once. Two MM frees, 1 pin/unpin, 1 MM_BUSY, 1 successful free,
+  14 total raw refreshes, zero owner errors.
+- [x] Parent WAIT_NOHANG cannot reap the leader on first failed HUP;
+  session retry skips the committed first member. Existing HUP/WAIT,
+  TTY handoff, pinned first-member u-area and duplicate-delivery
+  assertions PASS. Separate booted v1104 PIPE/HUP and original v907
+  HUP regressions, plus complete native P0-D matrix, all PASS.
+  No production kernel, KCore, MRES or OOM change.
+- [ ] Still missing booted combined XIP/VM/swap refusals and broad
+  WAIT/PID/resource leak failure cross-products. P0-D/E/F OPEN.
 
 ### v1104: booted real member HUP and pinned PIPE final close (2026-11-04)
 

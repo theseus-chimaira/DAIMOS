@@ -1,3 +1,42 @@
+## 2026-11-04 v1105: booted physical session HUP and Type-340 DPY MM refusal
+
+P0-D now has a booted physical Type-340 cross-resource refusal test in
+daimos-testkit, extending v907's real two-member session/TTY guest without
+altering production kernel code. The first member receives a real HUP and
+commits VM_NONE+FINALIZE while its exact stable u-area remains physically
+pinned, pending slot-0 release. The second member installs a genuine 32-word
+Type-340 raw display list through `/DEV/DPY0` before its own remote HUP.
+
+The second HUP reaches the production FILE DPY close dispatch and
+`dpy_write_words` STOP, which quiesces PI7 and calls actual `mm_free`
+on the published MM_TYPE_KERNEL_DYNAMIC / owner 014 display-list extent.
+The test-only hook pins the exact extent once; production `mm_free`
+returns MM_ERR_BUSY (-5) and retains the FILE descriptor and original
+raw-list owner/IOWD for retry. INIT verifies the leader cannot yet be
+reaped with WAIT_NOHANG. During the refusal interval the display clock
+replays the same list through the live PI6 refresh path.
+
+On the second HUP, production session teardown skips the already
+irreversible first member. The original DPY extent is physically
+unpinned and freed by the unchanged MM allocator; its FILE descriptor
+then closes. TTY session commit unpins the first member's stable u-area.
+The guest verifies all three HUP/WAIT statuses and TTY handoff with no
+duplicated HUP, premature WAIT or owner error.
+
+Booted PDP-6 v1105 PASS: DPY physical MM free attempts 2, one pin,
+one unpin, exactly one MM_BUSY rejection and one successful free, 14
+actual PI6 raw-list refreshes (8 after busy and before unpin), zero
+errors; first-member u-area pin/unpin 1/1 and repeated member HUP 0.
+Independent reruns of the booted v1104 PIPE/HUP and original v907
+physical HUP fixtures PASS, as does the complete v1096 native P0-D
+release-stage matrix.
+Test-only fault hooks and counters exist solely in the disposable
+guest kernel. Production KCore remains `023171` octal, OOM remains OFF.
+
+P0-D remains OPEN for simultaneous MEMFS-XIP, swap backing and VM
+failure combinations, broader failure cross-products and final resource
+leak/WAIT/PID acceptance. P0-E/F remain OPEN.
+
 ## 2026-11-04 v1104: real session-member HUP plus physical PIPE MM_BUSY
 
 P0-D gained a booted physical cross-resource refusal case using the

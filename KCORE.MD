@@ -1,3 +1,25 @@
+## 2026-11-04 v1105: physical Type-340 HUP/DPY-MM fault stage
+
+The v1105 disposable booted PDP-6 guest extends the real two-member
+session HUP test with a live Type-340 raw display list in the second
+member. Its remote HUP drives FILE DPY CLOSE through actual DPY STOP
+and the production MM allocator. The isolated fault hook physically
+pins the exact 32-word DPY extent once; MM_BUSY (-5) must retain the
+FILE descriptor, raw-list base/IOWD and PI7 refresh ownership.
+The existing first member simultaneously retains a pinned u-area and
+a committed VM_NONE+FINALIZE stage. Parent WAIT_NOHANG must not reap
+the leader during partial HUP. Eight PI6 refreshes occur while the
+DPY extent remains pinned. The second HUP unpins and frees the exact
+original DPY extent once; first-member u-area and TTY release then
+complete without repeated HUP or ownership errors.
+
+Results: two DPY frees attempted, one MM_BUSY, one successful free,
+one physical DPY pin/unpin, 14 raw refreshes total, zero errors.
+Separate booted v1104 PIPE/HUP and original v907 HUP guests and the
+full v1096 native release-stage matrix all PASS.
+No production code, KCORE resident data, MRES or OOM enable changes;
+`__kcore_low_end` remains `023171` octal. P0-D/E/F remain OPEN.
+
 ## 2026-11-04 v1104: booted physical member HUP and PIPE final-close fault
 
 The v1104 daimos-testkit guest augments the real v907 two-member
