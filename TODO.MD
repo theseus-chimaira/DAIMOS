@@ -1,3 +1,17 @@
+### v1114: full-system MM descriptor-pressure child RUN (2026-11-04)
+
+- [x] In disposable 256K PDP-6 images, use genuine MM allocations to
+  fill the live descriptor table to its configured capacity. Check
+  that valid RUN then refuses without fatal retirement or retained
+  process MM/slot; release every acquired test extent by its exact
+  base/type/owner. Both default-disabled and test-only OOM-enabled
+  guests PASS with existing invalid BRK, OOM requester and bystander
+  checks. No production kernel source or resident RAM growth.
+- [ ] Capture the exact MM cause through the failed RUN, and boot a
+  truly fragmented physical-core BRK refusal, with no fatal dispatch
+  when test OOM is enabled. Continue P0-D/E mixed-fault and WAIT/PID
+  acceptance before considering production OOM activation.
+
 ### v1113: native integrated MM/VM/BRK OOM gate (2026-11-04)
 
 - [x] Combine unchanged production PDP-6 allocator fit/insert,

@@ -1,3 +1,17 @@
+## 2026-11-04 v1114: booted MM descriptor saturation / RUN rollback
+
+An isolated 256K PDP-6 kernel test extension acquires actual one-word
+MM_TYPE_KERNEL_DYNAMIC extents until `mm_extent_count` equals
+`mm_extent_capacity`, then checks that valid child RUN fails without
+killing its parent or leaving extra process words/slots. Each tracked
+physical extent is freed through the normal typed MM release path.
+OOM-disabled and disposable enabled-policy boots both PASS, including
+v1110 BRK negatives, the physical-OOM requester and independent
+witness. The RUN internal failure code is not captured; native v1113
+already verifies exact -2/-3 VM/BRK propagation. No production text,
+BSS or MRES changes. Booted BRK fragmentation and complete P0-F
+pressure-classification acceptance remain open.
+
 ## 2026-11-04 v1113: VM and BRK preserve actual -2/-3 MM causes
 
 The native PDP-6 regression now tests the entire production failure

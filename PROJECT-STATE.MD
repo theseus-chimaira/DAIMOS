@@ -1,3 +1,31 @@
+## 2026-11-04 v1114: booted actual MM descriptor-table pressure
+
+The disposable 256K PDP-6 v1114 guest extends v1075/v1110/v1112
+with a test-only BRK sentinel protocol compiled into a private copy
+of `syscall_dispatch_pdp6.s`. Production BRK dispatch stays unchanged.
+The sentinel uses real `mm_alloc_aligned_noreclaim` to allocate
+tracked, one-word MM_TYPE_KERNEL_DYNAMIC extents until
+`mm_extent_count == mm_extent_capacity`. The parent attempts the
+same structurally valid child RUN used by the successful v1110 tests;
+RUN returns -1 with the MM descriptor table full. A second sentinel
+releases every tracked physical base through production `mm_free`
+with the exact type and owner. Parent process-slot and process-word
+accounting return to their baseline before other regressions run.
+
+Both separately built and booted guests PASS. Default-disabled OOM
+prints `<MRILDNWP`; disposable OOM-enabled prints `<MRILKWP`.
+Invalid RUN and BRK requests remain nonfatal, the subsequent physical
+OOM requester dies only under the enabled policy, and the independent
+blocked witness survives. The internal MM failure code returned by
+the failed RUN was not directly recorded; full descriptor occupancy
+at the beginning of RUN is proven by the sentinel. This closes the
+booted physical descriptor-pressure child-RUN observation, but NOT
+booted real BRK fragmentation or explicit RUN -3 cause tracing.
+
+All additional code/BSS is compiled solely into the disposable test
+image; production code, resident KCore and MRES occupancy, ABIs and
+the default disabled OOM policy are unchanged. P0-D/E/F remain open.
+
 ## 2026-11-04 v1113: real MM -> VM BRK -> syscall error propagation
 
 The native PDP-6 v1113 fixture links actual `mm_find_fit`,
