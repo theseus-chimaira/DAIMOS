@@ -1,3 +1,38 @@
+## 2026-11-04 v1123: OOM activation gates made individually testable
+
+The new top-of-DAIMOS-TODO v1123 checklist specifies 65 mandatory
+tasks for requester-only BRK OOM activation (32 checked, 33 OPEN;
+31 pre-enable blockers and two post-signoff actions)
+and eight separately optional MEMFS raw-XIP RUN/EXEC admission tasks
+(two checked, six OPEN). It retains v1087 allocation-free transitive
+reclaim and v1086 PI6 non-sleeping slot-0 proofs, along with v1092
+provider lifetime safety through fail-closed quarantine. A forever-
+stalled provider is not promised eventual cleanup or reclamation.
+
+The remaining immediate release path is physical TTY+HUP/VM/u-area,
+mixed APR/EXEC/RUN rollback under held provider faults, sustained
+independent process progress and exact MM/WAIT/PID/bitmap accounting
+under repeated true exhaustion. Final enabled/disabled test matrices
+and real 16K executive/MRES residency measurements precede changing
+`PROC_OOM_BRK_ENABLED_V1000,0` in production.
+
+Raw MEMFS XIP admission is deliberately outside current normal
+RUN/EXEC: both paths use `vm_space_startup`, which writes startup
+metadata even with zero args/environment. The v1123 source guard
+confirms that no normal loader calls op 027; six negative mutations
+are rejected. The existing native provider/MRES XIP unpin/VM retry
+regressions remain applicable. Any new opt-in XIP process launcher
+must meet its separate trust/no-writing/swap/BRK and scheduled
+teardown requirements and requalify OOM before being enabled.
+
+The full source-linked v1096 P0-D matrix PASSes on current code;
+the v1123 checklist inventory audit structurally PASSes but its
+readiness check fails closed on 31 open pre-activation IDs. All production
+KCore/MRES memory, ABI and disabled OOM behavior remain unchanged.
+The v981/v999 policy and BRK-cause checks, v1113 real MM -2/-3
+regression, v1092 provider quarantine with 14 negative mutants,
+and v1086 PI6 non-sleeping closure audit independently rerun PASS.
+
 ## 2026-11-04 v1122: physical PIPE refusal plus real DISK bitmap failure
 
 A disposable 256K PDP-6 full guest now exercises *both* actual

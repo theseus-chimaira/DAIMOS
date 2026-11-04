@@ -1,3 +1,205 @@
+## v1123: fine-grained production OOM enablement checklist (2026-11-04)
+
+This is the active prerequisite list for changing
+`PROC_OOM_BRK_ENABLED_V1000` from 0. The default policy is
+**requester-only** fatal BRK on proven `MM_ERR_NOMEM` (-1), after
+ordinary reclaim/compaction. A failed child RUN must not kill its
+parent. P0-A, P0-B (ownership safety), and P0-C are CLOSED;
+P0-D/E/F are OPEN. Of 33 unfinished mandatory items, 31 are
+prerequisites for signoff; F12 and F13 are the two post-signoff
+implementation/verification actions and must not block the act of
+signing off. Existing checked items are prior verified evidence,
+not permission to bypass the final combined regression. See
+`pdp10-doc/KERNEL/OOM-ENABLEMENT-CHECKLIST-V1123.MD` for gate rules.
+
+### S: freeze scope, ABI and actual trigger
+
+- [x] S01: Keep faulting requester as the sole possible OOM victim;
+  exclude third-party/size-based selection (v981-v982).
+- [x] S02: Preserve ordinary BRK success, unchanged user ABI and
+  exact internal AC2 MM error cause (v999-v1000).
+- [x] S03: Prove real BRK physical exhaustion (-1) with normal return
+  while disabled and requester-only fatal cleanup when test-enabled;
+  unrelated blocked witness survives (v1075).
+- [x] S04: Prove invalid BRK/address/floor (-4) stays nonfatal in both
+  policies (v1110).
+- [x] S05: Prove fragmentation (-2), MM descriptor shortage (-3),
+  pinned MM (-5) and failed child RUN do not become fatal requester
+  OOM; preserve the exact underlying cause (v1112-v1116).
+- [x] S06: Verify the production switch is still disabled in KCORE
+  and all current normal RUN/EXEC paths call the *writing* VM startup;
+  no raw MEMFS XIP admission in those loaders. Source guard v1123
+  rejects six unsafe mutations.
+- [ ] S07: Freeze the precise release configuration, intended memory
+  profiles, boot media, providers/MRES, foreground TTY and available
+  swap; distinguish a 256K acceptance profile from deferred 32K DSH.
+- [ ] S08: Freeze which optional facilities are excluded; do not
+  enable root-only raw-XIP RUN/EXEC as part of OOM activation.
+
+### A: allocation-free transitive release graph (closed; revalidate)
+
+- [x] A01: Trace BRK/APR/EXEC/EXIT, FILE/VFS/SYNC, PIPE/DPY, HUP,
+  TTY, VM/XIP, SWAP bitmap, u-area and WAIT release edges (v1087).
+- [x] A02: Show no new MM extent, backing sector, heap, private
+  provider buffer or removable helper required during fatal release.
+- [x] A03: Run the v1087 source/negative-mutation contract; owner
+  and error paths remain bounded in *allocation*, not necessarily time.
+- [ ] A04: Rerun v1087 and the full source-linked P0-D matrix at the
+  final production candidate revision; fail on any new call edge.
+
+### B: provider ownership and fail-closed behavior (safety closed)
+
+- [x] B01: Preserve original in-flight DTFS/D6FS/TSFS gateway owner,
+  its process/private stack, FILE and shared provider workspace.
+- [x] B02: Refuse recursive and foreign fatal acquisition safely;
+  never steal or reset a held provider lease (v1092).
+- [x] B03: Keep a returning but failing FILE/SYNC owner live through
+  checked retry; no premature VM/u-area/PID reclamation.
+- [x] B04: Verify permanent -5 CLOSE quarantine and recovering
+  twelfth CLOSE with one final EXIT (v891/v953).
+- [x] B05: Define the explicit limit: a provider that never returns
+  may hold its owner indefinitely; repair or controlled restart is
+  required without a provider-specific quiescence proof (v1092).
+- [ ] B06: Test genuine physical-OOM pressure *while* another process
+  holds the gateway, including pre-dispatch and already-in-flight
+  owners, error retry, correct failure stage and independent spinner.
+- [ ] B07: Confirm no new code treats a capped retry interval as
+  bounded total lifetime or forces reclaim of a blocked owner.
+
+### C: non-sleeping slot-0 and owner-phase transitions (closed; recheck)
+
+- [x] C01: Keep PI6-masked slot-0 POSTVM/PREVM finalizers non-sleeping;
+  prohibit disk swap-in and blocking provider acquisition (v1086).
+- [x] C02: Run potentially sleeping FILE/HUP preflight on the real
+  owner's retained private stack before permanent handoff (v991/v995).
+- [x] C03: Preserve VM_NONE/FINALIZE/PREVM identity and exit status
+  across checked release refusal, then commit exactly once (v997).
+- [ ] C04: Boot real PI6-clock/owner-continuation adversarial
+  combinations with pending HUP, pinned TTY and VM failures; verify
+  independent timer and bystander progress without PI6 deadlock.
+
+### D: idempotent physical release and cross-provider failure (OPEN)
+
+- [x] D01: Exact PIPE/FIFO final-close MM -4/-5 owner retention and
+  later release (v870/v1099/v1104).
+- [x] D02: Exact Type-340 DPY raw-list pin/busy/unpin/free and live
+  PI6 refresh during refusal (v1100/v1105).
+- [x] D03: Process resident VM MM_BUSY, saved owner, later VM_NONE and
+  no premature u-area free (v1106).
+- [x] D04: DISK-backed swap bitmap verifier refusal, real backing
+  record retention, repair and one physical free (v1107).
+- [x] D05: Physical PIPE plus VM MM_BUSY with FILE/u-area/FS lease
+  and bystander WAIT checks (v1118).
+- [x] D06: Two distinct physical PIPE and DPY errors during one HUP,
+  correct PI6 replay and no duplicate finalized event (v1119).
+- [x] D07: Physical DPY MM_BUSY across real swap-out and *successful*
+  swap-in, not falsely counted as bitmap refusal (v1121).
+- [x] D08: First-member physical PIPE MM_BUSY plus distinct second-
+  member real DISK bitmap-refusal/retry in one session (v1122).
+- [x] D09: Wrong MM owner/type/base -4 never force-frees another
+  resource; quarantined owner and bystander survive (v1101).
+- [x] D10: Source-linked real MEMFS XIP MRES-owned unpin/retry and
+  VM destroy without process-MM fallback (v1108/v1109).
+- [ ] D11: Booted physical TTY canonical-buffer -5 combined with
+  HUP, VM and post-VM u-area retry, with original session preserved.
+- [ ] D12: Booted unrecoverable wrong-owner -4 combined with a live
+  foreign provider; no forced finalization or slot recycling.
+- [ ] D13: Booted nested APR/EXEC fatal request and unpublished RUN
+  rollback across failed FILE/HUP/VM or swap backing ownership.
+- [ ] D14: Mixed PIPE/DPY/VM/u-area plus provider-lock fault in one
+  boot, with exact release order and zero premature parent WAIT.
+- [ ] D15: Decide XIP scope: if production EXEC/RUN cannot admit an
+  XIP process, keep it explicitly out of this release and rerun
+  v1108/v1109; if enabled, complete separate X01-X08 below first.
+- [ ] D16: Verify final exact-once FILE/PIPE/DPY, TTY, VM, SWAP,
+  process-slot and MM-owner accounting across all supported retries.
+
+### E: whole-system OOM stress and liveness (OPEN)
+
+- [x] E01: Boot real physical exhaustion with unrelated witness
+  survival in disabled and test-only enabled policies (v1075).
+- [x] E02: After exhaustion, sequentially RUN/reap 24 processes
+  reusing numeric PID, verify alternating WAIT status and stale
+  requests *between* lifetimes (v1120).
+- [x] E03: Boot mixed fatal owner faults with independent spinner
+  activity and repeated stale WAIT/PID checks (v1117/v1118).
+- [x] E04: Boot two different actual resource refusals in one session
+  teardown while maintaining original WAIT/TTY ownership (v1122).
+- [ ] E05: Define a sustained repeatable duration/cycle threshold
+  exceeding the short existing 24-PID/37-spinner/48-stale checks.
+- [ ] E06: Repeatedly force true physical OOM, reclaim and subsequent
+  RUN/BRK success without monotonic MM slots, words or backing leaks.
+- [ ] E07: Run at least one competing runnable user process during
+  held-provider, PIPE/DPY, TTY, VM, and DISK retry intervals; prove
+  qualified PI6 clock and observable forward progress.
+- [ ] E08: Exercise multiple concurrent process groups/sessions,
+  stopped processes, parent WAIT/CHLD and numeric PID recycling
+  without duplicate event delivery or wrong-owner termination.
+- [ ] E09: Combine physical RAM exhaustion, disk backing full/failed
+  allocation and fragmentation in separate guest scenarios; preserve
+  -1/-2/-3/-4/-5 distinctions and no kill on nonphysical shortage.
+- [ ] E10: Execute APR fault and EXEC post-commit failure while a
+  separate provider is busy; ensure the faulting owner retains its
+  continuation and final WAIT status is exact.
+- [ ] E11: Repeat child RUN admission failure/rollback alongside a
+  genuinely OOM-killed BRK requester: never kill the RUN parent.
+- [ ] E12: Confirm no unauthorized INIT/kernel critical process,
+  in-flight gateway owner or unrelated bystander is terminated.
+- [ ] E13: Repeat on the required PDP-6 simulator targets and actual
+  release boot/media configuration; archive complete counter logs.
+
+### F: size, acceptance, default enable and rollback (OPEN)
+
+- [x] F01: Keep production `PROC_OOM_BRK_ENABLED_V1000,0` during
+  all experiments; enable it only in disposable positive guests.
+- [ ] F02: Run all P0-D component and optional `P0D_FULL=1` booted
+  matrix cases on the *exact* candidate revision, not stale results.
+- [ ] F03: Rebuild and run disabled/enabled OOM positive and negative
+  guest variants v1075/v1110/v1112/v1114/v1115/v1116/v1120.
+- [ ] F04: Check precise executable/VM/heap/BRK and MM error causes
+  under both policies, including no interrupted APR/VM publication.
+- [ ] F05: Measure production KCC KCORE text/data/low endpoint and
+  real MRES residency with OOM off/on; retain the 16K executive
+  mapping budget and avoid permanent RAM growth.
+- [ ] F06: Re-evaluate current full/auto packaged permanent-image
+  overflow versus `040000` octal; measure the *actually resident*
+  module set rather than treating all packages as simultaneously live.
+- [ ] F07: Check peak physical MM extent/descriptor use, APR aligned
+  slack, startup stacks and provider buffers under maximum load.
+- [ ] F08: Retain deferred strict 32K KCORE/DSH optimization as a
+  **separate** gate; do not misreport a passing 256K guest as 32K.
+- [ ] F09: Record all outstanding fail-closed noncompletion cases and
+  operator recovery/restart policy explicitly before release signoff.
+- [ ] F10: Require zero unexplained compiler/assembler diagnostics,
+  no unsafe tests in production and clean post-stress bookkeeping.
+- [ ] F11: Explicitly review and sign off S/A/B/C, all applicable
+  D/E tasks and F02-F10; never infer activation readiness from one
+  matrix PASS or from unreviewed checkbox changes.
+- [ ] F12: Only after F11, change default-off requester OOM in the
+  *production* code, rebuild and rerun the entire regression set.
+- [ ] F13: Record post-enable result, revert the switch on any
+  regression, update this checklist/PROJECT-STATE/pdp10-doc, then
+  commit and push the verified release.
+
+### X: OPTIONAL raw-MEMFS-XIP admission (not part of default OOM scope)
+
+- [x] X01: MEMFS has private MRES op 027 admission and op 026 VM
+  release; source-linked XIP/MM tests v1108/v1109 PASS.
+- [x] X02: Current normal RUN and EXEC use writing `vm_space_startup`;
+  no production XIP launch wired in. v1123 source/mutant guard PASS.
+- [ ] X03: If requested later, add strictly root-only trusted raw-XIP
+  format verification; reject mutable/PURE-only DXR impostors.
+- [ ] X04: Add real no-stack/no-argv/no-env, no-user-write startup;
+  do not reuse ordinary writing `vm_space_startup`.
+- [ ] X05: Reject XIP BRK, regular swap-out and non-whitelisted writes;
+  preserve MEMFS pinned provider provenance for exact unpin.
+- [ ] X06: Boot real scheduled XIP RUN, EXEC, fatal EXIT/WAIT and
+  failures under pressure with physical pin/refcount/MM checks.
+- [ ] X07: Exercise MEMFS unload/reclaim/unmount and foreign provider
+  refusal while XIP mappings remain live, with correct denial/retry.
+- [ ] X08: Only after X03-X07 pass, extend D/E/F and the OOM scope
+  fixture; XIP is otherwise OFF and does not block core-only OOM.
+
 ### v1122: real PIPE MM_BUSY and distinct DISK bitmap failure (2026-11-04)
 
 - [x] Combine a resident first member's physical PIPE final-close

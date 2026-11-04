@@ -1,3 +1,57 @@
+## 2026-11-04 v1123: fine-grained OOM release checklist and XIP boundary
+
+The production requester-only OOM branch remains OFF. A new active
+top-of-TODO v1123 list separates 65 mandatory tasks S/A/B/C/D/E/F
+from eight optional raw-MEMFS-XIP admission tasks. The audited
+baseline is **32/65 mandatory checked, 33 mandatory OPEN**;
+raw-XIP X01-X02 are checked, X03-X08 optional and OPEN.
+
+S covers policy/qualification scope, A allocation-free release
+(v1087 CLOSED), B fail-closed held-provider ownership (v1092
+CLOSED *for safety*, not guaranteed completion), C PI6-safe slot-0
+finalization (v1086 CLOSED), D physical error/owner cross-products
+(OPEN), E sustained system acceptance (OPEN), and F image-budget,
+full-matrix and actual production activation (OPEN).
+
+Of the 33 unfinished mandatory tasks, F12 (production switch) and
+F13 (post-enable regression/commit) are deliberately executed only
+**after** pre-enable signoff. The actual activation-readiness audit
+therefore reports **31 open pre-activation blockers** and two later
+actions, avoiding a circular release prerequisite.
+
+The existing v1122 real PIPE MM_BUSY plus separate DISK bitmap
+refusal/repair and v1120 physical OOM PID-reuse evidence are retained
+as completed subsets, not counted as full P0-D/E acceptance. All
+normal production RUN/EXEC paths use the writing `vm_space_startup`;
+no privileged raw MEMFS-XIP process admission is wired. The new
+testkit v1123 source guard detects this boundary and rejects six
+unsafe mutations. Optional XIP RUN/EXEC is excluded from the current
+ordinary-process OOM activation scope; adding it later requires
+separate trusted non-writing startup/VM/swap/teardown acceptance.
+
+The full current source-linked v1096 P0-D component matrix PASSes,
+including MEMFS XIP release/retry, TTY/VM/SWAP/PIPE/DPY and the
+v1087 transitive allocation-free graph. New testkit readiness audit
+PASSes structural inventory and five unsafe mutations, reporting
+33 unfinished mandatory items, of which 31 block pre-enable signoff;
+its --require-ready mode correctly exits 2.
+The independent v981 requester policy, v999 BRK-cause, v1113
+real MM -2/-3 (three unsafe mutants rejected), v1092 provider
+quarantine (14 mutants rejected), and v1086 slot-0 PI6 closure
+source-linked controls also rerun PASS.
+This is a **not-ready** result, not a replacement for an enabled
+256K guest or the optional P0D_FULL booted suite. A comprehensive
+release checklist and constraints are documented in
+`pdp10-doc/KERNEL/OOM-ENABLEMENT-CHECKLIST-V1123.MD`.
+
+No production KCORE code, MRES, process ABI, resident RAM or default
+OOM policy was modified; the known KCC 256K full-image low endpoint
+remains `023171` octal pending a new final sizing run. The historical
+v513 full/auto package-budget overflow must be assessed against
+the actual live MRES set before activation, not treated as measured
+runtime peak. Strict 32K DSH and KCORE `<020000` goals remain
+separately deferred, not implied by 256K OOM acceptance.
+
 ## 2026-11-04 v1122: actual cross-owner PIPE MM and DISK bitmap refusal
 
 The new testkit `daimos-session-hup-pipe-swap-v1122` full 256K
